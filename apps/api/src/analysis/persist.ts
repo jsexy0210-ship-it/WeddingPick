@@ -1,6 +1,8 @@
+import { productKey } from '@weddingpick/domain';
 import type { PoolClient } from 'pg';
 
 import type { Extraction } from './schema';
+import { matchVendor } from './vendor-matching';
 
 /** 신뢰도와 함께 저장할 추출 필드. */
 function extractionFields(extraction: Extraction) {
@@ -39,9 +41,8 @@ function extractionFields(extraction: Extraction) {
  * 등급은 L0에서 시작하고 confirmed_at은 비운다. 사용자 확인 전에는 어떤 계산에도
  * 들어가지 않는다 — 서비스정책서 1번.
  *
- * 업체는 이름만 받아 두고 연결하지 않는다. 어느 업체인지 확정하는 것은 서버의 매칭
- * 단계이며(사업계획서 27번), 아직 업체 데이터가 없다. 연결 전까지 이 문서는 가격
- * 비교에 쓰이지 않는다.
+ * 업체는 정규화한 이름이 정확히 같을 때만 연결한다(사업계획서 27번 — 매칭은 서버 몫).
+ * 연결하지 못해도 읽은 이름은 남겨두므로, 나중에 업체가 등록되면 다시 맞출 수 있다.
  */
 export async function persistExtraction(
   client: PoolClient,
@@ -55,17 +56,23 @@ export async function persistExtraction(
     [input.rawDocumentId, extraction.personalInfoKinds]
   );
 
+  const vendorId = await matchVendor(client, extraction.vendorName.value);
+
   const quote = await client.query<{ id: string }>(
     `INSERT INTO structured.quotes
-       (wedding_id, raw_document_id, doc_type, product_name, total_amount, discount_amount,
-        contract_date, verification_level, source)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, 'L0', 'ai_extraction')
+       (wedding_id, raw_document_id, doc_type, vendor_id, vendor_name_raw, product_name,
+        product_key, total_amount, discount_amount, contract_date, verification_level, source)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'L0', 'ai_extraction')
      RETURNING id`,
     [
       input.weddingId,
       input.rawDocumentId,
       extraction.documentKind === 'not_a_document' ? 'unknown' : extraction.documentKind,
+      vendorId,
+      extraction.vendorName.value,
       extraction.productName.value,
+      // 업체가 연결돼야 상품 키가 생긴다. 업체를 모르면 무엇과 견줄지도 알 수 없다.
+      vendorId ? productKey({ vendorId, productName: extraction.productName.value }) : null,
       extraction.totalAmount.value,
       extraction.discountAmount.value,
       extraction.contractDate.value,

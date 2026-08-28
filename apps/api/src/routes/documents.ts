@@ -43,9 +43,18 @@ export function registerDocumentRoutes(app: FastifyInstance, context: AppContext
     );
 
     await withTransaction(context.pool, async (client) => {
+      // 보관 기간이 정해지지 않았으면 만료 시각도 없다. 그런 문서는 삭제 대상에 오르지 않는다.
+      const retentionDays = context.config.originalRetentionDays;
+
       await client.query(
-        'INSERT INTO originals.raw_documents (id, owner_user_id, page_count) VALUES ($1, $2, $3)',
-        [documentId, userId, body.pages.length]
+        `INSERT INTO originals.raw_documents (id, owner_user_id, page_count, retention_until)
+         VALUES ($1, $2, $3, $4)`,
+        [
+          documentId,
+          userId,
+          body.pages.length,
+          retentionDays ? new Date(Date.now() + retentionDays * 24 * 60 * 60 * 1000) : null,
+        ]
       );
 
       for (const [index, upload] of uploads.entries()) {

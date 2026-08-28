@@ -1,3 +1,5 @@
+import { PRICING_POLICY, productKey } from '@weddingpick/domain';
+
 import type { Analyzer } from '../analysis/analyzer';
 import type { Extraction } from '../analysis/schema';
 import { runOnce } from '../analysis/worker';
@@ -302,6 +304,71 @@ describeWithDb('분석 워커', () => {
     // AI는 업체 이름을 읽었을 뿐이고, 어느 업체인지 확정하는 매칭은 아직 없다.
     // 그래서 비교하지 않고 이유를 준다 — 없는 가격을 만들지 않는다.
     expect(comparison.json()).toMatchObject({ available: false, reason: 'vendor_unknown' });
+  });
+
+  it('업체가 등록돼 있으면 연결되고 비교까지 이어진다', async () => {
+    const vendor = await test.pool.query<{ id: string }>(
+      `INSERT INTO structured.vendors (category, name, region, source)
+       VALUES ('hall', '테스트홀', '서울 강남구', 'vendor_official') RETURNING id`
+    );
+    const vendorId = vendor.rows[0]!.id;
+    const key = productKey({ vendorId, productName: '기본 패키지' })!;
+
+    // 다른 부부들의 인증된 계약. 시장 표본이 된다.
+    const otherUser = await test.pool.query<{ id: string }>(
+      'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
+    );
+    const otherWedding = await test.pool.query<{ id: string }>(
+      'INSERT INTO structured.weddings (owner_user_id) VALUES ($1) RETURNING id',
+      [otherUser.rows[0]!.id]
+    );
+
+    for (let index = 0; index < PRICING_POLICY.minimumSampleCount + 2; index += 1) {
+      await test.pool.query(
+        `INSERT INTO structured.quotes
+           (wedding_id, vendor_id, doc_type, product_key, total_amount, contract_date,
+            verification_level, source, confirmed_at)
+         VALUES ($1, $2, 'contract', $3, $4, '2026-03-01', 'L2', 'ai_extraction', now())`,
+        [otherWedding.rows[0]!.id, vendorId, key, 3_000_000 + index * 100_000]
+      );
+    }
+
+    const { headers, analysisId } = await queueAnalysis();
+
+    await runOnce({
+      pool: test.pool,
+      storage: test.context.storage,
+      analyzer: fakeAnalyzer(extraction()),
+    });
+
+    const quoteId = (
+      await test.app.inject({ method: 'GET', url: `/v1/analyses/${analysisId}`, headers })
+    ).json().quoteId;
+
+    await test.app.inject({
+      method: 'POST',
+      url: `/v1/quotes/${quoteId}/confirmations`,
+      headers,
+      payload: {
+        fields: [{ path: 'totalAmount' }, { path: 'contractDate' }, { path: 'refundTerms' }],
+      },
+    });
+
+    const comparison = (
+      await test.app.inject({
+        method: 'GET',
+        url: `/v1/quotes/${quoteId}/comparison`,
+        headers,
+      })
+    ).json();
+
+    expect(comparison.available).toBe(true);
+    expect(comparison.myAmount).toBe(3_280_000);
+    expect(comparison.stat.sampleCount).toBe(PRICING_POLICY.minimumSampleCount + 2);
+    expect(comparison.stat.minVerificationLevel).toBe('L2');
+    // 표본 3,000,000~3,600,000의 중앙값은 3,300,000. 내 견적 3,280,000은 그 언저리다.
+    expect(comparison.stat.median).toBe(3_300_000);
+    expect(comparison.judgement).toBe('similar');
   });
 
   it('워커가 여럿이어도 같은 문서를 두 번 분석하지 않는다', async () => {

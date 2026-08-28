@@ -8,7 +8,8 @@
     "typecheck": "tsc --noEmit",
     "test": "jest --runInBand",
     "worker": "tsx src/worker.ts",
-    "worker:dev": "tsx watch src/worker.ts"
+    "worker:dev": "tsx watch src/worker.ts",
+    "vendors:import": "tsx src/vendors-import.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",
