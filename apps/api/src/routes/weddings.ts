@@ -12,12 +12,12 @@ type WeddingRow = {
   owner_user_id: string;
   partner_user_id: string | null;
   created_at: Date;
+  partner_joined_at: Date | null;
 };
 
-async function loadDetail(context: AppContext, weddingId: string) {
-  const { rows } = await context.pool.query<WeddingRow & { owner_joined: Date; partner_joined: Date | null }>(
-    `SELECT id, wedding_date, owner_user_id, partner_user_id, created_at,
-            created_at AS owner_joined, NULL::timestamptz AS partner_joined
+async function loadDetail(context: AppContext, weddingId: string, viewerId: string) {
+  const { rows } = await context.pool.query<WeddingRow>(
+    `SELECT id, wedding_date, owner_user_id, partner_user_id, created_at, partner_joined_at
      FROM structured.weddings WHERE id = $1`,
     [weddingId]
   );
@@ -28,13 +28,26 @@ async function loadDetail(context: AppContext, weddingId: string) {
     throw notFound('웨딩');
   }
 
-  // 배우자의 개인정보는 내려보내지 않는다. 이용약관 제5조.
-  const members: { role: 'owner' | 'partner'; joinedAt: string }[] = [
-    { role: 'owner', joinedAt: row.created_at.toISOString() },
+  /*
+   * 배우자의 개인정보는 내려보내지 않는다. 이용약관 제5조.
+   *
+   * 누가 누구인지는 이름이 아니라 isMe로 구분한다 — 상대의 이름을 보여주려면 그 사람의
+   * 개인정보를 꺼내야 한다.
+   */
+  const members: { role: 'owner' | 'partner'; joinedAt: string; isMe: boolean }[] = [
+    {
+      role: 'owner',
+      joinedAt: row.created_at.toISOString(),
+      isMe: row.owner_user_id === viewerId,
+    },
   ];
 
   if (row.partner_user_id) {
-    members.push({ role: 'partner', joinedAt: row.created_at.toISOString() });
+    members.push({
+      role: 'partner',
+      joinedAt: (row.partner_joined_at ?? row.created_at).toISOString(),
+      isMe: row.partner_user_id === viewerId,
+    });
   }
 
   return {
@@ -71,13 +84,13 @@ export function registerWeddingRoutes(app: FastifyInstance, context: AppContext)
       [userId, body.weddingDate ?? null]
     );
 
-    return reply.status(201).send(await loadDetail(context, rows[0]!.id));
+    return reply.status(201).send(await loadDetail(context, rows[0]!.id, userId));
   });
 
   app.get<{ Params: { weddingId: string } }>('/v1/weddings/:weddingId', auth, async (request) => {
     const userId = currentUserId(request);
     await assertWeddingAccess(context.pool, request.params.weddingId, userId);
 
-    return loadDetail(context, request.params.weddingId);
+    return loadDetail(context, request.params.weddingId, userId);
   });
 }

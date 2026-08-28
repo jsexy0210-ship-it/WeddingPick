@@ -4,6 +4,7 @@ export * from './data-sources';
 export * from './document';
 export * from './inquiry';
 export * from './korean';
+export * from './partner-link';
 export * from './planner-listing';
 export * from './policies';
 export * from './policy';

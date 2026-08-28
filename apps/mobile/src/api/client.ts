@@ -17,7 +17,10 @@ import {
   vendorComparisonResponseSchema,
   vendorDetailSchema,
   vendorRegionsResponseSchema,
+  createInviteResponseSchema,
+  invitePreviewResponseSchema,
   vendorSearchResponseSchema,
+  weddingInviteListResponseSchema,
   verificationRequestSchema,
   weddingDetailSchema,
   type Analysis,
@@ -36,7 +39,10 @@ import {
   type VendorComparisonResponse,
   type VendorDetail,
   type VendorRegionsResponse,
+  type CreateInviteResponse,
+  type InvitePreviewResponse,
   type VendorSearchResponse,
+  type WeddingInviteListResponse,
   type VerificationRequest,
 } from '@weddingpick/api-contract';
 import { z, type ZodType } from 'zod';
@@ -144,6 +150,10 @@ export async function getCurrentUser() {
 
 export async function createWedding() {
   return request('/v1/weddings', weddingDetailSchema, { method: 'POST', body: '{}' });
+}
+
+export async function getWedding(weddingId: string) {
+  return request(`/v1/weddings/${weddingId}`, weddingDetailSchema);
 }
 
 /** 웨딩이 없으면 하나 만든다. 사용자에게 물어보지 않는다 — 제품 원칙 1. */
@@ -301,4 +311,39 @@ export async function createInquiry(
 
 export async function listMyInquiries(): Promise<InquiryListResponse> {
   return request('/v1/inquiries', inquiryListResponseSchema);
+}
+
+/** A-18 배우자 초대. 코드는 이 응답에서 한 번만 내려온다 — 서버가 다시 보여줄 수 없다. */
+export async function createWeddingInvite(weddingId: string): Promise<CreateInviteResponse> {
+  return request(`/v1/weddings/${weddingId}/invites`, createInviteResponseSchema, {
+    method: 'POST',
+  });
+}
+
+export async function getWeddingInvite(weddingId: string): Promise<WeddingInviteListResponse> {
+  return request(`/v1/weddings/${weddingId}/invites`, weddingInviteListResponseSchema);
+}
+
+export async function revokeWeddingInvite(weddingId: string, inviteId: string): Promise<void> {
+  await request(`/v1/weddings/${weddingId}/invites/${inviteId}`, z.null(), { method: 'DELETE' });
+}
+
+/** 받아들이기 전에 무엇에 동의하는지 본다. */
+export async function previewWeddingInvite(code: string): Promise<InvitePreviewResponse> {
+  return request('/v1/wedding-invites/preview', invitePreviewResponseSchema, {
+    method: 'POST',
+    body: JSON.stringify({ code }),
+  });
+}
+
+export async function acceptWeddingInvite(code: string): Promise<{ weddingId: string }> {
+  return request('/v1/wedding-invites/accept', z.object({ weddingId: z.string() }), {
+    method: 'POST',
+    body: JSON.stringify({ code }),
+  });
+}
+
+/** 연결 끊기. 어느 쪽이든 할 수 있다. */
+export async function unlinkPartner(weddingId: string): Promise<void> {
+  await request(`/v1/weddings/${weddingId}/partner`, z.null(), { method: 'DELETE' });
 }

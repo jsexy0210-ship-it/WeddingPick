@@ -22,6 +22,11 @@ export default function WeddingScreen() {
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.header}>
             <ThemedText type="subtitle">내 웨딩</ThemedText>
+            <ActionButton
+              label="배우자와 함께 보기"
+              hint="견적과 비교 결과를 함께 보며 결정할 수 있습니다"
+              onPress={() => router.push('/wedding/partner')}
+            />
           </ThemedView>
 
           {!ready ? null : sets.length === 0 ? (

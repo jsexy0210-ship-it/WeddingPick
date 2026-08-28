@@ -1,0 +1,201 @@
+import type { InvitePreviewResponse } from '@weddingpick/api-contract';
+import { router } from 'expo-router';
+import { useState } from 'react';
+import { ScrollView, StyleSheet, TextInput } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { acceptWeddingInvite, previewWeddingInvite } from '@/api/client';
+import { ActionButton } from '@/components/action-button';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
+
+/**
+ * A-18 초대 받아들이기.
+ *
+ * 연결의 나머지 한쪽 동의다. **받아들이기 전에 무엇에 동의하는지 먼저 보여준다** —
+ * 동의는 무엇에 동의하는지 알 때만 동의다. 그래서 코드를 넣으면 바로 연결되지 않고
+ * 공유 범위를 한 번 거친다.
+ */
+export default function JoinScreen() {
+  const theme = useTheme();
+  const [code, setCode] = useState('');
+  const [preview, setPreview] = useState<InvitePreviewResponse | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [joined, setJoined] = useState(false);
+
+  async function check() {
+    if (busy || code.trim().length === 0) return;
+    setBusy(true);
+    setError(null);
+
+    try {
+      setPreview(await previewWeddingInvite(code.trim()));
+    } catch (caught) {
+      setError((caught as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function join() {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+
+    try {
+      await acceptWeddingInvite(code.trim());
+      setJoined(true);
+    } catch (caught) {
+      setError((caught as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (joined) {
+    return (
+      <Frame>
+        <ThemedText type="subtitle">연결했습니다</ThemedText>
+        <ThemedText type="small" themeColor="textSecondary">
+          이제 두 분이 같은 견적과 비교 결과를 봅니다.
+        </ThemedText>
+        <ActionButton variant="primary" label="내 웨딩 보기" onPress={() => router.push('/wedding')} />
+      </Frame>
+    );
+  }
+
+  return (
+    <ThemedView style={styles.container}>
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView contentContainerStyle={styles.content}>
+          <ThemedView style={styles.section}>
+            <ThemedText type="subtitle">초대 코드 넣기</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              배우자에게 받은 코드를 넣어주세요. 무엇이 공유되는지 보고 나서 결정하실 수
+              있습니다.
+            </ThemedText>
+          </ThemedView>
+
+          <ThemedView style={styles.section}>
+            <TextInput
+              style={[styles.input, { color: theme.text, borderColor: theme.border }]}
+              value={code}
+              onChangeText={(text) => {
+                setCode(text);
+                setPreview(null);
+              }}
+              autoCapitalize="none"
+              autoCorrect={false}
+              placeholder="초대 코드"
+              placeholderTextColor={theme.textSecondary}
+              accessibilityLabel="초대 코드"
+            />
+            <ActionButton
+              label={busy ? '확인 중…' : '확인하기'}
+              disabled={busy || code.trim().length === 0}
+              onPress={check}
+            />
+          </ThemedView>
+
+          {preview && !preview.usable ? (
+            <ThemedView type="backgroundElement" style={styles.card}>
+              <ThemedText type="small" themeColor="textSecondary">
+                {preview.message}
+              </ThemedText>
+            </ThemedView>
+          ) : null}
+
+          {preview?.usable ? (
+            <>
+              <ThemedView style={styles.section}>
+                <ThemedText type="smallBold">함께 보게 되는 것</ThemedText>
+                {preview.shared.map((item) => (
+                  <ThemedView key={item} type="backgroundElement" style={styles.card}>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      {item}
+                    </ThemedText>
+                  </ThemedView>
+                ))}
+              </ThemedView>
+
+              <ThemedView style={styles.section}>
+                <ThemedText type="smallBold">공유하지 않는 것</ThemedText>
+                {preview.notShared.map((item) => (
+                  <ThemedView key={item} type="backgroundElement" style={styles.card}>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      {item}
+                    </ThemedText>
+                  </ThemedView>
+                ))}
+              </ThemedView>
+
+              <ActionButton
+                variant="primary"
+                label={busy ? '연결 중…' : '이대로 연결하기'}
+                hint="연결한 뒤에도 어느 쪽이든 끊을 수 있습니다"
+                disabled={busy}
+                onPress={join}
+              />
+            </>
+          ) : null}
+
+          {error ? (
+            <ThemedView type="backgroundElement" style={styles.card}>
+              <ThemedText type="small" themeColor="textSecondary">
+                {error}
+              </ThemedText>
+            </ThemedView>
+          ) : null}
+
+          <ActionButton label="돌아가기" onPress={() => router.back()} />
+        </ScrollView>
+      </SafeAreaView>
+    </ThemedView>
+  );
+}
+
+function Frame({ children }: { children: React.ReactNode }) {
+  return (
+    <ThemedView style={styles.container}>
+      <SafeAreaView style={styles.safeArea}>
+        <ThemedView style={styles.content}>{children}</ThemedView>
+      </SafeAreaView>
+    </ThemedView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  safeArea: {
+    flex: 1,
+    maxWidth: MaxContentWidth,
+  },
+  content: {
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.five,
+    paddingBottom: Spacing.four,
+    gap: Spacing.four,
+  },
+  section: {
+    gap: Spacing.two,
+  },
+  card: {
+    borderRadius: Spacing.three,
+    padding: Spacing.three,
+    gap: Spacing.one,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: Spacing.three,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    fontSize: 16,
+  },
+});

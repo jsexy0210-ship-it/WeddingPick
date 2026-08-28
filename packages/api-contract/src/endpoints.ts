@@ -1,6 +1,7 @@
-import type { ZodType } from 'zod';
+import { z, type ZodType } from 'zod';
 
 import { analysisSchema } from './analyses';
+import { idSchema } from './common';
 import {
   authProvidersResponseSchema,
   createSessionRequestSchema,
@@ -36,9 +37,13 @@ import {
   verificationRequestSchema,
 } from './verification';
 import {
+  acceptInviteRequestSchema,
+  createInviteResponseSchema,
   createWeddingRequestSchema,
   currentUserSchema,
+  invitePreviewResponseSchema,
   weddingDetailSchema,
+  weddingInviteListResponseSchema,
 } from './weddings';
 
 export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE';
@@ -231,6 +236,34 @@ export const ENDPOINTS = {
     method: 'GET',
     path: '/v1/inquiries/{inquiryId}',
     response: inquirySchema,
+  },
+
+  /** A-18 배우자 초대. 코드는 이 응답에서 한 번만 내려온다. */
+  createWeddingInvite: {
+    method: 'POST',
+    path: '/v1/weddings/{weddingId}/invites',
+    response: createInviteResponseSchema,
+  },
+
+  getWeddingInvite: {
+    method: 'GET',
+    path: '/v1/weddings/{weddingId}/invites',
+    response: weddingInviteListResponseSchema,
+  },
+
+  /** 받아들이기 전에 무엇에 동의하는지 본다. */
+  previewWeddingInvite: {
+    method: 'POST',
+    path: '/v1/wedding-invites/preview',
+    body: acceptInviteRequestSchema,
+    response: invitePreviewResponseSchema,
+  },
+
+  acceptWeddingInvite: {
+    method: 'POST',
+    path: '/v1/wedding-invites/accept',
+    body: acceptInviteRequestSchema,
+    response: z.object({ weddingId: idSchema }),
   },
 } as const satisfies Record<string, EndpointDefinition>;
 
