@@ -2,6 +2,7 @@ import { createDevProvider } from './auth/dev-provider';
 import { createAppleProvider, createKakaoProvider } from './auth/identity-provider';
 import { loadConfig } from './config';
 import type { AppContext } from './context';
+import { createClaudePaymentReader } from './analysis/claude-payment-reader';
 import { createPool } from './db';
 import { buildServer } from './server';
 import { createLocalStorage } from './storage/local';
@@ -39,6 +40,7 @@ async function main() {
   const context: AppContext = {
     config,
     pool: createPool(config.databaseUrl),
+    proofReader: createClaudePaymentReader(),
     storage:
       config.storage.driver === 's3'
         ? createS3Storage(config.storage)

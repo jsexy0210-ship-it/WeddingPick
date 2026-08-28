@@ -37,6 +37,17 @@ const configSchema = z.object({
    */
   corsOrigins: z.array(z.string().min(1)).default([]),
 
+  /**
+   * 결제내역 이미지를 읽는 모델.
+   *
+   * 스펙 7.3이 "저비용 AI 우선 → confidence 낮으면 상위 모델"이라고 정했다. 두
+   * 이름을 설정에 두는 이유는, 그 순서가 실제로 이득인지 재본 뒤에 바꿀 수 있어야
+   * 하기 때문이다 — escalation률이 높으면 두 번 부르는 값이 한 번에 좋은 모델을
+   * 부르는 값보다 비싸진다. ai_usage_monthly가 그 비율을 센다.
+   */
+  proofReaderCheapModel: z.string().default('claude-haiku-4-5'),
+  proofReaderStrongModel: z.string().default('claude-opus-5'),
+
   /** 제공자별 설정이 없으면 그 제공자 로그인만 막힌다. 서비스 전체가 멈추지는 않는다. */
   appleClientId: z.string().optional(),
   kakaoAppKey: z.string().optional(),
@@ -62,6 +73,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     storage,
     retentionMode: env.RETENTION_MODE,
     retentionReminderHours: env.RETENTION_REMINDER_HOURS,
+    proofReaderCheapModel: env.PROOF_READER_CHEAP_MODEL,
+    proofReaderStrongModel: env.PROOF_READER_STRONG_MODEL,
     corsOrigins: (env.CORS_ORIGINS ?? '')
       .split(',')
       .map((origin) => origin.trim())

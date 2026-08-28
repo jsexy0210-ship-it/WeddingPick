@@ -185,9 +185,9 @@
 | 0022 | `payment_proofs`, `masked_identifier_kind` enum, 종류별 보관 기간 | ✅ |
 | 0023 | 후기 확인 단계에 결제인증. 근거를 가리키게 하는 CHECK | ✅ |
 | 0024 | `data_unlocks` — 실제가격 열람 자격 뷰 | ✅ |
-| 0025 | `vendor_candidates` — 후보 저장. 웨딩 단위, 배우자와 공유 | 남음 |
-| 0026 | `vendors.slug` — SEO 경로 | 남음 |
-| 0027 | `ai_usage` — 기능별 호출·토큰·비용·escalation·사용자 수정률 | 남음 |
+| 0027 | `vendors.slug` — SEO 경로 | 남음 |
+| 0025 | `ai_usage`·`ai_budgets` + 지표 뷰 | ✅ |
+| 0026 | `vendor_candidates` — 후보 저장 | 남음 |
 
 **카드번호를 저장할 방법이 없게 만든 것**이 0022의 요점이다. 요청 본문에 그 필드가
 없고, DB 컬럼은 `masked_identifier_kind[]` enum이라 `'5432-1234-…'`를 넣으려 하면
@@ -206,9 +206,9 @@
 ③ 결제인증 등록 + 24시간 파기   ✅
 ④ Level 3 Unlock 게이트         ✅
 ⑤ 결제문자 규칙 파서            ✅ 글에서 읽는다. AI 없이
-⑥ 이미지에서 읽기 (AI Vision)   ← 다음. 넘기는 기준은 이미 정해뒀다
-⑦ 후보 저장 · 비교픽
-⑧ AI Router · 비용 추적
+⑥ 이미지에서 읽기 (AI Vision)   ✅ 규칙이 못 읽은 것만. 저비용 → 상위
+⑦ AI 비용 추적 · 예산           ✅ 호출마다 한 줄. 비율은 뷰가 센다
+⑧ 후보 저장 · 비교픽            ← 다음
 ⑨ SEO slug + 업체 페이지
 ⑩ PLAN (웨딩머니·준비리스트·일정)
 ```

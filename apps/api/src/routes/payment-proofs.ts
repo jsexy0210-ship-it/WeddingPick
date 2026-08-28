@@ -2,19 +2,13 @@ import {
   parsePaymentTextRequestSchema,
   registerPaymentProofRequestSchema,
 } from '@weddingpick/api-contract';
-import {
-  LOW_CONFIDENCE_THRESHOLD,
-  PAYMENT_PROOF_RETENTION_HOURS,
-  canRegisterPaymentProof,
-  fieldsNeedingConfirmation,
-  hasDataUnlock,
-  parsePaymentText,
-} from '@weddingpick/domain';
+import { PAYMENT_PROOF_RETENTION_HOURS, canRegisterPaymentProof, hasDataUnlock } from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
 
 import { currentUserId, requireUser } from '../auth/plugin';
 import type { AppContext } from '../context';
+import { readPaymentProof } from '../analysis/proof-pipeline';
 import { withTransaction } from '../db';
 import { ApiError, notFound } from '../errors';
 
@@ -43,6 +37,36 @@ async function matchVendor(pool: Pool, merchantName: string): Promise<string | n
   return rows.length === 1 ? rows[0]!.id : null;
 }
 
+/**
+ * 읽어줄 이미지를 스토리지에서 가져온다.
+ *
+ * **주인부터 본다.** 남의 업로드 id를 넣어 남의 영수증을 읽게 할 수 없다.
+ */
+async function loadProofImages(context: AppContext, userId: string, rawDocumentId: string) {
+  const owned = await context.pool.query(
+    `SELECT 1 FROM originals.raw_documents
+     WHERE id = $1 AND owner_user_id = $2 AND deleted_at IS NULL`,
+    [rawDocumentId, userId]
+  );
+
+  if (owned.rows.length === 0) {
+    throw notFound('촬영한 원본');
+  }
+
+  const { rows } = await context.pool.query<{ storage_key: string; mime_type: string }>(
+    `SELECT storage_key, mime_type FROM originals.raw_document_pages
+     WHERE raw_document_id = $1 ORDER BY page_index`,
+    [rawDocumentId]
+  );
+
+  return Promise.all(
+    rows.map(async (row) => ({
+      mimeType: row.mime_type,
+      bytes: await context.storage.download(row.storage_key),
+    }))
+  );
+}
+
 export function registerPaymentProofRoutes(app: FastifyInstance, context: AppContext): void {
   const auth = { preHandler: requireUser(context) };
 
@@ -58,19 +82,50 @@ export function registerPaymentProofRoutes(app: FastifyInstance, context: AppCon
    * 읽은 값이 확인 없이 분포에 들어가면, 그건 읽기 실패보다 나쁘다.
    */
   app.post('/v1/payment-proofs/parse', auth, async (request) => {
-    const { text } = parsePaymentTextRequestSchema.parse(request.body);
-    const parsed = parsePaymentText(text);
+    const userId = currentUserId(request);
+    const body = parsePaymentTextRequestSchema.parse(request.body);
+
+    if (!body.text && !body.rawDocumentId) {
+      throw new ApiError('invalid_request', '읽을 글이나 사진이 필요합니다.');
+    }
+
+    /*
+     * 사진은 규칙이 못 읽었을 때만 쓰인다(proof-pipeline이 판단한다). 여기서는
+     * 넘겨줄 준비만 한다 — 남의 업로드를 읽지 못하게 주인부터 본다.
+     */
+    const images = body.rawDocumentId
+      ? await loadProofImages(context, userId, body.rawDocumentId)
+      : [];
+
+    const result = await readPaymentProof({
+      pool: context.pool,
+      reader: context.proofReader,
+      models: {
+        cheap: context.config.proofReaderCheapModel,
+        strong: context.config.proofReaderStrongModel,
+      },
+      text: body.text,
+      images,
+    });
+
+    const { reading } = result;
+    // 파서와 모델이 같은 모양을 내보내므로 여기서 갈라질 것이 없다.
+    const field = <T>(value: T | null) =>
+      value === null ? null : { value, confidence: reading.confidence };
 
     return {
-      rejection: parsed.rejection,
-      merchantName: parsed.merchantName,
-      paidAmount: parsed.paidAmount,
-      paidAt: parsed.paidAt,
-      method: parsed.method,
-      maskedIdentifiers: parsed.maskedIdentifiers,
-      missing: parsed.missing,
-      // 문서 쪽과 같은 기준값을 쓴다. 두 화면이 다르면 그 표시를 못 믿게 된다.
-      needsConfirmation: fieldsNeedingConfirmation(parsed, LOW_CONFIDENCE_THRESHOLD),
+      rejection: reading.rejection,
+      merchantName: field(reading.merchantName),
+      paidAmount: field(reading.paidAmount),
+      paidAt: field(reading.paidAt),
+      method: field(reading.method),
+      maskedIdentifiers: reading.maskedIdentifiers,
+      missing: (['merchantName', 'paidAmount', 'paidAt', 'method'] as const).filter(
+        (key) => reading[key] === null
+      ),
+      needsConfirmation: result.needsConfirmation,
+      readingId: result.usageId,
+      notice: result.notice,
     };
   });
 
@@ -166,6 +221,19 @@ export function registerPaymentProofRoutes(app: FastifyInstance, context: AppCon
       }
 
       throw error;
+    }
+
+    /*
+     * 읽어준 값을 사람이 고쳤는지 남긴다. 스펙 7.3의 user_correction_rate.
+     *
+     * 이 값이 높으면 읽기가 나쁜 것이고, 그러면 모델을 바꾸거나 규칙을 손봐야 한다.
+     * 재지 않으면 나쁜지도 모른다.
+     */
+    if (body.readingId !== undefined && body.readingCorrected !== undefined) {
+      await context.pool.query(
+        'UPDATE structured.ai_usage SET user_corrected = $2 WHERE id = $1',
+        [body.readingId, body.readingCorrected]
+      );
     }
 
     const unlock = await context.pool.query(

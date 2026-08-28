@@ -59,6 +59,9 @@ export default function RegisterPaymentProofScreen() {
 
   const [pasted, setPasted] = useState('');
   const [reading, setReading] = useState(false);
+  /** 읽어준 값의 열쇠와, 읽어준 그대로인지. 등록할 때 함께 보낸다. */
+  const [readingId, setReadingId] = useState<string | null>(null);
+  const [asRead, setAsRead] = useState<Record<string, string> | null>(null);
   const [readNote, setReadNote] = useState<string | null>(null);
   /** 서버가 "확신이 낮다"고 짚은 항목. 화면이 그 칸을 강조한다. */
   const [uncertain, setUncertain] = useState<PaymentProofField[]>([]);
@@ -127,6 +130,7 @@ export default function RegisterPaymentProofScreen() {
         // 취소 문자를 결제로 등록하면 낸 적 없는 돈이 낸 돈이 된다.
         setReadNote(parsed.rejection);
         setUncertain([]);
+        setReadingId(null);
 
         return;
       }
@@ -139,12 +143,21 @@ export default function RegisterPaymentProofScreen() {
       setIdentifiers(parsed.maskedIdentifiers);
       setUncertain(parsed.needsConfirmation);
 
+      setReadingId(parsed.readingId);
+      // 등록할 때 이것과 견줘 "사람이 고쳤는지"를 알린다.
+      setAsRead({
+        merchantName: parsed.merchantName?.value ?? '',
+        amount: parsed.paidAmount ? String(parsed.paidAmount.value) : '',
+        day: parsed.paidAt?.value.slice(0, 10) ?? '',
+      });
+
       const unread = parsed.missing.map((field) => PAYMENT_PROOF_FIELD_LABEL[field]);
 
       setReadNote(
-        unread.length > 0
-          ? `${unread.join(' · ')}은(는) 읽지 못했습니다. 직접 적어주세요.`
-          : '읽었습니다. 맞는지 확인해 주세요.'
+        parsed.notice ??
+          (unread.length > 0
+            ? `${unread.join(' · ')}은(는) 읽지 못했습니다. 직접 적어주세요.`
+            : '읽었습니다. 맞는지 확인해 주세요.')
       );
     } catch (caught) {
       setReadNote(caught instanceof Error ? caught.message : '읽지 못했습니다. 직접 적어주세요.');
@@ -166,6 +179,19 @@ export default function RegisterPaymentProofScreen() {
         paidAt,
         method,
         maskedIdentifiers: identifiers,
+        /*
+         * 읽어준 값을 그대로 썼는지 알린다. 이 비율이 높으면 읽기가 나쁜 것이고,
+         * 그러면 규칙이나 모델을 손봐야 한다. 재지 않으면 나쁜지도 모른다.
+         */
+        ...(readingId && asRead
+          ? {
+              readingId,
+              readingCorrected:
+                asRead.merchantName !== merchantName.trim() ||
+                asRead.amount !== String(paidAmount) ||
+                asRead.day !== day,
+            }
+          : {}),
       });
 
       setDone({

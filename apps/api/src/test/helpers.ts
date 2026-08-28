@@ -37,10 +37,21 @@ export async function createTestApp(): Promise<TestApp> {
     corsOrigins: [],
     retentionMode: 'manual',
     retentionReminderHours: 24,
+    proofReaderCheapModel: 'claude-haiku-4-5',
+    proofReaderStrongModel: 'claude-opus-5',
   };
 
   const context: AppContext = {
     pool,
+    /*
+     * 테스트에서는 모델을 부르지 않는다. 실제 호출은 돈이 들고 결과가 매번 다르다.
+     * 부르려 하면 여기서 터져, 어느 테스트가 모델을 부르려 했는지 바로 드러난다.
+     */
+    proofReader: {
+      async read() {
+        throw new Error('테스트에서 결제내역 읽기 모델을 불렀다. 가짜를 끼워라.');
+      },
+    },
     config,
     storage: createLocalStorage(),
     providers: {

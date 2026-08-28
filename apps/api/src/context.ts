@@ -1,5 +1,6 @@
 import type { Pool } from 'pg';
 
+import type { PaymentProofReader } from './analysis/payment-reader';
 import type { IdentityProviders } from './auth/identity-provider';
 import type { Config } from './config';
 import type { Storage } from './storage/port';
@@ -10,4 +11,6 @@ export type AppContext = {
   storage: Storage;
   providers: IdentityProviders;
   config: Config;
+  /** 결제내역 이미지를 읽는 쪽. 테스트에서는 가짜를 끼운다. */
+  proofReader: PaymentProofReader;
 };

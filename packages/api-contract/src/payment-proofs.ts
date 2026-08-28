@@ -27,6 +27,15 @@ export const registerPaymentProofRequestSchema = z.object({
   vendorId: idSchema.optional(),
   /** 촬영한 원본. 분석이 끝나면 24시간 안에 지워진다. */
   rawDocumentId: idSchema.optional(),
+  /**
+   * 읽어준 값을 받았다면 그 열쇠와, 사람이 고쳤는지.
+   *
+   * 앱이 알려주는 값이다 — 읽어준 값을 서버가 붙들고 있다가 비교하면 정확하겠지만,
+   * 그러려면 사용자가 확인하기도 전의 값을 저장해 둬야 한다. 품질 지표 하나를
+   * 정확하게 만들자고 확인 전 값을 보관하지는 않는다.
+   */
+  readingId: idSchema.optional(),
+  readingCorrected: z.boolean().optional(),
 });
 
 export const registerPaymentProofResponseSchema = z.object({
@@ -86,7 +95,15 @@ export const paidPriceSchema = z.discriminatedUnion('available', [
  * 이미지를 올리지 않으므로 파기할 원본도 생기지 않는다. 가장 싸고 가장 안전한 길이다.
  */
 export const parsePaymentTextRequestSchema = z.object({
-  text: z.string().min(1).max(2000),
+  /** 붙여넣은 결제문자. 규칙이 먼저 읽는다. */
+  text: z.string().max(2000).optional(),
+  /**
+   * 촬영한 원본. **규칙이 못 읽었을 때만** 쓰인다.
+   *
+   * 글로 되는 것을 굳이 사진으로 받지 않는다 — 사진은 올리는 순간 파기할 원본이
+   * 생기고, 읽는 값도 더 비싸다.
+   */
+  rawDocumentId: idSchema.optional(),
 });
 
 const parsedFieldSchema = <T extends z.ZodType>(value: T) =>
@@ -105,6 +122,18 @@ export const parsePaymentTextResponseSchema = z.object({
   missing: z.array(z.enum(['merchantName', 'paidAmount', 'paidAt', 'method'])),
   /** 확신이 낮아 사람이 봐야 하는 항목. */
   needsConfirmation: z.array(z.enum(['merchantName', 'paidAmount', 'paidAt', 'method'])),
+  /**
+   * 읽어준 값이 얼마나 맞았는지 나중에 세기 위한 열쇠. 규칙만으로 읽었으면 null.
+   *
+   * 등록할 때 이 값을 함께 보내면 읽기 정확도가 쌓인다(스펙 7.3의 user_correction_rate).
+   */
+  readingId: idSchema.nullable(),
+  /**
+   * 사진에서 읽어드리지 못하는 상태의 안내. 예산이 바닥났을 때 온다.
+   *
+   * 서비스가 멈추지는 않는다 — 직접 적으면 그대로 등록된다.
+   */
+  notice: z.string().nullable(),
 });
 
 export type ParsePaymentTextRequest = z.infer<typeof parsePaymentTextRequestSchema>;
