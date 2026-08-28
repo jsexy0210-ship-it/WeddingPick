@@ -6,5 +6,6 @@ export * from './documents';
 export * from './endpoints';
 export * from './errors';
 export * from './quotes';
+export * from './vendors';
 export * from './verification';
 export * from './weddings';

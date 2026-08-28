@@ -14,6 +14,11 @@ import {
 } from './documents';
 import { confirmFieldsRequestSchema, quoteListResponseSchema, quoteSchema } from './quotes';
 import {
+  vendorDetailSchema,
+  vendorRegionsResponseSchema,
+  vendorSearchResponseSchema,
+} from './vendors';
+import {
   createVerificationRequestSchema,
   createVerificationResponseSchema,
   verificationRequestSchema,
@@ -143,6 +148,27 @@ export const ENDPOINTS = {
     method: 'GET',
     path: '/v1/verification-requests/{requestId}',
     response: verificationRequestSchema,
+  },
+
+  /** A-16 업체 검색. 질의는 q·category·region·cursor 쿼리 파라미터로 준다. */
+  searchVendors: {
+    method: 'GET',
+    path: '/v1/vendors',
+    response: vendorSearchResponseSchema,
+  },
+
+  /** 지역 필터 목록. 자료에 실제로 있는 시도만 내려온다. */
+  listVendorRegions: {
+    method: 'GET',
+    path: '/v1/vendors/regions',
+    response: vendorRegionsResponseSchema,
+  },
+
+  /** A-17 업체 상세. */
+  getVendor: {
+    method: 'GET',
+    path: '/v1/vendors/{vendorId}',
+    response: vendorDetailSchema,
   },
 } as const satisfies Record<string, EndpointDefinition>;
 

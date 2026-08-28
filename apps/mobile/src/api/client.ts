@@ -9,6 +9,9 @@ import {
   errorResponseSchema,
   createVerificationResponseSchema,
   quoteSchema,
+  vendorDetailSchema,
+  vendorRegionsResponseSchema,
+  vendorSearchResponseSchema,
   verificationRequestSchema,
   weddingDetailSchema,
   type Analysis,
@@ -18,9 +21,14 @@ import {
   type CreateVerificationResponse,
   type ErrorCode,
   type Quote,
+  type VendorDetail,
+  type VendorRegionsResponse,
+  type VendorSearchResponse,
   type VerificationRequest,
 } from '@weddingpick/api-contract';
 import { z, type ZodType } from 'zod';
+
+import type { VendorCategory } from '@weddingpick/domain';
 
 import { API_URL } from '@/api/config';
 import { clearToken, loadToken, saveToken } from '@/api/session';
@@ -190,4 +198,36 @@ export async function createVerificationRequest(
 
 export async function getVerificationRequest(requestId: string): Promise<VerificationRequest> {
   return request(`/v1/verification-requests/${requestId}`, verificationRequestSchema);
+}
+
+/**
+ * A-16 업체 검색.
+ *
+ * 빈 검색어는 보내지 않는다 — 서버가 조건 없이 전부 훑는다.
+ */
+export async function searchVendors(input: {
+  q?: string;
+  category?: VendorCategory;
+  region?: string;
+  cursor?: string;
+}): Promise<VendorSearchResponse> {
+  const query = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(input)) {
+    if (value) {
+      query.set(key, value);
+    }
+  }
+
+  const suffix = query.size > 0 ? `?${query.toString()}` : '';
+
+  return request(`/v1/vendors${suffix}`, vendorSearchResponseSchema);
+}
+
+export async function listVendorRegions(): Promise<VendorRegionsResponse> {
+  return request('/v1/vendors/regions', vendorRegionsResponseSchema);
+}
+
+export async function getVendor(vendorId: string): Promise<VendorDetail> {
+  return request(`/v1/vendors/${vendorId}`, vendorDetailSchema);
 }

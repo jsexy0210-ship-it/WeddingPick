@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { createVerificationRequest, getQuote } from '@/api/client';
 import { ActionButton } from '@/components/action-button';
+import { FilterChip } from '@/components/filter-chip';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { VerificationBadge } from '@/components/verification-badge';
@@ -201,45 +202,27 @@ export default function VerifyRequestScreen() {
                     <ThemedView type="backgroundElement" style={styles.kindRow}>
                       {(
                         Object.keys(VERIFICATION_EVIDENCE_RULES) as VerificationEvidenceKind[]
-                      ).map((kind) => {
-                        const selected = evidence[document.rawDocumentId] === kind;
+                      ).map((kind) => (
+                        <FilterChip
+                          key={kind}
+                          role="radio"
+                          label={VERIFICATION_EVIDENCE_RULES[kind].label}
+                          selected={evidence[document.rawDocumentId] === kind}
+                          onPress={() =>
+                            setEvidence((current) => {
+                              const next = { ...current };
 
-                        return (
-                          <Pressable
-                            key={kind}
-                            accessibilityRole="radio"
-                            accessibilityState={{ selected }}
-                            onPress={() =>
-                              setEvidence((current) => {
-                                const next = { ...current };
+                              if (next[document.rawDocumentId] === kind) {
+                                delete next[document.rawDocumentId];
+                              } else {
+                                next[document.rawDocumentId] = kind;
+                              }
 
-                                if (selected) {
-                                  delete next[document.rawDocumentId];
-                                } else {
-                                  next[document.rawDocumentId] = kind;
-                                }
-
-                                return next;
-                              })
-                            }>
-                            <ThemedView
-                              style={[
-                                styles.chip,
-                                {
-                                  borderColor: selected ? theme.tint : theme.border,
-                                  backgroundColor: selected ? theme.tint : 'transparent',
-                                },
-                              ]}>
-                              <ThemedText
-                                type="small"
-                                style={selected ? styles.chipSelected : undefined}
-                                themeColor={selected ? undefined : 'textSecondary'}>
-                                {VERIFICATION_EVIDENCE_RULES[kind].label}
-                              </ThemedText>
-                            </ThemedView>
-                          </Pressable>
-                        );
-                      })}
+                              return next;
+                            })
+                          }
+                        />
+                      ))}
                     </ThemedView>
                   </ThemedView>
                 ))}
@@ -315,14 +298,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.two,
-  },
-  chip: {
-    borderRadius: Spacing.four,
-    borderWidth: 1,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.one,
-  },
-  chipSelected: {
-    color: '#ffffff',
   },
 });

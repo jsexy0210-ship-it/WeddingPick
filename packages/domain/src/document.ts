@@ -23,6 +23,18 @@ export const DOCUMENT_TYPES = [
 
 export type DocumentType = (typeof DOCUMENT_TYPES)[number];
 
+/** 화면에 쓰는 이름. 코드를 그대로 보여주지 않는다. */
+export const DOCUMENT_TYPE_LABEL: Record<DocumentType, string> = {
+  official_price: '공식가격',
+  quote: '견적',
+  pre_contract: '가계약',
+  revised_quote: '변경견적',
+  contract: '계약',
+  additional_charge: '추가금',
+  final_payment: '최종지출',
+  unknown: '분류 전',
+};
+
 /** 견적서에 적힌 항목이 값에 포함되는지, 별도인지, 나중에 붙을 수 있는지. */
 export type LineItemKind = 'included' | 'excluded' | 'additional_candidate';
 

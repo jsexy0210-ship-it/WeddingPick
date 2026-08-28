@@ -14,6 +14,17 @@ export const VENDOR_CATEGORIES = [
 
 export type VendorCategory = (typeof VENDOR_CATEGORIES)[number];
 
+/** 화면에 쓰는 이름. 코드를 그대로 보여주지 않는다. */
+export const VENDOR_CATEGORY_LABEL: Record<VendorCategory, string> = {
+  wedding_info_company: '웨딩정보회사',
+  hall: '웨딩홀',
+  sdm: '스드메',
+  planner_agency: '플래닝',
+  snap: '스냅·영상',
+  goods: '예물·예단',
+  etc: '기타',
+};
+
 /**
  * 정보의 출처. 사업계획서 25번.
  * 공식정보와 실제 데이터를 섞지 않기 위해 값마다 출처를 들고 다닌다 — 제품 원칙 3.

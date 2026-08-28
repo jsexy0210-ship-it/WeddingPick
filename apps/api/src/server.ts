@@ -9,6 +9,7 @@ import { registerAuthRoutes } from './routes/auth';
 import { registerDevStorageRoutes } from './routes/dev-storage';
 import { registerDocumentRoutes } from './routes/documents';
 import { registerQuoteRoutes } from './routes/quotes';
+import { registerVendorRoutes } from './routes/vendors';
 import { registerVerificationRoutes } from './routes/verification';
 import { registerWeddingRoutes } from './routes/weddings';
 
@@ -73,6 +74,7 @@ export function buildServer(context: AppContext): FastifyInstance {
   registerAnalysisRoutes(app, context);
   registerQuoteRoutes(app, context);
   registerVerificationRoutes(app, context);
+  registerVendorRoutes(app, context);
   registerDevStorageRoutes(app, context);
 
   return app;
