@@ -199,6 +199,26 @@ p90은 가격 판단 4단계의 마지막 경계라 함께 저장한다 (`packag
 
 ---
 
+## 8. API 계약
+
+[`packages/api-contract`](../packages/api-contract)에 코드로 있다. 서버는 이대로 구현하고 앱은 이대로 부른다.
+
+```
+POST /v1/documents/uploads          서명된 URL 받기 → 파일은 스토리지로 바로
+POST /v1/documents/{id}/complete    분석 시작
+GET  /v1/analyses/{id}              A-06 진행 상태
+GET  /v1/quotes/{id}                A-08 분석 결과
+POST /v1/quotes/{id}/confirmations  A-07 핵심 필드 확인
+GET  /v1/quotes/{id}/comparison     A-09 실제 가격 비교
+POST /v1/quotes/{id}/verification-requests   A-13 인증 신청
+```
+
+응답 모양이 정책을 강제하는 지점: 가격은 표본 수·기준 기간과 한 객체로만 나가고, 비교 불가 응답에는 이유가 반드시 붙으며, 인증 접수 응답에는 승인 상태가 존재하지 않는다.
+
+`결정 필요`: 토큰 발급 경로 — 인증 제공자가 정해져야 확정된다.
+
+---
+
 ## 7. 열린 질문 (원본 문서의 미확정 항목 + 개발 관점 추가)
 
 원본 문서에서 넘어온 것:
