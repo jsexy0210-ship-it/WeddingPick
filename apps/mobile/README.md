@@ -27,7 +27,7 @@ npm run export:web --workspace @weddingpick/mobile   # 번들이 실제로 빌�
 src/app/                     expo-router 파일 기반 라우팅
   _layout.tsx                루트 Stack + 테마 + 촬영 draft Provider
   (tabs)/_layout.tsx         Bottom Navigation (홈 | 검색 | 촬영 | 내 웨딩 | MY)
-  (tabs)/index.tsx           A-03 홈
+  (tabs)/index.tsx           A-03 홈 — 촬영 CTA + 최근 분석·내 웨딩 요약
   (tabs)/search.tsx          A-16 검색 (Phase 2)
   (tabs)/capture/index.tsx   A-04 촬영 — 입력 방식 선택
   (tabs)/capture/camera.tsx  카메라 연속 촬영
@@ -41,7 +41,7 @@ src/hooks/                   테마·색상 스킴 훅
 types/expo.d.ts              expo 타입 참조 (CI에서 expo-env.d.ts가 생성되지 않으므로 직접 둠)
 ```
 
-화면 ID(A-03 등)와 각 화면이 담을 내용은 [docs/05-product-spec.md](../../docs/05-product-spec.md) 2번 표를 따른다. A-04·A-05를 뺀 나머지 탭은 아직 `ScreenPlaceholder`만 렌더링하며, 실제 화면이 붙으면 해당 사용을 지운다.
+화면 ID(A-03 등)와 각 화면이 담을 내용은 [docs/05-product-spec.md](../../docs/05-product-spec.md) 2번 표를 따른다. A-03·A-04·A-05를 뺀 나머지 탭은 아직 `ScreenPlaceholder`만 렌더링하며, 실제 화면이 붙으면 해당 사용을 지운다.
 
 ## 촬영 흐름
 
