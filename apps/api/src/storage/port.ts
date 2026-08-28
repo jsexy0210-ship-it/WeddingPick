@@ -17,6 +17,9 @@ export type Storage = {
     expiresInSeconds: number;
   }): Promise<UploadTarget>;
 
+  /** 워커가 문서를 읽을 때. */
+  download(storageKey: string): Promise<Buffer>;
+
   /** 자동삭제가 지우는 대상. 서비스정책서 4번. */
   delete(storageKey: string): Promise<void>;
 };

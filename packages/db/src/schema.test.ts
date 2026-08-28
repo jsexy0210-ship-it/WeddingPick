@@ -212,13 +212,22 @@ describeWithDb('DB 스키마', () => {
       );
 
       const { rows } = await client.query<{ id: string }>(
-        `INSERT INTO originals.raw_documents
-           (owner_user_id, storage_key, mime_type, page_count, retention_until)
-         VALUES ($1, $2, 'image/jpeg', 2, $3) RETURNING id`,
-        [user.rows[0]!.id, `key-${Math.random()}`, retentionUntil]
+        `INSERT INTO originals.raw_documents (owner_user_id, page_count, retention_until)
+         VALUES ($1, 2, $2) RETURNING id`,
+        [user.rows[0]!.id, retentionUntil]
       );
 
-      return rows[0]!.id;
+      const documentId = rows[0]!.id;
+
+      // 스토리지 키는 장마다 따로 있다 (0003).
+      await client.query(
+        `INSERT INTO originals.raw_document_pages
+           (raw_document_id, page_index, storage_key, mime_type)
+         VALUES ($1, 0, $2, 'image/jpeg')`,
+        [documentId, `key-${Math.random()}`]
+      );
+
+      return documentId;
     }
 
     it('원본을 지워도 구조화 데이터는 남고 연결만 끊긴다', async () => {

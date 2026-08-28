@@ -42,11 +42,21 @@ export function registerDocumentRoutes(app: FastifyInstance, context: AppContext
       })
     );
 
-    await context.pool.query(
-      `INSERT INTO originals.raw_documents (id, owner_user_id, storage_key, mime_type, page_count)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [documentId, userId, uploads[0]!.storageKey, body.pages[0]!.mimeType, body.pages.length]
-    );
+    await withTransaction(context.pool, async (client) => {
+      await client.query(
+        'INSERT INTO originals.raw_documents (id, owner_user_id, page_count) VALUES ($1, $2, $3)',
+        [documentId, userId, body.pages.length]
+      );
+
+      for (const [index, upload] of uploads.entries()) {
+        await client.query(
+          `INSERT INTO originals.raw_document_pages
+             (raw_document_id, page_index, storage_key, mime_type)
+           VALUES ($1, $2, $3, $4)`,
+          [documentId, index, upload.storageKey, body.pages[index]!.mimeType]
+        );
+      }
+    });
 
     return reply.status(201).send({
       rawDocumentId: documentId,

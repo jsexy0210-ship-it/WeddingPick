@@ -20,7 +20,7 @@
 
 ```
 apps/mobile/       Expo(React Native) 앱 — Primary Product
-apps/api/          Fastify + PostgreSQL 서버
+apps/api/          Fastify + PostgreSQL 서버, AI 분석 워커
 packages/domain/   앱과 서버가 함께 쓰는 도메인 타입·계산 규칙
 packages/db/       PostgreSQL 스키마와 마이그레이션
 packages/api-contract/  앱과 서버가 주고받는 것의 정의 (타입 + 런타임 검증)
