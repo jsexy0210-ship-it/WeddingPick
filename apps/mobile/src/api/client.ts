@@ -9,6 +9,8 @@ import {
   errorResponseSchema,
   createVerificationResponseSchema,
   quoteSchema,
+  createInquiryResponseSchema,
+  inquiryListResponseSchema,
   plannerDetailSchema,
   plannerRegionsResponseSchema,
   plannerSearchResponseSchema,
@@ -24,6 +26,9 @@ import {
   type CreateVerificationRequest,
   type CreateVerificationResponse,
   type ErrorCode,
+  type CreateInquiryRequest,
+  type CreateInquiryResponse,
+  type InquiryListResponse,
   type PlannerDetail,
   type PlannerRegionsResponse,
   type PlannerSearchResponse,
@@ -277,4 +282,23 @@ export async function listPlannerRegions(): Promise<PlannerRegionsResponse> {
 
 export async function getPlanner(plannerId: string): Promise<PlannerDetail> {
   return request(`/v1/planners/${plannerId}`, plannerDetailSchema);
+}
+
+/**
+ * 문의 접수.
+ *
+ * 응답에 'received' 말고는 들어올 수 없다 — 계약이 그렇게 되어 있다. 결론은 사람이
+ * 낸다 (서비스정책서 6번).
+ */
+export async function createInquiry(
+  body: CreateInquiryRequest
+): Promise<CreateInquiryResponse> {
+  return request('/v1/inquiries', createInquiryResponseSchema, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function listMyInquiries(): Promise<InquiryListResponse> {
+  return request('/v1/inquiries', inquiryListResponseSchema);
 }

@@ -8,6 +8,7 @@ import { registerAnalysisRoutes } from './routes/analyses';
 import { registerAuthRoutes } from './routes/auth';
 import { registerDevStorageRoutes } from './routes/dev-storage';
 import { registerDocumentRoutes } from './routes/documents';
+import { registerInquiryRoutes } from './routes/inquiries';
 import { registerPlannerRoutes } from './routes/planners';
 import { registerQuoteRoutes } from './routes/quotes';
 import { registerVendorRoutes } from './routes/vendors';
@@ -77,6 +78,7 @@ export function buildServer(context: AppContext): FastifyInstance {
   registerVerificationRoutes(app, context);
   registerVendorRoutes(app, context);
   registerPlannerRoutes(app, context);
+  registerInquiryRoutes(app, context);
   registerDevStorageRoutes(app, context);
 
   return app;

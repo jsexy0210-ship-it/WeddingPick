@@ -1,12 +1,15 @@
 import {
   ANALYSIS_DISCLAIMER,
   ANALYSIS_FACTS,
+  INQUIRY_CATEGORIES,
+  INQUIRY_CATEGORY_RULES,
   HALL_CANCELLATION_STANDARD,
   POLICY_DOCUMENTS,
   PRICING_POLICY,
   VERIFICATION_LEVELS,
   VERIFICATION_LEVEL_RULES,
   formatAttribution,
+  inquiryAcknowledgement,
   listDataSources,
 } from '@weddingpick/domain';
 
@@ -130,14 +133,30 @@ function policyList(): string {
 }
 
 function contact(): string {
+  const inApp = `<p>앱에서 <strong>MY → 문의하기</strong>로 보내실 수 있습니다. 받는 것:</p>
+    <ul class="plain">${INQUIRY_CATEGORIES.map(
+      (category) =>
+        `<li><strong>${escapeHtml(INQUIRY_CATEGORY_RULES[category].label)}</strong> — ${escapeHtml(
+          INQUIRY_CATEGORY_RULES[category].description
+        )}</li>`
+    ).join('')}</ul>
+    <p>${escapeHtml(inquiryAcknowledgement())}</p>`;
+
   if (!CONTACT_EMAIL) {
-    // 지어낸 주소를 붙이면 사람들이 받지 않는 곳으로 편지를 보낸다.
-    return '<p>문의처는 아직 정해지지 않았습니다. 정해지면 여기에 적겠습니다.</p>';
+    /*
+     * 지어낸 주소를 붙이면 사람들이 받지 않는 곳으로 편지를 보낸다.
+     *
+     * 앱 밖에서 연락할 방법이 아직 없다는 것도 그대로 적는다 — 앱을 쓰지 않는 사람,
+     * 특히 검색에서 자기 이름을 발견한 플래너에게는 이게 유일한 길이어야 한다.
+     */
+    return `${inApp}
+      <p class="pending">앱을 쓰지 않고 연락할 방법은 아직 마련하지 못했습니다. 주소가 정해지면 여기에 적겠습니다.</p>`;
   }
 
-  return `<p>문의: <a href="mailto:${escapeHtml(CONTACT_EMAIL)}">${escapeHtml(
-    CONTACT_EMAIL
-  )}</a></p>`;
+  return `${inApp}
+    <p>앱 밖에서는 <a href="mailto:${escapeHtml(CONTACT_EMAIL)}">${escapeHtml(
+      CONTACT_EMAIL
+    )}</a>로 보내주세요.</p>`;
 }
 
 export function renderLandingPage(styles: string): string {

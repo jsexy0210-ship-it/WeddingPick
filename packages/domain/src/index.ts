@@ -2,6 +2,7 @@ export * from './analysis-notice';
 export * from './consumer-standards';
 export * from './data-sources';
 export * from './document';
+export * from './inquiry';
 export * from './korean';
 export * from './planner-listing';
 export * from './policies';

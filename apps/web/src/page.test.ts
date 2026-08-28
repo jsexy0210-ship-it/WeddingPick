@@ -1,11 +1,14 @@
 import {
   ANALYSIS_DISCLAIMER,
+  INQUIRY_CATEGORIES,
+  INQUIRY_CATEGORY_RULES,
   ANALYSIS_FACTS,
   HALL_CANCELLATION_STANDARD,
   POLICY_DOCUMENTS,
   PRICING_POLICY,
   VERIFICATION_LEVEL_RULES,
   formatAttribution,
+  inquiryAcknowledgement,
   listDataSources,
 } from '@weddingpick/domain';
 
@@ -75,7 +78,19 @@ describe('랜딩', () => {
   it('문의처가 없으면 지어내지 않는다', () => {
     // 지어낸 주소를 붙이면 사람들이 받지 않는 곳으로 편지를 보낸다.
     expect(process.env.WEDDINGPICK_CONTACT_EMAIL).toBeUndefined();
-    expect(html).toContain('문의처는 아직 정해지지 않았습니다');
+    expect(html).not.toContain('mailto:');
+    expect(html).toContain('앱을 쓰지 않고 연락할 방법은 아직 마련하지 못했습니다');
+  });
+
+  it('무엇을 받는 창구인지 적는다', () => {
+    for (const category of INQUIRY_CATEGORIES) {
+      expect(html).toContain(escapeHtml(INQUIRY_CATEGORY_RULES[category].label));
+    }
+  });
+
+  it('정해지지 않은 처리 기한을 약속하지 않는다', () => {
+    expect(html).toContain(escapeHtml(inquiryAcknowledgement()));
+    expect(html).toContain('아직 정하지 못했습니다');
   });
 
   it('본문에 넣는 값을 이스케이프한다', () => {

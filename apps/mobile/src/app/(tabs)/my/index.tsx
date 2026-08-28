@@ -85,6 +85,11 @@ export default function MyScreen() {
               label="촬영 방법과 분석 안내"
               onPress={() => router.push('/my/guide')}
             />
+            <ActionButton
+              label="문의하기"
+              hint="잘못된 정보, 분석 결과 이의, 개인정보 요청을 받습니다"
+              onPress={() => router.push('/my/contact')}
+            />
           </ThemedView>
 
           <ThemedView style={styles.section}>

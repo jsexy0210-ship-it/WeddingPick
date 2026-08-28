@@ -13,6 +13,12 @@ import {
   createUploadResponseSchema,
 } from './documents';
 import {
+  createInquiryRequestSchema,
+  createInquiryResponseSchema,
+  inquiryListResponseSchema,
+  inquirySchema,
+} from './inquiries';
+import {
   plannerDetailSchema,
   plannerRegionsResponseSchema,
   plannerSearchResponseSchema,
@@ -205,6 +211,26 @@ export const ENDPOINTS = {
     method: 'GET',
     path: '/v1/planners/{plannerId}',
     response: plannerDetailSchema,
+  },
+
+  /** 문의 접수. 접수만 된다 — 결론은 사람이 낸다 (서비스정책서 6번). */
+  createInquiry: {
+    method: 'POST',
+    path: '/v1/inquiries',
+    body: createInquiryRequestSchema,
+    response: createInquiryResponseSchema,
+  },
+
+  listMyInquiries: {
+    method: 'GET',
+    path: '/v1/inquiries',
+    response: inquiryListResponseSchema,
+  },
+
+  getInquiry: {
+    method: 'GET',
+    path: '/v1/inquiries/{inquiryId}',
+    response: inquirySchema,
   },
 } as const satisfies Record<string, EndpointDefinition>;
 

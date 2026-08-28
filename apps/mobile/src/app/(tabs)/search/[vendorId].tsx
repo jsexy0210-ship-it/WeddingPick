@@ -111,6 +111,21 @@ export default function VendorDetailScreen() {
               hint="견적서를 올리면 이 업체의 실제 계약과 견줘 보여드립니다"
               onPress={() => router.push('/capture')}
             />
+            <ActionButton
+              label="업체 정보가 다릅니다"
+              hint="이름·지역이 실제와 다르면 알려주세요"
+              onPress={() =>
+                router.push({
+                  pathname: '/my/contact',
+                  params: {
+                    category: 'data_correction',
+                    subjectKind: 'vendor',
+                    subjectId: vendor.id,
+                    subjectName: vendor.name,
+                  },
+                })
+              }
+            />
             <ActionButton label="돌아가기" onPress={() => router.back()} />
           </ThemedView>
         </ScrollView>

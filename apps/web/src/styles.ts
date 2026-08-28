@@ -156,6 +156,16 @@ ul.sources span, ul.policies span { color: var(--text-secondary); }
 }
 .pending { font-size: 0.85rem; }
 
+ul.plain {
+  margin: 0 0 1rem;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+}
+ul.plain strong { color: var(--text); }
+
 a { color: var(--tint); }
 a:focus-visible, .skip:focus-visible { outline: 2px solid var(--tint); outline-offset: 2px; }
 

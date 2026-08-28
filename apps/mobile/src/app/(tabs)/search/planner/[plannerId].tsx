@@ -75,6 +75,21 @@ export default function PlannerDetailScreen() {
             <ThemedText type="small" themeColor="textSecondary">
               {planner.withdrawalNotice}
             </ThemedText>
+            {/* 안내만 하고 받을 곳이 없으면 지키지 않을 약속이다. */}
+            <ActionButton
+              label="검색에서 내려주세요"
+              onPress={() =>
+                router.push({
+                  pathname: '/my/contact',
+                  params: {
+                    category: 'planner_delisting',
+                    subjectKind: 'planner',
+                    subjectId: planner.id,
+                    subjectName: planner.name,
+                  },
+                })
+              }
+            />
           </ThemedView>
 
           <ThemedView style={styles.section}>
