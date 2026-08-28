@@ -10,7 +10,8 @@
     "worker": "tsx src/worker.ts",
     "worker:dev": "tsx watch src/worker.ts",
     "vendors:import": "tsx src/vendors-import.ts",
-    "analysis:eval": "tsx src/analysis-eval.ts"
+    "analysis:eval": "tsx src/analysis-eval.ts",
+    "public-data:import": "tsx src/public-data-import.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",
@@ -20,7 +21,9 @@
     "@weddingpick/api-contract": "*",
     "@weddingpick/db": "*",
     "@weddingpick/domain": "*",
+    "csv-parse": "^7.0.2",
     "fastify": "^5.12.1",
+    "iconv-lite": "^0.7.3",
     "jose": "^6.2.10",
     "pg": "^8.13.1",
     "zod": "^4.4.3"

@@ -41,6 +41,15 @@ src/
 
 ## 업체 등록과 매칭
 
+공개 인허가 자료로 한 번에 등록한다. 자세한 것은 [src/public-data/README.md](src/public-data/README.md).
+
+```bash
+npm run public-data:import --workspace @weddingpick/api -- \
+  --file 예식장.csv --category hall --dry-run
+```
+
+손으로 몇 곳만 넣거나 별칭을 붙일 때는 CSV로도 넣을 수 있다.
+
 ```bash
 npm run vendors:import --workspace @weddingpick/api -- vendors.csv
 # category,name,region,source[,별칭1;별칭2]
@@ -125,8 +134,8 @@ ANTHROPIC_API_KEY=... npm run analysis:eval --workspace @weddingpick/api -- ~/�
 
 ## 아직 없는 것
 
-- **업체 데이터** — 매칭은 되지만 등록된 업체가 없다. 어떻게 모을지(공개정보/수동 등록)가
-  아직 정해지지 않았다
+- **업체 자료 실제 적재** — 공개 인허가 자료를 넣는 도구는 있지만 아직 실제 파일로
+  돌려보지 못했다. 이 개발 환경에서는 공공데이터 사이트에 접근할 수 없다
 - **실제 견적서로 확인** — 정확도 측정 하네스는 있다([eval/](eval/)). 아직 실제 업체
   견적서로 돌려보지 못했다 — 자격증명과 문서가 필요하다
 - **Apple·Kakao 실제 검증** — OIDC 검증 코드는 있지만 실제 제공자 토큰으로 확인하지 못했다.
