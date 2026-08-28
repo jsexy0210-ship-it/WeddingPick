@@ -1,4 +1,8 @@
-import { INQUIRY_CATEGORY_RULES, INQUIRY_STATUS_LABEL } from '@weddingpick/domain';
+import {
+  INQUIRY_CATEGORY_RULES,
+  INQUIRY_STATUS_LABEL,
+  PLANNER_LISTING_REQUEST_SOURCE,
+} from '@weddingpick/domain';
 import type { InquiryCategory, InquiryStatus } from '@weddingpick/domain';
 import type { PoolClient } from 'pg';
 
@@ -15,7 +19,7 @@ import { createPool, withTransaction } from './db';
  *   npm run inquiries --workspace @weddingpick/api -- --show <id>
  *   npm run inquiries --workspace @weddingpick/api -- --review <id> --by <user-id>
  *   npm run inquiries --workspace @weddingpick/api -- --answer <id> --by <user-id> \
- *     --resolution "..." [--withdraw-planner]
+ *     --resolution "..." [--withdraw-planner | --list-planner]
  *
  * `--by`는 처리한 사람의 사용자 id다. 스키마가 결론에 사람을 요구한다.
  */
@@ -28,16 +32,18 @@ type Options = {
   by?: string;
   resolution?: string;
   withdrawPlanner: boolean;
+  listPlanner: boolean;
 };
 
 function parseArgs(argv: string[]): Options {
-  const options: Options = { list: false, withdrawPlanner: false };
+  const options: Options = { list: false, withdrawPlanner: false, listPlanner: false };
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
 
     if (arg === '--list') options.list = true;
     else if (arg === '--withdraw-planner') options.withdrawPlanner = true;
+    else if (arg === '--list-planner') options.listPlanner = true;
     else if (arg === '--show') options.show = argv[++i];
     else if (arg === '--review') options.review = argv[++i];
     else if (arg === '--answer') options.answer = argv[++i];
@@ -79,6 +85,31 @@ async function withdrawPlanner(client: PoolClient, plannerId: string): Promise<v
 
   console.log(
     rowCount === 0 ? '  (이미 내려가 있거나 없는 플래너다)' : '  플래너를 검색에서 내렸다.'
+  );
+}
+
+/**
+ * 등록 요청을 받아들여 검색에 올린다.
+ *
+ * 노출 중단의 반대편이지만 대칭이 아니다. 내리는 것은 요청만으로 되고 되돌릴 수
+ * 없다. 올리는 것은 근거를 사람이 확인해야 하고, 언제든 다시 내릴 수 있다.
+ * 개인 이름을 싣는 일이라 그 방향으로 기울여 둔다.
+ *
+ * 한 번 내려간(withdrawn) 플래너는 다시 올라가지 않는다 — 0008의 트리거가 막는다.
+ * 여기서 굳이 확인하지 않는 것은, 확인을 두 곳에 두면 한 곳이 늦게 바뀌기 때문이다.
+ */
+async function listPlanner(client: PoolClient, plannerId: string): Promise<void> {
+  const { rowCount } = await client.query(
+    `UPDATE structured.planners
+     SET listing_status = 'public', listing_source = $2::source_type, listed_at = now()
+     WHERE id = $1 AND listing_status = 'private'`,
+    [plannerId, PLANNER_LISTING_REQUEST_SOURCE]
+  );
+
+  console.log(
+    rowCount === 0
+      ? '  (이미 공개되어 있거나, 내려달라고 한 적이 있거나, 없는 플래너다)'
+      : '  플래너를 검색에 올렸다. 왜 나오는지가 검색 결과에 함께 표시된다.'
   );
 }
 
@@ -169,7 +200,8 @@ async function main(): Promise<void> {
         options.by,
         options.resolution,
         options.withdrawPlanner,
-        null
+        null,
+        options.listPlanner
       );
       return;
     }
@@ -187,7 +219,8 @@ async function moveStatus(
   by: string,
   resolution: string | null,
   alsoWithdrawPlanner: boolean,
-  note: string | null
+  note: string | null,
+  alsoListPlanner = false
 ): Promise<void> {
   await withTransaction(pool, async (client) => {
     const { rows } = await client.query<{
@@ -227,12 +260,29 @@ async function moveStatus(
 
     console.log(`${inquiryId}: ${INQUIRY_STATUS_LABEL[found.status]} → ${INQUIRY_STATUS_LABEL[to]}`);
 
+    if (alsoWithdrawPlanner && alsoListPlanner) {
+      throw new Error('내리면서 동시에 올릴 수는 없다.');
+    }
+
     if (alsoWithdrawPlanner) {
       if (found.subject_kind !== 'planner' || !found.subject_id) {
         throw new Error('플래너를 가리키지 않는 문의다. 내릴 대상이 없다.');
       }
 
       await withdrawPlanner(client, found.subject_id);
+    }
+
+    if (alsoListPlanner) {
+      if (found.subject_kind !== 'planner' || !found.subject_id) {
+        throw new Error('플래너를 가리키지 않는 문의다. 올릴 대상이 없다.');
+      }
+
+      if (found.category !== 'planner_listing') {
+        // 다른 문의를 처리하다가 실수로 개인 이름을 검색에 올리는 일이 없게 한다.
+        throw new Error('등록 요청이 아닌 문의로는 플래너를 올릴 수 없다.');
+      }
+
+      await listPlanner(client, found.subject_id);
     }
   });
 }

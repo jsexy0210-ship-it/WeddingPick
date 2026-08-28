@@ -62,3 +62,70 @@ export function inviteState(input: {
 
   return new Date(input.expiresAt) > now ? 'usable' : 'expired';
 }
+
+/**
+ * 초대 링크.
+ *
+ * 코드를 손으로 옮겨 적게 하면 한 글자만 틀려도 막힌다. 링크로 열면 그 자리가
+ * 사라진다.
+ *
+ * 앱 스킴(`weddingpick://`)을 쓴다. 도메인이 정해지면 유니버설 링크를 더할 수
+ * 있지만, 그때까지 기다릴 이유가 없다 — 앱이 깔린 사람에게는 스킴만으로 열린다.
+ * 도메인이 없어 못 하는 것은 **앱이 없는 사람이 링크를 눌렀을 때 스토어로
+ * 보내주는 것** 하나다. 그래서 공유 문구에 코드를 함께 적어, 링크가 열리지 않는
+ * 사람도 손으로 넣을 수 있게 남겨둔다.
+ */
+export const INVITE_LINK_SCHEME = 'weddingpick';
+
+export function inviteLink(code: string): string {
+  // 코드는 우리가 만든 것이라 URL에서 위험한 글자가 없지만, 만드는 규칙이 바뀌어도
+  // 링크가 깨지지 않도록 감싼다.
+  return `${INVITE_LINK_SCHEME}://join?code=${encodeURIComponent(code)}`;
+}
+
+/**
+ * 공유 문구.
+ *
+ * 링크와 코드를 함께 담는다. 링크는 앱이 깔린 사람에게 한 번에 열리고, 코드는
+ * 그렇지 않은 사람이 손으로 넣을 수 있는 길이다. 둘 중 하나만 담으면 한쪽이
+ * 막힌다.
+ */
+export function inviteShareMessage(code: string): string {
+  return [
+    '웨딩픽에서 함께 견적을 봐요.',
+    inviteLink(code),
+    `앱이 열리지 않으면 이 코드를 넣어주세요: ${code}`,
+  ].join('\n');
+}
+
+/**
+ * 링크에서 코드를 꺼낸다.
+ *
+ * 우리 스킴이 아니거나 코드가 없으면 아무것도 돌려주지 않는다 — 남이 만든 링크로
+ * 엉뚱한 값이 입력칸에 들어가지 않게 한다.
+ */
+export function inviteCodeFromLink(url: string): string | null {
+  // URL 클래스를 쓰지 않는다 — 이 패키지는 서버·앱·웹 어디서나 돌아야 하고,
+  // 그 셋의 런타임이 같은 전역을 갖고 있다고 가정하지 않는다.
+  const match = /^weddingpick:\/\/join\/?\?(.+)$/i.exec(url.trim());
+
+  if (!match) return null;
+
+  for (const pair of match[1]!.split('&')) {
+    const separator = pair.indexOf('=');
+
+    if (separator === -1) continue;
+    if (pair.slice(0, separator) !== 'code') continue;
+
+    try {
+      const code = decodeURIComponent(pair.slice(separator + 1)).trim();
+
+      return code.length > 0 ? code : null;
+    } catch {
+      // 망가진 인코딩. 코드가 아니다.
+      return null;
+    }
+  }
+
+  return null;
+}

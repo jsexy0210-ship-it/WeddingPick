@@ -8,6 +8,7 @@
 export const INQUIRY_CATEGORIES = [
   'vendor_objection',
   'planner_delisting',
+  'planner_listing',
   'data_correction',
   'analysis_error',
   'privacy',
@@ -22,6 +23,13 @@ export type InquiryCategoryRule = {
   description: string;
   /** 무엇에 대한 문의인지 반드시 가리켜야 하는지 */
   requiresSubject: boolean;
+  /**
+   * 근거가 있는 곳을 반드시 받아야 하는지.
+   *
+   * 등록 요청에만 붙는다. 내려달라는 요청에 근거를 요구하면 내리기가 올리기보다
+   * 어려워지고, 그건 개인에게 불리한 쪽으로 기운다. 비대칭은 의도한 것이다.
+   */
+  requiresEvidence: boolean;
 };
 
 export const INQUIRY_CATEGORY_RULES: Record<InquiryCategory, InquiryCategoryRule> = {
@@ -29,31 +37,44 @@ export const INQUIRY_CATEGORY_RULES: Record<InquiryCategory, InquiryCategoryRule
     label: '업체 이의 제기',
     description: '업체로서 견적·계약 자료나 정리된 내용에 이의가 있습니다.',
     requiresSubject: false,
+    requiresEvidence: false,
   },
   planner_delisting: {
     label: '플래너 노출 중단',
     description: '검색에 나오는 것을 원하지 않습니다. 내려드리고 다시 올리지 않습니다.',
     requiresSubject: true,
+    requiresEvidence: false,
+  },
+  planner_listing: {
+    label: '플래너 등록 요청',
+    description:
+      '소속 플래너를 검색에 올려주세요. 업체 공식 페이지처럼 확인할 수 있는 곳을 함께 알려주셔야 합니다.',
+    requiresSubject: true,
+    requiresEvidence: true,
   },
   data_correction: {
     label: '업체 정보 정정',
     description: '업체 이름·지역 같은 정보가 실제와 다릅니다.',
     requiresSubject: false,
+    requiresEvidence: false,
   },
   analysis_error: {
     label: '분석 결과가 다릅니다',
     description: '정리된 내용이 원본 문서와 다릅니다.',
     requiresSubject: false,
+    requiresEvidence: false,
   },
   privacy: {
     label: '개인정보',
     description: '내 정보 열람·정정·삭제를 요청합니다.',
     requiresSubject: false,
+    requiresEvidence: false,
   },
   other: {
     label: '그 밖의 문의',
     description: '위에 해당하지 않는 이야기입니다.',
     requiresSubject: false,
+    requiresEvidence: false,
   },
 };
 
@@ -95,10 +116,25 @@ export function canSubmitInquiry(input: {
   hasSubject: boolean;
   /** 로그인했거나 회신처를 적었거나 */
   hasReplyRoute: boolean;
+  /** 근거가 있는 곳을 적었는지. 등록 요청에만 필요하다. */
+  hasEvidence?: boolean;
 }): boolean {
   if (input.body.trim().length === 0 || !input.hasReplyRoute) {
     return false;
   }
 
-  return !INQUIRY_CATEGORY_RULES[input.category].requiresSubject || input.hasSubject;
+  const rule = INQUIRY_CATEGORY_RULES[input.category];
+
+  if (rule.requiresSubject && !input.hasSubject) return false;
+  if (rule.requiresEvidence && !input.hasEvidence) return false;
+
+  return true;
 }
+
+/**
+ * 등록 요청을 받아들여 검색에 올릴 때 쓰는 근거.
+ *
+ * 개인 플래너는 인허가 데이터에 실리지 않는다(사업자가 아니다). 그래서 실질적으로
+ * 가능한 근거는 이것 하나다 — 소속 업체나 본인이 스스로 밝힌 것.
+ */
+export const PLANNER_LISTING_REQUEST_SOURCE = 'vendor_official' as const;

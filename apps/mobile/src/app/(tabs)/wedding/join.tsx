@@ -1,5 +1,6 @@
 import type { InvitePreviewResponse } from '@weddingpick/api-contract';
-import { router } from 'expo-router';
+import { inviteCodeFromLink } from '@weddingpick/domain';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,7 +17,20 @@ import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView, useThem
  */
 export default function JoinScreen() {
   const theme = useTheme();
-  const [code, setCode] = useState('');
+  /*
+   * 링크로 들어온 경우 코드가 여기 실려 온다 (weddingpick://join?code=...).
+   *
+   * 채워만 두고 자동으로 연결하지는 않는다. 링크를 눌렀다는 것이 공유 범위에
+   * 동의했다는 뜻은 아니다 — 무엇에 동의하는지 보여주는 단계는 그대로 거친다.
+   */
+  const params = useLocalSearchParams<{ code?: string }>();
+  /*
+   * 손으로 넣은 값. 아직 아무것도 넣지 않았으면 null이고, 그때는 링크로 실려 온
+   * 코드를 쓴다. state를 링크에 맞춰 되돌리는 대신 이렇게 두면, 화면이 떠 있는
+   * 동안 다른 링크로 다시 들어와도 알아서 따라간다.
+   */
+  const [typed, setTyped] = useState<string | null>(null);
+  const code = typed ?? params.code?.trim() ?? '';
   const [preview, setPreview] = useState<InvitePreviewResponse | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +94,9 @@ export default function JoinScreen() {
               style={[styles.input, { color: theme.text, borderColor: theme.border }]}
               value={code}
               onChangeText={(text) => {
-                setCode(text);
+                // 링크를 통째로 붙여넣는 사람이 많다. 그럴 때 "코드가 아닙니다"라고
+                // 되돌려주는 대신 코드를 꺼내 쓴다.
+                setTyped(inviteCodeFromLink(text.trim()) ?? text);
                 setPreview(null);
               }}
               autoCapitalize="none"

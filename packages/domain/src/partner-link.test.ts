@@ -1,5 +1,7 @@
 import {
   INVITE_TTL_HOURS,
+  inviteCodeFromLink,
+  inviteShareMessage,
   PARTNER_NOT_SHARED,
   PARTNER_SHARED,
   inviteState,
@@ -43,5 +45,33 @@ describe('배우자 초대', () => {
 
   it('초대에 기한이 있다', () => {
     expect(INVITE_TTL_HOURS).toBeGreaterThan(0);
+  });
+});
+
+describe('초대 링크', () => {
+  it('링크에서 코드를 꺼낸다', () => {
+    expect(inviteCodeFromLink('weddingpick://join?code=ABCD-1234')).toBe('ABCD-1234');
+  });
+
+  it('공유 문구에 링크와 코드를 함께 담는다', () => {
+    const message = inviteShareMessage('ABCD-1234');
+
+    // 앱이 깔린 사람은 링크로, 아닌 사람은 코드로. 하나만 담으면 한쪽이 막힌다.
+    expect(message).toContain('weddingpick://join?code=ABCD-1234');
+    expect(message).toContain('ABCD-1234');
+  });
+
+  it('우리 스킴이 아니면 받지 않는다', () => {
+    expect(inviteCodeFromLink('https://example.com/join?code=ABCD-1234')).toBeNull();
+    expect(inviteCodeFromLink('weddingpick://settings?code=ABCD-1234')).toBeNull();
+  });
+
+  it('코드가 없으면 받지 않는다', () => {
+    expect(inviteCodeFromLink('weddingpick://join')).toBeNull();
+    expect(inviteCodeFromLink('weddingpick://join?code=')).toBeNull();
+  });
+
+  it('링크가 아니어도 터지지 않는다', () => {
+    expect(inviteCodeFromLink('그냥 문자열')).toBeNull();
   });
 });

@@ -62,20 +62,30 @@ export function registerInquiryRoutes(app: FastifyInstance, context: AppContext)
         body: body.body,
         hasSubject: body.subject !== undefined,
         hasReplyRoute: true,
+        hasEvidence: body.evidenceUrl !== undefined,
       })
     ) {
       const rule = INQUIRY_CATEGORY_RULES[body.category];
+      // 무엇이 빠졌는지 말해준다. "형식이 올바르지 않습니다"로는 고칠 수 없다.
+      const missing = [
+        rule.requiresSubject && body.subject === undefined
+          ? '어느 대상에 대한 것인지'
+          : null,
+        rule.requiresEvidence && body.evidenceUrl === undefined
+          ? '확인할 수 있는 곳의 주소를'
+          : null,
+      ].filter((part): part is string => part !== null);
 
       throw new ApiError(
         'invalid_request',
-        `${withObject(rule.label)} 보내시려면 어느 대상에 대한 것인지 함께 알려주세요.`
+        `${withObject(rule.label)} 보내시려면 ${missing.join(', ')} 함께 알려주세요.`
       );
     }
 
     const { rows } = await context.pool.query<{ id: string; received_at: Date }>(
       `INSERT INTO structured.inquiries
-         (category, body, requester_user_id, contact, subject_kind, subject_id)
-       VALUES ($1, $2, $3, $4, $5, $6)
+         (category, body, requester_user_id, contact, subject_kind, subject_id, evidence_url)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING id, received_at`,
       [
         body.category,
@@ -84,6 +94,7 @@ export function registerInquiryRoutes(app: FastifyInstance, context: AppContext)
         body.contact ?? null,
         body.subject?.kind ?? null,
         body.subject?.id ?? null,
+        body.evidenceUrl ?? null,
       ]
     );
 

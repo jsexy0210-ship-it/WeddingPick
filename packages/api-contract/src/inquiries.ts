@@ -24,6 +24,13 @@ export const createInquiryRequestSchema = z.object({
   subject: inquirySubjectSchema.optional(),
   /** 앱 말고 다른 곳으로 답을 받고 싶을 때. */
   contact: z.string().trim().min(1).max(200).optional(),
+  /**
+   * 근거가 있는 곳. 플래너 등록 요청에만 필요하다.
+   *
+   * 증빙 파일을 받지 않고 **가리키는 곳**만 받는다 — 신분증 사본 같은 것을 우리가
+   * 들고 있을 이유가 없다. 확인은 사람이 그 주소를 열어보고 한다.
+   */
+  evidenceUrl: z.string().trim().url().max(500).optional(),
 });
 
 /**

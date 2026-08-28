@@ -23,6 +23,8 @@ async function seedQuote(options: {
   amount?: number;
   productKey?: string | null;
   contractDate?: string | null;
+  /** 개인정보 재검토를 마쳤는지. 서비스정책서 4번. */
+  piiReviewed?: boolean;
 }) {
   const user = await client.query<{ id: string }>(
     'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
@@ -54,6 +56,16 @@ async function seedQuote(options: {
       options.confirmed === false ? null : new Date(),
     ]
   );
+
+  // 서비스정책서 4번: 개인정보 재검토를 받아야 남들이 보는 면으로 간다.
+  if (options.piiReviewed !== false) {
+    await client.query(
+      `UPDATE structured.quotes
+       SET pii_review = 'clean', pii_reviewed_at = now(), pii_reviewed_by = $2
+       WHERE id = $1`,
+      [quote.rows[0]!.id, userId]
+    );
+  }
 
   return { userId, quoteId: quote.rows[0]!.id, vendorId: vendor.rows[0]!.id };
 }
@@ -144,6 +156,14 @@ describeWithDb('DB 스키마', () => {
 
     it('상품 키가 없으면 빠진다 — 무엇과 견줄지 알 수 없다', async () => {
       await seedQuote({ productKey: null });
+
+      expect(await comparableCount()).toBe(0);
+    });
+
+    it('개인정보 재검토를 받지 않으면 등급이 높아도 빠진다', async () => {
+      // 등급은 "이 금액이 진짜인가"를 보고, 재검토는 "남의 개인정보가 섞여 있지
+      // 않은가"를 본다. 서로 다른 질문이라 둘 다 통과해야 한다.
+      await seedQuote({ level: 'L4', piiReviewed: false });
 
       expect(await comparableCount()).toBe(0);
     });

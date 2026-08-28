@@ -1,6 +1,14 @@
 import { PRICING_POLICY } from '@weddingpick/domain';
 
-import { createTestApp, createWedding, resetDatabase, signInAs, type TestApp } from './helpers';
+import {
+  createTestApp,
+  createWedding,
+  markAllPiiReviewed,
+  markPiiReviewed,
+  resetDatabase,
+  signInAs,
+  type TestApp,
+} from './helpers';
 
 let test: TestApp;
 
@@ -57,6 +65,10 @@ async function seedQuote(options: {
     ]);
   }
 
+  // 서비스정책서 4번: 개인정보 재검토를 받아야 남들이 보는 면으로 간다.
+  // 실전에서도 사람이 한 번 본 뒤에야 비교에 잡힌다.
+  await markPiiReviewed(test, [quoteId]);
+
   return { quoteId, vendorId };
 }
 
@@ -74,6 +86,8 @@ async function seedMarketSamples(vendorId: string, count: number, level = 'L2') 
       [weddingId, vendorId, 9_000_000 + index * 200_000, level]
     );
   }
+
+  await markAllPiiReviewed(test);
 }
 
 describeWithDb('문서와 비교', () => {

@@ -109,3 +109,39 @@ export async function createWedding(test: TestApp, headers: Record<string, strin
 
   return response.json<{ id: string }>().id;
 }
+
+/**
+ * 개인정보 재검토를 마쳤다고 표시한다.
+ *
+ * 서비스정책서 4번대로, 검토를 받지 않은 문서는 남들이 보는 면(시장 대표가격,
+ * 비교표)으로 가지 않는다. 그래서 "비교에 잡히는 문서"를 심는 테스트는 이걸
+ * 함께 해줘야 실제와 같아진다 — 실전에서도 사람이 한 번 본 뒤에야 잡힌다.
+ */
+export async function markPiiReviewed(test: TestApp, quoteIds: readonly string[]): Promise<void> {
+  if (quoteIds.length === 0) return;
+
+  const reviewer = await test.pool.query<{ id: string }>(
+    'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
+  );
+
+  await test.pool.query(
+    `UPDATE structured.quotes
+     SET pii_review = 'clean', pii_reviewed_at = now(), pii_reviewed_by = $2
+     WHERE id = ANY($1::uuid[])`,
+    [quoteIds, reviewer.rows[0]!.id]
+  );
+}
+
+/** 어느 웨딩에도 매이지 않은 시장 표본 전체를 검토 완료로. */
+export async function markAllPiiReviewed(test: TestApp): Promise<void> {
+  const reviewer = await test.pool.query<{ id: string }>(
+    'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
+  );
+
+  await test.pool.query(
+    `UPDATE structured.quotes
+     SET pii_review = 'clean', pii_reviewed_at = now(), pii_reviewed_by = $1
+     WHERE pii_review = 'pending'`,
+    [reviewer.rows[0]!.id]
+  );
+}

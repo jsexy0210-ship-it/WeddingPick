@@ -4,7 +4,7 @@ import type { Analyzer } from '../analysis/analyzer';
 import type { Extraction } from '../analysis/schema';
 import { runOnce } from '../analysis/worker';
 import type { LocalStorage } from '../storage/local';
-import { createTestApp, createWedding, resetDatabase, signInAs, type TestApp } from './helpers';
+import { createTestApp, createWedding, markAllPiiReviewed, resetDatabase, signInAs, type TestApp } from './helpers';
 
 let test: TestApp;
 
@@ -343,6 +343,9 @@ describeWithDb('분석 워커', () => {
         [otherWedding.rows[0]!.id, vendorId, key, 3_000_000 + index * 100_000]
       );
     }
+
+    // 서비스정책서 4번: 시장 표본도 개인정보 재검토를 받아야 비교에 잡힌다.
+    await markAllPiiReviewed(test);
 
     const { headers, analysisId } = await queueAnalysis();
 

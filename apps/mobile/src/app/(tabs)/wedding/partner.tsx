@@ -3,6 +3,7 @@ import {
   PARTNER_NOT_SHARED,
   PARTNER_SHARED,
   PARTNER_UNLINK_EFFECTS,
+  inviteShareMessage,
 } from '@weddingpick/domain';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
@@ -96,9 +97,9 @@ export default function PartnerScreen() {
     if (!code) return;
 
     try {
-      await Share.share({
-        message: `웨딩픽에서 함께 견적을 봐요. 앱에서 이 코드를 넣어주세요: ${code}`,
-      });
+      // 링크와 코드를 함께 보낸다. 앱이 깔린 사람은 한 번에 열리고, 아닌 사람은
+      // 코드를 손으로 넣는다.
+      await Share.share({ message: inviteShareMessage(code) });
     } catch {
       // 공유 시트를 닫은 경우가 대부분이라 따로 알리지 않는다.
     }

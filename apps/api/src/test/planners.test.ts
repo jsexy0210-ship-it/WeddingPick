@@ -1,6 +1,6 @@
 import { PRICING_POLICY, productKey } from '@weddingpick/domain';
 
-import { createTestApp, createWedding, resetDatabase, signInAs, type TestApp } from './helpers';
+import { createTestApp, createWedding, markAllPiiReviewed, resetDatabase, signInAs, type TestApp } from './helpers';
 
 let test: TestApp;
 
@@ -263,6 +263,9 @@ describeWithDb('플래너 상세', () => {
         ]
       );
     }
+
+    // 서비스정책서 4번: 개인정보 재검토를 받아야 비교에 잡힌다.
+    await markAllPiiReviewed(test);
 
     const response = await test.app.inject({
       method: 'GET',

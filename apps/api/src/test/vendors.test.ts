@@ -1,6 +1,6 @@
 import { MAX_COMPARED_VENDORS, PRICING_POLICY, productKey } from '@weddingpick/domain';
 
-import { createTestApp, createWedding, resetDatabase, signInAs, type TestApp } from './helpers';
+import { createTestApp, createWedding, markAllPiiReviewed, resetDatabase, signInAs, type TestApp } from './helpers';
 
 let test: TestApp;
 
@@ -42,6 +42,9 @@ async function createComparableQuote(input: {
       input.amount,
     ]
   );
+
+  // 서비스정책서 4번: 개인정보 재검토를 받아야 비교에 잡힌다.
+  await markAllPiiReviewed(test);
 }
 
 async function search(headers: Record<string, string>, query = '') {
