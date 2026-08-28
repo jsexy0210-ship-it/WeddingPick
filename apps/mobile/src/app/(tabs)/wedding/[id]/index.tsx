@@ -55,9 +55,6 @@ export default function DocumentSetScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.header}>
-            <ThemedText type="code" themeColor="textSecondary">
-              A-12 · PHASE 1
-            </ThemedText>
             <ThemedText type="subtitle">{set.label}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
               {formatDate(set.createdAt)} · {set.pages.length}장
@@ -69,8 +66,8 @@ export default function DocumentSetScreen() {
             <ThemedText type="smallBold">분석 결과</ThemedText>
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="small" themeColor="textSecondary">
-                아직 분석하지 않았습니다. 업체·상품·금액·계약조건 추출은 AI 분석을 연결한 뒤
-                채워집니다.
+                아직 분석하지 않았습니다. 업체·상품·금액·계약조건은 분석이 끝나면
+                여기에 채워집니다.
               </ThemedText>
             </ThemedView>
           </ThemedView>
@@ -84,7 +81,7 @@ export default function DocumentSetScreen() {
                   <ThemedView type="backgroundElement" style={styles.rowText}>
                     <ThemedText type="smallBold">{index + 1}번째 장</ThemedText>
                     <ThemedText type="small" themeColor="textSecondary">
-                      {page.name ?? page.mimeType}
+                      {page.name ?? (page.mimeType === 'application/pdf' ? 'PDF 파일' : '사진')}
                     </ThemedText>
                   </ThemedView>
                 </ThemedView>

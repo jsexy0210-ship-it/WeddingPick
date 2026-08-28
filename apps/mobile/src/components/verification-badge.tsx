@@ -12,7 +12,7 @@ export function VerificationBadge({ level }: { level: VerificationLevel }) {
   return (
     <View style={[styles.badge, { backgroundColor: `${accent}1F` }]}>
       <ThemedText type="small" style={{ color: accent }}>
-        {level} {VERIFICATION_LEVEL_RULES[level].label}
+        {VERIFICATION_LEVEL_RULES[level].label}
       </ThemedText>
     </View>
   );

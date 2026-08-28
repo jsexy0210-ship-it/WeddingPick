@@ -8,7 +8,7 @@ import { confirmFields, getComparison, getQuote } from '@/api/client';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { AiNotice, QuoteResultView } from '@/features/quotes/quote-result-view';
+import { AnalysisNotice, QuoteResultView } from '@/features/quotes/quote-result-view';
 import { useTheme } from '@/hooks/use-theme';
 
 /** A-08 분석 결과 + A-07 확인 단계 + A-09 가격 비교. */
@@ -85,7 +85,7 @@ export default function ResultScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <AiNotice />
+        <AnalysisNotice />
         <QuoteResultView
           quote={quote}
           comparison={comparison}
@@ -94,11 +94,6 @@ export default function ResultScreen() {
             onEdit: (path, value) => setEdits((current) => ({ ...current, [path]: value })),
             onConfirm: confirm,
           }}
-          header={
-            <ThemedText type="code" themeColor="textSecondary">
-              A-08 · PHASE 1
-            </ThemedText>
-          }
         />
       </SafeAreaView>
     </ThemedView>

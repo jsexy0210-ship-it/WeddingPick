@@ -33,11 +33,6 @@ export default function SampleScreen() {
         <QuoteResultView
           quote={SAMPLE_QUOTE}
           comparison={SAMPLE_COMPARISON}
-          header={
-            <ThemedText type="code" themeColor="textSecondary">
-              샘플 · 실제 데이터 아님
-            </ThemedText>
-          }
         />
 
         <ThemedView style={styles.footer}>

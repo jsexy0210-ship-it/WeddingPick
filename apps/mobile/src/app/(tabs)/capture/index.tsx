@@ -46,12 +46,9 @@ export default function CaptureScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ThemedView style={styles.header}>
-          <ThemedText type="code" themeColor="textSecondary">
-            A-04 · PHASE 1
-          </ThemedText>
           <ThemedText type="subtitle">견적서를 올려주세요</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            찍기만 하면 됩니다. 업체·상품·금액·계약조건은 분석이 읽어냅니다.
+            찍기만 하면 됩니다. 업체·상품·금액·계약조건을 읽어 정리해 드립니다.
           </ThemedText>
         </ThemedView>
 
@@ -80,7 +77,7 @@ export default function CaptureScreen() {
         <ThemedView style={styles.actions}>
           <ActionButton
             label="이렇게 찍어주세요"
-            hint="잘 읽히는 촬영 방법과 AI 안내"
+            hint="잘 읽히는 촬영 방법과 분석 안내"
             onPress={() => router.push('/my/guide')}
           />
           <ActionButton label="샘플 결과 보기" onPress={() => router.push('/capture/sample')} />
@@ -94,8 +91,8 @@ export default function CaptureScreen() {
         ) : null}
 
         <ThemedText type="small" themeColor="textSecondary" style={styles.notice}>
-          지금은 문서가 기기 안에만 저장됩니다. 서버 업로드와 AI 분석은 원본 문서 처리에 대한 법률
-          검토가 끝난 뒤에 연결합니다.
+          지금은 문서가 기기 안에만 저장됩니다. 서버로 보내는 분석은 원본 문서 처리에 대한
+          법률 검토가 끝난 뒤에 연결합니다.
         </ThemedText>
       </SafeAreaView>
     </ThemedView>

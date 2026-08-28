@@ -26,12 +26,10 @@ export default function VerifyScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.header}>
-            <ThemedText type="code" themeColor="textSecondary">
-              A-13 · PHASE 1
-            </ThemedText>
-            <ThemedText type="subtitle">인증 등급</ThemedText>
+            <ThemedText type="subtitle">자료 확인</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              실제 견적·계약자료를 확인받은 데이터만 시장 가격 계산에 들어갑니다.
+              실제 견적서·계약서를 확인받은 자료만 가격 비교의 기준이 됩니다. 확인 단계가
+              올라갈수록 다른 분들의 비교에도 더 큰 몫으로 반영됩니다.
             </ThemedText>
           </ThemedView>
 
@@ -43,7 +41,7 @@ export default function VerifyScreen() {
           ) : null}
 
           <ThemedView style={styles.section}>
-            <ThemedText type="smallBold">등급 체계</ThemedText>
+            <ThemedText type="smallBold">확인 단계</ThemedText>
             {VERIFICATION_LEVELS.map((level) => {
               const rule = VERIFICATION_LEVEL_RULES[level];
 
@@ -54,7 +52,9 @@ export default function VerifyScreen() {
                     {rule.condition}
                   </ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
-                    시장 가격 반영: {rule.affectsMarketPrice ? '반영' : '미반영'}
+                    {rule.affectsMarketPrice
+                      ? '가격 비교의 기준이 됩니다'
+                      : '아직 가격 비교에는 쓰이지 않습니다'}
                   </ThemedText>
                 </ThemedView>
               );
@@ -65,7 +65,7 @@ export default function VerifyScreen() {
             <ActionButton
               variant="primary"
               label="인증 신청"
-              hint="증빙 확인이 서버에서 이뤄지므로 아직 접수할 수 없습니다"
+              hint="자료 확인 절차를 준비하고 있습니다. 곧 신청하실 수 있습니다"
               disabled
               onPress={() => {}}
             />

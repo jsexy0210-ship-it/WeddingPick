@@ -63,10 +63,6 @@ export default function AnalysisScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <ThemedText type="code" themeColor="textSecondary">
-          A-06 · PHASE 1
-        </ThemedText>
-
         {failure || error ? (
           <>
             <ThemedText type="subtitle">분석하지 못했습니다</ThemedText>

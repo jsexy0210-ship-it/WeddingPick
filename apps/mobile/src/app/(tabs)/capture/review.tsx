@@ -83,9 +83,6 @@ export default function ReviewScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ThemedView style={styles.header}>
-          <ThemedText type="code" themeColor="textSecondary">
-            A-05 · PHASE 1
-          </ThemedText>
           <ThemedText type="subtitle">{pages.length}장 확인</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
             글씨가 잘리거나 흐린 장이 있으면 빼고 다시 찍어주세요.

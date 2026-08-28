@@ -30,9 +30,6 @@ export default function MyScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.header}>
-            <ThemedText type="code" themeColor="textSecondary">
-              A-14 · PHASE 1
-            </ThemedText>
             <ThemedText type="subtitle">MY</ThemedText>
           </ThemedView>
 
@@ -43,7 +40,7 @@ export default function MyScreen() {
                 저장한 문서 {sets.length}건 · 총 {pageCount}장
               </ThemedText>
               <ThemedText type="small" themeColor="textSecondary">
-                분석·인증 기록은 서버 연결 후에 쌓입니다.
+                분석하고 확인받은 기록은 여기에 쌓입니다.
               </ThemedText>
             </ThemedView>
           </ThemedView>
@@ -51,7 +48,7 @@ export default function MyScreen() {
           <ThemedView style={styles.section}>
             <ThemedText type="smallBold">안내</ThemedText>
             <ActionButton
-              label="촬영 방법과 AI 안내"
+              label="촬영 방법과 분석 안내"
               onPress={() => router.push('/my/guide')}
             />
           </ThemedView>
@@ -67,7 +64,7 @@ export default function MyScreen() {
 
           <ThemedView style={styles.section}>
             <ThemedText type="smallBold">약관 및 정책</ThemedText>
-            <ActionButton label="이용약관 · 개인정보 · AI 안내" onPress={() => router.push('/my/policies')} />
+            <ActionButton label="이용약관 · 개인정보 · 분석 안내" onPress={() => router.push('/my/policies')} />
           </ThemedView>
         </ScrollView>
       </SafeAreaView>

@@ -62,7 +62,7 @@ export default function HomeScreen() {
               <ThemedView type="backgroundElement" style={styles.flow}>
                 {FLOW.map((item) => (
                   <ThemedView key={item.step} type="backgroundElement" style={styles.flowRow}>
-                    <ThemedText type="code" themeColor="textSecondary" style={styles.flowStep}>
+                    <ThemedText type="smallBold" themeColor="textSecondary" style={styles.flowStep}>
                       {item.step}
                     </ThemedText>
                     <ThemedView type="backgroundElement" style={styles.flowText}>

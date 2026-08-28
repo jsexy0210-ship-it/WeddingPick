@@ -181,12 +181,17 @@ export function QuoteResultView({ quote, comparison, confirm, header, contentSty
   );
 }
 
-/** 서비스정책서 1번: 분석 결과 화면 상단에 고정한다. */
-export function AiNotice() {
+/**
+ * 분석 결과의 성격을 알리는 고정 문구. 서비스정책서 1번에 따라 결과 화면 상단에 둔다.
+ *
+ * 사용자에게 "AI"라는 말을 쓰지 않는다 — 알아야 할 것은 이 결과가 참고용이고
+ * 원본이 우선한다는 사실이지, 무엇으로 읽었는지가 아니다.
+ */
+export function AnalysisNotice() {
   return (
     <ThemedView type="backgroundElement" style={styles.notice}>
       <ThemedText type="small" themeColor="textSecondary">
-        AI 분석 결과이며 법적 효력이 없습니다. 원본 문서와 다를 경우 원본이 우선합니다.
+        분석 결과는 참고용이며 법적 효력이 없습니다. 원본 문서와 다를 경우 원본이 우선합니다.
       </ThemedText>
     </ThemedView>
   );

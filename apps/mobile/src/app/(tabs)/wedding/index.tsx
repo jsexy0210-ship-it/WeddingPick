@@ -21,9 +21,6 @@ export default function WeddingScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.header}>
-            <ThemedText type="code" themeColor="textSecondary">
-              A-11 · PHASE 1
-            </ThemedText>
             <ThemedText type="subtitle">내 웨딩</ThemedText>
           </ThemedView>
 

@@ -14,7 +14,7 @@ export function PageThumbnail({ page }: { page: Pick<CapturedPage, 'uri' | 'mime
 
   return (
     <ThemedView type="backgroundSelected" style={[styles.thumbnail, styles.file]}>
-      <ThemedText type="code">PDF</ThemedText>
+      <ThemedText type="small">PDF</ThemedText>
     </ThemedView>
   );
 }

@@ -44,8 +44,8 @@ export default function OnboardingScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ThemedView style={styles.body}>
-          <ThemedText type="code" themeColor="textSecondary">
-            {index + 1} / {STEPS.length}
+          <ThemedText type="small" themeColor="textSecondary">
+            {STEPS.length}장 중 {index + 1}번째
           </ThemedText>
           <ThemedText type="subtitle">{step.title}</ThemedText>
           <ThemedText type="default" themeColor="textSecondary">
