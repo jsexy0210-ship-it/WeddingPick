@@ -16,7 +16,8 @@
     "verifications": "tsx src/verification-admin.ts",
     "retention": "tsx src/retention-admin.ts",
     "pii": "tsx src/pii-admin.ts",
-    "seed:demo": "tsx src/seed-demo.ts"
+    "seed:demo": "tsx src/seed-demo.ts",
+    "analyze": "tsx src/analyze-file.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",
