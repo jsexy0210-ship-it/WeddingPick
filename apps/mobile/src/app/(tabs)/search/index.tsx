@@ -1,5 +1,6 @@
 import type { VendorRegionsResponse, VendorSummary } from '@weddingpick/api-contract';
 import {
+  MAX_COMPARED_VENDORS,
   VENDOR_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
   type VendorCategory,
@@ -35,6 +36,8 @@ export default function SearchScreen() {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** 견줄 업체. 고른 순서를 지킨다 — 화면에 그 순서로 나온다. */
+  const [picked, setPicked] = useState<string[]>([]);
 
   /** 늦게 도착한 옛 요청이 새 결과를 덮어쓰지 않게 한다. */
   const requestId = useRef(0);
@@ -103,6 +106,17 @@ export default function SearchScreen() {
     setFilters((current) => ({ ...current, [key]: current[key] === value ? null : value }));
   }
 
+  function togglePicked(vendorId: string) {
+    setPicked((current) => {
+      if (current.includes(vendorId)) {
+        return current.filter((id) => id !== vendorId);
+      }
+
+      // 가득 찼으면 조용히 무시하지 않는다 — 아래 안내가 왜 안 담기는지 말해준다.
+      return current.length >= MAX_COMPARED_VENDORS ? current : [...current, vendorId];
+    });
+  }
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
@@ -167,37 +181,70 @@ export default function SearchScreen() {
             ListFooterComponent={
               loadingMore ? <ActivityIndicator color={theme.tint} style={styles.spinner} /> : null
             }
-            renderItem={({ item }) => (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`${item.name} 자세히 보기`}
-                onPress={() => router.push(`/search/${item.id}`)}>
+            renderItem={({ item }) => {
+              const chosen = picked.includes(item.id);
+
+              return (
                 <ThemedView type="backgroundElement" style={styles.card}>
-                  <ThemedText type="smallBold">{item.name}</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {VENDOR_CATEGORY_LABEL[item.category]} · {item.region}
-                  </ThemedText>
-                  {/*
-                   * 0건도 숨기지 않는다. "아직 자료가 없다"도 사용자가 알아야 할 사실이고,
-                   * 숨기면 자료가 없는 업체와 싼 업체가 같은 얼굴이 된다.
-                   */}
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {item.comparableQuoteCount === 0
-                      ? '확인된 계약 자료가 아직 없습니다'
-                      : `확인된 계약 ${item.comparableQuoteCount}건`}
-                  </ThemedText>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`${item.name} 자세히 보기`}
+                    onPress={() => router.push(`/search/${item.id}`)}>
+                    <ThemedView type="backgroundElement" style={styles.cardBody}>
+                      <ThemedText type="smallBold">{item.name}</ThemedText>
+                      <ThemedText type="small" themeColor="textSecondary">
+                        {VENDOR_CATEGORY_LABEL[item.category]} · {item.region}
+                      </ThemedText>
+                      {/*
+                       * 0건도 숨기지 않는다. "아직 자료가 없다"도 사용자가 알아야 할 사실이고,
+                       * 숨기면 자료가 없는 업체와 싼 업체가 같은 얼굴이 된다.
+                       */}
+                      <ThemedText type="small" themeColor="textSecondary">
+                        {item.comparableQuoteCount === 0
+                          ? '확인된 계약 자료가 아직 없습니다'
+                          : `확인된 계약 ${item.comparableQuoteCount}건`}
+                      </ThemedText>
+                    </ThemedView>
+                  </Pressable>
+
+                  <ThemedView type="backgroundElement" style={styles.pickRow}>
+                    <FilterChip
+                      label={chosen ? '비교에서 빼기' : '비교에 담기'}
+                      selected={chosen}
+                      onPress={() => togglePicked(item.id)}
+                    />
+                  </ThemedView>
                 </ThemedView>
-              </Pressable>
-            )}
+              );
+            }}
           />
         )}
 
         <ThemedView style={styles.footer}>
-          <ActionButton
-            label="견적서 촬영하기"
-            hint="찾는 업체가 없어도 견적서를 올리면 정리해드립니다"
-            onPress={() => router.push('/capture')}
-          />
+          {picked.length > 0 ? (
+            <>
+              <ActionButton
+                variant="primary"
+                label={`${picked.length}곳 비교하기`}
+                hint={
+                  picked.length < 2
+                    ? '한 곳 더 담아주세요'
+                    : picked.length >= MAX_COMPARED_VENDORS
+                      ? `한 번에 ${MAX_COMPARED_VENDORS}곳까지 견줄 수 있습니다`
+                      : `${MAX_COMPARED_VENDORS - picked.length}곳 더 담을 수 있습니다`
+                }
+                disabled={picked.length < 2}
+                onPress={() => router.push(`/search/compare?ids=${picked.join(',')}`)}
+              />
+              <ActionButton label="비교 목록 비우기" onPress={() => setPicked([])} />
+            </>
+          ) : (
+            <ActionButton
+              label="견적서 촬영하기"
+              hint="찾는 업체가 없어도 견적서를 올리면 정리해드립니다"
+              onPress={() => router.push('/capture')}
+            />
+          )}
         </ThemedView>
       </SafeAreaView>
     </ThemedView>
@@ -239,12 +286,19 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: Spacing.three,
     padding: Spacing.three,
+    gap: Spacing.two,
+  },
+  cardBody: {
     gap: Spacing.one,
+  },
+  pickRow: {
+    flexDirection: 'row',
   },
   spinner: {
     paddingVertical: Spacing.five,
   },
   footer: {
     paddingBottom: Spacing.three,
+    gap: Spacing.two,
   },
 });

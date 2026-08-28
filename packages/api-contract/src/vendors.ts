@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { MAX_COMPARED_VENDORS } from '@weddingpick/domain';
+
 import { documentTypeSchema, idSchema, vendorCategorySchema } from './common';
 import { priceStatSchema } from './comparison';
 
@@ -55,7 +57,20 @@ export const vendorDetailSchema = vendorSummarySchema.extend({
   products: z.array(vendorProductStatSchema),
 });
 
+/**
+ * A-17 업체 비교. 최대 세 곳.
+ *
+ * 단서(caveats)는 결과와 한 객체로 나간다. 떼어놓을 수 있게 두면 화면이 표만 그리고
+ * "금액만으로는 비교할 수 없다"는 말을 빠뜨릴 수 있다 — 사업계획서 2번이 꼽은
+ * "비교의 어려움"을 우리가 만든 표가 되레 가리게 된다.
+ */
+export const vendorComparisonResponseSchema = z.object({
+  vendors: z.array(vendorDetailSchema).min(2).max(MAX_COMPARED_VENDORS),
+  caveats: z.array(z.string().min(1)).min(1),
+});
+
 export type VendorSummary = z.infer<typeof vendorSummarySchema>;
+export type VendorComparisonResponse = z.infer<typeof vendorComparisonResponseSchema>;
 export type VendorSearchResponse = z.infer<typeof vendorSearchResponseSchema>;
 export type VendorRegionsResponse = z.infer<typeof vendorRegionsResponseSchema>;
 export type VendorProductStat = z.infer<typeof vendorProductStatSchema>;

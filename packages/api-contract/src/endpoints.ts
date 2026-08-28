@@ -14,6 +14,7 @@ import {
 } from './documents';
 import { confirmFieldsRequestSchema, quoteListResponseSchema, quoteSchema } from './quotes';
 import {
+  vendorComparisonResponseSchema,
   vendorDetailSchema,
   vendorRegionsResponseSchema,
   vendorSearchResponseSchema,
@@ -162,6 +163,13 @@ export const ENDPOINTS = {
     method: 'GET',
     path: '/v1/vendors/regions',
     response: vendorRegionsResponseSchema,
+  },
+
+  /** A-17 업체 비교. ids 쿼리 파라미터에 쉼표로 잇는다. 최대 세 곳. */
+  compareVendors: {
+    method: 'GET',
+    path: '/v1/vendors/compare',
+    response: vendorComparisonResponseSchema,
   },
 
   /** A-17 업체 상세. */

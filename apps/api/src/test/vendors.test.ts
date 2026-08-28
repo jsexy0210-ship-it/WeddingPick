@@ -1,4 +1,4 @@
-import { PRICING_POLICY, productKey } from '@weddingpick/domain';
+import { MAX_COMPARED_VENDORS, PRICING_POLICY, productKey } from '@weddingpick/domain';
 
 import { createTestApp, createWedding, resetDatabase, signInAs, type TestApp } from './helpers';
 
@@ -277,5 +277,117 @@ describeWithDb('업체 상세', () => {
     expect(product.stat.sampleCount).toBe(PRICING_POLICY.minimumSampleCount);
     expect(product.stat.periodStart).toBe('2026-06-01');
     expect(product.stat.minVerificationLevel).toBe('L2');
+  });
+});
+
+describeWithDb('업체 비교', () => {
+  beforeAll(async () => {
+    await resetDatabase();
+    test = await createTestApp();
+  });
+
+  afterAll(async () => {
+    await test?.close();
+  });
+
+  beforeEach(resetDatabase);
+
+  async function compare(headers: Record<string, string>, ids: string[]) {
+    return test.app.inject({
+      method: 'GET',
+      url: `/v1/vendors/compare?ids=${ids.join(',')}`,
+      headers,
+    });
+  }
+
+  it('한 곳만으로는 비교할 수 없다', async () => {
+    const { headers } = await signInAs(test);
+    const vendorId = await createVendor({ name: '가홀' });
+
+    const response = await compare(headers, [vendorId]);
+
+    expect(response.statusCode).toBe(400);
+  });
+
+  it('같은 업체를 두 번 골라 두 곳을 만들 수 없다', async () => {
+    const { headers } = await signInAs(test);
+    const vendorId = await createVendor({ name: '가홀' });
+
+    const response = await compare(headers, [vendorId, vendorId]);
+
+    expect(response.statusCode).toBe(400);
+  });
+
+  it('세 곳을 넘기면 막는다', async () => {
+    const { headers } = await signInAs(test);
+    const ids = [];
+
+    for (const name of ['가홀', '나홀', '다홀', '라홀']) {
+      ids.push(await createVendor({ name }));
+    }
+
+    const response = await compare(headers, ids);
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error.message).toContain(`${MAX_COMPARED_VENDORS}곳`);
+  });
+
+  it('금액만으로 비교할 수 없다는 말이 결과에 함께 나간다', async () => {
+    const { headers } = await signInAs(test);
+    const a = await createVendor({ name: '가홀' });
+    const b = await createVendor({ name: '나홀' });
+
+    const body = (await compare(headers, [a, b])).json();
+
+    // 표만 그리고 이 말을 빠뜨리면 우리가 만든 표가 오해를 부추긴다. 사업계획서 2번.
+    expect(body.caveats.at(-1)).toContain('금액만으로는 비교하기 어렵습니다');
+  });
+
+  it('분류와 지역이 섞이면 알려준다', async () => {
+    const { headers } = await signInAs(test);
+    const a = await createVendor({ name: '가홀', region: '서울 마포구', category: 'hall' });
+    const b = await createVendor({ name: '나스냅', region: '경기 성남시', category: 'snap' });
+
+    const body = (await compare(headers, [a, b])).json();
+
+    expect(body.caveats.some((note: string) => note.includes('분류가 다른'))).toBe(true);
+    expect(body.caveats.some((note: string) => note.includes('지역이 다릅니다'))).toBe(true);
+  });
+
+  it('가격을 견줄 수 있는 곳과 없는 곳을 함께 보여준다', async () => {
+    const { headers } = await signInAs(test);
+    const weddingId = await createWedding(test, headers);
+    const withData = await createVendor({ name: '자료있는홀' });
+    const withoutData = await createVendor({ name: '자료없는홀' });
+
+    for (let i = 0; i < PRICING_POLICY.minimumSampleCount; i += 1) {
+      await createComparableQuote({
+        weddingId,
+        vendorId: withData,
+        productName: '그랜드볼룸',
+        amount: 20_000_000 + i * 1_000_000,
+      });
+    }
+
+    const body = (await compare(headers, [withData, withoutData])).json();
+    const byName = Object.fromEntries(
+      body.vendors.map((v: { name: string; products: unknown[] }) => [v.name, v.products.length])
+    );
+
+    expect(byName['자료있는홀']).toBe(1);
+    expect(byName['자료없는홀']).toBe(0);
+    // 자료가 없는 것이 싸다는 뜻으로 읽히지 않게 한다.
+    expect(body.caveats.some((note: string) => note.includes('싸거나 비싸다는 뜻이 아닙니다'))).toBe(
+      true
+    );
+  });
+
+  it('없는 업체가 섞이면 404다', async () => {
+    const { headers } = await signInAs(test);
+    const vendorId = await createVendor({ name: '가홀' });
+
+    const response = await compare(headers, [vendorId, crypto.randomUUID()]);
+
+    expect(response.statusCode).toBe(404);
   });
 });

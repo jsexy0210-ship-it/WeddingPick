@@ -9,6 +9,7 @@ import {
   errorResponseSchema,
   createVerificationResponseSchema,
   quoteSchema,
+  vendorComparisonResponseSchema,
   vendorDetailSchema,
   vendorRegionsResponseSchema,
   vendorSearchResponseSchema,
@@ -21,6 +22,7 @@ import {
   type CreateVerificationResponse,
   type ErrorCode,
   type Quote,
+  type VendorComparisonResponse,
   type VendorDetail,
   type VendorRegionsResponse,
   type VendorSearchResponse,
@@ -230,4 +232,12 @@ export async function listVendorRegions(): Promise<VendorRegionsResponse> {
 
 export async function getVendor(vendorId: string): Promise<VendorDetail> {
   return request(`/v1/vendors/${vendorId}`, vendorDetailSchema);
+}
+
+/** A-17 업체 비교. 단서는 결과와 한 응답으로 온다. */
+export async function compareVendors(ids: string[]): Promise<VendorComparisonResponse> {
+  return request(
+    `/v1/vendors/compare?ids=${ids.map(encodeURIComponent).join(',')}`,
+    vendorComparisonResponseSchema
+  );
 }

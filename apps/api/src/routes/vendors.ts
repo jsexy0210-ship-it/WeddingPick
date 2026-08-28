@@ -1,10 +1,17 @@
-import { computePriceStat, type PriceSample } from '@weddingpick/domain';
+import {
+  MAX_COMPARED_VENDORS,
+  comparisonCaveats,
+  computePriceStat,
+  type PriceSample,
+  type VendorCategory,
+} from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
+import type { Pool } from 'pg';
 import { z } from 'zod';
 
 import { requireUser } from '../auth/plugin';
 import type { AppContext } from '../context';
-import { notFound } from '../errors';
+import { ApiError, notFound } from '../errors';
 import { vendorSourceNote } from '../vendor-view';
 
 const searchQuerySchema = z.object({
@@ -16,6 +23,11 @@ const searchQuerySchema = z.object({
   region: z.string().trim().max(20).optional(),
   cursor: z.string().max(200).optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+
+const compareQuerySchema = z.object({
+  /** 쉼표로 이은 업체 id. */
+  ids: z.string().min(1).max(200),
 });
 
 type VendorRow = {
@@ -56,7 +68,7 @@ function toSummary(row: VendorRow) {
   return {
     id: row.id,
     name: row.name,
-    category: row.category,
+    category: row.category as VendorCategory,
     region: row.region,
     sourceNote: vendorSourceNote(row.source),
     comparableQuoteCount: Number(row.comparable_quote_count),
@@ -84,6 +96,88 @@ function mostCommon(values: string[]): string | null {
   return best;
 }
 
+/**
+ * 업체 한 곳의 상세.
+ *
+ * 상품별 가격은 comparable_quotes에서 그때그때 계산한다. 표본이 기준에 못 미치는
+ * 상품은 아예 내려보내지 않는다 — 중앙값 없는 상품 이름만 늘어놓으면 화면이 그것을
+ * 가격으로 그릴 여지가 생긴다.
+ */
+async function loadVendorDetail(pool: Pool, vendorId: string) {
+  const { rows } = await pool.query<VendorRow>(
+    `SELECT v.id, v.name, v.category, v.region, v.source, v.last_verified_at,
+            (SELECT count(*) FROM structured.comparable_quotes c WHERE c.vendor_id = v.id)
+              AS comparable_quote_count
+     FROM structured.vendors v WHERE v.id = $1`,
+    [vendorId]
+  );
+
+  const vendor = rows[0];
+
+  if (!vendor) {
+    throw notFound('업체');
+  }
+
+  const samples = await pool.query<{
+    product_key: string;
+    doc_type: string;
+    product_label: string | null;
+    amount: string;
+    verification_level: PriceSample['verificationLevel'];
+    contract_date: Date;
+  }>(
+    `SELECT c.product_key, c.doc_type,
+            coalesce(q.product_name, q.hall_name) AS product_label,
+            c.total_amount AS amount, c.verification_level, c.contract_date
+     FROM structured.comparable_quotes c
+     JOIN structured.quotes q ON q.id = c.id
+     WHERE c.vendor_id = $1
+     ORDER BY c.product_key, c.doc_type`,
+    [vendor.id]
+  );
+
+  const groups = new Map<string, { docType: string; labels: string[]; samples: PriceSample[] }>();
+
+  for (const row of samples.rows) {
+    const key = `${row.product_key} ${row.doc_type}`;
+    const group = groups.get(key) ?? { docType: row.doc_type, labels: [], samples: [] };
+
+    if (row.product_label) {
+      group.labels.push(row.product_label);
+    }
+
+    group.samples.push({
+      amount: Number(row.amount),
+      verificationLevel: row.verification_level,
+      contractDate: row.contract_date.toISOString().slice(0, 10),
+    });
+
+    groups.set(key, group);
+  }
+
+  const products = [];
+
+  for (const group of groups.values()) {
+    const stat = computePriceStat(group.samples);
+    const label = mostCommon(group.labels);
+
+    // 표본이 모자라거나 이름을 모르는 상품은 내려보내지 않는다.
+    if (!stat || !label) {
+      continue;
+    }
+
+    products.push({ productLabel: label, docType: group.docType, stat });
+  }
+
+  products.sort((a, b) => a.productLabel.localeCompare(b.productLabel, 'ko'));
+
+  return {
+    ...toSummary(vendor),
+    lastVerifiedAt: vendor.last_verified_at.toISOString(),
+    products,
+  };
+}
+
 export function registerVendorRoutes(app: FastifyInstance, context: AppContext): void {
   const auth = { preHandler: requireUser(context) };
 
@@ -92,8 +186,6 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
    *
    * 자료에 실제로 있는 시도만 내려간다. 전국 목록을 박아두면 눌러도 아무것도 나오지 않는
    * 필터가 생긴다.
-   *
-   * 이 경로가 `/v1/vendors/:vendorId`보다 먼저 등록돼야 regions가 업체 id로 잡히지 않는다.
    */
   app.get('/v1/vendors/regions', auth, async () => {
     const { rows } = await context.pool.query<{ name: string; vendor_count: string }>(
@@ -106,6 +198,51 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
 
     return {
       regions: rows.map((row) => ({ name: row.name, vendorCount: Number(row.vendor_count) })),
+    };
+  });
+
+  /**
+   * A-17 업체 비교. 최대 세 곳.
+   *
+   * 단서를 결과와 한 응답에 담아 보낸다. 따로 받아오게 두면 화면이 표만 그리고
+   * "금액만으로는 비교할 수 없다"는 말을 빠뜨릴 수 있다 — 사업계획서 2번이 꼽은
+   * "비교의 어려움"을 우리가 만든 표가 되레 가리게 된다.
+   */
+  app.get('/v1/vendors/compare', auth, async (request) => {
+    const { ids } = compareQuerySchema.parse(request.query);
+
+    // 같은 업체를 두 번 골라 "두 곳"을 만들 수 없게 한다.
+    const unique = [
+      ...new Set(
+        ids
+          .split(',')
+          .map((id) => id.trim())
+          .filter(Boolean)
+      ),
+    ];
+
+    if (unique.length < 2) {
+      throw new ApiError('invalid_request', '견줄 업체를 두 곳 이상 골라주세요.');
+    }
+
+    if (unique.length > MAX_COMPARED_VENDORS) {
+      throw new ApiError(
+        'invalid_request',
+        `한 번에 ${MAX_COMPARED_VENDORS}곳까지 견줄 수 있습니다.`
+      );
+    }
+
+    const vendors = await Promise.all(unique.map((id) => loadVendorDetail(context.pool, id)));
+
+    return {
+      vendors,
+      caveats: comparisonCaveats(
+        vendors.map((vendor) => ({
+          category: vendor.category,
+          region: vendor.region,
+          hasPriceData: vendor.products.length > 0,
+        }))
+      ),
     };
   });
 
@@ -166,85 +303,8 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
     };
   });
 
-  /**
-   * A-17 업체 상세.
-   *
-   * 상품별 가격은 comparable_quotes에서 그때그때 계산한다. 표본이 기준에 못 미치는
-   * 상품은 아예 내려보내지 않는다 — 중앙값 없는 상품 이름만 늘어놓으면 화면이 그것을
-   * 가격으로 그릴 여지가 생긴다.
-   */
-  app.get<{ Params: { vendorId: string } }>('/v1/vendors/:vendorId', auth, async (request) => {
-    const { rows } = await context.pool.query<VendorRow>(
-      `SELECT v.id, v.name, v.category, v.region, v.source, v.last_verified_at,
-              (SELECT count(*) FROM structured.comparable_quotes c WHERE c.vendor_id = v.id)
-                AS comparable_quote_count
-       FROM structured.vendors v WHERE v.id = $1`,
-      [request.params.vendorId]
-    );
-
-    const vendor = rows[0];
-
-    if (!vendor) {
-      throw notFound('업체');
-    }
-
-    const samples = await context.pool.query<{
-      product_key: string;
-      doc_type: string;
-      product_label: string | null;
-      amount: string;
-      verification_level: PriceSample['verificationLevel'];
-      contract_date: Date;
-    }>(
-      `SELECT c.product_key, c.doc_type,
-              coalesce(q.product_name, q.hall_name) AS product_label,
-              c.total_amount AS amount, c.verification_level, c.contract_date
-       FROM structured.comparable_quotes c
-       JOIN structured.quotes q ON q.id = c.id
-       WHERE c.vendor_id = $1
-       ORDER BY c.product_key, c.doc_type`,
-      [vendor.id]
-    );
-
-    const groups = new Map<string, { docType: string; labels: string[]; samples: PriceSample[] }>();
-
-    for (const row of samples.rows) {
-      const key = `${row.product_key} ${row.doc_type}`;
-      const group = groups.get(key) ?? { docType: row.doc_type, labels: [], samples: [] };
-
-      if (row.product_label) {
-        group.labels.push(row.product_label);
-      }
-
-      group.samples.push({
-        amount: Number(row.amount),
-        verificationLevel: row.verification_level,
-        contractDate: row.contract_date.toISOString().slice(0, 10),
-      });
-
-      groups.set(key, group);
-    }
-
-    const products = [];
-
-    for (const group of groups.values()) {
-      const stat = computePriceStat(group.samples);
-      const label = mostCommon(group.labels);
-
-      // 표본이 모자라거나 이름을 모르는 상품은 내려보내지 않는다.
-      if (!stat || !label) {
-        continue;
-      }
-
-      products.push({ productLabel: label, docType: group.docType, stat });
-    }
-
-    products.sort((a, b) => a.productLabel.localeCompare(b.productLabel, 'ko'));
-
-    return {
-      ...toSummary(vendor),
-      lastVerifiedAt: vendor.last_verified_at.toISOString(),
-      products,
-    };
-  });
+  /** A-17 업체 상세. */
+  app.get<{ Params: { vendorId: string } }>('/v1/vendors/:vendorId', auth, async (request) =>
+    loadVendorDetail(context.pool, request.params.vendorId)
+  );
 }
