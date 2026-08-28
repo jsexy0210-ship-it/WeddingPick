@@ -1,0 +1,15 @@
+{
+  "note": "스드메 가계약서. 만원 단위 표기('30만원~80만원')와 원 단위 표기가 섞여 있다.",
+  "documentKind": "pre_contract",
+  "vendorName": "아이니웨딩",
+  "plannerName": "박지영",
+  "totalAmount": 3280000,
+  "discountAmount": 500000,
+  "contractDate": null,
+  "termCategories": ["refund", "penalty"],
+  "lineItemKeywords": {
+    "included": ["스튜디오", "드레스", "메이크업"],
+    "additional_candidate": ["헬퍼", "업그레이드"]
+  },
+  "personalInfoKinds": ["name", "phone"]
+}
