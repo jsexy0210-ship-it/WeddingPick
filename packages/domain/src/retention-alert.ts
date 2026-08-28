@@ -9,6 +9,17 @@ import { withSubject } from './korean';
  */
 
 /**
+ * 운영자에게 가는 알림의 종류.
+ *
+ * 둘 다 "사람이 손대야 할 일이 쌓였다"는 이야기지만 할 일이 다르다 — 하나는
+ * 지우는 일, 하나는 심사하는 일이다. 종류를 나누어 각각 얼마나 밀렸는지 따로
+ * 세고 따로 알린다. 하나로 합치면 파기가 줄어드는 사이 심사가 쌓여도 조용해진다.
+ */
+export const OPERATOR_ALERT_KINDS = ['retention_due', 'verification_backlog'] as const;
+
+export type OperatorAlertKind = (typeof OPERATOR_ALERT_KINDS)[number];
+
+/**
  * 푸시 본문에 개인정보를 담지 않는다.
  *
  * 푸시는 잠금화면에 뜬다. 폰을 잠깐 든 사람, 어깨너머로 본 사람에게 그대로
@@ -37,6 +48,31 @@ export function retentionAlertContent(dueCount: number, overdueDays: number): Re
     title: '파기 예정 원본이 있습니다',
     // 건수만. 어떤 문서인지도, 누구 것인지도 담지 않는다.
     body: `원본 ${dueCount}건을 지울 때가 됐습니다. ${oldest}`,
+  };
+}
+
+/**
+ * 심사가 밀렸다는 알림.
+ *
+ * 파기 알림과 같은 규칙을 지킨다 — **건수만** 담는다. 누구의 신청인지, 어떤
+ * 문서인지는 앱을 열어야 안다.
+ *
+ * 왜 급한지를 한 줄 덧붙인다. 심사가 밀리면 그 증빙 원본이 파기되지 않고 남기
+ * 때문이다. 그 연결을 알림에 적어두지 않으면 "나중에 하지"가 되기 쉽다.
+ */
+export function verificationBacklogContent(
+  backlogCount: number,
+  oldestDays: number
+): RetentionAlertContent {
+  if (backlogCount <= 0) {
+    throw new Error('밀린 심사가 없으면 알리지 않는다.');
+  }
+
+  return {
+    title: '인증 심사가 밀려 있습니다',
+    body:
+      `${backlogCount}건이 아직 결론이 나지 않았습니다. 가장 오래된 것은 ${oldestDays}일째입니다. ` +
+      '심사가 끝나야 그 원본의 파기 일정이 시작됩니다.',
   };
 }
 

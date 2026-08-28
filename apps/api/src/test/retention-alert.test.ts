@@ -83,7 +83,7 @@ describeWithDb('파기 일정 알림', () => {
     await createDueDocument(member);
 
     const { push, sent } = fakePush();
-    const result = await alertOperators(deps(push));
+    const result = (await alertOperators(deps(push))).retention_due;
 
     // 파기 대상은 일반 사용자의 문서지만, 그 사실을 그 사람에게 알리는 것은
     // 우리 일이 아니다. 사용자는 앱 화면에서 예정일을 본다.
@@ -98,7 +98,7 @@ describeWithDb('파기 일정 알림', () => {
     await createDueDocument(operator);
 
     const { push, sent } = fakePush();
-    await alertOperators(deps(push));
+    (await alertOperators(deps(push))).retention_due;
 
     // 푸시는 잠금화면에 뜬다. 파기해야 할 개인정보를 알리려다 흘리면 안 된다.
     const text = `${sent[0]!.title} ${sent[0]!.body}`;
@@ -114,7 +114,7 @@ describeWithDb('파기 일정 알림', () => {
 
     const { push, sent } = fakePush();
 
-    expect(await alertOperators(deps(push))).toMatchObject({ dueCount: 0, notified: 0 });
+    expect((await alertOperators(deps(push))).retention_due).toMatchObject({ dueCount: 0, notified: 0 });
     expect(sent).toHaveLength(0);
   });
 
@@ -156,7 +156,7 @@ describeWithDb('파기 일정 알림', () => {
 
     await createDueDocument(operator);
 
-    const result = await alertOperators(deps(fakePush().push));
+    const result = (await alertOperators(deps(fakePush().push))).retention_due;
 
     // 닿지 못했다는 사실이 드러나야 하지만, 그렇다고 10분마다 다시 시도하면
     // 발송이 무한히 반복된다.
@@ -180,7 +180,7 @@ describeWithDb('파기 일정 알림', () => {
       error: 'DeviceNotRegistered',
     }));
 
-    expect(await alertOperators(deps(push))).toMatchObject({ disabledTokens: 1 });
+    expect((await alertOperators(deps(push))).retention_due).toMatchObject({ disabledTokens: 1 });
 
     const { rows } = await test.pool.query<{ disabled_reason: string | null }>(
       'SELECT disabled_reason FROM structured.device_tokens WHERE token = $1',
@@ -203,7 +203,7 @@ describeWithDb('파기 일정 알림', () => {
     }));
 
     // 한 번 끄면 그 기기는 다시 등록하기 전까지 알림을 못 받는다.
-    expect(await alertOperators(deps(push))).toMatchObject({ disabledTokens: 0 });
+    expect((await alertOperators(deps(push))).retention_due).toMatchObject({ disabledTokens: 0 });
   });
 
   it('방금 올린 문서로는 알리지 않는다', async () => {
@@ -217,7 +217,7 @@ describeWithDb('파기 일정 알림', () => {
 
     const { push, sent } = fakePush();
 
-    expect(await alertOperators(deps(push))).toMatchObject({ dueCount: 0 });
+    expect((await alertOperators(deps(push))).retention_due).toMatchObject({ dueCount: 0 });
     expect(sent).toHaveLength(0);
   });
 
@@ -254,7 +254,7 @@ describeWithDb('파기 일정 알림', () => {
      * 오지 않는다 — 조용한 것을 안전하다고 읽으면 안 되는 이유다. 이 상태는
      * retention_held_for_verification에 따로 드러난다.
      */
-    expect(await alertOperators(deps(push))).toMatchObject({ dueCount: 0 });
+    expect((await alertOperators(deps(push))).retention_due).toMatchObject({ dueCount: 0 });
     expect(sent).toHaveLength(0);
 
     const { rows } = await test.pool.query(

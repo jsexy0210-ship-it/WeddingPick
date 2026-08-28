@@ -2,6 +2,7 @@ import {
   VERIFICATION_EVENT_LABEL,
   VERIFICATION_EVIDENCE_RULES,
   VERIFICATION_LEVEL_RULES,
+  VERIFICATION_POLICY,
   VERIFICATION_STATUS_LABEL,
   canApprove,
 } from '@weddingpick/domain';
@@ -26,6 +27,7 @@ import { createPool, withTransaction } from './db';
  * 가격 비교 자체가 서지 않는다.
  *
  *   npm run verifications --workspace @weddingpick/api -- --list
+ *   npm run verifications --workspace @weddingpick/api -- --backlog
  *   npm run verifications --workspace @weddingpick/api -- --show <id>
  *   npm run verifications --workspace @weddingpick/api -- --review <id> --by <user-id>
  *   npm run verifications --workspace @weddingpick/api -- --approve <id> --by <user-id> \
@@ -43,6 +45,7 @@ import { createPool, withTransaction } from './db';
 
 type Options = {
   list: boolean;
+  backlog: boolean;
   show?: string;
   review?: string;
   approve?: string;
@@ -53,12 +56,13 @@ type Options = {
 };
 
 function parseArgs(argv: string[]): Options {
-  const options: Options = { list: false };
+  const options: Options = { list: false, backlog: false };
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
 
     if (arg === '--list') options.list = true;
+    else if (arg === '--backlog') options.backlog = true;
     else if (arg === '--show') options.show = argv[++i];
     else if (arg === '--review') options.review = argv[++i];
     else if (arg === '--approve') options.approve = argv[++i];
@@ -91,11 +95,18 @@ type PendingRow = {
   evidence_kinds: string[];
 };
 
-function describe(row: PendingRow): string {
+function describe(row: PendingRow, now: Date): string {
+  const waitingDays = Math.floor(
+    (now.getTime() - row.received_at.getTime()) / (24 * 60 * 60 * 1000)
+  );
+
   return (
     `${row.id}  ${VERIFICATION_STATUS_LABEL[row.status]}  ` +
     `→ ${VERIFICATION_LEVEL_RULES[row.target_level].label}  ` +
-    `증빙: ${evidenceLabels(row.evidence_kinds)}  ${when(row.received_at)}`
+    `증빙: ${evidenceLabels(row.evidence_kinds)}  ${when(row.received_at)}` +
+    // 밀린 것을 목록에서 바로 알아볼 수 있게 한다. 따로 --backlog를 봐야만
+    // 알 수 있으면, 안 보는 날에는 모른다.
+    (waitingDays >= VERIFICATION_POLICY.backlogDays ? `  (${waitingDays}일째)` : '')
   );
 }
 
@@ -116,8 +127,64 @@ async function main(): Promise<void> {
         return;
       }
 
+      const now = new Date();
+      const backlogged = rows.filter(
+        (row) =>
+          now.getTime() - row.received_at.getTime() >=
+          VERIFICATION_POLICY.backlogDays * 24 * 60 * 60 * 1000
+      ).length;
+
       console.log(`심사 대기 ${rows.length}건:`);
-      for (const row of rows) console.log(`  ${describe(row)}`);
+      for (const row of rows) console.log(`  ${describe(row, now)}`);
+
+      if (backlogged > 0) {
+        console.log(
+          `\n그중 ${backlogged}건은 ${VERIFICATION_POLICY.backlogDays}일 넘게 밀렸다.` +
+            ' 밀리는 동안 그 증빙 원본은 파기되지 않는다: npm run verifications -- --backlog'
+        );
+      }
+      return;
+    }
+
+    if (options.backlog) {
+      const { rows } = await pool.query<{
+        id: string;
+        target_level: RequestableLevel;
+        status: VerificationStatus;
+        waiting_days: number;
+        held_document_count: string;
+      }>(
+        `SELECT id, target_level, status, waiting_days, held_document_count
+         FROM structured.backlogged_verification_requests
+         ORDER BY waiting_days DESC`
+      );
+
+      if (rows.length === 0) {
+        console.log(`${VERIFICATION_POLICY.backlogDays}일 넘게 밀린 신청이 없다.`);
+        return;
+      }
+
+      const held = rows.reduce((sum, row) => sum + Number(row.held_document_count), 0);
+
+      console.log(`${VERIFICATION_POLICY.backlogDays}일 넘게 밀린 신청 ${rows.length}건:`);
+      for (const row of rows) {
+        console.log(
+          `  ${row.id}  ${VERIFICATION_STATUS_LABEL[row.status]}  ` +
+            `→ ${VERIFICATION_LEVEL_RULES[row.target_level].label}  ${row.waiting_days}일째` +
+            `  증빙 ${row.held_document_count}건`
+        );
+      }
+
+      /*
+       * 왜 급한지를 함께 말한다. 심사가 밀리는 동안 그 증빙 원본은 파기되지
+       * 않는다 — 심사 문제가 아니라 개인정보가 남는 문제다.
+       */
+      if (held > 0) {
+        console.log(
+          `\n이 신청들 때문에 원본 ${held}건의 파기 일정이 아직 시작되지 않았다.` +
+            '\n결론이 나야 그 원본의 30일이 시작된다.'
+        );
+      }
       return;
     }
 
@@ -153,7 +220,7 @@ async function main(): Promise<void> {
       return;
     }
 
-    console.log('--list, --show, --review, --approve, --reject 중 하나가 필요하다.');
+    console.log('--list, --backlog, --show, --review, --approve, --reject 중 하나가 필요하다.');
   } finally {
     await pool.end();
   }

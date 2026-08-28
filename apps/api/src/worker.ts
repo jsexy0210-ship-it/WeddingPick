@@ -49,23 +49,36 @@ async function main() {
          */
         if (config.retentionMode === 'automatic') {
           await sweepExpiredDocuments({ pool, storage });
-        } else {
-          const result = await alertOperators({
-            pool,
-            push,
-            reminderAfterHours: config.retentionReminderHours,
-          });
+        }
 
-          if (result.dueCount > 0 && result.notified === 0) {
+        /*
+         * 알림은 두 모드 모두에서 돈다. 심사 적체는 삭제 방식과 무관하고,
+         * 자동 모드에서 파기 알림이 뜬다면 그건 청소가 실패하고 있다는 뜻이라
+         * 오히려 알아야 한다.
+         */
+        const alerts = await alertOperators({
+          pool,
+          push,
+          reminderAfterHours: config.retentionReminderHours,
+        });
+
+        for (const [kind, result] of Object.entries(alerts)) {
+          if (result.dueCount === 0) continue;
+
+          const what =
+            kind === 'retention_due'
+              ? { label: '파기 예정 원본', how: 'npm run retention -- --due' }
+              : { label: '밀린 인증 심사', how: 'npm run verifications -- --backlog' };
+
+          if (result.notified === 0) {
             // 알릴 사람이 없으면 알림은 없는 것과 같다. 조용히 넘어가면
             // 아무도 모르는 채 개인정보가 쌓인다.
             console.error(
-              `파기 예정 원본 ${result.dueCount}건 — 알릴 운영자가 없거나 이미 알렸다. ` +
-                'npm run retention -- --due'
+              `${what.label} ${result.dueCount}건 — 알릴 운영자가 없거나 이미 알렸다. ${what.how}`
             );
-          } else if (result.notified > 0 && result.delivered === 0) {
+          } else if (result.delivered === 0) {
             console.error(
-              `파기 예정 원본 ${result.dueCount}건을 알렸으나 어떤 기기에도 닿지 않았다. ` +
+              `${what.label} ${result.dueCount}건을 알렸으나 어떤 기기에도 닿지 않았다. ` +
                 '운영자 기기가 등록되어 있는지 확인할 것.'
             );
           }

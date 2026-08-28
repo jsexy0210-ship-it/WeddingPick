@@ -1,10 +1,11 @@
-import { RETENTION_POLICY } from './policy';
+import { RETENTION_POLICY, VERIFICATION_POLICY } from './policy';
 import {
   isDeadTokenError,
   isExpoPushToken,
   retentionAlertContent,
   retentionSummary,
   shouldAlert,
+  verificationBacklogContent,
 } from './retention-alert';
 
 describe('푸시 본문', () => {
@@ -119,5 +120,35 @@ describe('보관 정책', () => {
     // 화면·약관·마이그레이션이 모두 이 값을 말한다. 여기서 바꾸면 그 셋도
     // 함께 고쳐야 한다 — 이 테스트는 그걸 잊지 않게 하려고 있다.
     expect(RETENTION_POLICY.originalDays).toBe(30);
+  });
+});
+
+describe('심사 적체 알림', () => {
+  it('접수 후 7일부터 밀린 것으로 본다', () => {
+    // SQL 쪽에도 같은 값이 있다. 한쪽만 고치면 목록과 알림이 어긋난다.
+    expect(VERIFICATION_POLICY.backlogDays).toBe(7);
+  });
+
+  it('건수와 왜 급한지를 담는다', () => {
+    const content = verificationBacklogContent(3, 12);
+
+    expect(content.body).toContain('3건');
+    expect(content.body).toContain('12일째');
+    // 심사가 밀리면 그 증빙 원본이 파기되지 않는다. 그 연결을 적어두지 않으면
+    // "나중에 하지"가 되기 쉽다.
+    expect(content.body).toContain('파기 일정');
+  });
+
+  it('사람이나 문서를 가리키는 말이 들어가지 않는다', () => {
+    const content = verificationBacklogContent(5, 30);
+    const text = `${content.title} ${content.body}`;
+
+    for (const forbidden of ['이름', '연락처', '@', '견적서']) {
+      expect(text).not.toContain(forbidden);
+    }
+  });
+
+  it('밀린 것이 없으면 만들지 않는다', () => {
+    expect(() => verificationBacklogContent(0, 0)).toThrow();
   });
 });
