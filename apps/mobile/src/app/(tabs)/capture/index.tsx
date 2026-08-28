@@ -9,9 +9,14 @@ import { PermissionDeniedError, pickFromLibrary, pickPdf } from '@/features/capt
 import type { CapturedPage } from '@/features/capture/types';
 
 /**
- * A-04 촬영.
- * 사업계획서 7번: 카메라 촬영 / 사진 불러오기 / PDF 불러오기 중 하나로 입력받고,
- * 별도 입력폼을 요구하지 않는다.
+ * 제보.
+ *
+ * 사업계획서 v3 8번이 이 자리를 하단 내비게이션 가운데(Primary Action)에 뒀다.
+ * 웨딩홀·스드메는 공공데이터가 없어 제보로만 자료가 쌓이기 때문이다.
+ *
+ * **결제인증이 앞이고 견적서가 뒤다.** v3 6번이 계약서 원본 업로드를 P1에서 뺐다 —
+ * 웨딩홀 약관의 비밀유지 조항(위약벌 계약금 2배)이 확인됐고, 그 위험을 지는 쪽이
+ * 이 앱을 쓴 사용자다. 결제내역에는 계약 조건이 없어 그 조항이 걸리지 않는다.
  */
 export default function CaptureScreen() {
   const { pages, addPages } = useCaptureDraft();
@@ -43,15 +48,30 @@ export default function CaptureScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ThemedView style={styles.header}>
-          <ThemedText type="subtitle">견적서를 올려주세요</ThemedText>
+          <ThemedText type="subtitle">실제로 내신 금액을 알려주세요</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            찍기만 하면 됩니다. 업체·상품·금액·계약조건을 읽어 정리해 드립니다.
+            결제문자나 카드 영수증이면 됩니다. 한 건만 올려주셔도 다른 분들이 실제로
+            얼마를 냈는지 보실 수 있습니다.
           </ThemedText>
         </ThemedView>
 
         <ThemedView style={styles.actions}>
           <ActionButton
             variant="primary"
+            label="결제인증 제보하기"
+            hint="결제문자 캡처도 괜찮습니다"
+            onPress={() => router.push('/capture/payment/consent')}
+          />
+        </ThemedView>
+
+        <ThemedView style={styles.actions}>
+          <ThemedText type="smallBold">견적서 분석</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            견적서를 읽어 항목과 추가비용 후보를 정리해 드립니다. 계약서는 지금
+            받지 않습니다 — 계약서에 비밀유지 조항이 있는 경우가 있어, 법률 확인이
+            끝날 때까지 미뤄두었습니다.
+          </ThemedText>
+          <ActionButton
             label="카메라로 촬영"
             hint="여러 장을 이어서 찍을 수 있습니다"
             disabled={busy}
