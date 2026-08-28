@@ -1,4 +1,5 @@
 import { backfillVendorMatches, matchVendor } from '../analysis/vendor-matching';
+import { loadQuote } from '../quote-view';
 import { runOnce } from '../analysis/worker';
 import { createTestApp, resetDatabase, type TestApp } from './helpers';
 
@@ -6,14 +7,26 @@ let test: TestApp;
 
 const describeWithDb = process.env.DATABASE_URL ? describe : describe.skip;
 
-async function createVendor(name: string, region = '서울 강남구') {
+async function createVendor(name: string, region = '서울 강남구', source = 'vendor_official') {
   const { rows } = await test.pool.query<{ id: string }>(
     `INSERT INTO structured.vendors (category, name, region, source)
-     VALUES ('hall', $1, $2, 'vendor_official') RETURNING id`,
-    [name, region]
+     VALUES ('hall', $1, $2, $3) RETURNING id`,
+    [name, region, source]
   );
 
   return rows[0]!.id;
+}
+
+async function createWedding() {
+  const user = await test.pool.query<{ id: string }>(
+    'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
+  );
+  const wedding = await test.pool.query<{ id: string }>(
+    'INSERT INTO structured.weddings (owner_user_id) VALUES ($1) RETURNING id',
+    [user.rows[0]!.id]
+  );
+
+  return wedding.rows[0]!.id;
 }
 
 async function match(name: string | null) {
@@ -74,18 +87,12 @@ describeWithDb('업체 매칭', () => {
   });
 
   it('업체를 나중에 등록하면 이전 문서들이 연결된다', async () => {
-    const user = await test.pool.query<{ id: string }>(
-      'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
-    );
-    const wedding = await test.pool.query<{ id: string }>(
-      'INSERT INTO structured.weddings (owner_user_id) VALUES ($1) RETURNING id',
-      [user.rows[0]!.id]
-    );
+    const weddingId = await createWedding();
 
     await test.pool.query(
       `INSERT INTO structured.quotes (wedding_id, doc_type, vendor_name_raw, source)
        VALUES ($1, 'contract', '더 채플 앳 청담', 'ai_extraction')`,
-      [wedding.rows[0]!.id]
+      [weddingId]
     );
 
     const vendorId = await createVendor('더채플앳청담');
@@ -103,20 +110,47 @@ describeWithDb('업체 매칭', () => {
     expect(rows[0]!.vendor_id).toBe(vendorId);
   });
 
+  it('공공데이터에서 온 업체는 출처를 밝힌다', async () => {
+    // 공공누리는 유형과 무관하게 출처 표시를 요구한다.
+    const weddingId = await createWedding();
+    const vendorId = await createVendor('아펠가모 공덕', '서울 마포구', 'public_data');
+
+    const { rows } = await test.pool.query<{ id: string }>(
+      `INSERT INTO structured.quotes (wedding_id, doc_type, vendor_id, source)
+       VALUES ($1, 'contract', $2, 'ai_extraction') RETURNING id`,
+      [weddingId, vendorId]
+    );
+
+    const quote = await loadQuote(test.pool, rows[0]!.id);
+
+    expect(quote.vendor?.sourceNote).toBe(
+      '행정안전부 지방행정 인허가 데이터 (2026-08-28 확인)'
+    );
+  });
+
+  it('사용자 문서에서만 온 업체에는 바깥 출처를 붙이지 않는다', async () => {
+    const weddingId = await createWedding();
+    const vendorId = await createVendor('더채플앳청담');
+
+    const { rows } = await test.pool.query<{ id: string }>(
+      `INSERT INTO structured.quotes (wedding_id, doc_type, vendor_id, source)
+       VALUES ($1, 'contract', $2, 'ai_extraction') RETURNING id`,
+      [weddingId, vendorId]
+    );
+
+    const quote = await loadQuote(test.pool, rows[0]!.id);
+
+    expect(quote.vendor?.sourceNote).toBeNull();
+  });
+
   it('연결되지 않은 이름은 빈도와 함께 남는다', async () => {
-    const user = await test.pool.query<{ id: string }>(
-      'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
-    );
-    const wedding = await test.pool.query<{ id: string }>(
-      'INSERT INTO structured.weddings (owner_user_id) VALUES ($1) RETURNING id',
-      [user.rows[0]!.id]
-    );
+    const weddingId = await createWedding();
 
     for (const name of ['라움', '라 움', '노블발렌티']) {
       await test.pool.query(
         `INSERT INTO structured.quotes (wedding_id, doc_type, vendor_name_raw, source)
          VALUES ($1, 'contract', $2, 'ai_extraction')`,
-        [wedding.rows[0]!.id, name]
+        [weddingId, name]
       );
     }
 

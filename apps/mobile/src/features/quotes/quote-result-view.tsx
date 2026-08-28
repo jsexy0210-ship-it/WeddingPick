@@ -87,6 +87,11 @@ export function QuoteResultView({ quote, comparison, confirm, header, contentSty
           {[quote.productName, quote.contractDate].filter(Boolean).join(' · ') || '—'}
         </ThemedText>
         <VerificationBadge level={quote.verificationLevel} />
+        {quote.vendor?.sourceNote ? (
+          <ThemedText type="small" themeColor="textSecondary">
+            업체 정보 출처: {quote.vendor.sourceNote}
+          </ThemedText>
+        ) : null}
       </ThemedView>
 
       <ThemedView type="backgroundElement" style={styles.card}>

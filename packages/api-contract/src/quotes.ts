@@ -62,11 +62,24 @@ export const quoteSubVendorSchema = z.object({
   matched: z.boolean(),
 });
 
+/**
+ * 문서에 붙은 업체.
+ *
+ * 업체 정보를 공공데이터에서 가져왔다면 출처를 밝혀야 한다. 공공누리는 유형과 무관하게
+ * 출처 표시를 요구한다. 앱이 코드로 판단하지 않도록 서버가 한글 문장으로 만들어 내려준다.
+ */
+export const quoteVendorSchema = z.object({
+  id: idSchema,
+  name: z.string(),
+  /** 예: "행정안전부 지방행정 인허가 데이터 (2026-08-28 확인)". 사용자가 올린 문서에서만 온 업체면 null. */
+  sourceNote: z.string().nullable(),
+});
+
 export const quoteSchema = z.object({
   id: idSchema,
   weddingId: idSchema,
   docType: documentTypeSchema,
-  vendor: z.object({ id: idSchema, name: z.string() }).nullable(),
+  vendor: quoteVendorSchema.nullable(),
   planner: z.object({ id: idSchema, name: z.string() }).nullable(),
   productName: z.string().nullable(),
   totalAmount: amountSchema.nullable(),
@@ -111,6 +124,7 @@ export const quoteListResponseSchema = z.object({
   nextCursor: z.string().nullable(),
 });
 
+export type QuoteVendor = z.infer<typeof quoteVendorSchema>;
 export type ExtractionField = z.infer<typeof extractionFieldSchema>;
 export type Quote = z.infer<typeof quoteSchema>;
 export type ConfirmFieldsRequest = z.infer<typeof confirmFieldsRequestSchema>;

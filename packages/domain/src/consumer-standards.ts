@@ -9,17 +9,11 @@
  * (사업계획서 25번).
  */
 
+import { DATA_SOURCES } from './data-sources';
+
 export const STANDARD_SOURCES = {
-  weddingHallCancellation: {
-    name: '소비자분쟁해결기준 (예식업)',
-    authority: '공정거래위원회',
-    lastVerifiedAt: '2026-08-28',
-  },
-  sdmEssentialOptions: {
-    name: '결혼준비대행업 불공정약관 시정 (18개 업체)',
-    authority: '공정거래위원회',
-    lastVerifiedAt: '2026-08-28',
-  },
+  weddingHallCancellation: DATA_SOURCES.consumerDisputeStandard,
+  sdmEssentialOptions: DATA_SOURCES.weddingAgencyTermsCorrection,
 } as const;
 
 /**

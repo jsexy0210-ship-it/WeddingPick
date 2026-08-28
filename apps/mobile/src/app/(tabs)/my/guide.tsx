@@ -1,3 +1,4 @@
+import { formatAttribution, listDataSources } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -76,6 +77,28 @@ export default function GuideScreen() {
                 <ThemedText type="small" themeColor="textSecondary">
                   {fact.body}
                 </ThemedText>
+              </ThemedView>
+            ))}
+          </ThemedView>
+
+          <ThemedView style={styles.section}>
+            <ThemedText type="subtitle">자료 출처</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              웨딩픽이 비교와 대조에 쓰는 바깥 자료입니다. 기관이 자료를 고치면 앱의 내용도
+              달라질 수 있어 마지막으로 확인한 날짜를 함께 적어둡니다.
+            </ThemedText>
+
+            {listDataSources().map((source) => (
+              <ThemedView key={source.id} type="backgroundElement" style={styles.card}>
+                <ThemedText type="smallBold">{formatAttribution(source)}</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">
+                  쓰이는 곳: {source.usedFor}
+                </ThemedText>
+                {source.url ? (
+                  <ThemedText type="small" themeColor="textSecondary">
+                    원문: {source.url}
+                  </ThemedText>
+                ) : null}
               </ThemedView>
             ))}
           </ThemedView>

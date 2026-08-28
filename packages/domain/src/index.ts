@@ -1,4 +1,5 @@
 export * from './consumer-standards';
+export * from './data-sources';
 export * from './document';
 export * from './policy';
 export * from './product';

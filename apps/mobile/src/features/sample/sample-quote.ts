@@ -13,7 +13,7 @@ export const SAMPLE_QUOTE: Quote = {
   id: 'sample',
   weddingId: 'sample',
   docType: 'quote',
-  vendor: { id: 'sample-vendor', name: '샘플웨딩홀' },
+  vendor: { id: 'sample-vendor', name: '샘플웨딩홀', sourceNote: null },
   planner: { id: 'sample-planner', name: '이수진' },
   productName: '그랜드볼룸 토요일 낮',
   totalAmount: 23_700_000,
