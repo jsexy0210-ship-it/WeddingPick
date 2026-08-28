@@ -75,6 +75,32 @@ export type ExtractionField<T = string | number> = {
 export const FIELDS_REQUIRING_CONFIRMATION = ['totalAmount', 'contractDate', 'refundTerms'] as const;
 
 /**
+ * 이 아래로는 "확인 필요"로 드러낸다. 서비스정책서 1번.
+ *
+ * 핵심 필드(위)는 신뢰도와 무관하게 확인을 거친다. 이건 다른 이야기다 —
+ * 핵심이 아닌 항목이라도 **흐릿하게 읽은 값을 아무 표시 없이 보여주면 안 된다**.
+ * 실제 계약서 사진으로 시험해 보면 접힌 자리·손글씨·역광 때문에 예식일이나 홀
+ * 이름을 확신 못 하는 일이 흔하다. 그 값이 맞는 것처럼 나가면 사용자는 틀린
+ * 것을 그대로 믿는다.
+ *
+ * **잠정값이다.** 서비스정책서의 "개인정보 탐지 정확도 목표치 및 수동 검토 전환
+ * 기준"이 정해지면 그와 함께 맞춰야 한다. 0.7은 실제 문서 몇 건을 읽어보고
+ * 고른 값이지 측정해서 나온 값이 아니다.
+ */
+export const LOW_CONFIDENCE_THRESHOLD = 0.7;
+
+/** 이 항목을 "확인 필요"로 드러내야 하는가. */
+export function needsAttention(field: {
+  requiresConfirmation: boolean;
+  confirmedByUser: boolean;
+  confidence: number;
+}): boolean {
+  if (field.confirmedByUser) return false;
+
+  return field.requiresConfirmation || field.confidence < LOW_CONFIDENCE_THRESHOLD;
+}
+
+/**
  * 분석이 끝난 문서 하나. 명세 3.2의 Quote.
  *
  * rawDocumentId는 원본이 자동삭제되면 끊긴다 — 원본은 핵심 자산이 아니고 구조화된

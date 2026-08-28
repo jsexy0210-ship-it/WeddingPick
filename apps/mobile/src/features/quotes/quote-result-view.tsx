@@ -4,7 +4,7 @@ import type {
   Quote,
   QuoteDocument,
 } from '@weddingpick/api-contract';
-import { ANALYSIS_DISCLAIMER, PRICE_JUDGEMENT_LABEL } from '@weddingpick/domain';
+import { ANALYSIS_DISCLAIMER, PRICE_JUDGEMENT_LABEL, needsAttention } from '@weddingpick/domain';
 import { ScrollView, StyleSheet, TextInput, type ViewStyle } from 'react-native';
 
 import { ActionButton, Spacing, ThemedText, ThemedView, VerificationBadge, useTheme } from '@weddingpick/ui';
@@ -118,8 +118,19 @@ export function QuoteResultView({
 }: Props) {
   const theme = useTheme();
 
+  /*
+   * 두 종류를 갈라 둔다. 섞으면 안 되는 이유는 하는 말이 다르기 때문이다.
+   *
+   * 핵심 필드는 확인하기 전까지 비교에 **쓰이지 않는다**. 신뢰도가 낮은 나머지
+   * 항목은 비교를 막지는 않지만, 흐릿하게 읽은 값을 아무 표시 없이 보여주면
+   * 사용자가 틀린 것을 그대로 믿는다(서비스정책서 1번).
+   */
   const pending: ExtractionField[] = quote.extractionFields.filter(
     (field) => field.requiresConfirmation && !field.confirmedByUser
+  );
+  const lowConfidence: ExtractionField[] = quote.extractionFields.filter(
+    (field) =>
+      !field.requiresConfirmation && !field.confirmedByUser && needsAttention(field)
   );
 
   return (
@@ -211,6 +222,25 @@ export function QuoteResultView({
                   onPress={() => confirm.onConfirm([field.path])}
                 />
               ) : null}
+
+      {lowConfidence.length > 0 ? (
+        <ThemedView style={styles.section}>
+          <ThemedText type="smallBold">흐릿하게 읽은 항목</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            아래 값은 문서에서 또렷하게 읽지 못했습니다. 원본과 다를 수 있으니
+            직접 확인해 주세요.
+          </ThemedText>
+
+          {lowConfidence.map((field) => (
+            <ThemedView key={field.path} type="backgroundElement" style={styles.card}>
+              <ThemedText type="small" themeColor="textSecondary">
+                {FIELD_LABEL[field.path] ?? field.path}
+              </ThemedText>
+              <ThemedText>{field.correctedValue ?? field.value}</ThemedText>
+            </ThemedView>
+          ))}
+        </ThemedView>
+      ) : null}
             </ThemedView>
           ))}
 
