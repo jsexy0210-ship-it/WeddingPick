@@ -4,11 +4,16 @@
  * 색은 theme.ts가 @montage-ui/theme에서 직접 읽으므로 여기 없다. 여기 있는 것은
  * React Native가 웹에서 var()로 넘기는 글꼴 변수뿐이다.
  *
- * Pretendard는 Montage의 글꼴이다. 실제로 싣지 않고 이름만 적어두면 시스템 글꼴로
- * 떨어지므로, 이 파일이 참조하는 것은 함께 배포되는 pretendard 패키지의 웹폰트다.
+ * 이 파일은 Pretendard 웹폰트를 직접 끌어오지 않는다 — 자립해야 하기 때문이다.
+ * 예전에는 여기서 pretendard 패키지를 가리켰는데, 그건 번들러가 node_modules를
+ * 풀어주는 곳에서만 도는 경로다. 이 파일이 그대로 복사되어 나가는 곳(디자인 시스템
+ * 번들)에서는 그 경로가 없어 글꼴이 통째로 빠진다. 그래서 글꼴을 싣는 일은 이 파일을
+ * 쓰는 쪽이 진다: 앱은 _layout.tsx에서 pretendard 패키지를 함께 가져오고, 디자인
+ * 번들은 config.json의 extraFonts로 폰트 파일을 실어 간다.
+ *
+ * 아래 스택은 Pretendard가 실리지 않은 곳에서도 한글이 읽히도록 시스템 한글 글꼴까지
+ * 내려간다.
  */
-
-@import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
 
 :root {
   --font-sans:

@@ -17,7 +17,12 @@
     "ThemedView": "children?: React.ReactNode;\n  /** 배경으로 쓸 색 역할. 기본은 'background'. 카드는 'backgroundElement'를 쓴다. */\n  type?: 'text' | 'textSecondary' | 'background' | 'backgroundElement' | 'backgroundSelected' | 'border' | 'tint' | 'tintInactive';\n  style?: StyleProp<ViewStyle>;\n  accessibilityLabel?: string;\n  accessibilityRole?: string;",
     "ActionButton": "/** 단추에 적히는 말. 무엇이 일어날지 그대로 쓴다. */\n  label: string;\n  /** 라벨 아래 작은 글씨로 붙는 보조 설명. 왜 눌리지 않는지도 여기에 적는다. */\n  hint?: string;\n  /** 화면에서 가장 중요한 하나만 'primary'. 나머지는 기본값. */\n  variant?: 'primary' | 'secondary';\n  disabled?: boolean;\n  onPress?: () => void;\n  accessibilityLabel?: string;",
     "FilterChip": "/** 조건 이름. 개수를 붙일 때는 '서울 6곳'처럼 함께 적는다. */\n  label: string;\n  selected: boolean;\n  onPress: () => void;\n  /** 여럿 중 하나만 고르는 자리인지. 스크린 리더가 읽는 역할이 달라진다. */\n  role?: 'checkbox' | 'radio';",
-    "VerificationBadge": "/** 이 문서가 어느 확인 단계까지 왔는지. 등급의 의미와 색은 도메인이 정한다. */\n  level: 'L0' | 'L1' | 'L2' | 'L3' | 'L4';",
-    "ScreenPlaceholder": "title: string;\n  /** 이 화면이 무엇을 하게 될지 사용자에게 하는 설명. 빈 화면을 그냥 두지 않는다. */\n  summary: string;"
-  }
+    "VerificationBadge": "/** 이 문서가 어느 확인 단계까지 왔는지. 등급의 의미와 색은 도메인이 정한다. */\n  level: 'L0' | 'L1' | 'L2' | 'L3' | 'L4';"
+  },
+  "runtimeFontPrefixes": [
+    "Pretendard"
+  ],
+  "extraFonts": [
+    "../../pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css"
+  ]
 }

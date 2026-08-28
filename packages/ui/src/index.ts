@@ -14,7 +14,6 @@ export { ThemedView, type ThemedViewProps } from './themed-view';
 export { ActionButton, type ActionButtonProps } from './action-button';
 export { FilterChip, type FilterChipProps } from './filter-chip';
 export { VerificationBadge, type VerificationBadgeProps } from './verification-badge';
-export { ScreenPlaceholder, type ScreenPlaceholderProps } from './screen-placeholder';
 
 export {
   Colors,

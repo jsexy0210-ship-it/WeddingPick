@@ -1,3 +1,6 @@
+// Pretendard(Montage의 글꼴)를 먼저 싣고, 그 위에 글꼴 변수를 얹는다. 순서가 아니라
+// 두 줄인 것이 중요하다 — tokens.css는 자립해야 해서 글꼴을 직접 부르지 않는다.
+import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
 import '@weddingpick/ui/tokens.css';
 
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, router } from 'expo-router';
