@@ -226,15 +226,26 @@ describeWithDb('DB 스키마', () => {
   });
 
   describe('원본 문서', () => {
-    async function seedRawDocument(retentionUntil: string | null) {
+    /**
+     * 원본 하나.
+     *
+     * 파기 예정일은 저장하지 않고 계산한다(0018) — 검증이 끝난 날로부터 센다.
+     * 아무 일도 없는 문서는 업로드가 기준이라, 업로드 시각을 옮겨 만료를 만든다.
+     */
+    async function seedRawDocument(age: 'expired' | 'fresh' = 'fresh') {
       const user = await client.query<{ id: string }>(
         'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
       );
 
+      const uploaded =
+        age === 'expired'
+          ? new Date(Date.now() - 40 * 24 * 60 * 60 * 1000)
+          : new Date();
+
       const { rows } = await client.query<{ id: string }>(
-        `INSERT INTO originals.raw_documents (owner_user_id, page_count, retention_until)
+        `INSERT INTO originals.raw_documents (owner_user_id, page_count, uploaded_at)
          VALUES ($1, 2, $2) RETURNING id`,
-        [user.rows[0]!.id, retentionUntil]
+        [user.rows[0]!.id, uploaded]
       );
 
       const documentId = rows[0]!.id;
@@ -251,7 +262,7 @@ describeWithDb('DB 스키마', () => {
     }
 
     it('원본을 지워도 구조화 데이터는 남고 연결만 끊긴다', async () => {
-      const rawId = await seedRawDocument(null);
+      const rawId = await seedRawDocument();
       const { quoteId } = await seedQuote({});
 
       await client.query('UPDATE structured.quotes SET raw_document_id = $1 WHERE id = $2', [
@@ -271,17 +282,51 @@ describeWithDb('DB 스키마', () => {
     });
 
     it('만료된 원본만 삭제 대상 목록에 올라온다', async () => {
-      await seedRawDocument('2020-01-01T00:00:00Z');
-      await seedRawDocument('2099-01-01T00:00:00Z');
-      await seedRawDocument(null);
+      await seedRawDocument('expired');
+      await seedRawDocument('fresh');
 
       const { rows } = await client.query('SELECT id FROM originals.expired_documents');
 
       expect(rows).toHaveLength(1);
     });
 
+    it('심사가 열려 있으면 아무리 오래돼도 삭제 대상이 아니다', async () => {
+      const rawId = await seedRawDocument('expired');
+      const user = await client.query<{ id: string }>(
+        'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
+      );
+      const wedding = await client.query<{ id: string }>(
+        'INSERT INTO structured.weddings (owner_user_id) VALUES ($1) RETURNING id',
+        [user.rows[0]!.id]
+      );
+      const quote = await client.query<{ id: string }>(
+        `INSERT INTO structured.quotes (wedding_id, raw_document_id, source)
+         VALUES ($1, $2, 'ai_extraction') RETURNING id`,
+        [wedding.rows[0]!.id, rawId]
+      );
+      const request = await client.query<{ id: string }>(
+        `INSERT INTO structured.verification_requests (quote_id, requested_by, target_level)
+         VALUES ($1, $2, 'L2') RETURNING id`,
+        [quote.rows[0]!.id, user.rows[0]!.id]
+      );
+      await client.query(
+        `INSERT INTO structured.verification_evidence (request_id, kind, raw_document_id)
+         VALUES ($1, 'contract_document', $2)`,
+        [request.rows[0]!.id, rawId]
+      );
+
+      // 지우면 심사자가 확인할 근거를 잃는다. 셈은 심사가 끝나야 시작된다.
+      const expired = await client.query('SELECT id FROM originals.expired_documents');
+      const held = await client.query(
+        'SELECT id FROM originals.retention_held_for_verification'
+      );
+
+      expect(expired.rows).toHaveLength(0);
+      expect(held.rows).toHaveLength(1);
+    });
+
     it('삭제 상태와 삭제 시각이 어긋나면 저장할 수 없다', async () => {
-      const rawId = await seedRawDocument(null);
+      const rawId = await seedRawDocument();
 
       await expect(
         client.query(`UPDATE originals.raw_documents SET status = 'deleted' WHERE id = $1`, [rawId])

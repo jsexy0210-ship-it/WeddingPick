@@ -1,4 +1,3 @@
-import { RETENTION_POLICY } from '@weddingpick/domain';
 import { z } from 'zod';
 
 const configSchema = z.object({
@@ -16,18 +15,6 @@ const configSchema = z.object({
     }),
     z.object({ driver: z.literal('local') }),
   ]),
-  /**
-   * 원본 문서 보관 일수. 기본값은 정해진 정책(30일)이다.
-   *
-   * 예전에는 기본값 없이 두었다 — 정해지지 않은 값을 지어내지 않으려던 것이다.
-   * 이제 정해졌으므로 반대가 된다: 환경변수를 빠뜨린 환경이 무기한 보관으로
-   * 떨어지는 것이 정책 위반이다. 값은 도메인의 RETENTION_POLICY 한 곳에 있다.
-   */
-  originalRetentionDays: z.coerce
-    .number()
-    .int()
-    .positive()
-    .default(RETENTION_POLICY.originalDays),
 
   /**
    * 예정일이 된 원본을 누가 지우는가.
@@ -73,7 +60,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     port: env.PORT,
     sessionTtlDays: env.SESSION_TTL_DAYS,
     storage,
-    originalRetentionDays: env.ORIGINAL_RETENTION_DAYS,
     retentionMode: env.RETENTION_MODE,
     retentionReminderHours: env.RETENTION_REMINDER_HOURS,
     corsOrigins: (env.CORS_ORIGINS ?? '')

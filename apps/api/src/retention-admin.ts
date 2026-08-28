@@ -1,10 +1,11 @@
-import { RETENTION_UNSET_WARNING, retentionSummary } from '@weddingpick/domain';
+import { retentionSummary } from '@weddingpick/domain';
 
 import { loadConfig } from './config';
 import { createPool } from './db';
 import {
   deleteDocument,
   listDueDocuments,
+  listHeldForVerification,
   listRetentionAttention,
   markUnreachableForReview,
   sweepExpiredDocuments,
@@ -171,13 +172,22 @@ async function main(): Promise<void> {
     if (process.argv.includes('--due')) {
       const due = await listDueDocuments(pool);
 
+      const held = await listHeldForVerification(pool);
+
       if (due.length === 0) {
-        // 비어 있는 것을 안전하다고 읽으면 안 된다.
-        console.log(
-          config.originalRetentionDays
-            ? '파기할 때가 된 원본이 없다.'
-            : RETENTION_UNSET_WARNING
-        );
+        /*
+         * 비어 있는 것을 안전하다고 읽으면 안 된다. 검증 완료 후를 기준으로
+         * 삼았으므로, 지울 것이 없어서가 아니라 아직 셈이 시작되지 않아서일 수
+         * 있다.
+         */
+        console.log('파기할 때가 된 원본이 없다.');
+
+        if (held.length > 0) {
+          console.log(
+            `\n다만 ${held.length}건은 심사가 열려 있어 파기 일정이 서지 않았다.` +
+              '\n심사가 끝나야 셈이 시작된다: npm run verifications -- --list'
+          );
+        }
         return;
       }
 
@@ -193,6 +203,12 @@ async function main(): Promise<void> {
         console.log(
           `\n${blocking}건은 아직 결론이 나지 않은 인증 신청의 증빙이다. 지우면 그 신청은` +
             '\n확인할 근거를 잃는다. 먼저 심사를 끝내려면: npm run verifications -- --list'
+        );
+      }
+
+      if (held.length > 0) {
+        console.log(
+          `\n그 밖에 ${held.length}건은 심사가 열려 있어 아직 일정이 서지 않았다.`
         );
       }
 

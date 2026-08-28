@@ -83,8 +83,16 @@ export const quoteDocumentSchema = z.object({
   rawDocumentId: idSchema,
   pageCount: z.int().positive(),
   uploadedAt: timestampSchema,
-  /** 보관 기간이 지나면 원본이 지워진다. 기준 일수가 정해지기 전에는 null. */
+  /**
+   * 언제 원본이 지워지는지. 검증이 끝난 날로부터 센다.
+   *
+   * 아직 결론이 나지 않은 인증 신청의 증빙이면 일정이 서지 않아 null이다.
+   * 그때는 awaitingVerification이 true다 — 화면이 "언제인지 모른다"와
+   * "심사가 끝나면 정해진다"를 구분해 말할 수 있어야 한다.
+   */
   retentionUntil: timestampSchema.nullable(),
+  /** 인증 심사가 끝나기를 기다리는 중이라 파기 일정이 서지 않았는지. */
+  awaitingVerification: z.boolean(),
   deletedAt: timestampSchema.nullable(),
 });
 

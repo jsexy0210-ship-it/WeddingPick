@@ -1,4 +1,4 @@
-import { RETENTION_UNSET_WARNING } from '@weddingpick/domain';
+import { RETENTION_POLICY } from '@weddingpick/domain';
 
 import { createClaudeAnalyzer } from './analysis/claude-analyzer';
 import { runForever } from './analysis/worker';
@@ -23,16 +23,12 @@ async function main() {
   const storage =
     config.storage.driver === 's3' ? createS3Storage(config.storage) : createLocalStorage();
 
-  if (config.originalRetentionDays) {
-    console.log(
-      `원본 보관 ${config.originalRetentionDays}일` +
-        (config.retentionMode === 'automatic'
-          ? ' 후 자동삭제'
-          : ' 후 파기 예정. 지우는 것은 사람이 하고, 서버는 운영자에게 알린다.')
-    );
-  } else {
-    console.warn(RETENTION_UNSET_WARNING);
-  }
+  console.log(
+    `원본 보관: 검증이 끝난 날로부터 ${RETENTION_POLICY.originalDays}일` +
+      (config.retentionMode === 'automatic'
+        ? ' 후 자동삭제'
+        : ' 후 파기 예정. 지우는 것은 사람이 하고, 서버는 운영자에게 알린다.')
+  );
 
   /*
    * 보관 정리는 자주 볼 필요가 없다. 분석 루프와 나란히 돌린다.

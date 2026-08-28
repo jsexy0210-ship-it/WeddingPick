@@ -125,9 +125,13 @@ export async function loadQuote(pool: Pool, quoteId: string) {
     ),
     // 원본은 분석을 통해서만 문서에 이어진다. 삭제 예정일(A-12)과 인증 증빙(A-13)이 여기서 나온다.
     pool.query(
-      `SELECT d.id, d.page_count, d.uploaded_at, d.retention_until, d.deleted_at
+      // 파기 예정일은 저장된 값이 아니라 계산값이다(0018). 확인과 심사가 끝날
+      // 때마다 달라지므로, 화면에 보여줄 때도 그때그때 계산한 것을 준다.
+      `SELECT d.id, d.page_count, d.uploaded_at, d.deleted_at,
+              s.retention_until, s.awaiting_verification
        FROM structured.analyses a
        JOIN originals.raw_documents d ON d.id = a.raw_document_id
+       JOIN originals.document_retention_schedule s ON s.id = d.id
        WHERE a.quote_id = $1
        ORDER BY d.uploaded_at`,
       [quoteId]
@@ -197,6 +201,7 @@ export async function loadQuote(pool: Pool, quoteId: string) {
       pageCount: row.page_count,
       uploadedAt: row.uploaded_at.toISOString(),
       retentionUntil: row.retention_until?.toISOString() ?? null,
+      awaitingVerification: row.awaiting_verification,
       deletedAt: row.deleted_at?.toISOString() ?? null,
     })),
     createdAt: quote.created_at.toISOString(),

@@ -284,3 +284,40 @@ export async function deleteDocument(
 
   return { ok: true, keysDeleted: keys.length };
 }
+
+
+export type HeldDocument = {
+  id: string;
+  ownerUserId: string;
+  uploadedAt: Date;
+  personalInfoKinds: string[];
+};
+
+/**
+ * 심사가 열려 있어 파기 일정이 서지 않는 원본.
+ *
+ * 검증 완료 후를 기준으로 삼은 대가다. 심사에 결론이 날 때까지 원본이 남고,
+ * 그 기간에 상한이 없다. 심사가 적체되면 개인정보가 그만큼 오래 남는다.
+ *
+ * 파기 목록이 비어 있는 것을 안전하다고 읽으면 안 되는 이유가 여기 있다 —
+ * 지울 것이 없어서가 아니라 아직 셈이 시작되지 않아서일 수 있다.
+ */
+export async function listHeldForVerification(pool: Pool): Promise<HeldDocument[]> {
+  const { rows } = await pool.query<{
+    id: string;
+    owner_user_id: string;
+    uploaded_at: Date;
+    personal_info_kinds: string[];
+  }>(
+    `SELECT id, owner_user_id, uploaded_at, personal_info_kinds
+     FROM originals.retention_held_for_verification
+     ORDER BY uploaded_at`
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    ownerUserId: row.owner_user_id,
+    uploadedAt: row.uploaded_at,
+    personalInfoKinds: row.personal_info_kinds,
+  }));
+}

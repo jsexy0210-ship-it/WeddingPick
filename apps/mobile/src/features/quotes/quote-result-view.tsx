@@ -53,11 +53,12 @@ function formatDay(timestamp: string): string {
 /**
  * 원본이 언제 지워지는지. A-12가 요구하는 표시다.
  *
- * 보관 기간은 30일로 정해졌다. 그래도 여기서 30일을 세지 않고 서버가 준 날짜를
- * 그대로 보여준다 — 앱이 따로 계산하면 정책이 바뀔 때 두 곳이 어긋나고, 화면에
- * 적힌 날짜와 실제로 지워지는 날이 다른 것이 가장 나쁘다.
+ * 날짜를 앱이 세지 않고 서버가 준 것을 그대로 보여준다 — 검증이 끝난 날로부터
+ * 세는데 그 시점은 확인과 심사에 따라 달라지고, 앱이 따로 계산하면 화면에 적힌
+ * 날짜와 실제로 지워지는 날이 달라진다.
  *
- * 날짜가 없는 경우는 서버에 올리기 전이거나 보관 기간이 꺼진 환경이다.
+ * 날짜가 없는 경우가 둘이라 구분해 말한다. 인증 심사가 열려 있으면 심사가
+ * 끝나야 셈이 시작되고, 그건 "모른다"가 아니라 "아직 아니다"이다.
  */
 function retentionNote(document: QuoteDocument): string {
   if (document.deletedAt) {
@@ -69,6 +70,10 @@ function retentionNote(document: QuoteDocument): string {
     // 누가 지우는지가 아니라 언제 지워지는지다. 운영 방식이 바뀌어도 이 말은
     // 거짓이 되지 않는다.
     return `${formatDay(document.retentionUntil)}에 원본이 지워집니다. 정리된 결과는 그대로 남습니다.`;
+  }
+
+  if (document.awaitingVerification) {
+    return '인증 심사가 끝나면 원본 삭제 예정일이 정해집니다. 심사에 이 문서가 증빙으로 들어가 있어 그때까지 보관합니다.';
   }
 
   return '아직 삭제 예정일이 정해지지 않았습니다. 정해지면 여기에 표시합니다.';

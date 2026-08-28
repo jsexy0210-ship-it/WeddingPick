@@ -34,8 +34,10 @@ export const SAMPLE_QUOTE: Quote = {
       rawDocumentId: 'sample-document',
       pageCount: 2,
       uploadedAt: '2026-05-16T04:00:00Z',
-      // 보관 일수가 정해지면 서버가 넣는다. 샘플은 정해졌을 때의 모습을 보여준다.
-      retentionUntil: '2026-11-16T04:00:00Z',
+      // 검증이 끝난 날로부터 30일. 이 샘플은 확인·심사가 없으므로 업로드가
+      // 기준이 된다 — 5월 16일 + 30일.
+      retentionUntil: '2026-06-15T04:00:00Z',
+      awaitingVerification: false,
       deletedAt: null,
     },
   ],

@@ -12,16 +12,32 @@ let test: TestApp;
 
 const describeWithDb = process.env.DATABASE_URL ? describe : describe.skip;
 
-/** 만료 시각을 직접 지정해 원본 하나를 만든다. */
-async function seedDocument(retentionUntil: string | null, keys = ['a.jpg', 'b.jpg']) {
+/**
+ * 원본 하나.
+ *
+ * 파기 예정일은 이제 저장하지 않고 계산한다(0018) — 검증이 끝난 날로부터 센다.
+ * 그래서 만료 시각을 직접 넣는 대신 업로드 시각을 옮긴다. 아무 일도 없는
+ * 문서에서는 업로드가 기준이 되므로, 30일보다 오래되면 파기 대상이다.
+ */
+async function seedDocument(
+  uploadedAt: string | 'expired' | 'fresh',
+  keys = ['a.jpg', 'b.jpg']
+) {
   const user = await test.pool.query<{ id: string }>(
     'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
   );
 
+  const uploaded =
+    uploadedAt === 'expired'
+      ? new Date(Date.now() - 40 * 24 * 60 * 60 * 1000)
+      : uploadedAt === 'fresh'
+        ? new Date()
+        : new Date(uploadedAt);
+
   const document = await test.pool.query<{ id: string }>(
-    `INSERT INTO originals.raw_documents (owner_user_id, page_count, retention_until)
+    `INSERT INTO originals.raw_documents (owner_user_id, page_count, uploaded_at)
      VALUES ($1, $2, $3) RETURNING id`,
-    [user.rows[0]!.id, keys.length, retentionUntil]
+    [user.rows[0]!.id, keys.length, uploaded]
   );
 
   const documentId = document.rows[0]!.id;
@@ -67,7 +83,7 @@ describeWithDb('원본 자동삭제', () => {
   beforeEach(resetDatabase);
 
   it('보관 기간이 지난 원본의 파일을 지우고 기록을 남긴다', async () => {
-    const { documentId } = await seedDocument('2020-01-01T00:00:00Z');
+    const { documentId } = await seedDocument('expired');
 
     const result = await sweepExpiredDocuments({
       pool: test.pool,
@@ -85,7 +101,7 @@ describeWithDb('원본 자동삭제', () => {
   });
 
   it('없는 파일을 가리키는 키는 남기지 않는다', async () => {
-    const { documentId } = await seedDocument('2020-01-01T00:00:00Z');
+    const { documentId } = await seedDocument('expired');
 
     await sweepExpiredDocuments({ pool: test.pool, storage: test.context.storage });
 
@@ -97,7 +113,7 @@ describeWithDb('원본 자동삭제', () => {
   });
 
   it('구조화 데이터는 남고 연결만 끊긴다', async () => {
-    const { documentId, userId } = await seedDocument('2020-01-01T00:00:00Z');
+    const { documentId, userId } = await seedDocument('expired');
 
     const wedding = await test.pool.query<{ id: string }>(
       'INSERT INTO structured.weddings (owner_user_id) VALUES ($1) RETURNING id',
@@ -116,9 +132,8 @@ describeWithDb('원본 자동삭제', () => {
     expect(rows).toHaveLength(1);
   });
 
-  it('보관 기간이 남았거나 정해지지 않은 원본은 건드리지 않는다', async () => {
-    const future = await seedDocument('2099-01-01T00:00:00Z');
-    const undecided = await seedDocument(null);
+  it('보관 기간이 남은 원본은 건드리지 않는다', async () => {
+    const future = await seedDocument('fresh');
 
     const result = await sweepExpiredDocuments({
       pool: test.pool,
@@ -127,12 +142,10 @@ describeWithDb('원본 자동삭제', () => {
 
     expect(result.deleted).toBe(0);
     expect((await documentStatus(future.documentId)).status).toBe('uploaded');
-    // 보관 기간이 확정되기 전에 올라온 문서를 임의로 지우지 않는다.
-    expect((await documentStatus(undecided.documentId)).status).toBe('uploaded');
   });
 
   it('삭제가 실패하면 조용히 넘어가지 않고 표시로 남긴다', async () => {
-    const { documentId } = await seedDocument('2020-01-01T00:00:00Z');
+    const { documentId } = await seedDocument('expired');
 
     const brokenStorage: Storage = {
       ...test.context.storage,
@@ -153,7 +166,7 @@ describeWithDb('원본 자동삭제', () => {
   });
 
   it('실패한 문서는 다음 차례에 다시 시도한다', async () => {
-    const { documentId } = await seedDocument('2020-01-01T00:00:00Z');
+    const { documentId } = await seedDocument('expired');
 
     const brokenStorage: Storage = {
       ...test.context.storage,
@@ -189,23 +202,28 @@ describeWithDb('보관 점검', () => {
   beforeEach(resetDatabase);
 
   /** 페이지 기록이 없는 문서. 삭제 작업이 집어가지 못한다. */
-  async function seedPagelessDocument(retentionUntil: string) {
+  async function seedPagelessDocument(uploadedAt: 'expired' | 'fresh') {
     const user = await test.pool.query<{ id: string }>(
       'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
     );
 
+    const uploaded =
+      uploadedAt === 'expired'
+        ? new Date(Date.now() - 40 * 24 * 60 * 60 * 1000)
+        : new Date();
+
     const document = await test.pool.query<{ id: string }>(
       `INSERT INTO originals.raw_documents
-         (owner_user_id, page_count, retention_until, personal_info_kinds)
+         (owner_user_id, page_count, uploaded_at, personal_info_kinds)
        VALUES ($1, 1, $2, ARRAY['resident_number']) RETURNING id`,
-      [user.rows[0]!.id, retentionUntil]
+      [user.rows[0]!.id, uploaded]
     );
 
     return document.rows[0]!.id;
   }
 
   it('페이지 기록이 없으면 삭제 작업이 집어가지 못한다', async () => {
-    await seedPagelessDocument('2020-01-01');
+    await seedPagelessDocument('expired');
 
     const { rows } = await test.pool.query('SELECT 1 FROM originals.expired_documents');
 
@@ -214,7 +232,7 @@ describeWithDb('보관 점검', () => {
   });
 
   it('집어가지 못하는 문서도 점검 목록에는 올라온다', async () => {
-    const documentId = await seedPagelessDocument('2020-01-01');
+    const documentId = await seedPagelessDocument('expired');
 
     const attention = await listRetentionAttention(test.pool);
 
@@ -226,7 +244,7 @@ describeWithDb('보관 점검', () => {
   });
 
   it('삭제에 실패한 문서도 같은 목록에 올라온다', async () => {
-    const { documentId } = await seedDocument('2020-01-01');
+    const { documentId } = await seedDocument('expired');
 
     await test.pool.query(
       `UPDATE originals.raw_documents SET status = 'delete_failed', delete_attempts = 3
@@ -242,13 +260,13 @@ describeWithDb('보관 점검', () => {
   });
 
   it('보관 기간이 남은 문서는 점검 목록에 오지 않는다', async () => {
-    await seedPagelessDocument('2999-01-01');
+    await seedPagelessDocument('fresh');
 
     expect(await listRetentionAttention(test.pool)).toHaveLength(0);
   });
 
   it('처리 목록에 올려도 한 문서는 한 줄로만 센다', async () => {
-    await seedPagelessDocument('2020-01-01');
+    await seedPagelessDocument('expired');
 
     expect(await markUnreachableForReview(test.pool)).toBe(1);
 
@@ -262,7 +280,7 @@ describeWithDb('보관 점검', () => {
   });
 
   it('이미 올라간 것을 다시 올리지 않는다', async () => {
-    await seedPagelessDocument('2020-01-01');
+    await seedPagelessDocument('expired');
 
     expect(await markUnreachableForReview(test.pool)).toBe(1);
     // 두 번째는 아무것도 하지 않았다고 말해야 한다. 안 그러면 매번 새 문제가
@@ -271,7 +289,7 @@ describeWithDb('보관 점검', () => {
   });
 
   it('처리 목록에 올리는 것은 무엇도 지우지 않는다', async () => {
-    const documentId = await seedPagelessDocument('2020-01-01');
+    const documentId = await seedPagelessDocument('expired');
 
     await markUnreachableForReview(test.pool);
 

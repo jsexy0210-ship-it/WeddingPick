@@ -1,3 +1,5 @@
+import { RETENTION_POLICY } from '@weddingpick/domain';
+
 import { alertOperators } from '../retention/alert';
 import type { Push, PushMessage, PushOutcome } from '../push/port';
 import { createTestApp, resetDatabase, type TestApp } from './helpers';
@@ -53,13 +55,18 @@ describeWithDb('파기 일정 알림', () => {
     );
   }
 
-  /** 파기 예정일이 지난 원본 하나. */
+  /**
+   * 파기 예정일이 지난 원본 하나.
+   *
+   * 예정일은 저장하지 않고 계산한다(0018). 아무 일도 없는 문서는 업로드가
+   * 기준이므로, 보관 일수보다 그만큼 더 오래된 것으로 만든다.
+   */
   async function createDueDocument(ownerId: string, daysOverdue = 2) {
     const { rows } = await test.pool.query<{ id: string }>(
       `INSERT INTO originals.raw_documents
-         (owner_user_id, page_count, retention_until, personal_info_kinds)
+         (owner_user_id, page_count, uploaded_at, personal_info_kinds)
        VALUES ($1, 1, now() - ($2 || ' days')::interval, ARRAY['name']) RETURNING id`,
-      [ownerId, String(daysOverdue)]
+      [ownerId, String(RETENTION_POLICY.originalDays + daysOverdue)]
     );
 
     return rows[0]!.id;
@@ -199,7 +206,7 @@ describeWithDb('파기 일정 알림', () => {
     expect(await alertOperators(deps(push))).toMatchObject({ disabledTokens: 0 });
   });
 
-  it('보관 기간이 정해지지 않은 문서는 파기 예정이 아니다', async () => {
+  it('방금 올린 문서로는 알리지 않는다', async () => {
     const operator = await createUser({ operator: true });
 
     await registerDevice(operator, 'ExponentPushToken[operator]');
@@ -210,8 +217,50 @@ describeWithDb('파기 일정 알림', () => {
 
     const { push, sent } = fakePush();
 
-    // 조용한 것이 안전한 것은 아니다 — 일정이 없을 뿐 원본은 쌓이고 있다.
     expect(await alertOperators(deps(push))).toMatchObject({ dueCount: 0 });
     expect(sent).toHaveLength(0);
+  });
+
+  it('심사가 열려 있는 문서로는 알리지 않는다', async () => {
+    const operator = await createUser({ operator: true });
+
+    await registerDevice(operator, 'ExponentPushToken[operator]');
+
+    const documentId = await createDueDocument(operator, 400);
+    const wedding = await test.pool.query<{ id: string }>(
+      'INSERT INTO structured.weddings (owner_user_id) VALUES ($1) RETURNING id',
+      [operator]
+    );
+    const quote = await test.pool.query<{ id: string }>(
+      `INSERT INTO structured.quotes (wedding_id, raw_document_id, source)
+       VALUES ($1, $2, 'ai_extraction') RETURNING id`,
+      [wedding.rows[0]!.id, documentId]
+    );
+    const request = await test.pool.query<{ id: string }>(
+      `INSERT INTO structured.verification_requests (quote_id, requested_by, target_level)
+       VALUES ($1, $2, 'L2') RETURNING id`,
+      [quote.rows[0]!.id, operator]
+    );
+    await test.pool.query(
+      `INSERT INTO structured.verification_evidence (request_id, kind, raw_document_id)
+       VALUES ($1, 'contract_document', $2)`,
+      [request.rows[0]!.id, documentId]
+    );
+
+    const { push, sent } = fakePush();
+
+    /*
+     * 400일이 지났어도 심사가 열려 있으면 셈이 시작되지 않는다. 그래서 알림도
+     * 오지 않는다 — 조용한 것을 안전하다고 읽으면 안 되는 이유다. 이 상태는
+     * retention_held_for_verification에 따로 드러난다.
+     */
+    expect(await alertOperators(deps(push))).toMatchObject({ dueCount: 0 });
+    expect(sent).toHaveLength(0);
+
+    const { rows } = await test.pool.query(
+      'SELECT 1 FROM originals.retention_held_for_verification'
+    );
+
+    expect(rows).toHaveLength(1);
   });
 });
