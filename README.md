@@ -16,6 +16,24 @@
 - 실제 운영 기준 → [서비스정책서](docs/02-service-policy.md)
 - 개발 범위·화면·데이터 모델 → [제품·기술 명세](docs/05-product-spec.md)
 
+## 구조
+
+```
+apps/mobile/   Expo(React Native) 앱 — Primary Product
+docs/          기획·정책·법률 기준 문서와 제품 명세
+```
+
+## 시작하기
+
+```bash
+npm install
+npm run mobile    # Expo 개발 서버
+```
+
+자세한 내용은 [apps/mobile/README.md](apps/mobile/README.md).
+
 ## 현재 상태
 
-기획 문서 정리 단계. 앱 코드는 아직 없으며, 기술 스택은 [제품·기술 명세 5번](docs/05-product-spec.md#5-기술-스택-제안--확정-필요)에서 제안 상태다.
+[개발 순서](docs/05-product-spec.md#6-개발-순서-제안) 1단계(레포 구조 + 앱 스캐폴드 + CI) 완료. 5개 탭이 뜨는 빈 앱 상태이며, 다음은 인증과 웨딩 생성이다.
+
+백엔드·호스팅·인증 제공자는 아직 미확정이다 — [제품·기술 명세 5번](docs/05-product-spec.md#5-기술-스택).
