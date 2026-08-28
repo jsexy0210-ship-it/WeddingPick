@@ -8,12 +8,17 @@ import { MissingColumnError, parseLocaldataCsv } from './public-data/localdata';
 /**
  * 공개 인허가 자료로 업체를 등록한다.
  *
+ *   npm run public-data:import --workspace @weddingpick/api -- --file 예식장.csv --inspect
  *   npm run public-data:import --workspace @weddingpick/api -- --file 예식장.csv --category hall
  *   ... --dry-run          # 쓰지 않고 무엇이 들어갈지만 본다
- *   ... --region 서울       # 지역 이름이 포함된 것만
+ *   ... --region 서울       # 지역 이름이 포함된 것만 (없으면 전국)
  *
  * 파일은 지방행정 인허가 데이터(localdata.go.kr)에서 업종별로 내려받는다.
  * 특정 사이트를 긁어오지 않고 공개 자료만 쓴다 — 사업계획서 20번.
+ *
+ * **모르는 파일은 --inspect 부터.** 업종과 배포 시점에 따라 컬럼 이름과 내용이
+ * 다르고, 어떤 업종이 우리 분류 중 무엇에 해당하는지도 파일을 봐야 안다.
+ * 잘못 넣으면 미용실 전부가 스드메로 들어오는 식의 일이 생긴다.
  */
 
 const CATEGORIES = ['wedding_info_company', 'hall', 'sdm', 'planner_agency', 'snap', 'goods', 'etc'];
@@ -24,10 +29,49 @@ function argument(name: string): string | undefined {
   return index === -1 ? undefined : process.argv[index + 1];
 }
 
+/**
+ * 파일을 들여다보기만 한다.
+ *
+ * 컬럼 이름과 몇 줄을 보여준다. 이걸 먼저 보면 --category를 고를 수 있고,
+ * 컬럼 이름이 우리가 아는 것과 다르면 여기서 드러난다.
+ */
+async function inspect(file: string): Promise<void> {
+  const bytes = await readFile(file);
+  const iconv = await import('iconv-lite');
+
+  // 파일은 CP949로 내려온다. UTF-8로 온 것도 있어 둘 다 시도한다.
+  const decoded = ((): string => {
+    const cp949 = iconv.default.decode(bytes, 'cp949');
+
+    // CP949로 읽었는데 한글이 깨지면 UTF-8이었던 것이다.
+    return cp949.includes('\uFFFD') ? bytes.toString('utf8') : cp949;
+  })();
+
+  const lines = decoded.split(/\r?\n/).filter((line) => line.trim().length > 0);
+  const headers = (lines[0] ?? '').split(',').map((header) => header.trim().replace(/^"|"$/g, ''));
+
+  console.log(`줄 수: ${lines.length - 1}건 (머리줄 제외)`);
+  console.log(`\n컬럼 ${headers.length}개:`);
+  for (const header of headers) console.log(`  ${header}`);
+
+  console.log('\n앞 3줄:');
+  for (const line of lines.slice(1, 4)) console.log(`  ${line.slice(0, 200)}`);
+
+  console.log(
+    '\n이 파일이 우리 분류 중 무엇인지 정한 뒤 --category로 넣는다:' +
+      `\n  ${CATEGORIES.join(', ')}`
+  );
+}
+
 async function main() {
   const file = argument('file');
   const category = argument('category');
   const regionFilter = argument('region');
+
+  if (file && process.argv.includes('--inspect')) {
+    await inspect(file);
+    return;
+  }
   const dryRun = process.argv.includes('--dry-run');
 
   if (!file || !category) {
