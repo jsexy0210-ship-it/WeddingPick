@@ -14,6 +14,7 @@ import { z } from 'zod';
 import { requireUser } from '../auth/plugin';
 import type { AppContext } from '../context';
 import { ApiError, notFound } from '../errors';
+import { loadUsageScore } from '../review-view';
 import { vendorSourceNote } from '../vendor-view';
 
 const searchQuerySchema = z.object({
@@ -196,6 +197,7 @@ async function loadVendorDetail(pool: Pool, vendorId: string) {
 
   return {
     ...toSummary(vendor),
+    usageScore: await loadUsageScore(pool, vendor.id, vendor.category as VendorCategory),
     reportedPrice: reported.available
       ? { ...reported, caveat: PRICE_REPORT_CAVEAT }
       : reported,

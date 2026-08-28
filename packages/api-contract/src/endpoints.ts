@@ -28,6 +28,15 @@ import {
 } from './planners';
 import { confirmFieldsRequestSchema, quoteListResponseSchema, quoteSchema } from './quotes';
 import {
+  createReviewReportRequestSchema,
+  createReviewReportResponseSchema,
+  createReviewRequestSchema,
+  createReviewResponseSchema,
+  reportReasonListResponseSchema,
+  reviewFormSchema,
+  reviewListResponseSchema,
+} from './reviews';
+import {
   vendorComparisonResponseSchema,
   vendorDetailSchema,
   vendorRegionsResponseSchema,
@@ -269,11 +278,51 @@ export const ENDPOINTS = {
   },
 
   /**
-   * 푸시 받을 기기 등록.
+   * 후기 쓰기 화면에 필요한 것.
    *
-   * 등록한다고 알림을 받게 되는 것은 아니다 — 파기 알림은 운영자에게만 가고,
-   * 운영자 표시는 사람이 DB에서 직접 켠다. 이 경로로는 어떤 권한도 오르지 않는다.
+   * 물어볼 항목과 이 사람이 받게 될 확인 단계를 **쓰기 전에** 내려준다. 다 쓰고
+   * 나서 "미인증입니다"라고 하면 그건 통보다.
    */
+  getReviewForm: {
+    method: 'GET',
+    path: '/v1/vendors/{vendorId}/review-form',
+    response: reviewFormSchema,
+  },
+
+  /**
+   * 후기 쓰기. 한 사람이 한 업체에 하나.
+   *
+   * 확인 단계는 보내지 않는다 — 서버가 이 사람의 인증된 문서를 보고 정한다.
+   */
+  createReview: {
+    method: 'POST',
+    path: '/v1/vendors/{vendorId}/reviews',
+    body: createReviewRequestSchema,
+    response: createReviewResponseSchema,
+  },
+
+  /** 업체의 후기와 이용점수. cursor·limit 쿼리 파라미터로 쪽을 넘긴다. */
+  listVendorReviews: {
+    method: 'GET',
+    path: '/v1/vendors/{vendorId}/reviews',
+    response: reviewListResponseSchema,
+  },
+
+  /** 신고 사유 목록. */
+  listReportReasons: {
+    method: 'GET',
+    path: '/v1/review-report-reasons',
+    response: reportReasonListResponseSchema,
+  },
+
+  /** 후기 신고. 접수만 된다 — 내릴지는 사람이 정한다. */
+  createReviewReport: {
+    method: 'POST',
+    path: '/v1/reviews/{reviewId}/reports',
+    body: createReviewReportRequestSchema,
+    response: createReviewReportResponseSchema,
+  },
+
   /**
    * 가격 제보. 문서 없이 받는다.
    *
@@ -287,6 +336,12 @@ export const ENDPOINTS = {
     response: createPriceReportResponseSchema,
   },
 
+  /**
+   * 푸시 받을 기기 등록.
+   *
+   * 등록한다고 알림을 받게 되는 것은 아니다 — 파기 알림은 운영자에게만 가고,
+   * 운영자 표시는 사람이 DB에서 직접 켠다. 이 경로로는 어떤 권한도 오르지 않는다.
+   */
   registerDevice: {
     method: 'POST',
     path: '/v1/devices',

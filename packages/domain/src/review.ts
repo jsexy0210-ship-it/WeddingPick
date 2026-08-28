@@ -44,6 +44,14 @@ export const REVIEW_ASPECTS: Partial<Record<VendorCategory, readonly ReviewAspec
     { key: 'staff', label: '직원 응대' },
     { key: 'parking', label: '주차' },
     { key: 'transport', label: '교통' },
+    /*
+     * 계약자만 답한다.
+     *
+     * 사업계획서 1번이 꼽은 문제가 이것이다 — 견적서의 금액과 실제로 낸 금액이
+     * 다르다. 그런데 그걸 아는 사람은 계약한 사람뿐이고, 하객은 짐작밖에 할 수
+     * 없다. 아래 GUEST_ANSWERABLE이 이 항목을 빼는 이유다.
+     */
+    { key: 'extra_cost', label: '추가비용 사전안내' },
   ],
   sdm: [
     { key: 'result', label: '결과물' },
@@ -321,3 +329,30 @@ export function shouldRestore(input: { status: ReviewStatus; holdUntil: Date | n
  */
 export const REVIEW_CAVEAT =
   '후기는 작성한 분의 경험이며 웨딩픽이 사실 여부를 확인하지 않습니다. 확인된 후기는 그 분이 실제로 이용했다는 것까지만 확인한 것입니다.';
+
+/**
+ * 신고 접수 문구.
+ *
+ * 문의와 같은 규칙이다 — 정해지지 않은 기한을 약속하지 않는다. 그리고 "내려갑니다"라고
+ * 말하지 않는다. 신고만으로 글이 내려가면 그건 신고가 아니라 삭제 버튼이다.
+ */
+export function reviewReportAcknowledgement(): string {
+  return '신고를 접수했습니다. 사람이 직접 확인하고 알려드립니다. 신고만으로 글이 내려가지는 않습니다.';
+}
+
+/**
+ * 이 사람이 지금 후기를 쓰면 어디까지 확인되는지, 그 이유.
+ *
+ * 쓰기 **전에** 보여주려고 만든다. 다 쓰고 나서 "미인증입니다"라고 하면 그건 통보고,
+ * 그 자리에서 사람들은 글을 지운다.
+ */
+export function verificationNote(verification: ReviewVerification): string {
+  switch (verification) {
+    case 'contract':
+      return '인증을 마친 계약 문서가 있어 계약 확인으로 올라갑니다. 증빙을 다시 올리지 않으셔도 됩니다.';
+    case 'receipt':
+      return '인증을 마친 결제 내역이 있어 영수증 확인으로 올라갑니다. 계약서를 인증하시면 계약 확인이 됩니다.';
+    case 'unverified':
+      return '이 업체의 인증된 문서가 없어 미인증으로 올라갑니다. 후기는 그대로 보이지만 업체 점수에는 들어가지 않습니다.';
+  }
+}

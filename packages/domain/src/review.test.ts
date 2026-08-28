@@ -2,6 +2,7 @@ import {
   MINIMUM_REVIEW_COUNT,
   OBJECTION_HOLD_MAX_DAYS,
   REVIEW_CAVEAT,
+  REVIEW_VERIFICATION,
   aspectsFor,
   aspectsForRole,
   canMergeScores,
@@ -10,8 +11,10 @@ import {
   countsTowardScore,
   isVisible,
   objectionHoldUntil,
+  reviewReportAcknowledgement,
   reviewVerificationFromQuote,
   shouldRestore,
+  verificationNote,
 } from './review';
 
 describe('누가 무엇에 답하는가', () => {
@@ -34,6 +37,13 @@ describe('누가 무엇에 답하는가', () => {
 
   it('계약자에게는 전부 묻는다', () => {
     expect(aspectsForRole('hall', 'contractor')).toEqual(aspectsFor('hall'));
+  });
+
+  it('웨딩홀에서도 추가비용은 계약자만 안다', () => {
+    // 사업계획서 1번이 꼽은 문제가 이것이다 — 견적서의 금액과 실제로 낸 금액이
+    // 다르다. 그런데 그걸 아는 사람은 계약한 사람뿐이다.
+    expect(aspectsForRole('hall', 'contractor').map((a) => a.key)).toContain('extra_cost');
+    expect(aspectsForRole('hall', 'guest').map((a) => a.key)).not.toContain('extra_cost');
   });
 
   it('업종마다 항목이 다르다', () => {
@@ -178,6 +188,34 @@ describe('후기 쓰기', () => {
 
   it('조건을 갖추면 받는다', () => {
     expect(canSubmitReview(draft)).toEqual({ ok: true });
+  });
+});
+
+describe('쓰기 전에 알려주는 말', () => {
+  it('확인 단계마다 이유를 준다', () => {
+    // 다 쓰고 나서 "미인증입니다"라고 하면 그건 통보고, 그 자리에서 글을 지운다.
+    for (const value of REVIEW_VERIFICATION) {
+      expect(verificationNote(value).length).toBeGreaterThan(0);
+    }
+  });
+
+  it('올릴 방법이 있으면 그 방법을 말한다', () => {
+    expect(verificationNote('receipt')).toContain('계약서를 인증하시면');
+  });
+
+  it('미인증이어도 글은 보인다고 말한다', () => {
+    expect(verificationNote('unverified')).toContain('그대로 보이지만');
+  });
+});
+
+describe('신고 접수', () => {
+  it('신고만으로 내려간다고 말하지 않는다', () => {
+    // 신고만으로 글이 내려가면 그건 신고가 아니라 삭제 버튼이다.
+    expect(reviewReportAcknowledgement()).toContain('신고만으로 글이 내려가지는 않습니다');
+  });
+
+  it('정해지지 않은 기한을 약속하지 않는다', () => {
+    expect(reviewReportAcknowledgement()).not.toMatch(/\d+일 안에/);
   });
 });
 

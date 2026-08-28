@@ -12,6 +12,11 @@ import {
   createInquiryResponseSchema,
   inquiryListResponseSchema,
   registerDeviceResponseSchema,
+  createReviewReportResponseSchema,
+  createReviewResponseSchema,
+  reportReasonListResponseSchema,
+  reviewFormSchema,
+  reviewListResponseSchema,
   plannerDetailSchema,
   plannerRegionsResponseSchema,
   plannerSearchResponseSchema,
@@ -33,6 +38,13 @@ import {
   type CreateInquiryRequest,
   type RegisterDeviceRequest,
   type RegisterDeviceResponse,
+  type CreateReviewReportRequest,
+  type CreateReviewReportResponse,
+  type CreateReviewRequest,
+  type CreateReviewResponse,
+  type ReportReasonListResponse,
+  type ReviewForm,
+  type ReviewListResponse,
   type CreateInquiryResponse,
   type InquiryListResponse,
   type PlannerDetail,
@@ -264,6 +276,52 @@ export async function compareVendors(ids: string[]): Promise<VendorComparisonRes
     `/v1/vendors/compare?ids=${ids.map(encodeURIComponent).join(',')}`,
     vendorComparisonResponseSchema
   );
+}
+
+/**
+ * 후기 쓰기 화면에 필요한 것.
+ *
+ * 물어볼 항목을 앱이 정하지 않는다. 업종마다 다르고 역할마다 다르며, 그 규칙은
+ * 서버에 있다 — 앱에 박아두면 항목이 늘 때마다 앱을 새로 내야 한다.
+ */
+export async function getReviewForm(vendorId: string): Promise<ReviewForm> {
+  return request(`/v1/vendors/${vendorId}/review-form`, reviewFormSchema);
+}
+
+/** 후기 쓰기. 확인 단계는 보내지 않는다 — 서버가 정한다. */
+export async function createReview(
+  vendorId: string,
+  body: CreateReviewRequest
+): Promise<CreateReviewResponse> {
+  return request(`/v1/vendors/${vendorId}/reviews`, createReviewResponseSchema, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+/** 업체의 후기와 이용점수. 단서는 목록과 한 응답으로 온다. */
+export async function listVendorReviews(
+  vendorId: string,
+  cursor?: string
+): Promise<ReviewListResponse> {
+  const suffix = cursor ? `?cursor=${encodeURIComponent(cursor)}` : '';
+
+  return request(`/v1/vendors/${vendorId}/reviews${suffix}`, reviewListResponseSchema);
+}
+
+export async function listReportReasons(): Promise<ReportReasonListResponse> {
+  return request('/v1/review-report-reasons', reportReasonListResponseSchema);
+}
+
+/** 후기 신고. 접수만 된다 — 내릴지는 사람이 정한다. */
+export async function reportReview(
+  reviewId: string,
+  body: CreateReviewReportRequest
+): Promise<CreateReviewReportResponse> {
+  return request(`/v1/reviews/${reviewId}/reports`, createReviewReportResponseSchema, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
 }
 
 /**

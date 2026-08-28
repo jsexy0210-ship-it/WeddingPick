@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { reportedPriceSchema } from './price-reports';
+import { usageScoreSchema } from './reviews';
 
 import { MAX_COMPARED_VENDORS } from '@weddingpick/domain';
 
@@ -65,6 +66,14 @@ export const vendorDetailSchema = vendorSummarySchema.extend({
    * 헷갈리면 섞여 나간다(서비스정책서 2번).
    */
   reportedPrice: reportedPriceSchema,
+  /**
+   * 이용점수. 확인된 후기만 들어간다.
+   *
+   * 표본이 모자라면 숫자를 만들지 않고 이유를 준다 — 가격 중앙값과 같은 규칙이다.
+   * 후기 두세 건으로 만든 점수는 정보가 아니라 소음이고, 업체 하나를 망칠 수도
+   * 살릴 수도 있다.
+   */
+  usageScore: usageScoreSchema,
 });
 
 /**

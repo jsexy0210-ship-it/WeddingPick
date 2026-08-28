@@ -101,6 +101,41 @@ export default function VendorDetailScreen() {
           </ThemedView>
 
           <ThemedView style={styles.section}>
+            <ThemedText type="smallBold">이용점수</ThemedText>
+
+            {/*
+              확인된 후기만 들어간다. 표본이 모자라면 숫자를 만들지 않고 이유를 준다 —
+              가격과 같은 규칙이다. 후기 두세 건으로 만든 점수는 정보가 아니라 소음이고,
+              업체 하나를 망칠 수도 살릴 수도 있다.
+            */}
+            <ThemedView type="backgroundElement" style={styles.card}>
+              {vendor.usageScore.available ? (
+                <>
+                  <ThemedText type="subtitle">{vendor.usageScore.average.toFixed(1)}</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    확인된 후기 {vendor.usageScore.count}건
+                  </ThemedText>
+                  {vendor.usageScore.aspects.map((aspect) => (
+                    <ThemedText key={aspect.key} type="small" themeColor="textSecondary">
+                      {aspect.label} {aspect.average.toFixed(1)}
+                    </ThemedText>
+                  ))}
+                </>
+              ) : (
+                <ThemedText type="small" themeColor="textSecondary">
+                  {vendor.usageScore.reason}
+                </ThemedText>
+              )}
+            </ThemedView>
+
+            <ActionButton
+              label="후기 보기"
+              hint="이용하신 분들이 남긴 글입니다"
+              onPress={() => router.push(`/search/${vendor.id}/reviews`)}
+            />
+          </ThemedView>
+
+          <ThemedView style={styles.section}>
             <ActionButton
               variant="primary"
               label="내 견적서와 비교하기"

@@ -10,6 +10,7 @@ export * from './inquiries';
 export * from './planners';
 export * from './price-reports';
 export * from './quotes';
+export * from './reviews';
 export * from './vendors';
 export * from './verification';
 export * from './weddings';
