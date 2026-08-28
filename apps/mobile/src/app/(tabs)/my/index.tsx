@@ -49,6 +49,14 @@ export default function MyScreen() {
           </ThemedView>
 
           <ThemedView style={styles.section}>
+            <ThemedText type="smallBold">안내</ThemedText>
+            <ActionButton
+              label="촬영 방법과 AI 안내"
+              onPress={() => router.push('/my/guide')}
+            />
+          </ThemedView>
+
+          <ThemedView style={styles.section}>
             <ThemedText type="smallBold">공유</ThemedText>
             <ActionButton
               label="웨딩픽 공유하기"

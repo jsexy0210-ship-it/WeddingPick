@@ -7,7 +7,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 
-type PolicyStatus = '자문 대기' | '작성 필요';
+type PolicyStatus = '자문 대기' | '작성 필요' | '초안 게시';
 
 const POLICIES: { title: string; status: PolicyStatus; note: string }[] = [
   {
@@ -22,8 +22,8 @@ const POLICIES: { title: string; status: PolicyStatus; note: string }[] = [
   },
   {
     title: 'AI 안내',
-    status: '작성 필요',
-    note: 'AI가 문서를 어떻게 처리하고 무엇을 보장하지 않는지 알리는 문서입니다.',
+    status: '초안 게시',
+    note: 'AI 처리 방식과 한계를 앱 안에서 안내합니다. 법률 검토 후 확정합니다.',
   },
 ];
 
@@ -60,6 +60,11 @@ export default function PoliciesScreen() {
             ))}
           </ThemedView>
 
+          <ActionButton
+            variant="primary"
+            label="AI 안내 보기"
+            onPress={() => router.push('/my/guide')}
+          />
           <ActionButton label="돌아가기" onPress={() => router.back()} />
         </ScrollView>
       </SafeAreaView>

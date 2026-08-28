@@ -77,6 +77,15 @@ export default function CaptureScreen() {
           />
         </ThemedView>
 
+        <ThemedView style={styles.actions}>
+          <ActionButton
+            label="이렇게 찍어주세요"
+            hint="잘 읽히는 촬영 방법과 AI 안내"
+            onPress={() => router.push('/my/guide')}
+          />
+          <ActionButton label="샘플 결과 보기" onPress={() => router.push('/capture/sample')} />
+        </ThemedView>
+
         {pages.length > 0 ? (
           <ActionButton
             label={`작성 중인 문서 ${pages.length}장 이어서 보기`}

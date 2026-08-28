@@ -34,14 +34,18 @@ src/app/                     expo-router 파일 기반 라우팅
   (tabs)/capture/index.tsx   A-04 촬영 — 입력 방식 선택
   (tabs)/capture/camera.tsx  카메라 연속 촬영
   (tabs)/capture/review.tsx  A-05 문서 확인
+  (tabs)/capture/sample.tsx  샘플 미리보기 (서버 없이도 결과 모습을 보여준다)
   (tabs)/capture/analysis/   A-06 분석 중
   (tabs)/capture/result/     A-08 분석 결과 + A-07 확인 단계 + A-09 가격 비교
   (tabs)/wedding/index.tsx   A-11 내 웨딩
   (tabs)/wedding/[id]/       A-12 견적 상세, A-13 인증 등급
   (tabs)/my/index.tsx        A-14 MY
+  (tabs)/my/guide.tsx        촬영 방법 + AI 안내
   (tabs)/my/policies.tsx     A-15 약관 및 정책
 src/api/                     서버 클라이언트 — 응답을 계약 스키마로 검사한다
 src/features/capture/        촬영 흐름 상태, 사진·PDF 선택, 업로드
+src/features/quotes/         분석 결과 렌더링 (실제 결과와 샘플이 함께 쓴다)
+src/features/sample/         샘플 미리보기 고정 데이터
 src/features/documents/      기기에 저장된 문서 묶음
 src/features/verification/   검증 등급 L0~L4 정의
 src/features/onboarding/     온보딩 완료 여부
@@ -86,6 +90,15 @@ npm run mobile
 
 `EXPO_PUBLIC_DEV_LOGIN_SECRET`은 개발 빌드 전용이다. EXPO_PUBLIC_* 값은 번들에 그대로
 들어가므로 배포 빌드에는 절대 넣지 않는다. Apple·Kakao 로그인이 붙으면 이 경로는 지운다.
+
+## 샘플 미리보기와 안내
+
+- **샘플 미리보기**(`capture/sample.tsx`) — 견적서를 올리기 전에 결과가 어떤 모습인지
+  보여준다. 실제 결과 화면과 **같은 컴포넌트**로 그려서, 샘플이 실제와 다른 약속을 하지
+  않는다. 화면 위와 헤더에서 샘플임을 계속 알린다 — 지어낸 숫자이고 실제 업체·계약이 아니다
+- **안내 페이지**(`my/guide.tsx`) — 촬영 요령과 AI 안내. 법률검토 체크리스트의
+  "AI 안내 정책"에 해당하는 소비자 고지다. AI가 무엇을 하고 무엇을 보장하지 않는지,
+  개인정보를 어떻게 다루는지 적었다. **법률 검토 전 초안이다**
 
 ## 주의
 

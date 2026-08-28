@@ -74,6 +74,11 @@ export default function HomeScreen() {
                   </ThemedView>
                 ))}
               </ThemedView>
+              <ActionButton
+                label="샘플 결과 먼저 보기"
+                hint="견적서를 올리면 어떤 모습으로 정리되는지 보여드립니다"
+                onPress={() => router.push('/capture/sample')}
+              />
             </ThemedView>
           </ThemedView>
 
