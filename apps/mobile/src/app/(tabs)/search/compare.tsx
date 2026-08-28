@@ -98,12 +98,17 @@ export default function CompareScreen() {
 
           <Row title="상품별 실제 계약 가격" vendors={result.vendors}>
             {(vendor) =>
-              vendor.products.length === 0 ? (
+              /* 잠긴 것과 자료가 없는 것은 다른 말이다. 한 칸에 뭉치지 않는다. */
+              vendor.prices.available === 'locked' ? (
+                <ThemedText type="small" themeColor="textSecondary">
+                  {vendor.prices.requirement}
+                </ThemedText>
+              ) : vendor.prices.products.length === 0 ? (
                 <ThemedText type="small" themeColor="textSecondary">
                   자료가 모자라 가격을 보여드릴 수 없습니다
                 </ThemedText>
               ) : (
-                vendor.products.map((product) => (
+                vendor.prices.products.map((product) => (
                   <ThemedView
                     key={`${product.productLabel}-${product.docType}`}
                     type="backgroundElement"

@@ -63,42 +63,102 @@ export default function VendorDetailScreen() {
             ) : null}
           </ThemedView>
 
-          <ThemedView style={styles.section}>
-            <ThemedText type="smallBold">실제 계약 가격</ThemedText>
-
-            {vendor.products.length === 0 ? (
+          {/*
+            가격은 잠길 수 있다. 사업계획서 v3 7번 Level 3 — 결제인증 제보를 한 건
+            이상 낸 사람이 실제가격을 본다. 잠긴 상태를 빈칸으로 그리지 않는다.
+          */}
+          {vendor.prices.available === 'locked' ? (
+            <ThemedView style={styles.section}>
+              <ThemedText type="smallBold">실제 가격</ThemedText>
               <ThemedView type="backgroundElement" style={styles.card}>
                 <ThemedText type="small" themeColor="textSecondary">
-                  {vendor.comparableQuoteCount === 0
+                  {vendor.prices.productCount === 0
                     ? '이 업체의 확인된 계약 자료가 아직 없습니다.'
-                    : `확인된 계약이 ${vendor.comparableQuoteCount}건 모였지만, 같은 상품끼리 견주기에는 아직 모자랍니다.`}
+                    : `확인된 계약이 ${vendor.prices.productCount}건 모여 있습니다.`}
                 </ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
-                  자료가 모이기 전에는 가격을 지어내지 않습니다. 견적서를 올려주시면 이
-                  업체의 자료가 됩니다.
+                  {vendor.prices.requirement}
                 </ThemedText>
               </ThemedView>
-            ) : (
-              vendor.products.map((product) => (
-                <ThemedView
-                  key={`${product.productLabel}-${product.docType}`}
-                  type="backgroundElement"
-                  style={styles.card}>
-                  <ThemedText type="smallBold">{product.productLabel}</ThemedText>
-                  <ThemedText type="subtitle">{won(product.stat.median)}</ThemedText>
-                  {/* 사업계획서 9번: 표본 수와 기준 기간을 늘 함께 보인다. */}
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {DOCUMENT_TYPE_LABEL[product.docType]} · 확인된 계약{' '}
-                    {product.stat.sampleCount}건 · {product.stat.periodStart}~
-                    {product.stat.periodEnd}
-                  </ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    가운데 절반이 {won(product.stat.p25)}~{won(product.stat.p75)} 사이입니다
-                  </ThemedText>
+              <ActionButton
+                variant="primary"
+                label="결제인증 제보하기"
+                hint="결제내역을 찍으면 실제 가격이 열립니다"
+                onPress={() => router.push('/capture')}
+              />
+            </ThemedView>
+          ) : (
+            <>
+              <ThemedView style={styles.section}>
+                <ThemedText type="smallBold">실제 계약 가격</ThemedText>
+
+                {vendor.prices.products.length === 0 ? (
+                  <ThemedView type="backgroundElement" style={styles.card}>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      {vendor.comparableQuoteCount === 0
+                        ? '이 업체의 확인된 계약 자료가 아직 없습니다.'
+                        : `확인된 계약이 ${vendor.comparableQuoteCount}건 모였지만, 같은 상품끼리 견주기에는 아직 모자랍니다.`}
+                    </ThemedText>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      자료가 모이기 전에는 가격을 지어내지 않습니다.
+                    </ThemedText>
+                  </ThemedView>
+                ) : (
+                  vendor.prices.products.map((product) => (
+                    <ThemedView
+                      key={`${product.productLabel}-${product.docType}`}
+                      type="backgroundElement"
+                      style={styles.card}>
+                      <ThemedText type="smallBold">{product.productLabel}</ThemedText>
+                      <ThemedText type="subtitle">{won(product.stat.median)}</ThemedText>
+                      {/* 사업계획서 9번: 표본 수와 기준 기간을 늘 함께 보인다. */}
+                      <ThemedText type="small" themeColor="textSecondary">
+                        {DOCUMENT_TYPE_LABEL[product.docType]} · 확인된 계약{' '}
+                        {product.stat.sampleCount}건 · {product.stat.periodStart}~
+                        {product.stat.periodEnd}
+                      </ThemedText>
+                      <ThemedText type="small" themeColor="textSecondary">
+                        가운데 절반이 {won(product.stat.p25)}~{won(product.stat.p75)} 사이입니다
+                      </ThemedText>
+                    </ThemedView>
+                  ))
+                )}
+              </ThemedView>
+
+              {/*
+                결제인증은 계약 중앙값과 **다른 칸**에 그린다. 근거가 다르다 —
+                하나는 사람이 심사한 계약이고 하나는 기계가 읽은 결제내역이다.
+              */}
+              <ThemedView style={styles.section}>
+                <ThemedText type="smallBold">결제인증 금액</ThemedText>
+                <ThemedView type="backgroundElement" style={styles.card}>
+                  {vendor.prices.paidPrice.available === true ? (
+                    <>
+                      <ThemedText type="subtitle">
+                        {won(vendor.prices.paidPrice.median)}
+                      </ThemedText>
+                      <ThemedText type="small" themeColor="textSecondary">
+                        결제인증 {vendor.prices.paidPrice.count}건 ·{' '}
+                        {vendor.prices.paidPrice.periodStart}~
+                        {vendor.prices.paidPrice.periodEnd}
+                      </ThemedText>
+                      <ThemedText type="small" themeColor="textSecondary">
+                        {vendor.prices.paidPrice.caveat}
+                      </ThemedText>
+                    </>
+                  ) : vendor.prices.paidPrice.available === false ? (
+                    <ThemedText type="small" themeColor="textSecondary">
+                      {vendor.prices.paidPrice.reason}
+                    </ThemedText>
+                  ) : (
+                    <ThemedText type="small" themeColor="textSecondary">
+                      {vendor.prices.paidPrice.requirement}
+                    </ThemedText>
+                  )}
                 </ThemedView>
-              ))
-            )}
-          </ThemedView>
+              </ThemedView>
+            </>
+          )}
 
           <ThemedView style={styles.section}>
             <ThemedText type="smallBold">이용점수</ThemedText>

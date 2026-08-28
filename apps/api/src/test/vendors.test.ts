@@ -1,6 +1,14 @@
 import { MAX_COMPARED_VENDORS, PRICING_POLICY, productKey } from '@weddingpick/domain';
 
-import { createTestApp, createWedding, markAllPiiReviewed, resetDatabase, signInAs, type TestApp } from './helpers';
+import {
+  createTestApp,
+  createWedding,
+  markAllPiiReviewed,
+  resetDatabase,
+  signInAs,
+  signInUnlocked,
+  type TestApp,
+} from './helpers';
 
 let test: TestApp;
 
@@ -71,10 +79,44 @@ describeWithDb('업체 검색', () => {
 
   beforeEach(resetDatabase);
 
-  it('로그인하지 않으면 검색할 수 없다', async () => {
+  it('로그인 없이 검색할 수 있다', async () => {
+    // 사업계획서 v3 7번 Level 1. 무엇을 주는 서비스인지 보기도 전에 계정을
+    // 만들라고 하지 않는다.
+    await createVendor({ name: '누구나보는홀' });
+
     const response = await test.app.inject({ method: 'GET', url: '/v1/vendors' });
 
+    expect(response.statusCode).toBe(200);
+    expect(response.json().vendors).toHaveLength(1);
+  });
+
+  it('망가진 토큰은 조용히 비로그인으로 떨어지지 않는다', async () => {
+    // 만료된 토큰을 든 사람에게 남의 화면을 보여주면, 그 사람은 로그인한 줄 안다.
+    const response = await test.app.inject({
+      method: 'GET',
+      url: '/v1/vendors',
+      headers: { authorization: 'Bearer 이건아닌토큰' },
+    });
+
     expect(response.statusCode).toBe(401);
+  });
+
+  it('로그인해도 가격은 잠겨 있다', async () => {
+    // Level 3. 자료를 내놓은 사람이 자료를 본다.
+    const { headers } = await signInAs(test);
+    const vendorId = await createVendor({ name: '잠긴홀' });
+
+    const response = await test.app.inject({
+      method: 'GET',
+      url: `/v1/vendors/${vendorId}`,
+      headers,
+    });
+
+    const prices = response.json().prices;
+
+    expect(prices.available).toBe('locked');
+    // 잠갔다고만 하고 방법을 말하지 않으면 파는 것처럼 보인다.
+    expect(prices.requirement).toBeTruthy();
   });
 
   it('표기가 달라도 찾는다', async () => {
@@ -216,7 +258,7 @@ describeWithDb('업체 상세', () => {
   beforeEach(resetDatabase);
 
   it('없는 업체는 404다', async () => {
-    const { headers } = await signInAs(test);
+    const { headers } = await signInUnlocked(test);
     const response = await test.app.inject({
       method: 'GET',
       url: `/v1/vendors/${crypto.randomUUID()}`,
@@ -227,7 +269,7 @@ describeWithDb('업체 상세', () => {
   });
 
   it('표본이 모자란 상품은 내려보내지 않는다', async () => {
-    const { headers } = await signInAs(test);
+    const { headers } = await signInUnlocked(test);
     const weddingId = await createWedding(test, headers);
     const vendorId = await createVendor({ name: '표본부족홀' });
 
@@ -247,12 +289,12 @@ describeWithDb('업체 상세', () => {
     });
 
     // 중앙값 없는 상품 이름만 늘어놓으면 화면이 그걸 가격으로 그린다.
-    expect(response.json().products).toEqual([]);
+    expect(response.json().prices.products).toEqual([]);
     expect(response.json().comparableQuoteCount).toBe(PRICING_POLICY.minimumSampleCount - 1);
   });
 
   it('표본이 모이면 상품 이름과 함께 분포를 준다', async () => {
-    const { headers } = await signInAs(test);
+    const { headers } = await signInUnlocked(test);
     const weddingId = await createWedding(test, headers);
     const vendorId = await createVendor({ name: '표본있는홀' });
 
@@ -271,7 +313,7 @@ describeWithDb('업체 상세', () => {
       headers,
     });
 
-    const [product] = response.json().products;
+    const [product] = response.json().prices.products;
 
     // 내부 키가 아니라 사람이 읽는 이름이어야 한다.
     expect(product.productLabel).toBe('그랜드볼룸');
@@ -304,7 +346,7 @@ describeWithDb('업체 비교', () => {
   }
 
   it('한 곳만으로는 비교할 수 없다', async () => {
-    const { headers } = await signInAs(test);
+    const { headers } = await signInUnlocked(test);
     const vendorId = await createVendor({ name: '가홀' });
 
     const response = await compare(headers, [vendorId]);
@@ -313,7 +355,7 @@ describeWithDb('업체 비교', () => {
   });
 
   it('같은 업체를 두 번 골라 두 곳을 만들 수 없다', async () => {
-    const { headers } = await signInAs(test);
+    const { headers } = await signInUnlocked(test);
     const vendorId = await createVendor({ name: '가홀' });
 
     const response = await compare(headers, [vendorId, vendorId]);
@@ -322,7 +364,7 @@ describeWithDb('업체 비교', () => {
   });
 
   it('세 곳을 넘기면 막는다', async () => {
-    const { headers } = await signInAs(test);
+    const { headers } = await signInUnlocked(test);
     const ids = [];
 
     for (const name of ['가홀', '나홀', '다홀', '라홀']) {
@@ -336,7 +378,7 @@ describeWithDb('업체 비교', () => {
   });
 
   it('금액만으로 비교할 수 없다는 말이 결과에 함께 나간다', async () => {
-    const { headers } = await signInAs(test);
+    const { headers } = await signInUnlocked(test);
     const a = await createVendor({ name: '가홀' });
     const b = await createVendor({ name: '나홀' });
 
@@ -347,7 +389,7 @@ describeWithDb('업체 비교', () => {
   });
 
   it('분류와 지역이 섞이면 알려준다', async () => {
-    const { headers } = await signInAs(test);
+    const { headers } = await signInUnlocked(test);
     const a = await createVendor({ name: '가홀', region: '서울 마포구', category: 'hall' });
     const b = await createVendor({ name: '나스냅', region: '경기 성남시', category: 'snap' });
 
@@ -358,7 +400,7 @@ describeWithDb('업체 비교', () => {
   });
 
   it('가격을 견줄 수 있는 곳과 없는 곳을 함께 보여준다', async () => {
-    const { headers } = await signInAs(test);
+    const { headers } = await signInUnlocked(test);
     const weddingId = await createWedding(test, headers);
     const withData = await createVendor({ name: '자료있는홀' });
     const withoutData = await createVendor({ name: '자료없는홀' });
@@ -374,7 +416,10 @@ describeWithDb('업체 비교', () => {
 
     const body = (await compare(headers, [withData, withoutData])).json();
     const byName = Object.fromEntries(
-      body.vendors.map((v: { name: string; products: unknown[] }) => [v.name, v.products.length])
+      body.vendors.map((v: { name: string; prices: { products: unknown[] } }) => [
+        v.name,
+        v.prices.products.length,
+      ])
     );
 
     expect(byName['자료있는홀']).toBe(1);
@@ -386,7 +431,7 @@ describeWithDb('업체 비교', () => {
   });
 
   it('없는 업체가 섞이면 404다', async () => {
-    const { headers } = await signInAs(test);
+    const { headers } = await signInUnlocked(test);
     const vendorId = await createVendor({ name: '가홀' });
 
     const response = await compare(headers, [vendorId, crypto.randomUUID()]);

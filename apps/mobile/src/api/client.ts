@@ -12,6 +12,7 @@ import {
   createInquiryResponseSchema,
   inquiryListResponseSchema,
   registerDeviceResponseSchema,
+  registerPaymentProofResponseSchema,
   createReviewReportResponseSchema,
   createReviewResponseSchema,
   reportReasonListResponseSchema,
@@ -38,6 +39,9 @@ import {
   type CreateInquiryRequest,
   type RegisterDeviceRequest,
   type RegisterDeviceResponse,
+  type RegisterPaymentProofRequest,
+  type RegisterPaymentProofResponse,
+  type OriginalKind,
   type CreateReviewReportRequest,
   type CreateReviewReportResponse,
   type CreateReviewRequest,
@@ -180,6 +184,8 @@ export async function ensureWedding(): Promise<string> {
 
 export async function createUpload(input: {
   weddingId: string;
+  /** 무엇을 찍은 것인가. 보관 기간이 이 값으로 갈린다 — 결제내역 24시간, 그 밖 30일. */
+  kind?: OriginalKind;
   pages: { mimeType: string; sizeBytes: number }[];
 }) {
   return request('/v1/documents/uploads', createUploadResponseSchema, {
@@ -275,6 +281,35 @@ export async function compareVendors(ids: string[]): Promise<VendorComparisonRes
   return request(
     `/v1/vendors/compare?ids=${ids.map(encodeURIComponent).join(',')}`,
     vendorComparisonResponseSchema
+  );
+}
+
+/**
+ * 결제인증 등록.
+ *
+ * 심사가 아니라 등록이다 — 사람이 보지 않고 문서 등급도 오르지 않는다. 하는 일은
+ * 결제인증 표시와 실제가격 열기 둘이다.
+ *
+ * 카드번호를 보낼 자리가 요청 타입에 없다. 앱이 실수로도 보낼 수 없다.
+ */
+export async function registerPaymentProof(
+  body: RegisterPaymentProofRequest
+): Promise<RegisterPaymentProofResponse> {
+  return request('/v1/payment-proofs', registerPaymentProofResponseSchema, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+/** 내 실제가격 열람 자격. 몇 건 더 내면 열리는지 화면이 말할 수 있어야 한다. */
+export async function getDataUnlock() {
+  return request(
+    '/v1/me/data-unlock',
+    z.object({
+      unlocked: z.boolean(),
+      paymentProofCount: z.number(),
+      retentionHours: z.number(),
+    })
   );
 }
 

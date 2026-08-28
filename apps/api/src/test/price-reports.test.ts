@@ -1,6 +1,12 @@
 import { PRICING_POLICY } from '@weddingpick/domain';
 
-import { createTestApp, resetDatabase, signInAs, type TestApp } from './helpers';
+import {
+  createTestApp,
+  resetDatabase,
+  signInAs,
+  signInUnlocked,
+  type TestApp,
+} from './helpers';
 
 let test: TestApp;
 
@@ -62,7 +68,7 @@ describeWithDb('가격 제보', () => {
   });
 
   it('제보는 시장 대표가격에 들어가지 않는다', async () => {
-    const { headers } = await signInAs(test);
+    const { headers } = await signInUnlocked(test);
     const vendorId = await createVendor();
 
     for (let index = 0; index < PRICING_POLICY.minimumSampleCount + 2; index += 1) {
@@ -82,18 +88,20 @@ describeWithDb('가격 제보', () => {
       headers,
     });
     const body = detail.json<{
-      products: unknown[];
-      reportedPrice: { available: boolean; median?: number; count?: number };
+      prices: {
+        products: unknown[];
+        reportedPrice: { available: boolean; median?: number; count?: number };
+      };
     }>();
 
     // 계약 중앙값은 없고, 제보는 따로 나온다.
-    expect(body.products).toHaveLength(0);
-    expect(body.reportedPrice.available).toBe(true);
-    expect(body.reportedPrice.count).toBe(PRICING_POLICY.minimumSampleCount + 2);
+    expect(body.prices.products).toHaveLength(0);
+    expect(body.prices.reportedPrice.available).toBe(true);
+    expect(body.prices.reportedPrice.count).toBe(PRICING_POLICY.minimumSampleCount + 2);
   });
 
   it('제보도 표본이 모자라면 숫자를 만들지 않는다', async () => {
-    const { headers } = await signInAs(test);
+    const { headers } = await signInUnlocked(test);
     const vendorId = await createVendor();
 
     await report(headers, vendorId);
@@ -103,11 +111,13 @@ describeWithDb('가격 제보', () => {
       url: `/v1/vendors/${vendorId}`,
       headers,
     });
-    const body = detail.json<{ reportedPrice: { available: boolean; reason?: string } }>();
+    const body = detail.json<{
+      prices: { reportedPrice: { available: boolean; reason?: string } };
+    }>();
 
     // 제보라고 기준을 낮추면 신뢰도가 낮은 쪽이 더 쉽게 숫자를 만들게 된다.
-    expect(body.reportedPrice.available).toBe(false);
-    expect(body.reportedPrice.reason).toContain(`${PRICING_POLICY.minimumSampleCount}건이`);
+    expect(body.prices.reportedPrice.available).toBe(false);
+    expect(body.prices.reportedPrice.reason).toContain(`${PRICING_POLICY.minimumSampleCount}건이`);
   });
 
   it('자릿수를 잘못 적으면 받지 않는다', async () => {

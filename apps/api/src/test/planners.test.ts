@@ -58,10 +58,12 @@ describeWithDb('플래너 검색', () => {
 
   beforeEach(resetDatabase);
 
-  it('로그인하지 않으면 검색할 수 없다', async () => {
+  it('로그인 없이 검색할 수 있다', async () => {
+    // Level 1. 공개 근거가 있는 플래너만 나오는 것은 뷰가 막는다 — 로그인은
+    // 그 잠금과 아무 상관이 없었다.
     const response = await test.app.inject({ method: 'GET', url: '/v1/planners' });
 
-    expect(response.statusCode).toBe(401);
+    expect(response.statusCode).toBe(200);
   });
 
   it('공개 근거가 없는 플래너는 검색에 나오지 않는다', async () => {

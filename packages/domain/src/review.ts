@@ -116,13 +116,13 @@ export function isValidRating(rating: number): boolean {
  * 다만 **이용점수에는 확인된 후기만 들어간다.** 누구나 쓸 수 있는 글이 업체
  * 점수를 움직이면 그 점수는 사고팔 수 있는 것이 된다(서비스정책서 5번).
  */
-export const REVIEW_VERIFICATION = ['unverified', 'receipt', 'contract'] as const;
+export const REVIEW_VERIFICATION = ['unverified', 'payment', 'contract'] as const;
 
 export type ReviewVerification = (typeof REVIEW_VERIFICATION)[number];
 
 export const REVIEW_VERIFICATION_LABEL: Record<ReviewVerification, string> = {
   unverified: '미인증',
-  receipt: '영수증 확인',
+  payment: '결제 확인',
   contract: '계약 확인',
 };
 
@@ -137,15 +137,29 @@ export function countsTowardScore(verification: ReviewVerification): boolean {
  * 별도의 증빙을 다시 받지 않는다. 이미 인증 심사를 통과한 문서가 있으면 그것이
  * 곧 "이 업체와 실제로 계약했다"는 증거다 — 같은 것을 두 번 확인하게 하면
  * 사람들은 두 번째에서 그만둔다.
+ *
+ * **L1(견적인증)로는 확인해 주지 않는다.** 견적서를 받은 것과 그 업체를 이용한
+ * 것은 다른 일이다. 상담만 받고 계약하지 않은 사람의 후기에 확인 배지가 붙으면,
+ * 그 배지는 "이용했다"는 뜻이 아니게 된다.
  */
 export function reviewVerificationFromQuote(
   level: VerificationLevel
 ): ReviewVerification | null {
-  if (isAtLeast(level, 'L3')) return 'contract';
-  if (isAtLeast(level, 'L2')) return 'contract';
-  if (isAtLeast(level, 'L1')) return 'receipt';
+  return isAtLeast(level, 'L2') ? 'contract' : null;
+}
 
-  return null;
+/**
+ * 두 근거가 다 있으면 어느 쪽을 붙이는가.
+ *
+ * 계약 확인이 이긴다 — 사람이 심사한 것과 기계가 읽고 등록한 것은 무게가 다르다.
+ */
+export function strongerVerification(
+  a: ReviewVerification,
+  b: ReviewVerification
+): ReviewVerification {
+  const rank = (value: ReviewVerification) => REVIEW_VERIFICATION.indexOf(value);
+
+  return rank(a) >= rank(b) ? a : b;
 }
 
 /**
@@ -358,8 +372,8 @@ export function verificationNote(verification: ReviewVerification): string {
   switch (verification) {
     case 'contract':
       return '인증을 마친 계약 문서가 있어 계약 확인으로 올라갑니다. 증빙을 다시 올리지 않으셔도 됩니다.';
-    case 'receipt':
-      return '인증을 마친 결제 내역이 있어 영수증 확인으로 올라갑니다. 계약서를 인증하시면 계약 확인이 됩니다.';
+    case 'payment':
+      return '결제인증 제보가 있어 결제 확인으로 올라갑니다. 계약서를 인증하시면 계약 확인이 됩니다.';
     case 'unverified':
       return '이 업체의 인증된 문서가 없어 미인증으로 올라갑니다. 후기는 그대로 보이지만 업체 점수에는 들어가지 않습니다.';
   }

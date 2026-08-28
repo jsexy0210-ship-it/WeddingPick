@@ -15,6 +15,7 @@ import {
   reviewReportAcknowledgement,
   reviewVerificationFromQuote,
   shouldRestore,
+  strongerVerification,
   verificationNote,
 } from './review';
 
@@ -59,7 +60,7 @@ describe('누가 무엇에 답하는가', () => {
 });
 
 describe('이용점수', () => {
-  const review = (overall: number, verification: 'unverified' | 'receipt' | 'contract') => ({
+  const review = (overall: number, verification: 'unverified' | 'payment' | 'contract') => ({
     overall,
     verification,
     aspects: { parking: overall },
@@ -82,7 +83,7 @@ describe('이용점수', () => {
   });
 
   it('표본이 모자라면 만들지 않는다', () => {
-    const score = computeUsageScore([review(4, 'contract'), review(5, 'receipt')]);
+    const score = computeUsageScore([review(4, 'contract'), review(5, 'payment')]);
 
     // 후기 두세 건으로 만든 점수는 정보가 아니라 소음이다.
     expect(score.available).toBe(false);
@@ -94,10 +95,10 @@ describe('이용점수', () => {
   it('충분하면 평균과 항목별 점수를 함께 준다', () => {
     const score = computeUsageScore([
       review(4, 'contract'),
-      review(5, 'receipt'),
+      review(5, 'payment'),
       review(3, 'contract'),
       review(4, 'contract'),
-      review(4, 'receipt'),
+      review(4, 'payment'),
     ]);
 
     expect(score.available).toBe(true);
@@ -118,7 +119,7 @@ describe('이용점수', () => {
 
   it('미인증은 점수를 움직이지 않는다', () => {
     expect(countsTowardScore('unverified')).toBe(false);
-    expect(countsTowardScore('receipt')).toBe(true);
+    expect(countsTowardScore('payment')).toBe(true);
     expect(countsTowardScore('contract')).toBe(true);
   });
 });
@@ -139,8 +140,9 @@ describe('이미 인증한 문서로 후기를 확인한다', () => {
     expect(reviewVerificationFromQuote('L4')).toBe('contract');
   });
 
-  it('견적인증이면 영수증 확인까지', () => {
-    expect(reviewVerificationFromQuote('L1')).toBe('receipt');
+  it('견적인증으로는 확인해 주지 않는다', () => {
+    // 견적서를 받은 것과 그 업체를 이용한 것은 다른 일이다.
+    expect(reviewVerificationFromQuote('L1')).toBeNull();
   });
 
   it('미인증 문서로는 올릴 수 없다', () => {
@@ -215,11 +217,20 @@ describe('쓰기 전에 알려주는 말', () => {
   });
 
   it('올릴 방법이 있으면 그 방법을 말한다', () => {
-    expect(verificationNote('receipt')).toContain('계약서를 인증하시면');
+    expect(verificationNote('payment')).toContain('계약서를 인증하시면');
   });
 
   it('미인증이어도 글은 보인다고 말한다', () => {
     expect(verificationNote('unverified')).toContain('그대로 보이지만');
+  });
+});
+
+describe('두 근거가 다 있을 때', () => {
+  it('사람이 심사한 쪽이 이긴다', () => {
+    // 사람이 심사한 것과 기계가 읽고 등록한 것은 무게가 다르다.
+    expect(strongerVerification('payment', 'contract')).toBe('contract');
+    expect(strongerVerification('contract', 'payment')).toBe('contract');
+    expect(strongerVerification('unverified', 'payment')).toBe('payment');
   });
 });
 

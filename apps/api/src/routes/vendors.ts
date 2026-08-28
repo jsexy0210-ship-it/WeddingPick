@@ -1,8 +1,11 @@
 import {
   MAX_COMPARED_VENDORS,
+  PAYMENT_PROOF_CAVEAT,
   PRICE_REPORT_CAVEAT,
+  UNLOCK_REQUIREMENT_NOTE,
   comparisonCaveats,
   computePriceStat,
+  summarizePaidAmounts,
   summarizeReports,
   type PriceSample,
   type VendorCategory,
@@ -11,7 +14,7 @@ import type { FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
 import { z } from 'zod';
 
-import { requireUser } from '../auth/plugin';
+import { optionalUser, optionalUserId } from '../auth/plugin';
 import type { AppContext } from '../context';
 import { ApiError, notFound } from '../errors';
 import { loadUsageScore } from '../review-view';
@@ -106,7 +109,7 @@ function mostCommon(values: string[]): string | null {
  * 상품은 아예 내려보내지 않는다 — 중앙값 없는 상품 이름만 늘어놓으면 화면이 그것을
  * 가격으로 그릴 여지가 생긴다.
  */
-async function loadVendorDetail(pool: Pool, vendorId: string) {
+async function loadVendorDetail(pool: Pool, vendorId: string, viewerId: string | null) {
   const { rows } = await pool.query<VendorRow>(
     `SELECT v.id, v.name, v.category, v.region, v.source, v.last_verified_at,
             (SELECT count(*) FROM structured.comparable_quotes c WHERE c.vendor_id = v.id)
@@ -119,6 +122,31 @@ async function loadVendorDetail(pool: Pool, vendorId: string) {
 
   if (!vendor) {
     throw notFound('업체');
+  }
+
+  /*
+   * 볼 자격이 있는가. 사업계획서 v3 7번 Level 3.
+   *
+   * 자격을 먼저 보고, 없으면 가격 질의 자체를 하지 않는다. "불러온 뒤 화면에서
+   * 가린다"로 두면 응답에는 값이 실려 나가고, 그건 가린 것이 아니다.
+   */
+  const unlock = viewerId
+    ? await pool.query('SELECT 1 FROM structured.data_unlocks WHERE user_id = $1', [viewerId])
+    : null;
+
+  const unlocked = (unlock?.rows.length ?? 0) > 0;
+
+  if (!unlocked) {
+    return {
+      ...toSummary(vendor),
+      usageScore: await loadUsageScore(pool, vendor.id, vendor.category as VendorCategory),
+      lastVerifiedAt: vendor.last_verified_at.toISOString(),
+      prices: {
+        available: 'locked' as const,
+        productCount: Number(vendor.comparable_quote_count),
+        requirement: UNLOCK_REQUIREMENT_NOTE,
+      },
+    };
   }
 
   const samples = await pool.query<{
@@ -195,19 +223,48 @@ async function loadVendorDetail(pool: Pool, vendorId: string) {
     }))
   );
 
+  /*
+   * 결제인증은 또 따로 읽는다. 계약 중앙값과도, 수기 제보와도 UNION하지 않는다.
+   *
+   * 셋의 근거가 다르다 — 사람이 심사한 계약, 기계가 읽은 결제내역, 그냥 적어준
+   * 숫자. 한 번이라도 합치면 그 뒤로는 어느 숫자가 무엇이었는지 아무도 모른다.
+   */
+  const paid = await pool.query<{ paid_amount: string; paid_at: Date }>(
+    `SELECT paid_amount, paid_at FROM structured.usable_payment_proofs WHERE vendor_id = $1`,
+    [vendor.id]
+  );
+
+  const paidPrice = summarizePaidAmounts(
+    paid.rows.map((row) => ({
+      amount: Number(row.paid_amount),
+      paidAt: row.paid_at.toISOString().slice(0, 7),
+    }))
+  );
+
   return {
     ...toSummary(vendor),
     usageScore: await loadUsageScore(pool, vendor.id, vendor.category as VendorCategory),
-    reportedPrice: reported.available
-      ? { ...reported, caveat: PRICE_REPORT_CAVEAT }
-      : reported,
     lastVerifiedAt: vendor.last_verified_at.toISOString(),
-    products,
+    prices: {
+      available: true as const,
+      products,
+      paidPrice: paidPrice.available
+        ? { ...paidPrice, caveat: PAYMENT_PROOF_CAVEAT }
+        : paidPrice,
+      reportedPrice: reported.available ? { ...reported, caveat: PRICE_REPORT_CAVEAT } : reported,
+    },
   };
 }
 
 export function registerVendorRoutes(app: FastifyInstance, context: AppContext): void {
-  const auth = { preHandler: requireUser(context) };
+  /*
+   * 로그인 없이 본다. 사업계획서 v3 7번 Level 1.
+   *
+   * 앱을 켜자마자 로그인을 요구하면, 무엇을 주는 서비스인지 보기도 전에 계정을
+   * 만들라는 말이 된다. 가격은 여전히 잠겨 있다(Level 3) — 여는 것은 목록·기본정보·
+   * 이용점수까지다.
+   */
+  const auth = { preHandler: optionalUser(context) };
 
   /**
    * 지역 필터 목록.
@@ -260,7 +317,11 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
       );
     }
 
-    const vendors = await Promise.all(unique.map((id) => loadVendorDetail(context.pool, id)));
+    const viewerId = optionalUserId(request);
+
+    const vendors = await Promise.all(
+      unique.map((id) => loadVendorDetail(context.pool, id, viewerId))
+    );
 
     return {
       vendors,
@@ -268,7 +329,7 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
         vendors.map((vendor) => ({
           category: vendor.category,
           region: vendor.region,
-          hasPriceData: vendor.products.length > 0,
+          hasPriceData: vendor.prices.available === true && vendor.prices.products.length > 0,
         }))
       ),
     };
@@ -333,6 +394,6 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
 
   /** A-17 업체 상세. */
   app.get<{ Params: { vendorId: string } }>('/v1/vendors/:vendorId', auth, async (request) =>
-    loadVendorDetail(context.pool, request.params.vendorId)
+    loadVendorDetail(context.pool, request.params.vendorId, optionalUserId(request))
   );
 }

@@ -20,6 +20,10 @@ import {
   inquirySchema,
 } from './inquiries';
 import { registerDeviceRequestSchema, registerDeviceResponseSchema } from './devices';
+import {
+  registerPaymentProofRequestSchema,
+  registerPaymentProofResponseSchema,
+} from './payment-proofs';
 import { createPriceReportRequestSchema, createPriceReportResponseSchema } from './price-reports';
 import {
   plannerDetailSchema,
@@ -321,6 +325,32 @@ export const ENDPOINTS = {
     path: '/v1/reviews/{reviewId}/reports',
     body: createReviewReportRequestSchema,
     response: createReviewReportResponseSchema,
+  },
+
+  /**
+   * 결제인증 등록. 사업계획서 v3 6번.
+   *
+   * **심사가 아니라 등록이다.** `createVerificationRequest`와 다른 경로다 — 사람이
+   * 보지 않고, 문서 등급을 올리지 않으며, 시장 대표가격에도 들어가지 않는다.
+   *
+   * 카드번호를 받을 필드가 없다. 요청 본문에 그럴 자리를 만들지 않았다.
+   */
+  registerPaymentProof: {
+    method: 'POST',
+    path: '/v1/payment-proofs',
+    body: registerPaymentProofRequestSchema,
+    response: registerPaymentProofResponseSchema,
+  },
+
+  /** 내 실제가격 열람 자격. 몇 건 더 내면 열리는지 화면이 말할 수 있어야 한다. */
+  getDataUnlock: {
+    method: 'GET',
+    path: '/v1/me/data-unlock',
+    response: z.object({
+      unlocked: z.boolean(),
+      paymentProofCount: z.int().nonnegative(),
+      retentionHours: z.int().positive(),
+    }),
   },
 
   /**

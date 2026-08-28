@@ -48,10 +48,14 @@ export function registerDocumentRoutes(app: FastifyInstance, context: AppContext
        * 시점에는 아직 정해지지 않았고, 확인과 심사가 끝날 때마다 달라진다.
        * 계산은 originals.document_retention_schedule 뷰가 한다(0018).
        */
+      /*
+       * 종류를 여기서 못박는다. 보관 기간이 이 값으로 갈리므로(0022), 나중에
+       * 정하게 두면 찍어만 두고 등록하지 않은 결제내역이 30일짜리로 남는다.
+       */
       await client.query(
-        `INSERT INTO originals.raw_documents (id, owner_user_id, page_count)
-         VALUES ($1, $2, $3)`,
-        [documentId, userId, body.pages.length]
+        `INSERT INTO originals.raw_documents (id, owner_user_id, page_count, kind)
+         VALUES ($1, $2, $3, $4::original_kind)`,
+        [documentId, userId, body.pages.length, body.kind]
       );
 
       for (const [index, upload] of uploads.entries()) {

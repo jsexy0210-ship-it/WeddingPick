@@ -145,3 +145,33 @@ export async function markAllPiiReviewed(test: TestApp): Promise<void> {
     [reviewer.rows[0]!.id]
   );
 }
+
+/**
+ * 실제가격을 볼 자격을 준다. 사업계획서 v3 7번 Level 3.
+ *
+ * 결제인증 제보를 한 건 넣는다. 가격을 보는 테스트는 이걸 함께 해줘야 실제와
+ * 같아진다 — 실전에서도 자료를 낸 사람만 자료를 본다.
+ */
+export async function unlockPrices(test: TestApp, userId: string): Promise<void> {
+  const vendor = await test.pool.query<{ id: string }>(
+    `INSERT INTO structured.vendors (name, category, region, source)
+     VALUES ('열쇠용 업체 ' || gen_random_uuid(), 'etc', '서울', 'public_data')
+     RETURNING id`
+  );
+
+  await test.pool.query(
+    `INSERT INTO structured.payment_proofs
+       (reporter_user_id, vendor_id, merchant_name, paid_amount, paid_at)
+     VALUES ($1, $2, '열쇠용 결제', 100000, now())`,
+    [userId, vendor.rows[0]!.id]
+  );
+}
+
+/** 로그인하고 실제가격 열람 자격까지 얻는다. 가격을 보는 테스트가 쓴다. */
+export async function signInUnlocked(test: TestApp, subject?: string) {
+  const session = await signInAs(test, subject);
+
+  await unlockPrices(test, session.userId);
+
+  return session;
+}

@@ -15,6 +15,7 @@ import {
   canSubmitReview,
   reviewReportAcknowledgement,
   reviewVerificationFromQuote,
+  strongerVerification,
   verificationNote,
   type ReviewVerification,
   type ReviewerRole,
@@ -25,7 +26,7 @@ import type { FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
 import { z } from 'zod';
 
-import { currentUserId, requireUser } from '../auth/plugin';
+import { currentUserId, optionalUser, optionalUserId, requireUser } from '../auth/plugin';
 import type { AppContext } from '../context';
 import { ApiError, notFound } from '../errors';
 import { loadUsageScore } from '../review-view';
@@ -62,11 +63,18 @@ async function loadVendor(pool: Pool, vendorId: string): Promise<VendorRow> {
  * 확인한 사람은 그 문서를 승인한 심사자를 그대로 이어받는다. 후기 쪽에서 새로
  * 만들지 않는다 — 자동 인증은 없다는 규칙이 여기서도 지켜져야 한다.
  */
+type AuthorVerification = {
+  verification: ReviewVerification;
+  quoteId: string | null;
+  paymentProofId: string | null;
+  verifiedBy: string | null;
+};
+
 async function verificationForAuthor(
   pool: Pool,
   userId: string,
   vendorId: string
-): Promise<{ verification: ReviewVerification; quoteId: string | null; verifiedBy: string | null }> {
+): Promise<AuthorVerification> {
   const { rows } = await pool.query<{
     id: string;
     verification_level: VerificationLevel;
@@ -87,6 +95,21 @@ async function verificationForAuthor(
     [userId, vendorId]
   );
 
+  /*
+   * 결제인증도 확인의 근거가 된다.
+   *
+   * 결제인증이 있으면 그 사람이 그 업체에 돈을 낸 것은 사실이고, "실제로
+   * 이용했다"에는 그것으로 충분하다. 다만 심사가 아니라 등록이라 계약 확인보다
+   * 약하다 — 배지를 나눠 붙인다.
+   */
+  const proof = await pool.query<{ id: string }>(
+    `SELECT id FROM structured.usable_payment_proofs
+     WHERE vendor_id = $2 AND reporter_user_id = $1
+     ORDER BY paid_at DESC
+     LIMIT 1`,
+    [userId, vendorId]
+  );
+
   const best = rows[0];
   const verification = best ? reviewVerificationFromQuote(best.verification_level) : null;
 
@@ -97,11 +120,41 @@ async function verificationForAuthor(
    * 이유는, 나중에 등급을 올리는 다른 길이 생겼을 때 그 길이 조용히 "확인된 후기"를
    * 찍어내지 못하게 하기 위해서다.
    */
+  const fromPayment: AuthorVerification | null = proof.rows[0]
+    ? {
+        verification: 'payment',
+        quoteId: null,
+        paymentProofId: proof.rows[0].id,
+        // 결제인증에는 확인한 사람이 없다. 심사가 아니라 등록이라서다.
+        verifiedBy: null,
+      }
+    : null;
+
   if (!best || !verification || !best.decided_by) {
-    return { verification: 'unverified', quoteId: null, verifiedBy: null };
+    return (
+      fromPayment ?? {
+        verification: 'unverified',
+        quoteId: null,
+        paymentProofId: null,
+        verifiedBy: null,
+      }
+    );
   }
 
-  return { verification, quoteId: best.id, verifiedBy: best.decided_by };
+  const fromQuote: AuthorVerification = {
+    verification,
+    quoteId: best.id,
+    paymentProofId: null,
+    verifiedBy: best.decided_by,
+  };
+
+  if (!fromPayment) return fromQuote;
+
+  // 둘 다 있으면 사람이 심사한 쪽이 이긴다.
+  return strongerVerification(fromQuote.verification, fromPayment.verification) ===
+    fromQuote.verification
+    ? fromQuote
+    : fromPayment;
 }
 
 function encodeCursor(row: { created_at: Date; id: string }): string {
@@ -131,9 +184,11 @@ function decodeCursor(cursor: string): [string, string] | null {
 
 export function registerReviewRoutes(app: FastifyInstance, context: AppContext): void {
   const auth = { preHandler: requireUser(context) };
+  /* 읽기는 로그인 없이. 쓰기·신고는 여전히 로그인이 필요하다(아래 참조). */
+  const open = { preHandler: optionalUser(context) };
 
   /** 신고 사유 목록. 앱에 박아두면 늘릴 때마다 앱을 새로 내야 한다. */
-  app.get('/v1/review-report-reasons', auth, async () => ({
+  app.get('/v1/review-report-reasons', open, async () => ({
     reasons: REPORT_REASONS.map((value) => ({ value, label: REPORT_REASON_LABEL[value] })),
   }));
 
@@ -208,7 +263,7 @@ export function registerReviewRoutes(app: FastifyInstance, context: AppContext):
         throw new ApiError('invalid_request', '이 항목은 물어보지 않은 것입니다.');
       }
 
-      const { verification, quoteId, verifiedBy } = await verificationForAuthor(
+      const { verification, quoteId, paymentProofId, verifiedBy } = await verificationForAuthor(
         context.pool,
         userId,
         vendor.id
@@ -222,10 +277,11 @@ export function registerReviewRoutes(app: FastifyInstance, context: AppContext):
         const created = await client.query<{ id: string }>(
           `INSERT INTO structured.reviews
              (vendor_id, author_user_id, role, overall, title, body, pros, cons,
-              verification, verified_quote_id, verified_at, verified_by)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::review_verification, $10,
+              verification, verified_quote_id, verified_payment_proof_id, verified_at,
+              verified_by)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::review_verification, $10, $11,
                    CASE WHEN $9::review_verification = 'unverified' THEN NULL ELSE now() END,
-                   $11)
+                   $12)
            RETURNING id`,
           [
             vendor.id,
@@ -238,6 +294,7 @@ export function registerReviewRoutes(app: FastifyInstance, context: AppContext):
             body.cons?.trim() || null,
             verification,
             quoteId,
+            paymentProofId,
             verifiedBy,
           ]
         );
@@ -281,9 +338,10 @@ export function registerReviewRoutes(app: FastifyInstance, context: AppContext):
    */
   app.get<{ Params: { vendorId: string } }>(
     '/v1/vendors/:vendorId/reviews',
-    auth,
+    open,
     async (request) => {
-      const userId = currentUserId(request);
+      // 비로그인이면 null. "내가 쓴 글"이 없을 뿐 목록은 그대로 보인다.
+      const userId = optionalUserId(request);
       const query = listQuerySchema.parse(request.query);
       const vendor = await loadVendor(context.pool, request.params.vendorId);
       const after = query.cursor ? decodeCursor(query.cursor) : null;

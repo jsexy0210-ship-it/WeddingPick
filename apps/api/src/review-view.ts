@@ -14,7 +14,7 @@ import type { Pool } from 'pg';
 export async function loadUsageScore(pool: Pool, vendorId: string, category: VendorCategory) {
   const { rows } = await pool.query<{
     overall: number;
-    verification: 'receipt' | 'contract';
+    verification: 'payment' | 'contract';
     aspects: { aspect: string; rating: number }[] | null;
   }>(
     `SELECT s.overall, s.verification,

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { paidPriceSchema } from './payment-proofs';
 import { reportedPriceSchema } from './price-reports';
 import { usageScoreSchema } from './reviews';
 
@@ -54,24 +55,45 @@ export const vendorProductStatSchema = z.object({
   stat: priceStatSchema,
 });
 
+/**
+ * 업체의 가격. **사업계획서 v3 7번 Level 3.**
+ *
+ * 자료를 내놓은 사람이 자료를 본다. 결제인증 제보가 한 건도 없으면 잠긴 채로
+ * 내려가고, 화면은 잠긴 것을 그릴 수밖에 없다 — 잠금을 **판별 유니온**으로 둔
+ * 이유가 이것이다. 필드를 그냥 비워 보내면 화면이 "0원"이나 빈칸을 그릴 여지가
+ * 남고, 언젠가 어느 화면이 그렇게 그린다.
+ *
+ * 세 가격이 한 자리에 있지만 **셋은 서로 다른 숫자다.** 근거가 다르다:
+ * 사람이 심사한 계약(products), 기계가 읽은 결제내역(paidPrice), 그냥 적어준
+ * 숫자(reportedPrice). 배열 하나로 합치지 않는 이유다.
+ */
+export const vendorPricesSchema = z.discriminatedUnion('available', [
+  z.object({
+    available: z.literal(true),
+    /** 계약 중앙값. 사람이 심사한 L2 이상 문서에서만 나온다. */
+    products: z.array(vendorProductStatSchema),
+    /** 이용자가 올린 결제내역에서 읽은 금액. 심사가 아니라 등록이다. */
+    paidPrice: paidPriceSchema,
+    /** 문서 없이 적어준 금액. */
+    reportedPrice: reportedPriceSchema,
+  }),
+  z.object({
+    available: z.literal('locked'),
+    /** 잠긴 채로도 몇 건이 모였는지는 말한다. 빈 곳인지 잠긴 곳인지 알려야 한다. */
+    productCount: z.int().nonnegative(),
+    /** 어떻게 하면 열리는지. 잠갔다고만 하고 방법을 말하지 않으면 파는 것처럼 보인다. */
+    requirement: z.string().min(1),
+  }),
+]);
+
 export const vendorDetailSchema = vendorSummarySchema.extend({
   lastVerifiedAt: z.string().min(1),
-  /** 가격을 보여줄 수 있는 상품들. 비어 있으면 아직 자료가 모이지 않았다는 뜻이다. */
-  products: z.array(vendorProductStatSchema),
-  /**
-   * 이용자가 문서 없이 적어준 금액.
-   *
-   * `products`와 **다른 자리에 둔다.** 하나로 합치지 않는 것이 규칙이라
-   * 계약에서부터 갈라놓는다 — 같은 배열에 넣으면 화면이 둘을 헷갈리고,
-   * 헷갈리면 섞여 나간다(서비스정책서 2번).
-   */
-  reportedPrice: reportedPriceSchema,
+  prices: vendorPricesSchema,
   /**
    * 이용점수. 확인된 후기만 들어간다.
    *
-   * 표본이 모자라면 숫자를 만들지 않고 이유를 준다 — 가격 중앙값과 같은 규칙이다.
-   * 후기 두세 건으로 만든 점수는 정보가 아니라 소음이고, 업체 하나를 망칠 수도
-   * 살릴 수도 있다.
+   * **잠기지 않는다.** Level 1이 후기와 이용점수를 본다(사업계획서 v3 7번) —
+   * 잠기는 것은 가격뿐이다.
    */
   usageScore: usageScoreSchema,
 });
@@ -93,4 +115,5 @@ export type VendorComparisonResponse = z.infer<typeof vendorComparisonResponseSc
 export type VendorSearchResponse = z.infer<typeof vendorSearchResponseSchema>;
 export type VendorRegionsResponse = z.infer<typeof vendorRegionsResponseSchema>;
 export type VendorProductStat = z.infer<typeof vendorProductStatSchema>;
+export type VendorPrices = z.infer<typeof vendorPricesSchema>;
 export type VendorDetail = z.infer<typeof vendorDetailSchema>;

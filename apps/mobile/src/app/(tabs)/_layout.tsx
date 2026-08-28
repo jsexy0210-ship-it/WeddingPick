@@ -41,7 +41,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="capture"
         options={{
-          title: '촬영',
+          title: '제보',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="camera-outline" color={color} size={size} />
           ),

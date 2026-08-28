@@ -9,7 +9,7 @@ import type { FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
 import { z } from 'zod';
 
-import { requireUser } from '../auth/plugin';
+import { optionalUser } from '../auth/plugin';
 import type { AppContext } from '../context';
 import { notFound } from '../errors';
 
@@ -173,7 +173,8 @@ async function loadPlannerDetail(pool: Pool, plannerId: string) {
 }
 
 export function registerPlannerRoutes(app: FastifyInstance, context: AppContext): void {
-  const auth = { preHandler: requireUser(context) };
+  /* Level 1. 공개 근거가 있는 플래너만 나오는 것은 뷰가 이미 막는다(0008). */
+  const auth = { preHandler: optionalUser(context) };
 
   /**
    * 지역 필터 목록.
