@@ -1,4 +1,4 @@
-import type { VendorRegionsResponse, VendorSummary } from '@weddingpick/api-contract';
+import type { PlannerSummary, VendorSummary } from '@weddingpick/api-contract';
 import {
   MAX_COMPARED_VENDORS,
   VENDOR_CATEGORIES,
@@ -10,7 +10,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { listVendorRegions, searchVendors } from '@/api/client';
+import {
+  listPlannerRegions,
+  listVendorRegions,
+  searchPlanners,
+  searchVendors,
+} from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { ActionButton } from '@/components/action-button';
 import { FilterChip } from '@/components/filter-chip';
@@ -25,14 +30,33 @@ const CATEGORY_ORDER: VendorCategory[] = [...VENDOR_CATEGORIES];
 /** 글자를 칠 때마다 서버를 부르지 않는다. */
 const DEBOUNCE_MS = 350;
 
-type Filters = { q: string; category: VendorCategory | null; region: string | null };
+type Mode = 'vendor' | 'planner';
+
+type Filters = {
+  mode: Mode;
+  q: string;
+  category: VendorCategory | null;
+  region: string | null;
+};
+
+/** 플래너는 업체 부속정보가 아니라 독립 비교대상이다. 사업계획서 11번. */
+const MODE_LABEL: Record<Mode, string> = { vendor: '업체', planner: '플래너' };
 
 export default function SearchScreen() {
   const theme = useTheme();
-  const [filters, setFilters] = useState<Filters>({ q: '', category: null, region: null });
+  const [filters, setFilters] = useState<Filters>({
+    mode: 'vendor',
+    q: '',
+    category: null,
+    region: null,
+  });
   // 서버 주소가 없으면 부를 곳도 없다. 처음부터 빈 목록으로 시작한다.
   const [vendors, setVendors] = useState<VendorSummary[] | null>(isServerConfigured ? null : []);
-  const [regions, setRegions] = useState<VendorRegionsResponse['regions']>([]);
+  const [planners, setPlanners] = useState<PlannerSummary[] | null>(isServerConfigured ? null : []);
+  /** 노출 중단 안내. 서버가 결과와 함께 준다. */
+  const [withdrawalNotice, setWithdrawalNotice] = useState<string | null>(null);
+  /** 지역 필터. 모드마다 다른 목록을 쓴다 — 플래너가 없는 지역을 업체 목록으로 띄우지 않는다. */
+  const [regions, setRegions] = useState<{ name: string; count: number }[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,11 +69,20 @@ export default function SearchScreen() {
   useEffect(() => {
     if (!isServerConfigured) return;
 
-    listVendorRegions()
-      .then((response) => setRegions(response.regions))
+    const load =
+      filters.mode === 'vendor'
+        ? listVendorRegions().then((response) =>
+            response.regions.map((region) => ({ name: region.name, count: region.vendorCount }))
+          )
+        : listPlannerRegions().then((response) =>
+            response.regions.map((region) => ({ name: region.name, count: region.plannerCount }))
+          );
+
+    load
+      .then(setRegions)
       // 지역 목록을 못 불러와도 검색은 된다.
       .catch(() => undefined);
-  }, []);
+  }, [filters.mode]);
 
   useEffect(() => {
     if (!isServerConfigured) {
@@ -58,22 +91,37 @@ export default function SearchScreen() {
 
     const id = (requestId.current += 1);
     const timer = setTimeout(() => {
-      searchVendors({
+      const shared = {
         q: filters.q.trim() || undefined,
-        category: filters.category ?? undefined,
         region: filters.region ?? undefined,
-      })
-        .then((response) => {
+      };
+
+      const search =
+        filters.mode === 'vendor'
+          ? searchVendors({ ...shared, category: filters.category ?? undefined }).then(
+              (response) => {
+                setVendors(response.vendors);
+                return response.nextCursor;
+              }
+            )
+          : searchPlanners(shared).then((response) => {
+              setPlanners(response.planners);
+              setWithdrawalNotice(response.withdrawalNotice);
+              return response.nextCursor;
+            });
+
+      search
+        .then((cursor) => {
           if (id !== requestId.current) return;
 
-          setVendors(response.vendors);
-          setNextCursor(response.nextCursor);
+          setNextCursor(cursor);
           setError(null);
         })
         .catch((caught: Error) => {
           if (id !== requestId.current) return;
 
           setVendors([]);
+          setPlanners([]);
           setError(caught.message);
         });
     }, DEBOUNCE_MS);
@@ -86,15 +134,26 @@ export default function SearchScreen() {
     setLoadingMore(true);
 
     try {
-      const response = await searchVendors({
+      const shared = {
         q: filters.q.trim() || undefined,
-        category: filters.category ?? undefined,
         region: filters.region ?? undefined,
         cursor: nextCursor,
-      });
+      };
 
-      setVendors((current) => [...(current ?? []), ...response.vendors]);
-      setNextCursor(response.nextCursor);
+      if (filters.mode === 'vendor') {
+        const response = await searchVendors({
+          ...shared,
+          category: filters.category ?? undefined,
+        });
+
+        setVendors((current) => [...(current ?? []), ...response.vendors]);
+        setNextCursor(response.nextCursor);
+      } else {
+        const response = await searchPlanners(shared);
+
+        setPlanners((current) => [...(current ?? []), ...response.planners]);
+        setNextCursor(response.nextCursor);
+      }
     } catch (caught) {
       setError((caught as Error).message);
     } finally {
@@ -104,6 +163,18 @@ export default function SearchScreen() {
 
   function toggle<K extends 'category' | 'region'>(key: K, value: Filters[K]) {
     setFilters((current) => ({ ...current, [key]: current[key] === value ? null : value }));
+  }
+
+  function switchMode(mode: Mode) {
+    if (mode === filters.mode) return;
+
+    // 결과가 갈아끼워지는 동안 옛 목록을 보여주지 않는다.
+    setVendors(isServerConfigured ? null : []);
+    setPlanners(isServerConfigured ? null : []);
+    setNextCursor(null);
+    setError(null);
+    setRegions([]);
+    setFilters((current) => ({ ...current, mode, category: null, region: null }));
   }
 
   function togglePicked(vendorId: string) {
@@ -121,35 +192,50 @@ export default function SearchScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ThemedView style={styles.header}>
-          <ThemedText type="subtitle">업체 찾기</ThemedText>
+          <ThemedText type="subtitle">{MODE_LABEL[filters.mode]} 찾기</ThemedText>
+
+          <ThemedView style={styles.chips}>
+            {(Object.keys(MODE_LABEL) as Mode[]).map((mode) => (
+              <FilterChip
+                key={mode}
+                role="radio"
+                label={MODE_LABEL[mode]}
+                selected={filters.mode === mode}
+                onPress={() => switchMode(mode)}
+              />
+            ))}
+          </ThemedView>
+
           <TextInput
             style={[styles.input, { color: theme.text, borderColor: theme.border }]}
-            placeholder="업체 이름으로 찾아보세요"
+            placeholder={`${MODE_LABEL[filters.mode]} 이름으로 찾아보세요`}
             placeholderTextColor={theme.textSecondary}
             value={filters.q}
             onChangeText={(text) => setFilters((current) => ({ ...current, q: text }))}
             autoCorrect={false}
             returnKeyType="search"
-            accessibilityLabel="업체 이름 검색"
+            accessibilityLabel={`${MODE_LABEL[filters.mode]} 이름 검색`}
           />
 
-          <ThemedView style={styles.chips}>
-            {CATEGORY_ORDER.map((category) => (
-              <FilterChip
-                key={category}
-                label={VENDOR_CATEGORY_LABEL[category]}
-                selected={filters.category === category}
-                onPress={() => toggle('category', category)}
-              />
-            ))}
-          </ThemedView>
+          {filters.mode === 'vendor' ? (
+            <ThemedView style={styles.chips}>
+              {CATEGORY_ORDER.map((category) => (
+                <FilterChip
+                  key={category}
+                  label={VENDOR_CATEGORY_LABEL[category]}
+                  selected={filters.category === category}
+                  onPress={() => toggle('category', category)}
+                />
+              ))}
+            </ThemedView>
+          ) : null}
 
           {regions.length > 0 ? (
             <ThemedView style={styles.chips}>
               {regions.map((region) => (
                 <FilterChip
                   key={region.name}
-                  label={`${region.name} ${region.vendorCount}곳`}
+                  label={`${region.name} ${region.count}${filters.mode === 'vendor' ? '곳' : '명'}`}
                   selected={filters.region === region.name}
                   onPress={() => toggle('region', region.name)}
                 />
@@ -158,70 +244,133 @@ export default function SearchScreen() {
           ) : null}
         </ThemedView>
 
-        {vendors === null ? (
+        {filters.mode === 'vendor' ? (
+          vendors === null ? (
+            <ActivityIndicator color={theme.tint} style={styles.spinner} />
+          ) : (
+            <FlatList
+              data={vendors}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.list}
+              onEndReached={loadMore}
+              onEndReachedThreshold={0.4}
+              ListEmptyComponent={
+                <ThemedView type="backgroundElement" style={styles.card}>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {!isServerConfigured
+                      ? '이 빌드는 서버에 붙어 있지 않아 업체를 찾을 수 없습니다. 견적서 촬영과 기기 저장은 그대로 쓰실 수 있습니다.'
+                      : error
+                        ? error
+                        : '찾으시는 업체가 아직 등록되지 않았습니다. 견적서를 올리시면 그 업체가 등록될 때 자동으로 이어집니다.'}
+                  </ThemedText>
+                </ThemedView>
+              }
+              ListFooterComponent={
+                loadingMore ? <ActivityIndicator color={theme.tint} style={styles.spinner} /> : null
+              }
+              renderItem={({ item }) => {
+                const chosen = picked.includes(item.id);
+
+                return (
+                  <ThemedView type="backgroundElement" style={styles.card}>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`${item.name} 자세히 보기`}
+                      onPress={() => router.push(`/search/${item.id}`)}>
+                      <ThemedView type="backgroundElement" style={styles.cardBody}>
+                        <ThemedText type="smallBold">{item.name}</ThemedText>
+                        <ThemedText type="small" themeColor="textSecondary">
+                          {VENDOR_CATEGORY_LABEL[item.category]} · {item.region}
+                        </ThemedText>
+                        {/*
+                         * 0건도 숨기지 않는다. "아직 자료가 없다"도 사용자가 알아야 할 사실이고,
+                         * 숨기면 자료가 없는 업체와 싼 업체가 같은 얼굴이 된다.
+                         */}
+                        <ThemedText type="small" themeColor="textSecondary">
+                          {item.comparableQuoteCount === 0
+                            ? '확인된 계약 자료가 아직 없습니다'
+                            : `확인된 계약 ${item.comparableQuoteCount}건`}
+                        </ThemedText>
+                      </ThemedView>
+                    </Pressable>
+
+                    <ThemedView type="backgroundElement" style={styles.pickRow}>
+                      <FilterChip
+                        label={chosen ? '비교에서 빼기' : '비교에 담기'}
+                        selected={chosen}
+                        onPress={() => togglePicked(item.id)}
+                      />
+                    </ThemedView>
+                  </ThemedView>
+                );
+              }}
+            />
+          )
+        ) : planners === null ? (
           <ActivityIndicator color={theme.tint} style={styles.spinner} />
         ) : (
           <FlatList
-            data={vendors}
+            data={planners}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.list}
             onEndReached={loadMore}
             onEndReachedThreshold={0.4}
+            ListHeaderComponent={
+              /*
+               * 검색 결과에 개인 이름이 있는데 왜 있는지, 원하지 않으면 어떻게 하는지
+               * 적어두지 않으면 본인도 다른 사람도 그것을 따져볼 방법이 없다.
+               */
+              withdrawalNotice ? (
+                <ThemedView type="backgroundElement" style={styles.card}>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {withdrawalNotice}
+                  </ThemedText>
+                </ThemedView>
+              ) : null
+            }
             ListEmptyComponent={
               <ThemedView type="backgroundElement" style={styles.card}>
                 <ThemedText type="small" themeColor="textSecondary">
                   {!isServerConfigured
-                    ? '이 빌드는 서버에 붙어 있지 않아 업체를 찾을 수 없습니다. 견적서 촬영과 기기 저장은 그대로 쓰실 수 있습니다.'
+                    ? '이 빌드는 서버에 붙어 있지 않아 플래너를 찾을 수 없습니다.'
                     : error
                       ? error
-                      : '찾으시는 업체가 아직 등록되지 않았습니다. 견적서를 올리시면 그 업체가 등록될 때 자동으로 이어집니다.'}
+                      : '찾으시는 플래너가 아직 없습니다. 공개된 자료에 실려 있거나 본인이 밝힌 플래너만 검색에 나옵니다.'}
                 </ThemedText>
               </ThemedView>
             }
             ListFooterComponent={
               loadingMore ? <ActivityIndicator color={theme.tint} style={styles.spinner} /> : null
             }
-            renderItem={({ item }) => {
-              const chosen = picked.includes(item.id);
-
-              return (
+            renderItem={({ item }) => (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`${item.name} 자세히 보기`}
+                onPress={() => router.push(`/search/planner/${item.id}`)}>
                 <ThemedView type="backgroundElement" style={styles.card}>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`${item.name} 자세히 보기`}
-                    onPress={() => router.push(`/search/${item.id}`)}>
-                    <ThemedView type="backgroundElement" style={styles.cardBody}>
-                      <ThemedText type="smallBold">{item.name}</ThemedText>
-                      <ThemedText type="small" themeColor="textSecondary">
-                        {VENDOR_CATEGORY_LABEL[item.category]} · {item.region}
-                      </ThemedText>
-                      {/*
-                       * 0건도 숨기지 않는다. "아직 자료가 없다"도 사용자가 알아야 할 사실이고,
-                       * 숨기면 자료가 없는 업체와 싼 업체가 같은 얼굴이 된다.
-                       */}
-                      <ThemedText type="small" themeColor="textSecondary">
-                        {item.comparableQuoteCount === 0
-                          ? '확인된 계약 자료가 아직 없습니다'
-                          : `확인된 계약 ${item.comparableQuoteCount}건`}
-                      </ThemedText>
-                    </ThemedView>
-                  </Pressable>
-
-                  <ThemedView type="backgroundElement" style={styles.pickRow}>
-                    <FilterChip
-                      label={chosen ? '비교에서 빼기' : '비교에 담기'}
-                      selected={chosen}
-                      onPress={() => togglePicked(item.id)}
-                    />
-                  </ThemedView>
+                  <ThemedText type="smallBold">{item.name}</ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {[item.vendor?.name ?? '프리랜서', item.regions.join(' · ')]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {item.comparableQuoteCount === 0
+                      ? '확인된 계약 자료가 아직 없습니다'
+                      : `확인된 계약 ${item.comparableQuoteCount}건`}
+                  </ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {item.listingBasis}
+                  </ThemedText>
                 </ThemedView>
-              );
-            }}
+              </Pressable>
+            )}
           />
         )}
 
         <ThemedView style={styles.footer}>
-          {picked.length > 0 ? (
+          {/* 비교는 업체끼리만 한다. 플래너 비교는 아직 없다. */}
+          {filters.mode === 'vendor' && picked.length > 0 ? (
             <>
               <ActionButton
                 variant="primary"
@@ -241,7 +390,7 @@ export default function SearchScreen() {
           ) : (
             <ActionButton
               label="견적서 촬영하기"
-              hint="찾는 업체가 없어도 견적서를 올리면 정리해드립니다"
+              hint={`찾는 ${MODE_LABEL[filters.mode]}가 없어도 견적서를 올리면 정리해드립니다`}
               onPress={() => router.push('/capture')}
             />
           )}

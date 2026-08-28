@@ -9,6 +9,9 @@ import {
   errorResponseSchema,
   createVerificationResponseSchema,
   quoteSchema,
+  plannerDetailSchema,
+  plannerRegionsResponseSchema,
+  plannerSearchResponseSchema,
   vendorComparisonResponseSchema,
   vendorDetailSchema,
   vendorRegionsResponseSchema,
@@ -21,6 +24,9 @@ import {
   type CreateVerificationRequest,
   type CreateVerificationResponse,
   type ErrorCode,
+  type PlannerDetail,
+  type PlannerRegionsResponse,
+  type PlannerSearchResponse,
   type Quote,
   type VendorComparisonResponse,
   type VendorDetail,
@@ -240,4 +246,35 @@ export async function compareVendors(ids: string[]): Promise<VendorComparisonRes
     `/v1/vendors/compare?ids=${ids.map(encodeURIComponent).join(',')}`,
     vendorComparisonResponseSchema
   );
+}
+
+/**
+ * A-16 플래너 검색.
+ *
+ * 공개 근거가 있는 플래너만 내려온다. 조건은 서버의 뷰 안에 있어 앱이 걸러줄 것이 없다.
+ */
+export async function searchPlanners(input: {
+  q?: string;
+  region?: string;
+  cursor?: string;
+}): Promise<PlannerSearchResponse> {
+  const query = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(input)) {
+    if (value) {
+      query.set(key, value);
+    }
+  }
+
+  const suffix = query.size > 0 ? `?${query.toString()}` : '';
+
+  return request(`/v1/planners${suffix}`, plannerSearchResponseSchema);
+}
+
+export async function listPlannerRegions(): Promise<PlannerRegionsResponse> {
+  return request('/v1/planners/regions', plannerRegionsResponseSchema);
+}
+
+export async function getPlanner(plannerId: string): Promise<PlannerDetail> {
+  return request(`/v1/planners/${plannerId}`, plannerDetailSchema);
 }

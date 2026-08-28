@@ -12,6 +12,11 @@ import {
   createUploadRequestSchema,
   createUploadResponseSchema,
 } from './documents';
+import {
+  plannerDetailSchema,
+  plannerRegionsResponseSchema,
+  plannerSearchResponseSchema,
+} from './planners';
 import { confirmFieldsRequestSchema, quoteListResponseSchema, quoteSchema } from './quotes';
 import {
   vendorComparisonResponseSchema,
@@ -177,6 +182,29 @@ export const ENDPOINTS = {
     method: 'GET',
     path: '/v1/vendors/{vendorId}',
     response: vendorDetailSchema,
+  },
+
+  /**
+   * A-16 플래너 검색. 공개 근거가 있는 플래너만 나온다 — 견적서에서 읽어낸 이름은
+   * 검색에 오르지 않는다.
+   */
+  searchPlanners: {
+    method: 'GET',
+    path: '/v1/planners',
+    response: plannerSearchResponseSchema,
+  },
+
+  /** 플래너 지역 필터 목록. 업체 지역과 다르다 — 플래너가 없는 지역은 뜨지 않는다. */
+  listPlannerRegions: {
+    method: 'GET',
+    path: '/v1/planners/regions',
+    response: plannerRegionsResponseSchema,
+  },
+
+  getPlanner: {
+    method: 'GET',
+    path: '/v1/planners/{plannerId}',
+    response: plannerDetailSchema,
   },
 } as const satisfies Record<string, EndpointDefinition>;
 

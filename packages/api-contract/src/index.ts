@@ -5,6 +5,7 @@ export * from './comparison';
 export * from './documents';
 export * from './endpoints';
 export * from './errors';
+export * from './planners';
 export * from './quotes';
 export * from './vendors';
 export * from './verification';

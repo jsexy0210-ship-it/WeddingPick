@@ -1,3 +1,5 @@
+import { withObject } from '@weddingpick/domain';
+
 import type { ErrorCode, ErrorResponse } from '@weddingpick/api-contract';
 
 const STATUS_BY_CODE: Record<ErrorCode, number> = {
@@ -31,6 +33,8 @@ export class ApiError extends Error {
   }
 }
 
-export const notFound = (what: string) => new ApiError('not_found', `${what}을(를) 찾을 수 없습니다.`);
+// "플래너을(를)"처럼 두 조사를 함께 쓰지 않는다. 조사 규칙은 도메인에 있다.
+export const notFound = (what: string) =>
+  new ApiError('not_found', `${withObject(what)} 찾을 수 없습니다.`);
 export const forbidden = () => new ApiError('forbidden', '접근 권한이 없습니다.');
 export const unauthenticated = () => new ApiError('unauthenticated', '로그인이 필요합니다.');
