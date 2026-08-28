@@ -149,13 +149,21 @@ export function reviewVerificationFromQuote(
 }
 
 /**
- * 이용점수.
+ * 이용점수를 만들기 위한 최소 표본. **화면데이터구조 스펙 5.5가 정한 값이다.**
  *
  * 표본이 모자라면 만들지 않는다. 가격 중앙값과 같은 규칙이다(사업계획서 9번) —
- * 후기 두세 건으로 만든 점수는 정보가 아니라 소음이고, 업체 하나를 망칠 수도
- * 살릴 수도 있다.
+ * 몇 건으로 만든 점수는 정보가 아니라 소음이고, 업체 하나를 망칠 수도 살릴 수도 있다.
  */
-export const MINIMUM_REVIEW_COUNT = 3;
+export const MINIMUM_REVIEW_COUNT = 5;
+
+/**
+ * 점수가 없을 때 화면이 쓰는 말.
+ *
+ * 화면데이터구조 스펙 5.5 — 기준에 못 미치면 "데이터 수집 중"으로 적고 **확정 비율을
+ * 내보내지 않는다.** 4건에서 계산한 4.5점을 회색으로 흐려 보여주는 것도 안 된다.
+ * 흐린 숫자도 숫자고, 사람들은 숫자를 읽는다.
+ */
+export const COLLECTING_LABEL = '데이터 수집 중';
 
 export type UsageScore =
   | { available: true; average: number; count: number; byAspect: Record<string, number> }
@@ -174,7 +182,7 @@ export function computeUsageScore(
   if (counted.length < MINIMUM_REVIEW_COUNT) {
     return {
       available: false,
-      reason: `확인된 후기가 ${withSubject(`${MINIMUM_REVIEW_COUNT}건`)} 모여야 점수를 만듭니다.`,
+      reason: `${COLLECTING_LABEL} — 확인된 후기가 ${withSubject(`${MINIMUM_REVIEW_COUNT}건`)} 모여야 점수를 만듭니다.`,
       count: counted.length,
     };
   }

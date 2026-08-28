@@ -1,4 +1,5 @@
 import {
+  COLLECTING_LABEL,
   MINIMUM_REVIEW_COUNT,
   OBJECTION_HOLD_MAX_DAYS,
   REVIEW_CAVEAT,
@@ -86,6 +87,8 @@ describe('이용점수', () => {
     // 후기 두세 건으로 만든 점수는 정보가 아니라 소음이다.
     expect(score.available).toBe(false);
     expect(score.available === false && score.reason).toContain(`${MINIMUM_REVIEW_COUNT}건이`);
+    // 스펙 5.5: 기준에 못 미치면 확정 비율을 내보내지 않는다.
+    expect(score.available === false && score.reason).toContain(COLLECTING_LABEL);
   });
 
   it('충분하면 평균과 항목별 점수를 함께 준다', () => {
@@ -93,12 +96,24 @@ describe('이용점수', () => {
       review(4, 'contract'),
       review(5, 'receipt'),
       review(3, 'contract'),
+      review(4, 'contract'),
+      review(4, 'receipt'),
     ]);
 
     expect(score.available).toBe(true);
     expect(score.available === true && score.average).toBe(4);
     expect(score.available === true && score.byAspect.parking).toBe(4);
-    expect(score.count).toBe(3);
+    expect(score.count).toBe(MINIMUM_REVIEW_COUNT);
+  });
+
+  it('한 건 모자라면 아무 숫자도 내보내지 않는다', () => {
+    // 스펙 5.5: 확정 비율 노출 금지. 흐린 숫자도 숫자고, 사람들은 숫자를 읽는다.
+    const score = computeUsageScore(
+      Array.from({ length: MINIMUM_REVIEW_COUNT - 1 }, () => review(5, 'contract'))
+    );
+
+    expect(score.available).toBe(false);
+    expect(Object.keys(score)).not.toContain('average');
   });
 
   it('미인증은 점수를 움직이지 않는다', () => {
