@@ -32,6 +32,19 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "견적서·계약서를 촬영해 분석하려면 카메라 접근이 필요합니다.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "저장된 견적서·계약서 사진을 불러오려면 사진 접근이 필요합니다."
+        }
       ]
     ],
     "experiments": {

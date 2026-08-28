@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Tabs } from 'expo-router';
+import { Tabs, useSegments } from 'expo-router';
 
 import { useTheme } from '@/hooks/use-theme';
 
@@ -9,6 +9,8 @@ import { useTheme } from '@/hooks/use-theme';
  */
 export default function TabLayout() {
   const theme = useTheme();
+  // 카메라는 전체 화면을 써야 문서를 화면에 맞추기 쉽다.
+  const onCamera = useSegments().includes('camera');
 
   return (
     <Tabs
@@ -16,7 +18,9 @@ export default function TabLayout() {
         headerShown: false,
         tabBarActiveTintColor: theme.tint,
         tabBarInactiveTintColor: theme.tintInactive,
-        tabBarStyle: { backgroundColor: theme.background, borderTopColor: theme.border },
+        tabBarStyle: onCamera
+          ? { display: 'none' }
+          : { backgroundColor: theme.background, borderTopColor: theme.border },
       }}>
       <Tabs.Screen
         name="index"
