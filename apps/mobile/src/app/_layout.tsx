@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
 import { CaptureDraftProvider } from '@/features/capture/capture-draft';
+import { DocumentStoreProvider } from '@/features/documents/document-store';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -16,11 +17,13 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <CaptureDraftProvider>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" />
-        </Stack>
-      </CaptureDraftProvider>
+      <DocumentStoreProvider>
+        <CaptureDraftProvider>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(tabs)" />
+          </Stack>
+        </CaptureDraftProvider>
+      </DocumentStoreProvider>
     </ThemeProvider>
   );
 }

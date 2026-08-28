@@ -1,12 +1,14 @@
 import { router } from 'expo-router';
-import { ScrollView, StyleSheet } from 'react-native';
+import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton } from '@/components/action-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { VerificationBadge } from '@/components/verification-badge';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useCaptureDraft } from '@/features/capture/capture-draft';
+import { useDocumentStore } from '@/features/documents/document-store';
 
 /** 사업계획서 1번의 핵심 경험. 분석 결과가 쌓이기 전까지 홈이 대신 설명한다. */
 const FLOW = [
@@ -22,6 +24,8 @@ const FLOW = [
  */
 export default function HomeScreen() {
   const { pages } = useCaptureDraft();
+  const { sets } = useDocumentStore();
+  const recent = sets.slice(0, 3);
 
   return (
     <ThemedView style={styles.container}>
@@ -75,11 +79,35 @@ export default function HomeScreen() {
 
           <ThemedView style={styles.section}>
             <ThemedText type="smallBold">내 웨딩</ThemedText>
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="small" themeColor="textSecondary">
-                저장된 후보와 견적이 아직 없습니다. 분석한 견적은 여기에 모입니다.
-              </ThemedText>
-            </ThemedView>
+            {recent.length === 0 ? (
+              <ThemedView type="backgroundElement" style={styles.card}>
+                <ThemedText type="small" themeColor="textSecondary">
+                  저장된 후보와 견적이 아직 없습니다. 찍어둔 문서는 여기에 모입니다.
+                </ThemedText>
+              </ThemedView>
+            ) : (
+              <>
+                {recent.map((set) => (
+                  <Pressable key={set.id} onPress={() => router.push(`/wedding/${set.id}`)}>
+                    <ThemedView type="backgroundElement" style={styles.setRow}>
+                      <ThemedView type="backgroundElement" style={styles.setText}>
+                        <ThemedText type="smallBold">{set.label}</ThemedText>
+                        <ThemedText type="small" themeColor="textSecondary">
+                          {set.pages.length}장 · 분석 전
+                        </ThemedText>
+                      </ThemedView>
+                      <VerificationBadge level={set.verificationLevel} />
+                    </ThemedView>
+                  </Pressable>
+                ))}
+                {sets.length > recent.length ? (
+                  <ActionButton
+                    label={`내 웨딩 전체 보기 (${sets.length}건)`}
+                    onPress={() => router.push('/wedding')}
+                  />
+                ) : null}
+              </>
+            )}
           </ThemedView>
         </ScrollView>
       </SafeAreaView>
@@ -129,6 +157,18 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.half,
   },
   flowText: {
+    flex: 1,
+    gap: Spacing.half,
+  },
+  setRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.three,
+    borderRadius: Spacing.three,
+    padding: Spacing.three,
+  },
+  setText: {
     flex: 1,
     gap: Spacing.half,
   },

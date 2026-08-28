@@ -1,14 +1,16 @@
-import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet } from 'react-native';
+import { useState } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton } from '@/components/action-button';
+import { PageThumbnail } from '@/components/page-thumbnail';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useCaptureDraft } from '@/features/capture/capture-draft';
 import type { CapturedPage } from '@/features/capture/types';
+import { useDocumentStore } from '@/features/documents/document-store';
 
 const SOURCE_LABEL: Record<CapturedPage['source'], string> = {
   camera: '촬영',
@@ -22,10 +24,27 @@ function formatSize(bytes?: number) {
 }
 
 /**
- * A-05 문서 확인. 분석에 넘기기 전에 장 단위로 다시 찍거나 뺄 수 있게 한다.
+ * A-05 문서 확인. 저장하기 전에 장 단위로 다시 찍거나 뺄 수 있게 한다.
  */
 export default function ReviewScreen() {
   const { pages, removePage, clearDraft } = useCaptureDraft();
+  const { saveDraft } = useDocumentStore();
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
+    if (saving) return;
+    setSaving(true);
+
+    try {
+      const saved = await saveDraft(pages);
+      clearDraft();
+      router.replace(`/wedding/${saved.id}`);
+    } catch {
+      Alert.alert('저장 실패', '문서를 저장하지 못했습니다. 다시 시도해주세요.');
+    } finally {
+      setSaving(false);
+    }
+  }
 
   if (pages.length === 0) {
     return (
@@ -54,13 +73,7 @@ export default function ReviewScreen() {
         <ScrollView contentContainerStyle={styles.list}>
           {pages.map((page, index) => (
             <ThemedView key={page.id} type="backgroundElement" style={styles.row}>
-              {page.mimeType.startsWith('image/') ? (
-                <Image source={{ uri: page.uri }} style={styles.thumbnail} contentFit="cover" />
-              ) : (
-                <ThemedView type="backgroundSelected" style={[styles.thumbnail, styles.fileIcon]}>
-                  <ThemedText type="code">PDF</ThemedText>
-                </ThemedView>
-              )}
+              <PageThumbnail page={page} />
 
               <ThemedView type="backgroundElement" style={styles.rowText}>
                 <ThemedText type="smallBold">
@@ -89,10 +102,10 @@ export default function ReviewScreen() {
         <ThemedView style={styles.footer}>
           <ActionButton
             variant="primary"
-            label="분석 시작"
-            hint="AI 분석 연결은 다음 단계입니다"
-            disabled
-            onPress={() => {}}
+            label={saving ? '저장 중…' : '내 웨딩에 저장'}
+            hint="AI 분석 연결 전까지는 문서만 보관합니다"
+            disabled={saving}
+            onPress={save}
           />
           <ActionButton label="장 추가하기" onPress={() => router.push('/capture/camera')} />
           <ActionButton
@@ -138,15 +151,6 @@ const styles = StyleSheet.create({
   rowText: {
     flex: 1,
     gap: Spacing.half,
-  },
-  thumbnail: {
-    width: 56,
-    height: 72,
-    borderRadius: Spacing.two,
-  },
-  fileIcon: {
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   footer: {
     gap: Spacing.two,
