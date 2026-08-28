@@ -10,6 +10,7 @@ export * from './planner-listing';
 export * from './policies';
 export * from './policy';
 export * from './retention-alert';
+export * from './review';
 export * from './product';
 export * from './pricing';
 export * from './vendor';
