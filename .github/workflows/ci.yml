@@ -48,3 +48,6 @@ jobs:
 
       - name: Bundle (web)
         run: npm run export:web --workspace @weddingpick/mobile
+
+      - name: Build landing
+        run: npm run build --workspace @weddingpick/web

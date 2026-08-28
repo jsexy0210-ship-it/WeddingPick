@@ -1,3 +1,4 @@
+import { POLICY_DOCUMENTS } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,34 +8,14 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 
-type PolicyStatus = '자문 대기' | '작성 필요' | '초안 게시';
-
-const POLICIES: { title: string; status: PolicyStatus; note: string }[] = [
-  {
-    title: '이용약관',
-    status: '자문 대기',
-    note: '초안은 작성됐지만 법률 자문 전이라 게시하지 않습니다.',
-  },
-  {
-    title: '개인정보처리방침',
-    status: '작성 필요',
-    note: '문서 분석과 배우자 데이터 공유 항목을 포함해 작성해야 합니다.',
-  },
-  {
-    title: '분석 안내',
-    status: '초안 게시',
-    note: '견적서를 어떻게 읽고 무엇을 보장하지 않는지 앱 안에서 안내합니다. 법률 검토 후 확정합니다.',
-  },
-];
-
 /**
  * A-15 정책.
  *
  * 이용약관 초안은 "법률 자문 전 게시 금지"라 앱에 싣지 않는다. 자리와 상태만 두고,
  * 자문이 끝나면 확정본을 여기에 넣는다.
  *
- * 법률검토 문서에서는 "AI 안내"라 부르지만 화면에서는 "분석 안내"로 쓴다 —
- * 사용자가 알아야 할 것은 결과의 성격이지 무엇으로 읽었는지가 아니다.
+ * 목록은 @weddingpick/domain에 있다 — 웹 랜딩이 같은 것을 본다. 한쪽에서만
+ * "게시됨"으로 바뀌면 어느 쪽이 맞는지 아무도 모르게 된다.
  */
 export default function PoliciesScreen() {
   return (
@@ -50,8 +31,8 @@ export default function PoliciesScreen() {
           </ThemedView>
 
           <ThemedView style={styles.list}>
-            {POLICIES.map((policy) => (
-              <ThemedView key={policy.title} type="backgroundElement" style={styles.card}>
+            {POLICY_DOCUMENTS.map((policy) => (
+              <ThemedView key={policy.id} type="backgroundElement" style={styles.card}>
                 <ThemedText type="smallBold">{policy.title}</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
                   {policy.status} · {policy.note}

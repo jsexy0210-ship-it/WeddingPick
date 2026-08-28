@@ -1,0 +1,21 @@
+{
+  "name": "@weddingpick/web",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "tsx src/cli.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@weddingpick/domain": "*"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^22.10.2",
+    "jest": "^30.0.0",
+    "ts-jest": "^29.2.5",
+    "tsx": "^4.19.2",
+    "typescript": "~6.0.3"
+  }
+}

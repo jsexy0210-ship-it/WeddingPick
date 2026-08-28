@@ -4,7 +4,7 @@ import type {
   Quote,
   QuoteDocument,
 } from '@weddingpick/api-contract';
-import { PRICE_JUDGEMENT_LABEL } from '@weddingpick/domain';
+import { ANALYSIS_DISCLAIMER, PRICE_JUDGEMENT_LABEL } from '@weddingpick/domain';
 import { ScrollView, StyleSheet, TextInput, type ViewStyle } from 'react-native';
 
 import { ActionButton } from '@/components/action-button';
@@ -322,7 +322,7 @@ export function AnalysisNotice() {
   return (
     <ThemedView type="backgroundElement" style={styles.notice}>
       <ThemedText type="small" themeColor="textSecondary">
-        분석 결과는 참고용이며 법적 효력이 없습니다. 원본 문서와 다를 경우 원본이 우선합니다.
+        {ANALYSIS_DISCLAIMER}
       </ThemedText>
     </ThemedView>
   );
