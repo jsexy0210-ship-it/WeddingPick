@@ -1,6 +1,7 @@
 import type { ZodType } from 'zod';
 
 import { analysisSchema } from './analyses';
+import { createSessionRequestSchema, createSessionResponseSchema } from './auth';
 import { comparisonResponseSchema } from './comparison';
 import {
   completeUploadResponseSchema,
@@ -13,7 +14,11 @@ import {
   createVerificationResponseSchema,
   verificationRequestSchema,
 } from './verification';
-import { currentUserSchema, weddingDetailSchema } from './weddings';
+import {
+  createWeddingRequestSchema,
+  currentUserSchema,
+  weddingDetailSchema,
+} from './weddings';
 
 export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE';
 
@@ -28,17 +33,32 @@ export type EndpointDefinition = {
 /**
  * API 계약. 서버는 이대로 구현하고 앱은 이대로 부른다.
  *
- * 인증: 토큰 발급 경로는 인증 제공자가 정해져야 확정된다. 나머지 모든 경로는
+ * 인증: `createSession`만 토큰 없이 부른다. 나머지 모든 경로는
  * `Authorization: Bearer <token>`을 요구한다.
  *
  * 오류: 어떤 경로든 실패하면 `errorResponseSchema` 모양으로 답한다.
  */
 export const ENDPOINTS = {
+  /** 로그인. 이 경로만 토큰 없이 부른다. */
+  createSession: {
+    method: 'POST',
+    path: '/v1/auth/sessions',
+    body: createSessionRequestSchema,
+    response: createSessionResponseSchema,
+  },
+
   /** 내 계정과 현재 웨딩. 앱 첫 진입에 한 번. */
   getCurrentUser: {
     method: 'GET',
     path: '/v1/me',
     response: currentUserSchema,
+  },
+
+  createWedding: {
+    method: 'POST',
+    path: '/v1/weddings',
+    body: createWeddingRequestSchema,
+    response: weddingDetailSchema,
   },
 
   getWedding: {

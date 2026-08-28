@@ -23,6 +23,11 @@ export const weddingDetailSchema = weddingSchema.extend({
   members: z.array(weddingMemberSchema).min(1).max(2),
 });
 
+/** 아직 웨딩이 없는 계정이 하나 만든다. 날짜는 나중에 정해도 된다. */
+export const createWeddingRequestSchema = z.object({
+  weddingDate: dateSchema.nullable().optional(),
+});
+
 export const currentUserSchema = z.object({
   userId: idSchema,
   weddingId: idSchema.nullable(),
@@ -30,4 +35,5 @@ export const currentUserSchema = z.object({
 
 export type Wedding = z.infer<typeof weddingSchema>;
 export type WeddingDetail = z.infer<typeof weddingDetailSchema>;
+export type CreateWeddingRequest = z.infer<typeof createWeddingRequestSchema>;
 export type CurrentUser = z.infer<typeof currentUserSchema>;

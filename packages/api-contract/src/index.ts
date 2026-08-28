@@ -1,4 +1,5 @@
 export * from './analyses';
+export * from './auth';
 export * from './common';
 export * from './comparison';
 export * from './documents';
