@@ -57,3 +57,34 @@ describe('기본 제공이어야 하는 항목', () => {
     expect(matchEssentialOption('지방 예식 출장비')).toBeNull();
   });
 });
+
+describe('구간 조항은 위쪽 끝으로 본다', () => {
+  /*
+   * 실제 계약서에서 나온 조항이다 — "예식일 149~60일 전 해제 시 총 비용의 10%".
+   * 기준은 90일 이상이면 계약금 환급이므로, 이 조항은 149~90일 구간에서 더 무겁다.
+   */
+  it('구간의 위쪽 끝에서 차이를 잡는다', () => {
+    expect(comparePenalty({ daysBeforeWedding: 149, contractRate: 0.1 })).toEqual({
+      verdict: 'harsher_than_standard',
+      standardRate: 0,
+      contractRate: 0.1,
+    });
+  });
+
+  it('아래쪽 끝만 보면 같은 조항을 놓친다', () => {
+    // 60일 지점에서는 기준도 10%라 같아 보인다. 그래서 아래쪽 끝을 넣으면 안 된다.
+    expect(comparePenalty({ daysBeforeWedding: 60, contractRate: 0.1 }).verdict).toBe(
+      'within_standard'
+    );
+  });
+
+  it('기준과 같은 구간은 조용히 둔다', () => {
+    // 같은 계약서의 나머지 두 구간은 기준과 정확히 같았다.
+    expect(comparePenalty({ daysBeforeWedding: 59, contractRate: 0.2 }).verdict).toBe(
+      'within_standard'
+    );
+    expect(comparePenalty({ daysBeforeWedding: 29, contractRate: 0.35 }).verdict).toBe(
+      'within_standard'
+    );
+  });
+});
