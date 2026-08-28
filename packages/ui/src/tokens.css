@@ -1,9 +1,20 @@
+/*
+ * 웹 토큰 — Montage (Wanted Design System)를 따른다.
+ *
+ * 색은 theme.ts가 @montage-ui/theme에서 직접 읽으므로 여기 없다. 여기 있는 것은
+ * React Native가 웹에서 var()로 넘기는 글꼴 변수뿐이다.
+ *
+ * Pretendard는 Montage의 글꼴이다. 실제로 싣지 않고 이름만 적어두면 시스템 글꼴로
+ * 떨어지므로, 이 파일이 참조하는 것은 함께 배포되는 pretendard 패키지의 웹폰트다.
+ */
+
+@import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
+
 :root {
-  --font-display:
-    Spline Sans, Inter, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji,
-    Segoe UI Symbol, Noto Color Emoji;
+  --font-sans:
+    'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui,
+    'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
   --font-mono:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
-  --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
   --font-serif: Georgia, 'Times New Roman', serif;
 }

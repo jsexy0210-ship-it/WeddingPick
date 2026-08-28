@@ -20,6 +20,7 @@ export {
   Colors,
   Fonts,
   Spacing,
+  Radius,
   BottomTabInset,
   MaxContentWidth,
   type ThemeColor,
