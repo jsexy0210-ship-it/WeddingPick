@@ -8,7 +8,7 @@ import { ThemedView } from '@/components/themed-view';
 import { VerificationBadge } from '@/components/verification-badge';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useDocumentStore } from '@/features/documents/document-store';
-import { VERIFICATION_LEVELS, VERIFICATION_LEVEL_INFO } from '@/features/verification/levels';
+import { VERIFICATION_LEVELS, VERIFICATION_LEVEL_RULES } from '@weddingpick/domain';
 
 /**
  * A-13 인증 신청.
@@ -45,16 +45,16 @@ export default function VerifyScreen() {
           <ThemedView style={styles.section}>
             <ThemedText type="smallBold">등급 체계</ThemedText>
             {VERIFICATION_LEVELS.map((level) => {
-              const info = VERIFICATION_LEVEL_INFO[level];
+              const rule = VERIFICATION_LEVEL_RULES[level];
 
               return (
                 <ThemedView key={level} type="backgroundElement" style={styles.levelRow}>
                   <VerificationBadge level={level} />
                   <ThemedText type="small" themeColor="textSecondary">
-                    {info.condition}
+                    {rule.condition}
                   </ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
-                    시장 가격 반영: {info.affectsMarketPrice ? '반영' : '미반영'}
+                    시장 가격 반영: {rule.affectsMarketPrice ? '반영' : '미반영'}
                   </ThemedText>
                 </ThemedView>
               );

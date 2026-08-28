@@ -1,24 +1,18 @@
-import {
-  VERIFICATION_LEVELS,
-  VERIFICATION_LEVEL_INFO,
-} from '@/features/verification/levels';
+import { VERIFICATION_LEVELS } from '@weddingpick/domain';
 
-describe('검증 등급', () => {
-  // 서비스정책서 2번: 시장 대표가격은 L2 이상 데이터만 반영한다.
-  it('L2 미만은 시장 가격에 반영하지 않는다', () => {
-    expect(VERIFICATION_LEVEL_INFO.L0.affectsMarketPrice).toBe(false);
-    expect(VERIFICATION_LEVEL_INFO.L1.affectsMarketPrice).toBe(false);
-  });
+import { VERIFICATION_LEVEL_ACCENT } from '@/features/verification/levels';
 
-  it('L2부터 시장 가격에 반영한다', () => {
-    expect(VERIFICATION_LEVEL_INFO.L2.affectsMarketPrice).toBe(true);
-    expect(VERIFICATION_LEVEL_INFO.L3.affectsMarketPrice).toBe(true);
-    expect(VERIFICATION_LEVEL_INFO.L4.affectsMarketPrice).toBe(true);
-  });
-
+describe('검증 등급 표시', () => {
   it('등급마다 서로 다른 색을 쓴다', () => {
-    const accents = VERIFICATION_LEVELS.map((level) => VERIFICATION_LEVEL_INFO[level].accent);
+    const accents = VERIFICATION_LEVELS.map((level) => VERIFICATION_LEVEL_ACCENT[level]);
 
     expect(new Set(accents).size).toBe(VERIFICATION_LEVELS.length);
+  });
+
+  it('모든 등급에 색이 정해져 있다', () => {
+    // 서비스정책서 2번: 등급별 아이콘·색상은 고정한다.
+    for (const level of VERIFICATION_LEVELS) {
+      expect(VERIFICATION_LEVEL_ACCENT[level]).toMatch(/^#[0-9A-Fa-f]{6}$/);
+    }
   });
 });

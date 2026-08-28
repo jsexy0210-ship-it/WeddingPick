@@ -83,6 +83,7 @@ export async function saveDocumentSet(
     id,
     createdAt: createdAt.toISOString(),
     label: formatLabel(createdAt),
+    // AI 문서분류 전이다. 사용자에게 물어보지 않는다 — 제품 원칙 1.
     docType: 'unknown',
     // 분석·인증 전이므로 항상 L0에서 시작한다. 서비스정책서 2번.
     verificationLevel: 'L0',

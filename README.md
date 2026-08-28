@@ -19,8 +19,9 @@
 ## 구조
 
 ```
-apps/mobile/   Expo(React Native) 앱 — Primary Product
-docs/          기획·정책·법률 기준 문서와 제품 명세
+apps/mobile/       Expo(React Native) 앱 — Primary Product
+packages/domain/   앱과 서버가 함께 쓰는 도메인 타입·계산 규칙
+docs/              기획·정책·법률 기준 문서와 제품 명세
 ```
 
 ## 시작하기

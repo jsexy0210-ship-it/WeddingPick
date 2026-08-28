@@ -1,5 +1,5 @@
 import type { CapturedPage } from '@/features/capture/types';
-import type { VerificationLevel } from '@/features/verification/levels';
+import type { DocumentType, VerificationLevel } from '@weddingpick/domain';
 
 /** 저장된 문서 한 장. 촬영 단계의 CapturedPage와 같되 uri가 앱 저장소를 가리킨다. */
 export type StoredPage = CapturedPage;
@@ -15,7 +15,7 @@ export type DocumentSet = {
   /** ISO 8601 */
   createdAt: string;
   label: string;
-  docType: 'unknown';
+  docType: DocumentType;
   verificationLevel: VerificationLevel;
   pages: StoredPage[];
 };
