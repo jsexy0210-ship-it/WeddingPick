@@ -93,6 +93,25 @@ react-native-web은 `<style id="react-native-stylesheet">`를 `<head>`에 넣는
   available"). 디자인 에이전트에 넘기면 이 부품으로 만든 모든 디자인이 깨진다.
   같이 쓰이지 않게 된 `react-native-safe-area-context` peer/dev 의존성도 뺐다.
 
+## 규약 검증 (2026-08-28)
+
+`conventions.md`가 주장하는 이름 27개를 브라우저에서 실제 export에 대조했다.
+`window.WeddingPickUI`의 13개 export, `Colors`의 13개 역할, `Spacing` 7개,
+`Radius` 4개가 하나도 빠지거나 남지 않고 일치한다.
+
+그 과정에서 공백을 하나 메웠다. `useTheme`이 export되는데 규약이 그것을 가르치지
+않고 있었다. 우리 부품 다섯으로는 입력칸·구분선 같은 것을 그릴 수 없어 에이전트가
+직접 그려야 하는데, `useTheme`을 모르면 hex 값을 지어낸다. 앱의 실제 코드
+(`my/contact.tsx`의 TextInput)를 예시로 넣었다.
+
+`--config` 없이 `package-build.mjs`만 돌리지 말 것. 규약은 빌드 때 README에
+꿰매지므로, 드라이버(`resync.mjs`)로 돌려야 업로드할 빌드가 규약을 싣는다.
+
+```
+DS_CHROMIUM_PATH=/opt/pw-browsers/chromium node .ds-sync/resync.mjs \
+  --config .design-sync/config.json --node-modules node_modules --out ds-bundle
+```
+
 ## 아직 못 한 것
 
 **업로드.** 이 세션에서 `DesignSync` 도구가 인가되지 않았다. 도구가 준 안내

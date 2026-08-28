@@ -19,6 +19,48 @@ React Native 컴포넌트입니다. 웹에서는 react-native-web으로 그려�
 라이트/다크 두 모드가 모두 살아 있습니다. 색을 직접 고르지 말고 `ThemedText`의
 `themeColor`, `ThemedView`의 `type`으로 **역할**을 고르면 모드는 알아서 맞습니다.
 
+## 우리 부품으로 안 되는 것을 그릴 때는 useTheme
+
+여기 있는 다섯 부품으로 화면이 다 채워지지는 않습니다. 입력칸, 구분선, 아이콘
+색처럼 직접 그려야 하는 것이 있습니다. **그때 hex 값을 지어내지 마세요.**
+`useTheme()`이 지금 모드에 맞는 색을 줍니다.
+
+```tsx
+import { Spacing, ThemedView, useTheme } from '@weddingpick/ui';
+
+function 검색칸() {
+  const theme = useTheme();
+
+  return (
+    <ThemedView style={{ padding: Spacing.three }}>
+      <TextInput
+        style={{ color: theme.text, borderColor: theme.border, borderWidth: 1 }}
+        placeholderTextColor={theme.textSecondary}
+        placeholder="업체 이름으로 찾아보세요"
+      />
+    </ThemedView>
+  );
+}
+```
+
+쓸 수 있는 색 역할은 이것뿐입니다. 여기 없는 색이 필요하면 그건 새 색이 아니라
+설계가 어긋난 것입니다.
+
+| 역할 | 쓰는 곳 |
+| --- | --- |
+| `text` · `textSecondary` · `textAssistive` | 글자. 뒤로 갈수록 흐리다 |
+| `background` · `backgroundElement` · `backgroundSelected` | 면. 카드는 backgroundElement |
+| `border` | 선 |
+| `tint` · `tintStrong` · `tintInactive` | 강조. 눌리지 않는 것은 tintInactive |
+| `positive` · `cautionary` · `negative` | 상태 |
+
+간격과 둥글기도 `Spacing`·`Radius`에서 고릅니다. `Spacing`은 half·one·two·
+three·four·five·six이고 `Radius`는 small·medium·large·pill입니다. 임의의 숫자를
+쓰면 다른 화면과 어긋납니다.
+
+글꼴은 `Fonts`에 있습니다. 웹에서는 CSS 변수로, 네이티브에서는 시스템 글꼴로
+떨어집니다 — 직접 글꼴 이름을 적지 마세요.
+
 ## ThemedView에는 투명 모드가 없다
 
 `ThemedView`는 언제나 배경색을 칠합니다(`type`을 안 주면 `background` — 밝은 면).
