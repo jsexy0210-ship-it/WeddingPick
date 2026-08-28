@@ -7,12 +7,7 @@ import type {
 import { ANALYSIS_DISCLAIMER, PRICE_JUDGEMENT_LABEL } from '@weddingpick/domain';
 import { ScrollView, StyleSheet, TextInput, type ViewStyle } from 'react-native';
 
-import { ActionButton } from '@/components/action-button';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { VerificationBadge } from '@/components/verification-badge';
-import { Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { ActionButton, Spacing, ThemedText, ThemedView, VerificationBadge, useTheme } from '@weddingpick/ui';
 
 const FIELD_LABEL: Record<string, string> = {
   totalAmount: '계약금액',

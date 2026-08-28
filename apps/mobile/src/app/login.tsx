@@ -6,12 +6,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listAuthProviders, signIn } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
-import { ActionButton } from '@/components/action-button';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
 import { DEV_LOGIN_SECRET, devIdToken } from '@/features/auth/dev-login';
-import { useTheme } from '@/hooks/use-theme';
 
 const PROVIDER_LABEL = {
   apple: 'Apple로 계속하기',

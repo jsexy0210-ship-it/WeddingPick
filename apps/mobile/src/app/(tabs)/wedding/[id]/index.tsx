@@ -2,12 +2,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Alert, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ActionButton } from '@/components/action-button';
+import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView, VerificationBadge } from '@weddingpick/ui';
 import { PageThumbnail } from '@/components/page-thumbnail';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { VerificationBadge } from '@/components/verification-badge';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useDocumentStore } from '@/features/documents/document-store';
 
 function formatDate(iso: string) {

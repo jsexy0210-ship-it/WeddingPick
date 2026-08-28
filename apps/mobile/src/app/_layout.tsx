@@ -1,3 +1,5 @@
+import '@weddingpick/ui/tokens.css';
+
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useRef, useState } from 'react';

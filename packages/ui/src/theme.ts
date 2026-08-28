@@ -1,9 +1,11 @@
 /**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
+ * 디자인 토큰.
+ *
+ * 색은 밝은 모드와 어두운 모드를 짝으로 둔다. 화면은 이 값을 직접 읽지 않고 useTheme으로
+ * 지금 모드에 맞는 쪽을 받는다 — 화면마다 모드를 판단하면 언젠가 한 곳이 어긋난다.
+ *
+ * 웹에서 쓰는 글꼴 변수는 tokens.css가 정의한다.
  */
-
-import '@/global.css';
 
 import { Platform } from 'react-native';
 

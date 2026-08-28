@@ -13,12 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { createInquiry, listMyInquiries } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
-import { ActionButton } from '@/components/action-button';
-import { FilterChip } from '@/components/filter-chip';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { ActionButton, FilterChip, MaxContentWidth, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
 
 function isCategory(value: string | undefined): value is InquiryCategory {
   return (INQUIRY_CATEGORIES as readonly string[]).includes(value ?? '');

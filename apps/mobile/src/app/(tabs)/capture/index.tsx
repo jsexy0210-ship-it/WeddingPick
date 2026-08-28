@@ -3,10 +3,7 @@ import { useState } from 'react';
 import { Alert, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ActionButton } from '@/components/action-button';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
 import { useCaptureDraft } from '@/features/capture/capture-draft';
 import { PermissionDeniedError, pickFromLibrary, pickPdf } from '@/features/capture/pickers';
 import type { CapturedPage } from '@/features/capture/types';

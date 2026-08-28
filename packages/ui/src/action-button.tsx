@@ -1,17 +1,17 @@
 import { Pressable, StyleSheet, type PressableProps } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
-import { Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { ThemedText } from './themed-text';
+import { Spacing } from './theme';
+import { useTheme } from './use-theme';
 
-type Props = Omit<PressableProps, 'children' | 'style'> & {
+export type ActionButtonProps = Omit<PressableProps, 'children' | 'style'> & {
   label: string;
   /** 보조 설명. 라벨 아래 작은 글씨로 붙는다. */
   hint?: string;
   variant?: 'primary' | 'secondary';
 };
 
-export function ActionButton({ label, hint, variant = 'secondary', disabled, ...rest }: Props) {
+export function ActionButton({ label, hint, variant = 'secondary', disabled, ...rest }: ActionButtonProps) {
   const theme = useTheme();
   const isPrimary = variant === 'primary';
 

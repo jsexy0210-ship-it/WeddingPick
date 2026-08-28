@@ -2,11 +2,7 @@ import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ActionButton } from '@/components/action-button';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { VerificationBadge } from '@/components/verification-badge';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView, VerificationBadge } from '@weddingpick/ui';
 import { useDocumentStore } from '@/features/documents/document-store';
 
 /**

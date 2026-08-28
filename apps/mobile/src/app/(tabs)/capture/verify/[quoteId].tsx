@@ -15,13 +15,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { createVerificationRequest, getQuote } from '@/api/client';
-import { ActionButton } from '@/components/action-button';
-import { FilterChip } from '@/components/filter-chip';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { VerificationBadge } from '@/components/verification-badge';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { ActionButton, FilterChip, MaxContentWidth, Spacing, ThemedText, ThemedView, VerificationBadge, useTheme } from '@weddingpick/ui';
 
 /** 화면에 내보낼 문서 이름. 식별자를 그대로 보여주지 않는다. */
 function documentLabel(document: QuoteDocument, index: number): string {

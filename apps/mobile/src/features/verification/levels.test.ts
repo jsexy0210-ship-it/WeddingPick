@@ -1,6 +1,6 @@
 import { VERIFICATION_LEVELS } from '@weddingpick/domain';
 
-import { VERIFICATION_LEVEL_ACCENT } from '@/features/verification/levels';
+import { VERIFICATION_LEVEL_ACCENT } from '@weddingpick/ui';
 
 describe('검증 등급 표시', () => {
   it('등급마다 서로 다른 색을 쓴다', () => {

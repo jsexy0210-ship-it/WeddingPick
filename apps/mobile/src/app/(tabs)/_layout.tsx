@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs, useSegments } from 'expo-router';
 
-import { useTheme } from '@/hooks/use-theme';
+import { useTheme } from '@weddingpick/ui';
 
 /**
  * Bottom Navigation: 홈 | 검색 | 촬영 | 내 웨딩 | MY

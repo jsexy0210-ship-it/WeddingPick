@@ -18,11 +18,7 @@ import {
   unlinkPartner,
 } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
-import { ActionButton } from '@/components/action-button';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
 
 /** "8월 31일 오후 3시" — 초대가 언제까지 살아 있는지. */
 function formatDeadline(timestamp: string): string {

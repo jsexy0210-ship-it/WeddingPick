@@ -2,10 +2,7 @@ import { router } from 'expo-router';
 import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ActionButton } from '@/components/action-button';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
 import { QuoteResultView } from '@/features/quotes/quote-result-view';
 import { SAMPLE_COMPARISON, SAMPLE_QUOTE } from '@/features/sample/sample-quote';
 

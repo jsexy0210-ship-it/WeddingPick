@@ -1,11 +1,11 @@
 import { Pressable, StyleSheet } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { ThemedText } from './themed-text';
+import { ThemedView } from './themed-view';
+import { Spacing } from './theme';
+import { useTheme } from './use-theme';
 
-type Props = {
+export type FilterChipProps = {
   label: string;
   selected: boolean;
   onPress: () => void;
@@ -14,7 +14,7 @@ type Props = {
 };
 
 /** 눌러서 켜고 끄는 작은 조건 단추. 검색 필터와 증빙 종류 선택이 같은 것을 쓴다. */
-export function FilterChip({ label, selected, onPress, role = 'checkbox' }: Props) {
+export function FilterChip({ label, selected, onPress, role = 'checkbox' }: FilterChipProps) {
   const theme = useTheme();
 
   return (

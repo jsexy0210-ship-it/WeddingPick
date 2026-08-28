@@ -5,12 +5,8 @@ import { ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { confirmFields, getComparison, getQuote } from '@/api/client';
-import { ActionButton } from '@/components/action-button';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
 import { AnalysisNotice, QuoteResultView } from '@/features/quotes/quote-result-view';
-import { useTheme } from '@/hooks/use-theme';
 
 /** A-08 분석 결과 + A-07 확인 단계 + A-09 가격 비교. */
 export default function ResultScreen() {

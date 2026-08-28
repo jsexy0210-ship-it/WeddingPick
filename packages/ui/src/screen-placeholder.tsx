@@ -1,18 +1,18 @@
 import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { ThemedText } from './themed-text';
+import { ThemedView } from './themed-view';
+import { MaxContentWidth, Spacing } from './theme';
 
-type Props = {
+export type ScreenPlaceholderProps = {
   title: string;
   /** 이 화면이 무엇을 하게 될지 사용자에게 하는 설명 */
   summary: string;
 };
 
 /** 아직 준비 중인 화면 자리. 실제 화면이 붙으면 이 컴포넌트 사용을 지운다. */
-export function ScreenPlaceholder({ title, summary }: Props) {
+export function ScreenPlaceholder({ title, summary }: ScreenPlaceholderProps) {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>

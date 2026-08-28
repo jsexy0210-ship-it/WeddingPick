@@ -3,10 +3,7 @@ import { useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ActionButton } from '@/components/action-button';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
 import { completeOnboarding } from '@/features/onboarding/onboarding-state';
 
 /** A-01 온보딩. 마지막 장에서 카메라·사진 권한이 왜 필요한지 미리 알린다. */
