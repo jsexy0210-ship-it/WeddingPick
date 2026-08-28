@@ -1,22 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useReducer, type ReactNode } from 'react';
 
+import { captureReducer } from '@/features/capture/capture-reducer';
 import type { CapturedPage } from '@/features/capture/types';
-
-type Action =
-  | { type: 'add'; pages: CapturedPage[] }
-  | { type: 'remove'; id: string }
-  | { type: 'clear' };
-
-function reducer(pages: CapturedPage[], action: Action): CapturedPage[] {
-  switch (action.type) {
-    case 'add':
-      return [...pages, ...action.pages];
-    case 'remove':
-      return pages.filter((page) => page.id !== action.id);
-    case 'clear':
-      return [];
-  }
-}
 
 type CaptureDraftValue = {
   pages: CapturedPage[];
@@ -33,7 +18,7 @@ const CaptureDraftContext = createContext<CaptureDraftValue | null>(null);
  * 서버 저장은 아직 없다 — 앱을 닫으면 사라진다.
  */
 export function CaptureDraftProvider({ children }: { children: ReactNode }) {
-  const [pages, dispatch] = useReducer(reducer, []);
+  const [pages, dispatch] = useReducer(captureReducer, []);
 
   const addPages = useCallback((next: CapturedPage[]) => dispatch({ type: 'add', pages: next }), []);
   const removePage = useCallback((id: string) => dispatch({ type: 'remove', id }), []);

@@ -24,5 +24,8 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Test
+        run: npm test
+
       - name: Bundle (web)
         run: npm run export:web --workspace @weddingpick/mobile

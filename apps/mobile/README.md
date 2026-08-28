@@ -16,16 +16,18 @@ Expo Go 또는 개발 빌드에서 QR로 연결한다. `npm run ios` / `npm run 
 ```bash
 npm run typecheck --workspace @weddingpick/mobile
 npm run lint --workspace @weddingpick/mobile
+npm test --workspace @weddingpick/mobile             # jest-expo
 npm run export:web --workspace @weddingpick/mobile   # 번들이 실제로 빌드되는지 확인
 ```
 
-셋 다 CI에서 돈다.
+넷 다 CI에서 돈다. 테스트는 화면이 아니라 규칙을 지키는 로직에 붙였다 — 촬영 draft 순서, 저장 시 등급이 항상 L0인지, 검증 등급의 시장가격 반영 기준(L2 이상), 저장 형식이 깨졌을 때의 동작.
 
 ## 구조
 
 ```
 src/app/                     expo-router 파일 기반 라우팅
-  _layout.tsx                루트 Stack + 테마 + 촬영 draft Provider
+  _layout.tsx                루트 Stack + 테마 + Provider + 온보딩 분기
+  onboarding.tsx             A-01 온보딩 (첫 실행에만)
   (tabs)/_layout.tsx         Bottom Navigation (홈 | 검색 | 촬영 | 내 웨딩 | MY)
   (tabs)/index.tsx           A-03 홈 — 촬영 CTA + 최근 분석·내 웨딩 요약
   (tabs)/search.tsx          A-16 검색 (Phase 2)
@@ -39,6 +41,7 @@ src/app/                     expo-router 파일 기반 라우팅
 src/features/capture/        촬영 흐름 상태와 사진·PDF 선택
 src/features/documents/      기기에 저장된 문서 묶음
 src/features/verification/   검증 등급 L0~L4 정의
+src/features/onboarding/     온보딩 완료 여부
 src/components/              공용 컴포넌트
 src/constants/theme.ts       색상·간격·폰트 토큰
 src/hooks/                   테마·색상 스킴 훅
