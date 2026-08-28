@@ -53,8 +53,11 @@ function formatDay(timestamp: string): string {
 /**
  * 원본이 언제 지워지는지. A-12가 요구하는 표시다.
  *
- * 보관 일수가 아직 정해지지 않았다(서비스정책서 미확정 항목). 정해진 척 날짜를
- * 지어내는 대신 정해지지 않았다고 말한다.
+ * 보관 기간은 30일로 정해졌다. 그래도 여기서 30일을 세지 않고 서버가 준 날짜를
+ * 그대로 보여준다 — 앱이 따로 계산하면 정책이 바뀔 때 두 곳이 어긋나고, 화면에
+ * 적힌 날짜와 실제로 지워지는 날이 다른 것이 가장 나쁘다.
+ *
+ * 날짜가 없는 경우는 서버에 올리기 전이거나 보관 기간이 꺼진 환경이다.
  */
 function retentionNote(document: QuoteDocument): string {
   if (document.deletedAt) {
@@ -68,7 +71,7 @@ function retentionNote(document: QuoteDocument): string {
     return `${formatDay(document.retentionUntil)}에 원본이 지워집니다. 정리된 결과는 그대로 남습니다.`;
   }
 
-  return '보관 기간이 아직 정해지지 않았습니다. 정해지면 삭제 예정일을 여기에 표시합니다.';
+  return '아직 삭제 예정일이 정해지지 않았습니다. 정해지면 여기에 표시합니다.';
 }
 
 /** 항목 금액. 범위로 적힌 것은 범위 그대로 보여준다. */

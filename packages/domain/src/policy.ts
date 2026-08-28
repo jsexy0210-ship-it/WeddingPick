@@ -29,3 +29,18 @@ export const PRICING_POLICY = {
    */
   judgementQuantiles: { low: 0.25, similar: 0.75, somewhatHigh: 0.9 },
 } as const;
+
+/**
+ * 원본 문서 보관 정책.
+ *
+ * 서비스정책서 4번의 미확정 항목이었다. **30일로 정해졌다**(2026-08-28).
+ *
+ * 값을 여기 두는 이유는, 환경변수만으로 두면 그것을 빠뜨린 환경이 조용히
+ * 무기한 보관으로 떨어지기 때문이다. 정해지기 전에는 그게 안전한 쪽이었지만,
+ * 정해진 뒤에는 그 자체가 정책 위반이다. 이제 기본값이 정책이고, 환경변수는
+ * 그것을 덮어쓰는 수단이다.
+ */
+export const RETENTION_POLICY = {
+  /** 업로드한 날로부터 며칠까지 원본을 보관하는가. */
+  originalDays: 30,
+} as const;

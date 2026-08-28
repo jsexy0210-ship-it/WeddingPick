@@ -1,3 +1,4 @@
+import { RETENTION_POLICY } from '@weddingpick/domain';
 import { migrate } from '@weddingpick/db';
 import type { FastifyInstance } from 'fastify';
 import { Client, Pool } from 'pg';
@@ -37,6 +38,7 @@ export async function createTestApp(): Promise<TestApp> {
     corsOrigins: [],
     retentionMode: 'manual',
     retentionReminderHours: 24,
+    originalRetentionDays: RETENTION_POLICY.originalDays,
   };
 
   const context: AppContext = {

@@ -1,3 +1,4 @@
+import { RETENTION_POLICY } from './policy';
 import {
   isDeadTokenError,
   isExpoPushToken,
@@ -110,5 +111,13 @@ describe('요약 문구', () => {
 
   it('문제가 없으면 건수만 말한다', () => {
     expect(retentionSummary({ dueCount: 5, attentionCount: 0 })).toBe('파기 예정 5건.');
+  });
+});
+
+describe('보관 정책', () => {
+  it('원본은 30일 보관한다', () => {
+    // 화면·약관·마이그레이션이 모두 이 값을 말한다. 여기서 바꾸면 그 셋도
+    // 함께 고쳐야 한다 — 이 테스트는 그걸 잊지 않게 하려고 있다.
+    expect(RETENTION_POLICY.originalDays).toBe(30);
   });
 });

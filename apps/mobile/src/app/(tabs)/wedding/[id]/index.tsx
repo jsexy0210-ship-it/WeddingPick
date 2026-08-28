@@ -89,8 +89,8 @@ export default function DocumentSetScreen() {
             <ThemedText type="smallBold">보관</ThemedText>
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="small" themeColor="textSecondary">
-                이 문서는 기기 안에만 있습니다. 서버 보관 기간과 원본 파기 기준은 아직 정해지지
-                않았습니다.
+                이 문서는 기기 안에만 있습니다. 서버에 올리시면 원본은 30일 뒤에 지워지고,
+                정리된 결과는 남습니다.
               </ThemedText>
             </ThemedView>
           </ThemedView>

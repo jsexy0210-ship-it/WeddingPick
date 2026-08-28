@@ -160,6 +160,16 @@ export type DueDocument = {
   retentionUntil: Date;
   personalInfoKinds: string[];
   storageKeys: string[];
+  /**
+   * 아직 결론이 나지 않은 인증 신청의 증빙인지.
+   *
+   * 보관 기간(30일)과 인증 심사는 서로 모른다. 심사가 늦어지는 사이 증빙 파일이
+   * 파기 예정일에 닿으면, 지우는 순간 그 신청은 확인할 근거를 잃는다.
+   *
+   * 그렇다고 보관 기간을 늘리지는 않는다 — 그건 정해진 정책이다. 대신 지우는
+   * 사람에게 보인다. 심사를 먼저 끝내든, 그대로 지우든 사람이 정한다.
+   */
+  blocksOpenVerification: boolean;
 };
 
 /** 파기 예정일이 지난 원본. 사람이 지운다. */
@@ -170,6 +180,7 @@ export async function listDueDocuments(pool: Pool): Promise<DueDocument[]> {
     retention_until: Date;
     personal_info_kinds: string[];
     storage_keys: string[] | null;
+    blocks_open_verification: boolean;
   }>(
     `SELECT
        d.id, d.owner_user_id, d.retention_until, d.personal_info_kinds,
@@ -177,7 +188,14 @@ export async function listDueDocuments(pool: Pool): Promise<DueDocument[]> {
          (SELECT array_agg(p.storage_key ORDER BY p.page_index)
             FROM originals.raw_document_pages p WHERE p.raw_document_id = d.id),
          ARRAY[]::text[]
-       ) AS storage_keys
+       ) AS storage_keys,
+       EXISTS (
+         SELECT 1
+           FROM structured.verification_evidence e
+           JOIN structured.verification_requests r ON r.id = e.request_id
+          WHERE e.raw_document_id = d.id
+            AND r.status IN ('received', 'in_review')
+       ) AS blocks_open_verification
      FROM originals.documents_due_for_deletion d
      ORDER BY d.retention_until`
   );
@@ -188,6 +206,7 @@ export async function listDueDocuments(pool: Pool): Promise<DueDocument[]> {
     retentionUntil: row.retention_until,
     personalInfoKinds: row.personal_info_kinds,
     storageKeys: row.storage_keys ?? [],
+    blocksOpenVerification: row.blocks_open_verification,
   }));
 }
 

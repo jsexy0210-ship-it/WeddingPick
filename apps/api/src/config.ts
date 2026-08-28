@@ -1,3 +1,4 @@
+import { RETENTION_POLICY } from '@weddingpick/domain';
 import { z } from 'zod';
 
 const configSchema = z.object({
@@ -16,11 +17,17 @@ const configSchema = z.object({
     z.object({ driver: z.literal('local') }),
   ]),
   /**
-   * 원본 문서 보관 일수. **정해지지 않으면 자동삭제하지 않는다.**
-   * 서비스정책서의 미확정 항목이라 기본값을 두지 않았다 — 임의의 숫자로 남의 계약서를
-   * 지우거나, 반대로 무기한 보관하는 쪽을 조용히 고르지 않으려는 것이다.
+   * 원본 문서 보관 일수. 기본값은 정해진 정책(30일)이다.
+   *
+   * 예전에는 기본값 없이 두었다 — 정해지지 않은 값을 지어내지 않으려던 것이다.
+   * 이제 정해졌으므로 반대가 된다: 환경변수를 빠뜨린 환경이 무기한 보관으로
+   * 떨어지는 것이 정책 위반이다. 값은 도메인의 RETENTION_POLICY 한 곳에 있다.
    */
-  originalRetentionDays: z.coerce.number().int().positive().optional(),
+  originalRetentionDays: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(RETENTION_POLICY.originalDays),
 
   /**
    * 예정일이 된 원본을 누가 지우는가.

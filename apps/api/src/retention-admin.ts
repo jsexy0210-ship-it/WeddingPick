@@ -79,7 +79,9 @@ function describeDue(doc: DueDocument, now: Date): string {
     `${doc.id}  예정일 ${doc.retentionUntil.toISOString().slice(0, 10)}` +
     (overdueDays > 0 ? ` (${overdueDays}일 지남)` : ' (오늘)') +
     `  파일 ${doc.storageKeys.length}개` +
-    (kinds.length > 0 ? `  담긴 것: ${kinds.join(', ')}` : '')
+    (kinds.length > 0 ? `  담긴 것: ${kinds.join(', ')}` : '') +
+    // 지우면 그 신청은 확인할 근거를 잃는다. 지우는 사람이 알고 정해야 한다.
+    (doc.blocksOpenVerification ? '\n      ⚠ 심사 중인 인증 신청의 증빙이다' : '')
   );
 }
 
@@ -184,6 +186,16 @@ async function main(): Promise<void> {
 
       console.log(retentionSummary({ dueCount: due.length, attentionCount: attention.length }));
       for (const doc of due) console.log(`  ${describeDue(doc, now)}`);
+
+      const blocking = due.filter((doc) => doc.blocksOpenVerification).length;
+
+      if (blocking > 0) {
+        console.log(
+          `\n${blocking}건은 아직 결론이 나지 않은 인증 신청의 증빙이다. 지우면 그 신청은` +
+            '\n확인할 근거를 잃는다. 먼저 심사를 끝내려면: npm run verifications -- --list'
+        );
+      }
+
       console.log('\n지우려면: npm run retention -- --delete <id>');
       return;
     }
