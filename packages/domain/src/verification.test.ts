@@ -1,5 +1,6 @@
 import {
   VERIFICATION_EVIDENCE_KINDS,
+  canApprove,
   VERIFICATION_EVIDENCE_RULES,
   VERIFICATION_LEVELS,
   affectsMarketPrice,
@@ -47,5 +48,52 @@ describe('인증 증빙', () => {
       expect(VERIFICATION_EVIDENCE_RULES[kind].label).toBeTruthy();
       expect(VERIFICATION_EVIDENCE_RULES[kind].description).toBeTruthy();
     }
+  });
+});
+
+describe('canApprove', () => {
+  const base = {
+    targetLevel: 'L2',
+    currentLevel: 'L0',
+    evidenceKinds: ['contract_document'],
+    reviewerId: 'reviewer',
+    requesterId: 'requester',
+  } as const;
+
+  it('조건이 맞으면 승인할 수 있다', () => {
+    expect(canApprove(base)).toEqual({ ok: true });
+  });
+
+  it('신청자 본인은 심사할 수 없다', () => {
+    const result = canApprove({ ...base, reviewerId: 'requester' });
+
+    expect(result).toEqual({ ok: false, reason: '신청한 본인은 심사할 수 없습니다.' });
+  });
+
+  it('이미 받은 등급은 다시 승인하지 않는다', () => {
+    const result = canApprove({ ...base, currentLevel: 'L3' });
+
+    expect(result.ok).toBe(false);
+    expect(result.ok === false && result.reason).toContain('이용인증');
+  });
+
+  it('목표 등급에 맞는 증빙이 없으면 승인할 수 없다', () => {
+    const result = canApprove({ ...base, evidenceKinds: ['quote_document'] });
+
+    expect(result).toEqual({
+      ok: false,
+      reason: '계약인증에는 계약서가 있어야 합니다. 낸 증빙에 없습니다.',
+    });
+  });
+
+  it('사유의 조사는 앞말을 보고 고른다', () => {
+    // '결제 내역'은 받침이 있어 '이'가 붙는다. '결제 내역가'가 되면 안 된다.
+    const result = canApprove({
+      ...base,
+      targetLevel: 'L4',
+      evidenceKinds: ['contract_document'],
+    });
+
+    expect(result.ok === false && result.reason).toContain('결제 내역이 있어야 합니다');
   });
 });

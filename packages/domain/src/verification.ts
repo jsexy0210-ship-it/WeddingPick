@@ -1,3 +1,5 @@
+import { withSubject } from './korean';
+
 /**
  * 데이터 검증 등급. 사업계획서 26번, 서비스정책서 2번.
  * 배열 순서가 곧 등급 순서다.
@@ -104,3 +106,79 @@ export function requestableLevels(current: VerificationLevel): RequestableLevel[
     (level): level is RequestableLevel => level !== 'L0' && levelRank(level) > levelRank(current)
   );
 }
+
+/** 신청의 처리 상태. DB의 verification_status와 같은 목록이다. */
+export const VERIFICATION_STATUSES = ['received', 'in_review', 'approved', 'rejected'] as const;
+
+export type VerificationStatus = (typeof VERIFICATION_STATUSES)[number];
+
+export const VERIFICATION_STATUS_LABEL: Record<VerificationStatus, string> = {
+  received: '접수됨',
+  in_review: '확인 중',
+  approved: '승인',
+  rejected: '반려',
+};
+
+/**
+ * 심사자가 승인하기 전에 통과해야 하는 것들.
+ *
+ * 신청 접수(A-13)에서 이미 한 번 거른다. 그런데 접수와 승인 사이에는 시간이 있고,
+ * 그 사이에 증빙이 지워지거나 문서 등급이 다른 경로로 오를 수 있다. 승인은
+ * 시장 대표가격에 자료를 넣는 행위라(서비스정책서 2번) 그때 다시 본다.
+ *
+ * 결과를 boolean이 아니라 사유로 돌려주는 이유는, 심사자가 "안 된다"만 보고
+ * 왜인지 몰라 그냥 승인해버리는 일을 막기 위해서다.
+ */
+export type ApprovalCheck = { ok: true } | { ok: false; reason: string };
+
+export function canApprove(input: {
+  targetLevel: RequestableLevel;
+  currentLevel: VerificationLevel;
+  evidenceKinds: readonly VerificationEvidenceKind[];
+  reviewerId: string;
+  requesterId: string;
+}): ApprovalCheck {
+  // 서비스정책서 7번. 자기 증빙을 자기가 확인하는 것은 확인이 아니다.
+  if (input.reviewerId === input.requesterId) {
+    return { ok: false, reason: '신청한 본인은 심사할 수 없습니다.' };
+  }
+
+  if (isAtLeast(input.currentLevel, input.targetLevel)) {
+    return {
+      ok: false,
+      reason: `이 문서는 이미 ${VERIFICATION_LEVEL_RULES[input.currentLevel].label}입니다.`,
+    };
+  }
+
+  if (!hasRequiredEvidence(input.targetLevel, input.evidenceKinds)) {
+    const required = VERIFICATION_EVIDENCE_RULES[REQUIRED_EVIDENCE_KIND[input.targetLevel]].label;
+
+    // '결제 내역가'가 되지 않도록 조사는 앞말을 보고 고른다.
+    return {
+      ok: false,
+      reason:
+        `${VERIFICATION_LEVEL_RULES[input.targetLevel].label}에는 ` +
+        `${withSubject(required)} 있어야 합니다. 낸 증빙에 없습니다.`,
+    };
+  }
+
+  return { ok: true };
+}
+
+/** 심사 이력에 남는 일들. DB의 verification_event_kind와 같은 목록이다. */
+export const VERIFICATION_EVENT_KINDS = [
+  'received',
+  'review_started',
+  'approved',
+  'rejected',
+] as const;
+
+export type VerificationEventKind = (typeof VERIFICATION_EVENT_KINDS)[number];
+
+/** 이력을 사람이 읽는 말로. 심사자에게도 enum 값을 그대로 보이지 않는다. */
+export const VERIFICATION_EVENT_LABEL: Record<VerificationEventKind, string> = {
+  received: '접수',
+  review_started: '심사 시작',
+  approved: '승인',
+  rejected: '반려',
+};

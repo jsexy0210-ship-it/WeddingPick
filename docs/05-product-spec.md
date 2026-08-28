@@ -491,7 +491,64 @@ npm run inquiries --workspace @weddingpick/api -- --answer <id> --by <user-id> \
 
 ---
 
-## 14. 열린 질문 (원본 문서의 미확정 항목 + 개발 관점 추가)
+## 14. 인증 심사 (A-13의 뒷면)
+
+A-13은 신청을 **접수만** 한다. 등급은 사람이 증빙을 보고 나서야 오른다
+(서비스정책서 7번). 그 "사람이 보는" 자리가 없으면 신청은 쌓이기만 하고
+L1~L4는 영원히 붙지 않는다. 시장 대표가격은 L2 이상만 쓰므로, 심사가 없으면
+가격 비교 자체가 서지 않는다.
+
+### 도구
+
+```
+npm run verifications --workspace @weddingpick/api -- --list
+npm run verifications --workspace @weddingpick/api -- --show <id>
+npm run verifications --workspace @weddingpick/api -- --review <id> --by <user-id>
+npm run verifications --workspace @weddingpick/api -- --approve <id> --by <user-id> --note "..."
+npm run verifications --workspace @weddingpick/api -- --reject <id> --by <user-id> --reason "..."
+```
+
+`--by`는 심사한 사람의 사용자 id다. 결론에는 예외 없이 사람이 남는다.
+
+### 승인이 통과해야 하는 것
+
+승인은 되돌리기 어렵다 — 등급이 오르는 순간 그 문서는 다른 사람이 보는 중앙값에
+들어간다. 그래서 접수 때 한 번 거른 조건을 승인 직전에 다시 본다
+(`canApprove`, `packages/domain/src/verification.ts`). 접수와 승인 사이에 증빙이
+지워졌거나 문서 등급이 다른 경로로 올랐을 수 있기 때문이다.
+
+| 조건 | 막는 것 |
+| --- | --- |
+| 심사자 ≠ 신청자 | 자기 증빙을 자기가 확인하는 것 |
+| 목표 등급에 맞는 증빙이 있다 | 계약인증(L2)에 견적서만 내고 통과하는 것 |
+| 이미 그 등급이 아니다 | 심사자가 헛일하는 것 |
+
+세 조건은 도메인 코드와 DB 제약 양쪽에 있다. 도구를 거치지 않고 SQL로 직접
+건드려도 스키마가 막는다.
+
+### 스키마가 지키는 것 (0011)
+
+- `decision_has_reviewer_who_is_not_the_requester` — 승인이든 반려든 결론에는
+  신청자가 **아닌** 심사자가 남는다.
+
+  0002의 `approved_is_not_self_service`는 이름이 "self service가 아니다"이고
+  주석이 "자동승인을 스키마에서 막는다"였는데, 실제로 검사한 것은
+  `decided_by IS NOT NULL` 하나였다. 신청자가 자기 id를 넣으면 그대로 통과했다.
+  이름이 약속한 것을 제약이 지키지 않고 있었고, 0011에서 바로잡았다.
+- `structured.verification_events` — 접수·심사 시작·승인·반려가 남는다.
+  접수는 트리거가 자동으로 남기므로 사람이 잊어서 비는 일이 없다. 나머지는
+  `human_action_has_actor`가 사람을 요구한다.
+- `structured.pending_verification_requests` — 심사가 필요한 신청을 목표 등급과
+  **실제로 낸 증빙**과 함께 보여준다. 심사자가 봐야 하는 것은 신청 한 줄이 아니라
+  그 둘이 맞는지다.
+
+### 아직 없는 것
+
+**심사자가 누구인가.** 도구는 사용자 id를 받을 뿐, 그 사람이 심사 권한이 있는지
+확인하지 않는다. 지금은 서버에 접근할 수 있는 사람만 이 명령을 돌릴 수 있다는
+것이 유일한 통제다. 운영 인력이 정해지면 역할을 스키마에 넣어야 한다.
+
+## 15. 열린 질문 (원본 문서의 미확정 항목 + 개발 관점 추가)
 
 원본 문서에서 넘어온 것:
 - [ ] 원본 문서 보관 기간 (일수) — **가장 급하다.** 정해지기 전에는 `ORIGINAL_RETENTION_DAYS`가 비어 자동삭제가 돌지 않고, A-12는 "보관 기간이 아직 정해지지 않았습니다"라고 말한다
@@ -502,7 +559,7 @@ npm run inquiries --workspace @weddingpick/api -- --answer <id> --by <user-id> \
 개발 착수를 위해 추가로 필요한 것:
 - [x] 백엔드·호스팅·인증 확정 (5번) — 국내 리전 + 상시 구동 TypeScript 서버 + PostgreSQL + Apple/Kakao
 - [ ] Apple·Kakao 클라이언트 ID — 나오기 전까지 A-02는 서버가 켜둔 개발용 경로만 보여준다
-- [ ] 인증 심사 운영 — 접수는 되지만 증빙을 누가 언제 확인하는지가 없다. 신청이 쌓이기 시작하면 이것부터 필요하다
+- [x] 인증 심사 운영 — 사람이 결론을 내는 도구가 생겼다(14번). 심사자가 누구인지는 여전히 정해야 한다 (운영 인력 배치)
 - [ ] 중앙값 노출 최소 표본 수 — **잠정 5건**으로 구현됨
 - [ ] 가격 판단 4단계 임계값 — **잠정 p25 / p75 / p90**으로 구현됨
 
