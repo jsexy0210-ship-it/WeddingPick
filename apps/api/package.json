@@ -13,7 +13,8 @@
     "analysis:eval": "tsx src/analysis-eval.ts",
     "public-data:import": "tsx src/public-data-import.ts",
     "inquiries": "tsx src/inquiry-admin.ts",
-    "verifications": "tsx src/verification-admin.ts"
+    "verifications": "tsx src/verification-admin.ts",
+    "retention": "tsx src/retention-admin.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",

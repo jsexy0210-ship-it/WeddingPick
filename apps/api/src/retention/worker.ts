@@ -87,3 +87,68 @@ export async function listFailedDeletions(pool: Pool): Promise<{ id: string; att
 
   return rows.map((row) => ({ id: row.id, attempts: row.delete_attempts }));
 }
+
+export type AttentionReason = 'delete_failed' | 'unreachable';
+
+export type AttentionDocument = {
+  id: string;
+  ownerUserId: string;
+  retentionUntil: Date;
+  attempts: number;
+  personalInfoKinds: string[];
+  reason: AttentionReason;
+};
+
+/**
+ * 사람 손이 필요한 원본 전부. 서비스정책서 4번의 수동 처리 대상이다.
+ *
+ * 두 가지가 섞여 있다. 지우려다 실패한 것(delete_failed)과, 삭제 작업이 아예
+ * 집어가지 못하는 것(unreachable — 페이지 기록이 없어 목록에 오르지 않는다).
+ * 후자는 실패조차 하지 않으므로 delete_attempts로는 드러나지 않는다.
+ */
+export async function listRetentionAttention(pool: Pool): Promise<AttentionDocument[]> {
+  const { rows } = await pool.query<{
+    id: string;
+    owner_user_id: string;
+    retention_until: Date;
+    delete_attempts: number;
+    personal_info_kinds: string[];
+    reason: AttentionReason;
+  }>(
+    `SELECT id, owner_user_id, retention_until, delete_attempts, personal_info_kinds, reason
+     FROM originals.retention_attention
+     ORDER BY retention_until`
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    ownerUserId: row.owner_user_id,
+    retentionUntil: row.retention_until,
+    attempts: row.delete_attempts,
+    personalInfoKinds: row.personal_info_kinds,
+    reason: row.reason,
+  }));
+}
+
+/**
+ * 삭제 작업이 집어가지 못하던 문서를 집어갈 수 있게 만든다.
+ *
+ * 페이지 기록이 없다는 것은 지울 파일을 우리가 모른다는 뜻이다. 파일이 어딘가
+ * 남아 있을 수 있으므로 "지웠다"고 기록하는 것은 거짓말이 된다. 대신
+ * delete_failed로 표시해 목록에 남기고, 스토리지를 사람이 직접 확인하게 한다.
+ *
+ * 이 함수는 되돌릴 수 있는 것만 한다 — 어떤 파일도 지우지 않고, 어떤 문서도
+ * 지워졌다고 기록하지 않는다.
+ */
+export async function markUnreachableForReview(pool: Pool): Promise<number> {
+  // 이미 목록에 올라 있는 것은 건드리지 않는다. 안 그러면 아무것도 하지 않고도
+  // "올렸다"고 말하게 되고, 운영자는 매번 새 문제가 생긴 줄 안다.
+  const { rowCount } = await pool.query(
+    `UPDATE originals.raw_documents
+     SET status = 'delete_failed'
+     WHERE id IN (SELECT id FROM originals.unreachable_expired_documents)
+       AND status <> 'delete_failed'`
+  );
+
+  return rowCount ?? 0;
+}

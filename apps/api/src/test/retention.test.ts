@@ -1,4 +1,9 @@
-import { listFailedDeletions, sweepExpiredDocuments } from '../retention/worker';
+import {
+  listFailedDeletions,
+  listRetentionAttention,
+  markUnreachableForReview,
+  sweepExpiredDocuments,
+} from '../retention/worker';
 import type { LocalStorage } from '../storage/local';
 import type { Storage } from '../storage/port';
 import { createTestApp, resetDatabase, type TestApp } from './helpers';
@@ -162,5 +167,120 @@ describeWithDb('원본 자동삭제', () => {
 
     expect(second.deleted).toBe(1);
     expect((await documentStatus(documentId)).status).toBe('deleted');
+  });
+});
+
+/**
+ * 서비스정책서 4번: 자동삭제 실패에는 알림과 수동 처리가 따라야 한다.
+ *
+ * 여기서 지키는 것은 "조용히 남지 않는다"이다. 개인정보가 보관 기간을 넘겨
+ * 남아 있는데 아무도 모르는 상태가 가장 나쁘다.
+ */
+describeWithDb('보관 점검', () => {
+  beforeAll(async () => {
+    await resetDatabase();
+    test = await createTestApp();
+  });
+
+  afterAll(async () => {
+    await test?.close();
+  });
+
+  beforeEach(resetDatabase);
+
+  /** 페이지 기록이 없는 문서. 삭제 작업이 집어가지 못한다. */
+  async function seedPagelessDocument(retentionUntil: string) {
+    const user = await test.pool.query<{ id: string }>(
+      'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
+    );
+
+    const document = await test.pool.query<{ id: string }>(
+      `INSERT INTO originals.raw_documents
+         (owner_user_id, page_count, retention_until, personal_info_kinds)
+       VALUES ($1, 1, $2, ARRAY['resident_number']) RETURNING id`,
+      [user.rows[0]!.id, retentionUntil]
+    );
+
+    return document.rows[0]!.id;
+  }
+
+  it('페이지 기록이 없으면 삭제 작업이 집어가지 못한다', async () => {
+    await seedPagelessDocument('2020-01-01');
+
+    const { rows } = await test.pool.query('SELECT 1 FROM originals.expired_documents');
+
+    // 정규 삭제 목록에는 없다 — 이게 조용히 남는 이유다.
+    expect(rows).toHaveLength(0);
+  });
+
+  it('집어가지 못하는 문서도 점검 목록에는 올라온다', async () => {
+    const documentId = await seedPagelessDocument('2020-01-01');
+
+    const attention = await listRetentionAttention(test.pool);
+
+    expect(attention).toHaveLength(1);
+    expect(attention[0]!.id).toBe(documentId);
+    expect(attention[0]!.reason).toBe('unreachable');
+    // 무엇이 남아 있는지 알아야 얼마나 급한지 판단할 수 있다.
+    expect(attention[0]!.personalInfoKinds).toEqual(['resident_number']);
+  });
+
+  it('삭제에 실패한 문서도 같은 목록에 올라온다', async () => {
+    const { documentId } = await seedDocument('2020-01-01');
+
+    await test.pool.query(
+      `UPDATE originals.raw_documents SET status = 'delete_failed', delete_attempts = 3
+       WHERE id = $1`,
+      [documentId]
+    );
+
+    const attention = await listRetentionAttention(test.pool);
+
+    expect(attention).toEqual([
+      expect.objectContaining({ id: documentId, reason: 'delete_failed', attempts: 3 }),
+    ]);
+  });
+
+  it('보관 기간이 남은 문서는 점검 목록에 오지 않는다', async () => {
+    await seedPagelessDocument('2999-01-01');
+
+    expect(await listRetentionAttention(test.pool)).toHaveLength(0);
+  });
+
+  it('처리 목록에 올려도 한 문서는 한 줄로만 센다', async () => {
+    await seedPagelessDocument('2020-01-01');
+
+    expect(await markUnreachableForReview(test.pool)).toBe(1);
+
+    const attention = await listRetentionAttention(test.pool);
+
+    // status는 delete_failed가 됐지만 페이지는 여전히 없다. 두 조건에 모두
+    // 걸리더라도 문서는 하나다 — 건수가 부풀면 운영자가 문서 수를 셀 수 없다.
+    expect(attention).toHaveLength(1);
+    // 무엇을 해야 하는지를 결정하는 쪽이 남는다: 지울 키를 우리가 모른다.
+    expect(attention[0]!.reason).toBe('unreachable');
+  });
+
+  it('이미 올라간 것을 다시 올리지 않는다', async () => {
+    await seedPagelessDocument('2020-01-01');
+
+    expect(await markUnreachableForReview(test.pool)).toBe(1);
+    // 두 번째는 아무것도 하지 않았다고 말해야 한다. 안 그러면 매번 새 문제가
+    // 생긴 것처럼 보인다.
+    expect(await markUnreachableForReview(test.pool)).toBe(0);
+  });
+
+  it('처리 목록에 올리는 것은 무엇도 지우지 않는다', async () => {
+    const documentId = await seedPagelessDocument('2020-01-01');
+
+    await markUnreachableForReview(test.pool);
+
+    const { rows } = await test.pool.query<{ deleted_at: Date | null }>(
+      'SELECT deleted_at FROM originals.raw_documents WHERE id = $1',
+      [documentId]
+    );
+
+    // 파일을 확인하지 않고 "지웠다"고 적으면 파기 기록이 거짓이 된다.
+    expect(rows[0]!.deleted_at).toBeNull();
   });
 });
