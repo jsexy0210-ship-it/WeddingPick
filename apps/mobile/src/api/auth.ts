@@ -1,17 +1,13 @@
 import { ApiError, signIn } from '@/api/client';
 import { loadToken } from '@/api/session';
+import { DEV_LOGIN_SECRET, devIdToken } from '@/features/auth/dev-login';
 
 /**
- * 개발용 로그인 비밀값. 설정된 빌드에서만 쓴다.
+ * 서버를 부르기 전에 세션이 있는지 확인한다.
  *
- * EXPO_PUBLIC_* 값은 앱 번들에 그대로 들어간다. 개발 빌드 밖에서는 절대 넣지 말 것.
- * 실제 로그인(Apple·Kakao)이 붙으면 이 경로는 지운다.
+ * 세션이 없으면 부르는 쪽이 A-02 로그인 화면으로 보낸다. 개발 빌드에서는 조용히
+ * 개발용 로그인을 쓴다 — 서버를 붙여 시험하는 데 매번 화면을 거치지 않게.
  */
-const DEV_LOGIN_SECRET = process.env.EXPO_PUBLIC_DEV_LOGIN_SECRET;
-
-let deviceKey: string | undefined;
-
-/** 서버를 부르기 전에 세션이 있는지 확인한다. */
 export async function ensureSignedIn(): Promise<void> {
   if (await loadToken()) {
     return;
@@ -21,6 +17,5 @@ export async function ensureSignedIn(): Promise<void> {
     throw new ApiError('unauthenticated', '로그인이 필요합니다.');
   }
 
-  deviceKey ??= `device-${Date.now()}`;
-  await signIn('apple', `${DEV_LOGIN_SECRET}:${deviceKey}`);
+  await signIn('apple', devIdToken());
 }

@@ -11,10 +11,11 @@ import { useDocumentStore } from '@/features/documents/document-store';
 import { VERIFICATION_LEVELS, VERIFICATION_LEVEL_RULES } from '@weddingpick/domain';
 
 /**
- * A-13 인증 신청.
+ * 확인 단계 안내.
  *
- * 등급 판정은 증빙 재검토가 필요해 서버 몫이다(서비스정책서 2번). 서버가 붙기 전까지는
- * 등급 체계와 현재 상태만 보여주고 접수는 막아둔다.
+ * 여기는 기기에 저장만 해둔 문서를 보는 자리다. 신청은 분석까지 끝난 문서에서만
+ * 할 수 있으므로(증빙이 서버에 있어야 한다) 여기서는 단계가 무엇인지만 알려주고
+ * 분석으로 보낸다.
  */
 export default function VerifyScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -64,10 +65,9 @@ export default function VerifyScreen() {
           <ThemedView style={styles.footer}>
             <ActionButton
               variant="primary"
-              label="인증 신청"
-              hint="자료 확인 절차를 준비하고 있습니다. 곧 신청하실 수 있습니다"
-              disabled
-              onPress={() => {}}
+              label="이 문서 분석하기"
+              hint="분석을 마치면 자료 확인을 신청할 수 있습니다"
+              onPress={() => router.push('/capture')}
             />
             <ActionButton label="돌아가기" onPress={() => router.back()} />
           </ThemedView>

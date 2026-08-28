@@ -1,6 +1,7 @@
 export * from './consumer-standards';
 export * from './data-sources';
 export * from './document';
+export * from './korean';
 export * from './policy';
 export * from './product';
 export * from './pricing';

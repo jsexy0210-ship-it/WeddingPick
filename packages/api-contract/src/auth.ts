@@ -18,5 +18,20 @@ export const createSessionResponseSchema = z.object({
   expiresAt: timestampSchema,
 });
 
+/**
+ * 쓸 수 있는 로그인 방법. 서버가 실제로 무엇을 켜뒀는지 앱이 짐작하지 않게 한다.
+ */
+export const authProviderSchema = z.object({
+  provider: z.enum(['apple', 'kakao']),
+  /** 개발용 대체 경로면 true. 화면이 이 사실을 감추지 않는다. */
+  isDevelopmentStandIn: z.boolean(),
+});
+
+export const authProvidersResponseSchema = z.object({
+  providers: z.array(authProviderSchema),
+});
+
+export type AuthProvider = z.infer<typeof authProviderSchema>;
+export type AuthProvidersResponse = z.infer<typeof authProvidersResponseSchema>;
 export type CreateSessionRequest = z.infer<typeof createSessionRequestSchema>;
 export type CreateSessionResponse = z.infer<typeof createSessionResponseSchema>;

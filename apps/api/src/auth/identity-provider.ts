@@ -8,6 +8,13 @@ export type VerifiedIdentity = {
 };
 
 export type IdentityProvider = {
+  /**
+   * 개발용 대체 경로인지. 실제 제공자 검증이 아니다.
+   *
+   * 앱에 그대로 내려보내 화면에서 "실제 애플 로그인이 아니다"라고 말하게 한다.
+   * 개발용 문을 열어두고 실제 로그인인 척하면, 그 빌드가 어디까지 나가는지 아무도 모른다.
+   */
+  isDevelopmentStandIn?: boolean;
   verify(idToken: string): Promise<VerifiedIdentity>;
 };
 

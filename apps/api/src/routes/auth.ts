@@ -1,11 +1,25 @@
 import { createSessionRequestSchema } from '@weddingpick/api-contract';
 import type { FastifyInstance } from 'fastify';
 
+import type { IdentityProviderName } from '../auth/identity-provider';
 import { signIn, signOut } from '../auth/sessions';
 import type { AppContext } from '../context';
 import { ApiError } from '../errors';
 
 export function registerAuthRoutes(app: FastifyInstance, context: AppContext): void {
+  /**
+   * 쓸 수 있는 로그인 방법.
+   *
+   * 앱이 어느 제공자가 켜져 있는지 짐작하지 않게 한다. 개발용 대체 경로는 그렇다고
+   * 밝힌다 — 개발용 문을 실제 로그인인 척 그려두면 그 빌드가 어디까지 나가는지 모른다.
+   */
+  app.get('/v1/auth/providers', async () => ({
+    providers: (Object.keys(context.providers) as IdentityProviderName[]).sort().map((name) => ({
+      provider: name,
+      isDevelopmentStandIn: Boolean(context.providers[name]?.isDevelopmentStandIn),
+    })),
+  }));
+
   app.post('/v1/auth/sessions', async (request, reply) => {
     const body = createSessionRequestSchema.parse(request.body);
     const provider = context.providers[body.provider];

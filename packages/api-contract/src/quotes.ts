@@ -75,6 +75,19 @@ export const quoteVendorSchema = z.object({
   sourceNote: z.string().nullable(),
 });
 
+/**
+ * 이 문서를 만든 원본 파일. A-12가 원본 삭제 예정일을 보여주는 근거이고,
+ * A-13 인증 신청이 증빙으로 고르는 대상이다.
+ */
+export const quoteDocumentSchema = z.object({
+  rawDocumentId: idSchema,
+  pageCount: z.int().positive(),
+  uploadedAt: timestampSchema,
+  /** 보관 기간이 지나면 원본이 지워진다. 기준 일수가 정해지기 전에는 null. */
+  retentionUntil: timestampSchema.nullable(),
+  deletedAt: timestampSchema.nullable(),
+});
+
 export const quoteSchema = z.object({
   id: idSchema,
   weddingId: idSchema,
@@ -99,6 +112,7 @@ export const quoteSchema = z.object({
   lineItems: z.array(quoteLineItemSchema),
   terms: z.array(contractTermSchema),
   extractionFields: z.array(extractionFieldSchema),
+  documents: z.array(quoteDocumentSchema),
   createdAt: timestampSchema,
   /** 핵심 필드 확인을 마친 시각. null이면 비교·통계에 쓰이지 않는다. */
   confirmedAt: timestampSchema.nullable(),
@@ -125,6 +139,7 @@ export const quoteListResponseSchema = z.object({
 });
 
 export type QuoteVendor = z.infer<typeof quoteVendorSchema>;
+export type QuoteDocument = z.infer<typeof quoteDocumentSchema>;
 export type ExtractionField = z.infer<typeof extractionFieldSchema>;
 export type Quote = z.infer<typeof quoteSchema>;
 export type ConfirmFieldsRequest = z.infer<typeof confirmFieldsRequestSchema>;

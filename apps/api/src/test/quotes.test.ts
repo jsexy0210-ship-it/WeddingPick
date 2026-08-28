@@ -322,6 +322,59 @@ describeWithDb('문서와 비교', () => {
       expect(quote.json().verificationLevel).toBe('L0');
     });
 
+    it('목표 등급에 맞는 증빙이 없으면 접수하지 않는다', async () => {
+      const { headers } = await signInAs(test);
+      const weddingId = await createWedding(test, headers);
+      const { quoteId } = await seedQuote({ weddingId, level: 'L0', confirmed: true });
+
+      const upload = await test.app.inject({
+        method: 'POST',
+        url: '/v1/documents/uploads',
+        headers,
+        payload: { weddingId, pages: [{ mimeType: 'image/jpeg', sizeBytes: 1000 }] },
+      });
+
+      const response = await test.app.inject({
+        method: 'POST',
+        url: `/v1/quotes/${quoteId}/verification-requests`,
+        headers,
+        // 계약인증(L2)에 견적서만 냈다. L2부터 시장가격에 반영되므로 여기서 막는다.
+        payload: {
+          targetLevel: 'L2',
+          evidence: [{ kind: 'quote_document', rawDocumentId: upload.json().rawDocumentId }],
+        },
+      });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json().error.message).toContain('계약서');
+    });
+
+    it('이미 받은 등급은 다시 신청할 수 없다', async () => {
+      const { headers } = await signInAs(test);
+      const weddingId = await createWedding(test, headers);
+      const { quoteId } = await seedQuote({ weddingId, level: 'L2', confirmed: true });
+
+      const upload = await test.app.inject({
+        method: 'POST',
+        url: '/v1/documents/uploads',
+        headers,
+        payload: { weddingId, pages: [{ mimeType: 'image/jpeg', sizeBytes: 1000 }] },
+      });
+
+      const response = await test.app.inject({
+        method: 'POST',
+        url: `/v1/quotes/${quoteId}/verification-requests`,
+        headers,
+        payload: {
+          targetLevel: 'L2',
+          evidence: [{ kind: 'contract_document', rawDocumentId: upload.json().rawDocumentId }],
+        },
+      });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json().error.message).toContain('계약인증');
+    });
+
     it('남의 증빙 문서는 붙일 수 없다', async () => {
       const stranger = await signInAs(test, 'stranger');
       const strangerWedding = await createWedding(test, stranger.headers);

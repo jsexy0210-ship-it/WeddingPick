@@ -42,7 +42,7 @@ async function main() {
     storage:
       config.storage.driver === 's3'
         ? createS3Storage(config.storage)
-        : createLocalStorage(),
+        : createLocalStorage(`http://localhost:${config.port}/dev-storage`),
     providers: {
       ...(config.appleClientId && { apple: createAppleProvider(config.appleClientId) }),
       ...(config.kakaoAppKey && { kakao: createKakaoProvider(config.kakaoAppKey) }),

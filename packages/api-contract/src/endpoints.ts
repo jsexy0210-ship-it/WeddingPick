@@ -1,7 +1,11 @@
 import type { ZodType } from 'zod';
 
 import { analysisSchema } from './analyses';
-import { createSessionRequestSchema, createSessionResponseSchema } from './auth';
+import {
+  authProvidersResponseSchema,
+  createSessionRequestSchema,
+  createSessionResponseSchema,
+} from './auth';
 import { comparisonResponseSchema } from './comparison';
 import {
   completeUploadResponseSchema,
@@ -33,13 +37,19 @@ export type EndpointDefinition = {
 /**
  * API 계약. 서버는 이대로 구현하고 앱은 이대로 부른다.
  *
- * 인증: `createSession`만 토큰 없이 부른다. 나머지 모든 경로는
+ * 인증: `listAuthProviders`와 `createSession`만 토큰 없이 부른다. 나머지 모든 경로는
  * `Authorization: Bearer <token>`을 요구한다.
  *
  * 오류: 어떤 경로든 실패하면 `errorResponseSchema` 모양으로 답한다.
  */
 export const ENDPOINTS = {
-  /** 로그인. 이 경로만 토큰 없이 부른다. */
+  /** 쓸 수 있는 로그인 방법. 토큰 없이 부른다. */
+  listAuthProviders: {
+    method: 'GET',
+    path: '/v1/auth/providers',
+    response: authProvidersResponseSchema,
+  },
+  /** 로그인. 토큰 없이 부른다. */
   createSession: {
     method: 'POST',
     path: '/v1/auth/sessions',

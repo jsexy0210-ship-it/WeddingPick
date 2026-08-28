@@ -38,6 +38,21 @@ export function buildServer(context: AppContext): FastifyInstance {
         .send({ error: { code: 'invalid_request', message: '요청 형식이 올바르지 않습니다.', details } });
     }
 
+    /*
+     * 요청이 잘못된 것은 서버 잘못이 아니다.
+     *
+     * Fastify가 본문 파싱·크기 초과 등에서 붙이는 statusCode를 그대로 쓴다. 이걸
+     * 500으로 뭉개면 클라이언트가 고칠 수 있는 실수를 "잠시 후 다시" 라고 안내하고,
+     * 진짜 장애가 같은 얼굴로 섞인다.
+     */
+    const status = (error as { statusCode?: unknown }).statusCode;
+
+    if (typeof status === 'number' && status >= 400 && status < 500) {
+      return reply
+        .status(status)
+        .send({ error: { code: 'invalid_request', message: '요청 형식이 올바르지 않습니다.' } });
+    }
+
     app.log.error(error);
 
     // 안쪽 사정을 그대로 내보내지 않는다.

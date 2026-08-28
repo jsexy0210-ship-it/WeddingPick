@@ -29,6 +29,16 @@ export const SAMPLE_QUOTE: Quote = {
   verificationLevel: 'L0',
   source: 'ai_extraction',
   createdAt: '2026-05-16T04:00:00Z',
+  documents: [
+    {
+      rawDocumentId: 'sample-document',
+      pageCount: 2,
+      uploadedAt: '2026-05-16T04:00:00Z',
+      // 보관 일수가 정해지면 서버가 넣는다. 샘플은 정해졌을 때의 모습을 보여준다.
+      retentionUntil: '2026-11-16T04:00:00Z',
+      deletedAt: null,
+    },
+  ],
   confirmedAt: '2026-05-16T04:02:00Z',
   lineItems: [
     { id: 's1', kind: 'included', label: '대관료', amount: 8_000_000, amountMin: null, amountMax: null, standardNote: null },

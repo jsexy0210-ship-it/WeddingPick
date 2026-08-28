@@ -45,16 +45,63 @@ describeWithDb('API', () => {
       expect(response.statusCode).toBe(401);
     });
 
-    it('설정되지 않은 제공자로는 로그인할 수 없다', async () => {
-      delete test.context.providers.kakao;
+    it('본문 없는 로그아웃을 500으로 만들지 않는다', async () => {
+      const { headers } = await signInAs(test);
 
+      // 앱이 content-type만 붙이고 본문을 비워 보내던 자리다. 클라이언트 실수를
+      // 500으로 답하면 진짜 장애와 구분되지 않는다.
       const response = await test.app.inject({
-        method: 'POST',
+        method: 'DELETE',
         url: '/v1/auth/sessions',
-        payload: { provider: 'kakao', idToken: 'x' },
+        headers: { ...headers, 'content-type': 'application/json' },
       });
 
-      expect(response.statusCode).toBe(400);
+      expect(response.statusCode).toBeLessThan(500);
+    });
+
+    it('쓸 수 있는 로그인 방법을 토큰 없이 알려준다', async () => {
+      const response = await test.app.inject({ method: 'GET', url: '/v1/auth/providers' });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json().providers).toEqual([
+        { provider: 'apple', isDevelopmentStandIn: false },
+        { provider: 'kakao', isDevelopmentStandIn: false },
+      ]);
+    });
+
+    it('개발용 대체 경로는 그렇다고 밝힌다', async () => {
+      const real = test.context.providers.apple!;
+      test.context.providers.apple = { ...real, isDevelopmentStandIn: true };
+
+      try {
+        const response = await test.app.inject({ method: 'GET', url: '/v1/auth/providers' });
+        const apple = response
+          .json()
+          .providers.find((entry: { provider: string }) => entry.provider === 'apple');
+
+        // 개발용 문을 실제 애플 로그인인 척 그려두면 그 빌드가 어디까지 나가는지 모른다.
+        expect(apple.isDevelopmentStandIn).toBe(true);
+      } finally {
+        test.context.providers.apple = real;
+      }
+    });
+
+    it('설정되지 않은 제공자로는 로그인할 수 없다', async () => {
+      const real = test.context.providers.kakao;
+      delete test.context.providers.kakao;
+
+      try {
+        const response = await test.app.inject({
+          method: 'POST',
+          url: '/v1/auth/sessions',
+          payload: { provider: 'kakao', idToken: 'x' },
+        });
+
+        expect(response.statusCode).toBe(400);
+      } finally {
+        // 지운 채로 두면 뒤따르는 테스트가 없어진 제공자를 쓴다.
+        test.context.providers.kakao = real;
+      }
     });
   });
 

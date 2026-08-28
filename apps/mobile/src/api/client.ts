@@ -1,19 +1,26 @@
 import {
   analysisSchema,
+  authProvidersResponseSchema,
   comparisonResponseSchema,
   completeUploadResponseSchema,
   createSessionResponseSchema,
   createUploadResponseSchema,
   currentUserSchema,
   errorResponseSchema,
+  createVerificationResponseSchema,
   quoteSchema,
+  verificationRequestSchema,
   weddingDetailSchema,
   type Analysis,
   type ComparisonResponse,
+  type AuthProvidersResponse,
+  type CreateVerificationRequest,
+  type CreateVerificationResponse,
   type ErrorCode,
   type Quote,
+  type VerificationRequest,
 } from '@weddingpick/api-contract';
-import type { ZodType } from 'zod';
+import { z, type ZodType } from 'zod';
 
 import { API_URL } from '@/api/config';
 import { clearToken, loadToken, saveToken } from '@/api/session';
@@ -54,7 +61,8 @@ async function request<T>(
   const response = await fetch(`${requireBaseUrl()}${path}`, {
     ...rest,
     headers: {
-      'content-type': 'application/json',
+      // 본문이 없는데 JSON이라고 말하면 서버가 빈 본문을 파싱하려다 막힌다.
+      ...(rest.body !== undefined && { 'content-type': 'application/json' }),
       ...(token && { authorization: `Bearer ${token}` }),
       ...headers,
     },
@@ -74,13 +82,19 @@ async function request<T>(
     throw new ApiError('internal', '서버와 통신하지 못했습니다.');
   }
 
-  const parsed = schema.safeParse(await response.json());
+  // 204는 본문이 없다. json()을 부르면 거기서 터진다.
+  const parsed = schema.safeParse(response.status === 204 ? null : await response.json());
 
   if (!parsed.success) {
     throw new ApiError('internal', '서버 응답을 이해하지 못했습니다.');
   }
 
   return parsed.data;
+}
+
+/** 서버가 켜둔 로그인 방법. 앱이 짐작하지 않는다. */
+export async function listAuthProviders(): Promise<AuthProvidersResponse> {
+  return request('/v1/auth/providers', authProvidersResponseSchema, { auth: false });
 }
 
 export async function signIn(provider: 'apple' | 'kakao', idToken: string): Promise<void> {
@@ -91,6 +105,16 @@ export async function signIn(provider: 'apple' | 'kakao', idToken: string): Prom
   );
 
   await saveToken(session.token);
+}
+
+/** 로그아웃. 서버 세션을 지우고 기기의 토큰도 버린다. */
+export async function signOut(): Promise<void> {
+  try {
+    await request('/v1/auth/sessions', z.null(), { method: 'DELETE' });
+  } finally {
+    // 서버를 못 불러도 기기의 토큰은 버린다. 남겨두면 로그아웃한 척만 한 것이 된다.
+    await clearToken();
+  }
 }
 
 export async function getCurrentUser() {
@@ -146,4 +170,24 @@ export async function confirmFields(
 
 export async function getComparison(quoteId: string): Promise<ComparisonResponse> {
   return request(`/v1/quotes/${quoteId}/comparison`, comparisonResponseSchema);
+}
+
+/**
+ * A-13 인증 신청 접수.
+ *
+ * 응답에 'received' 말고는 들어올 수 없다 — 계약이 그렇게 되어 있다. 등급은 사람이
+ * 증빙을 확인한 뒤에야 오른다 (서비스정책서 7번).
+ */
+export async function createVerificationRequest(
+  quoteId: string,
+  body: CreateVerificationRequest
+): Promise<CreateVerificationResponse> {
+  return request(`/v1/quotes/${quoteId}/verification-requests`, createVerificationResponseSchema, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function getVerificationRequest(requestId: string): Promise<VerificationRequest> {
+  return request(`/v1/verification-requests/${requestId}`, verificationRequestSchema);
 }

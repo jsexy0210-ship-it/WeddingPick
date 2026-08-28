@@ -4,6 +4,8 @@ import {
   comparePenalty,
   formatAttribution,
   matchEssentialOption,
+  withObject,
+  withTopic,
 } from '@weddingpick/domain';
 import type { Pool } from 'pg';
 
@@ -58,7 +60,9 @@ function penaltyNote(days: number | null, rate: string | null): string | null {
   const standard =
     result.standardRate === 0 ? '계약금 환급' : `총 비용의 ${percent(result.standardRate)}`;
 
-  return `${STANDARD_SOURCES.weddingHallCancellation.authority} ${STANDARD_SOURCES.weddingHallCancellation.name}은 예식 ${days}일 전 취소 시 ${standard}을 기준으로 합니다. 이 조항은 ${percent(result.contractRate)}로 더 무겁습니다.`;
+  const source = `${STANDARD_SOURCES.weddingHallCancellation.authority} ${STANDARD_SOURCES.weddingHallCancellation.name}`;
+
+  return `${withTopic(source)} 예식 ${days}일 전 취소 시 ${withObject(standard)} 기준으로 합니다. 이 조항은 ${percent(result.contractRate)}로 더 무겁습니다.`;
 }
 
 /**
@@ -87,7 +91,7 @@ function essentialOptionNote(kind: string, label: string): string | null {
     return null;
   }
 
-  return `${option.label}는 ${STANDARD_SOURCES.sdmEssentialOptions.authority}가 기본 제공에 포함하도록 시정한 항목입니다. 별도 청구인지 확인해보세요.`;
+  return `${withTopic(option.label)} ${STANDARD_SOURCES.sdmEssentialOptions.authority}가 기본 제공에 포함하도록 시정한 항목입니다. 별도 청구인지 확인해보세요.`;
 }
 
 /** 계약이 정한 모양 그대로 문서 하나를 읽는다. */
@@ -112,7 +116,7 @@ export async function loadQuote(pool: Pool, quoteId: string) {
     throw notFound('문서');
   }
 
-  const [lineItems, terms, fields, subVendors] = await Promise.all([
+  const [lineItems, terms, fields, subVendors, documents] = await Promise.all([
     pool.query(
       `SELECT id, kind, label, amount, amount_min, amount_max, note
        FROM structured.quote_line_items WHERE quote_id = $1 ORDER BY label`,
@@ -132,6 +136,15 @@ export async function loadQuote(pool: Pool, quoteId: string) {
     pool.query(
       `SELECT role, name_raw, vendor_id, amount FROM structured.quote_sub_vendors
        WHERE quote_id = $1 ORDER BY role`,
+      [quoteId]
+    ),
+    // 원본은 분석을 통해서만 문서에 이어진다. 삭제 예정일(A-12)과 인증 증빙(A-13)이 여기서 나온다.
+    pool.query(
+      `SELECT d.id, d.page_count, d.uploaded_at, d.retention_until, d.deleted_at
+       FROM structured.analyses a
+       JOIN originals.raw_documents d ON d.id = a.raw_document_id
+       WHERE a.quote_id = $1
+       ORDER BY d.uploaded_at`,
       [quoteId]
     ),
   ]);
@@ -193,6 +206,13 @@ export async function loadQuote(pool: Pool, quoteId: string) {
       requiresConfirmation: row.requires_confirmation,
       confirmedByUser: row.confirmed_by_user,
       ...(row.corrected_value && { correctedValue: row.corrected_value }),
+    })),
+    documents: documents.rows.map((row) => ({
+      rawDocumentId: row.id,
+      pageCount: row.page_count,
+      uploadedAt: row.uploaded_at.toISOString(),
+      retentionUntil: row.retention_until?.toISOString() ?? null,
+      deletedAt: row.deleted_at?.toISOString() ?? null,
     })),
     createdAt: quote.created_at.toISOString(),
     confirmedAt: quote.confirmed_at?.toISOString() ?? null,

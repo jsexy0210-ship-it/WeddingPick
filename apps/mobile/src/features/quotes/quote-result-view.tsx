@@ -1,4 +1,9 @@
-import type { ComparisonResponse, ExtractionField, Quote } from '@weddingpick/api-contract';
+import type {
+  ComparisonResponse,
+  ExtractionField,
+  Quote,
+  QuoteDocument,
+} from '@weddingpick/api-contract';
 import { PRICE_JUDGEMENT_LABEL } from '@weddingpick/domain';
 import { ScrollView, StyleSheet, TextInput, type ViewStyle } from 'react-native';
 
@@ -43,6 +48,31 @@ const ROLE_LABEL = {
 
 export const won = (amount: number) => `${amount.toLocaleString('ko-KR')}원`;
 
+/** "2026년 8월 28일". 화면에는 ISO 문자열을 그대로 내보내지 않는다. */
+function formatDay(timestamp: string): string {
+  const date = new Date(timestamp);
+
+  return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
+}
+
+/**
+ * 원본이 언제 지워지는지. A-12가 요구하는 표시다.
+ *
+ * 보관 일수가 아직 정해지지 않았다(서비스정책서 미확정 항목). 정해진 척 날짜를
+ * 지어내는 대신 정해지지 않았다고 말한다.
+ */
+function retentionNote(document: QuoteDocument): string {
+  if (document.deletedAt) {
+    return `${formatDay(document.deletedAt)}에 원본을 지웠습니다. 정리된 결과는 그대로 남습니다.`;
+  }
+
+  if (document.retentionUntil) {
+    return `${formatDay(document.retentionUntil)}에 원본이 자동으로 지워집니다.`;
+  }
+
+  return '보관 기간이 아직 정해지지 않았습니다. 정해지면 삭제 예정일을 여기에 표시합니다.';
+}
+
 /** 항목 금액. 범위로 적힌 것은 범위 그대로 보여준다. */
 function itemAmount(item: { amount: number | null; amountMin: number | null; amountMax: number | null }) {
   if (item.amount !== null) return won(item.amount);
@@ -63,6 +93,8 @@ type Props = {
     onConfirm: (paths: string[]) => void;
   };
   header?: React.ReactNode;
+  /** 결과 아래에 붙는 것. 인증 신청 버튼처럼 화면마다 다른 동선이 들어온다. */
+  footer?: React.ReactNode;
   contentStyle?: ViewStyle;
 };
 
@@ -70,7 +102,14 @@ type Props = {
  * 분석 결과를 그리는 부분. 실제 결과 화면과 샘플 미리보기가 같은 것을 쓴다 —
  * 둘이 갈라지면 샘플이 실제와 다른 약속을 하게 된다.
  */
-export function QuoteResultView({ quote, comparison, confirm, header, contentStyle }: Props) {
+export function QuoteResultView({
+  quote,
+  comparison,
+  confirm,
+  header,
+  footer,
+  contentStyle,
+}: Props) {
   const theme = useTheme();
 
   const pending: ExtractionField[] = quote.extractionFields.filter(
@@ -248,6 +287,27 @@ export function QuoteResultView({ quote, comparison, confirm, header, contentSty
           ))}
         </ThemedView>
       ) : null}
+
+      {quote.documents.length > 0 ? (
+        <ThemedView style={styles.section}>
+          <ThemedText type="smallBold">원본 보관</ThemedText>
+          {quote.documents.map((document) => (
+            <ThemedView
+              key={document.rawDocumentId}
+              type="backgroundElement"
+              style={styles.card}>
+              <ThemedText type="small">
+                {formatDay(document.uploadedAt)} 올림 · {document.pageCount}장
+              </ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                {retentionNote(document)}
+              </ThemedText>
+            </ThemedView>
+          ))}
+        </ThemedView>
+      ) : null}
+
+      {footer}
     </ScrollView>
   );
 }

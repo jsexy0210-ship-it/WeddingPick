@@ -1,10 +1,11 @@
 import type { ComparisonResponse, Quote } from '@weddingpick/api-contract';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { confirmFields, getComparison, getQuote } from '@/api/client';
+import { ActionButton } from '@/components/action-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -94,6 +95,23 @@ export default function ResultScreen() {
             onEdit: (path, value) => setEdits((current) => ({ ...current, [path]: value })),
             onConfirm: confirm,
           }}
+          footer={
+            /*
+             * 확인 단계를 지나야 신청할 수 있다. 서버도 같은 것을 막지만, 누를 수 없는
+             * 버튼을 두고 눌러야 이유를 알려주는 것보다 이유를 먼저 보여주는 편이 낫다.
+             */
+            <ActionButton
+              variant={quote.confirmedAt ? 'primary' : 'secondary'}
+              label="자료 확인 신청"
+              hint={
+                quote.confirmedAt
+                  ? '확인을 마친 자료만 다른 분들의 가격 비교에 쓰입니다'
+                  : '금액과 계약일을 확인하면 신청할 수 있습니다'
+              }
+              disabled={!quote.confirmedAt}
+              onPress={() => router.push(`/capture/verify/${quote.id}`)}
+            />
+          }
         />
       </SafeAreaView>
     </ThemedView>

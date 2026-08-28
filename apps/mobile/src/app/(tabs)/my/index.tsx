@@ -1,11 +1,12 @@
 import { router } from 'expo-router';
-import { ScrollView, Share, StyleSheet } from 'react-native';
+import { Alert, ScrollView, Share, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton } from '@/components/action-button';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useSession } from '@/features/auth/use-session';
 import { useDocumentStore } from '@/features/documents/document-store';
 
 /** 공유되는 건 앱 자체뿐이다. 견적·계약 정보는 포함하지 않는다 — 사업계획서 12번. */
@@ -14,7 +15,16 @@ const SHARE_MESSAGE = '웨딩픽 — 찍으면, 진짜 가격이 보인다. 견�
 /** A-14 MY. 내 활동, 앱 공유, 정책 진입점. */
 export default function MyScreen() {
   const { sets } = useDocumentStore();
+  const { state, signOut } = useSession();
   const pageCount = sets.reduce((total, set) => total + set.pages.length, 0);
+
+  async function leave() {
+    try {
+      await signOut();
+    } catch {
+      Alert.alert('로그아웃 실패', '다시 시도해주세요.');
+    }
+  }
 
   async function shareApp() {
     try {
@@ -43,6 +53,30 @@ export default function MyScreen() {
                 분석하고 확인받은 기록은 여기에 쌓입니다.
               </ThemedText>
             </ThemedView>
+          </ThemedView>
+
+          <ThemedView style={styles.section}>
+            <ThemedText type="smallBold">계정</ThemedText>
+            {state.status === 'offline' ? (
+              <ThemedView type="backgroundElement" style={styles.card}>
+                <ThemedText type="small" themeColor="textSecondary">
+                  이 빌드는 서버에 붙어 있지 않습니다. 촬영과 기기 저장까지 됩니다.
+                </ThemedText>
+              </ThemedView>
+            ) : state.status === 'signedIn' ? (
+              <ActionButton
+                label="로그아웃"
+                hint="기기에 저장된 문서는 지워지지 않습니다"
+                onPress={leave}
+              />
+            ) : state.status === 'signedOut' ? (
+              <ActionButton
+                variant="primary"
+                label="로그인"
+                hint="분석과 자료 확인 신청에 필요합니다"
+                onPress={() => router.push('/login')}
+              />
+            ) : null}
           </ThemedView>
 
           <ThemedView style={styles.section}>

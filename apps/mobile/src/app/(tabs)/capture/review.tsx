@@ -4,6 +4,7 @@ import { Alert, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ensureSignedIn } from '@/api/auth';
+import { ApiError } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { ActionButton } from '@/components/action-button';
 import { PageThumbnail } from '@/components/page-thumbnail';
@@ -47,6 +48,12 @@ export default function ReviewScreen() {
       clearDraft();
       router.replace(`/capture/analysis/${analysisId}`);
     } catch (error) {
+      // 로그인이 없어서 막힌 것이면 실패라고 말하지 말고 로그인으로 보낸다.
+      if (error instanceof ApiError && error.code === 'unauthenticated') {
+        router.push('/login');
+        return;
+      }
+
       Alert.alert('분석 요청 실패', (error as Error).message);
     } finally {
       setAnalyzing(false);
