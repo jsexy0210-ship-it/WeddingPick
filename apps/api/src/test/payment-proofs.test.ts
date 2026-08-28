@@ -256,3 +256,89 @@ describeWithDb('결제인증', () => {
     expect(response.statusCode).toBe(401);
   });
 });
+
+/**
+ * 결제문자 읽기.
+ *
+ * 스펙 7.3의 처리 순서 — AI 앞에 규칙이 온다. 여기서 확인하는 것은 그 순서가
+ * 지켜지는지가 아니라(그건 도메인 테스트가 본다), 읽은 값이 저장되지 않는다는
+ * 것이다. 사람이 확인하기 전에 저장되면 잘못 읽은 값이 분포에 들어간다.
+ */
+describeWithDb('결제문자 읽기', () => {
+  beforeAll(async () => {
+    await resetDatabase();
+    test = await createTestApp();
+  });
+
+  afterAll(async () => {
+    await test?.close();
+  });
+
+  beforeEach(resetDatabase);
+
+  async function parse(headers: Record<string, string>, text: string) {
+    return await test.app.inject({
+      method: 'POST',
+      url: '/v1/payment-proofs/parse',
+      headers,
+      payload: { text },
+    });
+  }
+
+  const SMS = ['[Web발신]', '신한카드(1234)승인 홍*동', '3,000,000원 일시불', '05/20 14:23', '가온예식홀'].join('\n');
+
+  it('읽기만 하고 저장하지 않는다', async () => {
+    const { headers } = await signInAs(test);
+
+    const response = await parse(headers, SMS);
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json<{ merchantName: { value: string } }>().merchantName.value).toBe(
+      '가온예식홀'
+    );
+
+    // 사람이 확인하기 전에는 아무것도 남지 않는다.
+    const stored = await test.pool.query('SELECT 1 FROM structured.payment_proofs');
+    expect(stored.rows).toHaveLength(0);
+  });
+
+  it('카드번호가 응답에 실리지 않는다', async () => {
+    const { headers } = await signInAs(test);
+
+    const response = await parse(headers, SMS);
+
+    // 종류는 온다.
+    expect(response.json<{ maskedIdentifiers: string[] }>().maskedIdentifiers).toContain(
+      'card_number'
+    );
+    // 값은 어디에도 없다. 담을 필드를 만들지 않았다.
+    expect(response.body).not.toContain('1234');
+  });
+
+  it('취소 문자는 거절 이유와 함께 온다', async () => {
+    const { headers } = await signInAs(test);
+
+    const response = await parse(headers, '신한카드 승인취소 3,000,000원 05/22 가온예식홀');
+
+    expect(response.json<{ rejection: string }>().rejection).toContain('취소');
+  });
+
+  it('확신이 낮은 항목을 짚어준다', async () => {
+    const { headers } = await signInAs(test);
+
+    // 연도가 없는 날짜는 추정한 값이다.
+    const response = await parse(headers, '신한카드 승인 3,000,000원 05/20 14:23 가온예식홀');
+
+    expect(response.json<{ needsConfirmation: string[] }>().needsConfirmation).toContain('paidAt');
+  });
+
+  it('로그인해야 읽어준다', async () => {
+    const response = await test.app.inject({
+      method: 'POST',
+      url: '/v1/payment-proofs/parse',
+      payload: { text: SMS },
+    });
+
+    expect(response.statusCode).toBe(401);
+  });
+});

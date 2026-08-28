@@ -3,16 +3,18 @@ import {
   MASKED_IDENTIFIER_LABEL,
   PAYMENT_METHODS,
   PAYMENT_METHOD_LABEL,
+  PAYMENT_PROOF_FIELD_LABEL,
   canRegisterPaymentProof,
   type MaskedIdentifierKind,
   type PaymentMethod,
+  type PaymentProofField,
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { registerPaymentProof } from '@/api/client';
+import { parsePaymentText, registerPaymentProof } from '@/api/client';
 import {
   ActionButton,
   FilterChip,
@@ -35,9 +37,14 @@ function toTimestamp(day: string): string | null {
 /**
  * 결제인증 제보 — 등록.
  *
- * **자동 추출은 아직 없다.** 결제 화면 전용 파서가 만들어지기 전까지는 영수증을
- * 보고 직접 적는다. 읽어주는 척하고 빈칸을 내미느니, 아직 못 읽는다고 말하는
- * 편이 낫다.
+ * 결제문자를 붙여넣으면 서버가 읽어 채운다. **AI를 부르지 않는다** — 카드사가
+ * 기계로 찍어 보내는 글이라 규칙으로 읽힌다(스펙 7.3).
+ *
+ * 붙여넣기를 앞에 두는 이유가 하나 더 있다: **서버에 이미지가 올라가지 않는다.**
+ * 올라가지 않은 것은 새지도, 파기할 일도 없다. 가장 싸고 가장 안전한 길이다.
+ *
+ * 읽은 값도 그대로 저장하지 않는다. 확신이 낮은 항목은 표시해서 사람이 보게 한다 —
+ * 잘못 읽은 값이 확인 없이 분포에 들어가면 읽기 실패보다 나쁘다.
  *
  * 카드번호를 적을 칸이 없다. 있었는지만 고른다 — 그 값은 우리가 가질 이유가 없다.
  */
@@ -49,6 +56,12 @@ export default function RegisterPaymentProofScreen() {
   const [day, setDay] = useState('');
   const [method, setMethod] = useState<PaymentMethod>('card');
   const [identifiers, setIdentifiers] = useState<MaskedIdentifierKind[]>([]);
+
+  const [pasted, setPasted] = useState('');
+  const [reading, setReading] = useState(false);
+  const [readNote, setReadNote] = useState<string | null>(null);
+  /** 서버가 "확신이 낮다"고 짚은 항목. 화면이 그 칸을 강조한다. */
+  const [uncertain, setUncertain] = useState<PaymentProofField[]>([]);
 
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -101,6 +114,45 @@ export default function RegisterPaymentProofScreen() {
     );
   }
 
+  async function read() {
+    if (pasted.trim().length === 0) return;
+
+    setReading(true);
+    setReadNote(null);
+
+    try {
+      const parsed = await parsePaymentText(pasted);
+
+      if (parsed.rejection) {
+        // 취소 문자를 결제로 등록하면 낸 적 없는 돈이 낸 돈이 된다.
+        setReadNote(parsed.rejection);
+        setUncertain([]);
+
+        return;
+      }
+
+      if (parsed.merchantName) setMerchantName(parsed.merchantName.value);
+      if (parsed.paidAmount) setAmount(String(parsed.paidAmount.value));
+      if (parsed.paidAt) setDay(parsed.paidAt.value.slice(0, 10));
+      if (parsed.method) setMethod(parsed.method.value);
+      // 값이 아니라 종류다. 읽어낸 것을 그대로 쓴다.
+      setIdentifiers(parsed.maskedIdentifiers);
+      setUncertain(parsed.needsConfirmation);
+
+      const unread = parsed.missing.map((field) => PAYMENT_PROOF_FIELD_LABEL[field]);
+
+      setReadNote(
+        unread.length > 0
+          ? `${unread.join(' · ')}은(는) 읽지 못했습니다. 직접 적어주세요.`
+          : '읽었습니다. 맞는지 확인해 주세요.'
+      );
+    } catch (caught) {
+      setReadNote(caught instanceof Error ? caught.message : '읽지 못했습니다. 직접 적어주세요.');
+    } finally {
+      setReading(false);
+    }
+  }
+
   async function submit() {
     if (!paidAt || !check.ok) return;
 
@@ -134,17 +186,44 @@ export default function RegisterPaymentProofScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.section}>
-            <ThemedText type="subtitle">결제내역을 적어주세요</ThemedText>
+            <ThemedText type="subtitle">결제내역을 알려주세요</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              결제문자나 영수증을 보고 그대로 적어주시면 됩니다. 아직 사진에서 자동으로
-              읽어오지는 못합니다.
+              결제문자를 그대로 붙여넣으시면 읽어서 채워드립니다. 사진을 올리지 않으니
+              저희 서버에 이미지가 남지 않습니다.
             </ThemedText>
+          </ThemedView>
+
+          <ThemedView style={styles.section}>
+            <ThemedText type="smallBold">결제문자 붙여넣기</ThemedText>
+            <TextInput
+              style={[styles.input, styles.paste, { color: theme.text, borderColor: theme.border }]}
+              value={pasted}
+              onChangeText={setPasted}
+              multiline
+              placeholder={'[Web발신]\n신한카드 승인\n3,000,000원 일시불\n05/20 14:23\n가온예식홀'}
+              placeholderTextColor={theme.textSecondary}
+              accessibilityLabel="결제문자"
+            />
+            <ActionButton
+              label={reading ? '읽는 중…' : '붙여넣은 문자에서 읽기'}
+              disabled={pasted.trim().length === 0 || reading}
+              onPress={() => void read()}
+            />
+            {readNote ? (
+              <ThemedView type="backgroundElement" style={styles.card}>
+                <ThemedText type="small" themeColor="textSecondary">
+                  {readNote}
+                </ThemedText>
+              </ThemedView>
+            ) : null}
           </ThemedView>
 
           <ThemedView style={styles.section}>
             <ThemedText type="smallBold">가맹점 이름</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              영수증에 찍힌 그대로. 업체 이름과 달라도 괜찮습니다.
+              {uncertain.includes('merchantName')
+                ? '여러 개로 읽혀 하나를 골랐습니다. 맞는지 봐주세요.'
+                : '영수증에 찍힌 그대로. 업체 이름과 달라도 괜찮습니다.'}
             </ThemedText>
             <TextInput
               style={[styles.input, { color: theme.text, borderColor: theme.border }]}
@@ -158,6 +237,11 @@ export default function RegisterPaymentProofScreen() {
 
           <ThemedView style={styles.section}>
             <ThemedText type="smallBold">결제 금액</ThemedText>
+            {uncertain.includes('paidAmount') ? (
+              <ThemedText type="small" themeColor="textSecondary">
+                금액이 여러 개 있어 하나를 골랐습니다. 맞는지 봐주세요.
+              </ThemedText>
+            ) : null}
             <TextInput
               style={[styles.input, { color: theme.text, borderColor: theme.border }]}
               value={amount}
@@ -171,6 +255,12 @@ export default function RegisterPaymentProofScreen() {
 
           <ThemedView style={styles.section}>
             <ThemedText type="smallBold">결제한 날</ThemedText>
+            {uncertain.includes('paidAt') ? (
+              /* 문자에 연도가 없어 추정한 값이다. 한 해가 어긋나면 기간이 달라진다. */
+              <ThemedText type="small" themeColor="textSecondary">
+                문자에 연도가 없어 짐작한 값입니다. 연도가 맞는지 봐주세요.
+              </ThemedText>
+            ) : null}
             <TextInput
               style={[styles.input, { color: theme.text, borderColor: theme.border }]}
               value={day}
@@ -265,4 +355,5 @@ const styles = StyleSheet.create({
   card: { borderRadius: Spacing.three, padding: Spacing.three, gap: Spacing.one },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   input: { borderWidth: 1, borderRadius: Spacing.two, padding: Spacing.three },
+  paste: { minHeight: 120, textAlignVertical: 'top' },
 });

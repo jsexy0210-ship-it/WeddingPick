@@ -1,8 +1,14 @@
-import { registerPaymentProofRequestSchema } from '@weddingpick/api-contract';
 import {
+  parsePaymentTextRequestSchema,
+  registerPaymentProofRequestSchema,
+} from '@weddingpick/api-contract';
+import {
+  LOW_CONFIDENCE_THRESHOLD,
   PAYMENT_PROOF_RETENTION_HOURS,
   canRegisterPaymentProof,
+  fieldsNeedingConfirmation,
   hasDataUnlock,
+  parsePaymentText,
 } from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
@@ -39,6 +45,34 @@ async function matchVendor(pool: Pool, merchantName: string): Promise<string | n
 
 export function registerPaymentProofRoutes(app: FastifyInstance, context: AppContext): void {
   const auth = { preHandler: requireUser(context) };
+
+  /**
+   * 결제문자 읽기. **AI를 부르지 않는다.**
+   *
+   * 스펙 7.3의 처리 순서를 그대로 따른다 — 규칙으로 읽어보고, 못 읽은 것만 다음
+   * 단계로 간다. 결제문자는 카드사가 기계로 찍어 보내는 글이라 형태가 고정돼 있어
+   * 대부분 여기서 읽힌다. 이걸 AI에 보내는 것은 곱셈을 시키려고 사람을 부르는 것과
+   * 같다.
+   *
+   * **읽기만 하고 저장하지 않는다.** 사람이 확인한 뒤에 등록이 따로 온다 — 잘못
+   * 읽은 값이 확인 없이 분포에 들어가면, 그건 읽기 실패보다 나쁘다.
+   */
+  app.post('/v1/payment-proofs/parse', auth, async (request) => {
+    const { text } = parsePaymentTextRequestSchema.parse(request.body);
+    const parsed = parsePaymentText(text);
+
+    return {
+      rejection: parsed.rejection,
+      merchantName: parsed.merchantName,
+      paidAmount: parsed.paidAmount,
+      paidAt: parsed.paidAt,
+      method: parsed.method,
+      maskedIdentifiers: parsed.maskedIdentifiers,
+      missing: parsed.missing,
+      // 문서 쪽과 같은 기준값을 쓴다. 두 화면이 다르면 그 표시를 못 믿게 된다.
+      needsConfirmation: fieldsNeedingConfirmation(parsed, LOW_CONFIDENCE_THRESHOLD),
+    };
+  });
 
   /**
    * 결제인증 등록.

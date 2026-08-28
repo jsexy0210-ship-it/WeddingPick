@@ -12,6 +12,7 @@ import {
   createInquiryResponseSchema,
   inquiryListResponseSchema,
   registerDeviceResponseSchema,
+  parsePaymentTextResponseSchema,
   registerPaymentProofResponseSchema,
   createReviewReportResponseSchema,
   createReviewResponseSchema,
@@ -39,6 +40,7 @@ import {
   type CreateInquiryRequest,
   type RegisterDeviceRequest,
   type RegisterDeviceResponse,
+  type ParsePaymentTextResponse,
   type RegisterPaymentProofRequest,
   type RegisterPaymentProofResponse,
   type OriginalKind,
@@ -282,6 +284,18 @@ export async function compareVendors(ids: string[]): Promise<VendorComparisonRes
     `/v1/vendors/compare?ids=${ids.map(encodeURIComponent).join(',')}`,
     vendorComparisonResponseSchema
   );
+}
+
+/**
+ * 결제문자에서 값을 읽는다. AI를 부르지 않는다 — 서버의 규칙 엔진이 읽는다.
+ *
+ * 읽기만 하고 저장하지 않는다. 사람이 확인한 뒤에 등록이 따로 간다.
+ */
+export async function parsePaymentText(text: string): Promise<ParsePaymentTextResponse> {
+  return request('/v1/payment-proofs/parse', parsePaymentTextResponseSchema, {
+    method: 'POST',
+    body: JSON.stringify({ text }),
+  });
 }
 
 /**

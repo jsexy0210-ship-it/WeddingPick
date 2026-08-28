@@ -21,6 +21,8 @@ import {
 } from './inquiries';
 import { registerDeviceRequestSchema, registerDeviceResponseSchema } from './devices';
 import {
+  parsePaymentTextRequestSchema,
+  parsePaymentTextResponseSchema,
   registerPaymentProofRequestSchema,
   registerPaymentProofResponseSchema,
 } from './payment-proofs';
@@ -325,6 +327,22 @@ export const ENDPOINTS = {
     path: '/v1/reviews/{reviewId}/reports',
     body: createReviewReportRequestSchema,
     response: createReviewReportResponseSchema,
+  },
+
+  /**
+   * 결제문자에서 값을 읽는다. **AI를 부르지 않는다.**
+   *
+   * 스펙 7.3의 처리 순서 — 규칙 엔진이 먼저다. 결제문자는 카드사가 기계로 찍어
+   * 보내는 글이라 형태가 고정돼 있어, 여기서 대부분 읽힌다.
+   *
+   * 읽기만 하고 저장하지 않는다. 등록은 `registerPaymentProof`가 따로 받는다 —
+   * 읽은 값을 사람이 확인한 뒤에 저장돼야 하기 때문이다.
+   */
+  parsePaymentText: {
+    method: 'POST',
+    path: '/v1/payment-proofs/parse',
+    body: parsePaymentTextRequestSchema,
+    response: parsePaymentTextResponseSchema,
   },
 
   /**

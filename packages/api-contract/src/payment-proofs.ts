@@ -76,6 +76,39 @@ export const paidPriceSchema = z.discriminatedUnion('available', [
   }),
 ]);
 
+/**
+ * 결제문자 읽기.
+ *
+ * 화면데이터구조 스펙 7.3: AI를 부르기 전에 규칙으로 먼저 읽는다. 결제문자는
+ * 카드사가 기계로 찍어 보내는 글이라 형태가 거의 고정돼 있다.
+ *
+ * **글만 보낸다.** 이미지가 아니라 사용자가 붙여넣은 글이다 — 붙여넣기는 서버에
+ * 이미지를 올리지 않으므로 파기할 원본도 생기지 않는다. 가장 싸고 가장 안전한 길이다.
+ */
+export const parsePaymentTextRequestSchema = z.object({
+  text: z.string().min(1).max(2000),
+});
+
+const parsedFieldSchema = <T extends z.ZodType>(value: T) =>
+  z.object({ value, confidence: z.number().min(0).max(1) }).nullable();
+
+export const parsePaymentTextResponseSchema = z.object({
+  /** 결제 기록이 아니어서 등록으로 넘기지 않는 이유. 없으면 null. */
+  rejection: z.string().nullable(),
+  merchantName: parsedFieldSchema(z.string()),
+  paidAmount: parsedFieldSchema(amountSchema),
+  paidAt: parsedFieldSchema(timestampSchema),
+  method: parsedFieldSchema(paymentMethodSchema),
+  /** 글에 있었던 식별정보의 **종류**. 값은 담기지 않는다. */
+  maskedIdentifiers: z.array(maskedIdentifierKindSchema),
+  /** 규칙으로 못 읽은 항목. 화면이 이것만 물어본다. */
+  missing: z.array(z.enum(['merchantName', 'paidAmount', 'paidAt', 'method'])),
+  /** 확신이 낮아 사람이 봐야 하는 항목. */
+  needsConfirmation: z.array(z.enum(['merchantName', 'paidAmount', 'paidAt', 'method'])),
+});
+
+export type ParsePaymentTextRequest = z.infer<typeof parsePaymentTextRequestSchema>;
+export type ParsePaymentTextResponse = z.infer<typeof parsePaymentTextResponseSchema>;
 export type RegisterPaymentProofRequest = z.infer<typeof registerPaymentProofRequestSchema>;
 export type RegisterPaymentProofResponse = z.infer<typeof registerPaymentProofResponseSchema>;
 export type PaidPrice = z.infer<typeof paidPriceSchema>;
