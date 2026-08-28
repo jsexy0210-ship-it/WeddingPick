@@ -34,11 +34,14 @@ src/app/                     expo-router 파일 기반 라우팅
   (tabs)/capture/index.tsx   A-04 촬영 — 입력 방식 선택
   (tabs)/capture/camera.tsx  카메라 연속 촬영
   (tabs)/capture/review.tsx  A-05 문서 확인
+  (tabs)/capture/analysis/   A-06 분석 중
+  (tabs)/capture/result/     A-08 분석 결과 + A-07 확인 단계 + A-09 가격 비교
   (tabs)/wedding/index.tsx   A-11 내 웨딩
   (tabs)/wedding/[id]/       A-12 견적 상세, A-13 인증 등급
   (tabs)/my/index.tsx        A-14 MY
   (tabs)/my/policies.tsx     A-15 약관 및 정책
-src/features/capture/        촬영 흐름 상태와 사진·PDF 선택
+src/api/                     서버 클라이언트 — 응답을 계약 스키마로 검사한다
+src/features/capture/        촬영 흐름 상태, 사진·PDF 선택, 업로드
 src/features/documents/      기기에 저장된 문서 묶음
 src/features/verification/   검증 등급 L0~L4 정의
 src/features/onboarding/     온보딩 완료 여부
@@ -54,7 +57,10 @@ types/expo.d.ts              expo 타입 참조 (CI에서 expo-env.d.ts가 생�
 
 카메라 촬영 / 사진 불러오기 / PDF 불러오기 세 경로 모두 `CaptureDraft`(`src/features/capture/capture-draft.tsx`)에 장을 쌓고 A-05에서 확인한다. 화면을 넘나들며 장을 더하고 빼므로 화면 상태가 아니라 흐름 단위 상태로 두었다.
 
-**문서는 아직 기기 밖으로 나가지 않는다.** 업로드는 원본 문서 처리에 대한 법률 자문이 끝난 뒤에 붙인다(docs/05 6번).
+서버 주소(`EXPO_PUBLIC_API_URL`)가 있으면 "분석 시작"이 뜬다. 없으면 기기 저장까지만 된다.
+
+**실제 사용자 문서를 서버로 보내는 것은 원본 문서 처리에 대한 법률 자문이 끝난 뒤다**(docs/05 6번).
+지금 서버 연결은 개발용이다.
 
 ## 저장
 
@@ -65,6 +71,21 @@ types/expo.d.ts              expo 타입 참조 (CI에서 expo-env.d.ts가 생�
 - 웹에서는 파일시스템을 쓰지 않고 원본 URI를 그대로 둔다. 화면 확인용이며 새로고침하면 blob URI가 끊긴다.
 
 서버 보관기간과 원본 자동삭제(`retentionUntil`)는 기준이 확정되지 않아 아직 넣지 않았다.
+
+## 서버 연결
+
+```bash
+EXPO_PUBLIC_API_URL=http://localhost:3000 \
+EXPO_PUBLIC_DEV_LOGIN_SECRET=development-only-secret \
+npm run mobile
+```
+
+`src/api/client.ts`는 받은 응답을 **계약 스키마로 검사한 뒤에만** 쓴다. 서버가 계약을
+어기면 화면이 이상한 값을 그리기 전에 여기서 걸린다 — 표본 수 없이 중앙값만 담긴
+비교 응답은 통과하지 못한다.
+
+`EXPO_PUBLIC_DEV_LOGIN_SECRET`은 개발 빌드 전용이다. EXPO_PUBLIC_* 값은 번들에 그대로
+들어가므로 배포 빌드에는 절대 넣지 않는다. Apple·Kakao 로그인이 붙으면 이 경로는 지운다.
 
 ## 주의
 

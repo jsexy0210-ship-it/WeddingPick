@@ -22,6 +22,12 @@ const configSchema = z.object({
    */
   originalRetentionDays: z.coerce.number().int().positive().optional(),
 
+  /**
+   * 브라우저에서 API를 부를 수 있는 출처. 비워두면 CORS 헤더를 내보내지 않는다.
+   * 네이티브 앱은 CORS와 무관하다 — 웹에서 붙여볼 때만 필요하다.
+   */
+  corsOrigins: z.array(z.string().min(1)).default([]),
+
   /** 제공자별 설정이 없으면 그 제공자 로그인만 막힌다. 서비스 전체가 멈추지는 않는다. */
   appleClientId: z.string().optional(),
   kakaoAppKey: z.string().optional(),
@@ -46,6 +52,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     sessionTtlDays: env.SESSION_TTL_DAYS,
     storage,
     originalRetentionDays: env.ORIGINAL_RETENTION_DAYS,
+    corsOrigins: (env.CORS_ORIGINS ?? '')
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean),
     appleClientId: env.APPLE_CLIENT_ID,
     kakaoAppKey: env.KAKAO_APP_KEY,
   });

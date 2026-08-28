@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ensureSignedIn } from '@/api/auth';
+import { isServerConfigured } from '@/api/config';
 import { ActionButton } from '@/components/action-button';
 import { PageThumbnail } from '@/components/page-thumbnail';
 import { ThemedText } from '@/components/themed-text';
@@ -10,6 +12,7 @@ import { ThemedView } from '@/components/themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useCaptureDraft } from '@/features/capture/capture-draft';
 import type { CapturedPage } from '@/features/capture/types';
+import { uploadForAnalysis } from '@/features/capture/upload';
 import { useDocumentStore } from '@/features/documents/document-store';
 
 const SOURCE_LABEL: Record<CapturedPage['source'], string> = {
@@ -30,6 +33,25 @@ export default function ReviewScreen() {
   const { pages, removePage, clearDraft } = useCaptureDraft();
   const { saveDraft } = useDocumentStore();
   const [saving, setSaving] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+
+  /** 서버가 있으면 올려서 분석한다. 없으면 기기 저장까지만 된다. */
+  async function analyze() {
+    if (analyzing) return;
+    setAnalyzing(true);
+
+    try {
+      await ensureSignedIn();
+      const { analysisId } = await uploadForAnalysis(pages);
+
+      clearDraft();
+      router.replace(`/capture/analysis/${analysisId}`);
+    } catch (error) {
+      Alert.alert('분석 요청 실패', (error as Error).message);
+    } finally {
+      setAnalyzing(false);
+    }
+  }
 
   async function save() {
     if (saving) return;
@@ -100,11 +122,20 @@ export default function ReviewScreen() {
         </ScrollView>
 
         <ThemedView style={styles.footer}>
+          {isServerConfigured ? (
+            <ActionButton
+              variant="primary"
+              label={analyzing ? '올리는 중…' : '분석 시작'}
+              hint="업체·금액·계약조건을 읽어 실제 계약과 비교합니다"
+              disabled={analyzing || saving}
+              onPress={analyze}
+            />
+          ) : null}
           <ActionButton
-            variant="primary"
-            label={saving ? '저장 중…' : '내 웨딩에 저장'}
-            hint="AI 분석 연결 전까지는 문서만 보관합니다"
-            disabled={saving}
+            variant={isServerConfigured ? 'secondary' : 'primary'}
+            label={saving ? '저장 중…' : '기기에만 저장'}
+            hint={isServerConfigured ? undefined : '서버가 연결되면 분석할 수 있습니다'}
+            disabled={saving || analyzing}
             onPress={save}
           />
           <ActionButton label="장 추가하기" onPress={() => router.push('/capture/camera')} />

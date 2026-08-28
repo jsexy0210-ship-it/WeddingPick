@@ -1,3 +1,4 @@
+import cors from '@fastify/cors';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { ZodError } from 'zod';
 
@@ -5,6 +6,7 @@ import type { AppContext } from './context';
 import { ApiError } from './errors';
 import { registerAnalysisRoutes } from './routes/analyses';
 import { registerAuthRoutes } from './routes/auth';
+import { registerDevStorageRoutes } from './routes/dev-storage';
 import { registerDocumentRoutes } from './routes/documents';
 import { registerQuoteRoutes } from './routes/quotes';
 import { registerVerificationRoutes } from './routes/verification';
@@ -12,6 +14,14 @@ import { registerWeddingRoutes } from './routes/weddings';
 
 export function buildServer(context: AppContext): FastifyInstance {
   const app = Fastify({ logger: false });
+
+  // 허용 출처를 적어준 경우에만 CORS를 연다. 비워두면 브라우저에서 부를 수 없다.
+  if (context.config.corsOrigins.length > 0) {
+    app.register(cors, {
+      origin: context.config.corsOrigins,
+      methods: ['GET', 'HEAD', 'POST', 'PUT', 'DELETE'],
+    });
+  }
 
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof ApiError) {
@@ -48,6 +58,7 @@ export function buildServer(context: AppContext): FastifyInstance {
   registerAnalysisRoutes(app, context);
   registerQuoteRoutes(app, context);
   registerVerificationRoutes(app, context);
+  registerDevStorageRoutes(app, context);
 
   return app;
 }
