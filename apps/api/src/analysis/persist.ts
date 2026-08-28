@@ -19,7 +19,13 @@ function extractionFields(extraction: Extraction) {
   push('productName', extraction.productName);
   push('totalAmount', extraction.totalAmount);
   push('discountAmount', extraction.discountAmount);
+  push('depositAmount', extraction.depositAmount);
+  push('balanceAmount', extraction.balanceAmount);
   push('contractDate', extraction.contractDate);
+  push('weddingDate', extraction.weddingDate);
+  push('hallName', extraction.hallName);
+  push('guaranteedGuests', extraction.guaranteedGuests);
+  push('mealPricePerPerson', extraction.mealPricePerPerson);
 
   // 환불조건은 확인이 필요한 핵심 필드다. 여러 조항이 있으면 하나로 묶어 보여준다.
   const refundTerms = extraction.terms.filter((term) => term.category === 'refund');
@@ -61,8 +67,11 @@ export async function persistExtraction(
   const quote = await client.query<{ id: string }>(
     `INSERT INTO structured.quotes
        (wedding_id, raw_document_id, doc_type, vendor_id, vendor_name_raw, product_name,
-        product_key, total_amount, discount_amount, contract_date, verification_level, source)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'L0', 'ai_extraction')
+        product_key, total_amount, discount_amount, deposit_amount, balance_amount,
+        contract_date, wedding_date, hall_name, guaranteed_guests, meal_price_per_person,
+        verification_level, source)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16,
+             'L0', 'ai_extraction')
      RETURNING id`,
     [
       input.weddingId,
@@ -72,10 +81,22 @@ export async function persistExtraction(
       extraction.vendorName.value,
       extraction.productName.value,
       // 업체가 연결돼야 상품 키가 생긴다. 업체를 모르면 무엇과 견줄지도 알 수 없다.
-      vendorId ? productKey({ vendorId, productName: extraction.productName.value }) : null,
+      vendorId
+        ? productKey({
+            vendorId,
+            productName: extraction.productName.value,
+            hallName: extraction.hallName.value,
+          })
+        : null,
       extraction.totalAmount.value,
       extraction.discountAmount.value,
+      extraction.depositAmount.value,
+      extraction.balanceAmount.value,
       extraction.contractDate.value,
+      extraction.weddingDate.value,
+      extraction.hallName.value,
+      extraction.guaranteedGuests.value,
+      extraction.mealPricePerPerson.value,
     ]
   );
 
@@ -83,17 +104,29 @@ export async function persistExtraction(
 
   for (const item of extraction.lineItems) {
     await client.query(
-      `INSERT INTO structured.quote_line_items (quote_id, kind, label, amount, note)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [quoteId, item.kind, item.label, item.amount, item.note]
+      `INSERT INTO structured.quote_line_items
+         (quote_id, kind, label, amount, amount_min, amount_max, note)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [quoteId, item.kind, item.label, item.amount, item.amountMin, item.amountMax, item.note]
+    );
+  }
+
+  // 스드메처럼 업체가 여럿인 패키지. 각 업체도 따로 매칭한다.
+  for (const subVendor of extraction.subVendors) {
+    await client.query(
+      `INSERT INTO structured.quote_sub_vendors (quote_id, role, name_raw, vendor_id, amount)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (quote_id, role, name_raw) DO NOTHING`,
+      [quoteId, subVendor.role, subVendor.name, await matchVendor(client, subVendor.name), subVendor.amount]
     );
   }
 
   for (const term of extraction.terms) {
     await client.query(
-      `INSERT INTO structured.contract_terms (quote_id, category, body, flagged)
-       VALUES ($1, $2, $3, $4)`,
-      [quoteId, term.category, term.body, term.flagged]
+      `INSERT INTO structured.contract_terms
+         (quote_id, category, body, flagged, days_before_wedding, penalty_rate)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [quoteId, term.category, term.body, term.flagged, term.daysBeforeWedding, term.penaltyRate]
     );
   }
 

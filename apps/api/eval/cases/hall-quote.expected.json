@@ -1,16 +1,36 @@
 {
-  "note": "웨딩홀 예식 견적서. 상담일은 있으나 계약일은 없다 — 상담일을 계약일로 옮기면 오답이다.",
+  "note": "웨딩홀 예식 견적서. 상담일은 있으나 계약일은 없다 — 상담일을 계약일로 옮기면 오답이다. 계약금 300만원, 예식일 2027-03-20, 보증인원 200명, 1인 식대 68,000원이 적혀 있다.",
   "documentKind": "quote",
   "vendorName": "더채플앳청담",
   "plannerName": "이수진",
   "totalAmount": 23700000,
   "discountAmount": 1500000,
   "contractDate": null,
-  "termCategories": ["refund", "penalty", "schedule"],
+  "termCategories": [
+    "refund",
+    "penalty",
+    "schedule"
+  ],
   "lineItemKeywords": {
-    "included": ["대관", "식대"],
-    "excluded": ["스냅"],
-    "additional_candidate": ["보증인원", "생화"]
+    "included": [
+      "대관",
+      "식대"
+    ],
+    "excluded": [
+      "스냅"
+    ],
+    "additional_candidate": [
+      "보증인원",
+      "생화"
+    ]
   },
-  "personalInfoKinds": ["name", "phone"]
+  "personalInfoKinds": [
+    "name",
+    "phone"
+  ],
+  "depositAmount": 3000000,
+  "weddingDate": "2027-03-20",
+  "hallName": "그랜드볼룸",
+  "guaranteedGuests": 200,
+  "mealPricePerPerson": 68000
 }

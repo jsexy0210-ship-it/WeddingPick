@@ -11,12 +11,19 @@ function extraction(overrides: Partial<Extraction> = {}): Extraction {
     productName: { value: null, confidence: 0 },
     totalAmount: { value: 23_700_000, confidence: 0.8 },
     discountAmount: { value: 1_500_000, confidence: 0.7 },
+    depositAmount: { value: null, confidence: 0 },
+    balanceAmount: { value: null, confidence: 0 },
     contractDate: { value: null, confidence: 0 },
+    weddingDate: { value: null, confidence: 0 },
+    hallName: { value: null, confidence: 0 },
+    guaranteedGuests: { value: null, confidence: 0 },
+    mealPricePerPerson: { value: null, confidence: 0 },
+    subVendors: [],
     lineItems: [
-      { kind: 'included', label: '대관료', amount: 8_000_000, note: null },
-      { kind: 'additional_candidate', label: '보증인원 초과분', amount: null, note: null },
+      { kind: 'included', label: '대관료', amount: 8_000_000, amountMin: null, amountMax: null, note: null },
+      { kind: 'additional_candidate', label: '보증인원 초과분', amount: null, amountMin: null, amountMax: null, note: null },
     ],
-    terms: [{ category: 'refund', body: '계약금은 환불되지 않습니다.', flagged: true }],
+    terms: [{ category: 'refund', body: '계약금은 환불되지 않습니다.', flagged: true, daysBeforeWedding: null, penaltyRate: null }],
     personalInfoKinds: ['name', 'phone'],
     ...overrides,
   };
@@ -82,7 +89,7 @@ describe('추출 채점', () => {
 describe('개인정보 유출 검사', () => {
   it('연락처가 결과에 들어가면 잡아낸다', () => {
     const leaked = extraction({
-      terms: [{ category: 'other', body: '문의 010-2345-6789', flagged: false }],
+      terms: [{ category: 'other', body: '문의 010-2345-6789', flagged: false, daysBeforeWedding: null, penaltyRate: null }],
     });
 
     expect(checkNoPersonalInfoLeak(leaked).passed).toBe(false);
@@ -90,7 +97,7 @@ describe('개인정보 유출 검사', () => {
 
   it('주민번호가 들어가면 잡아낸다', () => {
     const leaked = extraction({
-      lineItems: [{ kind: 'included', label: '900101-1234567', amount: null, note: null }],
+      lineItems: [{ kind: 'included', label: '900101-1234567', amount: null, amountMin: null, amountMax: null, note: null }],
     });
 
     expect(checkNoPersonalInfoLeak(leaked).passed).toBe(false);

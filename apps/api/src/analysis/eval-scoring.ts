@@ -9,7 +9,15 @@ export type Expected = {
   productName?: string | null;
   totalAmount?: number | null;
   discountAmount?: number | null;
+  depositAmount?: number | null;
+  balanceAmount?: number | null;
   contractDate?: string | null;
+  weddingDate?: string | null;
+  hallName?: string | null;
+  guaranteedGuests?: number | null;
+  mealPricePerPerson?: number | null;
+  /** 역할별로 어떤 업체 이름이 나와야 하는지 */
+  subVendorNames?: Record<string, string>;
   termCategories?: string[];
   lineItemKeywords?: Record<string, string[]>;
   personalInfoKinds?: string[];
@@ -57,7 +65,17 @@ export function scoreCase(extraction: Extraction, expected: Expected): Check[] {
     }
   }
 
-  for (const field of ['totalAmount', 'discountAmount', 'contractDate'] as const) {
+  for (const field of [
+    'totalAmount',
+    'discountAmount',
+    'depositAmount',
+    'balanceAmount',
+    'contractDate',
+    'weddingDate',
+    'hallName',
+    'guaranteedGuests',
+    'mealPricePerPerson',
+  ] as const) {
     if (expected[field] !== undefined) {
       checks.push(checkRead(field, expected[field], extraction[field]));
     }
@@ -90,6 +108,19 @@ export function scoreCase(extraction: Extraction, expected: Expected): Check[] {
         detail: passed ? '찾음' : `없음 (읽은 것: ${labels.join(' | ') || '—'})`,
       });
     }
+  }
+
+  for (const [role, name] of Object.entries(expected.subVendorNames ?? {})) {
+    const found = extraction.subVendors.find((sub) => sub.role === role);
+    const passed = normalize(found?.name)?.includes(normalize(name) ?? '') === true;
+
+    checks.push({
+      label: `패키지 ${role}`,
+      passed,
+      detail: passed
+        ? `${found?.name}`
+        : `기대 ${name} / 실제 ${found?.name ?? '없음'}`,
+    });
   }
 
   if (expected.personalInfoKinds) {

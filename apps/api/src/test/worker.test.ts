@@ -20,14 +20,25 @@ function extraction(overrides: Partial<Extraction> = {}): Extraction {
     productName: { value: '기본 패키지', confidence: 0.8 },
     totalAmount: { value: 3_280_000, confidence: 0.55 },
     discountAmount: { value: 200_000, confidence: 0.7 },
+    depositAmount: { value: 500_000, confidence: 0.8 },
+    balanceAmount: { value: 2_780_000, confidence: 0.8 },
     contractDate: { value: '2026-05-01', confidence: 0.9 },
+    weddingDate: { value: '2027-03-20', confidence: 0.9 },
+    hallName: { value: null, confidence: 0 },
+    guaranteedGuests: { value: null, confidence: 0 },
+    mealPricePerPerson: { value: null, confidence: 0 },
+    subVendors: [
+      { role: 'studio', name: '세컨드플로어', amount: 1_150_000 },
+      { role: 'dress', name: '메종드로브', amount: 1_300_000 },
+      { role: 'makeup', name: '제니하우스 청담', amount: 980_000 },
+    ],
     lineItems: [
-      { kind: 'included', label: '대관료', amount: 2_000_000, note: null },
-      { kind: 'additional_candidate', label: '조명 추가', amount: null, note: '현장 결제' },
+      { kind: 'included', label: '대관료', amount: 2_000_000, amountMin: null, amountMax: null, note: null },
+      { kind: 'additional_candidate', label: '조명 추가', amount: null, amountMin: null, amountMax: null, note: '현장 결제' },
     ],
     terms: [
-      { category: 'refund', body: '계약금은 환불되지 않습니다.', flagged: true },
-      { category: 'schedule', body: '날짜 변경은 1회 가능합니다.', flagged: false },
+      { category: 'refund', body: '계약금은 환불되지 않습니다.', flagged: true, daysBeforeWedding: null, penaltyRate: null },
+      { category: 'schedule', body: '날짜 변경은 1회 가능합니다.', flagged: false, daysBeforeWedding: null, penaltyRate: null },
     ],
     personalInfoKinds: ['name', 'phone'],
     ...overrides,
@@ -369,6 +380,191 @@ describeWithDb('분석 워커', () => {
     // 표본 3,000,000~3,600,000의 중앙값은 3,300,000. 내 견적 3,280,000은 그 언저리다.
     expect(comparison.stat.median).toBe(3_300_000);
     expect(comparison.judgement).toBe('similar');
+  });
+
+  it('견적서에 적힌 조건을 빠짐없이 담는다', async () => {
+    const { headers, analysisId } = await queueAnalysis();
+
+    await runOnce({
+      pool: test.pool,
+      storage: test.context.storage,
+      analyzer: fakeAnalyzer(
+        extraction({
+          hallName: { value: '그랜드볼룸', confidence: 0.9 },
+          guaranteedGuests: { value: 200, confidence: 0.9 },
+          mealPricePerPerson: { value: 68_000, confidence: 0.85 },
+        })
+      ),
+    });
+
+    const quoteId = (
+      await test.app.inject({ method: 'GET', url: `/v1/analyses/${analysisId}`, headers })
+    ).json().quoteId;
+    const quote = (
+      await test.app.inject({ method: 'GET', url: `/v1/quotes/${quoteId}`, headers })
+    ).json();
+
+    // 가계약 검증이 보는 값들. 계약조건 본문에만 있으면 비교할 수 없다.
+    expect(quote).toMatchObject({
+      depositAmount: 500_000,
+      balanceAmount: 2_780_000,
+      weddingDate: '2027-03-20',
+      hallName: '그랜드볼룸',
+      guaranteedGuests: 200,
+      mealPricePerPerson: 68_000,
+    });
+  });
+
+  it('패키지 안의 업체를 각각 담고 따로 매칭한다', async () => {
+    // 스튜디오만 등록해두면 그것만 연결돼야 한다.
+    await test.pool.query(
+      `INSERT INTO structured.vendors (category, name, region, source)
+       VALUES ('sdm', '세컨드플로어', '서울 강남구', 'vendor_official')`
+    );
+
+    const { headers, analysisId } = await queueAnalysis();
+
+    await runOnce({
+      pool: test.pool,
+      storage: test.context.storage,
+      analyzer: fakeAnalyzer(extraction()),
+    });
+
+    const quoteId = (
+      await test.app.inject({ method: 'GET', url: `/v1/analyses/${analysisId}`, headers })
+    ).json().quoteId;
+    const subVendors = (
+      await test.app.inject({ method: 'GET', url: `/v1/quotes/${quoteId}`, headers })
+    ).json().subVendors;
+
+    // 사업계획서 19번: 스튜디오·드레스·메이크업을 하나로 합치지 않는다.
+    expect(subVendors).toHaveLength(3);
+    expect(subVendors.find((v: { role: string }) => v.role === 'studio')).toMatchObject({
+      name: '세컨드플로어',
+      amount: 1_150_000,
+      matched: true,
+    });
+    expect(subVendors.find((v: { role: string }) => v.role === 'dress')?.matched).toBe(false);
+  });
+
+  it('기준보다 무거운 위약금 조항에 안내를 붙인다', async () => {
+    const { headers, analysisId } = await queueAnalysis();
+
+    await runOnce({
+      pool: test.pool,
+      storage: test.context.storage,
+      analyzer: fakeAnalyzer(
+        extraction({
+          terms: [
+            {
+              category: 'penalty',
+              body: '예식일 30일 이내 취소 시 총액의 50%를 배상합니다.',
+              flagged: true,
+              daysBeforeWedding: 29,
+              penaltyRate: 0.5,
+            },
+            {
+              category: 'penalty',
+              body: '예식일 59일 이내 취소 시 총액의 20%를 배상합니다.',
+              flagged: false,
+              daysBeforeWedding: 59,
+              penaltyRate: 0.2,
+            },
+          ],
+        })
+      ),
+    });
+
+    const quoteId = (
+      await test.app.inject({ method: 'GET', url: `/v1/analyses/${analysisId}`, headers })
+    ).json().quoteId;
+    const terms = (
+      await test.app.inject({ method: 'GET', url: `/v1/quotes/${quoteId}`, headers })
+    ).json().terms;
+
+    const harsher = terms.find((t: { penaltyRate: number }) => t.penaltyRate === 0.5);
+    const withinStandard = terms.find((t: { penaltyRate: number }) => t.penaltyRate === 0.2);
+
+    // 소비자분쟁해결기준은 29일 이후 35%다. 50%는 그보다 무겁다.
+    expect(harsher.standardNote).toContain('35%');
+    expect(harsher.standardNote).toContain('50%');
+    // 기준 안에 있는 조항에는 아무 말도 붙이지 않는다.
+    expect(withinStandard.standardNote).toBeNull();
+  });
+
+  it('기본 제공이어야 할 항목이 추가비용에 있으면 알린다', async () => {
+    const { headers, analysisId } = await queueAnalysis();
+
+    await runOnce({
+      pool: test.pool,
+      storage: test.context.storage,
+      analyzer: fakeAnalyzer(
+        extraction({
+          lineItems: [
+            {
+              kind: 'additional_candidate',
+              label: '메이크업 얼리스타트(오전 6시 이전)',
+              amount: 50_000,
+              amountMin: null,
+              amountMax: null,
+              note: null,
+            },
+            {
+              kind: 'additional_candidate',
+              label: '지방 예식 출장비',
+              amount: null,
+              amountMin: null,
+              amountMax: null,
+              note: '별도 협의',
+            },
+          ],
+        })
+      ),
+    });
+
+    const quoteId = (
+      await test.app.inject({ method: 'GET', url: `/v1/analyses/${analysisId}`, headers })
+    ).json().quoteId;
+    const items = (
+      await test.app.inject({ method: 'GET', url: `/v1/quotes/${quoteId}`, headers })
+    ).json().lineItems;
+
+    // 공정거래위원회가 기본 제공에 포함하도록 시정한 항목이다.
+    expect(items.find((i: { label: string }) => i.label.includes('얼리스타트')).standardNote)
+      .toContain('기본 제공');
+    expect(items.find((i: { label: string }) => i.label.includes('출장비')).standardNote).toBeNull();
+  });
+
+  it('범위로 적힌 금액을 하한·상한으로 담는다', async () => {
+    const { headers, analysisId } = await queueAnalysis();
+
+    await runOnce({
+      pool: test.pool,
+      storage: test.context.storage,
+      analyzer: fakeAnalyzer(
+        extraction({
+          lineItems: [
+            {
+              kind: 'additional_candidate',
+              label: '생화 장식 업그레이드',
+              amount: null,
+              amountMin: 1_500_000,
+              amountMax: 3_000_000,
+              note: '150만원 ~ 300만원',
+            },
+          ],
+        })
+      ),
+    });
+
+    const quoteId = (
+      await test.app.inject({ method: 'GET', url: `/v1/analyses/${analysisId}`, headers })
+    ).json().quoteId;
+    const items = (
+      await test.app.inject({ method: 'GET', url: `/v1/quotes/${quoteId}`, headers })
+    ).json().lineItems;
+
+    expect(items[0]).toMatchObject({ amountMin: 1_500_000, amountMax: 3_000_000 });
   });
 
   it('워커가 여럿이어도 같은 문서를 두 번 분석하지 않는다', async () => {

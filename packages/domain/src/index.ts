@@ -1,3 +1,4 @@
+export * from './consumer-standards';
 export * from './document';
 export * from './policy';
 export * from './product';

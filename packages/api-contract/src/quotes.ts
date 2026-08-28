@@ -31,7 +31,15 @@ export const quoteLineItemSchema = z.object({
   kind: z.enum(['included', 'excluded', 'additional_candidate']),
   label: z.string().min(1),
   amount: amountSchema.nullable(),
+  /** 금액이 범위로 적혀 있을 때. */
+  amountMin: amountSchema.nullable(),
+  amountMax: amountSchema.nullable(),
   note: z.string().optional(),
+  /**
+   * 공개된 소비자 보호 기준과 견준 결과. 서버가 계산해 문장으로 내려준다.
+   * 법률 판단이 아니라 확인해볼 거리다 (이용약관 제3조, 사업계획서 8번).
+   */
+  standardNote: z.string().nullable(),
 });
 
 export const contractTermSchema = z.object({
@@ -39,6 +47,19 @@ export const contractTermSchema = z.object({
   category: z.enum(['cancellation', 'refund', 'penalty', 'schedule', 'other']),
   body: z.string().min(1),
   flagged: z.boolean(),
+  /** 조항이 적용되는 시점(예식일까지 남은 날)과 총액 대비 비율. 읽어내지 못하면 null. */
+  daysBeforeWedding: z.int().nonnegative().nullable(),
+  penaltyRate: z.number().min(0).max(1).nullable(),
+  /** 공개 기준과 견준 결과. 기준 안이면 null. */
+  standardNote: z.string().nullable(),
+});
+
+export const quoteSubVendorSchema = z.object({
+  role: z.enum(['studio', 'dress', 'makeup', 'planning', 'snap', 'other']),
+  name: z.string().min(1),
+  amount: amountSchema.nullable(),
+  /** 업체로 연결됐는지. 연결돼야 그 업체 기준으로 비교할 수 있다. */
+  matched: z.boolean(),
 });
 
 export const quoteSchema = z.object({
@@ -51,6 +72,15 @@ export const quoteSchema = z.object({
   totalAmount: amountSchema.nullable(),
   discountAmount: amountSchema.nullable(),
   contractDate: dateSchema.nullable(),
+  weddingDate: dateSchema.nullable(),
+  depositAmount: amountSchema.nullable(),
+  balanceAmount: amountSchema.nullable(),
+  /** 웨딩홀 견적에만 있다. */
+  hallName: z.string().nullable(),
+  guaranteedGuests: z.int().positive().nullable(),
+  mealPricePerPerson: amountSchema.nullable(),
+  /** 스드메처럼 업체가 여럿인 패키지의 개별 업체. */
+  subVendors: z.array(quoteSubVendorSchema),
   verificationLevel: verificationLevelSchema,
   source: sourceTypeSchema,
   lineItems: z.array(quoteLineItemSchema),

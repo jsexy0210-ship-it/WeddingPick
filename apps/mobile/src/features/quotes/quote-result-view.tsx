@@ -32,7 +32,26 @@ const UNAVAILABLE_MESSAGE = {
   amount_unconfirmed: '금액을 확인하면 비교할 수 있습니다.',
 } as const;
 
+const ROLE_LABEL = {
+  studio: '스튜디오',
+  dress: '드레스',
+  makeup: '메이크업',
+  planning: '플래닝',
+  snap: '스냅',
+  other: '기타',
+} as const;
+
 export const won = (amount: number) => `${amount.toLocaleString('ko-KR')}원`;
+
+/** 항목 금액. 범위로 적힌 것은 범위 그대로 보여준다. */
+function itemAmount(item: { amount: number | null; amountMin: number | null; amountMax: number | null }) {
+  if (item.amount !== null) return won(item.amount);
+  if (item.amountMin !== null && item.amountMax !== null) {
+    return `${won(item.amountMin)}~${won(item.amountMax)}`;
+  }
+  if (item.amountMin !== null) return `${won(item.amountMin)}부터`;
+  return null;
+}
 
 type Props = {
   quote: Quote;
@@ -77,7 +96,44 @@ export function QuoteResultView({ quote, comparison, confirm, header, contentSty
         <ThemedText type="subtitle">
           {quote.totalAmount === null ? '읽지 못함' : won(quote.totalAmount)}
         </ThemedText>
+        {quote.depositAmount !== null || quote.balanceAmount !== null ? (
+          <ThemedText type="small" themeColor="textSecondary">
+            {[
+              quote.depositAmount !== null && `계약금 ${won(quote.depositAmount)}`,
+              quote.balanceAmount !== null && `잔금 ${won(quote.balanceAmount)}`,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </ThemedText>
+        ) : null}
+        {quote.guaranteedGuests !== null || quote.mealPricePerPerson !== null ? (
+          <ThemedText type="small" themeColor="textSecondary">
+            {[
+              quote.guaranteedGuests !== null && `보증인원 ${quote.guaranteedGuests}명`,
+              quote.mealPricePerPerson !== null &&
+                `1인 식대 ${won(quote.mealPricePerPerson)}`,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </ThemedText>
+        ) : null}
       </ThemedView>
+
+      {quote.subVendors.length > 0 ? (
+        <ThemedView style={styles.section}>
+          <ThemedText type="smallBold">패키지 구성</ThemedText>
+          {quote.subVendors.map((sub) => (
+            <ThemedView key={`${sub.role}-${sub.name}`} type="backgroundElement" style={styles.row}>
+              <ThemedText type="small" style={styles.rowLabel}>
+                {ROLE_LABEL[sub.role]} · {sub.name}
+              </ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                {sub.amount === null ? '금액 미기재' : won(sub.amount)}
+              </ThemedText>
+            </ThemedView>
+          ))}
+        </ThemedView>
+      ) : null}
 
       {pending.length > 0 ? (
         <ThemedView style={styles.section}>
@@ -151,14 +207,18 @@ export function QuoteResultView({ quote, comparison, confirm, header, contentSty
         <ThemedView style={styles.section}>
           <ThemedText type="smallBold">항목</ThemedText>
           {quote.lineItems.map((item) => (
-            <ThemedView key={item.id} type="backgroundElement" style={styles.row}>
-              <ThemedText type="small" style={styles.rowLabel}>
-                {item.label}
-              </ThemedText>
+            <ThemedView key={item.id} type="backgroundElement" style={styles.card}>
+              {/* 항목 이름이 길어 한 줄에 금액과 나란히 두면 눌린다. 아래로 내린다. */}
+              <ThemedText type="small">{item.label}</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">
                 {KIND_LABEL[item.kind]}
-                {item.amount === null ? '' : ` · ${won(item.amount)}`}
+                {itemAmount(item) ? ` · ${itemAmount(item)}` : ''}
               </ThemedText>
+              {item.standardNote ? (
+                <ThemedText type="small" style={styles.standardNote}>
+                  {item.standardNote}
+                </ThemedText>
+              ) : null}
             </ThemedView>
           ))}
         </ThemedView>
@@ -173,6 +233,12 @@ export function QuoteResultView({ quote, comparison, confirm, header, contentSty
                 {term.flagged ? '⚠ ' : ''}
                 {term.body}
               </ThemedText>
+              {/* 공개 기준과 견준 결과. 법률 판단이 아니라 확인해볼 거리다. */}
+              {term.standardNote ? (
+                <ThemedText type="small" style={styles.standardNote}>
+                  {term.standardNote}
+                </ThemedText>
+              ) : null}
             </ThemedView>
           ))}
         </ThemedView>
@@ -214,7 +280,7 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: Spacing.three,
     padding: Spacing.three,
-    gap: Spacing.two,
+    gap: Spacing.one,
   },
   row: {
     flexDirection: 'row',
@@ -226,6 +292,9 @@ const styles = StyleSheet.create({
   },
   rowLabel: {
     flex: 1,
+  },
+  standardNote: {
+    color: '#B4571A',
   },
   input: {
     borderWidth: 1,
