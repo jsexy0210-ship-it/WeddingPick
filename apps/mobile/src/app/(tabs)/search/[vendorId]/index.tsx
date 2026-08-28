@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { getVendor } from '@/api/client';
+import { addCandidate, ensureWedding, getVendor } from '@/api/client';
 import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
 import { won } from '@/features/quotes/quote-result-view';
 
@@ -20,6 +20,8 @@ export default function VendorDetailScreen() {
   const theme = useTheme();
   const [vendor, setVendor] = useState<VendorDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [saveNote, setSaveNote] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     getVendor(vendorId)
@@ -45,6 +47,22 @@ export default function VendorDetailScreen() {
         <ActivityIndicator color={theme.tint} />
       </Frame>
     );
+  }
+
+  async function save() {
+    setSaving(true);
+    setSaveNote(null);
+
+    try {
+      const weddingId = await ensureWedding();
+
+      await addCandidate(weddingId, vendor!.id);
+      setSaveNote('담았습니다. 내 웨딩에서 보실 수 있습니다.');
+    } catch (caught) {
+      setSaveNote(caught instanceof Error ? caught.message : '담지 못했습니다.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -196,8 +214,23 @@ export default function VendorDetailScreen() {
           </ThemedView>
 
           <ThemedView style={styles.section}>
+            {/*
+              담아두는 자리. 사람이 아니라 웨딩에 매단다 — 배우자가 같은 목록을
+              보고, 그래야 같은 이야기를 할 수 있다.
+            */}
             <ActionButton
               variant="primary"
+              label={saving ? '담는 중…' : '후보에 담기'}
+              hint="배우자와 함께 보는 목록에 들어갑니다"
+              disabled={saving}
+              onPress={() => void save()}
+            />
+            {saveNote ? (
+              <ThemedText type="small" themeColor="textSecondary">
+                {saveNote}
+              </ThemedText>
+            ) : null}
+            <ActionButton
               label="내 견적서와 비교하기"
               hint="견적서를 올리면 이 업체의 실제 계약과 견줘 보여드립니다"
               onPress={() => router.push('/capture')}

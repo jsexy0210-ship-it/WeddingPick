@@ -5,6 +5,7 @@ import { ZodError } from 'zod';
 import type { AppContext } from './context';
 import { ApiError } from './errors';
 import { registerAnalysisRoutes } from './routes/analyses';
+import { registerCandidateRoutes } from './routes/candidates';
 import { registerAuthRoutes } from './routes/auth';
 import { registerDevStorageRoutes } from './routes/dev-storage';
 import { registerDeviceRoutes } from './routes/devices';
@@ -82,6 +83,7 @@ export function buildServer(context: AppContext): FastifyInstance {
   registerQuoteRoutes(app, context);
   registerVerificationRoutes(app, context);
   registerVendorRoutes(app, context);
+  registerCandidateRoutes(app, context);
   registerPlannerRoutes(app, context);
   registerInquiryRoutes(app, context);
   registerDeviceRoutes(app, context);

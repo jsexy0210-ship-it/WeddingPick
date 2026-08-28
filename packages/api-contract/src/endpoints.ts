@@ -1,6 +1,10 @@
 import { z, type ZodType } from 'zod';
 
 import { analysisSchema } from './analyses';
+import {
+  candidateListResponseSchema,
+  createCandidateRequestSchema,
+} from './candidates';
 import { idSchema } from './common';
 import {
   authProvidersResponseSchema,
@@ -210,6 +214,32 @@ export const ENDPOINTS = {
     method: 'GET',
     path: '/v1/vendors/{vendorId}',
     response: vendorDetailSchema,
+  },
+
+  /**
+   * 담아둔 업체. 사업계획서 v3 8번의 COMPARE.
+   *
+   * 사람이 아니라 **웨딩**에 매달려 있다 — 배우자가 담은 곳을 내가 보고, 내가
+   * 담은 곳을 배우자가 본다.
+   */
+  listCandidates: {
+    method: 'GET',
+    path: '/v1/weddings/{weddingId}/candidates',
+    response: candidateListResponseSchema,
+  },
+
+  addCandidate: {
+    method: 'POST',
+    path: '/v1/weddings/{weddingId}/candidates',
+    body: createCandidateRequestSchema,
+    response: z.object({ candidateId: idSchema }),
+  },
+
+  /** 빼기. 배우자가 담은 것도 뺄 수 있다 — 함께 고르는 것이라서. */
+  removeCandidate: {
+    method: 'DELETE',
+    path: '/v1/weddings/{weddingId}/candidates/{candidateId}',
+    response: z.null(),
   },
 
   /**

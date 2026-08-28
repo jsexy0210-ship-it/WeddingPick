@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView, VerificationBadge } from '@weddingpick/ui';
+import { ensureWedding } from '@/api/client';
 import { useDocumentStore } from '@/features/documents/document-store';
 
 /**
@@ -12,12 +13,27 @@ import { useDocumentStore } from '@/features/documents/document-store';
 export default function WeddingScreen() {
   const { sets, ready } = useDocumentStore();
 
+  /*
+   * 후보는 웨딩에 매달려 있어 웨딩 id가 필요하다. 아직 없으면 여기서 만든다 —
+   * 담아두려고 들어온 사람에게 "먼저 웨딩을 만드세요"라고 하지 않는다.
+   */
+  async function openCandidates() {
+    const weddingId = await ensureWedding();
+
+    router.push(`/wedding/${weddingId}/candidates`);
+  }
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.header}>
             <ThemedText type="subtitle">내 웨딩</ThemedText>
+            <ActionButton
+              label="담아둔 곳 보기"
+              hint="배우자와 함께 보는 후보 목록입니다"
+              onPress={() => void openCandidates()}
+            />
             <ActionButton
               label="배우자와 함께 보기"
               hint="견적과 비교 결과를 함께 보며 결정할 수 있습니다"

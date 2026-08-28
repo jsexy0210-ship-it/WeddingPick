@@ -1,5 +1,6 @@
 import {
   analysisSchema,
+  candidateListResponseSchema,
   authProvidersResponseSchema,
   comparisonResponseSchema,
   completeUploadResponseSchema,
@@ -31,6 +32,7 @@ import {
   weddingInviteListResponseSchema,
   verificationRequestSchema,
   weddingDetailSchema,
+  type CandidateListResponse,
   type Analysis,
   type ComparisonResponse,
   type AuthProvidersResponse,
@@ -287,6 +289,34 @@ export async function compareVendors(ids: string[]): Promise<VendorComparisonRes
 }
 
 /**
+ * 담아둔 업체.
+ *
+ * 사람이 아니라 웨딩에 매달려 있다 — 배우자가 담은 곳이 함께 온다.
+ */
+export async function listCandidates(weddingId: string): Promise<CandidateListResponse> {
+  return request(`/v1/weddings/${weddingId}/candidates`, candidateListResponseSchema);
+}
+
+export async function addCandidate(
+  weddingId: string,
+  vendorId: string,
+  note?: string
+): Promise<{ candidateId: string }> {
+  return request(`/v1/weddings/${weddingId}/candidates`, z.object({ candidateId: z.string() }), {
+    method: 'POST',
+    body: JSON.stringify({ vendorId, ...(note ? { note } : {}) }),
+  });
+}
+
+/** 빼기. 배우자가 담은 것도 뺄 수 있다 — 함께 고르는 것이라서. */
+export async function removeCandidate(weddingId: string, candidateId: string): Promise<void> {
+  await request(`/v1/weddings/${weddingId}/candidates/${candidateId}`, z.null(), {
+    method: 'DELETE',
+  });
+}
+
+/**
+ * 결제문자에서 값을 읽는다./**
  * 결제문자에서 값을 읽는다. AI를 부르지 않는다 — 서버의 규칙 엔진이 읽는다.
  *
  * 읽기만 하고 저장하지 않는다. 사람이 확인한 뒤에 등록이 따로 간다.
