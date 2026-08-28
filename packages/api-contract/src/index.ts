@@ -8,6 +8,7 @@ export * from './endpoints';
 export * from './errors';
 export * from './inquiries';
 export * from './planners';
+export * from './price-reports';
 export * from './quotes';
 export * from './vendors';
 export * from './verification';

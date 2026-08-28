@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { reportedPriceSchema } from './price-reports';
+
 import { MAX_COMPARED_VENDORS } from '@weddingpick/domain';
 
 import { documentTypeSchema, idSchema, vendorCategorySchema } from './common';
@@ -55,6 +57,14 @@ export const vendorDetailSchema = vendorSummarySchema.extend({
   lastVerifiedAt: z.string().min(1),
   /** 가격을 보여줄 수 있는 상품들. 비어 있으면 아직 자료가 모이지 않았다는 뜻이다. */
   products: z.array(vendorProductStatSchema),
+  /**
+   * 이용자가 문서 없이 적어준 금액.
+   *
+   * `products`와 **다른 자리에 둔다.** 하나로 합치지 않는 것이 규칙이라
+   * 계약에서부터 갈라놓는다 — 같은 배열에 넣으면 화면이 둘을 헷갈리고,
+   * 헷갈리면 섞여 나간다(서비스정책서 2번).
+   */
+  reportedPrice: reportedPriceSchema,
 });
 
 /**

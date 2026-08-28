@@ -20,6 +20,7 @@ import {
   inquirySchema,
 } from './inquiries';
 import { registerDeviceRequestSchema, registerDeviceResponseSchema } from './devices';
+import { createPriceReportRequestSchema, createPriceReportResponseSchema } from './price-reports';
 import {
   plannerDetailSchema,
   plannerRegionsResponseSchema,
@@ -273,6 +274,19 @@ export const ENDPOINTS = {
    * 등록한다고 알림을 받게 되는 것은 아니다 — 파기 알림은 운영자에게만 가고,
    * 운영자 표시는 사람이 DB에서 직접 켠다. 이 경로로는 어떤 권한도 오르지 않는다.
    */
+  /**
+   * 가격 제보. 문서 없이 받는다.
+   *
+   * 이 값은 시장 대표가격에 들어가지 않는다 — 다른 표에 저장되고 화면에서도
+   * 따로 표시된다(서비스정책서 2번).
+   */
+  createPriceReport: {
+    method: 'POST',
+    path: '/v1/price-reports',
+    body: createPriceReportRequestSchema,
+    response: createPriceReportResponseSchema,
+  },
+
   registerDevice: {
     method: 'POST',
     path: '/v1/devices',

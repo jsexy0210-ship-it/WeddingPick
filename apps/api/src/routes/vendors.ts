@@ -1,7 +1,9 @@
 import {
   MAX_COMPARED_VENDORS,
+  PRICE_REPORT_CAVEAT,
   comparisonCaveats,
   computePriceStat,
+  summarizeReports,
   type PriceSample,
   type VendorCategory,
 } from '@weddingpick/domain';
@@ -171,8 +173,32 @@ async function loadVendorDetail(pool: Pool, vendorId: string) {
 
   products.sort((a, b) => a.productLabel.localeCompare(b.productLabel, 'ko'));
 
+  /*
+   * 제보는 따로 읽어 따로 내려보낸다.
+   *
+   * 위의 comparable_quotes와 UNION하지 않는다 — 서비스정책서 2번은 시장
+   * 대표가격의 근거를 L2 이상으로 못박았고, 제보는 그 근거를 갖지 못한다.
+   * 표를 나눠둔 이유가 여기서 지켜진다.
+   */
+  const reports = await pool.query<{ total_amount: string; contracted_on: Date }>(
+    `SELECT total_amount, contracted_on
+     FROM structured.usable_price_reports
+     WHERE vendor_id = $1`,
+    [vendor.id]
+  );
+
+  const reported = summarizeReports(
+    reports.rows.map((row) => ({
+      totalAmount: Number(row.total_amount),
+      contractedOn: row.contracted_on.toISOString().slice(0, 7),
+    }))
+  );
+
   return {
     ...toSummary(vendor),
+    reportedPrice: reported.available
+      ? { ...reported, caveat: PRICE_REPORT_CAVEAT }
+      : reported,
     lastVerifiedAt: vendor.last_verified_at.toISOString(),
     products,
   };

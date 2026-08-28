@@ -12,6 +12,7 @@ export * from './policy';
 export * from './retention-alert';
 export * from './review';
 export * from './product';
+export * from './price-report';
 export * from './pricing';
 export * from './vendor';
 export * from './vendor-comparison';
