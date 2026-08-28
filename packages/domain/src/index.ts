@@ -8,6 +8,7 @@ export * from './partner-link';
 export * from './planner-listing';
 export * from './policies';
 export * from './policy';
+export * from './retention-alert';
 export * from './product';
 export * from './pricing';
 export * from './vendor';

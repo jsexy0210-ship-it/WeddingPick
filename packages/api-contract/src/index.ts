@@ -2,6 +2,7 @@ export * from './analyses';
 export * from './auth';
 export * from './common';
 export * from './comparison';
+export * from './devices';
 export * from './documents';
 export * from './endpoints';
 export * from './errors';

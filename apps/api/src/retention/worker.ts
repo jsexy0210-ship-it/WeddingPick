@@ -152,3 +152,116 @@ export async function markUnreachableForReview(pool: Pool): Promise<number> {
 
   return rowCount ?? 0;
 }
+
+
+export type DueDocument = {
+  id: string;
+  ownerUserId: string;
+  retentionUntil: Date;
+  personalInfoKinds: string[];
+  storageKeys: string[];
+};
+
+/** 파기 예정일이 지난 원본. 사람이 지운다. */
+export async function listDueDocuments(pool: Pool): Promise<DueDocument[]> {
+  const { rows } = await pool.query<{
+    id: string;
+    owner_user_id: string;
+    retention_until: Date;
+    personal_info_kinds: string[];
+    storage_keys: string[] | null;
+  }>(
+    `SELECT
+       d.id, d.owner_user_id, d.retention_until, d.personal_info_kinds,
+       COALESCE(
+         (SELECT array_agg(p.storage_key ORDER BY p.page_index)
+            FROM originals.raw_document_pages p WHERE p.raw_document_id = d.id),
+         ARRAY[]::text[]
+       ) AS storage_keys
+     FROM originals.documents_due_for_deletion d
+     ORDER BY d.retention_until`
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    ownerUserId: row.owner_user_id,
+    retentionUntil: row.retention_until,
+    personalInfoKinds: row.personal_info_kinds,
+    storageKeys: row.storage_keys ?? [],
+  }));
+}
+
+export type DeleteOutcome =
+  | { ok: true; keysDeleted: number }
+  | { ok: false; reason: string };
+
+/**
+ * 원본 하나를 지운다. 사람이 고른 것만 지운다.
+ *
+ * 자동 청소(sweepExpiredDocuments)와 같은 순서를 따른다 — 파일을 먼저 지우고,
+ * 다 지워진 뒤에야 기록을 남긴다. 반대로 하면 기록은 "지웠다"인데 파일은 남는
+ * 상태가 생기고, 그건 파기 기록이 거짓이 되는 것이다.
+ *
+ * 페이지 기록이 없는 문서는 거절한다. 지울 파일을 우리가 모르는 상태에서
+ * "지웠다"고 적을 수는 없다.
+ */
+export async function deleteDocument(
+  deps: RetentionDeps,
+  documentId: string
+): Promise<DeleteOutcome> {
+  const { rows } = await deps.pool.query<{
+    retention_until: Date | null;
+    deleted_at: Date | null;
+    storage_keys: string[] | null;
+  }>(
+    `SELECT
+       d.retention_until, d.deleted_at,
+       (SELECT array_agg(p.storage_key ORDER BY p.page_index)
+          FROM originals.raw_document_pages p WHERE p.raw_document_id = d.id) AS storage_keys
+     FROM originals.raw_documents d WHERE d.id = $1`,
+    [documentId]
+  );
+
+  const found = rows[0];
+
+  if (!found) return { ok: false, reason: '없는 문서다.' };
+  if (found.deleted_at) return { ok: false, reason: '이미 지워진 문서다.' };
+
+  if (!found.retention_until) {
+    return { ok: false, reason: '보관 기간이 정해지지 않아 파기 예정일이 없다.' };
+  }
+
+  if (found.retention_until > new Date()) {
+    // 예정일 전에 지우는 것은 사용자와의 약속을 깨는 일이다. 앱이 그 날짜를
+    // 화면에 보여주고 있다.
+    return { ok: false, reason: '아직 파기 예정일이 아니다.' };
+  }
+
+  const keys = found.storage_keys ?? [];
+
+  if (keys.length === 0) {
+    return {
+      ok: false,
+      reason: '페이지 기록이 없어 지울 파일을 알 수 없다. 스토리지를 직접 확인해야 한다.',
+    };
+  }
+
+  for (const key of keys) {
+    await deps.storage.delete(key);
+  }
+
+  await withTransaction(deps.pool, async (client) => {
+    await client.query(
+      `UPDATE originals.raw_documents
+       SET status = 'deleted', deleted_at = now()
+       WHERE id = $1`,
+      [documentId]
+    );
+
+    await client.query('DELETE FROM originals.raw_document_pages WHERE raw_document_id = $1', [
+      documentId,
+    ]);
+  });
+
+  return { ok: true, keysDeleted: keys.length };
+}

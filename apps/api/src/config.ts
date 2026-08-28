@@ -23,6 +23,21 @@ const configSchema = z.object({
   originalRetentionDays: z.coerce.number().int().positive().optional(),
 
   /**
+   * 예정일이 된 원본을 누가 지우는가.
+   *
+   * - `manual` — 사람이 지운다. 서버는 알리기만 한다. **기본값이다.**
+   * - `automatic` — 서버가 지운다.
+   *
+   * 운영 결정으로 manual을 기본에 둔다. 기본값을 automatic으로 두면, 설정을
+   * 빠뜨린 환경이 남의 계약서를 조용히 지운다. 지우지 않고 알리는 쪽이 되돌릴 수
+   * 있는 실수다.
+   */
+  retentionMode: z.enum(['manual', 'automatic']).default('manual'),
+
+  /** 파기할 문서가 처리되지 않은 채 이만큼 지나면 운영자에게 다시 알린다. */
+  retentionReminderHours: z.coerce.number().int().positive().default(24),
+
+  /**
    * 브라우저에서 API를 부를 수 있는 출처. 비워두면 CORS 헤더를 내보내지 않는다.
    * 네이티브 앱은 CORS와 무관하다 — 웹에서 붙여볼 때만 필요하다.
    */
@@ -52,6 +67,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     sessionTtlDays: env.SESSION_TTL_DAYS,
     storage,
     originalRetentionDays: env.ORIGINAL_RETENTION_DAYS,
+    retentionMode: env.RETENTION_MODE,
+    retentionReminderHours: env.RETENTION_REMINDER_HOURS,
     corsOrigins: (env.CORS_ORIGINS ?? '')
       .split(',')
       .map((origin) => origin.trim())

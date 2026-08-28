@@ -11,6 +11,7 @@ import {
   quoteSchema,
   createInquiryResponseSchema,
   inquiryListResponseSchema,
+  registerDeviceResponseSchema,
   plannerDetailSchema,
   plannerRegionsResponseSchema,
   plannerSearchResponseSchema,
@@ -30,6 +31,8 @@ import {
   type CreateVerificationResponse,
   type ErrorCode,
   type CreateInquiryRequest,
+  type RegisterDeviceRequest,
+  type RegisterDeviceResponse,
   type CreateInquiryResponse,
   type InquiryListResponse,
   type PlannerDetail,
@@ -346,4 +349,20 @@ export async function acceptWeddingInvite(code: string): Promise<{ weddingId: st
 /** 연결 끊기. 어느 쪽이든 할 수 있다. */
 export async function unlinkPartner(weddingId: string): Promise<void> {
   await request(`/v1/weddings/${weddingId}/partner`, z.null(), { method: 'DELETE' });
+}
+
+/**
+ * 푸시 받을 기기를 등록한다.
+ *
+ * 등록한다고 알림을 받게 되는 것은 아니다 — 파기 알림은 운영자에게만 가고,
+ * 운영자인지는 서버가 판단한다. 앱은 자기가 운영자인지 알 필요가 없고,
+ * 알려고 하지도 않는다.
+ */
+export async function registerDevice(
+  body: RegisterDeviceRequest
+): Promise<RegisterDeviceResponse> {
+  return request('/v1/devices', registerDeviceResponseSchema, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
 }

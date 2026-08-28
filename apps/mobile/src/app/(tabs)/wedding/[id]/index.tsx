@@ -89,7 +89,7 @@ export default function DocumentSetScreen() {
             <ThemedText type="smallBold">보관</ThemedText>
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="small" themeColor="textSecondary">
-                이 문서는 기기 안에만 있습니다. 서버 보관 기간과 원본 자동삭제 기준은 아직 정해지지
+                이 문서는 기기 안에만 있습니다. 서버 보관 기간과 원본 파기 기준은 아직 정해지지
                 않았습니다.
               </ThemedText>
             </ThemedView>

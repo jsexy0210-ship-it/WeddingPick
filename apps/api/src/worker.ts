@@ -1,7 +1,11 @@
+import { RETENTION_UNSET_WARNING } from '@weddingpick/domain';
+
 import { createClaudeAnalyzer } from './analysis/claude-analyzer';
 import { runForever } from './analysis/worker';
 import { loadConfig } from './config';
 import { createPool } from './db';
+import { createExpoPush } from './push/expo';
+import { alertOperators } from './retention/alert';
 import { listRetentionAttention, sweepExpiredDocuments } from './retention/worker';
 import { createLocalStorage } from './storage/local';
 import { createS3Storage } from './storage/s3';
@@ -20,11 +24,14 @@ async function main() {
     config.storage.driver === 's3' ? createS3Storage(config.storage) : createLocalStorage();
 
   if (config.originalRetentionDays) {
-    console.log(`원본 보관 ${config.originalRetentionDays}일 후 자동삭제`);
-  } else {
-    console.warn(
-      'ORIGINAL_RETENTION_DAYS가 없어 원본을 자동삭제하지 않는다. 보관 기간을 정한 뒤 설정할 것.'
+    console.log(
+      `원본 보관 ${config.originalRetentionDays}일` +
+        (config.retentionMode === 'automatic'
+          ? ' 후 자동삭제'
+          : ' 후 파기 예정. 지우는 것은 사람이 하고, 서버는 운영자에게 알린다.')
     );
+  } else {
+    console.warn(RETENTION_UNSET_WARNING);
   }
 
   /*
@@ -35,10 +42,38 @@ async function main() {
    * 남아 있는데 아무도 모르는 상태가 된다. 그래서 있으면 매번 말한다.
    * 시끄러운 편이 낫다.
    */
+  const push = createExpoPush();
+
   const sweep = setInterval(() => {
     void (async () => {
       try {
-        await sweepExpiredDocuments({ pool, storage });
+        /*
+         * manual 모드에서는 아무것도 지우지 않는다. 예정일이 됐다고 알리기만
+         * 하고, 지우는 것은 사람이 한다.
+         */
+        if (config.retentionMode === 'automatic') {
+          await sweepExpiredDocuments({ pool, storage });
+        } else {
+          const result = await alertOperators({
+            pool,
+            push,
+            reminderAfterHours: config.retentionReminderHours,
+          });
+
+          if (result.dueCount > 0 && result.notified === 0) {
+            // 알릴 사람이 없으면 알림은 없는 것과 같다. 조용히 넘어가면
+            // 아무도 모르는 채 개인정보가 쌓인다.
+            console.error(
+              `파기 예정 원본 ${result.dueCount}건 — 알릴 운영자가 없거나 이미 알렸다. ` +
+                'npm run retention -- --due'
+            );
+          } else if (result.notified > 0 && result.delivered === 0) {
+            console.error(
+              `파기 예정 원본 ${result.dueCount}건을 알렸으나 어떤 기기에도 닿지 않았다. ` +
+                '운영자 기기가 등록되어 있는지 확인할 것.'
+            );
+          }
+        }
 
         const attention = await listRetentionAttention(pool);
 

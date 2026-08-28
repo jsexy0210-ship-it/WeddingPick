@@ -1,13 +1,19 @@
+import { RETENTION_UNSET_WARNING, retentionSummary } from '@weddingpick/domain';
+
 import { loadConfig } from './config';
 import { createPool } from './db';
 import {
+  deleteDocument,
+  listDueDocuments,
   listRetentionAttention,
   markUnreachableForReview,
   sweepExpiredDocuments,
   type AttentionDocument,
+  type DueDocument,
 } from './retention/worker';
 import { createLocalStorage } from './storage/local';
 import { createS3Storage } from './storage/s3';
+import type { Storage } from './storage/port';
 
 /**
  * 보관 점검 도구.
@@ -15,14 +21,20 @@ import { createS3Storage } from './storage/s3';
  * 서비스정책서 4번은 자동삭제 실패에 "알림 및 수동 처리 프로세스"를 요구한다.
  * 워커가 알리는 쪽이고, 여기가 처리하는 쪽이다.
  *
+ *   npm run retention --workspace @weddingpick/api -- --operator <user-id> [--off]
+ *   npm run retention --workspace @weddingpick/api -- --due
+ *   npm run retention --workspace @weddingpick/api -- --delete <document-id>
  *   npm run retention --workspace @weddingpick/api -- --list
  *   npm run retention --workspace @weddingpick/api -- --sweep
  *   npm run retention --workspace @weddingpick/api -- --collect-unreachable
  *
- * 이 도구는 파일을 지우는 일을 하지 않는다. `--sweep`은 정규 삭제 작업을 한 번
- * 더 돌릴 뿐이고, `--collect-unreachable`은 목록에 올리기만 한다. 남은 파일을
- * 실제로 확인하고 지우는 것은 스토리지를 보는 사람의 일이다 — 우리 기록만 보고
- * "지웠다"고 적으면 그 기록이 거짓이 된다.
+ * 원본을 지우는 것은 사람이 한다(운영 결정). `--due`로 때가 된 것을 보고
+ * `--delete`로 하나씩 지운다. 한 번에 다 지우는 명령은 두지 않았다 — 되돌릴 수
+ * 없는 일에 "전부"를 붙이면 손이 미끄러졌을 때 남는 것이 없다.
+ *
+ * `--collect-unreachable`은 목록에 올리기만 한다. 페이지 기록이 없다는 것은 지울
+ * 파일을 우리가 모른다는 뜻이므로, 스토리지는 사람이 직접 확인해야 한다.
+ * 우리 기록만 보고 "지웠다"고 적으면 그 기록이 거짓이 된다.
  */
 
 const REASON_LABEL: Record<AttentionDocument['reason'], string> = {
@@ -57,18 +69,32 @@ function describe(doc: AttentionDocument, now: Date): string {
   );
 }
 
+function describeDue(doc: DueDocument, now: Date): string {
+  const overdueDays = Math.floor(
+    (now.getTime() - doc.retentionUntil.getTime()) / (24 * 60 * 60 * 1000)
+  );
+  const kinds = doc.personalInfoKinds.map((kind) => PERSONAL_INFO_LABEL[kind] ?? kind);
+
+  return (
+    `${doc.id}  예정일 ${doc.retentionUntil.toISOString().slice(0, 10)}` +
+    (overdueDays > 0 ? ` (${overdueDays}일 지남)` : ' (오늘)') +
+    `  파일 ${doc.storageKeys.length}개` +
+    (kinds.length > 0 ? `  담긴 것: ${kinds.join(', ')}` : '')
+  );
+}
+
 async function main(): Promise<void> {
   const config = loadConfig();
   const pool = createPool(config.databaseUrl);
 
   try {
-    if (process.argv.includes('--sweep')) {
-      const storage =
-        config.storage.driver === 's3'
-          ? createS3Storage(config.storage)
-          : createLocalStorage(`http://localhost:${config.port}/dev-storage`);
+    const openStorage = (): Storage =>
+      config.storage.driver === 's3'
+        ? createS3Storage(config.storage)
+        : createLocalStorage(`http://localhost:${config.port}/dev-storage`);
 
-      const result = await sweepExpiredDocuments({ pool, storage });
+    if (process.argv.includes('--sweep')) {
+      const result = await sweepExpiredDocuments({ pool, storage: openStorage() });
 
       console.log(`지움 ${result.deleted}건, 실패 ${result.failed}건.`);
       return;
@@ -82,6 +108,83 @@ async function main(): Promise<void> {
           ? '삭제 작업이 못 보는 문서는 없다.'
           : `${moved}건을 처리 목록에 올렸다. 스토리지에 파일이 남아 있는지 직접 확인해야 한다.`
       );
+      return;
+    }
+
+    const deleteIndex = process.argv.indexOf('--delete');
+
+    if (deleteIndex !== -1) {
+      const documentId = process.argv[deleteIndex + 1];
+
+      if (!documentId) {
+        console.error('지울 문서 id가 필요하다.');
+        process.exitCode = 1;
+        return;
+      }
+
+      const outcome = await deleteDocument({ pool, storage: openStorage() }, documentId);
+
+      if (!outcome.ok) {
+        console.error(`지우지 않았다: ${outcome.reason}`);
+        process.exitCode = 1;
+        return;
+      }
+
+      console.log(`파일 ${outcome.keysDeleted}개를 지웠다. 파기 기록을 남겼다.`);
+      return;
+    }
+
+    const operatorIndex = process.argv.indexOf('--operator');
+
+    if (operatorIndex !== -1) {
+      const userId = process.argv[operatorIndex + 1];
+
+      if (!userId) {
+        console.error('운영자로 지정할 사용자 id가 필요하다.');
+        process.exitCode = 1;
+        return;
+      }
+
+      /*
+       * 운영자 표시는 사람이 여기서만 켠다. 앱에도 API에도 이 값을 바꾸는 길이
+       * 없다 — 알림을 받는 자리이자 남의 계약서를 지우는 자리라, 스스로 올라갈
+       * 수 있으면 안 된다.
+       */
+      const off = process.argv.includes('--off');
+      const { rowCount } = await pool.query(
+        'UPDATE structured.users SET is_operator = $2 WHERE id = $1::uuid',
+        [userId, !off]
+      );
+
+      console.log(
+        rowCount === 0
+          ? '없는 사용자다.'
+          : off
+            ? '운영자에서 내렸다. 이제 파기 알림을 받지 않는다.'
+            : '운영자로 지정했다. 이 사람의 기기로 파기 알림이 간다.'
+      );
+      return;
+    }
+
+    if (process.argv.includes('--due')) {
+      const due = await listDueDocuments(pool);
+
+      if (due.length === 0) {
+        // 비어 있는 것을 안전하다고 읽으면 안 된다.
+        console.log(
+          config.originalRetentionDays
+            ? '파기할 때가 된 원본이 없다.'
+            : RETENTION_UNSET_WARNING
+        );
+        return;
+      }
+
+      const attention = await listRetentionAttention(pool);
+      const now = new Date();
+
+      console.log(retentionSummary({ dueCount: due.length, attentionCount: attention.length }));
+      for (const doc of due) console.log(`  ${describeDue(doc, now)}`);
+      console.log('\n지우려면: npm run retention -- --delete <id>');
       return;
     }
 
@@ -106,7 +209,9 @@ async function main(): Promise<void> {
       return;
     }
 
-    console.log('--list, --sweep, --collect-unreachable 중 하나가 필요하다.');
+    console.log(
+      '--operator, --due, --delete, --list, --sweep, --collect-unreachable 중 하나가 필요하다.'
+    );
   } finally {
     await pool.end();
   }

@@ -62,7 +62,10 @@ function retentionNote(document: QuoteDocument): string {
   }
 
   if (document.retentionUntil) {
-    return `${formatDay(document.retentionUntil)}에 원본이 자동으로 지워집니다.`;
+    // "자동으로"라고 하지 않는다. 지우는 것은 사람이고, 사용자에게 중요한 것은
+    // 누가 지우는지가 아니라 언제 지워지는지다. 운영 방식이 바뀌어도 이 말은
+    // 거짓이 되지 않는다.
+    return `${formatDay(document.retentionUntil)}에 원본이 지워집니다. 정리된 결과는 그대로 남습니다.`;
   }
 
   return '보관 기간이 아직 정해지지 않았습니다. 정해지면 삭제 예정일을 여기에 표시합니다.';

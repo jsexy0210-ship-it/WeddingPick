@@ -19,6 +19,7 @@ import {
   inquiryListResponseSchema,
   inquirySchema,
 } from './inquiries';
+import { registerDeviceRequestSchema, registerDeviceResponseSchema } from './devices';
 import {
   plannerDetailSchema,
   plannerRegionsResponseSchema,
@@ -264,6 +265,19 @@ export const ENDPOINTS = {
     path: '/v1/wedding-invites/accept',
     body: acceptInviteRequestSchema,
     response: z.object({ weddingId: idSchema }),
+  },
+
+  /**
+   * 푸시 받을 기기 등록.
+   *
+   * 등록한다고 알림을 받게 되는 것은 아니다 — 파기 알림은 운영자에게만 가고,
+   * 운영자 표시는 사람이 DB에서 직접 켠다. 이 경로로는 어떤 권한도 오르지 않는다.
+   */
+  registerDevice: {
+    method: 'POST',
+    path: '/v1/devices',
+    body: registerDeviceRequestSchema,
+    response: registerDeviceResponseSchema,
   },
 } as const satisfies Record<string, EndpointDefinition>;
 

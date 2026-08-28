@@ -35,6 +35,8 @@ export async function createTestApp(): Promise<TestApp> {
     sessionTtlDays: 30,
     storage: { driver: 'local' },
     corsOrigins: [],
+    retentionMode: 'manual',
+    retentionReminderHours: 24,
   };
 
   const context: AppContext = {
