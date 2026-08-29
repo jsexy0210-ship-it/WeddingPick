@@ -9,8 +9,15 @@ import { useTheme } from '@weddingpick/ui';
  */
 export default function TabLayout() {
   const theme = useTheme();
-  // 카메라는 전체 화면을 써야 문서를 화면에 맞추기 쉽다.
-  const onCamera = useSegments().includes('camera');
+  /*
+   * 카메라는 전체 화면을 써야 문서를 화면에 맞추기 쉽다.
+   *
+   * 조각들을 문자열 배열로 받는다. 타입 생성기가 만드는 조각 유니온은 라우트를
+   * 더할 때마다 좁아져서, 어느 날 `includes`가 아무 값도 못 받는 상태가 된다 —
+   * 여기서 알고 싶은 것은 "카메라 화면인가" 하나뿐이라 그 유니온이 필요 없다.
+   */
+  const segments: readonly string[] = useSegments();
+  const onCamera = segments.includes('camera');
 
   return (
     <Tabs

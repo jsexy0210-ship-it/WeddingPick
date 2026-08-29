@@ -1,3 +1,4 @@
+import { vendorDetailSchema, vendorSearchResponseSchema } from '@weddingpick/api-contract';
 import { MAX_COMPARED_VENDORS, PRICING_POLICY, productKey } from '@weddingpick/domain';
 
 import {
@@ -117,6 +118,31 @@ describeWithDb('업체 검색', () => {
     expect(prices.paidPrice.stage).toBe('collecting');
     // 자료가 없다는 사실은 말해준다. 빈칸으로 두지 않는다.
     expect(prices.paidPrice.caption).toContain('수집 중');
+  });
+
+  it('상세 응답이 계약과 어긋나지 않는다', async () => {
+    /*
+     * 화면은 이 스키마로 응답을 읽는다. 어긋나면 화면이 통째로 "불러오지
+     * 못했습니다"가 되므로, 값 하나씩 짚는 것으로는 모자라고 응답 전체를
+     * 계약에 대본다.
+     */
+    const vendorId = await createVendor({ name: '계약확인홀' });
+
+    const response = await test.app.inject({ method: 'GET', url: `/v1/vendors/${vendorId}` });
+    const parsed = vendorDetailSchema.safeParse(response.json());
+
+    expect(parsed.error?.issues ?? []).toEqual([]);
+    expect(parsed.success).toBe(true);
+  });
+
+  it('목록 응답도 계약과 어긋나지 않는다', async () => {
+    await createVendor({ name: '목록확인홀' });
+
+    const response = await test.app.inject({ method: 'GET', url: '/v1/vendors' });
+    const parsed = vendorSearchResponseSchema.safeParse(response.json());
+
+    expect(parsed.error?.issues ?? []).toEqual([]);
+    expect(parsed.success).toBe(true);
   });
 
   it('결제인증을 낸 사람에게는 깊이가 열린다', async () => {

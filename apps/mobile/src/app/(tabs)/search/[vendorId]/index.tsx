@@ -1,4 +1,4 @@
-import type { VendorDetail } from '@weddingpick/api-contract';
+import type { ConditionStats, VendorDetail } from '@weddingpick/api-contract';
 import {
   DOCUMENT_TYPE_LABEL,
   MAX_RATING,
@@ -12,7 +12,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { addCandidate, ensureWedding, getVendor } from '@/api/client';
+import { addCandidate, ensureWedding, getVendor, getVendorConditions } from '@/api/client';
 import {
   ActionButton,
   MaxContentWidth,
@@ -35,6 +35,8 @@ export default function VendorDetailScreen() {
   const { vendorId } = useLocalSearchParams<{ vendorId: string }>();
   const theme = useTheme();
   const [vendor, setVendor] = useState<VendorDetail | null>(null);
+  /** 조건이 비슷한 결제 사례. 상세와 따로 읽는다 — 하나가 늦어도 나머지는 뜬다. */
+  const [conditions, setConditions] = useState<ConditionStats | null>(null);
   /** 출처를 펼쳤는가. 배지를 눌러 연다. */
   const [sourceOpen, setSourceOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +47,14 @@ export default function VendorDetailScreen() {
     getVendor(vendorId)
       .then(setVendor)
       .catch((caught: Error) => setError(caught.message));
+
+    /*
+     * 실패해도 조용히 넘긴다. 조건별은 곁가지라, 못 읽었다고 업체 화면 전체가
+     * 오류로 바뀌면 잃는 것이 더 크다.
+     */
+    getVendorConditions(vendorId)
+      .then(setConditions)
+      .catch(() => setConditions(null));
   }, [vendorId]);
 
   if (error) {
@@ -180,6 +190,45 @@ export default function VendorDetailScreen() {
                 hint={vendor.prices.deepDataNote}
                 onPress={() => router.push('/capture/payment/consent')}
               />
+            ) : null}
+
+            {/*
+              조건이 비슷한 결제 사례. v2.0 D-1.
+              위의 구간은 이 업체의 것이고, 이건 같은 업종에서 조건을 좁힌
+              것이다 — 둘을 나란히 두면 어느 쪽이 비싼지 보인다.
+             */}
+            {conditions?.available ? (
+              <ThemedView type="backgroundElement" style={styles.card}>
+                <ThemedText type="t7" themeColor="textSecondary">
+                  조건이 비슷한 결제
+                </ThemedText>
+                {/* 어느 조건의 숫자인지가 숫자보다 먼저다. */}
+                <ThemedText type="t5">{conditions.condition}</ThemedText>
+                {conditions.price.stage === 'collecting' ? (
+                  <ThemedText type="t6" themeColor="textSecondary">
+                    {conditions.price.caption}
+                  </ThemedText>
+                ) : (
+                  <>
+                    <ThemedText type="t4" numeric>
+                      {rangeLabel(conditions.price.low, conditions.price.high)}
+                    </ThemedText>
+                    <ThemedText type="t7" themeColor="textSecondary">
+                      {conditions.price.caption}
+                    </ThemedText>
+                  </>
+                )}
+              </ThemedView>
+            ) : null}
+
+            {/*
+              못 낼 때는 왜 못 내는지 적는다. 결제인증으로 여는 안내는 위에 이미
+              있으므로, 여기서는 자료가 모이는 중이라는 말만 한다.
+             */}
+            {conditions && !conditions.available && !vendor.prices.deepDataNote ? (
+              <ThemedText type="t7" themeColor="textSecondary">
+                {conditions.note}
+              </ThemedText>
             ) : null}
           </ThemedView>
 

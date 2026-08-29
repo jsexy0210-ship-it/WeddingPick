@@ -37,11 +37,13 @@ import {
   createInviteResponseSchema,
   invitePreviewResponseSchema,
   vendorSearchResponseSchema,
+  conditionStatsSchema,
   vendorClaimListResponseSchema,
   weddingInviteListResponseSchema,
   verificationRequestSchema,
   weddingDetailSchema,
   type CandidateListResponse,
+  type ConditionStats,
   type CreateRebuttalRequest,
   type CreateVendorClaimRequest,
   type VendorClaimListResponse,
@@ -319,6 +321,16 @@ export async function listVendorRegions(): Promise<VendorRegionsResponse> {
 
 export async function getVendor(vendorId: string): Promise<VendorDetail> {
   return request(`/v1/vendors/${vendorId}`, vendorDetailSchema);
+}
+
+/**
+ * 조건이 비슷한 결제 사례. v2.0 D-1.
+ *
+ * 실제 결제 구간(`getVendor`)과 다른 자리다 — 그건 누구나 보고, 이것은 결제인증이
+ * 여는 깊이다.
+ */
+export async function getVendorConditions(vendorId: string): Promise<ConditionStats> {
+  return request(`/v1/vendors/${vendorId}/conditions`, conditionStatsSchema);
 }
 
 /** A-17 업체 비교. 단서는 결과와 한 응답으로 온다. */

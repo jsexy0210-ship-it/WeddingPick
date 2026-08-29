@@ -2,6 +2,9 @@ import { DISCLOSURE_THRESHOLDS } from './disclosure';
 import {
   CONDITION_AXES,
   CONDITION_AXIS_LABEL,
+  CONDITION_NARROWING,
+  RECENT_PERIOD_LABEL,
+  narrowedLabel,
   canDiscloseNarrowed,
   coarseRegion,
   conditionStage,
@@ -70,5 +73,33 @@ describe('재식별 방지', () => {
     for (const axis of CONDITION_AXES) {
       expect(CONDITION_AXIS_LABEL[axis].length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('조건이 비슷한 사례', () => {
+  it('좁혀 들어가는 순서는 지역 다음 시기다', () => {
+    // 지역은 바꿀 수 없고 시기는 기다리면 달라진다. 하나만 남긴다면 지역이다.
+    expect(CONDITION_NARROWING).toEqual([null, 'region', 'period']);
+  });
+
+  it('좁힌 만큼만 조건을 적는다', () => {
+    const vendor = { category: '웨딩홀', region: '서울 강남구' };
+
+    expect(narrowedLabel(0, vendor)).toBe('웨딩홀 · 전국');
+    expect(narrowedLabel(1, vendor)).toBe('웨딩홀 · 서울');
+    expect(narrowedLabel(2, vendor)).toBe(`웨딩홀 · 서울 · ${RECENT_PERIOD_LABEL}`);
+  });
+
+  it('지역을 안 좁혔으면 전국이라고 적는다', () => {
+    /*
+     * 아무 말도 안 적으면 읽는 사람이 자기 지역의 숫자라고 넘겨짚는다. 그게
+     * 가장 흔한 오해다.
+     */
+    expect(narrowedLabel(0, { category: '스튜디오', region: '부산 해운대구' })).toContain('전국');
+  });
+
+  it('구까지 좁혀 적지 않는다', () => {
+    // 구까지 가면 "그 동네에서 결혼한 사람"이 되고, 그건 대개 몇 쌍이다.
+    expect(narrowedLabel(1, { category: '웨딩홀', region: '서울 강남구' })).not.toContain('강남구');
   });
 });

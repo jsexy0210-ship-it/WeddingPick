@@ -105,3 +105,44 @@ export function conditionStage(totalCount: number, conditionCount: number, axes:
 
   return disclosureStage(conditionCount);
 }
+
+/**
+ * 조건이 비슷한 사례를 찾을 때 좁혀 들어가는 순서. v2.0 D-1.
+ *
+ * **배열의 자리가 곧 좁힌 축의 수다.** 0번은 아무것도 안 좁힌 업종 전체이고,
+ * 뒤로 갈수록 좁다. `widestDisclosable`이 이 배열과 같은 길이의 건수를 받아
+ * 보여줄 수 있는 가장 넓은 자리를 고른다.
+ *
+ * 지역이 시기보다 앞인 이유: 지역은 사용자가 바꿀 수 없는 조건이고, 시기는
+ * 기다리면 달라진다. 하나만 남길 수 있다면 남길 것은 지역 쪽이다.
+ */
+export const CONDITION_NARROWING = [null, 'region', 'period'] as const satisfies readonly (
+  | ConditionAxis
+  | null
+)[];
+
+/** 시기 축이 보는 창. 최근 이만큼에 결제된 것만 같은 시기로 본다. */
+export const RECENT_PERIOD_MONTHS = 3;
+
+export const RECENT_PERIOD_LABEL = `최근 ${RECENT_PERIOD_MONTHS}개월`;
+
+/**
+ * 어느 조건의 숫자인지 화면에 적는 말.
+ *
+ * 숫자만 떼어놓으면 그것이 어느 조건의 값인지 모르는 채로 읽힌다. 조건별
+ * 통계에서는 이게 캡션보다 먼저다 — 무엇을 좁혔는지가 곧 그 숫자의 뜻이다.
+ */
+export function narrowedLabel(
+  axes: number,
+  input: { category: string; region: string }
+): string {
+  /*
+   * 지역을 안 좁혔으면 '전국'이라고 적는다. 아무 말도 안 적으면 읽는 사람이
+   * 자기 지역의 숫자라고 넘겨짚는다 — 그게 가장 흔한 오해다.
+   */
+  const parts = [input.category, axes >= 1 ? coarseRegion(input.region) : '전국'];
+
+  if (axes >= 2) parts.push(RECENT_PERIOD_LABEL);
+
+  return parts.join(' · ');
+}

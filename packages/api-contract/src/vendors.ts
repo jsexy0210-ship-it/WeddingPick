@@ -117,12 +117,21 @@ export const vendorPricesSchema = z.object({
   deepDataNote: z.string().nullable(),
 });
 
-export const vendorDetailSchema = vendorSummarySchema.extend({
-  lastVerifiedAt: z.string().min(1),
-  prices: vendorPricesSchema,
-  /** 이용점수. 확인된 후기만 들어간다. */
-  usageScore: usageScoreSchema,
-});
+/**
+ * 업체 상세.
+ *
+ * 목록 카드의 `paidPrice`를 **덜어낸다.** 상세에는 더 자세한 `prices`가 있고,
+ * 같은 숫자를 두 자리에 두면 언젠가 둘이 어긋난다 — 그때 어느 쪽이 맞는지
+ * 아무도 모른다. 하나만 둔다.
+ */
+export const vendorDetailSchema = vendorSummarySchema
+  .omit({ paidPrice: true })
+  .extend({
+    lastVerifiedAt: z.string().min(1),
+    prices: vendorPricesSchema,
+    /** 이용점수. 확인된 후기만 들어간다. */
+    usageScore: usageScoreSchema,
+  });
 
 /**
  * A-17 업체 비교. 최대 세 곳.
@@ -144,3 +153,30 @@ export type VendorRegionsResponse = z.infer<typeof vendorRegionsResponseSchema>;
 export type VendorProductStat = z.infer<typeof vendorProductStatSchema>;
 export type VendorPrices = z.infer<typeof vendorPricesSchema>;
 export type VendorDetail = z.infer<typeof vendorDetailSchema>;
+
+/**
+ * 조건이 비슷한 결제 사례. 최종통합정책 v2.0 D-1 · C-3 · C-4.
+ *
+ * **판별 유니온이다.** 낼 수 없을 때는 `price`가 아예 없다 — 비워 보내면 화면이
+ * 0원이나 빈 구간을 그릴 여지가 남는다.
+ *
+ * 낼 수 있을 때는 `condition`이 함께 온다. 어느 조건의 숫자인지 모르면 읽는
+ * 사람이 자기 조건의 값이라고 넘겨짚고, 그게 가장 흔한 오해다.
+ */
+export const conditionStatsSchema = z.discriminatedUnion('available', [
+  z.object({
+    available: z.literal(false),
+    /** 왜 못 내는지. "개인정보 때문"이라고 말하지 않는다 — 자료가 덜 모인 것이 맞다. */
+    note: z.string().min(1),
+  }),
+  z.object({
+    available: z.literal(true),
+    /** 무엇을 좁힌 숫자인지. `웨딩홀 · 서울 · 최근 3개월`. */
+    condition: z.string().min(1),
+    /** 몇 개의 축으로 좁혔는지. 0이면 업종 전국이다. */
+    axes: z.int().min(0),
+    price: paidPriceSchema,
+  }),
+]);
+
+export type ConditionStats = z.infer<typeof conditionStatsSchema>;

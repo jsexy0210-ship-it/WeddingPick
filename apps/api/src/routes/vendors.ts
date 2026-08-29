@@ -1,13 +1,22 @@
 import {
+  CONDITION_NARROWING,
   DEEP_DATA_NOTE,
   DEFAULT_PERIOD_LABEL,
   DEFAULT_PERIOD_MONTHS,
   MAX_COMPARED_VENDORS,
+  NARROWED_NOT_ENOUGH,
   PRICE_REPORT_CAVEAT,
+  RECENT_PERIOD_LABEL,
+  RECENT_PERIOD_MONTHS,
+  VENDOR_CATEGORY_LABEL,
+  coarseRegion,
   comparisonCaveats,
   computePriceStat,
   discloseAmounts,
+  hasDeepData,
+  narrowedLabel,
   summarizeReports,
+  widestDisclosable,
   type PriceSample,
   type VendorCategory,
 } from '@weddingpick/domain';
@@ -474,8 +483,107 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
     };
   });
 
+/**
+ * 조건이 비슷한 결제 사례. v2.0 D-1 · C-3 · C-4.
+ *
+ * 세 겹으로 좁혀 세어보고, **보여줄 수 있는 가장 넓은 겹**을 고른다
+ * (`widestDisclosable`). 못 보여줄 바에는 넓게라도 보여주는 것이 낫고, 그게 C-4의
+ * "묶거나 숨긴다"에서 묶는 쪽이다.
+ *
+ * 좁힐수록 더 많은 건수를 요구하는 이유는 건수가 아니라 조합이 문제이기 때문이다 —
+ * "서울 · 최근 3개월"로 좁힌 3건은 서로를 알 만한 사람 셋일 수 있다.
+ */
+async function loadConditionStats(
+  pool: Pool,
+  vendorId: string,
+  userId: string | null
+): Promise<
+  | { available: false; note: string }
+  | { available: true; condition: string; axes: number; price: ReturnType<typeof discloseAmounts> }
+> {
+  const vendor = await pool.query<{ category: string; region: string }>(
+    'SELECT category, region FROM structured.vendors WHERE id = $1',
+    [vendorId]
+  );
+
+  const found = vendor.rows[0];
+  if (!found) throw notFound('업체');
+
+  /*
+   * 결제인증이 여는 것은 접근이 아니라 깊이다(K-6 · D-1). 실제 결제 구간은
+   * 누구나 보고, 조건을 좁힌 사례가 여기서 열린다.
+   */
+  const proofs = userId
+    ? await pool.query<{ count: string }>(
+        'SELECT count(*) AS count FROM structured.usable_payment_proofs WHERE reporter_user_id = $1',
+        [userId]
+      )
+    : null;
+
+  if (!hasDeepData({ usablePaymentProofCount: Number(proofs?.rows[0]?.count ?? 0) })) {
+    return { available: false, note: DEEP_DATA_NOTE };
+  }
+
+  /*
+   * 좁힌 겹마다 금액을 따로 읽는다. 한 번에 읽어 코드에서 나누지 않는 이유는,
+   * 지역과 시기를 SQL에서 거르는 것이 나중에 축이 늘어날 때 늘리기 쉬워서다.
+   */
+  const region = coarseRegion(found.region);
+
+  const layers = await Promise.all(
+    CONDITION_NARROWING.map(async (_, axes) =>
+      pool.query<{ paid_amount: string }>(
+        `SELECT p.paid_amount
+         FROM structured.usable_payment_proofs p
+         JOIN structured.vendors v ON v.id = p.vendor_id
+         WHERE v.category = $1
+           AND p.paid_at >= now() - ($2 || ' months')::interval
+           AND ($3 = 0 OR v.region LIKE $4 || '%')
+           AND ($3 < 2 OR p.paid_at >= now() - ($5 || ' months')::interval)`,
+        [found.category, DEFAULT_PERIOD_MONTHS, axes, region, RECENT_PERIOD_MONTHS]
+      )
+    )
+  );
+
+  const counts = layers.map((layer) => layer.rows.length);
+  const axes = widestDisclosable(counts);
+
+  if (axes === null) return { available: false, note: NARROWED_NOT_ENOUGH };
+
+  return {
+    available: true,
+    condition: narrowedLabel(axes, {
+      category: VENDOR_CATEGORY_LABEL[found.category as VendorCategory],
+      region: found.region,
+    }),
+    axes,
+    price: discloseAmounts({
+      amounts: layers[axes]!.rows.map((row) => Number(row.paid_amount)),
+      /*
+       * 캡션의 기간은 실제로 거른 기간과 같아야 한다. 시기까지 좁힌 겹은 최근
+       * 3개월만 세는데 캡션이 12개월이라고 적으면, 조건과 캡션이 서로 다른 말을
+       * 하게 된다 — 라벨이 사실보다 앞서면 안 된다.
+       */
+      period: axes >= 2 ? RECENT_PERIOD_LABEL : DEFAULT_PERIOD_LABEL,
+    }),
+  };
+}
+
   /** A-17 업체 상세. */
   app.get<{ Params: { vendorId: string } }>('/v1/vendors/:vendorId', auth, async (request) =>
     loadVendorDetail(context.pool, request.params.vendorId, optionalUserId(request))
+  );
+
+  /**
+   * 조건이 비슷한 결제 사례. v2.0 D-1.
+   *
+   * 로그인은 선택이다 — 안 한 사람에게는 여는 방법을 알려주는 안내가 나간다.
+   * 로그인을 요구하면 무엇이 열리는지 보기도 전에 계정을 만들라는 말이 된다.
+   */
+  app.get<{ Params: { vendorId: string } }>(
+    '/v1/vendors/:vendorId/conditions',
+    auth,
+    async (request) =>
+      loadConditionStats(context.pool, request.params.vendorId, optionalUserId(request))
   );
 }

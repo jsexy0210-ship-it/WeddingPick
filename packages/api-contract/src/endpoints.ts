@@ -73,6 +73,7 @@ import {
   updateReviewRequestSchema,
 } from './reviews';
 import {
+  conditionStatsSchema,
   vendorComparisonResponseSchema,
   vendorDetailSchema,
   vendorRegionsResponseSchema,
@@ -480,6 +481,18 @@ export const ENDPOINTS = {
     method: 'DELETE',
     path: '/v1/rebuttals/{rebuttalId}',
     response: z.null(),
+  },
+
+  /**
+   * 조건이 비슷한 결제 사례. v2.0 D-1.
+   *
+   * 결제인증이 여는 것은 접근이 아니라 **깊이다**(K-6). 실제 결제 구간은 누구나
+   * 보고, 여기서 열리는 것은 조건을 좁힌 사례다.
+   */
+  getVendorConditions: {
+    method: 'GET',
+    path: '/v1/vendors/{vendorId}/conditions',
+    response: conditionStatsSchema,
   },
 
   /**
