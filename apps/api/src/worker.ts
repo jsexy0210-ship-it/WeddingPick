@@ -5,12 +5,20 @@ import { runForever } from './analysis/worker';
 import { loadConfig } from './config';
 import { createPool } from './db';
 import { createExpoPush } from './push/expo';
+import { sendPriceChangeNudges, sendTaskNudges } from './notify/nudges';
 import { alertOperators } from './retention/alert';
 import { listRetentionAttention, sweepExpiredDocuments } from './retention/worker';
 import { createLocalStorage } from './storage/local';
 import { createS3Storage } from './storage/s3';
 
 const RETENTION_SWEEP_MS = 10 * 60 * 1000;
+
+/*
+ * 사용자 알림은 자주 볼 필요가 없다. 일정 알림은 하루 단위이고, 가격 변동은
+ * 하루 한 번까지다 — 10분마다 도는 파기 정리에 얹으면 같은 질의를 하루 144번
+ * 하게 된다.
+ */
+const NUDGE_MS = 60 * 60 * 1000;
 
 async function main() {
   const config = loadConfig();
@@ -39,6 +47,31 @@ async function main() {
    * 시끄러운 편이 낫다.
    */
   const push = createExpoPush();
+
+  /*
+   * 준비 알림과 가격 변동 알림. v2.0 36·37번.
+   *
+   * 실패해도 워커를 멈추지 않는다 — 알림이 곁가지라서가 아니라, 여기서 죽으면
+   * 파기 정리까지 함께 멈추기 때문이다.
+   */
+  const nudges = setInterval(() => {
+    void (async () => {
+      try {
+        const tasks = await sendTaskNudges({ pool, push });
+        const prices = await sendPriceChangeNudges({ pool, push });
+
+        if (tasks.stored + prices.stored > 0) {
+          console.log(
+            `알림 ${tasks.stored + prices.stored}건 남김 ` +
+              `(일정 ${tasks.stored} · 가격 ${prices.stored}), ` +
+              `푸시 ${tasks.pushed + prices.pushed}건 닿음`
+          );
+        }
+      } catch (error) {
+        console.error('알림을 보내지 못했다:', error);
+      }
+    })();
+  }, NUDGE_MS);
 
   const sweep = setInterval(() => {
     void (async () => {
@@ -101,7 +134,10 @@ async function main() {
     })();
   }, RETENTION_SWEEP_MS);
 
-  controller.signal.addEventListener('abort', () => clearInterval(sweep));
+  controller.signal.addEventListener('abort', () => {
+    clearInterval(sweep);
+    clearInterval(nudges);
+  });
 
   console.log('분석 워커 시작');
 
