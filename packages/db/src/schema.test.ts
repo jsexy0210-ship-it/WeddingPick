@@ -862,6 +862,73 @@ describeWithDb('DB 스키마', () => {
     });
   });
 
+  describe('광고 방화벽', () => {
+    it('광고는 다른 스키마에 있다', async () => {
+      /*
+       * E-1. 같은 스키마에 두고 "섞지 말자"고 정해두면 언젠가 누군가 조인 한
+       * 줄을 더한다. ads.를 적어야만 닿게 해두면 그 한 줄이 눈에 보인다.
+       */
+      const { rows } = await client.query<{ table_schema: string }>(
+        `SELECT table_schema FROM information_schema.tables
+         WHERE table_name = 'placements'`
+      );
+
+      expect(rows).toEqual([{ table_schema: 'ads' }]);
+    });
+
+    it('자연 결과 쪽에서 광고를 가리키는 것이 없다', async () => {
+      /*
+       * 광고는 업체를 가리킨다(어쩔 수 없다 — 어느 업체의 광고인지 적어야 한다).
+       * 중요한 것은 반대 방향이 없다는 것이다: structured의 어떤 표도 ads를
+       * 가리키지 않으므로, 자연 결과를 세는 질의는 ads를 볼 일이 없다.
+       */
+      const { rows } = await client.query<{ table_name: string }>(
+        `SELECT c.conrelid::regclass::text AS table_name
+         FROM pg_constraint c
+         JOIN pg_class referenced ON referenced.oid = c.confrelid
+         JOIN pg_namespace target ON target.oid = referenced.relnamespace
+         JOIN pg_namespace source ON source.oid = c.connamespace
+         WHERE c.contype = 'f'
+           AND target.nspname = 'ads'
+           AND source.nspname <> 'ads'`
+      );
+
+      expect(rows).toEqual([]);
+    });
+
+    it('기간이 거꾸로인 광고는 넣을 수 없다', async () => {
+      const vendor = await client.query<{ id: string }>(
+        `INSERT INTO structured.vendors (name, category, region, source)
+         VALUES ('가온예식홀', 'hall', '서울 강남구', 'public_data') RETURNING id`
+      );
+
+      await expect(
+        client.query(
+          `INSERT INTO ads.placements (vendor_id, surface, starts_on, ends_on)
+           VALUES ($1, 'search', '2026-09-30', '2026-09-01')`,
+          [vendor.rows[0]!.id]
+        )
+      ).rejects.toThrow(/placement_period_is_ordered/);
+    });
+
+    it('기간이 지난 광고는 오늘 목록에 없다', async () => {
+      const vendor = await client.query<{ id: string }>(
+        `INSERT INTO structured.vendors (name, category, region, source)
+         VALUES ('가온예식홀', 'hall', '서울 강남구', 'public_data') RETURNING id`
+      );
+
+      await client.query(
+        `INSERT INTO ads.placements (vendor_id, surface, starts_on, ends_on)
+         VALUES ($1, 'search', current_date - 30, current_date - 1)`,
+        [vendor.rows[0]!.id]
+      );
+
+      const today = await client.query('SELECT 1 FROM ads.active_placements');
+
+      expect(today.rows).toHaveLength(0);
+    });
+  });
+
   describe('마이그레이션', () => {
     it('두 번 돌려도 같은 결과가 된다', async () => {
       await expect(migrate(client)).resolves.toEqual([]);

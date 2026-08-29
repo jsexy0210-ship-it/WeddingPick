@@ -4,7 +4,7 @@ import { paidPriceSchema } from './payment-proofs';
 import { reportedPriceSchema } from './price-reports';
 import { usageScoreSchema } from './reviews';
 
-import { MAX_COMPARED_VENDORS } from '@weddingpick/domain';
+import { MAX_COMPARED_VENDORS, SPONSORED_LABEL } from '@weddingpick/domain';
 
 import { documentTypeSchema, idSchema, vendorCategorySchema } from './common';
 import { priceStatSchema } from './comparison';
@@ -56,8 +56,33 @@ export const VENDOR_SORT_LABEL: Record<(typeof VENDOR_SORTS)[number], string> = 
   name: '이름 순',
 };
 
+/**
+ * 유료 노출 한 줄. 최종통합정책 v2.0 E-1.
+ *
+ * **자연 결과와 다른 배열에 담긴다.** 같은 배열에 넣고 배지만 붙이면 화면이
+ * 섞어 그릴 수 있고, 배지를 못 본 사람에게 그건 그냥 검색 결과다. 타입이 섞을
+ * 자리를 주지 않는다.
+ *
+ * 순위 근거(E-2)가 여기 없는 것도 같은 이유다 — 광고는 근거로 오른 것이 아니라
+ * 값을 치르고 오른 것이고, 근거 자리를 만들어두면 언젠가 무언가 적힌다.
+ */
+export const sponsoredCardSchema = z.object({
+  vendorId: idSchema,
+  name: z.string().min(1),
+  category: vendorCategorySchema,
+  region: z.string().min(1),
+  /** 유료 노출임을 밝히는 말. 애매한 말을 쓰지 않는다. */
+  label: z.literal(SPONSORED_LABEL),
+});
+
 export const vendorSearchResponseSchema = z.object({
   vendors: z.array(vendorSummarySchema),
+  /**
+   * 광고 자리. **`vendors`와 섞이지 않는다**(E-1).
+   *
+   * 광고가 없으면 빈 배열이다. 화면은 이 배열을 자연 결과 위에 따로 그린다.
+   */
+  sponsored: z.array(sponsoredCardSchema),
   /** 다음 쪽. 없으면 null. */
   nextCursor: z.string().nullable(),
   /**
@@ -148,6 +173,7 @@ export const vendorComparisonResponseSchema = z.object({
 export type VendorSort = z.infer<typeof vendorSortSchema>;
 export type VendorSummary = z.infer<typeof vendorSummarySchema>;
 export type VendorComparisonResponse = z.infer<typeof vendorComparisonResponseSchema>;
+export type SponsoredCard = z.infer<typeof sponsoredCardSchema>;
 export type VendorSearchResponse = z.infer<typeof vendorSearchResponseSchema>;
 export type VendorRegionsResponse = z.infer<typeof vendorRegionsResponseSchema>;
 export type VendorProductStat = z.infer<typeof vendorProductStatSchema>;

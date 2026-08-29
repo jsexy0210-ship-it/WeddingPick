@@ -1,5 +1,6 @@
 import {
   CONDITION_NARROWING,
+  SPONSORED_LABEL,
   DEEP_DATA_NOTE,
   DEFAULT_PERIOD_LABEL,
   DEFAULT_PERIOD_MONTHS,
@@ -470,6 +471,26 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
     const hasMore = rows.length > query.limit;
     const page = hasMore ? rows.slice(0, query.limit) : rows;
 
+    /*
+     * 광고는 첫 쪽에만 싣는다. 쪽마다 다시 나오면 스크롤할수록 광고가 늘어난다.
+     * 커서가 없다는 것이 첫 쪽이라는 뜻이다.
+     */
+    const sponsored =
+      after === null
+        ? await loadSponsored(context.pool, {
+            category: query.category,
+            region: query.region && query.region.length > 0 ? query.region : undefined,
+          }).catch((error: unknown) => {
+            /*
+             * 광고를 못 읽었다고 검색이 안 되면 곁가지가 본줄기를 끊는 셈이다.
+             * 대신 조용히 지나가지 않게 남긴다 — 처음 이걸 삼켰을 때 질의가
+             * 깨져 있는 것을 한참 못 봤다.
+             */
+            request.log.error({ error }, '광고 자리를 읽지 못했다');
+            return [];
+          })
+        : [];
+
     return {
       vendors: page.map((row) => ({
         ...toSummary(row),
@@ -478,10 +499,72 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
           period: DEFAULT_PERIOD_LABEL,
         }),
       })),
+      // 같은 배열에 넣지 않는다. 타입이 섞을 자리를 주지 않는다(E-1).
+      sponsored,
       nextCursor: hasMore && page.length > 0 ? encodeCursor(page[page.length - 1]!) : null,
       total: Number(page[0]?.total ?? 0),
     };
   });
+
+/**
+ * 검색 지면의 광고. 최종통합정책 v2.0 E-1.
+ *
+ * **자연 결과를 세는 질의와 따로 부른다.** 한 질의에 조인해 넣으면 광고 여부가
+ * 정렬·페이징과 한 덩어리가 되고, 그때부터 "이 업체가 위에 있는 것이 광고
+ * 때문인지"에 답할 수 없다. `ads.`를 앞에 적어야 닿는 것도 같은 이유다.
+ *
+ * 실패해도 검색을 막지 않는다 — 광고를 못 읽었다고 검색이 안 되면, 곁가지가
+ * 본줄기를 끊는 셈이 된다.
+ */
+async function loadSponsored(
+  pool: Pool,
+  filter: { category?: string; region?: string }
+): Promise<{ vendorId: string; name: string; category: VendorCategory; region: string; label: typeof SPONSORED_LABEL }[]> {
+  const { rows } = await pool.query<{
+    vendor_id: string;
+    name: string;
+    category: string;
+    region: string;
+  }>(
+    /*
+     * 한 업체는 한 번만 실린다.
+     *
+     * 자리를 겹쳐 잡아둘 수 있고(기간이 겹치는 두 건), 그러면 같은 업체가 두 줄로
+     * 나온다. 렌더해보고 잡았다 — 표에서 막기보다 여기서 묶는 이유는, 겹치는
+     * 기간을 표로 막으려면 자리를 나눠 잡는 정상적인 경우까지 걸리기 때문이다.
+     */
+    `SELECT picked.vendor_id, picked.name, picked.category, picked.region
+     FROM (
+       SELECT DISTINCT ON (p.vendor_id)
+              p.vendor_id, v.name, v.category, v.region
+       FROM ads.active_placements p
+       JOIN structured.vendors v ON v.id = p.vendor_id
+       WHERE p.surface = 'search'
+         AND (p.category IS NULL OR $1::text IS NULL OR p.category::text = $1::text)
+         AND (p.region IS NULL OR $2::text IS NULL OR p.region = $2::text)
+       ORDER BY p.vendor_id
+     ) picked
+     ORDER BY picked.name
+     LIMIT $3::int`,
+    [filter.category ?? null, filter.region ?? null, SPONSORED_LIMIT]
+  );
+
+  return rows.map((row) => ({
+    vendorId: row.vendor_id,
+    name: row.name,
+    category: row.category as VendorCategory,
+    region: row.region,
+    label: SPONSORED_LABEL,
+  }));
+}
+
+/**
+ * 한 화면에 실을 광고 수.
+ *
+ * 자연 결과가 스무 곳인데 광고가 열 개면, 그건 분리된 영역이 아니라 광고 화면에
+ * 검색 결과가 딸려 있는 것이다.
+ */
+const SPONSORED_LIMIT = 2;
 
 /**
  * 조건이 비슷한 결제 사례. v2.0 D-1 · C-3 · C-4.

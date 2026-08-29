@@ -3,6 +3,7 @@ import {
   VENDOR_SORT_LABEL,
   type PlannerSummary,
   type VendorSort,
+  type SponsoredCard,
   type VendorSummary,
 } from '@weddingpick/api-contract';
 import {
@@ -65,6 +66,13 @@ export default function SearchScreen() {
   });
   // 서버 주소가 없으면 부를 곳도 없다. 처음부터 빈 목록으로 시작한다.
   const [vendors, setVendors] = useState<VendorSummary[] | null>(isServerConfigured ? null : []);
+  /*
+   * 광고 자리. **결과 배열과 따로 둔다**(v2.0 E-1).
+   *
+   * 목록의 data는 vendors뿐이라 광고가 결과 사이에 끼어들 수가 없다 — 섞어 놓고
+   * 배지만 붙이면 배지를 못 본 사람에게 그건 그냥 검색 결과다.
+   */
+  const [sponsored, setSponsored] = useState<SponsoredCard[]>([]);
   const [planners, setPlanners] = useState<PlannerSummary[] | null>(isServerConfigured ? null : []);
   /** 노출 중단 안내. 서버가 결과와 함께 준다. */
   const [withdrawalNotice, setWithdrawalNotice] = useState<string | null>(null);
@@ -123,6 +131,7 @@ export default function SearchScreen() {
               sort: filters.sort,
             }).then((response) => {
               setVendors(response.vendors);
+              setSponsored(response.sponsored);
               setTotal(response.total);
               return response.nextCursor;
             })
@@ -342,6 +351,37 @@ export default function SearchScreen() {
                   </ThemedText>
                 </ThemedView>
               }
+              ListHeaderComponent={
+                sponsored.length === 0 ? null : (
+                  <ThemedView style={styles.sponsored}>
+                    {sponsored.map((ad) => (
+                      <Pressable
+                        key={ad.vendorId}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${ad.label} ${ad.name} 자세히 보기`}
+                        onPress={() => router.push(`/search/${ad.vendorId}`)}>
+                        <ThemedView
+                          type="backgroundElement"
+                          style={[styles.card, styles.adCard, { borderColor: theme.border }]}>
+                          {/* 유료 노출임을 먼저 밝힌다. 애매한 말을 쓰지 않는다. */}
+                          <ThemedText type="badge" themeColor="textAssistive">
+                            {ad.label}
+                          </ThemedText>
+                          <ThemedText type="smallBold">{ad.name}</ThemedText>
+                          <ThemedText type="small" themeColor="textSecondary">
+                            {VENDOR_CATEGORY_LABEL[ad.category]} · {ad.region}
+                          </ThemedText>
+                        </ThemedView>
+                      </Pressable>
+                    ))}
+                    {/*
+                      여기서 아래가 자연 결과라는 것을 눈으로 갈라 보여준다.
+                      선 하나가 배지보다 잘 읽힌다.
+                     */}
+                    <ThemedView style={[styles.adDivider, { backgroundColor: theme.line }]} />
+                  </ThemedView>
+                )
+              }
               ListFooterComponent={
                 loadingMore ? <ActivityIndicator color={theme.tint} style={styles.spinner} /> : null
               }
@@ -549,6 +589,17 @@ const styles = StyleSheet.create({
   },
   cardBody: {
     gap: Spacing.one,
+  },
+  sponsored: {
+    gap: Spacing.two,
+  },
+  /** 자연 결과 카드와 다른 얼굴이어야 한다. 테두리로 가른다. */
+  adCard: {
+    borderWidth: 1,
+  },
+  adDivider: {
+    height: 1,
+    marginTop: Spacing.one,
   },
   pickRow: {
     flexDirection: 'row',
