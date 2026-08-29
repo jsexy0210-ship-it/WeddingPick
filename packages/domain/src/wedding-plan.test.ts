@@ -103,6 +103,19 @@ describe('진행률과 다음 일정', () => {
     expect(nextTask(tasks, NOW)?.label).toBe('가까운 것');
   });
 
+  it('끝낸 것은 다음이 아니다', () => {
+    /*
+     * 날짜가 앞이어도 이미 했다고 표시한 일을 "다음 일정"이라고 내밀면, 홈이 할
+     * 일을 알려주는 자리가 아니라 달력을 읽어주는 자리가 된다.
+     */
+    const tasks = [
+      { label: '끝낸 것', dueDate: at(1), state: 'done' as const },
+      { label: '남은 것', dueDate: at(5), state: 'upcoming' as const },
+    ];
+
+    expect(nextTask(tasks, NOW)?.label).toBe('남은 것');
+  });
+
   it('오늘도 다음 일정이 될 수 있다', () => {
     expect(nextTask([{ label: '오늘', dueDate: at(0) }], NOW)?.label).toBe('오늘');
   });

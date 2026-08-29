@@ -1,59 +1,295 @@
+import type {
+  CandidateListResponse,
+  CurrentUser,
+  ExpenseSummaryResponse,
+  WeddingTaskListResponse,
+} from '@weddingpick/api-contract';
+import {
+  EXPENSE_BUCKET_COLOR,
+  dDay,
+  formatTaskDate,
+  greeting,
+  nextTask,
+  type ExpenseBucket,
+} from '@weddingpick/domain';
 import { router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { dDay, greeting } from '@weddingpick/domain';
-import { useEffect, useState } from 'react';
-
-import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView, VerificationBadge } from '@weddingpick/ui';
-import { getCurrentUser } from '@/api/client';
-import { useCaptureDraft } from '@/features/capture/capture-draft';
-import { useDocumentStore } from '@/features/documents/document-store';
-
-/** 사업계획서 1번의 핵심 경험. 분석 결과가 쌓이기 전까지 홈이 대신 설명한다. */
-const FLOW = [
-  { step: '1', title: '찍는다', body: '견적서·가계약서·계약서를 촬영하거나 파일로 불러옵니다.' },
-  { step: '2', title: '읽는다', body: '업체·상품·금액·계약조건·추가비용을 뽑아 정리합니다.' },
-  { step: '3', title: '비교한다', body: '실제 계약 중앙값과 견줘 지금 조건이 어느 정도인지 봅니다.' },
-];
+import {
+  getCurrentUser,
+  getDataUnlock,
+  getExpenses,
+  listCandidates,
+  listWeddingTasks,
+} from '@/api/client';
+import {
+  ActionButton,
+  Layout,
+  MaxContentWidth,
+  Radius,
+  Spacing,
+  ThemedText,
+  ThemedView,
+  useTheme,
+} from '@weddingpick/ui';
+import {
+  HOME_SECTIONS,
+  isVisible,
+  loadHomeLayout,
+  type HomeLayout,
+  type HomeSection,
+} from '@/features/home/sections';
+import { won } from '@/features/quotes/quote-result-view';
 
 /**
- * A-03 홈. 촬영 CTA 중심(명세 2번)이며, 아래는 최근 분석과 내 웨딩 요약 자리다.
- * 분석 결과를 저장할 곳이 아직 없으므로 두 섹션 모두 빈 상태만 보여준다.
- * 가짜 견적·가격을 채우지 않는 건 제품 원칙 2(AI가 시장 데이터를 만들어내지 않는다) 때문이다.
+ * 홈. 디자인 핸드오프 5번.
+ *
+ * **D-Day와 다음 일정은 고정이다.** 나머지 다섯 섹션은 순서를 바꾸고 숨길 수
+ * 있다(홈 편집) — 오늘 무엇을 해야 하는지가 홈의 이유라, 그 둘까지 숨길 수 있게
+ * 두면 홈이 빈 화면이 될 수 있다.
+ *
+ * **빈 상태에서 레이아웃을 바꾸지 않는다.** 핸드오프가 명시한 규칙이다 — 값만
+ * 0이나 —로 두고 자리는 지킨다. 자료가 없다고 다른 화면으로 갈아끼우면, 자료가
+ * 생겼을 때 사용자는 처음 보는 화면을 만나게 된다.
  */
-export default function HomeScreen() {
-  const { pages } = useCaptureDraft();
-  const { sets } = useDocumentStore();
-  const recent = sets.slice(0, 3);
-  const [me, setMe] = useState<{ displayName: string | null; weddingDate: string | null } | null>(
-    null
-  );
+type HomeData = {
+  me: CurrentUser | null;
+  tasks: WeddingTaskListResponse | null;
+  expenses: ExpenseSummaryResponse | null;
+  candidates: CandidateListResponse | null;
+  /** 실제 결제 구간을 이미 볼 수 있는가. 그러면 그걸 권하는 카드를 접는다. */
+  unlocked: boolean;
+};
 
-  useEffect(() => {
-    // 못 불러오면 환영 인사만 한다. 없는 이름을 지어내 부르지 않는다.
-    getCurrentUser()
-      .then(setMe)
-      .catch(() => setMe(null));
+const EMPTY: HomeData = {
+  me: null,
+  tasks: null,
+  expenses: null,
+  candidates: null,
+  unlocked: false,
+};
+
+export default function HomeScreen() {
+  const theme = useTheme();
+  const [layout, setLayout] = useState<HomeLayout | null>(null);
+  const [data, setData] = useState<HomeData>(EMPTY);
+
+  const load = useCallback(() => {
+    void loadHomeLayout().then(setLayout);
+
+    /*
+     * 하나가 실패해도 나머지는 보여준다. 로그인 안 한 사람은 넷 다 실패하는데,
+     * 그때도 홈은 떠야 한다 — 게스트가 보는 화면이기도 하다.
+     */
+    void getCurrentUser()
+      .then(async (me) => {
+        setData((current) => ({ ...current, me }));
+
+        if (!me.weddingId) return;
+
+        const [tasks, expenses, candidates, unlock] = await Promise.all([
+          listWeddingTasks(me.weddingId).catch(() => null),
+          getExpenses(me.weddingId).catch(() => null),
+          listCandidates(me.weddingId).catch(() => null),
+          getDataUnlock().catch(() => null),
+        ]);
+
+        setData((current) => ({
+          ...current,
+          tasks,
+          expenses,
+          candidates,
+          unlocked: unlock?.unlocked ?? false,
+        }));
+      })
+      .catch(() => setData(EMPTY));
   }, []);
+
+  useEffect(load, [load]);
+
+  const upcoming = data.tasks ? nextTask(data.tasks.tasks) : null;
+
+  const sections: Record<HomeSection, React.ReactNode> = {
+    quickMenu: (
+      <ThemedView key="quickMenu" style={styles.section}>
+        <ThemedView style={styles.quickRow}>
+          <Quick label="지출내역" onPress={() => go(data.me, 'expenses')} />
+          <Quick label="업체비교" onPress={() => router.push('/search')} />
+          <Quick label="웨딩 스케줄" onPress={() => go(data.me, 'tasks')} />
+          <Quick label="방문노트" onPress={() => go(data.me, 'visit-notes')} />
+        </ThemedView>
+      </ThemedView>
+    ),
+
+    tasks: (
+      <ThemedView key="tasks" style={styles.section}>
+        <ThemedView style={styles.sectionHead}>
+          <ThemedText type="t4">웨딩 스케줄</ThemedText>
+          <ActionButton label="전체보기" onPress={() => go(data.me, 'tasks')} />
+        </ThemedView>
+
+        {/* 자료가 없어도 자리는 지킨다. 값만 0으로 둔다. */}
+        <ThemedText type="t7" themeColor="textSecondary">
+          준비 {data.tasks?.progress.done ?? 0} / {data.tasks?.progress.total ?? 0} 완료
+        </ThemedText>
+
+        <View style={[styles.track, { backgroundColor: theme.track }]}>
+          <View
+            style={{
+              flex: data.tasks?.progress.done ?? 0,
+              backgroundColor: theme.tint,
+            }}
+          />
+          <View
+            style={{
+              flex: Math.max(
+                0,
+                (data.tasks?.progress.total ?? 1) - (data.tasks?.progress.done ?? 0)
+              ),
+            }}
+          />
+        </View>
+
+        {(data.tasks?.tasks ?? []).slice(0, 4).map((task) => (
+          <ThemedView key={task.id} style={styles.taskRow}>
+            <ThemedText type="t7" themeColor="textAssistive" style={styles.taskDate}>
+              {task.dueDate ? formatTaskDate(task.dueDate) : '미정'}
+            </ThemedText>
+            <ThemedText type="t6" style={styles.grow}>
+              {task.label}
+            </ThemedText>
+            <ThemedText type="badge" themeColor={task.state === 'done' ? 'positive' : 'tint'}>
+              {task.stateLabel}
+            </ThemedText>
+          </ThemedView>
+        ))}
+      </ThemedView>
+    ),
+
+    expenses: (
+      <ThemedView key="expenses" style={styles.section}>
+        <ThemedText type="t7" themeColor="textSecondary">
+          지금까지 결제한 금액
+        </ThemedText>
+        <ThemedText type="amount" numeric>
+          {won(data.expenses?.paidTotal ?? 0)}
+        </ThemedText>
+
+        <View style={styles.bar}>
+          {(data.expenses?.buckets ?? []).map((bucket) => (
+            <View
+              key={bucket.bucket}
+              style={{
+                flex: bucket.ratio,
+                backgroundColor: theme[EXPENSE_BUCKET_COLOR[bucket.bucket as ExpenseBucket].bar],
+              }}
+            />
+          ))}
+          {/* 빈 상태도 막대가 있다. 회색 한 칸으로 둔다. */}
+          {!data.expenses || data.expenses.paidTotal === 0 ? (
+            <View style={{ flex: 1, backgroundColor: theme.chartMuted }} />
+          ) : null}
+        </View>
+
+        <ThemedView style={styles.legendRow}>
+          {(data.expenses?.buckets ?? []).map((bucket) => (
+            <ThemedView key={bucket.bucket} style={styles.legendItem}>
+              <View
+                style={[
+                  styles.dot,
+                  {
+                    backgroundColor:
+                      theme[EXPENSE_BUCKET_COLOR[bucket.bucket as ExpenseBucket].bar],
+                  },
+                ]}
+              />
+              <ThemedText type="t7" themeColor="textSecondary">
+                {bucket.label}
+              </ThemedText>
+              <ThemedText type="t7" numeric>
+                {won(bucket.amount)}
+              </ThemedText>
+            </ThemedView>
+          ))}
+        </ThemedView>
+
+        <ThemedView style={styles.cardRow}>
+          <ThemedView type="backgroundElement" style={[styles.card, styles.grow]}>
+            <ThemedText type="t7" themeColor="textSecondary">
+              다음 결제
+            </ThemedText>
+            <ThemedText type="t5" numeric>
+              {/* 없으면 0원이 아니라 —다. 0원은 "낼 것이 없다"로 읽힌다. */}
+              {data.expenses && data.expenses.scheduledTotal > 0
+                ? won(data.expenses.scheduledTotal)
+                : '—'}
+            </ThemedText>
+          </ThemedView>
+          <ThemedView type="backgroundElement" style={[styles.card, styles.grow]}>
+            <ThemedText type="t7" themeColor="textSecondary">
+              잔여 예산
+            </ThemedText>
+            <ThemedText type="t5" numeric>
+              {data.expenses?.budget.set ? won(data.expenses.budget.remaining) : '—'}
+            </ThemedText>
+          </ThemedView>
+        </ThemedView>
+      </ThemedView>
+    ),
+
+    candidates: (
+      <ThemedView key="candidates" style={styles.section}>
+        <ThemedView style={styles.sectionHead}>
+          <ThemedText type="t4">관심업체</ThemedText>
+          <ActionButton label="비교하기" onPress={() => go(data.me, 'candidates')} />
+        </ThemedView>
+
+        {(data.candidates?.total ?? 0) === 0 ? (
+          <ThemedText type="t7" themeColor="textSecondary">
+            아직 담아둔 곳이 없어요
+          </ThemedText>
+        ) : (
+          (data.candidates?.groups ?? []).flatMap((group) =>
+            group.candidates.slice(0, 3).map((candidate) => (
+              <ThemedView key={candidate.id} style={styles.taskRow}>
+                <ThemedText type="t6" style={styles.grow}>
+                  {candidate.vendorName}
+                </ThemedText>
+                <ThemedText type="t7" themeColor="textAssistive">
+                  {group.categoryLabel}
+                </ThemedText>
+              </ThemedView>
+            ))
+          )
+        )}
+      </ThemedView>
+    ),
+
+    unlock: (
+      <ThemedView key="unlock" style={[styles.unlock, { backgroundColor: theme.tint }]}>
+        <ThemedText type="t4" style={styles.onTint}>
+          결제 금액, 얼마나 차이 날까요?
+        </ThemedText>
+        <ThemedText type="t7" style={styles.onTint}>
+          결제내역을 한 건 등록하시면 실제 결제 구간을 보실 수 있어요
+        </ThemedText>
+        <ActionButton label="결제인증 제보하기" onPress={() => router.push('/capture')} />
+      </ThemedView>
+    ),
+  };
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content}>
-          <ThemedView style={styles.header}>
-            {/*
-              D-Day. 핸드오프 5번 — `지선님, / 예식까지 231일 남았어요`.
-              이름이나 예식일이 없으면 지어내지 않고 환영 인사만 한다.
-
-              카피 규칙 — "진짜 가격"·"적정가"는 쓰지 않는다. 우리는 가격의 적정
-              여부를 판정하지 않으므로, 판정처럼 들리는 말을 쓰면 하지 않는 일을
-              한다고 말하는 것이 된다.
-            */}
-            {me?.weddingDate ? (
+          {/* 고정 1 — D-Day */}
+          <ThemedView style={styles.headline}>
+            {data.me?.weddingDate ? (
               <>
-                <ThemedText type="t2">{greeting(me.displayName)}</ThemedText>
-                <ThemedText type="t2">{dDay(me.weddingDate).text}</ThemedText>
+                <ThemedText type="t2">{greeting(data.me.displayName)}</ThemedText>
+                <ThemedText type="t2">{dDay(data.me.weddingDate).text}</ThemedText>
               </>
             ) : (
               <>
@@ -61,148 +297,87 @@ export default function HomeScreen() {
                 <ThemedText type="t2">오신 것을 환영해요</ThemedText>
               </>
             )}
-            <ThemedText type="t7" themeColor="textSecondary">
-              같은 업체도, 결제 금액은 달라요
-            </ThemedText>
           </ThemedView>
 
-          <ThemedView style={styles.actions}>
-            <ActionButton
-              variant="primary"
-              label="견적서 촬영하기"
-              hint="카메라 · 사진 · PDF"
-              onPress={() => router.push('/capture')}
-            />
-            {pages.length > 0 ? (
-              <ActionButton
-                label={`작성 중인 문서 ${pages.length}장 이어서 보기`}
-                onPress={() => router.push('/capture/review')}
-              />
-            ) : null}
-          </ThemedView>
-
-          <ThemedView style={styles.section}>
-            <ThemedText type="smallBold">최근 분석</ThemedText>
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="small" themeColor="textSecondary">
-                아직 분석한 견적이 없습니다.
-              </ThemedText>
-              <ThemedView type="backgroundElement" style={styles.flow}>
-                {FLOW.map((item) => (
-                  <ThemedView key={item.step} type="backgroundElement" style={styles.flowRow}>
-                    <ThemedText type="smallBold" themeColor="textSecondary" style={styles.flowStep}>
-                      {item.step}
-                    </ThemedText>
-                    <ThemedView type="backgroundElement" style={styles.flowText}>
-                      <ThemedText type="smallBold">{item.title}</ThemedText>
-                      <ThemedText type="small" themeColor="textSecondary">
-                        {item.body}
-                      </ThemedText>
-                    </ThemedView>
-                  </ThemedView>
-                ))}
-              </ThemedView>
-              <ActionButton
-                label="샘플 결과 먼저 보기"
-                hint="견적서를 올리면 어떤 모습으로 정리되는지 보여드립니다"
-                onPress={() => router.push('/capture/sample')}
-              />
-            </ThemedView>
-          </ThemedView>
-
-          <ThemedView style={styles.section}>
-            <ThemedText type="smallBold">내 웨딩</ThemedText>
-            {recent.length === 0 ? (
-              <ThemedView type="backgroundElement" style={styles.card}>
-                <ThemedText type="small" themeColor="textSecondary">
-                  저장된 후보와 견적이 아직 없습니다. 찍어둔 문서는 여기에 모입니다.
-                </ThemedText>
-              </ThemedView>
-            ) : (
+          {/* 고정 2 — 다음 일정 */}
+          <ThemedView type="backgroundElement" style={styles.card}>
+            {upcoming ? (
               <>
-                {recent.map((set) => (
-                  <Pressable key={set.id} onPress={() => router.push(`/wedding/${set.id}`)}>
-                    <ThemedView type="backgroundElement" style={styles.setRow}>
-                      <ThemedView type="backgroundElement" style={styles.setText}>
-                        <ThemedText type="smallBold">{set.label}</ThemedText>
-                        <ThemedText type="small" themeColor="textSecondary">
-                          {set.pages.length}장 · 분석 전
-                        </ThemedText>
-                      </ThemedView>
-                      <VerificationBadge level={set.verificationLevel} />
-                    </ThemedView>
-                  </Pressable>
-                ))}
-                {sets.length > recent.length ? (
-                  <ActionButton
-                    label={`내 웨딩 전체 보기 (${sets.length}건)`}
-                    onPress={() => router.push('/wedding')}
-                  />
+                <ThemedText type="t7" themeColor="tint">
+                  다음 일정 · {formatTaskDate(upcoming.dueDate!)}
+                </ThemedText>
+                <ThemedText type="t5">{upcoming.label}</ThemedText>
+                {upcoming.vendorLabel ? (
+                  <ThemedText type="t7" themeColor="textSecondary">
+                    {upcoming.vendorLabel}
+                  </ThemedText>
                 ) : null}
               </>
+            ) : (
+              <ThemedText type="t6" themeColor="textSecondary">
+                일정을 등록해보세요
+              </ThemedText>
             )}
           </ThemedView>
+
+          {(layout?.order ?? HOME_SECTIONS)
+            .filter((section) => (layout ? isVisible(layout, section) : true))
+            /*
+             * 이미 볼 수 있는 사람에게 "등록하시면 보실 수 있어요"라고 하지 않는다.
+             * 숨기기와 다른 일이다 — 숨기기는 사용자가 정하고, 이건 사실이 정한다.
+             */
+            .filter((section) => section !== 'unlock' || !data.unlocked)
+            .map((section) => sections[section])}
+
+          <ActionButton label="홈 편집" onPress={() => router.push('/home-edit')} />
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
   );
 }
 
+/** 웨딩이 없으면 우리웨딩 탭으로 보낸다 — 거기서 만들어준다. */
+function go(me: CurrentUser | null, section: string) {
+  router.push(me?.weddingId ? `/wedding/${me.weddingId}/${section}` : '/wedding');
+}
+
+function Quick({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <ThemedView style={styles.quick}>
+      <ActionButton label={label} onPress={onPress} />
+    </ThemedView>
+  );
+}
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-  },
+  container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
+  safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
   content: {
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.five,
-    paddingBottom: Spacing.four,
+    paddingBottom: Spacing.six,
     gap: Spacing.four,
   },
-  header: {
-    gap: Spacing.two,
-  },
-  actions: {
-    gap: Spacing.two,
-  },
-  section: {
-    gap: Spacing.two,
-  },
-  card: {
-    borderRadius: Spacing.three,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.three,
-    gap: Spacing.three,
-  },
-  flow: {
-    gap: Spacing.three,
-  },
-  flowRow: {
-    flexDirection: 'row',
-    gap: Spacing.three,
-  },
-  flowStep: {
-    paddingTop: Spacing.half,
-  },
-  flowText: {
-    flex: 1,
-    gap: Spacing.half,
-  },
-  setRow: {
+  headline: { gap: 0 },
+  section: { gap: Spacing.two },
+  sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  quickRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  quick: { flexGrow: 1, minWidth: 140 },
+  track: { flexDirection: 'row', height: 8, borderRadius: Radius.pill, overflow: 'hidden' },
+  bar: { flexDirection: 'row', height: 8, borderRadius: Radius.pill, overflow: 'hidden' },
+  legendRow: { gap: Spacing.one },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  dot: { width: 8, height: 8, borderRadius: Radius.pill },
+  taskRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.three,
-    borderRadius: Spacing.three,
-    padding: Spacing.three,
+    gap: Spacing.two,
+    minHeight: Layout.rowMinHeight,
   },
-  setText: {
-    flex: 1,
-    gap: Spacing.half,
-  },
+  taskDate: { width: 56 },
+  grow: { flex: 1 },
+  cardRow: { flexDirection: 'row', gap: Spacing.two },
+  card: { borderRadius: Radius.medium, padding: Spacing.three, gap: Spacing.one },
+  unlock: { borderRadius: Radius.card, padding: Layout.gutter, gap: Spacing.two },
+  onTint: { color: '#ffffff' },
 });

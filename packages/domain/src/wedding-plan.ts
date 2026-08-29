@@ -122,9 +122,13 @@ export function taskProgress(
 /**
  * 다음 일정. 홈 고정 섹션이 쓴다.
  *
- * **아직 오지 않은 것 중 가장 가까운 것.** 지난 것을 다음이라고 부르지 않는다.
+ * **아직 오지 않았고 아직 안 한 것 중 가장 가까운 것.**
+ *
+ * 지난 것을 다음이라고 부르지 않는 것은 당연하지만, **끝낸 것도 다음이 아니다** —
+ * 날짜가 앞이어도 이미 했다고 표시한 일을 "다음 일정"이라고 내밀면, 홈이 할 일을
+ * 알려주는 자리가 아니라 달력을 읽어주는 자리가 된다.
  */
-export function nextTask<T extends { dueDate: string | null }>(
+export function nextTask<T extends { dueDate: string | null; state?: TaskState }>(
   tasks: readonly T[],
   now: Date = new Date()
 ): T | null {
@@ -132,6 +136,7 @@ export function nextTask<T extends { dueDate: string | null }>(
 
   const upcoming = tasks
     .filter((task): task is T & { dueDate: string } => task.dueDate !== null)
+    .filter((task) => task.state !== 'done')
     .filter((task) => new Date(task.dueDate).getTime() >= today)
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
 

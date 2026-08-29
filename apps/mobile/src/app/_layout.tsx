@@ -77,6 +77,7 @@ export default function RootLayout() {
             <Stack.Screen name="onboarding" />
             {/* 스킵할 수 없는 화면이라 제스처로도 나갈 수 없게 한다. */}
             <Stack.Screen name="setup" options={{ gestureEnabled: false }} />
+            <Stack.Screen name="home-edit" options={{ presentation: 'modal' }} />
             <Stack.Screen name="login" options={{ presentation: 'modal' }} />
           </Stack>
         </CaptureDraftProvider>
