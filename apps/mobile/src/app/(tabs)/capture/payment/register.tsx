@@ -15,6 +15,9 @@ import { ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { parsePaymentText, registerPaymentProof } from '@/api/client';
+import { PermissionDeniedError, pickFromLibrary } from '@/features/capture/pickers';
+import { uploadPaymentProof } from '@/features/capture/upload';
+import type { CapturedPage } from '@/features/capture/types';
 import {
   ActionButton,
   FilterChip,
@@ -61,6 +64,8 @@ export default function RegisterPaymentProofScreen() {
   const [reading, setReading] = useState(false);
   /** 읽어준 값의 열쇠와, 읽어준 그대로인지. 등록할 때 함께 보낸다. */
   const [readingId, setReadingId] = useState<string | null>(null);
+  /** 올려둔 원본. 규칙이 못 읽었을 때만 서버가 본다. */
+  const [rawDocumentId, setRawDocumentId] = useState<string | null>(null);
   const [asRead, setAsRead] = useState<Record<string, string> | null>(null);
   const [readNote, setReadNote] = useState<string | null>(null);
   /** 서버가 "확신이 낮다"고 짚은 항목. 화면이 그 칸을 강조한다. */
@@ -117,6 +122,43 @@ export default function RegisterPaymentProofScreen() {
     );
   }
 
+  /**
+   * 사진에서 읽기.
+   *
+   * 붙여넣기를 먼저 두는 이유는 **서버에 이미지가 올라가지 않기 때문이다** —
+   * 올라가지 않은 것은 새지도, 파기할 일도 없다. 사진은 글로 옮길 수 없는 것
+   * (카드 영수증 실물)에만 쓴다.
+   */
+  async function readFromImages(pick: () => Promise<CapturedPage[]>) {
+    if (reading) return;
+
+    setReading(true);
+    setReadNote(null);
+
+    try {
+      const pages = await pick();
+
+      if (pages.length === 0) {
+        return;
+      }
+
+      const uploaded = await uploadPaymentProof(pages.slice(0, 1));
+
+      setRawDocumentId(uploaded);
+      await runParse({ rawDocumentId: uploaded });
+    } catch (caught) {
+      setReadNote(
+        caught instanceof PermissionDeniedError
+          ? caught.message
+          : caught instanceof Error
+            ? caught.message
+            : '읽지 못했습니다. 직접 적어주세요.'
+      );
+    } finally {
+      setReading(false);
+    }
+  }
+
   async function read() {
     if (pasted.trim().length === 0) return;
 
@@ -124,7 +166,17 @@ export default function RegisterPaymentProofScreen() {
     setReadNote(null);
 
     try {
-      const parsed = await parsePaymentText(pasted);
+      await runParse({ text: pasted });
+    } catch (caught) {
+      setReadNote(caught instanceof Error ? caught.message : '읽지 못했습니다. 직접 적어주세요.');
+    } finally {
+      setReading(false);
+    }
+  }
+
+  async function runParse(input: { text?: string; rawDocumentId?: string }) {
+    {
+      const parsed = await parsePaymentText(input);
 
       if (parsed.rejection) {
         // 취소 문자를 결제로 등록하면 낸 적 없는 돈이 낸 돈이 된다.
@@ -159,10 +211,6 @@ export default function RegisterPaymentProofScreen() {
             ? `${unread.join(' · ')}은(는) 읽지 못했습니다. 직접 적어주세요.`
             : '읽었습니다. 맞는지 확인해 주세요.')
       );
-    } catch (caught) {
-      setReadNote(caught instanceof Error ? caught.message : '읽지 못했습니다. 직접 적어주세요.');
-    } finally {
-      setReading(false);
     }
   }
 
@@ -179,6 +227,8 @@ export default function RegisterPaymentProofScreen() {
         paidAt,
         method,
         maskedIdentifiers: identifiers,
+        // 올려둔 원본이 있으면 이어붙인다. 24시간 뒤에 지워진다.
+        ...(rawDocumentId ? { rawDocumentId } : {}),
         /*
          * 읽어준 값을 그대로 썼는지 알린다. 이 비율이 높으면 읽기가 나쁜 것이고,
          * 그러면 규칙이나 모델을 손봐야 한다. 재지 않으면 나쁜지도 모른다.
@@ -234,6 +284,25 @@ export default function RegisterPaymentProofScreen() {
               label={reading ? '읽는 중…' : '붙여넣은 문자에서 읽기'}
               disabled={pasted.trim().length === 0 || reading}
               onPress={() => void read()}
+            />
+
+            {/*
+              사진은 글로 옮길 수 없는 것에만 쓴다 — 카드 영수증 실물처럼.
+              올린 사진은 24시간 뒤에 지워지고, 붙여넣기는 애초에 올라가지 않는다.
+            */}
+            <ThemedText type="small" themeColor="textSecondary">
+              결제문자가 아니라 종이 영수증이라면 사진으로 올려주세요. 올린 사진은
+              24시간 안에 지워집니다.
+            </ThemedText>
+            <ActionButton
+              label="영수증 촬영하기"
+              disabled={reading}
+              onPress={() => router.push('/capture/camera')}
+            />
+            <ActionButton
+              label="사진에서 불러오기"
+              disabled={reading}
+              onPress={() => void readFromImages(pickFromLibrary)}
             />
             {readNote ? (
               <ThemedView type="backgroundElement" style={styles.card}>

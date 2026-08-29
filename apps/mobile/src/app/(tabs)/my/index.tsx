@@ -7,7 +7,8 @@ import { useSession } from '@/features/auth/use-session';
 import { useDocumentStore } from '@/features/documents/document-store';
 
 /** 공유되는 건 앱 자체뿐이다. 견적·계약 정보는 포함하지 않는다 — 사업계획서 12번. */
-const SHARE_MESSAGE = '웨딩픽 — 찍으면, 진짜 가격이 보인다. 견적서를 찍으면 조건을 정리해줍니다.';
+const SHARE_MESSAGE =
+  '웨딩픽 — 같은 업체도, 결제 금액은 달라요. 실제 결제 사례와 나란히 놓고 가격 차이를 확인해보세요.';
 
 /** A-14 MY. 내 활동, 앱 공유, 정책 진입점. */
 export default function MyScreen() {

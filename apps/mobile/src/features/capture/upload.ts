@@ -8,6 +8,28 @@ import type { CapturedPage } from '@/features/capture/types';
  * 계약서 원본이 지나는 경로가 하나 줄어든다.
  */
 export async function uploadForAnalysis(pages: CapturedPage[]): Promise<{ analysisId: string }> {
+  const { rawDocumentId, weddingId } = await uploadPages(pages, 'document');
+
+  return completeUpload(rawDocumentId, weddingId);
+}
+
+/**
+ * 결제내역을 올린다. 분석을 걸지 않는다.
+ *
+ * 견적서와 다른 길이다. 결제내역은 등록 화면이 값을 확인받은 뒤에 저장하므로,
+ * 여기서는 원본만 올리고 id를 돌려준다. `kind`가 `payment_proof`라 **24시간 뒤에
+ * 지워진다**(0022) — 종류를 등록할 때가 아니라 올릴 때 정하는 이유가 이것이다.
+ */
+export async function uploadPaymentProof(pages: CapturedPage[]): Promise<string> {
+  const { rawDocumentId } = await uploadPages(pages, 'payment_proof');
+
+  return rawDocumentId;
+}
+
+async function uploadPages(
+  pages: CapturedPage[],
+  kind: 'document' | 'payment_proof'
+): Promise<{ rawDocumentId: string; weddingId: string }> {
   const weddingId = await ensureWedding();
 
   // 크기를 서버에 먼저 알려야 하므로 파일을 읽어둔다. 카메라로 찍은 장은 크기를 모른다.
@@ -17,6 +39,7 @@ export async function uploadForAnalysis(pages: CapturedPage[]): Promise<{ analys
 
   const { rawDocumentId, uploads } = await createUpload({
     weddingId,
+    kind,
     pages: pages.map((page, index) => ({
       mimeType: page.mimeType,
       sizeBytes: files[index]!.size,
@@ -39,5 +62,5 @@ export async function uploadForAnalysis(pages: CapturedPage[]): Promise<{ analys
     })
   );
 
-  return completeUpload(rawDocumentId, weddingId);
+  return { rawDocumentId, weddingId };
 }

@@ -12,11 +12,14 @@ import {
   REVIEW_VERIFICATION_LABEL,
   aspectsFor,
   aspectsForRole,
+  checklistFor,
+  evaluationModeFor,
   canSubmitReview,
   reviewReportAcknowledgement,
   reviewVerificationFromQuote,
   strongerVerification,
   verificationNote,
+  type ChecklistAnswer,
   type ReviewVerification,
   type ReviewerRole,
   type VendorCategory,
@@ -211,13 +214,29 @@ export function registerReviewRoutes(app: FastifyInstance, context: AppContext):
         [vendor.id, userId]
       );
 
+      const mode = evaluationModeFor(vendor.category);
+
       return {
         vendorId: vendor.id,
         vendorName: vendor.name,
+        evaluationMode: mode,
+        // 결정사만 체크리스트다. 역할과 무관하게 같은 문항을 묻는다 —
+        // 계약 조건에 관한 질문이라 계약자만 답할 수 있다.
+        checklist:
+          mode === 'checklist'
+            ? checklistFor(vendor.category).map(({ key, label, question }) => ({
+                key,
+                label,
+                question,
+              }))
+            : [],
         roles: REVIEWER_ROLES.map((value) => ({
           value,
           label: REVIEWER_ROLE_LABEL[value],
-          aspects: aspectsForRole(vendor.category, value).map(({ key, label }) => ({ key, label })),
+          aspects:
+            mode === 'rating'
+              ? aspectsForRole(vendor.category, value).map(({ key, label }) => ({ key, label }))
+              : [],
         })),
         verification: {
           value: verification,
@@ -256,8 +275,33 @@ export function registerReviewRoutes(app: FastifyInstance, context: AppContext):
        * 업체 점수가 된다. 걸러내는 대신 되돌려 보낸다 — 조용히 버리면 앱이 보낸 것과
        * 저장된 것이 달라지고, 그 차이를 아무도 모른다.
        */
-      const allowed = new Set(aspectsForRole(vendor.category, body.role).map((a) => a.key));
-      const unknown = body.aspects.filter((aspect) => !allowed.has(aspect.key));
+      /*
+       * 업종이 방식을 정한다. 다른 방식으로 온 것은 받지 않는다.
+       *
+       * 섞이면 업체평가에 별점 막대와 비율 막대가 나란히 서고, 읽는 사람은 두
+       * 숫자가 같은 것을 재는 줄 안다. 스키마 트리거가 막긴 하지만 그 예외는
+       * 사람이 읽을 말이 아니다.
+       */
+      const mode = evaluationModeFor(vendor.category);
+
+      if (mode === 'checklist' && body.aspects.length > 0) {
+        throw new ApiError('invalid_request', '이 업종은 체크리스트로 평가합니다.');
+      }
+
+      if (mode === 'rating' && body.checklist.length > 0) {
+        throw new ApiError('invalid_request', '이 업종은 항목별 평가로 받습니다.');
+      }
+
+      const allowed = new Set(
+        mode === 'checklist'
+          ? checklistFor(vendor.category).map((item) => item.key)
+          : aspectsForRole(vendor.category, body.role).map((aspect) => aspect.key)
+      );
+
+      const unknown = [
+        ...body.aspects.map((aspect) => aspect.key),
+        ...body.checklist.map((answer) => answer.key),
+      ].filter((key) => !allowed.has(key));
 
       if (unknown.length > 0) {
         throw new ApiError('invalid_request', '이 항목은 물어보지 않은 것입니다.');
@@ -305,6 +349,15 @@ export function registerReviewRoutes(app: FastifyInstance, context: AppContext):
           await client.query(
             'INSERT INTO structured.review_aspects (review_id, aspect, rating) VALUES ($1, $2, $3)',
             [reviewId, aspect.key, aspect.rating]
+          );
+        }
+
+        // '모름'도 저장한다. 답하지 않은 것과 모른다고 답한 것은 다르다.
+        for (const answer of body.checklist) {
+          await client.query(
+            `INSERT INTO structured.review_checklist_answers (review_id, item, answer)
+             VALUES ($1, $2, $3::checklist_answer)`,
+            [reviewId, answer.key, answer.answer]
           );
         }
 

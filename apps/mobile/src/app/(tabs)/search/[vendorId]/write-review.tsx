@@ -1,5 +1,10 @@
 import type { ReviewForm } from '@weddingpick/api-contract';
-import type { ReviewerRole } from '@weddingpick/domain';
+import {
+  CHECKLIST_ANSWERS,
+  CHECKLIST_ANSWER_LABEL,
+  type ChecklistAnswer,
+  type ReviewerRole,
+} from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, TextInput } from 'react-native';
@@ -37,6 +42,7 @@ export default function WriteReviewScreen() {
   const [role, setRole] = useState<ReviewerRole | null>(null);
   const [overall, setOverall] = useState<number | null>(null);
   const [aspects, setAspects] = useState<Record<string, number>>({});
+  const [checklist, setChecklist] = useState<Record<string, ChecklistAnswer>>({});
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [pros, setPros] = useState('');
@@ -124,6 +130,12 @@ export default function WriteReviewScreen() {
 
           return rating === undefined ? [] : [{ key: aspect.key, rating }];
         }),
+        // 업종이 방식을 정한다. 둘 중 하나만 채워져 나간다.
+        checklist: (form!.checklist ?? []).flatMap((item) => {
+          const answer = checklist[item.key];
+
+          return answer === undefined ? [] : [{ key: item.key, answer }];
+        }),
       });
 
       setDone({ label: created.verificationLabel, caveat: created.caveat });
@@ -175,6 +187,37 @@ export default function WriteReviewScreen() {
             <ThemedText type="smallBold">전체 만족도</ThemedText>
             <RatingPicker label="전체 만족도" size="large" value={overall} onChange={setOverall} />
           </ThemedView>
+
+          {/*
+            결정사는 체크리스트다. 별점이 답할 수 없는 것을 답할 수 있어서다 —
+            "모름"이 점수 계산에서 빠진다. 별점은 모르는 것도 3점쯤으로 찍힌다.
+          */}
+          {form.evaluationMode === 'checklist' && form.checklist.length > 0 ? (
+            <ThemedView style={styles.section}>
+              <ThemedText type="smallBold">이용 경험 확인</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                모르시는 항목은 모름으로 두셔도 됩니다. 모름은 점수에 들어가지 않습니다.
+              </ThemedText>
+              {form.checklist.map((item) => (
+                <ThemedView key={item.key} style={styles.section}>
+                  <ThemedText type="small">{item.question}</ThemedText>
+                  <ThemedView style={styles.chips}>
+                    {CHECKLIST_ANSWERS.map((answer) => (
+                      <FilterChip
+                        key={answer}
+                        label={CHECKLIST_ANSWER_LABEL[answer]}
+                        selected={checklist[item.key] === answer}
+                        role="radio"
+                        onPress={() =>
+                          setChecklist((current) => ({ ...current, [item.key]: answer }))
+                        }
+                      />
+                    ))}
+                  </ThemedView>
+                </ThemedView>
+              ))}
+            </ThemedView>
+          ) : null}
 
           {picked && picked.aspects.length > 0 ? (
             <ThemedView style={styles.section}>

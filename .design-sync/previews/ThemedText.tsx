@@ -6,7 +6,7 @@ const row = { gap: Spacing.two, padding: Spacing.three };
 export function Types() {
   return (
     <ThemedView style={row}>
-      <ThemedText type="title">내 견적, 적정한 걸까?</ThemedText>
+      <ThemedText type="title">실제 결제 사례와 견줘볼까요?</ThemedText>
       <ThemedText type="subtitle">아펠가모 공덕</ThemedText>
       <ThemedText type="default">
         견적서를 촬영하면 업체·상품·금액·계약조건을 정리해 보여드립니다.

@@ -1,4 +1,14 @@
-import { aspectsFor, computeUsageScore, type VendorCategory } from '@weddingpick/domain';
+import {
+  CHECKLIST_CAPTION,
+  aspectsFor,
+  computeUsageScore,
+  evaluationModeFor,
+  isCollecting,
+  needsAttentionColor,
+  scoreChecklist,
+  type ChecklistAnswer,
+  type VendorCategory,
+} from '@weddingpick/domain';
 import type { Pool } from 'pg';
 
 /**
@@ -38,6 +48,38 @@ export async function loadUsageScore(pool: Pool, vendorId: string, category: Ven
   }
 
   /*
+   * 업종이 방식을 정한다. 결정사는 체크리스트, 나머지는 별점.
+   *
+   * 두 배열을 나눠 내보내는 이유는 4.2점과 78%가 다른 것을 재기 때문이다.
+   * 한 배열에 넣으면 화면이 같은 막대로 그리고, 읽는 사람은 같은 것으로 읽는다.
+   */
+  if (evaluationModeFor(category) === 'checklist') {
+    const answers = await pool.query<{ item: string; answer: ChecklistAnswer }>(
+      `SELECT a.item, a.answer
+       FROM structured.review_checklist_answers a
+       JOIN structured.scored_reviews s ON s.id = a.review_id
+       WHERE s.vendor_id = $1`,
+      [vendorId]
+    );
+
+    const checklist = scoreChecklist(category, answers.rows);
+
+    return {
+      available: true as const,
+      average: score.average,
+      count: score.count,
+      aspects: [],
+      checklist: checklist.map((item) => ({
+        ...item,
+        // 표본이 모자란 100%는 정보가 아니다. 숫자 대신 "수집 중"으로 나간다.
+        collecting: isCollecting(item),
+        needsAttention: needsAttentionColor(item),
+      })),
+      caption: CHECKLIST_CAPTION,
+    };
+  }
+
+  /*
    * 업종 목록을 돌면서 이름을 붙인다. 목록에 없는 항목은 내보내지 않는다 — 화면에
    * 내부 키가 그대로 뜨는 것보다 한 줄 빠지는 편이 낫다. 순서도 목록 순서를 따른다.
    */
@@ -50,5 +92,7 @@ export async function loadUsageScore(pool: Pool, vendorId: string, category: Ven
 
       return average === undefined ? [] : [{ key: aspect.key, label: aspect.label, average }];
     }),
+    checklist: [],
+    caption: null,
   };
 }

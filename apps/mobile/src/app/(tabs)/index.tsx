@@ -28,10 +28,15 @@ export default function HomeScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.header}>
+            {/*
+              디자인 핸드오프 카피 규칙 — "진짜 가격"·"적정가"는 쓰지 않는다.
+              우리는 가격의 적정 여부를 판정하지 않으므로, 판정처럼 들리는 말을
+              쓰면 하지 않는 일을 한다고 말하는 것이 된다.
+            */}
             <ThemedText type="small" themeColor="textSecondary">
-              찍으면, 진짜 가격이 보인다
+              같은 업체도, 결제 금액은 달라요
             </ThemedText>
-            <ThemedText type="subtitle">내 견적, 적정한 걸까?</ThemedText>
+            <ThemedText type="subtitle">실제 결제 사례와 견줘볼까요?</ThemedText>
           </ThemedView>
 
           <ThemedView style={styles.actions}>

@@ -401,3 +401,218 @@ describeWithDb('이용 후기', () => {
     expect(response.statusCode).toBe(404);
   });
 });
+
+/**
+ * 결정사 업체평가 — 체크리스트.
+ *
+ * 디자인 핸드오프 8번. 별점을 걷어내지 않고 업종으로 갈랐다 — 체크리스트 항목은
+ * 결정사 계약에만 있는 것이라 웨딩홀 음식에는 쓸 수 없다.
+ */
+describeWithDb('결정사 체크리스트', () => {
+  beforeAll(async () => {
+    await resetDatabase();
+    test = await createTestApp();
+  });
+
+  afterAll(async () => {
+    await test?.close();
+  });
+
+  beforeEach(resetDatabase);
+
+  const BODY =
+    '가입 전에 들은 조건과 계약서가 같았고, 약정한 소개 횟수도 채워주셨습니다. 담당자 변경도 빨랐습니다.';
+
+  /** 심사를 통과한 계약 문서 하나. 확인된 후기라야 점수에 들어간다. */
+  async function approvedContract(userId: string, weddingId: string, vendorId: string) {
+    const quote = await test.pool.query<{ id: string }>(
+      `INSERT INTO structured.quotes
+         (wedding_id, doc_type, vendor_id, product_name, product_key, total_amount,
+          contract_date, verification_level, source, confirmed_at)
+       VALUES ($1, 'contract', $2, '노블레스', $3, 3000000, '2026-06-01', 'L2',
+               'contract_verified', now())
+       RETURNING id`,
+      [weddingId, vendorId, `${vendorId}:${userId}`]
+    );
+
+    const reviewer = await test.pool.query<{ id: string }>(
+      'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
+    );
+
+    await test.pool.query(
+      `INSERT INTO structured.verification_requests
+         (quote_id, requested_by, target_level, status, decided_at, decided_by)
+       VALUES ($1, $2, 'L2', 'approved', now(), $3)`,
+      [quote.rows[0]!.id, userId, reviewer.rows[0]!.id]
+    );
+  }
+
+  async function createAgency() {
+    const { rows } = await test.pool.query<{ id: string }>(
+      `INSERT INTO structured.vendors (name, category, region, source)
+       VALUES ('가온결혼정보', 'wedding_info_company', '서울', 'public_data') RETURNING id`
+    );
+
+    return rows[0]!.id;
+  }
+
+  async function writeChecklist(
+    headers: Record<string, string>,
+    vendorId: string,
+    over: Record<string, unknown> = {}
+  ) {
+    return await test.app.inject({
+      method: 'POST',
+      url: `/v1/vendors/${vendorId}/reviews`,
+      headers,
+      payload: {
+        role: 'contractor',
+        overall: 4,
+        title: '설명대로였습니다',
+        body: BODY,
+        checklist: [
+          { key: 'price_explained', answer: 'yes' },
+          { key: 'pushed_too_hard', answer: 'no' },
+          { key: 'operating_normally', answer: 'unknown' },
+        ],
+        ...over,
+      },
+    });
+  }
+
+  it('결정사에는 체크리스트를 묻는다', async () => {
+    const { headers } = await signInAs(test);
+    const vendorId = await createAgency();
+
+    const form = await test.app.inject({
+      method: 'GET',
+      url: `/v1/vendors/${vendorId}/review-form`,
+      headers,
+    });
+
+    const body = form.json<{
+      evaluationMode: string;
+      checklist: { key: string; question: string }[];
+      roles: { aspects: unknown[] }[];
+    }>();
+
+    expect(body.evaluationMode).toBe('checklist');
+    expect(body.checklist.length).toBeGreaterThan(0);
+    // 실제로 묻는 문장이 온다. 막대 이름만으로는 무엇을 묻는지 모른다.
+    expect(body.checklist[0]!.question).toContain('?');
+    // 별점 항목은 비어 있다.
+    expect(body.roles.every((role) => role.aspects.length === 0)).toBe(true);
+  });
+
+  it('웨딩홀에는 여전히 별점을 묻는다', async () => {
+    const { headers } = await signInAs(test);
+    const { rows } = await test.pool.query<{ id: string }>(
+      `INSERT INTO structured.vendors (name, category, region, source)
+       VALUES ('가온예식홀', 'hall', '서울', 'public_data') RETURNING id`
+    );
+
+    const form = await test.app.inject({
+      method: 'GET',
+      url: `/v1/vendors/${rows[0]!.id}/review-form`,
+      headers,
+    });
+
+    const body = form.json<{ evaluationMode: string; checklist: unknown[] }>();
+
+    expect(body.evaluationMode).toBe('rating');
+    expect(body.checklist).toEqual([]);
+  });
+
+  it('모름도 저장한다', async () => {
+    const { headers } = await signInAs(test);
+    const vendorId = await createAgency();
+
+    expect((await writeChecklist(headers, vendorId)).statusCode).toBe(201);
+
+    // 답하지 않은 것과 모른다고 답한 것은 다르다.
+    const stored = await test.pool.query<{ answer: string }>(
+      `SELECT answer FROM structured.review_checklist_answers WHERE item = 'operating_normally'`
+    );
+
+    expect(stored.rows[0]!.answer).toBe('unknown');
+  });
+
+  it('업종에 맞지 않는 방식은 받지 않는다', async () => {
+    const { headers } = await signInAs(test);
+    const vendorId = await createAgency();
+
+    const response = await writeChecklist(headers, vendorId, {
+      checklist: [],
+      aspects: [{ key: 'food_taste', rating: 5 }],
+    });
+
+    expect(response.statusCode).toBe(400);
+  });
+
+  it('한 후기에 두 방식을 섞을 수 없다', async () => {
+    const { headers } = await signInAs(test);
+    const vendorId = await createAgency();
+    const created = await writeChecklist(headers, vendorId);
+    const reviewId = created.json<{ reviewId: string }>().reviewId;
+
+    /*
+     * 라우트가 막지만 스키마도 막는다. 섞이면 업체평가에 별점 막대와 비율 막대가
+     * 나란히 서고, 읽는 사람은 두 숫자가 같은 것을 재는 줄 안다.
+     */
+    await expect(
+      test.pool.query(
+        'INSERT INTO structured.review_aspects (review_id, aspect, rating) VALUES ($1, $2, $3)',
+        [reviewId, 'food_taste', 5]
+      )
+    ).rejects.toThrow(/함께 쓸 수 없다/);
+  });
+
+  it('표본이 모이면 항목별 환산값을 준다', async () => {
+    const vendorId = await createAgency();
+
+    // 이용점수 자체의 표본 기준과 항목별 기준을 둘 다 넘긴다.
+    for (let index = 0; index < 5; index += 1) {
+      const { headers, userId } = await signInAs(test, `apple-user-${index}`);
+      const weddingId = await createWedding(test, headers);
+
+      await approvedContract(userId, weddingId, vendorId);
+      await writeChecklist(headers, vendorId, {
+        checklist: [
+          { key: 'price_explained', answer: index === 0 ? 'no' : 'yes' },
+          { key: 'pushed_too_hard', answer: 'no' },
+        ],
+      });
+    }
+
+    const { headers } = await signInAs(test, 'apple-reader');
+    const response = await test.app.inject({
+      method: 'GET',
+      url: `/v1/vendors/${vendorId}/reviews`,
+      headers,
+    });
+
+    const score = response.json<{
+      usageScore: {
+        available: true;
+        aspects: unknown[];
+        checklist: { key: string; percent: number; collecting: boolean }[];
+        caption: string;
+      };
+    }>().usageScore;
+
+    expect(score.available).toBe(true);
+    // 별점 배열은 비어 있다. 4.2점과 78%는 다른 것을 잰다.
+    expect(score.aspects).toEqual([]);
+
+    const price = score.checklist.find((item) => item.key === 'price_explained')!;
+
+    expect(price.collecting).toBe(false);
+    expect(price.percent).toBe(80);
+
+    // '예'가 나쁜 답인 항목은 뒤집어 센다.
+    const pushed = score.checklist.find((item) => item.key === 'pushed_too_hard')!;
+
+    expect(pushed.percent).toBe(100);
+    expect(score.caption).toContain('별점이 아니라');
+  });
+});

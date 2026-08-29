@@ -123,6 +123,26 @@ export default function VendorReviewsScreen() {
                       {aspect.label} {aspect.average.toFixed(1)}
                     </ThemedText>
                   ))}
+
+                  {/*
+                    체크리스트는 별점과 다른 배열로 온다. 4.2점과 78%는 다른 것을
+                    재는 숫자라 같은 막대로 그리지 않는다. 표본이 모자라면 숫자
+                    대신 "수집 중"이다 — 흐린 숫자도 숫자다.
+                  */}
+                  {page.usageScore.checklist.map((item) => (
+                    <ThemedText
+                      key={item.key}
+                      type="small"
+                      themeColor={item.needsAttention ? 'cautionary' : 'textSecondary'}>
+                      {item.label}{' '}
+                      {item.collecting ? '수집 중' : `${item.percent}% · ${item.answered}명 답함`}
+                    </ThemedText>
+                  ))}
+                  {page.usageScore.caption ? (
+                    <ThemedText type="small" themeColor="textAssistive">
+                      {page.usageScore.caption}
+                    </ThemedText>
+                  ) : null}
                 </>
               ) : (
                 <ThemedText type="small" themeColor="textSecondary">
