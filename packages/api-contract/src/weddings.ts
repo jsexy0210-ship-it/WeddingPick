@@ -1,4 +1,4 @@
-import { MAX_DISPLAY_NAME_LENGTH } from '@weddingpick/domain';
+import { MAX_DISPLAY_NAME_LENGTH, MEMBER_TIERS } from '@weddingpick/domain';
 import { z } from 'zod';
 
 import { dateSchema, idSchema, timestampSchema } from './common';
@@ -45,6 +45,19 @@ export const currentUserSchema = z.object({
    * 화면은 이름만 보고, 어느 화면은 날짜만 보게 된다.
    */
   setupComplete: z.boolean(),
+
+  /** 배우자가 연결돼 있는가. 등급과 미션이 이 값을 본다. */
+  spouseLinked: z.boolean(),
+  /** 업체가 매칭된 결제인증이 있는가. Level 3 Unlock과 같은 조건이다. */
+  hasPaymentProof: z.boolean(),
+  /**
+   * 지금 등급. 서버가 정한다.
+   *
+   * 앱이 세 값으로 계산하게 두면, 화면마다 조건을 다시 적게 되고 언젠가 한 곳이
+   * 어긋난다 — 그러면 같은 사람이 화면에 따라 다른 등급으로 보인다.
+   */
+  tier: z.enum(MEMBER_TIERS),
+  tierLabel: z.string().min(1),
 });
 
 /**

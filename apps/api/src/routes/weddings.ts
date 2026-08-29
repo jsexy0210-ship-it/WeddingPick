@@ -3,9 +3,11 @@ import {
   createWeddingRequestSchema,
 } from '@weddingpick/api-contract';
 import {
+  MEMBER_TIER_LABEL,
   WEDDING_DATE_HINT,
   checkDisplayName,
   isSelectableWeddingDate,
+  tierOf,
 } from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
 
@@ -78,11 +80,22 @@ export function registerWeddingRoutes(app: FastifyInstance, context: AppContext)
       id: string | null;
       wedding_date: Date | null;
       display_name: string | null;
+      spouse_linked: boolean;
+      has_payment_proof: boolean;
     }>(
-      `SELECT w.id, w.wedding_date, u.display_name
+      `SELECT
+         w.id,
+         w.wedding_date,
+         u.display_name,
+         coalesce(w.owner_user_id IS NOT NULL AND w.partner_user_id IS NOT NULL, false)
+           AS spouse_linked,
+         EXISTS (
+           SELECT 1 FROM structured.usable_payment_proofs p WHERE p.reporter_user_id = u.id
+         ) AS has_payment_proof
        FROM structured.users u
        LEFT JOIN LATERAL (
-         SELECT id, wedding_date FROM structured.weddings
+         SELECT id, wedding_date, owner_user_id, partner_user_id
+         FROM structured.weddings
          WHERE owner_user_id = u.id OR partner_user_id = u.id
          ORDER BY created_at LIMIT 1
        ) w ON true
@@ -94,6 +107,15 @@ export function registerWeddingRoutes(app: FastifyInstance, context: AppContext)
     const weddingDate = row?.wedding_date ? row.wedding_date.toISOString().slice(0, 10) : null;
     const displayName = row?.display_name ?? null;
 
+    const facts = {
+      // 이 경로는 로그인이 필요하므로 여기까지 온 사람은 로그인한 사람이다.
+      loggedIn: true,
+      spouseLinked: row?.spouse_linked ?? false,
+      hasPaymentProof: row?.has_payment_proof ?? false,
+    };
+
+    const tier = tierOf(facts);
+
     return {
       userId,
       weddingId: row?.id ?? null,
@@ -104,6 +126,14 @@ export function registerWeddingRoutes(app: FastifyInstance, context: AppContext)
        * 어느 화면은 이름만 보고 어느 화면은 날짜만 보게 된다.
        */
       setupComplete: displayName !== null && weddingDate !== null,
+      spouseLinked: facts.spouseLinked,
+      hasPaymentProof: facts.hasPaymentProof,
+      /*
+       * 등급은 서버가 정한다. 앱이 세 값으로 계산하게 두면 화면마다 조건을 다시
+       * 적게 되고, 언젠가 한 곳이 어긋나 같은 사람이 화면에 따라 다른 등급으로 보인다.
+       */
+      tier,
+      tierLabel: MEMBER_TIER_LABEL[tier],
     };
   });
 

@@ -27,3 +27,4 @@ export * from './vendor-comparison';
 export * from './verification';
 export * from './wedding';
 export * from './expense';
+export * from './membership';
