@@ -40,3 +40,4 @@ export * from './reidentification';
 export * from './advertising';
 export * from './reward';
 export * from './nudge';
+export * from './vendor-claim';

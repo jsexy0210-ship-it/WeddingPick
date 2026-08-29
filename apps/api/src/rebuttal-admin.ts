@@ -21,9 +21,10 @@ import { notify } from './notify';
  *
  * `--by`는 결정한 사람의 사용자 id다. 스키마가 결론에 사람을 요구한다.
  *
- * 소속을 어떻게 확인하는지는 아직 정하지 않았다. 지금은 사람이 밖에서 확인하고
- * `--note`에 무엇으로 확인했는지 적는다 — **적지 않으면 나중에 왜 실었는지 아무도
- * 답할 수 없다.**
+ * 소속은 관계자 인증(v2.0 26번)이 확인한다. `--show`가 그 결과를 함께 보여주므로,
+ * 인증을 마친 사람의 반론인지 아니면 아직 아무도 확인하지 않은 이름인지 심사하는
+ * 사람이 먼저 안다. 인증이 없어도 실을 수는 있다 — 대신 `--note`에 무엇으로
+ * 확인했는지 적는다. **적지 않으면 나중에 왜 실었는지 아무도 답할 수 없다.**
  */
 
 type Options = {
@@ -173,10 +174,17 @@ async function main(): Promise<void> {
         review_title: string;
         review_body: string;
         review_overall: number;
+        verified_role: string | null;
       }>(
         `SELECT b.id, b.status, b.claimed_role, b.body, b.decision_note, b.created_at,
                 v.name AS vendor_name, r.title AS review_title, r.body AS review_body,
-                r.overall AS review_overall
+                r.overall AS review_overall,
+                (SELECT c.claimed_role
+                 FROM structured.approved_vendor_claims c
+                 WHERE c.vendor_id = r.vendor_id
+                   AND c.claimant_user_id = b.submitted_by_user_id
+                 ORDER BY c.decided_at DESC
+                 LIMIT 1) AS verified_role
          FROM structured.review_rebuttals b
          JOIN structured.reviews r ON r.id = b.review_id
          JOIN structured.vendors v ON v.id = r.vendor_id
@@ -194,7 +202,16 @@ async function main(): Promise<void> {
 
       console.log(`${found.id}  ${REBUTTAL_STATUS_LABEL[found.status]}  ${when(found.created_at)}`);
       console.log(`  업체: ${found.vendor_name}`);
-      console.log(`  본인이 밝힌 소속: ${found.claimed_role}  ← 이걸 확인하는 것이 심사다`);
+      console.log(`  본인이 밝힌 소속: ${found.claimed_role}`);
+      /*
+       * 관계자 인증을 마쳤는지. v2.0 25번이 반론의 첫 단계로 관계자 인증을
+       * 두었으므로, 심사하는 사람이 먼저 볼 것은 이 줄이다.
+       */
+      console.log(
+        found.verified_role === null
+          ? '  관계자 인증: 없다  ← 이걸 확인하는 것이 심사다'
+          : `  관계자 인증: 확인됨 (${found.verified_role})`
+      );
       console.log(`  원본 후기(${found.review_overall}점): ${found.review_title}`);
       console.log(`    ${found.review_body}`);
       console.log(`  반론: ${found.body}`);

@@ -298,6 +298,13 @@ export default function MyScreen() {
               hint="등록한 반론과 확인 상태를 볼 수 있어요"
               onPress={() => (data.me ? router.push('/my/rebuttals') : router.push('/login'))}
             />
+            <ActionButton
+              label="업체 관계자 인증"
+              hint="관계자로 확인되면 우리 업체 후기에 반론을 낼 수 있어요"
+              onPress={() =>
+                data.me ? router.push('/my/vendor-claims') : router.push('/login')
+              }
+            />
           </ThemedView>
 
           <ThemedView style={styles.section}>

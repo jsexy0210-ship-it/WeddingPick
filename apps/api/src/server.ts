@@ -15,6 +15,7 @@ import { registerInquiryRoutes } from './routes/inquiries';
 import { registerMyReportRoutes } from './routes/my-reports';
 import { registerNotificationRoutes } from './routes/notifications';
 import { registerRebuttalRoutes } from './routes/rebuttals';
+import { registerVendorClaimRoutes } from './routes/vendor-claims';
 import { registerSettingsRoutes } from './routes/settings';
 import { registerPlannerRoutes } from './routes/planners';
 import { registerPaymentProofRoutes } from './routes/payment-proofs';
@@ -99,6 +100,7 @@ export function buildServer(context: AppContext): FastifyInstance {
   registerWeddingInviteRoutes(app, context);
   registerNotificationRoutes(app, context);
   registerRebuttalRoutes(app, context);
+  registerVendorClaimRoutes(app, context);
   registerMyReportRoutes(app, context);
   registerSettingsRoutes(app, context);
   registerDevStorageRoutes(app, context);

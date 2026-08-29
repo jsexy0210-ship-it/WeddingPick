@@ -344,6 +344,20 @@ export default function VendorDetailScreen() {
                 })
               }
             />
+            {/*
+              업체 쪽 사람이 들어오는 문. v2.0 26번 — 관계자로 확인되면 자기
+              업체 후기에 반론을 낼 수 있다.
+            */}
+            <ActionButton
+              label="이 업체의 관계자예요"
+              hint="확인되면 우리 업체 후기에 반론을 낼 수 있어요"
+              onPress={() =>
+                router.push({
+                  pathname: '/my/vendor-claims/[vendorId]',
+                  params: { vendorId: vendor.id, vendorName: vendor.name },
+                })
+              }
+            />
             <ActionButton label="돌아가기" onPress={() => router.back()} />
           </ThemedView>
         </ScrollView>

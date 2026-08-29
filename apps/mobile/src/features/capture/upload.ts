@@ -26,6 +26,19 @@ export async function uploadPaymentProof(pages: CapturedPage[]): Promise<string>
   return rawDocumentId;
 }
 
+/**
+ * 업체 관계자 인증의 사업자 증빙을 올린다.
+ *
+ * 견적서와 같은 `document`다 — 사람이 심사하는 원본이라 보관 기간도 같다.
+ * 심사가 열려 있는 동안에는 파기 일정이 서지 않고(0038), 결론이 난 날부터
+ * 30일을 센다.
+ */
+export async function uploadBusinessDocument(pages: CapturedPage[]): Promise<string> {
+  const { rawDocumentId } = await uploadPages(pages, 'document');
+
+  return rawDocumentId;
+}
+
 async function uploadPages(
   pages: CapturedPage[],
   kind: 'document' | 'payment_proof'

@@ -641,6 +641,227 @@ describeWithDb('DB 스키마', () => {
     });
   });
 
+  describe('업체 관계자 인증', () => {
+    async function aVendor(officialDomain: string | null = 'gaon.co.kr') {
+      const vendor = await client.query<{ id: string }>(
+        `INSERT INTO structured.vendors (name, category, region, source, official_domain)
+         VALUES ('가온예식홀', 'hall', '서울', 'public_data', $1) RETURNING id`,
+        [officialDomain]
+      );
+      const claimant = await client.query<{ id: string }>(
+        'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
+      );
+
+      return { vendorId: vendor.rows[0]!.id, claimantId: claimant.rows[0]!.id };
+    }
+
+    async function aDocument(ownerId: string) {
+      const { rows } = await client.query<{ id: string }>(
+        `INSERT INTO originals.raw_documents (owner_user_id, page_count)
+         VALUES ($1, 1) RETURNING id`,
+        [ownerId]
+      );
+
+      return rows[0]!.id;
+    }
+
+    const claim = (
+      vendorId: string,
+      claimantId: string,
+      columns: string,
+      values: string
+    ) =>
+      client.query(
+        `INSERT INTO structured.vendor_claims
+           (vendor_id, claimant_user_id, claimed_role, ${columns})
+         VALUES ($1, $2, '예약팀장', ${values})
+         RETURNING id`,
+        [vendorId, claimantId]
+      );
+
+    it('공식 도메인 이메일 신청은 주소를 들고 온다', async () => {
+      const { vendorId, claimantId } = await aVendor();
+
+      await expect(
+        claim(vendorId, claimantId, 'method, contact_email', `'official_domain_email', 'yeji@gaon.co.kr'`)
+      ).resolves.toBeDefined();
+    });
+
+    it('주소 없는 이메일 신청은 들어오지 못한다', async () => {
+      const { vendorId, claimantId } = await aVendor();
+
+      await expect(
+        claim(vendorId, claimantId, 'method', `'official_domain_email'`)
+      ).rejects.toThrow(/email_methods_have_an_email/);
+    });
+
+    it('공개된 이메일은 어디에 공개돼 있는지가 함께 남는다', async () => {
+      const { vendorId, claimantId } = await aVendor();
+
+      await expect(
+        claim(vendorId, claimantId, 'method, contact_email', `'listed_email', 'yeji@naver.com'`)
+      ).rejects.toThrow(/listed_email_says_where/);
+
+      await expect(
+        claim(
+          vendorId,
+          claimantId,
+          'method, contact_email, listed_at',
+          `'listed_email', 'yeji@naver.com', '공식 홈페이지 하단'`
+        )
+      ).resolves.toBeDefined();
+    });
+
+    it('증빙 수단은 증빙 없이 들어오지 못한다', async () => {
+      const { vendorId, claimantId } = await aVendor();
+
+      await expect(
+        claim(vendorId, claimantId, 'method', `'business_document'`)
+      ).rejects.toThrow(/document_method_has_a_document/);
+
+      const documentId = await aDocument(claimantId);
+
+      await expect(
+        claim(
+          vendorId,
+          claimantId,
+          'method, evidence_document_id',
+          `'business_document', '${documentId}'::uuid`
+        )
+      ).resolves.toBeDefined();
+    });
+
+    it('사람이 결정하지 않은 신청은 확인 완료가 될 수 없다', async () => {
+      const { vendorId, claimantId } = await aVendor();
+
+      await expect(
+        claim(
+          vendorId,
+          claimantId,
+          'method, contact_email, status',
+          `'official_domain_email', 'yeji@gaon.co.kr', 'approved'`
+        )
+      ).rejects.toThrow(/claim_decision_is_dated/);
+    });
+
+    it('결정한 때만 있고 사람이 없을 수 없다', async () => {
+      /*
+       * 0032에서 배운 것이다. 두 조건을 한 제약으로 묶으면 양변이 나란히
+       * false가 되는 구멍이 생겨, 사람 없이 결론난 줄이 통과한다.
+       */
+      const { vendorId, claimantId } = await aVendor();
+
+      await expect(
+        claim(
+          vendorId,
+          claimantId,
+          'method, contact_email, status, decided_at',
+          `'official_domain_email', 'yeji@gaon.co.kr', 'approved', now()`
+        )
+      ).rejects.toThrow(/claim_decision_names_the_person/);
+    });
+
+    it('확인 중인 신청을 한 업체에 둘 들 수 없다', async () => {
+      const { vendorId, claimantId } = await aVendor();
+
+      await claim(
+        vendorId,
+        claimantId,
+        'method, contact_email',
+        `'official_domain_email', 'yeji@gaon.co.kr'`
+      );
+
+      await expect(
+        claim(vendorId, claimantId, 'method, contact_email', `'listed_email', 'yeji@naver.com'`)
+      ).rejects.toThrow();
+    });
+
+    it('확인된 관계자 목록에는 증빙도 연락처도 열이 없다', async () => {
+      /*
+       * 원문 27번: 일반 사용자에게 원본 공개하지 않음. 화면이 실수로 꺼내려
+       * 해도 꺼낼 열 자체가 없어야 한다.
+       */
+      const { rows } = await client.query<{ column_name: string }>(
+        `SELECT column_name FROM information_schema.columns
+         WHERE table_schema = 'structured' AND table_name = 'approved_vendor_claims'`
+      );
+
+      const columns = rows.map((row) => row.column_name);
+
+      expect(columns).not.toContain('contact_email');
+      expect(columns).not.toContain('evidence_document_id');
+      expect(columns).not.toContain('listed_at');
+      expect(columns).toContain('claimed_role');
+    });
+
+    it('심사가 열려 있는 동안에는 증빙이 파기 목록에 오르지 않는다', async () => {
+      /*
+       * 사업자 증빙은 업로드 30일 뒤에 지워진다. 그때까지 심사가 안 끝나 있으면
+       * 심사하는 사람이 볼 것이 사라진다. 0018이 인증 심사에 낸 답을 관계자
+       * 인증에도 쓴다.
+       */
+      const { vendorId, claimantId } = await aVendor();
+      const documentId = await aDocument(claimantId);
+
+      await client.query(
+        `INSERT INTO originals.raw_document_pages
+           (raw_document_id, page_index, storage_key, mime_type)
+         VALUES ($1, 0, 'claims/' || gen_random_uuid(), 'image/jpeg')`,
+        [documentId]
+      );
+
+      await client.query(
+        "UPDATE originals.raw_documents SET uploaded_at = now() - interval '400 days' WHERE id = $1",
+        [documentId]
+      );
+
+      const beforeClaim = await client.query(
+        'SELECT 1 FROM originals.expired_documents WHERE id = $1',
+        [documentId]
+      );
+
+      expect(beforeClaim.rows).toHaveLength(1);
+
+      const claimed = await claim(
+        vendorId,
+        claimantId,
+        'method, evidence_document_id',
+        `'business_document', '${documentId}'::uuid`
+      );
+
+      const held = await client.query(
+        'SELECT 1 FROM originals.expired_documents WHERE id = $1',
+        [documentId]
+      );
+
+      expect(held.rows).toHaveLength(0);
+
+      // 결론이 나면 다시 셈이 시작된다. 무기한으로 늘어나지 않는다.
+      const decider = await client.query<{ id: string }>(
+        'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
+      );
+
+      await client.query(
+        `UPDATE structured.vendor_claims
+         SET status = 'approved', decided_at = now() - interval '400 days', decided_by = $2
+         WHERE id = $1`,
+        [claimed.rows[0]!.id, decider.rows[0]!.id]
+      );
+
+      const released = await client.query(
+        'SELECT 1 FROM originals.expired_documents WHERE id = $1',
+        [documentId]
+      );
+
+      expect(released.rows).toHaveLength(1);
+    });
+
+    it('업체 공식 도메인은 도메인 꼴만 받는다', async () => {
+      await expect(aVendor('https://gaon.co.kr')).rejects.toThrow();
+      await expect(aVendor(null)).resolves.toBeDefined();
+    });
+  });
+
   describe('마이그레이션', () => {
     it('두 번 돌려도 같은 결과가 된다', async () => {
       await expect(migrate(client)).resolves.toEqual([]);

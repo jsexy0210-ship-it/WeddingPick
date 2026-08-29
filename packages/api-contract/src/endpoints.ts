@@ -41,6 +41,10 @@ import {
   notificationSummaryResponseSchema,
 } from './notifications';
 import {
+  createVendorClaimRequestSchema,
+  vendorClaimListResponseSchema,
+} from './vendor-claims';
+import {
   createRebuttalRequestSchema,
   rebuttalListResponseSchema,
   updateRebuttalRequestSchema,
@@ -476,6 +480,27 @@ export const ENDPOINTS = {
     method: 'DELETE',
     path: '/v1/rebuttals/{rebuttalId}',
     response: z.null(),
+  },
+
+  /**
+   * 업체 관계자 인증 신청. v2.0 26번.
+   *
+   * **여기서 확인되는 것은 없다.** 이메일 도메인이 맞아떨어져도 그건 재료지
+   * 결론이 아니다 — 도메인이 같다는 것은 그 회사의 주소라는 뜻이지, 신청한
+   * 사람이 그 주소를 쓴다는 뜻이 아니다. 이 경로에는 status를 정할 자리가 없다.
+   */
+  createVendorClaim: {
+    method: 'POST',
+    path: '/v1/vendor-claims',
+    body: createVendorClaimRequestSchema,
+    response: z.object({ claimId: idSchema }),
+  },
+
+  /** 내가 낸 신청. 증빙과 연락처는 돌려주지 않는다(v2.0 27번). */
+  listMyVendorClaims: {
+    method: 'GET',
+    path: '/v1/me/vendor-claims',
+    response: vendorClaimListResponseSchema,
   },
 
   /**

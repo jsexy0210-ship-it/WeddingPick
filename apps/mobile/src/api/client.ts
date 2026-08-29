@@ -37,11 +37,14 @@ import {
   createInviteResponseSchema,
   invitePreviewResponseSchema,
   vendorSearchResponseSchema,
+  vendorClaimListResponseSchema,
   weddingInviteListResponseSchema,
   verificationRequestSchema,
   weddingDetailSchema,
   type CandidateListResponse,
   type CreateRebuttalRequest,
+  type CreateVendorClaimRequest,
+  type VendorClaimListResponse,
   type MyReportListResponse,
   type NotificationListResponse,
   type NotificationSummaryResponse,
@@ -710,6 +713,32 @@ export async function updateRebuttal(
 
 export async function removeRebuttal(rebuttalId: string): Promise<void> {
   await request(`/v1/rebuttals/${rebuttalId}`, z.null(), { method: 'DELETE' });
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * 업체 관계자 인증 (최종통합정책 v2.0 26·27번)
+ * ---------------------------------------------------------------------------
+ */
+
+/**
+ * 업체 관계자 인증 신청.
+ *
+ * **여기서 확인되지 않는다.** 이메일 도메인이 맞아떨어져도 담당자가 그 주소로
+ * 연락해 확인한 뒤에야 관계자가 된다 — 요청 타입에 상태를 정할 자리가 없는 것이
+ * 그 사실을 말해준다.
+ */
+export async function createVendorClaim(
+  body: CreateVendorClaimRequest
+): Promise<{ claimId: string }> {
+  return request('/v1/vendor-claims', z.object({ claimId: z.string() }), {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function listMyVendorClaims(): Promise<VendorClaimListResponse> {
+  return request('/v1/me/vendor-claims', vendorClaimListResponseSchema);
 }
 
 /*
