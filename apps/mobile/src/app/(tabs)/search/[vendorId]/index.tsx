@@ -1,6 +1,7 @@
 import type { VendorDetail } from '@weddingpick/api-contract';
 import {
   DOCUMENT_TYPE_LABEL,
+  MAX_RATING,
   PAYMENT_PROOF_CAVEAT,
   VENDOR_CATEGORY_LABEL,
   manwon,
@@ -8,13 +9,14 @@ import {
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { addCandidate, ensureWedding, getVendor } from '@/api/client';
 import {
   ActionButton,
   MaxContentWidth,
+  ProgressBar,
   Radius,
   Spacing,
   ThemedText,
@@ -33,6 +35,8 @@ export default function VendorDetailScreen() {
   const { vendorId } = useLocalSearchParams<{ vendorId: string }>();
   const theme = useTheme();
   const [vendor, setVendor] = useState<VendorDetail | null>(null);
+  /** 출처를 펼쳤는가. 배지를 눌러 연다. */
+  const [sourceOpen, setSourceOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saveNote, setSaveNote] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -88,9 +92,34 @@ export default function VendorDetailScreen() {
             <ThemedText type="small" themeColor="textSecondary">
               {VENDOR_CATEGORY_LABEL[vendor.category]} · {vendor.region}
             </ThemedText>
+            {/*
+              공식정보 배지. 핸드오프 8번 — 눌러서 기관·출처·기준일을 본다.
+
+              배지만 두고 출처를 감추지 않는다. `공공데이터`라는 말은 그 자체로는
+              아무것도 확인해주지 않는다 — 어느 기관의 무엇을 언제 확인했는지가
+              그 배지의 내용이다.
+            */}
             {vendor.sourceNote ? (
-              <ThemedText type="small" themeColor="textSecondary">
-                업체 정보 출처: {vendor.sourceNote}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="업체 정보 출처 보기"
+                accessibilityState={{ expanded: sourceOpen }}
+                onPress={() => setSourceOpen((open) => !open)}
+                style={styles.sourceRow}>
+                <View style={[styles.badge, { backgroundColor: theme.backgroundSelected }]}>
+                  <ThemedText type="badge" themeColor="textSecondary">
+                    공공데이터
+                  </ThemedText>
+                </View>
+                <ThemedText type="t7" themeColor="textAssistive">
+                  {sourceOpen ? '−' : '출처'}
+                </ThemedText>
+              </Pressable>
+            ) : null}
+
+            {sourceOpen && vendor.sourceNote ? (
+              <ThemedText type="t7" themeColor="textSecondary">
+                {vendor.sourceNote}
               </ThemedText>
             ) : null}
           </ThemedView>
@@ -205,10 +234,19 @@ export default function VendorDetailScreen() {
                   <ThemedText type="small" themeColor="textSecondary">
                     확인된 후기 {vendor.usageScore.count}건
                   </ThemedText>
+                  {/* 별점은 5점 만점을 채운 비율로 그린다. 핸드오프 8번. */}
                   {vendor.usageScore.aspects.map((aspect) => (
-                    <ThemedText key={aspect.key} type="small" themeColor="textSecondary">
-                      {aspect.label} {aspect.average.toFixed(1)}
-                    </ThemedText>
+                    <ThemedView key={aspect.key} type="backgroundElement" style={styles.meter}>
+                      <ThemedView type="backgroundElement" style={styles.meterHead}>
+                        <ThemedText type="t7" themeColor="textSecondary">
+                          {aspect.label}
+                        </ThemedText>
+                        <ThemedText type="t7" numeric>
+                          {aspect.average.toFixed(1)}
+                        </ThemedText>
+                      </ThemedView>
+                      <ProgressBar value={aspect.average / MAX_RATING} />
+                    </ThemedView>
                   ))}
 
                   {/*
@@ -217,13 +255,37 @@ export default function VendorDetailScreen() {
                     대신 "수집 중"이다 — 흐린 숫자도 숫자다.
                   */}
                   {vendor.usageScore.checklist.map((item) => (
-                    <ThemedText
-                      key={item.key}
-                      type="small"
-                      themeColor={item.needsAttention ? 'cautionary' : 'textSecondary'}>
-                      {item.label}{' '}
-                      {item.collecting ? '수집 중' : `${item.percent}% · ${item.answered}명 답함`}
-                    </ThemedText>
+                    <ThemedView key={item.key} type="backgroundElement" style={styles.meter}>
+                      <ThemedView type="backgroundElement" style={styles.meterHead}>
+                        <ThemedText
+                          type="t7"
+                          themeColor={item.needsAttention ? 'cautionary' : 'textSecondary'}>
+                          {item.label}
+                        </ThemedText>
+                        <ThemedText
+                          type="t7"
+                          numeric
+                          themeColor={item.collecting ? 'textAssistive' : undefined}>
+                          {item.collecting ? '수집 중' : `${item.percent}%`}
+                        </ThemedText>
+                      </ThemedView>
+
+                      {/*
+                        데이터가 모자라면 막대를 그리지 않고 빈 트랙만 둔다 —
+                        흐린 숫자도 숫자고, 사람들은 숫자를 읽는다.
+                        70 미만은 주황(핸드오프 8번).
+                      */}
+                      <ProgressBar
+                        value={item.collecting ? 0 : item.percent / 100}
+                        color={item.needsAttention ? 'cautionary' : 'tint'}
+                      />
+
+                      {item.collecting ? null : (
+                        <ThemedText type="t7" themeColor="textAssistive">
+                          {item.answered}명 답함
+                        </ThemedText>
+                      )}
+                    </ThemedView>
                   ))}
                   {vendor.usageScore.caption ? (
                     <ThemedText type="small" themeColor="textAssistive">
@@ -301,6 +363,27 @@ function Frame({ children }: { children: React.ReactNode }) {
 }
 
 const styles = StyleSheet.create({
+  sourceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    alignSelf: 'flex-start',
+    minHeight: 32,
+  },
+  badge: {
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: 2,
+  },
+  meter: {
+    gap: Spacing.one,
+    paddingVertical: Spacing.one,
+  },
+  meterHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   /** 실제 결제 잉크 블록. 핸드오프 8번 — 이 화면에서 가장 중요한 숫자다. */
   ink: {
     borderRadius: Radius.card,

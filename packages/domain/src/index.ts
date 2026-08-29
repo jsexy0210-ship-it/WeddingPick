@@ -35,3 +35,7 @@ export * from './disclosure';
 export * from './decision';
 export * from './risk-scan';
 export * from './wedding-phase';
+export * from './faq';
+export * from './reidentification';
+export * from './advertising';
+export * from './reward';

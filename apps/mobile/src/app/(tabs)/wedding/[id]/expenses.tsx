@@ -1,5 +1,5 @@
 import type { ExpenseSummaryResponse } from '@weddingpick/api-contract';
-import { EXPENSE_BUCKET_COLOR, type ExpenseBucket } from '@weddingpick/domain';
+import { EXPENSE_BUCKET_COLOR, manwon, type ExpenseBucket } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, ScrollView, StyleSheet, TextInput, View } from 'react-native';
@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { getExpenses, removeExpense, setBudget } from '@/api/client';
 import {
   ActionButton,
+  DonutChart,
   Layout,
   MaxContentWidth,
   Radius,
@@ -97,30 +98,27 @@ export default function ExpensesScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content}>
-          <ThemedView style={styles.section}>
-            <ThemedText type="t7" themeColor="textSecondary">
-              지금까지 결제한 금액
-            </ThemedText>
-            <ThemedText type="amount" numeric>
-              {won(page.paidTotal)}
-            </ThemedText>
-          </ThemedView>
+          {/*
+            도넛과 총액. 핸드오프 14번 — 140px, 구멍 94px.
 
-          {/* 4색 누적 막대. 0원인 갈래도 자리를 지켜 색 순서가 안 흔들린다. */}
-          <View style={styles.bar}>
-            {page.buckets.map((bucket) => (
-              <View
-                key={bucket.bucket}
-                style={{
-                  flex: bucket.ratio,
-                  backgroundColor: theme[EXPENSE_BUCKET_COLOR[bucket.bucket as ExpenseBucket].bar],
-                }}
-              />
-            ))}
-            {page.paidTotal === 0 ? (
-              <View style={{ flex: 1, backgroundColor: theme.chartMuted }} />
-            ) : null}
-          </View>
+            총액을 구멍 안에 둔다. 옆에 두면 눈이 두 번 움직이고, 무엇의 총액인지
+            한 번 더 생각해야 한다.
+          */}
+          <ThemedView style={styles.donutRow}>
+            <DonutChart
+              slices={page.buckets.map((bucket) => ({
+                key: bucket.bucket,
+                value: bucket.amount,
+                color: theme[EXPENSE_BUCKET_COLOR[bucket.bucket as ExpenseBucket].bar],
+              }))}>
+              <ThemedText type="t7" themeColor="textSecondary">
+                지금까지
+              </ThemedText>
+              <ThemedText type="t4" numeric>
+                {manwon(page.paidTotal)}
+              </ThemedText>
+            </DonutChart>
+          </ThemedView>
 
           <ThemedView style={styles.legend}>
             {page.buckets.map((bucket) => (
@@ -278,7 +276,7 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   section: { gap: Spacing.two },
-  bar: { flexDirection: 'row', height: 8, borderRadius: Radius.pill, overflow: 'hidden' },
+  donutRow: { alignItems: 'center', paddingVertical: Spacing.two },
   legend: { gap: Spacing.one },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   dot: { width: 8, height: 8, borderRadius: Radius.pill },

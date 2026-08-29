@@ -1,5 +1,6 @@
 import type { Inquiry } from '@weddingpick/api-contract';
 import {
+  FAQ_ITEMS,
   INQUIRY_CATEGORIES,
   INQUIRY_CATEGORY_RULES,
   INQUIRY_STATUS_LABEL,
@@ -13,7 +14,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { createInquiry, listMyInquiries } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
-import { ActionButton, FilterChip, MaxContentWidth, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
+import {
+  Accordion,
+  ActionButton,
+  FilterChip,
+  MaxContentWidth,
+  Spacing,
+  ThemedText,
+  ThemedView,
+  useTheme,
+} from '@weddingpick/ui';
 
 function isCategory(value: string | undefined): value is InquiryCategory {
   return (INQUIRY_CATEGORIES as readonly string[]).includes(value ?? '');
@@ -128,6 +138,24 @@ export default function ContactScreen() {
             <ThemedText type="small" themeColor="textSecondary">
               사람이 직접 읽고 답합니다. 이름이나 주소는 묻지 않습니다.
             </ThemedText>
+          </ThemedView>
+
+          {/*
+            FAQ를 문의 앞에 둔다. 핸드오프 20번.
+
+            **문의를 줄이려는 것이 아니라, 답이 이미 있는 질문에 하루를 기다리지
+            않게 하려는 것이다.** 그래서 답은 사람이 답할 말과 같아야 한다 —
+            다르면 문의창구가 FAQ를 부정하는 자리가 된다.
+          */}
+          <ThemedView style={styles.section}>
+            <ThemedText type="smallBold">자주 묻는 것</ThemedText>
+            <Accordion
+              items={FAQ_ITEMS.map((item) => ({
+                key: item.key,
+                title: item.question,
+                body: item.answer,
+              }))}
+            />
           </ThemedView>
 
           {!isServerConfigured ? (

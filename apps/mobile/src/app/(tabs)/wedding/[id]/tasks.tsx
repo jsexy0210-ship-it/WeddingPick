@@ -5,9 +5,15 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Modal, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { listWeddingTasks, removeWeddingTask, updateWeddingTask } from '@/api/client';
+import {
+  addWeddingTask,
+  listWeddingTasks,
+  removeWeddingTask,
+  updateWeddingTask,
+} from '@/api/client';
 import {
   ActionButton,
+  Fab,
   FilterChip,
   Layout,
   MaxContentWidth,
@@ -35,6 +41,9 @@ export default function WeddingTasksScreen() {
   const [error, setError] = useState<string | null>(null);
   /** 수정 중인 일정. 닫으면 버린다. */
   const [editing, setEditing] = useState<WeddingTaskListResponse['tasks'][number] | null>(null);
+  /** 새로 더하는 중인가. 고치기와 같은 시트를 쓰되 저장하는 곳이 다르다. */
+  const [adding, setAdding] = useState(false);
+  const [draftLabel, setDraftLabel] = useState('');
   const [draftDate, setDraftDate] = useState<string | null>(null);
   const [draftVendor, setDraftVendor] = useState('');
 
@@ -66,6 +75,40 @@ export default function WeddingTasksScreen() {
     );
   }
 
+  function closeSheet() {
+    setEditing(null);
+    setAdding(false);
+    setDraftLabel('');
+    setDraftDate(null);
+    setDraftVendor('');
+    setError(null);
+  }
+
+  async function add() {
+    if (draftLabel.trim().length === 0) {
+      setError('무슨 일인지 적어주세요.');
+
+      return;
+    }
+
+    try {
+      /*
+       * 만들 때는 비운 값을 아예 보내지 않는다. 고칠 때의 null은 "지워달라"는
+       * 뜻이지만, 없던 것을 지워달라고 할 수는 없다.
+       */
+      await addWeddingTask(id, {
+        label: draftLabel.trim(),
+        ...(draftDate ? { dueDate: draftDate } : {}),
+        ...(draftVendor.trim() === '' ? {} : { vendorLabel: draftVendor.trim() }),
+      });
+
+      closeSheet();
+      load();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : '더하지 못했습니다.');
+    }
+  }
+
   async function save(state?: 'auto' | (typeof TASK_STATES)[number]) {
     if (!editing) return;
 
@@ -77,7 +120,7 @@ export default function WeddingTasksScreen() {
         ...(state ? { state: state === 'auto' ? null : state } : {}),
       });
 
-      setEditing(null);
+      closeSheet();
       load();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '고치지 못했습니다.');
@@ -137,10 +180,42 @@ export default function WeddingTasksScreen() {
         </ScrollView>
       </SafeAreaView>
 
-      <Modal visible={editing !== null} transparent animationType="slide">
+      {/*
+        핸드오프 15번의 연필 FAB. 프리셋 14개로 시작하지만 사람마다 챙길 일이
+        다르다 — 더할 길이 없으면 그 목록은 우리 목록이지 그 사람의 목록이 아니다.
+      */}
+      <Fab
+        label="일정 더하기"
+        glyph="✎"
+        onPress={() => {
+          closeSheet();
+          setAdding(true);
+        }}
+      />
+
+      <Modal visible={editing !== null || adding} transparent animationType="slide">
         <ThemedView style={[styles.scrim, { backgroundColor: theme.scrim }]}>
           <ScrollView contentContainerStyle={styles.sheet}>
-            <ThemedText type="t4">{editing?.label}</ThemedText>
+            {adding ? (
+              <>
+                <ThemedText type="t4">일정 더하기</ThemedText>
+                <ThemedText type="t7" themeColor="textSecondary">
+                  무슨 일인가요
+                </ThemedText>
+                <TextInput
+                  style={[
+                    styles.input,
+                    { color: theme.text, backgroundColor: theme.backgroundSelected },
+                  ]}
+                  value={draftLabel}
+                  onChangeText={setDraftLabel}
+                  placeholder="예: 상견례"
+                  placeholderTextColor={theme.textAssistive}
+                />
+              </>
+            ) : (
+              <ThemedText type="t4">{editing?.label}</ThemedText>
+            )}
 
             <ThemedText type="t7" themeColor="textSecondary">
               업체
@@ -167,30 +242,43 @@ export default function WeddingTasksScreen() {
               today={new Date(1970, 0, 1)}
             />
 
-            <ThemedText type="t7" themeColor="textSecondary">
-              상태
-            </ThemedText>
-            <ThemedView style={styles.chips}>
-              <FilterChip
-                label="날짜에 맡기기"
-                selected={editing?.manualState === false}
-                role="radio"
-                onPress={() => void save('auto')}
-              />
-              {TASK_STATES.map((state) => (
-                <FilterChip
-                  key={state}
-                  label={TASK_STATE_LABEL[state]}
-                  selected={editing?.manualState === true && editing.state === state}
-                  role="radio"
-                  onPress={() => void save(state)}
-                />
-              ))}
-            </ThemedView>
+            {/*
+              새로 더하는 중에는 상태를 묻지 않는다. 날짜만 있으면 상태는 저절로
+              정해지고, 만들면서 직접 지정하면 그 일정은 처음부터 날짜를 따라가지
+              않는다.
+            */}
+            {adding ? null : (
+              <>
+                <ThemedText type="t7" themeColor="textSecondary">
+                  상태
+                </ThemedText>
+                <ThemedView style={styles.chips}>
+                  <FilterChip
+                    label="날짜에 맡기기"
+                    selected={editing?.manualState === false}
+                    role="radio"
+                    onPress={() => void save('auto')}
+                  />
+                  {TASK_STATES.map((state) => (
+                    <FilterChip
+                      key={state}
+                      label={TASK_STATE_LABEL[state]}
+                      selected={editing?.manualState === true && editing.state === state}
+                      role="radio"
+                      onPress={() => void save(state)}
+                    />
+                  ))}
+                </ThemedView>
+              </>
+            )}
 
             <ThemedView style={styles.sheetActions}>
-              <ActionButton label="취소" onPress={() => setEditing(null)} />
-              <ActionButton variant="primary" label="완료" onPress={() => void save()} />
+              <ActionButton label="취소" onPress={closeSheet} />
+              <ActionButton
+                variant="primary"
+                label="완료"
+                onPress={() => void (adding ? add() : save())}
+              />
             </ThemedView>
           </ScrollView>
         </ThemedView>

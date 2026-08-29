@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { addVisitNote, listVisitNotes, removeVisitNote } from '@/api/client';
 import {
   ActionButton,
+  Fab,
   Layout,
   MaxContentWidth,
   Radius,
@@ -144,10 +145,12 @@ export default function VisitNotesScreen() {
             {page.caveat}
           </ThemedText>
 
-          <ActionButton variant="primary" label="방문 적어두기" onPress={() => setFormOpen(true)} />
           <ActionButton label="돌아가기" onPress={() => router.back()} />
         </ScrollView>
       </SafeAreaView>
+
+      {/* 핸드오프 16번의 FAB. 목록 아래 단추 대신 늘 손 닿는 자리에 둔다. */}
+      <Fab label="방문노트 더하기" onPress={() => setFormOpen(true)} />
 
       <Modal visible={formOpen} transparent animationType="slide">
         <ThemedView style={[styles.scrim, { backgroundColor: theme.scrim }]}>
