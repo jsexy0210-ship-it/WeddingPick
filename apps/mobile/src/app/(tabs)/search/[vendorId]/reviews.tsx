@@ -211,6 +211,19 @@ export default function VendorReviewsScreen() {
                     {formatDay(review.createdAt)}
                   </ThemedText>
 
+                  {/*
+                    * 업체 반론. 사람이 게시를 결정한 것만 온다 — 후기를 가리는
+                    * 대신 옆에 말을 더한다. 읽는 사람이 양쪽을 다 본다.
+                    */}
+                  {review.rebuttal ? (
+                    <ThemedView style={[styles.rebuttal, { borderLeftColor: theme.tint }]}>
+                      <ThemedText type="t7" themeColor="tint">
+                        업체 반론 · {review.rebuttal.claimedRole}
+                      </ThemedText>
+                      <ThemedText type="small">{review.rebuttal.body}</ThemedText>
+                    </ThemedView>
+                  ) : null}
+
                   {reporting === review.id ? (
                     <ThemedView style={styles.chips}>
                       {reasons.map((reason) => (
@@ -225,15 +238,29 @@ export default function VendorReviewsScreen() {
                       <ActionButton label="그만두기" onPress={() => setReporting(null)} />
                     </ThemedView>
                   ) : review.mine ? null : (
-                    <ActionButton
-                      label="신고하기"
-                      hint="신고만으로 글이 내려가지는 않습니다"
-                      disabled={reasons.length === 0}
-                      onPress={() => {
-                        setNotice(null);
-                        setReporting(review.id);
-                      }}
-                    />
+                    <>
+                      <ActionButton
+                        label="신고하기"
+                        hint="신고만으로 글이 내려가지는 않습니다"
+                        disabled={reasons.length === 0}
+                        onPress={() => {
+                          setNotice(null);
+                          setReporting(review.id);
+                        }}
+                      />
+                      {/*
+                        * 반론은 어느 후기에 대한 답인지가 있어야 성립한다. 그래서
+                        * 등록은 MY가 아니라 후기 옆에서 시작한다 — MY의 메뉴는
+                        * 낸 것을 보러 가는 길이다.
+                        */}
+                      {review.rebuttal ? null : (
+                        <ActionButton
+                          label="업체 반론 등록"
+                          hint="업체 관계자만 등록해주세요. 확인 후 표시됩니다"
+                          onPress={() => router.push(`/my/rebuttals/${review.id}`)}
+                        />
+                      )}
+                    </>
                   )}
                 </ThemedView>
               ))
@@ -262,6 +289,12 @@ function Frame({ children }: { children: React.ReactNode }) {
 }
 
 const styles = StyleSheet.create({
+  /** 후기 아래 세로선 블록. 핸드오프가 정한 모양이다. */
+  rebuttal: {
+    borderLeftWidth: 2,
+    paddingLeft: Spacing.three,
+    gap: Spacing.one,
+  },
   container: {
     flex: 1,
     flexDirection: 'row',

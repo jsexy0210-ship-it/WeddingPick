@@ -13,6 +13,7 @@
     "analysis:eval": "tsx src/analysis-eval.ts",
     "public-data:import": "tsx src/public-data-import.ts",
     "inquiries": "tsx src/inquiry-admin.ts",
+    "rebuttals": "tsx src/rebuttal-admin.ts",
     "verifications": "tsx src/verification-admin.ts",
     "retention": "tsx src/retention-admin.ts",
     "pii": "tsx src/pii-admin.ts",

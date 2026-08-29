@@ -17,6 +17,7 @@ import type { PoolClient } from 'pg';
 
 import { loadConfig } from './config';
 import { createPool, withTransaction } from './db';
+import { notify } from './notify';
 
 /**
  * 인증 심사 도구.
@@ -372,6 +373,15 @@ async function approve(
     );
 
     await logEvent(client, id, 'approved', by, note);
+
+    // 신청한 사람은 심사가 끝났는지 알 길이 없다. 결과를 알림함에 남긴다.
+    await notify(client, {
+      userId: found.requested_by,
+      kind: 'verification',
+      title: '자료 확인이 끝났어요',
+      body: '확인 결과가 반영됐어요. 문서 화면에서 확인해주세요',
+      targetId: found.quote_id,
+    });
   });
 
   console.log('승인했다. 문서 등급이 올랐고, 이제 가격 비교에 쓰인다.');
@@ -402,6 +412,14 @@ async function reject(
     );
 
     await logEvent(client, id, 'rejected', by, reason);
+
+    await notify(client, {
+      userId: found.requested_by,
+      kind: 'verification',
+      title: '자료 확인 결과를 알려드려요',
+      body: reason,
+      targetId: found.quote_id,
+    });
   });
 
   console.log('반려했다. 사유는 신청한 사람에게 보인다.');

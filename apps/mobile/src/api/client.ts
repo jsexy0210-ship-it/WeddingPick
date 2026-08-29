@@ -16,6 +16,10 @@ import {
   createInquiryResponseSchema,
   inquiryListResponseSchema,
   registerDeviceResponseSchema,
+  myReportListResponseSchema,
+  notificationListResponseSchema,
+  notificationSummaryResponseSchema,
+  rebuttalListResponseSchema,
   parsePaymentTextResponseSchema,
   registerPaymentProofResponseSchema,
   createReviewReportResponseSchema,
@@ -36,6 +40,12 @@ import {
   verificationRequestSchema,
   weddingDetailSchema,
   type CandidateListResponse,
+  type CreateRebuttalRequest,
+  type MyReportListResponse,
+  type NotificationListResponse,
+  type NotificationSummaryResponse,
+  type RebuttalListResponse,
+  type UpdateRebuttalRequest,
   type CreateExpenseRequest,
   type CreateVisitNoteRequest,
   type ExpenseSummaryResponse,
@@ -606,4 +616,71 @@ export async function registerDevice(
     method: 'POST',
     body: JSON.stringify(body),
   });
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * 알림 · 내 제보 내역 · 업체 반론 (디자인 핸드오프 20번)
+ * ---------------------------------------------------------------------------
+ */
+
+export async function listNotifications(): Promise<NotificationListResponse> {
+  return request('/v1/me/notifications', notificationListResponseSchema);
+}
+
+/** 홈의 벨. 목록 전체를 받지 않고 개수만 묻는다. */
+export async function getNotificationSummary(): Promise<NotificationSummaryResponse> {
+  return request('/v1/me/notifications/summary', notificationSummaryResponseSchema);
+}
+
+export async function readNotification(
+  notificationId: string
+): Promise<NotificationSummaryResponse> {
+  return request(
+    `/v1/me/notifications/${notificationId}/read`,
+    notificationSummaryResponseSchema,
+    { method: 'POST' }
+  );
+}
+
+export async function readAllNotifications(): Promise<NotificationSummaryResponse> {
+  return request('/v1/me/notifications/read-all', notificationSummaryResponseSchema, {
+    method: 'POST',
+  });
+}
+
+/** 내가 낸 자료. 결제인증·가격제보·후기가 종류를 달고 한 목록에 선다. */
+export async function listMyReports(): Promise<MyReportListResponse> {
+  return request('/v1/me/reports', myReportListResponseSchema);
+}
+
+/**
+ * 업체 반론 등록.
+ *
+ * **여기서 게시되지 않는다.** 사람이 확인한 뒤에 후기 옆에 붙는다 — 요청 타입에
+ * 상태를 정할 자리가 없는 것이 그 사실을 말해준다.
+ */
+export async function createRebuttal(body: CreateRebuttalRequest): Promise<{ rebuttalId: string }> {
+  return request('/v1/rebuttals', z.object({ rebuttalId: z.string() }), {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function listMyRebuttals(): Promise<RebuttalListResponse> {
+  return request('/v1/me/rebuttals', rebuttalListResponseSchema);
+}
+
+export async function updateRebuttal(
+  rebuttalId: string,
+  body: UpdateRebuttalRequest
+): Promise<void> {
+  await request(`/v1/rebuttals/${rebuttalId}`, z.null(), {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function removeRebuttal(rebuttalId: string): Promise<void> {
+  await request(`/v1/rebuttals/${rebuttalId}`, z.null(), { method: 'DELETE' });
 }

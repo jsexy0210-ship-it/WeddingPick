@@ -8,6 +8,7 @@ import type { PoolClient } from 'pg';
 
 import { loadConfig } from './config';
 import { createPool, withTransaction } from './db';
+import { notify } from './notify';
 
 /**
  * 문의 처리 도구.
@@ -228,8 +229,10 @@ async function moveStatus(
       category: InquiryCategory;
       subject_kind: string | null;
       subject_id: string | null;
+      requester_user_id: string | null;
     }>(
-      'SELECT status, category, subject_kind, subject_id FROM structured.inquiries WHERE id = $1 FOR UPDATE',
+      `SELECT status, category, subject_kind, subject_id, requester_user_id
+       FROM structured.inquiries WHERE id = $1 FOR UPDATE`,
       [inquiryId]
     );
 
@@ -257,6 +260,23 @@ async function moveStatus(
        VALUES ($1::uuid, $2::inquiry_status, $3::inquiry_status, $4::uuid, $5::text)`,
       [inquiryId, found.status, to, by, note]
     );
+
+    /*
+     * 답을 냈으면 보낸 사람에게 알린다.
+     *
+     * 로그인하지 않고 보낸 문의(requester_user_id가 비어 있는 것)는 앱으로 알릴
+     * 곳이 없다 — 그 사람에게는 적어준 회신처로 사람이 답한다. 여기서 조용히
+     * 넘어가는 것은 그래서다.
+     */
+    if (to === 'answered' && found.requester_user_id) {
+      await notify(client, {
+        userId: found.requester_user_id,
+        kind: 'inquiry',
+        title: '문의에 답변이 등록됐어요',
+        body: resolution ?? '문의하신 내용에 대한 처리 결과를 확인해주세요',
+        targetId: inquiryId,
+      });
+    }
 
     console.log(`${inquiryId}: ${INQUIRY_STATUS_LABEL[found.status]} → ${INQUIRY_STATUS_LABEL[to]}`);
 

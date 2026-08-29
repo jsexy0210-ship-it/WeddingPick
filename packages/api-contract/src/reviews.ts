@@ -143,6 +143,20 @@ export const reviewSchema = z.object({
   createdAt: timestampSchema,
   /** 내가 쓴 글인지. 작성자를 밝히지 않으므로 이것 말고는 알 방법이 없다. */
   mine: z.boolean(),
+
+  /**
+   * 업체가 단 반론. **사람이 게시를 결정한 것만 온다**
+   * (`structured.published_rebuttals`).
+   *
+   * 후기를 가리는 대신 옆에 말을 더한다 — 읽는 사람이 양쪽을 다 본다.
+   */
+  rebuttal: z
+    .object({
+      claimedRole: z.string().min(1),
+      body: z.string().min(1),
+      publishedAt: timestampSchema,
+    })
+    .nullable(),
 });
 
 /**

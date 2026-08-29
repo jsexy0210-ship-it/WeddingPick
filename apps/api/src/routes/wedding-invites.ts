@@ -15,6 +15,7 @@ import { currentUserId, requireUser } from '../auth/plugin';
 import type { AppContext } from '../context';
 import { withTransaction } from '../db';
 import { ApiError, notFound } from '../errors';
+import { notify } from '../notify';
 
 /** 코드 원문은 저장하지 않는다. DB가 유출돼도 그것만으로 남의 웨딩에 들어갈 수 없다. */
 function hashCode(code: string): string {
@@ -235,6 +236,21 @@ export function registerWeddingInviteRoutes(app: FastifyInstance, context: AppCo
          WHERE id = $1`,
         [invite.id, userId]
       );
+
+      /*
+       * 초대한 사람에게 알린다. 초대장을 보낸 쪽은 상대가 눌렀는지 알 길이 없다 —
+       * 앱을 다시 열어 배우자 화면에 들어가 보는 수밖에 없다.
+       *
+       * 같은 트랜잭션 안에서 남긴다. 연결은 됐는데 알림만 빠지는 상태를 만들지
+       * 않기 위해서다.
+       */
+      await notify(client, {
+        userId: invite.invited_by,
+        kind: 'partner',
+        title: '배우자가 연결됐어요',
+        body: '이제 관심업체와 지출내역을 함께 보실 수 있어요',
+        targetId: invite.wedding_id,
+      });
 
       return { weddingId: invite.wedding_id };
     });

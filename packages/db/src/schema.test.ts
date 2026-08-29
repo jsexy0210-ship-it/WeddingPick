@@ -400,6 +400,134 @@ describeWithDb('DB 스키마', () => {
     });
   });
 
+  describe('업체 반론', () => {
+    async function aReview() {
+      const vendor = await client.query<{ id: string }>(
+        `INSERT INTO structured.vendors (name, category, region, source)
+         VALUES ('가온예식홀', 'hall', '서울', 'public_data') RETURNING id`
+      );
+      const author = await client.query<{ id: string }>(
+        'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
+      );
+      const review = await client.query<{ id: string }>(
+        `INSERT INTO structured.reviews (vendor_id, author_user_id, role, overall, title, body)
+         VALUES ($1, $2, 'contractor', 2, '제목', repeat('가', 60)) RETURNING id`,
+        [vendor.rows[0]!.id, author.rows[0]!.id]
+      );
+      const submitter = await client.query<{ id: string }>(
+        'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
+      );
+
+      return { reviewId: review.rows[0]!.id, submitterId: submitter.rows[0]!.id };
+    }
+
+    const submit = (reviewId: string, submitterId: string, extra = '') =>
+      client.query(
+        `INSERT INTO structured.review_rebuttals
+           (review_id, submitted_by_user_id, claimed_role, body${extra ? ', status' : ''})
+         VALUES ($1, $2, '가온예식홀 예약팀장', repeat('가', 40)${extra})
+         RETURNING id`,
+        [reviewId, submitterId]
+      );
+
+    it('사람이 결정하지 않은 반론은 게시 상태가 될 수 없다', async () => {
+      /*
+       * 자동 게시가 열리면, 업체라고 말하기만 하면 누구나 남의 후기 아래에 글을
+       * 실을 수 있게 된다. 그 문을 관례가 아니라 제약으로 닫는다.
+       */
+      const { reviewId, submitterId } = await aReview();
+
+      await expect(submit(reviewId, submitterId, ", 'published'")).rejects.toThrow(
+        /rebuttal_decision_is_dated/
+      );
+    });
+
+    it('심사를 마쳤다면 누가 언제 했는지가 남는다', async () => {
+      const { reviewId, submitterId } = await aReview();
+      const { rows } = await submit(reviewId, submitterId);
+      const reviewer = await client.query<{ id: string }>(
+        'INSERT INTO structured.users (is_operator) VALUES (true) RETURNING id'
+      );
+
+      // 결정만 적고 사람을 비우면 막힌다.
+      await expect(
+        client.query(
+          `UPDATE structured.review_rebuttals SET status = 'published', decided_at = now()
+           WHERE id = $1`,
+          [rows[0]!.id]
+        )
+      ).rejects.toThrow(/rebuttal_decision_has_reviewer/);
+
+      await expect(
+        client.query(
+          `UPDATE structured.review_rebuttals
+           SET status = 'published', decided_at = now(), decided_by = $2
+           WHERE id = $1`,
+          [rows[0]!.id, reviewer.rows[0]!.id]
+        )
+      ).resolves.toBeDefined();
+    });
+
+    it('게시된 것만 후기 옆에 붙는다', async () => {
+      const { reviewId, submitterId } = await aReview();
+      const { rows } = await submit(reviewId, submitterId);
+      const reviewer = await client.query<{ id: string }>(
+        'INSERT INTO structured.users (is_operator) VALUES (true) RETURNING id'
+      );
+
+      const before = await client.query('SELECT 1 FROM structured.published_rebuttals');
+      expect(before.rows).toHaveLength(0);
+
+      await client.query(
+        `UPDATE structured.review_rebuttals
+         SET status = 'published', decided_at = now(), decided_by = $2 WHERE id = $1`,
+        [rows[0]!.id, reviewer.rows[0]!.id]
+      );
+
+      const after = await client.query('SELECT 1 FROM structured.published_rebuttals');
+      expect(after.rows).toHaveLength(1);
+    });
+
+    it('거절된 반론은 붙지 않는다', async () => {
+      const { reviewId, submitterId } = await aReview();
+      const { rows } = await submit(reviewId, submitterId);
+      const reviewer = await client.query<{ id: string }>(
+        'INSERT INTO structured.users (is_operator) VALUES (true) RETURNING id'
+      );
+
+      await client.query(
+        `UPDATE structured.review_rebuttals
+         SET status = 'rejected', decided_at = now(), decided_by = $2 WHERE id = $1`,
+        [rows[0]!.id, reviewer.rows[0]!.id]
+      );
+
+      const published = await client.query('SELECT 1 FROM structured.published_rebuttals');
+      expect(published.rows).toHaveLength(0);
+    });
+
+    it('후기 하나에 반론 하나다', async () => {
+      // 여럿을 허용하면 후기 페이지가 말싸움이 된다.
+      const { reviewId, submitterId } = await aReview();
+
+      await submit(reviewId, submitterId);
+
+      await expect(submit(reviewId, submitterId)).rejects.toThrow(/review_rebuttals_review_id_key/);
+    });
+
+    it('소속을 밝히지 않은 반론은 들어가지 않는다', async () => {
+      const { reviewId, submitterId } = await aReview();
+
+      await expect(
+        client.query(
+          `INSERT INTO structured.review_rebuttals
+             (review_id, submitted_by_user_id, claimed_role, body)
+           VALUES ($1, $2, '   ', repeat('가', 40))`,
+          [reviewId, submitterId]
+        )
+      ).rejects.toThrow();
+    });
+  });
+
   describe('마이그레이션', () => {
     it('두 번 돌려도 같은 결과가 된다', async () => {
       await expect(migrate(client)).resolves.toEqual([]);

@@ -278,6 +278,22 @@ export default function MyScreen() {
 
           <ThemedView style={styles.section}>
             <ThemedText type="t7" themeColor="textSecondary">
+              데이터
+            </ThemedText>
+            <ActionButton
+              label="내 제보 내역"
+              hint="낸 자료가 어디에 쓰이는지 함께 보여드려요"
+              onPress={() => (data.me ? router.push('/my/reports') : router.push('/login'))}
+            />
+            <ActionButton
+              label="업체 반론"
+              hint="등록한 반론과 확인 상태를 볼 수 있어요"
+              onPress={() => (data.me ? router.push('/my/rebuttals') : router.push('/login'))}
+            />
+          </ThemedView>
+
+          <ThemedView style={styles.section}>
+            <ThemedText type="t7" themeColor="textSecondary">
               안내
             </ThemedText>
             <ActionButton label="촬영 방법과 분석 안내" onPress={() => router.push('/my/guide')} />

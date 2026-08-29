@@ -7,6 +7,7 @@ import type {
 import {
   EXPENSE_BUCKET_COLOR,
   dDay,
+  hasUnread,
   formatTaskDate,
   greeting,
   nextTask,
@@ -14,13 +15,14 @@ import {
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   getCurrentUser,
   getDataUnlock,
   getExpenses,
+  getNotificationSummary,
   listCandidates,
   listWeddingTasks,
 } from '@/api/client';
@@ -61,6 +63,8 @@ type HomeData = {
   candidates: CandidateListResponse | null;
   /** 실제 결제 구간을 이미 볼 수 있는가. 그러면 그걸 권하는 카드를 접는다. */
   unlocked: boolean;
+  /** 안 읽은 알림 수. 벨의 빨간 점이 이 값을 본다. */
+  unread: number;
 };
 
 const EMPTY: HomeData = {
@@ -69,6 +73,7 @@ const EMPTY: HomeData = {
   expenses: null,
   candidates: null,
   unlocked: false,
+  unread: 0,
 };
 
 export default function HomeScreen() {
@@ -86,6 +91,14 @@ export default function HomeScreen() {
     void getCurrentUser()
       .then(async (me) => {
         setData((current) => ({ ...current, me }));
+
+        /*
+         * 알림은 웨딩이 없어도 온다 — 문의 답변처럼 웨딩과 상관없는 것이 있다.
+         * 그래서 웨딩 자료보다 먼저, 따로 받는다.
+         */
+        const notifications = await getNotificationSummary().catch(() => null);
+
+        setData((current) => ({ ...current, unread: notifications?.unread ?? 0 }));
 
         if (!me.weddingId) return;
 
@@ -284,6 +297,24 @@ export default function HomeScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content}>
+          {/* 벨. 안 읽은 것이 있으면 점이 뜬다 — 판단은 도메인 함수 하나가 한다. */}
+          <ThemedView style={styles.bellRow}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={
+                hasUnread({ unread: data.unread, total: data.unread })
+                  ? `알림 ${data.unread}건`
+                  : '알림'
+              }
+              onPress={() => router.push('/my/notifications')}
+              style={styles.bell}>
+              <ThemedText type="t4">🔔</ThemedText>
+              {hasUnread({ unread: data.unread, total: data.unread }) ? (
+                <View style={[styles.bellDot, { backgroundColor: theme.negative }]} />
+              ) : null}
+            </Pressable>
+          </ThemedView>
+
           {/* 고정 1 — D-Day */}
           <ThemedView style={styles.headline}>
             {data.me?.weddingDate ? (
@@ -350,6 +381,25 @@ function Quick({ label, onPress }: { label: string; onPress: () => void }) {
 }
 
 const styles = StyleSheet.create({
+  bellRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  bell: {
+    minWidth: Layout.touchTarget,
+    minHeight: Layout.touchTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  /** 개수를 적지 않는다. 핸드오프가 점 하나로 정했다 — 세는 것이 목적이 아니다. */
+  bellDot: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 8,
+    height: 8,
+    borderRadius: Radius.pill,
+  },
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
   content: {

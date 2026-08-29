@@ -412,14 +412,26 @@ export function registerReviewRoutes(app: FastifyInstance, context: AppContext):
         created_at: Date;
         mine: boolean;
         aspects: { aspect: string; rating: number }[] | null;
+        rebuttal_role: string | null;
+        rebuttal_body: string | null;
+        rebuttal_published_at: Date | null;
       }>(
+        /*
+         * 반론은 structured.published_rebuttals에서만 가져온다. 조건을 여기서
+         * 다시 적지 않는 것이 요점이다 — 적기 시작하면 언젠가 한 경로가 빠지고,
+         * 그 한 곳에서 심사받지 않은 반론이 후기 옆에 실린다.
+         */
         `SELECT r.id, r.role, r.overall, r.title, r.body, r.pros, r.cons,
                 r.verification, r.created_at,
                 (r.author_user_id = $2) AS mine,
                 (SELECT json_agg(json_build_object('aspect', a.aspect, 'rating', a.rating)
                                  ORDER BY a.aspect)
-                 FROM structured.review_aspects a WHERE a.review_id = r.id) AS aspects
+                 FROM structured.review_aspects a WHERE a.review_id = r.id) AS aspects,
+                b.claimed_role AS rebuttal_role,
+                b.body AS rebuttal_body,
+                b.published_at AS rebuttal_published_at
          FROM structured.visible_reviews r
+         LEFT JOIN structured.published_rebuttals b ON b.review_id = r.id
          WHERE r.vendor_id = $1
            AND ($3::timestamptz IS NULL OR (r.created_at, r.id) < ($3, $4::uuid))
          ORDER BY r.created_at DESC, r.id DESC
@@ -450,6 +462,14 @@ export function registerReviewRoutes(app: FastifyInstance, context: AppContext):
           }),
           createdAt: row.created_at.toISOString(),
           mine: row.mine,
+          rebuttal:
+            row.rebuttal_body && row.rebuttal_role && row.rebuttal_published_at
+              ? {
+                  claimedRole: row.rebuttal_role,
+                  body: row.rebuttal_body,
+                  publishedAt: row.rebuttal_published_at.toISOString(),
+                }
+              : null,
         })),
         nextCursor: hasMore && page.length > 0 ? encodeCursor(page[page.length - 1]!) : null,
         usageScore: await loadUsageScore(context.pool, vendor.id, vendor.category),

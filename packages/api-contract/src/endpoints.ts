@@ -34,6 +34,16 @@ import {
   inquirySchema,
 } from './inquiries';
 import { registerDeviceRequestSchema, registerDeviceResponseSchema } from './devices';
+import { myReportListResponseSchema } from './my-reports';
+import {
+  notificationListResponseSchema,
+  notificationSummaryResponseSchema,
+} from './notifications';
+import {
+  createRebuttalRequestSchema,
+  rebuttalListResponseSchema,
+  updateRebuttalRequestSchema,
+} from './rebuttals';
 import {
   parsePaymentTextRequestSchema,
   parsePaymentTextResponseSchema,
@@ -349,6 +359,78 @@ export const ENDPOINTS = {
   removeCandidate: {
     method: 'DELETE',
     path: '/v1/weddings/{weddingId}/candidates/{candidateId}',
+    response: z.null(),
+  },
+
+  /*
+   * ---------------------------------------------------------------------
+   * 알림 · 내 제보 내역 · 업체 반론 (디자인 핸드오프 20번)
+   * ---------------------------------------------------------------------
+   */
+
+  /** 알림함. 푸시를 못 받는 기기에서도 결과를 볼 수 있어야 한다. */
+  listNotifications: {
+    method: 'GET',
+    path: '/v1/me/notifications',
+    response: notificationListResponseSchema,
+  },
+
+  /** 벨 하나 때문에 목록 전체를 받지 않도록. */
+  getNotificationSummary: {
+    method: 'GET',
+    path: '/v1/me/notifications/summary',
+    response: notificationSummaryResponseSchema,
+  },
+
+  readNotification: {
+    method: 'POST',
+    path: '/v1/me/notifications/{notificationId}/read',
+    response: notificationSummaryResponseSchema,
+  },
+
+  readAllNotifications: {
+    method: 'POST',
+    path: '/v1/me/notifications/read-all',
+    response: notificationSummaryResponseSchema,
+  },
+
+  /** 내가 낸 자료. 결제인증·가격제보·후기가 종류를 달고 한 목록에 선다. */
+  listMyReports: {
+    method: 'GET',
+    path: '/v1/me/reports',
+    response: myReportListResponseSchema,
+  },
+
+  /**
+   * 업체 반론 등록.
+   *
+   * **사람이 게시를 결정하기 전에는 후기 옆에 붙지 않는다.** 넣었다고 실리는
+   * 것이 아니라는 사실을 화면이 먼저 말해야 한다.
+   */
+  createRebuttal: {
+    method: 'POST',
+    path: '/v1/rebuttals',
+    body: createRebuttalRequestSchema,
+    response: z.object({ rebuttalId: idSchema }),
+  },
+
+  listMyRebuttals: {
+    method: 'GET',
+    path: '/v1/me/rebuttals',
+    response: rebuttalListResponseSchema,
+  },
+
+  /** 확인 중인 것만 고칠 수 있다. 게시된 글을 몰래 바꾸는 길을 두지 않는다. */
+  updateRebuttal: {
+    method: 'PUT',
+    path: '/v1/rebuttals/{rebuttalId}',
+    body: updateRebuttalRequestSchema,
+    response: z.null(),
+  },
+
+  removeRebuttal: {
+    method: 'DELETE',
+    path: '/v1/rebuttals/{rebuttalId}',
     response: z.null(),
   },
 
