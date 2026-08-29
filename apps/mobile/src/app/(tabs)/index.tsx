@@ -39,6 +39,7 @@ import {
   ThemedView,
   useTheme,
 } from '@weddingpick/ui';
+import { HomeSkeleton } from '@/features/home/home-skeleton';
 import {
   HOME_SECTIONS,
   isVisible,
@@ -83,6 +84,12 @@ export default function HomeScreen() {
   const theme = useTheme();
   const [layout, setLayout] = useState<HomeLayout | null>(null);
   const [data, setData] = useState<HomeData>(EMPTY);
+  /*
+   * 한 번이라도 받아왔는가. **자료가 없는 것과 아직 모르는 것은 다르다** —
+   * 앞은 "일정을 등록해보세요"이고 뒤는 스켈레톤이다. 하나로 뭉치면 로그인 안 한
+   * 사람에게 영원히 스켈레톤이 돈다.
+   */
+  const [settled, setSettled] = useState(false);
 
   const load = useCallback(() => {
     void loadHomeLayout().then(setLayout);
@@ -120,10 +127,16 @@ export default function HomeScreen() {
           deepData: unlock?.deepData ?? false,
         }));
       })
-      .catch(() => setData(EMPTY));
+      .catch(() => setData(EMPTY))
+      .finally(() => setSettled(true));
   }, []);
 
   useEffect(load, [load]);
+
+  // 골격이 같은 스켈레톤을 덮는다. 자료가 왔을 때 화면이 튀지 않게 하려는 것이다.
+  if (!settled) {
+    return <HomeSkeleton />;
+  }
 
   const upcoming = data.tasks ? nextTask(data.tasks.tasks) : null;
   /* 저장하지 않고 계산한다 — 아무 일도 없어도 시간이 지나면 바뀌는 값이다. */

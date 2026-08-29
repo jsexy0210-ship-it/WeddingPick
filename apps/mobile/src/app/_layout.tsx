@@ -12,6 +12,7 @@ import { CaptureDraftProvider } from '@/features/capture/capture-draft';
 import { DocumentStoreProvider } from '@/features/documents/document-store';
 import { getCurrentUser } from '@/api/client';
 import { isOnboardingCompleted } from '@/features/onboarding/onboarding-state';
+import { SPLASH_MINIMUM_MS, SplashView } from '@/features/splash/splash-view';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -30,6 +31,13 @@ type Entry = 'onboarding' | 'setup' | 'app';
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [entry, setEntry] = useState<Entry | null>(null);
+  /**
+   * 스플래시를 이만큼은 보여준다. 핸드오프 0번.
+   *
+   * 첫 화면을 빨리 정했다고 스플래시가 깜빡이고 사라지면, 사용자는 무언가
+   * 잘못됐다고 느낀다. 애니메이션이 끝나기 전에 화면이 바뀌는 것도 마찬가지다.
+   */
+  const [minimumShown, setMinimumShown] = useState(false);
   const redirected = useRef(false);
 
   useEffect(() => {
@@ -53,19 +61,34 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (entry === null) return;
+    const timer = setTimeout(() => setMinimumShown(true), SPLASH_MINIMUM_MS);
 
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    /*
+     * 우리 스플래시가 뜨자마자 네이티브 스플래시를 내린다. 첫 화면을 정할 때까지
+     * 기다리면 그동안 우리 것이 가려져 애니메이션을 아무도 못 본다.
+     */
     SplashScreen.hideAsync();
+  }, []);
+
+  useEffect(() => {
+    if (entry === null || !minimumShown) return;
 
     if (entry !== 'app' && !redirected.current) {
       redirected.current = true;
       router.replace(entry === 'onboarding' ? '/onboarding' : '/setup');
     }
-  }, [entry]);
+  }, [entry, minimumShown]);
 
-  // 첫 화면을 모르는 동안은 스플래시를 그대로 둔다. 홈이 잠깐 스쳤다 사라지는 걸 막는다.
-  if (entry === null) {
-    return null;
+  /*
+   * 첫 화면을 정할 때까지, 그리고 스플래시를 충분히 보여줄 때까지 덮어둔다.
+   * 홈이 잠깐 스쳤다 사라지는 것을 막는다.
+   */
+  if (entry === null || !minimumShown) {
+    return <SplashView />;
   }
 
   return (
