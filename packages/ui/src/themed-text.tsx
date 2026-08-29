@@ -3,26 +3,56 @@ import { Platform, StyleSheet, Text, type TextProps } from 'react-native';
 import { Fonts, ThemeColor } from './theme';
 import { useTheme } from './use-theme';
 
+/**
+ * 글자 크기 — 디자인 핸드오프가 정한 t 스케일.
+ *
+ * 핸드오프 이름(t1·t2·t4·t5·t6·t7)을 그대로 쓴다. 우리 이름으로 바꿔 두면 디자인을
+ * 보면서 코드를 쓸 때 매번 머릿속에서 번역해야 하고, 번역은 틀린다.
+ *
+ * 옛 이름(title·subtitle·default·small·smallBold)은 화면 34곳이 쓰고 있어 남겨두고
+ * 같은 값으로 잇는다 — 이름을 한꺼번에 바꾸는 것은 개편이 아니라 이사다.
+ */
 export type ThemedTextProps = TextProps & {
-  type?: 'default' | 'title' | 'small' | 'smallBold' | 'subtitle' | 'link' | 'linkPrimary' | 'code';
+  type?:
+    | 't1'
+    | 't2'
+    | 't4'
+    | 't5'
+    | 't6'
+    | 't7'
+    | 'tab'
+    | 'badge'
+    /** 홈 지출 총액 전용. 핸드오프가 이 자리만 38/48/-1로 따로 정했다. */
+    | 'amount'
+    | 'link'
+    | 'linkPrimary'
+    | 'code'
+    /** 아래는 옛 이름. 위 스케일로 잇는다. */
+    | 'title'
+    | 'subtitle'
+    | 'default'
+    | 'small'
+    | 'smallBold';
   themeColor?: ThemeColor;
+  /** 금액에는 tabular-nums를 붙인다. 자릿수가 흔들리면 숫자가 춤춘다. */
+  numeric?: boolean;
 };
 
-export function ThemedText({ style, type = 'default', themeColor, ...rest }: ThemedTextProps) {
+export function ThemedText({
+  style,
+  type = 't6',
+  themeColor,
+  numeric,
+  ...rest
+}: ThemedTextProps) {
   const theme = useTheme();
 
   return (
     <Text
       style={[
         { color: theme[themeColor ?? 'text'] },
-        type === 'default' && styles.default,
-        type === 'title' && styles.title,
-        type === 'small' && styles.small,
-        type === 'smallBold' && styles.smallBold,
-        type === 'subtitle' && styles.subtitle,
-        type === 'link' && styles.link,
-        type === 'linkPrimary' && styles.linkPrimary,
-        type === 'code' && styles.code,
+        styles[STYLE_FOR[type]],
+        numeric && styles.numeric,
         style,
       ]}
       {...rest}
@@ -30,41 +60,57 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
   );
 }
 
+type TextType = NonNullable<ThemedTextProps['type']>;
+
+/**
+ * 이름 → 실제 값.
+ *
+ * 옛 이름은 t 스케일로 잇는다. 값을 두 벌 두지 않으려고 이름만 잇는 것이라,
+ * `title`과 `t1`은 같은 줄을 가리킨다.
+ */
+const STYLE_FOR: Record<TextType, keyof typeof styles> = {
+  t1: 't1',
+  t2: 't2',
+  t4: 't4',
+  t5: 't5',
+  t6: 't6',
+  t7: 't7',
+  tab: 'tab',
+  badge: 'badge',
+  amount: 'amount',
+  link: 'link',
+  linkPrimary: 'linkPrimary',
+  code: 'code',
+
+  title: 't1',
+  subtitle: 't2',
+  default: 't6',
+  small: 't7',
+  // 목록 항목명·강조 값. smallBold가 실제로 쓰이던 자리가 t5다.
+  smallBold: 't5',
+};
+
 const styles = StyleSheet.create({
-  small: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: 500,
-  },
-  smallBold: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: 700,
-  },
-  default: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontWeight: 500,
-  },
-  title: {
-    fontSize: 48,
-    fontWeight: 600,
-    lineHeight: 52,
-  },
-  subtitle: {
-    fontSize: 32,
-    lineHeight: 44,
-    fontWeight: 600,
-  },
-  link: {
-    lineHeight: 30,
-    fontSize: 14,
-  },
-  linkPrimary: {
-    lineHeight: 30,
-    fontSize: 14,
-    color: '#3c87f7',
-  },
+  /** 대표 숫자. */
+  t1: { fontSize: 30, lineHeight: 40, letterSpacing: -0.8, fontWeight: 700 },
+  /** 화면 헤드라인. 줄바꿈은 수동. */
+  t2: { fontSize: 26, lineHeight: 35, letterSpacing: -0.6, fontWeight: 700 },
+  /** 섹션 제목. */
+  t4: { fontSize: 20, lineHeight: 28, letterSpacing: -0.4, fontWeight: 700 },
+  /** 목록 항목명, 강조 값. */
+  t5: { fontSize: 17, lineHeight: 25.5, letterSpacing: -0.3, fontWeight: 600 },
+  /** 본문, 설명. */
+  t6: { fontSize: 15, lineHeight: 22.5, letterSpacing: -0.3, fontWeight: 400 },
+  /** 캡션, 라벨, 출처. */
+  t7: { fontSize: 13, lineHeight: 19.5, letterSpacing: -0.2, fontWeight: 400 },
+  tab: { fontSize: 11, lineHeight: 14, fontWeight: 600 },
+  badge: { fontSize: 12, lineHeight: 16, fontWeight: 600 },
+  amount: { fontSize: 38, lineHeight: 48, letterSpacing: -1, fontWeight: 700 },
+
+  numeric: { fontVariant: ['tabular-nums'] },
+
+  link: { fontSize: 13, lineHeight: 30 },
+  linkPrimary: { fontSize: 13, lineHeight: 30, color: '#3182f6' },
   code: {
     fontFamily: Fonts.mono,
     fontWeight: Platform.select({ android: 700 }) ?? 500,

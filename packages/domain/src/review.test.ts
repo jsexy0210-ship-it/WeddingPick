@@ -4,6 +4,7 @@ import {
   OBJECTION_HOLD_MAX_DAYS,
   REVIEW_CAVEAT,
   REVIEW_VERIFICATION,
+  REVIEW_VERIFICATION_LABEL,
   aspectsFor,
   aspectsForRole,
   canMergeScores,
@@ -60,7 +61,7 @@ describe('누가 무엇에 답하는가', () => {
 });
 
 describe('이용점수', () => {
-  const review = (overall: number, verification: 'unverified' | 'payment' | 'contract') => ({
+  const review = (overall: number, verification: 'reported' | 'payment' | 'contract') => ({
     overall,
     verification,
     aspects: { parking: overall },
@@ -72,9 +73,9 @@ describe('이용점수', () => {
      * 된다(서비스정책서 5번).
      */
     const score = computeUsageScore([
-      review(5, 'unverified'),
-      review(5, 'unverified'),
-      review(5, 'unverified'),
+      review(5, 'reported'),
+      review(5, 'reported'),
+      review(5, 'reported'),
       review(1, 'contract'),
     ]);
 
@@ -118,7 +119,7 @@ describe('이용점수', () => {
   });
 
   it('미인증은 점수를 움직이지 않는다', () => {
-    expect(countsTowardScore('unverified')).toBe(false);
+    expect(countsTowardScore('reported')).toBe(false);
     expect(countsTowardScore('payment')).toBe(true);
     expect(countsTowardScore('contract')).toBe(true);
   });
@@ -134,10 +135,15 @@ describe('스드메 세 업체를 합치지 않는다', () => {
 });
 
 describe('이미 인증한 문서로 후기를 확인한다', () => {
-  it('계약인증 이상이면 계약 확인', () => {
+  it('계약인증이면 계약인증 배지', () => {
     // 같은 것을 두 번 확인하게 하면 사람들은 두 번째에서 그만둔다.
     expect(reviewVerificationFromQuote('L2')).toBe('contract');
-    expect(reviewVerificationFromQuote('L4')).toBe('contract');
+  });
+
+  it('이용인증 이상이면 이용인증 배지', () => {
+    // 계약했다는 것과 실제로 그 자리에서 결혼식을 올렸다는 것은 다른 사실이다.
+    expect(reviewVerificationFromQuote('L3')).toBe('usage');
+    expect(reviewVerificationFromQuote('L4')).toBe('usage');
   });
 
   it('견적인증으로는 확인해 주지 않는다', () => {
@@ -221,7 +227,10 @@ describe('쓰기 전에 알려주는 말', () => {
   });
 
   it('미인증이어도 글은 보인다고 말한다', () => {
-    expect(verificationNote('unverified')).toContain('그대로 보이지만');
+    expect(verificationNote('reported')).toContain('그대로 보이지만');
+    // 배지는 띄어쓰기 없이. 핸드오프 카피 규칙.
+    expect(REVIEW_VERIFICATION_LABEL.payment).toBe('결제인증');
+    expect(REVIEW_VERIFICATION_LABEL.usage).toBe('이용인증');
   });
 });
 
@@ -230,7 +239,9 @@ describe('두 근거가 다 있을 때', () => {
     // 사람이 심사한 것과 기계가 읽고 등록한 것은 무게가 다르다.
     expect(strongerVerification('payment', 'contract')).toBe('contract');
     expect(strongerVerification('contract', 'payment')).toBe('contract');
-    expect(strongerVerification('unverified', 'payment')).toBe('payment');
+    expect(strongerVerification('reported', 'payment')).toBe('payment');
+    // 이용인증이 가장 무겁다.
+    expect(strongerVerification('contract', 'usage')).toBe('usage');
   });
 });
 

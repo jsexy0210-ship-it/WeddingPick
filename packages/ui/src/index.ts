@@ -20,6 +20,8 @@ export {
   Colors,
   Fonts,
   Spacing,
+  Layout,
+  Motion,
   Radius,
   BottomTabInset,
   MaxContentWidth,

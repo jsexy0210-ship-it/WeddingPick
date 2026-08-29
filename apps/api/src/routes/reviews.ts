@@ -136,7 +136,7 @@ async function verificationForAuthor(
   if (!best || !verification || !best.decided_by) {
     return (
       fromPayment ?? {
-        verification: 'unverified',
+        verification: 'reported',
         quoteId: null,
         paymentProofId: null,
         verifiedBy: null,
@@ -324,7 +324,7 @@ export function registerReviewRoutes(app: FastifyInstance, context: AppContext):
               verification, verified_quote_id, verified_payment_proof_id, verified_at,
               verified_by)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::review_verification, $10, $11,
-                   CASE WHEN $9::review_verification = 'unverified' THEN NULL ELSE now() END,
+                   CASE WHEN $9::review_verification = 'reported' THEN NULL ELSE now() END,
                    $12)
            RETURNING id`,
           [

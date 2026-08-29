@@ -350,6 +350,56 @@ describeWithDb('DB 스키마', () => {
     });
   });
 
+  describe('후기 확인 배지', () => {
+    async function vendorAndUser() {
+      const vendor = await client.query<{ id: string }>(
+        `INSERT INTO structured.vendors (name, category, region, source)
+         VALUES ('가온예식홀', 'hall', '서울', 'public_data') RETURNING id`
+      );
+      const user = await client.query<{ id: string }>(
+        'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
+      );
+
+      return { vendorId: vendor.rows[0]!.id, userId: user.rows[0]!.id };
+    }
+
+    const insert = (vendorId: string, userId: string, verification: string, extra = '') =>
+      client.query(
+        `INSERT INTO structured.reviews
+           (vendor_id, author_user_id, role, overall, title, body, verification${extra ? ', verified_at' : ''})
+         VALUES ($1, $2, 'contractor', 4, '제목', repeat('가', 60), $3::review_verification${extra})`,
+        [vendorId, userId, verification]
+      );
+
+    it('근거 없는 이용인증을 만들 수 없다', async () => {
+      /*
+       * 0023의 CASE에는 ELSE가 없었다. 0028이 'usage'를 더하는 순간 그 값은 CASE에서
+       * NULL이 되고 **NULL은 CHECK를 통과한다** — enum에 값을 더하는 것만으로 제약이
+       * 조용히 뚫렸다. 0029가 ELSE false를 넣어 막았고, 이 테스트가 그걸 지킨다.
+       */
+      const { vendorId, userId } = await vendorAndUser();
+
+      await expect(insert(vendorId, userId, 'usage')).rejects.toThrow(
+        /verification_names_its_evidence/
+      );
+    });
+
+    it('근거 없는 계약인증도 막힌다', async () => {
+      const { vendorId, userId } = await vendorAndUser();
+
+      await expect(insert(vendorId, userId, 'contract')).rejects.toThrow(
+        /verification_names_its_evidence/
+      );
+    });
+
+    it('상담제보는 근거 없이 만들 수 있다', async () => {
+      // 근거가 없다는 뜻이 아니라, 이 사람이 겪은 일을 적었다는 뜻이다.
+      const { vendorId, userId } = await vendorAndUser();
+
+      await expect(insert(vendorId, userId, 'reported')).resolves.toBeDefined();
+    });
+  });
+
   describe('마이그레이션', () => {
     it('두 번 돌려도 같은 결과가 된다', async () => {
       await expect(migrate(client)).resolves.toEqual([]);

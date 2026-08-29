@@ -116,19 +116,28 @@ export function isValidRating(rating: number): boolean {
  * 다만 **이용점수에는 확인된 후기만 들어간다.** 누구나 쓸 수 있는 글이 업체
  * 점수를 움직이면 그 점수는 사고팔 수 있는 것이 된다(서비스정책서 5번).
  */
-export const REVIEW_VERIFICATION = ['unverified', 'payment', 'contract'] as const;
+export const REVIEW_VERIFICATION = ['reported', 'payment', 'contract', 'usage'] as const;
 
 export type ReviewVerification = (typeof REVIEW_VERIFICATION)[number];
 
+/**
+ * 화면에 나가는 배지. 디자인 핸드오프 8번과 카피 규칙이 정한 이름이다.
+ *
+ * **띄어쓰기가 없다.** 핸드오프 카피 규칙 — 배지는 붙여 쓴다.
+ *
+ * '미인증'이 '상담제보'가 된 것이 뜻이 있다. 근거가 없다는 뜻이 아니라, 이 사람이
+ * 겪은 일을 적었다는 뜻이다. "미인증"은 그 글이 못 믿을 것처럼 들린다.
+ */
 export const REVIEW_VERIFICATION_LABEL: Record<ReviewVerification, string> = {
-  unverified: '미인증',
-  payment: '결제 확인',
-  contract: '계약 확인',
+  reported: '상담제보',
+  payment: '결제인증',
+  contract: '계약인증',
+  usage: '이용인증',
 };
 
-/** 이용점수에 들어가는 후기인지. */
+/** 이용점수에 들어가는 후기인지. 상담제보는 보이되 점수를 움직이지 않는다. */
 export function countsTowardScore(verification: ReviewVerification): boolean {
-  return verification !== 'unverified';
+  return verification !== 'reported';
 }
 
 /**
@@ -145,6 +154,12 @@ export function countsTowardScore(verification: ReviewVerification): boolean {
 export function reviewVerificationFromQuote(
   level: VerificationLevel
 ): ReviewVerification | null {
+  /*
+   * L3(이용인증)는 계약보다 무거운 근거다. 계약했다는 것과 실제로 그 자리에서
+   * 결혼식을 올렸다는 것은 다른 사실이고, 후기의 무게도 다르다.
+   */
+  if (isAtLeast(level, 'L3')) return 'usage';
+
   return isAtLeast(level, 'L2') ? 'contract' : null;
 }
 
@@ -374,7 +389,9 @@ export function verificationNote(verification: ReviewVerification): string {
       return '인증을 마친 계약 문서가 있어 계약 확인으로 올라갑니다. 증빙을 다시 올리지 않으셔도 됩니다.';
     case 'payment':
       return '결제인증 제보가 있어 결제 확인으로 올라갑니다. 계약서를 인증하시면 계약 확인이 됩니다.';
-    case 'unverified':
-      return '이 업체의 인증된 문서가 없어 미인증으로 올라갑니다. 후기는 그대로 보이지만 업체 점수에는 들어가지 않습니다.';
+    case 'usage':
+      return '이용까지 확인된 문서가 있어 이용인증으로 올라갑니다. 가장 무거운 확인입니다.';
+    case 'reported':
+      return '이 업체의 확인된 문서가 없어 상담제보로 올라갑니다. 후기는 그대로 보이지만 업체 점수에는 들어가지 않습니다.';
   }
 }

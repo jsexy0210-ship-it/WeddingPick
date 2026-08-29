@@ -1,8 +1,13 @@
 /*
- * 웹 토큰 — Montage (Wanted Design System)를 따른다.
+ * 웹 토큰 — 디자인 핸드오프(v7)를 따른다.
  *
- * 색은 theme.ts가 @montage-ui/theme에서 직접 읽으므로 여기 없다. 여기 있는 것은
- * React Native가 웹에서 var()로 넘기는 글꼴 변수뿐이다.
+ * 색은 theme.ts가 값으로 들고 있으므로 여기 없다. 여기 있는 것은 React Native가
+ * 웹에서 var()로 넘기는 글꼴 변수뿐이다.
+ *
+ * **핸드오프의 첫 글꼴은 'Toss Product Sans'인데 우리에게 그 파일이 없다.** 없는
+ * 것을 적으면 조용히 다음 후보로 떨어지고 왜 다르게 보이는지 아무도 모른다. 대신
+ * 우리가 이미 싣고 있는 Pretendard를 앞에 두고, 그 뒤로는 핸드오프가 적은 순서를
+ * 그대로 따른다 — 시스템 글꼴로 떨어지면 한글이 눈에 띄게 나빠진다.
  *
  * 이 파일은 Pretendard 웹폰트를 직접 끌어오지 않는다 — 자립해야 하기 때문이다.
  * 예전에는 여기서 pretendard 패키지를 가리켰는데, 그건 번들러가 node_modules를
@@ -17,7 +22,7 @@
 
 :root {
   --font-sans:
-    'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui,
+    'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont,
     'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
   --font-mono:
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;

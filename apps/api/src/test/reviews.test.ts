@@ -111,7 +111,7 @@ describeWithDb('이용 후기', () => {
     expect(guest.aspects.every((a) => /[가-힣]/.test(a.label))).toBe(true);
 
     // 다 쓰고 나서 "미인증입니다"라고 하면 그건 통보다.
-    expect(body.verification.value).toBe('unverified');
+    expect(body.verification.value).toBe('reported');
     expect(body.verification.note.length).toBeGreaterThan(0);
     expect(body.alreadyWritten).toBe(false);
   });
@@ -124,7 +124,7 @@ describeWithDb('이용 후기', () => {
     const response = await write(headers, vendorId, { verification: 'contract' });
 
     expect(response.statusCode).toBe(201);
-    expect(response.json<{ verification: string }>().verification).toBe('unverified');
+    expect(response.json<{ verification: string }>().verification).toBe('reported');
   });
 
   it('인증을 마친 문서가 있으면 증빙을 다시 받지 않는다', async () => {
@@ -138,7 +138,7 @@ describeWithDb('이용 후기', () => {
 
     expect(response.statusCode).toBe(201);
     expect(response.json<{ verification: string }>().verification).toBe('contract');
-    expect(response.json<{ verificationLabel: string }>().verificationLabel).toBe('계약 확인');
+    expect(response.json<{ verificationLabel: string }>().verificationLabel).toBe('계약인증');
   });
 
   it('심사자 없이 오른 등급으로는 확인해 주지 않는다', async () => {
@@ -159,7 +159,7 @@ describeWithDb('이용 후기', () => {
 
     const response = await write(headers, vendorId);
 
-    expect(response.json<{ verification: string }>().verification).toBe('unverified');
+    expect(response.json<{ verification: string }>().verification).toBe('reported');
   });
 
   it('묻지 않은 항목은 받지 않는다', async () => {
