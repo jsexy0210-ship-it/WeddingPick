@@ -2,7 +2,11 @@ import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { dDay, greeting } from '@weddingpick/domain';
+import { useEffect, useState } from 'react';
+
 import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView, VerificationBadge } from '@weddingpick/ui';
+import { getCurrentUser } from '@/api/client';
 import { useCaptureDraft } from '@/features/capture/capture-draft';
 import { useDocumentStore } from '@/features/documents/document-store';
 
@@ -22,6 +26,16 @@ export default function HomeScreen() {
   const { pages } = useCaptureDraft();
   const { sets } = useDocumentStore();
   const recent = sets.slice(0, 3);
+  const [me, setMe] = useState<{ displayName: string | null; weddingDate: string | null } | null>(
+    null
+  );
+
+  useEffect(() => {
+    // 못 불러오면 환영 인사만 한다. 없는 이름을 지어내 부르지 않는다.
+    getCurrentUser()
+      .then(setMe)
+      .catch(() => setMe(null));
+  }, []);
 
   return (
     <ThemedView style={styles.container}>
@@ -29,14 +43,27 @@ export default function HomeScreen() {
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.header}>
             {/*
-              디자인 핸드오프 카피 규칙 — "진짜 가격"·"적정가"는 쓰지 않는다.
-              우리는 가격의 적정 여부를 판정하지 않으므로, 판정처럼 들리는 말을
-              쓰면 하지 않는 일을 한다고 말하는 것이 된다.
+              D-Day. 핸드오프 5번 — `지선님, / 예식까지 231일 남았어요`.
+              이름이나 예식일이 없으면 지어내지 않고 환영 인사만 한다.
+
+              카피 규칙 — "진짜 가격"·"적정가"는 쓰지 않는다. 우리는 가격의 적정
+              여부를 판정하지 않으므로, 판정처럼 들리는 말을 쓰면 하지 않는 일을
+              한다고 말하는 것이 된다.
             */}
-            <ThemedText type="small" themeColor="textSecondary">
+            {me?.weddingDate ? (
+              <>
+                <ThemedText type="t2">{greeting(me.displayName)}</ThemedText>
+                <ThemedText type="t2">{dDay(me.weddingDate).text}</ThemedText>
+              </>
+            ) : (
+              <>
+                <ThemedText type="t2">웨딩픽에</ThemedText>
+                <ThemedText type="t2">오신 것을 환영해요</ThemedText>
+              </>
+            )}
+            <ThemedText type="t7" themeColor="textSecondary">
               같은 업체도, 결제 금액은 달라요
             </ThemedText>
-            <ThemedText type="subtitle">실제 결제 사례와 견줘볼까요?</ThemedText>
           </ThemedView>
 
           <ThemedView style={styles.actions}>

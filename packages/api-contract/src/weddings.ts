@@ -1,3 +1,4 @@
+import { MAX_DISPLAY_NAME_LENGTH } from '@weddingpick/domain';
 import { z } from 'zod';
 
 import { dateSchema, idSchema, timestampSchema } from './common';
@@ -33,6 +34,28 @@ export const createWeddingRequestSchema = z.object({
 export const currentUserSchema = z.object({
   userId: idSchema,
   weddingId: idSchema.nullable(),
+  /** 부를 이름. 아직 안 정했으면 null. */
+  displayName: z.string().nullable(),
+  /** 예식일. 아직 안 정했으면 null. */
+  weddingDate: dateSchema.nullable(),
+  /**
+   * 처음 설정을 마쳤는가. 이름과 예식일이 둘 다 있어야 한다.
+   *
+   * **앱이 이 값으로 첫 화면을 정한다.** 두 값을 따로 보고 판단하게 두면 어느
+   * 화면은 이름만 보고, 어느 화면은 날짜만 보게 된다.
+   */
+  setupComplete: z.boolean(),
+});
+
+/**
+ * 이름·예식일 등록. 핸드오프 2번 — **스킵할 수 없는 화면**이다.
+ *
+ * 둘을 한 번에 받는다. 따로 받으면 이름만 넣고 나간 사람이 생기고, 그 사람의 홈은
+ * 이름은 부르는데 D-Day가 없는 반쪽이 된다.
+ */
+export const completeSetupRequestSchema = z.object({
+  displayName: z.string().trim().min(1).max(MAX_DISPLAY_NAME_LENGTH),
+  weddingDate: dateSchema,
 });
 
 /**
@@ -96,3 +119,4 @@ export type AcceptInviteRequest = z.infer<typeof acceptInviteRequestSchema>;
 export type WeddingDetail = z.infer<typeof weddingDetailSchema>;
 export type CreateWeddingRequest = z.infer<typeof createWeddingRequestSchema>;
 export type CurrentUser = z.infer<typeof currentUserSchema>;
+export type CompleteSetupRequest = z.infer<typeof completeSetupRequestSchema>;

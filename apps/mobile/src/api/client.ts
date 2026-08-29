@@ -167,6 +167,19 @@ export async function signOut(): Promise<void> {
   }
 }
 
+/**
+ * 이름·예식일 등록. 둘을 한 번에 보낸다.
+ *
+ * 따로 보내면 이름만 넣고 나간 사람이 생기고, 그 사람의 홈은 이름은 부르는데
+ * D-Day가 없는 반쪽이 된다.
+ */
+export async function completeSetup(displayName: string, weddingDate: string) {
+  return request('/v1/me/setup', currentUserSchema, {
+    method: 'POST',
+    body: JSON.stringify({ displayName, weddingDate }),
+  });
+}
+
 export async function getCurrentUser() {
   return request('/v1/me', currentUserSchema);
 }

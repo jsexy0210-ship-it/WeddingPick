@@ -59,6 +59,7 @@ import {
 } from './verification';
 import {
   acceptInviteRequestSchema,
+  completeSetupRequestSchema,
   createInviteResponseSchema,
   createWeddingRequestSchema,
   currentUserSchema,
@@ -104,6 +105,19 @@ export const ENDPOINTS = {
   getCurrentUser: {
     method: 'GET',
     path: '/v1/me',
+    response: currentUserSchema,
+  },
+
+  /**
+   * 이름·예식일 등록. 핸드오프 2번 — 스킵할 수 없는 화면이다.
+   *
+   * 둘을 한 번에 받는다. 따로 받으면 이름만 넣고 나간 사람의 홈이 이름은 부르는데
+   * D-Day가 없는 반쪽이 된다.
+   */
+  completeSetup: {
+    method: 'POST',
+    path: '/v1/me/setup',
+    body: completeSetupRequestSchema,
     response: currentUserSchema,
   },
 

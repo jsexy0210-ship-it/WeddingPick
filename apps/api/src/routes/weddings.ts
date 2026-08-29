@@ -1,10 +1,19 @@
-import { createWeddingRequestSchema } from '@weddingpick/api-contract';
+import {
+  completeSetupRequestSchema,
+  createWeddingRequestSchema,
+} from '@weddingpick/api-contract';
+import {
+  WEDDING_DATE_HINT,
+  checkDisplayName,
+  isSelectableWeddingDate,
+} from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
 
 import { assertWeddingAccess } from '../access';
 import { currentUserId, requireUser } from '../auth/plugin';
 import type { AppContext } from '../context';
-import { notFound } from '../errors';
+import { withTransaction } from '../db';
+import { ApiError, notFound } from '../errors';
 
 type WeddingRow = {
   id: string;
@@ -65,14 +74,100 @@ export function registerWeddingRoutes(app: FastifyInstance, context: AppContext)
   app.get('/v1/me', auth, async (request) => {
     const userId = currentUserId(request);
 
-    const { rows } = await context.pool.query<{ id: string }>(
-      `SELECT id FROM structured.weddings
-       WHERE owner_user_id = $1 OR partner_user_id = $1
-       ORDER BY created_at LIMIT 1`,
+    const { rows } = await context.pool.query<{
+      id: string | null;
+      wedding_date: Date | null;
+      display_name: string | null;
+    }>(
+      `SELECT w.id, w.wedding_date, u.display_name
+       FROM structured.users u
+       LEFT JOIN LATERAL (
+         SELECT id, wedding_date FROM structured.weddings
+         WHERE owner_user_id = u.id OR partner_user_id = u.id
+         ORDER BY created_at LIMIT 1
+       ) w ON true
+       WHERE u.id = $1`,
       [userId]
     );
 
-    return { userId, weddingId: rows[0]?.id ?? null };
+    const row = rows[0];
+    const weddingDate = row?.wedding_date ? row.wedding_date.toISOString().slice(0, 10) : null;
+    const displayName = row?.display_name ?? null;
+
+    return {
+      userId,
+      weddingId: row?.id ?? null,
+      displayName,
+      weddingDate,
+      /*
+       * 앱이 이 값 하나로 첫 화면을 정한다. 두 값을 따로 보고 판단하게 두면
+       * 어느 화면은 이름만 보고 어느 화면은 날짜만 보게 된다.
+       */
+      setupComplete: displayName !== null && weddingDate !== null,
+    };
+  });
+
+  /**
+   * 이름·예식일 등록. 핸드오프 2번 — **스킵할 수 없는 화면**이다.
+   *
+   * 둘을 한 번에 받는다. 따로 받으면 이름만 넣고 나간 사람이 생기고, 그 사람의
+   * 홈은 이름은 부르는데 D-Day가 없는 반쪽이 된다.
+   *
+   * 웨딩이 없으면 여기서 만든다. "먼저 웨딩을 만드세요"라고 할 자리가 아니다 —
+   * 사용자에게 웨딩은 만드는 것이 아니라 이미 있는 것이다.
+   */
+  app.post('/v1/me/setup', auth, async (request) => {
+    const userId = currentUserId(request);
+    const body = completeSetupRequestSchema.parse(request.body);
+
+    const check = checkDisplayName(body.displayName);
+
+    if (!check.ok) {
+      throw new ApiError('invalid_request', check.reason);
+    }
+
+    // 결혼식은 미래다. 오늘과 과거는 고를 수 없다(핸드오프 3번).
+    if (!isSelectableWeddingDate(body.weddingDate)) {
+      throw new ApiError('invalid_request', WEDDING_DATE_HINT);
+    }
+
+    return withTransaction(context.pool, async (client) => {
+      await client.query('UPDATE structured.users SET display_name = $2 WHERE id = $1', [
+        userId,
+        body.displayName.trim(),
+      ]);
+
+      const existing = await client.query<{ id: string }>(
+        `SELECT id FROM structured.weddings
+         WHERE owner_user_id = $1 OR partner_user_id = $1
+         ORDER BY created_at LIMIT 1`,
+        [userId]
+      );
+
+      const weddingId = existing.rows[0]?.id;
+
+      if (weddingId) {
+        await client.query('UPDATE structured.weddings SET wedding_date = $2 WHERE id = $1', [
+          weddingId,
+          body.weddingDate,
+        ]);
+
+        return { userId, weddingId, displayName: body.displayName.trim(), weddingDate: body.weddingDate, setupComplete: true };
+      }
+
+      const created = await client.query<{ id: string }>(
+        'INSERT INTO structured.weddings (owner_user_id, wedding_date) VALUES ($1, $2) RETURNING id',
+        [userId, body.weddingDate]
+      );
+
+      return {
+        userId,
+        weddingId: created.rows[0]!.id,
+        displayName: body.displayName.trim(),
+        weddingDate: body.weddingDate,
+        setupComplete: true,
+      };
+    });
   });
 
   app.post('/v1/weddings', auth, async (request, reply) => {

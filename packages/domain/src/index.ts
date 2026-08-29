@@ -9,6 +9,7 @@ export * from './pii-review';
 export * from './planner-listing';
 export * from './policies';
 export * from './policy';
+export * from './profile';
 export * from './retention-alert';
 export * from './ai-cost';
 export * from './candidate';

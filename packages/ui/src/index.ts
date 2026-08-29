@@ -14,6 +14,7 @@ export { ThemedView, type ThemedViewProps } from './themed-view';
 export { ActionButton, type ActionButtonProps } from './action-button';
 export { FilterChip, type FilterChipProps } from './filter-chip';
 export { RatingPicker, type RatingPickerProps } from './rating-picker';
+export { WeddingCalendar, type WeddingCalendarProps } from './wedding-calendar';
 export { VerificationBadge, type VerificationBadgeProps } from './verification-badge';
 
 export {
