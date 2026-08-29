@@ -61,8 +61,8 @@ type HomeData = {
   tasks: WeddingTaskListResponse | null;
   expenses: ExpenseSummaryResponse | null;
   candidates: CandidateListResponse | null;
-  /** 실제 결제 구간을 이미 볼 수 있는가. 그러면 그걸 권하는 카드를 접는다. */
-  unlocked: boolean;
+  /** 조건이 비슷한 사례를 이미 볼 수 있는가. 그러면 그걸 권하는 카드를 접는다. */
+  deepData: boolean;
   /** 안 읽은 알림 수. 벨의 빨간 점이 이 값을 본다. */
   unread: number;
 };
@@ -72,7 +72,7 @@ const EMPTY: HomeData = {
   tasks: null,
   expenses: null,
   candidates: null,
-  unlocked: false,
+  deepData: false,
   unread: 0,
 };
 
@@ -114,7 +114,7 @@ export default function HomeScreen() {
           tasks,
           expenses,
           candidates,
-          unlocked: unlock?.unlocked ?? false,
+          deepData: unlock?.deepData ?? false,
         }));
       })
       .catch(() => setData(EMPTY));
@@ -286,7 +286,7 @@ export default function HomeScreen() {
           결제 금액, 얼마나 차이 날까요?
         </ThemedText>
         <ThemedText type="t7" style={styles.onTint}>
-          결제내역을 한 건 등록하시면 실제 결제 구간을 보실 수 있어요
+          결제내역을 등록하시면 조건이 비슷한 결제 사례를 함께 보실 수 있어요
         </ThemedText>
         <ActionButton label="결제인증 제보하기" onPress={() => router.push('/capture')} />
       </ThemedView>
@@ -357,7 +357,7 @@ export default function HomeScreen() {
              * 이미 볼 수 있는 사람에게 "등록하시면 보실 수 있어요"라고 하지 않는다.
              * 숨기기와 다른 일이다 — 숨기기는 사용자가 정하고, 이건 사실이 정한다.
              */
-            .filter((section) => section !== 'unlock' || !data.unlocked)
+            .filter((section) => section !== 'unlock' || !data.deepData)
             .map((section) => sections[section])}
 
           <ActionButton label="홈 편집" onPress={() => router.push('/home-edit')} />

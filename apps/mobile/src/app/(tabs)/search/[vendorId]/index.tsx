@@ -1,12 +1,25 @@
 import type { VendorDetail } from '@weddingpick/api-contract';
-import { DOCUMENT_TYPE_LABEL, VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
+import {
+  DOCUMENT_TYPE_LABEL,
+  VENDOR_CATEGORY_LABEL,
+  manwon,
+  rangeLabel,
+} from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { addCandidate, ensureWedding, getVendor } from '@/api/client';
-import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
+import {
+  ActionButton,
+  MaxContentWidth,
+  Radius,
+  Spacing,
+  ThemedText,
+  ThemedView,
+  useTheme,
+} from '@weddingpick/ui';
 import { won } from '@/features/quotes/quote-result-view';
 
 /**
@@ -82,107 +95,97 @@ export default function VendorDetailScreen() {
           </ThemedView>
 
           {/*
-            가격은 잠길 수 있다. 사업계획서 v3 7번 Level 3 — 결제인증 제보를 한 건
-            이상 낸 사람이 실제가격을 본다. 잠긴 상태를 빈칸으로 그리지 않는다.
+            실제 결제. **잠기지 않는다** — 최종통합정책 v2.0 K-6이 "결제인증 회원만
+            접근"을 폐기했다. 무엇을 보여줄지는 사람이 아니라 데이터 수가 정한다
+            (0~2 수집 중 / 3~4 구간+안내 / 5~9 구간 / 10+ 중앙값).
+
+            타입이 단계별로 갈려 있어, 수집 중인 업체에 구간을 그리는 코드는
+            애초에 컴파일되지 않는다.
           */}
-          {vendor.prices.available === 'locked' ? (
-            <ThemedView style={styles.section}>
-              <ThemedText type="smallBold">실제 가격</ThemedText>
+          <ThemedView style={styles.section}>
+            <ThemedText type="smallBold">실제 결제</ThemedText>
+
+            {vendor.prices.paidPrice.stage === 'collecting' ? (
+              <ThemedView type="backgroundElement" style={styles.card}>
+                <ThemedText type="t5" themeColor="textSecondary">
+                  데이터를 모으는 중이에요
+                </ThemedText>
+                <ThemedText type="t7" themeColor="textSecondary">
+                  {vendor.prices.paidPrice.caption}
+                </ThemedText>
+              </ThemedView>
+            ) : (
+              /* 핸드오프 8번의 잉크 블록. 이 화면에서 가장 중요한 숫자다. */
+              <ThemedView style={[styles.ink, { backgroundColor: theme.tint }]}>
+                <ThemedText type="amount" numeric style={styles.onTint}>
+                  {rangeLabel(vendor.prices.paidPrice.low, vendor.prices.paidPrice.high)}
+                </ThemedText>
+                {/* 원문 16번: 데이터 수와 기준 기간을 금액 옆에 반드시 함께 적는다. */}
+                <ThemedText type="t7" style={styles.onTint}>
+                  {vendor.prices.paidPrice.caption}
+                </ThemedText>
+                {vendor.prices.paidPrice.stage === 'detailed' ? (
+                  <ThemedText type="t6" style={styles.onTint}>
+                    중앙값 {manwon(vendor.prices.paidPrice.median)}
+                  </ThemedText>
+                ) : null}
+              </ThemedView>
+            )}
+
+            {/*
+              결제인증이 여는 것은 구간이 아니라 깊이다. 이미 열려 있는 사람에게는
+              권하지 않는다 — 서버가 null을 준다.
+            */}
+            {vendor.prices.deepDataNote ? (
+              <ActionButton
+                label="결제내역 등록하기"
+                hint={vendor.prices.deepDataNote}
+                onPress={() => router.push('/capture/payment/consent')}
+              />
+            ) : null}
+          </ThemedView>
+
+          <ThemedView style={styles.section}>
+            <ThemedText type="smallBold">실제 계약 가격</ThemedText>
+
+            {vendor.prices.products.length === 0 ? (
               <ThemedView type="backgroundElement" style={styles.card}>
                 <ThemedText type="small" themeColor="textSecondary">
-                  {vendor.prices.productCount === 0
+                  {vendor.comparableQuoteCount === 0
                     ? '이 업체의 확인된 계약 자료가 아직 없습니다.'
-                    : `확인된 계약이 ${vendor.prices.productCount}건 모여 있습니다.`}
+                    : `확인된 계약이 ${vendor.comparableQuoteCount}건 모였지만, 같은 상품끼리 견주기에는 아직 모자랍니다.`}
                 </ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
-                  {vendor.prices.requirement}
+                  자료가 모이기 전에는 가격을 지어내지 않습니다.
                 </ThemedText>
               </ThemedView>
-              <ActionButton
-                variant="primary"
-                label="결제인증 제보하기"
-                hint="결제내역을 찍으면 실제 가격이 열립니다"
-                onPress={() => router.push('/capture')}
-              />
-            </ThemedView>
-          ) : (
-            <>
-              <ThemedView style={styles.section}>
-                <ThemedText type="smallBold">실제 계약 가격</ThemedText>
-
-                {vendor.prices.products.length === 0 ? (
-                  <ThemedView type="backgroundElement" style={styles.card}>
-                    <ThemedText type="small" themeColor="textSecondary">
-                      {vendor.comparableQuoteCount === 0
-                        ? '이 업체의 확인된 계약 자료가 아직 없습니다.'
-                        : `확인된 계약이 ${vendor.comparableQuoteCount}건 모였지만, 같은 상품끼리 견주기에는 아직 모자랍니다.`}
-                    </ThemedText>
-                    <ThemedText type="small" themeColor="textSecondary">
-                      자료가 모이기 전에는 가격을 지어내지 않습니다.
-                    </ThemedText>
-                  </ThemedView>
-                ) : (
-                  vendor.prices.products.map((product) => (
-                    <ThemedView
-                      key={`${product.productLabel}-${product.docType}`}
-                      type="backgroundElement"
-                      style={styles.card}>
-                      <ThemedText type="smallBold">{product.productLabel}</ThemedText>
-                      <ThemedText type="subtitle">{won(product.stat.median)}</ThemedText>
-                      {/* 사업계획서 9번: 표본 수와 기준 기간을 늘 함께 보인다. */}
-                      <ThemedText type="small" themeColor="textSecondary">
-                        {DOCUMENT_TYPE_LABEL[product.docType]} · 확인된 계약{' '}
-                        {product.stat.sampleCount}건 · {product.stat.periodStart}~
-                        {product.stat.periodEnd}
-                      </ThemedText>
-                      <ThemedText type="small" themeColor="textSecondary">
-                        가운데 절반이 {won(product.stat.p25)}~{won(product.stat.p75)} 사이입니다
-                      </ThemedText>
-                    </ThemedView>
-                  ))
-                )}
-              </ThemedView>
-
-              {/*
-                결제인증은 계약 중앙값과 **다른 칸**에 그린다. 근거가 다르다 —
-                하나는 사람이 심사한 계약이고 하나는 기계가 읽은 결제내역이다.
-              */}
-              <ThemedView style={styles.section}>
-                <ThemedText type="smallBold">결제인증 금액</ThemedText>
-                <ThemedView type="backgroundElement" style={styles.card}>
-                  {vendor.prices.paidPrice.available === true ? (
-                    <>
-                      <ThemedText type="subtitle">
-                        {won(vendor.prices.paidPrice.median)}
-                      </ThemedText>
-                      <ThemedText type="small" themeColor="textSecondary">
-                        결제인증 {vendor.prices.paidPrice.count}건 ·{' '}
-                        {vendor.prices.paidPrice.periodStart}~
-                        {vendor.prices.paidPrice.periodEnd}
-                      </ThemedText>
-                      <ThemedText type="small" themeColor="textSecondary">
-                        {vendor.prices.paidPrice.caveat}
-                      </ThemedText>
-                    </>
-                  ) : vendor.prices.paidPrice.available === false ? (
-                    <ThemedText type="small" themeColor="textSecondary">
-                      {vendor.prices.paidPrice.reason}
-                    </ThemedText>
-                  ) : (
-                    <ThemedText type="small" themeColor="textSecondary">
-                      {vendor.prices.paidPrice.requirement}
-                    </ThemedText>
-                  )}
+            ) : (
+              vendor.prices.products.map((product) => (
+                <ThemedView
+                  key={`${product.productLabel}-${product.docType}`}
+                  type="backgroundElement"
+                  style={styles.card}>
+                  <ThemedText type="smallBold">{product.productLabel}</ThemedText>
+                  <ThemedText type="subtitle">{won(product.stat.median)}</ThemedText>
+                  {/* 데이터 수와 기준 기간을 늘 함께 보인다. */}
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {DOCUMENT_TYPE_LABEL[product.docType]} · 확인된 계약{' '}
+                    {product.stat.sampleCount}건 · {product.stat.periodStart}~
+                    {product.stat.periodEnd}
+                  </ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary">
+                    가운데 절반이 {won(product.stat.p25)}~{won(product.stat.p75)} 사이입니다
+                  </ThemedText>
                 </ThemedView>
-              </ThemedView>
-            </>
-          )}
+              ))
+            )}
+          </ThemedView>
 
           <ThemedView style={styles.section}>
             <ThemedText type="smallBold">이용점수</ThemedText>
 
             {/*
-              확인된 후기만 들어간다. 표본이 모자라면 숫자를 만들지 않고 이유를 준다 —
+              확인된 후기만 들어간다. 데이터가 모자라면 숫자를 만들지 않고 이유를 준다 —
               가격과 같은 규칙이다. 후기 두세 건으로 만든 점수는 정보가 아니라 소음이고,
               업체 하나를 망칠 수도 살릴 수도 있다.
             */}
@@ -289,6 +292,15 @@ function Frame({ children }: { children: React.ReactNode }) {
 }
 
 const styles = StyleSheet.create({
+  /** 실제 결제 잉크 블록. 핸드오프 8번 — 이 화면에서 가장 중요한 숫자다. */
+  ink: {
+    borderRadius: Radius.card,
+    padding: Spacing.four,
+    gap: Spacing.one,
+  },
+  onTint: {
+    color: '#ffffff',
+  },
   container: {
     flex: 1,
     flexDirection: 'row',

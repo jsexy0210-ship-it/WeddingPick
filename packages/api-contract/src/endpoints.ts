@@ -587,7 +587,7 @@ export const ENDPOINTS = {
     method: 'GET',
     path: '/v1/me/data-unlock',
     response: z.object({
-      unlocked: z.boolean(),
+      deepData: z.boolean(),
       paymentProofCount: z.int().nonnegative(),
       retentionHours: z.int().positive(),
     }),

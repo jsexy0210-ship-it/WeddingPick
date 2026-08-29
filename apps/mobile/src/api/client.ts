@@ -459,12 +459,17 @@ export async function registerPaymentProof(
   });
 }
 
-/** 내 실제가격 열람 자격. 몇 건 더 내면 열리는지 화면이 말할 수 있어야 한다. */
+/**
+ * 내가 낸 결제인증과, 그것으로 열린 것.
+ *
+ * **가격을 여는 값이 아니다.** v2.0 K-6이 그 잠금을 폐기했다 — 실제 결제 구간은
+ * 누구나 본다. 여기서 열리는 것은 조건이 비슷한 사례다.
+ */
 export async function getDataUnlock() {
   return request(
     '/v1/me/data-unlock',
     z.object({
-      unlocked: z.boolean(),
+      deepData: z.boolean(),
       paymentProofCount: z.number(),
       retentionHours: z.number(),
     })

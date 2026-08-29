@@ -76,7 +76,7 @@ export default function RegisterPaymentProofScreen() {
   const [done, setDone] = useState<{
     matched: boolean;
     note: string | null;
-    unlocked: boolean;
+    deepData: boolean;
     deletedBy: string | null;
   } | null>(null);
 
@@ -101,11 +101,15 @@ export default function RegisterPaymentProofScreen() {
                 : (done.note ?? '업체를 찾지 못했습니다.')}
             </ThemedText>
 
-            {done.unlocked ? (
+            {/*
+              실제 결제 구간이 "열렸다"고 말하지 않는다 — 그건 등록 전에도 보였다
+              (v2.0 K-6). 여기서 늘어난 것은 조건이 비슷한 사례다.
+            */}
+            {done.deepData ? (
               <ThemedView type="backgroundElement" style={styles.card}>
-                <ThemedText type="smallBold">실제 가격이 열렸습니다</ThemedText>
+                <ThemedText type="smallBold">조건이 비슷한 사례를 볼 수 있어요</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
-                  이제 업체 상세에서 실제 계약 가격과 결제인증 금액을 보실 수 있습니다.
+                  업체 화면에서 내 결제와 조건이 비슷한 결제 사례를 함께 보실 수 있습니다.
                 </ThemedText>
               </ThemedView>
             ) : null}
@@ -247,7 +251,7 @@ export default function RegisterPaymentProofScreen() {
       setDone({
         matched: created.matchedVendorId !== null,
         note: created.unmatchedNote,
-        unlocked: created.unlocked,
+        deepData: created.deepData,
         deletedBy: created.originalDeletedBy,
       });
     } catch (caught) {

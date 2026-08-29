@@ -44,45 +44,47 @@ export const registerPaymentProofResponseSchema = z.object({
   matchedVendorId: idSchema.nullable(),
   /** 못 찾았을 때 무엇을 해야 하는지. 찾았으면 null. */
   unmatchedNote: z.string().nullable(),
-  /** 이 등록으로 실제 결제 분포가 열렸는지. */
-  unlocked: z.boolean(),
+  /**
+   * 이 등록으로 조건이 비슷한 사례를 볼 수 있게 됐는지.
+   *
+   * 실제 결제 구간이 열린 것이 아니다 — 그건 등록 전에도 보였다(v2.0 K-6).
+   */
+  deepData: z.boolean(),
   /** 원본을 언제까지 들고 있는지. 화면이 그대로 보여준다. */
   originalDeletedBy: timestampSchema.nullable(),
 });
 
 /**
- * 업체의 결제인증 분포.
+ * 업체의 결제인증 분포. **최종통합정책 v2.0 C장·D-1의 4단계 사다리.**
+ *
+ * 잠금은 없다. v2.0 K-6이 "결제인증 회원만 실제 결제 데이터 접근"을 폐기했고,
+ * 실제 결제 구간은 비회원도 본다 — 결제인증이 여는 것은 접근이 아니라 깊이다.
  *
  * 계약 중앙값(`products`)·수기 제보(`reportedPrice`)와 **세 번째 자리**다. 셋을
  * 한 배열에 넣지 않는 이유는 근거가 셋 다 다르기 때문이다 — 사람이 심사한 계약,
  * 기계가 읽은 결제내역, 그냥 적어준 숫자.
+ *
+ * **단계가 곧 타입이다.** `median`은 `detailed`에만 있고 구간은 `collecting`에
+ * 없다 — 필드를 비워 보내면 화면이 0원이나 빈칸을 그릴 여지가 남고, 언젠가 어느
+ * 화면이 그렇게 그린다.
  */
-export const paidPriceSchema = z.discriminatedUnion('available', [
+const disclosedRange = {
+  count: z.int().positive(),
+  /** 데이터 수와 기준 기간. 금액 옆에 반드시 함께 적는다(원문 16번). */
+  caption: z.string().min(1),
+  low: amountSchema,
+  high: amountSchema,
+};
+
+export const paidPriceSchema = z.discriminatedUnion('stage', [
   z.object({
-    available: z.literal(true),
-    median: amountSchema,
-    count: z.int().positive(),
-    /** YYYY-MM */
-    periodStart: z.string(),
-    periodEnd: z.string(),
-    caveat: z.string().min(1),
-  }),
-  z.object({
-    available: z.literal(false),
-    reason: z.string().min(1),
+    stage: z.literal('collecting'),
     count: z.int().nonnegative(),
+    caption: z.string().min(1),
   }),
-  /**
-   * 자료는 있는데 볼 자격이 없는 상태. 사업계획서 v3 7번 Level 3.
-   *
-   * `false`와 갈라두는 것이 중요하다 — "자료가 없다"와 "자료는 있는데 아직 못
-   * 본다"는 다른 말이고, 하나로 뭉치면 화면이 둘 다 빈칸으로 그린다.
-   */
-  z.object({
-    available: z.literal('locked'),
-    count: z.int().positive(),
-    requirement: z.string().min(1),
-  }),
+  z.object({ stage: z.literal('early'), ...disclosedRange }),
+  z.object({ stage: z.literal('general'), ...disclosedRange }),
+  z.object({ stage: z.literal('detailed'), ...disclosedRange, median: amountSchema }),
 ]);
 
 /**

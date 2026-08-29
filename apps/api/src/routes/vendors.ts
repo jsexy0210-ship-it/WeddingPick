@@ -1,11 +1,11 @@
 import {
+  DEEP_DATA_NOTE,
+  DEFAULT_PERIOD_LABEL,
   MAX_COMPARED_VENDORS,
-  PAYMENT_PROOF_CAVEAT,
   PRICE_REPORT_CAVEAT,
-  UNLOCK_REQUIREMENT_NOTE,
   comparisonCaveats,
   computePriceStat,
-  summarizePaidAmounts,
+  discloseAmounts,
   summarizeReports,
   type PriceSample,
   type VendorCategory,
@@ -125,29 +125,17 @@ async function loadVendorDetail(pool: Pool, vendorId: string, viewerId: string |
   }
 
   /*
-   * 볼 자격이 있는가. 사업계획서 v3 7번 Level 3.
+   * 조건이 비슷한 사례를 볼 수 있는가.
    *
-   * 자격을 먼저 보고, 없으면 가격 질의 자체를 하지 않는다. "불러온 뒤 화면에서
-   * 가린다"로 두면 응답에는 값이 실려 나가고, 그건 가린 것이 아니다.
+   * **가격을 가리는 값이 아니다.** 최종통합정책 v2.0 K-6이 "결제인증 회원만 실제
+   * 결제 데이터 접근"을 폐기했다 — 구간은 비회원도 본다. 여기서 갈리는 것은
+   * 깊이뿐이고, 무엇을 보여줄지는 사람이 아니라 데이터 수가 정한다.
    */
-  const unlock = viewerId
+  const deep = viewerId
     ? await pool.query('SELECT 1 FROM structured.data_unlocks WHERE user_id = $1', [viewerId])
     : null;
 
-  const unlocked = (unlock?.rows.length ?? 0) > 0;
-
-  if (!unlocked) {
-    return {
-      ...toSummary(vendor),
-      usageScore: await loadUsageScore(pool, vendor.id, vendor.category as VendorCategory),
-      lastVerifiedAt: vendor.last_verified_at.toISOString(),
-      prices: {
-        available: 'locked' as const,
-        productCount: Number(vendor.comparable_quote_count),
-        requirement: UNLOCK_REQUIREMENT_NOTE,
-      },
-    };
-  }
+  const deepData = (deep?.rows.length ?? 0) > 0;
 
   const samples = await pool.query<{
     product_key: string;
@@ -234,24 +222,26 @@ async function loadVendorDetail(pool: Pool, vendorId: string, viewerId: string |
     [vendor.id]
   );
 
-  const paidPrice = summarizePaidAmounts(
-    paid.rows.map((row) => ({
-      amount: Number(row.paid_amount),
-      paidAt: row.paid_at.toISOString().slice(0, 7),
-    }))
-  );
+  /*
+   * 4단계 사다리로 정리한다(v2.0 C장·D-1). 몇 건부터 무엇을 보여줄지는 도메인이
+   * 정하고, 이 경로는 금액만 넘긴다 — 화면마다 기준을 다시 적지 않기 위해서다.
+   */
+  const paidPrice = discloseAmounts({
+    amounts: paid.rows.map((row) => Number(row.paid_amount)),
+    period: DEFAULT_PERIOD_LABEL,
+  });
 
   return {
     ...toSummary(vendor),
     usageScore: await loadUsageScore(pool, vendor.id, vendor.category as VendorCategory),
     lastVerifiedAt: vendor.last_verified_at.toISOString(),
     prices: {
-      available: true as const,
       products,
-      paidPrice: paidPrice.available
-        ? { ...paidPrice, caveat: PAYMENT_PROOF_CAVEAT }
-        : paidPrice,
+      paidPrice,
       reportedPrice: reported.available ? { ...reported, caveat: PRICE_REPORT_CAVEAT } : reported,
+      deepData,
+      // 열려 있으면 여는 방법을 말하지 않는다. 이미 한 일을 권하는 셈이 된다.
+      deepDataNote: deepData ? null : DEEP_DATA_NOTE,
     },
   };
 }
@@ -329,7 +319,8 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
         vendors.map((vendor) => ({
           category: vendor.category,
           region: vendor.region,
-          hasPriceData: vendor.prices.available === true && vendor.prices.products.length > 0,
+          hasPriceData:
+            vendor.prices.products.length > 0 || vendor.prices.paidPrice.stage !== 'collecting',
         }))
       ),
     };

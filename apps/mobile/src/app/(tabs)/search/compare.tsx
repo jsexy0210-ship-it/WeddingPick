@@ -98,12 +98,7 @@ export default function CompareScreen() {
 
           <Row title="상품별 실제 계약 가격" vendors={result.vendors}>
             {(vendor) =>
-              /* 잠긴 것과 자료가 없는 것은 다른 말이다. 한 칸에 뭉치지 않는다. */
-              vendor.prices.available === 'locked' ? (
-                <ThemedText type="small" themeColor="textSecondary">
-                  {vendor.prices.requirement}
-                </ThemedText>
-              ) : vendor.prices.products.length === 0 ? (
+              vendor.prices.products.length === 0 ? (
                 <ThemedText type="small" themeColor="textSecondary">
                   자료가 모자라 가격을 보여드릴 수 없습니다
                 </ThemedText>
@@ -115,7 +110,7 @@ export default function CompareScreen() {
                     style={styles.product}>
                     <ThemedText type="small">{product.productLabel}</ThemedText>
                     <ThemedText type="smallBold">{won(product.stat.median)}</ThemedText>
-                    {/* 사업계획서 9번: 표본 수와 기준 기간을 늘 함께 보인다. */}
+                    {/* 데이터 수와 기준 기간을 늘 함께 보인다(원문 16번). */}
                     <ThemedText type="small" themeColor="textSecondary">
                       {DOCUMENT_TYPE_LABEL[product.docType]} · {product.stat.sampleCount}건 ·{' '}
                       {product.stat.periodStart}~{product.stat.periodEnd}

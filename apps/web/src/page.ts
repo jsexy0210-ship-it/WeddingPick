@@ -191,7 +191,7 @@ export function renderLandingPage(styles: string): string {
   ${section(
     'comparison',
     '가격은 어떻게 비교하나요',
-    `<p>확인된 실제 계약만 모아 중앙값을 냅니다. 표본이 ${
+    `<p>확인된 실제 계약만 모아 중앙값을 냅니다. 데이터가 ${
       PRICING_POLICY.minimumSampleCount
     }건에 못 미치면 중앙값을 보여주지 않고, 왜 보여줄 수 없는지 알려드립니다. 가격을 보여드릴 때는 몇 건을 모았고 어느 기간인지 함께 적습니다.</p>
     ${verificationTable()}`

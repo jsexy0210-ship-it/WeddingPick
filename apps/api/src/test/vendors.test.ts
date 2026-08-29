@@ -101,22 +101,43 @@ describeWithDb('업체 검색', () => {
     expect(response.statusCode).toBe(401);
   });
 
-  it('로그인해도 가격은 잠겨 있다', async () => {
-    // Level 3. 자료를 내놓은 사람이 자료를 본다.
-    const { headers } = await signInAs(test);
-    const vendorId = await createVendor({ name: '잠긴홀' });
+  it('로그인하지 않아도 가격이 잠기지 않는다', async () => {
+    /*
+     * 최종통합정책 v2.0 K-6이 "결제인증 회원만 실제 결제 데이터 접근"을 폐기했다.
+     * 무엇을 보여줄지는 이제 사람이 아니라 데이터 수가 정한다.
+     */
+    const vendorId = await createVendor({ name: '열린홀' });
 
-    const response = await test.app.inject({
+    const response = await test.app.inject({ method: 'GET', url: `/v1/vendors/${vendorId}` });
+
+    const prices = response.json().prices;
+
+    // 잠긴 상태를 표현할 필드 자체가 없다.
+    expect(prices.available).toBeUndefined();
+    expect(prices.paidPrice.stage).toBe('collecting');
+    // 자료가 없다는 사실은 말해준다. 빈칸으로 두지 않는다.
+    expect(prices.paidPrice.caption).toContain('수집 중');
+  });
+
+  it('결제인증을 낸 사람에게는 깊이가 열린다', async () => {
+    // 구간이 아니라 깊이다 — 조건이 비슷한 사례와 상세 분석(D-1).
+    const vendorId = await createVendor({ name: '열린홀' });
+    const guest = await test.app.inject({ method: 'GET', url: `/v1/vendors/${vendorId}` });
+
+    expect(guest.json().prices.deepData).toBe(false);
+    // 아직이면 어떻게 열리는지 말해준다.
+    expect(guest.json().prices.deepDataNote).toBeTruthy();
+
+    const { headers } = await signInUnlocked(test);
+    const member = await test.app.inject({
       method: 'GET',
       url: `/v1/vendors/${vendorId}`,
       headers,
     });
 
-    const prices = response.json().prices;
-
-    expect(prices.available).toBe('locked');
-    // 잠갔다고만 하고 방법을 말하지 않으면 파는 것처럼 보인다.
-    expect(prices.requirement).toBeTruthy();
+    expect(member.json().prices.deepData).toBe(true);
+    // 이미 한 일을 다시 권하지 않는다.
+    expect(member.json().prices.deepDataNote).toBeNull();
   });
 
   it('표기가 달라도 찾는다', async () => {

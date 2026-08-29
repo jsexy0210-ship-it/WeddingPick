@@ -2,7 +2,11 @@ import {
   parsePaymentTextRequestSchema,
   registerPaymentProofRequestSchema,
 } from '@weddingpick/api-contract';
-import { PAYMENT_PROOF_RETENTION_HOURS, canRegisterPaymentProof, hasDataUnlock } from '@weddingpick/domain';
+import {
+  PAYMENT_PROOF_RETENTION_HOURS,
+  canRegisterPaymentProof,
+  hasDeepData,
+} from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
 
@@ -254,7 +258,7 @@ export function registerPaymentProofRoutes(app: FastifyInstance, context: AppCon
       unmatchedNote: vendorId
         ? null
         : '영수증의 가맹점 이름으로 업체를 찾지 못했습니다. 어디인지 알려주시면 이어붙이겠습니다.',
-      unlocked: hasDataUnlock({
+      deepData: hasDeepData({
         usablePaymentProofCount: Number(unlock.rows[0]?.proof_count ?? 0),
       }),
       originalDeletedBy: deletedBy?.rows[0]?.retention_until?.toISOString() ?? null,
@@ -262,10 +266,10 @@ export function registerPaymentProofRoutes(app: FastifyInstance, context: AppCon
   });
 
   /**
-   * 내 자격.
+   * 내가 낸 결제인증과, 그것으로 열린 것.
    *
-   * 화면이 "몇 건 더 내면 열리는지"를 말할 수 있어야 한다. 잠긴 것만 보여주고
-   * 왜 잠겼는지 말하지 않으면, 그건 팔려는 것처럼 보인다.
+   * **가격을 여는 값이 아니다.** 최종통합정책 v2.0 K-6이 그 잠금을 폐기했다 —
+   * 실제 결제 구간은 누구나 본다. 여기서 열리는 것은 조건이 비슷한 사례다.
    */
   app.get('/v1/me/data-unlock', auth, async (request) => {
     const userId = currentUserId(request);
@@ -278,7 +282,7 @@ export function registerPaymentProofRoutes(app: FastifyInstance, context: AppCon
     const count = Number(rows[0]?.proof_count ?? 0);
 
     return {
-      unlocked: hasDataUnlock({ usablePaymentProofCount: count }),
+      deepData: hasDeepData({ usablePaymentProofCount: count }),
       paymentProofCount: count,
       retentionHours: PAYMENT_PROOF_RETENTION_HOURS,
     };

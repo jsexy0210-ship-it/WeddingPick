@@ -160,62 +160,6 @@ export function reviewVerificationFromPaymentProof(): 'payment' {
   return 'payment';
 }
 
-/**
- * 실제 결제 분포를 볼 자격이 있는가. 사업계획서 v3 7번 Level 3.
- *
- * **수기 제보로는 열리지 않는다.** 문서 없이 숫자만 적어 넣고 남의 결제 분포를
- * 열 수 있으면, 그 문은 잠겨 있지 않은 것이다.
- */
-export function hasDataUnlock(input: { usablePaymentProofCount: number }): boolean {
-  return input.usablePaymentProofCount >= 1;
-}
-
-export const UNLOCK_REQUIREMENT_NOTE =
-  '결제인증 제보를 한 건 이상 올리시면 이 업체의 실제 결제 분포를 보실 수 있습니다.';
-
 /** 결제인증은 등급을 올리지 않으므로, 어떤 등급도 이 경로로 나오지 않는다. */
 export const PAYMENT_PROOF_LEVEL: VerificationLevel | null = null;
 
-export type PaidPriceSummary =
-  | { available: true; median: number; count: number; periodStart: string; periodEnd: string }
-  | { available: false; reason: string; count: number };
-
-/**
- * 결제인증들의 중앙값.
- *
- * 표본 기준은 계약 중앙값·수기 제보와 같은 것을 쓴다(PRICING_POLICY). 근거가 달라
- * 숫자를 나눠두는 것과, 몇 건부터 숫자를 만들 것이냐는 다른 문제다 — 후자는 셋 다
- * 같아야 한다. 어느 하나만 기준이 낮으면 그 칸이 늘 먼저 차고, 사람들은 그 숫자를
- * 대표값으로 읽는다.
- *
- * **개별 금액은 나가지 않는다.** 스펙 8.1이 "중앙값 형태로만 외부 노출"이라고
- * 적었다. 결제 한 건은 한 사람의 결제고, 금액·시각이 함께 나가면 그 사람이 누구인지
- * 좁혀진다.
- */
-export function summarizePaidAmounts(
-  payments: readonly { amount: number; paidAt: string }[]
-): PaidPriceSummary {
-  if (payments.length < PRICING_POLICY.minimumSampleCount) {
-    return {
-      available: false,
-      reason: `결제인증이 ${withSubject(`${PRICING_POLICY.minimumSampleCount}건`)} 모여야 보여드립니다.`,
-      count: payments.length,
-    };
-  }
-
-  const amounts = [...payments.map((payment) => payment.amount)].sort((a, b) => a - b);
-  const middle = Math.floor(amounts.length / 2);
-
-  const months = [...payments.map((payment) => payment.paidAt)].sort();
-
-  return {
-    available: true,
-    median:
-      amounts.length % 2 === 0
-        ? Math.round((amounts[middle - 1]! + amounts[middle]!) / 2)
-        : amounts[middle]!,
-    count: payments.length,
-    periodStart: months[0]!,
-    periodEnd: months[months.length - 1]!,
-  };
-}
