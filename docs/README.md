@@ -10,6 +10,7 @@
 | [01a-business-plan-v3.md](01a-business-plan-v3.md) | 대외/투자용 — **v3 올인원 전환** | 2026-08-28 전달 |
 | [05a-screen-data-spec.md](05a-screen-data-spec.md) | 개발용 — 화면·데이터 구조 스펙 | 2026-08-28 전달 |
 | [06-v3-transition-analysis.md](06-v3-transition-analysis.md) | 내부 — v3와 지금 코드의 차이·충돌 | 05a 9번 요청에 대한 답 |
+| [07-design-handoff-gap.md](07-design-handoff-gap.md) | 내부 — 디자인 핸드오프(v7)와 지금 코드의 차이 | 2026-08-29 전달 |
 
 01~04는 Drive 원본을 옮긴 것으로 내용 변경이 없다(마크다운 이스케이프와 깨진 이모지만 정리). 05는 이 문서들에서 파생한 개발 문서이며, 원본에 없는 내용은 `제안` / `결정 필요`로 표시했다.
 
