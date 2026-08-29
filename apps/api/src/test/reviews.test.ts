@@ -80,6 +80,356 @@ describeWithDb('이용 후기', () => {
     });
   }
 
+  describe('위험정보', () => {
+    /*
+     * 원문 24번 · v2.0 K-3. 명백한 위험정보는 즉시 가릴 수 있지만, **업체에
+     * 부정적인 후기라는 이유만으로는 가리지 않는다.**
+     */
+    it('전화번호가 들어 있으면 올라가지 않는다', async () => {
+      const { headers } = await signInAs(test);
+      const vendorId = await createVendor();
+
+      const response = await write(headers, vendorId, {
+        body: `${BODY} 문의는 010-1234-5678로 주세요.`,
+      });
+
+      expect(response.statusCode).toBe(400);
+      // 지우라고 말하면서 값을 한 번 더 적지 않는다.
+      const message = response.json<{ error: { message: string } }>().error.message;
+      expect(message).toContain('전화번호');
+      expect(message).not.toContain('1234');
+    });
+
+    it('계좌번호도 막는다', async () => {
+      const { headers } = await signInAs(test);
+      const vendorId = await createVendor();
+
+      expect(
+        (await write(headers, vendorId, { body: `${BODY} 계좌 110-234-567890으로 보냈어요.` }))
+          .statusCode
+      ).toBe(400);
+    });
+
+    it('제목과 좋았던 점도 함께 본다', async () => {
+      // 본문만 보면 제목으로 새어 나간다.
+      const { headers } = await signInAs(test);
+      const vendorId = await createVendor();
+
+      expect(
+        (await write(headers, vendorId, { title: '연락처 010-1234-5678' })).statusCode
+      ).toBe(400);
+      expect(
+        (await write(headers, vendorId, { pros: '담당자 hong@example.com' })).statusCode
+      ).toBe(400);
+    });
+
+    it('날짜가 든 후기는 그대로 올라간다', async () => {
+      // 2026-08-29는 자릿수만으로는 계좌처럼 보인다. 흔한 문장이라 특히 위험하다.
+      const { headers } = await signInAs(test);
+      const vendorId = await createVendor();
+
+      expect(
+        (await write(headers, vendorId, { body: `${BODY} 2026-08-29에 계약했습니다.` }))
+          .statusCode
+      ).toBe(201);
+    });
+
+    it('신고가 들어오면 위험정보가 있는 글만 가린다', async () => {
+      /*
+       * 이미 올라간 글(스키마로 심는다)에 신고가 붙는 경우다. 신고만으로 글이
+       * 내려가면 그건 신고가 아니라 삭제 버튼이고, 업체가 불리한 후기를 지우는
+       * 데 쓴다.
+       */
+      const author = await signInAs(test, 'author');
+      const vendorId = await createVendor();
+
+      const risky = await test.pool.query<{ id: string }>(
+        `INSERT INTO structured.reviews (vendor_id, author_user_id, role, overall, title, body)
+         VALUES ($1, $2, 'contractor', 2, '제목', $3) RETURNING id`,
+        [vendorId, author.userId, `${BODY} 계좌 110-234-567890으로 보내래요.`]
+      );
+
+      const reporter = await signInAs(test, 'reporter');
+
+      const response = await test.app.inject({
+        method: 'POST',
+        url: `/v1/reviews/${risky.rows[0]!.id}/reports`,
+        headers: reporter.headers,
+        payload: { reason: 'personal_info' },
+      });
+
+      expect(response.statusCode).toBe(201);
+
+      const after = await test.pool.query<{ status: string }>(
+        'SELECT status FROM structured.reviews WHERE id = $1',
+        [risky.rows[0]!.id]
+      );
+
+      expect(after.rows[0]!.status).toBe('under_objection');
+    });
+
+    it('나쁜 후기라는 이유만으로는 가리지 않는다', async () => {
+      const author = await signInAs(test, 'author');
+      const vendorId = await createVendor();
+
+      const harsh = await test.pool.query<{ id: string }>(
+        `INSERT INTO structured.reviews (vendor_id, author_user_id, role, overall, title, body)
+         VALUES ($1, $2, 'contractor', 1, '제목', $3) RETURNING id`,
+        [
+          vendorId,
+          author.userId,
+          '상담이 불친절했고 안내받은 금액과 계약서 금액이 달랐습니다. 다시 가고 싶지는 않습니다. 아쉬웠어요.',
+        ]
+      );
+
+      const reporter = await signInAs(test, 'reporter');
+
+      await test.app.inject({
+        method: 'POST',
+        url: `/v1/reviews/${harsh.rows[0]!.id}/reports`,
+        headers: reporter.headers,
+        payload: { reason: 'false_content' },
+      });
+
+      const after = await test.pool.query<{ status: string }>(
+        'SELECT status FROM structured.reviews WHERE id = $1',
+        [harsh.rows[0]!.id]
+      );
+
+      expect(after.rows[0]!.status).toBe('published');
+    });
+
+    it('규칙이 못 잡은 신고는 사람이 볼 자리에 남는다', async () => {
+      /*
+       * 자동으로 처리한 척 하고 아무 일도 하지 않는 것이 가장 나쁘다.
+       * `open_decisions`가 H장의 "진짜 확인 필요"다.
+       */
+      const author = await signInAs(test, 'author');
+      const vendorId = await createVendor();
+
+      const review = await test.pool.query<{ id: string }>(
+        `INSERT INTO structured.reviews (vendor_id, author_user_id, role, overall, title, body)
+         VALUES ($1, $2, 'contractor', 3, '제목', $3) RETURNING id`,
+        [vendorId, author.userId, BODY]
+      );
+
+      const reporter = await signInAs(test, 'reporter');
+
+      await test.app.inject({
+        method: 'POST',
+        url: `/v1/reviews/${review.rows[0]!.id}/reports`,
+        headers: reporter.headers,
+        payload: { reason: 'other' },
+      });
+
+      const open = await test.pool.query<{ decision: string; reason_code: string }>(
+        'SELECT decision, reason_code FROM structured.open_decisions'
+      );
+
+      expect(open.rows).toHaveLength(1);
+      expect(open.rows[0]!.decision).toBe('needs_review');
+    });
+
+    it('가린 결정에 근거가 남되 값은 남지 않는다', async () => {
+      // L장: 개인정보는 이 로그에 불필요하게 복제하지 않는다.
+      const author = await signInAs(test, 'author');
+      const vendorId = await createVendor();
+
+      const risky = await test.pool.query<{ id: string }>(
+        `INSERT INTO structured.reviews (vendor_id, author_user_id, role, overall, title, body)
+         VALUES ($1, $2, 'contractor', 2, '제목', $3) RETURNING id`,
+        [vendorId, author.userId, `${BODY} 계좌 110-234-567890으로 보내래요.`]
+      );
+
+      const reporter = await signInAs(test, 'reporter');
+
+      await test.app.inject({
+        method: 'POST',
+        url: `/v1/reviews/${risky.rows[0]!.id}/reports`,
+        headers: reporter.headers,
+        payload: { reason: 'personal_info' },
+      });
+
+      const { rows } = await test.pool.query<{
+        decider: string;
+        rule_version: string;
+        policy_version: string;
+        evidence_refs: { kind: string; id: string }[];
+      }>(
+        `SELECT decider, rule_version, policy_version, evidence_refs
+         FROM structured.decisions WHERE decision = 'hidden'`
+      );
+
+      expect(rows).toHaveLength(1);
+      expect(rows[0]!.decider).toBe('rule');
+      // 어느 판이 내렸는지가 남는다.
+      expect(rows[0]!.rule_version).toBeTruthy();
+      expect(rows[0]!.policy_version).toBe('v2.0');
+      // 가리키기만 한다.
+      expect(JSON.stringify(rows[0]!.evidence_refs)).not.toContain('110-234');
+    });
+
+    it('고치면 되살아난다', async () => {
+      /*
+       * 0033이 작성자에게 "지우고 다시 올려주세요"라고 말했다. 고칠 길이 없으면
+       * 그건 지키지 못할 말이다.
+       */
+      const author = await signInAs(test, 'author');
+      const vendorId = await createVendor();
+
+      const written = await write(author.headers, vendorId, {
+        body: `${BODY} 계좌 110-234-567890으로 보내래요.`,
+      });
+
+      // 쓸 때 이미 막힌다. 그래서 이미 올라간 글을 스키마로 심는다.
+      expect(written.statusCode).toBe(400);
+
+      const risky = await test.pool.query<{ id: string }>(
+        `INSERT INTO structured.reviews (vendor_id, author_user_id, role, overall, title, body)
+         VALUES ($1, $2, 'contractor', 2, '제목', $3) RETURNING id`,
+        [vendorId, author.userId, `${BODY} 계좌 110-234-567890으로 보내래요.`]
+      );
+
+      const reporter = await signInAs(test, 'reporter');
+      await test.app.inject({
+        method: 'POST',
+        url: `/v1/reviews/${risky.rows[0]!.id}/reports`,
+        headers: reporter.headers,
+        payload: { reason: 'personal_info' },
+      });
+
+      const fixed = await test.app.inject({
+        method: 'PUT',
+        url: `/v1/reviews/${risky.rows[0]!.id}`,
+        headers: author.headers,
+        payload: { overall: 2, title: '제목', body: BODY },
+      });
+
+      expect(fixed.statusCode).toBe(204);
+
+      /*
+       * 응답을 받은 순간 이미 반영돼 있어야 한다.
+       *
+       * 처음에는 트랜잭션 안에서 reply.send()를 불렀고, 이 파일을 통째로 돌릴 때
+       * 여기서 낡은 값이 보였다 — 응답이 먼저 나가고 COMMIT이 뒤에 끝난 것이다.
+       * 지금은 COMMIT 뒤에 보낸다.
+       *
+       * **이 단언이 그 순서를 매번 잡아주지는 않는다.** 되돌려 놓고 이 테스트만
+       * 따로 돌리면 통과한다 — 경합이라 늘 드러나지 않는다. 그래서 테스트가 아니라
+       * 코드 모양으로 막았다: 보내는 일을 트랜잭션 밖으로 뺐다.
+       */
+
+      const after = await test.pool.query<{ status: string; auto_hidden_at: Date | null }>(
+        'SELECT status, auto_hidden_at FROM structured.reviews WHERE id = $1',
+        [risky.rows[0]!.id]
+      );
+
+      expect(after.rows[0]!.status).toBe('published');
+      expect(after.rows[0]!.auto_hidden_at).toBeNull();
+    });
+
+    it('고친 글도 검사를 다시 지난다', async () => {
+      // 한 번 통과했다고 다음에도 통과하는 것이 아니다.
+      const author = await signInAs(test, 'author');
+      const vendorId = await createVendor();
+      const written = await write(author.headers, vendorId);
+
+      const response = await test.app.inject({
+        method: 'PUT',
+        url: `/v1/reviews/${written.json<{ reviewId: string }>().reviewId}`,
+        headers: author.headers,
+        payload: { overall: 4, title: '제목', body: `${BODY} 연락처 010-1234-5678` },
+      });
+
+      expect(response.statusCode).toBe(400);
+    });
+
+    it('사람이 내린 임시조치는 작성자가 풀 수 없다', async () => {
+      /*
+       * 법적 분쟁으로 가린 글을 작성자가 스스로 되살릴 수 있으면 그건 임시조치가
+       * 아니다. `auto_hidden_at`이 규칙이 가린 것과 사람이 가린 것을 가른다.
+       */
+      const author = await signInAs(test, 'author');
+      const vendorId = await createVendor();
+      const written = await write(author.headers, vendorId);
+      const reviewId = written.json<{ reviewId: string }>().reviewId;
+
+      // 사람이 가린다 — auto_hidden_at은 비운다.
+      await test.pool.query(
+        `UPDATE structured.reviews
+         SET status = 'under_objection', objection_hold_until = now() + interval '30 days'
+         WHERE id = $1`,
+        [reviewId]
+      );
+
+      const response = await test.app.inject({
+        method: 'PUT',
+        url: `/v1/reviews/${reviewId}`,
+        headers: author.headers,
+        payload: { overall: 4, title: '제목', body: BODY },
+      });
+
+      expect(response.statusCode).toBe(409);
+
+      const after = await test.pool.query<{ status: string }>(
+        'SELECT status FROM structured.reviews WHERE id = $1',
+        [reviewId]
+      );
+
+      expect(after.rows[0]!.status).toBe('under_objection');
+    });
+
+    it('남의 후기는 고칠 수 없다', async () => {
+      const author = await signInAs(test, 'author');
+      const vendorId = await createVendor();
+      const written = await write(author.headers, vendorId);
+
+      const stranger = await signInAs(test, 'stranger');
+
+      const response = await test.app.inject({
+        method: 'PUT',
+        url: `/v1/reviews/${written.json<{ reviewId: string }>().reviewId}`,
+        headers: stranger.headers,
+        payload: { overall: 1, title: '바꿔치기', body: BODY },
+      });
+
+      // 없는 글과 같은 답을 받는다. 다르면 남의 글 id를 알아낼 수 있다.
+      expect(response.statusCode).toBe(404);
+    });
+
+    it('가려졌다는 것을 쓴 사람에게 알린다', async () => {
+      const author = await signInAs(test, 'author');
+      const vendorId = await createVendor();
+
+      const risky = await test.pool.query<{ id: string }>(
+        `INSERT INTO structured.reviews (vendor_id, author_user_id, role, overall, title, body)
+         VALUES ($1, $2, 'contractor', 2, '제목', $3) RETURNING id`,
+        [vendorId, author.userId, `${BODY} 계좌 110-234-567890으로 보내래요.`]
+      );
+
+      const reporter = await signInAs(test, 'reporter');
+
+      await test.app.inject({
+        method: 'POST',
+        url: `/v1/reviews/${risky.rows[0]!.id}/reports`,
+        headers: reporter.headers,
+        payload: { reason: 'personal_info' },
+      });
+
+      const inbox = await test.app.inject({
+        method: 'GET',
+        url: '/v1/me/notifications',
+        headers: author.headers,
+      });
+
+      const notifications = inbox.json<{ notifications: { body: string }[] }>().notifications;
+
+      expect(notifications).toHaveLength(1);
+      // 알림에도 값을 되읽어주지 않는다.
+      expect(notifications[0]!.body).not.toContain('110-234');
+    });
+  });
+
   it('쓰기 전에 무엇을 묻는지와 어디까지 확인되는지 알려준다', async () => {
     const { headers } = await signInAs(test);
     const vendorId = await createVendor();

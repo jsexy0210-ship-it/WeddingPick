@@ -7,6 +7,27 @@
 --
 -- 이 표가 답해야 하는 질문: 누가·무엇으로·얼마나 확신하고·왜 그렇게 정했는가.
 
+/*
+ * 근거가 가리키기만 하는지. CHECK 안에서는 부속질의를 쓸 수 없어 함수로 뺀다.
+ *
+ * `[{"kind": "...", "id": "..."}]` 꼴만 통과한다. 키가 둘뿐이라 값을 적을 자리가
+ * 없고, 그래서 카드번호도 이름도 이 로그에 복사될 수 없다.
+ */
+CREATE FUNCTION structured.refs_only_point(refs jsonb)
+RETURNS boolean
+LANGUAGE sql
+IMMUTABLE
+AS $$
+  SELECT jsonb_typeof(refs) = 'array'
+     AND NOT EXISTS (
+       SELECT 1
+       FROM jsonb_array_elements(refs) AS ref
+       WHERE jsonb_typeof(ref.value) <> 'object'
+          OR NOT (ref.value ?& array['kind', 'id'])
+          OR (SELECT count(*) FROM jsonb_object_keys(ref.value)) <> 2
+     );
+$$;
+
 -- 누가 정했는가. 사람도 여기 들어온다 — 사람 결정과 자동 결정을 한 표에 두면
 -- "이 건은 누가 봤나"를 한 번의 질의로 답할 수 있다.
 CREATE TYPE decider_kind AS ENUM ('rule', 'model', 'human');
@@ -90,20 +111,7 @@ CREATE TABLE structured.decisions (
     CHECK (decider <> 'model' OR (model IS NOT NULL AND confidence IS NOT NULL)),
 
   -- 근거는 가리키기만 한다. 값이 들어올 자리가 없다.
-  CONSTRAINT evidence_refs_only_point
-    CHECK (
-      jsonb_typeof(evidence_refs) = 'array'
-      AND NOT EXISTS (
-        SELECT 1
-        FROM jsonb_array_elements(evidence_refs) AS ref
-        WHERE jsonb_typeof(ref.value) <> 'object'
-           OR NOT (ref.value ?& array['kind', 'id'])
-           OR EXISTS (
-             SELECT 1 FROM jsonb_object_keys(ref.value) AS key
-             WHERE key NOT IN ('kind', 'id')
-           )
-      )
-    )
+  CONSTRAINT evidence_refs_only_point CHECK (structured.refs_only_point(evidence_refs))
 );
 
 CREATE INDEX decisions_event_idx ON structured.decisions (event_id, created_at);

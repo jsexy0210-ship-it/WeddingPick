@@ -1,6 +1,7 @@
 import type { VendorDetail } from '@weddingpick/api-contract';
 import {
   DOCUMENT_TYPE_LABEL,
+  PAYMENT_PROOF_CAVEAT,
   VENDOR_CATEGORY_LABEL,
   manwon,
   rangeLabel,
@@ -131,6 +132,14 @@ export default function VendorDetailScreen() {
                 ) : null}
               </ThemedView>
             )}
+
+            {/*
+              무엇을 세는 숫자인지 늘 함께 적는다. 계약 전체 금액과 그때 결제한
+              금액은 다른 값이고, 옆에 나란히 놓이면 같은 것으로 읽힌다.
+            */}
+            <ThemedText type="t7" themeColor="textSecondary">
+              {PAYMENT_PROOF_CAVEAT}
+            </ThemedText>
 
             {/*
               결제인증이 여는 것은 구간이 아니라 깊이다. 이미 열려 있는 사람에게는

@@ -5,12 +5,15 @@ import type {
   WeddingTaskListResponse,
 } from '@weddingpick/api-contract';
 import {
+  COMPLETED_ACTIONS,
+  COMPLETED_GREETING,
   EXPENSE_BUCKET_COLOR,
   dDay,
   hasUnread,
   formatTaskDate,
   greeting,
   nextTask,
+  weddingPhase,
   type ExpenseBucket,
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
@@ -123,6 +126,8 @@ export default function HomeScreen() {
   useEffect(load, [load]);
 
   const upcoming = data.tasks ? nextTask(data.tasks.tasks) : null;
+  /* 저장하지 않고 계산한다 — 아무 일도 없어도 시간이 지나면 바뀌는 값이다. */
+  const phase = weddingPhase(data.me?.weddingDate ?? null);
 
   const sections: Record<HomeSection, React.ReactNode> = {
     quickMenu: (
@@ -315,13 +320,25 @@ export default function HomeScreen() {
             </Pressable>
           </ThemedView>
 
-          {/* 고정 1 — D-Day */}
+          {/*
+            고정 1 — D-Day.
+
+            예식이 끝나면 남은 날짜를 세지 않는다(v2.0 D-4). "예식일이 3일
+            지났어요"는 아무에게도 필요 없는 말이다.
+          */}
           <ThemedView style={styles.headline}>
             {data.me?.weddingDate ? (
-              <>
-                <ThemedText type="t2">{greeting(data.me.displayName)}</ThemedText>
-                <ThemedText type="t2">{dDay(data.me.weddingDate).text}</ThemedText>
-              </>
+              phase === 'completed' ? (
+                <>
+                  <ThemedText type="t2">{greeting(data.me.displayName)}</ThemedText>
+                  <ThemedText type="t2">{COMPLETED_GREETING}</ThemedText>
+                </>
+              ) : (
+                <>
+                  <ThemedText type="t2">{greeting(data.me.displayName)}</ThemedText>
+                  <ThemedText type="t2">{dDay(data.me.weddingDate).text}</ThemedText>
+                </>
+              )
             ) : (
               <>
                 <ThemedText type="t2">웨딩픽에</ThemedText>
@@ -330,7 +347,24 @@ export default function HomeScreen() {
             )}
           </ThemedView>
 
-          {/* 고정 2 — 다음 일정 */}
+          {/*
+            고정 2 — 다음 일정. 예식이 끝났으면 그 자리에 마무리할 것을 둔다.
+
+            **계정을 제한하지 않는다**(원문 34번). 아래 섹션은 그대로 뜨고,
+            여기 있는 것은 막는 목록이 아니라 권하는 목록이다.
+          */}
+          {phase === 'completed' ? (
+            <ThemedView type="backgroundElement" style={styles.card}>
+              {COMPLETED_ACTIONS.map((action) => (
+                <ThemedView key={action.key} type="backgroundElement" style={styles.completedRow}>
+                  <ThemedText type="t5">{action.title}</ThemedText>
+                  <ThemedText type="t7" themeColor="textSecondary">
+                    {action.description}
+                  </ThemedText>
+                </ThemedView>
+              ))}
+            </ThemedView>
+          ) : (
           <ThemedView type="backgroundElement" style={styles.card}>
             {upcoming ? (
               <>
@@ -350,6 +384,7 @@ export default function HomeScreen() {
               </ThemedText>
             )}
           </ThemedView>
+          )}
 
           {(layout?.order ?? HOME_SECTIONS)
             .filter((section) => (layout ? isVisible(layout, section) : true))
@@ -381,6 +416,10 @@ function Quick({ label, onPress }: { label: string; onPress: () => void }) {
 }
 
 const styles = StyleSheet.create({
+  completedRow: {
+    gap: Spacing.one,
+    paddingVertical: Spacing.two,
+  },
   bellRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',

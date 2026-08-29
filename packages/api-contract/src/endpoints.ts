@@ -65,6 +65,7 @@ import {
   reportReasonListResponseSchema,
   reviewFormSchema,
   reviewListResponseSchema,
+  updateReviewRequestSchema,
 } from './reviews';
 import {
   vendorComparisonResponseSchema,
@@ -367,6 +368,19 @@ export const ENDPOINTS = {
    * 알림 · 내 제보 내역 · 업체 반론 (디자인 핸드오프 20번)
    * ---------------------------------------------------------------------
    */
+
+  /**
+   * 후기 고치기. 자기 글만.
+   *
+   * 규칙이 위험정보를 찾아 가린 글은 고치면 되살아난다. 사람이 내린 임시조치는
+   * 여기서 풀리지 않는다.
+   */
+  updateReview: {
+    method: 'PUT',
+    path: '/v1/reviews/{reviewId}',
+    body: updateReviewRequestSchema,
+    response: z.null(),
+  },
 
   /** 알림함. 푸시를 못 받는 기기에서도 결과를 볼 수 있어야 한다. */
   listNotifications: {

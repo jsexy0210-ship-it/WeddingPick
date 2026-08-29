@@ -4,9 +4,11 @@ import {
   MISSION_COMPLETE_BODY,
   MISSION_COMPLETE_TAGS,
   MISSION_COMPLETE_TITLE,
+  WEDDING_PHASE_LABEL,
   allMissionsDone,
   formatWeddingDate,
   isMissionDone,
+  weddingPhase,
   type MembershipFacts,
   type MissionKey,
 } from '@weddingpick/domain';
@@ -102,6 +104,7 @@ export default function MyScreen() {
     : GUEST_FACTS;
 
   const everythingDone = allMissionsDone(facts);
+  const phase = weddingPhase(data.me?.weddingDate ?? null);
 
   /*
    * 미션 완료 모달은 최초 1회다(핸드오프 18번). 여기서 봤는지 물어보고, 축하할
@@ -174,11 +177,16 @@ export default function MyScreen() {
               <ThemedText type="t7" themeColor="textSecondary">
                 {data.me?.weddingDate ? formatWeddingDate(data.me.weddingDate) : '예식일 미등록'}
                 {facts.spouseLinked ? ' · 배우자 연결됨' : ''}
+                {/* 예식이 끝났으면 그렇다고 적는다. v2.0 D-4 · 원문 34번. */}
+                {phase === 'completed' ? ` · ${WEDDING_PHASE_LABEL.completed}` : ''}
               </ThemedText>
             </ThemedView>
           </ThemedView>
 
-          {/* 예식일 미등록 배너 */}
+          {/*
+            예식일 미등록 배너. 예식이 끝난 사람에게는 뜨지 않는다 — 등록하라고
+            권할 이유가 이미 지났다.
+          */}
           {data.me && !data.me.weddingDate ? (
             <Pressable
               accessibilityRole="button"

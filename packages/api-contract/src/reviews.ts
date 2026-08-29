@@ -221,6 +221,21 @@ export const reviewListResponseSchema = z.object({
   caveat: z.string().min(1),
 });
 
+/**
+ * 후기 고치기. 원문 23번.
+ *
+ * **역할과 평가 항목은 바꾸지 않는다.** 계약자로 쓴 글을 하객으로 바꾸면 그 글이
+ * 이용점수에 들어가는 조건이 달라지고, 별점만 바꿔 점수를 올릴 수도 있다.
+ * 고치는 것은 글이다.
+ */
+export const updateReviewRequestSchema = z.object({
+  overall: ratingSchema,
+  title: z.string().trim().min(1).max(80),
+  body: z.string().trim().min(MINIMUM_BODY_LENGTH).max(4000),
+  pros: z.string().trim().max(1000).optional(),
+  cons: z.string().trim().max(1000).optional(),
+});
+
 /** 신고 사유. 목록은 서버가 준다 — 앱에 박아두면 늘릴 때마다 앱을 새로 내야 한다. */
 export const reportReasonListResponseSchema = z.object({
   reasons: z.array(z.object({ value: reportReasonSchema, label: z.string().min(1) })),
@@ -247,6 +262,7 @@ export const createReviewReportResponseSchema = z.object({
 export type ChecklistItemView = z.infer<typeof checklistItemSchema>;
 export type ReviewForm = z.infer<typeof reviewFormSchema>;
 export type CreateReviewRequest = z.infer<typeof createReviewRequestSchema>;
+export type UpdateReviewRequest = z.infer<typeof updateReviewRequestSchema>;
 export type CreateReviewResponse = z.infer<typeof createReviewResponseSchema>;
 export type Review = z.infer<typeof reviewSchema>;
 export type UsageScore = z.infer<typeof usageScoreSchema>;

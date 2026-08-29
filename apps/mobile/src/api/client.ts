@@ -45,6 +45,7 @@ import {
   type NotificationListResponse,
   type NotificationSummaryResponse,
   type RebuttalListResponse,
+  type UpdateReviewRequest,
   type UpdateRebuttalRequest,
   type CreateExpenseRequest,
   type CreateVisitNoteRequest,
@@ -498,6 +499,22 @@ export async function createReview(
 }
 
 /** 업체의 후기와 이용점수. 단서는 목록과 한 응답으로 온다. */
+/**
+ * 후기 고치기. 자기 글만.
+ *
+ * 규칙이 위험정보를 찾아 가린 글은 고치면 되살아난다 — 그래야 "지우고 다시
+ * 올려주세요"가 지킬 수 있는 말이 된다.
+ */
+export async function updateReview(
+  reviewId: string,
+  body: UpdateReviewRequest
+): Promise<void> {
+  await request(`/v1/reviews/${reviewId}`, z.null(), {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
+}
+
 export async function listVendorReviews(
   vendorId: string,
   cursor?: string

@@ -528,6 +528,119 @@ describeWithDb('DB 스키마', () => {
     });
   });
 
+  describe('의사결정 기록', () => {
+    async function anOperator() {
+      const { rows } = await client.query<{ id: string }>(
+        'INSERT INTO structured.users (is_operator) VALUES (true) RETURNING id'
+      );
+
+      return rows[0]!.id;
+    }
+
+    const insert = (columns: string, values: string, params: unknown[] = []) =>
+      client.query(
+        `INSERT INTO structured.decisions
+           (event_id, workflow, step, subject_kind, decision, reason_code, policy_version,
+            ${columns})
+         VALUES (gen_random_uuid(), 'w', 's', 'rebuttal', 'published', 'ok', 'v2.0',
+            ${values})
+         RETURNING id`,
+        params
+      );
+
+    it('이름 없는 사람 결정을 막는다', async () => {
+      await expect(insert('decider', `'human'`)).rejects.toThrow(
+        /human_decision_names_the_person/
+      );
+    });
+
+    it('판 없는 규칙 결정을 막는다', async () => {
+      /*
+       * 규칙이 바뀌면 과거 결정을 다시 읽을 수 있어야 한다. 어느 판이 내린
+       * 결정인지 모르면 그 결정은 재현할 수 없다.
+       */
+      await expect(insert('decider', `'rule'`)).rejects.toThrow(
+        /rule_decision_names_its_version/
+      );
+
+      await expect(
+        insert('decider, rule_version', `'rule', 'payment-parser@3'`)
+      ).resolves.toBeDefined();
+    });
+
+    it('확신 없는 모델 결정을 막는다', async () => {
+      // B-2: 모든 AI 판단에는 confidence와 판단근거를 기록한다.
+      await expect(insert('decider, model', `'model', 'claude-haiku-4-5'`)).rejects.toThrow(
+        /model_decision_names_its_model/
+      );
+
+      await expect(
+        insert('decider, model, confidence', `'model', 'claude-haiku-4-5', 0.82`)
+      ).resolves.toBeDefined();
+    });
+
+    it('사람 결정에는 사람이 남는다', async () => {
+      const operator = await anOperator();
+
+      await expect(
+        insert('decider, actor_user_id', `'human', $1`, [operator])
+      ).resolves.toBeDefined();
+    });
+
+    it('근거에 값을 적을 수 없다', async () => {
+      /*
+       * L장: 개인정보는 이 로그에 불필요하게 복제하지 않는다. 관례가 아니라
+       * 제약으로 지킨다 — {kind, id} 외의 키가 들어올 자리가 없다.
+       */
+      const withValue = insert(
+        'decider, rule_version, evidence_refs',
+        `'rule', 'v1', '[{"kind": "card", "id": "x", "number": "1234-5678"}]'::jsonb`
+      );
+
+      await expect(withValue).rejects.toThrow(/evidence_refs_only_point/);
+    });
+
+    it('근거는 가리키기만 하면 통과한다', async () => {
+      await expect(
+        insert(
+          'decider, rule_version, evidence_refs',
+          `'rule', 'v1', '[{"kind": "review", "id": "abc"}]'::jsonb`
+        )
+      ).resolves.toBeDefined();
+    });
+
+    it('가리키는 것이 아니면 막는다', async () => {
+      // 문자열만 담긴 배열, 객체가 아닌 것, id가 빠진 것 모두.
+      for (const refs of [`'["abc"]'`, `'[{"kind": "review"}]'`, `'{"kind": "review"}'`]) {
+        await expect(
+          insert('decider, rule_version, evidence_refs', `'rule', 'v1', ${refs}::jsonb`)
+        ).rejects.toThrow(/evidence_refs_only_point/);
+      }
+    });
+
+    it('확신은 0과 1 사이다', async () => {
+      await expect(
+        insert('decider, model, confidence', `'model', 'm', 1.5`)
+      ).rejects.toThrow();
+    });
+
+    it('끝나지 않은 결정만 따로 볼 수 있다', async () => {
+      // H장의 "진짜 확인 필요". 이 뷰가 비어 있는 것이 정상이다.
+      await insert('decider, rule_version', `'rule', 'v1'`);
+
+      const quiet = await client.query('SELECT 1 FROM structured.open_decisions');
+      expect(quiet.rows).toHaveLength(0);
+
+      await insert(
+        'decider, rule_version, execution_status',
+        `'rule', 'v1', 'failed'::decision_execution`
+      );
+
+      const noisy = await client.query('SELECT 1 FROM structured.open_decisions');
+      expect(noisy.rows).toHaveLength(1);
+    });
+  });
+
   describe('마이그레이션', () => {
     it('두 번 돌려도 같은 결과가 된다', async () => {
       await expect(migrate(client)).resolves.toEqual([]);

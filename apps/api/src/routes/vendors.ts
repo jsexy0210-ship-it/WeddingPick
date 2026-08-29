@@ -1,6 +1,7 @@
 import {
   DEEP_DATA_NOTE,
   DEFAULT_PERIOD_LABEL,
+  DEFAULT_PERIOD_MONTHS,
   MAX_COMPARED_VENDORS,
   PRICE_REPORT_CAVEAT,
   comparisonCaveats,
@@ -217,9 +218,19 @@ async function loadVendorDetail(pool: Pool, vendorId: string, viewerId: string |
    * 셋의 근거가 다르다 — 사람이 심사한 계약, 기계가 읽은 결제내역, 그냥 적어준
    * 숫자. 한 번이라도 합치면 그 뒤로는 어느 숫자가 무엇이었는지 아무도 모른다.
    */
-  const paid = await pool.query<{ paid_amount: string; paid_at: Date }>(
-    `SELECT paid_amount, paid_at FROM structured.usable_payment_proofs WHERE vendor_id = $1`,
-    [vendor.id]
+  /*
+   * 최근 12개월만 본다. v2.0 C-1.
+   *
+   * 라벨이 사실보다 앞서면 안 된다 — 화면이 "최근 12개월"이라고 적는데 3년 전
+   * 결제가 섞여 있으면, 그건 안내가 아니라 틀린 말이다. 오래된 것을 지우지는
+   * 않는다(C-1) — 과거 이력으로 남고, 이 질의에서만 빠진다.
+   */
+  const paid = await pool.query<{ paid_amount: string }>(
+    `SELECT paid_amount
+     FROM structured.usable_payment_proofs
+     WHERE vendor_id = $1
+       AND paid_at >= now() - ($2 || ' months')::interval`,
+    [vendor.id, DEFAULT_PERIOD_MONTHS]
   );
 
   /*

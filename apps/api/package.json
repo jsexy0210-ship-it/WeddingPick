@@ -14,6 +14,7 @@
     "public-data:import": "tsx src/public-data-import.ts",
     "inquiries": "tsx src/inquiry-admin.ts",
     "rebuttals": "tsx src/rebuttal-admin.ts",
+    "decisions": "tsx src/decisions-admin.ts",
     "verifications": "tsx src/verification-admin.ts",
     "retention": "tsx src/retention-admin.ts",
     "pii": "tsx src/pii-admin.ts",

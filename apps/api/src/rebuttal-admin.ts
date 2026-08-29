@@ -1,6 +1,7 @@
 import { REBUTTAL_STATUS_LABEL, type RebuttalStatus } from '@weddingpick/domain';
 
 import { loadConfig } from './config';
+import { newEventId, recordDecision } from './decisions';
 import { createPool, withTransaction } from './db';
 import { notify } from './notify';
 
@@ -91,6 +92,25 @@ async function decide(
        WHERE id = $1::uuid`,
       [id, to, by, note]
     );
+
+    /*
+     * 같은 트랜잭션에서 남긴다. L장이 요구하는 것은 "왜 그렇게 정했는가"를
+     * 나중에 답할 수 있게 하는 것이고, 결정만 되고 기록이 빠지면 답할 수 없다.
+     *
+     * 근거는 가리키기만 한다 — 소속을 무엇으로 확인했는지는 note에 사람이 적고,
+     * 그 증빙 자체는 여기 복사되지 않는다(원문 27번).
+     */
+    await recordDecision(client, {
+      eventId: newEventId(),
+      workflow: 'rebuttal_review',
+      step: 'decide',
+      subjectKind: 'rebuttal',
+      subjectId: id,
+      decider: { kind: 'human', userId: by },
+      decision: to,
+      reasonCode: to === 'published' ? 'affiliation_verified' : 'not_published',
+      evidence: [{ kind: 'review', id: found.review_id }],
+    });
 
     await notify(client, {
       userId: found.submitted_by_user_id,

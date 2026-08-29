@@ -1,6 +1,7 @@
 import {
   createReviewReportRequestSchema,
   createReviewRequestSchema,
+  updateReviewRequestSchema,
 } from '@weddingpick/api-contract';
 import {
   MINIMUM_BODY_LENGTH,
@@ -17,6 +18,9 @@ import {
   canSubmitReview,
   reviewReportAcknowledgement,
   reviewVerificationFromQuote,
+  RISK_REASON_CODE,
+  riskNotice,
+  scanForRisk,
   strongerVerification,
   verificationNote,
   type ChecklistAnswer,
@@ -31,8 +35,26 @@ import { z } from 'zod';
 
 import { currentUserId, optionalUser, optionalUserId, requireUser } from '../auth/plugin';
 import type { AppContext } from '../context';
+import { withTransaction } from '../db';
+import { newEventId, recordDecision } from '../decisions';
 import { ApiError, notFound } from '../errors';
+import { notify } from '../notify';
 import { loadUsageScore } from '../review-view';
+
+/**
+ * 규칙의 판. 결정 기록에 함께 남는다 — 규칙이 바뀌면 과거 결정을 다시 읽을 수
+ * 있어야 하고, 어느 판이 내렸는지 모르면 재현할 수 없다.
+ */
+const RISK_SCAN_VERSION = 'risk-scan@1';
+
+/**
+ * 가려두는 기간. 정보통신망법 제44조의2가 30일을 상한으로 정했고, 스키마의
+ * 트리거가 그 상한을 지킨다.
+ *
+ * 상한까지 쓰지 않는다. 위험정보를 지우고 다시 올리는 데 한 달이 필요하지 않고,
+ * 길게 잡을수록 자동으로 가린 글이 오래 안 보인다.
+ */
+const RISK_HOLD_DAYS = 7;
 
 const listQuerySchema = z.object({
   cursor: z.string().max(200).optional(),
@@ -269,6 +291,23 @@ export function registerReviewRoutes(app: FastifyInstance, context: AppContext):
       }
 
       /*
+       * 위험정보는 올라가기 전에 막는다. 원문 24번 · v2.0 K-3.
+       *
+       * 올린 뒤에 가리는 것보다 낫다 — 가리는 사이에도 그 글은 이미 보였고,
+       * 화면을 캡처한 사람에게는 지워지지 않는다.
+       *
+       * **이름은 여기서 잡지 않는다.** 한국어 성은 형태로 잡히지 않아, 기계로
+       * 거르려 하면 멀쩡한 글이 걸리거나 진짜가 빠져나간다(0020). 이름은 신고와
+       * 사람의 몫이다.
+       */
+      const risky = scanForRisk(`${body.title}\n${body.body}\n${body.pros ?? ''}\n${body.cons ?? ''}`);
+
+      if (risky.length > 0) {
+        // 값을 되읽어주지 않는다. 지우라고 말하면서 한 번 더 적는 셈이 된다.
+        throw new ApiError('invalid_request', riskNotice(risky));
+      }
+
+      /*
        * 이 역할에게 물은 항목만 받는다.
        *
        * 목록에 없는 항목을 받아주면 하객이 추가비용에 별점을 매길 수 있고, 그 짐작이
@@ -479,6 +518,105 @@ export function registerReviewRoutes(app: FastifyInstance, context: AppContext):
   );
 
   /**
+   * 후기 고치기. 원문 23번.
+   *
+   * **자기 글만 고친다.** 그리고 고친 글도 위험정보 검사를 다시 지난다 — 한 번
+   * 통과했다고 다음에도 통과하는 것이 아니다.
+   *
+   * 규칙이 가린 글은 고치면 되살아난다. 0033이 작성자에게 "지우고 다시
+   * 올려주세요"라고 말했으니, 그 말을 지킬 길이 있어야 한다.
+   *
+   * **사람이 내린 임시조치는 여기서 풀리지 않는다.** `auto_hidden_at`이 그 둘을
+   * 가른다 — 법적 분쟁으로 가린 글을 작성자가 스스로 되살릴 수 있으면 그건
+   * 임시조치가 아니다.
+   */
+  app.put<{ Params: { reviewId: string } }>(
+    '/v1/reviews/:reviewId',
+    auth,
+    async (request, reply) => {
+      const userId = currentUserId(request);
+      const body = updateReviewRequestSchema.parse(request.body);
+
+      const check = canSubmitReview({ overall: body.overall, body: body.body, role: 'contractor' });
+
+      if (!check.ok) {
+        throw new ApiError('invalid_request', check.reason);
+      }
+
+      const risky = scanForRisk(
+        `${body.title}\n${body.body}\n${body.pros ?? ''}\n${body.cons ?? ''}`
+      );
+
+      if (risky.length > 0) {
+        throw new ApiError('invalid_request', riskNotice(risky));
+      }
+
+      await withTransaction(context.pool, async (client) => {
+        const { rows } = await client.query<{ status: string; auto_hidden_at: Date | null }>(
+          `SELECT status, auto_hidden_at FROM structured.reviews
+           WHERE id = $1 AND author_user_id = $2
+           FOR UPDATE`,
+          [request.params.reviewId, userId]
+        );
+
+        const found = rows[0];
+
+        // 남의 글과 없는 글이 같은 답을 받는다. 다르면 남의 글 id를 알아낼 수 있다.
+        if (!found) throw notFound('후기');
+
+        if (found.status === 'under_objection' && found.auto_hidden_at === null) {
+          throw new ApiError(
+            'conflict',
+            '확인 중인 후기는 고칠 수 없습니다. 결과를 알려드리겠습니다.'
+          );
+        }
+
+        if (found.status === 'removed') {
+          throw new ApiError('conflict', '내려간 후기는 고칠 수 없습니다.');
+        }
+
+        const restored = found.auto_hidden_at !== null;
+
+        await client.query(
+          `UPDATE structured.reviews
+           SET title = $2, body = $3, pros = $4, cons = $5, overall = $6,
+               status = 'published',
+               objection_hold_until = NULL,
+               auto_hidden_at = NULL,
+               updated_at = now()
+           WHERE id = $1`,
+          [
+            request.params.reviewId,
+            body.title,
+            body.body,
+            body.pros ?? null,
+            body.cons ?? null,
+            body.overall,
+          ]
+        );
+
+        if (restored) {
+          // 되살린 것도 결정이다. 왜 다시 보이게 됐는지에 답할 수 있어야 한다.
+          await recordDecision(client, {
+            eventId: newEventId(),
+            workflow: 'review_report',
+            step: 'restore',
+            subjectKind: 'review',
+            subjectId: request.params.reviewId,
+            decider: { kind: 'rule', ruleVersion: RISK_SCAN_VERSION },
+            decision: 'restored',
+            reasonCode: 'risk_info_removed',
+            evidence: [{ kind: 'review', id: request.params.reviewId }],
+          });
+        }
+      });
+
+      // COMMIT이 끝난 뒤에 보낸다.
+      return reply.status(204).send();
+    }
+  );
+
+  /**
    * 후기 신고.
    *
    * 접수만 된다. 신고만으로 글이 내려가면 그건 신고가 아니라 삭제 버튼이고, 업체가
@@ -491,28 +629,113 @@ export function registerReviewRoutes(app: FastifyInstance, context: AppContext):
       const userId = currentUserId(request);
       const body = createReviewReportRequestSchema.parse(request.body);
 
-      const review = await context.pool.query(
-        'SELECT 1 FROM structured.visible_reviews WHERE id = $1',
+      const review = await context.pool.query<{
+        author_user_id: string;
+        title: string;
+        body: string;
+        pros: string | null;
+        cons: string | null;
+      }>(
+        `SELECT author_user_id, title, body, pros, cons
+         FROM structured.visible_reviews WHERE id = $1`,
         [request.params.reviewId]
       );
 
-      if (review.rows.length === 0) {
+      const found = review.rows[0];
+
+      if (!found) {
         throw notFound('후기');
       }
 
-      const { rows } = await context.pool.query<{ id: string; received_at: Date }>(
-        `INSERT INTO structured.review_reports (review_id, reporter_user_id, reason, note)
-         VALUES ($1, $2, $3, $4)
-         RETURNING id, received_at`,
-        [request.params.reviewId, userId, body.reason, body.note ?? null]
-      );
+      const created = await withTransaction(context.pool, async (client) => {
+        const { rows } = await client.query<{ id: string; received_at: Date }>(
+          `INSERT INTO structured.review_reports (review_id, reporter_user_id, reason, note)
+           VALUES ($1, $2, $3, $4)
+           RETURNING id, received_at`,
+          [request.params.reviewId, userId, body.reason, body.note ?? null]
+        );
 
-      return reply.status(201).send({
-        reportId: rows[0]!.id,
-        status: 'received',
-        receivedAt: rows[0]!.received_at.toISOString(),
-        acknowledgement: reviewReportAcknowledgement(),
+        const reportId = rows[0]!.id;
+        const eventId = newEventId();
+
+        /*
+         * 명백한 위험정보는 바로 가린다. 원문 24번이 정한 다섯 가지 중 숫자로 된
+         * 것들이고, 규칙으로 잡히므로 모델을 부를 일이 아니다(A-3).
+         *
+         * 나머지는 가리지 않는다 — **업체에 부정적인 후기라는 이유만으로
+         * 블라인드하지 않는다**(원문 24번). 신고만으로 글이 내려가면 그건 신고가
+         * 아니라 삭제 버튼이고, 업체가 불리한 후기를 지우는 데 쓴다.
+         */
+        const risky = scanForRisk(
+          `${found.title}\n${found.body}\n${found.pros ?? ''}\n${found.cons ?? ''}`
+        );
+
+        if (risky.length > 0) {
+          await client.query(
+            `UPDATE structured.reviews
+             SET status = 'under_objection',
+                 objection_hold_until = now() + ($2 || ' days')::interval,
+                 -- 규칙이 가렸다는 표시. 이게 있어야 작성자가 고쳐서 되살릴 수 있다.
+                 auto_hidden_at = now(),
+                 updated_at = now()
+             WHERE id = $1`,
+            [request.params.reviewId, RISK_HOLD_DAYS]
+          );
+
+          await recordDecision(client, {
+            eventId,
+            workflow: 'review_report',
+            step: 'auto_hide',
+            subjectKind: 'review',
+            subjectId: request.params.reviewId,
+            decider: { kind: 'rule', ruleVersion: RISK_SCAN_VERSION },
+            decision: 'hidden',
+            reasonCode: RISK_REASON_CODE,
+            // 무엇을 봤는지는 가리키기만 한다. 찾은 값은 어디에도 적지 않는다.
+            evidence: [{ kind: 'review_report', id: reportId }],
+          });
+
+          await notify(client, {
+            userId: found.author_user_id,
+            kind: 'notice',
+            title: '후기를 잠시 가렸어요',
+            body: riskNotice(risky),
+            targetId: request.params.reviewId,
+          });
+        } else {
+          /*
+           * 규칙이 못 잡는 것(이름, 맥락)은 사람이 본다. 끝나지 않은 결정으로
+           * 남겨 `structured.open_decisions`에 뜨게 한다 — 자동으로 처리한 척
+           * 하고 아무 일도 하지 않는 것이 가장 나쁘다.
+           */
+          await recordDecision(client, {
+            eventId,
+            workflow: 'review_report',
+            step: 'triage',
+            subjectKind: 'review',
+            subjectId: request.params.reviewId,
+            decider: { kind: 'rule', ruleVersion: RISK_SCAN_VERSION },
+            decision: 'needs_review',
+            reasonCode: 'no_rule_match',
+            evidence: [{ kind: 'review_report', id: reportId }],
+            execution: 'pending',
+          });
+        }
+
+        return {
+          reportId,
+          status: 'received' as const,
+          receivedAt: rows[0]!.received_at.toISOString(),
+          acknowledgement: reviewReportAcknowledgement(),
+        };
       });
+
+      /*
+       * **COMMIT이 끝난 뒤에 보낸다.** 트랜잭션 안에서 send하면 응답이 먼저
+       * 나가고 COMMIT이 뒤에 끝나, 201을 받고 곧바로 다시 읽은 클라이언트가
+       * 낡은 값을 본다. 테스트가 실제로 그 순간을 잡았다.
+       */
+      return reply.status(201).send(created);
     }
   );
 }

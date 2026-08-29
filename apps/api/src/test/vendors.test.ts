@@ -140,6 +140,90 @@ describeWithDb('업체 검색', () => {
     expect(member.json().prices.deepDataNote).toBeNull();
   });
 
+  describe('실제 결제 구간', () => {
+    /** 업체에 결제인증 n건을 심는다. 금액은 조금씩 다르게 둔다. */
+    async function seedProofs(vendorId: string, count: number, monthsAgo = 1) {
+      for (let index = 0; index < count; index += 1) {
+        const reporter = await test.pool.query<{ id: string }>(
+          'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
+        );
+
+        await test.pool.query(
+          `INSERT INTO structured.payment_proofs
+             (reporter_user_id, vendor_id, merchant_name, paid_amount, paid_at)
+           VALUES ($1, $2, '가온예식홀', $3, now() - ($4 || ' months')::interval)`,
+          [reporter.rows[0]!.id, vendorId, 2_500_000 + index * 100_000, monthsAgo]
+        );
+      }
+    }
+
+    const prices = async (vendorId: string) =>
+      (await test.app.inject({ method: 'GET', url: `/v1/vendors/${vendorId}` })).json().prices;
+
+    it('2건까지는 구간을 만들지 않는다', async () => {
+      const vendorId = await createVendor({ name: '가온예식홀' });
+      await seedProofs(vendorId, 2);
+
+      const paid = (await prices(vendorId)).paidPrice;
+
+      expect(paid.stage).toBe('collecting');
+      // 몇 건 모였는지는 말한다. 빈 곳인지 모으는 중인지 알려야 한다.
+      expect(paid.caption).toContain('2건');
+      expect(paid.low).toBeUndefined();
+    });
+
+    it('3건부터 구간이 나오되 데이터가 적다고 말한다', async () => {
+      const vendorId = await createVendor({ name: '가온예식홀' });
+      await seedProofs(vendorId, 3);
+
+      const paid = (await prices(vendorId)).paidPrice;
+
+      expect(paid.stage).toBe('early');
+      expect(paid.caption).toContain('아직 데이터가 적어요');
+      expect(paid.low).toBeGreaterThan(0);
+      // 중앙값은 상세 단계의 것이다. 구간이 나온다고 따라 나오지 않는다.
+      expect(paid.median).toBeUndefined();
+    });
+
+    it('10건부터 중앙값이 나온다', async () => {
+      const vendorId = await createVendor({ name: '가온예식홀' });
+      await seedProofs(vendorId, 10);
+
+      const paid = (await prices(vendorId)).paidPrice;
+
+      expect(paid.stage).toBe('detailed');
+      expect(paid.median).toBeGreaterThan(0);
+    });
+
+    it('12개월보다 오래된 결제는 세지 않는다', async () => {
+      /*
+       * 라벨이 사실보다 앞서면 안 된다. 화면이 "최근 12개월"이라고 적는데 3년 전
+       * 결제가 섞여 있으면 그건 안내가 아니라 틀린 말이다.
+       */
+      const vendorId = await createVendor({ name: '가온예식홀' });
+
+      await seedProofs(vendorId, 3, 1);
+      await seedProofs(vendorId, 9, 20);
+
+      const paid = (await prices(vendorId)).paidPrice;
+
+      // 열두 건이 아니라 세 건이다.
+      expect(paid.caption).toContain('3건');
+      expect(paid.stage).toBe('early');
+    });
+
+    it('오래된 결제를 지우지는 않는다', async () => {
+      // C-1: 삭제하지 않고 과거 이력으로 분리한다.
+      const vendorId = await createVendor({ name: '가온예식홀' });
+      await seedProofs(vendorId, 4, 20);
+
+      const stored = await test.pool.query('SELECT 1 FROM structured.payment_proofs');
+
+      expect(stored.rows).toHaveLength(4);
+      expect((await prices(vendorId)).paidPrice.stage).toBe('collecting');
+    });
+  });
+
   it('표기가 달라도 찾는다', async () => {
     const { headers } = await signInAs(test);
     await createVendor({ name: '더 채플 앳 청담' });
