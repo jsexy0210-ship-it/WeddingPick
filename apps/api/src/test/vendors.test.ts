@@ -312,14 +312,123 @@ describeWithDb('업체 검색', () => {
       await createVendor({ name });
     }
 
-    const first = await search(headers, '?limit=2');
+    const first = await search(headers, '?limit=2&sort=name');
     expect(first.vendors.map((v: { name: string }) => v.name)).toEqual(['가홀', '나홀']);
     expect(first.nextCursor).not.toBeNull();
 
-    const second = await search(headers, `?limit=2&cursor=${encodeURIComponent(first.nextCursor)}`);
+    const second = await search(
+      headers,
+      `?limit=2&sort=name&cursor=${encodeURIComponent(first.nextCursor)}`
+    );
     expect(second.vendors.map((v: { name: string }) => v.name)).toEqual(['다홀']);
     // 마지막 쪽에서는 빈 쪽을 한 번 더 부르게 하지 않는다.
     expect(second.nextCursor).toBeNull();
+  });
+
+  describe('정렬', () => {
+    async function seed(vendorId: string, count: number, amount: number) {
+      for (let index = 0; index < count; index += 1) {
+        const reporter = await test.pool.query<{ id: string }>(
+          'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
+        );
+
+        await test.pool.query(
+          `INSERT INTO structured.payment_proofs
+             (reporter_user_id, vendor_id, merchant_name, paid_amount, paid_at)
+           VALUES ($1, $2, '가맹점', $3, now() - interval '1 month')`,
+          [reporter.rows[0]!.id, vendorId, amount + index]
+        );
+      }
+    }
+
+    const names = (body: { vendors: { name: string }[] }) => body.vendors.map((v) => v.name);
+
+    it('기본은 데이터 많은 순이다', async () => {
+      /*
+       * `인기 순`은 만들지 않았다. 인기를 재는 것이 우리에게 없고, 없는 것에
+       * 이름만 붙이면 그건 정렬이 아니라 꾸밈이다.
+       */
+      const { headers } = await signInAs(test);
+      const few = await createVendor({ name: '가홀' });
+      const many = await createVendor({ name: '나홀' });
+
+      await seed(few, 3, 3_000_000);
+      await seed(many, 8, 5_000_000);
+
+      expect(names(await search(headers, ''))).toEqual(['나홀', '가홀']);
+    });
+
+    it('금액 낮은 순·높은 순으로 뒤집힌다', async () => {
+      const { headers } = await signInAs(test);
+      const cheap = await createVendor({ name: '나홀' });
+      const dear = await createVendor({ name: '가홀' });
+
+      await seed(cheap, 5, 2_000_000);
+      await seed(dear, 5, 9_000_000);
+
+      expect(names(await search(headers, '?sort=price_low'))).toEqual(['나홀', '가홀']);
+      expect(names(await search(headers, '?sort=price_high'))).toEqual(['가홀', '나홀']);
+    });
+
+    it('자료 없는 업체가 가장 싼 곳이 되지 않는다', async () => {
+      /*
+       * 금액이 NULL인 업체를 앞에 두면 "가장 싼 곳"이 자료 없는 곳이 된다.
+       */
+      const { headers } = await signInAs(test);
+      const priced = await createVendor({ name: '가홀' });
+      await createVendor({ name: '나홀' });
+
+      await seed(priced, 5, 2_000_000);
+
+      expect(names(await search(headers, '?sort=price_low'))).toEqual(['가홀', '나홀']);
+    });
+
+    it('어느 정렬로든 이어붙일 수 있다', async () => {
+      /*
+       * 정렬값을 커서에 함께 넣지 않으면 둘째 쪽이 첫 쪽과 겹친다.
+       */
+      const { headers } = await signInAs(test);
+
+      for (const [index, name] of ['가홀', '나홀', '다홀'].entries()) {
+        const id = await createVendor({ name });
+        await seed(id, 3 + index, 3_000_000);
+      }
+
+      const first = await search(headers, '?limit=2&sort=data');
+      const second = await search(
+        headers,
+        `?limit=2&sort=data&cursor=${encodeURIComponent(first.nextCursor)}`
+      );
+
+      // 데이터가 많은 순: 다홀(5) → 나홀(4) → 가홀(3)
+      expect(names(first)).toEqual(['다홀', '나홀']);
+      expect(names(second)).toEqual(['가홀']);
+      expect(second.nextCursor).toBeNull();
+    });
+
+    it('조건에 몇 곳이 있는지 함께 준다', async () => {
+      // 핸드오프 7번이 정렬 옆에 개수를 뒀다. 쪽 수가 아니라 전체 수다.
+      const { headers } = await signInAs(test);
+
+      for (const name of ['가홀', '나홀', '다홀']) {
+        await createVendor({ name });
+      }
+
+      expect((await search(headers, '?limit=2')).total).toBe(3);
+    });
+
+    it('목록에도 실제 결제 구간이 실린다', async () => {
+      // 핸드오프 7번의 업체 카드. 상세와 같은 사다리를 쓴다.
+      const { headers } = await signInAs(test);
+      const vendorId = await createVendor({ name: '가홀' });
+
+      await seed(vendorId, 6, 2_500_000);
+
+      const card = (await search(headers, '')).vendors[0];
+
+      expect(card.paidPrice.stage).toBe('general');
+      expect(card.paidPrice.caption).toContain('6건');
+    });
   });
 
   it('망가진 커서는 첫 쪽으로 되돌린다', async () => {

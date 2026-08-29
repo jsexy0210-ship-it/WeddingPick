@@ -35,6 +35,7 @@ import {
 } from './inquiries';
 import { registerDeviceRequestSchema, registerDeviceResponseSchema } from './devices';
 import { myReportListResponseSchema } from './my-reports';
+import { settingsSchema, updateSettingsRequestSchema } from './settings';
 import {
   notificationListResponseSchema,
   notificationSummaryResponseSchema,
@@ -380,6 +381,35 @@ export const ENDPOINTS = {
     path: '/v1/reviews/{reviewId}',
     body: updateReviewRequestSchema,
     response: z.null(),
+  },
+
+  /** 설정. 핸드오프 19번. */
+  getSettings: {
+    method: 'GET',
+    path: '/v1/me/settings',
+    response: settingsSchema,
+  },
+
+  /** 보낸 값만 바꾼다. 하나를 눌렀는데 다른 하나가 되돌아가면 안 된다. */
+  updateSettings: {
+    method: 'PUT',
+    path: '/v1/me/settings',
+    body: updateSettingsRequestSchema,
+    response: settingsSchema,
+  },
+
+  /** 결제인증 동의. 최초 1회만 남는다. */
+  grantPaymentConsent: {
+    method: 'POST',
+    path: '/v1/me/payment-consent',
+    response: settingsSchema,
+  },
+
+  /** 철회. 지우지 않고 철회 시각을 적는다. */
+  revokePaymentConsent: {
+    method: 'DELETE',
+    path: '/v1/me/payment-consent',
+    response: settingsSchema,
   },
 
   /** 알림함. 푸시를 못 받는 기기에서도 결과를 볼 수 있어야 한다. */

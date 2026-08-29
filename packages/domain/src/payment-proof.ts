@@ -80,6 +80,18 @@ export const PAYMENT_PROOF_CONSENT_POINTS = [
   PAYMENT_PROOF_RETENTION_NOTICE,
 ] as const;
 
+/**
+ * 지금 받고 있는 동의문의 판.
+ *
+ * **문구가 바뀌면 이 값도 올린다.** 안내가 바뀌면 이전 동의는 다른 것에 대한
+ * 동의이고, 판을 남기지 않으면 "이 사람이 무엇에 동의했는지"에 답할 수 없다.
+ */
+export const PAYMENT_CONSENT_VERSION = '2026-08-29';
+
+/** 철회하면 하는 말. 이미 낸 자료가 어떻게 되는지 함께 말한다. */
+export const PAYMENT_CONSENT_REVOKED_NOTICE =
+  '동의를 철회했어요. 앞으로는 결제내역을 등록할 수 없고, 이미 등록한 내역은 내 제보 내역에서 지울 수 있어요';
+
 export type PaymentProofDraft = {
   merchantName: string;
   paidAmount: number;

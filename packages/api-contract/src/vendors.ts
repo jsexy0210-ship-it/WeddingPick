@@ -29,12 +29,43 @@ export const vendorSummarySchema = z.object({
    * L2 이상이고 사용자 확인을 마친 문서만 센다.
    */
   comparableQuoteCount: z.int().nonnegative(),
+  /**
+   * 최근 12개월 실제 결제. 목록에서도 보여준다 — 핸드오프 7번의 업체 카드.
+   *
+   * 상세와 같은 사다리를 쓴다. 목록만 기준을 낮추면 목록에서 본 숫자가 상세에서
+   * 사라지는 일이 생긴다.
+   */
+  paidPrice: paidPriceSchema,
 });
+
+/**
+ * 정렬. 핸드오프 7번.
+ *
+ * **`인기 순`은 없다.** 인기를 재는 것이 우리에게 없고, 없는 것을 만들어 이름만
+ * 붙이면 그건 정렬이 아니라 꾸밈이다. 대신 `데이터 많은 순`을 기본으로 둔다 —
+ * 결제인증이 많이 모인 업체가 먼저 나오는 것은 잴 수 있는 사실이다.
+ */
+export const VENDOR_SORTS = ['data', 'price_low', 'price_high', 'name'] as const;
+
+export const vendorSortSchema = z.enum(VENDOR_SORTS);
+
+export const VENDOR_SORT_LABEL: Record<(typeof VENDOR_SORTS)[number], string> = {
+  data: '데이터 많은 순',
+  price_low: '금액 낮은 순',
+  price_high: '금액 높은 순',
+  name: '이름 순',
+};
 
 export const vendorSearchResponseSchema = z.object({
   vendors: z.array(vendorSummarySchema),
   /** 다음 쪽. 없으면 null. */
   nextCursor: z.string().nullable(),
+  /**
+   * 이 조건에 몇 곳이 있는지. 핸드오프 7번이 정렬 옆에 개수를 뒀다.
+   *
+   * 쪽 수가 아니라 전체 수다 — "웨딩홀 128곳"이라고 말할 수 있어야 한다.
+   */
+  total: z.int().nonnegative(),
 });
 
 /** 지역 필터에 쓸 시도 목록. 자료에 실제로 있는 것만 내려간다. */
@@ -105,6 +136,7 @@ export const vendorComparisonResponseSchema = z.object({
   caveats: z.array(z.string().min(1)).min(1),
 });
 
+export type VendorSort = z.infer<typeof vendorSortSchema>;
 export type VendorSummary = z.infer<typeof vendorSummarySchema>;
 export type VendorComparisonResponse = z.infer<typeof vendorComparisonResponseSchema>;
 export type VendorSearchResponse = z.infer<typeof vendorSearchResponseSchema>;

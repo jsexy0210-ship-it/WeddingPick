@@ -156,6 +156,22 @@ export function registerPaymentProofRoutes(app: FastifyInstance, context: AppCon
       throw new ApiError('invalid_request', check.reason);
     }
 
+    /*
+     * 동의 없이는 받지 않는다. 핸드오프 10번 · 19번.
+     *
+     * **관문은 뷰 하나다**(`active_payment_consents`). 화면이 동의 화면을
+     * 지나게 하는 것으로 충분하다고 두면, 철회한 사람이 옛 화면을 열어둔 채
+     * 등록하는 길이 남는다.
+     */
+    const consent = await context.pool.query(
+      'SELECT 1 FROM structured.active_payment_consents WHERE user_id = $1',
+      [userId]
+    );
+
+    if (consent.rows.length === 0) {
+      throw new ApiError('forbidden', '결제내역 등록에 먼저 동의해주세요.');
+    }
+
     if (body.vendorId) {
       const found = await context.pool.query('SELECT 1 FROM structured.vendors WHERE id = $1', [
         body.vendorId,

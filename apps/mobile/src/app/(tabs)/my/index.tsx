@@ -319,6 +319,11 @@ export default function MyScreen() {
               label="이용약관 · 개인정보 처리방침"
               onPress={() => router.push('/my/policies')}
             />
+            <ActionButton
+              label="설정"
+              hint="알림, 예식일, 결제인증 동의"
+              onPress={() => router.push('/my/settings')}
+            />
           </ThemedView>
         </ScrollView>
       </SafeAreaView>

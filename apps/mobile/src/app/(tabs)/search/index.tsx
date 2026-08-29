@@ -1,8 +1,15 @@
-import type { PlannerSummary, VendorSummary } from '@weddingpick/api-contract';
+import {
+  VENDOR_SORTS,
+  VENDOR_SORT_LABEL,
+  type PlannerSummary,
+  type VendorSort,
+  type VendorSummary,
+} from '@weddingpick/api-contract';
 import {
   MAX_COMPARED_VENDORS,
   VENDOR_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
+  rangeLabel,
   type VendorCategory,
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
@@ -17,7 +24,16 @@ import {
   searchVendors,
 } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
-import { ActionButton, FilterChip, MaxContentWidth, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
+import {
+  ActionButton,
+  FilterChip,
+  MaxContentWidth,
+  Spacing,
+  ThemedText,
+  ThemedView,
+  Toast,
+  useTheme,
+} from '@weddingpick/ui';
 
 /** 검색은 자주 쓰는 분류부터 보여준다. 사업계획서 6번의 확장 순서와 같다. */
 const CATEGORY_ORDER: VendorCategory[] = [...VENDOR_CATEGORIES];
@@ -32,6 +48,7 @@ type Filters = {
   q: string;
   category: VendorCategory | null;
   region: string | null;
+  sort: VendorSort;
 };
 
 /** 플래너는 업체 부속정보가 아니라 독립 비교대상이다. 사업계획서 11번. */
@@ -44,6 +61,7 @@ export default function SearchScreen() {
     q: '',
     category: null,
     region: null,
+    sort: 'data',
   });
   // 서버 주소가 없으면 부를 곳도 없다. 처음부터 빈 목록으로 시작한다.
   const [vendors, setVendors] = useState<VendorSummary[] | null>(isServerConfigured ? null : []);
@@ -55,8 +73,14 @@ export default function SearchScreen() {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** 이 조건에 몇 곳이 있는지. 핸드오프 7번이 정렬 옆에 개수를 뒀다. */
+  const [total, setTotal] = useState(0);
   /** 견줄 업체. 고른 순서를 지킨다 — 화면에 그 순서로 나온다. */
   const [picked, setPicked] = useState<string[]>([]);
+  /** 담긴 업체들의 업종. 섞이는 것을 막는 데 쓴다. */
+  const [pickedCategory, setPickedCategory] = useState<VendorCategory | null>(null);
+  /** 눌렀는데 아무 일도 없으면 고장난 줄 안다. 막은 이유를 말한다. */
+  const [toast, setToast] = useState<string | null>(null);
 
   /** 늦게 도착한 옛 요청이 새 결과를 덮어쓰지 않게 한다. */
   const requestId = useRef(0);
@@ -93,12 +117,15 @@ export default function SearchScreen() {
 
       const search =
         filters.mode === 'vendor'
-          ? searchVendors({ ...shared, category: filters.category ?? undefined }).then(
-              (response) => {
-                setVendors(response.vendors);
-                return response.nextCursor;
-              }
-            )
+          ? searchVendors({
+              ...shared,
+              category: filters.category ?? undefined,
+              sort: filters.sort,
+            }).then((response) => {
+              setVendors(response.vendors);
+              setTotal(response.total);
+              return response.nextCursor;
+            })
           : searchPlanners(shared).then((response) => {
               setPlanners(response.planners);
               setWithdrawalNotice(response.withdrawalNotice);
@@ -139,6 +166,7 @@ export default function SearchScreen() {
         const response = await searchVendors({
           ...shared,
           category: filters.category ?? undefined,
+          sort: filters.sort,
         });
 
         setVendors((current) => [...(current ?? []), ...response.vendors]);
@@ -172,15 +200,37 @@ export default function SearchScreen() {
     setFilters((current) => ({ ...current, mode, category: null, region: null }));
   }
 
-  function togglePicked(vendorId: string) {
-    setPicked((current) => {
-      if (current.includes(vendorId)) {
-        return current.filter((id) => id !== vendorId);
-      }
+  /**
+   * 비교함에 담기.
+   *
+   * **업종이 섞이면 담지 않는다**(핸드오프 7번). 웨딩홀과 스튜디오를 나란히 놓은
+   * 표는 아무것도 말해주지 않는다 — 비교할 항목 자체가 다르다.
+   */
+  function togglePicked(vendor: VendorSummary) {
+    if (picked.includes(vendor.id)) {
+      const left = picked.filter((id) => id !== vendor.id);
 
-      // 가득 찼으면 조용히 무시하지 않는다 — 아래 안내가 왜 안 담기는지 말해준다.
-      return current.length >= MAX_COMPARED_VENDORS ? current : [...current, vendorId];
-    });
+      setPicked(left);
+      // 다 빼면 업종 잠금도 푼다. 안 그러면 다음에 다른 업종을 못 담는다.
+      if (left.length === 0) setPickedCategory(null);
+
+      return;
+    }
+
+    if (pickedCategory !== null && pickedCategory !== vendor.category) {
+      setToast(`${VENDOR_CATEGORY_LABEL[pickedCategory]}끼리만 비교할 수 있어요`);
+
+      return;
+    }
+
+    if (picked.length >= MAX_COMPARED_VENDORS) {
+      setToast(`한 번에 ${MAX_COMPARED_VENDORS}곳까지 담을 수 있어요`);
+
+      return;
+    }
+
+    setPicked([...picked, vendor.id]);
+    setPickedCategory(vendor.category);
   }
 
   return (
@@ -237,6 +287,38 @@ export default function SearchScreen() {
               ))}
             </ThemedView>
           ) : null}
+
+          {/*
+            정렬과 개수. 핸드오프 7번이 이 둘을 한 줄에 뒀다.
+
+            **`인기 순`은 없다.** 인기를 재는 것이 우리에게 없고, 없는 것에 이름만
+            붙이면 그건 정렬이 아니라 꾸밈이다. 대신 `데이터 많은 순`을 기본으로
+            둔다 — 결제인증이 많이 모인 업체가 먼저 나오는 것은 잴 수 있는 사실이다.
+          */}
+          {filters.mode === 'vendor' ? (
+            <ThemedView style={styles.sortRow}>
+              {/*
+                개수를 정렬 칩과 한 줄에 두면 390px에서 잘린다. 그려보고 알았다 —
+                핸드오프는 드롭다운을 그렸고, 칩 셋은 그 자리에 들어가지 않는다.
+              */}
+              <ThemedText type="t7" themeColor="textSecondary">
+                {filters.category ? `${VENDOR_CATEGORY_LABEL[filters.category]} ` : ''}
+                {total}곳
+              </ThemedText>
+
+              <ThemedView style={styles.chips}>
+                {VENDOR_SORTS.filter((sort) => sort !== 'name').map((sort) => (
+                  <FilterChip
+                    key={sort}
+                    role="radio"
+                    label={VENDOR_SORT_LABEL[sort]}
+                    selected={filters.sort === sort}
+                    onPress={() => setFilters((current) => ({ ...current, sort }))}
+                  />
+                ))}
+              </ThemedView>
+            </ThemedView>
+          ) : null}
         </ThemedView>
 
         {filters.mode === 'vendor' ? (
@@ -278,13 +360,24 @@ export default function SearchScreen() {
                           {VENDOR_CATEGORY_LABEL[item.category]} · {item.region}
                         </ThemedText>
                         {/*
-                         * 0건도 숨기지 않는다. "아직 자료가 없다"도 사용자가 알아야 할 사실이고,
-                         * 숨기면 자료가 없는 업체와 싼 업체가 같은 얼굴이 된다.
+                         * 실제 결제 구간. 상세와 같은 사다리를 쓴다 — 목록만
+                         * 기준을 낮추면 목록에서 본 숫자가 상세에서 사라진다.
+                         *
+                         * 수집 중인 업체도 숨기지 않는다. "아직 자료가 없다"도
+                         * 사용자가 알아야 할 사실이고, 숨기면 자료가 없는 업체와
+                         * 싼 업체가 같은 얼굴이 된다.
                          */}
-                        <ThemedText type="small" themeColor="textSecondary">
-                          {item.comparableQuoteCount === 0
-                            ? '확인된 계약 자료가 아직 없습니다'
-                            : `확인된 계약 ${item.comparableQuoteCount}건`}
+                        {item.paidPrice.stage === 'collecting' ? (
+                          <ThemedText type="t6" themeColor="textAssistive">
+                            데이터를 모으는 중이에요
+                          </ThemedText>
+                        ) : (
+                          <ThemedText type="t5" numeric>
+                            {rangeLabel(item.paidPrice.low, item.paidPrice.high)}
+                          </ThemedText>
+                        )}
+                        <ThemedText type="t7" themeColor="textSecondary">
+                          {item.paidPrice.caption}
                         </ThemedText>
                       </ThemedView>
                     </Pressable>
@@ -293,7 +386,7 @@ export default function SearchScreen() {
                       <FilterChip
                         label={chosen ? '비교에서 빼기' : '비교에 담기'}
                         selected={chosen}
-                        onPress={() => togglePicked(item.id)}
+                        onPress={() => togglePicked(item)}
                       />
                     </ThemedView>
                   </ThemedView>
@@ -363,33 +456,40 @@ export default function SearchScreen() {
           />
         )}
 
-        <ThemedView style={styles.footer}>
-          {/* 비교는 업체끼리만 한다. 플래너 비교는 아직 없다. */}
-          {filters.mode === 'vendor' && picked.length > 0 ? (
-            <>
-              <ActionButton
-                variant="primary"
-                label={`${picked.length}곳 비교하기`}
-                hint={
-                  picked.length < 2
-                    ? '한 곳 더 담아주세요'
-                    : picked.length >= MAX_COMPARED_VENDORS
-                      ? `한 번에 ${MAX_COMPARED_VENDORS}곳까지 견줄 수 있습니다`
-                      : `${MAX_COMPARED_VENDORS - picked.length}곳 더 담을 수 있습니다`
-                }
-                disabled={picked.length < 2}
-                onPress={() => router.push(`/search/compare?ids=${picked.join(',')}`)}
-              />
-              <ActionButton label="비교 목록 비우기" onPress={() => setPicked([])} />
-            </>
-          ) : (
+        {/*
+          하단 트레이. 핸드오프 7번 — 문구는 왼쪽, 단추는 오른쪽에 고정.
+
+          두 곳 미만이면 왜 못 누르는지 왼쪽이 말한다. 비활성 단추만 두고 이유를
+          말하지 않으면 사용자는 자기가 뭘 잘못했는지 모른다.
+        */}
+        {filters.mode === 'vendor' ? (
+          <ThemedView style={[styles.tray, { borderTopColor: theme.line }]}>
+            <ThemedText type="t7" themeColor="textSecondary" style={styles.trayNote}>
+              {picked.length === 0
+                ? '같은 업종끼리만 비교할 수 있어요'
+                : picked.length < 2
+                  ? '한 곳 더 담아주세요'
+                  : `${picked.length}곳 담음 · ${MAX_COMPARED_VENDORS}곳까지`}
+            </ThemedText>
+
+            <ActionButton
+              variant="primary"
+              label="비교함"
+              disabled={picked.length < 2}
+              onPress={() => router.push(`/search/compare?ids=${picked.join(',')}`)}
+            />
+          </ThemedView>
+        ) : (
+          <ThemedView style={styles.footer}>
             <ActionButton
               label="견적서 촬영하기"
               hint={`찾는 ${MODE_LABEL[filters.mode]}가 없어도 견적서를 올리면 정리해드립니다`}
               onPress={() => router.push('/capture')}
             />
-          )}
-        </ThemedView>
+          </ThemedView>
+        )}
+
+        <Toast message={toast} onHidden={() => setToast(null)} />
       </SafeAreaView>
     </ThemedView>
   );
@@ -416,6 +516,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     fontSize: 16,
+  },
+  sortRow: {
+    gap: Spacing.two,
+  },
+  /** 핸드오프 7번: 높이 70, 문구 좌측 · 단추 우측. */
+  tray: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.three,
+    height: 70,
+    borderTopWidth: 1,
+  },
+  trayNote: {
+    flex: 1,
   },
   chips: {
     flexDirection: 'row',

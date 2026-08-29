@@ -178,6 +178,27 @@ export async function unlockPrices(test: TestApp, userId: string): Promise<void>
   );
 }
 
+/**
+ * 결제인증에 동의한다.
+ *
+ * 등록 경로가 동의를 요구하므로(핸드오프 10·19번), 결제내역을 넣는 테스트는
+ * 이걸 먼저 불러야 실제와 같아진다 — 실전에서도 동의한 사람만 등록한다.
+ */
+export async function consentToPaymentProofs(
+  test: TestApp,
+  headers: Record<string, string>
+): Promise<void> {
+  const response = await test.app.inject({
+    method: 'POST',
+    url: '/v1/me/payment-consent',
+    headers,
+  });
+
+  if (response.statusCode !== 200) {
+    throw new Error(`동의를 남기지 못했다: ${response.statusCode}`);
+  }
+}
+
 /** 로그인하고 실제가격 열람 자격까지 얻는다. 가격을 보는 테스트가 쓴다. */
 export async function signInUnlocked(test: TestApp, subject?: string) {
   const session = await signInAs(test, subject);

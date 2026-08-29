@@ -11,6 +11,7 @@ export * from './inquiries';
 export * from './my-reports';
 export * from './notifications';
 export * from './rebuttals';
+export * from './settings';
 export * from './planners';
 export * from './payment-proofs';
 export * from './price-reports';

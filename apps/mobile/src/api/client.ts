@@ -16,6 +16,7 @@ import {
   createInquiryResponseSchema,
   inquiryListResponseSchema,
   registerDeviceResponseSchema,
+  settingsSchema,
   myReportListResponseSchema,
   notificationListResponseSchema,
   notificationSummaryResponseSchema,
@@ -46,6 +47,9 @@ import {
   type NotificationSummaryResponse,
   type RebuttalListResponse,
   type UpdateReviewRequest,
+  type Settings,
+  type UpdateSettingsRequest,
+  type VendorSort,
   type UpdateRebuttalRequest,
   type CreateExpenseRequest,
   type CreateVisitNoteRequest,
@@ -291,6 +295,7 @@ export async function searchVendors(input: {
   category?: VendorCategory;
   region?: string;
   cursor?: string;
+  sort?: VendorSort;
 }): Promise<VendorSearchResponse> {
   const query = new URLSearchParams();
 
@@ -705,4 +710,30 @@ export async function updateRebuttal(
 
 export async function removeRebuttal(rebuttalId: string): Promise<void> {
   await request(`/v1/rebuttals/${rebuttalId}`, z.null(), { method: 'DELETE' });
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * 설정 (디자인 핸드오프 19번)
+ * ---------------------------------------------------------------------------
+ */
+
+export async function getSettings(): Promise<Settings> {
+  return request('/v1/me/settings', settingsSchema);
+}
+
+export async function updateSettings(body: UpdateSettingsRequest): Promise<Settings> {
+  return request('/v1/me/settings', settingsSchema, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
+}
+
+/** 결제인증 동의. 최초 1회만 — 두 번 눌러도 한 번만 남는다. */
+export async function grantPaymentConsent(): Promise<Settings> {
+  return request('/v1/me/payment-consent', settingsSchema, { method: 'POST' });
+}
+
+export async function revokePaymentConsent(): Promise<Settings> {
+  return request('/v1/me/payment-consent', settingsSchema, { method: 'DELETE' });
 }

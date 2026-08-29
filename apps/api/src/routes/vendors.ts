@@ -11,6 +11,7 @@ import {
   type PriceSample,
   type VendorCategory,
 } from '@weddingpick/domain';
+import { vendorSortSchema } from '@weddingpick/api-contract';
 import type { FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
 import { z } from 'zod';
@@ -29,6 +30,8 @@ const searchQuerySchema = z.object({
   /** "서울"처럼 시도까지만. region은 "서울 마포구" 형태라 앞부분으로 맞춘다. */
   region: z.string().trim().max(20).optional(),
   cursor: z.string().max(200).optional(),
+  /** 기본은 데이터 많은 순. `인기 순`은 잴 것이 없어 만들지 않았다. */
+  sort: vendorSortSchema.default('data'),
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 
@@ -45,24 +48,34 @@ type VendorRow = {
   source: string;
   last_verified_at: Date;
   comparable_quote_count: string;
+  /** 검색 목록에서만 채워진다. 상세는 따로 읽는다. */
+  proof_count?: string;
+  total?: string;
+  paid_amounts?: string[];
+  sort_key?: string | null;
 };
 
-/** 다음 쪽을 가리키는 키. 이름이 같은 업체가 있어 id를 함께 넣는다. */
+/**
+ * 다음 쪽을 가리키는 키. `[정렬값, 이름, id]`.
+ *
+ * 이름이 같은 업체가 있어 id를 함께 넣고, 정렬값을 함께 넣는 것은 **이름 아닌
+ * 순서로도 이어붙일 수 있게** 하기 위해서다. 정렬값 없이 이름만 들고 가면
+ * "데이터 많은 순"의 둘째 쪽이 첫 쪽과 겹친다.
+ */
+type Cursor = [string, string, string];
+
 function encodeCursor(row: VendorRow): string {
-  return Buffer.from(JSON.stringify([row.name, row.id]), 'utf8').toString('base64url');
+  return Buffer.from(JSON.stringify([row.sort_key ?? '', row.name, row.id]), 'utf8').toString(
+    'base64url'
+  );
 }
 
-function decodeCursor(cursor: string): [string, string] | null {
+function decodeCursor(cursor: string): Cursor | null {
   try {
     const parsed: unknown = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8'));
 
-    if (
-      Array.isArray(parsed) &&
-      parsed.length === 2 &&
-      typeof parsed[0] === 'string' &&
-      typeof parsed[1] === 'string'
-    ) {
-      return [parsed[0], parsed[1]];
+    if (Array.isArray(parsed) && parsed.length === 3 && parsed.every((v) => typeof v === 'string')) {
+      return parsed as Cursor;
     }
   } catch {
     // 망가진 커서는 첫 쪽으로 되돌린다. 오류를 띄우느니 처음부터 보여주는 편이 낫다.
@@ -70,6 +83,25 @@ function decodeCursor(cursor: string): [string, string] | null {
 
   return null;
 }
+
+/**
+ * 정렬마다 무엇으로 줄을 세우는가.
+ *
+ * `key`는 **절대 NULL이 되지 않는다.** 자료가 없는 업체를 coalesce로 양 끝에
+ * 보내는데, NULL을 남겨두면 커서 비교가 NULL과 견주게 되어 그 자리에서 목록이
+ * 끊긴다. 어느 쪽 끝으로 보낼지는 정렬마다 다르다 — 금액 낮은 순에서 자료 없는
+ * 업체가 맨 앞에 오면 "가장 싼 곳"이 자료 없는 곳이 된다.
+ */
+const SORTS = {
+  name: { key: null, direction: 'ASC' as const },
+  data: { key: 'coalesce(w.proof_count, 0)', direction: 'DESC' as const },
+  price_low: {
+    // 자료 없는 업체를 맨 뒤로. bigint의 최댓값이면 어떤 금액보다 크다.
+    key: 'coalesce(w.median_amount, 9223372036854775807)',
+    direction: 'ASC' as const,
+  },
+  price_high: { key: 'coalesce(w.median_amount, 0)', direction: 'DESC' as const },
+};
 
 function toSummary(row: VendorRow) {
   return {
@@ -346,7 +378,6 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
    */
   app.get('/v1/vendors', auth, async (request) => {
     const query = searchQuerySchema.parse(request.query);
-    const after = query.cursor ? decodeCursor(query.cursor) : null;
 
     /*
      * 정규화는 DB의 normalize_vendor_name을 그대로 쓴다. 서버가 따로 흉내내면 색인에
@@ -355,32 +386,74 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
      * 확인된 계약 수는 comparable_quotes 뷰에서 센다 — 등급·확인 조건이 뷰 안에 있어
      * 여기서 다시 쓰지 않는다.
      */
+    const sort = SORTS[query.sort];
+
+    /*
+     * 이어붙이기 조건.
+     *
+     * 정렬값이 같은 업체가 여럿이라 `(값, 이름, id)`를 한 줄로 견주지 못한다 —
+     * 첫 칸은 내림차순인데 나머지는 오름차순인 경우가 있어서다. 그래서 "값이
+     * 지났거나, 값이 같고 이름·id가 지났거나"로 나눠 적는다.
+     */
+    const after = query.cursor ? decodeCursor(query.cursor) : null;
+    const beyond = sort.direction === 'DESC' ? '<' : '>';
+
+    const where = sort.key
+      ? `($4::text IS NULL OR ${sort.key} ${beyond} $4::bigint
+           OR (${sort.key} = $4::bigint AND (v.name, v.id) > ($5, $6::uuid)))`
+      : `($4::text IS NULL OR (v.name, v.id) > ($5, $6::uuid))`;
+
+    const orderBy = sort.key
+      ? `${sort.key} ${sort.direction}, v.name, v.id`
+      : 'v.name, v.id';
+
     const { rows } = await context.pool.query<VendorRow>(
       `WITH needle AS (
          SELECT CASE WHEN $1::text IS NULL THEN NULL
                      ELSE structured.normalize_vendor_name($1) END AS value
+       ),
+       found AS (
+         SELECT v.id, v.name, v.category, v.region, v.source, v.last_verified_at
+         FROM structured.vendors v, needle n
+         WHERE (n.value IS NULL
+                OR v.normalized_name LIKE '%' || n.value || '%'
+                OR EXISTS (SELECT 1 FROM structured.vendor_aliases a
+                           WHERE a.vendor_id = v.id
+                             AND a.normalized_alias LIKE '%' || n.value || '%'))
+           AND ($2::vendor_category IS NULL OR v.category = $2)
+           AND ($3::text IS NULL OR v.region LIKE $3 || '%')
        )
        SELECT v.id, v.name, v.category, v.region, v.source, v.last_verified_at,
               (SELECT count(*) FROM structured.comparable_quotes c WHERE c.vendor_id = v.id)
-                AS comparable_quote_count
-       FROM structured.vendors v, needle n
-       WHERE (n.value IS NULL
-              OR v.normalized_name LIKE '%' || n.value || '%'
-              OR EXISTS (SELECT 1 FROM structured.vendor_aliases a
-                         WHERE a.vendor_id = v.id
-                           AND a.normalized_alias LIKE '%' || n.value || '%'))
-         AND ($2::vendor_category IS NULL OR v.category = $2)
-         AND ($3::text IS NULL OR v.region LIKE $3 || '%')
-         AND ($4::text IS NULL OR (v.name, v.id) > ($4, $5::uuid))
-       ORDER BY v.name, v.id
-       LIMIT $6`,
+                AS comparable_quote_count,
+              coalesce(w.proof_count, 0) AS proof_count,
+              (SELECT count(*) FROM found) AS total,
+              ${sort.key ? `(${sort.key})::text` : 'NULL::text'} AS sort_key,
+              /*
+               * 목록에 실을 금액들. 구간은 도메인이 만든다 — 몇 건부터 무엇을
+               * 보여줄지를 SQL이 다시 정하면 상세와 어긋난다.
+               */
+              coalesce(
+                (SELECT array_agg(p.paid_amount)
+                 FROM structured.usable_payment_proofs p
+                 WHERE p.vendor_id = v.id
+                   AND p.paid_at >= now() - ($8 || ' months')::interval),
+                ARRAY[]::bigint[]
+              ) AS paid_amounts
+       FROM found v
+       LEFT JOIN structured.vendor_paid_window w ON w.vendor_id = v.id
+       WHERE ${where}
+       ORDER BY ${orderBy}
+       LIMIT $7`,
       [
         query.q && query.q.length > 0 ? query.q : null,
         query.category ?? null,
         query.region && query.region.length > 0 ? query.region : null,
         after?.[0] ?? null,
         after?.[1] ?? null,
+        after?.[2] ?? null,
         query.limit + 1,
+        DEFAULT_PERIOD_MONTHS,
       ]
     );
 
@@ -389,8 +462,15 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
     const page = hasMore ? rows.slice(0, query.limit) : rows;
 
     return {
-      vendors: page.map(toSummary),
+      vendors: page.map((row) => ({
+        ...toSummary(row),
+        paidPrice: discloseAmounts({
+          amounts: (row.paid_amounts ?? []).map(Number),
+          period: DEFAULT_PERIOD_LABEL,
+        }),
+      })),
       nextCursor: hasMore && page.length > 0 ? encodeCursor(page[page.length - 1]!) : null,
+      total: Number(page[0]?.total ?? 0),
     };
   });
 
