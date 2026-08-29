@@ -6,6 +6,7 @@ import type { AppContext } from './context';
 import { ApiError } from './errors';
 import { registerAnalysisRoutes } from './routes/analyses';
 import { registerCandidateRoutes } from './routes/candidates';
+import { registerWeddingPlanRoutes } from './routes/wedding-plan';
 import { registerAuthRoutes } from './routes/auth';
 import { registerDevStorageRoutes } from './routes/dev-storage';
 import { registerDeviceRoutes } from './routes/devices';
@@ -84,6 +85,7 @@ export function buildServer(context: AppContext): FastifyInstance {
   registerVerificationRoutes(app, context);
   registerVendorRoutes(app, context);
   registerCandidateRoutes(app, context);
+  registerWeddingPlanRoutes(app, context);
   registerPlannerRoutes(app, context);
   registerInquiryRoutes(app, context);
   registerDeviceRoutes(app, context);

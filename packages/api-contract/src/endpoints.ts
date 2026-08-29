@@ -5,7 +5,17 @@ import {
   candidateListResponseSchema,
   createCandidateRequestSchema,
 } from './candidates';
-import { idSchema } from './common';
+import {
+  createExpenseRequestSchema,
+  createVisitNoteRequestSchema,
+  createWeddingTaskRequestSchema,
+  expenseSummaryResponseSchema,
+  setBudgetRequestSchema,
+  updateWeddingTaskRequestSchema,
+  visitNoteListResponseSchema,
+  weddingTaskListResponseSchema,
+} from './wedding-plan';
+import { amountSchema, idSchema } from './common';
 import {
   authProvidersResponseSchema,
   createSessionRequestSchema,
@@ -68,7 +78,7 @@ import {
   weddingInviteListResponseSchema,
 } from './weddings';
 
-export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE';
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 export type EndpointDefinition = {
   method: HttpMethod;
@@ -228,6 +238,92 @@ export const ENDPOINTS = {
     method: 'GET',
     path: '/v1/vendors/{vendorId}',
     response: vendorDetailSchema,
+  },
+
+  /**
+   * 우리웨딩 — 웨딩 스케줄. 핸드오프 15번.
+   *
+   * 처음 부르면 서버가 기본 열넷을 깔아준다. 처음 결혼을 준비하는 사람은 무엇을
+   * 해야 하는지부터 모른다.
+   */
+  listWeddingTasks: {
+    method: 'GET',
+    path: '/v1/weddings/{weddingId}/tasks',
+    response: weddingTaskListResponseSchema,
+  },
+
+  addWeddingTask: {
+    method: 'POST',
+    path: '/v1/weddings/{weddingId}/tasks',
+    body: createWeddingTaskRequestSchema,
+    response: z.object({ taskId: idSchema }),
+  },
+
+  /** 보낸 칸만 고친다. `state: null`은 자동 판정으로 되돌린다는 뜻이다. */
+  updateWeddingTask: {
+    method: 'PATCH',
+    path: '/v1/weddings/{weddingId}/tasks/{taskId}',
+    body: updateWeddingTaskRequestSchema,
+    response: z.object({ ok: z.boolean() }),
+  },
+
+  removeWeddingTask: {
+    method: 'DELETE',
+    path: '/v1/weddings/{weddingId}/tasks/{taskId}',
+    response: z.null(),
+  },
+
+  /**
+   * 우리웨딩 — 지출내역. 핸드오프 14번.
+   *
+   * `paidTotal`과 `scheduledTotal`이 다른 필드다. 합쳐 보내면 화면이 더할 여지가
+   * 남고, 더하면 "지금까지 결제한 금액"이 거짓말이 된다.
+   */
+  getExpenses: {
+    method: 'GET',
+    path: '/v1/weddings/{weddingId}/expenses',
+    response: expenseSummaryResponseSchema,
+  },
+
+  addExpense: {
+    method: 'POST',
+    path: '/v1/weddings/{weddingId}/expenses',
+    body: createExpenseRequestSchema,
+    response: z.object({ expenseId: idSchema }),
+  },
+
+  /** 직접 입력한 항목만 지워진다. 결제인증에서 온 줄은 404다 — 그건 제보다. */
+  removeExpense: {
+    method: 'DELETE',
+    path: '/v1/weddings/{weddingId}/expenses/{expenseId}',
+    response: z.null(),
+  },
+
+  setBudget: {
+    method: 'PUT',
+    path: '/v1/weddings/{weddingId}/budget',
+    body: setBudgetRequestSchema,
+    response: z.object({ budget: amountSchema.nullable() }),
+  },
+
+  /** 우리웨딩 — 방문노트. 제안금액은 가격 통계 어디에도 들어가지 않는다. */
+  listVisitNotes: {
+    method: 'GET',
+    path: '/v1/weddings/{weddingId}/visit-notes',
+    response: visitNoteListResponseSchema,
+  },
+
+  addVisitNote: {
+    method: 'POST',
+    path: '/v1/weddings/{weddingId}/visit-notes',
+    body: createVisitNoteRequestSchema,
+    response: z.object({ noteId: idSchema }),
+  },
+
+  removeVisitNote: {
+    method: 'DELETE',
+    path: '/v1/weddings/{weddingId}/visit-notes/{noteId}',
+    response: z.null(),
   },
 
   /**

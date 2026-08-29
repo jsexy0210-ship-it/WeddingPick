@@ -1,6 +1,9 @@
 import {
   analysisSchema,
   candidateListResponseSchema,
+  expenseSummaryResponseSchema,
+  visitNoteListResponseSchema,
+  weddingTaskListResponseSchema,
   authProvidersResponseSchema,
   comparisonResponseSchema,
   completeUploadResponseSchema,
@@ -33,6 +36,12 @@ import {
   verificationRequestSchema,
   weddingDetailSchema,
   type CandidateListResponse,
+  type CreateExpenseRequest,
+  type CreateVisitNoteRequest,
+  type ExpenseSummaryResponse,
+  type UpdateWeddingTaskRequest,
+  type VisitNoteListResponse,
+  type WeddingTaskListResponse,
   type Analysis,
   type ComparisonResponse,
   type AuthProvidersResponse,
@@ -299,6 +308,85 @@ export async function compareVendors(ids: string[]): Promise<VendorComparisonRes
     `/v1/vendors/compare?ids=${ids.map(encodeURIComponent).join(',')}`,
     vendorComparisonResponseSchema
   );
+}
+
+/* -------------------------------------------------------------------------- */
+/* 우리웨딩 — 웨딩 스케줄 · 지출내역 · 방문노트                                */
+/* -------------------------------------------------------------------------- */
+
+/** 처음 부르면 서버가 기본 열넷을 깔아준다. */
+export async function listWeddingTasks(weddingId: string): Promise<WeddingTaskListResponse> {
+  return request(`/v1/weddings/${weddingId}/tasks`, weddingTaskListResponseSchema);
+}
+
+export async function addWeddingTask(
+  weddingId: string,
+  body: { label: string; dueDate?: string; vendorLabel?: string }
+): Promise<{ taskId: string }> {
+  return request(`/v1/weddings/${weddingId}/tasks`, z.object({ taskId: z.string() }), {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+/** 보낸 칸만 고친다. `state: null`은 자동 판정으로 되돌린다는 뜻이다. */
+export async function updateWeddingTask(
+  weddingId: string,
+  taskId: string,
+  body: UpdateWeddingTaskRequest
+): Promise<void> {
+  await request(`/v1/weddings/${weddingId}/tasks/${taskId}`, z.object({ ok: z.boolean() }), {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function removeWeddingTask(weddingId: string, taskId: string): Promise<void> {
+  await request(`/v1/weddings/${weddingId}/tasks/${taskId}`, z.null(), { method: 'DELETE' });
+}
+
+export async function getExpenses(weddingId: string): Promise<ExpenseSummaryResponse> {
+  return request(`/v1/weddings/${weddingId}/expenses`, expenseSummaryResponseSchema);
+}
+
+export async function addExpense(
+  weddingId: string,
+  body: CreateExpenseRequest
+): Promise<{ expenseId: string }> {
+  return request(`/v1/weddings/${weddingId}/expenses`, z.object({ expenseId: z.string() }), {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+/** 직접 입력한 항목만 지워진다. 결제인증에서 온 줄은 404다. */
+export async function removeExpense(weddingId: string, expenseId: string): Promise<void> {
+  await request(`/v1/weddings/${weddingId}/expenses/${expenseId}`, z.null(), { method: 'DELETE' });
+}
+
+export async function setBudget(weddingId: string, budget: number | null): Promise<void> {
+  await request(`/v1/weddings/${weddingId}/budget`, z.object({ budget: z.number().nullable() }), {
+    method: 'PUT',
+    body: JSON.stringify({ budget }),
+  });
+}
+
+export async function listVisitNotes(weddingId: string): Promise<VisitNoteListResponse> {
+  return request(`/v1/weddings/${weddingId}/visit-notes`, visitNoteListResponseSchema);
+}
+
+export async function addVisitNote(
+  weddingId: string,
+  body: CreateVisitNoteRequest
+): Promise<{ noteId: string }> {
+  return request(`/v1/weddings/${weddingId}/visit-notes`, z.object({ noteId: z.string() }), {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function removeVisitNote(weddingId: string, noteId: string): Promise<void> {
+  await request(`/v1/weddings/${weddingId}/visit-notes/${noteId}`, z.null(), { method: 'DELETE' });
 }
 
 /**

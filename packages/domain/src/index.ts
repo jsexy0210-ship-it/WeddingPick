@@ -22,6 +22,8 @@ export * from './product';
 export * from './price-report';
 export * from './pricing';
 export * from './vendor';
+export * from './wedding-plan';
 export * from './vendor-comparison';
 export * from './verification';
 export * from './wedding';
+export * from './expense';

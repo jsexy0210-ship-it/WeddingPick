@@ -15,4 +15,5 @@ export * from './quotes';
 export * from './reviews';
 export * from './vendors';
 export * from './verification';
+export * from './wedding-plan';
 export * from './weddings';

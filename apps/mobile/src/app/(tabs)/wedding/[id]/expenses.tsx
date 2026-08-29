@@ -1,0 +1,299 @@
+import type { ExpenseSummaryResponse } from '@weddingpick/api-contract';
+import { EXPENSE_BUCKET_COLOR, type ExpenseBucket } from '@weddingpick/domain';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Modal, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { getExpenses, removeExpense, setBudget } from '@/api/client';
+import {
+  ActionButton,
+  Layout,
+  MaxContentWidth,
+  Radius,
+  Spacing,
+  ThemedText,
+  ThemedView,
+  useTheme,
+} from '@weddingpick/ui';
+import { won } from '@/features/quotes/quote-result-view';
+
+/**
+ * 지출내역. 디자인 핸드오프 14번.
+ *
+ * **낸 돈과 낼 돈이 다른 자리에 있다.** 잔금을 합계에 더하면 "지금까지 결제한
+ * 금액"이 거짓말이 된다 — 아직 안 냈다.
+ *
+ * 예산을 안 정했으면 시트가 자동으로 뜬다(핸드오프). 다만 **평균값을 깔아두지는
+ * 않는다** — 결혼 예산은 사람마다 열 배씩 차이가 나서, 그건 안내가 아니라 유도다.
+ */
+export default function ExpensesScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const theme = useTheme();
+  const [page, setPage] = useState<ExpenseSummaryResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [budgetOpen, setBudgetOpen] = useState(false);
+  const [draft, setDraft] = useState('');
+
+  const load = useCallback(() => {
+    getExpenses(id)
+      .then((loaded) => {
+        setPage(loaded);
+        // 예산이 없으면 시트를 연다. 한 틱 뒤에 열어 초기화와 상쇄되지 않게 한다.
+        if (!loaded.budget.set) setTimeout(() => setBudgetOpen(true), 0);
+      })
+      .catch((caught: Error) => setError(caught.message));
+  }, [id]);
+
+  useEffect(load, [load]);
+
+  if (error) {
+    return (
+      <Frame>
+        <ThemedText type="t4">불러오지 못했습니다</ThemedText>
+        <ThemedText type="t7" themeColor="textSecondary">
+          {error}
+        </ThemedText>
+        <ActionButton label="돌아가기" onPress={() => router.back()} />
+      </Frame>
+    );
+  }
+
+  if (!page) {
+    return (
+      <Frame>
+        <ActivityIndicator color={theme.tint} />
+      </Frame>
+    );
+  }
+
+  async function saveBudget() {
+    const amount = Number(draft.replace(/[^\d]/g, ''));
+
+    try {
+      await setBudget(id, Number.isFinite(amount) && amount > 0 ? amount : null);
+      setBudgetOpen(false);
+      load();
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : '정하지 못했습니다.');
+    }
+  }
+
+  async function remove(expenseId: string) {
+    try {
+      await removeExpense(id, expenseId);
+      load();
+    } catch (caught) {
+      // 결제인증에서 온 줄은 여기서 지울 수 없다. 그건 지출 기록이 아니라 제보다.
+      setError(
+        caught instanceof Error
+          ? '결제인증으로 들어온 항목은 여기서 지울 수 없습니다.'
+          : '지우지 못했습니다.'
+      );
+    }
+  }
+
+  return (
+    <ThemedView style={styles.container}>
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView contentContainerStyle={styles.content}>
+          <ThemedView style={styles.section}>
+            <ThemedText type="t7" themeColor="textSecondary">
+              지금까지 결제한 금액
+            </ThemedText>
+            <ThemedText type="amount" numeric>
+              {won(page.paidTotal)}
+            </ThemedText>
+          </ThemedView>
+
+          {/* 4색 누적 막대. 0원인 갈래도 자리를 지켜 색 순서가 안 흔들린다. */}
+          <View style={styles.bar}>
+            {page.buckets.map((bucket) => (
+              <View
+                key={bucket.bucket}
+                style={{
+                  flex: bucket.ratio,
+                  backgroundColor: theme[EXPENSE_BUCKET_COLOR[bucket.bucket as ExpenseBucket].bar],
+                }}
+              />
+            ))}
+            {page.paidTotal === 0 ? (
+              <View style={{ flex: 1, backgroundColor: theme.chartMuted }} />
+            ) : null}
+          </View>
+
+          <ThemedView style={styles.legend}>
+            {page.buckets.map((bucket) => (
+              <ThemedView key={bucket.bucket} style={styles.legendItem}>
+                <View
+                  style={[
+                    styles.dot,
+                    {
+                      backgroundColor:
+                        theme[EXPENSE_BUCKET_COLOR[bucket.bucket as ExpenseBucket].bar],
+                    },
+                  ]}
+                />
+                <ThemedText
+                  type="t7"
+                  themeColor={EXPENSE_BUCKET_COLOR[bucket.bucket as ExpenseBucket].text}>
+                  {bucket.label}
+                </ThemedText>
+                <ThemedText type="t7" numeric themeColor="textSecondary">
+                  {won(bucket.amount)}
+                </ThemedText>
+              </ThemedView>
+            ))}
+          </ThemedView>
+
+          <ThemedView type="backgroundElement" style={styles.card}>
+            <ThemedText type="t7" themeColor="textSecondary">
+              총 예산
+            </ThemedText>
+            {page.budget.set ? (
+              <>
+                <ThemedText type="t4" numeric>
+                  {won(page.budget.budget)}
+                </ThemedText>
+                <ThemedText
+                  type="t7"
+                  themeColor={page.budget.over ? 'negative' : 'textSecondary'}>
+                  {page.budget.over
+                    ? `${won(-page.budget.remaining)} 넘었어요`
+                    : `${won(page.budget.remaining)} 남았어요`}
+                </ThemedText>
+              </>
+            ) : (
+              <ThemedText type="t7" themeColor="textSecondary">
+                {page.budget.note}
+              </ThemedText>
+            )}
+            <ActionButton
+              label={page.budget.set ? '예산 고치기' : '예산 정하기'}
+              onPress={() => {
+                setDraft(page.budget.set ? String(page.budget.budget) : '');
+                setBudgetOpen(true);
+              }}
+            />
+          </ThemedView>
+
+          <ThemedView style={styles.section}>
+            <ThemedText type="t4">항목</ThemedText>
+            {page.expenses.length === 0 ? (
+              <ThemedView type="backgroundElement" style={styles.card}>
+                <ThemedText type="t7" themeColor="textSecondary">
+                  아직 항목이 없습니다. 결제내역을 등록하시면 여기 모입니다.
+                </ThemedText>
+                <ActionButton
+                  variant="primary"
+                  label="결제인증 제보하기"
+                  onPress={() => router.push('/capture')}
+                />
+              </ThemedView>
+            ) : (
+              page.expenses.map((expense) => (
+                <ThemedView key={expense.id} type="backgroundElement" style={styles.card}>
+                  <ThemedText
+                    type="t5"
+                    // 잔금 예정 행은 회색이다. 낸 돈과 다르게 보여야 한다.
+                    themeColor={expense.status === 'scheduled' ? 'textAssistive' : 'text'}>
+                    {expense.label}
+                  </ThemedText>
+                  <ThemedText
+                    type="t5"
+                    numeric
+                    themeColor={expense.status === 'scheduled' ? 'textAssistive' : 'text'}>
+                    {won(expense.amount)}
+                  </ThemedText>
+                  <ThemedText type="t7" themeColor="textAssistive">
+                    {expense.sourceLabel}
+                    {expense.spentOn ? ` · ${expense.spentOn}` : ''}
+                    {expense.status === 'scheduled' ? ` · ${expense.statusLabel}` : ''}
+                  </ThemedText>
+                  {expense.source === 'manual' ? (
+                    <ActionButton label="빼기" onPress={() => void remove(expense.id)} />
+                  ) : null}
+                </ThemedView>
+              ))
+            )}
+
+            {page.scheduledTotal > 0 ? (
+              <ThemedText type="t7" themeColor="textAssistive">
+                {page.scheduledNote}
+              </ThemedText>
+            ) : null}
+          </ThemedView>
+
+          <ActionButton label="돌아가기" onPress={() => router.back()} />
+        </ScrollView>
+      </SafeAreaView>
+
+      <Modal visible={budgetOpen} transparent animationType="slide">
+        <ThemedView style={[styles.scrim, { backgroundColor: theme.scrim }]}>
+          <ThemedView style={styles.sheet}>
+            <ThemedText type="t4">총 예산</ThemedText>
+            <ThemedText type="t7" themeColor="textSecondary">
+              정하시면 남은 금액을 함께 보여드려요. 나중에 바꾸셔도 됩니다.
+            </ThemedText>
+            <TextInput
+              style={[
+                styles.input,
+                { color: theme.text, backgroundColor: theme.backgroundSelected },
+              ]}
+              value={draft}
+              onChangeText={setDraft}
+              keyboardType="number-pad"
+              placeholder="예: 30000000"
+              placeholderTextColor={theme.textAssistive}
+              accessibilityLabel="총 예산"
+            />
+            <ThemedView style={styles.sheetActions}>
+              <ActionButton label="나중에" onPress={() => setBudgetOpen(false)} />
+              <ActionButton variant="primary" label="정하기" onPress={() => void saveBudget()} />
+            </ThemedView>
+          </ThemedView>
+        </ThemedView>
+      </Modal>
+    </ThemedView>
+  );
+}
+
+function Frame({ children }: { children: React.ReactNode }) {
+  return (
+    <ThemedView style={styles.container}>
+      <SafeAreaView style={styles.safeArea}>
+        <ThemedView style={styles.content}>{children}</ThemedView>
+      </SafeAreaView>
+    </ThemedView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
+  safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
+  content: {
+    paddingHorizontal: Layout.gutter,
+    paddingTop: Spacing.five,
+    paddingBottom: Spacing.four,
+    gap: Spacing.three,
+  },
+  section: { gap: Spacing.two },
+  bar: { flexDirection: 'row', height: 8, borderRadius: Radius.pill, overflow: 'hidden' },
+  legend: { gap: Spacing.one },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  dot: { width: 8, height: 8, borderRadius: Radius.pill },
+  card: { borderRadius: Radius.medium, padding: Spacing.three, gap: Spacing.one },
+  scrim: { flex: 1, justifyContent: 'flex-end' },
+  sheet: {
+    borderTopLeftRadius: Radius.sheet,
+    borderTopRightRadius: Radius.sheet,
+    padding: Layout.gutter,
+    gap: Spacing.two,
+  },
+  sheetActions: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.two },
+  input: {
+    height: Layout.rowMinHeight,
+    borderRadius: Radius.input,
+    paddingHorizontal: Spacing.three,
+  },
+});
