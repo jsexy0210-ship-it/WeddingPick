@@ -38,12 +38,14 @@ import {
   invitePreviewResponseSchema,
   vendorSearchResponseSchema,
   conditionStatsSchema,
+  myRewardsResponseSchema,
   vendorClaimListResponseSchema,
   weddingInviteListResponseSchema,
   verificationRequestSchema,
   weddingDetailSchema,
   type CandidateListResponse,
   type ConditionStats,
+  type MyRewardsResponse,
   type CreateRebuttalRequest,
   type CreateVendorClaimRequest,
   type VendorClaimListResponse,
@@ -751,6 +753,36 @@ export async function createVendorClaim(
 
 export async function listMyVendorClaims(): Promise<VendorClaimListResponse> {
   return request('/v1/me/vendor-claims', vendorClaimListResponseSchema);
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * 이벤트 보상 (최종통합정책 v2.0 I장)
+ * ---------------------------------------------------------------------------
+ */
+
+export async function getMyRewards(): Promise<MyRewardsResponse> {
+  return request('/v1/me/rewards', myRewardsResponseSchema);
+}
+
+/**
+ * 초대 코드 넣기.
+ *
+ * **여기서 보상이 생기지 않는다.** 결제내역을 처음 등록할 때 초대한 분의 조건이
+ * 찬다 — 가입만으로 돈을 주면 가입만 하는 계정이 모인다(v2.0 K-7).
+ */
+export async function redeemReferral(code: string): Promise<void> {
+  await request('/v1/referrals/redeem', z.null(), {
+    method: 'POST',
+    body: JSON.stringify({ code }),
+  });
+}
+
+export async function submitPromotion(url: string): Promise<{ promotionId: string }> {
+  return request('/v1/promotions', z.object({ promotionId: z.string() }), {
+    method: 'POST',
+    body: JSON.stringify({ url }),
+  });
 }
 
 /*

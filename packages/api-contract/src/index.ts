@@ -16,6 +16,7 @@ export * from './planners';
 export * from './payment-proofs';
 export * from './price-reports';
 export * from './quotes';
+export * from './rewards';
 export * from './reviews';
 export * from './vendor-claims';
 export * from './vendors';

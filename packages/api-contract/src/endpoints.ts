@@ -73,6 +73,11 @@ import {
   updateReviewRequestSchema,
 } from './reviews';
 import {
+  myRewardsResponseSchema,
+  redeemReferralRequestSchema,
+  submitPromotionRequestSchema,
+} from './rewards';
+import {
   conditionStatsSchema,
   vendorComparisonResponseSchema,
   vendorDetailSchema,
@@ -481,6 +486,39 @@ export const ENDPOINTS = {
     method: 'DELETE',
     path: '/v1/rebuttals/{rebuttalId}',
     response: z.null(),
+  },
+
+  /**
+   * 내 보상. v2.0 I장.
+   *
+   * 초대 코드는 처음 물어볼 때 만들어진다 — 안 쓰는 사람 몫까지 미리 만들어둘
+   * 이유가 없다.
+   */
+  getMyRewards: {
+    method: 'GET',
+    path: '/v1/me/rewards',
+    response: myRewardsResponseSchema,
+  },
+
+  /**
+   * 초대 코드 넣기.
+   *
+   * **여기서 지급되지 않는다.** 초대받은 사람이 결제내역을 처음 등록해야 조건이
+   * 찬다(I-1 · K-7) — 가입만으로 돈을 주면 가입만 하는 계정이 모인다.
+   */
+  redeemReferral: {
+    method: 'POST',
+    path: '/v1/referrals/redeem',
+    body: redeemReferralRequestSchema,
+    response: z.null(),
+  },
+
+  /** 홍보인증. 사람이 글을 확인한 뒤에 지급 대상이 된다(I-2). */
+  submitPromotion: {
+    method: 'POST',
+    path: '/v1/promotions',
+    body: submitPromotionRequestSchema,
+    response: z.object({ promotionId: idSchema }),
   },
 
   /**

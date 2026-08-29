@@ -305,6 +305,12 @@ export default function MyScreen() {
                 data.me ? router.push('/my/vendor-claims') : router.push('/login')
               }
             />
+            {/* 금액을 여기 적지 않는다. 조건을 먼저 읽어야 한다(v2.0 K-7). */}
+            <ActionButton
+              label="친구초대 · 홍보인증"
+              hint="초대한 분이 결제내역을 등록하시면 지급 대상이 돼요"
+              onPress={() => (data.me ? router.push('/my/rewards') : router.push('/login'))}
+            />
           </ThemedView>
 
           <ThemedView style={styles.section}>

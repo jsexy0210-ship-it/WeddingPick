@@ -15,6 +15,7 @@
     "inquiries": "tsx src/inquiry-admin.ts",
     "rebuttals": "tsx src/rebuttal-admin.ts",
     "vendor-claims": "tsx src/vendor-claim-admin.ts",
+    "rewards": "tsx src/reward-admin.ts",
     "decisions": "tsx src/decisions-admin.ts",
     "verifications": "tsx src/verification-admin.ts",
     "retention": "tsx src/retention-admin.ts",

@@ -14,6 +14,7 @@ import { currentUserId, requireUser } from '../auth/plugin';
 import type { AppContext } from '../context';
 import { readPaymentProof } from '../analysis/proof-pipeline';
 import { withTransaction } from '../db';
+import { qualifyReferral } from '../rewards';
 import { ApiError, notFound } from '../errors';
 
 /**
@@ -231,6 +232,13 @@ export function registerPaymentProofRoutes(app: FastifyInstance, context: AppCon
             [body.rawDocumentId]
           );
         }
+
+        /*
+         * 초대받고 들어온 사람의 첫 결제인증이면 초대한 사람의 보상 조건이
+         * 찬다(I-1 · K-7). **같은 트랜잭션에 둔다** — 결제인증은 됐는데 원장에만
+         * 안 남으면 그 사람은 영영 못 받고 우리는 그 사실도 모른다.
+         */
+        await qualifyReferral(client, userId);
 
         return created.rows[0]!.id;
       });
