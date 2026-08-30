@@ -22,6 +22,41 @@ npm run export:web --workspace @weddingpick/mobile   # 번들이 실제로 빌�
 
 넷 다 CI에서 돈다. 테스트는 화면이 아니라 규칙을 지키는 로직에 붙였다 — 촬영 draft 순서, 저장 시 등급이 항상 L0인지, 검증 등급의 시장가격 반영 기준(L2 이상), 저장 형식이 깨졌을 때의 동작.
 
+## 테스트용 APK
+
+두 가지 길이 있다. **둘 다 스토어 키가 아니라 테스트 키로 서명된다** — 설치는
+되지만 스토어에는 못 올린다.
+
+### GitHub Actions (계정 없이, 권장)
+
+Actions 탭 → `Android APK` → Run workflow. 끝나면 그 실행 화면 맨 아래
+Artifacts에 APK가 붙는다.
+
+`api_url` 칸에 API 주소를 넣으면 그 서버에 붙는 빌드가 나온다. 비워두면 서버에
+붙지 않는 빌드다 — 촬영과 기기 저장은 되지만 업체 검색·가격은 안 나온다(화면이
+그렇다고 적는다).
+
+### EAS Build (Expo 계정 필요)
+
+```bash
+npx eas init                                   # 최초 1회. projectId를 app.json에 적어준다
+npx eas build --platform android --profile preview
+```
+
+`preview` 프로필이 AAB가 아니라 APK를 낸다(`eas.json`). 서버 주소는
+`EXPO_PUBLIC_API_URL`로 넣는다.
+
+### 이 레포에서는 왜 못 만드나
+
+개발 환경의 네트워크 정책이 `dl.google.com`을 막아 Android SDK를 받을 수 없다.
+`expo prebuild`까지는 되지만(npm에서 받는다) Gradle이 SDK·NDK를 못 받는다.
+그래서 APK는 러너에서 만든다.
+
+### 패키지 이름
+
+`kr.weddingpick.app`. **스토어에 처음 올린 뒤에는 바꿀 수 없다** — 첫 배포 전에
+한 번 확인하고 넘어간다.
+
 ## 구조
 
 ```
