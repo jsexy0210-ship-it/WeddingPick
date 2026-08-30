@@ -1,4 +1,4 @@
-import { migrate } from '@weddingpick/db';
+import { resetSchema } from '@weddingpick/db';
 import type { FastifyInstance } from 'fastify';
 import { Client, Pool } from 'pg';
 
@@ -80,8 +80,7 @@ export async function resetDatabase(): Promise<void> {
   await client.connect();
 
   try {
-    await client.query('DROP OWNED BY CURRENT_USER CASCADE');
-    await migrate(client);
+    await resetSchema(client);
   } finally {
     await client.end();
   }

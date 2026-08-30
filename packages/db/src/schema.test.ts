@@ -1,6 +1,7 @@
 import { Client } from 'pg';
 
 import { migrate } from './migrate';
+import { resetSchema } from './reset';
 
 const connectionString = process.env.DATABASE_URL;
 const describeWithDb = connectionString ? describe : describe.skip;
@@ -12,9 +13,8 @@ if (!connectionString) {
 let client: Client;
 
 async function reset() {
-  // 이 역할이 만든 모든 객체(스키마·타입·테이블)를 지우고 다시 올린다.
-  await client.query('DROP OWNED BY CURRENT_USER CASCADE');
-  await migrate(client);
+  // 마이그레이션이 만든 것만 지우고 다시 올린다. 한 벌을 둘이 나눠 쓴다.
+  await resetSchema(client);
 }
 
 async function seedQuote(options: {
