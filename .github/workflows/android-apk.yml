@@ -47,15 +47,15 @@ jobs:
 
       # 릴리스 서명은 Expo 템플릿의 디버그 키로 한다. 설치는 되지만 스토어에는
       # 못 올린다 — 테스트용이라 그것으로 충분하고, 스토어 키를 CI에 두지 않는다.
-- name: Assemble
-  working-directory: apps/mobile/android
-  env:
-    EXPO_PUBLIC_API_URL: ${{ inputs.api_url }}
-  run: >-
-    ./gradlew assembleRelease
-    --no-daemon
-    --max-workers=2
-    -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g"
+      - name: Assemble
+        working-directory: apps/mobile/android
+        env:
+          EXPO_PUBLIC_API_URL: ${{ inputs.api_url }}
+        run: >-
+          ./gradlew assembleRelease
+          --no-daemon
+          --max-workers=2
+          -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g"
 
       - uses: actions/upload-artifact@v4
         with:
