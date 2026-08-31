@@ -539,6 +539,11 @@ async function loadSponsored(
               p.vendor_id, v.name, v.category, v.region
        FROM ads.active_placements p
        JOIN structured.vendors v ON v.id = p.vendor_id
+       /*
+        * 실운영으로 연 상품만 실린다. 결정이 없으면 테스트라 화면에 안 나간다 —
+        * "AI가 멋대로 광고 스위치를 올리는 일 금지"가 여기까지 와야 뜻이 있다.
+        */
+       JOIN ads.tier_state t ON t.tier = p.tier AND t.state = 'live'
        WHERE p.surface = 'search'
          AND (p.category IS NULL OR $1::text IS NULL OR p.category::text = $1::text)
          AND (p.region IS NULL OR $2::text IS NULL OR p.region = $2::text)

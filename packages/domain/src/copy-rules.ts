@@ -84,3 +84,51 @@ export function violatesCopyRules(text: string): boolean {
 export function hasExclamationOrEmoji(text: string): boolean {
   return /[!！]/u.test(text) || /\p{Extended_Pictographic}/u.test(text);
 }
+
+/**
+ * 애매모호 표현 금지. 정책 원칙(2026-08-31).
+ *
+ * **인간 언어의 편리한 도피처를 닫는다.** `거의 완성`은 46%일 수도 91%일 수도
+ * 있고, 적은 사람은 둘 다 아니라고 말하지 않았다. 읽는 사람은 자기 형편에 맞는
+ * 쪽으로 읽고, 나중에 어긋나면 아무도 틀린 말을 하지 않았다는 결론이 난다.
+ *
+ * UI·정책서·기획서·관리자·AI 생성 콘텐츠에 모두 적용한다.
+ */
+export const VAGUE_PHRASES = [
+  '거의',
+  '아마도',
+  '아마',
+  '대략',
+  '어느 정도',
+  '가능성이 높',
+  '것으로 보임',
+  '것으로 보인다',
+] as const;
+
+/**
+ * 그 자리에 대신 쓰는 말.
+ *
+ * 모르는 것을 아는 척하라는 뜻이 아니다 — **모른다는 것도 상태로 적으라는
+ * 뜻이다.** `아마 적용 가능`이 아니라 `현재 검증 전`이다.
+ */
+export const STATE_WORDS = [
+  '확정',
+  '미확정',
+  '검증 전',
+  '확인 필요',
+  '조건부',
+  '측정값',
+  '추정값',
+] as const;
+
+export function findVaguePhrases(text: string): CopyViolation[] {
+  return VAGUE_PHRASES.flatMap((phrase) => {
+    const index = text.indexOf(phrase);
+
+    return index >= 0 ? [{ phrase, index }] : [];
+  });
+}
+
+export function isVague(text: string): boolean {
+  return findVaguePhrases(text).length > 0;
+}

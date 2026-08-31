@@ -30,6 +30,7 @@ type Options = {
   add?: string;
   remove?: string;
   surface?: string;
+  tier?: string;
   from?: string;
   to?: string;
   category?: string;
@@ -47,6 +48,7 @@ function parseArgs(argv: string[]): Options {
     else if (arg === '--add') options.add = argv[++i];
     else if (arg === '--remove') options.remove = argv[++i];
     else if (arg === '--surface') options.surface = argv[++i];
+    else if (arg === '--tier') options.tier = argv[++i];
     else if (arg === '--from') options.from = argv[++i];
     else if (arg === '--to') options.to = argv[++i];
     else if (arg === '--category') options.category = argv[++i];
@@ -117,19 +119,23 @@ async function main(): Promise<void> {
     }
 
     if (options.add) {
-      if (!options.surface || !options.from || !options.to) {
-        console.error('--surface, --from, --to가 필요하다. 기간 없는 광고는 내릴 때를 모른다.');
+      if (!options.surface || !options.tier || !options.from || !options.to) {
+        console.error(
+          '--surface, --tier, --from, --to가 필요하다. 기간 없는 광고는 내릴 때를 모르고, ' +
+            '등급 없는 광고는 무엇을 판 것인지 모른다.'
+        );
         process.exitCode = 1;
         return;
       }
 
       const { rows } = await pool.query<{ id: string }>(
-        `INSERT INTO ads.placements (vendor_id, surface, category, region, starts_on, ends_on)
-         VALUES ($1, $2::ad_surface, $3::vendor_category, $4, $5, $6)
+        `INSERT INTO ads.placements (vendor_id, surface, tier, category, region, starts_on, ends_on)
+         VALUES ($1, $2::ad_surface, $3::ad_tier, $4::vendor_category, $5, $6, $7)
          RETURNING id`,
         [
           options.add,
           options.surface,
+          options.tier,
           options.category ?? null,
           options.region ?? null,
           options.from,

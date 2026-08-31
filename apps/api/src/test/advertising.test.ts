@@ -33,15 +33,30 @@ describeWithDb('광고 지면', () => {
     return rows[0]!.id;
   }
 
+  /** 실운영으로 연다. 사람이 정해야 열린다 — 그 사실을 시험도 지킨다. */
+  async function openTier(tier = 'standard') {
+    const person = await test.pool.query<{ id: string }>(
+      'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
+    );
+
+    await test.pool.query(
+      `INSERT INTO ads.launch_decisions (tier, state, decided_by)
+       VALUES ($1::ad_tier, 'live', $2)
+       ON CONFLICT (tier) DO NOTHING`,
+      [tier, person.rows[0]!.id]
+    );
+  }
+
   async function place(
     vendorId: string,
     over: { category?: string; region?: string; days?: [number, number] } = {}
   ) {
     const [from, to] = over.days ?? [-1, 30];
 
+    await openTier();
     await test.pool.query(
-      `INSERT INTO ads.placements (vendor_id, surface, category, region, starts_on, ends_on)
-       VALUES ($1, 'search', $2::vendor_category, $3, current_date + $4::int, current_date + $5::int)`,
+      `INSERT INTO ads.placements (vendor_id, surface, tier, category, region, starts_on, ends_on)
+       VALUES ($1, 'search', 'standard', $2::vendor_category, $3, current_date + $4::int, current_date + $5::int)`,
       [vendorId, over.category ?? null, over.region ?? null, from, to]
     );
   }
@@ -164,6 +179,26 @@ describeWithDb('광고 지면', () => {
     const paid = await aVendor('가온예식홀');
     await place(paid);
     await place(paid);
+
+    expect((await search()).json<{ sponsored: unknown[] }>().sponsored).toHaveLength(1);
+  });
+
+  it('사람이 열지 않은 상품은 실리지 않는다', async () => {
+    /*
+     * 정책 원칙: AI가 멋대로 광고 스위치를 올리는 일 금지. 자리를 잡아두는
+     * 것만으로 화면에 나가면 그 금지가 뜻이 없다.
+     */
+    const paid = await aVendor('가온예식홀');
+
+    await test.pool.query(
+      `INSERT INTO ads.placements (vendor_id, surface, tier, starts_on, ends_on)
+       VALUES ($1, 'search', 'standard', current_date - 1, current_date + 30)`,
+      [paid]
+    );
+
+    expect((await search()).json<{ sponsored: unknown[] }>().sponsored).toEqual([]);
+
+    await openTier();
 
     expect((await search()).json<{ sponsored: unknown[] }>().sponsored).toHaveLength(1);
   });

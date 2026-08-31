@@ -904,8 +904,8 @@ describeWithDb('DB 스키마', () => {
 
       await expect(
         client.query(
-          `INSERT INTO ads.placements (vendor_id, surface, starts_on, ends_on)
-           VALUES ($1, 'search', '2026-09-30', '2026-09-01')`,
+          `INSERT INTO ads.placements (vendor_id, surface, tier, starts_on, ends_on)
+           VALUES ($1, 'search', 'standard', '2026-09-30', '2026-09-01')`,
           [vendor.rows[0]!.id]
         )
       ).rejects.toThrow(/placement_period_is_ordered/);
@@ -918,8 +918,8 @@ describeWithDb('DB 스키마', () => {
       );
 
       await client.query(
-        `INSERT INTO ads.placements (vendor_id, surface, starts_on, ends_on)
-         VALUES ($1, 'search', current_date - 30, current_date - 1)`,
+        `INSERT INTO ads.placements (vendor_id, surface, tier, starts_on, ends_on)
+         VALUES ($1, 'search', 'standard', current_date - 30, current_date - 1)`,
         [vendor.rows[0]!.id]
       );
 
@@ -1050,6 +1050,135 @@ describeWithDb('DB 스키마', () => {
       );
 
       expect(rows[0]?.state).toBe('before');
+    });
+  });
+
+  describe('광고 실운영 전환', () => {
+    const aPerson = async () => {
+      const { rows } = await client.query<{ id: string }>(
+        'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
+      );
+
+      return rows[0]!.id;
+    };
+
+    it('아무것도 안 정하면 테스트 상태다', async () => {
+      // 아무것도 안 정한 상품이 실운영으로 시작하면 안 된다.
+      const { rows } = await client.query<{ tier: string; state: string }>(
+        'SELECT tier, state FROM ads.tier_state ORDER BY tier'
+      );
+
+      expect(rows.map((row) => row.state)).toEqual(['test', 'test', 'test']);
+    });
+
+    it('사람 없이 실운영으로 올릴 수 없다', async () => {
+      /*
+       * "AI가 멋대로 광고 스위치를 올리는 일 금지"를 표현하는 방법이다.
+       * 관례로 두면 언젠가 자동화가 한 줄 넣는다.
+       */
+      await expect(
+        client.query(
+          "INSERT INTO ads.launch_decisions (tier, state) VALUES ('light', 'live')"
+        )
+      ).rejects.toThrow(/decided_by/);
+    });
+
+    it('사람이 정하면 실운영이 된다', async () => {
+      const person = await aPerson();
+
+      await client.query(
+        "INSERT INTO ads.launch_decisions (tier, state, decided_by) VALUES ('light', 'live', $1)",
+        [person]
+      );
+
+      const { rows } = await client.query<{ state: string }>(
+        "SELECT state FROM ads.tier_state WHERE tier = 'light'"
+      );
+
+      expect(rows[0]?.state).toBe('live');
+    });
+
+    it('테스트는 결정이 아니라 시작 상태다', async () => {
+      const person = await aPerson();
+
+      await expect(
+        client.query(
+          "INSERT INTO ads.launch_decisions (tier, state, decided_by) VALUES ('light', 'test', $1)",
+          [person]
+        )
+      ).rejects.toThrow(/decision_is_not_test/);
+    });
+
+    it('두 분석이 서로 다른 결론을 그대로 든다', async () => {
+      /*
+       * 합치는 순간 어느 쪽이 무엇을 봤는지 사라지고, 사용자가 결정할 재료가
+       * 없어진다.
+       */
+      await client.query(
+        `INSERT INTO ads.launch_reports (tier, analyst, verdict, recommended_on, findings)
+         VALUES ('standard', 'gpt', 'open', current_date + 30, '{"ctr": 0.021}'::jsonb)`
+      );
+      await client.query(
+        `INSERT INTO ads.launch_reports (tier, analyst, verdict, findings)
+         VALUES ('standard', 'claude', 'hold', '{"reason": "데이터 부족"}'::jsonb)`
+      );
+
+      const { rows } = await client.query<{ analyst: string; verdict: string }>(
+        "SELECT analyst, verdict FROM ads.launch_reports WHERE tier = 'standard' ORDER BY analyst"
+      );
+
+      expect(rows).toEqual([
+        { analyst: 'gpt', verdict: 'open' },
+        { analyst: 'claude', verdict: 'hold' },
+      ]);
+    });
+
+    it('한 분석자가 남의 보고서를 덮어쓸 수 없다', async () => {
+      await client.query(
+        `INSERT INTO ads.launch_reports (tier, analyst, verdict, findings)
+         VALUES ('light', 'gpt', 'hold', '{"reason": "x"}'::jsonb)`
+      );
+
+      await expect(
+        client.query(
+          `INSERT INTO ads.launch_reports (tier, analyst, verdict, findings)
+           VALUES ('light', 'gpt', 'open', '{"reason": "y"}'::jsonb)`
+        )
+      ).rejects.toThrow();
+    });
+
+    it('근거 없는 판정은 받지 않는다', async () => {
+      await expect(
+        client.query(
+          `INSERT INTO ads.launch_reports (tier, analyst, verdict, findings)
+           VALUES ('light', 'claude', 'hold', '{}'::jsonb)`
+        )
+      ).rejects.toThrow(/report_has_findings/);
+    });
+
+    it('열자고 하면서 언제인지 말하지 않을 수 없다', async () => {
+      await expect(
+        client.query(
+          `INSERT INTO ads.launch_reports (tier, analyst, verdict, findings)
+           VALUES ('light', 'claude', 'open', '{"ctr": 0.02}'::jsonb)`
+        )
+      ).rejects.toThrow(/open_verdict_names_a_date/);
+    });
+
+    it('테스트 종료일을 미리 박아둘 자리가 없다', async () => {
+      /*
+       * 날짜를 박아두면 자료가 모자라도 그날이 되면 결정하게 되고, 그건 자료를
+       * 보고 정하는 것이 아니다.
+       */
+      const { rows } = await client.query<{ column_name: string }>(
+        `SELECT column_name FROM information_schema.columns
+         WHERE table_schema = 'ads' AND table_name = 'launch_decisions'`
+      );
+
+      const columns = rows.map((row) => row.column_name);
+
+      expect(columns).not.toContain('test_ends_on');
+      expect(columns).toContain('decided_by');
     });
   });
 

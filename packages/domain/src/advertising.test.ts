@@ -6,6 +6,11 @@ import {
   SPONSORED_LABEL,
   isSeparated,
   type Placement,
+  AD_METRICS,
+  AD_PROMOTIONS,
+  AD_TIER_RULES,
+  firstMonthKrw,
+  surfacesFor,
 } from './advertising';
 
 const organic = (): Placement => ({ kind: 'organic', reasons: ['search_match'] });
@@ -57,5 +62,54 @@ describe('광고 방화벽', () => {
 
   it('유료 노출에 붙는 말이 분명하다', () => {
     expect(SPONSORED_LABEL).toBe('광고');
+  });
+});
+
+describe('초기 광고 상품 (v3.10)', () => {
+  it('위 등급이 아래 등급 지면을 포함한다', () => {
+    // 포함 관계를 등급마다 따로 적어두면 언젠가 한쪽만 고쳐진다. 순서에서 계산한다.
+    expect(surfacesFor('light')).toEqual(['vendor_detail']);
+    expect(surfacesFor('standard')).toEqual(['vendor_detail', 'search']);
+    expect(surfacesFor('premium')).toEqual(['vendor_detail', 'search', 'region_category']);
+  });
+
+  it('정책이 적은 금액 그대로다', () => {
+    expect(AD_TIER_RULES.light.monthlyKrw).toBe(30_000);
+    expect(AD_TIER_RULES.standard.monthlyKrw).toBe(70_000);
+    expect(AD_TIER_RULES.premium.monthlyKrw).toBe(150_000);
+  });
+
+  it('프로모션은 첫 달에만 걸린다', () => {
+    expect(firstMonthKrw('standard', 'first_month_free')).toBe(0);
+    expect(firstMonthKrw('standard', 'first_month_half')).toBe(35_000);
+    expect(firstMonthKrw('standard', null)).toBe(70_000);
+  });
+
+  it('영구 무료는 프로모션 목록에 없다', () => {
+    /*
+     * v3.10 §3. 값을 매기지 않은 지면은 지면이 아니라 부탁이고, 부탁으로 시작한
+     * 관계는 나중에 값을 받기 어렵다.
+     */
+    expect(AD_PROMOTIONS.every((promotion) => promotion.startsWith('first_month'))).toBe(true);
+  });
+
+  it('광고가 못 건드리는 목록이 v3.10 그대로다', () => {
+    /*
+     * v2.0 때는 없던 추천(TOP3·오늘의 Pick·개인화)이 생겼다. 새로 만든 것부터
+     * 광고가 붙기 쉬우므로 목록이 따라가야 한다.
+     */
+    expect([...ADVERTISING_MUST_NOT_AFFECT]).toEqual([
+      'top3',
+      'todays_pick',
+      'personalized',
+      'search_ranking',
+      'verified_data',
+      'reviews',
+    ]);
+  });
+
+  it('재는 것은 셋뿐이다', () => {
+    // 재보지 않은 것으로 값을 매길 수는 없다. 이 셋이 쌓이기 전에는 성과형이 없다.
+    expect([...AD_METRICS]).toEqual(['impression', 'click', 'pick']);
   });
 });
