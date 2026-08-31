@@ -105,7 +105,7 @@ export default function SettingsScreen() {
             />
             <SwitchRow
               label="가격 변동 알림"
-              hint="관심업체의 결제 구간이 크게 바뀌면 알려드려요"
+              hint="Pick한 곳의 결제 구간이 크게 바뀌면 알려드려요"
               value={settings?.priceChangeEnabled ?? true}
               onChange={(next) => void toggle('priceChangeEnabled', next)}
             />

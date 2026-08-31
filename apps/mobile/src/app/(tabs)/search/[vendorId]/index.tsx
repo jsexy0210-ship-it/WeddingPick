@@ -166,7 +166,7 @@ export default function VendorDetailScreen() {
                 </ThemedText>
                 {vendor.prices.paidPrice.stage === 'detailed' ? (
                   <ThemedText type="t6" style={styles.onTint}>
-                    중앙값 {manwon(vendor.prices.paidPrice.median)}
+                    기준금액 {manwon(vendor.prices.paidPrice.median)}
                   </ThemedText>
                 ) : null}
               </ThemedView>

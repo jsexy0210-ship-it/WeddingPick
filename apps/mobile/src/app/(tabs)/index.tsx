@@ -273,7 +273,7 @@ export default function HomeScreen() {
     candidates: (
       <ThemedView key="candidates" style={styles.section}>
         <ThemedView style={styles.sectionHead}>
-          <ThemedText type="t4">관심업체</ThemedText>
+          <ThemedText type="t4">Pick한 곳</ThemedText>
           <ActionButton label="비교하기" onPress={() => go(data.me, 'candidates')} />
         </ThemedView>
 

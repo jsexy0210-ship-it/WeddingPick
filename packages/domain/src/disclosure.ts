@@ -10,6 +10,8 @@
  * **깊이다** — 조건이 비슷한 사례와 상세 분석.
  */
 
+import { NOT_ENOUGH_DATA, TERMS } from './terms';
+
 export const DISCLOSURE_STAGES = ['collecting', 'early', 'general', 'detailed'] as const;
 
 export type DisclosureStage = (typeof DISCLOSURE_STAGES)[number];
@@ -42,13 +44,21 @@ export function disclosureCaption(input: {
   stage: DisclosureStage;
   count: number;
   period: string;
+  /** 상세 단계에서만 붙는다. `168만원` 꼴. */
+  baseAmount?: string;
 }): string {
-  const head = `결제인증 ${input.count}건`;
+  /*
+   * v3.3이 사용자 화면의 `결제인증 N건`을 `확인된 정보 N건`으로 바꿨다.
+   * 안에서는 여전히 결제인증이고, 이 줄은 밖으로 나가는 말이다.
+   */
+  const head = `${TERMS.verifiedData} ${input.count}건`;
 
   if (input.stage === 'collecting') return `${head} · 수집 중`;
-  if (input.stage === 'early') return `${head} · 아직 데이터가 적어요`;
+  if (input.stage === 'early') return `${head} · ${NOT_ENOUGH_DATA}`;
 
-  return `${head} · ${input.period}`;
+  const tail = input.baseAmount ? ` · ${TERMS.baseAmount} ${input.baseAmount}` : '';
+
+  return `${head} · ${input.period}${tail}`;
 }
 
 /**
@@ -104,19 +114,44 @@ export function discloseAmounts(input: {
 }): PriceDisclosure {
   const count = input.amounts.length;
   const stage = disclosureStage(count);
-  const caption = disclosureCaption({ stage, count, period: input.period });
 
-  if (stage === 'collecting') return { stage, count, caption };
+  if (stage === 'collecting') {
+    return { stage, count, caption: disclosureCaption({ stage, count, period: input.period }) };
+  }
 
   const sorted = [...input.amounts].sort((a, b) => a - b);
   const low = quantile(sorted, RANGE_QUANTILES.low);
   const high = quantile(sorted, RANGE_QUANTILES.high);
 
+  /*
+   * 기준금액은 상세 단계에서만 캡션에 붙는다(v3.1 §11). 그래서 중앙값을 먼저
+   * 구하고 캡션을 만든다 — 캡션이 값보다 앞서면 붙일 것이 없다.
+   */
   if (stage === 'detailed') {
-    return { stage, count, caption, low, high, median: median(sorted) };
+    const middle = median(sorted);
+
+    return {
+      stage,
+      count,
+      caption: disclosureCaption({
+        stage,
+        count,
+        period: input.period,
+        baseAmount: manwon(middle),
+      }),
+      low,
+      high,
+      median: middle,
+    };
   }
 
-  return { stage, count, caption, low, high };
+  return {
+    stage,
+    count,
+    caption: disclosureCaption({ stage, count, period: input.period }),
+    low,
+    high,
+  };
 }
 
 /**

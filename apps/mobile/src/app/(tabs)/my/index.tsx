@@ -206,7 +206,7 @@ export default function MyScreen() {
               onPress={() => router.push('/capture/payment/consent')}
             />
             <Stat
-              label="관심업체"
+              label="Pick한 곳"
               value={data.candidates?.total ?? 0}
               onPress={() => goWedding(data.me, 'candidates')}
             />

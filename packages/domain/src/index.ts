@@ -41,3 +41,4 @@ export * from './advertising';
 export * from './reward';
 export * from './nudge';
 export * from './vendor-claim';
+export * from './terms';

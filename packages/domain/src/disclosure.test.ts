@@ -58,7 +58,7 @@ describe('금액 공개', () => {
     const disclosed = discloseAmounts({ amounts: amounts(5), period: PERIOD });
 
     expect(disclosed.stage).toBe('general');
-    expect(disclosed.caption).toBe(`결제인증 5건 · ${PERIOD}`);
+    expect(disclosed.caption).toBe(`확인된 정보 5건 · ${PERIOD}`);
   });
 
   it('10건부터 중앙값이 생긴다', () => {
@@ -124,6 +124,45 @@ describe('조건별 공개', () => {
   });
 });
 
+describe('기준금액 표기', () => {
+  it('상세 단계에서만 캡션에 기준금액이 붙는다', () => {
+    /*
+     * v3.1 §11의 표준 꼴. 중앙값이 없는 단계에 이름만 붙이면, 읽는 사람은
+     * 우리가 계산하지 않은 값을 계산했다고 믿는다.
+     */
+    const general = discloseAmounts({ amounts: [100, 200, 300, 400, 500], period: PERIOD });
+    const detailed = discloseAmounts({
+      amounts: Array.from({ length: 10 }, (_, i) => (i + 1) * 1_000_000),
+      period: PERIOD,
+    });
+
+    expect(general.caption).not.toContain('기준금액');
+    expect(detailed.caption).toContain('기준금액');
+  });
+
+  it('캡션의 기준금액이 실제 중앙값과 같다', () => {
+    const detailed = discloseAmounts({
+      amounts: Array.from({ length: 10 }, (_, i) => (i + 1) * 1_000_000),
+      period: PERIOD,
+    });
+
+    expect(detailed.stage).toBe('detailed');
+    if (detailed.stage !== 'detailed') return;
+
+    expect(detailed.caption).toContain(manwon(detailed.median));
+  });
+
+  it('평균이라고 적지 않는다', () => {
+    // 우리가 계산한 것은 중앙값이다. 이름을 잘못 붙이면 그 계산을 했다고 믿는다.
+    const detailed = discloseAmounts({
+      amounts: Array.from({ length: 12 }, (_, i) => (i + 1) * 1_000_000),
+      period: PERIOD,
+    });
+
+    expect(detailed.caption).not.toContain('평균');
+  });
+});
+
 describe('결제인증이 여는 것', () => {
   it('구간이 아니라 깊이다', () => {
     /*
@@ -138,13 +177,13 @@ describe('결제인증이 여는 것', () => {
 describe('캡션', () => {
   it('단계마다 다른 말을 붙인다', () => {
     expect(disclosureCaption({ stage: 'collecting', count: 2, period: PERIOD })).toBe(
-      '결제인증 2건 · 수집 중'
+      '확인된 정보 2건 · 수집 중'
     );
     expect(disclosureCaption({ stage: 'early', count: 3, period: PERIOD })).toBe(
-      '결제인증 3건 · 아직 데이터가 적어요'
+      '확인된 정보 3건 · 아직 데이터가 적어요'
     );
     expect(disclosureCaption({ stage: 'general', count: 8, period: PERIOD })).toBe(
-      '결제인증 8건 · 최근 12개월'
+      '확인된 정보 8건 · 최근 12개월'
     );
   });
 });

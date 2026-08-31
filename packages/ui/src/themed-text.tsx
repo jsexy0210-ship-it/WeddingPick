@@ -25,7 +25,6 @@ export type ThemedTextProps = TextProps & {
     /** 홈 지출 총액 전용. 핸드오프가 이 자리만 38/48/-1로 따로 정했다. */
     | 'amount'
     | 'link'
-    | 'linkPrimary'
     | 'code'
     /** 아래는 옛 이름. 위 스케일로 잇는다. */
     | 'title'
@@ -79,7 +78,6 @@ const STYLE_FOR: Record<TextType, keyof typeof styles> = {
   badge: 'badge',
   amount: 'amount',
   link: 'link',
-  linkPrimary: 'linkPrimary',
   code: 'code',
 
   title: 't1',
@@ -110,7 +108,6 @@ const styles = StyleSheet.create({
   numeric: { fontVariant: ['tabular-nums'] },
 
   link: { fontSize: 13, lineHeight: 30 },
-  linkPrimary: { fontSize: 13, lineHeight: 30, color: '#3182f6' },
   code: {
     fontFamily: Fonts.mono,
     fontWeight: Platform.select({ android: 700 }) ?? 500,

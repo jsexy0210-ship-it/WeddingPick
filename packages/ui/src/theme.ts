@@ -13,11 +13,18 @@ import { Platform } from 'react-native';
  * 화면마다 모드를 판단하면 언젠가 한 곳이 어긋난다.
  */
 
-/** 핸드오프 팔레트 원본. 역할 이름 아래에서만 쓰고 화면이 직접 집지 않는다. */
+/** 팔레트 원본. 역할 이름 아래에서만 쓰고 화면이 직접 집지 않는다. */
 const palette = {
-  blue500: '#3182f6',
-  blue600: '#1b64da',
-  blue50: '#e8f3ff',
+  /*
+   * 키 컬러. 통합정책 v3.1 §5가 코랄 오렌지로 정했다 — 이전 파랑(#3182f6)을
+   * 대체한다. Pick·핵심 CTA·활성/선택에만 제한적으로 쓴다.
+   *
+   * strong/weak은 정책이 값을 정해주지 않아 우리가 뽑았다. weak은 정책이 적은
+   * `#FFF0EE`를 그대로 쓴다.
+   */
+  coral500: '#ff6f61',
+  coral600: '#e0574a',
+  coral50: '#fff0ee',
   grey900: '#191f28',
   grey800: '#333d4b',
   grey700: '#4e5968',
@@ -70,10 +77,10 @@ export const Colors = {
     /** 트랙·미달성 체크. */
     track: palette.grey300,
 
-    tint: palette.blue500,
-    tintStrong: palette.blue600,
-    /** 배지·안내 배너·아바타의 옅은 파랑. */
-    tintSubtle: palette.blue50,
+    tint: palette.coral500,
+    tintStrong: palette.coral600,
+    /** 배지·안내 배너·아바타의 옅은 코랄. 정책 v3.1의 Coral Weak. */
+    tintSubtle: palette.coral50,
     tintInactive: palette.grey400,
 
     positive: palette.green,
@@ -121,9 +128,9 @@ export const Colors = {
     line: 'rgba(255,255,255,.12)',
     track: '#3a3f45',
 
-    tint: '#5a9cf8',
-    tintStrong: '#8ab8fa',
-    tintSubtle: '#1c2b3f',
+    tint: '#ff8478',
+    tintStrong: '#ffa79e',
+    tintSubtle: '#3a2320',
     tintInactive: '#6b7684',
 
     positive: '#3ecf8e',

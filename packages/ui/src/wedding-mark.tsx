@@ -36,7 +36,7 @@ const SQUARE_RATIO = 0.58;
 export function WeddingMark({
   size = 64,
   color = '#ffffff',
-  cutColor = '#3182f6',
+  cutColor = '#ff6f61',
 }: WeddingMarkProps) {
   const square = size * SQUARE_RATIO;
   const edge = square * HALF_EDGE;

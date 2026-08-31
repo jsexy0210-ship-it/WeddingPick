@@ -265,7 +265,7 @@ export function QuoteResultView({
                   {PRICE_JUDGEMENT_LABEL[comparison.judgement]}
                 </ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
-                  내 견적 {won(comparison.myAmount)} · 실제 계약 중앙값{' '}
+                  내 견적 {won(comparison.myAmount)} · 실제 계약 기준금액{' '}
                   {won(comparison.stat.median)}
                 </ThemedText>
                 {/* 사업계획서 9번: 표본 수와 기준 기간을 늘 함께 보인다. */}
