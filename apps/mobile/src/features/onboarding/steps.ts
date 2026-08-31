@@ -1,9 +1,14 @@
+import { dataCaption } from '@weddingpick/domain';
+
 /**
  * 온보딩 5장. 디자인 핸드오프 1번이 문구와 예시 카드까지 정했다.
  *
  * 화면이 아니라 자료로 둔 이유는, 이 다섯 장이 서비스가 무엇을 하는지 말하는
  * 유일한 자리이기 때문이다 — 문구가 화면 코드 사이에 흩어지면 한 장만 고쳐지고
  * 나머지는 옛말을 계속한다.
+ *
+ * 사용자 화면이라 v3.1 §11·v3.3의 노출 용어를 따른다 — `결제인증`, `실제 결제`는
+ * 내부에서만 쓰는 말이고 여기서는 `확인된 정보`로 적는다.
  */
 export type OnboardingRow = { label: string; value: string };
 
@@ -18,12 +23,12 @@ export type OnboardingStep = {
 export const ONBOARDING_STEPS: readonly OnboardingStep[] = [
   {
     headline: ['같은 업체도', '결제 금액은 달라요'],
-    body: '업체 안내 가격과 실제 결제 사례를 한눈에 비교해보세요.',
+    body: '업체 안내 가격과 확인된 결제 사례를 한눈에 비교해요.',
     card: [
       { label: '업체 안내', value: '390만원' },
-      { label: '실제 결제 구간', value: '265~305만원' },
+      { label: '확인된 결제 구간', value: '265~305만원' },
     ],
-    caption: '결제인증 34건 · 최근 12개월',
+    caption: dataCaption({ count: 34 }),
   },
   {
     headline: ['결제내역 한 장으로', '가격 차이를 확인해보세요'],

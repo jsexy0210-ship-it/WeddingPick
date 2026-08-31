@@ -1,102 +1,69 @@
-import { StyleSheet, View, type ViewStyle } from 'react-native';
+import type { ColorValue } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
+
+/**
+ * 웨딩픽 심볼 — **하트 윤곽선 안에 체크**.
+ *
+ * 확정된 심볼이다. 모양(하트·체크)과 기본 색(코랄)은 바꾸지 않는다.
+ * 앱 아이콘, 스플래시, Pick 탭, Pick 완료, 최종 결정, 웹, 관리자에서 같은 마크를 쓴다.
+ *
+ * 좌표는 64 칸 격자에 잡았다. 24 칸으로 잡으면 소수점이 붙어 눈으로 고치기 어렵다.
+ * 획 두께까지 포함한 마크의 실제 크기는 53×45이며, 64 칸 한가운데 놓았다 —
+ * 하트는 위가 넓고 아래가 뾰족해서 경로 좌표만 가운데 맞추면 눈에는 내려가 보인다.
+ */
+export const MARK_VIEWBOX = 64;
+
+/**
+ * 하트 윤곽. 아래 꼭짓점에서 시작하지 않고 **위 가운데 홈**에서 시작한다 —
+ * 좌우가 같은 순서로 뒤집힌 대칭이라 한쪽을 고치면 반대쪽을 그대로 옮길 수 있다.
+ */
+export const MARK_HEART_PATH =
+  'M32 19 C30 15 26 12 20 12 C13 12 8 17 8 24 C8 35 22 44 32 52 ' +
+  'C42 44 56 35 56 24 C56 17 51 12 44 12 C38 12 34 15 32 19 Z';
+
+/** 체크. 하트 안쪽에만 머무르도록 획 끝을 좌우 봉우리 아래에 둔다. */
+export const MARK_CHECK_PATH = 'M21 28 L28.5 35.5 L45 19';
+
+/** 획 두께. 하트와 체크가 같아야 한 손으로 그린 것처럼 보인다. */
+export const MARK_STROKE = 5;
 
 export type WeddingMarkProps = {
   /** 한 변의 길이. 핸드오프 0번의 스플래시는 64. */
   size?: number;
-  /** 하트 색. */
-  color?: string;
   /**
-   * 체크를 파낼 색. 하트를 얹은 **바탕과 같은 색**이어야 한다.
+   * 선 색. 기본은 코랄. 코랄 바탕 위에 얹을 때만 흰색으로 뒤집는다.
    *
-   * 체크를 그리지 않고 뚫는 이유는, 그리면 획이 하트 밖으로 나갈 때 어색해지고
-   * 작은 크기에서 뭉개지기 때문이다.
+   * 탭 바가 넘겨주는 색은 문자열이 아닐 수 있어서(플랫폼 색 객체) `ColorValue`로 받는다.
    */
-  cutColor?: string;
+  color?: ColorValue;
 };
 
-/*
- * 하트의 뼈대.
- *
- * **45도 돌린 정사각형 하나와 원 둘**이다. 사각형의 아래 꼭짓점이 하트의 뾰족한
- * 끝이 되고, 원 둘이 사각형의 위쪽 두 변에 얹혀 봉우리가 된다.
- *
- * 처음에는 위만 둥근 사각형 둘을 반대로 돌려 겹쳤는데, 그러면 **아래가 뾰족해지지
- * 않고 V자로 파인다** — 두 도형의 아래 모서리가 한 점에서 만나지 않기 때문이다.
- * 그려서 눈으로 보고 나서야 알았다.
- */
-
-/** 정사각형 한 변 대비 중심에서 꼭짓점까지 = 1/√2. */
-const HALF_DIAGONAL = Math.SQRT1_2;
-/** 중심에서 변의 중점까지 = 1/(2√2). 원의 중심이 여기 얹힌다. */
-const HALF_EDGE = Math.SQRT1_2 / 2;
-
-/** 사각형 한 변을 전체 크기의 몇 배로 둘 것인가. 하트가 틀을 거의 채우도록 맞춘 값. */
-const SQUARE_RATIO = 0.58;
-
-export function WeddingMark({
-  size = 64,
-  color = '#ffffff',
-  cutColor = '#ff6f61',
-}: WeddingMarkProps) {
-  const square = size * SQUARE_RATIO;
-  const edge = square * HALF_EDGE;
-
-  /** 하트가 세로로 가운데 오도록 사각형 중심을 내린다. */
-  const centerY = size * 0.05 + edge + square / 2;
-  const centerX = size / 2;
-
-  const lobe = (dx: number): ViewStyle => ({
-    position: 'absolute',
-    width: square,
-    height: square,
-    borderRadius: square / 2,
-    backgroundColor: color,
-    left: centerX + dx - square / 2,
-    top: centerY - edge - square / 2,
-  });
-
-  /** 체크의 획 하나. */
-  const stroke = (length: number, angle: string, left: number, top: number): ViewStyle => ({
-    position: 'absolute',
-    width: length,
-    height: size * 0.085,
-    borderRadius: size * 0.045,
-    backgroundColor: cutColor,
-    left,
-    top,
-    transform: [{ rotate: angle }],
-  });
-
+export function WeddingMark({ size = 64, color = '#ff6f61' }: WeddingMarkProps) {
   return (
-    <View style={[styles.frame, { width: size, height: size }]}>
-      {/* 아래 꼭짓점을 만드는 사각형. */}
-      <View
-        style={{
-          position: 'absolute',
-          width: square,
-          height: square,
-          backgroundColor: color,
-          left: centerX - square / 2,
-          top: centerY - square / 2,
-          transform: [{ rotate: '45deg' }],
-        }}
+    <Svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${MARK_VIEWBOX} ${MARK_VIEWBOX}`}
+      fill="none">
+      {/*
+        낭독기용 속성은 걸지 않는다. react-native-svg가 웹에서 알 수 없는 속성을
+        DOM으로 그대로 넘겨 경고를 낸다. 마크에는 글자가 없어서 라벨을 가진
+        부모(탭·버튼)만 읽히면 되고, 그 편이 실제로 맞다.
+       */}
+      <Path
+        d={MARK_HEART_PATH}
+        stroke={color}
+        strokeWidth={MARK_STROKE}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
-      <View style={lobe(-edge)} />
-      <View style={lobe(edge)} />
-
-      {/* 체크. 짧은 획이 왼쪽 아래로 내려갔다 긴 획이 오른쪽 위로 올라간다. */}
-      <View style={stroke(size * 0.22, '45deg', size * 0.26, centerY - size * 0.02)} />
-      <View style={stroke(size * 0.36, '-45deg', size * 0.36, centerY - size * 0.08)} />
-    </View>
+      <Path
+        d={MARK_CHECK_PATH}
+        stroke={color}
+        strokeWidth={MARK_STROKE}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
   );
 }
-
-const styles = StyleSheet.create({
-  frame: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
-
-/** 사각형의 아래 꼭짓점이 틀 안에 들어오는지. 비율을 바꿀 때 확인한다. */
-export const MARK_BOTTOM_RATIO = 0.05 + HALF_EDGE * SQUARE_RATIO + SQUARE_RATIO * HALF_DIAGONAL;

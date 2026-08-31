@@ -77,7 +77,7 @@ export function SplashView() {
           // 0.88에서 1로. 커지는 것이 아니라 다가오는 느낌이어야 한다.
           transform: [{ scale: symbol.interpolate({ inputRange: [0, 1], outputRange: [0.88, 1] }) }],
         }}>
-        <WeddingMark size={64} color={Colors.light.onTint} cutColor={Colors.light.tint} />
+        <WeddingMark size={88} color={Colors.light.onTint} />
       </Animated.View>
 
       <Animated.Text style={[styles.title, rise(title)]}>웨딩픽</Animated.Text>
