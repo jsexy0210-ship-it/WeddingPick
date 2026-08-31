@@ -208,7 +208,7 @@ export default function MyScreen() {
             <Stat
               label="Pick한 곳"
               value={data.candidates?.total ?? 0}
-              onPress={() => goWedding(data.me, 'candidates')}
+              onPress={() => router.push('/pick')}
             />
             <Stat
               label="방문노트"
@@ -410,7 +410,7 @@ function Stat({ label, value, onPress }: { label: string; value: number; onPress
 }
 
 /** 웨딩이 없으면 우리웨딩 탭으로 보낸다 — 거기서 만들어준다. */
-function goWedding(me: CurrentUser | null, section: 'candidates' | 'visit-notes') {
+function goWedding(me: CurrentUser | null, section: 'visit-notes') {
   if (!me?.weddingId) {
     router.push('/wedding');
     return;

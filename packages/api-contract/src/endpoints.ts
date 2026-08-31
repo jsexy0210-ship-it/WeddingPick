@@ -4,6 +4,7 @@ import { analysisSchema } from './analyses';
 import {
   candidateListResponseSchema,
   createCandidateRequestSchema,
+  decideCategoryRequestSchema,
 } from './candidates';
 import {
   createExpenseRequestSchema,
@@ -519,6 +520,25 @@ export const ENDPOINTS = {
     path: '/v1/promotions',
     body: submitPromotionRequestSchema,
     response: z.object({ promotionId: idSchema }),
+  },
+
+  /**
+   * 최종 결정. v3.2 §6.
+   *
+   * Pick한 곳 중에서만 정할 수 있고, 한 업종에 하나다. 다시 부르면 바뀐다 —
+   * 마음이 바뀌는 일이라 되돌릴 수 없게 두지 않는다.
+   */
+  decideCategory: {
+    method: 'PUT',
+    path: '/v1/weddings/{weddingId}/decisions',
+    body: decideCategoryRequestSchema,
+    response: z.null(),
+  },
+
+  removeDecision: {
+    method: 'DELETE',
+    path: '/v1/weddings/{weddingId}/decisions/{category}',
+    response: z.null(),
   },
 
   /**

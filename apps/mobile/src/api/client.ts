@@ -45,6 +45,7 @@ import {
   weddingDetailSchema,
   type CandidateListResponse,
   type ConditionStats,
+  type DecideCategoryRequest,
   type MyRewardsResponse,
   type CreateRebuttalRequest,
   type CreateVendorClaimRequest,
@@ -760,6 +761,26 @@ export async function listMyVendorClaims(): Promise<VendorClaimListResponse> {
  * 이벤트 보상 (최종통합정책 v2.0 I장)
  * ---------------------------------------------------------------------------
  */
+
+/**
+ * 최종 결정. v3.2 §6.
+ *
+ * Pick한 곳 중에서만 정할 수 있다. 다시 부르면 그 업종의 결정이 바뀐다 —
+ * 마음이 바뀌는 일이라 되돌릴 수 없게 두지 않는다.
+ */
+export async function decideCategory(
+  weddingId: string,
+  body: DecideCategoryRequest
+): Promise<void> {
+  await request(`/v1/weddings/${weddingId}/decisions`, z.null(), {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function removeDecision(weddingId: string, category: string): Promise<void> {
+  await request(`/v1/weddings/${weddingId}/decisions/${category}`, z.null(), { method: 'DELETE' });
+}
 
 export async function getMyRewards(): Promise<MyRewardsResponse> {
   return request('/v1/me/rewards', myRewardsResponseSchema);

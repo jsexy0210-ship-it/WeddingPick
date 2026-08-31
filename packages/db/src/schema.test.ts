@@ -929,6 +929,130 @@ describeWithDb('DB 스키마', () => {
     });
   });
 
+  describe('Pick 최종 결정', () => {
+    async function aWeddingWithPick(category = 'hall') {
+      const user = await client.query<{ id: string }>(
+        'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
+      );
+      const wedding = await client.query<{ id: string }>(
+        'INSERT INTO structured.weddings (owner_user_id) VALUES ($1) RETURNING id',
+        [user.rows[0]!.id]
+      );
+      const vendor = await client.query<{ id: string }>(
+        `INSERT INTO structured.vendors (name, category, region, source)
+         VALUES ('가온예식홀', $1::vendor_category, '서울 강남구', 'public_data') RETURNING id`,
+        [category]
+      );
+
+      await client.query(
+        'INSERT INTO structured.vendor_candidates (wedding_id, vendor_id, added_by) VALUES ($1, $2, $3)',
+        [wedding.rows[0]!.id, vendor.rows[0]!.id, user.rows[0]!.id]
+      );
+
+      return { weddingId: wedding.rows[0]!.id, vendorId: vendor.rows[0]!.id, userId: user.rows[0]!.id };
+    }
+
+    const decide = (weddingId: string, category: string, vendorId: string) =>
+      client.query(
+        `INSERT INTO structured.category_decisions (wedding_id, category, vendor_id)
+         VALUES ($1, $2::vendor_category, $3)`,
+        [weddingId, category, vendorId]
+      );
+
+    it('Pick한 곳은 결정할 수 있다', async () => {
+      const { weddingId, vendorId } = await aWeddingWithPick();
+
+      await expect(decide(weddingId, 'hall', vendorId)).resolves.toBeDefined();
+    });
+
+    it('Pick하지 않은 곳은 결정할 수 없다', async () => {
+      /*
+       * 담아두지도 않은 곳으로 정해져 있는 상태가 생기면 안 된다. 화면에서
+       * 거르는 것만으로는 동시에 두 번 눌리는 경우가 남는다.
+       */
+      const { weddingId } = await aWeddingWithPick();
+      const other = await client.query<{ id: string }>(
+        `INSERT INTO structured.vendors (name, category, region, source)
+         VALUES ('안 담은 홀', 'hall', '서울 강남구', 'public_data') RETURNING id`
+      );
+
+      await expect(decide(weddingId, 'hall', other.rows[0]!.id)).rejects.toThrow(
+        /decision_is_a_pick/
+      );
+    });
+
+    it('한 업종에 결정이 둘일 수 없다', async () => {
+      /*
+       * 후보 줄에 깃발을 세우는 방식이었다면 둘을 동시에 세울 수 있고, 그때
+       * 어느 쪽이 진짜인지 아무도 모른다. 기본키가 그걸 막는다.
+       */
+      const { weddingId, vendorId } = await aWeddingWithPick();
+      const second = await client.query<{ id: string }>(
+        `INSERT INTO structured.vendors (name, category, region, source)
+         VALUES ('둘째 홀', 'hall', '서울 강남구', 'public_data') RETURNING id`
+      );
+
+      await client.query(
+        'INSERT INTO structured.vendor_candidates (wedding_id, vendor_id) VALUES ($1, $2)',
+        [weddingId, second.rows[0]!.id]
+      );
+
+      await decide(weddingId, 'hall', vendorId);
+
+      await expect(decide(weddingId, 'hall', second.rows[0]!.id)).rejects.toThrow();
+    });
+
+    it('Pick에서 빼면 결정도 함께 사라진다', async () => {
+      const { weddingId, vendorId } = await aWeddingWithPick();
+
+      await decide(weddingId, 'hall', vendorId);
+      await client.query(
+        'DELETE FROM structured.vendor_candidates WHERE wedding_id = $1 AND vendor_id = $2',
+        [weddingId, vendorId]
+      );
+
+      const left = await client.query('SELECT 1 FROM structured.category_decisions WHERE wedding_id = $1', [
+        weddingId,
+      ]);
+
+      expect(left.rows).toHaveLength(0);
+    });
+
+    it('준비 상태를 저장하지 않고 계산한다', async () => {
+      const { weddingId, vendorId } = await aWeddingWithPick();
+
+      const picking = await client.query<{ state: string }>(
+        `SELECT state FROM structured.wedding_preparation
+         WHERE wedding_id = $1 AND category = 'hall'`,
+        [weddingId]
+      );
+
+      expect(picking.rows[0]?.state).toBe('picking');
+
+      await decide(weddingId, 'hall', vendorId);
+
+      const decided = await client.query<{ state: string }>(
+        `SELECT state FROM structured.wedding_preparation
+         WHERE wedding_id = $1 AND category = 'hall'`,
+        [weddingId]
+      );
+
+      expect(decided.rows[0]?.state).toBe('decided');
+    });
+
+    it('손대지 않은 업종은 준비 전이다', async () => {
+      const { weddingId } = await aWeddingWithPick();
+
+      const { rows } = await client.query<{ state: string }>(
+        `SELECT state FROM structured.wedding_preparation
+         WHERE wedding_id = $1 AND category = 'snap'`,
+        [weddingId]
+      );
+
+      expect(rows[0]?.state).toBe('before');
+    });
+  });
+
   describe('마이그레이션', () => {
     it('두 번 돌려도 같은 결과가 된다', async () => {
       await expect(migrate(client)).resolves.toEqual([]);

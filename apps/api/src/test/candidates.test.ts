@@ -210,4 +210,161 @@ describeWithDb('후보 저장', () => {
 
     expect(response.statusCode).toBe(401);
   });
+
+  describe('최종 결정', () => {
+    const decide = (
+      headers: Record<string, string>,
+      weddingId: string,
+      category: string,
+      vendorId: string
+    ) =>
+      test.app.inject({
+        method: 'PUT',
+        url: `/v1/weddings/${weddingId}/decisions`,
+        headers,
+        payload: { category, vendorId },
+      });
+
+    it('Pick한 곳으로 정하면 그 업종이 결정 완료가 된다', async () => {
+      const { headers } = await signInAs(test);
+      const weddingId = await createWedding(test, headers);
+      const vendorId = await createVendor('가온예식홀');
+
+      await add(headers, weddingId, vendorId);
+
+      expect((await decide(headers, weddingId, 'hall', vendorId)).statusCode).toBe(204);
+
+      const body = (await list(headers, weddingId)).json<{
+        groups: { category: string; state: string; stateLabel: string; decidedVendorId: string }[];
+      }>();
+
+      const hall = body.groups.find((group) => group.category === 'hall');
+
+      expect(hall?.state).toBe('decided');
+      expect(hall?.stateLabel).toBe('결정 완료');
+      expect(hall?.decidedVendorId).toBe(vendorId);
+    });
+
+    it('Pick하지 않은 곳으로는 정할 수 없다', async () => {
+      /*
+       * 담아두지도 않은 곳으로 정해져 있는 상태가 생기면 안 된다. 표의 외래키가
+       * 이미 막지만 사용자는 읽을 수 있는 말을 받아야 한다.
+       */
+      const { headers } = await signInAs(test);
+      const weddingId = await createWedding(test, headers);
+      const vendorId = await createVendor('안 담은 홀');
+
+      const response = await decide(headers, weddingId, 'hall', vendorId);
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json<{ error: { message: string } }>().error.message).toContain('Pick한 곳');
+    });
+
+    it('업종이 맞지 않으면 받지 않는다', async () => {
+      const { headers } = await signInAs(test);
+      const weddingId = await createWedding(test, headers);
+      const vendorId = await createVendor('스튜디오하나', 'sdm');
+
+      await add(headers, weddingId, vendorId);
+
+      expect((await decide(headers, weddingId, 'hall', vendorId)).statusCode).toBe(400);
+    });
+
+    it('다시 정하면 바뀐다', async () => {
+      // 마음이 바뀌는 일이라 되돌릴 수 없게 두지 않는다.
+      const { headers } = await signInAs(test);
+      const weddingId = await createWedding(test, headers);
+      const first = await createVendor('첫째 홀');
+      const second = await createVendor('둘째 홀');
+
+      await add(headers, weddingId, first);
+      await add(headers, weddingId, second);
+      await decide(headers, weddingId, 'hall', first);
+
+      expect((await decide(headers, weddingId, 'hall', second)).statusCode).toBe(204);
+
+      const body = (await list(headers, weddingId)).json<{
+        groups: { category: string; decidedVendorId: string }[];
+      }>();
+
+      expect(body.groups.find((group) => group.category === 'hall')?.decidedVendorId).toBe(second);
+    });
+
+    it('결정을 되돌리면 다시 후보를 고르는 중이 된다', async () => {
+      const { headers } = await signInAs(test);
+      const weddingId = await createWedding(test, headers);
+      const vendorId = await createVendor('가온예식홀');
+
+      await add(headers, weddingId, vendorId);
+      await decide(headers, weddingId, 'hall', vendorId);
+
+      const removed = await test.app.inject({
+        method: 'DELETE',
+        url: `/v1/weddings/${weddingId}/decisions/hall`,
+        headers,
+      });
+
+      expect(removed.statusCode).toBe(204);
+
+      const body = (await list(headers, weddingId)).json<{
+        groups: { category: string; state: string }[];
+      }>();
+
+      expect(body.groups.find((group) => group.category === 'hall')?.state).toBe('picking');
+    });
+
+    it('Pick에서 빼면 결정도 함께 사라진다', async () => {
+      const { headers } = await signInAs(test);
+      const weddingId = await createWedding(test, headers);
+      const vendorId = await createVendor('가온예식홀');
+
+      const added = await add(headers, weddingId, vendorId);
+      const candidateId = added.json<{ candidateId: string }>().candidateId;
+
+      await decide(headers, weddingId, 'hall', vendorId);
+
+      await test.app.inject({
+        method: 'DELETE',
+        url: `/v1/weddings/${weddingId}/candidates/${candidateId}`,
+        headers,
+      });
+
+      const left = await test.pool.query('SELECT 1 FROM structured.category_decisions');
+
+      expect(left.rows).toHaveLength(0);
+    });
+
+    it('진행률의 분모는 업종 수다', async () => {
+      /*
+       * 담은 후보 수를 분모로 쓰면 많이 담을수록 진행률이 떨어진다. 그건 열심히
+       * 한 사람을 벌주는 셈이다.
+       */
+      const { headers } = await signInAs(test);
+      const weddingId = await createWedding(test, headers);
+      const vendorId = await createVendor('가온예식홀');
+
+      await add(headers, weddingId, vendorId);
+      await add(headers, weddingId, await createVendor('둘째 홀'));
+      await decide(headers, weddingId, 'hall', vendorId);
+
+      const body = (await list(headers, weddingId)).json<{
+        progress: { decided: number; total: number; label: string };
+      }>();
+
+      expect(body.progress.decided).toBe(1);
+      expect(body.progress.total).toBeGreaterThan(1);
+      expect(body.progress.label).toBe(`1/${body.progress.total} 완료`);
+    });
+
+    it('담다 만 업종을 다음으로 권한다', async () => {
+      const { headers } = await signInAs(test);
+      const weddingId = await createWedding(test, headers);
+
+      await add(headers, weddingId, await createVendor('스튜디오하나', 'sdm'));
+
+      const body = (await list(headers, weddingId)).json<{ nextCategory: string }>();
+
+      expect(body.nextCategory).toBe('sdm');
+    });
+  });
 });

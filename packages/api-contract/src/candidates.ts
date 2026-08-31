@@ -1,4 +1,4 @@
-import { MAX_CANDIDATE_NOTE_LENGTH } from '@weddingpick/domain';
+import { MAX_CANDIDATE_NOTE_LENGTH, PREPARATION_STATES } from '@weddingpick/domain';
 import { z } from 'zod';
 
 import { idSchema, timestampSchema, vendorCategorySchema } from './common';
@@ -40,12 +40,38 @@ export const candidateListResponseSchema = z.object({
       categoryLabel: z.string().min(1),
       candidates: z.array(vendorCandidateSchema),
       comparable: z.boolean(),
+      /** 준비 전 / 후보 Pick 중 / 결정 완료. v3.2 §7. */
+      state: z.enum(PREPARATION_STATES),
+      stateLabel: z.string().min(1),
+      /** 최종 결정한 곳. 안 정했으면 null. */
+      decidedVendorId: idSchema.nullable(),
     })
   ),
   total: z.int().nonnegative(),
   /** 몇 곳까지 담을 수 있는지. 화면이 남은 자리를 말할 수 있어야 한다. */
   limit: z.int().positive(),
+  /**
+   * 업종 몇 개를 정했는지. `1/9 완료` 꼴.
+   *
+   * 분모는 업종 수다 — 담은 후보 수를 분모로 쓰면 많이 담을수록 진행률이
+   * 떨어지고, 그건 열심히 한 사람을 벌주는 셈이다.
+   */
+  progress: z.object({
+    decided: z.int().nonnegative(),
+    total: z.int().positive(),
+    label: z.string().min(1),
+  }),
+  /** 다음에 무엇을 준비하면 좋은지. 다 정했으면 null — 없는 다음을 지어내지 않는다. */
+  nextCategory: vendorCategorySchema.nullable(),
 });
+
+/** 최종 결정. 어느 업종을 어느 곳으로 정하는지. */
+export const decideCategoryRequestSchema = z.object({
+  category: vendorCategorySchema,
+  vendorId: idSchema,
+});
+
+export type DecideCategoryRequest = z.infer<typeof decideCategoryRequestSchema>;
 
 export type VendorCandidate = z.infer<typeof vendorCandidateSchema>;
 export type CreateCandidateRequest = z.infer<typeof createCandidateRequestSchema>;

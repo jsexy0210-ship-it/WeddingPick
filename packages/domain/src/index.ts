@@ -42,3 +42,4 @@ export * from './reward';
 export * from './nudge';
 export * from './vendor-claim';
 export * from './terms';
+export * from './pick';

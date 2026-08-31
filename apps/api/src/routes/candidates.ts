@@ -1,10 +1,18 @@
-import { createCandidateRequestSchema } from '@weddingpick/api-contract';
+import {
+  createCandidateRequestSchema,
+  decideCategoryRequestSchema,
+} from '@weddingpick/api-contract';
 import {
   MAX_CANDIDATES,
+  PREPARATION_STATE_LABEL,
+  VENDOR_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
   canAddCandidate,
   comparableWithin,
   groupByCategory,
+  nextCategory,
+  preparationProgress,
+  type CategoryProgress,
   type VendorCategory,
 } from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
@@ -52,7 +60,35 @@ export function registerCandidateRoutes(app: FastifyInstance, context: AppContex
         [request.params.weddingId]
       );
 
+      /*
+       * 결정은 후보와 다른 표에 있다(0041). 따로 읽어 붙이는 이유는 "이 업종은
+       * 여기로 정했다"가 후보 한 줄의 속성이 아니라 웨딩과 업종에 붙는 결론이기
+       * 때문이다.
+       */
+      const decisions = await context.pool.query<{ category: VendorCategory; vendor_id: string }>(
+        'SELECT category, vendor_id FROM structured.category_decisions WHERE wedding_id = $1',
+        [request.params.weddingId]
+      );
+
+      const decidedBy = new Map(decisions.rows.map((row) => [row.category, row.vendor_id]));
       const grouped = groupByCategory(rows);
+
+      /*
+       * 진행률은 업종 전체를 분모로 센다. 담은 업종만 세면 아무것도 안 담은
+       * 사람의 진행률이 0/0이 되고, 그건 아무 말도 하지 않는 숫자다.
+       */
+      const progress: CategoryProgress[] = VENDOR_CATEGORIES.map((category) => {
+        const picks = grouped.get(category) ?? [];
+        const decided = decidedBy.get(category) ?? null;
+
+        return {
+          category,
+          label: VENDOR_CATEGORY_LABEL[category],
+          state: decided ? 'decided' : picks.length > 0 ? 'picking' : 'before',
+          pickCount: picks.length,
+          decidedVendorId: decided,
+        };
+      });
 
       return {
         groups: [...grouped.entries()].map(([category, candidates]) => ({
@@ -70,9 +106,14 @@ export function registerCandidateRoutes(app: FastifyInstance, context: AppContex
             addedByPartner: row.added_by !== null && row.added_by !== userId,
           })),
           comparable: comparableWithin(candidates.length),
+          state: decidedBy.has(category) ? ('decided' as const) : ('picking' as const),
+          stateLabel: PREPARATION_STATE_LABEL[decidedBy.has(category) ? 'decided' : 'picking'],
+          decidedVendorId: decidedBy.get(category) ?? null,
         })),
         total: rows.length,
         limit: MAX_CANDIDATES,
+        progress: preparationProgress(progress),
+        nextCategory: nextCategory(progress),
       };
     }
   );
@@ -152,6 +193,78 @@ export function registerCandidateRoutes(app: FastifyInstance, context: AppContex
       if (rowCount === 0) {
         throw notFound('후보');
       }
+
+      return reply.status(204).send();
+    }
+  );
+
+  /**
+   * 최종 결정. v3.2 §6.
+   *
+   * **Pick한 곳 중에서만 정할 수 있다.** 표의 외래키가 이미 막지만, 여기서
+   * 걸러야 사용자가 읽을 수 있는 말을 받는다.
+   *
+   * 다시 부르면 그 업종의 결정을 바꾼다 — 마음이 바뀌는 일이라 되돌릴 수 없게
+   * 두지 않는다.
+   */
+  app.put<{ Params: { weddingId: string } }>(
+    '/v1/weddings/:weddingId/decisions',
+    auth,
+    async (request, reply) => {
+      const userId = currentUserId(request);
+      const body = decideCategoryRequestSchema.parse(request.body);
+
+      await assertWeddingAccess(context.pool, request.params.weddingId, userId);
+
+      const picked = await context.pool.query<{ category: VendorCategory }>(
+        `SELECT v.category
+         FROM structured.vendor_candidates c
+         JOIN structured.vendors v ON v.id = c.vendor_id
+         WHERE c.wedding_id = $1 AND c.vendor_id = $2`,
+        [request.params.weddingId, body.vendorId]
+      );
+
+      const category = picked.rows[0]?.category;
+
+      if (!category) {
+        throw new ApiError('invalid_request', 'Pick한 곳 중에서 정할 수 있어요.');
+      }
+
+      // 업종은 업체가 정한다. 보내온 값과 다르면 화면이 잘못 알고 있는 것이다.
+      if (category !== body.category) {
+        throw new ApiError('invalid_request', '업종이 맞지 않아요.');
+      }
+
+      await context.pool.query(
+        `INSERT INTO structured.category_decisions (wedding_id, category, vendor_id, decided_by)
+         VALUES ($1, $2::vendor_category, $3, $4)
+         ON CONFLICT (wedding_id, category)
+         DO UPDATE SET vendor_id = EXCLUDED.vendor_id,
+                       decided_at = now(),
+                       decided_by = EXCLUDED.decided_by`,
+        [request.params.weddingId, body.category, body.vendorId, userId]
+      );
+
+      return reply.status(204).send();
+    }
+  );
+
+  /** 결정 되돌리기. 그 업종은 다시 후보를 고르는 중이 된다. */
+  app.delete<{ Params: { weddingId: string; category: string } }>(
+    '/v1/weddings/:weddingId/decisions/:category',
+    auth,
+    async (request, reply) => {
+      const userId = currentUserId(request);
+
+      await assertWeddingAccess(context.pool, request.params.weddingId, userId);
+
+      const { rowCount } = await context.pool.query(
+        `DELETE FROM structured.category_decisions
+         WHERE wedding_id = $1 AND category = $2::vendor_category`,
+        [request.params.weddingId, request.params.category]
+      );
+
+      if (rowCount === 0) throw notFound('결정');
 
       return reply.status(204).send();
     }

@@ -45,21 +45,32 @@ export default function TabLayout() {
           ),
         }}
       />
+      {/*
+        Pick. 통합정책 v3.2 §1이 루트를 홈/검색/Pick/우리웨딩/MY로 정했다.
+        아이콘은 좋아요·찜으로 읽히면 안 되므로 하트를 쓰지 않는다 — 겹쳐둔
+        카드가 "고른 후보를 모아 견주는 곳"에 가깝고, 라벨이 Pick이라고 못박는다.
+       */}
       <Tabs.Screen
-        name="capture"
+        name="pick"
         options={{
-          title: '제보',
+          title: 'Pick',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="camera-outline" color={color} size={size} />
+            <Ionicons name="albums-outline" color={color} size={size} />
           ),
         }}
       />
+      {/*
+        제보는 루트에서 뺀다(v3.2 §1). 화면은 남아 있고 MY와 업체 상세, 데이터가
+        모자란 자리에서 들어간다 — 맥락 없이 탭으로 세워두면 무엇을 제보하라는
+        것인지 알 수 없다.
+       */}
+      <Tabs.Screen name="capture" options={{ href: null }} />
       <Tabs.Screen
         name="wedding"
         options={{
-          title: '내 웨딩',
+          title: '우리웨딩',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="heart-outline" color={color} size={size} />
+            <Ionicons name="people-outline" color={color} size={size} />
           ),
         }}
       />
