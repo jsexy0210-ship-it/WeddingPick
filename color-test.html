@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WeddingPick V7 SEED 병렬 비교</title>
+<style>
+
+:root{
+  --seed-fg:#16181c;--seed-fg-muted:#6b6f76;--seed-fg-subtle:#93979f;
+  --seed-bg:#ffffff;--seed-bg-layer:#f5f6f7;--seed-bg-neutral:#eef0f2;
+  --seed-primary:#ff6f61;--seed-primary-weak:#fff0ee;--seed-success:#2f9e44;--seed-danger:#e5484d;
+  --seed-border:#e6e8eb;--seed-shadow:0 15px 75px rgba(26,29,33,.12);
+}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:#f3f4f5;color:var(--seed-fg);font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;-webkit-font-smoothing:antialiased}
+body{display:flex;justify-content:center;padding:24px}
+.fr{width:390px;height:844px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:var(--seed-bg);box-shadow:var(--seed-shadow)}
+.sb{height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:600;letter-spacing:-.2px}
+.nav{flex:0 0 56px;display:flex;align-items:center;gap:4px;padding:0 16px;background:#fff}
+.bd{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;padding:0 24px 32px;scrollbar-width:none}.bd::-webkit-scrollbar{display:none}.bd>*{flex-shrink:0}
+.t1{font-size:30px;line-height:40px;letter-spacing:-.8px;font-weight:700;font-variant-numeric:tabular-nums}.t2{font-size:26px;line-height:35px;letter-spacing:-.6px;font-weight:700;text-wrap:pretty;margin:8px 0 24px}.t4{font-size:20px;line-height:28px;letter-spacing:-.4px;font-weight:700}.t5{font-size:17px;line-height:25.5px;letter-spacing:-.3px;font-weight:600}.t6{font-size:15px;line-height:22.5px;letter-spacing:-.3px;color:var(--seed-fg-muted)}.t7{font-size:13px;line-height:19.5px;letter-spacing:-.2px;color:var(--seed-fg-subtle)}
+.grp{background:var(--seed-bg-layer);border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:12px}.band{height:16px;background:var(--seed-bg-layer);margin:24px -24px}.tap{display:flex;align-items:center;gap:12px;padding:14px 0;min-height:56px;border:0;background:transparent;cursor:pointer;width:100%;text-align:left;font-family:inherit}.iconbtn{width:40px;height:40px;border:0;background:transparent;border-radius:999px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative}
+.tabbar{flex:0 0 72px;display:flex;align-items:flex-start;background:#fff;border-top:1px solid var(--seed-border);padding-top:9px;position:relative;overflow:visible;z-index:30}.tab{flex:1;border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:4px;font-family:inherit;color:#8b9098;font-size:11px;line-height:14px;font-weight:600;cursor:pointer;padding:0;position:relative}.tab.on{color:var(--seed-primary)}.tab svg{display:block}.tab-fab-space{width:24px;height:24px;display:block}.tab-fab{position:absolute;top:-16px;left:50%;margin-left:-21px;width:42px;height:42px;border-radius:999px;background:var(--seed-primary);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(255,111,97,.28)}
+.stack{height:10px;overflow:hidden;border-radius:999px;background:var(--seed-bg-neutral)}.stack>div{height:100%}
+.badge{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:600;background:#eef6ff;color:#2f6feb}.badge.green{background:#edf8ef;color:#2f8f46}
+
+/* 홈 편집 영역 스타일 수정 */
+.homeEditWrap{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  padding:20px 0;
+  margin-top:20px;
+  border-top:1px solid var(--seed-border);
+  border-bottom:1px solid var(--seed-border);
+}
+.homeEditBtn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  border:0;
+  background:var(--seed-bg-neutral); /* 버튼에 연한 회색 배경 부여 */
+  border-radius:999px; /* 알약 형태 형태 */
+  padding:10px 20px;
+  cursor:pointer;
+  font-family:inherit;
+  color:var(--seed-fg);
+  font-size:13px;
+  line-height:18px;
+  font-weight:600;
+  letter-spacing:-0.15px;
+  transition:background-color 0.2s, opacity 0.2s;
+}
+.homeEditBtn:active{
+  opacity:.7;
+  background:#e2e5e9;
+}
+
+.homeModeSheetBtn{width:100%;border:0;background:var(--seed-bg-neutral);border-radius:14px;padding:15px 16px;display:flex;align-items:center;justify-content:space-between;font-family:inherit;cursor:pointer;margin-top:18px;color:var(--seed-fg)}
+.homeModeSheetBtn:active{opacity:.65}
+.homeModeCheck{font-size:13px;line-height:18px;font-weight:700;color:var(--seed-primary)}
+.sheetWrap{display:none;position:absolute;inset:0;background:rgba(0,0,0,.25);z-index:100;align-items:flex-end}.sheetWrap.open{display:flex}.sheet{width:100%;background:#fff;border-radius:24px 24px 0 0;padding:20px 20px 28px;max-height:70%;overflow:auto}.handle{width:36px;height:4px;border-radius:99px;background:#d7dade;margin:0 auto 18px}.sheetRow{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--seed-border)}.drag{color:#9ca1a8}.switch{margin-left:auto;width:44px;height:26px;border-radius:999px;background:var(--seed-primary);position:relative}.switch:after{content:"";position:absolute;right:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff}.close{width:100%;height:50px;border:0;border-radius:14px;background:var(--seed-primary);color:#fff;font-weight:700;font-size:15px;margin-top:18px;cursor:pointer}
+@media(max-width:460px){body{padding:0;background:#fff}.fr{width:100vw;height:100vh;border-radius:0;box-shadow:none}}
+
+
+html,body{min-height:100%;background:#eef1f5}
+body{display:block;padding:24px}
+.compare{max-width:1700px;margin:0 auto}
+.compareHead{margin-bottom:18px}
+.compareHead h1{font-size:22px;line-height:30px;margin:0;letter-spacing:-.5px}
+.compareHead p{font-size:13px;line-height:19px;color:#6b7684;margin:5px 0 0}
+.grid2{display:grid;grid-template-columns:repeat(4,390px);gap:20px;align-items:start;justify-content:center}
+.colLabel{text-align:center;font-size:14px;font-weight:700;margin-bottom:10px}
+.phone{width:390px;height:844px;margin:auto;background:#fff;border-radius:34px;overflow:hidden;position:relative;box-shadow:0 10px 28px rgba(0,0,0,.08);display:flex;flex-direction:column}
+.phone .sb{flex:0 0 auto}
+.phone .tabbar{flex:0 0 auto}
+.tabPage{display:none;flex:1 1 auto;min-height:0;overflow:auto}
+.tabPage.on{display:block}
+.tabPage::-webkit-scrollbar{display:none}
+.tabPage>.bd{min-height:100%;padding-bottom:30px}
+.navV7{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 24px}
+.searchField{height:50px;border-radius:14px;background:#f2f4f6;display:flex;align-items:center;gap:10px;padding:0 15px;color:#8b95a1}
+.rowScroll{display:flex;gap:8px;overflow:auto;padding:0 0 16px;scrollbar-width:none}.rowScroll::-webkit-scrollbar{display:none}
+.vchip{border:1px solid var(--seed-border);background:#fff;border-radius:999px;padding:8px 12px;font:600 13px inherit;white-space:nowrap;color:#4e5968}
+.vchip.on{border-color:var(--seed-primary);background:var(--seed-primary-weak);color:var(--seed-primary)}
+.vendorItem{padding:16px 0;border-bottom:1px solid var(--seed-border)}
+.vendorTop{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.range{font-size:20px;line-height:28px;font-weight:700;letter-spacing:-.4px;margin-top:8px}
+.bottomCompare{position:sticky;bottom:0;margin:18px -24px -30px;padding:12px 24px 16px;background:rgba(255,255,255,.96);border-top:1px solid var(--seed-border)}
+.primaryBtn{height:50px;border:0;border-radius:14px;width:100%;background:var(--seed-primary);color:#fff;font:700 15px inherit}
+.checkRow{display:flex;align-items:flex-start;gap:12px;padding:15px 0;border-bottom:1px solid var(--seed-border)}
+.fakeCheck{width:22px;height:22px;border-radius:7px;border:2px solid var(--seed-primary);display:flex;align-items:center;justify-content:center;color:var(--seed-primary);font-weight:800}
+.segment{display:grid;grid-template-columns:repeat(3,1fr);background:#f2f4f6;border-radius:12px;padding:3px;margin-bottom:18px}
+.segment button{border:0;background:transparent;height:38px;border-radius:10px;font:600 13px inherit;color:#6b7684}
+.segment button.on{background:#fff;color:#191f28;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.summary{background:#f7f8fa;border-radius:18px;padding:18px;margin-bottom:14px}
+.progress{height:8px;border-radius:999px;background:#e5e8eb;overflow:hidden;margin-top:12px}.progress>i{display:block;height:100%;background:var(--seed-primary);width:58%}
+.myProfile{display:flex;align-items:center;justify-content:space-between;padding:12px 0 18px}
+.avatar{width:52px;height:52px;border-radius:50%;background:#f2f4f6;display:flex;align-items:center;justify-content:center;font-weight:700}
+.menuGroup{padding-top:6px}
+.groupLabel{font-size:12px;font-weight:700;color:#6b7684;padding:12px 0 4px}
+.menuRow{display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--seed-border)}
+
+.key-coral{--seed-primary:#FF6F61;--seed-primary-weak:#FFF0EE}
+.key-blue{--seed-primary:#3182F6;--seed-primary-weak:#E8F3FF}
+.key-green{--seed-primary:#2B8A6E;--seed-primary-weak:#EBF6F2}
+.key-purple{--seed-primary:#7C5CFC;--seed-primary-weak:#F1EEFE}
+
+.key-coral .tab-fab{background:#FF6F61!important;box-shadow:0 4px 12px rgba(255,111,97,.34)!important}
+.key-blue .tab-fab{background:#3182F6!important;box-shadow:0 4px 12px rgba(49,130,246,.34)!important}
+.key-green .tab-fab{background:#2B8A6E!important;box-shadow:0 4px 12px rgba(43,138,110,.34)!important}
+.key-purple .tab-fab{background:#7C5CFC!important;box-shadow:0 4px 12px rgba(124,92,252,.34)!important}
+
+.tabbar .tab{cursor:pointer;pointer-events:auto}
+@media(max-width:1350px){.grid2{grid-template-columns:repeat(2,390px)}}@media(max-width:880px){.grid2{grid-template-columns:1fr}.phone{width:min(390px,100%)}}
+
+</style>
+</head>
+<body>
+<div class="compare">
+  <div class="compareHead">
+    <h1>WeddingPick V7 · SEED Key Color 4종 비교</h1>
+    <p>V7 화면 구조·UI 레이아웃·기능·상태·인터랙션은 동일하고 Key Color만 4종 병렬 비교합니다.</p>
+  </div>
+  <div class="grid2">
+<div><div class="colLabel">SEED · Coral / Peach<div style="font-size:11px;color:#8b95a1;margin-top:3px">#FF6F61</div></div><div class="phone key-coral"><div class="sb"><span>9:41</span><span>● ● ●</span></div><section class="tabPage on" data-page="home"><div class="bd">
+    <h1 class="t2" style="white-space:pre-line">재호님, 예식까지<br>27일 남았어요</h1>
+
+    <!-- 1. 다음 일정 -->
+    <div style="display:flex;flex-direction:column">
+      <button class="grp" style="border:0;cursor:pointer;font-family:inherit;flex-direction:row;align-items:center;gap:14px;padding:18px 20px;margin-bottom:4px">
+        <span style="flex:1;display:flex;flex-direction:column;gap:3px;min-width:0;text-align:left">
+          <span class="t7" style="color:var(--seed-primary);font-weight:700">다음 일정</span>
+          <span class="t5">드레스 최종 피팅</span><span class="t7">라비드블랑 · 9월 5일</span>
+        </span>
+        <span style="font-size:24px;color:#b5bac1">›</span>
+      </button><div class="band"></div>
+    </div>
+
+    <!-- 2. 퀵 메뉴 -->
+    <div style="display:flex;flex-direction:column">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+        <button class="tap" style="flex-direction:column;gap:8px;justify-content:flex-start"><span style="width:48px;height:48px;border-radius:16px;background:var(--seed-primary-weak);display:flex;align-items:center;justify-content:center;font-size:20px">₩</span><span class="t7" style="color:#59616c;font-weight:600">지출내역</span></button>
+        <button class="tap" style="flex-direction:column;gap:8px;justify-content:flex-start"><span style="width:48px;height:48px;border-radius:16px;background:var(--seed-primary-weak);display:flex;align-items:center;justify-content:center;font-size:20px">≋</span><span class="t7" style="color:#59616c;font-weight:600">업체비교</span></button>
+        <button class="tap" style="flex-direction:column;gap:8px;justify-content:flex-start"><span style="width:48px;height:48px;border-radius:16px;background:var(--seed-primary-weak);display:flex;align-items:center;justify-content:center;font-size:20px">✓</span><span class="t7" style="color:#59616c;font-weight:600">웨딩 스케줄</span></button>
+        <button class="tap" style="flex-direction:column;gap:8px;justify-content:flex-start"><span style="width:48px;height:48px;border-radius:16px;background:var(--seed-primary-weak);display:flex;align-items:center;justify-content:center;font-size:20px">▤</span><span class="t7" style="color:#59616c;font-weight:600">방문노트</span></button>
+      </div><div class="band"></div>
+    </div>
+
+    <!-- 3. 웨딩 스케줄 -->
+    <div style="display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px"><span class="t4">웨딩 스케줄</span><span class="t6" style="color:var(--seed-primary);font-weight:700">전체보기</span></div>
+      <div class="t7" style="padding-bottom:8px">준비 7 / 12 완료</div>
+      <div style="height:8px;background:var(--seed-bg-neutral);border-radius:99px;overflow:hidden;margin-bottom:14px"><div style="width:58%;height:100%;background:var(--seed-primary)"></div></div>
+      <button class="tap"><span style="flex:0 0 56px"><span class="t7" style="color:var(--seed-primary);font-weight:700">SEP</span><br><span class="t5">05</span></span><span style="flex:1"><span class="t5">드레스 최종 피팅</span><br><span class="t7">라비드블랑 · 오후 2:00</span></span><span class="badge">예정</span></button>
+      <button class="tap"><span style="flex:0 0 56px"><span class="t7" style="font-weight:700">SEP</span><br><span class="t5">12</span></span><span style="flex:1"><span class="t5">웨딩홀 잔금</span><br><span class="t7">아펠가모 선릉</span></span><span class="badge green">완료</span></button>
+      <div class="band"></div>
+    </div>
+
+    <!-- 4. 결제 금액 -->
+    <div style="display:flex;flex-direction:column">
+      <span class="t7" style="font-weight:600;color:#59616c">지금까지 결제한 금액</span>
+      <div style="display:flex;align-items:baseline;gap:3px;padding-top:4px"><span class="t1" style="font-size:38px;line-height:48px;letter-spacing:-1px">862</span><span style="font-size:20px;font-weight:600;color:#59616c">만원</span></div>
+      <div class="stack" style="display:flex;margin-top:22px"><div style="width:35%;background:#ff8a7d"></div><div style="width:36%;background:#f5b24b"></div><div style="width:16%;background:#5c9ded"></div><div style="width:13%;background:#55b978"></div></div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px 4px;padding-top:16px">
+        <span><span class="t7">웨딩홀</span><br><span class="t6" style="font-weight:700">300만원</span></span><span><span class="t7">결정사</span><br><span class="t6" style="font-weight:700">312만원</span></span><span><span class="t7">스튜디오</span><br><span class="t6" style="font-weight:700">140만원</span></span><span><span class="t7">기타</span><br><span class="t6" style="font-weight:700">110만원</span></span>
+      </div><div class="band"></div>
+    </div>
+
+    <!-- 5. 관심업체 -->
+    <div style="display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:6px"><span class="t4">관심업체</span><span class="t6" style="color:var(--seed-primary);font-weight:700">비교하기</span></div>
+      <button class="tap"><span style="flex:1"><span class="t5">듀오</span><br><span class="t7">결정사 · 서울</span></span><span class="badge">비교 중</span></button>
+      <button class="tap"><span style="flex:1"><span class="t5">가연</span><br><span class="t7">결정사 · 서울</span></span><span class="badge">관심</span></button>
+    </div>
+
+    <!-- 6. 홈 편집 (버튼 형태 및 아이콘 감성 추가) -->
+    <div class="homeEditWrap">
+      <button class="homeEditBtn" id="editBtn" type="button" aria-label="홈 편집">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+        <span>홈 편집</span>
+      </button>
+    </div>
+  </div></section>
+<section class="tabPage" data-page="search">
+  <div class="navV7"><span class="t4">검색</span></div>
+  <div class="bd">
+    <div class="searchField">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="2"/><path d="M16 16l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <span class="t6">업체명·지역으로 찾기</span>
+    </div>
+    <div class="rowScroll" style="padding-top:16px">
+      <button class="vchip on">결정사</button><button class="vchip">웨딩홀</button><button class="vchip">스튜디오</button><button class="vchip">드레스</button><button class="vchip">메이크업</button>
+    </div>
+    <div class="rowx" style="padding:4px 0 10px"><span class="t5">결정사</span><span class="t7">서울 · 24곳</span></div>
+    <div class="vendorItem"><div class="vendorTop"><div><span class="t5">듀오</span><div class="t7">서울 강남 · 결정사</div></div><span class="badge">비교담기</span></div><div class="range">280~340만원</div><div class="t7">확인된 결제 데이터 12건 · 최근 12개월</div></div>
+    <div class="vendorItem"><div class="vendorTop"><div><span class="t5">가연</span><div class="t7">서울 강남 · 결정사</div></div><span class="badge green">관심</span></div><div class="range">250~320만원</div><div class="t7">확인된 결제 데이터 8건 · 최근 12개월</div></div>
+    <div class="vendorItem"><div class="vendorTop"><div><span class="t5">바로연</span><div class="t7">서울 · 결정사</div></div><span class="t7">♡</span></div><div class="range" style="font-size:17px">데이터 수집 중</div><div class="t7">확인된 결제 데이터가 더 필요해요</div></div>
+    <div class="bottomCompare"><button class="primaryBtn">2곳 비교하기</button></div>
+  </div>
+</section>
+
+<section class="tabPage" data-page="report">
+  <div class="navV7"><button class="iconbtn" aria-label="닫기">×</button></div>
+  <div class="bd">
+    <span class="t7" style="font-weight:600;color:var(--seed-primary);padding-bottom:2px">결제내역 최초 등록 안내</span>
+    <h1 class="t2" style="margin-top:6px">결제내역으로<br>가격 차이를 확인해보세요</h1>
+    <div class="checkRow" style="margin-top:18px"><div class="fakeCheck">✓</div><div style="flex:1"><span class="t5">전체 동의</span></div></div>
+    <div class="checkRow"><div class="fakeCheck">✓</div><div style="flex:1"><span class="t6" style="color:#191f28;font-weight:600">서비스 이용약관 동의</span><div class="t7">필수</div></div><span class="t7">보기</span></div>
+    <div class="checkRow"><div class="fakeCheck">✓</div><div style="flex:1"><span class="t6" style="color:#191f28;font-weight:600">개인정보 수집·이용 동의</span><div class="t7">필수</div></div><span class="t7">보기</span></div>
+    <div class="checkRow"><div class="fakeCheck">✓</div><div style="flex:1"><span class="t6" style="color:#191f28;font-weight:600">결제내역 분석 및 데이터 활용 동의</span><div class="t7">필수</div></div><span class="t7">보기</span></div>
+    <div class="notice" style="margin-top:18px">개별 결제금액은 후기 화면에 그대로 공개하지 않고, 조건이 비슷한 데이터를 모아 범위와 중앙값으로 보여줘요.</div>
+    <button class="primaryBtn" style="margin-top:22px">동의하고 결제내역 등록</button>
+  </div>
+</section>
+
+<section class="tabPage" data-page="wedding">
+  <div class="navV7"><span class="t4">우리웨딩</span><button class="iconbtn" aria-label="배우자 연결"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3.2" stroke="#4e5968" stroke-width="2"/><path d="M3.5 19c.6-3 2.8-4.6 5.5-4.6S13.9 16 14.5 19" stroke="#4e5968" stroke-width="2" stroke-linecap="round"/><path d="M16 6.2a3.2 3.2 0 0 1 0 6M17.5 14.7c2.1.5 3.4 2 3.9 4.3" stroke="#4e5968" stroke-width="2" stroke-linecap="round"/></svg></button></div>
+  <div class="bd">
+    <div class="segment"><button class="on">지출내역</button><button>웨딩 스케줄</button><button>방문노트</button></div>
+    <div class="summary"><div class="rowx"><span class="t7">총 예산</span><span class="t6" style="font-weight:700;color:var(--seed-primary)">수정</span></div><div class="t2" style="margin-top:4px">1,500만원</div><div class="progress"><i></i></div><div class="rowx" style="margin-top:9px"><span class="t7">지출 872만원</span><span class="t7">남은 예산 628만원</span></div></div>
+    <div class="rowx" style="padding:8px 0 10px"><span class="t5">지출내역</span><span class="t7">5건</span></div>
+    <div class="menuRow"><div><span class="t6" style="color:#191f28;font-weight:700">아펠가모 선릉</span><div class="t7">웨딩홀 계약금 · 결제 확인</div></div><span class="t5">300만원</span></div>
+    <div class="menuRow"><div><span class="t6" style="color:#191f28;font-weight:700">듀오</span><div class="t7">결정사 · 결제 확인</div></div><span class="t5">312만원</span></div>
+    <div class="menuRow"><div><span class="t6" style="color:#191f28;font-weight:700">스튜디오 이로</span><div class="t7">스튜디오 · 결제 확인</div></div><span class="t5">140만원</span></div>
+    <div class="menuRow"><div><span class="t6" style="color:#191f28;font-weight:700">라비드블랑</span><div class="t7">드레스 · 직접 입력</div></div><span class="t5">110만원</span></div>
+  </div>
+</section>
+
+<section class="tabPage" data-page="my">
+  <div class="navV7"><span class="t4">MY</span><button class="iconbtn" aria-label="설정">⚙</button></div>
+  <div class="bd">
+    <div class="myProfile"><div style="display:flex;align-items:center;gap:12px"><div class="avatar">재</div><div><span class="t5">재호님</span><div class="t7">예식일 2026. 09. 27</div></div></div><span class="badge">메이트</span></div>
+    <div class="summary"><div class="rowx"><span class="t5">웨딩 준비 단계</span><span class="t7">3 / 4</span></div><div class="progress"><i style="width:75%"></i></div><div class="t7" style="margin-top:9px">배우자 연결과 결제 데이터 확인까지 이어서 준비할 수 있어요.</div></div>
+    <div class="menuGroup"><div class="groupLabel">웨딩 준비</div><div class="menuRow"><span class="t6" style="color:#191f28">웨딩픽 오픈 이벤트</span><span>›</span></div><div class="menuRow"><span class="t6" style="color:#191f28">배우자 연결 안내</span><span>›</span></div><div class="menuRow"><span class="t6" style="color:#191f28">관심업체</span><span>›</span></div></div>
+    <div class="menuGroup"><div class="groupLabel">데이터</div><div class="menuRow"><span class="t6" style="color:#191f28">내가 등록한 내역</span><span>1건 ›</span></div><div class="menuRow"><span class="t6" style="color:#191f28">내가 쓴 후기</span><span>›</span></div><div class="menuRow"><span class="t6" style="color:#191f28">업체 반론 등록</span><span>›</span></div></div>
+    <div class="menuGroup"><div class="groupLabel">지원</div><div class="menuRow"><span class="t6" style="color:#191f28">문의하기</span><span>›</span></div><div class="menuRow"><span class="t6" style="color:#191f28">이용약관 · 개인정보 처리방침</span><span>›</span></div></div>
+  </div>
+</section>
+<div class="tabbar">
+    <button class="tab on" aria-label="홈" data-tab="home" data-tab="search" data-tab="report" data-tab="wedding" data-tab="my">
+      <span style="width:24px;height:24px;display:flex;align-items:center;justify-content:center">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20H4v-9.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9.5 20v-5.5h5V20" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+      </span><span>홈</span>
+    </button>
+    <button class="tab" aria-label="검색">
+      <span style="width:24px;height:24px;display:flex;align-items:center;justify-content:center">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="2"/><path d="M16 16l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </span><span>검색</span>
+    </button>
+    <button class="tab" aria-label="등록">
+      <span class="tab-fab-space"></span>
+      <span class="tab-fab" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 8.5h3.4l1.6-2.2h6l1.6 2.2H20v10H4v-10Z" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="13" r="3" stroke="#fff" stroke-width="2"/></svg>
+      </span><span>등록</span>
+    </button>
+    <button class="tab" aria-label="우리웨딩">
+      <span style="width:24px;height:24px;display:flex;align-items:center;justify-content:center">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 20s-7-4.4-7-9a3.9 3.9 0 0 1 7-2.3A3.9 3.9 0 0 1 19 11c0 4.6-7 9-7 9Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+      </span><span>우리웨딩</span>
+    </button>
+    <button class="tab" aria-label="MY">
+      <span style="width:24px;height:24px;display:flex;align-items:center;justify-content:center">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="3.4" stroke="currentColor" stroke-width="2"/><path d="M5 20c.7-3.4 3.4-5.2 7-5.2s6.3 1.8 7 5.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </span><span>MY</span>
+    </button>
+  </div></div></div>
+<div><div class="colLabel">SEED · Soft Royal Blue<div style="font-size:11px;color:#8b95a1;margin-top:3px">#3182F6</div></div><div class="phone key-blue"><div class="sb"><span>9:41</span><span>● ● ●</span></div><section class="tabPage on" data-page="home"><div class="bd">
+    <h1 class="t2" style="white-space:pre-line">재호님, 예식까지<br>27일 남았어요</h1>
+
+    <!-- 1. 다음 일정 -->
+    <div style="display:flex;flex-direction:column">
+      <button class="grp" style="border:0;cursor:pointer;font-family:inherit;flex-direction:row;align-items:center;gap:14px;padding:18px 20px;margin-bottom:4px">
+        <span style="flex:1;display:flex;flex-direction:column;gap:3px;min-width:0;text-align:left">
+          <span class="t7" style="color:var(--seed-primary);font-weight:700">다음 일정</span>
+          <span class="t5">드레스 최종 피팅</span><span class="t7">라비드블랑 · 9월 5일</span>
+        </span>
+        <span style="font-size:24px;color:#b5bac1">›</span>
+      </button><div class="band"></div>
+    </div>
+
+    <!-- 2. 퀵 메뉴 -->
+    <div style="display:flex;flex-direction:column">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+        <button class="tap" style="flex-direction:column;gap:8px;justify-content:flex-start"><span style="width:48px;height:48px;border-radius:16px;background:var(--seed-primary-weak);display:flex;align-items:center;justify-content:center;font-size:20px">₩</span><span class="t7" style="color:#59616c;font-weight:600">지출내역</span></button>
+        <button class="tap" style="flex-direction:column;gap:8px;justify-content:flex-start"><span style="width:48px;height:48px;border-radius:16px;background:var(--seed-primary-weak);display:flex;align-items:center;justify-content:center;font-size:20px">≋</span><span class="t7" style="color:#59616c;font-weight:600">업체비교</span></button>
+        <button class="tap" style="flex-direction:column;gap:8px;justify-content:flex-start"><span style="width:48px;height:48px;border-radius:16px;background:var(--seed-primary-weak);display:flex;align-items:center;justify-content:center;font-size:20px">✓</span><span class="t7" style="color:#59616c;font-weight:600">웨딩 스케줄</span></button>
+        <button class="tap" style="flex-direction:column;gap:8px;justify-content:flex-start"><span style="width:48px;height:48px;border-radius:16px;background:var(--seed-primary-weak);display:flex;align-items:center;justify-content:center;font-size:20px">▤</span><span class="t7" style="color:#59616c;font-weight:600">방문노트</span></button>
+      </div><div class="band"></div>
+    </div>
+
+    <!-- 3. 웨딩 스케줄 -->
+    <div style="display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px"><span class="t4">웨딩 스케줄</span><span class="t6" style="color:var(--seed-primary);font-weight:700">전체보기</span></div>
+      <div class="t7" style="padding-bottom:8px">준비 7 / 12 완료</div>
+      <div style="height:8px;background:var(--seed-bg-neutral);border-radius:99px;overflow:hidden;margin-bottom:14px"><div style="width:58%;height:100%;background:var(--seed-primary)"></div></div>
+      <button class="tap"><span style="flex:0 0 56px"><span class="t7" style="color:var(--seed-primary);font-weight:700">SEP</span><br><span class="t5">05</span></span><span style="flex:1"><span class="t5">드레스 최종 피팅</span><br><span class="t7">라비드블랑 · 오후 2:00</span></span><span class="badge">예정</span></button>
+      <button class="tap"><span style="flex:0 0 56px"><span class="t7" style="font-weight:700">SEP</span><br><span class="t5">12</span></span><span style="flex:1"><span class="t5">웨딩홀 잔금</span><br><span class="t7">아펠가모 선릉</span></span><span class="badge green">완료</span></button>
+      <div class="band"></div>
+    </div>
+
+    <!-- 4. 결제 금액 -->
+    <div style="display:flex;flex-direction:column">
+      <span class="t7" style="font-weight:600;color:#59616c">지금까지 결제한 금액</span>
+      <div style="display:flex;align-items:baseline;gap:3px;padding-top:4px"><span class="t1" style="font-size:38px;line-height:48px;letter-spacing:-1px">862</span><span style="font-size:20px;font-weight:600;color:#59616c">만원</span></div>
+      <div class="stack" style="display:flex;margin-top:22px"><div style="width:35%;background:#ff8a7d"></div><div style="width:36%;background:#f5b24b"></div><div style="width:16%;background:#5c9ded"></div><div style="width:13%;background:#55b978"></div></div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px 4px;padding-top:16px">
+        <span><span class="t7">웨딩홀</span><br><span class="t6" style="font-weight:700">300만원</span></span><span><span class="t7">결정사</span><br><span class="t6" style="font-weight:700">312만원</span></span><span><span class="t7">스튜디오</span><br><span class="t6" style="font-weight:700">140만원</span></span><span><span class="t7">기타</span><br><span class="t6" style="font-weight:700">110만원</span></span>
+      </div><div class="band"></div>
+    </div>
+
+    <!-- 5. 관심업체 -->
+    <div style="display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:6px"><span class="t4">관심업체</span><span class="t6" style="color:var(--seed-primary);font-weight:700">비교하기</span></div>
+      <button class="tap"><span style="flex:1"><span class="t5">듀오</span><br><span class="t7">결정사 · 서울</span></span><span class="badge">비교 중</span></button>
+      <button class="tap"><span style="flex:1"><span class="t5">가연</span><br><span class="t7">결정사 · 서울</span></span><span class="badge">관심</span></button>
+    </div>
+
+    <!-- 6. 홈 편집 (버튼 형태 및 아이콘 감성 추가) -->
+    <div class="homeEditWrap">
+      <button class="homeEditBtn" id="editBtn" type="button" aria-label="홈 편집">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+        <span>홈 편집</span>
+      </button>
+    </div>
+  </div></section>
+<section class="tabPage" data-page="search">
+  <div class="navV7"><span class="t4">검색</span></div>
+  <div class="bd">
+    <div class="searchField">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="2"/><path d="M16 16l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <span class="t6">업체명·지역으로 찾기</span>
+    </div>
+    <div class="rowScroll" style="padding-top:16px">
+      <button class="vchip on">결정사</button><button class="vchip">웨딩홀</button><button class="vchip">스튜디오</button><button class="vchip">드레스</button><button class="vchip">메이크업</button>
+    </div>
+    <div class="rowx" style="padding:4px 0 10px"><span class="t5">결정사</span><span class="t7">서울 · 24곳</span></div>
+    <div class="vendorItem"><div class="vendorTop"><div><span class="t5">듀오</span><div class="t7">서울 강남 · 결정사</div></div><span class="badge">비교담기</span></div><div class="range">280~340만원</div><div class="t7">확인된 결제 데이터 12건 · 최근 12개월</div></div>
+    <div class="vendorItem"><div class="vendorTop"><div><span class="t5">가연</span><div class="t7">서울 강남 · 결정사</div></div><span class="badge green">관심</span></div><div class="range">250~320만원</div><div class="t7">확인된 결제 데이터 8건 · 최근 12개월</div></div>
+    <div class="vendorItem"><div class="vendorTop"><div><span class="t5">바로연</span><div class="t7">서울 · 결정사</div></div><span class="t7">♡</span></div><div class="range" style="font-size:17px">데이터 수집 중</div><div class="t7">확인된 결제 데이터가 더 필요해요</div></div>
+    <div class="bottomCompare"><button class="primaryBtn">2곳 비교하기</button></div>
+  </div>
+</section>
+
+<section class="tabPage" data-page="report">
+  <div class="navV7"><button class="iconbtn" aria-label="닫기">×</button></div>
+  <div class="bd">
+    <span class="t7" style="font-weight:600;color:var(--seed-primary);padding-bottom:2px">결제내역 최초 등록 안내</span>
+    <h1 class="t2" style="margin-top:6px">결제내역으로<br>가격 차이를 확인해보세요</h1>
+    <div class="checkRow" style="margin-top:18px"><div class="fakeCheck">✓</div><div style="flex:1"><span class="t5">전체 동의</span></div></div>
+    <div class="checkRow"><div class="fakeCheck">✓</div><div style="flex:1"><span class="t6" style="color:#191f28;font-weight:600">서비스 이용약관 동의</span><div class="t7">필수</div></div><span class="t7">보기</span></div>
+    <div class="checkRow"><div class="fakeCheck">✓</div><div style="flex:1"><span class="t6" style="color:#191f28;font-weight:600">개인정보 수집·이용 동의</span><div class="t7">필수</div></div><span class="t7">보기</span></div>
+    <div class="checkRow"><div class="fakeCheck">✓</div><div style="flex:1"><span class="t6" style="color:#191f28;font-weight:600">결제내역 분석 및 데이터 활용 동의</span><div class="t7">필수</div></div><span class="t7">보기</span></div>
+    <div class="notice" style="margin-top:18px">개별 결제금액은 후기 화면에 그대로 공개하지 않고, 조건이 비슷한 데이터를 모아 범위와 중앙값으로 보여줘요.</div>
+    <button class="primaryBtn" style="margin-top:22px">동의하고 결제내역 등록</button>
+  </div>
+</section>
+
+<section class="tabPage" data-page="wedding">
+  <div class="navV7"><span class="t4">우리웨딩</span><button class="iconbtn" aria-label="배우자 연결"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3.2" stroke="#4e5968" stroke-width="2"/><path d="M3.5 19c.6-3 2.8-4.6 5.5-4.6S13.9 16 14.5 19" stroke="#4e5968" stroke-width="2" stroke-linecap="round"/><path d="M16 6.2a3.2 3.2 0 0 1 0 6M17.5 14.7c2.1.5 3.4 2 3.9 4.3" stroke="#4e5968" stroke-width="2" stroke-linecap="round"/></svg></button></div>
+  <div class="bd">
+    <div class="segment"><button class="on">지출내역</button><button>웨딩 스케줄</button><button>방문노트</button></div>
+    <div class="summary"><div class="rowx"><span class="t7">총 예산</span><span class="t6" style="font-weight:700;color:var(--seed-primary)">수정</span></div><div class="t2" style="margin-top:4px">1,500만원</div><div class="progress"><i></i></div><div class="rowx" style="margin-top:9px"><span class="t7">지출 872만원</span><span class="t7">남은 예산 628만원</span></div></div>
+    <div class="rowx" style="padding:8px 0 10px"><span class="t5">지출내역</span><span class="t7">5건</span></div>
+    <div class="menuRow"><div><span class="t6" style="color:#191f28;font-weight:700">아펠가모 선릉</span><div class="t7">웨딩홀 계약금 · 결제 확인</div></div><span class="t5">300만원</span></div>
+    <div class="menuRow"><div><span class="t6" style="color:#191f28;font-weight:700">듀오</span><div class="t7">결정사 · 결제 확인</div></div><span class="t5">312만원</span></div>
+    <div class="menuRow"><div><span class="t6" style="color:#191f28;font-weight:700">스튜디오 이로</span><div class="t7">스튜디오 · 결제 확인</div></div><span class="t5">140만원</span></div>
+    <div class="menuRow"><div><span class="t6" style="color:#191f28;font-weight:700">라비드블랑</span><div class="t7">드레스 · 직접 입력</div></div><span class="t5">110만원</span></div>
+  </div>
+</section>
+
+<section class="tabPage" data-page="my">
+  <div class="navV7"><span class="t4">MY</span><button class="iconbtn" aria-label="설정">⚙</button></div>
+  <div class="bd">
+    <div class="myProfile"><div style="display:flex;align-items:center;gap:12px"><div class="avatar">재</div><div><span class="t5">재호님</span><div class="t7">예식일 2026. 09. 27</div></div></div><span class="badge">메이트</span></div>
+    <div class="summary"><div class="rowx"><span class="t5">웨딩 준비 단계</span><span class="t7">3 / 4</span></div><div class="progress"><i style="width:75%"></i></div><div class="t7" style="margin-top:9px">배우자 연결과 결제 데이터 확인까지 이어서 준비할 수 있어요.</div></div>
+    <div class="menuGroup"><div class="groupLabel">웨딩 준비</div><div class="menuRow"><span class="t6" style="color:#191f28">웨딩픽 오픈 이벤트</span><span>›</span></div><div class="menuRow"><span class="t6" style="color:#191f28">배우자 연결 안내</span><span>›</span></div><div class="menuRow"><span class="t6" style="color:#191f28">관심업체</span><span>›</span></div></div>
+    <div class="menuGroup"><div class="groupLabel">데이터</div><div class="menuRow"><span class="t6" style="color:#191f28">내가 등록한 내역</span><span>1건 ›</span></div><div class="menuRow"><span class="t6" style="color:#191f28">내가 쓴 후기</span><span>›</span></div><div class="menuRow"><span class="t6" style="color:#191f28">업체 반론 등록</span><span>›</span></div></div>
+    <div class="menuGroup"><div class="groupLabel">지원</div><div class="menuRow"><span class="t6" style="color:#191f28">문의하기</span><span>›</span></div><div class="menuRow"><span class="t6" style="color:#191f28">이용약관 · 개인정보 처리방침</span><span>›</span></div></div>
+  </div>
+</section>
+<div class="tabbar">
+    <button class="tab on" aria-label="홈" data-tab="home" data-tab="search" data-tab="report" data-tab="wedding" data-tab="my">
+      <span style="width:24px;height:24px;display:flex;align-items:center;justify-content:center">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20H4v-9.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9.5 20v-5.5h5V20" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+      </span><span>홈</span>
+    </button>
+    <button class="tab" aria-label="검색">
+      <span style="width:24px;height:24px;display:flex;align-items:center;justify-content:center">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="2"/><path d="M16 16l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </span><span>검색</span>
+    </button>
+    <button class="tab" aria-label="등록">
+      <span class="tab-fab-space"></span>
+      <span class="tab-fab" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 8.5h3.4l1.6-2.2h6l1.6 2.2H20v10H4v-10Z" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="13" r="3" stroke="#fff" stroke-width="2"/></svg>
+      </span><span>등록</span>
+    </button>
+    <button class="tab" aria-label="우리웨딩">
+      <span style="width:24px;height:24px;display:flex;align-items:center;justify-content:center">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 20s-7-4.4-7-9a3.9 3.9 0 0 1 7-2.3A3.9 3.9 0 0 1 19 11c0 4.6-7 9-7 9Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+      </span><span>우리웨딩</span>
+    </button>
+    <button class="tab" aria-label="MY">
+      <span style="width:24px;height:24px;display:flex;align-items:center;justify-content:center">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="3.4" stroke="currentColor" stroke-width="2"/><path d="M5 20c.7-3.4 3.4-5.2 7-5.2s6.3 1.8 7 5.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </span><span>MY</span>
+    </button>
+  </div></div></div>
+<div><div class="colLabel">SEED · Sage Green<div style="font-size:11px;color:#8b95a1;margin-top:3px">#2B8A6E</div></div><div class="phone key-green"><div class="sb"><span>9:41</span><span>● ● ●</span></div><section class="tabPage on" data-page="home"><div class="bd">
+    <h1 class="t2" style="white-space:pre-line">재호님, 예식까지<br>27일 남았어요</h1>
+
+    <!-- 1. 다음 일정 -->
+    <div style="display:flex;flex-direction:column">
+      <button class="grp" style="border:0;cursor:pointer;font-family:inherit;flex-direction:row;align-items:center;gap:14px;padding:18px 20px;margin-bottom:4px">
+        <span style="flex:1;display:flex;flex-direction:column;gap:3px;min-width:0;text-align:left">
+          <span class="t7" style="color:var(--seed-primary);font-weight:700">다음 일정</span>
+          <span class="t5">드레스 최종 피팅</span><span class="t7">라비드블랑 · 9월 5일</span>
+        </span>
+        <span style="font-size:24px;color:#b5bac1">›</span>
+      </button><div class="band"></div>
+    </div>
+
+    <!-- 2. 퀵 메뉴 -->
+    <div style="display:flex;flex-direction:column">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+        <button class="tap" style="flex-direction:column;gap:8px;justify-content:flex-start"><span style="width:48px;height:48px;border-radius:16px;background:var(--seed-primary-weak);display:flex;align-items:center;justify-content:center;font-size:20px">₩</span><span class="t7" style="color:#59616c;font-weight:600">지출내역</span></button>
+        <button class="tap" style="flex-direction:column;gap:8px;justify-content:flex-start"><span style="width:48px;height:48px;border-radius:16px;background:var(--seed-primary-weak);display:flex;align-items:center;justify-content:center;font-size:20px">≋</span><span class="t7" style="color:#59616c;font-weight:600">업체비교</span></button>
+        <button class="tap" style="flex-direction:column;gap:8px;justify-content:flex-start"><span style="width:48px;height:48px;border-radius:16px;background:var(--seed-primary-weak);display:flex;align-items:center;justify-content:center;font-size:20px">✓</span><span class="t7" style="color:#59616c;font-weight:600">웨딩 스케줄</span></button>
+        <button class="tap" style="flex-direction:column;gap:8px;justify-content:flex-start"><span style="width:48px;height:48px;border-radius:16px;background:var(--seed-primary-weak);display:flex;align-items:center;justify-content:center;font-size:20px">▤</span><span class="t7" style="color:#59616c;font-weight:600">방문노트</span></button>
+      </div><div class="band"></div>
+    </div>
+
+    <!-- 3. 웨딩 스케줄 -->
+    <div style="display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px"><span class="t4">웨딩 스케줄</span><span class="t6" style="color:var(--seed-primary);font-weight:700">전체보기</span></div>
+      <div class="t7" style="padding-bottom:8px">준비 7 / 12 완료</div>
+      <div style="height:8px;background:var(--seed-bg-neutral);border-radius:99px;overflow:hidden;margin-bottom:14px"><div style="width:58%;height:100%;background:var(--seed-primary)"></div></div>
+      <button class="tap"><span style="flex:0 0 56px"><span class="t7" style="color:var(--seed-primary);font-weight:700">SEP</span><br><span class="t5">05</span></span><span style="flex:1"><span class="t5">드레스 최종 피팅</span><br><span class="t7">라비드블랑 · 오후 2:00</span></span><span class="badge">예정</span></button>
+      <button class="tap"><span style="flex:0 0 56px"><span class="t7" style="font-weight:700">SEP</span><br><span class="t5">12</span></span><span style="flex:1"><span class="t5">웨딩홀 잔금</span><br><span class="t7">아펠가모 선릉</span></span><span class="badge green">완료</span></button>
+      <div class="band"></div>
+    </div>
+
+    <!-- 4. 결제 금액 -->
+    <div style="display:flex;flex-direction:column">
+      <span class="t7" style="font-weight:600;color:#59616c">지금까지 결제한 금액</span>
+      <div style="display:flex;align-items:baseline;gap:3px;padding-top:4px"><span class="t1" style="font-size:38px;line-height:48px;letter-spacing:-1px">862</span><span style="font-size:20px;font-weight:600;color:#59616c">만원</span></div>
+      <div class="stack" style="display:flex;margin-top:22px"><div style="width:35%;background:#ff8a7d"></div><div style="width:36%;background:#f5b24b"></div><div style="width:16%;background:#5c9ded"></div><div style="width:13%;background:#55b978"></div></div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px 4px;padding-top:16px">
+        <span><span class="t7">웨딩홀</span><br><span class="t6" style="font-weight:700">300만원</span></span><span><span class="t7">결정사</span><br><span class="t6" style="font-weight:700">312만원</span></span><span><span class="t7">스튜디오</span><br><span class="t6" style="font-weight:700">140만원</span></span><span><span class="t7">기타</span><br><span class="t6" style="font-weight:700">110만원</span></span>
+      </div><div class="band"></div>
+    </div>
+
+    <!-- 5. 관심업체 -->
+    <div style="display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:6px"><span class="t4">관심업체</span><span class="t6" style="color:var(--seed-primary);font-weight:700">비교하기</span></div>
+      <button class="tap"><span style="flex:1"><span class="t5">듀오</span><br><span class="t7">결정사 · 서울</span></span><span class="badge">비교 중</span></button>
+      <button class="tap"><span style="flex:1"><span class="t5">가연</span><br><span class="t7">결정사 · 서울</span></span><span class="badge">관심</span></button>
+    </div>
+
+    <!-- 6. 홈 편집 (버튼 형태 및 아이콘 감성 추가) -->
+    <div class="homeEditWrap">
+      <button class="homeEditBtn" id="editBtn" type="button" aria-label="홈 편집">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+        <span>홈 편집</span>
+      </button>
+    </div>
+  </div></section>
+<section class="tabPage" data-page="search">
+  <div class="navV7"><span class="t4">검색</span></div>
+  <div class="bd">
+    <div class="searchField">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="2"/><path d="M16 16l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <span class="t6">업체명·지역으로 찾기</span>
+    </div>
+    <div class="rowScroll" style="padding-top:16px">
+      <button class="vchip on">결정사</button><button class="vchip">웨딩홀</button><button class="vchip">스튜디오</button><button class="vchip">드레스</button><button class="vchip">메이크업</button>
+    </div>
+    <div class="rowx" style="padding:4px 0 10px"><span class="t5">결정사</span><span class="t7">서울 · 24곳</span></div>
+    <div class="vendorItem"><div class="vendorTop"><div><span class="t5">듀오</span><div class="t7">서울 강남 · 결정사</div></div><span class="badge">비교담기</span></div><div class="range">280~340만원</div><div class="t7">확인된 결제 데이터 12건 · 최근 12개월</div></div>
+    <div class="vendorItem"><div class="vendorTop"><div><span class="t5">가연</span><div class="t7">서울 강남 · 결정사</div></div><span class="badge green">관심</span></div><div class="range">250~320만원</div><div class="t7">확인된 결제 데이터 8건 · 최근 12개월</div></div>
+    <div class="vendorItem"><div class="vendorTop"><div><span class="t5">바로연</span><div class="t7">서울 · 결정사</div></div><span class="t7">♡</span></div><div class="range" style="font-size:17px">데이터 수집 중</div><div class="t7">확인된 결제 데이터가 더 필요해요</div></div>
+    <div class="bottomCompare"><button class="primaryBtn">2곳 비교하기</button></div>
+  </div>
+</section>
+
+<section class="tabPage" data-page="report">
+  <div class="navV7"><button class="iconbtn" aria-label="닫기">×</button></div>
+  <div class="bd">
+    <span class="t7" style="font-weight:600;color:var(--seed-primary);padding-bottom:2px">결제내역 최초 등록 안내</span>
+    <h1 class="t2" style="margin-top:6px">결제내역으로<br>가격 차이를 확인해보세요</h1>
+    <div class="checkRow" style="margin-top:18px"><div class="fakeCheck">✓</div><div style="flex:1"><span class="t5">전체 동의</span></div></div>
+    <div class="checkRow"><div class="fakeCheck">✓</div><div style="flex:1"><span class="t6" style="color:#191f28;font-weight:600">서비스 이용약관 동의</span><div class="t7">필수</div></div><span class="t7">보기</span></div>
+    <div class="checkRow"><div class="fakeCheck">✓</div><div style="flex:1"><span class="t6" style="color:#191f28;font-weight:600">개인정보 수집·이용 동의</span><div class="t7">필수</div></div><span class="t7">보기</span></div>
+    <div class="checkRow"><div class="fakeCheck">✓</div><div style="flex:1"><span class="t6" style="color:#191f28;font-weight:600">결제내역 분석 및 데이터 활용 동의</span><div class="t7">필수</div></div><span class="t7">보기</span></div>
+    <div class="notice" style="margin-top:18px">개별 결제금액은 후기 화면에 그대로 공개하지 않고, 조건이 비슷한 데이터를 모아 범위와 중앙값으로 보여줘요.</div>
+    <button class="primaryBtn" style="margin-top:22px">동의하고 결제내역 등록</button>
+  </div>
+</section>
+
+<section class="tabPage" data-page="wedding">
+  <div class="navV7"><span class="t4">우리웨딩</span><button class="iconbtn" aria-label="배우자 연결"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3.2" stroke="#4e5968" stroke-width="2"/><path d="M3.5 19c.6-3 2.8-4.6 5.5-4.6S13.9 16 14.5 19" stroke="#4e5968" stroke-width="2" stroke-linecap="round"/><path d="M16 6.2a3.2 3.2 0 0 1 0 6M17.5 14.7c2.1.5 3.4 2 3.9 4.3" stroke="#4e5968" stroke-width="2" stroke-linecap="round"/></svg></button></div>
+  <div class="bd">
+    <div class="segment"><button class="on">지출내역</button><button>웨딩 스케줄</button><button>방문노트</button></div>
+    <div class="summary"><div class="rowx"><span class="t7">총 예산</span><span class="t6" style="font-weight:700;color:var(--seed-primary)">수정</span></div><div class="t2" style="margin-top:4px">1,500만원</div><div class="progress"><i></i></div><div class="rowx" style="margin-top:9px"><span class="t7">지출 872만원</span><span class="t7">남은 예산 628만원</span></div></div>
+    <div class="rowx" style="padding:8px 0 10px"><span class="t5">지출내역</span><span class="t7">5건</span></div>
+    <div class="menuRow"><div><span class="t6" style="color:#191f28;font-weight:700">아펠가모 선릉</span><div class="t7">웨딩홀 계약금 · 결제 확인</div></div><span class="t5">300만원</span></div>
+    <div class="menuRow"><div><span class="t6" style="color:#191f28;font-weight:700">듀오</span><div class="t7">결정사 · 결제 확인</div></div><span class="t5">312만원</span></div>
+    <div class="menuRow"><div><span class="t6" style="color:#191f28;font-weight:700">스튜디오 이로</span><div class="t7">스튜디오 · 결제 확인</div></div><span class="t5">140만원</span></div>
+    <div class="menuRow"><div><span class="t6" style="color:#191f28;font-weight:700">라비드블랑</span><div class="t7">드레스 · 직접 입력</div></div><span class="t5">110만원</span></div>
+  </div>
+</section>
+
+<section class="tabPage" data-page="my">
+  <div class="navV7"><span class="t4">MY</span><button class="iconbtn" aria-label="설정">⚙</button></div>
+  <div class="bd">
+    <div class="myProfile"><div style="display:flex;align-items:center;gap:12px"><div class="avatar">재</div><div><span class="t5">재호님</span><div class="t7">예식일 2026. 09. 27</div></div></div><span class="badge">메이트</span></div>
+    <div class="summary"><div class="rowx"><span class="t5">웨딩 준비 단계</span><span class="t7">3 / 4</span></div><div class="progress"><i style="width:75%"></i></div><div class="t7" style="margin-top:9px">배우자 연결과 결제 데이터 확인까지 이어서 준비할 수 있어요.</div></div>
+    <div class="menuGroup"><div class="groupLabel">웨딩 준비</div><div class="menuRow"><span class="t6" style="color:#191f28">웨딩픽 오픈 이벤트</span><span>›</span></div><div class="menuRow"><span class="t6" style="color:#191f28">배우자 연결 안내</span><span>›</span></div><div class="menuRow"><span class="t6" style="color:#191f28">관심업체</span><span>›</span></div></div>
+    <div class="menuGroup"><div class="groupLabel">데이터</div><div class="menuRow"><span class="t6" style="color:#191f28">내가 등록한 내역</span><span>1건 ›</span></div><div class="menuRow"><span class="t6" style="color:#191f28">내가 쓴 후기</span><span>›</span></div><div class="menuRow"><span class="t6" style="color:#191f28">업체 반론 등록</span><span>›</span></div></div>
+    <div class="menuGroup"><div class="groupLabel">지원</div><div class="menuRow"><span class="t6" style="color:#191f28">문의하기</span><span>›</span></div><div class="menuRow"><span class="t6" style="color:#191f28">이용약관 · 개인정보 처리방침</span><span>›</span></div></div>
+  </div>
+</section>
+<div class="tabbar">
+    <button class="tab on" aria-label="홈" data-tab="home" data-tab="search" data-tab="report" data-tab="wedding" data-tab="my">
+      <span style="width:24px;height:24px;display:flex;align-items:center;justify-content:center">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20H4v-9.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9.5 20v-5.5h5V20" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+      </span><span>홈</span>
+    </button>
+    <button class="tab" aria-label="검색">
+      <span style="width:24px;height:24px;display:flex;align-items:center;justify-content:center">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="2"/><path d="M16 16l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </span><span>검색</span>
+    </button>
+    <button class="tab" aria-label="등록">
+      <span class="tab-fab-space"></span>
+      <span class="tab-fab" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 8.5h3.4l1.6-2.2h6l1.6 2.2H20v10H4v-10Z" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="13" r="3" stroke="#fff" stroke-width="2"/></svg>
+      </span><span>등록</span>
+    </button>
+    <button class="tab" aria-label="우리웨딩">
+      <span style="width:24px;height:24px;display:flex;align-items:center;justify-content:center">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 20s-7-4.4-7-9a3.9 3.9 0 0 1 7-2.3A3.9 3.9 0 0 1 19 11c0 4.6-7 9-7 9Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+      </span><span>우리웨딩</span>
+    </button>
+    <button class="tab" aria-label="MY">
+      <span style="width:24px;height:24px;display:flex;align-items:center;justify-content:center">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="3.4" stroke="currentColor" stroke-width="2"/><path d="M5 20c.7-3.4 3.4-5.2 7-5.2s6.3 1.8 7 5.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </span><span>MY</span>
+    </button>
+  </div></div></div>
+<div><div class="colLabel">SEED · Deep Purple<div style="font-size:11px;color:#8b95a1;margin-top:3px">#7C5CFC</div></div><div class="phone key-purple"><div class="sb"><span>9:41</span><span>● ● ●</span></div><section class="tabPage on" data-page="home"><div class="bd">
+    <h1 class="t2" style="white-space:pre-line">재호님, 예식까지<br>27일 남았어요</h1>
+
+    <!-- 1. 다음 일정 -->
+    <div style="display:flex;flex-direction:column">
+      <button class="grp" style="border:0;cursor:pointer;font-family:inherit;flex-direction:row;align-items:center;gap:14px;padding:18px 20px;margin-bottom:4px">
+        <span style="flex:1;display:flex;flex-direction:column;gap:3px;min-width:0;text-align:left">
+          <span class="t7" style="color:var(--seed-primary);font-weight:700">다음 일정</span>
+          <span class="t5">드레스 최종 피팅</span><span class="t7">라비드블랑 · 9월 5일</span>
+        </span>
+        <span style="font-size:24px;color:#b5bac1">›</span>
+      </button><div class="band"></div>
+    </div>
+
+    <!-- 2. 퀵 메뉴 -->
+    <div style="display:flex;flex-direction:column">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+        <button class="tap" style="flex-direction:column;gap:8px;justify-content:flex-start"><span style="width:48px;height:48px;border-radius:16px;background:var(--seed-primary-weak);display:flex;align-items:center;justify-content:center;font-size:20px">₩</span><span class="t7" style="color:#59616c;font-weight:600">지출내역</span></button>
+        <button class="tap" style="flex-direction:column;gap:8px;justify-content:flex-start"><span style="width:48px;height:48px;border-radius:16px;background:var(--seed-primary-weak);display:flex;align-items:center;justify-content:center;font-size:20px">≋</span><span class="t7" style="color:#59616c;font-weight:600">업체비교</span></button>
+        <button class="tap" style="flex-direction:column;gap:8px;justify-content:flex-start"><span style="width:48px;height:48px;border-radius:16px;background:var(--seed-primary-weak);display:flex;align-items:center;justify-content:center;font-size:20px">✓</span><span class="t7" style="color:#59616c;font-weight:600">웨딩 스케줄</span></button>
+        <button class="tap" style="flex-direction:column;gap:8px;justify-content:flex-start"><span style="width:48px;height:48px;border-radius:16px;background:var(--seed-primary-weak);display:flex;align-items:center;justify-content:center;font-size:20px">▤</span><span class="t7" style="color:#59616c;font-weight:600">방문노트</span></button>
+      </div><div class="band"></div>
+    </div>
+
+    <!-- 3. 웨딩 스케줄 -->
+    <div style="display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:12px"><span class="t4">웨딩 스케줄</span><span class="t6" style="color:var(--seed-primary);font-weight:700">전체보기</span></div>
+      <div class="t7" style="padding-bottom:8px">준비 7 / 12 완료</div>
+      <div style="height:8px;background:var(--seed-bg-neutral);border-radius:99px;overflow:hidden;margin-bottom:14px"><div style="width:58%;height:100%;background:var(--seed-primary)"></div></div>
+      <button class="tap"><span style="flex:0 0 56px"><span class="t7" style="color:var(--seed-primary);font-weight:700">SEP</span><br><span class="t5">05</span></span><span style="flex:1"><span class="t5">드레스 최종 피팅</span><br><span class="t7">라비드블랑 · 오후 2:00</span></span><span class="badge">예정</span></button>
+      <button class="tap"><span style="flex:0 0 56px"><span class="t7" style="font-weight:700">SEP</span><br><span class="t5">12</span></span><span style="flex:1"><span class="t5">웨딩홀 잔금</span><br><span class="t7">아펠가모 선릉</span></span><span class="badge green">완료</span></button>
+      <div class="band"></div>
+    </div>
+
+    <!-- 4. 결제 금액 -->
+    <div style="display:flex;flex-direction:column">
+      <span class="t7" style="font-weight:600;color:#59616c">지금까지 결제한 금액</span>
+      <div style="display:flex;align-items:baseline;gap:3px;padding-top:4px"><span class="t1" style="font-size:38px;line-height:48px;letter-spacing:-1px">862</span><span style="font-size:20px;font-weight:600;color:#59616c">만원</span></div>
+      <div class="stack" style="display:flex;margin-top:22px"><div style="width:35%;background:#ff8a7d"></div><div style="width:36%;background:#f5b24b"></div><div style="width:16%;background:#5c9ded"></div><div style="width:13%;background:#55b978"></div></div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px 4px;padding-top:16px">
+        <span><span class="t7">웨딩홀</span><br><span class="t6" style="font-weight:700">300만원</span></span><span><span class="t7">결정사</span><br><span class="t6" style="font-weight:700">312만원</span></span><span><span class="t7">스튜디오</span><br><span class="t6" style="font-weight:700">140만원</span></span><span><span class="t7">기타</span><br><span class="t6" style="font-weight:700">110만원</span></span>
+      </div><div class="band"></div>
+    </div>
+
+    <!-- 5. 관심업체 -->
+    <div style="display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:6px"><span class="t4">관심업체</span><span class="t6" style="color:var(--seed-primary);font-weight:700">비교하기</span></div>
+      <button class="tap"><span style="flex:1"><span class="t5">듀오</span><br><span class="t7">결정사 · 서울</span></span><span class="badge">비교 중</span></button>
+      <button class="tap"><span style="flex:1"><span class="t5">가연</span><br><span class="t7">결정사 · 서울</span></span><span class="badge">관심</span></button>
+    </div>
+
+    <!-- 6. 홈 편집 (버튼 형태 및 아이콘 감성 추가) -->
+    <div class="homeEditWrap">
+      <button class="homeEditBtn" id="editBtn" type="button" aria-label="홈 편집">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+        <span>홈 편집</span>
+      </button>
+    </div>
+  </div></section>
+<section class="tabPage" data-page="search">
+  <div class="navV7"><span class="t4">검색</span></div>
+  <div class="bd">
+    <div class="searchField">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="2"/><path d="M16 16l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <span class="t6">업체명·지역으로 찾기</span>
+    </div>
+    <div class="rowScroll" style="padding-top:16px">
+      <button class="vchip on">결정사</button><button class="vchip">웨딩홀</button><button class="vchip">스튜디오</button><button class="vchip">드레스</button><button class="vchip">메이크업</button>
+    </div>
+    <div class="rowx" style="padding:4px 0 10px"><span class="t5">결정사</span><span class="t7">서울 · 24곳</span></div>
+    <div class="vendorItem"><div class="vendorTop"><div><span class="t5">듀오</span><div class="t7">서울 강남 · 결정사</div></div><span class="badge">비교담기</span></div><div class="range">280~340만원</div><div class="t7">확인된 결제 데이터 12건 · 최근 12개월</div></div>
+    <div class="vendorItem"><div class="vendorTop"><div><span class="t5">가연</span><div class="t7">서울 강남 · 결정사</div></div><span class="badge green">관심</span></div><div class="range">250~320만원</div><div class="t7">확인된 결제 데이터 8건 · 최근 12개월</div></div>
+    <div class="vendorItem"><div class="vendorTop"><div><span class="t5">바로연</span><div class="t7">서울 · 결정사</div></div><span class="t7">♡</span></div><div class="range" style="font-size:17px">데이터 수집 중</div><div class="t7">확인된 결제 데이터가 더 필요해요</div></div>
+    <div class="bottomCompare"><button class="primaryBtn">2곳 비교하기</button></div>
+  </div>
+</section>
+
+<section class="tabPage" data-page="report">
+  <div class="navV7"><button class="iconbtn" aria-label="닫기">×</button></div>
+  <div class="bd">
+    <span class="t7" style="font-weight:600;color:var(--seed-primary);padding-bottom:2px">결제내역 최초 등록 안내</span>
+    <h1 class="t2" style="margin-top:6px">결제내역으로<br>가격 차이를 확인해보세요</h1>
+    <div class="checkRow" style="margin-top:18px"><div class="fakeCheck">✓</div><div style="flex:1"><span class="t5">전체 동의</span></div></div>
+    <div class="checkRow"><div class="fakeCheck">✓</div><div style="flex:1"><span class="t6" style="color:#191f28;font-weight:600">서비스 이용약관 동의</span><div class="t7">필수</div></div><span class="t7">보기</span></div>
+    <div class="checkRow"><div class="fakeCheck">✓</div><div style="flex:1"><span class="t6" style="color:#191f28;font-weight:600">개인정보 수집·이용 동의</span><div class="t7">필수</div></div><span class="t7">보기</span></div>
+    <div class="checkRow"><div class="fakeCheck">✓</div><div style="flex:1"><span class="t6" style="color:#191f28;font-weight:600">결제내역 분석 및 데이터 활용 동의</span><div class="t7">필수</div></div><span class="t7">보기</span></div>
+    <div class="notice" style="margin-top:18px">개별 결제금액은 후기 화면에 그대로 공개하지 않고, 조건이 비슷한 데이터를 모아 범위와 중앙값으로 보여줘요.</div>
+    <button class="primaryBtn" style="margin-top:22px">동의하고 결제내역 등록</button>
+  </div>
+</section>
+
+<section class="tabPage" data-page="wedding">
+  <div class="navV7"><span class="t4">우리웨딩</span><button class="iconbtn" aria-label="배우자 연결"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="9" cy="8" r="3.2" stroke="#4e5968" stroke-width="2"/><path d="M3.5 19c.6-3 2.8-4.6 5.5-4.6S13.9 16 14.5 19" stroke="#4e5968" stroke-width="2" stroke-linecap="round"/><path d="M16 6.2a3.2 3.2 0 0 1 0 6M17.5 14.7c2.1.5 3.4 2 3.9 4.3" stroke="#4e5968" stroke-width="2" stroke-linecap="round"/></svg></button></div>
+  <div class="bd">
+    <div class="segment"><button class="on">지출내역</button><button>웨딩 스케줄</button><button>방문노트</button></div>
+    <div class="summary"><div class="rowx"><span class="t7">총 예산</span><span class="t6" style="font-weight:700;color:var(--seed-primary)">수정</span></div><div class="t2" style="margin-top:4px">1,500만원</div><div class="progress"><i></i></div><div class="rowx" style="margin-top:9px"><span class="t7">지출 872만원</span><span class="t7">남은 예산 628만원</span></div></div>
+    <div class="rowx" style="padding:8px 0 10px"><span class="t5">지출내역</span><span class="t7">5건</span></div>
+    <div class="menuRow"><div><span class="t6" style="color:#191f28;font-weight:700">아펠가모 선릉</span><div class="t7">웨딩홀 계약금 · 결제 확인</div></div><span class="t5">300만원</span></div>
+    <div class="menuRow"><div><span class="t6" style="color:#191f28;font-weight:700">듀오</span><div class="t7">결정사 · 결제 확인</div></div><span class="t5">312만원</span></div>
+    <div class="menuRow"><div><span class="t6" style="color:#191f28;font-weight:700">스튜디오 이로</span><div class="t7">스튜디오 · 결제 확인</div></div><span class="t5">140만원</span></div>
+    <div class="menuRow"><div><span class="t6" style="color:#191f28;font-weight:700">라비드블랑</span><div class="t7">드레스 · 직접 입력</div></div><span class="t5">110만원</span></div>
+  </div>
+</section>
+
+<section class="tabPage" data-page="my">
+  <div class="navV7"><span class="t4">MY</span><button class="iconbtn" aria-label="설정">⚙</button></div>
+  <div class="bd">
+    <div class="myProfile"><div style="display:flex;align-items:center;gap:12px"><div class="avatar">재</div><div><span class="t5">재호님</span><div class="t7">예식일 2026. 09. 27</div></div></div><span class="badge">메이트</span></div>
+    <div class="summary"><div class="rowx"><span class="t5">웨딩 준비 단계</span><span class="t7">3 / 4</span></div><div class="progress"><i style="width:75%"></i></div><div class="t7" style="margin-top:9px">배우자 연결과 결제 데이터 확인까지 이어서 준비할 수 있어요.</div></div>
+    <div class="menuGroup"><div class="groupLabel">웨딩 준비</div><div class="menuRow"><span class="t6" style="color:#191f28">웨딩픽 오픈 이벤트</span><span>›</span></div><div class="menuRow"><span class="t6" style="color:#191f28">배우자 연결 안내</span><span>›</span></div><div class="menuRow"><span class="t6" style="color:#191f28">관심업체</span><span>›</span></div></div>
+    <div class="menuGroup"><div class="groupLabel">데이터</div><div class="menuRow"><span class="t6" style="color:#191f28">내가 등록한 내역</span><span>1건 ›</span></div><div class="menuRow"><span class="t6" style="color:#191f28">내가 쓴 후기</span><span>›</span></div><div class="menuRow"><span class="t6" style="color:#191f28">업체 반론 등록</span><span>›</span></div></div>
+    <div class="menuGroup"><div class="groupLabel">지원</div><div class="menuRow"><span class="t6" style="color:#191f28">문의하기</span><span>›</span></div><div class="menuRow"><span class="t6" style="color:#191f28">이용약관 · 개인정보 처리방침</span><span>›</span></div></div>
+  </div>
+</section>
+<div class="tabbar">
+    <button class="tab on" aria-label="홈" data-tab="home" data-tab="search" data-tab="report" data-tab="wedding" data-tab="my">
+      <span style="width:24px;height:24px;display:flex;align-items:center;justify-content:center">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20H4v-9.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9.5 20v-5.5h5V20" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+      </span><span>홈</span>
+    </button>
+    <button class="tab" aria-label="검색">
+      <span style="width:24px;height:24px;display:flex;align-items:center;justify-content:center">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="2"/><path d="M16 16l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </span><span>검색</span>
+    </button>
+    <button class="tab" aria-label="등록">
+      <span class="tab-fab-space"></span>
+      <span class="tab-fab" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 8.5h3.4l1.6-2.2h6l1.6 2.2H20v10H4v-10Z" stroke="#fff" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="13" r="3" stroke="#fff" stroke-width="2"/></svg>
+      </span><span>등록</span>
+    </button>
+    <button class="tab" aria-label="우리웨딩">
+      <span style="width:24px;height:24px;display:flex;align-items:center;justify-content:center">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 20s-7-4.4-7-9a3.9 3.9 0 0 1 7-2.3A3.9 3.9 0 0 1 19 11c0 4.6-7 9-7 9Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+      </span><span>우리웨딩</span>
+    </button>
+    <button class="tab" aria-label="MY">
+      <span style="width:24px;height:24px;display:flex;align-items:center;justify-content:center">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="3.4" stroke="currentColor" stroke-width="2"/><path d="M5 20c.7-3.4 3.4-5.2 7-5.2s6.3 1.8 7 5.2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </span><span>MY</span>
+    </button>
+  </div></div></div>
+</div>
+</div>
+<script>
+(function(){
+  function go(key){
+    document.querySelectorAll('.phone').forEach(function(phone){
+      phone.querySelectorAll('.tabPage').forEach(function(p){
+        p.classList.toggle('on', p.getAttribute('data-page')===key);
+      });
+      phone.querySelectorAll('.tab[data-tab]').forEach(function(t){
+        t.classList.toggle('on', t.getAttribute('data-tab')===key);
+      });
+    });
+  }
+  document.addEventListener('click',function(e){
+    var btn=e.target.closest('.tab[data-tab]');
+    if(!btn)return;
+    e.preventDefault();
+    go(btn.getAttribute('data-tab'));
+  });
+  go('home');
+})();
+</script>
+</body>
+</html>
