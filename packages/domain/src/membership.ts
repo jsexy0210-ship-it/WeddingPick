@@ -22,6 +22,12 @@ export type MembershipFacts = {
   spouseLinked: boolean;
   /** 업체가 매칭된 결제인증이 있는가. Level 3 Unlock과 같은 조건이다. */
   hasPaymentProof: boolean;
+  /** 예식일을 정했는가. 최소 온보딩이 받는 것이다. */
+  weddingSet: boolean;
+  /** 한 곳이라도 Pick했는가. */
+  hasPick: boolean;
+  /** 한 업종이라도 비교해봤는가. 비교할 수 있는 상태가 아니라 비교한 사실이다. */
+  hasCompared: boolean;
 };
 
 /**
@@ -42,7 +48,16 @@ export function tierOf(facts: MembershipFacts): MemberTier {
   return 'mate';
 }
 
-export const MISSION_KEYS = ['explore', 'organize', 'together', 'payment'] as const;
+/**
+ * 미션 넷. 통합정책 v3.7 최신 §9가 다시 정했다.
+ *
+ * **결제내역 제보가 빠졌다.** 예전 넷은 마지막이 결제인증이었는데, 처음 온
+ * 사람에게 영수증을 내라는 것은 활성화가 아니라 문턱이다. 대신 첫 Pick과
+ * 비교해보기가 들어왔다 — 이 앱이 무엇을 하는 곳인지 몸으로 알게 하는 순서다.
+ *
+ * 미션은 가입 조건도 기능 잠금도 아니다. 안 해도 다 쓸 수 있다.
+ */
+export const MISSION_KEYS = ['setup', 'first_pick', 'compare', 'partner'] as const;
 
 export type MissionKey = (typeof MISSION_KEYS)[number];
 
@@ -52,35 +67,38 @@ export type Mission = {
   description: string;
 };
 
-/** 핸드오프 17번이 문구까지 정했다. */
 export const MISSIONS: readonly Mission[] = [
   {
-    key: 'explore',
-    title: '업체를 살펴봐요',
-    description: '검색 · 업체정보 · 인증후기 · 업체평가',
+    key: 'setup',
+    title: '내 웨딩을 설정해요',
+    description: '예식일과 지역을 알려주시면 맞춰서 찾아드려요',
   },
   {
-    key: 'organize',
-    title: '준비를 정리해요',
-    description: '관심업체 · 지출내역 · 웨딩 스케줄',
+    key: 'first_pick',
+    title: '마음에 드는 곳을 Pick해요',
+    description: '검색하다 마음에 드는 곳을 담아두세요',
   },
   {
-    key: 'together',
+    key: 'compare',
+    title: '나란히 놓고 비교해요',
+    description: '같은 업종에서 두 곳부터 견줘볼 수 있어요',
+  },
+  {
+    key: 'partner',
     title: '배우자와 함께해요',
     description: '초대 코드로 배우자를 초대해보세요',
   },
-  {
-    key: 'payment',
-    title: '결제 데이터를 확인해요',
-    description: '결제 인증 시 모든 정보 확인 가능',
-  },
 ];
+
+/** 미션 진행률에 붙는 말. v3.7 §9가 이 꼴로 정했다. */
+export const MISSION_HEADLINE = '웨딩픽 시작하기';
 
 /**
  * 미션이 끝났는가.
  *
- * **'업체를 살펴봐요'는 늘 완료다.** 앱을 연 것이 곧 그 미션이라, 조건을 붙이면
- * 첫 화면부터 못 한 일이 하나 있는 상태로 시작한다. 그건 안내가 아니라 잔소리다.
+ * **첫 Pick으로 로그인했으면 그 미션은 이미 끝난 것이다**(v3.7 §9). 로그인
+ * 화면을 지나온 이유가 Pick이었는데 Pick 미션이 안 끝나 있으면, 방금 한 일이
+ * 없던 일이 된다.
  *
  * 미션은 등급과 따로 센다. 결제인증만 내고 배우자를 연결하지 않은 사람은 패밀리
  * 등급이지만 '배우자와 함께해요'는 아직 안 한 것이다 — **등급이 미션을 대신
@@ -88,14 +106,14 @@ export const MISSIONS: readonly Mission[] = [
  */
 export function isMissionDone(key: MissionKey, facts: MembershipFacts): boolean {
   switch (key) {
-    case 'explore':
-      return true;
-    case 'organize':
-      return facts.loggedIn;
-    case 'together':
+    case 'setup':
+      return facts.weddingSet;
+    case 'first_pick':
+      return facts.hasPick;
+    case 'compare':
+      return facts.hasCompared;
+    case 'partner':
       return facts.spouseLinked;
-    case 'payment':
-      return facts.hasPaymentProof;
   }
 }
 

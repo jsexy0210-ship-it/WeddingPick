@@ -5,6 +5,7 @@ import {
   candidateListResponseSchema,
   createCandidateRequestSchema,
   decideCategoryRequestSchema,
+  recordComparisonRequestSchema,
 } from './candidates';
 import {
   createExpenseRequestSchema,
@@ -532,6 +533,14 @@ export const ENDPOINTS = {
     method: 'PUT',
     path: '/v1/weddings/{weddingId}/decisions',
     body: decideCategoryRequestSchema,
+    response: z.null(),
+  },
+
+  /** 비교했다는 사실. 미션 ③이 이 기록을 본다. */
+  recordComparison: {
+    method: 'POST',
+    path: '/v1/weddings/{weddingId}/comparisons',
+    body: recordComparisonRequestSchema,
     response: z.null(),
   },
 

@@ -73,6 +73,13 @@ export const decideCategoryRequestSchema = z.object({
 
 export type DecideCategoryRequest = z.infer<typeof decideCategoryRequestSchema>;
 
+/** 비교했다는 사실. 업종별로 남긴다. */
+export const recordComparisonRequestSchema = z.object({
+  category: vendorCategorySchema,
+});
+
+export type RecordComparisonRequest = z.infer<typeof recordComparisonRequestSchema>;
+
 export type VendorCandidate = z.infer<typeof vendorCandidateSchema>;
 export type CreateCandidateRequest = z.infer<typeof createCandidateRequestSchema>;
 export type CandidateListResponse = z.infer<typeof candidateListResponseSchema>;

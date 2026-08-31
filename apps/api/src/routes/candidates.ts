@@ -1,6 +1,7 @@
 import {
   createCandidateRequestSchema,
   decideCategoryRequestSchema,
+  recordComparisonRequestSchema,
 } from '@weddingpick/api-contract';
 import {
   MAX_CANDIDATES,
@@ -243,6 +244,35 @@ export function registerCandidateRoutes(app: FastifyInstance, context: AppContex
                        decided_at = now(),
                        decided_by = EXCLUDED.decided_by`,
         [request.params.weddingId, body.category, body.vendorId, userId]
+      );
+
+      return reply.status(204).send();
+    }
+  );
+
+  /**
+   * 비교했다는 사실을 남긴다. v3.7 §9의 미션 ③.
+   *
+   * **비교할 수 있는 상태가 아니라 비교한 사실이다.** 후보 두 곳을 담았다고
+   * 비교한 것은 아니다 — 버튼이 옆에 있는 것과 눌러본 것은 다르고, 미션은
+   * 눌러보게 하려고 있는 장치다.
+   *
+   * 처음 한 번만 남긴다. 몇 번 비교했는지는 미션이 묻지 않는다.
+   */
+  app.post<{ Params: { weddingId: string } }>(
+    '/v1/weddings/:weddingId/comparisons',
+    auth,
+    async (request, reply) => {
+      const userId = currentUserId(request);
+      const body = recordComparisonRequestSchema.parse(request.body);
+
+      await assertWeddingAccess(context.pool, request.params.weddingId, userId);
+
+      await context.pool.query(
+        `INSERT INTO structured.comparisons (wedding_id, category)
+         VALUES ($1, $2::vendor_category)
+         ON CONFLICT (wedding_id, category) DO NOTHING`,
+        [request.params.weddingId, body.category]
       );
 
       return reply.status(204).send();

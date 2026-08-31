@@ -778,6 +778,19 @@ export async function decideCategory(
   });
 }
 
+/**
+ * 비교했다는 사실을 남긴다. 미션 ③이 이 기록을 본다.
+ *
+ * 실패해도 부르는 쪽을 막지 않는다 — 미션 체크 하나 때문에 비교 화면이 오류로
+ * 바뀌면 잃는 것이 더 크다.
+ */
+export async function recordComparison(weddingId: string, category: string): Promise<void> {
+  await request(`/v1/weddings/${weddingId}/comparisons`, z.null(), {
+    method: 'POST',
+    body: JSON.stringify({ category }),
+  });
+}
+
 export async function removeDecision(weddingId: string, category: string): Promise<void> {
   await request(`/v1/weddings/${weddingId}/decisions/${category}`, z.null(), { method: 'DELETE' });
 }

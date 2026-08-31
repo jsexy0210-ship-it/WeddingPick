@@ -82,6 +82,8 @@ export function registerWeddingRoutes(app: FastifyInstance, context: AppContext)
       display_name: string | null;
       spouse_linked: boolean;
       has_payment_proof: boolean;
+      has_pick: boolean;
+      has_compared: boolean;
     }>(
       `SELECT
          w.id,
@@ -91,7 +93,14 @@ export function registerWeddingRoutes(app: FastifyInstance, context: AppContext)
            AS spouse_linked,
          EXISTS (
            SELECT 1 FROM structured.usable_payment_proofs p WHERE p.reporter_user_id = u.id
-         ) AS has_payment_proof
+         ) AS has_payment_proof,
+         EXISTS (
+           SELECT 1 FROM structured.vendor_candidates c WHERE c.wedding_id = w.id
+         ) AS has_pick,
+         /* 비교할 수 있는 상태가 아니라 실제로 비교한 사실이다(0044). */
+         EXISTS (
+           SELECT 1 FROM structured.comparisons x WHERE x.wedding_id = w.id
+         ) AS has_compared
        FROM structured.users u
        LEFT JOIN LATERAL (
          SELECT id, wedding_date, owner_user_id, partner_user_id
@@ -112,6 +121,10 @@ export function registerWeddingRoutes(app: FastifyInstance, context: AppContext)
       loggedIn: true,
       spouseLinked: row?.spouse_linked ?? false,
       hasPaymentProof: row?.has_payment_proof ?? false,
+      /* 예식일이 있으면 내 웨딩을 설정한 것이다. 최소 온보딩이 받는 것이 이것이다. */
+      weddingSet: weddingDate !== null,
+      hasPick: row?.has_pick ?? false,
+      hasCompared: row?.has_compared ?? false,
     };
 
     const tier = tierOf(facts);
@@ -128,6 +141,8 @@ export function registerWeddingRoutes(app: FastifyInstance, context: AppContext)
       setupComplete: displayName !== null && weddingDate !== null,
       spouseLinked: facts.spouseLinked,
       hasPaymentProof: facts.hasPaymentProof,
+      hasPick: facts.hasPick,
+      hasCompared: facts.hasCompared,
       /*
        * 등급은 서버가 정한다. 앱이 세 값으로 계산하게 두면 화면마다 조건을 다시
        * 적게 되고, 언젠가 한 곳이 어긋나 같은 사람이 화면에 따라 다른 등급으로 보인다.

@@ -1,6 +1,7 @@
 import type { CandidateListResponse, CurrentUser, VisitNoteListResponse } from '@weddingpick/api-contract';
 import {
   MISSIONS,
+  MISSION_HEADLINE,
   MISSION_COMPLETE_BODY,
   MISSION_COMPLETE_TAGS,
   MISSION_COMPLETE_TITLE,
@@ -8,6 +9,7 @@ import {
   allMissionsDone,
   formatWeddingDate,
   isMissionDone,
+  missionProgress,
   lifecycle,
   type MembershipFacts,
   type MissionKey,
@@ -43,6 +45,9 @@ const GUEST_FACTS: MembershipFacts = {
   loggedIn: false,
   spouseLinked: false,
   hasPaymentProof: false,
+  weddingSet: false,
+  hasPick: false,
+  hasCompared: false,
 };
 
 type MyData = {
@@ -100,6 +105,9 @@ export default function MyScreen() {
         loggedIn: true,
         spouseLinked: data.me.spouseLinked,
         hasPaymentProof: data.me.hasPaymentProof,
+        weddingSet: data.me.weddingDate !== null,
+        hasPick: data.me.hasPick,
+        hasCompared: data.me.hasCompared,
       }
     : GUEST_FACTS;
 
@@ -141,19 +149,21 @@ export default function MyScreen() {
     }
   }
 
+  /** 미션마다 그 일을 실제로 할 수 있는 자리로 보낸다. */
   function goMission(key: MissionKey) {
     switch (key) {
-      case 'explore':
+      case 'setup':
+        router.push('/setup');
+        return;
+      case 'first_pick':
         router.push('/search');
         return;
-      case 'organize':
-        router.push('/wedding');
+      case 'compare':
+        // 비교는 Pick한 곳에서 시작한다. 거기 두 곳이 있으면 버튼이 있다.
+        router.push('/pick');
         return;
-      case 'together':
+      case 'partner':
         router.push('/wedding/partner');
-        return;
-      case 'payment':
-        router.push('/capture/payment/consent');
     }
   }
 
@@ -220,10 +230,12 @@ export default function MyScreen() {
             />
           </ThemedView>
 
-          {/* 나의 웨딩 미션 */}
+          {/* 웨딩픽 시작하기 N/4. v3.7 §9가 이 꼴로 정했다. */}
           <ThemedView type="backgroundElement" style={styles.missionBlock}>
             <ThemedView type="backgroundElement" style={styles.missionHead}>
-              <ThemedText type="t4">나의 웨딩 미션</ThemedText>
+              <ThemedText type="t4">
+                {MISSION_HEADLINE} {missionProgress(facts).done}/{missionProgress(facts).total}
+              </ThemedText>
               {/* 핸드오프가 배지를 여기에도 뒀다. 미션과 등급이 같은 이야기라서다. */}
               <TierBadge label={data.me?.tierLabel ?? '게스트'} />
             </ThemedView>

@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { compareVendors } from '@/api/client';
+import { compareVendors, getCurrentUser, recordComparison } from '@/api/client';
 import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
 import { won } from '@/features/quotes/quote-result-view';
 
@@ -31,7 +31,24 @@ export default function CompareScreen() {
     if (tooFew) return;
 
     compareVendors((ids ?? '').split(',').filter(Boolean))
-      .then(setResult)
+      .then((response) => {
+        setResult(response);
+
+        /*
+         * 비교했다는 사실을 남긴다(미션 ③). 화면을 실제로 연 이때가 그 사실이
+         * 생기는 순간이다 — 후보를 담은 때가 아니다.
+         *
+         * 실패는 삼킨다. 미션 체크 하나 때문에 비교 화면이 오류로 바뀌면
+         * 잃는 것이 더 크다.
+         */
+        const category = response.vendors[0]?.category;
+
+        if (!category) return;
+
+        void getCurrentUser()
+          .then((me) => (me.weddingId ? recordComparison(me.weddingId, category) : undefined))
+          .catch(() => undefined);
+      })
       .catch((caught: Error) => setError(caught.message));
   }, [ids, tooFew]);
 

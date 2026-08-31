@@ -50,6 +50,15 @@ export const currentUserSchema = z.object({
   spouseLinked: z.boolean(),
   /** 업체가 매칭된 결제인증이 있는가. Level 3 Unlock과 같은 조건이다. */
   hasPaymentProof: z.boolean(),
+  /** 한 곳이라도 Pick했는가. 미션 ②가 본다. */
+  hasPick: z.boolean(),
+  /**
+   * 한 업종이라도 비교해봤는가. 미션 ③이 본다.
+   *
+   * 비교할 수 있는 상태가 아니라 **비교한 사실**이다 — 후보 두 곳을 담았다고
+   * 비교한 것은 아니다.
+   */
+  hasCompared: z.boolean(),
   /**
    * 지금 등급. 서버가 정한다.
    *
