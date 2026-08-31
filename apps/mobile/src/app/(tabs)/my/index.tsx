@@ -4,11 +4,11 @@ import {
   MISSION_COMPLETE_BODY,
   MISSION_COMPLETE_TAGS,
   MISSION_COMPLETE_TITLE,
-  WEDDING_PHASE_LABEL,
+  LIFECYCLE_STAGE_LABEL,
   allMissionsDone,
   formatWeddingDate,
   isMissionDone,
-  weddingPhase,
+  lifecycle,
   type MembershipFacts,
   type MissionKey,
 } from '@weddingpick/domain';
@@ -104,7 +104,7 @@ export default function MyScreen() {
     : GUEST_FACTS;
 
   const everythingDone = allMissionsDone(facts);
-  const phase = weddingPhase(data.me?.weddingDate ?? null);
+  const stage = lifecycle(data.me?.weddingDate ?? null);
 
   /*
    * 미션 완료 모달은 최초 1회다(핸드오프 18번). 여기서 봤는지 물어보고, 축하할
@@ -177,8 +177,11 @@ export default function MyScreen() {
               <ThemedText type="t7" themeColor="textSecondary">
                 {data.me?.weddingDate ? formatWeddingDate(data.me.weddingDate) : '예식일 미등록'}
                 {facts.spouseLinked ? ' · 배우자 연결됨' : ''}
-                {/* 예식이 끝났으면 그렇다고 적는다. v2.0 D-4 · 원문 34번. */}
-                {phase === 'completed' ? ` · ${WEDDING_PHASE_LABEL.completed}` : ''}
+                {/*
+                  지금 어느 단계인지 적는다. 예식이 끝나도 비우지 않는다 —
+                  v3.5가 준비만 하는 앱에 고정하지 말라고 정했다.
+                 */}
+                {data.me?.weddingDate ? ` · ${LIFECYCLE_STAGE_LABEL[stage.stage]}` : ''}
               </ThemedText>
             </ThemedView>
           </ThemedView>

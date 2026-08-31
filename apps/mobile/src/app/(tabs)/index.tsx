@@ -6,14 +6,13 @@ import type {
 } from '@weddingpick/api-contract';
 import {
   COMPLETED_ACTIONS,
-  COMPLETED_GREETING,
   EXPENSE_BUCKET_COLOR,
-  dDay,
   hasUnread,
   formatTaskDate,
   greeting,
   nextTask,
-  weddingPhase,
+  lifecycle,
+  showsPreparationFirst,
   type ExpenseBucket,
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
@@ -139,8 +138,12 @@ export default function HomeScreen() {
   }
 
   const upcoming = data.tasks ? nextTask(data.tasks.tasks) : null;
-  /* 저장하지 않고 계산한다 — 아무 일도 없어도 시간이 지나면 바뀌는 값이다. */
-  const phase = weddingPhase(data.me?.weddingDate ?? null);
+  /*
+   * 저장하지 않고 계산한다 — 아무 일도 없어도 시간이 지나면 바뀌는 값이다.
+   *
+   * v3.5의 일곱 단계를 쓴다. 예식이 지나도 앱이 할 말을 잃지 않는다.
+   */
+  const stage = lifecycle(data.me?.weddingDate ?? null);
 
   const sections: Record<HomeSection, React.ReactNode> = {
     quickMenu: (
@@ -334,24 +337,24 @@ export default function HomeScreen() {
           </ThemedView>
 
           {/*
-            고정 1 — D-Day.
+            고정 1 — Hero.
 
-            예식이 끝나면 남은 날짜를 세지 않는다(v2.0 D-4). "예식일이 3일
-            지났어요"는 아무에게도 필요 없는 말이다.
+            상태 문구 한 줄 + 제목 두 줄. v3.1 §3이 정한 모양이고, v3.4가 상태
+            문구를 남은 기간에 따라 바꾸라고 정했다 — 300일 남은 사람에게
+            `두근두근`은 아무 뜻도 없다.
+
+            예식이 지나도 이 자리를 비우지 않는다(v3.5 §4). 다만 지난 날을 세는
+            카운터로 두지 않는다 — `stage.note`가 단계에 맞는 말을 들고 온다.
           */}
           <ThemedView style={styles.headline}>
             {data.me?.weddingDate ? (
-              phase === 'completed' ? (
-                <>
-                  <ThemedText type="t2">{greeting(data.me.displayName)}</ThemedText>
-                  <ThemedText type="t2">{COMPLETED_GREETING}</ThemedText>
-                </>
-              ) : (
-                <>
-                  <ThemedText type="t2">{greeting(data.me.displayName)}</ThemedText>
-                  <ThemedText type="t2">{dDay(data.me.weddingDate).text}</ThemedText>
-                </>
-              )
+              <>
+                <ThemedText type="t7" themeColor="tint">
+                  {stage.mood}
+                </ThemedText>
+                <ThemedText type="t2">{greeting(data.me.displayName)}</ThemedText>
+                <ThemedText type="t2">{stage.note}</ThemedText>
+              </>
             ) : (
               <>
                 <ThemedText type="t2">웨딩픽에</ThemedText>
@@ -366,7 +369,7 @@ export default function HomeScreen() {
             **계정을 제한하지 않는다**(원문 34번). 아래 섹션은 그대로 뜨고,
             여기 있는 것은 막는 목록이 아니라 권하는 목록이다.
           */}
-          {phase === 'completed' ? (
+          {!showsPreparationFirst(stage.stage) ? (
             <ThemedView type="backgroundElement" style={styles.card}>
               {COMPLETED_ACTIONS.map((action) => (
                 <ThemedView key={action.key} type="backgroundElement" style={styles.completedRow}>
