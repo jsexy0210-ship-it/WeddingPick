@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-static.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-scale.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-semantic.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/typography.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/dimension.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/motion.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/base.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/core/core.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/buttons/buttons.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/forms/forms.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/feedback/feedback.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/overlay/overlay.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/display/display.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/styles.css">
+<script src="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/_ds_bundle.js"></script>
+<script src="./image-slot.js"></script>
+<style>
+body{margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#ff6f61;text-decoration:none}
+a:hover{color:#e2564a}
+.nsb::-webkit-scrollbar{display:none}
+image-slot{background:#eaebee}
+image-slot::part(empty){display:none !important}
+@keyframes wpSheet{0%{transform:translateY(100%)}100%{transform:translateY(0)}}
+@keyframes wpCheck{0%{transform:scale(0)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
+@keyframes wpRing{0%{transform:scale(.5);opacity:.45}100%{transform:scale(2.4);opacity:0}}
+@keyframes wpRise{0%{transform:translateY(10px);opacity:0}100%{transform:translateY(0);opacity:1}}
+</style>
+</helmet>
+
+<section style="{{ rootStyle }}">
+
+<div style="display:flex;flex-direction:column;gap:10px;max-width:1000px;padding-bottom:8px">
+  <span style="font-size:14px;line-height:19px;font-weight:700;color:#ff6f61">WeddingPick · WP-PICK</span>
+  <span style="font-size:40px;line-height:52px;font-weight:700;color:#212124">Pick</span>
+  <span style="font-size:18px;line-height:26px;color:#393a40;text-wrap:pretty">검색이 «찾는 곳», Pick은 «좁히는 곳»입니다. 관심업체 개념은 폐기하고 Pick 하나로 통합했습니다. 후보를 모으고 → 비교하고 → 배우자와 맞춰보고 → 최종 결정하면 우리웨딩으로 넘어갑니다.</span>
+</div>
+
+<div style="display:flex;gap:36px;align-items:flex-start">
+
+<div id="17a" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">1</span>Pick 홈 · WP-PICK-001</div>
+  <span style="{{ tagDesc }}">카테고리별 진행 상태가 그대로 진입점입니다. 지금 좁힐 것 하나만 코랄로 지목합니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ head }}">
+      <span style="{{ h20 }}">Pick</span>
+      <span style="display:flex;align-items:center;gap:6px"><span style="{{ av1 }}">지</span><span style="{{ av2 }}">준</span></span>
+    </div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:12px 24px 26px;display:flex;flex-direction:column;gap:12px">
+        <span style="{{ h26 }}">4개 중 1개를<br>결정했어요</span>
+        <div style="display:flex;align-items:center;gap:10px"><div style="{{ track }}"><div style="{{ fill25 }}"></div></div><span style="{{ t14m }}">1/4</span></div>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:2px">
+        <sc-for list="{{ pickCats }}" as="c" hint-placeholder-count="4">
+          <div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:14px 0;cursor:pointer">
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                <span style="{{ t18b }}">{{ c.name }}</span>
+                <span style="{{ t14n }}">{{ c.sub }}</span>
+              </div>
+              <span style="{{ c.actionStyle }}">{{ c.action }}</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#adb1ba" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+            </div>
+            <div style="{{ hr }}"></div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="{{ band }}"></div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:12px">
+        <span style="{{ s20 }}">둘 다 고른 곳</span>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <sc-for list="{{ shared }}" as="v" hint-placeholder-count="2">
+            <div>
+              <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:12px 0">
+                <div style="{{ thumb52 }}"><image-slot id="{{ v.slot }}" src="{{ v.src }}" shape="rounded" radius="6" placeholder=""></image-slot></div>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+                  <span style="{{ t18b }}">{{ v.name }}</span>
+                  <span style="display:flex;align-items:baseline;gap:6px;min-width:0"><span style="{{ t16b }}">{{ v.price }}</span><span style="{{ t14n }}">{{ v.n }}</span></span>
+                </div>
+              </div>
+              <div style="{{ hr }}"></div>
+            </div>
+          </sc-for>
+        </div>
+        <button style="{{ cta }}">웨딩홀 3곳 비교</button>
+      </div>
+    </div>
+    <div style="{{ tabBar }}"><sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5"><button style="{{ t.style }}"><span style="{{ t.wrap }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{ t.stroke }}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.d1 }}"></path><path d="{{ t.d2 }}"></path><path d="{{ t.d3 }}"></path></svg></span><span>{{ t.label }}</span></button></sc-for></div>
+  </div>
+</div>
+
+<div id="17b" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">2</span>Pick 비어 있음</div>
+  <span style="{{ tagDesc }}">후보가 하나도 없을 때. 카테고리 목록을 빈칸으로 늘어놓지 않고 첫 카테고리 하나만 제안합니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ head }}"><span style="{{ h20 }}">Pick</span></div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:12px 24px 26px;display:flex;flex-direction:column;gap:10px">
+        <span style="{{ h26 }}">아직 Pick한 곳이<br>없어요</span>
+        <span style="{{ t16g }}">마음에 드는 곳을 담아두면 여기서 비교할 수 있어요</span>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:12px">
+        <span style="{{ s20 }}">웨딩홀부터 볼까요</span>
+        <div style="display:flex;gap:10px">
+          <sc-for list="{{ starters }}" as="v" hint-placeholder-count="3">
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px">
+              <div style="position:relative;width:100%;height:96px;border-radius:6px;overflow:hidden"><image-slot id="{{ v.slot }}" src="{{ v.src }}" shape="rect" placeholder=""></image-slot></div>
+              <span style="{{ t16bb }}">{{ v.name }}</span>
+              <span style="{{ t14n }}">{{ v.price }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <button style="{{ cta }}">웨딩홀 둘러보기</button>
+      </div>
+      <div style="{{ band }}"></div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:2px">
+        <sc-for list="{{ emptyCats }}" as="c" hint-placeholder-count="4">
+          <div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:14px 0">
+              <span style="flex:1;min-width:0;{{ t18b }}">{{ c.name }}</span>
+              <span style="{{ t16d }}">{{ c.tail }}</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#adb1ba" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+            </div>
+            <div style="{{ hr }}"></div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="{{ tabBar }}"><sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5"><button style="{{ t.style }}"><span style="{{ t.wrap }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{ t.stroke }}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.d1 }}"></path><path d="{{ t.d2 }}"></path><path d="{{ t.d3 }}"></path></svg></span><span>{{ t.label }}</span></button></sc-for></div>
+  </div>
+</div>
+
+<div id="17c" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">3</span>배우자 의견 · WP-PICK-004</div>
+  <span style="{{ tagDesc }}">누가 무엇을 골랐는지, 어디가 갈리는지를 먼저 보여줍니다. 의견이 다른 항목만 코랄로 표시합니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navBack }}">
+      <span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span>
+      <span style="flex:1;min-width:0;{{ t18b }}">웨딩홀 후보</span>
+    </div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:12px 24px 24px;display:flex;flex-direction:column;gap:10px">
+        <span style="{{ h26 }}">한 곳에서<br>의견이 갈려요</span>
+        <span style="{{ t16g }}">둘 다 고른 두 곳부터 비교해보세요</span>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:12px">
+        <sc-for list="{{ opinions }}" as="o" hint-placeholder-count="3">
+          <div style="{{ o.card }}">
+            <div style="display:flex;align-items:flex-start;gap:12px">
+              <div style="width:72px;height:72px;flex:0 0 72px;border-radius:6px;overflow:hidden;position:relative"><image-slot id="{{ o.slot }}" src="{{ o.src }}" shape="rect" placeholder=""></image-slot></div>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+                <span style="{{ o.badgeStyle }}">{{ o.badge }}</span>
+                <span style="{{ t18b }}">{{ o.name }}</span>
+                <span style="{{ t16b }}">{{ o.price }}</span>
+                <span style="{{ t14n }}">{{ o.n }}</span>
+              </div>
+            </div>
+            <div style="{{ hrIn }}"></div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ o.notes }}" as="nt" hint-placeholder-count="2">
+                <div style="display:flex;align-items:flex-start;gap:8px">
+                  <span style="{{ nt.who }}">{{ nt.initial }}</span>
+                  <span style="flex:1;{{ t16g }}">{{ nt.text }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="{{ dock }}"><button style="{{ ctaGhostHalf }}">Pick 추가</button><button style="{{ ctaWide }}">2곳 비교</button></div>
+  </div>
+</div>
+
+<div id="17d" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">4</span>결정 완료 · WP-PICK-006</div>
+  <span style="{{ tagDesc }}">완료 모션 뒤에 무엇이 자동으로 반영됐는지 알려주고, 다음 카테고리로 넘깁니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:56px 24px 36px;display:flex;flex-direction:column;align-items:center;gap:22px;text-align:center">
+        <span style="{{ doneMark }}">
+          <span style="{{ doneRing }}"></span>
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="position:relative"><path d="M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z"></path><path d="M8.7 11.9l2.2 2.2 4.4-4.4"></path></svg>
+        </span>
+        <div style="display:flex;flex-direction:column;gap:8px;animation:wpRise 420ms cubic-bezier(.16,1,.3,1) 150ms both">
+          <span style="{{ h26 }}">웨딩홀 준비 완료</span>
+          <span style="{{ t16g }}">더채플 강남 그랜드홀로 결정했어요</span>
+        </div>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:2px;animation:wpRise 420ms cubic-bezier(.16,1,.3,1) 260ms both">
+        <sc-for list="{{ reflected }}" as="a" hint-placeholder-count="3">
+          <div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:12px 0">
+              <span style="width:76px;flex:0 0 76px;{{ t14m }}">{{ a.label }}</span>
+              <span style="flex:1;min-width:0;{{ t16g }}">{{ a.text }}</span>
+            </div>
+            <div style="{{ hr }}"></div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 28px;animation:wpRise 420ms cubic-bezier(.16,1,.3,1) 380ms both">
+        <div style="{{ nextBox }}">
+          <span style="{{ t14a }}">다음 준비 · 스튜디오 · D-120</span>
+          <span style="{{ t18b2 }}">예식일에 맞춰 스튜디오 3곳을 골라뒀어요</span>
+          <button style="{{ cta }}">스튜디오 후보 보기</button>
+        </div>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 32px;display:flex;justify-content:center"><span style="{{ t16m }}">Pick으로 돌아가기</span></div>
+    </div>
+  </div>
+</div>
+
+<div id="17e" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">5</span>결정 내역 · WP-PICK-007</div>
+  <span style="{{ tagDesc }}">결정한 것과 아직 안 정한 것을 한 화면에 둡니다. 결정은 되돌릴 수 있게 열어둡니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navBack }}">
+      <span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span>
+      <span style="flex:1;min-width:0;{{ t18b }}">결정 내역</span>
+    </div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:12px 24px 24px"><span style="{{ h26 }}">2,140만원을<br>정했어요</span></div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:12px">
+        <sc-for list="{{ decided }}" as="d" hint-placeholder-count="2">
+          <div style="{{ decidedCard }}">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="{{ thumb52 }}"><image-slot id="{{ d.slot }}" src="{{ d.src }}" shape="rounded" radius="6" placeholder=""></image-slot></div>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+                <span style="{{ t14a }}">{{ d.cat }}</span>
+                <span style="{{ t18b }}">{{ d.name }}</span>
+              </div>
+              <span style="{{ t16b }}">{{ d.price }}</span>
+            </div>
+            <div style="{{ hrIn }}"></div>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span style="{{ t14n }}">{{ d.when }}</span>
+              <span style="{{ t14m }}">결정 취소</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="{{ band }}"></div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:12px">
+        <span style="{{ s20 }}">아직 안 정한 것</span>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <sc-for list="{{ undecided }}" as="u" hint-placeholder-count="2">
+            <div>
+              <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:14px 0">
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                  <span style="{{ t18b }}">{{ u.name }}</span>
+                  <span style="{{ t14n }}">{{ u.sub }}</span>
+                </div>
+                <span style="{{ u.tailStyle }}">{{ u.tail }}</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#adb1ba" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+              </div>
+              <div style="{{ hr }}"></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="17f" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">6</span>Pick 해제 · WP-SHT-003</div>
+  <span style="{{ tagDesc }}">둘 다 고른 곳을 뺄 때는 배우자에게도 사라진다는 사실을 먼저 알립니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="flex:1;position:relative;overflow:hidden">
+      <div style="position:absolute;inset:0;padding:12px 24px;display:flex;flex-direction:column;gap:12px;filter:blur(1px);opacity:.45">
+        <div style="height:120px;border-radius:10px;background:#f2f3f6"></div>
+        <div style="height:120px;border-radius:10px;background:#f2f3f6"></div>
+        <div style="height:120px;border-radius:10px;background:#f2f3f6"></div>
+      </div>
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,.45)"></div>
+      <div style="{{ sheet }}">
+        <span style="{{ grabber }}"></span>
+        <div style="display:flex;align-items:center;gap:14px">
+          <div style="width:56px;height:56px;flex:0 0 56px;border-radius:6px;overflow:hidden;position:relative"><image-slot id="pk-rm" src="uploads/samples-1788175716419-flvg.jpg" shape="rect" placeholder=""></image-slot></div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+            <span style="{{ t18b }}">더채플 강남 그랜드홀</span>
+            <span style="{{ t14n }}">둘 다 고른 곳</span>
+          </div>
+        </div>
+        <span style="{{ h24 }}">후보에서 뺄까요?</span>
+        <span style="{{ t16g }}">준호님 Pick 목록에서도 함께 사라져요. 다시 담을 수 있어요.</span>
+        <div style="display:flex;gap:10px">
+          <button style="{{ ctaGhostHalf }}">그대로 둘게요</button>
+          <button style="{{ ctaDanger }}">빼기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1500,&quot;height&quot;:1100}}">
+class Component extends DCLogic {
+  static ICONS = {
+    home: ['M3.6 10.4 12 3.8l8.4 6.6V19a1.6 1.6 0 0 1-1.6 1.6H5.2A1.6 1.6 0 0 1 3.6 19z', 'M9.6 20.6v-6.2h4.8v6.2', ''],
+    search: ['M11 4.2a6.9 6.9 0 1 0 0 13.8 6.9 6.9 0 0 0 0-13.8z', 'M16.2 16.2 20.8 20.8', ''],
+    pick: ['M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z', 'M8.7 11.9l2.2 2.2 4.4-4.4', ''],
+    couple: ['M8.6 11.2a3.3 3.3 0 1 0 0-6.6 3.3 3.3 0 0 0 0 6.6z', 'M2.6 20.4v-.8a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v.8', 'M16.2 5.4a3.3 3.3 0 0 1 0 5.9M17.6 14.7a5 5 0 0 1 3.8 4.9v.8'],
+    my: ['M12 11.6a4 4 0 1 0 0-8 4 4 0 0 0 0 8z', 'M4.8 20.6v-.6a6 6 0 0 1 6-6h2.4a6 6 0 0 1 6 6v.6', '']
+  };
+
+  renderVals() {
+    const C = '#ff6f61';
+    const IMG = {
+      couple: 'uploads/samples-1788175716407-57s9.jpg',
+      arch: 'uploads/samples-1788175716396-jydc.jpg',
+      bride: 'uploads/samples-1788175716389-fion.jpg',
+      hall: 'uploads/samples-1788175716419-flvg.jpg',
+      dress: 'uploads/samples-1788175716375-3z0c.jpg'
+    };
+    const tab = (label, icon, on) => {
+      const c = on ? '#212124' : '#868b94';
+      const d = Component.ICONS[icon];
+      return { label, d1: d[0], d2: d[1], d3: d[2], stroke: c,
+        style: 'flex:1;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:0;background:transparent;cursor:pointer;padding:0;font-size:12px;line-height:16px;font-family:inherit;font-weight:700;color:' + c,
+        wrap: 'width:24px;height:24px;display:flex;align-items:center;justify-content:center' };
+    };
+    const cat = (name, sub, action, kind) => ({ name, sub, action,
+      actionStyle: 'font-size:16px;line-height:22px;font-weight:700;white-space:nowrap;color:'
+        + (kind === 'done' ? '#1aa174' : kind === 'now' ? C : '#868b94') });
+    const who = mine => 'width:22px;height:22px;flex:0 0 22px;margin-top:1px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;'
+      + (mine ? 'background:color-mix(in oklab,' + C + ' 16%,#fff);color:' + C + ';' : 'background:#f2f3f6;color:#4d5159;');
+    const op = (name, price, n, slot, src, kind, notes) => ({
+      name, price, n, slot, src, notes,
+      card: 'border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:14px;'
+        + (kind === 'split' ? 'border:1.5px solid ' + C + ';background:#fff;' : 'border:1px solid #dcdee3;background:#fff;'),
+      badge: kind === 'split' ? '의견이 갈려요' : '둘 다 고른 곳',
+      badgeStyle: 'align-self:flex-start;padding:3px 8px;border-radius:4px;font-size:13px;line-height:18px;font-weight:700;'
+        + (kind === 'split' ? 'background:color-mix(in oklab,' + C + ' 12%,#fff);color:' + C + ';' : 'background:#e8faf6;color:#1aa174;')
+    });
+
+    return {
+      rootStyle: 'display:flex;flex-direction:column;gap:48px;align-items:flex-start;padding:64px;width:max-content',
+      col: 'display:flex;flex-direction:column;gap:10px;width:390px',
+      tag: 'height:26px;display:flex;align-items:center;gap:8px;font-size:18px;line-height:24px;font-weight:700;color:#212124;white-space:nowrap;overflow:hidden',
+      tagId: 'width:26px;height:26px;flex:0 0 26px;border-radius:6px;background:#212124;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700',
+      tagDesc: 'height:71px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;line-height:21px;color:#4d5159;text-wrap:pretty',
+      phone: 'width:390px;height:844px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)',
+      bar: 'height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:700;color:#212124',
+      barIcons: 'display:flex;gap:5px;align-items:center',
+      head: 'flex:0 0 56px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:#fff',
+      navBack: 'flex:0 0 56px;display:flex;align-items:center;gap:4px;padding:0 20px 0 12px;background:#fff',
+      backBtn: 'width:40px;height:40px;flex:0 0 40px;border-radius:999px;display:flex;align-items:center;justify-content:center',
+      scroll: 'flex:1 1 auto;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;scrollbar-width:none',
+      tabBar: 'flex:0 0 72px;display:flex;align-items:flex-start;background:#fff;box-shadow:inset 0 1px 0 #eaebee;padding-top:9px',
+      dock: 'flex:0 0 92px;background:#fff;box-shadow:inset 0 1px 0 #eaebee;padding:12px 24px;display:flex;gap:8px;box-sizing:border-box',
+      hr: 'height:1px;background:#eaebee',
+      hrIn: 'height:1px;background:#eaebee',
+      band: 'flex-shrink:0;height:16px;background:#f2f3f6;margin-bottom:28px',
+      track: 'flex:1;height:6px;border-radius:999px;background:#eaebee;overflow:hidden',
+      fill25: 'width:25%;height:100%;border-radius:999px;background:' + C,
+      thumb52: 'width:52px;height:52px;flex:0 0 52px;border-radius:6px;overflow:hidden;position:relative',
+      av1: 'width:26px;height:26px;border-radius:999px;background:color-mix(in oklab,' + C + ' 16%,#fff);color:' + C + ';display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700',
+      av2: 'width:26px;height:26px;border-radius:999px;background:#f2f3f6;color:#4d5159;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;margin-left:-10px',
+      doneMark: 'position:relative;width:72px;height:72px;border-radius:999px;background:' + C + ';display:flex;align-items:center;justify-content:center;animation:wpCheck 460ms cubic-bezier(.34,1.56,.64,1) both',
+      doneRing: 'position:absolute;inset:0;border-radius:999px;background:' + C + ';animation:wpRing 1000ms cubic-bezier(.16,1,.3,1) both',
+      nextBox: 'border-radius:10px;border:1px solid color-mix(in oklab,' + C + ' 32%,#fff);background:color-mix(in oklab,' + C + ' 7%,#fff);padding:20px;display:flex;flex-direction:column;gap:10px',
+      decidedCard: 'border-radius:10px;border:1px solid #dcdee3;background:#fff;padding:18px;display:flex;flex-direction:column;gap:14px',
+      sheet: 'position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;padding:12px 24px 28px;display:flex;flex-direction:column;gap:18px;animation:wpSheet 350ms cubic-bezier(.16,1,.3,1) both',
+      grabber: 'width:40px;height:4px;border-radius:999px;background:#eaebee;align-self:center',
+
+      h26: 'font-size:26px;line-height:35px;font-weight:700;color:#212124;text-wrap:pretty',
+      h24: 'font-size:24px;line-height:32px;font-weight:700;color:#212124;text-wrap:pretty',
+      h20: 'font-size:20px;line-height:27px;font-weight:700;color:#212124',
+      s20: 'font-size:20px;line-height:27px;font-weight:700;color:#212124',
+      t18b: 'font-size:18px;line-height:24px;font-weight:700;color:#212124;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      t18b2: 'font-size:18px;line-height:24px;font-weight:700;color:#212124;text-wrap:pretty',
+      t16bb: 'font-size:16px;line-height:22px;font-weight:700;color:#212124;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      t16b: 'font-size:16px;line-height:22px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums;white-space:nowrap',
+      t16g: 'font-size:16px;line-height:24px;color:#4d5159;text-wrap:pretty',
+      t16d: 'font-size:16px;line-height:22px;color:#868b94;white-space:nowrap',
+      t16m: 'font-size:16px;line-height:22px;font-weight:700;color:#868b94;cursor:pointer',
+      t14n: 'display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;line-height:19px;color:#868b94;font-variant-numeric:tabular-nums',
+      t14m: 'font-size:14px;line-height:19px;font-weight:700;color:#868b94;white-space:nowrap',
+      t14a: 'font-size:14px;line-height:19px;font-weight:700;color:' + C,
+      cta: 'width:100%;height:52px;border:0;border-radius:6px;background:' + C + ';color:#fff;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer',
+      ctaWide: 'flex:1.5;height:52px;border:0;border-radius:6px;background:' + C + ';color:#fff;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer',
+      ctaGhostHalf: 'flex:1;height:52px;border:0;border-radius:6px;background:#f2f3f6;color:#393a40;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer',
+      ctaDanger: 'flex:1.2;height:52px;border:0;border-radius:6px;background:#ff4133;color:#fff;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer',
+
+      tabs: [tab('홈', 'home', false), tab('검색', 'search', false), tab('Pick', 'pick', true), tab('우리웨딩', 'couple', false), tab('MY', 'my', false)],
+
+      pickCats: [
+        cat('웨딩홀', '후보 3곳 · 둘 다 고른 곳 2', '비교하기', 'now'),
+        cat('스튜디오', '모먼트 스튜디오로 결정', '결정 완료', 'done'),
+        cat('드레스', '후보 2곳 · 나만 골랐어요', '비교하기', 'none'),
+        cat('메이크업', '후보 없음', '둘러보기', 'none')
+      ],
+      shared: [
+        { name: '더채플 강남 그랜드홀', price: '1,480~1,820만원', n: '확인된 정보 21건', slot: 'pk-s1', src: IMG.hall },
+        { name: '메종 드 그레이스', price: '1,320~1,610만원', n: '확인된 정보 9건', slot: 'pk-s2', src: IMG.arch }
+      ],
+      starters: [
+        { name: '더채플 강남', price: '1,480~1,820만', slot: 'pk-e1', src: IMG.hall },
+        { name: '메종 드 그레이스', price: '1,320~1,610만', slot: 'pk-e2', src: IMG.arch },
+        { name: '라뷰티캐슬', price: '1,180~1,470만', slot: 'pk-e3', src: IMG.bride }
+      ],
+      emptyCats: [
+        { name: '스튜디오', tail: '286곳' },
+        { name: '드레스', tail: '231곳' },
+        { name: '메이크업', tail: '198곳' },
+        { name: '예물', tail: '63곳' }
+      ],
+      opinions: [
+        op('더채플 강남 그랜드홀', '1,480~1,820만원', '확인된 정보 21건', 'pk-o1', IMG.hall, 'both', [
+          { initial: '지', who: who(true), text: '홀 자체가 제일 마음에 들어요' },
+          { initial: '준', who: who(false), text: '주차가 넉넉해서 좋았어요' }
+        ]),
+        op('메종 드 그레이스', '1,320~1,610만원', '확인된 정보 9건', 'pk-o2', IMG.arch, 'both', [
+          { initial: '지', who: who(true), text: '예산이 여기가 제일 낫네요' },
+          { initial: '준', who: who(false), text: '동의해요' }
+        ]),
+        op('라뷰티캐슬', '1,180~1,470만원', '확인된 정보 6건', 'pk-o3', IMG.bride, 'split', [
+          { initial: '준', who: who(false), text: '가격은 좋은데 홀이 좁아 보여요' },
+          { initial: '지', who: who(true), text: '실물은 괜찮았어요. 한 번 더 볼까요' }
+        ])
+      ],
+      reflected: [
+        { label: '우리웨딩', text: '준비현황에 웨딩홀 결정 완료로 반영됐어요' },
+        { label: '일정', text: '본식 5월 16일이 일정에 추가됐어요' },
+        { label: '지출', text: '결제내역을 제보하면 지출에 연결돼요' }
+      ],
+      decided: [
+        { cat: '웨딩홀', name: '더채플 강남 그랜드홀', price: '1,620만원', when: '2월 12일 결정', slot: 'pk-d1', src: IMG.hall },
+        { cat: '스튜디오', name: '모먼트 스튜디오', price: '168만원', when: '3월 1일 결정', slot: 'pk-d2', src: IMG.couple }
+      ],
+      undecided: [
+        { name: '드레스', sub: '후보 2곳 · 투어 전이에요', tail: 'D-90', tailStyle: 'font-size:16px;line-height:22px;color:#868b94;white-space:nowrap' },
+        { name: '메이크업', sub: '후보 없음', tail: 'D-60', tailStyle: 'font-size:16px;line-height:22px;color:#868b94;white-space:nowrap' }
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

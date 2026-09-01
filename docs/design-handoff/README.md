@@ -1,0 +1,29 @@
+# 디자인 핸드오프
+
+## 현재 기준: SEED
+
+**[seed/](seed)** 가 현재 디자인 핸드오프다. Claude Design(SEED Design System, 당근마켓 기반)으로
+만들어졌고, Primary만 웨딩픽 코랄(`#FF6F61`)로 치환했다. 색·타이포·컴포넌트 확정값의
+원출처는 [seed/웨딩픽 컴포넌트 시트.dc.html](seed/웨딩픽%20컴포넌트%20시트.dc.html)이고,
+전체 화면 목록(176개)은 [seed/웨딩픽 전체 IA.dc.html](seed/웨딩픽%20전체%20IA.dc.html)의
+JS 배열 `G`에 있다. 개요는 [seed/README.md](seed/README.md), 확정 규칙은
+[seed/PROJECT_RULES.md](seed/PROJECT_RULES.md)를 본다.
+
+**주의:** [seed/README.md](seed/README.md)의 프로즈 색 표는 몇 곳에서 실제
+`웨딩픽 컴포넌트 시트.dc.html`과 어긋난다(예: Primary press · Warning · Danger). 값이
+갈리면 `.dc.html` 인라인 스타일 쪽이 맞다.
+
+이 폴더는 `통합정책 v3.13`과 어긋나는 부분이 있으면 통합정책을 따른다 — 특히 카피·용어·
+정책 규칙은 통합정책이 최종 기준이고, 이 핸드오프는 시각 디자인(색·타이포·간격·컴포넌트
+규격) 쪽이 더 상세하고 최신이다.
+
+## 지난 버전: Toss TDS (v7) — 참고용
+
+[archive-toss-v7-README.md](archive-toss-v7-README.md)는 이전 핸드오프 세대다. Toss TDS
+Mobile 기반, blue500(`#3182f6`) 단일 강조색, 21개 화면, "관심업체"·"결제인증" 같은
+지금은 폐기된 용어를 쓴다. 이 폴더에는 README만 남아 있고 실제 `.dc.html` 원본 파일은
+없다 — 화면 구조·인터랙션 로직 참고 이상으로는 쓰지 않는다.
+
+2026-09-02 기준 코드(`packages/ui/src/theme.ts`)는 v7의 그레이 스케일 값과 코랄 대체
+방침(통합정책 v3.1 §5)에서 출발했지만, 이후 SEED 핸드오프 값으로 다시 맞췄다 — 지금부터는
+SEED가 기준이다.

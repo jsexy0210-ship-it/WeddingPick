@@ -2,7 +2,7 @@ import { VERIFICATION_LEVEL_RULES, type VerificationLevel } from '@weddingpick/d
 import { StyleSheet, View } from 'react-native';
 
 import { ThemedText } from './themed-text';
-import { Spacing } from './theme';
+import { Radius, Spacing } from './theme';
 import { VERIFICATION_LEVEL_ACCENT } from './verification-levels';
 
 /** 검증 등급 배지. 서비스정책서 2번에 따라 등급은 UI에서 항상 배지로 표시한다. */
@@ -26,7 +26,8 @@ export function VerificationBadge({ level }: VerificationBadgeProps) {
 const styles = StyleSheet.create({
   badge: {
     alignSelf: 'flex-start',
-    borderRadius: Spacing.two,
+    /* SEED 핸드오프: 상태 배지(인증완료·확인필요·반려) 라디우스 6. */
+    borderRadius: Radius.small,
     paddingHorizontal: Spacing.two,
     paddingVertical: Spacing.half,
   },
