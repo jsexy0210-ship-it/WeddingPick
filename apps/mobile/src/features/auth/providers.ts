@@ -10,9 +10,12 @@ import { DEV_LOGIN_SECRET, devIdToken } from '@/features/auth/dev-login';
 export const PROVIDER_LABEL = {
   apple: 'Apple로 계속하기',
   kakao: '카카오로 계속하기',
+  google: 'Google로 계속하기',
+  naver: '네이버로 계속하기',
 } as const;
 
 const KAKAO_CLIENT_ID = process.env.EXPO_PUBLIC_KAKAO_CLIENT_ID;
+const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
 
 /**
  * 쓸 수 있는 로그인 방법.
@@ -109,5 +112,23 @@ export async function signInWith(provider: AuthProvider): Promise<void> {
     return;
   }
 
-  throw new Error('카카오 로그인 설정이 아직 완료되지 않았습니다.');
+  if (provider.provider === 'google') {
+    if (!GOOGLE_CLIENT_ID) throw new Error('Google 로그인 설정이 아직 완료되지 않았습니다.');
+    const request = new AuthRequest({
+      clientId: GOOGLE_CLIENT_ID,
+      redirectUri: makeRedirectUri({ scheme: 'weddingpick' }),
+      responseType: ResponseType.IdToken,
+      scopes: ['openid', 'profile', 'email'],
+      usePKCE: false,
+    });
+    const result = await request.promptAsync({ authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth' });
+    if (result.type !== 'success' || !result.params.id_token) {
+      if (result.type === 'cancel' || result.type === 'dismiss') return;
+      throw new Error('Google 로그인에 실패했습니다. 다시 시도해 주세요.');
+    }
+    await signIn('google', result.params.id_token);
+    return;
+  }
+
+  throw new Error('네이버 로그인은 서버 OAuth 연동 후 사용할 수 있습니다.');
 }
