@@ -1,0 +1,9 @@
+.git
+**/node_modules
+apps/mobile/.expo
+apps/mobile/android
+apps/mobile/ios
+apps/web/dist
+*.log
+.env*
+.claude
