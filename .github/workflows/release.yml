@@ -7,8 +7,9 @@
 #   ASC API Key (Admin 권한): Key ID 62U8N2ZWJR
 #   EAS가 이 키로 Distribution Certificate·Provisioning Profile을 자동 생성·관리한다.
 #
-#   --clear-credentials: Expo 서버에 저장된 만료/무효 Distribution Certificate를
-#   삭제하고 ASC API Key로 새로 발급한다. 최초 1회 또는 인증서 문제 발생 시 사용.
+#   처음 실행하기 전, 또는 "Distribution Certificate is not validated" 오류가 나면:
+#   expo.dev → 프로젝트 → Credentials → iOS → Distribution Certificate → Delete
+#   삭제 후 EAS가 Admin 키로 새 인증서를 자동 발급한다.
 #
 # ── Android 빌드 ────────────────────────────────────────────────────────
 #
@@ -103,7 +104,7 @@ jobs:
 
       - name: Build
         working-directory: apps/mobile
-        run: eas build --platform ios --profile production --non-interactive --clear-credentials
+        run: eas build --platform ios --profile production --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           EXPO_APPLE_API_KEY_ID: 62U8N2ZWJR
