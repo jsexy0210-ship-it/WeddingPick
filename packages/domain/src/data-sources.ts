@@ -30,8 +30,9 @@ export const DATA_SOURCES = {
     name: '지방행정 인허가 데이터',
     authority: '행정안전부',
     usedFor: '업체 이름·지역·영업 여부',
-    url: 'https://www.localdata.go.kr',
-    lastVerifiedAt: '2026-08-28',
+    // 2026년 4월 localdata.go.kr 서비스 종료, 이후 공공데이터포털(data.go.kr)로 통합
+    url: 'https://www.data.go.kr',
+    lastVerifiedAt: '2026-09-01',
   },
   consumerDisputeStandard: {
     id: 'consumer-dispute-standard',
