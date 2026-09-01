@@ -18,6 +18,7 @@ import {
   Accordion,
   ActionButton,
   FilterChip,
+  FontSize,
   MaxContentWidth,
   Spacing,
   ThemedText,
@@ -313,7 +314,8 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.three,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
-    fontSize: 16,
+    /* 입력 칸 글자도 본문이다. 토큰 밖의 크기를 쓰지 않는다. */
+    fontSize: FontSize.t6,
   },
   body: {
     minHeight: 120,

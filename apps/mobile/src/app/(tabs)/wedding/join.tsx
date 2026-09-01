@@ -6,7 +6,15 @@ import { ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { acceptWeddingInvite, previewWeddingInvite } from '@/api/client';
-import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
+import {
+  ActionButton,
+  FontSize,
+  MaxContentWidth,
+  Spacing,
+  ThemedText,
+  ThemedView,
+  useTheme,
+} from '@weddingpick/ui';
 
 /**
  * A-18 초대 받아들이기.
@@ -208,6 +216,7 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.three,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
-    fontSize: 16,
+    /* 입력 칸 글자도 본문이다. 토큰 밖의 크기를 쓰지 않는다. */
+    fontSize: FontSize.t6,
   },
 });

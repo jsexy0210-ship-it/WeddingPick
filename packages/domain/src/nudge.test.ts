@@ -72,7 +72,7 @@ describe('일정 알림', () => {
 
 describe('가격 변동 알림', () => {
   const collecting = { stage: 'collecting', low: null, high: null };
-  const range = (low: number, high: number) => ({ stage: 'general', low, high });
+  const range = (low: number, high: number) => ({ stage: 'normal', low, high });
 
   it('수집 중이던 업체에 구간이 생기면 알린다', () => {
     // 못 보던 것을 보게 된 것이라 그 자체가 소식이다.

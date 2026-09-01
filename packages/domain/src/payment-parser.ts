@@ -329,7 +329,7 @@ export function parsePaymentText(text: string, now: Date = new Date()): ParsedPa
     return {
       ...empty,
       maskedIdentifiers: readIdentifiers(text),
-      rejection: '취소·환불 안내로 보입니다. 결제인증에는 결제된 내역이 필요합니다.',
+      rejection: '취소·환불 안내로 보여요. 제보에는 결제된 내역이 필요해요.',
     };
   }
 

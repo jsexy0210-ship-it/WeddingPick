@@ -12,8 +12,14 @@ export const EXPENSE_SOURCES = ['payment_proof', 'manual'] as const;
 
 export type ExpenseSource = (typeof EXPENSE_SOURCES)[number];
 
+/**
+ * 이 줄이 어디서 왔는지. 사용자 화면에 그대로 나간다.
+ *
+ * `결제인증`은 내부 이름이다. 사용자에게는 자기가 한 일로 적는다 — 제보한
+ * 결제내역이 여기 들어왔다는 뜻이지, 무엇이 인증됐다는 뜻이 아니다.
+ */
 export const EXPENSE_SOURCE_LABEL: Record<ExpenseSource, string> = {
-  payment_proof: '결제인증',
+  payment_proof: '제보한 결제내역',
   manual: '직접 입력',
 };
 

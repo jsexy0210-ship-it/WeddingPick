@@ -1,5 +1,7 @@
 import { Platform, StyleSheet, Text, type TextProps } from 'react-native';
 
+import { FontSize, LineHeight } from './typography';
+
 import { Fonts, ThemeColor } from './theme';
 import { useTheme } from './use-theme';
 
@@ -90,27 +92,27 @@ const STYLE_FOR: Record<TextType, keyof typeof styles> = {
 
 const styles = StyleSheet.create({
   /** 대표 숫자. */
-  t1: { fontSize: 30, lineHeight: 40, letterSpacing: -0.8, fontWeight: 700 },
+  t1: { fontSize: FontSize.t1, lineHeight: LineHeight.t1, letterSpacing: -0.8, fontWeight: 700 },
   /** 화면 헤드라인. 줄바꿈은 수동. */
-  t2: { fontSize: 26, lineHeight: 35, letterSpacing: -0.6, fontWeight: 700 },
+  t2: { fontSize: FontSize.t2, lineHeight: LineHeight.t2, letterSpacing: -0.6, fontWeight: 700 },
   /** 섹션 제목. */
-  t4: { fontSize: 20, lineHeight: 28, letterSpacing: -0.4, fontWeight: 700 },
+  t4: { fontSize: FontSize.t4, lineHeight: LineHeight.t4, letterSpacing: -0.4, fontWeight: 700 },
   /** 목록 항목명, 강조 값. */
-  t5: { fontSize: 17, lineHeight: 25.5, letterSpacing: -0.3, fontWeight: 600 },
+  t5: { fontSize: FontSize.t5, lineHeight: LineHeight.t5, letterSpacing: -0.3, fontWeight: 600 },
   /** 본문, 설명. */
-  t6: { fontSize: 15, lineHeight: 22.5, letterSpacing: -0.3, fontWeight: 400 },
+  t6: { fontSize: FontSize.t6, lineHeight: LineHeight.t6, letterSpacing: -0.3, fontWeight: 400 },
   /** 캡션, 라벨, 출처. */
-  t7: { fontSize: 13, lineHeight: 19.5, letterSpacing: -0.2, fontWeight: 400 },
-  tab: { fontSize: 11, lineHeight: 14, fontWeight: 600 },
-  badge: { fontSize: 12, lineHeight: 16, fontWeight: 600 },
-  amount: { fontSize: 38, lineHeight: 48, letterSpacing: -1, fontWeight: 700 },
+  t7: { fontSize: FontSize.t7, lineHeight: LineHeight.t7, letterSpacing: -0.2, fontWeight: 400 },
+  tab: { fontSize: FontSize.tab, lineHeight: LineHeight.tab, fontWeight: 600 },
+  badge: { fontSize: FontSize.badge, lineHeight: LineHeight.badge, fontWeight: 600 },
+  amount: { fontSize: FontSize.amount, lineHeight: LineHeight.amount, letterSpacing: -1, fontWeight: 700 },
 
   numeric: { fontVariant: ['tabular-nums'] },
 
-  link: { fontSize: 13, lineHeight: 30 },
+  link: { fontSize: FontSize.t7, lineHeight: LineHeight.link },
   code: {
     fontFamily: Fonts.mono,
     fontWeight: Platform.select({ android: 700 }) ?? 500,
-    fontSize: 12,
+    fontSize: FontSize.code,
   },
 });

@@ -13,10 +13,17 @@ export const REBUTTAL_STATUSES = ['pending', 'published', 'rejected'] as const;
 
 export type RebuttalStatus = (typeof REBUTTAL_STATUSES)[number];
 
+/**
+ * 사용자에게 나가는 말. 표시 정책(`report-state.ts`)을 따른다.
+ *
+ * `게시됨`만 그 표 밖에 있다. `확인 완료`와 다른 사실이라서다 — 확인은 끝났는데
+ * 아직 안 붙어 있을 수 있고, 낸 사람이 알고 싶은 것은 자기 글이 지금 후기 아래에
+ * 보이느냐다.
+ */
 export const REBUTTAL_STATUS_LABEL: Record<RebuttalStatus, string> = {
   pending: '확인 중',
   published: '게시됨',
-  rejected: '게시하지 않음',
+  rejected: '반영되지 않았어요',
 };
 
 /** 낸 사람에게 보이는 상태 설명. 심사가 어디까지 왔는지 말해준다. */

@@ -88,7 +88,7 @@ export default function ExpensesScreen() {
       // 결제인증에서 온 줄은 여기서 지울 수 없다. 그건 지출 기록이 아니라 제보다.
       setError(
         caught instanceof Error
-          ? '결제인증으로 들어온 항목은 여기서 지울 수 없습니다.'
+          ? '제보로 들어온 항목은 여기서 지울 수 없어요.'
           : '지우지 못했습니다.'
       );
     }
@@ -184,7 +184,7 @@ export default function ExpensesScreen() {
                 </ThemedText>
                 <ActionButton
                   variant="primary"
-                  label="결제인증 제보하기"
+                  label="제보하기"
                   onPress={() => router.push('/capture')}
                 />
               </ThemedView>

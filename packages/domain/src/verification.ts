@@ -112,11 +112,18 @@ export const VERIFICATION_STATUSES = ['received', 'in_review', 'approved', 'reje
 
 export type VerificationStatus = (typeof VERIFICATION_STATUSES)[number];
 
+/**
+ * 사용자에게 나가는 말. 표시 정책(`report-state.ts`)을 따른다.
+ *
+ * `승인`·`반려`는 심사자의 말이지 사용자의 말이 아니다. 같은 일을 다른 흐름에서
+ * `확인 완료`라고 적고 여기서만 `승인`이라고 적으면, 읽는 사람은 둘이 다른
+ * 일인 줄 안다.
+ */
 export const VERIFICATION_STATUS_LABEL: Record<VerificationStatus, string> = {
-  received: '접수됨',
+  received: '확인 중',
   in_review: '확인 중',
-  approved: '승인',
-  rejected: '반려',
+  approved: '확인 완료',
+  rejected: '반영되지 않았어요',
 };
 
 /**

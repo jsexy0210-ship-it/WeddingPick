@@ -2,12 +2,15 @@ import {
   VENDOR_SORTS,
   VENDOR_SORT_LABEL,
   type PlannerSummary,
+  type Top3Response,
   type VendorSort,
   type SponsoredCard,
   type VendorSummary,
 } from '@weddingpick/api-contract';
 import {
   MAX_COMPARED_VENDORS,
+  TERMS,
+  TOP3_REASON_LABEL,
   VENDOR_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
   rangeLabel,
@@ -19,6 +22,7 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, TextInput } from 'r
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
+  getTop3,
   listPlannerRegions,
   listVendorRegions,
   searchPlanners,
@@ -28,6 +32,7 @@ import { isServerConfigured } from '@/api/config';
 import {
   ActionButton,
   FilterChip,
+  FontSize,
   MaxContentWidth,
   Spacing,
   ThemedText,
@@ -89,9 +94,41 @@ export default function SearchScreen() {
   const [pickedCategory, setPickedCategory] = useState<VendorCategory | null>(null);
   /** 눌렀는데 아무 일도 없으면 고장난 줄 안다. 막은 이유를 말한다. */
   const [toast, setToast] = useState<string | null>(null);
+  /**
+   * 이 지역·업종에서 볼 만한 곳. v3.10 §2의 TOP3다.
+   *
+   * 홈 C-1이 가격 TOP3 섹션을 홈에서 뺐고, 탐색 성격이라 여기로 왔다.
+   */
+  const [top3, setTop3] = useState<Top3Response | null>(null);
 
   /** 늦게 도착한 옛 요청이 새 결과를 덮어쓰지 않게 한다. */
   const requestId = useRef(0);
+
+  /*
+   * 검색어를 치는 중에는 추천을 접는다. 조건을 정한 사람의 결과 위에 우리가 고른
+   * 목록이 남아 있으면 그건 결과를 가리는 것이다.
+   */
+  const recommended =
+    filters.mode === 'vendor' && filters.q.trim() === '' ? (top3?.items ?? []) : [];
+
+  useEffect(() => {
+    if (!isServerConfigured) return;
+
+    /*
+     * 업체 모드에서만 부른다. 플래너는 확인된 결제 자료가 업체와 다른 방식으로
+     * 쌓여 같은 사다리를 못 쓴다 — 없는 추천을 만들지 않는다. 모드를 되돌렸을 때
+     * 쓰라고 받아둔 값은 지우지 않고, 그릴지 말지는 아래 `recommended`가 정한다.
+     */
+    if (filters.mode !== 'vendor') return;
+
+    getTop3({
+      region: filters.region ?? undefined,
+      category: filters.category ?? undefined,
+    })
+      .then(setTop3)
+      // 추천을 못 불러와도 검색은 된다.
+      .catch(() => setTop3(null));
+  }, [filters.mode, filters.region, filters.category]);
 
   useEffect(() => {
     if (!isServerConfigured) return;
@@ -352,7 +389,59 @@ export default function SearchScreen() {
                 </ThemedView>
               }
               ListHeaderComponent={
-                sponsored.length === 0 ? null : (
+                <>
+                  {/*
+                    추천. 홈 C-1이 가격 TOP3 섹션을 홈에서 뺐고, TOP3 성격의 탐색은
+                    여기에 둔다 — 찾으러 온 사람에게 "이 지역에서 볼 만한 곳"을
+                    먼저 보이는 것은 검색의 일이다.
+
+                    검색어나 필터를 건드리면 접는다. 사용자가 조건을 정한 뒤에도
+                    우리가 고른 목록이 위에 남아 있으면, 그건 검색 결과를 가린다.
+
+                    **광고와 다른 자리다.** 스폰서는 산 자리이고 이 목록은 확인된
+                    정보가 고른 자리라, 붙여두면 둘이 같은 것으로 읽힌다. 그래서
+                    추천을 먼저 두고 그 아래에 스폰서를 둔다.
+                   */}
+                  {recommended.length > 0 ? (
+                    <ThemedView style={styles.section}>
+                      <ThemedText type="t4">
+                        {top3 === null ? '추천' : `${VENDOR_CATEGORY_LABEL[top3.category]} 추천`}
+                      </ThemedText>
+                      {recommended.map((item) => (
+                        <Pressable
+                          key={item.vendorId}
+                          accessibilityRole="button"
+                          accessibilityLabel={`${item.name} 자세히 보기`}
+                          onPress={() => router.push(`/search/${item.vendorId}`)}>
+                          <ThemedView type="backgroundElement" style={styles.card}>
+                            {/* 이유가 먼저다. 이름부터 보이면 왜 이 곳인지 묻게 된다. */}
+                            <ThemedText type="t7" themeColor="tint">
+                              {TERMS.recommendReason}
+                            </ThemedText>
+                            <ThemedText type="t7" themeColor="textSecondary">
+                              {item.reasons.map((reason) => TOP3_REASON_LABEL[reason]).join(' · ')}
+                            </ThemedText>
+                            <ThemedText type="t5">{item.name}</ThemedText>
+                            <ThemedText type="t7" themeColor="textAssistive">
+                              {VENDOR_CATEGORY_LABEL[item.category]} · {item.region}
+                            </ThemedText>
+                            <ThemedText type="t7" themeColor="textSecondary">
+                              {item.paidPrice.stage === 'collecting'
+                                ? item.paidPrice.caption
+                                : `${rangeLabel(item.paidPrice.low, item.paidPrice.high)} · ${item.paidPrice.caption}`}
+                            </ThemedText>
+                          </ThemedView>
+                        </Pressable>
+                      ))}
+                      {top3?.note ? (
+                        <ThemedText type="t7" themeColor="textAssistive">
+                          {top3.note}
+                        </ThemedText>
+                      ) : null}
+                    </ThemedView>
+                  ) : null}
+
+                  {sponsored.length === 0 ? null : (
                   <ThemedView style={styles.sponsored}>
                     {sponsored.map((ad) => (
                       <Pressable
@@ -380,7 +469,8 @@ export default function SearchScreen() {
                      */}
                     <ThemedView style={[styles.adDivider, { backgroundColor: theme.line }]} />
                   </ThemedView>
-                )
+                  )}
+                </>
               }
               ListFooterComponent={
                 loadingMore ? <ActivityIndicator color={theme.tint} style={styles.spinner} /> : null
@@ -555,7 +645,8 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.three,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
-    fontSize: 16,
+    /* 입력 칸 글자도 본문이다. 토큰 밖의 크기를 쓰지 않는다. */
+    fontSize: FontSize.t6,
   },
   sortRow: {
     gap: Spacing.two,
@@ -589,6 +680,11 @@ const styles = StyleSheet.create({
   },
   cardBody: {
     gap: Spacing.one,
+  },
+  /** 추천 묶음. 스폰서와 붙지 않게 아래에 여백을 둔다 — 둘은 다른 자리다. */
+  section: {
+    gap: Spacing.two,
+    paddingBottom: Spacing.three,
   },
   sponsored: {
     gap: Spacing.two,

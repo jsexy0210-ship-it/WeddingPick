@@ -11,6 +11,7 @@ import {
   createUploadResponseSchema,
   currentUserSchema,
   displayNameResponseSchema,
+  top3ResponseSchema,
   errorResponseSchema,
   createVerificationResponseSchema,
   quoteSchema,
@@ -331,6 +332,23 @@ export async function searchVendors(input: {
   const suffix = query.size > 0 ? `?${query.toString()}` : '';
 
   return request(`/v1/vendors${suffix}`, vendorSearchResponseSchema);
+}
+
+/**
+ * TOP3 추천. v3.10 §2.
+ *
+ * 지역은 넘길 수 있다 — 지연 로그인이라 로그인 전에도 홈이 뜨고, 그때 지역은
+ * 기기에만 있다. 안 넘기면 서버가 로그인한 사람의 웨딩에서 읽는다.
+ */
+export async function getTop3(input: { region?: string; category?: VendorCategory } = {}) {
+  const query = new URLSearchParams();
+
+  if (input.region) query.set('region', input.region);
+  if (input.category) query.set('category', input.category);
+
+  const suffix = query.size > 0 ? `?${query.toString()}` : '';
+
+  return request(`/v1/recommendations/top3${suffix}`, top3ResponseSchema);
 }
 
 export async function listVendorRegions(): Promise<VendorRegionsResponse> {

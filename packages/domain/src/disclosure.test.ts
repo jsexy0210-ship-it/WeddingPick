@@ -21,17 +21,17 @@ describe('공개 단계', () => {
   it('경계에서 갈린다', () => {
     expect(disclosureStage(0)).toBe('collecting');
     expect(disclosureStage(2)).toBe('collecting');
-    expect(disclosureStage(3)).toBe('early');
-    expect(disclosureStage(4)).toBe('early');
-    expect(disclosureStage(5)).toBe('general');
-    expect(disclosureStage(9)).toBe('general');
+    expect(disclosureStage(3)).toBe('limited');
+    expect(disclosureStage(4)).toBe('limited');
+    expect(disclosureStage(5)).toBe('normal');
+    expect(disclosureStage(9)).toBe('normal');
     expect(disclosureStage(10)).toBe('detailed');
   });
 
   it('경계값이 정책 숫자와 같다', () => {
     // 화면마다 숫자를 다시 적지 않게, 기준을 한곳에 두고 여기서 지킨다.
-    expect(disclosureStage(DISCLOSURE_THRESHOLDS.early)).toBe('early');
-    expect(disclosureStage(DISCLOSURE_THRESHOLDS.general)).toBe('general');
+    expect(disclosureStage(DISCLOSURE_THRESHOLDS.limited)).toBe('limited');
+    expect(disclosureStage(DISCLOSURE_THRESHOLDS.normal)).toBe('normal');
     expect(disclosureStage(DISCLOSURE_THRESHOLDS.detailed)).toBe('detailed');
   });
 });
@@ -49,7 +49,7 @@ describe('금액 공개', () => {
   it('3건부터 구간이 나오되 데이터가 적다고 말한다', () => {
     const disclosed = discloseAmounts({ amounts: amounts(3), period: PERIOD });
 
-    expect(disclosed.stage).toBe('early');
+    expect(disclosed.stage).toBe('limited');
     expect(disclosed.caption).toContain('아직 데이터가 적어요');
     expect('low' in disclosed && disclosed.low).toBeGreaterThan(0);
   });
@@ -57,7 +57,7 @@ describe('금액 공개', () => {
   it('5건부터는 데이터 부족 안내를 떼고 기준 기간을 적는다', () => {
     const disclosed = discloseAmounts({ amounts: amounts(5), period: PERIOD });
 
-    expect(disclosed.stage).toBe('general');
+    expect(disclosed.stage).toBe('normal');
     expect(disclosed.caption).toBe(`확인된 정보 5건 · ${PERIOD}`);
   });
 
@@ -179,10 +179,10 @@ describe('캡션', () => {
     expect(disclosureCaption({ stage: 'collecting', count: 2, period: PERIOD })).toBe(
       '확인된 정보 2건 · 수집 중'
     );
-    expect(disclosureCaption({ stage: 'early', count: 3, period: PERIOD })).toBe(
+    expect(disclosureCaption({ stage: 'limited', count: 3, period: PERIOD })).toBe(
       '확인된 정보 3건 · 아직 데이터가 적어요'
     );
-    expect(disclosureCaption({ stage: 'general', count: 8, period: PERIOD })).toBe(
+    expect(disclosureCaption({ stage: 'normal', count: 8, period: PERIOD })).toBe(
       '확인된 정보 8건 · 최근 12개월'
     );
   });

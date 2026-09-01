@@ -192,7 +192,7 @@ describeWithDb('우리웨딩', () => {
       expect(body.paidTotal).toBe(3_000_000);
       // 어디서 온 값인지 줄마다 적는다.
       expect(body.expenses[0]!.source).toBe('payment_proof');
-      expect(body.expenses[0]!.sourceLabel).toBe('결제인증');
+      expect(body.expenses[0]!.sourceLabel).toBe('제보한 결제내역');
       expect(body.expenses[0]!.bucket).toBe('hall');
     });
 

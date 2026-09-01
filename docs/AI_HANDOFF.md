@@ -7,7 +7,7 @@
 - branch: main
 - base_commit:
 - last_verified_commit:
-- policy_version: v2.3
+- policy_version: v3.10
 
 ## 이번 작업 범위
 - work_scope:

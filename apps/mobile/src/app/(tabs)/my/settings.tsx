@@ -89,8 +89,8 @@ export default function SettingsScreen() {
 
   function confirmRevoke() {
     Alert.alert(
-      '결제인증 동의를 철회할까요',
-      '앞으로 결제내역을 등록할 수 없어요. 이미 등록한 내역은 내 제보 내역에서 지울 수 있어요',
+      '결제내역 제보 동의를 철회할까요',
+      '앞으로 결제내역을 등록할 수 없어요. 이미 등록한 내역은 내 제보내역에서 지울 수 있어요',
       [
         { text: '그만두기', style: 'cancel' },
         {
@@ -177,14 +177,14 @@ export default function SettingsScreen() {
           </Section>
 
           <Section title="데이터">
-            <ActionButton label="내 제보 내역" onPress={() => router.push('/my/reports')} />
+            <ActionButton label="내 제보내역" onPress={() => router.push('/my/reports')} />
             {/*
               동의하지 않은 사람에게 철회 단추를 보이지 않는다. 누를 것이 없는
               단추는 무엇이 잘못됐는지 생각하게 만든다.
             */}
             {settings?.paymentConsent ? (
               <ActionButton
-                label="결제인증 동의 철회"
+                label="결제내역 제보 동의 철회"
                 hint={
                   settings.paymentConsentAt
                     ? `${formatWeddingDate(settings.paymentConsentAt.slice(0, 10))}에 동의하셨어요`

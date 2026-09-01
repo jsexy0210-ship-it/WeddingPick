@@ -48,6 +48,9 @@ export function Fab({ label, glyph = '+', onPress }: FabProps) {
   );
 }
 
+/** 기호 한 글자를 가운데 앉히려고 잡은 줄 높이. 글자 크기 토큰과 다른 값이다. */
+const FAB_GLYPH_LINE_HEIGHT = 34;
+
 const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
@@ -65,7 +68,10 @@ const styles = StyleSheet.create({
   },
   glyph: {
     color: '#ffffff',
-    // 기호가 가운데 오도록. 글꼴마다 아래로 처져 보이는 것을 눈으로 맞췄다.
-    lineHeight: 34,
+    /*
+     * 기호가 가운데 오도록 줄 높이를 크게 잡는다. 글꼴마다 아래로 처져 보이는
+     * 것을 눈으로 맞춘 값이라, 글자 크기 토큰이 아니라 이 단추의 크기를 따른다.
+     */
+    lineHeight: FAB_GLYPH_LINE_HEIGHT,
   },
 });

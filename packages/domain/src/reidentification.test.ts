@@ -18,7 +18,7 @@ describe('재식별 방지', () => {
      * 문제는 건수가 아니라 조합이다. "서울 강남구 · 2026년 5월 · 토요일 저녁"으로
      * 좁힌 3건은, 그 조건에 해당하는 사람이 알 만한 사람 셋이라는 뜻이다.
      */
-    expect(requiredCount(0)).toBe(DISCLOSURE_THRESHOLDS.early);
+    expect(requiredCount(0)).toBe(DISCLOSURE_THRESHOLDS.limited);
     expect(requiredCount(1)).toBeGreaterThan(requiredCount(0));
     expect(requiredCount(3)).toBeGreaterThan(requiredCount(2));
   });

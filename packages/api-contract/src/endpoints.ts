@@ -86,6 +86,7 @@ import {
   vendorRegionsResponseSchema,
   vendorSearchResponseSchema,
 } from './vendors';
+import { top3QuerySchema, top3ResponseSchema } from './recommendations';
 import {
   createVerificationRequestSchema,
   createVerificationResponseSchema,
@@ -163,6 +164,18 @@ export const ENDPOINTS = {
     path: '/v1/me/display-name',
     body: displayNameRequestSchema,
     response: displayNameResponseSchema,
+  },
+
+  /**
+   * TOP3 추천. v3.10 §2.
+   *
+   * 지역·업종은 쿼리로 넘길 수 있다 — 지연 로그인이라 로그인 전에도 홈이 뜨고,
+   * 그때 지역은 기기에만 있다.
+   */
+  getTop3: {
+    method: 'GET',
+    path: '/v1/recommendations/top3',
+    response: top3ResponseSchema,
   },
 
   createWedding: {

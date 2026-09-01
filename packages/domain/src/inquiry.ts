@@ -82,11 +82,18 @@ export const INQUIRY_STATUSES = ['received', 'in_review', 'answered', 'closed'] 
 
 export type InquiryStatus = (typeof INQUIRY_STATUSES)[number];
 
+/**
+ * 사용자에게 나가는 말. 표시 정책(`report-state.ts`)을 따른다.
+ *
+ * `답변 완료`를 `확인 완료`로 바꾸지 않은 자리가 없다 — 문의는 답을 받는 것이
+ * 끝이고, 그 끝을 `확인 완료`라고 적으면 답이 왔는지 알 수 없다. 그래서 두
+ * 상태 모두 표의 말을 쓰되 `answered`가 `확인 완료`다.
+ */
 export const INQUIRY_STATUS_LABEL: Record<InquiryStatus, string> = {
-  received: '접수됨',
+  received: '확인 중',
   in_review: '확인 중',
-  answered: '답변 완료',
-  closed: '종료',
+  answered: '확인 완료',
+  closed: '종료됨',
 };
 
 /**

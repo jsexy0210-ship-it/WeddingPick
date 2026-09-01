@@ -214,7 +214,7 @@ export default function MyScreen() {
           {/* 통계 3개 — 각각 해당 화면으로 */}
           <ThemedView style={styles.statRow}>
             <Stat
-              label="결제인증"
+              label="확인된 정보"
               value={data.paymentProofCount}
               onPress={() => router.push('/capture/payment/consent')}
             />
@@ -304,7 +304,7 @@ export default function MyScreen() {
               데이터
             </ThemedText>
             <ActionButton
-              label="내 제보 내역"
+              label="내 제보내역"
               hint="낸 자료가 어디에 쓰이는지 함께 보여드려요"
               onPress={() => (data.me ? router.push('/my/reports') : router.push('/login'))}
             />
@@ -349,7 +349,7 @@ export default function MyScreen() {
             />
             <ActionButton
               label="설정"
-              hint="알림, 예식일, 결제인증 동의"
+              hint="알림, 예식일, 결제내역 제보 동의"
               onPress={() => router.push('/my/settings')}
             />
           </ThemedView>

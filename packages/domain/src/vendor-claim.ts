@@ -75,10 +75,11 @@ export const CLAIM_STATUSES = ['pending', 'approved', 'rejected'] as const;
 
 export type ClaimStatus = (typeof CLAIM_STATUSES)[number];
 
+/** 사용자에게 나가는 말. 표시 정책(`report-state.ts`)을 따른다. */
 export const CLAIM_STATUS_LABEL: Record<ClaimStatus, string> = {
   pending: '확인 중',
   approved: '확인 완료',
-  rejected: '확인하지 못함',
+  rejected: '반영되지 않았어요',
 };
 
 /** 낸 사람에게 보이는 상태 설명. */

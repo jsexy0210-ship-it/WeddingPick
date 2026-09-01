@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ActionButton,
   FilterChip,
+  FontSize,
   Layout,
   MaxContentWidth,
   Radius,
@@ -266,7 +267,8 @@ const styles = StyleSheet.create({
   input: {
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.three,
-    fontSize: 15,
+    /* 입력 칸 글자도 본문이다. 토큰 밖의 크기를 쓰지 않는다. */
+    fontSize: FontSize.t6,
     minHeight: Layout.rowMinHeight,
   },
 });

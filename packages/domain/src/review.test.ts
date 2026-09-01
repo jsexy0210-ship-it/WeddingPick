@@ -229,8 +229,8 @@ describe('쓰기 전에 알려주는 말', () => {
   it('미인증이어도 글은 보인다고 말한다', () => {
     expect(verificationNote('reported')).toContain('그대로 보이지만');
     // 배지는 띄어쓰기 없이. 핸드오프 카피 규칙.
-    expect(REVIEW_VERIFICATION_LABEL.payment).toBe('결제인증');
-    expect(REVIEW_VERIFICATION_LABEL.usage).toBe('이용인증');
+    expect(REVIEW_VERIFICATION_LABEL.payment).toBe('결제확인');
+    expect(REVIEW_VERIFICATION_LABEL.usage).toBe('이용확인');
   });
 });
 

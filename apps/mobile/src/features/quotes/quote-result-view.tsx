@@ -7,7 +7,15 @@ import type {
 import { ANALYSIS_DISCLAIMER, PRICE_JUDGEMENT_LABEL, needsAttention } from '@weddingpick/domain';
 import { ScrollView, StyleSheet, TextInput, type ViewStyle } from 'react-native';
 
-import { ActionButton, Spacing, ThemedText, ThemedView, VerificationBadge, useTheme } from '@weddingpick/ui';
+import {
+  ActionButton,
+  FontSize,
+  Spacing,
+  ThemedText,
+  ThemedView,
+  VerificationBadge,
+  useTheme,
+} from '@weddingpick/ui';
 
 const FIELD_LABEL: Record<string, string> = {
   totalAmount: '계약금액',
@@ -402,6 +410,7 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.two,
     paddingHorizontal: Spacing.two,
     paddingVertical: Spacing.two,
-    fontSize: 16,
+    /* 입력 칸 글자도 본문이다. 토큰 밖의 크기를 쓰지 않는다. */
+    fontSize: FontSize.t6,
   },
 });

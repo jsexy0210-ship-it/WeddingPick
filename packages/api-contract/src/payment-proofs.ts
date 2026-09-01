@@ -82,8 +82,8 @@ export const paidPriceSchema = z.discriminatedUnion('stage', [
     count: z.int().nonnegative(),
     caption: z.string().min(1),
   }),
-  z.object({ stage: z.literal('early'), ...disclosedRange }),
-  z.object({ stage: z.literal('general'), ...disclosedRange }),
+  z.object({ stage: z.literal('limited'), ...disclosedRange }),
+  z.object({ stage: z.literal('normal'), ...disclosedRange }),
   z.object({ stage: z.literal('detailed'), ...disclosedRange, median: amountSchema }),
 ]);
 

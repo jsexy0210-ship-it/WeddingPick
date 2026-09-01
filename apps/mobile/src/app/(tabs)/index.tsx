@@ -7,10 +7,10 @@ import type {
 import {
   COMPLETED_ACTIONS,
   EXPENSE_BUCKET_COLOR,
+  topPriority,
   hasUnread,
   formatTaskDate,
   greeting,
-  nextTask,
   lifecycle,
   showsPreparationFirst,
   type ExpenseBucket,
@@ -39,6 +39,7 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import { HomeSkeleton } from '@/features/home/home-skeleton';
+import { homePriorityItems } from '@/features/home/priority';
 import {
   HOME_SECTIONS,
   isVisible,
@@ -125,6 +126,7 @@ export default function HomeScreen() {
           candidates,
           deepData: unlock?.deepData ?? false,
         }));
+
       })
       .catch(() => setData(EMPTY))
       .finally(() => setSettled(true));
@@ -137,7 +139,11 @@ export default function HomeScreen() {
     return <HomeSkeleton />;
   }
 
-  const upcoming = data.tasks ? nextTask(data.tasks.tasks) : null;
+  /*
+   * 홈 대표 자리에 무엇을 둘지. 순서는 도메인이, 후보는 화면이 만든다 —
+   * 못 재는 종류는 후보로 만들어지지 않아 여기 올라올 길이 없다.
+   */
+  const priority = topPriority(homePriorityItems(data));
   /*
    * 저장하지 않고 계산한다 — 아무 일도 없어도 시간이 지나면 바뀌는 값이다.
    *
@@ -309,7 +315,7 @@ export default function HomeScreen() {
         <ThemedText type="t7" style={styles.onTint}>
           결제내역을 등록하시면 조건이 비슷한 결제 사례를 함께 보실 수 있어요
         </ThemedText>
-        <ActionButton label="결제인증 제보하기" onPress={() => router.push('/capture')} />
+        <ActionButton label="제보하기" onPress={() => router.push('/capture')} />
       </ThemedView>
     ),
   };
@@ -364,10 +370,14 @@ export default function HomeScreen() {
           </ThemedView>
 
           {/*
-            고정 2 — 다음 일정. 예식이 끝났으면 그 자리에 마무리할 것을 둔다.
+            고정 2 — 지금 할 일. Priority Engine이 고른 하나(v3.10 §3).
 
-            **계정을 제한하지 않는다**(원문 34번). 아래 섹션은 그대로 뜨고,
-            여기 있는 것은 막는 목록이 아니라 권하는 목록이다.
+            여러 개를 늘어놓지 않는다. 홈에서 무엇부터 할지 정해주는 것이 이 자리의
+            일이라, 세 장을 나란히 두면 정해주지 않은 것과 같아진다.
+
+            예식이 끝났으면 그 자리에 마무리할 것을 둔다. **계정을 제한하지
+            않는다**(원문 34번) — 아래 섹션은 그대로 뜨고, 여기 있는 것은 막는
+            목록이 아니라 권하는 목록이다.
           */}
           {!showsPreparationFirst(stage.stage) ? (
             <ThemedView type="backgroundElement" style={styles.card}>
@@ -381,26 +391,36 @@ export default function HomeScreen() {
               ))}
             </ThemedView>
           ) : (
-          <ThemedView type="backgroundElement" style={styles.card}>
-            {upcoming ? (
-              <>
-                <ThemedText type="t7" themeColor="tint">
-                  다음 일정 · {formatTaskDate(upcoming.dueDate!)}
-                </ThemedText>
-                <ThemedText type="t5">{upcoming.label}</ThemedText>
-                {upcoming.vendorLabel ? (
-                  <ThemedText type="t7" themeColor="textSecondary">
-                    {upcoming.vendorLabel}
+            <ThemedView type="backgroundElement" style={styles.card}>
+              {priority ? (
+                <>
+                  <ThemedText type="t7" themeColor="tint">
+                    지금 할 일
                   </ThemedText>
-                ) : null}
-              </>
-            ) : (
-              <ThemedText type="t6" themeColor="textSecondary">
-                일정을 등록해보세요
-              </ThemedText>
-            )}
-          </ThemedView>
+                  <ThemedText type="t5">{priority.title}</ThemedText>
+                  {priority.detail ? (
+                    <ThemedText type="t7" themeColor="textSecondary">
+                      {priority.detail}
+                    </ThemedText>
+                  ) : null}
+                  <ActionButton
+                    label={priority.actionLabel}
+                    onPress={() => router.push(priority.action as never)}
+                  />
+                </>
+              ) : (
+                <ThemedText type="t6" themeColor="textSecondary">
+                  일정을 등록해보세요
+                </ThemedText>
+              )}
+            </ThemedView>
           )}
+
+          {/*
+            가격 TOP3 섹션은 홈에 두지 않는다(홈 C-1). 오늘의 Pick과 경쟁하는
+            자리라, 둘을 나란히 두면 홈이 무엇을 권하는 화면인지 흐려진다.
+            TOP3 성격의 탐색은 검색 탭에 있다.
+          */}
 
           {(layout?.order ?? HOME_SECTIONS)
             .filter((section) => (layout ? isVisible(layout, section) : true))

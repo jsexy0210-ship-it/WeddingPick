@@ -12,24 +12,40 @@
 
 import { NOT_ENOUGH_DATA, TERMS } from './terms';
 
-export const DISCLOSURE_STAGES = ['collecting', 'early', 'general', 'detailed'] as const;
+/**
+ * 화면이 받는 상태 넷. **화면은 이 값만 받고 건수 기준을 알지 못한다.**
+ *
+ *   - `collecting` 수집 중 — 보여줄 금액이 없다
+ *   - `limited`    정보 적음 — 구간은 보여주되 적다고 함께 말한다
+ *   - `normal`     일반 공개 — 구간을 그대로 보여준다
+ *   - `detailed`   상세 공개 — 기준금액·조건별·시기별까지
+ *
+ * 몇 건부터 어느 상태인지는 아래 임계값과 `decideDisclosure`가 정한다. 화면에
+ * `count >= 5` 같은 조건이 들어가는 순간, 기준을 고칠 때 화면마다 찾아다녀야
+ * 하고 어느 한 곳이 남는다.
+ */
+export const DISCLOSURE_STAGES = ['collecting', 'limited', 'normal', 'detailed'] as const;
 
 export type DisclosureStage = (typeof DISCLOSURE_STAGES)[number];
 
-/** 각 단계가 시작되는 데이터 수. */
+/**
+ * 각 단계가 시작되는 데이터 수.
+ *
+ * **이 수는 화면이 아니라 여기에만 있다.** 정책이 바꾸면 이 표 하나를 고친다.
+ */
 export const DISCLOSURE_THRESHOLDS = {
   /** 여기부터 구간을 보여주되, 데이터가 적다고 함께 말한다. */
-  early: 3,
+  limited: 3,
   /** 여기부터는 데이터 부족 안내를 뗀다. */
-  general: 5,
+  normal: 5,
   /** 여기부터 중앙값·조건별·시기별을 낼 수 있다. */
   detailed: 10,
 } as const;
 
 export function disclosureStage(count: number): DisclosureStage {
   if (count >= DISCLOSURE_THRESHOLDS.detailed) return 'detailed';
-  if (count >= DISCLOSURE_THRESHOLDS.general) return 'general';
-  if (count >= DISCLOSURE_THRESHOLDS.early) return 'early';
+  if (count >= DISCLOSURE_THRESHOLDS.normal) return 'normal';
+  if (count >= DISCLOSURE_THRESHOLDS.limited) return 'limited';
 
   return 'collecting';
 }
@@ -54,7 +70,7 @@ export function disclosureCaption(input: {
   const head = `${TERMS.verifiedData} ${input.count}건`;
 
   if (input.stage === 'collecting') return `${head} · 수집 중`;
-  if (input.stage === 'early') return `${head} · ${NOT_ENOUGH_DATA}`;
+  if (input.stage === 'limited') return `${head} · ${NOT_ENOUGH_DATA}`;
 
   const tail = input.baseAmount ? ` · ${TERMS.baseAmount} ${input.baseAmount}` : '';
 
@@ -70,8 +86,8 @@ export function disclosureCaption(input: {
  */
 export type PriceDisclosure =
   | { stage: 'collecting'; count: number; caption: string }
-  | { stage: 'early'; count: number; caption: string; low: number; high: number }
-  | { stage: 'general'; count: number; caption: string; low: number; high: number }
+  | { stage: 'limited'; count: number; caption: string; low: number; high: number }
+  | { stage: 'normal'; count: number; caption: string; low: number; high: number }
   | {
       stage: 'detailed';
       count: number;

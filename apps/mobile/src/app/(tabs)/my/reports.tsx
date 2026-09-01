@@ -40,7 +40,7 @@ export default function MyReportsScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content}>
-          <ThemedText type="t2">내 제보 내역</ThemedText>
+          <ThemedText type="t2">내 제보내역</ThemedText>
 
           {reports !== null && reports.length === 0 ? (
             <ThemedView style={styles.empty}>

@@ -204,7 +204,7 @@ describeWithDb('업체 검색', () => {
 
       const paid = (await prices(vendorId)).paidPrice;
 
-      expect(paid.stage).toBe('early');
+      expect(paid.stage).toBe('limited');
       expect(paid.caption).toContain('아직 데이터가 적어요');
       expect(paid.low).toBeGreaterThan(0);
       // 중앙값은 상세 단계의 것이다. 구간이 나온다고 따라 나오지 않는다.
@@ -235,7 +235,7 @@ describeWithDb('업체 검색', () => {
 
       // 열두 건이 아니라 세 건이다.
       expect(paid.caption).toContain('3건');
-      expect(paid.stage).toBe('early');
+      expect(paid.stage).toBe('limited');
     });
 
     it('오래된 결제를 지우지는 않는다', async () => {
@@ -452,7 +452,7 @@ describeWithDb('업체 검색', () => {
 
       const card = (await search(headers, '')).vendors[0];
 
-      expect(card.paidPrice.stage).toBe('general');
+      expect(card.paidPrice.stage).toBe('normal');
       expect(card.paidPrice.caption).toContain('6건');
     });
   });

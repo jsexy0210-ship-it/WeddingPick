@@ -429,7 +429,7 @@ export default function RegisterPaymentProofScreen() {
             ) : null}
             <ActionButton
               variant="primary"
-              label={sending ? '등록하는 중…' : '결제인증 등록'}
+              label={sending ? '등록하는 중…' : '제보하기'}
               disabled={!check.ok || sending}
               onPress={() => void submit()}
             />

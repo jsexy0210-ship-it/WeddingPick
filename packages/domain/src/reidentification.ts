@@ -50,7 +50,7 @@ export function canDiscloseNarrowed(input: {
 
 /** 이만큼은 모여야 그 조건을 보여준다. */
 export function requiredCount(axes: number): number {
-  return DISCLOSURE_THRESHOLDS.early + Math.max(0, axes) * NARROWING_STEP;
+  return DISCLOSURE_THRESHOLDS.limited + Math.max(0, axes) * NARROWING_STEP;
 }
 
 /**

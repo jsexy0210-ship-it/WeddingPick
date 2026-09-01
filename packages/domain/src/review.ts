@@ -130,9 +130,15 @@ export type ReviewVerification = (typeof REVIEW_VERIFICATION)[number];
  */
 export const REVIEW_VERIFICATION_LABEL: Record<ReviewVerification, string> = {
   reported: '상담제보',
-  payment: '결제인증',
-  contract: '계약인증',
-  usage: '이용인증',
+  /*
+   * `인증`이 아니라 `확인`이다. 아래 안내문이 이미 "결제 확인으로 올라갑니다"라고
+   * 적고 있어, 배지만 `결제인증`으로 두면 같은 화면이 두 이름을 쓴다.
+   *
+   * 띄어쓰기가 없는 것은 배지 카피 규칙이다.
+   */
+  payment: '결제확인',
+  contract: '계약확인',
+  usage: '이용확인',
 };
 
 /** 이용점수에 들어가는 후기인지. 상담제보는 보이되 점수를 움직이지 않는다. */

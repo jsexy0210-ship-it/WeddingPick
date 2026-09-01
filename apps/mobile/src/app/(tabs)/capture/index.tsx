@@ -58,7 +58,7 @@ export default function CaptureScreen() {
         <ThemedView style={styles.actions}>
           <ActionButton
             variant="primary"
-            label="결제인증 제보하기"
+            label="제보하기"
             hint="결제문자 캡처도 괜찮습니다"
             onPress={() => router.push('/capture/payment/consent')}
           />

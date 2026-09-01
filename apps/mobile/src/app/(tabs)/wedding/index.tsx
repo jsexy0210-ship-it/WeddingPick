@@ -36,7 +36,7 @@ export default function WeddingScreen() {
             />
             <ActionButton
               label="지출내역"
-              hint="결제인증으로 등록한 금액이 여기 모입니다"
+              hint="제보한 결제내역 금액이 여기 모여요"
               onPress={() => void open('expenses')}
             />
             <ActionButton
