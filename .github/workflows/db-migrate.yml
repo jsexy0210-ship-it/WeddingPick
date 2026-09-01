@@ -1,0 +1,27 @@
+# Neon DB에 마이그레이션을 적용한다. 수동으로 한 번 돌린다.
+#
+# DATABASE_URL GitHub Secret이 있어야 한다.
+# 멱등하다 — 이미 적용된 버전은 건너뛴다.
+name: DB Migrate
+
+on:
+  workflow_dispatch:
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: npm run migrate --workspace @weddingpick/db
