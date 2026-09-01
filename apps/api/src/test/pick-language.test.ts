@@ -145,6 +145,36 @@ describe('사용자 앱 Pick 언어', () => {
     expect(scan(/견적|계약서/)).toEqual([]);
   });
 
+  it('앱 설정의 권한 안내에도 금지어가 없다', () => {
+    /*
+     * `app.json`의 권한 문구는 **iOS·안드로이드 시스템 대화상자에 그대로 뜨는
+     * 사용자 문구**다. 화면 코드가 아니라 설정 파일에 있어서 위의 저장소 훑기가
+     * 지나친다 — 실제로 `견적서·계약서를 촬영해…`가 여기 남아 빌드에 실려 나갈
+     * 뻔했다. 한 번 심으면 앱을 다시 올리기 전까지 못 고치는 문구다.
+     */
+    const config = JSON.parse(
+      readFileSync(join(ROOT, 'apps/mobile/app.json'), 'utf8')
+    ) as { expo: { name: string; plugins: unknown[] } };
+
+    const texts = [config.expo.name];
+
+    for (const plugin of config.expo.plugins) {
+      if (!Array.isArray(plugin)) continue;
+
+      for (const value of Object.values(plugin[1] as Record<string, unknown>)) {
+        if (typeof value === 'string') texts.push(value);
+      }
+    }
+
+    /* 권한 문구가 실제로 있는지부터 본다 — 없으면 이 시험은 아무것도 안 지킨다. */
+    expect(texts.some((text) => text.includes('카메라'))).toBe(true);
+
+    for (const text of texts) {
+      expect(text).not.toMatch(/결제/);
+      expect(text).not.toMatch(/견적|계약서/);
+    }
+  });
+
   it('예외 영역은 결제를 그대로 쓴다', () => {
     /*
      * FAQ가 `Pick 인증 자료를 올리시면`이라고만 적으면 무엇을 올리라는 건지

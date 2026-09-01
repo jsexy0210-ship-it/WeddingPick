@@ -7,6 +7,11 @@
     "icon": "./assets/images/icon.png",
     "scheme": "weddingpick",
     "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "kr.weddingpick.app",
+      "buildNumber": "1",
+      "supportsTablet": false
+    },
     "android": {
       "package": "kr.weddingpick.app",
       "adaptiveIcon": {
@@ -34,14 +39,15 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "견적서·계약서를 촬영해 분석하려면 카메라 접근이 필요합니다.",
-          "recordAudioAndroid": false
+          "cameraPermission": "문서를 촬영해 분석하려면 카메라 접근이 필요합니다.",
+          "recordAudioAndroid": false,
+          "microphonePermission": false
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "저장된 견적서·계약서 사진을 불러오려면 사진 접근이 필요합니다."
+          "photosPermission": "저장된 문서 사진을 불러오려면 사진 접근이 필요합니다."
         }
       ],
       [
