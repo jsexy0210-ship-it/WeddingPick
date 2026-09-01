@@ -7,7 +7,7 @@
       "key": "screens",
       "label": "화면 구현",
       "weight": 30,
-      "basis": "05-product-spec.md 2번 화면 목록 표에서 ✅ 표시된 화면 수"
+      "basis": "05-product-spec.md 2번 화면 목록 표에서 ✅ 표시된 화면 수 (앱 화면만 — 관리자 콘솔은 이 표에 없다)"
     },
     {
       "key": "openQuestions",
@@ -26,6 +26,45 @@
       "label": "코드 게이트",
       "weight": 20,
       "basis": "npm run typecheck / npm run lint / npm test 통과 수 (--checks 일 때만 측정)"
+    }
+  ],
+  "outOfScope": [
+    "관리자 콘솔 웹 UI — 지금 웹은 랜딩 한 장이고 운영은 CLI 10개로만 돈다. IA 화면 목록이 저장소에 없어 분모를 만들지 못하므로 비율로 내지 않는다.",
+    "Phase 4 이후 범위(박람회·외부 캘린더/지도·주차·방문 브리핑) — 05번 화면표에 행이 없어 세지 못한다.",
+    "API 406건·DB 65건 테스트 — DATABASE_URL 없이 도는 환경에서는 건너뛴다. 코드 게이트가 통과해도 그 몫은 검증 전이다."
+  ],
+  "inventory": [
+    {
+      "label": "모바일 라우트",
+      "pattern": "^apps/mobile/src/app/.*\\.tsx$",
+      "exclude": "_layout\\.tsx$"
+    },
+    {
+      "label": "API 라우트 모듈",
+      "pattern": "^apps/api/src/.*\\.ts$",
+      "exclude": "\\.test\\.ts$"
+    },
+    {
+      "label": "운영 CLI(관리자)",
+      "pattern": "^apps/api/src/[^/]*-admin\\.ts$"
+    },
+    {
+      "label": "관리자 웹 UI",
+      "pattern": "^apps/web/src/admin/.*\\.ts$"
+    },
+    {
+      "label": "DB 마이그레이션",
+      "pattern": "^packages/db/migrations/.+"
+    },
+    {
+      "label": "도메인 모듈",
+      "pattern": "^packages/domain/src/.*\\.ts$",
+      "exclude": "\\.test\\.ts$"
+    },
+    {
+      "label": "UI 컴포넌트",
+      "pattern": "^packages/ui/src/.*\\.tsx$",
+      "exclude": "\\.test\\.tsx$"
     }
   ]
 }

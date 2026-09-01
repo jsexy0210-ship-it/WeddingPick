@@ -254,6 +254,28 @@ function measure(rev, { runChecks }) {
   };
 }
 
+// ── 재고 — 비율이 아니라 개수다 ─────────────────────────────────────────────
+// 분모(전체가 몇 개여야 하는지)를 모르는 것은 비율로 만들지 않는다. 대신 세어서
+// 어제와 견준다. 문서가 안 움직인 날에도 코드가 움직였는지는 이 줄에 남는다.
+function fileList(rev) {
+  const out = rev === null
+    ? git(['ls-files'])
+    : git(['ls-tree', '-r', '--name-only', rev]);
+  return out ? out.split('\n').filter(Boolean) : [];
+}
+
+function inventory(rev) {
+  const files = fileList(rev);
+  return (CONFIG.inventory ?? []).map((entry) => {
+    const pattern = new RegExp(entry.pattern);
+    const exclude = entry.exclude ? new RegExp(entry.exclude) : null;
+    return {
+      label: entry.label,
+      count: files.filter((f) => pattern.test(f) && !(exclude && exclude.test(f))).length,
+    };
+  });
+}
+
 // ── 공정률에 넣지 않는 참고 정보 ────────────────────────────────────────────
 function pendingDecisions(read) {
   const src = read(CONFIG.specPath);
@@ -380,6 +402,23 @@ function renderText(report) {
     out.push('');
   }
 
+  if (report.inventory.length) {
+    out.push('재고 — 분모를 모르는 것은 비율로 내지 않고 센다');
+    for (const row of report.inventory) {
+      const was = report.inventoryBefore?.find((r) => r.label === row.label);
+      const d = was ? row.count - was.count : null;
+      const move = d === null || d === 0 ? '' : `  ${d > 0 ? '+' : '−'}${Math.abs(d)}`;
+      out.push(`  ${pad(row.label, 20)}${pad(String(row.count), 6)}${move}`);
+    }
+    out.push('');
+  }
+
+  if (CONFIG.outOfScope?.length) {
+    out.push('이 공정률이 재지 않는 것');
+    for (const line of CONFIG.outOfScope) out.push(`  · ${line}`);
+    out.push('');
+  }
+
   const gates = today.items.find((i) => i.key === 'codeGates');
   if (!gates?.measured) {
     out.push('코드 게이트는 재지 않았다 — `npm run progress -- --checks` 로 타입체크·린트·테스트까지 돌린다.');
@@ -432,6 +471,20 @@ function renderMarkdown(report) {
     for (const d of decisions) out.push(`- [${clip(d.section, 30)}] ${d.text}`);
   }
 
+  if (report.inventory.length) {
+    out.push('', '### 재고 (분모를 모르는 것은 비율로 내지 않고 센다)', '', '| 항목 | 개수 | 직전 대비 |', '|---|---|---|');
+    for (const row of report.inventory) {
+      const was = report.inventoryBefore?.find((r) => r.label === row.label);
+      const d = was ? row.count - was.count : null;
+      out.push(`| ${row.label} | ${row.count} | ${d === null || d === 0 ? '—' : `${d > 0 ? '+' : '−'}${Math.abs(d)}`} |`);
+    }
+  }
+
+  if (CONFIG.outOfScope?.length) {
+    out.push('', '### 이 공정률이 재지 않는 것', '');
+    for (const line of CONFIG.outOfScope) out.push(`- ${line}`);
+  }
+
   out.push('', `### 그 사이 커밋 (${commits.length}건)`, '');
   if (commits.length === 0) out.push('- 없음');
   for (const c of commits.slice(0, 20)) out.push(`- \`${c.hash}\` ${c.date} ${c.author} — ${c.subject}`);
@@ -463,6 +516,8 @@ function main(argv) {
     before,
     decisions: pendingDecisions(readerFor(null)),
     commits: recentCommits(compareRev),
+    inventory: inventory(null),
+    inventoryBefore: before ? inventory(compareRev) : null,
   };
 
   if (opts.format === 'json') console.log(JSON.stringify(report, null, 2));
