@@ -4,10 +4,10 @@
 #
 # ── iOS 빌드 전제 조건 ──────────────────────────────────────────────────
 #
-#   GitHub Secrets에 EAS_ASC_KEY_P8가 등록되어 있어야 한다.
-#   (AuthKey_NPCMZ655GG.p8 파일 내용을 그대로 붙여넣기)
+#   GitHub Secrets에 EAS_ASC_KEY_P8_BASE64가 등록되어 있어야 한다.
+#   (AuthKey_NPCMZ655GG.p8 파일을 base64로 인코딩한 값)
 #
-#   워크플로우가 .p8를 파일로 써서 EAS에 직접 전달한다:
+#   워크플로우가 base64 디코딩 후 .p8 파일을 써서 EAS에 직접 전달한다:
 #     EXPO_APPLE_API_KEY_ID        NPCMZ655GG
 #     EXPO_APPLE_API_KEY_ISSUER_ID a7e4029d-6abf-4811-80a7-9cc47c1d1e21
 #     EXPO_APPLE_API_KEY_PATH      /tmp/AuthKey_NPCMZ655GG.p8
@@ -26,7 +26,7 @@
 #
 # 필요한 GitHub Secrets:
 #   EXPO_TOKEN                        expo.dev Access Tokens에서 발급
-#   EAS_ASC_KEY_P8                    AuthKey_NPCMZ655GG.p8 파일 내용 그대로
+#   EAS_ASC_KEY_P8_BASE64             AuthKey_NPCMZ655GG.p8 파일을 base64 인코딩한 값
 #   EXPO_APPLE_ID                     애플 개발자 계정 이메일 (submit 전용)
 #   EXPO_APPLE_APP_SPECIFIC_PASSWORD  앱 암호 appleid.apple.com (submit 전용)
 name: Release
@@ -101,10 +101,10 @@ jobs:
 
       - name: ASC API Key 설정
         run: |
-          printf '%s' "$EAS_ASC_KEY_P8" > /tmp/AuthKey_NPCMZ655GG.p8
+          echo "$EAS_ASC_KEY_P8_BASE64" | base64 -d > /tmp/AuthKey_NPCMZ655GG.p8
           chmod 600 /tmp/AuthKey_NPCMZ655GG.p8
         env:
-          EAS_ASC_KEY_P8: ${{ secrets.EAS_ASC_KEY_P8 }}
+          EAS_ASC_KEY_P8_BASE64: ${{ secrets.EAS_ASC_KEY_P8_BASE64 }}
 
       - name: Build
         working-directory: apps/mobile
