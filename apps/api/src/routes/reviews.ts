@@ -5,6 +5,7 @@ import {
 } from '@weddingpick/api-contract';
 import {
   MINIMUM_BODY_LENGTH,
+  PACKAGE_ROLE_LABEL,
   REPORT_REASONS,
   REPORT_REASON_LABEL,
   REVIEWER_ROLES,
@@ -94,6 +95,50 @@ type AuthorVerification = {
   paymentProofId: string | null;
   verifiedBy: string | null;
 };
+
+/**
+ * 같은 패키지로 함께 계약한 다른 업체. 사업계획서 19번.
+ *
+ * 스튜디오·드레스·메이크업을 한 평점으로 합치지 않으려면 셋을 각자 물어야 한다.
+ * 이 사람이 이 업체를 계약한 견적(`quote_sub_vendors`)에서 **같은 견적에 함께
+ * 묶인 다른 업체**를 찾는다. 아직 후기를 안 쓴 곳만 담는다 — 이미 썼으면 다시
+ * 물을 이유가 없다.
+ */
+async function packageSiblingsFor(
+  pool: Pool,
+  userId: string,
+  vendorId: string
+): Promise<{ vendorId: string; vendorName: string; roleLabel: string }[]> {
+  const { rows } = await pool.query<{
+    vendor_id: string;
+    vendor_name: string;
+    role: keyof typeof PACKAGE_ROLE_LABEL;
+  }>(
+    `SELECT DISTINCT ON (sibling.vendor_id)
+            sibling.vendor_id, v.name AS vendor_name, sibling.role
+     FROM structured.quote_sub_vendors mine
+     JOIN structured.quotes q ON q.id = mine.quote_id
+     JOIN structured.weddings w ON w.id = q.wedding_id
+     JOIN structured.quote_sub_vendors sibling ON sibling.quote_id = mine.quote_id
+     JOIN structured.vendors v ON v.id = sibling.vendor_id
+     WHERE mine.vendor_id = $2
+       AND (w.owner_user_id = $1 OR w.partner_user_id = $1)
+       AND sibling.vendor_id IS NOT NULL
+       AND sibling.vendor_id <> $2
+       AND NOT EXISTS (
+         SELECT 1 FROM structured.reviews r
+         WHERE r.vendor_id = sibling.vendor_id AND r.author_user_id = $1
+       )
+     ORDER BY sibling.vendor_id, q.created_at DESC`,
+    [userId, vendorId]
+  );
+
+  return rows.map((row) => ({
+    vendorId: row.vendor_id,
+    vendorName: row.vendor_name,
+    roleLabel: PACKAGE_ROLE_LABEL[row.role],
+  }));
+}
 
 async function verificationForAuthor(
   pool: Pool,
@@ -236,6 +281,7 @@ export function registerReviewRoutes(app: FastifyInstance, context: AppContext):
         [vendor.id, userId]
       );
 
+      const packageSiblings = await packageSiblingsFor(context.pool, userId, vendor.id);
       const mode = evaluationModeFor(vendor.category);
 
       return {
@@ -267,6 +313,7 @@ export function registerReviewRoutes(app: FastifyInstance, context: AppContext):
         },
         alreadyWritten: written.rows.length > 0,
         minimumBodyLength: MINIMUM_BODY_LENGTH,
+        packageSiblings,
       };
     }
   );

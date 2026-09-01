@@ -45,11 +45,11 @@ describeWithDb('이용 후기', () => {
     return { vendorId, headers, reviewId: written.json<{ reviewId: string }>().reviewId };
   }
 
-  async function createVendor(category = 'hall') {
+  async function createVendor(category = 'hall', name = '가온예식홀') {
     const { rows } = await test.pool.query<{ id: string }>(
       `INSERT INTO structured.vendors (name, category, region, source)
-       VALUES ('가온예식홀', $1::vendor_category, '서울', 'public_data') RETURNING id`,
-      [category]
+       VALUES ($2, $1::vendor_category, '서울', 'public_data') RETURNING id`,
+      [category, name]
     );
 
     return rows[0]!.id;
@@ -448,6 +448,100 @@ describeWithDb('이용 후기', () => {
       expect(notifications).toHaveLength(1);
       // 알림에도 값을 되읽어주지 않는다.
       expect(notifications[0]!.body).not.toContain('110-234');
+    });
+  });
+
+  /**
+   * 스드메 패키지는 업체가 하나가 아니다. 사업계획서 19번 — 세 가지를 한
+   * 평점으로 합치지 않는다.
+   */
+  describe('패키지로 함께 계약한 다른 업체', () => {
+    async function aPackageQuote(headers: Record<string, string>, vendorIds: string[]) {
+      const weddingId = await createWedding(test, headers);
+      const roles = ['studio', 'dress', 'makeup'] as const;
+
+      const quote = await test.pool.query<{ id: string }>(
+        `INSERT INTO structured.quotes (wedding_id, source, total_amount)
+         VALUES ($1, 'user_quote', 5000000) RETURNING id`,
+        [weddingId]
+      );
+
+      for (const [i, vendorId] of vendorIds.entries()) {
+        await test.pool.query(
+          `INSERT INTO structured.quote_sub_vendors (quote_id, role, name_raw, vendor_id)
+           VALUES ($1, $2, $3, $4)`,
+          [quote.rows[0]!.id, roles[i], `업체${i}`, vendorId]
+        );
+      }
+
+      return quote.rows[0]!.id;
+    }
+
+    async function reviewForm(vendorId: string, headers: Record<string, string>) {
+      const response = await test.app.inject({
+        method: 'GET',
+        url: `/v1/vendors/${vendorId}/review-form`,
+        headers,
+      });
+
+      return response.json<{
+        packageSiblings: { vendorId: string; vendorName: string; roleLabel: string }[];
+      }>();
+    }
+
+    it('같은 견적에 묶인 다른 업체를 보여준다', async () => {
+      const { headers } = await signInAs(test);
+      const studio = await createVendor('sdm', '세컨드플로어');
+      const dress = await createVendor('sdm', '메종드로브');
+      const makeup = await createVendor('sdm', '제니하우스');
+
+      await aPackageQuote(headers, [studio, dress, makeup]);
+
+      const form = await reviewForm(studio, headers);
+
+      expect(form.packageSiblings).toHaveLength(2);
+      expect(form.packageSiblings.map((s) => s.roleLabel).sort()).toEqual(['드레스', '메이크업']);
+    });
+
+    it('이미 후기를 쓴 업체는 다시 권하지 않는다', async () => {
+      const { headers } = await signInAs(test);
+      const studio = await createVendor('sdm', '세컨드플로어');
+      const dress = await createVendor('sdm', '메종드로브');
+
+      await aPackageQuote(headers, [studio, dress]);
+
+      const written = await test.app.inject({
+        method: 'POST',
+        url: `/v1/vendors/${dress}/reviews`,
+        headers,
+        payload: {
+          role: 'contractor',
+          overall: 4,
+          title: '드레스가 예뻤어요',
+          body: BODY,
+          // sdm 업종의 유효한 항목 키가 아니면 이 요청이 400으로 거절된다.
+          aspects: [],
+        },
+      });
+
+      expect(written.statusCode).toBe(201);
+
+      const form = await reviewForm(studio, headers);
+
+      expect(form.packageSiblings).toEqual([]);
+    });
+
+    it('남의 견적에 걸린 업체는 내 목록에 뜨지 않는다', async () => {
+      const { headers: mine } = await signInAs(test, 'mine');
+      const { headers: theirs } = await signInAs(test, 'theirs');
+      const studio = await createVendor('sdm', '세컨드플로어');
+      const dress = await createVendor('sdm', '메종드로브');
+
+      await aPackageQuote(theirs, [studio, dress]);
+
+      const form = await reviewForm(studio, mine);
+
+      expect(form.packageSiblings).toEqual([]);
     });
   });
 
