@@ -10,7 +10,10 @@
     "ios": {
       "bundleIdentifier": "kr.weddingpick.app",
       "buildNumber": "1",
-      "supportsTablet": false
+      "supportsTablet": false,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "kr.weddingpick.app",
