@@ -4,16 +4,8 @@
 #
 # ── iOS 빌드 전제 조건 ──────────────────────────────────────────────────
 #
-#   expo.dev → Project → Credentials → iOS → App Store Connect API Keys
-#   에 ASC API Key가 등록되어 있어야 한다 (등록 완료 상태).
-#
-#   EAS는 등록된 ASC API Key로 Distribution Certificate·Provisioning Profile을
-#   자동 생성·관리한다.
-#
-#   eas build에 EXPO_APPLE_ID를 넘기지 않는다.
-#   EXPO_APPLE_ID를 넘기면 EAS가 Apple ID 로그인 경로를 시도하고
-#   non-interactive 모드에서 "Distribution Certificate is not validated" 오류로 실패한다.
-#   EXPO_APPLE_ID는 eas submit(TestFlight 제출) 단계에서만 사용한다.
+#   ASC API Key (Admin 권한): Key ID 62U8N2ZWJR
+#   EAS가 이 키로 Distribution Certificate·Provisioning Profile을 자동 생성·관리한다.
 #
 # ── Android 빌드 ────────────────────────────────────────────────────────
 #
@@ -26,6 +18,7 @@
 #
 # 필요한 GitHub Secrets:
 #   EXPO_TOKEN                        expo.dev Access Tokens에서 발급
+#   EAS_ASC_KEY_P8_BASE64             Admin ASC API Key .p8 파일의 base64
 #   EXPO_APPLE_ID                     애플 개발자 계정 이메일 (submit 전용)
 #   EXPO_APPLE_APP_SPECIFIC_PASSWORD  앱 암호 appleid.apple.com (submit 전용)
 name: Release
@@ -100,8 +93,8 @@ jobs:
 
       - name: ASC API Key 설정
         run: |
-          echo "$EAS_ASC_KEY_P8_BASE64" | base64 -d > /tmp/AuthKey_NPCMZ655GG.p8
-          chmod 600 /tmp/AuthKey_NPCMZ655GG.p8
+          echo "$EAS_ASC_KEY_P8_BASE64" | base64 -d > /tmp/AuthKey_62U8N2ZWJR.p8
+          chmod 600 /tmp/AuthKey_62U8N2ZWJR.p8
         env:
           EAS_ASC_KEY_P8_BASE64: ${{ secrets.EAS_ASC_KEY_P8_BASE64 }}
 
@@ -110,9 +103,9 @@ jobs:
         run: eas build --platform ios --profile production --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-          EXPO_APPLE_API_KEY_ID: NPCMZ655GG
+          EXPO_APPLE_API_KEY_ID: 62U8N2ZWJR
           EXPO_APPLE_API_KEY_ISSUER_ID: a7e4029d-6abf-4811-80a7-9cc47c1d1e21
-          EXPO_APPLE_API_KEY_PATH: /tmp/AuthKey_NPCMZ655GG.p8
+          EXPO_APPLE_API_KEY_PATH: /tmp/AuthKey_62U8N2ZWJR.p8
 
   submit-ios:
     name: iOS → TestFlight 제출
