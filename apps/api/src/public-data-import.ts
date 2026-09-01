@@ -13,7 +13,8 @@ import { MissingColumnError, parseLocaldataCsv } from './public-data/localdata';
  *   ... --dry-run          # 쓰지 않고 무엇이 들어갈지만 본다
  *   ... --region 서울       # 지역 이름이 포함된 것만 (없으면 전국)
  *
- * 파일은 지방행정 인허가 데이터(localdata.go.kr)에서 업종별로 내려받는다.
+ * 파일은 공공데이터포털(data.go.kr)에서 "행정안전부 지방행정 인허가 데이터"로 검색해 업종별로 내려받는다.
+ * 2026년 4월부터 기존 localdata.go.kr 서비스가 종료되고 공공데이터포털로 통합됐다.
  * 특정 사이트를 긁어오지 않고 공개 자료만 쓴다 — 사업계획서 20번.
  *
  * **모르는 파일은 --inspect 부터.** 업종과 배포 시점에 따라 컬럼 이름과 내용이
