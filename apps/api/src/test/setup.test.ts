@@ -14,12 +14,12 @@ function future(days: number): string {
 }
 
 /**
- * 이름·예식일 등록. 핸드오프 2번 — 스킵할 수 없는 화면이다.
+ * 최소 온보딩. 통합정책 v3.10 §3 — 받는 것은 **예식일과 지역**이다.
  *
- * 둘을 한 번에 받는 것이 요점이다. 따로 받으면 이름만 넣고 나간 사람이 생기고,
- * 그 사람의 홈은 이름은 부르는데 D-Day가 없는 반쪽이 된다.
+ * 이름은 받지 않는다. 그것이 이 화면의 요점이라 여기서 지킨다 — 이름을 도로
+ * 필수로 만들려는 사람이 이 테스트를 먼저 만난다.
  */
-describeWithDb('이름·예식일 등록', () => {
+describeWithDb('최소 온보딩', () => {
   beforeAll(async () => {
     await resetDatabase();
     test = await createTestApp();
@@ -36,7 +36,7 @@ describeWithDb('이름·예식일 등록', () => {
       method: 'POST',
       url: '/v1/me/setup',
       headers,
-      payload: { displayName: '지선', weddingDate: future(231), ...over },
+      payload: { weddingDate: future(231), region: '서울', ...over },
     });
   }
 
@@ -49,15 +49,17 @@ describeWithDb('이름·예식일 등록', () => {
     const body = (await me(headers)).json<{
       displayName: string | null;
       weddingDate: string | null;
+      region: string | null;
       setupComplete: boolean;
     }>();
 
     expect(body.displayName).toBeNull();
     expect(body.weddingDate).toBeNull();
+    expect(body.region).toBeNull();
     expect(body.setupComplete).toBe(false);
   });
 
-  it('둘을 한 번에 저장한다', async () => {
+  it('예식일과 지역을 한 번에 저장한다', async () => {
     const { headers } = await signInAs(test);
 
     const response = await setup(headers);
@@ -65,19 +67,52 @@ describeWithDb('이름·예식일 등록', () => {
     expect(response.statusCode).toBe(200);
 
     const body = (await me(headers)).json<{
-      displayName: string;
       weddingDate: string;
+      region: string;
       weddingId: string;
       setupComplete: boolean;
     }>();
 
-    expect(body.displayName).toBe('지선');
+    expect(body.weddingDate).toBe(future(231));
+    expect(body.region).toBe('서울');
     expect(body.setupComplete).toBe(true);
     // 웨딩이 없으면 여기서 만든다. "먼저 웨딩을 만드세요"라고 할 자리가 아니다.
     expect(body.weddingId).toBeTruthy();
   });
 
-  it('이미 있는 웨딩에는 날짜만 채운다', async () => {
+  it('응답이 /v1/me와 같은 모양이다', async () => {
+    /*
+     * 계약이 두 경로에 같은 응답을 적어뒀다. 서버가 몇 칸만 채워 보내도 서버는
+     * 조용하고 앱이 검증에서 처음 깨지므로, 여기서 두 응답을 통째로 견준다.
+     */
+    const { headers } = await signInAs(test);
+
+    const saved = (await setup(headers)).json<Record<string, unknown>>();
+    const read = (await me(headers)).json<Record<string, unknown>>();
+
+    expect(saved).toEqual(read);
+  });
+
+  it('이름 없이도 설정이 끝난다', async () => {
+    // v3.10 §3: 닉네임은 최초 필수입력에서 뺀다.
+    const { headers } = await signInAs(test);
+
+    await setup(headers);
+
+    const body = (await me(headers)).json<{ displayName: string | null; setupComplete: boolean }>();
+
+    expect(body.displayName).toBeNull();
+    expect(body.setupComplete).toBe(true);
+  });
+
+  it('지역이 없으면 등록할 수 없다', async () => {
+    const { headers } = await signInAs(test);
+
+    expect((await setup(headers, { region: '' })).statusCode).toBe(400);
+    expect((await setup(headers, { region: '   ' })).statusCode).toBe(400);
+  });
+
+  it('이미 있는 웨딩에는 값만 채운다', async () => {
     const { headers } = await signInAs(test);
 
     const created = await test.app.inject({
@@ -96,21 +131,6 @@ describeWithDb('이름·예식일 등록', () => {
     expect(created.statusCode).toBe(201);
   });
 
-  it('초성이나 모음만으로는 등록할 수 없다', async () => {
-    const { headers } = await signInAs(test);
-
-    const response = await setup(headers, { displayName: 'ㅈㅅ' });
-
-    expect(response.statusCode).toBe(400);
-    expect(response.json<{ error: { message: string } }>().error.message).toContain('초성');
-  });
-
-  it('다섯 자를 넘기면 막는다', async () => {
-    const { headers } = await signInAs(test);
-
-    expect((await setup(headers, { displayName: '일이삼사오육' })).statusCode).toBe(400);
-  });
-
   it('오늘과 과거는 예식일이 될 수 없다', async () => {
     // 결혼식은 미래다.
     const { headers } = await signInAs(test);
@@ -121,26 +141,96 @@ describeWithDb('이름·예식일 등록', () => {
   });
 
   it('다시 부르면 덮어쓴다', async () => {
-    // 핸드오프: "입력한 정보는 언제든 설정에서 바꿀 수 있어요"
+    // "입력한 정보는 언제든 설정에서 바꿀 수 있어요"
     const { headers } = await signInAs(test);
 
     await setup(headers);
-    await setup(headers, { displayName: '민준', weddingDate: future(100) });
+    await setup(headers, { weddingDate: future(100), region: '부산' });
 
-    const body = (await me(headers)).json<{ displayName: string; weddingDate: string }>();
+    const body = (await me(headers)).json<{ weddingDate: string; region: string }>();
 
-    expect(body.displayName).toBe('민준');
     expect(body.weddingDate).toBe(future(100));
+    expect(body.region).toBe('부산');
+  });
+
+  it('총예산은 선택이고 아직 모르겠어요가 null이다', async () => {
+    const { headers } = await signInAs(test);
+
+    await setup(headers, { budgetAmount: 50_000_000 });
+    expect((await me(headers)).json<{ budgetAmount: number | null }>().budgetAmount).toBe(50_000_000);
+
+    // 명시적인 null은 "아직 모르겠어요"다. 되돌릴 수 있어야 한다.
+    await setup(headers, { budgetAmount: null });
+    expect((await me(headers)).json<{ budgetAmount: number | null }>().budgetAmount).toBeNull();
+  });
+
+  it('예산을 안 보내면 건드리지 않는다', async () => {
+    /*
+     * 안 보낸 것과 null을 보낸 것은 다르다. 같게 다루면 예식일만 고치러 온
+     * 사람이 적어둔 예산을 잃는다.
+     */
+    const { headers } = await signInAs(test);
+
+    await setup(headers, { budgetAmount: 50_000_000 });
+    await setup(headers, { weddingDate: future(120) });
+
+    expect((await me(headers)).json<{ budgetAmount: number | null }>().budgetAmount).toBe(50_000_000);
   });
 
   it('로그인해야 등록할 수 있다', async () => {
     const response = await test.app.inject({
       method: 'POST',
       url: '/v1/me/setup',
-      payload: { displayName: '지선', weddingDate: future(231) },
+      payload: { weddingDate: future(231), region: '서울' },
     });
 
     expect(response.statusCode).toBe(401);
+  });
+
+  it('부를 이름은 MY에서 따로 정한다', async () => {
+    const { headers } = await signInAs(test);
+
+    const name = (displayName: string | null) =>
+      test.app.inject({
+        method: 'POST',
+        url: '/v1/me/display-name',
+        headers,
+        payload: { displayName },
+      });
+
+    expect((await name('지선')).statusCode).toBe(200);
+    expect((await me(headers)).json<{ displayName: string | null }>().displayName).toBe('지선');
+
+    // 한 번 적었다고 영영 못 지우게 할 이유가 없다.
+    expect((await name(null)).statusCode).toBe(200);
+    expect((await me(headers)).json<{ displayName: string | null }>().displayName).toBeNull();
+  });
+
+  it('초성이나 모음만으로는 이름이 될 수 없다', async () => {
+    const { headers } = await signInAs(test);
+
+    const response = await test.app.inject({
+      method: 'POST',
+      url: '/v1/me/display-name',
+      headers,
+      payload: { displayName: 'ㅈㅅ' },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json<{ error: { message: string } }>().error.message).toContain('초성');
+  });
+
+  it('다섯 자를 넘기면 막는다', async () => {
+    const { headers } = await signInAs(test);
+
+    const response = await test.app.inject({
+      method: 'POST',
+      url: '/v1/me/display-name',
+      headers,
+      payload: { displayName: '일이삼사오육' },
+    });
+
+    expect(response.statusCode).toBe(400);
   });
 
   it('이름은 users에 두는 유일한 개인정보다', async () => {

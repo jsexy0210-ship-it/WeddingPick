@@ -44,3 +44,4 @@ export * from './vendor-claim';
 export * from './terms';
 export * from './pick';
 export * from './lifecycle';
+export * from './particle';

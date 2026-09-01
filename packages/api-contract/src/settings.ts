@@ -19,9 +19,18 @@ export const settingsSchema = z.object({
   paymentConsent: z.boolean(),
   paymentConsentAt: timestampSchema.nullable(),
 
-  /** 예식일과 배우자. 설정에서 바로 보이고 눌러서 바꾼다. */
+  /** 예식일·지역과 배우자. 설정에서 바로 보이고 눌러서 바꾼다. */
   weddingDate: z.string().nullable(),
+  region: z.string().nullable(),
   spouseLinked: z.boolean(),
+
+  /**
+   * 부를 이름. 최소 온보딩에서 뺀 값이라 여기가 정하는 자리다(v3.10 §3).
+   *
+   * null은 "안 부름"이다. 홈은 그때 이름 없이 인사한다 — 없는 이름을 지어내
+   * 부르지 않는다.
+   */
+  displayName: z.string().nullable(),
 });
 
 export const updateSettingsRequestSchema = z.object({

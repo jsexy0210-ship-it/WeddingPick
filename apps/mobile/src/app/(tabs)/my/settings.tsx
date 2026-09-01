@@ -1,21 +1,28 @@
 import type { Settings } from '@weddingpick/api-contract';
-import { PAYMENT_CONSENT_REVOKED_NOTICE, formatWeddingDate } from '@weddingpick/domain';
+import {
+  DISPLAY_NAME_HINT,
+  MAX_DISPLAY_NAME_LENGTH,
+  PAYMENT_CONSENT_REVOKED_NOTICE,
+  checkDisplayName,
+  formatWeddingDate,
+} from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Alert, Modal, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   ActionButton,
   Layout,
   MaxContentWidth,
+  Radius,
   Spacing,
   ThemedText,
   ThemedView,
   Toast,
   useTheme,
 } from '@weddingpick/ui';
-import { getSettings, revokePaymentConsent, updateSettings } from '@/api/client';
+import { getSettings, revokePaymentConsent, setDisplayName, updateSettings } from '@/api/client';
 import { useSession } from '@/features/auth/use-session';
 import { APP_VERSION } from '@/features/settings/version';
 
@@ -31,6 +38,32 @@ export default function SettingsScreen() {
   const { signOut } = useSession();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  /** 이름 고치는 시트. 화면을 옮기지 않는다 — 한 칸 고치러 다른 화면까지 가지 않는다. */
+  const [nameOpen, setNameOpen] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+  const [nameSaving, setNameSaving] = useState(false);
+
+  const nameCheck = checkDisplayName(nameDraft);
+  /** 비우는 것도 허용한다. 한 번 적었다고 영영 못 지우게 할 이유가 없다. */
+  const nameReady = nameDraft.trim() === '' || nameCheck.ok;
+
+  async function saveName() {
+    if (!nameReady || !settings) return;
+
+    setNameSaving(true);
+
+    try {
+      const next = nameDraft.trim() === '' ? null : nameDraft.trim();
+      const saved = await setDisplayName(next);
+
+      setSettings({ ...settings, displayName: saved.displayName });
+      setNameOpen(false);
+    } catch {
+      setToast('이름을 바꾸지 못했어요');
+    } finally {
+      setNameSaving(false);
+    }
+  }
 
   const load = useCallback(() => {
     void getSettings()
@@ -112,11 +145,28 @@ export default function SettingsScreen() {
           </Section>
 
           <Section title="계정">
+            {/*
+              부를 이름. 최소 온보딩에서 뺀 값이라(v3.10 §3) 정하는 자리가 여기다.
+              안 정해도 앱은 다 돌아간다 — 홈이 이름 없이 인사한다.
+            */}
+            <Row
+              label="부를 이름"
+              value={settings?.displayName ?? '정하지 않음'}
+              onPress={() => {
+                setNameDraft(settings?.displayName ?? '');
+                setNameOpen(true);
+              }}
+            />
             <Row
               label="예식일"
               value={
                 settings?.weddingDate ? formatWeddingDate(settings.weddingDate) : '등록하지 않음'
               }
+              onPress={() => router.push('/setup')}
+            />
+            <Row
+              label="준비하는 지역"
+              value={settings?.region ?? '고르지 않음'}
               onPress={() => router.push('/setup')}
             />
             <Row
@@ -161,6 +211,40 @@ export default function SettingsScreen() {
           </ThemedView>
         </ScrollView>
       </SafeAreaView>
+
+      <Modal visible={nameOpen} transparent animationType="slide">
+        <ThemedView style={[styles.scrim, { backgroundColor: theme.scrim }]}>
+          <ThemedView style={styles.sheet}>
+            <ThemedText type="t4">어떻게 불러드릴까요?</ThemedText>
+            <TextInput
+              style={[
+                styles.input,
+                { color: theme.text, backgroundColor: theme.backgroundSelected },
+              ]}
+              value={nameDraft}
+              onChangeText={setNameDraft}
+              // 초과 입력을 막는다. 지우게 하는 것보다 못 넣게 하는 편이 낫다.
+              maxLength={MAX_DISPLAY_NAME_LENGTH}
+              placeholder="비워두면 이름 없이 인사해요"
+              placeholderTextColor={theme.textAssistive}
+              accessibilityLabel="부를 이름"
+            />
+            <ThemedText type="t7" themeColor={nameReady ? 'textAssistive' : 'negative'}>
+              {nameCheck.ok || nameReady ? DISPLAY_NAME_HINT : nameCheck.reason}
+            </ThemedText>
+
+            <ThemedView style={styles.sheetActions}>
+              <ActionButton label="취소" onPress={() => setNameOpen(false)} />
+              <ActionButton
+                variant="primary"
+                label={nameSaving ? '저장하는 중…' : '저장'}
+                disabled={!nameReady || nameSaving}
+                onPress={() => void saveName()}
+              />
+            </ThemedView>
+          </ThemedView>
+        </ThemedView>
+      </Modal>
 
       <Toast message={toast} onHidden={() => setToast(null)} />
     </ThemedView>
@@ -232,6 +316,20 @@ const styles = StyleSheet.create({
   },
   section: {
     gap: Spacing.two,
+  },
+  scrim: { flex: 1, justifyContent: 'flex-end' },
+  sheet: {
+    borderTopLeftRadius: Radius.sheet,
+    borderTopRightRadius: Radius.sheet,
+    padding: Layout.gutter,
+    paddingBottom: Spacing.five,
+    gap: Spacing.two,
+  },
+  sheetActions: { flexDirection: 'row', gap: Spacing.two, justifyContent: 'flex-end' },
+  input: {
+    height: Layout.rowMinHeight,
+    borderRadius: Radius.input,
+    paddingHorizontal: Spacing.three,
   },
   switchRow: {
     flexDirection: 'row',

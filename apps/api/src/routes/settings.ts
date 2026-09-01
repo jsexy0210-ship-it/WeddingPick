@@ -11,6 +11,8 @@ type SettingsRow = {
   price_change_enabled: boolean;
   consent_at: Date | null;
   wedding_date: Date | null;
+  region: string | null;
+  display_name: string | null;
   spouse_linked: boolean;
 };
 
@@ -31,13 +33,15 @@ export function registerSettingsRoutes(app: FastifyInstance, context: AppContext
          coalesce(s.price_change_enabled, true) AS price_change_enabled,
          c.granted_at AS consent_at,
          w.wedding_date,
+         w.region,
+         u.display_name,
          coalesce(w.owner_user_id IS NOT NULL AND w.partner_user_id IS NOT NULL, false)
            AS spouse_linked
        FROM structured.users u
        LEFT JOIN structured.notification_settings s ON s.user_id = u.id
        LEFT JOIN structured.active_payment_consents c ON c.user_id = u.id
        LEFT JOIN LATERAL (
-         SELECT wedding_date, owner_user_id, partner_user_id
+         SELECT wedding_date, region, owner_user_id, partner_user_id
          FROM structured.weddings
          WHERE owner_user_id = u.id OR partner_user_id = u.id
          ORDER BY created_at LIMIT 1
@@ -54,7 +58,9 @@ export function registerSettingsRoutes(app: FastifyInstance, context: AppContext
       paymentConsent: row?.consent_at != null,
       paymentConsentAt: row?.consent_at?.toISOString() ?? null,
       weddingDate: row?.wedding_date ? row.wedding_date.toISOString().slice(0, 10) : null,
+      region: row?.region ?? null,
       spouseLinked: row?.spouse_linked ?? false,
+      displayName: row?.display_name ?? null,
     };
   }
 

@@ -97,6 +97,8 @@ import {
   createInviteResponseSchema,
   createWeddingRequestSchema,
   currentUserSchema,
+  displayNameRequestSchema,
+  displayNameResponseSchema,
   invitePreviewResponseSchema,
   weddingDetailSchema,
   weddingInviteListResponseSchema,
@@ -143,16 +145,24 @@ export const ENDPOINTS = {
   },
 
   /**
-   * 이름·예식일 등록. 핸드오프 2번 — 스킵할 수 없는 화면이다.
+   * 최소 온보딩. v3.10 §3 — 예식일과 지역을 받는다. 이름은 받지 않는다.
    *
-   * 둘을 한 번에 받는다. 따로 받으면 이름만 넣고 나간 사람의 홈이 이름은 부르는데
-   * D-Day가 없는 반쪽이 된다.
+   * 응답이 `getCurrentUser`와 같은 모양인 이유: 저장 직후 앱이 다시 물어보게 하면
+   * 왕복이 하나 늘고, 그 사이 화면은 옛 상태를 그린다.
    */
   completeSetup: {
     method: 'POST',
     path: '/v1/me/setup',
     body: completeSetupRequestSchema,
     response: currentUserSchema,
+  },
+
+  /** 부를 이름. MY에서 정한다 — 최소 온보딩에서 뺀 값이다. */
+  setDisplayName: {
+    method: 'POST',
+    path: '/v1/me/display-name',
+    body: displayNameRequestSchema,
+    response: displayNameResponseSchema,
   },
 
   createWedding: {

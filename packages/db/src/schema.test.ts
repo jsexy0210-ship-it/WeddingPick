@@ -1182,6 +1182,45 @@ describeWithDb('DB 스키마', () => {
     });
   });
 
+  describe('최소 온보딩', () => {
+    async function aWedding(region: string | null = null) {
+      const user = await client.query<{ id: string }>(
+        'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
+      );
+
+      return await client.query<{ id: string }>(
+        'INSERT INTO structured.weddings (owner_user_id, region) VALUES ($1, $2) RETURNING id',
+        [user.rows[0]!.id, region]
+      );
+    }
+
+    it('지역을 비워둘 수 있다', async () => {
+      // NULL은 "아직 안 고름"이다. 기본값을 깔면 서울에 사는 사람과 서울을 고른
+      // 사람이 같은 값이 되어 구분이 사라진다.
+      await expect(aWedding(null)).resolves.toBeTruthy();
+    });
+
+    it('빈 지역은 넣을 수 없다', async () => {
+      // 공백만 남은 값은 고른 것도 안 고른 것도 아니다.
+      await expect(aWedding('')).rejects.toThrow();
+      await expect(aWedding('   ')).rejects.toThrow();
+    });
+
+    it('총예산은 0이 될 수 없다', async () => {
+      /*
+       * `아직 모르겠어요`는 NULL이다. 0원을 허용하면 안 정한 것과 안 쓰기로 한
+       * 것이 화면에서 같은 값이 되고, 그때부터 예산 화면은 거짓말을 한다.
+       */
+      const wedding = await aWedding('서울');
+
+      await expect(
+        client.query('UPDATE structured.weddings SET budget_amount = 0 WHERE id = $1', [
+          wedding.rows[0]!.id,
+        ])
+      ).rejects.toThrow();
+    });
+  });
+
   describe('마이그레이션', () => {
     it('두 번 돌려도 같은 결과가 된다', async () => {
       await expect(migrate(client)).resolves.toEqual([]);
