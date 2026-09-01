@@ -1,0 +1,51 @@
+# Fly.io 배포
+#
+# Staging: main 브랜치 push 시 자동 배포
+# Production: workflow_dispatch에서 environment=production 선택
+#
+# 필요한 GitHub Secrets:
+#   FLY_API_TOKEN — fly tokens create deploy -a weddingpick-staging,weddingpick-api
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: '배포 환경'
+        type: choice
+        options: [staging, production]
+        default: staging
+        required: true
+
+jobs:
+  deploy-staging:
+    name: Deploy Staging
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging')
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy to staging
+        run: flyctl deploy --config fly.staging.toml --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+  deploy-production:
+    name: Deploy Production
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy API + Worker to production
+        run: flyctl deploy --config fly.production.toml --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

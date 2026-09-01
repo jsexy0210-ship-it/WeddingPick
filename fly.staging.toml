@@ -1,0 +1,36 @@
+# Staging — API 서버만 실행 (Worker 없음)
+# 앱 생성: fly apps create weddingpick-staging
+app = 'weddingpick-staging'
+primary_region = 'nrt'
+
+[build]
+
+[processes]
+  api = "npm run start --workspace @weddingpick/api"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['api']
+
+  [[http_service.checks]]
+    interval = '30s'
+    timeout = '5s'
+    grace_period = '15s'
+    method = 'GET'
+    path = '/health'
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '256mb'
+  processes = ['api']
+
+[env]
+  NODE_ENV = 'staging'
+  PORT = '3000'
+  STORAGE_DRIVER = 's3'
+  S3_REGION = 'kr-standard'
+  S3_ENDPOINT = 'https://kr.object.ncloudstorage.com'
