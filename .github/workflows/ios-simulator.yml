@@ -39,6 +39,28 @@ jobs:
 
       - run: npm ci
 
+      # 러너 기본 Xcode를 쓰지 않는다.
+      #
+      # 첫 실행이 이걸로 죽었다:
+      #
+      #     xcodebuild: error: Could not resolve package dependencies:
+      #       package 'apple' is using Swift tools version 6.2.0
+      #       but the installed version is 6.1.0
+      #
+      # `expo-modules-jsi`가 Swift 6.2로 쓰인 SwiftPM 패키지를 들고 있는데 러너
+      # 기본값이 Xcode 16.4(Swift 6.1)였다. 버전을 적어 박으면 러너 이미지가
+      # 바뀔 때마다 여기가 낡으므로, **깔려 있는 것 중 가장 새것**을 고른다.
+      #
+      # 무엇이 깔려 있는지 함께 찍는다 — 다음에 또 어긋나면 로그만 보고 안다.
+      - name: Select Xcode
+        run: |
+          ls -d /Applications/Xcode*.app
+          newest=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          echo "고른 것: $newest"
+          sudo xcode-select -s "$newest/Contents/Developer"
+          xcodebuild -version
+          swift --version
+
       # 네이티브 프로젝트는 레포에 두지 않는다(.gitignore). 빌드할 때 만든다.
       # `--no-install`을 빼야 CocoaPods가 함께 돈다 — iOS는 pod 없이는 못 짓는다.
       - name: Prebuild
