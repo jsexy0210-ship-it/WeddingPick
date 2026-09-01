@@ -154,7 +154,9 @@ async function main() {
     {
       pool,
       storage,
-      analyzer: createClaudeAnalyzer({ model: process.env.ANALYSIS_MODEL }),
+      analyzer: createClaudeAnalyzer({ model: config.analysisModel }),
+      model: config.analysisModel,
+      dailyCallLimit: config.aiDailyCallLimit,
     },
     { signal: controller.signal }
   );

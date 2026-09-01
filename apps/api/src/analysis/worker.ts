@@ -4,17 +4,24 @@ import { withTransaction } from '../db';
 import type { Storage } from '../storage/port';
 import type { Analyzer, DocumentPage } from './analyzer';
 import { persistExtraction } from './persist';
+import { extractDocument } from './pipeline';
 
 export type WorkerDeps = {
   pool: Pool;
   storage: Storage;
   analyzer: Analyzer;
+  /** `ai_usage`에 적을 이름. 실제로 부른 모델과 같아야 한다. */
+  model: string;
+  /** 한 사람이 하루에 부를 수 있는 횟수. 없으면 한도가 없다. */
+  dailyCallLimit?: number | null;
 };
 
 type ClaimedAnalysis = {
   id: string;
   raw_document_id: string;
   wedding_id: string;
+  /** 누구의 문서인가. 사람 단위 한도를 걸려면 호출에 사람이 붙어야 한다. */
+  owner_user_id: string;
 };
 
 /**
@@ -37,7 +44,16 @@ async function claim(pool: Pool): Promise<ClaimedAnalysis | null> {
      RETURNING id, raw_document_id, wedding_id`
   );
 
-  return rows[0] ?? null;
+  const claimed = rows[0];
+
+  if (!claimed) return null;
+
+  const owner = await pool.query<{ owner_user_id: string }>(
+    'SELECT owner_user_id FROM originals.raw_documents WHERE id = $1',
+    [claimed.raw_document_id]
+  );
+
+  return { ...claimed, owner_user_id: owner.rows[0]!.owner_user_id };
 }
 
 async function loadPages(deps: WorkerDeps, rawDocumentId: string): Promise<DocumentPage[]> {
@@ -58,7 +74,7 @@ async function loadPages(deps: WorkerDeps, rawDocumentId: string): Promise<Docum
 async function fail(
   pool: Pool,
   analysisId: string,
-  reason: 'unreadable' | 'not_a_document' | 'internal'
+  reason: 'unreadable' | 'not_a_document' | 'internal' | 'unavailable'
 ) {
   await pool.query(
     `UPDATE structured.analyses
@@ -86,7 +102,24 @@ export async function runOnce(deps: WorkerDeps): Promise<boolean> {
       return true;
     }
 
-    const { extraction, usage } = await deps.analyzer.analyze(pages);
+    /*
+     * 관문을 지난다. 스펙 7.3 — 부르기 전에 부를 수 있는지 먼저 묻는다.
+     *
+     * 막혔으면 고장이 아니라 지금 부를 수 없는 것이다. `internal`로 적으면 화면이
+     * "다시 시도해주세요"라고 말하는데, 다시 시도해도 같은 결과다.
+     */
+    const result = await extractDocument(
+      { pool: deps.pool, analyzer: deps.analyzer, dailyCallLimit: deps.dailyCallLimit },
+      { ownerUserId: analysis.owner_user_id, pages, model: deps.model }
+    );
+
+    if (result.kind === 'blocked') {
+      console.warn(`문서 분석을 부르지 못했다 (${analysis.id}): ${result.reason}`);
+      await fail(deps.pool, analysis.id, 'unavailable');
+      return true;
+    }
+
+    const { extraction, usage } = result.outcome;
 
     if (extraction.unreadable) {
       await fail(deps.pool, analysis.id, 'unreadable');
