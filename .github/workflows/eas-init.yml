@@ -48,8 +48,12 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: eas whoami
 
-      # 이미 붙어 있으면 그대로 두고 끝낸다. `--force`를 습관처럼 붙이면
-      # 실수로 새 프로젝트를 만들어 기존 빌드 이력과 자격증명이 끊긴다.
+      # 이미 붙어 있으면 그대로 두고 끝낸다.
+      #
+      # `--force`는 **없는 프로젝트를 만든다**는 뜻이다. 위의 검사를 통과했다는
+      # 것은 `app.json`에 아무 id도 없다는 뜻이므로, 여기서 만드는 것이 맞다.
+      # 검사 없이 `--force`만 붙여두면 이미 붙은 레포에서 새 프로젝트가 하나 더
+      # 생기고, 그때 기존 빌드 이력과 자격증명이 끊긴다. 순서가 안전장치다.
       - name: Link project
         working-directory: apps/mobile
         env:
@@ -62,7 +66,7 @@ jobs:
             exit 0
           fi
 
-          eas init --non-interactive
+          eas init --non-interactive --force
 
       - name: Show result
         working-directory: apps/mobile
