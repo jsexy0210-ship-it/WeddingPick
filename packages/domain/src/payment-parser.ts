@@ -25,7 +25,7 @@ export type PaymentProofField = (typeof PAYMENT_PROOF_FIELDS)[number];
 
 export const PAYMENT_PROOF_FIELD_LABEL: Record<PaymentProofField, string> = {
   merchantName: '가맹점 이름',
-  /* 사용자 화면에 그대로 나가는 이름이라 `결제`를 쓰지 않는다(v3.11 §1). */
+  /* 사용자 화면에 그대로 나가는 이름이라 `결제`를 쓰지 않는다(v3.13 §O-1). */
   paidAmount: '금액',
   paidAt: '낸 날',
   method: '지불 수단',

@@ -7,7 +7,7 @@ import { dataCaption } from '@weddingpick/domain';
  * 유일한 자리이기 때문이다 — 문구가 화면 코드 사이에 흩어지면 한 장만 고쳐지고
  * 나머지는 옛말을 계속한다.
  *
- * 사용자 화면이라 v3.11 §1의 노출 용어를 따른다 — `결제`와 그 파생 표현은
+ * 사용자 화면이라 v3.13 §O-1의 노출 용어를 따른다 — `결제`와 그 파생 표현은
  * 내부에서만 쓰는 말이고, 여기서는 `Pick 인증`·`Pick 가격대`로 적는다.
  */
 export type OnboardingRow = { label: string; value: string };

@@ -17,7 +17,7 @@ const fact = (checkedOn: string): VendorFact<string> => ({
 });
 
 describe('업체 사실 항목', () => {
-  it('v3.12가 이름 붙인 항목이 모두 있다', () => {
+  it('v3.13 §O-4가 이름 붙인 항목이 모두 있다', () => {
     const keys = VENDOR_FACT_FIELDS.map((field) => field.key);
 
     expect(keys).toEqual([

@@ -8,7 +8,7 @@ import {
 import { findPaymentWords } from './pick-verification';
 
 describe('비교 축', () => {
-  it('v3.12가 꼽은 축이 모두 있다', () => {
+  it('v3.13 §O-5가 꼽은 축이 모두 있다', () => {
     expect(COMPARISON_AXES.map((axis) => axis.key)).toEqual([
       'pick_price_range',
       'official_price',

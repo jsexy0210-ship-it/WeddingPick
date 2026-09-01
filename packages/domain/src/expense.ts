@@ -28,7 +28,7 @@ export const EXPENSE_STATUSES = ['paid', 'scheduled'] as const;
 export type ExpenseStatus = (typeof EXPENSE_STATUSES)[number];
 
 export const EXPENSE_STATUS_LABEL: Record<ExpenseStatus, string> = {
-  /* v3.11이 사용자 앱에서 `결제`를 막았다. 지출 화면이라 지출로 적는다. */
+  /* v3.13 §O-1이 사용자 앱에서 `결제`를 막았다. 지출 화면이라 지출로 적는다. */
   paid: '지출완료',
   scheduled: '지출예정',
 };
