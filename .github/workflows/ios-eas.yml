@@ -1,0 +1,127 @@
+# 실기기·TestFlight용 iOS 빌드.
+#
+# 아이폰에 실제로 설치되는 `.ipa`는 **애플 인증서로 서명**해야 나온다. 인증서와
+# 프로비저닝 프로파일을 CI 시크릿에 직접 넣는 방법도 있지만, 그러면 만료될 때마다
+# 사람이 다시 넣어야 하고 그 파일이 로그에 새어나갈 자리가 늘어난다.
+#
+# 그래서 EAS에 맡긴다. 애플 자격증명은 Expo 쪽에 한 번 등록해두고, 여기서는
+# 토큰 하나만 쓴다.
+#
+# ── 처음 한 번은 사람이 해야 하는 것 ────────────────────────────────
+#
+#   1. 로컬에서 `cd apps/mobile && eas login && eas init`
+#      → `app.json`에 `extra.eas.projectId`가 생긴다. 커밋해야 CI가 찾는다.
+#
+#   2. 로컬에서 `eas build -p ios --profile production`을 한 번 돌린다.
+#      애플 로그인을 물어보고, 배포 인증서와 프로파일을 만들어 Expo에 올려둔다.
+#      이걸 안 해두면 CI가 비대화형이라 자격증명이 없다며 멈춘다.
+#
+#   3. GitHub → Settings → Secrets and variables → Actions에
+#      `EXPO_TOKEN`을 넣는다. (expo.dev → Account settings → Access tokens)
+#
+# 그다음부터는 Actions 탭에서 Run workflow만 누르면 된다.
+name: iOS (EAS)
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'production = 스토어·TestFlight용 / preview = 등록한 기기에 설치'
+        required: true
+        default: production
+        type: choice
+        options:
+          - production
+          - preview
+      api_url:
+        description: >-
+          앱이 붙을 API 주소 (예: https://api.example.com).
+          비워두면 서버에 붙지 않는 빌드가 된다 — 촬영과 기기 저장은 되지만
+          업체 검색·가격은 안 나온다.
+        required: false
+        default: ''
+      submit:
+        description: 빌드가 끝나면 TestFlight로 올린다 (production일 때만)
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  build:
+    # EAS가 애플 쪽 빌드를 자기 맥에서 돌린다. 이 러너는 명령만 보내고 기다린다.
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # 남의 액션을 끼우지 않는다. eas-cli가 EXPO_TOKEN 환경변수를 스스로 읽는다 —
+      # 액션 하나를 덜 믿는 만큼 버전이 어긋날 자리도 줄어든다.
+      - run: npm i -g eas-cli
+
+      - run: npm ci
+
+      # 토큰이 없으면 `eas build`가 대화형 로그인을 시도하다 멈춘다. 그때의
+      # 오류 메시지로는 무엇이 빠졌는지 알기 어려워서 먼저 짚어준다.
+      - name: Check token
+        run: |
+          if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
+            echo "::error::EXPO_TOKEN 시크릿이 없습니다. 이 파일 맨 위 3번을 보세요."
+            exit 1
+          fi
+
+      # `eas init`을 안 했으면 프로젝트가 어느 계정 것인지 알 수 없다. 빌드를
+      # 20분 돌린 뒤가 아니라 지금 멈춘다.
+      - name: Check project link
+        run: |
+          if ! grep -q '"projectId"' apps/mobile/app.json; then
+            echo "::error::app.json에 eas projectId가 없습니다. 로컬에서 eas init을 한 번 돌리고 커밋해주세요."
+            exit 1
+          fi
+
+      - name: Warn about missing API url
+        if: inputs.api_url == ''
+        run: >-
+          echo "::warning::API 주소 없이 빌드합니다.
+          설치는 되지만 업체 검색·가격·Pick이 동작하지 않습니다."
+
+      # 서버 주소를 `eas.json`에 적어 넣는다.
+      #
+      # **이 러너의 환경변수는 빌드에 닿지 않는다.** `eas build`는 소스를 EAS로
+      # 올려 거기서 짓고, 번들이 만들어지는 곳은 저쪽 기계다. 여기서 env로 넘기면
+      # 명령을 부르는 프로세스에만 붙고 번들에는 안 들어간다 — 앱을 깔아보고 나서야
+      # 알게 되는 종류의 어긋남이다.
+      #
+      # 프로필의 `env`는 EAS가 읽어서 빌드 환경에 넣어준다. 커밋하지 않고
+      # 러너의 체크아웃만 고친다.
+      - name: Inject API url
+        if: inputs.api_url != ''
+        run: |
+          python3 - <<'PY'
+          import json, io
+          path = 'apps/mobile/eas.json'
+          doc = json.load(io.open(path, encoding='utf-8'))
+          profile = doc['build']['${{ inputs.profile }}']
+          profile.setdefault('env', {})['EXPO_PUBLIC_API_URL'] = '${{ inputs.api_url }}'
+          io.open(path, 'w', encoding='utf-8').write(json.dumps(doc, ensure_ascii=False, indent=2) + '\n')
+          print(json.dumps(profile, ensure_ascii=False))
+          PY
+
+      - name: Build
+        working-directory: apps/mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: eas build --platform ios --profile ${{ inputs.profile }} --non-interactive
+
+      # 빌드가 끝난 뒤 별도 명령으로 올린다. 빌드와 제출을 한 명령으로 묶으면
+      # 제출이 실패했을 때 빌드까지 다시 돌려야 한다.
+      - name: Submit to TestFlight
+        if: inputs.submit && inputs.profile == 'production'
+        working-directory: apps/mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: eas submit --platform ios --latest --non-interactive

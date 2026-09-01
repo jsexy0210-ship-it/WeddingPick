@@ -1,0 +1,76 @@
+# 테스트용 iOS 시뮬레이터 빌드.
+#
+# **애플 계정도 서명도 필요 없다.** 시뮬레이터용 빌드는 서명하지 않기 때문이다.
+# 그래서 인증서·프로비저닝 프로파일을 CI에 넣기 전에, iOS가 **애초에 빌드되는지**를
+# 여기서 먼저 확인한다. 네이티브 모듈이나 config plugin이 깨졌으면 여기서 걸린다.
+#
+# 나오는 것은 `.app`이고 **맥의 시뮬레이터에서만** 열린다. 아이폰 실기기에 넣으려면
+# 서명이 필요하고, 그건 `ios-eas.yml`이 한다.
+#
+# 받은 뒤:
+#   1. 압축을 푼다
+#   2. xcrun simctl boot "iPhone 16"   (또는 시뮬레이터를 먼저 실행)
+#   3. xcrun simctl install booted 웨딩픽.app
+name: iOS Simulator
+
+on:
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: >-
+          앱이 붙을 API 주소 (예: https://api.example.com).
+          비워두면 서버에 붙지 않는 빌드가 된다 — 촬영과 기기 저장은 되지만
+          업체 검색·가격은 안 나온다.
+        required: false
+        default: ''
+
+jobs:
+  simulator:
+    # 애플이 iOS 빌드를 맥에서만 허용한다. 리눅스 러너로는 이 잡을 돌릴 수 없다.
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # 네이티브 프로젝트는 레포에 두지 않는다(.gitignore). 빌드할 때 만든다.
+      # `--no-install`을 빼야 CocoaPods가 함께 돈다 — iOS는 pod 없이는 못 짓는다.
+      - name: Prebuild
+        working-directory: apps/mobile
+        env:
+          EXPO_PUBLIC_API_URL: ${{ inputs.api_url }}
+        run: npx expo prebuild --platform ios
+
+      # 스킴 이름은 `app`이다. 앱 이름이 한글(`웨딩픽`)이라 Expo가 ASCII로 만들
+      # 수 없어 기본값으로 떨어진다. 화면에 보이는 이름은 CFBundleDisplayName이
+      # 따로 들고 있어서 한글 그대로 나온다.
+      - name: Build
+        working-directory: apps/mobile/ios
+        env:
+          EXPO_PUBLIC_API_URL: ${{ inputs.api_url }}
+        run: >-
+          xcodebuild
+          -workspace app.xcworkspace
+          -scheme app
+          -configuration Release
+          -sdk iphonesimulator
+          -derivedDataPath build
+          CODE_SIGNING_ALLOWED=NO
+          build
+
+      # `.app`은 디렉터리다. 그대로 올리면 수천 개 파일이 되고 실행 권한도 잃는다.
+      - name: Pack
+        working-directory: apps/mobile/ios/build/Build/Products/Release-iphonesimulator
+        run: ditto -c -k --sequesterRsrc --keepParent *.app ../../../../weddingpick-simulator.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: weddingpick-ios-simulator
+          path: apps/mobile/ios/weddingpick-simulator.zip
+          if-no-files-found: error
