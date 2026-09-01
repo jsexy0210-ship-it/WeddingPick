@@ -207,7 +207,7 @@ export default function VendorDetailScreen() {
             */}
             {vendor.prices.deepDataNote ? (
               <ActionButton
-                label="결제내역 등록하기"
+                label={TERMS.reportCta}
                 hint={vendor.prices.deepDataNote}
                 onPress={() => router.push('/capture/payment/consent')}
               />
@@ -401,7 +401,7 @@ export default function VendorDetailScreen() {
             ) : null}
             <ActionButton
               label="내 견적서와 비교하기"
-              hint="견적서를 올리면 이 업체의 실제 계약과 견줘 보여드립니다"
+              hint="견적서를 올리면 이 업체의 확인된 계약과 견줘 보여드려요"
               onPress={() => router.push('/capture')}
             />
             <ActionButton
