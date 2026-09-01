@@ -98,10 +98,20 @@ function openItemsIn(body) {
   const items = [];
   const re = /^### 아직 없는 것[^\n]*\n([\s\S]*?)(?=^#{2,3} |$(?![\s\S]))/gm;
   for (const block of body.matchAll(re)) {
-    for (const line of block[1].split('\n')) {
-      const bullet = /^- (.+)$/.exec(line);
-      if (bullet) items.push(bullet[1].trim());
+    const bullets = [...block[1].matchAll(/^- (.+)$/gm)].map((m) => m[1].trim());
+
+    if (bullets.length > 0) {
+      items.push(...bullets);
+      continue;
     }
+
+    /*
+     * 불릿 없이 문단으로 적힌 블록도 있다(14번의 '심사자가 누구인가').
+     * 불릿만 세면 그런 절은 남은 것이 없는 절로 잡혀 공정률이 실제보다 높아진다.
+     * 문단 하나를 한 건으로 센다 — 몇 건인지 모를 때 0건으로 세지 않기 위해서다.
+     */
+    const prose = block[1].trim();
+    if (prose) items.push(prose.split('\n')[0]);
   }
   return items;
 }
