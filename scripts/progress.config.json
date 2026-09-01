@@ -1,0 +1,31 @@
+{
+  "specPath": "docs/05-product-spec.md",
+  "readmePath": "README.md",
+  "note": "가중치를 바꾸면 전체 공정률이 바뀐다. 바꾼 이유를 커밋 메시지에 남긴다.",
+  "items": [
+    {
+      "key": "screens",
+      "label": "화면 구현",
+      "weight": 30,
+      "basis": "05-product-spec.md 2번 화면 목록 표에서 ✅ 표시된 화면 수"
+    },
+    {
+      "key": "openQuestions",
+      "label": "열린 질문 해소",
+      "weight": 20,
+      "basis": "05-product-spec.md 열린 질문 절의 체크박스 [x] 수"
+    },
+    {
+      "key": "specSections",
+      "label": "명세 항목 완결",
+      "weight": 30,
+      "basis": "'아직 없는 것' 블록에 남은 항목이 없는 ## 섹션 수"
+    },
+    {
+      "key": "codeGates",
+      "label": "코드 게이트",
+      "weight": 20,
+      "basis": "npm run typecheck / npm run lint / npm test 통과 수 (--checks 일 때만 측정)"
+    }
+  ]
+}
