@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs, useSegments } from 'expo-router';
 
-import { useTheme } from '@weddingpick/ui';
+import { WeddingMark, useTheme } from '@weddingpick/ui';
 
 /**
  * Bottom Navigation: 홈 | 검색 | 촬영 | 내 웨딩 | MY
@@ -47,16 +47,15 @@ export default function TabLayout() {
       />
       {/*
         Pick. 통합정책 v3.2 §1이 루트를 홈/검색/Pick/우리웨딩/MY로 정했다.
-        아이콘은 좋아요·찜으로 읽히면 안 되므로 하트를 쓰지 않는다 — 겹쳐둔
-        카드가 "고른 후보를 모아 견주는 곳"에 가깝고, 라벨이 Pick이라고 못박는다.
+        아이콘은 웨딩픽 심볼(하트 안에 체크)을 그대로 쓴다 — 앱 아이콘·스플래시와
+        같은 마크라야 "Pick이 이 앱의 중심"이라는 말이 화면에서도 같은 모양으로
+        읽힌다. 색은 다른 탭처럼 선택 상태를 따라간다.
        */}
       <Tabs.Screen
         name="pick"
         options={{
           title: 'Pick',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="albums-outline" color={color} size={size} />
-          ),
+          tabBarIcon: ({ color, size }) => <WeddingMark size={size} color={color} />,
         }}
       />
       {/*
