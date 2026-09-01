@@ -62,7 +62,8 @@
         {
           "defaultChannel": "default"
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,

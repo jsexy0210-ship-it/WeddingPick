@@ -5,7 +5,10 @@
 - API는 `POST /v1/auth/sessions`에서 `apple`, `kakao` ID Token을 검증한다.
 - `GET /v1/auth/providers`는 설정된 제공자만 반환한다.
 - 모바일 로그인 화면과 로그인 시트는 API 제공자 목록을 표시한다.
-- 모바일의 `providers.ts`는 현재 개발용 로그인 토큰만 실제 전송하며, Apple·Kakao SDK 연결은 아직 필요하다.
+- 모바일 `providers.ts`는 Apple 네이티브 로그인과 Kakao OAuth 흐름을 연결하고, 받은 ID Token을 API로 전송한다.
+- Kakao 버튼을 활성화하려면 앱 빌드 환경에 `EXPO_PUBLIC_KAKAO_CLIENT_ID`를 주입해야 한다.
+- Google 버튼을 활성화하려면 앱과 API에 `EXPO_PUBLIC_GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_ID`를 주입해야 한다.
+- 네이버는 ID Token이 아닌 authorization code 교환 방식이므로 전용 서버 콜백·토큰 교환 API가 필요하다.
 
 ## 운영 환경변수
 
@@ -22,12 +25,13 @@ NODE_ENV=production
 
 ## 다음 구현 순서
 
-1. 모바일에 Apple Sign in과 Kakao OAuth를 연결한다.
-2. 콜백에서 받은 ID Token을 `/v1/auth/sessions`로 전달한다.
-3. 로그인 취소·실패·재시도 상태를 처리한다.
-4. Apple Developer의 Bundle ID와 Sign in with Apple을 확인한다.
-5. Kakao Developers의 네이티브 앱 키·동의항목·Redirect URI를 설정한다.
-6. Android/iOS 실기기에서 각각 로그인 테스트 후 개발용 로그인 코드를 제거한다.
+1. API 운영 환경에 `APPLE_CLIENT_ID`, `KAKAO_APP_KEY`를 설정한다.
+2. EAS preview/production 환경에 `EXPO_PUBLIC_KAKAO_CLIENT_ID`를 설정한다.
+3. Kakao Developers에서 OpenID Connect와 `weddingpick://` Redirect URI를 설정한다.
+4. Android/iOS 실기기에서 각각 로그인 테스트한다.
+5. 테스트 완료 후 개발용 로그인 코드를 운영 빌드에서 제거한다.
+
+네이버는 `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`을 서버에만 두고, 모바일에서 받은 authorization code를 서버 콜백으로 교환하는 방식으로 별도 구현한다. 현재는 네이버를 실제 제공자 목록에 노출하지 않는다.
 
 ## 주의
 
