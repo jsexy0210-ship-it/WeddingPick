@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { type LegalNotice } from '@weddingpick/domain';
+
 
 const configSchema = z.object({
   databaseUrl: z.string().min(1),
@@ -54,6 +56,26 @@ const configSchema = z.object({
 });
 
 export type Config = z.infer<typeof configSchema>;
+
+/**
+ * 법적 고지. 사업자명·대표자·등록번호처럼 서비스가 열리려면 반드시 있어야 하는 값들.
+ *
+ * 설정 스키마에 넣지 않고 따로 읽는 이유: 개발·테스트에서는 비어 있어도 서버가
+ * 떠야 한다. 비면 안 되는 것은 **Production으로 나가는 순간**이고, 그 판정은
+ * `assertReleasable`이 한다.
+ */
+export function loadLegalNotice(env: NodeJS.ProcessEnv = process.env): LegalNotice {
+  return {
+    businessName: env.LEGAL_BUSINESS_NAME,
+    representative: env.LEGAL_REPRESENTATIVE,
+    registrationNumber: env.LEGAL_REGISTRATION_NUMBER,
+    address: env.LEGAL_ADDRESS,
+    supportContact: env.LEGAL_SUPPORT_CONTACT,
+    privacyOfficer: env.LEGAL_PRIVACY_OFFICER,
+    termsEffectiveOn: env.LEGAL_TERMS_EFFECTIVE_ON,
+    privacyEffectiveOn: env.LEGAL_PRIVACY_EFFECTIVE_ON,
+  };
+}
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const storage =

@@ -5,6 +5,7 @@ import {
   PAYMENT_PROOF_CAVEAT,
   VENDOR_CATEGORY_LABEL,
   manwon,
+  TERMS,
   rangeLabel,
   withParticle,
 } from '@weddingpick/domain';
@@ -163,7 +164,7 @@ export default function VendorDetailScreen() {
             애초에 컴파일되지 않는다.
           */}
           <ThemedView style={styles.section}>
-            <ThemedText type="smallBold">실제 결제</ThemedText>
+            <ThemedText type="smallBold">{TERMS.verifiedData}</ThemedText>
 
             {vendor.prices.paidPrice.stage === 'collecting' ? (
               <ThemedView type="backgroundElement" style={styles.card}>
@@ -253,7 +254,12 @@ export default function VendorDetailScreen() {
           </ThemedView>
 
           <ThemedView style={styles.section}>
-            <ThemedText type="smallBold">실제 계약 가격</ThemedText>
+            {/*
+              확인된 계약. 위의 `확인된 정보`(결제내역)와 **다른 숫자다** — 하나는
+              결제한 금액이고 하나는 사람이 확인한 계약 금액이다. 이름을 같게
+              달면 두 값이 다를 때 어느 쪽이 틀린 것처럼 보인다.
+             */}
+            <ThemedText type="smallBold">확인된 계약</ThemedText>
 
             {vendor.prices.products.length === 0 ? (
               <ThemedView type="backgroundElement" style={styles.card}>
@@ -289,7 +295,7 @@ export default function VendorDetailScreen() {
           </ThemedView>
 
           <ThemedView style={styles.section}>
-            <ThemedText type="smallBold">이용점수</ThemedText>
+            <ThemedText type="smallBold">{TERMS.experience}</ThemedText>
 
             {/*
               확인된 후기만 들어간다. 데이터가 모자라면 숫자를 만들지 않고 이유를 준다 —
