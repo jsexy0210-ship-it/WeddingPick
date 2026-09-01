@@ -24,7 +24,7 @@ export const WITHDRAWAL_NOTICE: string | null =
 /** 탈퇴 후 작성자 정보와 분리되어 유지될 수 있는 항목. */
 export const WITHDRAWAL_ANON_SECTION = {
   title: '작성자 정보와 분리되는 정보',
-  items: ['후기 2건', '확인된 정보 4건'] as const,
+  items: ['작성하신 후기', '제공하신 확인된 정보'] as const,
   footer: '후기와 확인된 정보는 나를 알아볼 수 없도록 분리해 유지될 수 있어요.',
 } as const;
 
