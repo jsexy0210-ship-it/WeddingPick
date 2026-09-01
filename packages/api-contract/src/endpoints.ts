@@ -396,6 +396,13 @@ export const ENDPOINTS = {
     response: z.null(),
   },
 
+  /** 후기 삭제. 한 사람이 한 업체에 하나라, 지울 수 없으면 다시 쓸 수도 없다. */
+  deleteReview: {
+    method: 'DELETE',
+    path: '/v1/reviews/{reviewId}',
+    response: z.null(),
+  },
+
   /** 설정. 핸드오프 19번. */
   getSettings: {
     method: 'GET',

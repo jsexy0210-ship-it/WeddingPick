@@ -542,6 +542,11 @@ export async function updateReview(
   });
 }
 
+/** 후기 삭제. 한 사람이 한 업체에 하나라, 지울 수 없으면 다시 쓸 수도 없다. */
+export async function deleteReview(reviewId: string): Promise<void> {
+  await request(`/v1/reviews/${reviewId}`, z.null(), { method: 'DELETE' });
+}
+
 export async function listVendorReviews(
   vendorId: string,
   cursor?: string

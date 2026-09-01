@@ -2,7 +2,7 @@ import type { MyReport } from '@weddingpick/api-contract';
 import { MY_REPORTS_EMPTY, MY_REPORTS_EMPTY_CTA, formatWeddingDate } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -13,9 +13,10 @@ import {
   Spacing,
   ThemedText,
   ThemedView,
+  Toast,
   useTheme,
 } from '@weddingpick/ui';
-import { listMyReports } from '@/api/client';
+import { deleteReview, listMyReports } from '@/api/client';
 import { won } from '@/features/quotes/quote-result-view';
 
 /**
@@ -27,6 +28,7 @@ import { won } from '@/features/quotes/quote-result-view';
 export default function MyReportsScreen() {
   const theme = useTheme();
   const [reports, setReports] = useState<MyReport[] | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   const load = useCallback(() => {
     void listMyReports()
@@ -35,6 +37,22 @@ export default function MyReportsScreen() {
   }, []);
 
   useEffect(load, [load]);
+
+  function confirmDelete(reviewId: string, vendor: string) {
+    // 되돌릴 수 없는 행동은 한 번 더 묻는다. 핸드오프 인터랙션 규칙.
+    Alert.alert('후기를 지울까요', `${vendor}에 쓴 후기가 지워져요. 다시 되돌릴 수 없어요.`, [
+      { text: '그대로 둘게요', style: 'cancel' },
+      {
+        text: '지우기',
+        style: 'destructive',
+        onPress: () => {
+          void deleteReview(reviewId)
+            .then(load)
+            .catch(() => setToast('지우지 못했어요'));
+        },
+      },
+    ]);
+  }
 
   return (
     <ThemedView style={styles.container}>
@@ -82,10 +100,24 @@ export default function MyReportsScreen() {
               <ThemedText type="t7" themeColor="textSecondary">
                 {report.note ?? report.use}
               </ThemedText>
+
+              {/*
+                후기는 한 사람이 한 업체에 하나다. 지우는 길이 없으면 다시 쓸 수도
+                없어서 지금까지는 문의 창구로 와야 했다.
+              */}
+              {report.kind === 'review' ? (
+                <ActionButton
+                  label="후기 지우기"
+                  variant="secondary"
+                  onPress={() => confirmDelete(report.id, report.subject)}
+                />
+              ) : null}
             </ThemedView>
           ))}
         </ScrollView>
       </SafeAreaView>
+
+      <Toast message={toast} onHidden={() => setToast(null)} />
     </ThemedView>
   );
 }

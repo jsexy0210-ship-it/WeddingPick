@@ -24,6 +24,27 @@ describeWithDb('이용 후기', () => {
 
   const BODY = '음식이 따뜻하게 나왔고 직원분들이 동선을 잘 안내해 주셨습니다. 주차는 조금 붐비는 편이었습니다.';
 
+  /** 후기 한 건. 지우기 테스트가 함께 쓴다. */
+  async function aWrittenReview() {
+    const vendorId = await createVendor();
+    const { headers } = await signInAs(test, `author-${Math.random()}`);
+
+    const written = await test.app.inject({
+      method: 'POST',
+      url: `/v1/vendors/${vendorId}/reviews`,
+      headers,
+      payload: {
+        role: 'contractor',
+        overall: 3,
+        title: '주차가 아쉬웠습니다',
+        body: BODY,
+        aspects: [{ key: 'food_taste', rating: 3 }],
+      },
+    });
+
+    return { vendorId, headers, reviewId: written.json<{ reviewId: string }>().reviewId };
+  }
+
   async function createVendor(category = 'hall') {
     const { rows } = await test.pool.query<{ id: string }>(
       `INSERT INTO structured.vendors (name, category, region, source)
@@ -750,6 +771,95 @@ describeWithDb('이용 후기', () => {
 
     expect(response.statusCode).toBe(404);
   });
+  /**
+   * 후기 삭제.
+   *
+   * 한 사람이 한 업체에 하나라, 지우는 길이 없으면 **다시 쓸 수도 없다.**
+   * 확인 중인 글은 지울 수 없다 — 사람이 내린 임시조치는 다투는 중이라는 뜻이고,
+   * 그때 지우면 다투던 자료가 사라진다(0034와 같은 규칙).
+   */
+  describe('지우기', () => {
+    it('내 후기를 지우면 목록에서 사라진다', async () => {
+      const { vendorId, headers, reviewId } = await aWrittenReview();
+
+      const gone = await test.app.inject({
+        method: 'DELETE',
+        url: `/v1/reviews/${reviewId}`,
+        headers,
+      });
+
+      expect(gone.statusCode).toBe(204);
+
+      const listed = (
+        await test.app.inject({ method: 'GET', url: `/v1/vendors/${vendorId}/reviews` })
+      ).json<{ reviews: unknown[] }>();
+
+      expect(listed.reviews).toHaveLength(0);
+    });
+
+    it('지우면 같은 업체에 다시 쓸 수 있다', async () => {
+      // 지우는 길이 없으면 다시 쓸 수도 없다. 그게 이 기능이 있는 이유다.
+      const { vendorId, headers, reviewId } = await aWrittenReview();
+
+      await test.app.inject({ method: 'DELETE', url: `/v1/reviews/${reviewId}`, headers });
+
+      const again = await test.app.inject({
+        method: 'POST',
+        url: `/v1/vendors/${vendorId}/reviews`,
+        headers,
+        payload: {
+          role: 'contractor',
+          overall: 4,
+          title: '다시 씁니다',
+          body: BODY,
+          aspects: [{ key: 'food_taste', rating: 4 }],
+        },
+      });
+
+      expect(again.statusCode).toBe(201);
+    });
+
+    it('남의 후기는 지울 수 없고, 없는 것과 같은 답을 받는다', async () => {
+      // 답이 다르면 남의 글 id를 알아낼 수 있다.
+      const { reviewId } = await aWrittenReview();
+      const other = await signInAs(test, 'someone-else');
+
+      const denied = await test.app.inject({
+        method: 'DELETE',
+        url: `/v1/reviews/${reviewId}`,
+        headers: other.headers,
+      });
+
+      expect(denied.statusCode).toBe(404);
+    });
+
+    it('확인 중인 후기는 지울 수 없다', async () => {
+      const { headers, reviewId } = await aWrittenReview();
+
+      await test.pool.query(
+        `UPDATE structured.reviews
+         SET status = 'under_objection', objection_hold_until = now() + interval '10 days'
+         WHERE id = $1`,
+        [reviewId]
+      );
+
+      const denied = await test.app.inject({
+        method: 'DELETE',
+        url: `/v1/reviews/${reviewId}`,
+        headers,
+      });
+
+      expect(denied.statusCode).toBe(409);
+    });
+
+    it('로그인해야 지울 수 있다', async () => {
+      const { reviewId } = await aWrittenReview();
+
+      const denied = await test.app.inject({ method: 'DELETE', url: `/v1/reviews/${reviewId}` });
+
+      expect(denied.statusCode).toBe(401);
+    });
+  });
 });
 
 /**
@@ -965,4 +1075,5 @@ describeWithDb('결정사 체크리스트', () => {
     expect(pushed.percent).toBe(100);
     expect(score.caption).toContain('별점이 아니라');
   });
+
 });

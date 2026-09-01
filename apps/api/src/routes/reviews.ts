@@ -617,6 +617,80 @@ export function registerReviewRoutes(app: FastifyInstance, context: AppContext):
   );
 
   /**
+   * 후기 삭제.
+   *
+   * 한 사람이 한 업체에 하나라, 지우는 길이 없으면 **다시 쓸 수도 없다.** 고치는
+   * 길(PUT)만 있고 지우는 길이 없어 지금까지는 문의 창구로 와야 했다.
+   *
+   * 실제로 지운다. 내려두는 것(`removed`)은 운영자가 하는 일이고, 그건 "우리가 이
+   * 글을 안 보이게 했다"는 뜻이다 — 작성자가 자기 글을 거둔 것과 다른 사실이라
+   * 같은 상태로 적으면 안 된다.
+   *
+   * **확인 중인 글은 지울 수 없다.** 고치기와 같은 규칙이다(0034) — 사람이 내린
+   * 임시조치는 법적 분쟁 중이라는 뜻이고, 그때 작성자가 지우면 다투던 자료가
+   * 사라진다. 규칙이 가린 것(`auto_hidden_at`)은 지울 수 있다.
+   */
+  app.delete<{ Params: { reviewId: string } }>(
+    '/v1/reviews/:reviewId',
+    auth,
+    async (request, reply) => {
+      const userId = currentUserId(request);
+
+      await withTransaction(context.pool, async (client) => {
+        const { rows } = await client.query<{
+          status: string;
+          auto_hidden_at: Date | null;
+          vendor_name: string;
+          rebuttal_by: string | null;
+        }>(
+          `SELECT r.status, r.auto_hidden_at, v.name AS vendor_name,
+                  b.submitted_by_user_id AS rebuttal_by
+           FROM structured.reviews r
+           JOIN structured.vendors v ON v.id = r.vendor_id
+           LEFT JOIN structured.review_rebuttals b
+             ON b.review_id = r.id AND b.status = 'published'
+           WHERE r.id = $1 AND r.author_user_id = $2
+           FOR UPDATE OF r`,
+          [request.params.reviewId, userId]
+        );
+
+        const found = rows[0];
+
+        // 남의 글과 없는 글이 같은 답을 받는다. 다르면 남의 글 id를 알아낼 수 있다.
+        if (!found) throw notFound('후기');
+
+        if (found.status === 'under_objection' && found.auto_hidden_at === null) {
+          throw new ApiError(
+            'conflict',
+            '확인 중인 후기는 지울 수 없습니다. 결과를 알려드리겠습니다.'
+          );
+        }
+
+        /*
+         * 실려 있던 반론은 후기와 함께 사라진다(CASCADE). 그 사람에게는 자기 글이
+         * 어느 날 없어진 것이므로, 없어졌다는 사실은 알려야 한다. 누가 지웠는지는
+         * 적지 않는다 — 작성자가 누구인지는 그 사람이 알 일이 아니다.
+         */
+        if (found.rebuttal_by) {
+          await notify(client, {
+            userId: found.rebuttal_by,
+            kind: 'rebuttal',
+            title: '반론을 달았던 후기가 사라졌어요',
+            body: `${found.vendor_name}에 대한 그 후기가 지워져서 반론도 함께 내려갔어요.`,
+            targetId: null,
+          });
+        }
+
+        await client.query('DELETE FROM structured.reviews WHERE id = $1', [
+          request.params.reviewId,
+        ]);
+      });
+
+      return reply.status(204).send();
+    }
+  );
+
+  /**
    * 후기 신고.
    *
    * 접수만 된다. 신고만으로 글이 내려가면 그건 신고가 아니라 삭제 버튼이고, 업체가
