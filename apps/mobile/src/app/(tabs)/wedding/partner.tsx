@@ -7,7 +7,7 @@ import {
 } from '@weddingpick/domain';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Share, StyleSheet, ScrollView } from 'react-native';
+import { Share, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -19,7 +19,7 @@ import {
   unlinkPartner,
 } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
-import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
+import { ActionButton, ErrorView, LoadingView, MaxContentWidth, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
 
 /** "8월 31일 오후 3시" — 초대가 언제까지 살아 있는지. */
 function formatDeadline(timestamp: string): string {
@@ -38,7 +38,6 @@ function formatDeadline(timestamp: string): string {
  * 무엇이 공유되고 무엇이 안 되는지 초대를 만들기 전에 보여준다.
  */
 export default function PartnerScreen() {
-  const theme = useTheme();
   const [wedding, setWedding] = useState<WeddingDetail | null>(null);
   const [invite, setInvite] = useState<WeddingInvite | null>(null);
   /** 방금 만든 코드. 서버는 다시 보여줄 수 없어 이 화면을 떠나면 사라진다. */
@@ -137,32 +136,20 @@ export default function PartnerScreen() {
 
   if (!isServerConfigured) {
     return (
-      <Frame>
-        <ThemedText type="subtitle">배우자와 함께 보기</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          이 빌드는 서버에 붙어 있지 않아 연결할 수 없습니다.
-        </ThemedText>
-        <ActionButton label="돌아가기" onPress={() => router.back()} />
-      </Frame>
+      <ErrorView
+        title="배우자와 함께 보기"
+        message="이 빌드는 서버에 붙어 있지 않아 연결할 수 없어요."
+        onBack={() => router.back()}
+      />
     );
   }
 
   if (!wedding) {
-    return (
-      <Frame>
-        {error ? (
-          <>
-            <ThemedText type="subtitle">불러오지 못했습니다</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              {error}
-            </ThemedText>
-            <ActionButton label="돌아가기" onPress={() => router.back()} />
-          </>
-        ) : (
-          <ActivityIndicator color={theme.tint} />
-        )}
-      </Frame>
-    );
+    if (error) {
+      return <ErrorView message={error} onBack={() => router.back()} />;
+    }
+
+    return <LoadingView />;
   }
 
   return (
@@ -172,17 +159,17 @@ export default function PartnerScreen() {
           <ThemedView style={styles.section}>
             <ThemedText type="subtitle">배우자와 함께 보기</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              자료와 비교 결과를 함께 보며 결정할 수 있습니다. 연결은 양쪽이 각각
-              동의해야 이뤄집니다.
+              자료와 비교 결과를 함께 보며 결정할 수 있어요. 연결은 양쪽이 각각
+              동의해야 이뤄져요.
             </ThemedText>
           </ThemedView>
 
           {wedding.partnerLinked ? (
             <>
               <ThemedView type="backgroundElement" style={styles.card}>
-                <ThemedText type="smallBold">연결되어 있습니다</ThemedText>
+                <ThemedText type="smallBold">연결되어 있어요</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
-                  두 분이 같은 자료와 비교 결과를 보고 있습니다.
+                  두 분이 같은 자료와 비교 결과를 보고 있어요.
                 </ThemedText>
               </ThemedView>
 
@@ -196,7 +183,7 @@ export default function PartnerScreen() {
                   ))}
                   <ActionButton
                     variant="primary"
-                    label={busy ? '끊는 중…' : '끊겠습니다'}
+                    label={busy ? '끊는 중…' : '끊을게요'}
                     disabled={busy}
                     onPress={unlink}
                   />
@@ -205,7 +192,7 @@ export default function PartnerScreen() {
               ) : (
                 <ActionButton
                   label="연결 끊기"
-                  hint="어느 쪽이든 끊을 수 있습니다"
+                  hint="어느 쪽이든 끊을 수 있어요"
                   onPress={() => setConfirmingUnlink(true)}
                 />
               )}
@@ -242,20 +229,20 @@ export default function PartnerScreen() {
                   </ThemedText>
                   {/* 서버는 해시만 들고 있어 이 코드를 다시 보여줄 수 없다. */}
                   <ThemedText type="small" themeColor="textSecondary">
-                    이 화면을 떠나면 다시 볼 수 없습니다. 지금 보내주세요.
+                    이 화면을 떠나면 다시 볼 수 없어요. 지금 보내주세요.
                   </ThemedText>
                   {invite ? (
                     <ThemedText type="small" themeColor="textSecondary">
-                      {formatDeadline(invite.expiresAt)}까지 쓸 수 있습니다.
+                      {formatDeadline(invite.expiresAt)}까지 쓸 수 있어요.
                     </ThemedText>
                   ) : null}
                   <ActionButton variant="primary" label="배우자에게 보내기" onPress={share} />
                 </ThemedView>
               ) : invite ? (
                 <ThemedView type="backgroundElement" style={styles.card}>
-                  <ThemedText type="smallBold">보낸 초대가 있습니다</ThemedText>
+                  <ThemedText type="smallBold">보낸 초대가 있어요</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
-                    {formatDeadline(invite.expiresAt)}까지 쓸 수 있습니다. 코드는 다시 보여드릴
+                    {formatDeadline(invite.expiresAt)}까지 쓸 수 있어요. 코드는 다시 보여드릴
                     수 없어, 잃어버리셨으면 새로 만들어주세요.
                   </ThemedText>
                 </ThemedView>
@@ -273,7 +260,7 @@ export default function PartnerScreen() {
                 <ActionButton
                   variant="primary"
                   label={busy ? '만드는 중…' : invite ? '새 초대 만들기' : '초대 만들기'}
-                  hint={invite ? '새로 만들면 먼저 보낸 초대는 쓸 수 없게 됩니다' : undefined}
+                  hint={invite ? '새로 만들면 먼저 보낸 초대는 쓸 수 없게 돼요' : undefined}
                   disabled={busy}
                   onPress={makeInvite}
                 />
@@ -290,16 +277,6 @@ export default function PartnerScreen() {
 
           <ActionButton label="돌아가기" onPress={() => router.back()} />
         </ScrollView>
-      </SafeAreaView>
-    </ThemedView>
-  );
-}
-
-function Frame({ children }: { children: React.ReactNode }) {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.content}>{children}</ThemedView>
       </SafeAreaView>
     </ThemedView>
   );

@@ -280,13 +280,13 @@ export default function MyScreen() {
             {state.status === 'offline' ? (
               <ThemedView type="backgroundElement" style={styles.card}>
                 <ThemedText type="t7" themeColor="textSecondary">
-                  이 빌드는 서버에 붙어 있지 않습니다. 촬영과 기기 저장까지 됩니다.
+                  이 빌드는 서버에 붙어 있지 않아요. 촬영과 기기 저장까지 돼요.
                 </ThemedText>
               </ThemedView>
             ) : state.status === 'signedIn' ? (
               <ActionButton
                 label="로그아웃"
-                hint="기기에 저장된 문서는 지워지지 않습니다"
+                hint="기기에 저장된 문서는 지워지지 않아요"
                 onPress={leave}
               />
             ) : state.status === 'signedOut' ? (
@@ -335,7 +335,7 @@ export default function MyScreen() {
             <ActionButton label="촬영 방법과 분석 안내" onPress={() => router.push('/my/guide')} />
             <ActionButton
               label="문의하기"
-              hint="잘못된 정보, 분석 결과 이의, 개인정보 요청을 받습니다"
+              hint="잘못된 정보, 분석 결과 이의, 개인정보 요청을 받아요"
               onPress={() => router.push('/my/contact')}
             />
             <ActionButton

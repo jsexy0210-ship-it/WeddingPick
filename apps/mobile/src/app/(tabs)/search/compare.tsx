@@ -8,11 +8,11 @@ import {
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { compareVendors, getCurrentUser, recordComparison } from '@/api/client';
-import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
+import { ActionButton, ErrorView, LoadingView, MaxContentWidth, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
 import { won } from '@/features/quotes/quote-result-view';
 
 /**
@@ -26,7 +26,6 @@ import { won } from '@/features/quotes/quote-result-view';
  */
 export default function CompareScreen() {
   const { ids } = useLocalSearchParams<{ ids?: string }>();
-  const theme = useTheme();
   const [result, setResult] = useState<VendorComparisonResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,22 +59,16 @@ export default function CompareScreen() {
 
   if (tooFew || error) {
     return (
-      <Frame>
-        <ThemedText type="subtitle">비교할 수 없습니다</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          {error ?? '견줄 업체를 두 곳 이상 골라주세요.'}
-        </ThemedText>
-        <ActionButton label="돌아가기" onPress={() => router.back()} />
-      </Frame>
+      <ErrorView
+        title="비교할 수 없어요"
+        message={error ?? '견줄 업체를 두 곳 이상 골라주세요.'}
+        onBack={() => router.back()}
+      />
     );
   }
 
   if (!result) {
-    return (
-      <Frame>
-        <ActivityIndicator color={theme.tint} />
-      </Frame>
-    );
+    return <LoadingView />;
   }
 
   return (
@@ -113,7 +106,7 @@ export default function CompareScreen() {
             {(vendor) => (
               <ThemedText type="small" themeColor="textSecondary">
                 {vendor.comparableQuoteCount === 0
-                  ? '아직 없습니다'
+                  ? '아직 없어요'
                   : `${vendor.comparableQuoteCount}건`}
               </ThemedText>
             )}
@@ -154,7 +147,7 @@ export default function CompareScreen() {
           <Row title="업체 정보 출처" vendors={result.vendors}>
             {(vendor) => (
               <ThemedText type="small" themeColor="textSecondary">
-                {vendor.sourceNote ?? '올려주신 문서에서 확인한 업체입니다'}
+                {vendor.sourceNote ?? '올려주신 문서에서 확인한 업체예요'}
               </ThemedText>
             )}
           </Row>
@@ -209,15 +202,6 @@ function Row({
   );
 }
 
-function Frame({ children }: { children: React.ReactNode }) {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.content}>{children}</ThemedView>
-      </SafeAreaView>
-    </ThemedView>
-  );
-}
 
 const styles = StyleSheet.create({
   container: {

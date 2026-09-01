@@ -22,8 +22,8 @@ export default function PoliciesScreen() {
           <ThemedView style={styles.header}>
             <ThemedText type="subtitle">약관 및 정책</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              서비스 오픈 전까지 확정해야 하는 문서들입니다. 아직 확정본이 없어 상태만
-              표시합니다.
+              서비스 오픈 전까지 확정해야 하는 문서들이에요. 아직 확정본이 없어 상태만
+              표시해요.
             </ThemedText>
           </ThemedView>
 

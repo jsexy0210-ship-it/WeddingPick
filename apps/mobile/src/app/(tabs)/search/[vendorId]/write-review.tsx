@@ -7,13 +7,15 @@ import {
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, TextInput } from 'react-native';
+import { ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { createReview, getReviewForm } from '@/api/client';
 import {
   ActionButton,
+  ErrorView,
   FilterChip,
+  LoadingView,
   MaxContentWidth,
   RatingPicker,
   Spacing,
@@ -59,31 +61,19 @@ export default function WriteReviewScreen() {
   }, [vendorId]);
 
   if (loadError) {
-    return (
-      <Frame>
-        <ThemedText type="subtitle">불러오지 못했습니다</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          {loadError}
-        </ThemedText>
-        <ActionButton label="돌아가기" onPress={() => router.back()} />
-      </Frame>
-    );
+    return <ErrorView message={loadError} onBack={() => router.back()} />;
   }
 
   if (!form) {
-    return (
-      <Frame>
-        <ActivityIndicator color={theme.tint} />
-      </Frame>
-    );
+    return <LoadingView />;
   }
 
   if (done) {
     return (
       <Frame>
-        <ThemedText type="subtitle">후기를 남겼습니다</ThemedText>
+        <ThemedText type="subtitle">후기를 남겼어요</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
-          {done.label}로 올라갔습니다.
+          {done.label}로 올라갔어요.
         </ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
           {done.caveat}
@@ -96,10 +86,10 @@ export default function WriteReviewScreen() {
   if (form.alreadyWritten) {
     return (
       <Frame>
-        <ThemedText type="subtitle">이미 후기를 쓰셨습니다</ThemedText>
+        <ThemedText type="subtitle">이미 후기를 쓰셨어요</ThemedText>
         {/* 한 사람이 한 업체에 하나. 여러 개면 점수를 밀어 올릴 수 있다. */}
         <ThemedText type="small" themeColor="textSecondary">
-          한 업체에 후기는 하나만 남길 수 있습니다. 고치고 싶으시면 문의로 알려주세요.
+          한 업체에 후기는 하나만 남길 수 있어요. 고치고 싶으시면 문의로 알려주세요.
         </ThemedText>
         <ActionButton label="돌아가기" onPress={() => router.back()} />
       </Frame>
@@ -140,7 +130,7 @@ export default function WriteReviewScreen() {
 
       setDone({ label: created.verificationLabel, caveat: created.caveat });
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : '후기를 남기지 못했습니다.');
+      setError(caught instanceof Error ? caught.message : '후기를 남기지 못했어요.');
     } finally {
       setSending(false);
     }
@@ -164,7 +154,7 @@ export default function WriteReviewScreen() {
           <ThemedView style={styles.section}>
             <ThemedText type="smallBold">어떤 자리로 오셨나요</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              고르신 자리에 따라 여쭙는 항목이 달라집니다.
+              고르신 자리에 따라 여쭙는 항목이 달라져요.
             </ThemedText>
             <ThemedView style={styles.chips}>
               {form.roles.map((option) => (
@@ -196,7 +186,7 @@ export default function WriteReviewScreen() {
             <ThemedView style={styles.section}>
               <ThemedText type="smallBold">이용 경험 확인</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">
-                모르시는 항목은 모름으로 두셔도 됩니다. 모름은 점수에 들어가지 않습니다.
+                모르시는 항목은 모름으로 두셔도 돼요. 모름은 점수에 들어가지 않아요.
               </ThemedText>
               {form.checklist.map((item) => (
                 <ThemedView key={item.key} style={styles.section}>
@@ -223,7 +213,7 @@ export default function WriteReviewScreen() {
             <ThemedView style={styles.section}>
               <ThemedText type="smallBold">항목별 평가 (선택)</ThemedText>
               <ThemedText type="small" themeColor="textSecondary">
-                아시는 것만 골라주세요. 고르지 않은 항목은 계산에 들어가지 않습니다.
+                아시는 것만 골라주세요. 고르지 않은 항목은 계산에 들어가지 않아요.
               </ThemedText>
               {picked.aspects.map((aspect) => (
                 <ThemedView key={aspect.key} style={styles.aspectRow}>
@@ -256,7 +246,7 @@ export default function WriteReviewScreen() {
             <ThemedText type="smallBold">후기</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
               {form.minimumBodyLength}자 이상 적어주세요. 짧은 글은 다음 분에게 도움이 되지
-              않습니다.
+              않아요.
             </ThemedText>
             <TextInput
               style={[styles.input, styles.body, { color: theme.text, borderColor: theme.border }]}

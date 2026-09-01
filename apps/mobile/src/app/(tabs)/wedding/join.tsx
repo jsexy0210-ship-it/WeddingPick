@@ -76,9 +76,9 @@ export default function JoinScreen() {
   if (joined) {
     return (
       <Frame>
-        <ThemedText type="subtitle">연결했습니다</ThemedText>
+        <ThemedText type="subtitle">연결했어요</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
-          이제 두 분이 같은 자료와 비교 결과를 봅니다.
+          이제 두 분이 같은 자료와 비교 결과를 봐요.
         </ThemedText>
         <ActionButton variant="primary" label="내 웨딩 보기" onPress={() => router.push('/wedding')} />
       </Frame>
@@ -93,7 +93,7 @@ export default function JoinScreen() {
             <ThemedText type="subtitle">초대 코드 넣기</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
               배우자에게 받은 코드를 넣어주세요. 무엇이 공유되는지 보고 나서 결정하실 수
-              있습니다.
+              있어요.
             </ThemedText>
           </ThemedView>
 
@@ -155,7 +155,7 @@ export default function JoinScreen() {
               <ActionButton
                 variant="primary"
                 label={busy ? '연결 중…' : '이대로 연결하기'}
-                hint="연결한 뒤에도 어느 쪽이든 끊을 수 있습니다"
+                hint="연결한 뒤에도 어느 쪽이든 끊을 수 있어요"
                 disabled={busy}
                 onPress={join}
               />

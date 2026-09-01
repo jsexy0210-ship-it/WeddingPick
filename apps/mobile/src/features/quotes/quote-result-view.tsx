@@ -34,10 +34,10 @@ const KIND_LABEL = {
 } as const;
 
 const UNAVAILABLE_MESSAGE = {
-  not_enough_samples: '아직 비교할 만큼 인증된 계약이 모이지 않았습니다.',
-  vendor_unknown: '어느 업체인지 확정되지 않아 비교할 수 없습니다.',
-  product_unknown: '어떤 상품과 견줄지 정할 수 없습니다.',
-  amount_unconfirmed: '금액을 확인하면 비교할 수 있습니다.',
+  not_enough_samples: '아직 비교할 만큼 인증된 계약이 모이지 않았어요.',
+  vendor_unknown: '어느 업체인지 확정되지 않아 비교할 수 없어요.',
+  product_unknown: '어떤 상품과 견줄지 정할 수 없어요.',
+  amount_unconfirmed: '금액을 확인하면 비교할 수 있어요.',
 } as const;
 
 const ROLE_LABEL = {
@@ -70,21 +70,21 @@ function formatDay(timestamp: string): string {
  */
 function retentionNote(document: QuoteDocument): string {
   if (document.deletedAt) {
-    return `${formatDay(document.deletedAt)}에 원본을 지웠습니다. 정리된 결과는 그대로 남습니다.`;
+    return `${formatDay(document.deletedAt)}에 원본을 지웠어요. 정리된 결과는 그대로 남아요.`;
   }
 
   if (document.retentionUntil) {
     // "자동으로"라고 하지 않는다. 지우는 것은 사람이고, 사용자에게 중요한 것은
     // 누가 지우는지가 아니라 언제 지워지는지다. 운영 방식이 바뀌어도 이 말은
     // 거짓이 되지 않는다.
-    return `${formatDay(document.retentionUntil)}에 원본이 지워집니다. 정리된 결과는 그대로 남습니다.`;
+    return `${formatDay(document.retentionUntil)}에 원본이 지워져요. 정리된 결과는 그대로 남아요.`;
   }
 
   if (document.awaitingVerification) {
-    return '인증 심사가 끝나면 원본 삭제 예정일이 정해집니다. 심사에 이 문서가 증빙으로 들어가 있어 그때까지 보관합니다.';
+    return '인증 심사가 끝나면 원본 삭제 예정일이 정해져요. 심사에 이 문서가 증빙으로 들어가 있어 그때까지 보관해요.';
   }
 
-  return '아직 삭제 예정일이 정해지지 않았습니다. 정해지면 여기에 표시합니다.';
+  return '아직 삭제 예정일이 정해지지 않았어요. 정해지면 여기에 표시할게요.';
 }
 
 /** 항목 금액. 범위로 적힌 것은 범위 그대로 보여준다. */
@@ -206,9 +206,9 @@ export function QuoteResultView({
 
       {pending.length > 0 ? (
         <ThemedView style={styles.section}>
-          <ThemedText type="smallBold">확인이 필요합니다</ThemedText>
+          <ThemedText type="smallBold">확인이 필요해요</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            이 항목들은 확인하기 전까지 비교에 쓰이지 않습니다.
+            이 항목들은 확인하기 전까지 비교에 쓰이지 않아요.
           </ThemedText>
 
           {pending.map((field) => (
@@ -235,7 +235,7 @@ export function QuoteResultView({
         <ThemedView style={styles.section}>
           <ThemedText type="smallBold">흐릿하게 읽은 항목</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            아래 값은 문서에서 또렷하게 읽지 못했습니다. 원본과 다를 수 있으니
+            아래 값은 문서에서 또렷하게 읽지 못했어요. 원본과 다를 수 있으니
             직접 확인해 주세요.
           </ThemedText>
 

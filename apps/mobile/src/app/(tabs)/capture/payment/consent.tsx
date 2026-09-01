@@ -49,7 +49,7 @@ export default function PaymentProofConsentScreen() {
       await grantPaymentConsent();
       router.replace('/capture/payment/register');
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : '동의를 저장하지 못했습니다.');
+      setError(caught instanceof Error ? caught.message : '동의를 저장하지 못했어요.');
     } finally {
       setSending(false);
     }
@@ -62,7 +62,7 @@ export default function PaymentProofConsentScreen() {
           <ThemedView style={styles.section}>
             <ThemedText type="subtitle">Pick 인증 자료를 올리기 전에</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              서류 전체가 아니라 금액을 확인할 수 있는 자료만 받습니다. 카드 승인 문자나 영수증이면 됩니다.
+              서류 전체가 아니라 금액을 확인할 수 있는 자료만 받아요. 카드 승인 문자나 영수증이면 돼요.
             </ThemedText>
           </ThemedView>
 
@@ -76,8 +76,8 @@ export default function PaymentProofConsentScreen() {
 
           <ThemedView style={styles.section}>
             <ThemedText type="small" themeColor="textSecondary">
-              올려주신 이미지는 {PAYMENT_PROOF_RETENTION_HOURS}시간 안에 지워집니다. 지운
-              기록은 따로 남겨 나중에 확인할 수 있게 합니다.
+              올려주신 이미지는 {PAYMENT_PROOF_RETENTION_HOURS}시간 안에 지워져요. 지운
+              기록은 따로 남겨 나중에 확인할 수 있게 해요.
             </ThemedText>
             {error ? (
               <ThemedText type="small" themeColor="negative">

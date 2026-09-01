@@ -550,10 +550,10 @@ export default function SearchScreen() {
               <ThemedView type="backgroundElement" style={styles.card}>
                 <ThemedText type="small" themeColor="textSecondary">
                   {!isServerConfigured
-                    ? '이 빌드는 서버에 붙어 있지 않아 플래너를 찾을 수 없습니다.'
+                    ? '이 빌드는 서버에 붙어 있지 않아 플래너를 찾을 수 없어요.'
                     : error
                       ? error
-                      : '찾으시는 플래너가 아직 없습니다. 공개된 자료에 실려 있거나 본인이 밝힌 플래너만 검색에 나옵니다.'}
+                      : '찾으시는 플래너가 아직 없어요. 공개된 자료에 실려 있거나 본인이 밝힌 플래너만 검색에 나와요.'}
                 </ThemedText>
               </ThemedView>
             }
@@ -574,7 +574,7 @@ export default function SearchScreen() {
                   </ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
                     {item.comparableQuoteCount === 0
-                      ? '확인된 계약 자료가 아직 없습니다'
+                      ? '확인된 계약 자료가 아직 없어요'
                       : `확인된 계약 ${item.comparableQuoteCount}건`}
                   </ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">

@@ -2,7 +2,7 @@ import type { WeddingTaskListResponse } from '@weddingpick/api-contract';
 import { TASK_STATES, TASK_STATE_LABEL, formatTaskDate } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, ScrollView, StyleSheet, TextInput } from 'react-native';
+import { Modal, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -13,9 +13,11 @@ import {
 } from '@/api/client';
 import {
   ActionButton,
+  ErrorView,
   Fab,
   FilterChip,
   Layout,
+  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
@@ -56,23 +58,11 @@ export default function WeddingTasksScreen() {
   useEffect(load, [load]);
 
   if (error) {
-    return (
-      <Frame>
-        <ThemedText type="t4">불러오지 못했습니다</ThemedText>
-        <ThemedText type="t7" themeColor="textSecondary">
-          {error}
-        </ThemedText>
-        <ActionButton label="돌아가기" onPress={() => router.back()} />
-      </Frame>
-    );
+    return <ErrorView message={error} onBack={() => router.back()} />;
   }
 
   if (!page) {
-    return (
-      <Frame>
-        <ActivityIndicator color={theme.tint} />
-      </Frame>
-    );
+    return <LoadingView />;
   }
 
   function closeSheet() {
@@ -105,7 +95,7 @@ export default function WeddingTasksScreen() {
       closeSheet();
       load();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : '더하지 못했습니다.');
+      setError(caught instanceof Error ? caught.message : '더하지 못했어요.');
     }
   }
 
@@ -123,7 +113,7 @@ export default function WeddingTasksScreen() {
       closeSheet();
       load();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : '고치지 못했습니다.');
+      setError(caught instanceof Error ? caught.message : '고치지 못했어요.');
     }
   }
 
@@ -132,7 +122,7 @@ export default function WeddingTasksScreen() {
       await removeWeddingTask(id, taskId);
       load();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : '지우지 못했습니다.');
+      setError(caught instanceof Error ? caught.message : '지우지 못했어요.');
     }
   }
 
@@ -283,16 +273,6 @@ export default function WeddingTasksScreen() {
           </ScrollView>
         </ThemedView>
       </Modal>
-    </ThemedView>
-  );
-}
-
-function Frame({ children }: { children: React.ReactNode }) {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.content}>{children}</ThemedView>
-      </SafeAreaView>
     </ThemedView>
   );
 }

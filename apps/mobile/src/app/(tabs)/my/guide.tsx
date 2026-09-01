@@ -7,9 +7,9 @@ import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView } from '
 
 const SHOOTING_TIPS = [
   '문서가 화면에 꽉 차게, 네 귀퉁이가 모두 보이게 찍어주세요.',
-  '그림자가 지지 않는 밝은 곳에서 찍으면 금액과 조건을 더 잘 읽습니다.',
+  '그림자가 지지 않는 밝은 곳에서 찍으면 금액과 조건을 더 잘 읽어요.',
   '여러 장짜리 자료는 순서대로 이어서 찍어주세요. 한 건으로 묶어 분석해요.',
-  '메일이나 메신저로 받은 PDF는 촬영하지 말고 파일 그대로 불러오세요. 훨씬 정확합니다.',
+  '메일이나 메신저로 받은 PDF는 촬영하지 말고 파일 그대로 불러오세요. 훨씬 정확해요.',
 ];
 
 /** 촬영 요령과 분석 안내. MY와 촬영 화면에서 들어온다. */
@@ -32,7 +32,7 @@ export default function GuideScreen() {
           <ThemedView style={styles.section}>
             <ThemedText type="subtitle">분석 안내</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              웨딩픽이 올려주신 자료를 어떻게 읽고, 무엇을 보장하지 않는지 알려드립니다.
+              웨딩픽이 올려주신 자료를 어떻게 읽고, 무엇을 보장하지 않는지 알려드려요.
             </ThemedText>
 
             {ANALYSIS_FACTS.map((fact) => (
@@ -48,8 +48,8 @@ export default function GuideScreen() {
           <ThemedView style={styles.section}>
             <ThemedText type="subtitle">자료 출처</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              웨딩픽이 비교와 대조에 쓰는 바깥 자료입니다. 기관이 자료를 고치면 앱의 내용도
-              달라질 수 있어 마지막으로 확인한 날짜를 함께 적어둡니다.
+              웨딩픽이 비교와 대조에 쓰는 바깥 자료예요. 기관이 자료를 고치면 앱의 내용도
+              달라질 수 있어 마지막으로 확인한 날짜를 함께 적어둬요.
             </ThemedText>
 
             {listDataSources().map((source) => (

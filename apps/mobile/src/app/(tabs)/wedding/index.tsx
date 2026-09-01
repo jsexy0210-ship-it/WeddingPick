@@ -31,7 +31,7 @@ export default function WeddingScreen() {
             <ThemedText type="subtitle">내 웨딩</ThemedText>
             <ActionButton
               label="웨딩 스케줄"
-              hint="준비할 일 열네 가지가 미리 들어 있습니다"
+              hint="준비할 일 열네 가지가 미리 들어 있어요"
               onPress={() => void open('tasks')}
             />
             <ActionButton
@@ -46,7 +46,7 @@ export default function WeddingScreen() {
             />
             <ActionButton
               label="담아둔 곳 보기"
-              hint="배우자와 함께 보는 후보 목록입니다"
+              hint="배우자와 함께 보는 후보 목록이에요"
               onPress={() => void open('candidates')}
             />
             <ActionButton
@@ -59,7 +59,7 @@ export default function WeddingScreen() {
           {!ready ? null : sets.length === 0 ? (
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="small" themeColor="textSecondary">
-                저장된 문서가 없습니다. 자료를 찍어두면 여기에 쌓입니다.
+                저장된 문서가 없어요. 자료를 찍어두면 여기에 쌓여요.
               </ThemedText>
               <ActionButton
                 variant="primary"
