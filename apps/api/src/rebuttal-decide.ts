@@ -1,7 +1,7 @@
 import { REBUTTAL_STATUS_LABEL, type RebuttalStatus } from '@weddingpick/domain';
 import type { Pool } from 'pg';
 
-import { newEventId, recordDecision } from './decisions';
+import { newEventId, recordDecision, requireOperator } from './decisions';
 import { withTransaction } from './db';
 import { notify } from './notify';
 
@@ -36,6 +36,8 @@ export async function decideRebuttal(
   const { id, to, by, note } = input;
 
   await withTransaction(pool, async (client) => {
+    await requireOperator(client, by);
+
     const { rows } = await client.query<{
       status: RebuttalStatus;
       submitted_by_user_id: string;

@@ -1,7 +1,7 @@
 import { OBJECTION_HOLD_MAX_DAYS } from '@weddingpick/domain';
 import type { Pool } from 'pg';
 
-import { newEventId, recordDecision } from './decisions';
+import { newEventId, recordDecision, requireOperator } from './decisions';
 import { withTransaction } from './db';
 import { notify } from './notify';
 
@@ -64,6 +64,8 @@ export async function holdReview(
   }
 
   await withTransaction(pool, async (client) => {
+    await requireOperator(client, input.by);
+
     const review = await load(client, input.reviewId);
 
     if (review.status !== 'published') {
@@ -119,6 +121,8 @@ export async function resolveObjection(
   input: { reviewId: string; to: 'restore' | 'remove'; by: string; note: string }
 ): Promise<void> {
   await withTransaction(pool, async (client) => {
+    await requireOperator(client, input.by);
+
     const review = await load(client, input.reviewId);
 
     if (review.status !== 'under_objection') {

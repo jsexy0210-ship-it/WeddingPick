@@ -10,6 +10,7 @@ import type { PoolClient } from 'pg';
 
 import { loadConfig } from './config';
 import { createPool, withTransaction } from './db';
+import { requireOperator } from './decisions';
 
 /**
  * 개인정보 재검토 도구.
@@ -202,7 +203,7 @@ async function show(pool: ReturnType<typeof createPool>, quoteId: string): Promi
 }
 
 /** 검토 결론. 사람과 시각이 함께 남는다. */
-async function conclude(
+export async function conclude(
   pool: ReturnType<typeof createPool>,
   quoteId: string,
   by: string,
@@ -210,6 +211,9 @@ async function conclude(
   client?: PoolClient
 ): Promise<void> {
   const run = client ?? pool;
+
+  await requireOperator(run, by);
+
   const { rowCount } = await run.query(
     `UPDATE structured.quotes
      SET pii_review = $2::pii_review_status, pii_reviewed_at = now(), pii_reviewed_by = $3::uuid
@@ -229,7 +233,7 @@ async function conclude(
  * 지울지는 문맥을 봐야 정해지고, 도구가 대신 판단하면 남겨야 할 계약조건까지
  * 날린다. 여기서는 무엇을 지웠는지를 남기고 검토를 닫는다.
  */
-async function redact(
+export async function redact(
   pool: ReturnType<typeof createPool>,
   quoteId: string,
   by: string,
@@ -237,6 +241,7 @@ async function redact(
   kind: string
 ): Promise<void> {
   await withTransaction(pool, async (client) => {
+    // conclude()가 같은 by를 다시 확인한다. 여기서 중복 검사하지 않는다.
     await client.query(
       `INSERT INTO structured.pii_redactions (quote_id, field, kind, redacted_by)
        VALUES ($1::uuid, $2, $3, $4::uuid)`,
@@ -253,7 +258,15 @@ async function redact(
   );
 }
 
-main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exitCode = 1;
-});
+/*
+ * CLI로 직접 실행했을 때만 돈다. 테스트가 이 파일에서 함수를 가져오면(require)
+ * `require.main`이 테스트 러너를 가리키므로 여기 걸리지 않는다 — 안 걸리면
+ * 테스트마다 실제 커넥션 풀을 만들고 빈 인자로 main()이 돌며 exitCode를
+ * 조용히 오염시킨다.
+ */
+if (require.main === module) {
+  void main().catch((error: unknown) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  });
+}
