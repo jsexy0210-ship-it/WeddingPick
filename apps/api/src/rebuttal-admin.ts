@@ -34,10 +34,11 @@ type Options = {
   reject?: string;
   by?: string;
   note?: string;
+  withoutClaim: boolean;
 };
 
 function parseArgs(argv: string[]): Options {
-  const options: Options = { list: false };
+  const options: Options = { list: false, withoutClaim: false };
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -48,6 +49,7 @@ function parseArgs(argv: string[]): Options {
     else if (arg === '--reject') options.reject = argv[++i];
     else if (arg === '--by') options.by = argv[++i];
     else if (arg === '--note') options.note = argv[++i];
+    else if (arg === '--without-claim') options.withoutClaim = true;
   }
 
   return options;
@@ -60,9 +62,10 @@ async function decide(
   id: string,
   to: Exclude<RebuttalStatus, 'pending'>,
   by: string,
-  note: string
+  note: string,
+  withoutClaim = false
 ): Promise<void> {
-  await decideRebuttal(pool, { id, to, by, note });
+  await decideRebuttal(pool, { id, to, by, note, withoutClaim });
 
   console.log(
     to === 'published'
@@ -176,7 +179,7 @@ async function main(): Promise<void> {
     }
 
     if (options.publish) {
-      await decide(pool, options.publish, 'published', options.by, options.note);
+      await decide(pool, options.publish, 'published', options.by, options.note, options.withoutClaim);
       return;
     }
 

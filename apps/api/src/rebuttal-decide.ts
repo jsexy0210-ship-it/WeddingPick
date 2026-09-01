@@ -5,6 +5,9 @@ import { newEventId, recordDecision } from './decisions';
 import { withTransaction } from './db';
 import { notify } from './notify';
 
+/** 실을 수 없는 이유. 사람이 읽고 다음에 무엇을 할지 알 수 있게 적는다. */
+export class RebuttalRefused extends Error {}
+
 /**
  * 반론 하나에 결론을 낸다. 최종통합정책 v2.0 원문 26·27번.
  *
@@ -19,6 +22,15 @@ export async function decideRebuttal(
     to: Exclude<RebuttalStatus, 'pending'>;
     by: string;
     note: string;
+    /**
+     * 관계자 인증 없이 싣는다.
+     *
+     * v2.0 26번은 인증이 없어도 실을 수 있게 두라고 했다(작은 업체에는 회사 이메일이
+     * 없다). 대신 **그 길로 갔다는 사실이 기록에 남아야 한다** — 그냥 통과시키면
+     * 인증으로 확인한 것과 사람이 밖에서 확인한 것이 같은 줄로 보이고, 나중에
+     * "무엇으로 확인했나"에 답할 수 없다.
+     */
+    withoutClaim?: boolean;
   }
 ): Promise<void> {
   const { id, to, by, note } = input;
@@ -29,11 +41,17 @@ export async function decideRebuttal(
       submitted_by_user_id: string;
       review_id: string;
       review_author_user_id: string;
+      vendor_id: string;
+      claim_id: string | null;
     }>(
       `SELECT b.status, b.submitted_by_user_id, b.review_id,
-              r.author_user_id AS review_author_user_id
+              r.author_user_id AS review_author_user_id,
+              r.vendor_id,
+              c.id AS claim_id
        FROM structured.review_rebuttals b
        JOIN structured.reviews r ON r.id = b.review_id
+       LEFT JOIN structured.approved_vendor_claims c
+         ON c.vendor_id = r.vendor_id AND c.claimant_user_id = b.submitted_by_user_id
        WHERE b.id = $1 FOR UPDATE OF b`,
       [id]
     );
@@ -49,6 +67,20 @@ export async function decideRebuttal(
     if (found.submitted_by_user_id === by) {
       // 인증 심사와 같은 규칙이다. 자기 글을 자기가 실을 수는 없다.
       throw new Error('반론을 낸 본인은 심사할 수 없다.');
+    }
+
+    /*
+     * 실을 때는 소속을 무엇으로 확인했는지가 **구조로** 남아야 한다.
+     *
+     * 지금까지는 사람이 앱 밖에서 확인하고 `--note`에 적었다. 글로만 남으면 나중에
+     * "이 반론은 무엇으로 확인했나"를 세거나 되짚을 수 없다 — 인증으로 확인한 것과
+     * 사람이 눈으로 확인한 것이 같은 줄로 보인다.
+     */
+    if (to === 'published' && !found.claim_id && !input.withoutClaim) {
+      throw new RebuttalRefused(
+        '이 사람의 승인된 관계자 인증이 없다. 인증을 먼저 승인하거나, ' +
+          '밖에서 확인했다면 --without-claim과 함께 무엇으로 확인했는지 --note에 적어라.'
+      );
     }
 
     await client.query(
@@ -74,8 +106,19 @@ export async function decideRebuttal(
       subjectId: id,
       decider: { kind: 'human', userId: by },
       decision: to,
-      reasonCode: to === 'published' ? 'affiliation_verified' : 'not_published',
-      evidence: [{ kind: 'review', id: found.review_id }],
+      reasonCode:
+        to === 'published'
+          ? found.claim_id
+            ? 'affiliation_verified'
+            : // 인증 없이 실은 것. 같은 결론이라도 확인한 방법이 다르다.
+              'affiliation_verified_offline'
+          : 'not_published',
+      evidence: found.claim_id
+        ? [
+            { kind: 'review', id: found.review_id },
+            { kind: 'vendor_claim', id: found.claim_id },
+          ]
+        : [{ kind: 'review', id: found.review_id }],
     });
 
     await notify(client, {
