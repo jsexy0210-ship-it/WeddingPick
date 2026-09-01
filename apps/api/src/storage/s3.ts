@@ -19,7 +19,14 @@ export function createS3Storage(options: {
 }): Storage {
   const client = new S3Client({
     region: options.region,
-    ...(options.endpoint && { endpoint: options.endpoint, forcePathStyle: true }),
+    ...(options.endpoint && {
+      endpoint: options.endpoint,
+      forcePathStyle: true,
+      // AWS SDK v3.729+ 이후 PutObject에 체크섬을 자동으로 붙인다.
+      // B2 등 비-AWS S3 호환 스토리지는 이 헤더를 거절하므로 비활성화한다.
+      requestChecksumCalculation: 'WHEN_REQUIRED',
+      responseChecksumValidation: 'WHEN_REQUIRED',
+    }),
   });
 
   return {
