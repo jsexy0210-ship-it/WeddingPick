@@ -1,3 +1,4 @@
+import { decideRebuttal } from '../rebuttal-decide';
 import { createTestApp, resetDatabase, signInAs, type TestApp } from './helpers';
 
 let test: TestApp;
@@ -291,5 +292,78 @@ describeWithDb('업체 반론', () => {
     });
 
     expect(response.statusCode).toBe(401);
+  });
+
+  /**
+   * 반론은 후기를 지우지 않고 옆에 붙는다. 붙었다는 사실을 작성자가 모르면,
+   * 자기 글 아래에 남의 말이 실린 것을 남이 먼저 안다.
+   */
+  describe('게시되면 후기 작성자도 안다', () => {
+    async function anOperator(): Promise<string> {
+      const { rows } = await test.pool.query<{ id: string }>(
+        'INSERT INTO structured.users (is_operator) VALUES (true) RETURNING id'
+      );
+      return rows[0]!.id;
+    }
+
+    const notificationsOf = async (userId: string) =>
+      (
+        await test.pool.query<{ kind: string; title: string; body: string; target_id: string }>(
+          `SELECT kind, title, body, target_id FROM structured.notifications
+           WHERE user_id = $1 ORDER BY created_at`,
+          [userId]
+        )
+      ).rows;
+
+    async function authorOf(reviewId: string): Promise<string> {
+      const { rows } = await test.pool.query<{ author_user_id: string }>(
+        'SELECT author_user_id FROM structured.reviews WHERE id = $1',
+        [reviewId]
+      );
+      return rows[0]!.author_user_id;
+    }
+
+    it('게시하면 작성자에게 알림이 간다', async () => {
+      const { reviewId } = await aReview();
+      const vendorSide = await signInAs(test, 'vendor-staff');
+      const { rebuttalId } = (await submit(vendorSide.headers, reviewId)).json<{
+        rebuttalId: string;
+      }>();
+
+      await decideRebuttal(test.pool, {
+        id: rebuttalId,
+        to: 'published',
+        by: await anOperator(),
+        note: '사업자등록증으로 소속 확인',
+      });
+
+      const forAuthor = await notificationsOf(await authorOf(reviewId));
+
+      expect(forAuthor).toHaveLength(1);
+      expect(forAuthor[0]!.kind).toBe('rebuttal');
+      expect(forAuthor[0]!.target_id).toBe(reviewId);
+      // 심사 메모는 심사자가 소속을 무엇으로 확인했는지 적은 내부 기록이다.
+      expect(forAuthor[0]!.body).not.toContain('사업자등록증');
+    });
+
+    it('게시하지 않기로 하면 작성자에게는 아무것도 가지 않는다', async () => {
+      const { reviewId } = await aReview();
+      const vendorSide = await signInAs(test, 'vendor-staff');
+      const { rebuttalId } = (await submit(vendorSide.headers, reviewId)).json<{
+        rebuttalId: string;
+      }>();
+
+      await decideRebuttal(test.pool, {
+        id: rebuttalId,
+        to: 'rejected',
+        by: await anOperator(),
+        note: '소속을 확인하지 못했다',
+      });
+
+      // 작성자에게는 일어나지 않은 일이다.
+      expect(await notificationsOf(await authorOf(reviewId))).toHaveLength(0);
+      // 낸 사람은 결론을 받는다.
+      expect(await notificationsOf(vendorSide.userId)).toHaveLength(1);
+    });
   });
 });
