@@ -100,6 +100,42 @@ export type PriceDisclosure =
 /** 구간의 양끝. 최저·최고가 아니라 분포의 허리를 쓴다 — 한 건의 특이값이 구간을 늘리지 않게. */
 const RANGE_QUANTILES = { low: 0.25, high: 0.75 } as const;
 
+/**
+ * 밖으로 내보내는 금액의 단위. **만원.**
+ *
+ * 분위수는 표본 수에 따라 **표본 하나를 그대로 돌려준다.** `(n-1)*q`가 정수면
+ * 보간할 이웃이 없어 그 자리의 값이 그대로 나온다 — 5건이면 25%·50%·75% 셋 다
+ * 그렇다. 그러면 화면에 뜨는 `기준금액`이 어느 한 사람이 실제로 낸 금액이고,
+ * 그 사람은 자기 영수증과 숫자를 맞춰볼 수 있다. 중앙값도 홀수 표본에서는
+ * 가운데 한 건 그대로다.
+ *
+ * 그래서 내보내기 전에 만원으로 반올림한다. 화면은 어차피 만원 단위로 그리므로
+ * (`manwon`·`rangeLabel`) 보이는 것은 달라지지 않고, 원 단위로 일치하는 숫자가
+ * 나가지 않는다.
+ *
+ * **이것이 재식별을 막아주지는 않는다.** 만원으로 반올림해도 표본이 적으면
+ * 누구인지 좁혀질 수 있다. 그건 공개 건수 기준과 C-4가 맡는 일이고, 여기서
+ * 막는 것은 `숫자가 그대로 나가는 것` 하나다.
+ */
+export const PUBLISHED_AMOUNT_UNIT = 10_000;
+
+/**
+ * 밖으로 나가는 금액은 전부 이걸 거친다.
+ *
+ * 만원이 안 되는 값은 그대로 둔다. 반올림하면 0원이 되고, **0원은 "공짜였다"로
+ * 읽힌다** — 있는 그대로보다 나쁜 거짓말이다. 1만원으로 올려 적는 것도 없는
+ * 값을 지어내는 것이라 하지 않는다.
+ *
+ * `manwon`이 만원 아래를 `원`으로 그대로 적는 것과 같은 규칙이다. 이 구간에서는
+ * 숫자가 그대로 나갈 수 있지만, 웨딩 계약 금액이 만원 미만인 경우는 없다 —
+ * 그런 값이 보인다면 반올림이 아니라 그 데이터를 의심할 자리다.
+ */
+export function roundForDisclosure(amount: number): number {
+  if (amount < PUBLISHED_AMOUNT_UNIT) return amount;
+
+  return Math.round(amount / PUBLISHED_AMOUNT_UNIT) * PUBLISHED_AMOUNT_UNIT;
+}
+
 function quantile(sorted: readonly number[], q: number): number {
   const position = (sorted.length - 1) * q;
   const below = Math.floor(position);
@@ -123,6 +159,9 @@ function median(sorted: readonly number[]): number {
  *
  * 개별 금액은 나가지 않는다 — 결제 한 건은 한 사람의 결제고, 금액과 시각이 함께
  * 나가면 그 사람이 누구인지 좁혀진다(C-4 재식별 방지).
+ *
+ * 구간과 기준금액도 만원으로 반올림해서 내보낸다. 분위수가 표본 하나를 그대로
+ * 돌려주는 자리가 있어서다 — `PUBLISHED_AMOUNT_UNIT`에 왜인지 적어뒀다.
  */
 export function discloseAmounts(input: {
   amounts: readonly number[];
@@ -136,15 +175,15 @@ export function discloseAmounts(input: {
   }
 
   const sorted = [...input.amounts].sort((a, b) => a - b);
-  const low = quantile(sorted, RANGE_QUANTILES.low);
-  const high = quantile(sorted, RANGE_QUANTILES.high);
+  const low = roundForDisclosure(quantile(sorted, RANGE_QUANTILES.low));
+  const high = roundForDisclosure(quantile(sorted, RANGE_QUANTILES.high));
 
   /*
    * 기준금액은 상세 단계에서만 캡션에 붙는다(v3.1 §11). 그래서 중앙값을 먼저
    * 구하고 캡션을 만든다 — 캡션이 값보다 앞서면 붙일 것이 없다.
    */
   if (stage === 'detailed') {
-    const middle = median(sorted);
+    const middle = roundForDisclosure(median(sorted));
 
     return {
       stage,
