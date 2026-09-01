@@ -164,6 +164,27 @@ function measureScreens(read) {
   };
 }
 
+/**
+ * 관리자 콘솔. 분모는 디자인이 그린 화면 수이고, 분자는 대장에서 ✅ 표시된 수다.
+ *
+ * 파일 개수로 어림하지 않는다 — 화면 스물여섯을 파일 몇 개로 짓든 그건 만든 사람의
+ * 사정이고, 개수로 비율을 내면 파일을 쪼갤 때마다 공정률이 오른다. 05번 화면표와
+ * 같은 규약으로 사람이 ✅를 붙인다.
+ */
+function measureAdminConsole(read) {
+  const src = read(CONFIG.ledgerPath);
+  if (src == null) return null;
+  const rows = [...src.matchAll(/^\|\s*(WP-ADM-\d+)\s*(✅)?\s*\|([^|]*)\|/gm)];
+  if (rows.length === 0) return null;
+  const screens = rows.map((r) => ({ id: r[1], done: Boolean(r[2]), title: stripMd(r[3]) }));
+  return {
+    done: screens.filter((s) => s.done).length,
+    total: screens.length,
+    unit: '화면',
+    detail: { pending: screens.filter((s) => !s.done).map((s) => `${s.id} ${s.title}`) },
+  };
+}
+
 function measureOpenQuestions(read) {
   const src = read(CONFIG.specPath);
   if (src == null) return null;
@@ -232,6 +253,7 @@ function measureCodeGates(read, { run }) {
 
 const MEASURERS = {
   screens: measureScreens,
+  adminConsole: measureAdminConsole,
   openQuestions: measureOpenQuestions,
   specSections: measureSpecSections,
   codeGates: measureCodeGates,
