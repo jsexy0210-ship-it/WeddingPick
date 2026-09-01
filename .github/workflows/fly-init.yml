@@ -19,12 +19,12 @@ jobs:
 
       - name: 앱 생성 (이미 있으면 건너뜀)
         run: |
-          fly apps create weddingpick-staging || true
+          fly apps create weddingpickl || true
           fly apps create weddingpick-api || true
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
-      - name: Staging — Secrets 설정
+      - name: Staging (weddingpickl) — Secrets 설정
         run: |
           fly secrets set \
             DATABASE_URL="$DATABASE_URL" \
@@ -32,7 +32,7 @@ jobs:
             AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
             S3_BUCKET="$S3_BUCKET" \
             ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" \
-            --app weddingpick-staging
+            --app weddingpickl
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
@@ -41,7 +41,7 @@ jobs:
           S3_BUCKET: ${{ secrets.S3_BUCKET }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
-      - name: Production — Secrets 설정
+      - name: Production (weddingpick-api) — Secrets 설정
         run: |
           fly secrets set \
             DATABASE_URL="$DATABASE_URL" \
