@@ -10,6 +10,7 @@ import {
   createSessionResponseSchema,
   createUploadResponseSchema,
   currentUserSchema,
+  displayNameResponseSchema,
   errorResponseSchema,
   createVerificationResponseSchema,
   quoteSchema,
@@ -204,15 +205,29 @@ export async function signOut(): Promise<void> {
 }
 
 /**
- * 이름·예식일 등록. 둘을 한 번에 보낸다.
+ * 최소 온보딩. 예식일과 지역을 한 번에 보낸다(v3.10 §3).
  *
- * 따로 보내면 이름만 넣고 나간 사람이 생기고, 그 사람의 홈은 이름은 부르는데
- * D-Day가 없는 반쪽이 된다.
+ * 이름은 보내지 않는다 — 닉네임은 최초 필수입력에서 빠졌고 MY에서 정한다.
+ *
+ * `budgetAmount`를 넘기지 않으면 서버가 예산을 건드리지 않는다. `아직 모르겠어요`는
+ * 명시적인 null이다 — 안 고른 것과 모르겠다고 고른 것은 다른 상태다.
  */
-export async function completeSetup(displayName: string, weddingDate: string) {
+export async function completeSetup(input: {
+  weddingDate: string;
+  region: string;
+  budgetAmount?: number | null;
+}) {
   return request('/v1/me/setup', currentUserSchema, {
     method: 'POST',
-    body: JSON.stringify({ displayName, weddingDate }),
+    body: JSON.stringify(input),
+  });
+}
+
+/** 부를 이름. MY에서 정한다. null이면 안 부른다. */
+export async function setDisplayName(displayName: string | null) {
+  return request('/v1/me/display-name', displayNameResponseSchema, {
+    method: 'POST',
+    body: JSON.stringify({ displayName }),
   });
 }
 

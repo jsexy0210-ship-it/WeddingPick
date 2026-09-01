@@ -1,18 +1,17 @@
 import type { AuthProvider } from '@weddingpick/api-contract';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { listAuthProviders, signIn } from '@/api/client';
-import { isServerConfigured } from '@/api/config';
 import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
-import { DEV_LOGIN_SECRET, devIdToken } from '@/features/auth/dev-login';
-
-const PROVIDER_LABEL = {
-  apple: 'Apple로 계속하기',
-  kakao: '카카오로 계속하기',
-} as const;
+import { completeAfterSignIn } from '@/features/auth/after-sign-in';
+import {
+  PROVIDER_LABEL,
+  canSignInWith,
+  signInWith,
+  useAuthProviders,
+} from '@/features/auth/providers';
 
 /** 로그인이 무엇을 위한 것인지. 계정을 요구하는 이유를 먼저 말한다. */
 const REASONS = [
@@ -29,25 +28,9 @@ const REASONS = [
  */
 export default function LoginScreen() {
   const theme = useTheme();
-  // 서버 주소가 없으면 물어볼 곳도 없다. 처음부터 빈 목록으로 시작한다.
-  const [providers, setProviders] = useState<AuthProvider[] | null>(
-    isServerConfigured ? null : []
-  );
+  const { providers, error: loadError } = useAuthProviders();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    if (!isServerConfigured) {
-      return;
-    }
-
-    listAuthProviders()
-      .then((response) => setProviders(response.providers))
-      .catch((caught: Error) => {
-        setProviders([]);
-        setError(caught.message);
-      });
-  }, []);
 
   async function startSignIn(provider: AuthProvider) {
     if (busy) return;
@@ -55,12 +38,12 @@ export default function LoginScreen() {
     setError(null);
 
     try {
-      if (!provider.isDevelopmentStandIn) {
-        // 제공자 SDK는 클라이언트 ID가 나온 뒤에 붙인다. 그 전까지 버튼은 눌리지 않는다.
-        throw new Error('아직 준비 중입니다.');
-      }
-
-      await signIn(provider.provider, devIdToken());
+      await signInWith(provider);
+      /*
+       * 로그인 전에 기기에 적어둔 최소 온보딩과 멈춰둔 Pick을 여기서도 마친다.
+       * 시트에서만 하면, 이 화면으로 로그인한 사람의 예식일은 서버에 영영 안 올라간다.
+       */
+      await completeAfterSignIn();
       router.back();
     } catch (caught) {
       setError((caught as Error).message);
@@ -114,17 +97,17 @@ export default function LoginScreen() {
                       ? '실제 애플·카카오 로그인이 아닙니다. 개발 중인 서버에만 있습니다'
                       : undefined
                   }
-                  disabled={busy || (provider.isDevelopmentStandIn && !DEV_LOGIN_SECRET)}
+                  disabled={busy || !canSignInWith(provider)}
                   onPress={() => startSignIn(provider)}
                 />
               ))}
             </ThemedView>
           )}
 
-          {error ? (
+          {error ?? loadError ? (
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="small" themeColor="textSecondary">
-                {error}
+                {error ?? loadError}
               </ThemedText>
             </ThemedView>
           ) : null}

@@ -205,7 +205,7 @@ describeWithDb('업체 검색', () => {
       const paid = (await prices(vendorId)).paidPrice;
 
       expect(paid.stage).toBe('early');
-      expect(paid.caption).toContain('아직 데이터가 적어요');
+      expect(paid.caption).toContain('아직 정보가 적어요');
       expect(paid.low).toBeGreaterThan(0);
       // 중앙값은 상세 단계의 것이다. 구간이 나온다고 따라 나오지 않는다.
       expect(paid.median).toBeUndefined();
