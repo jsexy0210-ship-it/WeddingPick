@@ -6,6 +6,7 @@ import {
   VENDOR_CATEGORY_LABEL,
   manwon,
   rangeLabel,
+  withParticle,
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -13,6 +14,10 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { addCandidate, ensureWedding, getVendor, getVendorConditions } from '@/api/client';
+import { isServerConfigured } from '@/api/config';
+import { loadToken } from '@/api/session';
+import { LoginSheet } from '@/features/auth/login-sheet';
+import { savePendingAction } from '@/features/auth/pending-action';
 import {
   ActionButton,
   MaxContentWidth,
@@ -42,6 +47,8 @@ export default function VendorDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [saveNote, setSaveNote] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  /** 로그인 시트가 떠 있는가. 첫 Pick이 대표 트리거다(v3.10 §3). */
+  const [loginOpen, setLoginOpen] = useState(false);
 
   useEffect(() => {
     getVendor(vendorId)
@@ -77,17 +84,30 @@ export default function VendorDetailScreen() {
     );
   }
 
-  async function save() {
+  /**
+   * Pick. 통합정책 v3.10 §3 — **첫 Pick이 대표 로그인 트리거**다.
+   *
+   * 로그인 전이면 누른 것을 적어두고 시트를 연다. 로그인 화면으로 밀어내지 않는
+   * 이유는, 돌아왔을 때 이 업체도 스크롤 위치도 사라지기 때문이다. 로그인이
+   * 끝나면 적어둔 Pick을 시트가 대신 마친다.
+   */
+  async function pick() {
     setSaving(true);
     setSaveNote(null);
 
     try {
+      if (isServerConfigured && !(await loadToken())) {
+        await savePendingAction({ kind: 'pick', vendorId: vendor!.id, vendorName: vendor!.name });
+        setLoginOpen(true);
+        return;
+      }
+
       const weddingId = await ensureWedding();
 
       await addCandidate(weddingId, vendor!.id);
-      setSaveNote('담았습니다. 내 웨딩에서 보실 수 있습니다.');
+      setSaveNote('Pick했어요. Pick 탭에서 보실 수 있어요.');
     } catch (caught) {
-      setSaveNote(caught instanceof Error ? caught.message : '담지 못했습니다.');
+      setSaveNote(caught instanceof Error ? caught.message : 'Pick하지 못했어요.');
     } finally {
       setSaving(false);
     }
@@ -358,15 +378,15 @@ export default function VendorDetailScreen() {
 
           <ThemedView style={styles.section}>
             {/*
-              담아두는 자리. 사람이 아니라 웨딩에 매단다 — 배우자가 같은 목록을
+              Pick하는 자리. 사람이 아니라 웨딩에 매단다 — 배우자가 같은 목록을
               보고, 그래야 같은 이야기를 할 수 있다.
             */}
             <ActionButton
               variant="primary"
-              label={saving ? '담는 중…' : '후보에 담기'}
-              hint="배우자와 함께 보는 목록에 들어갑니다"
+              label={saving ? 'Pick하는 중…' : 'Pick하기'}
+              hint="배우자와 함께 보는 목록에 들어가요"
               disabled={saving}
-              onPress={() => void save()}
+              onPress={() => void pick()}
             />
             {saveNote ? (
               <ThemedText type="small" themeColor="textSecondary">
@@ -411,6 +431,23 @@ export default function VendorDetailScreen() {
           </ThemedView>
         </ScrollView>
       </SafeAreaView>
+
+      <LoginSheet
+        visible={loginOpen}
+        reason={`로그인하면 ${withParticle(vendor.name, '을를')} 바로 Pick해드려요.`}
+        onSignedIn={(result) => {
+          setLoginOpen(false);
+          setSaveNote(
+            [
+              result.completed ? 'Pick했어요. Pick 탭에서 보실 수 있어요.' : null,
+              result.weddingError,
+            ]
+              .filter(Boolean)
+              .join(' ') || null
+          );
+        }}
+        onDismiss={() => setLoginOpen(false)}
+      />
     </ThemedView>
   );
 }

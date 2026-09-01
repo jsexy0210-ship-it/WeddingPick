@@ -38,11 +38,16 @@ export const currentUserSchema = z.object({
   displayName: z.string().nullable(),
   /** 예식일. 아직 안 정했으면 null. */
   weddingDate: dateSchema.nullable(),
+  /** 준비 지역. 아직 안 골랐으면 null. 업체 지역 목록과 같은 문자열이다. */
+  region: z.string().nullable(),
+  /** 총예산. `아직 모르겠어요`가 null이다 — 0원과 다르다. */
+  budgetAmount: z.int().positive().nullable(),
   /**
-   * 처음 설정을 마쳤는가. 이름과 예식일이 둘 다 있어야 한다.
+   * 최소 온보딩을 마쳤는가. **예식일과 지역**이 둘 다 있어야 한다(v3.10 §3).
    *
    * **앱이 이 값으로 첫 화면을 정한다.** 두 값을 따로 보고 판단하게 두면 어느
-   * 화면은 이름만 보고, 어느 화면은 날짜만 보게 된다.
+   * 화면은 날짜만 보고, 어느 화면은 지역만 보게 된다. 이름은 여기 들어가지
+   * 않는다 — 이름이 없다고 첫 화면에 다시 붙잡아두면 그게 강제 가입이다.
    */
   setupComplete: z.boolean(),
 
@@ -70,14 +75,36 @@ export const currentUserSchema = z.object({
 });
 
 /**
- * 이름·예식일 등록. 핸드오프 2번 — **스킵할 수 없는 화면**이다.
+ * 부를 이름. MY에서 정한다.
  *
- * 둘을 한 번에 받는다. 따로 받으면 이름만 넣고 나간 사람이 생기고, 그 사람의 홈은
- * 이름은 부르는데 D-Day가 없는 반쪽이 된다.
+ * 최소 온보딩에서 뺀 값이라(v3.10 §3) 이 계약이 없으면 이름을 정할 방법이 없다.
+ * null은 "안 부름"이다 — 한 번 적었다고 영영 못 지우게 할 이유가 없다.
+ */
+export const displayNameRequestSchema = z.object({
+  displayName: z.string().trim().min(1).max(MAX_DISPLAY_NAME_LENGTH).nullable(),
+});
+
+export const displayNameResponseSchema = z.object({
+  displayName: z.string().nullable(),
+});
+
+/**
+ * 최소 온보딩. 통합정책 v3.10 §3.
+ *
+ * **이름을 받지 않는다.** v3.10이 닉네임을 최초 필수입력에서 뺐다 — 이름을 물어보는
+ * 화면은 "가입" 냄새가 나고, 이 앱은 로그인을 앞세우지 않는다. 부를 이름은 MY에서
+ * 따로 정한다.
+ *
+ * 예식일과 지역은 함께 받는다. 따로 받으면 날짜만 넣고 나간 사람이 생기고, 그
+ * 사람에게 보여줄 것은 전국 평균뿐이다.
+ *
+ * 총예산은 선택이다. `아직 모르겠어요`가 null이고, 그것은 "0원"과 다르다 —
+ * 아직 안 정한 것과 안 쓰기로 한 것은 같은 상태가 아니다.
  */
 export const completeSetupRequestSchema = z.object({
-  displayName: z.string().trim().min(1).max(MAX_DISPLAY_NAME_LENGTH),
   weddingDate: dateSchema,
+  region: z.string().trim().min(1),
+  budgetAmount: z.int().positive().nullable().optional(),
 });
 
 /**

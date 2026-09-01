@@ -12,6 +12,7 @@ import { CaptureDraftProvider } from '@/features/capture/capture-draft';
 import { DocumentStoreProvider } from '@/features/documents/document-store';
 import { getCurrentUser } from '@/api/client';
 import { isOnboardingCompleted } from '@/features/onboarding/onboarding-state';
+import { loadWeddingDraft } from '@/features/onboarding/wedding-draft';
 import { SPLASH_MINIMUM_MS, SplashView } from '@/features/splash/splash-view';
 
 SplashScreen.preventAutoHideAsync();
@@ -19,12 +20,12 @@ SplashScreen.preventAutoHideAsync();
 /**
  * 첫 화면을 정한다.
  *
- * 순서가 정해져 있다: 온보딩 → 이름·예식일 등록 → 홈. 핸드오프 2번이 등록을
- * **스킵할 수 없는 화면**으로 정했으므로, 등록을 마치지 않은 사람은 로그인해도
- * 홈으로 가지 않는다.
+ * 순서가 정해져 있다: 온보딩 → 최소 온보딩(예식일·지역) → 홈.
  *
- * 로그인하지 않은 사람은 등록으로 보내지 않는다 — 게스트도 검색과 업체 상세를
- * 볼 수 있어야 하고(핸드오프 이용 등급), 그러려면 이름이 필요 없다.
+ * **로그인은 여기서 묻지 않는다.** 통합정책 v3.10 §2가 최초 실행에 로그인을
+ * 강제하지 않는다고 정했다. 그래서 예식일·지역을 아직 안 적은 사람은 로그인
+ * 여부와 상관없이 그 화면으로 보낸다 — 로그인한 사람은 서버가, 로그인 전인
+ * 사람은 기기에 적어둔 값이 그 판정을 준다.
  */
 type Entry = 'onboarding' | 'setup' | 'app';
 
@@ -51,12 +52,20 @@ export default function RootLayout() {
       }
 
       /*
-       * 로그인한 사람만 등록 상태를 물어볼 수 있다. 못 물어보면(비로그인·서버
-       * 없음) 앱으로 들여보낸다 — 첫 화면을 못 정해서 앱이 안 열리는 것이 가장 나쁘다.
+       * 로그인한 사람은 서버가 답한다. 못 물어보면(비로그인·서버 없음) 기기에
+       * 적어둔 값을 본다 — 지연 로그인이라 로그인 전에도 이 값이 있을 수 있다.
        */
       const me = await getCurrentUser().catch(() => null);
 
-      setEntry(me && !me.setupComplete ? 'setup' : 'app');
+      if (me) {
+        setEntry(me.setupComplete ? 'app' : 'setup');
+
+        return;
+      }
+
+      const draft = await loadWeddingDraft().catch(() => null);
+
+      setEntry(draft ? 'app' : 'setup');
     })();
   }, []);
 
@@ -98,7 +107,7 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="onboarding" />
-            {/* 스킵할 수 없는 화면이라 제스처로도 나갈 수 없게 한다. */}
+            {/* 예식일·지역 없이는 개인화가 없다. 제스처로도 나갈 수 없게 한다. */}
             <Stack.Screen name="setup" options={{ gestureEnabled: false }} />
             <Stack.Screen name="home-edit" options={{ presentation: 'modal' }} />
             <Stack.Screen name="login" options={{ presentation: 'modal' }} />
