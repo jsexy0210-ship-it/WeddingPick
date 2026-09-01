@@ -47,5 +47,18 @@ COMMENT ON COLUMN structured.vendors.data_published_at IS
 COMMENT ON COLUMN structured.vendors.updated_at IS
   '행이 마지막으로 바뀐 시각. 임포트·관리자 수정·폐업 전환 모두 갱신한다.';
 
+-- updated_at 자동 갱신. 앱 코드가 명시적으로 설정하지 않아도 UPDATE마다 갱신된다.
+CREATE OR REPLACE FUNCTION structured.touch_updated_at()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER vendors_touch_updated_at
+  BEFORE UPDATE ON structured.vendors
+  FOR EACH ROW EXECUTE FUNCTION structured.touch_updated_at();
+
 -- 영업 중인 업체만 빠르게 찾는다. 검색·비교·상세가 공통으로 쓴다.
 CREATE INDEX vendors_is_active_idx ON structured.vendors (category, region) WHERE is_active;

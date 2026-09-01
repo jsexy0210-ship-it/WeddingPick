@@ -88,7 +88,12 @@ CREATE TABLE structured.vendor_images (
 
   -- 저장소 키나 원본 URL 중 하나는 있어야 한다.
   CONSTRAINT image_has_location
-    CHECK (storage_key IS NOT NULL OR source_url IS NOT NULL)
+    CHECK (storage_key IS NOT NULL OR source_url IS NOT NULL),
+
+  -- 공공누리 제4유형(상업적 이용 금지)은 approved로 전환할 수 없다.
+  -- 수집·보관은 하되 서비스에 노출하지 않는다 — 통합정책 N-8.
+  CONSTRAINT kogl_type4_cannot_be_approved
+    CHECK (copyright_basis != 'kogl_type4' OR status != 'approved')
 );
 
 -- 업체별 approved 대표 이미지는 하나만.

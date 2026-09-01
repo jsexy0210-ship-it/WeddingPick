@@ -46,8 +46,10 @@ CREATE TABLE structured.vendor_corrections (
   -- 결론이 났으면 누가 언제 냈는지 반드시 남는다. 0032·0038에서 이미 쓴 패턴.
   CONSTRAINT correction_decided_by_and_at_together
     CHECK ((decided_by IS NULL) = (decided_at IS NULL)),
-  CONSTRAINT correction_pending_has_no_decision
-    CHECK ((status = 'pending') = (decided_at IS NULL))
+  -- approved·rejected는 decided_at이 있어야 하고, pending·superseded는 없어야 한다.
+  -- superseded는 자동 시스템 전환이라 관리자 결정(decided_at)이 없다.
+  CONSTRAINT correction_decided_set_iff_resolved
+    CHECK ((status IN ('approved', 'rejected')) = (decided_at IS NOT NULL))
 );
 
 -- 심사 대기 목록. 관리자가 처리 순서대로 읽는다.
@@ -65,8 +67,8 @@ COMMENT ON TABLE structured.vendor_corrections IS
 COMMENT ON COLUMN structured.vendor_corrections.current_value IS
   '신청 시점의 현재값 스냅샷. 관리자가 그사이 다른 값으로 이미 바꿨는지 판단할 때 쓴다.';
 
-COMMENT ON COLUMN structured.vendor_corrections.superseded IS
-  '같은 vendor·field에 더 최신 신청이 먼저 승인되면 이전 pending 신청을 superseded로 전환한다.';
+COMMENT ON COLUMN structured.vendor_corrections.status IS
+  'superseded: 같은 vendor·field에 더 최신 신청이 먼저 승인되면 기존 pending을 자동 전환한다. decided_at 없음.';
 
 -- ---------------------------------------------------------------------------
 -- 동일 필드 중복 신청 방지

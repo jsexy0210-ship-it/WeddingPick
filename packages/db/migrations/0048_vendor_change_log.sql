@@ -26,7 +26,11 @@ CREATE TABLE structured.vendor_change_log (
   cause         vendor_change_cause NOT NULL,
   changed_by    uuid        REFERENCES structured.users (id) ON DELETE SET NULL,
   import_run_id uuid,       -- 0049에서 import_runs FK 추가 예정
-  changed_at    timestamptz NOT NULL DEFAULT now()
+  changed_at    timestamptz NOT NULL DEFAULT now(),
+
+  -- 임포트 원인이면 어느 실행인지 반드시 연결한다.
+  CONSTRAINT change_log_import_requires_run_id
+    CHECK (cause != 'import' OR import_run_id IS NOT NULL)
 );
 
 -- 업체별 최신 이력 조회. 변경이 많은 업체도 빠르게 읽는다.
