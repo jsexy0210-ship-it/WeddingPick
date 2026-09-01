@@ -19,14 +19,14 @@ jobs:
 
       - name: 앱 생성 (이미 있으면 건너뜀)
         run: |
-          fly apps create weddingpickl || true
-          fly apps create weddingpick-api || true
+          flyctl apps create weddingpickl || true
+          flyctl apps create weddingpick-api || true
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
       - name: Staging (weddingpickl) — Secrets 설정
         run: |
-          fly secrets set \
+          flyctl secrets set \
             DATABASE_URL="$DATABASE_URL" \
             AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" \
             AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
@@ -43,7 +43,7 @@ jobs:
 
       - name: Production (weddingpick-api) — Secrets 설정
         run: |
-          fly secrets set \
+          flyctl secrets set \
             DATABASE_URL="$DATABASE_URL" \
             AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" \
             AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
