@@ -45,10 +45,10 @@ export function canListPlanner(source: SourceType | null): source is PlannerList
  * 따져볼 방법이 없다.
  */
 export const PLANNER_LISTING_BASIS: Record<PlannerListingSource, string> = {
-  public_data: '공개된 자료에 실려 있어 검색에 나옵니다',
-  vendor_official: '소속 업체나 본인이 밝힌 정보라 검색에 나옵니다',
+  public_data: '공개된 자료에 실려 있어 검색에 나와요',
+  vendor_official: '소속 업체나 본인이 밝힌 정보라 검색에 나와요',
 };
 
 /** 노출 중단 안내. 검색 화면과 상세 화면 모두에 둔다. */
 export const PLANNER_WITHDRAWAL_NOTICE =
-  '검색에 나오는 것을 원하지 않으시면 알려주세요. 내려드리고 다시 올리지 않습니다.';
+  '검색에 나오는 것을 원하지 않으시면 알려주세요. 내려드리고 다시 올리지 않아요.';

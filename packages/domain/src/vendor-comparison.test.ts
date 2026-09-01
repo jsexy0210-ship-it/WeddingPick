@@ -7,7 +7,7 @@ describe('업체 비교 단서', () => {
     // 표를 만들어놓고 이 말을 빼면 우리가 만든 표가 오해를 부추긴다. 사업계획서 2번.
     const caveats = comparisonCaveats([hall, { ...hall, region: '서울 강남구' }]);
 
-    expect(caveats.at(-1)).toContain('금액만으로는 비교하기 어렵습니다');
+    expect(caveats.at(-1)).toContain('금액만으로는 비교하기 어려워요');
   });
 
   it('같은 분류·같은 지역이면 그 얘기는 하지 않는다', () => {
@@ -33,7 +33,7 @@ describe('업체 비교 단서', () => {
   it('자료가 없는 것이 싸다는 뜻이 아님을 밝힌다', () => {
     const caveats = comparisonCaveats([hall, { ...hall, hasPriceData: false }]);
 
-    expect(caveats.some((note) => note.includes('싸거나 비싸다는 뜻이 아닙니다'))).toBe(true);
+    expect(caveats.some((note) => note.includes('싸거나 비싸다는 뜻이 아니에요'))).toBe(true);
   });
 
   it('모두 자료가 없으면 그렇게 말한다', () => {

@@ -23,7 +23,7 @@ export function canAddCandidate(input: { currentCount: number }): CandidateCheck
   if (input.currentCount >= MAX_CANDIDATES) {
     return {
       ok: false,
-      reason: `후보는 ${MAX_CANDIDATES}곳까지 담을 수 있습니다. 마음이 떠난 곳을 빼주세요.`,
+      reason: `후보는 ${MAX_CANDIDATES}곳까지 담을 수 있어요. 마음이 떠난 곳을 빼주세요.`,
     };
   }
 
