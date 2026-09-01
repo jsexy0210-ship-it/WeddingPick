@@ -55,7 +55,7 @@ export const TERMS = {
 } as const;
 
 /** `기준금액`이 무슨 값인지 묻는 사람에게. 정책이 문장까지 정했다. */
-export const BASE_AMOUNT_HELP = '확인된 실제 결제 데이터의 중앙값이에요.';
+export const BASE_AMOUNT_HELP = '확인된 실제 결제 정보의 중앙값이에요.';
 
 /**
  * 자료가 모자랄 때.
@@ -65,6 +65,8 @@ export const BASE_AMOUNT_HELP = '확인된 실제 결제 데이터의 중앙값�
  * 말이다. 상수 이름은 그대로 둔다(내부 이름이라 바꿀 이유가 없다).
  */
 export const NOT_ENOUGH_DATA = '아직 정보가 적어요';
+/** 아직 모으는 중. 두 화면이 같은 말을 각자 적고 있었다. */
+export const STILL_COLLECTING = '정보를 모으는 중이에요';
 export const CANNOT_COMPARE_YET = '아직 비교하기 어려워요';
 export const COMPARE_LATER = '조금 더 모이면 비교할 수 있어요';
 export const MANY_CONFIRMED = '많이 확인된 곳';

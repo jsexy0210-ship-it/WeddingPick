@@ -23,7 +23,7 @@ export default function SampleScreen() {
             샘플 화면입니다
           </ThemedText>
           <ThemedText type="small" style={styles.bannerText}>
-            실제 업체나 실제 계약 데이터가 아닙니다. 견적서를 올리면 이런 모습으로 정리됩니다.
+            실제 업체나 실제 계약 정보가 아닙니다. 견적서를 올리면 이런 모습으로 정리됩니다.
           </ThemedText>
         </ThemedView>
 

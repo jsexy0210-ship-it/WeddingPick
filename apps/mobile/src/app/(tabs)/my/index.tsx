@@ -301,7 +301,7 @@ export default function MyScreen() {
 
           <ThemedView style={styles.section}>
             <ThemedText type="t7" themeColor="textSecondary">
-              데이터
+              내 활동
             </ThemedText>
             <ActionButton
               label="내 제보 내역"

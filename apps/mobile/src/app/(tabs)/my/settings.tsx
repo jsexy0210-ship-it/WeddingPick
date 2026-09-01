@@ -176,7 +176,7 @@ export default function SettingsScreen() {
             />
           </Section>
 
-          <Section title="데이터">
+          <Section title="내 활동">
             <ActionButton label="내 제보 내역" onPress={() => router.push('/my/reports')} />
             {/*
               동의하지 않은 사람에게 철회 단추를 보이지 않는다. 누를 것이 없는

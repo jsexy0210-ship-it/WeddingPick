@@ -22,7 +22,7 @@ export const HOME_SECTION_LABEL: Record<HomeSection, string> = {
   tasks: '웨딩 스케줄',
   expenses: '지출 현황',
   candidates: '관심업체',
-  unlock: '결제 데이터 안내',
+  unlock: '확인된 정보 안내',
 };
 
 export type HomeLayout = {

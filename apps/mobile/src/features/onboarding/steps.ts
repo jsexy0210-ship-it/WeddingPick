@@ -55,7 +55,7 @@ export const ONBOARDING_STEPS: readonly OnboardingStep[] = [
       { label: '업체를 살펴봐요', value: '바로 시작' },
       { label: '준비를 정리해요', value: '로그인' },
       { label: '배우자와 함께해요', value: '초대 코드' },
-      { label: '결제 데이터를 확인해요', value: '결제내역 1건' },
+      { label: '확인된 정보를 봐요', value: '결제내역 1건' },
     ],
     caption: '진행 상황은 MY에서 확인할 수 있어요',
   },
