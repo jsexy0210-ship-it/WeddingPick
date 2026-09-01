@@ -98,13 +98,21 @@ jobs:
 
       - run: npm ci
 
+      - name: ASC API Key 설정
+        run: |
+          echo "$EAS_ASC_KEY_P8_BASE64" | base64 -d > /tmp/AuthKey_NPCMZ655GG.p8
+          chmod 600 /tmp/AuthKey_NPCMZ655GG.p8
+        env:
+          EAS_ASC_KEY_P8_BASE64: ${{ secrets.EAS_ASC_KEY_P8_BASE64 }}
+
       - name: Build
         working-directory: apps/mobile
         run: eas build --platform ios --profile production --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-          # EXPO_APPLE_ID는 여기서 넘기지 않는다.
-          # expo.dev에 등록된 ASC API Key가 인증서 생성을 전담한다.
+          EXPO_APPLE_API_KEY_ID: NPCMZ655GG
+          EXPO_APPLE_API_KEY_ISSUER_ID: a7e4029d-6abf-4811-80a7-9cc47c1d1e21
+          EXPO_APPLE_API_KEY_PATH: /tmp/AuthKey_NPCMZ655GG.p8
 
   submit-ios:
     name: iOS → TestFlight 제출
