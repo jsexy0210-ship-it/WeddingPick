@@ -1,5 +1,6 @@
-import type { MyRewardsResponse } from '@weddingpick/api-contract';
+import type { MyMonthlyDrawResponse, MyRewardsResponse } from '@weddingpick/api-contract';
 import {
+  MONTHLY_DRAW_NOTICE,
   PROMOTION_NOTICE,
   REFERRAL_NOTICE,
   REWARDS,
@@ -21,7 +22,7 @@ import {
   ThemedView,
   useTheme,
 } from '@weddingpick/ui';
-import { getMyRewards, redeemReferral, submitPromotion } from '@/api/client';
+import { getMyMonthlyDraw, getMyRewards, redeemReferral, submitPromotion } from '@/api/client';
 
 const won = (amount: number): string => `${amount.toLocaleString('ko-KR')}원`;
 
@@ -36,6 +37,7 @@ const won = (amount: number): string => `${amount.toLocaleString('ko-KR')}원`;
 export default function MyRewardsScreen() {
   const theme = useTheme();
   const [data, setData] = useState<MyRewardsResponse | null>(null);
+  const [draw, setDraw] = useState<MyMonthlyDrawResponse | null>(null);
   const [code, setCode] = useState('');
   const [url, setUrl] = useState('');
   const [message, setMessage] = useState<string | null>(null);
@@ -45,6 +47,9 @@ export default function MyRewardsScreen() {
     void getMyRewards()
       .then(setData)
       .catch(() => setData(null));
+    void getMyMonthlyDraw()
+      .then(setDraw)
+      .catch(() => setDraw(null));
   }, []);
 
   useEffect(load, [load]);
@@ -114,6 +119,39 @@ export default function MyRewardsScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content}>
+          {/* ── 웨딩지원금 ── */}
+          <ThemedText type="t2">웨딩지원금</ThemedText>
+
+          <ThemedView style={[styles.notice, { backgroundColor: theme.tintSubtle }]}>
+            <ThemedText type="t6" themeColor="tint">
+              {MONTHLY_DRAW_NOTICE}
+            </ThemedText>
+          </ThemedView>
+
+          <ThemedView type="backgroundElement" style={styles.card}>
+            <ThemedView type="backgroundElement" style={styles.cardHead}>
+              <ThemedText type="t5">
+                {draw ? `${draw.drawMonth} 응모` : '이번 달 응모'}
+              </ThemedText>
+              {draw ? (
+                <ThemedText
+                  type="badge"
+                  themeColor={draw.status === 'won' ? 'positive' : 'textAssistive'}>
+                  {draw.statusLabel}
+                </ThemedText>
+              ) : null}
+            </ThemedView>
+            <ThemedText type="t7" themeColor="textSecondary">
+              {draw ? draw.statusNote : '로딩 중'}
+            </ThemedText>
+            {draw ? (
+              <ThemedText type="t7" themeColor="textAssistive">
+                {`매월 ${draw.winnersPerMonth}명 추첨 · 1인 ${draw.amountKrw.toLocaleString('ko-KR')}원`}
+              </ThemedText>
+            ) : null}
+          </ThemedView>
+
+          {/* ── 친구초대 ── */}
           <ThemedText type="t2">친구초대</ThemedText>
 
           {/* 조건이 먼저다. 금액부터 보이면 조건이 안 읽힌다. */}
