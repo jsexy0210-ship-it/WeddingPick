@@ -25,7 +25,7 @@ export default function VerifyScreen() {
           <ThemedView style={styles.header}>
             <ThemedText type="subtitle">자료 확인</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              실제 견적서·계약서를 확인받은 자료만 가격 비교의 기준이 됩니다. 확인 단계가
+              Pick 인증을 마친 자료만 가격 비교의 기준이 됩니다. 확인 단계가
               올라갈수록 다른 분들의 비교에도 더 큰 몫으로 반영됩니다.
             </ThemedText>
           </ThemedView>

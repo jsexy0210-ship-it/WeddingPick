@@ -66,7 +66,7 @@ describe('비교 축', () => {
 
   it('축 이름과 안내에 금지어가 없다', () => {
     for (const axis of COMPARISON_AXES) {
-      const text = `${axis.label} ${axis.note ?? ''}`;
+      const text = `${axis.label} ${'note' in axis ? axis.note : ''}`;
 
       expect(findPaymentWords(text)).toEqual([]);
       expect(text).not.toMatch(/견적|계약서/);

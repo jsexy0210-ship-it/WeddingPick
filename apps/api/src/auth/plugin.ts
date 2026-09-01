@@ -1,32 +1,80 @@
+import { NOT_ACTIVATED_NOTICE } from '@weddingpick/domain';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import type { AppContext } from '../context';
-import { unauthenticated } from '../errors';
+import { ApiError, unauthenticated } from '../errors';
 import { resolveSession } from './sessions';
 
 declare module 'fastify' {
   interface FastifyRequest {
     userId?: string;
+    /** 가입이 끝난 계정인가. `requireSignup`을 단 라우트에서만 false일 수 있다. */
+    userActivated?: boolean;
   }
 }
 
-/** Authorization 헤더의 세션 토큰을 사용자로 바꾼다. 없거나 만료면 401. */
+/**
+ * 가입이 끝나지 않았다.
+ *
+ * 401이 아니라 403이다. 토큰은 멀쩡하고 다시 로그인해도 달라지지 않는다 —
+ * 앱이 401을 보면 로그인 화면으로 돌려보내고, 그러면 사용자는 로그인과 동의
+ * 화면 사이를 오간다.
+ */
+function notActivated(): ApiError {
+  return new ApiError('forbidden', NOT_ACTIVATED_NOTICE);
+}
+
+/**
+ * Authorization 헤더의 세션 토큰을 사용자로 바꾼다. 없거나 만료면 401.
+ *
+ * **가입이 끝나지 않은 계정은 여기서 막힌다.** 통합정책 v3.13 §N-2 —
+ * 소셜 로그인 성공만으로 서비스를 쓰게 하지 않는다. 관문을 라우트마다 두지 않고
+ * 여기 하나에 둔다.
+ */
 export function requireUser(context: AppContext) {
   return async function (request: FastifyRequest, _reply: FastifyReply): Promise<void> {
-    const header = request.headers.authorization;
+    const user = await readSession(context, request);
 
-    if (!header?.startsWith('Bearer ')) {
+    if (!user) {
       throw unauthenticated();
     }
 
-    const userId = await resolveSession(context.pool, header.slice('Bearer '.length));
-
-    if (!userId) {
-      throw unauthenticated();
+    if (!user.activated) {
+      throw notActivated();
     }
 
-    request.userId = userId;
+    request.userId = user.userId;
+    request.userActivated = true;
   };
+}
+
+/**
+ * 로그인은 했지만 아직 가입이 끝나지 않았을 수도 있는 자리.
+ *
+ * **가입 화면에만 단다.** 이걸 다른 곳에 달면 §N-2가 막으려던 그 상태 —
+ * 동의를 건너뛴 계정이 서비스를 쓰는 상태 — 가 그대로 생긴다.
+ */
+export function requireSignup(context: AppContext) {
+  return async function (request: FastifyRequest, _reply: FastifyReply): Promise<void> {
+    const user = await readSession(context, request);
+
+    if (!user) {
+      throw unauthenticated();
+    }
+
+    request.userId = user.userId;
+    request.userActivated = user.activated;
+  };
+}
+
+async function readSession(context: AppContext, request: FastifyRequest) {
+  const header = request.headers.authorization;
+
+  if (!header?.startsWith('Bearer ')) {
+    return null;
+  }
+
+  return await resolveSession(context.pool, header.slice('Bearer '.length));
 }
 
 /**
@@ -48,13 +96,23 @@ export function optionalUser(context: AppContext) {
       return;
     }
 
-    const userId = await resolveSession(context.pool, header.slice('Bearer '.length));
+    const user = await resolveSession(context.pool, header.slice('Bearer '.length));
 
-    if (!userId) {
+    if (!user) {
       throw unauthenticated();
     }
 
-    request.userId = userId;
+    /*
+     * 대기 계정은 비로그인처럼 둔다. 여기는 로그인 없이도 보는 화면(Level 1)이라
+     * 막을 것이 없고, 그렇다고 가입이 끝난 사람으로 세면 대기 계정이 개인화된
+     * 화면을 받는다.
+     */
+    if (!user.activated) {
+      return;
+    }
+
+    request.userId = user.userId;
+    request.userActivated = true;
   };
 }
 

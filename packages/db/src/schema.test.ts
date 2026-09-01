@@ -1221,6 +1221,169 @@ describeWithDb('DB 스키마', () => {
     });
   });
 
+  describe('가입 연령과 약관 동의', () => {
+    async function aPendingUser() {
+      const { rows } = await client.query<{ id: string }>(
+        'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
+      );
+
+      return rows[0]!.id;
+    }
+
+    async function grant(userId: string, item: string, required: boolean) {
+      await client.query(
+        `INSERT INTO structured.user_consents (user_id, item, terms_version, is_required)
+         VALUES ($1, $2, 'draft-2026-09-01', $3)`,
+        [userId, item, required]
+      );
+    }
+
+    it('로그인만 한 계정은 활성 사용자에 없다', async () => {
+      /*
+       * v3.13 §N-2. 소셜 로그인 성공만으로 가입이 끝나지 않는다. 뷰가 그 사실을
+       * 들고 있어야 읽는 쪽마다 다시 판단하지 않는다.
+       */
+      const userId = await aPendingUser();
+
+      const { rows } = await client.query('SELECT 1 FROM structured.active_users WHERE id = $1', [
+        userId,
+      ]);
+
+      expect(rows).toHaveLength(0);
+    });
+
+    it('연령을 통과하지 않으면 활성화할 수 없다', async () => {
+      const userId = await aPendingUser();
+
+      await expect(
+        client.query('UPDATE structured.users SET activated_at = now() WHERE id = $1', [userId])
+      ).rejects.toThrow();
+    });
+
+    it('막힌 계정은 활성화할 수 없다', async () => {
+      const userId = await aPendingUser();
+
+      await client.query(
+        "UPDATE structured.users SET age_gate = 'blocked', age_checked_at = now() WHERE id = $1",
+        [userId]
+      );
+
+      await expect(
+        client.query('UPDATE structured.users SET activated_at = now() WHERE id = $1', [userId])
+      ).rejects.toThrow();
+    });
+
+    it('확인하지 않았는데 확인한 때만 남길 수 없다', async () => {
+      const userId = await aPendingUser();
+
+      await expect(
+        client.query('UPDATE structured.users SET age_checked_at = now() WHERE id = $1', [userId])
+      ).rejects.toThrow();
+    });
+
+    it('연령을 통과하고 나면 활성화된다', async () => {
+      const userId = await aPendingUser();
+
+      await client.query(
+        `UPDATE structured.users
+         SET age_gate = 'passed', age_checked_at = now(), activated_at = now()
+         WHERE id = $1`,
+        [userId]
+      );
+
+      const { rows } = await client.query('SELECT 1 FROM structured.active_users WHERE id = $1', [
+        userId,
+      ]);
+
+      expect(rows).toHaveLength(1);
+    });
+
+    it('탈퇴하면 활성 사용자에서 빠진다', async () => {
+      const userId = await aPendingUser();
+
+      await client.query(
+        `UPDATE structured.users
+         SET age_gate = 'passed', age_checked_at = now(), activated_at = now(), deleted_at = now()
+         WHERE id = $1`,
+        [userId]
+      );
+
+      const { rows } = await client.query('SELECT 1 FROM structured.active_users WHERE id = $1', [
+        userId,
+      ]);
+
+      expect(rows).toHaveLength(0);
+    });
+
+    it('같은 항목·판에 두 번 동의할 수 없다', async () => {
+      const userId = await aPendingUser();
+
+      await grant(userId, 'terms', true);
+
+      await expect(grant(userId, 'terms', true)).rejects.toThrow();
+    });
+
+    it('철회한 뒤에는 다시 동의할 수 있다', async () => {
+      const userId = await aPendingUser();
+
+      await grant(userId, 'marketing', false);
+      await client.query(
+        'UPDATE structured.user_consents SET withdrawn_at = now() WHERE user_id = $1',
+        [userId]
+      );
+
+      await expect(grant(userId, 'marketing', false)).resolves.toBeUndefined();
+    });
+
+    it('철회한 동의는 살아 있는 동의에서 빠진다', async () => {
+      const userId = await aPendingUser();
+
+      await grant(userId, 'privacy', true);
+      await client.query(
+        'UPDATE structured.user_consents SET withdrawn_at = now() WHERE user_id = $1',
+        [userId]
+      );
+
+      const { rows } = await client.query(
+        'SELECT 1 FROM structured.active_consents WHERE user_id = $1',
+        [userId]
+      );
+
+      expect(rows).toHaveLength(0);
+    });
+
+    it('동의보다 먼저 철회할 수 없다', async () => {
+      const userId = await aPendingUser();
+
+      await expect(
+        client.query(
+          `INSERT INTO structured.user_consents
+             (user_id, item, terms_version, is_required, granted_at, withdrawn_at)
+           VALUES ($1, 'terms', 'draft-2026-09-01', true, now(), now() - interval '1 day')`,
+          [userId]
+        )
+      ).rejects.toThrow();
+    });
+
+    it('그때 필수였는지가 행에 남는다', async () => {
+      /*
+       * 지금 무엇이 필수인지는 코드가 안다. 받던 그때 필수였는지는 그때 적어두지
+       * 않으면 알 수 없다 — 선택이던 항목을 나중에 필수로 바꾸면 과거 동의의
+       * 성격이 소급해 바뀐다.
+       */
+      const userId = await aPendingUser();
+
+      await grant(userId, 'marketing', false);
+
+      const { rows } = await client.query<{ is_required: boolean }>(
+        'SELECT is_required FROM structured.active_consents WHERE user_id = $1',
+        [userId]
+      );
+
+      expect(rows[0]!.is_required).toBe(false);
+    });
+  });
+
   describe('마이그레이션', () => {
     it('두 번 돌려도 같은 결과가 된다', async () => {
       await expect(migrate(client)).resolves.toEqual([]);

@@ -1,4 +1,5 @@
 import { resetSchema } from '@weddingpick/db';
+import { REQUIRED_CONSENTS } from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
 import { Client, Pool } from 'pg';
 
@@ -86,10 +87,19 @@ export async function resetDatabase(): Promise<void> {
   }
 }
 
-/** 로그인해서 Authorization 헤더를 만든다. */
+/**
+ * 로그인해서 Authorization 헤더를 만든다.
+ *
+ * **가입까지 마친다.** 통합정책 v3.13 §N-2가 소셜 로그인 성공만으로 가입을
+ * 끝내지 못하게 했으므로, 실전에서 로그인 뒤에 곧바로 오는 것이 동의 화면이다.
+ * 여기서 같이 해주지 않으면 모든 시험이 대기 계정으로 돌아 실제와 달라진다.
+ *
+ * 대기 상태 자체를 보는 시험은 `completeSignup: false`로 부른다.
+ */
 export async function signInAs(
   test: TestApp,
-  subject = 'apple-user-1'
+  subject = 'apple-user-1',
+  options: { completeSignup?: boolean } = {}
 ): Promise<{ token: string; userId: string; headers: Record<string, string> }> {
   test.context.providers.apple = fakeProvider({ provider: 'apple', subject });
 
@@ -100,12 +110,18 @@ export async function signInAs(
   });
 
   const body = response.json<{ token: string; userId: string }>();
+  const headers = { authorization: `Bearer ${body.token}` };
 
-  return {
-    token: body.token,
-    userId: body.userId,
-    headers: { authorization: `Bearer ${body.token}` },
-  };
+  if (options.completeSignup !== false) {
+    await test.app.inject({
+      method: 'POST',
+      url: '/v1/me/signup',
+      headers,
+      payload: { birthDate: '1995-03-15', consents: REQUIRED_CONSENTS },
+    });
+  }
+
+  return { token: body.token, userId: body.userId, headers };
 }
 
 /** 로그인한 사용자의 웨딩 하나. */

@@ -92,6 +92,7 @@ import {
   createVerificationResponseSchema,
   verificationRequestSchema,
 } from './verification';
+import { completeSignupRequestSchema, signupStateSchema } from './signup';
 import {
   acceptInviteRequestSchema,
   completeSetupRequestSchema,
@@ -143,6 +144,29 @@ export const ENDPOINTS = {
     method: 'GET',
     path: '/v1/me',
     response: currentUserSchema,
+  },
+
+  /**
+   * 가입 상태. v3.13 §N.
+   *
+   * 로그인 직후 앱이 이걸 먼저 본다. `activated`가 false면 동의 화면부터다 —
+   * 소셜 로그인 성공만으로는 가입이 끝나지 않는다(§N-2).
+   *
+   * 대기 계정도 부를 수 있는 유일한 `/v1/me` 경로다. 다른 경로는 활성화 전에
+   * 막히는데, 이것까지 막으면 동의를 하러 갈 수가 없다.
+   */
+  getSignupState: {
+    method: 'GET',
+    path: '/v1/me/signup',
+    response: signupStateSchema,
+  },
+
+  /** 연령 확인과 필수 동의. 통과하면 계정이 살아난다. */
+  completeSignup: {
+    method: 'POST',
+    path: '/v1/me/signup',
+    body: completeSignupRequestSchema,
+    response: signupStateSchema,
   },
 
   /**

@@ -268,7 +268,7 @@ export default function RegisterPaymentProofScreen() {
           <ThemedView style={styles.section}>
             <ThemedText type="subtitle">Pick 인증 자료를 알려주세요</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              결제문자를 그대로 붙여넣으시면 읽어서 채워드립니다. 사진을 올리지 않으니
+              카드 승인 문자를 그대로 붙여넣으시면 읽어서 채워드립니다. 사진을 올리지 않으니
               저희 서버에 이미지가 남지 않습니다.
             </ThemedText>
           </ThemedView>
@@ -295,7 +295,7 @@ export default function RegisterPaymentProofScreen() {
               올린 사진은 24시간 뒤에 지워지고, 붙여넣기는 애초에 올라가지 않는다.
             */}
             <ThemedText type="small" themeColor="textSecondary">
-              결제문자가 아니라 종이 영수증이라면 사진으로 올려주세요. 올린 사진은
+              승인 문자가 아니라 종이 영수증이라면 사진으로 올려주세요. 올린 사진은
               24시간 안에 지워집니다.
             </ThemedText>
             <ActionButton

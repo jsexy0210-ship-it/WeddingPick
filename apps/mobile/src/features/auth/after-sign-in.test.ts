@@ -11,11 +11,13 @@ import { loadWeddingDraft, saveWeddingDraft } from '@/features/onboarding/weddin
 const mockCompleteSetup = jest.fn();
 const mockAddCandidate = jest.fn();
 const mockEnsureWedding = jest.fn();
+const mockGetSignupState = jest.fn();
 
 jest.mock('@/api/client', () => ({
   completeSetup: (...args: unknown[]) => mockCompleteSetup(...args),
   addCandidate: (...args: unknown[]) => mockAddCandidate(...args),
   ensureWedding: (...args: unknown[]) => mockEnsureWedding(...args),
+  getSignupState: (...args: unknown[]) => mockGetSignupState(...args),
 }));
 
 const DRAFT = { weddingDate: '2027-05-15', region: '서울', budgetAmount: 50_000_000 };
@@ -25,6 +27,8 @@ beforeEach(async () => {
   mockCompleteSetup.mockReset().mockResolvedValue({});
   mockAddCandidate.mockReset().mockResolvedValue({ candidateId: 'c1' });
   mockEnsureWedding.mockReset().mockResolvedValue('w1');
+  // 가입이 끝난 계정이 보통이다. 대기 상태는 그것만 보는 시험에서 따로 정한다.
+  mockGetSignupState.mockReset().mockResolvedValue({ activated: true });
 });
 
 describe('기기에 적어둔 최소 온보딩', () => {
@@ -110,8 +114,42 @@ describe('로그인 직후', () => {
   it('할 일이 없으면 아무것도 부르지 않는다', async () => {
     const result = await completeAfterSignIn();
 
-    expect(result).toEqual({ savedWedding: false, weddingError: null, completed: null });
+    expect(result).toEqual({
+      needsSignup: false,
+      savedWedding: false,
+      weddingError: null,
+      completed: null,
+    });
     expect(mockCompleteSetup).not.toHaveBeenCalled();
     expect(mockAddCandidate).not.toHaveBeenCalled();
+  });
+});
+
+describe('가입이 끝나지 않은 계정', () => {
+  it('아무것도 올리지 않고 동의 화면으로 보낸다', async () => {
+    /*
+     * 통합정책 v3.13 §N-2. 대기 계정은 서버가 다른 경로를 전부 막는다. 여기서
+     * 올리려 하면 실패하고, 실패하면 적어둔 예식일이 못 올린 값으로 보인다.
+     */
+    mockGetSignupState.mockResolvedValue({ activated: false });
+    await saveWeddingDraft(DRAFT);
+    await savePendingAction({ kind: 'pick', vendorId: 'v1', vendorName: '아펠가모 공덕' });
+
+    await expect(completeAfterSignIn()).resolves.toMatchObject({ needsSignup: true });
+
+    expect(mockCompleteSetup).not.toHaveBeenCalled();
+    expect(mockAddCandidate).not.toHaveBeenCalled();
+  });
+
+  it('적어둔 값과 멈춰둔 Pick을 그대로 남겨둔다', async () => {
+    // 동의를 마치고 다시 부르면 그때 올라간다. 여기서 지우면 영영 사라진다.
+    mockGetSignupState.mockResolvedValue({ activated: false });
+    await saveWeddingDraft(DRAFT);
+    await savePendingAction({ kind: 'pick', vendorId: 'v1', vendorName: '아펠가모 공덕' });
+
+    await completeAfterSignIn();
+
+    await expect(loadWeddingDraft()).resolves.toEqual(DRAFT);
+    await expect(takePendingAction()).resolves.toMatchObject({ vendorId: 'v1' });
   });
 });

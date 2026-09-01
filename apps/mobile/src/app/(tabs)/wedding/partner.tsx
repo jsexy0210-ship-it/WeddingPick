@@ -172,7 +172,7 @@ export default function PartnerScreen() {
           <ThemedView style={styles.section}>
             <ThemedText type="subtitle">배우자와 함께 보기</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              견적과 비교 결과를 함께 보며 결정할 수 있습니다. 연결은 양쪽이 각각
+              자료와 비교 결과를 함께 보며 결정할 수 있습니다. 연결은 양쪽이 각각
               동의해야 이뤄집니다.
             </ThemedText>
           </ThemedView>
@@ -182,7 +182,7 @@ export default function PartnerScreen() {
               <ThemedView type="backgroundElement" style={styles.card}>
                 <ThemedText type="smallBold">연결되어 있습니다</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
-                  두 분이 같은 견적과 비교 결과를 보고 있습니다.
+                  두 분이 같은 자료와 비교 결과를 보고 있습니다.
                 </ThemedText>
               </ThemedView>
 

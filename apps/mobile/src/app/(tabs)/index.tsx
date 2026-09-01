@@ -211,7 +211,7 @@ export default function HomeScreen() {
     expenses: (
       <ThemedView key="expenses" style={styles.section}>
         <ThemedText type="t7" themeColor="textSecondary">
-          지금까지 결제한 금액
+          지금까지 쓴 금액
         </ThemedText>
         <ThemedText type="amount" numeric>
           {won(data.expenses?.paidTotal ?? 0)}
@@ -258,7 +258,7 @@ export default function HomeScreen() {
         <ThemedView style={styles.cardRow}>
           <ThemedView type="backgroundElement" style={[styles.card, styles.grow]}>
             <ThemedText type="t7" themeColor="textSecondary">
-              다음 결제
+              앞으로 낼 금액
             </ThemedText>
             <ThemedText type="t5" numeric>
               {/* 없으면 0원이 아니라 —다. 0원은 "낼 것이 없다"로 읽힌다. */}
@@ -310,7 +310,7 @@ export default function HomeScreen() {
     unlock: (
       <ThemedView key="unlock" style={[styles.unlock, { backgroundColor: theme.tint }]}>
         <ThemedText type="t4" style={styles.onTint}>
-          결제 금액, 얼마나 차이 날까요?
+          같은 조건인데 얼마나 차이 날까요?
         </ThemedText>
         <ThemedText type="t7" style={styles.onTint}>
           Pick 인증을 마치시면 조건이 비슷한 사례를 함께 보실 수 있어요

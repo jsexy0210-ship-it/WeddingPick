@@ -88,7 +88,19 @@ function userFacingLines(text: string, word: RegExp): { line: string; at: number
     const inString = new RegExp(`['"\`][^'"\`]*(${word.source})`).test(line);
     const inJsxText = new RegExp(`>[^<]*(${word.source})[^<]*<`).test(line);
 
-    if (inString || inJsxText) found.push({ line, at: index + 1 });
+    /*
+     * 여러 줄로 흐르는 JSX 글.
+     *
+     * `<ThemedText>` 안의 문장이 길면 포매터가 줄을 나누고, 가운데 줄에는 태그도
+     * 따옴표도 남지 않는다. `>...<`만 보고 있으면 그 줄이 통째로 빠진다 —
+     * 실제로 `계약서가 아니라 …` 한 줄이 이 구멍으로 빠져나가 있었다.
+     *
+     * 코드 기호가 하나도 없는 줄은 화면에 그대로 나가는 글로 본다. 정규식 문자열
+     * (`/(승인|결제|…)/g`)이 걸리지 않도록 괄호·슬래시·파이프도 코드 기호로 센다.
+     */
+    const bareText = !/[<>{}=/()[\]|;:`'"\\]/.test(trimmed) && new RegExp(word.source).test(trimmed);
+
+    if (inString || inJsxText || bareText) found.push({ line, at: index + 1 });
   });
 
   return found;

@@ -32,7 +32,7 @@ export default function GuideScreen() {
           <ThemedView style={styles.section}>
             <ThemedText type="subtitle">분석 안내</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              웨딩픽이 견적서를 어떻게 읽고, 무엇을 보장하지 않는지 알려드립니다.
+              웨딩픽이 올려주신 자료를 어떻게 읽고, 무엇을 보장하지 않는지 알려드립니다.
             </ThemedText>
 
             {ANALYSIS_FACTS.map((fact) => (

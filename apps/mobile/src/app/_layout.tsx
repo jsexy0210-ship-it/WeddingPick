@@ -10,7 +10,7 @@ import { useColorScheme } from 'react-native';
 
 import { CaptureDraftProvider } from '@/features/capture/capture-draft';
 import { DocumentStoreProvider } from '@/features/documents/document-store';
-import { getCurrentUser } from '@/api/client';
+import { getCurrentUser, getSignupState } from '@/api/client';
 import { isOnboardingCompleted } from '@/features/onboarding/onboarding-state';
 import { loadWeddingDraft } from '@/features/onboarding/wedding-draft';
 import { SPLASH_MINIMUM_MS, SplashView } from '@/features/splash/splash-view';
@@ -20,14 +20,24 @@ SplashScreen.preventAutoHideAsync();
 /**
  * 첫 화면을 정한다.
  *
- * 순서가 정해져 있다: 온보딩 → 최소 온보딩(예식일·지역) → 홈.
+ * 순서가 정해져 있다: 온보딩 → (로그인했다면) 가입 마무리 → 최소 온보딩 → 홈.
  *
  * **로그인은 여기서 묻지 않는다.** 통합정책 v3.10 §2가 최초 실행에 로그인을
  * 강제하지 않는다고 정했다. 그래서 예식일·지역을 아직 안 적은 사람은 로그인
  * 여부와 상관없이 그 화면으로 보낸다 — 로그인한 사람은 서버가, 로그인 전인
  * 사람은 기기에 적어둔 값이 그 판정을 준다.
+ *
+ * 다만 **로그인은 했는데 가입이 안 끝난 사람**은 다르다(v3.13 §N-2). 서버가
+ * 그 계정의 다른 경로를 전부 막고 있어서, 그대로 두면 어느 화면을 열어도
+ * 막혔다는 말만 듣는다. 마칠 수 있는 화면으로 보낸다.
  */
-type Entry = 'onboarding' | 'setup' | 'app';
+type Entry = 'onboarding' | 'signup' | 'setup' | 'app';
+
+const ENTRY_ROUTE = {
+  onboarding: '/onboarding',
+  signup: '/signup',
+  setup: '/setup',
+} as const;
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -63,6 +73,19 @@ export default function RootLayout() {
         return;
       }
 
+      /*
+       * 못 물어본 이유가 둘이다 — 토큰이 없거나(비로그인·서버 없음), 토큰은
+       * 있는데 가입이 안 끝났거나. 앞의 경우 이 요청도 실패해 null이 되고,
+       * 뒤의 경우에만 대기 상태가 돌아온다.
+       */
+      const signup = await getSignupState().catch(() => null);
+
+      if (signup && !signup.activated) {
+        setEntry('signup');
+
+        return;
+      }
+
       const draft = await loadWeddingDraft().catch(() => null);
 
       setEntry(draft ? 'app' : 'setup');
@@ -88,7 +111,7 @@ export default function RootLayout() {
 
     if (entry !== 'app' && !redirected.current) {
       redirected.current = true;
-      router.replace(entry === 'onboarding' ? '/onboarding' : '/setup');
+      router.replace(ENTRY_ROUTE[entry]);
     }
   }, [entry, minimumShown]);
 
@@ -107,6 +130,11 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="onboarding" />
+            {/*
+              가입이 끝나기 전에는 나갈 곳이 없다. 제스처로 빠져나가면 서버가
+              전부 막아둔 계정으로 앱을 헤매게 된다(v3.13 §N-2).
+            */}
+            <Stack.Screen name="signup" options={{ gestureEnabled: false }} />
             {/* 예식일·지역 없이는 개인화가 없다. 제스처로도 나갈 수 없게 한다. */}
             <Stack.Screen name="setup" options={{ gestureEnabled: false }} />
             <Stack.Screen name="home-edit" options={{ presentation: 'modal' }} />

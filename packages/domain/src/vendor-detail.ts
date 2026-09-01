@@ -24,7 +24,7 @@ export const VENDOR_DETAIL_SECTIONS = [
     key: 'key_conditions',
     label: '핵심 조건',
     ready: true,
-    /* v3.12 §3이 이 자리에 들어갈 항목을 열거했다. 목록은 `vendor-fact.ts`에 있다. */
+    /* v3.12 §4가 이 자리에 들어갈 항목을 열거했다. 목록은 `vendor-fact.ts`에 있다. */
     note: '주차·식대·보증인원 같은 항목은 vendor-fact.ts가 목록을 갖는다',
   },
   {

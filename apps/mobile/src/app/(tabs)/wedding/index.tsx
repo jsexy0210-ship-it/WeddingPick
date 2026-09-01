@@ -59,7 +59,7 @@ export default function WeddingScreen() {
           {!ready ? null : sets.length === 0 ? (
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="small" themeColor="textSecondary">
-                저장된 문서가 없습니다. 견적서를 찍어두면 여기에 쌓입니다.
+                저장된 문서가 없습니다. 자료를 찍어두면 여기에 쌓입니다.
               </ThemedText>
               <ActionButton
                 variant="primary"

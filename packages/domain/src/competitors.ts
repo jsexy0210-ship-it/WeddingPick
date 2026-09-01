@@ -62,7 +62,7 @@ export const COMPETITOR_RESPONSE_RULE: Record<CompetitorResponse, string> = {
 /**
  * 이 기능이 우리 방향인가.
  *
- * v3.12 §5가 서비스 정체성을 못박았다 — 웨딩픽은 사용자가 **직접 고르도록 돕는**
+ * v3.12 §7이 서비스 정체성을 못박았다 — 웨딩픽은 사용자가 **직접 고르도록 돕는**
  * 서비스지 대신 상담하고 예약해주는 서비스가 아니다.
  */
 export const OUT_OF_DIRECTION = ['상담', '예약', '판매', '패키지 중개'] as const;

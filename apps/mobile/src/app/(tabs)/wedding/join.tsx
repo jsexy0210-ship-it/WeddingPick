@@ -78,7 +78,7 @@ export default function JoinScreen() {
       <Frame>
         <ThemedText type="subtitle">연결했습니다</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
-          이제 두 분이 같은 견적과 비교 결과를 봅니다.
+          이제 두 분이 같은 자료와 비교 결과를 봅니다.
         </ThemedText>
         <ActionButton variant="primary" label="내 웨딩 보기" onPress={() => router.push('/wedding')} />
       </Frame>

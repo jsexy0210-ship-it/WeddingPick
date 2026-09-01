@@ -75,14 +75,29 @@ export async function signIn(
   }
 }
 
-/** 살아 있는 세션이면 사용자 id를, 아니면 null을 준다. */
-export async function resolveSession(pool: Pool, token: string): Promise<string | null> {
-  const { rows } = await pool.query<{ user_id: string }>(
-    'SELECT user_id FROM identity.active_sessions WHERE token_hash = $1',
+/**
+ * 세션이 가리키는 사람.
+ *
+ * `activated`를 함께 준다. 통합정책 v3.13 §N-2가 **소셜 로그인 성공만으로 가입을
+ * 끝내지 말라**고 정했고, 그러면 "세션은 있는데 가입은 안 끝난" 상태가 실제로
+ * 생긴다. 그 상태를 여기서 한 번 읽어두지 않으면 라우트마다 다시 물어보게 되고,
+ * 물어보는 것을 잊은 라우트가 바로 정책이 막으려던 구멍이 된다.
+ */
+export type SessionUser = { userId: string; activated: boolean };
+
+export async function resolveSession(pool: Pool, token: string): Promise<SessionUser | null> {
+  const { rows } = await pool.query<{ user_id: string; activated: boolean }>(
+    `SELECT s.user_id,
+            (a.id IS NOT NULL) AS activated
+     FROM identity.active_sessions s
+     LEFT JOIN structured.active_users a ON a.id = s.user_id
+     WHERE s.token_hash = $1`,
     [hashToken(token)]
   );
 
-  return rows[0]?.user_id ?? null;
+  const row = rows[0];
+
+  return row ? { userId: row.user_id, activated: row.activated } : null;
 }
 
 export async function signOut(pool: Pool, token: string): Promise<void> {

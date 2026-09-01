@@ -18,6 +18,7 @@ import { registerRebuttalRoutes } from './routes/rebuttals';
 import { registerRewardRoutes } from './routes/rewards';
 import { registerVendorClaimRoutes } from './routes/vendor-claims';
 import { registerSettingsRoutes } from './routes/settings';
+import { registerSignupRoutes } from './routes/signup';
 import { registerPlannerRoutes } from './routes/planners';
 import { registerPaymentProofRoutes } from './routes/payment-proofs';
 import { registerPriceReportRoutes } from './routes/price-reports';
@@ -107,6 +108,7 @@ export function buildServer(context: AppContext): FastifyInstance {
   registerRewardRoutes(app, context);
   registerMyReportRoutes(app, context);
   registerSettingsRoutes(app, context);
+  registerSignupRoutes(app, context);
   registerDevStorageRoutes(app, context);
 
   return app;

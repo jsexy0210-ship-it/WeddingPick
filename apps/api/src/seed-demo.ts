@@ -4,6 +4,19 @@ import type { PoolClient } from 'pg';
 import { loadConfig } from './config';
 import { createPool, withTransaction } from './db';
 
+/*
+ * 데모 계정은 가입이 끝난 상태로 만든다. v3.13 §N-2가 로그인만 한 계정을 대기로
+ * 두면서, 그냥 넣으면 데모 화면이 전부 막힌 계정을 보여주게 된다. 연령은 데모
+ * 데이터라 통과로 두고, 확인한 때를 남겨 판정이 언제 것인지 보이게 한다.
+ */
+const ACTIVE_USER = `INSERT INTO structured.users (age_gate, age_checked_at, activated_at)
+   VALUES ('passed', now(), now()) RETURNING id`;
+
+const ACTIVE_OPERATOR = `INSERT INTO structured.users
+     (is_operator, age_gate, age_checked_at, activated_at)
+   VALUES (true, 'passed', now(), now()) RETURNING id`;
+
+
 /**
  * 시연·테스트용 데이터를 채운다.
  *
@@ -117,14 +130,14 @@ async function seedMarketSamples(
   baseAmount: number
 ) {
   const owner = await client.query<{ id: string }>(
-    'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
+    ACTIVE_USER
   );
   const wedding = await client.query<{ id: string }>(
     'INSERT INTO structured.weddings (owner_user_id) VALUES ($1) RETURNING id',
     [owner.rows[0]!.id]
   );
   const reviewer = await client.query<{ id: string }>(
-    'INSERT INTO structured.users (is_operator) VALUES (true) RETURNING id'
+    ACTIVE_OPERATOR
   );
 
   for (let index = 0; index < count; index += 1) {
@@ -206,7 +219,7 @@ async function main(): Promise<void> {
 
       // ── 내 웨딩: 화면에서 실제로 열어볼 문서들 ───────────────────────────
       const me = await client.query<{ id: string }>(
-        'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
+        ACTIVE_USER
       );
       const myId = me.rows[0]!.id;
       const wedding = await client.query<{ id: string }>(
@@ -216,7 +229,7 @@ async function main(): Promise<void> {
       );
       const weddingId = wedding.rows[0]!.id;
       const operator = await client.query<{ id: string }>(
-        'INSERT INTO structured.users (is_operator) VALUES (true) RETURNING id'
+        ACTIVE_OPERATOR
       );
       const operatorId = operator.rows[0]!.id;
 

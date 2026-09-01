@@ -19,6 +19,7 @@ export * from './recommendations';
 export * from './reviews';
 export * from './rewards';
 export * from './settings';
+export * from './signup';
 export * from './vendor-claims';
 export * from './vendors';
 export * from './verification';

@@ -451,6 +451,17 @@ export default function VendorDetailScreen() {
         reason={`로그인하면 ${withParticle(vendor.name, '을를')} 바로 Pick해드려요.`}
         onSignedIn={(result) => {
           setLoginOpen(false);
+
+          /*
+           * 아직 가입이 끝나지 않았다(v3.13 §N-2). Pick은 담기지 않았고, 담기지
+           * 않은 이유를 여기서 말하는 대신 마저 할 수 있는 화면으로 보낸다.
+           */
+          if (result.needsSignup) {
+            router.push('/signup');
+
+            return;
+          }
+
           setSaveNote(
             [
               result.completed ? 'Pick했어요. Pick 탭에서 보실 수 있어요.' : null,

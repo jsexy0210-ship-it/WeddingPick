@@ -19,6 +19,7 @@ import {
   inquiryListResponseSchema,
   registerDeviceResponseSchema,
   settingsSchema,
+  signupStateSchema,
   myReportListResponseSchema,
   notificationListResponseSchema,
   notificationSummaryResponseSchema,
@@ -230,6 +231,28 @@ export async function setDisplayName(displayName: string | null) {
 
 export async function getCurrentUser() {
   return request('/v1/me', currentUserSchema);
+}
+
+/**
+ * 가입 상태. 통합정책 v3.13 §N.
+ *
+ * 로그인 직후 이걸 먼저 본다. 소셜 로그인 성공만으로는 가입이 끝나지 않아서,
+ * `activated`가 false면 다른 경로는 전부 막혀 있다.
+ */
+export async function getSignupState() {
+  return request('/v1/me/signup', signupStateSchema);
+}
+
+/**
+ * 연령 확인과 필수 동의.
+ *
+ * `birthDate`는 서버가 나이를 세는 데만 쓰고 저장하지 않는다.
+ */
+export async function completeSignup(input: { birthDate: string; consents: string[] }) {
+  return request('/v1/me/signup', signupStateSchema, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
 }
 
 export async function createWedding() {

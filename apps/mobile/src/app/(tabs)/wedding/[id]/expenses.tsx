@@ -180,7 +180,7 @@ export default function ExpensesScreen() {
             {page.expenses.length === 0 ? (
               <ThemedView type="backgroundElement" style={styles.card}>
                 <ThemedText type="t7" themeColor="textSecondary">
-                  아직 항목이 없습니다. 결제내역을 등록하시면 여기 모입니다.
+                  아직 항목이 없습니다. 지출을 등록하시면 여기 모입니다.
                 </ThemedText>
                 <ActionButton
                   variant="primary"

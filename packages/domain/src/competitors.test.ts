@@ -27,7 +27,7 @@ describe('경쟁 서비스 모니터링', () => {
   });
 
   it('상담·예약·판매·중개는 우리 방향이 아니다', () => {
-    // v3.12 §5. 웨딩픽은 사용자가 직접 고르도록 돕는 서비스다.
+    // v3.12 §7. 웨딩픽은 사용자가 직접 고르도록 돕는 서비스다.
     expect(isOutOfDirection('업체 상담 예약 대행')).toBe(true);
     expect(isOutOfDirection('패키지 중개 수수료')).toBe(true);
     expect(isOutOfDirection('가격 비교')).toBe(false);

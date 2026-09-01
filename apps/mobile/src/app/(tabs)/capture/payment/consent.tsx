@@ -62,7 +62,7 @@ export default function PaymentProofConsentScreen() {
           <ThemedView style={styles.section}>
             <ThemedText type="subtitle">Pick 인증 자료를 올리기 전에</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              계약서가 아니라 결제내역을 받습니다. 결제문자나 카드 영수증이면 됩니다.
+              서류 전체가 아니라 금액을 확인할 수 있는 자료만 받습니다. 카드 승인 문자나 영수증이면 됩니다.
             </ThemedText>
           </ThemedView>
 

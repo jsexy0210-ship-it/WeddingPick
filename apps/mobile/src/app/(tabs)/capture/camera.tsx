@@ -27,7 +27,7 @@ export default function CameraScreen() {
         <SafeAreaView style={styles.permissionArea}>
           <ThemedText type="subtitle">카메라 권한이 필요합니다</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            견적서·계약서를 촬영해 분석하려면 카메라 접근을 허용해주세요.
+            문서를 촬영해 분석하려면 카메라 접근을 허용해주세요.
           </ThemedText>
           <ActionButton variant="primary" label="권한 허용하기" onPress={requestPermission} />
           <ActionButton label="돌아가기" onPress={() => router.back()} />

@@ -43,7 +43,19 @@ export default function LoginScreen() {
        * 로그인 전에 기기에 적어둔 최소 온보딩과 멈춰둔 Pick을 여기서도 마친다.
        * 시트에서만 하면, 이 화면으로 로그인한 사람의 예식일은 서버에 영영 안 올라간다.
        */
-      await completeAfterSignIn();
+      const after = await completeAfterSignIn();
+
+      /*
+       * 아직 가입이 끝나지 않았다(v3.13 §N-2). 여기서 그냥 돌아가면 서버가
+       * 모든 경로를 막은 계정으로 앱을 쓰게 되고, 사용자는 로그인이 됐는데
+       * 아무것도 안 되는 화면을 본다.
+       */
+      if (after.needsSignup) {
+        router.replace('/signup');
+
+        return;
+      }
+
       router.back();
     } catch (caught) {
       setError((caught as Error).message);
