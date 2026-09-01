@@ -15,7 +15,7 @@ import {
 
 /** 로그인이 무엇을 위한 것인지. 계정을 요구하는 이유를 먼저 말한다. */
 const REASONS = [
-  '분석한 견적을 기기를 바꿔도 다시 볼 수 있습니다.',
+  '분석한 자료를 기기를 바꿔도 다시 볼 수 있어요.',
   '자료 확인을 신청하고 진행 상황을 받아볼 수 있습니다.',
   '촬영과 기기 저장은 로그인 없이도 됩니다.',
 ];
@@ -59,7 +59,7 @@ export default function LoginScreen() {
           <ThemedView style={styles.section}>
             <ThemedText type="title">로그인</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              견적서를 분석하려면 계정이 필요합니다.
+              자료를 분석하려면 계정이 필요해요.
             </ThemedText>
           </ThemedView>
 

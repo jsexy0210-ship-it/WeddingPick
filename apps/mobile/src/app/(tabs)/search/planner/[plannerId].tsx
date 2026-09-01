@@ -127,8 +127,8 @@ export default function PlannerDetailScreen() {
           <ThemedView style={styles.section}>
             <ActionButton
               variant="primary"
-              label="내 견적서와 비교하기"
-              hint="견적서를 올리면 실제 계약과 견줘 보여드립니다"
+              label="내 금액과 비교하기"
+              hint="자료를 올리면 Pick 가격대와 견줘 보여드려요"
               onPress={() => router.push('/capture')}
             />
             <ActionButton label="돌아가기" onPress={() => router.back()} />

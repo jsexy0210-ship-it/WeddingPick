@@ -381,10 +381,10 @@ export default function SearchScreen() {
                 <ThemedView type="backgroundElement" style={styles.card}>
                   <ThemedText type="small" themeColor="textSecondary">
                     {!isServerConfigured
-                      ? '이 빌드는 서버에 붙어 있지 않아 업체를 찾을 수 없습니다. 견적서 촬영과 기기 저장은 그대로 쓰실 수 있습니다.'
+                      ? '이 빌드는 서버에 붙어 있지 않아 업체를 찾을 수 없어요. 촬영과 기기 저장은 그대로 쓰실 수 있어요.'
                       : error
                         ? error
-                        : '찾으시는 업체가 아직 등록되지 않았습니다. 견적서를 올리시면 그 업체가 등록될 때 자동으로 이어집니다.'}
+                        : '찾으시는 업체가 아직 등록되지 않았어요. 자료를 올리시면 그 업체가 등록될 때 자동으로 이어져요.'}
                   </ThemedText>
                 </ThemedView>
               }
@@ -612,8 +612,8 @@ export default function SearchScreen() {
         ) : (
           <ThemedView style={styles.footer}>
             <ActionButton
-              label="견적서 촬영하기"
-              hint={`찾는 ${MODE_LABEL[filters.mode]}가 없어도 견적서를 올리면 정리해드립니다`}
+              label="자료 촬영하기"
+              hint={`찾는 ${MODE_LABEL[filters.mode]}가 없어도 자료를 올리면 정리해드려요`}
               onPress={() => router.push('/capture')}
             />
           </ThemedView>

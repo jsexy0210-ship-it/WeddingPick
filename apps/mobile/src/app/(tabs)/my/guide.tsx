@@ -8,7 +8,7 @@ import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView } from '
 const SHOOTING_TIPS = [
   '문서가 화면에 꽉 차게, 네 귀퉁이가 모두 보이게 찍어주세요.',
   '그림자가 지지 않는 밝은 곳에서 찍으면 금액과 조건을 더 잘 읽습니다.',
-  '여러 장짜리 견적서는 순서대로 이어서 찍어주세요. 한 건으로 묶어 분석합니다.',
+  '여러 장짜리 자료는 순서대로 이어서 찍어주세요. 한 건으로 묶어 분석해요.',
   '메일이나 메신저로 받은 PDF는 촬영하지 말고 파일 그대로 불러오세요. 훨씬 정확합니다.',
 ];
 
@@ -71,7 +71,7 @@ export default function GuideScreen() {
             <ActionButton
               variant="primary"
               label="샘플 결과 보기"
-              hint="견적서를 올리기 전에 결과가 어떤 모습인지 볼 수 있습니다"
+              hint="자료를 올리기 전에 결과가 어떤 모습인지 볼 수 있어요"
               onPress={() => router.push('/capture/sample')}
             />
             <ActionButton label="돌아가기" onPress={() => router.back()} />

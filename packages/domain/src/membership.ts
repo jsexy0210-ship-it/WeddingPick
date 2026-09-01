@@ -131,4 +131,4 @@ export function allMissionsDone(facts: MembershipFacts): boolean {
 /** 미션을 다 마쳤을 때 한 번 뜨는 말. 핸드오프 18번. */
 export const MISSION_COMPLETE_TITLE = '필수 미션을 모두 완료했어요';
 export const MISSION_COMPLETE_BODY = '웨딩픽의 모든 기능을 이용해보세요.';
-export const MISSION_COMPLETE_TAGS = ['업체 탐색', '준비 관리', '배우자 연결', '결제 비교'] as const;
+export const MISSION_COMPLETE_TAGS = ['업체 탐색', '준비 관리', '배우자 연결', '가격 비교'] as const;

@@ -20,7 +20,13 @@ export const VENDOR_DETAIL_SECTIONS = [
     note: '업체 제공 이미지가 아직 없어요',
   },
   { key: 'name', label: '업체명', ready: true },
-  { key: 'key_conditions', label: '핵심 조건', ready: true },
+  {
+    key: 'key_conditions',
+    label: '핵심 조건',
+    ready: true,
+    /* v3.12 §3이 이 자리에 들어갈 항목을 열거했다. 목록은 `vendor-fact.ts`에 있다. */
+    note: '주차·식대·보증인원 같은 항목은 vendor-fact.ts가 목록을 갖는다',
+  },
   {
     key: 'verified_data',
     label: TERMS.verifiedData,

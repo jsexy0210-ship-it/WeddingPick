@@ -53,3 +53,7 @@ export * from './report-state';
 export * from './release-gate';
 export * from './vendor-detail';
 export * from './withdrawal';
+export * from './pick-verification';
+export * from './competitors';
+export * from './vendor-fact';
+export * from './comparison-axes';

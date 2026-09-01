@@ -313,7 +313,7 @@ export default function HomeScreen() {
           결제 금액, 얼마나 차이 날까요?
         </ThemedText>
         <ThemedText type="t7" style={styles.onTint}>
-          결제내역을 등록하시면 조건이 비슷한 결제 사례를 함께 보실 수 있어요
+          Pick 인증을 마치시면 조건이 비슷한 사례를 함께 보실 수 있어요
         </ThemedText>
         <ActionButton label="제보하기" onPress={() => router.push('/capture')} />
       </ThemedView>

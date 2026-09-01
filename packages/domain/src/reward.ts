@@ -220,7 +220,7 @@ export function decideGrant(input: {
 
 /** 안내 문구. 조건을 먼저 말한다 — 금액부터 말하면 조건이 안 읽힌다. */
 export const REFERRAL_NOTICE =
-  '초대한 분이 결제내역을 처음 등록하시면 지급 대상이 돼요. 가입만으로는 지급되지 않아요';
+  '초대한 분이 Pick 인증을 처음 마치시면 지급 대상이 돼요. 가입만으로는 지급되지 않아요';
 
 export const PROMOTION_NOTICE =
   '공개된 글의 주소를 넣어주세요. 담당자가 글을 확인한 뒤에 지급 대상이 돼요';

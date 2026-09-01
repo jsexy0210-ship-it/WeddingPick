@@ -65,7 +65,7 @@ export default function CameraScreen() {
             </ThemedText>
           </Pressable>
           <ThemedText type="small" style={styles.overlayText}>
-            {pages.length > 0 ? `${pages.length}장 촬영됨` : '견적서를 화면에 맞춰주세요'}
+            {pages.length > 0 ? `${pages.length}장 촬영됨` : '자료를 화면에 맞춰주세요'}
           </ThemedText>
         </View>
 

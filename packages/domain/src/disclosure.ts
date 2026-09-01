@@ -200,7 +200,7 @@ export function hasDeepData(input: { usablePaymentProofCount: number }): boolean
 }
 
 export const DEEP_DATA_NOTE =
-  '결제내역을 등록하시면 조건이 비슷한 결제 사례를 함께 보실 수 있어요';
+  'Pick 인증을 마치시면 조건이 비슷한 사례를 함께 보실 수 있어요';
 
 /**
  * 만원 단위로 줄여 적는다. 정책 문서가 쓰는 표기다 — `265~305만원`.

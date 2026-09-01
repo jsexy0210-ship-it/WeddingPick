@@ -73,10 +73,10 @@ export const PAYMENT_PROOF_RETENTION_NOTICE =
  * 무엇을 버리는지 적지 않으면, 동의한 사람도 자기가 무엇에 동의했는지 모른다.
  */
 export const PAYMENT_PROOF_CONSENT_POINTS = [
-  '읽어가는 것: 가맹점 이름, 결제 금액, 결제한 날짜와 시각, 결제 수단',
+  '읽어가는 것: 가맹점 이름, 금액, 낸 날짜와 시각, 지불 수단',
   '이미지에 카드번호 일부나 승인번호가 함께 찍힐 수 있습니다',
   '그 번호들은 있었다는 것만 남기고 값은 저장하지 않습니다',
-  '쓰는 곳: 확인된 정보 표시와 결제 금액 분포 (분포는 여럿을 묶은 중앙값으로만 보입니다)',
+  '쓰는 곳: Pick 인증 표시와 Pick 가격대 (가격대는 여럿을 묶은 중앙값으로만 보입니다)',
   PAYMENT_PROOF_RETENTION_NOTICE,
 ] as const;
 
@@ -90,7 +90,7 @@ export const PAYMENT_CONSENT_VERSION = '2026-08-29';
 
 /** 철회하면 하는 말. 이미 낸 자료가 어떻게 되는지 함께 말한다. */
 export const PAYMENT_CONSENT_REVOKED_NOTICE =
-  '동의를 철회했어요. 앞으로는 결제내역을 등록할 수 없고, 이미 등록한 내역은 내 제보 내역에서 지울 수 있어요';
+  '동의를 철회했어요. 앞으로는 Pick 인증을 할 수 없고, 이미 올린 자료는 내 제보내역에서 지울 수 있어요';
 
 export type PaymentProofDraft = {
   merchantName: string;
@@ -124,12 +124,12 @@ export function canRegisterPaymentProof(
   const paidAt = new Date(draft.paidAt);
 
   if (Number.isNaN(paidAt.getTime())) {
-    return { ok: false, reason: '결제 날짜를 읽지 못했습니다. 다시 찍어주세요.' };
+    return { ok: false, reason: '낸 날짜를 읽지 못했어요. 다시 찍어주세요.' };
   }
 
   // 앞으로의 결제는 없다. 날짜를 잘못 읽은 것이다.
   if (paidAt.getTime() > now.getTime()) {
-    return { ok: false, reason: '결제 날짜가 오늘보다 뒤입니다. 잘못 읽은 것 같습니다.' };
+    return { ok: false, reason: '낸 날짜가 오늘보다 뒤예요. 잘못 읽은 것 같아요.' };
   }
 
   return { ok: true };
@@ -159,7 +159,7 @@ export function canMergeWithMarketPrice(): false {
 
 /** 확인된 정보 분포에 늘 붙는 말. 내부에서는 결제인증이라 부르는 그것이다. */
 export const PAYMENT_PROOF_CAVEAT =
-  '확인된 정보는 이용자가 올린 결제내역에서 읽은 금액이에요. 계약 전체 금액이 아니라 그때 결제한 금액이며, 사람이 확인한 계약 중앙값과는 다른 값이에요.';
+  'Pick 가격은 이용자가 올린 자료에서 읽은 금액이에요. 계약 전체 금액이 아니라 그때 낸 금액이며, 사람이 확인한 계약 중앙값과는 다른 값이에요.';
 
 /**
  * 결제인증만으로 후기를 어디까지 확인해 줄 수 있는가.

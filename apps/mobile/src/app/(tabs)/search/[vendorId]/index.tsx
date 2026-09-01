@@ -192,7 +192,7 @@ export default function VendorDetailScreen() {
             {conditions?.available ? (
               <ThemedView type="backgroundElement" style={styles.card}>
                 <ThemedText type="t7" themeColor="textSecondary">
-                  조건이 비슷한 결제
+                  조건이 비슷한 Pick 가격
                 </ThemedText>
                 {/* 어느 조건의 숫자인지가 숫자보다 먼저다. */}
                 <ThemedText type="t5">{conditions.condition}</ThemedText>
@@ -408,8 +408,8 @@ export default function VendorDetailScreen() {
               </ThemedText>
             ) : null}
             <ActionButton
-              label="내 견적서와 비교하기"
-              hint="견적서를 올리면 이 업체의 확인된 계약과 견줘 보여드려요"
+              label="내 금액과 비교하기"
+              hint="자료를 올리면 이 업체의 Pick 가격대와 견줘 보여드려요"
               onPress={() => router.push('/capture')}
             />
             <ActionButton

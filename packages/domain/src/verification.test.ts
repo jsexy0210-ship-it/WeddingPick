@@ -74,7 +74,7 @@ describe('canApprove', () => {
     const result = canApprove({ ...base, currentLevel: 'L3' });
 
     expect(result.ok).toBe(false);
-    expect(result.ok === false && result.reason).toContain('이용인증');
+    expect(result.ok === false && result.reason).toContain('이용확인');
   });
 
   it('목표 등급에 맞는 증빙이 없으면 승인할 수 없다', () => {
@@ -82,7 +82,7 @@ describe('canApprove', () => {
 
     expect(result).toEqual({
       ok: false,
-      reason: '계약인증에는 계약서가 있어야 합니다. 낸 증빙에 없습니다.',
+      reason: 'Pick확인에는 계약서가 있어야 합니다. 낸 증빙에 없습니다.',
     });
   });
 
@@ -94,6 +94,6 @@ describe('canApprove', () => {
       evidenceKinds: ['contract_document'],
     });
 
-    expect(result.ok === false && result.reason).toContain('결제 내역이 있어야 합니다');
+    expect(result.ok === false && result.reason).toContain('Pick 인증 자료가 있어야 합니다');
   });
 });

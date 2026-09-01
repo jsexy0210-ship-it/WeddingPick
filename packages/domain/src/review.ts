@@ -136,7 +136,7 @@ export const REVIEW_VERIFICATION_LABEL: Record<ReviewVerification, string> = {
    *
    * 띄어쓰기가 없는 것은 배지 카피 규칙이다.
    */
-  payment: '결제확인',
+  payment: 'Pick확인',
   contract: '계약확인',
   usage: '이용확인',
 };
@@ -394,7 +394,7 @@ export function verificationNote(verification: ReviewVerification): string {
     case 'contract':
       return '인증을 마친 계약 문서가 있어 계약 확인으로 올라갑니다. 증빙을 다시 올리지 않으셔도 됩니다.';
     case 'payment':
-      return '결제인증 제보가 있어 결제 확인으로 올라갑니다. 계약서를 인증하시면 계약 확인이 됩니다.';
+      return 'Pick 인증 자료가 있어 Pick 확인으로 올라가요. 계약 자료를 확인받으시면 계약 확인이 돼요.';
     case 'usage':
       return '이용까지 확인된 문서가 있어 이용인증으로 올라갑니다. 가장 무거운 확인입니다.';
     case 'reported':

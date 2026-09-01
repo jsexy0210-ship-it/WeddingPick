@@ -59,13 +59,13 @@ export default function CaptureScreen() {
           <ActionButton
             variant="primary"
             label="제보하기"
-            hint="결제문자 캡처도 괜찮습니다"
+            hint="안내 문자 캡처도 괜찮아요"
             onPress={() => router.push('/capture/payment/consent')}
           />
         </ThemedView>
 
         <ThemedView style={styles.actions}>
-          <ThemedText type="smallBold">견적서 분석</ThemedText>
+          <ThemedText type="smallBold">자료 분석</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
             견적서를 읽어 항목과 추가비용 후보를 정리해 드립니다. 계약서는 지금
             받지 않습니다 — 계약서에 비밀유지 조항이 있는 경우가 있어, 법률 확인이
@@ -79,13 +79,13 @@ export default function CaptureScreen() {
           />
           <ActionButton
             label="사진에서 불러오기"
-            hint="앨범에 저장해둔 견적서 사진"
+            hint="앨범에 저장해둔 자료 사진"
             disabled={busy}
             onPress={() => runPicker(pickFromLibrary)}
           />
           <ActionButton
             label="PDF 불러오기"
-            hint="메일이나 메신저로 받은 견적서 파일"
+            hint="메일이나 메신저로 받은 자료 파일"
             disabled={busy}
             onPress={() => runPicker(pickPdf)}
           />

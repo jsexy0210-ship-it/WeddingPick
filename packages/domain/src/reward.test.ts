@@ -173,7 +173,7 @@ describe('보상 지급 규칙', () => {
 
     it('친구초대 안내가 조건을 먼저 말한다', () => {
       // 가입만으로 준다고 읽히면 안 된다. K-7이 그 규칙을 폐기했다.
-      expect(REFERRAL_NOTICE).toContain('결제내역');
+      expect(REFERRAL_NOTICE).toContain('Pick 인증');
       expect(REFERRAL_NOTICE).toContain('가입만으로는');
     });
   });

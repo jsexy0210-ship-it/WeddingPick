@@ -11,7 +11,7 @@ const POLL_MS = 2000;
 /** 실패 이유마다 사용자가 할 수 있는 일이 다르다. */
 const FAILURE_MESSAGE = {
   unreadable: '글씨를 읽지 못했습니다. 밝은 곳에서 문서가 화면에 꽉 차게 다시 찍어주세요.',
-  not_a_document: '견적서나 계약서로 보이지 않습니다. 다른 문서를 올려주세요.',
+  not_a_document: '금액이 적힌 자료로 보이지 않아요. 다른 자료를 올려주세요.',
   internal: '분석에 실패했습니다. 잠시 후 다시 시도해주세요.',
 } as const;
 

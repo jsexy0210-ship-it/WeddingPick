@@ -52,7 +52,7 @@ export const REVIEW_CHECKLIST: Partial<Record<VendorCategory, readonly Checklist
     {
       key: 'contract_matched',
       label: '계약 일치',
-      question: '설명받은 조건이 계약서와 같았나요?',
+      question: '설명받은 조건이 계약 내용과 같았나요?',
       yesIsGood: true,
     },
     {

@@ -35,7 +35,7 @@ export default function SampleScreen() {
         <ThemedView style={styles.footer}>
           <ActionButton
             variant="primary"
-            label="내 견적서로 해보기"
+            label="내 자료로 해보기"
             onPress={() => router.replace('/capture')}
           />
         </ThemedView>

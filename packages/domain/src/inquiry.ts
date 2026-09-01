@@ -35,7 +35,7 @@ export type InquiryCategoryRule = {
 export const INQUIRY_CATEGORY_RULES: Record<InquiryCategory, InquiryCategoryRule> = {
   vendor_objection: {
     label: '업체 이의 제기',
-    description: '업체로서 견적·계약 자료나 정리된 내용에 이의가 있습니다.',
+    description: '업체로서 정리된 가격·조건 내용에 이의가 있습니다.',
     requiresSubject: false,
     requiresEvidence: false,
   },

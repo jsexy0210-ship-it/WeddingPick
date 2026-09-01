@@ -108,8 +108,8 @@ export function priceChangeNudge(input: {
 }): { title: string; body: string; dedupeKey: string } {
   return {
     title: input.appeared
-      ? `${input.vendorName}의 실제 결제를 볼 수 있어요`
-      : `${input.vendorName}의 결제 구간이 바뀌었어요`,
+      ? `${input.vendorName}의 Pick 가격대를 볼 수 있어요`
+      : `${input.vendorName}의 Pick 가격대가 바뀌었어요`,
     body: input.caption,
     // v2.0 37번: 동일 업체 하루 최대 1회.
     dedupeKey: `price:${input.vendorId}:${input.today}`,

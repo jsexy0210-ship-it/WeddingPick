@@ -19,7 +19,7 @@ export type ExpenseSource = (typeof EXPENSE_SOURCES)[number];
  * 결제내역이 여기 들어왔다는 뜻이지, 무엇이 인증됐다는 뜻이 아니다.
  */
 export const EXPENSE_SOURCE_LABEL: Record<ExpenseSource, string> = {
-  payment_proof: '제보한 결제내역',
+  payment_proof: 'Pick 인증 자료',
   manual: '직접 입력',
 };
 
@@ -28,8 +28,9 @@ export const EXPENSE_STATUSES = ['paid', 'scheduled'] as const;
 export type ExpenseStatus = (typeof EXPENSE_STATUSES)[number];
 
 export const EXPENSE_STATUS_LABEL: Record<ExpenseStatus, string> = {
-  paid: '결제완료',
-  scheduled: '결제예정',
+  /* v3.11이 사용자 앱에서 `결제`를 막았다. 지출 화면이라 지출로 적는다. */
+  paid: '지출완료',
+  scheduled: '지출예정',
 };
 
 /**
@@ -123,7 +124,7 @@ export function summarizeExpenses(lines: readonly ExpenseLine[]): ExpenseSummary
   };
 }
 
-export const SCHEDULED_NOTE = '잔금은 예식 후 결제라 아직 더하지 않았어요';
+export const SCHEDULED_NOTE = '잔금은 예식 뒤에 내는 돈이라 아직 더하지 않았어요';
 
 export type BudgetView =
   | { set: false; note: string }

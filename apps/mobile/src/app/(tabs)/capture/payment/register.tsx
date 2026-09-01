@@ -85,7 +85,7 @@ export default function RegisterPaymentProofScreen() {
 
   const check =
     paidAt === null
-      ? { ok: false as const, reason: '결제한 날짜를 2026-05-20 형태로 적어주세요.' }
+      ? { ok: false as const, reason: '낸 날짜를 2026-05-20 형태로 적어주세요.' }
       : canRegisterPaymentProof({ merchantName, paidAmount, paidAt });
 
   if (done) {
@@ -109,7 +109,7 @@ export default function RegisterPaymentProofScreen() {
               <ThemedView type="backgroundElement" style={styles.card}>
                 <ThemedText type="smallBold">조건이 비슷한 사례를 볼 수 있어요</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
-                  업체 화면에서 내 결제와 조건이 비슷한 결제 사례를 함께 보실 수 있습니다.
+                  업체 화면에서 내 금액과 조건이 비슷한 사례를 함께 보실 수 있어요.
                 </ThemedText>
               </ThemedView>
             ) : null}
@@ -266,7 +266,7 @@ export default function RegisterPaymentProofScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.section}>
-            <ThemedText type="subtitle">결제내역을 알려주세요</ThemedText>
+            <ThemedText type="subtitle">Pick 인증 자료를 알려주세요</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
               결제문자를 그대로 붙여넣으시면 읽어서 채워드립니다. 사진을 올리지 않으니
               저희 서버에 이미지가 남지 않습니다.
@@ -274,7 +274,7 @@ export default function RegisterPaymentProofScreen() {
           </ThemedView>
 
           <ThemedView style={styles.section}>
-            <ThemedText type="smallBold">결제문자 붙여넣기</ThemedText>
+            <ThemedText type="smallBold">안내 문자 붙여넣기</ThemedText>
             <TextInput
               style={[styles.input, styles.paste, { color: theme.text, borderColor: theme.border }]}
               value={pasted}
@@ -282,7 +282,7 @@ export default function RegisterPaymentProofScreen() {
               multiline
               placeholder={'[Web발신]\n신한카드 승인\n3,000,000원 일시불\n05/20 14:23\n가온예식홀'}
               placeholderTextColor={theme.textSecondary}
-              accessibilityLabel="결제문자"
+              accessibilityLabel="안내 문자"
             />
             <ActionButton
               label={reading ? '읽는 중…' : '붙여넣은 문자에서 읽기'}
@@ -335,7 +335,7 @@ export default function RegisterPaymentProofScreen() {
           </ThemedView>
 
           <ThemedView style={styles.section}>
-            <ThemedText type="smallBold">결제 금액</ThemedText>
+            <ThemedText type="smallBold">금액</ThemedText>
             {uncertain.includes('paidAmount') ? (
               <ThemedText type="small" themeColor="textSecondary">
                 금액이 여러 개 있어 하나를 골랐습니다. 맞는지 봐주세요.
@@ -348,12 +348,12 @@ export default function RegisterPaymentProofScreen() {
               keyboardType="number-pad"
               placeholder="예: 3000000"
               placeholderTextColor={theme.textSecondary}
-              accessibilityLabel="결제 금액"
+              accessibilityLabel="금액"
             />
           </ThemedView>
 
           <ThemedView style={styles.section}>
-            <ThemedText type="smallBold">결제한 날</ThemedText>
+            <ThemedText type="smallBold">낸 날</ThemedText>
             {uncertain.includes('paidAt') ? (
               /* 문자에 연도가 없어 추정한 값이다. 한 해가 어긋나면 기간이 달라진다. */
               <ThemedText type="small" themeColor="textSecondary">
@@ -366,12 +366,12 @@ export default function RegisterPaymentProofScreen() {
               onChangeText={setDay}
               placeholder="2026-05-20"
               placeholderTextColor={theme.textSecondary}
-              accessibilityLabel="결제한 날"
+              accessibilityLabel="낸 날"
             />
           </ThemedView>
 
           <ThemedView style={styles.section}>
-            <ThemedText type="smallBold">결제 수단</ThemedText>
+            <ThemedText type="smallBold">지불 수단</ThemedText>
             <ThemedView style={styles.chips}>
               {PAYMENT_METHODS.map((value) => (
                 <FilterChip

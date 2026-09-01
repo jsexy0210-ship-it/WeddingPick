@@ -98,7 +98,7 @@ export default function DocumentSetScreen() {
           <ThemedView style={styles.footer}>
             <ActionButton
               label="인증 등급 올리기"
-              hint="실제 견적·계약자료를 확인받으면 등급이 올라갑니다"
+              hint="올린 자료를 확인받으면 등급이 올라가요"
               onPress={() => router.push(`/wedding/${set.id}/verify`)}
             />
             <ActionButton label="문서 지우기" onPress={confirmDelete} />

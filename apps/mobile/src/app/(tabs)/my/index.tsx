@@ -38,7 +38,7 @@ import {
 
 /** 공유되는 건 앱 자체뿐이다. 견적·계약 정보는 포함하지 않는다 — 사업계획서 12번. */
 const SHARE_MESSAGE =
-  '웨딩픽 — 같은 업체도, 결제 금액은 달라요. 실제 결제 사례와 나란히 놓고 가격 차이를 확인해보세요.';
+  '웨딩픽 — 같은 업체도 금액은 달라요. Pick 인증으로 확인된 가격대와 나란히 놓고 차이를 확인해보세요.';
 
 /** 로그인하지 않은 사람의 사실. 게스트도 MY를 본다. */
 const GUEST_FACTS: MembershipFacts = {
@@ -293,7 +293,7 @@ export default function MyScreen() {
               <ActionButton
                 variant="primary"
                 label="로그인"
-                hint="우리웨딩과 결제내역 등록에 필요합니다"
+                hint="우리웨딩과 Pick 인증에 필요해요"
                 onPress={() => router.push('/login')}
               />
             ) : null}
@@ -323,7 +323,7 @@ export default function MyScreen() {
             {/* 금액을 여기 적지 않는다. 조건을 먼저 읽어야 한다(v2.0 K-7). */}
             <ActionButton
               label="친구초대 · 홍보인증"
-              hint="초대한 분이 결제내역을 등록하시면 지급 대상이 돼요"
+              hint="초대한 분이 Pick 인증을 마치시면 지급 대상이 돼요"
               onPress={() => (data.me ? router.push('/my/rewards') : router.push('/login'))}
             />
           </ThemedView>
@@ -340,7 +340,7 @@ export default function MyScreen() {
             />
             <ActionButton
               label="웨딩픽 공유하기"
-              hint="앱만 공유합니다. 내 견적·계약 정보는 포함되지 않습니다"
+              hint="앱만 공유해요. 내 자료는 포함되지 않아요"
               onPress={shareApp}
             />
             <ActionButton
@@ -349,7 +349,7 @@ export default function MyScreen() {
             />
             <ActionButton
               label="설정"
-              hint="알림, 예식일, 결제내역 제보 동의"
+              hint="알림, 예식일, Pick 인증 동의"
               onPress={() => router.push('/my/settings')}
             />
           </ThemedView>

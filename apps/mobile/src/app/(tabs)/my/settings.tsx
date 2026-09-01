@@ -89,8 +89,8 @@ export default function SettingsScreen() {
 
   function confirmRevoke() {
     Alert.alert(
-      '결제내역 제보 동의를 철회할까요',
-      '앞으로 결제내역을 등록할 수 없어요. 이미 등록한 내역은 내 제보내역에서 지울 수 있어요',
+      'Pick 인증 동의를 철회할까요',
+      '앞으로 Pick 인증을 할 수 없어요. 이미 올린 자료는 내 제보내역에서 지울 수 있어요',
       [
         { text: '그만두기', style: 'cancel' },
         {
@@ -138,7 +138,7 @@ export default function SettingsScreen() {
             />
             <SwitchRow
               label="가격 변동 알림"
-              hint="Pick한 곳의 결제 구간이 크게 바뀌면 알려드려요"
+              hint="Pick한 곳의 Pick 가격대가 크게 바뀌면 알려드려요"
               value={settings?.priceChangeEnabled ?? true}
               onChange={(next) => void toggle('priceChangeEnabled', next)}
             />
@@ -184,7 +184,7 @@ export default function SettingsScreen() {
             */}
             {settings?.paymentConsent ? (
               <ActionButton
-                label="결제내역 제보 동의 철회"
+                label="Pick 인증 동의 철회"
                 hint={
                   settings.paymentConsentAt
                     ? `${formatWeddingDate(settings.paymentConsentAt.slice(0, 10))}에 동의하셨어요`

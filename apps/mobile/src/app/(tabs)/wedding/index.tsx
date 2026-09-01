@@ -36,7 +36,7 @@ export default function WeddingScreen() {
             />
             <ActionButton
               label="지출내역"
-              hint="제보한 결제내역 금액이 여기 모여요"
+              hint="Pick 인증한 금액이 여기 모여요"
               onPress={() => void open('expenses')}
             />
             <ActionButton
@@ -51,7 +51,7 @@ export default function WeddingScreen() {
             />
             <ActionButton
               label="배우자와 함께 보기"
-              hint="견적과 비교 결과를 함께 보며 결정할 수 있습니다"
+              hint="금액과 비교 결과를 함께 보며 결정할 수 있어요"
               onPress={() => router.push('/wedding/partner')}
             />
           </ThemedView>
@@ -63,7 +63,7 @@ export default function WeddingScreen() {
               </ThemedText>
               <ActionButton
                 variant="primary"
-                label="견적서 촬영하기"
+                label="자료 촬영하기"
                 onPress={() => router.push('/capture')}
               />
             </ThemedView>

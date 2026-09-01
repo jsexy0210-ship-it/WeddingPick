@@ -14,7 +14,7 @@ export const INVITE_TTL_HOURS = 72;
 
 /** 연결하면 함께 보게 되는 것. */
 export const PARTNER_SHARED = [
-  '정리된 견적·계약 내용 (업체, 상품, 금액, 계약조건, 추가비용)',
+  '정리된 가격·조건 내용 (업체, 상품, 금액, 계약조건, 추가비용)',
   '실제 계약과의 가격 비교 결과',
   '문서를 올린 날짜와 원본 삭제 예정일',
 ] as const;
@@ -32,7 +32,7 @@ export const PARTNER_NOT_SHARED = [
 
 /** 연결을 끊으면 어떻게 되는지. 끊기 전에 알려준다. */
 export const PARTNER_UNLINK_EFFECTS = [
-  '상대방은 이 웨딩의 견적과 비교 결과를 더 볼 수 없습니다.',
+  '상대방은 이 웨딩의 금액과 비교 결과를 더 볼 수 없습니다.',
   '각자 올린 원본 문서는 올린 사람에게 그대로 남습니다.',
   '이미 확인을 마친 자료는 가격 비교에 그대로 쓰입니다 — 연결과 무관합니다.',
 ] as const;
@@ -92,7 +92,7 @@ export function inviteLink(code: string): string {
  */
 export function inviteShareMessage(code: string): string {
   return [
-    '웨딩픽에서 함께 견적을 봐요.',
+    '웨딩픽에서 함께 금액을 봐요.',
     inviteLink(code),
     `앱이 열리지 않으면 이 코드를 넣어주세요: ${code}`,
   ].join('\n');

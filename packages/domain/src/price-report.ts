@@ -116,7 +116,7 @@ export const PRICE_SOURCE_LABEL = {
 export type PriceSourceKind = keyof typeof PRICE_SOURCE_LABEL;
 
 export const PRICE_SOURCE_NOTE: Record<PriceSourceKind, string> = {
-  contract: '계약서를 확인한 값입니다.',
+  contract: '계약 내용을 확인한 값입니다.',
   report: '문서 확인 없이 적어주신 값입니다.',
 };
 

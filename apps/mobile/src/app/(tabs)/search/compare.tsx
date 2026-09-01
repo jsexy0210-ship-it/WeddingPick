@@ -1,5 +1,11 @@
 import type { VendorComparisonResponse, VendorDetail } from '@weddingpick/api-contract';
-import { DOCUMENT_TYPE_LABEL, VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
+import {
+  AXIS_KIND_NOTE,
+  DOCUMENT_TYPE_LABEL,
+  PICK_VERIFICATION,
+  VENDOR_CATEGORY_LABEL,
+  axisLabel,
+} from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
@@ -103,7 +109,7 @@ export default function CompareScreen() {
             )}
           </Row>
 
-          <Row title="확인된 계약" vendors={result.vendors}>
+          <Row title={PICK_VERIFICATION.material} vendors={result.vendors}>
             {(vendor) => (
               <ThemedText type="small" themeColor="textSecondary">
                 {vendor.comparableQuoteCount === 0
@@ -113,11 +119,18 @@ export default function CompareScreen() {
             )}
           </Row>
 
-          <Row title="상품별 실제 계약 가격" vendors={result.vendors}>
+          {/*
+            항목 이름은 비교 축 정의(COMPARISON_AXES)에서 꺼낸다. 화면이 제 이름을
+            따로 적으면 앱과 웹이 서로 다른 말을 하게 된다.
+          */}
+          <Row
+            title={axisLabel('pick_price_range')}
+            note={AXIS_KIND_NOTE.pick}
+            vendors={result.vendors}>
             {(vendor) =>
               vendor.prices.products.length === 0 ? (
                 <ThemedText type="small" themeColor="textSecondary">
-                  자료가 모자라 가격을 보여드릴 수 없습니다
+                  자료가 모자라 가격을 보여드릴 수 없어요
                 </ThemedText>
               ) : (
                 vendor.prices.products.map((product) => (
@@ -149,8 +162,8 @@ export default function CompareScreen() {
           <ThemedView style={styles.section}>
             <ActionButton
               variant="primary"
-              label="내 견적서와 비교하기"
-              hint="견적서를 올리면 이 업체들의 실제 계약과 견줘 보여드립니다"
+              label="내 금액과 비교하기"
+              hint={`자료를 올리면 이 업체들의 ${axisLabel('pick_price_range')}와 견줘 보여드려요`}
               onPress={() => router.push('/capture')}
             />
             <ActionButton label="검색으로 돌아가기" onPress={() => router.back()} />
@@ -161,19 +174,31 @@ export default function CompareScreen() {
   );
 }
 
-/** 항목 하나. 그 안에서 업체가 세로로 늘어선다. */
+/**
+ * 항목 하나. 그 안에서 업체가 세로로 늘어선다.
+ *
+ * `note`는 이 항목의 값이 누구 말인지다(v3.12 §2). 표는 값을 나란히 놓기 때문에,
+ * 붙여두지 않으면 나란히 놓였다는 이유만으로 모두 같은 종류로 읽힌다.
+ */
 function Row({
   title,
+  note,
   vendors,
   children,
 }: {
   title: string;
+  note?: string;
   vendors: VendorDetail[];
   children: (vendor: VendorDetail) => React.ReactNode;
 }) {
   return (
     <ThemedView style={styles.section}>
       <ThemedText type="smallBold">{title}</ThemedText>
+      {note ? (
+        <ThemedText type="small" themeColor="textSecondary">
+          {note}
+        </ThemedText>
+      ) : null}
       {vendors.map((vendor) => (
         <ThemedView key={vendor.id} type="backgroundElement" style={styles.card}>
           <ThemedText type="small">{vendor.name}</ThemedText>

@@ -19,6 +19,13 @@ export const AI_FEATURES = [
 
 export type AiFeature = (typeof AI_FEATURES)[number];
 
+/**
+ * 비용을 어느 기능이 썼는지. **관리자·운영 화면에서만 쓴다.**
+ *
+ * 사용자 앱은 이 표를 보지 않는다. 그래서 v3.11이 사용자 UI에서 막은 말이
+ * 여기 남아 있어도 된다 — 운영자가 보는 자리에서는 무엇의 비용인지가 정확해야
+ * 하고, `Pick 인증 읽기`라고 적으면 어느 파이프라인인지 짚기 어려워진다.
+ */
 export const AI_FEATURE_LABEL: Record<AiFeature, string> = {
   document_extraction: '문서 분석',
   payment_proof_vision: '결제내역 읽기',
@@ -125,4 +132,4 @@ export function fallbackFor(state: BudgetState): BudgetFallback {
 
 /** 예산이 바닥났을 때 화면이 그대로 보여줄 말. AI를 입에 올리지 않는다. */
 export const BUDGET_EXHAUSTED_NOTICE =
-  '지금은 사진에서 자동으로 읽어드리지 못합니다. 결제문자를 붙여넣거나 직접 적어주시면 그대로 등록됩니다.';
+  '지금은 사진에서 자동으로 읽어드리지 못해요. 안내 문자를 붙여넣거나 직접 적어주시면 그대로 올라가요.';
