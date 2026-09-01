@@ -51,3 +51,5 @@ export * from './policy-engine';
 export * from './agency-price';
 export * from './report-state';
 export * from './release-gate';
+export * from './vendor-detail';
+export * from './withdrawal';

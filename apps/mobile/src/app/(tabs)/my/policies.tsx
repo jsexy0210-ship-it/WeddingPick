@@ -1,4 +1,4 @@
-import { POLICY_DOCUMENTS } from '@weddingpick/domain';
+import { POLICY_DOCUMENTS, withdrawalNotice } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -36,6 +36,18 @@ export default function PoliciesScreen() {
                 </ThemedText>
               </ThemedView>
             ))}
+          </ThemedView>
+
+          {/*
+            탈퇴하면 낸 자료가 어떻게 되는지. **문장을 여기서 짓지 않는다** —
+            개인정보처리방침이 답할 질문이고, 방침이 확정되기 전에 화면이 먼저
+            답하면 근거 없는 약속이 된다. 확정 전에는 아직 안내드릴 수 없다고 적는다.
+           */}
+          <ThemedView type="backgroundElement" style={styles.card}>
+            <ThemedText type="smallBold">탈퇴하면 낸 자료는요</ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              {withdrawalNotice()}
+            </ThemedText>
           </ThemedView>
 
           <ActionButton

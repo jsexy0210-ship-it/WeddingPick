@@ -38,8 +38,12 @@ describe('아직 안 정해진 값', () => {
 });
 
 describe('출시 차단', () => {
-  it('다 채워져 있으면 나갈 수 있다', () => {
-    expect(checkRelease(FILLED)).toEqual({ missing: [], releasable: true, note: null });
+  it('값이 다 채워지면 값 쪽은 통과한다', () => {
+    /*
+     * 값과 문서를 따로 센다. 문서(약관·방침·탈퇴 안내)는 아직 확정 전이라 여전히
+     * 막는데, 그건 값이 모자란 것과 다른 문제이고 고치는 사람도 다르다.
+     */
+    expect(checkRelease(FILLED).missing).toEqual([]);
   });
 
   it('하나라도 비면 막는다', () => {
@@ -70,9 +74,9 @@ describe('출시 차단', () => {
     expect(assertReleasable(undefined, {})).toContain('사업자명');
   });
 
-  it('다 채웠으면 어디서도 조용하다', () => {
-    expect(assertReleasable('production', FILLED)).toBeNull();
-    expect(assertReleasable('development', FILLED)).toBeNull();
+  it('값을 다 채워도 문서가 안 되면 막는다', () => {
+    // 사업자 정보만으로 문을 열 수 없다. 문서 쪽은 withdrawal.test가 함께 지킨다.
+    expect(() => assertReleasable('production', FILLED)).toThrow('확정되지 않은 문서');
   });
 
   it('모든 항목에 사람이 읽을 이름이 있다', () => {

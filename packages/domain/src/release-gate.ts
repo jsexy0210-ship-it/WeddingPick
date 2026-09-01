@@ -1,3 +1,6 @@
+import { POLICY_DOCUMENTS } from './policies';
+import { withdrawalReady } from './withdrawal';
+
 /**
  * 출시 전 법적 고지 차단 조건.
  *
@@ -55,6 +58,13 @@ export function isPlaceholder(value: string | null | undefined): boolean {
 export type ReleaseCheck = {
   /** 아직 안 정해진 값들. */
   missing: LegalField[];
+  /**
+   * 값 말고 문서가 막는 것들.
+   *
+   * 사업자 정보를 다 채워도 약관과 개인정보처리방침이 확정 전이면 문을 열 수 없다.
+   * 탈퇴 안내가 없으면 사용자는 자기가 낸 자료가 어떻게 되는지 모르는 채로 가입한다.
+   */
+  blockingDocuments: string[];
   /** Production으로 나가도 되는가. */
   releasable: boolean;
   /** 사람이 읽을 한 줄. 나가도 되면 null. */
@@ -70,13 +80,31 @@ export type ReleaseCheck = {
 export function checkRelease(notice: LegalNotice): ReleaseCheck {
   const missing = REQUIRED_LEGAL_FIELDS.filter((field) => isPlaceholder(notice[field]));
 
+  /*
+   * 확정본이 게시되지 않은 문서. `url`이 없으면 아직 게시하지 않은 것이다 —
+   * 상태 글자(`자문 대기`)를 믿지 않고 실제 게시 여부를 본다.
+   */
+  const blockingDocuments = POLICY_DOCUMENTS.filter(
+    (policy) => policy.id !== 'analysis-notice' && policy.url === undefined
+  ).map((policy) => policy.title);
+
+  if (!withdrawalReady()) blockingDocuments.push('탈퇴 안내');
+
+  const parts: string[] = [];
+
+  if (missing.length > 0) {
+    parts.push(`아직 정해지지 않은 값: ${missing.map((field) => LEGAL_FIELD_LABEL[field]).join(', ')}`);
+  }
+
+  if (blockingDocuments.length > 0) {
+    parts.push(`아직 확정되지 않은 문서: ${blockingDocuments.join(', ')}`);
+  }
+
   return {
     missing,
-    releasable: missing.length === 0,
-    note:
-      missing.length === 0
-        ? null
-        : `아직 정해지지 않은 값: ${missing.map((field) => LEGAL_FIELD_LABEL[field]).join(', ')}`,
+    blockingDocuments,
+    releasable: missing.length === 0 && blockingDocuments.length === 0,
+    note: parts.length === 0 ? null : parts.join(' / '),
   };
 }
 

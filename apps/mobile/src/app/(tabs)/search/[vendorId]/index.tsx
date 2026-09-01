@@ -123,36 +123,7 @@ export default function VendorDetailScreen() {
             <ThemedText type="small" themeColor="textSecondary">
               {VENDOR_CATEGORY_LABEL[vendor.category]} · {vendor.region}
             </ThemedText>
-            {/*
-              공식정보 배지. 핸드오프 8번 — 눌러서 기관·출처·기준일을 본다.
 
-              배지만 두고 출처를 감추지 않는다. `공공데이터`라는 말은 그 자체로는
-              아무것도 확인해주지 않는다 — 어느 기관의 무엇을 언제 확인했는지가
-              그 배지의 내용이다.
-            */}
-            {vendor.sourceNote ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="업체 정보 출처 보기"
-                accessibilityState={{ expanded: sourceOpen }}
-                onPress={() => setSourceOpen((open) => !open)}
-                style={styles.sourceRow}>
-                <View style={[styles.badge, { backgroundColor: theme.backgroundSelected }]}>
-                  <ThemedText type="badge" themeColor="textSecondary">
-                    공공데이터
-                  </ThemedText>
-                </View>
-                <ThemedText type="t7" themeColor="textAssistive">
-                  {sourceOpen ? '−' : '출처'}
-                </ThemedText>
-              </Pressable>
-            ) : null}
-
-            {sourceOpen && vendor.sourceNote ? (
-              <ThemedText type="t7" themeColor="textSecondary">
-                {vendor.sourceNote}
-              </ThemedText>
-            ) : null}
           </ThemedView>
 
           {/*
@@ -381,6 +352,43 @@ export default function VendorDetailScreen() {
               onPress={() => router.push(`/search/${vendor.id}/reviews`)}
             />
           </ThemedView>
+
+          {/*
+            공식정보. 통합정책 v3.10 §8이 이 자리를 후기 다음, Pick 앞에 두었다.
+
+            예전에는 업체명 바로 아래에 있었다. 이름을 꾸며주는 배지처럼 보였는데,
+            공식정보는 꾸밈이 아니라 **어느 기관의 무엇을 언제 확인했는지**다.
+            읽는 사람이 그것을 궁금해하는 때는 이름을 볼 때가 아니라 고르기 직전이다.
+
+            배지만 두고 출처를 감추지 않는다. `공공데이터`라는 말은 그 자체로는
+            아무것도 확인해주지 않는다.
+           */}
+          {vendor.sourceNote ? (
+            <ThemedView style={styles.section}>
+              <ThemedText type="smallBold">공식정보</ThemedText>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="업체 정보 출처 보기"
+                accessibilityState={{ expanded: sourceOpen }}
+                onPress={() => setSourceOpen((open) => !open)}
+                style={styles.sourceRow}>
+                <View style={[styles.badge, { backgroundColor: theme.backgroundSelected }]}>
+                  <ThemedText type="badge" themeColor="textSecondary">
+                    공공데이터
+                  </ThemedText>
+                </View>
+                <ThemedText type="t7" themeColor="textAssistive">
+                  {sourceOpen ? '−' : '출처'}
+                </ThemedText>
+              </Pressable>
+
+              {sourceOpen ? (
+                <ThemedText type="t7" themeColor="textSecondary">
+                  {vendor.sourceNote}
+                </ThemedText>
+              ) : null}
+            </ThemedView>
+          ) : null}
 
           <ThemedView style={styles.section}>
             {/*

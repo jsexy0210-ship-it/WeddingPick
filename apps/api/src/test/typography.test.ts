@@ -63,4 +63,35 @@ describe('글자 크기 토큰', () => {
   it('줄 높이도 직접 적지 않는다', () => {
     expect(offenders(/lineHeight:\s*\d/)).toEqual([]);
   });
+
+  it('웹이 앱과 같은 스케일을 쓴다', () => {
+    /*
+     * 랜딩은 번들러 없이 문서에 통째로 실려서 tokens.css를 import할 수 없다.
+     * 그래서 값을 옮겨 적는데, 옮겨 적은 값은 갈라진다 — 나란히 놓고 보기
+     * 전까지 아무도 모른다. 그 갈라짐을 여기서 잡는다.
+     */
+    const scale = readFileSync(join(ROOT, 'packages/ui/src/typography.ts'), 'utf8');
+    const web = readFileSync(join(ROOT, 'apps/web/src/styles.ts'), 'utf8');
+    const css = readFileSync(join(ROOT, 'packages/ui/src/tokens.css'), 'utf8');
+
+    for (const token of ['t1', 't2', 't4', 't5', 't6', 't7', 'badge', 'amount']) {
+      const size = scale.match(new RegExp(`${token}: (\\d+)`))?.[1];
+
+      expect({ token, size }).toEqual({ token, size: expect.any(String) });
+      expect(web).toContain(`--text-${token}: ${size}px;`);
+      expect(css).toContain(`--text-${token}: ${size}px;`);
+    }
+  });
+
+  it('웹도 글자 크기를 직접 적지 않는다', () => {
+    const web = readFileSync(join(ROOT, 'apps/web/src/styles.ts'), 'utf8');
+    const raw = web
+      .split('\n')
+      .map((line, index) => [line, index + 1] as const)
+      /* 토큰을 정의하는 줄(`--text-t6: 15px`)은 숫자를 들고 있어야 한다. */
+      .filter(([line]) => /font-size:\s*[\d.]/.test(line))
+      .map(([line, at]) => `apps/web/src/styles.ts:${at} ${line.trim()}`);
+
+    expect(raw).toEqual([]);
+  });
 });
