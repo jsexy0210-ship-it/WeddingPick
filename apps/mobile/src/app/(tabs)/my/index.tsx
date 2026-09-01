@@ -352,6 +352,17 @@ export default function MyScreen() {
               hint="알림, 예식일, 결제인증 동의"
               onPress={() => router.push('/my/settings')}
             />
+            {/*
+              로그인한 사람에게만 보인다. 지울 계정이 없는 사람에게 탈퇴를 보이면
+              없는 곳으로 가는 줄을 그리는 것이 된다.
+            */}
+            {data.me ? (
+              <ActionButton
+                label="회원탈퇴"
+                hint="지워지는 것과 분리되는 것을 먼저 보여드려요"
+                onPress={() => router.push('/my/withdrawal')}
+              />
+            ) : null}
           </ThemedView>
         </ScrollView>
       </SafeAreaView>

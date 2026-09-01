@@ -99,6 +99,10 @@ import {
   type VendorSearchResponse,
   type WeddingInviteListResponse,
   type VerificationRequest,
+  withdrawalNoticeSchema,
+  withdrawalResultSchema,
+  type WithdrawalNotice,
+  type WithdrawalResult,
 } from '@weddingpick/api-contract';
 import { z, type ZodType } from 'zod';
 
@@ -834,6 +838,16 @@ export async function updateSettings(body: UpdateSettingsRequest): Promise<Setti
     method: 'PUT',
     body: JSON.stringify(body),
   });
+}
+
+/** 탈퇴하면 무엇이 어떻게 되는지. 화면이 개수를 짐작하지 않는다. */
+export async function getWithdrawalNotice(): Promise<WithdrawalNotice> {
+  return request('/v1/me/withdrawal', withdrawalNoticeSchema);
+}
+
+/** 탈퇴. 되돌릴 수 없어서 화면이 시트로 한 번 더 묻고 부른다. */
+export async function withdraw(): Promise<WithdrawalResult> {
+  return request('/v1/me/withdrawal', withdrawalResultSchema, { method: 'POST' });
 }
 
 /** 결제인증 동의. 최초 1회만 — 두 번 눌러도 한 번만 남는다. */

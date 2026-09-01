@@ -8,6 +8,7 @@ import { createExpoPush } from './push/expo';
 import { sendPriceChangeNudges, sendTaskNudges } from './notify/nudges';
 import { alertOperators } from './retention/alert';
 import { listRetentionAttention, sweepExpiredDocuments } from './retention/worker';
+import { completeWithdrawals } from './withdrawal';
 import { createLocalStorage } from './storage/local';
 import { createS3Storage } from './storage/s3';
 
@@ -83,6 +84,14 @@ async function main() {
         if (config.retentionMode === 'automatic') {
           await sweepExpiredDocuments({ pool, storage });
         }
+
+        /*
+         * 탈퇴하고 원본이 다 지워진 계정을 지운다. **두 모드 모두에서 돈다** —
+         * 여기서 지우는 것은 파일이 아니라 계정 행이고, 파일이 하나라도 남아
+         * 있으면 `deletable_accounts`에 애초에 뜨지 않는다. 지울 것이 없는데
+         * 남겨두면 탈퇴한 사람의 계정만 남는다.
+         */
+        await completeWithdrawals(pool);
 
         /*
          * 알림은 두 모드 모두에서 돈다. 심사 적체는 삭제 방식과 무관하고,
