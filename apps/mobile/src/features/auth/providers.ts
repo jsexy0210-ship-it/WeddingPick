@@ -1,4 +1,6 @@
 import type { AuthProvider } from '@weddingpick/api-contract';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import { AuthRequest, ResponseType, makeRedirectUri } from 'expo-auth-session';
 import { useEffect, useState } from 'react';
 
 import { listAuthProviders, signIn } from '@/api/client';
@@ -8,7 +10,12 @@ import { DEV_LOGIN_SECRET, devIdToken } from '@/features/auth/dev-login';
 export const PROVIDER_LABEL = {
   apple: 'Apple로 계속하기',
   kakao: '카카오로 계속하기',
+  google: 'Google로 계속하기',
+  naver: '네이버로 계속하기',
 } as const;
+
+const KAKAO_CLIENT_ID = process.env.EXPO_PUBLIC_KAKAO_CLIENT_ID;
+const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
 
 /**
  * 쓸 수 있는 로그인 방법.
@@ -54,9 +61,74 @@ export function canSignInWith(provider: AuthProvider): boolean {
  * 눌러도 여기서 멈춘다 — 눌리는 척하고 아무 일도 안 하는 것보다 낫다.
  */
 export async function signInWith(provider: AuthProvider): Promise<void> {
-  if (!provider.isDevelopmentStandIn) {
-    throw new Error('아직 준비 중입니다.');
+  if (provider.isDevelopmentStandIn) {
+    await signIn(provider.provider, devIdToken());
+    return;
   }
 
-  await signIn(provider.provider, devIdToken());
+  if (provider.provider === 'apple') {
+    if (!(await AppleAuthentication.isAvailableAsync())) {
+      throw new Error('이 기기에서는 Apple 로그인을 사용할 수 없습니다.');
+    }
+
+    const credential = await AppleAuthentication.signInAsync({
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+      ],
+    });
+
+    if (!credential.identityToken) {
+      throw new Error('Apple 로그인 토큰을 받지 못했습니다. 다시 시도해 주세요.');
+    }
+
+    await signIn('apple', credential.identityToken);
+    return;
+  }
+
+  if (provider.provider === 'kakao') {
+    if (!KAKAO_CLIENT_ID) {
+      throw new Error('카카오 로그인 설정이 아직 완료되지 않았습니다.');
+    }
+
+    const redirectUri = makeRedirectUri({ scheme: 'weddingpick' });
+    const request = new AuthRequest({
+      clientId: KAKAO_CLIENT_ID,
+      redirectUri,
+      responseType: ResponseType.IdToken,
+      scopes: ['openid'],
+      usePKCE: false,
+    });
+    const result = await request.promptAsync({
+      authorizationEndpoint: 'https://kauth.kakao.com/oauth/authorize',
+    });
+
+    if (result.type !== 'success' || !result.params.id_token) {
+      if (result.type === 'cancel' || result.type === 'dismiss') return;
+      throw new Error('카카오 로그인에 실패했습니다. 다시 시도해 주세요.');
+    }
+
+    await signIn('kakao', result.params.id_token);
+    return;
+  }
+
+  if (provider.provider === 'google') {
+    if (!GOOGLE_CLIENT_ID) throw new Error('Google 로그인 설정이 아직 완료되지 않았습니다.');
+    const request = new AuthRequest({
+      clientId: GOOGLE_CLIENT_ID,
+      redirectUri: makeRedirectUri({ scheme: 'weddingpick' }),
+      responseType: ResponseType.IdToken,
+      scopes: ['openid', 'profile', 'email'],
+      usePKCE: false,
+    });
+    const result = await request.promptAsync({ authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth' });
+    if (result.type !== 'success' || !result.params.id_token) {
+      if (result.type === 'cancel' || result.type === 'dismiss') return;
+      throw new Error('Google 로그인에 실패했습니다. 다시 시도해 주세요.');
+    }
+    await signIn('google', result.params.id_token);
+    return;
+  }
+
+  throw new Error('네이버 로그인은 서버 OAuth 연동 후 사용할 수 있습니다.');
 }

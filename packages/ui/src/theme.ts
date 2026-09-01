@@ -20,6 +20,10 @@ import { Platform } from 'react-native';
  * gray 램프와 의미색은 SEED scale 토큰을 그대로 옮겼다. **키 컬러만 SEED와
  * 다르다** — SEED의 carrot(#ff6f0f)은 당근의 브랜드색이고, 우리 키 컬러는
  * 통합정책 v3.1 §5가 정한 코랄 `#ff6f61`이다.
+ *
+ * `orange`/`orangeBg`(경고)는 `design_handoff_weddingpick/웨딩픽 컴포넌트
+ * 시트.dc.html`에서 직접 읽은 값이다 — gray 램프와 이름 체계가 달라 보여도
+ * 같은 SEED 출처다.
  */
 const palette = {
   /*
@@ -65,6 +69,9 @@ const palette = {
   green50: '#e8faf6',
   yellow700: '#805217',
   yellow50: '#fff7e6',
+  /** Warning. 컴포넌트 시트에서 직접 읽었다. */
+  orange: '#b57a00',
+  orangeBg: '#fff5e0',
 
   /* 지출 차트. SEED가 정하지 않은 자리라 이전 값을 그대로 쓴다. */
   tealBar: '#00c2b3',
@@ -241,7 +248,8 @@ export const Layout = {
   touchTarget: 44,
   statusBar: 44,
   navBar: 56,
-  tabBar: 74,
+  /** SEED 핸드오프: 72 + Safe Area. */
+  tabBar: 72,
   /** SEED 컨트롤 높이. 화면당 Primary CTA는 xlarge다. */
   controlMedium: 40,
   controlLarge: 48,
@@ -249,25 +257,18 @@ export const Layout = {
 } as const;
 
 /**
- * 모서리 둥글기 — SEED radius 토큰.
+ * 모서리 둥글기. SEED 핸드오프(컴포넌트 시트): 버튼·입력필드·작은 썸네일·배지 컨테이너
+ * 6, 카드·이미지·알림박스 10, Pick 카드 14, 바텀시트 상단 20, 칩·아바타·원형버튼 999.
  *
- * **버튼이 6이다.** TDS에서는 14였다. 이 한 값이 인상을 가장 크게 바꾼다 —
- * 둥근 인상에서 단정한 인상으로 내려온다.
+ * 이름은 예전(v7 Toss 핸드오프) 스케일을 그대로 두고 값만 SEED로 바꿨다.
  */
 export const Radius = {
-  tiny: 2,
-  xsmall: 4,
-  /** 박스 버튼(md~xl)·텍스트 필드·다이얼로그 액션. */
   small: 6,
   input: 6,
-  /** 콜아웃·카드. */
   medium: 10,
-  card: 10,
-  /** 알림 다이얼로그 컨테이너. */
-  large: 16,
-  /** 바텀시트·액션시트 상단. */
+  card: 14,
   sheet: 20,
-  pill: 9999,
+  pill: 999,
 } as const;
 
 /**

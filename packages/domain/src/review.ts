@@ -130,9 +130,15 @@ export type ReviewVerification = (typeof REVIEW_VERIFICATION)[number];
  */
 export const REVIEW_VERIFICATION_LABEL: Record<ReviewVerification, string> = {
   reported: '상담제보',
-  payment: '결제인증',
-  contract: '계약인증',
-  usage: '이용인증',
+  /*
+   * `인증`이 아니라 `확인`이다. 아래 안내문이 이미 "결제 확인으로 올라갑니다"라고
+   * 적고 있어, 배지만 `결제인증`으로 두면 같은 화면이 두 이름을 쓴다.
+   *
+   * 띄어쓰기가 없는 것은 배지 카피 규칙이다.
+   */
+  payment: 'Pick확인',
+  contract: '계약확인',
+  usage: '이용확인',
 };
 
 /** 이용점수에 들어가는 후기인지. 상담제보는 보이되 점수를 움직이지 않는다. */
@@ -211,7 +217,7 @@ export function computeUsageScore(
   if (counted.length < MINIMUM_REVIEW_COUNT) {
     return {
       available: false,
-      reason: `${COLLECTING_LABEL} — 확인된 후기가 ${withSubject(`${MINIMUM_REVIEW_COUNT}건`)} 모여야 점수를 만듭니다.`,
+      reason: `${COLLECTING_LABEL} — 확인된 후기가 ${withSubject(`${MINIMUM_REVIEW_COUNT}건`)} 모여야 점수를 만들어요.`,
       count: counted.length,
     };
   }
@@ -269,7 +275,7 @@ export function canSubmitReview(draft: ReviewDraft): ReviewCheck {
   if (draft.body.trim().length < MINIMUM_BODY_LENGTH) {
     return {
       ok: false,
-      reason: `${MINIMUM_BODY_LENGTH}자 이상 적어주세요. 짧은 글은 다음 분에게 도움이 되지 않습니다.`,
+      reason: `${MINIMUM_BODY_LENGTH}자 이상 적어주세요. 짧은 글은 다음 분에게 도움이 되지 않아요.`,
     };
   }
 
@@ -365,7 +371,7 @@ export function shouldRestore(input: { status: ReviewStatus; holdUntil: Date | n
  * 한 사람의 경험이고, 우리는 그것이 사실인지 판단하지 않는다.
  */
 export const REVIEW_CAVEAT =
-  '후기는 작성한 분의 경험이며 웨딩픽이 사실 여부를 확인하지 않습니다. 확인된 후기는 그 분이 실제로 이용했다는 것까지만 확인한 것입니다.';
+  '후기는 작성한 분의 경험이며 웨딩픽이 사실 여부를 확인하지 않아요. 확인된 후기는 그 분이 실제로 이용했다는 것까지만 확인한 거예요.';
 
 /**
  * 신고 접수 문구.
@@ -374,7 +380,7 @@ export const REVIEW_CAVEAT =
  * 말하지 않는다. 신고만으로 글이 내려가면 그건 신고가 아니라 삭제 버튼이다.
  */
 export function reviewReportAcknowledgement(): string {
-  return '신고를 접수했습니다. 사람이 직접 확인하고 알려드립니다. 신고만으로 글이 내려가지는 않습니다.';
+  return '신고를 접수했어요. 사람이 직접 확인하고 알려드려요. 신고만으로 글이 내려가지는 않아요.';
 }
 
 /**
@@ -386,12 +392,12 @@ export function reviewReportAcknowledgement(): string {
 export function verificationNote(verification: ReviewVerification): string {
   switch (verification) {
     case 'contract':
-      return '인증을 마친 계약 문서가 있어 계약 확인으로 올라갑니다. 증빙을 다시 올리지 않으셔도 됩니다.';
+      return '인증을 마친 계약 문서가 있어 계약 확인으로 올라가요. 증빙을 다시 올리지 않으셔도 돼요.';
     case 'payment':
-      return '결제인증 제보가 있어 결제 확인으로 올라갑니다. 계약서를 인증하시면 계약 확인이 됩니다.';
+      return 'Pick 인증 자료가 있어 Pick 확인으로 올라가요. 계약 자료를 확인받으시면 계약 확인이 돼요.';
     case 'usage':
-      return '이용까지 확인된 문서가 있어 이용인증으로 올라갑니다. 가장 무거운 확인입니다.';
+      return '이용까지 확인된 문서가 있어 이용인증으로 올라가요. 가장 무거운 확인이에요.';
     case 'reported':
-      return '이 업체의 확인된 문서가 없어 상담제보로 올라갑니다. 후기는 그대로 보이지만 업체 점수에는 들어가지 않습니다.';
+      return '이 업체의 확인된 문서가 없어 상담제보로 올라가요. 후기는 그대로 보이지만 업체 점수에는 들어가지 않아요.';
   }
 }

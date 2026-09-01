@@ -1,5 +1,7 @@
 import { Platform, StyleSheet, Text, type TextProps } from 'react-native';
 
+import { FontSize, LineHeight } from './typography';
+
 import { Fonts, ThemeColor } from './theme';
 import { useTheme } from './use-theme';
 
@@ -110,29 +112,29 @@ const STYLE_FOR: Record<TextType, keyof typeof styles> = {
  */
 const styles = StyleSheet.create({
   /** SEED h3. 홈 히어로 — `두근두근 / 142일 남았어요`. */
-  t1: { fontSize: 32, lineHeight: 43, fontWeight: 700 },
+  t1: { fontSize: FontSize.t1, lineHeight: LineHeight.t1, fontWeight: 700 },
   /** SEED h4. 화면 헤드라인·섹션 히어로. 줄바꿈은 수동. */
-  t2: { fontSize: 26, lineHeight: 35, fontWeight: 700 },
+  t2: { fontSize: FontSize.t2, lineHeight: LineHeight.t2, fontWeight: 700 },
   /** SEED title2. 섹션 제목. */
-  t4: { fontSize: 20, lineHeight: 27, fontWeight: 700 },
+  t4: { fontSize: FontSize.t4, lineHeight: LineHeight.t4, fontWeight: 700 },
   /** SEED title3. 목록 항목명, 강조 값. */
-  t5: { fontSize: 18, lineHeight: 24, fontWeight: 700 },
+  t5: { fontSize: FontSize.t5, lineHeight: LineHeight.t5, fontWeight: 700 },
   /** SEED subtitle1. 본문, 설명. */
-  t6: { fontSize: 16, lineHeight: 22, fontWeight: 400 },
+  t6: { fontSize: FontSize.t6, lineHeight: LineHeight.t6, fontWeight: 400 },
   /** SEED subtitle2. 캡션, 라벨, 출처. */
-  t7: { fontSize: 14, lineHeight: 19, fontWeight: 400 },
+  t7: { fontSize: FontSize.t7, lineHeight: LineHeight.t7, fontWeight: 400 },
   /** SEED body-l1. 두 줄 이상 이어 읽는 안내문. */
-  body: { fontSize: 16, lineHeight: 24, fontWeight: 400 },
-  tab: { fontSize: 12, lineHeight: 16, fontWeight: 700 },
-  badge: { fontSize: 12, lineHeight: 16, fontWeight: 700 },
-  amount: { fontSize: 32, lineHeight: 43, fontWeight: 700 },
+  body: { fontSize: FontSize.t6, lineHeight: FontSize.t6 * 1.5, fontWeight: 400 },
+  tab: { fontSize: FontSize.tab, lineHeight: LineHeight.tab, fontWeight: 700 },
+  badge: { fontSize: FontSize.badge, lineHeight: LineHeight.badge, fontWeight: 700 },
+  amount: { fontSize: FontSize.amount, lineHeight: LineHeight.amount, fontWeight: 700 },
 
   numeric: { fontVariant: ['tabular-nums'] },
 
-  link: { fontSize: 14, lineHeight: 19 },
+  link: { fontSize: FontSize.t7, lineHeight: LineHeight.link },
   code: {
     fontFamily: Fonts.mono,
     fontWeight: Platform.select({ android: 700 }) ?? 500,
-    fontSize: 12,
+    fontSize: FontSize.code,
   },
 });

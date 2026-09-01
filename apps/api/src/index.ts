@@ -1,6 +1,7 @@
 import { createDevProvider } from './auth/dev-provider';
-import { createAppleProvider, createKakaoProvider } from './auth/identity-provider';
-import { loadConfig } from './config';
+import { createAppleProvider, createGoogleProvider, createKakaoProvider } from './auth/identity-provider';
+import { assertReleasable } from '@weddingpick/domain';
+import { loadConfig, loadLegalNotice } from './config';
 import type { AppContext } from './context';
 import { createClaudePaymentReader } from './analysis/claude-payment-reader';
 import { createPool } from './db';
@@ -37,6 +38,19 @@ function devProvider() {
 async function main() {
   const config = loadConfig();
 
+  /*
+   * 법적 고지가 비어 있으면 Production은 뜨지 않는다.
+   *
+   * 사람이 기억하는 대신 배포가 막는다 — 사업자명·등록번호는 화면 구석에 있어서
+   * 아무도 안 보고, 다들 "출시 전에 채우겠지"라고 생각한다. 개발·테스트에서는
+   * 경고 한 줄만 남기고 뜬다.
+   */
+  const legalWarning = assertReleasable(process.env.NODE_ENV, loadLegalNotice());
+
+  if (legalWarning) {
+    console.warn(`⚠ 법적 고지가 아직 준비되지 않았다. ${legalWarning}`);
+  }
+
   const context: AppContext = {
     config,
     pool: createPool(config.databaseUrl),
@@ -48,6 +62,7 @@ async function main() {
     providers: {
       ...(config.appleClientId && { apple: createAppleProvider(config.appleClientId) }),
       ...(config.kakaoAppKey && { kakao: createKakaoProvider(config.kakaoAppKey) }),
+      ...(config.googleClientId && { google: createGoogleProvider(config.googleClientId) }),
       // 개발용은 apple 자리를 덮어쓴다. 실제 클라이언트 ID가 있으면 그쪽이 이긴다.
       ...(!config.appleClientId && devProvider() && { apple: devProvider()! }),
     },

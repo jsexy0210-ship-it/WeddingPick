@@ -1,0 +1,157 @@
+import { top3QuerySchema } from '@weddingpick/api-contract';
+import {
+  DEFAULT_PERIOD_LABEL,
+  DEFAULT_PERIOD_MONTHS,
+  RECENT_PERIOD_MONTHS,
+  TOP3_LIMIT,
+  TOP3_EMPTY,
+  TOP3_PARTIAL_NOTE,
+  coarseRegion,
+  discloseAmounts,
+  isRecommendable,
+  reasonsFor,
+  type VendorCategory,
+} from '@weddingpick/domain';
+import type { FastifyInstance } from 'fastify';
+
+import { optionalUser, optionalUserId } from '../auth/plugin';
+import type { AppContext } from '../context';
+
+type CandidateRow = {
+  id: string;
+  name: string;
+  category: VendorCategory;
+  region: string;
+  confirmed_count: string;
+  recent_count: string;
+  paid_amounts: string[] | null;
+};
+
+type ViewerRow = { region: string | null; budget_amount: string | null };
+
+/**
+ * 추천. 통합정책 v3.10 §2.
+ *
+ * **광고를 읽지 않는다.** 이 파일에 `ads.` 라는 글자가 없다는 것이 정책이다 —
+ * "광고비는 자연 추천 순위에 영향을 줄 수 없다"를 규칙으로 적어두는 대신,
+ * 광고를 섞으려면 이 파일에 스키마 이름을 새로 써야만 하도록 두었다. 리뷰에서
+ * 눈에 띈다.
+ */
+export function registerRecommendationRoutes(app: FastifyInstance, context: AppContext): void {
+  const auth = { preHandler: optionalUser(context) };
+
+  /**
+   * 이 지역·업종의 TOP3.
+   *
+   * 비회원도 부른다. 지연 로그인이라 로그인 전에도 홈이 뜨고, 그때 지역은 기기에
+   * 적혀 있어 쿼리로 넘어온다.
+   */
+  app.get('/v1/recommendations/top3', auth, async (request) => {
+    const query = top3QuerySchema.parse(request.query);
+    const userId = optionalUserId(request);
+
+    /*
+     * 로그인한 사람이면 자기 웨딩에서 지역과 예산을 읽는다. 쿼리가 있으면
+     * 쿼리가 이긴다 — 화면에서 지역을 바꿔보는 중일 수 있다.
+     */
+    const viewer = userId
+      ? (
+          await context.pool.query<ViewerRow>(
+            `SELECT region, budget_amount FROM structured.weddings
+             WHERE owner_user_id = $1 OR partner_user_id = $1
+             ORDER BY created_at LIMIT 1`,
+            [userId]
+          )
+        ).rows[0]
+      : undefined;
+
+    const region = query.region ?? viewer?.region ?? null;
+    const budgetAmount = viewer?.budget_amount ? Number(viewer.budget_amount) : null;
+    /*
+     * 업종을 안 주면 웨딩홀부터 본다. 준비 순서에서 가장 먼저 정해지는 업종이고,
+     * 나머지 업종의 날짜와 예산이 여기서 갈린다.
+     */
+    const category: VendorCategory = query.category ?? 'hall';
+
+    /*
+     * 후보를 넉넉히 읽는다. 자격 판정(확인된 정보 수·이유)이 도메인에 있어서
+     * 여기서는 못 거른다 — 세 줄만 읽으면 그 셋이 전부 탈락했을 때 남는 것이 없다.
+     */
+    const { rows } = await context.pool.query<CandidateRow>(
+      /*
+       * 확인된 정보는 **금액 캡션이 세는 것과 같은 것**을 센다 — 기본 기간 안의
+       * 확인된 결제다. 계약 자료를 따로 세면 카드가 `확인된 정보가 많아요`라고
+       * 적어놓고 캡션에 다른 수를 적는다.
+       *
+       * `최근`은 그보다 짧은 기간이다. 같은 기간을 두 번 세면 두 이유가 늘 붙어
+       * 다니는 한 문장이 된다.
+       */
+      `SELECT
+         v.id, v.name, v.category, v.region,
+         (SELECT count(*) FROM structured.usable_payment_proofs p
+          WHERE p.vendor_id = v.id AND p.paid_at >= now() - ($3 || ' months')::interval)
+           AS confirmed_count,
+         (SELECT count(*) FROM structured.usable_payment_proofs p
+          WHERE p.vendor_id = v.id AND p.paid_at >= now() - ($5 || ' months')::interval)
+           AS recent_count,
+         coalesce(
+           (SELECT array_agg(p.paid_amount)
+            FROM structured.usable_payment_proofs p
+            WHERE p.vendor_id = v.id
+              AND p.paid_at >= now() - ($3 || ' months')::interval),
+           ARRAY[]::bigint[]
+         ) AS paid_amounts
+       FROM structured.vendors v
+       WHERE v.category = $1::vendor_category
+         AND ($2::text IS NULL OR v.region LIKE $2 || '%')
+       ORDER BY confirmed_count DESC, recent_count DESC, v.name, v.id
+       LIMIT $4`,
+      [category, region, DEFAULT_PERIOD_MONTHS, TOP3_LIMIT * 10, RECENT_PERIOD_MONTHS]
+    );
+
+    const items = [];
+
+    for (const row of rows) {
+      const amounts = (row.paid_amounts ?? []).map(Number);
+      const paidPrice = discloseAmounts({ amounts, period: DEFAULT_PERIOD_LABEL });
+      const facts = {
+        /* 지역을 안 고른 사람에게는 지역이 이유가 될 수 없다. */
+        regionMatched: region !== null && coarseRegion(row.region) === coarseRegion(region),
+        confirmedCount: Number(row.confirmed_count),
+        recentCount: Number(row.recent_count),
+        baseAmount: paidPrice.stage === 'detailed' ? paidPrice.median : null,
+        budgetAmount,
+      };
+
+      if (!isRecommendable(facts)) continue;
+
+      items.push({
+        vendorId: row.id,
+        name: row.name,
+        category: row.category,
+        region: row.region,
+        reasons: reasonsFor(facts),
+        confirmedCount: facts.confirmedCount,
+        paidPrice,
+      });
+
+      if (items.length === TOP3_LIMIT) break;
+    }
+
+    return {
+      region,
+      category,
+      items,
+      /*
+       * 세 곳을 못 채웠으면 그렇다고 적는다. 아무 말 없이 두 줄만 두면 읽는
+       * 사람은 세 번째가 로딩 중이거나 빠진 것이라고 읽는다.
+       */
+      note:
+        items.length === 0
+          ? TOP3_EMPTY
+          : items.length < TOP3_LIMIT
+            ? TOP3_PARTIAL_NOTE
+            : null,
+    };
+  });
+}

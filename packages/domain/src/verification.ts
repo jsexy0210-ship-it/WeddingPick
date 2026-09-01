@@ -18,14 +18,24 @@ export type VerificationLevelRule = {
   weight: number;
 };
 
+/**
+ * 확인 단계 다섯.
+ *
+ * `label`은 **사용자 화면에 나가는 배지**다. v3.13 §O-10이 사용자 UI에서 `견적`·
+ * `계약서`를 막아서, 무엇을 확인했는지를 자료 이름이 아니라 **어디까지 확인됐는지**로
+ * 적는다. `condition`은 그 단계에 무엇이 필요한지를 운영자가 읽는 자리라
+ * 정확한 자료 이름을 그대로 쓴다.
+ *
+ * 배지는 띄어쓰지 않는다(카피 규칙).
+ */
 export const VERIFICATION_LEVEL_RULES: Record<VerificationLevel, VerificationLevelRule> = {
-  L0: { label: '미인증', condition: '사용자 입력만 존재', affectsMarketPrice: false, weight: 0 },
-  L1: { label: '견적인증', condition: '실제 견적자료 확인', affectsMarketPrice: false, weight: 0 },
-  L2: { label: '계약인증', condition: '실제 계약자료 확인', affectsMarketPrice: true, weight: 1 },
-  L3: { label: '이용인증', condition: '실제 이용 확인', affectsMarketPrice: true, weight: 2 },
+  L0: { label: '미확인', condition: '사용자 입력만 존재', affectsMarketPrice: false, weight: 0 },
+  L1: { label: '자료확인', condition: '올린 자료 확인', affectsMarketPrice: false, weight: 0 },
+  L2: { label: 'Pick확인', condition: '실제 계약 자료 확인', affectsMarketPrice: true, weight: 1 },
+  L3: { label: '이용확인', condition: '실제 이용 확인', affectsMarketPrice: true, weight: 2 },
   L4: {
-    label: '최종금액 인증',
-    condition: '최종 결제자료 확인',
+    label: '최종금액확인',
+    condition: '최종 지출 자료 확인',
     affectsMarketPrice: true,
     weight: 3,
   },
@@ -54,20 +64,31 @@ export const VERIFICATION_EVIDENCE_KINDS = [
 
 export type VerificationEvidenceKind = (typeof VERIFICATION_EVIDENCE_KINDS)[number];
 
+/**
+ * 어떤 서류를 첨부하는가.
+ *
+ * **여기만 실제 서류 이름을 쓴다.** v3.13 §O-10이 사용자 UI에서 `견적서`·`계약서`를
+ * 막았지만, 이 화면은 사용자가 **손에 든 종이를 골라야 하는 자리**다. 여기서
+ * `Pick 인증 자료`라고만 적으면 무엇을 첨부하라는 것인지 알 수 없고, 잘못된
+ * 서류가 올라와 확인이 반려된다.
+ *
+ * 줄마다 `pick-language:` 표시를 달아 검사에서 뺀다 — 파일째 빼면 이 파일의
+ * 다른 문구가 조용히 옛말로 돌아간다.
+ */
 export const VERIFICATION_EVIDENCE_RULES: Record<
   VerificationEvidenceKind,
   { label: string; description: string }
 > = {
   quote_document: {
-    label: '견적서',
-    description: '업체에서 받은 견적서 원본',
+    label: '견적서', // pick-language: 손에 든 서류 이름
+    description: '업체에서 받은 견적서 원본', // pick-language: 손에 든 서류 이름
   },
   contract_document: {
-    label: '계약서',
-    description: '도장이나 서명이 들어간 가계약서·계약서',
+    label: '계약서', // pick-language: 손에 든 서류 이름
+    description: '도장이나 서명이 들어간 가계약서·계약서', // pick-language: 손에 든 서류 이름
   },
   payment_receipt: {
-    label: '결제 내역',
+    label: 'Pick 인증 자료',
     description: '계약금·잔금을 실제로 낸 것을 보여주는 영수증이나 이체 내역',
   },
   usage_proof: {
@@ -112,11 +133,18 @@ export const VERIFICATION_STATUSES = ['received', 'in_review', 'approved', 'reje
 
 export type VerificationStatus = (typeof VERIFICATION_STATUSES)[number];
 
+/**
+ * 사용자에게 나가는 말. 표시 정책(`report-state.ts`)을 따른다.
+ *
+ * `승인`·`반려`는 심사자의 말이지 사용자의 말이 아니다. 같은 일을 다른 흐름에서
+ * `확인 완료`라고 적고 여기서만 `승인`이라고 적으면, 읽는 사람은 둘이 다른
+ * 일인 줄 안다.
+ */
 export const VERIFICATION_STATUS_LABEL: Record<VerificationStatus, string> = {
-  received: '접수됨',
+  received: '확인 중',
   in_review: '확인 중',
-  approved: '승인',
-  rejected: '반려',
+  approved: '확인 완료',
+  rejected: '반영되지 않았어요',
 };
 
 /**
@@ -140,13 +168,13 @@ export function canApprove(input: {
 }): ApprovalCheck {
   // 서비스정책서 7번. 자기 증빙을 자기가 확인하는 것은 확인이 아니다.
   if (input.reviewerId === input.requesterId) {
-    return { ok: false, reason: '신청한 본인은 심사할 수 없습니다.' };
+    return { ok: false, reason: '신청한 본인은 심사할 수 없어요.' };
   }
 
   if (isAtLeast(input.currentLevel, input.targetLevel)) {
     return {
       ok: false,
-      reason: `이 문서는 이미 ${VERIFICATION_LEVEL_RULES[input.currentLevel].label}입니다.`,
+      reason: `이 문서는 이미 ${VERIFICATION_LEVEL_RULES[input.currentLevel].label}이에요.`,
     };
   }
 
@@ -158,7 +186,7 @@ export function canApprove(input: {
       ok: false,
       reason:
         `${VERIFICATION_LEVEL_RULES[input.targetLevel].label}에는 ` +
-        `${withSubject(required)} 있어야 합니다. 낸 증빙에 없습니다.`,
+        `${withSubject(required)} 있어야 해요. 낸 증빙에 없어요.`,
     };
   }
 

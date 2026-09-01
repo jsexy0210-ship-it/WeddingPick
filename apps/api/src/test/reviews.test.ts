@@ -603,7 +603,7 @@ describeWithDb('이용 후기', () => {
 
     expect(response.statusCode).toBe(201);
     expect(response.json<{ verification: string }>().verification).toBe('contract');
-    expect(response.json<{ verificationLabel: string }>().verificationLabel).toBe('계약인증');
+    expect(response.json<{ verificationLabel: string }>().verificationLabel).toBe('계약확인');
   });
 
   it('심사자 없이 오른 등급으로는 확인해 주지 않는다', async () => {

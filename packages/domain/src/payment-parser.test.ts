@@ -116,7 +116,7 @@ describe('결제문자 읽기', () => {
   it('결제 안내가 아닌 글은 거절한다', () => {
     const parsed = parsePaymentText('안녕하세요 상담 문의드립니다 010-1234-5678', NOW);
 
-    expect(parsed.rejection).toContain('결제 안내문으로 보이지 않습니다');
+    expect(parsed.rejection).toContain('금액이 적힌 안내문으로 보이지 않아요');
   });
 
   it('빈 글도 거절한다', () => {

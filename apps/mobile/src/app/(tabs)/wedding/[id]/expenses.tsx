@@ -2,14 +2,16 @@ import type { ExpenseSummaryResponse } from '@weddingpick/api-contract';
 import { EXPENSE_BUCKET_COLOR, manwon, type ExpenseBucket } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Modal, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getExpenses, removeExpense, setBudget } from '@/api/client';
 import {
   ActionButton,
   DonutChart,
+  ErrorView,
   Layout,
+  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
@@ -49,23 +51,11 @@ export default function ExpensesScreen() {
   useEffect(load, [load]);
 
   if (error) {
-    return (
-      <Frame>
-        <ThemedText type="t4">불러오지 못했습니다</ThemedText>
-        <ThemedText type="t7" themeColor="textSecondary">
-          {error}
-        </ThemedText>
-        <ActionButton label="돌아가기" onPress={() => router.back()} />
-      </Frame>
-    );
+    return <ErrorView message={error} onBack={() => router.back()} />;
   }
 
   if (!page) {
-    return (
-      <Frame>
-        <ActivityIndicator color={theme.tint} />
-      </Frame>
-    );
+    return <LoadingView />;
   }
 
   async function saveBudget() {
@@ -76,7 +66,7 @@ export default function ExpensesScreen() {
       setBudgetOpen(false);
       load();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : '정하지 못했습니다.');
+      setError(caught instanceof Error ? caught.message : '정하지 못했어요.');
     }
   }
 
@@ -88,8 +78,8 @@ export default function ExpensesScreen() {
       // 결제인증에서 온 줄은 여기서 지울 수 없다. 그건 지출 기록이 아니라 제보다.
       setError(
         caught instanceof Error
-          ? '결제인증으로 들어온 항목은 여기서 지울 수 없습니다.'
-          : '지우지 못했습니다.'
+          ? '제보로 들어온 항목은 여기서 지울 수 없어요.'
+          : '지우지 못했어요.'
       );
     }
   }
@@ -180,11 +170,11 @@ export default function ExpensesScreen() {
             {page.expenses.length === 0 ? (
               <ThemedView type="backgroundElement" style={styles.card}>
                 <ThemedText type="t7" themeColor="textSecondary">
-                  아직 항목이 없습니다. 결제내역을 등록하시면 여기 모입니다.
+                  아직 항목이 없어요. 지출을 등록하시면 여기 모여요.
                 </ThemedText>
                 <ActionButton
                   variant="primary"
-                  label="결제인증 제보하기"
+                  label="제보하기"
                   onPress={() => router.push('/capture')}
                 />
               </ThemedView>
@@ -231,7 +221,7 @@ export default function ExpensesScreen() {
           <ThemedView style={styles.sheet}>
             <ThemedText type="t4">총 예산</ThemedText>
             <ThemedText type="t7" themeColor="textSecondary">
-              정하시면 남은 금액을 함께 보여드려요. 나중에 바꾸셔도 됩니다.
+              정하시면 남은 금액을 함께 보여드려요. 나중에 바꾸셔도 돼요.
             </ThemedText>
             <TextInput
               style={[
@@ -252,16 +242,6 @@ export default function ExpensesScreen() {
           </ThemedView>
         </ThemedView>
       </Modal>
-    </ThemedView>
-  );
-}
-
-function Frame({ children }: { children: React.ReactNode }) {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.content}>{children}</ThemedView>
-      </SafeAreaView>
     </ThemedView>
   );
 }

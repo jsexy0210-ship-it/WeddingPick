@@ -27,4 +27,29 @@
   --font-mono:
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
   --font-serif: Georgia, 'Times New Roman', serif;
+
+  /*
+   * 글자 크기. `packages/ui/src/typography.ts`의 t 스케일과 **같은 수여야 한다.**
+   *
+   * 앱은 그 파일을, 웹은 이 변수를 본다. 두 곳이 갈라지면 같은 서비스가 앱에서는
+   * 15px, 웹에서는 0.95rem으로 보이고 — 나란히 놓고 보기 전까지 아무도 모른다.
+   * `apps/api/src/test/typography.test.ts`가 두 값이 같은지 지킨다.
+   */
+  --text-t1: 32px;
+  --text-t2: 26px;
+  --text-t4: 20px;
+  --text-t5: 18px;
+  --text-t6: 16px;
+  --text-t7: 14px;
+  --text-badge: 12px;
+  --text-amount: 32px;
+
+  --leading-t1: 40px;
+  --leading-t2: 35px;
+  --leading-t4: 28px;
+  --leading-t5: 25.5px;
+  --leading-t6: 22.5px;
+  --leading-t7: 19.5px;
+  --leading-badge: 16px;
+  --leading-amount: 48px;
 }

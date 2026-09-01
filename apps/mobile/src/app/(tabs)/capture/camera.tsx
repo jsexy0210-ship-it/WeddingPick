@@ -25,9 +25,9 @@ export default function CameraScreen() {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.permissionArea}>
-          <ThemedText type="subtitle">카메라 권한이 필요합니다</ThemedText>
+          <ThemedText type="subtitle">카메라 권한이 필요해요</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            견적서·계약서를 촬영해 분석하려면 카메라 접근을 허용해주세요.
+            문서를 촬영해 분석하려면 카메라 접근을 허용해주세요.
           </ThemedText>
           <ActionButton variant="primary" label="권한 허용하기" onPress={requestPermission} />
           <ActionButton label="돌아가기" onPress={() => router.back()} />
@@ -65,7 +65,7 @@ export default function CameraScreen() {
             </ThemedText>
           </Pressable>
           <ThemedText type="small" style={styles.overlayText}>
-            {pages.length > 0 ? `${pages.length}장 촬영됨` : '견적서를 화면에 맞춰주세요'}
+            {pages.length > 0 ? `${pages.length}장 촬영됨` : '자료를 화면에 맞춰주세요'}
           </ThemedText>
         </View>
 

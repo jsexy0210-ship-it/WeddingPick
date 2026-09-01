@@ -7,7 +7,7 @@ import { idSchema, timestampSchema } from './common';
  * 서버는 제공자의 비밀키를 들고 있지 않는다.
  */
 export const createSessionRequestSchema = z.object({
-  provider: z.enum(['apple', 'kakao']),
+  provider: z.enum(['apple', 'kakao', 'google', 'naver']),
   idToken: z.string().min(1),
 });
 
@@ -22,7 +22,7 @@ export const createSessionResponseSchema = z.object({
  * 쓸 수 있는 로그인 방법. 서버가 실제로 무엇을 켜뒀는지 앱이 짐작하지 않게 한다.
  */
 export const authProviderSchema = z.object({
-  provider: z.enum(['apple', 'kakao']),
+  provider: z.enum(['apple', 'kakao', 'google', 'naver']),
   /** 개발용 대체 경로면 true. 화면이 이 사실을 감추지 않는다. */
   isDevelopmentStandIn: z.boolean(),
 });

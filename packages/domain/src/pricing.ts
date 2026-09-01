@@ -1,3 +1,4 @@
+import { roundForDisclosure } from './disclosure';
 import { PRICING_POLICY } from './policy';
 import type { DocumentType } from './document';
 import { VERIFICATION_LEVEL_RULES, affectsMarketPrice, isAtLeast } from './verification';
@@ -82,12 +83,23 @@ export function computePriceStat(samples: PriceSample[]): PriceStat | null {
   const amounts = eligible.map((sample) => sample.amount).sort((a, b) => a - b);
   const dates = eligible.map((sample) => sample.contractDate).sort();
 
+  /*
+   * 분위수는 만원으로 반올림해서 내보낸다.
+   *
+   * `(n-1)*q`가 정수면 분위수는 **표본 하나를 그대로 돌려준다.** 최소 표본이
+   * 5건인데 5건에서는 25%·50%·75%가 전부 그렇다 — 화면의 `기준금액`이 어느
+   * 한 사람이 실제로 낸 계약 금액이 되고, 그 사람은 자기 서류와 숫자를 맞춰볼
+   * 수 있다. 왜 만원인지는 `PUBLISHED_AMOUNT_UNIT`에 적어뒀다.
+   *
+   * `judgePrice`가 이 값들을 경계로 쓰는데, 만원 아래에서 판단이 갈리는 것은
+   * 원래 의미가 없다.
+   */
   return {
     sampleCount: eligible.length,
-    median: quantile(amounts, 0.5),
-    p25: quantile(amounts, PRICING_POLICY.judgementQuantiles.low),
-    p75: quantile(amounts, PRICING_POLICY.judgementQuantiles.similar),
-    p90: quantile(amounts, PRICING_POLICY.judgementQuantiles.somewhatHigh),
+    median: roundForDisclosure(quantile(amounts, 0.5)),
+    p25: roundForDisclosure(quantile(amounts, PRICING_POLICY.judgementQuantiles.low)),
+    p75: roundForDisclosure(quantile(amounts, PRICING_POLICY.judgementQuantiles.similar)),
+    p90: roundForDisclosure(quantile(amounts, PRICING_POLICY.judgementQuantiles.somewhatHigh)),
     periodStart: dates[0] as string,
     periodEnd: dates[dates.length - 1] as string,
     minVerificationLevel: PRICING_POLICY.minimumVerificationLevel,

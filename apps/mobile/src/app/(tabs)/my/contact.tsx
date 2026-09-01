@@ -18,6 +18,7 @@ import {
   Accordion,
   ActionButton,
   FilterChip,
+  FontSize,
   MaxContentWidth,
   Spacing,
   ThemedText,
@@ -113,7 +114,7 @@ export default function ContactScreen() {
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           <ThemedView style={styles.content}>
-            <ThemedText type="subtitle">보냈습니다</ThemedText>
+            <ThemedText type="subtitle">보냈어요</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
               {acknowledgement}
             </ThemedText>
@@ -136,7 +137,7 @@ export default function ContactScreen() {
           <ThemedView style={styles.section}>
             <ThemedText type="subtitle">문의하기</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              사람이 직접 읽고 답합니다. 이름이나 주소는 묻지 않습니다.
+              사람이 직접 읽고 답해요. 이름이나 주소는 묻지 않아요.
             </ThemedText>
           </ThemedView>
 
@@ -161,7 +162,7 @@ export default function ContactScreen() {
           {!isServerConfigured ? (
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="small" themeColor="textSecondary">
-                이 빌드는 서버에 붙어 있지 않아 문의를 보낼 수 없습니다.
+                이 빌드는 서버에 붙어 있지 않아 문의를 보낼 수 없어요.
               </ThemedText>
             </ThemedView>
           ) : null}
@@ -196,7 +197,7 @@ export default function ContactScreen() {
           {rule.requiresSubject && !subject ? (
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="small" themeColor="textSecondary">
-                이 항목은 어느 대상에 대한 것인지가 있어야 합니다. 해당 화면에서 눌러
+                이 항목은 어느 대상에 대한 것인지가 있어야 해요. 해당 화면에서 눌러
                 들어와주세요.
               </ThemedText>
             </ThemedView>
@@ -218,7 +219,7 @@ export default function ContactScreen() {
           <ThemedView style={styles.section}>
             <ThemedText type="smallBold">답을 받을 곳 (선택)</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              비워두시면 이 앱으로 알려드립니다. 다른 곳으로 받고 싶으시면 적어주세요.
+              비워두시면 이 앱으로 알려드려요. 다른 곳으로 받고 싶으시면 적어주세요.
             </ThemedText>
             <TextInput
               style={[styles.input, { color: theme.text, borderColor: theme.border }]}
@@ -313,7 +314,8 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.three,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
-    fontSize: 16,
+    /* 입력 칸 글자도 본문이다. 토큰 밖의 크기를 쓰지 않는다. */
+    fontSize: FontSize.t6,
   },
   body: {
     minHeight: 120,

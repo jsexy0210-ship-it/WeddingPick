@@ -386,7 +386,7 @@ describeWithDb('문서와 비교', () => {
       });
 
       expect(response.statusCode).toBe(400);
-      expect(response.json().error.message).toContain('계약인증');
+      expect(response.json().error.message).toContain('Pick확인');
     });
 
     it('남의 증빙 문서는 붙일 수 없다', async () => {

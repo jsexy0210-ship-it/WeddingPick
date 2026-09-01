@@ -91,7 +91,7 @@ export default function SetupScreen() {
 
       router.replace('/');
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : '저장하지 못했습니다.');
+      setError(caught instanceof Error ? caught.message : '저장하지 못했어요.');
     } finally {
       setSending(false);
     }

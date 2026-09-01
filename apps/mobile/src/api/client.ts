@@ -11,6 +11,7 @@ import {
   createUploadResponseSchema,
   currentUserSchema,
   displayNameResponseSchema,
+  top3ResponseSchema,
   errorResponseSchema,
   createVerificationResponseSchema,
   quoteSchema,
@@ -18,6 +19,7 @@ import {
   inquiryListResponseSchema,
   registerDeviceResponseSchema,
   settingsSchema,
+  signupStateSchema,
   myReportListResponseSchema,
   notificationListResponseSchema,
   notificationSummaryResponseSchema,
@@ -184,7 +186,7 @@ export async function listAuthProviders(): Promise<AuthProvidersResponse> {
   return request('/v1/auth/providers', authProvidersResponseSchema, { auth: false });
 }
 
-export async function signIn(provider: 'apple' | 'kakao', idToken: string): Promise<void> {
+export async function signIn(provider: 'apple' | 'kakao' | 'google' | 'naver', idToken: string): Promise<void> {
   const session = await request(
     '/v1/auth/sessions',
     createSessionResponseSchema,
@@ -233,6 +235,28 @@ export async function setDisplayName(displayName: string | null) {
 
 export async function getCurrentUser() {
   return request('/v1/me', currentUserSchema);
+}
+
+/**
+ * 가입 상태. 통합정책 v3.13 §N.
+ *
+ * 로그인 직후 이걸 먼저 본다. 소셜 로그인 성공만으로는 가입이 끝나지 않아서,
+ * `activated`가 false면 다른 경로는 전부 막혀 있다.
+ */
+export async function getSignupState() {
+  return request('/v1/me/signup', signupStateSchema);
+}
+
+/**
+ * 연령 확인과 필수 동의.
+ *
+ * `birthDate`는 서버가 나이를 세는 데만 쓰고 저장하지 않는다.
+ */
+export async function completeSignup(input: { birthDate: string; consents: string[] }) {
+  return request('/v1/me/signup', signupStateSchema, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
 }
 
 export async function createWedding() {
@@ -335,6 +359,23 @@ export async function searchVendors(input: {
   const suffix = query.size > 0 ? `?${query.toString()}` : '';
 
   return request(`/v1/vendors${suffix}`, vendorSearchResponseSchema);
+}
+
+/**
+ * TOP3 추천. v3.10 §2.
+ *
+ * 지역은 넘길 수 있다 — 지연 로그인이라 로그인 전에도 홈이 뜨고, 그때 지역은
+ * 기기에만 있다. 안 넘기면 서버가 로그인한 사람의 웨딩에서 읽는다.
+ */
+export async function getTop3(input: { region?: string; category?: VendorCategory } = {}) {
+  const query = new URLSearchParams();
+
+  if (input.region) query.set('region', input.region);
+  if (input.category) query.set('category', input.category);
+
+  const suffix = query.size > 0 ? `?${query.toString()}` : '';
+
+  return request(`/v1/recommendations/top3${suffix}`, top3ResponseSchema);
 }
 
 export async function listVendorRegions(): Promise<VendorRegionsResponse> {

@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import path from 'node:path';
 
 import { backfillVendorMatches } from './analysis/vendor-matching';
 import { loadConfig } from './config';
@@ -13,7 +14,8 @@ import { MissingColumnError, parseLocaldataCsv } from './public-data/localdata';
  *   ... --dry-run          # 쓰지 않고 무엇이 들어갈지만 본다
  *   ... --region 서울       # 지역 이름이 포함된 것만 (없으면 전국)
  *
- * 파일은 지방행정 인허가 데이터(localdata.go.kr)에서 업종별로 내려받는다.
+ * 파일은 공공데이터포털(data.go.kr)에서 "행정안전부 지방행정 인허가 데이터"로 검색해 업종별로 내려받는다.
+ * 2026년 4월부터 기존 localdata.go.kr 서비스가 종료되고 공공데이터포털로 통합됐다.
  * 특정 사이트를 긁어오지 않고 공개 자료만 쓴다 — 사업계획서 20번.
  *
  * **모르는 파일은 --inspect 부터.** 업종과 배포 시점에 따라 컬럼 이름과 내용이
@@ -22,6 +24,8 @@ import { MissingColumnError, parseLocaldataCsv } from './public-data/localdata';
  */
 
 const CATEGORIES = ['wedding_info_company', 'hall', 'sdm', 'planner_agency', 'snap', 'goods', 'etc'];
+
+const SOURCE_KEY = 'localdata';
 
 function argument(name: string): string | undefined {
   const index = process.argv.indexOf(`--${name}`);
@@ -44,7 +48,7 @@ async function inspect(file: string): Promise<void> {
     const cp949 = iconv.default.decode(bytes, 'cp949');
 
     // CP949로 읽었는데 한글이 깨지면 UTF-8이었던 것이다.
-    return cp949.includes('\uFFFD') ? bytes.toString('utf8') : cp949;
+    return cp949.includes('�') ? bytes.toString('utf8') : cp949;
   })();
 
   const lines = decoded.split(/\r?\n/).filter((line) => line.trim().length > 0);
@@ -82,19 +86,19 @@ async function main() {
     throw new Error(`--category 는 다음 중 하나여야 한다: ${CATEGORIES.join(', ')}`);
   }
 
-  const { vendors, skipped } = parseLocaldataCsv(await readFile(file));
+  const { vendors, skipped: csvSkipped } = parseLocaldataCsv(await readFile(file));
   const selected = regionFilter
     ? vendors.filter((vendor) => vendor.region.includes(regionFilter))
     : vendors;
 
   console.log(
-    `읽음 ${vendors.length}건 (영업 아님·정보 부족 ${skipped}건 제외)` +
+    `읽음 ${vendors.length}건 (영업 아님·정보 부족 ${csvSkipped}건 제외)` +
       (regionFilter ? ` → 지역 '${regionFilter}' ${selected.length}건` : '')
   );
 
   if (dryRun) {
     for (const vendor of selected.slice(0, 20)) {
-      console.log(`  ${vendor.name} · ${vendor.region} · 확인 ${vendor.lastVerifiedAt}`);
+      console.log(`  ${vendor.name} · ${vendor.region} · 원본기준일 ${vendor.lastVerifiedAt}`);
     }
 
     if (selected.length > 20) {
@@ -106,41 +110,117 @@ async function main() {
   }
 
   const pool = createPool(loadConfig().databaseUrl);
-
-  let created = 0;
-  let updated = 0;
-  let linked = 0;
+  let runId: string | null = null;
 
   try {
+    // 즉시 중단 스위치 확인. 레코드가 없으면(새 환경) 기본 허용.
+    const sw = await pool.query<{ enabled: boolean }>(
+      `SELECT enabled FROM structured.import_switches WHERE source_key = $1`,
+      [SOURCE_KEY]
+    );
+
+    if (sw.rows[0] && !sw.rows[0].enabled) {
+      console.error(
+        `[${SOURCE_KEY}] 임포트 중단 스위치가 꺼져 있다. ` +
+          `import_switches 테이블에서 enabled = true로 바꾼 뒤 다시 실행한다.`
+      );
+      process.exit(1);
+    }
+
+    // 실행 이력 생성.
+    const runRow = await pool.query<{ id: string }>(
+      `INSERT INTO structured.import_runs (source_key, category, file_name, status, total_rows)
+       VALUES ($1, $2, $3, 'running', $4)
+       RETURNING id`,
+      [SOURCE_KEY, category, path.basename(file), selected.length]
+    );
+    runId = runRow.rows[0]!.id;
+
+    let created = 0;
+    let updated = 0;
+    let linked = 0;
+    let errors = 0;
+
     for (const vendor of selected) {
-      const result = await withTransaction(pool, async (client) => {
-        // 같은 지역·같은 이름이면 새로 만들지 않고 확인일만 갱신한다.
-        const inserted = await client.query<{ id: string; created: boolean }>(
-          `INSERT INTO structured.vendors (category, name, region, source, last_verified_at)
-           VALUES ($1, $2, $3, 'public_data', $4)
-           ON CONFLICT (normalized_name, region)
-           DO UPDATE SET last_verified_at = EXCLUDED.last_verified_at
-           RETURNING id, (xmax = 0) AS created`,
-          [category, vendor.name, vendor.region, vendor.lastVerifiedAt]
+      try {
+        const result = await withTransaction(pool, async (client) => {
+          // last_verified_at = 우리가 확인한 날(now).
+          // data_published_at = CSV 행의 데이터갱신일자(원본 기준일).
+          // admin_locked = true인 행은 어떤 필드도 갱신하지 않는다.
+          const upsert = await client.query<{ id: string; created: boolean }>(
+            `INSERT INTO structured.vendors
+               (category, name, region, source, last_verified_at, data_published_at, is_active, updated_at)
+             VALUES ($1, $2, $3, 'public_data', now(), $4, true, now())
+             ON CONFLICT (normalized_name, region)
+             DO UPDATE SET
+               last_verified_at  = now(),
+               data_published_at = EXCLUDED.data_published_at,
+               is_active         = true,
+               updated_at        = now()
+             WHERE NOT structured.vendors.admin_locked
+             RETURNING id, (xmax = 0) AS created`,
+            [category, vendor.name, vendor.region, vendor.lastVerifiedAt]
+          );
+
+          if (upsert.rows.length === 0) {
+            // admin_locked 행 — 건너뜀.
+            return { created: false, matched: 0, locked: true };
+          }
+
+          const row = upsert.rows[0]!;
+          const matched = row.created ? await backfillVendorMatches(client, row.id) : 0;
+
+          return { created: row.created, matched, locked: false };
+        });
+
+        if (result.created) {
+          created += 1;
+          linked += result.matched;
+        } else if (!result.locked) {
+          updated += 1;
+        }
+      } catch (err) {
+        errors += 1;
+        const message = err instanceof Error ? err.message : String(err);
+
+        await pool.query(
+          `INSERT INTO structured.import_errors
+             (run_id, vendor_name, region, error_type, error_message)
+           VALUES ($1, $2, $3, 'db_error', $4)`,
+          [runId, vendor.name, vendor.region, message]
         );
-
-        const row = inserted.rows[0]!;
-
-        // 등록 전에 들어온 견적들을 이제 연결할 수 있다.
-        const matched = row.created ? await backfillVendorMatches(client, row.id) : 0;
-
-        return { created: row.created, matched };
-      });
-
-      if (result.created) {
-        created += 1;
-        linked += result.matched;
-      } else {
-        updated += 1;
       }
     }
 
-    console.log(`등록 ${created}건, 갱신 ${updated}건, 기다리던 문서 연결 ${linked}건`);
+    await pool.query(
+      `UPDATE structured.import_runs
+       SET status        = 'completed',
+           created_count = $2,
+           updated_count = $3,
+           skipped_count = $4,
+           error_count   = $5,
+           finished_at   = now()
+       WHERE id = $1`,
+      [runId, created, updated, csvSkipped, errors]
+    );
+
+    console.log(
+      `등록 ${created}건, 갱신 ${updated}건, 기다리던 문서 연결 ${linked}건` +
+        (errors > 0 ? `, 오류 ${errors}건 (import_errors 테이블 확인)` : '')
+    );
+  } catch (fatalErr) {
+    if (runId) {
+      await pool
+        .query(
+          `UPDATE structured.import_runs
+           SET status = 'failed', finished_at = now()
+           WHERE id = $1`,
+          [runId]
+        )
+        .catch(() => undefined);
+    }
+
+    throw fatalErr;
   } finally {
     await pool.end();
   }

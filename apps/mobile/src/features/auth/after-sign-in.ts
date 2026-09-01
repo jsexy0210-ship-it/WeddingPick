@@ -1,9 +1,17 @@
-import { addCandidate, completeSetup, ensureWedding } from '@/api/client';
+import { addCandidate, completeSetup, ensureWedding, getSignupState } from '@/api/client';
 import { takePendingAction, type PendingAction } from '@/features/auth/pending-action';
 import { clearWeddingDraft, loadWeddingDraft } from '@/features/onboarding/wedding-draft';
 
 /** 로그인 직후에 무슨 일이 일어났는가. 화면이 이걸 보고 뭐라고 말할지 정한다. */
 export type AfterSignIn = {
+  /**
+   * 아직 가입이 끝나지 않았다. 통합정책 v3.13 §N-2.
+   *
+   * 이때는 아무것도 올리지 않는다 — 서버가 대기 계정의 다른 경로를 전부 막아서
+   * 시도해봐야 실패하고, 실패하면 적어둔 예식일이 "못 올린 값"으로 보인다.
+   * 화면이 동의 화면으로 보내고, 동의가 끝난 뒤 이 함수를 다시 부른다.
+   */
+  needsSignup: boolean;
   /** 기기에 적어둔 최소 온보딩을 서버로 올렸는가. */
   savedWedding: boolean;
   /**
@@ -29,7 +37,24 @@ export type AfterSignIn = {
  * 그대로 돌려주고, 화면이 그 말을 한다.
  */
 export async function completeAfterSignIn(): Promise<AfterSignIn> {
-  const result: AfterSignIn = { savedWedding: false, weddingError: null, completed: null };
+  const result: AfterSignIn = {
+    needsSignup: false,
+    savedWedding: false,
+    weddingError: null,
+    completed: null,
+  };
+
+  /*
+   * 가입이 끝났는지 먼저 본다. 안 끝났으면 여기서 멈춘다 — 적어둔 값은 기기에
+   * 그대로 남고, 동의를 마친 뒤 이 함수를 다시 부르면 그때 올라간다.
+   */
+  const signup = await getSignupState();
+
+  if (!signup.activated) {
+    result.needsSignup = true;
+
+    return result;
+  }
 
   const draft = await loadWeddingDraft();
 

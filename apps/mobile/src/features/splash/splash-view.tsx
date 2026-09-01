@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 
-import { Colors, WeddingMark } from '@weddingpick/ui';
+import {
+  Colors,
+  FontSize,
+  LineHeight,
+  WeddingMark,
+} from '@weddingpick/ui';
 
 /**
  * 스플래시. 디자인 핸드오프 0번.
@@ -94,16 +99,16 @@ const styles = StyleSheet.create({
   },
   title: {
     marginTop: 20,
-    fontSize: 26,
-    lineHeight: 35,
+    fontSize: FontSize.t2,
+    lineHeight: LineHeight.t2,
     letterSpacing: -0.6,
     fontWeight: '700',
     color: '#ffffff',
   },
   subtitle: {
     marginTop: 4,
-    fontSize: 13,
-    lineHeight: 19.5,
+    fontSize: FontSize.t7,
+    lineHeight: LineHeight.t7,
     letterSpacing: 1.4,
     fontWeight: '600',
     // 핸드오프: 흰색 62%.

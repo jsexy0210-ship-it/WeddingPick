@@ -4,6 +4,7 @@ import {
   manwon,
   MAX_RATING,
   PAYMENT_PROOF_CAVEAT,
+  TERMS,
   rangeLabel,
   STILL_COLLECTING,
   VENDOR_CATEGORY_LABEL,
@@ -11,7 +12,7 @@ import {
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { addCandidate, ensureWedding, getVendor, getVendorConditions } from '@/api/client';
@@ -21,6 +22,8 @@ import { LoginSheet } from '@/features/auth/login-sheet';
 import { savePendingAction } from '@/features/auth/pending-action';
 import {
   ActionButton,
+  ErrorView,
+  LoadingView,
   MaxContentWidth,
   ProgressBar,
   Radius,
@@ -66,23 +69,11 @@ export default function VendorDetailScreen() {
   }, [vendorId]);
 
   if (error) {
-    return (
-      <Frame>
-        <ThemedText type="subtitle">불러오지 못했습니다</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          {error}
-        </ThemedText>
-        <ActionButton label="돌아가기" onPress={() => router.back()} />
-      </Frame>
-    );
+    return <ErrorView message={error} onBack={() => router.back()} />;
   }
 
   if (!vendor) {
-    return (
-      <Frame>
-        <ActivityIndicator color={theme.tint} />
-      </Frame>
-    );
+    return <LoadingView />;
   }
 
   /**
@@ -123,36 +114,7 @@ export default function VendorDetailScreen() {
             <ThemedText type="small" themeColor="textSecondary">
               {VENDOR_CATEGORY_LABEL[vendor.category]} · {vendor.region}
             </ThemedText>
-            {/*
-              공식정보 배지. 핸드오프 8번 — 눌러서 기관·출처·기준일을 본다.
 
-              배지만 두고 출처를 감추지 않는다. `공공데이터`라는 말은 그 자체로는
-              아무것도 확인해주지 않는다 — 어느 기관의 무엇을 언제 확인했는지가
-              그 배지의 내용이다.
-            */}
-            {vendor.sourceNote ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="업체 정보 출처 보기"
-                accessibilityState={{ expanded: sourceOpen }}
-                onPress={() => setSourceOpen((open) => !open)}
-                style={styles.sourceRow}>
-                <View style={[styles.badge, { backgroundColor: theme.backgroundSelected }]}>
-                  <ThemedText type="badge" themeColor="textSecondary">
-                    공공데이터
-                  </ThemedText>
-                </View>
-                <ThemedText type="t7" themeColor="textAssistive">
-                  {sourceOpen ? '−' : '출처'}
-                </ThemedText>
-              </Pressable>
-            ) : null}
-
-            {sourceOpen && vendor.sourceNote ? (
-              <ThemedText type="t7" themeColor="textSecondary">
-                {vendor.sourceNote}
-              </ThemedText>
-            ) : null}
           </ThemedView>
 
           {/*
@@ -164,7 +126,7 @@ export default function VendorDetailScreen() {
             애초에 컴파일되지 않는다.
           */}
           <ThemedView style={styles.section}>
-            <ThemedText type="smallBold">실제 결제</ThemedText>
+            <ThemedText type="smallBold">{TERMS.verifiedData}</ThemedText>
 
             {vendor.prices.paidPrice.stage === 'collecting' ? (
               <ThemedView type="backgroundElement" style={styles.card}>
@@ -207,7 +169,7 @@ export default function VendorDetailScreen() {
             */}
             {vendor.prices.deepDataNote ? (
               <ActionButton
-                label="결제내역 등록하기"
+                label={TERMS.reportCta}
                 hint={vendor.prices.deepDataNote}
                 onPress={() => router.push('/capture/payment/consent')}
               />
@@ -221,7 +183,7 @@ export default function VendorDetailScreen() {
             {conditions?.available ? (
               <ThemedView type="backgroundElement" style={styles.card}>
                 <ThemedText type="t7" themeColor="textSecondary">
-                  조건이 비슷한 결제
+                  조건이 비슷한 Pick 가격
                 </ThemedText>
                 {/* 어느 조건의 숫자인지가 숫자보다 먼저다. */}
                 <ThemedText type="t5">{conditions.condition}</ThemedText>
@@ -254,17 +216,22 @@ export default function VendorDetailScreen() {
           </ThemedView>
 
           <ThemedView style={styles.section}>
-            <ThemedText type="smallBold">실제 계약 가격</ThemedText>
+            {/*
+              확인된 계약. 위의 `확인된 정보`(결제내역)와 **다른 숫자다** — 하나는
+              결제한 금액이고 하나는 사람이 확인한 계약 금액이다. 이름을 같게
+              달면 두 값이 다를 때 어느 쪽이 틀린 것처럼 보인다.
+             */}
+            <ThemedText type="smallBold">확인된 계약</ThemedText>
 
             {vendor.prices.products.length === 0 ? (
               <ThemedView type="backgroundElement" style={styles.card}>
                 <ThemedText type="small" themeColor="textSecondary">
                   {vendor.comparableQuoteCount === 0
-                    ? '이 업체의 확인된 계약 자료가 아직 없습니다.'
-                    : `확인된 계약이 ${vendor.comparableQuoteCount}건 모였지만, 같은 상품끼리 견주기에는 아직 모자랍니다.`}
+                    ? '이 업체의 확인된 계약 자료가 아직 없어요.'
+                    : `확인된 계약이 ${vendor.comparableQuoteCount}건 모였지만, 같은 상품끼리 견주기에는 아직 모자라요.`}
                 </ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
-                  자료가 모이기 전에는 가격을 지어내지 않습니다.
+                  자료가 모이기 전에는 가격을 지어내지 않아요.
                 </ThemedText>
               </ThemedView>
             ) : (
@@ -282,7 +249,7 @@ export default function VendorDetailScreen() {
                     {product.stat.periodEnd}
                   </ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
-                    가운데 절반이 {won(product.stat.p25)}~{won(product.stat.p75)} 사이입니다
+                    가운데 절반이 {won(product.stat.p25)}~{won(product.stat.p75)} 사이예요
                   </ThemedText>
                 </ThemedView>
               ))
@@ -290,7 +257,7 @@ export default function VendorDetailScreen() {
           </ThemedView>
 
           <ThemedView style={styles.section}>
-            <ThemedText type="smallBold">이용점수</ThemedText>
+            <ThemedText type="smallBold">{TERMS.experience}</ThemedText>
 
             {/*
               확인된 후기만 들어간다. 데이터가 모자라면 숫자를 만들지 않고 이유를 준다 —
@@ -372,10 +339,47 @@ export default function VendorDetailScreen() {
 
             <ActionButton
               label="후기 보기"
-              hint="이용하신 분들이 남긴 글입니다"
+              hint="이용하신 분들이 남긴 글이에요"
               onPress={() => router.push(`/search/${vendor.id}/reviews`)}
             />
           </ThemedView>
+
+          {/*
+            공식정보. 통합정책 v3.10 §8이 이 자리를 후기 다음, Pick 앞에 두었다.
+
+            예전에는 업체명 바로 아래에 있었다. 이름을 꾸며주는 배지처럼 보였는데,
+            공식정보는 꾸밈이 아니라 **어느 기관의 무엇을 언제 확인했는지**다.
+            읽는 사람이 그것을 궁금해하는 때는 이름을 볼 때가 아니라 고르기 직전이다.
+
+            배지만 두고 출처를 감추지 않는다. `공공데이터`라는 말은 그 자체로는
+            아무것도 확인해주지 않는다.
+           */}
+          {vendor.sourceNote ? (
+            <ThemedView style={styles.section}>
+              <ThemedText type="smallBold">공식정보</ThemedText>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="업체 정보 출처 보기"
+                accessibilityState={{ expanded: sourceOpen }}
+                onPress={() => setSourceOpen((open) => !open)}
+                style={styles.sourceRow}>
+                <View style={[styles.badge, { backgroundColor: theme.backgroundSelected }]}>
+                  <ThemedText type="badge" themeColor="textSecondary">
+                    공공데이터
+                  </ThemedText>
+                </View>
+                <ThemedText type="t7" themeColor="textAssistive">
+                  {sourceOpen ? '−' : '출처'}
+                </ThemedText>
+              </Pressable>
+
+              {sourceOpen ? (
+                <ThemedText type="t7" themeColor="textSecondary">
+                  {vendor.sourceNote}
+                </ThemedText>
+              ) : null}
+            </ThemedView>
+          ) : null}
 
           <ThemedView style={styles.section}>
             {/*
@@ -395,12 +399,12 @@ export default function VendorDetailScreen() {
               </ThemedText>
             ) : null}
             <ActionButton
-              label="내 견적서와 비교하기"
-              hint="견적서를 올리면 이 업체의 실제 계약과 견줘 보여드립니다"
+              label="내 금액과 비교하기"
+              hint="자료를 올리면 이 업체의 Pick 가격대와 견줘 보여드려요"
               onPress={() => router.push('/capture')}
             />
             <ActionButton
-              label="업체 정보가 다릅니다"
+              label="업체 정보가 달라요"
               hint="이름·지역이 실제와 다르면 알려주세요"
               onPress={() =>
                 router.push({
@@ -438,6 +442,17 @@ export default function VendorDetailScreen() {
         reason={`로그인하면 ${withParticle(vendor.name, '을를')} 바로 Pick해드려요.`}
         onSignedIn={(result) => {
           setLoginOpen(false);
+
+          /*
+           * 아직 가입이 끝나지 않았다(v3.13 §N-2). Pick은 담기지 않았고, 담기지
+           * 않은 이유를 여기서 말하는 대신 마저 할 수 있는 화면으로 보낸다.
+           */
+          if (result.needsSignup) {
+            router.push('/signup');
+
+            return;
+          }
+
           setSaveNote(
             [
               result.completed ? 'Pick했어요. Pick 탭에서 보실 수 있어요.' : null,
@@ -453,15 +468,6 @@ export default function VendorDetailScreen() {
   );
 }
 
-function Frame({ children }: { children: React.ReactNode }) {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.content}>{children}</ThemedView>
-      </SafeAreaView>
-    </ThemedView>
-  );
-}
 
 const styles = StyleSheet.create({
   sourceRow: {

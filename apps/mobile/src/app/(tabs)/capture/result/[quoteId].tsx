@@ -1,17 +1,16 @@
 import type { ComparisonResponse, Quote } from '@weddingpick/api-contract';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { confirmFields, getComparison, getQuote } from '@/api/client';
-import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
+import { ActionButton, ErrorView, LoadingView, MaxContentWidth, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
 import { AnalysisNotice, QuoteResultView } from '@/features/quotes/quote-result-view';
 
 /** A-08 분석 결과 + A-07 확인 단계 + A-09 가격 비교. */
 export default function ResultScreen() {
   const { quoteId } = useLocalSearchParams<{ quoteId: string }>();
-  const theme = useTheme();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [comparison, setComparison] = useState<ComparisonResponse | null>(null);
   const [edits, setEdits] = useState<Record<string, string>>({});
@@ -57,26 +56,11 @@ export default function ResultScreen() {
   }
 
   if (error) {
-    return (
-      <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          <ThemedText type="subtitle">불러오지 못했습니다</ThemedText>
-          <ThemedText type="default" themeColor="textSecondary">
-            {error}
-          </ThemedText>
-        </SafeAreaView>
-      </ThemedView>
-    );
+    return <ErrorView message={error} />;
   }
 
   if (!quote) {
-    return (
-      <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          <ActivityIndicator color={theme.tint} />
-        </SafeAreaView>
-      </ThemedView>
-    );
+    return <LoadingView />;
   }
 
   return (
@@ -102,15 +86,15 @@ export default function ResultScreen() {
                 label="자료 확인 신청"
                 hint={
                   quote.confirmedAt
-                    ? '확인을 마친 자료만 다른 분들의 가격 비교에 쓰입니다'
-                    : '금액과 계약일을 확인하면 신청할 수 있습니다'
+                    ? '확인을 마친 자료만 다른 분들의 가격 비교에 쓰여요'
+                    : '금액과 계약일을 확인하면 신청할 수 있어요'
                 }
                 disabled={!quote.confirmedAt}
                 onPress={() => router.push(`/capture/verify/${quote.id}`)}
               />
               {/* 원본이 우선한다고 해놓고 고칠 곳이 없으면 말뿐이다. */}
               <ActionButton
-                label="원본과 다릅니다"
+                label="원본과 달라요"
                 hint="정리된 내용이 문서와 다르면 알려주세요"
                 onPress={() =>
                   router.push({

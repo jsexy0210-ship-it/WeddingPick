@@ -29,6 +29,13 @@ export const ADVERTISING_MUST_NOT_AFFECT = [
 
 export type ProtectedSurface = (typeof ADVERTISING_MUST_NOT_AFFECT)[number];
 
+/**
+ * 관리자·운영 화면에서 쓰는 이름.
+ *
+ * `AI TOP3`처럼 사용자 화면에 못 쓰는 말이 들어 있다. 정책 문서가 보호 대상을
+ * 그 이름으로 적어두었고, 여기는 그 목록을 사람이 눈으로 맞춰보는 자리라
+ * 정책과 같은 말을 쓴다. **사용자 화면에서는 이 표를 쓰지 않는다.**
+ */
 export const PROTECTED_SURFACE_LABEL: Record<ProtectedSurface, string> = {
   top3: 'AI TOP3',
   todays_pick: '오늘의 Pick',

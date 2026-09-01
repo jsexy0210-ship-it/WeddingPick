@@ -25,9 +25,10 @@ export type PaymentProofField = (typeof PAYMENT_PROOF_FIELDS)[number];
 
 export const PAYMENT_PROOF_FIELD_LABEL: Record<PaymentProofField, string> = {
   merchantName: '가맹점 이름',
-  paidAmount: '결제 금액',
-  paidAt: '결제한 날',
-  method: '결제 수단',
+  /* 사용자 화면에 그대로 나가는 이름이라 `결제`를 쓰지 않는다(v3.13 §O-1). */
+  paidAmount: '금액',
+  paidAt: '낸 날',
+  method: '지불 수단',
 };
 
 export type ParsedPaymentProof = {
@@ -316,7 +317,7 @@ export function parsePaymentText(text: string, now: Date = new Date()): ParsedPa
   };
 
   if (text.trim().length === 0) {
-    return { ...empty, rejection: '읽을 글이 없습니다.' };
+    return { ...empty, rejection: '읽을 글이 없어요.' };
   }
 
   /*
@@ -329,14 +330,14 @@ export function parsePaymentText(text: string, now: Date = new Date()): ParsedPa
     return {
       ...empty,
       maskedIdentifiers: readIdentifiers(text),
-      rejection: '취소·환불 안내로 보입니다. 결제인증에는 결제된 내역이 필요합니다.',
+      rejection: '취소·환불 안내로 보여요. Pick 인증에는 실제로 낸 내역이 필요해요.',
     };
   }
 
   if (!PAYMENT_SIGNAL.test(text)) {
     return {
       ...empty,
-      rejection: '결제 안내문으로 보이지 않습니다. 결제문자나 영수증을 올려주세요.',
+      rejection: '금액이 적힌 안내문으로 보이지 않아요. 안내 문자나 영수증을 올려주세요.',
     };
   }
 

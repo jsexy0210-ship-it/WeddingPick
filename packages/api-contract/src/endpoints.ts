@@ -87,11 +87,13 @@ import {
   vendorRegionsResponseSchema,
   vendorSearchResponseSchema,
 } from './vendors';
+import { top3QuerySchema, top3ResponseSchema } from './recommendations';
 import {
   createVerificationRequestSchema,
   createVerificationResponseSchema,
   verificationRequestSchema,
 } from './verification';
+import { completeSignupRequestSchema, signupStateSchema } from './signup';
 import {
   acceptInviteRequestSchema,
   completeSetupRequestSchema,
@@ -146,6 +148,29 @@ export const ENDPOINTS = {
   },
 
   /**
+   * 가입 상태. v3.13 §N.
+   *
+   * 로그인 직후 앱이 이걸 먼저 본다. `activated`가 false면 동의 화면부터다 —
+   * 소셜 로그인 성공만으로는 가입이 끝나지 않는다(§N-2).
+   *
+   * 대기 계정도 부를 수 있는 유일한 `/v1/me` 경로다. 다른 경로는 활성화 전에
+   * 막히는데, 이것까지 막으면 동의를 하러 갈 수가 없다.
+   */
+  getSignupState: {
+    method: 'GET',
+    path: '/v1/me/signup',
+    response: signupStateSchema,
+  },
+
+  /** 연령 확인과 필수 동의. 통과하면 계정이 살아난다. */
+  completeSignup: {
+    method: 'POST',
+    path: '/v1/me/signup',
+    body: completeSignupRequestSchema,
+    response: signupStateSchema,
+  },
+
+  /**
    * 최소 온보딩. v3.10 §3 — 예식일과 지역을 받는다. 이름은 받지 않는다.
    *
    * 응답이 `getCurrentUser`와 같은 모양인 이유: 저장 직후 앱이 다시 물어보게 하면
@@ -164,6 +189,18 @@ export const ENDPOINTS = {
     path: '/v1/me/display-name',
     body: displayNameRequestSchema,
     response: displayNameResponseSchema,
+  },
+
+  /**
+   * TOP3 추천. v3.10 §2.
+   *
+   * 지역·업종은 쿼리로 넘길 수 있다 — 지연 로그인이라 로그인 전에도 홈이 뜨고,
+   * 그때 지역은 기기에만 있다.
+   */
+  getTop3: {
+    method: 'GET',
+    path: '/v1/recommendations/top3',
+    response: top3ResponseSchema,
   },
 
   createWedding: {

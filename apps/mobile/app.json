@@ -7,6 +7,14 @@
     "icon": "./assets/images/icon.png",
     "scheme": "weddingpick",
     "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "kr.weddingpick.app",
+      "buildNumber": "2",
+      "supportsTablet": false,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
     "android": {
       "package": "kr.weddingpick.app",
       "adaptiveIcon": {
@@ -15,7 +23,11 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "output": "static",
@@ -34,14 +46,15 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "견적서·계약서를 촬영해 분석하려면 카메라 접근이 필요합니다.",
-          "recordAudioAndroid": false
+          "cameraPermission": "문서를 촬영해 분석하려면 카메라 접근이 필요합니다.",
+          "recordAudioAndroid": false,
+          "microphonePermission": false
         }
       ],
       [
         "expo-image-picker",
         {
-          "photosPermission": "저장된 견적서·계약서 사진을 불러오려면 사진 접근이 필요합니다."
+          "photosPermission": "저장된 문서 사진을 불러오려면 사진 접근이 필요합니다."
         }
       ],
       [
@@ -49,11 +62,19 @@
         {
           "defaultChannel": "default"
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "fae2514f-fd89-4916-bbe6-bb53f8935932"
+      }
+    },
+    "owner": "mrjesxys-team"
   }
 }

@@ -1,0 +1,33 @@
+# Backblaze B2 (S3 호환) 연결 테스트.
+#
+# 업로드 → 다운로드 → 삭제를 실제로 수행한다.
+# 필요한 Secrets: S3_BUCKET, S3_REGION, S3_ENDPOINT,
+#                 AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
+name: Storage Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run storage test
+        env:
+          STORAGE_DRIVER: s3
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+          S3_REGION: ${{ secrets.S3_REGION }}
+          S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: npx tsx scripts/test-storage.mts

@@ -7,8 +7,8 @@ import { dataCaption } from '@weddingpick/domain';
  * 유일한 자리이기 때문이다 — 문구가 화면 코드 사이에 흩어지면 한 장만 고쳐지고
  * 나머지는 옛말을 계속한다.
  *
- * 사용자 화면이라 v3.1 §11·v3.3의 노출 용어를 따른다 — `결제인증`, `실제 결제`는
- * 내부에서만 쓰는 말이고 여기서는 `확인된 정보`로 적는다.
+ * 사용자 화면이라 v3.13 §O-1의 노출 용어를 따른다 — `결제`와 그 파생 표현은
+ * 내부에서만 쓰는 말이고, 여기서는 `Pick 인증`·`Pick 가격대`로 적는다.
  */
 export type OnboardingRow = { label: string; value: string };
 
@@ -22,20 +22,20 @@ export type OnboardingStep = {
 
 export const ONBOARDING_STEPS: readonly OnboardingStep[] = [
   {
-    headline: ['같은 업체도', '결제 금액은 달라요'],
-    body: '업체 안내 가격과 확인된 결제 사례를 한눈에 비교해요.',
+    headline: ['같은 업체도', '금액은 달라요'],
+    body: '업체 안내 가격과 Pick 인증으로 확인된 가격대를 한눈에 비교해요.',
     card: [
       { label: '업체 안내', value: '390만원' },
-      { label: '확인된 결제 구간', value: '265~305만원' },
+      { label: 'Pick 가격대', value: '265~305만원' },
     ],
     caption: dataCaption({ count: 34 }),
   },
   {
-    headline: ['결제내역 한 장으로', '가격 차이를 확인해보세요'],
-    body: '결제내역이나 영수증을 등록하면 필요한 정보만 읽어 자동으로 정리해요.',
+    headline: ['자료 한 장으로', '가격 차이를 확인해보세요'],
+    body: '영수증이나 안내 문자를 올리면 필요한 정보만 읽어 자동으로 정리해요.',
     card: [
-      { label: '내 결제', value: '312만원' },
-      { label: '유사 결제 구간', value: '265~305만원' },
+      { label: '내 금액', value: '312만원' },
+      { label: '비슷한 Pick 가격대', value: '265~305만원' },
     ],
     caption: '원본 이미지는 24시간 내 삭제돼요',
   },
@@ -43,7 +43,7 @@ export const ONBOARDING_STEPS: readonly OnboardingStep[] = [
     headline: ['둘이 함께', '결혼 준비를 정리해요'],
     body: '지출내역과 웨딩 스케줄을 공유하고 준비 상황을 함께 확인해보세요.',
     card: [
-      { label: '지금까지 결제', value: '872만원' },
+      { label: '지금까지 쓴 돈', value: '872만원' },
       { label: '남은 준비', value: '12개' },
     ],
     caption: '초대 코드로 간편하게 연결해요',
@@ -55,7 +55,7 @@ export const ONBOARDING_STEPS: readonly OnboardingStep[] = [
       { label: '업체를 살펴봐요', value: '바로 시작' },
       { label: '준비를 정리해요', value: '로그인' },
       { label: '배우자와 함께해요', value: '초대 코드' },
-      { label: '확인된 정보를 봐요', value: '결제내역 1건' },
+      { label: 'Pick 가격을 확인해요', value: 'Pick 인증 1건' },
     ],
     caption: '진행 상황은 MY에서 확인할 수 있어요',
   },

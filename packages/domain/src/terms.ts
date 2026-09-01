@@ -55,7 +55,7 @@ export const TERMS = {
 } as const;
 
 /** `기준금액`이 무슨 값인지 묻는 사람에게. 정책이 문장까지 정했다. */
-export const BASE_AMOUNT_HELP = '확인된 실제 결제 정보의 중앙값이에요.';
+export const BASE_AMOUNT_HELP = 'Pick 인증으로 확인된 금액의 중앙값이에요.';
 
 /**
  * 자료가 모자랄 때.

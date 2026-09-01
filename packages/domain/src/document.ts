@@ -23,12 +23,18 @@ export const DOCUMENT_TYPES = [
 
 export type DocumentType = (typeof DOCUMENT_TYPES)[number];
 
-/** 화면에 쓰는 이름. 코드를 그대로 보여주지 않는다. */
+/**
+ * 화면에 쓰는 이름. 코드를 그대로 보여주지 않는다.
+ *
+ * v3.13 §O-10이 사용자 UI에서 `견적`을 막았다. 이 표는 **어느 단계의 금액인지**를
+ * 적는 자리라, 자료 이름 대신 그 단계의 이름을 쓴다 — 사용자가 알고 싶은 것은
+ * 그 숫자가 처음 받은 값인지 바뀐 값인지지, 종이 이름이 아니다.
+ */
 export const DOCUMENT_TYPE_LABEL: Record<DocumentType, string> = {
   official_price: '공식가격',
-  quote: '견적',
+  quote: '첫 안내금액',
   pre_contract: '가계약',
-  revised_quote: '변경견적',
+  revised_quote: '변경금액',
   contract: '계약',
   additional_charge: '추가금',
   final_payment: '최종지출',

@@ -20,10 +20,10 @@ export default function SampleScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ThemedView style={styles.banner}>
           <ThemedText type="smallBold" style={styles.bannerText}>
-            샘플 화면입니다
+            샘플 화면이에요
           </ThemedText>
           <ThemedText type="small" style={styles.bannerText}>
-            실제 업체나 실제 계약 정보가 아닙니다. 견적서를 올리면 이런 모습으로 정리됩니다.
+            실제 업체나 실제 자료가 아니에요. 자료를 올리시면 이런 모습으로 정리돼요.
           </ThemedText>
         </ThemedView>
 
@@ -35,7 +35,7 @@ export default function SampleScreen() {
         <ThemedView style={styles.footer}>
           <ActionButton
             variant="primary"
-            label="내 견적서로 해보기"
+            label="내 자료로 해보기"
             onPress={() => router.replace('/capture')}
           />
         </ThemedView>

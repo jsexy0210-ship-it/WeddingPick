@@ -99,7 +99,7 @@ export const SAMPLE_QUOTE: Quote = {
     {
       id: 't2',
       category: 'penalty',
-      body: '예식일 30일 이내 취소 시 총 견적금액의 50%를 위약금으로 배상합니다.',
+      body: '예식일 30일 이내 취소 시 총 견적금액의 50%를 위약금으로 배상합니다.', // pick-language: 예시 문서가 쓰는 말
       flagged: true,
       daysBeforeWedding: 29,
       penaltyRate: 0.5,

@@ -223,14 +223,14 @@ describe('쓰기 전에 알려주는 말', () => {
   });
 
   it('올릴 방법이 있으면 그 방법을 말한다', () => {
-    expect(verificationNote('payment')).toContain('계약서를 인증하시면');
+    expect(verificationNote('payment')).toContain('계약 자료를 확인받으시면');
   });
 
   it('미인증이어도 글은 보인다고 말한다', () => {
     expect(verificationNote('reported')).toContain('그대로 보이지만');
     // 배지는 띄어쓰기 없이. 핸드오프 카피 규칙.
-    expect(REVIEW_VERIFICATION_LABEL.payment).toBe('결제인증');
-    expect(REVIEW_VERIFICATION_LABEL.usage).toBe('이용인증');
+    expect(REVIEW_VERIFICATION_LABEL.payment).toBe('Pick확인');
+    expect(REVIEW_VERIFICATION_LABEL.usage).toBe('이용확인');
   });
 });
 
@@ -248,7 +248,7 @@ describe('두 근거가 다 있을 때', () => {
 describe('신고 접수', () => {
   it('신고만으로 내려간다고 말하지 않는다', () => {
     // 신고만으로 글이 내려가면 그건 신고가 아니라 삭제 버튼이다.
-    expect(reviewReportAcknowledgement()).toContain('신고만으로 글이 내려가지는 않습니다');
+    expect(reviewReportAcknowledgement()).toContain('신고만으로 글이 내려가지는 않아요');
   });
 
   it('정해지지 않은 기한을 약속하지 않는다', () => {
@@ -259,7 +259,7 @@ describe('신고 접수', () => {
 describe('후기에 함께 나가는 말', () => {
   it('사실 여부를 확인하지 않는다고 밝힌다', () => {
     // 가격 비교에 "금액만으로는 비교하기 어렵다"를 붙이는 것과 같은 이유다.
-    expect(REVIEW_CAVEAT).toContain('사실 여부를 확인하지 않습니다');
+    expect(REVIEW_CAVEAT).toContain('사실 여부를 확인하지 않아요');
     expect(REVIEW_CAVEAT).toContain('실제로 이용했다는 것까지만');
   });
 });

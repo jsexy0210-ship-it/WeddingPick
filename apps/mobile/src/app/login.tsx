@@ -15,9 +15,9 @@ import {
 
 /** 로그인이 무엇을 위한 것인지. 계정을 요구하는 이유를 먼저 말한다. */
 const REASONS = [
-  '분석한 견적을 기기를 바꿔도 다시 볼 수 있습니다.',
-  '자료 확인을 신청하고 진행 상황을 받아볼 수 있습니다.',
-  '촬영과 기기 저장은 로그인 없이도 됩니다.',
+  '분석한 자료를 기기를 바꿔도 다시 볼 수 있어요.',
+  '자료 확인을 신청하고 진행 상황을 받아볼 수 있어요.',
+  '촬영과 기기 저장은 로그인 없이도 돼요.',
 ];
 
 /**
@@ -43,7 +43,19 @@ export default function LoginScreen() {
        * 로그인 전에 기기에 적어둔 최소 온보딩과 멈춰둔 Pick을 여기서도 마친다.
        * 시트에서만 하면, 이 화면으로 로그인한 사람의 예식일은 서버에 영영 안 올라간다.
        */
-      await completeAfterSignIn();
+      const after = await completeAfterSignIn();
+
+      /*
+       * 아직 가입이 끝나지 않았다(v3.13 §N-2). 여기서 그냥 돌아가면 서버가
+       * 모든 경로를 막은 계정으로 앱을 쓰게 되고, 사용자는 로그인이 됐는데
+       * 아무것도 안 되는 화면을 본다.
+       */
+      if (after.needsSignup) {
+        router.replace('/signup');
+
+        return;
+      }
+
       router.back();
     } catch (caught) {
       setError((caught as Error).message);
@@ -59,7 +71,7 @@ export default function LoginScreen() {
           <ThemedView style={styles.section}>
             <ThemedText type="title">로그인</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              견적서를 분석하려면 계정이 필요합니다.
+              자료를 분석하려면 계정이 필요해요.
             </ThemedText>
           </ThemedView>
 
@@ -78,7 +90,7 @@ export default function LoginScreen() {
           ) : providers.length === 0 ? (
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="small" themeColor="textSecondary">
-                지금은 로그인할 수 없습니다. 촬영과 기기 저장은 그대로 쓰실 수 있습니다.
+                지금은 로그인할 수 없어요. 촬영과 기기 저장은 그대로 쓰실 수 있어요.
               </ThemedText>
             </ThemedView>
           ) : (
@@ -94,7 +106,7 @@ export default function LoginScreen() {
                   }
                   hint={
                     provider.isDevelopmentStandIn
-                      ? '실제 애플·카카오 로그인이 아닙니다. 개발 중인 서버에만 있습니다'
+                      ? '실제 애플·카카오 로그인이 아니에요. 개발 중인 서버에만 있어요'
                       : undefined
                   }
                   disabled={busy || !canSignInWith(provider)}

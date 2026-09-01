@@ -66,7 +66,7 @@ export default function ReviewScreen() {
       clearDraft();
       router.replace(`/wedding/${saved.id}`);
     } catch {
-      Alert.alert('저장 실패', '문서를 저장하지 못했습니다. 다시 시도해주세요.');
+      Alert.alert('저장 실패', '문서를 저장하지 못했어요. 다시 시도해주세요.');
     } finally {
       setSaving(false);
     }
@@ -76,7 +76,7 @@ export default function ReviewScreen() {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
-          <ThemedText type="subtitle">확인할 문서가 없습니다</ThemedText>
+          <ThemedText type="subtitle">확인할 문서가 없어요</ThemedText>
           <ActionButton variant="primary" label="촬영하러 가기" onPress={() => router.back()} />
         </SafeAreaView>
       </ThemedView>
@@ -127,7 +127,7 @@ export default function ReviewScreen() {
             <ActionButton
               variant="primary"
               label={analyzing ? '올리는 중…' : '분석 시작'}
-              hint="업체·금액·계약조건을 읽어 실제 계약과 비교합니다"
+              hint="업체·금액·계약조건을 읽어 실제 계약과 비교해요"
               disabled={analyzing || saving}
               onPress={analyze}
             />
@@ -135,7 +135,7 @@ export default function ReviewScreen() {
           <ActionButton
             variant={isServerConfigured ? 'secondary' : 'primary'}
             label={saving ? '저장 중…' : '기기에만 저장'}
-            hint={isServerConfigured ? undefined : '서버가 연결되면 분석할 수 있습니다'}
+            hint={isServerConfigured ? undefined : '서버가 연결되면 분석할 수 있어요'}
             disabled={saving || analyzing}
             onPress={save}
           />

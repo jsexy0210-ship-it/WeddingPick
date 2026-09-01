@@ -56,7 +56,7 @@ export const COMPLETED_ACTIONS = [
   },
   {
     key: 'payment',
-    title: '남은 결제내역을 등록해주세요',
+    title: '남은 Pick 인증 자료를 올려주세요',
     description: '잔금까지 등록하면 총지출이 맞아떨어져요',
   },
   {

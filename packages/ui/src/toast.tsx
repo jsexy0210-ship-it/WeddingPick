@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Animated, Easing, StyleSheet } from 'react-native';
 
 import { Layout, Radius, Spacing } from './theme';
+import { FontSize, LineHeight } from './typography';
 import { useTheme } from './use-theme';
 
 export type ToastProps = {
@@ -85,7 +86,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.three,
     textAlign: 'center',
-    fontSize: 15,
-    lineHeight: 22.5,
+    fontSize: FontSize.t6,
+    lineHeight: LineHeight.t6,
   },
 });

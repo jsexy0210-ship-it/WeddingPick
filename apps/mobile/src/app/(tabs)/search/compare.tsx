@@ -1,12 +1,18 @@
 import type { VendorComparisonResponse, VendorDetail } from '@weddingpick/api-contract';
-import { DOCUMENT_TYPE_LABEL, VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
+import {
+  AXIS_KIND_NOTE,
+  DOCUMENT_TYPE_LABEL,
+  PICK_VERIFICATION,
+  VENDOR_CATEGORY_LABEL,
+  axisLabel,
+} from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { compareVendors, getCurrentUser, recordComparison } from '@/api/client';
-import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
+import { ActionButton, ErrorView, LoadingView, MaxContentWidth, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
 import { won } from '@/features/quotes/quote-result-view';
 
 /**
@@ -20,7 +26,6 @@ import { won } from '@/features/quotes/quote-result-view';
  */
 export default function CompareScreen() {
   const { ids } = useLocalSearchParams<{ ids?: string }>();
-  const theme = useTheme();
   const [result, setResult] = useState<VendorComparisonResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,22 +59,16 @@ export default function CompareScreen() {
 
   if (tooFew || error) {
     return (
-      <Frame>
-        <ThemedText type="subtitle">비교할 수 없습니다</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          {error ?? '견줄 업체를 두 곳 이상 골라주세요.'}
-        </ThemedText>
-        <ActionButton label="돌아가기" onPress={() => router.back()} />
-      </Frame>
+      <ErrorView
+        title="비교할 수 없어요"
+        message={error ?? '견줄 업체를 두 곳 이상 골라주세요.'}
+        onBack={() => router.back()}
+      />
     );
   }
 
   if (!result) {
-    return (
-      <Frame>
-        <ActivityIndicator color={theme.tint} />
-      </Frame>
-    );
+    return <LoadingView />;
   }
 
   return (
@@ -103,21 +102,28 @@ export default function CompareScreen() {
             )}
           </Row>
 
-          <Row title="확인된 계약" vendors={result.vendors}>
+          <Row title={PICK_VERIFICATION.material} vendors={result.vendors}>
             {(vendor) => (
               <ThemedText type="small" themeColor="textSecondary">
                 {vendor.comparableQuoteCount === 0
-                  ? '아직 없습니다'
+                  ? '아직 없어요'
                   : `${vendor.comparableQuoteCount}건`}
               </ThemedText>
             )}
           </Row>
 
-          <Row title="상품별 실제 계약 가격" vendors={result.vendors}>
+          {/*
+            항목 이름은 비교 축 정의(COMPARISON_AXES)에서 꺼낸다. 화면이 제 이름을
+            따로 적으면 앱과 웹이 서로 다른 말을 하게 된다.
+          */}
+          <Row
+            title={axisLabel('pick_price_range')}
+            note={AXIS_KIND_NOTE.pick}
+            vendors={result.vendors}>
             {(vendor) =>
               vendor.prices.products.length === 0 ? (
                 <ThemedText type="small" themeColor="textSecondary">
-                  자료가 모자라 가격을 보여드릴 수 없습니다
+                  자료가 모자라 가격을 보여드릴 수 없어요
                 </ThemedText>
               ) : (
                 vendor.prices.products.map((product) => (
@@ -141,7 +147,7 @@ export default function CompareScreen() {
           <Row title="업체 정보 출처" vendors={result.vendors}>
             {(vendor) => (
               <ThemedText type="small" themeColor="textSecondary">
-                {vendor.sourceNote ?? '올려주신 문서에서 확인한 업체입니다'}
+                {vendor.sourceNote ?? '올려주신 문서에서 확인한 업체예요'}
               </ThemedText>
             )}
           </Row>
@@ -149,8 +155,8 @@ export default function CompareScreen() {
           <ThemedView style={styles.section}>
             <ActionButton
               variant="primary"
-              label="내 견적서와 비교하기"
-              hint="견적서를 올리면 이 업체들의 실제 계약과 견줘 보여드립니다"
+              label="내 금액과 비교하기"
+              hint={`자료를 올리면 이 업체들의 ${axisLabel('pick_price_range')}와 견줘 보여드려요`}
               onPress={() => router.push('/capture')}
             />
             <ActionButton label="검색으로 돌아가기" onPress={() => router.back()} />
@@ -161,19 +167,31 @@ export default function CompareScreen() {
   );
 }
 
-/** 항목 하나. 그 안에서 업체가 세로로 늘어선다. */
+/**
+ * 항목 하나. 그 안에서 업체가 세로로 늘어선다.
+ *
+ * `note`는 이 항목의 값이 누구 말인지다(v3.13 §O-5). 표는 값을 나란히 놓기 때문에,
+ * 붙여두지 않으면 나란히 놓였다는 이유만으로 모두 같은 종류로 읽힌다.
+ */
 function Row({
   title,
+  note,
   vendors,
   children,
 }: {
   title: string;
+  note?: string;
   vendors: VendorDetail[];
   children: (vendor: VendorDetail) => React.ReactNode;
 }) {
   return (
     <ThemedView style={styles.section}>
       <ThemedText type="smallBold">{title}</ThemedText>
+      {note ? (
+        <ThemedText type="small" themeColor="textSecondary">
+          {note}
+        </ThemedText>
+      ) : null}
       {vendors.map((vendor) => (
         <ThemedView key={vendor.id} type="backgroundElement" style={styles.card}>
           <ThemedText type="small">{vendor.name}</ThemedText>
@@ -184,15 +202,6 @@ function Row({
   );
 }
 
-function Frame({ children }: { children: React.ReactNode }) {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.content}>{children}</ThemedView>
-      </SafeAreaView>
-    </ThemedView>
-  );
-}
 
 const styles = StyleSheet.create({
   container: {

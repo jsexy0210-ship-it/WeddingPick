@@ -19,11 +19,13 @@ import { registerRewardRoutes } from './routes/rewards';
 import { registerVendorClaimRoutes } from './routes/vendor-claims';
 import { registerSettingsRoutes } from './routes/settings';
 import { registerWithdrawalRoutes } from './routes/withdrawal';
+import { registerSignupRoutes } from './routes/signup';
 import { registerPlannerRoutes } from './routes/planners';
 import { registerPaymentProofRoutes } from './routes/payment-proofs';
 import { registerPriceReportRoutes } from './routes/price-reports';
 import { registerReviewRoutes } from './routes/reviews';
 import { registerQuoteRoutes } from './routes/quotes';
+import { registerRecommendationRoutes } from './routes/recommendations';
 import { registerVendorRoutes } from './routes/vendors';
 import { registerWeddingInviteRoutes } from './routes/wedding-invites';
 import { registerVerificationRoutes } from './routes/verification';
@@ -91,6 +93,7 @@ export function buildServer(context: AppContext): FastifyInstance {
   registerQuoteRoutes(app, context);
   registerVerificationRoutes(app, context);
   registerVendorRoutes(app, context);
+  registerRecommendationRoutes(app, context);
   registerCandidateRoutes(app, context);
   registerWeddingPlanRoutes(app, context);
   registerPlannerRoutes(app, context);
@@ -107,6 +110,7 @@ export function buildServer(context: AppContext): FastifyInstance {
   registerMyReportRoutes(app, context);
   registerSettingsRoutes(app, context);
   registerWithdrawalRoutes(app, context);
+  registerSignupRoutes(app, context);
   registerDevStorageRoutes(app, context);
 
   return app;

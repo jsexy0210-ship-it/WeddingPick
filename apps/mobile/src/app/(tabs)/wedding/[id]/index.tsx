@@ -2,7 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Alert, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView, VerificationBadge } from '@weddingpick/ui';
+import { ActionButton, ErrorView, LoadingView, MaxContentWidth, Spacing, ThemedText, ThemedView, VerificationBadge } from '@weddingpick/ui';
 import { PageThumbnail } from '@/components/page-thumbnail';
 import { useDocumentStore } from '@/features/documents/document-store';
 
@@ -18,22 +18,19 @@ export default function DocumentSetScreen() {
   const set = sets.find((item) => item.id === id);
 
   if (!set) {
+    if (!ready) return <LoadingView />;
+
     return (
-      <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          {ready ? (
-            <>
-              <ThemedText type="subtitle">문서를 찾을 수 없습니다</ThemedText>
-              <ActionButton variant="primary" label="내 웨딩으로" onPress={() => router.back()} />
-            </>
-          ) : null}
-        </SafeAreaView>
-      </ThemedView>
+      <ErrorView
+        title="문서를 찾을 수 없어요"
+        onRetry={() => router.back()}
+        retryLabel="내 웨딩으로"
+      />
     );
   }
 
   function confirmDelete() {
-    Alert.alert('문서를 지울까요?', '저장된 원본까지 함께 지웁니다. 되돌릴 수 없습니다.', [
+    Alert.alert('문서를 지울까요?', '저장된 원본까지 함께 지워요. 되돌릴 수 없어요.', [
       { text: '취소', style: 'cancel' },
       {
         text: '지우기',
@@ -62,8 +59,8 @@ export default function DocumentSetScreen() {
             <ThemedText type="smallBold">분석 결과</ThemedText>
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="small" themeColor="textSecondary">
-                아직 분석하지 않았습니다. 업체·상품·금액·계약조건은 분석이 끝나면
-                여기에 채워집니다.
+                아직 분석하지 않았어요. 업체·상품·금액·계약조건은 분석이 끝나면
+                여기에 채워져요.
               </ThemedText>
             </ThemedView>
           </ThemedView>
@@ -89,8 +86,8 @@ export default function DocumentSetScreen() {
             <ThemedText type="smallBold">보관</ThemedText>
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="small" themeColor="textSecondary">
-                이 문서는 기기 안에만 있습니다. 서버에 올리시면 원본은 30일 뒤에 지워지고,
-                정리된 결과는 남습니다.
+                이 문서는 기기 안에만 있어요. 서버에 올리시면 원본은 30일 뒤에 지워지고,
+                정리된 결과는 남아요.
               </ThemedText>
             </ThemedView>
           </ThemedView>
@@ -98,7 +95,7 @@ export default function DocumentSetScreen() {
           <ThemedView style={styles.footer}>
             <ActionButton
               label="인증 등급 올리기"
-              hint="실제 견적·계약자료를 확인받으면 등급이 올라갑니다"
+              hint="올린 자료를 확인받으면 등급이 올라가요"
               onPress={() => router.push(`/wedding/${set.id}/verify`)}
             />
             <ActionButton label="문서 지우기" onPress={confirmDelete} />

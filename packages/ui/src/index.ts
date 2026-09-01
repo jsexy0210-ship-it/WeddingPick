@@ -23,6 +23,8 @@ export { Fab, type FabProps } from './fab';
 export { Accordion, type AccordionProps, type AccordionItem } from './accordion';
 export { ProgressBar, type ProgressBarProps } from './progress-bar';
 export { VerificationBadge, type VerificationBadgeProps } from './verification-badge';
+export { LoadingView, ErrorView, EmptyView } from './status-view';
+export type { LoadingViewProps, ErrorViewProps, EmptyViewProps } from './status-view';
 
 export {
   Colors,
@@ -35,5 +37,6 @@ export {
   MaxContentWidth,
   type ThemeColor,
 } from './theme';
+export { FontSize, LineHeight, type FontSizeToken } from './typography';
 export { useTheme } from './use-theme';
 export { VERIFICATION_LEVEL_ACCENT } from './verification-levels';

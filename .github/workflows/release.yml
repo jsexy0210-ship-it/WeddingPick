@@ -1,0 +1,185 @@
+# 앱 릴리즈 — EAS iOS·Android 빌드 및 스토어 제출
+#
+# main push마다 실행하지 않는다. 릴리즈 시에만 수동 실행.
+#
+# ── iOS 빌드 전제 조건 ──────────────────────────────────────────────────
+#
+#   ASC API Key (Admin 권한): Key ID 62U8N2ZWJR
+#   EAS가 이 키로 Distribution Certificate·Provisioning Profile을 자동 생성·관리한다.
+#
+#   처음 실행하기 전, 또는 "Distribution Certificate is not validated" 오류가 나면:
+#   expo.dev → 프로젝트 → Credentials → iOS → Distribution Certificate → Delete
+#   삭제 후 EAS가 Admin 키로 새 인증서를 자동 발급한다.
+#
+# ── Android 빌드 ────────────────────────────────────────────────────────
+#
+#   EAS가 Keystore를 자동 관리한다 (이미 설정됨).
+#
+# ── Google Play 제출 ────────────────────────────────────────────────────
+#
+#   계정 본인확인 제한으로 비활성 상태.
+#   제한 해제 후 submit-android 잡 주석을 해제하면 된다.
+#
+# 필요한 GitHub Secrets:
+#   EXPO_TOKEN                        expo.dev Access Tokens에서 발급
+#   EAS_ASC_KEY_P8_BASE64             Admin ASC API Key .p8 파일의 base64
+#   EXPO_APPLE_ID                     애플 개발자 계정 이메일 (submit 전용)
+#   EXPO_APPLE_APP_SPECIFIC_PASSWORD  앱 암호 appleid.apple.com (submit 전용)
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 빌드 플랫폼
+        type: choice
+        options: [all, ios, android]
+        default: all
+        required: true
+      submit:
+        description: 빌드 완료 후 TestFlight 제출 (iOS만, Android Google Play는 비활성)
+        type: boolean
+        default: false
+
+jobs:
+  validate:
+    name: 사전 검증
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm i -g eas-cli
+
+      - run: npm ci
+
+      - name: 필수 조건 확인
+        run: |
+          set -euo pipefail
+          fail=0
+
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::EXPO_TOKEN 시크릿이 없습니다."
+            fail=1
+          fi
+
+          if ! grep -q '"projectId"' apps/mobile/app.json; then
+            echo "::error::app.json에 EAS projectId가 없습니다. eas-init 워크플로를 먼저 실행하세요."
+            fail=1
+          fi
+
+          exit $fail
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+  build-ios:
+    name: iOS Production Build
+    needs: [validate]
+    if: inputs.platform == 'ios' || inputs.platform == 'all'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm i -g eas-cli
+
+      - run: npm ci
+
+      - name: ASC API Key 설정
+        run: |
+          echo "$EAS_ASC_KEY_P8_BASE64" | base64 -d > /tmp/AuthKey_62U8N2ZWJR.p8
+          chmod 600 /tmp/AuthKey_62U8N2ZWJR.p8
+        env:
+          EAS_ASC_KEY_P8_BASE64: ${{ secrets.EAS_ASC_KEY_P8_BASE64 }}
+
+      - name: Build
+        working-directory: apps/mobile
+        run: eas build --platform ios --profile production --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_APPLE_API_KEY_ID: 62U8N2ZWJR
+          EXPO_APPLE_API_KEY_ISSUER_ID: a7e4029d-6abf-4811-80a7-9cc47c1d1e21
+          EXPO_APPLE_API_KEY_PATH: /tmp/AuthKey_62U8N2ZWJR.p8
+
+  submit-ios:
+    name: iOS → TestFlight 제출
+    needs: [build-ios]
+    if: |
+      (inputs.platform == 'ios' || inputs.platform == 'all') &&
+      inputs.submit == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm i -g eas-cli
+
+      - run: npm ci
+
+      - name: Submit to TestFlight
+        working-directory: apps/mobile
+        run: eas submit --platform ios --latest --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_APPLE_ID: ${{ secrets.EXPO_APPLE_ID }}
+          EXPO_APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.EXPO_APPLE_APP_SPECIFIC_PASSWORD }}
+
+  build-android:
+    name: Android Production Build
+    needs: [validate]
+    if: inputs.platform == 'android' || inputs.platform == 'all'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm i -g eas-cli
+
+      - run: npm ci
+
+      - name: Build
+        working-directory: apps/mobile
+        run: eas build --platform android --profile production --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+  # submit-android:
+  #   name: Android → Google Play 제출
+  #   needs: [build-android]
+  #   # Google Play Console 계정 본인확인 완료 후 아래 if 조건을 활성화한다:
+  #   # if: inputs.platform == 'android' || inputs.platform == 'all'
+  #   if: false
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 22
+  #         cache: npm
+  #     - run: npm i -g eas-cli
+  #     - run: npm ci
+  #     - name: Submit to Google Play
+  #       working-directory: apps/mobile
+  #       run: eas submit --platform android --latest --non-interactive
+  #       env:
+  #         EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
