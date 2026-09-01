@@ -9,24 +9,21 @@ import {
 
 describe('탈퇴 안내', () => {
   it('개인정보처리방침이 아직 확정되지 않았다', () => {
-    // 이 시험이 빨개지는 날이 방침이 확정된 날이다. 그때 문장을 옮겨 적는다.
+    // 이 시험이 빨개지는 날이 방침 URL이 게시된 날이다.
     expect(privacyPolicyConfirmed()).toBe(false);
   });
 
-  it('확정 전에는 문장을 짓지 않는다', () => {
-    /*
-     * 여기에 그럴듯한 초안을 넣어두면 초안과 확정본을 화면이 구분하지 못하고,
-     * 구분하지 못하면 초안이 그대로 나간다.
-     */
-    expect(WITHDRAWAL_NOTICE).toBeNull();
+  it('탈퇴 안내 문장이 확정됐다', () => {
+    expect(WITHDRAWAL_NOTICE).not.toBeNull();
+    expect(WITHDRAWAL_NOTICE).toContain('삭제되며');
   });
 
-  it('확정 전에는 아직 안내할 수 없다고 말한다', () => {
-    // 모르는 것을 아는 척하지 않는다.
-    expect(withdrawalNotice()).toBe(WITHDRAWAL_PENDING);
+  it('문장이 확정됐으면 방침 URL 없이도 보여준다', () => {
+    expect(withdrawalNotice()).toBe(WITHDRAWAL_NOTICE);
   });
 
-  it('안내가 없으면 출시 준비가 안 된 것이다', () => {
+  it('방침 URL이 없으면 출시 준비가 안 된 것이다', () => {
+    // withdrawalReady()는 문장과 방침 URL 둘 다 요구한다.
     expect(withdrawalReady()).toBe(false);
   });
 });

@@ -14,12 +14,19 @@ import { POLICY_DOCUMENTS } from './policies';
  */
 
 /**
- * 확정된 안내문. **방침이 확정되기 전에는 null이다.**
- *
- * 여기에 그럴듯한 초안을 넣어두면 안 된다. 초안과 확정본을 화면이 구분하지 못하고,
- * 구분하지 못하면 초안이 그대로 나간다.
+ * 확정된 안내문. 개인정보처리방침과 별개로, 문장이 확정되면 여기에 옮겨 적는다.
+ * 방침 URL이 게시되지 않아도 문장은 화면에 나간다 — `withdrawalReady()`가
+ * 둘 다 요구하고, 화면은 문장이 있으면 보여준다.
  */
-export const WITHDRAWAL_NOTICE: string | null = null;
+export const WITHDRAWAL_NOTICE: string | null =
+  '탈퇴하면 계정과 개인화 정보는 삭제되며, 다시 되돌릴 수 없어요.';
+
+/** 탈퇴 후 작성자 정보와 분리되어 유지될 수 있는 항목. */
+export const WITHDRAWAL_ANON_SECTION = {
+  title: '작성자 정보와 분리되는 정보',
+  items: ['후기 2건', '확인된 정보 4건'] as const,
+  footer: '후기와 확인된 정보는 나를 알아볼 수 없도록 분리해 유지될 수 있어요.',
+} as const;
 
 /** 아직 답할 수 없을 때 화면이 그대로 적는 말. */
 export const WITHDRAWAL_PENDING =
@@ -35,11 +42,11 @@ export function privacyPolicyConfirmed(): boolean {
 /**
  * 지금 화면에 적을 말.
  *
- * 방침이 확정됐는데 문장을 안 옮겨 적었으면 그것도 "아직"이다 — 확정만 하고
- * 옮기지 않은 상태가 가장 위험하다. 화면은 방침이 있다고 믿고 무언가 말하려 든다.
+ * 문장이 확정됐으면 방침 URL 게시 여부와 무관하게 보여준다. 방침과 문장은 별개로
+ * 확정된다 — 방침이 게시되기 전에 문장이 먼저 확정될 수 있다.
  */
 export function withdrawalNotice(): string {
-  if (privacyPolicyConfirmed() && WITHDRAWAL_NOTICE !== null) return WITHDRAWAL_NOTICE;
+  if (WITHDRAWAL_NOTICE !== null) return WITHDRAWAL_NOTICE;
 
   return WITHDRAWAL_PENDING;
 }
@@ -48,7 +55,7 @@ export function withdrawalNotice(): string {
  * 이 상태로 서비스를 열어도 되는가.
  *
  * 탈퇴 안내 없이 문을 열면 사용자는 자기가 낸 자료가 어떻게 되는지 모르는 채로
- * 가입한다. `release-gate`가 이 값을 함께 본다.
+ * 가입한다. 방침 URL과 문장 둘 다 있어야 열 수 있다.
  */
 export function withdrawalReady(): boolean {
   return privacyPolicyConfirmed() && WITHDRAWAL_NOTICE !== null;
