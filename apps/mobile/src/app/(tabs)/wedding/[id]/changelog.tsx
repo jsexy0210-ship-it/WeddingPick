@@ -48,13 +48,20 @@ export default function ChangelogScreen() {
 
   function load() {
     if (!isServerConfigured) return;
-    setError(null);
     listNotifications()
-      .then((r) => setNotifications(r.notifications))
+      .then((r) => {
+        setNotifications(r.notifications);
+        setError(null);
+      })
       .catch((e: Error) => setError(e.message));
   }
 
-  useEffect(load, []);
+  function retry() {
+    setError(null);
+    load();
+  }
+
+  useEffect(() => { load(); }, []);
 
   async function markAllRead() {
     if (marking) return;
@@ -87,7 +94,7 @@ export default function ChangelogScreen() {
   }
 
   if (error) {
-    return <ErrorView message={error} onBack={load} />;
+    return <ErrorView message={error} onBack={retry} />;
   }
 
   if (notifications === null) {

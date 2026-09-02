@@ -33,7 +33,6 @@ export default function BizClaimScreen() {
 
   useEffect(() => {
     if (!isServerConfigured || query.trim().length < 2) {
-      setResults([]);
       return;
     }
 
@@ -64,12 +63,15 @@ export default function BizClaimScreen() {
     borderRadius: Radius.input,
   };
 
+  // query가 짧을 때는 이전 검색 결과를 표시하지 않는다.
+  const displayResults = query.trim().length >= 2 ? results : [];
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <ThemedView style={styles.header}>
-            <ThemedText type="t2">{'소속 업체를\n찾아주세요'}</ThemedText>
+            <ThemedText type="t2">{`소속 업체를\n찾아주세요`}</ThemedText>
             <ThemedText type="t6" themeColor="textSecondary">
               업체 이름을 두 글자 이상 입력하면 결과가 나와요.
             </ThemedText>
@@ -118,9 +120,9 @@ export default function BizClaimScreen() {
             </ThemedView>
           ) : null}
 
-          {results.length > 0 ? (
+          {displayResults.length > 0 ? (
             <ThemedView style={styles.results}>
-              {results.map((vendor) => (
+              {displayResults.map((vendor) => (
                 <ThemedView
                   key={vendor.id}
                   type="backgroundElement"
