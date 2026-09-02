@@ -1,6 +1,8 @@
 import { Link, Slot, usePathname } from 'expo-router';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { FontSize } from '@weddingpick/ui';
+
 const NAV_GROUPS: { group?: string; key?: string; label?: string; href?: string }[] = [
   { group: '검토해요' },
   { key: 'queue', label: '확인 필요 큐', href: '/admin/queue' },
@@ -80,7 +82,7 @@ const styles = StyleSheet.create({
     paddingBottom: 22,
   },
   sidebarTitle: {
-    fontSize: 16,
+    fontSize: FontSize.t6,
     fontWeight: '700',
     color: '#fff',
   },
@@ -91,7 +93,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: 14,
     paddingBottom: 5,
-    fontSize: 10,
+    fontSize: FontSize.tab,
     fontWeight: '700',
     letterSpacing: 0.6,
     color: '#393a40',
@@ -110,7 +112,7 @@ const styles = StyleSheet.create({
   },
   navLabel: {
     flex: 1,
-    fontSize: 14,
+    fontSize: FontSize.t7,
     color: '#868b94',
   },
   navLabelActive: {
@@ -129,7 +131,7 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   notWebText: {
-    fontSize: 16,
+    fontSize: FontSize.t6,
     color: '#868b94',
   },
 });

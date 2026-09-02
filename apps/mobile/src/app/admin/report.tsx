@@ -1,5 +1,7 @@
 import { View, Text, StyleSheet } from 'react-native';
 
+import { FontSize } from '@weddingpick/ui';
+
 // TODO: API 미구현 — GET /v1/admin/reports (VOC · 신고 접수 큐 없음)
 
 export default function ReportScreen() {
@@ -35,20 +37,20 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e4e5ea',
   },
-  title: { fontSize: 18, fontWeight: '700', color: '#17181c' },
+  title: { fontSize: FontSize.t5, fontWeight: '700', color: '#17181c' },
   body: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
   placeholder: {
     alignItems: 'center',
     maxWidth: 480,
   },
   placeholderTitle: {
-    fontSize: 20,
+    fontSize: FontSize.t4,
     fontWeight: '700',
     color: '#3a3b40',
     marginBottom: 10,
   },
   placeholderDesc: {
-    fontSize: 14,
+    fontSize: FontSize.t7,
     color: '#868b94',
     textAlign: 'center',
     marginBottom: 24,
@@ -63,13 +65,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   todoText: {
-    fontSize: 13,
+    fontSize: FontSize.t7,
     fontWeight: '700',
     color: '#92740a',
     marginBottom: 6,
   },
   todoDetail: {
-    fontSize: 12,
+    fontSize: FontSize.code,
     color: '#b89320',
     fontFamily: 'monospace',
     textAlign: 'center',

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { FontSize } from '@weddingpick/ui';
 import { API_URL } from '@/api/config';
 import { loadToken } from '@/api/session';
 
@@ -217,21 +218,21 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e4e5ea',
   },
-  title: { flex: 1, fontSize: 18, fontWeight: '700', color: '#17181c' },
+  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: '#17181c' },
   refreshBtn: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
     backgroundColor: '#f2f3f6',
   },
-  refreshText: { fontSize: 13, color: '#5a5d6a' },
+  refreshText: { fontSize: FontSize.t7, color: '#5a5d6a' },
   body: { flex: 1, flexDirection: 'row' },
   list: { flex: 1, backgroundColor: '#fff', borderRightWidth: 1, borderRightColor: '#e4e5ea' },
   detail: { width: 428, backgroundColor: '#fff', padding: 24 },
   detailEmpty: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   centered: { marginTop: 40 },
-  emptyText: { color: '#868b94', fontSize: 14, padding: 24 },
-  errorText: { color: '#e53e3e', fontSize: 14, padding: 24 },
+  emptyText: { color: '#868b94', fontSize: FontSize.t7, padding: 24 },
+  errorText: { color: '#e53e3e', fontSize: FontSize.t7, padding: 24 },
   tableHead: {
     flexDirection: 'row',
     paddingHorizontal: 16,
@@ -248,29 +249,29 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f0f1f4',
   },
   tableRowActive: { backgroundColor: 'rgba(255,111,97,0.08)' },
-  th: { fontSize: 11, fontWeight: '700', color: '#868b94', textTransform: 'uppercase' },
-  td: { fontSize: 13, color: '#3a3b40' },
+  th: { fontSize: FontSize.tab, fontWeight: '700', color: '#868b94', textTransform: 'uppercase' },
+  td: { fontSize: FontSize.t7, color: '#3a3b40' },
   colId: { width: 96 },
   colLevel: { width: 80 },
   colStatus: { width: 72 },
   colAmount: { flex: 1 },
   colDate: { width: 100 },
   monoText: { color: '#5a5d6a' },
-  detailSectionTitle: { fontSize: 12, fontWeight: '700', color: '#868b94', marginBottom: 12 },
-  detailLabel: { fontSize: 11, fontWeight: '600', color: '#868b94', marginBottom: 3, marginTop: 14 },
-  detailValue: { fontSize: 14, color: '#17181c' },
+  detailSectionTitle: { fontSize: FontSize.badge, fontWeight: '700', color: '#868b94', marginBottom: 12 },
+  detailLabel: { fontSize: FontSize.tab, fontWeight: '600', color: '#868b94', marginBottom: 3, marginTop: 14 },
+  detailValue: { fontSize: FontSize.t7, color: '#17181c' },
   noteInput: {
     marginTop: 6,
     borderWidth: 1,
     borderColor: '#d0d3dc',
     borderRadius: 6,
     padding: 10,
-    fontSize: 14,
+    fontSize: FontSize.t7,
     color: '#17181c',
     minHeight: 80,
     textAlignVertical: 'top',
   },
-  actionErrorText: { color: '#e53e3e', fontSize: 13, marginTop: 8 },
+  actionErrorText: { color: '#e53e3e', fontSize: FontSize.t7, marginTop: 8 },
   actionRow: { flexDirection: 'row', gap: 10, marginTop: 20 },
   approveBtn: {
     flex: 1,
@@ -279,7 +280,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#ff6f61',
   },
-  approveBtnText: { fontSize: 14, fontWeight: '600', color: '#fff' },
+  approveBtnText: { fontSize: FontSize.t7, fontWeight: '600', color: '#fff' },
   rejectBtn: {
     flex: 1,
     paddingVertical: 10,
@@ -289,6 +290,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#d0d3dc',
   },
-  rejectBtnText: { fontSize: 14, fontWeight: '600', color: '#3a3b40' },
+  rejectBtnText: { fontSize: FontSize.t7, fontWeight: '600', color: '#3a3b40' },
   btnDisabled: { opacity: 0.5 },
 });
