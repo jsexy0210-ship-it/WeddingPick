@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, type PressableProps } from 'react-native';
 
 import { ThemedText } from './themed-text';
-import { Spacing } from './theme';
+import { Radius, Spacing } from './theme';
 import { useTheme } from './use-theme';
 
 export type ActionButtonProps = Omit<PressableProps, 'children' | 'style'> & {
@@ -47,7 +47,8 @@ export function ActionButton({ label, hint, variant = 'secondary', disabled, ...
 
 const styles = StyleSheet.create({
   button: {
-    borderRadius: Spacing.three,
+    /* SEED 핸드오프: 버튼 라디우스 6. */
+    borderRadius: Radius.small,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.three,
     gap: Spacing.one,

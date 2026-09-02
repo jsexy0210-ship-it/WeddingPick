@@ -11,7 +11,7 @@ import {
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { addCandidate, ensureWedding, getVendor, getVendorConditions } from '@/api/client';
@@ -21,6 +21,8 @@ import { LoginSheet } from '@/features/auth/login-sheet';
 import { savePendingAction } from '@/features/auth/pending-action';
 import {
   ActionButton,
+  ErrorView,
+  LoadingView,
   MaxContentWidth,
   ProgressBar,
   Radius,
@@ -66,23 +68,11 @@ export default function VendorDetailScreen() {
   }, [vendorId]);
 
   if (error) {
-    return (
-      <Frame>
-        <ThemedText type="subtitle">불러오지 못했습니다</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          {error}
-        </ThemedText>
-        <ActionButton label="돌아가기" onPress={() => router.back()} />
-      </Frame>
-    );
+    return <ErrorView message={error} onBack={() => router.back()} />;
   }
 
   if (!vendor) {
-    return (
-      <Frame>
-        <ActivityIndicator color={theme.tint} />
-      </Frame>
-    );
+    return <LoadingView />;
   }
 
   /**
@@ -236,11 +226,11 @@ export default function VendorDetailScreen() {
               <ThemedView type="backgroundElement" style={styles.card}>
                 <ThemedText type="small" themeColor="textSecondary">
                   {vendor.comparableQuoteCount === 0
-                    ? '이 업체의 확인된 계약 자료가 아직 없습니다.'
-                    : `확인된 계약이 ${vendor.comparableQuoteCount}건 모였지만, 같은 상품끼리 견주기에는 아직 모자랍니다.`}
+                    ? '이 업체의 확인된 계약 자료가 아직 없어요.'
+                    : `확인된 계약이 ${vendor.comparableQuoteCount}건 모였지만, 같은 상품끼리 견주기에는 아직 모자라요.`}
                 </ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
-                  자료가 모이기 전에는 가격을 지어내지 않습니다.
+                  자료가 모이기 전에는 가격을 지어내지 않아요.
                 </ThemedText>
               </ThemedView>
             ) : (
@@ -258,7 +248,7 @@ export default function VendorDetailScreen() {
                     {product.stat.periodEnd}
                   </ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
-                    가운데 절반이 {won(product.stat.p25)}~{won(product.stat.p75)} 사이입니다
+                    가운데 절반이 {won(product.stat.p25)}~{won(product.stat.p75)} 사이예요
                   </ThemedText>
                 </ThemedView>
               ))
@@ -348,7 +338,7 @@ export default function VendorDetailScreen() {
 
             <ActionButton
               label="후기 보기"
-              hint="이용하신 분들이 남긴 글입니다"
+              hint="이용하신 분들이 남긴 글이에요"
               onPress={() => router.push(`/search/${vendor.id}/reviews`)}
             />
           </ThemedView>
@@ -413,7 +403,7 @@ export default function VendorDetailScreen() {
               onPress={() => router.push('/capture')}
             />
             <ActionButton
-              label="업체 정보가 다릅니다"
+              label="업체 정보가 달라요"
               hint="이름·지역이 실제와 다르면 알려주세요"
               onPress={() =>
                 router.push({
@@ -477,15 +467,6 @@ export default function VendorDetailScreen() {
   );
 }
 
-function Frame({ children }: { children: React.ReactNode }) {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.content}>{children}</ThemedView>
-      </SafeAreaView>
-    </ThemedView>
-  );
-}
 
 const styles = StyleSheet.create({
   sourceRow: {

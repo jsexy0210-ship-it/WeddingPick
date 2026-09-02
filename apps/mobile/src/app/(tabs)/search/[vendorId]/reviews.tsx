@@ -62,7 +62,7 @@ export default function VendorReviewsScreen() {
   if (error) {
     return (
       <Frame>
-        <ThemedText type="subtitle">불러오지 못했습니다</ThemedText>
+        <ThemedText type="subtitle">불러오지 못했어요</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
           {error}
         </ThemedText>
@@ -89,7 +89,7 @@ export default function VendorReviewsScreen() {
       setReporting(null);
       setNotice(received.acknowledgement);
     } catch (caught) {
-      setNotice(caught instanceof Error ? caught.message : '신고하지 못했습니다.');
+      setNotice(caught instanceof Error ? caught.message : '신고하지 못했어요.');
     }
   }
 
@@ -100,7 +100,7 @@ export default function VendorReviewsScreen() {
       setMore((current) => [...current, ...next.reviews]);
       setPage((current) => (current ? { ...current, nextCursor: next.nextCursor } : current));
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : '더 불러오지 못했습니다.');
+      setError(caught instanceof Error ? caught.message : '더 불러오지 못했어요.');
     }
   }
 
@@ -178,7 +178,7 @@ export default function VendorReviewsScreen() {
             {reviews.length === 0 ? (
               <ThemedView type="backgroundElement" style={styles.card}>
                 <ThemedText type="small" themeColor="textSecondary">
-                  아직 후기가 없습니다. 첫 후기를 남겨주시면 다음 분에게 도움이 됩니다.
+                  아직 후기가 없어요. 첫 후기를 남겨주시면 다음 분에게 도움이 돼요.
                 </ThemedText>
               </ThemedView>
             ) : (
@@ -241,7 +241,7 @@ export default function VendorReviewsScreen() {
                     <>
                       <ActionButton
                         label="신고하기"
-                        hint="신고만으로 글이 내려가지는 않습니다"
+                        hint="신고만으로 글이 내려가지는 않아요"
                         disabled={reasons.length === 0}
                         onPress={() => {
                           setNotice(null);
@@ -256,7 +256,7 @@ export default function VendorReviewsScreen() {
                       {review.rebuttal ? null : (
                         <ActionButton
                           label="업체 반론 등록"
-                          hint="업체 관계자만 등록해주세요. 확인 후 표시됩니다"
+                          hint="업체 관계자만 등록해주세요. 확인 후 표시돼요"
                           onPress={() => router.push(`/my/rebuttals/${review.id}`)}
                         />
                       )}

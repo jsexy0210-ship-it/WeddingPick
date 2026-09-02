@@ -40,7 +40,7 @@ export function comparisonCaveats(vendors: readonly ComparisonInput[]): string[]
     const labels = [...categories].map((category) => VENDOR_CATEGORY_LABEL[category]);
 
     caveats.push(
-      `분류가 다른 업체를 함께 놓았습니다 (${labels.join(', ')}). 같은 분류끼리 견주는 편이 낫습니다.`
+      `분류가 다른 업체를 함께 놓았어요 (${labels.join(', ')}). 같은 분류끼리 견주는 편이 나아요.`
     );
   }
 
@@ -48,7 +48,7 @@ export function comparisonCaveats(vendors: readonly ComparisonInput[]): string[]
 
   if (provinces.size > 1) {
     caveats.push(
-      `지역이 다릅니다 (${[...provinces].join(', ')}). 지역에 따라 가격대가 다릅니다.`
+      `지역이 달라요 (${[...provinces].join(', ')}). 지역에 따라 가격대가 달라요.`
     );
   }
 
@@ -57,14 +57,14 @@ export function comparisonCaveats(vendors: readonly ComparisonInput[]): string[]
   if (withoutData > 0) {
     caveats.push(
       withoutData === vendors.length
-        ? '아직 어느 곳도 가격을 보여줄 만큼 자료가 모이지 않았습니다.'
-        : `${withoutData}곳은 확인된 계약 자료가 모자라 가격을 견줄 수 없습니다. 자료가 없다는 뜻이지 싸거나 비싸다는 뜻이 아닙니다.`
+        ? '아직 어느 곳도 가격을 보여줄 만큼 자료가 모이지 않았어요.'
+        : `${withoutData}곳은 확인된 계약 자료가 모자라 가격을 견줄 수 없어요. 자료가 없다는 뜻이지 싸거나 비싸다는 뜻이 아니에요.`
     );
   }
 
   // 사업계획서 2번 "비교의 어려움". 늘 붙인다.
   caveats.push(
-    '금액만으로는 비교하기 어렵습니다. 웨딩홀은 식사·주차·교통·시설이, 스드메는 업체별 품질과 추가비용이 함께 걸려 있습니다.'
+    '금액만으로는 비교하기 어려워요. 웨딩홀은 식사·주차·교통·시설이, 스드메는 업체별 품질과 추가비용이 함께 걸려 있어요.'
   );
 
   return caveats;

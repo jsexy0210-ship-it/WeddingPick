@@ -13,40 +13,60 @@ import { Platform } from 'react-native';
  * 화면마다 모드를 판단하면 언젠가 한 곳이 어긋난다.
  */
 
-/** 팔레트 원본. 역할 이름 아래에서만 쓰고 화면이 직접 집지 않는다. */
+/**
+ * 팔레트 원본. 역할 이름 아래에서만 쓰고 화면이 직접 집지 않는다.
+ *
+ * 값은 `design_handoff_weddingpick/웨딩픽 컴포넌트 시트.dc.html`(SEED 기반,
+ * Primary만 코랄로 치환)에서 직접 읽었다 — README.md의 색 표는 몇 곳에서 실제
+ * 컴포넌트 시트와 어긋나 있어(예: Primary press·Warning·Danger) 시트 쪽을 썼다.
+ * 키 이름은 예전 grey 스케일을 그대로 두고 값만 갈아 끼운다 — 이름을 바꾸는
+ * 것은 개편이 아니라 이사다.
+ */
 const palette = {
-  /*
-   * 키 컬러. 통합정책 v3.1 §5가 코랄 오렌지로 정했다 — 이전 파랑(#3182f6)을
-   * 대체한다. Pick·핵심 CTA·활성/선택에만 제한적으로 쓴다.
-   *
-   * strong/weak은 정책이 값을 정해주지 않아 우리가 뽑았다. weak은 정책이 적은
-   * `#FFF0EE`를 그대로 쓴다.
-   */
+  /** Primary. Pick·핵심 CTA·활성/선택에만 제한적으로 쓴다. */
   coral500: '#ff6f61',
-  coral600: '#e0574a',
+  /** Primary press. */
+  coral600: '#e2564a',
+  /** weak coral — 컴포넌트 시트가 값을 안 주어 통합정책 v3.1 §5를 그대로 쓴다. */
   coral50: '#fff0ee',
-  grey900: '#191f28',
-  grey800: '#333d4b',
+  /** Ink. */
+  grey900: '#212124',
+  /** Ink 2. */
+  grey800: '#393a40',
   grey700: '#4e5968',
-  grey600: '#6b7684',
-  grey500: '#8b95a1',
-  grey400: '#b0b8c1',
-  grey300: '#d1d6db',
-  grey200: '#e5e8eb',
-  grey100: '#f2f4f6',
-  grey50: '#f9fafb',
+  /** Secondary. */
+  grey600: '#4d5159',
+  /** Tertiary. */
+  grey500: '#868b94',
+  /** Disabled. */
+  grey400: '#adb1ba',
+  /** Divider — 행 구분선. */
+  grey300: '#eaebee',
+  /** Border — 컨트롤 테두리. */
+  grey200: '#dcdee3',
+  /** Band — 섹션 구분 밴드·칩 배경. */
+  grey100: '#f2f3f6',
+  /** Recessed — 카드 배경. */
+  grey50: '#f7f8fa',
   white: '#ffffff',
-  red500: '#f04452',
-  green: '#0f8b4c',
-  greenBg: '#e8f8ef',
+  /** Danger. */
+  red500: '#e03131',
+  /** Success. */
+  green: '#1aa174',
+  /** Success 배경. */
+  greenBg: '#e8faf6',
   tealBar: '#00c2b3',
   tealText: '#00a99d',
   violetBar: '#8b5cf6',
   violetText: '#7c3aed',
-  orange: '#c26f00',
-  orangeBg: '#fff6e5',
-  line: 'rgba(0,27,55,.10)',
-  scrim: 'rgba(3,18,40,.70)',
+  /** Warning. */
+  orange: '#b57a00',
+  /** Warning 배경. */
+  orangeBg: '#fff5e0',
+  /** 행 구분선(Divider)과 같은 값. */
+  line: '#eaebee',
+  /** 바텀시트 배경 스크림. */
+  scrim: 'rgba(0,0,0,.45)',
 } as const;
 
 /**
@@ -199,16 +219,22 @@ export const Layout = {
   touchTarget: 44,
   statusBar: 44,
   navBar: 56,
-  tabBar: 74,
+  /** SEED 핸드오프: 72 + Safe Area. */
+  tabBar: 72,
 } as const;
 
-/** 모서리 둥글기. 핸드오프: 버튼 10~16, 입력 12, 카드 16~20, 시트 상단 24. */
+/**
+ * 모서리 둥글기. SEED 핸드오프(컴포넌트 시트): 버튼·입력필드·작은 썸네일·배지 컨테이너
+ * 6, 카드·이미지·알림박스 10, Pick 카드 14, 바텀시트 상단 20, 칩·아바타·원형버튼 999.
+ *
+ * 이름은 예전(v7 Toss 핸드오프) 스케일을 그대로 두고 값만 SEED로 바꿨다.
+ */
 export const Radius = {
-  small: 10,
-  input: 12,
-  medium: 16,
-  card: 20,
-  sheet: 24,
+  small: 6,
+  input: 6,
+  medium: 10,
+  card: 14,
+  sheet: 20,
   pill: 999,
 } as const;
 

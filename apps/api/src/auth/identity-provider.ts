@@ -1,4 +1,4 @@
-export type IdentityProviderName = 'apple' | 'kakao';
+export type IdentityProviderName = 'apple' | 'kakao' | 'google' | 'naver';
 
 export type VerifiedIdentity = {
   provider: IdentityProviderName;
@@ -76,6 +76,15 @@ export function createKakaoProvider(appKey: string): IdentityProvider {
     issuer: 'https://kauth.kakao.com',
     jwksUrl: 'https://kauth.kakao.com/.well-known/jwks.json',
     audience: appKey,
+  });
+}
+
+export function createGoogleProvider(clientId: string): IdentityProvider {
+  return createOidcProvider({
+    provider: 'google',
+    issuer: 'https://accounts.google.com',
+    jwksUrl: 'https://www.googleapis.com/oauth2/v3/certs',
+    audience: clientId,
   });
 }
 

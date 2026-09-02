@@ -5,7 +5,7 @@
 -- 인증
 -- ---------------------------------------------------------------------------
 
-CREATE TYPE identity_provider AS ENUM ('apple', 'kakao');
+CREATE TYPE identity_provider AS ENUM ('apple', 'kakao', 'google', 'naver');
 
 -- 개인정보 밀도가 높아 구조화 데이터와 같은 스키마에 두지 않는다.
 CREATE SCHEMA identity;

@@ -11,11 +11,11 @@ import {
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { createVerificationRequest, getQuote } from '@/api/client';
-import { ActionButton, FilterChip, MaxContentWidth, Spacing, ThemedText, ThemedView, VerificationBadge, useTheme } from '@weddingpick/ui';
+import { ActionButton, ErrorView, FilterChip, LoadingView, MaxContentWidth, Spacing, ThemedText, ThemedView, VerificationBadge, useTheme } from '@weddingpick/ui';
 
 /** 화면에 내보낼 문서 이름. 식별자를 그대로 보여주지 않는다. */
 function documentLabel(document: QuoteDocument, index: number): string {
@@ -70,32 +70,20 @@ export default function VerifyRequestScreen() {
   }
 
   if (error && !quote) {
-    return (
-      <Frame>
-        <ThemedText type="subtitle">불러오지 못했습니다</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          {error}
-        </ThemedText>
-        <ActionButton label="돌아가기" onPress={() => router.back()} />
-      </Frame>
-    );
+    return <ErrorView message={error} onBack={() => router.back()} />;
   }
 
   if (!quote) {
-    return (
-      <Frame>
-        <ActivityIndicator color={theme.tint} />
-      </Frame>
-    );
+    return <LoadingView />;
   }
 
   if (receivedAt) {
     return (
       <Frame>
-        <ThemedText type="subtitle">접수했습니다</ThemedText>
+        <ThemedText type="subtitle">접수했어요</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
-          올려주신 자료를 사람이 직접 확인합니다. 확인이 끝나면 알려드립니다. 확인 전까지
-          이 문서의 단계는 그대로입니다.
+          올려주신 자료를 사람이 직접 확인해요. 확인이 끝나면 알려드려요. 확인 전까지
+          이 문서의 단계는 그대로예요.
         </ThemedText>
         <ActionButton variant="primary" label="결과로 돌아가기" onPress={() => router.back()} />
       </Frame>
@@ -114,8 +102,8 @@ export default function VerifyRequestScreen() {
           <ThemedView style={styles.section}>
             <ThemedText type="subtitle">자료 확인 신청</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              올려주신 자료를 사람이 직접 확인합니다. 확인을 마친 자료만 다른 분들의 가격
-              비교에 쓰입니다.
+              올려주신 자료를 사람이 직접 확인해요. 확인을 마친 자료만 다른 분들의 가격
+              비교에 쓰여요.
             </ThemedText>
             <VerificationBadge level={quote.verificationLevel} />
           </ThemedView>
@@ -123,14 +111,14 @@ export default function VerifyRequestScreen() {
           {!quote.confirmedAt ? (
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="small" themeColor="textSecondary">
-                금액과 계약일을 먼저 확인해주세요. 확인이 끝나야 신청할 수 있습니다.
+                금액과 계약일을 먼저 확인해주세요. 확인이 끝나야 신청할 수 있어요.
               </ThemedText>
               <ActionButton label="결과로 돌아가기" onPress={() => router.back()} />
             </ThemedView>
           ) : levels.length === 0 ? (
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="small" themeColor="textSecondary">
-                더 신청할 단계가 없습니다. 이미 가장 높은 단계입니다.
+                더 신청할 단계가 없어요. 이미 가장 높은 단계예요.
               </ThemedText>
               <ActionButton label="돌아가기" onPress={() => router.back()} />
             </ThemedView>
@@ -162,7 +150,7 @@ export default function VerifyRequestScreen() {
                           {withSubject(
                             VERIFICATION_EVIDENCE_RULES[REQUIRED_EVIDENCE_KIND[level]].label
                           )}{' '}
-                          있어야 합니다
+                          있어야 해요
                         </ThemedText>
                       </ThemedView>
                     </Pressable>
@@ -181,7 +169,7 @@ export default function VerifyRequestScreen() {
                 {quote.documents.length === 0 ? (
                   <ThemedView type="backgroundElement" style={styles.card}>
                     <ThemedText type="small" themeColor="textSecondary">
-                      올려둔 원본이 없습니다. 증빙으로 낼 문서를 먼저 촬영해주세요.
+                      올려둔 원본이 없어요. 증빙으로 낼 문서를 먼저 촬영해주세요.
                     </ThemedText>
                   </ThemedView>
                 ) : null}
@@ -236,9 +224,9 @@ export default function VerifyRequestScreen() {
                   label={busy ? '보내는 중…' : '신청하기'}
                   hint={
                     ready
-                      ? '사람이 확인한 뒤에 단계가 올라갑니다'
+                      ? '사람이 확인한 뒤에 단계가 올라가요'
                       : required
-                        ? `${withInstrument(VERIFICATION_EVIDENCE_RULES[required].label)} 표시한 문서가 한 건 있어야 합니다`
+                        ? `${withInstrument(VERIFICATION_EVIDENCE_RULES[required].label)} 표시한 문서가 한 건 있어야 해요`
                         : undefined
                   }
                   disabled={busy || !ready}

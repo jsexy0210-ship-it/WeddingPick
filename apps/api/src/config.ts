@@ -53,6 +53,8 @@ const configSchema = z.object({
   /** 제공자별 설정이 없으면 그 제공자 로그인만 막힌다. 서비스 전체가 멈추지는 않는다. */
   appleClientId: z.string().optional(),
   kakaoAppKey: z.string().optional(),
+  googleClientId: z.string().optional(),
+  naverClientId: z.string().optional(),
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -103,6 +105,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       .filter(Boolean),
     appleClientId: env.APPLE_CLIENT_ID,
     kakaoAppKey: env.KAKAO_APP_KEY,
+    googleClientId: env.GOOGLE_CLIENT_ID,
+    naverClientId: env.NAVER_CLIENT_ID,
   });
 
   if (!parsed.success) {

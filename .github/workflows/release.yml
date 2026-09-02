@@ -7,6 +7,10 @@
 #   ASC API Key (Admin 권한): Key ID 62U8N2ZWJR
 #   EAS가 이 키로 Distribution Certificate·Provisioning Profile을 자동 생성·관리한다.
 #
+#   처음 실행하기 전, 또는 "Distribution Certificate is not validated" 오류가 나면:
+#   expo.dev → 프로젝트 → Credentials → iOS → Distribution Certificate → Delete
+#   삭제 후 EAS가 Admin 키로 새 인증서를 자동 발급한다.
+#
 # ── Android 빌드 ────────────────────────────────────────────────────────
 #
 #   EAS가 Keystore를 자동 관리한다 (이미 설정됨).

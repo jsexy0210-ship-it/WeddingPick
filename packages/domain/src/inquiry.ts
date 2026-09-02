@@ -35,44 +35,44 @@ export type InquiryCategoryRule = {
 export const INQUIRY_CATEGORY_RULES: Record<InquiryCategory, InquiryCategoryRule> = {
   vendor_objection: {
     label: '업체 이의 제기',
-    description: '업체로서 정리된 가격·조건 내용에 이의가 있습니다.',
+    description: '업체로서 정리된 가격·조건 내용에 이의가 있어요.',
     requiresSubject: false,
     requiresEvidence: false,
   },
   planner_delisting: {
     label: '플래너 노출 중단',
-    description: '검색에 나오는 것을 원하지 않습니다. 내려드리고 다시 올리지 않습니다.',
+    description: '검색에 나오는 것을 원하지 않아요. 내려드리고 다시 올리지 않아요.',
     requiresSubject: true,
     requiresEvidence: false,
   },
   planner_listing: {
     label: '플래너 등록 요청',
     description:
-      '소속 플래너를 검색에 올려주세요. 업체 공식 페이지처럼 확인할 수 있는 곳을 함께 알려주셔야 합니다.',
+      '소속 플래너를 검색에 올려주세요. 업체 공식 페이지처럼 확인할 수 있는 곳을 함께 알려주셔야 해요.',
     requiresSubject: true,
     requiresEvidence: true,
   },
   data_correction: {
     label: '업체 정보 정정',
-    description: '업체 이름·지역 같은 정보가 실제와 다릅니다.',
+    description: '업체 이름·지역 같은 정보가 실제와 달라요.',
     requiresSubject: false,
     requiresEvidence: false,
   },
   analysis_error: {
-    label: '분석 결과가 다릅니다',
-    description: '정리된 내용이 원본 문서와 다릅니다.',
+    label: '분석 결과가 달라요',
+    description: '정리된 내용이 원본 문서와 달라요.',
     requiresSubject: false,
     requiresEvidence: false,
   },
   privacy: {
     label: '개인정보',
-    description: '내 정보 열람·정정·삭제를 요청합니다.',
+    description: '내 정보 열람·정정·삭제를 요청해요.',
     requiresSubject: false,
     requiresEvidence: false,
   },
   other: {
     label: '그 밖의 문의',
-    description: '위에 해당하지 않는 이야기입니다.',
+    description: '위에 해당하지 않는 이야기예요.',
     requiresSubject: false,
     requiresEvidence: false,
   },
@@ -110,10 +110,10 @@ export function inquiryAcknowledgement(
   responseBusinessDays: number | null = INQUIRY_RESPONSE_BUSINESS_DAYS
 ): string {
   if (responseBusinessDays === null) {
-    return '접수했습니다. 사람이 직접 확인하고 알려드립니다. 며칠 안에 답한다는 기준은 아직 정하지 못했습니다.';
+    return '접수했어요. 사람이 직접 확인하고 알려드려요. 며칠 안에 답한다는 기준은 아직 정하지 못했어요.';
   }
 
-  return `접수했습니다. 사람이 직접 확인하고 영업일 기준 ${responseBusinessDays}일 안에 알려드립니다.`;
+  return `접수했어요. 사람이 직접 확인하고 영업일 기준 ${responseBusinessDays}일 안에 알려드려요.`;
 }
 
 /** 문의를 접수해도 되는지. 서버와 앱이 같은 규칙을 본다. */

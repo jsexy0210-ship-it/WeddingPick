@@ -168,13 +168,13 @@ export function canApprove(input: {
 }): ApprovalCheck {
   // 서비스정책서 7번. 자기 증빙을 자기가 확인하는 것은 확인이 아니다.
   if (input.reviewerId === input.requesterId) {
-    return { ok: false, reason: '신청한 본인은 심사할 수 없습니다.' };
+    return { ok: false, reason: '신청한 본인은 심사할 수 없어요.' };
   }
 
   if (isAtLeast(input.currentLevel, input.targetLevel)) {
     return {
       ok: false,
-      reason: `이 문서는 이미 ${VERIFICATION_LEVEL_RULES[input.currentLevel].label}입니다.`,
+      reason: `이 문서는 이미 ${VERIFICATION_LEVEL_RULES[input.currentLevel].label}이에요.`,
     };
   }
 
@@ -186,7 +186,7 @@ export function canApprove(input: {
       ok: false,
       reason:
         `${VERIFICATION_LEVEL_RULES[input.targetLevel].label}에는 ` +
-        `${withSubject(required)} 있어야 합니다. 낸 증빙에 없습니다.`,
+        `${withSubject(required)} 있어야 해요. 낸 증빙에 없어요.`,
     };
   }
 

@@ -67,7 +67,7 @@ describe('canApprove', () => {
   it('신청자 본인은 심사할 수 없다', () => {
     const result = canApprove({ ...base, reviewerId: 'requester' });
 
-    expect(result).toEqual({ ok: false, reason: '신청한 본인은 심사할 수 없습니다.' });
+    expect(result).toEqual({ ok: false, reason: '신청한 본인은 심사할 수 없어요.' });
   });
 
   it('이미 받은 등급은 다시 승인하지 않는다', () => {
@@ -82,7 +82,7 @@ describe('canApprove', () => {
 
     expect(result).toEqual({
       ok: false,
-      reason: 'Pick확인에는 계약서가 있어야 합니다. 낸 증빙에 없습니다.',
+      reason: 'Pick확인에는 계약서가 있어야 해요. 낸 증빙에 없어요.',
     });
   });
 
@@ -94,6 +94,6 @@ describe('canApprove', () => {
       evidenceKinds: ['contract_document'],
     });
 
-    expect(result.ok === false && result.reason).toContain('Pick 인증 자료가 있어야 합니다');
+    expect(result.ok === false && result.reason).toContain('Pick 인증 자료가 있어야 해요');
   });
 });

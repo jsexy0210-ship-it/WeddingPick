@@ -17,7 +17,7 @@ describe('문의 접수', () => {
   it('정해지지 않은 기한을 약속하지 않는다', () => {
     // 서비스정책서 미확정 항목. 지키지 못할 기한을 적는 것보다 못 정했다고 말하는 편이 낫다.
     expect(INQUIRY_RESPONSE_BUSINESS_DAYS).toBeNull();
-    expect(inquiryAcknowledgement()).toContain('아직 정하지 못했습니다');
+    expect(inquiryAcknowledgement()).toContain('아직 정하지 못했어요');
     expect(inquiryAcknowledgement()).not.toMatch(/\d+일 안에/);
   });
 

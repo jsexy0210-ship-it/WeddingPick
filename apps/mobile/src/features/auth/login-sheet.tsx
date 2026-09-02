@@ -64,7 +64,7 @@ export function LoginSheet({ visible, reason, onSignedIn, onDismiss }: LoginShee
        */
       onSignedIn(await completeAfterSignIn());
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : '로그인하지 못했습니다.');
+      setError(caught instanceof Error ? caught.message : '로그인하지 못했어요.');
     } finally {
       setBusy(false);
     }

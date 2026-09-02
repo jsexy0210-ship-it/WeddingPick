@@ -93,12 +93,12 @@ export default function RegisterPaymentProofScreen() {
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           <ThemedView style={styles.content}>
-            <ThemedText type="subtitle">등록했습니다</ThemedText>
+            <ThemedText type="subtitle">등록했어요</ThemedText>
 
             <ThemedText type="small" themeColor="textSecondary">
               {done.matched
-                ? '업체를 찾아 이어붙였습니다.'
-                : (done.note ?? '업체를 찾지 못했습니다.')}
+                ? '업체를 찾아 이어붙였어요.'
+                : (done.note ?? '업체를 찾지 못했어요.')}
             </ThemedText>
 
             {/*
@@ -156,7 +156,7 @@ export default function RegisterPaymentProofScreen() {
           ? caught.message
           : caught instanceof Error
             ? caught.message
-            : '읽지 못했습니다. 직접 적어주세요.'
+            : '읽지 못했어요. 직접 적어주세요.'
       );
     } finally {
       setReading(false);
@@ -172,7 +172,7 @@ export default function RegisterPaymentProofScreen() {
     try {
       await runParse({ text: pasted });
     } catch (caught) {
-      setReadNote(caught instanceof Error ? caught.message : '읽지 못했습니다. 직접 적어주세요.');
+      setReadNote(caught instanceof Error ? caught.message : '읽지 못했어요. 직접 적어주세요.');
     } finally {
       setReading(false);
     }
@@ -212,8 +212,8 @@ export default function RegisterPaymentProofScreen() {
       setReadNote(
         parsed.notice ??
           (unread.length > 0
-            ? `${unread.join(' · ')}은(는) 읽지 못했습니다. 직접 적어주세요.`
-            : '읽었습니다. 맞는지 확인해 주세요.')
+            ? `${unread.join(' · ')}은(는) 읽지 못했어요. 직접 적어주세요.`
+            : '읽었어요. 맞는지 확인해 주세요.')
       );
     }
   }
@@ -255,7 +255,7 @@ export default function RegisterPaymentProofScreen() {
         deletedBy: created.originalDeletedBy,
       });
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : '등록하지 못했습니다.');
+      setError(caught instanceof Error ? caught.message : '등록하지 못했어요.');
     } finally {
       setSending(false);
     }
@@ -268,8 +268,8 @@ export default function RegisterPaymentProofScreen() {
           <ThemedView style={styles.section}>
             <ThemedText type="subtitle">Pick 인증 자료를 알려주세요</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              카드 승인 문자를 그대로 붙여넣으시면 읽어서 채워드립니다. 사진을 올리지 않으니
-              저희 서버에 이미지가 남지 않습니다.
+              카드 승인 문자를 그대로 붙여넣으시면 읽어서 채워드려요. 사진을 올리지 않으니
+              저희 서버에 이미지가 남지 않아요.
             </ThemedText>
           </ThemedView>
 
@@ -296,7 +296,7 @@ export default function RegisterPaymentProofScreen() {
             */}
             <ThemedText type="small" themeColor="textSecondary">
               승인 문자가 아니라 종이 영수증이라면 사진으로 올려주세요. 올린 사진은
-              24시간 안에 지워집니다.
+              24시간 안에 지워져요.
             </ThemedText>
             <ActionButton
               label="영수증 촬영하기"
@@ -321,8 +321,8 @@ export default function RegisterPaymentProofScreen() {
             <ThemedText type="smallBold">가맹점 이름</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
               {uncertain.includes('merchantName')
-                ? '여러 개로 읽혀 하나를 골랐습니다. 맞는지 봐주세요.'
-                : '영수증에 찍힌 그대로. 업체 이름과 달라도 괜찮습니다.'}
+                ? '여러 개로 읽혀 하나를 골랐어요. 맞는지 봐주세요.'
+                : '영수증에 찍힌 그대로. 업체 이름과 달라도 괜찮아요.'}
             </ThemedText>
             <TextInput
               style={[styles.input, { color: theme.text, borderColor: theme.border }]}
@@ -338,7 +338,7 @@ export default function RegisterPaymentProofScreen() {
             <ThemedText type="smallBold">금액</ThemedText>
             {uncertain.includes('paidAmount') ? (
               <ThemedText type="small" themeColor="textSecondary">
-                금액이 여러 개 있어 하나를 골랐습니다. 맞는지 봐주세요.
+                금액이 여러 개 있어 하나를 골랐어요. 맞는지 봐주세요.
               </ThemedText>
             ) : null}
             <TextInput
@@ -357,7 +357,7 @@ export default function RegisterPaymentProofScreen() {
             {uncertain.includes('paidAt') ? (
               /* 문자에 연도가 없어 추정한 값이다. 한 해가 어긋나면 기간이 달라진다. */
               <ThemedText type="small" themeColor="textSecondary">
-                문자에 연도가 없어 짐작한 값입니다. 연도가 맞는지 봐주세요.
+                문자에 연도가 없어 짐작한 값이에요. 연도가 맞는지 봐주세요.
               </ThemedText>
             ) : null}
             <TextInput
@@ -393,7 +393,7 @@ export default function RegisterPaymentProofScreen() {
             */}
             <ThemedText type="small" themeColor="textSecondary">
               무엇이 있었는지만 알려주세요. 번호 자체는 적지 않으셔도 되고, 저희도
-              저장하지 않습니다.
+              저장하지 않아요.
             </ThemedText>
             <ThemedView style={styles.chips}>
               {MASKED_IDENTIFIER_KINDS.map((kind) => (

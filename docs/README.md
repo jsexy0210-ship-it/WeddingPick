@@ -16,7 +16,7 @@
 | [archive/통합정책 v3.10](archive/통합정책%20v3.10) | 과거본 | 기준이 아니다. v3.13과 다르면 v3.13이 맞다 |
 | [05-product-spec.md](05-product-spec.md) | 개발용 — Phase 1 범위·화면·데이터 모델 | 과거 범위 기준. 통합정책이 우선한다 |
 | [05a-screen-data-spec.md](05a-screen-data-spec.md) | 개발용 — 화면·데이터 구조 스펙 | 과거 범위 기준. 통합정책이 우선한다 |
-| [design-handoff](design-handoff) | 디자인 핸드오프 | 통합정책 v3.13과 어긋나는 부분은 통합정책을 따른다 |
+| [design-handoff](design-handoff) | 디자인 핸드오프 — 현재 기준은 [seed/](design-handoff/seed) (SEED, 176화면, 코랄). 옛 Toss/blue v7은 archive-toss-v7-README.md로 남겨둠 | 통합정책 v3.13과 어긋나는 부분은 통합정책을 따른다 |
 | [AI_HANDOFF.md](AI_HANDOFF.md) | 작업 인수인계 서식 | — |
 
 ## 과거 버전 번호를 어떻게 읽을 것인가

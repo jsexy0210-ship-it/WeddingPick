@@ -2,11 +2,11 @@ import type { PlannerDetail } from '@weddingpick/api-contract';
 import { DOCUMENT_TYPE_LABEL } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getPlanner } from '@/api/client';
-import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
+import { ActionButton, ErrorView, LoadingView, MaxContentWidth, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
 import { won } from '@/features/quotes/quote-result-view';
 
 /**
@@ -20,7 +20,6 @@ import { won } from '@/features/quotes/quote-result-view';
  */
 export default function PlannerDetailScreen() {
   const { plannerId } = useLocalSearchParams<{ plannerId: string }>();
-  const theme = useTheme();
   const [planner, setPlanner] = useState<PlannerDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,23 +30,11 @@ export default function PlannerDetailScreen() {
   }, [plannerId]);
 
   if (error) {
-    return (
-      <Frame>
-        <ThemedText type="subtitle">불러오지 못했습니다</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          {error}
-        </ThemedText>
-        <ActionButton label="돌아가기" onPress={() => router.back()} />
-      </Frame>
-    );
+    return <ErrorView message={error} onBack={() => router.back()} />;
   }
 
   if (!planner) {
-    return (
-      <Frame>
-        <ActivityIndicator color={theme.tint} />
-      </Frame>
-    );
+    return <LoadingView />;
   }
 
   return (
@@ -95,11 +82,11 @@ export default function PlannerDetailScreen() {
               <ThemedView type="backgroundElement" style={styles.card}>
                 <ThemedText type="small" themeColor="textSecondary">
                   {planner.comparableQuoteCount === 0
-                    ? '확인된 계약 자료가 아직 없습니다.'
-                    : `확인된 계약이 ${planner.comparableQuoteCount}건 모였지만, 같은 상품끼리 견주기에는 아직 모자랍니다.`}
+                    ? '확인된 계약 자료가 아직 없어요.'
+                    : `확인된 계약이 ${planner.comparableQuoteCount}건 모였지만, 같은 상품끼리 견주기에는 아직 모자라요.`}
                 </ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
-                  자료가 모이기 전에는 가격을 지어내지 않습니다.
+                  자료가 모이기 전에는 가격을 지어내지 않아요.
                 </ThemedText>
               </ThemedView>
             ) : (
@@ -117,7 +104,7 @@ export default function PlannerDetailScreen() {
                     {product.stat.periodEnd}
                   </ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
-                    가운데 절반이 {won(product.stat.p25)}~{won(product.stat.p75)} 사이입니다
+                    가운데 절반이 {won(product.stat.p25)}~{won(product.stat.p75)} 사이예요
                   </ThemedText>
                 </ThemedView>
               ))
@@ -139,15 +126,6 @@ export default function PlannerDetailScreen() {
   );
 }
 
-function Frame({ children }: { children: React.ReactNode }) {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.content}>{children}</ThemedView>
-      </SafeAreaView>
-    </ThemedView>
-  );
-}
 
 const styles = StyleSheet.create({
   container: {
