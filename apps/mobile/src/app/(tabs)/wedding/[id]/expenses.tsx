@@ -1,15 +1,23 @@
-import type { ExpenseSummaryResponse } from '@weddingpick/api-contract';
-import { EXPENSE_BUCKET_COLOR, manwon, type ExpenseBucket } from '@weddingpick/domain';
+import type { CreateExpenseRequest, ExpenseSummaryResponse } from '@weddingpick/api-contract';
+import {
+  EXPENSE_BUCKET_COLOR,
+  EXPENSE_STATUSES,
+  EXPENSE_STATUS_LABEL,
+  manwon,
+  type ExpenseBucket,
+} from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { getExpenses, removeExpense, setBudget } from '@/api/client';
+import { addExpense, getExpenses, removeExpense, setBudget } from '@/api/client';
 import {
   ActionButton,
   DonutChart,
   ErrorView,
+  Fab,
+  FilterChip,
   Layout,
   LoadingView,
   MaxContentWidth,
@@ -37,6 +45,12 @@ export default function ExpensesScreen() {
   const [error, setError] = useState<string | null>(null);
   const [budgetOpen, setBudgetOpen] = useState(false);
   const [draft, setDraft] = useState('');
+  /** 수동 지출 입력 시트 */
+  const [addOpen, setAddOpen] = useState(false);
+  const [addLabel, setAddLabel] = useState('');
+  const [addAmount, setAddAmount] = useState('');
+  const [addStatus, setAddStatus] = useState<CreateExpenseRequest['status']>('paid');
+  const [addSpentOn, setAddSpentOn] = useState('');
 
   const load = useCallback(() => {
     getExpenses(id)
@@ -70,6 +84,43 @@ export default function ExpensesScreen() {
     }
   }
 
+  function closeAddSheet() {
+    setAddOpen(false);
+    setAddLabel('');
+    setAddAmount('');
+    setAddStatus('paid');
+    setAddSpentOn('');
+  }
+
+  async function submitExpense() {
+    const label = addLabel.trim();
+    const amount = parseInt(addAmount.replace(/[^0-9]/g, ''), 10);
+
+    if (!label) {
+      Alert.alert('항목 이름을 적어주세요');
+      return;
+    }
+    if (!amount || amount <= 0) {
+      Alert.alert('금액을 숫자로 적어주세요');
+      return;
+    }
+    const spentOn = addSpentOn.trim();
+    const body: CreateExpenseRequest = {
+      label,
+      amount,
+      status: addStatus,
+      ...(spentOn ? { spentOn } : {}),
+    };
+
+    try {
+      await addExpense(id, body);
+      closeAddSheet();
+      load();
+    } catch (caught) {
+      Alert.alert('지출 추가 실패', caught instanceof Error ? caught.message : '다시 시도해주세요.');
+    }
+  }
+
   function remove(expenseId: string) {
     Alert.alert('항목 빼기', '이 지출 항목을 빼시겠어요? 되돌릴 수 없어요.', [
       { text: '취소', style: 'cancel' },
@@ -79,8 +130,12 @@ export default function ExpensesScreen() {
         onPress: () =>
           removeExpense(id, expenseId)
             .then(load)
-            .catch(() =>
-              setError('제보로 들어온 항목은 여기서 지울 수 없어요.')
+            .catch((caught: unknown) =>
+              setError(
+                caught instanceof Error && caught.message
+                  ? caught.message
+                  : '지울 수 없어요.'
+              )
             ),
       },
     ]);
@@ -218,6 +273,59 @@ export default function ExpensesScreen() {
         </ScrollView>
       </SafeAreaView>
 
+      <Fab label="지출 추가" glyph="+" onPress={() => { closeAddSheet(); setAddOpen(true); }} />
+
+      <Modal visible={addOpen} transparent animationType="slide">
+        <ThemedView style={[styles.scrim, { backgroundColor: theme.scrim }]}>
+          <ThemedView style={styles.sheet}>
+            <ThemedText type="t4">지출 추가</ThemedText>
+            <ThemedText type="t7" themeColor="textSecondary">항목 이름</ThemedText>
+            <TextInput
+              style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundSelected }]}
+              value={addLabel}
+              onChangeText={setAddLabel}
+              placeholder="예: 스드메 계약금"
+              placeholderTextColor={theme.textAssistive}
+              returnKeyType="next"
+            />
+            <ThemedText type="t7" themeColor="textSecondary">금액 (원)</ThemedText>
+            <TextInput
+              style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundSelected }]}
+              value={addAmount}
+              onChangeText={setAddAmount}
+              placeholder="예: 500000"
+              placeholderTextColor={theme.textAssistive}
+              keyboardType="number-pad"
+            />
+            <ThemedText type="t7" themeColor="textSecondary">상태</ThemedText>
+            <ThemedView style={styles.chips}>
+              {EXPENSE_STATUSES.map((s) => (
+                <FilterChip
+                  key={s}
+                  label={EXPENSE_STATUS_LABEL[s]}
+                  selected={addStatus === s}
+                  role="radio"
+                  onPress={() => setAddStatus(s)}
+                />
+              ))}
+            </ThemedView>
+            <ThemedText type="t7" themeColor="textSecondary">지출일 (선택, YYYY-MM-DD)</ThemedText>
+            <TextInput
+              style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundSelected }]}
+              value={addSpentOn}
+              onChangeText={setAddSpentOn}
+              placeholder="예: 2025-04-15"
+              placeholderTextColor={theme.textAssistive}
+              maxLength={10}
+            />
+            <ThemedView style={styles.sheetActions}>
+              <ActionButton label="취소" onPress={closeAddSheet} />
+              <ActionButton variant="primary" label="추가하기" onPress={() => void submitExpense()} />
+            </ThemedView>
+          </ThemedView>
+        </ThemedView>
+      </Modal>
+
       <Modal visible={budgetOpen} transparent animationType="slide">
         <ThemedView style={[styles.scrim, { backgroundColor: theme.scrim }]}>
           <ThemedView style={styles.sheet}>
@@ -271,6 +379,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   sheetActions: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.two },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   input: {
     height: Layout.rowMinHeight,
     borderRadius: Radius.input,

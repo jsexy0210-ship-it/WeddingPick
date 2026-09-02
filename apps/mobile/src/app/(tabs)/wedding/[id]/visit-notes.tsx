@@ -173,7 +173,7 @@ export default function VisitNotesScreen() {
             <WeddingCalendar
               value={visitedOn}
               onChange={setVisitedOn}
-              today={new Date(1970, 0, 1)}
+              allowPast
             />
 
             <ThemedText type="t7" themeColor="textSecondary">

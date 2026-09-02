@@ -61,8 +61,8 @@ export default function VerifyScreen() {
           <ThemedView style={styles.footer}>
             <ActionButton
               variant="primary"
-              label="이 문서 분석하기"
-              hint="분석을 마치면 자료 확인을 신청할 수 있어요"
+              label="새 문서 촬영하기"
+              hint="처음부터 새 문서를 찍어 올려요"
               onPress={() => router.push('/capture')}
             />
             <ActionButton label="돌아가기" onPress={() => router.back()} />
