@@ -131,7 +131,7 @@ export default function WeddingInfoDetailScreen() {
           <ThemedView type="backgroundElement" style={styles.card}>
             <ThemedText type="t6">Pick과 연결하기</ThemedText>
             <ThemedText type="t7" themeColor="textSecondary">
-              관련 업체를 Pick에 추가해 비교·견적 요청까지 이어갈 수 있어요.
+              관련 업체를 Pick에 추가해 비교·상담 요청까지 이어갈 수 있어요.
             </ThemedText>
             {/* TODO: API 미구현 — Pick 연결 흐름 (검색 화면으로 이동) */}
             <ActionButton
