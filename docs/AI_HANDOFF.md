@@ -145,7 +145,18 @@ claude.ai Settings → Connectors → Gmail 연결 필요.
   - `structured.monthly_draws` 등(0052) 관련 화면(캠페인·보상)은 그 표가 production에 아직 없을 수 있음을 감안해 `to_regclass()`로 존재 확인 후 없으면 안내 문구만 보여주도록 방어적으로 짬 — 0052 버그가 고쳐지기 전에도 이 화면 자체는 깨지지 않음.
   - 검증: `server.test.ts` 총 20개(기존 11 + 신규 9) — 로컬 Postgres로 전부 통과. `copy-rules.test.ts`가 새 페이지의 "표본" 사용을 잡아내 "데이터"로 고침(내부 관리자 도구라도 카피 규칙은 앱 전체에 적용됨을 확인).
   - nav·홈 바로가기 목록에 9개 추가. `apps/web/README.md` 갱신.
-**다음 세션 참고**: 남은 것은 관리자 화면 나머지(~19개 — 읽기 전용 14개 + 위험한 동작 5개, 위 참조)와 박람회 후속(관리자 등록 UI 없음, 지금은 DB에 직접 넣어야 함). 공통 Bottom Sheet·공통 상태는 순수 프론트엔드 가능분을 마쳤고, 남은 것은 위 "차단" 목록처럼 다른 선행 작업이 필요하다. **0052 마이그레이션 버그부터 고쳐야 `apps/api`의 DB 연동 테스트 전체와 production 마이그레이션이 풀린다** — 다음으로 손대는 세션(백엔드 쪽)이 최우선으로 봐야 한다.
+- ✅ 남은 미구현 화면 카테고리(B2B 문의·커플 연결·우리웨딩·홈·기타) 재조사(Explore 서브에이전트) 후 실제로 가능한 것부터 구현:
+  - **WP-OUR-013 예식 완료**: 이미 다 있었다 — `packages/domain/src/wedding-phase.ts`의 `COMPLETED_ACTIONS`(후기·미제보 결제내역·총지출 정리 문구)와 홈 화면의 `!showsPreparationFirst(stage.stage)` 분기가 예식 뒤 홈에 이미 뜨고 있었는데, 그 세 줄이 눌러도 아무 데도 안 가는 텍스트였다. `app/(tabs)/index.tsx`에 `goToCompletedAction()` 추가해 각각 `/pick`(후기 대상 고르기)·`/capture/payment/consent`(결제내역 등록)·지출내역 화면으로 연결. 새 화면도 새 API도 필요 없었다.
+  - **WP-OUR-012 준비 타임라인**: 핸드오프 원문 "Pick·최종결정·일정·지출·완료 기록을 시간순으로"는 `tasks.tsx`에 이미 있던 7단계 진행률 점(라이프사이클 stage 표시)과 다른 것이었다 — 그건 "지금 어느 단계인지"고, 이건 "그동안 뭘 했는지"의 시간순 기록. 새 DB 없이 기존 네 표(`vendor_candidates`·`category_decisions`·`expenses`·`wedding_tasks`)에서 시간과 함께 저장된 값만 모으는 새 집계 API를 만듦:
+    - API: `apps/api/src/routes/wedding-timeline.ts` `GET /v1/weddings/:weddingId/timeline` — 네 표를 병렬 조회 후 시간순 병합. 기본 열넷(preset_key 있는 task)은 사용자 행동이 아니라 자동 시딩이라 제외. **"완료 기록"은 못 낸다** — `wedding_tasks`가 완료 시각을 저장하지 않아 지어낼 수 없어서 뺐다(코드 주석에 명시).
+    - 계약: `packages/api-contract/src/wedding-timeline.ts` — kind별 discriminated union.
+    - 모바일: `wedding/[id]/timeline.tsx` 신규 화면 + `tasks.tsx`의 라이프사이클 카드에 "지금까지 한 일 보기" 링크 추가.
+    - 검증: `apps/api/src/test/wedding-timeline.test.ts`(로그인 필요·빈 상태·시간순 병합·기본 열넷 제외·타인 접근 403) — 0052 버그로 `resetDatabase()`가 막혀 커밋된 jest로는 못 돌렸고, 이번에도 별도 스크래치 하네스(커밋 안 함)로 로컬 Postgres에 직접 붙여 전부 확인 후 지움.
+  - **WP-HOME-004 TOP3 전체보기**: 미구현이 아니라 **해당 없음**으로 확인 — `index.tsx`에 "TOP3 성격의 탐색은 검색 탭에 있다(홈 C-1)"는 명시적 코드 주석이 있다. 홈에 TOP3 섹션 자체를 안 두기로 한 의도된 결정. 손대지 않음.
+  - 손대지 않고 넘긴 것(정책·백엔드 필요): WP-BIZ-005(자료 제공)·006(혜택 등록)·007(광고·제휴) — DB·API·화면 전부 없음, 특히 006·007은 실제 돈이 오가는 B2B 계약 조건이라 스키마부터 임의로 설계하지 않음 / WP-CPL 공동편집충돌·변경내역 — `wedding_plan` 관련 표에 버전/이력 컬럼이 아예 없고, "충돌"이 뜻하는 바 자체가 정책 결정 필요 / WP-HOME-006 개인화 웨딩피드 — `wedding_expos`·`wedding_guide_articles`(오늘 앞서 만듦)로 콘텐츠는 채울 수 있지만 "개인화" 랭킹 로직은 제품 결정이 필요해 손대지 않음
+  - 부수 발견: `packages/domain/src/terms.ts`의 `VERIFIED_DATA_HELP`(이전 세션에 추가)가 "결제하신 분들이..." 문구를 써서 `apps/api/src/test/pick-language.test.ts`(v3.13 §O-1, 사용자 앱에서 `결제` 금지)를 어기고 있었다 — 오늘 처음 전체 `apps/api` 테스트를 돌려보고서야 걸림. "낸 금액을..."로 고침. **교훈: 새 사용자 노출 문구를 추가할 때마다 `pick-language.test.ts`와 `copy-rules.test.ts`를 반드시 함께 돌려야 한다** — 하나(카피 금지어)만 확인하고 다른 하나(결제 금지어)를 놓쳤다.
+  - 검증: `apps/mobile`·`packages/domain`·`packages/api-contract`·`apps/api` 전부 `tsc --noEmit` 통과. `apps/mobile`(46)·`packages/domain`(801) 테스트 통과. `apps/api`는 `DATABASE_URL` 없이 돌려 새 테스트가 정상적으로 skip되는 것과 기존 실패 2건(사전부터 있던 것, 무관)만 남는 것을 확인.
+**다음 세션 참고**: 관리자 화면 나머지(~19개 — 읽기 전용 14개 + 위험한 동작 5개), 박람회 후속(관리자 등록 UI 없음), WP-BIZ 006/007(B2B 계약·광고 스키마 설계 필요), WP-CPL(버전 관리 설계 필요), WP-HOME-006(랭킹 로직 제품 결정 필요), WP-OUR 일정 추가/지도 보기/취향 재선택(전부 이전 세션에서 차단 확인)가 남아 있다. **0052 마이그레이션 버그부터 고쳐야 `apps/api`의 DB 연동 테스트 전체(이번 세션 추가분 포함)와 production 마이그레이션이 풀린다** — 다음으로 손대는 세션(백엔드 쪽)이 최우선으로 봐야 한다.
 
 ### 프론트엔드 (session_01HTGSU2B4vFjePXFS2ajKBY) — 아카이브
 **완료**: 모바일 앱 핵심 화면 구현, 42개 라우터 파일 생성

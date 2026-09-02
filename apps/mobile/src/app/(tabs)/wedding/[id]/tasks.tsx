@@ -184,6 +184,8 @@ export default function WeddingTasksScreen() {
                 <ThemedText type="t7" themeColor="textSecondary">
                   {LIFECYCLE_STAGE_LABEL[view.stage]} · {view.note}
                 </ThemedText>
+                {/* WP-OUR-012. 점은 지금 어느 단계인지만 말한다 — 그동안 뭘 했는지는 여기서 본다. */}
+                <ActionButton label="지금까지 한 일 보기" onPress={() => router.push(`/wedding/${id}/timeline`)} />
               </ThemedView>
             );
           })()}

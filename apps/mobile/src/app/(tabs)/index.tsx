@@ -13,6 +13,7 @@ import {
   greeting,
   lifecycle,
   showsPreparationFirst,
+  type CompletedAction,
   type ExpenseBucket,
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
@@ -390,13 +391,23 @@ export default function HomeScreen() {
           */}
           {!showsPreparationFirst(stage.stage) ? (
             <ThemedView type="backgroundElement" style={styles.card}>
+              {/*
+                WP-OUR-013 예식 완료. 문구는 이미 domain(COMPLETED_ACTIONS)에
+                있었는데 화면은 그냥 읽기만 했다 — 눌러도 아무 데도 안 가는
+                텍스트였다. 각 항목이 실제로 하는 자리로 보낸다.
+              */}
               {COMPLETED_ACTIONS.map((action) => (
-                <ThemedView key={action.key} type="backgroundElement" style={styles.completedRow}>
-                  <ThemedText type="t5">{action.title}</ThemedText>
-                  <ThemedText type="t7" themeColor="textSecondary">
-                    {action.description}
-                  </ThemedText>
-                </ThemedView>
+                <Pressable
+                  key={action.key}
+                  accessibilityRole="button"
+                  onPress={() => goToCompletedAction(action.key, data.me)}>
+                  <ThemedView type="backgroundElement" style={styles.completedRow}>
+                    <ThemedText type="t5">{action.title}</ThemedText>
+                    <ThemedText type="t7" themeColor="textSecondary">
+                      {action.description}
+                    </ThemedText>
+                  </ThemedView>
+                </Pressable>
               ))}
             </ThemedView>
           ) : (
@@ -450,6 +461,27 @@ export default function HomeScreen() {
 /** 웨딩이 없으면 우리웨딩 탭으로 보낸다 — 거기서 만들어준다. */
 function go(me: CurrentUser | null, section: string) {
   router.push(me?.weddingId ? `/wedding/${me.weddingId}/${section}` : '/wedding');
+}
+
+/**
+ * WP-OUR-013 예식 완료 권유 셋이 각각 어디로 가는지.
+ *
+ * `review`는 특정 업체 하나를 짚어 보내지 않는다 — 결정한 업체가 여러 곳일 수
+ * 있고, 그중 어느 곳 후기를 먼저 쓰고 싶은지는 사람마다 다르다. Pick 탭이
+ * 결정한 업체를 모아 보여주는 자리라 거기서 고르게 한다.
+ */
+function goToCompletedAction(key: CompletedAction['key'], me: CurrentUser | null) {
+  if (key === 'review') {
+    router.push('/pick');
+    return;
+  }
+
+  if (key === 'payment') {
+    router.push('/capture/payment/consent');
+    return;
+  }
+
+  go(me, 'expenses');
 }
 
 function Quick({ label, onPress }: { label: string; onPress: () => void }) {

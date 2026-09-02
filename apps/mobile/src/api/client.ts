@@ -4,6 +4,7 @@ import {
   expenseSummaryResponseSchema,
   visitNoteListResponseSchema,
   weddingTaskListResponseSchema,
+  weddingTimelineResponseSchema,
   authProvidersResponseSchema,
   comparisonResponseSchema,
   completeUploadResponseSchema,
@@ -103,6 +104,7 @@ import {
   type ExpoRegionsResponse,
   type GuideArticleDetail,
   type GuideArticleListResponse,
+  type WeddingTimelineResponse,
   type Quote,
   type VendorComparisonResponse,
   type VendorDetail,
@@ -417,6 +419,11 @@ export async function compareVendors(ids: string[]): Promise<VendorComparisonRes
 /** 처음 부르면 서버가 기본 열넷을 깔아준다. */
 export async function listWeddingTasks(weddingId: string): Promise<WeddingTaskListResponse> {
   return request(`/v1/weddings/${weddingId}/tasks`, weddingTaskListResponseSchema);
+}
+
+/** WP-OUR-012. Pick·최종결정·지출·사용자가 더한 일정을 시간순으로. */
+export async function getWeddingTimeline(weddingId: string): Promise<WeddingTimelineResponse> {
+  return request(`/v1/weddings/${weddingId}/timeline`, weddingTimelineResponseSchema);
 }
 
 export async function addWeddingTask(
