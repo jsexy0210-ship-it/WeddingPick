@@ -26,7 +26,7 @@ export type IdentityProvider = {
  */
 function createOidcProvider(options: {
   provider: IdentityProviderName;
-  issuer: string;
+  issuer: string | string[];
   jwksUrl: string;
   audience: string;
 }): IdentityProvider {
@@ -82,7 +82,8 @@ export function createKakaoProvider(appKey: string): IdentityProvider {
 export function createGoogleProvider(clientId: string): IdentityProvider {
   return createOidcProvider({
     provider: 'google',
-    issuer: 'https://accounts.google.com',
+    // Google은 두 issuer 값을 모두 정상 토큰으로 명시한다.
+    issuer: ['https://accounts.google.com', 'accounts.google.com'],
     jwksUrl: 'https://www.googleapis.com/oauth2/v3/certs',
     audience: clientId,
   });

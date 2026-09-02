@@ -1,7 +1,9 @@
 import type { AuthProvider } from '@weddingpick/api-contract';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { AuthRequest, ResponseType, makeRedirectUri } from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 
 import { listAuthProviders, signIn } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
@@ -16,6 +18,9 @@ export const PROVIDER_LABEL = {
 
 const KAKAO_CLIENT_ID = process.env.EXPO_PUBLIC_KAKAO_CLIENT_ID;
 const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
+
+// 웹에서는 제공자가 redirect한 창을 닫고 원래 로그인 요청을 완료해야 한다.
+WebBrowser.maybeCompleteAuthSession();
 
 /**
  * 쓸 수 있는 로그인 방법.
@@ -51,7 +56,20 @@ export function useAuthProviders(): { providers: AuthProvider[] | null; error: s
 
 /** 이 방법으로 지금 로그인할 수 있는가. 개발용은 비밀값이 있어야 눌린다. */
 export function canSignInWith(provider: AuthProvider): boolean {
-  return provider.isDevelopmentStandIn ? Boolean(DEV_LOGIN_SECRET) : true;
+  if (provider.isDevelopmentStandIn) return Boolean(DEV_LOGIN_SECRET);
+
+  switch (provider.provider) {
+    case 'apple':
+      // 현재 구현은 expo-apple-authentication 네이티브 흐름이다.
+      return Platform.OS === 'ios';
+    case 'kakao':
+      return Boolean(KAKAO_CLIENT_ID);
+    case 'google':
+      return Boolean(GOOGLE_CLIENT_ID);
+    case 'naver':
+      // authorization code를 교환할 서버 API가 생길 때까지 노출하지 않는다.
+      return false;
+  }
 }
 
 /**
