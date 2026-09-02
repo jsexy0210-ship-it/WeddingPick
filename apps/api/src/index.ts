@@ -1,5 +1,10 @@
 import { createDevProvider } from './auth/dev-provider';
-import { createAppleProvider, createGoogleProvider, createKakaoProvider } from './auth/identity-provider';
+import {
+  createAppleProvider,
+  createGoogleProvider,
+  createKakaoProvider,
+  createNaverProvider,
+} from './auth/identity-provider';
 import { assertReleasable } from '@weddingpick/domain';
 import { loadConfig, loadLegalNotice } from './config';
 import type { AppContext } from './context';
@@ -63,6 +68,10 @@ async function main() {
       ...(config.appleClientId && { apple: createAppleProvider(config.appleClientId) }),
       ...(config.kakaoAppKey && { kakao: createKakaoProvider(config.kakaoAppKey) }),
       ...(config.googleClientId && { google: createGoogleProvider(config.googleClientId) }),
+      ...(config.naverClientId &&
+        config.naverClientSecret && {
+          naver: createNaverProvider(config.naverClientId, config.naverClientSecret),
+        }),
       // 개발용은 apple 자리를 덮어쓴다. 실제 클라이언트 ID가 있으면 그쪽이 이긴다.
       ...(!config.appleClientId && devProvider() && { apple: devProvider()! }),
     },

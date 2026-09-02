@@ -105,6 +105,17 @@ URL 확정 후 도메인 상수(`packages/domain/src/constants/policy.ts` 또는
 Google 개발자 콘솔 알림 자동화 세션이 Gmail 미연결로 차단됨.  
 claude.ai Settings → Connectors → Gmail 연결 필요.
 
+### 6. 네이버 로그인 환경변수 (2026-09-02, 이 세션에서 서버 구현 완료)
+서버 코드(`createNaverProvider`)는 끝났다 — 아래 두 값만 넣으면 네이버가
+로그인 제공자 목록에 자동으로 나온다.
+```
+flyctl secrets set NAVER_CLIENT_ID=<네이버 개발자센터 발급값> --app weddingpickl
+flyctl secrets set NAVER_CLIENT_SECRET=<네이버 개발자센터 발급값> --app weddingpickl
+```
+네이버 개발자센터(developers.naver.com)에서 애플리케이션을 등록하고 서비스
+URL·Callback URL(`weddingpick://` 커스텀 스킴)을 설정해야 값이 나온다.
+자세한 내용은 `docs/social-login-handoff.md`.
+
 ---
 
 ## 세션별 작업 완료 현황
@@ -152,8 +163,13 @@ GitHub Actions 실제 실행 결과, production DB 적용.
    로직이 다 있는데 `server.ts`에 라우트로 등록된 게 하나도 없어서 (CLI로만
    실행됨) 관리자 화면 25개(WP-ADM-*)가 붙을 API가 없었다.
 2. 네이버 로그인 서버 미구현(타입·config만 존재, 콜백/토큰교환 라우트 없음).
-3. `terms.url`/`privacy.url` 미게시 — `assertReleasable`가 이 필드를 체크 안 해서
-   릴리즈 게이트를 뚫고 나갈 위험.
+3. ~~`terms.url`/`privacy.url` 미게시 — `assertReleasable`가 이 필드를 체크 안
+   해서 릴리즈 게이트를 뚫고 나갈 위험.~~ **오판이었다** — 다시 확인하니
+   `release-gate.ts`의 `checkRelease()`가 `POLICY_DOCUMENTS`의 `url` 필드를
+   이미 보고 있고(`analysis-notice` 제외), 실제로 문서가 미게시면
+   `assertReleasable('production', ...)`이 "확정되지 않은 문서"로 막는다는
+   테스트(`release-gate.test.ts`)까지 있었다. 코드 수정 없음 — 실제 남은 일은
+   법률 문서 자체를 완성해 `url`을 채우는 것뿐(사용자/법무 영역).
 4. 월간 웨딩지원금(NPay) — 0052~0054 마이그레이션 스키마만 있고 앱 코드 0건.
    (다른 브랜치 `origin/claude/session-a4bq31`에 옛 시도가 있으나 테이블명이
    `monthly_draw_entries`로 현재 스키마의 `draw_entries`와 달라 재사용 불가 —
@@ -372,6 +388,48 @@ ad, ai-cost, decisions, objection, rebuttal, retention, reward. 관리자
 - **미검증**: GitHub Actions 실제 실행 결과, production 배포·health check
   (Fly.io 크리덴셜이 이 세션에 없음 — 항상 그래왔듯 사용자 쪽에서 확인 필요).
 
+### 네이버 로그인 서버 구현 완료 (같은 세션)
+
+관리자 API 13개를 끝낸 뒤, «백엔드 갭 조사»의 2번 항목(네이버 로그인 서버
+미구현)을 마저 처리했다.
+
+**한 일**:
+- `apps/api/src/auth/identity-provider.ts`에 `createNaverProvider(clientId,
+  clientSecret, fetchImpl?)` 추가 — 네이버는 OIDC가 아니라 authorization
+  code 교환 방식이라 다른 세 제공자와 다르게 client secret이 필요하고, 서버가
+  직접 `https://nid.naver.com/oauth2.0/token`에서 토큰을 받은 뒤
+  `https://openapi.naver.com/v1/nid/me`로 프로필을 조회한다.
+- `IdentityProvider.verify`의 시그니처를 `(token, extra?: { state?: string
+  })`로 확장했다 — 네이버 토큰 교환에는 CSRF 방지용 `state`가 필수라
+  기존 `verify(idToken)` 하나로는 못 담았다. 다른 세 제공자는 `extra`를
+  무시하므로 영향 없음.
+- `packages/api-contract/src/auth.ts`의 `createSessionRequestSchema`에
+  `state?: string` 추가. 네이버는 `idToken` 자리에 authorization code를
+  넣어 보낸다(필드 이름은 그대로 재사용 — 계약을 안 바꾸려고 의도적으로
+  그렇게 함, 대신 스키마 주석에 설명 남김).
+- `config.ts`에 `naverClientSecret`(`NAVER_CLIENT_SECRET`) 추가,
+  `index.ts`는 `NAVER_CLIENT_ID`·`NAVER_CLIENT_SECRET`이 **둘 다** 있을
+  때만 naver 제공자를 등록한다 — 운영 환경변수를 아직 안 넣었으니 지금은
+  그대로 노출 안 됨(이전 세션이 남긴 "임의로 노출시키지 말 것" 경고와
+  결과적으로 같은 상태 유지).
+- `docs/social-login-handoff.md` 갱신 — 다음 사람이 필요한 게 서버 구현이
+  아니라 운영 환경변수 설정 + 모바일 쪽 네이버 로그인 버튼(authorization
+  code 받아오기, `weddingpick://` Redirect URI 등록)이라는 걸 명확히 함.
+
+**테스트**: `apps/api/src/auth/identity-provider.test.ts`(신설, `fetchImpl`을
+가짜로 끼워 실제 네이버 서버 없이 code↔토큰 교환·프로필 조회·에러 케이스
+5개 검증) + `apps/api/src/test/naver-login.test.ts`(신설, 라우트가 `state`를
+제공자에게 그대로 넘기고 세션을 만드는지 3개) — 둘 다 통과. 기존
+`api.test.ts`(세션 관련 13개) 회귀 없음. 전체 워크스페이스 typecheck 재확인
+통과.
+
+**다음 사람이 할 일**: 이건 코드가 아니라 운영/모바일 작업이다.
+1. **[사용자]** 네이버 개발자센터에서 애플리케이션 등록 → `NAVER_CLIENT_ID`·
+   `NAVER_CLIENT_SECRET`을 Fly.io 환경변수로 설정.
+2. **[AI/사용자]** 모바일 앱에 네이버 로그인 버튼 연결 — authorization code를
+   받아 `POST /v1/auth/sessions`(`provider: 'naver'`, `idToken`에 code,
+   `state`에 인가 요청 때 쓴 state)로 보내는 흐름 추가.
+
 ---
 
 ## 프론트엔드 화면 현황
@@ -480,16 +538,23 @@ WeddingPickl/
 1. **[사용자]** expo.dev에 ASC API Key 62U8N2ZWJR 등록 → iOS 빌드 재시작
 2. **[사용자]** Fly.io: `OPERATOR_SESSION_TTL_DAYS=365` 추가
 3. **[사용자]** Neon DB: `db-migrate.yml` 실행 → 0052 적용
-4. **[사용자]** terms.url · privacy.url 확정 → 도메인 상수 업데이트
+4. **[사용자]** terms.url · privacy.url 확정 → 법률 문서 자체를 완성해 URL을
+   채운다(코드가 아니라 문서 작업 — `assertReleasable`은 이미 정상 작동함,
+   위 «백엔드 갭 조사» 3번 참고)
 5. ~~**[AI]** 관리자 HTTP API 배선~~ — **완료**(이 세션, 13개 도메인 전부:
    withdrawal·vendor-claim·verification·pii·inquiry·payment-proof·ad·
    ai-cost·decisions·objection·rebuttal·retention·reward). 자세한 내용은
    위 «관리자 HTTP API 배선 — 13개 도메인 전부 완료» 참고.
-6. **[AI]** 관리자 화면(WP-ADM-*) 프론트엔드 설계 및 구현 — API는 이제 다
+6. **[사용자]** 네이버 개발자센터 애플리케이션 등록 → `NAVER_CLIENT_ID`·
+   `NAVER_CLIENT_SECRET`을 Fly.io 환경변수로 설정(서버 구현은 이 세션에서
+   완료됨, 위 «네이버 로그인 서버 구현 완료» 참고)
+7. **[AI]** 관리자 화면(WP-ADM-*) 프론트엔드 설계 및 구현 — API는 이제 다
    있다(`/v1/admin/*`, `requireOperator`로 보호). 각 `routes/admin-*.ts`
    파일이 엔드포인트 전체를 보여준다.
-7. **[AI]** 프론트엔드 미구현 화면 구현 — 우선순위: 회원탈퇴 > 일정 추가 > 지도 보기 > 취향 재선택
-8. **[AI]** 공통 Bottom Sheet 16종 인라인 처리 여부 확인
+8. **[AI]** 모바일에 네이버 로그인 버튼 연결(authorization code 받아오기,
+   `weddingpick://` Redirect URI 등록) — 서버는 준비됨
+9. **[AI]** 프론트엔드 미구현 화면 구현 — 우선순위: 회원탈퇴 > 일정 추가 > 지도 보기 > 취향 재선택
+10. **[AI]** 공통 Bottom Sheet 16종 인라인 처리 여부 확인
 
 ---
 
@@ -595,7 +660,12 @@ WeddingPickl/
 - do_not_change:
   - **회원탈퇴 자동 삭제 백엔드를 만들지 말 것.** `packages/domain/src/withdrawal.ts`의 `WITHDRAWAL_NOTICE`가 개인정보처리방침 확정 전까지 `null`인 명시적 게이트다. 스키마상 `structured.users` 하드 삭제는 FK CASCADE로 확인된 정보(quotes)까지 지운다 — 위험. `payment_proofs`/`price_reports`를 "통계 제외"할지 "익명화 유지"할지도 정책 §46이 명확히 안 정했다. 이 정책들이 정해지기 전엔 손대지 말 것.
   - NPay·월간 웨딩지원금 기능을 만들지 말 것(위 미완료 항목 참조, 개인정보 처리방침과 함께 정리해야 함).
-  - 소셜 로그인 관련 파일(`identity-provider.ts`, `config.ts`, `client.ts` 등)은 이번 세션에서 커밋됐지만, **네이버는 아직 실제 제공자 목록에 노출 안 함** — 서버 콜백·토큰 교환 API가 따로 필요하다(`docs/social-login-handoff.md` 참조). 임의로 노출시키지 말 것.
+  - ~~소셜 로그인 관련 파일은... 네이버는 아직 실제 제공자 목록에 노출 안 함 —
+    서버 콜백·토큰 교환 API가 따로 필요하다.~~ **오래된 노트.** 서버 구현은
+    위 «네이버 로그인 서버 구현 완료» 섹션에서 끝났다. 지금도 노출 안 되는
+    이유는 코드가 없어서가 아니라 `NAVER_CLIENT_ID`/`NAVER_CLIENT_SECRET`
+    운영 환경변수를 아직 안 넣어서다 — 넣는 순간 자동으로 노출된다(의도된
+    동작). `docs/social-login-handoff.md` 참고.
   - `docs/design-handoff/seed/`는 원본 그대로 유지 — 화면 구현할 때 이 폴더 안의 `.dc.html` 파일을 직접 고치지 않는다(참고용 원본).
 
 ## 롤백

@@ -75,6 +75,8 @@ const configSchema = z.object({
   kakaoAppKey: z.string().optional(),
   googleClientId: z.string().optional(),
   naverClientId: z.string().optional(),
+  /** id_token이 아니라 authorization code를 서버가 직접 교환해야 해서 필요하다. */
+  naverClientSecret: z.string().optional(),
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -129,6 +131,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     kakaoAppKey: env.KAKAO_APP_KEY,
     googleClientId: env.GOOGLE_CLIENT_ID,
     naverClientId: env.NAVER_CLIENT_ID,
+    naverClientSecret: env.NAVER_CLIENT_SECRET,
   });
 
   if (!parsed.success) {

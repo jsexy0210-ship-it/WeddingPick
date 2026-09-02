@@ -30,7 +30,7 @@ export function registerAuthRoutes(app: FastifyInstance, context: AppContext): v
 
     let identity;
     try {
-      identity = await provider.verify(body.idToken);
+      identity = await provider.verify(body.idToken, { state: body.state });
     } catch {
       // 검증 실패 이유를 그대로 내려주면 토큰을 맞춰보는 데 쓰인다.
       throw new ApiError('unauthenticated', '로그인 정보를 확인하지 못했습니다.');
