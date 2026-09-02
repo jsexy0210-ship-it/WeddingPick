@@ -211,14 +211,25 @@ HTTP에서는 `requireOperator(context)` preHandler가 관문 역할을 하니 �
 추가한 HTTP 테스트(`admin-inquiries.test.ts` 4개)가 사실상 첫 커버리지다.
 기존 `inquiries.test.ts`(15개, 문의 접수 경로) 실 Postgres로 재확인.
 
-**다음 세션이 같은 패턴으로 이어갈 것 — 남은 admin 8개**:
-- **함수 추출 없이 바로 라우트만 추가하면 되는 것**: `payment-proof-admin.ts`
-  (`link`). 다만 이것도 CLI의 `--list`/`--show` 조회 로직이 `main()` 안에
-  인라인돼 있어, 목록 조회 라우트가 필요하면 그 SQL을 먼저 exported 함수로
-  빼야 한다(`vendor-claim-admin.ts`의 `listPendingClaims()`/`getClaim()`,
-  `verification-admin.ts`의 `listPending()`/`listBacklog()`/`getVerification()`,
-  `pii-admin.ts`의 `listPendingPiiReviews()`/`getPiiReview()`처럼 — main()도 그 함수를
-  다시 부르게 같이 고쳐 로직이 두 곳에 남지 않게 한다).
+**업데이트(같은 세션, 여섯 번째 조각 — «함수 추출 불필요» 그룹 완료)**:
+`payment-proof-admin.ts`도 끝냈다 — `--list`/`--show`에 인라인이던 SQL을
+`listUnlinkedProofs()`/`getPaymentProof()`로 뽑았다. `/v1/admin/payment-proofs`
+(미연결 목록·상세+후보·잇기)를 열었다.
+**주의(발견한 기존 버그, 이번에 같이 고침)**: `list()`의 `candidates: number`
+타입 선언은 거짓말이었다 — Postgres `count(*)`는 pg 드라이버가 문자열로
+돌려준다. 원래 코드는 템플릿 문자열에 넣기만 해서 안 드러났지만
+(`row.candidates === 0` 비교는 사실 `"0" === 0`이라 **항상 false** — "후보
+0곳" 문구가 실제로는 한 번도 안 찍혔을 것), API 응답 JSON에서는 숫자 대신
+문자열이 나가는 게 테스트로 바로 드러났다. `Number(row.candidates)`로
+변환해서 고쳤다 — CLI 쪽도 이제 0건 문구가 제대로 나온다.
+테스트(`admin-payment-proofs.test.ts` 4개) + 기존 `payment-proof-admin.test.ts`·
+`payment-proofs.test.ts`(25개) 실 Postgres로 재확인.
+
+이걸로 «함수 추출 없이 바로 라우트만 추가» 그룹 5개(withdrawal·vendor-claim·
+verification·pii·inquiry·payment-proof — 실제로는 6개, 처음 분류가 하나
+빠졌었다) 전부 끝났다.
+
+**다음 세션이 이어갈 것 — 남은 admin 7개, 전부 리팩터링부터 필요**:
 - **먼저 리팩터링(로직/CLI 분리)이 필요한 것** — `main()` 안에 전부 들어 있어
   export된 함수가 하나도 없음: `ad-admin.ts`, `ai-cost-admin.ts`,
   `decisions-admin.ts`, `objection-admin.ts`, `rebuttal-admin.ts`,
@@ -332,10 +343,9 @@ WeddingPickl/
 2. **[사용자]** Fly.io: `OPERATOR_SESSION_TTL_DAYS=365` 추가
 3. **[사용자]** Neon DB: `db-migrate.yml` 실행 → 0052 적용
 4. **[사용자]** terms.url · privacy.url 확정 → 도메인 상수 업데이트
-5. **[AI]** 관리자 HTTP API 배선 — 남은 8개 도메인(withdrawal·vendor-claim·
-   verification·pii·inquiry 5개는 이 세션에서 끝남), 위 «백엔드 갭 조사» 세션
-   기록의 목록·순서 그대로 (함수 추출 불필요한 1개 먼저, 리팩터링 필요한 7개는
-   그 다음)
+5. **[AI]** 관리자 HTTP API 배선 — 남은 7개 도메인(withdrawal·vendor-claim·
+   verification·pii·inquiry·payment-proof 6개는 이 세션에서 끝남), 위
+   «백엔드 갭 조사» 세션 기록의 목록·순서 그대로 (전부 리팩터링부터 필요)
 6. **[AI]** 프론트엔드 미구현 화면 구현 — 우선순위: 회원탈퇴 > 일정 추가 > 지도 보기 > 취향 재선택
 7. **[AI]** 공통 Bottom Sheet 16종 인라인 처리 여부 확인
 8. **[AI]** 관리자 화면(WP-ADM-*) 설계 및 구현 — 5번 API가 먼저 있어야 붙는다
