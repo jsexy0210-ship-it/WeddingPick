@@ -137,7 +137,7 @@ export default function MyScreen() {
       bounciness: 14,
       speed: 10,
     }).start();
-  }, [celebrate]);
+  }, [bounceScale, celebrate]);
 
   async function closeCelebration() {
     setCelebrate(false);

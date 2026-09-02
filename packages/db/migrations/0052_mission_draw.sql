@@ -153,9 +153,11 @@ ALTER TABLE structured.reward_grants
     ),
   ADD CONSTRAINT grant_source_matches_kind
     CHECK (
-      (kind = 'referral')     = (referral_id   IS NOT NULL) AND
-      (kind = 'promotion')    = (promotion_id  IS NOT NULL) AND
-      (kind = 'monthly_draw') = (draw_entry_id IS NOT NULL)
+      (kind::text = 'referral')     = (referral_id   IS NOT NULL) AND
+      (kind::text = 'promotion')    = (promotion_id  IS NOT NULL) AND
+      -- 같은 트랜잭션에서 추가한 enum 값은 enum literal로 바로 사용할 수 없다.
+      -- text 비교는 마이그레이션 원자성을 유지하면서 제약을 만들 수 있다.
+      (kind::text = 'monthly_draw') = (draw_entry_id IS NOT NULL)
     );
 
 -- ---------------------------------------------------------------------------
