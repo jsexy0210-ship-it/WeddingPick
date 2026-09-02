@@ -362,6 +362,16 @@ ad, ai-cost, decisions, objection, rebuttal, retention, reward. 관리자
 `is_operator` 확인) — 관리자 화면도 일반 앱과 같은 로그인 흐름을 쓰고,
 운영자 계정만 이 API들을 통과한다.
 
+**세션 종료 시점 최종 검증**(전부 로컬 Postgres 16으로 실제 재현 — 샌드박스엔
+`DATABASE_URL` 기본 없어 CI와 동일한 조건을 직접 만들어 확인함):
+- `npm run typecheck` — 7개 워크스페이스(api·mobile·web·api-contract·db·
+  domain·ui) 전부 통과.
+- `apps/api` 전체 jest, 실 DB 연결: **58개 스위트 · 595개 테스트 전부 통과**
+  (13개 admin 커밋으로 늘어난 새 테스트 46개 포함, 회귀 0건).
+- lint는 `apps/api`에 스크립트가 없어(다른 워크스페이스만 해당) 대상 아님.
+- **미검증**: GitHub Actions 실제 실행 결과, production 배포·health check
+  (Fly.io 크리덴셜이 이 세션에 없음 — 항상 그래왔듯 사용자 쪽에서 확인 필요).
+
 ---
 
 ## 프론트엔드 화면 현황
