@@ -22,7 +22,7 @@ import {
  * "지우고 다시 올려주세요"가 지킬 수 있는 말이 된다.
  */
 export default function EditReviewScreen() {
-  const { vendorId, reviewId, overall: overallParam, title: titleParam, body: bodyParam, pros: prosParam, cons: consParam } =
+  const { reviewId, overall: overallParam, title: titleParam, body: bodyParam, pros: prosParam, cons: consParam } =
     useLocalSearchParams<{
       vendorId: string;
       reviewId: string;

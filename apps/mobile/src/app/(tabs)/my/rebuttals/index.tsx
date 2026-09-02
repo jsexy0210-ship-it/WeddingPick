@@ -30,17 +30,30 @@ export default function MyRebuttalsScreen() {
   const [rebuttals, setRebuttals] = useState<MyRebuttal[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const load = useCallback(() => {
-    setLoadError(null);
-    void listMyRebuttals()
-      .then((response) => setRebuttals(response.rebuttals))
-      .catch((caught: Error) => setLoadError(caught.message ?? '반론 내역을 불러오지 못했어요.'));
+  const load = useCallback(async () => {
+    try {
+      const response = await listMyRebuttals();
+      setRebuttals(response.rebuttals);
+    } catch (caught) {
+      const error = caught as Error;
+      setLoadError(error.message ?? '반론 내역을 불러오지 못했어요.');
+    }
   }, []);
 
-  useEffect(load, [load]);
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   if (loadError) {
-    return <ErrorView message={loadError} onBack={load} />;
+    return (
+      <ErrorView
+        message={loadError}
+        onBack={() => {
+          setLoadError(null);
+          void load();
+        }}
+      />
+    );
   }
 
   if (rebuttals === null) {

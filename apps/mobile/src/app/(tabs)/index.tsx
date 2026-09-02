@@ -4,12 +4,7 @@ import type {
   VendorSummary,
 } from '@weddingpick/api-contract';
 import {
-  COMPLETED_ACTIONS,
-  EXPENSE_BUCKET_COLOR,
   hasUnread,
-  topPriority,
-  formatTaskDate,
-  greeting,
   lifecycle,
   MANY_CONFIRMED,
   TERMS,
