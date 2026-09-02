@@ -104,7 +104,7 @@ export default function PriceReportScreen() {
             <ThemedText type="t2">가격 제보</ThemedText>
             <ThemedText type="t7" themeColor="textSecondary">
               문서 없이 금액과 조건을 알려주시면 같은 업체를 비교하는 분들에게 참고가 돼요.
-              제보는 가격 통계에 별도로 표시되며 결제 인증과는 달라요.
+              제보는 가격 통계에 별도로 표시되며 Pick 인증과는 달라요.
             </ThemedText>
           </ThemedView>
 

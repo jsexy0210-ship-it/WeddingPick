@@ -3,6 +3,7 @@ import {
   candidateListResponseSchema,
   expenseSummaryResponseSchema,
   visitNoteListResponseSchema,
+  weddingEventListResponseSchema,
   weddingTaskListResponseSchema,
   authProvidersResponseSchema,
   comparisonResponseSchema,
@@ -73,6 +74,9 @@ import {
   type UpdateWeddingTaskRequest,
   type VisitNoteListResponse,
   type WeddingTaskListResponse,
+  type CreateWeddingEventRequest,
+  type UpdateWeddingEventRequest,
+  type WeddingEventListResponse,
   type Analysis,
   type ComparisonResponse,
   type AuthProvidersResponse,
@@ -532,6 +536,37 @@ export async function addVisitNote(
 
 export async function removeVisitNote(weddingId: string, noteId: string): Promise<void> {
   await request(`/v1/weddings/${weddingId}/visit-notes/${noteId}`, z.null(), { method: 'DELETE' });
+}
+
+/** 웨딩 스케줄(체크리스트)과 다른 개념이다 — 일시·장소가 있는 캘린더 이벤트. */
+export async function listWeddingEvents(weddingId: string): Promise<WeddingEventListResponse> {
+  return request(`/v1/weddings/${weddingId}/events`, weddingEventListResponseSchema);
+}
+
+export async function addWeddingEvent(
+  weddingId: string,
+  body: CreateWeddingEventRequest
+): Promise<{ eventId: string }> {
+  return request(`/v1/weddings/${weddingId}/events`, z.object({ eventId: z.string() }), {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+/** 보낸 칸만 고친다. */
+export async function updateWeddingEvent(
+  weddingId: string,
+  eventId: string,
+  body: UpdateWeddingEventRequest
+): Promise<void> {
+  await request(`/v1/weddings/${weddingId}/events/${eventId}`, z.object({ ok: z.boolean() }), {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function removeWeddingEvent(weddingId: string, eventId: string): Promise<void> {
+  await request(`/v1/weddings/${weddingId}/events/${eventId}`, z.null(), { method: 'DELETE' });
 }
 
 /**

@@ -2,7 +2,8 @@ import { NOT_ACTIVATED_NOTICE } from '@weddingpick/domain';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import type { AppContext } from '../context';
-import { ApiError, unauthenticated } from '../errors';
+import { NotAnOperator, requireOperator as assertOperator } from '../decisions';
+import { ApiError, forbidden, unauthenticated } from '../errors';
 import { resolveSession } from './sessions';
 
 declare module 'fastify' {
@@ -41,6 +42,44 @@ export function requireUser(context: AppContext) {
 
     if (!user.activated) {
       throw notActivated();
+    }
+
+    request.userId = user.userId;
+    request.userActivated = true;
+  };
+}
+
+/**
+ * 로그인 + 운영자. 관리자 콘솔 라우트 전부가 이걸 쓴다.
+ *
+ * CLI 시절에는 각 결정 함수(`approve`·`decide`·`hold` 등)가 제 안에서
+ * `requireOperator`를 불렀다 — 조회(`list`/`show`)는 부르지 않았다. 서버에
+ * 접근할 수 있는 사람만 CLI를 돌릴 수 있다는 것이 조회 쪽의 유일한 통제였는데,
+ * HTTP로 옮기면 그 암묵적 경계가 사라진다. 그래서 여기서는 **조회든 결정이든
+ * 관리자 라우트는 전부** 맨 앞에서 운영자인지부터 본다 — 대상을 찾기도 전에.
+ * 결정 함수 안의 `requireOperator` 호출은 중복이 되지만, CLI에서도 여전히
+ * 쓰이므로 남겨둔다.
+ */
+export function requireOperatorUser(context: AppContext) {
+  return async function (request: FastifyRequest, _reply: FastifyReply): Promise<void> {
+    const user = await readSession(context, request);
+
+    if (!user) {
+      throw unauthenticated();
+    }
+
+    if (!user.activated) {
+      throw notActivated();
+    }
+
+    try {
+      await assertOperator(context.pool, user.userId);
+    } catch (error) {
+      if (error instanceof NotAnOperator) {
+        throw forbidden();
+      }
+
+      throw error;
     }
 
     request.userId = user.userId;

@@ -18,7 +18,9 @@ export default function WeddingScreen() {
    * 후보는 웨딩에 매달려 있어 웨딩 id가 필요하다. 아직 없으면 여기서 만든다 —
    * 담아두려고 들어온 사람에게 "먼저 웨딩을 만드세요"라고 하지 않는다.
    */
-  async function open(section: 'tasks' | 'expenses' | 'visit-notes' | 'candidates' | 'quotes') {
+  async function open(
+    section: 'tasks' | 'expenses' | 'visit-notes' | 'candidates' | 'quotes' | 'events'
+  ) {
     const weddingId = await ensureWedding();
 
     router.push(`/wedding/${weddingId}/${section}`);
@@ -30,6 +32,11 @@ export default function WeddingScreen() {
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.header}>
             <ThemedText type="subtitle">내 웨딩</ThemedText>
+            <ActionButton
+              label="일정"
+              hint="예식 관련 일정을 날짜·시간으로 관리해요"
+              onPress={() => void open('events')}
+            />
             <ActionButton
               label="웨딩 스케줄"
               hint="준비할 일 열네 가지가 미리 들어 있어요"
@@ -51,7 +58,7 @@ export default function WeddingScreen() {
               onPress={() => void open('candidates')}
             />
             <ActionButton
-              label="올린 견적·계약서"
+              label="올린 Pick 인증 자료"
               hint="AI가 읽어낸 계약 내용을 확인해요"
               onPress={() => void open('quotes')}
             />

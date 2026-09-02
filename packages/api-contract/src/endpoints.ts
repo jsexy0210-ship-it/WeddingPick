@@ -17,6 +17,11 @@ import {
   visitNoteListResponseSchema,
   weddingTaskListResponseSchema,
 } from './wedding-plan';
+import {
+  createWeddingEventRequestSchema,
+  updateWeddingEventRequestSchema,
+  weddingEventListResponseSchema,
+} from './wedding-events';
 import { amountSchema, idSchema } from './common';
 import {
   authProvidersResponseSchema,
@@ -396,6 +401,37 @@ export const ENDPOINTS = {
   removeVisitNote: {
     method: 'DELETE',
     path: '/v1/weddings/{weddingId}/visit-notes/{noteId}',
+    response: z.null(),
+  },
+
+  /**
+   * 우리웨딩 — 일정. 웨딩 스케줄(체크리스트)과 다르다 — 일시·장소가 있는
+   * 캘린더 이벤트다.
+   */
+  listWeddingEvents: {
+    method: 'GET',
+    path: '/v1/weddings/{weddingId}/events',
+    response: weddingEventListResponseSchema,
+  },
+
+  addWeddingEvent: {
+    method: 'POST',
+    path: '/v1/weddings/{weddingId}/events',
+    body: createWeddingEventRequestSchema,
+    response: z.object({ eventId: idSchema }),
+  },
+
+  /** 보낸 칸만 고친다. */
+  updateWeddingEvent: {
+    method: 'PATCH',
+    path: '/v1/weddings/{weddingId}/events/{eventId}',
+    body: updateWeddingEventRequestSchema,
+    response: z.object({ ok: z.boolean() }),
+  },
+
+  removeWeddingEvent: {
+    method: 'DELETE',
+    path: '/v1/weddings/{weddingId}/events/{eventId}',
     response: z.null(),
   },
 

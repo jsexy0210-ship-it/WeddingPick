@@ -6,6 +6,34 @@
 -- 추첨은 사람이 실행한다 (어뷰징 최종 검증 → 추첨 → 지급).
 -- ---------------------------------------------------------------------------
 
+-- ---------------------------------------------------------------------------
+-- 0. 예전 구현 정리
+-- ---------------------------------------------------------------------------
+--
+-- 같은 정책(§31)을 두 세션이 각자 스키마로 구현했다. 먼저 만들어진 쪽
+-- (구 0052_mission_draw 등, 커밋 4be7da7에서 파일은 지웠다)이 production에
+-- 이미 적용돼 있다 — 하지만 어느 코드도 그 표를 참조한 적이 없는 죽은
+-- 스키마였다(reward_grants.draw_entry_id 컬럼 포함). 이 마이그레이션은
+-- production에는 처음 적용되므로, 그 죽은 표가 남아 있으면 먼저 지운다.
+-- 새 DB에는 애초에 없으니 이 블록은 그런 곳에서 전부 조용히 넘어간다.
+--
+-- draw_entry_id를 먼저 지운다 — grant_has_exactly_one_source·
+-- grant_source_matches_kind 제약이 그 컬럼을 참조하므로, CASCADE로 함께
+-- 지워진다. 아래에서 같은 이름으로 다시 만든다.
+ALTER TABLE structured.reward_grants DROP COLUMN IF EXISTS draw_entry_id CASCADE;
+
+DROP TABLE IF EXISTS structured.npay_deliveries CASCADE;
+DROP TABLE IF EXISTS structured.draw_results CASCADE;
+DROP TABLE IF EXISTS structured.draw_entries CASCADE;
+DROP TABLE IF EXISTS structured.monthly_draws CASCADE;
+DROP VIEW IF EXISTS structured.missions_all_done CASCADE;
+DROP TABLE IF EXISTS structured.mission_completions CASCADE;
+
+DROP TYPE IF EXISTS npay_delivery_status;
+DROP TYPE IF EXISTS draw_result;
+DROP TYPE IF EXISTS draw_abuse_status;
+DROP TYPE IF EXISTS mission_key;
+
 -- 1. reward_kind 열거형 확장
 --    트랜잭션 밖에서 실행해야 한다 (PostgreSQL enum ADD VALUE 제약).
 

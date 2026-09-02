@@ -48,37 +48,18 @@ export default function MyRewardsScreen() {
   const [sending, setSending] = useState(false);
 
   const load = useCallback(() => {
-    setLoadError(null);
     void getMyRewards()
-      .then(setData)
+      .then((response) => {
+        setLoadError(null);
+        setData(response);
+      })
       .catch((caught: Error) => setLoadError(caught.message ?? '보상 정보를 불러오지 못했어요.'));
     void getMyMonthlyDraw()
       .then(setDraw)
       .catch(() => setDraw(null));
   }, []);
 
-  useEffect(() => {
-    let active = true;
-
-    void getMyRewards()
-      .then((response) => {
-        if (active) setData(response);
-      })
-      .catch((caught: Error) => {
-        if (active) setLoadError(caught.message ?? '보상 정보를 불러오지 못했어요.');
-      });
-    void getMyMonthlyDraw()
-      .then((response) => {
-        if (active) setDraw(response);
-      })
-      .catch(() => {
-        if (active) setDraw(null);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
+  useEffect(load, [load]);
 
   async function shareCode() {
     if (!data) return;
