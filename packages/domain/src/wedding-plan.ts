@@ -108,6 +108,15 @@ export function formatTaskDate(date: string): string {
   return `${month}월 ${day}일`;
 }
 
+/** "9월 2일 14:30" — 일정(wedding_events)의 일시 표기. */
+export function formatEventDateTime(isoDateTime: string): string {
+  const value = new Date(isoDateTime);
+  const hh = String(value.getHours()).padStart(2, '0');
+  const mm = String(value.getMinutes()).padStart(2, '0');
+
+  return `${value.getMonth() + 1}월 ${value.getDate()}일 ${hh}:${mm}`;
+}
+
 /** 준비 진행률. 홈이 "준비 6 / 14 완료"라고 적는다. */
 export function taskProgress(
   tasks: readonly { dueDate: string | null; override: TaskState | null }[],

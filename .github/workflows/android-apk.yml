@@ -51,6 +51,8 @@ jobs:
         working-directory: apps/mobile/android
         env:
           EXPO_PUBLIC_API_URL: ${{ inputs.api_url }}
+          EXPO_PUBLIC_NAVER_CLIENT_ID: tgp4WVYlYO_qd2nyvHug
+          EXPO_PUBLIC_NAVER_REDIRECT_URI: weddingpick://auth/naver
         run: >-
           ./gradlew assembleRelease
           --no-daemon

@@ -6,7 +6,7 @@ import { usageScoreSchema } from './reviews';
 
 import { MAX_COMPARED_VENDORS, SPONSORED_LABEL } from '@weddingpick/domain';
 
-import { documentTypeSchema, idSchema, vendorCategorySchema } from './common';
+import { coordinateSchema, documentTypeSchema, idSchema, vendorCategorySchema } from './common';
 import { priceStatSchema } from './comparison';
 
 /**
@@ -20,6 +20,8 @@ export const vendorSummarySchema = z.object({
   name: z.string().min(1),
   category: vendorCategorySchema,
   region: z.string().min(1),
+  /** 지도 핀 위치. 아직 지오코딩하지 않은 업체는 null — 지도에는 안 뜨고 목록에는 그대로 뜬다. */
+  coordinates: coordinateSchema.nullable(),
   /** 공공데이터에서 온 업체면 출처 문장. 서버가 만들어 내려준다. */
   sourceNote: z.string().nullable(),
   /**

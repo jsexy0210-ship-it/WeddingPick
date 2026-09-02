@@ -65,7 +65,7 @@ export async function list(pool: ReturnType<typeof createPool>): Promise<Unmatch
     merchant_name: string;
     paid_amount: string;
     paid_at: Date;
-    candidates: number;
+    candidates: string;
   }>(
     `SELECT
        p.id, p.merchant_name, p.paid_amount, p.paid_at,
@@ -81,7 +81,9 @@ export async function list(pool: ReturnType<typeof createPool>): Promise<Unmatch
     merchantName: row.merchant_name,
     paidAmount: row.paid_amount,
     paidAt: row.paid_at,
-    candidates: row.candidates,
+    // pg는 count(*)를 문자열로 돌려준다 — number로 선언해두면
+    // `candidates === 0` 비교가 "0" === 0이 되어 항상 거짓이 된다.
+    candidates: Number(row.candidates),
   }));
 }
 

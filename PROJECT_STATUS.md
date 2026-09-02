@@ -31,6 +31,19 @@
 -   Neon 연결 완료
 -   Neon DB migration 실행 완료
 -   기존 migration 46개 적용 완료
+-   일정(`wedding_events`) 백엔드·화면 3개 구현 — 마이그레이션 0061, `docs/AI_HANDOFF.md`
+    참고 (Neon production 미적용, `db-migrate.yml` 실행 필요)
+-   지도 보기 백엔드·화면 구현 — 업체 좌표 컬럼(마이그레이션 0062) + `expo-location`/
+    `react-native-maps` 도입 + 검색 화면 목록/지도 토글. 좌표 지오코딩은
+    `scripts/geocode-vendors.mts`(카카오 로컬 API, 수동 실행) — 상세는
+    `docs/AI_HANDOFF.md` "백엔드 — 일정 · 지도 보기" 절
+-   마이그레이션 번호 충돌 수정 — PR #19가 다른 PR과 동시에 진행되며 `0059`·`0060`을
+    각자 고른 채로 main에 머지됐다(사회 로그인 프로필·취향과 파일명 겹침). 일정·지도
+    보기 마이그레이션을 `0061`·`0062`로 재번호
+-   PR #16(취향 다시 고르기·준비 타임라인·예식 완료 등 프론트 화면) main 병합 완료.
+    병합 과정에서 발견된 base 브랜치 lint 회귀 6곳(`react-hooks/set-state-in-effect`,
+    `my/rebuttals`·`reports`·`rewards`·`vendor-claims`·`notifications`·`settings.tsx`)도
+    함께 고침 — PR #19에 포함
 -   NCP Object Storage 연결 완료
 -   Object Storage 업로드/다운로드/삭제 테스트 성공
 -   App Store Connect API 접근 승인
@@ -95,6 +108,17 @@
 6.  iOS Production Build 성공
 7.  TestFlight 제출 흐름 검증
 8.  Google Play 계정 제한 해제 후 Android 제출 자동화 활성화
+9.  Neon production에 마이그레이션 0052~0062 적용 (`db-migrate.yml`)
+10. Google Maps Android API 키 발급 → `apps/mobile/app.json` 자리표시자 교체
+11. 카카오 REST API 키 발급 → `scripts/geocode-vendors.mts`로 업체 좌표 백필
+
+## 제품 범위 결정
+
+-   (2026-09-02) **초기 출시는 예식 당일까지만 지원한다.** 예식 완료(post-wedding)
+    이후 단계의 화면·CTA·API는 이번 출시 범위 밖 — 사용자·업체 데이터가 어느
+    정도 모인 뒤 운영자가 판단해 추가 lifecycle 정책을 안내한다. 상세 근거와
+    지침은 최신 통합정책서 D-4를 반드시 확인한다. 그 안내가 나오기 전까지 AI는
+    예식 완료 전용 기능을 새로 만들지 않는다.
 
 ## 갱신 규칙
 
@@ -112,4 +136,4 @@
 
 ## 마지막 상태 기준일
 
-2026-09-01
+2026-09-02
