@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: weddingpick-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: weddingpick-db
+          property: connectionString
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: APPLE_CLIENT_ID
+        value: kr.weddingpick.app
+      - key: KAKAO_APP_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        value: 595165026523-dd5s0fqtle78e03mb34m9iaclpdmlb9r.apps.googleusercontent.com
+
+databases:
+  - name: weddingpick-db
+    plan: free
+    databaseName: weddingpick
+    user: weddingpick
