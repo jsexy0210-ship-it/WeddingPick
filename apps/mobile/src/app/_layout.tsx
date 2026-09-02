@@ -138,6 +138,7 @@ export default function RootLayout() {
             {/* 예식일·지역 없이는 개인화가 없다. 제스처로도 나갈 수 없게 한다. */}
             <Stack.Screen name="setup" options={{ gestureEnabled: false }} />
             <Stack.Screen name="login" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="admin" options={{ headerShown: false }} />
           </Stack>
         </CaptureDraftProvider>
       </DocumentStoreProvider>
