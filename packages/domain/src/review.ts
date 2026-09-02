@@ -194,11 +194,13 @@ export const MINIMUM_REVIEW_COUNT = 5;
 /**
  * 점수가 없을 때 화면이 쓰는 말.
  *
- * 화면데이터구조 스펙 5.5 — 기준에 못 미치면 "데이터 수집 중"으로 적고 **확정 비율을
+ * 화면데이터구조 스펙 5.5 — 기준에 못 미치면 "수집 중"으로 적고 **확정 비율을
  * 내보내지 않는다.** 4건에서 계산한 4.5점을 회색으로 흐려 보여주는 것도 안 된다.
  * 흐린 숫자도 숫자고, 사람들은 숫자를 읽는다.
+ *
+ * v3.3 §O-1: 사용자 화면에서 `데이터`를 쓰지 않는다 — "수집 중"으로 적는다.
  */
-export const COLLECTING_LABEL = '데이터 수집 중';
+export const COLLECTING_LABEL = '수집 중';
 
 export type UsageScore =
   | { available: true; average: number; count: number; byAspect: Record<string, number> }

@@ -226,7 +226,8 @@ export function canDiscloseCondition(input: {
   );
 }
 
-export const CONDITION_NOT_ENOUGH = '이 조건은 아직 데이터가 모이는 중이에요';
+/** v3.3 §O-1: 사용자 화면에서 `데이터`를 쓰지 않는다 — "정보"로 적는다. */
+export const CONDITION_NOT_ENOUGH = '이 조건은 아직 정보가 모이는 중이에요';
 
 /**
  * 결제인증이 여는 것.
