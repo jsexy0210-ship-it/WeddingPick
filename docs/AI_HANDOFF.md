@@ -10,7 +10,7 @@
 - `updated_at`: 2026-09-02
 - `repository`: jsexy0210-ship-it/WeddingPickl
 - `branch (main)`: 4bae250
-- `policy_version`: 통합정책 v3.13
+- `policy_version`: 통합정책 v3.14
 - `dashboard`: https://claude.ai/code/artifact/a1307c11-f282-4cf2-a26d-e44bd083d7a9
 - `ios_handoff_artifact`: https://claude.ai/code/artifact/b8792fcd-fefe-4386-b24e-41d122e90a87
 - `screen_status_artifact`: https://claude.ai/code/artifact/b99277b7-3bdc-45dc-9614-a1310507df53
@@ -58,7 +58,7 @@
   PR #10의 구현으로 교체(PR #10 자체는 이미 이렇게 병합해뒀다).
 - `WITHDRAWAL_NOTICE`(§J-3)로 확정한 문구가 있다면 PR #10의 실제 탈퇴 화면 문구와
   맞는지 확인 — 서로 다른 문구가 화면에 남지 않게.
-- `docs/통합정책 v3.13`에 이 결정(자동삭제 유지, release-gate 폐기)을 반영할지 확인.
+- `docs/통합정책 v3.14`와 실제 탈퇴 구현의 정합성을 확인.
 
 ### 1. iOS EAS 빌드 수정 — 최우선
 **상태**: Release #1 ~ #10 전부 실패  
@@ -218,7 +218,7 @@ WeddingPickl/
 │   ├── domain/              # 도메인 상수·정책 (terms.url, privacy.url 여기)
 │   └── ...
 ├── docs/
-│   ├── 통합정책 v3.13/      # 현재 확정 기준 정책
+│   ├── 통합정책 v3.14       # 현재 확정 기준 정책
 │   ├── design-handoff/      # 디자인 핸드오프 (IA 176화면)
 │   ├── AI_HANDOFF.md        # 이 파일
 │   └── 05-product-spec.md   # Phase 1 제품 스펙 (A-01~A-18)
@@ -229,7 +229,7 @@ WeddingPickl/
 
 ## 정책 문서 참조
 
-기준: `docs/통합정책 v3.13/`  
+기준: `docs/통합정책 v3.14`
 코드와 정책이 충돌하면 **정책이 맞다.** 코드를 고친다.
 
 주요 섹션:

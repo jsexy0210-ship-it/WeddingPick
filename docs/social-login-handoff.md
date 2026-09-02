@@ -39,8 +39,9 @@ Apple 네이티브 capability와 config plugin은 `app.json`에 반영됐다. Ap
 
 네이버 실사용 설정은 서버에 `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`, `NAVER_REDIRECT_URIS`를 두고 모바일 EAS 환경에 `EXPO_PUBLIC_NAVER_CLIENT_ID`, `EXPO_PUBLIC_NAVER_REDIRECT_URI`를 둔다. `NAVER_CLIENT_SECRET`은 모바일이나 저장소에 넣지 않는다. Redirect URI는 네이버 Developers에 등록한 값과 세 환경값이 정확히 같아야 하며, 서버 허용목록에 없는 URI는 거부한다.
 
-네이버 제공정보는 통합정책 v3.13 §49에 따라 식별자, 이름, 이메일, 별명, 프로필 사진,
-성별, 생일, 연령대, 출생연도, 휴대전화번호를 필수로 요청한다. API 서버는 반환된 값을
+네이버 제공정보는 통합정책 v3.14 §O에 따라 서비스에 필요한 최소 항목만 요청한다.
+식별자는 필수이며, 이름·이메일·별명·프로필 사진·성별·생일·연령대·출생연도·휴대전화번호는
+실제 이용 목적과 동의 설정이 확정된 항목만 받는다. API 서버는 반환된 값을
 `identity.identities`에 보관하며 앱 DB의 일반 사용자 데이터와 분리한다.
 
 프로필 자동 채움과 재입력 방지 우선순위는 네이버에만 적용하지 않는다. Apple, Kakao,
