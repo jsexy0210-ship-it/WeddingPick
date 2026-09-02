@@ -149,11 +149,76 @@ async function accept(pool: Pool, userId: string): Promise<void> {
 }
 
 /**
+ * 계정 하나를 안전하게 지운다. 운영자 RETRY와 배치 워커가 함께 쓴다.
+ *
+ * **확인과 삭제 사이를 트랜잭션 하나로 묶는다.** `deletable_accounts` 뷰로 목록을
+ * 뽑은 뒤 그 목록을 믿고 지우면, 목록을 뽑은 순간과 지우는 순간 사이에 운영자가
+ * HOLD를 걸어도 삭제를 막을 방법이 없다 — 뷰는 조회 시점의 스냅샷이지 잠금이
+ * 아니다. 그래서 여기서는 `structured.users` 행을 `FOR UPDATE`로 잠그고, 뷰가 보는
+ * 조건(원본 파기 완료·활성 보류 없음)을 삭제 직전에 다시 확인한다.
+ *
+ * 두 번 불러도 안전하다(멱등) — 이미 지워진 계정은 `deleted_at`을 못 찾아
+ * `not_deletable`로 끝나고, 아무것도 건드리지 않는다.
+ */
+export type DeleteAttempt =
+  | { completed: true }
+  | { completed: false; reason: 'not_deletable' }
+  | { completed: false; reason: 'error'; message: string };
+
+export async function attemptDeleteAccount(pool: Pool, userId: string): Promise<DeleteAttempt> {
+  try {
+    return await withTransaction(pool, async (client) => {
+      const { rows } = await client.query<{ deletable: boolean }>(
+        `SELECT
+           u.deleted_at IS NOT NULL
+           AND NOT EXISTS (
+             SELECT 1 FROM originals.raw_documents d
+             WHERE d.owner_user_id = u.id AND d.status <> 'deleted'
+           )
+           AND NOT EXISTS (
+             SELECT 1 FROM structured.withdrawal_holds h
+             WHERE h.user_id = u.id AND h.resolved_at IS NULL AND h.hold_until > now()
+           ) AS deletable
+         FROM structured.users u
+         WHERE u.id = $1
+         FOR UPDATE`,
+        [userId]
+      );
+
+      if (!rows[0]?.deletable) return { completed: false, reason: 'not_deletable' } as const;
+
+      await client.query('DELETE FROM structured.users WHERE id = $1', [userId]);
+      // 재시도가 필요했던 계정이 이번에 지워졌으면 실패 기록도 함께 지운다.
+      await client.query('DELETE FROM structured.withdrawal_deletion_failures WHERE user_id = $1', [
+        userId,
+      ]);
+
+      return { completed: true } as const;
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+
+    // 다음 배치·다음 RETRY가 이유를 볼 수 있게 남긴다. 콘솔 로그는 재시작하면 사라진다.
+    await pool.query(
+      `INSERT INTO structured.withdrawal_deletion_failures (user_id, error_message)
+       VALUES ($1, $2)
+       ON CONFLICT (user_id) DO UPDATE
+         SET error_message = excluded.error_message,
+             failed_at = now(),
+             attempt_count = structured.withdrawal_deletion_failures.attempt_count + 1`,
+      [userId, message]
+    );
+
+    return { completed: false, reason: 'error', message };
+  }
+}
+
+/**
  * 지울 준비가 된 계정을 지운다.
  *
- * 관문은 `structured.deletable_accounts` 하나다 — 원본 파일이 하나라도 남아 있으면
- * 이 뷰에 뜨지 않는다. 지우는 쪽이 각자 조건을 적으면 언젠가 한 곳이 그 확인을
- * 빠뜨리고, 그 한 번이 파일을 영영 남긴다.
+ * 관문은 `structured.deletable_accounts` 하나다 — 원본 파일이 하나라도 남아 있거나
+ * 운영자가 보류를 걸어뒀으면 이 뷰에 뜨지 않는다. 목록은 여기서 뽑지만, 실제로
+ * 지울지는 `attemptDeleteAccount`가 트랜잭션 안에서 다시 확인한다(위 설명).
  */
 export async function completeWithdrawals(pool: Pool, limit = 50): Promise<number> {
   const { rows } = await pool.query<{ user_id: string }>(
@@ -164,13 +229,10 @@ export async function completeWithdrawals(pool: Pool, limit = 50): Promise<numbe
   let deleted = 0;
 
   for (const row of rows) {
-    try {
-      await pool.query('DELETE FROM structured.users WHERE id = $1', [row.user_id]);
-      deleted += 1;
-    } catch (error) {
-      // 지우지 못한 계정은 다음 차례에 다시 본다. 조용히 넘어가지 않는다.
-      console.error(`탈퇴 완료 실패 (${row.user_id}):`, error);
-    }
+    const result = await attemptDeleteAccount(pool, row.user_id);
+
+    if (result.completed) deleted += 1;
+    // 실패는 attemptDeleteAccount가 이미 structured.withdrawal_deletion_failures에 남겼다.
   }
 
   return deleted;
@@ -198,14 +260,7 @@ export async function withdraw(
    */
   await sweepExpiredDocuments(deps, 200, { ownerUserId: userId });
 
-  const { rows } = await deps.pool.query<{ user_id: string }>(
-    'SELECT user_id FROM structured.deletable_accounts WHERE user_id = $1',
-    [userId]
-  );
+  const result = await attemptDeleteAccount(deps.pool, userId);
 
-  if (rows.length === 0) return { completed: false };
-
-  await deps.pool.query('DELETE FROM structured.users WHERE id = $1', [userId]);
-
-  return { completed: true };
+  return { completed: result.completed };
 }

@@ -22,6 +22,7 @@
     "decisions": "tsx src/decisions-admin.ts",
     "verifications": "tsx src/verification-admin.ts",
     "retention": "tsx src/retention-admin.ts",
+    "withdrawal-admin": "tsx src/withdrawal-admin.ts",
     "pii": "tsx src/pii-admin.ts",
     "ai-cost": "tsx src/ai-cost-admin.ts",
     "seed:demo": "tsx src/seed-demo.ts",

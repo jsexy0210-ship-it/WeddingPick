@@ -5,6 +5,7 @@ import { decideRebuttal } from '../rebuttal-decide';
 import { decide as decideVendorClaim } from '../vendor-claim-admin';
 import { moveStatus } from '../inquiry-admin';
 import { approve as approveVerification } from '../verification-admin';
+import { hold as holdWithdrawal, resume as resumeWithdrawal, retry as retryWithdrawal } from '../withdrawal-admin';
 import { createTestApp, resetDatabase, type TestApp } from './helpers';
 
 let test: TestApp;
@@ -80,6 +81,24 @@ describeWithDb('심사 권한', () => {
   it('문의를 처리할 때 운영자가 아니면 막는다', async () => {
     await expect(
       moveStatus(test.pool, NOWHERE, 'answered', await anOrdinaryUser(), '아무거나', false, null)
+    ).rejects.toThrow(NotAnOperator);
+  });
+
+  it('탈퇴를 보류할 때 운영자가 아니면 막는다', async () => {
+    await expect(
+      holdWithdrawal(test.pool, NOWHERE, await anOrdinaryUser(), '아무거나', new Date(Date.now() + 86_400_000))
+    ).rejects.toThrow(NotAnOperator);
+  });
+
+  it('탈퇴 보류를 해제할 때 운영자가 아니면 막는다', async () => {
+    await expect(
+      resumeWithdrawal(test.pool, NOWHERE, await anOrdinaryUser(), '아무거나')
+    ).rejects.toThrow(NotAnOperator);
+  });
+
+  it('탈퇴 삭제를 재시도할 때 운영자가 아니면 막는다', async () => {
+    await expect(
+      retryWithdrawal({ pool: test.pool, storage: test.context.storage }, NOWHERE, await anOrdinaryUser())
     ).rejects.toThrow(NotAnOperator);
   });
 
