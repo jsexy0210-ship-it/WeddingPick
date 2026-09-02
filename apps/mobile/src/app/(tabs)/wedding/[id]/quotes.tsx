@@ -78,21 +78,21 @@ export default function WeddingQuotesScreen() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
-    try {
-      const res = await listQuotes(id);
-      setQuotes(res.quotes);
-      setNextCursor(res.nextCursor);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : '불러오지 못했어요.');
-    } finally {
-      setLoading(false);
-    }
+  const load = useCallback(() => {
+    void listQuotes(id)
+      .then((res) => {
+        setQuotes(res.quotes);
+        setNextCursor(res.nextCursor);
+      })
+      .catch((caught: Error) => {
+        setError(caught instanceof Error ? caught.message : '불러오지 못했어요.');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [id]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useEffect(load, [load]);
 
   async function loadMore() {
     if (!nextCursor) return;
@@ -116,7 +116,7 @@ export default function WeddingQuotesScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.section}>
-            <ThemedText type="t2">올린 견적·계약서</ThemedText>
+            <ThemedText type="t2">올린 Pick 인증 자료</ThemedText>
             <ThemedText type="t7" themeColor="textSecondary">
               앱으로 올린 문서를 AI가 읽어낸 결과예요. 확인 전 자료는 가격 비교에 쓰이지 않아요.
             </ThemedText>
@@ -125,7 +125,7 @@ export default function WeddingQuotesScreen() {
           {quotes.length === 0 ? (
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="t7" themeColor="textSecondary">
-                아직 올린 문서가 없어요. 촬영·업로드 탭에서 계약서를 올려보세요.
+                아직 올린 문서가 없어요. 촬영·업로드 탭에서 Pick 인증 자료를 올려보세요.
               </ThemedText>
             </ThemedView>
           ) : (

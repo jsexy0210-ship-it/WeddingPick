@@ -57,9 +57,9 @@ export default function NotificationsScreen() {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    setLoadError(null);
     void listNotifications()
       .then((response) => {
+        setLoadError(null);
         setNotifications(response.notifications);
         setUnread(response.unread);
       })

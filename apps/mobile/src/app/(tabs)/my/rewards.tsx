@@ -46,9 +46,11 @@ export default function MyRewardsScreen() {
   const [sending, setSending] = useState(false);
 
   const load = useCallback(() => {
-    setLoadError(null);
     void getMyRewards()
-      .then(setData)
+      .then((response) => {
+        setLoadError(null);
+        setData(response);
+      })
       .catch((caught: Error) => setLoadError(caught.message ?? '보상 정보를 불러오지 못했어요.'));
   }, []);
 
