@@ -63,7 +63,7 @@ export default function WeddingCompleteScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.hero}>
-            <ThemedText type="t2" style={styles.emoji}>
+            <ThemedText type="t2">
               🎊
             </ThemedText>
             <ThemedText type="t4">결혼 축하드려요!</ThemedText>
@@ -145,7 +145,6 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   hero: { alignItems: 'center', gap: Spacing.two, paddingVertical: Spacing.four },
-  emoji: { fontSize: 56 },
   card: {
     borderRadius: Radius.medium,
     padding: Spacing.three,
