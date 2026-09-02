@@ -15,7 +15,7 @@ import {
   type MissionKey,
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Animated, Modal, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -72,7 +72,14 @@ export default function MyScreen() {
   const { state, signOut } = useSession();
   const [data, setData] = useState<MyData>(EMPTY);
   const [celebrate, setCelebrate] = useState(false);
-  const bounceScale = useRef(new Animated.Value(0));
+  /*
+   * useRef가 아니라 useState 초기화 함수로 만든다 — 값은 똑같이 렌더마다 그대로인
+   * 하나뿐인 Animated.Value지만, JSX 안에서 `.current`를 직접 읽으면 렌더 중 ref
+   * 접근으로 걸린다(react-hooks/refs). Animated.Value 자체는 mutable해서 이
+   * 값이 바뀐다고 다시 렌더되지 않는다 — useState로 감싸도 리렌더 루프가 생기지
+   * 않는다.
+   */
+  const [bounceScale] = useState(() => new Animated.Value(0));
 
   const load = useCallback(() => {
     /*
@@ -130,14 +137,14 @@ export default function MyScreen() {
 
   useEffect(() => {
     if (!celebrate) return;
-    bounceScale.current.setValue(0);
-    Animated.spring(bounceScale.current, {
+    bounceScale.setValue(0);
+    Animated.spring(bounceScale, {
       toValue: 1,
       useNativeDriver: true,
       bounciness: 14,
       speed: 10,
     }).start();
-  }, [celebrate]);
+  }, [celebrate, bounceScale]);
 
   async function closeCelebration() {
     setCelebrate(false);
@@ -386,7 +393,7 @@ export default function MyScreen() {
             <Animated.View
               style={[
                 styles.dialogMark,
-                { backgroundColor: theme.onTint, transform: [{ scale: bounceScale.current }] },
+                { backgroundColor: theme.onTint, transform: [{ scale: bounceScale }] },
               ]}>
               <ThemedText type="t2" themeColor="tint">
                 ✓
