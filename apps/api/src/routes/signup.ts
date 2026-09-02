@@ -23,9 +23,8 @@ import { ApiError } from '../errors';
  * 여기만 `requireSignup`을 단다 — 아직 활성화되지 않은 계정이 부를 수 있는 유일한
  * 자리다. 다른 모든 경로는 `requireUser`가 막는다.
  *
- * **생년월일은 세어보고 버린다.** 정책 §N-3이 남기라고 한 것은 약관 판·항목·
- * 필수 여부·동의 일시뿐이다. 나이를 알기 위해 받은 값을 남겨두면, 그때부터
- * 우리는 필요 없는 개인정보를 들고 있는 서비스가 된다.
+ * 소셜 제공자가 확인한 생년월일은 다시 묻지 않는다. 제공값이 없어 사용자가 직접
+ * 입력한 값은 나이만 세고 버린다.
  */
 export function registerSignupRoutes(app: FastifyInstance, context: AppContext): void {
   const auth = { preHandler: requireSignup(context) };
@@ -50,11 +49,13 @@ export function registerSignupRoutes(app: FastifyInstance, context: AppContext):
     );
 
     const granted = consents.rows.map((row) => ({ item: row.item, version: row.terms_version }));
+    const verifiedBirthDate = await loadVerifiedBirthDate(context, userId);
 
     return {
       activated: user.activated_at !== null,
       ageGate: user.age_gate,
       minimumAge: MINIMUM_AGE,
+      birthDateVerified: verifiedBirthDate !== null,
       items: CONSENT_ITEMS.map((item) => {
         const match = consents.rows.find(
           (row) => row.item === item.key && row.terms_version === item.version
@@ -77,7 +78,9 @@ export function registerSignupRoutes(app: FastifyInstance, context: AppContext):
   app.post('/v1/me/signup', auth, async (request) => {
     const userId = currentUserId(request);
     const body = completeSignupRequestSchema.parse(request.body);
-    const oldEnough = isOldEnough(body.birthDate, new Date());
+    const birthDate = (await loadVerifiedBirthDate(context, userId)) ?? body.birthDate;
+    if (!birthDate) throw new ApiError('invalid_request', '생년월일을 확인해 주세요.');
+    const oldEnough = isOldEnough(birthDate, new Date());
 
     const client = await context.pool.connect();
 
@@ -163,4 +166,17 @@ export function registerSignupRoutes(app: FastifyInstance, context: AppContext):
 
     return await loadState(userId);
   });
+}
+
+async function loadVerifiedBirthDate(context: AppContext, userId: string): Promise<string | null> {
+  const { rows } = await context.pool.query<{ birth_date: string | null }>(
+    `SELECT CASE
+       WHEN birth_year ~ '^\\d{4}$' AND birthday ~ '^\\d{2}-\\d{2}$'
+       THEN birth_year || '-' || birthday ELSE NULL END AS birth_date
+     FROM identity.identities
+     WHERE user_id = $1 AND birth_year IS NOT NULL AND birthday IS NOT NULL
+     ORDER BY last_login_at DESC LIMIT 1`,
+    [userId]
+  );
+  return rows[0]?.birth_date ?? null;
 }

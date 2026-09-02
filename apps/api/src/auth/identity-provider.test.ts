@@ -7,7 +7,14 @@ describe('createNaverProvider', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => ({ access_token: 'access-token' }) })
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ resultcode: '00', response: { id: 'naver-user', email: 'user@example.com' } }),
+        json: async () => ({
+          resultcode: '00',
+          response: {
+            id: 'naver-user', email: 'user@example.com', name: '웨딩픽', nickname: '웨픽',
+            profile_image: 'https://example.com/profile.png', gender: 'F', birthday: '01-02',
+            age: '20-29', birthyear: '2000', mobile: '010-0000-0000',
+          },
+        }),
       });
     const provider = createNaverProvider({
       clientId: 'client-id',
@@ -24,7 +31,10 @@ describe('createNaverProvider', () => {
         redirectUri: 'weddingpick://auth/naver',
         codeVerifier: 'v'.repeat(43),
       })
-    ).resolves.toEqual({ provider: 'naver', subject: 'naver-user', email: 'user@example.com' });
+    ).resolves.toMatchObject({
+      provider: 'naver', subject: 'naver-user', email: 'user@example.com',
+      profile: { name: '웨딩픽', nickname: '웨픽', gender: 'F', birthYear: '2000' },
+    });
 
     const tokenBody = fetchImpl.mock.calls[0]?.[1]?.body as URLSearchParams;
     expect(tokenBody.get('client_secret')).toBe('server-only-secret');

@@ -5,6 +5,16 @@ export type VerifiedIdentity = {
   /** 제공자가 주는 안정적인 식별자 */
   subject: string;
   email?: string;
+  profile?: {
+    name?: string;
+    nickname?: string;
+    profileImageUrl?: string;
+    gender?: string;
+    birthday?: string;
+    ageRange?: string;
+    birthYear?: string;
+    mobile?: string;
+  };
 };
 
 export type AuthorizationCodeCredential = {
@@ -115,7 +125,7 @@ export function createNaverProvider(options: {
 
       const profile = (await profileResponse.json()) as {
         resultcode?: unknown;
-        response?: { id?: unknown; email?: unknown };
+        response?: Record<string, unknown>;
       };
       if (profile.resultcode !== '00' || typeof profile.response?.id !== 'string') {
         throw new Error('네이버 프로필 응답이 올바르지 않다.');
@@ -125,9 +135,23 @@ export function createNaverProvider(options: {
         provider: 'naver',
         subject: profile.response.id,
         email: typeof profile.response.email === 'string' ? profile.response.email : undefined,
+        profile: {
+          name: stringValue(profile.response.name),
+          nickname: stringValue(profile.response.nickname),
+          profileImageUrl: stringValue(profile.response.profile_image),
+          gender: stringValue(profile.response.gender),
+          birthday: stringValue(profile.response.birthday),
+          ageRange: stringValue(profile.response.age),
+          birthYear: stringValue(profile.response.birthyear),
+          mobile: stringValue(profile.response.mobile),
+        },
       };
     },
   };
+}
+
+function stringValue(value: unknown): string | undefined {
+  return typeof value === 'string' && value.length > 0 ? value : undefined;
 }
 
 export function createAppleProvider(clientId: string): IdentityProvider {

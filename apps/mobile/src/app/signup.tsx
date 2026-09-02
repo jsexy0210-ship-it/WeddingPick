@@ -63,7 +63,7 @@ export default function SignupScreen() {
   const missing = (state?.items ?? []).filter(
     (item) => item.required && !checked.includes(item.item)
   );
-  const ready = birth.length === 10 && missing.length === 0;
+  const ready = (state?.birthDateVerified || birth.length === 10) && missing.length === 0;
 
   async function submit() {
     if (busy || !ready) return;
@@ -72,7 +72,10 @@ export default function SignupScreen() {
     setError(null);
 
     try {
-      await completeSignup({ birthDate: birth, consents: checked });
+      await completeSignup({
+        birthDate: state?.birthDateVerified ? undefined : birth,
+        consents: checked,
+      });
 
       /*
        * 가입이 끝나야 기기에 적어둔 예식일과 멈춰둔 Pick이 올라간다. 그 전에는
@@ -100,18 +103,21 @@ export default function SignupScreen() {
 
           <ThemedView style={styles.section}>
             <ThemedText type="smallBold">생년월일</ThemedText>
-            <TextInput
-              value={birth}
-              onChangeText={setBirth}
-              placeholder="2000-01-01"
-              placeholderTextColor={theme.textSecondary}
-              keyboardType="numbers-and-punctuation"
-              maxLength={10}
-              style={[styles.input, { color: theme.text, borderColor: theme.border }]}
-            />
+            {!state?.birthDateVerified ? (
+              <TextInput
+                value={birth}
+                onChangeText={setBirth}
+                placeholder="2000-01-01"
+                placeholderTextColor={theme.textSecondary}
+                keyboardType="numbers-and-punctuation"
+                maxLength={10}
+                style={[styles.input, { color: theme.text, borderColor: theme.border }]}
+              />
+            ) : null}
             <ThemedText type="small" themeColor="textSecondary">
-              만 {MINIMUM_AGE}세부터 이용할 수 있어요. 나이를 확인하는 데만 쓰고 따로 저장하지
-              않아요
+              {state?.birthDateVerified
+                ? '네이버에서 확인한 정보라 다시 입력하지 않아도 돼요'
+                : `만 ${MINIMUM_AGE}세부터 이용할 수 있어요. 나이를 확인하는 데만 써요`}
             </ThemedText>
           </ThemedView>
 

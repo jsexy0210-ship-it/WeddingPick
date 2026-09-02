@@ -261,9 +261,9 @@ export async function getSignupState() {
 /**
  * 연령 확인과 필수 동의.
  *
- * `birthDate`는 서버가 나이를 세는 데만 쓰고 저장하지 않는다.
+ * 소셜 제공 생년월일이 없을 때만 `birthDate`를 보내며 서버는 나이만 세고 버린다.
  */
-export async function completeSignup(input: { birthDate: string; consents: string[] }) {
+export async function completeSignup(input: { birthDate?: string; consents: string[] }) {
   return request('/v1/me/signup', signupStateSchema, {
     method: 'POST',
     body: JSON.stringify(input),
