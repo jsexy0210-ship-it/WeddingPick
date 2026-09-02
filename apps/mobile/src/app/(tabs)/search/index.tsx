@@ -308,6 +308,12 @@ export default function SearchScreen() {
             ))}
           </ThemedView>
 
+          {/* WP-EXPO-001·003. 검색은 이미 방문했지만 아직 뭘 살지 못 정한 사람이 함께 찾는 것들이다. */}
+          <ThemedView style={styles.chips}>
+            <ActionButton label="박람회" onPress={() => router.push('/search/expos')} />
+            <ActionButton label="웨딩 정보" onPress={() => router.push('/search/guide')} />
+          </ThemedView>
+
           <TextInput
             style={[styles.input, { color: theme.text, borderColor: theme.border }]}
             placeholder={`${MODE_LABEL[filters.mode]} 이름으로 찾아보세요`}

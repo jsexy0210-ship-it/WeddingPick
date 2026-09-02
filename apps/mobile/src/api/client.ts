@@ -34,6 +34,11 @@ import {
   plannerDetailSchema,
   plannerRegionsResponseSchema,
   plannerSearchResponseSchema,
+  expoDetailSchema,
+  expoListResponseSchema,
+  expoRegionsResponseSchema,
+  guideArticleDetailSchema,
+  guideArticleListResponseSchema,
   vendorComparisonResponseSchema,
   vendorDetailSchema,
   vendorRegionsResponseSchema,
@@ -93,6 +98,11 @@ import {
   type PlannerDetail,
   type PlannerRegionsResponse,
   type PlannerSearchResponse,
+  type ExpoDetail,
+  type ExpoListResponse,
+  type ExpoRegionsResponse,
+  type GuideArticleDetail,
+  type GuideArticleListResponse,
   type Quote,
   type VendorComparisonResponse,
   type VendorDetail,
@@ -647,6 +657,48 @@ export async function listPlannerRegions(): Promise<PlannerRegionsResponse> {
 
 export async function getPlanner(plannerId: string): Promise<PlannerDetail> {
   return request(`/v1/planners/${plannerId}`, plannerDetailSchema);
+}
+
+/** WP-EXPO-001. 기본은 지난 일정을 뺀다. */
+export async function listExpos(
+  input: { region?: string; includePast?: boolean; cursor?: string } = {}
+): Promise<ExpoListResponse> {
+  const query = new URLSearchParams();
+
+  if (input.region) query.set('region', input.region);
+  if (input.includePast) query.set('includePast', 'true');
+  if (input.cursor) query.set('cursor', input.cursor);
+
+  const suffix = query.size > 0 ? `?${query.toString()}` : '';
+
+  return request(`/v1/expos${suffix}`, expoListResponseSchema);
+}
+
+export async function listExpoRegions(): Promise<ExpoRegionsResponse> {
+  return request('/v1/expos/regions', expoRegionsResponseSchema);
+}
+
+export async function getExpo(expoId: string): Promise<ExpoDetail> {
+  return request(`/v1/expos/${expoId}`, expoDetailSchema);
+}
+
+/** WP-EXPO-003. */
+export async function listGuideArticles(
+  input: { stage?: string; category?: string; cursor?: string } = {}
+): Promise<GuideArticleListResponse> {
+  const query = new URLSearchParams();
+
+  if (input.stage) query.set('stage', input.stage);
+  if (input.category) query.set('category', input.category);
+  if (input.cursor) query.set('cursor', input.cursor);
+
+  const suffix = query.size > 0 ? `?${query.toString()}` : '';
+
+  return request(`/v1/guide-articles${suffix}`, guideArticleListResponseSchema);
+}
+
+export async function getGuideArticle(articleId: string): Promise<GuideArticleDetail> {
+  return request(`/v1/guide-articles/${articleId}`, guideArticleDetailSchema);
 }
 
 /**
