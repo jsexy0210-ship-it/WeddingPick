@@ -51,8 +51,8 @@ export default function WeddingScreen() {
               onPress={() => void open('candidates')}
             />
             <ActionButton
-              label="올린 견적·계약서"
-              hint="AI가 읽어낸 계약 내용을 확인해요"
+              label="올린 Pick 인증 자료"
+              hint="읽어낸 계약 내용을 확인해요"
               onPress={() => void open('quotes')}
             />
             <ActionButton
