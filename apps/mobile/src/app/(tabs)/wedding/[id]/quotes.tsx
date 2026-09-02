@@ -1,7 +1,7 @@
 import type { Quote } from '@weddingpick/api-contract';
 import { DOCUMENT_TYPE_LABEL, manwon } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -77,18 +77,6 @@ export default function WeddingQuotesScreen() {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    try {
-      const res = await listQuotes(id);
-      setQuotes(res.quotes);
-      setNextCursor(res.nextCursor);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : '불러오지 못했어요.');
-    } finally {
-      setLoading(false);
-    }
-  }, [id]);
 
   useEffect(() => {
     let active = true;
