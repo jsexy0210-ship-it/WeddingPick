@@ -79,8 +79,12 @@ export default function ExpensesScreen() {
         onPress: () =>
           removeExpense(id, expenseId)
             .then(load)
-            .catch(() =>
-              setError('제보로 들어온 항목은 여기서 지울 수 없어요.')
+            .catch((caught: unknown) =>
+              setError(
+                caught instanceof Error && caught.message
+                  ? caught.message
+                  : '지울 수 없어요.'
+              )
             ),
       },
     ]);
