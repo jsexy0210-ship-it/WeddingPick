@@ -41,8 +41,19 @@ export default function MyRebuttalsScreen() {
   }, []);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    let active = true;
+    void listMyRebuttals()
+      .then((response) => {
+        if (active) setRebuttals(response.rebuttals);
+      })
+      .catch((caught: Error) => {
+        if (active) setLoadError(caught.message ?? '반론 내역을 불러오지 못했어요.');
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   if (loadError) {
     return (

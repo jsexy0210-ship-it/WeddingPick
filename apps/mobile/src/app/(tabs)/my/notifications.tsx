@@ -68,8 +68,21 @@ export default function NotificationsScreen() {
   }, []);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    let active = true;
+    void listNotifications()
+      .then((response) => {
+        if (!active) return;
+        setNotifications(response.notifications);
+        setUnread(response.unread);
+      })
+      .catch((caught: Error) => {
+        if (active) setLoadError(caught.message ?? '알림을 불러오지 못했어요.');
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   async function open(notification: Notification) {
     if (!notification.readAt) {
