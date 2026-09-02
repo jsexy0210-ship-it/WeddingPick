@@ -276,6 +276,12 @@ export default function HomeScreen() {
             </ThemedText>
           </ThemedView>
         </ThemedView>
+
+        {data.expenses && data.expenses.scheduledTotal > 0 ? (
+          <ThemedText type="t7" themeColor="textAssistive">
+            {data.expenses.scheduledNote}
+          </ThemedText>
+        ) : null}
       </ThemedView>
     ),
 
@@ -304,6 +310,9 @@ export default function HomeScreen() {
             ))
           )
         )}
+        {(data.candidates?.total ?? 0) > 0 ? (
+          <ActionButton label="전체보기" onPress={() => router.push('/pick')} />
+        ) : null}
       </ThemedView>
     ),
 

@@ -2,7 +2,7 @@ import type { ExpenseSummaryResponse } from '@weddingpick/api-contract';
 import { EXPENSE_BUCKET_COLOR, manwon, type ExpenseBucket } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Modal, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getExpenses, removeExpense, setBudget } from '@/api/client';
@@ -70,18 +70,20 @@ export default function ExpensesScreen() {
     }
   }
 
-  async function remove(expenseId: string) {
-    try {
-      await removeExpense(id, expenseId);
-      load();
-    } catch (caught) {
-      // 결제인증에서 온 줄은 여기서 지울 수 없다. 그건 지출 기록이 아니라 제보다.
-      setError(
-        caught instanceof Error
-          ? '제보로 들어온 항목은 여기서 지울 수 없어요.'
-          : '지우지 못했어요.'
-      );
-    }
+  function remove(expenseId: string) {
+    Alert.alert('항목 빼기', '이 지출 항목을 빼시겠어요? 되돌릴 수 없어요.', [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '빼기',
+        style: 'destructive',
+        onPress: () =>
+          removeExpense(id, expenseId)
+            .then(load)
+            .catch(() =>
+              setError('제보로 들어온 항목은 여기서 지울 수 없어요.')
+            ),
+      },
+    ]);
   }
 
   return (
@@ -199,7 +201,7 @@ export default function ExpensesScreen() {
                     {expense.status === 'scheduled' ? ` · ${expense.statusLabel}` : ''}
                   </ThemedText>
                   {expense.source === 'manual' ? (
-                    <ActionButton label="빼기" onPress={() => void remove(expense.id)} />
+                    <ActionButton label="빼기" onPress={() => remove(expense.id)} />
                   ) : null}
                 </ThemedView>
               ))
