@@ -1,5 +1,5 @@
 import { NotAnOperator } from '../decisions';
-import { link } from '../payment-proof-admin';
+import { link, list } from '../payment-proof-admin';
 import { createTestApp, resetDatabase, type TestApp } from './helpers';
 
 let test: TestApp;
@@ -123,5 +123,19 @@ describeWithDb('결제인증 잇기', () => {
     );
 
     expect(rows[0]!.vendor_id).toBe(first);
+  });
+
+  it('후보 수는 진짜 숫자다 — pg가 count(*)를 문자열로 돌려줘도', async () => {
+    // "0" === 0은 항상 거짓이라, number로 잘못 선언해두면 후보가 없어도
+    // "등록된 업체 없음" 문구가 절대 안 뜬다(candidates === 0 비교가 실패).
+    const { id: withoutCandidates } = await anUnmatchedProof('아무도 없는 가맹점');
+    const { id: withCandidates } = await anUnmatchedProof('가온예식홀');
+    await aVendor('가온예식홀');
+
+    const rows = await list(test.pool);
+    const byId = Object.fromEntries(rows.map((row) => [row.id, row]));
+
+    expect(byId[withoutCandidates]!.candidates).toBe(0);
+    expect(byId[withCandidates]!.candidates).toBe(1);
   });
 });
