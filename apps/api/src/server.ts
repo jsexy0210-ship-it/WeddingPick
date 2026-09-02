@@ -4,6 +4,7 @@ import { ZodError } from 'zod';
 
 import type { AppContext } from './context';
 import { ApiError } from './errors';
+import { registerAdminPiiRoutes } from './routes/admin-pii';
 import { registerAdminVendorClaimRoutes } from './routes/admin-vendor-claims';
 import { registerAdminVerificationRoutes } from './routes/admin-verifications';
 import { registerAdminWithdrawalRoutes } from './routes/admin-withdrawals';
@@ -118,6 +119,7 @@ export function buildServer(context: AppContext): FastifyInstance {
   registerAdminWithdrawalRoutes(app, context);
   registerAdminVendorClaimRoutes(app, context);
   registerAdminVerificationRoutes(app, context);
+  registerAdminPiiRoutes(app, context);
 
   return app;
 }

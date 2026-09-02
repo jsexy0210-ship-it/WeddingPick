@@ -6,7 +6,7 @@ import {
   withObject,
 } from '@weddingpick/domain';
 import type { PiiHint, ReviewableField } from '@weddingpick/domain';
-import type { PoolClient } from 'pg';
+import type { Pool, PoolClient } from 'pg';
 
 import { loadConfig } from './config';
 import { createPool, withTransaction } from './db';
@@ -94,9 +94,7 @@ async function main(): Promise<void> {
 
   try {
     if (options.list) {
-      const { rows } = await pool.query<PendingRow>(
-        'SELECT * FROM structured.pending_pii_reviews'
-      );
+      const rows = await listPendingPiiReviews(pool);
 
       if (rows.length === 0) {
         console.log('검토할 문서가 없다.');
@@ -105,13 +103,11 @@ async function main(): Promise<void> {
 
       console.log(`검토 대기 ${rows.length}건:`);
       for (const row of rows) {
-        const hints = findPiiHints(reviewableFields(row));
-
         console.log(
-          `  ${row.id}  ${when(row.created_at)}  ` +
+          `  ${row.id}  ${when(row.createdAt)}  ` +
             reviewSummary({
-              detectedKinds: row.personal_info_kinds ?? [],
-              hintCount: hints.length,
+              detectedKinds: row.personalInfoKinds ?? [],
+              hintCount: row.hintCount,
             })
         );
       }
@@ -121,7 +117,7 @@ async function main(): Promise<void> {
     }
 
     if (options.show) {
-      await show(pool, options.show);
+      await printPiiReview(pool, options.show);
       return;
     }
 
@@ -154,7 +150,36 @@ async function main(): Promise<void> {
   }
 }
 
-async function show(pool: ReturnType<typeof createPool>, quoteId: string): Promise<void> {
+export type PendingPiiReview = {
+  id: string;
+  createdAt: Date;
+  personalInfoKinds: string[] | null;
+  hintCount: number;
+};
+
+/** 검토 대기 문서 전체. HTTP 관리자 콘솔과 CLI `--list`가 함께 쓴다. */
+export async function listPendingPiiReviews(pool: Pool): Promise<PendingPiiReview[]> {
+  const { rows } = await pool.query<PendingRow>('SELECT * FROM structured.pending_pii_reviews');
+
+  return rows.map((row) => ({
+    id: row.id,
+    createdAt: row.created_at,
+    personalInfoKinds: row.personal_info_kinds,
+    hintCount: findPiiHints(reviewableFields(row)).length,
+  }));
+}
+
+export type PiiReview = {
+  id: string;
+  status: string;
+  createdAt: Date | null;
+  personalInfoKinds: string[] | null;
+  fields: Partial<Record<ReviewableField, string>>;
+  hints: PiiHint[];
+};
+
+/** 문서 하나의 검토 상태. 이미 검토를 마친 문서는 `fields`/`hints`가 비어 있다. */
+export async function getPiiReview(pool: Pool, quoteId: string): Promise<PiiReview | null> {
   const { rows } = await pool.query<PendingRow & { pii_review: string }>(
     `SELECT v.*, q.pii_review
      FROM structured.quotes q
@@ -164,6 +189,33 @@ async function show(pool: ReturnType<typeof createPool>, quoteId: string): Promi
   );
 
   const found = rows[0];
+  if (!found) return null;
+
+  if (found.pii_review !== 'pending') {
+    return {
+      id: quoteId,
+      status: found.pii_review,
+      createdAt: null,
+      personalInfoKinds: null,
+      fields: {},
+      hints: [],
+    };
+  }
+
+  const fields = reviewableFields(found);
+
+  return {
+    id: quoteId,
+    status: found.pii_review,
+    createdAt: found.created_at,
+    personalInfoKinds: found.personal_info_kinds,
+    fields,
+    hints: findPiiHints(fields),
+  };
+}
+
+async function printPiiReview(pool: Pool, quoteId: string): Promise<void> {
+  const found = await getPiiReview(pool, quoteId);
 
   if (!found) {
     console.error('없는 문서다.');
@@ -171,29 +223,26 @@ async function show(pool: ReturnType<typeof createPool>, quoteId: string): Promi
     return;
   }
 
-  if (found.pii_review !== 'pending') {
-    console.log(`이 문서는 이미 검토를 마쳤다 (${found.pii_review}).`);
+  if (found.status !== 'pending') {
+    console.log(`이 문서는 이미 검토를 마쳤다 (${found.status}).`);
     return;
   }
 
-  const fields = reviewableFields(found);
-  const hints = findPiiHints(fields);
-
-  console.log(`${found.id}  ${when(found.created_at)}`);
+  console.log(`${found.id}  ${when(found.createdAt!)}`);
   console.log(
-    `  ${reviewSummary({ detectedKinds: found.personal_info_kinds ?? [], hintCount: hints.length })}`
+    `  ${reviewSummary({ detectedKinds: found.personalInfoKinds ?? [], hintCount: found.hints.length })}`
   );
   console.log('\n  문서에서 글자를 그대로 옮겨온 곳:');
 
   for (const field of Object.keys(REVIEWABLE_FIELD_LABEL) as ReviewableField[]) {
-    const text = fields[field];
+    const text = found.fields[field];
 
     console.log(`    ${REVIEWABLE_FIELD_LABEL[field]}: ${text ?? '(없음)'}`);
   }
 
-  if (hints.length > 0) {
+  if (found.hints.length > 0) {
     console.log('\n  눈에 띄는 곳 (거들 뿐이다 — 여기 없다고 깨끗한 것은 아니다):');
-    for (const line of describeHints(hints)) console.log(line);
+    for (const line of describeHints(found.hints)) console.log(line);
   }
 
   console.log(
