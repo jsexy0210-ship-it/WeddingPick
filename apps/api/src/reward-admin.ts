@@ -4,9 +4,10 @@ import {
   type RewardKind,
   type RewardStatus,
 } from '@weddingpick/domain';
+import type { Pool } from 'pg';
 
 import { loadConfig } from './config';
-import { newEventId, recordDecision } from './decisions';
+import { newEventId, recordDecision, requireOperator } from './decisions';
 import { createPool, withTransaction } from './db';
 import { notify } from './notify';
 
@@ -57,14 +58,20 @@ function parseArgs(argv: string[]): Options {
 const when = (at: Date): string => at.toISOString().slice(0, 16).replace('T', ' ');
 const won = (amount: number): string => `${amount.toLocaleString('ko-KR')}원`;
 
-async function decide(
-  pool: ReturnType<typeof createPool>,
+/**
+ * 보상에 결론을 낸다(지급 또는 차단). 원래 코드에는 `requireOperator` 확인이
+ * 아예 없었다(돈이 오가는 결정인데도) — 이번에 HTTP로 열면서 같이 넣었다.
+ */
+export async function decideReward(
+  pool: Pool,
   id: string,
   to: Extract<RewardStatus, 'paid' | 'blocked'>,
   by: string,
   note: string
 ): Promise<void> {
   await withTransaction(pool, async (client) => {
+    await requireOperator(client, by);
+
     const { rows } = await client.query<{
       status: RewardStatus;
       user_id: string;
@@ -141,10 +148,21 @@ async function decide(
   );
 }
 
-async function list(
-  pool: ReturnType<typeof createPool>,
+export type RewardGrant = {
+  id: string;
+  kind: RewardKind;
+  amountKrw: number;
+  reasonCode: string;
+  createdAt: Date;
+  /** 홍보인증 글 주소. 사람이 열어봐야 하는 경우에만 있다. */
+  url: string | null;
+};
+
+/** `earned`(지급 대기) 또는 `held`(한도 초과·어뷰징 의심 확인 대기) 보상 전체. */
+export async function listRewardGrants(
+  pool: Pool,
   status: Extract<RewardStatus, 'earned' | 'held'>
-): Promise<void> {
+): Promise<RewardGrant[]> {
   const { rows } = await pool.query<{
     id: string;
     kind: RewardKind;
@@ -161,12 +179,28 @@ async function list(
     [status]
   );
 
+  return rows.map((row) => ({
+    id: row.id,
+    kind: row.kind,
+    amountKrw: row.amount_krw,
+    reasonCode: row.reason_code,
+    createdAt: row.created_at,
+    url: row.url,
+  }));
+}
+
+async function printRewards(
+  pool: Pool,
+  status: Extract<RewardStatus, 'earned' | 'held'>
+): Promise<void> {
+  const rows = await listRewardGrants(pool, status);
+
   if (rows.length === 0) {
     console.log(status === 'earned' ? '지급할 보상이 없다.' : '확인할 보상이 없다.');
     return;
   }
 
-  const total = rows.reduce((sum, row) => sum + row.amount_krw, 0);
+  const total = rows.reduce((sum, row) => sum + row.amountKrw, 0);
 
   console.log(
     status === 'earned'
@@ -176,8 +210,8 @@ async function list(
 
   for (const row of rows) {
     console.log(
-      `  ${row.id}  ${REWARD_LABEL[row.kind]}  ${won(row.amount_krw)}  ` +
-        `${row.reason_code}  ${when(row.created_at)}`
+      `  ${row.id}  ${REWARD_LABEL[row.kind]}  ${won(row.amountKrw)}  ` +
+        `${row.reasonCode}  ${when(row.createdAt)}`
     );
     // 홍보인증은 사람이 글을 열어봐야 한다. 주소를 함께 적는다.
     if (row.url) console.log(`    글: ${row.url}`);
@@ -190,12 +224,12 @@ async function main(): Promise<void> {
 
   try {
     if (options.list) {
-      await list(pool, 'earned');
+      await printRewards(pool, 'earned');
       return;
     }
 
     if (options.held) {
-      await list(pool, 'held');
+      await printRewards(pool, 'held');
       return;
     }
 
@@ -215,12 +249,12 @@ async function main(): Promise<void> {
     }
 
     if (options.paid) {
-      await decide(pool, options.paid, 'paid', options.by, options.note);
+      await decideReward(pool, options.paid, 'paid', options.by, options.note);
       return;
     }
 
     if (options.block) {
-      await decide(pool, options.block, 'blocked', options.by, options.note);
+      await decideReward(pool, options.block, 'blocked', options.by, options.note);
       return;
     }
 
@@ -231,7 +265,16 @@ async function main(): Promise<void> {
   }
 }
 
-void main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exitCode = 1;
-});
+/*
+ * CLI로 직접 실행했을 때만 돈다. 테스트나 라우트가 이 파일에서 함수를
+ * 가져오면(require) `require.main`이 테스트 러너/서버를 가리키므로 여기
+ * 걸리지 않는다 — 안 걸리면 가져오기만 해도 `main()`이 돌며 실제 인자 없이
+ * 안내 문구로 exitCode를 오염시킨다. 원래 이 파일에는 이 관문이 없었다
+ * (다른 admin 도구와 다르게) — HTTP로 열면서 같이 넣었다.
+ */
+if (require.main === module) {
+  void main().catch((error: unknown) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  });
+}

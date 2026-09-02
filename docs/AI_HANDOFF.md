@@ -320,21 +320,47 @@ verification·pii·inquiry·payment-proof — 실제로는 6개, 처음 분류�
 테스트(`admin-retention.test.ts` 5개, 이 버그를 직접 잡아낸 테스트 포함) +
 기존 retention 관련 4개 스위트(35개) 실 Postgres로 재확인.
 
-**다음 세션이 이어갈 것 — 남은 admin 1개**:
-- `reward-admin.ts`. `vendor-claim-admin.ts`가 했던 방식(`decide()`는
-  export, argv 파싱과 콘솔 출력은 `main()`에 남김)을 그대로 따라가되,
-  **먼저** `require.main === module` 관문이 있는지 확인하고 없으면
-  `ad-admin.ts`/`ai-cost-admin.ts`/`decisions-admin.ts`/`objection-admin.ts`/
-  `rebuttal-admin.ts`/`retention-admin.ts`처럼 추가할 것(위 «발견한 기존
-  버그» 참고 — 지금까지 이 관문이 있던 admin 파일은 하나도 없었다. 있는지
-  확인 자체를 생략하지 말 것). **`requireOperator` 호출 유무도 함수마다
-  개별 확인**할 것 — 매번 다르다. **HTTP로 실제로 호출해서 응답까지
-  확인**할 것 — `retention-admin.ts`처럼 타입체크는 통과하는데 실행하면
-  스키마 불일치로 깨지는 코드가 있을 수 있다(테스트 없이 "라우트 배선만
-  하면 된다"고 넘기지 말 것).
-- 패턴: `requireOperator(context)`를 preHandler로 달고, 도메인 함수가 던지는
-  평범한 `Error`를 400(`invalid_request`)으로, `NotAnOperator`를 403으로 옮긴다
-  (`admin-withdrawals.ts` 그대로 베끼면 됨). 라우트 URL은 `/v1/admin/<도메인>`.
+**업데이트(같은 세션, 열세 번째 조각 — 마지막 admin 도메인, 13/13 완료)**:
+`reward-admin.ts`도 끝냈다. `decide()`(지급/차단)에 `requireOperator` 확인이
+아예 없었다(**돈이 오가는 결정인데도** — 이번 세션에서 본 것 중 가장 위험한
+누락) — `decideReward()`로 이름 붙여 export하며 추가했다. `--list`/`--held`
+인라인 SQL도 `listRewardGrants()`로 뽑았다. `/v1/admin/rewards`(지급 대기·
+확인 대기 목록, 지급·차단)를 열었다. `require.main === module` 관문도
+여기 없어서 추가(같은 유형의 마지막 기존 버그). 테스트(`admin-rewards.test.ts`
+4개) + 기존 `rewards.test.ts`(18개) 실 Postgres로 재확인.
+
+### 관리자 HTTP API 배선 — 13개 도메인 전부 완료
+
+이 세션에서 `apps/api/src/*-admin.ts` 13개 전부를 `/v1/admin/*` 라우트로
+열었다: withdrawal, vendor-claim, verification, pii, inquiry, payment-proof,
+ad, ai-cost, decisions, objection, rebuttal, retention, reward. 관리자
+화면(WP-ADM-* 25개)이 이제 실제로 붙을 수 있는 API 표면이 생겼다.
+
+**세션 전체에서 발견·수정한 기존 버그 요약**(전부 이번에 실제로 HTTP로
+호출해보고서야 드러남 — 타입체크만으로는 하나도 안 잡혔다):
+1. `ad-admin.ts`·`ai-cost-admin.ts`·`decisions-admin.ts`·`objection-admin.ts`·
+   `rebuttal-admin.ts`·`retention-admin.ts`·`reward-admin.ts` **7개 전부**
+   `require.main === module` 관문이 없었다 — import만 해도 실제
+   `process.argv`로 CLI가 돌며 `exitCode`가 오염됐을 것이다. 이게 아마
+   이 7개에 admin 파일 테스트가 원래 하나도 없었던 이유다.
+2. `ad-admin.ts`의 `addPlacement`/`removePlacement`, `ai-cost-admin.ts`의
+   `setBudget`/`clearBudget`, `reward-admin.ts`의 `decideReward` —
+   `requireOperator` 확인이 아예 없었다. 특히 마지막 건은 **돈이 오가는
+   결정**이었다.
+3. `payment-proof-admin.ts`의 count 집계를 `number`로 잘못 타입 선언해서
+   `candidates === 0` 비교가 항상 false였다(pg가 count를 문자열로 반환).
+4. **`retention/worker.ts`의 `deleteDocument()`가 마이그레이션 0018에서
+   이미 삭제된 컬럼(`raw_documents.retention_until`)을 직접 조회하고
+   있었다** — 개별 문서 수동 삭제가 호출될 때마다 100% 실패하던 상태.
+   이 세션에서 찾은 것 중 가장 심각한 버그다(자동 파기는 다른 경로라
+   영향 없었지만, 사람이 개입해야 하는 예외 상황에서 정작 수동 삭제
+   도구가 작동하지 않았다).
+
+**다음 세션이 할 일**: 관리자 화면(WP-ADM-*) 프론트엔드를 이 API들에
+붙이는 것. 각 라우트 파일(`apps/api/src/routes/admin-*.ts`)이 있는 엔드포인트
+전부를 보여준다. 인증은 전부 `requireOperator`(Bearer 세션 토큰 + 서버가
+`is_operator` 확인) — 관리자 화면도 일반 앱과 같은 로그인 흐름을 쓰고,
+운영자 계정만 이 API들을 통과한다.
 
 ---
 
@@ -392,9 +418,15 @@ verification·pii·inquiry·payment-proof — 실제로는 6개, 처음 분류�
 
 ## 백엔드 API 현황
 
-- **테스트**: 524개 통과 (백엔드 관리 세션 기준, 2026-09-02)
+- **테스트**: 이 세션 종료 시점 기준 600개 안팎 통과(정확한 숫자는 이 문서
+  하단 «백엔드 갭 조사» 세션의 마지막 커밋 로그 참고 — 실 Postgres 16으로
+  로컬에서 직접 재현·재확인함, 샌드박스엔 `DATABASE_URL` 기본 없음)
+- **관리자 API**: `/v1/admin/*` 13개 도메인 전부 배선 완료(이 세션) — 위
+  «관리자 HTTP API 배선 — 13개 도메인 전부 완료» 참고
 - **서버**: `weddingpickl.fly.dev` (Fly.io)
-- **미확인**: 프로덕션 환경 전체 API 엔드포인트 수, 커버리지 %
+- **미확인**: 프로덕션 환경 전체 API 엔드포인트 수, 커버리지 %, 이번
+  세션 변경분의 실제 프로덕션 배포·health check(이 세션은 Fly.io 크리덴셜
+  없음)
 
 ---
 
@@ -439,14 +471,15 @@ WeddingPickl/
 2. **[사용자]** Fly.io: `OPERATOR_SESSION_TTL_DAYS=365` 추가
 3. **[사용자]** Neon DB: `db-migrate.yml` 실행 → 0052 적용
 4. **[사용자]** terms.url · privacy.url 확정 → 도메인 상수 업데이트
-5. **[AI]** 관리자 HTTP API 배선 — 남은 1개 도메인(withdrawal·vendor-claim·
-   verification·pii·inquiry·payment-proof·ad·ai-cost·decisions·objection·
-   rebuttal·retention 12개는 이 세션에서 끝남), 위 «백엔드 갭 조사» 세션
-   기록의 목록·순서 그대로 (전부 리팩터링부터 필요 —
-   `require.main === module` 관문 추가부터)
-6. **[AI]** 프론트엔드 미구현 화면 구현 — 우선순위: 회원탈퇴 > 일정 추가 > 지도 보기 > 취향 재선택
-7. **[AI]** 공통 Bottom Sheet 16종 인라인 처리 여부 확인
-8. **[AI]** 관리자 화면(WP-ADM-*) 설계 및 구현 — 5번 API가 먼저 있어야 붙는다
+5. ~~**[AI]** 관리자 HTTP API 배선~~ — **완료**(이 세션, 13개 도메인 전부:
+   withdrawal·vendor-claim·verification·pii·inquiry·payment-proof·ad·
+   ai-cost·decisions·objection·rebuttal·retention·reward). 자세한 내용은
+   위 «관리자 HTTP API 배선 — 13개 도메인 전부 완료» 참고.
+6. **[AI]** 관리자 화면(WP-ADM-*) 프론트엔드 설계 및 구현 — API는 이제 다
+   있다(`/v1/admin/*`, `requireOperator`로 보호). 각 `routes/admin-*.ts`
+   파일이 엔드포인트 전체를 보여준다.
+7. **[AI]** 프론트엔드 미구현 화면 구현 — 우선순위: 회원탈퇴 > 일정 추가 > 지도 보기 > 취향 재선택
+8. **[AI]** 공통 Bottom Sheet 16종 인라인 처리 여부 확인
 
 ---
 
