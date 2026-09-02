@@ -498,3 +498,14 @@ WeddingPickl/
 
 ## 롤백
 - rollback_note: 커밋 4개(`f22a512`, `bba48ed`, `10ce66a`, `cf07b15`)는 서로 기능적으로 독립적이라 필요하면 개별 `git revert <hash>`로 되돌릴 수 있다. 순서상 뒤 커밋이 앞 커밋의 파일을 다시 건드리지 않으므로 역순 revert도 안전하다. 전부 origin/main에 push 완료 — 로컬에만 있는 미커밋 변경 없음(`.npm-cache/` 잡음 제외).
+
+---
+
+## 공정률 대시보드 (2026-09-02 추가)
+
+`npm run progress`(이 저장소가 이미 갖고 있던 계산기)의 결과를 눈으로 보기 편하게 만든 Artifact를 만들어뒀다: **https://claude.ai/code/artifact/bf90e7aa-91ad-4df3-bcbd-dc950216663a**
+
+- `db` capability로 발행했다. `snapshot/latest` 문서에 `npm run progress -- --format json`을 사람이 보기 좋은 모양으로 변환한 값을 담아두면, 열려 있는 페이지가 새로고침 없이 갱신된다.
+- 갱신 방법: `npm run progress -- --format json`을 돌리고 그 결과를 대시보드가 기대하는 모양(`overallRate`, `items[]`, `inventory[]`, `openSections[]`, `unanswered[]`, `decisionSections[]`, `commits[]` 등 — 위 URL의 아티팩트 소스 상단 `FALLBACK` 상수를 참고)으로 옮긴 다음, Artifact 도구의 `write_db`로 `collection: "snapshot"`, `doc_id: "latest"`에 `set` 하면 된다. 사용자가 "progress 다시 돌리고 대시보드 갱신해줘"라고 하면 이 흐름을 그대로 하면 된다.
+- 이 문서 위쪽 "변경 금지" 절이 회원탈퇴 자동삭제 백엔드를 만들지 말라고 적어뒀는데, 그 뒤 커밋(`e42d7c4`, `549e2fa` 등)에서 실제로 자동삭제 + 운영자 개입 기능이 만들어진 것으로 보인다 — **그 절이 낡았을 수 있다.** 다음 세션은 `packages/domain/src/withdrawal.ts`와 관련 마이그레이션(`0055_account_deletion.sql`, `0058_withdrawal_admin.sql`)을 직접 열어 지금 상태를 확인하고, 이 문서의 "변경 금지" 절을 현재 상태에 맞게 고칠 것.
+
