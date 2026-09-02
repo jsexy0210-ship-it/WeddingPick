@@ -1,3 +1,5 @@
+import type { Pool } from 'pg';
+
 import { loadConfig } from './config';
 import { createPool } from './db';
 
@@ -34,25 +36,127 @@ function parseArgs(argv: string[]): Options {
 
 const when = (at: Date): string => at.toISOString().slice(0, 16).replace('T', ' ');
 
+export type EventStep = {
+  step: string;
+  decider: string;
+  decision: string;
+  reasonCode: string;
+  confidence: string | null;
+  executionStatus: string;
+  createdAt: Date;
+};
+
+/** 한 사건이 어느 단계를 어떻게 지나왔는지. B-3 Orchestrator가 남긴 자취다. */
+export async function getEventDecisions(pool: Pool, eventId: string): Promise<EventStep[]> {
+  const { rows } = await pool.query<{
+    step: string;
+    decider: string;
+    decision: string;
+    reason_code: string;
+    confidence: string | null;
+    execution_status: string;
+    created_at: Date;
+  }>(
+    `SELECT step, decider, decision, reason_code, confidence, execution_status, created_at
+     FROM structured.decisions WHERE event_id = $1 ORDER BY created_at`,
+    [eventId]
+  );
+
+  return rows.map((row) => ({
+    step: row.step,
+    decider: row.decider,
+    decision: row.decision,
+    reasonCode: row.reason_code,
+    confidence: row.confidence,
+    executionStatus: row.execution_status,
+    createdAt: row.created_at,
+  }));
+}
+
+export type OpenDecision = {
+  id: string;
+  workflow: string;
+  step: string;
+  subjectKind: string;
+  subjectId: string | null;
+  reasonCode: string;
+  executionStatus: string;
+  createdAt: Date;
+};
+
+/** 사람 손이 필요한 것 전체. H장 — 개별 큐를 열 필요가 없는 게 목표라 이 목록이 그 전부다. */
+export async function listOpenDecisions(pool: Pool): Promise<OpenDecision[]> {
+  const { rows } = await pool.query<{
+    id: string;
+    workflow: string;
+    step: string;
+    subject_kind: string;
+    subject_id: string | null;
+    reason_code: string;
+    execution_status: string;
+    created_at: Date;
+  }>(
+    `SELECT id, workflow, step, subject_kind, subject_id, reason_code,
+            execution_status, created_at
+     FROM structured.open_decisions
+     ORDER BY created_at`
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    workflow: row.workflow,
+    step: row.step,
+    subjectKind: row.subject_kind,
+    subjectId: row.subject_id,
+    reasonCode: row.reason_code,
+    executionStatus: row.execution_status,
+    createdAt: row.created_at,
+  }));
+}
+
+export type BriefingRow = {
+  workflow: string;
+  decider: string;
+  decisions: number;
+  failed: number;
+  costUsd: string | null;
+};
+
+/** 최근 24시간 자동 결정 요약. 어제 자동으로 무슨 일이 있었는지를 먼저 보여준다(H장). */
+export async function getBriefing(pool: Pool): Promise<BriefingRow[]> {
+  const { rows } = await pool.query<{
+    workflow: string;
+    decider: string;
+    decisions: string;
+    failed: string;
+    cost: string | null;
+  }>(
+    `SELECT workflow, decider::text,
+            count(*)::text AS decisions,
+            count(*) FILTER (WHERE execution_status IN ('failed', 'pending'))::text AS failed,
+            sum(cost_usd)::text AS cost
+     FROM structured.decisions
+     WHERE created_at >= now() - interval '1 day'
+     GROUP BY workflow, decider
+     ORDER BY workflow, decider`
+  );
+
+  return rows.map((row) => ({
+    workflow: row.workflow,
+    decider: row.decider,
+    decisions: Number(row.decisions),
+    failed: Number(row.failed),
+    costUsd: row.cost,
+  }));
+}
+
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
   const pool = createPool(loadConfig().databaseUrl);
 
   try {
     if (options.event) {
-      const { rows } = await pool.query<{
-        step: string;
-        decider: string;
-        decision: string;
-        reason_code: string;
-        confidence: string | null;
-        execution_status: string;
-        created_at: Date;
-      }>(
-        `SELECT step, decider, decision, reason_code, confidence, execution_status, created_at
-         FROM structured.decisions WHERE event_id = $1 ORDER BY created_at`,
-        [options.event]
-      );
+      const rows = await getEventDecisions(pool, options.event);
 
       if (rows.length === 0) {
         console.error('그런 사건이 없다.');
@@ -60,35 +164,20 @@ async function main(): Promise<void> {
         return;
       }
 
-      // 한 사건이 어느 단계를 어떻게 지나왔는지. B-3 Orchestrator가 남긴 자취다.
       console.log(`사건 ${options.event} — ${rows.length}단계:`);
       for (const row of rows) {
         const confidence = row.confidence === null ? '' : ` (${row.confidence})`;
 
         console.log(
-          `  ${when(row.created_at)}  ${row.step}  ${row.decider}${confidence}` +
-            `  → ${row.decision} [${row.reason_code}]  ${row.execution_status}`
+          `  ${when(row.createdAt)}  ${row.step}  ${row.decider}${confidence}` +
+            `  → ${row.decision} [${row.reasonCode}]  ${row.executionStatus}`
         );
       }
       return;
     }
 
     if (options.open) {
-      const { rows } = await pool.query<{
-        id: string;
-        workflow: string;
-        step: string;
-        subject_kind: string;
-        subject_id: string | null;
-        reason_code: string;
-        execution_status: string;
-        created_at: Date;
-      }>(
-        `SELECT id, workflow, step, subject_kind, subject_id, reason_code,
-                execution_status, created_at
-         FROM structured.open_decisions
-         ORDER BY created_at`
-      );
+      const rows = await listOpenDecisions(pool);
 
       if (rows.length === 0) {
         // 목표한 상태다. 조용한 날이 정상이다.
@@ -99,31 +188,16 @@ async function main(): Promise<void> {
       console.log(`사람 손이 필요한 것 ${rows.length}건:`);
       for (const row of rows) {
         console.log(
-          `  ${when(row.created_at)}  ${row.workflow}/${row.step}  ` +
-            `${row.subject_kind}:${row.subject_id ?? '-'}  [${row.reason_code}]  ` +
-            `${row.execution_status}`
+          `  ${when(row.createdAt)}  ${row.workflow}/${row.step}  ` +
+            `${row.subjectKind}:${row.subjectId ?? '-'}  [${row.reasonCode}]  ` +
+            `${row.executionStatus}`
         );
       }
       return;
     }
 
     if (options.briefing) {
-      const { rows } = await pool.query<{
-        workflow: string;
-        decider: string;
-        decisions: string;
-        failed: string;
-        cost: string | null;
-      }>(
-        `SELECT workflow, decider::text,
-                count(*)::text AS decisions,
-                count(*) FILTER (WHERE execution_status IN ('failed', 'pending'))::text AS failed,
-                sum(cost_usd)::text AS cost
-         FROM structured.decisions
-         WHERE created_at >= now() - interval '1 day'
-         GROUP BY workflow, decider
-         ORDER BY workflow, decider`
-      );
+      const rows = await getBriefing(pool);
 
       console.log('최근 24시간:');
 
@@ -133,7 +207,7 @@ async function main(): Promise<void> {
       }
 
       for (const row of rows) {
-        const cost = row.cost === null ? '' : `  $${Number(row.cost).toFixed(4)}`;
+        const cost = row.costUsd === null ? '' : `  $${Number(row.costUsd).toFixed(4)}`;
 
         console.log(
           `  ${row.workflow}  ${row.decider}  ${row.decisions}건` +
@@ -150,7 +224,16 @@ async function main(): Promise<void> {
   }
 }
 
-void main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exitCode = 1;
-});
+/*
+ * CLI로 직접 실행했을 때만 돈다. 테스트나 라우트가 이 파일에서 함수를
+ * 가져오면(require) `require.main`이 테스트 러너/서버를 가리키므로 여기
+ * 걸리지 않는다 — 안 걸리면 가져오기만 해도 `main()`이 돌며 실제 인자 없이
+ * 안내 문구로 exitCode를 오염시킨다. 원래 이 파일에는 이 관문이 없었다
+ * (다른 admin 도구와 다르게) — HTTP로 열면서 같이 넣었다.
+ */
+if (require.main === module) {
+  void main().catch((error: unknown) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  });
+}
