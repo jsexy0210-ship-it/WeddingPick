@@ -36,6 +36,7 @@ import {
   FilterChip,
   FontSize,
   MaxContentWidth,
+  Radius,
   Spacing,
   ThemedText,
   ThemedView,
@@ -714,7 +715,7 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderRadius: Spacing.three,
+    borderRadius: Radius.small,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     /* 입력 칸 글자도 본문이다. 토큰 밖의 크기를 쓰지 않는다. */
@@ -746,7 +747,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   card: {
-    borderRadius: Spacing.three,
+    borderRadius: Radius.medium,
     padding: Spacing.three,
     gap: Spacing.two,
   },
@@ -773,7 +774,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   suggestions: {
-    borderRadius: Spacing.three,
+    borderRadius: Radius.medium,
     borderWidth: 1,
     overflow: 'hidden',
   },

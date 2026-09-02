@@ -594,13 +594,13 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     minWidth: 0,
     minHeight: Layout.rowMinHeight,
-    borderRadius: Radius.card,
+    borderRadius: Radius.medium,
     padding: Spacing.three,
     justifyContent: 'center',
   },
   pressed: { opacity: 0.8 },
 
-  note: { borderRadius: Radius.card, padding: 20, gap: Spacing.two },
+  note: { borderRadius: Radius.medium, padding: 20, gap: Spacing.two },
 
   decidedList: { gap: 2 },
   decidedRow: {

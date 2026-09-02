@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     padding: Spacing.three,
     borderWidth: 1,
-    borderRadius: Radius.card,
+    borderRadius: Radius.medium,
   },
   row: { flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.two },
   keptRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },

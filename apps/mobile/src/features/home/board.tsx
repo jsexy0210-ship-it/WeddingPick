@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
     flexBasis: '48%',
     flexGrow: 1,
     minWidth: 0,
-    borderRadius: Radius.card,
+    borderRadius: Radius.medium,
     padding: Spacing.three,
     gap: Spacing.one,
   },
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     minHeight: Layout.rowMinHeight,
     paddingHorizontal: 18,
     paddingVertical: Spacing.three,
-    borderRadius: Radius.card,
+    borderRadius: Radius.medium,
   },
   foldedText: { flex: 1, minWidth: 0, gap: 2 },
 });

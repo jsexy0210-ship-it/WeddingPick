@@ -23,8 +23,8 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: theme.tint,
-        tabBarInactiveTintColor: theme.tintInactive,
+        tabBarActiveTintColor: theme.text,
+        tabBarInactiveTintColor: theme.textAssistive,
         tabBarStyle: onCamera
           ? { display: 'none' }
           : { backgroundColor: theme.background, borderTopColor: theme.border },

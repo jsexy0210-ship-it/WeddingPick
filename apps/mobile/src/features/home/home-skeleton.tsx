@@ -30,7 +30,7 @@ export function HomeSkeleton() {
               key={index}
               width="auto"
               height={96}
-              radius={Radius.card}
+              radius={Radius.medium}
               style={styles.cell}
             />
           ))}

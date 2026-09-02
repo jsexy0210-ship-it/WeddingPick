@@ -123,5 +123,5 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   section: { gap: Spacing.one, marginBottom: Spacing.two },
-  card: { borderRadius: Radius.card, padding: Spacing.four, gap: Spacing.two },
+  card: { borderRadius: Radius.medium, padding: Spacing.four, gap: Spacing.two },
 });
