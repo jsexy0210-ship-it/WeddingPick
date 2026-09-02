@@ -142,6 +142,29 @@ GitHub Actions 실제 실행 결과, production DB 적용.
 ### 프론트엔드 (session_01HTGSU2B4vFjePXFS2ajKBY) — 아카이브
 **완료**: 모바일 앱 핵심 화면 구현, 42개 라우터 파일 생성
 
+### 백엔드 갭 투입 (claude/backend-gaps-olvj3m, 이 세션, Sonnet 5)
+**완료:**
+- ✅ 취향(홈 C-1 시안 1) 서버 API 신설 — `GET`/`PUT /v1/me/taste`
+  (`packages/db/migrations/0059_taste_preferences.sql`,
+  `packages/api-contract/src/taste.ts`, `apps/api/src/routes/taste.ts`).
+  기존에는 `apps/mobile/src/features/home/taste.ts`가 서버에 자리가 없어
+  AsyncStorage에만 저장했다(기기를 바꾸면 다시 물었다) — 이제 로그인한 사용자의
+  취향이 서버에 남는다. 모바일 쪽(`loadTaste`/`saveTaste`)을 그 API를 부르도록
+  교체, 저장 실패는 조용히 넘어가게 유지(낙관적 갱신 유지).
+- 조사 방법: Explore 서브에이전트로 `apps/mobile/src/api/client.ts`의 ~83개
+  엔드포인트 호출을 `apps/api/src/routes/*`와 전수 대조 — 나머지는 전부 대응하는
+  라우트가 있었고, 이 취향 기능과 홈 개인화 피드(`listWeddingContent`, 아래 참고)
+  둘만 "프론트는 있는데 백엔드가 없는" 실제 갭이었다.
+- typecheck(api-contract/api/mobile) 통과, mobile lint 0 error(기존 무관 경고 1개
+  그대로), API 테스트 549개 전체·mobile 테스트 66개 전체 통과(로컬에 Postgres 16을
+  띄우고 `npm run migrate --workspace @weddingpick/db`로 0059까지 재현해 확인).
+
+**미착수(다음 사람 참고)**:
+- 홈 개인화 웨딩피드 — `apps/mobile/src/features/home/content.ts`의
+  `listWeddingContent()`가 `TODO`로 빈 배열만 반환. 계약에도 API에도 "콘텐츠"라는
+  개념이 아직 없다 — 무엇을 콘텐츠로 볼지(에디토리얼? 업체 추천 큐레이션?)부터
+  정책이 필요해 보여 손대지 않았다.
+
 ---
 
 ## 프론트엔드 화면 현황
