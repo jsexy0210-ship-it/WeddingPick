@@ -1,12 +1,20 @@
-import type { WeddingTaskListResponse } from '@weddingpick/api-contract';
-import { TASK_STATES, TASK_STATE_LABEL, formatTaskDate } from '@weddingpick/domain';
+import type { WeddingDetail, WeddingTaskListResponse } from '@weddingpick/api-contract';
+import {
+  LIFECYCLE_STAGES,
+  LIFECYCLE_STAGE_LABEL,
+  TASK_STATES,
+  TASK_STATE_LABEL,
+  formatTaskDate,
+  lifecycle,
+} from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Modal, ScrollView, StyleSheet, TextInput } from 'react-native';
+import { Alert, Modal, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   addWeddingTask,
+  getWedding,
   listWeddingTasks,
   removeWeddingTask,
   updateWeddingTask,
@@ -40,6 +48,7 @@ export default function WeddingTasksScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const theme = useTheme();
   const [page, setPage] = useState<WeddingTaskListResponse | null>(null);
+  const [weddingInfo, setWeddingInfo] = useState<WeddingDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   /** 수정 중인 일정. 닫으면 버린다. */
   const [editing, setEditing] = useState<WeddingTaskListResponse['tasks'][number] | null>(null);
@@ -56,6 +65,10 @@ export default function WeddingTasksScreen() {
   }, [id]);
 
   useEffect(load, [load]);
+
+  useEffect(() => {
+    getWedding(id).then(setWeddingInfo).catch(() => undefined);
+  }, [id]);
 
   if (error) {
     return <ErrorView message={error} onBack={() => router.back()} />;
@@ -143,6 +156,37 @@ export default function WeddingTasksScreen() {
               준비 {page.progress.done} / {page.progress.total} 완료
             </ThemedText>
           </ThemedView>
+
+          {(() => {
+            const view = lifecycle(weddingInfo?.weddingDate ?? null);
+            const currentIndex = LIFECYCLE_STAGES.indexOf(view.stage);
+            return (
+              <ThemedView type="backgroundElement" style={styles.timeline}>
+                <ThemedView style={styles.timelineRow}>
+                  {LIFECYCLE_STAGES.map((stage, i) => (
+                    <View
+                      key={stage}
+                      style={[
+                        styles.timelineDot,
+                        {
+                          backgroundColor:
+                            i === currentIndex
+                              ? theme.tint
+                              : i < currentIndex
+                                ? theme.positive
+                                : theme.border,
+                        },
+                      ]}
+                    />
+                  ))}
+                </ThemedView>
+                <ThemedText type="t5">{view.mood}</ThemedText>
+                <ThemedText type="t7" themeColor="textSecondary">
+                  {LIFECYCLE_STAGE_LABEL[view.stage]} · {view.note}
+                </ThemedText>
+              </ThemedView>
+            );
+          })()}
 
           {page.tasks.map((task) => (
             <ThemedView key={task.id} type="backgroundElement" style={styles.row}>
@@ -313,5 +357,22 @@ const styles = StyleSheet.create({
     height: Layout.rowMinHeight,
     borderRadius: Radius.input,
     paddingHorizontal: Spacing.three,
+  },
+  timeline: {
+    borderRadius: Radius.medium,
+    padding: Spacing.three,
+    gap: Spacing.two,
+    marginBottom: Spacing.two,
+  },
+  timelineRow: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+    alignItems: 'center',
+  },
+  timelineDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    flex: 1,
   },
 });

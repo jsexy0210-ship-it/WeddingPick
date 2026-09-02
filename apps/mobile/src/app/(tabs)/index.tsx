@@ -310,6 +310,9 @@ export default function HomeScreen() {
             ))
           )
         )}
+        {(data.candidates?.total ?? 0) > 0 ? (
+          <ActionButton label="전체보기" onPress={() => router.push('/pick')} />
+        ) : null}
       </ThemedView>
     ),
 

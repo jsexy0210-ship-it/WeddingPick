@@ -17,7 +17,7 @@ import {
   type VendorCategory,
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -103,6 +103,17 @@ export default function SearchScreen() {
 
   /** 늦게 도착한 옛 요청이 새 결과를 덮어쓰지 않게 한다. */
   const requestId = useRef(0);
+  const [inputFocused, setInputFocused] = useState(false);
+
+  const trimmedQ = filters.q.trim();
+  const suggestions = useMemo(() => {
+    if (!inputFocused || trimmedQ.length === 0) return [];
+    const lower = trimmedQ.toLowerCase();
+    if (filters.mode === 'vendor') {
+      return (vendors ?? []).filter((v) => v.name.toLowerCase().includes(lower)).slice(0, 5);
+    }
+    return (planners ?? []).filter((p) => p.name.toLowerCase().includes(lower)).slice(0, 5);
+  }, [inputFocused, trimmedQ, filters.mode, vendors, planners]);
 
   /*
    * 검색어를 치는 중에는 추천을 접는다. 조건을 정한 사람의 결과 위에 우리가 고른
@@ -303,10 +314,36 @@ export default function SearchScreen() {
             placeholderTextColor={theme.textSecondary}
             value={filters.q}
             onChangeText={(text) => setFilters((current) => ({ ...current, q: text }))}
+            onFocus={() => setInputFocused(true)}
+            onBlur={() => setInputFocused(false)}
             autoCorrect={false}
             returnKeyType="search"
             accessibilityLabel={`${MODE_LABEL[filters.mode]} 이름 검색`}
           />
+
+          {suggestions.length > 0 ? (
+            <ThemedView
+              type="backgroundElement"
+              style={[styles.suggestions, { borderColor: theme.border }]}>
+              {suggestions.map((item) => (
+                <Pressable
+                  key={item.id}
+                  accessibilityRole="button"
+                  onPress={() => {
+                    setInputFocused(false);
+                    router.push(
+                      filters.mode === 'vendor'
+                        ? `/search/${item.id}`
+                        : `/search/planner/${item.id}`
+                    );
+                  }}>
+                  <ThemedView type="backgroundElement" style={styles.suggestionRow}>
+                    <ThemedText type="t6">{item.name}</ThemedText>
+                  </ThemedView>
+                </Pressable>
+              ))}
+            </ThemedView>
+          ) : null}
 
           {filters.mode === 'vendor' ? (
             <ThemedView style={styles.chips}>
@@ -699,6 +736,15 @@ const styles = StyleSheet.create({
   },
   pickRow: {
     flexDirection: 'row',
+  },
+  suggestions: {
+    borderRadius: Spacing.three,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  suggestionRow: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
   },
   spinner: {
     paddingVertical: Spacing.five,
