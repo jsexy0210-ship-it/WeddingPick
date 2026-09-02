@@ -50,8 +50,8 @@ describe('글자 크기 토큰', () => {
     // 핸드오프 이름을 그대로 쓴다. 우리 이름으로 바꾸면 디자인을 보며 매번 번역해야 한다.
     const tokens = readFileSync(join(ROOT, 'packages/ui/src/typography.ts'), 'utf8');
 
-    expect(tokens).toContain('t6: 15');
-    expect(tokens).toContain('t7: 13');
+    expect(tokens).toContain('t6: 16');
+    expect(tokens).toContain('t7: 14');
     expect(tokens).toContain('t2: 26');
   });
 

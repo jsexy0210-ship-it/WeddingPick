@@ -61,3 +61,30 @@ export async function recordDecision(
 export function newEventId(): string {
   return randomUUID();
 }
+
+/**
+ * 결정한 사람이 실제로 심사 권한이 있는지 본다.
+ *
+ * 지금까지 심사 도구들은 사용자 id를 받을 뿐, 그 사람이 운영자인지 확인하지
+ * 않았다. 서버에 접근할 수 있는 사람만 이 명령을 돌릴 수 있다는 것이 유일한
+ * 통제였다 — 그건 통제라기보다 우연이다. `structured.users.is_operator`는
+ * 처음부터 있었고(0038 이전부터 존재, retention-admin이 켜고 끈다), 심사
+ * 도구들이 그 값을 보지 않았을 뿐이다.
+ */
+export class NotAnOperator extends Error {}
+
+export async function requireOperator(
+  db: Pool | PoolClient,
+  userId: string
+): Promise<void> {
+  const { rows } = await db.query<{ is_operator: boolean }>(
+    'SELECT is_operator FROM structured.users WHERE id = $1',
+    [userId]
+  );
+
+  if (!rows[0]?.is_operator) {
+    throw new NotAnOperator(
+      '이 사람은 운영자가 아니다. `npm run retention -- --operator <user-id>`로 지정한다.'
+    );
+  }
+}

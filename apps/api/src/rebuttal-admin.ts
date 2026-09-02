@@ -1,9 +1,9 @@
 import { REBUTTAL_STATUS_LABEL, type RebuttalStatus } from '@weddingpick/domain';
+import type { Pool } from 'pg';
 
 import { loadConfig } from './config';
-import { newEventId, recordDecision } from './decisions';
-import { createPool, withTransaction } from './db';
-import { notify } from './notify';
+import { createPool } from './db';
+import { decideRebuttal } from './rebuttal-decide';
 
 /**
  * 업체 반론 심사 도구.
@@ -34,10 +34,11 @@ type Options = {
   reject?: string;
   by?: string;
   note?: string;
+  withoutClaim: boolean;
 };
 
 function parseArgs(argv: string[]): Options {
-  const options: Options = { list: false };
+  const options: Options = { list: false, withoutClaim: false };
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -48,6 +49,7 @@ function parseArgs(argv: string[]): Options {
     else if (arg === '--reject') options.reject = argv[++i];
     else if (arg === '--by') options.by = argv[++i];
     else if (arg === '--note') options.note = argv[++i];
+    else if (arg === '--without-claim') options.withoutClaim = true;
   }
 
   return options;
@@ -56,72 +58,14 @@ function parseArgs(argv: string[]): Options {
 const when = (at: Date): string => at.toISOString().slice(0, 16).replace('T', ' ');
 
 async function decide(
-  pool: ReturnType<typeof createPool>,
+  pool: Pool,
   id: string,
   to: Exclude<RebuttalStatus, 'pending'>,
   by: string,
-  note: string
+  note: string,
+  withoutClaim = false
 ): Promise<void> {
-  await withTransaction(pool, async (client) => {
-    const { rows } = await client.query<{
-      status: RebuttalStatus;
-      submitted_by_user_id: string;
-      review_id: string;
-    }>(
-      `SELECT status, submitted_by_user_id, review_id
-       FROM structured.review_rebuttals WHERE id = $1 FOR UPDATE`,
-      [id]
-    );
-
-    const found = rows[0];
-
-    if (!found) throw new Error('없는 반론이다.');
-
-    if (found.status !== 'pending') {
-      throw new Error(`이미 ${REBUTTAL_STATUS_LABEL[found.status]} 상태다.`);
-    }
-
-    if (found.submitted_by_user_id === by) {
-      // 인증 심사와 같은 규칙이다. 자기 글을 자기가 실을 수는 없다.
-      throw new Error('반론을 낸 본인은 심사할 수 없다.');
-    }
-
-    await client.query(
-      `UPDATE structured.review_rebuttals
-       SET status = $2::rebuttal_status, decided_at = now(), decided_by = $3::uuid,
-           decision_note = $4, updated_at = now()
-       WHERE id = $1::uuid`,
-      [id, to, by, note]
-    );
-
-    /*
-     * 같은 트랜잭션에서 남긴다. L장이 요구하는 것은 "왜 그렇게 정했는가"를
-     * 나중에 답할 수 있게 하는 것이고, 결정만 되고 기록이 빠지면 답할 수 없다.
-     *
-     * 근거는 가리키기만 한다 — 소속을 무엇으로 확인했는지는 note에 사람이 적고,
-     * 그 증빙 자체는 여기 복사되지 않는다(원문 27번).
-     */
-    await recordDecision(client, {
-      eventId: newEventId(),
-      workflow: 'rebuttal_review',
-      step: 'decide',
-      subjectKind: 'rebuttal',
-      subjectId: id,
-      decider: { kind: 'human', userId: by },
-      decision: to,
-      reasonCode: to === 'published' ? 'affiliation_verified' : 'not_published',
-      evidence: [{ kind: 'review', id: found.review_id }],
-    });
-
-    await notify(client, {
-      userId: found.submitted_by_user_id,
-      kind: 'rebuttal',
-      title:
-        to === 'published' ? '반론이 게시됐어요' : '반론을 게시하지 않기로 했어요',
-      body: note,
-      targetId: found.review_id,
-    });
-  });
+  await decideRebuttal(pool, { id, to, by, note, withoutClaim });
 
   console.log(
     to === 'published'
@@ -235,7 +179,7 @@ async function main(): Promise<void> {
     }
 
     if (options.publish) {
-      await decide(pool, options.publish, 'published', options.by, options.note);
+      await decide(pool, options.publish, 'published', options.by, options.note, options.withoutClaim);
       return;
     }
 

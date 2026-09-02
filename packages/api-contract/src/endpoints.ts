@@ -38,6 +38,7 @@ import {
 import { registerDeviceRequestSchema, registerDeviceResponseSchema } from './devices';
 import { myReportListResponseSchema } from './my-reports';
 import { settingsSchema, updateSettingsRequestSchema } from './settings';
+import { withdrawalNoticeSchema, withdrawalResultSchema } from './withdrawal';
 import {
   notificationListResponseSchema,
   notificationSummaryResponseSchema,
@@ -442,6 +443,13 @@ export const ENDPOINTS = {
     response: z.null(),
   },
 
+  /** 후기 삭제. 한 사람이 한 업체에 하나라, 지울 수 없으면 다시 쓸 수도 없다. */
+  deleteReview: {
+    method: 'DELETE',
+    path: '/v1/reviews/{reviewId}',
+    response: z.null(),
+  },
+
   /** 설정. 핸드오프 19번. */
   getSettings: {
     method: 'GET',
@@ -469,6 +477,24 @@ export const ENDPOINTS = {
     method: 'DELETE',
     path: '/v1/me/payment-consent',
     response: settingsSchema,
+  },
+
+  /**
+   * 회원탈퇴 안내. WP-MY-008.
+   *
+   * 무엇이 지워지고 무엇이 분리되는지를 **그 사람의 실제 개수로** 받아온다.
+   */
+  getWithdrawalNotice: {
+    method: 'GET',
+    path: '/v1/me/withdrawal',
+    response: withdrawalNoticeSchema,
+  },
+
+  /** 탈퇴. 되돌릴 수 없다 — 화면이 시트로 한 번 더 묻고 부른다. */
+  withdraw: {
+    method: 'POST',
+    path: '/v1/me/withdrawal',
+    response: withdrawalResultSchema,
   },
 
   /** 알림함. 푸시를 못 받는 기기에서도 결과를 볼 수 있어야 한다. */

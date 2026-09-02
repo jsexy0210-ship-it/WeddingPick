@@ -69,6 +69,14 @@ export default function WriteReviewScreen() {
   }
 
   if (done) {
+    /*
+     * 스튜디오·드레스·메이크업을 한 평점으로 합치지 않는다(사업계획서 19번) —
+     * 그러려면 셋을 각자 물어야 한다. 같은 견적으로 묶인 다른 업체가 있고 아직
+     * 안 썼으면, 여기서 바로 다음 업체로 이어간다. 이 목록은 쓰기 시작할 때
+     * 이미 받아뒀다 — 방금 쓴 후기 하나로 목록이 바뀌지 않는다.
+     */
+    const next = form.packageSiblings[0];
+
     return (
       <Frame>
         <ThemedText type="subtitle">후기를 남겼어요</ThemedText>
@@ -78,7 +86,27 @@ export default function WriteReviewScreen() {
         <ThemedText type="small" themeColor="textSecondary">
           {done.caveat}
         </ThemedText>
-        <ActionButton label="후기 보러 가기" onPress={() => router.back()} />
+
+        {next ? (
+          <ThemedView type="backgroundElement" style={styles.card}>
+            <ThemedText type="smallBold">
+              같은 견적에 {next.roleLabel} 업체도 있어요
+            </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary">
+              {next.vendorName}은 다른 업체라 후기도 따로 남겨야 반영돼요.
+            </ThemedText>
+            <ActionButton
+              label={`${next.vendorName} 후기 쓰기`}
+              onPress={() => router.replace(`/search/${next.vendorId}/write-review`)}
+            />
+          </ThemedView>
+        ) : null}
+
+        <ActionButton
+          label={next ? '나중에 할게요' : '후기 보러 가기'}
+          variant={next ? 'secondary' : 'primary'}
+          onPress={() => router.back()}
+        />
       </Frame>
     );
   }

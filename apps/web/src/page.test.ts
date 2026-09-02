@@ -90,7 +90,7 @@ describe('랜딩', () => {
 
   it('정해지지 않은 처리 기한을 약속하지 않는다', () => {
     expect(html).toContain(escapeHtml(inquiryAcknowledgement()));
-    expect(html).toContain('아직 정하지 못했습니다');
+    expect(html).toContain('아직 정하지 못했어요');
   });
 
   it('본문에 넣는 값을 이스케이프한다', () => {

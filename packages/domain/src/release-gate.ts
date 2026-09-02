@@ -1,5 +1,4 @@
 import { POLICY_DOCUMENTS } from './policies';
-import { withdrawalReady } from './withdrawal';
 
 /**
  * 출시 전 법적 고지 차단 조건.
@@ -62,7 +61,6 @@ export type ReleaseCheck = {
    * 값 말고 문서가 막는 것들.
    *
    * 사업자 정보를 다 채워도 약관과 개인정보처리방침이 확정 전이면 문을 열 수 없다.
-   * 탈퇴 안내가 없으면 사용자는 자기가 낸 자료가 어떻게 되는지 모르는 채로 가입한다.
    */
   blockingDocuments: string[];
   /** Production으로 나가도 되는가. */
@@ -87,8 +85,6 @@ export function checkRelease(notice: LegalNotice): ReleaseCheck {
   const blockingDocuments = POLICY_DOCUMENTS.filter(
     (policy) => policy.id !== 'analysis-notice' && policy.url === undefined
   ).map((policy) => policy.title);
-
-  if (!withdrawalReady()) blockingDocuments.push('탈퇴 안내');
 
   const parts: string[] = [];
 

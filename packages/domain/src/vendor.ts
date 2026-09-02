@@ -26,6 +26,24 @@ export const VENDOR_CATEGORY_LABEL: Record<VendorCategory, string> = {
 };
 
 /**
+ * 패키지 견적 안의 개별 업체 역할. `structured.quote_sub_vendors`의 `package_role`과
+ * 값을 맞춘다. 스튜디오·드레스·메이크업을 한 평점으로 합치지 않기 위해 후기 화면이
+ * 이 이름으로 각 업체를 부른다(사업계획서 19번).
+ */
+export const PACKAGE_ROLES = ['studio', 'dress', 'makeup', 'planning', 'snap', 'other'] as const;
+
+export type PackageRole = (typeof PACKAGE_ROLES)[number];
+
+export const PACKAGE_ROLE_LABEL: Record<PackageRole, string> = {
+  studio: '스튜디오',
+  dress: '드레스',
+  makeup: '메이크업',
+  planning: '플래닝',
+  snap: '스냅·영상',
+  other: '기타',
+};
+
+/**
  * 정보의 출처. 사업계획서 25번.
  * 공식정보와 실제 데이터를 섞지 않기 위해 값마다 출처를 들고 다닌다 — 제품 원칙 3.
  */
