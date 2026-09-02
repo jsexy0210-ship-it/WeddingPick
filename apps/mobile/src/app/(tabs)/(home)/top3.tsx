@@ -34,25 +34,26 @@ import {
  * 추천 이유와 실제 결제 데이터를 함께 표시한다.
  */
 export default function Top3Screen() {
-  const theme = useTheme();
   const [category, setCategory] = useState<VendorCategory>('hall');
   const [data, setData] = useState<Top3Response | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
 
   const load = useCallback(() => {
-    setLoading(true);
-    setData(null);
     getTop3({ category })
       .then((result) => {
         setError(null);
         setData(result);
       })
-      .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false));
+      .catch((e: Error) => setError(e.message));
   }, [category]);
 
   useEffect(load, [load]);
+
+  function handleCategoryChange(cat: VendorCategory) {
+    setData(null);
+    setError(null);
+    setCategory(cat);
+  }
 
   return (
     <ThemedView style={styles.container}>
@@ -74,16 +75,16 @@ export default function Top3Screen() {
                 key={cat}
                 label={VENDOR_CATEGORY_LABEL[cat]}
                 selected={category === cat}
-                onPress={() => setCategory(cat)}
+                onPress={() => handleCategoryChange(cat)}
               />
             ))}
           </ScrollView>
 
           {error ? (
             <ErrorView message={error} onBack={() => router.back()} />
-          ) : loading ? (
+          ) : !data ? (
             <LoadingView />
-          ) : data && data.items.length > 0 ? (
+          ) : data.items.length > 0 ? (
             <>
               {data.region || data.category ? (
                 <ThemedText type="t7" themeColor="textSecondary">
