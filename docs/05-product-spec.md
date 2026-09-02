@@ -1396,11 +1396,9 @@ npm run ai-cost --workspace @weddingpick/api -- --budget payment_proof_vision 20
 | `/wedding/{id}/expenses` | 지출내역 · 예산 |
 | `/wedding/{id}/visit-notes` | 방문노트 |
 
-### 아직 없는 것
+~~### 아직 없는 것~~
 
-- **도넛 차트**(핸드오프 14번). 지금은 누적 막대로 그린다 — `conic-gradient`가
-  React Native에 없어 SVG나 직접 그리기가 필요하다
-- **FAB**. 지금은 목록 아래 단추다
+~~도넛 차트와 FAB는 구현됐다.~~ `packages/ui/src/donut-chart.tsx`와 `packages/ui/src/fab.tsx`가 있고, `apps/mobile/src/app/(tabs)/wedding/[id]/expenses.tsx`가 두 컴포넌트를 모두 쓴다.
 
 ## 24. 홈 — C-1로 다시 지었다 (디자인 확정본 `웨딩픽 홈 C-1 상태`)
 
@@ -1428,17 +1426,14 @@ npm run ai-cost --workspace @weddingpick/api -- --budget payment_proof_vision 20
 지금 홈 어디에도 없다** — 옛 홈이 고정으로 못박았던 그 둘도 함께 사라졌다.
 
 `sections.ts`(다섯 섹션의 순서·숨김을 기기에 저장하던 코드)와 `home-edit.tsx`
-(그 순서를 고치던 화면)는 파일로 남아 있지만 **홈에서 들어가는 길이 없다** — 코드
-자신의 주석이 그렇게 적고 있다. 지우지도, 다시 잇지도 않은 채 멈춰 있다.
+(그 순서를 고치던 화면)는 C-1 홈으로 교체된 뒤 길이 없는 죽은 코드였다 — **삭제했다**.
 
 ### 아직 없는 것
 
 - **D-Day와 다음 일정을 C-1에 어떻게 다시 넣을지.** 옛 홈은 이 둘을 고정 자리로
   못박았다(오늘 무엇을 해야 하는지가 홈의 이유라서). C-1 시안에 그 자리가 있는지,
   현황판이 그 역할을 대신하는 것으로 정리됐는지는 디자인 쪽 결정이 필요하다
-- **`sections.ts` / `home-edit.tsx`를 지울지, 다시 이을지.** 죽은 코드로 두는 이유가
-  "곧 다시 쓸 것"인지 "옛 설계라 버릴 것"인지가 정해지지 않았다
-- 다음 일정을 탭했을 때 뜨는 수정 시트 — 위 결정이 먼저다
+- 다음 일정을 탭했을 때 뜨는 수정 시트 — D-Day 결정이 먼저다
 
 여덟 자리가 순서대로 선다: D-Day · 다음 일정 · 퀵메뉴 · 웨딩 스케줄 · 지출 현황 ·
 관심업체 · 결제 데이터 안내 · 홈 편집.
@@ -1537,9 +1532,9 @@ npm run ai-cost --workspace @weddingpick/api -- --budget payment_proof_vision 20
 완료하기 전에는 저장소를 건드리지 않는다 — 미리 "봤음"으로 찍어두면 정작 완료했을 때
 축하가 사라진다.
 
-### 아직 없는 것
+~~### 아직 없는 것~~
 
-- 핸드오프 18번의 등장 애니메이션(튀어오르는 원, 60/120/180/240ms 지연)
+~~핸드오프 18번 등장 애니메이션 구현됨.~~ `apps/mobile/src/app/(tabs)/my/index.tsx`: 원 `bounceScale` spring + 태그 4개 각각 60/120/180/240ms 지연 후 spring.
 
 ## 26. 알림 · 내 제보 내역 · 업체 반론 (디자인 핸드오프 20번)
 
