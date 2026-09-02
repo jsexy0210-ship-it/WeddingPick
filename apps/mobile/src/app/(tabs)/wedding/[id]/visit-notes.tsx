@@ -1,7 +1,7 @@
 import type { VisitNoteListResponse } from '@weddingpick/api-contract';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, TextInput } from 'react-native';
+import { Alert, Modal, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { addVisitNote, listVisitNotes, removeVisitNote } from '@/api/client';
@@ -85,13 +85,20 @@ export default function VisitNotesScreen() {
     }
   }
 
-  async function remove(noteId: string) {
-    try {
-      await removeVisitNote(id, noteId);
-      load();
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : '지우지 못했어요.');
-    }
+  function remove(noteId: string) {
+    Alert.alert('방문노트 빼기', '이 기록을 빼시겠어요? 되돌릴 수 없어요.', [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '빼기',
+        style: 'destructive',
+        onPress: () =>
+          removeVisitNote(id, noteId)
+            .then(load)
+            .catch((caught: Error) =>
+              setError(caught.message ?? '지우지 못했어요.')
+            ),
+      },
+    ]);
   }
 
   return (
@@ -125,7 +132,7 @@ export default function VisitNotesScreen() {
                   </ThemedText>
                 ) : null}
                 {note.memo ? <ThemedText type="t6">{note.memo}</ThemedText> : null}
-                <ActionButton label="빼기" onPress={() => void remove(note.id)} />
+                <ActionButton label="빼기" onPress={() => remove(note.id)} />
               </ThemedView>
             ))
           )}

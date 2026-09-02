@@ -1,9 +1,11 @@
+import { DOCUMENT_TYPE_LABEL } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Alert, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton, ErrorView, LoadingView, MaxContentWidth, Spacing, ThemedText, ThemedView, VerificationBadge } from '@weddingpick/ui';
 import { PageThumbnail } from '@/components/page-thumbnail';
+import { isServerConfigured } from '@/api/config';
 import { useDocumentStore } from '@/features/documents/document-store';
 
 function formatDate(iso: string) {
@@ -57,12 +59,33 @@ export default function DocumentSetScreen() {
 
           <ThemedView style={styles.section}>
             <ThemedText type="smallBold">분석 결과</ThemedText>
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="small" themeColor="textSecondary">
-                아직 분석하지 않았어요. 업체·상품·금액·계약조건은 분석이 끝나면
-                여기에 채워져요.
-              </ThemedText>
-            </ThemedView>
+            {set.docType !== 'unknown' ? (
+              <ThemedView type="backgroundElement" style={styles.card}>
+                <ThemedText type="small" themeColor="textSecondary">
+                  문서 종류
+                </ThemedText>
+                <ThemedText type="smallBold">{DOCUMENT_TYPE_LABEL[set.docType]}</ThemedText>
+                <ActionButton
+                  label="분석 결과 보기"
+                  onPress={() => router.push(`/capture/result/${set.id}`)}
+                />
+              </ThemedView>
+            ) : (
+              <ThemedView type="backgroundElement" style={styles.card}>
+                <ThemedText type="small" themeColor="textSecondary">
+                  아직 분석하지 않았어요. 업체·상품·금액·계약조건은 분석이 끝나면
+                  여기에 채워져요.
+                </ThemedText>
+                {isServerConfigured ? (
+                  <ActionButton
+                    variant="primary"
+                    label="분석 시작"
+                    hint="이 문서를 올려 업체·금액·계약조건을 분석해요"
+                    onPress={() => router.push('/capture')}
+                  />
+                ) : null}
+              </ThemedView>
+            )}
           </ThemedView>
 
           <ThemedView style={styles.section}>
