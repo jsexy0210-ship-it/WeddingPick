@@ -10,6 +10,8 @@ export const createSessionRequestSchema = z.union([
   z.object({
     provider: z.enum(['apple', 'kakao', 'google']),
     idToken: z.string().min(1),
+    /** Apple이 최초 인증 때 토큰 밖에서 한 번만 주는 이름. */
+    profileName: z.string().trim().min(1).max(100).optional(),
   }),
   z.object({
     provider: z.literal('naver'),

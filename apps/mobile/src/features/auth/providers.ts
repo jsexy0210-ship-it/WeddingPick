@@ -102,7 +102,10 @@ export async function signInWith(provider: AuthProvider): Promise<void> {
       throw new Error('Apple 로그인 토큰을 받지 못했습니다. 다시 시도해 주세요.');
     }
 
-    await signIn('apple', credential.identityToken);
+    const appleName = [credential.fullName?.familyName, credential.fullName?.givenName]
+      .filter(Boolean)
+      .join(' ');
+    await signIn('apple', credential.identityToken, appleName || undefined);
     return;
   }
 

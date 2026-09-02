@@ -49,6 +49,9 @@ Google의 검증된 OIDC 표준 클레임(`name`, `nickname`/`preferred_username
 않은 값만 추가 입력받고, MY에서 사용자가 직접 수정하거나 비운 값은 소셜 값으로
 덮어쓰지 않는다.
 
+Apple 이름은 ID 토큰이 아니라 최초 인증 응답에서 한 번만 제공될 수 있으므로 모바일이
+그 응답의 이름을 세션 생성 요청에 함께 보내고 서버가 최초 프로필 기본값으로 보관한다.
+
 ## 주의
 
 Apple private key, Kakao client secret, API key는 환경변수/시크릿 저장소로만 관리한다.
