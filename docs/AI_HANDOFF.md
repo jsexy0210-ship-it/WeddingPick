@@ -7,9 +7,9 @@
 
 ## 메타
 
-- `updated_at`: 2026-09-02
+- `updated_at`: 2026-09-02 (main 최초로 CI+staging 배포 전부 그린, head `b8a8df7`)
 - `repository`: jsexy0210-ship-it/WeddingPickl
-- `branch (main)`: 4bae250
+- `branch (main)`: b8a8df7
 - `policy_version`: 통합정책 v3.14
 - `dashboard`: https://claude.ai/code/artifact/a1307c11-f282-4cf2-a26d-e44bd083d7a9
 - `ios_handoff_artifact`: https://claude.ai/code/artifact/b8792fcd-fefe-4386-b24e-41d122e90a87
@@ -158,6 +158,32 @@ GitHub Actions 실제 실행 결과, production DB 적용.
 - typecheck(api-contract/api/mobile) 통과, mobile lint 0 error(기존 무관 경고 1개
   그대로), API 테스트 549개 전체·mobile 테스트 66개 전체 통과(로컬에 Postgres 16을
   띄우고 `npm run migrate --workspace @weddingpick/db`로 0059까지 재현해 확인).
+
+- ✅ PR #17 머지 후 main이 계속 CI 빨간불이길래 계속 파봤다 — 이 세션과 무관한
+  두 가지 원인을 찾아 고쳤다:
+  - **PR #23**: `eslint-plugin-react-hooks` 7.x의 `set-state-in-effect` 규칙이
+    표준 fetch-in-effect 패턴을 오탐지 — 6개 파일에 `eslint-disable-next-line`
+    (나중에 다른 세션이 더 나은 방식으로 재작성해 그 코멘트는 지금은 없다. 문제
+    없음 — Lint는 계속 0 error).
+  - **마이그레이션 충돌**: `0047_monthly_draw.sql`(PR #20)과 `0052_mission_draw.sql`
+    (예전 세션)이 같은 정책(월간 웨딩지원금)을 독립적으로 구현하면서
+    `reward_grants.draw_entry_id` 컬럼을 두 번 만들려다 매 마이그레이션마다
+    확정적으로 실패 — 동시성 문제가 아니었다. 내가 로컬에서 root-cause를 찾아
+    수정을 준비하는 사이 다른 세션이 **PR #25/#27**로 거의 같은 진단·해법(0052
+    삭제, 0053에 `IF NOT EXISTS`, production 첫 적용 대비 정리)을 먼저 머지해서
+    내 수정은 버리고 검증만 했다.
+  - **PR #29**: 마이그레이션 충돌 해소 후 main에 남은 마지막 2개 실패
+    (`release-gate.test.ts`, `page.test.ts`)를 고쳤다 — 코드 버그가 아니라
+    PR #22/#24가 이용약관·개인정보처리방침을 게시(url 설정)로 바꾼 뒤 "아직
+    게시 전"을 전제로 한 낡은 테스트 기대값이었다.
+- ✅ **PR #29 머지(head `b8a8df7`)로 main이 처음으로 CI 전체(Typecheck·Lint·
+  Test·Bundle·Build)와 `Deploy → Staging`(DB Migrate·Fly.io 배포·health check)
+  까지 전부 그린을 찍었다.** `weddingpickl.fly.dev`에 이 세션의 취향 API
+  (0060_taste_preferences 등)를 포함한 최신 코드가 실제로 배포됨.
+- **Production 배포는 보류 중** — `workflow_dispatch`(environment=production)로
+  수동 실행해야 하며, 사용자가 명시적으로 "진행 전에 물어봐달라"고 요청해 아직
+  실행하지 않았다. 다음 세션이 이어받으면: staging이 계속 정상인지 확인 후
+  사용자에게 production 배포 여부를 물어볼 것.
 
 **미착수(다음 사람 참고)**:
 - 홈 개인화 웨딩피드 — `apps/mobile/src/features/home/content.ts`의
