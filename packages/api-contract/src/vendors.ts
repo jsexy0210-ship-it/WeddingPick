@@ -42,15 +42,15 @@ export const vendorSummarySchema = z.object({
  * 정렬. 핸드오프 7번.
  *
  * **`인기 순`은 없다.** 인기를 재는 것이 우리에게 없고, 없는 것을 만들어 이름만
- * 붙이면 그건 정렬이 아니라 꾸밈이다. 대신 `데이터 많은 순`을 기본으로 둔다 —
- * 결제인증이 많이 모인 업체가 먼저 나오는 것은 잴 수 있는 사실이다.
+ * 붙이면 그건 정렬이 아니라 꾸밈이다. 대신 `확인된 정보 많은 순`을 기본으로 둔다 —
+ * Pick 인증이 많이 모인 업체가 먼저 나오는 것은 잴 수 있는 사실이다.
  */
 export const VENDOR_SORTS = ['data', 'price_low', 'price_high', 'name'] as const;
 
 export const vendorSortSchema = z.enum(VENDOR_SORTS);
 
 export const VENDOR_SORT_LABEL: Record<(typeof VENDOR_SORTS)[number], string> = {
-  data: '데이터 많은 순',
+  data: '확인된 정보 많은 순',
   price_low: '금액 낮은 순',
   price_high: '금액 높은 순',
   name: '이름 순',
