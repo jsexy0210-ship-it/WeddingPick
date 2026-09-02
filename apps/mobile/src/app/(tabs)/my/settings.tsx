@@ -13,7 +13,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   ActionButton,
+  ErrorView,
   Layout,
+  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
@@ -65,10 +67,13 @@ export default function SettingsScreen() {
     }
   }
 
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   const load = useCallback(() => {
+    setLoadError(null);
     void getSettings()
       .then(setSettings)
-      .catch(() => setSettings(null));
+      .catch((caught: Error) => setLoadError(caught.message ?? '설정을 불러오지 못했어요.'));
   }, []);
 
   useEffect(load, [load]);
@@ -123,6 +128,14 @@ export default function SettingsScreen() {
     ]);
   }
 
+  if (loadError) {
+    return <ErrorView message={loadError} onBack={load} />;
+  }
+
+  if (!settings) {
+    return <LoadingView />;
+  }
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
@@ -133,13 +146,13 @@ export default function SettingsScreen() {
             <SwitchRow
               label="푸시 알림"
               hint="자료 확인 결과, 문의 답변, 배우자 연결"
-              value={settings?.pushEnabled ?? true}
+              value={settings.pushEnabled}
               onChange={(next) => void toggle('pushEnabled', next)}
             />
             <SwitchRow
               label="가격 변동 알림"
               hint="Pick한 곳의 Pick 가격대가 크게 바뀌면 알려드려요"
-              value={settings?.priceChangeEnabled ?? true}
+              value={settings.priceChangeEnabled}
               onChange={(next) => void toggle('priceChangeEnabled', next)}
             />
           </Section>
@@ -151,7 +164,7 @@ export default function SettingsScreen() {
             */}
             <Row
               label="부를 이름"
-              value={settings?.displayName ?? '정하지 않음'}
+              value={settings.displayName ?? '정하지 않음'}
               onPress={() => {
                 setNameDraft(settings?.displayName ?? '');
                 setNameOpen(true);
@@ -160,18 +173,18 @@ export default function SettingsScreen() {
             <Row
               label="예식일"
               value={
-                settings?.weddingDate ? formatWeddingDate(settings.weddingDate) : '등록하지 않음'
+                settings.weddingDate ? formatWeddingDate(settings.weddingDate) : '등록하지 않음'
               }
               onPress={() => router.push('/setup')}
             />
             <Row
               label="준비하는 지역"
-              value={settings?.region ?? '고르지 않음'}
+              value={settings.region ?? '고르지 않음'}
               onPress={() => router.push('/setup')}
             />
             <Row
               label="배우자 연결"
-              value={settings?.spouseLinked ? '연결됨' : '연결하지 않음'}
+              value={settings.spouseLinked ? '연결됨' : '연결하지 않음'}
               onPress={() => router.push('/wedding/partner')}
             />
             <ActionButton label="회원탈퇴" onPress={() => router.push('/my/withdraw')} />
@@ -183,7 +196,7 @@ export default function SettingsScreen() {
               동의하지 않은 사람에게 철회 단추를 보이지 않는다. 누를 것이 없는
               단추는 무엇이 잘못됐는지 생각하게 만든다.
             */}
-            {settings?.paymentConsent ? (
+            {settings.paymentConsent ? (
               <ActionButton
                 label="Pick 인증 동의 철회"
                 hint={

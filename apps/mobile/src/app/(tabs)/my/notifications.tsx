@@ -9,6 +9,7 @@ import {
   ActionButton,
   ErrorView,
   Layout,
+  LoadingView,
   MaxContentWidth,
   Spacing,
   ThemedText,
@@ -113,6 +114,10 @@ export default function NotificationsScreen() {
     return <ErrorView message={loadError} onBack={load} />;
   }
 
+  if (notifications === null) {
+    return <LoadingView />;
+  }
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
@@ -124,13 +129,13 @@ export default function NotificationsScreen() {
             ) : null}
           </ThemedView>
 
-          {notifications !== null && notifications.length === 0 ? (
+          {notifications.length === 0 ? (
             <ThemedText type="t6" themeColor="textSecondary">
               {NOTIFICATIONS_EMPTY}
             </ThemedText>
           ) : null}
 
-          {(notifications ?? []).map((notification) => {
+          {notifications.map((notification) => {
             const read = notification.readAt !== null;
 
             return (
