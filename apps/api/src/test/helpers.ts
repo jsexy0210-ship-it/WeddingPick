@@ -42,6 +42,7 @@ export async function createTestApp(): Promise<TestApp> {
     retentionReminderHours: 24,
     proofReaderCheapModel: 'claude-haiku-4-5',
     proofReaderStrongModel: 'claude-opus-5',
+    naverRedirectUris: [],
   };
 
   const context: AppContext = {
