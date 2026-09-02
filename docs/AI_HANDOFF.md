@@ -169,7 +169,7 @@ GitHub Actions 실제 실행 결과, production DB 적용.
 | 커플 연결 (WP-CPL-*) | 2개 | 공동 편집 충돌, 변경 내역 |
 | 우리웨딩 (WP-OUR-*) | 1개 | 일정 추가(신규 API 필요, 보류). 준비 타임라인(`/wedding/[id]/timeline`)·예식 완료(`/wedding/[id]/complete`) 둘 다 2026-09-02 구현, 새 백엔드 없이 기존 API로 만듦 |
 | MY (WP-MY-*) | 0개 | 회원탈퇴(기존 구현 확인됨) · 취향 다시 고르기(2026-09-02 구현, `/my/preferences`) |
-| 홈 (WP-HOME-*) | 1개 | TOP3 전체보기 — v3.10/C-1 재설계로 홈에서 뺀 섹션(의도적, 검색 탭으로 이동, 실제 미구현 아님, 2026-09-02 확인). 개인화 웨딩피드는 `WeddingContent`(`features/home/wedding-content.tsx` · `features/home/content.ts`)가 콘텐츠 목록은 보여주지만 취향·지역 등으로 걸러내는 개인화 로직은 없음(2026-09-02 확인, `content.ts`에 taste/region/filter 로직 없음) — 여전히 미구현 |
+| 홈 (WP-HOME-*) | 1개 | TOP3 전체보기 — v3.10/C-1 재설계로 홈에서 뺀 섹션(의도적, 검색 탭으로 이동, 실제 미구현 아님, 2026-09-02 확인). 개인화 웨딩피드는 `listWeddingContent()`(`features/home/content.ts`)가 **콘텐츠 서버 API 자체가 없어 항상 빈 배열만 반환**(주석에 "서버에 아직 자리가 없다"고 명시) — 개인화 필터링 이전에 콘텐츠 소스가 없어 순수 프론트로는 손댈 수 없음. 백엔드에 콘텐츠 API가 생긴 뒤에야 착수 가능 |
 | 기타 | ~5개 | 지도 보기, 재실행·세션 복원, 진입 예외 등 |
 
 상세 목록: https://claude.ai/code/artifact/b99277b7-3bdc-45dc-9614-a1310507df53
@@ -245,7 +245,7 @@ WeddingPickl/
 2. **[사용자]** Fly.io: `OPERATOR_SESSION_TTL_DAYS=365` 추가
 3. **[사용자]** Neon DB: `db-migrate.yml` 실행 → 0052 적용
 4. **[사용자]** terms.url · privacy.url 확정 → 도메인 상수 업데이트
-5. **[AI]** 프론트엔드 미구현 화면 구현 — 남은 우선순위: 카메라 품질 피드백(밝기·흔들림·잘림, 이미지 분석 필요해 원격 세션에서 보류 중) > 개인화 웨딩피드 필터링(WP-HOME, 취향·지역 기준 콘텐츠 필터 없음) > 일정 추가(WP-OUR-004~006, 신규 API 필요) > 지도 보기(WP-SRCH-007, 지도 SDK·업체 좌표 데이터 필요)
+5. **[AI]** 프론트엔드 미구현 화면 구현 — 순수 프론트로 만들 만한 것은 이번 세션에서 대부분 소진했다. 남은 것은 전부 백엔드 선행 작업이 필요함: 카메라 품질 피드백(밝기·흔들림·잘림, 이미지 분석 로직 필요 — 원격 세션에서 기기 검증 불가해 보류) > 일정 추가(WP-OUR-004~006, 신규 API 필요) > 지도 보기(WP-SRCH-007, 지도 SDK·업체 좌표 데이터 필요) > 개인화 웨딩피드(WP-HOME, `content.ts`가 콘텐츠 서버 API 자체가 없어 항상 빈 배열 — 백엔드에 콘텐츠 API가 먼저 생겨야 함)
    - 회원탈퇴(WP-MY-008)는 `/my/withdrawal`에 이미 구현돼 있음(기존 구현 확인함)
    - 취향 다시 고르기(WP-MY-004)는 `/my/preferences`로 2026-09-02 구현 완료 — 홈의 `TastePicker`·`taste.ts`를 그대로 재사용, MY 설정 화면에서 진입
    - 준비 타임라인(WP-OUR-012)은 `/wedding/[id]/timeline`으로 2026-09-02 구현 완료 — 기존 tasks/expenses/visit-notes/candidates API 4개를 합쳐 시간순 정렬, 새 백엔드 없음. 최종결정은 결정 시각을 서버가 안 남겨 의도적으로 뺌(정확하지 않은 순서를 보여줄 수 없어서)
