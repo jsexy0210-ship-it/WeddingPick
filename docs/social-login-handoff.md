@@ -9,7 +9,7 @@
 - Kakao 버튼을 활성화하려면 앱 빌드 환경에 `EXPO_PUBLIC_KAKAO_CLIENT_ID`를 주입해야 한다.
 - Google 버튼을 활성화하려면 앱과 API에 `EXPO_PUBLIC_GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_ID`를 주입해야 한다.
 - Google ID Token 검증은 공식 규격의 두 issuer(`https://accounts.google.com`, `accounts.google.com`)를 모두 허용한다.
-- 네이버는 ID Token이 아닌 authorization code 교환 방식이므로 전용 서버 콜백·토큰 교환 API가 필요하다.
+- 네이버는 authorization code를 앱에서 받은 뒤 API 서버가 토큰 교환과 프로필 조회를 수행한다.
 
 ## 운영 환경변수
 
@@ -37,7 +37,7 @@ Apple 네이티브 capability와 config plugin은 `app.json`에 반영됐다. Ap
 현재 iOS 네이티브에서만 활성화한다. Android와 웹에서 Apple 로그인을 제공하려면
 별도의 웹 OAuth 흐름을 구현해야 한다.
 
-네이버는 `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`을 서버에만 두고, 모바일에서 받은 authorization code를 서버 콜백으로 교환하는 방식으로 별도 구현한다. 현재는 네이버를 실제 제공자 목록에 노출하지 않는다.
+네이버 실사용 설정은 서버에 `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`, `NAVER_REDIRECT_URIS`를 두고 모바일 EAS 환경에 `EXPO_PUBLIC_NAVER_CLIENT_ID`, `EXPO_PUBLIC_NAVER_REDIRECT_URI`를 둔다. `NAVER_CLIENT_SECRET`은 모바일이나 저장소에 넣지 않는다. Redirect URI는 네이버 Developers에 등록한 값과 세 환경값이 정확히 같아야 하며, 서버 허용목록에 없는 URI는 거부한다.
 
 ## 주의
 

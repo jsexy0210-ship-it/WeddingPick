@@ -3,13 +3,22 @@ import { z } from 'zod';
 import { idSchema, timestampSchema } from './common';
 
 /**
- * 로그인. 제공자가 발급한 OIDC id_token을 넘기면 서버가 제공자 공개키로 검증한다.
- * 서버는 제공자의 비밀키를 들고 있지 않는다.
+ * 로그인. OIDC 제공자는 id_token을 검증하고, 네이버는 일회용 인가 코드를 서버에서
+ * 교환한다. 네이버 client secret은 앱이 아니라 서버에만 둔다.
  */
-export const createSessionRequestSchema = z.object({
-  provider: z.enum(['apple', 'kakao', 'google', 'naver']),
-  idToken: z.string().min(1),
-});
+export const createSessionRequestSchema = z.union([
+  z.object({
+    provider: z.enum(['apple', 'kakao', 'google']),
+    idToken: z.string().min(1),
+  }),
+  z.object({
+    provider: z.literal('naver'),
+    authorizationCode: z.string().min(1),
+    state: z.string().min(1).max(512),
+    redirectUri: z.string().url().max(2048),
+    codeVerifier: z.string().min(43).max(128).optional(),
+  }),
+]);
 
 export const createSessionResponseSchema = z.object({
   /** 이후 모든 요청의 Authorization: Bearer <token>. 발급 시 한 번만 내려간다. */

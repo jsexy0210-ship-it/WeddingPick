@@ -182,12 +182,27 @@ export async function listAuthProviders(): Promise<AuthProvidersResponse> {
   return request('/v1/auth/providers', authProvidersResponseSchema, { auth: false });
 }
 
-export async function signIn(provider: 'apple' | 'kakao' | 'google' | 'naver', idToken: string): Promise<void> {
+export async function signIn(provider: 'apple' | 'kakao' | 'google', idToken: string): Promise<void> {
   const session = await request(
     '/v1/auth/sessions',
     createSessionResponseSchema,
     { method: 'POST', body: JSON.stringify({ provider, idToken }), auth: false }
   );
+
+  await saveToken(session.token);
+}
+
+export async function signInWithAuthorizationCode(input: {
+  authorizationCode: string;
+  state: string;
+  redirectUri: string;
+  codeVerifier?: string;
+}): Promise<void> {
+  const session = await request('/v1/auth/sessions', createSessionResponseSchema, {
+    method: 'POST',
+    body: JSON.stringify({ provider: 'naver', ...input }),
+    auth: false,
+  });
 
   await saveToken(session.token);
 }

@@ -11,6 +11,7 @@ import type { IdentityProvider } from './identity-provider';
  */
 export function createDevProvider(secret: string): IdentityProvider {
   return {
+    flow: 'id_token',
     isDevelopmentStandIn: true,
     async verify(idToken: string) {
       const separator = idToken.indexOf(':');

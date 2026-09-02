@@ -5,7 +5,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 
-import { listAuthProviders, signIn } from '@/api/client';
+import { listAuthProviders, signIn, signInWithAuthorizationCode } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { DEV_LOGIN_SECRET, devIdToken } from '@/features/auth/dev-login';
 
@@ -18,6 +18,8 @@ export const PROVIDER_LABEL = {
 
 const KAKAO_CLIENT_ID = process.env.EXPO_PUBLIC_KAKAO_CLIENT_ID;
 const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
+const NAVER_CLIENT_ID = process.env.EXPO_PUBLIC_NAVER_CLIENT_ID;
+const NAVER_REDIRECT_URI = process.env.EXPO_PUBLIC_NAVER_REDIRECT_URI;
 
 // 웹에서는 제공자가 redirect한 창을 닫고 원래 로그인 요청을 완료해야 한다.
 WebBrowser.maybeCompleteAuthSession();
@@ -67,8 +69,7 @@ export function canSignInWith(provider: AuthProvider): boolean {
     case 'google':
       return Boolean(GOOGLE_CLIENT_ID);
     case 'naver':
-      // authorization code를 교환할 서버 API가 생길 때까지 노출하지 않는다.
-      return false;
+      return Boolean(NAVER_CLIENT_ID && NAVER_REDIRECT_URI);
   }
 }
 
@@ -80,6 +81,7 @@ export function canSignInWith(provider: AuthProvider): boolean {
  */
 export async function signInWith(provider: AuthProvider): Promise<void> {
   if (provider.isDevelopmentStandIn) {
+    if (provider.provider === 'naver') throw new Error('네이버 개발용 로그인은 지원하지 않습니다.');
     await signIn(provider.provider, devIdToken());
     return;
   }
@@ -148,5 +150,29 @@ export async function signInWith(provider: AuthProvider): Promise<void> {
     return;
   }
 
-  throw new Error('네이버 로그인은 서버 OAuth 연동 후 사용할 수 있습니다.');
+  if (!NAVER_CLIENT_ID || !NAVER_REDIRECT_URI) {
+    throw new Error('네이버 로그인 설정이 아직 완료되지 않았습니다.');
+  }
+
+  const request = new AuthRequest({
+    clientId: NAVER_CLIENT_ID,
+    redirectUri: NAVER_REDIRECT_URI,
+    responseType: ResponseType.Code,
+    usePKCE: true,
+  });
+  const result = await request.promptAsync({
+    authorizationEndpoint: 'https://nid.naver.com/oauth2.0/authorize',
+  });
+
+  if (result.type !== 'success' || !result.params.code) {
+    if (result.type === 'cancel' || result.type === 'dismiss') return;
+    throw new Error('네이버 로그인에 실패했습니다. 다시 시도해 주세요.');
+  }
+
+  await signInWithAuthorizationCode({
+    authorizationCode: result.params.code,
+    state: result.params.state ?? request.state,
+    redirectUri: NAVER_REDIRECT_URI,
+    codeVerifier: request.codeVerifier,
+  });
 }

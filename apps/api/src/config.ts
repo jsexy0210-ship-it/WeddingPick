@@ -55,6 +55,8 @@ const configSchema = z.object({
   kakaoAppKey: z.string().optional(),
   googleClientId: z.string().optional(),
   naverClientId: z.string().optional(),
+  naverClientSecret: z.string().optional(),
+  naverRedirectUris: z.array(z.string().url()).default([]),
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -107,6 +109,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     kakaoAppKey: env.KAKAO_APP_KEY,
     googleClientId: env.GOOGLE_CLIENT_ID,
     naverClientId: env.NAVER_CLIENT_ID,
+    naverClientSecret: env.NAVER_CLIENT_SECRET,
+    naverRedirectUris: (env.NAVER_REDIRECT_URIS ?? '')
+      .split(',')
+      .map((uri) => uri.trim())
+      .filter(Boolean),
   });
 
   if (!parsed.success) {

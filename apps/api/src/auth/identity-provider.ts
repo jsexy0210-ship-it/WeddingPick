@@ -7,6 +7,13 @@ export type VerifiedIdentity = {
   email?: string;
 };
 
+export type AuthorizationCodeCredential = {
+  authorizationCode: string;
+  state: string;
+  redirectUri: string;
+  codeVerifier?: string;
+};
+
 export type IdentityProvider = {
   /**
    * 개발용 대체 경로인지. 실제 제공자 검증이 아니다.
@@ -15,8 +22,10 @@ export type IdentityProvider = {
    * 개발용 문을 열어두고 실제 로그인인 척하면, 그 빌드가 어디까지 나가는지 아무도 모른다.
    */
   isDevelopmentStandIn?: boolean;
-  verify(idToken: string): Promise<VerifiedIdentity>;
-};
+} & (
+  | { flow: 'id_token'; verify(idToken: string): Promise<VerifiedIdentity> }
+  | { flow: 'authorization_code'; verify(credential: AuthorizationCodeCredential): Promise<VerifiedIdentity> }
+);
 
 /**
  * OIDC id_token을 제공자의 공개키로 검증한다.
@@ -39,6 +48,7 @@ function createOidcProvider(options: {
   }
 
   return {
+    flow: 'id_token',
     async verify(idToken) {
       const { jwtVerify } = await import('jose');
       jwks ??= await loadJwks();
@@ -56,6 +66,65 @@ function createOidcProvider(options: {
         provider: options.provider,
         subject: payload.sub,
         email: typeof payload.email === 'string' ? payload.email : undefined,
+      };
+    },
+  };
+}
+
+export function createNaverProvider(options: {
+  clientId: string;
+  clientSecret: string;
+  allowedRedirectUris: string[];
+  fetchImpl?: typeof fetch;
+}): IdentityProvider {
+  const fetchImpl = options.fetchImpl ?? fetch;
+  const allowedRedirectUris = new Set(options.allowedRedirectUris);
+
+  return {
+    flow: 'authorization_code',
+    async verify(credential) {
+      if (!allowedRedirectUris.has(credential.redirectUri)) {
+        throw new Error('허용되지 않은 네이버 redirect URI다.');
+      }
+
+      const tokenBody = new URLSearchParams({
+        grant_type: 'authorization_code',
+        client_id: options.clientId,
+        client_secret: options.clientSecret,
+        code: credential.authorizationCode,
+        state: credential.state,
+      });
+      if (credential.codeVerifier) tokenBody.set('code_verifier', credential.codeVerifier);
+
+      const tokenResponse = await fetchImpl('https://nid.naver.com/oauth2/token', {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: tokenBody,
+      });
+      if (!tokenResponse.ok) throw new Error('네이버 토큰 교환에 실패했다.');
+
+      const token = (await tokenResponse.json()) as { access_token?: unknown };
+      if (typeof token.access_token !== 'string' || token.access_token.length === 0) {
+        throw new Error('네이버 access token이 없다.');
+      }
+
+      const profileResponse = await fetchImpl('https://openapi.naver.com/v1/nid/me', {
+        headers: { authorization: `Bearer ${token.access_token}` },
+      });
+      if (!profileResponse.ok) throw new Error('네이버 프로필 조회에 실패했다.');
+
+      const profile = (await profileResponse.json()) as {
+        resultcode?: unknown;
+        response?: { id?: unknown; email?: unknown };
+      };
+      if (profile.resultcode !== '00' || typeof profile.response?.id !== 'string') {
+        throw new Error('네이버 프로필 응답이 올바르지 않다.');
+      }
+
+      return {
+        provider: 'naver',
+        subject: profile.response.id,
+        email: typeof profile.response.email === 'string' ? profile.response.email : undefined,
       };
     },
   };
