@@ -10,6 +10,7 @@
     "ios": {
       "bundleIdentifier": "kr.weddingpick.app",
       "buildNumber": "2",
+      "usesAppleSignIn": true,
       "supportsTablet": false,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -35,6 +36,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-apple-authentication",
       [
         "expo-splash-screen",
         {

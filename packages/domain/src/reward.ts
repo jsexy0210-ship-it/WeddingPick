@@ -13,16 +13,23 @@ export const REWARDS = {
   referral: { amountKrw: 3_000, campaignLimit: 100 },
   /** 홍보인증. 공개 게시물 URL 자동검증이 기본(I-2). */
   promotion: { amountKrw: 2_000, perPerson: 1 },
+  /** 월간 웨딩지원금. 4개 미션 완료 후 자동 응모, 매월 2명 추첨(§31). */
+  monthly_draw: { amountKrw: 50_000, winnersPerMonth: 2 },
 } as const;
 
 export type RewardKind = keyof typeof REWARDS;
 
 /** 목록으로도 쓴다. 스키마가 열거하려면 배열이 필요하다. */
-export const REWARD_KINDS = ['referral', 'promotion'] as const satisfies readonly RewardKind[];
+export const REWARD_KINDS = [
+  'referral',
+  'promotion',
+  'monthly_draw',
+] as const satisfies readonly RewardKind[];
 
 export const REWARD_LABEL: Record<RewardKind, string> = {
   referral: '친구초대',
   promotion: '홍보인증',
+  monthly_draw: '웨딩지원금',
 };
 
 /**
@@ -209,7 +216,10 @@ export function decideGrant(input: {
 }): { status: Extract<RewardStatus, 'earned' | 'held'>; reasonCode: string } {
   if (input.suspectedAbuse) return { status: 'held', reasonCode: 'suspected_abuse' };
 
-  const limit = input.kind === 'referral' ? REWARDS.referral.campaignLimit : null;
+  const limit =
+    input.kind === 'referral'
+      ? REWARDS.referral.campaignLimit
+      : null;
 
   if (limit !== null && input.paidCountSoFar >= limit) {
     return { status: 'held', reasonCode: 'over_campaign_limit' };

@@ -1,4 +1,9 @@
-import { REFERRAL_CODE_LENGTH, REWARD_KINDS, REWARD_STATUSES } from '@weddingpick/domain';
+import {
+  MONTHLY_DRAW_STATUSES,
+  REFERRAL_CODE_LENGTH,
+  REWARD_KINDS,
+  REWARD_STATUSES,
+} from '@weddingpick/domain';
 import { z } from 'zod';
 
 import { idSchema, timestampSchema } from './common';
@@ -49,3 +54,20 @@ export type RewardGrant = z.infer<typeof rewardGrantSchema>;
 export type MyRewardsResponse = z.infer<typeof myRewardsResponseSchema>;
 export type RedeemReferralRequest = z.infer<typeof redeemReferralRequestSchema>;
 export type SubmitPromotionRequest = z.infer<typeof submitPromotionRequestSchema>;
+
+/**
+ * 월간 웨딩지원금 현황.
+ *
+ * 응모 여부·당첨 여부를 화면이 계산하지 않고 서버가 내려준다.
+ * 화면은 `status`에 따른 말만 고른다.
+ */
+export const myMonthlyDrawResponseSchema = z.object({
+  drawMonth: z.string(),
+  status: z.enum(MONTHLY_DRAW_STATUSES),
+  statusLabel: z.string(),
+  statusNote: z.string(),
+  amountKrw: z.int().positive(),
+  winnersPerMonth: z.int().positive(),
+});
+
+export type MyMonthlyDrawResponse = z.infer<typeof myMonthlyDrawResponseSchema>;

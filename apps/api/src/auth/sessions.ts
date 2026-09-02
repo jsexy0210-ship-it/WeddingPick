@@ -19,11 +19,15 @@ export type Session = {
  * 제공자가 확인해준 신원으로 계정을 찾거나 만들고 세션을 연다.
  *
  * 같은 사람이 다시 로그인하면 새 계정을 만들지 않는다 — (provider, subject)가 유일 키다.
+ *
+ * `operatorTtlDays`가 있으면 `is_operator`인 계정에 한해 그 기간을 쓴다.
+ * 운영자가 자주 로그인하지 않아도 세션이 유지되도록 한다.
  */
 export async function signIn(
   pool: Pool,
   identity: VerifiedIdentity,
-  ttlDays: number
+  ttlDays: number,
+  operatorTtlDays?: number
 ): Promise<Session> {
   const client = await pool.connect();
 
@@ -39,9 +43,14 @@ export async function signIn(
 
     if (userId) {
       await client.query(
-        `UPDATE identity.identities SET last_login_at = now(), email = COALESCE($3, email)
+        `UPDATE identity.identities SET
+           last_login_at = now(), email = COALESCE($3, email),
+           name = COALESCE($4, name), nickname = COALESCE($5, nickname),
+           profile_image_url = COALESCE($6, profile_image_url), gender = COALESCE($7, gender),
+           birthday = COALESCE($8, birthday), age_range = COALESCE($9, age_range),
+           birth_year = COALESCE($10, birth_year), mobile = COALESCE($11, mobile)
          WHERE provider = $1 AND subject = $2`,
-        [identity.provider, identity.subject, identity.email ?? null]
+        identityValues(identity)
       );
     } else {
       const created = await client.query<{ id: string }>(
@@ -50,14 +59,38 @@ export async function signIn(
       userId = created.rows[0]!.id;
 
       await client.query(
-        `INSERT INTO identity.identities (user_id, provider, subject, email)
-         VALUES ($1, $2, $3, $4)`,
-        [userId, identity.provider, identity.subject, identity.email ?? null]
+        `INSERT INTO identity.identities
+           (user_id, provider, subject, email, name, nickname, profile_image_url, gender,
+            birthday, age_range, birth_year, mobile)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+        [userId, ...identityValues(identity)]
       );
     }
 
+    const socialDisplayName = (identity.profile?.nickname ?? identity.profile?.name)?.trim();
+    if (socialDisplayName) {
+      await client.query(
+        `UPDATE structured.users
+         SET display_name = left($2, 5)
+         WHERE id = $1 AND display_name_user_set = false`,
+        [userId, socialDisplayName]
+      );
+    }
+
+    let effectiveTtlDays = ttlDays;
+
+    if (operatorTtlDays !== undefined) {
+      const { rows } = await client.query<{ is_operator: boolean }>(
+        'SELECT is_operator FROM structured.users WHERE id = $1',
+        [userId]
+      );
+      if (rows[0]?.is_operator) {
+        effectiveTtlDays = operatorTtlDays;
+      }
+    }
+
     const token = randomBytes(32).toString('base64url');
-    const expiresAt = new Date(Date.now() + ttlDays * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + effectiveTtlDays * 24 * 60 * 60 * 1000);
 
     await client.query(
       'INSERT INTO identity.sessions (user_id, token_hash, expires_at) VALUES ($1, $2, $3)',
@@ -73,6 +106,22 @@ export async function signIn(
   } finally {
     client.release();
   }
+}
+
+function identityValues(identity: VerifiedIdentity): Array<string | null> {
+  return [
+    identity.provider,
+    identity.subject,
+    identity.email ?? null,
+    identity.profile?.name ?? null,
+    identity.profile?.nickname ?? null,
+    identity.profile?.profileImageUrl ?? null,
+    identity.profile?.gender ?? null,
+    identity.profile?.birthday ?? null,
+    identity.profile?.ageRange ?? null,
+    identity.profile?.birthYear ?? null,
+    identity.profile?.mobile ?? null,
+  ];
 }
 
 /**

@@ -3,14 +3,22 @@ import {
   submitPromotionRequestSchema,
 } from '@weddingpick/api-contract';
 import {
+  MONTHLY_DRAW_AMOUNT_KRW,
+  MONTHLY_DRAW_STATUS_LABEL,
+  MONTHLY_DRAW_STATUS_NOTE,
+  MONTHLY_DRAW_WINNERS_PER_MONTH,
   REFERRAL_CODE_ALPHABET,
   REFERRAL_CODE_LENGTH,
   REWARD_LABEL,
   REWARD_STATUS_LABEL,
   REWARD_STATUS_NOTE,
+  allMissionsDone,
   checkPromotionUrl,
   checkRedeem,
+  drawMonthOf,
   isReferralCode,
+  type MembershipFacts,
+  type MonthlyDrawStatus,
   type RewardKind,
   type RewardStatus,
 } from '@weddingpick/domain';
@@ -115,6 +123,112 @@ export function registerRewardRoutes(app: FastifyInstance, context: AppContext):
         decisionNote: row.decision_note,
         createdAt: row.created_at.toISOString(),
       })),
+    };
+  });
+
+  /**
+   * 월간 웨딩지원금 현황.
+   *
+   * 4개 미션이 모두 완료됐으면 이번 달 응모 행을 만들고(없으면 upsert) 상태를 돌려준다.
+   * 미션이 안 됐으면 'not_entered'를 돌려준다.
+   *
+   * 당첨 여부는 reward_grants에서 확인한다 — 추첨은 사람이 하고 grant 행이 당첨 증거다.
+   */
+  app.get('/v1/me/monthly-draw', auth, async (request) => {
+    const userId = currentUserId(request);
+    const month = drawMonthOf(new Date());
+
+    // 미션 완료 여부를 확인한다.
+    const { rows: factRows } = await context.pool.query<{
+      wedding_set: boolean;
+      has_pick: boolean;
+      has_compared: boolean;
+      spouse_linked: boolean;
+    }>(
+      `SELECT
+         (w.wedding_date IS NOT NULL AND w.region IS NOT NULL) AS wedding_set,
+         EXISTS (
+           SELECT 1 FROM structured.vendor_candidates c WHERE c.wedding_id = w.id
+         ) AS has_pick,
+         EXISTS (
+           SELECT 1 FROM structured.comparisons x WHERE x.wedding_id = w.id
+         ) AS has_compared,
+         coalesce(w.owner_user_id IS NOT NULL AND w.partner_user_id IS NOT NULL, false)
+           AS spouse_linked
+       FROM structured.users u
+       LEFT JOIN LATERAL (
+         SELECT id, wedding_date, region, owner_user_id, partner_user_id
+         FROM structured.weddings
+         WHERE owner_user_id = u.id OR partner_user_id = u.id
+         ORDER BY created_at LIMIT 1
+       ) w ON true
+       WHERE u.id = $1`,
+      [userId]
+    );
+
+    const fr = factRows[0];
+    const facts: MembershipFacts = {
+      loggedIn: true,
+      weddingSet: fr?.wedding_set ?? false,
+      hasPick: fr?.has_pick ?? false,
+      hasCompared: fr?.has_compared ?? false,
+      spouseLinked: fr?.spouse_linked ?? false,
+      hasPaymentProof: false, // 이 판단에 불필요
+    };
+
+    if (!allMissionsDone(facts)) {
+      const status: MonthlyDrawStatus = 'not_entered';
+      return {
+        drawMonth: month,
+        status,
+        statusLabel: MONTHLY_DRAW_STATUS_LABEL[status],
+        statusNote: MONTHLY_DRAW_STATUS_NOTE[status],
+        amountKrw: MONTHLY_DRAW_AMOUNT_KRW,
+        winnersPerMonth: MONTHLY_DRAW_WINNERS_PER_MONTH,
+      };
+    }
+
+    // 미션 완료 — 이번 달 응모 행 upsert
+    const { rows: entryRows } = await context.pool.query<{ id: string }>(
+      `INSERT INTO structured.monthly_draw_entries (user_id, draw_month)
+       VALUES ($1, $2)
+       ON CONFLICT (user_id, draw_month) DO UPDATE SET draw_month = EXCLUDED.draw_month
+       RETURNING id`,
+      [userId, month]
+    );
+
+    const entryId = entryRows[0]!.id;
+
+    // 이번 달 당첨 여부 확인
+    const { rows: grantRows } = await context.pool.query<{ status: RewardStatus }>(
+      `SELECT g.status
+       FROM structured.reward_grants g
+       WHERE g.draw_entry_id = $1
+       LIMIT 1`,
+      [entryId]
+    );
+
+    const grantStatus = grantRows[0]?.status;
+    let status: MonthlyDrawStatus;
+
+    if (grantStatus === 'paid' || grantStatus === 'earned') {
+      status = 'won';
+    } else if (grantStatus === 'blocked') {
+      status = 'not_won';
+    } else if (grantStatus === 'held') {
+      status = 'pending';
+    } else {
+      // grant 행 없음 = 아직 발표 전
+      status = 'entered';
+    }
+
+    return {
+      drawMonth: month,
+      status,
+      statusLabel: MONTHLY_DRAW_STATUS_LABEL[status],
+      statusNote: MONTHLY_DRAW_STATUS_NOTE[status],
+      amountKrw: MONTHLY_DRAW_AMOUNT_KRW,
+      winnersPerMonth: MONTHLY_DRAW_WINNERS_PER_MONTH,
     };
   });
 

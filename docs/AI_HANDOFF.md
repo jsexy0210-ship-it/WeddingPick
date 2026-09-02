@@ -10,7 +10,7 @@
 - `updated_at`: 2026-09-02
 - `repository`: jsexy0210-ship-it/WeddingPickl
 - `branch (main)`: 4bae250
-- `policy_version`: 통합정책 v3.13
+- `policy_version`: 통합정책 v3.14
 - `dashboard`: https://claude.ai/code/artifact/a1307c11-f282-4cf2-a26d-e44bd083d7a9
 - `ios_handoff_artifact`: https://claude.ai/code/artifact/b8792fcd-fefe-4386-b24e-41d122e90a87
 - `screen_status_artifact`: https://claude.ai/code/artifact/b99277b7-3bdc-45dc-9614-a1310507df53
@@ -58,7 +58,7 @@
   PR #10의 구현으로 교체(PR #10 자체는 이미 이렇게 병합해뒀다).
 - `WITHDRAWAL_NOTICE`(§J-3)로 확정한 문구가 있다면 PR #10의 실제 탈퇴 화면 문구와
   맞는지 확인 — 서로 다른 문구가 화면에 남지 않게.
-- `docs/통합정책 v3.13`에 이 결정(자동삭제 유지, release-gate 폐기)을 반영할지 확인.
+- `docs/통합정책 v3.14`와 실제 탈퇴 구현의 정합성을 확인.
 
 ### 1. iOS EAS 빌드 수정 — 최우선
 **상태**: Release #1 ~ #10 전부 실패  
@@ -142,6 +142,29 @@ GitHub Actions 실제 실행 결과, production DB 적용.
 ### 프론트엔드 (session_01HTGSU2B4vFjePXFS2ajKBY) — 아카이브
 **완료**: 모바일 앱 핵심 화면 구현, 42개 라우터 파일 생성
 
+### 백엔드 갭 투입 (claude/backend-gaps-olvj3m, 이 세션, Sonnet 5)
+**완료:**
+- ✅ 취향(홈 C-1 시안 1) 서버 API 신설 — `GET`/`PUT /v1/me/taste`
+  (`packages/db/migrations/0059_taste_preferences.sql`,
+  `packages/api-contract/src/taste.ts`, `apps/api/src/routes/taste.ts`).
+  기존에는 `apps/mobile/src/features/home/taste.ts`가 서버에 자리가 없어
+  AsyncStorage에만 저장했다(기기를 바꾸면 다시 물었다) — 이제 로그인한 사용자의
+  취향이 서버에 남는다. 모바일 쪽(`loadTaste`/`saveTaste`)을 그 API를 부르도록
+  교체, 저장 실패는 조용히 넘어가게 유지(낙관적 갱신 유지).
+- 조사 방법: Explore 서브에이전트로 `apps/mobile/src/api/client.ts`의 ~83개
+  엔드포인트 호출을 `apps/api/src/routes/*`와 전수 대조 — 나머지는 전부 대응하는
+  라우트가 있었고, 이 취향 기능과 홈 개인화 피드(`listWeddingContent`, 아래 참고)
+  둘만 "프론트는 있는데 백엔드가 없는" 실제 갭이었다.
+- typecheck(api-contract/api/mobile) 통과, mobile lint 0 error(기존 무관 경고 1개
+  그대로), API 테스트 549개 전체·mobile 테스트 66개 전체 통과(로컬에 Postgres 16을
+  띄우고 `npm run migrate --workspace @weddingpick/db`로 0059까지 재현해 확인).
+
+**미착수(다음 사람 참고)**:
+- 홈 개인화 웨딩피드 — `apps/mobile/src/features/home/content.ts`의
+  `listWeddingContent()`가 `TODO`로 빈 배열만 반환. 계약에도 API에도 "콘텐츠"라는
+  개념이 아직 없다 — 무엇을 콘텐츠로 볼지(에디토리얼? 업체 추천 큐레이션?)부터
+  정책이 필요해 보여 손대지 않았다.
+
 ---
 
 ## 프론트엔드 화면 현황
@@ -218,7 +241,7 @@ WeddingPickl/
 │   ├── domain/              # 도메인 상수·정책 (terms.url, privacy.url 여기)
 │   └── ...
 ├── docs/
-│   ├── 통합정책 v3.13/      # 현재 확정 기준 정책
+│   ├── 통합정책 v3.14       # 현재 확정 기준 정책
 │   ├── design-handoff/      # 디자인 핸드오프 (IA 176화면)
 │   ├── AI_HANDOFF.md        # 이 파일
 │   └── 05-product-spec.md   # Phase 1 제품 스펙 (A-01~A-18)
@@ -229,7 +252,7 @@ WeddingPickl/
 
 ## 정책 문서 참조
 
-기준: `docs/통합정책 v3.13/`  
+기준: `docs/통합정책 v3.14`
 코드와 정책이 충돌하면 **정책이 맞다.** 코드를 고친다.
 
 주요 섹션:
@@ -353,7 +376,7 @@ WeddingPickl/
 - do_not_change:
   - **회원탈퇴 자동 삭제 백엔드를 만들지 말 것.** `packages/domain/src/withdrawal.ts`의 `WITHDRAWAL_NOTICE`가 개인정보처리방침 확정 전까지 `null`인 명시적 게이트다. 스키마상 `structured.users` 하드 삭제는 FK CASCADE로 확인된 정보(quotes)까지 지운다 — 위험. `payment_proofs`/`price_reports`를 "통계 제외"할지 "익명화 유지"할지도 정책 §46이 명확히 안 정했다. 이 정책들이 정해지기 전엔 손대지 말 것.
   - NPay·월간 웨딩지원금 기능을 만들지 말 것(위 미완료 항목 참조, 개인정보 처리방침과 함께 정리해야 함).
-  - 소셜 로그인 관련 파일(`identity-provider.ts`, `config.ts`, `client.ts` 등)은 이번 세션에서 커밋됐지만, **네이버는 아직 실제 제공자 목록에 노출 안 함** — 서버 콜백·토큰 교환 API가 따로 필요하다(`docs/social-login-handoff.md` 참조). 임의로 노출시키지 말 것.
+  - 네이버 authorization code 교환과 프로필 조회 경로가 구현됐다. 서버와 앱 환경값 및 네이버 Developers callback URL이 모두 설정된 경우에만 노출한다(`docs/social-login-handoff.md` 참조).
   - `docs/design-handoff/seed/`는 원본 그대로 유지 — 화면 구현할 때 이 폴더 안의 `.dc.html` 파일을 직접 고치지 않는다(참고용 원본).
 
 ## 롤백
