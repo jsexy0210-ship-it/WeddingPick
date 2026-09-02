@@ -8,6 +8,7 @@ import type { PoolClient } from 'pg';
 
 import { loadConfig } from './config';
 import { createPool, withTransaction } from './db';
+import { requireOperator } from './decisions';
 import { notify } from './notify';
 
 /**
@@ -213,7 +214,7 @@ async function main(): Promise<void> {
   }
 }
 
-async function moveStatus(
+export async function moveStatus(
   pool: ReturnType<typeof createPool>,
   inquiryId: string,
   to: InquiryStatus,
@@ -224,6 +225,8 @@ async function moveStatus(
   alsoListPlanner = false
 ): Promise<void> {
   await withTransaction(pool, async (client) => {
+    await requireOperator(client, by);
+
     const { rows } = await client.query<{
       status: InquiryStatus;
       category: InquiryCategory;
@@ -307,7 +310,15 @@ async function moveStatus(
   });
 }
 
-main().catch((error: Error) => {
-  console.error(error.message);
-  process.exitCode = 1;
-});
+/*
+ * CLI로 직접 실행했을 때만 돈다. 테스트가 이 파일에서 함수를 가져오면(require)
+ * `require.main`이 테스트 러너를 가리키므로 여기 걸리지 않는다 — 안 걸리면
+ * 테스트마다 실제 커넥션 풀을 만들고 빈 인자로 main()이 돌며 exitCode를
+ * 조용히 오염시킨다.
+ */
+if (require.main === module) {
+  void main().catch((error: Error) => {
+    console.error(error.message);
+    process.exitCode = 1;
+  });
+}

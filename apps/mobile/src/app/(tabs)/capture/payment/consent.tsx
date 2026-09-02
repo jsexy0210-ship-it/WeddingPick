@@ -186,5 +186,6 @@ const styles = StyleSheet.create({
     marginTop: 1,
     flexShrink: 0,
   },
-  checkmark: { color: '#fff', lineHeight: 16, fontSize: 13 },
+  // 글자 크기·줄높이는 ThemedText type="small"(t7 토큰)이 이미 정한다. 색만 얹는다.
+  checkmark: { color: '#fff' },
 });

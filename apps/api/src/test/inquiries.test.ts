@@ -56,7 +56,7 @@ describeWithDb('문의 창구', () => {
 
     const body = (await submit(headers, { category: 'other', body: '문의합니다' })).json();
 
-    expect(body.acknowledgement).toContain('아직 정하지 못했습니다');
+    expect(body.acknowledgement).toContain('아직 정하지 못했어요');
     expect(body.acknowledgement).not.toMatch(/\d+일 안에/);
   });
 

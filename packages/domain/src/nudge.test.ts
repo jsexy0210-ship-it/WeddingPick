@@ -130,7 +130,7 @@ describe('가격 변동 알림', () => {
       priceChangeNudge({
         vendorId: 'v1',
         vendorName: '가온예식홀',
-        caption: '결제인증 3건 · 아직 데이터가 적어요',
+        caption: '결제인증 3건 · 아직 정보가 적어요',
         today: '2026-08-29',
         appeared,
       }).title;

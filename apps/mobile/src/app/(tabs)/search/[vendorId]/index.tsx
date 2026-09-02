@@ -1,12 +1,13 @@
 import type { ConditionStats, Review, VendorDetail } from '@weddingpick/api-contract';
 import {
   DOCUMENT_TYPE_LABEL,
+  manwon,
   MAX_RATING,
   PAYMENT_PROOF_CAVEAT,
-  VENDOR_CATEGORY_LABEL,
-  manwon,
   TERMS,
   rangeLabel,
+  STILL_COLLECTING,
+  VENDOR_CATEGORY_LABEL,
   withParticle,
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -136,7 +137,7 @@ export default function VendorDetailScreen() {
             {vendor.prices.paidPrice.stage === 'collecting' ? (
               <ThemedView type="backgroundElement" style={styles.card}>
                 <ThemedText type="t5" themeColor="textSecondary">
-                  데이터를 모으는 중이에요
+                  {STILL_COLLECTING}
                 </ThemedText>
                 <ThemedText type="t7" themeColor="textSecondary">
                   {vendor.prices.paidPrice.caption}

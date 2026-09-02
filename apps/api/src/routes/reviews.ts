@@ -5,6 +5,7 @@ import {
 } from '@weddingpick/api-contract';
 import {
   MINIMUM_BODY_LENGTH,
+  PACKAGE_ROLE_LABEL,
   REPORT_REASONS,
   REPORT_REASON_LABEL,
   REVIEWER_ROLES,
@@ -94,6 +95,50 @@ type AuthorVerification = {
   paymentProofId: string | null;
   verifiedBy: string | null;
 };
+
+/**
+ * 같은 패키지로 함께 계약한 다른 업체. 사업계획서 19번.
+ *
+ * 스튜디오·드레스·메이크업을 한 평점으로 합치지 않으려면 셋을 각자 물어야 한다.
+ * 이 사람이 이 업체를 계약한 견적(`quote_sub_vendors`)에서 **같은 견적에 함께
+ * 묶인 다른 업체**를 찾는다. 아직 후기를 안 쓴 곳만 담는다 — 이미 썼으면 다시
+ * 물을 이유가 없다.
+ */
+async function packageSiblingsFor(
+  pool: Pool,
+  userId: string,
+  vendorId: string
+): Promise<{ vendorId: string; vendorName: string; roleLabel: string }[]> {
+  const { rows } = await pool.query<{
+    vendor_id: string;
+    vendor_name: string;
+    role: keyof typeof PACKAGE_ROLE_LABEL;
+  }>(
+    `SELECT DISTINCT ON (sibling.vendor_id)
+            sibling.vendor_id, v.name AS vendor_name, sibling.role
+     FROM structured.quote_sub_vendors mine
+     JOIN structured.quotes q ON q.id = mine.quote_id
+     JOIN structured.weddings w ON w.id = q.wedding_id
+     JOIN structured.quote_sub_vendors sibling ON sibling.quote_id = mine.quote_id
+     JOIN structured.vendors v ON v.id = sibling.vendor_id
+     WHERE mine.vendor_id = $2
+       AND (w.owner_user_id = $1 OR w.partner_user_id = $1)
+       AND sibling.vendor_id IS NOT NULL
+       AND sibling.vendor_id <> $2
+       AND NOT EXISTS (
+         SELECT 1 FROM structured.reviews r
+         WHERE r.vendor_id = sibling.vendor_id AND r.author_user_id = $1
+       )
+     ORDER BY sibling.vendor_id, q.created_at DESC`,
+    [userId, vendorId]
+  );
+
+  return rows.map((row) => ({
+    vendorId: row.vendor_id,
+    vendorName: row.vendor_name,
+    roleLabel: PACKAGE_ROLE_LABEL[row.role],
+  }));
+}
 
 async function verificationForAuthor(
   pool: Pool,
@@ -236,6 +281,7 @@ export function registerReviewRoutes(app: FastifyInstance, context: AppContext):
         [vendor.id, userId]
       );
 
+      const packageSiblings = await packageSiblingsFor(context.pool, userId, vendor.id);
       const mode = evaluationModeFor(vendor.category);
 
       return {
@@ -267,6 +313,7 @@ export function registerReviewRoutes(app: FastifyInstance, context: AppContext):
         },
         alreadyWritten: written.rows.length > 0,
         minimumBodyLength: MINIMUM_BODY_LENGTH,
+        packageSiblings,
       };
     }
   );
@@ -612,6 +659,80 @@ export function registerReviewRoutes(app: FastifyInstance, context: AppContext):
       });
 
       // COMMIT이 끝난 뒤에 보낸다.
+      return reply.status(204).send();
+    }
+  );
+
+  /**
+   * 후기 삭제.
+   *
+   * 한 사람이 한 업체에 하나라, 지우는 길이 없으면 **다시 쓸 수도 없다.** 고치는
+   * 길(PUT)만 있고 지우는 길이 없어 지금까지는 문의 창구로 와야 했다.
+   *
+   * 실제로 지운다. 내려두는 것(`removed`)은 운영자가 하는 일이고, 그건 "우리가 이
+   * 글을 안 보이게 했다"는 뜻이다 — 작성자가 자기 글을 거둔 것과 다른 사실이라
+   * 같은 상태로 적으면 안 된다.
+   *
+   * **확인 중인 글은 지울 수 없다.** 고치기와 같은 규칙이다(0034) — 사람이 내린
+   * 임시조치는 법적 분쟁 중이라는 뜻이고, 그때 작성자가 지우면 다투던 자료가
+   * 사라진다. 규칙이 가린 것(`auto_hidden_at`)은 지울 수 있다.
+   */
+  app.delete<{ Params: { reviewId: string } }>(
+    '/v1/reviews/:reviewId',
+    auth,
+    async (request, reply) => {
+      const userId = currentUserId(request);
+
+      await withTransaction(context.pool, async (client) => {
+        const { rows } = await client.query<{
+          status: string;
+          auto_hidden_at: Date | null;
+          vendor_name: string;
+          rebuttal_by: string | null;
+        }>(
+          `SELECT r.status, r.auto_hidden_at, v.name AS vendor_name,
+                  b.submitted_by_user_id AS rebuttal_by
+           FROM structured.reviews r
+           JOIN structured.vendors v ON v.id = r.vendor_id
+           LEFT JOIN structured.review_rebuttals b
+             ON b.review_id = r.id AND b.status = 'published'
+           WHERE r.id = $1 AND r.author_user_id = $2
+           FOR UPDATE OF r`,
+          [request.params.reviewId, userId]
+        );
+
+        const found = rows[0];
+
+        // 남의 글과 없는 글이 같은 답을 받는다. 다르면 남의 글 id를 알아낼 수 있다.
+        if (!found) throw notFound('후기');
+
+        if (found.status === 'under_objection' && found.auto_hidden_at === null) {
+          throw new ApiError(
+            'conflict',
+            '확인 중인 후기는 지울 수 없습니다. 결과를 알려드리겠습니다.'
+          );
+        }
+
+        /*
+         * 실려 있던 반론은 후기와 함께 사라진다(CASCADE). 그 사람에게는 자기 글이
+         * 어느 날 없어진 것이므로, 없어졌다는 사실은 알려야 한다. 누가 지웠는지는
+         * 적지 않는다 — 작성자가 누구인지는 그 사람이 알 일이 아니다.
+         */
+        if (found.rebuttal_by) {
+          await notify(client, {
+            userId: found.rebuttal_by,
+            kind: 'rebuttal',
+            title: '반론을 달았던 후기가 사라졌어요',
+            body: `${found.vendor_name}에 대한 그 후기가 지워져서 반론도 함께 내려갔어요.`,
+            targetId: null,
+          });
+        }
+
+        await client.query('DELETE FROM structured.reviews WHERE id = $1', [
+          request.params.reviewId,
+        ]);
+      });
+
       return reply.status(204).send();
     }
   );

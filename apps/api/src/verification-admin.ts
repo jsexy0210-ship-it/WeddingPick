@@ -17,6 +17,7 @@ import type { PoolClient } from 'pg';
 
 import { loadConfig } from './config';
 import { createPool, withTransaction } from './db';
+import { requireOperator } from './decisions';
 import { notify } from './notify';
 
 /**
@@ -334,13 +335,15 @@ async function startReview(
  * 문서 등급이 다른 경로로 올랐을 수 있고, 승인은 이 자료를 다른 사람이 보는
  * 중앙값에 넣는 일이라 되돌리기 어렵다.
  */
-async function approve(
+export async function approve(
   pool: ReturnType<typeof createPool>,
   id: string,
   by: string,
   note: string | null
 ): Promise<void> {
   await withTransaction(pool, async (client) => {
+    await requireOperator(client, by);
+
     const found = await lock(client, id);
 
     if (found.status === 'approved' || found.status === 'rejected') {
@@ -387,13 +390,15 @@ async function approve(
   console.log('승인했다. 문서 등급이 올랐고, 이제 가격 비교에 쓰인다.');
 }
 
-async function reject(
+export async function reject(
   pool: ReturnType<typeof createPool>,
   id: string,
   by: string,
   reason: string
 ): Promise<void> {
   await withTransaction(pool, async (client) => {
+    await requireOperator(client, by);
+
     const found = await lock(client, id);
 
     if (found.status === 'approved' || found.status === 'rejected') {
@@ -472,7 +477,15 @@ async function logEvent(
   );
 }
 
-main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exitCode = 1;
-});
+/*
+ * CLI로 직접 실행했을 때만 돈다. 테스트가 이 파일에서 함수를 가져오면(require)
+ * `require.main`이 테스트 러너를 가리키므로 여기 걸리지 않는다 — 안 걸리면
+ * 테스트마다 실제 커넥션 풀을 만들고 빈 인자로 main()이 돌며 exitCode를
+ * 조용히 오염시킨다.
+ */
+if (require.main === module) {
+  void main().catch((error: unknown) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  });
+}

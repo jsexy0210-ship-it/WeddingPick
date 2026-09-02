@@ -1,18 +1,20 @@
 import type {
   CandidateListResponse,
   CurrentUser,
-  ExpenseSummaryResponse,
-  WeddingTaskListResponse,
+  VendorSummary,
 } from '@weddingpick/api-contract';
 import {
   COMPLETED_ACTIONS,
   EXPENSE_BUCKET_COLOR,
+  hasUnread,
   topPriority,
   formatTaskDate,
   greeting,
   lifecycle,
-  showsPreparationFirst,
-  type ExpenseBucket,
+  MANY_CONFIRMED,
+  TERMS,
+  VENDOR_CATEGORY_LABEL,
+  type VendorCategory,
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -21,11 +23,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   getCurrentUser,
-  getDataUnlock,
-  getExpenses,
   getNotificationSummary,
   listCandidates,
-  listWeddingTasks,
+  searchVendors,
 } from '@/api/client';
 import {
   ActionButton,
@@ -37,98 +37,122 @@ import {
   ThemedView,
   useTheme,
 } from '@weddingpick/ui';
+import { Board, FoldedBoard } from '@/features/home/board';
+import { listWeddingContent, type WeddingContentItem } from '@/features/home/content';
 import { HomeSkeleton } from '@/features/home/home-skeleton';
-import { homePriorityItems } from '@/features/home/priority';
+import { homeView, nextUpCategory, type HomeView } from '@/features/home/state';
 import {
-  HOME_SECTIONS,
-  isVisible,
-  loadHomeLayout,
-  type HomeLayout,
-  type HomeSection,
-} from '@/features/home/sections';
-import { won } from '@/features/quotes/quote-result-view';
+  hasTaste,
+  loadTaste,
+  saveTaste,
+  toggleTaste,
+  type Taste,
+} from '@/features/home/taste';
+import { TastePicker } from '@/features/home/taste-picker';
+import { TodaysPick } from '@/features/home/todays-pick';
+import { VendorList } from '@/features/home/vendor-list';
+import { WeddingContent } from '@/features/home/wedding-content';
 
 /**
- * 홈. 디자인 핸드오프 5번.
+ * 홈. 디자인 확정본 `웨딩픽 홈 C-1 상태`.
  *
- * **D-Day와 다음 일정은 고정이다.** 나머지 다섯 섹션은 순서를 바꾸고 숨길 수
- * 있다(홈 편집) — 오늘 무엇을 해야 하는지가 홈의 이유라, 그 둘까지 숨길 수 있게
- * 두면 홈이 빈 화면이 될 수 있다.
+ * **모든 상태가 상황 → 추천 → 근거 → Pick 한 흐름을 따른다.** 상황은 D-day와
+ * 현황판, 추천은 오늘의 Pick, 근거는 그 안의 금액 줄, 행동은 비교 하나다. 가격
+ * TOP3처럼 오늘의 Pick과 경쟁하는 영역은 두지 않는다 — 확정 단계에서 없앤 자리다.
  *
- * **빈 상태에서 레이아웃을 바꾸지 않는다.** 핸드오프가 명시한 규칙이다 — 값만
- * 0이나 —로 두고 자리는 지킨다. 자료가 없다고 다른 화면으로 갈아끼우면, 자료가
- * 생겼을 때 사용자는 처음 보는 화면을 만나게 된다.
+ * **섹션 순서는 고정이다.** 이전 홈에는 사용자가 순서를 바꾸는 «홈 편집»이
+ * 있었는데, C-1은 위계 자체가 설계라서 순서를 바꾸면 «지금 할 일»이 아래로
+ * 내려갈 수 있다. `home-edit` 화면 파일은 남아 있지만 홈에서 들어가는 길은 없다.
+ *
+ * 여섯 시안이 어떻게 다섯 상태로 접히는지는 `features/home/state.ts`에 적어 뒀다.
  */
+
 type HomeData = {
   me: CurrentUser | null;
-  tasks: WeddingTaskListResponse | null;
-  expenses: ExpenseSummaryResponse | null;
   candidates: CandidateListResponse | null;
-  /** 조건이 비슷한 사례를 이미 볼 수 있는가. 그러면 그걸 권하는 카드를 접는다. */
-  deepData: boolean;
-  /** 안 읽은 알림 수. 벨의 빨간 점이 이 값을 본다. */
+  /** 오늘의 Pick 자리에 올릴 세 곳. 지목받은 업종에서 확인된 정보가 많은 순. */
+  recommended: readonly VendorSummary[];
+  /** 많이 확인된 곳. 비회원 홈의 본문이기도 하다. */
+  popular: readonly VendorSummary[];
+  content: readonly WeddingContentItem[];
+  /** 안 읽은 알림 수. 벨의 점이 이 값을 본다. */
   unread: number;
 };
 
 const EMPTY: HomeData = {
   me: null,
-  tasks: null,
-  expenses: null,
   candidates: null,
-  deepData: false,
+  recommended: [],
+  popular: [],
+  content: [],
   unread: 0,
 };
 
+/** 오늘의 Pick에 세우는 곳의 수. 셋을 넘기면 한 줄에 들어가지 않는다. */
+const PICK_COUNT = 3;
+/** 많이 확인된 곳에 세우는 줄 수. */
+const POPULAR_COUNT = 4;
+
 export default function HomeScreen() {
-  const theme = useTheme();
-  const [layout, setLayout] = useState<HomeLayout | null>(null);
   const [data, setData] = useState<HomeData>(EMPTY);
+  const [taste, setTaste] = useState<readonly Taste[]>([]);
   /*
-   * 한 번이라도 받아왔는가. **자료가 없는 것과 아직 모르는 것은 다르다** —
-   * 앞은 "일정을 등록해보세요"이고 뒤는 스켈레톤이다. 하나로 뭉치면 로그인 안 한
-   * 사람에게 영원히 스켈레톤이 돈다.
+   * 한 번이라도 받아왔는가. **자료가 없는 것과 아직 모르는 것은 다르다** — 앞은
+   * 비회원 홈이고 뒤는 스켈레톤이다. 하나로 뭉치면 로그인 안 한 사람에게 영원히
+   * 스켈레톤이 돈다.
    */
   const [settled, setSettled] = useState(false);
 
   const load = useCallback(() => {
-    void loadHomeLayout().then(setLayout);
+    void loadTaste().then(setTaste);
 
     /*
-     * 하나가 실패해도 나머지는 보여준다. 로그인 안 한 사람은 넷 다 실패하는데,
-     * 그때도 홈은 떠야 한다 — 게스트가 보는 화면이기도 하다.
+     * 하나가 실패해도 나머지는 보여준다. 로그인 안 한 사람은 개인화 자료가 전부
+     * 실패하는데, 그때도 홈은 떠야 한다 — 비회원이 보는 화면이기도 하다.
      */
-    void getCurrentUser()
-      .then(async (me) => {
-        setData((current) => ({ ...current, me }));
+    void (async () => {
+      const [popular, content] = await Promise.all([
+        searchVendors({ sort: 'data' })
+          .then((page) => page.vendors.slice(0, POPULAR_COUNT))
+          .catch(() => []),
+        listWeddingContent().catch(() => []),
+      ]);
 
-        /*
-         * 알림은 웨딩이 없어도 온다 — 문의 답변처럼 웨딩과 상관없는 것이 있다.
-         * 그래서 웨딩 자료보다 먼저, 따로 받는다.
-         */
-        const notifications = await getNotificationSummary().catch(() => null);
+      setData((current) => ({ ...current, popular, content }));
 
-        setData((current) => ({ ...current, unread: notifications?.unread ?? 0 }));
+      const me = await getCurrentUser().catch(() => null);
 
-        if (!me.weddingId) return;
+      if (me === null) {
+        setData((current) => ({ ...current, me: null }));
 
-        const [tasks, expenses, candidates, unlock] = await Promise.all([
-          listWeddingTasks(me.weddingId).catch(() => null),
-          getExpenses(me.weddingId).catch(() => null),
-          listCandidates(me.weddingId).catch(() => null),
-          getDataUnlock().catch(() => null),
-        ]);
+        return;
+      }
 
-        setData((current) => ({
-          ...current,
-          tasks,
-          expenses,
-          candidates,
-          deepData: unlock?.deepData ?? false,
-        }));
+      const notifications = await getNotificationSummary().catch(() => null);
 
+      setData((current) => ({ ...current, me, unread: notifications?.unread ?? 0 }));
+
+      if (me.weddingId === null) return;
+
+      const candidates = await listCandidates(me.weddingId).catch(() => null);
+
+      setData((current) => ({ ...current, candidates }));
+
+      /*
+       * 추천은 후보 목록이 지목한 업종에서 가져온다. 업종을 모르면 부르지 않는다 —
+       * 아무 업종에서나 세 곳을 뽑아 «오늘의 Pick»이라고 부를 수는 없다.
+       */
+      if (candidates?.nextCategory == null) return;
+
+      const recommended = await searchVendors({
+        category: candidates.nextCategory,
+        sort: 'data',
       })
-      .catch(() => setData(EMPTY))
-      .finally(() => setSettled(true));
+        .then((page) => page.vendors.slice(0, PICK_COUNT))
+        .catch(() => []);
+
+      setData((current) => ({ ...current, recommended }));
+    })().finally(() => setSettled(true));
   }, []);
 
   useEffect(load, [load]);
@@ -138,379 +162,467 @@ export default function HomeScreen() {
     return <HomeSkeleton />;
   }
 
-  /*
-   * 홈 대표 자리에 무엇을 둘지. 순서는 도메인이, 후보는 화면이 만든다 —
-   * 못 재는 종류는 후보로 만들어지지 않아 여기 올라올 길이 없다.
-   */
-  const priority = topPriority(homePriorityItems(data));
-  /*
-   * 저장하지 않고 계산한다 — 아무 일도 없어도 시간이 지나면 바뀌는 값이다.
-   *
-   * v3.5의 일곱 단계를 쓴다. 예식이 지나도 앱이 할 말을 잃지 않는다.
-   */
-  const stage = lifecycle(data.me?.weddingDate ?? null);
+  const view = homeView({
+    me: data.me,
+    candidates: data.candidates,
+    recommended: data.recommended,
+    tasteChosen: hasTaste(taste),
+  });
 
-  const sections: Record<HomeSection, React.ReactNode> = {
-    quickMenu: (
-      <ThemedView key="quickMenu" style={styles.section}>
-        <ThemedView style={styles.quickRow}>
-          <Quick label="지출내역" onPress={() => go(data.me, 'expenses')} />
-          <Quick label="업체비교" onPress={() => router.push('/search')} />
-          <Quick label="웨딩 스케줄" onPress={() => go(data.me, 'tasks')} />
-          <Quick label="방문노트" onPress={() => go(data.me, 'visit-notes')} />
-        </ThemedView>
-      </ThemedView>
-    ),
+  const onToggleTaste = (picked: Taste) => {
+    const next = toggleTaste(taste, picked);
 
-    tasks: (
-      <ThemedView key="tasks" style={styles.section}>
-        <ThemedView style={styles.sectionHead}>
-          <ThemedText type="t4">웨딩 스케줄</ThemedText>
-          <ActionButton label="전체보기" onPress={() => go(data.me, 'tasks')} />
-        </ThemedView>
-
-        {/* 자료가 없어도 자리는 지킨다. 값만 0으로 둔다. */}
-        <ThemedText type="t7" themeColor="textSecondary">
-          준비 {data.tasks?.progress.done ?? 0} / {data.tasks?.progress.total ?? 0} 완료
-        </ThemedText>
-
-        <View style={[styles.track, { backgroundColor: theme.track }]}>
-          <View
-            style={{
-              flex: data.tasks?.progress.done ?? 0,
-              backgroundColor: theme.tint,
-            }}
-          />
-          <View
-            style={{
-              flex: Math.max(
-                0,
-                (data.tasks?.progress.total ?? 1) - (data.tasks?.progress.done ?? 0)
-              ),
-            }}
-          />
-        </View>
-
-        {(data.tasks?.tasks ?? []).slice(0, 4).map((task) => (
-          <ThemedView key={task.id} style={styles.taskRow}>
-            <ThemedText type="t7" themeColor="textAssistive" style={styles.taskDate}>
-              {task.dueDate ? formatTaskDate(task.dueDate) : '미정'}
-            </ThemedText>
-            <ThemedText type="t6" style={styles.grow}>
-              {task.label}
-            </ThemedText>
-            <ThemedText type="badge" themeColor={task.state === 'done' ? 'positive' : 'tint'}>
-              {task.stateLabel}
-            </ThemedText>
-          </ThemedView>
-        ))}
-      </ThemedView>
-    ),
-
-    expenses: (
-      <ThemedView key="expenses" style={styles.section}>
-        <ThemedText type="t7" themeColor="textSecondary">
-          지금까지 쓴 금액
-        </ThemedText>
-        <ThemedText type="amount" numeric>
-          {won(data.expenses?.paidTotal ?? 0)}
-        </ThemedText>
-
-        <View style={styles.bar}>
-          {(data.expenses?.buckets ?? []).map((bucket) => (
-            <View
-              key={bucket.bucket}
-              style={{
-                flex: bucket.ratio,
-                backgroundColor: theme[EXPENSE_BUCKET_COLOR[bucket.bucket as ExpenseBucket].bar],
-              }}
-            />
-          ))}
-          {/* 빈 상태도 막대가 있다. 회색 한 칸으로 둔다. */}
-          {!data.expenses || data.expenses.paidTotal === 0 ? (
-            <View style={{ flex: 1, backgroundColor: theme.chartMuted }} />
-          ) : null}
-        </View>
-
-        <ThemedView style={styles.legendRow}>
-          {(data.expenses?.buckets ?? []).map((bucket) => (
-            <ThemedView key={bucket.bucket} style={styles.legendItem}>
-              <View
-                style={[
-                  styles.dot,
-                  {
-                    backgroundColor:
-                      theme[EXPENSE_BUCKET_COLOR[bucket.bucket as ExpenseBucket].bar],
-                  },
-                ]}
-              />
-              <ThemedText type="t7" themeColor="textSecondary">
-                {bucket.label}
-              </ThemedText>
-              <ThemedText type="t7" numeric>
-                {won(bucket.amount)}
-              </ThemedText>
-            </ThemedView>
-          ))}
-        </ThemedView>
-
-        <ThemedView style={styles.cardRow}>
-          <ThemedView type="backgroundElement" style={[styles.card, styles.grow]}>
-            <ThemedText type="t7" themeColor="textSecondary">
-              앞으로 낼 금액
-            </ThemedText>
-            <ThemedText type="t5" numeric>
-              {/* 없으면 0원이 아니라 —다. 0원은 "낼 것이 없다"로 읽힌다. */}
-              {data.expenses && data.expenses.scheduledTotal > 0
-                ? won(data.expenses.scheduledTotal)
-                : '—'}
-            </ThemedText>
-          </ThemedView>
-          <ThemedView type="backgroundElement" style={[styles.card, styles.grow]}>
-            <ThemedText type="t7" themeColor="textSecondary">
-              잔여 예산
-            </ThemedText>
-            <ThemedText type="t5" numeric>
-              {data.expenses?.budget.set ? won(data.expenses.budget.remaining) : '—'}
-            </ThemedText>
-          </ThemedView>
-        </ThemedView>
-
-        {data.expenses && data.expenses.scheduledTotal > 0 ? (
-          <ThemedText type="t7" themeColor="textAssistive">
-            {data.expenses.scheduledNote}
-          </ThemedText>
-        ) : null}
-      </ThemedView>
-    ),
-
-    candidates: (
-      <ThemedView key="candidates" style={styles.section}>
-        <ThemedView style={styles.sectionHead}>
-          <ThemedText type="t4">Pick한 곳</ThemedText>
-          <ActionButton label="비교하기" onPress={() => go(data.me, 'candidates')} />
-        </ThemedView>
-
-        {(data.candidates?.total ?? 0) === 0 ? (
-          <ThemedText type="t7" themeColor="textSecondary">
-            아직 담아둔 곳이 없어요
-          </ThemedText>
-        ) : (
-          (data.candidates?.groups ?? []).flatMap((group) =>
-            group.candidates.slice(0, 3).map((candidate) => (
-              <ThemedView key={candidate.id} style={styles.taskRow}>
-                <ThemedText type="t6" style={styles.grow}>
-                  {candidate.vendorName}
-                </ThemedText>
-                <ThemedText type="t7" themeColor="textAssistive">
-                  {group.categoryLabel}
-                </ThemedText>
-              </ThemedView>
-            ))
-          )
-        )}
-        {(data.candidates?.total ?? 0) > 0 ? (
-          <ActionButton label="전체보기" onPress={() => router.push('/pick')} />
-        ) : null}
-      </ThemedView>
-    ),
-
-    unlock: (
-      <ThemedView key="unlock" style={[styles.unlock, { backgroundColor: theme.tint }]}>
-        <ThemedText type="t4" style={styles.onTint}>
-          같은 조건인데 얼마나 차이 날까요?
-        </ThemedText>
-        <ThemedText type="t7" style={styles.onTint}>
-          Pick 인증을 마치시면 조건이 비슷한 사례를 함께 보실 수 있어요
-        </ThemedText>
-        <ActionButton label="제보하기" onPress={() => router.push('/capture')} />
-      </ThemedView>
-    ),
+    setTaste(next);
+    void saveTaste(next);
   };
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.content}>
-          {/* 벨. 안 읽은 것이 있으면 점이 뜬다 — 판단은 도메인 함수 하나가 한다. */}
-          <ThemedView style={styles.bellRow}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={
-                data.unread > 0
-                  ? `알림 ${data.unread}건`
-                  : '알림'
-              }
-              onPress={() => router.push('/my/notifications')}
-              style={styles.bell}>
-              <ThemedText type="t4">🔔</ThemedText>
-              {data.unread > 0 ? (
-                <View style={[styles.bellDot, { backgroundColor: theme.negative }]} />
-              ) : null}
-            </Pressable>
-          </ThemedView>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <Header
+          guest={view.state === 'guest'}
+          unread={data.unread}
+          onPressBell={() => router.push('/my/notifications')}
+          onPressSignIn={() => router.push('/login')}
+        />
 
-          {/*
-            고정 1 — Hero.
-
-            상태 문구 한 줄 + 제목 두 줄. v3.1 §3이 정한 모양이고, v3.4가 상태
-            문구를 남은 기간에 따라 바꾸라고 정했다 — 300일 남은 사람에게
-            `두근두근`은 아무 뜻도 없다.
-
-            예식이 지나도 이 자리를 비우지 않는다(v3.5 §4). 다만 지난 날을 세는
-            카운터로 두지 않는다 — `stage.note`가 단계에 맞는 말을 들고 온다.
-          */}
-          <ThemedView style={styles.headline}>
-            {data.me?.weddingDate ? (
-              <>
-                <ThemedText type="t7" themeColor="tint">
-                  {stage.mood}
-                </ThemedText>
-                <ThemedText type="t2">{greeting(data.me.displayName)}</ThemedText>
-                <ThemedText type="t2">{stage.note}</ThemedText>
-              </>
-            ) : (
-              <>
-                <ThemedText type="t2">웨딩픽에</ThemedText>
-                <ThemedText type="t2">오신 것을 환영해요</ThemedText>
-              </>
-            )}
-          </ThemedView>
-
-          {/*
-            고정 2 — 지금 할 일. Priority Engine이 고른 하나(v3.10 §3).
-
-            여러 개를 늘어놓지 않는다. 홈에서 무엇부터 할지 정해주는 것이 이 자리의
-            일이라, 세 장을 나란히 두면 정해주지 않은 것과 같아진다.
-
-            예식이 끝났으면 그 자리에 마무리할 것을 둔다. **계정을 제한하지
-            않는다**(원문 34번) — 아래 섹션은 그대로 뜨고, 여기 있는 것은 막는
-            목록이 아니라 권하는 목록이다.
-          */}
-          {!showsPreparationFirst(stage.stage) ? (
-            <ThemedView type="backgroundElement" style={styles.card}>
-              {COMPLETED_ACTIONS.map((action) => (
-                <ThemedView key={action.key} type="backgroundElement" style={styles.completedRow}>
-                  <ThemedText type="t5">{action.title}</ThemedText>
-                  <ThemedText type="t7" themeColor="textSecondary">
-                    {action.description}
-                  </ThemedText>
-                </ThemedView>
-              ))}
-            </ThemedView>
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          {view.state === 'guest' ? (
+            <GuestHome popular={data.popular} content={data.content} />
           ) : (
-            <ThemedView type="backgroundElement" style={styles.card}>
-              {priority ? (
-                <>
-                  <ThemedText type="t7" themeColor="tint">
-                    지금 할 일
-                  </ThemedText>
-                  <ThemedText type="t5">{priority.title}</ThemedText>
-                  {priority.detail ? (
-                    <ThemedText type="t7" themeColor="textSecondary">
-                      {priority.detail}
-                    </ThemedText>
-                  ) : null}
-                  <ActionButton
-                    label={priority.actionLabel}
-                    onPress={() => router.push(priority.action as never)}
-                  />
-                </>
-              ) : (
-                <ThemedText type="t6" themeColor="textSecondary">
-                  일정을 등록해보세요
-                </ThemedText>
-              )}
-            </ThemedView>
+            <MemberHome
+              me={data.me}
+              candidates={data.candidates}
+              recommended={data.recommended}
+              popular={data.popular}
+              content={data.content}
+              view={view}
+              taste={taste}
+              onToggleTaste={onToggleTaste}
+            />
           )}
-
-          {/*
-            가격 TOP3 섹션은 홈에 두지 않는다(홈 C-1). 오늘의 Pick과 경쟁하는
-            자리라, 둘을 나란히 두면 홈이 무엇을 권하는 화면인지 흐려진다.
-            TOP3 성격의 탐색은 검색 탭에 있다.
-          */}
-
-          {(layout?.order ?? HOME_SECTIONS)
-            .filter((section) => (layout ? isVisible(layout, section) : true))
-            /*
-             * 이미 볼 수 있는 사람에게 "등록하시면 보실 수 있어요"라고 하지 않는다.
-             * 숨기기와 다른 일이다 — 숨기기는 사용자가 정하고, 이건 사실이 정한다.
-             */
-            .filter((section) => section !== 'unlock' || !data.deepData)
-            .map((section) => sections[section])}
-
-          <ActionButton label="홈 편집" onPress={() => router.push('/home-edit')} />
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
   );
 }
 
-/** 웨딩이 없으면 우리웨딩 탭으로 보낸다 — 거기서 만들어준다. */
-function go(me: CurrentUser | null, section: string) {
-  router.push(me?.weddingId ? `/wedding/${me.weddingId}/${section}` : '/wedding');
+/* ------------------------------------------------------------------ 비회원 */
+
+/**
+ * 비회원 홈.
+ *
+ * **개인화를 하나도 꺼내지 않는다.** 이름·D-day·진행률·현황판·추천 이유를 모두
+ * 숨긴다 — 아는 것이 없는데 아는 척하면 앱이 갑자기 점쟁이가 된다. 대신 조건 없이
+ * 보여줄 수 있는 확인된 정보가 본문이 되고, 로그인은 막지 않고 위에서 권한다.
+ */
+function GuestHome({
+  popular,
+  content,
+}: {
+  popular: readonly VendorSummary[];
+  content: readonly WeddingContentItem[];
+}) {
+  const theme = useTheme();
+
+  return (
+    <>
+      <ThemedView style={styles.hero}>
+        <ThemedText type="t1">결혼 준비,{'\n'}어디서부터 볼까요?</ThemedText>
+        <ThemedText type="t6" themeColor="textSecondary" numberOfLines={1}>
+          {TERMS.verifiedData}부터 비교해보세요
+        </ThemedText>
+      </ThemedView>
+
+      {/*
+        업종 입구. 시안에는 칸마다 «확인된 정보 N건»이 붙어 있지만 그 숫자를 낼
+        API가 아직 없어 적지 않았다 — 근거 없는 숫자를 화면에 올리지 않는다.
+      */}
+      <ThemedView style={styles.block}>
+        <ThemedView style={styles.grid}>
+          {CATEGORY_ENTRIES.map((category) => (
+            <Pressable
+              key={category}
+              accessibilityRole="button"
+              onPress={() => router.push(`/search?category=${category}`)}
+              style={({ pressed }) => [
+                styles.entry,
+                { backgroundColor: theme.backgroundElement },
+                pressed && styles.pressed,
+              ]}>
+              <ThemedText type="t5" numberOfLines={1}>
+                {VENDOR_CATEGORY_LABEL[category]}
+              </ThemedText>
+            </Pressable>
+          ))}
+        </ThemedView>
+      </ThemedView>
+
+      <Section title={MANY_CONFIRMED}>
+        <VendorList vendors={popular} onPressVendor={openVendor} />
+      </Section>
+
+      <Band />
+
+      <ContentSection title="웨딩 정보" items={content} />
+    </>
+  );
 }
 
-function Quick({ label, onPress }: { label: string; onPress: () => void }) {
+/** 비회원에게 여는 업종. 초기에 실제로 자료가 모이는 넷이다. */
+const CATEGORY_ENTRIES: readonly VendorCategory[] = ['hall', 'sdm', 'snap', 'planner_agency'];
+
+/* -------------------------------------------------------------------- 회원 */
+
+function MemberHome({
+  me,
+  candidates,
+  recommended,
+  popular,
+  content,
+  view,
+  taste,
+  onToggleTaste,
+}: {
+  me: CurrentUser | null;
+  candidates: CandidateListResponse | null;
+  recommended: readonly VendorSummary[];
+  popular: readonly VendorSummary[];
+  content: readonly WeddingContentItem[];
+  view: HomeView;
+  taste: readonly Taste[];
+  onToggleTaste: (taste: Taste) => void;
+}) {
+  /*
+   * 남은 기간에 맞는 상태 문구를 도메인이 고른다. 시안은 «두근두근»으로 그려져
+   * 있지만 그건 예시 하나이고, 정책 v3.4가 300일 남은 사람에게 그 말은 아무 뜻도
+   * 없다고 정했다 — 문구는 `lifecycle`이 정한다.
+   */
+  const stage = lifecycle(me?.weddingDate ?? null);
+  const groups = candidates?.groups ?? [];
+  const focusGroup = groups.find((group) => group.category === view.focus) ?? null;
+  const upNext = nextUpCategory(groups, view.focus);
+  const decided = groups.filter((group) => group.decidedVendorId !== null);
+
   return (
-    <ThemedView style={styles.quick}>
-      <ActionButton label={label} onPress={onPress} />
+    <>
+      <ThemedView style={styles.hero}>
+        <ThemedView style={styles.who}>
+          <Avatar name={me?.displayName ?? null} />
+          <ThemedText type="t6" themeColor="textSecondary" numberOfLines={1}>
+            {me?.displayName ?? '우리'}
+            {me?.spouseLinked === true ? ' · 함께 준비 중' : ''}
+          </ThemedText>
+        </ThemedView>
+        <ThemedText type="t1">
+          {stage.mood}
+          {'\n'}
+          {stage.note}
+        </ThemedText>
+      </ThemedView>
+
+      {/* 상황 — 현황판. 채울 것이 없으면 격자를 접고 한 줄로 대신한다. */}
+      <ThemedView style={styles.block}>
+        {view.board === 'grid' ? (
+          <Board
+            groups={groups}
+            focus={view.focus}
+            onPressCategory={(category) => router.push(`/pick?category=${category}`)}
+          />
+        ) : (
+          <FoldedBoard onPress={() => router.push('/pick')} />
+        )}
+      </ThemedView>
+
+      {view.state === 'taste' ? (
+        /* 추천이 아직 성립하지 않는다. 그 자리를 취향 고르기가 대신한다. */
+        <Section title="어떤 결혼식을 원하세요?">
+          <TastePicker chosen={taste} onToggle={onToggleTaste} />
+          <ActionButton
+            label="취향 고르고 추천받기"
+            variant="primary"
+            size="xlarge"
+            disabled={taste.length === 0}
+            onPress={() => router.push('/search')}
+          />
+        </Section>
+      ) : (
+        /* 추천 — 오늘의 Pick. 근거와 행동이 이 안에 함께 있다. */
+        <ThemedView style={styles.block}>
+          <TodaysPick
+            categoryLabel={focusGroup?.categoryLabel ?? null}
+            vendors={recommended}
+            comparable={view.comparable}
+            onPressVendor={openVendor}
+            onCompare={() => router.push('/search/compare')}
+            onReport={() => router.push('/capture')}
+          />
+        </ThemedView>
+      )}
+
+      <Band />
+
+      {view.state === 'taste' ? (
+        <>
+          <Section title={TERMS.verifiedData}>
+            <VendorList vendors={popular} onPressVendor={openVendor} />
+          </Section>
+          {/*
+            금액이 아직 안 나오는 곳이 섞여 있을 때만 그 까닭을 적는다. 전부 금액이
+            있는데도 «수집 중»을 설명하면 없는 문제를 만들어 보여주는 셈이다.
+          */}
+          {popular.some((row) => row.paidPrice.stage === 'collecting') ? (
+            <ThemedView style={styles.block}>
+              <ThemedView type="backgroundElement" style={styles.note}>
+                <ThemedText type="t5">정보 수집 중</ThemedText>
+                <ThemedText type="body" themeColor="textSecondary">
+                  정보가 더 모이면 금액 범위를 보여드려요
+                </ThemedText>
+              </ThemedView>
+            </ThemedView>
+          ) : null}
+        </>
+      ) : view.showsDecided ? (
+        /* 정한 곳은 카드가 아니라 한 줄로 내려간다 — 이미 끝난 일이다. */
+        <Section title="정한 곳">
+          <ThemedView style={styles.decidedList}>
+            {decided.map((group) => (
+              <ThemedView key={group.category} style={styles.decidedRow}>
+                <ThemedText type="t6" themeColor="textSecondary" style={styles.decidedCategory}>
+                  {group.categoryLabel}
+                </ThemedText>
+                <ThemedText type="t5" numberOfLines={1} style={styles.grow}>
+                  {group.candidates.find((row) => row.vendorId === group.decidedVendorId)
+                    ?.vendorName ?? '결정 완료'}
+                </ThemedText>
+              </ThemedView>
+            ))}
+          </ThemedView>
+        </Section>
+      ) : upNext === null ? null : (
+        <Section title="다음 준비">
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push(`/pick?category=${upNext.category}`)}
+            style={({ pressed }) => [styles.nextRow, pressed && styles.pressed]}>
+            <ThemedText type="t5" numberOfLines={1} style={styles.grow}>
+              {upNext.categoryLabel}
+            </ThemedText>
+            <ThemedText type="t6" themeColor="textAssistive">
+              ›
+            </ThemedText>
+          </Pressable>
+        </Section>
+      )}
+
+      {view.state === 'taste' ? null : (
+        <>
+          <Band />
+          <ContentSection
+            title={me?.spouseLinked === true ? '두 분을 위한 웨딩 정보' : '웨딩 정보'}
+            items={content}
+          />
+        </>
+      )}
+    </>
+  );
+}
+
+/* ---------------------------------------------------------------- 공통 조각 */
+
+function Header({
+  guest,
+  unread,
+  onPressBell,
+  onPressSignIn,
+}: {
+  guest: boolean;
+  unread: number;
+  onPressBell: () => void;
+  onPressSignIn: () => void;
+}) {
+  const theme = useTheme();
+
+  return (
+    <ThemedView style={styles.header}>
+      <ThemedText type="t4">웨딩픽</ThemedText>
+
+      {guest ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={onPressSignIn}
+          style={({ pressed }) => [
+            styles.signIn,
+            { backgroundColor: theme.backgroundSelected },
+            pressed && styles.pressed,
+          ]}>
+          <ThemedText type="t7" themeColor="textSecondary" style={styles.signInLabel}>
+            로그인
+          </ThemedText>
+        </Pressable>
+      ) : (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={
+            hasUnread({ unread, total: unread }) ? `알림 ${unread}건` : '알림'
+          }
+          onPress={onPressBell}
+          style={styles.bell}>
+          <ThemedText type="t4">🔔</ThemedText>
+          {/* 개수를 적지 않는다. 세는 것이 목적이 아니다. */}
+          {hasUnread({ unread, total: unread }) ? (
+            <View style={[styles.bellDot, { backgroundColor: theme.negative }]} />
+          ) : null}
+        </Pressable>
+      )}
     </ThemedView>
   );
 }
 
+/**
+ * 섹션 — 제목 한 줄 → 콘텐츠 → 행동.
+ *
+ * **서브카피를 쓰지 않는다.** 제목 아래 설명 줄을 두면 화면마다 높이가 달라지고,
+ * 대개는 제목이 이미 한 말을 되풀이한다.
+ */
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <ThemedView style={styles.block}>
+      <ThemedView style={styles.section}>
+        <ThemedText type="t4">{title}</ThemedText>
+        {children}
+      </ThemedView>
+    </ThemedView>
+  );
+}
+
+/** 콘텐츠가 없으면 섹션째 접는다 — 빈 자리를 제목으로 알리지 않는다. */
+function ContentSection({
+  title,
+  items,
+}: {
+  title: string;
+  items: readonly WeddingContentItem[];
+}) {
+  if (items.length === 0) return null;
+
+  return (
+    <Section title={title}>
+      <WeddingContent items={items} onPressItem={(id) => router.push(`/search?content=${id}`)} />
+    </Section>
+  );
+}
+
+/** 섹션을 가르는 회색 밴드. 그림자 대신 이것으로 구획한다. */
+function Band() {
+  const theme = useTheme();
+
+  return <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} />;
+}
+
+function Avatar({ name }: { name: string | null }) {
+  const theme = useTheme();
+
+  return (
+    <View
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={[styles.avatar, { backgroundColor: theme.tintSubtle }]}>
+      <ThemedText type="t7" themeColor="tint" style={styles.avatarLabel}>
+        {(name ?? '웨').slice(0, 1)}
+      </ThemedText>
+    </View>
+  );
+}
+
+function openVendor(vendorId: string) {
+  router.push(`/search/${vendorId}`);
+}
+
 const styles = StyleSheet.create({
-  completedRow: {
-    gap: Spacing.one,
-    paddingVertical: Spacing.two,
-  },
-  bellRow: {
+  container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
+  safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
+
+  header: {
+    height: Layout.navBar,
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingLeft: Layout.gutter,
+    paddingRight: 20,
   },
+  signIn: {
+    height: 34,
+    paddingHorizontal: 14,
+    borderRadius: Radius.small,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  signInLabel: { fontWeight: 700 },
   bell: {
     minWidth: Layout.touchTarget,
     minHeight: Layout.touchTarget,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  /** 개수를 적지 않는다. 핸드오프가 점 하나로 정했다 — 세는 것이 목적이 아니다. */
-  bellDot: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    width: 8,
-    height: 8,
-    borderRadius: Radius.pill,
-  },
-  container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
-  safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
-  content: {
+  bellDot: { position: 'absolute', top: 6, right: 6, width: 8, height: 8, borderRadius: Radius.pill },
+
+  /*
+   * 가로 여백을 여기 두지 않는다. 회색 밴드가 화면 끝까지 닿아야 해서, 거터는
+   * 섹션마다 준다.
+   */
+  content: { paddingBottom: Spacing.six },
+
+  hero: {
     paddingHorizontal: Layout.gutter,
-    paddingTop: Spacing.five,
-    paddingBottom: Spacing.six,
-    gap: Spacing.four,
+    paddingTop: 20,
+    paddingBottom: Layout.gutter,
+    gap: 10,
   },
-  headline: { gap: 0 },
-  section: { gap: Spacing.two },
-  sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  quickRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  quick: { flexGrow: 1, minWidth: 140 },
-  track: { flexDirection: 'row', height: 8, borderRadius: Radius.pill, overflow: 'hidden' },
-  bar: { flexDirection: 'row', height: 8, borderRadius: Radius.pill, overflow: 'hidden' },
-  legendRow: { gap: Spacing.one },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  dot: { width: 8, height: 8, borderRadius: Radius.pill },
-  taskRow: {
+  who: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  avatar: {
+    width: 26,
+    height: 26,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarLabel: { fontWeight: 700 },
+
+  block: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionGap },
+  section: { gap: Layout.sectionHeadGap },
+  band: { height: Layout.sectionBand, marginBottom: Layout.sectionGap },
+
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 11 },
+  entry: {
+    flexBasis: '48%',
+    flexGrow: 1,
+    minWidth: 0,
+    minHeight: Layout.rowMinHeight,
+    borderRadius: Radius.card,
+    padding: Spacing.three,
+    justifyContent: 'center',
+  },
+  pressed: { opacity: 0.8 },
+
+  note: { borderRadius: Radius.card, padding: 20, gap: Spacing.two },
+
+  decidedList: { gap: 2 },
+  decidedRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
+    gap: Spacing.three - 4,
     minHeight: Layout.rowMinHeight,
+    paddingVertical: 12,
   },
-  taskDate: { width: 56 },
-  grow: { flex: 1 },
-  cardRow: { flexDirection: 'row', gap: Spacing.two },
-  card: { borderRadius: Radius.medium, padding: Spacing.three, gap: Spacing.one },
-  unlock: { borderRadius: Radius.card, padding: Layout.gutter, gap: Spacing.two },
-  onTint: { color: '#ffffff' },
+  decidedCategory: { width: 76 },
+  grow: { flex: 1, minWidth: 0 },
+
+  nextRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three - 4,
+    minHeight: Layout.rowMinHeight,
+    paddingHorizontal: 2,
+  },
 });

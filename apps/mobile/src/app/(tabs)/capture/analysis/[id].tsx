@@ -1,3 +1,4 @@
+import { CALL_BLOCKED_NOTICE } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 
@@ -11,6 +12,8 @@ const FAILURE_MESSAGE = {
   unreadable: '글씨를 읽지 못했어요. 밝은 곳에서 문서가 화면에 꽉 차게 다시 찍어주세요.',
   not_a_document: '금액이 적힌 자료로 보이지 않아요. 다른 자료를 올려주세요.',
   internal: '분석에 실패했어요. 잠시 후 다시 시도해주세요.',
+  // 고장이 아니라 지금 부를 수 없는 것이다. 다시 시도하라고 하지 않는다.
+  unavailable: CALL_BLOCKED_NOTICE,
 } as const;
 
 /** A-06 분석 중. 끝나면 결과로 넘어간다. */

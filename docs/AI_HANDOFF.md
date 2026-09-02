@@ -40,6 +40,26 @@
 
 ## 🚨 사용자 직접 조치 필요 (Claude 불가)
 
+### 0. 회원탈퇴 정책 — 최종 확정: 자동삭제 + 운영자 개입 (2026-09-02, 사용자 결정)
+**상태**: 해결됨. main의 `release-gate.ts`/`withdrawalReady()` 게이트 방식은 채택하지
+않는다.
+
+사용자가 두 세션의 다른 구현(main의 정책 확정 전 기능 잠금 vs PR #10의 자동파기+
+운영자 개입)을 확인한 뒤 직접 결정했다 — *"회원탈퇴 정책, 자동삭제+운영자개입 쪽으로
+최종 확정할게."*
+
+**확정된 구현**(PR #10, `claude/daily-progress-briefing-3k7lez`): 자동파기 유지 +
+운영자 조회·HOLD·RESUME·RETRY·감사로그(`packages/domain/src/withdrawal.ts`,
+`apps/api/src/withdrawal-admin.ts`, 마이그레이션 0055·0058).
+
+**PR #10을 병합하는 세션이 할 일**:
+- main의 `packages/domain/src/withdrawal.ts`(release-gate 버전)와
+  `packages/domain/src/release-gate.ts`의 `withdrawalReady()` 의존을 걷어내고
+  PR #10의 구현으로 교체(PR #10 자체는 이미 이렇게 병합해뒀다).
+- `WITHDRAWAL_NOTICE`(§J-3)로 확정한 문구가 있다면 PR #10의 실제 탈퇴 화면 문구와
+  맞는지 확인 — 서로 다른 문구가 화면에 남지 않게.
+- `docs/통합정책 v3.13`에 이 결정(자동삭제 유지, release-gate 폐기)을 반영할지 확인.
+
 ### 1. iOS EAS 빌드 수정 — 최우선
 **상태**: Release #1 ~ #10 전부 실패  
 **근본 원인**: ASC API Key `62U8N2ZWJR`가 expo.dev에 미등록
@@ -68,6 +88,14 @@ DATABASE_URL=<neon-connection-string> pnpm db:migrate
 ```
 적용 대상: `0052_mission_draw.sql` (미션 완료 추적 + 월간 웨딩지원금 추첨 스키마)
 
+**⚠️ 이 파일 그대로는 실행이 안 된다.** `ALTER TYPE reward_kind ADD VALUE 'monthly_draw'`를
+같은 트랜잭션 안에서 바로 쓰는 CHECK 제약(`grant_source_matches_kind`)이 있어
+Postgres가 "unsafe use of new value of enum type"으로 매번 실패한다(빈 DB에서
+직접 재현·확인함). PR #10 브랜치에서 0052를 두 부분으로 나누고, 값을 더하는 것과
+쓰는 것을 각각 새 마이그레이션(`0053_reward_kind_monthly_draw.sql`,
+`0054_grant_source_matches_kind.sql`)으로 분리해 고쳤다 — main에 병합되지 않은
+채로는 그대로 적용해도 실패한다.
+
 ### 4. 앱스토어 출시 블로커 — terms.url / privacy.url
 `assertReleasable('production')`이 `terms.url` · `privacy.url` 미설정 시 throw → 앱스토어 출시 불가.  
 URL 확정 후 도메인 상수(`packages/domain/src/constants/policy.ts` 또는 유사 위치) 업데이트 필요.  
@@ -94,9 +122,22 @@ claude.ai Settings → Connectors → Gmail 연결 필요.
 - ✅ UX 정책 업데이트: J-3 탈퇴 화면, I-4 월간 웨딩지원금 (PR #8 포함)
 - ✅ 개발 현황 대시보드 생성 (artifact a1307c11)
 
-### 백엔드 관리 (session_01GcqCiteAfxQ5X6SaHDhbDq) — 실행 중 (Sonnet 5)
-**현황**: API 테스트 524개 통과, 마무리 중  
-**브랜치**: `claude/daily-progress-briefing-3k7lez`
+### 백엔드 관리 (session_01GcqCiteAfxQ5X6SaHDhbDq) — PR #10 병합 대기 (Sonnet 5)
+**완료:**
+- ✅ 최신 main(이 커밋 포함)을 브랜치에 병합, 충돌 21개 전부 해소
+- ✅ 회원탈퇴 운영자 개입(조회·HOLD·RESUME·RETRY, `withdrawal-admin.ts`) +
+  삭제 워커 트랜잭션 안전성(`FOR UPDATE`, 멱등) — 사용자 지시로 자동파기 유지 결정,
+  아래 «회원탈퇴 정책 충돌» 참고
+- ✅ 마이그레이션 0055~0058(회원탈퇴/AI라우터/이의만료/탈퇴관리자) — main의
+  0052_mission_draw.sql 뒤로 재번호
+- ✅ typecheck 7개 워크스페이스·lint 0 error·test 543개(API 기준, 전체 1537개) 전부 통과
+  — CI와 동일한 명령(typecheck/lint/test/export:web/build)을 로컬에서 재현해 확인함
+  (이 PR에서 GitHub Actions check-run이 뜨지 않아 — 원인 미확인 — 실제 워크플로 실행
+  결과는 **미검증**)
+
+**브랜치**: `claude/daily-progress-briefing-3k7lez` · **PR**: #10 (main ← 이 브랜치)
+**미검증**: 실제 배포·health check(Fly.io 크리덴셜 필요, PR 단계에서는 원래도 실행 안 됨),
+GitHub Actions 실제 실행 결과, production DB 적용.
 
 ### 프론트엔드 (session_01HTGSU2B4vFjePXFS2ajKBY) — 아카이브
 **완료**: 모바일 앱 핵심 화면 구현, 42개 라우터 파일 생성

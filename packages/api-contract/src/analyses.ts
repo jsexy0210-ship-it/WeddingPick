@@ -13,6 +13,13 @@ export const analysisFailureSchema = z.enum([
   'not_a_document',
   /** 서버 문제 — 사용자가 할 일은 재시도뿐 */
   'internal',
+  /**
+   * 지금은 부를 수 없다 — 예산 소진 또는 하루 한도.
+   *
+   * **고장과 다르다.** `internal`로 적으면 화면이 "다시 시도해주세요"라고 말하는데,
+   * 다시 시도해도 같은 결과다. 이유가 다르면 사용자가 할 수 있는 일도 다르다.
+   */
+  'unavailable',
 ]);
 
 export const analysisSchema = z.discriminatedUnion('status', [
