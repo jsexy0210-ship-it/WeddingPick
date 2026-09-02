@@ -7,7 +7,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   ActionButton,
+  ErrorView,
   Layout,
+  LoadingView,
   MaxContentWidth,
   Spacing,
   ThemedText,
@@ -15,6 +17,11 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import { listNotifications, readAllNotifications, readNotification } from '@/api/client';
+
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
+}
 
 /**
  * 알림을 눌렀을 때 어디로 가는가. 디자인 핸드오프 20번.
@@ -47,14 +54,18 @@ export default function NotificationsScreen() {
   const theme = useTheme();
   const [notifications, setNotifications] = useState<Notification[] | null>(null);
   const [unread, setUnread] = useState(0);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = useCallback(() => {
     void listNotifications()
       .then((response) => {
+        setLoadError(null);
         setNotifications(response.notifications);
         setUnread(response.unread);
       })
-      .catch(() => setNotifications([]));
+      .catch((caught: Error) =>
+        setLoadError(caught.message ?? '알림을 불러오지 못했어요.')
+      );
   }, []);
 
   useEffect(load, [load]);
@@ -99,6 +110,14 @@ export default function NotificationsScreen() {
       });
   }
 
+  if (loadError) {
+    return <ErrorView message={loadError} onBack={load} />;
+  }
+
+  if (notifications === null) {
+    return <LoadingView />;
+  }
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
@@ -110,13 +129,13 @@ export default function NotificationsScreen() {
             ) : null}
           </ThemedView>
 
-          {notifications !== null && notifications.length === 0 ? (
+          {notifications.length === 0 ? (
             <ThemedText type="t6" themeColor="textSecondary">
               {NOTIFICATIONS_EMPTY}
             </ThemedText>
           ) : null}
 
-          {(notifications ?? []).map((notification) => {
+          {notifications.map((notification) => {
             const read = notification.readAt !== null;
 
             return (
@@ -141,6 +160,9 @@ export default function NotificationsScreen() {
                 </ThemedText>
                 <ThemedText type="t6" themeColor={read ? 'textAssistive' : 'textSecondary'}>
                   {notification.body}
+                </ThemedText>
+                <ThemedText type="t7" themeColor="textAssistive">
+                  {formatDate(notification.createdAt)}
                 </ThemedText>
               </Pressable>
             );

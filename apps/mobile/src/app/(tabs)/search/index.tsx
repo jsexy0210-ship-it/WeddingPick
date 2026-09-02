@@ -497,6 +497,11 @@ export default function SearchScreen() {
                                 ? item.paidPrice.caption
                                 : `${rangeLabel(item.paidPrice.low, item.paidPrice.high)} · ${item.paidPrice.caption}`}
                             </ThemedText>
+                            {item.confirmedCount > 0 ? (
+                              <ThemedText type="t7" themeColor="textAssistive">
+                                확인된 계약 {item.confirmedCount}건
+                              </ThemedText>
+                            ) : null}
                           </ThemedView>
                         </Pressable>
                       ))}

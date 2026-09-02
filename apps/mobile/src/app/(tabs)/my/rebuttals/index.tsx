@@ -7,7 +7,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   ActionButton,
+  ErrorView,
   Layout,
+  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
@@ -26,14 +28,26 @@ import { listMyRebuttals, removeRebuttal } from '@/api/client';
 export default function MyRebuttalsScreen() {
   const theme = useTheme();
   const [rebuttals, setRebuttals] = useState<MyRebuttal[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = useCallback(() => {
     void listMyRebuttals()
-      .then((response) => setRebuttals(response.rebuttals))
-      .catch(() => setRebuttals([]));
+      .then((response) => {
+        setLoadError(null);
+        setRebuttals(response.rebuttals);
+      })
+      .catch((caught: Error) => setLoadError(caught.message ?? '반론 내역을 불러오지 못했어요.'));
   }, []);
 
   useEffect(load, [load]);
+
+  if (loadError) {
+    return <ErrorView message={loadError} onBack={load} />;
+  }
+
+  if (rebuttals === null) {
+    return <LoadingView />;
+  }
 
   function confirmRemove(rebuttal: MyRebuttal) {
     /*
@@ -64,14 +78,14 @@ export default function MyRebuttalsScreen() {
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedText type="t2">업체 반론</ThemedText>
 
-          {rebuttals !== null && rebuttals.length === 0 ? (
+          {rebuttals.length === 0 ? (
             <ThemedText type="t6" themeColor="textSecondary">
               아직 등록한 반론이 없어요. 반론은 답할 후기를 고른 뒤 그 후기 옆에서
               등록해주세요
             </ThemedText>
           ) : null}
 
-          {(rebuttals ?? []).map((rebuttal) => (
+          {rebuttals.map((rebuttal) => (
             <ThemedView key={rebuttal.id} type="backgroundElement" style={styles.card}>
               <ThemedView type="backgroundElement" style={styles.cardHead}>
                 <ThemedText type="t7" themeColor="textSecondary">

@@ -106,6 +106,12 @@ import {
   type VendorSearchResponse,
   type WeddingInviteListResponse,
   type VerificationRequest,
+  createPriceReportRequestSchema,
+  createPriceReportResponseSchema,
+  quoteListResponseSchema,
+  type CreatePriceReportRequest,
+  type CreatePriceReportResponse,
+  type QuoteListResponse,
   withdrawalNoticeSchema,
   withdrawalResultSchema,
   type WithdrawalNotice,
@@ -338,6 +344,28 @@ export async function createVerificationRequest(
 
 export async function getVerificationRequest(requestId: string): Promise<VerificationRequest> {
   return request(`/v1/verification-requests/${requestId}`, verificationRequestSchema);
+}
+
+export async function createPriceReport(
+  body: CreatePriceReportRequest
+): Promise<CreatePriceReportResponse> {
+  return request('/v1/price-reports', createPriceReportResponseSchema, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function listQuotes(
+  weddingId: string,
+  cursor?: string
+): Promise<QuoteListResponse> {
+  const params = new URLSearchParams();
+  if (cursor) params.set('cursor', cursor);
+  const qs = params.toString();
+  return request(
+    `/v1/weddings/${weddingId}/quotes${qs ? `?${qs}` : ''}`,
+    quoteListResponseSchema
+  );
 }
 
 /**
