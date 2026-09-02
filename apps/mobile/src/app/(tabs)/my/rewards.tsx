@@ -48,16 +48,17 @@ export default function MyRewardsScreen() {
   const [sending, setSending] = useState(false);
 
   const load = useCallback(() => {
-    setLoadError(null);
     void getMyRewards()
-      .then(setData)
+      .then((response) => {
+        setLoadError(null);
+        setData(response);
+      })
       .catch((caught: Error) => setLoadError(caught.message ?? '보상 정보를 불러오지 못했어요.'));
     void getMyMonthlyDraw()
       .then(setDraw)
       .catch(() => setDraw(null));
   }, []);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- 화면 진입 시 목록을 가져오는 정상적인 fetch-in-effect다. eslint-plugin-react-hooks 7.x가 이 패턴을 오탐지한다.
   useEffect(load, [load]);
 
   async function shareCode() {

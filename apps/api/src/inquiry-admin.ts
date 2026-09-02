@@ -115,18 +115,124 @@ async function listPlanner(client: PoolClient, plannerId: string): Promise<void>
   );
 }
 
+export type PendingInquiry = {
+  id: string;
+  category: InquiryCategory;
+  status: InquiryStatus;
+  receivedAt: Date;
+  subjectKind: string | null;
+  subjectId: string | null;
+};
+
+/** 처리 대기 문의 전부. 조회라 `requireOperator`를 부르지 않는다. */
+export async function list(pool: ReturnType<typeof createPool>): Promise<PendingInquiry[]> {
+  const { rows } = await pool.query<{
+    id: string;
+    category: InquiryCategory;
+    status: InquiryStatus;
+    received_at: Date;
+    subject_kind: string | null;
+    subject_id: string | null;
+  }>(
+    `SELECT id, category, status, received_at, subject_kind, subject_id
+     FROM structured.inquiries
+     WHERE status IN ('received', 'in_review')
+     ORDER BY received_at`
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    category: row.category,
+    status: row.status,
+    receivedAt: row.received_at,
+    subjectKind: row.subject_kind,
+    subjectId: row.subject_id,
+  }));
+}
+
+export type InquiryEvent = {
+  fromStatus: InquiryStatus | null;
+  toStatus: InquiryStatus;
+  note: string | null;
+  createdAt: Date;
+};
+
+export type InquiryDetail = {
+  id: string;
+  category: InquiryCategory;
+  status: InquiryStatus;
+  body: string;
+  contact: string | null;
+  receivedAt: Date;
+  subjectKind: string | null;
+  subjectId: string | null;
+  resolution: string | null;
+  events: InquiryEvent[];
+};
+
+/** 문의 하나의 상세. 조회라 `requireOperator`를 부르지 않는다. */
+export async function show(
+  pool: ReturnType<typeof createPool>,
+  id: string
+): Promise<InquiryDetail | null> {
+  const { rows } = await pool.query<{
+    id: string;
+    category: InquiryCategory;
+    status: InquiryStatus;
+    body: string;
+    contact: string | null;
+    received_at: Date;
+    subject_kind: string | null;
+    subject_id: string | null;
+    resolution: string | null;
+  }>(
+    `SELECT id, category, status, body, contact, received_at, subject_kind, subject_id,
+            decided_at, resolution
+     FROM structured.inquiries WHERE id = $1`,
+    [id]
+  );
+
+  const found = rows[0];
+
+  if (!found) return null;
+
+  const events = await pool.query<{
+    from_status: InquiryStatus | null;
+    to_status: InquiryStatus;
+    note: string | null;
+    created_at: Date;
+  }>(
+    `SELECT from_status, to_status, note, created_at
+     FROM structured.inquiry_events WHERE inquiry_id = $1 ORDER BY created_at`,
+    [id]
+  );
+
+  return {
+    id: found.id,
+    category: found.category,
+    status: found.status,
+    body: found.body,
+    contact: found.contact,
+    receivedAt: found.received_at,
+    subjectKind: found.subject_kind,
+    subjectId: found.subject_id,
+    resolution: found.resolution,
+    events: events.rows.map((event) => ({
+      fromStatus: event.from_status,
+      toStatus: event.to_status,
+      note: event.note,
+      createdAt: event.created_at,
+    })),
+  };
+}
+
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
   const pool = createPool(loadConfig().databaseUrl);
 
   try {
     if (options.list) {
-      const { rows } = await pool.query(
-        `SELECT id, category, status, received_at, subject_kind, subject_id
-         FROM structured.inquiries
-         WHERE status IN ('received', 'in_review')
-         ORDER BY received_at`
-      );
+      const rows = await list(pool);
 
       if (rows.length === 0) {
         console.log('처리할 문의가 없다.');
@@ -134,19 +240,23 @@ async function main(): Promise<void> {
       }
 
       console.log(`처리 대기 ${rows.length}건:`);
-      for (const row of rows) console.log(`  ${describe(row)}`);
+      for (const row of rows) {
+        console.log(
+          `  ${describe({
+            id: row.id,
+            category: row.category,
+            status: row.status,
+            received_at: row.receivedAt,
+            subject_kind: row.subjectKind,
+            subject_id: row.subjectId,
+          })}`
+        );
+      }
       return;
     }
 
     if (options.show) {
-      const { rows } = await pool.query(
-        `SELECT id, category, status, body, contact, received_at, subject_kind, subject_id,
-                decided_at, resolution
-         FROM structured.inquiries WHERE id = $1`,
-        [options.show]
-      );
-
-      const found = rows[0];
+      const found = await show(pool, options.show);
 
       if (!found) {
         console.error('없는 문의다.');
@@ -154,23 +264,26 @@ async function main(): Promise<void> {
         return;
       }
 
-      console.log(describe(found));
+      console.log(
+        describe({
+          id: found.id,
+          category: found.category,
+          status: found.status,
+          received_at: found.receivedAt,
+          subject_kind: found.subjectKind,
+          subject_id: found.subjectId,
+        })
+      );
       console.log(`  회신처: ${found.contact ?? '(앱으로 답한다)'}`);
       console.log(`  내용: ${found.body}`);
       if (found.resolution) console.log(`  처리: ${found.resolution}`);
 
-      const events = await pool.query(
-        `SELECT from_status, to_status, note, created_at
-         FROM structured.inquiry_events WHERE inquiry_id = $1 ORDER BY created_at`,
-        [options.show]
-      );
-
       // 서비스정책서 6-5: 처리 이력은 내부 로그로 보관한다.
       console.log('  이력:');
-      for (const event of events.rows) {
+      for (const event of found.events) {
         console.log(
-          `    ${event.created_at.toISOString().slice(0, 16).replace('T', ' ')} ` +
-            `${event.from_status ?? '접수'} → ${event.to_status}${event.note ? ` (${event.note})` : ''}`
+          `    ${event.createdAt.toISOString().slice(0, 16).replace('T', ' ')} ` +
+            `${event.fromStatus ?? '접수'} → ${event.toStatus}${event.note ? ` (${event.note})` : ''}`
         );
       }
 

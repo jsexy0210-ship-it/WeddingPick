@@ -57,9 +57,9 @@ export default function NotificationsScreen() {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    setLoadError(null);
     void listNotifications()
       .then((response) => {
+        setLoadError(null);
         setNotifications(response.notifications);
         setUnread(response.unread);
       })
@@ -68,7 +68,6 @@ export default function NotificationsScreen() {
       );
   }, []);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- 화면 진입 시 목록을 가져오는 정상적인 fetch-in-effect다. eslint-plugin-react-hooks 7.x가 이 패턴을 오탐지한다.
   useEffect(load, [load]);
 
   async function open(notification: Notification) {
