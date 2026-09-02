@@ -8,6 +8,7 @@ import { registerAdminAdRoutes } from './routes/admin-ads';
 import { registerAdminAiCostRoutes } from './routes/admin-ai-cost';
 import { registerAdminDecisionRoutes } from './routes/admin-decisions';
 import { registerAdminObjectionRoutes } from './routes/admin-objections';
+import { registerAdminRebuttalRoutes } from './routes/admin-rebuttals';
 import { registerAdminInquiryRoutes } from './routes/admin-inquiries';
 import { registerAdminPaymentProofRoutes } from './routes/admin-payment-proofs';
 import { registerAdminPiiRoutes } from './routes/admin-pii';
@@ -132,6 +133,7 @@ export function buildServer(context: AppContext): FastifyInstance {
   registerAdminAiCostRoutes(app, context);
   registerAdminDecisionRoutes(app, context);
   registerAdminObjectionRoutes(app, context);
+  registerAdminRebuttalRoutes(app, context);
 
   return app;
 }

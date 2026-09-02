@@ -57,6 +57,100 @@ function parseArgs(argv: string[]): Options {
 
 const when = (at: Date): string => at.toISOString().slice(0, 16).replace('T', ' ');
 
+export type PendingRebuttal = {
+  id: string;
+  claimedRole: string;
+  vendorName: string;
+  createdAt: Date;
+};
+
+/** 확인 대기 반론 전체. HTTP 관리자 콘솔과 CLI `--list`가 함께 쓴다. */
+export async function listPendingRebuttals(pool: Pool): Promise<PendingRebuttal[]> {
+  const { rows } = await pool.query<{
+    id: string;
+    claimed_role: string;
+    vendor_name: string;
+    created_at: Date;
+  }>(
+    `SELECT b.id, b.claimed_role, v.name AS vendor_name, b.created_at
+     FROM structured.review_rebuttals b
+     JOIN structured.reviews r ON r.id = b.review_id
+     JOIN structured.vendors v ON v.id = r.vendor_id
+     WHERE b.status = 'pending'
+     ORDER BY b.created_at`
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    claimedRole: row.claimed_role,
+    vendorName: row.vendor_name,
+    createdAt: row.created_at,
+  }));
+}
+
+export type RebuttalDetail = {
+  id: string;
+  status: RebuttalStatus;
+  claimedRole: string;
+  body: string;
+  decisionNote: string | null;
+  createdAt: Date;
+  vendorName: string;
+  reviewTitle: string;
+  reviewBody: string;
+  reviewOverall: number;
+  verifiedRole: string | null;
+};
+
+/** 반론 하나의 상세 + 관계자 인증 여부(v2.0 25·26번). */
+export async function getRebuttal(pool: Pool, id: string): Promise<RebuttalDetail | null> {
+  const { rows } = await pool.query<{
+    id: string;
+    status: RebuttalStatus;
+    claimed_role: string;
+    body: string;
+    decision_note: string | null;
+    created_at: Date;
+    vendor_name: string;
+    review_title: string;
+    review_body: string;
+    review_overall: number;
+    verified_role: string | null;
+  }>(
+    `SELECT b.id, b.status, b.claimed_role, b.body, b.decision_note, b.created_at,
+            v.name AS vendor_name, r.title AS review_title, r.body AS review_body,
+            r.overall AS review_overall,
+            (SELECT c.claimed_role
+             FROM structured.approved_vendor_claims c
+             WHERE c.vendor_id = r.vendor_id
+               AND c.claimant_user_id = b.submitted_by_user_id
+             ORDER BY c.decided_at DESC
+             LIMIT 1) AS verified_role
+     FROM structured.review_rebuttals b
+     JOIN structured.reviews r ON r.id = b.review_id
+     JOIN structured.vendors v ON v.id = r.vendor_id
+     WHERE b.id = $1`,
+    [id]
+  );
+
+  const found = rows[0];
+  if (!found) return null;
+
+  return {
+    id: found.id,
+    status: found.status,
+    claimedRole: found.claimed_role,
+    body: found.body,
+    decisionNote: found.decision_note,
+    createdAt: found.created_at,
+    vendorName: found.vendor_name,
+    reviewTitle: found.review_title,
+    reviewBody: found.review_body,
+    reviewOverall: found.review_overall,
+    verifiedRole: found.verified_role,
+  };
+}
+
 async function decide(
   pool: Pool,
   id: string,
@@ -80,19 +174,7 @@ async function main(): Promise<void> {
 
   try {
     if (options.list) {
-      const { rows } = await pool.query<{
-        id: string;
-        claimed_role: string;
-        vendor_name: string;
-        created_at: Date;
-      }>(
-        `SELECT b.id, b.claimed_role, v.name AS vendor_name, b.created_at
-         FROM structured.review_rebuttals b
-         JOIN structured.reviews r ON r.id = b.review_id
-         JOIN structured.vendors v ON v.id = r.vendor_id
-         WHERE b.status = 'pending'
-         ORDER BY b.created_at`
-      );
+      const rows = await listPendingRebuttals(pool);
 
       if (rows.length === 0) {
         console.log('확인할 반론이 없다.');
@@ -101,42 +183,13 @@ async function main(): Promise<void> {
 
       console.log(`확인 대기 ${rows.length}건:`);
       for (const row of rows) {
-        console.log(`  ${row.id}  ${row.vendor_name}  ${row.claimed_role}  ${when(row.created_at)}`);
+        console.log(`  ${row.id}  ${row.vendorName}  ${row.claimedRole}  ${when(row.createdAt)}`);
       }
       return;
     }
 
     if (options.show) {
-      const { rows } = await pool.query<{
-        id: string;
-        status: RebuttalStatus;
-        claimed_role: string;
-        body: string;
-        decision_note: string | null;
-        created_at: Date;
-        vendor_name: string;
-        review_title: string;
-        review_body: string;
-        review_overall: number;
-        verified_role: string | null;
-      }>(
-        `SELECT b.id, b.status, b.claimed_role, b.body, b.decision_note, b.created_at,
-                v.name AS vendor_name, r.title AS review_title, r.body AS review_body,
-                r.overall AS review_overall,
-                (SELECT c.claimed_role
-                 FROM structured.approved_vendor_claims c
-                 WHERE c.vendor_id = r.vendor_id
-                   AND c.claimant_user_id = b.submitted_by_user_id
-                 ORDER BY c.decided_at DESC
-                 LIMIT 1) AS verified_role
-         FROM structured.review_rebuttals b
-         JOIN structured.reviews r ON r.id = b.review_id
-         JOIN structured.vendors v ON v.id = r.vendor_id
-         WHERE b.id = $1`,
-        [options.show]
-      );
-
-      const found = rows[0];
+      const found = await getRebuttal(pool, options.show);
 
       if (!found) {
         console.error('없는 반론이다.');
@@ -144,22 +197,22 @@ async function main(): Promise<void> {
         return;
       }
 
-      console.log(`${found.id}  ${REBUTTAL_STATUS_LABEL[found.status]}  ${when(found.created_at)}`);
-      console.log(`  업체: ${found.vendor_name}`);
-      console.log(`  본인이 밝힌 소속: ${found.claimed_role}`);
+      console.log(`${found.id}  ${REBUTTAL_STATUS_LABEL[found.status]}  ${when(found.createdAt)}`);
+      console.log(`  업체: ${found.vendorName}`);
+      console.log(`  본인이 밝힌 소속: ${found.claimedRole}`);
       /*
        * 관계자 인증을 마쳤는지. v2.0 25번이 반론의 첫 단계로 관계자 인증을
        * 두었으므로, 심사하는 사람이 먼저 볼 것은 이 줄이다.
        */
       console.log(
-        found.verified_role === null
+        found.verifiedRole === null
           ? '  관계자 인증: 없다  ← 이걸 확인하는 것이 심사다'
-          : `  관계자 인증: 확인됨 (${found.verified_role})`
+          : `  관계자 인증: 확인됨 (${found.verifiedRole})`
       );
-      console.log(`  원본 후기(${found.review_overall}점): ${found.review_title}`);
-      console.log(`    ${found.review_body}`);
+      console.log(`  원본 후기(${found.reviewOverall}점): ${found.reviewTitle}`);
+      console.log(`    ${found.reviewBody}`);
       console.log(`  반론: ${found.body}`);
-      if (found.decision_note) console.log(`  결정 사유: ${found.decision_note}`);
+      if (found.decisionNote) console.log(`  결정 사유: ${found.decisionNote}`);
       return;
     }
 
@@ -195,7 +248,16 @@ async function main(): Promise<void> {
   }
 }
 
-void main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exitCode = 1;
-});
+/*
+ * CLI로 직접 실행했을 때만 돈다. 테스트나 라우트가 이 파일에서 함수를
+ * 가져오면(require) `require.main`이 테스트 러너/서버를 가리키므로 여기
+ * 걸리지 않는다 — 안 걸리면 가져오기만 해도 `main()`이 돌며 실제 인자 없이
+ * 안내 문구로 exitCode를 오염시킨다. 원래 이 파일에는 이 관문이 없었다
+ * (다른 admin 도구와 다르게) — HTTP로 열면서 같이 넣었다.
+ */
+if (require.main === module) {
+  void main().catch((error: unknown) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  });
+}
