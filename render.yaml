@@ -17,10 +17,22 @@ services:
         sync: false
       - key: APPLE_CLIENT_ID
         value: kr.weddingpick.app
+      - key: APPLE_TEAM_ID
+        sync: false
+      - key: APPLE_KEY_ID
+        sync: false
+      - key: APPLE_PRIVATE_KEY
+        sync: false
       - key: KAKAO_APP_KEY
         sync: false
       - key: GOOGLE_CLIENT_ID
         value: 595165026523-dd5s0fqtle78e03mb34m9iaclpdmlb9r.apps.googleusercontent.com
+      - key: NAVER_CLIENT_ID
+        sync: false
+      - key: NAVER_CLIENT_SECRET
+        sync: false
+      - key: NAVER_REDIRECT_URIS
+        sync: false
 
 databases:
   - name: weddingpick-db
