@@ -51,7 +51,7 @@
   있고 상황을 확인할 수 있어야한다. 법적 리스크가 있는 정책은 무시하고 개선한다."*
   이 지시에 따라 **자동파기를 유지**하고 운영자 조회·HOLD·RESUME·RETRY·감사로그를
   갖춘 완성 구현을 만들었다(`packages/domain/src/withdrawal.ts`,
-  `apps/api/src/withdrawal-admin.ts`, 마이그레이션 0053·0056).
+  `apps/api/src/withdrawal-admin.ts`, 마이그레이션 0055·0058).
 
 **두 방향이 정면으로 다르다** — 한쪽은 "정책 확정 전엔 기능을 잠근다", 다른 쪽은
 "사용자가 이미 방향을 정했으니 지금 만든다." PR #10을 병합하기 전에 **어느 쪽이
@@ -86,6 +86,14 @@ DATABASE_URL=<neon-connection-string> pnpm db:migrate
 ```
 적용 대상: `0052_mission_draw.sql` (미션 완료 추적 + 월간 웨딩지원금 추첨 스키마)
 
+**⚠️ 이 파일 그대로는 실행이 안 된다.** `ALTER TYPE reward_kind ADD VALUE 'monthly_draw'`를
+같은 트랜잭션 안에서 바로 쓰는 CHECK 제약(`grant_source_matches_kind`)이 있어
+Postgres가 "unsafe use of new value of enum type"으로 매번 실패한다(빈 DB에서
+직접 재현·확인함). PR #10 브랜치에서 0052를 두 부분으로 나누고, 값을 더하는 것과
+쓰는 것을 각각 새 마이그레이션(`0053_reward_kind_monthly_draw.sql`,
+`0054_grant_source_matches_kind.sql`)으로 분리해 고쳤다 — main에 병합되지 않은
+채로는 그대로 적용해도 실패한다.
+
 ### 4. 앱스토어 출시 블로커 — terms.url / privacy.url
 `assertReleasable('production')`이 `terms.url` · `privacy.url` 미설정 시 throw → 앱스토어 출시 불가.  
 URL 확정 후 도메인 상수(`packages/domain/src/constants/policy.ts` 또는 유사 위치) 업데이트 필요.  
@@ -118,7 +126,7 @@ claude.ai Settings → Connectors → Gmail 연결 필요.
 - ✅ 회원탈퇴 운영자 개입(조회·HOLD·RESUME·RETRY, `withdrawal-admin.ts`) +
   삭제 워커 트랜잭션 안전성(`FOR UPDATE`, 멱등) — 사용자 지시로 자동파기 유지 결정,
   아래 «회원탈퇴 정책 충돌» 참고
-- ✅ 마이그레이션 0053~0056(회원탈퇴/AI라우터/이의만료/탈퇴관리자) — main의
+- ✅ 마이그레이션 0055~0058(회원탈퇴/AI라우터/이의만료/탈퇴관리자) — main의
   0052_mission_draw.sql 뒤로 재번호
 - ✅ typecheck 7개 워크스페이스·lint 0 error·test 543개(API 기준, 전체 1537개) 전부 통과
   — CI와 동일한 명령(typecheck/lint/test/export:web/build)을 로컬에서 재현해 확인함
