@@ -338,7 +338,9 @@ export default function SearchScreen() {
                     );
                   }}>
                   <ThemedView type="backgroundElement" style={styles.suggestionRow}>
-                    <ThemedText type="t6">{item.name}</ThemedText>
+                    <ThemedText type="t6" numberOfLines={1} ellipsizeMode="tail">
+                      {item.name}
+                    </ThemedText>
                   </ThemedView>
                 </Pressable>
               ))}
@@ -458,7 +460,9 @@ export default function SearchScreen() {
                             <ThemedText type="t7" themeColor="textSecondary">
                               {item.reasons.map((reason) => TOP3_REASON_LABEL[reason]).join(' · ')}
                             </ThemedText>
-                            <ThemedText type="t5">{item.name}</ThemedText>
+                            <ThemedText type="t5" numberOfLines={1} ellipsizeMode="tail">
+                              {item.name}
+                            </ThemedText>
                             <ThemedText type="t7" themeColor="textAssistive">
                               {VENDOR_CATEGORY_LABEL[item.category]} · {item.region}
                             </ThemedText>
@@ -493,7 +497,9 @@ export default function SearchScreen() {
                           <ThemedText type="badge" themeColor="textAssistive">
                             {ad.label}
                           </ThemedText>
-                          <ThemedText type="smallBold">{ad.name}</ThemedText>
+                          <ThemedText type="smallBold" numberOfLines={1} ellipsizeMode="tail">
+                            {ad.name}
+                          </ThemedText>
                           <ThemedText type="small" themeColor="textSecondary">
                             {VENDOR_CATEGORY_LABEL[ad.category]} · {ad.region}
                           </ThemedText>
@@ -522,7 +528,9 @@ export default function SearchScreen() {
                       accessibilityLabel={`${item.name} 자세히 보기`}
                       onPress={() => router.push(`/search/${item.id}`)}>
                       <ThemedView type="backgroundElement" style={styles.cardBody}>
-                        <ThemedText type="smallBold">{item.name}</ThemedText>
+                        <ThemedText type="smallBold" numberOfLines={1} ellipsizeMode="tail">
+                          {item.name}
+                        </ThemedText>
                         <ThemedText type="small" themeColor="textSecondary">
                           {VENDOR_CATEGORY_LABEL[item.category]} · {item.region}
                         </ThemedText>
@@ -603,7 +611,9 @@ export default function SearchScreen() {
                 accessibilityLabel={`${item.name} 자세히 보기`}
                 onPress={() => router.push(`/search/planner/${item.id}`)}>
                 <ThemedView type="backgroundElement" style={styles.card}>
-                  <ThemedText type="smallBold">{item.name}</ThemedText>
+                  <ThemedText type="smallBold" numberOfLines={1} ellipsizeMode="tail">
+                    {item.name}
+                  </ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
                     {[item.vendor?.name ?? '프리랜서', item.regions.join(' · ')]
                       .filter(Boolean)

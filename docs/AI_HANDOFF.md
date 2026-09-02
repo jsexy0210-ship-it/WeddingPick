@@ -105,7 +105,20 @@ claude.ai Settings → Connectors → Gmail 연결 필요.
 - ✅ 화면별 상태 표 재검증: #13 등록 완료, #19 설정 가격변동 알림 Switch — 이미 정상 구현 확인, ✅로 갱신
 - ✅ #9 비교함의 "순위 안 매김"·"의견 공유하기"는 SEED 핸드오프 어디에도 근거 없음 확인 — 폐기된 Toss v7 참고였을 가능성, 재확인 불필요로 정리
 - ✅ AI 우선순위 5번(회원탈퇴·일정 추가·지도 보기·취향 재선택) 각각 착수 가능 여부 실사 — 4개 전부 순수 프론트엔드로 못 끝냄(정책 게이트·API 부재·데이터 모델 부재), 사유를 우선순위 섹션에 기록
-**다음 세션 참고**: 진짜 순수 프론트엔드로 남은 미구현 화면은 관리자(WP-ADM-*, 25개)·박람회(WP-EXPO-*, 5개)·공통 Bottom Sheet 16종 확인 정도. 그 외 상위 우선순위 항목은 백엔드 세션과 조율 필요.
+- ✅ 공통 Bottom Sheet(WP-SHT-*) 16종 + 공통 상태(WP-ST-*) 14종 전수 조사(Explore 서브에이전트) 후 순수 프론트엔드로 가능한 것부터 구현:
+  - 신규: `packages/ui/src/bottom-sheet.tsx`(`BottomSheet` 껍데기), `packages/ui/src/info-sheet.tsx`(`InfoSheet`·`InfoButton`), `packages/domain/src/share.ts`(공유 문구·앱스킴 링크, 테스트 포함)
+  - WP-SHT-002 Pick 완료: `search/[vendorId]/index.tsx`에 시트 추가(Pick 목록 보기·계속 둘러보기), 로그인 경유 완료 시에도 동일하게 뜸
+  - WP-SHT-003 Pick 해제 확인: 기존 `Alert.alert` 유지(이미 컨펌 있음) + `pick/index.tsx`에서 배우자 연결 상태(`getWedding`) 조회해 "배우자도 함께 보던 곳" 안내 추가
+  - WP-SHT-005 최종 결정 확인: `pick/index.tsx`에 `Alert.alert` 컨펌 추가("나중에 결정 되돌리기로 다시 바꿀 수 있어요") — 기존 화면들이 이미 Alert로 파괴적 동작을 확인받는 관례를 그대로 따름, 새 컴포넌트 안 만듦
+  - WP-SHT-011 공유: 업체상세·비교 화면에 "공유하기" 버튼 추가, `Share.share()`(OS 공유 시트)로 처리 — 카카오톡 SDK나 클립보드 패키지가 없어 OS 시트가 그 역할을 대신함(iOS는 복사도 그 안에 있음), 커스텀 시트는 중복이라 안 만듦
+  - WP-SHT-014·015 데이터·기준금액 설명: 업체상세 "확인된 정보"·"기준금액" 옆에 ⓘ 추가, `InfoSheet`로 설명. `BASE_AMOUNT_HELP`(기존 상수, 그동안 미사용)를 처음 연결. `VERIFIED_DATA_HELP` 신규 추가(`terms.ts`)
+  - WP-SHT-016 권한 요청 설명: `capture/camera.tsx`에서 `canAskAgain`으로 "아직 안 물어봄"과 "이미 거부당함"을 분리 — 전자는 허용/나중에, 후자는 WP-ST-011대로 설정으로 이동
+  - WP-ST-011 권한 거부: `Linking.openSettings()`를 `capture/camera.tsx`·`capture/index.tsx`·`capture/payment/register.tsx`에 연결(이전에는 "설정에서 켜주세요" 문구만 있고 이동 버튼이 없었음)
+  - WP-ST-013 긴 콘텐츠: `search/index.tsx`(자동완성·TOP3·광고·업체·플래너 카드)·`pick/index.tsx`·`search/compare.tsx`의 업체명에 `numberOfLines`+`ellipsizeMode="tail"` 추가
+  - 손대지 않고 넘긴 것(이유 있음): WP-SHT-004(비교 후보 선택)·WP-SHT-013(신고)은 기존 인라인 구현으로 스펙 충족 판단, 새 시트로 안 바꿈 / WP-SHT-006~008(예식일·지역·예산 입력 고도화, 시군구·GPS·구간칩)은 `setup.tsx`의 `weddingDate: string`(nullable 아님) 데이터 모델을 건드려야 해서 보류 / WP-ST-007(로딩)·WP-ST-008(Empty)·WP-ST-009(오류)·WP-ST-002(커플상태)·WP-ST-003(Pick상태)은 이미 잘 구현되어 있음을 확인만 함 / WP-ST-005(데이터 상태 단계)는 `NOT_ENOUGH_DATA` 등 미사용 상수와 별개로 `vendor.prices.paidPrice.stage`(collecting/detailed)로 이미 실질 구현되어 있음을 확인
+  - 차단(백엔드·정책·미설계 데이터모델, 이번 세션에서 시도 안 함): WP-SHT-009(취향 이미지 Pick, 취향수집 시스템 자체 없음) · WP-SHT-012(캘린더 등록, 일정 관리 화면 WP-OUR-004/005/006 자체가 없어 붙일 곳이 없음) · WP-ST-006(혜택 상태, `priority.ts` 주석에 "없는 혜택을 말할 수 없다"로 명시) · WP-ST-010(네트워크 오류, `NetInfo` 등 새 의존성 필요 — 이번 세션은 새 패키지 설치 없이 진행) · WP-ST-014(점검·강제업데이트, 백엔드 API 필요) · WP-ST-004(이미지 상태, 이미지 자체가 없는 텍스트 전용 설계라 해당 없음)
+  - 검증: `apps/mobile`·`packages/domain`·`packages/ui` 전부 `tsc --noEmit` 통과, `apps/mobile`(46개)·`packages/domain`(797개, 신규 5개 포함) 테스트 전부 통과, 변경 파일 eslint 통과
+**다음 세션 참고**: 진짜 순수 프론트엔드로 남은 미구현 화면은 관리자(WP-ADM-*, 25개)·박람회(WP-EXPO-*, 5개) 정도. 공통 Bottom Sheet·공통 상태는 이번 세션에서 순수 프론트엔드 가능분을 마쳤고, 남은 것은 위 "차단" 목록처럼 다른 선행 작업이 필요하다. 그 외 상위 우선순위 항목은 백엔드 세션과 조율 필요.
 
 ### 프론트엔드 (session_01HTGSU2B4vFjePXFS2ajKBY) — 아카이브
 **완료**: 모바일 앱 핵심 화면 구현, 42개 라우터 파일 생성
@@ -121,7 +134,7 @@ claude.ai Settings → Connectors → Gmail 연결 필요.
 | 구현됨 | 34 | 19% |
 | 부분 구현 | 58 | 33% |
 | 미구현 | 49 | 28% |
-| 확인 필요 (Bottom Sheet·공통 상태) | 35 | 20% |
+| 확인 필요 (Bottom Sheet·공통 상태) | 35 | 20% — 2026-09-02 프론트엔드 착수 세션에서 전수 조사·순수 프론트엔드 가능분 구현 완료(아래 세션 로그 참조), 남은 것은 백엔드·정책 선행 필요 |
 
 **라우터 파일**: `apps/mobile/src/app/` 42개 — 핵심 화면 커버
 
@@ -218,8 +231,9 @@ WeddingPickl/
    - 일정 추가·목록·상세(WP-OUR-004/005/006): API·DB 전무 — `apps/api/src/routes/wedding-plan.ts`에 schedule 엔드포인트 없음. `tasks.tsx`(체크리스트)와는 별개 개념. DB migration(다음 번호 0053)부터 필요한 풀스택 작업 — 프론트 단독 세션에서 임의로 스키마 추가하지 말 것, 동시 진행 중인 백엔드 세션과 번호 충돌 위험
    - 지도 보기(WP-SRCH-007): `VendorSummary`(`packages/api-contract/src/vendors.ts`)에 위경도 필드 없음 — 백엔드에 geo 데이터 추가부터 필요
    - 취향 재선택(WP-MY-004): `packages/domain/src/priority.ts`의 `couple_taste` 주석이 "아직 이 종류는 만들어지지 않는다"고 명시 — 취향 수집(이미지 Pick 기반, v3.10 §8) 자체가 설계 전이라 재선택 화면을 만들 대상이 없음
-6. **[AI]** 공통 Bottom Sheet 16종 인라인 처리 여부 확인
+6. **[AI]** ~~공통 Bottom Sheet 16종 인라인 처리 여부 확인~~ — 2026-09-02 완료(WP-SHT-*·WP-ST-* 전수 조사 및 순수 프론트엔드 가능분 구현, 세션 로그 참조). 남은 것: WP-SHT-009/012, WP-ST-006/010/014 — 각각 취향수집 시스템·일정 화면·백엔드 API가 먼저 필요
 7. **[AI]** 관리자 화면 설계 및 구현 (앱스토어 출시 후 단계)
+8. **[AI]** 박람회·웨딩 정보(WP-EXPO-*, 5개) 화면 구현
 
 ---
 

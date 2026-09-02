@@ -23,6 +23,7 @@ import {
 import {
   decideCategory,
   getCurrentUser,
+  getWedding,
   listCandidates,
   removeCandidate,
   removeDecision,
@@ -43,6 +44,8 @@ export default function PickScreen() {
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [page, setPage] = useState<CandidateListResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** WP-SHT-003 — 배우자가 연결돼 있으면 뺄 때 그 사실을 함께 말한다. */
+  const [partnerLinked, setPartnerLinked] = useState(false);
 
   const load = useCallback(() => {
     getCurrentUser()
@@ -55,6 +58,9 @@ export default function PickScreen() {
         }
 
         setPage(await listCandidates(current.weddingId));
+        getWedding(current.weddingId)
+          .then((wedding) => setPartnerLinked(wedding.partnerLinked))
+          .catch(() => undefined);
       })
       .catch((caught: Error) => setError(caught.message));
   }, []);
@@ -85,9 +91,24 @@ export default function PickScreen() {
     }
   }
 
+  /**
+   * WP-SHT-005 최종 결정 확인. 업종을 닫는 일이라 되돌릴 수 있다는 것부터
+   * 말해둔다 — `undo()`가 이미 있으니 그 말은 거짓이 아니다.
+   */
+  function confirmDecide(category: VendorCategory, vendorId: string, vendorName: string) {
+    Alert.alert(`${vendorName}으로 정할까요`, '나중에 결정 되돌리기로 다시 바꿀 수 있어요.', [
+      { text: '그만두기', style: 'cancel' },
+      { text: '최종 결정', onPress: () => void decide(category, vendorId, vendorName) },
+    ]);
+  }
+
   function confirmRemove(candidateId: string, vendorName: string) {
     // 파괴적 동작은 대상 이름을 함께 보여준다. 두 번째 카드를 지우려다 첫 번째를 지운다.
-    Alert.alert('Pick에서 뺄까요', `${vendorName}이 목록에서 사라져요`, [
+    const message = partnerLinked
+      ? `${vendorName}이 목록에서 사라져요. 배우자도 함께 보던 곳이라 그쪽 화면에서도 사라져요.`
+      : `${vendorName}이 목록에서 사라져요`;
+
+    Alert.alert('Pick에서 뺄까요', message, [
       { text: '그만두기', style: 'cancel' },
       {
         text: '빼기',
@@ -180,7 +201,9 @@ export default function PickScreen() {
                       accessibilityLabel={`${candidate.vendorName} 자세히 보기`}
                       onPress={() => router.push(`/search/${candidate.vendorId}`)}>
                     <ThemedView type="backgroundElement" style={styles.rowHead}>
-                      <ThemedText type="t6">{candidate.vendorName}</ThemedText>
+                      <ThemedText type="t6" numberOfLines={2} ellipsizeMode="tail">
+                        {candidate.vendorName}
+                      </ThemedText>
                       {decided ? (
                         <ThemedText type="badge" themeColor="tint">
                           여기로 정했어요
@@ -212,7 +235,7 @@ export default function PickScreen() {
                         <ActionButton
                           label="여기로 정하기"
                           onPress={() =>
-                            void decide(group.category, candidate.vendorId, candidate.vendorName)
+                            confirmDecide(group.category, candidate.vendorId, candidate.vendorName)
                           }
                         />
                       )}

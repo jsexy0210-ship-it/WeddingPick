@@ -1,7 +1,7 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Alert, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Alert, Linking, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
@@ -26,6 +26,12 @@ export default function CameraScreen() {
   }
 
   if (!permission.granted) {
+    /*
+     * WP-SHT-016과 WP-ST-011은 같아 보이지만 다른 자리다. 아직 묻기 전에는
+     * 왜 필요한지 말하고 허용/나중에를 고르게 하고(SHT-016), 이미 거부해
+     * OS가 다시 묻지 않기로 한 뒤에는 여기서 다시 물어도 소용없다 — 설정으로
+     * 보내는 것만 남는다(ST-011). `canAskAgain`이 그 경계다.
+     */
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.permissionArea}>
@@ -33,8 +39,24 @@ export default function CameraScreen() {
           <ThemedText type="small" themeColor="textSecondary">
             문서를 촬영해 분석하려면 카메라 접근을 허용해주세요.
           </ThemedText>
-          <ActionButton variant="primary" label="권한 허용하기" onPress={requestPermission} />
-          <ActionButton label="돌아가기" onPress={() => router.back()} />
+          {permission.canAskAgain ? (
+            <>
+              <ActionButton variant="primary" label="권한 허용하기" onPress={requestPermission} />
+              <ActionButton label="나중에" onPress={() => router.back()} />
+            </>
+          ) : (
+            <>
+              <ThemedText type="small" themeColor="textSecondary">
+                이미 거부하셔서 여기서는 다시 물어볼 수 없어요. 설정에서 카메라 권한을 켜주세요.
+              </ThemedText>
+              <ActionButton
+                variant="primary"
+                label="설정으로 이동"
+                onPress={() => void Linking.openSettings()}
+              />
+              <ActionButton label="돌아가기" onPress={() => router.back()} />
+            </>
+          )}
         </SafeAreaView>
       </ThemedView>
     );

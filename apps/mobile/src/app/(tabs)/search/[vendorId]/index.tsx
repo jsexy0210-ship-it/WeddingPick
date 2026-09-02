@@ -1,17 +1,20 @@
 import type { ConditionStats, Review, VendorDetail } from '@weddingpick/api-contract';
 import {
+  BASE_AMOUNT_HELP,
   DOCUMENT_TYPE_LABEL,
   MAX_RATING,
   PAYMENT_PROOF_CAVEAT,
   VENDOR_CATEGORY_LABEL,
+  VERIFIED_DATA_HELP,
   manwon,
   TERMS,
   rangeLabel,
+  vendorShareMessage,
   withParticle,
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { addCandidate, ensureWedding, getVendor, getVendorConditions, listVendorReviews } from '@/api/client';
@@ -21,7 +24,10 @@ import { LoginSheet } from '@/features/auth/login-sheet';
 import { savePendingAction } from '@/features/auth/pending-action';
 import {
   ActionButton,
+  BottomSheet,
   ErrorView,
+  InfoButton,
+  InfoSheet,
   LoadingView,
   MaxContentWidth,
   ProgressBar,
@@ -54,6 +60,11 @@ export default function VendorDetailScreen() {
   const [saving, setSaving] = useState(false);
   /** 로그인 시트가 떠 있는가. 첫 Pick이 대표 트리거다(v3.10 §3). */
   const [loginOpen, setLoginOpen] = useState(false);
+  /** Pick 완료 시트. WP-SHT-002 — 담았다는 사실과 다음 행동을 함께 보여준다. */
+  const [pickDoneOpen, setPickDoneOpen] = useState(false);
+  /** WP-SHT-014·015 — `확인된 정보`·`기준금액` 옆 ⓘ가 여는 설명 시트. */
+  const [dataHelpOpen, setDataHelpOpen] = useState(false);
+  const [baseAmountHelpOpen, setBaseAmountHelpOpen] = useState(false);
 
   useEffect(() => {
     getVendor(vendorId)
@@ -102,11 +113,31 @@ export default function VendorDetailScreen() {
       const weddingId = await ensureWedding();
 
       await addCandidate(weddingId, vendor!.id);
-      setSaveNote('Pick했어요. Pick 탭에서 보실 수 있어요.');
+      setPickDoneOpen(true);
     } catch (caught) {
       setSaveNote(caught instanceof Error ? caught.message : 'Pick하지 못했어요.');
     } finally {
       setSaving(false);
+    }
+  }
+
+  /**
+   * WP-SHT-011 공유. OS 공유 시트가 곧 그 자리다 — 카카오톡이 깔려 있으면
+   * 목록에 뜨고, iOS는 복사도 그 목록 안에 있다. 앞에 우리 시트를 하나 더
+   * 두면 그 화면과 같은 일을 하는 화면이 하나 더 생길 뿐이다.
+   */
+  async function share() {
+    try {
+      await Share.share({
+        message: vendorShareMessage({
+          id: vendor!.id,
+          name: vendor!.name,
+          categoryLabel: VENDOR_CATEGORY_LABEL[vendor!.category],
+          region: vendor!.region,
+        }),
+      });
+    } catch {
+      // 공유 시트를 닫은 경우가 대부분이라 따로 알리지 않는다.
     }
   }
 
@@ -131,7 +162,13 @@ export default function VendorDetailScreen() {
             애초에 컴파일되지 않는다.
           */}
           <ThemedView style={styles.section}>
-            <ThemedText type="smallBold">{TERMS.verifiedData}</ThemedText>
+            <View style={styles.labelRow}>
+              <ThemedText type="smallBold">{TERMS.verifiedData}</ThemedText>
+              <InfoButton
+                accessibilityLabel={`${TERMS.verifiedData} 설명 보기`}
+                onPress={() => setDataHelpOpen(true)}
+              />
+            </View>
 
             {vendor.prices.paidPrice.stage === 'collecting' ? (
               <ThemedView type="backgroundElement" style={styles.card}>
@@ -153,9 +190,16 @@ export default function VendorDetailScreen() {
                   {vendor.prices.paidPrice.caption}
                 </ThemedText>
                 {vendor.prices.paidPrice.stage === 'detailed' ? (
-                  <ThemedText type="t6" style={styles.onTint}>
-                    기준금액 {manwon(vendor.prices.paidPrice.median)}
-                  </ThemedText>
+                  <View style={styles.labelRow}>
+                    <ThemedText type="t6" style={styles.onTint}>
+                      기준금액 {manwon(vendor.prices.paidPrice.median)}
+                    </ThemedText>
+                    <InfoButton
+                      accessibilityLabel={`${TERMS.baseAmount} 설명 보기`}
+                      themeColor="onTint"
+                      onPress={() => setBaseAmountHelpOpen(true)}
+                    />
+                  </View>
                 ) : null}
               </ThemedView>
             )}
@@ -428,6 +472,7 @@ export default function VendorDetailScreen() {
               hint="자료를 올리면 이 업체의 Pick 가격대와 견줘 보여드려요"
               onPress={() => router.push('/capture')}
             />
+            <ActionButton label="공유하기" onPress={() => void share()} />
             <ActionButton
               label="업체 정보가 달라요"
               hint="이름·지역이 실제와 다르면 알려주세요"
@@ -478,16 +523,43 @@ export default function VendorDetailScreen() {
             return;
           }
 
-          setSaveNote(
-            [
-              result.completed ? 'Pick했어요. Pick 탭에서 보실 수 있어요.' : null,
-              result.weddingError,
-            ]
-              .filter(Boolean)
-              .join(' ') || null
-          );
+          if (result.completed) {
+            setPickDoneOpen(true);
+          }
+
+          setSaveNote(result.weddingError ?? null);
         }}
         onDismiss={() => setLoginOpen(false)}
+      />
+
+      <BottomSheet visible={pickDoneOpen} onDismiss={() => setPickDoneOpen(false)}>
+        <ThemedText type="t4">Pick했어요</ThemedText>
+        <ThemedText type="t6" themeColor="textSecondary">
+          {vendor.name}이 Pick 탭에 담겼어요. 배우자와 함께 보는 목록이에요.
+        </ThemedText>
+        <ActionButton
+          variant="primary"
+          label="Pick 목록 보기"
+          onPress={() => {
+            setPickDoneOpen(false);
+            router.push('/pick');
+          }}
+        />
+        <ActionButton label="계속 둘러보기" onPress={() => setPickDoneOpen(false)} />
+      </BottomSheet>
+
+      <InfoSheet
+        visible={dataHelpOpen}
+        onDismiss={() => setDataHelpOpen(false)}
+        title={TERMS.verifiedData}
+        paragraphs={VERIFIED_DATA_HELP}
+      />
+
+      <InfoSheet
+        visible={baseAmountHelpOpen}
+        onDismiss={() => setBaseAmountHelpOpen(false)}
+        title={TERMS.baseAmount}
+        paragraphs={[BASE_AMOUNT_HELP]}
       />
     </ThemedView>
   );
@@ -495,6 +567,11 @@ export default function VendorDetailScreen() {
 
 
 const styles = StyleSheet.create({
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+  },
   sourceRow: {
     flexDirection: 'row',
     alignItems: 'center',

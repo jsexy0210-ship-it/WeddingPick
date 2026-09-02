@@ -5,10 +5,11 @@ import {
   PICK_VERIFICATION,
   VENDOR_CATEGORY_LABEL,
   axisLabel,
+  compareShareMessage,
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, Share, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { compareVendors, getCurrentUser, recordComparison } from '@/api/client';
@@ -57,6 +58,22 @@ export default function CompareScreen() {
       .catch((caught: Error) => setError(caught.message));
   }, [ids, tooFew]);
 
+  /** WP-SHT-011. `search/[vendorId]/index.tsx`의 `share()`와 같은 이유로 OS 공유 시트를 그대로 쓴다. */
+  async function share() {
+    if (!result) return;
+
+    try {
+      await Share.share({
+        message: compareShareMessage(
+          result.vendors.map((vendor) => vendor.name),
+          result.vendors.map((vendor) => vendor.id)
+        ),
+      });
+    } catch {
+      // 공유 시트를 닫은 경우가 대부분이라 따로 알리지 않는다.
+    }
+  }
+
   if (tooFew || error) {
     return (
       <ErrorView
@@ -77,7 +94,7 @@ export default function CompareScreen() {
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.section}>
             <ThemedText type="subtitle">{result.vendors.length}곳 비교</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
+            <ThemedText type="small" themeColor="textSecondary" numberOfLines={2} ellipsizeMode="tail">
               {result.vendors.map((vendor) => vendor.name).join(' · ')}
             </ThemedText>
           </ThemedView>
@@ -159,6 +176,7 @@ export default function CompareScreen() {
               hint={`자료를 올리면 이 업체들의 ${axisLabel('pick_price_range')}와 견줘 보여드려요`}
               onPress={() => router.push('/capture')}
             />
+            <ActionButton label="공유하기" onPress={() => void share()} />
             <ActionButton label="검색으로 돌아가기" onPress={() => router.back()} />
           </ThemedView>
         </ScrollView>
@@ -194,7 +212,9 @@ function Row({
       ) : null}
       {vendors.map((vendor) => (
         <ThemedView key={vendor.id} type="backgroundElement" style={styles.card}>
-          <ThemedText type="small">{vendor.name}</ThemedText>
+          <ThemedText type="small" numberOfLines={1} ellipsizeMode="tail">
+            {vendor.name}
+          </ThemedText>
           {children(vendor)}
         </ThemedView>
       ))}

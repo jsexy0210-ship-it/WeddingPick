@@ -11,7 +11,7 @@ import {
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, TextInput } from 'react-native';
+import { Linking, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { parsePaymentText, registerPaymentProof } from '@/api/client';
@@ -68,6 +68,8 @@ export default function RegisterPaymentProofScreen() {
   const [rawDocumentId, setRawDocumentId] = useState<string | null>(null);
   const [asRead, setAsRead] = useState<Record<string, string> | null>(null);
   const [readNote, setReadNote] = useState<string | null>(null);
+  /** WP-ST-011 — 이미 거부된 권한이면 다시 묻는 대신 설정으로 보낸다. */
+  const [permissionDenied, setPermissionDenied] = useState(false);
   /** 서버가 "확신이 낮다"고 짚은 항목. 화면이 그 칸을 강조한다. */
   const [uncertain, setUncertain] = useState<PaymentProofField[]>([]);
 
@@ -138,6 +140,7 @@ export default function RegisterPaymentProofScreen() {
 
     setReading(true);
     setReadNote(null);
+    setPermissionDenied(false);
 
     try {
       const pages = await pick();
@@ -151,6 +154,7 @@ export default function RegisterPaymentProofScreen() {
       setRawDocumentId(uploaded);
       await runParse({ rawDocumentId: uploaded });
     } catch (caught) {
+      setPermissionDenied(caught instanceof PermissionDeniedError);
       setReadNote(
         caught instanceof PermissionDeniedError
           ? caught.message
@@ -313,6 +317,12 @@ export default function RegisterPaymentProofScreen() {
                 <ThemedText type="small" themeColor="textSecondary">
                   {readNote}
                 </ThemedText>
+                {permissionDenied ? (
+                  <ActionButton
+                    label="설정으로 이동"
+                    onPress={() => void Linking.openSettings()}
+                  />
+                ) : null}
               </ThemedView>
             ) : null}
           </ThemedView>

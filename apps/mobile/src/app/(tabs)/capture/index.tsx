@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, StyleSheet } from 'react-native';
+import { Alert, Linking, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
@@ -47,11 +47,15 @@ export default function CaptureScreen() {
         router.push('/capture/review');
       }
     } catch (error) {
-      const message =
-        error instanceof PermissionDeniedError
-          ? error.message
-          : '문서를 불러오지 못했어요. 다시 시도해주세요.';
-      Alert.alert('불러오기 실패', message);
+      if (error instanceof PermissionDeniedError) {
+        // WP-ST-011 — 이미 거부된 권한은 여기서 다시 물어도 소용없다. 설정으로 보낸다.
+        Alert.alert('불러오기 실패', error.message, [
+          { text: '설정으로 이동', onPress: () => void Linking.openSettings() },
+          { text: '닫기', style: 'cancel' },
+        ]);
+      } else {
+        Alert.alert('불러오기 실패', '문서를 불러오지 못했어요. 다시 시도해주세요.');
+      }
     } finally {
       setBusy(false);
     }
