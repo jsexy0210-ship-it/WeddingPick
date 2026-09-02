@@ -112,17 +112,71 @@ function describe(row: PendingRow, now: Date): string {
   );
 }
 
+export type PendingVerification = {
+  id: string;
+  targetLevel: RequestableLevel;
+  status: VerificationStatus;
+  receivedAt: Date;
+  totalAmount: string | null;
+  evidenceKinds: string[];
+};
+
+/** 심사 대기 신청 전부. 조회라 `requireOperator`를 부르지 않는다. */
+export async function list(pool: ReturnType<typeof createPool>): Promise<PendingVerification[]> {
+  const { rows } = await pool.query<PendingRow>(
+    `SELECT id, target_level, status, received_at, total_amount, evidence_kinds
+     FROM structured.pending_verification_requests
+     ORDER BY received_at`
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    targetLevel: row.target_level,
+    status: row.status,
+    receivedAt: row.received_at,
+    totalAmount: row.total_amount,
+    evidenceKinds: row.evidence_kinds,
+  }));
+}
+
+export type BacklogRow = {
+  id: string;
+  targetLevel: RequestableLevel;
+  status: VerificationStatus;
+  waitingDays: number;
+  heldDocumentCount: number;
+};
+
+/** 기한을 넘겨 밀린 신청 전부. 조회라 `requireOperator`를 부르지 않는다. */
+export async function backlog(pool: ReturnType<typeof createPool>): Promise<BacklogRow[]> {
+  const { rows } = await pool.query<{
+    id: string;
+    target_level: RequestableLevel;
+    status: VerificationStatus;
+    waiting_days: number;
+    held_document_count: string;
+  }>(
+    `SELECT id, target_level, status, waiting_days, held_document_count
+     FROM structured.backlogged_verification_requests
+     ORDER BY waiting_days DESC`
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    targetLevel: row.target_level,
+    status: row.status,
+    waitingDays: row.waiting_days,
+    heldDocumentCount: Number(row.held_document_count),
+  }));
+}
+
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
   const pool = createPool(loadConfig().databaseUrl);
 
   try {
     if (options.list) {
-      const { rows } = await pool.query<PendingRow>(
-        `SELECT id, target_level, status, received_at, total_amount, evidence_kinds
-         FROM structured.pending_verification_requests
-         ORDER BY received_at`
-      );
+      const rows = await list(pool);
 
       if (rows.length === 0) {
         console.log('심사할 신청이 없다.');
@@ -132,12 +186,26 @@ async function main(): Promise<void> {
       const now = new Date();
       const backlogged = rows.filter(
         (row) =>
-          now.getTime() - row.received_at.getTime() >=
+          now.getTime() - row.receivedAt.getTime() >=
           VERIFICATION_POLICY.backlogDays * 24 * 60 * 60 * 1000
       ).length;
 
       console.log(`심사 대기 ${rows.length}건:`);
-      for (const row of rows) console.log(`  ${describe(row, now)}`);
+      for (const row of rows) {
+        console.log(
+          `  ${describe(
+            {
+              id: row.id,
+              target_level: row.targetLevel,
+              status: row.status,
+              received_at: row.receivedAt,
+              total_amount: row.totalAmount,
+              evidence_kinds: row.evidenceKinds,
+            },
+            now
+          )}`
+        );
+      }
 
       if (backlogged > 0) {
         console.log(
@@ -149,31 +217,21 @@ async function main(): Promise<void> {
     }
 
     if (options.backlog) {
-      const { rows } = await pool.query<{
-        id: string;
-        target_level: RequestableLevel;
-        status: VerificationStatus;
-        waiting_days: number;
-        held_document_count: string;
-      }>(
-        `SELECT id, target_level, status, waiting_days, held_document_count
-         FROM structured.backlogged_verification_requests
-         ORDER BY waiting_days DESC`
-      );
+      const rows = await backlog(pool);
 
       if (rows.length === 0) {
         console.log(`${VERIFICATION_POLICY.backlogDays}일 넘게 밀린 신청이 없다.`);
         return;
       }
 
-      const held = rows.reduce((sum, row) => sum + Number(row.held_document_count), 0);
+      const held = rows.reduce((sum, row) => sum + row.heldDocumentCount, 0);
 
       console.log(`${VERIFICATION_POLICY.backlogDays}일 넘게 밀린 신청 ${rows.length}건:`);
       for (const row of rows) {
         console.log(
           `  ${row.id}  ${VERIFICATION_STATUS_LABEL[row.status]}  ` +
-            `→ ${VERIFICATION_LEVEL_RULES[row.target_level].label}  ${row.waiting_days}일째` +
-            `  증빙 ${row.held_document_count}건`
+            `→ ${VERIFICATION_LEVEL_RULES[row.targetLevel].label}  ${row.waitingDays}일째` +
+            `  증빙 ${row.heldDocumentCount}건`
         );
       }
 
@@ -191,7 +249,43 @@ async function main(): Promise<void> {
     }
 
     if (options.show) {
-      await show(pool, options.show);
+      const found = await show(pool, options.show);
+
+      if (!found) {
+        console.error('없는 신청이다.');
+        process.exitCode = 1;
+        return;
+      }
+
+      // 결정이 난 뒤에는 화살표를 쓰지 않는다. 승인되면 문서 등급이 이미 목표와 같아져
+      // "계약인증 → 계약인증"이 되고, 그건 아무것도 말해주지 않는다.
+      const decided = found.status === 'approved' || found.status === 'rejected';
+
+      console.log(
+        `${found.id}  ${VERIFICATION_STATUS_LABEL[found.status]}  ` +
+          (decided
+            ? `${VERIFICATION_LEVEL_RULES[found.targetLevel].label} 신청`
+            : `${VERIFICATION_LEVEL_RULES[found.verificationLevel].label}` +
+              ` → ${VERIFICATION_LEVEL_RULES[found.targetLevel].label}`) +
+          `  ${when(found.receivedAt)}`
+      );
+      console.log(`  신청자: ${found.requestedBy}`);
+      console.log(`  금액: ${found.totalAmount ?? '(없음)'}`);
+      console.log(`  낸 증빙: ${evidenceLabels(found.evidenceKinds)}`);
+      console.log(
+        `  ${VERIFICATION_LEVEL_RULES[found.targetLevel].label} 조건: ` +
+          `${VERIFICATION_LEVEL_RULES[found.targetLevel].condition}`
+      );
+      if (found.rejectionReason) console.log(`  반려 사유: ${found.rejectionReason}`);
+
+      console.log('  이력:');
+      for (const event of found.events) {
+        console.log(
+          `    ${when(event.occurredAt)} ${VERIFICATION_EVENT_LABEL[event.kind]}` +
+            `${event.actorUserId ? ` (${event.actorUserId})` : ''}` +
+            `${event.note ? ` — ${event.note}` : ''}`
+        );
+      }
       return;
     }
 
@@ -228,7 +322,31 @@ async function main(): Promise<void> {
   }
 }
 
-async function show(pool: ReturnType<typeof createPool>, id: string): Promise<void> {
+export type VerificationEvent = {
+  kind: VerificationEventKind;
+  actorUserId: string | null;
+  note: string | null;
+  occurredAt: Date;
+};
+
+export type VerificationDetail = {
+  id: string;
+  targetLevel: RequestableLevel;
+  status: VerificationStatus;
+  receivedAt: Date;
+  rejectionReason: string | null;
+  requestedBy: string;
+  verificationLevel: VerificationLevel;
+  totalAmount: string | null;
+  evidenceKinds: string[];
+  events: VerificationEvent[];
+};
+
+/** 신청 하나의 상세. 조회라 `requireOperator`를 부르지 않는다. */
+export async function show(
+  pool: ReturnType<typeof createPool>,
+  id: string
+): Promise<VerificationDetail | null> {
   const { rows } = await pool.query<{
     id: string;
     target_level: RequestableLevel;
@@ -257,32 +375,7 @@ async function show(pool: ReturnType<typeof createPool>, id: string): Promise<vo
 
   const found = rows[0];
 
-  if (!found) {
-    console.error('없는 신청이다.');
-    process.exitCode = 1;
-    return;
-  }
-
-  // 결정이 난 뒤에는 화살표를 쓰지 않는다. 승인되면 문서 등급이 이미 목표와 같아져
-  // "계약인증 → 계약인증"이 되고, 그건 아무것도 말해주지 않는다.
-  const decided = found.status === 'approved' || found.status === 'rejected';
-
-  console.log(
-    `${found.id}  ${VERIFICATION_STATUS_LABEL[found.status]}  ` +
-      (decided
-        ? `${VERIFICATION_LEVEL_RULES[found.target_level].label} 신청`
-        : `${VERIFICATION_LEVEL_RULES[found.verification_level].label}` +
-          ` → ${VERIFICATION_LEVEL_RULES[found.target_level].label}`) +
-      `  ${when(found.received_at)}`
-  );
-  console.log(`  신청자: ${found.requested_by}`);
-  console.log(`  금액: ${found.total_amount ?? '(없음)'}`);
-  console.log(`  낸 증빙: ${evidenceLabels(found.evidence_kinds)}`);
-  console.log(
-    `  ${VERIFICATION_LEVEL_RULES[found.target_level].label} 조건: ` +
-      `${VERIFICATION_LEVEL_RULES[found.target_level].condition}`
-  );
-  if (found.rejection_reason) console.log(`  반려 사유: ${found.rejection_reason}`);
+  if (!found) return null;
 
   const events = await pool.query<{
     kind: VerificationEventKind;
@@ -295,22 +388,33 @@ async function show(pool: ReturnType<typeof createPool>, id: string): Promise<vo
     [id]
   );
 
-  console.log('  이력:');
-  for (const event of events.rows) {
-    console.log(
-      `    ${when(event.occurred_at)} ${VERIFICATION_EVENT_LABEL[event.kind]}` +
-        `${event.actor_user_id ? ` (${event.actor_user_id})` : ''}` +
-        `${event.note ? ` — ${event.note}` : ''}`
-    );
-  }
+  return {
+    id: found.id,
+    targetLevel: found.target_level,
+    status: found.status,
+    receivedAt: found.received_at,
+    rejectionReason: found.rejection_reason,
+    requestedBy: found.requested_by,
+    verificationLevel: found.verification_level,
+    totalAmount: found.total_amount,
+    evidenceKinds: found.evidence_kinds,
+    events: events.rows.map((event) => ({
+      kind: event.kind,
+      actorUserId: event.actor_user_id,
+      note: event.note,
+      occurredAt: event.occurred_at,
+    })),
+  };
 }
 
 /** 심사 시작 표시. 여러 사람이 같은 신청을 붙잡는 것을 막는 최소한의 표시다. */
-async function startReview(
+export async function startReview(
   pool: ReturnType<typeof createPool>,
   id: string,
   by: string
 ): Promise<void> {
+  await requireOperator(pool, by);
+
   await withTransaction(pool, async (client) => {
     const found = await lock(client, id);
 

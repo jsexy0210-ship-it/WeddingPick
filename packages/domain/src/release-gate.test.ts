@@ -74,10 +74,19 @@ describe('출시 차단', () => {
     expect(assertReleasable(undefined, {})).toContain('사업자명');
   });
 
-  it('값을 다 채워도 문서가 안 되면 막는다', () => {
-    // 사업자 정보만으로 문을 열 수 없다. 약관·개인정보처리방침 같은 문서가 게시(url)
-    // 되기 전까지는 여전히 막는다(POLICY_DOCUMENTS).
-    expect(() => assertReleasable('production', FILLED)).toThrow('확정되지 않은 문서');
+  it('약관·개인정보처리방침이 게시되면(url) 문서 쪽은 더 막지 않는다', () => {
+    /*
+     * checkRelease는 POLICY_DOCUMENTS를 그대로 읽는다 — 상태 글자가 아니라
+     * 실제 url 유무를 본다. 지금은 이용약관·개인정보처리방침 둘 다 게시(url)돼
+     * 있어(policies.ts) blockingDocuments가 비어야 한다. url이 없어지면
+     * (아직 확정 안 된 문서로 되돌리면) 이 값도 다시 채워져야 한다 — 그 문서
+     * 자체를 이 테스트가 만들지 않는 이유는 checkRelease가 실제 정책 목록을
+     * 그대로 쓰기 때문이다.
+     */
+    const check = checkRelease(FILLED);
+
+    expect(check.blockingDocuments).toEqual([]);
+    expect(assertReleasable('production', FILLED)).toBeNull();
   });
 
   it('모든 항목에 사람이 읽을 이름이 있다', () => {

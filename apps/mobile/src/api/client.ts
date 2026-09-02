@@ -21,6 +21,7 @@ import {
   registerDeviceResponseSchema,
   settingsSchema,
   signupStateSchema,
+  tasteListResponseSchema,
   myReportListResponseSchema,
   notificationListResponseSchema,
   notificationSummaryResponseSchema,
@@ -43,6 +44,7 @@ import {
   vendorSearchResponseSchema,
   conditionStatsSchema,
   myRewardsResponseSchema,
+  myMonthlyDrawResponseSchema,
   vendorClaimListResponseSchema,
   weddingInviteListResponseSchema,
   verificationRequestSchema,
@@ -51,6 +53,7 @@ import {
   type ConditionStats,
   type DecideCategoryRequest,
   type MyRewardsResponse,
+  type MyMonthlyDrawResponse,
   type CreateRebuttalRequest,
   type CreateVendorClaimRequest,
   type VendorClaimListResponse,
@@ -61,6 +64,8 @@ import {
   type UpdateReviewRequest,
   type Settings,
   type UpdateSettingsRequest,
+  type Taste,
+  type TasteListResponse,
   type VendorSort,
   type UpdateRebuttalRequest,
   type CreateExpenseRequest,
@@ -946,6 +951,10 @@ export async function getMyRewards(): Promise<MyRewardsResponse> {
   return request('/v1/me/rewards', myRewardsResponseSchema);
 }
 
+export async function getMyMonthlyDraw(): Promise<MyMonthlyDrawResponse> {
+  return request('/v1/me/monthly-draw', myMonthlyDrawResponseSchema);
+}
+
 /**
  * 초대 코드 넣기.
  *
@@ -980,6 +989,19 @@ export async function updateSettings(body: UpdateSettingsRequest): Promise<Setti
   return request('/v1/me/settings', settingsSchema, {
     method: 'PUT',
     body: JSON.stringify(body),
+  });
+}
+
+/** 취향. 홈 C-1 시안 1. 아직 안 골랐으면 빈 배열이 온다. */
+export async function getTaste(): Promise<TasteListResponse> {
+  return request('/v1/me/taste', tasteListResponseSchema);
+}
+
+/** 고른 전체를 그대로 보낸다 — "추가"가 아니라 "지금 고른 전체"다. */
+export async function updateTaste(tastes: readonly Taste[]): Promise<TasteListResponse> {
+  return request('/v1/me/taste', tasteListResponseSchema, {
+    method: 'PUT',
+    body: JSON.stringify({ tastes }),
   });
 }
 

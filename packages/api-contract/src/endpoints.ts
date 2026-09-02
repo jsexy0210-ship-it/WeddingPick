@@ -43,6 +43,7 @@ import {
 import { registerDeviceRequestSchema, registerDeviceResponseSchema } from './devices';
 import { myReportListResponseSchema } from './my-reports';
 import { settingsSchema, updateSettingsRequestSchema } from './settings';
+import { tasteListResponseSchema, updateTasteRequestSchema } from './taste';
 import { withdrawalNoticeSchema, withdrawalResultSchema } from './withdrawal';
 import {
   notificationListResponseSchema,
@@ -499,6 +500,21 @@ export const ENDPOINTS = {
     path: '/v1/me/settings',
     body: updateSettingsRequestSchema,
     response: settingsSchema,
+  },
+
+  /** 취향. 홈 C-1 시안 1. 아직 안 골랐으면 빈 배열. */
+  getTaste: {
+    method: 'GET',
+    path: '/v1/me/taste',
+    response: tasteListResponseSchema,
+  },
+
+  /** 고른 전체 취향을 그대로 덮어쓴다 — 눌렀다 뗀 것도 그대로 반영된다. */
+  updateTaste: {
+    method: 'PUT',
+    path: '/v1/me/taste',
+    body: updateTasteRequestSchema,
+    response: tasteListResponseSchema,
   },
 
   /** 결제인증 동의. 최초 1회만 남는다. */

@@ -7,9 +7,9 @@
 
 ## 메타
 
-- `updated_at`: 2026-09-02 (일정·지도 보기 세션 반영, main 병합 후 갱신)
+- `updated_at`: 2026-09-02 (일정·지도 보기 PR #19 병합, 취향 API, CI+staging 그린)
 - `repository`: jsexy0210-ship-it/WeddingPickl
-- `branch (main)`: d1915fd (PR #16 프론트 화면 구현·PR #13 소셜로그인 병합 완료)
+- `branch (main)`: e34125f (PR #28 count 버그픽 포함)
 - `policy_version`: 통합정책 v3.14
 - `dashboard`: https://claude.ai/code/artifact/a1307c11-f282-4cf2-a26d-e44bd083d7a9
 - `ios_handoff_artifact`: https://claude.ai/code/artifact/b8792fcd-fefe-4386-b24e-41d122e90a87
@@ -158,7 +158,7 @@ GitHub Actions 실제 실행 결과, production DB 적용.
 ### 프론트엔드 (session_01HTGSU2B4vFjePXFS2ajKBY) — 아카이브
 **완료**: 모바일 앱 핵심 화면 구현, 42개 라우터 파일 생성
 
-### 백엔드 — 일정 · 지도 보기 (이 세션, session_016VEKBiJwF4kJzTkxotEiCD)
+### 백엔드 — 일정 · 지도 보기 (session_016VEKBiJwF4kJzTkxotEiCD)
 **배경**: 프론트엔드 세션(PR #16)이 순수 프론트로 가능한 화면을 다 구현하고, 새 백엔드
 API·DB 마이그레이션·지도 SDK가 필요한 두 항목(일정 추가, 지도 보기)을 이 세션으로 넘김.
 
@@ -212,7 +212,56 @@ API·DB 마이그레이션·지도 SDK가 필요한 두 항목(일정 추가, �
 이전 에러 문구가 안 지워지는" 버그도 함께 해소됨(`setLoadError(null)`을 `.then()`
 성공 분기 안으로 옮기면 두 문제가 한 번에 풀린다).
 
-**브랜치**: `claude/wedding-events-map-view-260902` · **PR**: #19 (main ← 이 브랜치)
+**브랜치**: `claude/wedding-events-map-view-260902` · **PR**: #19 (병합 완료)
+
+### 백엔드 갭 투입 (session_01BY3GppUAGgA58aci9XXH3a, Sonnet 5)
+**완료:**
+- ✅ 취향(홈 C-1 시안 1) 서버 API 신설 — `GET`/`PUT /v1/me/taste`
+  (`packages/db/migrations/0059_taste_preferences.sql`,
+  `packages/api-contract/src/taste.ts`, `apps/api/src/routes/taste.ts`).
+  기존에는 `apps/mobile/src/features/home/taste.ts`가 서버에 자리가 없어
+  AsyncStorage에만 저장했다(기기를 바꾸면 다시 물었다) — 이제 로그인한 사용자의
+  취향이 서버에 남는다. 모바일 쪽(`loadTaste`/`saveTaste`)을 그 API를 부르도록
+  교체, 저장 실패는 조용히 넘어가게 유지(낙관적 갱신 유지).
+- 조사 방법: Explore 서브에이전트로 `apps/mobile/src/api/client.ts`의 ~83개
+  엔드포인트 호출을 `apps/api/src/routes/*`와 전수 대조 — 나머지는 전부 대응하는
+  라우트가 있었고, 이 취향 기능과 홈 개인화 피드(`listWeddingContent`, 아래 참고)
+  둘만 "프론트는 있는데 백엔드가 없는" 실제 갭이었다.
+- typecheck(api-contract/api/mobile) 통과, mobile lint 0 error(기존 무관 경고 1개
+  그대로), API 테스트 549개 전체·mobile 테스트 66개 전체 통과(로컬에 Postgres 16을
+  띄우고 `npm run migrate --workspace @weddingpick/db`로 0059까지 재현해 확인).
+
+- ✅ PR #17 머지 후 main이 계속 CI 빨간불이길래 계속 파봤다 — 이 세션과 무관한
+  두 가지 원인을 찾아 고쳤다:
+  - **PR #23**: `eslint-plugin-react-hooks` 7.x의 `set-state-in-effect` 규칙이
+    표준 fetch-in-effect 패턴을 오탐지 — 6개 파일에 `eslint-disable-next-line`
+    (나중에 다른 세션이 더 나은 방식으로 재작성해 그 코멘트는 지금은 없다. 문제
+    없음 — Lint는 계속 0 error).
+  - **마이그레이션 충돌**: `0047_monthly_draw.sql`(PR #20)과 `0052_mission_draw.sql`
+    (예전 세션)이 같은 정책(월간 웨딩지원금)을 독립적으로 구현하면서
+    `reward_grants.draw_entry_id` 컬럼을 두 번 만들려다 매 마이그레이션마다
+    확정적으로 실패 — 동시성 문제가 아니었다. 내가 로컬에서 root-cause를 찾아
+    수정을 준비하는 사이 다른 세션이 **PR #25/#27**로 거의 같은 진단·해법(0052
+    삭제, 0053에 `IF NOT EXISTS`, production 첫 적용 대비 정리)을 먼저 머지해서
+    내 수정은 버리고 검증만 했다.
+  - **PR #29**: 마이그레이션 충돌 해소 후 main에 남은 마지막 2개 실패
+    (`release-gate.test.ts`, `page.test.ts`)를 고쳤다 — 코드 버그가 아니라
+    PR #22/#24가 이용약관·개인정보처리방침을 게시(url 설정)로 바꾼 뒤 "아직
+    게시 전"을 전제로 한 낡은 테스트 기대값이었다.
+- ✅ **PR #29 머지(head `b8a8df7`)로 main이 처음으로 CI 전체(Typecheck·Lint·
+  Test·Bundle·Build)와 `Deploy → Staging`(DB Migrate·Fly.io 배포·health check)
+  까지 전부 그린을 찍었다.** `weddingpickl.fly.dev`에 이 세션의 취향 API
+  (0060_taste_preferences 등)를 포함한 최신 코드가 실제로 배포됨.
+- **Production 배포는 보류 중** — `workflow_dispatch`(environment=production)로
+  수동 실행해야 하며, 사용자가 명시적으로 "진행 전에 물어봐달라"고 요청해 아직
+  실행하지 않았다. 다음 세션이 이어받으면: staging이 계속 정상인지 확인 후
+  사용자에게 production 배포 여부를 물어볼 것.
+
+**미착수(다음 사람 참고)**:
+- 홈 개인화 웨딩피드 — `apps/mobile/src/features/home/content.ts`의
+  `listWeddingContent()`가 `TODO`로 빈 배열만 반환. 계약에도 API에도 "콘텐츠"라는
+  개념이 아직 없다 — 무엇을 콘텐츠로 볼지(에디토리얼? 업체 추천 큐레이션?)부터
+  정책이 필요해 보여 손대지 않았다.
 
 ---
 
