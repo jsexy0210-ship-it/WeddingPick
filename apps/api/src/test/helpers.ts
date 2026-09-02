@@ -14,7 +14,7 @@ export const connectionString = process.env.DATABASE_URL;
 
 /** 제공자를 부르지 않고 신원을 정해준다. 실제 Apple·Kakao 검증은 여기서 확인하지 않는다. */
 export function fakeProvider(identity: VerifiedIdentity): IdentityProvider {
-  return { verify: async () => identity };
+  return { flow: 'id_token', verify: async () => identity };
 }
 
 export type TestApp = {
@@ -42,6 +42,7 @@ export async function createTestApp(): Promise<TestApp> {
     retentionReminderHours: 24,
     proofReaderCheapModel: 'claude-haiku-4-5',
     proofReaderStrongModel: 'claude-opus-5',
+    naverRedirectUris: [],
   };
 
   const context: AppContext = {
