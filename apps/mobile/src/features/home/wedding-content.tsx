@@ -48,5 +48,5 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 11 },
   card: { flexBasis: '48%', flexGrow: 1, minWidth: 0, gap: Spacing.two },
   pressed: { opacity: 0.8 },
-  image: { width: '100%', aspectRatio: 1, borderRadius: Radius.card, overflow: 'hidden' },
+  image: { width: '100%', aspectRatio: 1, borderRadius: Radius.medium, overflow: 'hidden' },
 });

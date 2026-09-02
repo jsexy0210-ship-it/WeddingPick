@@ -535,7 +535,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   missionBlock: {
-    borderRadius: Radius.card,
+    borderRadius: Radius.medium,
     padding: Spacing.four,
     gap: Spacing.three,
   },
@@ -567,7 +567,7 @@ const styles = StyleSheet.create({
   dialog: {
     width: '100%',
     maxWidth: 320,
-    borderRadius: Radius.card,
+    borderRadius: Radius.medium,
     padding: Spacing.five,
     alignItems: 'center',
     gap: Spacing.two,

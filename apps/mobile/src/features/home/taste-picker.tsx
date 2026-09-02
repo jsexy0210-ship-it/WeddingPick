@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     minWidth: 0,
     height: 150,
-    borderRadius: Radius.card,
+    borderRadius: Radius.medium,
     overflow: 'hidden',
     justifyContent: 'flex-end',
     padding: 12,
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    borderRadius: Radius.card,
+    borderRadius: Radius.medium,
   },
   check: {
     position: 'absolute',

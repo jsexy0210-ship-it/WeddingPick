@@ -529,7 +529,7 @@ const styles = StyleSheet.create({
   },
   /** 실제 결제 잉크 블록. 핸드오프 8번 — 이 화면에서 가장 중요한 숫자다. */
   ink: {
-    borderRadius: Radius.card,
+    borderRadius: Radius.medium,
     padding: Spacing.four,
     gap: Spacing.one,
   },

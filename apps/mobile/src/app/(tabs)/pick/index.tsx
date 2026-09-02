@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.six,
     gap: Spacing.three,
   },
-  card: { borderRadius: Radius.card, padding: Spacing.four, gap: Spacing.three },
+  card: { borderRadius: Radius.medium, padding: Spacing.four, gap: Spacing.three },
   cardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   row: { gap: Spacing.one },
   rowHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
