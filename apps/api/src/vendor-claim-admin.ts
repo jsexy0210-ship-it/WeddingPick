@@ -5,6 +5,7 @@ import {
   type ClaimMethod,
   type ClaimStatus,
 } from '@weddingpick/domain';
+import type { Pool } from 'pg';
 
 import { loadConfig } from './config';
 import { newEventId, recordDecision, requireOperator } from './decisions';
@@ -56,6 +57,96 @@ function parseArgs(argv: string[]): Options {
 }
 
 const when = (at: Date): string => at.toISOString().slice(0, 16).replace('T', ' ');
+
+export type PendingClaim = {
+  id: string;
+  vendorName: string;
+  claimedRole: string;
+  method: ClaimMethod;
+  createdAt: Date;
+};
+
+/** 확인 대기 신청 전체. HTTP 관리자 콘솔과 CLI `--list`가 함께 쓴다. */
+export async function listPendingClaims(pool: Pool): Promise<PendingClaim[]> {
+  const { rows } = await pool.query<{
+    id: string;
+    vendor_name: string;
+    claimed_role: string;
+    method: ClaimMethod;
+    created_at: Date;
+  }>(
+    `SELECT c.id, v.name AS vendor_name, c.claimed_role, c.method, c.created_at
+     FROM structured.vendor_claims c
+     JOIN structured.vendors v ON v.id = c.vendor_id
+     WHERE c.status = 'pending'
+     ORDER BY c.created_at`
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    vendorName: row.vendor_name,
+    claimedRole: row.claimed_role,
+    method: row.method,
+    createdAt: row.created_at,
+  }));
+}
+
+export type ClaimDetail = {
+  id: string;
+  status: ClaimStatus;
+  vendorName: string;
+  officialDomain: string | null;
+  claimedRole: string;
+  method: ClaimMethod;
+  contactEmail: string | null;
+  listedAt: string | null;
+  hasDocument: boolean;
+  decisionNote: string | null;
+  createdAt: Date;
+};
+
+/** 신청 하나의 상세. 증빙 원본은 스토리지에 있으니 여기서는 왔는지만 말한다(v2.0 27번). */
+export async function getClaim(pool: Pool, id: string): Promise<ClaimDetail | null> {
+  const { rows } = await pool.query<{
+    id: string;
+    status: ClaimStatus;
+    vendor_name: string;
+    official_domain: string | null;
+    claimed_role: string;
+    method: ClaimMethod;
+    contact_email: string | null;
+    listed_at: string | null;
+    has_document: boolean;
+    decision_note: string | null;
+    created_at: Date;
+  }>(
+    `SELECT c.id, c.status, v.name AS vendor_name, v.official_domain,
+            c.claimed_role, c.method, c.contact_email, c.listed_at,
+            c.evidence_document_id IS NOT NULL AS has_document,
+            c.decision_note, c.created_at
+     FROM structured.vendor_claims c
+     JOIN structured.vendors v ON v.id = c.vendor_id
+     WHERE c.id = $1`,
+    [id]
+  );
+
+  const found = rows[0];
+  if (!found) return null;
+
+  return {
+    id: found.id,
+    status: found.status,
+    vendorName: found.vendor_name,
+    officialDomain: found.official_domain,
+    claimedRole: found.claimed_role,
+    method: found.method,
+    contactEmail: found.contact_email,
+    listedAt: found.listed_at,
+    hasDocument: found.has_document,
+    decisionNote: found.decision_note,
+    createdAt: found.created_at,
+  };
+}
 
 export async function decide(
   pool: ReturnType<typeof createPool>,
@@ -147,19 +238,7 @@ async function main(): Promise<void> {
 
   try {
     if (options.list) {
-      const { rows } = await pool.query<{
-        id: string;
-        vendor_name: string;
-        claimed_role: string;
-        method: ClaimMethod;
-        created_at: Date;
-      }>(
-        `SELECT c.id, v.name AS vendor_name, c.claimed_role, c.method, c.created_at
-         FROM structured.vendor_claims c
-         JOIN structured.vendors v ON v.id = c.vendor_id
-         WHERE c.status = 'pending'
-         ORDER BY c.created_at`
-      );
+      const rows = await listPendingClaims(pool);
 
       if (rows.length === 0) {
         console.log('확인할 신청이 없다.');
@@ -169,38 +248,15 @@ async function main(): Promise<void> {
       console.log(`확인 대기 ${rows.length}건:`);
       for (const row of rows) {
         console.log(
-          `  ${row.id}  ${row.vendor_name}  ${row.claimed_role}  ` +
-            `${CLAIM_METHOD_RULES[row.method].label}  ${when(row.created_at)}`
+          `  ${row.id}  ${row.vendorName}  ${row.claimedRole}  ` +
+            `${CLAIM_METHOD_RULES[row.method].label}  ${when(row.createdAt)}`
         );
       }
       return;
     }
 
     if (options.show) {
-      const { rows } = await pool.query<{
-        id: string;
-        status: ClaimStatus;
-        vendor_name: string;
-        official_domain: string | null;
-        claimed_role: string;
-        method: ClaimMethod;
-        contact_email: string | null;
-        listed_at: string | null;
-        has_document: boolean;
-        decision_note: string | null;
-        created_at: Date;
-      }>(
-        `SELECT c.id, c.status, v.name AS vendor_name, v.official_domain,
-                c.claimed_role, c.method, c.contact_email, c.listed_at,
-                c.evidence_document_id IS NOT NULL AS has_document,
-                c.decision_note, c.created_at
-         FROM structured.vendor_claims c
-         JOIN structured.vendors v ON v.id = c.vendor_id
-         WHERE c.id = $1`,
-        [options.show]
-      );
-
-      const found = rows[0];
+      const found = await getClaim(pool, options.show);
 
       if (!found) {
         console.error('없는 신청이다.');
@@ -208,35 +264,35 @@ async function main(): Promise<void> {
         return;
       }
 
-      console.log(`${found.id}  ${CLAIM_STATUS_LABEL[found.status]}  ${when(found.created_at)}`);
-      console.log(`  업체: ${found.vendor_name}`);
-      console.log(`  본인이 밝힌 소속: ${found.claimed_role}  ← 이걸 확인하는 것이 심사다`);
+      console.log(`${found.id}  ${CLAIM_STATUS_LABEL[found.status]}  ${when(found.createdAt)}`);
+      console.log(`  업체: ${found.vendorName}`);
+      console.log(`  본인이 밝힌 소속: ${found.claimedRole}  ← 이걸 확인하는 것이 심사다`);
       console.log(`  수단: ${CLAIM_METHOD_RULES[found.method].label}`);
 
-      if (found.contact_email) {
-        console.log(`  연락할 주소: ${found.contact_email}`);
-        console.log(`  업체 공식 도메인: ${found.official_domain ?? '아직 모른다'}`);
+      if (found.contactEmail) {
+        console.log(`  연락할 주소: ${found.contactEmail}`);
+        console.log(`  업체 공식 도메인: ${found.officialDomain ?? '아직 모른다'}`);
 
-        if (found.official_domain === null) {
+        if (found.officialDomain === null) {
           console.log('  → 견줄 것이 없다. 공식 홈페이지를 확인해 도메인부터 적는다.');
-        } else if (matchesOfficialDomain(found.contact_email, found.official_domain)) {
+        } else if (matchesOfficialDomain(found.contactEmail, found.officialDomain)) {
           console.log('  → 도메인이 같다. 다만 그 주소를 신청인이 쓰는지는 연락해 확인한다.');
         } else {
           console.log('  → 도메인이 다르다.');
         }
       }
 
-      if (found.listed_at) console.log(`  공개돼 있다는 자리: ${found.listed_at}`);
+      if (found.listedAt) console.log(`  공개돼 있다는 자리: ${found.listedAt}`);
 
       /*
        * 증빙은 왔는지만 말한다. 사업자등록증에는 대표자 이름과 주소가 적혀
        * 있고, 그걸 이 화면에 옮기면 로그에도 남는다(원문 27번).
        */
-      if (found.has_document) {
+      if (found.hasDocument) {
         console.log('  사업자 관련 증빙: 첨부됨 (원본은 스토리지에서 본다)');
       }
 
-      if (found.decision_note) console.log(`  결정 사유: ${found.decision_note}`);
+      if (found.decisionNote) console.log(`  결정 사유: ${found.decisionNote}`);
       return;
     }
 

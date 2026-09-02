@@ -173,14 +173,21 @@ GitHub Actions 실제 실행 결과, production DB 적용.
   (샌드박스엔 `DATABASE_URL`이 기본으로 없다 — CI 실행 전엔 대부분 테스트가
   조용히 skip되니, 리뷰할 때 실제로 DB를 붙여 돌렸는지 확인할 것).
 
-**다음 세션이 같은 패턴으로 이어갈 것 — 남은 admin 12개**:
-- **함수 추출 없이 바로 라우트만 추가하면 되는 것** (이미 재사용 가능한 함수가
-  export돼 있음): `vendor-claim-admin.ts`(`decide`), `verification-admin.ts`
+**업데이트(같은 세션, 두 번째 조각)**: `vendor-claim-admin.ts`도 같은 패턴으로
+끝냈다 — `--list`/`--show`에 인라인돼 있던 SQL을 `listPendingClaims()`/
+`getClaim()`으로 뽑아 `main()`이 그걸 다시 부르게 고치고, `/v1/admin/vendor-claims`
+(목록·상세·승인·거절)를 열었다. 테스트(`admin-vendor-claims.test.ts`) 포함, 기존
+`vendor-claims.test.ts`(CLI 단) 15개까지 실제 Postgres로 재확인함 — 리팩터링이
+CLI 동작을 안 바꿨다.
+
+**다음 세션이 같은 패턴으로 이어갈 것 — 남은 admin 11개**:
+- **함수 추출 없이 바로 라우트만 추가하면 되는 것**: `verification-admin.ts`
   (`approve`, `reject`), `pii-admin.ts`(`conclude`, `redact`),
   `inquiry-admin.ts`(`moveStatus`), `payment-proof-admin.ts`(`link`). 다만
-  이 다섯은 CLI의 `--list`/`--show` 조회 로직이 `main()` 안에 인라인돼 있어,
+  이 넷도 CLI의 `--list`/`--show` 조회 로직이 `main()` 안에 인라인돼 있어,
   목록 조회 라우트가 필요하면 그 SQL을 먼저 exported 함수로 빼야 한다
-  (`withdrawal-admin.ts`의 `list()`처럼).
+  (`vendor-claim-admin.ts`의 `listPendingClaims()`/`getClaim()`처럼 — main()도
+  그 함수를 다시 부르게 같이 고쳐 로직이 두 곳에 남지 않게 한다).
 - **먼저 리팩터링(로직/CLI 분리)이 필요한 것** — `main()` 안에 전부 들어 있어
   export된 함수가 하나도 없음: `ad-admin.ts`, `ai-cost-admin.ts`,
   `decisions-admin.ts`, `objection-admin.ts`, `rebuttal-admin.ts`,
