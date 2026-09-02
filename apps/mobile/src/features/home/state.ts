@@ -70,7 +70,7 @@ export function homeView(input: {
   candidates: CandidateListResponse | null;
   /** 오늘의 Pick 자리에 올릴 추천 세 곳. */
   recommended: readonly VendorSummary[];
-  /** 취향을 고른 적이 있는가. 아직 서버에 자리가 없어 기기에 저장한다. */
+  /** 취향을 고른 적이 있는가. */
   tasteChosen: boolean;
 }): HomeView {
   if (input.me === null) {

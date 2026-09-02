@@ -237,7 +237,16 @@ export default function VendorReviewsScreen() {
                       ))}
                       <ActionButton label="그만두기" onPress={() => setReporting(null)} />
                     </ThemedView>
-                  ) : review.mine ? null : (
+                  ) : review.mine ? (
+                    <ActionButton
+                      label="내 후기 고치기"
+                      onPress={() =>
+                        router.push(
+                          `/search/${vendorId}/edit-review?reviewId=${review.id}&overall=${review.overall}&title=${encodeURIComponent(review.title)}&body=${encodeURIComponent(review.body)}&pros=${encodeURIComponent(review.pros ?? '')}&cons=${encodeURIComponent(review.cons ?? '')}`
+                        )
+                      }
+                    />
+                  ) : (
                     <>
                       <ActionButton
                         label="신고하기"

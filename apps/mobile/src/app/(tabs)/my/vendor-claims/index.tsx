@@ -5,7 +5,9 @@ import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
+  ErrorView,
   Layout,
+  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
@@ -22,14 +24,24 @@ import { listMyVendorClaims } from '@/api/client';
  */
 export default function MyVendorClaimsScreen() {
   const [claims, setClaims] = useState<MyVendorClaim[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = useCallback(() => {
+    setLoadError(null);
     void listMyVendorClaims()
       .then((response) => setClaims(response.claims))
-      .catch(() => setClaims([]));
+      .catch((caught: Error) => setLoadError(caught.message ?? '인증 내역을 불러오지 못했어요.'));
   }, []);
 
   useEffect(load, [load]);
+
+  if (loadError) {
+    return <ErrorView message={loadError} onBack={load} />;
+  }
+
+  if (claims === null) {
+    return <LoadingView />;
+  }
 
   return (
     <ThemedView style={styles.container}>
@@ -37,14 +49,14 @@ export default function MyVendorClaimsScreen() {
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedText type="t2">업체 관계자 인증</ThemedText>
 
-          {claims !== null && claims.length === 0 ? (
+          {claims.length === 0 ? (
             <ThemedText type="t6" themeColor="textSecondary">
               아직 신청한 업체가 없어요. 업체 화면에서 이 업체의 관계자예요를
               눌러 신청해주세요
             </ThemedText>
           ) : null}
 
-          {(claims ?? []).map((claim) => (
+          {claims.map((claim) => (
             <ThemedView key={claim.id} type="backgroundElement" style={styles.card}>
               <ThemedView type="backgroundElement" style={styles.cardHead}>
                 <ThemedText type="t5">{claim.vendorName}</ThemedText>

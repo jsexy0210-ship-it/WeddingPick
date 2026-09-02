@@ -7,7 +7,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   ActionButton,
+  ErrorView,
   Layout,
+  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
@@ -28,15 +30,25 @@ import { won } from '@/features/quotes/quote-result-view';
 export default function MyReportsScreen() {
   const theme = useTheme();
   const [reports, setReports] = useState<MyReport[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   const load = useCallback(() => {
+    setLoadError(null);
     void listMyReports()
       .then((response) => setReports(response.reports))
-      .catch(() => setReports([]));
+      .catch((caught: Error) => setLoadError(caught.message ?? '제보내역을 불러오지 못했어요.'));
   }, []);
 
   useEffect(load, [load]);
+
+  if (loadError) {
+    return <ErrorView message={loadError} onBack={load} />;
+  }
+
+  if (reports === null) {
+    return <LoadingView />;
+  }
 
   function confirmDelete(reviewId: string, vendor: string) {
     // 되돌릴 수 없는 행동은 한 번 더 묻는다. 핸드오프 인터랙션 규칙.
@@ -60,7 +72,7 @@ export default function MyReportsScreen() {
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedText type="t2">내 제보내역</ThemedText>
 
-          {reports !== null && reports.length === 0 ? (
+          {reports.length === 0 ? (
             <ThemedView style={styles.empty}>
               <ThemedText type="t6" themeColor="textSecondary">
                 {MY_REPORTS_EMPTY}
@@ -73,7 +85,7 @@ export default function MyReportsScreen() {
             </ThemedView>
           ) : null}
 
-          {(reports ?? []).map((report) => (
+          {reports.map((report) => (
             <ThemedView key={report.id} type="backgroundElement" style={styles.card}>
               <ThemedView type="backgroundElement" style={styles.cardHead}>
                 <View style={[styles.badge, { backgroundColor: theme.tintSubtle }]}>

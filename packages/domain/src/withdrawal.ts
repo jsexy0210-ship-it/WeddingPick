@@ -34,8 +34,9 @@ export const WITHDRAWAL_DELETED_GROUP = '지워지는 것';
  * 동의를 받은 것이 아니라 오해를 받은 것이 된다.
  */
 export const WITHDRAWAL_SEPARATED_GROUP = '작성자 정보와 분리되는 정보';
+/** 통합정책 v3.13 §J-3 "하단 고지"의 문구를 그대로 쓴다. */
 export const WITHDRAWAL_SEPARATED_NOTE =
-  '후기와 확인된 정보는 작성자 정보와 분리돼 유지될 수 있어요';
+  '후기와 확인된 정보는 나를 알아볼 수 없도록 분리해 유지될 수 있어요';
 export const WITHDRAWAL_SEPARATED_EMPTY = '작성한 후기나 남는 정보가 없어요';
 export const WITHDRAWAL_ANONYMOUS_BADGE = '익명';
 
@@ -144,7 +145,7 @@ export function separatedOnWithdrawal(counts: WithdrawalCounts): WithdrawalKeptR
   if (counts.reviews > 0) {
     rows.push({
       label: `작성한 후기 ${counts.reviews}건`,
-      note: '작성자 정보와 분리돼 유지될 수 있어요',
+      note: '나를 알아볼 수 없도록 분리해 유지될 수 있어요',
       anonymous: true,
     });
   }
@@ -183,7 +184,7 @@ export function withdrawalDoneItems(counts: WithdrawalCounts): string[] {
   items.push('Pick · 일정 · 지출 기록을 삭제했어요');
 
   if (counts.reviews > 0 || counts.confirmedReports > 0) {
-    items.push('후기와 확인된 정보는 작성자 정보와 분리했어요');
+    items.push('후기와 확인된 정보는 나를 알아볼 수 없도록 분리했어요');
   }
 
   return items;
