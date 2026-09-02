@@ -157,10 +157,10 @@ DB 마이그레이션 44 · 도메인 모듈 47/테스트 35 · UI 컴포넌트 
 - **AI 라우터 사용량 게이트**: `packages/domain/src/ai-router.ts`(순수함수) +
   `apps/api/src/analysis/pipeline.ts`(`extractDocument` 게이트). 이전에는 문서 추출 AI
   호출이 실제로 기록되지 않아 예산·일일 호출 한도가 있으나마나였음. 기본 한도값을 지어내지
-  않음(`AI_DAILY_CALL_LIMIT`에 기본값 없음). 마이그레이션 `0049_ai_router.sql`
+  않음(`AI_DAILY_CALL_LIMIT`에 기본값 없음). 마이그레이션 `0053_ai_router.sql`
   (`structured.ai_usage.user_id` 추가).
 - **이의제기 30일 자동 만료**: `structured.review_visibility` 계산 뷰로 대체
-  (마이그레이션 `0050_objection_expiry.sql`). 이전에는 백그라운드 잡이 없어 이의 보류가
+  (마이그레이션 `0054_objection_expiry.sql`). 이전에는 백그라운드 잡이 없어 이의 보류가
   사실상 무기한이었음. `apps/api/src/objection-decide.ts`, `objection-admin.ts` 신규.
 - **반론(rebuttal) 게시 전 근거 확인**: `apps/api/src/rebuttal-decide.ts` — 연결된
   `approved_vendor_claims` 없이는 게시 불가(`--without-claim`으로 예외 처리 가능).
@@ -189,7 +189,7 @@ DB 마이그레이션 44 · 도메인 모듈 47/테스트 35 · UI 컴포넌트 
 
 ### 변경 파일
 scripts/progress.mjs, scripts/progress.config.json, docs/design-handoff/screens.md,
-packages/db/migrations/0048_account_deletion.sql, 0049_ai_router.sql, 0050_objection_expiry.sql,
+packages/db/migrations/0052_account_deletion.sql, 0053_ai_router.sql, 0054_objection_expiry.sql,
 packages/domain/src/withdrawal.ts(+test), ai-router.ts, terms.ts, copy-rules.ts, vendor.ts,
 apps/api/src/withdrawal.ts, routes/withdrawal.ts, analysis/pipeline.ts, objection-decide.ts,
 objection-admin.ts, rebuttal-decide.ts, decisions.ts, verification-admin.ts, vendor-claim-admin.ts,
@@ -199,11 +199,11 @@ apps/mobile/.../my/withdrawal.tsx, .../write-review.tsx, 그 외 v3.3 문구 수
 docs/05-product-spec.md.
 
 ### DB / Migration 변경
-- `0048_account_deletion.sql`(옛 0045): reviews/price_reports/payment_proofs의
+- `0052_account_deletion.sql`(옛 0048, 그전엔 0045): reviews/price_reports/payment_proofs의
   author/reporter FK를 CASCADE→SET NULL, `deletable_accounts` 뷰,
   `document_retention_schedule`이 `users.deleted_at` 발생 시 원본을 강제 만료하도록 수정.
-- `0049_ai_router.sql`(옛 0046): `structured.ai_usage.user_id` 추가.
-- `0050_objection_expiry.sql`(옛 0047): `structured.review_visibility` 계산 뷰.
+- `0053_ai_router.sql`(옛 0049, 그전엔 0046): `structured.ai_usage.user_id` 추가.
+- `0054_objection_expiry.sql`(옛 0050, 그전엔 0047): `structured.review_visibility` 계산 뷰.
 - **번호가 이미 한 번 밀렸음**: 원래 0045/0046/0047이었으나 home-c1 브랜치의
   `0045_wedding_region.sql`과 겹쳐 0048/0049/0050으로 밀어 코드·문서의 참조를 모두 고쳤음
   (grep으로 잔여 "0045/0046/0047" 자기참조 없음 확인).

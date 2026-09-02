@@ -69,7 +69,7 @@ export function TodaysPick({
             정보가 더 모이면 비교할 수 있어요
           </ThemedText>
           <ActionButton
-            label="결제내역 제보"
+            label="Pick 인증하기"
             variant="ghost"
             size="large"
             onPress={onReport}

@@ -52,8 +52,8 @@ export const DISCLOSURE_LIMIT_REASONS = [
 export type DisclosureLimitReason = (typeof DISCLOSURE_LIMIT_REASONS)[number];
 
 export const DISCLOSURE_LIMIT_LABEL: Record<DisclosureLimitReason, string> = {
-  not_enough: '아직 데이터가 적어요',
-  condition_thin: '이 조건은 아직 데이터가 모이는 중이에요',
+  not_enough: '아직 정보가 적어요',
+  condition_thin: '이 조건은 아직 정보가 모이는 중이에요',
   reidentifiable: '조건을 더 좁히면 특정 계약이 드러날 수 있어 넓게 보여드려요',
   stale: '최근 자료가 적어 넓게 보여드려요',
   low_trust: '확인 단계가 낮은 자료가 섞여 있어 넓게 보여드려요',

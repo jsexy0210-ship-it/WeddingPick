@@ -625,7 +625,7 @@ describeWithDb('업체 비교', () => {
     const body = (await compare(headers, [a, b])).json();
 
     // 표만 그리고 이 말을 빠뜨리면 우리가 만든 표가 오해를 부추긴다. 사업계획서 2번.
-    expect(body.caveats.at(-1)).toContain('금액만으로는 비교하기 어렵습니다');
+    expect(body.caveats.at(-1)).toContain('금액만으로는 비교하기 어려워요');
   });
 
   it('분류와 지역이 섞이면 알려준다', async () => {
@@ -636,7 +636,7 @@ describeWithDb('업체 비교', () => {
     const body = (await compare(headers, [a, b])).json();
 
     expect(body.caveats.some((note: string) => note.includes('분류가 다른'))).toBe(true);
-    expect(body.caveats.some((note: string) => note.includes('지역이 다릅니다'))).toBe(true);
+    expect(body.caveats.some((note: string) => note.includes('지역이 달라요'))).toBe(true);
   });
 
   it('가격을 견줄 수 있는 곳과 없는 곳을 함께 보여준다', async () => {
@@ -665,7 +665,7 @@ describeWithDb('업체 비교', () => {
     expect(byName['자료있는홀']).toBe(1);
     expect(byName['자료없는홀']).toBe(0);
     // 자료가 없는 것이 싸다는 뜻으로 읽히지 않게 한다.
-    expect(body.caveats.some((note: string) => note.includes('싸거나 비싸다는 뜻이 아닙니다'))).toBe(
+    expect(body.caveats.some((note: string) => note.includes('싸거나 비싸다는 뜻이 아니에요'))).toBe(
       true
     );
   });
