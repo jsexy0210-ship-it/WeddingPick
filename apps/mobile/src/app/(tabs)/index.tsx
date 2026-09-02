@@ -8,7 +8,6 @@ import {
   COMPLETED_ACTIONS,
   EXPENSE_BUCKET_COLOR,
   topPriority,
-  hasUnread,
   formatTaskDate,
   greeting,
   lifecycle,
@@ -338,14 +337,14 @@ export default function HomeScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={
-                hasUnread({ unread: data.unread, total: data.unread })
+                data.unread > 0
                   ? `알림 ${data.unread}건`
                   : '알림'
               }
               onPress={() => router.push('/my/notifications')}
               style={styles.bell}>
               <ThemedText type="t4">🔔</ThemedText>
-              {hasUnread({ unread: data.unread, total: data.unread }) ? (
+              {data.unread > 0 ? (
                 <View style={[styles.bellDot, { backgroundColor: theme.negative }]} />
               ) : null}
             </Pressable>

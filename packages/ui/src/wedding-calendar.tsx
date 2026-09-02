@@ -11,6 +11,8 @@ import { useTheme } from './use-theme';
  *
  * **오늘 포함 과거는 고를 수 없다** — 결혼식은 미래이기 때문이다. 일요일은 붉게,
  * 토요일은 파랗게. 오늘은 테두리로 표시하되 고를 수는 없다.
+ *
+ * `allowPast=true`이면 제한을 뒤집는다 — 방문노트처럼 지난 날을 골라야 할 때 쓴다.
  */
 export type WeddingCalendarProps = {
   /** 'YYYY-MM-DD' 또는 아직 안 고름. */
@@ -18,6 +20,8 @@ export type WeddingCalendarProps = {
   onChange: (value: string) => void;
   /** 테스트가 오늘을 정할 수 있게 받는다. */
   today?: Date;
+  /** true이면 과거 날짜도 고를 수 있다. 기본값은 false(미래만). */
+  allowPast?: boolean;
 };
 
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
@@ -35,7 +39,7 @@ function monthShape(year: number, month: number) {
   };
 }
 
-export function WeddingCalendar({ value, onChange, today = new Date() }: WeddingCalendarProps) {
+export function WeddingCalendar({ value, onChange, today = new Date(), allowPast = false }: WeddingCalendarProps) {
   const theme = useTheme();
   const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
@@ -58,8 +62,9 @@ export function WeddingCalendar({ value, onChange, today = new Date() }: Wedding
 
   while (cells.length < 42) cells.push(null);
 
-  // 이번 달에서는 이전 달로 갈 수 없다. 과거에는 고를 날이 없다.
+  // allowPast이면 제한 없음. 아니면 이번 달에서는 이전 달로 갈 수 없다.
   const atCurrentMonth =
+    !allowPast &&
     cursor.year === today.getFullYear() && cursor.month === today.getMonth();
 
   function move(delta: number) {
@@ -115,8 +120,9 @@ export function WeddingCalendar({ value, onChange, today = new Date() }: Wedding
 
           const date = iso(cursor.year, cursor.month, day);
           const asDate = new Date(cursor.year, cursor.month, day);
-          /* 오늘 포함 과거는 고를 수 없다. 결혼식은 미래다. */
-          const selectable = asDate.getTime() > startOfToday.getTime();
+          const selectable = allowPast
+            ? asDate.getTime() <= startOfToday.getTime()
+            : asDate.getTime() > startOfToday.getTime();
           const isToday = asDate.getTime() === startOfToday.getTime();
           const selected = value === date;
           const weekday = index % 7;

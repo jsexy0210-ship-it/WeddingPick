@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ActionButton,
   Layout,
+  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
@@ -36,13 +37,17 @@ export default function MyReportsScreen() {
 
   useEffect(load, [load]);
 
+  if (reports === null) {
+    return <LoadingView />;
+  }
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedText type="t2">내 제보내역</ThemedText>
 
-          {reports !== null && reports.length === 0 ? (
+          {reports.length === 0 ? (
             <ThemedView style={styles.empty}>
               <ThemedText type="t6" themeColor="textSecondary">
                 {MY_REPORTS_EMPTY}
@@ -55,7 +60,7 @@ export default function MyReportsScreen() {
             </ThemedView>
           ) : null}
 
-          {(reports ?? []).map((report) => (
+          {reports.map((report) => (
             <ThemedView key={report.id} type="backgroundElement" style={styles.card}>
               <ThemedView type="backgroundElement" style={styles.cardHead}>
                 <View style={[styles.badge, { backgroundColor: theme.tintSubtle }]}>
