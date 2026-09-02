@@ -57,6 +57,9 @@ type VendorRow = {
   region: string;
   source: string;
   last_verified_at: Date;
+  /** 지도 핀 좌표. 아직 지오코딩하지 않았으면 둘 다 null. */
+  lat: number | null;
+  lng: number | null;
   comparable_quote_count: string;
   /** 검색 목록에서만 채워진다. 상세는 따로 읽는다. */
   proof_count?: string;
@@ -119,6 +122,7 @@ function toSummary(row: VendorRow) {
     name: row.name,
     category: row.category as VendorCategory,
     region: row.region,
+    coordinates: row.lat !== null && row.lng !== null ? { lat: row.lat, lng: row.lng } : null,
     sourceNote: vendorSourceNote(row.source),
     comparableQuoteCount: Number(row.comparable_quote_count),
   };
@@ -154,7 +158,7 @@ function mostCommon(values: string[]): string | null {
  */
 async function loadVendorDetail(pool: Pool, vendorId: string, viewerId: string | null) {
   const { rows } = await pool.query<VendorRow>(
-    `SELECT v.id, v.name, v.category, v.region, v.source, v.last_verified_at,
+    `SELECT v.id, v.name, v.category, v.region, v.source, v.last_verified_at, v.lat, v.lng,
             (SELECT count(*) FROM structured.comparable_quotes c WHERE c.vendor_id = v.id)
               AS comparable_quote_count
      FROM structured.vendors v WHERE v.id = $1`,
@@ -423,7 +427,7 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
                      ELSE structured.normalize_vendor_name($1) END AS value
        ),
        found AS (
-         SELECT v.id, v.name, v.category, v.region, v.source, v.last_verified_at
+         SELECT v.id, v.name, v.category, v.region, v.source, v.last_verified_at, v.lat, v.lng
          FROM structured.vendors v, needle n
          WHERE (n.value IS NULL
                 OR v.normalized_name LIKE '%' || n.value || '%'
@@ -433,7 +437,7 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
            AND ($2::vendor_category IS NULL OR v.category = $2)
            AND ($3::text IS NULL OR v.region LIKE $3 || '%')
        )
-       SELECT v.id, v.name, v.category, v.region, v.source, v.last_verified_at,
+       SELECT v.id, v.name, v.category, v.region, v.source, v.last_verified_at, v.lat, v.lng,
               (SELECT count(*) FROM structured.comparable_quotes c WHERE c.vendor_id = v.id)
                 AS comparable_quote_count,
               coalesce(w.proof_count, 0) AS proof_count,

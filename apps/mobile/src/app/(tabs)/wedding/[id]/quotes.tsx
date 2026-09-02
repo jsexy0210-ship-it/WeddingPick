@@ -84,12 +84,10 @@ export default function WeddingQuotesScreen() {
         setQuotes(res.quotes);
         setNextCursor(res.nextCursor);
       })
-      .catch((caught: Error) => {
+      .catch((caught: unknown) => {
         setError(caught instanceof Error ? caught.message : '불러오지 못했어요.');
       })
-      .finally(() => {
-        setLoading(false);
-      });
+      .finally(() => setLoading(false));
   }, [id]);
 
   useEffect(load, [load]);

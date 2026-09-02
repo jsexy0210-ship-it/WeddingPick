@@ -70,9 +70,11 @@ export default function SettingsScreen() {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    setLoadError(null);
     void getSettings()
-      .then(setSettings)
+      .then((response) => {
+        setLoadError(null);
+        setSettings(response);
+      })
       .catch((caught: Error) => setLoadError(caught.message ?? '설정을 불러오지 못했어요.'));
   }, []);
 
