@@ -245,7 +245,22 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exitCode = 1;
-});
+/*
+ * CLI로 직접 실행했을 때만 돈다. 테스트나 라우트가 이 파일에서 함수를
+ * 가져오면(require) `require.main`이 테스트 러너/서버를 가리키므로 여기
+ * 걸리지 않는다 — 안 걸리면 가져오기만 해도 `main()`이 돌며 실제 인자 없이
+ * 안내 문구로 exitCode를 오염시킨다. 원래 이 파일에는 이 관문이 없었다
+ * (다른 admin 도구와 다르게) — HTTP로 열면서 같이 넣었다.
+ *
+ * 이 파일 자체에서 export할 함수는 없다 — 실제 로직은 전부 `retention/worker.ts`에
+ * 이미 있고, 여기는 그 함수들을 CLI 인자로 잇는 얇은 층이다. `--operator`
+ * (운영자 지정/해제)만은 **의도적으로 HTTP에 열지 않는다** — 바로 아래 주석대로,
+ * 이 값을 바꾸는 API 경로를 두지 않는 것 자체가 자기 자신을 운영자로 올리는
+ * 길을 막는 설계다.
+ */
+if (require.main === module) {
+  void main().catch((error: unknown) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  });
+}

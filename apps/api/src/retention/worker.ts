@@ -240,11 +240,16 @@ export async function deleteDocument(
     deleted_at: Date | null;
     storage_keys: string[] | null;
   }>(
+    /*
+     * `retention_until`은 원본 표의 칸이 아니다 — 0018이 지웠다. 검증 완료
+     * 시각으로부터 계산해 `document_retention_schedule` 뷰가 낸다. 원본
+     * 표(`raw_documents`)에서 곧바로 고르면 "column does not exist"로 죽는다.
+     */
     `SELECT
        d.retention_until, d.deleted_at,
        (SELECT array_agg(p.storage_key ORDER BY p.page_index)
           FROM originals.raw_document_pages p WHERE p.raw_document_id = d.id) AS storage_keys
-     FROM originals.raw_documents d WHERE d.id = $1`,
+     FROM originals.document_retention_schedule d WHERE d.id = $1`,
     [documentId]
   );
 

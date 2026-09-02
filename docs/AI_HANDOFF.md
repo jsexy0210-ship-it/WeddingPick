@@ -293,17 +293,45 @@ verification·pii·inquiry·payment-proof — 실제로는 6개, 처음 분류�
 추가했다(같은 유형의 기존 버그). 테스트(`admin-rebuttals.test.ts` 4개) +
 기존 `rebuttals.test.ts`(22개) 실 Postgres로 재확인.
 
-**다음 세션이 이어갈 것 — 남은 admin 2개, 전부 리팩터링부터 필요**:
-- `retention-admin.ts`, `reward-admin.ts`.
-  `vendor-claim-admin.ts`가 했던 방식(`decide()`는 export, argv 파싱과 콘솔
-  출력은 `main()`에 남김)을 그대로 따라가되, **먼저** `require.main ===
-  module` 관문이 있는지 확인하고 없으면 `ad-admin.ts`/`ai-cost-admin.ts`/
-  `decisions-admin.ts`/`objection-admin.ts`/`rebuttal-admin.ts`처럼 추가할
-  것(위 «발견한 기존 버그» 참고 — 지금까지 이 관문이 있던 admin 파일은
-  하나도 없었다. 있는지 확인 자체를 생략하지 말 것). **`requireOperator`
-  호출 유무도 함수마다 개별 확인**할 것 — `objection-admin.ts`/
-  `rebuttal-admin.ts`처럼 이미 안전한 경우도 있고, 나머지처럼 아예 없는
-  경우도 있었다. 매번 다르다.
+**업데이트(같은 세션, 열두 번째 조각 — 리팩터링 필요 그룹 6/7)**:
+`retention-admin.ts`도 끝냈다. 실제 로직은 이미 `retention/worker.ts`에
+다 있어서(CLI는 그 함수들을 잇는 얇은 층) 뽑을 게 없었다 — `require.main
+=== module` 관문만 추가했다(같은 유형의 기존 버그).
+`/v1/admin/retention`(파기 예정 목록·손이 필요한 목록·개별 삭제·자동 청소·
+집어가지 못한 문서 수거)를 열었다. **`--operator`(운영자 지정/해제)는
+의도적으로 라우트를 만들지 않았다** — 코드 주석이 "앱에도 API에도 이 값을
+바꾸는 길이 없다"고 명시적으로 설계해둔 것(자기 자신을 운영자로 못 올리게
+하는 방어). 이건 API가 없는 게 아니라 API가 없어야 하는 경우라 그대로 뒀다.
+
+**주의(발견한 실제 버그, 이번에 같이 고침 — 지금까지와 다른 종류)**:
+`retention/worker.ts`의 `deleteDocument()`가 `originals.raw_documents`
+테이블에서 `retention_until` 컬럼을 직접 골랐는데, 그 컬럼은 마이그레이션
+0018에서 이미 삭제됐다(`ALTER TABLE ... DROP COLUMN retention_until`,
+이후 `document_retention_schedule` 뷰가 검증 완료 시각으로부터 계산해서
+낸다). **즉 개별 문서 수동 삭제(`--delete <id>`)가 호출될 때마다 100%
+"column does not exist"로 죽고 있었다** — 이번에 HTTP로 열면서 실제로
+호출해보고서야 드러났다(기존 CLI 사용 기록이 있었는지는 확인 불가, 기존
+테스트는 이 경로를 직접 부르지 않았다). `FROM originals.raw_documents d`를
+`FROM originals.document_retention_schedule d`로 고쳐 해결. `sweepExpiredDocuments`
+(자동 청소)는 애초에 다른 뷰(`expired_documents`)를 써서 이 버그가 없었다
+— 그래서 자동 파기는 정상 동작 중이었고, 사람이 수동으로 개별 삭제할 때만
+막혀 있었다.
+
+테스트(`admin-retention.test.ts` 5개, 이 버그를 직접 잡아낸 테스트 포함) +
+기존 retention 관련 4개 스위트(35개) 실 Postgres로 재확인.
+
+**다음 세션이 이어갈 것 — 남은 admin 1개**:
+- `reward-admin.ts`. `vendor-claim-admin.ts`가 했던 방식(`decide()`는
+  export, argv 파싱과 콘솔 출력은 `main()`에 남김)을 그대로 따라가되,
+  **먼저** `require.main === module` 관문이 있는지 확인하고 없으면
+  `ad-admin.ts`/`ai-cost-admin.ts`/`decisions-admin.ts`/`objection-admin.ts`/
+  `rebuttal-admin.ts`/`retention-admin.ts`처럼 추가할 것(위 «발견한 기존
+  버그» 참고 — 지금까지 이 관문이 있던 admin 파일은 하나도 없었다. 있는지
+  확인 자체를 생략하지 말 것). **`requireOperator` 호출 유무도 함수마다
+  개별 확인**할 것 — 매번 다르다. **HTTP로 실제로 호출해서 응답까지
+  확인**할 것 — `retention-admin.ts`처럼 타입체크는 통과하는데 실행하면
+  스키마 불일치로 깨지는 코드가 있을 수 있다(테스트 없이 "라우트 배선만
+  하면 된다"고 넘기지 말 것).
 - 패턴: `requireOperator(context)`를 preHandler로 달고, 도메인 함수가 던지는
   평범한 `Error`를 400(`invalid_request`)으로, `NotAnOperator`를 403으로 옮긴다
   (`admin-withdrawals.ts` 그대로 베끼면 됨). 라우트 URL은 `/v1/admin/<도메인>`.
@@ -411,10 +439,10 @@ WeddingPickl/
 2. **[사용자]** Fly.io: `OPERATOR_SESSION_TTL_DAYS=365` 추가
 3. **[사용자]** Neon DB: `db-migrate.yml` 실행 → 0052 적용
 4. **[사용자]** terms.url · privacy.url 확정 → 도메인 상수 업데이트
-5. **[AI]** 관리자 HTTP API 배선 — 남은 2개 도메인(withdrawal·vendor-claim·
+5. **[AI]** 관리자 HTTP API 배선 — 남은 1개 도메인(withdrawal·vendor-claim·
    verification·pii·inquiry·payment-proof·ad·ai-cost·decisions·objection·
-   rebuttal 11개는 이 세션에서 끝남), 위 «백엔드 갭 조사» 세션 기록의
-   목록·순서 그대로 (전부 리팩터링부터 필요 —
+   rebuttal·retention 12개는 이 세션에서 끝남), 위 «백엔드 갭 조사» 세션
+   기록의 목록·순서 그대로 (전부 리팩터링부터 필요 —
    `require.main === module` 관문 추가부터)
 6. **[AI]** 프론트엔드 미구현 화면 구현 — 우선순위: 회원탈퇴 > 일정 추가 > 지도 보기 > 취향 재선택
 7. **[AI]** 공통 Bottom Sheet 16종 인라인 처리 여부 확인
