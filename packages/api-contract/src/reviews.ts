@@ -85,6 +85,16 @@ export const reviewFormSchema = z.object({
   /** 이미 이 업체에 후기를 썼는지. 한 사람이 한 업체에 하나다. */
   alreadyWritten: z.boolean(),
   minimumBodyLength: z.literal(MINIMUM_BODY_LENGTH),
+  /**
+   * 같은 패키지로 함께 계약한 다른 업체. 사업계획서 19번.
+   *
+   * 스튜디오·드레스·메이크업을 한 평점으로 합치지 않는다 — 그러려면 셋을 각자
+   * 물어야 한다. 이 목록은 아직 후기를 쓰지 않은 업체만 담는다. 이미 썼으면
+   * 다시 물을 이유가 없다.
+   */
+  packageSiblings: z.array(
+    z.object({ vendorId: idSchema, vendorName: z.string().min(1), roleLabel: z.string().min(1) })
+  ),
 });
 
 /**

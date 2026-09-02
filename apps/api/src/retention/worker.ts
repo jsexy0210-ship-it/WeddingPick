@@ -29,11 +29,18 @@ export type SweepResult = {
  */
 export async function sweepExpiredDocuments(
   deps: RetentionDeps,
-  limit = 50
+  limit = 50,
+  /**
+   * 한 사람 것만 지울 때 쓴다(회원탈퇴). 없으면 기한이 지난 것 전부를 본다 —
+   * 탈퇴 요청 하나가 남의 파기까지 대신 떠맡을 이유가 없다.
+   */
+  options: { ownerUserId?: string } = {}
 ): Promise<SweepResult> {
   const { rows } = await deps.pool.query<ExpiredDocument>(
-    'SELECT id, storage_keys FROM originals.expired_documents ORDER BY retention_until LIMIT $1',
-    [limit]
+    `SELECT id, storage_keys FROM originals.expired_documents
+     WHERE $2::uuid IS NULL OR owner_user_id = $2
+     ORDER BY retention_until LIMIT $1`,
+    [limit, options.ownerUserId ?? null]
   );
 
   let deleted = 0;

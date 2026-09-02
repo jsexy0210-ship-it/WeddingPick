@@ -1,7 +1,7 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
@@ -16,6 +16,10 @@ export default function CameraScreen() {
   const { pages, addPages } = useCaptureDraft();
   const cameraRef = useRef<CameraView>(null);
   const [shooting, setShooting] = useState(false);
+  const { width } = useWindowDimensions();
+  /* 3:4 비율 — 문서가 세로로 긴 형태라 이 비율이 잘림을 줄인다 */
+  const guideWidth = Math.min(width * 0.8, 300);
+  const guideHeight = (guideWidth * 4) / 3;
 
   if (!permission) {
     return <ThemedView style={styles.container} />;
@@ -25,7 +29,7 @@ export default function CameraScreen() {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.permissionArea}>
-          <ThemedText type="subtitle">카메라 권한이 필요합니다</ThemedText>
+          <ThemedText type="subtitle">카메라 권한이 필요해요</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
             문서를 촬영해 분석하려면 카메라 접근을 허용해주세요.
           </ThemedText>
@@ -65,8 +69,18 @@ export default function CameraScreen() {
             </ThemedText>
           </Pressable>
           <ThemedText type="small" style={styles.overlayText}>
-            {pages.length > 0 ? `${pages.length}장 촬영됨` : '자료를 화면에 맞춰주세요'}
+            {pages.length > 0 ? `${pages.length}장 촬영됨` : '자료를 가이드 안에 맞춰주세요'}
           </ThemedText>
+        </View>
+
+        {/* 3:4 문서 가이드 프레임 */}
+        <View style={styles.guideCenter} pointerEvents="none">
+          <View
+            style={[
+              styles.guide,
+              { width: guideWidth, height: guideHeight },
+            ]}
+          />
         </View>
 
         <View style={styles.bottomBar}>
@@ -109,6 +123,25 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'space-between',
+  },
+  guideCenter: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  guide: {
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.7)',
+    borderRadius: 4,
+    /* 모서리 안내. 전체 테두리보다 모서리만 강조하면 덜 답답하다. */
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 2,
   },
   topBar: {
     flexDirection: 'row',

@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-static.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-scale.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-semantic.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/typography.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/dimension.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/motion.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/base.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/core/core.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/buttons/buttons.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/forms/forms.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/feedback/feedback.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/overlay/overlay.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/display/display.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/styles.css">
+<script src="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/_ds_bundle.js"></script>
+<script src="./image-slot.js"></script>
+<style>
+body{margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#ff6f61;text-decoration:none}
+a:hover{color:#e2564a}
+.nsb::-webkit-scrollbar{display:none}
+image-slot{background:#eaebee}
+image-slot::part(empty){display:none !important}
+</style>
+</helmet>
+
+<section style="{{ rootStyle }}">
+
+<div style="display:flex;flex-direction:column;gap:10px;max-width:1000px;padding-bottom:8px">
+  <span style="font-size:14px;line-height:19px;font-weight:700;color:#ff6f61">WeddingPick · Home Study</span>
+  <span style="font-size:40px;line-height:52px;font-weight:700;color:#212124">홈 5안 비교</span>
+  <span style="font-size:18px;line-height:26px;color:#393a40;text-wrap:pretty">기기 · 내용 · 이미지 · 코랄 · 타이포 · 탭바 · 그리드를 모두 같게 두고, 홈의 정보구조와 배치만 다르게 만들었습니다. 같은 커플(지수 · 준호, D-142, 준비 9/20)의 같은 시점입니다. 현재 <b style="color:#212124">C-1이 임시 확정</b>이고, 나머지 안은 비교용으로 남겨둡니다.</span>
+</div>
+
+<div style="display:flex;gap:36px;align-items:flex-start">
+
+<div id="14a" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">A</span>기존형 · 기준 비교군</div>
+  <span style="{{ tagDesc }}">지금 구조를 유지하고 문구와 정렬만 정리했습니다. 정보량이 가장 많고, 무엇부터 볼지는 사용자가 정합니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ head }}"><span style="{{ wordmark }}">웨딩픽</span><span style="{{ headIcons }}"><span style="{{ iconBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4d5159" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6.9"></circle><path d="M16.2 16.2 20.8 20.8"></path></svg></span><span style="{{ iconBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4d5159" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9.4a6 6 0 1 0-12 0c0 4.8-2 5.8-2 5.8h16s-2-1-2-5.8"></path><path d="M13.7 19.4a2 2 0 0 1-3.4 0"></path></svg></span></span></div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:12px 24px 26px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:baseline;gap:8px"><span style="{{ t14 }}">지수님 · 예식까지</span><span style="{{ t14b }}">D-142</span></div>
+        <span style="{{ h26 }}">이번 주엔 스튜디오를<br>정할 차례예요</span>
+        <div style="display:flex;align-items:center;gap:10px"><div style="{{ track }}"><div style="{{ fill45 }}"></div></div><span style="{{ t14d }}">20개 중 9개 완료</span></div>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;flex-direction:column;gap:4px"><span style="{{ s20 }}">오늘의 Pick</span><span style="{{ t14g }}">두 분 조건에 맞는 3곳을 골랐어요</span></div>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <sc-for list="{{ top3 }}" as="v" hint-placeholder-count="3">
+            <div>
+              <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:12px 0">
+                <div style="{{ thumb52 }}"><image-slot id="{{ v.slotA }}" src="{{ v.src }}" shape="rounded" radius="6" placeholder=""></image-slot></div>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="{{ t18b }}">{{ v.name }}</span><span style="{{ t14g }}">{{ v.price }} · {{ v.n }}</span></div>
+              </div>
+              <div style="{{ hr }}"></div>
+            </div>
+          </sc-for>
+        </div>
+        <button style="{{ cta }}">3곳 나란히 비교하기</button>
+      </div>
+      <div style="{{ bandBox }}"></div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:14px">
+        <span style="{{ s20 }}">다음 준비</span>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <sc-for list="{{ nextSteps }}" as="n" hint-placeholder-count="3">
+            <div><div style="display:flex;align-items:center;gap:14px;min-height:56px;padding:12px 0"><span style="flex:1;min-width:0;{{ n.nameStyle }}">{{ n.name }}</span><span style="{{ n.tailStyle }}">{{ n.tail }}</span></div><div style="{{ hr }}"></div></div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="{{ bandBox }}"></div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:14px">
+        <span style="{{ s20 }}">요즘 많이 Pick한 곳</span>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px 11px">
+          <sc-for list="{{ feed }}" as="f" hint-placeholder-count="4">
+            <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+              <div style="{{ feedImg }}"><image-slot id="{{ f.slotA }}" src="{{ f.src }}" shape="rect" placeholder=""></image-slot></div>
+              <div style="height:66px;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="{{ t18b }}">{{ f.name }}</span><span style="{{ t16b }}">{{ f.price }}</span><span style="{{ t14g }}">{{ f.n }}</span></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="height:24px;flex-shrink:0"></div>
+    </div>
+    <div style="{{ tabBar }}"><sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5"><button style="{{ t.style }}"><span style="{{ t.wrap }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{ t.stroke }}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.d1 }}"></path><path d="{{ t.d2 }}"></path><path d="{{ t.d3 }}"></path></svg></span><span>{{ t.label }}</span></button></sc-for></div>
+  </div>
+</div>
+
+<div id="14b" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">B</span>심플형 · Next Action</div>
+  <span style="{{ tagDesc }}">이번 주에 할 일 하나만 남기고 나머지를 덜어냈습니다. TOP3가 곧 본문이고, 비교 버튼이 유일한 큰 행동입니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ head }}"><span style="{{ wordmark }}">웨딩픽</span><span style="{{ headIcons }}"><span style="{{ iconBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4d5159" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6.9"></circle><path d="M16.2 16.2 20.8 20.8"></path></svg></span><span style="{{ iconBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4d5159" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9.4a6 6 0 1 0-12 0c0 4.8-2 5.8-2 5.8h16s-2-1-2-5.8"></path><path d="M13.7 19.4a2 2 0 0 1-3.4 0"></path></svg></span></span></div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:20px 24px 32px;display:flex;flex-direction:column;gap:12px">
+        <span style="{{ t14d }}">D-142 · 준비 9/20</span>
+        <span style="{{ h26 }}">이번 주엔<br>스튜디오를 정할 차례예요</span>
+        <span style="{{ t16g }}">5개월 전이면 원하는 날짜가 아직 남아 있어요</span>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 20px;display:flex;flex-direction:column;gap:16px">
+        <sc-for list="{{ top3 }}" as="v" hint-placeholder-count="3">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="position:relative;width:100%;height:168px;border-radius:10px;overflow:hidden">
+              <image-slot id="{{ v.slotB }}" src="{{ v.src }}" shape="rect" placeholder=""></image-slot>
+              <span style="{{ rankPill }}">{{ v.rank }}</span>
+            </div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+              <span style="flex:1;min-width:0;{{ t20b }}">{{ v.name }}</span>
+              <span style="{{ t16b }}">{{ v.price }}</span>
+            </div>
+            <span style="{{ t16g }}">{{ v.why }}</span>
+            <span style="{{ t14g }}">{{ v.n }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="flex-shrink:0;padding:8px 24px 28px"><button style="{{ cta }}">3곳 나란히 비교하기</button></div>
+      <div style="{{ bandBox }}"></div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:2px">
+        <sc-for list="{{ nextSteps }}" as="n" hint-placeholder-count="3">
+          <div><div style="display:flex;align-items:center;gap:14px;min-height:56px;padding:12px 0"><span style="flex:1;min-width:0;{{ n.nameStyle }}">{{ n.name }}</span><span style="{{ n.tailStyle }}">{{ n.tail }}</span></div><div style="{{ hr }}"></div></div>
+        </sc-for>
+      </div>
+      <div style="height:24px;flex-shrink:0"></div>
+    </div>
+    <div style="{{ tabBar }}"><sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5"><button style="{{ t.style }}"><span style="{{ t.wrap }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{ t.stroke }}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.d1 }}"></path><path d="{{ t.d2 }}"></path><path d="{{ t.d3 }}"></path></svg></span><span>{{ t.label }}</span></button></sc-for></div>
+  </div>
+</div>
+
+<div id="14c" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">C</span>심플형 · Pick Dashboard</div>
+  <span style="{{ tagDesc }}">둘이서 어디까지 왔는지를 먼저 보여줍니다. 카테고리 현황판이 홈의 얼굴이고, 그 아래에서 지금 좁힐 것을 짚습니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ head }}"><span style="{{ wordmark }}">웨딩픽</span><span style="{{ headIcons }}"><span style="{{ iconBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4d5159" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9.4a6 6 0 1 0-12 0c0 4.8-2 5.8-2 5.8h16s-2-1-2-5.8"></path><path d="M13.7 19.4a2 2 0 0 1-3.4 0"></path></svg></span></span></div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:20px 24px 24px;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="{{ avatar1 }}">지</span><span style="{{ avatar2 }}">준</span>
+          <span style="{{ t16g }}">지수 · 준호</span>
+        </div>
+        <span style="{{ h32 }}">D-142</span>
+        <span style="{{ t16g }}">2027년 5월 16일 토요일</span>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:grid;grid-template-columns:1fr 1fr;gap:11px">
+        <sc-for list="{{ boardCats }}" as="c" hint-placeholder-count="4">
+          <div style="{{ c.card }}">
+            <span style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;line-height:19px;color:#868b94">{{ c.name }}</span>
+            <span style="{{ c.valueStyle }}">{{ c.value }}</span>
+            <span style="{{ c.markStyle }}">{{ c.mark }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:14px">
+        <span style="{{ h26 }}">스튜디오 후보를<br>좁힐 차례예요</span>
+        <div style="display:flex;gap:10px">
+          <sc-for list="{{ top3 }}" as="v" hint-placeholder-count="3">
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px">
+              <div style="position:relative;width:100%;height:96px;border-radius:6px;overflow:hidden"><image-slot id="{{ v.slotC }}" src="{{ v.src }}" shape="rect" placeholder=""></image-slot></div>
+              <span style="{{ t16b }}">{{ v.short }}</span>
+              <span style="{{ t14g }}">{{ v.priceShort }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <button style="{{ cta }}">3곳 나란히 비교하기</button>
+      </div>
+      <div style="{{ bandBox }}"></div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:2px">
+        <sc-for list="{{ boardRows }}" as="r" hint-placeholder-count="3">
+          <div><div style="display:flex;align-items:center;gap:14px;min-height:56px;padding:12px 0"><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="{{ t18b }}">{{ r.name }}</span><span style="{{ t14g }}">{{ r.meta }}</span></div><span style="{{ t16d }}">{{ r.tail }}</span></div><div style="{{ hr }}"></div></div>
+        </sc-for>
+      </div>
+      <div style="height:24px;flex-shrink:0"></div>
+    </div>
+    <div style="{{ tabBar }}"><sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5"><button style="{{ t.style }}"><span style="{{ t.wrap }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{ t.stroke }}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.d1 }}"></path><path d="{{ t.d2 }}"></path><path d="{{ t.d3 }}"></path></svg></span><span>{{ t.label }}</span></button></sc-for></div>
+  </div>
+</div>
+
+<div id="14c1" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagIdE }}">C-1</span>Pick Dashboard · 추천 라벨형<span style="{{ pickedTag }}">임시 확정</span></div>
+  <span style="{{ tagDesc }}">텍스트를 약 40% 걷어냈습니다. 히어로가 다음 할 일을 직접 말하므로 Next Action 카드를 없앴고, 현황판은 숫자 네 개로, 추천 카드는 이름 · 이유 한 줄 · 가격 · 건수로, 피드는 이미지 · 카테고리 · 제목만 남겼습니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ head }}"><span style="{{ wordmark }}">웨딩픽</span><span style="{{ headIcons }}"><span style="{{ iconBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4d5159" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9.4a6 6 0 1 0-12 0c0 4.8-2 5.8-2 5.8h16s-2-1-2-5.8"></path><path d="M13.7 19.4a2 2 0 0 1-3.4 0"></path></svg></span></span></div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:16px 24px 24px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <span style="display:flex;align-items:center;gap:8px"><span style="{{ avatar1 }}">지</span><span style="{{ avatar2 }}">준</span><span style="{{ t16g }}">지수 · 준호</span></span>
+          <span style="{{ dday }}">D-142</span>
+        </div>
+        <span style="{{ h26 }}">이번 주엔<br>스튜디오를 정할 차례예요</span>
+        <div style="display:flex;align-items:center;gap:10px;padding-top:2px"><div style="{{ track }}"><div style="{{ fill45 }}"></div></div><span style="{{ t14d }}">9/20 완료</span></div>
+      </div>
+
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:12px">
+        <span style="{{ s20 }}">우리 준비</span>
+        <div style="display:flex;gap:8px">
+          <sc-for list="{{ strip }}" as="c" hint-placeholder-count="4">
+            <div style="{{ c.box }}">
+              <span style="{{ c.valStyle }}">{{ c.val }}</span>
+              <span style="{{ c.nameStyle }}">{{ c.name }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:12px">
+        <span style="{{ t14a }}">오늘의 Pick · 스튜디오</span>
+        <div style="position:relative;width:100%;height:196px;border-radius:10px;overflow:hidden">
+          <image-slot id="hc1-hero" src="uploads/samples-1788175716407-57s9.jpg" shape="rect" placeholder=""></image-slot>
+          <span style="{{ rankPill }}">1위</span>
+        </div>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+          <span style="flex:1;min-width:0;{{ t20b }}">모먼트 스튜디오</span>
+          <span style="{{ t16b }}">152~184만원</span>
+        </div>
+        <span style="{{ t16n }}">두 분 취향에 잘 맞아요</span>
+        <span style="{{ t14n }}">확인된 정보 12건</span>
+        <div style="display:flex;gap:11px;padding-top:2px">
+          <sc-for list="{{ runners }}" as="r" hint-placeholder-count="2">
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px">
+              <div style="position:relative;width:100%;aspect-ratio:16/11;border-radius:6px;overflow:hidden"><image-slot id="{{ r.slotC1 }}" src="{{ r.src }}" shape="rect" placeholder=""></image-slot></div>
+              <span style="{{ t16bb }}">{{ r.name }}</span>
+              <span style="{{ t14n }}">{{ r.price }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <button style="{{ cta }}">3곳 비교</button>
+      </div>
+
+      <div style="{{ bandBox }}"></div>
+
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:12px">
+        <span style="{{ s20 }}">다음 준비</span>
+        <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:0 2px">
+          <span style="flex:1;min-width:0;{{ t18b }}">드레스</span>
+          <span style="{{ t16d }}">D-90</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#adb1ba" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+        </div>
+      </div>
+
+      <div style="{{ bandBox }}"></div>
+
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:14px">
+        <span style="{{ s20 }}">두 분을 위한 웨딩 정보</span>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px">
+          <sc-for list="{{ infoFeed }}" as="f" hint-placeholder-count="2">
+            <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+              <div style="position:relative;width:100%;aspect-ratio:1;border-radius:10px;overflow:hidden"><image-slot id="{{ f.slot }}" src="{{ f.src }}" shape="rect" placeholder=""></image-slot></div>
+              <span style="{{ t14n }}">{{ f.cat }}</span>
+              <span style="{{ t18w }}">{{ f.title }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="height:8px;flex-shrink:0"></div>
+    </div>
+    <div style="{{ tabBar }}"><sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5"><button style="{{ t.style }}"><span style="{{ t.wrap }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{ t.stroke }}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.d1 }}"></path><path d="{{ t.d2 }}"></path><path d="{{ t.d3 }}"></path></svg></span><span>{{ t.label }}</span></button></sc-for></div>
+  </div>
+</div>
+
+<div id="14c2" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">C-2</span>Pick Dashboard · 카피 변형</div>
+  <span style="{{ tagDesc }}">C-1과 같되 히어로 문장만 다릅니다. «앞으로»를 넣어 남은 기간을 세는 말투를 더 부드럽게 했습니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ head }}"><span style="{{ wordmark }}">웨딩픽</span><span style="{{ headIcons }}"><span style="{{ iconBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4d5159" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9.4a6 6 0 1 0-12 0c0 4.8-2 5.8-2 5.8h16s-2-1-2-5.8"></path><path d="M13.7 19.4a2 2 0 0 1-3.4 0"></path></svg></span></span></div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:20px 24px 24px;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="{{ avatar1 }}">지</span><span style="{{ avatar2 }}">준</span>
+          <span style="{{ t16g }}">지수 · 준호</span>
+        </div>
+        <span style="{{ h32 }}">두근두근<br>앞으로 142일 남았어요</span>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:grid;grid-template-columns:1fr 1fr;gap:11px">
+        <sc-for list="{{ boardCats }}" as="c" hint-placeholder-count="4">
+          <div style="{{ c.card }}">
+            <span style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;line-height:19px;color:#868b94">{{ c.name }}</span>
+            <span style="{{ c.valueStyle }}">{{ c.value }}</span>
+            <span style="{{ c.markStyle }}">{{ c.mark }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:14px">
+        <span style="{{ h26 }}">오늘의 Pick</span>
+        <div style="display:flex;gap:10px">
+          <sc-for list="{{ top3 }}" as="v" hint-placeholder-count="3">
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px">
+              <div style="position:relative;width:100%;height:96px;border-radius:6px;overflow:hidden"><image-slot id="{{ v.slotC2 }}" src="{{ v.src }}" shape="rect" placeholder=""></image-slot></div>
+              <span style="{{ t16bb }}">{{ v.short }}</span>
+              <span style="{{ t14g }}">{{ v.priceShort }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <button style="{{ cta }}">3곳 나란히 비교하기</button>
+      </div>
+      <div style="{{ bandBox }}"></div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:2px">
+        <sc-for list="{{ boardRows }}" as="r" hint-placeholder-count="3">
+          <div><div style="display:flex;align-items:center;gap:14px;min-height:56px;padding:12px 0"><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="{{ t18b }}">{{ r.name }}</span><span style="{{ t14g }}">{{ r.meta }}</span></div><span style="{{ t16d }}">{{ r.tail }}</span></div><div style="{{ hr }}"></div></div>
+        </sc-for>
+      </div>
+      <div style="height:24px;flex-shrink:0"></div>
+    </div>
+    <div style="{{ tabBar }}"><sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5"><button style="{{ t.style }}"><span style="{{ t.wrap }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{ t.stroke }}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.d1 }}"></path><path d="{{ t.d2 }}"></path><path d="{{ t.d3 }}"></path></svg></span><span>{{ t.label }}</span></button></sc-for></div>
+  </div>
+</div>
+
+<div id="14d" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">D</span>혁신형 · 결정 하나</div>
+  <span style="{{ tagDesc }}">섹션을 나열하지 않습니다. 지금 가장 필요한 결정 하나가 첫 화면을 통째로 차지하고, 나머지는 스크롤 아래로 내려갑니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ head }}"><span style="{{ t14d }}">D-142</span><span style="{{ headIcons }}"><span style="{{ iconBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4d5159" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9.4a6 6 0 1 0-12 0c0 4.8-2 5.8-2 5.8h16s-2-1-2-5.8"></path><path d="M13.7 19.4a2 2 0 0 1-3.4 0"></path></svg></span></span></div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:8px 24px 20px"><span style="{{ h26 }}">웨딩픽이<br>지금 골라봤어요</span></div>
+      <div style="flex-shrink:0;position:relative;width:390px;height:380px">
+        <image-slot id="hd-hero" src="uploads/samples-1788175716407-57s9.jpg" shape="rect" placeholder=""></image-slot>
+      </div>
+      <div style="flex-shrink:0;padding:20px 24px 24px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span style="{{ t14a }}">스튜디오 · 1위</span>
+          <span style="{{ h26 }}">모먼트 스튜디오</span>
+          <span style="{{ t16g }}">좋아하는 분위기에, 원하는 날짜도 맞아요</span>
+        </div>
+        <div style="{{ dataBox }}">
+          <span style="{{ h26n }}">152~184만원</span>
+          <span style="{{ t14g }}">확인된 정보 12건 · 최근 12개월 · 기준금액 168만원</span>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button style="{{ ctaWide }}">Pick하기</button>
+          <button style="{{ ctaGhost }}">다른 후보</button>
+        </div>
+      </div>
+      <div style="{{ bandBox }}"></div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:2px">
+        <sc-for list="{{ nextSteps }}" as="n" hint-placeholder-count="3">
+          <div><div style="display:flex;align-items:center;gap:14px;min-height:56px;padding:12px 0"><span style="flex:1;min-width:0;{{ n.nameStyle }}">{{ n.name }}</span><span style="{{ n.tailStyle }}">{{ n.tail }}</span></div><div style="{{ hr }}"></div></div>
+        </sc-for>
+      </div>
+      <div style="{{ bandBox }}"></div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:14px">
+        <span style="{{ s20 }}">요즘 많이 Pick한 곳</span>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px 11px">
+          <sc-for list="{{ feed }}" as="f" hint-placeholder-count="4">
+            <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+              <div style="{{ feedImg }}"><image-slot id="{{ f.slotD }}" src="{{ f.src }}" shape="rect" placeholder=""></image-slot></div>
+              <div style="height:66px;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="{{ t18b }}">{{ f.name }}</span><span style="{{ t16b }}">{{ f.price }}</span><span style="{{ t14g }}">{{ f.n }}</span></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="height:24px;flex-shrink:0"></div>
+    </div>
+    <div style="{{ tabBar }}"><sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5"><button style="{{ t.style }}"><span style="{{ t.wrap }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{ t.stroke }}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.d1 }}"></path><path d="{{ t.d2 }}"></path><path d="{{ t.d3 }}"></path></svg></span><span>{{ t.label }}</span></button></sc-for></div>
+  </div>
+</div>
+
+<div id="14e" style="{{ colE }}">
+  <div style="{{ tag }}"><span style="{{ tagIdE }}">E</span>Hybrid Home · 최종 후보</div>
+  <span style="{{ tagDesc }}">B의 «지금 할 일 + 큰 추천 + 즉시 비교»를 주인공으로 두고, C의 준비 현황판을 4줄로 줄여 아래에 붙이고, A의 다음 준비와 피드를 유지했습니다. 위계는 ① 지금 할 일 ② 오늘의 Pick ③ 비교 ④ 준비현황 ⑤ 다음 정보입니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ head }}"><span style="{{ wordmark }}">웨딩픽</span><span style="{{ headIcons }}"><span style="{{ iconBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4d5159" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6.9"></circle><path d="M16.2 16.2 20.8 20.8"></path></svg></span><span style="{{ iconBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4d5159" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9.4a6 6 0 1 0-12 0c0 4.8-2 5.8-2 5.8h16s-2-1-2-5.8"></path><path d="M13.7 19.4a2 2 0 0 1-3.4 0"></path></svg></span></span></div>
+    <div class="nsb" style="{{ scroll }}">
+
+      <div style="flex-shrink:0;padding:16px 24px 28px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <span style="{{ dday }}">D-142</span>
+          <span style="display:flex;align-items:center;gap:8px"><span style="{{ t16g }}">지수 · 준호</span><span style="{{ avatar1 }}">지</span><span style="{{ avatar2 }}">준</span></span>
+        </div>
+        <span style="{{ h26 }}">이번 주엔<br>스튜디오를 정할 차례예요</span>
+        <div style="display:flex;align-items:center;gap:10px;padding-top:2px"><div style="{{ track }}"><div style="{{ fill45 }}"></div></div><span style="{{ t14d }}">20개 중 9개 완료</span></div>
+      </div>
+
+      <div style="flex-shrink:0;padding:0 24px 12px"><span style="{{ t14a }}">오늘의 Pick · 스튜디오</span></div>
+      <div style="flex-shrink:0;padding:0 24px 14px;display:flex;flex-direction:column;gap:12px">
+        <div style="position:relative;width:100%;height:196px;border-radius:10px;overflow:hidden">
+          <image-slot id="he-hero" src="uploads/samples-1788175716407-57s9.jpg" shape="rect" placeholder=""></image-slot>
+          <span style="{{ rankPill }}">1위 · 두 분 취향에 잘 맞아요</span>
+        </div>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+          <span style="flex:1;min-width:0;{{ t20b }}">모먼트 스튜디오</span>
+          <span style="{{ t16b }}">152~184만원</span>
+        </div>
+        <span style="{{ t14g }}">확인된 정보 12건 · 기준금액 168만원</span>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 20px;display:flex;gap:11px">
+        <sc-for list="{{ runnerUps }}" as="r" hint-placeholder-count="2">
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px">
+            <div style="position:relative;width:100%;aspect-ratio:16/11;border-radius:6px;overflow:hidden"><image-slot id="{{ r.slot }}" src="{{ r.src }}" shape="rect" placeholder=""></image-slot></div>
+            <span style="{{ t16bb }}">{{ r.name }}</span>
+            <span style="{{ t14g }}">{{ r.price }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 28px"><button style="{{ cta }}">3곳 나란히 비교하기</button></div>
+
+      <div style="{{ bandBox }}"></div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span style="{{ s20 }}">우리 준비</span><span style="{{ t14m }}">우리웨딩</span></div>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <sc-for list="{{ boardCats }}" as="c" hint-placeholder-count="4">
+            <div>
+              <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:11px 0">
+                <span style="width:76px;flex:0 0 76px;{{ t16g }}">{{ c.name }}</span>
+                <span style="flex:1;min-width:0;{{ c.valueStyle }}">{{ c.value }}</span>
+                <span style="{{ c.markStyle }}">{{ c.mark }}</span>
+              </div>
+              <div style="{{ hr }}"></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:14px">
+        <span style="{{ s20 }}">다음 준비</span>
+        <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:14px 18px;border-radius:10px;background:#f7f8fa">
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+            <span style="{{ t18b }}">드레스 투어 잡기</span>
+            <span style="{{ t14g }}">촬영일 5월 12일에 맞추려면 3월 안에</span>
+          </div>
+          <span style="{{ t16d }}">D-90</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#adb1ba" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+        </div>
+      </div>
+
+      <div style="{{ bandBox }}"></div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;flex-direction:column;gap:4px"><span style="{{ s20 }}">두 분을 위한 웨딩 정보</span><span style="{{ t14g }}">고른 취향과 예산에 맞춰 모았어요</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px 11px">
+          <sc-for list="{{ feed }}" as="f" hint-placeholder-count="4">
+            <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+              <div style="{{ feedImg }}"><image-slot id="{{ f.slotE }}" src="{{ f.src }}" shape="rect" placeholder=""></image-slot></div>
+              <div style="height:66px;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="{{ t18b }}">{{ f.name }}</span><span style="{{ t16b }}">{{ f.price }}</span><span style="{{ t14g }}">{{ f.n }}</span></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <span style="{{ t16d }}">받을 수 있는 혜택 2개가 남아 있어요</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#adb1ba" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+      </div>
+    </div>
+    <div style="{{ tabBar }}"><sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5"><button style="{{ t.style }}"><span style="{{ t.wrap }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{ t.stroke }}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.d1 }}"></path><path d="{{ t.d2 }}"></path><path d="{{ t.d3 }}"></path></svg></span><span>{{ t.label }}</span></button></sc-for></div>
+  </div>
+</div>
+
+</div>
+
+<div style="display:flex;gap:20px;flex-wrap:wrap;max-width:1740px">
+  <sc-for list="{{ verdicts }}" as="v" hint-placeholder-count="4">
+    <div style="width:405px;background:#fff;border:1px solid #eaebee;border-radius:10px;padding:24px;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;align-items:center;gap:8px"><span style="{{ tagId }}">{{ v.id }}</span><span style="font-size:18px;line-height:24px;font-weight:700;color:#212124">{{ v.name }}</span></div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <span style="font-size:14px;line-height:19px;font-weight:700;color:#1aa174">잘하는 것</span>
+        <span style="font-size:16px;line-height:24px;color:#393a40;text-wrap:pretty">{{ v.pro }}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <span style="font-size:14px;line-height:19px;font-weight:700;color:#e81607">약한 것</span>
+        <span style="font-size:16px;line-height:24px;color:#393a40;text-wrap:pretty">{{ v.con }}</span>
+      </div>
+      <div style="height:1px;background:#eaebee"></div>
+      <span style="font-size:16px;line-height:24px;color:#4d5159;text-wrap:pretty">{{ v.when }}</span>
+    </div>
+  </sc-for>
+</div>
+
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1800,&quot;height&quot;:1100}}">
+class Component extends DCLogic {
+  static ICONS = {
+    home: ['M3.6 10.4 12 3.8l8.4 6.6V19a1.6 1.6 0 0 1-1.6 1.6H5.2A1.6 1.6 0 0 1 3.6 19z', 'M9.6 20.6v-6.2h4.8v6.2', ''],
+    search: ['M11 4.2a6.9 6.9 0 1 0 0 13.8 6.9 6.9 0 0 0 0-13.8z', 'M16.2 16.2 20.8 20.8', ''],
+    pick: ['M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z', 'M8.7 11.9l2.2 2.2 4.4-4.4', ''],
+    couple: ['M8.6 11.2a3.3 3.3 0 1 0 0-6.6 3.3 3.3 0 0 0 0 6.6z', 'M2.6 20.4v-.8a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v.8', 'M16.2 5.4a3.3 3.3 0 0 1 0 5.9M17.6 14.7a5 5 0 0 1 3.8 4.9v.8'],
+    my: ['M12 11.6a4 4 0 1 0 0-8 4 4 0 0 0 0 8z', 'M4.8 20.6v-.6a6 6 0 0 1 6-6h2.4a6 6 0 0 1 6 6v.6', '']
+  };
+
+  renderVals() {
+    const C = '#ff6f61';
+    const IMG = {
+      couple: 'uploads/samples-1788175716407-57s9.jpg',
+      arch: 'uploads/samples-1788175716396-jydc.jpg',
+      bride: 'uploads/samples-1788175716389-fion.jpg',
+      hall: 'uploads/samples-1788175716419-flvg.jpg',
+      dress: 'uploads/samples-1788175716375-3z0c.jpg'
+    };
+    const tab = (label, icon, on) => {
+      const c = on ? '#212124' : '#868b94';
+      const d = Component.ICONS[icon];
+      return {
+        label, d1: d[0], d2: d[1], d3: d[2], stroke: c,
+        style: 'flex:1;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:0;background:transparent;cursor:pointer;padding:0;font-size:12px;line-height:16px;font-family:inherit;font-weight:700;color:' + c,
+        wrap: 'width:24px;height:24px;display:flex;align-items:center;justify-content:center'
+      };
+    };
+    const catCard = (name, value, mark, kind) => ({
+      name, value, mark,
+      card: 'border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:4px;min-width:0;'
+        + (kind === 'now' ? 'border:1.5px solid ' + C + ';background:#fff;' : 'background:#f7f8fa;'),
+      markStyle: 'display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-top:2px;font-size:14px;line-height:19px;font-weight:700;color:' + (kind === 'done' ? '#1aa174' : kind === 'now' ? C : '#adb1ba'),
+      valueStyle: 'display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:20px;line-height:27px;font-weight:700;color:' + (kind === 'none' ? '#adb1ba' : '#212124')
+    });
+    const step = (name, tail, done) => ({
+      name, tail,
+      nameStyle: done ? 'font-size:18px;line-height:24px;color:#868b94' : 'font-size:18px;line-height:24px;font-weight:700;color:#212124',
+      tailStyle: 'font-size:16px;line-height:22px;font-weight:700;white-space:nowrap;color:' + (done ? '#adb1ba' : '#868b94')
+    });
+
+    return {
+      rootStyle: 'display:flex;flex-direction:column;gap:48px;align-items:flex-start;padding:64px;width:max-content',
+      col: 'display:flex;flex-direction:column;gap:10px;width:390px',
+      tag: 'height:26px;display:flex;align-items:center;gap:8px;font-size:18px;line-height:24px;font-weight:700;color:#212124;white-space:nowrap;overflow:hidden',
+      tagId: 'width:26px;height:26px;flex:0 0 26px;border-radius:6px;background:#212124;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700',
+      tagIdE: 'width:26px;height:26px;flex:0 0 26px;border-radius:6px;background:' + C + ';color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700',
+      colE: 'display:flex;flex-direction:column;gap:10px;width:390px',
+      t16bb: 'font-size:16px;line-height:22px;font-weight:700;color:#212124;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      t14m: 'font-size:14px;line-height:19px;font-weight:700;color:#868b94',
+      t16n: 'display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px;line-height:22px;color:#4d5159',
+      t14n: 'display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;line-height:19px;color:#868b94;font-variant-numeric:tabular-nums',
+      t18w: 'font-size:18px;line-height:24px;font-weight:700;color:#212124;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden',
+      strip: [
+        { name: '웨딩홀', val: '✓', kind: 'done' },
+        { name: '스튜디오', val: '3', kind: 'now' },
+        { name: '드레스', val: '2', kind: 'ing' },
+        { name: '메이크업', val: '-', kind: 'none' }
+      ].map(c => ({
+        name: c.name, val: c.val,
+        box: 'flex:1;min-width:0;border-radius:10px;padding:14px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;'
+          + (c.kind === 'now' ? 'border:1.5px solid ' + C + ';background:#fff;' : 'background:#f7f8fa;'),
+        valStyle: 'font-size:20px;line-height:27px;font-weight:700;font-variant-numeric:tabular-nums;color:'
+          + (c.kind === 'done' ? '#1aa174' : c.kind === 'now' ? C : c.kind === 'none' ? '#adb1ba' : '#212124'),
+        nameStyle: 'display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:14px;line-height:19px;color:#868b94'
+      })),
+      runners: [
+        { name: '서촌필름', price: '138~171만원', src: 'uploads/samples-1788175716396-jydc.jpg', slotC1: 'hc1-r2' },
+        { name: '아뜰리에 온', price: '165~203만원', src: 'uploads/samples-1788175716389-fion.jpg', slotC1: 'hc1-r3' }
+      ],
+      infoFeed: [
+        { slot: 'hc1-i1', src: 'uploads/samples-1788175716375-3z0c.jpg', cat: '드레스', title: '5월 촬영에 어울리는 라인' },
+        { slot: 'hc1-i2', src: 'uploads/samples-1788175716419-flvg.jpg', cat: '웨딩홀', title: '강남 홀 대관료 읽는 법' }
+      ],
+      pickedTag: 'margin-left:auto;padding:4px 9px;border-radius:4px;background:' + C + ';color:#fff;font-size:14px;line-height:19px;font-weight:700;white-space:nowrap',
+      dday: 'font-size:20px;line-height:27px;font-weight:700;color:' + C + ';font-variant-numeric:tabular-nums',
+      runnerUps: [
+        { name: '서촌필름', price: '138~171만원', src: 'uploads/samples-1788175716396-jydc.jpg', slot: 'he-2' },
+        { name: '아뜰리에 온', price: '165~203만원', src: 'uploads/samples-1788175716389-fion.jpg', slot: 'he-3' }
+      ],
+      tagDesc: 'height:92px;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;line-height:21px;color:#4d5159;text-wrap:pretty',
+      phone: 'width:390px;height:844px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)',
+      bar: 'height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:700;color:#212124',
+      barIcons: 'display:flex;gap:5px;align-items:center',
+      head: 'flex:0 0 56px;display:flex;align-items:center;justify-content:space-between;padding:0 20px 0 24px;background:#fff',
+      wordmark: 'font-size:20px;line-height:27px;font-weight:700;color:#212124',
+      headIcons: 'display:flex;gap:2px',
+      iconBtn: 'width:40px;height:40px;border-radius:999px;display:flex;align-items:center;justify-content:center',
+      scroll: 'flex:1 1 auto;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;scrollbar-width:none',
+      tabBar: 'flex:0 0 72px;display:flex;align-items:flex-start;background:#fff;box-shadow:inset 0 1px 0 #eaebee;padding-top:9px',
+      hr: 'height:1px;background:#eaebee',
+      bandBox: 'flex-shrink:0;height:16px;background:#f2f3f6;margin-bottom:28px',
+      track: 'flex:1;height:6px;border-radius:999px;background:#eaebee;overflow:hidden',
+      fill45: 'width:45%;height:100%;border-radius:999px;background:' + C,
+      thumb52: 'width:52px;height:52px;flex:0 0 52px;position:relative;border-radius:6px;overflow:hidden',
+      feedImg: 'position:relative;width:100%;aspect-ratio:16/11;border-radius:6px;overflow:hidden',
+      rankPill: 'position:absolute;top:12px;left:12px;pointer-events:none;background:rgba(0,0,0,.5);color:#fff;font-size:14px;line-height:19px;font-weight:700;padding:4px 10px;border-radius:999px',
+      dataBox: 'border-radius:10px;background:#f7f8fa;padding:18px 20px;display:flex;flex-direction:column;gap:6px',
+      avatar1: 'width:26px;height:26px;border-radius:999px;background:color-mix(in oklab,' + C + ' 16%,#fff);color:' + C + ';display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700',
+      avatar2: 'width:26px;height:26px;border-radius:999px;background:#f2f3f6;color:#4d5159;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;margin-left:-10px',
+
+      h32: 'font-size:32px;line-height:43px;font-weight:700;color:#212124;text-wrap:pretty',
+      h26: 'font-size:26px;line-height:35px;font-weight:700;color:#212124;text-wrap:pretty',
+      h26n: 'font-size:26px;line-height:35px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums',
+      s20: 'font-size:20px;line-height:27px;font-weight:700;color:#212124',
+      t20b: 'font-size:20px;line-height:27px;font-weight:700;color:#212124;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      t18b: 'font-size:18px;line-height:24px;font-weight:700;color:#212124;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      t16b: 'font-size:16px;line-height:22px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums;white-space:nowrap',
+      t16g: 'font-size:16px;line-height:24px;color:#4d5159;text-wrap:pretty',
+      t16d: 'font-size:16px;line-height:22px;color:#868b94;white-space:nowrap',
+      t14: 'font-size:16px;line-height:22px;color:#4d5159',
+      t14b: 'font-size:16px;line-height:22px;font-weight:700;color:' + C + ';font-variant-numeric:tabular-nums',
+      t14d: 'font-size:14px;line-height:19px;font-weight:700;color:#868b94;font-variant-numeric:tabular-nums',
+      t14g: 'font-size:14px;line-height:19px;color:#868b94;font-variant-numeric:tabular-nums;text-wrap:pretty',
+      t14a: 'font-size:14px;line-height:19px;font-weight:700;color:' + C,
+      cta: 'height:52px;border:0;border-radius:6px;background:' + C + ';color:#fff;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer;width:100%',
+      ctaWide: 'flex:1.6;height:52px;border:0;border-radius:6px;background:' + C + ';color:#fff;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer',
+      ctaGhost: 'flex:1;height:52px;border:0;border-radius:6px;background:#f2f3f6;color:#393a40;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer',
+
+      tabs: [tab('홈', 'home', true), tab('검색', 'search', false), tab('Pick', 'pick', false), tab('우리웨딩', 'couple', false), tab('MY', 'my', false)],
+
+      top3: [
+        { rank: '1위', name: '모먼트 스튜디오', short: '모먼트', src: IMG.couple, price: '152~184만원', priceShort: '152~184만', n: '확인된 정보 12건', why: '고른 사진이랑 가장 비슷해요', slotA: 'ha-1', slotB: 'hb-1', slotC: 'hc-1', slotC1: 'hc1-1', slotC2: 'hc2-1' },
+        { rank: '2위', name: '서촌필름', short: '서촌필름', src: IMG.arch, price: '138~171만원', priceShort: '138~171만', n: '확인된 정보 9건', why: '5월 주말에 가능해요', slotA: 'ha-2', slotB: 'hb-2', slotC: 'hc-2', slotC1: 'hc1-2', slotC2: 'hc2-2' },
+        { rank: '3위', name: '아뜰리에 온', short: '아뜰리에 온', src: IMG.bride, price: '165~203만원', priceShort: '165~203만', n: '확인된 정보 7건', why: '원본을 전부 받을 수 있어요', slotA: 'ha-3', slotB: 'hb-3', slotC: 'hc-3', slotC1: 'hc1-3', slotC2: 'hc2-3' }
+      ],
+      feed: [
+        { name: '라비드레스', price: '88~124만원', n: '확인된 정보 14건', src: IMG.dress, slotA: 'fa-1', slotD: 'fd-1', slotE: 'fe-1' },
+        { name: '더채플 강남', price: '1,480~1,820만원', n: '확인된 정보 21건', src: IMG.hall, slotA: 'fa-2', slotD: 'fd-2', slotE: 'fe-2' }
+      ],
+      nextSteps: [
+        step('드레스 투어 잡기', 'D-90', false),
+        step('본식스냅 정하기', 'D-60', false),
+        step('스튜디오 정하기', '완료', true)
+      ],
+      boardCats: [
+        catCard('웨딩홀', '더채플 강남', '결정', 'done'),
+        catCard('스튜디오', '후보 3곳', '좁히는 중', 'now'),
+        catCard('드레스', '후보 2곳', '모으는 중', 'ing'),
+        catCard('메이크업', '아직 없어요', '시작 전', 'none')
+      ],
+      boardRows: [
+        { name: '드레스 투어 1차', meta: '3월 14일 오후 2시 · 라비드레스', tail: 'D-11' },
+        { name: '지출', meta: '예산 3,800만원 중 56%', tail: '2,140만원' },
+        { name: '받을 수 있는 혜택', meta: '9월 30일까지', tail: '2개' }
+      ],
+      verdicts: [
+        { id: 'A', name: '기존형', pro: '한 화면에서 전체를 훑을 수 있고, 어디에 뭐가 있는지 예측됩니다. 앱을 오래 쓴 사람에게 편합니다.', con: '무엇부터 볼지 앱이 정해주지 않습니다. 스크롤이 길고, 첫 화면만 봐서는 웨딩픽이 골라준다는 인상이 약합니다.', when: '정보를 직접 뒤지고 싶어하는 사용자가 많다면.' },
+        { id: 'B', name: '심플형 · Next Action', pro: '이번 주에 뭘 해야 하는지가 3초 안에 읽히고, 큰 이미지 3장이 판단을 바로 돕습니다. 큰 행동이 하나뿐입니다.', con: '예산 · 일정 · 커플 현황이 홈에서 사라집니다. 준비 후반, 볼 게 많아진 시점에는 답답할 수 있습니다.', when: '초기 사용자와 준비 중반에 가장 잘 맞습니다.' },
+        { id: 'C', name: 'Pick Dashboard', pro: '둘이 어디까지 왔는지가 한눈에 보이고, 커플 서비스라는 성격이 가장 뚜렷합니다. 카테고리별 상태가 그대로 진입점입니다.', con: '현황판이 먼저 나와서 추천이 두 번째로 밀립니다. 후보가 없는 초기에는 빈칸만 보입니다.', when: '준비가 어느 정도 진행된 커플, 재방문 중심.' },
+        { id: 'D', name: '혁신형 · 결정 하나', pro: '웨딩픽이 골라주고 나는 Pick만 한다는 정체성이 가장 강하게 드러납니다. 첫 화면에 큰 이미지와 결정 버튼만 있습니다.', con: '추천이 빗나가면 홈 전체가 빗나갑니다. 정보가 적은 초기 사용자에게 보여줄 후보가 없으면 성립하지 않습니다.', when: '홈보다 업체 상세의 Hero로 옮겼습니다. 큰 이미지 → 추천 이유 → 실제 결제 데이터 → Pick 흐름이 상세에서 제 힘을 씁니다.' },
+        { id: 'E', name: 'Hybrid Home · 최종 후보', pro: '주인공은 B입니다. 지금 할 일 한 줄과 큰 추천 한 장, 그리고 비교 버튼 하나. C의 현황판은 4줄로 줄여 «어디까지 왔는지»만 답하게 했고, A의 다음 준비와 피드는 남겨 전체 흐름을 놓치지 않습니다.', con: '스크롤이 A 다음으로 깁니다. 준비현황과 다음 준비가 우리웨딩 탭과 겹치므로, 홈에서는 요약 이상으로 키우지 않아야 합니다.', when: '기본 홈. 초기 사용자는 오늘의 Pick 자리가 취향 고르기로 바뀌고, 준비현황은 접힙니다.' }
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

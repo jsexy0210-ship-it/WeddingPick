@@ -1,3 +1,4 @@
+import { decideRebuttal } from '../rebuttal-decide';
 import { createTestApp, resetDatabase, signInAs, type TestApp } from './helpers';
 
 let test: TestApp;
@@ -291,5 +292,185 @@ describeWithDb('업체 반론', () => {
     });
 
     expect(response.statusCode).toBe(401);
+  });
+
+  /**
+   * 반론은 후기를 지우지 않고 옆에 붙는다. 붙었다는 사실을 작성자가 모르면,
+   * 자기 글 아래에 남의 말이 실린 것을 남이 먼저 안다.
+   */
+  describe('게시되면 후기 작성자도 안다', () => {
+    async function anOperator(): Promise<string> {
+      const { rows } = await test.pool.query<{ id: string }>(
+        'INSERT INTO structured.users (is_operator) VALUES (true) RETURNING id'
+      );
+      return rows[0]!.id;
+    }
+
+    const notificationsOf = async (userId: string) =>
+      (
+        await test.pool.query<{ kind: string; title: string; body: string; target_id: string }>(
+          `SELECT kind, title, body, target_id FROM structured.notifications
+           WHERE user_id = $1 ORDER BY created_at`,
+          [userId]
+        )
+      ).rows;
+
+    async function authorOf(reviewId: string): Promise<string> {
+      const { rows } = await test.pool.query<{ author_user_id: string }>(
+        'SELECT author_user_id FROM structured.reviews WHERE id = $1',
+        [reviewId]
+      );
+      return rows[0]!.author_user_id;
+    }
+
+    it('게시하면 작성자에게 알림이 간다', async () => {
+      const { reviewId } = await aReview();
+      const vendorSide = await signInAs(test, 'vendor-staff');
+      const { rebuttalId } = (await submit(vendorSide.headers, reviewId)).json<{
+        rebuttalId: string;
+      }>();
+
+      await decideRebuttal(test.pool, {
+        id: rebuttalId,
+        to: 'published',
+        by: await anOperator(),
+        note: '사업자등록증으로 소속 확인',
+        withoutClaim: true,
+      });
+
+      const forAuthor = await notificationsOf(await authorOf(reviewId));
+
+      expect(forAuthor).toHaveLength(1);
+      expect(forAuthor[0]!.kind).toBe('rebuttal');
+      expect(forAuthor[0]!.target_id).toBe(reviewId);
+      // 심사 메모는 심사자가 소속을 무엇으로 확인했는지 적은 내부 기록이다.
+      expect(forAuthor[0]!.body).not.toContain('사업자등록증');
+    });
+
+    it('게시하지 않기로 하면 작성자에게는 아무것도 가지 않는다', async () => {
+      const { reviewId } = await aReview();
+      const vendorSide = await signInAs(test, 'vendor-staff');
+      const { rebuttalId } = (await submit(vendorSide.headers, reviewId)).json<{
+        rebuttalId: string;
+      }>();
+
+      await decideRebuttal(test.pool, {
+        id: rebuttalId,
+        to: 'rejected',
+        by: await anOperator(),
+        note: '소속을 확인하지 못했다',
+      });
+
+      // 작성자에게는 일어나지 않은 일이다.
+      expect(await notificationsOf(await authorOf(reviewId))).toHaveLength(0);
+      // 낸 사람은 결론을 받는다.
+      expect(await notificationsOf(vendorSide.userId)).toHaveLength(1);
+    });
+  });
+
+  /**
+   * 소속을 무엇으로 확인했는지가 **구조로** 남는다. v2.0 26번.
+   *
+   * 지금까지는 사람이 앱 밖에서 확인하고 `--note`에 적었다. 글로만 남으면 인증으로
+   * 확인한 것과 눈으로 확인한 것이 같은 줄로 보이고, 나중에 되짚을 수 없다.
+   */
+  describe('무엇으로 확인했는지가 남는다', () => {
+    async function anOperator(): Promise<string> {
+      const { rows } = await test.pool.query<{ id: string }>(
+        'INSERT INTO structured.users (is_operator) VALUES (true) RETURNING id'
+      );
+      return rows[0]!.id;
+    }
+
+    async function pending(): Promise<{ rebuttalId: string; vendorId: string; claimant: string }> {
+      const { vendorId, reviewId } = await aReview();
+      const vendorSide = await signInAs(test, 'vendor-staff');
+      const { rebuttalId } = (await submit(vendorSide.headers, reviewId)).json<{
+        rebuttalId: string;
+      }>();
+
+      return { rebuttalId, vendorId, claimant: vendorSide.userId };
+    }
+
+    const decisionOf = async (rebuttalId: string) =>
+      (
+        await test.pool.query<{ reason_code: string; evidence_refs: { kind: string }[] }>(
+          `SELECT reason_code, evidence_refs FROM structured.decisions
+           WHERE workflow = 'rebuttal_review' AND subject_id = $1`,
+          [rebuttalId]
+        )
+      ).rows[0]!;
+
+    it('인증도 없고 밝히지도 않으면 싣지 않는다', async () => {
+      const { rebuttalId } = await pending();
+
+      await expect(
+        decideRebuttal(test.pool, {
+          id: rebuttalId,
+          to: 'published',
+          by: await anOperator(),
+          note: '확인함',
+        })
+      ).rejects.toThrow(/관계자 인증/);
+    });
+
+    it('승인된 인증이 있으면 그것을 근거로 가리킨다', async () => {
+      const { rebuttalId, vendorId, claimant } = await pending();
+      const operator = await anOperator();
+
+      const claim = await test.pool.query<{ id: string }>(
+        `INSERT INTO structured.vendor_claims
+           (vendor_id, claimant_user_id, claimed_role, method, contact_email,
+            status, decided_at, decided_by)
+         VALUES ($1, $2, '예약팀장', 'official_domain_email', 'staff@gaon.example',
+                 'approved', now(), $3)
+         RETURNING id`,
+        [vendorId, claimant, operator]
+      );
+
+      await decideRebuttal(test.pool, {
+        id: rebuttalId,
+        to: 'published',
+        by: operator,
+        note: '공식 도메인 이메일로 확인',
+      });
+
+      const decision = await decisionOf(rebuttalId);
+
+      expect(decision.reason_code).toBe('affiliation_verified');
+      expect(decision.evidence_refs).toContainEqual({
+        kind: 'vendor_claim',
+        id: claim.rows[0]!.id,
+      });
+    });
+
+    it('밖에서 확인했으면 그 길로 갔다는 것이 남는다', async () => {
+      // 같은 결론이라도 확인한 방법이 다르다. 같은 줄로 보이면 되짚을 수 없다.
+      const { rebuttalId } = await pending();
+
+      await decideRebuttal(test.pool, {
+        id: rebuttalId,
+        to: 'published',
+        by: await anOperator(),
+        note: '사업자등록증 원본을 대면 확인',
+        withoutClaim: true,
+      });
+
+      expect((await decisionOf(rebuttalId)).reason_code).toBe('affiliation_verified_offline');
+    });
+
+    it('싣지 않기로 하는 데는 인증이 필요 없다', async () => {
+      // 막는 것은 싣는 쪽이다. 거절에 인증을 요구하면 아무것도 정리할 수 없다.
+      const { rebuttalId } = await pending();
+
+      await expect(
+        decideRebuttal(test.pool, {
+          id: rebuttalId,
+          to: 'rejected',
+          by: await anOperator(),
+          note: '반론이 아니라 홍보 글이다',
+        })
+      ).resolves.toBeUndefined();
+    });
   });
 });

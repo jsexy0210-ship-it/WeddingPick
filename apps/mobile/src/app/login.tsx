@@ -16,8 +16,8 @@ import {
 /** 로그인이 무엇을 위한 것인지. 계정을 요구하는 이유를 먼저 말한다. */
 const REASONS = [
   '분석한 자료를 기기를 바꿔도 다시 볼 수 있어요.',
-  '자료 확인을 신청하고 진행 상황을 받아볼 수 있습니다.',
-  '촬영과 기기 저장은 로그인 없이도 됩니다.',
+  '자료 확인을 신청하고 진행 상황을 받아볼 수 있어요.',
+  '촬영과 기기 저장은 로그인 없이도 돼요.',
 ];
 
 /**
@@ -90,7 +90,7 @@ export default function LoginScreen() {
           ) : providers.length === 0 ? (
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="small" themeColor="textSecondary">
-                지금은 로그인할 수 없습니다. 촬영과 기기 저장은 그대로 쓰실 수 있습니다.
+                지금은 로그인할 수 없어요. 촬영과 기기 저장은 그대로 쓰실 수 있어요.
               </ThemedText>
             </ThemedView>
           ) : (
@@ -106,7 +106,7 @@ export default function LoginScreen() {
                   }
                   hint={
                     provider.isDevelopmentStandIn
-                      ? '실제 애플·카카오 로그인이 아닙니다. 개발 중인 서버에만 있습니다'
+                      ? '실제 애플·카카오 로그인이 아니에요. 개발 중인 서버에만 있어요'
                       : undefined
                   }
                   disabled={busy || !canSignInWith(provider)}

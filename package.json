@@ -10,7 +10,8 @@
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
-    "build:ui": "npm run build --workspace @weddingpick/ui"
+    "build:ui": "npm run build --workspace @weddingpick/ui",
+    "progress": "node scripts/progress.mjs"
   },
   "engines": {
     "node": ">=22"

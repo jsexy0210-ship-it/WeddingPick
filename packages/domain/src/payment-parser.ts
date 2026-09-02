@@ -317,7 +317,7 @@ export function parsePaymentText(text: string, now: Date = new Date()): ParsedPa
   };
 
   if (text.trim().length === 0) {
-    return { ...empty, rejection: '읽을 글이 없습니다.' };
+    return { ...empty, rejection: '읽을 글이 없어요.' };
   }
 
   /*

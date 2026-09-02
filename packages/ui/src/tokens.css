@@ -35,14 +35,14 @@
    * 15px, 웹에서는 0.95rem으로 보이고 — 나란히 놓고 보기 전까지 아무도 모른다.
    * `apps/api/src/test/typography.test.ts`가 두 값이 같은지 지킨다.
    */
-  --text-t1: 30px;
+  --text-t1: 32px;
   --text-t2: 26px;
   --text-t4: 20px;
-  --text-t5: 17px;
-  --text-t6: 15px;
-  --text-t7: 13px;
+  --text-t5: 18px;
+  --text-t6: 16px;
+  --text-t7: 14px;
   --text-badge: 12px;
-  --text-amount: 38px;
+  --text-amount: 32px;
 
   --leading-t1: 40px;
   --leading-t2: 35px;

@@ -16,7 +16,7 @@ import {
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { Alert, Animated, Modal, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -72,6 +72,14 @@ export default function MyScreen() {
   const { state, signOut } = useSession();
   const [data, setData] = useState<MyData>(EMPTY);
   const [celebrate, setCelebrate] = useState(false);
+  /*
+   * useRef가 아니라 useState 초기화 함수로 만든다 — 값은 똑같이 렌더마다 그대로인
+   * 하나뿐인 Animated.Value지만, JSX 안에서 `.current`를 직접 읽으면 렌더 중 ref
+   * 접근으로 걸린다(react-hooks/refs). Animated.Value 자체는 mutable해서 이
+   * 값이 바뀐다고 다시 렌더되지 않는다 — useState로 감싸도 리렌더 루프가 생기지
+   * 않는다.
+   */
+  const [bounceScale] = useState(() => new Animated.Value(0));
 
   const load = useCallback(() => {
     /*
@@ -126,6 +134,17 @@ export default function MyScreen() {
       if (!seen) setCelebrate(true);
     });
   }, [everythingDone]);
+
+  useEffect(() => {
+    if (!celebrate) return;
+    bounceScale.setValue(0);
+    Animated.spring(bounceScale, {
+      toValue: 1,
+      useNativeDriver: true,
+      bounciness: 14,
+      speed: 10,
+    }).start();
+  }, [celebrate, bounceScale]);
 
   async function closeCelebration() {
     setCelebrate(false);
@@ -280,13 +299,13 @@ export default function MyScreen() {
             {state.status === 'offline' ? (
               <ThemedView type="backgroundElement" style={styles.card}>
                 <ThemedText type="t7" themeColor="textSecondary">
-                  이 빌드는 서버에 붙어 있지 않습니다. 촬영과 기기 저장까지 됩니다.
+                  이 빌드는 서버에 붙어 있지 않아요. 촬영과 기기 저장까지 돼요.
                 </ThemedText>
               </ThemedView>
             ) : state.status === 'signedIn' ? (
               <ActionButton
                 label="로그아웃"
-                hint="기기에 저장된 문서는 지워지지 않습니다"
+                hint="기기에 저장된 문서는 지워지지 않아요"
                 onPress={leave}
               />
             ) : state.status === 'signedOut' ? (
@@ -301,7 +320,7 @@ export default function MyScreen() {
 
           <ThemedView style={styles.section}>
             <ThemedText type="t7" themeColor="textSecondary">
-              데이터
+              내 활동
             </ThemedText>
             <ActionButton
               label="내 제보내역"
@@ -335,7 +354,7 @@ export default function MyScreen() {
             <ActionButton label="촬영 방법과 분석 안내" onPress={() => router.push('/my/guide')} />
             <ActionButton
               label="문의하기"
-              hint="잘못된 정보, 분석 결과 이의, 개인정보 요청을 받습니다"
+              hint="잘못된 정보, 분석 결과 이의, 개인정보 요청을 받아요"
               onPress={() => router.push('/my/contact')}
             />
             <ActionButton
@@ -352,6 +371,17 @@ export default function MyScreen() {
               hint="알림, 예식일, Pick 인증 동의"
               onPress={() => router.push('/my/settings')}
             />
+            {/*
+              로그인한 사람에게만 보인다. 지울 계정이 없는 사람에게 탈퇴를 보이면
+              없는 곳으로 가는 줄을 그리는 것이 된다.
+            */}
+            {data.me ? (
+              <ActionButton
+                label="회원탈퇴"
+                hint="지워지는 것과 분리되는 것을 먼저 보여드려요"
+                onPress={() => router.push('/my/withdrawal')}
+              />
+            ) : null}
           </ThemedView>
         </ScrollView>
       </SafeAreaView>
@@ -360,11 +390,15 @@ export default function MyScreen() {
       <Modal visible={celebrate} transparent animationType="fade" onRequestClose={closeCelebration}>
         <View style={[styles.scrim, { backgroundColor: theme.scrim }]}>
           <View style={[styles.dialog, { backgroundColor: theme.tint }]}>
-            <View style={[styles.dialogMark, { backgroundColor: theme.onTint }]}>
+            <Animated.View
+              style={[
+                styles.dialogMark,
+                { backgroundColor: theme.onTint, transform: [{ scale: bounceScale }] },
+              ]}>
               <ThemedText type="t2" themeColor="tint">
                 ✓
               </ThemedText>
-            </View>
+            </Animated.View>
 
             <ThemedText type="t4" style={styles.onTint}>
               {MISSION_COMPLETE_TITLE}

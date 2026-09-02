@@ -1,21 +1,31 @@
-import type { WeddingTaskListResponse } from '@weddingpick/api-contract';
-import { TASK_STATES, TASK_STATE_LABEL, formatTaskDate } from '@weddingpick/domain';
+import type { WeddingDetail, WeddingTaskListResponse } from '@weddingpick/api-contract';
+import {
+  LIFECYCLE_STAGES,
+  LIFECYCLE_STAGE_LABEL,
+  TASK_STATES,
+  TASK_STATE_LABEL,
+  formatTaskDate,
+  lifecycle,
+} from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, ScrollView, StyleSheet, TextInput } from 'react-native';
+import { Alert, Modal, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   addWeddingTask,
+  getWedding,
   listWeddingTasks,
   removeWeddingTask,
   updateWeddingTask,
 } from '@/api/client';
 import {
   ActionButton,
+  ErrorView,
   Fab,
   FilterChip,
   Layout,
+  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
@@ -38,6 +48,7 @@ export default function WeddingTasksScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const theme = useTheme();
   const [page, setPage] = useState<WeddingTaskListResponse | null>(null);
+  const [weddingInfo, setWeddingInfo] = useState<WeddingDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   /** 수정 중인 일정. 닫으면 버린다. */
   const [editing, setEditing] = useState<WeddingTaskListResponse['tasks'][number] | null>(null);
@@ -55,24 +66,16 @@ export default function WeddingTasksScreen() {
 
   useEffect(load, [load]);
 
+  useEffect(() => {
+    getWedding(id).then(setWeddingInfo).catch(() => undefined);
+  }, [id]);
+
   if (error) {
-    return (
-      <Frame>
-        <ThemedText type="t4">불러오지 못했습니다</ThemedText>
-        <ThemedText type="t7" themeColor="textSecondary">
-          {error}
-        </ThemedText>
-        <ActionButton label="돌아가기" onPress={() => router.back()} />
-      </Frame>
-    );
+    return <ErrorView message={error} onBack={() => router.back()} />;
   }
 
   if (!page) {
-    return (
-      <Frame>
-        <ActivityIndicator color={theme.tint} />
-      </Frame>
-    );
+    return <LoadingView />;
   }
 
   function closeSheet() {
@@ -105,7 +108,7 @@ export default function WeddingTasksScreen() {
       closeSheet();
       load();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : '더하지 못했습니다.');
+      setError(caught instanceof Error ? caught.message : '더하지 못했어요.');
     }
   }
 
@@ -123,17 +126,24 @@ export default function WeddingTasksScreen() {
       closeSheet();
       load();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : '고치지 못했습니다.');
+      setError(caught instanceof Error ? caught.message : '고치지 못했어요.');
     }
   }
 
-  async function remove(taskId: string) {
-    try {
-      await removeWeddingTask(id, taskId);
-      load();
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : '지우지 못했습니다.');
-    }
+  function remove(taskId: string) {
+    Alert.alert('일정 빼기', '이 일정을 빼시겠어요? 되돌릴 수 없어요.', [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '빼기',
+        style: 'destructive',
+        onPress: () =>
+          removeWeddingTask(id, taskId)
+            .then(load)
+            .catch((caught: Error) =>
+              setError(caught.message ?? '지우지 못했어요.')
+            ),
+      },
+    ]);
   }
 
   return (
@@ -146,6 +156,37 @@ export default function WeddingTasksScreen() {
               준비 {page.progress.done} / {page.progress.total} 완료
             </ThemedText>
           </ThemedView>
+
+          {(() => {
+            const view = lifecycle(weddingInfo?.weddingDate ?? null);
+            const currentIndex = LIFECYCLE_STAGES.indexOf(view.stage);
+            return (
+              <ThemedView type="backgroundElement" style={styles.timeline}>
+                <ThemedView style={styles.timelineRow}>
+                  {LIFECYCLE_STAGES.map((stage, i) => (
+                    <View
+                      key={stage}
+                      style={[
+                        styles.timelineDot,
+                        {
+                          backgroundColor:
+                            i === currentIndex
+                              ? theme.tint
+                              : i < currentIndex
+                                ? theme.positive
+                                : theme.border,
+                        },
+                      ]}
+                    />
+                  ))}
+                </ThemedView>
+                <ThemedText type="t5">{view.mood}</ThemedText>
+                <ThemedText type="t7" themeColor="textSecondary">
+                  {LIFECYCLE_STAGE_LABEL[view.stage]} · {view.note}
+                </ThemedText>
+              </ThemedView>
+            );
+          })()}
 
           {page.tasks.map((task) => (
             <ThemedView key={task.id} type="backgroundElement" style={styles.row}>
@@ -172,7 +213,7 @@ export default function WeddingTasksScreen() {
                   setDraftVendor(task.vendorLabel ?? '');
                 }}
               />
-              <ActionButton label="빼기" onPress={() => void remove(task.id)} />
+              <ActionButton label="빼기" onPress={() => remove(task.id)} />
             </ThemedView>
           ))}
 
@@ -287,16 +328,6 @@ export default function WeddingTasksScreen() {
   );
 }
 
-function Frame({ children }: { children: React.ReactNode }) {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.content}>{children}</ThemedView>
-      </SafeAreaView>
-    </ThemedView>
-  );
-}
-
 const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
@@ -326,5 +357,22 @@ const styles = StyleSheet.create({
     height: Layout.rowMinHeight,
     borderRadius: Radius.input,
     paddingHorizontal: Spacing.three,
+  },
+  timeline: {
+    borderRadius: Radius.medium,
+    padding: Spacing.three,
+    gap: Spacing.two,
+    marginBottom: Spacing.two,
+  },
+  timelineRow: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+    alignItems: 'center',
+  },
+  timelineDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    flex: 1,
   },
 });

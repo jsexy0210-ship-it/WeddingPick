@@ -27,9 +27,9 @@ import type { CapturedPage } from '@/features/capture/types';
  * 받지 않는 이유가 법률 확인이라는 것도 사실 그대로 적어야 한다.
  */
 const WHAT_WE_READ =
-  '견적서를 읽어 항목과 추가비용 후보를 정리해 드립니다. ' + // pick-language: 받는 서류 이름
-  '계약서는 지금 받지 않습니다 — 계약서에 비밀유지 조항이 있는 경우가 있어, ' + // pick-language: 안 받는 서류 이름과 그 이유
-  '법률 확인이 끝날 때까지 미뤄두었습니다.';
+  '견적서를 읽어 항목과 추가비용 후보를 정리해 드려요. ' + // pick-language: 받는 서류 이름
+  '계약서는 지금 받지 않아요 — 계약서에 비밀유지 조항이 있는 경우가 있어, ' + // pick-language: 안 받는 서류 이름과 그 이유
+  '법률 확인이 끝날 때까지 미뤄두었어요.';
 
 export default function CaptureScreen() {
   const { pages, addPages } = useCaptureDraft();
@@ -50,7 +50,7 @@ export default function CaptureScreen() {
       const message =
         error instanceof PermissionDeniedError
           ? error.message
-          : '문서를 불러오지 못했습니다. 다시 시도해주세요.';
+          : '문서를 불러오지 못했어요. 다시 시도해주세요.';
       Alert.alert('불러오기 실패', message);
     } finally {
       setBusy(false);
@@ -63,8 +63,8 @@ export default function CaptureScreen() {
         <ThemedView style={styles.header}>
           <ThemedText type="subtitle">실제로 내신 금액을 알려주세요</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            카드 승인 문자나 영수증이면 됩니다. 한 건만 올려주셔도 다른 분들이 실제로
-            얼마를 냈는지 보실 수 있습니다.
+            카드 승인 문자나 영수증이면 돼요. 한 건만 올려주셔도 다른 분들이 실제로
+            얼마를 냈는지 보실 수 있어요.
           </ThemedText>
         </ThemedView>
 
@@ -84,7 +84,7 @@ export default function CaptureScreen() {
           </ThemedText>
           <ActionButton
             label="카메라로 촬영"
-            hint="여러 장을 이어서 찍을 수 있습니다"
+            hint="여러 장을 이어서 찍을 수 있어요"
             disabled={busy}
             onPress={() => router.push('/capture/camera')}
           />
@@ -118,10 +118,6 @@ export default function CaptureScreen() {
           />
         ) : null}
 
-        <ThemedText type="small" themeColor="textSecondary" style={styles.notice}>
-          지금은 문서가 기기 안에만 저장됩니다. 서버로 보내는 분석은 원본 문서 처리에 대한
-          법률 검토가 끝난 뒤에 연결합니다.
-        </ThemedText>
       </SafeAreaView>
     </ThemedView>
   );
@@ -145,9 +141,5 @@ const styles = StyleSheet.create({
   },
   actions: {
     gap: Spacing.two,
-  },
-  notice: {
-    marginTop: 'auto',
-    paddingBottom: Spacing.four,
   },
 });

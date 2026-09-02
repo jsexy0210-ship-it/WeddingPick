@@ -26,14 +26,14 @@ export const STYLES = `
   --max: 44rem;
 
   /* 글자 크기 — t 스케일. 앱과 같은 수다. */
-  --text-t1: 30px;
+  --text-t1: 32px;
   --text-t2: 26px;
   --text-t4: 20px;
-  --text-t5: 17px;
-  --text-t6: 15px;
-  --text-t7: 13px;
+  --text-t5: 18px;
+  --text-t6: 16px;
+  --text-t7: 14px;
   --text-badge: 12px;
-  --text-amount: 38px;
+  --text-amount: 32px;
 }
 
 @media (prefers-color-scheme: dark) {

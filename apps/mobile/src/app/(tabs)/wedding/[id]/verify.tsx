@@ -25,8 +25,8 @@ export default function VerifyScreen() {
           <ThemedView style={styles.header}>
             <ThemedText type="subtitle">자료 확인</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              Pick 인증을 마친 자료만 가격 비교의 기준이 됩니다. 확인 단계가
-              올라갈수록 다른 분들의 비교에도 더 큰 몫으로 반영됩니다.
+              Pick 인증을 마친 자료만 가격 비교의 기준이 돼요. 확인 단계가
+              올라갈수록 다른 분들의 비교에도 더 큰 몫으로 반영돼요.
             </ThemedText>
           </ThemedView>
 
@@ -50,8 +50,8 @@ export default function VerifyScreen() {
                   </ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
                     {rule.affectsMarketPrice
-                      ? '가격 비교의 기준이 됩니다'
-                      : '아직 가격 비교에는 쓰이지 않습니다'}
+                      ? '가격 비교의 기준이 돼요'
+                      : '아직 가격 비교에는 쓰이지 않아요'}
                   </ThemedText>
                 </ThemedView>
               );
@@ -61,8 +61,8 @@ export default function VerifyScreen() {
           <ThemedView style={styles.footer}>
             <ActionButton
               variant="primary"
-              label="이 문서 분석하기"
-              hint="분석을 마치면 자료 확인을 신청할 수 있습니다"
+              label="새 문서 촬영하기"
+              hint="처음부터 새 문서를 찍어 올려요"
               onPress={() => router.push('/capture')}
             />
             <ActionButton label="돌아가기" onPress={() => router.back()} />

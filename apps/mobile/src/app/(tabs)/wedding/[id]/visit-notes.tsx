@@ -1,14 +1,16 @@
 import type { VisitNoteListResponse } from '@weddingpick/api-contract';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, ScrollView, StyleSheet, TextInput } from 'react-native';
+import { Alert, Modal, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { addVisitNote, listVisitNotes, removeVisitNote } from '@/api/client';
 import {
   ActionButton,
+  ErrorView,
   Fab,
   Layout,
+  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
@@ -47,23 +49,11 @@ export default function VisitNotesScreen() {
   useEffect(load, [load]);
 
   if (error) {
-    return (
-      <Frame>
-        <ThemedText type="t4">불러오지 못했습니다</ThemedText>
-        <ThemedText type="t7" themeColor="textSecondary">
-          {error}
-        </ThemedText>
-        <ActionButton label="돌아가기" onPress={() => router.back()} />
-      </Frame>
-    );
+    return <ErrorView message={error} onBack={() => router.back()} />;
   }
 
   if (!page) {
-    return (
-      <Frame>
-        <ActivityIndicator color={theme.tint} />
-      </Frame>
-    );
+    return <LoadingView />;
   }
 
   const ready = vendor.trim().length > 0 && visitedOn !== null;
@@ -91,17 +81,24 @@ export default function VisitNotesScreen() {
       setMemo('');
       load();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : '적지 못했습니다.');
+      setError(caught instanceof Error ? caught.message : '적지 못했어요.');
     }
   }
 
-  async function remove(noteId: string) {
-    try {
-      await removeVisitNote(id, noteId);
-      load();
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : '지우지 못했습니다.');
-    }
+  function remove(noteId: string) {
+    Alert.alert('방문노트 빼기', '이 기록을 빼시겠어요? 되돌릴 수 없어요.', [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '빼기',
+        style: 'destructive',
+        onPress: () =>
+          removeVisitNote(id, noteId)
+            .then(load)
+            .catch((caught: Error) =>
+              setError(caught.message ?? '지우지 못했어요.')
+            ),
+      },
+    ]);
   }
 
   return (
@@ -118,7 +115,7 @@ export default function VisitNotesScreen() {
           {page.notes.length === 0 ? (
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="t7" themeColor="textSecondary">
-                아직 적어두신 방문이 없습니다. 상담을 다녀오시면 그날 들은 금액과 느낌을
+                아직 적어두신 방문이 없어요. 상담을 다녀오시면 그날 들은 금액과 느낌을
                 적어두세요.
               </ThemedText>
             </ThemedView>
@@ -135,7 +132,7 @@ export default function VisitNotesScreen() {
                   </ThemedText>
                 ) : null}
                 {note.memo ? <ThemedText type="t6">{note.memo}</ThemedText> : null}
-                <ActionButton label="빼기" onPress={() => void remove(note.id)} />
+                <ActionButton label="빼기" onPress={() => remove(note.id)} />
               </ThemedView>
             ))
           )}
@@ -176,7 +173,7 @@ export default function VisitNotesScreen() {
             <WeddingCalendar
               value={visitedOn}
               onChange={setVisitedOn}
-              today={new Date(1970, 0, 1)}
+              allowPast
             />
 
             <ThemedText type="t7" themeColor="textSecondary">
@@ -221,16 +218,6 @@ export default function VisitNotesScreen() {
           </ScrollView>
         </ThemedView>
       </Modal>
-    </ThemedView>
-  );
-}
-
-function Frame({ children }: { children: React.ReactNode }) {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.content}>{children}</ThemedView>
-      </SafeAreaView>
     </ThemedView>
   );
 }

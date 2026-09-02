@@ -72,12 +72,18 @@ export function registerMyReportRoutes(app: FastifyInstance, context: AppContext
               w.vendor_id,
               NULL,
               w.created_at,
-              (w.status = 'published'),
-              CASE WHEN w.status <> 'published'
+              (vis.effective_status = 'published'),
+              CASE WHEN vis.effective_status <> 'published'
                    THEN '이의 확인 중이라 지금은 보이지 않아요'
               END
        FROM structured.reviews w
        JOIN structured.vendors v ON v.id = w.vendor_id
+       /*
+        * 저장된 status가 아니라 **지금 보이는가**를 본다(0050). 임시조치는 기간이
+        * 지나면 저절로 끝나므로, status만 보면 이미 다시 보이는 글에 "확인 중"이라고
+        * 적게 된다.
+        */
+       JOIN structured.review_visibility vis ON vis.review_id = w.id
        WHERE w.author_user_id = $1
 
        ORDER BY reported_at DESC`,

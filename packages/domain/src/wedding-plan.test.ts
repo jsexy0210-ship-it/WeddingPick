@@ -10,11 +10,20 @@ import {
 
 const NOW = new Date('2026-09-15T09:00:00+09:00');
 
-/** 오늘로부터 며칠 뒤. */
+/**
+ * 오늘로부터 며칠 뒤.
+ *
+ * `toISOString()`으로 돌리면 로컬 자정을 UTC로 바꾸면서 테스트를 돌리는 기기의
+ * 시간대에 따라 하루가 밀린다 — 그러면 `resolveTaskState`가 로컬 시간으로 읽는
+ * 값과 하루씩 어긋난다. 그래서 연·월·일을 UTC를 거치지 않고 그대로 적는다.
+ */
 const at = (days: number) => {
   const date = new Date(2026, 8, 15 + days);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
 
-  return date.toISOString().slice(0, 10);
+  return `${year}-${month}-${day}`;
 };
 
 describe('상태 자동 판정', () => {

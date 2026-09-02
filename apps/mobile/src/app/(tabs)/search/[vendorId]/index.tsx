@@ -1,26 +1,29 @@
-import type { ConditionStats, VendorDetail } from '@weddingpick/api-contract';
+import type { ConditionStats, Review, VendorDetail } from '@weddingpick/api-contract';
 import {
   DOCUMENT_TYPE_LABEL,
+  manwon,
   MAX_RATING,
   PAYMENT_PROOF_CAVEAT,
-  VENDOR_CATEGORY_LABEL,
-  manwon,
   TERMS,
   rangeLabel,
+  STILL_COLLECTING,
+  VENDOR_CATEGORY_LABEL,
   withParticle,
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { addCandidate, ensureWedding, getVendor, getVendorConditions } from '@/api/client';
+import { addCandidate, ensureWedding, getVendor, getVendorConditions, listVendorReviews } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { loadToken } from '@/api/session';
 import { LoginSheet } from '@/features/auth/login-sheet';
 import { savePendingAction } from '@/features/auth/pending-action';
 import {
   ActionButton,
+  ErrorView,
+  LoadingView,
   MaxContentWidth,
   ProgressBar,
   Radius,
@@ -45,6 +48,8 @@ export default function VendorDetailScreen() {
   const [conditions, setConditions] = useState<ConditionStats | null>(null);
   /** 출처를 펼쳤는가. 배지를 눌러 연다. */
   const [sourceOpen, setSourceOpen] = useState(false);
+  /** 미리보기 후기 2-3건. 실패해도 조용히 넘긴다. */
+  const [previewReviews, setPreviewReviews] = useState<Review[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saveNote, setSaveNote] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -63,26 +68,18 @@ export default function VendorDetailScreen() {
     getVendorConditions(vendorId)
       .then(setConditions)
       .catch(() => setConditions(null));
+
+    listVendorReviews(vendorId)
+      .then((res) => setPreviewReviews(res.reviews.slice(0, 3)))
+      .catch(() => undefined);
   }, [vendorId]);
 
   if (error) {
-    return (
-      <Frame>
-        <ThemedText type="subtitle">불러오지 못했습니다</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          {error}
-        </ThemedText>
-        <ActionButton label="돌아가기" onPress={() => router.back()} />
-      </Frame>
-    );
+    return <ErrorView message={error} onBack={() => router.back()} />;
   }
 
   if (!vendor) {
-    return (
-      <Frame>
-        <ActivityIndicator color={theme.tint} />
-      </Frame>
-    );
+    return <LoadingView />;
   }
 
   /**
@@ -140,7 +137,7 @@ export default function VendorDetailScreen() {
             {vendor.prices.paidPrice.stage === 'collecting' ? (
               <ThemedView type="backgroundElement" style={styles.card}>
                 <ThemedText type="t5" themeColor="textSecondary">
-                  데이터를 모으는 중이에요
+                  {STILL_COLLECTING}
                 </ThemedText>
                 <ThemedText type="t7" themeColor="textSecondary">
                   {vendor.prices.paidPrice.caption}
@@ -170,6 +167,11 @@ export default function VendorDetailScreen() {
             */}
             <ThemedText type="t7" themeColor="textSecondary">
               {PAYMENT_PROOF_CAVEAT}
+            </ThemedText>
+
+            {/* 자료 최종 확인일. 숫자가 얼마나 최신인지 알아야 믿을 수 있다. */}
+            <ThemedText type="t7" themeColor="textAssistive">
+              마지막 확인 {vendor.lastVerifiedAt.slice(0, 10)}
             </ThemedText>
 
             {/*
@@ -236,11 +238,11 @@ export default function VendorDetailScreen() {
               <ThemedView type="backgroundElement" style={styles.card}>
                 <ThemedText type="small" themeColor="textSecondary">
                   {vendor.comparableQuoteCount === 0
-                    ? '이 업체의 확인된 계약 자료가 아직 없습니다.'
-                    : `확인된 계약이 ${vendor.comparableQuoteCount}건 모였지만, 같은 상품끼리 견주기에는 아직 모자랍니다.`}
+                    ? '이 업체의 확인된 계약 자료가 아직 없어요.'
+                    : `확인된 계약이 ${vendor.comparableQuoteCount}건 모였지만, 같은 상품끼리 견주기에는 아직 모자라요.`}
                 </ThemedText>
                 <ThemedText type="small" themeColor="textSecondary">
-                  자료가 모이기 전에는 가격을 지어내지 않습니다.
+                  자료가 모이기 전에는 가격을 지어내지 않아요.
                 </ThemedText>
               </ThemedView>
             ) : (
@@ -258,7 +260,7 @@ export default function VendorDetailScreen() {
                     {product.stat.periodEnd}
                   </ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
-                    가운데 절반이 {won(product.stat.p25)}~{won(product.stat.p75)} 사이입니다
+                    가운데 절반이 {won(product.stat.p25)}~{won(product.stat.p75)} 사이예요
                   </ThemedText>
                 </ThemedView>
               ))
@@ -346,9 +348,29 @@ export default function VendorDetailScreen() {
               )}
             </ThemedView>
 
+            {previewReviews.length > 0
+              ? previewReviews.map((review) => (
+                  <ThemedView key={review.id} type="backgroundElement" style={styles.card}>
+                    <ThemedView type="backgroundElement" style={styles.reviewHead}>
+                      <ThemedText type="t7" themeColor="textSecondary">
+                        {review.roleLabel} · {review.verificationLabel}
+                      </ThemedText>
+                      <ThemedText type="t7" numeric>
+                        {review.overall.toFixed(1)}
+                      </ThemedText>
+                    </ThemedView>
+                    <ThemedText type="t6" numberOfLines={1}>
+                      {review.title}
+                    </ThemedText>
+                    <ThemedText type="t7" themeColor="textSecondary" numberOfLines={2}>
+                      {review.body}
+                    </ThemedText>
+                  </ThemedView>
+                ))
+              : null}
             <ActionButton
               label="후기 보기"
-              hint="이용하신 분들이 남긴 글입니다"
+              hint="이용하신 분들이 남긴 글이에요"
               onPress={() => router.push(`/search/${vendor.id}/reviews`)}
             />
           </ThemedView>
@@ -408,12 +430,17 @@ export default function VendorDetailScreen() {
               </ThemedText>
             ) : null}
             <ActionButton
+              label="가격 제보"
+              hint="문서 없이 금액과 조건만 알려주시면 다음 분께 도움이 돼요"
+              onPress={() => router.push(`/search/${vendor.id}/price-report`)}
+            />
+            <ActionButton
               label="내 금액과 비교하기"
               hint="자료를 올리면 이 업체의 Pick 가격대와 견줘 보여드려요"
               onPress={() => router.push('/capture')}
             />
             <ActionButton
-              label="업체 정보가 다릅니다"
+              label="업체 정보가 달라요"
               hint="이름·지역이 실제와 다르면 알려주세요"
               onPress={() =>
                 router.push({
@@ -477,15 +504,6 @@ export default function VendorDetailScreen() {
   );
 }
 
-function Frame({ children }: { children: React.ReactNode }) {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.content}>{children}</ThemedView>
-      </SafeAreaView>
-    </ThemedView>
-  );
-}
 
 const styles = StyleSheet.create({
   sourceRow: {
@@ -540,5 +558,10 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.three,
     padding: Spacing.three,
     gap: Spacing.one,
+  },
+  reviewHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
 });

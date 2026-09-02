@@ -2,7 +2,7 @@ import { Pressable, StyleSheet } from 'react-native';
 
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
-import { Spacing } from './theme';
+import { Radius, Spacing } from './theme';
 import { useTheme } from './use-theme';
 
 export type FilterChipProps = {
@@ -44,7 +44,10 @@ export function FilterChip({ label, selected, onPress, role = 'checkbox' }: Filt
 
 const styles = StyleSheet.create({
   chip: {
-    borderRadius: Spacing.four,
+    /* SEED 핸드오프: 칩 36px · Radius pill(999). */
+    minHeight: 36,
+    justifyContent: 'center',
+    borderRadius: Radius.pill,
     borderWidth: 1,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.one,

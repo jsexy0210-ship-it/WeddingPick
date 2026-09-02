@@ -13,7 +13,8 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://weddingpickl.fly.dev"
+        "EXPO_PUBLIC_API_URL": "https://weddingpickl.fly.dev",
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "595165026523-dd5s0fqtle78e03mb34m9iaclpdmlb9r.apps.googleusercontent.com"
       },
       "android": {
         "buildType": "apk"
@@ -24,7 +25,8 @@
     },
     "production": {
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://weddingpickl.fly.dev"
+        "EXPO_PUBLIC_API_URL": "https://weddingpickl.fly.dev",
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "595165026523-dd5s0fqtle78e03mb34m9iaclpdmlb9r.apps.googleusercontent.com"
       },
       "android": {
         "buildType": "app-bundle"

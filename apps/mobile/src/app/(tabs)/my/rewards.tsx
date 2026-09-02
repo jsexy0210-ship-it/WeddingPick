@@ -6,6 +6,7 @@ import {
   REWARDS,
   REWARD_PAYOUT_NOTICE,
   checkPromotionUrl,
+  formatWeddingDate,
 } from '@weddingpick/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, Share, StyleSheet, TextInput } from 'react-native';
@@ -13,8 +14,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   ActionButton,
+  ErrorView,
   FontSize,
   Layout,
+  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
@@ -38,15 +41,17 @@ export default function MyRewardsScreen() {
   const theme = useTheme();
   const [data, setData] = useState<MyRewardsResponse | null>(null);
   const [draw, setDraw] = useState<MyMonthlyDrawResponse | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [code, setCode] = useState('');
   const [url, setUrl] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
 
   const load = useCallback(() => {
+    setLoadError(null);
     void getMyRewards()
       .then(setData)
-      .catch(() => setData(null));
+      .catch((caught: Error) => setLoadError(caught.message ?? '보상 정보를 불러오지 못했어요.'));
     void getMyMonthlyDraw()
       .then(setDraw)
       .catch(() => setDraw(null));
@@ -109,6 +114,14 @@ export default function MyRewardsScreen() {
     }
   }
 
+  if (loadError) {
+    return <ErrorView message={loadError} onBack={load} />;
+  }
+
+  if (!data) {
+    return <LoadingView />;
+  }
+
   const field = {
     backgroundColor: theme.backgroundSelected,
     color: theme.text,
@@ -166,11 +179,10 @@ export default function MyRewardsScreen() {
               내 초대 코드
             </ThemedText>
             <ThemedText type="t2" numeric>
-              {data?.referralCode ?? '······'}
+              {data.referralCode}
             </ThemedText>
             <ThemedText type="t7" themeColor="textSecondary">
-              초대한 분 {data?.invitedCount ?? 0}명 · 조건을 채운 분{' '}
-              {data?.qualifiedCount ?? 0}명
+              초대한 분 {data.invitedCount}명 · 조건을 채운 분 {data.qualifiedCount}명
             </ThemedText>
           </ThemedView>
 
@@ -237,14 +249,14 @@ export default function MyRewardsScreen() {
 
           <ThemedText type="t2">내 보상</ThemedText>
 
-          {data && data.grants.length === 0 ? (
+          {data.grants.length === 0 ? (
             <ThemedText type="t6" themeColor="textSecondary">
               아직 받으실 보상이 없어요. 친구초대는 {won(REWARDS.referral.amountKrw)}, 홍보인증은{' '}
               {won(REWARDS.promotion.amountKrw)}이에요
             </ThemedText>
           ) : null}
 
-          {(data?.grants ?? []).map((grant) => (
+          {data.grants.map((grant) => (
             <ThemedView key={grant.id} type="backgroundElement" style={styles.card}>
               <ThemedView type="backgroundElement" style={styles.cardHead}>
                 <ThemedText type="t5">
@@ -259,6 +271,9 @@ export default function MyRewardsScreen() {
 
               <ThemedText type="t7" themeColor="textSecondary">
                 {grant.statusNote}
+              </ThemedText>
+              <ThemedText type="t7" themeColor="textAssistive">
+                {formatWeddingDate(grant.createdAt.slice(0, 10))}
               </ThemedText>
 
               {/* 사유는 지급하지 않기로 했을 때만 보여준다. */}

@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-static.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-scale.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-semantic.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/typography.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/dimension.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/motion.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/base.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/core/core.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/buttons/buttons.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/forms/forms.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/feedback/feedback.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/overlay/overlay.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/display/display.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/styles.css">
+<script src="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/_ds_bundle.js"></script>
+<style>
+body{margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#ff6f61;text-decoration:none}
+a:hover{color:#e2564a}
+.nsb::-webkit-scrollbar{display:none}
+</style>
+</helmet>
+
+<section style="{{ rootStyle }}">
+
+<div style="display:flex;flex-direction:column;gap:10px;max-width:1000px;padding-bottom:8px">
+  <span style="font-size:14px;line-height:19px;font-weight:700;color:#ff6f61">WeddingPick · WP-FAQ</span>
+  <span style="font-size:40px;line-height:52px;font-weight:700;color:#212124">FAQ · 사용자와 운영자</span>
+  <span style="font-size:18px;line-height:26px;color:#393a40;text-wrap:pretty">사용자는 MY · 고객지원 · 자주 묻는 질문으로 들어오고, 운영자는 관리자에서 직접 등록 · 수정 · 삭제합니다. 답변 문구에 «AI»를 쓰지 않고 «웨딩픽이»로 말합니다.</span>
+</div>
+
+<div style="display:flex;gap:36px;align-items:flex-start">
+
+<div id="21a" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">FO 1</span>FAQ 홈 · WP-FAQ-001</div>
+  <span style="{{ tagDesc }}">검색이 먼저, 그다음 카테고리 8개. 많이 찾는 질문을 아래에 둡니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navBack }}"><span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span><span style="flex:1;min-width:0;{{ t18b }}">자주 묻는 질문</span></div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:4px 24px 24px"><div style="{{ searchBox }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#868b94" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6.9"></circle><path d="M16.2 16.2 20.8 20.8"></path></svg><span style="{{ t16d }}">궁금한 내용을 검색해보세요</span></div></div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:grid;grid-template-columns:1fr 1fr;gap:11px">
+        <sc-for list="{{ faqCats }}" as="c" hint-placeholder-count="8">
+          <div style="{{ catBox }}"><span style="{{ t18b }}">{{ c.name }}</span><span style="{{ t14n }}">{{ c.n }}</span></div>
+        </sc-for>
+      </div>
+      <div style="{{ band }}"></div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:12px">
+        <span style="{{ s20 }}">많이 찾는 질문</span>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <sc-for list="{{ topQuestions }}" as="q" hint-placeholder-count="5">
+            <div>
+              <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:14px 0;cursor:pointer">
+                <span style="flex:1;min-width:0;{{ t18n }}">{{ q }}</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#adb1ba" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+              </div>
+              <div style="{{ hr }}"></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="21b" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">FO 2</span>답변 · WP-FAQ-003</div>
+  <span style="{{ tagDesc }}">답변 하단은 두 버튼뿐입니다. 해결되지 않았어요를 누르면 문의 유형이 자동으로 선택된 채로 문의 화면이 열립니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navBack }}"><span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span><span style="flex:1;min-width:0;{{ t18b }}">확인된 정보</span></div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:12px 24px 24px;display:flex;flex-direction:column;gap:12px">
+        <span style="{{ badgeCat }}">확인된 정보 · 제보</span>
+        <span style="{{ h26 }}">확인된 정보가<br>무엇인가요?</span>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 24px;display:flex;flex-direction:column;gap:16px">
+        <sc-for list="{{ answerParas }}" as="p" hint-placeholder-count="3">
+          <span style="{{ t16g }}">{{ p }}</span>
+        </sc-for>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 28px">
+        <div style="{{ noteBox }}">
+          <span style="{{ t14m }}">표기 예시</span>
+          <span style="{{ h24n }}">152~184만원</span>
+          <span style="{{ t14n }}">확인된 정보 12건 · 최근 12개월 · 기준금액 168만원</span>
+        </div>
+      </div>
+      <div style="{{ band }}"></div>
+      <div style="flex-shrink:0;padding:0 24px 24px;display:flex;flex-direction:column;gap:12px">
+        <span style="{{ t16b2 }}">도움이 되셨나요?</span>
+        <div style="display:flex;gap:8px">
+          <button style="{{ btnGhost }}">도움이 됐어요</button>
+          <button style="{{ btnGhost }}">해결되지 않았어요</button>
+        </div>
+        <span style="{{ t14w }}">해결되지 않았어요를 누르면 «확인된 정보» 유형이 선택된 문의 화면으로 넘어가요.</span>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:12px">
+        <span style="{{ s20 }}">이런 질문도 있어요</span>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <sc-for list="{{ relatedQ }}" as="q" hint-placeholder-count="3">
+            <div>
+              <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:14px 0">
+                <span style="flex:1;min-width:0;{{ t18n }}">{{ q }}</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#adb1ba" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+              </div>
+              <div style="{{ hr }}"></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="21c" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">FO 3</span>검색 결과 없음</div>
+  <span style="{{ tagDesc }}">찾는 답이 없으면 문의로 바로 넘깁니다. 검색어를 문의 제목에 그대로 넣어 다시 적게 하지 않습니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navSearch }}">
+      <span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span>
+      <div style="{{ searchBoxSm }}"><span style="{{ t16k }}">계약금 환불</span></div>
+    </div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:36px 24px 28px;display:flex;flex-direction:column;gap:10px">
+        <span style="{{ h26 }}">답변을 찾지<br>못했어요</span>
+        <span style="{{ t16g }}">계약금 환불 조건은 업체마다 달라서 웨딩픽이 일괄로 안내하기 어려워요</span>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 28px"><button style="{{ cta }}">문의하기</button></div>
+      <div style="{{ band }}"></div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:12px">
+        <span style="{{ s20 }}">비슷한 질문</span>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <sc-for list="{{ similarQ }}" as="q" hint-placeholder-count="3">
+            <div>
+              <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:14px 0">
+                <span style="flex:1;min-width:0;{{ t18n }}">{{ q }}</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#adb1ba" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+              </div>
+              <div style="{{ hr }}"></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div style="display:flex;flex-direction:column;gap:14px">
+  <div style="{{ tag }}"><span style="{{ tagIdBo }}">BO</span>관리자 · FAQ 관리 · WP-ADM-035</div>
+  <span style="{{ tagDescWide }}">운영자가 직접 등록 · 수정 · 삭제합니다. 카테고리 · 노출 순서 · 공개 여부를 함께 관리하고, 도움됨 비율과 조회수로 어떤 답변을 고쳐야 하는지 판단합니다.</span>
+  <div style="{{ adminFrame }}">
+    <div style="{{ adminHead }}">
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="{{ h24 }}">FAQ 관리</span>
+        <span style="{{ t14n }}">공개 24건 · 비공개 3건 · 초안 2건</span>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <span style="{{ btnGhostSm }}">카테고리 관리</span>
+        <span style="{{ btnPrimarySm }}">FAQ 등록</span>
+      </div>
+    </div>
+    <div style="{{ adminKpis }}">
+      <sc-for list="{{ faqKpis }}" as="k" hint-placeholder-count="4">
+        <div style="{{ kpiBox }}">
+          <span style="{{ t14n }}">{{ k.label }}</span>
+          <span style="{{ k.valueStyle }}">{{ k.value }}</span>
+          <span style="{{ t14w }}">{{ k.note }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="{{ tableWrap }}">
+      <div style="{{ trHead }}">
+        <sc-for list="{{ faqCols }}" as="c" hint-placeholder-count="8">
+          <span style="{{ c.style }}">{{ c.label }}</span>
+        </sc-for>
+      </div>
+      <sc-for list="{{ faqRows }}" as="r" hint-placeholder-count="7">
+        <div style="{{ tr }}">
+          <span style="{{ tdOrder }}">{{ r.order }}</span>
+          <span style="{{ tdCat }}">{{ r.cat }}</span>
+          <span style="{{ tdQ }}">{{ r.q }}</span>
+          <span style="{{ r.stateStyle }}">{{ r.state }}</span>
+          <span style="{{ tdNum }}">{{ r.view }}</span>
+          <span style="{{ r.helpStyle }}">{{ r.help }}</span>
+          <span style="{{ tdDate }}">{{ r.updated }}</span>
+          <span style="{{ tdActions }}">수정 · 삭제</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="{{ adminFoot }}">
+      <span style="{{ t14w }}">순서는 드래그로 바꿔요. 삭제한 FAQ는 30일 동안 휴지통에 남고 그 뒤에 지워져요. 도움됨 비율이 60% 아래로 떨어진 항목은 목록 위로 올려 보여줘요. 답변에는 «AI» 대신 «웨딩픽이»로 적고, 확정되지 않은 기준은 숫자를 만들어 쓰지 않아요.</span>
+    </div>
+  </div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:14px">
+  <div style="{{ tag }}"><span style="{{ tagIdBo }}">BO</span>FAQ 등록 · 수정</div>
+  <span style="{{ tagDescWide }}">등록과 수정은 같은 화면을 씁니다. 저장 전에 사용자에게 보이는 모습을 그대로 보여줍니다.</span>
+  <div style="{{ editorFrame }}">
+    <div style="{{ editorLeft }}">
+      <sc-for list="{{ editorFields }}" as="f" hint-placeholder-count="6">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="{{ t14m }}">{{ f.label }}</span>
+            <sc-if value="{{ f.req }}"><span style="{{ reqTag }}">필수</span></sc-if>
+          </div>
+          <div style="{{ f.box }}">{{ f.value }}</div>
+          <sc-if value="{{ f.hint }}"><span style="{{ t14w }}">{{ f.hint }}</span></sc-if>
+        </div>
+      </sc-for>
+      <div style="display:flex;gap:8px;padding-top:6px">
+        <span style="{{ btnGhostSm }}">임시저장</span>
+        <span style="{{ btnPrimarySm }}">공개하기</span>
+      </div>
+    </div>
+    <div style="{{ editorRight }}">
+      <span style="{{ t14m }}">사용자 화면 미리보기</span>
+      <div style="{{ previewCard }}">
+        <span style="{{ badgeCat }}">계정 · 알림</span>
+        <span style="{{ h20 }}">탈퇴하면 작성한 후기와 제보도 삭제되나요?</span>
+        <span style="{{ t16g }}">계정과 개인 웨딩 정보는 탈퇴할 때 지워요. 후기와 제보로 확인된 정보는 작성자를 알아볼 수 없도록 분리한 뒤 서비스의 정보 신뢰성을 위해 유지할 수 있어요. 법령에 따라 보관해야 하는 정보는 정해진 기간 동안 따로 보관한 뒤 지워요.</span>
+        <div style="{{ hrIn }}"></div>
+        <div style="display:flex;gap:8px">
+          <span style="{{ btnGhostMini }}">도움이 됐어요</span>
+          <span style="{{ btnGhostMini }}">해결되지 않았어요</span>
+        </div>
+      </div>
+      <span style="{{ t14w }}">해결되지 않았어요를 누르면 여기서 지정한 문의 유형이 선택된 채로 문의 화면이 열려요.</span>
+    </div>
+  </div>
+</div>
+
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1600,&quot;height&quot;:1100}}">
+class Component extends DCLogic {
+  renderVals() {
+    const C = '#ff6f61';
+    const fld = (label, value, filled, req, hint) => ({ label, value, req, hint,
+      box: 'min-height:52px;border-radius:6px;border:1px solid #d1d3d8;padding:14px;display:flex;align-items:flex-start;font-size:16px;line-height:24px;text-wrap:pretty;color:' + (filled ? '#212124' : '#adb1ba') });
+    const row = (order, cat, q, state, view, help, updated) => ({
+      order, cat, q, state, view: view.toLocaleString(), updated,
+      help: help === null ? '—' : help + '%',
+      stateStyle: 'width:74px;flex:0 0 74px;display:flex;align-items:center;justify-content:center;height:22px;border-radius:4px;font-size:13px;font-weight:700;white-space:nowrap;'
+        + (state === '공개' ? 'background:#e8faf6;color:#1aa174;' : state === '비공개' ? 'background:#f2f3f6;color:#868b94;' : 'background:#ffe3ba;color:#805217;'),
+      helpStyle: 'width:78px;flex:0 0 78px;text-align:right;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;color:'
+        + (help !== null && help < 60 ? '#e81607' : '#212124')
+    });
+    const col = (label, w, align) => ({ label,
+      style: (w === 'auto' ? 'flex:1 1 0;min-width:0;' : 'width:' + w + ';flex:0 0 ' + w + ';')
+        + 'text-align:' + align + ';font-size:13px;font-weight:700;color:#868b94;white-space:nowrap' });
+
+    return {
+      rootStyle: 'display:flex;flex-direction:column;gap:48px;align-items:flex-start;padding:64px;width:max-content',
+      col: 'display:flex;flex-direction:column;gap:10px;width:390px',
+      tag: 'height:26px;display:flex;align-items:center;gap:8px;font-size:18px;line-height:24px;font-weight:700;color:#212124;white-space:nowrap;overflow:hidden',
+      tagId: 'padding:0 8px;height:26px;flex:0 0 auto;border-radius:6px;background:#212124;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700',
+      tagIdBo: 'padding:0 8px;height:26px;flex:0 0 auto;border-radius:6px;background:' + C + ';color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700',
+      tagDesc: 'height:71px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;line-height:21px;color:#4d5159;text-wrap:pretty',
+      tagDescWide: 'max-width:900px;font-size:14px;line-height:21px;color:#4d5159;text-wrap:pretty',
+      phone: 'width:390px;height:844px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)',
+      bar: 'height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:700;color:#212124',
+      barIcons: 'display:flex;gap:5px;align-items:center',
+      navBack: 'flex:0 0 56px;display:flex;align-items:center;gap:4px;padding:0 20px 0 12px;background:#fff',
+      navSearch: 'flex:0 0 60px;display:flex;align-items:center;gap:10px;padding:0 24px 0 12px;background:#fff',
+      backBtn: 'width:40px;height:40px;flex:0 0 40px;border-radius:999px;display:flex;align-items:center;justify-content:center',
+      scroll: 'flex:1 1 auto;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;scrollbar-width:none',
+      hr: 'height:1px;background:#eaebee',
+      hrIn: 'height:1px;background:#eaebee;margin:2px 0',
+      band: 'flex-shrink:0;height:16px;background:#f2f3f6;margin-bottom:28px',
+      searchBox: 'height:52px;border-radius:6px;background:#f2f3f6;display:flex;align-items:center;gap:10px;padding:0 16px',
+      searchBoxSm: 'flex:1;min-width:0;height:44px;border-radius:6px;background:#f2f3f6;display:flex;align-items:center;padding:0 14px',
+      catBox: 'min-height:56px;border-radius:10px;background:#f7f8fa;padding:16px;display:flex;flex-direction:column;gap:3px;min-width:0;cursor:pointer',
+      noteBox: 'border-radius:10px;background:#f7f8fa;padding:20px;display:flex;flex-direction:column;gap:6px',
+      badgeCat: 'align-self:flex-start;padding:4px 9px;border-radius:4px;background:color-mix(in oklab,' + C + ' 12%,#fff);color:' + C + ';font-size:14px;line-height:19px;font-weight:700',
+
+      adminFrame: 'width:1440px;background:#fff;border:1px solid #eaebee;border-radius:10px;display:flex;flex-direction:column;overflow:hidden',
+      adminHead: 'display:flex;align-items:center;gap:16px;padding:24px 28px;box-shadow:inset 0 -1px 0 #eaebee',
+      adminKpis: 'display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:20px 28px;box-shadow:inset 0 -1px 0 #eaebee',
+      kpiBox: 'border-radius:10px;background:#f7f8fa;padding:16px 18px;display:flex;flex-direction:column;gap:4px',
+      tableWrap: 'display:flex;flex-direction:column',
+      trHead: 'display:flex;align-items:center;gap:14px;padding:12px 28px;background:#f7f8fa;box-shadow:inset 0 -1px 0 #eaebee',
+      tr: 'display:flex;align-items:center;gap:14px;padding:14px 28px;box-shadow:inset 0 -1px 0 #eaebee;min-height:56px;box-sizing:border-box',
+      tdOrder: 'width:44px;flex:0 0 44px;font-size:13px;color:#868b94;font-variant-numeric:tabular-nums',
+      tdCat: 'width:132px;flex:0 0 132px;font-size:13px;font-weight:700;color:#4d5159;overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      tdQ: 'flex:1 1 0;min-width:0;font-size:14px;font-weight:700;color:#212124;overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      tdNum: 'width:78px;flex:0 0 78px;text-align:right;font-size:13px;color:#393a40;font-variant-numeric:tabular-nums',
+      tdDate: 'width:96px;flex:0 0 96px;text-align:right;font-size:13px;color:#868b94;font-variant-numeric:tabular-nums',
+      tdActions: 'width:96px;flex:0 0 96px;text-align:right;font-size:13px;font-weight:700;color:#0088cc;cursor:pointer;white-space:nowrap',
+      adminFoot: 'padding:20px 28px;background:#f7f8fa',
+
+      editorFrame: 'width:1440px;background:#fff;border:1px solid #eaebee;border-radius:10px;display:flex;overflow:hidden',
+      editorLeft: 'flex:1.2;min-width:0;padding:28px;display:flex;flex-direction:column;gap:18px',
+      editorRight: 'width:480px;flex:0 0 480px;padding:28px;background:#f7f8fa;display:flex;flex-direction:column;gap:12px',
+      previewCard: 'background:#fff;border-radius:10px;padding:24px;display:flex;flex-direction:column;gap:12px',
+      reqTag: 'padding:2px 6px;border-radius:4px;background:color-mix(in oklab,' + C + ' 12%,#fff);color:' + C + ';font-size:12px;line-height:16px;font-weight:700',
+
+      h26: 'font-size:26px;line-height:35px;font-weight:700;color:#212124;text-wrap:pretty',
+      h24: 'font-size:24px;line-height:32px;font-weight:700;color:#212124',
+      h24n: 'font-size:24px;line-height:32px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums',
+      h20: 'font-size:20px;line-height:27px;font-weight:700;color:#212124;text-wrap:pretty',
+      s20: 'font-size:20px;line-height:27px;font-weight:700;color:#212124',
+      t18b: 'font-size:18px;line-height:24px;font-weight:700;color:#212124;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      t18n: 'font-size:18px;line-height:24px;color:#212124;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      t16b2: 'font-size:16px;line-height:22px;font-weight:700;color:#212124',
+      t16g: 'font-size:16px;line-height:24px;color:#393a40;text-wrap:pretty',
+      t16d: 'font-size:16px;line-height:22px;color:#868b94',
+      t16k: 'font-size:16px;line-height:22px;font-weight:700;color:#212124',
+      t14n: 'font-size:14px;line-height:19px;color:#868b94;font-variant-numeric:tabular-nums',
+      t14m: 'font-size:14px;line-height:19px;font-weight:700;color:#4d5159',
+      t14w: 'font-size:14px;line-height:21px;color:#868b94;text-wrap:pretty',
+      cta: 'width:100%;height:52px;border:0;border-radius:6px;background:' + C + ';color:#fff;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer',
+      btnGhost: 'flex:1;height:48px;border:1px solid #dcdee3;border-radius:6px;background:#fff;color:#212124;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer',
+      btnGhostSm: 'height:40px;padding:0 16px;border-radius:6px;background:#f2f3f6;color:#393a40;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;cursor:pointer',
+      btnGhostMini: 'flex:1;height:38px;border-radius:6px;background:#f2f3f6;color:#4d5159;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700',
+      btnPrimarySm: 'height:40px;padding:0 16px;border-radius:6px;background:' + C + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;cursor:pointer',
+
+      faqCats: [
+        { name: '웨딩픽 이용', n: '6개' },
+        { name: '확인된 정보 · 제보', n: '13개' },
+        { name: 'Pick · 비교', n: '7개' },
+        { name: '후기', n: '7개' },
+        { name: '우리웨딩 · 배우자', n: '7개' },
+        { name: '일정 · 지출', n: '5개' },
+        { name: '계정 · 알림', n: '4개' },
+        { name: '업체 · 플래너', n: '12개' }
+      ],
+      topQuestions: [
+        '확인된 정보가 무엇인가요?',
+        '회원가입 없이 사용할 수 있나요?',
+        'Pick 인증은 어떻게 하나요?',
+        '광고한 업체가 추천에 더 많이 나오나요?',
+        '배우자는 어떻게 연결하나요?'
+      ],
+      answerParas: [
+        '실제로 낸 금액을 사용자가 올려주신 자료로 확인해서 정리한 정보예요. 업체가 직접 안내하는 공식 정보와는 나눠서 보여드려요.',
+        '개인이 낸 금액을 그대로 공개하지 않아요. 공개할 수 있는 만큼 모이면 기간과 조건을 기준으로 금액 구간, 기준금액, 확인 건수를 알려드려요.',
+        '정보가 충분하지 않으면 가격이나 비교 결과를 만들어내지 않고 «수집 중»으로 표시해요.'
+      ],
+      relatedQ: [
+        '업체 공식 가격과 확인된 금액이 다른 이유는 무엇인가요?',
+        '정보는 언제 확인한 것인가요?',
+        '제보하면 바로 공개되나요?'
+      ],
+      similarQ: [
+        '결정한 업체를 바꿀 수 있나요?',
+        '지출내역에서는 무엇을 확인할 수 있나요?',
+        '업체 정보가 사실과 달라요'
+      ],
+
+      faqKpis: [
+        { label: '공개 중', value: '24건', note: '카테고리 8개', valueStyle: 'font-size:24px;line-height:32px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums' },
+        { label: '이번 주 조회', value: '3,182', note: '지난주 대비 +14%', valueStyle: 'font-size:24px;line-height:32px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums' },
+        { label: '평균 도움됨', value: '78%', note: '60% 미만 2건', valueStyle: 'font-size:24px;line-height:32px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums' },
+        { label: '해결 안 됨 → 문의', value: '164건', note: '조회 대비 5.2%', valueStyle: 'font-size:24px;line-height:32px;font-weight:700;color:#805217;font-variant-numeric:tabular-nums' }
+      ],
+      faqCols: [
+        col('순서', '44px', 'left'),
+        col('카테고리', '132px', 'left'),
+        col('질문', 'auto', 'left'),
+        col('상태', '74px', 'center'),
+        col('조회', '78px', 'right'),
+        col('도움됨', '78px', 'right'),
+        col('수정일', '96px', 'right'),
+        col('관리', '96px', 'right')
+      ],
+      faqRows: [
+        row(1, '확인된 정보 · 제보', '확인된 정보가 무엇인가요?', '공개', 842, 91, '08-28'),
+        row(2, '웨딩픽 이용', '회원가입 없이 사용할 수 있나요?', '공개', 610, 88, '08-24'),
+        row(3, '확인된 정보 · 제보', 'Pick 인증은 어떻게 하나요?', '공개', 588, 74, '08-27'),
+        row(4, '웨딩픽 이용', '광고한 업체가 추천에 더 많이 나오나요?', '공개', 402, 95, '09-01'),
+        row(5, '계정 · 알림', '탈퇴하면 작성한 후기와 제보도 삭제되나요?', '공개', 138, 86, '09-01'),
+        row(6, '일정 · 지출', '체크리스트를 직접 수정할 수 있나요?', '공개', 214, 52, '08-19'),
+        row(7, '업체 · 플래너', '업체가 후기를 삭제할 수 있나요?', '비공개', 96, 41, '08-12')
+      ],
+      editorFields: [
+        fld('카테고리', '계정 · 알림', true, true, ''),
+        fld('질문', '탈퇴하면 작성한 후기와 제보도 삭제되나요?', true, true, '한 문장으로 적어요. 물음표로 끝내요.'),
+        fld('답변', '계정과 개인 웨딩 정보는 탈퇴할 때 지워요. 후기와 제보로 확인된 정보는 작성자를 알아볼 수 없도록 분리한 뒤 서비스의 정보 신뢰성을 위해 유지할 수 있어요. 법령에 따라 보관해야 하는 정보는 정해진 기간 동안 따로 보관한 뒤 지워요.', true, true, '«AI» 대신 «웨딩픽이»로 적어요. 보존기간 같은 확정되지 않은 기준은 숫자를 만들어 쓰지 않아요.'),
+        fld('연결 문의 유형', '계정', true, false, '해결되지 않았어요를 눌렀을 때 자동으로 선택돼요.'),
+        fld('관련 질문', '회원탈퇴는 어디에서 하나요? · 개인정보는 어떻게 처리하나요?', true, false, '최대 3개까지 붙어요.'),
+        fld('노출 순서', '3', true, false, '목록에서 드래그로도 바꿀 수 있어요.')
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

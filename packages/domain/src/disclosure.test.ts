@@ -50,7 +50,7 @@ describe('금액 공개', () => {
     const disclosed = discloseAmounts({ amounts: amounts(3), period: PERIOD });
 
     expect(disclosed.stage).toBe('limited');
-    expect(disclosed.caption).toContain('아직 데이터가 적어요');
+    expect(disclosed.caption).toContain('아직 정보가 적어요');
     expect('low' in disclosed && disclosed.low).toBeGreaterThan(0);
   });
 
@@ -180,7 +180,7 @@ describe('캡션', () => {
       '확인된 정보 2건 · 수집 중'
     );
     expect(disclosureCaption({ stage: 'limited', count: 3, period: PERIOD })).toBe(
-      '확인된 정보 3건 · 아직 데이터가 적어요'
+      '확인된 정보 3건 · 아직 정보가 적어요'
     );
     expect(disclosureCaption({ stage: 'normal', count: 8, period: PERIOD })).toBe(
       '확인된 정보 8건 · 최근 12개월'

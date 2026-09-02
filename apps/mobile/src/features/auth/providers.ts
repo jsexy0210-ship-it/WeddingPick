@@ -1,14 +1,28 @@
 import type { AuthProvider } from '@weddingpick/api-contract';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import { AuthRequest, ResponseType, makeRedirectUri } from 'expo-auth-session';
+import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 
-import { listAuthProviders, signIn } from '@/api/client';
+import { listAuthProviders, signIn, signInWithAuthorizationCode } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { DEV_LOGIN_SECRET, devIdToken } from '@/features/auth/dev-login';
 
 export const PROVIDER_LABEL = {
   apple: 'Apple로 계속하기',
   kakao: '카카오로 계속하기',
+  google: 'Google로 계속하기',
+  naver: '네이버로 계속하기',
 } as const;
+
+const KAKAO_CLIENT_ID = process.env.EXPO_PUBLIC_KAKAO_CLIENT_ID;
+const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
+const NAVER_CLIENT_ID = process.env.EXPO_PUBLIC_NAVER_CLIENT_ID;
+const NAVER_REDIRECT_URI = process.env.EXPO_PUBLIC_NAVER_REDIRECT_URI;
+
+// 웹에서는 제공자가 redirect한 창을 닫고 원래 로그인 요청을 완료해야 한다.
+WebBrowser.maybeCompleteAuthSession();
 
 /**
  * 쓸 수 있는 로그인 방법.
@@ -44,7 +58,19 @@ export function useAuthProviders(): { providers: AuthProvider[] | null; error: s
 
 /** 이 방법으로 지금 로그인할 수 있는가. 개발용은 비밀값이 있어야 눌린다. */
 export function canSignInWith(provider: AuthProvider): boolean {
-  return provider.isDevelopmentStandIn ? Boolean(DEV_LOGIN_SECRET) : true;
+  if (provider.isDevelopmentStandIn) return Boolean(DEV_LOGIN_SECRET);
+
+  switch (provider.provider) {
+    case 'apple':
+      // 현재 구현은 expo-apple-authentication 네이티브 흐름이다.
+      return Platform.OS === 'ios';
+    case 'kakao':
+      return Boolean(KAKAO_CLIENT_ID);
+    case 'google':
+      return Boolean(GOOGLE_CLIENT_ID);
+    case 'naver':
+      return Boolean(NAVER_CLIENT_ID && NAVER_REDIRECT_URI);
+  }
 }
 
 /**
@@ -54,9 +80,102 @@ export function canSignInWith(provider: AuthProvider): boolean {
  * 눌러도 여기서 멈춘다 — 눌리는 척하고 아무 일도 안 하는 것보다 낫다.
  */
 export async function signInWith(provider: AuthProvider): Promise<void> {
-  if (!provider.isDevelopmentStandIn) {
-    throw new Error('아직 준비 중입니다.');
+  if (provider.isDevelopmentStandIn) {
+    if (provider.provider === 'naver') throw new Error('네이버 개발용 로그인은 지원하지 않습니다.');
+    await signIn(provider.provider, devIdToken());
+    return;
   }
 
-  await signIn(provider.provider, devIdToken());
+  if (provider.provider === 'apple') {
+    if (!(await AppleAuthentication.isAvailableAsync())) {
+      throw new Error('이 기기에서는 Apple 로그인을 사용할 수 없습니다.');
+    }
+
+    const credential = await AppleAuthentication.signInAsync({
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+      ],
+    });
+
+    if (!credential.identityToken) {
+      throw new Error('Apple 로그인 토큰을 받지 못했습니다. 다시 시도해 주세요.');
+    }
+
+    const appleName = [credential.fullName?.familyName, credential.fullName?.givenName]
+      .filter(Boolean)
+      .join(' ');
+    await signIn('apple', credential.identityToken, appleName || undefined);
+    return;
+  }
+
+  if (provider.provider === 'kakao') {
+    if (!KAKAO_CLIENT_ID) {
+      throw new Error('카카오 로그인 설정이 아직 완료되지 않았습니다.');
+    }
+
+    const redirectUri = makeRedirectUri({ scheme: 'weddingpick' });
+    const request = new AuthRequest({
+      clientId: KAKAO_CLIENT_ID,
+      redirectUri,
+      responseType: ResponseType.IdToken,
+      scopes: ['openid'],
+      usePKCE: false,
+    });
+    const result = await request.promptAsync({
+      authorizationEndpoint: 'https://kauth.kakao.com/oauth/authorize',
+    });
+
+    if (result.type !== 'success' || !result.params.id_token) {
+      if (result.type === 'cancel' || result.type === 'dismiss') return;
+      throw new Error('카카오 로그인에 실패했습니다. 다시 시도해 주세요.');
+    }
+
+    await signIn('kakao', result.params.id_token);
+    return;
+  }
+
+  if (provider.provider === 'google') {
+    if (!GOOGLE_CLIENT_ID) throw new Error('Google 로그인 설정이 아직 완료되지 않았습니다.');
+    const request = new AuthRequest({
+      clientId: GOOGLE_CLIENT_ID,
+      redirectUri: makeRedirectUri({ scheme: 'weddingpick' }),
+      responseType: ResponseType.IdToken,
+      scopes: ['openid', 'profile', 'email'],
+      usePKCE: false,
+    });
+    const result = await request.promptAsync({ authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth' });
+    if (result.type !== 'success' || !result.params.id_token) {
+      if (result.type === 'cancel' || result.type === 'dismiss') return;
+      throw new Error('Google 로그인에 실패했습니다. 다시 시도해 주세요.');
+    }
+    await signIn('google', result.params.id_token);
+    return;
+  }
+
+  if (!NAVER_CLIENT_ID || !NAVER_REDIRECT_URI) {
+    throw new Error('네이버 로그인 설정이 아직 완료되지 않았습니다.');
+  }
+
+  const request = new AuthRequest({
+    clientId: NAVER_CLIENT_ID,
+    redirectUri: NAVER_REDIRECT_URI,
+    responseType: ResponseType.Code,
+    usePKCE: true,
+  });
+  const result = await request.promptAsync({
+    authorizationEndpoint: 'https://nid.naver.com/oauth2.0/authorize',
+  });
+
+  if (result.type !== 'success' || !result.params.code) {
+    if (result.type === 'cancel' || result.type === 'dismiss') return;
+    throw new Error('네이버 로그인에 실패했습니다. 다시 시도해 주세요.');
+  }
+
+  await signInWithAuthorizationCode({
+    authorizationCode: result.params.code,
+    state: result.params.state ?? request.state,
+    redirectUri: NAVER_REDIRECT_URI,
+    codeVerifier: request.codeVerifier,
+  });
 }

@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-static.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-scale.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-semantic.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/typography.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/dimension.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/motion.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/base.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/core/core.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/buttons/buttons.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/forms/forms.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/feedback/feedback.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/overlay/overlay.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/display/display.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/styles.css">
+<script src="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/_ds_bundle.js"></script>
+<script src="./image-slot.js"></script>
+<style>
+body{margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--wp-accent,#ff6f61);text-decoration:none}
+a:hover{color:#e2564a}
+.nsb::-webkit-scrollbar{display:none}
+image-slot{background:#eaebee}
+image-slot::part(empty){display:none !important}
+@keyframes wpScan{0%{transform:translateY(-100%)}100%{transform:translateY(400%)}}
+@keyframes wpCheck{0%{transform:scale(0)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
+@keyframes wpRise{0%{transform:translateY(10px);opacity:0}100%{transform:translateY(0);opacity:1}}
+</style>
+</helmet>
+
+<section style="{{ rootStyle }}">
+
+<div id="12a" style="display:flex;flex-direction:column;gap:14px">
+<div style="font-size:14px;font-weight:700;color:#4d5159">12a · WP-RPT-001 제보 홈 · WP-RPT-002 이미지 선택</div>
+<div style="display:flex;gap:20px">
+
+  <div style="{{ phone }}">
+    <div style="{{ statusBar }}"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navBack }}">
+      <span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span>
+      <span style="flex:1;min-width:0;font-size:18px;line-height:24px;font-weight:700;color:#212124">제보</span>
+    </div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:12px 24px 26px;display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:26px;line-height:35px;font-weight:700;color:#212124">얼마 냈는지 알려주면<br>다음 사람이 덜 헤매요</span>
+        <span style="font-size:16px;line-height:24px;color:#4d5159">사진 한 장이면 자동으로 정리돼요</span>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px;display:flex;flex-direction:column;gap:12px">
+        <sc-for list="{{ reportKinds }}" as="k" hint-placeholder-count="3">
+          <div style="border-radius:10px;border:1px solid #dcdee3;padding:20px;display:flex;align-items:center;gap:14px;cursor:pointer">
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+              <span style="font-size:18px;line-height:24px;font-weight:700;color:#212124">{{ k.name }}</span>
+              <span style="font-size:14px;line-height:19px;color:#868b94;text-wrap:pretty">{{ k.desc }}</span>
+            </div>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#adb1ba" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+          </div>
+        </sc-for>
+      </div>
+      <div style="flex-shrink:0;height:16px;background:#f2f3f6;margin:28px 0"></div>
+      <div style="flex-shrink:0;padding:0 24px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:20px;line-height:27px;font-weight:700;color:#212124">내 제보 내역</span>
+          <span style="font-size:14px;line-height:19px;font-weight:700;color:#868b94">전체 보기</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <sc-for list="{{ myReports }}" as="r" hint-placeholder-count="3">
+            <div>
+              <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:12px 0;cursor:pointer">
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                  <span style="font-size:18px;line-height:24px;font-weight:700;color:#212124">{{ r.name }}</span>
+                  <span style="font-size:14px;line-height:19px;color:#868b94;font-variant-numeric:tabular-nums">{{ r.meta }}</span>
+                </div>
+                <span style="{{ r.badge }}">{{ r.state }}</span>
+              </div>
+              <div style="height:1px;background:#eaebee"></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="height:32px;flex-shrink:0"></div>
+    </div>
+  </div>
+
+  <div style="{{ phone }}">
+    <div style="{{ statusBar }}"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navBack }}">
+      <span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span>
+      <span style="flex:1;min-width:0;font-size:18px;line-height:24px;font-weight:700;color:#212124">Pick 인증</span>
+    </div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:12px 24px 24px;display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:26px;line-height:35px;font-weight:700;color:#212124">낸 금액이 보이는<br>화면을 올려주세요</span>
+        <span style="font-size:16px;line-height:24px;color:#4d5159">영수증 · 문자 · 앱 화면 캡처 모두 돼요</span>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px;display:grid;grid-template-columns:1fr 1fr;gap:11px">
+        <div style="aspect-ratio:1;border-radius:10px;border:1px dashed #dcdee3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#868b94" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 8.5h2.6l1.4-2.2h7l1.4 2.2h2.6a1.5 1.5 0 0 1 1.5 1.5v7.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5V10a1.5 1.5 0 0 1 1.5-1.5z"></path><circle cx="12" cy="13.6" r="3.3"></circle></svg>
+          <span style="font-size:14px;line-height:19px;font-weight:700;color:#4d5159">촬영하기</span>
+        </div>
+        <div style="aspect-ratio:1;border-radius:10px;border:1px dashed #dcdee3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#868b94" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2"></rect><path d="m4.5 16.5 4.2-4.2 3.4 3.4 3-3 4.4 4.4"></path><circle cx="9" cy="9.2" r="1.4"></circle></svg>
+          <span style="font-size:14px;line-height:19px;font-weight:700;color:#4d5159">앨범에서 고르기</span>
+        </div>
+        <div style="position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden">
+          <image-slot id="rp-s1" src="uploads/samples-1788175716419-flvg.jpg" shape="rect" placeholder=""></image-slot>
+          <span style="position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:999px;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></span>
+        </div>
+      </div>
+      <div style="flex-shrink:0;padding:24px 24px 0;display:flex;flex-direction:column;gap:10px">
+        <sc-for list="{{ uploadNotes }}" as="n" hint-placeholder-count="3">
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#868b94" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="margin-top:3px;flex:0 0 16px"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg>
+            <span style="flex:1;font-size:14px;line-height:21px;color:#4d5159;text-wrap:pretty">{{ n }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="height:24px;flex-shrink:0"></div>
+    </div>
+    <div style="{{ dock }}">
+      <button style="{{ ctaPrimary }}">1장으로 계속하기</button>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<div id="12b" style="display:flex;flex-direction:column;gap:14px">
+<div style="font-size:14px;font-weight:700;color:#4d5159">12b · WP-RPT-003 분석 중 · WP-RPT-004 자동완성 확인 · WP-RPT-005 업체 확인</div>
+<div style="display:flex;gap:20px">
+
+  <div style="{{ phone }}">
+    <div style="{{ statusBar }}"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navBack }}">
+      <span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></span>
+    </div>
+    <div style="flex:1;padding:0 24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px">
+      <div style="position:relative;width:200px;height:260px;border-radius:10px;overflow:hidden">
+        <image-slot id="rp-scan" src="uploads/samples-1788175716419-flvg.jpg" shape="rect" placeholder=""></image-slot>
+        <div style="position:absolute;inset:0;background:rgba(255,111,97,.10)"></div>
+        <div style="position:absolute;left:0;right:0;top:0;height:56px;background:linear-gradient(to bottom,rgba(255,111,97,0),rgba(255,111,97,.55));animation:wpScan 1.6s cubic-bezier(.4,0,.6,1) infinite"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">
+        <span style="font-size:24px;line-height:32px;font-weight:700;color:#212124">읽고 있어요</span>
+        <span style="font-size:16px;line-height:24px;color:#4d5159">보통 10초 안에 끝나요</span>
+      </div>
+      <div style="width:100%;display:flex;flex-direction:column;gap:12px">
+        <sc-for list="{{ scanSteps }}" as="st" hint-placeholder-count="3">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="{{ st.dot }}"></span>
+            <span style="{{ st.text }}">{{ st.name }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="{{ dock }}">
+      <button style="{{ ctaGhost }}">취소</button>
+    </div>
+  </div>
+
+  <div style="{{ phone }}">
+    <div style="{{ statusBar }}"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navBack }}">
+      <span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span>
+      <span style="flex:1;min-width:0;font-size:18px;line-height:24px;font-weight:700;color:#212124">확인</span>
+    </div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:12px 24px 24px;display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:26px;line-height:35px;font-weight:700;color:#212124">두 가지만<br>확인해주세요</span>
+        <span style="font-size:16px;line-height:24px;color:#4d5159">나머지는 올려주신 자료에서 그대로 읽었어요</span>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px;display:flex;flex-direction:column;gap:12px">
+        <sc-for list="{{ ocrFields }}" as="f" hint-placeholder-count="5">
+          <div style="{{ f.card }}">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:14px;line-height:19px;color:#868b94">{{ f.label }}</span>
+              <span style="{{ f.tag }}">{{ f.tagText }}</span>
+            </div>
+            <span style="{{ f.valueStyle }}">{{ f.value }}</span>
+            <sc-if value="{{ f.hint }}">
+              <span style="font-size:14px;line-height:19px;color:#4d5159;text-wrap:pretty">{{ f.hint }}</span>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+      <div style="flex-shrink:0;padding:24px 24px 0">
+        <div style="border-radius:10px;background:#f7f8fa;padding:18px 20px;display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:14px;line-height:19px;font-weight:700;color:#4d5159">같이 묶을까요?</span>
+          <span style="font-size:16px;line-height:24px;color:#393a40;text-wrap:pretty">3월 2일에 등록한 30만원 내역이 있어요. 같이 묶으면 총 182만원이에요.</span>
+        </div>
+      </div>
+      <div style="height:24px;flex-shrink:0"></div>
+    </div>
+    <div style="{{ dock }}">
+      <button style="{{ ctaPrimary }}">이대로 제보하기</button>
+    </div>
+  </div>
+
+  <div style="{{ phone }}">
+    <div style="{{ statusBar }}"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navBack }}">
+      <span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span>
+      <span style="flex:1;min-width:0;font-size:18px;line-height:24px;font-weight:700;color:#212124">업체 확인</span>
+    </div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:12px 24px 24px;display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:26px;line-height:35px;font-weight:700;color:#212124">어느 곳에<br>낸 금액인가요?</span>
+        <span style="font-size:16px;line-height:24px;color:#4d5159">올려주신 자료에는 «주식회사 모먼트»로 적혀 있어요</span>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px;display:flex;flex-direction:column;gap:2px">
+        <sc-for list="{{ vendorGuess }}" as="v" hint-placeholder-count="3">
+          <div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:12px 0;cursor:pointer">
+              <div style="width:48px;height:48px;flex:0 0 48px;position:relative"><image-slot id="{{ v.slotId }}" src="{{ v.src }}" shape="rounded" radius="6" placeholder=""></image-slot></div>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                <span style="font-size:18px;line-height:24px;font-weight:700;color:#212124">{{ v.name }}</span>
+                <span style="font-size:14px;line-height:19px;color:#868b94">{{ v.meta }}</span>
+              </div>
+              <span style="{{ v.mark }}"></span>
+            </div>
+            <div style="height:1px;background:#eaebee"></div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="flex-shrink:0;padding:20px 24px 0">
+        <span style="font-size:14px;line-height:19px;font-weight:700;color:#868b94;cursor:pointer">목록에 없어요 · 직접 입력</span>
+      </div>
+      <div style="height:24px;flex-shrink:0"></div>
+    </div>
+    <div style="{{ dock }}">
+      <button style="{{ ctaPrimary }}">확인</button>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<div id="12c" style="display:flex;flex-direction:column;gap:14px">
+<div style="font-size:14px;font-weight:700;color:#4d5159">12c · WP-RPT-007 제출 완료 · WP-RPT-009 내 제보 내역 · WP-RPT-004 인식 실패</div>
+<div style="display:flex;gap:20px">
+
+  <div style="{{ phone }}">
+    <div style="{{ statusBar }}"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:64px 24px 40px;display:flex;flex-direction:column;align-items:center;gap:24px;text-align:center">
+        <span style="width:72px;height:72px;border-radius:999px;background:var(--wp-pick,#ff6f61);display:flex;align-items:center;justify-content:center;animation:wpCheck 460ms cubic-bezier(.34,1.56,.64,1) both">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg>
+        </span>
+        <div style="display:flex;flex-direction:column;gap:8px;animation:wpRise 420ms cubic-bezier(.16,1,.3,1) 150ms both">
+          <span style="font-size:26px;line-height:35px;font-weight:700;color:#212124">제보 접수됐어요</span>
+          <span style="font-size:16px;line-height:24px;color:#4d5159">보통 하루 안에 확인이 끝나요</span>
+        </div>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px;display:flex;flex-direction:column;gap:12px;animation:wpRise 420ms cubic-bezier(.16,1,.3,1) 260ms both">
+        <sc-for list="{{ afterSubmit }}" as="a" hint-placeholder-count="3">
+          <div style="border-radius:10px;background:#f7f8fa;padding:18px 20px;display:flex;flex-direction:column;gap:3px">
+            <span style="font-size:14px;line-height:19px;color:#868b94">{{ a.label }}</span>
+            <span style="font-size:18px;line-height:24px;font-weight:700;color:#212124;text-wrap:pretty">{{ a.text }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="height:24px;flex-shrink:0"></div>
+    </div>
+    <div style="{{ dock }}">
+      <button style="{{ ctaPrimary }}">확인</button>
+    </div>
+  </div>
+
+  <div style="{{ phone }}">
+    <div style="{{ statusBar }}"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navBack }}">
+      <span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span>
+      <span style="flex:1;min-width:0;font-size:18px;line-height:24px;font-weight:700;color:#212124">내 제보 내역</span>
+    </div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:12px 24px 24px;display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:26px;line-height:35px;font-weight:700;color:#212124">4건 제보했고<br>3건이 반영됐어요</span>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px;display:flex;flex-direction:column;gap:12px">
+        <sc-for list="{{ reportLog }}" as="r" hint-placeholder-count="4">
+          <div style="border-radius:10px;border:1px solid #dcdee3;padding:18px 20px;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="{{ r.badge }}">{{ r.state }}</span>
+              <span style="font-size:14px;line-height:19px;color:#868b94;font-variant-numeric:tabular-nums">{{ r.date }}</span>
+            </div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+              <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:18px;line-height:24px;font-weight:700;color:#212124">{{ r.name }}</span>
+              <span style="font-size:16px;line-height:22px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums;white-space:nowrap">{{ r.amount }}</span>
+            </div>
+            <span style="font-size:14px;line-height:21px;color:#4d5159;text-wrap:pretty">{{ r.note }}</span>
+            <sc-if value="{{ r.action }}">
+              <button style="{{ ctaSmall }}">{{ r.action }}</button>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+      <div style="height:24px;flex-shrink:0"></div>
+    </div>
+  </div>
+
+  <div style="{{ phone }}">
+    <div style="{{ statusBar }}"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navBack }}">
+      <span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span>
+      <span style="flex:1;min-width:0;font-size:18px;line-height:24px;font-weight:700;color:#212124">직접 입력</span>
+    </div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:12px 24px 24px;display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:26px;line-height:35px;font-weight:700;color:#212124">사진이 흐려서<br>읽지 못했어요</span>
+        <span style="font-size:16px;line-height:24px;color:#4d5159">직접 적어주시면 그대로 접수할게요</span>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px;display:flex;flex-direction:column;gap:16px">
+        <sc-for list="{{ manualFields }}" as="m" hint-placeholder-count="4">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <span style="font-size:14px;line-height:19px;color:#4d5159">{{ m.label }}</span>
+            <div style="{{ m.field }}">{{ m.value }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="flex-shrink:0;padding:20px 24px 0">
+        <span style="font-size:14px;line-height:19px;font-weight:700;color:#868b94;cursor:pointer">사진 다시 찍기</span>
+      </div>
+      <div style="height:24px;flex-shrink:0"></div>
+    </div>
+    <div style="{{ dock }}">
+      <button style="{{ ctaPrimary }}">제보하기</button>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<div id="12d" style="display:flex;flex-direction:column;gap:14px">
+<div style="font-size:14px;font-weight:700;color:#4d5159">12d · WP-REV-002 후기 작성 · WP-REV-001 후기 목록 · WP-REV-006 이용한 사람들의 경험</div>
+<div style="display:flex;gap:20px">
+
+  <div style="{{ phone }}">
+    <div style="{{ statusBar }}"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navBack }}">
+      <span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></span>
+      <span style="flex:1;min-width:0;font-size:18px;line-height:24px;font-weight:700;color:#212124">후기 쓰기</span>
+    </div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:12px 24px 24px;display:flex;flex-direction:column;gap:14px">
+        <span style="font-size:26px;line-height:35px;font-weight:700;color:#212124">모먼트 스튜디오는<br>어땠나요?</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="padding:4px 9px;border-radius:4px;background:#e8faf6;color:#1aa174;font-size:14px;line-height:19px;font-weight:700">Pick 인증</span>
+          <span style="font-size:14px;line-height:19px;color:#868b94">확인된 정보가 있어서 자동으로 붙어요</span>
+        </div>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px;display:flex;flex-direction:column;gap:20px">
+        <sc-for list="{{ reviewAxes }}" as="ax" hint-placeholder-count="3">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <span style="font-size:16px;line-height:22px;font-weight:700;color:#212124">{{ ax.name }}</span>
+            <div style="display:flex;gap:8px">
+              <sc-for list="{{ ax.opts }}" as="o" hint-placeholder-count="3">
+                <span style="{{ o.style }}">{{ o.label }}</span>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="flex-shrink:0;padding:24px 24px 0;display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:16px;line-height:22px;font-weight:700;color:#212124">자유롭게 적어주세요</span>
+        <div style="min-height:120px;border-radius:6px;border:1px solid #d1d3d8;padding:14px;display:flex;flex-direction:column;justify-content:space-between">
+          <span style="font-size:16px;line-height:24px;color:#212124;text-wrap:pretty">촬영 당일 진행이 빨라서 예정보다 일찍 끝났어요. 보정본은 3주 걸렸습니다.</span>
+          <span style="align-self:flex-end;font-size:14px;line-height:19px;color:#adb1ba;font-variant-numeric:tabular-nums">47 / 500</span>
+        </div>
+      </div>
+      <div style="flex-shrink:0;padding:16px 24px 0;display:flex;gap:10px">
+        <div style="width:72px;height:72px;border-radius:6px;border:1px dashed #dcdee3;display:flex;align-items:center;justify-content:center">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#868b94" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+        </div>
+        <div style="width:72px;height:72px;border-radius:6px;overflow:hidden;position:relative"><image-slot id="rv-p1" src="uploads/samples-1788175716407-57s9.jpg" shape="rect" placeholder=""></image-slot></div>
+      </div>
+      <div style="height:24px;flex-shrink:0"></div>
+    </div>
+    <div style="{{ dock }}">
+      <button style="{{ ctaPrimary }}">후기 올리기</button>
+    </div>
+  </div>
+
+  <div style="{{ phone }}">
+    <div style="{{ statusBar }}"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navBack }}">
+      <span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span>
+      <span style="flex:1;min-width:0;font-size:18px;line-height:24px;font-weight:700;color:#212124">후기 12개</span>
+    </div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:12px 24px 20px;display:flex;gap:8px">
+        <sc-for list="{{ reviewFilters }}" as="rf" hint-placeholder-count="3">
+          <span style="{{ rf.style }}">{{ rf.label }}</span>
+        </sc-for>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px;display:flex;flex-direction:column;gap:24px">
+        <sc-for list="{{ reviews }}" as="rv" hint-placeholder-count="3">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:16px;line-height:22px;font-weight:700;color:#212124">{{ rv.who }}</span>
+              <sc-if value="{{ rv.verified }}">
+                <span style="padding:3px 8px;border-radius:4px;background:#e8faf6;color:#1aa174;font-size:14px;line-height:19px;font-weight:700">Pick 인증</span>
+              </sc-if>
+              <span style="font-size:14px;line-height:19px;color:#868b94;font-variant-numeric:tabular-nums">{{ rv.date }}</span>
+            </div>
+            <span style="font-size:16px;line-height:24px;color:#393a40;text-wrap:pretty">{{ rv.body }}</span>
+            <sc-if value="{{ rv.rebuttal }}">
+              <div style="border-radius:10px;background:#f7f8fa;padding:16px;display:flex;flex-direction:column;gap:6px">
+                <span style="font-size:14px;line-height:19px;font-weight:700;color:#4d5159">업체 반론</span>
+                <span style="font-size:16px;line-height:24px;color:#393a40;text-wrap:pretty">{{ rv.rebuttal }}</span>
+              </div>
+            </sc-if>
+            <div style="display:flex;align-items:center;gap:16px">
+              <span style="font-size:14px;line-height:19px;font-weight:700;color:#868b94;cursor:pointer">도움돼요 {{ rv.helpful }}</span>
+              <span style="font-size:14px;line-height:19px;color:#adb1ba;cursor:pointer">신고</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="height:24px;flex-shrink:0"></div>
+    </div>
+  </div>
+
+  <div style="{{ phone }}">
+    <div style="{{ statusBar }}"><span>9:41</span><span style="display:flex;gap:5px;align-items:center"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navBack }}">
+      <span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span>
+      <span style="flex:1;min-width:0;font-size:18px;line-height:24px;font-weight:700;color:#212124">이용한 사람들의 경험</span>
+    </div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:12px 24px 24px;display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:26px;line-height:35px;font-weight:700;color:#212124">14명이 답한<br>모먼트 스튜디오</span>
+        <span style="font-size:16px;line-height:24px;color:#4d5159">별점 대신 겪은 일을 물어봤어요</span>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px;display:flex;flex-direction:column;gap:20px">
+        <sc-for list="{{ expDetail }}" as="e" hint-placeholder-count="5">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+              <span style="flex:1;min-width:0;font-size:16px;line-height:22px;color:#393a40">{{ e.name }}</span>
+              <span style="font-size:16px;line-height:22px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums;white-space:nowrap">{{ e.label }}</span>
+            </div>
+            <div style="height:6px;border-radius:999px;background:#eaebee;overflow:hidden"><div style="{{ e.bar }}"></div></div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="flex-shrink:0;height:16px;background:#f2f3f6;margin:28px 0"></div>
+      <div style="flex-shrink:0;padding:0 24px;display:flex;flex-direction:column;gap:14px">
+        <span style="font-size:20px;line-height:27px;font-weight:700;color:#212124">가장 많이 나온 말</span>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <sc-for list="{{ keywords }}" as="kw" hint-placeholder-count="5">
+            <span style="{{ kw.style }}">{{ kw.text }}</span>
+          </sc-for>
+        </div>
+      </div>
+      <div style="height:32px;flex-shrink:0"></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1800,&quot;height&quot;:1060},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#FF6F61&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#FF6F61&quot;,&quot;#FF4D4D&quot;,&quot;#FFC041&quot;,&quot;#34C759&quot;,&quot;#3182F6&quot;,&quot;#191F28&quot;],&quot;section&quot;:&quot;스킨 컬러&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const skin = this.props.accent ?? '#FF6F61';
+    const pick = String(skin).toLowerCase() === '#191f28' ? '#FF6F61' : skin;
+    const IMG = {
+      couple: 'uploads/samples-1788175716407-57s9.jpg',
+      arch: 'uploads/samples-1788175716396-jydc.jpg',
+      bride: 'uploads/samples-1788175716389-fion.jpg'
+    };
+    const badge = kind => 'padding:4px 9px;border-radius:4px;font-size:14px;line-height:19px;font-weight:700;white-space:nowrap;'
+      + (kind === 'ok' ? 'background:#e8faf6;color:#1aa174;'
+        : kind === 'wait' ? 'background:#ffe3ba;color:#805217;'
+          : kind === 'no' ? 'background:#ffe5e3;color:#e81607;'
+            : 'background:#f2f3f6;color:#4d5159;');
+    const chip = on => 'flex:1;min-width:0;height:44px;display:flex;align-items:center;justify-content:center;border-radius:6px;font-size:16px;font-weight:700;cursor:pointer;'
+      + (on ? 'background:' + pick + ';color:#fff;' : 'background:#f2f3f6;color:#4d5159;');
+    const filt = on => 'height:36px;display:flex;align-items:center;padding:0 14px;border-radius:999px;font-size:14px;font-weight:700;cursor:pointer;'
+      + (on ? 'background:#212124;color:#fff;' : 'background:#f2f3f6;color:#4d5159;');
+    const mark = on => on
+      ? 'width:24px;height:24px;flex:0 0 24px;border-radius:999px;background:' + pick + ';background-image:url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'3.4\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><path d=\'m5 12.5 4.5 4.5L19 7.5\'/></svg>");background-size:16px;background-position:center;background-repeat:no-repeat'
+      : 'width:24px;height:24px;flex:0 0 24px;border-radius:999px;border:1.5px solid #dcdee3;box-sizing:border-box';
+    const fld = (n, label, value, tagText, sure, hint) => ({
+      label, value, tagText, hint,
+      card: 'border-radius:10px;padding:18px 20px;display:flex;flex-direction:column;gap:6px;'
+        + (sure ? 'background:#f7f8fa;' : 'border:1.5px solid ' + pick + ';background:#fff;'),
+      tag: 'padding:2px 7px;border-radius:4px;font-size:13px;line-height:18px;font-weight:700;'
+        + (sure ? 'background:#eaebee;color:#868b94;' : 'background:' + pick + ';color:#fff;'),
+      valueStyle: 'font-size:20px;line-height:27px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums'
+    });
+    return {
+      rootStyle: 'display:flex;flex-direction:column;gap:56px;align-items:flex-start;padding:64px;width:max-content;--wp-accent:' + skin + ';--wp-pick:' + pick,
+      phone: 'width:390px;height:844px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)',
+      statusBar: 'height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:700;color:#212124',
+      navBack: 'flex:0 0 56px;display:flex;align-items:center;gap:4px;padding:0 20px 0 12px;background:#fff',
+      backBtn: 'width:40px;height:40px;border-radius:999px;display:flex;align-items:center;justify-content:center;flex:0 0 40px',
+      scroll: 'flex:1 1 auto;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;scrollbar-width:none',
+      dock: 'flex:0 0 92px;background:#fff;box-shadow:inset 0 1px 0 #eaebee;padding:12px 24px;display:flex;gap:8px;box-sizing:border-box',
+      ctaPrimary: 'flex:1;height:52px;border:0;border-radius:6px;background:' + pick + ';color:#fff;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer',
+      ctaGhost: 'flex:1;height:52px;border:0;border-radius:6px;background:#f2f3f6;color:#393a40;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer',
+      ctaSmall: 'align-self:flex-start;height:36px;padding:0 14px;border:1px solid #dcdee3;border-radius:6px;background:#fff;color:#212124;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer',
+
+      reportKinds: [
+        { name: 'Pick 인증', desc: '낸 금액이 보이는 사진 한 장이면 업체와 금액을 자동으로 읽어요' },
+        { name: '가격 제보', desc: '증빙 없이 들은 금액만 알려주는 방법이에요' },
+        { name: '업체정보 제보', desc: '새 업체 등록 · 정보 정정 · 영업종료 알림' }
+      ],
+      myReports: [
+        { name: '모먼트 스튜디오', meta: '168만원 · 8월 28일', state: '반영됨', badge: badge('ok') },
+        { name: '더채플 강남 그랜드홀', meta: '1,620만원 · 8월 21일', state: '반영됨', badge: badge('ok') },
+        { name: '라비드레스', meta: '금액 확인 중 · 8월 30일', state: '확인 중', badge: badge('wait') }
+      ],
+      uploadNotes: [
+        '금액 · 날짜 · 업체명이 보이면 충분해요',
+        '카드번호와 이름은 자동으로 가려요',
+        '확인이 끝난 원본은 24시간 안에 지워요'
+      ],
+      scanSteps: [
+        { name: '글자 읽는 중', dot: 'width:8px;height:8px;border-radius:999px;background:' + pick, text: 'font-size:16px;line-height:22px;font-weight:700;color:#212124' },
+        { name: '금액과 날짜 찾는 중', dot: 'width:8px;height:8px;border-radius:999px;background:#dcdee3', text: 'font-size:16px;line-height:22px;color:#868b94' },
+        { name: '업체 맞춰보는 중', dot: 'width:8px;height:8px;border-radius:999px;background:#dcdee3', text: 'font-size:16px;line-height:22px;color:#868b94' }
+      ],
+      ocrFields: [
+        fld(1, '낸 금액', '1,520,000원', '읽었어요', true, ''),
+        fld(2, '낸 날짜', '2026년 8월 28일', '읽었어요', true, ''),
+        fld(3, '업체', '주식회사 모먼트', '확인 필요', false, '자료에 적힌 상호가 등록된 업체명과 달라요'),
+        fld(4, '상품', '스튜디오 촬영 패키지', '확인 필요', false, '어떤 구성인지 골라주시면 비교에 쓸 수 있어요'),
+        fld(5, '상태', '정상', '읽었어요', true, '')
+      ],
+      vendorGuess: [
+        { slotId: 'rp-v1', src: IMG.couple, name: '모먼트 스튜디오', meta: '강남 · 확인된 정보 12건', mark: mark(true) },
+        { slotId: 'rp-v2', src: IMG.bride, name: '모먼트 웨딩', meta: '분당 · 확인된 정보 4건', mark: mark(false) },
+        { slotId: 'rp-v3', src: IMG.arch, name: '모먼트 필름', meta: '성수 · 아직 정보가 적어요', mark: mark(false) }
+      ],
+      afterSubmit: [
+        { label: '다음', text: '확인이 끝나면 알림으로 알려드려요' },
+        { label: '내 지출', text: '우리웨딩 지출에 152만원이 더해졌어요' },
+        { label: '원본', text: '올려주신 사진은 24시간 뒤 삭제돼요' }
+      ],
+      reportLog: [
+        { state: '반영됨', badge: badge('ok'), date: '8월 28일', name: '모먼트 스튜디오', amount: '168만원', note: '확인된 정보에 반영됐어요. 이제 Pick 인증 회원이에요.', action: '' },
+        { state: '확인 중', badge: badge('wait'), date: '8월 30일', name: '라비드레스', amount: '112만원', note: '금액과 자료가 맞는지 보고 있어요. 하루 안에 끝나요.', action: '' },
+        { state: '보완 필요', badge: badge('wait'), date: '8월 25일', name: '메종 브라이드', amount: '—', note: '사진에서 날짜를 찾지 못했어요. 날짜만 알려주시면 바로 처리돼요.', action: '날짜 입력하기' },
+        { state: '반려', badge: badge('no'), date: '8월 12일', name: '온필름 스튜디오 청담', amount: '—', note: '같은 자료가 이미 등록돼 있어요.', action: '' }
+      ],
+      manualFields: [
+        { label: '업체', value: '모먼트 스튜디오', field: 'height:52px;border-radius:6px;border:1px solid #d1d3d8;padding:0 14px;display:flex;align-items:center;font-size:16px;color:#212124' },
+        { label: '낸 금액', value: '1,520,000원', field: 'height:52px;border-radius:6px;border:1px solid #d1d3d8;padding:0 14px;display:flex;align-items:center;font-size:16px;color:#212124;font-variant-numeric:tabular-nums' },
+        { label: '낸 날짜', value: '2026년 8월 28일', field: 'height:52px;border-radius:6px;border:1px solid #d1d3d8;padding:0 14px;display:flex;align-items:center;font-size:16px;color:#212124;font-variant-numeric:tabular-nums' },
+        { label: '상품 구성', value: '어떤 구성인지 적어주세요', field: 'height:52px;border-radius:6px;border:1px solid #d1d3d8;padding:0 14px;display:flex;align-items:center;font-size:16px;color:#adb1ba' }
+      ],
+      reviewAxes: [
+        { name: '진행은 어땠나요', opts: [{ label: '빨랐어요', style: chip(true) }, { label: '적당했어요', style: chip(false) }, { label: '늘어졌어요', style: chip(false) }] },
+        { name: '결과물은 어땠나요', opts: [{ label: '기대 이상', style: chip(false) }, { label: '기대만큼', style: chip(true) }, { label: '아쉬웠어요', style: chip(false) }] },
+        { name: '추가 비용 안내는요', opts: [{ label: '명확했어요', style: chip(true) }, { label: '보통이었어요', style: chip(false) }, { label: '불친절했어요', style: chip(false) }] }
+      ],
+      reviewFilters: [
+        { label: '전체', style: filt(true) },
+        { label: 'Pick 인증만', style: filt(false) },
+        { label: '사진 있는 후기', style: filt(false) }
+      ],
+      reviews: [
+        { who: '김OO', verified: true, date: '2026.07', body: '촬영 당일 진행이 빨라서 예정보다 일찍 끝났어요. 보정본은 3주 걸렸습니다.', rebuttal: '보정 기간은 성수기 기준 3~4주로 안내드리고 있어요.', helpful: '14' },
+        { who: '이OO', verified: true, date: '2026.06 · 수정됨', body: '원본 전체를 줘서 좋았어요. 주차가 조금 불편합니다.', rebuttal: '', helpful: '9' },
+        { who: '박OO', verified: false, date: '2026.05', body: '상담만 받아봤는데 설명이 자세했어요.', rebuttal: '', helpful: '3' }
+      ],
+      expDetail: [
+        { name: '진행이 빨랐어요', label: '12명', bar: 'width:86%;height:100%;border-radius:999px;background:' + skin },
+        { name: '결과물이 기대만큼이었어요', label: '11명', bar: 'width:79%;height:100%;border-radius:999px;background:' + skin },
+        { name: '추가 비용 안내가 명확했어요', label: '9명', bar: 'width:64%;height:100%;border-radius:999px;background:' + skin },
+        { name: '보정이 오래 걸렸어요', label: '6명', bar: 'width:43%;height:100%;border-radius:999px;background:#dcdee3' },
+        { name: '주차가 편했어요', label: '4명', bar: 'width:29%;height:100%;border-radius:999px;background:#dcdee3' }
+      ],
+      keywords: [
+        { text: '진행이 빨라요 12', style: 'height:36px;display:flex;align-items:center;padding:0 14px;border-radius:999px;background:#f2f3f6;font-size:14px;font-weight:700;color:#393a40;font-variant-numeric:tabular-nums' },
+        { text: '원본 전체 10', style: 'height:36px;display:flex;align-items:center;padding:0 14px;border-radius:999px;background:#f2f3f6;font-size:14px;font-weight:700;color:#393a40;font-variant-numeric:tabular-nums' },
+        { text: '보정 3주 7', style: 'height:36px;display:flex;align-items:center;padding:0 14px;border-radius:999px;background:#f2f3f6;font-size:14px;font-weight:700;color:#393a40;font-variant-numeric:tabular-nums' },
+        { text: '주차 불편 5', style: 'height:36px;display:flex;align-items:center;padding:0 14px;border-radius:999px;background:#f2f3f6;font-size:14px;font-weight:700;color:#393a40;font-variant-numeric:tabular-nums' },
+        { text: '실장님 친절 4', style: 'height:36px;display:flex;align-items:center;padding:0 14px;border-radius:999px;background:#f2f3f6;font-size:14px;font-weight:700;color:#393a40;font-variant-numeric:tabular-nums' }
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

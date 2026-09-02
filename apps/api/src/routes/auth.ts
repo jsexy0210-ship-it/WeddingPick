@@ -30,7 +30,21 @@ export function registerAuthRoutes(app: FastifyInstance, context: AppContext): v
 
     let identity;
     try {
-      identity = await provider.verify(body.idToken);
+      if (provider.flow === 'id_token' && 'idToken' in body) {
+        identity = await provider.verify(body.idToken);
+        if (body.provider === 'apple' && body.profileName) {
+          identity.profile = { ...identity.profile, name: body.profileName };
+        }
+      } else if (provider.flow === 'authorization_code' && 'authorizationCode' in body) {
+        identity = await provider.verify({
+          authorizationCode: body.authorizationCode,
+          state: body.state,
+          redirectUri: body.redirectUri,
+          codeVerifier: body.codeVerifier,
+        });
+      } else {
+        throw new Error('로그인 제공자와 인증 방식이 맞지 않는다.');
+      }
     } catch {
       // 검증 실패 이유를 그대로 내려주면 토큰을 맞춰보는 데 쓰인다.
       throw new ApiError('unauthenticated', '로그인 정보를 확인하지 못했습니다.');

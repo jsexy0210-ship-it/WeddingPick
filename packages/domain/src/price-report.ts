@@ -36,7 +36,7 @@ export type ReportCheck = { ok: true } | { ok: false; reason: string };
 
 export function canSubmitPriceReport(draft: PriceReportDraft): ReportCheck {
   if (draft.productName.trim().length === 0) {
-    return { ok: false, reason: '어떤 상품인지 적어주세요. 같은 업체라도 상품마다 가격이 다릅니다.' };
+    return { ok: false, reason: '어떤 상품인지 적어주세요. 같은 업체라도 상품마다 가격이 달라요.' };
   }
 
   if (!Number.isInteger(draft.totalAmount) || draft.totalAmount < MIN_REPORT_AMOUNT) {
@@ -49,11 +49,11 @@ export function canSubmitPriceReport(draft: PriceReportDraft): ReportCheck {
    * 중앙값을 크게 흔든다.
    */
   if (draft.totalAmount > MAX_REPORT_AMOUNT) {
-    return { ok: false, reason: '금액이 너무 큽니다. 원 단위가 맞는지 확인해 주세요.' };
+    return { ok: false, reason: '금액이 너무 커요. 원 단위가 맞는지 확인해 주세요.' };
   }
 
   if (!/^\d{4}-\d{2}$/.test(draft.contractedOn)) {
-    return { ok: false, reason: '계약한 연월을 적어주세요. 가격은 시점에 따라 달라집니다.' };
+    return { ok: false, reason: '계약한 연월을 적어주세요. 가격은 시점에 따라 달라져요.' };
   }
 
   return { ok: true };
@@ -75,7 +75,7 @@ export function summarizeReports(
   if (reports.length < PRICING_POLICY.minimumSampleCount) {
     return {
       available: false,
-      reason: `제보가 ${withSubject(`${PRICING_POLICY.minimumSampleCount}건`)} 모여야 보여드립니다.`,
+      reason: `제보가 ${withSubject(`${PRICING_POLICY.minimumSampleCount}건`)} 모여야 보여드려요.`,
       count: reports.length,
     };
   }
@@ -105,7 +105,7 @@ export function summarizeReports(
  * 늘 붙어야 한다.
  */
 export const PRICE_REPORT_CAVEAT =
-  '제보는 이용자가 직접 적어주신 금액이며 문서로 확인하지 않았습니다. 실제 계약 중앙값과는 다른 값입니다.';
+  '제보는 이용자가 직접 적어주신 금액이며 문서로 확인하지 않았어요. 실제 계약 중앙값과는 다른 값이에요.';
 
 /** 제보와 계약 중앙값을 한 화면에 놓을 때 붙이는 구분 설명. */
 export const PRICE_SOURCE_LABEL = {
@@ -116,8 +116,8 @@ export const PRICE_SOURCE_LABEL = {
 export type PriceSourceKind = keyof typeof PRICE_SOURCE_LABEL;
 
 export const PRICE_SOURCE_NOTE: Record<PriceSourceKind, string> = {
-  contract: '계약 내용을 확인한 값입니다.',
-  report: '문서 확인 없이 적어주신 값입니다.',
+  contract: '계약 내용을 확인한 값이에요.',
+  report: '문서 확인 없이 적어주신 값이에요.',
 };
 
 /**

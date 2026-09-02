@@ -9,15 +9,16 @@ import {
 } from '@weddingpick/api-contract';
 import {
   MAX_COMPARED_VENDORS,
+  rangeLabel,
+  STILL_COLLECTING,
+  type VendorCategory,
   TERMS,
   TOP3_REASON_LABEL,
   VENDOR_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
-  rangeLabel,
-  type VendorCategory,
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -103,6 +104,17 @@ export default function SearchScreen() {
 
   /** 늦게 도착한 옛 요청이 새 결과를 덮어쓰지 않게 한다. */
   const requestId = useRef(0);
+  const [inputFocused, setInputFocused] = useState(false);
+
+  const trimmedQ = filters.q.trim();
+  const suggestions = useMemo(() => {
+    if (!inputFocused || trimmedQ.length === 0) return [];
+    const lower = trimmedQ.toLowerCase();
+    if (filters.mode === 'vendor') {
+      return (vendors ?? []).filter((v) => v.name.toLowerCase().includes(lower)).slice(0, 5);
+    }
+    return (planners ?? []).filter((p) => p.name.toLowerCase().includes(lower)).slice(0, 5);
+  }, [inputFocused, trimmedQ, filters.mode, vendors, planners]);
 
   /*
    * 검색어를 치는 중에는 추천을 접는다. 조건을 정한 사람의 결과 위에 우리가 고른
@@ -303,10 +315,36 @@ export default function SearchScreen() {
             placeholderTextColor={theme.textSecondary}
             value={filters.q}
             onChangeText={(text) => setFilters((current) => ({ ...current, q: text }))}
+            onFocus={() => setInputFocused(true)}
+            onBlur={() => setInputFocused(false)}
             autoCorrect={false}
             returnKeyType="search"
             accessibilityLabel={`${MODE_LABEL[filters.mode]} 이름 검색`}
           />
+
+          {suggestions.length > 0 ? (
+            <ThemedView
+              type="backgroundElement"
+              style={[styles.suggestions, { borderColor: theme.border }]}>
+              {suggestions.map((item) => (
+                <Pressable
+                  key={item.id}
+                  accessibilityRole="button"
+                  onPress={() => {
+                    setInputFocused(false);
+                    router.push(
+                      filters.mode === 'vendor'
+                        ? `/search/${item.id}`
+                        : `/search/planner/${item.id}`
+                    );
+                  }}>
+                  <ThemedView type="backgroundElement" style={styles.suggestionRow}>
+                    <ThemedText type="t6">{item.name}</ThemedText>
+                  </ThemedView>
+                </Pressable>
+              ))}
+            </ThemedView>
+          ) : null}
 
           {filters.mode === 'vendor' ? (
             <ThemedView style={styles.chips}>
@@ -338,7 +376,7 @@ export default function SearchScreen() {
             정렬과 개수. 핸드오프 7번이 이 둘을 한 줄에 뒀다.
 
             **`인기 순`은 없다.** 인기를 재는 것이 우리에게 없고, 없는 것에 이름만
-            붙이면 그건 정렬이 아니라 꾸밈이다. 대신 `데이터 많은 순`을 기본으로
+            붙이면 그건 정렬이 아니라 꾸밈이다. 대신 `확인된 정보 많은 순`을 기본으로
             둔다 — 결제인증이 많이 모인 업체가 먼저 나오는 것은 잴 수 있는 사실이다.
           */}
           {filters.mode === 'vendor' ? (
@@ -430,6 +468,11 @@ export default function SearchScreen() {
                                 ? item.paidPrice.caption
                                 : `${rangeLabel(item.paidPrice.low, item.paidPrice.high)} · ${item.paidPrice.caption}`}
                             </ThemedText>
+                            {item.confirmedCount > 0 ? (
+                              <ThemedText type="t7" themeColor="textAssistive">
+                                확인된 계약 {item.confirmedCount}건
+                              </ThemedText>
+                            ) : null}
                           </ThemedView>
                         </Pressable>
                       ))}
@@ -499,7 +542,7 @@ export default function SearchScreen() {
                          */}
                         {item.paidPrice.stage === 'collecting' ? (
                           <ThemedText type="t6" themeColor="textAssistive">
-                            데이터를 모으는 중이에요
+                            {STILL_COLLECTING}
                           </ThemedText>
                         ) : (
                           <ThemedText type="t5" numeric>
@@ -550,10 +593,10 @@ export default function SearchScreen() {
               <ThemedView type="backgroundElement" style={styles.card}>
                 <ThemedText type="small" themeColor="textSecondary">
                   {!isServerConfigured
-                    ? '이 빌드는 서버에 붙어 있지 않아 플래너를 찾을 수 없습니다.'
+                    ? '이 빌드는 서버에 붙어 있지 않아 플래너를 찾을 수 없어요.'
                     : error
                       ? error
-                      : '찾으시는 플래너가 아직 없습니다. 공개된 자료에 실려 있거나 본인이 밝힌 플래너만 검색에 나옵니다.'}
+                      : '찾으시는 플래너가 아직 없어요. 공개된 자료에 실려 있거나 본인이 밝힌 플래너만 검색에 나와요.'}
                 </ThemedText>
               </ThemedView>
             }
@@ -574,7 +617,7 @@ export default function SearchScreen() {
                   </ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
                     {item.comparableQuoteCount === 0
-                      ? '확인된 계약 자료가 아직 없습니다'
+                      ? '확인된 계약 자료가 아직 없어요'
                       : `확인된 계약 ${item.comparableQuoteCount}건`}
                   </ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
@@ -699,6 +742,15 @@ const styles = StyleSheet.create({
   },
   pickRow: {
     flexDirection: 'row',
+  },
+  suggestions: {
+    borderRadius: Spacing.three,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  suggestionRow: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
   },
   spinner: {
     paddingVertical: Spacing.five,

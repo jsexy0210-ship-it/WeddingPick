@@ -95,7 +95,8 @@ describeWithDb('분석 워커', () => {
   beforeEach(resetDatabase);
 
   it('할 일이 없으면 아무것도 하지 않는다', async () => {
-    const deps = { pool: test.pool, storage: test.context.storage, analyzer: fakeAnalyzer(extraction()) };
+    const deps = { pool: test.pool, storage: test.context.storage, analyzer: fakeAnalyzer(extraction()),
+    model: 'test-analysis' };
 
     await expect(runOnce(deps)).resolves.toBe(false);
   });
@@ -107,6 +108,7 @@ describeWithDb('분석 워커', () => {
       pool: test.pool,
       storage: test.context.storage,
       analyzer: fakeAnalyzer(extraction()),
+      model: 'test-analysis'
     });
 
     const analysis = await test.app.inject({
@@ -140,6 +142,7 @@ describeWithDb('분석 워커', () => {
       pool: test.pool,
       storage: test.context.storage,
       analyzer: fakeAnalyzer(extraction()),
+      model: 'test-analysis'
     });
 
     const analysis = await test.app.inject({
@@ -165,6 +168,7 @@ describeWithDb('분석 워커', () => {
       pool: test.pool,
       storage: test.context.storage,
       analyzer: fakeAnalyzer(extraction()),
+      model: 'test-analysis'
     });
 
     const analysis = await test.app.inject({
@@ -198,6 +202,7 @@ describeWithDb('분석 워커', () => {
       pool: test.pool,
       storage: test.context.storage,
       analyzer: fakeAnalyzer(extraction()),
+      model: 'test-analysis'
     });
 
     const { rows } = await test.pool.query<{ personal_info_kinds: string[] }>(
@@ -215,6 +220,7 @@ describeWithDb('분석 워커', () => {
       pool: test.pool,
       storage: test.context.storage,
       analyzer: fakeAnalyzer(extraction()),
+      model: 'test-analysis'
     });
 
     const { rows } = await test.pool.query<{ input_tokens: number; output_tokens: number }>(
@@ -233,6 +239,7 @@ describeWithDb('분석 워커', () => {
       pool: test.pool,
       storage: test.context.storage,
       analyzer: fakeAnalyzer(extraction({ unreadable: true })),
+      model: 'test-analysis'
     });
 
     const analysis = await test.app.inject({
@@ -251,6 +258,7 @@ describeWithDb('분석 워커', () => {
       pool: test.pool,
       storage: test.context.storage,
       analyzer: fakeAnalyzer(extraction({ documentKind: 'not_a_document' })),
+      model: 'test-analysis'
     });
 
     const analysis = await test.app.inject({
@@ -270,6 +278,7 @@ describeWithDb('분석 워커', () => {
         pool: test.pool,
         storage: test.context.storage,
         analyzer: fakeAnalyzer(new Error('모델 호출 실패')),
+        model: 'test-analysis'
       })
     ).rejects.toThrow();
 
@@ -289,6 +298,7 @@ describeWithDb('분석 워커', () => {
       pool: test.pool,
       storage: test.context.storage,
       analyzer: fakeAnalyzer(extraction()),
+      model: 'test-analysis'
     });
 
     const quoteId = (
@@ -353,6 +363,7 @@ describeWithDb('분석 워커', () => {
       pool: test.pool,
       storage: test.context.storage,
       analyzer: fakeAnalyzer(extraction()),
+      model: 'test-analysis'
     });
 
     const quoteId = (
@@ -398,6 +409,7 @@ describeWithDb('분석 워커', () => {
           mealPricePerPerson: { value: 68_000, confidence: 0.85 },
         })
       ),
+      model: 'test-analysis'
     });
 
     const quoteId = (
@@ -431,6 +443,7 @@ describeWithDb('분석 워커', () => {
       pool: test.pool,
       storage: test.context.storage,
       analyzer: fakeAnalyzer(extraction()),
+      model: 'test-analysis'
     });
 
     const quoteId = (
@@ -476,6 +489,7 @@ describeWithDb('분석 워커', () => {
           ],
         })
       ),
+      model: 'test-analysis'
     });
 
     const quoteId = (
@@ -523,6 +537,7 @@ describeWithDb('분석 워커', () => {
           ],
         })
       ),
+      model: 'test-analysis'
     });
 
     const quoteId = (
@@ -558,6 +573,7 @@ describeWithDb('분석 워커', () => {
           ],
         })
       ),
+      model: 'test-analysis'
     });
 
     const quoteId = (
@@ -577,6 +593,7 @@ describeWithDb('분석 워커', () => {
       pool: test.pool,
       storage: test.context.storage,
       analyzer: fakeAnalyzer(extraction()),
+      model: 'test-analysis'
     };
 
     const [first, second] = await Promise.all([runOnce(deps), runOnce(deps)]);

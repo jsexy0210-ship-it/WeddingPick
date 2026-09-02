@@ -1,15 +1,25 @@
-import type { ExpenseSummaryResponse } from '@weddingpick/api-contract';
-import { EXPENSE_BUCKET_COLOR, manwon, type ExpenseBucket } from '@weddingpick/domain';
+import type { CreateExpenseRequest, ExpenseSummaryResponse } from '@weddingpick/api-contract';
+import {
+  EXPENSE_BUCKET_COLOR,
+  EXPENSE_STATUSES,
+  EXPENSE_STATUS_LABEL,
+  manwon,
+  type ExpenseBucket,
+} from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, Modal, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { getExpenses, removeExpense, setBudget } from '@/api/client';
+import { addExpense, getExpenses, removeExpense, setBudget } from '@/api/client';
 import {
   ActionButton,
   DonutChart,
+  ErrorView,
+  Fab,
+  FilterChip,
   Layout,
+  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
@@ -35,6 +45,12 @@ export default function ExpensesScreen() {
   const [error, setError] = useState<string | null>(null);
   const [budgetOpen, setBudgetOpen] = useState(false);
   const [draft, setDraft] = useState('');
+  /** 수동 지출 입력 시트 */
+  const [addOpen, setAddOpen] = useState(false);
+  const [addLabel, setAddLabel] = useState('');
+  const [addAmount, setAddAmount] = useState('');
+  const [addStatus, setAddStatus] = useState<CreateExpenseRequest['status']>('paid');
+  const [addSpentOn, setAddSpentOn] = useState('');
 
   const load = useCallback(() => {
     getExpenses(id)
@@ -49,23 +65,11 @@ export default function ExpensesScreen() {
   useEffect(load, [load]);
 
   if (error) {
-    return (
-      <Frame>
-        <ThemedText type="t4">불러오지 못했습니다</ThemedText>
-        <ThemedText type="t7" themeColor="textSecondary">
-          {error}
-        </ThemedText>
-        <ActionButton label="돌아가기" onPress={() => router.back()} />
-      </Frame>
-    );
+    return <ErrorView message={error} onBack={() => router.back()} />;
   }
 
   if (!page) {
-    return (
-      <Frame>
-        <ActivityIndicator color={theme.tint} />
-      </Frame>
-    );
+    return <LoadingView />;
   }
 
   async function saveBudget() {
@@ -76,22 +80,65 @@ export default function ExpensesScreen() {
       setBudgetOpen(false);
       load();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : '정하지 못했습니다.');
+      setError(caught instanceof Error ? caught.message : '정하지 못했어요.');
     }
   }
 
-  async function remove(expenseId: string) {
+  function closeAddSheet() {
+    setAddOpen(false);
+    setAddLabel('');
+    setAddAmount('');
+    setAddStatus('paid');
+    setAddSpentOn('');
+  }
+
+  async function submitExpense() {
+    const label = addLabel.trim();
+    const amount = parseInt(addAmount.replace(/[^0-9]/g, ''), 10);
+
+    if (!label) {
+      Alert.alert('항목 이름을 적어주세요');
+      return;
+    }
+    if (!amount || amount <= 0) {
+      Alert.alert('금액을 숫자로 적어주세요');
+      return;
+    }
+    const spentOn = addSpentOn.trim();
+    const body: CreateExpenseRequest = {
+      label,
+      amount,
+      status: addStatus,
+      ...(spentOn ? { spentOn } : {}),
+    };
+
     try {
-      await removeExpense(id, expenseId);
+      await addExpense(id, body);
+      closeAddSheet();
       load();
     } catch (caught) {
-      // 결제인증에서 온 줄은 여기서 지울 수 없다. 그건 지출 기록이 아니라 제보다.
-      setError(
-        caught instanceof Error
-          ? '제보로 들어온 항목은 여기서 지울 수 없어요.'
-          : '지우지 못했습니다.'
-      );
+      Alert.alert('지출 추가 실패', caught instanceof Error ? caught.message : '다시 시도해주세요.');
     }
+  }
+
+  function remove(expenseId: string) {
+    Alert.alert('항목 빼기', '이 지출 항목을 빼시겠어요? 되돌릴 수 없어요.', [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '빼기',
+        style: 'destructive',
+        onPress: () =>
+          removeExpense(id, expenseId)
+            .then(load)
+            .catch((caught: unknown) =>
+              setError(
+                caught instanceof Error && caught.message
+                  ? caught.message
+                  : '지울 수 없어요.'
+              )
+            ),
+      },
+    ]);
   }
 
   return (
@@ -180,7 +227,7 @@ export default function ExpensesScreen() {
             {page.expenses.length === 0 ? (
               <ThemedView type="backgroundElement" style={styles.card}>
                 <ThemedText type="t7" themeColor="textSecondary">
-                  아직 항목이 없습니다. 지출을 등록하시면 여기 모입니다.
+                  아직 항목이 없어요. 지출을 등록하시면 여기 모여요.
                 </ThemedText>
                 <ActionButton
                   variant="primary"
@@ -209,7 +256,7 @@ export default function ExpensesScreen() {
                     {expense.status === 'scheduled' ? ` · ${expense.statusLabel}` : ''}
                   </ThemedText>
                   {expense.source === 'manual' ? (
-                    <ActionButton label="빼기" onPress={() => void remove(expense.id)} />
+                    <ActionButton label="빼기" onPress={() => remove(expense.id)} />
                   ) : null}
                 </ThemedView>
               ))
@@ -226,12 +273,65 @@ export default function ExpensesScreen() {
         </ScrollView>
       </SafeAreaView>
 
+      <Fab label="지출 추가" glyph="+" onPress={() => { closeAddSheet(); setAddOpen(true); }} />
+
+      <Modal visible={addOpen} transparent animationType="slide">
+        <ThemedView style={[styles.scrim, { backgroundColor: theme.scrim }]}>
+          <ThemedView style={styles.sheet}>
+            <ThemedText type="t4">지출 추가</ThemedText>
+            <ThemedText type="t7" themeColor="textSecondary">항목 이름</ThemedText>
+            <TextInput
+              style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundSelected }]}
+              value={addLabel}
+              onChangeText={setAddLabel}
+              placeholder="예: 스드메 계약금"
+              placeholderTextColor={theme.textAssistive}
+              returnKeyType="next"
+            />
+            <ThemedText type="t7" themeColor="textSecondary">금액 (원)</ThemedText>
+            <TextInput
+              style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundSelected }]}
+              value={addAmount}
+              onChangeText={setAddAmount}
+              placeholder="예: 500000"
+              placeholderTextColor={theme.textAssistive}
+              keyboardType="number-pad"
+            />
+            <ThemedText type="t7" themeColor="textSecondary">상태</ThemedText>
+            <ThemedView style={styles.chips}>
+              {EXPENSE_STATUSES.map((s) => (
+                <FilterChip
+                  key={s}
+                  label={EXPENSE_STATUS_LABEL[s]}
+                  selected={addStatus === s}
+                  role="radio"
+                  onPress={() => setAddStatus(s)}
+                />
+              ))}
+            </ThemedView>
+            <ThemedText type="t7" themeColor="textSecondary">지출일 (선택, YYYY-MM-DD)</ThemedText>
+            <TextInput
+              style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundSelected }]}
+              value={addSpentOn}
+              onChangeText={setAddSpentOn}
+              placeholder="예: 2025-04-15"
+              placeholderTextColor={theme.textAssistive}
+              maxLength={10}
+            />
+            <ThemedView style={styles.sheetActions}>
+              <ActionButton label="취소" onPress={closeAddSheet} />
+              <ActionButton variant="primary" label="추가하기" onPress={() => void submitExpense()} />
+            </ThemedView>
+          </ThemedView>
+        </ThemedView>
+      </Modal>
+
       <Modal visible={budgetOpen} transparent animationType="slide">
         <ThemedView style={[styles.scrim, { backgroundColor: theme.scrim }]}>
           <ThemedView style={styles.sheet}>
             <ThemedText type="t4">총 예산</ThemedText>
             <ThemedText type="t7" themeColor="textSecondary">
-              정하시면 남은 금액을 함께 보여드려요. 나중에 바꾸셔도 됩니다.
+              정하시면 남은 금액을 함께 보여드려요. 나중에 바꾸셔도 돼요.
             </ThemedText>
             <TextInput
               style={[
@@ -252,16 +352,6 @@ export default function ExpensesScreen() {
           </ThemedView>
         </ThemedView>
       </Modal>
-    </ThemedView>
-  );
-}
-
-function Frame({ children }: { children: React.ReactNode }) {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.content}>{children}</ThemedView>
-      </SafeAreaView>
     </ThemedView>
   );
 }
@@ -289,6 +379,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   sheetActions: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.two },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   input: {
     height: Layout.rowMinHeight,
     borderRadius: Radius.input,

@@ -64,7 +64,7 @@ export const PAYMENT_PROOF_RETENTION_HOURS = 24;
 
 /** 촬영 화면과 동의 화면이 그대로 보여주는 말. 스펙 8.3이 문구까지 정해뒀다. */
 export const PAYMENT_PROOF_RETENTION_NOTICE =
-  '촬영한 이미지는 정보를 읽어내는 데만 사용되고, 분석이 끝나면 24시간 내 자동 삭제됩니다. 서버에는 금액·날짜 같은 정리된 정보만 남습니다.';
+  '촬영한 이미지는 정보를 읽어내는 데만 사용되고, 분석이 끝나면 24시간 내 자동 삭제돼요. 서버에는 금액·날짜 같은 정리된 정보만 남아요.';
 
 /**
  * 동의받을 때 무엇을 말해야 하는가.
@@ -74,9 +74,9 @@ export const PAYMENT_PROOF_RETENTION_NOTICE =
  */
 export const PAYMENT_PROOF_CONSENT_POINTS = [
   '읽어가는 것: 가맹점 이름, 금액, 낸 날짜와 시각, 지불 수단',
-  '이미지에 카드번호 일부나 승인번호가 함께 찍힐 수 있습니다',
-  '그 번호들은 있었다는 것만 남기고 값은 저장하지 않습니다',
-  '쓰는 곳: Pick 인증 표시와 Pick 가격대 (가격대는 여럿을 묶은 중앙값으로만 보입니다)',
+  '이미지에 카드번호 일부나 승인번호가 함께 찍힐 수 있어요',
+  '그 번호들은 있었다는 것만 남기고 값은 저장하지 않아요',
+  '쓰는 곳: Pick 인증 표시와 Pick 가격대 (가격대는 여럿을 묶은 중앙값으로만 보여요)',
   PAYMENT_PROOF_RETENTION_NOTICE,
 ] as const;
 
@@ -110,15 +110,15 @@ export function canRegisterPaymentProof(
   now: Date = new Date()
 ): PaymentProofCheck {
   if (draft.merchantName.trim().length === 0) {
-    return { ok: false, reason: '가맹점 이름을 읽지 못했습니다. 다시 찍어주세요.' };
+    return { ok: false, reason: '가맹점 이름을 읽지 못했어요. 다시 찍어주세요.' };
   }
 
   if (!Number.isInteger(draft.paidAmount) || draft.paidAmount < MIN_PAYMENT_AMOUNT) {
-    return { ok: false, reason: '금액을 읽지 못했습니다. 다시 찍어주세요.' };
+    return { ok: false, reason: '금액을 읽지 못했어요. 다시 찍어주세요.' };
   }
 
   if (draft.paidAmount > MAX_PAYMENT_AMOUNT) {
-    return { ok: false, reason: '금액이 너무 큽니다. 잘못 읽은 것 같습니다.' };
+    return { ok: false, reason: '금액이 너무 커요. 잘못 읽은 것 같아요.' };
   }
 
   const paidAt = new Date(draft.paidAt);

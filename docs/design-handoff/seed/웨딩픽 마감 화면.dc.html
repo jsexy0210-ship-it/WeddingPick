@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-static.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-scale.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-semantic.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/typography.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/dimension.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/motion.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/base.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/core/core.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/buttons/buttons.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/forms/forms.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/feedback/feedback.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/overlay/overlay.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/display/display.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/styles.css">
+<script src="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/_ds_bundle.js"></script>
+<script src="./image-slot.js"></script>
+<style>
+body{margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#ff6f61;text-decoration:none}
+a:hover{color:#e2564a}
+.nsb::-webkit-scrollbar{display:none}
+image-slot{background:#eaebee}
+image-slot::part(empty){display:none !important}
+@keyframes wpSheet{0%{transform:translateY(100%)}100%{transform:translateY(0)}}
+</style>
+</helmet>
+
+<section style="{{ rootStyle }}">
+
+<div style="display:flex;flex-direction:column;gap:10px;max-width:1000px;padding-bottom:8px">
+  <span style="font-size:14px;line-height:19px;font-weight:700;color:#ff6f61">WeddingPick · P2</span>
+  <span style="font-size:40px;line-height:52px;font-weight:700;color:#212124">마감 6종</span>
+  <span style="font-size:18px;line-height:26px;color:#393a40;text-wrap:pretty">리스트로만 있던 여섯 화면을 시안으로 마감했습니다. 새 패턴을 만들지 않고 컴포넌트 시트의 규격을 그대로 씁니다. 모든 문구는 확정 · 미확정 · 확인 필요처럼 상태를 직접 씁니다.</span>
+</div>
+
+<div style="display:flex;gap:36px;align-items:flex-start">
+
+<div id="20a" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">1</span>알림센터 · WP-NOTI-002</div>
+  <span style="{{ tagDesc }}">유형별로 어디로 가는지가 화면에 보입니다. 읽지 않은 것만 코랄 점을 답니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navBack }}"><span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span><span style="flex:1;min-width:0;{{ t18b }}">알림</span><span style="{{ t14m }}">모두 읽음</span></div>
+    <div class="nsb" style="{{ scroll }}">
+      <sc-for list="{{ notiGroups }}" as="g" hint-placeholder-count="2">
+        <div style="flex-shrink:0;padding:0 24px 24px;display:flex;flex-direction:column;gap:8px">
+          <span style="{{ t14m }}">{{ g.title }}</span>
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <sc-for list="{{ g.items }}" as="n" hint-placeholder-count="3">
+              <div>
+                <div style="display:flex;align-items:flex-start;gap:10px;min-height:56px;padding:14px 0;cursor:pointer">
+                  <span style="{{ n.dot }}"></span>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+                    <span style="{{ n.titleStyle }}">{{ n.title }}</span>
+                    <span style="{{ t14w }}">{{ n.body }}</span>
+                    <span style="{{ n.linkStyle }}">{{ n.link }}</span>
+                  </div>
+                  <span style="{{ t14n }}">{{ n.when }}</span>
+                </div>
+                <div style="{{ hr }}"></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+
+<div id="20b" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">2</span>박람회 상세 · WP-EXPO-002</div>
+  <span style="{{ tagDesc }}">주최사 공지에서 가져온 정보라 출처와 마지막 확인일을 함께 적습니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navBack }}"><span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span><span style="flex:1;min-width:0;{{ t18b }}">더 웨딩페어 코엑스</span></div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;position:relative;width:390px;height:220px"><image-slot id="fn-expo" src="uploads/samples-1788175716419-flvg.jpg" shape="rect" placeholder=""></image-slot></div>
+      <div style="flex-shrink:0;padding:20px 24px 24px;display:flex;flex-direction:column;gap:8px">
+        <span style="{{ t14a }}">D-11 · 사전등록 3월 12일 마감</span>
+        <span style="{{ h26 }}">더 웨딩페어 코엑스</span>
+        <span style="{{ t16g }}">3월 15~16일 · 코엑스 C홀 · 무료 입장</span>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:2px">
+        <sc-for list="{{ expoRows }}" as="e" hint-placeholder-count="5">
+          <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:56px;padding:12px 0">
+              <span style="{{ t16g3 }}">{{ e.k }}</span>
+              <span style="{{ t16b }}">{{ e.v }}</span>
+            </div>
+            <div style="{{ hr }}"></div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="{{ band }}"></div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:12px">
+        <span style="{{ s20 }}">참가 업체</span>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <sc-for list="{{ expoVendors }}" as="v" hint-placeholder-count="3">
+            <div>
+              <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:12px 0">
+                <div style="{{ thumb52 }}"><image-slot id="{{ v.slot }}" src="{{ v.src }}" shape="rounded" radius="6" placeholder=""></image-slot></div>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+                  <span style="{{ t18b }}">{{ v.name }}</span>
+                  <span style="{{ t14n }}">{{ v.n }}</span>
+                </div>
+                <span style="{{ v.pickStyle }}">{{ v.pick }}</span>
+              </div>
+              <div style="{{ hr }}"></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 28px">
+        <div style="{{ noteBox }}">
+          <span style="{{ t18b2 }}">주최사 공지에서 가져왔어요</span>
+          <span style="{{ t16g }}">2026년 8월 28일 확인. 내용이 바뀔 수 있으니 방문 전에 한 번 더 확인해주세요.</span>
+        </div>
+      </div>
+    </div>
+    <div style="{{ dock }}"><button style="{{ ctaGhostHalf }}">사전등록</button><button style="{{ ctaWide }}">일정에 추가</button></div>
+  </div>
+</div>
+
+<div id="20c" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">3</span>후기 신고 · WP-REV-005</div>
+  <span style="{{ tagDesc }}">신고 대상을 그대로 보여주고 사유를 고릅니다. 자동 검토와 처리 기간을 미리 알립니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navBack }}"><span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></span><span style="flex:1;min-width:0;{{ t18b }}">후기 신고</span></div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:12px 24px 20px"><span style="{{ h26 }}">어떤 점이<br>문제인가요?</span></div>
+      <div style="flex-shrink:0;padding:0 24px 24px">
+        <div style="{{ quoteBox }}">
+          <div style="display:flex;align-items:center;gap:8px"><span style="{{ t16b2 }}">박OO</span><span style="{{ t14n }}">2026.05</span></div>
+          <span style="{{ t16g }}">상담만 받아봤는데 설명이 자세했어요. 링크로 문의하면 할인 받을 수 있어요</span>
+        </div>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 24px;display:flex;flex-direction:column;gap:2px">
+        <sc-for list="{{ reportReasons }}" as="r" hint-placeholder-count="5">
+          <div>
+            <div style="display:flex;align-items:flex-start;gap:12px;min-height:56px;padding:14px 0;cursor:pointer">
+              <span style="{{ r.mark }}"></span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                <span style="{{ t18n }}">{{ r.name }}</span>
+                <sc-if value="{{ r.desc }}"><span style="{{ t14w }}">{{ r.desc }}</span></sc-if>
+              </div>
+            </div>
+            <div style="{{ hr }}"></div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 24px;display:flex;flex-direction:column;gap:8px">
+        <span style="{{ t14w }}">더 알려주실 내용이 있으면 적어주세요</span>
+        <div style="{{ textArea }}"><span style="{{ t16d }}">선택 사항이에요</span></div>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 28px">
+        <div style="{{ noteBox }}">
+          <span style="{{ t18b2 }}">접수되면 자동으로 검토해요</span>
+          <span style="{{ t16g }}">하루 안에 처리하고 결과는 알림으로 알려드려요. 개인 경험을 적은 후기는 신고 대상이 아니에요.</span>
+        </div>
+      </div>
+    </div>
+    <div style="{{ dock }}"><button style="{{ ctaDanger }}">신고하기</button></div>
+  </div>
+</div>
+
+<div id="20d" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">4</span>체크리스트 편집 · WP-OUR-007</div>
+  <span style="{{ tagDesc }}">자동으로 생긴 항목과 직접 추가한 항목을 구분합니다. 자동 항목은 지우지 않고 숨깁니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navBack }}"><span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span><span style="flex:1;min-width:0;{{ t18b }}">체크리스트 편집</span><span style="{{ t14a2 }}">완료</span></div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:12px 24px 24px;display:flex;flex-direction:column;gap:8px">
+        <span style="{{ h26 }}">20개 중 10개를<br>끝냈어요</span>
+        <span style="{{ t16n }}">순서를 바꾸거나 항목을 숨길 수 있어요</span>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 24px;display:flex;flex-direction:column;gap:8px">
+        <span style="{{ t14m }}">자동으로 생긴 항목</span>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <sc-for list="{{ autoItems }}" as="i" hint-placeholder-count="4">
+            <div>
+              <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:12px 0">
+                <span style="{{ handle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#adb1ba" stroke-width="2" stroke-linecap="round"><path d="M5 9h14M5 15h14"></path></svg></span>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                  <span style="{{ i.nameStyle }}">{{ i.name }}</span>
+                  <span style="{{ t14n }}">{{ i.when }}</span>
+                </div>
+                <span style="{{ i.action }}">{{ i.actionLabel }}</span>
+              </div>
+              <div style="{{ hr }}"></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 24px;display:flex;flex-direction:column;gap:8px">
+        <span style="{{ t14m }}">직접 추가한 항목</span>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <sc-for list="{{ myItems }}" as="i" hint-placeholder-count="2">
+            <div>
+              <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:12px 0">
+                <span style="{{ handle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#adb1ba" stroke-width="2" stroke-linecap="round"><path d="M5 9h14M5 15h14"></path></svg></span>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                  <span style="{{ t18n }}">{{ i.name }}</span>
+                  <span style="{{ t14n }}">{{ i.when }}</span>
+                </div>
+                <span style="{{ delLabel }}">삭제</span>
+              </div>
+              <div style="{{ hr }}"></div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="{{ addRow }}">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff6f61" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+          <span style="{{ t16a }}">항목 추가</span>
+        </div>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 28px">
+        <div style="{{ noteBox }}">
+          <span style="{{ t18b2 }}">자동 항목은 숨기기만 돼요</span>
+          <span style="{{ t16g }}">준비 단계에 따라 다시 필요해질 수 있어서 지우지 않아요. 숨긴 항목은 여기서 다시 켤 수 있어요.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="20e" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">5</span>지출 상세 · WP-OUR-010</div>
+  <span style="{{ tagDesc }}">제보로 연결된 항목인지, 직접 넣은 항목인지 구분합니다. 부분환불은 원금액과 함께 보여줍니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navBack }}"><span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span><span style="flex:1;min-width:0;{{ t18b }}">지출 상세</span><span style="{{ t14m }}">수정</span></div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:12px 24px 24px;display:flex;flex-direction:column;gap:10px">
+        <span style="{{ badgeOk }}">Pick 인증으로 확인된 내역</span>
+        <span style="{{ h32n }}">1,620만원</span>
+        <span style="{{ t16g }}">더채플 강남 그랜드홀 · 웨딩홀</span>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:2px">
+        <sc-for list="{{ spendRows }}" as="r" hint-placeholder-count="6">
+          <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:56px;padding:12px 0">
+              <span style="{{ t16g3 }}">{{ r.k }}</span>
+              <span style="{{ r.style }}">{{ r.v }}</span>
+            </div>
+            <div style="{{ hr }}"></div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="{{ band }}"></div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:12px">
+        <span style="{{ s20 }}">분할 결제</span>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <sc-for list="{{ installments }}" as="i" hint-placeholder-count="3">
+            <div>
+              <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:12px 0">
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                  <span style="{{ t18n }}">{{ i.name }}</span>
+                  <span style="{{ t14n }}">{{ i.date }} · {{ i.by }}</span>
+                </div>
+                <span style="{{ i.style }}">{{ i.v }}</span>
+              </div>
+              <div style="{{ hr }}"></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 28px">
+        <div style="{{ noteBox }}">
+          <span style="{{ t18b2 }}">이 금액은 확인된 정보에 들어가요</span>
+          <span style="{{ t16g }}">업체별 금액 구간에 반영되고, 누가 냈는지는 공개하지 않아요.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="20f" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">6</span>회원탈퇴 · WP-MY-008</div>
+  <span style="{{ tagDesc }}">탈퇴는 개인정보 삭제이지 서비스 정보 삭제가 아닙니다. 지워지는 것과 익명으로 남는 것을 나눠 적고, 통합 보존기간 숫자는 쓰지 않습니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navBack }}"><span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span><span style="flex:1;min-width:0;{{ t18b }}">회원탈퇴</span></div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:12px 24px 24px;display:flex;flex-direction:column;gap:10px">
+        <span style="{{ h26 }}">정말 그만두시나요?</span>
+        <span style="{{ t16g }}">준호님과 함께 만든 기록도 함께 사라져요</span>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 24px;display:flex;flex-direction:column;gap:8px">
+        <span style="{{ t14m }}">지워지는 것</span>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <sc-for list="{{ deleted }}" as="d" hint-placeholder-count="4">
+            <div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:56px;padding:12px 0">
+                <span style="{{ t16g3 }}">{{ d.k }}</span>
+                <span style="{{ t16b }}">{{ d.v }}</span>
+              </div>
+              <div style="{{ hr }}"></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 24px;display:flex;flex-direction:column;gap:8px">
+        <span style="{{ t14m }}">작성자 정보와 분리되는 정보</span>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <sc-for list="{{ kept }}" as="k" hint-placeholder-count="2">
+            <div>
+              <div style="display:flex;align-items:flex-start;gap:12px;min-height:56px;padding:14px 0">
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                  <span style="{{ t18n }}">{{ k.name }}</span>
+                  <span style="{{ t14w }}">{{ k.desc }}</span>
+                </div>
+                <span style="{{ badgeGray }}">익명</span>
+              </div>
+              <div style="{{ hr }}"></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 24px">
+        <div style="{{ noteBox }}">
+          <span style="{{ t18b2 }}">탈퇴하면 계정과 개인화 정보는 삭제돼요</span>
+          <span style="{{ t16g }}">다시 되돌릴 수 없어요. 같은 계정으로 다시 가입하면 새로 시작해요.</span>
+        </div>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;align-items:flex-start;gap:12px">
+        <span style="{{ markOn }}"></span>
+        <span style="flex:1;{{ t16g }}">위 내용을 확인했고 탈퇴에 동의해요</span>
+      </div>
+    </div>
+    <div style="{{ dock }}"><button style="{{ ctaGhostHalf }}">그대로 둘게요</button><button style="{{ ctaDangerWide }}">탈퇴하기</button></div>
+  </div>
+</div>
+
+</div>
+
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1500,&quot;height&quot;:1100}}">
+class Component extends DCLogic {
+  renderVals() {
+    const C = '#ff6f61';
+    const IMG = {
+      couple: 'uploads/samples-1788175716407-57s9.jpg',
+      arch: 'uploads/samples-1788175716396-jydc.jpg',
+      bride: 'uploads/samples-1788175716389-fion.jpg',
+      hall: 'uploads/samples-1788175716419-flvg.jpg',
+      dress: 'uploads/samples-1788175716375-3z0c.jpg'
+    };
+    const noti = (title, body, link, when, unread) => ({
+      title, body, link, when,
+      dot: unread ? 'width:8px;height:8px;flex:0 0 8px;margin-top:8px;border-radius:999px;background:' + C
+        : 'width:8px;height:8px;flex:0 0 8px;margin-top:8px;border-radius:999px;background:transparent',
+      titleStyle: 'font-size:18px;line-height:24px;color:#212124;font-weight:' + (unread ? '700' : '400'),
+      linkStyle: 'font-size:13px;line-height:18px;font-weight:700;color:' + C
+    });
+    const mark = on => on
+      ? 'width:24px;height:24px;flex:0 0 24px;margin-top:1px;border-radius:999px;background:' + C + ';background-image:url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'3.4\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><path d=\'m5 12.5 4.5 4.5L19 7.5\'/></svg>");background-size:16px;background-position:center;background-repeat:no-repeat'
+      : 'width:24px;height:24px;flex:0 0 24px;margin-top:1px;border-radius:999px;border:1.5px solid #dcdee3;box-sizing:border-box';
+    const auto = (name, when, hidden) => ({
+      name, when,
+      nameStyle: hidden ? 'font-size:18px;line-height:24px;color:#adb1ba' : 'font-size:18px;line-height:24px;color:#212124',
+      actionLabel: hidden ? '다시 켜기' : '숨기기',
+      action: 'font-size:14px;line-height:19px;font-weight:700;white-space:nowrap;cursor:pointer;color:' + (hidden ? C : '#868b94')
+    });
+    const num = (v, kind) => ({ v,
+      style: 'font-size:16px;line-height:22px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;color:'
+        + (kind === 'minus' ? '#e81607' : kind === 'dim' ? '#868b94' : '#212124') });
+
+    return {
+      rootStyle: 'display:flex;flex-direction:column;gap:48px;align-items:flex-start;padding:64px;width:max-content',
+      col: 'display:flex;flex-direction:column;gap:10px;width:390px',
+      tag: 'height:26px;display:flex;align-items:center;gap:8px;font-size:18px;line-height:24px;font-weight:700;color:#212124;white-space:nowrap;overflow:hidden',
+      tagId: 'width:26px;height:26px;flex:0 0 26px;border-radius:6px;background:#212124;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700',
+      tagDesc: 'height:71px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;line-height:21px;color:#4d5159;text-wrap:pretty',
+      phone: 'width:390px;height:844px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)',
+      bar: 'height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:700;color:#212124',
+      barIcons: 'display:flex;gap:5px;align-items:center',
+      navBack: 'flex:0 0 56px;display:flex;align-items:center;gap:8px;padding:0 20px 0 12px;background:#fff',
+      backBtn: 'width:40px;height:40px;flex:0 0 40px;border-radius:999px;display:flex;align-items:center;justify-content:center',
+      scroll: 'flex:1 1 auto;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;scrollbar-width:none',
+      dock: 'flex:0 0 92px;background:#fff;box-shadow:inset 0 1px 0 #eaebee;padding:12px 24px;display:flex;gap:8px;box-sizing:border-box',
+      hr: 'height:1px;background:#eaebee',
+      band: 'flex-shrink:0;height:16px;background:#f2f3f6;margin-bottom:28px',
+      thumb52: 'width:52px;height:52px;flex:0 0 52px;border-radius:6px;overflow:hidden;position:relative',
+      noteBox: 'border-radius:10px;background:#f7f8fa;padding:20px;display:flex;flex-direction:column;gap:8px',
+      quoteBox: 'border-radius:10px;background:#f7f8fa;padding:18px 20px;display:flex;flex-direction:column;gap:8px',
+      textArea: 'min-height:88px;border-radius:6px;border:1px solid #d1d3d8;padding:14px;display:flex',
+      handle: 'width:24px;height:24px;flex:0 0 24px;display:flex;align-items:center;justify-content:center;cursor:grab',
+      addRow: 'display:flex;align-items:center;gap:10px;min-height:56px;padding:12px 0;cursor:pointer',
+      badgeOk: 'align-self:flex-start;padding:4px 9px;border-radius:4px;background:#e8faf6;color:#1aa174;font-size:14px;line-height:19px;font-weight:700',
+      badgeGray: 'padding:3px 8px;border-radius:4px;background:#f2f3f6;color:#868b94;font-size:13px;line-height:18px;font-weight:700;white-space:nowrap',
+      markOn: mark(true),
+      delLabel: 'font-size:14px;line-height:19px;font-weight:700;color:#e81607;white-space:nowrap;cursor:pointer',
+
+      h32n: 'font-size:32px;line-height:43px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums',
+      h26: 'font-size:26px;line-height:35px;font-weight:700;color:#212124;text-wrap:pretty',
+      s20: 'font-size:20px;line-height:27px;font-weight:700;color:#212124',
+      t18b: 'font-size:18px;line-height:24px;font-weight:700;color:#212124;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      t18b2: 'font-size:18px;line-height:24px;font-weight:700;color:#212124;text-wrap:pretty',
+      t18n: 'font-size:18px;line-height:24px;color:#212124;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      t16b: 'font-size:16px;line-height:22px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums;text-align:right',
+      t16b2: 'font-size:16px;line-height:22px;font-weight:700;color:#212124',
+      t16g: 'font-size:16px;line-height:24px;color:#4d5159;text-wrap:pretty',
+      t16g3: 'font-size:16px;line-height:22px;color:#4d5159;white-space:nowrap',
+      t16d: 'font-size:16px;line-height:22px;color:#adb1ba',
+      t16n: 'display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px;line-height:24px;color:#4d5159',
+      t16a: 'font-size:16px;line-height:22px;font-weight:700;color:' + C,
+      t14n: 'display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;line-height:19px;color:#868b94;font-variant-numeric:tabular-nums',
+      t14m: 'font-size:14px;line-height:19px;font-weight:700;color:#868b94;white-space:nowrap',
+      t14a: 'font-size:14px;line-height:19px;font-weight:700;color:' + C,
+      t14a2: 'font-size:16px;line-height:22px;font-weight:700;color:' + C + ';white-space:nowrap',
+      t14w: 'font-size:14px;line-height:21px;color:#868b94;text-wrap:pretty',
+      ctaWide: 'flex:1.5;height:52px;border:0;border-radius:6px;background:' + C + ';color:#fff;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer',
+      ctaGhostHalf: 'flex:1;height:52px;border:0;border-radius:6px;background:#f2f3f6;color:#393a40;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer',
+      ctaDanger: 'flex:1;height:52px;border:0;border-radius:6px;background:#ff4133;color:#fff;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer',
+      ctaDangerWide: 'flex:1.2;height:52px;border:0;border-radius:6px;background:#ff4133;color:#fff;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer',
+
+      notiGroups: [
+        { title: '오늘', items: [
+          noti('드레스 투어가 내일이에요', '3월 14일 오후 2시 · 라비드레스', '일정 상세로 이동', '2시간 전', true),
+          noti('준호님이 서촌필름을 Pick했어요', '스튜디오 후보가 3곳이 됐어요', '스튜디오 Pick으로 이동', '5시간 전', true)
+        ] },
+        { title: '이번 주', items: [
+          noti('모먼트 스튜디오 제보가 반영됐어요', '이제 Pick 인증 회원이에요', '내 제보 내역으로 이동', '2일 전', false),
+          noti('더채플 강남 금액이 바뀌었어요', '1,480~1,820만원 · 확인된 정보 21건', '업체 상세로 이동', '3일 전', false),
+          noti('받을 수 있는 혜택이 2개 남았어요', '9월 30일까지', '혜택 허브로 이동', '4일 전', false),
+          noti('9월 정기 점검을 마쳤어요', '3시부터 5시까지 진행했어요', '공지로 이동', '5일 전', false)
+        ] }
+      ],
+      expoRows: [
+        { k: '주최', v: '웨딩페어코리아' },
+        { k: '참가 업체', v: '120곳' },
+        { k: '사전등록 혜택', v: '입장료 무료' },
+        { k: '주차', v: '3시간 무료' },
+        { k: '마지막 확인', v: '2026년 8월 28일' }
+      ],
+      expoVendors: [
+        { name: '더채플 강남 그랜드홀', n: '확인된 정보 21건', slot: 'fn-v1', src: IMG.hall, pick: 'Pick함', pickStyle: 'font-size:14px;line-height:19px;font-weight:700;color:' + C + ';white-space:nowrap' },
+        { name: '라비드레스', n: '확인된 정보 14건', slot: 'fn-v2', src: IMG.dress, pick: 'Pick하기', pickStyle: 'font-size:14px;line-height:19px;font-weight:700;color:#868b94;white-space:nowrap' },
+        { name: '메종 드 그레이스', n: '확인된 정보 9건', slot: 'fn-v3', src: IMG.arch, pick: 'Pick하기', pickStyle: 'font-size:14px;line-height:19px;font-weight:700;color:#868b94;white-space:nowrap' }
+      ],
+      reportReasons: [
+        { name: '광고나 홍보 링크가 있어요', desc: '외부 연락처 · 할인 유도 링크', mark: mark(true) },
+        { name: '사실과 달라요', desc: '확인할 수 있는 근거가 있으면 함께 적어주세요', mark: mark(false) },
+        { name: '욕설이나 비방이 있어요', desc: '', mark: mark(false) },
+        { name: '개인정보가 들어 있어요', desc: '이름 · 연락처 · 얼굴', mark: mark(false) },
+        { name: '같은 글이 반복돼요', desc: '', mark: mark(false) }
+      ],
+      autoItems: [
+        auto('예식장 계약', '완료 · 2월 12일', false),
+        auto('스튜디오 결정', '완료 · 3월 1일', false),
+        auto('드레스 투어 일정 잡기', '이번 주 안에', false),
+        auto('예단 · 예물 준비', '숨김', true)
+      ],
+      myItems: [
+        { name: '부모님 한복 맞추기', when: '4월 중' },
+        { name: '축가 부탁드리기', when: 'D-60까지' }
+      ],
+      spendRows: [
+        { k: '업체', ...num('더채플 강남 그랜드홀') },
+        { k: '카테고리', ...num('웨딩홀') },
+        { k: '낸 날짜', ...num('2026년 2월 12일') },
+        { k: '상태', ...num('정상') },
+        { k: '등록 방법', ...num('제보 연계 · 8월 21일') },
+        { k: '등록자', ...num('지수') }
+      ],
+      installments: [
+        { name: '계약금', date: '2월 12일', by: '지수', ...num('300만원') },
+        { name: '중도금', date: '4월 10일', by: '준호', ...num('600만원') },
+        { name: '잔금', date: '5월 16일 예정', by: '미정', ...num('720만원', 'dim') }
+      ],
+      deleted: [
+        { k: '계정 · 프로필', v: '지수' },
+        { k: '배우자 연결', v: '즉시 해제' },
+        { k: 'Pick · 취향', v: '8곳' },
+        { k: '일정 · 체크리스트', v: '12개' },
+        { k: '지출 기록', v: '2,140만원' },
+        { k: '인증 자료 원본', v: '남은 분 삭제' }
+      ],
+      kept: [
+        { name: '작성한 후기 2건', desc: '나를 알아볼 수 없도록 분리해 유지될 수 있어요' },
+        { name: '제보로 확인된 정보 4건', desc: '업체별 금액 구간에만 반영돼요' },
+        { name: '신고 · 분쟁 기록', desc: '처리와 법적 필요 기간 동안 따로 보관해요' },
+        { name: '법령상 보존 의무 정보', desc: '정해진 기간만 따로 보관한 뒤 지워요' }
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

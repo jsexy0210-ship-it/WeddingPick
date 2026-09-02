@@ -142,6 +142,13 @@ export default function PickScreen() {
           <ThemedText type="t6" themeColor="textSecondary">
             {page.progress.label}
           </ThemedText>
+          <ThemedText
+            type="t7"
+            themeColor={page.limit - page.total > 0 ? 'textAssistive' : 'negative'}>
+            {page.limit - page.total > 0
+              ? `${page.limit - page.total}곳 더 담을 수 있어요`
+              : '최대로 담았어요. 더는 담을 수 없어요.'}
+          </ThemedText>
 
           {page.groups.length === 0 ? (
             <ThemedView type="backgroundElement" style={styles.card}>

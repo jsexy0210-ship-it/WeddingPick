@@ -1,3 +1,4 @@
+import { DOCUMENT_TYPE_LABEL } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,7 +18,7 @@ export default function WeddingScreen() {
    * 후보는 웨딩에 매달려 있어 웨딩 id가 필요하다. 아직 없으면 여기서 만든다 —
    * 담아두려고 들어온 사람에게 "먼저 웨딩을 만드세요"라고 하지 않는다.
    */
-  async function open(section: 'tasks' | 'expenses' | 'visit-notes' | 'candidates') {
+  async function open(section: 'tasks' | 'expenses' | 'visit-notes' | 'candidates' | 'quotes') {
     const weddingId = await ensureWedding();
 
     router.push(`/wedding/${weddingId}/${section}`);
@@ -31,7 +32,7 @@ export default function WeddingScreen() {
             <ThemedText type="subtitle">내 웨딩</ThemedText>
             <ActionButton
               label="웨딩 스케줄"
-              hint="준비할 일 열네 가지가 미리 들어 있습니다"
+              hint="준비할 일 열네 가지가 미리 들어 있어요"
               onPress={() => void open('tasks')}
             />
             <ActionButton
@@ -46,8 +47,13 @@ export default function WeddingScreen() {
             />
             <ActionButton
               label="담아둔 곳 보기"
-              hint="배우자와 함께 보는 후보 목록입니다"
+              hint="배우자와 함께 보는 후보 목록이에요"
               onPress={() => void open('candidates')}
+            />
+            <ActionButton
+              label="올린 견적·계약서"
+              hint="AI가 읽어낸 계약 내용을 확인해요"
+              onPress={() => void open('quotes')}
             />
             <ActionButton
               label="배우자와 함께 보기"
@@ -59,7 +65,7 @@ export default function WeddingScreen() {
           {!ready ? null : sets.length === 0 ? (
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="small" themeColor="textSecondary">
-                저장된 문서가 없습니다. 자료를 찍어두면 여기에 쌓입니다.
+                저장된 문서가 없어요. 자료를 찍어두면 여기에 쌓여요.
               </ThemedText>
               <ActionButton
                 variant="primary"
@@ -75,7 +81,7 @@ export default function WeddingScreen() {
                     <ThemedView type="backgroundElement" style={styles.rowText}>
                       <ThemedText type="smallBold">{set.label}</ThemedText>
                       <ThemedText type="small" themeColor="textSecondary">
-                        {set.pages.length}장 · 분석 전
+                        {set.pages.length}장 · {set.docType === 'unknown' ? '분석 전' : DOCUMENT_TYPE_LABEL[set.docType]}
                       </ThemedText>
                     </ThemedView>
                     <VerificationBadge level={set.verificationLevel} />

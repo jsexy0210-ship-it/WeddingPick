@@ -7,7 +7,13 @@ import { REPORT_STATE_LABEL } from './report-state';
 import { TERMS } from './terms';
 import { TOP3_EMPTY, TOP3_PARTIAL_NOTE, TOP3_REASON_LABEL } from './top3';
 import { VENDOR_DETAIL_SECTIONS } from './vendor-detail';
-import { WITHDRAWAL_PENDING } from './withdrawal';
+import {
+  WITHDRAWAL_HEADLINE,
+  WITHDRAWAL_IRREVERSIBLE,
+  WITHDRAWAL_SEPARATED_NOTE,
+  WITHDRAWAL_SHEET_BODY,
+  WITHDRAWAL_TITLE,
+} from './withdrawal';
 
 /**
  * 화면에 나가는 말 전체를 한 번에 훑는다.
@@ -30,7 +36,11 @@ const USER_COPY: [string, string][] = [
   ]),
   ['top3:empty', TOP3_EMPTY],
   ['top3:partial', TOP3_PARTIAL_NOTE],
-  ['withdrawal:pending', WITHDRAWAL_PENDING],
+  ['withdrawal:headline', WITHDRAWAL_HEADLINE],
+  ['withdrawal:title', WITHDRAWAL_TITLE],
+  ['withdrawal:irreversible', WITHDRAWAL_IRREVERSIBLE],
+  ['withdrawal:separatedNote', WITHDRAWAL_SEPARATED_NOTE],
+  ['withdrawal:sheetBody', WITHDRAWAL_SHEET_BODY],
 ];
 
 describe('사용자에게 나가는 말', () => {
