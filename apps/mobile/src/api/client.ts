@@ -192,12 +192,31 @@ export async function listAuthProviders(): Promise<AuthProvidersResponse> {
   return request('/v1/auth/providers', authProvidersResponseSchema, { auth: false });
 }
 
-export async function signIn(provider: 'apple' | 'kakao' | 'google' | 'naver', idToken: string): Promise<void> {
+export async function signIn(
+  provider: 'apple' | 'kakao' | 'google',
+  idToken: string,
+  profileName?: string
+): Promise<void> {
   const session = await request(
     '/v1/auth/sessions',
     createSessionResponseSchema,
-    { method: 'POST', body: JSON.stringify({ provider, idToken }), auth: false }
+    { method: 'POST', body: JSON.stringify({ provider, idToken, profileName }), auth: false }
   );
+
+  await saveToken(session.token);
+}
+
+export async function signInWithAuthorizationCode(input: {
+  authorizationCode: string;
+  state: string;
+  redirectUri: string;
+  codeVerifier?: string;
+}): Promise<void> {
+  const session = await request('/v1/auth/sessions', createSessionResponseSchema, {
+    method: 'POST',
+    body: JSON.stringify({ provider: 'naver', ...input }),
+    auth: false,
+  });
 
   await saveToken(session.token);
 }
@@ -256,9 +275,9 @@ export async function getSignupState() {
 /**
  * 연령 확인과 필수 동의.
  *
- * `birthDate`는 서버가 나이를 세는 데만 쓰고 저장하지 않는다.
+ * 소셜 제공 생년월일이 없을 때만 `birthDate`를 보내며 서버는 나이만 세고 버린다.
  */
-export async function completeSignup(input: { birthDate: string; consents: string[] }) {
+export async function completeSignup(input: { birthDate?: string; consents: string[] }) {
   return request('/v1/me/signup', signupStateSchema, {
     method: 'POST',
     body: JSON.stringify(input),
