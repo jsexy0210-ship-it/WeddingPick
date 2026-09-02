@@ -168,6 +168,11 @@ export default function VendorDetailScreen() {
               {PAYMENT_PROOF_CAVEAT}
             </ThemedText>
 
+            {/* 자료 최종 확인일. 숫자가 얼마나 최신인지 알아야 믿을 수 있다. */}
+            <ThemedText type="t7" themeColor="textAssistive">
+              마지막 확인 {vendor.lastVerifiedAt.slice(0, 10)}
+            </ThemedText>
+
             {/*
               결제인증이 여는 것은 구간이 아니라 깊이다. 이미 열려 있는 사람에게는
               권하지 않는다 — 서버가 null을 준다.

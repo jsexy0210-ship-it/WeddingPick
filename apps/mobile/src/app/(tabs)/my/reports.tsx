@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   ActionButton,
+  ErrorView,
   Layout,
   LoadingView,
   MaxContentWidth,
@@ -28,14 +29,20 @@ import { won } from '@/features/quotes/quote-result-view';
 export default function MyReportsScreen() {
   const theme = useTheme();
   const [reports, setReports] = useState<MyReport[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = useCallback(() => {
+    setLoadError(null);
     void listMyReports()
       .then((response) => setReports(response.reports))
-      .catch(() => setReports([]));
+      .catch((caught: Error) => setLoadError(caught.message ?? '제보내역을 불러오지 못했어요.'));
   }, []);
 
   useEffect(load, [load]);
+
+  if (loadError) {
+    return <ErrorView message={loadError} onBack={load} />;
+  }
 
   if (reports === null) {
     return <LoadingView />;

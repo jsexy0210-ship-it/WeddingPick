@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   ActionButton,
+  ErrorView,
   Layout,
   MaxContentWidth,
   Spacing,
@@ -52,14 +53,18 @@ export default function NotificationsScreen() {
   const theme = useTheme();
   const [notifications, setNotifications] = useState<Notification[] | null>(null);
   const [unread, setUnread] = useState(0);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = useCallback(() => {
+    setLoadError(null);
     void listNotifications()
       .then((response) => {
         setNotifications(response.notifications);
         setUnread(response.unread);
       })
-      .catch(() => setNotifications([]));
+      .catch((caught: Error) =>
+        setLoadError(caught.message ?? '알림을 불러오지 못했어요.')
+      );
   }, []);
 
   useEffect(load, [load]);
@@ -102,6 +107,10 @@ export default function NotificationsScreen() {
         setNotifications(before);
         setUnread(before?.filter((row) => !row.readAt).length ?? 0);
       });
+  }
+
+  if (loadError) {
+    return <ErrorView message={loadError} onBack={load} />;
   }
 
   return (
