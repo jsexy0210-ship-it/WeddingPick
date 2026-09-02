@@ -76,6 +76,14 @@ function createOidcProvider(options: {
         provider: options.provider,
         subject: payload.sub,
         email: typeof payload.email === 'string' ? payload.email : undefined,
+        profile: {
+          name: stringValue(payload.name),
+          nickname: stringValue(payload.nickname ?? payload.preferred_username),
+          profileImageUrl: stringValue(payload.picture),
+          gender: stringValue(payload.gender),
+          birthday: stringValue(payload.birthdate),
+          mobile: stringValue(payload.phone_number),
+        },
       };
     },
   };

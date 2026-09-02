@@ -1,4 +1,4 @@
--- 소셜 로그인 제공자가 확인한 프로필. 로그인 신원과 같은 개인정보 영역에 둔다.
+-- 모든 소셜 로그인 제공자가 확인한 프로필. 로그인 신원과 같은 개인정보 영역에 둔다.
 ALTER TABLE identity.identities
   ADD COLUMN name text,
   ADD COLUMN nickname text,

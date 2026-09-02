@@ -43,6 +43,12 @@ Apple 네이티브 capability와 config plugin은 `app.json`에 반영됐다. Ap
 성별, 생일, 연령대, 출생연도, 휴대전화번호를 필수로 요청한다. API 서버는 반환된 값을
 `identity.identities`에 보관하며 앱 DB의 일반 사용자 데이터와 분리한다.
 
+프로필 자동 채움과 재입력 방지 우선순위는 네이버에만 적용하지 않는다. Apple, Kakao,
+Google의 검증된 OIDC 표준 클레임(`name`, `nickname`/`preferred_username`, `picture`,
+`gender`, `birthdate`, `phone_number`)도 같은 개인정보 영역에 저장한다. 제공자가 주지
+않은 값만 추가 입력받고, MY에서 사용자가 직접 수정하거나 비운 값은 소셜 값으로
+덮어쓰지 않는다.
+
 ## 주의
 
 Apple private key, Kakao client secret, API key는 환경변수/시크릿 저장소로만 관리한다.
