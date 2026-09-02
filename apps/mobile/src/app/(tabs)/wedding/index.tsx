@@ -1,3 +1,4 @@
+import { DOCUMENT_TYPE_LABEL } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -75,7 +76,7 @@ export default function WeddingScreen() {
                     <ThemedView type="backgroundElement" style={styles.rowText}>
                       <ThemedText type="smallBold">{set.label}</ThemedText>
                       <ThemedText type="small" themeColor="textSecondary">
-                        {set.pages.length}장 · 분석 전
+                        {set.pages.length}장 · {set.docType === 'unknown' ? '분석 전' : DOCUMENT_TYPE_LABEL[set.docType]}
                       </ThemedText>
                     </ThemedView>
                     <VerificationBadge level={set.verificationLevel} />

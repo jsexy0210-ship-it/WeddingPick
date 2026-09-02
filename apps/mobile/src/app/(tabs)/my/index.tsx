@@ -15,8 +15,8 @@ import {
   type MissionKey,
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, Animated, Modal, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -72,6 +72,7 @@ export default function MyScreen() {
   const { state, signOut } = useSession();
   const [data, setData] = useState<MyData>(EMPTY);
   const [celebrate, setCelebrate] = useState(false);
+  const bounceScale = useRef(new Animated.Value(0));
 
   const load = useCallback(() => {
     /*
@@ -126,6 +127,17 @@ export default function MyScreen() {
       if (!seen) setCelebrate(true);
     });
   }, [everythingDone]);
+
+  useEffect(() => {
+    if (!celebrate) return;
+    bounceScale.current.setValue(0);
+    Animated.spring(bounceScale.current, {
+      toValue: 1,
+      useNativeDriver: true,
+      bounciness: 14,
+      speed: 10,
+    }).start();
+  }, [celebrate]);
 
   async function closeCelebration() {
     setCelebrate(false);
@@ -360,11 +372,15 @@ export default function MyScreen() {
       <Modal visible={celebrate} transparent animationType="fade" onRequestClose={closeCelebration}>
         <View style={[styles.scrim, { backgroundColor: theme.scrim }]}>
           <View style={[styles.dialog, { backgroundColor: theme.tint }]}>
-            <View style={[styles.dialogMark, { backgroundColor: theme.onTint }]}>
+            <Animated.View
+              style={[
+                styles.dialogMark,
+                { backgroundColor: theme.onTint, transform: [{ scale: bounceScale.current }] },
+              ]}>
               <ThemedText type="t2" themeColor="tint">
                 ✓
               </ThemedText>
-            </View>
+            </Animated.View>
 
             <ThemedText type="t4" style={styles.onTint}>
               {MISSION_COMPLETE_TITLE}
