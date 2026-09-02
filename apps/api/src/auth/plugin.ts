@@ -2,7 +2,8 @@ import { NOT_ACTIVATED_NOTICE } from '@weddingpick/domain';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import type { AppContext } from '../context';
-import { ApiError, unauthenticated } from '../errors';
+import { NotAnOperator, requireOperator as assertOperator } from '../decisions';
+import { ApiError, forbidden, unauthenticated } from '../errors';
 import { resolveSession } from './sessions';
 
 declare module 'fastify' {
@@ -113,6 +114,36 @@ export function optionalUser(context: AppContext) {
 
     request.userId = user.userId;
     request.userActivated = true;
+  };
+}
+
+/**
+ * 운영자 콘솔용 관문. 로그인 + `structured.users.is_operator`를 함께 본다.
+ *
+ * 세션이 없으면 401(로그인 필요), 세션은 있지만 운영자가 아니면 403 — 둘을
+ * 구분해야 관리자 화면이 "로그인부터 다시" 와 "이 계정으론 못 들어온다"를
+ * 다르게 안내할 수 있다.
+ */
+export function requireOperator(context: AppContext) {
+  return async function (request: FastifyRequest, _reply: FastifyReply): Promise<void> {
+    const user = await readSession(context, request);
+
+    if (!user) {
+      throw unauthenticated();
+    }
+
+    try {
+      await assertOperator(context.pool, user.userId);
+    } catch (error) {
+      if (error instanceof NotAnOperator) {
+        throw forbidden();
+      }
+
+      throw error;
+    }
+
+    request.userId = user.userId;
+    request.userActivated = user.activated;
   };
 }
 

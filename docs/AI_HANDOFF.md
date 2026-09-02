@@ -142,6 +142,55 @@ GitHub Actions 실제 실행 결과, production DB 적용.
 ### 프론트엔드 (session_01HTGSU2B4vFjePXFS2ajKBY) — 아카이브
 **완료**: 모바일 앱 핵심 화면 구현, 42개 라우터 파일 생성
 
+### 백엔드 갭 조사 (이 세션, `claude/backend-gaps-9xrh1d`) — 실행 중
+**상황**: 세션 시작 시 원래 이 이름의 브랜치가 이미 PR #10으로 병합·삭제된 상태였다
+(main = eb3fc3d). main 최신 기준으로 브랜치를 다시 만들어 이어감(별도 안내 없이
+"merged PR, restart from main" 절차를 따름).
+
+**조사 결과 — 백엔드 미비 우선순위**(자세한 근거는 이 커밋의 diff와 코드 참고):
+1. **관리자 HTTP API 전무** — `apps/api/src/*-admin.ts` 13개 파일에 심사·운영
+   로직이 다 있는데 `server.ts`에 라우트로 등록된 게 하나도 없어서 (CLI로만
+   실행됨) 관리자 화면 25개(WP-ADM-*)가 붙을 API가 없었다.
+2. 네이버 로그인 서버 미구현(타입·config만 존재, 콜백/토큰교환 라우트 없음).
+3. `terms.url`/`privacy.url` 미게시 — `assertReleasable`가 이 필드를 체크 안 해서
+   릴리즈 게이트를 뚫고 나갈 위험.
+4. 월간 웨딩지원금(NPay) — 0052~0054 마이그레이션 스키마만 있고 앱 코드 0건.
+   (다른 브랜치 `origin/claude/session-a4bq31`에 옛 시도가 있으나 테이블명이
+   `monthly_draw_entries`로 현재 스키마의 `draw_entries`와 달라 재사용 불가 —
+   폐기된 코드로 보임. 실제 금전 지급이 걸려 있어 이번 세션은 손대지 않음.)
+
+**이번 세션에서 한 것 — 1번 중 첫 조각**:
+- `apps/api/src/auth/plugin.ts`에 `requireOperator(context)` preHandler 추가.
+  `decisions.ts`의 `requireOperator(db, userId)`(운영자 여부 DB 확인)를 그대로
+  쓰고, 세션 없음(401)과 운영자 아님(403)을 구분해서 던진다.
+- `apps/api/src/routes/admin-withdrawals.ts` 신설 — 이미 있던
+  `withdrawal-admin.ts`의 `list`/`hold`/`resume`/`retry`를 그대로 HTTP로 열었다.
+  새 라우트: `GET/POST /v1/admin/withdrawals[/:userId/hold|resume|retry]`.
+  도메인 함수가 던지는 평범한 `Error`(상태 규칙 위반)는 400으로, `NotAnOperator`는
+  403으로 변환한다.
+- `server.ts`에 등록, 테스트(`src/test/admin-withdrawals.test.ts`) 추가 —
+  로컬에 Postgres 16을 띄워 실제 DB로 typecheck + 전체 jest 재실행해서 확인함
+  (샌드박스엔 `DATABASE_URL`이 기본으로 없다 — CI 실행 전엔 대부분 테스트가
+  조용히 skip되니, 리뷰할 때 실제로 DB를 붙여 돌렸는지 확인할 것).
+
+**다음 세션이 같은 패턴으로 이어갈 것 — 남은 admin 12개**:
+- **함수 추출 없이 바로 라우트만 추가하면 되는 것** (이미 재사용 가능한 함수가
+  export돼 있음): `vendor-claim-admin.ts`(`decide`), `verification-admin.ts`
+  (`approve`, `reject`), `pii-admin.ts`(`conclude`, `redact`),
+  `inquiry-admin.ts`(`moveStatus`), `payment-proof-admin.ts`(`link`). 다만
+  이 다섯은 CLI의 `--list`/`--show` 조회 로직이 `main()` 안에 인라인돼 있어,
+  목록 조회 라우트가 필요하면 그 SQL을 먼저 exported 함수로 빼야 한다
+  (`withdrawal-admin.ts`의 `list()`처럼).
+- **먼저 리팩터링(로직/CLI 분리)이 필요한 것** — `main()` 안에 전부 들어 있어
+  export된 함수가 하나도 없음: `ad-admin.ts`, `ai-cost-admin.ts`,
+  `decisions-admin.ts`, `objection-admin.ts`, `rebuttal-admin.ts`,
+  `retention-admin.ts`, `reward-admin.ts`. `vendor-claim-admin.ts`가 했던
+  방식(`decide()`는 export, argv 파싱과 콘솔 출력은 `main()`에 남김)을 그대로
+  따라가면 된다.
+- 패턴: `requireOperator(context)`를 preHandler로 달고, 도메인 함수가 던지는
+  평범한 `Error`를 400(`invalid_request`)으로, `NotAnOperator`를 403으로 옮긴다
+  (`admin-withdrawals.ts` 그대로 베끼면 됨). 라우트 URL은 `/v1/admin/<도메인>`.
+
 ---
 
 ## 프론트엔드 화면 현황
@@ -245,9 +294,12 @@ WeddingPickl/
 2. **[사용자]** Fly.io: `OPERATOR_SESSION_TTL_DAYS=365` 추가
 3. **[사용자]** Neon DB: `db-migrate.yml` 실행 → 0052 적용
 4. **[사용자]** terms.url · privacy.url 확정 → 도메인 상수 업데이트
-5. **[AI]** 프론트엔드 미구현 화면 구현 — 우선순위: 회원탈퇴 > 일정 추가 > 지도 보기 > 취향 재선택
-6. **[AI]** 공통 Bottom Sheet 16종 인라인 처리 여부 확인
-7. **[AI]** 관리자 화면 설계 및 구현 (앱스토어 출시 후 단계)
+5. **[AI]** 관리자 HTTP API 배선 — 남은 12개 도메인, 위 «백엔드 갭 조사» 세션
+   기록의 목록·순서 그대로 (함수 추출 불필요한 5개 먼저, 리팩터링 필요한 7개는
+   그 다음)
+6. **[AI]** 프론트엔드 미구현 화면 구현 — 우선순위: 회원탈퇴 > 일정 추가 > 지도 보기 > 취향 재선택
+7. **[AI]** 공통 Bottom Sheet 16종 인라인 처리 여부 확인
+8. **[AI]** 관리자 화면(WP-ADM-*) 설계 및 구현 — 5번 API가 먼저 있어야 붙는다
 
 ---
 
