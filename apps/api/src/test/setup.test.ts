@@ -257,6 +257,8 @@ describeWithDb('최소 온보딩', () => {
       'created_at',
       'deleted_at',
       'display_name',
+      // 값이 아니라 사용자가 직접 이름을 정했는지 표시하는 덮어쓰기 방지 플래그다.
+      'display_name_user_set',
       'id',
       'is_operator',
     ]);
