@@ -7,6 +7,8 @@ const configSchema = z.object({
   port: z.coerce.number().int().positive().default(3000),
   /** 세션 유효기간. 만료되면 다시 로그인한다. */
   sessionTtlDays: z.coerce.number().int().positive().default(30),
+  /** 운영자(is_operator) 세션 유효기간. 미설정이면 일반 TTL과 같다. */
+  operatorSessionTtlDays: z.coerce.number().int().positive().optional(),
   storage: z.discriminatedUnion('driver', [
     z.object({
       driver: z.literal('s3'),
@@ -116,6 +118,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     databaseUrl: env.DATABASE_URL,
     port: env.PORT,
     sessionTtlDays: env.SESSION_TTL_DAYS,
+    operatorSessionTtlDays: env.OPERATOR_SESSION_TTL_DAYS,
     storage,
     retentionMode: env.RETENTION_MODE,
     retentionReminderHours: env.RETENTION_REMINDER_HOURS,

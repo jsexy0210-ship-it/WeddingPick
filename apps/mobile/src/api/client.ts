@@ -43,6 +43,7 @@ import {
   vendorSearchResponseSchema,
   conditionStatsSchema,
   myRewardsResponseSchema,
+  myMonthlyDrawResponseSchema,
   vendorClaimListResponseSchema,
   weddingInviteListResponseSchema,
   verificationRequestSchema,
@@ -51,6 +52,7 @@ import {
   type ConditionStats,
   type DecideCategoryRequest,
   type MyRewardsResponse,
+  type MyMonthlyDrawResponse,
   type CreateRebuttalRequest,
   type CreateVendorClaimRequest,
   type VendorClaimListResponse,
@@ -912,6 +914,10 @@ export async function removeDecision(weddingId: string, category: string): Promi
 
 export async function getMyRewards(): Promise<MyRewardsResponse> {
   return request('/v1/me/rewards', myRewardsResponseSchema);
+}
+
+export async function getMyMonthlyDraw(): Promise<MyMonthlyDrawResponse> {
+  return request('/v1/me/monthly-draw', myMonthlyDrawResponseSchema);
 }
 
 /**
