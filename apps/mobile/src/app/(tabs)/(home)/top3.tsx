@@ -62,7 +62,7 @@ export default function Top3Screen() {
           <ThemedView style={styles.pageHeader}>
             <ThemedText type="t4">TOP 3</ThemedText>
             <ThemedText type="t7" themeColor="textSecondary">
-              실제 결제 데이터 기반 추천이에요. 광고는 이 순위에 영향을 줄 수 없어요.
+              Pick 인증 데이터 기반 추천이에요. 광고는 이 순위에 영향을 줄 수 없어요.
             </ThemedText>
           </ThemedView>
 
@@ -148,7 +148,7 @@ function Top3Card({ rank, item }: { rank: number; item: Top3Item }) {
 
       <ThemedView style={styles.priceRow}>
         <ThemedText type="t7" themeColor="textSecondary">
-          실제 결제
+          Pick 가격대
         </ThemedText>
         {item.paidPrice.stage === 'collecting' ? (
           <ThemedText type="t7" themeColor="textAssistive">
