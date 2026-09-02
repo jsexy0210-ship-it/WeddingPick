@@ -424,6 +424,11 @@ export default function VendorDetailScreen() {
               </ThemedText>
             ) : null}
             <ActionButton
+              label="가격 제보"
+              hint="문서 없이 금액과 조건만 알려주시면 다음 분께 도움이 돼요"
+              onPress={() => router.push(`/search/${vendor.id}/price-report`)}
+            />
+            <ActionButton
               label="내 금액과 비교하기"
               hint="자료를 올리면 이 업체의 Pick 가격대와 견줘 보여드려요"
               onPress={() => router.push('/capture')}
