@@ -80,6 +80,7 @@ export default function MyScreen() {
    * 않는다.
    */
   const [bounceScale] = useState(() => new Animated.Value(0));
+  const [tagScales] = useState(() => MISSION_COMPLETE_TAGS.map(() => new Animated.Value(0)));
 
   const load = useCallback(() => {
     /*
@@ -138,13 +139,21 @@ export default function MyScreen() {
   useEffect(() => {
     if (!celebrate) return;
     bounceScale.setValue(0);
+    tagScales.forEach((s) => s.setValue(0));
     Animated.spring(bounceScale, {
       toValue: 1,
       useNativeDriver: true,
       bounciness: 14,
       speed: 10,
     }).start();
-  }, [celebrate, bounceScale]);
+    const DELAYS = [60, 120, 180, 240] as const;
+    tagScales.forEach((s, i) =>
+      Animated.sequence([
+        Animated.delay(DELAYS[i] ?? 0),
+        Animated.spring(s, { toValue: 1, useNativeDriver: true, bounciness: 14, speed: 10 }),
+      ]).start()
+    );
+  }, [celebrate, bounceScale, tagScales]);
 
   async function closeCelebration() {
     setCelebrate(false);
@@ -408,12 +417,14 @@ export default function MyScreen() {
             </ThemedText>
 
             <View style={styles.tagRow}>
-              {MISSION_COMPLETE_TAGS.map((tag) => (
-                <View key={tag} style={[styles.tag, { borderColor: theme.onTint }]}>
+              {MISSION_COMPLETE_TAGS.map((tag, i) => (
+                <Animated.View
+                  key={tag}
+                  style={[styles.tag, { borderColor: theme.onTint, transform: [{ scale: tagScales[i] }] }]}>
                   <ThemedText type="badge" style={styles.onTint}>
                     {tag}
                   </ThemedText>
-                </View>
+                </Animated.View>
               ))}
             </View>
 
