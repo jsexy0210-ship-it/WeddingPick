@@ -18,7 +18,9 @@ export default function WeddingScreen() {
    * 후보는 웨딩에 매달려 있어 웨딩 id가 필요하다. 아직 없으면 여기서 만든다 —
    * 담아두려고 들어온 사람에게 "먼저 웨딩을 만드세요"라고 하지 않는다.
    */
-  async function open(section: 'tasks' | 'expenses' | 'visit-notes' | 'candidates' | 'timeline') {
+  async function open(
+    section: 'tasks' | 'expenses' | 'visit-notes' | 'candidates' | 'timeline' | 'complete'
+  ) {
     const weddingId = await ensureWedding();
 
     router.push(`/wedding/${weddingId}/${section}`);
@@ -54,6 +56,11 @@ export default function WeddingScreen() {
               label="준비 타임라인"
               hint="Pick·준비·지출·방문 기록을 시간순으로 모아봐요"
               onPress={() => void open('timeline')}
+            />
+            <ActionButton
+              label="예식 완료"
+              hint="예식을 마치셨다면 지출을 정리하고 후기를 남겨요"
+              onPress={() => void open('complete')}
             />
             <ActionButton
               label="배우자와 함께 보기"

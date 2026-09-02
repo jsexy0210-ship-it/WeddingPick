@@ -167,7 +167,7 @@ GitHub Actions 실제 실행 결과, production DB 적용.
 | 공통 상태 (WP-ST-*) | 14개 | 로딩/에러/빈 상태 확인 필요 |
 | B2B 문의 (WP-BIZ-*) | 5개 | 소속확인·자료제공·혜택등록·광고·웹Footer |
 | 커플 연결 (WP-CPL-*) | 2개 | 공동 편집 충돌, 변경 내역 |
-| 우리웨딩 (WP-OUR-*) | 2개 | 일정 추가(신규 API 필요, 보류), 예식 완료(미착수). 준비 타임라인은 2026-09-02 구현(`/wedding/[id]/timeline`, 최종결정은 결정 시각이 없어 의도적으로 제외) |
+| 우리웨딩 (WP-OUR-*) | 1개 | 일정 추가(신규 API 필요, 보류). 준비 타임라인(`/wedding/[id]/timeline`)·예식 완료(`/wedding/[id]/complete`) 둘 다 2026-09-02 구현, 새 백엔드 없이 기존 API로 만듦 |
 | MY (WP-MY-*) | 0개 | 회원탈퇴(기존 구현 확인됨) · 취향 다시 고르기(2026-09-02 구현, `/my/preferences`) |
 | 홈 (WP-HOME-*) | 1개 | TOP3 전체보기 — v3.10/C-1 재설계로 홈에서 뺀 섹션(의도적, 검색 탭으로 이동, 실제 미구현 아님, 2026-09-02 확인). 개인화 웨딩피드는 `WeddingContent`(`features/home/wedding-content.tsx` · `features/home/content.ts`)가 콘텐츠 목록은 보여주지만 취향·지역 등으로 걸러내는 개인화 로직은 없음(2026-09-02 확인, `content.ts`에 taste/region/filter 로직 없음) — 여전히 미구현 |
 | 기타 | ~5개 | 지도 보기, 재실행·세션 복원, 진입 예외 등 |
@@ -245,11 +245,12 @@ WeddingPickl/
 2. **[사용자]** Fly.io: `OPERATOR_SESSION_TTL_DAYS=365` 추가
 3. **[사용자]** Neon DB: `db-migrate.yml` 실행 → 0052 적용
 4. **[사용자]** terms.url · privacy.url 확정 → 도메인 상수 업데이트
-5. **[AI]** 프론트엔드 미구현 화면 구현 — 남은 우선순위: 예식 완료(WP-OUR-013, 순수 프론트 가능해 보임 — lifecycle·getExpenses·listCandidates 재사용 검토) > 카메라 품질 피드백(밝기·흔들림·잘림, 이미지 분석 필요) > 일정 추가(WP-OUR-004~006, 신규 API 필요) > 지도 보기(WP-SRCH-007, 지도 SDK·업체 좌표 데이터 필요)
+5. **[AI]** 프론트엔드 미구현 화면 구현 — 남은 우선순위: 카메라 품질 피드백(밝기·흔들림·잘림, 이미지 분석 필요해 원격 세션에서 보류 중) > 개인화 웨딩피드 필터링(WP-HOME, 취향·지역 기준 콘텐츠 필터 없음) > 일정 추가(WP-OUR-004~006, 신규 API 필요) > 지도 보기(WP-SRCH-007, 지도 SDK·업체 좌표 데이터 필요)
    - 회원탈퇴(WP-MY-008)는 `/my/withdrawal`에 이미 구현돼 있음(기존 구현 확인함)
    - 취향 다시 고르기(WP-MY-004)는 `/my/preferences`로 2026-09-02 구현 완료 — 홈의 `TastePicker`·`taste.ts`를 그대로 재사용, MY 설정 화면에서 진입
    - 준비 타임라인(WP-OUR-012)은 `/wedding/[id]/timeline`으로 2026-09-02 구현 완료 — 기존 tasks/expenses/visit-notes/candidates API 4개를 합쳐 시간순 정렬, 새 백엔드 없음. 최종결정은 결정 시각을 서버가 안 남겨 의도적으로 뺌(정확하지 않은 순서를 보여줄 수 없어서)
-   - 개인화 웨딩피드(WP-HOME)는 콘텐츠 목록만 있고 개인화 필터링 로직이 없음 — 다음 세션이 볼 것
+   - 예식 완료(WP-OUR-013)는 `/wedding/[id]/complete`로 2026-09-02 구현 완료 — `packages/domain/src/lifecycle.ts`의 `lifecycle()`·`isBeforeWedding()`을 문지기로 써서 예식 전엔 안내만, 예식 뒤엔 총지출·미제보 결제내역(직접 입력 지출 중 Pick 인증 안 거친 것)·결정 업체별 후기 쓰기 CTA를 보여줌. **주의**: `isBeforeWedding`/`showsPreparationFirst`는 이 화면 전에는 앱 어디서도 안 쓰이던 죽은 코드였다 — 이번에 처음 실사용에 연결했다. 홈 화면 콘텐츠 우선순위를 `showsPreparationFirst`로 바꾸는 건 범위 밖으로 남겨뒀다(홈 로직 건드리는 리스크 회피) — 다음 세션이 볼 만한 항목
+   - "준비 알림 중단"은 이 화면에서 스위치를 흉내 내지 않았다 — 푸시를 실제로 보내는 쪽은 서버라, 프론트가 알림을 껐다고 표시해도 실제로 안 꺼지면 거짓말이 된다. 서버가 예식 뒤 준비 알림을 그만 보내게 하려면 백엔드 세션이 lifecycle stage를 보고 판단하는 로직이 필요함
 6. **[AI]** 공통 Bottom Sheet 16종 인라인 처리 여부 확인
 7. **[AI]** 관리자 화면 설계 및 구현 (앱스토어 출시 후 단계)
 
