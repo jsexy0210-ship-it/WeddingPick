@@ -229,13 +229,33 @@ HTTP에서는 `requireOperator(context)` preHandler가 관문 역할을 하니 �
 verification·pii·inquiry·payment-proof — 실제로는 6개, 처음 분류가 하나
 빠졌었다) 전부 끝났다.
 
-**다음 세션이 이어갈 것 — 남은 admin 7개, 전부 리팩터링부터 필요**:
-- **먼저 리팩터링(로직/CLI 분리)이 필요한 것** — `main()` 안에 전부 들어 있어
-  export된 함수가 하나도 없음: `ad-admin.ts`, `ai-cost-admin.ts`,
-  `decisions-admin.ts`, `objection-admin.ts`, `rebuttal-admin.ts`,
-  `retention-admin.ts`, `reward-admin.ts`. `vendor-claim-admin.ts`가 했던
-  방식(`decide()`는 export, argv 파싱과 콘솔 출력은 `main()`에 남김)을 그대로
-  따라가면 된다.
+**업데이트(같은 세션, 일곱 번째 조각 — 리팩터링 필요 그룹 1/7)**: `ad-admin.ts`
+끝냈다. `listPlacements()`/`addPlacement()`/`removePlacement()`로 뽑았다.
+`/v1/admin/ads`(지면 방화벽 안내·목록·잡기·내리기)를 열었다.
+**주의(발견한 기존 버그 둘, 이번에 같이 고침)**:
+1. 이 파일엔 `require.main === module` 관문이 아예 없었다 — 다른 admin
+   파일과 달리 모듈 최상단에서 `void main()`을 무조건 실행했다. 그냥
+   `import`만 해도(테스트나 라우트에서) 실제 `process.argv`로 CLI가 돌며
+   `exitCode`가 오염됐을 것이다. 관문을 추가했다.
+2. `addPlacement`/`removePlacement`에 `requireOperator` 확인이 아예 없었다
+   — CLI에 `--by`조차 없었다. 이번에 넣었다(CLI도 이제 `--by` 필수).
+**같은 문제가 남은 6개에도 있다** — `require.main === module` 관문이
+없는 파일: `ai-cost-admin.ts`, `decisions-admin.ts`, `objection-admin.ts`,
+`rebuttal-admin.ts`, `retention-admin.ts`, `reward-admin.ts` (전부 확인함,
+전부 없음). 각각 라우트로 열기 전에 반드시 이 관문부터 추가할 것 — 안
+그러면 라우트 파일이 그 모듈을 `import`하는 순간 서버 기동 시 CLI가 돈다.
+이 6개 중 `requireOperator` 호출 유무는 개별 확인 필요(아직 안 봄).
+`ad-admin.test.ts`는 원래 없었다 — 이번 HTTP 테스트(`admin-ads.test.ts`
+4개)가 첫 커버리지다(테스트가 없었던 이유도 아마 이 관문 부재 때문일
+가능성이 높다 — import하면 터지니 테스트를 못 붙였을 것).
+
+**다음 세션이 이어갈 것 — 남은 admin 6개, 전부 리팩터링부터 필요**:
+- `ai-cost-admin.ts`, `decisions-admin.ts`, `objection-admin.ts`,
+  `rebuttal-admin.ts`, `retention-admin.ts`, `reward-admin.ts`.
+  `vendor-claim-admin.ts`가 했던 방식(`decide()`는 export, argv 파싱과 콘솔
+  출력은 `main()`에 남김)을 그대로 따라가되, **먼저** `require.main ===
+  module` 관문이 있는지 확인하고 없으면 `ad-admin.ts`처럼 추가할 것
+  (위 «발견한 기존 버그» 참고 — 이 여섯 개 전부 없는 것으로 확인됨).
 - 패턴: `requireOperator(context)`를 preHandler로 달고, 도메인 함수가 던지는
   평범한 `Error`를 400(`invalid_request`)으로, `NotAnOperator`를 403으로 옮긴다
   (`admin-withdrawals.ts` 그대로 베끼면 됨). 라우트 URL은 `/v1/admin/<도메인>`.
@@ -343,9 +363,10 @@ WeddingPickl/
 2. **[사용자]** Fly.io: `OPERATOR_SESSION_TTL_DAYS=365` 추가
 3. **[사용자]** Neon DB: `db-migrate.yml` 실행 → 0052 적용
 4. **[사용자]** terms.url · privacy.url 확정 → 도메인 상수 업데이트
-5. **[AI]** 관리자 HTTP API 배선 — 남은 7개 도메인(withdrawal·vendor-claim·
-   verification·pii·inquiry·payment-proof 6개는 이 세션에서 끝남), 위
-   «백엔드 갭 조사» 세션 기록의 목록·순서 그대로 (전부 리팩터링부터 필요)
+5. **[AI]** 관리자 HTTP API 배선 — 남은 6개 도메인(withdrawal·vendor-claim·
+   verification·pii·inquiry·payment-proof·ad 7개는 이 세션에서 끝남), 위
+   «백엔드 갭 조사» 세션 기록의 목록·순서 그대로 (전부 리팩터링부터 필요 —
+   `require.main === module` 관문 추가부터)
 6. **[AI]** 프론트엔드 미구현 화면 구현 — 우선순위: 회원탈퇴 > 일정 추가 > 지도 보기 > 취향 재선택
 7. **[AI]** 공통 Bottom Sheet 16종 인라인 처리 여부 확인
 8. **[AI]** 관리자 화면(WP-ADM-*) 설계 및 구현 — 5번 API가 먼저 있어야 붙는다

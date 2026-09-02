@@ -4,6 +4,7 @@ import { ZodError } from 'zod';
 
 import type { AppContext } from './context';
 import { ApiError } from './errors';
+import { registerAdminAdRoutes } from './routes/admin-ads';
 import { registerAdminInquiryRoutes } from './routes/admin-inquiries';
 import { registerAdminPaymentProofRoutes } from './routes/admin-payment-proofs';
 import { registerAdminPiiRoutes } from './routes/admin-pii';
@@ -124,6 +125,7 @@ export function buildServer(context: AppContext): FastifyInstance {
   registerAdminPiiRoutes(app, context);
   registerAdminInquiryRoutes(app, context);
   registerAdminPaymentProofRoutes(app, context);
+  registerAdminAdRoutes(app, context);
 
   return app;
 }
