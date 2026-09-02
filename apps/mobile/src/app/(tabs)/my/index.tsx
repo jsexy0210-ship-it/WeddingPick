@@ -15,7 +15,7 @@ import {
   type MissionKey,
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Animated, Modal, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -72,7 +72,7 @@ export default function MyScreen() {
   const { state, signOut } = useSession();
   const [data, setData] = useState<MyData>(EMPTY);
   const [celebrate, setCelebrate] = useState(false);
-  const bounceScale = useRef(new Animated.Value(0));
+  const [bounceScale] = useState(() => new Animated.Value(0));
 
   const load = useCallback(() => {
     /*
@@ -130,8 +130,8 @@ export default function MyScreen() {
 
   useEffect(() => {
     if (!celebrate) return;
-    bounceScale.current.setValue(0);
-    Animated.spring(bounceScale.current, {
+    bounceScale.setValue(0);
+    Animated.spring(bounceScale, {
       toValue: 1,
       useNativeDriver: true,
       bounciness: 14,
@@ -375,7 +375,7 @@ export default function MyScreen() {
             <Animated.View
               style={[
                 styles.dialogMark,
-                { backgroundColor: theme.onTint, transform: [{ scale: bounceScale.current }] },
+                { backgroundColor: theme.onTint, transform: [{ scale: bounceScale }] },
               ]}>
               <ThemedText type="t2" themeColor="tint">
                 ✓
