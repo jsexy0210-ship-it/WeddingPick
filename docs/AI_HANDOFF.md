@@ -127,7 +127,14 @@ claude.ai Settings → Connectors → Gmail 연결 필요.
   - 로컬 알림: `features/expos/expo-reminder.ts` — 박람회 시작 하루 전 기기 로컬 알림(서버 푸시 아님, `expo-notifications`의 `scheduleNotificationAsync`+`SchedulableTriggerInputTypes.DATE` 사용 — v57 API라 `AGENTS.md` 경고대로 타입 정의를 직접 확인하고 씀)
   - "관련 체크리스트"(WP-EXPO-004)는 구현 안 함 — 준비단계 태그와 웨딩 체크리스트 항목을 잇는 매핑이 없어 억지로 이으면 근거 없는 연결이 됨. "Pick 연결"은 관련 카테고리로 검색 결과를 좁혀 보내는 것으로 대신함(특정 업체를 짚어 보내면 과장)
 - 🐛 **발견(고치지 않음, 손대면 안 되는 파일): `packages/db/migrations/0052_mission_draw.sql`이 실제로 실행하면 실패한다.** `ALTER TYPE reward_kind ADD VALUE 'monthly_draw'` 뒤, 같은 파일(=같은 트랜잭션, `migrate()`가 파일 하나당 트랜잭션 하나로 돈다) 안에서 그 값을 CHECK 제약(`grant_source_matches_kind`)에 바로 쓴다 — PostgreSQL은 같은 트랜잭션에서 방금 추가한 enum 값을 못 쓰게 막는다(PG16에서도 마찬가지). 로컬 Postgres 16에 `DATABASE_URL`을 주고 `packages/db/src/migrate.ts`를 처음부터 돌리면 `마이그레이션 0052_mission_draw 실패: unsafe use of new value "monthly_draw" of enum type reward_kind`로 멈춘다. `apps/api`의 `resetDatabase()`(→`resetSchema`→`migrate()`)도 매번 전체 마이그레이션을 처음부터 다시 돌리므로 **`DATABASE_URL`이 있는 채로 돌리는 `apps/api` DB 연동 테스트 전체가 지금 이 상태로는 막힌다** — production Neon DB에는 아직 미적용(우선순위 3번)이라 아직 아무도 못 봤을 뿐이다. `db-migrate.yml`을 그대로 실행하면 여기서 막힐 것이다. 고치는 법: enum 값 추가를 별도 트랜잭션(별도 마이그레이션 파일)으로 분리 — 0052가 아직 어디에도 적용 안 됐으니(운영 포함) 그 파일을 직접 쪼개도 안전하다. `mission_completions`·`monthly_draws`·`draw_entries`·`draw_results`·`npay_deliveries`를 만드는 부분(0052의 대부분)과 `reward_kind`에 값을 더하는 한 줄을 나누면 된다 — 단, 이 세션은 프론트엔드 세션이라 이 파일을 고치지 않았다(다른 세션이 소유한 진행 중 기능). 백엔드 세션이 처리해야 한다.
-**다음 세션 참고**: 진짜 순수 프론트엔드로 남은 미구현 화면은 관리자(WP-ADM-*, 25개) 정도 — 박람회·웨딩 정보는 이번 세션에서 풀스택으로 끝냈다. 공통 Bottom Sheet·공통 상태는 이번 세션에서 순수 프론트엔드 가능분을 마쳤고, 남은 것은 위 "차단" 목록처럼 다른 선행 작업이 필요하다. **0052 마이그레이션 버그부터 고쳐야 `apps/api`의 DB 연동 테스트 전체와 production 마이그레이션이 풀린다** — 다음으로 손대는 세션(백엔드 쪽)이 최우선으로 봐야 한다.
+- ✅ 관리자 화면(WP-ADM-*) 착수 — 사용자에게 범위·플랫폼 먼저 확인받음(25개 전부·위험한 동작까지 한 번에 자동 구현하는 대신 **읽기 전용 화면부터**, **`apps/web`에 관리자 웹**으로). 착수 전 확인한 것: 지금 "관리자"는 화면이 아예 없고, `is_operator` DB 컬럼과 CLI 스크립트(`apps/api/src/decisions-admin.ts` 등, `DATABASE_URL`을 쥔 사람이 직접 돌림)뿐이었다. `apps/web`은 정적 HTML 한 장(자바스크립트·서버 없음)이라 그 모양 그대로는 인증된 동적 대시보드를 못 담아 — 같은 워크스페이스 안에 `apps/api`와 같은 자리(Fastify)의 **별도 서버**를 새로 뒀다(`apps/web/src/admin/`, 랜딩의 `build.ts`/`page.ts`는 안 건드림).
+  - 인증: HTTP Basic Auth 하나(`admin`/`ADMIN_PASSWORD`, 상수시간 비교) — 소셜 로그인 재구현 대신. 지금 운영의 CLI 직접 접근보다 이미 더 좁힌 것이라 판단.
+  - 구현한 5개: WP-ADM-001(관리자 홈)·002(일일 브리핑)·040(자동화 상태)·052(감사 로그, 사건 id 검색 포함)·020(사용자 계정). 전부 이미 있는 표·뷰(`structured.decisions`·`open_decisions`·`active_users`)를 그대로 읽음 — 새 마이그레이션 없음. 브리핑·자동화 상태 쿼리는 `decisions-admin.ts`의 `--briefing`·`--open`과 동일.
+  - 명시적으로 안 만든 것: Kill Switch(041)·Policy Engine 편집(051)·롤백(042)·광고 실운영 전환(034)·광고 집행 관리(033) — 전부 실제 돈·운영에 영향 주는 파괴적 동작이라, 계정 하나짜리 공유 비밀번호로 지킬 계층이 아니라고 판단해 이번 범위에서 제외. 나머지 읽기 전용 화면(WP-ADM-010/011/012/013/014/015/016/021/022/023/030/031/032/050, 약 14개)은 시간 관계상 다음 세션으로.
+  - 검증: `server.test.ts` 11개 — 로컬 Postgres에 직접 붙여 인증 거부/통과, XSS 이스케이프(감사 로그 검색창에 `<script>` 넣어 확인), 데이터 집계까지 실행해서 통과 확인. **0052 버그 영향 없음** — `resetSchema()`(→`migrate()`)를 쓰지 않고 이 파일이 쓰는 표만 TRUNCATE하는 자체 리셋을 씀.
+  - 배포: `fly.admin.toml` 추가(앱 `weddingpick-admin`, 포트 3100). **`fly apps create weddingpick-admin` 및 시크릿 설정은 사용자 조치 필요** — 아래 우선순위 참조.
+  - 문서: `apps/web/README.md`에 "관리자 웹" 절 추가.
+**다음 세션 참고**: 남은 것은 관리자 화면 나머지(~19개 — 읽기 전용 14개 + 위험한 동작 5개, 위 참조)와 박람회 후속(관리자 등록 UI 없음, 지금은 DB에 직접 넣어야 함). 공통 Bottom Sheet·공통 상태는 순수 프론트엔드 가능분을 마쳤고, 남은 것은 위 "차단" 목록처럼 다른 선행 작업이 필요하다. **0052 마이그레이션 버그부터 고쳐야 `apps/api`의 DB 연동 테스트 전체와 production 마이그레이션이 풀린다** — 다음으로 손대는 세션(백엔드 쪽)이 최우선으로 봐야 한다.
 
 ### 프론트엔드 (session_01HTGSU2B4vFjePXFS2ajKBY) — 아카이브
 **완료**: 모바일 앱 핵심 화면 구현, 42개 라우터 파일 생성
@@ -243,7 +250,8 @@ WeddingPickl/
    - 취향 재선택(WP-MY-004): `packages/domain/src/priority.ts`의 `couple_taste` 주석이 "아직 이 종류는 만들어지지 않는다"고 명시 — 취향 수집(이미지 Pick 기반, v3.10 §8) 자체가 설계 전이라 재선택 화면을 만들 대상이 없음
 7. ~~**[AI]** 공통 Bottom Sheet 16종 인라인 처리 여부 확인~~ — 2026-09-02 완료(WP-SHT-*·WP-ST-* 전수 조사 및 순수 프론트엔드 가능분 구현, 세션 로그 참조). 남은 것: WP-SHT-009, WP-ST-006/010/014 — 각각 취향수집 시스템·백엔드 API가 먼저 필요 (WP-SHT-012 캘린더 등록은 완료)
 8. ~~**[AI]** 박람회·웨딩 정보(WP-EXPO-*, 5개) 화면 구현~~ — 2026-09-02 완료 (DB migration 0053 포함, production 미적용 상태로 대기 — 4번 참조)
-9. **[AI]** 관리자 화면(WP-ADM-*, 25개) 설계 및 구현 (앱스토어 출시 후 단계)
+9. **[AI]** 관리자 화면(WP-ADM-*) — 읽기 전용 5/25 완료(2026-09-02, `apps/web/src/admin/`). 남은 읽기 전용 14개(WP-ADM-010/011/012/013/014/015/016/021/022/023/030/031/032/050) 계속 진행 가능. Kill Switch·Policy Engine·롤백·광고 전환·집행 관리(041/051/042/034/033) 5개는 계정 하나짜리 Basic Auth로 지킬 계층이 아니라 판단해 제외 — 사람별 계정·승인 흐름이 먼저 필요, 앱스토어 출시 후 단계로 유지
+10. **[사용자]** `fly apps create weddingpick-admin` 실행 + `fly secrets set --app weddingpick-admin DATABASE_URL=... ADMIN_PASSWORD=...` — 관리자 웹이 아직 배포되지 않았다. `fly.admin.toml` 참조
 
 ---
 

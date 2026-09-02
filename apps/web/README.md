@@ -34,3 +34,33 @@ npm run build --workspace @weddingpick/web   # → apps/web/dist/index.html
 | 환경변수 | 없으면 |
 |---|---|
 | `WEDDINGPICK_CONTACT_EMAIL` | 문의처를 "아직 정해지지 않았습니다"로 적는다. 지어낸 주소를 붙이면 사람들이 받지 않는 곳으로 편지를 보낸다 |
+
+## 관리자 웹 (`src/admin/`)
+
+랜딩과 다른 프로그램이다. 랜딩은 자바스크립트도 서버도 없는 정적 파일 한 장인데,
+관리자 화면(WP-ADM-*)은 요청마다 DB를 읽어야 해서 그 모양으로는 안 된다. 그래서
+같은 워크스페이스 안에 별도 Fastify 서버를 하나 더 둔다 — `apps/api`처럼.
+
+```bash
+DATABASE_URL=... ADMIN_PASSWORD=... npm run admin:dev --workspace @weddingpick/web
+```
+
+- 인증은 HTTP Basic Auth 하나뿐이다(계정 `admin`, 비밀번호는 `ADMIN_PASSWORD`).
+  소셜 로그인을 다시 구현하지 않는다 — 지금 운영은 `DATABASE_URL`을 쥔 사람이 CLI로
+  직접 쿼리를 돌리는 것이고, 이 서버는 그 접근을 읽기 전용으로 좁히는 것뿐이다.
+- **읽기 전용이다.** Kill Switch·정책 편집·롤백 트리거 같은 파괴적 동작은 여기 없다
+  — 그런 것들은 계정 하나짜리 공유 비밀로 지킬 계층이 아니다.
+- 화면은 클라이언트 자바스크립트 없이 서버가 매 요청 렌더링한다. 랜딩의 "프레임워크도
+  런타임 자바스크립트도 없다" 원칙을 그대로 잇는다 — 다른 것은 정적이 아니라 매번
+  새로 그린다는 것뿐이다.
+- 지금 있는 화면 5개(WP-ADM-001·002·040·052·020)는 전부 이미 있는 표·뷰를 그대로
+  읽는다 — `structured.decisions`·`structured.open_decisions`·`structured.active_users`.
+  `apps/api/src/decisions-admin.ts`(CLI)가 쓰던 쿼리와 같은 것을 쓴다.
+- 배포: `fly.admin.toml` (앱 `weddingpick-admin`, 아직 `fly apps create` 안 됨 —
+  사용자 조치 필요). `DATABASE_URL`·`ADMIN_PASSWORD`는 `fly secrets set`으로 넣는다.
+
+| 환경변수 | 없으면 |
+|---|---|
+| `DATABASE_URL` | 뜨지 않는다(zod 검증 실패) |
+| `ADMIN_PASSWORD` | 뜨지 않는다. 16자 미만이면 마찬가지 |
+| `PORT` | 3100 |

@@ -4,15 +4,20 @@
   "private": true,
   "scripts": {
     "build": "tsx src/cli.ts",
+    "admin:dev": "tsx watch src/admin/index.ts",
+    "admin:start": "tsx src/admin/index.ts",
     "typecheck": "tsc --noEmit",
     "test": "jest"
   },
   "dependencies": {
-    "@weddingpick/domain": "*"
+    "@weddingpick/domain": "*",
+    "fastify": "^5.12.1",
+    "pg": "^8.13.1"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
     "@types/node": "^22.10.2",
+    "@types/pg": "^8.11.10",
     "jest": "^30.0.0",
     "ts-jest": "^29.2.5",
     "tsx": "^4.19.2",

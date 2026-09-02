@@ -1,0 +1,36 @@
+# 관리자 웹 — 읽기 전용 대시보드만 실행 (@weddingpick/web의 admin 서버)
+# 앱 생성: fly apps create weddingpick-admin
+# 이 서비스는 공개 인터넷에 그대로 두지 않는다 — ADMIN_PASSWORD가 문이지만,
+# 가능하면 Fly의 접근 제어(사설 네트워크·IP 허용목록)를 얹는다.
+app = 'weddingpick-admin'
+primary_region = 'nrt'
+
+[build]
+
+[processes]
+  admin = "npm run admin:start --workspace @weddingpick/web"
+
+[http_service]
+  internal_port = 3100
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['admin']
+
+  [[http_service.checks]]
+    interval = '30s'
+    timeout = '5s'
+    grace_period = '15s'
+    method = 'GET'
+    path = '/health'
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '256mb'
+  processes = ['admin']
+
+[env]
+  PORT = '3100'
+  # DATABASE_URL · ADMIN_PASSWORD는 시크릿이다 — 여기 적지 않는다.
+  # fly secrets set --app weddingpick-admin DATABASE_URL=... ADMIN_PASSWORD=...
