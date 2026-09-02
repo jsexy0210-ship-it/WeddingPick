@@ -174,10 +174,10 @@ export default function SettingsScreen() {
               value={settings?.spouseLinked ? '연결됨' : '연결하지 않음'}
               onPress={() => router.push('/wedding/partner')}
             />
-            <ActionButton label="회원탈퇴" onPress={() => router.push('/my/withdraw')} />
+            <ActionButton label="회원탈퇴" onPress={() => router.push('/my/withdrawal')} />
           </Section>
 
-          <Section title="데이터">
+          <Section title="내 활동">
             <ActionButton label="내 제보내역" onPress={() => router.push('/my/reports')} />
             {/*
               동의하지 않은 사람에게 철회 단추를 보이지 않는다. 누를 것이 없는

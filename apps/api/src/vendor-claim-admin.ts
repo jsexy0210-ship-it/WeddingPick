@@ -7,7 +7,7 @@ import {
 } from '@weddingpick/domain';
 
 import { loadConfig } from './config';
-import { newEventId, recordDecision } from './decisions';
+import { newEventId, recordDecision, requireOperator } from './decisions';
 import { createPool, withTransaction } from './db';
 import { notify } from './notify';
 
@@ -57,7 +57,7 @@ function parseArgs(argv: string[]): Options {
 
 const when = (at: Date): string => at.toISOString().slice(0, 16).replace('T', ' ');
 
-async function decide(
+export async function decide(
   pool: ReturnType<typeof createPool>,
   id: string,
   to: Exclude<ClaimStatus, 'pending'>,
@@ -65,6 +65,8 @@ async function decide(
   note: string
 ): Promise<void> {
   await withTransaction(pool, async (client) => {
+    await requireOperator(client, by);
+
     const { rows } = await client.query<{
       status: ClaimStatus;
       claimant_user_id: string;
@@ -270,7 +272,15 @@ async function main(): Promise<void> {
   }
 }
 
-void main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exitCode = 1;
-});
+/*
+ * CLI로 직접 실행했을 때만 돈다. 테스트가 이 파일에서 함수를 가져오면(require)
+ * `require.main`이 테스트 러너를 가리키므로 여기 걸리지 않는다 — 안 걸리면
+ * 테스트마다 실제 커넥션 풀을 만들고 빈 인자로 main()이 돌며 exitCode를
+ * 조용히 오염시킨다.
+ */
+if (require.main === module) {
+  void main().catch((error: unknown) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  });
+}

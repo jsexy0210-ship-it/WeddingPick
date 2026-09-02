@@ -33,7 +33,7 @@ const ANCHORS: Record<string, string> = {
   reviews: '후기 보기',
   official_source: '공식정보',
   pick: 'Pick하기',
-  report_error: '업체 정보가 다릅니다',
+  report_error: '업체 정보가 달라요',
 };
 
 /**

@@ -72,6 +72,13 @@ export default function MyScreen() {
   const { state, signOut } = useSession();
   const [data, setData] = useState<MyData>(EMPTY);
   const [celebrate, setCelebrate] = useState(false);
+  /*
+   * useRef가 아니라 useState 초기화 함수로 만든다 — 값은 똑같이 렌더마다 그대로인
+   * 하나뿐인 Animated.Value지만, JSX 안에서 `.current`를 직접 읽으면 렌더 중 ref
+   * 접근으로 걸린다(react-hooks/refs). Animated.Value 자체는 mutable해서 이
+   * 값이 바뀐다고 다시 렌더되지 않는다 — useState로 감싸도 리렌더 루프가 생기지
+   * 않는다.
+   */
   const [bounceScale] = useState(() => new Animated.Value(0));
 
   const load = useCallback(() => {
@@ -137,7 +144,7 @@ export default function MyScreen() {
       bounciness: 14,
       speed: 10,
     }).start();
-  }, [bounceScale, celebrate]);
+  }, [celebrate, bounceScale]);
 
   async function closeCelebration() {
     setCelebrate(false);
@@ -313,7 +320,7 @@ export default function MyScreen() {
 
           <ThemedView style={styles.section}>
             <ThemedText type="t7" themeColor="textSecondary">
-              데이터
+              내 활동
             </ThemedText>
             <ActionButton
               label="내 제보내역"
@@ -364,6 +371,17 @@ export default function MyScreen() {
               hint="알림, 예식일, Pick 인증 동의"
               onPress={() => router.push('/my/settings')}
             />
+            {/*
+              로그인한 사람에게만 보인다. 지울 계정이 없는 사람에게 탈퇴를 보이면
+              없는 곳으로 가는 줄을 그리는 것이 된다.
+            */}
+            {data.me ? (
+              <ActionButton
+                label="회원탈퇴"
+                hint="지워지는 것과 분리되는 것을 먼저 보여드려요"
+                onPress={() => router.push('/my/withdrawal')}
+              />
+            ) : null}
           </ThemedView>
         </ScrollView>
       </SafeAreaView>

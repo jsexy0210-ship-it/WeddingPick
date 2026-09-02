@@ -10,6 +10,7 @@ export * from './errors';
 export * from './inquiries';
 export * from './my-reports';
 export * from './notifications';
+export * from './withdrawal';
 export * from './payment-proofs';
 export * from './planners';
 export * from './price-reports';
