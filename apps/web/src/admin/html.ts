@@ -23,6 +23,15 @@ const NAV: readonly { path: string; label: string }[] = [
   { path: '/automation', label: '자동화 상태' },
   { path: '/audit-log', label: '감사 로그' },
   { path: '/users', label: '사용자' },
+  { path: '/data-import', label: '데이터 처리 현황' },
+  { path: '/price-stats', label: '가격통계' },
+  { path: '/vendors', label: '업체 관리' },
+  { path: '/images', label: '이미지 자동수급' },
+  { path: '/voc', label: 'VOC' },
+  { path: '/reviews', label: '후기·반론' },
+  { path: '/vendor-inquiries', label: '업체 문의 큐' },
+  { path: '/rewards', label: '캠페인·보상' },
+  { path: '/ai-cost', label: 'AI 사용량·비용' },
 ];
 
 export function renderPage(input: { title: string; activePath: string; body: string }): string {

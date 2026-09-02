@@ -41,6 +41,15 @@ export async function renderHomePage(pool: Pool): Promise<string> {
           <tr><td><a href="/automation">자동화 상태</a></td><td>사람 손이 필요한 것만 모은 큐</td></tr>
           <tr><td><a href="/audit-log">감사 로그</a></td><td>사건별 결정 이력, 사건 id로 검색</td></tr>
           <tr><td><a href="/users">사용자</a></td><td>가입·활성·탈퇴 현황</td></tr>
+          <tr><td><a href="/data-import">데이터 처리 현황</a></td><td>공개 데이터 임포트 실행·오류</td></tr>
+          <tr><td><a href="/price-stats">가격통계</a></td><td>공개된 통계, 데이터 수, 마지막 계산 시각</td></tr>
+          <tr><td><a href="/vendors">업체 관리</a></td><td>영업상태 전환, 데이터 변경 이력</td></tr>
+          <tr><td><a href="/images">이미지 자동수급</a></td><td>저작권·매칭·품질 검증 현황</td></tr>
+          <tr><td><a href="/voc">VOC</a></td><td>문의 처리 대기·이력</td></tr>
+          <tr><td><a href="/reviews">후기·반론</a></td><td>후기 신고, 업체 반론 심사 이력</td></tr>
+          <tr><td><a href="/vendor-inquiries">업체 문의 큐</a></td><td>관계자 인증, 정보 정정 요청</td></tr>
+          <tr><td><a href="/rewards">캠페인·보상</a></td><td>미션·친구초대·홍보인증·추첨 지급 현황</td></tr>
+          <tr><td><a href="/ai-cost">AI 사용량·비용</a></td><td>모델별 호출·비용·성공률</td></tr>
         </tbody>
       </table>
     </section>

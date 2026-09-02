@@ -2,11 +2,20 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
 
 import { requireAdmin } from './auth';
+import { renderAiCostPage } from './pages/ai-cost';
 import { renderAuditLogPage } from './pages/audit-log';
 import { renderAutomationPage } from './pages/automation';
 import { renderBriefingPage } from './pages/briefing';
+import { renderDataImportPage } from './pages/data-import';
 import { renderHomePage } from './pages/home';
+import { renderImagesPage } from './pages/images';
+import { renderPriceStatsPage } from './pages/price-stats';
+import { renderRewardsPage } from './pages/rewards';
+import { renderReviewsPage } from './pages/reviews';
 import { renderUsersPage } from './pages/users';
+import { renderVendorInquiriesPage } from './pages/vendor-inquiries';
+import { renderVendorsPage } from './pages/vendors';
+import { renderVocPage } from './pages/voc';
 
 export type AdminServerContext = {
   pool: Pool;
@@ -42,6 +51,42 @@ export function buildAdminServer(context: AdminServerContext): FastifyInstance {
 
   app.get('/users', async (_request, reply) => {
     reply.type('text/html').send(await renderUsersPage(context.pool));
+  });
+
+  app.get('/data-import', async (_request, reply) => {
+    reply.type('text/html').send(await renderDataImportPage(context.pool));
+  });
+
+  app.get('/price-stats', async (_request, reply) => {
+    reply.type('text/html').send(await renderPriceStatsPage(context.pool));
+  });
+
+  app.get('/vendors', async (_request, reply) => {
+    reply.type('text/html').send(await renderVendorsPage(context.pool));
+  });
+
+  app.get('/images', async (_request, reply) => {
+    reply.type('text/html').send(await renderImagesPage(context.pool));
+  });
+
+  app.get('/voc', async (_request, reply) => {
+    reply.type('text/html').send(await renderVocPage(context.pool));
+  });
+
+  app.get('/reviews', async (_request, reply) => {
+    reply.type('text/html').send(await renderReviewsPage(context.pool));
+  });
+
+  app.get('/vendor-inquiries', async (_request, reply) => {
+    reply.type('text/html').send(await renderVendorInquiriesPage(context.pool));
+  });
+
+  app.get('/rewards', async (_request, reply) => {
+    reply.type('text/html').send(await renderRewardsPage(context.pool));
+  });
+
+  app.get('/ai-cost', async (_request, reply) => {
+    reply.type('text/html').send(await renderAiCostPage(context.pool));
   });
 
   app.setNotFoundHandler((_request, reply) => {

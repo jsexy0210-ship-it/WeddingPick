@@ -134,6 +134,17 @@ claude.ai Settings → Connectors → Gmail 연결 필요.
   - 검증: `server.test.ts` 11개 — 로컬 Postgres에 직접 붙여 인증 거부/통과, XSS 이스케이프(감사 로그 검색창에 `<script>` 넣어 확인), 데이터 집계까지 실행해서 통과 확인. **0052 버그 영향 없음** — `resetSchema()`(→`migrate()`)를 쓰지 않고 이 파일이 쓰는 표만 TRUNCATE하는 자체 리셋을 씀.
   - 배포: `fly.admin.toml` 추가(앱 `weddingpick-admin`, 포트 3100). **`fly apps create weddingpick-admin` 및 시크릿 설정은 사용자 조치 필요** — 아래 우선순위 참조.
   - 문서: `apps/web/README.md`에 "관리자 웹" 절 추가.
+- ✅ 관리자 화면 나머지 읽기 전용 착수 계속 진행(사용자가 "나머지 14개도 이어서 진행해" 지시) — DB 스키마 조사(Explore 서브에이전트)로 14개 각각의 실제 백엔드 데이터 유무를 확인한 뒤, 데이터가 실제로 있는 9개만 구현하고 5개는 명시적으로 건너뜀.
+  - 구현한 9개: WP-ADM-010(데이터 처리 현황, `import_runs`·`import_errors`·`import_switches`)·012(가격통계, `stats.price_stats`)·014(업체 관리, 영업상태 + `vendor_change_log`)·015(이미지 자동수급, `vendor_images`)·021(VOC, `inquiries`)·022(후기·반론, `review_reports` + `review_rebuttals`)·023(업체 문의 큐, `vendor_claims` + `vendor_corrections`)·031(캠페인·보상, `reward_grants` + 미션 + 월간 추첨)·050(AI 사용량·비용, `ai_usage_monthly`/`ai_budget_status` — `ai-cost-admin.ts`와 완전히 같은 쿼리). 총 14/25 완료.
+  - 건너뛴 5개(WP-ADM-011·013·016·030·032) — **DB에 백엔드 데이터 자체가 없음을 확인**하고 건너뜀, 빈 화면이나 지어낸 숫자로 채우지 않음:
+    - 011 확인 필요 큐: 자동 교차검증 신뢰도 점수를 매기는 표가 없음(`vendor_corrections`는 있지만 confidence 컬럼 없음)
+    - 013 이상치·조작 탐지: 계정 군집·이미지 반복·금액 군집 탐지 표가 전혀 없음(`draw_entries.abuse_status`만 있고 월간 추첨 응모에만 좁게 적용됨)
+    - 016 이메일 회신 자동매칭: 인바운드 이메일 파싱·매칭 표가 전혀 없음
+    - 030 마케팅 자동화: 소재 생성·채널 게시 표가 전혀 없음
+    - 032 Revenue: 획득비용·리드·기여이익 퍼널 표가 전혀 없음(`ads.launch_reports`는 광고 실운영 전환 판단이지 매출 집계가 아님)
+  - `structured.monthly_draws` 등(0052) 관련 화면(캠페인·보상)은 그 표가 production에 아직 없을 수 있음을 감안해 `to_regclass()`로 존재 확인 후 없으면 안내 문구만 보여주도록 방어적으로 짬 — 0052 버그가 고쳐지기 전에도 이 화면 자체는 깨지지 않음.
+  - 검증: `server.test.ts` 총 20개(기존 11 + 신규 9) — 로컬 Postgres로 전부 통과. `copy-rules.test.ts`가 새 페이지의 "표본" 사용을 잡아내 "데이터"로 고침(내부 관리자 도구라도 카피 규칙은 앱 전체에 적용됨을 확인).
+  - nav·홈 바로가기 목록에 9개 추가. `apps/web/README.md` 갱신.
 **다음 세션 참고**: 남은 것은 관리자 화면 나머지(~19개 — 읽기 전용 14개 + 위험한 동작 5개, 위 참조)와 박람회 후속(관리자 등록 UI 없음, 지금은 DB에 직접 넣어야 함). 공통 Bottom Sheet·공통 상태는 순수 프론트엔드 가능분을 마쳤고, 남은 것은 위 "차단" 목록처럼 다른 선행 작업이 필요하다. **0052 마이그레이션 버그부터 고쳐야 `apps/api`의 DB 연동 테스트 전체와 production 마이그레이션이 풀린다** — 다음으로 손대는 세션(백엔드 쪽)이 최우선으로 봐야 한다.
 
 ### 프론트엔드 (session_01HTGSU2B4vFjePXFS2ajKBY) — 아카이브
@@ -250,7 +261,7 @@ WeddingPickl/
    - 취향 재선택(WP-MY-004): `packages/domain/src/priority.ts`의 `couple_taste` 주석이 "아직 이 종류는 만들어지지 않는다"고 명시 — 취향 수집(이미지 Pick 기반, v3.10 §8) 자체가 설계 전이라 재선택 화면을 만들 대상이 없음
 7. ~~**[AI]** 공통 Bottom Sheet 16종 인라인 처리 여부 확인~~ — 2026-09-02 완료(WP-SHT-*·WP-ST-* 전수 조사 및 순수 프론트엔드 가능분 구현, 세션 로그 참조). 남은 것: WP-SHT-009, WP-ST-006/010/014 — 각각 취향수집 시스템·백엔드 API가 먼저 필요 (WP-SHT-012 캘린더 등록은 완료)
 8. ~~**[AI]** 박람회·웨딩 정보(WP-EXPO-*, 5개) 화면 구현~~ — 2026-09-02 완료 (DB migration 0053 포함, production 미적용 상태로 대기 — 4번 참조)
-9. **[AI]** 관리자 화면(WP-ADM-*) — 읽기 전용 5/25 완료(2026-09-02, `apps/web/src/admin/`). 남은 읽기 전용 14개(WP-ADM-010/011/012/013/014/015/016/021/022/023/030/031/032/050) 계속 진행 가능. Kill Switch·Policy Engine·롤백·광고 전환·집행 관리(041/051/042/034/033) 5개는 계정 하나짜리 Basic Auth로 지킬 계층이 아니라 판단해 제외 — 사람별 계정·승인 흐름이 먼저 필요, 앱스토어 출시 후 단계로 유지
+9. **[AI]** 관리자 화면(WP-ADM-*) — 읽기 전용 14/25 완료(2026-09-02, `apps/web/src/admin/`). 남은 5개(WP-ADM-011/013/016/030/032)는 **백엔드 데이터 자체가 없어 스킵** — 각각 새 표(교차검증 신뢰도, 이상치·조작 탐지, 인바운드 이메일 파싱, 마케팅 콘텐츠 자동화, 매출 퍼널)를 설계하는 것부터 시작해야 하는 별도 백엔드 작업. Kill Switch·Policy Engine·롤백·광고 전환·집행 관리(041/051/042/034/033) 5개는 계정 하나짜리 Basic Auth로 지킬 계층이 아니라 판단해 계속 제외 — 사람별 계정·승인 흐름이 먼저 필요, 앱스토어 출시 후 단계로 유지
 10. **[사용자]** `fly apps create weddingpick-admin` 실행 + `fly secrets set --app weddingpick-admin DATABASE_URL=... ADMIN_PASSWORD=...` — 관리자 웹이 아직 배포되지 않았다. `fly.admin.toml` 참조
 
 ---

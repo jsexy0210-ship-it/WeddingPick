@@ -53,9 +53,15 @@ DATABASE_URL=... ADMIN_PASSWORD=... npm run admin:dev --workspace @weddingpick/w
 - 화면은 클라이언트 자바스크립트 없이 서버가 매 요청 렌더링한다. 랜딩의 "프레임워크도
   런타임 자바스크립트도 없다" 원칙을 그대로 잇는다 — 다른 것은 정적이 아니라 매번
   새로 그린다는 것뿐이다.
-- 지금 있는 화면 5개(WP-ADM-001·002·040·052·020)는 전부 이미 있는 표·뷰를 그대로
-  읽는다 — `structured.decisions`·`structured.open_decisions`·`structured.active_users`.
-  `apps/api/src/decisions-admin.ts`(CLI)가 쓰던 쿼리와 같은 것을 쓴다.
+- 지금 있는 화면 14개(WP-ADM-001·002·010·012·014·015·020·021·022·023·031·040·050·052)는
+  전부 이미 있는 표·뷰를 그대로 읽는다 — 새 마이그레이션 없음. 여러 화면은
+  `apps/api/src/*-admin.ts`(CLI 도구: `decisions-admin`·`inquiry-admin`·
+  `rebuttal-admin`·`vendor-claim-admin`·`reward-admin`·`ai-cost-admin`)가 쓰던
+  쿼리와 같은 것을 쓴다 — 웹 화면과 CLI가 서로 다른 답을 하지 않는다.
+- 남은 읽기 전용 화면 5개(WP-ADM-011·013·016·030·032)는 만들지 않았다 — DB를
+  뒤져봐도 그 화면이 보여줄 실제 데이터(교차검증 신뢰도 점수, 이상치·조작
+  탐지, 이메일 회신 파싱, 마케팅 콘텐츠 자동화, 광고 매출 퍼널)가 아직 어디에도
+  없다. 없는 데이터를 있는 것처럼 빈 화면이나 가짜 숫자로 채우지 않았다.
 - 배포: `fly.admin.toml` (앱 `weddingpick-admin`, 아직 `fly apps create` 안 됨 —
   사용자 조치 필요). `DATABASE_URL`·`ADMIN_PASSWORD`는 `fly secrets set`으로 넣는다.
 
