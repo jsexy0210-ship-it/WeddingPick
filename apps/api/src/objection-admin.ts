@@ -57,7 +57,16 @@ function parseArgs(argv: string[]): Options {
 
 const when = (at: Date): string => at.toISOString().slice(0, 16).replace('T', ' ');
 
-async function list(pool: Pool): Promise<void> {
+export type ObjectedReview = {
+  id: string;
+  vendorName: string;
+  title: string;
+  objectionHoldUntil: Date;
+  expired: boolean;
+};
+
+/** 확인 중인 이의 전부. 조회라 `requireOperator`를 부르지 않는다. */
+export async function list(pool: Pool): Promise<ObjectedReview[]> {
   const { rows } = await pool.query<{
     id: string;
     vendor_name: string;
@@ -73,20 +82,13 @@ async function list(pool: Pool): Promise<void> {
      ORDER BY r.objection_hold_until`
   );
 
-  if (rows.length === 0) {
-    console.log('확인 중인 이의가 없다.');
-    return;
-  }
-
-  console.log(`확인 중 ${rows.length}건:`);
-  for (const row of rows) {
-    /*
-     * 기간이 지난 것은 이미 다시 보인다. 그래도 목록에 세우는 이유는 **결론이
-     * 나지 않은 채 기간만 지난 건**이기 때문이다 — 그건 처리한 것이 아니다.
-     */
-    const mark = row.expired ? '기간 지남 · 이미 다시 보임' : `~${when(row.objection_hold_until)}`;
-    console.log(`  ${row.id}  ${row.vendor_name}  ${row.title}  (${mark})`);
-  }
+  return rows.map((row) => ({
+    id: row.id,
+    vendorName: row.vendor_name,
+    title: row.title,
+    objectionHoldUntil: row.objection_hold_until,
+    expired: row.expired,
+  }));
 }
 
 async function main(): Promise<void> {
@@ -95,7 +97,22 @@ async function main(): Promise<void> {
 
   try {
     if (options.list) {
-      await list(pool);
+      const rows = await list(pool);
+
+      if (rows.length === 0) {
+        console.log('확인 중인 이의가 없다.');
+        return;
+      }
+
+      console.log(`확인 중 ${rows.length}건:`);
+      for (const row of rows) {
+        /*
+         * 기간이 지난 것은 이미 다시 보인다. 그래도 목록에 세우는 이유는 **결론이
+         * 나지 않은 채 기간만 지난 건**이기 때문이다 — 그건 처리한 것이 아니다.
+         */
+        const mark = row.expired ? '기간 지남 · 이미 다시 보임' : `~${when(row.objectionHoldUntil)}`;
+        console.log(`  ${row.id}  ${row.vendorName}  ${row.title}  (${mark})`);
+      }
       return;
     }
 
@@ -150,7 +167,13 @@ async function main(): Promise<void> {
   }
 }
 
-void main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exitCode = 1;
-});
+/*
+ * CLI로 직접 실행했을 때만 돈다. 테스트가 이 파일에서 함수를 가져오면(require)
+ * `require.main`이 테스트 러너를 가리키므로 여기 걸리지 않는다.
+ */
+if (require.main === module) {
+  void main().catch((error: unknown) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  });
+}

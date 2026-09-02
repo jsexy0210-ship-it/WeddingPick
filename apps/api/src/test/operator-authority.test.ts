@@ -2,9 +2,11 @@ import { NotAnOperator } from '../decisions';
 import { holdReview } from '../objection-decide';
 import { conclude } from '../pii-admin';
 import { decideRebuttal } from '../rebuttal-decide';
+import { decide as decideReward } from '../reward-admin';
+import { deleteDocument } from '../retention/worker';
 import { decide as decideVendorClaim } from '../vendor-claim-admin';
 import { moveStatus } from '../inquiry-admin';
-import { approve as approveVerification } from '../verification-admin';
+import { approve as approveVerification, startReview } from '../verification-admin';
 import { hold as holdWithdrawal, resume as resumeWithdrawal, retry as retryWithdrawal } from '../withdrawal-admin';
 import { createTestApp, resetDatabase, type TestApp } from './helpers';
 
@@ -66,6 +68,12 @@ describeWithDb('심사 권한', () => {
     ).rejects.toThrow(NotAnOperator);
   });
 
+  it('인증 심사를 시작할 때 운영자가 아니면 막는다', async () => {
+    await expect(
+      startReview(test.pool, NOWHERE, await anOrdinaryUser())
+    ).rejects.toThrow(NotAnOperator);
+  });
+
   it('업체 관계자 인증을 결정할 때 운영자가 아니면 막는다', async () => {
     await expect(
       decideVendorClaim(test.pool, NOWHERE, 'approved', await anOrdinaryUser(), '아무거나')
@@ -99,6 +107,22 @@ describeWithDb('심사 권한', () => {
   it('탈퇴 삭제를 재시도할 때 운영자가 아니면 막는다', async () => {
     await expect(
       retryWithdrawal({ pool: test.pool, storage: test.context.storage }, NOWHERE, await anOrdinaryUser())
+    ).rejects.toThrow(NotAnOperator);
+  });
+
+  it('보상을 지급 처리할 때 운영자가 아니면 막는다', async () => {
+    await expect(
+      decideReward(test.pool, NOWHERE, 'paid', await anOrdinaryUser(), '아무거나')
+    ).rejects.toThrow(NotAnOperator);
+  });
+
+  it('원본을 지울 때 운영자가 아니면 막는다', async () => {
+    await expect(
+      deleteDocument(
+        { pool: test.pool, storage: test.context.storage },
+        NOWHERE,
+        await anOrdinaryUser()
+      )
     ).rejects.toThrow(NotAnOperator);
   });
 
