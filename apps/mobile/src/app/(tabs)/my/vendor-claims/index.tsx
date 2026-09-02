@@ -33,7 +33,21 @@ export default function MyVendorClaimsScreen() {
       .catch((caught: Error) => setLoadError(caught.message ?? '인증 내역을 불러오지 못했어요.'));
   }, []);
 
-  useEffect(load, [load]);
+  useEffect(() => {
+    let active = true;
+
+    void listMyVendorClaims()
+      .then((response) => {
+        if (active) setClaims(response.claims);
+      })
+      .catch((caught: Error) => {
+        if (active) setLoadError(caught.message ?? '인증 내역을 불러오지 못했어요.');
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   if (loadError) {
     return <ErrorView message={loadError} onBack={load} />;

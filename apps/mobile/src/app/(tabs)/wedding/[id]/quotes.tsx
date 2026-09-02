@@ -91,8 +91,25 @@ export default function WeddingQuotesScreen() {
   }, [id]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    let active = true;
+
+    void listQuotes(id)
+      .then((res) => {
+        if (!active) return;
+        setQuotes(res.quotes);
+        setNextCursor(res.nextCursor);
+      })
+      .catch((caught) => {
+        if (active) setError(caught instanceof Error ? caught.message : '불러오지 못했어요.');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [id]);
 
   async function loadMore() {
     if (!nextCursor) return;

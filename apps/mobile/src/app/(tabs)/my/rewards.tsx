@@ -52,7 +52,21 @@ export default function MyRewardsScreen() {
       .catch((caught: Error) => setLoadError(caught.message ?? '보상 정보를 불러오지 못했어요.'));
   }, []);
 
-  useEffect(load, [load]);
+  useEffect(() => {
+    let active = true;
+
+    void getMyRewards()
+      .then((response) => {
+        if (active) setData(response);
+      })
+      .catch((caught: Error) => {
+        if (active) setLoadError(caught.message ?? '보상 정보를 불러오지 못했어요.');
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   async function shareCode() {
     if (!data) return;

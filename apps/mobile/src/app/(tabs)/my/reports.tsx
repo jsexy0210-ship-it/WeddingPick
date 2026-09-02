@@ -40,7 +40,21 @@ export default function MyReportsScreen() {
       .catch((caught: Error) => setLoadError(caught.message ?? '제보내역을 불러오지 못했어요.'));
   }, []);
 
-  useEffect(load, [load]);
+  useEffect(() => {
+    let active = true;
+
+    void listMyReports()
+      .then((response) => {
+        if (active) setReports(response.reports);
+      })
+      .catch((caught: Error) => {
+        if (active) setLoadError(caught.message ?? '제보내역을 불러오지 못했어요.');
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   if (loadError) {
     return <ErrorView message={loadError} onBack={load} />;
