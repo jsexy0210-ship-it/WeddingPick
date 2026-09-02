@@ -30,6 +30,7 @@ import {
   searchVendors,
 } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
+import { VendorMap } from '@/features/search/vendor-map';
 import {
   ActionButton,
   FilterChip,
@@ -101,6 +102,8 @@ export default function SearchScreen() {
    * 홈 C-1이 가격 TOP3 섹션을 홈에서 뺐고, 탐색 성격이라 여기로 왔다.
    */
   const [top3, setTop3] = useState<Top3Response | null>(null);
+  /** 목록 · 지도. 지도는 업체 모드에서만 쓴다(WP-SRCH-007). */
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
   /** 늦게 도착한 옛 요청이 새 결과를 덮어쓰지 않게 한다. */
   const requestId = useRef(0);
@@ -160,54 +163,60 @@ export default function SearchScreen() {
       .catch(() => undefined);
   }, [filters.mode]);
 
+  /**
+   * 지금 조건으로 다시 부른다. 디바운스 효과와 지도의 "다시 찾기" 단추가 같이
+   * 쓴다 — 지도는 새 검색 로직을 만들지 않고 이 자리를 그대로 쓴다.
+   */
+  const runSearch = useCallback(() => {
+    const id = (requestId.current += 1);
+    const shared = {
+      q: filters.q.trim() || undefined,
+      region: filters.region ?? undefined,
+    };
+
+    const search =
+      filters.mode === 'vendor'
+        ? searchVendors({
+            ...shared,
+            category: filters.category ?? undefined,
+            sort: filters.sort,
+          }).then((response) => {
+            setVendors(response.vendors);
+            setSponsored(response.sponsored);
+            setTotal(response.total);
+            return response.nextCursor;
+          })
+        : searchPlanners(shared).then((response) => {
+            setPlanners(response.planners);
+            setWithdrawalNotice(response.withdrawalNotice);
+            return response.nextCursor;
+          });
+
+    search
+      .then((cursor) => {
+        if (id !== requestId.current) return;
+
+        setNextCursor(cursor);
+        setError(null);
+      })
+      .catch((caught: Error) => {
+        if (id !== requestId.current) return;
+
+        setVendors([]);
+        setPlanners([]);
+        setError(caught.message);
+      });
+  }, [filters]);
+
   useEffect(() => {
     if (!isServerConfigured) {
       return;
     }
 
-    const id = (requestId.current += 1);
-    const timer = setTimeout(() => {
-      const shared = {
-        q: filters.q.trim() || undefined,
-        region: filters.region ?? undefined,
-      };
-
-      const search =
-        filters.mode === 'vendor'
-          ? searchVendors({
-              ...shared,
-              category: filters.category ?? undefined,
-              sort: filters.sort,
-            }).then((response) => {
-              setVendors(response.vendors);
-              setSponsored(response.sponsored);
-              setTotal(response.total);
-              return response.nextCursor;
-            })
-          : searchPlanners(shared).then((response) => {
-              setPlanners(response.planners);
-              setWithdrawalNotice(response.withdrawalNotice);
-              return response.nextCursor;
-            });
-
-      search
-        .then((cursor) => {
-          if (id !== requestId.current) return;
-
-          setNextCursor(cursor);
-          setError(null);
-        })
-        .catch((caught: Error) => {
-          if (id !== requestId.current) return;
-
-          setVendors([]);
-          setPlanners([]);
-          setError(caught.message);
-        });
-    }, DEBOUNCE_MS);
+    const timer = setTimeout(runSearch, DEBOUNCE_MS);
 
     return () => clearTimeout(timer);
-  }, [filters]);
+  }, [filters, runSearch]);
 
   const loadMore = useCallback(async () => {
     if (!nextCursor || loadingMore) return;
@@ -309,6 +318,24 @@ export default function SearchScreen() {
             ))}
           </ThemedView>
 
+          {/* 지도 보기. 핸드오프 WP-SRCH-007 — 결과 상단 토글. 업체 모드에서만 쓴다. */}
+          {filters.mode === 'vendor' ? (
+            <ThemedView style={styles.chips}>
+              <FilterChip
+                role="radio"
+                label="목록"
+                selected={viewMode === 'list'}
+                onPress={() => setViewMode('list')}
+              />
+              <FilterChip
+                role="radio"
+                label="지도"
+                selected={viewMode === 'map'}
+                onPress={() => setViewMode('map')}
+              />
+            </ThemedView>
+          ) : null}
+
           <TextInput
             style={[styles.input, { color: theme.text, borderColor: theme.border }]}
             placeholder={`${MODE_LABEL[filters.mode]} 이름으로 찾아보세요`}
@@ -408,6 +435,8 @@ export default function SearchScreen() {
         {filters.mode === 'vendor' ? (
           vendors === null ? (
             <ActivityIndicator color={theme.tint} style={styles.spinner} />
+          ) : viewMode === 'map' ? (
+            <VendorMap vendors={vendors} loading={false} onRefresh={runSearch} />
           ) : (
             <FlatList
               data={vendors}

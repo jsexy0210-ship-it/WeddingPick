@@ -24,5 +24,6 @@ export * from './signup';
 export * from './vendor-claims';
 export * from './vendors';
 export * from './verification';
+export * from './wedding-events';
 export * from './wedding-plan';
 export * from './weddings';

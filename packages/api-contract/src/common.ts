@@ -44,6 +44,12 @@ export const sourceTypeSchema = z.enum([
   'external_schedule',
 ]);
 
+/** 지도 핀 좌표. WGS84. */
+export const coordinateSchema = z.object({
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+});
+
 export const pageSchema = z.object({
   limit: z.int().min(1).max(100).default(20),
   cursor: z.string().optional(),

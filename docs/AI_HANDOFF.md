@@ -7,7 +7,7 @@
 
 ## 메타
 
-- `updated_at`: 2026-09-02
+- `updated_at`: 2026-09-02 (일정·지도 보기 세션 반영)
 - `repository`: jsexy0210-ship-it/WeddingPickl
 - `branch (main)`: 4bae250
 - `policy_version`: 통합정책 v3.13
@@ -105,6 +105,22 @@ URL 확정 후 도메인 상수(`packages/domain/src/constants/policy.ts` 또는
 Google 개발자 콘솔 알림 자동화 세션이 Gmail 미연결로 차단됨.  
 claude.ai Settings → Connectors → Gmail 연결 필요.
 
+### 6. 지도 보기 — Google Maps Android API 키
+`apps/mobile/app.json`의 `android.config.googleMaps.apiKey`가 `REPLACE_WITH_GOOGLE_MAPS_ANDROID_API_KEY`
+자리표시자로 들어가 있다. Google Cloud Console에서 Maps SDK for Android 키를 발급해 실제 값으로
+바꿔야 Android에서 지도 타일이 뜬다(iOS는 기본 Apple Maps라 키가 필요 없다). 키를 안 넣어도
+빌드는 되지만 Android 지도 화면에 회색 배경 + 저작권 표시만 나온다.
+
+### 7. 지도 보기 — 업체 좌표 지오코딩 실행
+`0060_vendor_geo.sql` 적용 후 기존 업체는 전부 `lat`/`lng`가 NULL이다(좌표 없이 목록에는
+그대로 뜨고 지도에만 안 뜬다). `scripts/geocode-vendors.mts`를 카카오 REST API 키로 돌려야
+좌표가 채워진다 — 방법은 아래 "지도 보기 — 좌표 지오코딩" 절 참고. 카카오 개발자 콘솔에서
+키 발급 필요(Claude 불가).
+```
+DATABASE_URL=<neon-connection-string> KAKAO_REST_API_KEY=<발급받은 키> \
+  npx tsx scripts/geocode-vendors.mts
+```
+
 ---
 
 ## 세션별 작업 완료 현황
@@ -142,6 +158,52 @@ GitHub Actions 실제 실행 결과, production DB 적용.
 ### 프론트엔드 (session_01HTGSU2B4vFjePXFS2ajKBY) — 아카이브
 **완료**: 모바일 앱 핵심 화면 구현, 42개 라우터 파일 생성
 
+### 백엔드 — 일정 · 지도 보기 (이 세션, session_016VEKBiJwF4kJzTkxotEiCD)
+**배경**: 프론트엔드 세션(PR #16)이 순수 프론트로 가능한 화면을 다 구현하고, 새 백엔드
+API·DB 마이그레이션·지도 SDK가 필요한 두 항목(일정 추가, 지도 보기)을 이 세션으로 넘김.
+
+**완료**:
+- ✅ `wedding_events` 테이블(마이그레이션 `0059_wedding_events.sql`) — 웨딩 스케줄
+  (`wedding_tasks`, 체크리스트)과 다른 개념으로 분리: 일시·장소·업체·메모·알림 여부가
+  있는 캘린더 이벤트. `source`(manual/auto) 컬럼은 지금은 항상 manual — 업체 결정에서
+  자동 생성하는 기능은 이번 범위 밖.
+- ✅ `packages/api-contract/src/wedding-events.ts` + `endpoints.ts` 등록,
+  `apps/api/src/routes/wedding-events.ts` CRUD 4종(list/add/update/remove),
+  `apps/api/src/test/wedding-events.test.ts`(DB 테스트, 로컬 Postgres로 통과 확인)
+- ✅ 모바일 화면 3개: `wedding/[id]/events/index.tsx`(목록, 오늘·예정·지난 구분),
+  `events/new.tsx`(추가), `events/[eventId].tsx`(상세 — 수정·삭제·알림 토글).
+  `wedding/index.tsx`에 진입 항목 추가. 외부 캘린더 등록(WP-EXPO-005)은 손대지 않음.
+- ✅ `vendors` 테이블에 `address`/`lat`/`lng` 컬럼(마이그레이션 `0060_vendor_geo.sql`,
+  둘 다 없거나 둘 다 있게 하는 CHECK, 기본값 없음 — 지오코딩 전 업체는 지도에 안 뜬다)
+- ✅ `packages/api-contract`의 `vendorSummarySchema`에 `coordinates` 필드,
+  `apps/api/src/routes/vendors.ts` 검색·상세 쿼리에 `lat`/`lng` 반영
+- ✅ 좌표 백필 스크립트 `scripts/geocode-vendors.mts` — **결정**: vendors에는 구 단위
+  region만 있고 정확한 주소가 없어(0001/0007), 업체명+지역을 카카오 로컬 키워드검색
+  API에 그대로 넘겨 지오코딩한다(구 중심 좌표를 박아넣는 것보다 정확). 수동 실행
+  스크립트로 CI에 물리지 않음 — 실제 실행은 KAKAO_REST_API_KEY 발급 후 사용자 조치
+  (위 "사용자 직접 조치 필요" 6·7번 참고).
+- ✅ 모바일 지도 SDK: `expo-location` + `react-native-maps` 채택. **결정 근거**:
+  Expo 공식 `expo-maps`(57.0.2)는 alpha·Expo Go 미지원·플랫폼별(Apple/Google) 컴포넌트가
+  분리돼 있고 **웹 지원이 전혀 없다** — 이 앱은 `export:web`으로 웹도 배포한다.
+  `react-native-maps`(1.29.0)는 안정판이고 RN 0.86.3/React 19.2.3과 호환되며, 웹에서는
+  `MapView.web.ts`가 `UnimplementedView`로 빌드는 막지 않는다(지도 자체는 웹에서 안 뜸 —
+  `apps/mobile/src/features/search/vendor-map.tsx`가 `Platform.OS === 'web'`일 때 안내
+  문구로 대체). `apps/mobile/AGENTS.md` 지침대로 두 패키지 다 SDK 57 호환 버전 확인 후
+  설치(npm 레지스트리로 확인 — `docs.expo.dev`는 이 환경에서 egress 차단됨).
+- ✅ `apps/mobile/src/app/(tabs)/search/index.tsx`에 목록/지도 토글 칩 추가.
+  지도는 **새 검색 로직을 만들지 않고** 기존 검색 결과(`vendors` 상태) 위에 좌표
+  있는 업체만 핀으로 얹는다. 핀 탭 시 요약 카드, 현재 위치 버튼(`expo-location` 권한
+  요청), "이 조건으로 다시 찾기"는 기존 검색을 재실행(별도 영역-기반 쿼리는 만들지
+  않음 — 지시사항 범위 밖). 빈 상태: 위치 권한 거부/결과 없음/좌표 미확보 각각 안내.
+- ✅ `npm run typecheck`/`lint`/`test`(로컬 Postgres 16 기동, migrate 79개 스키마 테스트+
+  API 549개 테스트 전부 통과) + `export:web` + `build --workspace @weddingpick/web` 전부
+  통과 확인 — CI(`main.yml`)와 동일한 단계.
+
+**미검증**: 실제 Neon production 배포(마이그레이션 0059·0060 미적용), Android 실기기에서
+지도 렌더링(Google Maps API 키 미설정), 카카오 지오코딩 스크립트 실제 실행(API 키 없음).
+
+**브랜치**: `claude/wedding-events-map-view-260902`
+
 ---
 
 ## 프론트엔드 화면 현황
@@ -167,10 +229,13 @@ GitHub Actions 실제 실행 결과, production DB 적용.
 | 공통 상태 (WP-ST-*) | 14개 | 로딩/에러/빈 상태 확인 필요 |
 | B2B 문의 (WP-BIZ-*) | 5개 | 소속확인·자료제공·혜택등록·광고·웹Footer |
 | 커플 연결 (WP-CPL-*) | 2개 | 공동 편집 충돌, 변경 내역 |
-| 우리웨딩 (WP-OUR-*) | 3개 | 일정 추가, 준비 타임라인, 예식 완료 |
-| MY (WP-MY-*) | 2개 | 취향 다시 고르기, 회원탈퇴 |
+| 우리웨딩 (WP-OUR-*) | 3개 | 일정 추가 ✅(이 세션), 준비 타임라인 ✅(PR #16), 예식 완료 ✅(PR #16) |
+| MY (WP-MY-*) | 2개 | 취향 다시 고르기 ✅(PR #16), 회원탈퇴 ✅(PR #10/#15) |
 | 홈 (WP-HOME-*) | 2개 | TOP3 전체보기, 개인화 웨딩피드 |
-| 기타 | ~5개 | 지도 보기, 재실행·세션 복원, 진입 예외 등 |
+| 기타 | ~5개 | 지도 보기 ✅(이 세션), 재실행·세션 복원, 진입 예외 등 |
+
+이 표는 176개 화면 전체 재조사 시점(작성 당시) 기준 카운트라 위 ✅ 항목만큼 실제 미구현
+수는 줄었다 — 전체 재집계는 하지 않았다.
 
 상세 목록: https://claude.ai/code/artifact/b99277b7-3bdc-45dc-9614-a1310507df53
 
@@ -178,7 +243,7 @@ GitHub Actions 실제 실행 결과, production DB 적용.
 
 ## DB 스키마 현황
 
-### 마이그레이션 이력 (0001 ~ 0052, 전체 완료)
+### 마이그레이션 이력 (0001 ~ 0060, 전체 완료)
 
 | 범위 | 내용 |
 |---|---|
@@ -188,11 +253,14 @@ GitHub Actions 실제 실행 결과, production DB 적용.
 | 0031 ~ 0038 | Pick·비교·결제·광고 |
 | 0039 ~ 0046 | 보상·제보·광고·결혼 지역 |
 | 0047 ~ 0051 | 데이터 수집 파이프라인 (vendor_data_quality, change_log, import_run_log, vendor_images, corrections) |
-| **0052** | **미션 완료 추적 + 월간 웨딩지원금 추첨** (미션 4종 + monthly_draws + draw_entries + draw_results + reward_grants 확장 + npay_deliveries) |
+| 0052 ~ 0054 | 미션 완료 추적 + 월간 웨딩지원금 추첨 |
+| 0055 ~ 0058 | 회원탈퇴 자동파기 + 운영자 개입, AI 라우터, 이의 만료 |
+| **0059** | **일정(`wedding_events`)** — 웨딩 스케줄(체크리스트)과 다른, 일시·장소가 있는 캘린더 이벤트 |
+| **0060** | **업체 좌표(`vendors.address`/`lat`/`lng`)** — 지도 보기용, 기본값 없이 지오코딩 전엔 NULL |
 
 ### ⚠️ 프로덕션 미적용
-`0052_mission_draw.sql`은 코드 리포에 머지됐으나 Neon production DB에는 아직 미적용.  
-`db-migrate.yml` 워크플로 실행 필요.
+`0052_mission_draw.sql`부터 `0060_vendor_geo.sql`까지 코드 리포에는 머지됐으나 Neon
+production DB에는 아직 미적용. `db-migrate.yml` 워크플로 실행 필요.
 
 ---
 
@@ -243,11 +311,16 @@ WeddingPickl/
 
 1. **[사용자]** expo.dev에 ASC API Key 62U8N2ZWJR 등록 → iOS 빌드 재시작
 2. **[사용자]** Fly.io: `OPERATOR_SESSION_TTL_DAYS=365` 추가
-3. **[사용자]** Neon DB: `db-migrate.yml` 실행 → 0052 적용
+3. **[사용자]** Neon DB: `db-migrate.yml` 실행 → 0052 ~ 0060 적용
 4. **[사용자]** terms.url · privacy.url 확정 → 도메인 상수 업데이트
-5. **[AI]** 프론트엔드 미구현 화면 구현 — 우선순위: 회원탈퇴 > 일정 추가 > 지도 보기 > 취향 재선택
-6. **[AI]** 공통 Bottom Sheet 16종 인라인 처리 여부 확인
-7. **[AI]** 관리자 화면 설계 및 구현 (앱스토어 출시 후 단계)
+5. **[사용자]** Google Maps Android API 키 발급 → `apps/mobile/app.json`의
+   `REPLACE_WITH_GOOGLE_MAPS_ANDROID_API_KEY` 교체
+6. **[사용자]** 카카오 REST API 키 발급 → `scripts/geocode-vendors.mts` 실행해 업체 좌표 채우기
+7. **[사용자/AI]** PR #16(취향 다시 고르기·준비 타임라인·예식 완료, 순수 프론트) 병합 —
+   회원탈퇴·일정 추가·지도 보기(이번 세션)까지 합치면 §프론트엔드 화면 현황의 "우리웨딩·MY"
+   미구현 항목이 모두 닫힌다
+8. **[AI]** 공통 Bottom Sheet 16종 인라인 처리 여부 확인
+9. **[AI]** 관리자 화면 설계 및 구현 (앱스토어 출시 후 단계)
 
 ---
 
