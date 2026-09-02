@@ -57,7 +57,21 @@ function parseArgs(argv: string[]): Options {
 
 const when = (at: Date): string => at.toISOString().slice(0, 16).replace('T', ' ');
 
-async function list(pool: Pool): Promise<void> {
+export type UnderObjectionReview = {
+  id: string;
+  vendorName: string;
+  title: string;
+  objectionHoldUntil: Date;
+  expired: boolean;
+};
+
+/**
+ * 확인 중인 이의 전체. HTTP 관리자 콘솔과 CLI `--list`가 함께 쓴다.
+ *
+ * 기간이 지난 것도 포함한다 — 그건 이미 다시 보이지만(0050), **결론이 나지
+ * 않은 채 기간만 지난 것**이라 처리한 것이 아니다.
+ */
+export async function listUnderObjection(pool: Pool): Promise<UnderObjectionReview[]> {
   const { rows } = await pool.query<{
     id: string;
     vendor_name: string;
@@ -73,6 +87,18 @@ async function list(pool: Pool): Promise<void> {
      ORDER BY r.objection_hold_until`
   );
 
+  return rows.map((row) => ({
+    id: row.id,
+    vendorName: row.vendor_name,
+    title: row.title,
+    objectionHoldUntil: row.objection_hold_until,
+    expired: row.expired,
+  }));
+}
+
+async function printUnderObjection(pool: Pool): Promise<void> {
+  const rows = await listUnderObjection(pool);
+
   if (rows.length === 0) {
     console.log('확인 중인 이의가 없다.');
     return;
@@ -80,12 +106,10 @@ async function list(pool: Pool): Promise<void> {
 
   console.log(`확인 중 ${rows.length}건:`);
   for (const row of rows) {
-    /*
-     * 기간이 지난 것은 이미 다시 보인다. 그래도 목록에 세우는 이유는 **결론이
-     * 나지 않은 채 기간만 지난 건**이기 때문이다 — 그건 처리한 것이 아니다.
-     */
-    const mark = row.expired ? '기간 지남 · 이미 다시 보임' : `~${when(row.objection_hold_until)}`;
-    console.log(`  ${row.id}  ${row.vendor_name}  ${row.title}  (${mark})`);
+    const mark = row.expired
+      ? '기간 지남 · 이미 다시 보임'
+      : `~${when(row.objectionHoldUntil)}`;
+    console.log(`  ${row.id}  ${row.vendorName}  ${row.title}  (${mark})`);
   }
 }
 
@@ -95,7 +119,7 @@ async function main(): Promise<void> {
 
   try {
     if (options.list) {
-      await list(pool);
+      await printUnderObjection(pool);
       return;
     }
 
@@ -150,7 +174,16 @@ async function main(): Promise<void> {
   }
 }
 
-void main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exitCode = 1;
-});
+/*
+ * CLI로 직접 실행했을 때만 돈다. 테스트나 라우트가 이 파일에서 함수를
+ * 가져오면(require) `require.main`이 테스트 러너/서버를 가리키므로 여기
+ * 걸리지 않는다 — 안 걸리면 가져오기만 해도 `main()`이 돌며 실제 인자 없이
+ * 안내 문구로 exitCode를 오염시킨다. 원래 이 파일에는 이 관문이 없었다
+ * (다른 admin 도구와 다르게) — HTTP로 열면서 같이 넣었다.
+ */
+if (require.main === module) {
+  void main().catch((error: unknown) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  });
+}
