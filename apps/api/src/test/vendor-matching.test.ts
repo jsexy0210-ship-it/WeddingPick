@@ -124,7 +124,7 @@ describeWithDb('업체 매칭', () => {
     const quote = await loadQuote(test.pool, rows[0]!.id);
 
     expect(quote.vendor?.sourceNote).toBe(
-      '행정안전부 지방행정 인허가 데이터 (2026-08-28 확인)'
+      '행정안전부 지방행정 인허가 데이터 (2026-09-01 확인)'
     );
   });
 

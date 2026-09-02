@@ -2,13 +2,14 @@ import type { ConditionStats, Review, VendorDetail } from '@weddingpick/api-cont
 import {
   BASE_AMOUNT_HELP,
   DOCUMENT_TYPE_LABEL,
+  manwon,
   MAX_RATING,
   PAYMENT_PROOF_CAVEAT,
-  VENDOR_CATEGORY_LABEL,
-  VERIFIED_DATA_HELP,
-  manwon,
   TERMS,
   rangeLabel,
+  STILL_COLLECTING,
+  VENDOR_CATEGORY_LABEL,
+  VERIFIED_DATA_HELP,
   vendorShareMessage,
   withParticle,
 } from '@weddingpick/domain';
@@ -173,7 +174,7 @@ export default function VendorDetailScreen() {
             {vendor.prices.paidPrice.stage === 'collecting' ? (
               <ThemedView type="backgroundElement" style={styles.card}>
                 <ThemedText type="t5" themeColor="textSecondary">
-                  데이터를 모으는 중이에요
+                  {STILL_COLLECTING}
                 </ThemedText>
                 <ThemedText type="t7" themeColor="textSecondary">
                   {vendor.prices.paidPrice.caption}
@@ -210,6 +211,11 @@ export default function VendorDetailScreen() {
             */}
             <ThemedText type="t7" themeColor="textSecondary">
               {PAYMENT_PROOF_CAVEAT}
+            </ThemedText>
+
+            {/* 자료 최종 확인일. 숫자가 얼마나 최신인지 알아야 믿을 수 있다. */}
+            <ThemedText type="t7" themeColor="textAssistive">
+              마지막 확인 {vendor.lastVerifiedAt.slice(0, 10)}
             </ThemedText>
 
             {/*
@@ -467,6 +473,11 @@ export default function VendorDetailScreen() {
                 {saveNote}
               </ThemedText>
             ) : null}
+            <ActionButton
+              label="가격 제보"
+              hint="문서 없이 금액과 조건만 알려주시면 다음 분께 도움이 돼요"
+              onPress={() => router.push(`/search/${vendor.id}/price-report`)}
+            />
             <ActionButton
               label="내 금액과 비교하기"
               hint="자료를 올리면 이 업체의 Pick 가격대와 견줘 보여드려요"

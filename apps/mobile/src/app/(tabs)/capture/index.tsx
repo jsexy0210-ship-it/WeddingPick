@@ -122,10 +122,6 @@ export default function CaptureScreen() {
           />
         ) : null}
 
-        <ThemedText type="small" themeColor="textSecondary" style={styles.notice}>
-          지금은 문서가 기기 안에만 저장돼요. 서버로 보내는 분석은 원본 문서 처리에 대한
-          법률 검토가 끝난 뒤에 연결해요.
-        </ThemedText>
       </SafeAreaView>
     </ThemedView>
   );
@@ -149,9 +145,5 @@ const styles = StyleSheet.create({
   },
   actions: {
     gap: Spacing.two,
-  },
-  notice: {
-    marginTop: 'auto',
-    paddingBottom: Spacing.four,
   },
 });

@@ -35,7 +35,7 @@ export const FAQ_ITEMS: readonly FaqItem[] = [
      * 되고, 그 말은 아무도 안 고친다 — 문장이라서 고장으로 보이지 않는다.
      */
     answer:
-      `이용자가 등록한 결제내역에서 읽은 금액이에요. 데이터가 ${DISCLOSURE_THRESHOLDS.limited}건 모이면 구간을 보여드리고, ${DISCLOSURE_THRESHOLDS.detailed}건부터 기준금액까지 보여드려요. 그 아래에서는 숫자를 만들지 않고 모으는 중이라고 알려드려요.`,
+      `이용자가 등록한 결제내역에서 읽은 금액이에요. 확인된 정보가 ${DISCLOSURE_THRESHOLDS.limited}건 모이면 구간을 보여드리고, ${DISCLOSURE_THRESHOLDS.detailed}건부터 기준금액까지 보여드려요. 그 아래에서는 숫자를 만들지 않고 모으는 중이라고 알려드려요.`,
   },
   {
     key: 'why-locked',

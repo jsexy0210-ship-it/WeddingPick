@@ -9,8 +9,8 @@
 
 - `updated_at`: 2026-09-02 (프론트엔드 착수 세션 갱신)
 - `repository`: jsexy0210-ship-it/WeddingPickl
-- `branch (main)`: 4bae250
-- `policy_version`: 통합정책 v3.13
+- `branch (main)`: d1915fd
+- `policy_version`: 통합정책 v3.14
 - `dashboard`: https://claude.ai/code/artifact/a1307c11-f282-4cf2-a26d-e44bd083d7a9
 - `ios_handoff_artifact`: https://claude.ai/code/artifact/b8792fcd-fefe-4386-b24e-41d122e90a87
 - `screen_status_artifact`: https://claude.ai/code/artifact/b99277b7-3bdc-45dc-9614-a1310507df53
@@ -40,6 +40,26 @@
 
 ## 🚨 사용자 직접 조치 필요 (Claude 불가)
 
+### 0. 회원탈퇴 정책 — 최종 확정: 자동삭제 + 운영자 개입 (2026-09-02, 사용자 결정)
+**상태**: 해결됨. main의 `release-gate.ts`/`withdrawalReady()` 게이트 방식은 채택하지
+않는다.
+
+사용자가 두 세션의 다른 구현(main의 정책 확정 전 기능 잠금 vs PR #10의 자동파기+
+운영자 개입)을 확인한 뒤 직접 결정했다 — *"회원탈퇴 정책, 자동삭제+운영자개입 쪽으로
+최종 확정할게."*
+
+**확정된 구현**(PR #10, `claude/daily-progress-briefing-3k7lez`): 자동파기 유지 +
+운영자 조회·HOLD·RESUME·RETRY·감사로그(`packages/domain/src/withdrawal.ts`,
+`apps/api/src/withdrawal-admin.ts`, 마이그레이션 0055·0058).
+
+**PR #10을 병합하는 세션이 할 일**:
+- main의 `packages/domain/src/withdrawal.ts`(release-gate 버전)와
+  `packages/domain/src/release-gate.ts`의 `withdrawalReady()` 의존을 걷어내고
+  PR #10의 구현으로 교체(PR #10 자체는 이미 이렇게 병합해뒀다).
+- `WITHDRAWAL_NOTICE`(§J-3)로 확정한 문구가 있다면 PR #10의 실제 탈퇴 화면 문구와
+  맞는지 확인 — 서로 다른 문구가 화면에 남지 않게.
+- `docs/통합정책 v3.14`와 실제 탈퇴 구현의 정합성을 확인.
+
 ### 1. iOS EAS 빌드 수정 — 최우선
 **상태**: Release #1 ~ #10 전부 실패  
 **근본 원인**: ASC API Key `62U8N2ZWJR`가 expo.dev에 미등록
@@ -66,7 +86,15 @@ flyctl secrets set OPERATOR_SESSION_TTL_DAYS=365 --app weddingpickl
 # 또는 직접:
 DATABASE_URL=<neon-connection-string> pnpm db:migrate
 ```
-적용 대상: `0052_mission_draw.sql` (미션 완료 추적 + 월간 웨딩지원금 추첨 스키마)
+적용 대상: `0052_mission_draw.sql` ~ `0060_wedding_expos_guide.sql` (미션 완료 추적·월간 웨딩지원금 추첨, 회원탈퇴, AI 라우터, 박람회·웨딩 정보 등)
+
+**✅ 트랜잭션 버그는 고쳐져 main에 있다.** 원래 `0052_mission_draw.sql`이 `ALTER TYPE
+reward_kind ADD VALUE 'monthly_draw'`를 같은 트랜잭션 안에서 바로 쓰는 CHECK 제약에
+써서 "unsafe use of new value of enum type"으로 매번 실패했었다 — 0052를 트리밍하고
+값을 더하는 것과 쓰는 것을 각각 `0053_reward_kind_monthly_draw.sql`,
+`0054_grant_source_matches_kind.sql`로 분리해 고침(2026-09-02, `front-dev-start-nrr0jh`
+세션이 main을 병합하며 로컬 Postgres 16에 0001~0060 전체를 우회 없이 그대로 적용해
+재확인). 그대로 `db-migrate.yml` 실행하면 된다.
 
 ### 4. 앱스토어 출시 블로커 — terms.url / privacy.url
 `assertReleasable('production')`이 `terms.url` · `privacy.url` 미설정 시 throw → 앱스토어 출시 불가.  
@@ -94,9 +122,22 @@ claude.ai Settings → Connectors → Gmail 연결 필요.
 - ✅ UX 정책 업데이트: J-3 탈퇴 화면, I-4 월간 웨딩지원금 (PR #8 포함)
 - ✅ 개발 현황 대시보드 생성 (artifact a1307c11)
 
-### 백엔드 관리 (session_01GcqCiteAfxQ5X6SaHDhbDq) — 실행 중 (Sonnet 5)
-**현황**: API 테스트 524개 통과, 마무리 중  
-**브랜치**: `claude/daily-progress-briefing-3k7lez`
+### 백엔드 관리 (session_01GcqCiteAfxQ5X6SaHDhbDq) — PR #10 병합 대기 (Sonnet 5)
+**완료:**
+- ✅ 최신 main(이 커밋 포함)을 브랜치에 병합, 충돌 21개 전부 해소
+- ✅ 회원탈퇴 운영자 개입(조회·HOLD·RESUME·RETRY, `withdrawal-admin.ts`) +
+  삭제 워커 트랜잭션 안전성(`FOR UPDATE`, 멱등) — 사용자 지시로 자동파기 유지 결정,
+  아래 «회원탈퇴 정책 충돌» 참고
+- ✅ 마이그레이션 0055~0058(회원탈퇴/AI라우터/이의만료/탈퇴관리자) — main의
+  0052_mission_draw.sql 뒤로 재번호
+- ✅ typecheck 7개 워크스페이스·lint 0 error·test 543개(API 기준, 전체 1537개) 전부 통과
+  — CI와 동일한 명령(typecheck/lint/test/export:web/build)을 로컬에서 재현해 확인함
+  (이 PR에서 GitHub Actions check-run이 뜨지 않아 — 원인 미확인 — 실제 워크플로 실행
+  결과는 **미검증**)
+
+**브랜치**: `claude/daily-progress-briefing-3k7lez` · **PR**: #10 (main ← 이 브랜치)
+**미검증**: 실제 배포·health check(Fly.io 크리덴셜 필요, PR 단계에서는 원래도 실행 안 됨),
+GitHub Actions 실제 실행 결과, production DB 적용.
 
 ### 프론트엔드 착수 (session_01Xes21U5Fgf21B7PunjSyeJ) — 실행 중 (Sonnet 5)
 **브랜치**: `claude/front-dev-start-nrr0jh`  
@@ -119,14 +160,14 @@ claude.ai Settings → Connectors → Gmail 연결 필요.
   - 차단(백엔드·정책·미설계 데이터모델, 이번 세션에서 시도 안 함): WP-SHT-009(취향 이미지 Pick, 취향수집 시스템 자체 없음) · ~~WP-SHT-012(캘린더 등록)~~ 아래 박람회 작업에서 해소 · WP-ST-006(혜택 상태, `priority.ts` 주석에 "없는 혜택을 말할 수 없다"로 명시) · WP-ST-010(네트워크 오류, `NetInfo` 등 새 의존성 필요 — 이번 세션은 새 패키지 설치 없이 진행) · WP-ST-014(점검·강제업데이트, 백엔드 API 필요) · WP-ST-004(이미지 상태, 이미지 자체가 없는 텍스트 전용 설계라 해당 없음)
   - 검증: `apps/mobile`·`packages/domain`·`packages/ui` 전부 `tsc --noEmit` 통과, `apps/mobile`(46개)·`packages/domain`(797개, 신규 5개 포함) 테스트 전부 통과, 변경 파일 eslint 통과
 - ✅ 박람회·웨딩 정보(WP-EXPO-001~004) 풀스택 구현 — 순수 프론트엔드가 아니라 DB·API부터 새로 만든 유일한 화면군이다. 콘텐츠는 운영이 올리는 공개 정보(업체·플래너와 같은 자리)라 사용자별 소유자가 없다.
-  - DB: `packages/db/migrations/0053_wedding_expos_guide.sql` — `structured.wedding_expos`(박람회), `structured.wedding_guide_articles`(웨딩 정보, `stage`는 `LIFECYCLE_STAGES`와 값을 맞춤). **로컬 Postgres 16에 직접 적용해 검증함**(아래 "0052 마이그레이션 버그" 참조 — 그 버그를 우회한 임시 스플릿 마이그레이션으로 0001~0051+0053을 실제로 적용하고 스키마·인덱스·제약을 확인했다. 커밋에는 0053만 포함, 우회용 임시 파일은 커밋하지 않음)
+  - DB: `packages/db/migrations/0060_wedding_expos_guide.sql`(2026-09-02 main 병합 때 `0053_wedding_expos_guide.sql`→`0060`으로 재번호 — main이 0053~0059를 이미 다른 기능에 씀, 아래 "main 병합·재번호" 항목 참조) — `structured.wedding_expos`(박람회), `structured.wedding_guide_articles`(웨딩 정보, `stage`는 `LIFECYCLE_STAGES`와 값을 맞춤). 로컬 Postgres 16에 (당시 있던 0052 버그를 우회한 임시 스플릿 마이그레이션으로) 직접 적용해 스키마·인덱스·제약을 확인했었고, 병합 후 0001~0060 전체를 우회 없이 그대로 적용해 재확인함.
   - API 계약: `packages/api-contract/src/expos.ts`, `guide-articles.ts` — `planners.ts`와 같은 모양(값마다 source·lastVerifiedAt)
-  - API: `apps/api/src/routes/expos.ts`, `guide-articles.ts` — `planners.ts`의 커서 페이지네이션 패턴을 그대로 따름. 로그인 없이 접근 가능(Level 1). `server.ts`에 등록 완료. 커밋된 jest 테스트(`apps/api/src/test/expos.test.ts`, `guide-articles.test.ts`)는 다른 DB 연동 테스트와 같은 조건(`DATABASE_URL`)에서만 돌고, 지금은 0052 버그 때문에 `resetDatabase()` 자체가 실패해 실행 불가 — **로직은 별도 스크래치 하네스(커밋 안 함)로 위 마이그레이션 우회본 위에서 직접 실행해 200/404·필터·정렬·빈 목록을 전부 확인**했다. 0052가 고쳐지면 이 테스트들은 바로 돌아간다.
+  - API: `apps/api/src/routes/expos.ts`, `guide-articles.ts` — `planners.ts`의 커서 페이지네이션 패턴을 그대로 따름. 로그인 없이 접근 가능(Level 1). `server.ts`에 등록 완료. 커밋된 jest 테스트(`apps/api/src/test/expos.test.ts`, `guide-articles.test.ts`)는 다른 DB 연동 테스트와 같은 조건(`DATABASE_URL`)에서만 돈다 — 작성 당시엔 0052 버그로 `resetDatabase()`가 막혀 스크래치 하네스로만 확인했었고, 이제 0052가 고쳐져 커밋된 jest 그대로 돈다.
   - 도메인: `packages/domain/src/calendar-links.ts`(Google·Outlook 캘린더 등록 링크 — Apple은 `.ics` 생성이 필요해 이번 범위 밖, 테스트 포함)
   - 모바일: `search/expos/index.tsx`(목록, 지역 필터·기본 지난 일정 제외)·`search/expos/[expoId].tsx`(상세, WP-SHT-012 캘린더 등록 시트·기기 로컬 알림 포함)·`search/guide/index.tsx`(목록, 준비단계·카테고리 필터)·`search/guide/[articleId].tsx`(상세, 카테고리 있으면 검색으로 연결). `search/index.tsx`에 진입 버튼("박람회"·"웨딩 정보") 추가
   - 로컬 알림: `features/expos/expo-reminder.ts` — 박람회 시작 하루 전 기기 로컬 알림(서버 푸시 아님, `expo-notifications`의 `scheduleNotificationAsync`+`SchedulableTriggerInputTypes.DATE` 사용 — v57 API라 `AGENTS.md` 경고대로 타입 정의를 직접 확인하고 씀)
   - "관련 체크리스트"(WP-EXPO-004)는 구현 안 함 — 준비단계 태그와 웨딩 체크리스트 항목을 잇는 매핑이 없어 억지로 이으면 근거 없는 연결이 됨. "Pick 연결"은 관련 카테고리로 검색 결과를 좁혀 보내는 것으로 대신함(특정 업체를 짚어 보내면 과장)
-- 🐛 **발견(고치지 않음, 손대면 안 되는 파일): `packages/db/migrations/0052_mission_draw.sql`이 실제로 실행하면 실패한다.** `ALTER TYPE reward_kind ADD VALUE 'monthly_draw'` 뒤, 같은 파일(=같은 트랜잭션, `migrate()`가 파일 하나당 트랜잭션 하나로 돈다) 안에서 그 값을 CHECK 제약(`grant_source_matches_kind`)에 바로 쓴다 — PostgreSQL은 같은 트랜잭션에서 방금 추가한 enum 값을 못 쓰게 막는다(PG16에서도 마찬가지). 로컬 Postgres 16에 `DATABASE_URL`을 주고 `packages/db/src/migrate.ts`를 처음부터 돌리면 `마이그레이션 0052_mission_draw 실패: unsafe use of new value "monthly_draw" of enum type reward_kind`로 멈춘다. `apps/api`의 `resetDatabase()`(→`resetSchema`→`migrate()`)도 매번 전체 마이그레이션을 처음부터 다시 돌리므로 **`DATABASE_URL`이 있는 채로 돌리는 `apps/api` DB 연동 테스트 전체가 지금 이 상태로는 막힌다** — production Neon DB에는 아직 미적용(우선순위 3번)이라 아직 아무도 못 봤을 뿐이다. `db-migrate.yml`을 그대로 실행하면 여기서 막힐 것이다. 고치는 법: enum 값 추가를 별도 트랜잭션(별도 마이그레이션 파일)으로 분리 — 0052가 아직 어디에도 적용 안 됐으니(운영 포함) 그 파일을 직접 쪼개도 안전하다. `mission_completions`·`monthly_draws`·`draw_entries`·`draw_results`·`npay_deliveries`를 만드는 부분(0052의 대부분)과 `reward_kind`에 값을 더하는 한 줄을 나누면 된다 — 단, 이 세션은 프론트엔드 세션이라 이 파일을 고치지 않았다(다른 세션이 소유한 진행 중 기능). 백엔드 세션이 처리해야 한다.
+- 🐛 **발견 당시엔 고치지 않음, 이후 해소됨: `packages/db/migrations/0052_mission_draw.sql`이 원래 실제로 실행하면 실패했다.** `ALTER TYPE reward_kind ADD VALUE 'monthly_draw'` 뒤, 같은 파일(=같은 트랜잭션) 안에서 그 값을 CHECK 제약(`grant_source_matches_kind`)에 바로 써서 PostgreSQL이 "unsafe use of new value of enum type"으로 막았다(빈 DB에서 직접 재현). 발견 당시엔 다른 세션이 소유한 진행 중 기능이라 손대지 않고 문서만 남겼는데, 백엔드 세션(`daily-progress-briefing-3k7lez` 브랜치, PR #10)이 독립적으로 같은 버그를 발견해 0052를 트리밍하고 `0053_reward_kind_monthly_draw.sql`(enum 값 추가)·`0054_grant_source_matches_kind.sql`(그 값을 쓰는 제약)로 분리해 고쳤고, main에 병합됐다. **2026-09-02 이 세션이 main을 병합**하며 로컬 Postgres 16에 0001~0060(재번호 후) 전체를 실제 파일 그대로 적용해 재확인함 — 더 이상 버그 아님.
 - ✅ 관리자 화면(WP-ADM-*) 착수 — 사용자에게 범위·플랫폼 먼저 확인받음(25개 전부·위험한 동작까지 한 번에 자동 구현하는 대신 **읽기 전용 화면부터**, **`apps/web`에 관리자 웹**으로). 착수 전 확인한 것: 지금 "관리자"는 화면이 아예 없고, `is_operator` DB 컬럼과 CLI 스크립트(`apps/api/src/decisions-admin.ts` 등, `DATABASE_URL`을 쥔 사람이 직접 돌림)뿐이었다. `apps/web`은 정적 HTML 한 장(자바스크립트·서버 없음)이라 그 모양 그대로는 인증된 동적 대시보드를 못 담아 — 같은 워크스페이스 안에 `apps/api`와 같은 자리(Fastify)의 **별도 서버**를 새로 뒀다(`apps/web/src/admin/`, 랜딩의 `build.ts`/`page.ts`는 안 건드림).
   - 인증: HTTP Basic Auth 하나(`admin`/`ADMIN_PASSWORD`, 상수시간 비교) — 소셜 로그인 재구현 대신. 지금 운영의 CLI 직접 접근보다 이미 더 좁힌 것이라 판단.
   - 구현한 5개: WP-ADM-001(관리자 홈)·002(일일 브리핑)·040(자동화 상태)·052(감사 로그, 사건 id 검색 포함)·020(사용자 계정). 전부 이미 있는 표·뷰(`structured.decisions`·`open_decisions`·`active_users`)를 그대로 읽음 — 새 마이그레이션 없음. 브리핑·자동화 상태 쿼리는 `decisions-admin.ts`의 `--briefing`·`--open`과 동일.
@@ -146,17 +187,24 @@ claude.ai Settings → Connectors → Gmail 연결 필요.
   - 검증: `server.test.ts` 총 20개(기존 11 + 신규 9) — 로컬 Postgres로 전부 통과. `copy-rules.test.ts`가 새 페이지의 "표본" 사용을 잡아내 "데이터"로 고침(내부 관리자 도구라도 카피 규칙은 앱 전체에 적용됨을 확인).
   - nav·홈 바로가기 목록에 9개 추가. `apps/web/README.md` 갱신.
 - ✅ 남은 미구현 화면 카테고리(B2B 문의·커플 연결·우리웨딩·홈·기타) 재조사(Explore 서브에이전트) 후 실제로 가능한 것부터 구현:
-  - **WP-OUR-013 예식 완료**: 이미 다 있었다 — `packages/domain/src/wedding-phase.ts`의 `COMPLETED_ACTIONS`(후기·미제보 결제내역·총지출 정리 문구)와 홈 화면의 `!showsPreparationFirst(stage.stage)` 분기가 예식 뒤 홈에 이미 뜨고 있었는데, 그 세 줄이 눌러도 아무 데도 안 가는 텍스트였다. `app/(tabs)/index.tsx`에 `goToCompletedAction()` 추가해 각각 `/pick`(후기 대상 고르기)·`/capture/payment/consent`(결제내역 등록)·지출내역 화면으로 연결. 새 화면도 새 API도 필요 없었다.
+  - **WP-OUR-013 예식 완료**: 이미 다 있었다 — `packages/domain/src/wedding-phase.ts`의 `COMPLETED_ACTIONS`(후기·미제보 결제내역·총지출 정리 문구)와 홈 화면의 `!showsPreparationFirst(stage.stage)` 분기가 예식 뒤 홈에 이미 뜨고 있었는데, 그 세 줄이 눌러도 아무 데도 안 가는 텍스트였다. `app/(tabs)/index.tsx`에 `goToCompletedAction()` 추가해 각각 `/pick`(후기 대상 고르기)·`/capture/payment/consent`(결제내역 등록)·지출내역 화면으로 연결. 새 화면도 새 API도 필요 없었다. **⚠️ 2026-09-02 main 병합 때 이 배선이 사라짐** — 다른 세션이 홈 화면 전체를 `디자인 확정본 웨딩픽 홈 C-1 상태`로 새로 설계(`features/home/state.ts`의 `homeView()`, `GuestHome`/`MemberHome` 분리)하면서 갈아엎었는데, 그 확정본의 5개 상태(`guest`/`taste`/`empty`/`picking`/`decided`)에는 예식 완료(post-wedding) 상태가 아예 없다. 병합 충돌에서 이 세션의 옛 코드 대신 새 확정본을 그대로 채택했다(도메인 레이어의 `COMPLETED_ACTIONS`는 그대로 남아 있고 테스트도 통과 — 화면에서만 안 씀). **판단 근거를 지어내지 않기 위해 다시 배선하지 않았다** — 이 확정본이 post-wedding을 의도적으로 뺀 건지 다음 단계로 미룬 건지 이 세션은 알 수 없다. 다음 세션이 홈 설계 담당자에게 확인 필요.
   - **WP-OUR-012 준비 타임라인**: 핸드오프 원문 "Pick·최종결정·일정·지출·완료 기록을 시간순으로"는 `tasks.tsx`에 이미 있던 7단계 진행률 점(라이프사이클 stage 표시)과 다른 것이었다 — 그건 "지금 어느 단계인지"고, 이건 "그동안 뭘 했는지"의 시간순 기록. 새 DB 없이 기존 네 표(`vendor_candidates`·`category_decisions`·`expenses`·`wedding_tasks`)에서 시간과 함께 저장된 값만 모으는 새 집계 API를 만듦:
     - API: `apps/api/src/routes/wedding-timeline.ts` `GET /v1/weddings/:weddingId/timeline` — 네 표를 병렬 조회 후 시간순 병합. 기본 열넷(preset_key 있는 task)은 사용자 행동이 아니라 자동 시딩이라 제외. **"완료 기록"은 못 낸다** — `wedding_tasks`가 완료 시각을 저장하지 않아 지어낼 수 없어서 뺐다(코드 주석에 명시).
     - 계약: `packages/api-contract/src/wedding-timeline.ts` — kind별 discriminated union.
     - 모바일: `wedding/[id]/timeline.tsx` 신규 화면 + `tasks.tsx`의 라이프사이클 카드에 "지금까지 한 일 보기" 링크 추가.
-    - 검증: `apps/api/src/test/wedding-timeline.test.ts`(로그인 필요·빈 상태·시간순 병합·기본 열넷 제외·타인 접근 403) — 0052 버그로 `resetDatabase()`가 막혀 커밋된 jest로는 못 돌렸고, 이번에도 별도 스크래치 하네스(커밋 안 함)로 로컬 Postgres에 직접 붙여 전부 확인 후 지움.
+    - 검증: `apps/api/src/test/wedding-timeline.test.ts`(로그인 필요·빈 상태·시간순 병합·기본 열넷 제외·타인 접근 403) — 작성 당시엔 0052 버그로 `resetDatabase()`가 막혀 스크래치 하네스로만 확인했었고, 0052가 고쳐진 뒤 커밋된 jest로 재확인 통과.
   - **WP-HOME-004 TOP3 전체보기**: 미구현이 아니라 **해당 없음**으로 확인 — `index.tsx`에 "TOP3 성격의 탐색은 검색 탭에 있다(홈 C-1)"는 명시적 코드 주석이 있다. 홈에 TOP3 섹션 자체를 안 두기로 한 의도된 결정. 손대지 않음.
   - 손대지 않고 넘긴 것(정책·백엔드 필요): WP-BIZ-005(자료 제공)·006(혜택 등록)·007(광고·제휴) — DB·API·화면 전부 없음, 특히 006·007은 실제 돈이 오가는 B2B 계약 조건이라 스키마부터 임의로 설계하지 않음 / WP-CPL 공동편집충돌·변경내역 — `wedding_plan` 관련 표에 버전/이력 컬럼이 아예 없고, "충돌"이 뜻하는 바 자체가 정책 결정 필요 / WP-HOME-006 개인화 웨딩피드 — `wedding_expos`·`wedding_guide_articles`(오늘 앞서 만듦)로 콘텐츠는 채울 수 있지만 "개인화" 랭킹 로직은 제품 결정이 필요해 손대지 않음
   - 부수 발견: `packages/domain/src/terms.ts`의 `VERIFIED_DATA_HELP`(이전 세션에 추가)가 "결제하신 분들이..." 문구를 써서 `apps/api/src/test/pick-language.test.ts`(v3.13 §O-1, 사용자 앱에서 `결제` 금지)를 어기고 있었다 — 오늘 처음 전체 `apps/api` 테스트를 돌려보고서야 걸림. "낸 금액을..."로 고침. **교훈: 새 사용자 노출 문구를 추가할 때마다 `pick-language.test.ts`와 `copy-rules.test.ts`를 반드시 함께 돌려야 한다** — 하나(카피 금지어)만 확인하고 다른 하나(결제 금지어)를 놓쳤다.
   - 검증: `apps/mobile`·`packages/domain`·`packages/api-contract`·`apps/api` 전부 `tsc --noEmit` 통과. `apps/mobile`(46)·`packages/domain`(801) 테스트 통과. `apps/api`는 `DATABASE_URL` 없이 돌려 새 테스트가 정상적으로 skip되는 것과 기존 실패 2건(사전부터 있던 것, 무관)만 남는 것을 확인.
-**다음 세션 참고**: 관리자 화면 나머지(~19개 — 읽기 전용 14개 + 위험한 동작 5개), 박람회 후속(관리자 등록 UI 없음), WP-BIZ 006/007(B2B 계약·광고 스키마 설계 필요), WP-CPL(버전 관리 설계 필요), WP-HOME-006(랭킹 로직 제품 결정 필요), WP-OUR 일정 추가/지도 보기/취향 재선택(전부 이전 세션에서 차단 확인)가 남아 있다. **0052 마이그레이션 버그부터 고쳐야 `apps/api`의 DB 연동 테스트 전체(이번 세션 추가분 포함)와 production 마이그레이션이 풀린다** — 다음으로 손대는 세션(백엔드 쪽)이 최우선으로 봐야 한다.
+- ✅ **사용자 지시 "0052 마이그레이션 버그 고쳐줘"에 착수했다가, main에 이미 같은 수정이 병합돼 있음을 발견해 main 병합으로 방향 전환** — 사용자에게 진행 방식을 확인받고("main 병합 후 번호 재정렬") 진행:
+  - 처음엔 이 세션이 직접 0052를 트리밍하고 0054/0055로 분리하는 수정을 만들었으나, 커밋 전에 `origin/main`을 다시 확인해보니 백엔드 세션(PR #10)이 독립적으로 같은 버그를 찾아 이미 고쳐 병합해둔 상태였다(0052 트리밍 + `0053_reward_kind_monthly_draw.sql`·`0054_grant_source_matches_kind.sql`) — 직접 만든 수정은 버리고 main 것을 채택.
+  - 이 브랜치(`claude/front-dev-start-nrr0jh`)가 main보다 165 커밋 뒤처져 있었고, main이 0053~0059를 이미 다른 기능(reward_kind 수정·회원탈퇴·AI 라우터·이의제기·탈퇴 관리자·소셜 프로필)에 쓰고 있어 이 세션이 만든 `0053_wedding_expos_guide.sql`과 번호가 충돌 — `origin/main`을 이 브랜치에 merge하고, 충돌 3건(`packages/domain/src/terms.ts`, `app/(tabs)/index.tsx`, `search/[vendorId]/index.tsx` — 전부 import 목록·카피 정책(v3.3 `데이터`→`정보`) 수준, 로직 충돌 아님) 해소, `0053_wedding_expos_guide.sql`→`0060_wedding_expos_guide.sql`로 재번호.
+  - `app/(tabs)/index.tsx` 충돌에서 이 세션이 만든 WP-OUR-013 배선(`goToCompletedAction`)은 다른 세션의 홈 화면 재설계(확정본)에 밀려 버렸다 — 위 WP-OUR-013 항목의 ⚠️ 참조.
+  - 검증: 로컬 Postgres 16에 실제 마이그레이션 디렉터리(우회 없이)를 0001~0060 전체 적용 — 전부 성공. `packages/db` 스키마 테스트 79/79 통과(멱등성 포함). `apps/api` 전체 jest(`--runInBand`) 486/496 통과 — 실패 10건은 전부 이 수정과 무관한 기존 버그(아래 부수 발견).
+  - 부수 발견(0052/병합과 무관, 고치지 않음): `resetDatabase()`가 이번에 처음 끝까지 돌면서 드러난 기존 실패 — `vendors.test.ts`(3건)·`inquiries.test.ts`(1건)·`price-reports.test.ts`(1건)는 테스트가 옛 "합니다체" 문구를 기대하는데 실제 코드는 "해요체"로 이미 바뀜(톤 통일 때 테스트 갱신 누락). `vendor-matching.test.ts`(1건)는 `sourceNote`에 하드코딩된 확인일 `'2026-08-28'`을 기대하는데 `packages/domain/src/data-sources.ts`의 `DATA_SOURCES.localdata.lastVerifiedAt`이 `'2026-09-01'`로 이미 갱신됨(날짜 리터럴 테스트, 상수가 바뀔 때마다 깨짐). `typography.test.ts`(2건)·`vendor-detail-order.test.ts`(2건)는 DB와 무관한 정적 스캔 테스트 — `apps/mobile/src/app/(tabs)/capture/payment/consent.tsx:189`에 토큰 없이 하드코딩된 `fontSize`/`lineHeight`, 업체 상세 렌더 순서 정책에 `report_error` 위치 누락. 전부 이번 병합 이전부터 있던, 무관한 버그.
+  - 커밋: `packages/db/migrations/0060_wedding_expos_guide.sql`(재번호) + 이 병합 자체(main→이 브랜치).
+**다음 세션 참고**: 관리자 화면 나머지(~19개 — 읽기 전용 14개 + 위험한 동작 5개), 박람회 후속(관리자 등록 UI 없음), WP-BIZ 006/007(B2B 계약·광고 스키마 설계 필요), WP-CPL(버전 관리 설계 필요), WP-HOME-006(랭킹 로직 제품 결정 필요), WP-OUR 일정 추가/지도 보기/취향 재선택(전부 이전 세션에서 차단 확인)가 남아 있다. **0052 마이그레이션 버그는 고쳐져 main에 병합됐고 이 브랜치에도 반영됐다** — `apps/api` DB 연동 테스트와 production 마이그레이션 모두 정상 진행 가능. 대신 (1) WP-OUR-013 예식 완료 CTA가 홈 재설계로 다시 안 뜬다는 점(홈 설계 담당 세션 확인 필요), (2) 위에 기록한 기존 테스트 실패 10건이 다음 세션 정리 대상으로 남았다.
 
 ### 프론트엔드 (session_01HTGSU2B4vFjePXFS2ajKBY) — 아카이브
 **완료**: 모바일 앱 핵심 화면 구현, 42개 라우터 파일 생성
@@ -181,7 +229,7 @@ claude.ai Settings → Connectors → Gmail 연결 필요.
 | 영역 | 미구현 수 | 비고 |
 |---|---|---|
 | 관리자 화면 (WP-ADM-*) | 25개 | 전부 미구현 |
-| 박람회·웨딩 정보 (WP-EXPO-*) | 5개 | 2026-09-02 완료(4/5 — WP-EXPO-005 외부 캘린더 등록은 WP-EXPO-002 상세 화면에 통합됨). Neon production DB에는 0053 마이그레이션 미적용, `db-migrate.yml` 필요 |
+| 박람회·웨딩 정보 (WP-EXPO-*) | 5개 | 2026-09-02 완료(4/5 — WP-EXPO-005 외부 캘린더 등록은 WP-EXPO-002 상세 화면에 통합됨). Neon production DB에는 `0060_wedding_expos_guide.sql`(구 0053) 마이그레이션 미적용, `db-migrate.yml` 필요 |
 | 공통 Bottom Sheet (WP-SHT-*) | 16개 | 인라인 처리 여부 확인 필요 |
 | 공통 상태 (WP-ST-*) | 14개 | 로딩/에러/빈 상태 확인 필요 |
 | B2B 문의 (WP-BIZ-*) | 5개 | 소속확인·자료제공·혜택등록·광고·웹Footer |
@@ -197,7 +245,7 @@ claude.ai Settings → Connectors → Gmail 연결 필요.
 
 ## DB 스키마 현황
 
-### 마이그레이션 이력 (0001 ~ 0052, 전체 완료)
+### 마이그레이션 이력 (0001 ~ 0060, 전체 완료)
 
 | 범위 | 내용 |
 |---|---|
@@ -207,11 +255,15 @@ claude.ai Settings → Connectors → Gmail 연결 필요.
 | 0031 ~ 0038 | Pick·비교·결제·광고 |
 | 0039 ~ 0046 | 보상·제보·광고·결혼 지역 |
 | 0047 ~ 0051 | 데이터 수집 파이프라인 (vendor_data_quality, change_log, import_run_log, vendor_images, corrections) |
-| **0052** | **미션 완료 추적 + 월간 웨딩지원금 추첨** (미션 4종 + monthly_draws + draw_entries + draw_results + reward_grants 확장 + npay_deliveries) |
+| **0052** | **미션 완료 추적 + 월간 웨딩지원금 추첨** (미션 4종 + monthly_draws + draw_entries + draw_results + reward_grants 확장 + npay_deliveries). 원래 트랜잭션 버그가 있었으나 0053/0054로 분리해 고침(위 세션 로그 참조) |
+| 0053 | `reward_kind` enum에 `monthly_draw` 값 추가 (0052에서 분리) |
+| 0054 | `reward_grants.grant_source_matches_kind` CHECK 제약 재생성 (0052/0053에서 분리) |
+| 0055 ~ 0059 | 회원탈퇴, AI 라우터, 이의제기 만료, 탈퇴 관리자, 소셜 프로필 (백엔드 세션들) |
+| **0060** | **박람회·웨딩 정보** (wedding_expos, wedding_guide_articles) — 원래 0053이었으나 main 병합 때 재번호 |
 
 ### ⚠️ 프로덕션 미적용
-`0052_mission_draw.sql`은 코드 리포에 머지됐으나 Neon production DB에는 아직 미적용.  
-`db-migrate.yml` 워크플로 실행 필요.
+`0052`~`0060`은 코드 리포에 머지됐으나 Neon production DB에는 아직 미적용.  
+`db-migrate.yml` 워크플로 실행 필요 — 트랜잭션 버그가 고쳐졌으므로 그대로 실행하면 끝까지 성공한다.
 
 ---
 
@@ -233,11 +285,11 @@ WeddingPickl/
 │   └── api/                 # Hono API 서버 (Fly.io 배포)
 ├── packages/
 │   ├── db/
-│   │   └── migrations/      # 0001 ~ 0052 SQL 파일
+│   │   └── migrations/      # 0001 ~ 0060 SQL 파일
 │   ├── domain/              # 도메인 상수·정책 (terms.url, privacy.url 여기)
 │   └── ...
 ├── docs/
-│   ├── 통합정책 v3.13/      # 현재 확정 기준 정책
+│   ├── 통합정책 v3.14       # 현재 확정 기준 정책
 │   ├── design-handoff/      # 디자인 핸드오프 (IA 176화면)
 │   ├── AI_HANDOFF.md        # 이 파일
 │   └── 05-product-spec.md   # Phase 1 제품 스펙 (A-01~A-18)
@@ -248,7 +300,7 @@ WeddingPickl/
 
 ## 정책 문서 참조
 
-기준: `docs/통합정책 v3.13/`  
+기준: `docs/통합정책 v3.14`
 코드와 정책이 충돌하면 **정책이 맞다.** 코드를 고친다.
 
 주요 섹션:
@@ -260,27 +312,28 @@ WeddingPickl/
 
 ## 다음 작업 우선순위
 
-1. **[백엔드]** `0052_mission_draw.sql` 트랜잭션 버그 수정 — 세션 로그 "🐛 발견" 참조. `db-migrate.yml`을 그대로 실행하면 여기서 멈춘다. 이 버그를 고치기 전까지는 아래 3번도, `apps/api`의 DB 연동 테스트 전체도 진행할 수 없다 — 최우선.
+1. ~~**[백엔드]** `0052_mission_draw.sql` 트랜잭션 버그 수정~~ — 2026-09-02 완료(main의 PR #10에서 고쳐 병합, 이 브랜치도 main 병합으로 반영·재검증 — 세션 로그 참조). `db-migrate.yml`을 그대로 실행하면 끝까지 성공한다.
 2. **[사용자]** expo.dev에 ASC API Key 62U8N2ZWJR 등록 → iOS 빌드 재시작
 3. **[사용자]** Fly.io: `OPERATOR_SESSION_TTL_DAYS=365` 추가
-4. **[사용자]** Neon DB: 1번이 고쳐진 뒤 `db-migrate.yml` 실행 → 0052·0053(박람회·웨딩 정보) 적용
+4. **[사용자]** Neon DB: `db-migrate.yml` 실행 → 0052~0060 전체 적용(1번이 고쳐졌으므로 막힘 없이 끝까지 감)
 5. **[사용자]** terms.url · privacy.url 확정 → 도메인 상수 업데이트
 6. **[AI]** 프론트엔드 미구현 화면 구현 — 아래 4개 모두 순수 프론트엔드 작업이 아님, 착수 전 확인:
    - 회원탈퇴(WP-MY-008): 이미 구현됨(`my/withdraw.tsx`). `withdrawal.ts`의 정책 게이트가 의도한 동작 — 추가 작업 없음, 손대지 말 것(아래 do_not_change 참조)
-   - 일정 추가·목록·상세(WP-OUR-004/005/006): API·DB 전무 — `apps/api/src/routes/wedding-plan.ts`에 schedule 엔드포인트 없음. `tasks.tsx`(체크리스트)와는 별개 개념. DB migration(다음 번호 0054 — 0053은 박람회·웨딩 정보가 씀)부터 필요한 풀스택 작업 — 프론트 단독 세션에서 임의로 스키마 추가하지 말 것, 동시 진행 중인 백엔드 세션과 번호 충돌 위험
+   - 일정 추가·목록·상세(WP-OUR-004/005/006): API·DB 전무 — `apps/api/src/routes/wedding-plan.ts`에 schedule 엔드포인트 없음. `tasks.tsx`(체크리스트)와는 별개 개념. DB migration(다음 번호 0061)부터 필요한 풀스택 작업 — 프론트 단독 세션에서 임의로 스키마 추가하지 말 것, 다른 세션과 번호 충돌 위험(작업 직전 `origin/main`을 다시 확인해 번호를 정할 것)
    - 지도 보기(WP-SRCH-007): `VendorSummary`(`packages/api-contract/src/vendors.ts`)에 위경도 필드 없음 — 백엔드에 geo 데이터 추가부터 필요
    - 취향 재선택(WP-MY-004): `packages/domain/src/priority.ts`의 `couple_taste` 주석이 "아직 이 종류는 만들어지지 않는다"고 명시 — 취향 수집(이미지 Pick 기반, v3.10 §8) 자체가 설계 전이라 재선택 화면을 만들 대상이 없음
 7. ~~**[AI]** 공통 Bottom Sheet 16종 인라인 처리 여부 확인~~ — 2026-09-02 완료(WP-SHT-*·WP-ST-* 전수 조사 및 순수 프론트엔드 가능분 구현, 세션 로그 참조). 남은 것: WP-SHT-009, WP-ST-006/010/014 — 각각 취향수집 시스템·백엔드 API가 먼저 필요 (WP-SHT-012 캘린더 등록은 완료)
-8. ~~**[AI]** 박람회·웨딩 정보(WP-EXPO-*, 5개) 화면 구현~~ — 2026-09-02 완료 (DB migration 0053 포함, production 미적용 상태로 대기 — 4번 참조)
+8. ~~**[AI]** 박람회·웨딩 정보(WP-EXPO-*, 5개) 화면 구현~~ — 2026-09-02 완료 (DB migration은 `0060_wedding_expos_guide.sql` — main 병합 때 0053→0060 재번호, production 미적용 상태로 대기 — 4번 참조)
 9. **[AI]** 관리자 화면(WP-ADM-*) — 읽기 전용 14/25 완료(2026-09-02, `apps/web/src/admin/`). 남은 5개(WP-ADM-011/013/016/030/032)는 **백엔드 데이터 자체가 없어 스킵** — 각각 새 표(교차검증 신뢰도, 이상치·조작 탐지, 인바운드 이메일 파싱, 마케팅 콘텐츠 자동화, 매출 퍼널)를 설계하는 것부터 시작해야 하는 별도 백엔드 작업. Kill Switch·Policy Engine·롤백·광고 전환·집행 관리(041/051/042/034/033) 5개는 계정 하나짜리 Basic Auth로 지킬 계층이 아니라 판단해 계속 제외 — 사람별 계정·승인 흐름이 먼저 필요, 앱스토어 출시 후 단계로 유지
 10. **[사용자]** `fly apps create weddingpick-admin` 실행 + `fly secrets set --app weddingpick-admin DATABASE_URL=... ADMIN_PASSWORD=...` — 관리자 웹이 아직 배포되지 않았다. `fly.admin.toml` 참조
+11. **[AI]** WP-OUR-013 예식 완료 CTA — 새 홈 화면 확정본(`features/home/state.ts`)에 post-wedding 상태가 없어 2026-09-02 main 병합 때 배선이 빠짐. 도메인 로직(`COMPLETED_ACTIONS`)은 살아있음 — 홈 설계 담당 세션과 의도 확인 후 재배선할지 결정
 
 ---
 
 ## 변경 금지 / 주의
 
 - `--no-verify` 사용 금지
-- 마이그레이션 파일 번호 순서 역행 금지 (0052 다음은 0053)
+- 마이그레이션 파일 번호 순서 역행 금지 (0060 다음은 0061 — 새 마이그레이션 작업 전 `origin/main`에 더 앞선 번호가 없는지 확인)
 - `main` 브랜치 직접 푸시 금지 — 항상 PR 경유
 - `assertReleasable('production')` 우회 금지 — terms.url/privacy.url 설정이 올바른 해결책
 - expo.dev 크리덴셜은 Claude가 접근 불가 — 사용자 직접 처리
@@ -291,8 +344,8 @@ WeddingPickl/
 
 | 항목 | 롤백 방법 |
 |---|---|
-| DB 마이그레이션 0052 | `0052_mission_draw.sql` DROP 구문 없음 — 수동 롤백 필요. 실행 자체가 실패하는 버그가 있음(우선순위 1번 참조) — 고치기 전에는 애초에 적용되지 않는다 |
-| DB 마이그레이션 0053 | `0053_wedding_expos_guide.sql` DROP 구문 없음 — `structured.wedding_expos`·`structured.wedding_guide_articles`·`wedding_guide_stage` 타입, 수동 롤백 필요. 다른 마이그레이션과 의존 관계 없음(0001의 `vendor_category`·`source_type`만 참조) |
+| DB 마이그레이션 0052~0054 | DROP 구문 없음 — 수동 롤백 필요. 0052(미션·추첨 스키마)는 트랜잭션 버그가 고쳐져(0053이 enum 값 추가, 0054가 그 값을 쓰는 제약 재생성) 이제 정상 적용된다 |
+| DB 마이그레이션 0060 | `0060_wedding_expos_guide.sql`(구 0053, main 병합 때 재번호) DROP 구문 없음 — `structured.wedding_expos`·`structured.wedding_guide_articles`·`wedding_guide_stage` 타입, 수동 롤백 필요. 다른 마이그레이션과 의존 관계 없음(0001의 `vendor_category`·`source_type`만 참조) |
 | release.yml | git revert로 이전 커밋 복원 |
 | Fly.io 환경변수 | `flyctl secrets unset OPERATOR_SESSION_TTL_DAYS` |
 
@@ -380,7 +433,7 @@ WeddingPickl/
 - do_not_change:
   - **회원탈퇴 자동 삭제 백엔드를 만들지 말 것.** `packages/domain/src/withdrawal.ts`의 `WITHDRAWAL_NOTICE`가 개인정보처리방침 확정 전까지 `null`인 명시적 게이트다. 스키마상 `structured.users` 하드 삭제는 FK CASCADE로 확인된 정보(quotes)까지 지운다 — 위험. `payment_proofs`/`price_reports`를 "통계 제외"할지 "익명화 유지"할지도 정책 §46이 명확히 안 정했다. 이 정책들이 정해지기 전엔 손대지 말 것.
   - NPay·월간 웨딩지원금 기능을 만들지 말 것(위 미완료 항목 참조, 개인정보 처리방침과 함께 정리해야 함).
-  - 소셜 로그인 관련 파일(`identity-provider.ts`, `config.ts`, `client.ts` 등)은 이번 세션에서 커밋됐지만, **네이버는 아직 실제 제공자 목록에 노출 안 함** — 서버 콜백·토큰 교환 API가 따로 필요하다(`docs/social-login-handoff.md` 참조). 임의로 노출시키지 말 것.
+  - 네이버 authorization code 교환과 프로필 조회 경로가 구현됐다. 서버와 앱 환경값 및 네이버 Developers callback URL이 모두 설정된 경우에만 노출한다(`docs/social-login-handoff.md` 참조).
   - `docs/design-handoff/seed/`는 원본 그대로 유지 — 화면 구현할 때 이 폴더 안의 `.dc.html` 파일을 직접 고치지 않는다(참고용 원본).
 
 ## 롤백

@@ -9,12 +9,13 @@ import {
 } from '@weddingpick/api-contract';
 import {
   MAX_COMPARED_VENDORS,
+  rangeLabel,
+  STILL_COLLECTING,
+  type VendorCategory,
   TERMS,
   TOP3_REASON_LABEL,
   VENDOR_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
-  rangeLabel,
-  type VendorCategory,
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -383,7 +384,7 @@ export default function SearchScreen() {
             정렬과 개수. 핸드오프 7번이 이 둘을 한 줄에 뒀다.
 
             **`인기 순`은 없다.** 인기를 재는 것이 우리에게 없고, 없는 것에 이름만
-            붙이면 그건 정렬이 아니라 꾸밈이다. 대신 `데이터 많은 순`을 기본으로
+            붙이면 그건 정렬이 아니라 꾸밈이다. 대신 `확인된 정보 많은 순`을 기본으로
             둔다 — 결제인증이 많이 모인 업체가 먼저 나오는 것은 잴 수 있는 사실이다.
           */}
           {filters.mode === 'vendor' ? (
@@ -477,6 +478,11 @@ export default function SearchScreen() {
                                 ? item.paidPrice.caption
                                 : `${rangeLabel(item.paidPrice.low, item.paidPrice.high)} · ${item.paidPrice.caption}`}
                             </ThemedText>
+                            {item.confirmedCount > 0 ? (
+                              <ThemedText type="t7" themeColor="textAssistive">
+                                확인된 계약 {item.confirmedCount}건
+                              </ThemedText>
+                            ) : null}
                           </ThemedView>
                         </Pressable>
                       ))}
@@ -550,7 +556,7 @@ export default function SearchScreen() {
                          */}
                         {item.paidPrice.stage === 'collecting' ? (
                           <ThemedText type="t6" themeColor="textAssistive">
-                            데이터를 모으는 중이에요
+                            {STILL_COLLECTING}
                           </ThemedText>
                         ) : (
                           <ThemedText type="t5" numeric>

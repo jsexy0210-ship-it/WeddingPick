@@ -5,7 +5,7 @@ import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { confirmFields, getComparison, getQuote } from '@/api/client';
-import { ActionButton, ErrorView, LoadingView, MaxContentWidth, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
+import { ActionButton, ErrorView, LoadingView, MaxContentWidth, Spacing, ThemedView } from '@weddingpick/ui';
 import { AnalysisNotice, QuoteResultView } from '@/features/quotes/quote-result-view';
 
 /** A-08 분석 결과 + A-07 확인 단계 + A-09 가격 비교. */

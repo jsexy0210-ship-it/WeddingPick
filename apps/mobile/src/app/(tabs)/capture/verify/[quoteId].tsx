@@ -40,6 +40,7 @@ export default function VerifyRequestScreen() {
   const [evidence, setEvidence] = useState<Record<string, VerificationEvidenceKind>>({});
   const [busy, setBusy] = useState(false);
   const [receivedAt, setReceivedAt] = useState<string | null>(null);
+  const [receivedRequestId, setReceivedRequestId] = useState<string | null>(null);
 
   useEffect(() => {
     getQuote(quoteId)
@@ -62,6 +63,7 @@ export default function VerifyRequestScreen() {
     try {
       const received = await createVerificationRequest(quote.id, { targetLevel, evidence: items });
       setReceivedAt(received.receivedAt);
+      setReceivedRequestId(received.requestId);
     } catch (caught) {
       setError((caught as Error).message);
     } finally {
@@ -85,6 +87,13 @@ export default function VerifyRequestScreen() {
           올려주신 자료를 사람이 직접 확인해요. 확인이 끝나면 알려드려요. 확인 전까지
           이 문서의 단계는 그대로예요.
         </ThemedText>
+        {receivedRequestId ? (
+          <ActionButton
+            label="진행 상황 보기"
+            hint="접수·심사 중·결과를 확인해요"
+            onPress={() => router.push(`/capture/verify-status/${receivedRequestId}`)}
+          />
+        ) : null}
         <ActionButton variant="primary" label="결과로 돌아가기" onPress={() => router.back()} />
       </Frame>
     );

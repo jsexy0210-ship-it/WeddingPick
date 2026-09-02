@@ -50,11 +50,33 @@ const configSchema = z.object({
   proofReaderCheapModel: z.string().default('claude-haiku-4-5'),
   proofReaderStrongModel: z.string().default('claude-opus-5'),
 
+  /**
+   * 한 사람이 하루에 부를 수 있는 횟수. 스펙 7.3의 사용자별 일일 호출 제한.
+   *
+   * **기본값이 없다.** 문의 응답 기한·월 예산과 같은 규칙이다 — 정해지기 전에는
+   * 숫자를 지어내지 않는다. 지어낸 한도를 걸어두면 실제로 얼마나 부르는지 재보기도
+   * 전에 막히고, 막힌 사람은 왜 막혔는지 모른다.
+   *
+   * 0은 다른 뜻이다. 한 번도 부르지 못하게 하겠다는 결정이고, 그건 누군가 그렇게
+   * 정했을 때만 나온다.
+   */
+  aiDailyCallLimit: z.coerce.number().int().min(0).optional(),
+
+  /**
+   * 문서를 읽는 모델.
+   *
+   * 결제내역 쪽과 같은 규칙으로 설정에 둔다(스펙 7.3 — 모델을 이름으로 박아두지
+   * 않는다). 여기 있어야 `ai_usage`에 적는 이름과 실제로 부른 이름이 갈라지지 않는다.
+   */
+  analysisModel: z.string().default('claude-opus-5'),
+
   /** 제공자별 설정이 없으면 그 제공자 로그인만 막힌다. 서비스 전체가 멈추지는 않는다. */
   appleClientId: z.string().optional(),
   kakaoAppKey: z.string().optional(),
   googleClientId: z.string().optional(),
   naverClientId: z.string().optional(),
+  naverClientSecret: z.string().optional(),
+  naverRedirectUris: z.array(z.string().url()).default([]),
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -99,6 +121,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     retentionReminderHours: env.RETENTION_REMINDER_HOURS,
     proofReaderCheapModel: env.PROOF_READER_CHEAP_MODEL,
     proofReaderStrongModel: env.PROOF_READER_STRONG_MODEL,
+    aiDailyCallLimit: env.AI_DAILY_CALL_LIMIT,
+    analysisModel: env.ANALYSIS_MODEL,
     corsOrigins: (env.CORS_ORIGINS ?? '')
       .split(',')
       .map((origin) => origin.trim())
@@ -107,6 +131,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     kakaoAppKey: env.KAKAO_APP_KEY,
     googleClientId: env.GOOGLE_CLIENT_ID,
     naverClientId: env.NAVER_CLIENT_ID,
+    naverClientSecret: env.NAVER_CLIENT_SECRET,
+    naverRedirectUris: (env.NAVER_REDIRECT_URIS ?? '')
+      .split(',')
+      .map((uri) => uri.trim())
+      .filter(Boolean),
   });
 
   if (!parsed.success) {

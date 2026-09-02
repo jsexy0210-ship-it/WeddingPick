@@ -64,7 +64,7 @@ describeWithDb('가격 제보', () => {
 
     expect(response.statusCode).toBe(201);
     // 무엇을 낸 것인지 화면이 그대로 보여줄 문구가 함께 온다.
-    expect(response.json<{ caveat: string }>().caveat).toContain('문서로 확인하지 않았습니다');
+    expect(response.json<{ caveat: string }>().caveat).toContain('문서로 확인하지 않았어요');
   });
 
   it('제보는 시장 대표가격에 들어가지 않는다', async () => {

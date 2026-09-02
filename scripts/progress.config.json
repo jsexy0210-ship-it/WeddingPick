@@ -1,0 +1,77 @@
+{
+  "specPath": "docs/05-product-spec.md",
+  "readmePath": "README.md",
+  "note": "가중치를 바꾸면 전체 공정률이 바뀐다. 바꾼 이유를 커밋 메시지에 남긴다.",
+  "items": [
+    {
+      "key": "screens",
+      "label": "화면 구현",
+      "weight": 30,
+      "basis": "05-product-spec.md 2번 화면 목록 표에서 ✅ 표시된 화면 수 (앱 화면만 — 관리자 콘솔은 이 표에 없다)"
+    },
+    {
+      "key": "adminConsole",
+      "label": "관리자 콘솔",
+      "weight": 20,
+      "basis": "design-handoff/screens.md 관리자 표에서 ✅ 표시된 화면 수 (분모는 디자인 핸드오프의 WP-ADM 화면 수)"
+    },
+    {
+      "key": "openQuestions",
+      "label": "열린 질문 해소",
+      "weight": 20,
+      "basis": "05-product-spec.md 열린 질문 절의 체크박스 [x] 수"
+    },
+    {
+      "key": "specSections",
+      "label": "명세 항목 완결",
+      "weight": 30,
+      "basis": "'아직 없는 것' 블록에 남은 항목이 없는 ## 섹션 수"
+    },
+    {
+      "key": "codeGates",
+      "label": "코드 게이트",
+      "weight": 20,
+      "basis": "npm run typecheck / npm run lint / npm test 통과 수 (--checks 일 때만 측정)"
+    }
+  ],
+  "outOfScope": [
+    "Phase 4 이후 범위(박람회·외부 캘린더/지도·주차·방문 브리핑) — 05번 화면표에 행이 없어 세지 못한다.",
+    "앱 화면 중 05번 표에 없는 것 — 디자인 핸드오프는 앱 화면을 158개 그렸고 05번 표는 그중 핵심 흐름 18개만 추렸다. 두 표는 세는 대상이 다르다(design-handoff/screens.md).",
+    "관리자 콘솔의 가중치 20은 잠정값이다 — 정해지기 전까지는 이 숫자가 전체 공정률을 그만큼 움직인다."
+  ],
+  "inventory": [
+    {
+      "label": "모바일 라우트",
+      "pattern": "^apps/mobile/src/app/.*\\.tsx$",
+      "exclude": "_layout\\.tsx$"
+    },
+    {
+      "label": "API 라우트 모듈",
+      "pattern": "^apps/api/src/.*\\.ts$",
+      "exclude": "\\.test\\.ts$"
+    },
+    {
+      "label": "운영 CLI(관리자)",
+      "pattern": "^apps/api/src/[^/]*-admin\\.ts$"
+    },
+    {
+      "label": "관리자 웹 UI",
+      "pattern": "^apps/web/src/admin/.*\\.ts$"
+    },
+    {
+      "label": "DB 마이그레이션",
+      "pattern": "^packages/db/migrations/.+"
+    },
+    {
+      "label": "도메인 모듈",
+      "pattern": "^packages/domain/src/.*\\.ts$",
+      "exclude": "\\.test\\.ts$"
+    },
+    {
+      "label": "UI 컴포넌트",
+      "pattern": "^packages/ui/src/.*\\.tsx$",
+      "exclude": "\\.test\\.tsx$"
+    }
+  ],
+  "ledgerPath": "docs/design-handoff/screens.md"
+}

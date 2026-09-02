@@ -127,22 +127,21 @@ COMMENT ON TABLE structured.draw_results IS
   '추첨 결과. 응모자 전원에게 행이 생긴다. winner는 NPay 수령 절차로 연결된다.';
 
 -- ---------------------------------------------------------------------------
--- reward_grants에 monthly_draw 추가 (0039 확장)
+-- reward_grants에 monthly_draw 추가 (0039 확장) — 1/2
 -- ---------------------------------------------------------------------------
 --
--- reward_kind ENUM에 'monthly_draw' 추가.
--- reward_grants에 draw_entry_id 컬럼 추가.
--- 기존 source 제약을 세 source(referral·promotion·monthly_draw) 중 정확히 하나로 확장.
-
-ALTER TYPE reward_kind ADD VALUE 'monthly_draw';
+-- reward_grants에 draw_entry_id 컬럼 추가. `reward_kind` ENUM에 'monthly_draw'를
+-- 더하는 것과 그 값을 쓰는 CHECK 제약은 별도 마이그레이션(0053)으로 미룬다 —
+-- Postgres는 `ALTER TYPE ... ADD VALUE`로 더한 값을 **같은 트랜잭션 안에서** 바로
+-- 쓰지 못하게 막는다("unsafe use of new value"). 한 파일이 트랜잭션 하나이므로
+-- (`migrate.ts`), 여기서 더하고 여기서 쓰면 이 마이그레이션 자체가 항상 실패한다.
 
 ALTER TABLE structured.reward_grants
   ADD COLUMN draw_entry_id uuid UNIQUE
     REFERENCES structured.draw_entries (id) ON DELETE CASCADE;
 
 ALTER TABLE structured.reward_grants
-  DROP CONSTRAINT grant_has_exactly_one_source,
-  DROP CONSTRAINT grant_source_matches_kind;
+  DROP CONSTRAINT grant_has_exactly_one_source;
 
 ALTER TABLE structured.reward_grants
   ADD CONSTRAINT grant_has_exactly_one_source
@@ -150,12 +149,6 @@ ALTER TABLE structured.reward_grants
       (referral_id   IS NOT NULL)::int +
       (promotion_id  IS NOT NULL)::int +
       (draw_entry_id IS NOT NULL)::int = 1
-    ),
-  ADD CONSTRAINT grant_source_matches_kind
-    CHECK (
-      (kind = 'referral')     = (referral_id   IS NOT NULL) AND
-      (kind = 'promotion')    = (promotion_id  IS NOT NULL) AND
-      (kind = 'monthly_draw') = (draw_entry_id IS NOT NULL)
     );
 
 -- ---------------------------------------------------------------------------

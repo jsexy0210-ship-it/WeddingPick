@@ -1,3 +1,4 @@
+import type { Extraction } from '../analysis/schema';
 import { resetSchema } from '@weddingpick/db';
 import { REQUIRED_CONSENTS } from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
@@ -13,7 +14,7 @@ export const connectionString = process.env.DATABASE_URL;
 
 /** 제공자를 부르지 않고 신원을 정해준다. 실제 Apple·Kakao 검증은 여기서 확인하지 않는다. */
 export function fakeProvider(identity: VerifiedIdentity): IdentityProvider {
-  return { verify: async () => identity };
+  return { flow: 'id_token', verify: async () => identity };
 }
 
 export type TestApp = {
@@ -35,11 +36,13 @@ export async function createTestApp(): Promise<TestApp> {
     port: 0,
     sessionTtlDays: 30,
     storage: { driver: 'local' },
+    analysisModel: 'test-analysis',
     corsOrigins: [],
     retentionMode: 'manual',
     retentionReminderHours: 24,
     proofReaderCheapModel: 'claude-haiku-4-5',
     proofReaderStrongModel: 'claude-opus-5',
+    naverRedirectUris: [],
   };
 
   const context: AppContext = {
@@ -221,4 +224,45 @@ export async function signInUnlocked(test: TestApp, subject?: string) {
   await unlockPrices(test, session.userId);
 
   return session;
+}
+
+/**
+ * 분석 결과 한 벌. 관문·워커 테스트가 함께 쓴다.
+ *
+ * 스키마가 요구하는 칸이 많아 테스트마다 새로 지으면 빠뜨린 칸에서 터진다 —
+ * 그러면 실제로 보려던 것과 상관없는 곳에서 실패한다.
+ */
+export function extractionFixture(overrides: Partial<Extraction> = {}): Extraction {
+  return {
+    documentKind: 'contract',
+    documentKindConfidence: 0.95,
+    unreadable: false,
+    vendorName: { value: '테스트홀', confidence: 0.9 },
+    plannerName: { value: null, confidence: 0 },
+    productName: { value: '기본 패키지', confidence: 0.8 },
+    totalAmount: { value: 3_280_000, confidence: 0.55 },
+    discountAmount: { value: 200_000, confidence: 0.7 },
+    depositAmount: { value: 500_000, confidence: 0.8 },
+    balanceAmount: { value: 2_780_000, confidence: 0.8 },
+    contractDate: { value: '2026-05-01', confidence: 0.9 },
+    weddingDate: { value: '2027-03-20', confidence: 0.9 },
+    hallName: { value: null, confidence: 0 },
+    guaranteedGuests: { value: null, confidence: 0 },
+    mealPricePerPerson: { value: null, confidence: 0 },
+    subVendors: [
+      { role: 'studio', name: '세컨드플로어', amount: 1_150_000 },
+      { role: 'dress', name: '메종드로브', amount: 1_300_000 },
+      { role: 'makeup', name: '제니하우스 청담', amount: 980_000 },
+    ],
+    lineItems: [
+      { kind: 'included', label: '대관료', amount: 2_000_000, amountMin: null, amountMax: null, note: null },
+      { kind: 'additional_candidate', label: '조명 추가', amount: null, amountMin: null, amountMax: null, note: '현장 결제' },
+    ],
+    terms: [
+      { category: 'refund', body: '계약금은 환불되지 않습니다.', flagged: true, daysBeforeWedding: null, penaltyRate: null },
+      { category: 'schedule', body: '날짜 변경은 1회 가능합니다.', flagged: false, daysBeforeWedding: null, penaltyRate: null },
+    ],
+    personalInfoKinds: ['name', 'phone'],
+    ...overrides,
+  };
 }
