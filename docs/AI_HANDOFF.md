@@ -7,9 +7,9 @@
 
 ## 메타
 
-- `updated_at`: 2026-09-02 (일정·지도 보기 세션 반영)
+- `updated_at`: 2026-09-02 (일정·지도 보기 세션 반영, main 병합 후 갱신)
 - `repository`: jsexy0210-ship-it/WeddingPickl
-- `branch (main)`: 4bae250
+- `branch (main)`: 5090d24 (PR #16 프론트 화면 구현 병합 완료)
 - `policy_version`: 통합정책 v3.13
 - `dashboard`: https://claude.ai/code/artifact/a1307c11-f282-4cf2-a26d-e44bd083d7a9
 - `ios_handoff_artifact`: https://claude.ai/code/artifact/b8792fcd-fefe-4386-b24e-41d122e90a87
@@ -202,7 +202,17 @@ API·DB 마이그레이션·지도 SDK가 필요한 두 항목(일정 추가, �
 **미검증**: 실제 Neon production 배포(마이그레이션 0059·0060 미적용), Android 실기기에서
 지도 렌더링(Google Maps API 키 미설정), 카카오 지오코딩 스크립트 실제 실행(API 키 없음).
 
-**브랜치**: `claude/wedding-events-map-view-260902`
+**PR 작업 중 main 병합**: PR #16(프론트 화면 구현)이 이 세션 도중 main에 병합돼(5090d24)
+`wedding/index.tsx` 진입 항목이 충돌(이 세션의 `events` vs PR #16의 `quotes`) — 둘 다
+살리는 방향으로 해소. 병합이 main 전체를 다시 lint하게 만들면서 PR #16이 들여온
+`react-hooks/set-state-in-effect` 위반 6곳(`my/rebuttals`·`reports`·`rewards`·
+`vendor-claims`·`notifications`·`settings.tsx`의 `load` 콜백이 `.then()` 이전에
+`setLoadError(null)`을 동기로 부르던 패턴 — clean main worktree에서도 재현 확인, 이
+세션 코드가 만든 문제 아님)을 함께 고쳤다. 고치면서 같은 파일들에 있던 "재시도해도
+이전 에러 문구가 안 지워지는" 버그도 함께 해소됨(`setLoadError(null)`을 `.then()`
+성공 분기 안으로 옮기면 두 문제가 한 번에 풀린다).
+
+**브랜치**: `claude/wedding-events-map-view-260902` · **PR**: #19 (main ← 이 브랜치)
 
 ---
 
@@ -316,9 +326,9 @@ WeddingPickl/
 5. **[사용자]** Google Maps Android API 키 발급 → `apps/mobile/app.json`의
    `REPLACE_WITH_GOOGLE_MAPS_ANDROID_API_KEY` 교체
 6. **[사용자]** 카카오 REST API 키 발급 → `scripts/geocode-vendors.mts` 실행해 업체 좌표 채우기
-7. **[사용자/AI]** PR #16(취향 다시 고르기·준비 타임라인·예식 완료, 순수 프론트) 병합 —
-   회원탈퇴·일정 추가·지도 보기(이번 세션)까지 합치면 §프론트엔드 화면 현황의 "우리웨딩·MY"
-   미구현 항목이 모두 닫힌다
+7. **[완료]** PR #16(취향 다시 고르기·준비 타임라인·예식 완료, 순수 프론트) main 병합 완료 —
+   회원탈퇴·일정 추가·지도 보기(PR #19)까지 합치면 §프론트엔드 화면 현황의 "우리웨딩·MY"
+   미구현 항목이 모두 닫힌다. **[사용자]** PR #19 리뷰·병합 필요.
 8. **[AI]** 공통 Bottom Sheet 16종 인라인 처리 여부 확인
 9. **[AI]** 관리자 화면 설계 및 구현 (앱스토어 출시 후 단계)
 

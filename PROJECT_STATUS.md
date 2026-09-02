@@ -37,6 +37,10 @@
     `react-native-maps` 도입 + 검색 화면 목록/지도 토글. 좌표 지오코딩은
     `scripts/geocode-vendors.mts`(카카오 로컬 API, 수동 실행) — 상세는
     `docs/AI_HANDOFF.md` "백엔드 — 일정 · 지도 보기" 절
+-   PR #16(취향 다시 고르기·준비 타임라인·예식 완료 등 프론트 화면) main 병합 완료.
+    병합 과정에서 발견된 base 브랜치 lint 회귀 6곳(`react-hooks/set-state-in-effect`,
+    `my/rebuttals`·`reports`·`rewards`·`vendor-claims`·`notifications`·`settings.tsx`)도
+    함께 고침 — PR #19에 포함
 -   NCP Object Storage 연결 완료
 -   Object Storage 업로드/다운로드/삭제 테스트 성공
 -   App Store Connect API 접근 승인
