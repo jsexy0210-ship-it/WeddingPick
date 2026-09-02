@@ -34,13 +34,14 @@ export default function MyReportsScreen() {
   const [toast, setToast] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    setLoadError(null);
     void listMyReports()
-      .then((response) => setReports(response.reports))
+      .then((response) => {
+        setLoadError(null);
+        setReports(response.reports);
+      })
       .catch((caught: Error) => setLoadError(caught.message ?? '제보내역을 불러오지 못했어요.'));
   }, []);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- 화면 진입 시 목록을 가져오는 정상적인 fetch-in-effect다. eslint-plugin-react-hooks 7.x가 이 패턴을 오탐지한다.
   useEffect(load, [load]);
 
   if (loadError) {

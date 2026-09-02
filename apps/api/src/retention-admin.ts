@@ -24,7 +24,7 @@ import type { Storage } from './storage/port';
  *
  *   npm run retention --workspace @weddingpick/api -- --operator <user-id> [--off]
  *   npm run retention --workspace @weddingpick/api -- --due
- *   npm run retention --workspace @weddingpick/api -- --delete <document-id>
+ *   npm run retention --workspace @weddingpick/api -- --delete <document-id> --by <user-id>
  *   npm run retention --workspace @weddingpick/api -- --list
  *   npm run retention --workspace @weddingpick/api -- --sweep
  *   npm run retention --workspace @weddingpick/api -- --collect-unreachable
@@ -125,7 +125,16 @@ async function main(): Promise<void> {
         return;
       }
 
-      const outcome = await deleteDocument({ pool, storage: openStorage() }, documentId);
+      const byIndex = process.argv.indexOf('--by');
+      const by = byIndex !== -1 ? process.argv[byIndex + 1] : undefined;
+
+      if (!by) {
+        console.error('지운 사람(--by <user-id>)이 필요하다.');
+        process.exitCode = 1;
+        return;
+      }
+
+      const outcome = await deleteDocument({ pool, storage: openStorage() }, documentId, by);
 
       if (!outcome.ok) {
         console.error(`지우지 않았다: ${outcome.reason}`);
@@ -245,7 +254,13 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exitCode = 1;
-});
+/*
+ * CLI로 직접 실행했을 때만 돈다. 테스트가 이 파일에서 함수를 가져오면(require)
+ * `require.main`이 테스트 러너를 가리키므로 여기 걸리지 않는다.
+ */
+if (require.main === module) {
+  void main().catch((error: unknown) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  });
+}
