@@ -249,13 +249,30 @@ verification·pii·inquiry·payment-proof — 실제로는 6개, 처음 분류�
 4개)가 첫 커버리지다(테스트가 없었던 이유도 아마 이 관문 부재 때문일
 가능성이 높다 — import하면 터지니 테스트를 못 붙였을 것).
 
-**다음 세션이 이어갈 것 — 남은 admin 6개, 전부 리팩터링부터 필요**:
-- `ai-cost-admin.ts`, `decisions-admin.ts`, `objection-admin.ts`,
-  `rebuttal-admin.ts`, `retention-admin.ts`, `reward-admin.ts`.
+**업데이트(같은 세션, 여덟 번째 조각 — 리팩터링 필요 그룹 2/7)**:
+`ai-cost-admin.ts`도 끝냈다. `getBudgetStatus()`/`getUsage()`/`setBudget()`/
+`clearBudget()`로 뽑았다. `/v1/admin/ai-cost`(이번 달 상태·사용량·한도
+설정/해제)를 열었다.
+**주의(발견한 기존 버그 둘, 이번에 같이 고침 — ad-admin과 같은 유형)**:
+1. `require.main === module` 관문이 없었다(추가함).
+2. `setBudget`(한도 설정)과 `--clear-budget`(한도 해제, 원래 `main()`에
+   인라인)에 `requireOperator` 확인이 아예 없었다 — `--clear-budget`은
+   `--by`조차 받지 않았다. 둘 다 이번에 넣었다(CLI `--clear-budget`도 이제
+   `--by` 필수).
+테스트(`admin-ai-cost.test.ts` 3개, 첫 커버리지) + 전체 스위트 실 Postgres로
+재확인 중(이 문서를 쓰는 시점엔 아직 실행 중 — 다음 커밋 메시지에 결과 남김).
+
+**다음 세션이 이어갈 것 — 남은 admin 5개, 전부 리팩터링부터 필요**:
+- `decisions-admin.ts`, `objection-admin.ts`, `rebuttal-admin.ts`,
+  `retention-admin.ts`, `reward-admin.ts`.
   `vendor-claim-admin.ts`가 했던 방식(`decide()`는 export, argv 파싱과 콘솔
   출력은 `main()`에 남김)을 그대로 따라가되, **먼저** `require.main ===
-  module` 관문이 있는지 확인하고 없으면 `ad-admin.ts`처럼 추가할 것
-  (위 «발견한 기존 버그» 참고 — 이 여섯 개 전부 없는 것으로 확인됨).
+  module` 관문이 있는지 확인하고 없으면 `ad-admin.ts`/`ai-cost-admin.ts`처럼
+  추가할 것(위 «발견한 기존 버그» 참고 — 이 다섯 개 전부 없는 것으로 확인됨
+  — `decisions-admin.ts`·`objection-admin.ts`·`rebuttal-admin.ts`·
+  `reward-admin.ts`는 `void main()`이 무조건 실행, `retention-admin.ts`는
+  `ai-cost-admin.ts`와 같은 형태). **`requireOperator` 호출 유무도 함수마다
+  개별 확인**할 것 — 지금까지 본 패턴상 절반 정도는 빠져 있었다.
 - 패턴: `requireOperator(context)`를 preHandler로 달고, 도메인 함수가 던지는
   평범한 `Error`를 400(`invalid_request`)으로, `NotAnOperator`를 403으로 옮긴다
   (`admin-withdrawals.ts` 그대로 베끼면 됨). 라우트 URL은 `/v1/admin/<도메인>`.
@@ -363,9 +380,10 @@ WeddingPickl/
 2. **[사용자]** Fly.io: `OPERATOR_SESSION_TTL_DAYS=365` 추가
 3. **[사용자]** Neon DB: `db-migrate.yml` 실행 → 0052 적용
 4. **[사용자]** terms.url · privacy.url 확정 → 도메인 상수 업데이트
-5. **[AI]** 관리자 HTTP API 배선 — 남은 6개 도메인(withdrawal·vendor-claim·
-   verification·pii·inquiry·payment-proof·ad 7개는 이 세션에서 끝남), 위
-   «백엔드 갭 조사» 세션 기록의 목록·순서 그대로 (전부 리팩터링부터 필요 —
+5. **[AI]** 관리자 HTTP API 배선 — 남은 5개 도메인(withdrawal·vendor-claim·
+   verification·pii·inquiry·payment-proof·ad·ai-cost 8개는 이 세션에서
+   끝남), 위 «백엔드 갭 조사» 세션 기록의 목록·순서 그대로 (전부 리팩터링부터
+   필요 —
    `require.main === module` 관문 추가부터)
 6. **[AI]** 프론트엔드 미구현 화면 구현 — 우선순위: 회원탈퇴 > 일정 추가 > 지도 보기 > 취향 재선택
 7. **[AI]** 공통 Bottom Sheet 16종 인라인 처리 여부 확인
