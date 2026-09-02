@@ -220,7 +220,7 @@ describeWithDb('회원탈퇴', () => {
     ).json<{ done: string[] }>();
 
     expect(result.done).toContain('계정과 프로필을 삭제했어요');
-    expect(result.done).toContain('후기와 확인된 정보는 작성자 정보와 분리했어요');
+    expect(result.done).toContain('후기와 확인된 정보는 나를 알아볼 수 없도록 분리했어요');
   });
 
   it('운영자는 앱에서 탈퇴할 수 없다', async () => {

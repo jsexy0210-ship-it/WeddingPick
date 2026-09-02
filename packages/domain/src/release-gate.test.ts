@@ -75,7 +75,8 @@ describe('출시 차단', () => {
   });
 
   it('값을 다 채워도 문서가 안 되면 막는다', () => {
-    // 사업자 정보만으로 문을 열 수 없다. 문서 쪽은 withdrawal.test가 함께 지킨다.
+    // 사업자 정보만으로 문을 열 수 없다. 약관·개인정보처리방침 같은 문서가 게시(url)
+    // 되기 전까지는 여전히 막는다(POLICY_DOCUMENTS).
     expect(() => assertReleasable('production', FILLED)).toThrow('확정되지 않은 문서');
   });
 
