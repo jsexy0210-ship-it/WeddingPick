@@ -276,6 +276,12 @@ export default function HomeScreen() {
             </ThemedText>
           </ThemedView>
         </ThemedView>
+
+        {data.expenses && data.expenses.scheduledTotal > 0 ? (
+          <ThemedText type="t7" themeColor="textAssistive">
+            {data.expenses.scheduledNote}
+          </ThemedText>
+        ) : null}
       </ThemedView>
     ),
 

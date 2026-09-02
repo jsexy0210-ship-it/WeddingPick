@@ -1,4 +1,4 @@
-import type { ConditionStats, VendorDetail } from '@weddingpick/api-contract';
+import type { ConditionStats, Review, VendorDetail } from '@weddingpick/api-contract';
 import {
   DOCUMENT_TYPE_LABEL,
   MAX_RATING,
@@ -14,7 +14,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { addCandidate, ensureWedding, getVendor, getVendorConditions } from '@/api/client';
+import { addCandidate, ensureWedding, getVendor, getVendorConditions, listVendorReviews } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { loadToken } from '@/api/session';
 import { LoginSheet } from '@/features/auth/login-sheet';
@@ -47,6 +47,8 @@ export default function VendorDetailScreen() {
   const [conditions, setConditions] = useState<ConditionStats | null>(null);
   /** 출처를 펼쳤는가. 배지를 눌러 연다. */
   const [sourceOpen, setSourceOpen] = useState(false);
+  /** 미리보기 후기 2-3건. 실패해도 조용히 넘긴다. */
+  const [previewReviews, setPreviewReviews] = useState<Review[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saveNote, setSaveNote] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -65,6 +67,10 @@ export default function VendorDetailScreen() {
     getVendorConditions(vendorId)
       .then(setConditions)
       .catch(() => setConditions(null));
+
+    listVendorReviews(vendorId)
+      .then((res) => setPreviewReviews(res.reviews.slice(0, 3)))
+      .catch(() => undefined);
   }, [vendorId]);
 
   if (error) {
@@ -336,6 +342,26 @@ export default function VendorDetailScreen() {
               )}
             </ThemedView>
 
+            {previewReviews.length > 0
+              ? previewReviews.map((review) => (
+                  <ThemedView key={review.id} type="backgroundElement" style={styles.card}>
+                    <ThemedView type="backgroundElement" style={styles.reviewHead}>
+                      <ThemedText type="t7" themeColor="textSecondary">
+                        {review.roleLabel} · {review.verificationLabel}
+                      </ThemedText>
+                      <ThemedText type="t7" numeric>
+                        {review.overall.toFixed(1)}
+                      </ThemedText>
+                    </ThemedView>
+                    <ThemedText type="t6" numberOfLines={1}>
+                      {review.title}
+                    </ThemedText>
+                    <ThemedText type="t7" themeColor="textSecondary" numberOfLines={2}>
+                      {review.body}
+                    </ThemedText>
+                  </ThemedView>
+                ))
+              : null}
             <ActionButton
               label="후기 보기"
               hint="이용하신 분들이 남긴 글이에요"
@@ -521,5 +547,10 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.three,
     padding: Spacing.three,
     gap: Spacing.one,
+  },
+  reviewHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
 });

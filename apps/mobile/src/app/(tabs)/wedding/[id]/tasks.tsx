@@ -2,7 +2,7 @@ import type { WeddingTaskListResponse } from '@weddingpick/api-contract';
 import { TASK_STATES, TASK_STATE_LABEL, formatTaskDate } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, TextInput } from 'react-native';
+import { Alert, Modal, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -117,13 +117,20 @@ export default function WeddingTasksScreen() {
     }
   }
 
-  async function remove(taskId: string) {
-    try {
-      await removeWeddingTask(id, taskId);
-      load();
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : '지우지 못했어요.');
-    }
+  function remove(taskId: string) {
+    Alert.alert('일정 빼기', '이 일정을 빼시겠어요? 되돌릴 수 없어요.', [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '빼기',
+        style: 'destructive',
+        onPress: () =>
+          removeWeddingTask(id, taskId)
+            .then(load)
+            .catch((caught: Error) =>
+              setError(caught.message ?? '지우지 못했어요.')
+            ),
+      },
+    ]);
   }
 
   return (
@@ -162,7 +169,7 @@ export default function WeddingTasksScreen() {
                   setDraftVendor(task.vendorLabel ?? '');
                 }}
               />
-              <ActionButton label="빼기" onPress={() => void remove(task.id)} />
+              <ActionButton label="빼기" onPress={() => remove(task.id)} />
             </ThemedView>
           ))}
 
