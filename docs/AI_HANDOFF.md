@@ -40,23 +40,25 @@
 
 ## 🚨 사용자 직접 조치 필요 (Claude 불가)
 
-### 0. 회원탈퇴 정책 충돌 — 세션 두 곳이 다르게 진행 중, 병합 전 사람이 골라야 함
-**상태**: 같은 기능을 세 번째로 다르게 구현 중인 것으로 보인다.
+### 0. 회원탈퇴 정책 — 최종 확정: 자동삭제 + 운영자 개입 (2026-09-02, 사용자 결정)
+**상태**: 해결됨. main의 `release-gate.ts`/`withdrawalReady()` 게이트 방식은 채택하지
+않는다.
 
-- **정책 관리 세션(main에 직접 커밋)**: `WITHDRAWAL_NOTICE` 확정(§J-3), 여전히
-  `release-gate.ts`/`withdrawalReady()` 게이트 방식 — `privacy.url` 설정 전까지
-  자동삭제 기능 자체를 잠가둔다는 전제.
-- **백엔드 관리 세션(PR #10, `claude/daily-progress-briefing-3k7lez`)**: 사용자가
-  세션 안에서 직접 지시함 — *"회원삭제는 무조건 관리자에서 운영자가 직접 개입할 수
-  있고 상황을 확인할 수 있어야한다. 법적 리스크가 있는 정책은 무시하고 개선한다."*
-  이 지시에 따라 **자동파기를 유지**하고 운영자 조회·HOLD·RESUME·RETRY·감사로그를
-  갖춘 완성 구현을 만들었다(`packages/domain/src/withdrawal.ts`,
-  `apps/api/src/withdrawal-admin.ts`, 마이그레이션 0055·0058).
+사용자가 두 세션의 다른 구현(main의 정책 확정 전 기능 잠금 vs PR #10의 자동파기+
+운영자 개입)을 확인한 뒤 직접 결정했다 — *"회원탈퇴 정책, 자동삭제+운영자개입 쪽으로
+최종 확정할게."*
 
-**두 방향이 정면으로 다르다** — 한쪽은 "정책 확정 전엔 기능을 잠근다", 다른 쪽은
-"사용자가 이미 방향을 정했으니 지금 만든다." PR #10을 병합하기 전에 **어느 쪽이
-맞는지 사람이 정해야 한다.** Claude 세션끼리는 서로의 최신 지시를 모른 채 병렬로
-작업하고 있어 이 충돌이 저절로 풀리지 않는다.
+**확정된 구현**(PR #10, `claude/daily-progress-briefing-3k7lez`): 자동파기 유지 +
+운영자 조회·HOLD·RESUME·RETRY·감사로그(`packages/domain/src/withdrawal.ts`,
+`apps/api/src/withdrawal-admin.ts`, 마이그레이션 0055·0058).
+
+**PR #10을 병합하는 세션이 할 일**:
+- main의 `packages/domain/src/withdrawal.ts`(release-gate 버전)와
+  `packages/domain/src/release-gate.ts`의 `withdrawalReady()` 의존을 걷어내고
+  PR #10의 구현으로 교체(PR #10 자체는 이미 이렇게 병합해뒀다).
+- `WITHDRAWAL_NOTICE`(§J-3)로 확정한 문구가 있다면 PR #10의 실제 탈퇴 화면 문구와
+  맞는지 확인 — 서로 다른 문구가 화면에 남지 않게.
+- `docs/통합정책 v3.13`에 이 결정(자동삭제 유지, release-gate 폐기)을 반영할지 확인.
 
 ### 1. iOS EAS 빌드 수정 — 최우선
 **상태**: Release #1 ~ #10 전부 실패  
