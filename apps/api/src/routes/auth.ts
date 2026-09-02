@@ -50,7 +50,12 @@ export function registerAuthRoutes(app: FastifyInstance, context: AppContext): v
       throw new ApiError('unauthenticated', '로그인 정보를 확인하지 못했습니다.');
     }
 
-    const session = await signIn(context.pool, identity, context.config.sessionTtlDays);
+    const session = await signIn(
+      context.pool,
+      identity,
+      context.config.sessionTtlDays,
+      context.config.operatorSessionTtlDays
+    );
 
     return reply.status(201).send({
       token: session.token,

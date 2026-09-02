@@ -23,6 +23,7 @@ export * from './reviews';
 export * from './rewards';
 export * from './settings';
 export * from './signup';
+export * from './taste';
 export * from './vendor-claims';
 export * from './vendors';
 export * from './verification';

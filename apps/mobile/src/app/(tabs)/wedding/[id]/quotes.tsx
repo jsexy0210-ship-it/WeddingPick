@@ -78,21 +78,21 @@ export default function WeddingQuotesScreen() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const load = useCallback(async () => {
-    try {
-      const res = await listQuotes(id);
-      setQuotes(res.quotes);
-      setNextCursor(res.nextCursor);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : '불러오지 못했어요.');
-    } finally {
-      setLoading(false);
-    }
+  const load = useCallback(() => {
+    void listQuotes(id)
+      .then((res) => {
+        setQuotes(res.quotes);
+        setNextCursor(res.nextCursor);
+      })
+      .catch((caught: Error) => {
+        setError(caught instanceof Error ? caught.message : '불러오지 못했어요.');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [id]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useEffect(load, [load]);
 
   async function loadMore() {
     if (!nextCursor) return;

@@ -1,31 +1,23 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { TASTES, type Taste } from '@weddingpick/api-contract';
+
+import { getTaste, updateTaste } from '@/api/client';
 
 /**
  * 취향. 홈 C-1 시안 1 — 사진 넉 장으로 «어떤 결혼식을 원하세요?»를 받는 자리.
  *
- * **서버에 아직 자리가 없다.** 계약(`@weddingpick/api-contract`)에도 도메인에도
- * 취향이라는 개념이 없어서, 지금은 기기에 저장한다. 홈 순서(`sections.ts`)와 같은
- * 방식이고 같은 대가를 진다 — **새 기기에서는 다시 묻는다.**
+ * 서버(`/v1/me/taste`)에 저장한다 — 로그인한 사람에게만 이 화면이 뜨므로
+ * (`state.ts`의 `guest` 갈림), 기기를 바꿔도 고른 것이 남는다.
  *
- * 그래도 화면을 비워두지 않는 이유는, 취향이 없는 사람에게 개인화 추천을 띄우면
- * 앱이 아는 척을 하기 때문이다. 고른 값이 기기에만 있어도 «무엇을 골랐는지»는
- * 사실이고, 그 사실만으로 홈이 다음 얼굴로 넘어갈 수 있다.
+ * 화면을 비워두지 않는 이유는, 취향이 없는 사람에게 개인화 추천을 띄우면
+ * 앱이 아는 척을 하기 때문이다. 고른 것을 «무엇을 골랐는지»만으로 홈이 다음
+ * 얼굴로 넘어갈 수 있다.
  *
- * TODO: 서버에 취향이 생기면 이 모듈은 그 API를 부르는 자리로 바뀐다. 화면은
- * `loadTaste`/`saveTaste` 두 함수만 알고 있어서 저장 위치가 바뀌어도 그대로다.
+ * 서버가 안 불리면(오프라인 등) 조용히 안 고른 것으로 본다 — 그게 취향
+ * 화면이 안 뜨는 것보다 낫다. 화면은 `loadTaste`/`saveTaste` 두 함수만
+ * 알고 있어서 저장 방식이 바뀌어도 그대로다.
  */
 
-const STORAGE_KEY = 'weddingpick.taste.v1';
-
-/**
- * 고를 수 있는 취향.
- *
- * 사진으로 고르는 자리라 말은 짧다. 시안이 정한 넷을 그대로 쓴다 — 여기서 항목을
- * 늘리려면 사진이 먼저 있어야 한다.
- */
-export const TASTES = ['white', 'daylight', 'flower', 'classic'] as const;
-
-export type Taste = (typeof TASTES)[number];
+export { TASTES, type Taste };
 
 export const TASTE_LABEL: Record<Taste, string> = {
   white: '깔끔한 화이트',
@@ -57,15 +49,19 @@ export function toggleTaste(chosen: readonly Taste[], taste: Taste): readonly Ta
 
 export async function loadTaste(): Promise<readonly Taste[]> {
   try {
-    const raw = await AsyncStorage.getItem(STORAGE_KEY);
-
-    return reconcileTaste(raw === null ? null : (JSON.parse(raw) as string[]));
+    return reconcileTaste((await getTaste()).tastes);
   } catch {
-    // 못 읽거나 망가졌으면 안 고른 것으로 본다. 홈이 안 뜨는 것보다 낫다.
+    // 못 불러오거나(오프라인·미로그인) 서버가 이상하면 안 고른 것으로 본다.
+    // 홈이 안 뜨는 것보다 낫다.
     return [];
   }
 }
 
 export async function saveTaste(chosen: readonly Taste[]): Promise<void> {
-  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(chosen));
+  try {
+    await updateTaste(chosen);
+  } catch {
+    // 화면은 이미 낙관적으로 갱신됐다(app/(tabs)/index.tsx) — 저장이 실패해도
+    // 다음에 다시 열면 서버 값으로 되돌아갈 뿐, 여기서 사용자를 막지 않는다.
+  }
 }

@@ -31,9 +31,11 @@ export default function MyRebuttalsScreen() {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    setLoadError(null);
     void listMyRebuttals()
-      .then((response) => setRebuttals(response.rebuttals))
+      .then((response) => {
+        setLoadError(null);
+        setRebuttals(response.rebuttals);
+      })
       .catch((caught: Error) => setLoadError(caught.message ?? '반론 내역을 불러오지 못했어요.'));
   }, []);
 

@@ -34,9 +34,11 @@ export default function MyReportsScreen() {
   const [toast, setToast] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    setLoadError(null);
     void listMyReports()
-      .then((response) => setReports(response.reports))
+      .then((response) => {
+        setLoadError(null);
+        setReports(response.reports);
+      })
       .catch((caught: Error) => setLoadError(caught.message ?? '제보내역을 불러오지 못했어요.'));
   }, []);
 

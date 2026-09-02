@@ -1,6 +1,7 @@
 import type { Pool } from 'pg';
 
 import { withTransaction } from '../db';
+import { requireOperator } from '../decisions';
 import type { Storage } from '../storage/port';
 
 export type RetentionDeps = {
@@ -233,18 +234,23 @@ export type DeleteOutcome =
  */
 export async function deleteDocument(
   deps: RetentionDeps,
-  documentId: string
+  documentId: string,
+  by: string
 ): Promise<DeleteOutcome> {
+  await requireOperator(deps.pool, by);
+
   const { rows } = await deps.pool.query<{
     retention_until: Date | null;
     deleted_at: Date | null;
     storage_keys: string[] | null;
   }>(
     `SELECT
-       d.retention_until, d.deleted_at,
+       s.retention_until, d.deleted_at,
        (SELECT array_agg(p.storage_key ORDER BY p.page_index)
           FROM originals.raw_document_pages p WHERE p.raw_document_id = d.id) AS storage_keys
-     FROM originals.raw_documents d WHERE d.id = $1`,
+     FROM originals.raw_documents d
+     JOIN originals.document_retention_schedule s ON s.id = d.id
+     WHERE d.id = $1`,
     [documentId]
   );
 
