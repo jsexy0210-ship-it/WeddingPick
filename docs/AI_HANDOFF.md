@@ -112,7 +112,7 @@ claude.ai Settings → Connectors → Gmail 연결 필요.
 빌드는 되지만 Android 지도 화면에 회색 배경 + 저작권 표시만 나온다.
 
 ### 7. 지도 보기 — 업체 좌표 지오코딩 실행
-`0060_vendor_geo.sql` 적용 후 기존 업체는 전부 `lat`/`lng`가 NULL이다(좌표 없이 목록에는
+`0062_vendor_geo.sql` 적용 후 기존 업체는 전부 `lat`/`lng`가 NULL이다(좌표 없이 목록에는
 그대로 뜨고 지도에만 안 뜬다). `scripts/geocode-vendors.mts`를 카카오 REST API 키로 돌려야
 좌표가 채워진다 — 방법은 아래 "지도 보기 — 좌표 지오코딩" 절 참고. 카카오 개발자 콘솔에서
 키 발급 필요(Claude 불가).
@@ -163,7 +163,7 @@ GitHub Actions 실제 실행 결과, production DB 적용.
 API·DB 마이그레이션·지도 SDK가 필요한 두 항목(일정 추가, 지도 보기)을 이 세션으로 넘김.
 
 **완료**:
-- ✅ `wedding_events` 테이블(마이그레이션 `0059_wedding_events.sql`) — 웨딩 스케줄
+- ✅ `wedding_events` 테이블(마이그레이션 `0061_wedding_events.sql`) — 웨딩 스케줄
   (`wedding_tasks`, 체크리스트)과 다른 개념으로 분리: 일시·장소·업체·메모·알림 여부가
   있는 캘린더 이벤트. `source`(manual/auto) 컬럼은 지금은 항상 manual — 업체 결정에서
   자동 생성하는 기능은 이번 범위 밖.
@@ -173,7 +173,7 @@ API·DB 마이그레이션·지도 SDK가 필요한 두 항목(일정 추가, �
 - ✅ 모바일 화면 3개: `wedding/[id]/events/index.tsx`(목록, 오늘·예정·지난 구분),
   `events/new.tsx`(추가), `events/[eventId].tsx`(상세 — 수정·삭제·알림 토글).
   `wedding/index.tsx`에 진입 항목 추가. 외부 캘린더 등록(WP-EXPO-005)은 손대지 않음.
-- ✅ `vendors` 테이블에 `address`/`lat`/`lng` 컬럼(마이그레이션 `0060_vendor_geo.sql`,
+- ✅ `vendors` 테이블에 `address`/`lat`/`lng` 컬럼(마이그레이션 `0062_vendor_geo.sql`,
   둘 다 없거나 둘 다 있게 하는 CHECK, 기본값 없음 — 지오코딩 전 업체는 지도에 안 뜬다)
 - ✅ `packages/api-contract`의 `vendorSummarySchema`에 `coordinates` 필드,
   `apps/api/src/routes/vendors.ts` 검색·상세 쿼리에 `lat`/`lng` 반영
@@ -302,7 +302,7 @@ API·DB 마이그레이션·지도 SDK가 필요한 두 항목(일정 추가, �
 
 ## DB 스키마 현황
 
-### 마이그레이션 이력 (0001 ~ 0060, 전체 완료)
+### 마이그레이션 이력 (0001 ~ 0062, 전체 완료)
 
 | 범위 | 내용 |
 |---|---|
@@ -314,11 +314,19 @@ API·DB 마이그레이션·지도 SDK가 필요한 두 항목(일정 추가, �
 | 0047 ~ 0051 | 데이터 수집 파이프라인 (vendor_data_quality, change_log, import_run_log, vendor_images, corrections) |
 | 0052 ~ 0054 | 미션 완료 추적 + 월간 웨딩지원금 추첨 |
 | 0055 ~ 0058 | 회원탈퇴 자동파기 + 운영자 개입, AI 라우터, 이의 만료 |
-| **0059** | **일정(`wedding_events`)** — 웨딩 스케줄(체크리스트)과 다른, 일시·장소가 있는 캘린더 이벤트 |
-| **0060** | **업체 좌표(`vendors.address`/`lat`/`lng`)** — 지도 보기용, 기본값 없이 지오코딩 전엔 NULL |
+| 0059 | 소셜 로그인 프로필(`identities.name`/`nickname`/`profile_image_url`) |
+| 0060 | 취향(`taste_preferences`) — 홈 C-1 시안 1 |
+| **0061** | **일정(`wedding_events`)** — 웨딩 스케줄(체크리스트)과 다른, 일시·장소가 있는 캘린더 이벤트 |
+| **0062** | **업체 좌표(`vendors.address`/`lat`/`lng`)** — 지도 보기용, 기본값 없이 지오코딩 전엔 NULL |
+
+**번호 충돌 이력**: PR #19(일정·지도 보기)가 다른 PR과 동시에 진행되며 각자
+`0059`·`0060`을 골라 main에 그대로 머지됐다(사회 로그인 프로필·취향 마이그레이션과
+파일명이 겹침). 이 파일이 그 충돌을 `0061`·`0062`로 재번호를 매겨 고친다 —
+migrate.ts는 파일명 전체를 버전 키로 써서 실제로 깨지지는 않았지만, 번호가 순서를
+나타낸다는 규약을 어겼다.
 
 ### ⚠️ 프로덕션 미적용
-`0052_mission_draw.sql`부터 `0060_vendor_geo.sql`까지 코드 리포에는 머지됐으나 Neon
+`0052_mission_draw.sql`부터 `0062_vendor_geo.sql`까지 코드 리포에는 머지됐으나 Neon
 production DB에는 아직 미적용. `db-migrate.yml` 워크플로 실행 필요.
 
 ---
