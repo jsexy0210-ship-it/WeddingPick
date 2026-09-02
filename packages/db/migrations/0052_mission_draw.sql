@@ -130,14 +130,27 @@ COMMENT ON TABLE structured.draw_results IS
 -- reward_grants에 monthly_draw 추가 (0039 확장) — 1/2
 -- ---------------------------------------------------------------------------
 --
--- reward_grants에 draw_entry_id 컬럼 추가. `reward_kind` ENUM에 'monthly_draw'를
--- 더하는 것과 그 값을 쓰는 CHECK 제약은 별도 마이그레이션(0053)으로 미룬다 —
--- Postgres는 `ALTER TYPE ... ADD VALUE`로 더한 값을 **같은 트랜잭션 안에서** 바로
--- 쓰지 못하게 막는다("unsafe use of new value"). 한 파일이 트랜잭션 하나이므로
--- (`migrate.ts`), 여기서 더하고 여기서 쓰면 이 마이그레이션 자체가 항상 실패한다.
+-- reward_grants에 mission_draw_entry_id 컬럼 추가. `reward_kind` ENUM에
+-- 'monthly_draw'를 더하는 것과 그 값을 쓰는 CHECK 제약은 별도 마이그레이션
+-- (0053)으로 미룬다 — Postgres는 `ALTER TYPE ... ADD VALUE`로 더한 값을
+-- **같은 트랜잭션 안에서** 바로 쓰지 못하게 막는다("unsafe use of new
+-- value"). 한 파일이 트랜잭션 하나이므로(`migrate.ts`), 여기서 더하고
+-- 여기서 쓰면 이 마이그레이션 자체가 항상 실패한다.
+--
+-- **컬럼 이름이 `draw_entry_id`가 아니라 `mission_draw_entry_id`인 이유**:
+-- main에 별도 세션이 먼저 병합한 `0047_monthly_draw.sql`이 같은 이름의
+-- 컬럼(`reward_grants.draw_entry_id`, `structured.monthly_draw_entries`를
+-- 가리킴)을 이미 추가했고 `grant_has_exactly_one_source`도 그 3-source
+-- 버전으로 이미 바꿔놨다 — 두 세션이 같은 "월간 웨딩지원금" 기능을 각자
+-- 독립적으로 구현하다 겹친 것이다. 실제 앱 코드(`routes/rewards.ts`)는
+-- 0047의 `monthly_draw_entries`/`draw_entry_id`를 쓰고 있어 그쪽이 살아있는
+-- 구현이고, 이 파일의 `draw_entries`/`monthly_draws`/`draw_results`/
+-- `npay_deliveries`는 소비하는 앱 코드가 없다(0054 커밋 시점 기준). 그래도
+-- 두 세션의 스키마 작업을 함부로 버리지 않고 컬럼명만 바꿔 공존시킨다 —
+-- 어느 구현을 표준으로 삼을지는 코드 병합이 아니라 정책 결정이 필요하다.
 
 ALTER TABLE structured.reward_grants
-  ADD COLUMN draw_entry_id uuid UNIQUE
+  ADD COLUMN mission_draw_entry_id uuid UNIQUE
     REFERENCES structured.draw_entries (id) ON DELETE CASCADE;
 
 ALTER TABLE structured.reward_grants
@@ -146,9 +159,10 @@ ALTER TABLE structured.reward_grants
 ALTER TABLE structured.reward_grants
   ADD CONSTRAINT grant_has_exactly_one_source
     CHECK (
-      (referral_id   IS NOT NULL)::int +
-      (promotion_id  IS NOT NULL)::int +
-      (draw_entry_id IS NOT NULL)::int = 1
+      (referral_id           IS NOT NULL)::int +
+      (promotion_id          IS NOT NULL)::int +
+      (draw_entry_id         IS NOT NULL)::int +
+      (mission_draw_entry_id IS NOT NULL)::int = 1
     );
 
 -- ---------------------------------------------------------------------------

@@ -5,6 +5,23 @@ export type VerifiedIdentity = {
   /** 제공자가 주는 안정적인 식별자 */
   subject: string;
   email?: string;
+  profile?: {
+    name?: string;
+    nickname?: string;
+    profileImageUrl?: string;
+    gender?: string;
+    birthday?: string;
+    ageRange?: string;
+    birthYear?: string;
+    mobile?: string;
+  };
+};
+
+export type AuthorizationCodeCredential = {
+  authorizationCode: string;
+  state: string;
+  redirectUri: string;
+  codeVerifier?: string;
 };
 
 export type IdentityProvider = {
@@ -15,13 +32,10 @@ export type IdentityProvider = {
    * 개발용 문을 열어두고 실제 로그인인 척하면, 그 빌드가 어디까지 나가는지 아무도 모른다.
    */
   isDevelopmentStandIn?: boolean;
-  /**
-   * `token`은 대부분 OIDC id_token이다. 네이버만 다르다 — authorization
-   * code이고, `extra.state`가 함께 있어야 서버가 code를 교환할 수 있다
-   * (docs/social-login-handoff.md).
-   */
-  verify(token: string, extra?: { state?: string }): Promise<VerifiedIdentity>;
-};
+} & (
+  | { flow: 'id_token'; verify(idToken: string): Promise<VerifiedIdentity> }
+  | { flow: 'authorization_code'; verify(credential: AuthorizationCodeCredential): Promise<VerifiedIdentity> }
+);
 
 /**
  * OIDC id_token을 제공자의 공개키로 검증한다.
@@ -31,7 +45,7 @@ export type IdentityProvider = {
  */
 function createOidcProvider(options: {
   provider: IdentityProviderName;
-  issuer: string;
+  issuer: string | string[];
   jwksUrl: string;
   audience: string;
 }): IdentityProvider {
@@ -44,6 +58,7 @@ function createOidcProvider(options: {
   }
 
   return {
+    flow: 'id_token',
     async verify(idToken) {
       const { jwtVerify } = await import('jose');
       jwks ??= await loadJwks();
@@ -61,9 +76,90 @@ function createOidcProvider(options: {
         provider: options.provider,
         subject: payload.sub,
         email: typeof payload.email === 'string' ? payload.email : undefined,
+        profile: {
+          name: stringValue(payload.name),
+          nickname: stringValue(payload.nickname ?? payload.preferred_username),
+          profileImageUrl: stringValue(payload.picture),
+          gender: stringValue(payload.gender),
+          birthday: stringValue(payload.birthdate),
+          mobile: stringValue(payload.phone_number),
+        },
       };
     },
   };
+}
+
+export function createNaverProvider(options: {
+  clientId: string;
+  clientSecret: string;
+  allowedRedirectUris: string[];
+  fetchImpl?: typeof fetch;
+}): IdentityProvider {
+  const fetchImpl = options.fetchImpl ?? fetch;
+  const allowedRedirectUris = new Set(options.allowedRedirectUris);
+
+  return {
+    flow: 'authorization_code',
+    async verify(credential) {
+      if (!allowedRedirectUris.has(credential.redirectUri)) {
+        throw new Error('허용되지 않은 네이버 redirect URI다.');
+      }
+
+      const tokenBody = new URLSearchParams({
+        grant_type: 'authorization_code',
+        client_id: options.clientId,
+        client_secret: options.clientSecret,
+        code: credential.authorizationCode,
+        state: credential.state,
+      });
+      if (credential.codeVerifier) tokenBody.set('code_verifier', credential.codeVerifier);
+
+      const tokenResponse = await fetchImpl('https://nid.naver.com/oauth2/token', {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: tokenBody,
+      });
+      if (!tokenResponse.ok) throw new Error('네이버 토큰 교환에 실패했다.');
+
+      const token = (await tokenResponse.json()) as { access_token?: unknown };
+      if (typeof token.access_token !== 'string' || token.access_token.length === 0) {
+        throw new Error('네이버 access token이 없다.');
+      }
+
+      const profileResponse = await fetchImpl('https://openapi.naver.com/v1/nid/me', {
+        headers: { authorization: `Bearer ${token.access_token}` },
+      });
+      if (!profileResponse.ok) throw new Error('네이버 프로필 조회에 실패했다.');
+
+      const profile = (await profileResponse.json()) as {
+        resultcode?: unknown;
+        response?: Record<string, unknown>;
+      };
+      if (profile.resultcode !== '00' || typeof profile.response?.id !== 'string') {
+        throw new Error('네이버 프로필 응답이 올바르지 않다.');
+      }
+
+      return {
+        provider: 'naver',
+        subject: profile.response.id,
+        email: typeof profile.response.email === 'string' ? profile.response.email : undefined,
+        profile: {
+          name: stringValue(profile.response.name),
+          nickname: stringValue(profile.response.nickname),
+          profileImageUrl: stringValue(profile.response.profile_image),
+          gender: stringValue(profile.response.gender),
+          birthday: stringValue(profile.response.birthday),
+          ageRange: stringValue(profile.response.age),
+          birthYear: stringValue(profile.response.birthyear),
+          mobile: stringValue(profile.response.mobile),
+        },
+      };
+    },
+  };
+}
+
+function stringValue(value: unknown): string | undefined {
+  return typeof value === 'string' && value.length > 0 ? value : undefined;
 }
 
 export function createAppleProvider(clientId: string): IdentityProvider {
@@ -87,73 +183,11 @@ export function createKakaoProvider(appKey: string): IdentityProvider {
 export function createGoogleProvider(clientId: string): IdentityProvider {
   return createOidcProvider({
     provider: 'google',
-    issuer: 'https://accounts.google.com',
+    // Google은 두 issuer 값을 모두 정상 토큰으로 명시한다.
+    issuer: ['https://accounts.google.com', 'accounts.google.com'],
     jwksUrl: 'https://www.googleapis.com/oauth2/v3/certs',
     audience: clientId,
   });
-}
-
-type NaverTokenResponse =
-  | { access_token: string }
-  | { error: string; error_description?: string };
-
-type NaverProfileResponse = {
-  resultcode: string;
-  message: string;
-  response?: { id: string; email?: string };
-};
-
-/**
- * 네이버는 OIDC가 아니다 — 클라이언트가 받은 것은 id_token이 아니라
- * authorization code다. 서버가 `client_secret`으로 직접 토큰과 교환해야
- * 하고, 그래서 다른 세 제공자와 달리 client secret이 필요하다.
- *
- * `fetchImpl`은 테스트에서 실제 네이버 서버를 부르지 않고 가짜 응답을
- * 끼우기 위한 자리다 — 운영에서는 전역 `fetch`를 그대로 쓴다.
- */
-export function createNaverProvider(
-  clientId: string,
-  clientSecret: string,
-  fetchImpl: typeof fetch = fetch
-): IdentityProvider {
-  return {
-    async verify(code, extra) {
-      const state = extra?.state;
-
-      if (!state) {
-        throw new Error('네이버 로그인에는 state가 함께 있어야 한다.');
-      }
-
-      const tokenUrl = new URL('https://nid.naver.com/oauth2.0/token');
-      tokenUrl.searchParams.set('grant_type', 'authorization_code');
-      tokenUrl.searchParams.set('client_id', clientId);
-      tokenUrl.searchParams.set('client_secret', clientSecret);
-      tokenUrl.searchParams.set('code', code);
-      tokenUrl.searchParams.set('state', state);
-
-      const tokenResponse = await fetchImpl(tokenUrl);
-      const tokenBody = (await tokenResponse.json()) as NaverTokenResponse;
-
-      if (!('access_token' in tokenBody)) {
-        throw new Error(tokenBody.error_description ?? '네이버 토큰 교환에 실패했다.');
-      }
-
-      const profileResponse = await fetchImpl('https://openapi.naver.com/v1/nid/me', {
-        headers: { Authorization: `Bearer ${tokenBody.access_token}` },
-      });
-      const profileBody = (await profileResponse.json()) as NaverProfileResponse;
-
-      if (profileBody.resultcode !== '00' || !profileBody.response) {
-        throw new Error(profileBody.message || '네이버 프로필을 가져오지 못했다.');
-      }
-
-      return {
-        provider: 'naver',
-        subject: profileBody.response.id,
-        email: profileBody.response.email,
-      };
-    },
-  };
 }
 
 export type IdentityProviders = Partial<Record<IdentityProviderName, IdentityProvider>>;

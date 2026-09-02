@@ -10,7 +10,7 @@
 - `updated_at`: 2026-09-02
 - `repository`: jsexy0210-ship-it/WeddingPickl
 - `branch (main)`: 4bae250
-- `policy_version`: 통합정책 v3.13
+- `policy_version`: 통합정책 v3.14
 - `dashboard`: https://claude.ai/code/artifact/a1307c11-f282-4cf2-a26d-e44bd083d7a9
 - `ios_handoff_artifact`: https://claude.ai/code/artifact/b8792fcd-fefe-4386-b24e-41d122e90a87
 - `screen_status_artifact`: https://claude.ai/code/artifact/b99277b7-3bdc-45dc-9614-a1310507df53
@@ -58,7 +58,7 @@
   PR #10의 구현으로 교체(PR #10 자체는 이미 이렇게 병합해뒀다).
 - `WITHDRAWAL_NOTICE`(§J-3)로 확정한 문구가 있다면 PR #10의 실제 탈퇴 화면 문구와
   맞는지 확인 — 서로 다른 문구가 화면에 남지 않게.
-- `docs/통합정책 v3.13`에 이 결정(자동삭제 유지, release-gate 폐기)을 반영할지 확인.
+- `docs/통합정책 v3.14`와 실제 탈퇴 구현의 정합성을 확인.
 
 ### 1. iOS EAS 빌드 수정 — 최우선
 **상태**: Release #1 ~ #10 전부 실패  
@@ -105,15 +105,17 @@ URL 확정 후 도메인 상수(`packages/domain/src/constants/policy.ts` 또는
 Google 개발자 콘솔 알림 자동화 세션이 Gmail 미연결로 차단됨.  
 claude.ai Settings → Connectors → Gmail 연결 필요.
 
-### 6. 네이버 로그인 환경변수 (2026-09-02, 이 세션에서 서버 구현 완료)
-서버 코드(`createNaverProvider`)는 끝났다 — 아래 두 값만 넣으면 네이버가
-로그인 제공자 목록에 자동으로 나온다.
+### 6. 네이버 로그인 환경변수 (서버 구현은 다른 세션이 main에 이미 완료)
+서버 코드는 끝났다(PKCE·redirect URI 허용목록 포함, PR #13) — 아래 값들만
+넣으면 네이버가 로그인 제공자 목록에 자동으로 나온다.
 ```
 flyctl secrets set NAVER_CLIENT_ID=<네이버 개발자센터 발급값> --app weddingpickl
 flyctl secrets set NAVER_CLIENT_SECRET=<네이버 개발자센터 발급값> --app weddingpickl
+flyctl secrets set NAVER_REDIRECT_URIS=<허용할 redirect URI, 콤마 구분> --app weddingpickl
 ```
 네이버 개발자센터(developers.naver.com)에서 애플리케이션을 등록하고 서비스
-URL·Callback URL(`weddingpick://` 커스텀 스킴)을 설정해야 값이 나온다.
+URL·Callback URL을 설정해야 값이 나온다. 모바일 EAS 환경에는
+`EXPO_PUBLIC_NAVER_CLIENT_ID`, `EXPO_PUBLIC_NAVER_REDIRECT_URI`도 필요하다.
 자세한 내용은 `docs/social-login-handoff.md`.
 
 ---
@@ -170,10 +172,11 @@ GitHub Actions 실제 실행 결과, production DB 적용.
    `assertReleasable('production', ...)`이 "확정되지 않은 문서"로 막는다는
    테스트(`release-gate.test.ts`)까지 있었다. 코드 수정 없음 — 실제 남은 일은
    법률 문서 자체를 완성해 `url`을 채우는 것뿐(사용자/법무 영역).
-4. 월간 웨딩지원금(NPay) — 0052~0054 마이그레이션 스키마만 있고 앱 코드 0건.
-   (다른 브랜치 `origin/claude/session-a4bq31`에 옛 시도가 있으나 테이블명이
-   `monthly_draw_entries`로 현재 스키마의 `draw_entries`와 달라 재사용 불가 —
-   폐기된 코드로 보임. 실제 금전 지급이 걸려 있어 이번 세션은 손대지 않음.)
+4. ~~월간 웨딩지원금(NPay) — 0052~0054 마이그레이션 스키마만 있고 앱 코드
+   0건~~ — **이 조사 시점(main = eb3fc3d) 기준이었다.** 이후 main에
+   `packages/domain/src/monthly-draw.ts` + `0047_monthly_draw.sql`이
+   병합됐다(다른 세션). 이 세션은 실제 금전 지급이 걸린 기능이라 처음부터
+   손대지 않았고, main과 병합할 때도 그쪽 구현을 그대로 받았다.
 
 **이번 세션에서 한 것 — 1번 중 첫 조각**:
 - `apps/api/src/auth/plugin.ts`에 `requireOperator(context)` preHandler 추가.
@@ -388,47 +391,50 @@ ad, ai-cost, decisions, objection, rebuttal, retention, reward. 관리자
 - **미검증**: GitHub Actions 실제 실행 결과, production 배포·health check
   (Fly.io 크리덴셜이 이 세션에 없음 — 항상 그래왔듯 사용자 쪽에서 확인 필요).
 
-### 네이버 로그인 서버 구현 완료 (같은 세션)
+### 네이버 로그인 서버 구현 — 다른 세션이 더 나은 버전으로 먼저 병합함
 
 관리자 API 13개를 끝낸 뒤, «백엔드 갭 조사»의 2번 항목(네이버 로그인 서버
-미구현)을 마저 처리했다.
+미구현)도 직접 구현했었다(`createNaverProvider`, GET 방식 토큰교환,
+`idToken` 필드 재사용 + `state` 추가).
 
-**한 일**:
-- `apps/api/src/auth/identity-provider.ts`에 `createNaverProvider(clientId,
-  clientSecret, fetchImpl?)` 추가 — 네이버는 OIDC가 아니라 authorization
-  code 교환 방식이라 다른 세 제공자와 다르게 client secret이 필요하고, 서버가
-  직접 `https://nid.naver.com/oauth2.0/token`에서 토큰을 받은 뒤
-  `https://openapi.naver.com/v1/nid/me`로 프로필을 조회한다.
-- `IdentityProvider.verify`의 시그니처를 `(token, extra?: { state?: string
-  })`로 확장했다 — 네이버 토큰 교환에는 CSRF 방지용 `state`가 필수라
-  기존 `verify(idToken)` 하나로는 못 담았다. 다른 세 제공자는 `extra`를
-  무시하므로 영향 없음.
-- `packages/api-contract/src/auth.ts`의 `createSessionRequestSchema`에
-  `state?: string` 추가. 네이버는 `idToken` 자리에 authorization code를
-  넣어 보낸다(필드 이름은 그대로 재사용 — 계약을 안 바꾸려고 의도적으로
-  그렇게 함, 대신 스키마 주석에 설명 남김).
-- `config.ts`에 `naverClientSecret`(`NAVER_CLIENT_SECRET`) 추가,
-  `index.ts`는 `NAVER_CLIENT_ID`·`NAVER_CLIENT_SECRET`이 **둘 다** 있을
-  때만 naver 제공자를 등록한다 — 운영 환경변수를 아직 안 넣었으니 지금은
-  그대로 노출 안 됨(이전 세션이 남긴 "임의로 노출시키지 말 것" 경고와
-  결과적으로 같은 상태 유지).
-- `docs/social-login-handoff.md` 갱신 — 다음 사람이 필요한 게 서버 구현이
-  아니라 운영 환경변수 설정 + 모바일 쪽 네이버 로그인 버튼(authorization
-  code 받아오기, `weddingpick://` Redirect URI 등록)이라는 걸 명확히 함.
+**main과 병합하며 전량 폐기했다.** 동시에 다른 세션(`codex/social-login-completion`,
+PR #13)이 이미 main에 병합한 구현이 더 완성도가 높았다 — PKCE(`codeVerifier`),
+redirect URI 허용목록, discriminated union으로 제공자별 요청 스키마를 나눔
+(`{provider, idToken, profileName?}` vs `{provider: 'naver',
+authorizationCode, state, redirectUri, codeVerifier?}`), 네이버·Apple·Kakao·
+Google 전체에 걸친 풍부한 프로필 필드 수집(이름·별명·프로필사진·성별·생일 등,
+통합정책 v3.14 §O). 이 세션이 만든 `identity-provider.ts`/`identity-provider.test.ts`/
+`config.ts`/`index.ts`/`routes/auth.ts`/`packages/api-contract/src/auth.ts`/
+`apps/api/src/test/naver-login.test.ts` 변경은 전부 origin/main 쪽을
+그대로 채택하고 버렸다(`git checkout --theirs`).
 
-**테스트**: `apps/api/src/auth/identity-provider.test.ts`(신설, `fetchImpl`을
-가짜로 끼워 실제 네이버 서버 없이 code↔토큰 교환·프로필 조회·에러 케이스
-5개 검증) + `apps/api/src/test/naver-login.test.ts`(신설, 라우트가 `state`를
-제공자에게 그대로 넘기고 세션을 만드는지 3개) — 둘 다 통과. 기존
-`api.test.ts`(세션 관련 13개) 회귀 없음. 전체 워크스페이스 typecheck 재확인
-통과.
+**교훈**: 여러 세션이 동시에 같은 갭을 조사하면 같은 결론에 이를 수 있다.
+PR을 올리기 전에 `git fetch origin main`으로 최신 상태를 반드시 확인할 것 —
+이번엔 다행히 관리자 API 작업(1번 항목)과는 파일이 안 겹쳐서 병합이
+깔끔했지만, 겹쳤다면 훨씬 아팠을 것이다.
 
-**다음 사람이 할 일**: 이건 코드가 아니라 운영/모바일 작업이다.
-1. **[사용자]** 네이버 개발자센터에서 애플리케이션 등록 → `NAVER_CLIENT_ID`·
-   `NAVER_CLIENT_SECRET`을 Fly.io 환경변수로 설정.
-2. **[AI/사용자]** 모바일 앱에 네이버 로그인 버튼 연결 — authorization code를
-   받아 `POST /v1/auth/sessions`(`provider: 'naver'`, `idToken`에 code,
-   `state`에 인가 요청 때 쓴 state)로 보내는 흐름 추가.
+### 백엔드 갭 투입 (claude/backend-gaps-olvj3m, 이 세션, Sonnet 5)
+**완료:**
+- ✅ 취향(홈 C-1 시안 1) 서버 API 신설 — `GET`/`PUT /v1/me/taste`
+  (`packages/db/migrations/0059_taste_preferences.sql`,
+  `packages/api-contract/src/taste.ts`, `apps/api/src/routes/taste.ts`).
+  기존에는 `apps/mobile/src/features/home/taste.ts`가 서버에 자리가 없어
+  AsyncStorage에만 저장했다(기기를 바꾸면 다시 물었다) — 이제 로그인한 사용자의
+  취향이 서버에 남는다. 모바일 쪽(`loadTaste`/`saveTaste`)을 그 API를 부르도록
+  교체, 저장 실패는 조용히 넘어가게 유지(낙관적 갱신 유지).
+- 조사 방법: Explore 서브에이전트로 `apps/mobile/src/api/client.ts`의 ~83개
+  엔드포인트 호출을 `apps/api/src/routes/*`와 전수 대조 — 나머지는 전부 대응하는
+  라우트가 있었고, 이 취향 기능과 홈 개인화 피드(`listWeddingContent`, 아래 참고)
+  둘만 "프론트는 있는데 백엔드가 없는" 실제 갭이었다.
+- typecheck(api-contract/api/mobile) 통과, mobile lint 0 error(기존 무관 경고 1개
+  그대로), API 테스트 549개 전체·mobile 테스트 66개 전체 통과(로컬에 Postgres 16을
+  띄우고 `npm run migrate --workspace @weddingpick/db`로 0059까지 재현해 확인).
+
+**미착수(다음 사람 참고)**:
+- 홈 개인화 웨딩피드 — `apps/mobile/src/features/home/content.ts`의
+  `listWeddingContent()`가 `TODO`로 빈 배열만 반환. 계약에도 API에도 "콘텐츠"라는
+  개념이 아직 없다 — 무엇을 콘텐츠로 볼지(에디토리얼? 업체 추천 큐레이션?)부터
+  정책이 필요해 보여 손대지 않았다.
 
 ---
 
@@ -512,7 +518,7 @@ WeddingPickl/
 │   ├── domain/              # 도메인 상수·정책 (terms.url, privacy.url 여기)
 │   └── ...
 ├── docs/
-│   ├── 통합정책 v3.13/      # 현재 확정 기준 정책
+│   ├── 통합정책 v3.14       # 현재 확정 기준 정책
 │   ├── design-handoff/      # 디자인 핸드오프 (IA 176화면)
 │   ├── AI_HANDOFF.md        # 이 파일
 │   └── 05-product-spec.md   # Phase 1 제품 스펙 (A-01~A-18)
@@ -523,7 +529,7 @@ WeddingPickl/
 
 ## 정책 문서 참조
 
-기준: `docs/통합정책 v3.13/`  
+기준: `docs/통합정책 v3.14`
 코드와 정책이 충돌하면 **정책이 맞다.** 코드를 고친다.
 
 주요 섹션:
@@ -538,21 +544,22 @@ WeddingPickl/
 1. **[사용자]** expo.dev에 ASC API Key 62U8N2ZWJR 등록 → iOS 빌드 재시작
 2. **[사용자]** Fly.io: `OPERATOR_SESSION_TTL_DAYS=365` 추가
 3. **[사용자]** Neon DB: `db-migrate.yml` 실행 → 0052 적용
-4. **[사용자]** terms.url · privacy.url 확정 → 법률 문서 자체를 완성해 URL을
-   채운다(코드가 아니라 문서 작업 — `assertReleasable`은 이미 정상 작동함,
-   위 «백엔드 갭 조사» 3번 참고)
+4. ~~**[사용자]** terms.url · privacy.url 확정~~ — **완료**(다른 세션,
+   `weddingpick.kr/terms`·`/privacy`로 설정됨 — `packages/domain/src/policies.ts`).
+   `assertReleasable`은 이미 정상 작동하고 있었다(위 «백엔드 갭 조사» 3번 참고).
 5. ~~**[AI]** 관리자 HTTP API 배선~~ — **완료**(이 세션, 13개 도메인 전부:
    withdrawal·vendor-claim·verification·pii·inquiry·payment-proof·ad·
    ai-cost·decisions·objection·rebuttal·retention·reward). 자세한 내용은
    위 «관리자 HTTP API 배선 — 13개 도메인 전부 완료» 참고.
 6. **[사용자]** 네이버 개발자센터 애플리케이션 등록 → `NAVER_CLIENT_ID`·
-   `NAVER_CLIENT_SECRET`을 Fly.io 환경변수로 설정(서버 구현은 이 세션에서
-   완료됨, 위 «네이버 로그인 서버 구현 완료» 참고)
+   `NAVER_CLIENT_SECRET`·`NAVER_REDIRECT_URIS`를 Fly.io 환경변수로 설정
+   (서버 구현은 다른 세션이 main에 이미 완료함, 위 «네이버 로그인 서버
+   구현 — 다른 세션이 더 나은 버전으로 먼저 병합함» 참고)
 7. **[AI]** 관리자 화면(WP-ADM-*) 프론트엔드 설계 및 구현 — API는 이제 다
    있다(`/v1/admin/*`, `requireOperator`로 보호). 각 `routes/admin-*.ts`
    파일이 엔드포인트 전체를 보여준다.
-8. **[AI]** 모바일에 네이버 로그인 버튼 연결(authorization code 받아오기,
-   `weddingpick://` Redirect URI 등록) — 서버는 준비됨
+8. ~~**[AI]** 모바일에 네이버 로그인 버튼 연결~~ — **완료**(다른 세션,
+   `apps/mobile/src/features/auth/providers.ts` 참고).
 9. **[AI]** 프론트엔드 미구현 화면 구현 — 우선순위: 회원탈퇴 > 일정 추가 > 지도 보기 > 취향 재선택
 10. **[AI]** 공통 Bottom Sheet 16종 인라인 처리 여부 확인
 
@@ -659,13 +666,11 @@ WeddingPickl/
 ## 변경 금지 / 주의
 - do_not_change:
   - **회원탈퇴 자동 삭제 백엔드를 만들지 말 것.** `packages/domain/src/withdrawal.ts`의 `WITHDRAWAL_NOTICE`가 개인정보처리방침 확정 전까지 `null`인 명시적 게이트다. 스키마상 `structured.users` 하드 삭제는 FK CASCADE로 확인된 정보(quotes)까지 지운다 — 위험. `payment_proofs`/`price_reports`를 "통계 제외"할지 "익명화 유지"할지도 정책 §46이 명확히 안 정했다. 이 정책들이 정해지기 전엔 손대지 말 것.
-  - NPay·월간 웨딩지원금 기능을 만들지 말 것(위 미완료 항목 참조, 개인정보 처리방침과 함께 정리해야 함).
-  - ~~소셜 로그인 관련 파일은... 네이버는 아직 실제 제공자 목록에 노출 안 함 —
-    서버 콜백·토큰 교환 API가 따로 필요하다.~~ **오래된 노트.** 서버 구현은
-    위 «네이버 로그인 서버 구현 완료» 섹션에서 끝났다. 지금도 노출 안 되는
-    이유는 코드가 없어서가 아니라 `NAVER_CLIENT_ID`/`NAVER_CLIENT_SECRET`
-    운영 환경변수를 아직 안 넣어서다 — 넣는 순간 자동으로 노출된다(의도된
-    동작). `docs/social-login-handoff.md` 참고.
+  - ~~NPay·월간 웨딩지원금 기능을 만들지 말 것~~ **오래된 노트** — 다른
+    세션이 이미 구현해 main에 병합했다(`packages/domain/src/monthly-draw.ts`,
+    마이그레이션 `0047_monthly_draw.sql`). «백엔드 갭 조사»에서 이 세션이
+    "앱 코드 0건"이라 판단했던 것도 이 병합 전 시점 기준이라 이제는 틀렸다.
+  - 네이버 authorization code 교환과 프로필 조회 경로가 구현됐다. 서버와 앱 환경값 및 네이버 Developers callback URL이 모두 설정된 경우에만 노출한다(`docs/social-login-handoff.md` 참조).
   - `docs/design-handoff/seed/`는 원본 그대로 유지 — 화면 구현할 때 이 폴더 안의 `.dc.html` 파일을 직접 고치지 않는다(참고용 원본).
 
 ## 롤백

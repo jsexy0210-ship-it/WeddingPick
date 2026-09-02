@@ -23,14 +23,16 @@ export const POLICY_DOCUMENTS: readonly PolicyDocument[] = [
   {
     id: 'terms',
     title: '이용약관',
-    status: '자문 대기',
-    note: '초안은 작성됐지만 법률 자문 전이라 게시하지 않아요.',
+    status: '초안 게시',
+    note: '법률 자문을 마친 초안이에요. 확정 전 내용으로 언제든 바뀔 수 있어요.',
+    url: 'https://weddingpick.kr/terms',
   },
   {
     id: 'privacy',
     title: '개인정보처리방침',
     status: '작성 필요',
     note: '문서 분석과 배우자 데이터 공유 항목을 포함해 작성해야 해요.',
+    url: 'https://weddingpick.kr/privacy',
   },
   {
     id: 'analysis-notice',

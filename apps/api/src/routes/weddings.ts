@@ -266,10 +266,10 @@ export function registerWeddingRoutes(app: FastifyInstance, context: AppContext)
       }
     }
 
-    await context.pool.query('UPDATE structured.users SET display_name = $2 WHERE id = $1', [
-      userId,
-      displayName,
-    ]);
+    await context.pool.query(
+      `UPDATE structured.users SET display_name = $2, display_name_user_set = true WHERE id = $1`,
+      [userId, displayName]
+    );
 
     return { displayName };
   });

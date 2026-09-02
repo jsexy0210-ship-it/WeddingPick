@@ -245,7 +245,13 @@ export default function ContactScreen() {
             <ActionButton
               variant="primary"
               label={busy ? '보내는 중…' : '보내기'}
-              hint={ready ? undefined : '내용을 적어주세요'}
+              hint={
+                ready
+                  ? undefined
+                  : rule.requiresSubject && !subject
+                    ? '해당 화면에서 눌러 들어와주세요'
+                    : '내용을 적어주세요'
+              }
               disabled={busy || !ready || !isServerConfigured}
               onPress={submit}
             />

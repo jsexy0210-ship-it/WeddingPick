@@ -20,6 +20,7 @@ import {
   registerDeviceResponseSchema,
   settingsSchema,
   signupStateSchema,
+  tasteListResponseSchema,
   myReportListResponseSchema,
   notificationListResponseSchema,
   notificationSummaryResponseSchema,
@@ -42,6 +43,7 @@ import {
   vendorSearchResponseSchema,
   conditionStatsSchema,
   myRewardsResponseSchema,
+  myMonthlyDrawResponseSchema,
   vendorClaimListResponseSchema,
   weddingInviteListResponseSchema,
   verificationRequestSchema,
@@ -50,6 +52,7 @@ import {
   type ConditionStats,
   type DecideCategoryRequest,
   type MyRewardsResponse,
+  type MyMonthlyDrawResponse,
   type CreateRebuttalRequest,
   type CreateVendorClaimRequest,
   type VendorClaimListResponse,
@@ -60,6 +63,8 @@ import {
   type UpdateReviewRequest,
   type Settings,
   type UpdateSettingsRequest,
+  type Taste,
+  type TasteListResponse,
   type VendorSort,
   type UpdateRebuttalRequest,
   type CreateExpenseRequest,
@@ -102,6 +107,12 @@ import {
   type VendorSearchResponse,
   type WeddingInviteListResponse,
   type VerificationRequest,
+  createPriceReportRequestSchema,
+  createPriceReportResponseSchema,
+  quoteListResponseSchema,
+  type CreatePriceReportRequest,
+  type CreatePriceReportResponse,
+  type QuoteListResponse,
   withdrawalNoticeSchema,
   withdrawalResultSchema,
   type WithdrawalNotice,
@@ -186,12 +197,31 @@ export async function listAuthProviders(): Promise<AuthProvidersResponse> {
   return request('/v1/auth/providers', authProvidersResponseSchema, { auth: false });
 }
 
-export async function signIn(provider: 'apple' | 'kakao' | 'google' | 'naver', idToken: string): Promise<void> {
+export async function signIn(
+  provider: 'apple' | 'kakao' | 'google',
+  idToken: string,
+  profileName?: string
+): Promise<void> {
   const session = await request(
     '/v1/auth/sessions',
     createSessionResponseSchema,
-    { method: 'POST', body: JSON.stringify({ provider, idToken }), auth: false }
+    { method: 'POST', body: JSON.stringify({ provider, idToken, profileName }), auth: false }
   );
+
+  await saveToken(session.token);
+}
+
+export async function signInWithAuthorizationCode(input: {
+  authorizationCode: string;
+  state: string;
+  redirectUri: string;
+  codeVerifier?: string;
+}): Promise<void> {
+  const session = await request('/v1/auth/sessions', createSessionResponseSchema, {
+    method: 'POST',
+    body: JSON.stringify({ provider: 'naver', ...input }),
+    auth: false,
+  });
 
   await saveToken(session.token);
 }
@@ -250,9 +280,9 @@ export async function getSignupState() {
 /**
  * 연령 확인과 필수 동의.
  *
- * `birthDate`는 서버가 나이를 세는 데만 쓰고 저장하지 않는다.
+ * 소셜 제공 생년월일이 없을 때만 `birthDate`를 보내며 서버는 나이만 세고 버린다.
  */
-export async function completeSignup(input: { birthDate: string; consents: string[] }) {
+export async function completeSignup(input: { birthDate?: string; consents: string[] }) {
   return request('/v1/me/signup', signupStateSchema, {
     method: 'POST',
     body: JSON.stringify(input),
@@ -334,6 +364,28 @@ export async function createVerificationRequest(
 
 export async function getVerificationRequest(requestId: string): Promise<VerificationRequest> {
   return request(`/v1/verification-requests/${requestId}`, verificationRequestSchema);
+}
+
+export async function createPriceReport(
+  body: CreatePriceReportRequest
+): Promise<CreatePriceReportResponse> {
+  return request('/v1/price-reports', createPriceReportResponseSchema, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function listQuotes(
+  weddingId: string,
+  cursor?: string
+): Promise<QuoteListResponse> {
+  const params = new URLSearchParams();
+  if (cursor) params.set('cursor', cursor);
+  const qs = params.toString();
+  return request(
+    `/v1/weddings/${weddingId}/quotes${qs ? `?${qs}` : ''}`,
+    quoteListResponseSchema
+  );
 }
 
 /**
@@ -864,6 +916,10 @@ export async function getMyRewards(): Promise<MyRewardsResponse> {
   return request('/v1/me/rewards', myRewardsResponseSchema);
 }
 
+export async function getMyMonthlyDraw(): Promise<MyMonthlyDrawResponse> {
+  return request('/v1/me/monthly-draw', myMonthlyDrawResponseSchema);
+}
+
 /**
  * 초대 코드 넣기.
  *
@@ -898,6 +954,19 @@ export async function updateSettings(body: UpdateSettingsRequest): Promise<Setti
   return request('/v1/me/settings', settingsSchema, {
     method: 'PUT',
     body: JSON.stringify(body),
+  });
+}
+
+/** 취향. 홈 C-1 시안 1. 아직 안 골랐으면 빈 배열이 온다. */
+export async function getTaste(): Promise<TasteListResponse> {
+  return request('/v1/me/taste', tasteListResponseSchema);
+}
+
+/** 고른 전체를 그대로 보낸다 — "추가"가 아니라 "지금 고른 전체"다. */
+export async function updateTaste(tastes: readonly Taste[]): Promise<TasteListResponse> {
+  return request('/v1/me/taste', tasteListResponseSchema, {
+    method: 'PUT',
+    body: JSON.stringify({ tastes }),
   });
 }
 
