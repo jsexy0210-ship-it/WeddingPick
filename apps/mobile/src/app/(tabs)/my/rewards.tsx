@@ -59,7 +59,6 @@ export default function MyRewardsScreen() {
       .catch(() => setDraw(null));
   }, []);
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- 화면 진입 시 목록을 가져오는 정상적인 fetch-in-effect다. eslint-plugin-react-hooks 7.x가 이 패턴을 오탐지한다.
   useEffect(load, [load]);
 
   async function shareCode() {
