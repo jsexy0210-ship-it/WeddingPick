@@ -6,7 +6,7 @@ import {
   checkDisplayName,
   formatWeddingDate,
 } from '@weddingpick/domain';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,6 +25,7 @@ import {
 import { getSettings, revokePaymentConsent, setDisplayName, updateSettings } from '@/api/client';
 import { useSession } from '@/features/auth/use-session';
 import { APP_VERSION } from '@/features/settings/version';
+import { hasTaste, loadTaste, TASTE_LABEL, type Taste } from '@/features/home/taste';
 
 /**
  * 설정. 디자인 핸드오프 19번.
@@ -37,6 +38,7 @@ export default function SettingsScreen() {
   const theme = useTheme();
   const { signOut } = useSession();
   const [settings, setSettings] = useState<Settings | null>(null);
+  const [taste, setTaste] = useState<readonly Taste[]>([]);
   const [toast, setToast] = useState<string | null>(null);
   /** 이름 고치는 시트. 화면을 옮기지 않는다 — 한 칸 고치러 다른 화면까지 가지 않는다. */
   const [nameOpen, setNameOpen] = useState(false);
@@ -72,6 +74,13 @@ export default function SettingsScreen() {
   }, []);
 
   useEffect(load, [load]);
+
+  // 취향 다시 고르기에서 돌아왔을 수도 있다. 값이 기기에만 있어 focus마다 다시 읽는다.
+  useFocusEffect(
+    useCallback(() => {
+      void loadTaste().then(setTaste);
+    }, [])
+  );
 
   async function toggle(key: 'pushEnabled' | 'priceChangeEnabled', value: boolean) {
     if (!settings) return;
@@ -173,6 +182,13 @@ export default function SettingsScreen() {
               label="배우자 연결"
               value={settings?.spouseLinked ? '연결됨' : '연결하지 않음'}
               onPress={() => router.push('/wedding/partner')}
+            />
+            <Row
+              label="취향"
+              value={
+                hasTaste(taste) ? taste.map((one) => TASTE_LABEL[one]).join(' · ') : '고르지 않음'
+              }
+              onPress={() => router.push('/my/preferences')}
             />
             <ActionButton label="회원탈퇴" onPress={() => router.push('/my/withdrawal')} />
           </Section>

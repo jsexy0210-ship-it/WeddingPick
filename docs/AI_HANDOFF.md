@@ -7,7 +7,7 @@
 
 ## 메타
 
-- `updated_at`: 2026-09-02
+- `updated_at`: 2026-09-02 (프론트엔드 세션, `claude/frontend-development-i1j2aa`)
 - `repository`: jsexy0210-ship-it/WeddingPickl
 - `branch (main)`: 4bae250
 - `policy_version`: 통합정책 v3.13
@@ -168,7 +168,7 @@ GitHub Actions 실제 실행 결과, production DB 적용.
 | B2B 문의 (WP-BIZ-*) | 5개 | 소속확인·자료제공·혜택등록·광고·웹Footer |
 | 커플 연결 (WP-CPL-*) | 2개 | 공동 편집 충돌, 변경 내역 |
 | 우리웨딩 (WP-OUR-*) | 3개 | 일정 추가, 준비 타임라인, 예식 완료 |
-| MY (WP-MY-*) | 2개 | 취향 다시 고르기, 회원탈퇴 |
+| MY (WP-MY-*) | 0개 | 회원탈퇴(기존 구현 확인됨) · 취향 다시 고르기(2026-09-02 구현, `/my/preferences`) |
 | 홈 (WP-HOME-*) | 2개 | TOP3 전체보기, 개인화 웨딩피드 |
 | 기타 | ~5개 | 지도 보기, 재실행·세션 복원, 진입 예외 등 |
 
@@ -245,7 +245,9 @@ WeddingPickl/
 2. **[사용자]** Fly.io: `OPERATOR_SESSION_TTL_DAYS=365` 추가
 3. **[사용자]** Neon DB: `db-migrate.yml` 실행 → 0052 적용
 4. **[사용자]** terms.url · privacy.url 확정 → 도메인 상수 업데이트
-5. **[AI]** 프론트엔드 미구현 화면 구현 — 우선순위: 회원탈퇴 > 일정 추가 > 지도 보기 > 취향 재선택
+5. **[AI]** 프론트엔드 미구현 화면 구현 — 남은 우선순위: 일정 추가(WP-OUR-004~006, 신규 API 필요) > 지도 보기(WP-SRCH-007, 지도 SDK·업체 좌표 데이터 필요)
+   - 회원탈퇴(WP-MY-008)는 `/my/withdrawal`에 이미 구현돼 있음(기존 구현 확인함)
+   - 취향 다시 고르기(WP-MY-004)는 `/my/preferences`로 2026-09-02 구현 완료 — 홈의 `TastePicker`·`taste.ts`를 그대로 재사용, MY 설정 화면에서 진입
 6. **[AI]** 공통 Bottom Sheet 16종 인라인 처리 여부 확인
 7. **[AI]** 관리자 화면 설계 및 구현 (앱스토어 출시 후 단계)
 

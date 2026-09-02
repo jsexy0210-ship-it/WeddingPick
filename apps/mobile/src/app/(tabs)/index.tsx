@@ -11,7 +11,7 @@ import {
   VENDOR_CATEGORY_LABEL,
   type VendorCategory,
 } from '@weddingpick/domain';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -151,6 +151,16 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(load, [load]);
+
+  /*
+   * MY의 «취향 다시 고르기»에서 돌아왔을 수도 있다. 취향만 다시 읽는다 — 전체
+   * load()를 또 부르면 안 바뀐 서버 자료까지 매번 다시 받아온다.
+   */
+  useFocusEffect(
+    useCallback(() => {
+      void loadTaste().then(setTaste);
+    }, [])
+  );
 
   // 골격이 같은 스켈레톤을 덮는다. 자료가 왔을 때 화면이 튀지 않게 하려는 것이다.
   if (!settled) {
