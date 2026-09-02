@@ -177,7 +177,7 @@ td:first-child{font-family:monospace;font-size:12px}
     <button class="tab-btn" data-tab="objections">신고처리 <span id="obj-badge" class="badge" hidden></span></button>
     <button class="tab-btn" data-tab="rebuttals">반론심사 <span id="reb-badge" class="badge warn" hidden></span></button>
     <button class="tab-btn" data-tab="verifications">Pick인증검수 <span id="ver-badge" class="badge warn" hidden></span></button>
-    <button class="tab-btn" data-tab="pii">데이터오류수정 <span id="pii-badge" class="badge" hidden></span></button>
+    <button class="tab-btn" data-tab="pii">오류수정 <span id="pii-badge" class="badge" hidden></span></button>
   </div>
   <div id="main-content">
 
@@ -207,7 +207,7 @@ td:first-child{font-family:monospace;font-size:12px}
       <div id="ver-content" class="loading">불러오는 중…</div>
     </div>
 
-    <!-- 데이터오류수정 -->
+    <!-- 오류수정 -->
     <div class="panel" id="panel-pii">
       <div class="section-title">개인정보 오류 수정 <button id="pii-refresh" class="btn-ghost" style="font-size:12px;margin-left:8px">새로고침</button></div>
       <div id="pii-content" class="loading">불러오는 중…</div>
