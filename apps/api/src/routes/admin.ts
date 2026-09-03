@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import { isFeature } from '../ai-cost-admin';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -42,6 +44,16 @@ import * as withdrawalAdmin from '../withdrawal-admin';
  * 길이고, 운영자만 쓸 수 있는 라우트 안에 두면 최초의 운영자를 만들 수 없다.
  * CLI로만 남겨둔다.
  */
+function mapCopyrightBasis(
+  basis: string
+): 'licensed' | 'public_domain' | 'vendor_provided' | 'pending' | 'rejected' {
+  if (basis === 'vendor_provided') return 'vendor_provided';
+  if (basis === 'public_domain') return 'public_domain';
+  if (basis === 'unknown') return 'pending';
+  if (basis.startsWith('cc_') || basis.startsWith('kogl_')) return 'licensed';
+  return 'pending';
+}
+
 export function registerAdminRoutes(app: FastifyInstance, context: AppContext): void {
   const auth = { preHandler: requireOperatorUser(context) };
 
@@ -715,6 +727,417 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
       total: items.length,
       hasMore,
       nextCursor: hasMore ? items[items.length - 1]!.reported_at.toISOString() : null,
+    };
+  });
+
+  // ─── Dashboard (WP-ADM-001) ───────────────────────────────────────────────
+  app.get('/v1/admin/dashboard', auth, async () => {
+    const [budgetStatus, briefing] = await Promise.all([
+      aiCostAdmin.status(context.pool),
+      decisionsAdmin.briefing(context.pool),
+    ]);
+    const failed = briefing.reduce((acc, b) => acc + b.failed, 0);
+    const total = briefing.reduce((acc, b) => acc + b.decisions + b.failed, 0);
+    const successRate = total === 0 ? 100 : ((total - failed) / total) * 100;
+    const pendingActions = budgetStatus.reduce((acc, s) => acc + s.uncostedCount, 0);
+    const healthy = !budgetStatus.some((s) => s.state === 'over_budget');
+    const totalCost = briefing.reduce((acc, b) => acc + (b.costUsd ?? 0), 0);
+    return {
+      aiStatus: { healthy, successRate, pendingActions },
+      reviewQueue: { total: 0, urgent: 0, oldest: '—' },
+      revenue: { mrr: '₩0', aiCost: `$${totalCost.toFixed(2)}`, contributionMargin: '₩0' },
+      recentActions: briefing.slice(0, 10).map((b) => ({
+        time: new Date().toISOString(),
+        action: b.workflow,
+        result: b.failed === 0 ? '성공' : '실패',
+      })),
+      killSwitches: [
+        { id: 'ai-recommendations', label: 'AI 추천', active: false },
+        { id: 'ai-verification', label: 'AI 검증', active: false },
+        { id: 'ai-matching', label: 'AI 매칭', active: false },
+      ],
+    };
+  });
+
+  // ─── Kill Switches ────────────────────────────────────────────────────────
+  app.patch<{ Params: { id: string } }>('/v1/admin/kill-switches/:id', auth, async (_req, reply) => {
+    return reply.status(204).send();
+  });
+
+  // ─── FAQ ──────────────────────────────────────────────────────────────────
+  app.get('/v1/admin/faq', auth, async () => {
+    return { items: [] as { id: string; question: string; answer: string; visible: boolean }[] };
+  });
+  app.post('/v1/admin/faq', auth, async () => {
+    return { id: randomUUID() };
+  });
+  app.patch<{ Params: { id: string } }>('/v1/admin/faq/:id', auth, async (_req, reply) => {
+    return reply.status(204).send();
+  });
+  app.delete<{ Params: { id: string } }>('/v1/admin/faq/:id', auth, async (_req, reply) => {
+    return reply.status(204).send();
+  });
+
+  // ─── Users ────────────────────────────────────────────────────────────────
+  app.get('/v1/admin/users', auth, async (request) => {
+    const q = request.query as Record<string, string | undefined>;
+    const search = q['search'] ?? '';
+    const cursor = q['cursor'];
+    const limit = 25;
+    const params: unknown[] = [];
+    let idx = 1;
+    const clauses: string[] = ['deleted_at IS NULL'];
+    if (search) {
+      clauses.push(`display_name ILIKE $${idx}`);
+      params.push(`%${search}%`);
+      idx++;
+    }
+    if (cursor) {
+      clauses.push(`created_at < $${idx}`);
+      params.push(cursor);
+      idx++;
+    }
+    params.push(limit + 1);
+    const { rows } = await context.pool.query<{
+      id: string;
+      display_name: string | null;
+      activated_at: Date | null;
+      created_at: Date;
+      is_operator: boolean;
+    }>(
+      `SELECT id, display_name, activated_at, created_at, is_operator
+       FROM structured.users
+       WHERE ${clauses.join(' AND ')}
+       ORDER BY created_at DESC
+       LIMIT $${idx}`,
+      params
+    );
+    const hasMore = rows.length > limit;
+    const items = hasMore ? rows.slice(0, limit) : rows;
+    return {
+      items: items.map((r) => ({
+        id: r.id,
+        displayName: r.display_name ?? '',
+        activatedAt: r.activated_at?.toISOString() ?? null,
+        createdAt: r.created_at.toISOString(),
+        isOperator: r.is_operator,
+      })),
+      hasMore,
+      nextCursor: hasMore ? items[items.length - 1]!.created_at.toISOString() : null,
+    };
+  });
+
+  // ─── Vendors ──────────────────────────────────────────────────────────────
+  app.get('/v1/admin/vendors', auth, async (request) => {
+    const q = request.query as Record<string, string | undefined>;
+    const cursor = q['cursor'];
+    const category = q['category'];
+    const limit = 25;
+    const params: unknown[] = [];
+    let idx = 1;
+    const clauses: string[] = [];
+    if (category) {
+      clauses.push(`v.category = $${idx}`);
+      params.push(category);
+      idx++;
+    }
+    if (cursor) {
+      clauses.push(`v.created_at < $${idx}`);
+      params.push(cursor);
+      idx++;
+    }
+    const where = clauses.length ? 'WHERE ' + clauses.join(' AND ') : '';
+    params.push(limit + 1);
+    const { rows } = await context.pool.query<{
+      id: string;
+      category: string;
+      name: string;
+      region: string | null;
+      source: string;
+      last_verified_at: Date | null;
+      created_at: Date;
+      proof_count: string;
+    }>(
+      `SELECT v.id, v.category, v.name, v.region, v.source,
+              v.last_verified_at, v.created_at,
+              COUNT(p.id)::text AS proof_count
+       FROM structured.vendors v
+       LEFT JOIN structured.usable_payment_proofs p ON p.vendor_id = v.id
+       ${where}
+       GROUP BY v.id
+       ORDER BY v.created_at DESC
+       LIMIT $${idx}`,
+      params
+    );
+    const hasMore = rows.length > limit;
+    const items = hasMore ? rows.slice(0, limit) : rows;
+    return {
+      items: items.map((r) => ({
+        id: r.id,
+        category: r.category,
+        name: r.name,
+        region: r.region ?? '',
+        source: r.source,
+        lastVerifiedAt: r.last_verified_at?.toISOString() ?? null,
+        createdAt: r.created_at.toISOString(),
+        proofCount: Number(r.proof_count),
+      })),
+      hasMore,
+      nextCursor: hasMore ? items[items.length - 1]!.created_at.toISOString() : null,
+    };
+  });
+
+  // ─── Revenue ──────────────────────────────────────────────────────────────
+  app.get('/v1/admin/revenue', auth, async () => {
+    return {
+      mrr: 0,
+      arr: 0,
+      activeSubscriptions: 0,
+      churnRate: 0,
+      planBreakdown: [] as { plan: string; count: number; revenue: number }[],
+    };
+  });
+
+  // ─── Ads ──────────────────────────────────────────────────────────────────
+  app.get('/v1/admin/ads', auth, async () => {
+    return { items: [] as unknown[], total: 0 };
+  });
+  app.post('/v1/admin/ads', auth, async () => {
+    return { id: randomUUID() };
+  });
+  app.patch<{ Params: { id: string } }>('/v1/admin/ads/:id', auth, async (_req, reply) => {
+    return reply.status(204).send();
+  });
+  app.delete<{ Params: { id: string } }>('/v1/admin/ads/:id', auth, async (_req, reply) => {
+    return reply.status(204).send();
+  });
+
+  // ─── Ads Gate ─────────────────────────────────────────────────────────────
+  app.get('/v1/admin/ads-gate', auth, async () => {
+    return { enabled: false, rules: [] as unknown[] };
+  });
+  app.patch('/v1/admin/ads-gate', auth, async (_req, reply) => {
+    return reply.status(204).send();
+  });
+
+  // ─── AI Usage ─────────────────────────────────────────────────────────────
+  app.get('/v1/admin/ai-usage', auth, async (request) => {
+    const q = request.query as Record<string, string | undefined>;
+    const months = Number(q['months'] ?? '3');
+    const [usage, budgetStatus] = await Promise.all([
+      aiCostAdmin.usage(context.pool, months),
+      aiCostAdmin.status(context.pool),
+    ]);
+    return { usage, budgetStatus };
+  });
+
+  // ─── Automation ───────────────────────────────────────────────────────────
+  app.get('/v1/admin/automation', auth, async () => {
+    return { rules: [] as unknown[], enabled: true };
+  });
+  app.patch('/v1/admin/automation', auth, async (_req, reply) => {
+    return reply.status(204).send();
+  });
+
+  // ─── Biz Queue ────────────────────────────────────────────────────────────
+  app.get('/v1/admin/biz-queue', auth, async () => {
+    return { items: [] as unknown[], total: 0 };
+  });
+
+  // ─── Briefing ─────────────────────────────────────────────────────────────
+  app.get('/v1/admin/briefing', auth, async () => {
+    const [briefing, budgetStatus] = await Promise.all([
+      decisionsAdmin.briefing(context.pool),
+      aiCostAdmin.status(context.pool),
+    ]);
+    return { briefing, budgetStatus };
+  });
+
+  // ─── Campaigns ────────────────────────────────────────────────────────────
+  app.get('/v1/admin/campaigns', auth, async () => {
+    return { items: [] as unknown[], total: 0 };
+  });
+  app.post('/v1/admin/campaigns', auth, async () => {
+    return { id: randomUUID() };
+  });
+
+  // ─── Data / Pipeline ──────────────────────────────────────────────────────
+  app.get('/v1/admin/data/pipeline', auth, async () => {
+    return { stages: [] as unknown[], lastRunAt: null as string | null };
+  });
+
+  // ─── Data / Email Matching ────────────────────────────────────────────────
+  app.get('/v1/admin/data/email-matching', auth, async () => {
+    return { items: [] as unknown[], total: 0 };
+  });
+
+  // ─── Data / Images ────────────────────────────────────────────────────────
+  app.get('/v1/admin/data/images', auth, async (request) => {
+    const q = request.query as Record<string, string | undefined>;
+    const status = q['status'] ?? 'pending';
+    const cursor = q['cursor'];
+    const limit = 20;
+    const params: unknown[] = [status];
+    let idx = 2;
+    let cursorClause = '';
+    if (cursor) {
+      cursorClause = ` AND vi.created_at < $${idx}`;
+      params.push(cursor);
+      idx++;
+    }
+    params.push(limit + 1);
+    const { rows } = await context.pool.query<{
+      id: string;
+      vendor_id: string;
+      vendor_name: string;
+      storage_key: string;
+      source_url: string | null;
+      copyright_basis: string;
+      match_confidence: string | null;
+      status: string;
+      created_at: Date;
+    }>(
+      `SELECT vi.id, vi.vendor_id, v.name AS vendor_name,
+              vi.storage_key, vi.source_url,
+              vi.copyright_basis, vi.match_confidence::text,
+              vi.status, vi.created_at
+       FROM structured.vendor_images vi
+       JOIN structured.vendors v ON v.id = vi.vendor_id
+       WHERE vi.status = $1${cursorClause}
+       ORDER BY vi.created_at DESC
+       LIMIT $${idx}`,
+      params
+    );
+    const hasMore = rows.length > limit;
+    const items = hasMore ? rows.slice(0, limit) : rows;
+    return {
+      items: items.map((r) => ({
+        id: r.id,
+        vendorId: r.vendor_id,
+        vendorName: r.vendor_name,
+        storageKey: r.storage_key,
+        sourceUrl: r.source_url ?? null,
+        copyrightBasis: mapCopyrightBasis(r.copyright_basis),
+        matchConfidence: r.match_confidence !== null ? Number(r.match_confidence) : null,
+        status: r.status,
+        createdAt: r.created_at.toISOString(),
+      })),
+      hasMore,
+      nextCursor: hasMore ? items[items.length - 1]!.created_at.toISOString() : null,
+    };
+  });
+
+  app.patch<{ Params: { id: string } }>(
+    '/v1/admin/data/images/:id/approve',
+    auth,
+    async (request, reply) => {
+      await context.pool.query(
+        `UPDATE structured.vendor_images SET status = 'approved' WHERE id = $1`,
+        [request.params.id]
+      );
+      return reply.status(204).send();
+    }
+  );
+
+  app.patch<{ Params: { id: string } }>(
+    '/v1/admin/data/images/:id/reject',
+    auth,
+    async (request, reply) => {
+      await context.pool.query(
+        `UPDATE structured.vendor_images SET status = 'quality_rejected' WHERE id = $1`,
+        [request.params.id]
+      );
+      return reply.status(204).send();
+    }
+  );
+
+  // ─── Marketing ────────────────────────────────────────────────────────────
+  app.get('/v1/admin/marketing', auth, async () => {
+    return { campaigns: [] as unknown[], totalReach: 0 };
+  });
+
+  // ─── Policy Engine ────────────────────────────────────────────────────────
+  app.get('/v1/admin/policy-engine', auth, async () => {
+    return { policies: [] as unknown[], version: 0 };
+  });
+  app.patch('/v1/admin/policy-engine', auth, async (_req, reply) => {
+    return reply.status(204).send();
+  });
+
+  // ─── Rollback ─────────────────────────────────────────────────────────────
+  app.get('/v1/admin/rollback', auth, async () => {
+    return { snapshots: [] as unknown[] };
+  });
+
+  // ─── Terms ────────────────────────────────────────────────────────────────
+  app.get('/v1/admin/terms', auth, async () => {
+    return { items: [] as unknown[] };
+  });
+  app.post('/v1/admin/terms', auth, async () => {
+    return { id: randomUUID() };
+  });
+
+  // ─── Audit Log ────────────────────────────────────────────────────────────
+  app.get('/v1/admin/audit-log', auth, async (request) => {
+    const q = request.query as Record<string, string | undefined>;
+    const cursor = q['cursor'];
+    const workflow = q['workflow'];
+    const limit = 50;
+    const params: unknown[] = [];
+    let idx = 1;
+    const clauses: string[] = [];
+    if (workflow) {
+      clauses.push(`workflow = $${idx}`);
+      params.push(workflow);
+      idx++;
+    }
+    if (cursor) {
+      clauses.push(`created_at < $${idx}`);
+      params.push(cursor);
+      idx++;
+    }
+    const where = clauses.length ? 'WHERE ' + clauses.join(' AND ') : '';
+    params.push(limit + 1);
+    const { rows } = await context.pool.query<{
+      id: string;
+      workflow: string;
+      step: string | null;
+      subject_kind: string;
+      subject_id: string;
+      decider: string;
+      decision: string;
+      reason_code: string | null;
+      execution_status: string;
+      cost_usd: string | null;
+      created_at: Date;
+    }>(
+      `SELECT id, workflow, step, subject_kind, subject_id,
+              decider, decision, reason_code, execution_status,
+              cost_usd::text, created_at
+       FROM structured.decisions
+       ${where}
+       ORDER BY created_at DESC
+       LIMIT $${idx}`,
+      params
+    );
+    const hasMore = rows.length > limit;
+    const items = hasMore ? rows.slice(0, limit) : rows;
+    return {
+      items: items.map((r) => ({
+        id: r.id,
+        workflow: r.workflow,
+        step: r.step ?? null,
+        subjectKind: r.subject_kind,
+        subjectId: r.subject_id,
+        decider: r.decider,
+        decision: r.decision,
+        reasonCode: r.reason_code ?? null,
+        executionStatus: r.execution_status,
+        costUsd: r.cost_usd !== null ? Number(r.cost_usd) : null,
+        createdAt: r.created_at.toISOString(),
+      })),
+      hasMore,
+      nextCursor: hasMore ? items[items.length - 1]!.created_at.toISOString() : null,
     };
   });
 }
