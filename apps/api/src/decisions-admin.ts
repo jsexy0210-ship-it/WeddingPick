@@ -1,3 +1,5 @@
+import type { Pool } from 'pg';
+
 import { loadConfig } from './config';
 import { createPool } from './db';
 
@@ -13,8 +15,121 @@ import { createPool } from './db';
  *   npm run decisions --workspace @weddingpick/api -- --event <event-id>
  *
  * 여기서 아무것도 처리하지 않는다. 처리는 각 도구(rebuttals·inquiries·
- * verifications)가 하고, 이건 어디를 봐야 하는지만 말한다.
+ * verifications)가 하고, 이건 어디를 봐야 하는지만 말한다. 전부 조회라
+ * `requireOperator`를 여기서 부르지 않는다 — 관리자 라우트가 맨 앞에서
+ * 이미 확인한다.
  */
+
+export type DecisionStep = {
+  step: string;
+  decider: string;
+  decision: string;
+  reasonCode: string;
+  confidence: number | null;
+  executionStatus: string;
+  createdAt: Date;
+};
+
+export async function eventTimeline(pool: Pool, eventId: string): Promise<DecisionStep[]> {
+  const { rows } = await pool.query<{
+    step: string;
+    decider: string;
+    decision: string;
+    reason_code: string;
+    confidence: string | null;
+    execution_status: string;
+    created_at: Date;
+  }>(
+    `SELECT step, decider, decision, reason_code, confidence, execution_status, created_at
+     FROM structured.decisions WHERE event_id = $1 ORDER BY created_at`,
+    [eventId]
+  );
+
+  return rows.map((row) => ({
+    step: row.step,
+    decider: row.decider,
+    decision: row.decision,
+    reasonCode: row.reason_code,
+    confidence: row.confidence === null ? null : Number(row.confidence),
+    executionStatus: row.execution_status,
+    createdAt: row.created_at,
+  }));
+}
+
+export type OpenDecision = {
+  id: string;
+  workflow: string;
+  step: string;
+  subjectKind: string;
+  subjectId: string | null;
+  reasonCode: string;
+  executionStatus: string;
+  createdAt: Date;
+};
+
+export async function openDecisions(pool: Pool): Promise<OpenDecision[]> {
+  const { rows } = await pool.query<{
+    id: string;
+    workflow: string;
+    step: string;
+    subject_kind: string;
+    subject_id: string | null;
+    reason_code: string;
+    execution_status: string;
+    created_at: Date;
+  }>(
+    `SELECT id, workflow, step, subject_kind, subject_id, reason_code,
+            execution_status, created_at
+     FROM structured.open_decisions
+     ORDER BY created_at`
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    workflow: row.workflow,
+    step: row.step,
+    subjectKind: row.subject_kind,
+    subjectId: row.subject_id,
+    reasonCode: row.reason_code,
+    executionStatus: row.execution_status,
+    createdAt: row.created_at,
+  }));
+}
+
+export type BriefingRow = {
+  workflow: string;
+  decider: string;
+  decisions: number;
+  failed: number;
+  costUsd: number | null;
+};
+
+export async function briefing(pool: Pool): Promise<BriefingRow[]> {
+  const { rows } = await pool.query<{
+    workflow: string;
+    decider: string;
+    decisions: string;
+    failed: string;
+    cost: string | null;
+  }>(
+    `SELECT workflow, decider::text,
+            count(*)::text AS decisions,
+            count(*) FILTER (WHERE execution_status IN ('failed', 'pending'))::text AS failed,
+            sum(cost_usd)::text AS cost
+     FROM structured.decisions
+     WHERE created_at >= now() - interval '1 day'
+     GROUP BY workflow, decider
+     ORDER BY workflow, decider`
+  );
+
+  return rows.map((row) => ({
+    workflow: row.workflow,
+    decider: row.decider,
+    decisions: Number(row.decisions),
+    failed: Number(row.failed),
+    costUsd: row.cost === null ? null : Number(row.cost),
+  }));
+}
 
 type Options = { briefing: boolean; open: boolean; event?: string };
 
@@ -40,19 +155,7 @@ async function main(): Promise<void> {
 
   try {
     if (options.event) {
-      const { rows } = await pool.query<{
-        step: string;
-        decider: string;
-        decision: string;
-        reason_code: string;
-        confidence: string | null;
-        execution_status: string;
-        created_at: Date;
-      }>(
-        `SELECT step, decider, decision, reason_code, confidence, execution_status, created_at
-         FROM structured.decisions WHERE event_id = $1 ORDER BY created_at`,
-        [options.event]
-      );
+      const rows = await eventTimeline(pool, options.event);
 
       if (rows.length === 0) {
         console.error('그런 사건이 없다.');
@@ -60,38 +163,22 @@ async function main(): Promise<void> {
         return;
       }
 
-      // 한 사건이 어느 단계를 어떻게 지나왔는지. B-3 Orchestrator가 남긴 자취다.
       console.log(`사건 ${options.event} — ${rows.length}단계:`);
       for (const row of rows) {
         const confidence = row.confidence === null ? '' : ` (${row.confidence})`;
 
         console.log(
-          `  ${when(row.created_at)}  ${row.step}  ${row.decider}${confidence}` +
-            `  → ${row.decision} [${row.reason_code}]  ${row.execution_status}`
+          `  ${when(row.createdAt)}  ${row.step}  ${row.decider}${confidence}` +
+            `  → ${row.decision} [${row.reasonCode}]  ${row.executionStatus}`
         );
       }
       return;
     }
 
     if (options.open) {
-      const { rows } = await pool.query<{
-        id: string;
-        workflow: string;
-        step: string;
-        subject_kind: string;
-        subject_id: string | null;
-        reason_code: string;
-        execution_status: string;
-        created_at: Date;
-      }>(
-        `SELECT id, workflow, step, subject_kind, subject_id, reason_code,
-                execution_status, created_at
-         FROM structured.open_decisions
-         ORDER BY created_at`
-      );
+      const rows = await openDecisions(pool);
 
       if (rows.length === 0) {
-        // 목표한 상태다. 조용한 날이 정상이다.
         console.log('사람 손이 필요한 것이 없다.');
         return;
       }
@@ -99,31 +186,16 @@ async function main(): Promise<void> {
       console.log(`사람 손이 필요한 것 ${rows.length}건:`);
       for (const row of rows) {
         console.log(
-          `  ${when(row.created_at)}  ${row.workflow}/${row.step}  ` +
-            `${row.subject_kind}:${row.subject_id ?? '-'}  [${row.reason_code}]  ` +
-            `${row.execution_status}`
+          `  ${when(row.createdAt)}  ${row.workflow}/${row.step}  ` +
+            `${row.subjectKind}:${row.subjectId ?? '-'}  [${row.reasonCode}]  ` +
+            `${row.executionStatus}`
         );
       }
       return;
     }
 
     if (options.briefing) {
-      const { rows } = await pool.query<{
-        workflow: string;
-        decider: string;
-        decisions: string;
-        failed: string;
-        cost: string | null;
-      }>(
-        `SELECT workflow, decider::text,
-                count(*)::text AS decisions,
-                count(*) FILTER (WHERE execution_status IN ('failed', 'pending'))::text AS failed,
-                sum(cost_usd)::text AS cost
-         FROM structured.decisions
-         WHERE created_at >= now() - interval '1 day'
-         GROUP BY workflow, decider
-         ORDER BY workflow, decider`
-      );
+      const rows = await briefing(pool);
 
       console.log('최근 24시간:');
 
@@ -133,12 +205,9 @@ async function main(): Promise<void> {
       }
 
       for (const row of rows) {
-        const cost = row.cost === null ? '' : `  $${Number(row.cost).toFixed(4)}`;
+        const cost = row.costUsd === null ? '' : `  $${row.costUsd.toFixed(4)}`;
 
-        console.log(
-          `  ${row.workflow}  ${row.decider}  ${row.decisions}건` +
-            `  미해결 ${row.failed}건${cost}`
-        );
+        console.log(`  ${row.workflow}  ${row.decider}  ${row.decisions}건  미해결 ${row.failed}건${cost}`);
       }
       return;
     }
@@ -150,7 +219,13 @@ async function main(): Promise<void> {
   }
 }
 
-void main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exitCode = 1;
-});
+/*
+ * CLI로 직접 실행했을 때만 돈다. 테스트가 이 파일에서 함수를 가져오면(require)
+ * `require.main`이 테스트 러너를 가리키므로 여기 걸리지 않는다.
+ */
+if (require.main === module) {
+  void main().catch((error: unknown) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  });
+}

@@ -63,9 +63,14 @@ describe('랜딩', () => {
       }
     }
 
-    // 확정본이 없는 문서가 있을 때만 미게시 문구를 노출한다.
-    const hasUnpublishedPolicy = POLICY_DOCUMENTS.some((policy) => !policy.url);
-    expect(html.includes('확정본이 없어 아직 게시하지 않았습니다')).toBe(hasUnpublishedPolicy);
+    // 확정본이 없는 문서가 있으면, 있다고 지어내지 않고 없다고 적는다.
+    const hasUnpublished = POLICY_DOCUMENTS.some((policy) => !policy.url);
+
+    if (hasUnpublished) {
+      expect(html).toContain('확정본이 없어 아직 게시하지 않았습니다');
+    } else {
+      expect(html).not.toContain('확정본이 없어 아직 게시하지 않았습니다');
+    }
   });
 
   it('분석 안내를 랜딩에서 게시한다', () => {

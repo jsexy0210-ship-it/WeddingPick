@@ -50,13 +50,22 @@ function parseArgs(argv: string[]): Options {
 const when = (at: Date): string => at.toISOString().slice(0, 16).replace('T', ' ');
 const won = (amount: string): string => `${Number(amount).toLocaleString('ko-KR')}원`;
 
-async function list(pool: ReturnType<typeof createPool>): Promise<void> {
+export type UnmatchedProof = {
+  id: string;
+  merchantName: string;
+  paidAmount: string;
+  paidAt: Date;
+  candidates: number;
+};
+
+/** 업체 없이 남은 결제인증 전부. 조회라 `requireOperator`를 부르지 않는다. */
+export async function list(pool: ReturnType<typeof createPool>): Promise<UnmatchedProof[]> {
   const { rows } = await pool.query<{
     id: string;
     merchant_name: string;
     paid_amount: string;
     paid_at: Date;
-    candidates: number;
+    candidates: string;
   }>(
     `SELECT
        p.id, p.merchant_name, p.paid_amount, p.paid_at,
@@ -67,25 +76,27 @@ async function list(pool: ReturnType<typeof createPool>): Promise<void> {
      ORDER BY p.created_at DESC`
   );
 
-  if (rows.length === 0) {
-    console.log('이어붙일 결제인증이 없다.');
-    return;
-  }
-
-  console.log(`업체 없이 남은 결제인증 ${rows.length}건:`);
-  for (const row of rows) {
-    /*
-     * 후보가 0곳이면 업체 자체가 없는 것이고, 이 도구가 아니라 업체 등록이
-     * 먼저다. 후보가 둘 이상이면 그중 하나를 고르는 것이 이 도구가 할 일이다.
-     */
-    const situation = row.candidates === 0 ? '등록된 업체 없음' : `후보 ${row.candidates}곳`;
-    console.log(
-      `  ${row.id}  ${row.merchant_name}  ${won(row.paid_amount)}  ${when(row.paid_at)}  (${situation})`
-    );
-  }
+  return rows.map((row) => ({
+    id: row.id,
+    merchantName: row.merchant_name,
+    paidAmount: row.paid_amount,
+    paidAt: row.paid_at,
+    // pg는 count(*)를 문자열로 돌려준다 — number로 선언해두면
+    // `candidates === 0` 비교가 "0" === 0이 되어 항상 거짓이 된다.
+    candidates: Number(row.candidates),
+  }));
 }
 
-async function show(pool: ReturnType<typeof createPool>, id: string): Promise<void> {
+export type ProofDetail = {
+  merchantName: string;
+  paidAmount: string;
+  paidAt: Date;
+  method: string;
+  vendorId: string | null;
+  candidates: { id: string; name: string; category: string; region: string }[];
+};
+
+export async function show(pool: ReturnType<typeof createPool>, id: string): Promise<ProofDetail | null> {
   const proof = await pool.query<{
     merchant_name: string;
     paid_amount: string;
@@ -100,14 +111,7 @@ async function show(pool: ReturnType<typeof createPool>, id: string): Promise<vo
 
   const found = proof.rows[0];
 
-  if (!found) {
-    console.log('없는 결제인증이다.');
-    return;
-  }
-
-  console.log(`가맹점명: ${found.merchant_name}`);
-  console.log(`금액: ${won(found.paid_amount)}  일시: ${when(found.paid_at)}  수단: ${found.method}`);
-  console.log(`연결된 업체: ${found.vendor_id ?? '없음'}`);
+  if (!found) return null;
 
   const candidates = await pool.query<{ id: string; name: string; category: string; region: string }>(
     `SELECT v.id, v.name, v.category::text, v.region
@@ -122,15 +126,14 @@ async function show(pool: ReturnType<typeof createPool>, id: string): Promise<vo
     [found.merchant_name]
   );
 
-  if (candidates.rows.length === 0) {
-    console.log('이름이 겹치는 업체가 없다. 업체가 아직 등록되지 않았을 수 있다.');
-    return;
-  }
-
-  console.log(`후보:`);
-  for (const c of candidates.rows) {
-    console.log(`  ${c.id}  ${c.name}  ${c.category}  ${c.region}`);
-  }
+  return {
+    merchantName: found.merchant_name,
+    paidAmount: found.paid_amount,
+    paidAt: found.paid_at,
+    method: found.method,
+    vendorId: found.vendor_id,
+    candidates: candidates.rows,
+  };
 }
 
 export async function link(
@@ -165,12 +168,48 @@ export async function main(): Promise<void> {
 
   try {
     if (options.list) {
-      await list(pool);
+      const rows = await list(pool);
+
+      if (rows.length === 0) {
+        console.log('이어붙일 결제인증이 없다.');
+        return;
+      }
+
+      console.log(`업체 없이 남은 결제인증 ${rows.length}건:`);
+      for (const row of rows) {
+        /*
+         * 후보가 0곳이면 업체 자체가 없는 것이고, 이 도구가 아니라 업체 등록이
+         * 먼저다. 후보가 둘 이상이면 그중 하나를 고르는 것이 이 도구가 할 일이다.
+         */
+        const situation = row.candidates === 0 ? '등록된 업체 없음' : `후보 ${row.candidates}곳`;
+        console.log(
+          `  ${row.id}  ${row.merchantName}  ${won(row.paidAmount)}  ${when(row.paidAt)}  (${situation})`
+        );
+      }
       return;
     }
 
     if (options.show) {
-      await show(pool, options.show);
+      const found = await show(pool, options.show);
+
+      if (!found) {
+        console.log('없는 결제인증이다.');
+        return;
+      }
+
+      console.log(`가맹점명: ${found.merchantName}`);
+      console.log(`금액: ${won(found.paidAmount)}  일시: ${when(found.paidAt)}  수단: ${found.method}`);
+      console.log(`연결된 업체: ${found.vendorId ?? '없음'}`);
+
+      if (found.candidates.length === 0) {
+        console.log('이름이 겹치는 업체가 없다. 업체가 아직 등록되지 않았을 수 있다.');
+        return;
+      }
+
+      console.log(`후보:`);
+      for (const c of found.candidates) {
+        console.log(`  ${c.id}  ${c.name}  ${c.category}  ${c.region}`);
+      }
       return;
     }
 

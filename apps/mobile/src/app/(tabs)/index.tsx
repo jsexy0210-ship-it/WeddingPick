@@ -57,7 +57,7 @@ import { WeddingContent } from '@/features/home/wedding-content';
  *
  * **섹션 순서는 고정이다.** 이전 홈에는 사용자가 순서를 바꾸는 «홈 편집»이
  * 있었는데, C-1은 위계 자체가 설계라서 순서를 바꾸면 «지금 할 일»이 아래로
- * 내려갈 수 있다. `home-edit` 화면 파일은 남아 있지만 홈에서 들어가는 길은 없다.
+ * 내려갈 수 있다. `home-edit` 화면과 `sections.ts`는 삭제했다.
  *
  * 여섯 시안이 어떻게 다섯 상태로 접히는지는 `features/home/state.ts`에 적어 뒀다.
  */

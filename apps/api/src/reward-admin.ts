@@ -6,7 +6,7 @@ import {
 } from '@weddingpick/domain';
 
 import { loadConfig } from './config';
-import { newEventId, recordDecision } from './decisions';
+import { newEventId, recordDecision, requireOperator } from './decisions';
 import { createPool, withTransaction } from './db';
 import { notify } from './notify';
 
@@ -57,13 +57,15 @@ function parseArgs(argv: string[]): Options {
 const when = (at: Date): string => at.toISOString().slice(0, 16).replace('T', ' ');
 const won = (amount: number): string => `${amount.toLocaleString('ko-KR')}원`;
 
-async function decide(
+export async function decide(
   pool: ReturnType<typeof createPool>,
   id: string,
   to: Extract<RewardStatus, 'paid' | 'blocked'>,
   by: string,
   note: string
 ): Promise<void> {
+  await requireOperator(pool, by);
+
   await withTransaction(pool, async (client) => {
     const { rows } = await client.query<{
       status: RewardStatus;
@@ -141,10 +143,20 @@ async function decide(
   );
 }
 
-async function list(
+export type RewardGrantRow = {
+  id: string;
+  kind: RewardKind;
+  amountKrw: number;
+  reasonCode: string;
+  createdAt: Date;
+  url: string | null;
+};
+
+/** 지급 대기 또는 확인 대기 보상 전부. 조회라 `requireOperator`를 부르지 않는다. */
+export async function list(
   pool: ReturnType<typeof createPool>,
   status: Extract<RewardStatus, 'earned' | 'held'>
-): Promise<void> {
+): Promise<RewardGrantRow[]> {
   const { rows } = await pool.query<{
     id: string;
     kind: RewardKind;
@@ -161,27 +173,14 @@ async function list(
     [status]
   );
 
-  if (rows.length === 0) {
-    console.log(status === 'earned' ? '지급할 보상이 없다.' : '확인할 보상이 없다.');
-    return;
-  }
-
-  const total = rows.reduce((sum, row) => sum + row.amount_krw, 0);
-
-  console.log(
-    status === 'earned'
-      ? `지급 대기 ${rows.length}건 · 합계 ${won(total)}:`
-      : `확인 대기 ${rows.length}건 · 합계 ${won(total)}:`
-  );
-
-  for (const row of rows) {
-    console.log(
-      `  ${row.id}  ${REWARD_LABEL[row.kind]}  ${won(row.amount_krw)}  ` +
-        `${row.reason_code}  ${when(row.created_at)}`
-    );
-    // 홍보인증은 사람이 글을 열어봐야 한다. 주소를 함께 적는다.
-    if (row.url) console.log(`    글: ${row.url}`);
-  }
+  return rows.map((row) => ({
+    id: row.id,
+    kind: row.kind,
+    amountKrw: row.amount_krw,
+    reasonCode: row.reason_code,
+    createdAt: row.created_at,
+    url: row.url,
+  }));
 }
 
 async function main(): Promise<void> {
@@ -189,13 +188,31 @@ async function main(): Promise<void> {
   const pool = createPool(loadConfig().databaseUrl);
 
   try {
-    if (options.list) {
-      await list(pool, 'earned');
-      return;
-    }
+    if (options.list || options.held) {
+      const status = options.list ? 'earned' : 'held';
+      const rows = await list(pool, status);
 
-    if (options.held) {
-      await list(pool, 'held');
+      if (rows.length === 0) {
+        console.log(status === 'earned' ? '지급할 보상이 없다.' : '확인할 보상이 없다.');
+        return;
+      }
+
+      const total = rows.reduce((sum, row) => sum + row.amountKrw, 0);
+
+      console.log(
+        status === 'earned'
+          ? `지급 대기 ${rows.length}건 · 합계 ${won(total)}:`
+          : `확인 대기 ${rows.length}건 · 합계 ${won(total)}:`
+      );
+
+      for (const row of rows) {
+        console.log(
+          `  ${row.id}  ${REWARD_LABEL[row.kind]}  ${won(row.amountKrw)}  ` +
+            `${row.reasonCode}  ${when(row.createdAt)}`
+        );
+        // 홍보인증은 사람이 글을 열어봐야 한다. 주소를 함께 적는다.
+        if (row.url) console.log(`    글: ${row.url}`);
+      }
       return;
     }
 
@@ -231,7 +248,13 @@ async function main(): Promise<void> {
   }
 }
 
-void main().catch((error: unknown) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exitCode = 1;
-});
+/*
+ * CLI로 직접 실행했을 때만 돈다. 테스트가 이 파일에서 함수를 가져오면(require)
+ * `require.main`이 테스트 러너를 가리키므로 여기 걸리지 않는다.
+ */
+if (require.main === module) {
+  void main().catch((error: unknown) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  });
+}

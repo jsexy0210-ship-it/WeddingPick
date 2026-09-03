@@ -56,33 +56,19 @@ export default function NotificationsScreen() {
   const [unread, setUnread] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    try {
-      const response = await listNotifications();
-      setNotifications(response.notifications);
-      setUnread(response.unread);
-    } catch (caught) {
-      const error = caught as Error;
-      setLoadError(error.message ?? '알림을 불러오지 못했어요.');
-    }
-  }, []);
-
-  useEffect(() => {
-    let active = true;
+  const load = useCallback(() => {
     void listNotifications()
       .then((response) => {
-        if (!active) return;
+        setLoadError(null);
         setNotifications(response.notifications);
         setUnread(response.unread);
       })
-      .catch((caught: Error) => {
-        if (active) setLoadError(caught.message ?? '알림을 불러오지 못했어요.');
-      });
-
-    return () => {
-      active = false;
-    };
+      .catch((caught: Error) =>
+        setLoadError(caught.message ?? '알림을 불러오지 못했어요.')
+      );
   }, []);
+
+  useEffect(load, [load]);
 
   async function open(notification: Notification) {
     if (!notification.readAt) {
@@ -125,15 +111,7 @@ export default function NotificationsScreen() {
   }
 
   if (loadError) {
-    return (
-      <ErrorView
-        message={loadError}
-        onBack={() => {
-          setLoadError(null);
-          void load();
-        }}
-      />
-    );
+    return <ErrorView message={loadError} onBack={load} />;
   }
 
   if (notifications === null) {
