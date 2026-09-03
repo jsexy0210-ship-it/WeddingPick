@@ -68,6 +68,9 @@
   Apple Sign in Services ID/redirect, Render 운영 Secret 및 DB migration 확인.
 - Google Maps Android 키는 아직 placeholder이며, 카카오 지도 전환 여부를
   확정한 뒤 지도 SDK와 키를 운영 설정에 반영해야 한다.
+- 2026-09-03 Render `https://weddingpickl.onrender.com/health` 검증 결과
+  HTTP 200, `{"ok":true,"database":"ok"}`. 운영 DB 연결은 정상이며,
+  migration 0052~0062 적용 여부는 DB Migrate 워크플로 실행 후 확정한다.
 
 ## 현재 장애 / 제한
 
