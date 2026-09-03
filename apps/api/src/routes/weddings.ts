@@ -299,37 +299,51 @@ export function registerWeddingRoutes(app: FastifyInstance, context: AppContext)
    * 지도용 Pick 업체 목록.
    *
    * 좌표가 없는 업체는 지도에 찍을 수 없어 제외한다. 목록은 그대로 뜬다.
+   * `picked` = 해당 업종에서 결정된 업체인지 여부.
    */
-  app.get<{ Params: { id: string } }>(
-    '/v1/wedding/:id/map-vendors',
+  app.get<{ Params: { weddingId: string } }>(
+    '/v1/weddings/:weddingId/map-vendors',
     auth,
     async (request) => {
       const userId = currentUserId(request);
-      await assertWeddingAccess(context.pool, request.params.id, userId);
+      const { weddingId } = request.params;
+      await assertWeddingAccess(context.pool, weddingId, userId);
 
-      const { rows } = await context.pool.query<{
-        vendor_id: string;
-        vendor_name: string;
-        category: string;
-        lat: number;
-        lng: number;
-      }>(
-        `SELECT c.vendor_id, v.name AS vendor_name, v.category, v.lat, v.lng
-         FROM structured.vendor_candidates c
-         JOIN structured.vendors v ON v.id = c.vendor_id
-         WHERE c.wedding_id = $1
-           AND v.lat IS NOT NULL
-           AND v.lng IS NOT NULL
-         ORDER BY c.added_at`,
-        [request.params.id]
-      );
+      const [{ rows }, { rows: decisionRows }] = await Promise.all([
+        context.pool.query<{
+          vendor_id: string;
+          vendor_name: string;
+          category: string;
+          lat: number;
+          lng: number;
+          address: string | null;
+        }>(
+          `SELECT c.vendor_id, v.name AS vendor_name, v.category, v.lat, v.lng, v.address
+           FROM structured.vendor_candidates c
+           JOIN structured.vendors v ON v.id = c.vendor_id
+           WHERE c.wedding_id = $1
+             AND v.lat IS NOT NULL
+             AND v.lng IS NOT NULL
+           ORDER BY c.added_at`,
+          [weddingId]
+        ),
+        context.pool.query<{ vendor_id: string }>(
+          'SELECT vendor_id FROM structured.category_decisions WHERE wedding_id = $1',
+          [weddingId]
+        ),
+      ]);
+
+      const decidedIds = new Set(decisionRows.map((r) => r.vendor_id));
 
       return {
         vendors: rows.map((row) => ({
           vendorId: row.vendor_id,
           vendorName: row.vendor_name,
           category: row.category,
-          coordinates: { lat: row.lat, lng: row.lng },
+          lat: row.lat,
+          lng: row.lng,
+          address: row.address ?? '',
+          picked: decidedIds.has(row.vendor_id),
         })),
       };
     }

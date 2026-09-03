@@ -239,8 +239,17 @@ export function registerRewardRoutes(app: FastifyInstance, context: AppContext):
    */
   app.get('/v1/me/invite-code', auth, async (request) => {
     const userId = currentUserId(request);
-    const code = await referralCodeOf(context.pool, userId);
-    return { code };
+    const [code, usesResult] = await Promise.all([
+      referralCodeOf(context.pool, userId),
+      context.pool.query<{ uses: string }>(
+        `SELECT count(*) AS uses
+         FROM structured.referrals
+         WHERE inviter_user_id = $1
+           AND qualified_at IS NOT NULL`,
+        [userId]
+      ),
+    ]);
+    return { code, uses: Number(usesResult.rows[0]?.uses ?? 0) };
   });
 
   /**
