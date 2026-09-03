@@ -12,7 +12,7 @@ import {
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { addCandidate, ensureWedding, getVendor, getVendorConditions, listVendorReviews } from '@/api/client';
@@ -120,6 +120,14 @@ export default function VendorDetailScreen() {
             <ThemedText type="small" themeColor="textSecondary">
               {VENDOR_CATEGORY_LABEL[vendor.category]} · {vendor.region}
             </ThemedText>
+            <ActionButton
+              label="카카오맵에서 위치 보기"
+              hint="업체명과 지역으로 카카오맵을 엽니다"
+              onPress={() => {
+                const query = encodeURIComponent(`${vendor.name} ${vendor.region}`);
+                void Linking.openURL(`https://map.kakao.com/?q=${query}`);
+              }}
+            />
 
           </ThemedView>
 

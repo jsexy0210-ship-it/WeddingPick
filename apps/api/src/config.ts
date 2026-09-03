@@ -146,5 +146,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     throw new Error(`설정이 올바르지 않다: ${fields}`);
   }
 
+  // 로컬 저장소도 허용한다. 다만 운영에서 재시작하면 메모리 파일이 사라질 수
+  // 있으므로, 영구 보관이 필요한 배포는 STORAGE_DRIVER=s3를 사용해야 한다.
+
   return parsed.data;
 }
