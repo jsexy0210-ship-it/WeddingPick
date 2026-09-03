@@ -26,9 +26,28 @@ export function registerQuoteRoutes(app: FastifyInstance, context: AppContext): 
       const userId = currentUserId(request);
       await assertWeddingAccess(context.pool, request.params.weddingId, userId);
 
-      // 페이지네이션 파라미터
-      const offset = Math.max(0, parseInt(request.query.offset || '0', 10));
-      const limit = Math.min(100, Math.max(1, parseInt(request.query.limit || '20', 10)));
+      // 페이지네이션 파라미터 - 에러 처리 강화
+      let offset = 0;
+      let limit = 20;
+
+      if (request.query.offset) {
+        const parsed = parseInt(request.query.offset, 10);
+        if (isNaN(parsed) || parsed < 0) {
+          throw new ApiError('invalid_request', 'offset은 0 이상의 정수여야 합니다.');
+        }
+        offset = parsed;
+      }
+
+      if (request.query.limit) {
+        const parsed = parseInt(request.query.limit, 10);
+        if (isNaN(parsed) || parsed < 1) {
+          throw new ApiError('invalid_request', 'limit은 1 이상의 정수여야 합니다.');
+        }
+        if (parsed > 100) {
+          throw new ApiError('invalid_request', 'limit은 최대 100입니다.');
+        }
+        limit = parsed;
+      }
 
       // 전체 개수 조회
       const { rows: countRows } = await context.pool.query<{ total: number }>(

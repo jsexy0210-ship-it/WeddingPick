@@ -38,20 +38,35 @@ export function registerDocumentRoutes(app: FastifyInstance, context: AppContext
       throw new ApiError('invalid_request', '최대 100개 페이지까지만 업로드 가능합니다.');
     }
 
-    const documentId = randomUUID();
+   // MIME 타입 검증: 지원하는 형식만 허용
+   for (const page of body.pages) {
+     if (!EXTENSION[page.mimeType]) {
+       throw new ApiError(
+         'invalid_request',
+         `지원하지 않는 파일 형식: ${page.mimeType}. JPEG, PNG, HEIC, PDF만 허용됩니다.`
+       );
+     }
+   }
 
-    // 서명 URL을 먼저 받아 스토리지 실패가 DB 행을 남기지 않게 한다.
-    const uploads = await Promise.all(
-      body.pages.map(async (page, index) => {
-        const target = await context.storage.createUploadTarget({
-          storageKey: `${userId}/${documentId}/${index + 1}.${EXTENSION[page.mimeType]}`,
-          mimeType: page.mimeType,
-          expiresInSeconds: UPLOAD_URL_TTL_SECONDS,
-        });
+   const documentId = randomUUID();
 
-        return { pageIndex: index, ...target };
-      })
-    );
+   // 서명 URL을 먼저 받아 스토리지 실패가 DB 행을 남기지 않게 한다.
+   const uploads = await Promise.all(
+     body.pages.map(async (page, index) => {
+       const ext = EXTENSION[page.mimeType];
+       if (!ext) {
+         throw new ApiError('invalid_request', `지원하지 않는 파일 형식: ${page.mimeType}`);
+       }
+
+       const target = await context.storage.createUploadTarget({
+         storageKey: `${userId}/${documentId}/${index + 1}.${ext}`,
+         mimeType: page.mimeType,
+         expiresInSeconds: UPLOAD_URL_TTL_SECONDS,
+       });
+
+       return { pageIndex: index, ...target };
+     })
+   );
 
     await withTransaction(context.pool, async (client) => {
       /*

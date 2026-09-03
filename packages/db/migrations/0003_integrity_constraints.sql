@@ -7,14 +7,16 @@
 -- 예: (user_A, user_B)와 (user_B, user_A)는 동일 쌍으로 간주.
 -- partner_user_id가 NULL이면 "내 웨딩" 상태로, 제약에서 제외됨.
 
-ALTER TABLE structured.weddings ADD CONSTRAINT unique_partner_pair
-  UNIQUE NULLS DISTINCT (
+-- 함수 기반 제약: 두 user_id를 정렬하여 순서 무관하게 유니크 보장
+-- 대안: 트리거로 구현하거나, 애플리케이션 레벨 검증 추가
+CREATE UNIQUE INDEX idx_weddings_partner_pair
+  ON structured.weddings (
     LEAST(owner_user_id, partner_user_id),
     GREATEST(owner_user_id, partner_user_id)
   ) WHERE partner_user_id IS NOT NULL;
 
-COMMENT ON CONSTRAINT unique_partner_pair ON structured.weddings IS
-  '배우자가 연결된 웨딩에서만 작동. 동일한 두 사용자의 웨딩은 최대 1개 존재해야 함.';
+COMMENT ON INDEX idx_weddings_partner_pair IS
+  '배우자가 연결된 웨딩에서만 적용. 동일한 두 사용자의 웨딩은 최대 1개 존재해야 함.';
 
 -- ---------------------------------------------------------------------------
 -- 분석 테이블: 문서당 유니크 제약
@@ -30,3 +32,4 @@ COMMENT ON CONSTRAINT unique_analysis_per_document ON structured.analyses IS
 
 -- 필요시 인덱스: analyses는 raw_document_id로 빈번하게 조회되므로,
 -- 위 UNIQUE 제약이 자동으로 인덱스를 생성함.
+
