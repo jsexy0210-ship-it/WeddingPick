@@ -1,12 +1,13 @@
 # 웨딩픽 통합 파이프라인
 #
-# push(main)  → CI → DB 마이그레이션 → Render 헬스체크
+# push(main)  → CI → DB 마이그레이션 → Render 자동 배포 → health check (staging)
 # PR          → CI만 (배포 없음)
 # workflow_dispatch → staging 또는 production 수동 배포
 #
 # 필요한 GitHub Secrets:
 #   DATABASE_URL              Render PostgreSQL 연결 문자열
-#   RENDER_DEPLOY_HOOK_URL    (선택) Render 서비스 Deploy Hook URL
+#   RENDER_DEPLOY_HOOK_URL    (선택) Render staging 서비스 Deploy Hook URL
+#   RENDER_DEPLOY_HOOK_URL_PROD (선택) Render production 서비스 Deploy Hook URL
 name: CI / Deploy
 
 on:
@@ -114,17 +115,17 @@ jobs:
 
       - name: Health check
         run: |
-          echo "Waiting for Render deployment to settle..."
+          echo "Waiting for Render staging deployment to settle..."
           for i in $(seq 1 30); do
             sleep 15
-            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://weddingpickl.onrender.com/health 2>/dev/null || echo "000")
+            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://weddingpick-api.onrender.com/health 2>/dev/null || echo "000")
             if [ "$STATUS" = "200" ]; then
               echo "✓ /health 200 OK"
               exit 0
             fi
             echo "Attempt $i/30: HTTP $STATUS"
           done
-          echo "✗ Health check failed after 450 s"
+          echo "✗ Staging health check failed after 450 s"
           exit 1
 
   deploy-production:
@@ -164,12 +165,12 @@ jobs:
           echo "Waiting for Render production deployment..."
           for i in $(seq 1 30); do
             sleep 15
-            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://weddingpickl.onrender.com/health 2>/dev/null || echo "000")
+            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://weddingpick-api.onrender.com/health 2>/dev/null || echo "000")
             if [ "$STATUS" = "200" ]; then
               echo "✓ /health 200 OK"
               exit 0
             fi
             echo "Attempt $i/30: HTTP $STATUS"
           done
-          echo "✗ Health check failed after 450 s"
+          echo "✗ Production health check failed after 450 s"
           exit 1
