@@ -2,7 +2,7 @@ import { router, Stack } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
-import { getCurrentUser, listCandidates } from '@/api/client';
+import { getCurrentUser, getRemovedCandidates, listCandidates } from '@/api/client';
 import type { CandidateListResponse } from '@weddingpick/api-contract';
 import {
   EmptyView,
@@ -55,6 +55,7 @@ export default function PickHistoryScreen() {
 
   const [data, setData] = useState<CandidateListResponse | null>(null);
   const [weddingId, setWeddingId] = useState<string | null>(null);
+  const [hasRemoved, setHasRemoved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -66,7 +67,12 @@ export default function PickHistoryScreen() {
           return;
         }
         setWeddingId(user.weddingId);
-        return listCandidates(user.weddingId).then(setData);
+        return Promise.all([
+          listCandidates(user.weddingId).then(setData),
+          getRemovedCandidates(user.weddingId).then((res) =>
+            setHasRemoved(res.groups.some((g) => g.items.length > 0))
+          ),
+        ]);
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false));
@@ -219,6 +225,23 @@ export default function PickHistoryScreen() {
             </View>
           );
         })}
+
+        {/* 제거된 후보 링크 — 실제로 제거된 항목이 있을 때만 노출 */}
+        {hasRemoved && (
+          <Pressable
+            style={({ pressed }) => [
+              styles.addCta,
+              { borderColor: theme.border },
+              pressed && { opacity: 0.6 },
+            ]}
+            onPress={() => router.push('/(tabs)/pick/removed' as never)}
+            hitSlop={8}
+          >
+            <ThemedText themeColor="textSecondary" style={styles.addCtaText}>
+              제거된 후보 보기
+            </ThemedText>
+          </Pressable>
+        )}
       </ScrollView>
     </ThemedView>
   );
