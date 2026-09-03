@@ -148,6 +148,7 @@ export function registerWeddingInfoRoutes(app: FastifyInstance, context: AppCont
     return {
       id: info.id,
       title: info.title,
+      summary: info.summary,
       category: info.category,
       stage: info.stage,
       publishedAt: info.published_at.toISOString().slice(0, 10),

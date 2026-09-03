@@ -1,21 +1,15 @@
 import { z } from 'zod';
 
-export const weddingInfoStageSchema = z.enum([
-  'preparation',
+export const weddingInfoStageSchema = z.enum(['early', 'mid', 'late', 'all']);
+
+export const weddingInfoCategorySchema = z.enum([
+  'planning',
   'venue',
   'dress',
   'photo',
   'beauty',
+  'catering',
   'honeymoon',
-  'after',
-]);
-
-export const weddingInfoCategorySchema = z.enum([
-  'tips',
-  'checklist',
-  'review',
-  'trend',
-  'faq',
 ]);
 
 export const weddingInfoItemSchema = z.object({
@@ -25,13 +19,17 @@ export const weddingInfoItemSchema = z.object({
   stage: weddingInfoStageSchema,
   category: weddingInfoCategorySchema,
   publishedAt: z.string().min(1),
-  viewCount: z.int().nonnegative(),
+  thumbnailUrl: z.string().nullable(),
 });
 
 export const weddingInfoDetailSchema = weddingInfoItemSchema.extend({
   body: z.string(),
-  checklist: z.array(z.string()),
-  relatedVendorIds: z.array(z.string()),
+  checklist: z.array(
+    z.object({ id: z.string(), label: z.string(), done: z.boolean() })
+  ),
+  relatedVendors: z.array(
+    z.object({ id: z.string(), name: z.string(), category: z.string() })
+  ),
 });
 
 export const weddingInfoListResponseSchema = z.object({

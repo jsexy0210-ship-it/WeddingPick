@@ -21,29 +21,26 @@ import {
 type SortKey = 'latest' | 'stage' | 'category';
 
 const STAGE_LABEL: Record<WeddingInfoStage, string> = {
-  preparation: '초기 준비',
+  early: '초반 준비',
+  mid: '중반 준비',
+  late: '마무리',
+  all: '전체',
+};
+
+const CATEGORY_LABEL: Record<WeddingInfoCategory, string> = {
+  planning: '플래닝',
   venue: '예식장',
   dress: '드레스',
   photo: '촬영',
   beauty: '뷰티',
+  catering: '케이터링',
   honeymoon: '허니문',
-  after: '예식 후',
 };
 
-const CATEGORY_LABEL: Record<WeddingInfoCategory, string> = {
-  tips: '알아두세요',
-  checklist: '체크리스트',
-  review: '경험담',
-  trend: '트렌드',
-  faq: '자주 묻는 질문',
-};
-
-const STAGES: WeddingInfoStage[] = [
-  'preparation', 'venue', 'dress', 'photo', 'beauty', 'honeymoon', 'after',
-];
+const STAGES: WeddingInfoStage[] = ['early', 'mid', 'late'];
 
 const CATEGORIES: WeddingInfoCategory[] = [
-  'tips', 'checklist', 'review', 'trend', 'faq',
+  'planning', 'venue', 'dress', 'photo', 'beauty', 'catering', 'honeymoon',
 ];
 
 const SORTS: SortKey[] = ['latest', 'stage', 'category'];
@@ -119,7 +116,7 @@ export default function WeddingInfoListScreen() {
           <ThemedView style={styles.header}>
             <ThemedText type="t2">웨딩 정보</ThemedText>
             <ThemedText type="t7" themeColor="textSecondary">
-              준비 단계별 알아두면 좋은 정보를 모았어요
+              준비 단계별 알아두세요
             </ThemedText>
           </ThemedView>
 

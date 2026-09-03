@@ -18,21 +18,20 @@ import {
 } from '@weddingpick/ui';
 
 const STAGE_LABEL: Record<WeddingInfoStage, string> = {
-  preparation: '초기 준비',
+  early: '초반 준비',
+  mid: '중반 준비',
+  late: '마무리',
+  all: '전체',
+};
+
+const CATEGORY_LABEL: Record<WeddingInfoCategory, string> = {
+  planning: '플래닝',
   venue: '예식장',
   dress: '드레스',
   photo: '촬영',
   beauty: '뷰티',
+  catering: '케이터링',
   honeymoon: '허니문',
-  after: '예식 후',
-};
-
-const CATEGORY_LABEL: Record<WeddingInfoCategory, string> = {
-  tips: '알아두세요',
-  checklist: '체크리스트',
-  review: '경험담',
-  trend: '트렌드',
-  faq: '자주 묻는 질문',
 };
 
 /** 스켈레톤 — 웨딩 정보 상세 페이지 뼈대. */
