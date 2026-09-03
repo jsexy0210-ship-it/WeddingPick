@@ -75,10 +75,6 @@ export default function ExpoListScreen() {
     load();
   }, [load]);
 
-  function retry() {
-    load();
-  }
-
   const STATUS_COLOR: Record<ExpoStatus, string> = {
     upcoming: theme.tint,
     ongoing: theme.positive,
@@ -90,7 +86,7 @@ export default function ExpoListScreen() {
       <ErrorView
         title="박람회 목록을 불러오지 못했어요"
         message={error}
-        onRetry={retry}
+        onRetry={load}
         retryLabel="다시 시도"
       />
     );
