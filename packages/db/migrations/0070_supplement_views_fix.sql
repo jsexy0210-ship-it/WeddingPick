@@ -1,7 +1,7 @@
 -- WP-RPT-008 후속: supplement_requested 이벤트 종류 추가 + 뷰 재정의
 -- 0069가 최초 실행된 뒤 추가된 내용만 담는다.
 
-ALTER TYPE structured.verification_event_kind ADD VALUE IF NOT EXISTS 'supplement_requested' AFTER 'review_started';
+ALTER TYPE verification_event_kind ADD VALUE IF NOT EXISTS 'supplement_requested' AFTER 'review_started';
 
 -- pending 뷰: needs_supplement는 심사 대기열에 남아야 관리자가 볼 수 있다
 CREATE OR REPLACE VIEW structured.pending_verification_requests AS

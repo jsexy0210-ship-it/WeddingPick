@@ -2,8 +2,8 @@
 -- 심사자가 사용자에게 자료 보완을 요청할 수 있는 중간 상태다.
 -- 반려(rejected)와 달리 재신청이 가능하며, 사용자에게 구체적 안내를 줄 수 있다.
 
-ALTER TYPE structured.verification_status ADD VALUE IF NOT EXISTS 'needs_supplement' AFTER 'in_review';
-ALTER TYPE structured.verification_event_kind ADD VALUE IF NOT EXISTS 'supplement_requested' AFTER 'review_started';
+ALTER TYPE verification_status ADD VALUE IF NOT EXISTS 'needs_supplement' AFTER 'in_review';
+ALTER TYPE verification_event_kind ADD VALUE IF NOT EXISTS 'supplement_requested' AFTER 'review_started';
 
 ALTER TABLE structured.verification_requests
   ADD COLUMN IF NOT EXISTS supplement_reason text;
