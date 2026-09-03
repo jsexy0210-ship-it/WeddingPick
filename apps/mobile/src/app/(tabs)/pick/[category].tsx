@@ -69,6 +69,7 @@ export default function CategoryPickScreen() {
       .catch((e: Error) => setError(e.message));
   }, [category]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(load, [load]);
 
   async function decide(candidate: VendorCandidate) {

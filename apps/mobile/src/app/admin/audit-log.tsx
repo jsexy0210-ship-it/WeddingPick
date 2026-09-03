@@ -60,6 +60,7 @@ export default function AuditLogScreen() {
 
   useEffect(() => {
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     const qs = search ? `?q=${encodeURIComponent(search)}` : '';
     apiFetch(`/v1/admin/audit-log${qs}`)

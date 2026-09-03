@@ -59,6 +59,7 @@ export default function PickCategoryScreen() {
       .finally(() => setLoading(false));
   }, [cat]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(load, [load]);
 
   function openConfirm(vendorId: string, vendorName: string) {

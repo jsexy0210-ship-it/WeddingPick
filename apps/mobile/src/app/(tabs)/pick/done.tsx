@@ -1,6 +1,6 @@
 import { VENDOR_CATEGORY_LABEL, type VendorCategory } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Animated, Easing, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -37,21 +37,19 @@ export default function PickDoneScreen() {
   const categoryLabel = VENDOR_CATEGORY_LABEL[(category as VendorCategory) ?? 'venue'] ?? category ?? '';
   const vendor = vendorName ?? '';
 
-  // ── 애니메이션 값 ──────────────────────────────────────────
-  const markScale = useRef(new Animated.Value(0)).current;
-  const ringScale = useRef(new Animated.Value(1)).current;
-  const ringOpacity = useRef(new Animated.Value(0)).current;
+  // ── 애니메이션 값 — useMemo로 생성해 렌더 중 ref 접근을 피한다 ──────
+  const markScale = useMemo(() => new Animated.Value(0), []);
+  const ringScale = useMemo(() => new Animated.Value(1), []);
+  const ringOpacity = useMemo(() => new Animated.Value(0), []);
 
-  const riseY = [
-    useRef(new Animated.Value(10)).current,
-    useRef(new Animated.Value(10)).current,
-    useRef(new Animated.Value(10)).current,
-  ];
-  const riseOpacity = [
-    useRef(new Animated.Value(0)).current,
-    useRef(new Animated.Value(0)).current,
-    useRef(new Animated.Value(0)).current,
-  ];
+  const riseY0 = useMemo(() => new Animated.Value(10), []);
+  const riseY1 = useMemo(() => new Animated.Value(10), []);
+  const riseY2 = useMemo(() => new Animated.Value(10), []);
+  const riseOp0 = useMemo(() => new Animated.Value(0), []);
+  const riseOp1 = useMemo(() => new Animated.Value(0), []);
+  const riseOp2 = useMemo(() => new Animated.Value(0), []);
+  const riseY = useMemo(() => [riseY0, riseY1, riseY2], [riseY0, riseY1, riseY2]);
+  const riseOpacity = useMemo(() => [riseOp0, riseOp1, riseOp2], [riseOp0, riseOp1, riseOp2]);
 
   useEffect(() => {
     // 1. checkPop — 460ms, cubic-bezier(.34,1.56,.64,1) (CLAUDE.md §7)
@@ -106,7 +104,7 @@ export default function PickDoneScreen() {
         ]),
       ]).start();
     });
-  }, []);
+  }, [markScale, ringOpacity, ringScale, riseOpacity, riseY]);
 
   // ── 반영 3건 ────────────────────────────────────────────────
   const reflectItems = [

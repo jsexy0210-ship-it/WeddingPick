@@ -125,8 +125,6 @@ import {
   weddingInfoListResponseSchema,
   weddingInfoDetailSchema,
   type ExpoListResponse,
-  type ExpoItem,
-  type ExpoStatus,
   type ExpoDetail,
   type WeddingInfoListResponse,
   type WeddingInfoDetail,

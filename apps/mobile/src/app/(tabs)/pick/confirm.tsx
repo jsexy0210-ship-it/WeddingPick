@@ -1,6 +1,6 @@
 import { VENDOR_CATEGORY_LABEL, type VendorCategory } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Animated, Easing, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -47,7 +47,7 @@ export default function PickConfirmScreen() {
   /** 애니메이션이 재생 중이거나 끝난 상태 */
   const [decided, setDecided] = useState(false);
 
-  const markScale = useRef(new Animated.Value(0)).current;
+  const markScale = useMemo(() => new Animated.Value(0), []);
 
   function playCheckPop() {
     /*

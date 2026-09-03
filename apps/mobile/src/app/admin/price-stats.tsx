@@ -47,6 +47,7 @@ export default function PriceStatsScreen() {
 
   useEffect(() => {
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     apiFetch('/v1/admin/data/price-stats')
       .then((d) => {

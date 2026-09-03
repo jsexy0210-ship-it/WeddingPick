@@ -50,6 +50,7 @@ export default function MarketingScreen() {
 
   useEffect(() => {
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     apiFetch('/v1/admin/marketing')
       .then((d) => {

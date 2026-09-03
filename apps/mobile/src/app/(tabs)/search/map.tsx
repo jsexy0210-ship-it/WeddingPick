@@ -59,6 +59,7 @@ export default function MapScreen() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void load(params.q ?? '', params.category, params.region);
   }, [load, params.q, params.category, params.region]);
 

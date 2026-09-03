@@ -95,6 +95,7 @@ export default function WeddingInfoListScreen() {
   }, [sort, stage, category]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
 

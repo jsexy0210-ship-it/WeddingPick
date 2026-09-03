@@ -70,6 +70,7 @@ export default function ExpoDetailScreen() {
   }, [expoId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
 

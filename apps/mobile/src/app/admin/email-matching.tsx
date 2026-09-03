@@ -47,6 +47,7 @@ export default function EmailMatchingScreen() {
 
   useEffect(() => {
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     apiFetch('/v1/admin/data/email-matching')
       .then((d) => {

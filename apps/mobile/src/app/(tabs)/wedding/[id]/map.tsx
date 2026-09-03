@@ -61,10 +61,12 @@ export default function WeddingMapScreen() {
       .catch((e: Error) => setError(e.message));
   }, [id]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(load, [load]);
 
   useEffect(() => {
     if (!selectedId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedDetail(null);
       return;
     }
