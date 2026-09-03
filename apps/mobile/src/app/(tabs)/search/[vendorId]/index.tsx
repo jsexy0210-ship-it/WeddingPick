@@ -5,6 +5,7 @@ import {
   MAX_RATING,
   PAYMENT_PROOF_CAVEAT,
   TERMS,
+  countsTowardScore,
   rangeLabel,
   STILL_COLLECTING,
   VENDOR_CATEGORY_LABEL,
@@ -48,7 +49,9 @@ export default function VendorDetailScreen() {
   const [conditions, setConditions] = useState<ConditionStats | null>(null);
   /** 출처를 펼쳤는가. 배지를 눌러 연다. */
   const [sourceOpen, setSourceOpen] = useState(false);
-  /** 미리보기 후기 2-3건. 실패해도 조용히 넘긴다. */
+  /** Pick 인증 후기 (verification !== 'reported'). 최대 3건. */
+  const [verifiedReviews, setVerifiedReviews] = useState<Review[]>([]);
+  /** 일반 후기 미리보기 (상담제보). 최대 3건. */
   const [previewReviews, setPreviewReviews] = useState<Review[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saveNote, setSaveNote] = useState<string | null>(null);
@@ -70,7 +73,16 @@ export default function VendorDetailScreen() {
       .catch(() => setConditions(null));
 
     listVendorReviews(vendorId)
-      .then((res) => setPreviewReviews(res.reviews.slice(0, 3)))
+      .then((res) => {
+        /*
+         * Pick 인증 후기(payment / contract / usage 확인)와 일반 후기(상담제보)를
+         * 분리한다. 두 종류가 한 목록에 섞이면 어떤 근거로 쓴 글인지가 흐려진다.
+         */
+        const verified = res.reviews.filter((r) => countsTowardScore(r.verification));
+        const regular = res.reviews.filter((r) => !countsTowardScore(r.verification));
+        setVerifiedReviews(verified.slice(0, 3));
+        setPreviewReviews(regular.slice(0, 3));
+      })
       .catch(() => undefined);
   }, [vendorId]);
 
@@ -356,6 +368,43 @@ export default function VendorDetailScreen() {
               )}
             </ThemedView>
 
+            {/*
+              Pick 인증 후기 — payment / contract / usage 확인을 거친 후기만.
+              섹션은 1건 이상일 때만 보인다. 빈 헤더를 두지 않는다.
+            */}
+            {verifiedReviews.length > 0 ? (
+              <>
+                <ThemedText type="smallBold">Pick 인증 후기</ThemedText>
+                {verifiedReviews.map((review) => (
+                  <ThemedView key={review.id} type="backgroundElement" style={styles.card}>
+                    <ThemedView type="backgroundElement" style={styles.reviewHead}>
+                      <ThemedView type="backgroundElement" style={styles.reviewHeadLeft}>
+                        <ThemedText type="t7" themeColor="textSecondary">
+                          {review.roleLabel}
+                        </ThemedText>
+                        {/* Pick 인증 배지 — 이 후기가 어떤 근거로 확인됐는지 */}
+                        <View style={[styles.verifiedBadge, { backgroundColor: theme.positiveBackground }]}>
+                          <ThemedText type="badge" themeColor="positive">
+                            Pick 인증
+                          </ThemedText>
+                        </View>
+                      </ThemedView>
+                      <ThemedText type="t7" numeric>
+                        {review.overall.toFixed(1)}
+                      </ThemedText>
+                    </ThemedView>
+                    <ThemedText type="t6" numberOfLines={1}>
+                      {review.title}
+                    </ThemedText>
+                    <ThemedText type="t7" themeColor="textSecondary" numberOfLines={2}>
+                      {review.body}
+                    </ThemedText>
+                  </ThemedView>
+                ))}
+              </>
+            ) : null}
+
+            {/* 일반 후기 (상담제보) */}
             {previewReviews.length > 0
               ? previewReviews.map((review) => (
                   <ThemedView key={review.id} type="backgroundElement" style={styles.card}>
@@ -571,5 +620,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  reviewHeadLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  /** Pick 인증 배지. 배경색은 theme.positiveBackground (런타임에 주입). */
+  verifiedBadge: {
+    borderRadius: Radius.small,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: 2,
   },
 });
