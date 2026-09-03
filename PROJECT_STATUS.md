@@ -34,8 +34,9 @@
 -   일정(`wedding_events`) 백엔드·화면 3개 구현 — 마이그레이션 0061, `docs/AI_HANDOFF.md`
     참고 (Neon production 미적용, `db-migrate.yml` 실행 필요)
 -   지도 보기 백엔드·화면 구현 — 업체 좌표 컬럼(마이그레이션 0062) + 검색 화면
-    목록/지도 토글. 지도 열기는 카카오맵 공식 딥링크를 사용하며 Google Maps
-    placeholder 및 `react-native-maps` 의존성은 제거했다. 좌표 지오코딩은
+    목록/지도 토글. 업체 검색·상세는 공식 카카오맵 외부 링크를 사용한다.
+    2026-09-03 코드 대조: 우리웨딩 MapView, `react-native-maps` 의존성과
+    Google Maps 설정은 잔존한다. 전환·제거 전체 완료로 보지 않는다. 좌표 지오코딩은
     `scripts/geocode-vendors.mts`(카카오 로컬 API, 수동 실행) — 상세는
     `docs/AI_HANDOFF.md` "백엔드 — 일정 · 지도 보기" 절
 -   마이그레이션 번호 충돌 수정 — PR #19가 다른 PR과 동시에 진행되며 `0059`·`0060`을
@@ -67,8 +68,9 @@
 - 외부 콘솔에서 남은 등록: 네이버 HTTPS callback,
   카카오 Redirect URI/플랫폼 키, Google Android·iOS OAuth 클라이언트,
   Apple Sign in Services ID/redirect, Render 운영 Secret 및 DB migration 확인.
-- 카카오맵 사용 설정 및 플랫폼 키가 활성화됐다. 앱은 카카오맵 공식 딥링크로
-  전환했으며, 운영 경로에서 Google Maps 키 등록은 요구하지 않는다.
+- 카카오맵 사용 설정·플랫폼 키 활성화 기록이 있다(이번 문서 동기화에서 콘솔 재검증 안 함).
+  업체 검색·상세는 카카오맵 공식 외부 링크로 전환했으며 이 경로에는 Google Maps 키가 필요 없다.
+  우리웨딩 지도·웹 경로 및 의존성은 잔여 작업이다. 상세 경로는 `docs/AI_HANDOFF.md` 6번 참고.
 - 2026-09-03 Render `https://weddingpickl.onrender.com/health` 검증 결과
   HTTP 200, `{"ok":true,"database":"ok"}`. 운영 DB 연결은 정상이며,
   migration 0052~0062 적용 여부는 DB Migrate 워크플로 실행 후 확정한다.
@@ -84,9 +86,9 @@
 
 ### iOS
 
--   최근 `EAS Build #5` 실패
--   Summary의 exit code 1만 확인된 상태
--   실제 실패 Step 로그를 기준으로 원인 수정 필요
+-   최신 문서 기록은 Release #13의 Sign in with Apple capability/entitlement 누락이다.
+-   App ID 설정과 Provisioning Profile 수정 후 Production Build·TestFlight 검증 필요.
+-   현재 외부 콘솔 상태와 최신 실패 Step 로그를 재확인한다.
 -   추측으로 Apple Credential/API Key를 재생성하지 않는다.
 
 ### 이전 배포 기록
@@ -120,14 +122,14 @@
 
 1.  현재 GitHub Actions와 workflow 전체 점검
 2.  중복 workflow 제거가 아니라 우선 재사용·통합
-3.  `EAS Build #5` 실제 실패 로그 분석 및 수정
+3.  Release #13 이후 최신 실패 로그 확인, Sign in with Apple 권한·Provisioning Profile 수정 검증
 4.  Render deploy 자동화 정상화
 5.  Render `/health` 검증 성공
 6.  iOS Production Build 성공
 7.  TestFlight 제출 흐름 검증
 8.  Google Play 계정 제한 해제 후 Android 제출 자동화 활성화
 9.  Neon production에 마이그레이션 0052~0062 적용 (`db-migrate.yml`)
-10. 카카오맵 운영 딥링크 실기기 검증(Android/iOS)
+10. 카카오맵 잔여 경로·의존성 정리 및 운영 링크 실기기 검증(Android/iOS), 웹 제공 범위 확인
 11. 카카오 REST API 키 발급 → `scripts/geocode-vendors.mts`로 업체 좌표 백필
 
 ## 제품 범위 결정
@@ -139,6 +141,11 @@
     예식 완료 전용 기능을 새로 만들지 않는다.
 
 ## 갱신 규칙
+
+`docs/AI_HANDOFF.md`의 최신 P0 상태·지도 전환 절을 함께 갱신한다. 운영 기록과
+코드·실기기 검증 결과를 구분하고 확인 날짜·커밋을 남긴다. 과거 세션 기록을 최신 완료 근거로 쓰지 않는다.
+P0 항목별 완료 기준과 검증 증거가 확정되기 전에는 P0 진척률을 미측정으로 표시한다.
+`npm run progress`의 전체 문서 공정률은 P0 출시 준비율이 아니다.
 
 다음 상태가 변경되면 작업과 함께 이 파일을 갱신한다.
 
