@@ -18,6 +18,17 @@ import { migrate } from './migrate';
  */
 export async function resetSchema(client: Client): Promise<void> {
   /*
+   * 풀 연결이 열려 있으면 DROP SCHEMA CASCADE가 deadlock을 일으킨다.
+   * 스키마를 지우기 전에 다른 세션을 모두 끊어 단독 접근을 보장한다.
+   */
+  await client.query(`
+    SELECT pg_terminate_backend(pid)
+    FROM pg_stat_activity
+    WHERE datname = current_database()
+      AND pid <> pg_backend_pid()
+  `);
+
+  /*
    * 우리가 만든 스키마들(structured·originals·identity·ads·stats). 이름을 적어
    * 두지 않고 찾아서 지우는 이유는, 스키마를 새로 만들 때마다 이 파일을 같이
    * 고쳐야 하는 것을 잊기 때문이다 — 0040에서 ads를 더할 때 실제로 잊었다.
