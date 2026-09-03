@@ -7,7 +7,7 @@
 
 ## 메타
 
-- `updated_at`: 2026-09-02 (일정·지도 보기 PR #19 병합, 취향 API, CI+staging 그린)
+- `updated_at`: 2026-09-02 (일정·지도 보기 PR #19 병합, 취향 API; WP-MY-004/HOME-004/006/OUR-012/013 구현 완료 PR #35)
 - `repository`: jsexy0210-ship-it/WeddingPickl
 - `branch (main)`: e34125f (PR #28 count 버그픽 포함)
 - `policy_version`: 통합정책 v3.14
@@ -288,6 +288,12 @@ API·DB 마이그레이션·지도 SDK가 필요한 두 항목(일정 추가, �
 | 공통 상태 (WP-ST-*) | 14개 | 로딩/에러/빈 상태 확인 필요 |
 | B2B 문의 (WP-BIZ-*) | 5개 | 소속확인·자료제공·혜택등록·광고·웹Footer |
 | 커플 연결 (WP-CPL-*) | 2개 | 공동 편집 충돌, 변경 내역 |
+<<<<<<< HEAD
+| 우리웨딩 (WP-OUR-*) | 1개 | 일정 추가 (WP-OUR-012 타임라인·WP-OUR-013 예식완료 구현 완료) |
+| MY (WP-MY-*) | 0개 | WP-MY-004 취향 다시 고르기 구현 완료 |
+| 홈 (WP-HOME-*) | 0개 | WP-HOME-004 TOP3·WP-HOME-006 피드 구현 완료 |
+| 기타 | ~5개 | 지도 보기, 재실행·세션 복원, 진입 예외 등 |
+=======
 | 우리웨딩 (WP-OUR-*) | 3개 | 일정 추가 ✅(이 세션), 준비 타임라인 ✅(PR #16), 예식 완료 ✅(PR #16) |
 | MY (WP-MY-*) | 2개 | 취향 다시 고르기 ✅(PR #16), 회원탈퇴 ✅(PR #10/#15) |
 | 홈 (WP-HOME-*) | 2개 | TOP3 전체보기, 개인화 웨딩피드 |
@@ -295,6 +301,7 @@ API·DB 마이그레이션·지도 SDK가 필요한 두 항목(일정 추가, �
 
 이 표는 176개 화면 전체 재조사 시점(작성 당시) 기준 카운트라 위 ✅ 항목만큼 실제 미구현
 수는 줄었다 — 전체 재집계는 하지 않았다.
+>>>>>>> origin/main
 
 상세 목록: https://claude.ai/code/artifact/b99277b7-3bdc-45dc-9614-a1310507df53
 
@@ -380,6 +387,12 @@ WeddingPickl/
 2. **[사용자]** Fly.io: `OPERATOR_SESSION_TTL_DAYS=365` 추가
 3. **[사용자]** Neon DB: `db-migrate.yml` 실행 → 0052 ~ 0060 적용
 4. **[사용자]** terms.url · privacy.url 확정 → 도메인 상수 업데이트
+<<<<<<< HEAD
+5. **[AI]** 프론트엔드 미구현 화면 구현 — WP-MY-004/HOME-004/006/OUR-012/013 완료. 다음: 일정 추가 > 지도 보기
+   - 브랜치 `claude/fe-screens-our-my-home` 에 커밋 a3d7868, typecheck 통과, push 완료
+6. **[AI]** 공통 Bottom Sheet 16종 인라인 처리 여부 확인
+7. **[AI]** 관리자 화면 설계 및 구현 (앱스토어 출시 후 단계)
+=======
 5. **[사용자]** Google Maps Android API 키 발급 → `apps/mobile/app.json`의
    `REPLACE_WITH_GOOGLE_MAPS_ANDROID_API_KEY` 교체
 6. **[사용자]** 카카오 REST API 키 발급 → `scripts/geocode-vendors.mts` 실행해 업체 좌표 채우기
@@ -388,6 +401,7 @@ WeddingPickl/
    미구현 항목이 모두 닫힌다. **[사용자]** PR #19 리뷰·병합 필요.
 8. **[AI]** 공통 Bottom Sheet 16종 인라인 처리 여부 확인
 9. **[AI]** 관리자 화면 설계 및 구현 (앱스토어 출시 후 단계)
+>>>>>>> origin/main
 
 ---
 
@@ -498,3 +512,14 @@ WeddingPickl/
 
 ## 롤백
 - rollback_note: 커밋 4개(`f22a512`, `bba48ed`, `10ce66a`, `cf07b15`)는 서로 기능적으로 독립적이라 필요하면 개별 `git revert <hash>`로 되돌릴 수 있다. 순서상 뒤 커밋이 앞 커밋의 파일을 다시 건드리지 않으므로 역순 revert도 안전하다. 전부 origin/main에 push 완료 — 로컬에만 있는 미커밋 변경 없음(`.npm-cache/` 잡음 제외).
+
+---
+
+## 공정률 대시보드 (2026-09-02 추가)
+
+`npm run progress`(이 저장소가 이미 갖고 있던 계산기)의 결과를 눈으로 보기 편하게 만든 Artifact를 만들어뒀다: **https://claude.ai/code/artifact/bf90e7aa-91ad-4df3-bcbd-dc950216663a**
+
+- `db` capability로 발행했다. `snapshot/latest` 문서에 `npm run progress -- --format json`을 사람이 보기 좋은 모양으로 변환한 값을 담아두면, 열려 있는 페이지가 새로고침 없이 갱신된다.
+- 갱신 방법: `npm run progress -- --format json`을 돌리고 그 결과를 대시보드가 기대하는 모양(`overallRate`, `items[]`, `inventory[]`, `openSections[]`, `unanswered[]`, `decisionSections[]`, `commits[]` 등 — 위 URL의 아티팩트 소스 상단 `FALLBACK` 상수를 참고)으로 옮긴 다음, Artifact 도구의 `write_db`로 `collection: "snapshot"`, `doc_id: "latest"`에 `set` 하면 된다. 사용자가 "progress 다시 돌리고 대시보드 갱신해줘"라고 하면 이 흐름을 그대로 하면 된다.
+- 이 문서 위쪽 "변경 금지" 절이 회원탈퇴 자동삭제 백엔드를 만들지 말라고 적어뒀는데, 그 뒤 커밋(`e42d7c4`, `549e2fa` 등)에서 실제로 자동삭제 + 운영자 개입 기능이 만들어진 것으로 보인다 — **그 절이 낡았을 수 있다.** 다음 세션은 `packages/domain/src/withdrawal.ts`와 관련 마이그레이션(`0055_account_deletion.sql`, `0058_withdrawal_admin.sql`)을 직접 열어 지금 상태를 확인하고, 이 문서의 "변경 금지" 절을 현재 상태에 맞게 고칠 것.
+

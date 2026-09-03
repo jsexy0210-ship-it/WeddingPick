@@ -98,6 +98,12 @@ export function buildServer(context: AppContext): FastifyInstance {
     }
   });
 
+  app.get('/', async () => ({
+    name: 'WeddingPick API',
+    health: '/health',
+    version: 'v1',
+  }));
+
   registerAuthRoutes(app, context);
   registerWeddingRoutes(app, context);
   registerDocumentRoutes(app, context);

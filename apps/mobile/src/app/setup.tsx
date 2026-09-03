@@ -58,12 +58,20 @@ export default function SetupScreen() {
     }
 
     /*
-     * 지역 목록은 **업체가 실제로 있는 시도**만 내려온다. 전국 목록을 박아두면
-     * 고른 순간부터 빈 화면이 되는 지역이 생긴다.
+     * 지역 목록은 업체가 실제로 있는 시도만 내려온다. 업체가 아직 없거나 API가
+     * 실패하면 전국 주요 시도를 폴백으로 보여준다 — 빈 목록이면 선택 자체가
+     * 불가능해 다음으로 넘어갈 수 없다.
      */
+    const FALLBACK_REGIONS = [
+      '서울', '경기', '인천', '부산', '대구', '대전', '광주', '울산', '세종',
+      '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주',
+    ];
     listVendorRegions()
-      .then((response) => setRegions(response.regions.map((item) => item.name)))
-      .catch(() => setRegions([]));
+      .then((response) => {
+        const names = response.regions.map((item) => item.name);
+        setRegions(names.length > 0 ? names : FALLBACK_REGIONS);
+      })
+      .catch(() => setRegions(FALLBACK_REGIONS));
   }, []);
 
   const budgetAmount = budget.trim() === '' ? null : Number(budget.replace(/,/g, '')) * MANWON;
