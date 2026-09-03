@@ -71,6 +71,9 @@
 - 2026-09-03 Render `https://weddingpickl.onrender.com/health` 검증 결과
   HTTP 200, `{"ok":true,"database":"ok"}`. 운영 DB 연결은 정상이며,
   migration 0052~0062 적용 여부는 DB Migrate 워크플로 실행 후 확정한다.
+- 2026-09-03 Release #11은 코드 단계에 도달하기 전에 GitHub Actions 계정의
+  결제 실패/지출 한도 초과로 차단됐다. GitHub 결제 없이 운영한다는 원칙상
+  Actions 재시도 대신 EAS 대시보드 또는 승인된 외부 빌드 경로를 사용한다.
 
 ## 현재 장애 / 제한
 
