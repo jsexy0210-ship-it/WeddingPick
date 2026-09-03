@@ -33,8 +33,9 @@
 -   기존 migration 46개 적용 완료
 -   일정(`wedding_events`) 백엔드·화면 3개 구현 — 마이그레이션 0061, `docs/AI_HANDOFF.md`
     참고 (Neon production 미적용, `db-migrate.yml` 실행 필요)
--   지도 보기 백엔드·화면 구현 — 업체 좌표 컬럼(마이그레이션 0062) + `expo-location`/
-    `react-native-maps` 도입 + 검색 화면 목록/지도 토글. 좌표 지오코딩은
+-   지도 보기 백엔드·화면 구현 — 업체 좌표 컬럼(마이그레이션 0062) + 검색 화면
+    목록/지도 토글. 지도 열기는 카카오맵 공식 딥링크를 사용하며 Google Maps
+    placeholder 및 `react-native-maps` 의존성은 제거했다. 좌표 지오코딩은
     `scripts/geocode-vendors.mts`(카카오 로컬 API, 수동 실행) — 상세는
     `docs/AI_HANDOFF.md` "백엔드 — 일정 · 지도 보기" 절
 -   마이그레이션 번호 충돌 수정 — PR #19가 다른 PR과 동시에 진행되며 `0059`·`0060`을
@@ -66,8 +67,8 @@
 - 외부 콘솔에서 남은 등록: 네이버 HTTPS callback,
   카카오 Redirect URI/플랫폼 키, Google Android·iOS OAuth 클라이언트,
   Apple Sign in Services ID/redirect, Render 운영 Secret 및 DB migration 확인.
-- Google Maps Android 키는 아직 placeholder이며, 카카오 지도 전환 여부를
-  확정한 뒤 지도 SDK와 키를 운영 설정에 반영해야 한다.
+- 카카오맵 사용 설정 및 플랫폼 키가 활성화됐다. 앱은 카카오맵 공식 딥링크로
+  전환했으며, 운영 경로에서 Google Maps 키 등록은 요구하지 않는다.
 - 2026-09-03 Render `https://weddingpickl.onrender.com/health` 검증 결과
   HTTP 200, `{"ok":true,"database":"ok"}`. 운영 DB 연결은 정상이며,
   migration 0052~0062 적용 여부는 DB Migrate 워크플로 실행 후 확정한다.
@@ -126,7 +127,7 @@
 7.  TestFlight 제출 흐름 검증
 8.  Google Play 계정 제한 해제 후 Android 제출 자동화 활성화
 9.  Neon production에 마이그레이션 0052~0062 적용 (`db-migrate.yml`)
-10. Google Maps Android API 키 발급 → `apps/mobile/app.json` 자리표시자 교체
+10. 카카오맵 운영 딥링크 실기기 검증(Android/iOS)
 11. 카카오 REST API 키 발급 → `scripts/geocode-vendors.mts`로 업체 좌표 백필
 
 ## 제품 범위 결정
