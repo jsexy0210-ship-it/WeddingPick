@@ -65,6 +65,7 @@ export function ThemedText({
     <Text
       style={[
         { color: theme[themeColor ?? 'text'] },
+        { fontFamily: Fonts.sans },
         styles[STYLE_FOR[type]],
         numeric && styles.numeric,
         style,

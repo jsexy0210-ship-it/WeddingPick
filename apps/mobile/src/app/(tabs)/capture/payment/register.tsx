@@ -192,7 +192,8 @@ export default function RegisterPaymentProofScreen() {
       }
 
       if (parsed.merchantName) setMerchantName(parsed.merchantName.value);
-      if (parsed.paidAmount) setAmount(String(parsed.paidAmount.value));
+      if (parsed.paidAmount)
+        setAmount(String(parsed.paidAmount.value).replace(/\B(?=(\d{3})+(?!\d))/g, ','));
       if (parsed.paidAt) setDay(parsed.paidAt.value.slice(0, 10));
       if (parsed.method) setMethod(parsed.method.value);
       // 값이 아니라 종류다. 읽어낸 것을 그대로 쓴다.
@@ -344,8 +345,13 @@ export default function RegisterPaymentProofScreen() {
             <TextInput
               style={[styles.input, { color: theme.text, borderColor: theme.border }]}
               value={amount}
-              onChangeText={setAmount}
+              onChangeText={(text) =>
+                setAmount(
+                  text.replace(/[^0-9]/g, '').slice(0, 12).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+                )
+              }
               keyboardType="number-pad"
+              maxLength={15}
               placeholder="예: 3000000"
               placeholderTextColor={theme.textSecondary}
               accessibilityLabel="금액"

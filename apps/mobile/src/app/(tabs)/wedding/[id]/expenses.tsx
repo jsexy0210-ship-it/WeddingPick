@@ -292,10 +292,15 @@ export default function ExpensesScreen() {
             <TextInput
               style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundSelected }]}
               value={addAmount}
-              onChangeText={setAddAmount}
+              onChangeText={(text) =>
+                setAddAmount(
+                  text.replace(/[^0-9]/g, '').slice(0, 12).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+                )
+              }
               placeholder="예: 500000"
               placeholderTextColor={theme.textAssistive}
               keyboardType="number-pad"
+              maxLength={15}
             />
             <ThemedText type="t7" themeColor="textSecondary">상태</ThemedText>
             <ThemedView style={styles.chips}>
@@ -339,10 +344,15 @@ export default function ExpensesScreen() {
                 { color: theme.text, backgroundColor: theme.backgroundSelected },
               ]}
               value={draft}
-              onChangeText={setDraft}
+              onChangeText={(text) =>
+                setDraft(
+                  text.replace(/[^0-9]/g, '').slice(0, 12).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+                )
+              }
               keyboardType="number-pad"
               placeholder="예: 30000000"
               placeholderTextColor={theme.textAssistive}
+              maxLength={15}
               accessibilityLabel="총 예산"
             />
             <ThemedView style={styles.sheetActions}>

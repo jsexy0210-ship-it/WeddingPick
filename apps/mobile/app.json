@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "weddingpick",
+    "scheme": ["weddingpick", "kakao8ffc70af8bf397e03d930e10ca38cb22"],
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "kr.weddingpick.app",

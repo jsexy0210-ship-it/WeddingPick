@@ -182,10 +182,15 @@ export default function VisitNotesScreen() {
             <TextInput
               style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundSelected }]}
               value={amount}
-              onChangeText={setAmount}
+              onChangeText={(text) =>
+                setAmount(
+                  text.replace(/[^0-9]/g, '').slice(0, 7).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+                )
+              }
               keyboardType="number-pad"
               placeholder="예: 2800"
               placeholderTextColor={theme.textAssistive}
+              maxLength={9}
               accessibilityLabel="제안금액"
             />
 

@@ -1,5 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs, useSegments } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { WeddingMark, useTheme } from '@weddingpick/ui';
 
@@ -9,6 +10,7 @@ import { WeddingMark, useTheme } from '@weddingpick/ui';
  */
 export default function TabLayout() {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   /*
    * 카메라는 전체 화면을 써야 문서를 화면에 맞추기 쉽다.
    *
@@ -27,7 +29,12 @@ export default function TabLayout() {
         tabBarInactiveTintColor: theme.textAssistive,
         tabBarStyle: onCamera
           ? { display: 'none' }
-          : { backgroundColor: theme.background, borderTopColor: theme.border },
+          : {
+              backgroundColor: theme.background,
+              borderTopColor: theme.border,
+              paddingBottom: insets.bottom,
+              height: 60 + insets.bottom,
+            },
       }}>
       <Tabs.Screen
         name="index"
