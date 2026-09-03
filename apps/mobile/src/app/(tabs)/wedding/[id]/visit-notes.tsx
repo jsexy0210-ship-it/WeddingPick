@@ -86,10 +86,10 @@ export default function VisitNotesScreen() {
   }
 
   function remove(noteId: string) {
-    Alert.alert('방문노트 빼기', '이 기록을 빼시겠어요? 되돌릴 수 없어요.', [
+    Alert.alert('삭제할까요?', '이 방문 기록을 삭제하면 되돌릴 수 없어요.', [
       { text: '취소', style: 'cancel' },
       {
-        text: '빼기',
+        text: '삭제',
         style: 'destructive',
         onPress: () =>
           removeVisitNote(id, noteId)

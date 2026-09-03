@@ -176,15 +176,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  guide: {
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.7)',
-    borderRadius: 4,
-    /* 모서리 안내. 전체 테두리보다 모서리만 강조하면 덜 답답하다. */
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 2,
+  /**
+   * 모서리 L형 마커 — 수평 바.
+   * borderColor는 rgba(255,255,255,0.6) — 토큰 spec/tokens.json 카메라 가이드 60% 불투명.
+   */
+  cornerH: {
+    position: 'absolute',
+    height: 3,
+    backgroundColor: 'rgba(255,255,255,0.6)',
+  },
+  /** 모서리 L형 마커 — 수직 바. */
+  cornerV: {
+    position: 'absolute',
+    width: 3,
+    backgroundColor: 'rgba(255,255,255,0.6)',
+  },
+  /** 촬영 후 품질 경고 바. 화면 하단 중앙에 표시된다. */
+  qualityHintBar: {
+    position: 'absolute',
+    bottom: 160,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    paddingHorizontal: Spacing.four,
   },
   topBar: {
     flexDirection: 'row',

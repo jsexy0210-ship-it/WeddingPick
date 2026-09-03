@@ -122,10 +122,10 @@ export default function ExpensesScreen() {
   }
 
   function remove(expenseId: string) {
-    Alert.alert('항목 빼기', '이 지출 항목을 빼시겠어요? 되돌릴 수 없어요.', [
+    Alert.alert('삭제할까요?', '이 지출 항목을 삭제하면 되돌릴 수 없어요.', [
       { text: '취소', style: 'cancel' },
       {
-        text: '빼기',
+        text: '삭제',
         style: 'destructive',
         onPress: () =>
           removeExpense(id, expenseId)
