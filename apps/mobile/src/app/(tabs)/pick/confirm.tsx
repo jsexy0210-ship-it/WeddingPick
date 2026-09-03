@@ -97,33 +97,14 @@ export default function PickConfirmScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ThemedView style={styles.content}>
-          {/* Pick Mark */}
+          {/* Pick Mark — scale 0 → 1.18 → 1 팝 애니메이션 (460ms) */}
           <Animated.View
             style={[
               styles.markWrap,
               { backgroundColor: theme.tint },
               { transform: [{ scale: markScale }] },
             ]}>
-            <Svg
-              width={64}
-              height={64}
-              viewBox={`0 0 ${MARK_VIEWBOX} ${MARK_VIEWBOX}`}
-              fill="none">
-              <Path
-                d={MARK_HEART_PATH}
-                stroke="#ffffff"
-                strokeWidth={MARK_STROKE}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <Path
-                d={MARK_CHECK_PATH}
-                stroke="#ffffff"
-                strokeWidth={MARK_STROKE}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </Svg>
+            <WeddingMark size={64} color="#ffffff" />
           </Animated.View>
 
           {/* 요약 카드 */}
