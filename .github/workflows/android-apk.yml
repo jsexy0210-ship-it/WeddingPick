@@ -58,8 +58,13 @@ jobs:
         working-directory: apps/mobile/android
         env:
           EXPO_PUBLIC_API_URL: ${{ inputs.api_url }}
+          # 운영/스테이징과 동일한 공개 OAuth 설정을 APK에도 주입한다.
+          EXPO_PUBLIC_KAKAO_CLIENT_ID: 73d13d819afd9d14f20de20b8dff46b8
+          EXPO_PUBLIC_GOOGLE_CLIENT_ID: 595165026523-dd5s0fqtle78e03mb34m9iaclpdmlb9r.apps.googleusercontent.com
+          EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID: 595165026523-3mlcq960r5q174h6chun8mommjkpt0qi.apps.googleusercontent.com
           EXPO_PUBLIC_NAVER_CLIENT_ID: tgp4WVYlYO_qd2nyvHug
-          EXPO_PUBLIC_NAVER_REDIRECT_URI: weddingpick://auth/naver
+          # 네이버 콘솔에는 HTTPS callback만 등록하고, 서버가 앱 scheme으로 재전달한다.
+          EXPO_PUBLIC_NAVER_REDIRECT_URI: https://weddingpickl.onrender.com/v1/auth/naver/callback
         run: >-
           ./gradlew assembleRelease
           --build-cache
