@@ -10,6 +10,8 @@ import { withTransaction } from '../db';
 import { ApiError, notFound } from '../errors';
 
 const UPLOAD_URL_TTL_SECONDS = 15 * 60;
+/** 단일 파일의 최대 크기 (10MB) */
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 const EXTENSION: Record<string, string> = {
   'image/jpeg': 'jpg',
@@ -27,20 +29,44 @@ export function registerDocumentRoutes(app: FastifyInstance, context: AppContext
 
     await assertWeddingAccess(context.pool, body.weddingId, userId);
 
-    const documentId = randomUUID();
+    // 파일 크기 검증: 각 페이지별로 최대 크기 확인
+    if (!body.pages || body.pages.length === 0) {
+      throw new ApiError('invalid_request', '최소 1개의 파일이 필요합니다.');
+    }
 
-    // 서명 URL을 먼저 받아 스토리지 실패가 DB 행을 남기지 않게 한다.
-    const uploads = await Promise.all(
-      body.pages.map(async (page, index) => {
-        const target = await context.storage.createUploadTarget({
-          storageKey: `${userId}/${documentId}/${index + 1}.${EXTENSION[page.mimeType]}`,
-          mimeType: page.mimeType,
-          expiresInSeconds: UPLOAD_URL_TTL_SECONDS,
-        });
+    if (body.pages.length > 100) {
+      throw new ApiError('invalid_request', '최대 100개 페이지까지만 업로드 가능합니다.');
+    }
 
-        return { pageIndex: index, ...target };
-      })
-    );
+   // MIME 타입 검증: 지원하는 형식만 허용
+   for (const page of body.pages) {
+     if (!EXTENSION[page.mimeType]) {
+       throw new ApiError(
+         'invalid_request',
+         `지원하지 않는 파일 형식: ${page.mimeType}. JPEG, PNG, HEIC, PDF만 허용됩니다.`
+       );
+     }
+   }
+
+   const documentId = randomUUID();
+
+   // 서명 URL을 먼저 받아 스토리지 실패가 DB 행을 남기지 않게 한다.
+   const uploads = await Promise.all(
+     body.pages.map(async (page, index) => {
+       const ext = EXTENSION[page.mimeType];
+       if (!ext) {
+         throw new ApiError('invalid_request', `지원하지 않는 파일 형식: ${page.mimeType}`);
+       }
+
+       const target = await context.storage.createUploadTarget({
+         storageKey: `${userId}/${documentId}/${index + 1}.${ext}`,
+         mimeType: page.mimeType,
+         expiresInSeconds: UPLOAD_URL_TTL_SECONDS,
+       });
+
+       return { pageIndex: index, ...target };
+     })
+   );
 
     await withTransaction(context.pool, async (client) => {
       /*

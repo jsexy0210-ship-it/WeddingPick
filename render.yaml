@@ -1,10 +1,20 @@
 services:
+  # 웹 앱 (정적 사이트)
   - type: web
-    name: weddingpickl
-    runtime: node
-    buildCommand: npm ci
-    startCommand: npm run start --workspace @weddingpick/api
+    name: weddingpick-web
+    runtime: static
+    staticPublishPath: ./apps/web/dist
+    autoDeploy: true
+    buildCommand: npm run build --workspace @weddingpick/web
+
+  # API 서버
+  - type: web
+    name: weddingpick-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     healthCheckPath: /health
+    autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
@@ -12,111 +22,29 @@ services:
         fromDatabase:
           name: weddingpick-db
           property: connectionString
-      - key: STORAGE_DRIVER
+      - key: ANTHROPIC_API_KEY
         sync: false
+      - key: APPLE_CLIENT_ID
+        sync: false
+      - key: KAKAO_APP_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: STORAGE_DRIVER
+        value: s3
       - key: S3_BUCKET
         sync: false
       - key: S3_REGION
-        sync: false
+        value: kr-standard
       - key: S3_ENDPOINT
-        sync: false
+        value: https://kr.object.ncloudstorage.com
       - key: AWS_ACCESS_KEY_ID
         sync: false
       - key: AWS_SECRET_ACCESS_KEY
-        sync: false
-      - key: ANTHROPIC_API_KEY
-        sync: false
-      - key: AI_DAILY_CALL_LIMIT
-        sync: false
-
-  - type: worker
-    name: weddingpickl-worker
-    runtime: node
-    buildCommand: npm ci
-    startCommand: npm run worker --workspace @weddingpick/api
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: DATABASE_URL
-        fromDatabase:
-          name: weddingpick-db
-          property: connectionString
-      - key: STORAGE_DRIVER
-        sync: false
-      - key: S3_BUCKET
-        sync: false
-      - key: S3_REGION
-        sync: false
-      - key: S3_ENDPOINT
-        sync: false
-      - key: AWS_ACCESS_KEY_ID
-        sync: false
-      - key: AWS_SECRET_ACCESS_KEY
-        sync: false
-      - key: ANTHROPIC_API_KEY
-        sync: false
-      - key: AI_DAILY_CALL_LIMIT
-        sync: false
-
-  - type: web
-    name: weddingpickl-staging
-    runtime: node
-    buildCommand: npm ci
-    startCommand: npm run start --workspace @weddingpick/api
-    healthCheckPath: /health
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: DATABASE_URL
-        fromDatabase:
-          name: weddingpickl-staging-db
-          property: connectionString
-      - key: STORAGE_DRIVER
-        sync: false
-      - key: S3_BUCKET
-        sync: false
-      - key: S3_REGION
-        sync: false
-      - key: S3_ENDPOINT
-        sync: false
-      - key: AWS_ACCESS_KEY_ID
-        sync: false
-      - key: AWS_SECRET_ACCESS_KEY
-        sync: false
-      - key: ANTHROPIC_API_KEY
-        sync: false
-      - key: AI_DAILY_CALL_LIMIT
-        sync: false
-
-  - type: worker
-    name: weddingpickl-staging-worker
-    runtime: node
-    buildCommand: npm ci
-    startCommand: npm run worker --workspace @weddingpick/api
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: DATABASE_URL
-        fromDatabase:
-          name: weddingpickl-staging-db
-          property: connectionString
-      - key: STORAGE_DRIVER
-        sync: false
-      - key: S3_BUCKET
-        sync: false
-      - key: S3_REGION
-        sync: false
-      - key: S3_ENDPOINT
-        sync: false
-      - key: AWS_ACCESS_KEY_ID
-        sync: false
-      - key: AWS_SECRET_ACCESS_KEY
-        sync: false
-      - key: ANTHROPIC_API_KEY
-        sync: false
-      - key: AI_DAILY_CALL_LIMIT
         sync: false
 
 databases:
   - name: weddingpick-db
-  - name: weddingpickl-staging-db
+    plan: free
+    databaseName: weddingpick
+    user: weddingpick

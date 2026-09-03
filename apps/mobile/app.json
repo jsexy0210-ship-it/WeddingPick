@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": ["weddingpick", "kakao8ffc70af8bf397e03d930e10ca38cb22"],
+    "scheme": "weddingpick",
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "kr.weddingpick.app",
@@ -27,8 +27,15 @@
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
-      ]
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "process.env.EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY || REPLACE_WITH_GOOGLE_MAPS_ANDROID_API_KEY"
+        }
+      }
     },
     "web": {
       "output": "static",
@@ -59,6 +66,15 @@
           "photosPermission": "저장된 문서 사진을 불러오려면 사진 접근이 필요합니다."
         }
       ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "내 주변 업체를 지도에서 보려면 위치 접근이 필요합니다.",
+          "isAndroidBackgroundLocationEnabled": false,
+          "isIosBackgroundLocationEnabled": false
+        }
+      ],
+      "react-native-maps",
       [
         "expo-notifications",
         {
