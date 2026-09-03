@@ -44,6 +44,25 @@ import * as withdrawalAdmin from '../withdrawal-admin';
  * 길이고, 운영자만 쓸 수 있는 라우트 안에 두면 최초의 운영자를 만들 수 없다.
  * CLI로만 남겨둔다.
  */
+type KillSwitch = {
+  id: string;
+  name: string;
+  description: string;
+  enabled: boolean;
+  category: string;
+  lastChangedAt: string | null;
+  lastChangedBy: string | null;
+};
+
+const killSwitches = new Map<string, KillSwitch>([
+  ['ai-recommendations', { id: 'ai-recommendations', name: 'AI 추천', description: 'AI 기반 업체 추천 기능을 중지합니다', enabled: true, category: 'AI', lastChangedAt: null, lastChangedBy: null }],
+  ['ai-verification', { id: 'ai-verification', name: 'AI 검증', description: '문서 AI 자동 검증을 중지합니다', enabled: true, category: 'AI', lastChangedAt: null, lastChangedBy: null }],
+  ['ai-matching', { id: 'ai-matching', name: 'AI 매칭', description: '이메일 자동 매칭을 중지합니다', enabled: true, category: 'AI', lastChangedAt: null, lastChangedBy: null }],
+  ['stats-update', { id: 'stats-update', name: '통계 반영', description: '가격 통계 자동 갱신을 중지합니다', enabled: true, category: '운영', lastChangedAt: null, lastChangedBy: null }],
+  ['reward-payout', { id: 'reward-payout', name: '보상 지급', description: '친구 초대·홍보 보상 자동 지급을 중지합니다', enabled: true, category: '운영', lastChangedAt: null, lastChangedBy: null }],
+  ['auto-publish', { id: 'auto-publish', name: '자동 게시', description: '후기·반론 자동 게시를 중지합니다', enabled: true, category: '운영', lastChangedAt: null, lastChangedBy: null }],
+]);
+
 function mapCopyrightBasis(
   basis: string
 ): 'licensed' | 'public_domain' | 'vendor_provided' | 'pending' | 'rejected' {
@@ -760,7 +779,17 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   });
 
   // ─── Kill Switches ────────────────────────────────────────────────────────
-  app.patch<{ Params: { id: string } }>('/v1/admin/kill-switches/:id', auth, async (_req, reply) => {
+  app.get('/v1/admin/kill-switches', auth, async () => {
+    return { switches: [...killSwitches.values()] };
+  });
+
+  app.patch<{ Params: { id: string }; Body: { enabled?: boolean } }>('/v1/admin/kill-switches/:id', auth, async (req, reply) => {
+    const sw = killSwitches.get(req.params.id);
+    if (!sw) return reply.status(404).send({ error: 'not_found' });
+    const operatorId = currentUserId(req);
+    sw.enabled = req.body.enabled ?? sw.enabled;
+    sw.lastChangedAt = new Date().toISOString();
+    sw.lastChangedBy = operatorId ?? 'operator';
     return reply.status(204).send();
   });
 
@@ -774,6 +803,9 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   app.patch<{ Params: { id: string } }>('/v1/admin/faq/:id', auth, async (_req, reply) => {
     return reply.status(204).send();
   });
+  app.put<{ Params: { id: string } }>('/v1/admin/faq/:id', auth, async (_req, reply) => {
+    return reply.status(204).send();
+  });
   app.delete<{ Params: { id: string } }>('/v1/admin/faq/:id', auth, async (_req, reply) => {
     return reply.status(204).send();
   });
@@ -784,14 +816,27 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
     const search = q['search'] ?? '';
     const cursor = q['cursor'];
     const limit = 25;
-    const params: unknown[] = [];
-    let idx = 1;
-    const clauses: string[] = ['deleted_at IS NULL'];
+
+    const searchClauses: string[] = ['deleted_at IS NULL'];
+    const searchParams: unknown[] = [];
+    let searchIdx = 1;
     if (search) {
-      clauses.push(`display_name ILIKE $${idx}`);
-      params.push(`%${search}%`);
-      idx++;
+      searchClauses.push(`display_name ILIKE $${searchIdx}`);
+      searchParams.push(`%${search}%`);
+      searchIdx++;
     }
+
+    const [{ rows: countRows }] = await Promise.all([
+      context.pool.query<{ count: string }>(
+        `SELECT COUNT(*)::text AS count FROM structured.users WHERE ${searchClauses.join(' AND ')}`,
+        searchParams
+      ),
+    ]);
+    const total = Number(countRows[0]?.count ?? 0);
+
+    const params: unknown[] = [...searchParams];
+    let idx = searchIdx;
+    const clauses = [...searchClauses];
     if (cursor) {
       clauses.push(`created_at < $${idx}`);
       params.push(cursor);
@@ -815,13 +860,14 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
     const hasMore = rows.length > limit;
     const items = hasMore ? rows.slice(0, limit) : rows;
     return {
-      items: items.map((r) => ({
+      users: items.map((r) => ({
         id: r.id,
         displayName: r.display_name ?? '',
         activatedAt: r.activated_at?.toISOString() ?? null,
         createdAt: r.created_at.toISOString(),
         isOperator: r.is_operator,
       })),
+      total,
       hasMore,
       nextCursor: hasMore ? items[items.length - 1]!.created_at.toISOString() : null,
     };
@@ -1139,5 +1185,60 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
       hasMore,
       nextCursor: hasMore ? items[items.length - 1]!.created_at.toISOString() : null,
     };
+  });
+
+  // ─── Data / Price Stats (WP-ADM-PRICE) ────────────────────────────────────
+  app.get('/v1/admin/data/price-stats', auth, async () => {
+    type StatRow = {
+      vendor_id: string;
+      vendor_name: string;
+      data_count: string;
+      anomaly_count: string;
+    };
+    const { rows } = await context.pool.query<StatRow>(
+      `SELECT
+         p.vendor_id,
+         v.name AS vendor_name,
+         COUNT(*) AS data_count,
+         SUM(CASE WHEN p.paid_amount > stats.mean + 3 * stats.stddev THEN 1 ELSE 0 END) AS anomaly_count
+       FROM structured.usable_payment_proofs p
+       JOIN structured.vendors v ON v.id = p.vendor_id
+       JOIN LATERAL (
+         SELECT AVG(paid_amount) AS mean, STDDEV(paid_amount) AS stddev
+         FROM structured.usable_payment_proofs
+         WHERE vendor_id = p.vendor_id
+       ) stats ON true
+       GROUP BY p.vendor_id, v.name
+       ORDER BY data_count DESC
+       LIMIT 200`
+    );
+
+    const vendors = rows.map((r) => {
+      const count = Number(r.data_count);
+      const stage: 0 | 1 | 2 | 3 = count >= 10 ? 3 : count >= 5 ? 2 : count >= 3 ? 1 : 0;
+      return {
+        vendorId: r.vendor_id,
+        vendorName: r.vendor_name,
+        dataCount: count,
+        publicStage: stage,
+        anomalyCandidates: Number(r.anomaly_count),
+        statsVersion: '1',
+        lastRecalcAt: new Date().toISOString(),
+      };
+    });
+
+    const summary = {
+      totalVendors: vendors.length,
+      stage0: vendors.filter((v) => v.publicStage === 0).length,
+      stage1: vendors.filter((v) => v.publicStage === 1).length,
+      stage2: vendors.filter((v) => v.publicStage === 2).length,
+      stage3plus: vendors.filter((v) => v.publicStage === 3).length,
+    };
+
+    return { summary, vendors };
+  });
+
+  app.post<{ Params: { vendorId: string } }>('/v1/admin/data/price-stats/:vendorId/recalc', auth, async (_req, reply) => {
+    return reply.status(202).send({ queued: true });
   });
 }
