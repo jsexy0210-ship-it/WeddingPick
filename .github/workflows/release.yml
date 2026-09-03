@@ -63,6 +63,11 @@ jobs:
           set -euo pipefail
           fail=0
 
+          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            echo "::error::릴리즈 워크플로는 main 브랜치에서만 실행합니다. 현재: ${GITHUB_REF}"
+            fail=1
+          fi
+
           if [ -z "$EXPO_TOKEN" ]; then
             echo "::error::EXPO_TOKEN 시크릿이 없습니다."
             fail=1
@@ -75,15 +80,36 @@ jobs:
             fi
           fi
 
+          if [ "${{ inputs.submit }}" = "true" ]; then
+            if [ -z "$EXPO_APPLE_ID" ] || [ -z "$EXPO_APPLE_APP_SPECIFIC_PASSWORD" ]; then
+              echo "::error::TestFlight 제출에는 EXPO_APPLE_ID와 EXPO_APPLE_APP_SPECIFIC_PASSWORD 시크릿이 필요합니다."
+              fail=1
+            fi
+          fi
+
           if ! grep -q '"projectId"' apps/mobile/app.json; then
             echo "::error::app.json에 EAS projectId가 없습니다. eas-init 워크플로를 먼저 실행하세요."
             fail=1
           fi
 
+          if ! grep -q '"usesAppleSignIn": true' apps/mobile/app.json; then
+            echo "::error::app.json에 usesAppleSignIn=true가 필요합니다."
+            fail=1
+          fi
+
           exit $fail
         env:
+          GITHUB_REF: ${{ github.ref }}
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           EAS_ASC_KEY_P8_BASE64: ${{ secrets.EAS_ASC_KEY_P8_BASE64 }}
+          EXPO_APPLE_ID: ${{ secrets.EXPO_APPLE_ID }}
+          EXPO_APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.EXPO_APPLE_APP_SPECIFIC_PASSWORD }}
+
+      - name: 품질 게이트 (타입/린트/카피)
+        run: |
+          npm run typecheck
+          npm run lint
+          node lint-copy.js apps/mobile apps/web
 
   build-ios:
     name: iOS Production Build
