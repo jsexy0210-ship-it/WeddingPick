@@ -80,9 +80,10 @@ export default function ExpoDetailScreen() {
   async function handleNotifyToggle() {
     if (!expo || notifyLoading) return;
     setNotifyLoading(true);
+    const newEnabled = !expo.notifyEnabled;
     try {
-      const res = await toggleExpoNotify(expoId!, !expo.notifyEnabled);
-      setExpo((prev) => prev ? { ...prev, notifyEnabled: res.notifyEnabled } : prev);
+      await toggleExpoNotify(expoId!, newEnabled);
+      setExpo((prev) => prev ? { ...prev, notifyEnabled: newEnabled } : prev);
     } catch {
       // 실패 시 기존 상태 유지 — 조용히 넘어간다
     } finally {

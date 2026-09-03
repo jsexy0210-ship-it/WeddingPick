@@ -17,14 +17,20 @@ export const expoItemSchema = z.object({
 });
 
 export const expoDetailSchema = expoItemSchema.extend({
+  address: z.string(),
+  registrationDeadline: z.string().nullable(),
+  benefits: z.array(z.string()),
   description: z.string(),
-  registrationUrl: z.string().nullable(),
   notifyEnabled: z.boolean(),
 });
 
 export const expoListResponseSchema = z.object({
   items: z.array(expoItemSchema),
   nextCursor: z.string().nullable(),
+});
+
+export const expoNotifyResponseSchema = z.object({
+  notifyEnabled: z.boolean(),
 });
 
 export type ExpoStatus = z.infer<typeof expoStatusSchema>;

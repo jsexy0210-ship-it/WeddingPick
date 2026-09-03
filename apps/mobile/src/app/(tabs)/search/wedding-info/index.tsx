@@ -1,8 +1,10 @@
+import type { WeddingInfoCategory, WeddingInfoItem, WeddingInfoStage } from '@weddingpick/api-contract';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { listWeddingInfo } from '@/api/client';
 import {
   EmptyView,
   ErrorView,
@@ -16,58 +18,40 @@ import {
   ThemedView,
 } from '@weddingpick/ui';
 
-// TODO: API 미구현 — GET /v1/wedding-info (웨딩 정보 목록)
-type WeddingInfoCategory =
-  | 'planning'
-  | 'venue'
-  | 'dress'
-  | 'photo'
-  | 'beauty'
-  | 'catering'
-  | 'honeymoon';
-
-type WeddingInfoStage = 'early' | 'mid' | 'late' | 'all';
-
-type WeddingInfoItem = {
-  id: string;
-  title: string;
-  summary: string;
-  category: WeddingInfoCategory;
-  stage: WeddingInfoStage;
-  publishedAt: string;
-  thumbnailUrl: string | null;
-};
-
 type SortKey = 'latest' | 'stage' | 'category';
 
-const CATEGORY_LABEL: Record<WeddingInfoCategory, string> = {
-  planning: '전체 계획',
+const STAGE_LABEL: Record<WeddingInfoStage, string> = {
+  preparation: '초기 준비',
   venue: '예식장',
   dress: '드레스',
   photo: '촬영',
   beauty: '뷰티',
-  catering: '케이터링',
   honeymoon: '허니문',
+  after: '예식 후',
 };
 
-const STAGE_LABEL: Record<WeddingInfoStage, string> = {
-  all: '전체',
-  early: '초기 준비',
-  mid: '중반 준비',
-  late: '막바지 준비',
+const CATEGORY_LABEL: Record<WeddingInfoCategory, string> = {
+  tips: '알아두면 좋아요',
+  checklist: '체크리스트',
+  review: '경험담',
+  trend: '트렌드',
+  faq: '자주 묻는 질문',
 };
 
-const CATEGORIES: WeddingInfoCategory[] = [
-  'planning', 'venue', 'dress', 'photo', 'beauty', 'catering', 'honeymoon',
+const STAGES: WeddingInfoStage[] = [
+  'preparation', 'venue', 'dress', 'photo', 'beauty', 'honeymoon', 'after',
 ];
 
-const STAGES: WeddingInfoStage[] = ['all', 'early', 'mid', 'late'];
+const CATEGORIES: WeddingInfoCategory[] = [
+  'tips', 'checklist', 'review', 'trend', 'faq',
+];
+
 const SORTS: SortKey[] = ['latest', 'stage', 'category'];
 
 const SORT_LABEL: Record<SortKey, string> = {
   latest: '최신순',
   stage: '준비단계순',
-  category: '카테고리순',
+  category: '유형순',
 };
 
 /** 스켈레톤 — 웨딩 정보 카드 3장을 미리 잡는다. */
@@ -88,51 +72,45 @@ function WeddingInfoListSkeleton() {
 
 /**
  * 웨딩 정보 목록. 핸드오프 WP-EXPO-003.
- * 준비단계별·카테고리별·최신순 필터.
+ * 준비단계별·유형별·최신순 필터.
  * 상태: 로딩 → 빈 상태 / 목록 있음 / 오류.
  */
 export default function WeddingInfoListScreen() {
   const [sort, setSort] = useState<SortKey>('latest');
-  const [stage, setStage] = useState<WeddingInfoStage>('all');
+  const [stage, setStage] = useState<WeddingInfoStage | 'all'>('all');
   const [category, setCategory] = useState<WeddingInfoCategory | 'all'>('all');
   const [items, setItems] = useState<WeddingInfoItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // TODO: API 미구현 — GET /v1/wedding-info?sort={sort}&stage={stage}&category={category}
-    // 서버 연동 전: 빈 목록으로 떨어진다.
-    setItems([]);
-  }, []);
-
-  function retry() {
+  const load = useCallback(() => {
     setError(null);
     setItems(null);
-    // TODO: API 미구현 — 재시도 시 API 호출
-    setItems([]);
-  }
+
+    listWeddingInfo({
+      sort,
+      stage: stage === 'all' ? undefined : stage,
+      category: category === 'all' ? undefined : category,
+    })
+      .then((res) => setItems(res.items))
+      .catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : '웨딩 정보를 불러오지 못했어요');
+      });
+  }, [sort, stage, category]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   if (error) {
     return (
       <ErrorView
         title="웨딩 정보를 불러오지 못했어요"
         message={error}
-        onRetry={retry}
+        onRetry={load}
         retryLabel="다시 시도"
       />
     );
   }
-
-  const filtered = (items ?? []).filter((item) => {
-    const stageMatch = stage === 'all' || item.stage === stage;
-    const categoryMatch = category === 'all' || item.category === category;
-    return stageMatch && categoryMatch;
-  });
-
-  const sorted = [...filtered].sort((a, b) => {
-    if (sort === 'latest') return b.publishedAt.localeCompare(a.publishedAt);
-    if (sort === 'stage') return a.stage.localeCompare(b.stage);
-    return a.category.localeCompare(b.category);
-  });
 
   return (
     <ThemedView style={styles.container}>
@@ -164,6 +142,12 @@ export default function WeddingInfoListScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.scrollChips}
           >
+            <FilterChip
+              label="전체"
+              selected={stage === 'all'}
+              onPress={() => setStage('all')}
+              role="radio"
+            />
             {STAGES.map((s) => (
               <FilterChip
                 key={s}
@@ -175,7 +159,7 @@ export default function WeddingInfoListScreen() {
             ))}
           </ScrollView>
 
-          {/* 카테고리 */}
+          {/* 유형 */}
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -201,14 +185,14 @@ export default function WeddingInfoListScreen() {
           {/* 로딩 */}
           {items === null ? (
             <WeddingInfoListSkeleton />
-          ) : sorted.length === 0 ? (
+          ) : items.length === 0 ? (
             /* 빈 상태 */
             <EmptyView
               title="아직 웨딩 정보가 없어요"
               description="좋은 정보를 준비하고 있어요"
             />
           ) : (
-            sorted.map((item) => (
+            items.map((item) => (
               <Pressable
                 key={item.id}
                 accessibilityRole="button"

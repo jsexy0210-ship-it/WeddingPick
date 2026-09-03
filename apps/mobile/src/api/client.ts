@@ -1143,3 +1143,9 @@ export async function revokePaymentConsent(): Promise<Settings> {
   return request('/v1/me/payment-consent', settingsSchema, { method: 'DELETE' });
 }
 
+// ──────────────────────────────────────────────────────────────────────────────
+// 타입 재내보내기 — 화면이 @weddingpick/api-contract 직접 의존 없이 쓸 수 있다.
+// ──────────────────────────────────────────────────────────────────────────────
+export type { ExpoItem, ExpoStatus, ExpoDetail } from '@weddingpick/api-contract';
+export type { WeddingInfoListResponse, WeddingInfoDetail } from '@weddingpick/api-contract';
+
