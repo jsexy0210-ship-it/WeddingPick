@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontSize: FontSize.caption,
+    fontSize: FontSize.t7,
     lineHeight: Platform.OS === 'ios' ? 0 : 19,
     padding: 0,
   },
