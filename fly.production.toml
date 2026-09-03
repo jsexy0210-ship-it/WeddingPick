@@ -1,0 +1,44 @@
+# Production — API 서버 + Worker 동시 실행
+# 앱 생성: fly apps create weddingpick-api
+app = 'weddingpick-api'
+primary_region = 'nrt'
+
+[build]
+
+[processes]
+  api = "npm run start --workspace @weddingpick/api"
+  worker = "npm run worker --workspace @weddingpick/api"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ['api']
+
+  [[http_service.checks]]
+    interval = '30s'
+    timeout = '5s'
+    grace_period = '15s'
+    method = 'GET'
+    path = '/health'
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '256mb'
+  processes = ['api']
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '256mb'
+  processes = ['worker']
+
+[env]
+  # NODE_ENV=production 설정 시 LEGAL_* 환경변수 전부 필요.
+  # 법적 고지 준비 전까지 staging으로 운영하고 추후 전환한다.
+  NODE_ENV = 'production'
+  PORT = '3000'
+  STORAGE_DRIVER = 's3'
+  S3_REGION = 'kr-standard'
+  S3_ENDPOINT = 'https://kr.object.ncloudstorage.com'
