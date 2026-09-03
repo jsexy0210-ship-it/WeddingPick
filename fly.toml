@@ -7,6 +7,7 @@ primary_region = 'nrt'
 
 [processes]
   app = "npm run start --workspace @weddingpick/api"
+  worker = "npm run worker --workspace @weddingpick/api"
 
 [http_service]
   internal_port = 3000
@@ -28,7 +29,13 @@ primary_region = 'nrt'
   memory = '256mb'
   processes = ['app']
 
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '256mb'
+  processes = ['worker']
+
 [env]
+  DATABASE_URL = "from_secret"
   NODE_ENV = 'staging'
   PORT = '3000'
   STORAGE_DRIVER = 's3'

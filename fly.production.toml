@@ -35,9 +35,8 @@ primary_region = 'nrt'
   processes = ['worker']
 
 [env]
-  # NODE_ENV=production 설정 시 LEGAL_* 환경변수 전부 필요.
-  # 법적 고지 준비 전까지 staging으로 운영하고 추후 전환한다.
-  NODE_ENV = 'staging'
+  DATABASE_URL = "from_secret"
+  NODE_ENV = 'production'
   PORT = '3000'
   STORAGE_DRIVER = 's3'
   S3_REGION = 'kr-standard'

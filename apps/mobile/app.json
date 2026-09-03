@@ -33,7 +33,7 @@
       ],
       "config": {
         "googleMaps": {
-          "apiKey": "REPLACE_WITH_GOOGLE_MAPS_ANDROID_API_KEY"
+          "apiKey": "process.env.EXPO_PUBLIC_GOOGLE_MAPS_ANDROID_API_KEY || REPLACE_WITH_GOOGLE_MAPS_ANDROID_API_KEY"
         }
       }
     },

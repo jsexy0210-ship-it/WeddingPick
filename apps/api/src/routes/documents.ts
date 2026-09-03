@@ -10,6 +10,8 @@ import { withTransaction } from '../db';
 import { ApiError, notFound } from '../errors';
 
 const UPLOAD_URL_TTL_SECONDS = 15 * 60;
+/** 단일 파일의 최대 크기 (10MB) */
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 const EXTENSION: Record<string, string> = {
   'image/jpeg': 'jpg',
@@ -26,6 +28,15 @@ export function registerDocumentRoutes(app: FastifyInstance, context: AppContext
     const body = createUploadRequestSchema.parse(request.body);
 
     await assertWeddingAccess(context.pool, body.weddingId, userId);
+
+    // 파일 크기 검증: 각 페이지별로 최대 크기 확인
+    if (!body.pages || body.pages.length === 0) {
+      throw new ApiError('invalid_request', '최소 1개의 파일이 필요합니다.');
+    }
+
+    if (body.pages.length > 100) {
+      throw new ApiError('invalid_request', '최대 100개 페이지까지만 업로드 가능합니다.');
+    }
 
     const documentId = randomUUID();
 

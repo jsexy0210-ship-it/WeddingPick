@@ -19,21 +19,36 @@ export function registerQuoteRoutes(app: FastifyInstance, context: AppContext): 
     return loadQuote(context.pool, request.params.quoteId);
   });
 
-  app.get<{ Params: { weddingId: string } }>(
+  app.get<{ Params: { weddingId: string }; Querystring: { offset?: string; limit?: string } }>(
     '/v1/weddings/:weddingId/quotes',
     auth,
     async (request) => {
       const userId = currentUserId(request);
       await assertWeddingAccess(context.pool, request.params.weddingId, userId);
 
-      const { rows } = await context.pool.query<{ id: string }>(
-        'SELECT id FROM structured.quotes WHERE wedding_id = $1 ORDER BY created_at DESC LIMIT 50',
+      // 페이지네이션 파라미터
+      const offset = Math.max(0, parseInt(request.query.offset || '0', 10));
+      const limit = Math.min(100, Math.max(1, parseInt(request.query.limit || '20', 10)));
+
+      // 전체 개수 조회
+      const { rows: countRows } = await context.pool.query<{ total: number }>(
+        'SELECT COUNT(*)::int AS total FROM structured.quotes WHERE wedding_id = $1',
         [request.params.weddingId]
+      );
+      const total = countRows[0]?.total || 0;
+
+      // 페이지네이션된 결과 조회
+      const { rows } = await context.pool.query<{ id: string }>(
+        'SELECT id FROM structured.quotes WHERE wedding_id = $1 ORDER BY created_at DESC OFFSET $2 LIMIT $3',
+        [request.params.weddingId, offset, limit]
       );
 
       const quotes = await Promise.all(rows.map((row) => loadQuote(context.pool, row.id)));
 
-      return { quotes, nextCursor: null };
+      // cursor 기반 페이지네이션 지원
+      const nextCursor = offset + limit < total ? String(offset + limit) : null;
+
+      return { quotes, nextCursor, total, offset, limit };
     }
   );
 
