@@ -26,13 +26,14 @@ NODE_ENV=production
 
 `EXPO_PUBLIC_DEV_LOGIN_SECRET`은 운영 빌드에 넣지 않는다.
 
-## 다음 구현 순서
+## 제공자별 운영 설정
 
-1. API 운영 환경에 `APPLE_CLIENT_ID`, `KAKAO_APP_KEY`, `GOOGLE_CLIENT_ID`를 설정한다.
-2. EAS preview/production 환경에 `EXPO_PUBLIC_KAKAO_CLIENT_ID`를 설정한다.
-3. Kakao Developers에서 OpenID Connect와 `weddingpick://` Redirect URI를 설정한다.
-4. Android/iOS 실기기에서 각각 로그인 테스트한다.
-5. 테스트 완료 후 개발용 로그인 코드를 운영 빌드에서 제거한다.
+1. API 운영 환경에 `APPLE_CLIENT_ID`, `KAKAO_APP_KEY`, `GOOGLE_CLIENT_ID`, `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`, `NAVER_REDIRECT_URIS`를 설정한다.
+2. Kakao는 Developers의 네이티브 앱 키에 Android 패키지명 `kr.weddingpick.app`, iOS Bundle ID `kr.weddingpick.app`와 키 해시를 등록한다. 로그인 콜백은 Kakao 발급 `kakao<네이티브키>://oauth`를 사용한다.
+3. Google은 OAuth 클라이언트에 Android 패키지명·SHA-1과 iOS Bundle ID를 등록하고 앱의 `weddingpick://` 스킴을 사용한다.
+4. Apple은 App ID `kr.weddingpick.app`에 Sign in with Apple capability를 켜고 iOS 네이티브 로그인만 제공한다.
+5. Naver는 Mobile 웹 환경의 HTTPS Callback URL만 등록하고, 앱의 복귀 스킴은 Callback URL 목록에 넣지 않는다.
+6. Android/iOS 실기기에서 각 제공자 로그인을 테스트한다.
 
 Apple 네이티브 capability와 config plugin은 `app.json`에 반영됐다. Apple 로그인은
 현재 iOS 네이티브에서만 활성화한다. Android와 웹에서 Apple 로그인을 제공하려면
