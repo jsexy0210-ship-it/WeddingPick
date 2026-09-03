@@ -141,7 +141,7 @@ export default function PickDoneScreen() {
                 { backgroundColor: theme.tint },
                 { transform: [{ scale: markScale }] },
               ]}>
-              <WeddingMark size={64} color="#ffffff" />
+              <WeddingMark size={64} color={theme.onTint} />
             </Animated.View>
           </View>
 

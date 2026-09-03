@@ -111,7 +111,7 @@ export default function PickConfirmScreen() {
               { backgroundColor: theme.tint },
               { transform: [{ scale: markScale }] },
             ]}>
-            <WeddingMark size={64} color="#ffffff" />
+            <WeddingMark size={64} color={theme.onTint} />
           </Animated.View>
 
           {/* 요약 카드 */}

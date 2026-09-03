@@ -1,9 +1,11 @@
 import type { ColorValue } from 'react-native';
 import Svg, { Path, Circle, Rect } from 'react-native-svg';
 
+import { Colors } from './theme';
+
 export type ProductSymbolName = 'house' | 'magnifier' | 'pickMark' | 'twoPeople' | 'person' | 'hall' | 'sdm' | 'snap' | 'planner';
 
-export function ProductSymbol({ name, size = 24, color = '#212124' }: { name: ProductSymbolName; size?: number; color?: ColorValue }) {
+export function ProductSymbol({ name, size = 24, color = Colors.light.text }: { name: ProductSymbolName; size?: number; color?: ColorValue }) {
   const common = { stroke: color, strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, fill: 'none' };
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
