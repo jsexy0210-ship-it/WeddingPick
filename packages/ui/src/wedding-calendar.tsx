@@ -145,7 +145,7 @@ export function WeddingCalendar({ value, onChange, today = new Date(), allowPast
                 ]}>
                 <ThemedText
                   type="t6"
-                  style={selected ? styles.selectedLabel : undefined}
+                  style={selected ? [styles.selectedLabel, { color: theme.onTint }] : undefined}
                   themeColor={
                     selected
                       ? undefined
@@ -191,5 +191,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  selectedLabel: { color: '#ffffff', fontWeight: 700 },
+  selectedLabel: { fontWeight: '700' as const },
 });

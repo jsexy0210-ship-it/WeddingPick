@@ -41,7 +41,7 @@ export function Fab({ label, glyph = '+', onPress }: FabProps) {
           shadowColor: theme.tint,
         },
       ]}>
-      <ThemedText type="t2" style={styles.glyph}>
+      <ThemedText type="t2" style={[styles.glyph, { color: theme.onTint }]}>
         {glyph}
       </ThemedText>
     </Pressable>
@@ -67,7 +67,6 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   glyph: {
-    color: '#ffffff',
     /*
      * 기호가 가운데 오도록 줄 높이를 크게 잡는다. 글꼴마다 아래로 처져 보이는
      * 것을 눈으로 맞춘 값이라, 글자 크기 토큰이 아니라 이 단추의 크기를 따른다.
