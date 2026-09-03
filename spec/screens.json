@@ -108,7 +108,7 @@
     { "id": "WP-CMP-002", "name": "비교", "spec": "후보를 A·B·C 회색 계조로 구분. primary는 Pick 버튼에만. Hero가 비교의 결론을 말한다. 속성별 블록 3행이 같은 우측 기준선에 정렬. 우세한 값만 ink, 나머지 secondary." },
     { "id": "WP-PICK-001", "name": "Pick 홈", "sections": ["진행률", "카테고리별 상태 4행", "둘 다 고른 곳", "비교 CTA"] },
     { "id": "WP-PICK-002", "name": "카테고리별 Pick", "spec": "둘 다 고른 곳은 1.5px primary 테두리 + 체크. 나만 고른 곳은 회색. 배우자 메모가 카드 안에" },
-    { "id": "WP-PICK-005", "name": "최종 결정 확인", "type": "sheet", "mustSay": "언제든 바꿀 수 있어요" },
+    { "id": "WP-PICK-005", "name": "최종 결정 확인", "type": "sheet" },
     { "id": "WP-PICK-006", "name": "결정 완료", "motion": ["checkPop", "ringSpread", "rise ×3"], "sections": ["체크 링", "반영 3건", "다음 카테고리 추천"] },
 
     { "id": "WP-OUR-001", "name": "우리웨딩 홈", "sections": ["D-day + 진행률", "다음 일정", "지출", "준비현황"] },
