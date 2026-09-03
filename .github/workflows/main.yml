@@ -74,9 +74,7 @@ jobs:
   deploy-staging:
     name: Deploy → Staging
     needs: [ci]
-    if: |
-      github.event_name == 'push' && github.ref == 'refs/heads/main' ||
-      github.event_name == 'workflow_dispatch' && inputs.environment == 'staging'
+    if: github.event_name == 'workflow_dispatch' && inputs.environment == 'staging'
     runs-on: ubuntu-latest
 
     steps:
@@ -107,17 +105,17 @@ jobs:
 
       - name: Health check
         run: |
-          echo "Waiting for Render deployment to settle..."
+          echo "Waiting for Render staging deployment to settle..."
           for i in $(seq 1 30); do
             sleep 15
-            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://weddingpickl.onrender.com/health 2>/dev/null || echo "000")
+            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://weddingpick-api.onrender.com/health 2>/dev/null || echo "000")
             if [ "$STATUS" = "200" ]; then
               echo "✓ /health 200 OK"
               exit 0
             fi
             echo "Attempt $i/30: HTTP $STATUS"
           done
-          echo "✗ Health check failed after 450 s"
+          echo "✗ Staging health check failed after 450 s"
           exit 1
 
   deploy-production:
@@ -157,12 +155,12 @@ jobs:
           echo "Waiting for Render production deployment..."
           for i in $(seq 1 30); do
             sleep 15
-            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://weddingpickl.onrender.com/health 2>/dev/null || echo "000")
+            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://weddingpick-api.onrender.com/health 2>/dev/null || echo "000")
             if [ "$STATUS" = "200" ]; then
               echo "✓ /health 200 OK"
               exit 0
             fi
             echo "Attempt $i/30: HTTP $STATUS"
           done
-          echo "✗ Health check failed after 450 s"
+          echo "✗ Production health check failed after 450 s"
           exit 1

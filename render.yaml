@@ -30,6 +30,12 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
+      - key: LEGAL_TERMS_URL
+        sync: false
+      - key: LEGAL_PRIVACY_POLICY_URL
+        sync: false
+      - key: LEGAL_SERVICE_TERMS_URL
+        sync: false
       - key: STORAGE_DRIVER
         value: s3
       - key: S3_BUCKET
@@ -48,3 +54,4 @@ databases:
     plan: free
     databaseName: weddingpick
     user: weddingpick
+    skipProvisioning: true
