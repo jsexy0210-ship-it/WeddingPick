@@ -87,8 +87,9 @@ export default function PickConfirmScreen() {
       /* 460ms 뒤에 결정 완료 화면(WP-PICK-006)으로 넘어간다. */
       setTimeout(
         () =>
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           router.replace({
-            pathname: '/(tabs)/pick/done',
+            pathname: '/(tabs)/pick/done' as any,
             params: { category, vendorName },
           }),
         460

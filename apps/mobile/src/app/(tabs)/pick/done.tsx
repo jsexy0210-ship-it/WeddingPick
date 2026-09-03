@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
   },
   scroll: {
     paddingHorizontal: Layout.gutter,
-    paddingTop: Spacing.seven,
+    paddingTop: Spacing.five,
     paddingBottom: Layout.sectionGap,
     gap: Spacing.four,
     alignItems: 'center',
