@@ -299,4 +299,24 @@ export function registerCandidateRoutes(app: FastifyInstance, context: AppContex
       return reply.status(204).send();
     }
   );
+
+  /**
+   * Pick에서 뺀 업체 이력. 핸드오프 Pick 히스토리.
+   *
+   * **현재 DB는 삭제를 추적하지 않는다.**
+   *
+   * `vendor_candidates`는 DELETE로 지운다 — 이력 테이블이 없어 과거 데이터를
+   * 조회할 방법이 없다. 추후 `removed_candidates` 이력 테이블을 추가하고 이 경로를
+   * 채울 예정이다. 지금은 빈 목록을 내려줘 클라이언트가 빈 상태를 보여준다.
+   */
+  app.get<{ Params: { weddingId: string } }>(
+    '/v1/weddings/:weddingId/candidates/removed',
+    auth,
+    async (request) => {
+      const userId = currentUserId(request);
+      await assertWeddingAccess(context.pool, request.params.weddingId, userId);
+
+      return { groups: [] };
+    }
+  );
 }
