@@ -13,6 +13,7 @@
 | `spec/glossary.json` | 새 문구를 쓸 때 **항상** |
 | `spec/screens.json` | 화면을 만들 때 |
 | `README.md` | 처음 한 번 · 맥락 파악용 |
+| `docs/design-system-policy.md` | 아이콘 · 픽셀 검수 · 공통 컴포넌트 작업 시 **항상** |
 
 **하드코딩 금지.** hex · 폰트 크기 · 간격 · 문구를 코드에 직접 쓰지 않습니다. 전부 위 파일에서 가져옵니다.
 
