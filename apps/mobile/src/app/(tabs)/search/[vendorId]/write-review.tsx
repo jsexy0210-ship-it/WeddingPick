@@ -207,8 +207,8 @@ export default function WriteReviewScreen() {
           </ThemedView>
 
           {/*
-            결정사는 체크리스트다. 별점이 답할 수 없는 것을 답할 수 있어서다 —
-            "모름"이 점수 계산에서 빠진다. 별점은 모르는 것도 3점쯤으로 찍힌다.
+            결정사는 체크리스트다. 평점이 답할 수 없는 것을 답할 수 있어서다 —
+            "모름"이 점수 계산에서 빠진다. 평점은 모르는 것도 3점쯤으로 찍힌다.
           */}
           {form.evaluationMode === 'checklist' && form.checklist.length > 0 ? (
             <ThemedView style={styles.section}>

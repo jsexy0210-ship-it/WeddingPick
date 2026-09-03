@@ -195,7 +195,7 @@ export default function VendorDetailScreen() {
             </ThemedText>
 
             {/*
-              결제인증이 여는 것은 구간이 아니라 깊이다. 이미 열려 있는 사람에게는
+              Pick 인증이 여는 것은 구간이 아니라 깊이다. 이미 열려 있는 사람에게는
               권하지 않는다 — 서버가 null을 준다.
             */}
             {vendor.prices.deepDataNote ? (
@@ -236,7 +236,7 @@ export default function VendorDetailScreen() {
             ) : null}
 
             {/*
-              못 낼 때는 왜 못 내는지 적는다. 결제인증으로 여는 안내는 위에 이미
+              못 낼 때는 왜 못 내는지 적는다. Pick 인증으로 여는 안내는 위에 이미
               있으므로, 여기서는 자료가 모이는 중이라는 말만 한다.
              */}
             {conditions && !conditions.available && !vendor.prices.deepDataNote ? (
@@ -291,7 +291,7 @@ export default function VendorDetailScreen() {
             <ThemedText type="smallBold">{TERMS.experience}</ThemedText>
 
             {/*
-              확인된 후기만 들어간다. 데이터가 모자라면 숫자를 만들지 않고 이유를 준다 —
+              확인된 후기만 들어간다. 건수가 모자라면 숫자를 만들지 않고 이유를 준다 —
               가격과 같은 규칙이다. 후기 두세 건으로 만든 점수는 정보가 아니라 소음이고,
               업체 하나를 망칠 수도 살릴 수도 있다.
             */}
@@ -318,7 +318,7 @@ export default function VendorDetailScreen() {
                   ))}
 
                   {/*
-                    체크리스트는 별점과 다른 배열로 온다. 4.2점과 78%는 다른 것을
+                    체크리스트는 평점과 다른 배열로 온다. 4.2점과 78%는 다른 것을
                     재는 숫자라 같은 막대로 그리지 않는다. 표본이 모자라면 숫자
                     대신 "수집 중"이다 — 흐린 숫자도 숫자다.
                   */}
@@ -339,7 +339,7 @@ export default function VendorDetailScreen() {
                       </ThemedView>
 
                       {/*
-                        데이터가 모자라면 막대를 그리지 않고 빈 트랙만 둔다 —
+                        건수가 모자라면 막대를 그리지 않고 빈 트랙만 둔다 —
                         흐린 숫자도 숫자고, 사람들은 숫자를 읽는다.
                         70 미만은 주황(핸드오프 8번).
                       */}
@@ -439,7 +439,7 @@ export default function VendorDetailScreen() {
             공식정보는 꾸밈이 아니라 **어느 기관의 무엇을 언제 확인했는지**다.
             읽는 사람이 그것을 궁금해하는 때는 이름을 볼 때가 아니라 고르기 직전이다.
 
-            배지만 두고 출처를 감추지 않는다. `공공데이터`라는 말은 그 자체로는
+            배지만 두고 출처를 감추지 않는다. 출처 없는 배지는
             아무것도 확인해주지 않는다.
            */}
           {vendor.sourceNote ? (

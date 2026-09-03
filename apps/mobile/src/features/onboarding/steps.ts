@@ -65,7 +65,7 @@ export const ONBOARDING_STEPS: readonly OnboardingStep[] = [
     card: [
       { label: '웨딩 스케줄', value: '표시' },
       { label: '지출 현황', value: '표시' },
-      { label: '관심업체', value: '숨김' },
+      { label: 'Pick', value: '숨김' },
     ],
     caption: '홈 맨 아래 홈 편집에서 바꿀 수 있어요',
   },
