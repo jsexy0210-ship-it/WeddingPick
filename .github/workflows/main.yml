@@ -116,16 +116,16 @@ jobs:
       - name: Health check
         run: |
           echo "Waiting for Render staging deployment to settle..."
-          for i in $(seq 1 30); do
+          for i in $(seq 1 60); do
             sleep 15
             STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://weddingpick-api.onrender.com/health 2>/dev/null || echo "000")
             if [ "$STATUS" = "200" ]; then
               echo "✓ /health 200 OK"
               exit 0
             fi
-            echo "Attempt $i/30: HTTP $STATUS"
+            echo "Attempt $i/60: HTTP $STATUS"
           done
-          echo "✗ Staging health check failed after 450 s"
+          echo "✗ Staging health check failed after 900 s"
           exit 1
 
   deploy-production:
@@ -163,14 +163,14 @@ jobs:
       - name: Health check
         run: |
           echo "Waiting for Render production deployment..."
-          for i in $(seq 1 30); do
+          for i in $(seq 1 60); do
             sleep 15
             STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://weddingpick-api.onrender.com/health 2>/dev/null || echo "000")
             if [ "$STATUS" = "200" ]; then
               echo "✓ /health 200 OK"
               exit 0
             fi
-            echo "Attempt $i/30: HTTP $STATUS"
+            echo "Attempt $i/60: HTTP $STATUS"
           done
-          echo "✗ Production health check failed after 450 s"
+          echo "✗ Production health check failed after 900 s"
           exit 1
