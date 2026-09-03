@@ -678,4 +678,29 @@ async function loadConditionStats(
     async (request) =>
       loadConditionStats(context.pool, request.params.vendorId, optionalUserId(request))
   );
+
+  /**
+   * 업체 이벤트·혜택.
+   *
+   * 별도 수집 파이프라인이 아직 없어 지금은 빈 배열을 돌려준다. vendor_events
+   * 테이블이 생기면 이 핸들러만 채운다 — 응답 모양은 바꾸지 않는다.
+   */
+  app.get<{ Params: { vendorId: string } }>(
+    '/v1/vendors/:vendorId/events',
+    auth,
+    async (request) => {
+      const { vendorId } = request.params;
+
+      const { rows } = await context.pool.query<{ id: string }>(
+        'SELECT id FROM structured.vendors WHERE id = $1',
+        [vendorId]
+      );
+
+      if (!rows[0]) throw notFound('업체');
+
+      return {
+        events: [] as Array<{ id: string; title: string; endsOn: string | null }>,
+      };
+    }
+  );
 }

@@ -233,9 +233,66 @@ export function registerRewardRoutes(app: FastifyInstance, context: AppContext):
   });
 
   /**
+   * 내 초대 코드 조회.
+   *
+   * 없으면 여기서 만든다 — 쓰지 않는 사람 몫까지 미리 만들지 않는다.
+   */
+  app.get('/v1/me/invite-code', auth, async (request) => {
+    const userId = currentUserId(request);
+    const code = await referralCodeOf(context.pool, userId);
+    return { code };
+  });
+
+  /**
+   * 초대 코드 넣기 — `/v1/referrals/redeem`의 별칭 경로.
+   *
+   * **여기서 보상이 생기지 않는다.** 초대받은 사람이 Pick 인증을 처음 등록할 때
+   * 조건이 찬다(I-1 · K-7) — 가입만으로 돈을 주면 가입만 하는 계정이 모인다.
+   */
+  app.post('/v1/me/invite-use', auth, async (request, reply) => {
+    const userId = currentUserId(request);
+    const body = redeemReferralRequestSchema.parse(request.body);
+    const code = body.code.trim().toUpperCase();
+
+    if (!isReferralCode(code)) {
+      throw new ApiError('invalid_request', '초대 코드를 다시 확인해주세요');
+    }
+
+    const owner = await context.pool.query<{ user_id: string }>(
+      'SELECT user_id FROM structured.referral_codes WHERE code = $1',
+      [code]
+    );
+
+    const inviterId = owner.rows[0]?.user_id;
+    if (!inviterId) throw notFound('초대 코드');
+
+    const mine = await context.pool.query<{ id: string }>(
+      'SELECT id FROM structured.referrals WHERE invited_user_id = $1',
+      [userId]
+    );
+
+    const check = checkRedeem({
+      code,
+      isOwnCode: inviterId === userId,
+      alreadyInvited: mine.rows.length > 0,
+    });
+
+    if (!check.ok) throw new ApiError('invalid_request', check.message);
+
+    await context.pool.query(
+      `INSERT INTO structured.referrals (inviter_user_id, invited_user_id)
+       VALUES ($1, $2)
+       ON CONFLICT (invited_user_id) DO NOTHING`,
+      [inviterId, userId]
+    );
+
+    return reply.status(204).send();
+  });
+
+  /**
    * 초대 코드 넣기.
    *
-   * **여기서 보상이 생기지 않는다.** 초대받은 사람이 결제내역을 처음 등록할 때
+   * **여기서 보상이 생기지 않는다.** 초대받은 사람이 Pick 인증을 처음 등록할 때
    * 조건이 찬다(I-1 · K-7) — 가입만으로 돈을 주면 가입만 하는 계정이 모인다.
    */
   app.post('/v1/referrals/redeem', auth, async (request, reply) => {
