@@ -34,6 +34,9 @@ export function VendorMap({ vendors, loading, onRefresh }: Props) {
 
   const pinned = vendors.filter((v) => v.coordinates !== null);
   const selected = pinned.find((v) => v.id === selectedId) ?? null;
+  const selectedMapQuery = selected
+    ? `${selected.name} ${selected.region}`
+    : '';
 
   return (
     <ThemedView style={styles.container}>
@@ -56,7 +59,7 @@ export function VendorMap({ vendors, loading, onRefresh }: Props) {
         {selected ? (
           <ActionButton
             label="카카오맵에서 위치 보기"
-            onPress={() => void Linking.openURL(`https://map.kakao.com/?q=${encodeURIComponent(selected.name)}`)}
+            onPress={() => void Linking.openURL(`https://map.kakao.com/?q=${encodeURIComponent(selectedMapQuery)}`)}
           />
         ) : null}
         <ActionButton label="이 조건으로 다시 찾기" onPress={onRefresh} disabled={loading} />
