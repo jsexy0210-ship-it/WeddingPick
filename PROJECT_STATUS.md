@@ -59,6 +59,16 @@
 4.  Fly.io `/health` 자동 검증
 5.  TestFlight 제출 자동화 연결
 
+### P0 운영 등록 점검 (2026-09-03)
+
+- Android APK 워크플로의 네이버 callback을 운영 HTTPS 주소로 통일하고,
+  카카오·Google 공개 Client ID를 production과 동일하게 주입했다.
+- 외부 콘솔에서 남은 등록: 네이버 HTTPS callback,
+  카카오 Redirect URI/플랫폼 키, Google Android·iOS OAuth 클라이언트,
+  Apple Sign in Services ID/redirect, Render 운영 Secret 및 DB migration 확인.
+- Google Maps Android 키는 아직 placeholder이며, 카카오 지도 전환 여부를
+  확정한 뒤 지도 SDK와 키를 운영 설정에 반영해야 한다.
+
 ## 현재 장애 / 제한
 
 ### iOS
