@@ -92,8 +92,8 @@ export default function EditReviewScreen() {
           <ThemedText type="subtitle">내 후기 고치기</ThemedText>
 
           <ThemedView style={styles.section}>
-            <ThemedText type="smallBold">별점</ThemedText>
-            <RatingPicker label="별점" value={overall} onChange={setOverall} />
+            <ThemedText type="smallBold">이용한 사람들의 경험</ThemedText>
+            <RatingPicker label="이용한 사람들의 경험" value={overall} onChange={setOverall} />
           </ThemedView>
 
           <ThemedView style={styles.section}>

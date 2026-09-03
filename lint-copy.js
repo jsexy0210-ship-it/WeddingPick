@@ -24,6 +24,7 @@ const SKIP_FILE = /(admin|Admin|관리자|internal|test|Test|spec\/|\.d\.ts$|glo
 // 사용자에게 보이지 않는 줄은 건너뛴다
 const IGNORE_LINE = [
   /^\s*(\/\/|\/\*|\*|#)/,                    // 주석
+  /^\s*\{\/\*/,                             // JSX 블록 주석
   /^\s*import\s/,
   /\b(apiPath|endpoint|columnName|dbField|tableName)\b/i,
 ];
@@ -33,14 +34,24 @@ let findings = [];
 function scanFile(file) {
   const src = fs.readFileSync(file, 'utf8');
   const lines = src.split('\n');
+  let inBlockComment = false;
 
   lines.forEach((line, i) => {
+    if (inBlockComment) {
+      if (line.includes('*/')) inBlockComment = false;
+      return;
+    }
+    if (/^\s*(?:\/\*|\{\/\*)/.test(line)) {
+      const start = line.indexOf('/*');
+      if (start >= 0 && !line.includes('*/', start + 2)) inBlockComment = true;
+      return;
+    }
     if (IGNORE_LINE.some((re) => re.test(line))) return;
 
     for (const b of g.banned) {
       // 한글 단어 경계가 없으므로 단순 포함 검사 + 예외 처리
       if (!line.includes(b.term)) continue;
-      if (b.note && b.note.includes('예외') && isExempt(line, b)) continue;
+      if (isExempt(line, b)) continue;
       // "AI"는 대문자 두 글자라 오탐이 잦다 — 앞뒤가 영문자면 건너뛴다
       if (b.term === 'AI' && /[A-Za-z]AI|AI[A-Za-z]/.test(line)) continue;
 
@@ -56,6 +67,8 @@ function scanFile(file) {
 }
 
 function isExempt(line, b) {
+  // 법령·기관 고유명사는 제품 용어 치환 대상이 아니다.
+  if (b.term === '거래' && line.includes('공정거래위원회')) return true;
   const exemptPhrases = {
     '중앙값': '확인된 정보의 중앙값이에요',
     '별점': '별점 대신',
@@ -68,7 +81,7 @@ function isExempt(line, b) {
 function walk(target) {
   const stat = fs.statSync(target);
   if (stat.isDirectory()) {
-    if (SKIP_DIR.test(target)) return;
+    if (SKIP_DIR.test(target.replaceAll('\\', '/'))) return;
     for (const name of fs.readdirSync(target)) walk(path.join(target, name));
   } else if (EXT.test(target) && !SKIP_FILE.test(target)) {
     scanFile(target);

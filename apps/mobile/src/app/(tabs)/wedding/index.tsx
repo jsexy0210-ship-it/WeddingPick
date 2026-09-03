@@ -59,7 +59,7 @@ export default function WeddingScreen() {
             />
             <ActionButton
               label="올린 Pick 인증 자료"
-              hint="AI가 읽어낸 계약 내용을 확인해요"
+              hint="웨딩픽이 읽어낸 계약 내용을 확인해요"
               onPress={() => void open('quotes')}
             />
             <ActionButton
