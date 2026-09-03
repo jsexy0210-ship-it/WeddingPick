@@ -30,6 +30,7 @@ import {
   Spacing,
   ThemedText,
   ThemedView,
+  ProductSymbol,
   useTheme,
 } from '@weddingpick/ui';
 import { Board, FoldedBoard } from '@/features/home/board';
@@ -245,9 +246,10 @@ function GuestHome({
                 { backgroundColor: theme.backgroundElement },
                 pressed && styles.pressed,
               ]}>
-              <ThemedText type="t5" numberOfLines={1}>
-                {CATEGORY_META[category]?.icon ?? '•'} {VENDOR_CATEGORY_LABEL[category]}
-              </ThemedText>
+              <View style={styles.categoryLabel}>
+                <ProductSymbol name={CATEGORY_META[category]?.icon ?? 'hall'} size={20} color={theme.text} />
+                <ThemedText type="t5" numberOfLines={1}>{VENDOR_CATEGORY_LABEL[category]}</ThemedText>
+              </View>
               <ThemedText type="t7" themeColor="textAssistive" numberOfLines={1}>
                 {categoryCountLabel(category, popular)}
               </ThemedText>
@@ -271,11 +273,11 @@ function GuestHome({
 const CATEGORY_ENTRIES: readonly VendorCategory[] = ['hall', 'sdm', 'snap', 'planner_agency'];
 
 /** 목업의 두 줄 업종 카드 구조를 유지한다. 숫자는 서버가 내려준 자료만 사용한다. */
-const CATEGORY_META: Partial<Record<VendorCategory, { icon: string }>> = {
-  hall: { icon: '🏛' },
-  sdm: { icon: '💄' },
-  snap: { icon: '📷' },
-  planner_agency: { icon: '📁' },
+const CATEGORY_META: Partial<Record<VendorCategory, { icon: 'hall' | 'sdm' | 'snap' | 'planner' }>> = {
+  hall: { icon: 'hall' },
+  sdm: { icon: 'sdm' },
+  snap: { icon: 'snap' },
+  planner_agency: { icon: 'planner' },
 };
 
 function categoryCountLabel(category: VendorCategory, vendors: readonly VendorSummary[]) {
@@ -608,6 +610,7 @@ const styles = StyleSheet.create({
   band: { height: Layout.sectionBand, marginBottom: Layout.sectionGap },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 11 },
+  categoryLabel: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   entry: {
     flexBasis: '48%',
     flexGrow: 1,
@@ -615,13 +618,13 @@ const styles = StyleSheet.create({
     minHeight: Layout.rowMinHeight,
     borderRadius: Radius.medium,
     paddingHorizontal: Spacing.three,
-    paddingVertical: 12,
+    paddingVertical: Spacing.three,
     justifyContent: 'center',
     gap: 3,
   },
   pressed: { opacity: 0.8 },
 
-  note: { borderRadius: Radius.card, padding: 20, gap: Spacing.two },
+  note: { borderRadius: Radius.medium, padding: 20, gap: Spacing.two },
 
   decidedList: { gap: 2 },
   decidedRow: {

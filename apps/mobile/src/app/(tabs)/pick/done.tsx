@@ -54,21 +54,14 @@ export default function PickDoneScreen() {
   ];
 
   useEffect(() => {
-    // 1. checkPop + ringSpread 동시 시작
-    Animated.sequence([
-      Animated.timing(markScale, {
-        toValue: 1.18,
-        duration: 300,
-        easing: Easing.out(Easing.back(2)),
-        useNativeDriver: true,
-      }),
-      Animated.timing(markScale, {
-        toValue: 1,
-        duration: 160,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-    ]).start();
+    // 1. checkPop — 460ms, cubic-bezier(.34,1.56,.64,1) (CLAUDE.md §7)
+    // 단일 timing으로 구현: bezier의 Y값이 1을 넘어 자연스러운 overshoot을 만든다.
+    Animated.timing(markScale, {
+      toValue: 1,
+      duration: 460,
+      easing: Easing.bezier(0.34, 1.56, 0.64, 1),
+      useNativeDriver: true,
+    }).start();
 
     // ringSpread — 마크와 동시에 시작, 페이드아웃과 확장
     Animated.sequence([
@@ -101,7 +94,7 @@ export default function PickDoneScreen() {
           Animated.timing(y, {
             toValue: 0,
             duration: 420,
-            easing: Easing.out(Easing.back(1.2)),
+            easing: Easing.bezier(0.16, 1, 0.3, 1), // cubic-bezier(.16,1,.3,1) — CLAUDE.md §7
             useNativeDriver: true,
           }),
           Animated.timing(riseOpacity[i], {
