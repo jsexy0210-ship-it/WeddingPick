@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { FontSize, LineHeight } from '@weddingpick/ui';
 import { apiFetch } from './_api';
 
 type RiskItem = { id: string; category: string; description: string; severity: 'high' | 'medium' | 'low' };
@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: '#0088cc',
   },
-  summaryText: { fontSize: FontSize.t6, color: '#17181c', lineHeight: 22 },
+  summaryText: { fontSize: FontSize.t6, color: '#17181c', lineHeight: LineHeight.t6 },
   sectionTitle: {
     fontSize: FontSize.t7,
     fontWeight: '700',

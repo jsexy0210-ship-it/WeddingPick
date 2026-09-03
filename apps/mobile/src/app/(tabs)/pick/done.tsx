@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ActionButton,
   Layout,
+  LineHeight,
   MaxContentWidth,
   Radius,
   Spacing,
@@ -224,6 +225,6 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   reflectRow: {
-    lineHeight: 20,
+    lineHeight: LineHeight.t7,
   },
 });

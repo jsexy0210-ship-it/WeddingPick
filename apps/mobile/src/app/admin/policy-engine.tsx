@@ -7,7 +7,7 @@ import {
   ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
 } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { FontSize, LineHeight } from '@weddingpick/ui';
 import { apiFetch } from './_api';
 
 type PolicyType = 'number' | 'percentage' | 'boolean' | 'string';
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   policyMain: { flex: 1, marginRight: 16 },
   policyLabel: { fontSize: FontSize.t7, fontWeight: '700', color: '#17181c', marginBottom: 2 },
   policyKey: { fontSize: FontSize.tab, color: '#adb1ba', fontFamily: 'monospace', marginBottom: 2 },
-  policyDesc: { fontSize: FontSize.tab, color: '#868b94', lineHeight: 18, marginBottom: 4 },
+  policyDesc: { fontSize: FontSize.tab, color: '#868b94', lineHeight: LineHeight.micro, marginBottom: 4 },
   policyMeta: { fontSize: FontSize.tab, color: '#adb1ba' },
   policyRight: { alignItems: 'flex-end', gap: 4 },
   policyValue: { fontSize: FontSize.t7, fontWeight: '700', color: '#17181c', fontVariant: ['tabular-nums'] },

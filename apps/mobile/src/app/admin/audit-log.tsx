@@ -7,7 +7,7 @@ import {
   ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
 } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { FontSize, LineHeight } from '@weddingpick/ui';
 import { apiFetch } from './_api';
 
 type Decision = 'approved' | 'rejected' | 'escalated' | 'skipped';
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
   detailLabel: { width: 100, fontSize: FontSize.tab, fontWeight: '700', color: '#868b94' },
   detailValue: { flex: 1, fontSize: FontSize.t7, color: '#17181c' },
   evidenceTitle: { fontSize: FontSize.t7, fontWeight: '700', color: '#17181c', marginTop: 16, marginBottom: 8 },
-  evidenceItem: { fontSize: FontSize.t7, color: '#5a5d6a', lineHeight: 20, marginBottom: 4 },
+  evidenceItem: { fontSize: FontSize.t7, color: '#5a5d6a', lineHeight: LineHeight.t7, marginBottom: 4 },
   closeBtn: {
     marginTop: 16,
     paddingVertical: 10,

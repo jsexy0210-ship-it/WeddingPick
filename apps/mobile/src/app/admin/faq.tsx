@@ -7,7 +7,7 @@ import {
   ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View,
 } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { FontSize, LineHeight } from '@weddingpick/ui';
 import { apiFetch } from './_api';
 
 type FaqItem = {
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
   faqQ: { flex: 1, fontSize: FontSize.t7, fontWeight: '700', color: '#17181c' },
   faqPublished: { fontSize: FontSize.tab, fontWeight: '700' },
   faqOrder: { fontSize: FontSize.tab, color: '#868b94' },
-  faqA: { fontSize: FontSize.tab, color: '#868b94', lineHeight: 18 },
+  faqA: { fontSize: FontSize.tab, color: '#868b94', lineHeight: LineHeight.micro },
   faqActions: { flexDirection: 'row', gap: 6 },
   editBtn: {
     paddingHorizontal: 10,

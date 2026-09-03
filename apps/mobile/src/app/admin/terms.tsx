@@ -7,7 +7,7 @@ import {
   ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
 } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { FontSize, LineHeight } from '@weddingpick/ui';
 import { apiFetch } from './_api';
 
 type DocType = 'terms' | 'privacy' | 'marketing';
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
   clauseRowZebra: { backgroundColor: '#fafbfc' },
   clauseMain: { flex: 1, marginRight: 12 },
   clauseArticle: { fontSize: FontSize.t7, fontWeight: '700', color: '#17181c', marginBottom: 4 },
-  clauseBody: { fontSize: FontSize.t7, color: '#5a5d6a', lineHeight: 20 },
+  clauseBody: { fontSize: FontSize.t7, color: '#5a5d6a', lineHeight: LineHeight.t7 },
   editBtn: {
     paddingHorizontal: 10,
     paddingVertical: 6,
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
     padding: 12,
     fontSize: FontSize.t7,
     minHeight: 240,
-    lineHeight: 22,
+    lineHeight: LineHeight.t6,
   },
   saveError: { fontSize: FontSize.t7, color: '#e53e3e', marginTop: 8 },
   modalActions: { flexDirection: 'row', gap: 10, marginTop: 16 },

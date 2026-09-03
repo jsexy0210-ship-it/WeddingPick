@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { FontSize, LineHeight } from '@weddingpick/ui';
 
 import { apiFetch } from './_api';
 
@@ -180,6 +180,6 @@ const styles = StyleSheet.create({
   typeText: { fontSize: FontSize.badge, fontWeight: '700' },
   typeLabel: { fontSize: FontSize.t7, color: '#4d5159', flex: 1 },
   dateText: { fontSize: FontSize.badge, color: '#adb1ba' },
-  summary: { fontSize: FontSize.t7, color: '#3a3b40', lineHeight: 20 },
+  summary: { fontSize: FontSize.t7, color: '#3a3b40', lineHeight: LineHeight.t7 },
   reporterCount: { fontSize: FontSize.badge, color: '#868b94' },
 });

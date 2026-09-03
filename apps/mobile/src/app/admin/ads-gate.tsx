@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { FontSize, LineHeight } from '@weddingpick/ui';
 import { apiFetch } from './_api';
 
 type GateStepStatus = 'done' | 'in_progress' | 'pending' | 'blocked';
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
     color: '#3a3b40',
     marginTop: 8,
     paddingLeft: 22,
-    lineHeight: 20,
+    lineHeight: LineHeight.t7,
   },
   stepDate: {
     fontSize: FontSize.tab,
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   approvalTitle: { fontSize: FontSize.t6, fontWeight: '700', color: '#17181c', marginBottom: 8 },
-  approvalDesc: { fontSize: FontSize.t7, color: '#5a5d6a', lineHeight: 20, marginBottom: 16 },
+  approvalDesc: { fontSize: FontSize.t7, color: '#5a5d6a', lineHeight: LineHeight.t7, marginBottom: 16 },
   approvalBtn: {
     backgroundColor: '#ff6f61',
     borderRadius: 6,

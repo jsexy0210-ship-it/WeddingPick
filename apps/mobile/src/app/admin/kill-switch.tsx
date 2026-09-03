@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { FontSize, LineHeight } from '@weddingpick/ui';
 import { apiFetch } from './_api';
 
 type SwitchItem = {
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
   switchRowZebra: { backgroundColor: '#fafbfc' },
   switchInfo: { flex: 1, marginRight: 12 },
   switchName: { fontSize: FontSize.t7, fontWeight: '700', color: '#17181c', marginBottom: 2 },
-  switchDesc: { fontSize: FontSize.tab, color: '#868b94', lineHeight: 18 },
+  switchDesc: { fontSize: FontSize.tab, color: '#868b94', lineHeight: LineHeight.micro },
   switchMeta: { fontSize: FontSize.tab, color: '#adb1ba', marginTop: 4 },
   switchRight: { alignItems: 'flex-end', gap: 4 },
   switchStatus: { fontSize: FontSize.tab, fontWeight: '700' },
