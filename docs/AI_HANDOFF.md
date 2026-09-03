@@ -20,7 +20,7 @@
 ## 인프라 현황
 
 ### 서버
-- **API 서버**: Fly.io — `weddingpickl.fly.dev`
+- **API 서버**: Render — `https://weddingpickl.onrender.com`
 - **DB**: Neon PostgreSQL (production)
 - **스토리지**: Backblaze B2 (S3 호환)
 - **모바일 빌드**: EAS (Expo Application Services) + GitHub Actions
@@ -31,7 +31,7 @@
 | `main.yml` | PR 검증 · 테스트 |
 | `release.yml` | iOS EAS 빌드 배포 |
 | `db-migrate.yml` | Neon DB 마이그레이션 적용 |
-| `fly-init.yml` | Fly.io 초기화 |
+| `fly-init.yml` | 이전 Fly.io 초기화 기록(현재 운영 제외) |
 | `eas-init.yml` | EAS 프로젝트 초기화 |
 | `storage-test.yml` | B2 스토리지 연결 테스트 |
 | `android-apk.yml` | Android APK 빌드 |

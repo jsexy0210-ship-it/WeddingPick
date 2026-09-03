@@ -24,7 +24,7 @@
 -   Neon: PostgreSQL 운영 DB
 -   Naver Cloud Platform Object Storage: `weddingpick-test`
 -   웨딩픽 웹사이트: 서비스 웹·정책·지원 페이지
--   Fly.io: API/Worker 배포 자동화 구성 진행 중
+-   Render: API 서버·운영 배포 기준 (`https://weddingpickl.onrender.com`)
 
 ## 완료
 
@@ -55,8 +55,8 @@
 
 1.  GitHub 중심 단일 CI/CD 통합
 2.  iOS EAS Production Build 정상화
-3.  Fly.io 자동 production deploy 정상화
-4.  Fly.io `/health` 자동 검증
+3.  Render production deploy 정상화
+4.  Render `/health` 자동 검증
 5.  TestFlight 제출 자동화 연결
 
 ### P0 운영 등록 점검 (2026-09-03)
@@ -88,12 +88,10 @@
 -   실제 실패 Step 로그를 기준으로 원인 수정 필요
 -   추측으로 Apple Credential/API Key를 재생성하지 않는다.
 
-### Fly.io
+### 이전 배포 기록
 
--   기존 GitHub Action에서 `fly: command not found` 오류 이력 있음
--   `flyctl` 설치 및 호출 구조 재검증 필요
--   Fly API Token은 Secret으로 관리하며 실제 값을 문서/로그에 기록하지
-    않는다.
+-   Fly.io 관련 문서와 워크플로는 과거 시도 기록이며 현재 운영 대상이 아니다.
+-   신규 배포·검증은 Render 기준으로만 진행한다.
 
 ### Google Play
 
@@ -106,7 +104,7 @@
 
 ### 일반 개발
 
-`Claude/Codex 수정 → GitHub commit/push → CI → 필요한 DB migration → Fly.io 자동 배포 → health check`
+`Claude/Codex 수정 → GitHub commit/push → CI → 필요한 DB migration → Render 자동 배포 → health check`
 
 ### 앱 릴리즈
 
@@ -115,7 +113,7 @@
 -   앱은 매 commit마다 production build하지 않는다.
 -   CI 또는 migration 또는 deploy 또는 health check 실패 시 이후
     production 단계를 중단한다.
--   반복적인 Expo/Fly.io/Neon/App Store Connect/Google Play 수동 조작을
+-   반복적인 Expo/Render/Neon/App Store Connect/Google Play 수동 조작을
     최소화한다.
 
 ## 다음 작업 우선순위
@@ -123,8 +121,8 @@
 1.  현재 GitHub Actions와 workflow 전체 점검
 2.  중복 workflow 제거가 아니라 우선 재사용·통합
 3.  `EAS Build #5` 실제 실패 로그 분석 및 수정
-4.  Fly.io deploy 자동화 정상화
-5.  `/health` 검증 성공
+4.  Render deploy 자동화 정상화
+5.  Render `/health` 검증 성공
 6.  iOS Production Build 성공
 7.  TestFlight 제출 흐름 검증
 8.  Google Play 계정 제한 해제 후 Android 제출 자동화 활성화
