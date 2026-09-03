@@ -615,13 +615,13 @@ const styles = StyleSheet.create({
     minHeight: Layout.rowMinHeight,
     borderRadius: Radius.medium,
     paddingHorizontal: Spacing.three,
-    paddingVertical: 12,
+    paddingVertical: Spacing.three,
     justifyContent: 'center',
     gap: 3,
   },
   pressed: { opacity: 0.8 },
 
-  note: { borderRadius: Radius.card, padding: 20, gap: Spacing.two },
+  note: { borderRadius: Radius.medium, padding: 20, gap: Spacing.two },
 
   decidedList: { gap: 2 },
   decidedRow: {
