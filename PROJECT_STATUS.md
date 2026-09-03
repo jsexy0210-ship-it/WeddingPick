@@ -74,6 +74,10 @@
 - 2026-09-03 Release #11은 코드 단계에 도달하기 전에 GitHub Actions 계정의
   결제 실패/지출 한도 초과로 차단됐다. GitHub 결제 없이 운영한다는 원칙상
   Actions 재시도 대신 EAS 대시보드 또는 승인된 외부 빌드 경로를 사용한다.
+- Release #13에서 결제 제한은 해소됐지만 iOS 빌드는 Provisioning Profile에
+  Sign in with Apple capability/entitlement가 없어 실패했다. Apple Developer의
+  App ID `kr.weddingpick.app`에 Sign in with Apple을 활성화한 뒤 EAS iOS
+  credentials에서 Provisioning Profile을 재생성해야 한다.
 
 ## 현재 장애 / 제한
 
