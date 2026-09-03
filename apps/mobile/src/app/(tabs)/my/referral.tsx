@@ -1,4 +1,3 @@
-import * as Clipboard from 'expo-clipboard';
 import { Stack } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Share, StyleSheet, View } from 'react-native';
@@ -6,7 +5,6 @@ import { Share, StyleSheet, View } from 'react-native';
 import { getMyRewards } from '@/api/client';
 import {
   ActionButton,
-  Colors,
   EmptyView,
   ErrorView,
   FontSize,
@@ -26,7 +24,7 @@ const S = {
   heroTitle: '친구가 첫 Pick 인증을 하면\n혜택을 드려요',
   heroSub: '최대 100건까지 받을 수 있어요',
   codeSection: '내 초대 코드',
-  codeCopied: '코드를 복사했어요',
+  codeCopied: '공유 완료',
   'cta.copy': '코드 복사',
   'cta.share': '공유하기',
   shareText: '웨딩픽에서 실제로 낸 금액을 확인하고 Pick해보세요. 초대 코드: ',
@@ -36,12 +34,12 @@ const S = {
   'stats.unit': '명',
   'stats.hint': 'Pick 인증까지 완료한 분의 수예요',
   'empty.title': '아직 초대한 친구가 없어요',
-  'empty.body': '코드를 공유하면 이곳에 현황이 나와요',
+  'empty.description': '코드를 공유하면 이곳에 현황이 나와요',
   error: '초대 현황을 불러오지 못했어요',
 };
 
 export default function ReferralScreen() {
-  const { colors } = useTheme();
+  const theme = useTheme();
 
   const [data, setData] = useState<MyRewardsResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -57,7 +55,8 @@ export default function ReferralScreen() {
 
   const handleCopy = useCallback(async () => {
     if (!data) return;
-    await Clipboard.setStringAsync(data.referralCode);
+    // expo-clipboard 미설치 — Share로 코드만 공유한다.
+    await Share.share({ message: data.referralCode });
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   }, [data]);
@@ -69,7 +68,7 @@ export default function ReferralScreen() {
     });
   }, [data]);
 
-  const styles = makeStyles(colors);
+  const styles = makeStyles();
 
   if (loading) {
     return (
@@ -106,7 +105,7 @@ export default function ReferralScreen() {
         <ThemedText themeColor="textSecondary" style={styles.sectionLabel}>
           {S.codeSection}
         </ThemedText>
-        <View style={[styles.codeCard, { borderColor: colors.border, backgroundColor: colors.backgroundElement }]}>
+        <View style={[styles.codeCard, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}>
           <ThemedText style={styles.codeText}>{data.referralCode}</ThemedText>
           {copied && (
             <ThemedText themeColor="positive" style={styles.copiedHint}>
@@ -115,34 +114,36 @@ export default function ReferralScreen() {
           )}
         </View>
         <View style={styles.ctaRow}>
-          <ActionButton
-            variant="secondary"
-            label={S['cta.copy']}
-            onPress={handleCopy}
-            style={styles.ctaHalf}
-          />
-          <ActionButton
-            variant="primary"
-            label={S['cta.share']}
-            onPress={handleShare}
-            style={styles.ctaHalf}
-          />
+          <View style={styles.ctaHalf}>
+            <ActionButton
+              variant="secondary"
+              label={S['cta.copy']}
+              onPress={handleCopy}
+            />
+          </View>
+          <View style={styles.ctaHalf}>
+            <ActionButton
+              variant="primary"
+              label={S['cta.share']}
+              onPress={handleShare}
+            />
+          </View>
         </View>
       </View>
 
       {/* Stats */}
-      <View style={[styles.divider, { backgroundColor: colors.line }]} />
+      <View style={[styles.divider, { backgroundColor: theme.line }]} />
       <View style={styles.section}>
         <ThemedText themeColor="textSecondary" style={styles.sectionLabel}>
           {S.statsSection}
         </ThemedText>
 
         {data.invitedCount === 0 ? (
-          <EmptyView title={S['empty.title']} body={S['empty.body']} />
+          <EmptyView title={S['empty.title']} description={S['empty.description']} />
         ) : (
           <>
             <View style={styles.statsRow}>
-              <View style={[styles.statCard, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
+              <View style={[styles.statCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
                 <ThemedText themeColor="textSecondary" style={styles.statLabel}>
                   {S['stats.invited']}
                 </ThemedText>
@@ -153,12 +154,12 @@ export default function ReferralScreen() {
                   </ThemedText>
                 </View>
               </View>
-              <View style={[styles.statCard, { backgroundColor: colors.backgroundElement, borderColor: colors.border }]}>
+              <View style={[styles.statCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
                 <ThemedText themeColor="textSecondary" style={styles.statLabel}>
                   {S['stats.qualified']}
                 </ThemedText>
                 <View style={styles.statValueRow}>
-                  <ThemedText style={[styles.statValue, { color: colors.tint }]}>
+                  <ThemedText style={[styles.statValue, { color: theme.tint }]}>
                     {data.qualifiedCount}
                   </ThemedText>
                   <ThemedText themeColor="textAssistive" style={styles.statUnit}>
@@ -177,7 +178,7 @@ export default function ReferralScreen() {
   );
 }
 
-function makeStyles(colors: ReturnType<typeof useTheme>['colors']) {
+function makeStyles() {
   return StyleSheet.create({
     flex: { flex: 1 },
     hero: {
@@ -186,14 +187,14 @@ function makeStyles(colors: ReturnType<typeof useTheme>['colors']) {
       paddingBottom: Spacing.four,
     },
     heroTitle: {
-      fontSize: FontSize.title,
-      lineHeight: LineHeight.title,
+      fontSize: FontSize.t2,
+      lineHeight: LineHeight.t2,
       fontWeight: '700',
       marginBottom: Spacing.two,
     },
     heroSub: {
-      fontSize: FontSize.sub,
-      lineHeight: LineHeight.sub,
+      fontSize: FontSize.t6,
+      lineHeight: LineHeight.t6,
     },
     section: {
       paddingHorizontal: Layout.gutter,
@@ -201,8 +202,8 @@ function makeStyles(colors: ReturnType<typeof useTheme>['colors']) {
       paddingBottom: Spacing.four,
     },
     sectionLabel: {
-      fontSize: FontSize.caption,
-      lineHeight: LineHeight.caption,
+      fontSize: FontSize.t7,
+      lineHeight: LineHeight.t7,
       fontWeight: '700',
       marginBottom: Spacing.two,
     },
@@ -215,14 +216,14 @@ function makeStyles(colors: ReturnType<typeof useTheme>['colors']) {
       marginBottom: Spacing.two,
     },
     codeText: {
-      fontSize: FontSize.heading,
-      lineHeight: LineHeight.heading,
+      fontSize: FontSize.t2,
+      lineHeight: LineHeight.t2,
       fontWeight: '700',
       letterSpacing: 4,
     },
     copiedHint: {
-      fontSize: FontSize.caption,
-      lineHeight: LineHeight.caption,
+      fontSize: FontSize.t7,
+      lineHeight: LineHeight.t7,
       marginTop: Spacing.one,
     },
     ctaRow: {
@@ -242,13 +243,13 @@ function makeStyles(colors: ReturnType<typeof useTheme>['colors']) {
     },
     statCard: {
       flex: 1,
-      borderRadius: Radius.card,
+      borderRadius: Radius.medium,
       borderWidth: 1,
       padding: Spacing.three,
     },
     statLabel: {
-      fontSize: FontSize.caption,
-      lineHeight: LineHeight.caption,
+      fontSize: FontSize.t7,
+      lineHeight: LineHeight.t7,
       marginBottom: Spacing.one,
     },
     statValueRow: {
@@ -257,17 +258,17 @@ function makeStyles(colors: ReturnType<typeof useTheme>['colors']) {
       gap: Spacing.half,
     },
     statValue: {
-      fontSize: FontSize.section,
-      lineHeight: LineHeight.section,
+      fontSize: FontSize.t4,
+      lineHeight: LineHeight.t4,
       fontWeight: '700',
     },
     statUnit: {
-      fontSize: FontSize.sub,
-      lineHeight: LineHeight.sub,
+      fontSize: FontSize.t6,
+      lineHeight: LineHeight.t6,
     },
     statsHint: {
-      fontSize: FontSize.caption,
-      lineHeight: LineHeight.caption,
+      fontSize: FontSize.t7,
+      lineHeight: LineHeight.t7,
     },
   });
 }

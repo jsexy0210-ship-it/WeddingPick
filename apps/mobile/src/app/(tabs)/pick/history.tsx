@@ -305,8 +305,8 @@ function makeStyles(colors: ReturnType<typeof useTheme>['colors']) {
       marginTop: Spacing.one,
     },
     addCtaText: {
-      fontSize: FontSize.sub,
-      lineHeight: LineHeight.sub,
+      fontSize: FontSize.t6,
+      lineHeight: LineHeight.t6,
       fontWeight: '700',
     },
   });
