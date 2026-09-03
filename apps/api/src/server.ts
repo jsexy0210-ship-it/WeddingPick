@@ -1,8 +1,6 @@
 import cors from '@fastify/cors';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { ZodError } from 'zod';
-import { join } from 'node:path';
-import { existsSync } from 'node:fs';
 
 import type { AppContext } from './context';
 import { ApiError } from './errors';
@@ -140,26 +138,46 @@ export function buildServer(context: AppContext): FastifyInstance {
   registerDevStorageRoutes(app, context);
   registerAdminRoutes(app, context);
 
-  // 정적 파일 서빙 (웹앱)
-  const distDir = join(__dirname, '../../web/dist');
-  if (existsSync(distDir)) {
-   app.get('/*', async (_request, reply) => {
-     const { readFile } = await import('node:fs/promises');
-     try {
-       const filePath = join(distDir, _request.url.split('?')[0]);
-       // 정적 파일이 있으면 서빙, 없으면 index.html (SPA 라우팅)
-       if (existsSync(filePath) && !filePath.includes('..')) {
-         const content = await readFile(filePath);
-         return reply.type('text/html').send(content);
-       }
-       // 기본: index.html
-       const html = await readFile(join(distDir, 'index.html'));
-       return reply.type('text/html').send(html);
-     } catch {
+  // 정적 파일 서빙 (웹앱) - API는 이미 위에 등록되어 있으므로 마지막에 캐치올 추가
+  app.get('/*', async (_request, reply) => {
+   const { readFile } = await import('node:fs/promises');
+   const { join } = await import('node:path');
+   const { existsSync } = await import('node:fs');
+    
+   try {
+     // 절대 경로로 dist 디렉터리 계산
+     const distDir = join(process.cwd(), 'apps/web/dist');
+     const reqPath = _request.url.split('?')[0] || '/';
+     const filePath = join(distDir, reqPath.startsWith('/') ? reqPath.slice(1) : reqPath);
+      
+     // 경로 이탈 방지 및 정적 파일 확인
+     if (!filePath.startsWith(distDir)) {
        return reply.status(404).send('Not Found');
      }
-   });
-  }
+      
+     if (existsSync(filePath)) {
+       const content = await readFile(filePath);
+       const ext = filePath.split('.').pop() || '';
+       const mimeTypes: Record<string, string> = {
+         html: 'text/html',
+         js: 'application/javascript',
+         css: 'text/css',
+         json: 'application/json',
+         svg: 'image/svg+xml',
+         png: 'image/png',
+         jpg: 'image/jpeg',
+         ico: 'image/x-icon',
+       };
+       return reply.type(mimeTypes[ext] || 'application/octet-stream').send(content);
+     }
+      
+     // 파일 없으면 index.html (SPA 라우팅)
+     const html = await readFile(join(distDir, 'index.html'));
+     return reply.type('text/html').send(html);
+   } catch {
+     return reply.status(404).send('Not Found');
+   }
+  });
 
   return app;
 }
