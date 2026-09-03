@@ -1,4 +1,13 @@
 services:
+  # 웹 앱 (정적 사이트)
+  - type: web
+    name: weddingpick-web
+    runtime: static
+    staticPublishPath: ./apps/web/dist
+    autoDeploy: true
+    buildCommand: npm run build:ui
+
+  # API 서버
   - type: web
     name: weddingpick-api
     runtime: docker
