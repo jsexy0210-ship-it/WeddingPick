@@ -31,7 +31,7 @@ const STAGE_LABEL: Record<WeddingInfoStage, string> = {
 };
 
 const CATEGORY_LABEL: Record<WeddingInfoCategory, string> = {
-  tips: '알아두면 좋아요',
+  tips: '알아두세요',
   checklist: '체크리스트',
   review: '경험담',
   trend: '트렌드',
