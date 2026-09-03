@@ -209,8 +209,8 @@ export default function MyScreen() {
 
             <ThemedView style={styles.grow}>
               <ThemedView style={styles.nameRow}>
-                <ThemedText type="t4">{data.me?.displayName ?? '게스트'}</ThemedText>
-                <TierBadge label={data.me?.tierLabel ?? '게스트'} />
+                <ThemedText type="t4">{data.me?.displayName ?? '비회원'}</ThemedText>
+                <TierBadge label={data.me?.tierLabel ?? '비회원'} />
               </ThemedView>
               <ThemedText type="t7" themeColor="textSecondary">
                 {data.me?.weddingDate ? formatWeddingDate(data.me.weddingDate) : '예식일 미등록'}
@@ -265,7 +265,7 @@ export default function MyScreen() {
                 {MISSION_HEADLINE} {missionProgress(facts).done}/{missionProgress(facts).total}
               </ThemedText>
               {/* 핸드오프가 배지를 여기에도 뒀다. 미션과 등급이 같은 이야기라서다. */}
-              <TierBadge label={data.me?.tierLabel ?? '게스트'} />
+              <TierBadge label={data.me?.tierLabel ?? '비회원'} />
             </ThemedView>
 
             {MISSIONS.map((mission) => {

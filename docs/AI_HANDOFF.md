@@ -20,7 +20,7 @@
 ## 인프라 현황
 
 ### 서버
-- **API 서버**: Fly.io — `weddingpickl.fly.dev`
+- **API 서버**: Render — `https://weddingpickl.onrender.com`
 - **DB**: Neon PostgreSQL (production)
 - **스토리지**: Backblaze B2 (S3 호환)
 - **모바일 빌드**: EAS (Expo Application Services) + GitHub Actions
@@ -31,7 +31,7 @@
 | `main.yml` | PR 검증 · 테스트 |
 | `release.yml` | iOS EAS 빌드 배포 |
 | `db-migrate.yml` | Neon DB 마이그레이션 적용 |
-| `fly-init.yml` | Fly.io 초기화 |
+| `fly-init.yml` | 이전 Fly.io 초기화 기록(현재 운영 제외) |
 | `eas-init.yml` | EAS 프로젝트 초기화 |
 | `storage-test.yml` | B2 스토리지 연결 테스트 |
 | `android-apk.yml` | Android APK 빌드 |
@@ -74,13 +74,7 @@
 
 **참고**: 현재 expo.dev에는 `NPCMZ655GG`만 있으나 Team/Roles: None → 비활성 상태. `release.yml`은 `--clear-credentials` 제거 완료, 정상 상태.
 
-### 2. Fly.io 환경변수 추가
-```
-flyctl secrets set OPERATOR_SESSION_TTL_DAYS=365 --app weddingpickl
-```
-(또는 Fly.io 대시보드 → weddingpickl → Secrets)
-
-### 3. Production DB 마이그레이션 적용
+### 2. Production DB 마이그레이션 적용
 ```
 # GitHub Actions → db-migrate.yml → Run workflow
 # 또는 직접:
@@ -129,7 +123,7 @@ DATABASE_URL=<neon-connection-string> KAKAO_REST_API_KEY=<발급받은 키> \
 **완료:**
 - ✅ 월간 웨딩지원금 (§I-4) API + 모바일 화면 구현 → 원격 브랜치 푸시 완료
 - ✅ 탈퇴 안내 문구 `WITHDRAWAL_NOTICE` 확정 (§J-3)
-- ✅ `OPERATOR_SESSION_TTL_DAYS` 도메인 상수 추가 (코드에 추가됨, Fly.io 환경변수는 별도 조치 필요)
+- ✅ `OPERATOR_SESSION_TTL_DAYS` 도메인 상수 추가
 - ✅ `release.yml`에서 `--clear-credentials` 플래그 제거
 
 ### 정책 관리 (session_017L61fF1Tqbugm8WNCH6QG6, 이 세션) — 실행 중
@@ -152,7 +146,7 @@ DATABASE_URL=<neon-connection-string> KAKAO_REST_API_KEY=<발급받은 키> \
   결과는 **미검증**)
 
 **브랜치**: `claude/daily-progress-briefing-3k7lez` · **PR**: #10 (main ← 이 브랜치)
-**미검증**: 실제 배포·health check(Fly.io 크리덴셜 필요, PR 단계에서는 원래도 실행 안 됨),
+**미검증**: 실제 배포·health check(운영 배포 자격 증명 필요),
 GitHub Actions 실제 실행 결과, production DB 적용.
 
 ### 프론트엔드 (session_01HTGSU2B4vFjePXFS2ajKBY) — 아카이브
@@ -249,8 +243,8 @@ API·DB 마이그레이션·지도 SDK가 필요한 두 항목(일정 추가, �
     PR #22/#24가 이용약관·개인정보처리방침을 게시(url 설정)로 바꾼 뒤 "아직
     게시 전"을 전제로 한 낡은 테스트 기대값이었다.
 - ✅ **PR #29 머지(head `b8a8df7`)로 main이 처음으로 CI 전체(Typecheck·Lint·
-  Test·Bundle·Build)와 `Deploy → Staging`(DB Migrate·Fly.io 배포·health check)
-  까지 전부 그린을 찍었다.** `weddingpickl.fly.dev`에 이 세션의 취향 API
+  Test·Bundle·Build)와 `Deploy → Staging`(DB Migrate·Render 배포·health check)
+  까지 전부 그린을 찍었다.** Render에 이 세션의 취향 API
   (0060_taste_preferences 등)를 포함한 최신 코드가 실제로 배포됨.
 - **Production 배포는 보류 중** — `workflow_dispatch`(environment=production)로
   수동 실행해야 하며, 사용자가 명시적으로 "진행 전에 물어봐달라"고 요청해 아직
@@ -341,7 +335,7 @@ production DB에는 아직 미적용. `db-migrate.yml` 워크플로 실행 필�
 ## 백엔드 API 현황
 
 - **테스트**: 524개 통과 (백엔드 관리 세션 기준, 2026-09-02)
-- **서버**: `weddingpickl.fly.dev` (Fly.io)
+- **서버**: `https://weddingpickl.onrender.com` (Render)
 - **미확인**: 프로덕션 환경 전체 API 엔드포인트 수, 커버리지 %
 
 ---
@@ -353,7 +347,7 @@ WeddingPickl/
 ├── apps/
 │   ├── mobile/              # Expo Router 모바일 앱
 │   │   └── src/app/         # 42개 라우터 파일 (화면)
-│   └── api/                 # Hono API 서버 (Fly.io 배포)
+│   └── api/                 # Hono API 서버 (Render 배포)
 ├── packages/
 │   ├── db/
 │   │   └── migrations/      # 0001 ~ 0052 SQL 파일
@@ -384,8 +378,7 @@ WeddingPickl/
 ## 다음 작업 우선순위
 
 1. **[사용자]** expo.dev에 ASC API Key 62U8N2ZWJR 등록 → iOS 빌드 재시작
-2. **[사용자]** Fly.io: `OPERATOR_SESSION_TTL_DAYS=365` 추가
-3. **[사용자]** Neon DB: `db-migrate.yml` 실행 → 0052 ~ 0060 적용
+2. **[사용자]** Neon DB: `db-migrate.yml` 실행 → 0052 ~ 0060 적용
 4. **[사용자]** terms.url · privacy.url 확정 → 도메인 상수 업데이트
 <<<<<<< HEAD
 5. **[AI]** 프론트엔드 미구현 화면 구현 — WP-MY-004/HOME-004/006/OUR-012/013 완료. 다음: 일정 추가 > 지도 보기
@@ -421,7 +414,6 @@ WeddingPickl/
 |---|---|
 | DB 마이그레이션 0052 | `0052_mission_draw.sql` DROP 구문 없음 — 수동 롤백 필요 |
 | release.yml | git revert로 이전 커밋 복원 |
-| Fly.io 환경변수 | `flyctl secrets unset OPERATOR_SESSION_TTL_DAYS` |
 
 ---
 

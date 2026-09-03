@@ -1,8 +1,7 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs, useSegments } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { WeddingMark, useTheme } from '@weddingpick/ui';
+import { ProductSymbol, useTheme } from '@weddingpick/ui';
 
 /**
  * Bottom Navigation: 홈 | 검색 | 촬영 | 내 웨딩 | MY
@@ -40,7 +39,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: '홈',
-          tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => <ProductSymbol name="house" color={color} size={size} />,
         }}
       />
       <Tabs.Screen
@@ -48,7 +47,7 @@ export default function TabLayout() {
         options={{
           title: '검색',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="search-outline" color={color} size={size} />
+            <ProductSymbol name="magnifier" color={color} size={size} />
           ),
         }}
       />
@@ -62,7 +61,7 @@ export default function TabLayout() {
         name="pick"
         options={{
           title: 'Pick',
-          tabBarIcon: ({ color, size }) => <WeddingMark size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => <ProductSymbol name="pickMark" size={size} color={color} />,
         }}
       />
       {/*
@@ -76,7 +75,7 @@ export default function TabLayout() {
         options={{
           title: '우리웨딩',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="people-outline" color={color} size={size} />
+            <ProductSymbol name="twoPeople" color={color} size={size} />
           ),
         }}
       />
@@ -85,7 +84,7 @@ export default function TabLayout() {
         options={{
           title: 'MY',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" color={color} size={size} />
+            <ProductSymbol name="person" color={color} size={size} />
           ),
         }}
       />

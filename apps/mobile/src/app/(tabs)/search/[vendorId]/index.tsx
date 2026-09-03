@@ -404,7 +404,7 @@ export default function VendorDetailScreen() {
                 style={styles.sourceRow}>
                 <View style={[styles.badge, { backgroundColor: theme.backgroundSelected }]}>
                   <ThemedText type="badge" themeColor="textSecondary">
-                    공공데이터
+                    공공기관 확인
                   </ThemedText>
                 </View>
                 <ThemedText type="t7" themeColor="textAssistive">

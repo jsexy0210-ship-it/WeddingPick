@@ -68,6 +68,13 @@ jobs:
             fail=1
           fi
 
+          if [ "${{ inputs.platform }}" = "ios" ] || [ "${{ inputs.platform }}" = "all" ]; then
+            if [ -z "$EAS_ASC_KEY_P8_BASE64" ]; then
+              echo "::error::iOS 빌드에는 EAS_ASC_KEY_P8_BASE64 시크릿이 필요합니다."
+              fail=1
+            fi
+          fi
+
           if ! grep -q '"projectId"' apps/mobile/app.json; then
             echo "::error::app.json에 EAS projectId가 없습니다. eas-init 워크플로를 먼저 실행하세요."
             fail=1
@@ -76,6 +83,7 @@ jobs:
           exit $fail
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EAS_ASC_KEY_P8_BASE64: ${{ secrets.EAS_ASC_KEY_P8_BASE64 }}
 
   build-ios:
     name: iOS Production Build
@@ -107,9 +115,9 @@ jobs:
         run: eas build --platform ios --profile production --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-          EXPO_APPLE_API_KEY_ID: 62U8N2ZWJR
-          EXPO_APPLE_API_KEY_ISSUER_ID: a7e4029d-6abf-4811-80a7-9cc47c1d1e21
-          EXPO_APPLE_API_KEY_PATH: /tmp/AuthKey_62U8N2ZWJR.p8
+          EXPO_ASC_KEY_ID: 62U8N2ZWJR
+          EXPO_ASC_ISSUER_ID: a7e4029d-6abf-4811-80a7-9cc47c1d1e21
+          EXPO_ASC_API_KEY_PATH: /tmp/AuthKey_62U8N2ZWJR.p8
 
   submit-ios:
     name: iOS → TestFlight 제출
