@@ -1,11 +1,13 @@
 import {
-  VENDOR_CATEGORIES,
-  VENDOR_CATEGORY_LABEL,
   VENDOR_SORTS,
   VENDOR_SORT_LABEL,
   type VendorSort,
 } from '@weddingpick/api-contract';
-import type { VendorCategory } from '@weddingpick/domain';
+import {
+  VENDOR_CATEGORIES,
+  VENDOR_CATEGORY_LABEL,
+  type VendorCategory,
+} from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';

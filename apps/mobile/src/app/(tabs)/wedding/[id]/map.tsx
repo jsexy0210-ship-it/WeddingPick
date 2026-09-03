@@ -177,7 +177,7 @@ export default function WeddingMapScreen() {
                 </ThemedText>
               ) : selectedDetail ? (
                 <ThemedText type="t7" themeColor="textAssistive">
-                  {selectedDetail.address ?? ''}
+                  {selectedDetail.region}
                 </ThemedText>
               ) : null}
               <ActionButton

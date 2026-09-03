@@ -388,7 +388,7 @@ export default function MyScreen() {
               <ActionButton
                 label="회원탈퇴"
                 hint="지워지는 것과 분리되는 것을 먼저 보여드려요"
-                onPress={() => router.push('/my/withdrawal')}
+                onPress={() => router.push('/my/withdrawal' as never)}
               />
             ) : null}
           </ThemedView>

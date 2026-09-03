@@ -102,7 +102,7 @@ export default function AccountScreen() {
             />
             <ActionButton
               label="회원탈퇴"
-              onPress={() => router.push('/my/withdrawal')}
+              onPress={() => router.push('/my/withdrawal' as never)}
             />
           </ThemedView>
         </ScrollView>

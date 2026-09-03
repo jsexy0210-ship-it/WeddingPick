@@ -80,7 +80,7 @@ export default function CategoryPickScreen() {
         vendorId: candidate.vendorId,
       });
       router.push({
-        pathname: '/pick/confirm',
+        pathname: '/pick/confirm' as never,
         params: {
           category,
           vendorId: candidate.vendorId,
@@ -268,7 +268,7 @@ export default function CategoryPickScreen() {
               label="비교하기"
               onPress={() =>
                 router.push({
-                  pathname: '/pick/compare',
+                  pathname: '/pick/compare' as never,
                   params: { category },
                 })
               }
