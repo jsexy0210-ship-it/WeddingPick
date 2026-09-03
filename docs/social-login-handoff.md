@@ -7,6 +7,7 @@
 - 모바일 로그인 화면과 로그인 시트는 API 제공자 목록을 표시한다.
 - 모바일 `providers.ts`는 Apple 네이티브 로그인과 Kakao OAuth 흐름을 연결하고, 받은 ID Token을 API로 전송한다.
 - Kakao 버튼을 활성화하려면 앱 빌드 환경에 `EXPO_PUBLIC_KAKAO_CLIENT_ID`를 주입해야 한다.
+- Kakao 네이티브 OAuth callback은 임의의 `weddingpick://`가 아니라 Kakao가 네이티브 앱 키에 발급한 `kakao<key>://oauth` 스킴을 사용한다. 앱 설정의 Android 패키지명·iOS Bundle ID와 함께 등록해야 한다.
 - Google 버튼을 활성화하려면 앱과 API에 `EXPO_PUBLIC_GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_ID`를 주입해야 한다.
 - Google ID Token 검증은 공식 규격의 두 issuer(`https://accounts.google.com`, `accounts.google.com`)를 모두 허용한다.
 - 네이버는 authorization code를 앱에서 받은 뒤 API 서버가 토큰 교환과 프로필 조회를 수행한다.
@@ -39,7 +40,7 @@ Apple 네이티브 capability와 config plugin은 `app.json`에 반영됐다. Ap
 
 네이버 실사용 설정은 서버에 `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`, `NAVER_REDIRECT_URIS`를 두고 모바일 EAS 환경에 `EXPO_PUBLIC_NAVER_CLIENT_ID`, `EXPO_PUBLIC_NAVER_REDIRECT_URI`를 둔다. `NAVER_CLIENT_SECRET`은 모바일이나 저장소에 넣지 않는다. Redirect URI는 네이버 Developers에 등록한 값과 세 환경값이 정확히 같아야 하며, 서버 허용목록에 없는 URI는 거부한다.
 
-현재 앱의 네이버 Redirect URI는 `weddingpick://auth/naver`로 고정한다. Android APK 워크플로와 EAS preview/production 프로필은 이 값을 사용한다. 네이버 Client ID는 앱에 포함되는 공개 식별값이며 Client Secret만 GitHub Repository Secret과 Render Secret으로 관리한다.
+현재 앱의 네이버 Redirect URI는 `weddingpick://auth/naver`로 고정한다. 네이버 Developers의 URL Scheme/Callback URL 등록값과 Android APK·iOS EAS 프로필의 값이 완전히 같아야 한다. 네이버 Client ID는 앱에 포함되는 공개 식별값이며 Client Secret만 GitHub Repository Secret과 Render Secret으로 관리한다.
 
 네이버 제공정보는 통합정책 v3.14 §O에 따라 서비스에 필요한 최소 항목만 요청한다.
 식별자는 필수이며, 이름·이메일·별명·프로필 사진·성별·생일·연령대·출생연도·휴대전화번호는
