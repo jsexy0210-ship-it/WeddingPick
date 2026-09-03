@@ -40,7 +40,7 @@ Apple 네이티브 capability와 config plugin은 `app.json`에 반영됐다. Ap
 
 네이버 실사용 설정은 서버에 `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`, `NAVER_REDIRECT_URIS`를 두고 모바일 EAS 환경에 `EXPO_PUBLIC_NAVER_CLIENT_ID`, `EXPO_PUBLIC_NAVER_REDIRECT_URI`를 둔다. `NAVER_CLIENT_SECRET`은 모바일이나 저장소에 넣지 않는다. Redirect URI는 네이버 Developers에 등록한 값과 세 환경값이 정확히 같아야 하며, 서버 허용목록에 없는 URI는 거부한다.
 
-현재 앱의 네이버 Redirect URI는 `weddingpick://auth/naver`로 고정한다. 네이버 Developers의 URL Scheme/Callback URL 등록값과 Android APK·iOS EAS 프로필의 값이 완전히 같아야 한다. 네이버 Client ID는 앱에 포함되는 공개 식별값이며 Client Secret만 GitHub Repository Secret과 Render Secret으로 관리한다.
+네이버 Callback URL은 `https://weddingpickl.onrender.com/v1/auth/naver/callback`로 고정한다. 네이버가 HTTPS Callback만 허용하므로 `weddingpick://auth/naver`는 Callback URL에 등록하지 않는다. HTTPS 콜백은 인증 코드와 state를 앱의 커스텀 스킴으로 되돌리고, 앱이 PKCE verifier와 함께 API에서 토큰을 교환한다. 네이버 Client ID는 앱에 포함되는 공개 식별값이며 Client Secret만 GitHub Repository Secret과 Render Secret으로 관리한다.
 
 네이버 제공정보는 통합정책 v3.14 §O에 따라 서비스에 필요한 최소 항목만 요청한다.
 식별자는 필수이며, 이름·이메일·별명·프로필 사진·성별·생일·연령대·출생연도·휴대전화번호는

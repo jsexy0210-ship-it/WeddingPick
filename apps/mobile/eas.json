@@ -17,7 +17,7 @@
         "EXPO_PUBLIC_KAKAO_CLIENT_ID": "73d13d819afd9d14f20de20b8dff46b8",
         "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "595165026523-dd5s0fqtle78e03mb34m9iaclpdmlb9r.apps.googleusercontent.com",
         "EXPO_PUBLIC_NAVER_CLIENT_ID": "tgp4WVYlYO_qd2nyvHug",
-        "EXPO_PUBLIC_NAVER_REDIRECT_URI": "weddingpick://auth/naver"
+        "EXPO_PUBLIC_NAVER_REDIRECT_URI": "https://weddingpickl.onrender.com/v1/auth/naver/callback"
       },
       "android": {
         "buildType": "apk"
@@ -32,7 +32,7 @@
         "EXPO_PUBLIC_KAKAO_CLIENT_ID": "73d13d819afd9d14f20de20b8dff46b8",
         "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "595165026523-dd5s0fqtle78e03mb34m9iaclpdmlb9r.apps.googleusercontent.com",
         "EXPO_PUBLIC_NAVER_CLIENT_ID": "tgp4WVYlYO_qd2nyvHug",
-        "EXPO_PUBLIC_NAVER_REDIRECT_URI": "weddingpick://auth/naver"
+        "EXPO_PUBLIC_NAVER_REDIRECT_URI": "https://weddingpickl.onrender.com/v1/auth/naver/callback"
       },
       "android": {
         "buildType": "app-bundle"
