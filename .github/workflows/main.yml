@@ -99,12 +99,19 @@ jobs:
         run: |
           if [ -n "$RENDER_DEPLOY_HOOK_URL" ]; then
             curl -sS "$RENDER_DEPLOY_HOOK_URL"
-            echo "Deploy hook triggered"
+            echo "API deploy hook triggered"
           else
-            echo "No deploy hook configured — relying on Render auto-deploy (autoDeploy: true)"
+            echo "No API deploy hook configured — relying on Render auto-deploy (autoDeploy: true)"
+          fi
+          if [ -n "$RENDER_DEPLOY_HOOK_WEB_URL" ]; then
+            curl -sS "$RENDER_DEPLOY_HOOK_WEB_URL"
+            echo "Web static site deploy hook triggered"
+          else
+            echo "No web deploy hook configured — relying on Render auto-deploy (autoDeploy: true)"
           fi
         env:
           RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          RENDER_DEPLOY_HOOK_WEB_URL: ${{ secrets.RENDER_DEPLOY_HOOK_WEB_URL }}
 
       - name: Health check
         run: |

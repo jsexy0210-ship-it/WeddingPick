@@ -10,7 +10,7 @@ import { CLAIM_STATUS_LABEL } from './vendor-claim';
 import { VERIFICATION_STATUS_LABEL } from './verification';
 
 describe('제보 상태 표시 정책', () => {
-  it('여덟 상태에 사용자 문구가 하나씩 있다', () => {
+  it('각 상태에 사용자 문구가 하나씩 있다', () => {
     for (const state of REPORT_STATES) {
       expect(reportStateLabel(state)).toBeTruthy();
     }

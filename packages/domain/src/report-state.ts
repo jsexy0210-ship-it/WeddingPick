@@ -22,6 +22,8 @@ export const REPORT_STATES = [
   'need_user_confirm',
   /** 우리 쪽에서 보는 중. */
   'under_review',
+  /** 낸 사람이 자료를 보완해야 다음으로 넘어간다. */
+  'needs_supplement',
   /** 확인이 끝났고 쓰이고 있다. */
   'verified',
   /** 확인했지만 반영하지 않았다. */
@@ -49,6 +51,7 @@ export const REPORT_STATE_LABEL: Record<ReportState, string> = {
   verifying: '확인 중',
   need_user_confirm: '확인이 필요해요',
   under_review: '확인 중',
+  needs_supplement: '보완 필요',
   verified: '확인 완료',
   rejected: '반영되지 않았어요',
   canceled: '취소됨',

@@ -5,7 +5,7 @@ import { FontSize } from '@weddingpick/ui';
 import { API_URL } from '@/api/config';
 import { loadToken } from '@/api/session';
 
-type VerificationStatus = 'received' | 'in_review' | 'approved' | 'rejected';
+type VerificationStatus = 'received' | 'in_review' | 'needs_supplement' | 'approved' | 'rejected';
 
 type PendingVerification = {
   id: string;
@@ -19,6 +19,7 @@ type PendingVerification = {
 const STATUS_LABEL: Record<VerificationStatus, string> = {
   received: '접수',
   in_review: '심사중',
+  needs_supplement: '보완요청',
   approved: '승인',
   rejected: '반려',
 };
