@@ -1,12 +1,13 @@
 # 웨딩픽 통합 파이프라인
 #
-# push(main)  → CI → DB 마이그레이션 → Render 헬스체크
+# push(main)  → CI → DB 마이그레이션 → Render 자동 배포 → health check (staging)
 # PR          → CI만 (배포 없음)
 # workflow_dispatch → staging 또는 production 수동 배포
 #
 # 필요한 GitHub Secrets:
 #   DATABASE_URL              Render PostgreSQL 연결 문자열
-#   RENDER_DEPLOY_HOOK_URL    (선택) Render 서비스 Deploy Hook URL
+#   RENDER_DEPLOY_HOOK_URL    (선택) Render staging 서비스 Deploy Hook URL
+#   RENDER_DEPLOY_HOOK_URL_PROD (선택) Render production 서비스 Deploy Hook URL
 name: CI / Deploy
 
 on:
@@ -74,7 +75,9 @@ jobs:
   deploy-staging:
     name: Deploy → Staging
     needs: [ci]
-    if: github.event_name == 'workflow_dispatch' && inputs.environment == 'staging'
+    if: |
+      github.event_name == 'push' && github.ref == 'refs/heads/main' ||
+      github.event_name == 'workflow_dispatch' && inputs.environment == 'staging'
     runs-on: ubuntu-latest
 
     steps:
