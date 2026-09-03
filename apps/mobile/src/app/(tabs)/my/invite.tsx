@@ -106,7 +106,7 @@ export default function InviteScreen() {
               {data.referralCode}
             </ThemedText>
             <ThemedText type="t7" themeColor="textAssistive">
-              보상: 나 {won(REWARDS.referral.amountKrw)} · 친구 {won(REWARDS.referral.friendAmountKrw ?? REWARDS.referral.amountKrw)}
+              보상: {won(REWARDS.referral.amountKrw)} · 첫 결제내역 등록 조건
             </ThemedText>
           </ThemedView>
 
