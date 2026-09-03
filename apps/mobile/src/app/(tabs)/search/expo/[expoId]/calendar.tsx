@@ -158,10 +158,28 @@ export default function CalendarScreen() {
           {/* 일정 요약 */}
           <ThemedView type="backgroundElement" style={styles.card}>
             <ThemedText type="t5">{expoTitle}</ThemedText>
-            {/* TODO: API 미구현 — 실제 일정 표시 */}
-            <ThemedText type="t7" themeColor="textSecondary">
-              일정 정보를 가져오고 있어요
-            </ThemedText>
+            {loadError ? (
+              <ThemedText type="t7" themeColor="textSecondary">
+                일정 정보를 불러오지 못했어요
+              </ThemedText>
+            ) : expo ? (
+              <>
+                {expoVenue ? (
+                  <ThemedText type="t7" themeColor="textSecondary">
+                    {expoVenue}
+                  </ThemedText>
+                ) : null}
+                {expoStartsAt ? (
+                  <ThemedText type="t7" themeColor="textSecondary">
+                    {expoStartsAt.slice(0, 10)} ~ {expoEndsAt.slice(0, 10)}
+                  </ThemedText>
+                ) : null}
+              </>
+            ) : (
+              <ThemedText type="t7" themeColor="textSecondary">
+                일정 정보를 가져오고 있어요
+              </ThemedText>
+            )}
           </ThemedView>
 
           {/* 캘린더 선택 */}
