@@ -20,6 +20,8 @@ const KAKAO_CLIENT_ID = process.env.EXPO_PUBLIC_KAKAO_CLIENT_ID;
 const GOOGLE_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
 const NAVER_CLIENT_ID = process.env.EXPO_PUBLIC_NAVER_CLIENT_ID;
 const NAVER_REDIRECT_URI = process.env.EXPO_PUBLIC_NAVER_REDIRECT_URI;
+// Kakao Native AppKey가 발급한 스킴만 Android/iOS OAuth callback으로 사용한다.
+const KAKAO_REDIRECT_SCHEME = 'kakao8ffc70af8bf397e03d930e10ca38cb22';
 
 // 웹에서는 제공자가 redirect한 창을 닫고 원래 로그인 요청을 완료해야 한다.
 WebBrowser.maybeCompleteAuthSession();
@@ -114,7 +116,7 @@ export async function signInWith(provider: AuthProvider): Promise<void> {
       throw new Error('카카오 로그인 설정이 아직 완료되지 않았습니다.');
     }
 
-    const redirectUri = makeRedirectUri({ scheme: 'weddingpick' });
+    const redirectUri = makeRedirectUri({ scheme: KAKAO_REDIRECT_SCHEME, path: 'oauth' });
     const request = new AuthRequest({
       clientId: KAKAO_CLIENT_ID,
       redirectUri,
