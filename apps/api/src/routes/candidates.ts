@@ -303,11 +303,8 @@ export function registerCandidateRoutes(app: FastifyInstance, context: AppContex
   /**
    * Pick에서 뺀 업체 이력. 핸드오프 Pick 히스토리.
    *
-   * **현재 DB는 삭제를 추적하지 않는다.**
-   *
-   * `vendor_candidates`는 DELETE로 지운다 — 이력 테이블이 없어 과거 데이터를
-   * 조회할 방법이 없다. 추후 `removed_candidates` 이력 테이블을 추가하고 이 경로를
-   * 채울 예정이다. 지금은 빈 목록을 내려줘 클라이언트가 빈 상태를 보여준다.
+   * `removed_candidates`(0067)가 triger로 채운다 — vendor_candidates DELETE 시
+   * 자동으로 기록된다. 업종별로 묶어 내려준다.
    */
   app.get<{ Params: { weddingId: string } }>(
     '/v1/weddings/:weddingId/candidates/removed',
@@ -316,7 +313,44 @@ export function registerCandidateRoutes(app: FastifyInstance, context: AppContex
       const userId = currentUserId(request);
       await assertWeddingAccess(context.pool, request.params.weddingId, userId);
 
-      return { groups: [] };
+      type RemovedRow = {
+        id: string;
+        vendor_id: string | null;
+        vendor_name: string;
+        category: VendorCategory;
+        added_at: Date | null;
+        removed_at: Date;
+      };
+
+      const { rows } = await context.pool.query<RemovedRow>(
+        `SELECT rc.id, rc.vendor_id, rc.vendor_name, rc.category::vendor_category AS category,
+                rc.added_at, rc.removed_at
+         FROM structured.removed_candidates rc
+         WHERE rc.wedding_id = $1
+         ORDER BY rc.removed_at DESC`,
+        [request.params.weddingId]
+      );
+
+      // 업종별로 묶는다. 화면이 같은 업종끼리 모아 보여준다.
+      const grouped = groupByCategory(
+        rows.map((row) => ({ ...row, vendor_id: row.vendor_id ?? '', note: null, added_by: null }))
+      );
+
+      return {
+        groups: [...grouped.entries()].map(([category, items]) => ({
+          category,
+          categoryLabel: VENDOR_CATEGORY_LABEL[category],
+          items: items.map((row) => ({
+            id: row.id,
+            vendorId: row.vendor_id || null,
+            vendorName: row.vendor_name,
+            category: row.category,
+            categoryLabel: VENDOR_CATEGORY_LABEL[row.category],
+            addedAt: row.added_at ? row.added_at.toISOString() : null,
+            removedAt: row.removed_at.toISOString(),
+          })),
+        })),
+      };
     }
   );
 }
