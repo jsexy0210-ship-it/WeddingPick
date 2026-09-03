@@ -5,7 +5,6 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { getCurrentUser, listCandidates } from '@/api/client';
 import type { CandidateListResponse } from '@weddingpick/api-contract';
 import {
-  Colors,
   EmptyView,
   ErrorView,
   FontSize,
@@ -27,7 +26,7 @@ const S = {
   'section.candidates': '후보',
   'cta.addCandidate': '다시 후보 추가',
   'empty.title': '아직 Pick한 곳이 없어요',
-  'empty.body': '업체를 찾아 Pick에 담아보세요',
+  'empty.description': '업체를 찾아 Pick에 담아보세요',
   'empty.cta': '업체 검색',
   error: '후보 목록을 불러오지 못했어요',
 };
@@ -52,7 +51,7 @@ function HistorySkeleton() {
 }
 
 export default function PickHistoryScreen() {
-  const { colors } = useTheme();
+  const theme = useTheme();
 
   const [data, setData] = useState<CandidateListResponse | null>(null);
   const [weddingId, setWeddingId] = useState<string | null>(null);
@@ -80,7 +79,7 @@ export default function PickHistoryScreen() {
     []
   );
 
-  const styles = makeStyles(colors);
+  const styles = makeStyles(theme);
 
   if (loading) {
     return (
@@ -109,9 +108,9 @@ export default function PickHistoryScreen() {
         <Stack.Screen options={{ title: S.title }} />
         <EmptyView
           title={S['empty.title']}
-          body={S['empty.body']}
-          cta={S['empty.cta']}
-          onCta={() => router.push('/(tabs)/search')}
+          description={S['empty.description']}
+          actionLabel={S['empty.cta']}
+          onAction={() => router.push('/(tabs)/search')}
         />
       </ThemedView>
     );
@@ -153,7 +152,7 @@ export default function PickHistoryScreen() {
                     style={[
                       styles.vendorRow,
                       styles.decidedRow,
-                      { borderColor: colors.tint, backgroundColor: colors.tintSubtle },
+                      { borderColor: theme.tint, backgroundColor: theme.tintSubtle },
                     ]}
                   >
                     <View style={styles.vendorInfo}>
@@ -164,9 +163,9 @@ export default function PickHistoryScreen() {
                         {formatDate(decidedCandidate.addedAt)}
                       </ThemedText>
                     </View>
-                    <View style={[styles.decidedBadge, { backgroundColor: colors.tint }]}>
+                    <View style={[styles.decidedBadge, { backgroundColor: theme.tint }]}>
                       <ThemedText
-                        style={[styles.decidedBadgeText, { color: colors.onTint }]}
+                        style={[styles.decidedBadgeText, { color: theme.onTint }]}
                       >
                         {S.decided}
                       </ThemedText>
@@ -186,7 +185,7 @@ export default function PickHistoryScreen() {
                       key={candidate.id}
                       style={[
                         styles.vendorRow,
-                        { borderColor: colors.border, backgroundColor: colors.backgroundElement },
+                        { borderColor: theme.border, backgroundColor: theme.backgroundElement },
                       ]}
                     >
                       <View style={styles.vendorInfo}>
@@ -207,7 +206,7 @@ export default function PickHistoryScreen() {
               <Pressable
                 style={({ pressed }) => [
                   styles.addCta,
-                  { borderColor: colors.border },
+                  { borderColor: theme.border },
                   pressed && { opacity: 0.6 },
                 ]}
                 onPress={() => handleAddCandidate(group.category)}
@@ -225,7 +224,7 @@ export default function PickHistoryScreen() {
   );
 }
 
-function makeStyles(colors: ReturnType<typeof useTheme>['colors']) {
+function makeStyles(theme: ReturnType<typeof useTheme>) {
   return StyleSheet.create({
     flex: { flex: 1 },
     scroll: {
@@ -243,20 +242,20 @@ function makeStyles(colors: ReturnType<typeof useTheme>['colors']) {
       marginBottom: Spacing.two,
     },
     categoryLabel: {
-      fontSize: FontSize.sub,
-      lineHeight: LineHeight.sub,
+      fontSize: FontSize.t6,
+      lineHeight: LineHeight.t6,
       fontWeight: '700',
     },
     stateLabel: {
-      fontSize: FontSize.caption,
-      lineHeight: LineHeight.caption,
+      fontSize: FontSize.t7,
+      lineHeight: LineHeight.t7,
     },
     subSection: {
       marginBottom: Spacing.two,
     },
     subSectionLabel: {
-      fontSize: FontSize.caption,
-      lineHeight: LineHeight.caption,
+      fontSize: FontSize.t7,
+      lineHeight: LineHeight.t7,
       marginBottom: Spacing.one,
     },
     vendorRow: {
@@ -276,14 +275,14 @@ function makeStyles(colors: ReturnType<typeof useTheme>['colors']) {
       flex: 1,
     },
     vendorName: {
-      fontSize: FontSize.sub,
-      lineHeight: LineHeight.sub,
+      fontSize: FontSize.t6,
+      lineHeight: LineHeight.t6,
       fontWeight: '700',
       marginBottom: 2,
     },
     vendorMeta: {
-      fontSize: FontSize.caption,
-      lineHeight: LineHeight.caption,
+      fontSize: FontSize.t7,
+      lineHeight: LineHeight.t7,
     },
     decidedBadge: {
       borderRadius: Radius.pill,
@@ -292,7 +291,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>['colors']) {
       marginLeft: Spacing.two,
     },
     decidedBadgeText: {
-      fontSize: FontSize.micro,
+      fontSize: FontSize.badge,
       fontWeight: '700',
     },
     addCta: {
