@@ -107,7 +107,7 @@ export default function AdsScreen() {
         <ScrollView>
           <View style={styles.tableHead}>
             <Text style={[styles.th, styles.colVendor]}>업체</Text>
-            <Text style={[styles.th, styles.colPlan]}>요금제</Text>
+            <Text style={[styles.th, styles.planTag]}>요금제</Text>
             <Text style={[styles.th, styles.colSlot]}>슬롯</Text>
             <Text style={[styles.th, styles.colPeriod]}>기간</Text>
             <Text style={[styles.th, styles.colStatus]}>상태</Text>
@@ -209,6 +209,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     marginTop: 2,
   },
+  colPlan: { width: 72 },
   planTag: { width: 72, fontWeight: '700', fontSize: FontSize.tab },
   colSlot: { width: 60 },
   colPeriod: { width: 110, fontSize: FontSize.tab },

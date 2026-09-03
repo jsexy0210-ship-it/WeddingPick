@@ -151,7 +151,7 @@ export default function PriceStatsScreen() {
                   {v.anomalyCandidates > 0 ? `${v.anomalyCandidates}건` : '없음'}
                 </Text>
                 <Text style={[styles.td, styles.colVersion, styles.monoText]}>{v.statsVersion}</Text>
-                <View style={[styles.td, styles.colAction]}>
+                <View style={[styles.colAction]}>
                   <Pressable
                     style={[styles.inlineBtn, recalcId === v.vendorId && styles.btnDisabled]}
                     onPress={() => void recalc(v.vendorId)}

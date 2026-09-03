@@ -168,7 +168,7 @@ export default function DataPipelineScreen() {
                     <Text style={[styles.td, styles.colFailStage]}>{item.stage}</Text>
                     <Text style={[styles.td, styles.colError]} numberOfLines={1}>{item.error}</Text>
                     <Text style={[styles.td, styles.colRetry]}>{item.retryCount}회</Text>
-                    <View style={[styles.td, styles.colAction]}>
+                    <View style={[styles.colAction]}>
                       <Pressable
                         style={[styles.inlineBtn, retrying === item.id && styles.btnDisabled]}
                         onPress={() => void retryItem(item.id)}
