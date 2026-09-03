@@ -5,7 +5,7 @@ services:
     runtime: static
     staticPublishPath: ./apps/web/dist
     autoDeploy: true
-    buildCommand: npm run build:ui
+    buildCommand: npm run build --workspace @weddingpick/web
 
   # API 서버
   - type: web
