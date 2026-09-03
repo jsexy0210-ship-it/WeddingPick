@@ -128,9 +128,10 @@ export function registerVerificationRoutes(app: FastifyInstance, context: AppCon
         received_at: Date;
         decided_at: Date | null;
         rejection_reason: string | null;
+        supplement_reason: string | null;
       }>(
         `SELECT id, quote_id, requested_by, target_level, status, received_at,
-                decided_at, rejection_reason
+                decided_at, rejection_reason, supplement_reason
          FROM structured.verification_requests WHERE id = $1`,
         [request.params.requestId]
       );
@@ -153,6 +154,7 @@ export function registerVerificationRoutes(app: FastifyInstance, context: AppCon
         receivedAt: found.received_at.toISOString(),
         decidedAt: found.decided_at?.toISOString() ?? null,
         ...(found.rejection_reason && { rejectionReason: found.rejection_reason }),
+        ...(found.supplement_reason && { supplementReason: found.supplement_reason }),
       };
     }
   );

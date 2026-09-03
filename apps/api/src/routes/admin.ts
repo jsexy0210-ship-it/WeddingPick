@@ -257,6 +257,20 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
     }
   );
 
+  const supplementVerificationBodySchema = z.object({ reason: z.string().trim().min(1) });
+
+  app.post<{ Params: { id: string } }>(
+    '/v1/admin/verifications/:id/supplement',
+    auth,
+    async (request, reply) => {
+      const body = supplementVerificationBodySchema.parse(request.body);
+      await run(() =>
+        verificationAdmin.requestSupplement(context.pool, request.params.id, currentUserId(request), body.reason)
+      );
+      return reply.status(204).send();
+    }
+  );
+
   const rejectVerificationBodySchema = z.object({ reason: z.string().trim().min(1) });
 
   app.post<{ Params: { id: string } }>(
