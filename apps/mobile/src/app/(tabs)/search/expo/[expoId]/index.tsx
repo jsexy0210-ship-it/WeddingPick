@@ -1,8 +1,9 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { getExpo, toggleExpoNotify, type ExpoDetail, type ExpoStatus } from '@/api/client';
 import {
   ActionButton,
   ErrorView,
@@ -15,28 +16,6 @@ import {
   ThemedView,
   useTheme,
 } from '@weddingpick/ui';
-
-// TODO: API 미구현 — GET /v1/expos/:expoId (박람회 상세)
-type ExpoStatus = 'upcoming' | 'ongoing' | 'closed';
-
-type ExpoDetail = {
-  id: string;
-  title: string;
-  organizer: string;
-  startsAt: string;
-  endsAt: string;
-  venue: string;
-  address: string;
-  region: string;
-  status: ExpoStatus;
-  isDeadlineSoon: boolean;
-  registrationDeadline: string | null;
-  benefits: string[];
-  description: string;
-  notifyEnabled: boolean;
-  sourceNote: string;
-  lastVerifiedAt: string;
-};
 
 const STATUS_LABEL: Record<ExpoStatus, string> = {
   upcoming: '진행 예정',
@@ -79,19 +58,36 @@ export default function ExpoDetailScreen() {
   const { expoId } = useLocalSearchParams<{ expoId: string }>();
   const [expo, setExpo] = useState<ExpoDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notifyLoading, setNotifyLoading] = useState(false);
 
-  useEffect(() => {
-    // TODO: API 미구현 — GET /v1/expos/:expoId
-    // expoId로 박람회 상세를 조회한다.
-    void expoId;
-    setError('박람회 정보를 아직 가져올 수 없어요');
-  }, [expoId]);
-
-  function retry() {
+  const load = useCallback(() => {
+    if (!expoId) return;
     setError(null);
     setExpo(null);
-    // TODO: API 미구현 — 재시도 시 API 호출
-    setError('박람회 정보를 아직 가져올 수 없어요');
+    getExpo(expoId)
+      .then(setExpo)
+      .catch(() => setError('박람회 정보를 불러오지 못했어요'));
+  }, [expoId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  function retry() {
+    load();
+  }
+
+  async function handleNotifyToggle() {
+    if (!expo || notifyLoading) return;
+    setNotifyLoading(true);
+    try {
+      const res = await toggleExpoNotify(expoId!, !expo.notifyEnabled);
+      setExpo((prev) => prev ? { ...prev, notifyEnabled: res.notifyEnabled } : prev);
+    } catch {
+      // 실패 시 기존 상태 유지 — 조용히 넘어간다
+    } finally {
+      setNotifyLoading(false);
+    }
   }
 
   const STATUS_COLOR: Record<ExpoStatus, string> = {
@@ -234,17 +230,15 @@ export default function ExpoDetailScreen() {
                   size="xlarge"
                   label="사전등록"
                   onPress={() => {
-                    // TODO: API 미구현 — 사전등록 링크 열기
+                    // 사전등록 링크 — 서버에 별도 필드 추가 시 연동
                   }}
                 />
               ) : (
                 <ActionButton
                   variant="primary"
                   size="xlarge"
-                  label={expo.notifyEnabled ? '알림 해제' : '알림 받기'}
-                  onPress={() => {
-                    // TODO: API 미구현 — 알림 토글 PUT /v1/expos/:expoId/notify
-                  }}
+                  label={notifyLoading ? '처리 중' : expo.notifyEnabled ? '알림 해제' : '알림 받기'}
+                  onPress={handleNotifyToggle}
                 />
               )}
               {/* 사전등록이 있을 때는 알림 받기를 Secondary로 */}
@@ -252,10 +246,8 @@ export default function ExpoDetailScreen() {
                 <ActionButton
                   variant="secondary"
                   size="large"
-                  label={expo.notifyEnabled ? '알림 해제' : '알림 받기'}
-                  onPress={() => {
-                    // TODO: API 미구현 — 알림 토글
-                  }}
+                  label={notifyLoading ? '처리 중' : expo.notifyEnabled ? '알림 해제' : '알림 받기'}
+                  onPress={handleNotifyToggle}
                 />
               ) : null}
               <ActionButton

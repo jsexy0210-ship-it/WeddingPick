@@ -1,4 +1,6 @@
 export * from './analyses';
+export * from './expos';
+export * from './wedding-info';
 export * from './auth';
 export * from './candidates';
 export * from './common';

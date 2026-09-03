@@ -1,8 +1,9 @@
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { listExpos, type ExpoItem, type ExpoStatus } from '@/api/client';
 import {
   EmptyView,
   ErrorView,
@@ -16,23 +17,6 @@ import {
   ThemedView,
   useTheme,
 } from '@weddingpick/ui';
-
-// TODO: API 미구현 — GET /v1/expos (박람회 목록)
-type ExpoStatus = 'upcoming' | 'ongoing' | 'closed';
-
-type ExpoItem = {
-  id: string;
-  title: string;
-  organizer: string;
-  startsAt: string;
-  endsAt: string;
-  venue: string;
-  region: string;
-  status: ExpoStatus;
-  isDeadlineSoon: boolean;
-  sourceNote: string;
-  lastVerifiedAt: string;
-};
 
 type SortKey = 'date' | 'region';
 
@@ -79,17 +63,20 @@ export default function ExpoListScreen() {
   const [expos, setExpos] = useState<ExpoItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // TODO: API 미구현 — GET /v1/expos?sort={sort}&region={region}
-    // 서버 연동 전: 빈 목록으로 떨어진다.
-    setExpos([]);
-  }, []);
-
-  function retry() {
+  const load = useCallback(() => {
     setError(null);
     setExpos(null);
-    // TODO: API 미구현 — 재시도 시 API 호출
-    setExpos([]);
+    listExpos({ sort, region })
+      .then((res) => setExpos(res.items))
+      .catch(() => setError('박람회 목록을 불러오지 못했어요'));
+  }, [sort, region]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  function retry() {
+    load();
   }
 
   const STATUS_COLOR: Record<ExpoStatus, string> = {

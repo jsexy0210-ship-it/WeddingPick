@@ -1,4 +1,3 @@
-import type { CandidateListResponse } from '@weddingpick/api-contract';
 import { VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -18,7 +17,7 @@ import {
   ThemedView,
   useTheme,
 } from '@weddingpick/ui';
-import { listCandidates, getVendor } from '@/api/client';
+import { getMapVendors, getVendor } from '@/api/client';
 import type { VendorDetail } from '@weddingpick/api-contract';
 
 /**
@@ -36,12 +35,13 @@ const KOREA_REGION: Region = {
 };
 
 type PinnedVendor = {
-  candidateId: string;
   vendorId: string;
   vendorName: string;
   category: string;
   lat: number;
   lng: number;
+  address: string;
+  picked: boolean;
 };
 
 export default function WeddingMapScreen() {
@@ -56,20 +56,8 @@ export default function WeddingMapScreen() {
 
   const load = useCallback(() => {
     setError(null);
-    listCandidates(id)
-      .then((res: CandidateListResponse) => {
-        const withCoords: PinnedVendor[] = [];
-        // 후보 목록에서 좌표 있는 업체만 추린다
-        // TODO: API에서 좌표를 포함한 후보 목록 제공 후 교체
-        for (const group of res.groups) {
-          for (const c of group.candidates) {
-            // coordinates가 없으면 지도에 표시하지 않는다
-            void c; // 좌표 포함 필드 API 연동 전 placeholder
-          }
-        }
-        // 현재는 좌표 필드가 없으므로 빈 배열로 시작 (API 연동 후 채움)
-        setPinned(withCoords);
-      })
+    getMapVendors(id)
+      .then((res) => setPinned(res.vendors))
       .catch((e: Error) => setError(e.message));
   }, [id]);
 
@@ -134,7 +122,7 @@ export default function WeddingMapScreen() {
         >
           {pinned.map((vendor) => (
             <Marker
-              key={vendor.candidateId}
+              key={vendor.vendorId}
               coordinate={{ latitude: vendor.lat, longitude: vendor.lng }}
               title={vendor.vendorName}
               pinColor={

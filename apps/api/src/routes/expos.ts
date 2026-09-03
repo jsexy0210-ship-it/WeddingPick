@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
-import { optionalUser, optionalUserId } from '../auth/plugin';
+import { optionalUser, optionalUserId, requireUser } from '../auth/plugin';
 import type { AppContext } from '../context';
 import { notFound } from '../errors';
 
@@ -174,4 +174,54 @@ export function registerExpoRoutes(app: FastifyInstance, context: AppContext): v
       lastVerifiedAt: expo.last_verified_at.toISOString().slice(0, 10),
     };
   });
+
+  /**
+   * 박람회 알림 토글. PUT으로 켜고, DELETE로 끈다.
+   *
+   * 로그인 필수 — optionalUser로 처리하면 익명 사용자가 구독 행을 만들 수 있다.
+   * 대신 requireUser를 쓴다.
+   */
+  const authRequired = { preHandler: requireUser(context) };
+
+  app.put<{ Params: { expoId: string } }>(
+    '/v1/expos/:expoId/notify',
+    authRequired,
+    async (request) => {
+      const { expoId } = request.params;
+      const userId = request.userId;
+
+      // 박람회가 존재하는지 먼저 확인한다.
+      const { rows } = await context.pool.query<{ id: string }>(
+        'SELECT id FROM structured.expos WHERE id = $1',
+        [expoId]
+      );
+      if (!rows[0]) throw notFound('박람회');
+
+      // INSERT … ON CONFLICT DO NOTHING — 이미 구독 중이면 무시한다.
+      await context.pool.query(
+        `INSERT INTO structured.expo_notify (expo_id, user_id)
+         VALUES ($1, $2)
+         ON CONFLICT (expo_id, user_id) DO NOTHING`,
+        [expoId, userId]
+      );
+
+      return { notifyEnabled: true };
+    }
+  );
+
+  app.delete<{ Params: { expoId: string } }>(
+    '/v1/expos/:expoId/notify',
+    authRequired,
+    async (request) => {
+      const { expoId } = request.params;
+      const userId = request.userId;
+
+      await context.pool.query(
+        'DELETE FROM structured.expo_notify WHERE expo_id = $1 AND user_id = $2',
+        [expoId, userId]
+      );
+
+      return { notifyEnabled: false };
+    }
+  );
 }

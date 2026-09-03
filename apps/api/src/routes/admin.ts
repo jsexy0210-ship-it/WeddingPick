@@ -603,4 +603,118 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
       return reply.status(204).send();
     }
   );
+
+  /**
+   * 가격 이상치 탐지. 관리자 > 통계·이상치 화면(ADM-STATS).
+   *
+   * 카테고리별로 결제 금액의 평균·표준편차를 계산하고, 평균 + 3σ 초과 건을 이상치로
+   * 분류한다. 건수가 적은 카테고리(n < 10)는 통계가 불안정하므로 제외한다.
+   */
+  app.get('/v1/admin/price-stats', auth, async () => {
+    type StatsRow = {
+      vendor_id: string;
+      vendor_name: string;
+      category: string;
+      amount: string;
+      mean: string;
+      stddev: string;
+      paid_at: Date;
+    };
+
+    const { rows } = await context.pool.query<StatsRow>(
+      `WITH stats AS (
+         SELECT
+           p.vendor_id,
+           v.name  AS vendor_name,
+           v.category,
+           p.paid_amount AS amount,
+           p.paid_at,
+           AVG(p.paid_amount)    OVER (PARTITION BY v.category) AS mean,
+           STDDEV(p.paid_amount) OVER (PARTITION BY v.category) AS stddev,
+           COUNT(*)              OVER (PARTITION BY v.category) AS cat_count
+         FROM structured.usable_payment_proofs p
+         JOIN structured.vendors v ON v.id = p.vendor_id
+       )
+       SELECT vendor_id, vendor_name, category, amount, mean, stddev, paid_at
+       FROM stats
+       WHERE cat_count >= 10
+         AND stddev > 0
+         AND amount > mean + 3 * stddev
+       ORDER BY (amount - mean) / stddev DESC
+       LIMIT 200`
+    );
+
+    const anomalies = rows.map((r) => ({
+      vendorId: r.vendor_id,
+      vendorName: r.vendor_name,
+      category: r.category,
+      amount: Number(r.amount),
+      mean: Number(r.mean),
+      stddev: Number(r.stddev),
+      detectedAt: r.paid_at.toISOString(),
+    }));
+
+    return { total: anomalies.length, anomalies };
+  });
+
+  /**
+   * 신고·VOC 접수 목록. 관리자 > 신고·VOC 화면(ADM-REPORT).
+   *
+   * 현재는 후기 신고만 있다. 다른 신고 유형이 생기면 UNION으로 확장한다.
+   */
+  app.get('/v1/admin/reports', auth, async (request) => {
+    const query = (request.query as { status?: string; limit?: string; cursor?: string });
+    const status = query.status ?? 'pending';
+    const limit = Math.min(Number(query.limit ?? 20), 100);
+    const cursor = query.cursor;
+
+    type ReportRow = {
+      id: string;
+      report_type: string;
+      reported_at: Date;
+      status: string;
+      reporter_count: string;
+      summary: string | null;
+    };
+
+    const params: unknown[] = [status, limit + 1];
+    let cursorClause = '';
+    if (cursor) {
+      cursorClause = `AND rr.received_at < $3`;
+      params.push(cursor);
+    }
+
+    const { rows } = await context.pool.query<ReportRow>(
+      `SELECT
+         rr.id,
+         'review' AS report_type,
+         rr.received_at AS reported_at,
+         CASE WHEN rr.decided_at IS NULL THEN 'pending' ELSE 'resolved' END AS status,
+         COUNT(*) OVER (PARTITION BY rr.review_id) AS reporter_count,
+         rr.reason::text AS summary
+       FROM structured.review_reports rr
+       WHERE (CASE WHEN rr.decided_at IS NULL THEN 'pending' ELSE 'resolved' END) = $1
+       ${cursorClause}
+       ORDER BY rr.received_at DESC
+       LIMIT $2`,
+      params
+    );
+
+    const hasMore = rows.length > limit;
+    const items = hasMore ? rows.slice(0, limit) : rows;
+
+    return {
+      items: items.map((r) => ({
+        id: r.id,
+        reportType: r.report_type,
+        reportedAt: r.reported_at.toISOString(),
+        status: r.status,
+        reporterCount: Number(r.reporter_count),
+        summary: r.summary ?? '',
+      })),
+      total: items.length,
+      hasMore,
+      nextCursor: hasMore ? items[items.length - 1]!.reported_at.toISOString() : null,
+    };
+  });
 }

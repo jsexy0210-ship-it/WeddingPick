@@ -120,6 +120,14 @@ import {
   withdrawalResultSchema,
   type WithdrawalNotice,
   type WithdrawalResult,
+  expoListResponseSchema,
+  expoDetailSchema,
+  weddingInfoListResponseSchema,
+  weddingInfoDetailSchema,
+  type ExpoListResponse,
+  type ExpoDetail,
+  type WeddingInfoListResponse,
+  type WeddingInfoDetail,
 } from '@weddingpick/api-contract';
 import { z, type ZodType } from 'zod';
 
@@ -967,11 +975,121 @@ export async function redeemReferral(code: string): Promise<void> {
   });
 }
 
+// ──────────────────────────────────────────────────────────
+// 박람회 (Expos)
+// ──────────────────────────────────────────────────────────
+
+export async function listExpos(params?: {
+  sort?: 'date' | 'region';
+  region?: string;
+  cursor?: string;
+}): Promise<ExpoListResponse> {
+  const q = new URLSearchParams();
+  if (params?.sort) q.set('sort', params.sort);
+  if (params?.region && params.region !== '전체') q.set('region', params.region);
+  if (params?.cursor) q.set('cursor', params.cursor);
+  const suffix = q.size > 0 ? `?${q.toString()}` : '';
+  return request(`/v1/expos${suffix}`, expoListResponseSchema);
+}
+
+export async function getExpo(expoId: string): Promise<ExpoDetail> {
+  return request(`/v1/expos/${expoId}`, expoDetailSchema);
+}
+
+export async function toggleExpoNotify(expoId: string, enabled: boolean): Promise<void> {
+  await request(`/v1/expos/${expoId}/notify`, z.null(), {
+    method: 'PUT',
+    body: JSON.stringify({ enabled }),
+  });
+}
+
+// ──────────────────────────────────────────────────────────
+// 웨딩 정보 (Wedding Info)
+// ──────────────────────────────────────────────────────────
+
+export async function listWeddingInfo(params?: {
+  sort?: string;
+  stage?: string;
+  category?: string;
+  cursor?: string;
+}): Promise<WeddingInfoListResponse> {
+  const q = new URLSearchParams();
+  if (params?.sort) q.set('sort', params.sort);
+  if (params?.stage) q.set('stage', params.stage);
+  if (params?.category) q.set('category', params.category);
+  if (params?.cursor) q.set('cursor', params.cursor);
+  const suffix = q.size > 0 ? `?${q.toString()}` : '';
+  return request(`/v1/wedding-info${suffix}`, weddingInfoListResponseSchema);
+}
+
+export async function getWeddingInfo(infoId: string): Promise<WeddingInfoDetail> {
+  return request(`/v1/wedding-info/${infoId}`, weddingInfoDetailSchema);
+}
+
 export async function submitPromotion(url: string): Promise<{ promotionId: string }> {
   return request('/v1/promotions', z.object({ promotionId: z.string() }), {
     method: 'POST',
     body: JSON.stringify({ url }),
   });
+}
+
+/** 내 초대 코드와 사용 횟수. */
+export async function getMyInviteCode(): Promise<{ code: string; uses: number }> {
+  return request('/v1/me/invite-code', z.object({ code: z.string(), uses: z.number() }));
+}
+
+/** 지도용 — 좌표가 있는 Pick 업체 목록. */
+export async function getMapVendors(weddingId: string): Promise<{
+  vendors: Array<{
+    vendorId: string;
+    vendorName: string;
+    category: string;
+    lat: number;
+    lng: number;
+    address: string;
+    picked: boolean;
+  }>;
+}> {
+  return request(
+    `/v1/weddings/${weddingId}/map-vendors`,
+    z.object({
+      vendors: z.array(
+        z.object({
+          vendorId: z.string(),
+          vendorName: z.string(),
+          category: z.string(),
+          lat: z.number(),
+          lng: z.number(),
+          address: z.string(),
+          picked: z.boolean(),
+        })
+      ),
+    })
+  );
+}
+
+/** 제외한 후보 목록. 카테고리별로 묶여 온다. */
+export async function getRemovedCandidates(weddingId: string): Promise<{
+  groups: Array<{
+    category: string;
+    categoryLabel: string;
+    items: Array<{ id: string; vendorName: string; removedAt: string }>;
+  }>;
+}> {
+  return request(
+    `/v1/weddings/${weddingId}/candidates/removed`,
+    z.object({
+      groups: z.array(
+        z.object({
+          category: z.string(),
+          categoryLabel: z.string(),
+          items: z.array(
+            z.object({ id: z.string(), vendorName: z.string(), removedAt: z.string() })
+          ),
+        })
+      ),
+    })
+  );
 }
 
 /*
@@ -1021,4 +1139,76 @@ export async function grantPaymentConsent(): Promise<Settings> {
 
 export async function revokePaymentConsent(): Promise<Settings> {
   return request('/v1/me/payment-consent', settingsSchema, { method: 'DELETE' });
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * 박람회 (WP-EXPO-001, WP-EXPO-002, WP-EXPO-005)
+ * ---------------------------------------------------------------------------
+ */
+
+const expoStatusSchema = z.enum(['upcoming', 'ongoing', 'closed']);
+
+const expoItemSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  organizer: z.string(),
+  startsAt: z.string(),
+  endsAt: z.string(),
+  venue: z.string(),
+  region: z.string(),
+  status: expoStatusSchema,
+  isDeadlineSoon: z.boolean(),
+  sourceNote: z.string(),
+  lastVerifiedAt: z.string(),
+});
+
+const expoListResponseSchema = z.object({
+  items: z.array(expoItemSchema),
+  nextCursor: z.string().nullable(),
+});
+
+const expoDetailSchema = expoItemSchema.extend({
+  address: z.string(),
+  registrationDeadline: z.string().nullable(),
+  benefits: z.array(z.string()),
+  description: z.string(),
+  notifyEnabled: z.boolean(),
+});
+
+const expoNotifyResponseSchema = z.object({ notifyEnabled: z.boolean() });
+
+export type ExpoItem = z.infer<typeof expoItemSchema>;
+export type ExpoDetail = z.infer<typeof expoDetailSchema>;
+export type ExpoStatus = z.infer<typeof expoStatusSchema>;
+
+/** 박람회 목록. WP-EXPO-001. */
+export async function listExpos(params?: {
+  sort?: 'date' | 'region';
+  region?: string;
+  cursor?: string;
+}): Promise<z.infer<typeof expoListResponseSchema>> {
+  const q = new URLSearchParams();
+  if (params?.sort) q.set('sort', params.sort);
+  if (params?.region && params.region !== '전체') q.set('region', params.region);
+  if (params?.cursor) q.set('cursor', params.cursor);
+  const qs = q.toString() ? `?${q.toString()}` : '';
+  return request(`/v1/expos${qs}`, expoListResponseSchema);
+}
+
+/** 박람회 상세. WP-EXPO-002. */
+export async function getExpo(expoId: string): Promise<ExpoDetail> {
+  return request(`/v1/expos/${expoId}`, expoDetailSchema);
+}
+
+/** 박람회 알림 구독·해제. enabled=true → PUT, enabled=false → DELETE. */
+export async function toggleExpoNotify(
+  expoId: string,
+  enabled: boolean
+): Promise<{ notifyEnabled: boolean }> {
+  return request(
+    `/v1/expos/${expoId}/notify`,
+    expoNotifyResponseSchema,
+    { method: enabled ? 'PUT' : 'DELETE' }
+  );
 }

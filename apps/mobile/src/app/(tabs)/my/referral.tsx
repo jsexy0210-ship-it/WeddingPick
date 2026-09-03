@@ -2,7 +2,7 @@ import { Stack } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Share, StyleSheet, View } from 'react-native';
 
-import { getMyRewards } from '@/api/client';
+import { getMyInviteCode } from '@/api/client';
 import {
   ActionButton,
   EmptyView,
@@ -17,7 +17,6 @@ import {
   ThemedView,
   useTheme,
 } from '@weddingpick/ui';
-import type { MyRewardsResponse } from '@weddingpick/api-contract';
 
 const S = {
   title: '친구 초대',
@@ -41,13 +40,13 @@ const S = {
 export default function ReferralScreen() {
   const theme = useTheme();
 
-  const [data, setData] = useState<MyRewardsResponse | null>(null);
+  const [data, setData] = useState<{ code: string; uses: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    getMyRewards()
+    getMyInviteCode()
       .then(setData)
       .catch(() => setError(true))
       .finally(() => setLoading(false));
@@ -56,7 +55,7 @@ export default function ReferralScreen() {
   const handleCopy = useCallback(async () => {
     if (!data) return;
     // expo-clipboard 미설치 — Share로 코드만 공유한다.
-    await Share.share({ message: data.referralCode });
+    await Share.share({ message: data.code });
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   }, [data]);
@@ -64,7 +63,7 @@ export default function ReferralScreen() {
   const handleShare = useCallback(async () => {
     if (!data) return;
     await Share.share({
-      message: S.shareText + data.referralCode,
+      message: S.shareText + data.code,
     });
   }, [data]);
 
@@ -106,7 +105,7 @@ export default function ReferralScreen() {
           {S.codeSection}
         </ThemedText>
         <View style={[styles.codeCard, { borderColor: theme.border, backgroundColor: theme.backgroundElement }]}>
-          <ThemedText style={styles.codeText}>{data.referralCode}</ThemedText>
+          <ThemedText style={styles.codeText}>{data.code}</ThemedText>
           {copied && (
             <ThemedText themeColor="positive" style={styles.copiedHint}>
               {S.codeCopied}
