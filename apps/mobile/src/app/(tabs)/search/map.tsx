@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ActionButton,
   ErrorView,
+  FontSize,
   Layout,
   LoadingView,
   MaxContentWidth,
@@ -152,7 +153,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontSize: 14,
+    fontSize: FontSize.caption,
     lineHeight: Platform.OS === 'ios' ? 0 : 19,
     padding: 0,
   },
