@@ -68,6 +68,13 @@ jobs:
             fail=1
           fi
 
+          if [ "${{ inputs.platform }}" = "ios" ] || [ "${{ inputs.platform }}" = "all" ]; then
+            if [ -z "$EAS_ASC_KEY_P8_BASE64" ]; then
+              echo "::error::iOS 빌드에는 EAS_ASC_KEY_P8_BASE64 시크릿이 필요합니다."
+              fail=1
+            fi
+          fi
+
           if ! grep -q '"projectId"' apps/mobile/app.json; then
             echo "::error::app.json에 EAS projectId가 없습니다. eas-init 워크플로를 먼저 실행하세요."
             fail=1
@@ -76,6 +83,7 @@ jobs:
           exit $fail
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EAS_ASC_KEY_P8_BASE64: ${{ secrets.EAS_ASC_KEY_P8_BASE64 }}
 
   build-ios:
     name: iOS Production Build
