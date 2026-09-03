@@ -18,14 +18,14 @@ import {
 } from '@weddingpick/ui';
 
 const STAGE_LABEL: Record<WeddingInfoStage, string> = {
-  early: '초반 준비',
+  early: '초기 준비',
   mid: '중반 준비',
-  late: '마무리',
+  late: '막바지 준비',
   all: '전체',
 };
 
 const CATEGORY_LABEL: Record<WeddingInfoCategory, string> = {
-  planning: '플래닝',
+  planning: '전체 계획',
   venue: '예식장',
   dress: '드레스',
   photo: '촬영',
@@ -145,7 +145,7 @@ export default function WeddingInfoDetailScreen() {
           {/* 관련 업체로 이동 — 업체가 있을 때만 표시 */}
           {info.relatedVendors.length > 0 && (
             <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="t6" style={styles.sectionLabel}>관련 업체 보기</ThemedText>
+              <ThemedText type="t6" style={styles.sectionLabel}>관련 업체</ThemedText>
               <ThemedText type="t7" themeColor="textSecondary">
                 이 정보와 관련된 업체를 검색에서 찾아보세요
               </ThemedText>

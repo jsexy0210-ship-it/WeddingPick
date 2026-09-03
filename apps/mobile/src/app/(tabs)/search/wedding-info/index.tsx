@@ -21,14 +21,14 @@ import {
 type SortKey = 'latest' | 'stage' | 'category';
 
 const STAGE_LABEL: Record<WeddingInfoStage, string> = {
-  early: '초반 준비',
+  early: '초기 준비',
   mid: '중반 준비',
-  late: '마무리',
+  late: '막바지 준비',
   all: '전체',
 };
 
 const CATEGORY_LABEL: Record<WeddingInfoCategory, string> = {
-  planning: '플래닝',
+  planning: '전체 계획',
   venue: '예식장',
   dress: '드레스',
   photo: '촬영',
@@ -48,7 +48,7 @@ const SORTS: SortKey[] = ['latest', 'stage', 'category'];
 const SORT_LABEL: Record<SortKey, string> = {
   latest: '최신순',
   stage: '준비단계순',
-  category: '유형순',
+  category: '카테고리순',
 };
 
 /** 스켈레톤 — 웨딩 정보 카드 3장을 미리 잡는다. */
@@ -116,7 +116,7 @@ export default function WeddingInfoListScreen() {
           <ThemedView style={styles.header}>
             <ThemedText type="t2">웨딩 정보</ThemedText>
             <ThemedText type="t7" themeColor="textSecondary">
-              준비 단계별 알아두세요
+              준비 단계별 알아두면 좋은 정보를 모았어요
             </ThemedText>
           </ThemedView>
 
