@@ -1,6 +1,8 @@
 import cors from '@fastify/cors';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { ZodError } from 'zod';
+import { join } from 'node:path';
+import { existsSync } from 'node:fs';
 
 import type { AppContext } from './context';
 import { ApiError } from './errors';
@@ -137,6 +139,27 @@ export function buildServer(context: AppContext): FastifyInstance {
   registerSignupRoutes(app, context);
   registerDevStorageRoutes(app, context);
   registerAdminRoutes(app, context);
+
+  // 정적 파일 서빙 (웹앱)
+  const distDir = join(__dirname, '../../web/dist');
+  if (existsSync(distDir)) {
+   app.get('/*', async (_request, reply) => {
+     const { readFile } = await import('node:fs/promises');
+     try {
+       const filePath = join(distDir, _request.url.split('?')[0]);
+       // 정적 파일이 있으면 서빙, 없으면 index.html (SPA 라우팅)
+       if (existsSync(filePath) && !filePath.includes('..')) {
+         const content = await readFile(filePath);
+         return reply.type('text/html').send(content);
+       }
+       // 기본: index.html
+       const html = await readFile(join(distDir, 'index.html'));
+       return reply.type('text/html').send(html);
+     } catch {
+       return reply.status(404).send('Not Found');
+     }
+   });
+  }
 
   return app;
 }
