@@ -1,8 +1,7 @@
 import { VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, StyleSheet } from 'react-native';
-import MapView, { Marker, type Region } from 'react-native-maps';
+import { Linking, Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -17,22 +16,17 @@ import {
   ThemedView,
   useTheme,
 } from '@weddingpick/ui';
-import { getMapVendors, getVendor } from '@/api/client';
-import type { VendorDetail } from '@weddingpick/api-contract';
+import { getMapVendors } from '@/api/client';
 
 /**
  * 웨딩 준비 업체 지도. 핸드오프 wedding/[id].
- * Pick한 업체들을 지도에 표시한다 — 좌표가 있는 업체만 핀이 찍힌다.
- * 마커 탭 → 업체 상세 이동.
+ *
+ * Pick한 업체를 목록으로 보여준다. 업체를 선택하면 카카오맵 외부 링크로
+ * 위치·길찾기를 확인할 수 있다.
+ *
+ * 카카오맵은 네이티브 SDK 키를 앱에 내장하지 않고 공식 딥링크로 연다.
+ * Android/iOS 모두 같은 경로를 사용한다.
  */
-
-/** 대한민국 전체가 보이는 기본 위치 */
-const KOREA_REGION: Region = {
-  latitude: 36.5,
-  longitude: 127.8,
-  latitudeDelta: 6,
-  longitudeDelta: 6,
-};
 
 type PinnedVendor = {
   vendorId: string;
@@ -51,8 +45,6 @@ export default function WeddingMapScreen() {
   const [pinned, setPinned] = useState<PinnedVendor[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
-  const [selectedDetail, setSelectedDetail] = useState<VendorDetail | null>(null);
 
   const load = useCallback(() => {
     setError(null);
@@ -63,19 +55,6 @@ export default function WeddingMapScreen() {
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(load, [load]);
-
-  useEffect(() => {
-    if (!selectedId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSelectedDetail(null);
-      return;
-    }
-    setDetailLoading(true);
-    getVendor(selectedId)
-      .then((detail) => setSelectedDetail(detail))
-      .catch(() => setSelectedDetail(null))
-      .finally(() => setDetailLoading(false));
-  }, [selectedId]);
 
   if (error) {
     return (
@@ -94,100 +73,88 @@ export default function WeddingMapScreen() {
     return <LoadingView />;
   }
 
-  const initialRegion =
-    pinned.length > 0
-      ? (() => {
-          const lats = pinned.map((p) => p.lat);
-          const lngs = pinned.map((p) => p.lng);
-          const minLat = Math.min(...lats);
-          const maxLat = Math.max(...lats);
-          const minLng = Math.min(...lngs);
-          const maxLng = Math.max(...lngs);
-          return {
-            latitude: (minLat + maxLat) / 2,
-            longitude: (minLng + maxLng) / 2,
-            latitudeDelta: Math.max(maxLat - minLat, 0.05) * 1.5,
-            longitudeDelta: Math.max(maxLng - minLng, 0.05) * 1.5,
-          };
-        })()
-      : KOREA_REGION;
+  const selected = pinned.find((v) => v.vendorId === selectedId) ?? null;
 
-  const selectedVendor = pinned.find((p) => p.vendorId === selectedId) ?? null;
+  function openKakao(vendor: PinnedVendor) {
+    const q = encodeURIComponent(`${vendor.vendorName} ${vendor.address}`);
+    void Linking.openURL(`https://map.kakao.com/?q=${q}`);
+  }
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-        <MapView
-          style={styles.map}
-          initialRegion={initialRegion}
-          onPress={() => setSelectedId(null)}
-        >
-          {pinned.map((vendor) => (
-            <Marker
-              key={vendor.vendorId}
-              coordinate={{ latitude: vendor.lat, longitude: vendor.lng }}
-              title={vendor.vendorName}
-              pinColor={
-                vendor.vendorId === selectedId ? theme.tint : theme.tintInactive
-              }
-              onPress={() => setSelectedId(vendor.vendorId)}
-            />
-          ))}
-        </MapView>
-
-        {/* 업체 없음 안내 */}
-        {pinned.length === 0 && (
-          <ThemedView type="backgroundElement" style={styles.banner}>
+        <ScrollView contentContainerStyle={styles.scroll}>
+          <ThemedView style={styles.header}>
+            <ThemedText type="t5">Pick한 업체 위치</ThemedText>
             <ThemedText type="t7" themeColor="textSecondary">
-              Pick한 업체 중 지도에 표시할 수 있는 곳이 없어요
+              업체를 선택한 뒤 카카오맵에서 위치와 길찾기를 확인하세요.
             </ThemedText>
           </ThemedView>
-        )}
 
-        {/* 선택한 업체 요약 카드 */}
-        {selectedVendor && (
-          <Pressable
-            onPress={() => router.push(`/search/${selectedVendor.vendorId}`)}
-            accessibilityRole="button"
-            accessibilityLabel={`${selectedVendor.vendorName} 상세 보기`}
-          >
-            <ThemedView
-              type="backgroundElement"
-              style={[styles.summaryCard, { borderColor: theme.border }]}
-            >
-              <ThemedText type="t5" numberOfLines={1}>
-                {selectedVendor.vendorName}
-              </ThemedText>
+          {pinned.length === 0 ? (
+            <ThemedView type="backgroundElement" style={styles.emptyCard}>
               <ThemedText type="t7" themeColor="textSecondary">
-                {VENDOR_CATEGORY_LABEL[selectedVendor.category as keyof typeof VENDOR_CATEGORY_LABEL] ?? selectedVendor.category}
+                Pick한 업체 중 위치 정보가 있는 곳이 없어요.
               </ThemedText>
-              {detailLoading ? (
-                <ThemedText type="t7" themeColor="textAssistive">
-                  정보를 가져오고 있어요
-                </ThemedText>
-              ) : selectedDetail ? (
-                <ThemedText type="t7" themeColor="textAssistive">
-                  {selectedDetail.region}
-                </ThemedText>
-              ) : null}
-              <ActionButton
-                variant="primary"
-                size="large"
-                label="자세히 보기"
-                onPress={() => router.push(`/search/${selectedVendor.vendorId}`)}
-              />
             </ThemedView>
-          </Pressable>
-        )}
+          ) : (
+            pinned.map((vendor) => {
+              const isSelected = vendor.vendorId === selectedId;
+              return (
+                <Pressable
+                  key={vendor.vendorId}
+                  onPress={() => setSelectedId(isSelected ? null : vendor.vendorId)}
+                  accessibilityRole="button"
+                  accessibilityLabel={vendor.vendorName}
+                >
+                  <ThemedView
+                    type="backgroundElement"
+                    style={[
+                      styles.vendorCard,
+                      isSelected && { borderColor: theme.tint, borderWidth: 1.5 },
+                    ]}
+                  >
+                    <ThemedView style={styles.vendorInfo}>
+                      <ThemedText type="t6" numberOfLines={1}>
+                        {vendor.vendorName}
+                      </ThemedText>
+                      <ThemedText type="t7" themeColor="textSecondary">
+                        {VENDOR_CATEGORY_LABEL[vendor.category as keyof typeof VENDOR_CATEGORY_LABEL] ?? vendor.category}
+                        {vendor.address ? ` · ${vendor.address}` : ''}
+                      </ThemedText>
+                    </ThemedView>
+                    {isSelected && (
+                      <ThemedView style={styles.selectedActions}>
+                        <ActionButton
+                          variant="primary"
+                          size="large"
+                          label="카카오맵에서 위치 보기"
+                          onPress={() => openKakao(vendor)}
+                        />
+                        <ActionButton
+                          size="large"
+                          label="업체 상세 보기"
+                          onPress={() => router.push(`/search/${vendor.vendorId}`)}
+                        />
+                      </ThemedView>
+                    )}
+                  </ThemedView>
+                </Pressable>
+              );
+            })
+          )}
+        </ScrollView>
 
-        {/* 돌아가기 */}
-        <ThemedView style={styles.backRow}>
-          <ActionButton
-            variant="secondary"
-            size="large"
-            label="돌아가기"
-            onPress={() => router.back()}
-          />
+        <ThemedView style={styles.footer}>
+          {selected ? (
+            <ActionButton
+              variant="primary"
+              size="large"
+              label="카카오맵에서 위치 보기"
+              onPress={() => openKakao(selected)}
+            />
+          ) : null}
+          <ActionButton size="large" label="돌아가기" onPress={() => router.back()} />
         </ThemedView>
       </SafeAreaView>
     </ThemedView>
@@ -195,29 +162,35 @@ export default function WeddingMapScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
-  safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
-  map: { flex: 1 },
-  banner: {
-    position: 'absolute',
-    left: Layout.gutter,
-    right: Layout.gutter,
-    bottom: Layout.sectionGap + Layout.controlLarge + Spacing.two,
-    borderRadius: Radius.medium,
+  container: { flex: 1 },
+  safeArea: {
+    flex: 1,
+    alignSelf: 'center',
+    maxWidth: MaxContentWidth,
+    width: '100%',
+  },
+  scroll: {
+    paddingHorizontal: Layout.gutter,
+    paddingTop: Spacing.three,
+    paddingBottom: Spacing.two,
+    gap: Spacing.two,
+  },
+  header: { gap: Spacing.one, marginBottom: Spacing.one },
+  emptyCard: {
+    borderRadius: Radius.card,
     padding: Spacing.three,
   },
-  summaryCard: {
-    position: 'absolute',
-    left: Layout.gutter,
-    right: Layout.gutter,
-    bottom: Layout.sectionGap + Layout.controlLarge + Spacing.two,
-    borderRadius: Radius.medium,
-    borderWidth: 1,
+  vendorCard: {
+    borderRadius: Radius.card,
     padding: Spacing.three,
-    gap: Spacing.one,
+    gap: Spacing.two,
   },
-  backRow: {
+  vendorInfo: { gap: Spacing.one },
+  selectedActions: { gap: Spacing.two },
+  footer: {
     paddingHorizontal: Layout.gutter,
     paddingVertical: Spacing.two,
+    gap: Spacing.two,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
 });
