@@ -110,13 +110,20 @@ export default function CalendarScreen() {
           Alert.alert('지원 안 해요', 'Apple 캘린더는 iPhone에서만 쓸 수 있어요.');
           return;
         }
-        // TODO: expo-calendar 미설치 — 설치 후 Calendar.requestCalendarPermissionsAsync()
-        // 권한 거부 시: Alert.alert('권한 필요', '설정에서 캘린더 접근을 허용해주세요.')
-        Alert.alert(
-          '준비 중이에요',
-          'Apple 캘린더 직접 등록은 준비 중이에요. 직접 일정을 추가해주세요.',
-          [{ text: '확인' }]
-        );
+        // .ics 데이터 URI를 열면 iOS가 캘린더 앱으로 바로 넘긴다 — 네이티브 모듈 불필요.
+        const ics = [
+          'BEGIN:VCALENDAR',
+          'VERSION:2.0',
+          'BEGIN:VEVENT',
+          `SUMMARY:${expoTitle}`,
+          `DTSTART:${expoStartsAt.replace(/[-:]/g, '').slice(0, 8)}`,
+          `DTEND:${expoEndsAt.replace(/[-:]/g, '').slice(0, 8)}`,
+          `LOCATION:${expoAddress || expoVenue}`,
+          'END:VEVENT',
+          'END:VCALENDAR',
+        ].join('\r\n');
+        const encoded = encodeURIComponent(ics);
+        await Linking.openURL(`data:text/calendar;charset=utf-8,${encoded}`);
       } else if (option === 'outlook') {
         const url = buildOutlookUrl({
           title: expoTitle,

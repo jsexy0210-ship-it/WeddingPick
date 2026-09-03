@@ -134,16 +134,16 @@ export default function WeddingInfoDetailScreen() {
           {info.checklist.length > 0 && (
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="t6" style={styles.sectionLabel}>체크리스트</ThemedText>
-              {info.checklist.map((label, idx) => (
-                <ThemedView key={idx} style={styles.checkItem}>
-                  <ThemedText type="t7">{label}</ThemedText>
+              {info.checklist.map((item) => (
+                <ThemedView key={item.id} style={styles.checkItem}>
+                  <ThemedText type="t7">{item.label}</ThemedText>
                 </ThemedView>
               ))}
             </ThemedView>
           )}
 
-          {/* 관련 업체로 이동 — 업체 ID가 있을 때만 표시 */}
-          {info.relatedVendorIds.length > 0 && (
+          {/* 관련 업체로 이동 — 업체가 있을 때만 표시 */}
+          {info.relatedVendors.length > 0 && (
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="t6" style={styles.sectionLabel}>관련 업체 보기</ThemedText>
               <ThemedText type="t7" themeColor="textSecondary">
@@ -154,7 +154,7 @@ export default function WeddingInfoDetailScreen() {
                 onPress={() =>
                   router.push({
                     pathname: '/(tabs)/search',
-                    params: { vendorId: info.relatedVendorIds[0] },
+                    params: { vendorId: info.relatedVendors[0]!.id },
                   })
                 }
               />
