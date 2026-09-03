@@ -125,10 +125,15 @@ export default function PriceReportScreen() {
             <TextInput
               style={inputStyle}
               value={totalAmount}
-              onChangeText={setTotalAmount}
+              onChangeText={(text) =>
+                setTotalAmount(
+                  text.replace(/[^0-9]/g, '').slice(0, 12).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+                )
+              }
               placeholder="예: 1500000"
               placeholderTextColor={theme.textAssistive}
               keyboardType="numeric"
+              maxLength={16}
               returnKeyType="next"
             />
           </ThemedView>
@@ -164,10 +169,15 @@ export default function PriceReportScreen() {
             <TextInput
               style={inputStyle}
               value={mealPrice}
-              onChangeText={setMealPrice}
+              onChangeText={(text) =>
+                setMealPrice(
+                  text.replace(/[^0-9]/g, '').slice(0, 8).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+                )
+              }
               placeholder="예: 65000"
               placeholderTextColor={theme.textAssistive}
               keyboardType="numeric"
+              maxLength={12}
               returnKeyType="next"
             />
           </ThemedView>

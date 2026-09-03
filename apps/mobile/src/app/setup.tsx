@@ -66,7 +66,7 @@ export default function SetupScreen() {
       .catch(() => setRegions([]));
   }, []);
 
-  const budgetAmount = budget.trim() === '' ? null : Number(budget.trim()) * MANWON;
+  const budgetAmount = budget.trim() === '' ? null : Number(budget.replace(/,/g, '')) * MANWON;
   const budgetValid = budgetAmount === null || (Number.isInteger(budgetAmount) && budgetAmount > 0);
   const ready = date !== null && region !== null && budgetValid;
 
@@ -170,11 +170,14 @@ export default function SetupScreen() {
                 { color: theme.text, backgroundColor: theme.backgroundSelected },
               ]}
               value={budget}
-              onChangeText={(text) => setBudget(text.replace(/[^0-9]/g, ''))}
+              onChangeText={(text) =>
+                setBudget(text.replace(/[^0-9]/g, '').slice(0, 9).replace(/\B(?=(\d{3})+(?!\d))/g, ','))
+              }
               keyboardType="number-pad"
               placeholder="예: 5000"
               placeholderTextColor={theme.textAssistive}
               accessibilityLabel="총예산 만원"
+              maxLength={11}
             />
             <ThemedText type="t7" themeColor={budgetValid ? 'textAssistive' : 'negative'}>
               {/* 안 적어도 넘어간다. 정책이 선택이라고 정했다. */}
