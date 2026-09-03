@@ -1,70 +1,120 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { getExpo, toggleExpoNotify, type ExpoDetail, type ExpoStatus } from '@/api/client';
 import {
   ActionButton,
+  ErrorView,
   Layout,
   MaxContentWidth,
   Radius,
+  Skeleton,
   Spacing,
   ThemedText,
   ThemedView,
+  useTheme,
 } from '@weddingpick/ui';
 
-// TODO: API 미구현 — GET /v1/expos/:expoId (박람회 상세)
-type ExpoStatus = 'upcoming' | 'ongoing' | 'closed';
-
-type ExpoDetail = {
-  id: string;
-  title: string;
-  organizer: string;
-  startsAt: string;
-  endsAt: string;
-  venue: string;
-  address: string;
-  region: string;
-  status: ExpoStatus;
-  isDeadlineSoon: boolean;
-  registrationDeadline: string | null;
-  benefits: string[];
-  description: string;
-  notifyEnabled: boolean;
-};
-
 const STATUS_LABEL: Record<ExpoStatus, string> = {
-  upcoming: '진행예정',
-  ongoing: '진행중',
+  upcoming: '진행 예정',
+  ongoing: '진행 중',
   closed: '종료',
 };
 
-const STATUS_TINT: Record<ExpoStatus, string> = {
-  upcoming: '#5856D6',
-  ongoing: '#34C759',
-  closed: '#8E8E93',
-};
+/** 스켈레톤 — 박람회 상세 페이지 뼈대. */
+function ExpoDetailSkeleton() {
+  return (
+    <ScrollView contentContainerStyle={styles.scrollContent}>
+      <Skeleton height={19} width="30%" />
+      <Skeleton height={35} width="80%" />
+      <ThemedView type="backgroundElement" style={styles.card}>
+        <Skeleton height={22} width="30%" />
+        <Skeleton height={19} width="60%" />
+        <Skeleton height={19} width="50%" />
+      </ThemedView>
+      <ThemedView type="backgroundElement" style={styles.card}>
+        <Skeleton height={22} width="20%" />
+        <Skeleton height={19} width="70%" />
+        <Skeleton height={19} width="55%" />
+      </ThemedView>
+      <ThemedView type="backgroundElement" style={styles.card}>
+        <Skeleton height={22} width="20%" />
+        <Skeleton height={19} width="50%" />
+      </ThemedView>
+    </ScrollView>
+  );
+}
 
 /**
  * 박람회 상세. 핸드오프 WP-EXPO-002.
- * 진행예정·진행중·종료 상태별 UI 분기.
+ * 상태: 진행 예정 / 진행 중 / 종료.
+ * 진행 예정·중이면 사전등록·알림·캘린더 CTA를 보여준다.
+ * 종료된 박람회는 종료 안내만 보여준다.
  */
 export default function ExpoDetailScreen() {
+  const theme = useTheme();
   const { expoId } = useLocalSearchParams<{ expoId: string }>();
+  const [expo, setExpo] = useState<ExpoDetail | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [notifyLoading, setNotifyLoading] = useState(false);
 
-  // TODO: API 미구현 — expoId로 박람회 상세 조회
-  const expo = null as ExpoDetail | null;
+  const load = useCallback(() => {
+    if (!expoId) return;
+    setError(null);
+    setExpo(null);
+    getExpo(expoId)
+      .then(setExpo)
+      .catch(() => setError('박람회 정보를 불러오지 못했어요'));
+  }, [expoId]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    load();
+  }, [load]);
+
+  function retry() {
+    load();
+  }
+
+  async function handleNotifyToggle() {
+    if (!expo || notifyLoading) return;
+    setNotifyLoading(true);
+    const newEnabled = !expo.notifyEnabled;
+    try {
+      await toggleExpoNotify(expoId!, newEnabled);
+      setExpo((prev) => prev ? { ...prev, notifyEnabled: newEnabled } : prev);
+    } catch {
+      // 실패 시 기존 상태 유지 — 조용히 넘어간다
+    } finally {
+      setNotifyLoading(false);
+    }
+  }
+
+  const STATUS_COLOR: Record<ExpoStatus, string> = {
+    upcoming: theme.tint,
+    ongoing: theme.positive,
+    closed: theme.tintInactive,
+  };
+
+  if (error) {
+    return (
+      <ErrorView
+        title={error}
+        onRetry={retry}
+        retryLabel="다시 시도"
+        onBack={() => router.back()}
+        backLabel="돌아가기"
+      />
+    );
+  }
 
   if (!expo) {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
-          <ThemedView style={styles.content}>
-            {/* TODO: API 미구현 — expoId로 박람회 상세 조회 */}
-            <ThemedText type="t7" themeColor="textSecondary">
-              박람회 정보를 불러올 수 없습니다.
-            </ThemedText>
-            <ActionButton label="돌아가기" onPress={() => router.back()} />
-          </ThemedView>
+          <ExpoDetailSkeleton />
         </SafeAreaView>
       </ThemedView>
     );
@@ -76,114 +126,140 @@ export default function ExpoDetailScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          {/* 상태 뱃지 */}
-          <View style={styles.badgeRow}>
-            <View style={[styles.badge, { backgroundColor: STATUS_TINT[expo.status] }]}>
-              <ThemedText type="badge" style={styles.badgeText}>
+          {/* 상태 배지 */}
+          <ThemedView style={styles.badgeRow}>
+            <ThemedView
+              style={[styles.badge, { backgroundColor: STATUS_COLOR[expo.status] }]}>
+              <ThemedText type="badge" style={{ color: theme.onTint }}>
                 {STATUS_LABEL[expo.status]}
               </ThemedText>
-            </View>
+            </ThemedView>
             {expo.isDeadlineSoon && !isClosed && (
-              <View style={[styles.badge, { backgroundColor: '#FF3B30' }]}>
-                <ThemedText type="badge" style={styles.badgeText}>
+              <ThemedView style={[styles.badge, { backgroundColor: theme.negative }]}>
+                <ThemedText type="badge" style={{ color: theme.onTint }}>
                   마감 임박
                 </ThemedText>
-              </View>
+              </ThemedView>
             )}
-          </View>
+          </ThemedView>
 
           {/* 제목 */}
           <ThemedText type="t2">{expo.title}</ThemedText>
 
           {/* 일정 */}
           <ThemedView type="backgroundElement" style={styles.card}>
-            <ThemedText type="t6">일정</ThemedText>
+            <ThemedText type="t6" style={styles.sectionLabel}>
+              일정
+            </ThemedText>
             <ThemedText type="t7" themeColor="textSecondary">
               {expo.startsAt} ~ {expo.endsAt}
             </ThemedText>
-            {expo.registrationDeadline && (
+            {expo.registrationDeadline ? (
               <ThemedText type="t7" themeColor="textSecondary">
-                사전등록 마감: {expo.registrationDeadline}
+                사전등록 마감 {expo.registrationDeadline}
               </ThemedText>
-            )}
+            ) : null}
           </ThemedView>
 
           {/* 장소 */}
           <ThemedView type="backgroundElement" style={styles.card}>
-            <ThemedText type="t6">장소</ThemedText>
+            <ThemedText type="t6" style={styles.sectionLabel}>
+              장소
+            </ThemedText>
             <ThemedText type="t7" themeColor="textSecondary">
               {expo.venue}
             </ThemedText>
-            <ThemedText type="t7" themeColor="textSecondary">
+            <ThemedText type="t7" themeColor="textAssistive">
               {expo.address}
             </ThemedText>
           </ThemedView>
 
           {/* 주최사 */}
           <ThemedView type="backgroundElement" style={styles.card}>
-            <ThemedText type="t6">주최사</ThemedText>
+            <ThemedText type="t6" style={styles.sectionLabel}>
+              주최사
+            </ThemedText>
             <ThemedText type="t7" themeColor="textSecondary">
               {expo.organizer}
             </ThemedText>
           </ThemedView>
 
           {/* 혜택 */}
-          {expo.benefits.length > 0 && (
+          {expo.benefits.length > 0 ? (
             <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="t6">혜택</ThemedText>
+              <ThemedText type="t6" style={styles.sectionLabel}>
+                혜택
+              </ThemedText>
               {expo.benefits.map((benefit, i) => (
                 <ThemedText key={i} type="t7" themeColor="textSecondary">
-                  · {benefit}
+                  {benefit}
                 </ThemedText>
               ))}
             </ThemedView>
-          )}
+          ) : null}
 
-          {/* 상세 설명 */}
+          {/* 박람회 소개 */}
           {expo.description ? (
             <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="t6">박람회 소개</ThemedText>
+              <ThemedText type="t6" style={styles.sectionLabel}>
+                박람회 소개
+              </ThemedText>
               <ThemedText type="t7" themeColor="textSecondary">
                 {expo.description}
               </ThemedText>
             </ThemedView>
           ) : null}
 
-          {/* 종료된 경우 안내 */}
-          {isClosed && (
+          {/* 출처·마지막 확인일 */}
+          <ThemedText type="t7" themeColor="textAssistive">
+            출처 {expo.sourceNote} · 마지막 확인 {expo.lastVerifiedAt}
+          </ThemedText>
+
+          {/* 종료 안내 */}
+          {isClosed ? (
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="t7" themeColor="textSecondary">
-                이 박람회는 이미 종료되었습니다.
+                이미 종료된 박람회예요
               </ThemedText>
             </ThemedView>
-          )}
-
-          {/* 액션 버튼 영역 */}
-          {!isClosed && (
+          ) : (
+            /* CTA — 진행 예정·중일 때만 노출 */
             <ThemedView style={styles.actions}>
-              {/* TODO: API 미구현 — 사전등록 / 알림 설정 */}
-              {expo.registrationDeadline && (
+              {/* Primary CTA: 사전등록이 있으면 사전등록, 없으면 알림 받기 */}
+              {expo.registrationDeadline ? (
                 <ActionButton
+                  variant="primary"
+                  size="xlarge"
                   label="사전등록"
                   onPress={() => {
-                    // TODO: API 미구현 — 사전등록 처리
+                    // 사전등록 링크 — 서버에 별도 필드 추가 시 연동
                   }}
                 />
+              ) : (
+                <ActionButton
+                  variant="primary"
+                  size="xlarge"
+                  label={notifyLoading ? '처리 중' : expo.notifyEnabled ? '알림 해제' : '알림 받기'}
+                  onPress={handleNotifyToggle}
+                />
               )}
+              {/* 사전등록이 있을 때는 알림 받기를 Secondary로 */}
+              {expo.registrationDeadline ? (
+                <ActionButton
+                  variant="secondary"
+                  size="large"
+                  label={notifyLoading ? '처리 중' : expo.notifyEnabled ? '알림 해제' : '알림 받기'}
+                  onPress={handleNotifyToggle}
+                />
+              ) : null}
               <ActionButton
-                label={expo.notifyEnabled ? '알림 해제' : '알림 받기'}
-                onPress={() => {
-                  // TODO: API 미구현 — 알림 토글
-                }}
-              />
-              <ActionButton
+                variant="secondary"
+                size="large"
                 label="캘린더에 추가"
                 onPress={() => router.push(`/search/expo/${expoId}/calendar`)}
               />
             </ThemedView>
           )}
-
-          <ActionButton label="돌아가기" onPress={() => router.back()} />
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -193,22 +269,19 @@ export default function ExpoDetailScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
-  content: {
-    flex: 1,
-    padding: Layout.gutter,
-    gap: Spacing.two,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   scrollContent: {
     paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.five,
-    paddingBottom: Spacing.four,
+    paddingBottom: Layout.sectionGap,
     gap: Spacing.two,
   },
   badgeRow: { flexDirection: 'row', gap: Spacing.one },
-  badge: { borderRadius: Radius.small, paddingHorizontal: 8, paddingVertical: 2 },
-  badgeText: { color: '#fff' },
+  badge: {
+    borderRadius: Radius.small,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.half,
+  },
   card: { borderRadius: Radius.medium, padding: Spacing.three, gap: Spacing.one },
-  actions: { gap: Spacing.two },
+  sectionLabel: { fontWeight: '700' },
+  actions: { gap: Spacing.two, marginTop: Spacing.two },
 });

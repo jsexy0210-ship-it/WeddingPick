@@ -8,5 +8,5 @@ import { Redirect } from 'expo-router';
  * 일어나야 한다. 그래서 이 경로는 화면을 그리지 않고 바로 넘긴다.
  */
 export default function WithdrawRedirect() {
-  return <Redirect href="/my/withdrawal" />;
+  return <Redirect href={'/my/withdrawal' as never} />;
 }

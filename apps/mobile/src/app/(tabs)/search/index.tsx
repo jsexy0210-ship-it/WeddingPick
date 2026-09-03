@@ -405,7 +405,7 @@ export default function SearchScreen() {
 
             **`인기 순`은 없다.** 인기를 재는 것이 우리에게 없고, 없는 것에 이름만
             붙이면 그건 정렬이 아니라 꾸밈이다. 대신 `확인된 정보 많은 순`을 기본으로
-            둔다 — 결제인증이 많이 모인 업체가 먼저 나오는 것은 잴 수 있는 사실이다.
+            둔다 — Pick 인증이 많이 모인 업체가 먼저 나오는 것은 잴 수 있는 사실이다.
           */}
           {filters.mode === 'vendor' ? (
             <ThemedView style={styles.sortRow}>
@@ -459,7 +459,7 @@ export default function SearchScreen() {
               ListHeaderComponent={
                 <>
                   {/*
-                    추천. 홈 C-1이 가격 TOP3 섹션을 홈에서 뺐고, TOP3 성격의 탐색은
+                    추천. 홈 C-1이 가격 TOP3 섹션을 홈에서 뺐고, TOP3 성격의 검색은
                     여기에 둔다 — 찾으러 온 사람에게 "이 지역에서 볼 만한 곳"을
                     먼저 보이는 것은 검색의 일이다.
 

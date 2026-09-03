@@ -5,6 +5,7 @@ import {
   MAX_RATING,
   PAYMENT_PROOF_CAVEAT,
   TERMS,
+  countsTowardScore,
   rangeLabel,
   STILL_COLLECTING,
   VENDOR_CATEGORY_LABEL,
@@ -48,7 +49,9 @@ export default function VendorDetailScreen() {
   const [conditions, setConditions] = useState<ConditionStats | null>(null);
   /** 출처를 펼쳤는가. 배지를 눌러 연다. */
   const [sourceOpen, setSourceOpen] = useState(false);
-  /** 미리보기 후기 2-3건. 실패해도 조용히 넘긴다. */
+  /** Pick 인증 후기 (verification !== 'reported'). 최대 3건. */
+  const [verifiedReviews, setVerifiedReviews] = useState<Review[]>([]);
+  /** 일반 후기 미리보기 (상담제보). 최대 3건. */
   const [previewReviews, setPreviewReviews] = useState<Review[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saveNote, setSaveNote] = useState<string | null>(null);
@@ -70,7 +73,16 @@ export default function VendorDetailScreen() {
       .catch(() => setConditions(null));
 
     listVendorReviews(vendorId)
-      .then((res) => setPreviewReviews(res.reviews.slice(0, 3)))
+      .then((res) => {
+        /*
+         * Pick 인증 후기(payment / contract / usage 확인)와 일반 후기(상담제보)를
+         * 분리한다. 두 종류가 한 목록에 섞이면 어떤 근거로 쓴 글인지가 흐려진다.
+         */
+        const verified = res.reviews.filter((r) => countsTowardScore(r.verification));
+        const regular = res.reviews.filter((r) => !countsTowardScore(r.verification));
+        setVerifiedReviews(verified.slice(0, 3));
+        setPreviewReviews(regular.slice(0, 3));
+      })
       .catch(() => undefined);
   }, [vendorId]);
 
@@ -132,9 +144,9 @@ export default function VendorDetailScreen() {
           </ThemedView>
 
           {/*
-            실제 결제. **잠기지 않는다** — 최종통합정책 v2.0 K-6이 "결제인증 회원만
-            접근"을 폐기했다. 무엇을 보여줄지는 사람이 아니라 데이터 수가 정한다
-            (0~2 수집 중 / 3~4 구간+안내 / 5~9 구간 / 10+ 중앙값).
+            실제 결제. **잠기지 않는다** — 최종통합정책 v2.0 K-6이 "Pick 인증 회원만
+            접근"을 폐기했다. 무엇을 보여줄지는 사람이 아니라 건수가 정한다
+            (0~2 수집 중 / 3~4 구간+안내 / 5~9 구간 / 10+ 기준금액).
 
             타입이 단계별로 갈려 있어, 수집 중인 업체에 구간을 그리는 코드는
             애초에 컴파일되지 않는다.
@@ -157,7 +169,7 @@ export default function VendorDetailScreen() {
                 <ThemedText type="amount" numeric style={styles.onTint}>
                   {rangeLabel(vendor.prices.paidPrice.low, vendor.prices.paidPrice.high)}
                 </ThemedText>
-                {/* 원문 16번: 데이터 수와 기준 기간을 금액 옆에 반드시 함께 적는다. */}
+                {/* 원문 16번: 건수와 기준 기간을 금액 옆에 반드시 함께 적는다. */}
                 <ThemedText type="t7" style={styles.onTint}>
                   {vendor.prices.paidPrice.caption}
                 </ThemedText>
@@ -183,7 +195,7 @@ export default function VendorDetailScreen() {
             </ThemedText>
 
             {/*
-              결제인증이 여는 것은 구간이 아니라 깊이다. 이미 열려 있는 사람에게는
+              Pick 인증이 여는 것은 구간이 아니라 깊이다. 이미 열려 있는 사람에게는
               권하지 않는다 — 서버가 null을 준다.
             */}
             {vendor.prices.deepDataNote ? (
@@ -224,7 +236,7 @@ export default function VendorDetailScreen() {
             ) : null}
 
             {/*
-              못 낼 때는 왜 못 내는지 적는다. 결제인증으로 여는 안내는 위에 이미
+              못 낼 때는 왜 못 내는지 적는다. Pick 인증으로 여는 안내는 위에 이미
               있으므로, 여기서는 자료가 모이는 중이라는 말만 한다.
              */}
             {conditions && !conditions.available && !vendor.prices.deepDataNote ? (
@@ -261,7 +273,7 @@ export default function VendorDetailScreen() {
                   style={styles.card}>
                   <ThemedText type="smallBold">{product.productLabel}</ThemedText>
                   <ThemedText type="subtitle">{won(product.stat.median)}</ThemedText>
-                  {/* 데이터 수와 기준 기간을 늘 함께 보인다. */}
+                  {/* 건수와 기준 기간을 늘 함께 보인다. */}
                   <ThemedText type="small" themeColor="textSecondary">
                     {DOCUMENT_TYPE_LABEL[product.docType]} · 확인된 계약{' '}
                     {product.stat.sampleCount}건 · {product.stat.periodStart}~
@@ -279,7 +291,7 @@ export default function VendorDetailScreen() {
             <ThemedText type="smallBold">{TERMS.experience}</ThemedText>
 
             {/*
-              확인된 후기만 들어간다. 데이터가 모자라면 숫자를 만들지 않고 이유를 준다 —
+              확인된 후기만 들어간다. 건수가 모자라면 숫자를 만들지 않고 이유를 준다 —
               가격과 같은 규칙이다. 후기 두세 건으로 만든 점수는 정보가 아니라 소음이고,
               업체 하나를 망칠 수도 살릴 수도 있다.
             */}
@@ -290,7 +302,7 @@ export default function VendorDetailScreen() {
                   <ThemedText type="small" themeColor="textSecondary">
                     확인된 후기 {vendor.usageScore.count}건
                   </ThemedText>
-                  {/* 별점은 5점 만점을 채운 비율로 그린다. 핸드오프 8번. */}
+                  {/* 이용 점수는 5점 만점을 채운 비율로 그린다. 핸드오프 8번. */}
                   {vendor.usageScore.aspects.map((aspect) => (
                     <ThemedView key={aspect.key} type="backgroundElement" style={styles.meter}>
                       <ThemedView type="backgroundElement" style={styles.meterHead}>
@@ -306,7 +318,7 @@ export default function VendorDetailScreen() {
                   ))}
 
                   {/*
-                    체크리스트는 별점과 다른 배열로 온다. 4.2점과 78%는 다른 것을
+                    체크리스트는 이용 점수와 다른 배열로 온다. 4.2점과 78%는 다른 것을
                     재는 숫자라 같은 막대로 그리지 않는다. 표본이 모자라면 숫자
                     대신 "수집 중"이다 — 흐린 숫자도 숫자다.
                   */}
@@ -327,7 +339,7 @@ export default function VendorDetailScreen() {
                       </ThemedView>
 
                       {/*
-                        데이터가 모자라면 막대를 그리지 않고 빈 트랙만 둔다 —
+                        건수가 모자라면 막대를 그리지 않고 빈 트랙만 둔다 —
                         흐린 숫자도 숫자고, 사람들은 숫자를 읽는다.
                         70 미만은 주황(핸드오프 8번).
                       */}
@@ -356,6 +368,43 @@ export default function VendorDetailScreen() {
               )}
             </ThemedView>
 
+            {/*
+              Pick 인증 후기 — payment / contract / usage 확인을 거친 후기만.
+              섹션은 1건 이상일 때만 보인다. 빈 헤더를 두지 않는다.
+            */}
+            {verifiedReviews.length > 0 ? (
+              <>
+                <ThemedText type="smallBold">Pick 인증 후기</ThemedText>
+                {verifiedReviews.map((review) => (
+                  <ThemedView key={review.id} type="backgroundElement" style={styles.card}>
+                    <ThemedView type="backgroundElement" style={styles.reviewHead}>
+                      <ThemedView type="backgroundElement" style={styles.reviewHeadLeft}>
+                        <ThemedText type="t7" themeColor="textSecondary">
+                          {review.roleLabel}
+                        </ThemedText>
+                        {/* Pick 인증 배지 — 이 후기가 어떤 근거로 확인됐는지 */}
+                        <View style={[styles.verifiedBadge, { backgroundColor: theme.positiveBackground }]}>
+                          <ThemedText type="badge" themeColor="positive">
+                            Pick 인증
+                          </ThemedText>
+                        </View>
+                      </ThemedView>
+                      <ThemedText type="t7" numeric>
+                        {review.overall.toFixed(1)}
+                      </ThemedText>
+                    </ThemedView>
+                    <ThemedText type="t6" numberOfLines={1}>
+                      {review.title}
+                    </ThemedText>
+                    <ThemedText type="t7" themeColor="textSecondary" numberOfLines={2}>
+                      {review.body}
+                    </ThemedText>
+                  </ThemedView>
+                ))}
+              </>
+            ) : null}
+
+            {/* 일반 후기 (상담제보) */}
             {previewReviews.length > 0
               ? previewReviews.map((review) => (
                   <ThemedView key={review.id} type="backgroundElement" style={styles.card}>
@@ -390,7 +439,7 @@ export default function VendorDetailScreen() {
             공식정보는 꾸밈이 아니라 **어느 기관의 무엇을 언제 확인했는지**다.
             읽는 사람이 그것을 궁금해하는 때는 이름을 볼 때가 아니라 고르기 직전이다.
 
-            배지만 두고 출처를 감추지 않는다. `공공데이터`라는 말은 그 자체로는
+            배지만 두고 출처를 감추지 않는다. 출처 없는 배지는
             아무것도 확인해주지 않는다.
            */}
           {vendor.sourceNote ? (
@@ -571,5 +620,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  reviewHeadLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  /** Pick 인증 배지. 배경색은 theme.positiveBackground (런타임에 주입). */
+  verifiedBadge: {
+    borderRadius: Radius.small,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: 2,
   },
 });

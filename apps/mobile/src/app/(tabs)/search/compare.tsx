@@ -133,7 +133,7 @@ export default function CompareScreen() {
                     style={styles.product}>
                     <ThemedText type="small">{product.productLabel}</ThemedText>
                     <ThemedText type="smallBold">{won(product.stat.median)}</ThemedText>
-                    {/* 데이터 수와 기준 기간을 늘 함께 보인다(원문 16번). */}
+                    {/* 건수와 기준 기간을 늘 함께 보인다(원문 16번). */}
                     <ThemedText type="small" themeColor="textSecondary">
                       {DOCUMENT_TYPE_LABEL[product.docType]} · {product.stat.sampleCount}건 ·{' '}
                       {product.stat.periodStart}~{product.stat.periodEnd}

@@ -91,7 +91,7 @@ export default function VerifyRequestScreen() {
           <ActionButton
             label="진행 상황 보기"
             hint="접수·심사 중·결과를 확인해요"
-            onPress={() => router.push(`/capture/verify-status/${receivedRequestId}`)}
+            onPress={() => router.push(`/capture/verify-status/${receivedRequestId}` as never)}
           />
         ) : null}
         <ActionButton variant="primary" label="결과로 돌아가기" onPress={() => router.back()} />

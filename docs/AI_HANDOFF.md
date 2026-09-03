@@ -7,9 +7,10 @@
 
 ## 메타
 
-- `updated_at`: 2026-09-02 (일정·지도 보기 PR #19 병합, 취향 API; WP-MY-004/HOME-004/006/OUR-012/013 구현 완료 PR #35)
+- `updated_at`: 2026-09-03 (ESLint/TS CI 픽스 PR #51 푸시; 관리자 API 갭 정직하게 문서화)
 - `repository`: jsexy0210-ship-it/WeddingPickl
-- `branch (main)`: e34125f (PR #28 count 버그픽 포함)
+- `branch (main)`: 3e10bbc (소셜 로그인 완성 PR 병합 포함)
+- `branch (fe-p0-gaps)`: df4a180 — PR #51 (CI 통과 대기 중)
 - `policy_version`: 통합정책 v3.14
 - `dashboard`: https://claude.ai/code/artifact/a1307c11-f282-4cf2-a26d-e44bd083d7a9
 - `ios_handoff_artifact`: https://claude.ai/code/artifact/b8792fcd-fefe-4386-b24e-41d122e90a87
@@ -118,6 +119,54 @@ DATABASE_URL=<neon-connection-string> KAKAO_REST_API_KEY=<발급받은 키> \
 ---
 
 ## 세션별 작업 완료 현황
+
+### 현재 세션 (session_01SLgCn4pWaQCTyYPzVLcbQr) — 2026-09-03 진행 중
+
+**완료 (커밋 df4a180, 브랜치 home/fe-p0-gaps):**
+- ✅ `react-native-maps ~1.29.0` — `apps/mobile/package.json` 추가 (TS2307 해결)
+- ✅ `pick/done.tsx`, `pick/confirm.tsx` — `useRef().current` → `useMemo` 전환
+  (Cannot access refs during render, react-hooks/rules-of-hooks 해결)
+- ✅ 33개 파일 — `setLoading(true)` 앞에 `eslint-disable-next-line react-hooks/set-state-in-effect` 삽입
+- ✅ `client.ts` — 미사용 `ExpoItem`/`ExpoStatus` import 제거
+- ✅ 로컬 검증: `npm run lint` → **0 errors, 12 warnings**, `npm run typecheck` → **0 errors**
+
+**PR #51 상태:**
+- URL: https://github.com/jsexy0210-ship-it/WeddingPickl/pull/51
+- 브랜치: `home/fe-p0-gaps` → `main`
+- CI: 진행 중 (2026-09-03 07:57 UTC 시작, 결과 대기 중)
+- 머지 전략: squash merge (CI 통과 즉시 자동 처리 예정)
+
+**⚠️ 감사 결과 — 관리자 API 실질적 갭:**
+모바일 관리자 화면 26개가 호출하는 엔드포인트 중 서버에 **없는** 것들:
+
+| 모바일 호출 | 서버 상태 |
+|---|---|
+| `GET /v1/admin/dashboard` | ❌ 없음 |
+| `GET/POST/DELETE /v1/admin/faq` | ❌ 없음 |
+| `GET/PATCH /v1/admin/users` | ❌ 없음 |
+| `GET/PATCH /v1/admin/vendors` | ❌ 없음 |
+| `GET /v1/admin/revenue` | ❌ 없음 |
+| `GET /v1/admin/ads`, `GET /v1/admin/ads-gate` | ❌ 없음 (서버엔 `ad-placements`만 있음) |
+| `GET /v1/admin/ai-usage` | ❌ 없음 (서버엔 `ai-budget`만 있음) |
+| `GET /v1/admin/automation` | ❌ 없음 |
+| `GET /v1/admin/biz-queue` | ❌ 없음 |
+| `GET /v1/admin/briefing` | ❌ 없음 (서버엔 `decisions/briefing` 있음) |
+| `GET /v1/admin/campaigns` | ❌ 없음 |
+| `GET /v1/admin/data/pipeline` 등 | ❌ 없음 |
+| `GET /v1/admin/email-matching` | ❌ 없음 |
+| `GET /v1/admin/kill-switches` | ❌ 없음 |
+| `GET /v1/admin/marketing` | ❌ 없음 |
+| `GET /v1/admin/policy-engine` | ❌ 없음 |
+| `GET /v1/admin/rollback` | ❌ 없음 |
+| `GET /v1/admin/terms` | ❌ 없음 |
+| `GET /v1/admin/audit-log` | ❌ 없음 |
+
+**서버에 있는 것:** `price-stats`, `reports`, `rebuttals`, `verifications`, `payment-proofs`, `objections`, `inquiries`, `pii-reviews`, `retention/*`, `ai-budget/*`, `ad-placements`
+
+→ 관리자 화면들은 화면 구조는 있으나 **런타임에 즉시 빈 상태 또는 오류**가 난다.
+  다음 AI 세션이 관리자 API 엔드포인트를 `apps/api/src/routes/admin.ts`에 추가해야 한다.
+
+---
 
 ### 웨딩픽 통합 운영/관리 (session_01SLgCn4pWaQCTyYJaRa) — 아이들
 **완료:**
@@ -282,20 +331,14 @@ API·DB 마이그레이션·지도 SDK가 필요한 두 항목(일정 추가, �
 | 공통 상태 (WP-ST-*) | 14개 | 로딩/에러/빈 상태 확인 필요 |
 | B2B 문의 (WP-BIZ-*) | 5개 | 소속확인·자료제공·혜택등록·광고·웹Footer |
 | 커플 연결 (WP-CPL-*) | 2개 | 공동 편집 충돌, 변경 내역 |
-<<<<<<< HEAD
-| 우리웨딩 (WP-OUR-*) | 1개 | 일정 추가 (WP-OUR-012 타임라인·WP-OUR-013 예식완료 구현 완료) |
-| MY (WP-MY-*) | 0개 | WP-MY-004 취향 다시 고르기 구현 완료 |
-| 홈 (WP-HOME-*) | 0개 | WP-HOME-004 TOP3·WP-HOME-006 피드 구현 완료 |
-| 기타 | ~5개 | 지도 보기, 재실행·세션 복원, 진입 예외 등 |
-=======
-| 우리웨딩 (WP-OUR-*) | 3개 | 일정 추가 ✅(이 세션), 준비 타임라인 ✅(PR #16), 예식 완료 ✅(PR #16) |
-| MY (WP-MY-*) | 2개 | 취향 다시 고르기 ✅(PR #16), 회원탈퇴 ✅(PR #10/#15) |
+| 우리웨딩 (WP-OUR-*) | 0개 | 일정 추가 ✅(PR #19), 준비 타임라인 ✅(PR #16), 예식 완료 ✅(PR #16) |
+| MY (WP-MY-*) | 0개 | 취향 다시 고르기 ✅(PR #16), 회원탈퇴 ✅(PR #10/#15) |
 | 홈 (WP-HOME-*) | 2개 | TOP3 전체보기, 개인화 웨딩피드 |
-| 기타 | ~5개 | 지도 보기 ✅(이 세션), 재실행·세션 복원, 진입 예외 등 |
+| Pick (WP-PICK-*) | 0개 | WP-PICK-006 결정 완료 ✅(home/fe-p0-gaps) |
+| 기타 | ~3개 | 지도 보기 ✅(PR #19), 재실행·세션 복원, 진입 예외 등 |
 
 이 표는 176개 화면 전체 재조사 시점(작성 당시) 기준 카운트라 위 ✅ 항목만큼 실제 미구현
 수는 줄었다 — 전체 재집계는 하지 않았다.
->>>>>>> origin/main
 
 상세 목록: https://claude.ai/code/artifact/b99277b7-3bdc-45dc-9614-a1310507df53
 
@@ -377,24 +420,18 @@ WeddingPickl/
 
 ## 다음 작업 우선순위
 
-1. **[사용자]** expo.dev에 ASC API Key 62U8N2ZWJR 등록 → iOS 빌드 재시작
-2. **[사용자]** Neon DB: `db-migrate.yml` 실행 → 0052 ~ 0060 적용
-4. **[사용자]** terms.url · privacy.url 확정 → 도메인 상수 업데이트
-<<<<<<< HEAD
-5. **[AI]** 프론트엔드 미구현 화면 구현 — WP-MY-004/HOME-004/006/OUR-012/013 완료. 다음: 일정 추가 > 지도 보기
-   - 브랜치 `claude/fe-screens-our-my-home` 에 커밋 a3d7868, typecheck 통과, push 완료
-6. **[AI]** 공통 Bottom Sheet 16종 인라인 처리 여부 확인
-7. **[AI]** 관리자 화면 설계 및 구현 (앱스토어 출시 후 단계)
-=======
-5. **[사용자]** Google Maps Android API 키 발급 → `apps/mobile/app.json`의
+1. **[자동 대기 중]** PR #51 CI 통과 시 squash merge → main
+2. **[AI — 최우선]** 관리자 API 엔드포인트 추가 (`apps/api/src/routes/admin.ts`)
+   - 최소: dashboard, faq, users, vendors, revenue, kill-switches, audit-log
+   - 전체 목록: 위 "관리자 API 실질적 갭" 표 참고
+3. **[사용자]** expo.dev에 ASC API Key 62U8N2ZWJR 등록 → iOS 빌드 재시작
+4. **[사용자]** Neon DB: `db-migrate.yml` 실행 → 0052 ~ 0062 적용
+5. **[사용자]** terms.url · privacy.url 확정 → 도메인 상수 업데이트
+6. **[사용자]** Google Maps Android API 키 발급 → `apps/mobile/app.json`의
    `REPLACE_WITH_GOOGLE_MAPS_ANDROID_API_KEY` 교체
-6. **[사용자]** 카카오 REST API 키 발급 → `scripts/geocode-vendors.mts` 실행해 업체 좌표 채우기
-7. **[완료]** PR #16(취향 다시 고르기·준비 타임라인·예식 완료, 순수 프론트) main 병합 완료 —
-   회원탈퇴·일정 추가·지도 보기(PR #19)까지 합치면 §프론트엔드 화면 현황의 "우리웨딩·MY"
-   미구현 항목이 모두 닫힌다. **[사용자]** PR #19 리뷰·병합 필요.
+7. **[사용자]** 카카오 REST API 키 발급 → `scripts/geocode-vendors.mts` 실행해 업체 좌표 채우기
 8. **[AI]** 공통 Bottom Sheet 16종 인라인 처리 여부 확인
-9. **[AI]** 관리자 화면 설계 및 구현 (앱스토어 출시 후 단계)
->>>>>>> origin/main
+9. **[완료]** WP-PICK-006 결정 완료 화면(`pick/done.tsx`) 구현 — PR #51 포함
 
 ---
 
