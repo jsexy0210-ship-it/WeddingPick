@@ -529,6 +529,37 @@
     "info.detail.check.todo": "미완료"
   },
 
+  "referral": {
+    "title": "친구 초대",
+    "heroTitle": "친구가 첫 Pick 인증을 하면\n혜택을 드려요",
+    "heroSub": "최대 100건까지 받을 수 있어요",
+    "codeSection": "내 초대 코드",
+    "codeCopied": "코드를 복사했어요",
+    "cta.copy": "코드 복사",
+    "cta.share": "공유하기",
+    "shareText": "웨딩픽에서 실제로 낸 금액을 확인하고 Pick해보세요. 초대 코드: {code}",
+    "statsSection": "초대 현황",
+    "stats.invited": "초대한 사람",
+    "stats.qualified": "Pick 인증 완료",
+    "stats.unit": "명",
+    "stats.hint": "Pick 인증까지 완료한 분의 수예요",
+    "empty.title": "아직 초대한 친구가 없어요",
+    "empty.body": "코드를 공유하면 이곳에 현황이 나와요"
+  },
+
+  "pickHistory": {
+    "title": "Pick 히스토리",
+    "decided": "결정",
+    "decidedAt": "{date} 결정",
+    "addedAt": "{date} 추가",
+    "cta.addCandidate": "다시 후보 추가",
+    "section.decided": "결정한 곳",
+    "section.candidates": "후보",
+    "empty.title": "아직 Pick한 곳이 없어요",
+    "empty.body": "업체를 찾아 Pick에 담아보세요",
+    "empty.cta": "업체 검색"
+  },
+
   "confirm": {
     "delete.title": "삭제할까요?",
     "delete.cta": "삭제"
