@@ -1,14 +1,16 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   EmptyView,
+  ErrorView,
   FilterChip,
   Layout,
   MaxContentWidth,
   Radius,
+  Skeleton,
   Spacing,
   ThemedText,
   ThemedView,
@@ -68,19 +70,59 @@ const SORT_LABEL: Record<SortKey, string> = {
   category: '카테고리순',
 };
 
+/** 스켈레톤 — 웨딩 정보 카드 3장을 미리 잡는다. */
+function WeddingInfoListSkeleton() {
+  return (
+    <>
+      {[0, 1, 2].map((i) => (
+        <ThemedView key={i} type="backgroundElement" style={styles.skeletonCard}>
+          <Skeleton height={16} width="25%" />
+          <Skeleton height={22} width="80%" />
+          <Skeleton height={16} width="65%" />
+          <Skeleton height={14} width="30%" />
+        </ThemedView>
+      ))}
+    </>
+  );
+}
+
 /**
  * 웨딩 정보 목록. 핸드오프 WP-EXPO-003.
  * 준비단계별·카테고리별·최신순 필터.
+ * 상태: 로딩 → 빈 상태 / 목록 있음 / 오류.
  */
 export default function WeddingInfoListScreen() {
   const [sort, setSort] = useState<SortKey>('latest');
   const [stage, setStage] = useState<WeddingInfoStage>('all');
   const [category, setCategory] = useState<WeddingInfoCategory | 'all'>('all');
+  const [items, setItems] = useState<WeddingInfoItem[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // TODO: API 미구현 — 웨딩 정보 목록 조회 후 items 채우기
-  const items: WeddingInfoItem[] = [];
+  useEffect(() => {
+    // TODO: API 미구현 — GET /v1/wedding-info?sort={sort}&stage={stage}&category={category}
+    // 서버 연동 전: 빈 목록으로 떨어진다.
+    setItems([]);
+  }, []);
 
-  const filtered = items.filter((item) => {
+  function retry() {
+    setError(null);
+    setItems(null);
+    // TODO: API 미구현 — 재시도 시 API 호출
+    setItems([]);
+  }
+
+  if (error) {
+    return (
+      <ErrorView
+        title="웨딩 정보를 불러오지 못했어요"
+        message={error}
+        onRetry={retry}
+        retryLabel="다시 시도"
+      />
+    );
+  }
+
+  const filtered = (items ?? []).filter((item) => {
     const stageMatch = stage === 'all' || item.stage === stage;
     const categoryMatch = category === 'all' || item.category === category;
     return stageMatch && categoryMatch;
@@ -99,12 +141,12 @@ export default function WeddingInfoListScreen() {
           <ThemedView style={styles.header}>
             <ThemedText type="t2">웨딩 정보</ThemedText>
             <ThemedText type="t7" themeColor="textSecondary">
-              결혼 준비 단계별 알아두면 좋은 정보를 모았어요.
+              준비 단계별 알아두면 좋은 정보를 모았어요
             </ThemedText>
           </ThemedView>
 
           {/* 정렬 */}
-          <View style={styles.chipRow}>
+          <ThemedView style={styles.chipRow}>
             {SORTS.map((s) => (
               <FilterChip
                 key={s}
@@ -114,7 +156,7 @@ export default function WeddingInfoListScreen() {
                 role="radio"
               />
             ))}
-          </View>
+          </ThemedView>
 
           {/* 준비 단계 */}
           <ScrollView
@@ -156,32 +198,37 @@ export default function WeddingInfoListScreen() {
             ))}
           </ScrollView>
 
-          {/* 목록 */}
-          {sorted.length === 0 ? (
+          {/* 로딩 */}
+          {items === null ? (
+            <WeddingInfoListSkeleton />
+          ) : sorted.length === 0 ? (
+            /* 빈 상태 */
             <EmptyView
-              title="등록된 웨딩 정보가 없어요."
-              description="아직 준비 중이에요. 곧 유용한 정보를 채워드릴게요."
+              title="아직 웨딩 정보가 없어요"
+              description="좋은 정보를 준비하고 있어요"
             />
           ) : (
             sorted.map((item) => (
               <Pressable
                 key={item.id}
+                accessibilityRole="button"
+                accessibilityLabel={`${item.title} 자세히 보기`}
                 onPress={() => router.push(`/search/wedding-info/${item.id}`)}
               >
                 <ThemedView type="backgroundElement" style={styles.card}>
-                  <View style={styles.cardMeta}>
+                  <ThemedView style={styles.cardMeta}>
                     <ThemedText type="badge" themeColor="tint">
                       {CATEGORY_LABEL[item.category]}
                     </ThemedText>
                     <ThemedText type="badge" themeColor="textSecondary">
                       {STAGE_LABEL[item.stage]}
                     </ThemedText>
-                  </View>
-                  <ThemedText type="t5">{item.title}</ThemedText>
+                  </ThemedView>
+                  <ThemedText type="t5" numberOfLines={1}>{item.title}</ThemedText>
                   <ThemedText type="t7" themeColor="textSecondary" numberOfLines={2}>
                     {item.summary}
                   </ThemedText>
-                  <ThemedText type="t7" themeColor="textSecondary">
+                  <ThemedText type="t7" themeColor="textAssistive">
                     {item.publishedAt}
                   </ThemedText>
                 </ThemedView>
@@ -205,7 +252,18 @@ const styles = StyleSheet.create({
   },
   header: { gap: Spacing.one },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one },
-  scrollChips: { flexDirection: 'row', gap: Spacing.one, paddingHorizontal: Layout.gutter },
-  card: { borderRadius: Radius.medium, padding: Spacing.three, gap: Spacing.one },
+  /** 가로 스크롤 칩 — 부모의 paddingHorizontal과 겹치지 않게 패딩 제거. */
+  scrollChips: { flexDirection: 'row', gap: Spacing.one },
+  card: {
+    borderRadius: Radius.medium,
+    padding: Spacing.three,
+    gap: Spacing.one,
+    minHeight: Layout.rowMinHeight,
+  },
+  skeletonCard: {
+    borderRadius: Radius.medium,
+    padding: Spacing.three,
+    gap: Spacing.two,
+  },
   cardMeta: { flexDirection: 'row', gap: Spacing.one },
 });

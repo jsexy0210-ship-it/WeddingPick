@@ -92,20 +92,20 @@ export default function CalendarScreen() {
         });
         const canOpen = await Linking.canOpenURL(url);
         if (!canOpen) {
-          Alert.alert('열 수 없음', 'Google 캘린더를 열 수 없습니다. 브라우저가 설치되어 있는지 확인해 주세요.');
+          Alert.alert('열 수 없어요', 'Google 캘린더를 열 수 없어요. 브라우저가 설치되어 있는지 확인해주세요.');
           return;
         }
         await Linking.openURL(url);
       } else if (option === 'apple') {
         if (Platform.OS !== 'ios') {
-          Alert.alert('지원 안 함', 'Apple 캘린더는 iPhone에서만 사용할 수 있어요.');
+          Alert.alert('지원 안 해요', 'Apple 캘린더는 iPhone에서만 쓸 수 있어요.');
           return;
         }
         // TODO: expo-calendar 미설치 — 설치 후 Calendar.requestCalendarPermissionsAsync()
-        // 권한 거부 시: Alert.alert('권한 필요', '설정 앱에서 캘린더 접근을 허용해 주세요.')
+        // 권한 거부 시: Alert.alert('권한 필요', '설정에서 캘린더 접근을 허용해주세요.')
         Alert.alert(
-          '준비 중',
-          'Apple 캘린더 직접 등록은 준비 중입니다. 수동으로 일정을 추가해 주세요.',
+          '준비 중이에요',
+          'Apple 캘린더 직접 등록은 준비 중이에요. 직접 일정을 추가해주세요.',
           [{ text: '확인' }]
         );
       } else if (option === 'outlook') {
@@ -118,13 +118,13 @@ export default function CalendarScreen() {
         });
         const canOpen = await Linking.canOpenURL(url);
         if (!canOpen) {
-          Alert.alert('열 수 없음', 'Outlook을 열 수 없습니다.');
+          Alert.alert('열 수 없어요', 'Outlook을 열 수 없어요.');
           return;
         }
         await Linking.openURL(url);
       }
     } catch {
-      Alert.alert('오류', '캘린더를 열 수 없습니다. 잠시 후 다시 시도해 주세요.');
+      Alert.alert('오류', '캘린더를 열 수 없어요. 잠시 후 다시 시도해주세요.');
     } finally {
       setAdding(null);
     }
@@ -142,7 +142,7 @@ export default function CalendarScreen() {
           <ThemedView style={styles.header}>
             <ThemedText type="t2">캘린더에 추가</ThemedText>
             <ThemedText type="t7" themeColor="textSecondary">
-              박람회 일정을 캘린더에 등록해 두면 잊지 않을 수 있어요.
+              박람회 일정을 캘린더에 등록해두면 잊지 않아요
             </ThemedText>
           </ThemedView>
 
@@ -151,7 +151,7 @@ export default function CalendarScreen() {
             <ThemedText type="t5">{expoTitle}</ThemedText>
             {/* TODO: API 미구현 — 실제 일정 표시 */}
             <ThemedText type="t7" themeColor="textSecondary">
-              일정 정보를 불러오는 중입니다.
+              일정 정보를 가져오고 있어요
             </ThemedText>
           </ThemedView>
 
@@ -160,7 +160,7 @@ export default function CalendarScreen() {
             {options.map((opt) => (
               <ActionButton
                 key={opt}
-                label={adding === opt ? '열고 있어요…' : CALENDAR_LABEL[opt]}
+                label={adding === opt ? '열고 있어요' : CALENDAR_LABEL[opt]}
                 onPress={() => handleAdd(opt)}
               />
             ))}
@@ -169,7 +169,7 @@ export default function CalendarScreen() {
           {/* 권한 거부 안내 */}
           <ThemedView type="backgroundElement" style={styles.card}>
             <ThemedText type="t7" themeColor="textSecondary">
-              캘린더 앱이 열리지 않는다면 설정 앱에서 해당 앱의 접근 권한을 허용해 주세요.
+              캘린더 앱이 열리지 않으면 설정에서 접근 권한을 허용해주세요
             </ThemedText>
           </ThemedView>
 
