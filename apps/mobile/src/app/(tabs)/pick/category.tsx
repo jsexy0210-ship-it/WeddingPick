@@ -63,7 +63,7 @@ export default function PickCategoryScreen() {
 
   function openConfirm(vendorId: string, vendorName: string) {
     router.push({
-      pathname: '/(tabs)/pick/confirm',
+      pathname: '/(tabs)/pick/confirm' as never,
       params: { category: cat, vendorId, vendorName },
     });
   }
