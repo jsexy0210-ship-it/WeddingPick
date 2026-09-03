@@ -58,5 +58,65 @@ services:
       - key: AI_DAILY_CALL_LIMIT
         sync: false
 
+  - type: web
+    name: weddingpickl-staging
+    runtime: node
+    buildCommand: npm ci
+    startCommand: npm run start --workspace @weddingpick/api
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: weddingpickl-staging-db
+          property: connectionString
+      - key: STORAGE_DRIVER
+        sync: false
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_REGION
+        sync: false
+      - key: S3_ENDPOINT
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: AI_DAILY_CALL_LIMIT
+        sync: false
+
+  - type: worker
+    name: weddingpickl-staging-worker
+    runtime: node
+    buildCommand: npm ci
+    startCommand: npm run worker --workspace @weddingpick/api
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: weddingpickl-staging-db
+          property: connectionString
+      - key: STORAGE_DRIVER
+        sync: false
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_REGION
+        sync: false
+      - key: S3_ENDPOINT
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: AI_DAILY_CALL_LIMIT
+        sync: false
+
 databases:
   - name: weddingpick-db
+  - name: weddingpickl-staging-db
