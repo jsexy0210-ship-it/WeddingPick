@@ -30,6 +30,7 @@ import {
   Spacing,
   ThemedText,
   ThemedView,
+  ProductSymbol,
   useTheme,
 } from '@weddingpick/ui';
 import { Board, FoldedBoard } from '@/features/home/board';
@@ -245,8 +246,12 @@ function GuestHome({
                 { backgroundColor: theme.backgroundElement },
                 pressed && styles.pressed,
               ]}>
-              <ThemedText type="t5" numberOfLines={1}>
-                {VENDOR_CATEGORY_LABEL[category]}
+              <View style={styles.categoryLabel}>
+                <ProductSymbol name={CATEGORY_META[category]?.icon ?? 'hall'} size={20} color={theme.text} />
+                <ThemedText type="t5" numberOfLines={1}>{VENDOR_CATEGORY_LABEL[category]}</ThemedText>
+              </View>
+              <ThemedText type="t7" themeColor="textAssistive" numberOfLines={1}>
+                {categoryCountLabel(category, popular)}
               </ThemedText>
             </Pressable>
           ))}
@@ -266,6 +271,22 @@ function GuestHome({
 
 /** 비회원에게 여는 업종. 초기에 실제로 자료가 모이는 넷이다. */
 const CATEGORY_ENTRIES: readonly VendorCategory[] = ['hall', 'sdm', 'snap', 'planner_agency'];
+
+/** 목업의 두 줄 업종 카드 구조를 유지한다. 숫자는 서버가 내려준 자료만 사용한다. */
+const CATEGORY_META: Partial<Record<VendorCategory, { icon: 'hall' | 'sdm' | 'snap' | 'planner' }>> = {
+  hall: { icon: 'hall' },
+  sdm: { icon: 'sdm' },
+  snap: { icon: 'snap' },
+  planner_agency: { icon: 'planner' },
+};
+
+function categoryCountLabel(category: VendorCategory, vendors: readonly VendorSummary[]) {
+  const count = vendors
+    .filter((vendor) => vendor.category === category)
+    .reduce((total, vendor) => total + vendor.paidPrice.count, 0);
+
+  return count > 0 ? `${TERMS.verifiedData} ${count}건` : `${TERMS.verifiedData} 확인하기`;
+}
 
 /* -------------------------------------------------------------------- 회원 */
 
@@ -589,14 +610,17 @@ const styles = StyleSheet.create({
   band: { height: Layout.sectionBand, marginBottom: Layout.sectionGap },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 11 },
+  categoryLabel: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   entry: {
     flexBasis: '48%',
     flexGrow: 1,
     minWidth: 0,
     minHeight: Layout.rowMinHeight,
     borderRadius: Radius.medium,
-    padding: Spacing.three,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.three,
     justifyContent: 'center',
+    gap: 3,
   },
   pressed: { opacity: 0.8 },
 

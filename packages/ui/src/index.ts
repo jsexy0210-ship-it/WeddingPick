@@ -16,6 +16,7 @@ export { FilterChip, type FilterChipProps } from './filter-chip';
 export { RatingPicker, type RatingPickerProps } from './rating-picker';
 export { WeddingCalendar, type WeddingCalendarProps } from './wedding-calendar';
 export { WeddingMark, type WeddingMarkProps } from './wedding-mark';
+export { ProductSymbol, type ProductSymbolName } from './product-symbol';
 export { Skeleton, type SkeletonProps } from './skeleton';
 export { Toast, TOAST_MS, type ToastProps } from './toast';
 export { DonutChart, type DonutChartProps, type DonutSlice } from './donut-chart';

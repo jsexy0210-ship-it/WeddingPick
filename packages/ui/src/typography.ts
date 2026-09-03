@@ -43,6 +43,7 @@ export const LineHeight = {
   t5: 24,
   t6: 22,
   t7: 19,
+  micro: 18,
   tab: 16,
   badge: 16,
   amount: 43,

@@ -1,29 +1,112 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { useEffect, useState } from 'react';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 
 import { FontSize } from '@weddingpick/ui';
 
-// TODO: API 미구현 — GET /v1/admin/price-stats (이상치·조작 탐지 데이터 없음)
+import { apiFetch } from './_api';
+
+type AnomalyItem = {
+  vendorId: string;
+  vendorName: string;
+  category: string;
+  amount: number;
+  mean: number;
+  stddev: number;
+  detectedAt: string;
+};
+
+type PriceStatsResponse = {
+  total: number;
+  anomalies: AnomalyItem[];
+};
+
+function fmt(n: number) {
+  return (n / 10000).toFixed(0) + '만원';
+}
+
+function formatCat(category: string) {
+  const MAP: Record<string, string> = {
+    hall: '예식장',
+    sdm: '스드메',
+    snap: '스냅',
+    planner_agency: '플래너',
+    goods: '혼수',
+    etc: '기타',
+    wedding_info_company: '정보사',
+  };
+  return MAP[category] ?? category;
+}
 
 export default function StatsScreen() {
+  const [data, setData] = useState<PriceStatsResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    apiFetch('/v1/admin/price-stats')
+      .then((res) => setData(res as PriceStatsResponse))
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : '불러오기 실패'))
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <View style={styles.root}>
       <View style={styles.header}>
         <Text style={styles.title}>이상치 · 조작 탐지</Text>
+        {data && (
+          <Text style={styles.subtitle}>이상치 {data.total}건</Text>
+        )}
       </View>
-      <View style={styles.body}>
-        <View style={styles.placeholder}>
-          <Text style={styles.placeholderTitle}>가격 통계 / 이상치 탐지</Text>
-          <Text style={styles.placeholderDesc}>
-            이 화면은 API가 구현되면 활성화돼요.
-          </Text>
-          <View style={styles.todoBox}>
-            <Text style={styles.todoText}>TODO: API 미구현</Text>
-            <Text style={styles.todoDetail}>
-              {`GET /v1/admin/price-stats\nGET /v1/admin/anomalies`}
-            </Text>
-          </View>
+
+      {loading && (
+        <View style={styles.center}>
+          <Text style={styles.hint}>불러오는 중...</Text>
         </View>
-      </View>
+      )}
+
+      {error && (
+        <View style={styles.center}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
+
+      {data && data.anomalies.length === 0 && (
+        <View style={styles.center}>
+          <Text style={styles.hint}>이상치 없음</Text>
+        </View>
+      )}
+
+      {data && data.anomalies.length > 0 && (
+        <FlatList
+          data={data.anomalies}
+          keyExtractor={(item, i) => `${item.vendorId}-${i}`}
+          contentContainerStyle={styles.list}
+          ItemSeparatorComponent={() => <View style={styles.sep} />}
+          renderItem={({ item }) => (
+            <View style={styles.card}>
+              <View style={styles.cardTop}>
+                <Text style={styles.vendorName} numberOfLines={1}>{item.vendorName}</Text>
+                <View style={styles.catBadge}>
+                  <Text style={styles.catText}>{formatCat(item.category)}</Text>
+                </View>
+              </View>
+              <View style={styles.cardRow}>
+                <Text style={styles.label}>실제 금액</Text>
+                <Text style={styles.valueRed}>{fmt(item.amount)}</Text>
+              </View>
+              <View style={styles.cardRow}>
+                <Text style={styles.label}>기준금액 (평균)</Text>
+                <Text style={styles.value}>{fmt(item.mean)}</Text>
+              </View>
+              <View style={styles.cardRow}>
+                <Text style={styles.label}>표준편차</Text>
+                <Text style={styles.value}>{fmt(item.stddev)}</Text>
+              </View>
+              <Text style={styles.detectedAt}>탐지: {item.detectedAt.slice(0, 10)}</Text>
+            </View>
+          )}
+        />
+      )}
     </View>
   );
 }
@@ -36,44 +119,37 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#e4e5ea',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   title: { fontSize: FontSize.t5, fontWeight: '700', color: '#17181c' },
-  body: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  placeholder: {
-    alignItems: 'center',
-    maxWidth: 480,
-  },
-  placeholderTitle: {
-    fontSize: FontSize.t4,
-    fontWeight: '700',
-    color: '#3a3b40',
-    marginBottom: 10,
-  },
-  placeholderDesc: {
-    fontSize: FontSize.t7,
-    color: '#868b94',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  todoBox: {
-    backgroundColor: '#fff9e6',
+  subtitle: { fontSize: FontSize.t7, color: '#868b94' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  hint: { fontSize: FontSize.t7, color: '#868b94' },
+  errorText: { fontSize: FontSize.t7, color: '#e81607' },
+  list: { padding: 16, gap: 12 },
+  sep: { height: 8 },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 16,
+    gap: 6,
     borderWidth: 1,
-    borderColor: '#f5d86a',
-    borderRadius: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    alignItems: 'center',
+    borderColor: '#e4e5ea',
   },
-  todoText: {
-    fontSize: FontSize.t7,
-    fontWeight: '700',
-    color: '#92740a',
-    marginBottom: 6,
+  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  vendorName: { flex: 1, fontSize: FontSize.t6, fontWeight: '700', color: '#17181c' },
+  catBadge: {
+    backgroundColor: '#f0f1f4',
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
   },
-  todoDetail: {
-    fontSize: FontSize.code,
-    color: '#b89320',
-    fontFamily: 'monospace',
-    textAlign: 'center',
-  },
+  catText: { fontSize: FontSize.badge, color: '#4d5159' },
+  cardRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  label: { fontSize: FontSize.t7, color: '#868b94' },
+  value: { fontSize: FontSize.t7, fontWeight: '600', color: '#17181c' },
+  valueRed: { fontSize: FontSize.t7, fontWeight: '700', color: '#e81607' },
+  detectedAt: { fontSize: FontSize.badge, color: '#adb1ba', marginTop: 4 },
 });

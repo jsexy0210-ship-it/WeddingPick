@@ -24,7 +24,7 @@
 -   Neon: PostgreSQL 운영 DB
 -   Naver Cloud Platform Object Storage: `weddingpick-test`
 -   웨딩픽 웹사이트: 서비스 웹·정책·지원 페이지
--   Fly.io: API/Worker 배포 자동화 구성 진행 중
+-   Render: API 서버·운영 배포 기준 (`https://weddingpickl.onrender.com`)
 
 ## 완료
 
@@ -33,8 +33,9 @@
 -   기존 migration 46개 적용 완료
 -   일정(`wedding_events`) 백엔드·화면 3개 구현 — 마이그레이션 0061, `docs/AI_HANDOFF.md`
     참고 (Neon production 미적용, `db-migrate.yml` 실행 필요)
--   지도 보기 백엔드·화면 구현 — 업체 좌표 컬럼(마이그레이션 0062) + `expo-location`/
-    `react-native-maps` 도입 + 검색 화면 목록/지도 토글. 좌표 지오코딩은
+-   지도 보기 백엔드·화면 구현 — 업체 좌표 컬럼(마이그레이션 0062) + 검색 화면
+    목록/지도 토글. 지도 열기는 카카오맵 공식 딥링크를 사용하며 Google Maps
+    placeholder 및 `react-native-maps` 의존성은 제거했다. 좌표 지오코딩은
     `scripts/geocode-vendors.mts`(카카오 로컬 API, 수동 실행) — 상세는
     `docs/AI_HANDOFF.md` "백엔드 — 일정 · 지도 보기" 절
 -   마이그레이션 번호 충돌 수정 — PR #19가 다른 PR과 동시에 진행되며 `0059`·`0060`을
@@ -55,9 +56,29 @@
 
 1.  GitHub 중심 단일 CI/CD 통합
 2.  iOS EAS Production Build 정상화
-3.  Fly.io 자동 production deploy 정상화
-4.  Fly.io `/health` 자동 검증
+3.  Render production deploy 정상화
+4.  Render `/health` 자동 검증
 5.  TestFlight 제출 자동화 연결
+
+### P0 운영 등록 점검 (2026-09-03)
+
+- Android APK 워크플로의 네이버 callback을 운영 HTTPS 주소로 통일하고,
+  카카오·Google 공개 Client ID를 production과 동일하게 주입했다.
+- 외부 콘솔에서 남은 등록: 네이버 HTTPS callback,
+  카카오 Redirect URI/플랫폼 키, Google Android·iOS OAuth 클라이언트,
+  Apple Sign in Services ID/redirect, Render 운영 Secret 및 DB migration 확인.
+- 카카오맵 사용 설정 및 플랫폼 키가 활성화됐다. 앱은 카카오맵 공식 딥링크로
+  전환했으며, 운영 경로에서 Google Maps 키 등록은 요구하지 않는다.
+- 2026-09-03 Render `https://weddingpickl.onrender.com/health` 검증 결과
+  HTTP 200, `{"ok":true,"database":"ok"}`. 운영 DB 연결은 정상이며,
+  migration 0052~0062 적용 여부는 DB Migrate 워크플로 실행 후 확정한다.
+- 2026-09-03 Release #11은 코드 단계에 도달하기 전에 GitHub Actions 계정의
+  결제 실패/지출 한도 초과로 차단됐다. GitHub 결제 없이 운영한다는 원칙상
+  Actions 재시도 대신 EAS 대시보드 또는 승인된 외부 빌드 경로를 사용한다.
+- Release #13에서 결제 제한은 해소됐지만 iOS 빌드는 Provisioning Profile에
+  Sign in with Apple capability/entitlement가 없어 실패했다. Apple Developer의
+  App ID `kr.weddingpick.app`에 Sign in with Apple을 활성화한 뒤 EAS iOS
+  credentials에서 Provisioning Profile을 재생성해야 한다.
 
 ## 현재 장애 / 제한
 
@@ -68,12 +89,9 @@
 -   실제 실패 Step 로그를 기준으로 원인 수정 필요
 -   추측으로 Apple Credential/API Key를 재생성하지 않는다.
 
-### Fly.io
+### 이전 배포 기록
 
--   기존 GitHub Action에서 `fly: command not found` 오류 이력 있음
--   `flyctl` 설치 및 호출 구조 재검증 필요
--   Fly API Token은 Secret으로 관리하며 실제 값을 문서/로그에 기록하지
-    않는다.
+-   신규 배포·검증은 Render 기준으로만 진행한다.
 
 ### Google Play
 
@@ -86,7 +104,7 @@
 
 ### 일반 개발
 
-`Claude/Codex 수정 → GitHub commit/push → CI → 필요한 DB migration → Fly.io 자동 배포 → health check`
+`Claude/Codex 수정 → GitHub commit/push → CI → 필요한 DB migration → Render 자동 배포 → health check`
 
 ### 앱 릴리즈
 
@@ -95,7 +113,7 @@
 -   앱은 매 commit마다 production build하지 않는다.
 -   CI 또는 migration 또는 deploy 또는 health check 실패 시 이후
     production 단계를 중단한다.
--   반복적인 Expo/Fly.io/Neon/App Store Connect/Google Play 수동 조작을
+-   반복적인 Expo/Render/Neon/App Store Connect/Google Play 수동 조작을
     최소화한다.
 
 ## 다음 작업 우선순위
@@ -103,13 +121,13 @@
 1.  현재 GitHub Actions와 workflow 전체 점검
 2.  중복 workflow 제거가 아니라 우선 재사용·통합
 3.  `EAS Build #5` 실제 실패 로그 분석 및 수정
-4.  Fly.io deploy 자동화 정상화
-5.  `/health` 검증 성공
+4.  Render deploy 자동화 정상화
+5.  Render `/health` 검증 성공
 6.  iOS Production Build 성공
 7.  TestFlight 제출 흐름 검증
 8.  Google Play 계정 제한 해제 후 Android 제출 자동화 활성화
 9.  Neon production에 마이그레이션 0052~0062 적용 (`db-migrate.yml`)
-10. Google Maps Android API 키 발급 → `apps/mobile/app.json` 자리표시자 교체
+10. 카카오맵 운영 딥링크 실기기 검증(Android/iOS)
 11. 카카오 REST API 키 발급 → `scripts/geocode-vendors.mts`로 업체 좌표 백필
 
 ## 제품 범위 결정

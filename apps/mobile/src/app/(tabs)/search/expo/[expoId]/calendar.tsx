@@ -1,19 +1,20 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Linking, Platform, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { getExpo, type ExpoDetail } from '@/api/client';
 import {
   ActionButton,
   Layout,
   MaxContentWidth,
   Radius,
+  Skeleton,
   Spacing,
   ThemedText,
   ThemedView,
 } from '@weddingpick/ui';
 
-// TODO: API 미구현 — GET /v1/expos/:expoId (캘린더 추가용 박람회 일정 조회)
 type CalendarOption = 'google' | 'apple' | 'outlook';
 
 const CALENDAR_LABEL: Record<CalendarOption, string> = {
@@ -70,13 +71,21 @@ function buildOutlookUrl(params: {
 export default function CalendarScreen() {
   const { expoId } = useLocalSearchParams<{ expoId: string }>();
   const [adding, setAdding] = useState<CalendarOption | null>(null);
+  const [expo, setExpo] = useState<ExpoDetail | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
-  // TODO: API 미구현 — expoId로 박람회 일정 조회 후 실제 값으로 교체
-  const expoTitle = '웨딩 박람회';
-  const expoStartsAt = '';
-  const expoEndsAt = '';
-  const expoVenue = '';
-  const expoAddress = '';
+  useEffect(() => {
+    if (!expoId) return;
+    getExpo(expoId)
+      .then(setExpo)
+      .catch(() => setLoadError(true));
+  }, [expoId]);
+
+  const expoTitle = expo?.title ?? '웨딩 박람회';
+  const expoStartsAt = expo?.startsAt ?? '';
+  const expoEndsAt = expo?.endsAt ?? '';
+  const expoVenue = expo?.venue ?? '';
+  const expoAddress = expo?.address ?? '';
 
   async function handleAdd(option: CalendarOption) {
     setAdding(option);
@@ -92,22 +101,29 @@ export default function CalendarScreen() {
         });
         const canOpen = await Linking.canOpenURL(url);
         if (!canOpen) {
-          Alert.alert('열 수 없음', 'Google 캘린더를 열 수 없습니다. 브라우저가 설치되어 있는지 확인해 주세요.');
+          Alert.alert('열 수 없어요', 'Google 캘린더를 열 수 없어요. 브라우저가 설치되어 있는지 확인해주세요.');
           return;
         }
         await Linking.openURL(url);
       } else if (option === 'apple') {
         if (Platform.OS !== 'ios') {
-          Alert.alert('지원 안 함', 'Apple 캘린더는 iPhone에서만 사용할 수 있어요.');
+          Alert.alert('지원 안 해요', 'Apple 캘린더는 iPhone에서만 쓸 수 있어요.');
           return;
         }
-        // TODO: expo-calendar 미설치 — 설치 후 Calendar.requestCalendarPermissionsAsync()
-        // 권한 거부 시: Alert.alert('권한 필요', '설정 앱에서 캘린더 접근을 허용해 주세요.')
-        Alert.alert(
-          '준비 중',
-          'Apple 캘린더 직접 등록은 준비 중입니다. 수동으로 일정을 추가해 주세요.',
-          [{ text: '확인' }]
-        );
+        // .ics 데이터 URI를 열면 iOS가 캘린더 앱으로 바로 넘긴다 — 네이티브 모듈 불필요.
+        const ics = [
+          'BEGIN:VCALENDAR',
+          'VERSION:2.0',
+          'BEGIN:VEVENT',
+          `SUMMARY:${expoTitle}`,
+          `DTSTART:${expoStartsAt.replace(/[-:]/g, '').slice(0, 8)}`,
+          `DTEND:${expoEndsAt.replace(/[-:]/g, '').slice(0, 8)}`,
+          `LOCATION:${expoAddress || expoVenue}`,
+          'END:VEVENT',
+          'END:VCALENDAR',
+        ].join('\r\n');
+        const encoded = encodeURIComponent(ics);
+        await Linking.openURL(`data:text/calendar;charset=utf-8,${encoded}`);
       } else if (option === 'outlook') {
         const url = buildOutlookUrl({
           title: expoTitle,
@@ -118,13 +134,13 @@ export default function CalendarScreen() {
         });
         const canOpen = await Linking.canOpenURL(url);
         if (!canOpen) {
-          Alert.alert('열 수 없음', 'Outlook을 열 수 없습니다.');
+          Alert.alert('열 수 없어요', 'Outlook을 열 수 없어요.');
           return;
         }
         await Linking.openURL(url);
       }
     } catch {
-      Alert.alert('오류', '캘린더를 열 수 없습니다. 잠시 후 다시 시도해 주세요.');
+      Alert.alert('오류', '캘린더를 열 수 없어요. 잠시 후 다시 시도해주세요.');
     } finally {
       setAdding(null);
     }
@@ -142,17 +158,35 @@ export default function CalendarScreen() {
           <ThemedView style={styles.header}>
             <ThemedText type="t2">캘린더에 추가</ThemedText>
             <ThemedText type="t7" themeColor="textSecondary">
-              박람회 일정을 캘린더에 등록해 두면 잊지 않을 수 있어요.
+              박람회 일정을 캘린더에 등록해두면 잊지 않아요
             </ThemedText>
           </ThemedView>
 
           {/* 일정 요약 */}
           <ThemedView type="backgroundElement" style={styles.card}>
             <ThemedText type="t5">{expoTitle}</ThemedText>
-            {/* TODO: API 미구현 — 실제 일정 표시 */}
-            <ThemedText type="t7" themeColor="textSecondary">
-              일정 정보를 불러오는 중입니다.
-            </ThemedText>
+            {loadError ? (
+              <ThemedText type="t7" themeColor="textSecondary">
+                일정 정보를 불러오지 못했어요
+              </ThemedText>
+            ) : expo ? (
+              <>
+                {expoVenue ? (
+                  <ThemedText type="t7" themeColor="textSecondary">
+                    {expoVenue}
+                  </ThemedText>
+                ) : null}
+                {expoStartsAt ? (
+                  <ThemedText type="t7" themeColor="textSecondary">
+                    {expoStartsAt.slice(0, 10)} ~ {expoEndsAt.slice(0, 10)}
+                  </ThemedText>
+                ) : null}
+              </>
+            ) : (
+              <ThemedText type="t7" themeColor="textSecondary">
+                일정 정보를 가져오고 있어요
+              </ThemedText>
+            )}
           </ThemedView>
 
           {/* 캘린더 선택 */}
@@ -160,7 +194,7 @@ export default function CalendarScreen() {
             {options.map((opt) => (
               <ActionButton
                 key={opt}
-                label={adding === opt ? '열고 있어요…' : CALENDAR_LABEL[opt]}
+                label={adding === opt ? '열고 있어요' : CALENDAR_LABEL[opt]}
                 onPress={() => handleAdd(opt)}
               />
             ))}
@@ -169,7 +203,7 @@ export default function CalendarScreen() {
           {/* 권한 거부 안내 */}
           <ThemedView type="backgroundElement" style={styles.card}>
             <ThemedText type="t7" themeColor="textSecondary">
-              캘린더 앱이 열리지 않는다면 설정 앱에서 해당 앱의 접근 권한을 허용해 주세요.
+              캘린더 앱이 열리지 않으면 설정에서 접근 권한을 허용해주세요
             </ThemedText>
           </ThemedView>
 

@@ -28,7 +28,7 @@ function sourceFiles(dir: string): string[] {
     const path = join(dir, entry);
 
     if (statSync(path).isDirectory()) {
-      return entry === 'node_modules' ? [] : sourceFiles(path);
+      return entry === 'node_modules' || entry === 'admin' ? [] : sourceFiles(path);
     }
 
     return /\.(ts|tsx)$/.test(entry) && !entry.endsWith('.test.ts') ? [path] : [];
