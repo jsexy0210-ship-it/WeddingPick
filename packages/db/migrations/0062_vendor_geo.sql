@@ -11,11 +11,28 @@
 -- 그대로 뜬다.
 
 ALTER TABLE structured.vendors
-  ADD COLUMN address text,
-  ADD COLUMN lat double precision CHECK (lat IS NULL OR lat BETWEEN -90 AND 90),
-  ADD COLUMN lng double precision CHECK (lng IS NULL OR lng BETWEEN -180 AND 180),
+  ADD COLUMN IF NOT EXISTS address text,
+  ADD COLUMN IF NOT EXISTS lat double precision,
+  ADD COLUMN IF NOT EXISTS lng double precision;
+
+DO $$ BEGIN
+  ALTER TABLE structured.vendors
+    ADD CONSTRAINT vendors_lat_check CHECK (lat IS NULL OR lat BETWEEN -90 AND 90);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  ALTER TABLE structured.vendors
+    ADD CONSTRAINT vendors_lng_check CHECK (lng IS NULL OR lng BETWEEN -180 AND 180);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
   -- 위도만 있고 경도가 없는 반쪽 좌표를 막는다.
-  ADD CONSTRAINT vendors_geo_both_or_neither CHECK ((lat IS NULL) = (lng IS NULL));
+  ALTER TABLE structured.vendors
+    ADD CONSTRAINT vendors_geo_both_or_neither CHECK ((lat IS NULL) = (lng IS NULL));
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 COMMENT ON COLUMN structured.vendors.address IS
   '정확한 지오코딩을 위한 상세 주소. 지금은 대부분 NULL — 수집 파이프라인은 이후 과제.';
@@ -25,4 +42,4 @@ COMMENT ON COLUMN structured.vendors.lng IS
   '경도. lat과 항상 짝으로 있거나 둘 다 없다.';
 
 -- 지도가 "이 영역 안의 업체"를 찾을 때 쓴다. 좌표 있는 업체만 대상이라 부분 색인으로 충분하다.
-CREATE INDEX vendors_geo_idx ON structured.vendors (lat, lng) WHERE lat IS NOT NULL;
+CREATE INDEX IF NOT EXISTS vendors_geo_idx ON structured.vendors (lat, lng) WHERE lat IS NOT NULL;

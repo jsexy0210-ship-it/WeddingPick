@@ -87,7 +87,22 @@ export function buildServer(context: AppContext): FastifyInstance {
     reply.status(404).send({ error: { code: 'not_found', message: '없는 경로입니다.' } })
   );
 
-  app.get('/health', async () => ({ ok: true }));
+  app.get('/health', async (_request, reply) => {
+    // 프로세스가 살아 있는 것만으로는 배포 상태를 보장하지 않는다. DB까지
+    // 확인해 Render 헬스체크가 실제로 요청을 처리할 수 있는 인스턴스만 통과시킨다.
+    try {
+      await context.pool.query('SELECT 1');
+      return { ok: true, database: 'ok' as const };
+    } catch {
+      return reply.status(503).send({ ok: false, database: 'unavailable' as const });
+    }
+  });
+
+  app.get('/', async () => ({
+    name: 'WeddingPick API',
+    health: '/health',
+    version: 'v1',
+  }));
 
   registerAuthRoutes(app, context);
   registerWeddingRoutes(app, context);

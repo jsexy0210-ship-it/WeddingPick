@@ -7,7 +7,7 @@
 
 ## 메타
 
-- `updated_at`: 2026-09-02 (일정·지도 보기 PR #19 병합, 취향 API, CI+staging 그린)
+- `updated_at`: 2026-09-02 (일정·지도 보기 PR #19 병합, 취향 API; WP-MY-004/HOME-004/006/OUR-012/013 구현 완료 PR #35)
 - `repository`: jsexy0210-ship-it/WeddingPickl
 - `branch (main)`: e34125f (PR #28 count 버그픽 포함)
 - `policy_version`: 통합정책 v3.14
@@ -288,6 +288,12 @@ API·DB 마이그레이션·지도 SDK가 필요한 두 항목(일정 추가, �
 | 공통 상태 (WP-ST-*) | 14개 | 로딩/에러/빈 상태 확인 필요 |
 | B2B 문의 (WP-BIZ-*) | 5개 | 소속확인·자료제공·혜택등록·광고·웹Footer |
 | 커플 연결 (WP-CPL-*) | 2개 | 공동 편집 충돌, 변경 내역 |
+<<<<<<< HEAD
+| 우리웨딩 (WP-OUR-*) | 1개 | 일정 추가 (WP-OUR-012 타임라인·WP-OUR-013 예식완료 구현 완료) |
+| MY (WP-MY-*) | 0개 | WP-MY-004 취향 다시 고르기 구현 완료 |
+| 홈 (WP-HOME-*) | 0개 | WP-HOME-004 TOP3·WP-HOME-006 피드 구현 완료 |
+| 기타 | ~5개 | 지도 보기, 재실행·세션 복원, 진입 예외 등 |
+=======
 | 우리웨딩 (WP-OUR-*) | 3개 | 일정 추가 ✅(이 세션), 준비 타임라인 ✅(PR #16), 예식 완료 ✅(PR #16) |
 | MY (WP-MY-*) | 2개 | 취향 다시 고르기 ✅(PR #16), 회원탈퇴 ✅(PR #10/#15) |
 | 홈 (WP-HOME-*) | 2개 | TOP3 전체보기, 개인화 웨딩피드 |
@@ -295,6 +301,7 @@ API·DB 마이그레이션·지도 SDK가 필요한 두 항목(일정 추가, �
 
 이 표는 176개 화면 전체 재조사 시점(작성 당시) 기준 카운트라 위 ✅ 항목만큼 실제 미구현
 수는 줄었다 — 전체 재집계는 하지 않았다.
+>>>>>>> origin/main
 
 상세 목록: https://claude.ai/code/artifact/b99277b7-3bdc-45dc-9614-a1310507df53
 
@@ -380,6 +387,12 @@ WeddingPickl/
 2. **[사용자]** Fly.io: `OPERATOR_SESSION_TTL_DAYS=365` 추가
 3. **[사용자]** Neon DB: `db-migrate.yml` 실행 → 0052 ~ 0060 적용
 4. **[사용자]** terms.url · privacy.url 확정 → 도메인 상수 업데이트
+<<<<<<< HEAD
+5. **[AI]** 프론트엔드 미구현 화면 구현 — WP-MY-004/HOME-004/006/OUR-012/013 완료. 다음: 일정 추가 > 지도 보기
+   - 브랜치 `claude/fe-screens-our-my-home` 에 커밋 a3d7868, typecheck 통과, push 완료
+6. **[AI]** 공통 Bottom Sheet 16종 인라인 처리 여부 확인
+7. **[AI]** 관리자 화면 설계 및 구현 (앱스토어 출시 후 단계)
+=======
 5. **[사용자]** Google Maps Android API 키 발급 → `apps/mobile/app.json`의
    `REPLACE_WITH_GOOGLE_MAPS_ANDROID_API_KEY` 교체
 6. **[사용자]** 카카오 REST API 키 발급 → `scripts/geocode-vendors.mts` 실행해 업체 좌표 채우기
@@ -388,6 +401,7 @@ WeddingPickl/
    미구현 항목이 모두 닫힌다. **[사용자]** PR #19 리뷰·병합 필요.
 8. **[AI]** 공통 Bottom Sheet 16종 인라인 처리 여부 확인
 9. **[AI]** 관리자 화면 설계 및 구현 (앱스토어 출시 후 단계)
+>>>>>>> origin/main
 
 ---
 

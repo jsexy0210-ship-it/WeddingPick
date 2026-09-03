@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { renderAdminPage } from './admin-page';
 import { renderLandingPage } from './page';
 import { STYLES } from './styles';
 
@@ -11,11 +12,13 @@ import { STYLES } from './styles';
  * 자바스크립트를 켜지 않아도 읽을 수 있어야 한다.
  */
 export function build(outDir: string): string {
-  const html = renderLandingPage(STYLES);
-  const path = join(outDir, 'index.html');
-
   mkdirSync(outDir, { recursive: true });
-  writeFileSync(path, html, 'utf8');
 
-  return path;
+  const indexPath = join(outDir, 'index.html');
+  writeFileSync(indexPath, renderLandingPage(STYLES), 'utf8');
+
+  const adminPath = join(outDir, 'admin.html');
+  writeFileSync(adminPath, renderAdminPage(), 'utf8');
+
+  return indexPath;
 }

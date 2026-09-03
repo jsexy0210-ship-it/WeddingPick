@@ -19,7 +19,7 @@ describe('createNaverProvider', () => {
     const provider = createNaverProvider({
       clientId: 'client-id',
       clientSecret: 'server-only-secret',
-      allowedRedirectUris: ['weddingpick://auth/naver'],
+      allowedRedirectUris: ['https://weddingpickl.onrender.com/v1/auth/naver/callback'],
       fetchImpl: fetchImpl as unknown as typeof fetch,
     });
 
@@ -28,7 +28,7 @@ describe('createNaverProvider', () => {
       provider.verify({
         authorizationCode: 'one-time-code',
         state: 'state-value',
-        redirectUri: 'weddingpick://auth/naver',
+        redirectUri: 'https://weddingpickl.onrender.com/v1/auth/naver/callback',
         codeVerifier: 'v'.repeat(43),
       })
     ).resolves.toMatchObject({
@@ -47,7 +47,7 @@ describe('createNaverProvider', () => {
     const provider = createNaverProvider({
       clientId: 'client-id',
       clientSecret: 'server-only-secret',
-      allowedRedirectUris: ['weddingpick://auth/naver'],
+      allowedRedirectUris: ['https://weddingpickl.onrender.com/v1/auth/naver/callback'],
       fetchImpl: fetchImpl as unknown as typeof fetch,
     });
 

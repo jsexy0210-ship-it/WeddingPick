@@ -34,7 +34,7 @@ export const WITHDRAWAL_DELETED_GROUP = '지워지는 것';
  * 동의를 받은 것이 아니라 오해를 받은 것이 된다.
  */
 export const WITHDRAWAL_SEPARATED_GROUP = '작성자 정보와 분리되는 정보';
-/** 통합정책 v3.13 §J-3 "하단 고지"의 문구를 그대로 쓴다. */
+/** 통합정책 v3.14 §J-3 "하단 고지"의 문구를 그대로 쓴다. */
 export const WITHDRAWAL_SEPARATED_NOTE =
   '후기와 확인된 정보는 나를 알아볼 수 없도록 분리해 유지될 수 있어요';
 export const WITHDRAWAL_SEPARATED_EMPTY = '작성한 후기나 남는 정보가 없어요';
@@ -133,8 +133,10 @@ export function deletedOnWithdrawal(counts: WithdrawalCounts): WithdrawalRow[] {
 /**
  * 작성자 정보와 분리돼 유지되는 것.
  *
- * **일수를 쓰지 않는다.** 항목별 법정기간은 개인정보처리방침이 확정될 때 정해지고,
- * 그 전에 `30일` 같은 숫자를 화면에 적으면 지키지 못할 약속을 하는 것이다.
+ * **일수를 화면에 쓰지 않는다.** 통합정책 v3.14 §J-3에 따라 보존 기간은 관련 법령
+ * (전자상거래법·통신비밀보호법 등)의 법정 보존 기간에서 직접 가져온다. 서버가 그
+ * 기간에 맞춰 처리하며, 화면에 숫자를 직접 명시하면 법령 개정 시 화면과 법령이
+ * 어긋나는 문제가 생기므로 적지 않는다.
  *
  * 남긴 것이 하나도 없으면 빈 목록을 낸다. 화면은 그때 `WITHDRAWAL_SEPARATED_EMPTY`를
  * 적는다 — 0건짜리 줄을 세우면 있지도 않은 것을 잃는 것처럼 보인다.

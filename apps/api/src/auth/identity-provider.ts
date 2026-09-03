@@ -186,7 +186,8 @@ export function createGoogleProvider(clientId: string): IdentityProvider {
     // Google은 두 issuer 값을 모두 정상 토큰으로 명시한다.
     issuer: ['https://accounts.google.com', 'accounts.google.com'],
     jwksUrl: 'https://www.googleapis.com/oauth2/v3/certs',
-    audience: clientId,
+    // Android/iOS/웹 클라이언트 ID를 쉼표로 함께 허용한다.
+    audience: clientId.split(',').map((value) => value.trim()).filter(Boolean),
   });
 }
 

@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+# 통합정책 자동 버전업
+# docs/통합정책 v*.* 파일이 staged되면 minor 버전을 하나 올리고
+# 기존 파일을 docs/archive/ 에 복사한 뒤 새 이름으로 커밋한다.
+
+set -euo pipefail
+
+POLICY_FILE=$(git -c core.quotepath=false diff --cached --name-only \
+  | grep '^docs/통합정책 v' | head -1 || true)
+
+[ -z "$POLICY_FILE" ] && exit 0
+
+CURRENT_VER="${POLICY_FILE#docs/통합정책 v}"
+MAJOR="${CURRENT_VER%%.*}"
+MINOR="${CURRENT_VER##*.}"
+NEW_MINOR=$(( MINOR + 1 ))
+NEW_VER="${MAJOR}.${NEW_MINOR}"
+NEW_FILE="docs/통합정책 v${NEW_VER}"
+TODAY=$(date +%Y-%m-%d)
+
+# 이미 버전업된 상태면 건너뛴다 (hook 재실행 방지)
+[ "$POLICY_FILE" = "$NEW_FILE" ] && exit 0
+
+# 이전 버전을 아카이브에 보관 (사람이 읽기 위한 복사본)
+mkdir -p docs/archive
+cp "$POLICY_FILE" "docs/archive/통합정책 v${CURRENT_VER}"
+
+# 새 파일에 버전 헤더 업데이트
+POLICY_FILE="$POLICY_FILE" NEW_FILE="$NEW_FILE" \
+CURRENT_VER="$CURRENT_VER" NEW_VER="$NEW_VER" TODAY="$TODAY" \
+python3 -c "
+import re, os
+
+src  = os.environ['POLICY_FILE']
+dst  = os.environ['NEW_FILE']
+cur  = os.environ['CURRENT_VER']
+nxt  = os.environ['NEW_VER']
+today = os.environ['TODAY']
+
+with open(src, 'r', encoding='utf-8') as f:
+    text = f.read()
+
+text = text.replace(
+    f'# WeddingPick 최종 통합정책 v{cur}',
+    f'# WeddingPick 최종 통합정책 v{nxt}', 1
+)
+text = re.sub(r'(?m)^작성일: \d{4}-\d{2}-\d{2}', f'작성일: {today}', text, count=1)
+
+with open(dst, 'w', encoding='utf-8') as f:
+    f.write(text)
+"
+
+rm "$POLICY_FILE"
+
+git rm --cached -- "$POLICY_FILE"
+git add -- "docs/archive/통합정책 v${CURRENT_VER}" "$NEW_FILE"
+
+echo "📋 정책 자동 버전업: v${CURRENT_VER} → v${NEW_VER}"

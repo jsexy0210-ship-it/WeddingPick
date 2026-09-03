@@ -146,5 +146,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     throw new Error(`설정이 올바르지 않다: ${fields}`);
   }
 
+  // Production/staging must use durable object storage; local files disappear on restart.
+  if (env.NODE_ENV === 'production' && parsed.data.storage.driver !== 's3') {
+    throw new Error('운영 환경은 STORAGE_DRIVER=s3와 영구 버킷 설정이 필요하다.');
+  }
+
+  // 로컬 저장소도 허용한다. 다만 운영에서 재시작하면 메모리 파일이 사라질 수
+  // 있으므로, 영구 보관이 필요한 배포는 STORAGE_DRIVER=s3를 사용해야 한다.
+
   return parsed.data;
 }

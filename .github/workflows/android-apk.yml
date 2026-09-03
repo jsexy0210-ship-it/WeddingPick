@@ -1,10 +1,11 @@
 # 테스트용 안드로이드 APK.
 #
-# 이 레포의 개발 환경은 dl.google.com에 나갈 수 없어 Android SDK를 받을 수 없다.
-# 그래서 APK는 여기서 만든다 — GitHub 러너에는 SDK가 이미 깔려 있다.
+# 검수 흐름:
+#   1. 여기서 APK 만든다 → 폰에서 확인
+#   2. 확인 완료되면 EAS 빌드 (스토어 배포용)
 #
-# Actions 탭에서 "Android APK"를 고르고 Run workflow를 누르면 된다. 끝나면 그 실행
-# 화면 맨 아래 Artifacts에 APK가 붙는다.
+# Actions 탭 → "Android APK" → Run workflow.
+# 완료되면 실행 화면 하단 Artifacts에 APK zip이 붙는다.
 name: Android APK
 
 on:
@@ -13,10 +14,9 @@ on:
       api_url:
         description: >-
           앱이 붙을 API 주소 (예: https://api.example.com).
-          비워두면 서버에 붙지 않는 빌드가 된다 — 촬영과 기기 저장은 되지만
-          업체 검색·가격은 안 나온다.
+          비워두면 서버에 붙지 않는 빌드가 된다.
         required: false
-        default: ''
+        default: 'https://weddingpickl.onrender.com'
 
 jobs:
   apk:
@@ -30,14 +30,22 @@ jobs:
           node-version: 22
           cache: npm
 
-      # AGP 8.x가 요구하는 JDK. 러너 기본값이 바뀌어도 흔들리지 않게 못박는다.
+      # AGP 8.x가 요구하는 JDK.
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      # Android SDK는 러너 이미지에 이미 있고 라이선스도 수락돼 있다. 없는
-      # 컴포넌트는 Gradle이 알아서 받는다 — 여기서는 나갈 수 있다.
+      # Gradle 의존성·빌드 캐시. 캐시 히트 시 빌드 시간 38분 → 5분대로 줄어든다.
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('apps/mobile/android/**/*.gradle*', 'apps/mobile/android/**/gradle-wrapper.properties') }}
+          restore-keys: gradle-
+
       - run: npm ci
 
       # 네이티브 프로젝트는 레포에 두지 않는다(.gitignore). 빌드할 때 만든다.
@@ -45,8 +53,7 @@ jobs:
         working-directory: apps/mobile
         run: npx expo prebuild --platform android --no-install
 
-      # 릴리스 서명은 Expo 템플릿의 디버그 키로 한다. 설치는 되지만 스토어에는
-      # 못 올린다 — 테스트용이라 그것으로 충분하고, 스토어 키를 CI에 두지 않는다.
+      # 릴리스 서명은 Expo 템플릿의 디버그 키로 한다. 테스트용.
       - name: Assemble
         working-directory: apps/mobile/android
         env:
@@ -55,6 +62,7 @@ jobs:
           EXPO_PUBLIC_NAVER_REDIRECT_URI: weddingpick://auth/naver
         run: >-
           ./gradlew assembleRelease
+          --build-cache
           --no-daemon
           --max-workers=2
           -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g"

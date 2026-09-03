@@ -1,12 +1,12 @@
 # 웨딩픽 통합 파이프라인
 #
-# push(main)  → CI → DB 마이그레이션 → Fly.io staging 배포 → /health 확인
+# push(main)  → CI → DB 마이그레이션 → Render 헬스체크
 # PR          → CI만 (배포 없음)
 # workflow_dispatch → staging 또는 production 수동 배포
 #
 # 필요한 GitHub Secrets:
-#   FLY_API_TOKEN    fly tokens create deploy -a weddingpickl,weddingpick-api
-#   DATABASE_URL     Neon 연결 문자열
+#   DATABASE_URL              Render PostgreSQL 연결 문자열
+#   RENDER_DEPLOY_HOOK_URL    (선택) Render 서비스 Deploy Hook URL
 name: CI / Deploy
 
 on:
@@ -94,26 +94,30 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
-      - uses: superfly/flyctl-actions/setup-flyctl@master
-
-      - name: Deploy (weddingpickl)
-        run: flyctl deploy --config fly.toml --remote-only
+      - name: Trigger Render deploy
+        run: |
+          if [ -n "$RENDER_DEPLOY_HOOK_URL" ]; then
+            curl -sS "$RENDER_DEPLOY_HOOK_URL"
+            echo "Deploy hook triggered"
+          else
+            echo "No deploy hook configured — relying on Render auto-deploy (autoDeploy: true)"
+          fi
         env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
 
       - name: Health check
         run: |
-          echo "Waiting for deployment to settle..."
-          for i in $(seq 1 12); do
-            sleep 5
-            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://weddingpickl.fly.dev/health 2>/dev/null || echo "000")
+          echo "Waiting for Render deployment to settle..."
+          for i in $(seq 1 30); do
+            sleep 15
+            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://weddingpickl.onrender.com/health 2>/dev/null || echo "000")
             if [ "$STATUS" = "200" ]; then
               echo "✓ /health 200 OK"
               exit 0
             fi
-            echo "Attempt $i: HTTP $STATUS"
+            echo "Attempt $i/30: HTTP $STATUS"
           done
-          echo "✗ Health check failed after 60 s"
+          echo "✗ Health check failed after 450 s"
           exit 1
 
   deploy-production:
@@ -137,24 +141,28 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
-      - uses: superfly/flyctl-actions/setup-flyctl@master
-
-      - name: Deploy (weddingpick-api)
-        run: flyctl deploy --config fly.production.toml --remote-only
+      - name: Trigger Render deploy
+        run: |
+          if [ -n "$RENDER_DEPLOY_HOOK_URL_PROD" ]; then
+            curl -sS "$RENDER_DEPLOY_HOOK_URL_PROD"
+            echo "Production deploy hook triggered"
+          else
+            echo "No production deploy hook configured"
+          fi
         env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          RENDER_DEPLOY_HOOK_URL_PROD: ${{ secrets.RENDER_DEPLOY_HOOK_URL_PROD }}
 
       - name: Health check
         run: |
-          echo "Waiting for deployment to settle..."
-          for i in $(seq 1 12); do
-            sleep 5
-            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://weddingpick-api.fly.dev/health 2>/dev/null || echo "000")
+          echo "Waiting for Render production deployment..."
+          for i in $(seq 1 30); do
+            sleep 15
+            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://weddingpickl.onrender.com/health 2>/dev/null || echo "000")
             if [ "$STATUS" = "200" ]; then
               echo "✓ /health 200 OK"
               exit 0
             fi
-            echo "Attempt $i: HTTP $STATUS"
+            echo "Attempt $i/30: HTTP $STATUS"
           done
-          echo "✗ Health check failed after 60 s"
+          echo "✗ Health check failed after 450 s"
           exit 1
