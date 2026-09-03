@@ -1,162 +1,313 @@
-import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { router, Stack } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { getCurrentUser, listCandidates } from '@/api/client';
+import type { CandidateListResponse } from '@weddingpick/api-contract';
 import {
-  ActionButton,
+  Colors,
+  EmptyView,
   ErrorView,
+  FontSize,
   Layout,
+  LineHeight,
   LoadingView,
-  MaxContentWidth,
   Radius,
+  Skeleton,
   Spacing,
   ThemedText,
   ThemedView,
+  useTheme,
 } from '@weddingpick/ui';
-import { getCurrentUser } from '@/api/client';
 
-/**
- * Pick 히스토리.
- *
- * **아직 서버 계약이 없는 화면이다.** `/v1/weddings/{id}/candidates/removed` 경로가
- * 생기는 날 `load()` 안에 실제 호출을 넣는다. 그때까지 구조만 완성해두고 빈 상태로
- * 뜬다.
- *
- * 빈 상태가 있어야 하는 이유: 처음 온 사람에게 아무것도 안 보이는 화면이 뜨면
- * 무엇이 잘못됐는지 생각한다. "아직 없어요"가 그 생각을 막는다.
- */
-
-type PickHistoryItem = {
-  id: string;
-  vendorId: string;
-  vendorName: string;
-  category: string;
-  categoryLabel: string;
-  addedAt: string;
-  removedAt: string;
-};
-
-type PickHistoryGroup = {
-  category: string;
-  categoryLabel: string;
-  items: PickHistoryItem[];
+const S = {
+  title: 'Pick 히스토리',
+  decided: '결정',
+  'section.decided': '결정한 곳',
+  'section.candidates': '후보',
+  'cta.addCandidate': '다시 후보 추가',
+  'empty.title': '아직 Pick한 곳이 없어요',
+  'empty.body': '업체를 찾아 Pick에 담아보세요',
+  'empty.cta': '업체 검색',
+  error: '후보 목록을 불러오지 못했어요',
 };
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
-  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function HistorySkeleton() {
+  return (
+    <View style={{ paddingHorizontal: Layout.gutter, paddingTop: Spacing.four }}>
+      {[1, 2, 3].map((i) => (
+        <View key={i} style={{ marginBottom: Spacing.four }}>
+          <Skeleton width={80} height={14} radius={4} style={{ marginBottom: Spacing.two }} />
+          <Skeleton width="100%" height={72} radius={Radius.card} style={{ marginBottom: Spacing.one }} />
+          <Skeleton width="100%" height={72} radius={Radius.card} />
+        </View>
+      ))}
+    </View>
+  );
 }
 
 export default function PickHistoryScreen() {
-  const [groups, setGroups] = useState<PickHistoryGroup[] | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const { colors } = useTheme();
 
-  const load = useCallback(() => {
-    // weddingId를 확인한 뒤 히스토리를 불러온다.
-    // API 계약이 생기면 여기에 /v1/weddings/{id}/candidates/removed 호출을 넣는다.
-    void getCurrentUser()
-      .then(() => {
-        setLoadError(null);
-        // 아직 히스토리 API가 없어 빈 목록으로 둔다.
-        setGroups([]);
+  const [data, setData] = useState<CandidateListResponse | null>(null);
+  const [weddingId, setWeddingId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    getCurrentUser()
+      .then((user) => {
+        if (!user.weddingId) {
+          setLoading(false);
+          return;
+        }
+        setWeddingId(user.weddingId);
+        return listCandidates(user.weddingId).then(setData);
       })
-      .catch((caught: Error) =>
-        setLoadError(caught.message ?? '정보를 불러오지 못했어요.')
-      );
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
   }, []);
 
-  useEffect(load, [load]);
+  const handleAddCandidate = useCallback(
+    (category: string) => {
+      router.push({ pathname: '/(tabs)/search', params: { category } });
+    },
+    []
+  );
 
-  if (loadError) {
-    return <ErrorView message={loadError} onBack={load} />;
+  const styles = makeStyles(colors);
+
+  if (loading) {
+    return (
+      <ThemedView style={styles.flex}>
+        <Stack.Screen options={{ title: S.title }} />
+        <HistorySkeleton />
+      </ThemedView>
+    );
   }
 
-  if (groups === null) {
-    return <LoadingView />;
+  if (error) {
+    return (
+      <ThemedView style={styles.flex}>
+        <Stack.Screen options={{ title: S.title }} />
+        <ErrorView message={S.error} />
+      </ThemedView>
+    );
+  }
+
+  const hasAnyCandidate =
+    data && data.groups.some((g) => g.candidates.length > 0 || g.decidedVendorId !== null);
+
+  if (!data || !hasAnyCandidate) {
+    return (
+      <ThemedView style={styles.flex}>
+        <Stack.Screen options={{ title: S.title }} />
+        <EmptyView
+          title={S['empty.title']}
+          body={S['empty.body']}
+          cta={S['empty.cta']}
+          onCta={() => router.push('/(tabs)/search')}
+        />
+      </ThemedView>
+    );
   }
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.content}>
-          <ThemedText type="t2">Pick 히스토리</ThemedText>
+    <ThemedView style={styles.flex}>
+      <Stack.Screen options={{ title: S.title }} />
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        {data.groups.map((group) => {
+          const decidedCandidate = group.decidedVendorId
+            ? group.candidates.find((c) => c.vendorId === group.decidedVendorId)
+            : null;
+          const otherCandidates = group.candidates.filter(
+            (c) => c.vendorId !== group.decidedVendorId
+          );
 
-          {groups.length === 0 ? (
-            <ThemedView style={styles.empty}>
-              <ThemedText type="t6" themeColor="textSecondary">
-                아직 Pick에서 뺀 곳이 없어요
-              </ThemedText>
-              <ThemedText type="t7" themeColor="textAssistive">
-                Pick했다가 뺀 업체가 여기 쌓여요
-              </ThemedText>
-            </ThemedView>
-          ) : null}
+          if (group.candidates.length === 0 && !group.decidedVendorId) return null;
 
-          {groups.map((group) => (
-            <ThemedView key={group.category} style={styles.group}>
-              <ThemedText type="t4">{group.categoryLabel}</ThemedText>
+          return (
+            <View key={group.category} style={styles.categoryBlock}>
+              {/* Category header */}
+              <View style={styles.categoryHeader}>
+                <ThemedText themeColor="textSecondary" style={styles.categoryLabel}>
+                  {group.categoryLabel}
+                </ThemedText>
+                <ThemedText themeColor="textAssistive" style={styles.stateLabel}>
+                  {group.stateLabel}
+                </ThemedText>
+              </View>
 
-              {group.items.map((item) => (
-                <ThemedView key={item.id} type="backgroundElement" style={styles.row}>
-                  <ThemedView type="backgroundElement" style={styles.rowMeta}>
-                    <ThemedText type="t5">{item.vendorName}</ThemedText>
-                    <ThemedText type="t7" themeColor="textAssistive">
-                      Pick 추가 {formatDate(item.addedAt)} · 제거 {formatDate(item.removedAt)}
-                    </ThemedText>
-                  </ThemedView>
-                  <ActionButton
-                    label="다시 후보 추가"
-                    onPress={() =>
-                      router.push(`/search/${item.vendorId}` as Parameters<typeof router.push>[0])
-                    }
-                  />
-                </ThemedView>
-              ))}
-            </ThemedView>
-          ))}
+              {/* Decided vendor */}
+              {decidedCandidate && (
+                <View style={styles.subSection}>
+                  <ThemedText themeColor="textAssistive" style={styles.subSectionLabel}>
+                    {S['section.decided']}
+                  </ThemedText>
+                  <View
+                    style={[
+                      styles.vendorRow,
+                      styles.decidedRow,
+                      { borderColor: colors.tint, backgroundColor: colors.tintSubtle },
+                    ]}
+                  >
+                    <View style={styles.vendorInfo}>
+                      <ThemedText style={styles.vendorName} numberOfLines={1}>
+                        {decidedCandidate.vendorName}
+                      </ThemedText>
+                      <ThemedText themeColor="textAssistive" style={styles.vendorMeta}>
+                        {formatDate(decidedCandidate.addedAt)}
+                      </ThemedText>
+                    </View>
+                    <View style={[styles.decidedBadge, { backgroundColor: colors.tint }]}>
+                      <ThemedText
+                        style={[styles.decidedBadgeText, { color: colors.onTint }]}
+                      >
+                        {S.decided}
+                      </ThemedText>
+                    </View>
+                  </View>
+                </View>
+              )}
 
-          {groups.length > 0 ? (
-            <ThemedText type="t7" themeColor="textAssistive">
-              업종별로 정리해요
-            </ThemedText>
-          ) : null}
-        </ScrollView>
-      </SafeAreaView>
+              {/* Other candidates */}
+              {otherCandidates.length > 0 && (
+                <View style={styles.subSection}>
+                  <ThemedText themeColor="textAssistive" style={styles.subSectionLabel}>
+                    {S['section.candidates']}
+                  </ThemedText>
+                  {otherCandidates.map((candidate) => (
+                    <View
+                      key={candidate.id}
+                      style={[
+                        styles.vendorRow,
+                        { borderColor: colors.border, backgroundColor: colors.backgroundElement },
+                      ]}
+                    >
+                      <View style={styles.vendorInfo}>
+                        <ThemedText style={styles.vendorName} numberOfLines={1}>
+                          {candidate.vendorName}
+                        </ThemedText>
+                        <ThemedText themeColor="textAssistive" style={styles.vendorMeta}>
+                          {formatDate(candidate.addedAt)}
+                          {candidate.addedByPartner ? ' · 배우자 추가' : ''}
+                        </ThemedText>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {/* Add candidate CTA */}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.addCta,
+                  { borderColor: colors.border },
+                  pressed && { opacity: 0.6 },
+                ]}
+                onPress={() => handleAddCandidate(group.category)}
+                hitSlop={8}
+              >
+                <ThemedText themeColor="tint" style={styles.addCtaText}>
+                  {S['cta.addCandidate']}
+                </ThemedText>
+              </Pressable>
+            </View>
+          );
+        })}
+      </ScrollView>
     </ThemedView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-  },
-  content: {
-    paddingHorizontal: Layout.gutter,
-    paddingTop: Spacing.five,
-    paddingBottom: Spacing.six,
-    gap: Spacing.four,
-  },
-  empty: {
-    paddingTop: Spacing.six,
-    alignItems: 'center',
-    gap: Spacing.two,
-  },
-  group: {
-    gap: Spacing.two,
-  },
-  row: {
-    borderRadius: Radius.medium,
-    padding: Spacing.three,
-    gap: Spacing.two,
-  },
-  rowMeta: {
-    gap: 2,
-  },
-});
+function makeStyles(colors: ReturnType<typeof useTheme>['colors']) {
+  return StyleSheet.create({
+    flex: { flex: 1 },
+    scroll: {
+      paddingHorizontal: Layout.gutter,
+      paddingTop: Spacing.four,
+      paddingBottom: Spacing.six,
+    },
+    categoryBlock: {
+      marginBottom: Layout.sectionGap,
+    },
+    categoryHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: Spacing.two,
+    },
+    categoryLabel: {
+      fontSize: FontSize.sub,
+      lineHeight: LineHeight.sub,
+      fontWeight: '700',
+    },
+    stateLabel: {
+      fontSize: FontSize.caption,
+      lineHeight: LineHeight.caption,
+    },
+    subSection: {
+      marginBottom: Spacing.two,
+    },
+    subSectionLabel: {
+      fontSize: FontSize.caption,
+      lineHeight: LineHeight.caption,
+      marginBottom: Spacing.one,
+    },
+    vendorRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      minHeight: Layout.rowMinHeight,
+      borderRadius: Radius.card,
+      borderWidth: 1,
+      paddingHorizontal: Spacing.three,
+      paddingVertical: Spacing.two,
+      marginBottom: Spacing.one,
+    },
+    decidedRow: {
+      borderWidth: 1.5,
+    },
+    vendorInfo: {
+      flex: 1,
+    },
+    vendorName: {
+      fontSize: FontSize.sub,
+      lineHeight: LineHeight.sub,
+      fontWeight: '700',
+      marginBottom: 2,
+    },
+    vendorMeta: {
+      fontSize: FontSize.caption,
+      lineHeight: LineHeight.caption,
+    },
+    decidedBadge: {
+      borderRadius: Radius.pill,
+      paddingHorizontal: Spacing.two,
+      paddingVertical: 3,
+      marginLeft: Spacing.two,
+    },
+    decidedBadgeText: {
+      fontSize: FontSize.micro,
+      fontWeight: '700',
+    },
+    addCta: {
+      height: Layout.controlMedium,
+      borderRadius: Radius.medium,
+      borderWidth: 1,
+      borderStyle: 'dashed',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: Spacing.one,
+    },
+    addCtaText: {
+      fontSize: FontSize.sub,
+      lineHeight: LineHeight.sub,
+      fontWeight: '700',
+    },
+  });
+}
