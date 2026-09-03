@@ -84,8 +84,15 @@ export default function PickConfirmScreen() {
       setDecided(true);
       playCheckPop();
 
-      /* 460ms 뒤에 이전 화면으로 돌아간다 — 애니메이션을 다 보고 나서. */
-      setTimeout(() => router.back(), 460);
+      /* 460ms 뒤에 결정 완료 화면(WP-PICK-006)으로 넘어간다. */
+      setTimeout(
+        () =>
+          router.replace({
+            pathname: '/(tabs)/pick/done',
+            params: { category, vendorName },
+          }),
+        460
+      );
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '정하지 못했어요. 다시 시도해주세요.');
     } finally {
