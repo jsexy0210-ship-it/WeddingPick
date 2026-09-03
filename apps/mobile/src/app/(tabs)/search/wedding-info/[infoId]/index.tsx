@@ -1,12 +1,15 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   ActionButton,
+  ErrorView,
   Layout,
   MaxContentWidth,
   Radius,
+  Skeleton,
   Spacing,
   ThemedText,
   ThemedView,
@@ -54,26 +57,68 @@ const CATEGORY_LABEL: Record<WeddingInfoCategory, string> = {
   honeymoon: '허니문',
 };
 
+/** 스켈레톤 — 웨딩 정보 상세 페이지 뼈대. */
+function WeddingInfoDetailSkeleton() {
+  return (
+    <ScrollView contentContainerStyle={styles.content}>
+      <Skeleton height={14} width="20%" />
+      <Skeleton height={35} width="75%" />
+      <Skeleton height={14} width="25%" />
+      <ThemedView type="backgroundElement" style={styles.card}>
+        <Skeleton height={16} width="40%" />
+        <Skeleton height={14} width="90%" />
+        <Skeleton height={14} width="80%" />
+        <Skeleton height={14} width="85%" />
+      </ThemedView>
+      <ThemedView type="backgroundElement" style={styles.card}>
+        <Skeleton height={16} width="30%" />
+        <Skeleton height={14} width="70%" />
+        <Skeleton height={14} width="60%" />
+      </ThemedView>
+    </ScrollView>
+  );
+}
+
 /**
  * 웨딩 정보 상세. 핸드오프 WP-EXPO-004.
  * 본문·관련업체·체크리스트·Pick 연결.
+ * 상태: 로딩 → 오류 / 상세 있음.
  */
 export default function WeddingInfoDetailScreen() {
-  // TODO: API 미구현 — infoId로 웨딩 정보 상세 조회
-  const { infoId: _infoId } = useLocalSearchParams<{ infoId: string }>();
-  const info = null as WeddingInfoDetail | null;
+  const { infoId } = useLocalSearchParams<{ infoId: string }>();
+  const [info, setInfo] = useState<WeddingInfoDetail | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // TODO: API 미구현 — GET /v1/wedding-info/:infoId
+    void infoId;
+    setError('웨딩 정보를 아직 가져올 수 없어요');
+  }, [infoId]);
+
+  function retry() {
+    setError(null);
+    setInfo(null);
+    // TODO: API 미구현 — 재시도 시 API 호출
+    setError('웨딩 정보를 아직 가져올 수 없어요');
+  }
+
+  if (error) {
+    return (
+      <ErrorView
+        title={error}
+        onRetry={retry}
+        retryLabel="다시 시도"
+        onBack={() => router.back()}
+        backLabel="돌아가기"
+      />
+    );
+  }
 
   if (!info) {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
-          <ThemedView style={styles.centerContent}>
-            {/* TODO: API 미구현 — infoId로 웨딩 정보 조회 */}
-            <ThemedText type="t7" themeColor="textSecondary">
-              웨딩 정보를 불러올 수 없습니다.
-            </ThemedText>
-            <ActionButton label="돌아가기" onPress={() => router.back()} />
-          </ThemedView>
+          <WeddingInfoDetailSkeleton />
         </SafeAreaView>
       </ThemedView>
     );
@@ -102,11 +147,18 @@ export default function WeddingInfoDetailScreen() {
           {/* 체크리스트 */}
           {info.checklist.length > 0 && (
             <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="t6">체크리스트</ThemedText>
+              <ThemedText type="t6" style={styles.sectionLabel}>체크리스트</ThemedText>
               {info.checklist.map((item) => (
                 <ThemedView key={item.id} style={styles.checkItem}>
-                  <ThemedText type="t7" themeColor={item.done ? 'textSecondary' : undefined}>
-                    {item.done ? '✓' : '○'} {item.label}
+                  <ThemedText
+                    type="t7"
+                    themeColor={item.done ? 'textAssistive' : undefined}
+                    style={item.done ? styles.checkDone : undefined}
+                  >
+                    {item.label}
+                  </ThemedText>
+                  <ThemedText type="t7" themeColor={item.done ? 'tint' : 'textAssistive'}>
+                    {item.done ? '완료' : '미완료'}
                   </ThemedText>
                 </ThemedView>
               ))}
@@ -116,7 +168,7 @@ export default function WeddingInfoDetailScreen() {
           {/* 관련 업체 */}
           {info.relatedVendors.length > 0 && (
             <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="t6">관련 업체</ThemedText>
+              <ThemedText type="t6" style={styles.sectionLabel}>관련 업체</ThemedText>
               {info.relatedVendors.map((vendor) => (
                 <ActionButton
                   key={vendor.id}
@@ -129,9 +181,9 @@ export default function WeddingInfoDetailScreen() {
 
           {/* Pick 연결 안내 */}
           <ThemedView type="backgroundElement" style={styles.card}>
-            <ThemedText type="t6">Pick과 연결하기</ThemedText>
+            <ThemedText type="t6" style={styles.sectionLabel}>Pick과 연결하기</ThemedText>
             <ThemedText type="t7" themeColor="textSecondary">
-              관련 업체를 Pick에 추가해 비교·상담 요청까지 이어갈 수 있어요.
+              관련 업체를 Pick에 담아 비교해보세요
             </ThemedText>
             {/* TODO: API 미구현 — Pick 연결 흐름 (검색 화면으로 이동) */}
             <ActionButton
@@ -156,14 +208,15 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.four,
     gap: Spacing.two,
   },
-  centerContent: {
-    flex: 1,
-    padding: Layout.gutter,
-    gap: Spacing.two,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   header: { gap: Spacing.one },
   card: { borderRadius: Radius.medium, padding: Spacing.three, gap: Spacing.one },
-  checkItem: { paddingVertical: 2 },
+  sectionLabel: { fontWeight: '700' },
+  checkItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: Spacing.half,
+    minHeight: Layout.touchTarget,
+  },
+  checkDone: { textDecorationLine: 'line-through' },
 });
