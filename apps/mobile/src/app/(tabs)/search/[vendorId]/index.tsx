@@ -144,9 +144,9 @@ export default function VendorDetailScreen() {
           </ThemedView>
 
           {/*
-            실제 결제. **잠기지 않는다** — 최종통합정책 v2.0 K-6이 "결제인증 회원만
-            접근"을 폐기했다. 무엇을 보여줄지는 사람이 아니라 데이터 수가 정한다
-            (0~2 수집 중 / 3~4 구간+안내 / 5~9 구간 / 10+ 중앙값).
+            실제 결제. **잠기지 않는다** — 최종통합정책 v2.0 K-6이 "Pick 인증 회원만
+            접근"을 폐기했다. 무엇을 보여줄지는 사람이 아니라 건수가 정한다
+            (0~2 수집 중 / 3~4 구간+안내 / 5~9 구간 / 10+ 기준금액).
 
             타입이 단계별로 갈려 있어, 수집 중인 업체에 구간을 그리는 코드는
             애초에 컴파일되지 않는다.
@@ -169,7 +169,7 @@ export default function VendorDetailScreen() {
                 <ThemedText type="amount" numeric style={styles.onTint}>
                   {rangeLabel(vendor.prices.paidPrice.low, vendor.prices.paidPrice.high)}
                 </ThemedText>
-                {/* 원문 16번: 데이터 수와 기준 기간을 금액 옆에 반드시 함께 적는다. */}
+                {/* 원문 16번: 건수와 기준 기간을 금액 옆에 반드시 함께 적는다. */}
                 <ThemedText type="t7" style={styles.onTint}>
                   {vendor.prices.paidPrice.caption}
                 </ThemedText>
@@ -273,7 +273,7 @@ export default function VendorDetailScreen() {
                   style={styles.card}>
                   <ThemedText type="smallBold">{product.productLabel}</ThemedText>
                   <ThemedText type="subtitle">{won(product.stat.median)}</ThemedText>
-                  {/* 데이터 수와 기준 기간을 늘 함께 보인다. */}
+                  {/* 건수와 기준 기간을 늘 함께 보인다. */}
                   <ThemedText type="small" themeColor="textSecondary">
                     {DOCUMENT_TYPE_LABEL[product.docType]} · 확인된 계약{' '}
                     {product.stat.sampleCount}건 · {product.stat.periodStart}~
@@ -302,7 +302,7 @@ export default function VendorDetailScreen() {
                   <ThemedText type="small" themeColor="textSecondary">
                     확인된 후기 {vendor.usageScore.count}건
                   </ThemedText>
-                  {/* 별점은 5점 만점을 채운 비율로 그린다. 핸드오프 8번. */}
+                  {/* 이용 점수는 5점 만점을 채운 비율로 그린다. 핸드오프 8번. */}
                   {vendor.usageScore.aspects.map((aspect) => (
                     <ThemedView key={aspect.key} type="backgroundElement" style={styles.meter}>
                       <ThemedView type="backgroundElement" style={styles.meterHead}>
@@ -318,7 +318,7 @@ export default function VendorDetailScreen() {
                   ))}
 
                   {/*
-                    체크리스트는 평점과 다른 배열로 온다. 4.2점과 78%는 다른 것을
+                    체크리스트는 이용 점수와 다른 배열로 온다. 4.2점과 78%는 다른 것을
                     재는 숫자라 같은 막대로 그리지 않는다. 표본이 모자라면 숫자
                     대신 "수집 중"이다 — 흐린 숫자도 숫자다.
                   */}
@@ -453,7 +453,7 @@ export default function VendorDetailScreen() {
                 style={styles.sourceRow}>
                 <View style={[styles.badge, { backgroundColor: theme.backgroundSelected }]}>
                   <ThemedText type="badge" themeColor="textSecondary">
-                    공공데이터
+                    공공정보
                   </ThemedText>
                 </View>
                 <ThemedText type="t7" themeColor="textAssistive">
