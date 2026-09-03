@@ -37,6 +37,7 @@ function devProvider() {
 
 async function main() {
   const config = loadConfig();
+  const dev = devProvider();
 
   /*
    * 법적 고지가 비어 있으면 Production은 뜨지 않는다.
@@ -71,7 +72,7 @@ async function main() {
         }),
       }),
       // 개발용은 apple 자리를 덮어쓴다. 실제 클라이언트 ID가 있으면 그쪽이 이긴다.
-      ...(!config.appleClientId && devProvider() && { apple: devProvider()! }),
+      ...(!config.appleClientId && dev && { apple: dev }),
     },
   };
 

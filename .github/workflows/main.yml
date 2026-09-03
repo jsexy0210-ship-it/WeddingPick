@@ -5,8 +5,13 @@
 # workflow_dispatch → staging 또는 production 수동 배포
 #
 # 필요한 GitHub Secrets:
-#   DATABASE_URL              Render PostgreSQL 연결 문자열
-#   RENDER_DEPLOY_HOOK_URL    (선택) Render 서비스 Deploy Hook URL
+#   DATABASE_URL_STAGING              (권장) staging PostgreSQL 연결 문자열
+#   DATABASE_URL_PRODUCTION           (권장) production PostgreSQL 연결 문자열
+#   DATABASE_URL                      (선택) 위 값 미설정 시 fallback
+#   RENDER_DEPLOY_HOOK_URL            (선택) staging Render 서비스 Deploy Hook URL
+#   RENDER_DEPLOY_HOOK_URL_PROD       (선택) production Render 서비스 Deploy Hook URL
+#   STAGING_HEALTHCHECK_URL           (선택) 기본값: https://weddingpickl-staging.onrender.com/health
+#   PRODUCTION_HEALTHCHECK_URL        (선택) 기본값: https://weddingpickl.onrender.com/health
 name: CI / Deploy
 
 on:
@@ -62,6 +67,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Copy lint
+        run: node lint-copy.js apps/mobile apps/web
+
       - name: Test
         run: npm test
 
@@ -92,7 +100,7 @@ jobs:
       - name: DB Migrate
         run: npm run migrate --workspace @weddingpick/db
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL_STAGING || secrets.DATABASE_URL }}
 
       - name: Trigger Render deploy
         run: |
@@ -110,7 +118,7 @@ jobs:
           echo "Waiting for Render deployment to settle..."
           for i in $(seq 1 30); do
             sleep 15
-            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://weddingpickl.onrender.com/health 2>/dev/null || echo "000")
+            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" "$HEALTHCHECK_URL" 2>/dev/null || echo "000")
             if [ "$STATUS" = "200" ]; then
               echo "✓ /health 200 OK"
               exit 0
@@ -119,6 +127,8 @@ jobs:
           done
           echo "✗ Health check failed after 450 s"
           exit 1
+        env:
+          HEALTHCHECK_URL: ${{ secrets.STAGING_HEALTHCHECK_URL || 'https://weddingpickl-staging.onrender.com/health' }}
 
   deploy-production:
     name: Deploy → Production
@@ -139,7 +149,7 @@ jobs:
       - name: DB Migrate
         run: npm run migrate --workspace @weddingpick/db
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL_PRODUCTION || secrets.DATABASE_URL }}
 
       - name: Trigger Render deploy
         run: |
@@ -157,7 +167,7 @@ jobs:
           echo "Waiting for Render production deployment..."
           for i in $(seq 1 30); do
             sleep 15
-            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://weddingpickl.onrender.com/health 2>/dev/null || echo "000")
+            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" "$HEALTHCHECK_URL" 2>/dev/null || echo "000")
             if [ "$STATUS" = "200" ]; then
               echo "✓ /health 200 OK"
               exit 0
@@ -166,3 +176,5 @@ jobs:
           done
           echo "✗ Health check failed after 450 s"
           exit 1
+        env:
+          HEALTHCHECK_URL: ${{ secrets.PRODUCTION_HEALTHCHECK_URL || 'https://weddingpickl.onrender.com/health' }}
