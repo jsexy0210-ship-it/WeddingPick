@@ -1,9 +1,11 @@
 import { VENDOR_CATEGORY_LABEL, type VendorCategory } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { decideCategory, getCurrentUser } from '@/api/client';
+import { won } from '@/features/quotes/quote-result-view';
 import {
   ActionButton,
   Layout,
@@ -12,81 +14,82 @@ import {
   Spacing,
   ThemedText,
   ThemedView,
+  WeddingMark,
   useTheme,
 } from '@weddingpick/ui';
 
 /**
- * 최종 결정 확인 시트. 핸드오프 WP-PICK-005.
- * 선택한 업체 정보 요약 + Pick Mark 체크 팝 애니메이션(460ms).
- * 이 화면은 decideCategory 성공 후에 온다 — 결정은 이미 완료된 상태.
+ * 최종 결정 확인 시트. WP-PICK-005.
+ *
+ * 업체명·카테고리·금액을 보여주고 "결정할게요"를 누르면 Pick Mark 체크 팝
+ * 애니메이션(460ms, cubic-bezier(.34,1.56,.64,1))을 재생한 뒤 결정을 저장한다.
+ *
+ * **결정은 되돌릴 수 있다.** 바꾸는 화면이 따로 있고, 이 화면에서는 그 이야기를
+ * 꺼내지 않는다 — 선택을 앞둔 사람에게 "취소할 수 있어요"를 먼저 말하면
+ * 결정을 돕는 것이 아니라 미루게 만든다.
  */
-
-type ConfirmParams = {
-  category?: string;
-  vendorId?: string;
-  vendorName?: string;
-};
-
-/** Pick Mark: 하트 안에 체크 — CLAUDE.md §2 확정본. */
-function PickMark({ size = 64 }: { size?: number }) {
+export default function PickConfirmScreen() {
   const theme = useTheme();
-  const scale = useRef(new Animated.Value(0)).current;
+  const params = useLocalSearchParams<{
+    category: string;
+    vendorId: string;
+    vendorName: string;
+    amount?: string;
+  }>();
 
-  useEffect(() => {
-    // 체크 팝 애니메이션: scale 0 → 1.18 → 1 / 460ms / cubic-bezier(.34,1.56,.64,1)
+  const category = params.category as VendorCategory;
+  const vendorId = params.vendorId ?? '';
+  const vendorName = params.vendorName ?? '';
+  const amount = params.amount ? Number(params.amount) : null;
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  /** 애니메이션이 재생 중이거나 끝난 상태 */
+  const [decided, setDecided] = useState(false);
+
+  const markScale = useRef(new Animated.Value(0)).current;
+
+  function playCheckPop() {
+    /*
+      CLAUDE.md §7: 체크 팝 — scale 0 → 1.18 → 1, 460ms,
+      cubic-bezier(.34,1.56,.64,1). React Native Animated에서 spring으로
+      같은 효과를 낸다. Easing.elastic(1.2)은 과탄성 곡선으로 1.18→1을 흉내낸다.
+    */
     Animated.sequence([
-      Animated.timing(scale, {
+      Animated.timing(markScale, {
         toValue: 1.18,
         duration: 300,
-        easing: Easing.out(Easing.back(2.5)),
+        easing: Easing.out(Easing.back(2)),
         useNativeDriver: true,
       }),
-      Animated.timing(scale, {
+      Animated.timing(markScale, {
         toValue: 1,
         duration: 160,
-        easing: Easing.inOut(Easing.ease),
+        easing: Easing.out(Easing.quad),
         useNativeDriver: true,
       }),
     ]).start();
-  }, [scale]);
-
-  return (
-    <Animated.View style={{ transform: [{ scale }] }}>
-      <Animated.View
-        style={[
-          styles.pickMark,
-          { width: size, height: size, backgroundColor: theme.tint },
-        ]}
-      >
-        {/* SVG path는 웹 전용 — React Native에서는 tint 원 위에 아이콘 대체 */}
-        <ThemedText
-          style={[styles.checkGlyph, { fontSize: size * 0.45, color: theme.onTint }]}
-        >
-          {'✓'}
-        </ThemedText>
-      </Animated.View>
-    </Animated.View>
-  );
-}
-
-export default function ConfirmScreen() {
-  const params = useLocalSearchParams<ConfirmParams>();
-  const { category, vendorName } = params;
-
-  const categoryLabel = category
-    ? (VENDOR_CATEGORY_LABEL[category as VendorCategory] ?? category)
-    : '';
-
-  function goHome() {
-    router.dismissAll();
-    router.replace('/(tabs)/pick');
   }
 
-  function goDetail() {
-    if (params.vendorId) {
-      router.push(`/search/${params.vendorId}`);
-    } else {
-      router.replace('/(tabs)/pick');
+  async function decide() {
+    if (loading || decided) return;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const me = await getCurrentUser();
+      if (!me.weddingId) throw new Error('결혼 정보가 없어요.');
+      await decideCategory(me.weddingId, { category, vendorId });
+
+      setDecided(true);
+      playCheckPop();
+
+      /* 460ms 뒤에 이전 화면으로 돌아간다 — 애니메이션을 다 보고 나서. */
+      setTimeout(() => router.back(), 460);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : '정하지 못했어요. 다시 시도해주세요.');
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -94,47 +97,63 @@ export default function ConfirmScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ThemedView style={styles.content}>
-          {/* Pick Mark 팝 애니메이션 */}
-          <PickMark size={80} />
+          {/* Pick Mark */}
+          <Animated.View
+            style={[
+              styles.markWrap,
+              { backgroundColor: theme.tint },
+              { transform: [{ scale: markScale }] },
+            ]}>
+            <Svg
+              width={64}
+              height={64}
+              viewBox={`0 0 ${MARK_VIEWBOX} ${MARK_VIEWBOX}`}
+              fill="none">
+              <Path
+                d={MARK_HEART_PATH}
+                stroke="#ffffff"
+                strokeWidth={MARK_STROKE}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <Path
+                d={MARK_CHECK_PATH}
+                stroke="#ffffff"
+                strokeWidth={MARK_STROKE}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
+          </Animated.View>
 
-          {/* 완료 메시지 */}
-          <ThemedView style={styles.textBlock}>
-            <ThemedText type="t2" style={styles.center}>
-              {categoryLabel} 결정 완료
+          {/* 요약 카드 */}
+          <ThemedView type="backgroundElement" style={styles.card}>
+            <ThemedText type="t7" themeColor="textSecondary">
+              {VENDOR_CATEGORY_LABEL[category]}
             </ThemedText>
-            {vendorName ? (
-              <ThemedText type="t6" themeColor="textSecondary" style={styles.center}>
-                {vendorName}으로 정했어요
+            <ThemedText type="t4">{vendorName}</ThemedText>
+            {amount !== null ? (
+              <ThemedText type="t5" numeric themeColor="textSecondary">
+                {won(amount)}
               </ThemedText>
             ) : null}
           </ThemedView>
 
-          {/* 안내 */}
-          <ThemedView type="backgroundElement" style={styles.infoCard}>
-            <ThemedText type="t7" themeColor="textSecondary">
-              우리웨딩 준비현황과 지출에 자동으로 반영돼요
+          {error ? (
+            <ThemedText type="t7" themeColor="negative">
+              {error}
             </ThemedText>
-            <ThemedText type="t7" themeColor="textSecondary">
-              결정은 언제든 바꿀 수 있어요
-            </ThemedText>
-          </ThemedView>
+          ) : null}
 
-          {/* CTA */}
-          <ThemedView style={styles.actions}>
+          {/* Primary CTA — 52h */}
+          <ThemedView style={styles.cta}>
             <ActionButton
               variant="primary"
-              size="xlarge"
-              label="Pick 목록으로"
-              onPress={goHome}
+              label="결정할게요"
+              disabled={loading || decided}
+              onPress={() => void decide()}
             />
-            {params.vendorId ? (
-              <ActionButton
-                variant="secondary"
-                size="large"
-                label="업체 상세 보기"
-                onPress={goDetail}
-              />
-            ) : null}
+            <ActionButton label="취소" onPress={() => router.back()} />
           </ThemedView>
         </ThemedView>
       </SafeAreaView>
@@ -143,33 +162,37 @@ export default function ConfirmScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
-  safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
-  content: {
+  container: { flex: 1 },
+  safeArea: {
     flex: 1,
+    alignSelf: 'center',
+    maxWidth: MaxContentWidth,
+    width: '100%',
+    justifyContent: 'center',
+  },
+  content: {
     paddingHorizontal: Layout.gutter,
-    paddingTop: Spacing.five,
-    paddingBottom: Layout.sectionGap,
     gap: Spacing.three,
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  pickMark: {
-    borderRadius: Radius.pick,
+  markWrap: {
+    width: 96,
+    height: 96,
+    borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: Spacing.two,
   },
-  checkGlyph: {
-    lineHeight: undefined,
-    textAlign: 'center',
-  },
-  textBlock: { gap: Spacing.one, alignItems: 'center' },
-  center: { textAlign: 'center' },
-  infoCard: {
-    borderRadius: Radius.medium,
+  card: {
+    borderRadius: Radius.card,
     padding: Spacing.three,
     gap: Spacing.one,
     width: '100%',
+    alignItems: 'center',
   },
-  actions: { gap: Spacing.two, width: '100%', marginTop: Spacing.two },
+  cta: {
+    width: '100%',
+    gap: Spacing.two,
+    marginTop: Spacing.two,
+  },
 });

@@ -47,7 +47,7 @@ function createOidcProvider(options: {
   provider: IdentityProviderName;
   issuer: string | string[];
   jwksUrl: string;
-  audience: string;
+  audience: string | string[];
 }): IdentityProvider {
   // jose는 ESM 전용이라 실행 시점에 불러온다. 공개키 묶음은 한 번만 만들어 재사용한다.
   let jwks: Awaited<ReturnType<typeof loadJwks>> | undefined;
