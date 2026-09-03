@@ -125,6 +125,8 @@ import {
   weddingInfoListResponseSchema,
   weddingInfoDetailSchema,
   type ExpoListResponse,
+  type ExpoItem,
+  type ExpoStatus,
   type ExpoDetail,
   type WeddingInfoListResponse,
   type WeddingInfoDetail,
@@ -1141,74 +1143,3 @@ export async function revokePaymentConsent(): Promise<Settings> {
   return request('/v1/me/payment-consent', settingsSchema, { method: 'DELETE' });
 }
 
-/*
- * ---------------------------------------------------------------------------
- * 박람회 (WP-EXPO-001, WP-EXPO-002, WP-EXPO-005)
- * ---------------------------------------------------------------------------
- */
-
-const expoStatusSchema = z.enum(['upcoming', 'ongoing', 'closed']);
-
-const expoItemSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  organizer: z.string(),
-  startsAt: z.string(),
-  endsAt: z.string(),
-  venue: z.string(),
-  region: z.string(),
-  status: expoStatusSchema,
-  isDeadlineSoon: z.boolean(),
-  sourceNote: z.string(),
-  lastVerifiedAt: z.string(),
-});
-
-const expoListResponseSchema = z.object({
-  items: z.array(expoItemSchema),
-  nextCursor: z.string().nullable(),
-});
-
-const expoDetailSchema = expoItemSchema.extend({
-  address: z.string(),
-  registrationDeadline: z.string().nullable(),
-  benefits: z.array(z.string()),
-  description: z.string(),
-  notifyEnabled: z.boolean(),
-});
-
-const expoNotifyResponseSchema = z.object({ notifyEnabled: z.boolean() });
-
-export type ExpoItem = z.infer<typeof expoItemSchema>;
-export type ExpoDetail = z.infer<typeof expoDetailSchema>;
-export type ExpoStatus = z.infer<typeof expoStatusSchema>;
-
-/** 박람회 목록. WP-EXPO-001. */
-export async function listExpos(params?: {
-  sort?: 'date' | 'region';
-  region?: string;
-  cursor?: string;
-}): Promise<z.infer<typeof expoListResponseSchema>> {
-  const q = new URLSearchParams();
-  if (params?.sort) q.set('sort', params.sort);
-  if (params?.region && params.region !== '전체') q.set('region', params.region);
-  if (params?.cursor) q.set('cursor', params.cursor);
-  const qs = q.toString() ? `?${q.toString()}` : '';
-  return request(`/v1/expos${qs}`, expoListResponseSchema);
-}
-
-/** 박람회 상세. WP-EXPO-002. */
-export async function getExpo(expoId: string): Promise<ExpoDetail> {
-  return request(`/v1/expos/${expoId}`, expoDetailSchema);
-}
-
-/** 박람회 알림 구독·해제. enabled=true → PUT, enabled=false → DELETE. */
-export async function toggleExpoNotify(
-  expoId: string,
-  enabled: boolean
-): Promise<{ notifyEnabled: boolean }> {
-  return request(
-    `/v1/expos/${expoId}/notify`,
-    expoNotifyResponseSchema,
-    { method: enabled ? 'PUT' : 'DELETE' }
-  );
-}

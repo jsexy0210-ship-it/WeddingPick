@@ -1,19 +1,20 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Linking, Platform, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { getExpo, type ExpoDetail } from '@/api/client';
 import {
   ActionButton,
   Layout,
   MaxContentWidth,
   Radius,
+  Skeleton,
   Spacing,
   ThemedText,
   ThemedView,
 } from '@weddingpick/ui';
 
-// TODO: API 미구현 — GET /v1/expos/:expoId (캘린더 추가용 박람회 일정 조회)
 type CalendarOption = 'google' | 'apple' | 'outlook';
 
 const CALENDAR_LABEL: Record<CalendarOption, string> = {
@@ -70,13 +71,21 @@ function buildOutlookUrl(params: {
 export default function CalendarScreen() {
   const { expoId } = useLocalSearchParams<{ expoId: string }>();
   const [adding, setAdding] = useState<CalendarOption | null>(null);
+  const [expo, setExpo] = useState<ExpoDetail | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
-  // TODO: API 미구현 — expoId로 박람회 일정 조회 후 실제 값으로 교체
-  const expoTitle = '웨딩 박람회';
-  const expoStartsAt = '';
-  const expoEndsAt = '';
-  const expoVenue = '';
-  const expoAddress = '';
+  useEffect(() => {
+    if (!expoId) return;
+    getExpo(expoId)
+      .then(setExpo)
+      .catch(() => setLoadError(true));
+  }, [expoId]);
+
+  const expoTitle = expo?.title ?? '웨딩 박람회';
+  const expoStartsAt = expo?.startsAt ?? '';
+  const expoEndsAt = expo?.endsAt ?? '';
+  const expoVenue = expo?.venue ?? '';
+  const expoAddress = expo?.address ?? '';
 
   async function handleAdd(option: CalendarOption) {
     setAdding(option);

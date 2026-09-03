@@ -169,6 +169,7 @@ export function registerExpoRoutes(app: FastifyInstance, context: AppContext): v
         : null,
       benefits: Array.isArray(expo.benefits) ? expo.benefits : [],
       description: expo.description,
+      registrationUrl: null,
       notifyEnabled,
       sourceNote: expo.source_note,
       lastVerifiedAt: expo.last_verified_at.toISOString().slice(0, 10),

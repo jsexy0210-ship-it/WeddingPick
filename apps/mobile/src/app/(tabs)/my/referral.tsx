@@ -137,29 +137,18 @@ export default function ReferralScreen() {
           {S.statsSection}
         </ThemedText>
 
-        {data.invitedCount === 0 ? (
+        {data.uses === 0 ? (
           <EmptyView title={S['empty.title']} description={S['empty.description']} />
         ) : (
           <>
             <View style={styles.statsRow}>
               <View style={[styles.statCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
                 <ThemedText themeColor="textSecondary" style={styles.statLabel}>
-                  {S['stats.invited']}
-                </ThemedText>
-                <View style={styles.statValueRow}>
-                  <ThemedText style={styles.statValue}>{data.invitedCount}</ThemedText>
-                  <ThemedText themeColor="textAssistive" style={styles.statUnit}>
-                    {S['stats.unit']}
-                  </ThemedText>
-                </View>
-              </View>
-              <View style={[styles.statCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-                <ThemedText themeColor="textSecondary" style={styles.statLabel}>
                   {S['stats.qualified']}
                 </ThemedText>
                 <View style={styles.statValueRow}>
                   <ThemedText style={[styles.statValue, { color: theme.tint }]}>
-                    {data.qualifiedCount}
+                    {data.uses}
                   </ThemedText>
                   <ThemedText themeColor="textAssistive" style={styles.statUnit}>
                     {S['stats.unit']}
