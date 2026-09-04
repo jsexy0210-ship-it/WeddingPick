@@ -46,7 +46,7 @@ import {
 } from '@weddingpick/ui';
 
 /**
- * WP-VEND-001 업체 상세. 섹션 순서 고정(orderLocked).
+ * WP-VEND-001 업체 상세. 섬션 순서 고정(orderLocked).
  *
  * 별점도 후기도 없다. 확인된 실제 계약이 충분히 모인 상품만 가격을 보여주고, 그렇지
  * 않으면 그렇다고 말한다 — 자료가 없는 업체와 싼 업체가 같은 얼굴이 되면 안 된다.
@@ -59,7 +59,7 @@ export default function VendorDetailScreen() {
   const theme = useTheme();
 
   const [vendor, setVendor] = useState<VendorDetail | null>(null);
-  /** 조건이 비슷한 결제 사례. 상세와 따로 읽는다 — 하나가 늦어도 나머지는 뜬다. */
+  /** 조건이 비슷한 결제 사례. 상세와 따로 읽는다 — 하나가 닫어도 나머지는 뚀다. */
   const [conditions, setConditions] = useState<ConditionStats | null>(null);
   /** Pick 인증 후기 (verification !== 'reported'). 최대 3건. */
   const [verifiedReviews, setVerifiedReviews] = useState<Review[]>([]);
@@ -86,7 +86,7 @@ export default function VendorDetailScreen() {
       .catch((caught: Error) => setError(caught.message));
 
     /*
-     * 실패해도 조용히 넘긴다. 조건별은 곁가지라, 못 읽었다고 업체 화면 전체가
+     * 실패해도 조용히 넘긴다. 조건별은 곰가지라, 못 읽었다고 업체 화면 전체가
      * 오류로 바뀌면 잃는 것이 더 크다.
      */
     getVendorConditions(vendorId)
@@ -136,6 +136,36 @@ export default function VendorDetailScreen() {
       setSaveNote('Pick했어요. Pick 탭에서 보실 수 있어요.');
     } catch (caught) {
       setSaveNote(caught instanceof Error ? caught.message : 'Pick하지 못했어요.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /**
+   * 비교에 담기. 이 앱에는 별도의 "비교 바구니"가 없다 — 비교는 같은 업종에
+   * Pick해둘 후보끼리 한다(Pick 탭 SharedSection과 동일한 모델). 그래서 이
+   * 버튼도 Pick과 같은 저장을 하고, 대신 바로 그 업종의 후보 목록으로
+   * 이동시켜 비교가 시작되는 자리를 보여준다.
+   */
+  async function addToCompare() {
+    setSaving(true);
+    setSaveNote(null);
+
+    try {
+      if (isServerConfigured && !(await loadToken())) {
+        await savePendingAction({ kind: 'pick', vendorId: vendor!.id, vendorName: vendor!.name });
+        setLoginOpen(true);
+        return;
+      }
+
+      const weddingId = await ensureWedding();
+      await addCandidate(weddingId, vendor!.id);
+      router.push({
+        pathname: '/pick/[category]',
+        params: { category: vendor!.category },
+      });
+    } catch (caught) {
+      setSaveNote(caught instanceof Error ? caught.message : '담지 못했어요.');
     } finally {
       setSaving(false);
     }
@@ -294,7 +324,7 @@ export default function VendorDetailScreen() {
             ) : null}
           </View>
 
-          {/* ⑤ Action — Pick(52px 코랄) + 비교에 담기(48px secondary). 순서 고정. */}
+          {/* ⑤ Action — Pick(52px 코랑) + 비교에 담기(48px secondary). 순서 고정. */}
           <View style={styles.actionSection}>
             <Pressable
               accessibilityRole="button"
@@ -312,8 +342,9 @@ export default function VendorDetailScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="비교에 담기"
+              disabled={saving}
               style={[styles.compareBtn, { borderColor: theme.border }]}
-              onPress={() => router.back()}>
+              onPress={() => void addToCompare()}>
               <ThemedText type="t6" themeColor="text">비교에 담기</ThemedText>
             </Pressable>
           </View>
@@ -495,7 +526,7 @@ export default function VendorDetailScreen() {
             />
             <ActionButton
               label="내 금액과 비교하기"
-              hint="자료를 올리면 이 업체의 Pick 가격대와 견줘 보여드려요"
+              hint="자료를 올리면 이 업체의 Pick 가격대와 견옶 보여드려요"
               onPress={() => router.push('/capture')}
             />
             <ActionButton
@@ -555,7 +586,7 @@ export default function VendorDetailScreen() {
   );
 }
 
-// ─── 레이아웃 상수 ──────────────────────────────────────────────────────────
+// ─── 레이아웃 상수 ────────────────────────────────────────────
 
 /** 핸드오프 WP-VEND-001 대표 이미지 높이 260px */
 const HERO_HEIGHT = 260;
@@ -656,7 +687,7 @@ const styles = StyleSheet.create({
     paddingBottom: Layout.sectionGap,
     gap: Spacing.two,
   },
-  /** Pick 버튼. WP-VEND-001: height 52px 코랄. */
+  /** Pick 버튼. WP-VEND-001: height 52px 코랑. */
   pickBtn: {
     height: Layout.controlXLarge,
     borderRadius: Radius.input,

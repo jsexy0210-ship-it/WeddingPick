@@ -8,13 +8,24 @@ import {
   axisLabel,
   manwon,
   rangeLabel,
+  withParticle,
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { compareVendors, getCurrentUser, recordComparison } from '@/api/client';
+import {
+  addCandidate,
+  compareVendors,
+  ensureWedding,
+  getCurrentUser,
+  recordComparison,
+} from '@/api/client';
+import { isServerConfigured } from '@/api/config';
+import { loadToken } from '@/api/session';
+import { LoginSheet } from '@/features/auth/login-sheet';
+import { savePendingAction } from '@/features/auth/pending-action';
 import {
   ActionButton,
   Colors,
@@ -32,7 +43,7 @@ import {
 /**
  * WP-CMP-001 업체 비교. 최대 세 곳.
  *
- * 좁은 화면에 세 칸짜리 표를 그리면 아무것도 읽히지 않는다. 항목을 위에서 아래로 두고,
+ * 좋은 화면에 세 칸짜리 표를 그리면 아무것도 읽히지 않는다. 항목을 위에서 아래로 두고,
  * 각 항목 안에서 업체를 나란히 놓는다.
  *
  * 단서는 결과와 함께 서버가 내려준다. 표만 그리고 "금액만으로는 비교할 수 없다"는 말을
@@ -45,9 +56,16 @@ export default function CompareScreen() {
   const [error, setError] = useState<string | null>(null);
   /**
    * 업체별 Pick 완료 여부. key = vendorId.
-   * 비교 화면에서도 바로 Pick할 수 있다(바텀 독).
+   * 비교 화면에서도 바로 Pick할 수 있다(바텀 독). 실제로 후보에 저장된
+   * 것만 true다 — 로컴로만 켜지는 스위치가 아니다.
    */
   const [picked, setPicked] = useState<Record<string, boolean>>({});
+  /** 지금 저장 요청 중인 업체. 중복 클릭을 막고 "담는 중"을 보여준다. */
+  const [pickingId, setPickingId] = useState<string | null>(null);
+  /** Pick이 실패했을 때 보여줄 메시지. */
+  const [pickError, setPickError] = useState<string | null>(null);
+  /** 로그인 전에 Pick을 누럈을 때, 로그인 후 이어서 저장할 업체. */
+  const [loginTarget, setLoginTarget] = useState<VendorDetail | null>(null);
 
   // 두 곳이 안 되면 서버를 부를 것도 없다.
   const tooFew = (ids ?? '').split(',').filter(Boolean).length < 2;
@@ -60,7 +78,7 @@ export default function CompareScreen() {
         setResult(response);
 
         /*
-         * 비교했다는 사실을 남긴다(미션 ③). 화면을 실제로 연 이때가 그 사실이
+         * 비교했다는 사실을 남긴다(미션 ③). 화면을 실제로 열 이때가 그 사실이
          * 생기는 순간이다 — 후보를 담은 때가 아니다.
          */
         const category = response.vendors[0]?.category;
@@ -85,6 +103,33 @@ export default function CompareScreen() {
 
   if (!result) {
     return <LoadingView />;
+  }
+
+  /**
+   * 바텀 독에서 Pick. 통합정책 v3.10 §3 — 첫 Pick이 대표 로그인 트리거다.
+   * 로그인 전이면 누른 것을 적어두고 시트를 연다 — 업체상세 pick()와 같은 흐름.
+   */
+  async function pickVendor(vendor: VendorDetail) {
+    if (picked[vendor.id] || pickingId) return;
+
+    setPickingId(vendor.id);
+    setPickError(null);
+
+    try {
+      if (isServerConfigured && !(await loadToken())) {
+        await savePendingAction({ kind: 'pick', vendorId: vendor.id, vendorName: vendor.name });
+        setLoginTarget(vendor);
+        return;
+      }
+
+      const weddingId = await ensureWedding();
+      await addCandidate(weddingId, vendor.id);
+      setPicked((prev) => ({ ...prev, [vendor.id]: true }));
+    } catch (caught) {
+      setPickError(caught instanceof Error ? caught.message : 'Pick하지 못했어요.');
+    } finally {
+      setPickingId(null);
+    }
   }
 
   return (
@@ -195,7 +240,7 @@ export default function CompareScreen() {
             )}
           </CompareRow>
 
-          {/* 웨딩픽 요약 — 비교한 뒤 뭘 선택해야 할지 단서 */}
+          {/* 웨딩픽 요약 — 비교한 뒤 뫐 선택해야 할지 단서 */}
           {result.summary ? (
             <>
               <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} />
@@ -212,37 +257,72 @@ export default function CompareScreen() {
 
         {/* ── 바텀 독 — 업체별 Pick 버튼 ── */}
         <ThemedView style={[styles.dock, { borderTopColor: theme.line }]}>
-          {result.vendors.map((vendor) => (
-            <Pressable
-              key={vendor.id}
-              accessibilityRole="button"
-              accessibilityLabel={picked[vendor.id] ? `${vendor.name} Pick했어요` : `${vendor.name} Pick하기`}
-              style={[
-                styles.dockPickBtn,
-                picked[vendor.id]
-                  ? { backgroundColor: theme.tint }
-                  : { backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border },
-              ]}
-              onPress={() =>
-                setPicked((prev) => ({ ...prev, [vendor.id]: !prev[vendor.id] }))
-              }>
-              <ThemedText
-                type="t7"
-                numberOfLines={1}
-                style={picked[vendor.id] ? styles.dockPickBtnTextOn : undefined}
-                themeColor={picked[vendor.id] ? undefined : 'textSecondary'}>
-                {vendor.name}
-              </ThemedText>
-              <ThemedText
-                type="t7"
-                style={picked[vendor.id] ? styles.dockPickBtnTextOn : undefined}
-                themeColor={picked[vendor.id] ? undefined : 'text'}>
-                {picked[vendor.id] ? 'Pick했어요' : 'Pick하기'}
-              </ThemedText>
-            </Pressable>
-          ))}
+          {pickError ? (
+            <ThemedText type="t7" themeColor="negative">
+              {pickError}
+            </ThemedText>
+          ) : null}
+          <View style={styles.dockButtons}>
+            {result.vendors.map((vendor) => {
+              const isPicked = picked[vendor.id] === true;
+              const isPicking = pickingId === vendor.id;
+
+              return (
+                <Pressable
+                  key={vendor.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={isPicked ? `${vendor.name} Pick했어요` : `${vendor.name} Pick하기`}
+                  disabled={isPicked || isPicking}
+                  style={[
+                    styles.dockPickBtn,
+                    isPicked
+                      ? { backgroundColor: theme.tint }
+                      : { backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border },
+                    isPicking && styles.dockPickBtnPending,
+                  ]}
+                  onPress={() => void pickVendor(vendor)}>
+                  <ThemedText
+                    type="t7"
+                    numberOfLines={1}
+                    style={isPicked ? styles.dockPickBtnTextOn : undefined}
+                    themeColor={isPicked ? undefined : 'textSecondary'}>
+                    {vendor.name}
+                  </ThemedText>
+                  <ThemedText
+                    type="t7"
+                    style={isPicked ? styles.dockPickBtnTextOn : undefined}
+                    themeColor={isPicked ? undefined : 'text'}>
+                    {isPicking ? '담는 중…' : isPicked ? 'Pick했어요' : 'Pick하기'}
+                  </ThemedText>
+                </Pressable>
+              );
+            })}
+          </View>
         </ThemedView>
       </SafeAreaView>
+
+      <LoginSheet
+        visible={loginTarget !== null}
+        reason={
+          loginTarget ? `로그인하면 ${withParticle(loginTarget.name, '을를')} 바로 Pick해드려요.` : ''
+        }
+        onSignedIn={(result) => {
+          const target = loginTarget;
+          setLoginTarget(null);
+
+          if (result.needsSignup) {
+            router.push('/signup');
+            return;
+          }
+
+          if (target && result.completed) {
+            setPicked((prev) => ({ ...prev, [target.id]: true }));
+          } else if (result.weddingError) {
+            setPickError(result.weddingError);
+          }
+        }}
+        onDismiss={() => setLoginTarget(null)}
+      />
     </ThemedView>
   );
 }
@@ -347,11 +427,14 @@ const styles = StyleSheet.create({
     height: 80,
   },
   dock: {
-    flexDirection: 'row',
     borderTopWidth: 1,
     paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.two,
     paddingBottom: Spacing.three,
+    gap: Spacing.two,
+  },
+  dockButtons: {
+    flexDirection: 'row',
     gap: Spacing.two,
   },
   dockPickBtn: {
@@ -362,6 +445,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.one,
     paddingHorizontal: Spacing.two,
+  },
+  dockPickBtnPending: {
+    opacity: 0.6,
   },
   dockPickBtnTextOn: {
     color: Colors.light.onTint,
