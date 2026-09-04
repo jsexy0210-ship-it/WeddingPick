@@ -706,6 +706,58 @@ async function loadConditionStats(
   );
 
   /**
+   * WP-VEND-002 업체 이미지 전체보기.
+   *
+   * approved 상태만 내려간다 — pending·rejected는 아직 검증 전이거나 노출 기준에
+   * 못 미친 것이라 사용자에게 보이면 안 된다. 대표 이미지가 맨 앞에 오도록
+   * `is_representative DESC`로 정렬하고, 그다음은 수집 순서(created_at ASC)다.
+   *
+   * URL은 source_url이 있으면 그대로 쓴다 — 외부 출처를 우리 저장소를 거치지
+   * 않고 직접 보여줄 수 있는 경우다. storage_key만 있으면 스토리지에 서명된
+   * 조회 URL을 그때그때 발급한다 — 영구 URL을 내려주면 만료 시각을 관리할
+   * 방법이 없다.
+   */
+  app.get<{ Params: { vendorId: string } }>(
+    '/v1/vendors/:vendorId/images',
+    auth,
+    async (request) => {
+      const { vendorId } = request.params;
+
+      const vendorCheck = await context.pool.query<{ id: string }>(
+        'SELECT id FROM structured.vendors WHERE id = $1',
+        [vendorId]
+      );
+
+      if (!vendorCheck.rows[0]) throw notFound('업체');
+
+      const { rows } = await context.pool.query<{
+        id: string;
+        storage_key: string | null;
+        source_url: string | null;
+        is_representative: boolean;
+        use_contain: boolean;
+      }>(
+        `SELECT id, storage_key, source_url, is_representative, use_contain
+         FROM structured.vendor_images
+         WHERE vendor_id = $1 AND status = 'approved'
+         ORDER BY is_representative DESC, created_at ASC`,
+        [vendorId]
+      );
+
+      const photos = await Promise.all(
+        rows.map(async (row) => ({
+          id: row.id,
+          url: row.source_url ?? (await context.storage.getPublicUrl(row.storage_key!, 3600)),
+          isRepresentative: row.is_representative,
+          useContain: row.use_contain,
+        }))
+      );
+
+      return { photos };
+    }
+  );
+
+  /**
    * 업체 가격 구간 통계.
    *
    * Pick 인증된 결제 자료를 바탕으로 가격 구간과 건수를 돌려준다.

@@ -191,6 +191,30 @@ export type VendorDetail = z.infer<typeof vendorDetailSchema>;
  * 낼 수 있을 때는 `condition`이 함께 온다. 어느 조건의 숫자인지 모르면 읽는
  * 사람이 자기 조건의 값이라고 넘겨짚고, 그게 가장 흔한 오해다.
  */
+/**
+ * WP-VEND-002 업체 이미지 한 장.
+ *
+ * `VendorImage`(@weddingpick/ui의 카테고리 기본 이미지 컴포넌트)와 이름이 겹치지
+ * 않게 `VendorPhoto`로 부른다 — 이건 실제 업체 사진이고, 그건 사진이 없을 때의
+ * 대체 그림이다.
+ */
+export const vendorPhotoSchema = z.object({
+  id: idSchema,
+  /** 승인된 이미지의 조회 URL. 저장소 서명 URL이거나 원본 출처 URL. */
+  url: z.string().min(1),
+  /** 업체를 대표하는 한 장. 업체당 최대 하나. */
+  isRepresentative: z.boolean(),
+  /** true면 로고·CI처럼 잘리면 안 되는 이미지 — contain으로 표시한다. */
+  useContain: z.boolean(),
+});
+
+export const vendorPhotosResponseSchema = z.object({
+  photos: z.array(vendorPhotoSchema),
+});
+
+export type VendorPhoto = z.infer<typeof vendorPhotoSchema>;
+export type VendorPhotosResponse = z.infer<typeof vendorPhotosResponseSchema>;
+
 export const conditionStatsSchema = z.discriminatedUnion('available', [
   z.object({
     available: z.literal(false),
