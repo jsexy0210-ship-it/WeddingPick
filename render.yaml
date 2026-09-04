@@ -7,6 +7,20 @@ services:
     autoDeploy: true
     buildCommand: npm run build --workspace @weddingpick/web
 
+  # 관리자 패널 (admin.weddingpick.kr)
+  - type: web
+    name: weddingpick-admin
+    runtime: static
+    staticPublishPath: ./apps/web/dist
+    autoDeploy: true
+    buildCommand: npm run build --workspace @weddingpick/web
+    domains:
+      - admin.weddingpick.kr
+    routes:
+      - type: redirect
+        source: /
+        destination: /admin.html
+
   # API 서버
   - type: web
     name: weddingpick-api
