@@ -67,7 +67,15 @@
   페이지별 URL, 이미지 규격, 기존 아이콘 파일 보존 검증. 이미지 시각 검수 완료.
 - 시스템 Node에서 빌드/테스트 프로세스가 비정상 종료되어 번들 Node로 테스트·build 함수 검증.
   기존 main 문구 검사 위반 3건(landing-v4.ts/subpages.ts)은 이번 OG 변경과 무관하게 남아 있음.
-- GitHub CI·main 병합·운영 배포 및 크롤러 UA 검증은 진행 중. 플랫폼 내부 미리보기 캐시 검증은 별도 필요.
+- 완료: PR #64 main 병합 (`706c556`), CI `33847125953` 전체 성공, Render 웹 배포 완료.
+- 2026-09-04 운영 검증: 일반·kakaotalk-scrap·Slackbot User-Agent 모두 HTTP 200.
+  HTML source에 요청한 OG/Twitter 태그 9개가 각각 1회 노출되고 지정 title/description 일치.
+- `https://weddingpick-web.onrender.com/assets/weddingpick-og.png` 인증 없이 HTTP 200,
+  image/png, 1200×630. 브라우저 직접 열기 및 이미지 표시 확인. 검수 PNG와 운영 바이트 일치.
+  SHA256: `40cf031d1d5115aac9ce907cc973826d10650a71214148d2c75e459b53e9a6e7`.
+- 운영 favicon-32.png·apple-touch-icon.png·site.webmanifest 모두 HTTP 200.
+- 남은 확인: 실제 메신저 앱 내부 미리보기/캐시 갱신 미검증.
+  weddingpick.kr DNS 연결 완료 후 SITE_ORIGIN 변경 및 재검증 필요.
 
 ### 홍보 자동화 파이프라인 (2026-09-04)
 
