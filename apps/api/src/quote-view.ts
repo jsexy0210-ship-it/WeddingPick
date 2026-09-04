@@ -17,6 +17,7 @@ type QuoteRow = {
   vendor_id: string | null;
   vendor_name: string | null;
   vendor_source: string | null;
+  vendor_source_url: string | null;
   planner_id: string | null;
   planner_name: string | null;
   product_name: string | null;
@@ -85,6 +86,7 @@ export async function loadQuote(pool: Pool, quoteId: string) {
     `SELECT q.id, q.wedding_id, q.doc_type, q.vendor_id, v.name AS vendor_name,
             q.planner_id, p.name AS planner_name, q.product_name, q.total_amount,
             v.source AS vendor_source,
+            to_jsonb(v)->>'source_url' AS vendor_source_url,
             q.discount_amount, q.deposit_amount, q.balance_amount, q.contract_date,
             q.wedding_date, q.hall_name, q.guaranteed_guests, q.meal_price_per_person,
             q.verification_level, q.source, q.created_at, q.confirmed_at
@@ -146,7 +148,7 @@ export async function loadQuote(pool: Pool, quoteId: string) {
       ? {
           id: quote.vendor_id,
           name: quote.vendor_name!,
-          sourceNote: vendorSourceNote(quote.vendor_source),
+          sourceNote: vendorSourceNote(quote.vendor_source, quote.vendor_source_url),
         }
       : null,
     planner: quote.planner_id ? { id: quote.planner_id, name: quote.planner_name! } : null,
