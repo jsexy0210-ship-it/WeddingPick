@@ -10,7 +10,7 @@ test('built public HTML exposes one complete sharing card and preserved icons wi
     'twitter:card', 'twitter:title', 'twitter:description', 'twitter:image'];
   for (const name of readdirSync(out).filter((n) => n.endsWith('.html') && n !== 'admin.html')) {
     const html = readFileSync(join(out, name), 'utf8');
-    const head = html.slice(0, html.indexOf('</head>'));
+    const head = html.split('</head>')[0] ?? '';
     for (const tag of required) {
       expect(head.match(new RegExp(`(?:property|name)="${tag}"`, 'g'))).toHaveLength(1);
     }
