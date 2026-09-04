@@ -19,8 +19,9 @@ import { ONBOARDING_STEPS, ctaLabel } from '@/features/onboarding/steps';
 /**
  * 온보딩 5장. 디자인 핸드오프 1번.
  *
- * 건너뛰기와 마지막 CTA가 **같은 곳으로 간다** — 이름·예식일 등록이다. 건너뛴
- * 사람에게도 그 화면은 스킵할 수 없다(핸드오프 2번).
+ * 건너뛰기와 마지막 CTA가 **같은 곳으로 간다** — 로그인이다. 2026-09-04
+ * 정책 변경(비회원 진입 삭제)으로 예식일 등록(`/setup`)은 로그인 뒤로
+ * 옮겨졌다 — 계정과 무관한 이 소개 화면만 로그인보다 앞에 남는다.
  */
 export default function OnboardingScreen() {
   const theme = useTheme();
@@ -30,7 +31,7 @@ export default function OnboardingScreen() {
 
   async function leave() {
     await completeOnboarding();
-    router.replace('/setup');
+    router.replace('/login');
   }
 
   return (

@@ -14,7 +14,6 @@ import { DocumentStoreProvider } from '@/features/documents/document-store';
 import { getCurrentUser, getSignupState } from '@/api/client';
 import { saveToken } from '@/api/session';
 import { isOnboardingCompleted } from '@/features/onboarding/onboarding-state';
-import { loadWeddingDraft } from '@/features/onboarding/wedding-draft';
 import { SPLASH_MINIMUM_MS, SplashView } from '@/features/splash/splash-view';
 
 SplashScreen.preventAutoHideAsync();
@@ -22,21 +21,24 @@ SplashScreen.preventAutoHideAsync();
 /**
  * 첫 화면을 정한다.
  *
- * 순서가 정해져 있다: 온보딩 → (로그인했다면) 가입 마무리 → 최소 온보딩 → 홈.
+ * 순서가 정해져 있다: 온보딩(최초 실행 소개) → 로그인 → (가입 마무리) → 최소
+ * 온보딩 → 홈.
  *
- * **로그인은 여기서 묻지 않는다.** 통합정책 v3.10 §2가 최초 실행에 로그인을
- * 강제하지 않는다고 정했다. 그래서 예식일·지역을 아직 안 적은 사람은 로그인
- * 여부와 상관없이 그 화면으로 보낸다 — 로그인한 사람은 서버가, 로그인 전인
- * 사람은 기기에 적어둔 값이 그 판정을 준다.
+ * **2026-09-04 정책 변경 — 비회원 진입 삭제.** 로그인 없이는 앱을 못 쓴다.
+ * 기기에 적어둔 예식 정보 초안만으로 로그인 없이 홈에 들여보내던 지연 로그인
+ * 경로는 폐기했다 — 로그인이 안 된 사람은 무조건 로그인 화면으로 보낸다.
+ * 최초 실행 소개(온보딩)만은 로그인보다 앞에 둔다 — 계정과 무관한 소개
+ * 화면이라 로그인을 막을 이유가 없다.
  *
- * 다만 **로그인은 했는데 가입이 안 끝난 사람**은 다르다(v3.13 §N-2). 서버가
+ * **로그인은 했는데 가입이 안 끝난 사람**은 다르다(v3.13 §N-2). 서버가
  * 그 계정의 다른 경로를 전부 막고 있어서, 그대로 두면 어느 화면을 열어도
  * 막혔다는 말만 듣는다. 마칠 수 있는 화면으로 보낸다.
  */
-type Entry = 'onboarding' | 'signup' | 'setup' | 'app';
+type Entry = 'onboarding' | 'login' | 'signup' | 'setup' | 'app';
 
 const ENTRY_ROUTE = {
   onboarding: '/onboarding',
+  login: '/login',
   signup: '/signup',
   setup: '/setup',
 } as const;
@@ -99,10 +101,7 @@ export default function RootLayout() {
         return;
       }
 
-      /*
-       * 로그인한 사람은 서버가 답한다. 못 물어보면(비로그인·서버 없음) 기기에
-       * 적어둔 값을 본다 — 지연 로그인이라 로그인 전에도 이 값이 있을 수 있다.
-       */
+      /* 로그인한 사람은 서버가 답한다. */
       const me = await getCurrentUser().catch(() => null);
 
       if (me) {
@@ -112,9 +111,9 @@ export default function RootLayout() {
       }
 
       /*
-       * 못 물어본 이유가 둘이다 — 토큰이 없거나(비로그인·서버 없음), 토큰은
-       * 있는데 가입이 안 끝났거나. 앞의 경우 이 요청도 실패해 null이 되고,
-       * 뒤의 경우에만 대기 상태가 돌아온다.
+       * 못 물어본 이유가 둘이다 — 토큰이 없거나(비로그인), 토큰은 있는데
+       * 가입이 안 끝났거나. 앞의 경우 이 요청도 실패해 null이 되고, 뒤의
+       * 경우에만 대기 상태가 돌아온다.
        */
       const signup = await getSignupState().catch(() => null);
 
@@ -124,9 +123,8 @@ export default function RootLayout() {
         return;
       }
 
-      const draft = await loadWeddingDraft().catch(() => null);
-
-      setEntry(draft ? 'app' : 'setup');
+      /* 비회원 진입 삭제 — 로그인이 안 된 사람은 무조건 로그인 화면으로. */
+      setEntry('login');
     })();
   }, [tokenBootstrapped]);
 
@@ -175,7 +173,8 @@ export default function RootLayout() {
             <Stack.Screen name="signup" options={{ gestureEnabled: false }} />
             {/* 예식일·지역 없이는 개인화가 없다. 제스처로도 나갈 수 없게 한다. */}
             <Stack.Screen name="setup" options={{ gestureEnabled: false }} />
-            <Stack.Screen name="login" options={{ presentation: 'modal' }} />
+            {/* 로그인 없이는 앱을 쓸 수 없다. 제스처로 빠져나가면 뒤에 아무것도 없다. */}
+            <Stack.Screen name="login" options={{ gestureEnabled: false }} />
             <Stack.Screen name="admin" options={{ headerShown: false }} />
           </Stack>
         </CaptureDraftProvider>
