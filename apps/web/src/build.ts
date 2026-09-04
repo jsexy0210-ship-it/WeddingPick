@@ -1,10 +1,12 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { renderAdminPage } from './admin-page';
 import { renderHomePage } from './home-page';
+import { renderLandingV4 } from './landing-v4';
 import { renderLandingPage } from './page';
 import { loadSiteData, loadVendor, vendorIdsToBuild } from './site-data';
+import { renderFaqPage, renderIntroPage, renderPrivacyPage, renderSupportPage, renderTermsPage } from './subpages';
 import { STYLES } from './styles';
 import { renderVendorPage } from './vendor-page';
 
@@ -17,7 +19,13 @@ import { renderVendorPage } from './vendor-page';
  *
  * | 나오는 것 | 무엇 |
  * |---|---|
- * | `index.html` | WP-WEB-001 홈. 검색과 확인된 금액 |
+ * | `index.html` | 랜딩 v4. 서비스 마케팅 메인 |
+ * | `search.html` | WP-WEB-001 홈. 검색과 확인된 금액 |
+ * | `intro.html` | 서비스 소개 |
+ * | `faq.html` | 자주 묻는 질문 |
+ * | `support.html` | 고객지원 |
+ * | `terms.html` | 이용약관 |
+ * | `privacy.html` | 개인정보 처리방침 |
  * | `v/<업체 id>.html` | WP-WEB-003 업체 상세 |
  * | `about.html` | 서비스 소개 한 장. 약관·출처·분석 안내가 여기 있다 |
  * | `admin.html` | 관리자 |
@@ -33,8 +41,23 @@ import { renderVendorPage } from './vendor-page';
 export async function build(outDir: string): Promise<string> {
   mkdirSync(outDir, { recursive: true });
 
+  // Copy public assets (favicons, manifest, etc.)
+  const publicDir = join(__dirname, '..', 'public');
+  cpSync(publicDir, outDir, { recursive: true, force: true });
+
+  // Landing v4 is the new root
   const indexPath = join(outDir, 'index.html');
-  writeFileSync(indexPath, renderHomePage(await loadSiteData()), 'utf8');
+  writeFileSync(indexPath, renderLandingV4(), 'utf8');
+
+  // Home/search page moved to search.html
+  writeFileSync(join(outDir, 'search.html'), renderHomePage(await loadSiteData()), 'utf8');
+
+  // Sub-pages
+  writeFileSync(join(outDir, 'intro.html'), renderIntroPage(), 'utf8');
+  writeFileSync(join(outDir, 'faq.html'), renderFaqPage(), 'utf8');
+  writeFileSync(join(outDir, 'support.html'), renderSupportPage(), 'utf8');
+  writeFileSync(join(outDir, 'terms.html'), renderTermsPage(), 'utf8');
+  writeFileSync(join(outDir, 'privacy.html'), renderPrivacyPage(), 'utf8');
 
   writeFileSync(join(outDir, 'about.html'), renderLandingPage(STYLES), 'utf8');
   writeFileSync(join(outDir, 'admin.html'), renderAdminPage(), 'utf8');
