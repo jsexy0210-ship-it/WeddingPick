@@ -1,3 +1,4 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
 <title>하이브리드 전환 현황판</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap">
 <style>
@@ -47,6 +48,11 @@
   .brand { font-family: 'Noto Serif KR', serif; font-size: 18px; font-weight: 700; }
   .brand span { color: var(--accent); }
   .sub { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
+  .header-right { display:flex; align-items:center; gap:18px; }
+  .overall { display:flex; align-items:baseline; gap:6px; }
+  .overall b { font-family:'Noto Serif KR',serif; font-size:28px; font-variant-numeric:tabular-nums; color:var(--ok); }
+  .overall .of { font-size:14px; color:var(--text-3); font-variant-numeric:tabular-nums; }
+  .overall .lbl { font-size:10px; color:var(--text-3); text-transform:uppercase; letter-spacing:.06em; margin-left:4px; }
   .live { display:flex; align-items:center; gap:6px; font-size:11px; color: var(--text-3); }
   .live .dot { width:7px; height:7px; border-radius:50%; background: var(--ok); box-shadow: 0 0 0 3px var(--ok-lo); }
   .live.stale .dot { background: var(--text-3); box-shadow: 0 0 0 3px var(--elevated); }
@@ -56,6 +62,10 @@
   .stat b { font-family:'Noto Serif KR',serif; font-size:24px; font-variant-numeric:tabular-nums; }
   .stat span { font-size:10px; color:var(--text-3); text-transform:uppercase; letter-spacing:.06em; }
   .c-ok{color:var(--ok)} .c-warn{color:var(--warn)} .c-danger{color:var(--danger)} .c-info{color:var(--info)} .c-accent{color:var(--accent)}
+
+  .overall-bar-wrap { padding: 10px 28px; background:var(--surface); border-bottom:1px solid var(--border); }
+  .overall-bar-track { width:100%; height:8px; background:var(--elevated); border-radius:4px; overflow:hidden; }
+  .overall-bar-fill { height:100%; background:var(--ok); border-radius:4px; transition:width .3s; }
 
   main { max-width: 1200px; margin: 0 auto; padding: 24px 28px 60px; }
   .sec-title { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); margin: 28px 0 10px; }
@@ -108,6 +118,8 @@
     .stat-row { grid-template-columns: repeat(3,1fr); }
     .screen-row { grid-template-columns: 1fr 60px; }
     .screen-id { display:none; }
+    .header-right { gap:10px; }
+    .overall b { font-size:22px; }
   }
 </style>
 
@@ -116,8 +128,17 @@
     <div class="brand">Wedding<span>Pickl</span> · 하이브리드 전환</div>
     <div class="sub">마스터 세션 병렬 작업 현황판</div>
   </div>
-  <div class="live" id="liveIndicator"><span class="dot"></span><span id="liveText">연결 중…</span></div>
+  <div class="header-right">
+    <div class="overall">
+      <b id="overallDone">—</b><span class="of" id="overallOf">/ —</span><span class="lbl">완료</span>
+    </div>
+    <div class="live" id="liveIndicator"><span class="dot"></span><span id="liveText">연결 중…</span></div>
+  </div>
 </header>
+
+<div class="overall-bar-wrap">
+  <div class="overall-bar-track"><div class="overall-bar-fill" id="overallBarFill" style="width:0%"></div></div>
+</div>
 
 <div class="stat-row" id="statRow">
   <div class="stat"><b class="c-accent" id="statTotal">—</b><span>전체 화면</span></div>
@@ -244,7 +265,7 @@
         <div class="section-head" onclick="this.closest('.section-group').classList.toggle('open')">
           <div class="section-head-left">
             <span>${esc(sec.label || key)}</span>
-            <span class="chip" style="background:var(--elevated);color:var(--text-3)">${screens.length}개</span>
+            <span class="chip" style="background:var(--elevated);color:var(--text-3)">${done}/${screens.length}</span>
           </div>
           <div class="section-head-right">
             <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
@@ -263,6 +284,12 @@
     document.getElementById('statProgress').textContent = String(inProgress);
     document.getElementById('statBlocked').textContent = String(blocked);
     document.getElementById('statTodo').textContent = String(todo);
+
+    document.getElementById('overallDone').textContent = String(pass);
+    document.getElementById('overallOf').textContent = `/ ${total}`;
+    const overallPct = total ? Math.round((pass / total) * 100) : 0;
+    document.getElementById('overallBarFill').style.width = overallPct + '%';
+    document.title = `(${pass}/${total}) 하이브리드 전환 현황판`;
   }
 
   db.collection('sessions').onSnapshot(
@@ -276,3 +303,5 @@
   );
 })();
 </script>
+
+</body></html>
