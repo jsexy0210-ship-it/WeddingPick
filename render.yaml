@@ -22,18 +22,6 @@ services:
         source: /
         destination: /admin.html
 
-  # 관리자 패널 (admin.weddingpick.kr)
-  - type: web
-    name: weddingpick-admin
-    runtime: static
-    staticPublishPath: ./apps/web/dist
-    autoDeploy: true
-    buildCommand: npm run build --workspace @weddingpick/web
-    routes:
-      - type: redirect
-        source: /
-        destination: /admin.html
-
   # API 서버
   - type: web
     name: weddingpick-api
