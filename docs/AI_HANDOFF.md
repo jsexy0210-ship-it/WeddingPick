@@ -42,17 +42,26 @@
 
 `apps/mobile`의 웹 export(react-native-web, `npm run export:web`, CI `main.yml`의
 `Bundle (web)` 스텝에서 이미 매번 빌드 검증됨)를 실제로 호스팅해서, 네이티브 쉘이
-자기 자신의 웹 빌드를 웹뷰로 띄우는 구조를 검증한 POC다. **이 저장소는 Render를
-쓰지 않는다** — 실제 인프라는 Fly.io(`fly.toml`, API는 `weddingpickl.fly.dev`)뿐이고
-`render.yaml`도 존재하지 않는다. 관련 다른 문서·알림에서 Render를 언급했다면
-착오이니 무시할 것.
+자기 자신의 웹 빌드를 웹뷰로 띄우는 구조를 검증한 POC다.
 
-### 1. 웹 번들 호스팅 — Fly.io, 설정만 준비함
-- `Dockerfile.mobile-web`: 루트에서 `npm ci` → `npm run export:web --workspace
-  @weddingpick/mobile` → 결과물(`apps/mobile/dist`)을 `serve -s`로 정적 서빙.
-- `fly.mobile-web.toml`: 앱 이름 `weddingpick-app-web` (아직 미생성).
-- **실제 Fly 앱 생성·배포는 하지 않았다.** 새 유료 리소스이므로 사용자 승인이
-  필요하다 — 아래 "사용자 직접 조치 필요" 8번 참고.
+**인프라 정정(2026-09-04, 같은 세션 내 수정)**: 이 섹션은 처음에 "이 저장소는
+Render를 쓰지 않는다"고 적었었다 — `main`만 보고 판단해서 생긴 착오다. 실제로는
+`main`이 인프라 문서·CI(`main.yml`의 `flyctl deploy`)·`fly.toml` 전부 Fly.io
+기준으로 **뒤처져** 있고, 실제 운영 인프라는 **Render**다(API:
+`weddingpickl.onrender.com`, `claude/session-a4bq31` 브랜치의 `render.yaml`·
+`docs/AI_HANDOFF.md`가 최신 상태 — 사용자가 직접 확인해준 사실이다). `main`의
+나머지 Fly.io 언급(§인프라 현황, 2번 항목, 코드 구조 등)을 전부 Render로
+갱신하는 것은 이 PR의 범위 밖이다 — 이 PR은 호스팅 설정 하나만 Render로 바꿨다.
+
+### 1. 웹 번들 호스팅 — Render 정적 사이트, 설정만 추가함
+- `main`에 없던 `render.yaml`을 새로 만들었다 — `claude/session-a4bq31`의
+  실제 운영 정의(`weddingpick-web`/`weddingpick-admin`/`weddingpick-api`)를
+  그대로 옮기고, 새 서비스 `weddingpick-app-web`을 추가했다.
+- `weddingpick-app-web`: `buildCommand: npm run export:web --workspace
+  @weddingpick/mobile`, `staticPublishPath: ./apps/mobile/dist`, expo-router
+  클라이언트 라우팅을 위한 `/* → /index.html` rewrite 포함.
+- **실제 Render 서비스 생성·배포는 하지 않았다.** 새 유료 리소스이므로 사용자
+  승인이 필요하다 — 아래 "사용자 직접 조치 필요" 8번 참고.
 
 ### 2. 웹뷰 쉘 — 홈 · Pick 두 화면에 opt-in으로 배선
 - `apps/mobile/src/features/webshell/WebShellView.tsx` — `react-native-webview`
@@ -107,17 +116,17 @@
 
 ## 🚨 사용자 직접 조치 필요 (Claude 불가)
 
-### 8. 하이브리드 웹뷰 쉘 POC — Fly 앱 생성 필요 (2026-09-04)
-**상태**: 설정(`Dockerfile.mobile-web`, `fly.mobile-web.toml`)만 준비됨, 실제 앱
+### 8. 하이브리드 웹뷰 쉘 POC — Render 서비스 생성 필요 (2026-09-04)
+**상태**: `render.yaml`에 `weddingpick-app-web` 정의만 추가됨, 실제 서비스
 미생성.
 
 **필요한 조치**:
-1. `fly apps create weddingpick-app-web` (새 유료 리소스 — 생성 여부·요금제
-   확인 필요)
-2. `flyctl deploy --config fly.mobile-web.toml --remote-only`로 배포
-3. 배포된 URL을 `apps/mobile/eas.json`의 `build.preview.env`와
+1. Render 대시보드에서 이 저장소의 Blueprint(`render.yaml`)를 동기화하거나
+   `weddingpick-app-web` 정적 사이트를 수동 생성 (새 유료 리소스 — 생성
+   여부·요금제 확인 필요)
+2. 배포된 URL을 `apps/mobile/eas.json`의 `build.preview.env`와
    `build.production.env`에 `EXPO_PUBLIC_WEB_URL`로 추가
-4. 실제로 웹뷰 쉘을 켜보려면 빌드 시 `EXPO_PUBLIC_WEBSHELL_SCREENS=home,pick`도
+3. 실제로 웹뷰 쉘을 켜보려면 빌드 시 `EXPO_PUBLIC_WEBSHELL_SCREENS=home,pick`도
    함께 넣어야 함(기본은 꺼짐)
 
 ### 0. 회원탈퇴 정책 — 최종 확정: 자동삭제 + 운영자 개입 (2026-09-02, 사용자 결정)

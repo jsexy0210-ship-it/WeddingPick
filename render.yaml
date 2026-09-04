@@ -1,0 +1,107 @@
+services:
+  # 웹 앱 (정적 사이트)
+  - type: web
+    name: weddingpick-web
+    runtime: static
+    staticPublishPath: ./apps/web/dist
+    autoDeploy: true
+    buildCommand: npm run build --workspace @weddingpick/web
+    envVars:
+      - key: WEDDINGPICK_CONTACT_EMAIL
+        value: help.weddingpick@gmail.com
+
+  # 관리자 패널 (admin.weddingpick.kr)
+  - type: web
+    name: weddingpick-admin
+    runtime: static
+    staticPublishPath: ./apps/web/dist
+    autoDeploy: true
+    buildCommand: npm run build --workspace @weddingpick/web
+    routes:
+      - type: redirect
+        source: /
+        destination: /admin.html
+
+  # 모바일 웹 export 정적 호스팅 (하이브리드 웹뷰 쉘 POC)
+  #
+  # apps/mobile을 react-native-web으로 정적 빌드해 서빙한다. 네이티브 앱 쉘의
+  # react-native-webview가 이 URL을 불러온다(apps/mobile/src/features/webshell).
+  # 이 서비스는 아직 실제로 생성되지 않았다 — 새 유료 리소스라 사용자 확인이
+  # 필요하다. 생성 후 배포 URL을 apps/mobile/eas.json의 build profile env에
+  # EXPO_PUBLIC_WEB_URL로 채워야 웹뷰 쉘이 동작한다.
+  - type: web
+    name: weddingpick-app-web
+    runtime: static
+    staticPublishPath: ./apps/mobile/dist
+    autoDeploy: true
+    buildCommand: npm run export:web --workspace @weddingpick/mobile
+    routes:
+      # expo-router 클라이언트 라우팅 — 없는 경로를 index.html로 되돌린다.
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+  # API 서버
+  - type: web
+    name: weddingpick-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: weddingpick-db
+          property: connectionString
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: APPLE_CLIENT_ID
+        sync: false
+      - key: KAKAO_APP_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: LEGAL_BUSINESS_NAME
+        sync: false
+      - key: LEGAL_REPRESENTATIVE
+        sync: false
+      - key: LEGAL_REGISTRATION_NUMBER
+        sync: false
+      - key: LEGAL_ADDRESS
+        sync: false
+      - key: LEGAL_SUPPORT_CONTACT
+        value: help.weddingpick@gmail.com
+      - key: LEGAL_PRIVACY_OFFICER
+        sync: false
+      - key: LEGAL_TERMS_EFFECTIVE_ON
+        sync: false
+      - key: LEGAL_PRIVACY_EFFECTIVE_ON
+        sync: false
+      - key: LEGAL_TERMS_URL
+        sync: false
+      - key: LEGAL_PRIVACY_POLICY_URL
+        sync: false
+      - key: LEGAL_SERVICE_TERMS_URL
+        sync: false
+      - key: STORAGE_DRIVER
+        value: s3
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_REGION
+        value: kr-standard
+      - key: S3_ENDPOINT
+        value: https://kr.object.ncloudstorage.com
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+
+databases:
+  - name: weddingpick-db
+    plan: free
+    databaseName: weddingpick
+    user: weddingpick
+    skipProvisioning: true
