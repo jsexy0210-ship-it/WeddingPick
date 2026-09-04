@@ -43,6 +43,5 @@ CREATE INDEX IF NOT EXISTS idx_marketing_jobs_status ON marketing_jobs(status);
 CREATE INDEX IF NOT EXISTS idx_marketing_jobs_scheduled ON marketing_jobs(scheduled_at) WHERE status = 'queued';
 CREATE INDEX IF NOT EXISTS idx_marketing_events_job ON marketing_events(job_id);
 
--- 중복 생성 방지: 같은 소재·채널·포맷·날짜는 1건만
-CREATE UNIQUE INDEX IF NOT EXISTS idx_marketing_jobs_unique_daily
-  ON marketing_jobs(source_id, channel, format, DATE(COALESCE(scheduled_at, created_at)));
+-- 중복 방지는 애플리케이션 레이어에서 처리
+-- DATE(TIMESTAMPTZ) 는 STABLE 함수라 PostgreSQL index expression 불가
