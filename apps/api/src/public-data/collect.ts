@@ -78,12 +78,23 @@ export function parsePublicCsv(bytes: Buffer, key: SourceKey, at = new Date()) {
   return { vendors, total: rows.length, rejected, duplicates };
 }
 
+async function fetchWithRetry(url: string, attempts = 3): Promise<Response> {
+  for (let i = 0; i < attempts; i++) {
+    try { return await fetch(url, { redirect: 'error', signal: AbortSignal.timeout(30_000) }); }
+    catch (err) {
+      if (i === attempts - 1 || !(err instanceof TypeError)) throw err;
+      await new Promise((r) => setTimeout(r, 2000 * (i + 1)));
+    }
+  }
+  throw new Error('unreachable');
+}
+
 /** allowlist + HTTPS + no redirects + bounded streaming; raw pages are never persisted. */
 export async function publicGet(url: string, limit: number): Promise<Buffer> {
   const parsed = new URL(url);
   if (parsed.origin !== 'https://www.data.go.kr' || parsed.username || parsed.password)
     throw new Error('허용되지 않은 수집 주소');
-  const response = await fetch(url, { redirect: 'error', signal: AbortSignal.timeout(30_000) });
+  const response = await fetchWithRetry(url);
   if (!response.ok) throw new Error(`공공데이터 응답 오류 ${response.status}`);
   const chunks: Buffer[] = [];
   let size = 0;
