@@ -126,6 +126,23 @@ export function summarizeExpenses(lines: readonly ExpenseLine[]): ExpenseSummary
 
 export const SCHEDULED_NOTE = '잔금은 예식 뒤에 내는 돈이라 아직 더하지 않았어요';
 
+/**
+ * 환불 상태. 지출 상세(WP-OUR-010)에서만 쓴다.
+ *
+ * 결제인증(payment_proofs)에서 온 줄에는 이 개념이 없다 — 아직 환불·취소를 그
+ * 표에서 추적하지 않는다. 그래서 늘 `normal`로 고정해 보여준다. 직접 입력한
+ * 지출(structured.expenses)에만 실제 값이 있다.
+ */
+export const EXPENSE_REFUND_STATUSES = ['normal', 'partial_refund', 'cancelled'] as const;
+
+export type ExpenseRefundStatus = (typeof EXPENSE_REFUND_STATUSES)[number];
+
+export const EXPENSE_REFUND_STATUS_LABEL: Record<ExpenseRefundStatus, string> = {
+  normal: '정상',
+  partial_refund: '부분환불',
+  cancelled: '전액취소',
+};
+
 export type BudgetView =
   | { set: false; note: string }
   | { set: true; budget: number; spent: number; remaining: number; over: boolean };

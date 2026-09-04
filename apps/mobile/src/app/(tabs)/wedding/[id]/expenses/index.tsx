@@ -8,7 +8,7 @@ import {
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { addExpense, getExpenses, removeExpense, setBudget } from '@/api/client';
@@ -238,28 +238,40 @@ export default function ExpensesScreen() {
               </ThemedView>
             ) : (
               page.expenses.map((expense) => (
-                <ThemedView key={expense.id} type="backgroundElement" style={styles.card}>
-                  <ThemedText
-                    type="t5"
-                    // 잔금 예정 행은 회색이다. 낸 돈과 다르게 보여야 한다.
-                    themeColor={expense.status === 'scheduled' ? 'textAssistive' : 'text'}>
-                    {expense.label}
-                  </ThemedText>
-                  <ThemedText
-                    type="t5"
-                    numeric
-                    themeColor={expense.status === 'scheduled' ? 'textAssistive' : 'text'}>
-                    {won(expense.amount)}
-                  </ThemedText>
-                  <ThemedText type="t7" themeColor="textAssistive">
-                    {expense.sourceLabel}
-                    {expense.spentOn ? ` · ${expense.spentOn}` : ''}
-                    {expense.status === 'scheduled' ? ` · ${expense.statusLabel}` : ''}
-                  </ThemedText>
-                  {expense.source === 'manual' ? (
-                    <ActionButton label="빼기" onPress={() => remove(expense.id)} />
-                  ) : null}
-                </ThemedView>
+                <Pressable
+                  key={expense.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${expense.label} 상세 보기`}
+                  onPress={() => router.push(`/wedding/${id}/expenses/${expense.id}` as never)}>
+                  <ThemedView type="backgroundElement" style={styles.card}>
+                    <ThemedText
+                      type="t5"
+                      // 잔금 예정 행은 회색이다. 낸 돈과 다르게 보여야 한다.
+                      themeColor={expense.status === 'scheduled' ? 'textAssistive' : 'text'}>
+                      {expense.label}
+                    </ThemedText>
+                    <ThemedText
+                      type="t5"
+                      numeric
+                      themeColor={expense.status === 'scheduled' ? 'textAssistive' : 'text'}>
+                      {won(expense.amount)}
+                    </ThemedText>
+                    <ThemedText type="t7" themeColor="textAssistive">
+                      {expense.sourceLabel}
+                      {expense.spentOn ? ` · ${expense.spentOn}` : ''}
+                      {expense.status === 'scheduled' ? ` · ${expense.statusLabel}` : ''}
+                    </ThemedText>
+                    {expense.source === 'manual' ? (
+                      <ActionButton
+                        label="빼기"
+                        onPress={(event) => {
+                          event.stopPropagation();
+                          remove(expense.id);
+                        }}
+                      />
+                    ) : null}
+                  </ThemedView>
+                </Pressable>
               ))
             )}
 

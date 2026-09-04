@@ -1,5 +1,7 @@
 import {
   EXPENSE_BUCKETS,
+  EXPENSE_REFUND_STATUSES,
+  EXPENSE_REFUND_STATUS_LABEL,
   SCHEDULED_NOTE,
   bucketFor,
   budgetView,
@@ -57,6 +59,15 @@ describe('지출 합계', () => {
 
   it('잔금을 왜 안 더하는지 말한다', () => {
     expect(SCHEDULED_NOTE).toContain('아직 더하지 않았어요');
+  });
+});
+
+describe('환불 상태', () => {
+  it('세 값 모두 사용자 화면 문구가 있다', () => {
+    // WP-OUR-010: 빈 칸이나 未정의 값을 화면에 내보내지 않는다.
+    for (const status of EXPENSE_REFUND_STATUSES) {
+      expect(EXPENSE_REFUND_STATUS_LABEL[status].length).toBeGreaterThan(0);
+    }
   });
 });
 

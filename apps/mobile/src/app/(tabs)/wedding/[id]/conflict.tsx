@@ -18,6 +18,7 @@ const KIND_LABEL: Record<string, string> = {
   event: '일정',
   expense: '지출내역',
   candidate: '담아둔 업체',
+  memo: '메모',
 };
 
 /**

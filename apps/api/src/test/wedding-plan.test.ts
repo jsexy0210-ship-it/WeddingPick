@@ -9,6 +9,19 @@ import {
   type TestApp,
 } from './helpers';
 
+async function weddingWithPartner(test: TestApp) {
+  const owner = await signInAs(test, 'apple-owner');
+  const weddingId = await createWedding(test, owner.headers);
+  const partner = await signInAs(test, 'apple-partner');
+
+  await test.pool.query('UPDATE structured.weddings SET partner_user_id = $2 WHERE id = $1', [
+    weddingId,
+    partner.userId,
+  ]);
+
+  return { owner, partner, weddingId };
+}
+
 let test: TestApp;
 
 const describeWithDb = process.env.DATABASE_URL ? describe : describe.skip;
@@ -300,6 +313,117 @@ describeWithDb('우리웨딩', () => {
     });
   });
 
+  /**
+   * 지출 상세. WP-OUR-010.
+   */
+  describe('지출 상세', () => {
+    const detail = (headers: Record<string, string>, weddingId: string, expenseId: string) =>
+      test.app.inject({
+        method: 'GET',
+        url: `/v1/weddings/${weddingId}/expenses/${expenseId}`,
+        headers,
+      });
+
+    it('직접 입력한 항목은 환불 상태가 기본값 정상이고 분할 결제가 비어 있다', async () => {
+      const { headers, weddingId } = await mine();
+
+      const added = await test.app.inject({
+        method: 'POST',
+        url: `/v1/weddings/${weddingId}/expenses`,
+        headers,
+        payload: { label: '계약금', amount: 3_000_000, category: 'hall' },
+      });
+
+      const { expenseId } = added.json<{ expenseId: string }>();
+
+      const body = (await detail(headers, weddingId, expenseId)).json<{
+        refundStatus: string;
+        refundStatusLabel: string;
+        splitPayments: unknown[];
+        bucketLabel: string;
+        source: string;
+      }>();
+
+      expect(body.refundStatus).toBe('normal');
+      expect(body.refundStatusLabel).toBe('정상');
+      expect(body.splitPayments).toEqual([]);
+      expect(body.bucketLabel).toBe('웨딩홀');
+      expect(body.source).toBe('manual');
+    });
+
+    it('환불 상태를 고칠 수 있다', async () => {
+      const { headers, weddingId } = await mine();
+
+      const added = await test.app.inject({
+        method: 'POST',
+        url: `/v1/weddings/${weddingId}/expenses`,
+        headers,
+        payload: { label: '계약금', amount: 3_000_000 },
+      });
+
+      const { expenseId } = added.json<{ expenseId: string }>();
+
+      const updated = await test.app.inject({
+        method: 'PATCH',
+        url: `/v1/weddings/${weddingId}/expenses/${expenseId}`,
+        headers,
+        payload: { refundStatus: 'partial_refund' },
+      });
+
+      expect(updated.statusCode).toBe(200);
+
+      const body = (await detail(headers, weddingId, expenseId)).json<{
+        refundStatus: string;
+        refundStatusLabel: string;
+      }>();
+
+      expect(body.refundStatus).toBe('partial_refund');
+      expect(body.refundStatusLabel).toBe('부분환불');
+    });
+
+    it('결제인증에서 온 줄도 상세를 볼 수 있고 환불 상태는 늘 정상이다', async () => {
+      const { headers, weddingId } = await mine();
+
+      await test.pool.query(
+        `INSERT INTO structured.vendors (name, category, region, source)
+         VALUES ('가온예식홀', 'hall', '서울', 'public_data')`
+      );
+
+      await consentToPaymentProofs(test, headers);
+
+      const registered = await test.app.inject({
+        method: 'POST',
+        url: '/v1/payment-proofs',
+        headers,
+        payload: {
+          merchantName: '가온예식홀',
+          paidAmount: 3_000_000,
+          paidAt: '2026-05-20T04:00:00.000Z',
+        },
+      });
+
+      const proofId = registered.json<{ paymentProofId: string }>().paymentProofId;
+
+      const body = (await detail(headers, weddingId, proofId)).json<{
+        source: string;
+        refundStatus: string;
+        splitPayments: unknown[];
+      }>();
+
+      expect(body.source).toBe('payment_proof');
+      expect(body.refundStatus).toBe('normal');
+      expect(body.splitPayments).toEqual([]);
+    });
+
+    it('없는 지출은 404다', async () => {
+      const { headers, weddingId } = await mine();
+
+      const response = await detail(headers, weddingId, '00000000-0000-4000-8000-000000000000');
+
+      expect(response.statusCode).toBe(404);
+    });
+  });
+
   describe('방문노트', () => {
     it('업체를 못 찾아도 적을 수 있다', async () => {
       // 방문은 계약보다 먼저다.
@@ -355,6 +479,167 @@ describeWithDb('우리웨딩', () => {
 
         expect(rows.rows).toHaveLength(0);
       }
+    });
+  });
+
+  /**
+   * 메모. WP-OUR-011.
+   *
+   * 규칙 — 작성자와 수정 여부를 항상 남긴다. 동시 수정 충돌은 version으로 판정한다.
+   */
+  describe('메모', () => {
+    const notes = (headers: Record<string, string>, weddingId: string) =>
+      test.app.inject({ method: 'GET', url: `/v1/weddings/${weddingId}/notes`, headers });
+
+    it('업체별 메모와 자유 메모를 둘 다 담을 수 있다', async () => {
+      const { headers, weddingId } = await mine();
+
+      await test.app.inject({
+        method: 'POST',
+        url: `/v1/weddings/${weddingId}/notes`,
+        headers,
+        payload: { vendorLabel: '가온예식홀', body: '식대 별도라고 함' },
+      });
+
+      await test.app.inject({
+        method: 'POST',
+        url: `/v1/weddings/${weddingId}/notes`,
+        headers,
+        payload: { body: '이번 주말에 상견례' },
+      });
+
+      const body = (await notes(headers, weddingId)).json<{
+        notes: { vendorLabel: string | null; body: string; authoredByPartner: boolean; edited: boolean }[];
+      }>();
+
+      expect(body.notes).toHaveLength(2);
+      expect(body.notes.find((n) => n.vendorLabel === '가온예식홀')?.body).toBe('식대 별도라고 함');
+      expect(body.notes.find((n) => n.vendorLabel === null)?.body).toBe('이번 주말에 상견례');
+      expect(body.notes.every((n) => n.authoredByPartner === false)).toBe(true);
+      expect(body.notes.every((n) => n.edited === false)).toBe(true);
+    });
+
+    it('배우자가 쓴 메모인지 안다', async () => {
+      const { owner, partner, weddingId } = await weddingWithPartner(test);
+
+      await test.app.inject({
+        method: 'POST',
+        url: `/v1/weddings/${weddingId}/notes`,
+        headers: partner.headers,
+        payload: { body: '드레스 예약 완료' },
+      });
+
+      const body = (await notes(owner.headers, weddingId)).json<{
+        notes: { authoredByPartner: boolean }[];
+      }>();
+
+      expect(body.notes[0]!.authoredByPartner).toBe(true);
+    });
+
+    it('고치면 수정됨으로 남는다', async () => {
+      const { headers, weddingId } = await mine();
+
+      const created = await test.app.inject({
+        method: 'POST',
+        url: `/v1/weddings/${weddingId}/notes`,
+        headers,
+        payload: { body: '식대 별도라고 함' },
+      });
+
+      const { noteId } = created.json<{ noteId: string }>();
+
+      const firstList = (await notes(headers, weddingId)).json<{ notes: { version: number }[] }>();
+      const version = firstList.notes[0]!.version;
+
+      const updated = await test.app.inject({
+        method: 'PATCH',
+        url: `/v1/weddings/${weddingId}/notes/${noteId}`,
+        headers,
+        payload: { body: '식대 포함이라고 정정', version },
+      });
+
+      expect(updated.statusCode).toBe(200);
+
+      const after = (await notes(headers, weddingId)).json<{
+        notes: { body: string; edited: boolean; editedByPartner: boolean | null }[];
+      }>();
+
+      expect(after.notes[0]!.body).toBe('식대 포함이라고 정정');
+      expect(after.notes[0]!.edited).toBe(true);
+      expect(after.notes[0]!.editedByPartner).toBe(false);
+    });
+
+    it('배우자가 먼저 고치면 conflict를 돌려준다', async () => {
+      /*
+       * 그대로 덮어쓰면 배우자의 수정이 조용히 사라진다. 화면이 결론을 내리게
+       * conflict를 돌려준다(WP-CPL-005 conflict 화면).
+       */
+      const { owner, partner, weddingId } = await weddingWithPartner(test);
+
+      const created = await test.app.inject({
+        method: 'POST',
+        url: `/v1/weddings/${weddingId}/notes`,
+        headers: owner.headers,
+        payload: { body: '식대 별도라고 함' },
+      });
+
+      const { noteId } = created.json<{ noteId: string }>();
+
+      // 배우자가 먼저 고친다 — version이 2로 올라간다.
+      await test.app.inject({
+        method: 'PATCH',
+        url: `/v1/weddings/${weddingId}/notes/${noteId}`,
+        headers: partner.headers,
+        payload: { body: '배우자가 먼저 고침', version: 1 },
+      });
+
+      // 내가 옛 version(1)을 들고 고치려 한다.
+      const conflict = await test.app.inject({
+        method: 'PATCH',
+        url: `/v1/weddings/${weddingId}/notes/${noteId}`,
+        headers: owner.headers,
+        payload: { body: '내가 나중에 고침', version: 1 },
+      });
+
+      expect(conflict.statusCode).toBe(409);
+      expect(conflict.json<{ error: { code: string } }>().error.code).toBe('conflict');
+
+      // 배우자의 수정은 그대로 남아 있다.
+      const after = (await notes(owner.headers, weddingId)).json<{ notes: { body: string }[] }>();
+
+      expect(after.notes[0]!.body).toBe('배우자가 먼저 고침');
+    });
+
+    it('지울 수 있다', async () => {
+      const { headers, weddingId } = await mine();
+
+      const created = await test.app.inject({
+        method: 'POST',
+        url: `/v1/weddings/${weddingId}/notes`,
+        headers,
+        payload: { body: '지울 메모' },
+      });
+
+      const { noteId } = created.json<{ noteId: string }>();
+
+      const removed = await test.app.inject({
+        method: 'DELETE',
+        url: `/v1/weddings/${weddingId}/notes/${noteId}`,
+        headers,
+      });
+
+      expect(removed.statusCode).toBe(204);
+
+      const after = (await notes(headers, weddingId)).json<{ notes: unknown[] }>();
+
+      expect(after.notes).toHaveLength(0);
+    });
+
+    it('남의 웨딩 메모는 볼 수 없다', async () => {
+      const { weddingId } = await mine();
+      const stranger = await signInAs(test, 'apple-stranger-notes');
+
+      expect((await notes(stranger.headers, weddingId)).statusCode).toBe(403);
     });
   });
 });

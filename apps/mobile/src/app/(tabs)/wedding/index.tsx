@@ -446,7 +446,20 @@ export default function WeddingScreen() {
 
               {/* 준비현황 */}
               <View style={styles.section}>
-                <ThemedText type="t4">준비현황</ThemedText>
+                <View style={styles.sectionHead}>
+                  <ThemedText type="t4">준비현황</ThemedText>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() =>
+                      data.me?.weddingId
+                        ? router.push(`/wedding/${data.me.weddingId}/decided` as never)
+                        : null
+                    }>
+                    <ThemedText type="t7" themeColor="textAssistive">
+                      결정한 업체
+                    </ThemedText>
+                  </Pressable>
+                </View>
 
                 {loading && prepTasks.length === 0 ? (
                   <View style={styles.skeletonRows}>
@@ -522,6 +535,24 @@ export default function WeddingScreen() {
                     })}
                   </View>
                 )}
+              </View>
+
+              {/* 메모 — WP-OUR-011 진입점. 목록은 여기서 보여주지 않는다. */}
+              <View style={styles.section}>
+                <View style={styles.sectionHead}>
+                  <ThemedText type="t4">메모</ThemedText>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() =>
+                      data.me?.weddingId
+                        ? router.push(`/wedding/${data.me.weddingId}/notes` as never)
+                        : null
+                    }>
+                    <ThemedText type="t7" themeColor="textAssistive">
+                      전체 보기
+                    </ThemedText>
+                  </Pressable>
+                </View>
               </View>
             </>
           )}
