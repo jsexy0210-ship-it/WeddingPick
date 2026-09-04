@@ -3,4 +3,5 @@ module.exports = {
   setupFiles: ['<rootDir>/jest.setup.js'],
   testMatch: ['**/*.test.ts', '**/*.test.tsx'],
   forceExit: true,
+  openHandlesTimeout: 0,
 };
