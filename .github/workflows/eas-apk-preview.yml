@@ -1,0 +1,86 @@
+# 직접 설치용 EAS APK — eas.json의 기존 "preview" profile(android.buildType=apk)로 빌드한다.
+#
+# .github/workflows/android-apk.yml 은 EAS 없이 로컬 gradle로 APK를 만드는 빠른 경로다.
+# 이 워크플로는 그것과 달리 실제 EAS 빌드 파이프라인(자격증명 관리 포함)을 그대로 타면서
+# 스토어용 app-bundle이 아닌 설치용 apk 산출물을 받고 싶을 때 쓴다.
+#
+# Actions 탭 → "EAS Android APK (preview)" → Run workflow.
+# 완료되면 실행 화면 하단 Artifacts에 .apk가 붙는다.
+#
+# 필요한 GitHub Secret: EXPO_TOKEN (release.yml, eas-init.yml과 동일)
+name: EAS Android APK (preview)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm i -g eas-cli
+
+      - run: npm ci
+
+      - name: Check token
+        run: |
+          if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
+            echo "::error::EXPO_TOKEN 시크릿이 없습니다."
+            exit 1
+          fi
+
+      # preview profile은 eas.json에 이미 있다 (android.buildType: "apk").
+      # --output 을 주면 빌드 완료 후 산출물을 이 경로로 내려받는다.
+      - name: EAS Build (preview → apk)
+        working-directory: apps/mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: >-
+          eas build
+          --platform android
+          --profile preview
+          --non-interactive
+          --wait
+          --output ./weddingpick-preview.apk
+
+      # AAB를 apk로 이름만 바꾼 산출물이 아닌지 여기서 직접 검증한다.
+      # apk/aab 둘 다 zip 컨테이너라서 확장자만으로는 구분되지 않는다 —
+      # apk는 최상위에 AndroidManifest.xml(바이너리 XML)과 classes.dex가 있고,
+      # aab는 base/manifest/AndroidManifest.xml, BundleConfig.pb 처럼 module 디렉터리 구조를 갖는다.
+      - name: Verify real APK (not a renamed AAB)
+        working-directory: apps/mobile
+        run: |
+          set -euo pipefail
+          f=weddingpick-preview.apk
+
+          test -s "$f"
+
+          file "$f" | grep -qi 'Zip\|Android' || { echo "::error::$f is not a valid archive"; exit 1; }
+
+          listing=$(unzip -l "$f")
+
+          echo "$listing" | grep -q '^\s*[0-9]\+\s.*AndroidManifest\.xml$' \
+            || { echo "::error::AndroidManifest.xml이 없습니다 — 유효한 apk/aab가 아닙니다."; exit 1; }
+
+          if echo "$listing" | grep -q 'BundleConfig\.pb'; then
+            echo "::error::BundleConfig.pb 발견 — 이 파일은 AAB입니다. buildType=apk 설정을 확인하세요."
+            exit 1
+          fi
+
+          echo "$listing" | grep -q 'classes\.dex' \
+            || { echo "::error::classes.dex가 없습니다 — 설치 가능한 apk가 아닙니다."; exit 1; }
+
+          echo "검증 통과: 실기기에 직접 설치 가능한 apk입니다."
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: weddingpick-preview-apk
+          path: apps/mobile/weddingpick-preview.apk
+          if-no-files-found: error
