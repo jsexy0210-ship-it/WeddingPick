@@ -136,6 +136,35 @@ jobs:
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
 
+      - name: Custom domains (weddingpick.kr / admin.weddingpick.kr)
+        run: |
+          if [ -z "$RENDER_API_KEY" ]; then
+            echo "RENDER_API_KEY 없음 — 커스텀 도메인 설정 생략"
+            exit 0
+          fi
+          add_domain() {
+            local SVC_NAME=$1
+            local DOMAIN=$2
+            SVC_ID=$(curl -sf -H "Authorization: Bearer $RENDER_API_KEY" \
+              "https://api.render.com/v1/services?name=${SVC_NAME}&limit=5" \
+              | python3 -c "import sys,json;data=json.load(sys.stdin);items=[i for i in data if i.get('service',i).get('name','')==\"${SVC_NAME}\"];print(items[0].get('service',items[0]).get('id','') if items else '')" 2>/dev/null)
+            if [ -z "$SVC_ID" ]; then
+              echo "${SVC_NAME}: 서비스를 찾지 못했습니다 (Blueprint sync 완료 후 재시도 필요)"
+              return 0
+            fi
+            echo "${SVC_NAME} (${SVC_ID}): ${DOMAIN} 도메인 추가 시도"
+            RESP=$(curl -s -X POST \
+              -H "Authorization: Bearer $RENDER_API_KEY" \
+              -H "Content-Type: application/json" \
+              -d "{\"name\":\"${DOMAIN}\"}" \
+              "https://api.render.com/v1/services/${SVC_ID}/custom-domains")
+            echo "${DOMAIN} 응답: $RESP"
+          }
+          add_domain "weddingpick-web"   "weddingpick.kr"
+          add_domain "weddingpick-admin" "admin.weddingpick.kr"
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+
       - name: Health check
         run: |
           echo "Waiting for Render staging deployment to settle..."
