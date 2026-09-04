@@ -24,6 +24,8 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import { getCurrentUser, listCandidates } from '@/api/client';
+import { isWebShellScreen } from '@/features/webshell/config';
+import { WebShellView } from '@/features/webshell/WebShellView';
 
 /**
  * Pick 홈 · WP-PICK-001.
@@ -42,6 +44,10 @@ export default function PickScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
+    // 하이브리드 웹뷰 쉘 POC로 이 화면을 대체할 때는 이 밑 자료를 안 쓴다 —
+    // 훅 순서를 지키려고 호출 자체는 남기고, 몸통만 건너뛴다.
+    if (isWebShellScreen('pick')) return;
+
     getCurrentUser()
       .then(async (current) => {
         setError(null);
@@ -56,6 +62,12 @@ export default function PickScreen() {
   }, []);
 
   useEffect(load, [load]);
+
+  // 하이브리드 웹뷰 쉘 POC. `EXPO_PUBLIC_WEBSHELL_SCREENS`에 "pick"이 없으면
+  // (기본값) 이 분기는 타지 않고 기존 네이티브 화면 그대로다.
+  if (isWebShellScreen('pick')) {
+    return <WebShellView path="/pick" />;
+  }
 
   // 배우자와 둘 다 고른 곳: addedByPartner=true인 후보가 있는 첫 번째 그룹
   const sharedGroup = page?.groups.find((g) => g.candidates.some((c) => c.addedByPartner));

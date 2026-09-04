@@ -101,7 +101,96 @@ P0 전체 항목의 완료 기준과 검증 증거가 확정되지 않아 P0 진
 
 ---
 
+## 하이브리드 웹뷰 쉘 POC (2026-09-04, `hybrid/shell-poc` 브랜치, PR 별도)
+
+`apps/mobile`의 웹 export(react-native-web, `npm run export:web`, CI `main.yml`의
+`Bundle (web)` 스텝에서 이미 매번 빌드 검증됨)를 실제로 호스팅해서, 네이티브 쉘이
+자기 자신의 웹 빌드를 웹뷰로 띄우는 구조를 검증한 POC다.
+
+**인프라 정정(2026-09-04, 같은 세션 내 수정)**: 이 섹션은 처음에 "이 저장소는
+Render를 쓰지 않는다"고 적었었다 — `main`만 보고 판단해서 생긴 착오다. 실제로는
+`main`이 인프라 문서·CI(`main.yml`의 `flyctl deploy`)·`fly.toml` 전부 Fly.io
+기준으로 **뒤처져** 있고, 실제 운영 인프라는 **Render**다(API:
+`weddingpickl.onrender.com`, `claude/session-a4bq31` 브랜치의 `render.yaml`·
+`docs/AI_HANDOFF.md`가 최신 상태 — 사용자가 직접 확인해준 사실이다). `main`의
+나머지 Fly.io 언급(§인프라 현황, 2번 항목, 코드 구조 등)을 전부 Render로
+갱신하는 것은 이 PR의 범위 밖이다 — 이 PR은 호스팅 설정 하나만 Render로 바꿨다.
+
+### 1. 웹 번들 호스팅 — Render 정적 사이트, 설정만 추가함
+- `main`에 없던 `render.yaml`을 새로 만들었다 — `claude/session-a4bq31`의
+  실제 운영 정의(`weddingpick-web`/`weddingpick-admin`/`weddingpick-api`)를
+  그대로 옮기고, 새 서비스 `weddingpick-app-web`을 추가했다.
+- `weddingpick-app-web`: `buildCommand: npm run export:web --workspace
+  @weddingpick/mobile`, `staticPublishPath: ./apps/mobile/dist`, expo-router
+  클라이언트 라우팅을 위한 `/* → /index.html` rewrite 포함.
+- **실제 Render 서비스 생성·배포는 하지 않았다.** 새 유료 리소스이므로 사용자
+  승인이 필요하다 — 아래 "사용자 직접 조치 필요" 8번 참고.
+
+### 2. 웹뷰 쉘 — 홈 · Pick 두 화면에 opt-in으로 배선
+- `apps/mobile/src/features/webshell/WebShellView.tsx` — `react-native-webview`
+  래퍼. `apps/mobile/src/app/(tabs)/index.tsx`(홈), `.../pick/index.tsx`(Pick)에
+  연결.
+- **기본값은 꺼짐이다.** `EXPO_PUBLIC_WEBSHELL_SCREENS` 환경변수(쉼표 목록, 예
+  `"home,pick"`)에 화면 id가 들어있을 때만 그 화면이 웹뷰로 바뀐다
+  (`features/webshell/config.ts`). eas.json에는 아무 값도 넣지 않았다 — 즉
+  프로덕션·프리뷰 빌드는 지금과 똑같이 100% 네이티브다.
+- **왜 opt-in인가**: 홈(`(tabs)/index.tsx`, 통합정책 C-1)과 Pick(`pick/index.tsx`,
+  v3.2 §6)은 스텁이 아니라 이미 완성된 네이티브 화면이다. 웹뷰로 무조건 대체하면
+  회귀 위험만 있고 얻는 것이 없다 — 그래서 검증용 스위치로만 만들었다. **다른
+  세션이 이 방향을 실제 프로덕션 전환으로 오해하지 말 것.** 화면을 웹으로
+  대체할지는 이 POC가 정하는 게 아니라 별도 결정이 필요하다.
+
+### 3. 로그인 세션 전달 — 기존 `api/session.ts`를 그대로 재사용
+- **결정**: URL 쿼리 파라미터로 최초 1회 전달 + 웹 쪽 저장은 새 메커니즘을 만들지
+  않고 기존 `apps/mobile/src/api/session.ts`(`saveToken`/`loadToken`, AsyncStorage
+  키 `weddingpick.sessionToken.v1`)를 그대로 쓴다. 웹 export는 같은 코드베이스가
+  react-native-web으로 빌드된 것이라 AsyncStorage가 web에서는 localStorage로
+  동작하는 폴리필을 그대로 쓰기 때문에 자연스럽게 맞는다.
+- **흐름**: `WebShellView`가 `loadToken()`으로 토큰을 읽어 `?wp_token=<token>`을
+  최초 진입 URL에 한 번만 붙인다(웹뷰 내부 이동에는 다시 붙이지 않는다) →
+  `apps/mobile/src/app/_layout.tsx`(웹 타깃에서도 같은 파일)가 부팅 시
+  `wp_token`을 읽어 `saveToken()`으로 저장하고 `history.replaceState`로 주소창·
+  히스토리에서 지운다.
+- **왜 postMessage나 쿠키가 아닌가**: 토큰이 opaque 문자열 하나뿐이고(리프레시
+  토큰·만료시각은 클라이언트에 저장하지 않음, `api/client.ts`도 마찬가지), 서버가
+  쿠키 세션을 발급하지 않는다(Bearer 헤더만). 네이티브 웹뷰와 호스팅된 정적
+  사이트는 오리진이 달라 쿠키 공유도 애초에 안 된다. 반면 URL 파라미터 → 기존
+  저장 함수 재사용은 새 프로토콜 없이 HTTPS 한 번으로 끝나고, 받은 즉시
+  `replaceState`로 주소창에서 지워 히스토리·로그에 남지 않는다.
+
+### 4. 네이티브로 유지되는 화면 — 손대지 않음
+- WP-RPT-002(이미지 선택): `apps/mobile/src/app/(tabs)/capture/index.tsx`,
+  `.../capture/camera.tsx`, `apps/mobile/src/features/capture/pickers.ts`
+- WP-NOTI-003(알림 설정): `apps/mobile/src/app/(tabs)/my/notifications.tsx`
+- 이번 POC 브랜치에서 이 파일들은 전혀 수정하지 않았다(git diff로 확인됨).
+
+### 5. 아직 안 정한 것 (이 POC가 답하지 않은 부분)
+- **웹뷰 내부 라우팅과 RN 라우터 동기화**: 지금은 화면 전체를 웹뷰로 통째로
+  바꾸는 구조라, 웹뷰 안에서 (호스팅된 앱의) expo-router가 다른 경로로 이동해도
+  네이티브 탭바·스택은 그 사실을 모른다. 웹뷰 화면 안에서 다른 탭으로 가야 하는
+  링크를 누르면 어떻게 할지(웹뷰 안에서 그대로 이동 vs `postMessage`로 네이티브
+  라우터에 알려서 네이티브 화면 전환) 정하지 않았다.
+- **딥링크**: `weddingpick://` 커스텀 스킴이 웹뷰로 대체된 화면을 가리킬 때 동작을
+  정하지 않았다.
+- **로그아웃 시 웹뷰 쪽 정리**: 네이티브에서 `clearToken()` 호출 시 이미 열려있는
+  웹뷰의 localStorage까지 지울지, 다음 로드 때만 반영할지 정하지 않았다.
+
+---
+
 ## 🚨 사용자 직접 조치 필요 (Claude 불가)
+
+### 8. 하이브리드 웹뷰 쉘 POC — Render 서비스 생성 필요 (2026-09-04)
+**상태**: `render.yaml`에 `weddingpick-app-web` 정의만 추가됨, 실제 서비스
+미생성.
+
+**필요한 조치**:
+1. Render 대시보드에서 이 저장소의 Blueprint(`render.yaml`)를 동기화하거나
+   `weddingpick-app-web` 정적 사이트를 수동 생성 (새 유료 리소스 — 생성
+   여부·요금제 확인 필요)
+2. 배포된 URL을 `apps/mobile/eas.json`의 `build.preview.env`와
+   `build.production.env`에 `EXPO_PUBLIC_WEB_URL`로 추가
+3. 실제로 웹뷰 쉘을 켜보려면 빌드 시 `EXPO_PUBLIC_WEBSHELL_SCREENS=home,pick`도
+   함께 넣어야 함(기본은 꺼짐)
 
 ### 0. 회원탈퇴 정책 — 최종 확정: 자동삭제 + 운영자 개입 (2026-09-02, 사용자 결정)
 **상태**: 해결됨. main의 `release-gate.ts`/`withdrawalReady()` 게이트 방식은 채택하지
