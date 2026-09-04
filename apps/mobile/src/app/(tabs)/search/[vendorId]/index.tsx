@@ -1,4 +1,4 @@
-import type { ConditionStats, Review, VendorDetail } from '@weddingpick/api-contract';
+import type { ConditionStats, Review, VendorDetail, VendorPhoto } from '@weddingpick/api-contract';
 import {
   manwon,
   MAX_RATING,
@@ -21,6 +21,7 @@ import {
   ensureWedding,
   getVendor,
   getVendorConditions,
+  listVendorPhotos,
   listVendorReviews,
 } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
@@ -60,6 +61,11 @@ export default function VendorDetailScreen() {
   const [vendor, setVendor] = useState<VendorDetail | null>(null);
   /** 조건이 비슷한 결제 사례. 상세와 따로 읽는다 — 하나가 늦어도 나머지는 뜬다. */
   const [conditions, setConditions] = useState<ConditionStats | null>(null);
+  /**
+   * 승인된 업체 실사진. WP-VEND-002. 못 읽어도 상세 화면은 그대로 뜬다 —
+   * 대표 이미지가 카테고리 기본으로 조용히 대체될 뿐이다.
+   */
+  const [photos, setPhotos] = useState<VendorPhoto[]>([]);
   /** Pick 인증 후기 (verification !== 'reported'). 최대 3건. */
   const [verifiedReviews, setVerifiedReviews] = useState<Review[]>([]);
   /** 일반 후기 미리보기 (상담제보). 최대 3건. */
@@ -91,6 +97,14 @@ export default function VendorDetailScreen() {
     getVendorConditions(vendorId)
       .then(setConditions)
       .catch(() => setConditions(null));
+
+    /*
+     * 실사진도 곁가지다. 이미지 서버가 잠깐 안 되더라도 카테고리 기본 이미지가
+     * 대신 나오면 되지, 업체 상세 전체가 오류로 바뀔 일은 아니다.
+     */
+    listVendorPhotos(vendorId)
+      .then((res) => setPhotos(res.photos))
+      .catch(() => setPhotos([]));
 
     listVendorReviews(vendorId)
       .then((res) => {
@@ -182,14 +196,35 @@ export default function VendorDetailScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}>
 
-          {/* ①  대표 이미지 390×260 — 이미지가 없으면 카테고리 기본으로 대체 */}
+          {/*
+            ①  대표 이미지 390×260.
+            승인된 실사진이 있으면 그 대표 이미지를, 없으면 카테고리 기본으로
+            대체한다(CLAUDE.md §8). `VendorImage`가 로드 실패까지 대신
+            처리해준다 — source가 깨져도 카테고리 기본으로 조용히 되돌아간다.
+          */}
           <View style={styles.hero}>
             <VendorImage
+              source={photos[0] ? { uri: photos[0].url } : undefined}
               category={vendor.category as Parameters<typeof VendorImage>[0]['category']}
               width={undefined}
               height={HERO_HEIGHT}
               radius={0}
             />
+            {/*
+              실제 사진이 한 장이라도 있을 때만 진입 버튼을 보여준다 — 없으면
+              눌러도 소득이 없는 버튼이 된다(CLAUDE.md §8).
+            */}
+            {photos.length > 0 ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`사진 ${photos.length}장 보기`}
+                onPress={() => router.push(`/search/${vendor.id}/images`)}
+                style={[styles.photoCountBadge, { backgroundColor: theme.scrim }]}>
+                <ThemedText type="t7" style={{ color: theme.onTint }}>
+                  사진 {photos.length}장 보기
+                </ThemedText>
+              </Pressable>
+            ) : null}
           </View>
 
           {/* ② Identity — 영업 배지 + 업체명 + 핵심조건 */}
@@ -624,6 +659,16 @@ const styles = StyleSheet.create({
     width: '100%',
     height: HERO_HEIGHT,
     overflow: 'hidden',
+    position: 'relative',
+  },
+  photoCountBadge: {
+    position: 'absolute',
+    right: Spacing.three,
+    bottom: Spacing.three,
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.three,
+    minHeight: Layout.touchTarget,
+    justifyContent: 'center',
   },
 
   // ── Identity 블록 ──

@@ -128,6 +128,8 @@ import {
   type ExpoDetail,
   type WeddingInfoListResponse,
   type WeddingInfoDetail,
+  vendorPhotosResponseSchema,
+  type VendorPhotosResponse,
 } from '@weddingpick/api-contract';
 import { z, type ZodType } from 'zod';
 
@@ -447,6 +449,16 @@ export async function listVendorRegions(): Promise<VendorRegionsResponse> {
 
 export async function getVendor(vendorId: string): Promise<VendorDetail> {
   return request(`/v1/vendors/${vendorId}`, vendorDetailSchema);
+}
+
+/**
+ * WP-VEND-002 업체 이미지 전체보기. 승인된 이미지만 온다.
+ *
+ * 대표 이미지가 배열 맨 앞이다 — 화면이 따로 찾을 필요 없이 `photos[0]`을 쓸 수
+ * 있다.
+ */
+export async function listVendorPhotos(vendorId: string): Promise<VendorPhotosResponse> {
+  return request(`/v1/vendors/${vendorId}/images`, vendorPhotosResponseSchema);
 }
 
 /**

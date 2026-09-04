@@ -1,5 +1,5 @@
 import type { ReviewListResponse } from '@weddingpick/api-contract';
-import type { ReportReason } from '@weddingpick/domain';
+import { TERMS, type ReportReason } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
@@ -10,6 +10,7 @@ import {
   ActionButton,
   FilterChip,
   MaxContentWidth,
+  Radius,
   Spacing,
   ThemedText,
   ThemedView,
@@ -109,7 +110,7 @@ export default function VendorReviewsScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.section}>
-            <ThemedText type="subtitle">이용점수</ThemedText>
+            <ThemedText type="subtitle">{TERMS.experience}</ThemedText>
 
             <ThemedView type="backgroundElement" style={styles.card}>
               {page.usageScore.available ? (
@@ -185,8 +186,8 @@ export default function VendorReviewsScreen() {
               reviews.map((review) => (
                 <ThemedView key={review.id} type="backgroundElement" style={styles.card}>
                   <ThemedText type="smallBold">{review.title}</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {'★'.repeat(review.overall)} · {review.roleLabel} · {review.verificationLabel}
+                  <ThemedText type="small" numeric themeColor="textSecondary">
+                    {review.overall.toFixed(1)} · {review.roleLabel} · {review.verificationLabel}
                   </ThemedText>
                   <ThemedText type="small">{review.body}</ThemedText>
 
@@ -202,8 +203,8 @@ export default function VendorReviewsScreen() {
                   ) : null}
 
                   {review.aspects.map((aspect) => (
-                    <ThemedText key={aspect.key} type="small" themeColor="textSecondary">
-                      {aspect.label} {'★'.repeat(aspect.rating)}
+                    <ThemedText key={aspect.key} type="small" numeric themeColor="textSecondary">
+                      {aspect.label} {aspect.rating.toFixed(1)}
                     </ThemedText>
                   ))}
 
@@ -323,7 +324,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   card: {
-    borderRadius: Spacing.three,
+    borderRadius: Radius.medium,
     padding: Spacing.three,
     gap: Spacing.one,
   },
