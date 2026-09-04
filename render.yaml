@@ -6,6 +6,9 @@ services:
     staticPublishPath: ./apps/web/dist
     autoDeploy: true
     buildCommand: npm run build --workspace @weddingpick/web
+    envVars:
+      - key: WEDDINGPICK_CONTACT_EMAIL
+        value: help.weddingpick@gmail.com
 
   # 관리자 패널 (admin.weddingpick.kr)
   - type: web
@@ -51,7 +54,7 @@ services:
       - key: LEGAL_ADDRESS
         sync: false
       - key: LEGAL_SUPPORT_CONTACT
-        sync: false
+        value: help.weddingpick@gmail.com
       - key: LEGAL_PRIVACY_OFFICER
         sync: false
       - key: LEGAL_TERMS_EFFECTIVE_ON
