@@ -55,7 +55,7 @@ const EMPTY: WeddingData = {
  * 커플 연결 상태에 따라 세 화면이 된다.
  * - 비로그인: 로그인 CTA
  * - 미연결: 배우자 초대 CTA
- * - 초대 대기: 수낙 대기 안내
+ * - 초대 대기: 수락 대기 안내
  * - 연결됨: D-day 히어로 · 일정 · 지출 · 준비현황
  *
  * 비회원에게 개인화 영역(이름 · D-day · 진행률)을 보이지 않는다.
@@ -65,17 +65,25 @@ export default function WeddingScreen() {
   const { state } = useSession();
   const [data, setData] = useState<WeddingData>(EMPTY);
   const [loading, setLoading] = useState(true);
+  /** D-day 계산용 기준 시각. 렌더 중에는 Date.now()를 부르지 않는다 — 마운트 후 한 번 정한다. */
+  const [now, setNow] = useState<number | null>(null);
+
+  useEffect(() => {
+    void Promise.resolve().then(() => setNow(Date.now()));
+  }, []);
 
   const isSignedIn = state.status === 'signedIn';
 
   const load = useCallback(() => {
     if (!isSignedIn) {
-      setData(EMPTY);
-      setLoading(false);
+      void Promise.resolve().then(() => {
+        setData(EMPTY);
+        setLoading(false);
+      });
       return;
     }
 
-    setLoading(true);
+    void Promise.resolve().then(() => setLoading(true));
     void getCurrentUser()
       .then(async (me) => {
         setData((prev) => ({ ...prev, me }));
@@ -128,7 +136,7 @@ export default function WeddingScreen() {
     .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())
     .slice(0, 2);
 
-  // 지출 버3: 금액 있는 것만 최대 3개
+  // 지출 버킷: 금액 있는 것만 최대 3개
   const topBuckets = (data.expenses?.buckets ?? [])
     .filter((b) => b.amount > 0)
     .slice(0, 3);
@@ -207,9 +215,9 @@ export default function WeddingScreen() {
           {/* ── 초대 대기 ── */}
           {coupleStatus === 'pending' && (
             <View style={styles.emptyBlock}>
-              <ThemedText type="t2">배우자 수낙{'\n'}대기 중</ThemedText>
+              <ThemedText type="t2">배우자 수락{'\n'}대기 중</ThemedText>
               <ThemedText type="body" themeColor="textSecondary">
-                초대 링크를 전달했나요? 수낙하면 바로 연결돼요
+                초대 링크를 전달했나요? 수락하면 바로 연결돼요
               </ThemedText>
               <ActionButton
                 label="초대 취소"
@@ -291,10 +299,10 @@ export default function WeddingScreen() {
                       const d = new Date(event.startsAt);
                       const month = d.getMonth() + 1;
                       const day = d.getDate();
-                      const diffDays = Math.ceil(
-                        (d.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-                      );
-                      const dDayLabel = diffDays <= 0 ? 'D-day' : `D-${diffDays}`;
+                      const diffDays =
+                        now === null ? null : Math.ceil((d.getTime() - now) / (1000 * 60 * 60 * 24));
+                      const dDayLabel =
+                        diffDays === null ? null : diffDays <= 0 ? 'D-day' : `D-${diffDays}`;
                       const timeStr = d.toLocaleTimeString('ko-KR', {
                         hour: 'numeric',
                         minute: '2-digit',
@@ -326,9 +334,11 @@ export default function WeddingScreen() {
                                 {subText}
                               </ThemedText>
                             </View>
-                            <ThemedText type="t6" themeColor="textAssistive" numeric>
-                              {dDayLabel}
-                            </ThemedText>
+                            {dDayLabel !== null ? (
+                              <ThemedText type="t6" themeColor="textAssistive" numeric>
+                                {dDayLabel}
+                              </ThemedText>
+                            ) : null}
                           </View>
                           {idx < upcomingEvents.length - 1 && (
                             <View
@@ -466,7 +476,7 @@ export default function WeddingScreen() {
                       const badgeLabel = isDone
                         ? '결정됨'
                         : isInProgress
-                          ? '좋힐는 중'
+                          ? '좁히는 중'
                           : '시작 전';
 
                       return (

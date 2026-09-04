@@ -42,7 +42,7 @@ export default function MyScreen() {
 
   const load = useCallback(() => {
     if (!isSignedIn) {
-      setData(EMPTY);
+      void Promise.resolve().then(() => setData(EMPTY));
       return;
     }
 
@@ -60,7 +60,7 @@ export default function MyScreen() {
 
   useEffect(load, [load]);
 
-  /** 비로그인이면 로그인 화면으로 보난다. */
+  /** 비로그인이면 로그인 화면으로 보낸다. */
   function guestPush(path: string) {
     if (!isSignedIn) {
       router.push('/login');
@@ -253,7 +253,7 @@ export default function MyScreen() {
   );
 }
 
-// ─── Sub-components ──────────────────────────────────────────
+// ─── Sub-components ───────────────────────────────────────────────
 
 function MenuGroup({ title, children }: { title: string; children: React.ReactNode }) {
   const theme = useTheme();
@@ -333,7 +333,7 @@ function ChevronRight({ color }: { color: string }) {
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────
+// ─── Styles ───────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: {
@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  /* 쉬브론 */
+  /* 쉐브론 */
   chevron: {
     width: 8,
     height: 8,
