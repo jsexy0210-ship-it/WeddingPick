@@ -47,6 +47,8 @@ import { TastePicker } from '@/features/home/taste-picker';
 import { TodaysPick } from '@/features/home/todays-pick';
 import { VendorList } from '@/features/home/vendor-list';
 import { WeddingContent } from '@/features/home/wedding-content';
+import { isWebShellScreen } from '@/features/webshell/config';
+import { WebShellView } from '@/features/webshell/WebShellView';
 
 /**
  * 홈. 디자인 확정본 `웨딩픽 홈 C-1 상태`.
@@ -96,9 +98,14 @@ export default function HomeScreen() {
    * 비회원 홈이고 뒤는 스켈레톤이다. 하나로 뭉치면 로그인 안 한 사람에게 영원히
    * 스켈레톤이 돈다.
    */
-  const [settled, setSettled] = useState(false);
+  // 하이브리드 웹뷰 쉘 POC일 때는 애초에 스켈레톤을 거칠 일이 없어 settled로 시작한다.
+  const [settled, setSettled] = useState(() => isWebShellScreen('home'));
 
   const load = useCallback(() => {
+    // 웹뷰 쉘로 대체할 때는 이 밑 자료를 안 쓴다 — 훅 순서를 지키려고 호출
+    // 자체는 남기고, 몸통만 건너뛴다.
+    if (isWebShellScreen('home')) return;
+
     void loadTaste().then(setTaste);
 
     /*
@@ -151,6 +158,12 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(load, [load]);
+
+  // 하이브리드 웹뷰 쉘 POC. `EXPO_PUBLIC_WEBSHELL_SCREENS`에 "home"이 없으면
+  // (기본값) 이 분기는 타지 않고 기존 네이티브 화면 그대로다.
+  if (isWebShellScreen('home')) {
+    return <WebShellView path="/" />;
+  }
 
   // 골격이 같은 스켈레톤을 덮는다. 자료가 왔을 때 화면이 튀지 않게 하려는 것이다.
   if (!settled) {

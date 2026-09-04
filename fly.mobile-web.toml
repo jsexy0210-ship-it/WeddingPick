@@ -1,0 +1,32 @@
+# 모바일 웹 export 호스팅 — 하이브리드 웹뷰 쉘 POC
+#
+# 앱 생성: fly apps create weddingpick-app-web
+# 배포: flyctl deploy --config fly.mobile-web.toml --remote-only
+#
+# 이 파일은 설정만 준비한 것이다. 실제 Fly 앱 생성·배포는 하지 않았다 — 새
+# 유료 리소스 생성 여부는 사용자 확인이 필요해서다(CLAUDE.md: 불필요한 유료
+# 리소스 임의 생성 금지). 앱을 만든 뒤에는 `apps/mobile/eas.json`의 build
+# profile에 `EXPO_PUBLIC_WEB_URL`을 이 앱의 URL로 채워야 웹뷰 쉘이 동작한다.
+app = 'weddingpick-app-web'
+primary_region = 'nrt'
+
+[build]
+  dockerfile = 'Dockerfile.mobile-web'
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    interval = '30s'
+    timeout = '5s'
+    grace_period = '15s'
+    method = 'GET'
+    path = '/'
+
+[[vm]]
+  size = 'shared-cpu-1x'
+  memory = '256mb'

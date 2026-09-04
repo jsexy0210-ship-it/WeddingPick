@@ -6,11 +6,12 @@ import '@weddingpick/ui/tokens.css';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useRef, useState } from 'react';
-import { useColorScheme } from 'react-native';
+import { Platform, useColorScheme } from 'react-native';
 
 import { CaptureDraftProvider } from '@/features/capture/capture-draft';
 import { DocumentStoreProvider } from '@/features/documents/document-store';
 import { getCurrentUser, getSignupState } from '@/api/client';
+import { saveToken } from '@/api/session';
 import { isOnboardingCompleted } from '@/features/onboarding/onboarding-state';
 import { loadWeddingDraft } from '@/features/onboarding/wedding-draft';
 import { SPLASH_MINIMUM_MS, SplashView } from '@/features/splash/splash-view';
@@ -50,8 +51,41 @@ export default function RootLayout() {
    */
   const [minimumShown, setMinimumShown] = useState(false);
   const redirected = useRef(false);
+  /*
+   * 네이티브 쉘의 웹뷰가 최초 진입 URL에 `wp_token`을 한 번 실어 보낸다(하이브리드
+   * 웹뷰 쉘, `features/webshell`). 웹 export는 이 값을 받아 저장하고 주소창에서
+   * 지운다 — 네이티브에서는 애초에 필요 없는 단계라 곧장 완료로 둔다. 토큰이
+   * 없는 경우도 초기 렌더 시점에 동기로 판정한다 — 있는 경우만 저장이 끝난 뒤
+   * effect 콜백에서 완료로 표시한다.
+   */
+  const [tokenBootstrapped, setTokenBootstrapped] = useState(() => {
+    if (Platform.OS !== 'web') return true;
+
+    return !new URLSearchParams(window.location.search).has('wp_token');
+  });
 
   useEffect(() => {
+    if (Platform.OS !== 'web') return;
+
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('wp_token');
+
+    if (!token) return;
+
+    params.delete('wp_token');
+
+    void saveToken(token).then(() => {
+      const nextSearch = params.toString();
+      const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}${window.location.hash}`;
+
+      window.history.replaceState(null, '', nextUrl);
+      setTokenBootstrapped(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!tokenBootstrapped) return;
+
     void (async () => {
       const onboarded = await isOnboardingCompleted().catch(() => false);
 
@@ -90,7 +124,7 @@ export default function RootLayout() {
 
       setEntry(draft ? 'app' : 'setup');
     })();
-  }, []);
+  }, [tokenBootstrapped]);
 
   useEffect(() => {
     const timer = setTimeout(() => setMinimumShown(true), SPLASH_MINIMUM_MS);
