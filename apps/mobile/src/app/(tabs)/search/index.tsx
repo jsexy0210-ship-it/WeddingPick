@@ -133,9 +133,6 @@ export default function SearchScreen() {
     return (planners ?? []).filter((p) => p.name.toLowerCase().includes(lower)).slice(0, 5);
   }, [inputFocused, trimmedQ, filters.mode, vendors, planners]);
 
-  const recommended =
-    filters.mode === 'vendor' && filters.q.trim() === '' ? (top3?.items ?? []) : [];
-
   useEffect(() => {
     if (!isServerConfigured) return;
     if (filters.mode !== 'vendor') return;

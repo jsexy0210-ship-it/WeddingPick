@@ -4,4 +4,7 @@ module.exports = {
   testMatch: ['**/*.test.ts', '**/*.test.tsx'],
   forceExit: true,
   openHandlesTimeout: 0,
+  clearMocks: true,
+  resetMocks: true,
+  restoreMocks: true,
 };

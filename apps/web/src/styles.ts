@@ -50,6 +50,16 @@ export const STYLES = `
   --t14: 14px;
   --t13: 13px;
   --t12: 12px;
+
+  /* 앱 타이포 스케일 — packages/ui/src/typography.ts와 같은 값 */
+  --text-t1: 32px;
+  --text-t2: 26px;
+  --text-t4: 20px;
+  --text-t5: 18px;
+  --text-t6: 16px;
+  --text-t7: 14px;
+  --text-badge: 12px;
+  --text-amount: 32px;
 }
 
 @media (prefers-color-scheme: dark) {

@@ -323,31 +323,6 @@ export default function VendorDetailScreen() {
             ) : null}
           </View>
 
-          {/* ⑤ Action — Pick(52px 코랄) + 비교에 담기(48px secondary). 순서 고정. */}
-          <View style={styles.actionSection}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={saving ? 'Pick하는 중' : `${vendor.name} Pick하기`}
-              disabled={saving}
-              style={[styles.pickBtn, { backgroundColor: theme.tint }]}
-              onPress={() => void pick()}>
-              <ThemedText type="t5" style={styles.pickBtnText}>
-                {saving ? 'Pick하는 중…' : 'Pick하기'}
-              </ThemedText>
-            </Pressable>
-            {saveNote ? (
-              <ThemedText type="t7" themeColor="textSecondary">{saveNote}</ThemedText>
-            ) : null}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="비교에 담기"
-              disabled={saving}
-              style={[styles.compareBtn, { borderColor: theme.border }]}
-              onPress={() => void addToCompare()}>
-              <ThemedText type="t6" themeColor="text">비교에 담기</ThemedText>
-            </Pressable>
-          </View>
-
           {/* ⑥ 업체 안내 — 포함 항목 + 별도 비용 */}
           <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} />
           <View style={styles.section}>
@@ -509,6 +484,46 @@ export default function VendorDetailScreen() {
               hint="이용하신 분들이 남긴 글이에요"
               onPress={() => router.push(`/search/${vendor.id}/reviews`)}
             />
+          </View>
+
+          {/* 공식정보 — 출처 근거 */}
+          <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} />
+          <View style={styles.section}>
+            <ThemedText type="t4">공식정보</ThemedText>
+            {vendor.sourceNote ? (
+              <ThemedText type="t6" themeColor="textSecondary">
+                {vendor.sourceNote}
+              </ThemedText>
+            ) : (
+              <ThemedText type="t6" themeColor="textSecondary">
+                공공기관이 확인한 정보를 기준으로 안내해요.
+              </ThemedText>
+            )}
+          </View>
+
+          {/* ⑤ Action — Pick(52px 코랄) + 비교에 담기(48px secondary). 순서 고정. */}
+          <View style={styles.actionSection}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={saving ? 'Pick하는 중' : `${vendor.name} Pick하기`}
+              disabled={saving}
+              style={[styles.pickBtn, { backgroundColor: theme.tint }]}
+              onPress={() => void pick()}>
+              <ThemedText type="t5" style={styles.pickBtnText}>
+                {saving ? 'Pick하는 중…' : 'Pick하기'}
+              </ThemedText>
+            </Pressable>
+            {saveNote ? (
+              <ThemedText type="t7" themeColor="textSecondary">{saveNote}</ThemedText>
+            ) : null}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="비교에 담기"
+              disabled={saving}
+              style={[styles.compareBtn, { borderColor: theme.border }]}
+              onPress={() => void addToCompare()}>
+              <ThemedText type="t6" themeColor="text">비교에 담기</ThemedText>
+            </Pressable>
           </View>
 
           {/* ⑨ Pick 인증 권유 */}
