@@ -1,606 +1,490 @@
-import type { CandidateListResponse, CurrentUser, VisitNoteListResponse } from '@weddingpick/api-contract';
-import {
-  MISSIONS,
-  MISSION_HEADLINE,
-  MISSION_COMPLETE_BODY,
-  MISSION_COMPLETE_TAGS,
-  MISSION_COMPLETE_TITLE,
-  LIFECYCLE_STAGE_LABEL,
-  allMissionsDone,
-  formatWeddingDate,
-  isMissionDone,
-  missionProgress,
-  lifecycle,
-  type MembershipFacts,
-  type MissionKey,
-} from '@weddingpick/domain';
+import type { CurrentUser, MyReportListResponse } from '@weddingpick/api-contract';
+import { formatWeddingDate, manwon } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Animated, Modal, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   ActionButton,
   Layout,
-  MaxContentWidth,
   Radius,
   Spacing,
   ThemedText,
   ThemedView,
   useTheme,
 } from '@weddingpick/ui';
-import { getCurrentUser, getDataUnlock, listCandidates, listVisitNotes } from '@/api/client';
+import { getCurrentUser, listMyReports } from '@/api/client';
 import { useSession } from '@/features/auth/use-session';
-import {
-  hasSeenMissionComplete,
-  markMissionCompleteSeen,
-} from '@/features/membership/mission-seen';
-
-/** 공유되는 건 앱 자체뿐이다. 견적·계약 정보는 포함하지 않는다 — 사업계획서 12번. */
-const SHARE_MESSAGE =
-  '웨딩픽 — 같은 업체도 금액은 달라요. Pick 인증으로 확인된 가격대와 나란히 놓고 차이를 확인해보세요.';
-
-/** 로그인하지 않은 사람의 사실. 게스트도 MY를 본다. */
-const GUEST_FACTS: MembershipFacts = {
-  loggedIn: false,
-  spouseLinked: false,
-  hasPaymentProof: false,
-  weddingSet: false,
-  hasPick: false,
-  hasCompared: false,
-};
 
 type MyData = {
   me: CurrentUser | null;
-  paymentProofCount: number;
-  candidates: CandidateListResponse | null;
-  visitNotes: VisitNoteListResponse | null;
+  reports: MyReportListResponse | null;
 };
 
-const EMPTY: MyData = { me: null, paymentProofCount: 0, candidates: null, visitNotes: null };
+const EMPTY: MyData = { me: null, reports: null };
 
 /**
- * MY. 디자인 핸드오프 17번.
+ * MY 홈 · WP-MY-001.
  *
- * **등급은 막는 장치가 아니라 보여주는 장치다.** 여기서 등급을 이유로 잠그는 것은
- * 없다 — 등급 배지는 어디까지 왔는지를 말하고, 미션 행은 다음에 무엇을 해볼 수
- * 있는지를 말한다. 실제로 잠기는 것은 실제 결제 구간 하나뿐이고, 그건 이 화면이
- * 아니라 업체 화면에서 걸린다.
+ * - 비로그인: 프로필 없음 + 로그인 CTA
+ * - 로그인: 아바타 + 이름 + Pick 인증 배지 + 웨딩 설정 + 메뉴 그룹
+ *
+ * 비회원에게 개인화 영역(이름 · 웨딩 정보)을 보이지 않는다.
  */
 export default function MyScreen() {
   const theme = useTheme();
-  const { state, signOut } = useSession();
+  const { state } = useSession();
   const [data, setData] = useState<MyData>(EMPTY);
-  const [celebrate, setCelebrate] = useState(false);
-  /*
-   * useRef가 아니라 useState 초기화 함수로 만든다 — 값은 똑같이 렌더마다 그대로인
-   * 하나뿐인 Animated.Value지만, JSX 안에서 `.current`를 직접 읽으면 렌더 중 ref
-   * 접근으로 걸린다(react-hooks/refs). Animated.Value 자체는 mutable해서 이
-   * 값이 바뀐다고 다시 렌더되지 않는다 — useState로 감싸도 리렌더 루프가 생기지
-   * 않는다.
-   */
-  const [bounceScale] = useState(() => new Animated.Value(0));
-  const [tagScales] = useState(() => MISSION_COMPLETE_TAGS.map(() => new Animated.Value(0)));
+
+  const isSignedIn = state.status === 'signedIn';
 
   const load = useCallback(() => {
-    /*
-     * 하나가 실패해도 나머지는 보여준다. 로그인 안 한 사람은 다 실패하는데, 그때도
-     * MY는 떠야 한다 — 안내와 정책이 여기 있고, 그건 게스트에게 더 필요하다.
-     */
+    if (!isSignedIn) {
+      setData(EMPTY);
+      return;
+    }
+
     void getCurrentUser()
       .then(async (me) => {
-        setData((current) => ({ ...current, me }));
-
-        const [unlock, candidates, visitNotes] = await Promise.all([
-          getDataUnlock().catch(() => null),
-          me.weddingId ? listCandidates(me.weddingId).catch(() => null) : null,
-          me.weddingId ? listVisitNotes(me.weddingId).catch(() => null) : null,
-        ]);
-
-        setData((current) => ({
-          ...current,
-          paymentProofCount: unlock?.paymentProofCount ?? 0,
-          candidates,
-          visitNotes,
+        setData((prev) => ({ ...prev, me }));
+        const [reports] = await Promise.allSettled([listMyReports()]);
+        setData((prev) => ({
+          ...prev,
+          reports: reports.status === 'fulfilled' ? reports.value : null,
         }));
       })
       .catch(() => setData(EMPTY));
-  }, []);
+  }, [isSignedIn]);
 
   useEffect(load, [load]);
 
-  const facts: MembershipFacts = data.me
-    ? {
-        loggedIn: true,
-        spouseLinked: data.me.spouseLinked,
-        hasPaymentProof: data.me.hasPaymentProof,
-        weddingSet: data.me.weddingDate !== null,
-        hasPick: data.me.hasPick,
-        hasCompared: data.me.hasCompared,
-      }
-    : GUEST_FACTS;
-
-  const everythingDone = allMissionsDone(facts);
-  const stage = lifecycle(data.me?.weddingDate ?? null);
-
-  /*
-   * 미션 완료 모달은 최초 1회다(핸드오프 18번). 여기서 봤는지 물어보고, 축하할
-   * 때가 아니면 저장소를 건드리지 않는다 — 완료하기 전에 "봤음"으로 찍어두면
-   * 정작 완료했을 때 축하가 사라진다.
-   */
-  useEffect(() => {
-    if (!everythingDone) return;
-
-    void hasSeenMissionComplete().then((seen) => {
-      if (!seen) setCelebrate(true);
-    });
-  }, [everythingDone]);
-
-  useEffect(() => {
-    if (!celebrate) return;
-    bounceScale.setValue(0);
-    tagScales.forEach((s) => s.setValue(0));
-    Animated.spring(bounceScale, {
-      toValue: 1,
-      useNativeDriver: true,
-      bounciness: 14,
-      speed: 10,
-    }).start();
-    const DELAYS = [60, 120, 180, 240] as const;
-    tagScales.forEach((s, i) =>
-      Animated.sequence([
-        Animated.delay(DELAYS[i] ?? 0),
-        Animated.spring(s, { toValue: 1, useNativeDriver: true, bounciness: 14, speed: 10 }),
-      ]).start()
-    );
-  }, [celebrate, bounceScale, tagScales]);
-
-  async function closeCelebration() {
-    setCelebrate(false);
-    await markMissionCompleteSeen();
-  }
-
-  async function leave() {
-    try {
-      await signOut();
-    } catch {
-      Alert.alert('로그아웃 실패', '다시 시도해주세요.');
+  /** 비로그인이면 로그인 화면으로 보낸다. */
+  function guestPush(path: string) {
+    if (!isSignedIn) {
+      router.push('/login');
+      return;
     }
+    router.push(path as never);
   }
 
-  async function shareApp() {
-    try {
-      // 스토어 링크는 앱을 올린 뒤 여기에 함께 넣는다.
-      await Share.share({ message: SHARE_MESSAGE });
-    } catch {
-      // 사용자가 공유 시트를 닫은 경우가 대부분이라 따로 알리지 않는다.
-    }
-  }
-
-  /** 미션마다 그 일을 실제로 할 수 있는 자리로 보낸다. */
-  function goMission(key: MissionKey) {
-    switch (key) {
-      case 'setup':
-        router.push('/setup');
-        return;
-      case 'first_pick':
-        router.push('/search');
-        return;
-      case 'compare':
-        // 비교는 Pick한 곳에서 시작한다. 거기 두 곳이 있으면 버튼이 있다.
-        router.push('/pick');
-        return;
-      case 'partner':
-        router.push('/wedding/partner');
-    }
-  }
+  const me = data.me;
+  const initial = me?.displayName?.slice(0, 1) ?? '나';
+  const totalReports = data.reports?.reports.length ?? 0;
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.content}>
-          {/* 프로필 — 아바타 / 이름 + 등급 배지 / 예식일·배우자 상태 */}
-          <ThemedView style={styles.profile}>
-            <View style={[styles.avatar, { backgroundColor: theme.tintSubtle }]}>
-              <ThemedText type="t4" themeColor="tint">
-                {data.me?.displayName?.slice(0, 1) ?? '픽'}
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        {/* 헤더 */}
+        <View style={[styles.header, { borderBottomColor: theme.border }]}>
+          <ThemedText type="t4">MY</ThemedText>
+        </View>
+
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}>
+
+          {/* 프로필 행 */}
+          <View style={[styles.profileRow, { borderBottomColor: theme.border }]}>
+            {/* 아바타 */}
+            <View style={[styles.avatar, { backgroundColor: theme.backgroundSelected }]}>
+              <ThemedText type="t4" themeColor="textSecondary">
+                {isSignedIn ? initial : '?'}
               </ThemedText>
             </View>
 
-            <ThemedView style={styles.grow}>
-              <ThemedView style={styles.nameRow}>
-                <ThemedText type="t4">{data.me?.displayName ?? '비회원'}</ThemedText>
-                <TierBadge label={data.me?.tierLabel ?? '비회원'} />
-              </ThemedView>
-              <ThemedText type="t7" themeColor="textSecondary">
-                {data.me?.weddingDate ? formatWeddingDate(data.me.weddingDate) : '예식일 미등록'}
-                {facts.spouseLinked ? ' · 배우자 연결됨' : ''}
-                {/*
-                  지금 어느 단계인지 적는다. 예식이 끝나도 비우지 않는다 —
-                  v3.5가 준비만 하는 앱에 고정하지 말라고 정했다.
-                 */}
-                {data.me?.weddingDate ? ` · ${LIFECYCLE_STAGE_LABEL[stage.stage]}` : ''}
-              </ThemedText>
-            </ThemedView>
-          </ThemedView>
-
-          {/*
-            예식일 미등록 배너. 예식이 끝난 사람에게는 뜨지 않는다 — 등록하라고
-            권할 이유가 이미 지났다.
-          */}
-          {data.me && !data.me.weddingDate ? (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => router.push('/setup')}
-              style={[styles.banner, { backgroundColor: theme.tintSubtle }]}>
-              <ThemedText type="t6" themeColor="tint">
-                예식일을 등록하면 남은 날짜와 일정을 챙겨드려요
-              </ThemedText>
-            </Pressable>
-          ) : null}
-
-          {/* 통계 3개 — 각각 해당 화면으로 */}
-          <ThemedView style={styles.statRow}>
-            <Stat
-              label="확인된 정보"
-              value={data.paymentProofCount}
-              onPress={() => router.push('/capture/payment/consent')}
-            />
-            <Stat
-              label="Pick한 곳"
-              value={data.candidates?.total ?? 0}
-              onPress={() => router.push('/pick')}
-            />
-            <Stat
-              label="방문노트"
-              value={data.visitNotes?.notes.length ?? 0}
-              onPress={() => goWedding(data.me, 'visit-notes')}
-            />
-          </ThemedView>
-
-          {/* 웨딩픽 시작하기 N/4. v3.7 §9가 이 꼴로 정했다. */}
-          <ThemedView type="backgroundElement" style={styles.missionBlock}>
-            <ThemedView type="backgroundElement" style={styles.missionHead}>
-              <ThemedText type="t4">
-                {MISSION_HEADLINE} {missionProgress(facts).done}/{missionProgress(facts).total}
-              </ThemedText>
-              {/* 핸드오프가 배지를 여기에도 뒀다. 미션과 등급이 같은 이야기라서다. */}
-              <TierBadge label={data.me?.tierLabel ?? '비회원'} />
-            </ThemedView>
-
-            {MISSIONS.map((mission) => {
-              const done = isMissionDone(mission.key, facts);
-
-              return (
-                <Pressable
-                  key={mission.key}
-                  accessibilityRole="button"
-                  accessibilityState={{ checked: done }}
-                  onPress={() => goMission(mission.key)}
-                  style={styles.missionRow}>
-                  <ThemedText type="t5" themeColor={done ? 'tint' : 'track'}>
-                    ✓
-                  </ThemedText>
-                  <View style={styles.grow}>
-                    <ThemedText type="t6" themeColor={done ? 'text' : 'textAssistive'}>
-                      {mission.title}
-                    </ThemedText>
-                    <ThemedText type="t7" themeColor="textSecondary">
-                      {mission.description}
+            <View style={styles.profileInfo}>
+              <View style={styles.profileNameRow}>
+                <ThemedText type="t5">
+                  {isSignedIn && me?.displayName ? `${me.displayName}님` : '비회원'}
+                </ThemedText>
+                {isSignedIn && me?.hasPaymentProof && (
+                  <View
+                    style={[
+                      styles.verifiedBadge,
+                      { backgroundColor: theme.positiveBackground },
+                    ]}>
+                    <ThemedText
+                      type="badge"
+                      style={{ color: theme.positive }}>
+                      Pick 인증 완료
                     </ThemedText>
                   </View>
-                </Pressable>
-              );
-            })}
-          </ThemedView>
-
-          {/* 메뉴 */}
-          <ThemedView style={styles.section}>
-            <ThemedText type="t7" themeColor="textSecondary">
-              계정
-            </ThemedText>
-            <ActionButton
-              label="배우자 연결 관리"
-              onPress={() =>
-                data.me ? router.push('/wedding/partner') : router.push('/login')
-              }
-            />
-            {state.status === 'offline' ? (
-              <ThemedView type="backgroundElement" style={styles.card}>
-                <ThemedText type="t7" themeColor="textSecondary">
-                  이 빌드는 서버에 붙어 있지 않아요. 촬영과 기기 저장까지 돼요.
+                )}
+              </View>
+              {isSignedIn && me?.tierLabel && (
+                <ThemedText type="t7" themeColor="textAssistive">
+                  {me.tierLabel}
                 </ThemedText>
-              </ThemedView>
-            ) : state.status === 'signedIn' ? (
-              <ActionButton
-                label="로그아웃"
-                hint="기기에 저장된 문서는 지워지지 않아요"
-                onPress={leave}
-              />
-            ) : state.status === 'signedOut' ? (
-              <ActionButton
-                variant="primary"
-                label="로그인"
-                hint="우리웨딩과 Pick 인증에 필요해요"
-                onPress={() => router.push('/login')}
-              />
-            ) : null}
-          </ThemedView>
-
-          <ThemedView style={styles.section}>
-            <ThemedText type="t7" themeColor="textSecondary">
-              내 활동
-            </ThemedText>
-            <ActionButton
-              label="내 제보내역"
-              hint="낸 자료가 어디에 쓰이는지 함께 보여드려요"
-              onPress={() => (data.me ? router.push('/my/reports') : router.push('/login'))}
-            />
-            <ActionButton
-              label="업체 반론"
-              hint="등록한 반론과 확인 상태를 볼 수 있어요"
-              onPress={() => (data.me ? router.push('/my/rebuttals') : router.push('/login'))}
-            />
-            <ActionButton
-              label="업체 관계자 인증"
-              hint="관계자로 확인되면 우리 업체 후기에 반론을 낼 수 있어요"
-              onPress={() =>
-                data.me ? router.push('/my/vendor-claims') : router.push('/login')
-              }
-            />
-            {/* 금액을 여기 적지 않는다. 조건을 먼저 읽어야 한다(v2.0 K-7). */}
-            <ActionButton
-              label="친구초대 · 홍보인증"
-              hint="초대한 분이 Pick 인증을 마치시면 지급 대상이 돼요"
-              onPress={() => (data.me ? router.push('/my/rewards') : router.push('/login'))}
-            />
-          </ThemedView>
-
-          <ThemedView style={styles.section}>
-            <ThemedText type="t7" themeColor="textSecondary">
-              안내
-            </ThemedText>
-            <ActionButton label="촬영 방법과 분석 안내" onPress={() => router.push('/my/guide')} />
-            <ActionButton
-              label="문의하기"
-              hint="잘못된 정보, 분석 결과 이의, 개인정보 요청을 받아요"
-              onPress={() => router.push('/my/contact')}
-            />
-            <ActionButton
-              label="웨딩픽 공유하기"
-              hint="앱만 공유해요. 내 자료는 포함되지 않아요"
-              onPress={shareApp}
-            />
-            <ActionButton
-              label="이용약관 · 개인정보 처리방침"
-              onPress={() => router.push('/my/policies')}
-            />
-            <ActionButton
-              label="설정"
-              hint="알림, 예식일, Pick 인증 동의"
-              onPress={() => router.push('/my/settings')}
-            />
-            {/*
-              로그인한 사람에게만 보인다. 지울 계정이 없는 사람에게 탈퇴를 보이면
-              없는 곳으로 가는 줄을 그리는 것이 된다.
-            */}
-            {data.me ? (
-              <ActionButton
-                label="회원탈퇴"
-                hint="지워지는 것과 분리되는 것을 먼저 보여드려요"
-                onPress={() => router.push('/my/withdrawal' as never)}
-              />
-            ) : null}
-          </ThemedView>
-        </ScrollView>
-      </SafeAreaView>
-
-      {/* 미션 완료 — 최초 1회. 핸드오프 18번. */}
-      <Modal visible={celebrate} transparent animationType="fade" onRequestClose={closeCelebration}>
-        <View style={[styles.scrim, { backgroundColor: theme.scrim }]}>
-          <View style={[styles.dialog, { backgroundColor: theme.tint }]}>
-            <Animated.View
-              style={[
-                styles.dialogMark,
-                { backgroundColor: theme.onTint, transform: [{ scale: bounceScale }] },
-              ]}>
-              <ThemedText type="t2" themeColor="tint">
-                ✓
-              </ThemedText>
-            </Animated.View>
-
-            <ThemedText type="t4" style={styles.onTint}>
-              {MISSION_COMPLETE_TITLE}
-            </ThemedText>
-            <ThemedText type="t6" style={styles.onTint}>
-              {MISSION_COMPLETE_BODY}
-            </ThemedText>
-
-            <View style={styles.tagRow}>
-              {MISSION_COMPLETE_TAGS.map((tag, i) => (
-                <Animated.View
-                  key={tag}
-                  style={[styles.tag, { borderColor: theme.onTint, transform: [{ scale: tagScales[i] }] }]}>
-                  <ThemedText type="badge" style={styles.onTint}>
-                    {tag}
-                  </ThemedText>
-                </Animated.View>
-              ))}
+              )}
             </View>
 
+            {isSignedIn && (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="프로필 편집"
+                hitSlop={Spacing.two}
+                onPress={() => router.push('/my/account' as never)}>
+                <ChevronRight color={theme.textAssistive} />
+              </Pressable>
+            )}
+          </View>
+
+          {/* 웨딩 설정 박스 — 로그인 + 온보딩 완료 시 */}
+          {isSignedIn && me?.setupComplete && (
             <Pressable
               accessibilityRole="button"
-              onPress={closeCelebration}
-              style={[styles.dialogButton, { backgroundColor: theme.onTint }]}>
-              <ThemedText type="t5" themeColor="tint">
-                확인
-              </ThemedText>
+              style={[styles.weddingBox, { backgroundColor: theme.backgroundElement }]}
+              onPress={() => router.push('/setup' as never)}>
+              <View style={styles.weddingBoxInner}>
+                {me.weddingDate && (
+                  <SettingRow label="예식일" value={formatWeddingDate(me.weddingDate)} />
+                )}
+                {me.region && (
+                  <SettingRow label="지역" value={me.region} />
+                )}
+                {me.budgetAmount && (
+                  <SettingRow label="총예산" value={manwon(me.budgetAmount)} />
+                )}
+              </View>
+              <ChevronRight color={theme.textAssistive} />
             </Pressable>
+          )}
+
+          {/* ── 메뉴 그룹 ── */}
+
+          {/* Pick 인증 */}
+          <MenuGroup title="Pick 인증">
+            <MenuItem
+              label="내 제보 내역"
+              value={totalReports > 0 ? `${totalReports}건` : undefined}
+              onPress={() => guestPush('/my/reports')}
+            />
+            <MenuItem
+              label="Pick 인증하기"
+              onPress={() => guestPush('/capture/payment/consent')}
+              last
+            />
+          </MenuGroup>
+
+          {/* 혜택 */}
+          <MenuGroup title="혜택">
+            <MenuItem
+              label="웨딩픽 혜택"
+              onPress={() => guestPush('/my/rewards')}
+            />
+            <MenuItem
+              label="친구 초대"
+              onPress={() => guestPush('/my/referral')}
+              last
+            />
+          </MenuGroup>
+
+          {/* 설정 */}
+          <MenuGroup title="설정">
+            <MenuItem
+              label="알림 설정"
+              onPress={() => guestPush('/my/notification-settings')}
+            />
+            <MenuItem
+              label="계정 설정"
+              onPress={() => guestPush('/my/account')}
+            />
+            <MenuItem
+              label="서비스 안내"
+              onPress={() => router.push('/my/guide' as never)}
+            />
+            <MenuItem
+              label="약관 · 방침"
+              onPress={() => router.push('/my/policies' as never)}
+              last
+            />
+          </MenuGroup>
+
+          {/* 업체 · 플래너 문의 */}
+          <View
+            style={[
+              styles.bizBox,
+              { borderColor: theme.border },
+            ]}>
+            <View style={styles.bizContent}>
+              <ThemedText type="t6" style={styles.bizTitle}>
+                업체·플래너 문의
+              </ThemedText>
+              <ThemedText type="t7" themeColor="textAssistive" style={styles.bizBody}>
+                정보 수정 · 반론 · 사진 제공 · 혜택 등록 · 광고 제휴를 여기서 접수해요
+              </ThemedText>
+            </View>
+            <ActionButton
+              variant="ghost"
+              label="문의하기"
+              onPress={() => router.push('/my/biz' as never)}
+            />
           </View>
-        </View>
-      </Modal>
+
+          {/* 로그아웃 / 로그인 CTA */}
+          <View style={styles.footerArea}>
+            {isSignedIn ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push('/my/logout' as never)}>
+                <ThemedText type="t6" themeColor="textAssistive">
+                  로그아웃
+                </ThemedText>
+              </Pressable>
+            ) : (
+              <View style={styles.loginCta}>
+                <ActionButton
+                  variant="primary"
+                  label="로그인 · 가입하기"
+                  onPress={() => router.push('/login')}
+                />
+                <ThemedText type="t7" themeColor="textAssistive" style={styles.loginHint}>
+                  우리웨딩과 Pick 인증에 필요해요
+                </ThemedText>
+              </View>
+            )}
+          </View>
+        </ScrollView>
+      </SafeAreaView>
     </ThemedView>
   );
 }
 
-function TierBadge({ label }: { label: string }) {
+// ─── Sub-components ───────────────────────────────────────────────
+
+function MenuGroup({ title, children }: { title: string; children: React.ReactNode }) {
   const theme = useTheme();
 
   return (
-    <View style={[styles.badge, { backgroundColor: theme.tintSubtle }]}>
-      <ThemedText type="badge" themeColor="tint">
+    <View style={styles.menuGroup}>
+      <View style={[styles.menuBand, { backgroundColor: theme.backgroundSelected }]} />
+      <View style={styles.menuGroupContent}>
+        <ThemedText type="t7" themeColor="textAssistive" style={styles.menuGroupTitle}>
+          {title}
+        </ThemedText>
+        {children}
+      </View>
+    </View>
+  );
+}
+
+function MenuItem({
+  label,
+  value,
+  onPress,
+  last = false,
+}: {
+  label: string;
+  value?: string;
+  onPress: () => void;
+  last?: boolean;
+}) {
+  const theme = useTheme();
+
+  return (
+    <>
+      <Pressable
+        accessibilityRole="button"
+        style={styles.menuItem}
+        onPress={onPress}>
+        <ThemedText type="t6" style={styles.menuItemLabel}>
+          {label}
+        </ThemedText>
+        <View style={styles.menuItemRight}>
+          {value !== undefined && (
+            <ThemedText type="t6" themeColor="textAssistive">
+              {value}
+            </ThemedText>
+          )}
+          <ChevronRight color={theme.textAssistive} />
+        </View>
+      </Pressable>
+      {!last && (
+        <View style={[styles.divider, { backgroundColor: theme.border }]} />
+      )}
+    </>
+  );
+}
+
+function SettingRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.settingRow}>
+      <ThemedText type="t7" themeColor="textAssistive" style={styles.settingLabel}>
         {label}
+      </ThemedText>
+      <ThemedText type="t6" numberOfLines={1}>
+        {value}
       </ThemedText>
     </View>
   );
 }
 
-function Stat({ label, value, onPress }: { label: string; value: number; onPress: () => void }) {
+function ChevronRight({ color }: { color: string }) {
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={styles.stat}>
-      {/* 0도 자리를 지킨다. 빈 상태에서 레이아웃을 바꾸지 않는다. */}
-      <ThemedText type="t4" numeric>
-        {value}
-      </ThemedText>
-      <ThemedText type="t7" themeColor="textSecondary">
-        {label}
-      </ThemedText>
-    </Pressable>
+    <View
+      style={[
+        styles.chevron,
+        { borderColor: color },
+      ]}
+    />
   );
 }
 
-/** 웨딩이 없으면 우리웨딩 탭으로 보낸다 — 거기서 만들어준다. */
-function goWedding(me: CurrentUser | null, section: 'visit-notes') {
-  if (!me?.weddingId) {
-    router.push('/wedding');
-    return;
-  }
-
-  router.push(`/wedding/${me.weddingId}/${section}`);
-}
+// ─── Styles ───────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
   },
   safeArea: {
     flex: 1,
-    maxWidth: MaxContentWidth,
   },
-  content: {
+  header: {
+    height: Layout.navBar,
+    justifyContent: 'center',
     paddingHorizontal: Layout.gutter,
-    paddingTop: Spacing.five,
-    paddingBottom: Spacing.six,
-    gap: Spacing.four,
+    borderBottomWidth: 1,
   },
-  grow: {
+  scroll: {
     flex: 1,
   },
-  profile: {
+  scrollContent: {
+    paddingBottom: Spacing.six,
+  },
+
+  /* 프로필 */
+  profileRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.three,
+    paddingHorizontal: Layout.gutter,
+    paddingVertical: Spacing.three,
+    borderBottomWidth: 1,
   },
   avatar: {
-    width: 56,
-    height: 56,
+    width: 48,
+    height: 48,
     borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
-  nameRow: {
+  profileInfo: {
+    flex: 1,
+    gap: 2,
+    minWidth: 0,
+  },
+  profileNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    flexWrap: 'wrap',
+  },
+  verifiedBadge: {
+    borderRadius: Radius.small,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: 2,
+  },
+
+  /* 웨딩 설정 박스 */
+  weddingBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: Layout.gutter,
+    marginTop: Spacing.three,
+    borderRadius: Radius.medium,
+    padding: Layout.gutter,
+    gap: Spacing.two,
+  },
+  weddingBoxInner: {
+    flex: 1,
+    gap: Spacing.two,
+  },
+  settingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
   },
-  badge: {
-    borderRadius: Radius.pill,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: 2,
+  settingLabel: {
+    width: 52,
+    flexShrink: 0,
   },
-  banner: {
-    borderRadius: Radius.medium,
-    padding: Spacing.three,
+
+  /* 메뉴 그룹 */
+  menuGroup: {
+    marginTop: Layout.sectionGap,
   },
-  statRow: {
-    flexDirection: 'row',
+  menuBand: {
+    height: Layout.sectionBand,
   },
-  stat: {
-    flex: 1,
-    alignItems: 'center',
-    gap: Spacing.one,
-    minHeight: Layout.touchTarget,
-    justifyContent: 'center',
+  menuGroupContent: {
+    paddingHorizontal: Layout.gutter,
+    paddingTop: Spacing.three,
   },
-  missionBlock: {
-    borderRadius: Radius.medium,
-    padding: Spacing.four,
-    gap: Spacing.three,
+  menuGroupTitle: {
+    marginBottom: Spacing.two,
   },
-  missionHead: {
+  menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    minHeight: Layout.rowMinHeight,
+    paddingVertical: Spacing.two,
   },
-  missionRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.three,
-    minHeight: Layout.touchTarget,
-  },
-  section: {
-    gap: Spacing.two,
-  },
-  card: {
-    borderRadius: Radius.medium,
-    padding: Spacing.three,
-    gap: Spacing.one,
-  },
-  scrim: {
+  menuItemLabel: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: Layout.gutter,
   },
-  dialog: {
-    width: '100%',
-    maxWidth: 320,
-    borderRadius: Radius.medium,
-    padding: Spacing.five,
+  menuItemRight: {
+    flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
   },
-  dialogMark: {
-    width: 64,
-    height: 64,
-    borderRadius: Radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.two,
+  divider: {
+    height: 1,
   },
-  tagRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: Spacing.one,
-    marginVertical: Spacing.two,
-  },
-  tag: {
-    borderRadius: Radius.pill,
+
+  /* 업체·플래너 */
+  bizBox: {
+    marginHorizontal: Layout.gutter,
+    marginTop: Spacing.four,
     borderWidth: 1,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: 2,
+    borderRadius: Radius.medium,
+    padding: Layout.gutter,
+    gap: Spacing.three,
   },
-  dialogButton: {
-    alignSelf: 'stretch',
+  bizContent: {
+    gap: Spacing.one,
+  },
+  bizTitle: {
+    fontWeight: '700',
+  },
+  bizBody: {
+    lineHeight: 20,
+  },
+
+  /* 푸터 */
+  footerArea: {
     alignItems: 'center',
-    borderRadius: Radius.input,
-    paddingVertical: Spacing.three,
+    paddingHorizontal: Layout.gutter,
+    paddingTop: Spacing.four,
   },
-  onTint: {
-    color: '#ffffff',
+  loginCta: {
+    width: '100%',
+    gap: Spacing.two,
+    alignItems: 'center',
+  },
+  loginHint: {
     textAlign: 'center',
+  },
+
+  /* 쉐브론 */
+  chevron: {
+    width: 8,
+    height: 8,
+    borderRightWidth: 1.5,
+    borderTopWidth: 1.5,
+    transform: [{ rotate: '45deg' }],
   },
 });
