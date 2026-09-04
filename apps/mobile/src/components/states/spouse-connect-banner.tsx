@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
   },
   text: {
     flex: 1,
-    gap: 2,
+    gap: Spacing.half,
   },
   cta: {
     paddingHorizontal: Spacing.three,
