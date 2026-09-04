@@ -55,6 +55,55 @@
 
 ## 진행 중
 
+### 홍보 자동화 파이프라인 (2026-09-04)
+
+- 범위: 출시 후 사용할 홍보 포맷과 자동화 파이프라인 준비. 실제 외부 게시 없음. dry_run만 허용.
+- 구현 완료(이번 세션):
+  - `packages/api-contract/src/marketing.ts` — Zod 스키마 (채널·포맷·상태·소재·잡·응답)
+  - `packages/db/migrations/0072_marketing_pipeline.sql` — marketing_sources / marketing_jobs / marketing_events
+  - `apps/api/src/marketing/content.ts` — 템플릿 기반 생성, 금지 표현·PII 검사, UTM 생성, 계획 프롬프트
+  - `apps/api/src/marketing/store.ts` — DB CRUD, FOR UPDATE SKIP LOCKED, 재시도 한도
+  - `apps/api/src/marketing/cli.ts` — demo / preview / simulate / facts CLI
+  - `apps/api/src/marketing/demo.ts` — programmatic 예제 실행기
+  - `apps/api/src/marketing/content.test.ts` — 단위 테스트 15개
+  - `apps/api/src/routes/admin.ts` — 기존 빈 stub 교체, 8개 마케팅 엔드포인트
+  - `apps/mobile/src/app/admin/marketing.tsx` — 새 스키마(queued/simulated/failed) 반영, 모의 실행 버튼
+  - `docs/marketing-pipeline.md` — 파이프라인 사용 안내
+  - `.github/workflows/main.yml` — CI 미리보기 생성 + 7일 artifact
+  - `apps/api/package.json` — `marketing` 스크립트 추가
+- 검증 한계:
+  - DB 통합 테스트는 DATABASE_URL 부재로 미실행 (격리된 PG 필요)
+  - 관리자 화면 실제 앱 실행·시각 검증 미완료
+  - 운영 DB 마이그레이션 0072 미적용
+- 실행 안내: `docs/marketing-pipeline.md`
+- 아직 구현 안 됨: 실 SNS 게시 어댑터, AI API 자동 호출, 카드뉴스 이미지, 성과 수집, 상시 예약, 실게시 활성화 체계
+
+### 웨딩픽 전용 공공데이터 수집 (2026-09-04)
+
+- 추가 영향/비용 점검: docs/wedding-data-cost-impact.md. 상시 수집 서버는 불필요,
+  Actions·Neon 사용량 증가 가능. 실제 계정 플랜/잔여 한도/청구액은 미확인.
+  중복 다운로드, DB 이력 누적, migration 잠금, main CI/배포 영향도 기록했다.
+
+- 사용자 확정: 공공데이터·업체 직접 제공·수집 허용 공식 출처를 원천으로 사용.
+  Google·네이버·카카오 결과의 저장용 통합은 제외한다. 통합정책 N-9~N-12와
+  AI_START_HERE.md에 모든 AI의 필수 확인 경로를 추가했다.
+- 최신 main bbc6ce8에서 기존 public-data:import를 확장했다. 이천·제천 공개 CSV
+  자동 다운로드, 전국 상권 CSV 어댑터, 최소 필드 추출, 출처별 최신성·중복·잠금 보호,
+  기존 실행/변경 로그와 연결하는 DB 경로를 추가했다.
+- 로컬 실수집: 이천 6개 + 제천 4개 = 10개, 제외 0개. 기준일과 수집시각을 분리했다.
+  업체 운영 상태는 확인필요이며 전국 전체 수집 완료가 아니다.
+- 로컬 단위/기존 파서 테스트 18개 통과, API 타입 검사 통과.
+- 공유 PR: https://github.com/jsexy0210-ship-it/WeddingPickl/pull/62 (main 미병합).
+  정책 변경도 PR에 있으므로 main 기준으로 적용 완료라고 보고하지 않는다.
+- GitHub Actions 실행 33838694039는 계정 결제 실패 또는 지출 한도 문제로
+  verify 작업 시작 전에 차단됐다(실행 화면 Annotations 확인). PostgreSQL 통합
+  테스트는 미실행, 수집 작업은 skipped다. 계정 소유자가 Billing & plans 문제를
+  해결한 뒤 검증 재실행 → main 병합 → 0071 migration → 수집 apply 순으로 진행한다.
+- 현재 로컬 DATABASE_URL·공공데이터 API 키가 없다. 운영 DB 반영은 아직 미실행.
+  0071_vendor_public_sources 적용과 GitHub Actions DB 반영 결과를 후속 확인한다.
+- 카카오 API 응답을 저장하는 geocode-vendors.mts는 실행을 차단했다.
+- 실행 안내: apps/api/src/public-data/README.md. 리스크: docs/wedding-data-source-risks.md.
+
 1.  GitHub 중심 단일 CI/CD 통합
 2.  iOS EAS Production Build 정상화
 3.  Render production deploy 정상화
@@ -132,6 +181,14 @@
 10. 카카오맵 잔여 경로·의존성 정리 및 운영 링크 실기기 검증(Android/iOS), 웹 제공 범위 확인
 11. 카카오 REST API 키 발급 → `scripts/geocode-vendors.mts`로 업체 좌표 백필
 
+### 홍보 파이프라인 후속 (2026-09-04)
+
+12. 격리된 PostgreSQL에서 마이그레이션 0072 및 통합 테스트 검증
+    - 중복 요청, 동시 처리(FOR UPDATE SKIP LOCKED), 예약 시각, 소재 만료·폐기, 재시도 한도 확인
+13. 관리자 화면 실제 실행 — 소재 등록·생성·모의 흐름 시각 검증
+14. VERIFIED_FACTS 추가 및 소재 등록 운영자 작성 흐름 보완
+15. 실게시 활성화 조건 설계 (출시 기능·스토어 주소·채널 권한 확인 체크리스트)
+
 ## 제품 범위 결정
 
 -   (2026-09-02) **초기 출시는 예식 당일까지만 지원한다.** 예식 완료(post-wedding)
@@ -161,4 +218,4 @@ P0 항목별 완료 기준과 검증 증거가 확정되기 전에는 P0 진척�
 
 ## 마지막 상태 기준일
 
-2026-09-02
+2026-09-04

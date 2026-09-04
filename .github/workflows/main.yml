@@ -66,6 +66,16 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Marketing preview
+        run: npm run marketing --workspace @weddingpick/api -- demo .marketing-preview
+
+      - name: Upload marketing preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: marketing-preview
+          path: .marketing-preview/
+          retention-days: 7
+
       - name: Bundle (web)
         run: npm run export:web --workspace @weddingpick/mobile
 

@@ -1,0 +1,48 @@
+import iconv from 'iconv-lite';
+import { contentHash, isoDay, parsePublicCsv, type CollectedVendor } from './collect';
+import { sourceKey } from './sources';
+import { replacementDecision } from './sync';
+
+const at = new Date('2026-09-04T00:00:00Z');
+const csv = '업체명,도로명주소,기준일자,전화번호,위도\n긴 웨딩홀 원문,경기도 이천시 길 1,2026-07-01,010-1234-5678,37.1';
+test.each(['utf8','cp949'])('최소 필드만 남긴다 (%s)', (encoding) => {
+  const parsed = parsePublicCsv(iconv.encode(csv,encoding),'icheon-halls',at);
+  expect(parsed.vendors).toHaveLength(1);
+  expect(parsed.vendors[0]).toMatchObject({name:'긴 웨딩홀 원문', region:'경기도 이천시',status:'needs_verification'});
+  expect(JSON.stringify(parsed)).not.toContain('010-1234');
+  expect(JSON.stringify(parsed)).not.toContain('길 1');
+  expect(JSON.stringify(parsed)).not.toContain('37.1');
+});
+test('잘못된 날짜와 미래 날짜는 조회일로 대체하지 않는다', () => {
+  expect(isoDay('2026-02-30','2026-09-04')).toBeNull();
+  expect(isoDay('2026-10-01','2026-09-04')).toBeNull();
+  expect(parsePublicCsv(Buffer.from(csv.replace('2026-07-01','')),'icheon-halls',at).rejected).toBe(1);
+});
+test('스키마 변경은 실패하고 중복은 별도 집계한다', () => {
+  expect(() => parsePublicCsv(Buffer.from('name,address\na,b'),'icheon-halls',at)).toThrow();
+  expect(parsePublicCsv(Buffer.from(csv+'\n'+csv.split('\n')[1]),'icheon-halls',at).duplicates).toBe(1);
+});
+test('상권 CSV의 일반 미용실·사진관은 자동 등록하지 않는다', () => {
+  const data='상호명,도로명주소,상가업소번호,상권업종소분류명\n일반사진관,서울특별시 강남구 길 1,1,사진 촬영업\n행복웨딩,서울특별시 강남구 길 2,2,예식장업';
+  const parsed=parsePublicCsv(Buffer.from(data),'sbiz',at);
+  expect(parsed.rejected).toBe(1);
+  expect(parsed.vendors[0]?.publishedOn).toBeNull();
+});
+test('Google·네이버·카카오를 저장 허용 출처로 받을 수 없다', () => {
+  for(const key of ['google','naver','kakao','__proto__']) expect(()=>sourceKey(key)).toThrow();
+});
+const incoming: CollectedVendor = {name:'새 이름',region:'경기도 이천시',category:'hall',sourceKey:'icheon-halls',
+  sourceUrl:'https://www.data.go.kr/data/15100736/fileData.do',sourceRecordId:'id',publishedOn:'2026-09-02',
+  collectedAt:at.toISOString(),status:'needs_verification'};
+const existing={id:'id',name:'옛 이름',region:'경기도 이천시',category:'hall',source:'public_data',
+  source_url:incoming.sourceUrl,data_published_at:'2026-08-01',admin_locked:false};
+test('최신 동일 출처 갱신, 과거·다른 출처·잠금은 보류한다', () => {
+  expect(replacementDecision(existing,incoming)).toBe('update');
+  expect(replacementDecision(existing,{...incoming,publishedOn:'2026-07-01'})).toBe('hold');
+  expect(replacementDecision(existing,{...incoming,publishedOn:null})).toBe('hold');
+  expect(replacementDecision({...existing,source_url:'other'},incoming)).toBe('hold');
+  expect(replacementDecision({...existing,admin_locked:true},incoming)).toBe('hold');
+});
+test('해시는 수집 시각에 영향받지 않는다', () => {
+  expect(contentHash(incoming)).toBe(contentHash({...incoming,collectedAt:'later'} as CollectedVendor));
+});

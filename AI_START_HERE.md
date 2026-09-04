@@ -84,4 +84,13 @@ GitHub 최신 main을 공통 기준으로 사용한다.
 
 ## 7. 핵심 한 줄
 
+### 외부 업체 수집 작업 필수 확인 (2026-09-04 확정)
+
+통합정책 v3.14의 N-9~N-12와 `docs/wedding-data-source-risks.md`,
+`docs/wedding-data-cost-impact.md`,
+`apps/api/src/public-data/README.md`를 반드시 읽는다. 전국 업체 DB는 이용허락을
+확인한 공공데이터·업체 제공·허용된 공식 출처로 구축한다. Google·네이버·카카오
+검색 응답을 복제해 업체 DB를 만들지 않는다. 조회일을 원본 수정일로 간주하지 않는다.
+실수집·검증·DB 반영·배포를 구분해 보고하고, 실행 결과는 PROJECT_STATUS.md에 남긴다.
+
 `웨딩픽 작업 시작 → AI_START_HERE.md → 최신 통합정책서 → PROJECT_STATUS.md → 최신 코드 확인 → 작업 시작`
