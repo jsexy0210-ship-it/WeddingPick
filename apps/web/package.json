@@ -5,7 +5,7 @@
   "scripts": {
     "build": "tsx src/cli.ts",
     "typecheck": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest --forceExit"
   },
   "dependencies": {
     "@weddingpick/api-contract": "*",
