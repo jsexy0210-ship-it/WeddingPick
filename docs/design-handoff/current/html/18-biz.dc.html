@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-static.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-scale.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-semantic.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/typography.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/dimension.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/motion.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/base.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/core/core.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/buttons/buttons.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/forms/forms.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/feedback/feedback.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/overlay/overlay.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/display/display.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/styles.css">
+<script src="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/_ds_bundle.js"></script>
+<script src="./image-slot.js"></script>
+<style>
+body{margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#ff6f61;text-decoration:none}
+a:hover{color:#e2564a}
+.nsb::-webkit-scrollbar{display:none}
+image-slot{background:#eaebee}
+image-slot::part(empty){display:none !important}
+</style>
+</helmet>
+
+<section style="{{ rootStyle }}">
+
+<div style="display:flex;flex-direction:column;gap:10px;max-width:1000px;padding-bottom:8px">
+  <span style="font-size:14px;line-height:19px;font-weight:700;color:#ff6f61">WeddingPick · WP-BIZ</span>
+  <span style="font-size:40px;line-height:52px;font-weight:700;color:#212124">업체 · 플래너 문의</span>
+  <span style="font-size:18px;line-height:26px;color:#393a40;text-wrap:pretty">사용자 화면과 톤을 나눕니다. 여기는 결정 흐름이 아니라 접수 창구라 코랄을 제출 버튼에만 쓰고, 각 화면에서 «무엇이 되고 무엇이 안 되는지»를 먼저 밝힙니다.</span>
+</div>
+
+<div style="display:flex;gap:36px;align-items:flex-start">
+
+<div id="19a" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">004</span>반론 등록</div>
+  <span style="{{ tagDesc }}">원 후기를 그대로 보여주고 그 아래에 입장을 답니다. 삭제 요청과 반론을 명확히 구분합니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navBack }}"><span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span><span style="flex:1;min-width:0;{{ t18b }}">반론 등록</span></div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:12px 24px 20px"><span style="{{ h26 }}">어느 후기에<br>답하시나요?</span></div>
+      <div style="flex-shrink:0;padding:0 24px 24px;display:flex;flex-direction:column;gap:12px">
+        <sc-for list="{{ targetReviews }}" as="r" hint-placeholder-count="2">
+          <div style="{{ r.card }}">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="{{ r.mark }}"></span>
+              <span style="{{ t16b2 }}">{{ r.who }}</span>
+              <span style="{{ badgeOk }}">Pick 인증</span>
+              <span style="{{ t14n }}">{{ r.date }}</span>
+            </div>
+            <span style="{{ t16g }}">{{ r.body }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 24px;display:flex;flex-direction:column;gap:8px">
+        <span style="{{ t16b2 }}">업체 입장</span>
+        <div style="{{ textArea }}">
+          <span style="{{ t16k }}">보정 기간은 성수기 기준 3~4주로 안내드리고 있어요. 촬영 당일 안내가 부족했던 점은 확인 후 개선하겠습니다.</span>
+          <span style="{{ counter }}">64 / 500</span>
+        </div>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:12px">
+        <div style="{{ noteBox }}">
+          <span style="{{ t18b2 }}">반론은 후기를 지우지 않아요</span>
+          <span style="{{ t16g }}">원 후기 아래에 «업체 반론»으로 함께 보여드려요. 후기 삭제가 필요하면 별도로 요청해주세요.</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;min-height:56px">
+          <span style="flex:1;min-width:0;{{ t16g2 }}">이 후기의 삭제를 요청할래요</span>
+          <span style="{{ t14m }}">삭제 요청</span>
+        </div>
+      </div>
+    </div>
+    <div style="{{ dock }}"><button style="{{ cta }}">반론 등록</button></div>
+  </div>
+</div>
+
+<div id="19b" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">005</span>사진 · 공식자료 제공</div>
+  <span style="{{ tagDesc }}">권리 확인이 통과해야 올라갑니다. 확인 전에는 대표 이미지로 쓰이지 않는다는 점을 먼저 적습니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navBack }}"><span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span><span style="flex:1;min-width:0;{{ t18b }}">사진 제공</span></div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:12px 24px 20px"><span style="{{ h26 }}">공식 사진을<br>올려주세요</span></div>
+      <div style="flex-shrink:0;padding:0 24px 24px;display:grid;grid-template-columns:1fr 1fr;gap:11px">
+        <div style="{{ uploadBox }}">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#868b94" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+          <span style="{{ t14w }}">사진 추가</span>
+        </div>
+        <sc-for list="{{ photos }}" as="p" hint-placeholder-count="3">
+          <div style="position:relative;aspect-ratio:1;border-radius:6px;overflow:hidden">
+            <image-slot id="{{ p.slot }}" src="{{ p.src }}" shape="rect" placeholder=""></image-slot>
+            <span style="{{ p.badge }}">{{ p.state }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 24px;display:flex;flex-direction:column;gap:10px">
+        <span style="{{ t16b2 }}">권리 확인</span>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <sc-for list="{{ rights }}" as="r" hint-placeholder-count="3">
+            <div>
+              <div style="display:flex;align-items:flex-start;gap:12px;min-height:56px;padding:14px 0">
+                <span style="{{ r.mark }}"></span>
+                <span style="flex:1;min-width:0;{{ t16g }}">{{ r.text }}</span>
+              </div>
+              <div style="{{ hr }}"></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 28px">
+        <div style="{{ noteBox }}">
+          <span style="{{ t18b2 }}">확인 전에는 노출되지 않아요</span>
+          <span style="{{ t16g }}">권리 확인이 끝난 사진만 대표 이미지로 써요. 그 전에는 카테고리 기본 이미지가 보여요.</span>
+        </div>
+      </div>
+    </div>
+    <div style="{{ dock }}"><button style="{{ cta }}">3장 제출</button></div>
+  </div>
+</div>
+
+<div id="19c" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">006</span>혜택 등록</div>
+  <span style="{{ tagDesc }}">기간과 조건이 없으면 접수되지 않습니다. 만료되면 자동으로 내려간다는 것을 등록 시점에 알립니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navBack }}"><span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span><span style="flex:1;min-width:0;{{ t18b }}">혜택 등록</span></div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:12px 24px 20px"><span style="{{ h26 }}">어떤 혜택인가요?</span></div>
+      <div style="flex-shrink:0;padding:0 24px 24px;display:flex;flex-direction:column;gap:16px">
+        <sc-for list="{{ benefitFields }}" as="f" hint-placeholder-count="4">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="{{ t14w }}">{{ f.label }}</span>
+              <sc-if value="{{ f.req }}"><span style="{{ reqDot }}">필수</span></sc-if>
+            </div>
+            <div style="{{ f.box }}">{{ f.value }}</div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 24px;display:flex;flex-direction:column;gap:10px">
+        <span style="{{ t16b2 }}">사용자에게 이렇게 보여요</span>
+        <div style="{{ previewBox }}">
+          <span style="{{ t18b2 }}">이번 달 계약 시 앨범 업그레이드</span>
+          <span style="{{ t14n }}">2026년 9월 30일까지 · 업체 제공</span>
+        </div>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 28px">
+        <div style="{{ noteBox }}">
+          <span style="{{ t18b2 }}">기간이 지나면 자동으로 내려가요</span>
+          <span style="{{ t16g }}">만료일 없이 계속 노출되는 혜택은 등록할 수 없어요.</span>
+        </div>
+      </div>
+    </div>
+    <div style="{{ dock }}"><button style="{{ ctaOff }}">기간을 채워주세요</button></div>
+  </div>
+</div>
+
+<div id="19d" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">007</span>광고 · 제휴</div>
+  <span style="{{ tagDesc }}">v3.10 월 정액 3단계를 먼저 보여주고, 그다음 살 수 있는 것과 살 수 없는 것을 나란히 놓습니다. 이 구분이 서비스의 신뢰를 지탱합니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navBack }}"><span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span><span style="flex:1;min-width:0;{{ t18b }}">광고 · 제휴</span></div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:12px 24px 24px;display:flex;flex-direction:column;gap:10px">
+        <span style="{{ h26 }}">노출은 팔지만<br>순위는 팔지 않아요</span>
+      </div>
+
+      <div style="flex-shrink:0;padding:0 24px 24px;display:flex;flex-direction:column;gap:12px">
+        <span style="{{ s20 }}">월 정액 3단계</span>
+        <div style="display:flex;flex-direction:column;gap:11px">
+          <sc-for list="{{ adPlans }}" as="p" hint-placeholder-count="3">
+            <div style="{{ p.card }}">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+                <span style="{{ p.nameStyle }}">{{ p.name }}</span>
+                <span style="{{ p.priceStyle }}">{{ p.price }}</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <sc-for list="{{ p.slots }}" as="sl" hint-placeholder-count="3">
+                  <div style="display:flex;align-items:flex-start;gap:8px">
+                    <span style="{{ sl.dot }}"></span>
+                    <span style="flex:1;{{ sl.style }}">{{ sl.label }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="{{ promoBox }}">
+          <span style="{{ t18b2 }}">첫 달은 무료로 써보세요</span>
+          <span style="{{ t16g }}">첫 달 무료 또는 50% 할인 중 하나를 고를 수 있어요. 계속 무료로 드리지는 않아요.</span>
+        </div>
+      </div>
+
+      <div style="{{ band }}"></div>
+
+      <div style="flex-shrink:0;padding:0 24px 24px;display:flex;flex-direction:column;gap:12px">
+        <span style="{{ s20 }}">가능한 것</span>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <sc-for list="{{ adCan }}" as="a" hint-placeholder-count="3">
+            <div>
+              <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:12px 0">
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                  <span style="{{ t18b }}">{{ a.name }}</span>
+                  <span style="{{ t14w }}">{{ a.desc }}</span>
+                </div>
+                <span style="{{ badgeOk }}">가능</span>
+              </div>
+              <div style="{{ hr }}"></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="{{ band }}"></div>
+      <div style="flex-shrink:0;padding:0 24px 24px;display:flex;flex-direction:column;gap:12px">
+        <span style="{{ s20 }}">할 수 없는 것</span>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <sc-for list="{{ adCant }}" as="a" hint-placeholder-count="5">
+            <div>
+              <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:12px 0">
+                <span style="flex:1;min-width:0;{{ t16g2 }}">{{ a }}</span>
+                <span style="{{ badgeNo }}">불가</span>
+              </div>
+              <div style="{{ hr }}"></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="{{ band }}"></div>
+
+      <div style="flex-shrink:0;padding:0 24px 24px;display:flex;flex-direction:column;gap:12px">
+        <span style="{{ s20 }}">성과는 이렇게 보여드려요</span>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <sc-for list="{{ adMetrics }}" as="m" hint-placeholder-count="3">
+            <div>
+              <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:12px 0">
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                  <span style="{{ t18b }}">{{ m.name }}</span>
+                  <span style="{{ t14w }}">{{ m.desc }}</span>
+                </div>
+              </div>
+              <div style="{{ hr }}"></div>
+            </div>
+          </sc-for>
+        </div>
+        <span style="{{ t14w }}">클릭당 과금이나 성과형 광고는 정보가 충분히 쌓인 뒤에 검토해요.</span>
+      </div>
+
+      <div style="flex-shrink:0;padding:0 24px 28px">
+        <div style="{{ noteBox }}">
+          <span style="{{ t18b2 }}">광고는 «광고»라고 적어요</span>
+          <span style="{{ t16g }}">자연 결과와 섞지 않고 별도 라벨과 함께 보여드려요. 요금제 등급이 올라가도 추천 결과는 달라지지 않아요.</span>
+        </div>
+      </div>
+    </div>
+    <div style="{{ dock }}"><button style="{{ cta }}">상담 요청</button></div>
+  </div>
+</div>
+
+<div id="19e" style="{{ colWide }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">008</span>웹 Footer 진입</div>
+  <span style="{{ tagDesc }}">웹에서는 로그인 없이 접수하고 소속 확인을 뒤에 둡니다. 앱과 같은 창구로 들어옵니다.</span>
+  <div style="{{ web }}">
+    <div style="{{ webBar }}"><span style="{{ dot1 }}"></span><span style="{{ dot2 }}"></span><span style="{{ dot3 }}"></span><span style="{{ urlBox }}">weddingpick.kr</span></div>
+    <div class="nsb" style="{{ webBody }}">
+      <div style="{{ webHero }}">
+        <span style="{{ h40 }}">확인된 제보로<br>웨딩을 준비해요</span>
+        <span style="{{ t18g }}">직접 올려준 자료를 확인해 모았어요</span>
+      </div>
+      <div style="{{ webGrid }}">
+        <sc-for list="{{ webCards }}" as="w" hint-placeholder-count="3">
+          <div style="{{ webCard }}">
+            <span style="{{ t18b }}">{{ w.name }}</span>
+            <span style="{{ t16b }}">{{ w.price }}</span>
+            <span style="{{ t14n }}">{{ w.n }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="{{ footer }}">
+        <div style="display:flex;gap:56px">
+          <sc-for list="{{ footerCols }}" as="f" hint-placeholder-count="3">
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <span style="{{ footTitle }}">{{ f.title }}</span>
+              <sc-for list="{{ f.items }}" as="i" hint-placeholder-count="3">
+                <span style="{{ i.style }}">{{ i.label }}</span>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+        <div style="{{ footBottom }}">
+          <span style="{{ t14w }}">웨딩픽 · 사업자등록번호 000-00-00000</span>
+          <span style="{{ t14w }}">광고 · 제휴 문의는 업체 · 플래너 문의로 접수해주세요</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1500,&quot;height&quot;:1100}}">
+class Component extends DCLogic {
+  renderVals() {
+    const C = '#ff6f61';
+    const IMG = {
+      couple: 'uploads/samples-1788175716407-57s9.jpg',
+      arch: 'uploads/samples-1788175716396-jydc.jpg',
+      bride: 'uploads/samples-1788175716389-fion.jpg'
+    };
+    const mark = on => on
+      ? 'width:24px;height:24px;flex:0 0 24px;margin-top:1px;border-radius:999px;background:' + C + ';background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'3.4\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpath d=\'m5 12.5 4.5 4.5L19 7.5\'/%3E%3C/svg%3E");background-size:16px;background-position:center;background-repeat:no-repeat'
+      : 'width:24px;height:24px;flex:0 0 24px;margin-top:1px;border-radius:999px;border:1.5px solid #dcdee3;box-sizing:border-box';
+    const fld = (label, value, filled, req) => ({ label, value, req,
+      box: 'min-height:52px;border-radius:6px;padding:14px;display:flex;align-items:center;font-size:16px;line-height:24px;text-wrap:pretty;'
+        + (filled ? 'border:1px solid #d1d3d8;color:#212124;' : 'border:1px solid ' + (req ? C : '#d1d3d8') + ';color:#adb1ba;') });
+    const photoBadge = k => 'position:absolute;left:8px;bottom:8px;padding:3px 8px;border-radius:4px;font-size:13px;line-height:18px;font-weight:700;'
+      + (k === 'ok' ? 'background:#e8faf6;color:#1aa174;' : k === 'wait' ? 'background:#ffe3ba;color:#805217;' : 'background:#ffe5e3;color:#e81607;');
+
+    return {
+      rootStyle: 'display:flex;flex-direction:column;gap:48px;align-items:flex-start;padding:64px;width:max-content',
+      col: 'display:flex;flex-direction:column;gap:10px;width:390px',
+      colWide: 'display:flex;flex-direction:column;gap:10px;width:820px',
+      tag: 'height:26px;display:flex;align-items:center;gap:8px;font-size:18px;line-height:24px;font-weight:700;color:#212124;white-space:nowrap;overflow:hidden',
+      tagId: 'padding:0 8px;height:26px;flex:0 0 auto;border-radius:6px;background:#212124;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums',
+      tagDesc: 'height:71px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;line-height:21px;color:#4d5159;text-wrap:pretty',
+      phone: 'width:390px;height:844px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)',
+      web: 'width:820px;height:844px;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)',
+      webBar: 'flex:0 0 48px;display:flex;align-items:center;gap:8px;padding:0 16px;background:#f2f3f6',
+      dot1: 'width:11px;height:11px;border-radius:999px;background:#ff5f57',
+      dot2: 'width:11px;height:11px;border-radius:999px;background:#febc2e',
+      dot3: 'width:11px;height:11px;border-radius:999px;background:#28c840',
+      urlBox: 'margin-left:12px;height:28px;flex:1;border-radius:6px;background:#fff;display:flex;align-items:center;padding:0 12px;font-size:14px;color:#868b94',
+      webBody: 'flex:1;overflow-y:auto;display:flex;flex-direction:column;scrollbar-width:none',
+      webHero: 'flex-shrink:0;padding:64px 56px 40px;display:flex;flex-direction:column;gap:14px',
+      webGrid: 'flex-shrink:0;padding:0 56px 64px;display:grid;grid-template-columns:repeat(3,1fr);gap:20px',
+      webCard: 'border:1px solid #eaebee;border-radius:10px;padding:24px;display:flex;flex-direction:column;gap:6px',
+      footer: 'margin-top:auto;flex-shrink:0;padding:44px 56px 40px;background:#f7f8fa;display:flex;flex-direction:column;gap:32px',
+      footTitle: 'font-size:14px;line-height:19px;font-weight:700;color:#212124',
+      footBottom: 'padding-top:24px;box-shadow:inset 0 1px 0 #eaebee;display:flex;flex-direction:column;gap:6px',
+      bar: 'height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:700;color:#212124',
+      barIcons: 'display:flex;gap:5px;align-items:center',
+      navBack: 'flex:0 0 56px;display:flex;align-items:center;gap:4px;padding:0 20px 0 12px;background:#fff',
+      backBtn: 'width:40px;height:40px;flex:0 0 40px;border-radius:999px;display:flex;align-items:center;justify-content:center',
+      scroll: 'flex:1 1 auto;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;scrollbar-width:none',
+      dock: 'flex:0 0 92px;background:#fff;box-shadow:inset 0 1px 0 #eaebee;padding:12px 24px;display:flex;box-sizing:border-box',
+      hr: 'height:1px;background:#eaebee',
+      band: 'flex-shrink:0;height:16px;background:#f2f3f6;margin-bottom:24px',
+      noteBox: 'border-radius:10px;background:#f7f8fa;padding:20px;display:flex;flex-direction:column;gap:8px',
+      promoBox: 'border-radius:10px;background:#f7f8fa;padding:18px 20px;display:flex;flex-direction:column;gap:8px',
+      previewBox: 'border-radius:10px;border:1px solid color-mix(in oklab,' + C + ' 32%,#fff);background:color-mix(in oklab,' + C + ' 7%,#fff);padding:18px 20px;display:flex;flex-direction:column;gap:6px',
+      textArea: 'min-height:132px;border-radius:6px;border:1px solid #d1d3d8;padding:14px;display:flex;flex-direction:column;justify-content:space-between;gap:10px',
+      counter: 'align-self:flex-end;font-size:14px;line-height:19px;color:#adb1ba;font-variant-numeric:tabular-nums',
+      uploadBox: 'aspect-ratio:1;border-radius:6px;border:1px dashed #dcdee3;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer',
+      badgeOk: 'padding:3px 8px;border-radius:4px;background:#e8faf6;color:#1aa174;font-size:13px;line-height:18px;font-weight:700;white-space:nowrap',
+      badgeNo: 'padding:3px 8px;border-radius:4px;background:#f2f3f6;color:#868b94;font-size:13px;line-height:18px;font-weight:700;white-space:nowrap',
+      reqDot: 'padding:2px 6px;border-radius:4px;background:color-mix(in oklab,' + C + ' 12%,#fff);color:' + C + ';font-size:12px;line-height:16px;font-weight:700',
+
+      h40: 'font-size:40px;line-height:52px;font-weight:700;color:#212124',
+      h26: 'font-size:26px;line-height:35px;font-weight:700;color:#212124;text-wrap:pretty',
+      s20: 'font-size:20px;line-height:27px;font-weight:700;color:#212124',
+      t18b: 'font-size:18px;line-height:24px;font-weight:700;color:#212124;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      t18b2: 'font-size:18px;line-height:24px;font-weight:700;color:#212124;text-wrap:pretty',
+      t18g: 'font-size:18px;line-height:26px;color:#4d5159',
+      t16b: 'font-size:16px;line-height:22px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums',
+      t16b2: 'font-size:16px;line-height:22px;font-weight:700;color:#212124',
+      t16g: 'font-size:16px;line-height:24px;color:#4d5159;text-wrap:pretty',
+      t16g2: 'font-size:16px;line-height:22px;color:#4d5159',
+      t16k: 'font-size:16px;line-height:24px;color:#212124;text-wrap:pretty',
+      t14n: 'font-size:14px;line-height:19px;color:#868b94;font-variant-numeric:tabular-nums',
+      t14m: 'font-size:14px;line-height:19px;font-weight:700;color:#868b94;white-space:nowrap;cursor:pointer',
+      t14w: 'font-size:14px;line-height:21px;color:#868b94;text-wrap:pretty',
+      cta: 'flex:1;height:52px;border:0;border-radius:6px;background:' + C + ';color:#fff;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer',
+      ctaOff: 'flex:1;height:52px;border:0;border-radius:6px;background:#f2f3f6;color:#adb1ba;font-family:inherit;font-size:18px;font-weight:700;cursor:default',
+
+      targetReviews: [
+        { who: '김OO', date: '2026.07', body: '촬영 당일 진행이 빨라서 예정보다 일찍 끝났어요. 보정본은 3주 걸렸습니다.', mark: mark(true),
+          card: 'border-radius:10px;border:1.5px solid ' + C + ';background:#fff;padding:16px 18px;display:flex;flex-direction:column;gap:8px' },
+        { who: '이OO', date: '2026.06', body: '원본 전체를 줘서 좋았어요. 주차가 조금 불편합니다.', mark: mark(false),
+          card: 'border-radius:10px;border:1px solid #dcdee3;background:#fff;padding:16px 18px;display:flex;flex-direction:column;gap:8px' }
+      ],
+      photos: [
+        { slot: 'bz-p1', src: IMG.couple, state: '확인 완료', badge: photoBadge('ok') },
+        { slot: 'bz-p2', src: IMG.arch, state: '확인 중', badge: photoBadge('wait') },
+        { slot: 'bz-p3', src: IMG.bride, state: '권리 확인 필요', badge: photoBadge('no') }
+      ],
+      rights: [
+        { text: '업체가 직접 촬영했거나 사용 권리를 가진 사진이에요', mark: mark(true) },
+        { text: '사진 속 인물의 공개 동의를 받았어요', mark: mark(true) },
+        { text: '웨딩픽 서비스 내 노출에 동의해요', mark: mark(false) }
+      ],
+      benefitFields: [
+        fld('혜택 내용', '이번 달 계약 시 앨범 업그레이드', true, true),
+        fld('시작일', '2026년 9월 1일', true, true),
+        fld('종료일', '날짜를 골라주세요', false, true),
+        fld('조건', '평일 계약 · 신규 고객 등 조건이 있으면 적어주세요', false, false)
+      ],
+      adPlans: [
+        { name: 'LIGHT', price: '월 30,000원', on: false, slots: [['업체 상세 스폰서 혜택', true], ['검색 광고 슬롯', false], ['지역 · 카테고리 슬롯', false]] },
+        { name: 'STANDARD', price: '월 70,000원', on: true, slots: [['업체 상세 스폰서 혜택', true], ['검색 광고 슬롯', true], ['지역 · 카테고리 슬롯', false]] },
+        { name: 'PREMIUM', price: '월 150,000원', on: false, slots: [['업체 상세 스폰서 혜택', true], ['검색 광고 슬롯', true], ['지역 · 카테고리 슬롯', true]] }
+      ].map(p => ({
+        name: p.name, price: p.price,
+        card: 'border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:12px;'
+          + (p.on ? 'border:1.5px solid ' + C + ';background:color-mix(in oklab,' + C + ' 5%,#fff);' : 'border:1px solid #dcdee3;background:#fff;'),
+        nameStyle: 'font-size:18px;line-height:24px;font-weight:700;color:' + (p.on ? C : '#212124'),
+        priceStyle: 'font-size:18px;line-height:24px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums;white-space:nowrap',
+        slots: p.slots.map(s => ({
+          label: s[0],
+          dot: 'width:6px;height:6px;flex:0 0 6px;margin-top:8px;border-radius:999px;background:' + (s[1] ? (p.on ? C : '#4d5159') : '#dcdee3'),
+          style: s[1] ? 'font-size:16px;line-height:22px;color:#393a40' : 'font-size:16px;line-height:22px;color:#adb1ba'
+        }))
+      })),
+      adMetrics: [
+        { name: '노출', desc: '광고가 몇 번 보였는지' },
+        { name: '클릭', desc: '눌러서 업체 상세로 들어온 수' },
+        { name: 'Pick 전환', desc: '광고를 보고 후보에 담은 수' }
+      ],
+      adCan: [
+        { name: '검색 결과 상단 노출', desc: '«광고» 라벨과 함께 자연 결과와 분리해서 보여요' },
+        { name: '카테고리 배너', desc: '목록 사이에 별도 영역으로 들어가요' },
+        { name: '웨딩 정보 협찬 콘텐츠', desc: '협찬 표기를 제목 옆에 붙여요' }
+      ],
+      adCant: [
+'웨딩픽 TOP3 순서 조정',
+        '오늘의 Pick에 넣기',
+        '검색 자연 순위 올리기',
+        '후기 내리거나 가리기',
+        '확인된 제보 바꾸기',
+        '후기 순서 바꾸기'
+      ],
+      webCards: [
+        { name: '강남 A 웨딩홀', price: '1,480~1,820만원', n: '확인된 제보 21건' },
+        { name: '강남 A 스튜디오', price: '152~184만원', n: '확인된 제보 12건' },
+        { name: '강남 A 드레스', price: '88~124만원', n: '확인된 제보 14건' }
+      ],
+      footerCols: [
+        { title: '서비스', items: [
+          { label: '업체 검색', style: 'font-size:14px;line-height:19px;color:#868b94;cursor:pointer' },
+          { label: '확인된 제보란', style: 'font-size:14px;line-height:19px;color:#868b94;cursor:pointer' },
+          { label: '웨딩 정보', style: 'font-size:14px;line-height:19px;color:#868b94;cursor:pointer' }
+        ] },
+        { title: '이용안내', items: [
+          { label: '이용약관', style: 'font-size:14px;line-height:19px;color:#868b94;cursor:pointer' },
+          { label: '개인정보처리방침', style: 'font-size:14px;line-height:19px;color:#868b94;cursor:pointer' },
+          { label: '고객지원', style: 'font-size:14px;line-height:19px;color:#868b94;cursor:pointer' }
+        ] },
+        { title: '업체 · 플래너', items: [
+          { label: '업체 · 플래너 문의', style: 'font-size:14px;line-height:19px;font-weight:700;color:' + C + ';cursor:pointer' },
+          { label: '정보 수정 요청', style: 'font-size:14px;line-height:19px;color:#868b94;cursor:pointer' },
+          { label: '광고 · 제휴', style: 'font-size:14px;line-height:19px;color:#868b94;cursor:pointer' }
+        ] }
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

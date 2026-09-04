@@ -30,6 +30,8 @@ import { registerReviewRoutes } from './routes/reviews';
 import { registerQuoteRoutes } from './routes/quotes';
 import { registerRecommendationRoutes } from './routes/recommendations';
 import { registerVendorRoutes } from './routes/vendors';
+import { registerWeddingInfoRoutes } from './routes/wedding-info';
+import { registerExpoRoutes } from './routes/expos';
 import { registerWeddingInviteRoutes } from './routes/wedding-invites';
 import { registerVerificationRoutes } from './routes/verification';
 import { registerWeddingRoutes } from './routes/weddings';
@@ -87,7 +89,22 @@ export function buildServer(context: AppContext): FastifyInstance {
     reply.status(404).send({ error: { code: 'not_found', message: '없는 경로입니다.' } })
   );
 
-  app.get('/health', async () => ({ ok: true }));
+  app.get('/health', async (_request, reply) => {
+    // 프로세스가 살아 있는 것만으로는 배포 상태를 보장하지 않는다. DB까지
+    // 확인해 Render 헬스체크가 실제로 요청을 처리할 수 있는 인스턴스만 통과시킨다.
+    try {
+      await context.pool.query('SELECT 1');
+      return { ok: true, database: 'ok' as const };
+    } catch {
+      return reply.status(503).send({ ok: false, database: 'unavailable' as const });
+    }
+  });
+
+  app.get('/', async () => ({
+    name: 'WeddingPick API',
+    health: '/health',
+    version: 'v1',
+  }));
 
   registerAuthRoutes(app, context);
   registerWeddingRoutes(app, context);
@@ -96,6 +113,8 @@ export function buildServer(context: AppContext): FastifyInstance {
   registerQuoteRoutes(app, context);
   registerVerificationRoutes(app, context);
   registerVendorRoutes(app, context);
+  registerWeddingInfoRoutes(app, context);
+  registerExpoRoutes(app, context);
   registerRecommendationRoutes(app, context);
   registerCandidateRoutes(app, context);
   registerWeddingPlanRoutes(app, context);
@@ -118,6 +137,47 @@ export function buildServer(context: AppContext): FastifyInstance {
   registerSignupRoutes(app, context);
   registerDevStorageRoutes(app, context);
   registerAdminRoutes(app, context);
+
+  // 정적 파일 서빙 (웹앱) - API는 이미 위에 등록되어 있으므로 마지막에 캐치올 추가
+  app.get('/*', async (_request, reply) => {
+   const { readFile } = await import('node:fs/promises');
+   const { join } = await import('node:path');
+   const { existsSync } = await import('node:fs');
+    
+   try {
+     // 절대 경로로 dist 디렉터리 계산
+     const distDir = join(process.cwd(), 'apps/web/dist');
+     const reqPath = _request.url.split('?')[0] || '/';
+     const filePath = join(distDir, reqPath.startsWith('/') ? reqPath.slice(1) : reqPath);
+      
+     // 경로 이탈 방지 및 정적 파일 확인
+     if (!filePath.startsWith(distDir)) {
+       return reply.status(404).send('Not Found');
+     }
+      
+     if (existsSync(filePath)) {
+       const content = await readFile(filePath);
+       const ext = filePath.split('.').pop() || '';
+       const mimeTypes: Record<string, string> = {
+         html: 'text/html',
+         js: 'application/javascript',
+         css: 'text/css',
+         json: 'application/json',
+         svg: 'image/svg+xml',
+         png: 'image/png',
+         jpg: 'image/jpeg',
+         ico: 'image/x-icon',
+       };
+       return reply.type(mimeTypes[ext] || 'application/octet-stream').send(content);
+     }
+      
+     // 파일 없으면 index.html (SPA 라우팅)
+     const html = await readFile(join(distDir, 'index.html'));
+     return reply.type('text/html').send(html);
+   } catch {
+     return reply.status(404).send('Not Found');
+   }
+  });
 
   return app;
 }

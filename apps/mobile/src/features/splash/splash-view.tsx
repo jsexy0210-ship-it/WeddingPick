@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     lineHeight: LineHeight.t2,
     letterSpacing: -0.6,
     fontWeight: '700',
-    color: '#ffffff',
+    color: Colors.light.onTint,
   },
   subtitle: {
     marginTop: 4,

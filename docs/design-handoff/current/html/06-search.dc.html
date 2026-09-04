@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-static.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-scale.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-semantic.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/typography.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/dimension.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/motion.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/base.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/core/core.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/buttons/buttons.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/forms/forms.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/feedback/feedback.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/overlay/overlay.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/display/display.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/styles.css">
+<script src="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/_ds_bundle.js"></script>
+<script src="./image-slot.js"></script>
+<style>
+body{margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#ff6f61;text-decoration:none}
+a:hover{color:#e2564a}
+.nsb::-webkit-scrollbar{display:none}
+image-slot{background:#eaebee}
+image-slot::part(empty){display:none !important}
+@keyframes wpSheet{0%{transform:translateY(100%)}100%{transform:translateY(0)}}
+</style>
+</helmet>
+
+<section style="{{ rootStyle }}">
+
+<div style="display:flex;flex-direction:column;gap:10px;max-width:1000px;padding-bottom:8px">
+  <span style="font-size:14px;line-height:19px;font-weight:700;color:#ff6f61">WeddingPick · WP-SRCH</span>
+  <span style="font-size:40px;line-height:52px;font-weight:700;color:#212124">검색</span>
+  <span style="font-size:18px;line-height:26px;color:#393a40;text-wrap:pretty">사용자가 직접 찾는 유일한 곳입니다. 홈이 «웨딩픽이 골라주는» 화면이라면 검색은 «내가 좁히는» 화면이라, 여기서는 필터와 정렬이 주인공이고 추천 문구를 넣지 않습니다. 결과 카드는 어디서나 같은 규격을 씁니다.</span>
+</div>
+
+<div style="display:flex;gap:36px;align-items:flex-start">
+
+<div id="16a" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">1</span>검색 홈 · WP-SRCH-001</div>
+  <span style="{{ tagDesc }}">카테고리와 최근 검색, 그리고 많이 확인된 곳. 개인화 추천은 넣지 않습니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ head }}"><span style="{{ h20 }}">검색</span></div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:4px 24px 24px"><div style="{{ searchBox }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#868b94" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6.9"></circle><path d="M16.2 16.2 20.8 20.8"></path></svg><span style="{{ t16d }}">업체나 지역을 검색해보세요</span></div></div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:12px">
+        <span style="{{ s20 }}">카테고리</span>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px">
+          <sc-for list="{{ cats }}" as="c" hint-placeholder-count="8">
+            <div style="{{ catBox }}"><span style="{{ t18b }}">{{ c.name }}</span><span style="{{ t14n }}">{{ c.meta }}</span></div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="{{ band }}"></div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between"><span style="{{ s20 }}">최근 검색</span><span style="{{ t14m }}">전체 삭제</span></div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <sc-for list="{{ recent }}" as="r" hint-placeholder-count="4">
+            <span style="{{ chipOff }}">{{ r }}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#adb1ba" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></span>
+          </sc-for>
+        </div>
+      </div>
+      <div style="{{ band }}"></div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:12px">
+        <span style="{{ s20 }}">많이 확인된 곳</span>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <sc-for list="{{ trend }}" as="v" hint-placeholder-count="4">
+            <div>
+              <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:12px 0">
+                <span style="{{ rankNo }}">{{ v.no }}</span>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+                  <span style="{{ t18b }}">{{ v.name }}</span>
+                  <span style="display:flex;align-items:baseline;gap:6px;min-width:0"><span style="{{ v.priceStyle }}">{{ v.price }}</span><span style="{{ t14n }}">{{ v.n }}</span></span>
+                </div>
+              </div>
+              <div style="{{ hr }}"></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+    <div style="{{ tabBar }}"><sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5"><button style="{{ t.style }}"><span style="{{ t.wrap }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{ t.stroke }}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.d1 }}"></path><path d="{{ t.d2 }}"></path><path d="{{ t.d3 }}"></path></svg></span><span>{{ t.label }}</span></button></sc-for></div>
+  </div>
+</div>
+
+<div id="16b" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">2</span>자동완성 · WP-SRCH-002</div>
+  <span style="{{ tagDesc }}">입력 중에는 업체 · 지역 · 카테고리를 구분해 보여주고, 각 줄에 확인된 제보 건수를 붙입니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navSearch }}">
+      <div style="{{ searchBoxActive }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6.9"></circle><path d="M16.2 16.2 20.8 20.8"></path></svg><span style="{{ t16k }}">강남 A 스튜디오</span><span style="{{ caret }}"></span></div>
+      <span style="{{ t16m }}">취소</span>
+    </div>
+    <div class="nsb" style="{{ scroll }}">
+      <sc-for list="{{ acGroups }}" as="g" hint-placeholder-count="3">
+        <div style="flex-shrink:0;padding:0 24px 20px;display:flex;flex-direction:column;gap:8px">
+          <span style="{{ t14m }}">{{ g.title }}</span>
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <sc-for list="{{ g.items }}" as="i" hint-placeholder-count="3">
+              <div>
+                <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:12px 0">
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                    <span style="{{ t18b }}">{{ i.name }}</span>
+                    <sc-if value="{{ i.meta }}"><span style="{{ t14n }}">{{ i.meta }}</span></sc-if>
+                  </div>
+                  <sc-if value="{{ i.tail }}"><span style="{{ t14n }}">{{ i.tail }}</span></sc-if>
+                </div>
+                <div style="{{ hr }}"></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+
+<div id="16c" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">3</span>결과 · WP-SRCH-004</div>
+  <span style="{{ tagDesc }}">필터 · 정렬이 상단에 고정되고, 결과 카드는 이미지 · 업체명 · 금액 · 건수 · Pick 순입니다. 광고는 별도 라벨로 분리합니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navSearch }}">
+      <span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span>
+      <div style="{{ searchBoxSm }}"><span style="{{ t16k }}">강남 스튜디오</span></div>
+    </div>
+    <div class="nsb" style="{{ filterBar }}">
+      <sc-for list="{{ filters }}" as="f" hint-placeholder-count="5"><span style="{{ f.style }}">{{ f.label }}</span></sc-for>
+    </div>
+    <div style="{{ resultMeta }}"><span style="{{ t14n }}">28곳</span><span style="{{ t14m }}">추천순</span></div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:4px 24px 28px;display:flex;flex-direction:column;gap:20px">
+        <sc-for list="{{ results }}" as="v" hint-placeholder-count="4">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="position:relative;width:100%;height:168px;border-radius:10px;overflow:hidden">
+              <image-slot id="{{ v.slot }}" src="{{ v.src }}" shape="rect" placeholder=""></image-slot>
+              <sc-if value="{{ v.ad }}"><span style="{{ adPill }}">광고</span></sc-if>
+            </div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+              <span style="flex:1;min-width:0;{{ t20b }}">{{ v.name }}</span>
+              <span style="{{ v.priceStyle }}">{{ v.price }}</span>
+            </div>
+            <span style="{{ t14n }}">{{ v.meta }}</span>
+            <button style="{{ v.btnStyle }}">{{ v.btn }}</button>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="{{ tabBar }}"><sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5"><button style="{{ t.style }}"><span style="{{ t.wrap }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{ t.stroke }}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.d1 }}"></path><path d="{{ t.d2 }}"></path><path d="{{ t.d3 }}"></path></svg></span><span>{{ t.label }}</span></button></sc-for></div>
+  </div>
+</div>
+
+<div id="16d" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">4</span>필터 · WP-SRCH-005</div>
+  <span style="{{ tagDesc }}">바텀시트. 조건을 바꿀 때마다 하단 버튼의 결과 수가 함께 바뀝니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="flex:1;position:relative;overflow:hidden">
+      <div style="position:absolute;inset:0;padding:12px 24px;display:flex;flex-direction:column;gap:12px;filter:blur(1px);opacity:.45">
+        <div style="height:52px;border-radius:6px;background:#f2f3f6"></div>
+        <div style="height:168px;border-radius:10px;background:#f2f3f6"></div>
+        <div style="height:120px;border-radius:10px;background:#f2f3f6"></div>
+      </div>
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,.45)"></div>
+      <div style="{{ sheet }}">
+        <span style="{{ grabber }}"></span>
+        <div style="display:flex;align-items:center;justify-content:space-between"><span style="{{ h24 }}">필터</span><span style="{{ t16m }}">초기화</span></div>
+        <div class="nsb" style="max-height:440px;overflow-y:auto;display:flex;flex-direction:column;gap:22px;scrollbar-width:none">
+          <sc-for list="{{ filterGroups }}" as="g" hint-placeholder-count="4">
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <span style="{{ t16b2 }}">{{ g.title }}</span>
+              <div style="display:flex;flex-wrap:wrap;gap:8px">
+                <sc-for list="{{ g.opts }}" as="o" hint-placeholder-count="4"><span style="{{ o.style }}">{{ o.label }}</span></sc-for>
+              </div>
+            </div>
+          </sc-for>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <span style="{{ t16b2 }}">확인된 제보가 있는 곳만</span>
+            <div style="display:flex;align-items:center;justify-content:space-between;min-height:56px">
+              <span style="{{ t16g }}">금액을 볼 수 있는 곳만 보기</span>
+              <span style="{{ switchOn }}"><span style="{{ knob }}"></span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="{{ sheetDock }}"><button style="{{ cta }}">28곳 보기</button></div>
+    </div>
+  </div>
+</div>
+
+<div id="16e" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">5</span>지도 · WP-SRCH-007</div>
+  <span style="{{ tagDesc }}">핀을 고르면 하단에 결과 카드 한 장이 뜹니다. 지도 위에는 금액만 얹고 설명을 넣지 않습니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navSearch }}">
+      <span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span>
+      <div style="{{ searchBoxSm }}"><span style="{{ t16k }}">강남 스튜디오</span></div>
+      <span style="{{ t16m }}">목록</span>
+    </div>
+    <div style="flex:1;position:relative;overflow:hidden;background:#eef0f2">
+      <div style="position:absolute;inset:0;opacity:.5;background-image:linear-gradient(#dcdee3 1px,transparent 1px),linear-gradient(90deg,#dcdee3 1px,transparent 1px);background-size:64px 64px"></div>
+      <div style="position:absolute;left:34px;top:96px;width:180px;height:6px;border-radius:3px;background:#dcdee3;transform:rotate(24deg)"></div>
+      <div style="position:absolute;left:120px;top:220px;width:240px;height:6px;border-radius:3px;background:#dcdee3;transform:rotate(-14deg)"></div>
+      <sc-for list="{{ pins }}" as="p" hint-placeholder-count="4"><span style="{{ p.style }}">{{ p.label }}</span></sc-for>
+      <div style="{{ mapCard }}">
+        <div style="width:64px;height:64px;flex:0 0 64px;border-radius:6px;overflow:hidden;position:relative"><image-slot id="sc-map1" src="uploads/samples-1788175716407-57s9.jpg" shape="rect" placeholder=""></image-slot></div>
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+          <span style="{{ t18b }}">강남 A 스튜디오</span>
+          <span style="{{ t16b }}">152~184만원</span>
+          <span style="{{ t14n }}">확인된 제보 12건 · 강남</span>
+        </div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#adb1ba" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="16f" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">6</span>결과 없음 · WP-SRCH-008</div>
+  <span style="{{ tagDesc }}">막다른 길로 두지 않습니다. 조건을 하나 풀어주는 버튼과, 등록되지 않은 업체를 제보하는 길을 함께 놓습니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navSearch }}">
+      <span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span>
+      <div style="{{ searchBoxSm }}"><span style="{{ t16k }}">성수 한옥 스튜디오</span></div>
+    </div>
+    <div class="nsb" style="{{ filterBar }}">
+      <sc-for list="{{ filtersTight }}" as="f" hint-placeholder-count="4"><span style="{{ f.style }}">{{ f.label }}</span></sc-for>
+    </div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:36px 24px 28px;display:flex;flex-direction:column;gap:10px">
+        <span style="{{ h26 }}">조건에 맞는 곳이<br>없어요</span>
+        <span style="{{ t16g }}">예산 조건을 풀면 6곳이 나와요</span>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 28px"><button style="{{ cta }}">예산 조건 풀기</button></div>
+      <div style="{{ band }}"></div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:12px">
+        <span style="{{ s20 }}">비슷한 곳</span>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <sc-for list="{{ similar }}" as="v" hint-placeholder-count="3">
+            <div>
+              <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:12px 0">
+                <div style="{{ thumb52 }}"><image-slot id="{{ v.slot }}" src="{{ v.src }}" shape="rounded" radius="6" placeholder=""></image-slot></div>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+                  <span style="{{ t18b }}">{{ v.name }}</span>
+                  <span style="display:flex;align-items:baseline;gap:6px;min-width:0"><span style="{{ t16b }}">{{ v.price }}</span><span style="{{ t14n }}">{{ v.n }}</span></span>
+                </div>
+              </div>
+              <div style="{{ hr }}"></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 28px">
+        <div style="{{ noteBox }}">
+          <span style="{{ t18b }}">찾는 곳이 없나요?</span>
+          <span style="{{ t16g }}">업체를 알려주시면 등록하고 알려드릴게요.</span>
+          <button style="{{ ctaGhost }}">업체 제보</button>
+        </div>
+      </div>
+    </div>
+    <div style="{{ tabBar }}"><sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5"><button style="{{ t.style }}"><span style="{{ t.wrap }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{ t.stroke }}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.d1 }}"></path><path d="{{ t.d2 }}"></path><path d="{{ t.d3 }}"></path></svg></span><span>{{ t.label }}</span></button></sc-for></div>
+  </div>
+</div>
+
+</div>
+
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1500,&quot;height&quot;:1100}}">
+class Component extends DCLogic {
+  static ICONS = {
+    home: ['M3.6 10.4 12 3.8l8.4 6.6V19a1.6 1.6 0 0 1-1.6 1.6H5.2A1.6 1.6 0 0 1 3.6 19z', 'M9.6 20.6v-6.2h4.8v6.2', ''],
+    search: ['M11 4.2a6.9 6.9 0 1 0 0 13.8 6.9 6.9 0 0 0 0-13.8z', 'M16.2 16.2 20.8 20.8', ''],
+    pick: ['M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z', 'M9.4 11.9l1.7 1.7 3.4-3.4', ''],
+    couple: ['M8.6 11.2a3.3 3.3 0 1 0 0-6.6 3.3 3.3 0 0 0 0 6.6z', 'M2.6 20.4v-.8a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v.8', 'M16.2 5.4a3.3 3.3 0 0 1 0 5.9M17.6 14.7a5 5 0 0 1 3.8 4.9v.8'],
+    my: ['M12 11.6a4 4 0 1 0 0-8 4 4 0 0 0 0 8z', 'M4.8 20.6v-.6a6 6 0 0 1 6-6h2.4a6 6 0 0 1 6 6v.6', '']
+  };
+
+  renderVals() {
+    const C = '#ff6f61';
+    const IMG = {
+      couple: 'uploads/samples-1788175716407-57s9.jpg',
+      arch: 'uploads/samples-1788175716396-jydc.jpg',
+      bride: 'uploads/samples-1788175716389-fion.jpg',
+      hall: 'uploads/samples-1788175716419-flvg.jpg',
+      dress: 'uploads/samples-1788175716375-3z0c.jpg'
+    };
+    const tab = (label, icon, on) => {
+      const c = on ? '#212124' : '#868b94';
+      const d = Component.ICONS[icon];
+      return { label, d1: d[0], d2: d[1], d3: d[2], stroke: c,
+        style: 'flex:1;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:0;background:transparent;cursor:pointer;padding:0;font-size:12px;line-height:16px;font-family:inherit;font-weight:700;color:' + c,
+        wrap: 'width:24px;height:24px;display:flex;align-items:center;justify-content:center' };
+    };
+    const chip = on => 'flex:0 0 auto;height:36px;display:flex;align-items:center;gap:5px;padding:0 14px;border-radius:999px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;'
+      + (on ? 'background:#212124;color:#fff;' : 'background:#fff;color:#4d5159;box-shadow:inset 0 0 0 1px #dcdee3;');
+    const opt = on => 'height:38px;display:flex;align-items:center;padding:0 14px;border-radius:999px;font-size:16px;font-weight:700;cursor:pointer;white-space:nowrap;'
+      + (on ? 'background:' + C + ';color:#fff;' : 'background:#f2f3f6;color:#4d5159;');
+    const pin = (label, x, y, on) => ({ label,
+      style: 'position:absolute;left:' + x + 'px;top:' + y + 'px;height:32px;display:flex;align-items:center;padding:0 12px;border-radius:999px;font-size:14px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums;'
+        + (on ? 'background:' + C + ';color:#fff;box-shadow:0 2px 6px rgba(0,0,0,.16);z-index:2;' : 'background:#fff;color:#212124;box-shadow:0 1px 3px rgba(0,0,0,.2);') });
+    const res = (name, price, meta, slot, src, picked, ad) => ({
+      name, price, meta, slot, src, ad,
+      priceStyle: 'font-size:16px;line-height:22px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;color:' + (price === '수집 중' ? '#868b94' : '#212124'),
+      btn: picked ? 'Pick했어요' : 'Pick하기',
+      btnStyle: 'height:48px;border-radius:6px;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;'
+        + (picked ? 'border:0;background:' + C + ';color:#fff;' : 'border:1px solid #dcdee3;background:#fff;color:#212124;')
+    });
+
+    return {
+      rootStyle: 'display:flex;flex-direction:column;gap:48px;align-items:flex-start;padding:64px;width:max-content',
+      col: 'display:flex;flex-direction:column;gap:10px;width:390px',
+      tag: 'height:26px;display:flex;align-items:center;gap:8px;font-size:18px;line-height:24px;font-weight:700;color:#212124;white-space:nowrap;overflow:hidden',
+      tagId: 'width:26px;height:26px;flex:0 0 26px;border-radius:6px;background:#212124;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700',
+      tagDesc: 'height:71px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;line-height:21px;color:#4d5159;text-wrap:pretty',
+      phone: 'width:390px;height:844px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)',
+      bar: 'height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:700;color:#212124',
+      barIcons: 'display:flex;gap:5px;align-items:center',
+      head: 'flex:0 0 56px;display:flex;align-items:center;justify-content:space-between;padding:0 20px 0 24px;background:#fff',
+      navSearch: 'flex:0 0 60px;display:flex;align-items:center;gap:10px;padding:0 24px 0 12px;background:#fff',
+      backBtn: 'width:40px;height:40px;flex:0 0 40px;border-radius:999px;display:flex;align-items:center;justify-content:center',
+      scroll: 'flex:1 1 auto;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;scrollbar-width:none',
+      tabBar: 'flex:0 0 72px;display:flex;align-items:flex-start;background:#fff;box-shadow:inset 0 1px 0 #eaebee;padding-top:9px',
+      hr: 'height:1px;background:#eaebee',
+      band: 'flex-shrink:0;height:16px;background:#f2f3f6;margin-bottom:28px',
+      searchBox: 'height:52px;border-radius:6px;background:#f2f3f6;display:flex;align-items:center;gap:10px;padding:0 16px',
+      searchBoxActive: 'flex:1;min-width:0;height:44px;border-radius:6px;background:#f2f3f6;display:flex;align-items:center;gap:10px;padding:0 14px',
+      searchBoxSm: 'flex:1;min-width:0;height:44px;border-radius:6px;background:#f2f3f6;display:flex;align-items:center;padding:0 14px',
+      caret: 'width:2px;height:20px;background:' + C,
+      filterBar: 'flex:0 0 56px;display:flex;align-items:center;gap:8px;padding:0 24px;background:#fff;overflow-x:auto;overflow-y:hidden;scrollbar-width:none',
+      resultMeta: 'flex:0 0 40px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:#fff',
+      catBox: 'min-height:56px;border-radius:10px;background:#f7f8fa;padding:16px;display:flex;flex-direction:column;gap:3px;min-width:0;cursor:pointer',
+      chipOff: 'height:36px;display:flex;align-items:center;gap:6px;padding:0 14px;border-radius:999px;background:#f2f3f6;font-size:16px;font-weight:700;color:#4d5159;cursor:pointer',
+      rankNo: 'width:18px;flex:0 0 18px;font-size:16px;line-height:22px;font-weight:700;color:#868b94;font-variant-numeric:tabular-nums',
+      thumb52: 'width:52px;height:52px;flex:0 0 52px;border-radius:6px;overflow:hidden;position:relative',
+      adPill: 'position:absolute;top:10px;left:10px;background:rgba(0,0,0,.5);color:#fff;font-size:13px;line-height:18px;font-weight:700;padding:3px 9px;border-radius:4px',
+      sheet: 'position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;padding:12px 24px 104px;display:flex;flex-direction:column;gap:18px;animation:wpSheet 350ms cubic-bezier(.16,1,.3,1) both',
+      sheetDock: 'position:absolute;left:0;right:0;bottom:0;padding:12px 24px 28px;background:#fff;box-shadow:inset 0 1px 0 #eaebee;display:flex',
+      grabber: 'width:40px;height:4px;border-radius:999px;background:#eaebee;align-self:center',
+      mapCard: 'position:absolute;left:16px;right:16px;bottom:16px;background:#fff;border-radius:10px;padding:14px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 6px rgba(0,0,0,.16)',
+      noteBox: 'border-radius:10px;background:#f7f8fa;padding:20px;display:flex;flex-direction:column;gap:8px',
+      switchOn: 'width:52px;height:32px;border-radius:999px;background:' + C + ';display:flex;align-items:center;justify-content:flex-end;padding:0 3px',
+      knob: 'width:26px;height:26px;border-radius:999px;background:#fff',
+
+      h24: 'font-size:24px;line-height:32px;font-weight:700;color:#212124',
+      h26: 'font-size:26px;line-height:35px;font-weight:700;color:#212124;text-wrap:pretty',
+      h20: 'font-size:20px;line-height:27px;font-weight:700;color:#212124',
+      s20: 'font-size:20px;line-height:27px;font-weight:700;color:#212124',
+      t20b: 'font-size:20px;line-height:27px;font-weight:700;color:#212124;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      t18b: 'font-size:18px;line-height:24px;font-weight:700;color:#212124;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      t16b: 'font-size:16px;line-height:22px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums;white-space:nowrap',
+      t16b2: 'font-size:16px;line-height:22px;font-weight:700;color:#212124',
+      t16g: 'font-size:16px;line-height:24px;color:#4d5159;text-wrap:pretty',
+      t16d: 'font-size:16px;line-height:22px;color:#868b94',
+      t16k: 'font-size:16px;line-height:22px;color:#212124;font-weight:700',
+      t16m: 'font-size:16px;line-height:22px;font-weight:700;color:#4d5159;white-space:nowrap',
+      t14n: 'display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;line-height:19px;color:#868b94;font-variant-numeric:tabular-nums',
+      t14m: 'font-size:14px;line-height:19px;font-weight:700;color:#868b94;white-space:nowrap',
+      cta: 'flex:1;width:100%;height:52px;border:0;border-radius:6px;background:' + C + ';color:#fff;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer',
+      ctaGhost: 'height:48px;border:1px solid #dcdee3;border-radius:6px;background:#fff;color:#212124;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;margin-top:2px',
+
+      tabs: [tab('홈', 'home', false), tab('검색', 'search', true), tab('Pick', 'pick', false), tab('우리웨딩', 'couple', false), tab('MY', 'my', false)],
+
+      cats: [
+        { name: '웨딩홀', meta: '확인된 제보 412건' },
+        { name: '스튜디오', meta: '확인된 제보 286건' },
+        { name: '드레스', meta: '확인된 제보 231건' },
+        { name: '메이크업', meta: '확인된 제보 198건' },
+        { name: '결혼정보회사', meta: '확인된 제보 47건' },
+        { name: '예물', meta: '확인된 제보 63건' },
+        { name: '혼수', meta: '확인된 제보 88건' },
+        { name: '허니문', meta: '확인된 제보 74건' }
+      ],
+      recent: ['강남 스튜디오', '더채플', '5월 웨딩홀', '강남 A 드레스'],
+      trend: [
+        { no: '1', name: '강남 A 웨딩홀', price: '1,480~1,820만원', n: '확인된 제보 21건', priceStyle: 'font-size:16px;line-height:22px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums;white-space:nowrap' },
+        { no: '2', name: '강남 A 스튜디오', price: '152~184만원', n: '확인된 제보 12건', priceStyle: 'font-size:16px;line-height:22px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums;white-space:nowrap' },
+        { no: '3', name: '강남 A 드레스', price: '88~124만원', n: '확인된 제보 14건', priceStyle: 'font-size:16px;line-height:22px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums;white-space:nowrap' },
+        { no: '4', name: '청담 D 스튜디오', price: '수집 중', n: '아직 정보가 적어요 · 3건', priceStyle: 'font-size:16px;line-height:22px;font-weight:700;color:#868b94;white-space:nowrap' }
+      ],
+      acGroups: [
+        { title: '업체', items: [
+          { name: '강남 A 스튜디오', meta: '강남 · 스튜디오', tail: '확인된 제보 12건' },
+          { name: '분당 B 웨딩홀', meta: '분당 · 웨딩홀', tail: '확인된 제보 4건' },
+          { name: '성수 C 스튜디오 성수', meta: '성수 · 스튜디오', tail: '3건' }
+        ] },
+        { title: '지역', items: [
+          { name: '모란역 주변', meta: '스튜디오 8곳', tail: '' }
+        ] },
+        { title: '이 말로 검색', items: [
+          { name: '강남 A 스튜디오', meta: '', tail: '결과 14곳' }
+        ] }
+      ],
+      filters: [
+        { label: '필터 2', style: chip(true) },
+        { label: '강남', style: chip(true) },
+        { label: '예산', style: chip(false) },
+        { label: '5월', style: chip(false) },
+        { label: '정보 있는 곳', style: chip(false) }
+      ],
+      filtersTight: [
+        { label: '필터 3', style: chip(true) },
+        { label: '성수', style: chip(true) },
+        { label: '150만원 이하', style: chip(true) },
+        { label: '한옥', style: chip(true) }
+      ],
+      results: [
+        res('강남 A 스튜디오', '152~184만원', '확인된 제보 12건 · 강남 · 원본 전체', 'sc-r1', IMG.couple, true, false),
+        res('서촌 B 스튜디오', '138~171만원', '확인된 제보 9건 · 서촌 · 5월 주말 가능', 'sc-r2', IMG.arch, false, true),
+        res('청담 C 스튜디오', '165~203만원', '확인된 제보 7건 · 청담 · 야외 1회 포함', 'sc-r3', IMG.bride, false, false),
+        res('청담 D 스튜디오', '수집 중', '아직 정보가 적어요 · 3건 · 청담', 'sc-r4', IMG.dress, false, false)
+      ],
+      filterGroups: [
+        { title: '지역', opts: [
+          { label: '강남', style: opt(true) }, { label: '서초', style: opt(false) },
+          { label: '성수', style: opt(false) }, { label: '홍대', style: opt(false) }, { label: '전체', style: opt(false) }
+        ] },
+        { title: '예산', opts: [
+          { label: '~120만원', style: opt(false) }, { label: '120~180만원', style: opt(true) },
+          { label: '180~250만원', style: opt(false) }, { label: '250만원~', style: opt(false) }
+        ] },
+        { title: '촬영일', opts: [
+          { label: '평일', style: opt(false) }, { label: '주말', style: opt(false) }, { label: '상관없어요', style: opt(true) }
+        ] },
+        { title: '조건', opts: [
+          { label: '원본 전체', style: opt(false) }, { label: '야외 포함', style: opt(false) },
+          { label: '헤메 포함', style: opt(false) }, { label: '앨범 포함', style: opt(false) }
+        ] }
+      ],
+      pins: [pin('152만', 96, 150, true), pin('138만', 220, 118, false), pin('165만', 62, 300, false), pin('141만', 236, 330, false)],
+      similar: [
+        { name: '성수 G 스튜디오', price: '156~192만원', n: '확인된 제보 8건', slot: 'sc-s1', src: IMG.arch },
+        { name: '북촌 H 스튜디오', price: '132~168만원', n: '확인된 제보 5건', slot: 'sc-s2', src: IMG.bride },
+        { name: '홍대 E 스튜디오', price: '129~158만원', n: '확인된 제보 11건', slot: 'sc-s3', src: IMG.couple }
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

@@ -6,9 +6,11 @@ import {
 import {
   MEMBER_TIER_LABEL,
   WEDDING_DATE_HINT,
+  allMissionsDone,
   checkDisplayName,
   isSelectableWeddingDate,
   tierOf,
+  type MembershipFacts,
 } from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
 
@@ -291,5 +293,92 @@ export function registerWeddingRoutes(app: FastifyInstance, context: AppContext)
     await assertWeddingAccess(context.pool, request.params.weddingId, userId);
 
     return loadDetail(context, request.params.weddingId, userId);
+  });
+
+  /**
+   * 지도용 Pick 업체 목록.
+   *
+   * 좌표가 없는 업체는 지도에 찍을 수 없어 제외한다. 목록은 그대로 뜬다.
+   * `picked` = 해당 업종에서 결정된 업체인지 여부.
+   */
+  app.get<{ Params: { weddingId: string } }>(
+    '/v1/weddings/:weddingId/map-vendors',
+    auth,
+    async (request) => {
+      const userId = currentUserId(request);
+      const { weddingId } = request.params;
+      await assertWeddingAccess(context.pool, weddingId, userId);
+
+      const [{ rows }, { rows: decisionRows }] = await Promise.all([
+        context.pool.query<{
+          vendor_id: string;
+          vendor_name: string;
+          category: string;
+          lat: number;
+          lng: number;
+          address: string | null;
+        }>(
+          `SELECT c.vendor_id, v.name AS vendor_name, v.category, v.lat, v.lng, v.address
+           FROM structured.vendor_candidates c
+           JOIN structured.vendors v ON v.id = c.vendor_id
+           WHERE c.wedding_id = $1
+             AND v.lat IS NOT NULL
+             AND v.lng IS NOT NULL
+           ORDER BY c.added_at`,
+          [weddingId]
+        ),
+        context.pool.query<{ vendor_id: string }>(
+          'SELECT vendor_id FROM structured.category_decisions WHERE wedding_id = $1',
+          [weddingId]
+        ),
+      ]);
+
+      const decidedIds = new Set(decisionRows.map((r) => r.vendor_id));
+
+      return {
+        vendors: rows.map((row) => ({
+          vendorId: row.vendor_id,
+          vendorName: row.vendor_name,
+          category: row.category,
+          lat: row.lat,
+          lng: row.lng,
+          address: row.address ?? '',
+          picked: decidedIds.has(row.vendor_id),
+        })),
+      };
+    }
+  );
+
+  /**
+   * 내 등급·미션 현황.
+   *
+   * `/v1/me`는 전체 프로필이고, 이 경로는 등급·미션에만 집중한다. 클라이언트가
+   * 홈이나 혜택 화면에서 전체 프로필을 다시 내려받지 않아도 된다.
+   */
+  app.get('/v1/me/membership', auth, async (request) => {
+    const userId = currentUserId(request);
+    const current = await loadCurrentUser(context, userId);
+
+    const facts: MembershipFacts = {
+      loggedIn: true,
+      weddingSet: current.setupComplete,
+      hasPick: current.hasPick,
+      hasCompared: current.hasCompared,
+      spouseLinked: current.spouseLinked,
+      hasPaymentProof: current.hasPaymentProof,
+    };
+
+    return {
+      tier: current.tier,
+      tierLabel: current.tierLabel,
+      allMissionsDone: allMissionsDone(facts),
+      missions: {
+        weddingSet: facts.weddingSet,
+        hasPick: facts.hasPick,
+        hasCompared: facts.hasCompared,
+        spouseLinked: facts.spouseLinked,
+        hasPaymentProof: facts.hasPaymentProof,
+      },
+    };
   });
 }

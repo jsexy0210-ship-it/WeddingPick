@@ -129,7 +129,7 @@ export function requestableLevels(current: VerificationLevel): RequestableLevel[
 }
 
 /** 신청의 처리 상태. DB의 verification_status와 같은 목록이다. */
-export const VERIFICATION_STATUSES = ['received', 'in_review', 'approved', 'rejected'] as const;
+export const VERIFICATION_STATUSES = ['received', 'in_review', 'needs_supplement', 'approved', 'rejected'] as const;
 
 export type VerificationStatus = (typeof VERIFICATION_STATUSES)[number];
 
@@ -143,6 +143,7 @@ export type VerificationStatus = (typeof VERIFICATION_STATUSES)[number];
 export const VERIFICATION_STATUS_LABEL: Record<VerificationStatus, string> = {
   received: '확인 중',
   in_review: '확인 중',
+  needs_supplement: '보완 필요',
   approved: '확인 완료',
   rejected: '반영되지 않았어요',
 };

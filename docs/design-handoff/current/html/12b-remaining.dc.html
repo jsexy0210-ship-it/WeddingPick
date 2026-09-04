@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-static.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-scale.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-semantic.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/typography.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/dimension.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/motion.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/base.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/core/core.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/buttons/buttons.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/forms/forms.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/feedback/feedback.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/overlay/overlay.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/display/display.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/styles.css">
+<script src="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/_ds_bundle.js"></script>
+<script src="./image-slot.js"></script>
+<style>
+body{margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#ff6f61;text-decoration:none}
+a:hover{color:#e2564a}
+.nsb::-webkit-scrollbar{display:none}
+image-slot{background:#eaebee}
+image-slot::part(empty){display:none !important}
+</style>
+</helmet>
+
+<section style="{{ rootStyle }}">
+
+<div style="display:flex;flex-direction:column;gap:10px;max-width:1000px;padding-bottom:8px">
+  <span style="font-size:14px;line-height:19px;font-weight:700;color:#ff6f61">WeddingPick · 잔여</span>
+  <span style="font-size:40px;line-height:52px;font-weight:700;color:#212124">홈 · 제보 · 후기 · 박람회 · 검색</span>
+  <span style="font-size:18px;line-height:26px;color:#393a40;text-wrap:pretty">IA에 있으나 시안이 없던 나머지 화면들입니다. 기존 컴포넌트 규격을 그대로 쓰고 새 패턴을 만들지 않았습니다.</span>
+</div>
+
+<sc-for list="{{ lines }}" as="line" hint-placeholder-count="4">
+  <div style="display:flex;gap:36px;align-items:flex-start">
+    <sc-for list="{{ line.items }}" as="s" hint-placeholder-count="5">
+      <div style="{{ col }}">
+        <div style="{{ tag }}"><span style="{{ tagId }}">{{ s.no }}</span>{{ s.label }}</div>
+        <span style="{{ tagDesc }}">{{ s.desc }}</span>
+        <div style="{{ phone }}">
+          <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+          <div style="{{ navBack }}">
+            <span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ s.navIcon }}"></path></svg></span>
+            <span style="flex:1;min-width:0;{{ t18b }}">{{ s.nav }}</span>
+            <sc-if value="{{ s.navRight }}"><span style="{{ s.navRightStyle }}">{{ s.navRight }}</span></sc-if>
+          </div>
+          <div class="nsb" style="{{ scroll }}">
+
+            <sc-if value="{{ s.line1 }}">
+              <div style="{{ padHero }}">
+                <sc-if value="{{ s.eyebrow }}"><span style="{{ eyebrow }}">{{ s.eyebrow }}</span></sc-if>
+                <span style="{{ h26 }}">{{ s.line1 }}<br>{{ s.line2 }}</span>
+                <sc-if value="{{ s.sub }}"><span style="{{ t16n }}">{{ s.sub }}</span></sc-if>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ s.chips }}" hint-placeholder-val="{{ false }}">
+              <div class="nsb" style="{{ chipBar }}">
+                <sc-for list="{{ s.chips }}" as="c" hint-placeholder-count="4"><span style="{{ c.style }}">{{ c.label }}</span></sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ s.cards }}" hint-placeholder-val="{{ false }}">
+              <div style="{{ padSec }}">
+                <sc-for list="{{ s.cards }}" as="c" hint-placeholder-count="2">
+                  <div style="{{ c.wrap }}">
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <span style="{{ c.badgeStyle }}">{{ c.badge }}</span>
+                      <sc-if value="{{ c.meta }}"><span style="{{ t14w }}">{{ c.meta }}</span></sc-if>
+                    </div>
+                    <span style="{{ t18b2 }}">{{ c.title }}</span>
+                    <sc-if value="{{ c.body }}"><span style="{{ t16g }}">{{ c.body }}</span></sc-if>
+                    <sc-if value="{{ c.cta }}"><button style="{{ c.ctaStyle }}">{{ c.cta }}</button></sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ s.grid }}" hint-placeholder-val="{{ false }}">
+              <div style="{{ gridWrap }}">
+                <sc-for list="{{ s.grid }}" as="g2" hint-placeholder-count="6">
+                  <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+                    <div style="{{ gridImg }}"><image-slot id="{{ g2.slot }}" src="{{ g2.src }}" shape="rect" placeholder=""></image-slot></div>
+                    <div style="height:68px;display:flex;flex-direction:column;gap:3px;min-width:0">
+                      <span style="{{ t14w }}">{{ g2.cat }}</span>
+                      <span style="{{ t17clamp }}">{{ g2.title }}</span>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-for list="{{ s.groups }}" as="g" hint-placeholder-count="2">
+              <div style="{{ padSec }}">
+                <sc-if value="{{ g.title }}">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+                    <span style="{{ g.titleStyle }}">{{ g.title }}</span>
+                    <sc-if value="{{ g.more }}"><span style="{{ t14m }}">{{ g.more }}</span></sc-if>
+                  </div>
+                </sc-if>
+                <div style="display:flex;flex-direction:column;gap:2px">
+                  <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="4">
+                    <div>
+                      <div style="{{ r.rowStyle }}">
+                        <sc-if value="{{ r.lead }}"><span style="{{ r.leadStyle }}">{{ r.lead }}</span></sc-if>
+                        <sc-if value="{{ r.check }}" hint-placeholder-val="{{ false }}">
+                          <span style="{{ r.checkStyle }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{ r.checkStroke }}" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg></span>
+                        </sc-if>
+                        <sc-if value="{{ r.slot }}">
+                          <div style="{{ thumb52 }}"><image-slot id="{{ r.slot }}" src="{{ r.src }}" shape="rect" placeholder=""></image-slot></div>
+                        </sc-if>
+                        <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                          <span style="{{ r.nameStyle }}">{{ r.name }}</span>
+                          <sc-if value="{{ r.meta }}"><span style="{{ t14w }}">{{ r.meta }}</span></sc-if>
+                        </div>
+                        <sc-if value="{{ r.tail }}"><span style="{{ r.tailStyle }}">{{ r.tail }}</span></sc-if>
+                        <sc-if value="{{ r.chevron }}" hint-placeholder-val="{{ false }}">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#adb1ba" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 18px;margin-top:3px"><path d="m9 6 6 6-6 6"></path></svg>
+                        </sc-if>
+                      </div>
+                      <div style="{{ hr }}"></div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+
+            <sc-if value="{{ s.fields }}" hint-placeholder-val="{{ false }}">
+              <div style="flex-shrink:0;padding:0 24px 24px;display:flex;flex-direction:column;gap:16px">
+                <sc-for list="{{ s.fields }}" as="f" hint-placeholder-count="3">
+                  <div style="display:flex;flex-direction:column;gap:6px">
+                    <span style="{{ t14g2 }}">{{ f.label }}</span>
+                    <div style="{{ f.style }}">{{ f.value }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ s.note }}">
+              <div style="flex-shrink:0;padding:0 24px 28px">
+                <div style="{{ noteBox }}">
+                  <span style="{{ t18b2 }}">{{ s.noteTitle }}</span>
+                  <span style="{{ t16g }}">{{ s.note }}</span>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+          <sc-if value="{{ s.cta }}">
+            <div style="{{ dock }}">
+              <sc-if value="{{ s.cta2 }}"><button style="{{ ctaGhost }}">{{ s.cta2 }}</button></sc-if>
+              <button style="{{ s.ctaStyle }}">{{ s.cta }}</button>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</sc-for>
+
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:2200,&quot;height&quot;:1100}}">
+class Component extends DCLogic {
+  renderVals() {
+    const C = '#ff6f61';
+    const BACK = 'M14.5 5 8 12l6.5 7';
+    const CLOSE = 'M6 6l12 12M18 6 6 18';
+    const IMG = {
+      couple: 'uploads/samples-1788175716407-57s9.jpg',
+      arch: 'uploads/samples-1788175716396-jydc.jpg',
+      bride: 'uploads/samples-1788175716389-fion.jpg',
+      hall: 'uploads/samples-1788175716419-flvg.jpg',
+      dress: 'uploads/samples-1788175716375-3z0c.jpg'
+    };
+    const badge = k => 'padding:4px 9px;border-radius:4px;font-size:14px;line-height:19px;font-weight:700;white-space:nowrap;margin-top:2px;'
+      + (k === 'ok' ? 'background:#e8faf6;color:#1aa174;'
+        : k === 'wait' ? 'background:#ffe3ba;color:#805217;'
+          : k === 'no' ? 'background:#ffe5e3;color:#e81607;'
+            : k === 'brand' ? 'background:#ffe8e4;color:' + C + ';'
+              : 'background:#f2f3f6;color:#4d5159;');
+    const chip = on => 'flex:0 0 auto;height:36px;display:flex;align-items:center;padding:0 14px;border-radius:999px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;'
+      + (on ? 'background:#212124;color:#fff;' : 'background:#f2f3f6;color:#4d5159;');
+    const row = o => ({
+      lead: o.lead || '', leadStyle: o.leadStyle || '',
+      check: o.check === true || o.check === false ? true : false,
+      checkStyle: o.check
+        ? 'width:24px;height:24px;flex:0 0 24px;margin-top:1px;border-radius:999px;background:' + C + ';display:flex;align-items:center;justify-content:center'
+        : 'width:24px;height:24px;flex:0 0 24px;margin-top:1px;border-radius:999px;border:1.5px solid #dcdee3;box-sizing:border-box;display:flex;align-items:center;justify-content:center',
+      checkStroke: o.check ? '#fff' : 'transparent',
+      slot: o.slot || '', src: o.src || '',
+      name: o.name, meta: o.meta || '', tail: o.tail || '',
+      rowStyle: 'display:flex;align-items:' + (o.meta ? 'flex-start' : 'center') + ';gap:12px;min-height:56px;padding:' + (o.meta ? '14px' : '12px') + ' 0',
+      nameStyle: 'font-size:18px;line-height:24px;' + (o.bold ? 'font-weight:700;' : '') + 'color:' + (o.off ? '#adb1ba' : '#212124') + ';display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      tailStyle: o.tailKind ? badge(o.tailKind)
+        : 'font-size:16px;line-height:22px;' + (o.tailDim ? 'color:#868b94;' : 'font-weight:700;color:#212124;')
+          + 'font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right;margin-top:' + (o.meta ? '2px' : '0'),
+      chevron: !!o.chevron
+    });
+    const grp = o => ({
+      title: o.title || '', more: o.more || '',
+      titleStyle: o.small ? 'font-size:14px;line-height:19px;font-weight:700;color:#868b94' : 'font-size:20px;line-height:27px;font-weight:700;color:#212124',
+      rows: o.rows || []
+    });
+    const card = o => ({
+      badge: o.badge, badgeStyle: badge(o.kind || 'none'), meta: o.meta || '',
+      title: o.title, body: o.body || '',
+      wrap: 'border-radius:10px;padding:18px 20px;display:flex;flex-direction:column;gap:10px;'
+        + (o.brand ? 'border:1px solid #ffd9d4;background:#fff5f2;' : 'border:1px solid #dcdee3;background:#fff;'),
+      cta: o.cta || '',
+      ctaStyle: 'align-self:stretch;height:48px;border:0;border-radius:6px;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;background:' + C + ';color:#fff'
+    });
+    const fld = (label, value, ph) => ({ label, value,
+      style: 'min-height:52px;border-radius:6px;border:1px solid #d1d3d8;padding:14px;display:flex;align-items:center;font-size:16px;line-height:22px;color:' + (ph ? '#adb1ba' : '#212124') });
+    const rank = (n, on) => 'width:22px;flex:0 0 22px;margin-top:2px;font-size:18px;font-weight:700;text-align:center;color:' + (on ? C : '#adb1ba');
+    const av = (who, mine) => 'width:32px;height:32px;flex:0 0 32px;margin-top:1px;border-radius:999px;'
+      + (mine ? 'background:#ffe8e4;color:' + C + ';' : 'background:#f2f3f6;color:#4d5159;')
+      + 'display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700';
+    const sc = o => ({
+      no: o.no, label: o.label, desc: o.desc, nav: o.nav,
+      navIcon: o.close ? CLOSE : BACK,
+      navRight: o.navRight || '',
+      navRightStyle: 'font-size:16px;line-height:22px;font-weight:700;white-space:nowrap;color:' + (o.navRightBrand ? C : '#4d5159'),
+      eyebrow: o.eyebrow || '',
+      line1: o.hero ? String(o.hero).split('\n')[0] : '',
+      line2: o.hero ? (String(o.hero).split('\n')[1] || '') : '',
+      sub: o.sub || '',
+      chips: o.chips || null, cards: o.cards || null, grid: o.grid || null,
+      groups: o.groups || [], fields: o.fields || null,
+      noteTitle: o.noteTitle || '', note: o.note || '',
+      cta: o.cta || '', cta2: o.cta2 || '',
+      ctaStyle: 'flex:' + (o.cta2 ? '1.4' : '1') + ';height:52px;border:0;border-radius:6px;background:' + C + ';color:#fff;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer'
+    });
+
+    const A = [
+      sc({
+        no: '1', label: 'TOP3 전체보기 · WP-HOME-004', nav: '웨딩픽 TOP3',
+        desc: '업종 칩으로 바꿔 보며 순위를 확인합니다. 순위 근거를 한 줄로 붙이고 광고는 섞지 않습니다.',
+        hero: '지수님 조건에\n맞는 순서예요', sub: '강남 · 5월 · 예산 180만원 기준',
+        chips: [{ label: '스튜디오', style: chip(true) }, { label: '웨딩홀', style: chip(false) }, { label: '드레스', style: chip(false) }, { label: '메이크업', style: chip(false) }],
+        groups: [grp({ small: true, rows: [
+          row({ lead: '1', leadStyle: rank(1, true), slot: 'rs-t1', src: IMG.couple, name: '강남 A 스튜디오', meta: '고른 사진이랑 가장 비슷해요 · 확인된 제보 12건', tail: '152~184만원' }),
+          row({ lead: '2', leadStyle: rank(2, false), slot: 'rs-t2', src: IMG.arch, name: '서촌 B 스튜디오', meta: '제보 금액은 여기부터 시작해요 · 9건', tail: '138~171만원' }),
+          row({ lead: '3', leadStyle: rank(3, false), slot: 'rs-t3', src: IMG.bride, name: '청담 C 스튜디오', meta: '원본을 전부 받을 수 있어요 · 7건', tail: '165~203만원' }),
+          row({ lead: '4', leadStyle: rank(4, false), slot: 'rs-t4', src: IMG.dress, name: '성수 D 스튜디오', meta: '아직 정보가 적어요 · 3건', tail: '수집 중', tailDim: true })
+        ] })],
+        noteTitle: '광고는 섞지 않아요', note: '이 순서는 두 분 조건과 확인된 제보로만 정해요.',
+        cta: '3곳 비교'
+      }),
+      sc({
+        no: '2', label: '다음 준비 · WP-HOME-005', nav: '다음 준비',
+        desc: '지금 해야 할 것 하나를 크게 두고, 그 뒤 순서를 D-day와 함께 나열합니다.',
+        eyebrow: '지금 할 일', hero: '드레스 투어를\n3월 안에 잡아요', sub: '촬영일 5월 12일에 맞추려면요',
+        cards: [card({ badge: 'D-90', kind: 'brand', title: '드레스 투어 일정 잡기', body: '후보 2곳이 있어요. 투어는 보통 2~3주 전에 예약해요.', cta: '후보 보기', brand: true })],
+        groups: [
+          grp({ small: true, title: '그다음 순서', rows: [
+            row({ name: '본식스냅 정하기', meta: '스튜디오와 같은 팀으로 하면 편해요', tail: 'D-60', tailDim: true, chevron: true }),
+            row({ name: '청첩장 시안 고르기', meta: '주소 모으기부터 시작해요', tail: 'D-50', tailDim: true, chevron: true }),
+            row({ name: '메이크업 시연', meta: '드레스가 정해진 뒤에 해요', tail: 'D-40', tailDim: true, chevron: true }),
+            row({ name: '예물 상담', tail: 'D-30', tailDim: true, chevron: true })
+          ] }),
+          grp({ small: true, title: '끝낸 일', rows: [
+            row({ name: '예식장 계약', meta: '2월 12일', off: true }),
+            row({ name: '스튜디오 결정', meta: '3월 1일', off: true })
+          ] })
+        ],
+        noteTitle: '순서는 예식일로 계산해요', note: '예식일을 바꾸면 남은 날짜도 다시 계산돼요.'
+      }),
+      sc({
+        no: '3', label: '웨딩 소식 전체 · WP-HOME-006', nav: '웨딩 소식',
+        desc: '이미지가 주인공입니다. 업종 칩으로 걸러 보고 제목은 두 줄까지만 둡니다.',
+        chips: [{ label: '전체', style: chip(true) }, { label: '드레스', style: chip(false) }, { label: '웨딩홀', style: chip(false) }, { label: '스튜디오', style: chip(false) }],
+        grid: [
+          { slot: 'rs-f1', src: IMG.dress, cat: '드레스', title: '5월 촬영에 어울리는 라인' },
+          { slot: 'rs-f2', src: IMG.hall, cat: '웨딩홀', title: '강남 홀 대관료 읽는 법' },
+          { slot: 'rs-f3', src: IMG.couple, cat: '스튜디오', title: '원본 전부 받는 게 왜 중요한가' },
+          { slot: 'rs-f4', src: IMG.arch, cat: '준비', title: '예식 5개월 전 체크리스트' },
+          { slot: 'rs-f5', src: IMG.bride, cat: '메이크업', title: '시연 예약 전에 정할 것' },
+          { slot: 'rs-f6', src: IMG.hall, cat: '예산', title: '3,800만원으로 준비한 기록' }
+        ],
+        noteTitle: '웨딩픽이 직접 정리한 글이에요', note: '확인할 수 있는 출처를 바탕으로 직접 써요.'
+      }),
+      sc({
+        no: '4', label: '홈 편집 · WP-HOME-007', nav: '홈 편집', navRight: '완료', navRightBrand: true, close: true,
+        desc: '순서를 바꾸고 섹션을 숨깁니다. 숨겨도 기록이 지워지지 않는다는 점을 하단에 적습니다.',
+        hero: '보고 싶은 것만\n남겨보세요',
+        groups: [
+          grp({ small: true, title: '항상 보여요', rows: [
+            row({ check: true, name: 'D-day와 진행률', tail: '고정', tailKind: 'none' })
+          ] }),
+          grp({ small: true, title: '순서 바꾸기', rows: [
+            row({ lead: '≡', leadStyle: 'width:24px;flex:0 0 24px;font-size:18px;color:#adb1ba;text-align:center', name: '우리 준비', tail: '켬', tailKind: 'ok' }),
+            row({ lead: '≡', leadStyle: 'width:24px;flex:0 0 24px;font-size:18px;color:#adb1ba;text-align:center', name: '오늘의 Pick', tail: '켬', tailKind: 'ok' }),
+            row({ lead: '≡', leadStyle: 'width:24px;flex:0 0 24px;font-size:18px;color:#adb1ba;text-align:center', name: '다음 준비', tail: '켬', tailKind: 'ok' }),
+            row({ lead: '≡', leadStyle: 'width:24px;flex:0 0 24px;font-size:18px;color:#adb1ba;text-align:center', name: '웨딩 소식', tail: '켬', tailKind: 'ok' }),
+            row({ lead: '≡', leadStyle: 'width:24px;flex:0 0 24px;font-size:18px;color:#adb1ba;text-align:center', name: '혜택', off: true, tail: '숨김', tailKind: 'none' })
+          ] })
+        ],
+        noteTitle: '숨겨도 기록은 그대로 있어요', note: '언제든 다시 켜면 그대로 보여요.'
+      }),
+      sc({
+        no: '5', label: '홈 상단 규칙 · WP-HOME-002', nav: '홈 상단 규칙',
+        desc: '히어로에 무엇이 올라오는지 정하는 8단계입니다. 개발 참고용이라 실제 앱에는 없습니다.',
+        hero: '히어로는\n이 순서로 정해요', sub: '위에서 걸리는 첫 항목이 올라와요',
+        groups: [grp({ small: true, rows: [
+          row({ lead: '1', leadStyle: rank(1, true), name: '긴급 일정', meta: '오늘·내일 일정이 있으면', tail: '최우선', tailKind: 'brand' }),
+          row({ lead: '2', leadStyle: rank(2, false), name: '다음 할 일', meta: '현재 준비 단계의 마감이 가까우면' }),
+          row({ lead: '3', leadStyle: rank(3, false), name: 'Pick 후보 변화', meta: '배우자가 새로 골랐거나 금액이 바뀌면' }),
+          row({ lead: '4', leadStyle: rank(4, false), name: '커플 공통 취향', meta: '둘 다 고른 곳이 3곳 이상이면' }),
+          row({ lead: '5', leadStyle: rank(5, false), name: '예산 초과', meta: '지출이 예산의 90%를 넘으면' }),
+          row({ lead: '6', leadStyle: rank(6, false), name: '웨딩픽 TOP3', meta: '추천 근거가 충분하면' }),
+          row({ lead: '7', leadStyle: rank(7, false), name: '혜택 · 정보 변경', meta: '마감이 가까운 혜택이 있으면' }),
+          row({ lead: '8', leadStyle: rank(8, false), name: '일반 추천', meta: '위에 걸리는 것이 없으면', tail: '기본', tailKind: 'none' })
+        ] })],
+        noteTitle: '근거가 없으면 추천하지 않아요', note: '판단할 정보가 부족하면 다음 일정으로 대신해요.'
+      })
+    ];
+
+    const B = [
+      sc({
+        no: '6', label: 'Pick 인증 결과 · WP-RPT-008', nav: '인증 결과',
+        desc: '무엇이 어떻게 처리됐는지 단계로 보여줍니다. 반영된 곳을 항목으로 나눠 적습니다.',
+        eyebrow: '8월 28일 접수', hero: '반영됐어요', sub: '강남 A 스튜디오 · 168만원',
+        groups: [
+          grp({ small: true, title: '처리 단계', rows: [
+            row({ check: true, name: '자료 확인', meta: '8월 28일 · 금액과 날짜를 읽었어요' }),
+            row({ check: true, name: '업체 확인', meta: '8월 28일 · 강남 A 스튜디오로 연결했어요' }),
+            row({ check: true, name: '교차 확인', meta: '8월 29일 · 다른 제보와 비교했어요' }),
+            row({ check: true, name: '반영', meta: '8월 29일 · 금액 구간에 들어갔어요', tail: '완료', tailKind: 'ok' })
+          ] }),
+          grp({ small: true, title: '반영된 곳', rows: [
+            row({ name: '강남 A 스튜디오 금액 구간', meta: '152~184만원 · 확인된 제보 12건', chevron: true }),
+            row({ name: '우리웨딩 지출', meta: '168만원 추가', chevron: true }),
+            row({ name: '내 상태', meta: 'Pick 인증 회원이 됐어요', tail: '인증', tailKind: 'ok' })
+          ] })
+        ],
+        noteTitle: '올려주신 원본은 지웠어요', note: '확인이 끝나 8월 30일에 삭제했어요.'
+      }),
+      sc({
+        no: '7', label: '가격 제보 · WP-RPT-010', nav: '가격 제보', close: true,
+        desc: '증빙 없는 제보임을 먼저 밝힙니다. 확인된 제보와 섞이지 않는다는 점이 핵심입니다.',
+        hero: '들은 금액을\n알려주세요', sub: '자료가 없어도 괜찮아요',
+        fields: [
+          fld('업체', '강남 A 스튜디오'),
+          fld('금액', '170만원'),
+          fld('언제 들었나요', '2026년 8월'),
+          fld('조건', '주말 · 원본 전부 · 야외 없음')
+        ],
+        noteTitle: '확인된 제보와 따로 관리해요', note: '가격 제보는 참고용으로만 보여드리고 금액 구간에는 넣지 않아요.',
+        cta: '제보하기'
+      }),
+      sc({
+        no: '8', label: '업체 정보 제보 · WP-RPT-011', nav: '업체 정보 제보', close: true,
+        desc: '무엇을 알리려는지 먼저 고릅니다. 신규 등록과 정정, 영업 종료를 한 화면에서 처리합니다.',
+        hero: '어떤 정보를\n알려주실래요?',
+        groups: [grp({ small: true, rows: [
+          row({ check: true, name: '새 업체를 등록해주세요', meta: '검색에 없는 곳이에요' }),
+          row({ check: false, name: '정보가 틀렸어요', meta: '주소 · 연락처 · 영업시간' }),
+          row({ check: false, name: '영업을 종료했어요' }),
+          row({ check: false, name: '다른 업체와 섞여 있어요' })
+        ] })],
+        fields: [
+          fld('업체명', '성수 필름 스튜디오'),
+          fld('주소나 지역', '서울 성동구 성수동'),
+          fld('참고 링크', '선택이에요', true)
+        ],
+        noteTitle: '확인 후 등록해요', note: '사업자 정보로 대조한 뒤 등록하고 알림으로 알려드려요.',
+        cta: '제보하기'
+      }),
+      sc({
+        no: '9', label: '후기 상세 · WP-REV-003', nav: '후기',
+        desc: '한 사람의 답변 세 축과 본문을 함께 봅니다. 수정 이력과 업체 반론이 아래로 이어집니다.',
+        groups: [
+          grp({ small: true, title: '', rows: [
+            row({ lead: '김', leadStyle: av('김', false), name: '김OO', meta: '2026.07 · 수정됨', tail: 'Pick 인증', tailKind: 'ok' })
+          ] }),
+          grp({ small: true, title: '답변', rows: [
+            row({ name: '진행', tail: '빨랐어요', small: true }),
+            row({ name: '결과물', tail: '기대만큼', small: true }),
+            row({ name: '추가 비용 안내', tail: '명확했어요', small: true })
+          ] }),
+          grp({ small: true, title: '본문', rows: [
+            row({ name: '촬영 당일 진행이 빨라서', meta: '예정보다 일찍 끝났어요. 보정본은 3주 걸렸습니다. 실장님이 포즈를 잘 잡아주셔서 어색하지 않았어요.' })
+          ] }),
+          grp({ small: true, title: '업체 반론', rows: [
+            row({ lead: '업', leadStyle: 'width:32px;height:32px;flex:0 0 32px;margin-top:1px;border-radius:999px;background:#ebf7fa;color:#0077b2;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700', name: '강남 A 스튜디오', meta: '보정 기간은 성수기 기준 3~4주로 안내드리고 있어요.', tail: '관계자', tailKind: 'none' })
+          ] }),
+          grp({ small: true, title: '', rows: [
+            row({ name: '도움돼요', tail: '14', chevron: false }),
+            row({ name: '신고', off: true, chevron: true })
+          ] })
+        ]
+      }),
+      sc({
+        no: '10', label: '내 후기 · WP-REV-004', nav: '내 후기',
+        desc: '쓴 후기와 쓸 수 있는 곳을 나눕니다. 반론이 달린 후기는 표시해서 확인을 유도합니다.',
+        hero: '2곳에\n후기를 남겼어요',
+        groups: [
+          grp({ small: true, title: '쓴 후기', rows: [
+            row({ slot: 'rs-r1', src: IMG.couple, name: '강남 A 스튜디오', meta: '2026.07 · 도움돼요 14', tail: '반론 1', tailKind: 'wait', chevron: true }),
+            row({ slot: 'rs-r2', src: IMG.hall, name: '더채플 강남', meta: '2026.03 · 도움돼요 8', chevron: true })
+          ] }),
+          grp({ small: true, title: '쓸 수 있는 곳', rows: [
+            row({ slot: 'rs-r3', src: IMG.dress, name: '라비드레스', meta: 'Pick 인증 완료 · 3월 4일', tail: '쓰기', tailKind: 'brand' }),
+            row({ slot: 'rs-r4', src: IMG.bride, name: '청담 헤메', meta: 'Pick 인증 완료 · 4월 2일', tail: '쓰기', tailKind: 'brand' })
+          ] })
+        ],
+        noteTitle: '후기는 언제든 고칠 수 있어요', note: '고치면 수정됨 표시가 함께 보여요.'
+      })
+    ];
+
+    const D = [
+      sc({
+        no: '11', label: '박람회 목록 · WP-EXPO-001', nav: '박람회',
+        desc: '일정순으로 두고 마감이 가까운 것에 D-day를 붙입니다. 지난 일정은 회색으로 내립니다.',
+        hero: '이번 달 강남에서\n네 곳이 열려요',
+        chips: [{ label: '서울 강남', style: chip(true) }, { label: '이번 달', style: chip(true) }, { label: '마감 임박', style: chip(false) }],
+        groups: [grp({ small: true, rows: [
+          row({ slot: 'rs-e1', src: IMG.hall, name: '더 웨딩페어 코엑스', meta: '3월 15~16일 · 코엑스 C홀', tail: 'D-11', tailDim: true, chevron: true }),
+          row({ slot: 'rs-e2', src: IMG.arch, name: '강남 웨딩박람회', meta: '3월 22~23일 · 세텍', tail: 'D-18', tailDim: true, chevron: true }),
+          row({ slot: 'rs-e3', src: IMG.bride, name: '스몰웨딩 마켓', meta: '3월 29일 · 성수 에스팩토리', tail: 'D-25', tailDim: true, chevron: true }),
+          row({ slot: 'rs-e4', src: IMG.dress, name: '드레스 단독전', meta: '2월 28일 종료', off: true, tail: '종료', tailKind: 'none' })
+        ] })],
+        noteTitle: '주최사 공지에서 모아요', note: '일정이 바뀔 수 있어서 방문 전에 한 번 더 확인해주세요.'
+      }),
+      sc({
+        no: '12', label: '웨딩 정보 목록 · WP-EXPO-003', nav: '웨딩 정보',
+        desc: '준비 단계별로 묶습니다. 지금 단계에 해당하는 글을 위로 올립니다.',
+        chips: [{ label: '지금 단계', style: chip(true) }, { label: '전체', style: chip(false) }, { label: '예산', style: chip(false) }],
+        groups: [
+          grp({ small: true, title: '드레스 단계에서 볼 글', rows: [
+            row({ name: '드레스 투어 전에 정할 세 가지', meta: '읽는 데 3분', chevron: true }),
+            row({ name: '피팅비와 헬퍼비는 왜 따로인가', meta: '읽는 데 4분', chevron: true }),
+            row({ name: '5월 촬영에 어울리는 라인', meta: '읽는 데 2분', chevron: true })
+          ] }),
+          grp({ small: true, title: '다음 단계 미리 보기', rows: [
+            row({ name: '본식스냅과 스튜디오 스냅의 차이', meta: '읽는 데 3분', chevron: true }),
+            row({ name: '청첩장 주소 모으는 순서', meta: '읽는 데 2분', chevron: true })
+          ] })
+        ]
+      }),
+      sc({
+        no: '13', label: '웨딩 정보 상세 · WP-EXPO-004', nav: '웨딩 정보',
+        desc: '본문 뒤에 관련 업체와 체크리스트를 붙여 바로 행동으로 이어갑니다.',
+        eyebrow: '드레스 · 읽는 데 3분', hero: '드레스 투어 전에\n정할 세 가지',
+        groups: [
+          grp({ small: true, title: '요약', rows: [
+            row({ check: true, name: '몇 벌 입어볼지 먼저 정하기', meta: '보통 3~5벌이에요' }),
+            row({ check: true, name: '피팅비와 헬퍼비 확인하기', meta: '드레스 값과 따로예요' }),
+            row({ check: true, name: '촬영일과 본식일 나눠 생각하기', meta: '같은 곳에서 둘 다 하면 할인되는 경우가 있어요' })
+          ] }),
+          grp({ small: true, title: '이 글과 관련된 곳', rows: [
+            row({ slot: 'rs-d1', src: IMG.dress, name: '라비드레스', meta: '88~124만원 · 확인된 제보 14건', tail: 'Pick', tailKind: 'brand' }),
+            row({ slot: 'rs-d2', src: IMG.bride, name: '메종 브라이드', meta: '수집 중 · 3건', tail: 'Pick', tailKind: 'brand' })
+          ] }),
+          grp({ small: true, title: '체크리스트에 넣기', rows: [
+            row({ name: '드레스 투어 일정 잡기', tail: '넣기', tailKind: 'none' })
+          ] })
+        ],
+        noteTitle: '웨딩픽이 직접 정리했어요', note: '확인할 수 있는 출처를 바탕으로 직접 써요. 다른 글을 그대로 가져오지 않아요.'
+      }),
+      sc({
+        no: '14', label: '업종별 · WP-SRCH-003', nav: '스튜디오',
+        desc: '업종 안에서 지역과 예산으로 좁힙니다. 상단에 확인된 제보 건수를 두어 정보량을 먼저 보여줍니다.',
+        hero: '스튜디오\n286곳', sub: '확인된 제보 286건 · 강남 82곳',
+        chips: [{ label: '강남', style: chip(true) }, { label: '예산', style: chip(false) }, { label: '5월', style: chip(false) }, { label: '정보 있는 곳', style: chip(false) }],
+        groups: [
+          grp({ small: true, title: '많이 확인된 곳', rows: [
+            row({ slot: 'rs-c1', src: IMG.couple, name: '강남 A 스튜디오', meta: '확인된 제보 12건', tail: '152~184만원' }),
+            row({ slot: 'rs-c2', src: IMG.arch, name: '서촌 B 스튜디오', meta: '확인된 제보 9건', tail: '138~171만원' }),
+            row({ slot: 'rs-c3', src: IMG.bride, name: '청담 C 스튜디오', meta: '확인된 제보 7건', tail: '165~203만원' })
+          ] }),
+          grp({ small: true, title: '새로 등록된 곳', rows: [
+            row({ slot: 'rs-c4', src: IMG.dress, name: '성수 D 스튜디오', meta: '아직 정보가 적어요 · 3건', tail: '수집 중', tailDim: true }),
+            row({ slot: 'rs-c5', src: IMG.hall, name: '한남 E 스튜디오', meta: '아직 정보가 적어요 · 1건', tail: '수집 중', tailDim: true })
+          ] })
+        ]
+      }),
+      sc({
+        no: '15', label: '정렬 · WP-SRCH-006', nav: '정렬', close: true,
+        desc: '바텀시트. 광고는 자연 결과와 분리된다는 사실을 시트 안에서 밝힙니다.',
+        hero: '어떤 순서로\n볼까요?',
+        groups: [grp({ small: true, rows: [
+          row({ check: true, name: '추천순', meta: '두 분 조건에 맞는 순서예요' }),
+          row({ check: false, name: '제보 금액 낮은순', meta: '확인된 제보 기준이에요' }),
+          row({ check: false, name: '제보 금액 높은순' }),
+          row({ check: false, name: '많이 확인된 순', meta: '제보 건수가 많은 순서예요' }),
+          row({ check: false, name: '최근 등록순' })
+        ] })],
+        noteTitle: '광고는 이 순서에 들어가지 않아요', note: '광고 슬롯은 따로 표시되고 자연 결과와 섞이지 않아요.',
+        cta: '이 순서로 보기'
+      })
+    ];
+
+    return {
+      rootStyle: 'display:flex;flex-direction:column;gap:48px;align-items:flex-start;padding:64px;width:max-content',
+      col: 'display:flex;flex-direction:column;gap:10px;width:390px',
+      tag: 'height:26px;display:flex;align-items:center;gap:8px;font-size:18px;line-height:24px;font-weight:700;color:#212124;white-space:nowrap;overflow:hidden',
+      tagId: 'width:26px;height:26px;flex:0 0 26px;border-radius:6px;background:#212124;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700',
+      tagDesc: 'height:71px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;line-height:21px;color:#4d5159;text-wrap:pretty',
+      phone: 'width:390px;height:844px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)',
+      bar: 'height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:700;color:#212124',
+      barIcons: 'display:flex;gap:5px;align-items:center',
+      navBack: 'flex:0 0 56px;display:flex;align-items:center;gap:8px;padding:0 20px 0 12px;background:#fff',
+      backBtn: 'width:40px;height:40px;flex:0 0 40px;border-radius:999px;display:flex;align-items:center;justify-content:center',
+      scroll: 'flex:1 1 auto;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;scrollbar-width:none',
+      dock: 'flex:0 0 92px;background:#fff;box-shadow:inset 0 1px 0 #eaebee;padding:12px 24px;display:flex;gap:8px;box-sizing:border-box',
+      padHero: 'flex-shrink:0;padding:12px 24px 24px;display:flex;flex-direction:column;gap:8px',
+      padSec: 'flex-shrink:0;padding:0 24px 24px;display:flex;flex-direction:column;gap:10px',
+      chipBar: 'flex-shrink:0;display:flex;gap:8px;padding:0 24px 20px;overflow-x:auto;scrollbar-width:none',
+      gridWrap: 'flex-shrink:0;padding:0 24px 24px;display:grid;grid-template-columns:1fr 1fr;gap:20px 11px',
+      gridImg: 'position:relative;width:100%;aspect-ratio:1;border-radius:10px;overflow:hidden',
+      thumb52: 'width:52px;height:52px;flex:0 0 52px;margin-top:1px;border-radius:6px;overflow:hidden;position:relative',
+      hr: 'height:1px;background:#eaebee',
+      noteBox: 'border-radius:10px;background:#f7f8fa;padding:20px;display:flex;flex-direction:column;gap:8px',
+      eyebrow: 'font-size:14px;line-height:19px;font-weight:700;color:' + C,
+
+      h26: 'font-size:26px;line-height:35px;font-weight:700;color:#212124;text-wrap:pretty',
+      t18b: 'font-size:18px;line-height:24px;font-weight:700;color:#212124;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      t18b2: 'font-size:18px;line-height:24px;font-weight:700;color:#212124;text-wrap:pretty',
+      t17clamp: 'font-size:17px;line-height:24px;font-weight:700;color:#212124;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden',
+      t16g: 'font-size:16px;line-height:24px;color:#4d5159;text-wrap:pretty',
+      t16n: 'display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px;line-height:24px;color:#4d5159',
+      t14g2: 'font-size:14px;line-height:19px;color:#4d5159',
+      t14m: 'font-size:14px;line-height:19px;font-weight:700;color:#868b94;white-space:nowrap',
+      t14w: 'font-size:14px;line-height:19px;color:#868b94;font-variant-numeric:tabular-nums;text-wrap:pretty',
+      ctaGhost: 'flex:1;height:52px;border:0;border-radius:6px;background:#f2f3f6;color:#393a40;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer',
+
+      lines: [{ items: A }, { items: B }, { items: D }]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

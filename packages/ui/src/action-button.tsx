@@ -84,6 +84,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.three,
     gap: Spacing.one,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   /** 높이를 고정하면 안쪽 여백 대신 가운데 정렬로 세운다. */
   fixed: {

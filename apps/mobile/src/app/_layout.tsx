@@ -5,6 +5,7 @@ import '@weddingpick/ui/tokens.css';
 
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { useFonts } from 'expo-font';
 import { useEffect, useRef, useState } from 'react';
 import { useColorScheme } from 'react-native';
 
@@ -41,6 +42,9 @@ const ENTRY_ROUTE = {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const [fontsLoaded] = useFonts({
+    Pretendard: require('pretendard/dist/public/variable/PretendardVariable.ttf'),
+  });
   const [entry, setEntry] = useState<Entry | null>(null);
   /**
    * 스플래시를 이만큼은 보여준다. 핸드오프 0번.
@@ -119,7 +123,7 @@ export default function RootLayout() {
    * 첫 화면을 정할 때까지, 그리고 스플래시를 충분히 보여줄 때까지 덮어둔다.
    * 홈이 잠깐 스쳤다 사라지는 것을 막는다.
    */
-  if (entry === null || !minimumShown) {
+  if (entry === null || !minimumShown || !fontsLoaded) {
     return <SplashView />;
   }
 
@@ -138,6 +142,7 @@ export default function RootLayout() {
             {/* 예식일·지역 없이는 개인화가 없다. 제스처로도 나갈 수 없게 한다. */}
             <Stack.Screen name="setup" options={{ gestureEnabled: false }} />
             <Stack.Screen name="login" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="admin" options={{ headerShown: false }} />
           </Stack>
         </CaptureDraftProvider>
       </DocumentStoreProvider>

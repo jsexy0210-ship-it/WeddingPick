@@ -9,17 +9,24 @@ import {
 } from '@weddingpick/api-contract';
 import {
   MAX_COMPARED_VENDORS,
+  NOT_ENOUGH_DATA,
   rangeLabel,
   STILL_COLLECTING,
   type VendorCategory,
-  TERMS,
-  TOP3_REASON_LABEL,
   VENDOR_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, TextInput } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -33,13 +40,18 @@ import { isServerConfigured } from '@/api/config';
 import { VendorMap } from '@/features/search/vendor-map';
 import {
   ActionButton,
+  Colors,
   FilterChip,
   FontSize,
+  Layout,
+  LineHeight,
   MaxContentWidth,
+  Radius,
   Spacing,
   ThemedText,
   ThemedView,
   Toast,
+  VendorImage,
   useTheme,
 } from '@weddingpick/ui';
 
@@ -62,6 +74,14 @@ type Filters = {
 /** 플래너는 업체 부속정보가 아니라 독립 비교대상이다. 사업계획서 11번. */
 const MODE_LABEL: Record<Mode, string> = { vendor: '업체', planner: '플래너' };
 
+/**
+ * 화면 상태.
+ *
+ * - `home`: 검색어 없음 — 카테고리·최근·많이 확인된 곳.
+ * - `results`: 검색어 제출됨 — 필터바·결과 카드.
+ */
+type ViewState = 'home' | 'results';
+
 export default function SearchScreen() {
   const theme = useTheme();
   const [filters, setFilters] = useState<Filters>({
@@ -71,45 +91,39 @@ export default function SearchScreen() {
     region: null,
     sort: 'data',
   });
-  // 서버 주소가 없으면 부를 곳도 없다. 처음부터 빈 목록으로 시작한다.
+  const [viewState, setViewState] = useState<ViewState>('home');
+  /** 입력 칸에 포커스가 있는가. 자동완성을 띄울 조건이다. */
+  const [inputFocused, setInputFocused] = useState(false);
+
   const [vendors, setVendors] = useState<VendorSummary[] | null>(isServerConfigured ? null : []);
   /*
    * 광고 자리. **결과 배열과 따로 둔다**(v2.0 E-1).
-   *
-   * 목록의 data는 vendors뿐이라 광고가 결과 사이에 끼어들 수가 없다 — 섞어 놓고
-   * 배지만 붙이면 배지를 못 본 사람에게 그건 그냥 검색 결과다.
    */
   const [sponsored, setSponsored] = useState<SponsoredCard[]>([]);
   const [planners, setPlanners] = useState<PlannerSummary[] | null>(isServerConfigured ? null : []);
-  /** 노출 중단 안내. 서버가 결과와 함께 준다. */
   const [withdrawalNotice, setWithdrawalNotice] = useState<string | null>(null);
-  /** 지역 필터. 모드마다 다른 목록을 쓴다 — 플래너가 없는 지역을 업체 목록으로 띄우지 않는다. */
   const [regions, setRegions] = useState<{ name: string; count: number }[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  /** 이 조건에 몇 곳이 있는지. 핸드오프 7번이 정렬 옆에 개수를 뒀다. */
   const [total, setTotal] = useState(0);
-  /** 견줄 업체. 고른 순서를 지킨다 — 화면에 그 순서로 나온다. */
+  /** 견줄 업체. 고른 순서를 지킨다. */
   const [picked, setPicked] = useState<string[]>([]);
-  /** 담긴 업체들의 업종. 섞이는 것을 막는 데 쓴다. */
   const [pickedCategory, setPickedCategory] = useState<VendorCategory | null>(null);
-  /** 눌렀는데 아무 일도 없으면 고장난 줄 안다. 막은 이유를 말한다. */
   const [toast, setToast] = useState<string | null>(null);
-  /**
-   * 이 지역·업종에서 볼 만한 곳. v3.10 §2의 TOP3다.
-   *
-   * 홈 C-1이 가격 TOP3 섹션을 홈에서 뺐고, 탐색 성격이라 여기로 왔다.
-   */
   const [top3, setTop3] = useState<Top3Response | null>(null);
   /** 목록 · 지도. 지도는 업체 모드에서만 쓴다(WP-SRCH-007). */
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  /**
+   * 최근 검색. 제출한 검색어를 기억한다.
+   * 영구 보존은 다음 단계(AsyncStorage)에서 한다.
+   */
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
-  /** 늦게 도착한 옛 요청이 새 결과를 덮어쓰지 않게 한다. */
   const requestId = useRef(0);
-  const [inputFocused, setInputFocused] = useState(false);
 
   const trimmedQ = filters.q.trim();
+
   const suggestions = useMemo(() => {
     if (!inputFocused || trimmedQ.length === 0) return [];
     const lower = trimmedQ.toLowerCase();
@@ -119,21 +133,8 @@ export default function SearchScreen() {
     return (planners ?? []).filter((p) => p.name.toLowerCase().includes(lower)).slice(0, 5);
   }, [inputFocused, trimmedQ, filters.mode, vendors, planners]);
 
-  /*
-   * 검색어를 치는 중에는 추천을 접는다. 조건을 정한 사람의 결과 위에 우리가 고른
-   * 목록이 남아 있으면 그건 결과를 가리는 것이다.
-   */
-  const recommended =
-    filters.mode === 'vendor' && filters.q.trim() === '' ? (top3?.items ?? []) : [];
-
   useEffect(() => {
     if (!isServerConfigured) return;
-
-    /*
-     * 업체 모드에서만 부른다. 플래너는 확인된 결제 자료가 업체와 다른 방식으로
-     * 쌓여 같은 사다리를 못 쓴다 — 없는 추천을 만들지 않는다. 모드를 되돌렸을 때
-     * 쓰라고 받아둔 값은 지우지 않고, 그릴지 말지는 아래 `recommended`가 정한다.
-     */
     if (filters.mode !== 'vendor') return;
 
     getTop3({
@@ -141,7 +142,6 @@ export default function SearchScreen() {
       category: filters.category ?? undefined,
     })
       .then(setTop3)
-      // 추천을 못 불러와도 검색은 된다.
       .catch(() => setTop3(null));
   }, [filters.mode, filters.region, filters.category]);
 
@@ -157,16 +157,9 @@ export default function SearchScreen() {
             response.regions.map((region) => ({ name: region.name, count: region.plannerCount }))
           );
 
-    load
-      .then(setRegions)
-      // 지역 목록을 못 불러와도 검색은 된다.
-      .catch(() => undefined);
+    load.then(setRegions).catch(() => undefined);
   }, [filters.mode]);
 
-  /**
-   * 지금 조건으로 다시 부른다. 디바운스 효과와 지도의 "다시 찾기" 단추가 같이
-   * 쓴다 — 지도는 새 검색 로직을 만들지 않고 이 자리를 그대로 쓴다.
-   */
   const runSearch = useCallback(() => {
     const id = (requestId.current += 1);
     const shared = {
@@ -195,13 +188,11 @@ export default function SearchScreen() {
     search
       .then((cursor) => {
         if (id !== requestId.current) return;
-
         setNextCursor(cursor);
         setError(null);
       })
       .catch((caught: Error) => {
         if (id !== requestId.current) return;
-
         setVendors([]);
         setPlanners([]);
         setError(caught.message);
@@ -209,14 +200,12 @@ export default function SearchScreen() {
   }, [filters]);
 
   useEffect(() => {
-    if (!isServerConfigured) {
-      return;
-    }
+    if (!isServerConfigured) return;
+    if (viewState !== 'results') return;
 
     const timer = setTimeout(runSearch, DEBOUNCE_MS);
-
     return () => clearTimeout(timer);
-  }, [filters, runSearch]);
+  }, [filters, viewState, runSearch]);
 
   const loadMore = useCallback(async () => {
     if (!nextCursor || loadingMore) return;
@@ -235,12 +224,10 @@ export default function SearchScreen() {
           category: filters.category ?? undefined,
           sort: filters.sort,
         });
-
         setVendors((current) => [...(current ?? []), ...response.vendors]);
         setNextCursor(response.nextCursor);
       } else {
         const response = await searchPlanners(shared);
-
         setPlanners((current) => [...(current ?? []), ...response.planners]);
         setNextCursor(response.nextCursor);
       }
@@ -257,8 +244,6 @@ export default function SearchScreen() {
 
   function switchMode(mode: Mode) {
     if (mode === filters.mode) return;
-
-    // 결과가 갈아끼워지는 동안 옛 목록을 보여주지 않는다.
     setVendors(isServerConfigured ? null : []);
     setPlanners(isServerConfigured ? null : []);
     setNextCursor(null);
@@ -268,31 +253,44 @@ export default function SearchScreen() {
   }
 
   /**
+   * 검색 제출. 홈 → 결과 전환.
+   */
+  function submitSearch(q: string) {
+    const trimmed = q.trim();
+    if (!trimmed) return;
+
+    // 최근 검색에 추가 (중복 제거, 최신 우선, 최대 10개)
+    setRecentSearches((prev) => [trimmed, ...prev.filter((s) => s !== trimmed)].slice(0, 10));
+    setFilters((current) => ({ ...current, q: trimmed }));
+    setViewState('results');
+    setInputFocused(false);
+  }
+
+  function goHome() {
+    setViewState('home');
+    setFilters((current) => ({ ...current, q: '' }));
+    setInputFocused(false);
+  }
+
+  /**
    * 비교함에 담기.
-   *
-   * **업종이 섞이면 담지 않는다**(핸드오프 7번). 웨딩홀과 스튜디오를 나란히 놓은
-   * 표는 아무것도 말해주지 않는다 — 비교할 항목 자체가 다르다.
+   * 업종이 섞이면 담지 않는다.
    */
   function togglePicked(vendor: VendorSummary) {
     if (picked.includes(vendor.id)) {
       const left = picked.filter((id) => id !== vendor.id);
-
       setPicked(left);
-      // 다 빼면 업종 잠금도 푼다. 안 그러면 다음에 다른 업종을 못 담는다.
       if (left.length === 0) setPickedCategory(null);
-
       return;
     }
 
     if (pickedCategory !== null && pickedCategory !== vendor.category) {
       setToast(`${VENDOR_CATEGORY_LABEL[pickedCategory]}끼리만 비교할 수 있어요`);
-
       return;
     }
 
     if (picked.length >= MAX_COMPARED_VENDORS) {
       setToast(`한 번에 ${MAX_COMPARED_VENDORS}곳까지 담을 수 있어요`);
-
       return;
     }
 
@@ -300,27 +298,495 @@ export default function SearchScreen() {
     setPickedCategory(vendor.category);
   }
 
+  // ─── 홈 화면 ──────────────────────────────────────────────────────────────
+
+  function renderHome() {
+    return (
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.homeContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}>
+
+        {/* 카테고리 그리드 — 2열 */}
+        <View style={styles.homeSection}>
+          <ThemedText type="t4">카테고리</ThemedText>
+          <View style={styles.categoryGrid}>
+            {CATEGORY_ORDER.map((category) => (
+              <Pressable
+                key={category}
+                accessibilityRole="button"
+                style={[styles.categoryCell, { backgroundColor: theme.backgroundElement }]}
+                onPress={() => {
+                  setFilters((current) => ({ ...current, category }));
+                  setViewState('results');
+                }}>
+                <ThemedText type="t5">{VENDOR_CATEGORY_LABEL[category]}</ThemedText>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
+        {/* 최근 검색 */}
+        {recentSearches.length > 0 ? (
+          <>
+            <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} />
+            <View style={styles.homeSection}>
+              <View style={styles.sectionRow}>
+                <ThemedText type="t4">최근 검색</ThemedText>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setRecentSearches([])}>
+                  <ThemedText type="t7" themeColor="textAssistive">전체 삭제</ThemedText>
+                </Pressable>
+              </View>
+              <View style={styles.chipRow}>
+                {recentSearches.map((term) => (
+                  <Pressable
+                    key={term}
+                    accessibilityRole="button"
+                    onPress={() => submitSearch(term)}
+                    style={[styles.recentChip, { borderColor: theme.border }]}>
+                    <ThemedText type="t6">{term}</ThemedText>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          </>
+        ) : null}
+
+        {/* 많이 확인된 곳 */}
+        {top3 && top3.items.length > 0 ? (
+          <>
+            <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} />
+            <View style={styles.homeSection}>
+              <ThemedText type="t4">많이 확인된 곳</ThemedText>
+              {top3.items.map((item, idx) => (
+                <View key={item.vendorId}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`${item.name} 자세히 보기`}
+                    onPress={() =>
+                      router.push({
+                        pathname: '/search/[vendorId]',
+                        params: { vendorId: item.vendorId, reasons: item.reasons.join(',') },
+                      })
+                    }>
+                    <View style={styles.trendRow}>
+                      <ThemedText type="t6" themeColor="textAssistive" style={styles.rankNo}>
+                        {idx + 1}
+                      </ThemedText>
+                      <View style={styles.trendBody}>
+                        <ThemedText type="t5" numberOfLines={1}>{item.name}</ThemedText>
+                        <View style={styles.trendMeta}>
+                          {item.paidPrice.stage !== 'collecting' ? (
+                            <ThemedText type="t6" numeric numberOfLines={1}>
+                              {rangeLabel(item.paidPrice.low, item.paidPrice.high)}
+                            </ThemedText>
+                          ) : null}
+                          <ThemedText type="t7" themeColor="textAssistive" numberOfLines={1}>
+                            {item.confirmedCount > 0
+                              ? `확인된 정보 ${item.confirmedCount}건`
+                              : STILL_COLLECTING}
+                          </ThemedText>
+                        </View>
+                      </View>
+                    </View>
+                  </Pressable>
+                  {idx < top3.items.length - 1 ? (
+                    <View style={[styles.divider, { backgroundColor: theme.line }]} />
+                  ) : null}
+                </View>
+              ))}
+              {top3.note ? (
+                <ThemedText type="t7" themeColor="textAssistive">{top3.note}</ThemedText>
+              ) : null}
+            </View>
+          </>
+        ) : null}
+      </ScrollView>
+    );
+  }
+
+  // ─── 자동완성 ─────────────────────────────────────────────────────────────
+
+  function renderSuggestions() {
+    if (suggestions.length === 0) return null;
+
+    return (
+      <ThemedView
+        type="backgroundElement"
+        style={[styles.suggestions, { borderColor: theme.border }]}>
+        {filters.mode === 'vendor'
+          ? (suggestions as VendorSummary[]).map((item) => (
+              <Pressable
+                key={item.id}
+                accessibilityRole="button"
+                onPress={() => {
+                  setInputFocused(false);
+                  router.push(`/search/${item.id}`);
+                }}>
+                <ThemedView type="backgroundElement" style={styles.suggestionRow}>
+                  <ThemedText type="t6">{item.name}</ThemedText>
+                  <ThemedText type="t7" themeColor="textAssistive">
+                    {VENDOR_CATEGORY_LABEL[item.category]} · {item.region}
+                  </ThemedText>
+                </ThemedView>
+              </Pressable>
+            ))
+          : (suggestions as PlannerSummary[]).map((item) => (
+              <Pressable
+                key={item.id}
+                accessibilityRole="button"
+                onPress={() => {
+                  setInputFocused(false);
+                  router.push(`/search/planner/${item.id}`);
+                }}>
+                <ThemedView type="backgroundElement" style={styles.suggestionRow}>
+                  <ThemedText type="t6">{item.name}</ThemedText>
+                  <ThemedText type="t7" themeColor="textAssistive">
+                    {item.regions.join(' · ')}
+                  </ThemedText>
+                </ThemedView>
+              </Pressable>
+            ))}
+      </ThemedView>
+    );
+  }
+
+  // ─── 결과 화면 ────────────────────────────────────────────────────────────
+
+  /** 결과 카드 한 장. WP-SRCH-004 스펙. */
+  function renderVendorCard(item: VendorSummary) {
+    const chosen = picked.includes(item.id);
+    const paidPrice = item.paidPrice;
+    const isCollecting = paidPrice.stage === 'collecting';
+    const isLimited = paidPrice.stage === 'limited';
+
+    return (
+      <View style={styles.resultCard}>
+        {/* 대표 이미지 — 업체 제공 이미지가 없으면 카테고리 기본 */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${item.name} 자세히 보기`}
+          onPress={() => router.push(`/search/${item.id}`)}>
+          <View style={styles.cardImageWrap}>
+            <VendorImage
+              category={item.category as Parameters<typeof VendorImage>[0]['category']}
+              width={undefined}
+              height={CARD_IMAGE_HEIGHT}
+              radius={Radius.medium}
+            />
+          </View>
+        </Pressable>
+
+        {/* 업체명 ↔ 금액구간 */}
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push(`/search/${item.id}`)}>
+          <View style={styles.cardNameRow}>
+            <ThemedText type="t4" numberOfLines={1} style={styles.cardName}>
+              {item.name}
+            </ThemedText>
+            {paidPrice.stage !== 'collecting' ? (
+              <ThemedText type="t6" numeric style={styles.cardPrice}>
+                {rangeLabel(paidPrice.low, paidPrice.high)}
+              </ThemedText>
+            ) : (
+              <ThemedText type="t7" themeColor="textAssistive">
+                {STILL_COLLECTING}
+              </ThemedText>
+            )}
+          </View>
+
+          {/* 확인된 정보 · 지역 */}
+          <ThemedText type="t7" themeColor="textAssistive" numberOfLines={1} style={styles.cardMeta}>
+            {isCollecting
+              ? `${STILL_COLLECTING} · ${item.region}`
+              : isLimited
+                ? `${NOT_ENOUGH_DATA} · ${paidPrice.count}건 · ${item.region}`
+                : `확인된 정보 ${paidPrice.count}건 · ${item.region}`}
+          </ThemedText>
+        </Pressable>
+
+        {/* Pick 버튼 */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={chosen ? `${item.name} 비교에서 빼기` : `${item.name} 비교에 담기`}
+          style={[
+            styles.pickBtn,
+            chosen
+              ? { backgroundColor: theme.tint }
+              : { backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border },
+          ]}
+          onPress={() => togglePicked(item)}>
+          <ThemedText
+            type="t6"
+            style={chosen ? styles.pickBtnTextOn : undefined}
+            themeColor={chosen ? undefined : 'text'}>
+            {chosen ? 'Pick했어요' : 'Pick하기'}
+          </ThemedText>
+        </Pressable>
+      </View>
+    );
+  }
+
+  function renderResults() {
+    return (
+      <>
+        {/* 필터바 — sticky, 가로 스크롤 */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={[styles.filterBar, { backgroundColor: theme.background }]}
+          contentContainerStyle={styles.filterBarContent}>
+          {CATEGORY_ORDER.map((category) => (
+            <FilterChip
+              key={category}
+              label={VENDOR_CATEGORY_LABEL[category]}
+              selected={filters.category === category}
+              onPress={() => toggle('category', category)}
+            />
+          ))}
+          {regions.map((region) => (
+            <FilterChip
+              key={region.name}
+              label={`${region.name} ${region.count}곳`}
+              selected={filters.region === region.name}
+              onPress={() => toggle('region', region.name)}
+            />
+          ))}
+        </ScrollView>
+
+        {/* 결과 수 + 정렬 */}
+        {filters.mode === 'vendor' ? (
+          <View style={[styles.sortRow, { backgroundColor: theme.background }]}>
+            <ThemedText type="t7" themeColor="textAssistive">
+              {filters.category ? `${VENDOR_CATEGORY_LABEL[filters.category]} ` : ''}
+              {total}곳
+            </ThemedText>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={styles.sortChips}>
+                {VENDOR_SORTS.filter((sort) => sort !== 'name').map((sort) => (
+                  <FilterChip
+                    key={sort}
+                    role="radio"
+                    label={VENDOR_SORT_LABEL[sort]}
+                    selected={filters.sort === sort}
+                    onPress={() => setFilters((current) => ({ ...current, sort }))}
+                  />
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+        ) : null}
+
+        {/* 결과 목록 */}
+        {filters.mode === 'vendor' ? (
+          vendors === null ? (
+            <ActivityIndicator color={theme.tint} style={styles.spinner} />
+          ) : viewMode === 'map' ? (
+            <VendorMap vendors={vendors} loading={false} onRefresh={runSearch} />
+          ) : (
+            <FlatList
+              data={vendors}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.resultList}
+              onEndReached={loadMore}
+              onEndReachedThreshold={0.4}
+              showsVerticalScrollIndicator={false}
+              ListHeaderComponent={
+                <>
+                  {/* 광고 — 자연 결과와 별도 배열. 선 하나로 분리 표시. */}
+                  {sponsored.length > 0 ? (
+                    <View style={styles.sponsoredBlock}>
+                      {sponsored.map((ad) => (
+                        <Pressable
+                          key={ad.vendorId}
+                          accessibilityRole="button"
+                          accessibilityLabel={`${ad.label} ${ad.name} 자세히 보기`}
+                          onPress={() => router.push(`/search/${ad.vendorId}`)}>
+                          <View
+                            style={[
+                              styles.adCard,
+                              {
+                                backgroundColor: theme.backgroundElement,
+                                borderColor: theme.border,
+                              },
+                            ]}>
+                            <ThemedText type="badge" themeColor="textAssistive">
+                              {ad.label}
+                            </ThemedText>
+                            <ThemedText type="t5">{ad.name}</ThemedText>
+                            <ThemedText type="t7" themeColor="textSecondary">
+                              {VENDOR_CATEGORY_LABEL[ad.category]} · {ad.region}
+                            </ThemedText>
+                          </View>
+                        </Pressable>
+                      ))}
+                      <View style={[styles.adDivider, { backgroundColor: theme.line }]} />
+                    </View>
+                  ) : null}
+                </>
+              }
+              ListEmptyComponent={
+                <View style={styles.emptyWrap}>
+                  <ThemedText type="t2">조건에 맞는 곳이{'\n'}없어요</ThemedText>
+                  {filters.category || filters.region ? (
+                    <ThemedText type="t6" themeColor="textSecondary">
+                      조건을 하나 풀어보세요
+                    </ThemedText>
+                  ) : (
+                    <ThemedText type="t6" themeColor="textSecondary">
+                      {!isServerConfigured
+                        ? '이 빌드는 서버에 붙어 있지 않아요.'
+                        : error ?? '찾으시는 업체가 아직 등록되지 않았어요.'}
+                    </ThemedText>
+                  )}
+                  {(filters.category || filters.region) ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      style={[styles.filterResetBtn, { backgroundColor: theme.tint }]}
+                      onPress={() =>
+                        setFilters((current) => ({
+                          ...current,
+                          category: null,
+                          region: null,
+                        }))
+                      }>
+                      <ThemedText type="t5" style={styles.filterResetText}>
+                        조건 초기화
+                      </ThemedText>
+                    </Pressable>
+                  ) : null}
+                </View>
+              }
+              ListFooterComponent={
+                loadingMore ? <ActivityIndicator color={theme.tint} style={styles.spinner} /> : null
+              }
+              renderItem={({ item }) => renderVendorCard(item)}
+            />
+          )
+        ) : planners === null ? (
+          <ActivityIndicator color={theme.tint} style={styles.spinner} />
+        ) : (
+          <FlatList
+            data={planners}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.resultList}
+            onEndReached={loadMore}
+            onEndReachedThreshold={0.4}
+            ListHeaderComponent={
+              withdrawalNotice ? (
+                <View
+                  style={[styles.adCard, { backgroundColor: theme.backgroundElement }]}>
+                  <ThemedText type="t7" themeColor="textSecondary">
+                    {withdrawalNotice}
+                  </ThemedText>
+                </View>
+              ) : null
+            }
+            ListEmptyComponent={
+              <View style={styles.emptyWrap}>
+                <ThemedText type="t2">찾는 플래너가{'\n'}없어요</ThemedText>
+                <ThemedText type="t6" themeColor="textSecondary">
+                  {!isServerConfigured
+                    ? '이 빌드는 서버에 붙어 있지 않아요.'
+                    : error ?? '공개된 자료에 실려 있거나 본인이 밝힌 플래너만 나와요.'}
+                </ThemedText>
+              </View>
+            }
+            ListFooterComponent={
+              loadingMore ? <ActivityIndicator color={theme.tint} style={styles.spinner} /> : null
+            }
+            renderItem={({ item }) => (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`${item.name} 자세히 보기`}
+                onPress={() => router.push(`/search/planner/${item.id}`)}>
+                <View
+                  style={[
+                    styles.adCard,
+                    { backgroundColor: theme.backgroundElement },
+                  ]}>
+                  <ThemedText type="t5">{item.name}</ThemedText>
+                  <ThemedText type="t7" themeColor="textSecondary">
+                    {[item.vendor?.name ?? '프리랜서', item.regions.join(' · ')]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </ThemedText>
+                  <ThemedText type="t7" themeColor="textSecondary">
+                    {item.comparableQuoteCount === 0
+                      ? '확인된 계약 자료가 아직 없어요'
+                      : `확인된 계약 ${item.comparableQuoteCount}건`}
+                  </ThemedText>
+                </View>
+              </Pressable>
+            )}
+          />
+        )}
+      </>
+    );
+  }
+
+  // ─── 렌더 ─────────────────────────────────────────────────────────────────
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+
+        {/* ── 헤더 ── */}
         <ThemedView style={styles.header}>
-          <ThemedText type="subtitle">{MODE_LABEL[filters.mode]} 찾기</ThemedText>
+          {/* 모드 탭 — 업체 / 플래너 */}
+          {viewState === 'home' ? (
+            <View style={styles.headerTop}>
+              <ThemedText type="t4">검색</ThemedText>
+              <View style={styles.modeSwitcher}>
+                {(Object.keys(MODE_LABEL) as Mode[]).map((mode) => (
+                  <FilterChip
+                    key={mode}
+                    role="radio"
+                    label={MODE_LABEL[mode]}
+                    selected={filters.mode === mode}
+                    onPress={() => switchMode(mode)}
+                  />
+                ))}
+              </View>
+            </View>
+          ) : null}
 
-          <ThemedView style={styles.chips}>
-            {(Object.keys(MODE_LABEL) as Mode[]).map((mode) => (
-              <FilterChip
-                key={mode}
-                role="radio"
-                label={MODE_LABEL[mode]}
-                selected={filters.mode === mode}
-                onPress={() => switchMode(mode)}
-              />
-            ))}
-          </ThemedView>
+          {/* 검색창 */}
+          <View style={[styles.searchBox, { backgroundColor: theme.backgroundSelected }]}>
+            {/* 검색 아이콘 */}
+            <View style={styles.searchIcon}>
+              <SearchIcon color={theme.textAssistive} />
+            </View>
+            <TextInput
+              style={[styles.searchInput, { color: theme.text }]}
+              placeholder={`업체나 지역을 검색해보세요`}
+              placeholderTextColor={theme.textAssistive}
+              value={filters.q}
+              onChangeText={(text) => setFilters((current) => ({ ...current, q: text }))}
+              onFocus={() => setInputFocused(true)}
+              onBlur={() => setInputFocused(false)}
+              onSubmitEditing={() => submitSearch(filters.q)}
+              returnKeyType="search"
+              autoCorrect={false}
+              accessibilityLabel={`${MODE_LABEL[filters.mode]} 이름 검색`}
+            />
+            {viewState === 'results' ? (
+              <Pressable accessibilityRole="button" onPress={goHome} style={styles.cancelBtn}>
+                <ThemedText type="t6" themeColor="textSecondary">취소</ThemedText>
+              </Pressable>
+            ) : null}
+          </View>
 
-          {/* 지도 보기. 핸드오프 WP-SRCH-007 — 결과 상단 토글. 업체 모드에서만 쓴다. */}
-          {filters.mode === 'vendor' ? (
-            <ThemedView style={styles.chips}>
+          {/* 자동완성 — 입력 중에 뜬다 */}
+          {renderSuggestions()}
+
+          {/* 결과 모드 지도/목록 토글 */}
+          {viewState === 'results' && filters.mode === 'vendor' ? (
+            <View style={styles.viewToggle}>
               <FilterChip
                 role="radio"
                 label="목록"
@@ -333,337 +799,14 @@ export default function SearchScreen() {
                 selected={viewMode === 'map'}
                 onPress={() => setViewMode('map')}
               />
-            </ThemedView>
-          ) : null}
-
-          <TextInput
-            style={[styles.input, { color: theme.text, borderColor: theme.border }]}
-            placeholder={`${MODE_LABEL[filters.mode]} 이름으로 찾아보세요`}
-            placeholderTextColor={theme.textSecondary}
-            value={filters.q}
-            onChangeText={(text) => setFilters((current) => ({ ...current, q: text }))}
-            onFocus={() => setInputFocused(true)}
-            onBlur={() => setInputFocused(false)}
-            autoCorrect={false}
-            returnKeyType="search"
-            accessibilityLabel={`${MODE_LABEL[filters.mode]} 이름 검색`}
-          />
-
-          {suggestions.length > 0 ? (
-            <ThemedView
-              type="backgroundElement"
-              style={[styles.suggestions, { borderColor: theme.border }]}>
-              {suggestions.map((item) => (
-                <Pressable
-                  key={item.id}
-                  accessibilityRole="button"
-                  onPress={() => {
-                    setInputFocused(false);
-                    router.push(
-                      filters.mode === 'vendor'
-                        ? `/search/${item.id}`
-                        : `/search/planner/${item.id}`
-                    );
-                  }}>
-                  <ThemedView type="backgroundElement" style={styles.suggestionRow}>
-                    <ThemedText type="t6">{item.name}</ThemedText>
-                  </ThemedView>
-                </Pressable>
-              ))}
-            </ThemedView>
-          ) : null}
-
-          {filters.mode === 'vendor' ? (
-            <ThemedView style={styles.chips}>
-              {CATEGORY_ORDER.map((category) => (
-                <FilterChip
-                  key={category}
-                  label={VENDOR_CATEGORY_LABEL[category]}
-                  selected={filters.category === category}
-                  onPress={() => toggle('category', category)}
-                />
-              ))}
-            </ThemedView>
-          ) : null}
-
-          {regions.length > 0 ? (
-            <ThemedView style={styles.chips}>
-              {regions.map((region) => (
-                <FilterChip
-                  key={region.name}
-                  label={`${region.name} ${region.count}${filters.mode === 'vendor' ? '곳' : '명'}`}
-                  selected={filters.region === region.name}
-                  onPress={() => toggle('region', region.name)}
-                />
-              ))}
-            </ThemedView>
-          ) : null}
-
-          {/*
-            정렬과 개수. 핸드오프 7번이 이 둘을 한 줄에 뒀다.
-
-            **`인기 순`은 없다.** 인기를 재는 것이 우리에게 없고, 없는 것에 이름만
-            붙이면 그건 정렬이 아니라 꾸밈이다. 대신 `확인된 정보 많은 순`을 기본으로
-            둔다 — 결제인증이 많이 모인 업체가 먼저 나오는 것은 잴 수 있는 사실이다.
-          */}
-          {filters.mode === 'vendor' ? (
-            <ThemedView style={styles.sortRow}>
-              {/*
-                개수를 정렬 칩과 한 줄에 두면 390px에서 잘린다. 그려보고 알았다 —
-                핸드오프는 드롭다운을 그렸고, 칩 셋은 그 자리에 들어가지 않는다.
-              */}
-              <ThemedText type="t7" themeColor="textSecondary">
-                {filters.category ? `${VENDOR_CATEGORY_LABEL[filters.category]} ` : ''}
-                {total}곳
-              </ThemedText>
-
-              <ThemedView style={styles.chips}>
-                {VENDOR_SORTS.filter((sort) => sort !== 'name').map((sort) => (
-                  <FilterChip
-                    key={sort}
-                    role="radio"
-                    label={VENDOR_SORT_LABEL[sort]}
-                    selected={filters.sort === sort}
-                    onPress={() => setFilters((current) => ({ ...current, sort }))}
-                  />
-                ))}
-              </ThemedView>
-            </ThemedView>
+            </View>
           ) : null}
         </ThemedView>
 
-        {filters.mode === 'vendor' ? (
-          vendors === null ? (
-            <ActivityIndicator color={theme.tint} style={styles.spinner} />
-          ) : viewMode === 'map' ? (
-            <VendorMap vendors={vendors} loading={false} onRefresh={runSearch} />
-          ) : (
-            <FlatList
-              data={vendors}
-              keyExtractor={(item) => item.id}
-              contentContainerStyle={styles.list}
-              onEndReached={loadMore}
-              onEndReachedThreshold={0.4}
-              ListEmptyComponent={
-                <ThemedView type="backgroundElement" style={styles.card}>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {!isServerConfigured
-                      ? '이 빌드는 서버에 붙어 있지 않아 업체를 찾을 수 없어요. 촬영과 기기 저장은 그대로 쓰실 수 있어요.'
-                      : error
-                        ? error
-                        : '찾으시는 업체가 아직 등록되지 않았어요. 자료를 올리시면 그 업체가 등록될 때 자동으로 이어져요.'}
-                  </ThemedText>
-                </ThemedView>
-              }
-              ListHeaderComponent={
-                <>
-                  {/*
-                    추천. 홈 C-1이 가격 TOP3 섹션을 홈에서 뺐고, TOP3 성격의 탐색은
-                    여기에 둔다 — 찾으러 온 사람에게 "이 지역에서 볼 만한 곳"을
-                    먼저 보이는 것은 검색의 일이다.
+        {/* ── 본문 ── */}
+        {viewState === 'home' ? renderHome() : renderResults()}
 
-                    검색어나 필터를 건드리면 접는다. 사용자가 조건을 정한 뒤에도
-                    우리가 고른 목록이 위에 남아 있으면, 그건 검색 결과를 가린다.
-
-                    **광고와 다른 자리다.** 스폰서는 산 자리이고 이 목록은 확인된
-                    정보가 고른 자리라, 붙여두면 둘이 같은 것으로 읽힌다. 그래서
-                    추천을 먼저 두고 그 아래에 스폰서를 둔다.
-                   */}
-                  {recommended.length > 0 ? (
-                    <ThemedView style={styles.section}>
-                      <ThemedText type="t4">
-                        {top3 === null ? '추천' : `${VENDOR_CATEGORY_LABEL[top3.category]} 추천`}
-                      </ThemedText>
-                      {recommended.map((item) => (
-                        <Pressable
-                          key={item.vendorId}
-                          accessibilityRole="button"
-                          accessibilityLabel={`${item.name} 자세히 보기`}
-                          onPress={() => router.push(`/search/${item.vendorId}`)}>
-                          <ThemedView type="backgroundElement" style={styles.card}>
-                            {/* 이유가 먼저다. 이름부터 보이면 왜 이 곳인지 묻게 된다. */}
-                            <ThemedText type="t7" themeColor="tint">
-                              {TERMS.recommendReason}
-                            </ThemedText>
-                            <ThemedText type="t7" themeColor="textSecondary">
-                              {item.reasons.map((reason) => TOP3_REASON_LABEL[reason]).join(' · ')}
-                            </ThemedText>
-                            <ThemedText type="t5">{item.name}</ThemedText>
-                            <ThemedText type="t7" themeColor="textAssistive">
-                              {VENDOR_CATEGORY_LABEL[item.category]} · {item.region}
-                            </ThemedText>
-                            <ThemedText type="t7" themeColor="textSecondary">
-                              {item.paidPrice.stage === 'collecting'
-                                ? item.paidPrice.caption
-                                : `${rangeLabel(item.paidPrice.low, item.paidPrice.high)} · ${item.paidPrice.caption}`}
-                            </ThemedText>
-                            {item.confirmedCount > 0 ? (
-                              <ThemedText type="t7" themeColor="textAssistive">
-                                확인된 계약 {item.confirmedCount}건
-                              </ThemedText>
-                            ) : null}
-                          </ThemedView>
-                        </Pressable>
-                      ))}
-                      {top3?.note ? (
-                        <ThemedText type="t7" themeColor="textAssistive">
-                          {top3.note}
-                        </ThemedText>
-                      ) : null}
-                    </ThemedView>
-                  ) : null}
-
-                  {sponsored.length === 0 ? null : (
-                  <ThemedView style={styles.sponsored}>
-                    {sponsored.map((ad) => (
-                      <Pressable
-                        key={ad.vendorId}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${ad.label} ${ad.name} 자세히 보기`}
-                        onPress={() => router.push(`/search/${ad.vendorId}`)}>
-                        <ThemedView
-                          type="backgroundElement"
-                          style={[styles.card, styles.adCard, { borderColor: theme.border }]}>
-                          {/* 유료 노출임을 먼저 밝힌다. 애매한 말을 쓰지 않는다. */}
-                          <ThemedText type="badge" themeColor="textAssistive">
-                            {ad.label}
-                          </ThemedText>
-                          <ThemedText type="smallBold">{ad.name}</ThemedText>
-                          <ThemedText type="small" themeColor="textSecondary">
-                            {VENDOR_CATEGORY_LABEL[ad.category]} · {ad.region}
-                          </ThemedText>
-                        </ThemedView>
-                      </Pressable>
-                    ))}
-                    {/*
-                      여기서 아래가 자연 결과라는 것을 눈으로 갈라 보여준다.
-                      선 하나가 배지보다 잘 읽힌다.
-                     */}
-                    <ThemedView style={[styles.adDivider, { backgroundColor: theme.line }]} />
-                  </ThemedView>
-                  )}
-                </>
-              }
-              ListFooterComponent={
-                loadingMore ? <ActivityIndicator color={theme.tint} style={styles.spinner} /> : null
-              }
-              renderItem={({ item }) => {
-                const chosen = picked.includes(item.id);
-
-                return (
-                  <ThemedView type="backgroundElement" style={styles.card}>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={`${item.name} 자세히 보기`}
-                      onPress={() => router.push(`/search/${item.id}`)}>
-                      <ThemedView type="backgroundElement" style={styles.cardBody}>
-                        <ThemedText type="smallBold">{item.name}</ThemedText>
-                        <ThemedText type="small" themeColor="textSecondary">
-                          {VENDOR_CATEGORY_LABEL[item.category]} · {item.region}
-                        </ThemedText>
-                        {/*
-                         * 실제 결제 구간. 상세와 같은 사다리를 쓴다 — 목록만
-                         * 기준을 낮추면 목록에서 본 숫자가 상세에서 사라진다.
-                         *
-                         * 수집 중인 업체도 숨기지 않는다. "아직 자료가 없다"도
-                         * 사용자가 알아야 할 사실이고, 숨기면 자료가 없는 업체와
-                         * 싼 업체가 같은 얼굴이 된다.
-                         */}
-                        {item.paidPrice.stage === 'collecting' ? (
-                          <ThemedText type="t6" themeColor="textAssistive">
-                            {STILL_COLLECTING}
-                          </ThemedText>
-                        ) : (
-                          <ThemedText type="t5" numeric>
-                            {rangeLabel(item.paidPrice.low, item.paidPrice.high)}
-                          </ThemedText>
-                        )}
-                        <ThemedText type="t7" themeColor="textSecondary">
-                          {item.paidPrice.caption}
-                        </ThemedText>
-                      </ThemedView>
-                    </Pressable>
-
-                    <ThemedView type="backgroundElement" style={styles.pickRow}>
-                      <FilterChip
-                        label={chosen ? '비교에서 빼기' : '비교에 담기'}
-                        selected={chosen}
-                        onPress={() => togglePicked(item)}
-                      />
-                    </ThemedView>
-                  </ThemedView>
-                );
-              }}
-            />
-          )
-        ) : planners === null ? (
-          <ActivityIndicator color={theme.tint} style={styles.spinner} />
-        ) : (
-          <FlatList
-            data={planners}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.list}
-            onEndReached={loadMore}
-            onEndReachedThreshold={0.4}
-            ListHeaderComponent={
-              /*
-               * 검색 결과에 개인 이름이 있는데 왜 있는지, 원하지 않으면 어떻게 하는지
-               * 적어두지 않으면 본인도 다른 사람도 그것을 따져볼 방법이 없다.
-               */
-              withdrawalNotice ? (
-                <ThemedView type="backgroundElement" style={styles.card}>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {withdrawalNotice}
-                  </ThemedText>
-                </ThemedView>
-              ) : null
-            }
-            ListEmptyComponent={
-              <ThemedView type="backgroundElement" style={styles.card}>
-                <ThemedText type="small" themeColor="textSecondary">
-                  {!isServerConfigured
-                    ? '이 빌드는 서버에 붙어 있지 않아 플래너를 찾을 수 없어요.'
-                    : error
-                      ? error
-                      : '찾으시는 플래너가 아직 없어요. 공개된 자료에 실려 있거나 본인이 밝힌 플래너만 검색에 나와요.'}
-                </ThemedText>
-              </ThemedView>
-            }
-            ListFooterComponent={
-              loadingMore ? <ActivityIndicator color={theme.tint} style={styles.spinner} /> : null
-            }
-            renderItem={({ item }) => (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`${item.name} 자세히 보기`}
-                onPress={() => router.push(`/search/planner/${item.id}`)}>
-                <ThemedView type="backgroundElement" style={styles.card}>
-                  <ThemedText type="smallBold">{item.name}</ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {[item.vendor?.name ?? '프리랜서', item.regions.join(' · ')]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {item.comparableQuoteCount === 0
-                      ? '확인된 계약 자료가 아직 없어요'
-                      : `확인된 계약 ${item.comparableQuoteCount}건`}
-                  </ThemedText>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {item.listingBasis}
-                  </ThemedText>
-                </ThemedView>
-              </Pressable>
-            )}
-          />
-        )}
-
-        {/*
-          하단 트레이. 핸드오프 7번 — 문구는 왼쪽, 단추는 오른쪽에 고정.
-
-          두 곳 미만이면 왜 못 누르는지 왼쪽이 말한다. 비활성 단추만 두고 이유를
-          말하지 않으면 사용자는 자기가 뭘 잘못했는지 모른다.
-        */}
+        {/* ── 비교함 트레이 (업체 모드에서만) ── */}
         {filters.mode === 'vendor' ? (
           <ThemedView style={[styles.tray, { borderTopColor: theme.line }]}>
             <ThemedText type="t7" themeColor="textSecondary" style={styles.trayNote}>
@@ -673,7 +816,6 @@ export default function SearchScreen() {
                   ? '한 곳 더 담아주세요'
                   : `${picked.length}곳 담음 · ${MAX_COMPARED_VENDORS}곳까지`}
             </ThemedText>
-
             <ActionButton
               variant="primary"
               label="비교함"
@@ -697,6 +839,24 @@ export default function SearchScreen() {
   );
 }
 
+/** 검색 아이콘 (돋보기). */
+function SearchIcon({ color }: { color: string }) {
+  return (
+    <View accessibilityElementsHidden>
+      {/* SVG를 React Native에서 인라인으로 쓸 수 없으므로 Text 대체 */}
+      <ThemedText type="t6" style={{ color }}>
+        🔍
+      </ThemedText>
+    </View>
+  );
+}
+
+// ─── 레이아웃 상수 ──────────────────────────────────────────────────────────
+
+// 핸드오프: 결과 카드 이미지 높이 168px, 2:1 비율 유지
+const CARD_IMAGE_HEIGHT = 168;
+
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -706,24 +866,253 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.four,
   },
+
+  // ── 헤더 ──
   header: {
-    paddingTop: Spacing.five,
+    paddingHorizontal: Layout.gutter,
+    paddingTop: Spacing.three,
     gap: Spacing.two,
   },
-  input: {
-    borderWidth: 1,
-    borderRadius: Spacing.three,
+  headerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  modeSwitcher: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+
+  // 검색창. 핸드오프: height 52, radius 6, background recessed
+  searchBox: {
+    height: Layout.controlXLarge,
+    borderRadius: Radius.input,
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    /* 입력 칸 글자도 본문이다. 토큰 밖의 크기를 쓰지 않는다. */
-    fontSize: FontSize.t6,
-  },
-  sortRow: {
     gap: Spacing.two,
   },
-  /** 핸드오프 7번: 높이 70, 문구 좌측 · 단추 우측. */
+  searchIcon: {
+    flexShrink: 0,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: FontSize.t6,
+    lineHeight: LineHeight.t6,
+    paddingVertical: 0,
+  },
+  cancelBtn: {
+    paddingLeft: Spacing.two,
+  },
+
+  // 자동완성
+  suggestions: {
+    borderRadius: Radius.medium,
+    borderWidth: 1,
+    overflow: 'hidden',
+    marginTop: -Spacing.one,
+  },
+  suggestionRow: {
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.two,
+    minHeight: Layout.rowMinHeight,
+    justifyContent: 'center',
+    gap: Spacing.one,
+  },
+  viewToggle: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+
+  // ── 홈 ──
+  scroll: {
+    flex: 1,
+  },
+  homeContent: {
+    paddingBottom: Spacing.three,
+  },
+  homeSection: {
+    paddingHorizontal: Layout.gutter,
+    paddingTop: Spacing.three,
+    paddingBottom: Layout.sectionGap,
+    gap: Spacing.three,
+  },
+  sectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  // 카테고리 2열 그리드. 핸드오프: gap 11, height 52, radius 10, bg recessed
+  categoryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 11,
+  },
+  categoryCell: {
+    width: '47.5%',
+    height: Layout.controlXLarge,
+    borderRadius: Radius.medium,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.three,
+  },
+
+  // 최근 검색 칩. 핸드오프: height 36, border, radius 999, padding 0 14
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
+  recentChip: {
+    height: 36,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // 많이 확인된 곳 — 리스트 행
+  trendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    minHeight: Layout.rowMinHeight,
+    paddingVertical: Spacing.two,
+  },
+  rankNo: {
+    width: 18,
+    textAlign: 'center',
+    fontVariant: ['tabular-nums'],
+  },
+  trendBody: {
+    flex: 1,
+    minWidth: 0,
+    gap: Spacing.one,
+  },
+  trendMeta: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: Spacing.two,
+  },
+  divider: {
+    height: 1,
+  },
+  band: {
+    height: Layout.sectionBand,
+  },
+
+  // ── 결과 ──
+  // 필터바. 핸드오프: height 56, 가로 스크롤
+  filterBar: {
+    height: Layout.navBar,
+    flexGrow: 0,
+    flexShrink: 0,
+  },
+  filterBarContent: {
+    alignItems: 'center',
+    paddingHorizontal: Layout.gutter,
+    gap: Spacing.two,
+  },
+
+  // 정렬 행. 핸드오프: height 40, count 좌 · 정렬 우
+  sortRow: {
+    height: Layout.controlMedium,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Layout.gutter,
+    flexShrink: 0,
+  },
+  sortChips: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  resultList: {
+    paddingHorizontal: Layout.gutter,
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.three,
+    gap: Spacing.five,
+  },
+
+  // 결과 카드. 핸드오프: 이미지(full-width × 168) + 이름↔금액 + 건수 + Pick 버튼
+  resultCard: {
+    gap: Spacing.two,
+  },
+  cardImageWrap: {
+    width: '100%',
+    height: CARD_IMAGE_HEIGHT,
+    borderRadius: Radius.medium,
+    overflow: 'hidden',
+  },
+  cardNameRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: Spacing.three,
+  },
+  cardName: {
+    flex: 1,
+    minWidth: 0,
+  },
+  cardPrice: {
+    flexShrink: 0,
+    fontVariant: ['tabular-nums'],
+  },
+  cardMeta: {
+    marginTop: -Spacing.one,
+  },
+  // Pick 버튼. 핸드오프: height 48, radius 6
+  pickBtn: {
+    height: Layout.controlLarge,
+    borderRadius: Radius.input,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: Spacing.one,
+  },
+  pickBtnTextOn: {
+    color: Colors.light.onTint,
+  },
+
+  // 광고 카드
+  adCard: {
+    borderRadius: Radius.medium,
+    padding: Spacing.three,
+    gap: Spacing.one,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  sponsoredBlock: {
+    gap: Spacing.two,
+    marginBottom: Spacing.three,
+  },
+  adDivider: {
+    height: 1,
+  },
+
+  // 결과 없음
+  emptyWrap: {
+    paddingTop: Layout.sectionGap + Spacing.three,
+    gap: Spacing.two,
+  },
+  filterResetBtn: {
+    height: Layout.controlXLarge,
+    borderRadius: Radius.input,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: Spacing.two,
+  },
+  filterResetText: {
+    color: Colors.light.onTint,
+  },
+
+  spinner: {
+    paddingVertical: Spacing.five,
+  },
+
+  // ── 하단 트레이 ──
   tray: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -731,60 +1120,13 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     height: 70,
     borderTopWidth: 1,
+    paddingHorizontal: Layout.gutter,
   },
   trayNote: {
     flex: 1,
   },
-  chips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
-  list: {
-    paddingTop: Spacing.three,
-    paddingBottom: Spacing.three,
-    gap: Spacing.two,
-  },
-  card: {
-    borderRadius: Spacing.three,
-    padding: Spacing.three,
-    gap: Spacing.two,
-  },
-  cardBody: {
-    gap: Spacing.one,
-  },
-  /** 추천 묶음. 스폰서와 붙지 않게 아래에 여백을 둔다 — 둘은 다른 자리다. */
-  section: {
-    gap: Spacing.two,
-    paddingBottom: Spacing.three,
-  },
-  sponsored: {
-    gap: Spacing.two,
-  },
-  /** 자연 결과 카드와 다른 얼굴이어야 한다. 테두리로 가른다. */
-  adCard: {
-    borderWidth: 1,
-  },
-  adDivider: {
-    height: 1,
-    marginTop: Spacing.one,
-  },
-  pickRow: {
-    flexDirection: 'row',
-  },
-  suggestions: {
-    borderRadius: Spacing.three,
-    borderWidth: 1,
-    overflow: 'hidden',
-  },
-  suggestionRow: {
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-  },
-  spinner: {
-    paddingVertical: Spacing.five,
-  },
   footer: {
+    paddingHorizontal: Layout.gutter,
     paddingBottom: Spacing.three,
     gap: Spacing.two,
   },

@@ -87,10 +87,10 @@ export default function VisitNotesScreen() {
   }
 
   function remove(noteId: string) {
-    showAlert('방문노트 빼기', '이 기록을 빼시겠어요? 되돌릴 수 없어요.', [
+    showAlert('삭제할까요?', '이 방문 기록을 삭제하면 되돌릴 수 없어요.', [
       { text: '취소', style: 'cancel' },
       {
-        text: '빼기',
+        text: '삭제',
         style: 'destructive',
         onPress: () =>
           removeVisitNote(id, noteId)
@@ -183,10 +183,15 @@ export default function VisitNotesScreen() {
             <TextInput
               style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundSelected }]}
               value={amount}
-              onChangeText={setAmount}
+              onChangeText={(text) =>
+                setAmount(
+                  text.replace(/[^0-9]/g, '').slice(0, 7).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+                )
+              }
               keyboardType="number-pad"
               placeholder="예: 2800"
               placeholderTextColor={theme.textAssistive}
+              maxLength={9}
               accessibilityLabel="제안금액"
             />
 

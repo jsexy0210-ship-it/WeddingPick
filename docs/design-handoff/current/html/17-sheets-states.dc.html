@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-static.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-scale.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-semantic.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/typography.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/dimension.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/motion.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/base.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/core/core.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/buttons/buttons.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/forms/forms.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/feedback/feedback.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/overlay/overlay.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/display/display.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/styles.css">
+<script src="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/_ds_bundle.js"></script>
+<style>
+body{margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#ff6f61;text-decoration:none}
+a:hover{color:#e2564a}
+@keyframes wpSk{0%{opacity:1}50%{opacity:.45}100%{opacity:1}}
+@keyframes wpSpin{to{transform:rotate(360deg)}}
+</style>
+</helmet>
+
+<section style="{{ rootStyle }}">
+
+<div style="display:flex;flex-direction:column;gap:10px;max-width:1000px">
+  <span style="font-size:14px;line-height:19px;font-weight:700;color:#ff6f61">WeddingPick · WP-SHT / WP-ST</span>
+  <span style="font-size:40px;line-height:52px;font-weight:700;color:#212124">공통 Overlay · 상태</span>
+  <span style="font-size:18px;line-height:26px;color:#393a40;text-wrap:pretty">전 화면에서 같은 컴포넌트를 씁니다. 화면을 새로 열지 않고 시트로 처리해 보던 맥락을 잃지 않게 하고, 상태는 정상 하나만 그리지 않습니다.</span>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:14px">
+  <span style="{{ h2 }}">Bottom Sheet · 16종</span>
+  <div style="{{ grid3 }}">
+    <sc-for list="{{ sheets }}" as="s" hint-placeholder-count="16">
+      <div style="{{ card }}">
+        <div style="{{ cardHead }}">
+          <span style="{{ code }}">{{ s.code }}</span>
+          <span style="{{ cardTitle }}">{{ s.name }}</span>
+        </div>
+        <div style="{{ sheetFrame }}">
+          <span style="{{ grabber }}"></span>
+          <span style="{{ shTitle }}">{{ s.title }}</span>
+          <sc-if value="{{ s.body }}"><span style="{{ shBody }}">{{ s.body }}</span></sc-if>
+          <div style="display:flex;gap:8px;padding-top:2px">
+            <sc-if value="{{ s.ghost }}"><span style="{{ btnGhost }}">{{ s.ghost }}</span></sc-if>
+            <span style="{{ s.ctaStyle }}">{{ s.cta }}</span>
+          </div>
+        </div>
+        <span style="{{ note }}">진입 · {{ s.from }}</span>
+      </div>
+    </sc-for>
+  </div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:14px">
+  <span style="{{ h2 }}">상태 · 14종</span>
+  <div style="{{ grid3 }}">
+
+    <div style="{{ card }}">
+      <div style="{{ cardHead }}"><span style="{{ code }}">WP-ST-007</span><span style="{{ cardTitle }}">로딩 · Skeleton</span></div>
+      <div style="{{ stFrame }}">
+        <sc-for list="{{ skRows }}" as="r" hint-placeholder-count="3">
+          <div style="display:flex;gap:12px;align-items:center;animation:wpSk 1.4s ease-in-out infinite">
+            <span style="{{ skThumb }}"></span>
+            <div style="flex:1;display:flex;flex-direction:column;gap:7px">
+              <span style="{{ r.a }}"></span>
+              <span style="{{ r.b }}"></span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <span style="{{ note }}">목록은 3줄까지만 뼈대를 그립니다. 스피너는 쓰지 않습니다.</span>
+    </div>
+
+    <div style="{{ card }}">
+      <div style="{{ cardHead }}"><span style="{{ code }}">WP-ST-012</span><span style="{{ cardTitle }}">처리 중</span></div>
+      <div style="{{ stFrameCenter }}">
+        <span style="{{ spinner }}"></span>
+        <span style="{{ stTitle }}">확인하고 있어요</span>
+        <span style="{{ stBody }}">보통 10초 안에 끝나요</span>
+      </div>
+      <span style="{{ note }}">사용자를 기다리게 할 때만 스피너를 씁니다. 예상 시간을 함께 적습니다.</span>
+    </div>
+
+    <sc-for list="{{ states }}" as="s" hint-placeholder-count="8">
+      <div style="{{ card }}">
+        <div style="{{ cardHead }}"><span style="{{ code }}">{{ s.code }}</span><span style="{{ cardTitle }}">{{ s.name }}</span></div>
+        <div style="{{ stFrameCenter }}">
+          <span style="{{ stTitle }}">{{ s.title }}</span>
+          <span style="{{ stBody }}">{{ s.body }}</span>
+          <sc-if value="{{ s.cta }}"><span style="{{ btnPrimarySm }}">{{ s.cta }}</span></sc-if>
+        </div>
+        <span style="{{ note }}">{{ s.note }}</span>
+      </div>
+    </sc-for>
+
+    <div style="{{ card }}">
+      <div style="{{ cardHead }}"><span style="{{ code }}">WP-ST-005</span><span style="{{ cardTitle }}">정보 4단계</span></div>
+      <div style="{{ stFrame }}">
+        <sc-for list="{{ tiers }}" as="t" hint-placeholder-count="4">
+          <div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:52px;padding:10px 0">
+              <span style="{{ t.badge }}">{{ t.range }}</span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                <span style="{{ t.valStyle }}">{{ t.value }}</span>
+                <span style="{{ noteSm }}">{{ t.sub }}</span>
+              </div>
+            </div>
+            <div style="{{ hr }}"></div>
+          </div>
+        </sc-for>
+      </div>
+      <span style="{{ note }}">확인된 제보 건수에 따라 금액 표기를 바꿉니다. 빈 칸이나 «—»는 쓰지 않습니다.</span>
+    </div>
+
+    <div style="{{ card }}">
+      <div style="{{ cardHead }}"><span style="{{ code }}">WP-ST-004</span><span style="{{ cardTitle }}">이미지 없음</span></div>
+      <div style="{{ stFrame }}">
+        <div style="display:flex;gap:11px">
+          <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+            <span style="{{ imgOk }}"></span>
+            <span style="{{ noteSm }}">업체 제공</span>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+            <span style="{{ imgDefault }}">웨딩홀 기본</span>
+            <span style="{{ noteSm }}">카테고리 기본</span>
+          </div>
+        </div>
+        <span style="{{ stBody }}">업체 제공 → 사용 허가 → 공식 → 카테고리 기본 순으로 채웁니다.</span>
+      </div>
+      <span style="{{ note }}">«사진 준비 중» 문구나 빈 상자는 노출하지 않습니다.</span>
+    </div>
+
+    <div style="{{ card }}">
+      <div style="{{ cardHead }}"><span style="{{ code }}">WP-ST-013</span><span style="{{ cardTitle }}">긴 콘텐츠</span></div>
+      <div style="{{ stFrame }}">
+        <sc-for list="{{ longRows }}" as="l" hint-placeholder-count="3">
+          <div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:52px;padding:10px 0">
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                <span style="{{ clip1 }}">{{ l.name }}</span>
+                <span style="{{ noteSm }}">{{ l.meta }}</span>
+              </div>
+              <span style="{{ numRight }}">{{ l.price }}</span>
+            </div>
+            <div style="{{ hr }}"></div>
+          </div>
+        </sc-for>
+      </div>
+      <span style="{{ note }}">업체명 1줄 · 금액 1줄 · 건수 1줄. 넘치면 말줄임하고 줄바꿈하지 않습니다.</span>
+    </div>
+
+  </div>
+</div>
+
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1568,&quot;height&quot;:1100}}">
+class Component extends DCLogic {
+  renderVals() {
+    const C = '#ff6f61';
+    const sh = (code, name, title, body, cta, ghost, from, danger) => ({
+      code, name, title, body, cta, ghost, from,
+      ctaStyle: 'flex:' + (ghost ? '1.3' : '1') + ';height:44px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;white-space:nowrap;background:' + (danger ? '#ff4133' : C)
+    });
+    const stt = (code, name, title, body, cta, note) => ({ code, name, title, body, cta, note });
+    const tier = (range, value, sub, kind) => ({
+      range, value, sub,
+      badge: 'padding:3px 8px;border-radius:4px;font-size:13px;line-height:18px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums;'
+        + (kind === 'full' ? 'background:#e8faf6;color:#1aa174;' : kind === 'mid' ? 'background:#f2f3f6;color:#4d5159;' : 'background:#ffe3ba;color:#805217;'),
+      valStyle: 'font-size:16px;line-height:22px;font-weight:700;font-variant-numeric:tabular-nums;color:' + (kind === 'low' ? '#868b94' : '#212124')
+    });
+    const skRow = (w1, w2) => ({
+      a: 'height:14px;border-radius:4px;background:#eaebee;width:' + w1,
+      b: 'height:12px;border-radius:4px;background:#f2f3f6;width:' + w2
+    });
+
+    return {
+      rootStyle: 'display:flex;flex-direction:column;gap:48px;align-items:flex-start;padding:64px;width:1568px;box-sizing:border-box',
+      h2: 'font-size:24px;line-height:32px;font-weight:700;color:#212124',
+      grid3: 'display:grid;grid-template-columns:repeat(3,464px);gap:20px',
+      card: 'background:#fff;border:1px solid #eaebee;border-radius:10px;padding:24px;display:flex;flex-direction:column;gap:14px',
+      cardHead: 'height:26px;display:flex;align-items:center;gap:8px;white-space:nowrap;overflow:hidden',
+      code: 'padding:3px 8px;border-radius:4px;background:#f2f3f6;color:#4d5159;font-size:13px;line-height:18px;font-weight:700;font-variant-numeric:tabular-nums',
+      cardTitle: 'font-size:18px;line-height:24px;font-weight:700;color:#212124',
+      sheetFrame: 'border-radius:10px 10px 0 0;background:#f7f8fa;box-shadow:inset 0 0 0 1px #eaebee;padding:12px 20px 20px;display:flex;flex-direction:column;gap:10px;min-height:168px',
+      stFrame: 'border-radius:10px;background:#fff;box-shadow:inset 0 0 0 1px #eaebee;padding:18px 20px;display:flex;flex-direction:column;gap:10px;min-height:168px;box-sizing:border-box',
+      stFrameCenter: 'border-radius:10px;background:#fff;box-shadow:inset 0 0 0 1px #eaebee;padding:24px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;min-height:168px;box-sizing:border-box',
+      grabber: 'width:36px;height:4px;border-radius:999px;background:#eaebee;align-self:center;margin-bottom:4px',
+      shTitle: 'font-size:20px;line-height:27px;font-weight:700;color:#212124;text-wrap:pretty',
+      shBody: 'font-size:15px;line-height:22px;color:#4d5159;text-wrap:pretty',
+      btnGhost: 'flex:1;height:44px;border-radius:6px;background:#eaebee;color:#393a40;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;white-space:nowrap',
+      btnPrimarySm: 'margin-top:4px;height:40px;padding:0 16px;border-radius:6px;background:' + C + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700',
+      stTitle: 'font-size:18px;line-height:24px;font-weight:700;color:#212124;text-wrap:pretty',
+      stBody: 'font-size:15px;line-height:22px;color:#4d5159;text-wrap:pretty',
+      note: 'font-size:14px;line-height:21px;color:#868b94;text-wrap:pretty',
+      noteSm: 'font-size:13px;line-height:18px;color:#868b94;font-variant-numeric:tabular-nums',
+      hr: 'height:1px;background:#eaebee',
+      skThumb: 'width:44px;height:44px;flex:0 0 44px;border-radius:6px;background:#eaebee',
+      spinner: 'width:32px;height:32px;border-radius:999px;border:3px solid #eaebee;border-top-color:' + C + ';animation:wpSpin 800ms linear infinite',
+      imgOk: 'height:70px;border-radius:6px;background:linear-gradient(135deg,#dcdee3,#eaebee)',
+      imgDefault: 'height:70px;border-radius:6px;background:#f2f3f6;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#adb1ba',
+      clip1: 'display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px;line-height:22px;font-weight:700;color:#212124',
+      numRight: 'font-size:15px;line-height:22px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums;white-space:nowrap',
+
+      sheets: [
+        sh('SHT-001', '지연 로그인', 'Pick한 곳을 저장하려면 로그인이 필요해요', '방금 고른 곳이 그대로 담겨요', '카카오로 계속하기', '', '첫 Pick · 저장 · 제보', false),
+        sh('SHT-002', 'Pick 완료', '후보에 담았어요', '', 'Pick 목록 보기', '닫기', 'Pick 버튼', false),
+        sh('SHT-003', 'Pick 해제', '후보에서 뺄까요?', '준호님 목록에서도 함께 사라져요', '빼기', '그대로 둘게요', 'Pick 해제', true),
+        sh('SHT-004', '비교 후보 선택', '비교할 곳을 골라주세요', '같은 카테고리에서 2~3곳까지', '2곳 비교', '', '비교 버튼', false),
+        sh('SHT-005', '최종 결정', '스튜디오는 강남 A 스튜디오로 결정할까요?', '언제든 바꿀 수 있어요', '최종 결정', '다시 볼게요', '비교 · Pick 목록', false),
+        sh('SHT-006', '예식일 입력', '예식일이 언제인가요?', '남은 기간에 맞춰 순서를 잡아드려요', '확인', '미정이에요', '온보딩 · MY · 홈', false),
+        sh('SHT-007', '지역 선택', '어디에서 하시나요?', '그 지역의 확인된 제보로 맞춰드려요', '확인', '', '온보딩 · 필터', false),
+        sh('SHT-008', '예산 입력', '예산은 어느 정도 생각하세요?', '나중에 바꿀 수 있어요', '확인', '모르겠어요', '온보딩 · MY', false),
+        sh('SHT-009', '취향 이미지', '마음에 드는 분위기를 골라주세요', '최소 한 장이면 돼요', '2개 고르고 시작', '건너뛰기', '온보딩 · MY', false),
+        sh('SHT-010', '배우자 초대', '준호님을 초대할까요?', '코드는 24시간 동안 쓸 수 있어요', '링크 보내기', '코드 복사', '배우자 연결 관리', false),
+        sh('SHT-011', '공유', '어떻게 보낼까요?', '', '카카오로 보내기', '링크 복사', '업체상세 · 비교', false),
+        sh('SHT-012', '캘린더 등록', '어느 캘린더에 넣을까요?', 'Google · Apple · Outlook', 'Google', '', '일정 · 박람회', false),
+        sh('SHT-013', '신고', '어떤 점이 문제인가요?', '접수되면 자동으로 검토해요', '신고하기', '취소', '후기 · 업체', true),
+        sh('SHT-014', '확인된 제보란', '확인된 제보가 뭔가요?', '실제로 낸 금액을 자료로 확인해 모은 정보예요. 웨딩픽은 비싸다 싸다를 판정하지 않아요.', '알겠어요', '', '금액 옆 ⓘ', false),
+        sh('SHT-015', '기준금액이란', '기준금액이 뭔가요?', '확인된 제보의 중앙값이에요', '알겠어요', '', '기준금액 옆 ⓘ', false),
+        sh('SHT-016', '권한 요청', '사진 접근을 허용해주세요', '올려주신 자료에서 금액과 업체만 읽고, 원본은 24시간 안에 지워요', '허용하기', '나중에', '제보 · 일정 · 위치', false)
+      ],
+
+      skRows: [skRow('72%', '48%'), skRow('58%', '40%'), skRow('66%', '44%')],
+
+      states: [
+        stt('WP-ST-008', 'Empty · 목록', '아직 Pick한 곳이 없어요', '마음에 드는 곳을 담아두면 여기서 비교할 수 있어요', '웨딩홀 둘러보기', '빈 상태에는 다음 행동 버튼을 하나만 둡니다.'),
+        stt('WP-ST-009', '오류', '잠시 문제가 생겼어요', '다시 시도해도 안 되면 알려주세요', '다시 시도', '무엇이 잘못됐는지 대신 무엇을 하면 되는지 적습니다.'),
+        stt('WP-ST-010', '네트워크 오류', '연결이 불안정해요', '마지막으로 확인한 내용을 보여드리고 있어요', '다시 시도', '오프라인에서도 마지막 정보를 지웁니다 대신 남깁니다.'),
+        stt('WP-ST-011', '권한 거부', '사진 접근이 꺼져 있어요', '설정에서 켜면 사진으로 바로 인증할 수 있어요', '설정 열기', '거부해도 직접 입력 경로를 남깁니다.'),
+        stt('WP-ST-014', '점검 중', '잠시 점검 중이에요', '오전 3시부터 5시까지예요. 끝나면 알려드릴게요.', '알림 받기', '끝나는 시각을 반드시 적습니다.'),
+        stt('WP-ST-001', '비회원', '로그인하면 저장돼요', '확인된 제보는 로그인 없이도 볼 수 있어요', '3초 만에 시작', '비회원에게 개인화 영역을 보여주지 않습니다.'),
+        stt('WP-ST-002', '배우자 미연결', '혼자 준비 중이에요', '둘이 같이 보면 결정이 빨라져요', '배우자 초대', '연결을 강요하지 않고 혼자서도 완결되게 둡니다.'),
+        stt('WP-ST-006', '혜택 없음', '지금은 받을 수 있는 혜택이 없어요', '새로 열리면 알려드릴게요', '', '없는 혜택을 억지로 만들어 채우지 않습니다.')
+      ],
+
+      tiers: [
+        tier('0~2건', '수집 중', '금액 구간을 보여주지 않아요', 'low'),
+        tier('3~4건', '152~184만원', '정보가 적다는 안내를 함께 적어요', 'mid'),
+        tier('5~9건', '152~184만원', '구간만 보여줘요', 'mid'),
+        tier('10건 이상', '152~184만원 · 기준금액 168만원', '조건별 분포까지 보여줘요', 'full')
+      ],
+
+      longRows: [
+        { name: '강남 A 웨딩홀 프리미엄관', meta: '확인된 제보 21건', price: '1,480~1,820만원' },
+        { name: '청담 D 스튜디오 본점', meta: '아직 정보가 적어요 · 3건', price: '수집 중' },
+        { name: '서초 B 웨딩홀', meta: '확인된 제보 9건', price: '1,320만원' }
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

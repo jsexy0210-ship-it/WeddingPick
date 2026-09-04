@@ -33,7 +33,7 @@ export function FilterChip({ label, selected, onPress, role = 'checkbox' }: Filt
         ]}>
         <ThemedText
           type="small"
-          style={selected ? styles.selectedLabel : undefined}
+          style={selected ? { color: theme.onTint } : undefined}
           themeColor={selected ? undefined : 'textSecondary'}>
           {label}
         </ThemedText>
@@ -51,8 +51,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.one,
-  },
-  selectedLabel: {
-    color: '#ffffff',
   },
 });

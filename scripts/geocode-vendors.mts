@@ -22,6 +22,9 @@
  */
 import { Client } from 'pg';
 
+// 통합정책 N-9 (2026-09-04): 카카오 응답 저장 권한 확인 전 좌표 백필 중지.
+throw new Error('카카오 로컬 응답 DB 저장은 중지되었습니다. 통합정책 N-9와 docs/wedding-data-source-risks.md 확인');
+
 const DATABASE_URL = process.env.DATABASE_URL;
 const KAKAO_REST_API_KEY = process.env.KAKAO_REST_API_KEY;
 

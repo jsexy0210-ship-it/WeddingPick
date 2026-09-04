@@ -189,7 +189,7 @@ export default function SettingsScreen() {
               value={settings.spouseLinked ? '연결됨' : '연결하지 않음'}
               onPress={() => router.push('/wedding/partner')}
             />
-            <ActionButton label="회원탈퇴" onPress={() => router.push('/my/withdrawal')} />
+            <ActionButton label="회원탈퇴" onPress={() => router.push('/my/withdrawal' as never)} />
           </Section>
 
           <Section title="내 활동">

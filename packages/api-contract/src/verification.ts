@@ -42,11 +42,13 @@ export const verificationRequestSchema = z.object({
   requestId: idSchema,
   quoteId: idSchema,
   targetLevel: verificationLevelSchema,
-  status: z.enum(['received', 'in_review', 'approved', 'rejected']),
+  status: z.enum(['received', 'in_review', 'needs_supplement', 'approved', 'rejected']),
   receivedAt: timestampSchema,
   decidedAt: timestampSchema.nullable(),
   /** 반려 사유. 승인이면 없다. */
   rejectionReason: z.string().optional(),
+  /** 보완 요청 사유. needs_supplement 상태일 때만 있다. */
+  supplementReason: z.string().optional(),
 });
 
 export type CreateVerificationRequest = z.infer<typeof createVerificationRequestSchema>;

@@ -1,7 +1,7 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs, useSegments } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { WeddingMark, useTheme } from '@weddingpick/ui';
+import { ProductSymbol, useTheme } from '@weddingpick/ui';
 
 /**
  * Bottom Navigation: 홈 | 검색 | 촬영 | 내 웨딩 | MY
@@ -9,6 +9,7 @@ import { WeddingMark, useTheme } from '@weddingpick/ui';
  */
 export default function TabLayout() {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   /*
    * 카메라는 전체 화면을 써야 문서를 화면에 맞추기 쉽다.
    *
@@ -23,17 +24,22 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: theme.tint,
-        tabBarInactiveTintColor: theme.tintInactive,
+        tabBarActiveTintColor: theme.text,
+        tabBarInactiveTintColor: theme.textAssistive,
         tabBarStyle: onCamera
           ? { display: 'none' }
-          : { backgroundColor: theme.background, borderTopColor: theme.border },
+          : {
+              backgroundColor: theme.background,
+              borderTopColor: theme.border,
+              paddingBottom: insets.bottom,
+              height: 60 + insets.bottom,
+            },
       }}>
       <Tabs.Screen
         name="index"
         options={{
           title: '홈',
-          tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => <ProductSymbol name="house" color={color} size={size} />,
         }}
       />
       <Tabs.Screen
@@ -41,7 +47,7 @@ export default function TabLayout() {
         options={{
           title: '검색',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="search-outline" color={color} size={size} />
+            <ProductSymbol name="magnifier" color={color} size={size} />
           ),
         }}
       />
@@ -55,11 +61,11 @@ export default function TabLayout() {
         name="pick"
         options={{
           title: 'Pick',
-          tabBarIcon: ({ color, size }) => <WeddingMark size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => <ProductSymbol name="pickMark" size={size} color={color} />,
         }}
       />
       {/*
-        제보는 루트에서 뺀다(v3.2 §1). 화면은 남아 있고 MY와 업체 상세, 데이터가
+        제보는 루트에서 뺀다(v3.2 §1). 화면은 남아 있고 MY와 업체 상세, 건수가
         모자란 자리에서 들어간다 — 맥락 없이 탭으로 세워두면 무엇을 제보하라는
         것인지 알 수 없다.
        */}
@@ -69,7 +75,7 @@ export default function TabLayout() {
         options={{
           title: '우리웨딩',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="people-outline" color={color} size={size} />
+            <ProductSymbol name="twoPeople" color={color} size={size} />
           ),
         }}
       />
@@ -78,7 +84,7 @@ export default function TabLayout() {
         options={{
           title: 'MY',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" color={color} size={size} />
+            <ProductSymbol name="person" color={color} size={size} />
           ),
         }}
       />
