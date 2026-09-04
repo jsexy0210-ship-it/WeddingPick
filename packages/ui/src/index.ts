@@ -26,6 +26,7 @@ export { ProgressBar, type ProgressBarProps } from './progress-bar';
 export { VerificationBadge, type VerificationBadgeProps } from './verification-badge';
 export { LoadingView, ErrorView, EmptyView, NetworkErrorView, PermissionDeniedView, ProcessingView, MaintenanceView } from './status-view';
 export type { LoadingViewProps, ErrorViewProps, EmptyViewProps, NetworkErrorViewProps, PermissionDeniedViewProps, PermissionKind, ProcessingViewProps, MaintenanceViewProps } from './status-view';
+export { showAlert, type ShowAlertButton } from './show-alert';
 export { ListSkeleton, type ListSkeletonProps } from './list-skeleton';
 export { PickStatusBadge, type PickStatusBadgeProps, type PickStatus } from './pick-status-badge';
 export { VendorImage, type VendorImageProps, type VendorCategory } from './vendor-image';
@@ -45,4 +46,5 @@ export {
 } from './theme';
 export { FontSize, LineHeight, type FontSizeToken } from './typography';
 export { useTheme } from './use-theme';
+export { readWebInteractionState, type WebInteractionState } from './web-interaction';
 export { VERIFICATION_LEVEL_ACCENT } from './verification-levels';

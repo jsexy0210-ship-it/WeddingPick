@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   section: { gap: Spacing.one },
   card: { borderRadius: Radius.medium, padding: Spacing.four, gap: Spacing.two },
   input: {
-    height: Layout.rowMinHeight,
+    height: Layout.controlXLarge,
     borderRadius: Radius.input,
     paddingHorizontal: Spacing.three,
     fontSize: FontSize.t6,

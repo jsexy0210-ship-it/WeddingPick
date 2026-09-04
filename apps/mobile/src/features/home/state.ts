@@ -13,15 +13,17 @@ import { MIN_COMPARABLE, type VendorCategory } from '@weddingpick/domain';
  *
  * | 시안 | state | comparable |
  * | --- | --- | --- |
- * | 0 비회원 · 정보 없음 | `guest` | — |
  * | 1 취향도 후보도 없음 | `taste` | — |
  * | 2 취향은 있고 후보가 없음 | `empty` | true |
  * | 3 후보는 있고 확인된 정보가 없음 | `picking` | **false** |
  * | 4 Pick 중 · 기본 | `picking` | true |
  * | 5 결정 이후 | `decided` | true |
+ *
+ * 2026-09-04 정책 변경(비회원 진입 삭제)으로 시안 0(비회원 홈)은 없앴다 —
+ * 로그인 없이는 애초에 이 화면에 올 수 없다.
  */
 
-export const HOME_STATES = ['guest', 'taste', 'empty', 'picking', 'decided'] as const;
+export const HOME_STATES = ['taste', 'empty', 'picking', 'decided'] as const;
 
 export type HomeState = (typeof HOME_STATES)[number];
 
@@ -61,9 +63,11 @@ export function comparableCount(vendors: readonly VendorSummary[]): number {
 /**
  * 지금 홈이 무엇을 보여줘야 하는가.
  *
- * **로그인 여부가 가장 먼저다.** 이름도 예식일도 모르는 사람에게 D-day와 현황판을
- * 띄우면 앱이 갑자기 점쟁이가 된다 — 비회원에게는 조건 없이 보여줄 수 있는 확인된
- * 정보가 본문이고, 개인화는 하나도 꺼내지 않는다.
+ * `me`는 로그인 게이트(`_layout.tsx`)를 통과한 사람만 이 화면에 온다는 전제로,
+ * 항상 채워져 있어야 정상이다. 프로필을 못 불러온 순간(네트워크 오류 등)에는
+ * `me`가 잠깐 null일 수 있는데, 그때도 화면을 비우지 않고 아직 아무것도 담지
+ * 않은 사람과 같은 모양(`taste`)으로 보여준다 — 오류를 비회원인 척 꾸미지
+ * 않되, 화면이 완전히 멈추지도 않게 한다.
  */
 export function homeView(input: {
   me: CurrentUser | null;
@@ -73,10 +77,6 @@ export function homeView(input: {
   /** 취향을 고른 적이 있는가. */
   tasteChosen: boolean;
 }): HomeView {
-  if (input.me === null) {
-    return { state: 'guest', board: 'folded', focus: null, comparable: false, showsDecided: false };
-  }
-
   const comparable = comparableCount(input.recommended) >= MIN_COMPARABLE;
   const focus = input.candidates?.nextCategory ?? null;
   const picked = input.candidates?.total ?? 0;

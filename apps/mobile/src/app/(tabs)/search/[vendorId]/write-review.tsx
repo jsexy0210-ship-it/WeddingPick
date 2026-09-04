@@ -17,6 +17,7 @@ import {
   FilterChip,
   LoadingView,
   MaxContentWidth,
+  Radius,
   RatingPicker,
   Spacing,
   ThemedText,
@@ -376,7 +377,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   card: {
-    borderRadius: Spacing.three,
+    borderRadius: Radius.medium,
     padding: Spacing.three,
     gap: Spacing.one,
   },
@@ -393,7 +394,7 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderRadius: Spacing.two,
+    borderRadius: Radius.input,
     padding: Spacing.three,
   },
   body: {

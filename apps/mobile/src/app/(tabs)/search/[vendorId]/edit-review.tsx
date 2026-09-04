@@ -7,6 +7,7 @@ import { updateReview } from '@/api/client';
 import {
   ActionButton,
   MaxContentWidth,
+  Radius,
   RatingPicker,
   Spacing,
   ThemedText,
@@ -173,7 +174,7 @@ const styles = StyleSheet.create({
     gap: Spacing.four,
   },
   section: { gap: Spacing.two },
-  card: { borderRadius: Spacing.three, padding: Spacing.three, gap: Spacing.one },
-  input: { borderWidth: 1, borderRadius: Spacing.two, padding: Spacing.three },
+  card: { borderRadius: Radius.medium, padding: Spacing.three, gap: Spacing.one },
+  input: { borderWidth: 1, borderRadius: Radius.input, padding: Spacing.three },
   bodyInput: { minHeight: 140, textAlignVertical: 'top' },
 });

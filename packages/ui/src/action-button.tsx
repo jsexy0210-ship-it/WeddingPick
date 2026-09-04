@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, type PressableProps } from 'react-native';
 import { ThemedText } from './themed-text';
 import { Layout, Radius, Spacing } from './theme';
 import { useTheme } from './use-theme';
+import { readWebInteractionState } from './web-interaction';
 
 export type ActionButtonProps = Omit<PressableProps, 'children' | 'style'> & {
   label: string;
@@ -49,20 +50,23 @@ export function ActionButton({
       accessibilityRole="button"
       accessibilityState={{ disabled: disabled === true }}
       disabled={disabled}
-      style={({ pressed }) => [
-        styles.button,
-        size === 'auto' ? null : [styles.fixed, { height: HEIGHT[size] }],
-        {
-          backgroundColor: isPrimary
-            ? theme.tint
-            : isGhost
-              ? theme.background
-              : theme.backgroundElement,
-          borderWidth: isGhost ? 1 : 0,
-          borderColor: theme.track,
-          opacity: disabled === true ? 0.4 : pressed ? 0.8 : 1,
-        },
-      ]}
+      style={(state) => {
+        const { pressed, hovered, focused } = readWebInteractionState(state);
+        return [
+          styles.button,
+          size === 'auto' ? null : [styles.fixed, { height: HEIGHT[size] }],
+          {
+            backgroundColor: isPrimary
+              ? theme.tint
+              : isGhost
+                ? theme.background
+                : theme.backgroundElement,
+            borderWidth: isGhost || focused ? 1 : 0,
+            borderColor: focused ? theme.tint : theme.track,
+            opacity: disabled === true ? 0.4 : pressed ? 0.8 : hovered || focused ? 0.9 : 1,
+          },
+        ];
+      }}
       {...rest}>
       <ThemedText type="t5" numberOfLines={1} themeColor={isPrimary ? 'onTint' : 'text'}>
         {label}

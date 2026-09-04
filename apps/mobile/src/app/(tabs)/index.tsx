@@ -3,14 +3,7 @@ import type {
   CurrentUser,
   VendorSummary,
 } from '@weddingpick/api-contract';
-import {
-  hasUnread,
-  lifecycle,
-  MANY_CONFIRMED,
-  TERMS,
-  VENDOR_CATEGORY_LABEL,
-  type VendorCategory,
-} from '@weddingpick/domain';
+import { hasUnread, lifecycle, TERMS, VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -47,6 +40,8 @@ import { TastePicker } from '@/features/home/taste-picker';
 import { TodaysPick } from '@/features/home/todays-pick';
 import { VendorList } from '@/features/home/vendor-list';
 import { WeddingContent } from '@/features/home/wedding-content';
+import { isWebShellScreen } from '@/features/webshell/config';
+import { WebShellView } from '@/features/webshell/WebShellView';
 
 /**
  * 홈. 디자인 확정본 `웨딩픽 홈 C-1 상태`.
@@ -67,7 +62,7 @@ type HomeData = {
   candidates: CandidateListResponse | null;
   /** 오늘의 Pick 자리에 올릴 세 곳. 지목받은 업종에서 확인된 정보가 많은 순. */
   recommended: readonly VendorSummary[];
-  /** 많이 확인된 곳. 비회원 홈의 본문이기도 하다. */
+  /** 많이 확인된 곳. */
   popular: readonly VendorSummary[];
   content: readonly WeddingContentItem[];
   /** 안 읽은 알림 수. 벨의 점이 이 값을 본다. */
@@ -93,18 +88,20 @@ export default function HomeScreen() {
   const [taste, setTaste] = useState<readonly Taste[]>([]);
   /*
    * 한 번이라도 받아왔는가. **자료가 없는 것과 아직 모르는 것은 다르다** — 앞은
-   * 비회원 홈이고 뒤는 스켈레톤이다. 하나로 뭉치면 로그인 안 한 사람에게 영원히
-   * 스켈레톤이 돈다.
+   * '취향 고르기' 상태고 뒤는 스켈레톤이다. 하나로 뭉치면 프로필을 못 불러온
+   * 사람에게 영원히 스켈레톤이 돈다.
    */
-  const [settled, setSettled] = useState(false);
+  // 하이브리드 웹뷰 쉘 POC일 때는 애초에 스켈레톤을 거칠 일이 없어 settled로 시작한다.
+  const [settled, setSettled] = useState(() => isWebShellScreen('home'));
 
   const load = useCallback(() => {
+    // 웹뷰 쉘로 대체할 때는 이 밑 자료를 안 쓴다 — 훅 순서를 지키려고 호출
+    // 자체는 남기고, 몸통만 건너뛴다.
+    if (isWebShellScreen('home')) return;
+
     void loadTaste().then(setTaste);
 
-    /*
-     * 하나가 실패해도 나머지는 보여준다. 로그인 안 한 사람은 개인화 자료가 전부
-     * 실패하는데, 그때도 홈은 떠야 한다 — 비회원이 보는 화면이기도 하다.
-     */
+    /* 하나가 실패해도 나머지는 보여준다 — 개인화 자료 하나가 실패했다고 화면 전체를 비우지 않는다. */
     void (async () => {
       const [popular, content] = await Promise.all([
         searchVendors({ sort: 'data' })
@@ -152,6 +149,12 @@ export default function HomeScreen() {
 
   useEffect(load, [load]);
 
+  // 하이브리드 웹뷰 쉘 POC. `EXPO_PUBLIC_WEBSHELL_SCREENS`에 "home"이 없으면
+  // (기본값) 이 분기는 타지 않고 기존 네이티브 화면 그대로다.
+  if (isWebShellScreen('home')) {
+    return <WebShellView path="/" />;
+  }
+
   // 골격이 같은 스켈레톤을 덮는다. 자료가 왔을 때 화면이 튀지 않게 하려는 것이다.
   if (!settled) {
     return <HomeSkeleton />;
@@ -174,107 +177,23 @@ export default function HomeScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <Header
-          guest={view.state === 'guest'}
-          unread={data.unread}
-          onPressBell={() => router.push('/my/notifications')}
-          onPressSignIn={() => router.push('/login')}
-        />
+        <Header unread={data.unread} onPressBell={() => router.push('/my/notifications')} />
 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          {view.state === 'guest' ? (
-            <GuestHome popular={data.popular} content={data.content} />
-          ) : (
-            <MemberHome
-              me={data.me}
-              candidates={data.candidates}
-              recommended={data.recommended}
-              popular={data.popular}
-              content={data.content}
-              view={view}
-              taste={taste}
-              onToggleTaste={onToggleTaste}
-            />
-          )}
+          <MemberHome
+            me={data.me}
+            candidates={data.candidates}
+            recommended={data.recommended}
+            popular={data.popular}
+            content={data.content}
+            view={view}
+            taste={taste}
+            onToggleTaste={onToggleTaste}
+          />
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
   );
-}
-
-/* ------------------------------------------------------------------ 비회원 */
-
-/**
- * 비회원 홈.
- *
- * **개인화를 하나도 꺼내지 않는다.** 이름·D-day·진행률·현황판·추천 이유를 모두
- * 숨긴다 — 아는 것이 없는데 아는 척하면 앱이 갑자기 점쟁이가 된다. 대신 조건 없이
- * 보여줄 수 있는 확인된 정보가 본문이 되고, 로그인은 막지 않고 위에서 권한다.
- */
-function GuestHome({
-  popular,
-  content,
-}: {
-  popular: readonly VendorSummary[];
-  content: readonly WeddingContentItem[];
-}) {
-  const theme = useTheme();
-
-  return (
-    <>
-      <ThemedView style={styles.hero}>
-        <ThemedText type="t1">결혼 준비,{'\n'}어디서부터 볼까요?</ThemedText>
-        <ThemedText type="t6" themeColor="textSecondary" numberOfLines={1}>
-          {TERMS.verifiedData}부터 비교해보세요
-        </ThemedText>
-      </ThemedView>
-
-      {/*
-        업종 입구. 시안에는 칸마다 «확인된 정보 N건»이 붙어 있지만 그 숫자를 낼
-        API가 아직 없어 적지 않았다 — 근거 없는 숫자를 화면에 올리지 않는다.
-      */}
-      <ThemedView style={styles.block}>
-        <ThemedView style={styles.grid}>
-          {CATEGORY_ENTRIES.map((category) => (
-            <Pressable
-              key={category}
-              accessibilityRole="button"
-              onPress={() => router.push(`/search?category=${category}`)}
-              style={({ pressed }) => [
-                styles.entry,
-                { backgroundColor: theme.backgroundElement },
-                pressed && styles.pressed,
-              ]}>
-              <ThemedText type="t5" numberOfLines={1}>{VENDOR_CATEGORY_LABEL[category]}</ThemedText>
-              <ThemedText type="t7" themeColor="textAssistive" numberOfLines={1}>
-                {categoryCountLabel(category, popular)}
-              </ThemedText>
-            </Pressable>
-          ))}
-        </ThemedView>
-      </ThemedView>
-
-      <Section title={MANY_CONFIRMED}>
-        <VendorList vendors={popular} onPressVendor={openVendor} />
-      </Section>
-
-      <Band />
-
-      <ContentSection title="웨딩 정보" items={content} />
-    </>
-  );
-}
-
-/** 비회원에게 여는 업종. 초기에 실제로 자료가 모이는 넷이다. */
-const CATEGORY_ENTRIES: readonly VendorCategory[] = ['hall', 'sdm', 'snap', 'planner_agency'];
-
-
-function categoryCountLabel(category: VendorCategory, vendors: readonly VendorSummary[]) {
-  const count = vendors
-    .filter((vendor) => vendor.category === category)
-    .reduce((total, vendor) => total + vendor.paidPrice.count, 0);
-
-  return count > 0 ? `${TERMS.verifiedData} ${count}건` : `${TERMS.verifiedData} 확인하기`;
 }
 
 /* -------------------------------------------------------------------- 회원 */
@@ -452,51 +371,24 @@ function MemberHome({
 
 /* ---------------------------------------------------------------- 공통 조각 */
 
-function Header({
-  guest,
-  unread,
-  onPressBell,
-  onPressSignIn,
-}: {
-  guest: boolean;
-  unread: number;
-  onPressBell: () => void;
-  onPressSignIn: () => void;
-}) {
+function Header({ unread, onPressBell }: { unread: number; onPressBell: () => void }) {
   const theme = useTheme();
 
   return (
     <ThemedView style={styles.header}>
       <ThemedText type="t4">웨딩픽</ThemedText>
 
-      {guest ? (
-        <Pressable
-          accessibilityRole="button"
-          onPress={onPressSignIn}
-          style={({ pressed }) => [
-            styles.signIn,
-            { backgroundColor: theme.backgroundSelected },
-            pressed && styles.pressed,
-          ]}>
-          <ThemedText type="t7" themeColor="textSecondary" style={styles.signInLabel}>
-            로그인
-          </ThemedText>
-        </Pressable>
-      ) : (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={
-            hasUnread({ unread, total: unread }) ? `알림 ${unread}건` : '알림'
-          }
-          onPress={onPressBell}
-          style={styles.bell}>
-          <ThemedText type="t4">🔔</ThemedText>
-          {/* 개수를 적지 않는다. 세는 것이 목적이 아니다. */}
-          {hasUnread({ unread, total: unread }) ? (
-            <View style={[styles.bellDot, { backgroundColor: theme.negative }]} />
-          ) : null}
-        </Pressable>
-      )}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={hasUnread({ unread, total: unread }) ? `알림 ${unread}건` : '알림'}
+        onPress={onPressBell}
+        style={styles.bell}>
+        <ThemedText type="t4">🔔</ThemedText>
+        {/* 개수를 적지 않는다. 세는 것이 목적이 아니다. */}
+        {hasUnread({ unread, total: unread }) ? (
+          <View style={[styles.bellDot, { backgroundColor: theme.negative }]} />
+        ) : null}
+      </Pressable>
     </ThemedView>
   );
 }
@@ -618,14 +510,6 @@ const styles = StyleSheet.create({
     paddingLeft: Layout.gutter,
     paddingRight: 20,
   },
-  signIn: {
-    height: 34,
-    paddingHorizontal: 14,
-    borderRadius: Radius.small,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  signInLabel: { fontWeight: 700 },
   bell: {
     minWidth: Layout.touchTarget,
     minHeight: Layout.touchTarget,
@@ -661,18 +545,6 @@ const styles = StyleSheet.create({
   section: { gap: Layout.sectionHeadGap },
   band: { height: Layout.sectionBand, marginBottom: Layout.sectionGap },
 
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 11 },
-  entry: {
-    flexBasis: '48%',
-    flexGrow: 1,
-    minWidth: 0,
-    minHeight: Layout.rowMinHeight,
-    borderRadius: Radius.medium,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.three,
-    justifyContent: 'center',
-    gap: 3,
-  },
   pressed: { opacity: 0.8 },
 
   note: { borderRadius: Radius.medium, padding: 20, gap: Spacing.two },

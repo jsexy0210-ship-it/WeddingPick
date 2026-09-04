@@ -20,6 +20,9 @@ export type Storage = {
   /** 워커가 문서를 읽을 때. */
   download(storageKey: string): Promise<Buffer>;
 
+  /** 승인된 공개 이미지 조회 URL. 서명 유효기간 동안만 접근 가능. */
+  getPublicUrl(storageKey: string, expiresInSeconds: number): Promise<string>;
+
   /** 자동삭제가 지우는 대상. 서비스정책서 4번. */
   delete(storageKey: string): Promise<void>;
 };

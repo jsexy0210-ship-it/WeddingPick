@@ -5,6 +5,7 @@ import { ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
+import { getCurrentUser } from '@/api/client';
 import { completeAfterSignIn } from '@/features/auth/after-sign-in';
 import {
   PROVIDER_LABEL,
@@ -17,14 +18,16 @@ import {
 const REASONS = [
   '분석한 자료를 기기를 바꿔도 다시 볼 수 있어요.',
   '자료 확인을 신청하고 진행 상황을 받아볼 수 있어요.',
-  '촬영과 기기 저장은 로그인 없이도 돼요.',
+  '배우자와 함께 준비 상황을 나눠볼 수 있어요.',
 ];
 
 /**
  * A-02 로그인/가입.
  *
- * 이 앱은 로그인을 앞세우지 않는다. 촬영과 기기 저장은 계정 없이 되고, 서버가 필요한
- * 순간에만 여기로 온다.
+ * 2026-09-04 정책 변경 — 비회원 진입 삭제. 스플래시(온보딩 소개) 다음은
+ * 이 화면이고, 로그인해야만 앱으로 넘어간다. `_layout.tsx`의 진입 로직이
+ * 비로그인 상태면 항상 이 화면으로 보낸다 — 뒤에 아무것도 없으니 "나중에
+ * 하기"로 건너뛸 수 없다.
  */
 export default function LoginScreen() {
   const theme = useTheme();
@@ -56,7 +59,13 @@ export default function LoginScreen() {
         return;
       }
 
-      router.back();
+      /*
+       * 방금 만든 웨딩(완료 처리)이거나, 이전에 이미 만들어둔 계정으로 다시
+       * 로그인한 경우 둘 다 있다 — 서버에 다시 물어봐서 정한다.
+       */
+      const me = await getCurrentUser().catch(() => null);
+
+      router.replace(me?.setupComplete || after.savedWedding ? '/(tabs)' : '/setup');
     } catch (caught) {
       setError((caught as Error).message);
     } finally {
@@ -90,7 +99,7 @@ export default function LoginScreen() {
           ) : providers.length === 0 ? (
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="small" themeColor="textSecondary">
-                지금은 로그인할 수 없어요. 촬영과 기기 저장은 그대로 쓰실 수 있어요.
+                지금은 로그인할 수 없어요. 잠시 후 다시 시도해주세요.
               </ThemedText>
             </ThemedView>
           ) : (
@@ -123,8 +132,6 @@ export default function LoginScreen() {
               </ThemedText>
             </ThemedView>
           ) : null}
-
-          <ActionButton label="나중에 하기" onPress={() => router.back()} />
         </ScrollView>
       </SafeAreaView>
     </ThemedView>

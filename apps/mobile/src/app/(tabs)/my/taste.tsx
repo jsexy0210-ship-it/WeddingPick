@@ -1,8 +1,9 @@
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { confirmAlert } from '@/components/confirm-alert';
 import {
   hasTaste,
   loadTaste,
@@ -46,7 +47,7 @@ export default function TasteScreen() {
     setSaving(true);
     try {
       await saveTaste(chosen);
-      Alert.alert(
+      confirmAlert(
         '취향 저장 완료',
         hasTaste(chosen)
           ? '선택하신 취향으로 홈 추천이 새로 만들어져요.'
@@ -54,7 +55,7 @@ export default function TasteScreen() {
         [{ text: '확인', onPress: () => router.back() }]
       );
     } catch {
-      Alert.alert('저장 실패', '잠시 후 다시 시도해주세요.');
+      confirmAlert('저장 실패', '잠시 후 다시 시도해주세요.');
     } finally {
       setSaving(false);
     }
