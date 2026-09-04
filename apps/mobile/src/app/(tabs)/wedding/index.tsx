@@ -55,7 +55,7 @@ const EMPTY: WeddingData = {
  * 커플 연결 상태에 따라 세 화면이 된다.
  * - 비로그인: 로그인 CTA
  * - 미연결: 배우자 초대 CTA
- * - 초대 대기: 수락 대기 안내
+ * - 초대 대기: 수낙 대기 안내
  * - 연결됨: D-day 히어로 · 일정 · 지출 · 준비현황
  *
  * 비회원에게 개인화 영역(이름 · D-day · 진행률)을 보이지 않는다.
@@ -66,7 +66,15 @@ export default function WeddingScreen() {
   const [data, setData] = useState<WeddingData>(EMPTY);
   const [loading, setLoading] = useState(true);
 
+  const isSignedIn = state.status === 'signedIn';
+
   const load = useCallback(() => {
+    if (!isSignedIn) {
+      setData(EMPTY);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     void getCurrentUser()
       .then(async (me) => {
@@ -99,7 +107,7 @@ export default function WeddingScreen() {
         setData(EMPTY);
         setLoading(false);
       });
-  }, []);
+  }, [isSignedIn]);
 
   useEffect(load, [load]);
 
@@ -120,7 +128,7 @@ export default function WeddingScreen() {
     .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())
     .slice(0, 2);
 
-  // 지출 버킷: 금액 있는 것만 최대 3개
+  // 지출 버3: 금액 있는 것만 최대 3개
   const topBuckets = (data.expenses?.buckets ?? [])
     .filter((b) => b.amount > 0)
     .slice(0, 3);
@@ -170,7 +178,7 @@ export default function WeddingScreen() {
           {coupleStatus === 'guest' && (
             <View style={styles.emptyBlock}>
               <ThemedText type="t2">로그인 후{'\n'}이용할 수 있어요</ThemedText>
-              <ThemedText type="t6" themeColor="textSecondary" style={styles.bodyText}>
+              <ThemedText type="body" themeColor="textSecondary">
                 우리웨딩은 로그인한 커플을 위한 공간이에요
               </ThemedText>
               <ActionButton
@@ -185,7 +193,7 @@ export default function WeddingScreen() {
           {(coupleStatus === 'no-wedding' || coupleStatus === 'unlinked') && (
             <View style={styles.emptyBlock}>
               <ThemedText type="t2">배우자와{'\n'}함께 준비해요</ThemedText>
-              <ThemedText type="t6" themeColor="textSecondary" style={styles.bodyText}>
+              <ThemedText type="body" themeColor="textSecondary">
                 Pick한 곳 · 일정 · 지출을 함께 볼 수 있어요
               </ThemedText>
               <ActionButton
@@ -199,9 +207,9 @@ export default function WeddingScreen() {
           {/* ── 초대 대기 ── */}
           {coupleStatus === 'pending' && (
             <View style={styles.emptyBlock}>
-              <ThemedText type="t2">배우자 수락{'\n'}대기 중</ThemedText>
-              <ThemedText type="t6" themeColor="textSecondary" style={styles.bodyText}>
-                초대 링크를 전달했나요? 수락하면 바로 연결돼요
+              <ThemedText type="t2">배우자 수낙{'\n'}대기 중</ThemedText>
+              <ThemedText type="body" themeColor="textSecondary">
+                초대 링크를 전달했나요? 수낙하면 바로 연결돼요
               </ThemedText>
               <ActionButton
                 label="초대 취소"
@@ -458,7 +466,7 @@ export default function WeddingScreen() {
                       const badgeLabel = isDone
                         ? '결정됨'
                         : isInProgress
-                          ? '좁히는 중'
+                          ? '좋힐는 중'
                           : '시작 전';
 
                       return (
@@ -553,9 +561,6 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.five,
     paddingBottom: Spacing.four,
     gap: Spacing.three,
-  },
-  bodyText: {
-    lineHeight: 24,
   },
   hero: {
     marginHorizontal: Layout.gutter,
