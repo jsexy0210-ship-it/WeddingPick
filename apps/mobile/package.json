@@ -57,7 +57,7 @@
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
     "export:web": "expo export --platform web",
-    "test": "jest"
+    "test": "jest --forceExit"
   },
   "private": true
 }
