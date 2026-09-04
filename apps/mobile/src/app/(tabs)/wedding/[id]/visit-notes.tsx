@@ -1,7 +1,7 @@
 import type { VisitNoteListResponse } from '@weddingpick/api-contract';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Modal, ScrollView, StyleSheet, TextInput } from 'react-native';
+import { Modal, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { addVisitNote, listVisitNotes, removeVisitNote } from '@/api/client';
@@ -13,6 +13,7 @@ import {
   LoadingView,
   MaxContentWidth,
   Radius,
+  showAlert,
   Spacing,
   ThemedText,
   ThemedView,
@@ -86,7 +87,7 @@ export default function VisitNotesScreen() {
   }
 
   function remove(noteId: string) {
-    Alert.alert('방문노트 빼기', '이 기록을 빼시겠어요? 되돌릴 수 없어요.', [
+    showAlert('방문노트 빼기', '이 기록을 빼시겠어요? 되돌릴 수 없어요.', [
       { text: '취소', style: 'cancel' },
       {
         text: '빼기',

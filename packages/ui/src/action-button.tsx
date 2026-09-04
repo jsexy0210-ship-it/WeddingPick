@@ -49,7 +49,7 @@ export function ActionButton({
       accessibilityRole="button"
       accessibilityState={{ disabled: disabled === true }}
       disabled={disabled}
-      style={({ pressed }) => [
+      style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
         styles.button,
         size === 'auto' ? null : [styles.fixed, { height: HEIGHT[size] }],
         {
@@ -60,7 +60,8 @@ export function ActionButton({
               : theme.backgroundElement,
           borderWidth: isGhost ? 1 : 0,
           borderColor: theme.track,
-          opacity: disabled === true ? 0.4 : pressed ? 0.8 : 1,
+          // hovered는 react-native-web에서만 온다(마우스 없는 네이티브는 항상 false).
+          opacity: disabled === true ? 0.4 : pressed ? 0.8 : hovered ? 0.9 : 1,
         },
       ]}
       {...rest}>

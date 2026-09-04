@@ -1,9 +1,9 @@
 import { DOCUMENT_TYPE_LABEL } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Alert, ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ActionButton, ErrorView, LoadingView, MaxContentWidth, Spacing, ThemedText, ThemedView, VerificationBadge } from '@weddingpick/ui';
+import { ActionButton, ErrorView, LoadingView, MaxContentWidth, showAlert, Spacing, ThemedText, ThemedView, VerificationBadge } from '@weddingpick/ui';
 import { PageThumbnail } from '@/components/page-thumbnail';
 import { isServerConfigured } from '@/api/config';
 import { useDocumentStore } from '@/features/documents/document-store';
@@ -32,7 +32,7 @@ export default function DocumentSetScreen() {
   }
 
   function confirmDelete() {
-    Alert.alert('문서를 지울까요?', '저장된 원본까지 함께 지워요. 되돌릴 수 없어요.', [
+    showAlert('문서를 지울까요?', '저장된 원본까지 함께 지워요. 되돌릴 수 없어요.', [
       { text: '취소', style: 'cancel' },
       {
         text: '지우기',
