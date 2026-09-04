@@ -15,6 +15,7 @@ import {
   Spacing,
   ThemedText,
   ThemedView,
+  useHoverFocus,
   useTheme,
 } from '@weddingpick/ui';
 import { getCurrentUser, listCandidates } from '@/api/client';
@@ -39,7 +40,6 @@ function CandidateRowSkeleton() {
 }
 
 export default function PickCompareScreen() {
-  const theme = useTheme();
   const { category } = useLocalSearchParams<{ category?: string }>();
 
   const [candidates, setCandidates] = useState<CandidateListResponse['groups'][number]['candidates'] | null>(null);
@@ -132,45 +132,13 @@ export default function PickCompareScreen() {
               const isSelected = selected.has(c.vendorId);
               const isDisabled = !isSelected && selected.size >= MAX_COMPARE;
               return (
-                <Pressable
+                <CandidateRow
                   key={c.id}
-                  onPress={() => toggle(c.vendorId)}
-                  disabled={isDisabled}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: isSelected, disabled: isDisabled }}
-                  accessibilityLabel={c.vendorName}
-                >
-                  <ThemedView
-                    type="backgroundElement"
-                    style={[
-                      styles.row,
-                      isSelected && { borderColor: theme.tint, borderWidth: 1.5 },
-                      isDisabled && styles.rowDisabled,
-                    ]}
-                  >
-                    <View style={styles.rowContent}>
-                      <ThemedText type="t6" numberOfLines={1}>
-                        {c.vendorName}
-                      </ThemedText>
-                      <ThemedText type="t7" themeColor="textSecondary" numberOfLines={1}>
-                        {VENDOR_CATEGORY_LABEL[c.category as VendorCategory] ?? c.category} · {c.region}
-                      </ThemedText>
-                      {c.addedByPartner ? (
-                        <ThemedText type="tab" themeColor="positive">
-                          배우자도 고른 곳
-                        </ThemedText>
-                      ) : null}
-                    </View>
-                    {/* 선택 인디케이터 */}
-                    <View
-                      style={[
-                        styles.check,
-                        { borderColor: isSelected ? theme.tint : theme.border },
-                        isSelected && { backgroundColor: theme.tint },
-                      ]}
-                    />
-                  </ThemedView>
-                </Pressable>
+                  candidate={c}
+                  isSelected={isSelected}
+                  isDisabled={isDisabled}
+                  onToggle={() => toggle(c.vendorId)}
+                />
               );
             })
           )}
@@ -192,6 +160,66 @@ export default function PickCompareScreen() {
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
+  );
+}
+
+type CandidateItem = CandidateListResponse['groups'][number]['candidates'][number];
+
+function CandidateRow({
+  candidate: c,
+  isSelected,
+  isDisabled,
+  onToggle,
+}: {
+  candidate: CandidateItem;
+  isSelected: boolean;
+  isDisabled: boolean;
+  onToggle: () => void;
+}) {
+  const theme = useTheme();
+  const { hovered, focused, hoverFocusHandlers } = useHoverFocus();
+
+  return (
+    <Pressable
+      onPress={onToggle}
+      disabled={isDisabled}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: isSelected, disabled: isDisabled }}
+      accessibilityLabel={c.vendorName}
+      {...hoverFocusHandlers}>
+      <ThemedView
+        type="backgroundElement"
+        style={[
+          styles.row,
+          isSelected && { borderColor: theme.tint, borderWidth: 1.5 },
+          isDisabled && styles.rowDisabled,
+          !isDisabled && hovered ? { backgroundColor: theme.backgroundSelected } : null,
+          focused ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: -2 } : null,
+        ]}
+      >
+        <View style={styles.rowContent}>
+          <ThemedText type="t6" numberOfLines={1}>
+            {c.vendorName}
+          </ThemedText>
+          <ThemedText type="t7" themeColor="textSecondary" numberOfLines={1}>
+            {VENDOR_CATEGORY_LABEL[c.category as VendorCategory] ?? c.category} · {c.region}
+          </ThemedText>
+          {c.addedByPartner ? (
+            <ThemedText type="tab" themeColor="positive">
+              배우자도 고른 곳
+            </ThemedText>
+          ) : null}
+        </View>
+        {/* 선택 인디케이터 */}
+        <View
+          style={[
+            styles.check,
+            { borderColor: isSelected ? theme.tint : theme.border },
+            isSelected && { backgroundColor: theme.tint },
+          ]}
+        />
+      </ThemedView>
+    </Pressable>
   );
 }
 

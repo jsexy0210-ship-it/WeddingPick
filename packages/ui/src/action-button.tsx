@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Pressable, StyleSheet, type PressableProps } from 'react-native';
 
 import { ThemedText } from './themed-text';
@@ -38,17 +39,40 @@ export function ActionButton({
   variant = 'secondary',
   size = 'auto',
   disabled,
+  onHoverIn,
+  onHoverOut,
+  onFocus,
+  onBlur,
   ...rest
 }: ActionButtonProps) {
   const theme = useTheme();
   const isPrimary = variant === 'primary';
   const isGhost = variant === 'ghost';
+  /** 웹 마우스 사용자를 위한 hover·focus 피드백. 터치 기기에서는 발생하지 않는다. */
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
 
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ disabled: disabled === true }}
       disabled={disabled}
+      onHoverIn={(e) => {
+        setHovered(true);
+        onHoverIn?.(e);
+      }}
+      onHoverOut={(e) => {
+        setHovered(false);
+        onHoverOut?.(e);
+      }}
+      onFocus={(e) => {
+        setFocused(true);
+        onFocus?.(e);
+      }}
+      onBlur={(e) => {
+        setFocused(false);
+        onBlur?.(e);
+      }}
       style={({ pressed }) => [
         styles.button,
         size === 'auto' ? null : [styles.fixed, { height: HEIGHT[size] }],
@@ -60,8 +84,11 @@ export function ActionButton({
               : theme.backgroundElement,
           borderWidth: isGhost ? 1 : 0,
           borderColor: theme.track,
-          opacity: disabled === true ? 0.4 : pressed ? 0.8 : 1,
+          opacity: disabled === true ? 0.4 : pressed ? 0.8 : hovered ? 0.9 : 1,
         },
+        focused && disabled !== true
+          ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: 2 }
+          : null,
       ]}
       {...rest}>
       <ThemedText type="t5" numberOfLines={1} themeColor={isPrimary ? 'onTint' : 'text'}>

@@ -45,4 +45,5 @@ export {
 } from './theme';
 export { FontSize, LineHeight, type FontSizeToken } from './typography';
 export { useTheme } from './use-theme';
+export { useHoverFocus } from './use-hover-focus';
 export { VERIFICATION_LEVEL_ACCENT } from './verification-levels';
