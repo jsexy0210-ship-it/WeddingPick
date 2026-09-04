@@ -2,7 +2,7 @@ import type { MyRebuttal } from '@weddingpick/api-contract';
 import { isEditable } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -18,6 +18,7 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import { listMyRebuttals, removeRebuttal } from '@/api/client';
+import { confirmAlert } from '@/components/confirm-alert';
 
 /**
  * 내가 낸 업체 반론. 디자인 핸드오프 20번.
@@ -54,7 +55,7 @@ export default function MyRebuttalsScreen() {
      * 파괴적 동작은 컨펌을 거치고 대상 이름을 함께 보여준다 — 핸드오프가 정한
      * 규칙이다. 목록에서 두 번째 카드를 지우려다 첫 번째를 지우는 일이 실제로 난다.
      */
-    Alert.alert(
+    confirmAlert(
       '반론을 지울까요',
       `${rebuttal.review.vendorName} 후기에 등록한 반론이 사라져요`,
       [
@@ -65,7 +66,7 @@ export default function MyRebuttalsScreen() {
           onPress: () => {
             void removeRebuttal(rebuttal.id)
               .then(load)
-              .catch(() => Alert.alert('지우지 못했어요', '잠시 후 다시 시도해주세요.'));
+              .catch(() => confirmAlert('지우지 못했어요', '잠시 후 다시 시도해주세요.'));
           },
         },
       ]

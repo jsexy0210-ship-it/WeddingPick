@@ -12,7 +12,7 @@ import {
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -138,18 +138,20 @@ export default function CompareScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}>
 
-          {/* 헤더 — 몇 곳 비교인지 + 업체명 */}
+          {/* 헤더 — 몇 곳 비교인지 + 업체명. spec compare.title: "{category} {n}곳 비교" */}
           <View style={styles.section}>
-            <ThemedText type="t2">{result.vendors.length}곳 비교</ThemedText>
+            <ThemedText type="t2">
+              {VENDOR_CATEGORY_LABEL[result.vendors[0].category]} {result.vendors.length}곳 비교
+            </ThemedText>
             <ThemedText type="t6" themeColor="textSecondary">
               {result.vendors.map((vendor) => vendor.name).join(' · ')}
             </ThemedText>
           </View>
 
-          {/* 비교 전에 읽어야 할 것 */}
+          {/* 비교 전에 읽어야 할 것 — spec compare.summary */}
           <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} />
           <View style={styles.section}>
-            <ThemedText type="t4">견주기 전에</ThemedText>
+            <ThemedText type="t4">웨딩픽 요약</ThemedText>
             {result.caveats.map((caveat) => (
               <ThemedView key={caveat} type="backgroundElement" style={styles.card}>
                 <ThemedText type="t6" themeColor="textSecondary">{caveat}</ThemedText>
@@ -251,40 +253,15 @@ export default function CompareScreen() {
             </ThemedText>
           ) : null}
           <View style={styles.dockButtons}>
-            {result.vendors.map((vendor) => {
-              const isPicked = picked[vendor.id] === true;
-              const isPicking = pickingId === vendor.id;
-
-              return (
-                <Pressable
-                  key={vendor.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={isPicked ? `${vendor.name} Pick했어요` : `${vendor.name} Pick하기`}
-                  disabled={isPicked || isPicking}
-                  style={[
-                    styles.dockPickBtn,
-                    isPicked
-                      ? { backgroundColor: theme.tint }
-                      : { backgroundColor: theme.background, borderWidth: 1, borderColor: theme.border },
-                    isPicking && styles.dockPickBtnPending,
-                  ]}
-                  onPress={() => void pickVendor(vendor)}>
-                  <ThemedText
-                    type="t7"
-                    numberOfLines={1}
-                    style={isPicked ? styles.dockPickBtnTextOn : undefined}
-                    themeColor={isPicked ? undefined : 'textSecondary'}>
-                    {vendor.name}
-                  </ThemedText>
-                  <ThemedText
-                    type="t7"
-                    style={isPicked ? styles.dockPickBtnTextOn : undefined}
-                    themeColor={isPicked ? undefined : 'text'}>
-                    {isPicking ? '담는 중…' : isPicked ? 'Pick했어요' : 'Pick하기'}
-                  </ThemedText>
-                </Pressable>
-              );
-            })}
+            {result.vendors.map((vendor) => (
+              <DockPickButton
+                key={vendor.id}
+                vendor={vendor}
+                isPicked={picked[vendor.id] === true}
+                isPicking={pickingId === vendor.id}
+                onPress={() => void pickVendor(vendor)}
+              />
+            ))}
           </View>
         </ThemedView>
       </SafeAreaView>
@@ -316,11 +293,17 @@ export default function CompareScreen() {
 }
 
 /**
- * 비교 항목 하나. 업체가 세로로 나열된다.
+ * 비교 항목 하나.
  *
  * `note`는 이 항목의 값이 누구 말인지다. 표는 값을 나란히 놓기 때문에,
  * 붙여두지 않으면 나란히 놓였다는 이유만으로 모두 같은 종류로 읽힌다.
+ *
+ * 태블릿·데스크톱 폭에서는 업체 카드를 나란히 놓는다. 좁은 화면에서만 위에서
+ * 아래로 쌓는다 — 넓은 화면까지 세로로만 쌓으면 남는 가로 폭을 그대로 버리고,
+ * 곁에 두고 봐야 비교가 되는 화면에서 오히려 스크롤만 늘린다.
  */
+const WIDE_COMPARE_BREAKPOINT = 700;
+
 function CompareRow({
   title,
   note,
@@ -332,6 +315,9 @@ function CompareRow({
   vendors: VendorDetail[];
   children: (vendor: VendorDetail) => React.ReactNode;
 }) {
+  const { width } = useWindowDimensions();
+  const isWide = vendors.length > 1 && width >= WIDE_COMPARE_BREAKPOINT;
+
   return (
     <View style={styles.compareSection}>
       <View style={styles.compareSectionInner}>
@@ -339,16 +325,80 @@ function CompareRow({
         {note ? (
           <ThemedText type="t7" themeColor="textSecondary">{note}</ThemedText>
         ) : null}
-        {vendors.map((vendor) => (
-          <ThemedView key={vendor.id} type="backgroundElement" style={styles.card}>
-            <ThemedText type="t6" themeColor="textSecondary" numberOfLines={1}>
-              {vendor.name}
-            </ThemedText>
-            {children(vendor)}
-          </ThemedView>
-        ))}
+        <View style={isWide ? styles.compareCardsRow : styles.compareCardsStack}>
+          {vendors.map((vendor) => (
+            <ThemedView
+              key={vendor.id}
+              type="backgroundElement"
+              style={[styles.card, isWide && styles.cardWide]}>
+              <ThemedText type="t6" themeColor="textSecondary" numberOfLines={1}>
+                {vendor.name}
+              </ThemedText>
+              {children(vendor)}
+            </ThemedView>
+          ))}
+        </View>
       </View>
     </View>
+  );
+}
+
+/**
+ * 바텀 독의 업체별 Pick 버튼.
+ *
+ * 마우스로 쓰는 웹에서는 눌러보기 전까지 이게 눌리는 것인지 알 방법이 없었다
+ * — `pressed`만으로는 마우스가 올라와 있는 동안, 또는 키보드로 포커스가 온
+ * 동안 아무 반응이 없다. hover·focus 모두 같은 강조로 반응한다.
+ */
+function DockPickButton({
+  vendor,
+  isPicked,
+  isPicking,
+  onPress,
+}: {
+  vendor: VendorDetail;
+  isPicked: boolean;
+  isPicking: boolean;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+  const [highlighted, setHighlighted] = useState(false);
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={isPicked ? `${vendor.name} Pick했어요` : `${vendor.name} Pick하기`}
+      disabled={isPicked || isPicking}
+      onHoverIn={() => setHighlighted(true)}
+      onHoverOut={() => setHighlighted(false)}
+      onFocus={() => setHighlighted(true)}
+      onBlur={() => setHighlighted(false)}
+      style={[
+        styles.dockPickBtn,
+        isPicked
+          ? { backgroundColor: highlighted ? theme.tintStrong : theme.tint }
+          : {
+              backgroundColor: highlighted ? theme.backgroundSelected : theme.background,
+              borderWidth: 1,
+              borderColor: highlighted ? theme.tint : theme.border,
+            },
+        isPicking && styles.dockPickBtnPending,
+      ]}
+      onPress={onPress}>
+      <ThemedText
+        type="t7"
+        numberOfLines={1}
+        style={isPicked ? styles.dockPickBtnTextOn : undefined}
+        themeColor={isPicked ? undefined : 'textSecondary'}>
+        {vendor.name}
+      </ThemedText>
+      <ThemedText
+        type="t7"
+        style={isPicked ? styles.dockPickBtnTextOn : undefined}
+        themeColor={isPicked ? undefined : 'text'}>
+        {isPicking ? '담는 중…' : isPicked ? 'Pick했어요' : 'Pick하기'}
+      </ThemedText>
+    </Pressable>
   );
 }
 
@@ -390,11 +440,24 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
 
+  // ── 업체 카드 배치 — 좁은 화면은 세로, 태블릿·데스크톱은 나란히 ──
+  compareCardsStack: {
+    gap: Spacing.two,
+  },
+  compareCardsRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: Spacing.two,
+  },
+
   // ── 공통 카드 ──
   card: {
     borderRadius: Radius.medium,
     padding: Spacing.three,
     gap: Spacing.one,
+  },
+  cardWide: {
+    flex: 1,
   },
 
   // ── 금액 셀 ──

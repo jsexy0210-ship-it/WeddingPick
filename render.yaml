@@ -22,6 +22,25 @@ services:
         source: /
         destination: /admin.html
 
+  # 모바일 웹 export 정적 호스팅 (하이브리드 웹뷰 쉘 POC)
+  #
+  # apps/mobile을 react-native-web으로 정적 빌드해 서빙한다. 네이티브 앱 쉘의
+  # react-native-webview가 이 URL을 불러온다(apps/mobile/src/features/webshell).
+  # 이 서비스는 아직 실제로 생성되지 않았다 — 새 유료 리소스라 사용자 확인이
+  # 필요하다. 생성 후 배포 URL을 apps/mobile/eas.json의 build profile env에
+  # EXPO_PUBLIC_WEB_URL로 채워야 웹뷰 쉘이 동작한다.
+  - type: web
+    name: weddingpick-app-web
+    runtime: static
+    staticPublishPath: ./apps/mobile/dist
+    autoDeploy: true
+    buildCommand: npm run export:web --workspace @weddingpick/mobile
+    routes:
+      # expo-router 클라이언트 라우팅 — 없는 경로를 index.html로 되돌린다.
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
   # API 서버
   - type: web
     name: weddingpick-api

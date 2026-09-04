@@ -183,6 +183,38 @@ export type VendorPrices = z.infer<typeof vendorPricesSchema>;
 export type VendorDetail = z.infer<typeof vendorDetailSchema>;
 
 /**
+ * WP-VEND-002 업체 이미지 한 장.
+ *
+ * `VendorImage`(@weddingpick/ui의 카테고리 기본 이미지 컴포넌트)와 이름이 겹치지
+ * 않게 `VendorPhoto`로 부른다 — 이건 실제 업체 사진이고, 그건 사진이 없을 때의
+ * 대체 그림이다.
+ *
+ * 핸드오프(WP-VEND-002)는 "업체 제공" · "제보 사진" 2탭을 그렸지만, 지금 DB에는
+ * 그 둘을 가를 축이 없다 — `vendor_images.copyright_basis`는 저작권 근거일 뿐
+ * 제공 주체를 말하지 않는다. 없는 축으로 탭을 나누느니 단일 목록으로 보여준다.
+ */
+export const vendorPhotoSchema = z.object({
+  id: idSchema,
+  /** 승인된 이미지의 조회 URL. 저장소 서명 URL이거나 원본 출처 URL. */
+  url: z.string().min(1),
+  /** 업체를 대표하는 한 장. 업체당 최대 하나. */
+  isRepresentative: z.boolean(),
+  /** true면 로고·CI처럼 잘리면 안 되는 이미지 — contain으로 표시한다. */
+  useContain: z.boolean(),
+  /** 화면에 표시할 출처 문구. 없으면 안 보여준다 — 지어내지 않는다. */
+  sourceNote: z.string().nullable(),
+  /** 검증 통과 시각. 확인일로 보여준다. */
+  verifiedAt: z.string().nullable(),
+});
+
+export const vendorPhotosResponseSchema = z.object({
+  photos: z.array(vendorPhotoSchema),
+});
+
+export type VendorPhoto = z.infer<typeof vendorPhotoSchema>;
+export type VendorPhotosResponse = z.infer<typeof vendorPhotosResponseSchema>;
+
+/**
  * 조건이 비슷한 결제 사례. 최종통합정책 v2.0 D-1 · C-3 · C-4.
  *
  * **판별 유니온이다.** 낼 수 없을 때는 `price`가 아예 없다 — 비워 보내면 화면이

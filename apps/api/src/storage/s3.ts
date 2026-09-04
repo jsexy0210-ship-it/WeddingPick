@@ -70,6 +70,14 @@ export function createS3Storage(options: {
       return Buffer.from(await result.Body.transformToByteArray());
     },
 
+    async getPublicUrl(storageKey, expiresInSeconds) {
+      return getSignedUrl(
+        client,
+        new GetObjectCommand({ Bucket: options.bucket, Key: storageKey }),
+        { expiresIn: expiresInSeconds }
+      );
+    },
+
     async delete(storageKey) {
       await client.send(new DeleteObjectCommand({ Bucket: options.bucket, Key: storageKey }));
     },

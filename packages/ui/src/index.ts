@@ -46,4 +46,5 @@ export {
 } from './theme';
 export { FontSize, LineHeight, type FontSizeToken } from './typography';
 export { useTheme } from './use-theme';
+export { readWebInteractionState, type WebInteractionState } from './web-interaction';
 export { VERIFICATION_LEVEL_ACCENT } from './verification-levels';

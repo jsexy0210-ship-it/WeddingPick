@@ -24,7 +24,8 @@ import { searchVendors } from '@/api/client';
 /**
  * 지도 결과. 핸드오프 WP-SRCH-007.
  * 검색 화면과 같은 조건을 지도 위에서 본다.
- * react-native-maps — 웹에서는 VendorMap이 안내 메시지를 보여준다.
+ * VendorMap이 카카오맵 공식 딥링크로 열기 때문에 Android·iOS·Web 모두 이 화면
+ * 그대로 쓴다 — 웹 전용 안내 화면을 따로 두지 않는다.
  */
 
 type MapParams = {
