@@ -11,7 +11,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
 import {
+  FontSize,
   Layout,
+  LineHeight,
   MaxContentWidth,
   ProgressBar,
   Radius,
@@ -65,7 +67,7 @@ export default function PickScreen() {
     <ThemedView style={styles.root}>
       <SafeAreaView style={styles.safeArea}>
         <View style={[styles.wrapper, { maxWidth: MaxContentWidth }]}>
-          {/* ── 헤더 56px (고정) ── */}
+          {/* ── 헤더 (고정) ── */}
           <View style={[styles.header, { borderBottomColor: theme.border }]}>
             <ThemedText style={styles.headerTitle}>Pick</ThemedText>
             {me?.spouseLinked ? (
@@ -449,13 +451,13 @@ const styles = StyleSheet.create({
 
   /* 헤더 */
   header: {
-    height: 56,
+    height: Layout.navBar,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: Layout.gutter,
   },
-  headerTitle: { fontSize: 20, lineHeight: 27, fontWeight: '700' },
+  headerTitle: { fontSize: FontSize.t4, lineHeight: LineHeight.t4, fontWeight: '700' },
   avatars: { flexDirection: 'row', alignItems: 'center', gap: 0 },
   avatar: {
     width: 26,
@@ -465,7 +467,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarPartner: { marginLeft: -10 },
-  avatarInitial: { fontSize: 13, fontWeight: '700' },
+  avatarInitial: { fontSize: FontSize.badge, fontWeight: '700' },
 
   /* 진행 요약 */
   progressSection: {
@@ -476,7 +478,7 @@ const styles = StyleSheet.create({
   },
   progressRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   progressTrack: { flex: 1 },
-  progressLabel: { fontSize: 14, lineHeight: 19, fontWeight: '700' },
+  progressLabel: { fontSize: FontSize.t7, lineHeight: LineHeight.t7, fontWeight: '700' },
 
   /* 카테고리 목록 */
   categorySection: {
@@ -491,11 +493,11 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   categoryInfo: { flex: 1, minWidth: 0, gap: 2 },
-  categoryName: { fontSize: 18, lineHeight: 24, fontWeight: '700' },
-  categorySub: { fontSize: 14, lineHeight: 19 },
+  categoryName: { fontSize: FontSize.t5, lineHeight: LineHeight.t5, fontWeight: '700' },
+  categorySub: { fontSize: FontSize.t7, lineHeight: LineHeight.t7 },
   categoryAction: {
-    fontSize: 16,
-    lineHeight: 22,
+    fontSize: FontSize.t6,
+    lineHeight: LineHeight.t6,
     fontWeight: '700',
     flexShrink: 0,
   },
@@ -510,7 +512,7 @@ const styles = StyleSheet.create({
     paddingBottom: Layout.sectionGap,
     gap: 12,
   },
-  sectionTitle: { fontSize: 20, lineHeight: 27, fontWeight: '700' },
+  sectionTitle: { fontSize: FontSize.t4, lineHeight: LineHeight.t4, fontWeight: '700' },
   vendorRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -520,17 +522,17 @@ const styles = StyleSheet.create({
   },
   vendorThumb: { width: 52, height: 52, borderRadius: Radius.small, overflow: 'hidden' },
   vendorInfo: { flex: 1, minWidth: 0, gap: 3 },
-  vendorName: { fontSize: 18, lineHeight: 24, fontWeight: '700' },
-  vendorMeta: { fontSize: 14, lineHeight: 19 },
+  vendorName: { fontSize: FontSize.t5, lineHeight: LineHeight.t5, fontWeight: '700' },
+  vendorMeta: { fontSize: FontSize.t7, lineHeight: LineHeight.t7 },
 
   /* CTA */
   ctaPrimary: {
-    height: 52,
+    height: Layout.controlXLarge,
     borderRadius: Radius.small,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  ctaLabel: { fontSize: 18, lineHeight: 24, fontWeight: '700' },
+  ctaLabel: { fontSize: FontSize.t5, lineHeight: LineHeight.t5, fontWeight: '700' },
 
   /* 빈 상태 */
   emptyHero: {
@@ -539,7 +541,7 @@ const styles = StyleSheet.create({
     paddingBottom: 26,
     gap: 10,
   },
-  emptySubtitle: { fontSize: 16, lineHeight: 24 },
+  emptySubtitle: { fontSize: FontSize.t6, lineHeight: FontSize.t6 * 1.5 },
 
   /* 스타터 섹션 */
   starterSection: {
@@ -550,5 +552,5 @@ const styles = StyleSheet.create({
   starterGrid: { flexDirection: 'row', gap: 10 },
   starterCard: { flex: 1, minWidth: 0, gap: 8 },
   starterImage: { width: '100%', height: 96, borderRadius: Radius.small, overflow: 'hidden' },
-  starterName: { fontSize: 16, lineHeight: 22, fontWeight: '700' },
+  starterName: { fontSize: FontSize.t6, lineHeight: LineHeight.t6, fontWeight: '700' },
 });
