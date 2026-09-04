@@ -27,9 +27,7 @@ CREATE TABLE IF NOT EXISTS marketing_jobs (
   failed_at    TIMESTAMPTZ,
   fail_reason  TEXT,
   retry_count  INTEGER     NOT NULL DEFAULT 0,
-  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  -- 중복 생성 방지: 같은 소재·채널·포맷·날짜는 1건만
-  UNIQUE (source_id, channel, format, DATE(COALESCE(scheduled_at, created_at)))
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- 이벤트 로그 (상태 변경 감사)
@@ -44,3 +42,6 @@ CREATE TABLE IF NOT EXISTS marketing_events (
 CREATE INDEX IF NOT EXISTS idx_marketing_jobs_status ON marketing_jobs(status);
 CREATE INDEX IF NOT EXISTS idx_marketing_jobs_scheduled ON marketing_jobs(scheduled_at) WHERE status = 'queued';
 CREATE INDEX IF NOT EXISTS idx_marketing_events_job ON marketing_events(job_id);
+
+-- 중복 방지는 애플리케이션 레이어에서 처리
+-- DATE(TIMESTAMPTZ) 는 STABLE 함수라 PostgreSQL index expression 불가
