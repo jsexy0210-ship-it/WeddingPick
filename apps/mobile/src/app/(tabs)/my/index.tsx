@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ActionButton,
   Layout,
+  LineHeight,
   Radius,
   Spacing,
   ThemedText,
@@ -252,7 +253,7 @@ export default function MyScreen() {
   );
 }
 
-// ─── Sub-components ───────────────────────────────────────────────
+// ─── Sub-components ──────────────────────────────────────────
 
 function MenuGroup({ title, children }: { title: string; children: React.ReactNode }) {
   const theme = useTheme();
@@ -332,7 +333,7 @@ function ChevronRight({ color }: { color: string }) {
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────
+// ─── Styles ───────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: {
@@ -461,7 +462,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   bizBody: {
-    lineHeight: 20,
+    lineHeight: LineHeight.t7,
   },
 
   /* 푸터 */
@@ -479,7 +480,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  /* 쉐브론 */
+  /* 쉬브론 */
   chevron: {
     width: 8,
     height: 8,
