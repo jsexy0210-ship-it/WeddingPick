@@ -45,21 +45,26 @@ RN 화면의 웹 렌더링 품질이 이제 "부가 기능"이 아니라 **실�
 `docs/design-handoff/hybrid-web-qa-checklist.md`.
 
 ### 정책 1 — 비회원 진입 삭제
-로그인 없이 들어갈 수 있는 화면(게스트 홈 등)을 폐지한다. 로그인 완료 후에만 앱 진입이
-가능하도록 진입 흐름(`apps/mobile/src/app/_layout.tsx` 등)을 바꿔야 한다.
-**아직 구현되지 않았다** — 다음 작업.
+로그인 없이 들어갈 수 있는 화면(게스트 홈 등)을 폐지한다. **구현 완료** — PR #79
+(`hybrid/guest-removal`, main 병합 완료)가 `_layout.tsx`의 로컬 draft 기반 비로그인
+진입 분기를 제거하고, 비로그인 시 무조건 `/login`으로 보내도록 바꿨다.
+`onboarding.tsx`·`login.tsx`·`(tabs)/index.tsx`·`features/home/state.ts`도 함께
+정리됨(PR #79 본문 참고). `WP-SHT-001`(`login-sheet.tsx`)·`WP-ST-001`
+(`guest-gate-sheet.tsx`)는 Pick 플로우와 얽혀 있어 PR #79 범위 밖으로 남겨졌다 —
+후속 작업 필요.
 
 ### 정책 2 — 홈 헤더 검색버튼 삭제
-홈 탭(`apps/mobile/src/app/(tabs)/index.tsx`, 헤더의 `router.push('/search')` 버튼,
-341번째 줄 부근)의 검색 버튼을 없앤다. 알림 아이콘만 남긴다. 검색 자체는 하단 탭의
-검색 탭(`(tabs)/search`)으로 계속 접근 가능하니 기능 손실은 아니다.
-**아직 구현되지 않았다** — 다음 작업.
+홈 탭(`apps/mobile/src/app/(tabs)/index.tsx`)의 `Header` 컴포넌트를 재확인한 결과,
+헤더에는 원래 검색 버튼이 없었다(로그인 상태면 알림 버튼만). **이 정책은 이미
+만족돼 있었다 — 코드 변경 불필요.** 검색은 하단 탭의 검색 탭(`(tabs)/search`)으로
+계속 접근 가능.
 
-### 다음 작업 (미착수)
-1. `react-native-webview` 설치 + 네이티브 래퍼 셸 구현
-2. 웹 빌드 호스팅 방식 결정(`expo export -p web` 결과물을 어디에 올릴지)
-3. 정책 1·2 실제 코드 반영
-4. `docs/design-handoff/hybrid-web-qa-checklist.md` 기준으로 홈·진입/내비게이션·공통
+### 남은 작업
+1. `react-native-webview` 설치 + 네이티브 래퍼 셸 구현(POC는 `hybrid/shell-poc`
+   브랜치에 있음, 아래 "하이브리드 웹뷰 쉘 POC" 절 참고)
+2. `WP-SHT-001`/`WP-ST-001`(로그인 유도 시트) 정리 — 비회원 진입 삭제 이후 도달
+   불가능한 코드가 됐는지, Pick 플로우에서 여전히 쓰이는지 확인 필요
+3. `docs/design-handoff/hybrid-web-qa-checklist.md` 기준으로 홈·진입/내비게이션·공통
    화면군부터 웹 렌더링 QA
 
 ---

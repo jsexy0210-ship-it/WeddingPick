@@ -24,9 +24,10 @@ cd apps/mobile && npm run web
 4. **상태 완전성** — 로딩·에러·빈 상태가 각각 구현돼 있고 웹에서도 정상 표시된다
    (네이티브 전용 API를 쓰는 화면은 웹에서 조건부 대체 문구가 있어야 한다 — 예:
    `apps/mobile/src/features/search/vendor-map.tsx`의 `Platform.OS === 'web'` 처리 참고).
-5. **디자인 토큰 준수** — 색·타이포·간격이 `packages/ui/src/theme.ts` /
-   `packages/ui/src/tokens.css` 값을 그대로 쓴다. 하드코딩된 색상·픽셀값, Pick Mark
-   변형, mock/demo API 호출이 없다.
+5. **디자인 토큰·용어 준수**(루트 `CLAUDE.md` 기준) — 색·타이포·간격·문구를
+   `spec/tokens.json` · `spec/strings.ko.json` · `spec/glossary.json`에서만 가져온다.
+   하드코딩된 hex·픽셀값·문구, Pick Mark(`CLAUDE.md` §2) 변형, mock/demo API 호출이
+   없다.
 
 ## 문제를 찾으면
 
@@ -37,4 +38,5 @@ cd apps/mobile && npm run web
 
 - `npm run typecheck --workspace @weddingpick/mobile`
 - `npx expo lint` (`apps/mobile`에서)
-- 위 두 명령이 통과했을 때만 커밋한다.
+- `node lint-copy.js apps/mobile/src` (저장소 루트에서, 금지 용어·문구 검사)
+- 위 세 명령이 통과했을 때만 커밋한다.
