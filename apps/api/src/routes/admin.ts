@@ -4,6 +4,9 @@ import { isFeature } from '../ai-cost-admin';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
+import type { MarketingChannel, MarketingFormat } from '@weddingpick/api-contract';
+import * as marketingContent from '../marketing/content';
+import * as marketingStore from '../marketing/store';
 import * as adAdmin from '../ad-admin';
 import * as aiCostAdmin from '../ai-cost-admin';
 import { currentUserId, requireOperatorUser } from '../auth/plugin';
@@ -1113,7 +1116,123 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
 
   // ─── Marketing ────────────────────────────────────────────────────────────
   app.get('/v1/admin/marketing', auth, async () => {
-    return { campaigns: [] as unknown[], totalReach: 0 };
+    try {
+      const [items, summary] = await Promise.all([
+        marketingStore.listJobs(context.pool, 50),
+        marketingStore.getSummary(context.pool),
+      ]);
+      return { summary, items };
+    } catch {
+      // DB 없을 때 빈 응답 (개발 환경)
+      return {
+        summary: { generated: 0, simulated: 0, failed: 0, failRate: 0 },
+        items: [],
+      };
+    }
+  });
+
+  app.post('/v1/admin/marketing/sources', auth, async (request) => {
+    const body = request.body as {
+      id: string; factIds: string[]; reviewed?: boolean;
+      expiresAt?: string; nextVerifyAt?: string; note?: string;
+    };
+    await marketingStore.registerSource(context.pool, {
+      id: body.id,
+      factIds: body.factIds,
+      reviewed: body.reviewed ?? false,
+      reviewedAt: body.reviewed ? new Date().toISOString() : null,
+      expiresAt: body.expiresAt ?? null,
+      nextVerifyAt: body.nextVerifyAt ?? null,
+      active: true,
+      note: body.note,
+    });
+    return { ok: true };
+  });
+
+  app.delete<{ Params: { sourceId: string } }>(
+    '/v1/admin/marketing/sources/:sourceId',
+    auth,
+    async (request) => {
+      const { sourceId } = request.params;
+      await marketingStore.deactivateSource(context.pool, sourceId);
+      return { ok: true };
+    },
+  );
+
+  app.post('/v1/admin/marketing/generate', auth, async (request, reply) => {
+    const body = request.body as {
+      sourceId: string; channel: string; format: string; scheduledAt?: string;
+    };
+    const source = await marketingStore.getSource(context.pool, body.sourceId);
+    if (!source) return reply.status(404).send({ error: '소재를 찾을 수 없습니다.' });
+
+    const jobKey = `job_${Date.now()}`;
+    const result = marketingContent.generateContent(
+      source,
+      body.channel as MarketingChannel,
+      body.format as MarketingFormat,
+      jobKey,
+    );
+    if (!result.ok) return reply.status(400).send({ error: result.error });
+
+    const job = await marketingStore.createJob(context.pool, {
+      sourceId: body.sourceId,
+      channel: body.channel as MarketingChannel,
+      format: body.format as MarketingFormat,
+      title: result.title,
+      body: result.body,
+      utmUrl: result.utmUrl,
+      scheduledAt: body.scheduledAt,
+    });
+    return { job };
+  });
+
+  app.post<{ Params: { jobId: string } }>(
+    '/v1/admin/marketing/:jobId/simulate',
+    auth,
+    async (_request) => {
+      const r = await marketingStore.processScheduled(context.pool);
+      return { ok: true, result: r };
+    },
+  );
+
+  app.post<{ Params: { jobId: string } }>(
+    '/v1/admin/marketing/:jobId/retry',
+    auth,
+    async (request) => {
+      const { jobId } = request.params;
+      await marketingStore.retryJob(context.pool, jobId);
+      return { ok: true };
+    },
+  );
+
+  app.get<{ Params: { jobId: string } }>(
+    '/v1/admin/marketing/:jobId/events',
+    auth,
+    async (request) => {
+      const { jobId } = request.params;
+      const jobEvents = await marketingStore.listJobEvents(context.pool, jobId);
+      return { events: jobEvents };
+    },
+  );
+
+  app.get('/v1/admin/marketing/plan-prompt', auth, async (request, reply) => {
+    const { sourceId, channel, format } = request.query as {
+      sourceId?: string; channel?: string; format?: string;
+    };
+    if (!sourceId || !channel || !format) {
+      return reply.status(400).send({ error: 'sourceId, channel, format 필수' });
+    }
+    const source = await marketingStore.getSource(context.pool, sourceId);
+    if (!source) return reply.status(404).send({ error: '소재 없음' });
+    const result = marketingContent.generateContent(
+      source,
+      channel as MarketingChannel,
+      format as MarketingFormat,
+      'prompt_preview',
+    );
+    if (!result.ok) return reply.status(400).send({ error: result.error });
+    return { prompt: result.planningPrompt };
   });
 
   // ─── Policy Engine ────────────────────────────────────────────────────────

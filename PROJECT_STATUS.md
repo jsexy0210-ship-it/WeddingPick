@@ -55,6 +55,29 @@
 
 ## 진행 중
 
+### 홍보 자동화 파이프라인 (2026-09-04)
+
+- 범위: 출시 후 사용할 홍보 포맷과 자동화 파이프라인 준비. 실제 외부 게시 없음. dry_run만 허용.
+- 구현 완료(이번 세션):
+  - `packages/api-contract/src/marketing.ts` — Zod 스키마 (채널·포맷·상태·소재·잡·응답)
+  - `packages/db/migrations/0072_marketing_pipeline.sql` — marketing_sources / marketing_jobs / marketing_events
+  - `apps/api/src/marketing/content.ts` — 템플릿 기반 생성, 금지 표현·PII 검사, UTM 생성, 계획 프롬프트
+  - `apps/api/src/marketing/store.ts` — DB CRUD, FOR UPDATE SKIP LOCKED, 재시도 한도
+  - `apps/api/src/marketing/cli.ts` — demo / preview / simulate / facts CLI
+  - `apps/api/src/marketing/demo.ts` — programmatic 예제 실행기
+  - `apps/api/src/marketing/content.test.ts` — 단위 테스트 15개
+  - `apps/api/src/routes/admin.ts` — 기존 빈 stub 교체, 8개 마케팅 엔드포인트
+  - `apps/mobile/src/app/admin/marketing.tsx` — 새 스키마(queued/simulated/failed) 반영, 모의 실행 버튼
+  - `docs/marketing-pipeline.md` — 파이프라인 사용 안내
+  - `.github/workflows/main.yml` — CI 미리보기 생성 + 7일 artifact
+  - `apps/api/package.json` — `marketing` 스크립트 추가
+- 검증 한계:
+  - DB 통합 테스트는 DATABASE_URL 부재로 미실행 (격리된 PG 필요)
+  - 관리자 화면 실제 앱 실행·시각 검증 미완료
+  - 운영 DB 마이그레이션 0072 미적용
+- 실행 안내: `docs/marketing-pipeline.md`
+- 아직 구현 안 됨: 실 SNS 게시 어댑터, AI API 자동 호출, 카드뉴스 이미지, 성과 수집, 상시 예약, 실게시 활성화 체계
+
 ### 웨딩픽 전용 공공데이터 수집 (2026-09-04)
 
 - 추가 영향/비용 점검: docs/wedding-data-cost-impact.md. 상시 수집 서버는 불필요,
@@ -158,6 +181,14 @@
 10. 카카오맵 잔여 경로·의존성 정리 및 운영 링크 실기기 검증(Android/iOS), 웹 제공 범위 확인
 11. 카카오 REST API 키 발급 → `scripts/geocode-vendors.mts`로 업체 좌표 백필
 
+### 홍보 파이프라인 후속 (2026-09-04)
+
+12. 격리된 PostgreSQL에서 마이그레이션 0072 및 통합 테스트 검증
+    - 중복 요청, 동시 처리(FOR UPDATE SKIP LOCKED), 예약 시각, 소재 만료·폐기, 재시도 한도 확인
+13. 관리자 화면 실제 실행 — 소재 등록·생성·모의 흐름 시각 검증
+14. VERIFIED_FACTS 추가 및 소재 등록 운영자 작성 흐름 보완
+15. 실게시 활성화 조건 설계 (출시 기능·스토어 주소·채널 권한 확인 체크리스트)
+
 ## 제품 범위 결정
 
 -   (2026-09-02) **초기 출시는 예식 당일까지만 지원한다.** 예식 완료(post-wedding)
@@ -187,4 +218,4 @@ P0 항목별 완료 기준과 검증 증거가 확정되기 전에는 P0 진척�
 
 ## 마지막 상태 기준일
 
-2026-09-02
+2026-09-04

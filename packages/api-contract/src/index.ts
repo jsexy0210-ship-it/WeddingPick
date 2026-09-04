@@ -30,3 +30,4 @@ export * from './verification';
 export * from './wedding-events';
 export * from './wedding-plan';
 export * from './weddings';
+export * from './marketing';

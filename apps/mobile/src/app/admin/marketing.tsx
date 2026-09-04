@@ -1,6 +1,6 @@
 /**
  * WP-ADM-030 성장 · 마케팅 자동화
- * 소재 · 생성 · 사실검증 · 채널별 게시 · 성과 · 실패율
+ * 소재 · 생성 · 모의 실행 · 채널별 게시 · 성과 · 실패율
  */
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -8,36 +8,30 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { FontSize } from '@weddingpick/ui';
 import { apiFetch } from './_api';
 
-type ContentStatus = 'draft' | 'fact_checking' | 'approved' | 'published' | 'failed';
+type ContentStatus = 'queued' | 'simulated' | 'failed';
 type MarketingItem = {
   id: string;
   title: string;
   channel: string;
   status: ContentStatus;
   createdAt: string;
-  publishedAt: string | null;
-  views: number;
-  clicks: number;
-  factCheckPassed: boolean | null;
+  simulatedAt: string | null;
+  failReason: string | null;
 };
 
 type MarketingData = {
-  summary: { generated: number; published: number; failed: number; failRate: number };
+  summary: { generated: number; simulated: number; failed: number; failRate: number };
   items: MarketingItem[];
 };
 
 const STATUS_LABEL: Record<ContentStatus, string> = {
-  draft: '초안',
-  fact_checking: '사실 검증 중',
-  approved: '승인됨',
-  published: '게시됨',
+  queued: '대기 중',
+  simulated: '모의 완료',
   failed: '실패',
 };
 const STATUS_COLOR: Record<ContentStatus, string> = {
-  draft: '#868b94',
-  fact_checking: '#805217',
-  approved: '#0088cc',
-  published: '#1aa174',
+  queued: '#868b94',
+  simulated: '#1aa174',
   failed: '#e81607',
 };
 
@@ -75,6 +69,14 @@ export default function MarketingScreen() {
     } catch { /* 무시 */ } finally { setActing(null); }
   }
 
+  async function simulate(id: string) {
+    setActing(id);
+    try {
+      await apiFetch(`/v1/admin/marketing/${id}/simulate`, { method: 'POST' });
+      setRev((r) => r + 1);
+    } catch { /* 무시 */ } finally { setActing(null); }
+  }
+
   return (
     <View style={styles.root}>
       <View style={styles.header}>
@@ -102,8 +104,8 @@ export default function MarketingScreen() {
               <Text style={styles.summaryLabel}>생성</Text>
             </View>
             <View style={styles.summaryCell}>
-              <Text style={[styles.summaryValue, { color: '#1aa174' }]}>{data.summary.published}</Text>
-              <Text style={styles.summaryLabel}>게시됨</Text>
+              <Text style={[styles.summaryValue, { color: '#1aa174' }]}>{data.summary.simulated}</Text>
+              <Text style={styles.summaryLabel}>모의 완료</Text>
             </View>
             <View style={styles.summaryCell}>
               <Text style={[styles.summaryValue, { color: '#e81607' }]}>{data.summary.failed}</Text>
@@ -121,20 +123,36 @@ export default function MarketingScreen() {
               <Text style={[styles.th, styles.colTitle]}>제목</Text>
               <Text style={[styles.th, styles.colChannel]}>채널</Text>
               <Text style={[styles.th, styles.colStatus]}>상태</Text>
-              <Text style={[styles.th, styles.colViews]}>조회</Text>
-              <Text style={[styles.th, styles.colClicks]}>클릭</Text>
+              <Text style={[styles.th, styles.colSimulatedAt]}>모의완료</Text>
               <Text style={[styles.th, styles.colAction]} />
             </View>
             {data.items.map((item, i) => (
               <View key={item.id} style={[styles.tableRow, i % 2 === 1 && styles.tableRowZebra]}>
-                <Text style={[styles.td, styles.colTitle]} numberOfLines={1}>{item.title}</Text>
+                <View style={styles.colTitle}>
+                  <Text style={styles.td} numberOfLines={1}>{item.title}</Text>
+                  {item.failReason != null && (
+                    <Text style={styles.failReason} numberOfLines={1}>{item.failReason}</Text>
+                  )}
+                </View>
                 <Text style={[styles.td, styles.colChannel]}>{item.channel}</Text>
                 <Text style={[styles.td, styles.colStatus, { color: STATUS_COLOR[item.status] }]}>
                   {STATUS_LABEL[item.status]}
                 </Text>
-                <Text style={[styles.td, styles.colViews]}>{item.views.toLocaleString()}</Text>
-                <Text style={[styles.td, styles.colClicks]}>{item.clicks.toLocaleString()}</Text>
+                <Text style={[styles.td, styles.colSimulatedAt]}>
+                  {item.simulatedAt ? item.simulatedAt.slice(0, 10) : '—'}
+                </Text>
                 <View style={styles.colAction}>
+                  {item.status === 'queued' && (
+                    <Pressable
+                      style={[styles.inlineBtn, styles.inlineBtnPrimary, acting === item.id && styles.btnDisabled]}
+                      onPress={() => void simulate(item.id)}
+                      disabled={acting !== null}
+                    >
+                      <Text style={[styles.inlineBtnText, styles.inlineBtnTextPrimary]}>
+                        {acting === item.id ? '…' : '모의'}
+                      </Text>
+                    </Pressable>
+                  )}
                   {item.status === 'failed' && (
                     <Pressable
                       style={[styles.inlineBtn, acting === item.id && styles.btnDisabled]}
@@ -204,11 +222,11 @@ const styles = StyleSheet.create({
   tableRowZebra: { backgroundColor: '#fafbfc' },
   th: { fontSize: FontSize.tab, fontWeight: '700', color: '#868b94', textTransform: 'uppercase' as const },
   td: { fontSize: FontSize.t7, color: '#3a3b40' },
+  failReason: { fontSize: FontSize.tab, color: '#e81607', marginTop: 2 },
   colTitle: { flex: 3 },
-  colChannel: { width: 80 },
-  colStatus: { width: 90 },
-  colViews: { width: 70, textAlign: 'right' as const },
-  colClicks: { width: 60, textAlign: 'right' as const },
+  colChannel: { width: 72 },
+  colStatus: { width: 72 },
+  colSimulatedAt: { width: 76, textAlign: 'right' as const, fontSize: FontSize.tab, color: '#868b94' },
   colAction: { width: 60, alignItems: 'flex-end' },
   inlineBtn: {
     paddingHorizontal: 8,
@@ -218,6 +236,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#d1d3d8',
   },
+  inlineBtnPrimary: {
+    backgroundColor: '#0088cc',
+    borderColor: '#0088cc',
+  },
   inlineBtnText: { fontSize: FontSize.tab, color: '#5a5d6a' },
+  inlineBtnTextPrimary: { color: '#fff', fontWeight: '700' },
   btnDisabled: { opacity: 0.5 },
 });
