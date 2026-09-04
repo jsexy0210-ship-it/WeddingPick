@@ -14,8 +14,6 @@ services:
     staticPublishPath: ./apps/web/dist
     autoDeploy: true
     buildCommand: npm run build --workspace @weddingpick/web
-    domains:
-      - admin.weddingpick.kr
     routes:
       - type: redirect
         source: /
