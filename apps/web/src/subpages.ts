@@ -41,16 +41,20 @@ const NAV = [
 function subGnb(activePath: string | null): string {
   const links = NAV.map((n) => {
     const active = n.href === activePath;
-    return `<a href="${esc(n.href)}" style="font-size:16px;line-height:22px;color:${active ? INK : SEC};font-weight:${active ? 700 : 400};text-decoration:none;white-space:nowrap">${esc(n.label)}</a>`;
+    return `<a href="${esc(n.href)}" class="sp-nav-link${active ? ' sp-nav-active' : ''}" style="color:${active ? INK : SEC};font-weight:${active ? 700 : 400}">${esc(n.label)}</a>`;
   }).join('');
 
-  return `<header style="height:76px;flex:0 0 76px;display:flex;align-items:center;justify-content:space-between;padding:0 64px;border-bottom:1px solid ${esc(DIVIDER)}">
-  <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit">
+  return `<header class="sp-gnb" style="border-bottom:1px solid ${esc(DIVIDER)}">
+  <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;flex-shrink:0">
     <span style="color:${esc(C)};display:flex;line-height:0">${pickMark(22, C)}</span>
     <span style="font-size:19px;font-weight:700;color:${esc(INK)}">웨딩픽</span>
   </a>
-  <nav style="display:flex;align-items:center;gap:32px">${links}</nav>
-  <a href="/" style="height:38px;padding:0 18px;border-radius:999px;background:${esc(C)};color:#fff;display:inline-flex;align-items:center;font-size:15px;font-weight:700;text-decoration:none;white-space:nowrap">앱 다운로드</a>
+  <input type="checkbox" id="sp-cb" class="sp-ham-cb" aria-hidden="true">
+  <nav class="sp-nav">${links}</nav>
+  <a href="/" class="sp-cta-btn" style="background:${esc(C)};color:#fff">앱 다운로드</a>
+  <label for="sp-cb" class="sp-ham-btn" aria-label="메뉴 열기">
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M3 6h16M3 11h16M3 16h16" stroke="${esc(INK)}" stroke-width="1.8" stroke-linecap="round"/></svg>
+  </label>
 </header>`;
 }
 
@@ -59,20 +63,20 @@ function subFooter(): string {
     ? `<a href="mailto:${esc(CONTACT_EMAIL)}" style="font-size:14px;color:rgba(255,255,255,.5);text-decoration:none">${esc(CONTACT_EMAIL)}</a>`
     : '';
 
-  return `<footer style="background:${esc(FOOT_INK)};padding:0 64px">
-  <div style="display:flex;align-items:center;justify-content:space-between;height:76px;border-bottom:1px solid rgba(255,255,255,.12)">
-    <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none">
+  return `<footer class="sp-foot" style="background:${esc(FOOT_INK)}">
+  <div class="sp-foot-top">
+    <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0">
       <span style="color:${esc(C)};display:flex;line-height:0">${pickMark(20, C)}</span>
       <span style="font-size:17px;font-weight:700;color:#fff">웨딩픽</span>
     </a>
-    <nav style="display:flex;align-items:center;gap:24px">
+    <nav class="sp-foot-nav">
       ${NAV.map((n) => `<a href="${esc(n.href)}" style="font-size:14px;color:rgba(255,255,255,.6);text-decoration:none;white-space:nowrap">${esc(n.label)}</a>`).join('')}
     </nav>
     ${email}
   </div>
-  <div style="display:flex;align-items:center;justify-content:space-between;height:60px">
+  <div class="sp-foot-bot">
     <span style="font-size:13px;color:rgba(255,255,255,.4)">© 2026 웨딩픽. All rights reserved.</span>
-    <nav style="display:flex;align-items:center;gap:16px">
+    <nav class="sp-foot-policy">
       <a href="/terms.html" style="font-size:13px;color:rgba(255,255,255,.5);text-decoration:none;white-space:nowrap">이용약관</a>
       <span style="font-size:13px;color:rgba(255,255,255,.2)">·</span>
       <a href="/privacy.html" style="font-size:13px;color:rgba(255,255,255,.5);text-decoration:none;white-space:nowrap">개인정보처리방침</a>
@@ -89,7 +93,74 @@ const BASE_STYLE = `
 html{font-family:${FONT_STACK};font-size:16px;-webkit-text-size-adjust:100%}
 body{margin:0;background:#f7f8fa;color:${INK}}
 a{color:inherit}
-.page{width:1280px;margin:0 auto;background:#fff;box-shadow:0 10px 40px rgba(58,47,48,.10);display:flex;flex-direction:column;min-height:100vh}
+.page{max-width:1280px;width:100%;margin:0 auto;background:#fff;box-shadow:0 10px 40px rgba(58,47,48,.10);display:flex;flex-direction:column;min-height:100vh;overflow-x:hidden}
+
+/* GNB */
+.sp-gnb{height:76px;flex:0 0 76px;display:flex;align-items:center;justify-content:space-between;padding:0 64px;position:relative;gap:32px}
+.sp-nav{display:flex;align-items:center;gap:32px;flex:1;justify-content:center}
+.sp-nav-link{font-size:16px;line-height:22px;text-decoration:none;white-space:nowrap}
+.sp-ham-cb{position:absolute;opacity:0;width:0;height:0;pointer-events:none}
+.sp-ham-btn{display:none;background:none;border:none;padding:8px;cursor:pointer;line-height:0;flex-shrink:0}
+.sp-cta-btn{height:38px;padding:0 18px;border-radius:999px;display:inline-flex;align-items:center;font-size:15px;font-weight:700;text-decoration:none;white-space:nowrap;flex-shrink:0}
+
+/* Title band */
+.sp-titleband{padding:52px 64px 44px;border-bottom:1px solid ${DIVIDER}}
+.sp-titleband h1{font-size:38px;line-height:52px;font-weight:700;color:${INK};letter-spacing:-1.2px;margin:0;white-space:pre-line}
+
+/* Body */
+.sp-body{padding:52px 64px 72px}
+
+/* Footer */
+.sp-foot{padding:0 64px}
+.sp-foot-top{display:flex;align-items:center;justify-content:space-between;height:76px;border-bottom:1px solid rgba(255,255,255,.12);gap:24px}
+.sp-foot-nav{display:flex;align-items:center;gap:24px;flex:1;justify-content:center}
+.sp-foot-bot{display:flex;align-items:center;justify-content:space-between;height:60px;gap:16px}
+.sp-foot-policy{display:flex;align-items:center;gap:16px}
+
+/* Legal layout */
+.sp-legal{padding:56px 64px 72px;display:flex;gap:56px;align-items:flex-start}
+.sp-toc{flex:0 0 200px;position:sticky;top:24px;display:flex;flex-direction:column;gap:0}
+.sp-content{flex:1;min-width:0;display:flex;flex-direction:column;gap:40px}
+
+/* Tablet */
+@media(max-width:1023px){
+  .sp-gnb{padding:0 32px}
+  .sp-titleband{padding:40px 32px 36px}
+  .sp-titleband h1{font-size:30px;line-height:42px}
+  .sp-body{padding:40px 32px 56px}
+  .sp-foot{padding:0 32px}
+  .sp-legal{padding:40px 32px 56px}
+}
+
+/* Mobile */
+@media(max-width:767px){
+  .sp-gnb{padding:0 20px;height:64px;flex:0 0 64px;gap:0}
+  .sp-nav{
+    display:none;position:absolute;top:64px;left:0;right:0;
+    flex-direction:column;align-items:flex-start;gap:0;flex:none;justify-content:flex-start;
+    background:#fff;border-top:1px solid ${DIVIDER};
+    box-shadow:0 8px 24px rgba(58,47,48,.12);z-index:99
+  }
+  .sp-nav-link{display:block;padding:16px 20px;width:100%;border-bottom:1px solid #f0f1f3}
+  .sp-ham-cb:checked~.sp-nav{display:flex}
+  .sp-ham-btn{display:flex;margin-left:auto;margin-right:8px}
+  .sp-cta-btn{font-size:14px !important;height:36px;padding:0 14px}
+  .sp-titleband{padding:28px 20px 24px}
+  .sp-titleband h1{font-size:26px;line-height:36px}
+  .sp-body{padding:28px 20px 48px}
+  .sp-foot{padding:0 20px}
+  .sp-foot-top{height:auto;padding:20px 0;flex-direction:column;align-items:flex-start;gap:12px}
+  .sp-foot-nav{flex-direction:column;align-items:flex-start;gap:8px;flex:none;justify-content:flex-start}
+  .sp-foot-bot{height:auto;padding:16px 0;flex-direction:column;align-items:flex-start;gap:8px}
+  .sp-legal{padding:24px 20px 48px;flex-direction:column;gap:32px}
+  .sp-toc{display:none}
+  .sp-content{flex:none;width:100%}
+}
+
+/* Small mobile */
+@media(max-width:479px){
+  .sp-titleband h1{font-size:22px;line-height:32px}
+}
 `.trim();
 
 function subDocument(opts: {
@@ -127,9 +198,9 @@ ${faviconTags()}
 }
 
 function titleBand(crumb: string, h1: string, h1sub?: string): string {
-  return `<div style="padding:52px 64px 44px;border-bottom:1px solid ${esc(DIVIDER)}">
+  return `<div class="sp-titleband">
   <p style="font-size:14px;line-height:19px;color:${esc(TER)};margin:0 0 16px">${esc(crumb)}</p>
-  <h1 style="font-size:38px;line-height:52px;font-weight:700;color:${esc(INK)};letter-spacing:-1.2px;margin:0;white-space:pre-line">${esc(h1)}</h1>
+  <h1>${esc(h1)}</h1>
   ${h1sub ? `<p style="font-size:17px;line-height:27px;color:${esc(SEC)};margin:4px 0 0;max-width:700px">${esc(h1sub)}</p>` : ''}
 </div>`;
 }
@@ -150,7 +221,7 @@ function introCards(title: string, lead: string, items: { eyebrow?: string; titl
   return `<section style="padding:40px 0;display:flex;flex-direction:column;gap:16px">
     ${title ? `<h2 style="font-size:24px;line-height:32px;font-weight:700;color:${esc(INK)};margin:0">${esc(title)}</h2>` : ''}
     ${lead ? `<p style="font-size:16px;line-height:26px;color:${esc(SEC)};margin:0">${esc(lead)}</p>` : ''}
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">${cards}</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px">${cards}</div>
   </section>`;
 }
 
@@ -172,7 +243,7 @@ function introSteps(title: string, steps: { no: string; title: string; body: str
 }
 
 export function renderIntroPage(): string {
-  const body = `<div style="padding:0 64px 72px;display:flex;flex-direction:column;gap:0">
+  const body = `<div class="sp-body" style="padding-top:0;display:flex;flex-direction:column;gap:0">
     <div style="height:1px;background:${esc(DIVIDER)};margin-bottom:0"></div>
     ${introSteps('이렇게 씁니다', [
       { no: '1', title: '예식일과 지역을 알려주세요', body: '남은 기간에 맞춰 지금 정할 것부터 순서대로 챙겨드려요.', meta: '30초' },
@@ -246,9 +317,9 @@ export function renderFaqPage(): string {
     <a href="/support.html" style="color:${C};font-weight:700;text-decoration:none;margin-left:8px">문의 남기기</a></span>
   </div>`;
 
-  const body = `<div style="padding:52px 64px 72px;display:flex;flex-direction:column;gap:40px">
+  const body = `<div class="sp-body" style="display:flex;flex-direction:column;gap:40px">
     <section style="display:flex;flex-direction:column;gap:16px">
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">${catGrid}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px">${catGrid}</div>
     </section>
     <section style="display:flex;flex-direction:column;gap:0">
       <h2 style="font-size:24px;line-height:32px;font-weight:700;color:${INK};margin:0 0 20px">많이 보는 질문</h2>
@@ -331,9 +402,9 @@ export function renderSupportPage(): string {
     </div>
   </section>`;
 
-  const body = `<div style="padding:52px 64px 72px;display:flex;flex-direction:column;gap:40px">
+  const body = `<div class="sp-body" style="display:flex;flex-direction:column;gap:40px">
     <section style="display:flex;flex-direction:column;gap:16px">
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">${quickCards}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">${quickCards}</div>
     </section>
     <section style="display:flex;flex-direction:column;gap:12px">
       <h2 style="font-size:24px;line-height:32px;font-weight:700;color:${INK};margin:0">자주 찾는 항목</h2>
@@ -395,9 +466,9 @@ function legalDocument(articles: TermsArticle[]): string {
     </section>`;
   }).join('');
 
-  return `<div style="padding:56px 64px 72px;display:flex;gap:56px;align-items:flex-start">
-    <aside style="flex:0 0 200px;position:sticky;top:24px;display:flex;flex-direction:column;gap:0">${toc}</aside>
-    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:40px">${content}</div>
+  return `<div class="sp-legal">
+    <aside class="sp-toc">${toc}</aside>
+    <div class="sp-content">${content}</div>
   </div>`;
 }
 
@@ -503,9 +574,9 @@ function privacyDocument(sections: PrivacySection[]): string {
     </section>`;
   }).join('');
 
-  return `<div style="padding:56px 64px 72px;display:flex;gap:56px;align-items:flex-start">
-    <aside style="flex:0 0 200px;position:sticky;top:24px;display:flex;flex-direction:column;gap:0">${toc}</aside>
-    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:40px">${content}</div>
+  return `<div class="sp-legal">
+    <aside class="sp-toc">${toc}</aside>
+    <div class="sp-content">${content}</div>
   </div>`;
 }
 
