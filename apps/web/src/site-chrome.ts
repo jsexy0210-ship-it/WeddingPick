@@ -1,3 +1,4 @@
+import { socialMeta } from './social-meta';
 /**
  * 두 화면이 함께 쓰는 겉껍데기 — 문서 틀, GNB, Footer.
  *
@@ -177,6 +178,7 @@ function appAnchor(): string {
  * 도는지는 우리 사정이다. 검색칸도 GET form이라 스크립트 없이 넘어간다.
  */
 export function siteDocument(input: {
+  path: string;
   title: string;
   description: string;
   current: string | null;
@@ -189,10 +191,7 @@ export function siteDocument(input: {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(input.title)}</title>
 <meta name="description" content="${escapeHtml(input.description)}">
-<meta property="og:title" content="${escapeHtml(input.title)}">
-<meta property="og:description" content="${escapeHtml(input.description)}">
-<meta property="og:type" content="website">
-<meta property="og:locale" content="ko_KR">
+${socialMeta(input.path, input.title, input.description)}
 <style>${SITE_STYLES}</style>
 </head>
 <body>
