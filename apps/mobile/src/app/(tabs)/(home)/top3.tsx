@@ -166,7 +166,7 @@ function Top3Card({ rank, item }: { rank: number; item: Top3Item }) {
         )}
       </ThemedView>
 
-      <ThemedText type="smallBold" themeColor="textAssistive">
+      <ThemedText type="t7" themeColor="textAssistive">
         확인된 정보 {item.confirmedCount}건
       </ThemedText>
     </ThemedView>
