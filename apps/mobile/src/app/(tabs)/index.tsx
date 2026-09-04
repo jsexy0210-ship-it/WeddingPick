@@ -30,7 +30,6 @@ import {
   Spacing,
   ThemedText,
   ThemedView,
-  ProductSymbol,
   useTheme,
 } from '@weddingpick/ui';
 import { Board, FoldedBoard } from '@/features/home/board';
@@ -246,10 +245,7 @@ function GuestHome({
                 { backgroundColor: theme.backgroundElement },
                 pressed && styles.pressed,
               ]}>
-              <View style={styles.categoryLabel}>
-                <ProductSymbol name={CATEGORY_META[category]?.icon ?? 'hall'} size={20} color={theme.text} />
-                <ThemedText type="t5" numberOfLines={1}>{VENDOR_CATEGORY_LABEL[category]}</ThemedText>
-              </View>
+              <ThemedText type="t5" numberOfLines={1}>{VENDOR_CATEGORY_LABEL[category]}</ThemedText>
               <ThemedText type="t7" themeColor="textAssistive" numberOfLines={1}>
                 {categoryCountLabel(category, popular)}
               </ThemedText>
@@ -272,13 +268,6 @@ function GuestHome({
 /** 비회원에게 여는 업종. 초기에 실제로 자료가 모이는 넷이다. */
 const CATEGORY_ENTRIES: readonly VendorCategory[] = ['hall', 'sdm', 'snap', 'planner_agency'];
 
-/** 목업의 두 줄 업종 카드 구조를 유지한다. 숫자는 서버가 내려준 자료만 사용한다. */
-const CATEGORY_META: Partial<Record<VendorCategory, { icon: 'hall' | 'sdm' | 'snap' | 'planner' }>> = {
-  hall: { icon: 'hall' },
-  sdm: { icon: 'sdm' },
-  snap: { icon: 'snap' },
-  planner_agency: { icon: 'planner' },
-};
 
 function categoryCountLabel(category: VendorCategory, vendors: readonly VendorSummary[]) {
   const count = vendors
@@ -324,7 +313,10 @@ function MemberHome({
     <>
       <ThemedView style={styles.hero}>
         <ThemedView style={styles.who}>
-          <Avatar name={me?.displayName ?? null} />
+          <Avatar name={me?.displayName ?? null} role="primary" />
+          {me?.spouseLinked === true && (
+            <Avatar name={null} role="secondary" />
+          )}
           <ThemedText type="t6" themeColor="textSecondary" numberOfLines={1}>
             {me?.displayName ?? '우리'}
             {me?.spouseLinked === true ? ' · 함께 준비 중' : ''}
@@ -415,7 +407,16 @@ function MemberHome({
             ))}
           </ThemedView>
         </Section>
+      ) : view.state === 'empty' && view.focus !== null ? (
+        /* 비어있는 상태 — 지목된 업종을 카드로 보여 첫 발을 내딛게 한다. */
+        <Section title="다음 준비">
+          <NextStepCard
+            categoryLabel={focusGroup?.categoryLabel ?? VENDOR_CATEGORY_LABEL[view.focus]}
+            onPress={() => router.push(`/pick?category=${view.focus!}`)}
+          />
+        </Section>
       ) : upNext === null ? null : (
+        /* 진행 중 — 다음 업종을 한 줄로, D-day를 붙여서. */
         <Section title="다음 준비">
           <Pressable
             accessibilityRole="button"
@@ -424,6 +425,11 @@ function MemberHome({
             <ThemedText type="t5" numberOfLines={1} style={styles.grow}>
               {upNext.categoryLabel}
             </ThemedText>
+            {stage.daysLeft !== null && (
+              <ThemedText type="t7" themeColor="textAssistive">
+                D-{stage.daysLeft}
+              </ThemedText>
+            )}
             <ThemedText type="t6" themeColor="textAssistive">
               ›
             </ThemedText>
@@ -536,18 +542,63 @@ function Band() {
   return <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} />;
 }
 
-function Avatar({ name }: { name: string | null }) {
+function Avatar({ name, role = 'primary' }: { name: string | null; role?: 'primary' | 'secondary' }) {
   const theme = useTheme();
+  const isSecondary = role === 'secondary';
 
   return (
     <View
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      style={[styles.avatar, { backgroundColor: theme.tintSubtle }]}>
-      <ThemedText type="t7" themeColor="tint" style={styles.avatarLabel}>
-        {(name ?? '웨').slice(0, 1)}
+      style={[
+        styles.avatar,
+        { backgroundColor: isSecondary ? theme.backgroundSelected : theme.tintSubtle },
+        isSecondary && styles.avatarSecondary,
+      ]}>
+      <ThemedText
+        type="t7"
+        themeColor={isSecondary ? 'textAssistive' : 'tint'}
+        style={styles.avatarLabel}>
+        {(name ?? '배').slice(0, 1)}
       </ThemedText>
     </View>
+  );
+}
+
+/**
+ * 빈 상태 "다음 준비" 카드. 후보가 하나도 없을 때 지목된 업종을 강조해서 보여준다.
+ * 누르면 해당 업종 Pick 화면으로 이동한다.
+ */
+function NextStepCard({
+  categoryLabel,
+  onPress,
+}: {
+  categoryLabel: string;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.nextCard,
+        { backgroundColor: theme.backgroundElement },
+        pressed && styles.pressed,
+      ]}>
+      <ThemedView style={styles.nextCardBody}>
+        <ThemedText type="t5" numberOfLines={1}>
+          {categoryLabel}
+        </ThemedText>
+        <ThemedText type="t7" themeColor="textAssistive" numberOfLines={1}>
+          정할 때마다 쌓여요
+        </ThemedText>
+      </ThemedView>
+      <ThemedText type="t6" themeColor="textAssistive">
+        ›
+      </ThemedText>
+    </Pressable>
   );
 }
 
@@ -604,13 +655,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarLabel: { fontWeight: 700 },
+  avatarSecondary: { marginLeft: -10 },
 
   block: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionGap },
   section: { gap: Layout.sectionHeadGap },
   band: { height: Layout.sectionBand, marginBottom: Layout.sectionGap },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 11 },
-  categoryLabel: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   entry: {
     flexBasis: '48%',
     flexGrow: 1,
@@ -644,4 +695,13 @@ const styles = StyleSheet.create({
     minHeight: Layout.rowMinHeight,
     paddingHorizontal: 2,
   },
+  nextCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: Radius.medium,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.three,
+    gap: Spacing.two,
+  },
+  nextCardBody: { flex: 1, gap: 3 },
 });
