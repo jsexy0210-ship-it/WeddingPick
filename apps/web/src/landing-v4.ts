@@ -407,26 +407,26 @@ a{color:inherit}
 
 /* Mobile (≤767px) */
 @media(max-width:767px){
-  .lv-gnb{padding:0 20px;height:64px;flex:0 0 64px;gap:0}
+  .lv-gnb{padding:0 24px;height:64px;flex:0 0 64px;gap:0}
   .lv-gnb-nav{
     display:none;position:absolute;top:64px;left:0;right:0;
     flex-direction:column;align-items:flex-start;gap:0;flex:none;
     background:#fff;border-top:1px solid #EAEBEE;
     box-shadow:0 8px 24px rgba(58,47,48,.12);z-index:99
   }
-  .lv-gnb-nav a{display:block;padding:16px 20px;width:100%;font-size:16px !important;border-bottom:1px solid #f0f1f3}
+  .lv-gnb-nav a{display:block;padding:16px 24px;width:100%;font-size:16px !important;border-bottom:1px solid #f0f1f3}
   .lv-ham-cb:checked~.lv-gnb-nav{display:flex}
   .lv-ham-btn{display:flex;margin-left:auto;margin-right:8px}
   .lv-cta-btn{font-size:14px !important;height:36px;padding:0 14px}
   .lv-hero{min-height:320px}
-  .lv-hero-inner{padding:40px 20px}
+  .lv-hero-inner{padding:40px 24px}
   .lv-hero-h1{font-size:34px;line-height:48px;letter-spacing:-1px}
-  .lv-feat{padding:56px 20px;flex-direction:column;gap:36px}
+  .lv-feat{padding:56px 24px;flex-direction:column;gap:36px}
   .lv-feat-rev{flex-direction:column}
   .lv-feat-mockup{flex:none;width:100%}
   .lv-feat-h2{font-size:28px;line-height:40px}
-  .lv-dl{padding:56px 20px}
-  .lv-foot{padding:0 20px}
+  .lv-dl{padding:56px 24px}
+  .lv-foot{padding:0 24px}
   .lv-foot-top{height:auto;padding:20px 0;flex-direction:column;align-items:flex-start;gap:12px}
   .lv-foot-nav{flex-direction:column;align-items:flex-start;gap:8px;flex:none;justify-content:flex-start}
   .lv-foot-bot{height:auto;padding:16px 0;flex-direction:column;align-items:flex-start;gap:8px}
