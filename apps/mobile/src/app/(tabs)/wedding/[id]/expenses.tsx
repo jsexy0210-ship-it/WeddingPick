@@ -8,7 +8,7 @@ import {
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Modal, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Modal, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { addExpense, getExpenses, removeExpense, setBudget } from '@/api/client';
@@ -22,6 +22,7 @@ import {
   LoadingView,
   MaxContentWidth,
   Radius,
+  showAlert,
   Spacing,
   ThemedText,
   ThemedView,
@@ -97,11 +98,11 @@ export default function ExpensesScreen() {
     const amount = parseInt(addAmount.replace(/[^0-9]/g, ''), 10);
 
     if (!label) {
-      Alert.alert('항목 이름을 적어주세요');
+      showAlert('항목 이름을 적어주세요');
       return;
     }
     if (!amount || amount <= 0) {
-      Alert.alert('금액을 숫자로 적어주세요');
+      showAlert('금액을 숫자로 적어주세요');
       return;
     }
     const spentOn = addSpentOn.trim();
@@ -117,12 +118,12 @@ export default function ExpensesScreen() {
       closeAddSheet();
       load();
     } catch (caught) {
-      Alert.alert('지출 추가 실패', caught instanceof Error ? caught.message : '다시 시도해주세요.');
+      showAlert('지출 추가 실패', caught instanceof Error ? caught.message : '다시 시도해주세요.');
     }
   }
 
   function remove(expenseId: string) {
-    Alert.alert('삭제할까요?', '이 지출 항목을 삭제하면 되돌릴 수 없어요.', [
+    showAlert('삭제할까요?', '이 지출 항목을 삭제하면 되돌릴 수 없어요.', [
       { text: '취소', style: 'cancel' },
       {
         text: '삭제',

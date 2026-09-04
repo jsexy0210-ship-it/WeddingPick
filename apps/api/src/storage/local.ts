@@ -34,6 +34,10 @@ export function createLocalStorage(baseUrl = 'http://localhost:3000/dev-storage'
       return bytes;
     },
 
+    async getPublicUrl(storageKey) {
+      return `${baseUrl}/${encodeURIComponent(storageKey)}`;
+    },
+
     async delete(storageKey) {
       files.delete(storageKey);
     },

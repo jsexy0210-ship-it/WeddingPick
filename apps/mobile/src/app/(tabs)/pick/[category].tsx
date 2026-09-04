@@ -19,7 +19,7 @@ import {
   Spacing,
   ThemedText,
   ThemedView,
-  useHoverFocus,
+  readWebInteractionState,
   useTheme,
 } from '@weddingpick/ui';
 import {
@@ -238,79 +238,82 @@ function CandidateCard({
   onRemove: () => void;
 }) {
   const theme = useTheme();
-  const { hovered, focused, hoverFocusHandlers } = useHoverFocus();
 
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`${candidate.vendorName} 상세 보기`}
-      onPress={() => router.push(`/search/${candidate.vendorId}`)}
-      {...hoverFocusHandlers}>
-      <ThemedView
-        type="backgroundElement"
-        style={[
-          styles.card,
-          isDecidedVendor && { borderColor: theme.tint, borderWidth: 2 },
-          hovered ? { backgroundColor: theme.backgroundSelected } : null,
-          focused ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: -2 } : null,
-        ]}
-      >
-        <ThemedView style={styles.cardHeader}>
-          <ThemedText type="t5" numberOfLines={1} style={styles.cardName}>
-            {candidate.vendorName}
-          </ThemedText>
-          {isDecidedVendor && (
-            <ThemedView
-              style={[styles.decidedBadge, { backgroundColor: theme.tint }]}
-            >
-              <ThemedText type="badge" style={{ color: theme.onTint }}>
-                결정
+      onPress={() => router.push(`/search/${candidate.vendorId}`)}>
+      {(state) => {
+        const { hovered, focused } = readWebInteractionState(state);
+        return (
+          <ThemedView
+            type="backgroundElement"
+            style={[
+              styles.card,
+              isDecidedVendor && { borderColor: theme.tint, borderWidth: 2 },
+              hovered ? { backgroundColor: theme.backgroundSelected } : null,
+              focused ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: -2 } : null,
+            ]}
+          >
+            <ThemedView style={styles.cardHeader}>
+              <ThemedText type="t5" numberOfLines={1} style={styles.cardName}>
+                {candidate.vendorName}
               </ThemedText>
+              {isDecidedVendor && (
+                <ThemedView
+                  style={[styles.decidedBadge, { backgroundColor: theme.tint }]}
+                >
+                  <ThemedText type="badge" style={{ color: theme.onTint }}>
+                    결정
+                  </ThemedText>
+                </ThemedView>
+              )}
+              {candidate.addedByPartner && !isDecidedVendor && (
+                <ThemedView
+                  style={[styles.partnerBadge, { backgroundColor: theme.tintSubtle }]}
+                >
+                  <ThemedText type="badge" themeColor="tint">
+                    둘 다 Pick
+                  </ThemedText>
+                </ThemedView>
+              )}
             </ThemedView>
-          )}
-          {candidate.addedByPartner && !isDecidedVendor && (
-            <ThemedView
-              style={[styles.partnerBadge, { backgroundColor: theme.tintSubtle }]}
-            >
-              <ThemedText type="badge" themeColor="tint">
-                둘 다 Pick
+
+            <ThemedText type="t7" themeColor="textSecondary">
+              {candidate.region}
+            </ThemedText>
+
+            {candidate.note ? (
+              <ThemedText type="t7" themeColor="textAssistive" numberOfLines={2}>
+                {candidate.note}
               </ThemedText>
-            </ThemedView>
-          )}
-        </ThemedView>
+            ) : null}
 
-        <ThemedText type="t7" themeColor="textSecondary">
-          {candidate.region}
-        </ThemedText>
-
-        {candidate.note ? (
-          <ThemedText type="t7" themeColor="textAssistive" numberOfLines={2}>
-            {candidate.note}
-          </ThemedText>
-        ) : null}
-
-        {/* CTA */}
-        {!isDecided && (
-          <ThemedView style={styles.cardActions}>
-            <ActionButton
-              variant="secondary"
-              size="large"
-              label="빼기"
-              disabled={removing}
-              onPress={onRemove}
-            />
-            <ThemedView style={styles.decideBtn}>
-              <ActionButton
-                variant="primary"
-                size="large"
-                label={deciding ? '정하는 중' : '최종 결정'}
-                disabled={deciding}
-                onPress={onDecide}
-              />
-            </ThemedView>
+            {/* CTA */}
+            {!isDecided && (
+              <ThemedView style={styles.cardActions}>
+                <ActionButton
+                  variant="secondary"
+                  size="large"
+                  label="빼기"
+                  disabled={removing}
+                  onPress={onRemove}
+                />
+                <ThemedView style={styles.decideBtn}>
+                  <ActionButton
+                    variant="primary"
+                    size="large"
+                    label={deciding ? '정하는 중' : '최종 결정'}
+                    disabled={deciding}
+                    onPress={onDecide}
+                  />
+                </ThemedView>
+              </ThemedView>
+            )}
           </ThemedView>
-        )}
-      </ThemedView>
+        );
+      }}
     </Pressable>
   );
 }

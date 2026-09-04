@@ -16,7 +16,7 @@ import {
   Spacing,
   ThemedText,
   ThemedView,
-  useHoverFocus,
+  readWebInteractionState,
   useTheme,
 } from '@weddingpick/ui';
 
@@ -242,21 +242,22 @@ function DashedCta({
   onPress: () => void;
 }) {
   const theme = useTheme();
-  const { hovered, focused, hoverFocusHandlers } = useHoverFocus();
   const styles = makeStyles(theme);
 
   return (
     <Pressable
-      style={({ pressed }) => [
-        styles.addCta,
-        { borderColor: theme.border },
-        pressed && { opacity: 0.6 },
-        !pressed && hovered ? { backgroundColor: theme.backgroundSelected } : null,
-        focused ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: -2 } : null,
-      ]}
+      style={(state) => {
+        const { pressed, hovered, focused } = readWebInteractionState(state);
+        return [
+          styles.addCta,
+          { borderColor: theme.border },
+          pressed && { opacity: 0.6 },
+          !pressed && hovered ? { backgroundColor: theme.backgroundSelected } : null,
+          focused ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: -2 } : null,
+        ];
+      }}
       onPress={onPress}
       hitSlop={8}
-      {...hoverFocusHandlers}
     >
       <ThemedText themeColor={labelColor} style={styles.addCtaText}>
         {label}

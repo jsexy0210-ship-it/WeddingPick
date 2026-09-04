@@ -2,7 +2,7 @@ import type { WeddingEvent } from '@weddingpick/api-contract';
 import { formatEventDateTime } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listWeddingEvents, removeWeddingEvent, updateWeddingEvent } from '@/api/client';
@@ -13,6 +13,7 @@ import {
   LoadingView,
   MaxContentWidth,
   Radius,
+  showAlert,
   Spacing,
   ThemedText,
   ThemedView,
@@ -137,7 +138,7 @@ export default function WeddingEventDetailScreen() {
   }
 
   function remove() {
-    Alert.alert('일정 빼기', '이 일정을 빼시겠어요? 되돌릴 수 없어요.', [
+    showAlert('일정 빼기', '이 일정을 빼시겠어요? 되돌릴 수 없어요.', [
       { text: '취소', style: 'cancel' },
       {
         text: '빼기',

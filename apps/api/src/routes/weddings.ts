@@ -22,7 +22,7 @@ import { ApiError, notFound } from '../errors';
 
 type WeddingRow = {
   id: string;
-  wedding_date: string | null;
+  wedding_date: Date | null;
   owner_user_id: string;
   partner_user_id: string | null;
   created_at: Date;
@@ -66,7 +66,7 @@ async function loadDetail(context: AppContext, weddingId: string, viewerId: stri
 
   return {
     id: row.id,
-    weddingDate: row.wedding_date,
+    weddingDate: row.wedding_date ? row.wedding_date.toISOString().slice(0, 10) : null,
     partnerLinked: row.partner_user_id !== null,
     createdAt: row.created_at.toISOString(),
     members,

@@ -21,10 +21,12 @@ import {
   ThemedView,
   VendorImage,
   type VendorCategory as UIVendorCategory,
-  useHoverFocus,
+  readWebInteractionState,
   useTheme,
 } from '@weddingpick/ui';
 import { getCurrentUser, listCandidates } from '@/api/client';
+import { isWebShellScreen } from '@/features/webshell/config';
+import { WebShellView } from '@/features/webshell/WebShellView';
 
 /**
  * Pick 홈 · WP-PICK-001.
@@ -43,6 +45,10 @@ export default function PickScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
+    // 하이브리드 웹뷰 쉘 POC로 이 화면을 대체할 때는 이 밑 자료를 안 쓴다 —
+    // 훅 순서를 지키려고 호출 자체는 남기고, 몸통만 건너뛴다.
+    if (isWebShellScreen('pick')) return;
+
     getCurrentUser()
       .then(async (current) => {
         setError(null);
@@ -57,6 +63,12 @@ export default function PickScreen() {
   }, []);
 
   useEffect(load, [load]);
+
+  // 하이브리드 웹뷰 쉘 POC. `EXPO_PUBLIC_WEBSHELL_SCREENS`에 "pick"이 없으면
+  // (기본값) 이 분기는 타지 않고 기존 네이티브 화면 그대로다.
+  if (isWebShellScreen('pick')) {
+    return <WebShellView path="/pick" />;
+  }
 
   // 배우자와 둘 다 고른 곳: addedByPartner=true인 후보가 있는 첫 번째 그룹
   const sharedGroup = page?.groups.find((g) => g.candidates.some((c) => c.addedByPartner));
@@ -189,7 +201,6 @@ function CategoryRow({
   isLast: boolean;
 }) {
   const theme = useTheme();
-  const { hovered, focused, hoverFocusHandlers } = useHoverFocus();
   const label = VENDOR_CATEGORY_LABEL[cat];
 
   let subText: string;
@@ -235,12 +246,14 @@ function CategoryRow({
         onPress={onPress}
         accessibilityRole="button"
         accessibilityLabel={`${label} 카테고리 보기`}
-        {...hoverFocusHandlers}
-        style={[
-          styles.categoryRow,
-          hovered ? { backgroundColor: theme.backgroundSelected } : null,
-          focused ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: -2 } : null,
-        ]}>
+        style={(state) => {
+          const { hovered, focused } = readWebInteractionState(state);
+          return [
+            styles.categoryRow,
+            hovered ? { backgroundColor: theme.backgroundSelected } : null,
+            focused ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: -2 } : null,
+          ];
+        }}>
         <View style={styles.categoryInfo}>
           <ThemedText style={styles.categoryName}>{label}</ThemedText>
           <ThemedText style={styles.categorySub} themeColor="textAssistive">
@@ -270,7 +283,6 @@ function SharedSection({
   sharedCandidates: GroupRow['candidates'];
 }) {
   const theme = useTheme();
-  const { hovered, focused, hoverFocusHandlers } = useHoverFocus();
   const categoryLabel = VENDOR_CATEGORY_LABEL[group.category as VendorCategory] ?? group.categoryLabel;
   const totalCount = group.candidates.length;
 
@@ -297,12 +309,14 @@ function SharedSection({
       <Pressable
         onPress={goCompare}
         accessibilityRole="button"
-        {...hoverFocusHandlers}
-        style={[
-          styles.ctaPrimary,
-          { backgroundColor: theme.tint, opacity: hovered ? 0.9 : 1 },
-          focused ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: 2 } : null,
-        ]}>
+        style={(state) => {
+          const { hovered, focused } = readWebInteractionState(state);
+          return [
+            styles.ctaPrimary,
+            { backgroundColor: theme.tint, opacity: hovered ? 0.9 : 1 },
+            focused ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: 2 } : null,
+          ];
+        }}>
         <ThemedText style={[styles.ctaLabel, { color: theme.onTint }]}>
           {`${categoryLabel} ${totalCount}곳 비교`}
         </ThemedText>
@@ -321,7 +335,6 @@ function SharedVendorRow({
   isLast: boolean;
 }) {
   const theme = useTheme();
-  const { hovered, focused, hoverFocusHandlers } = useHoverFocus();
 
   return (
     <View>
@@ -329,12 +342,14 @@ function SharedVendorRow({
         onPress={() => router.push(`/search/${candidate.vendorId}`)}
         accessibilityRole="button"
         accessibilityLabel={`${candidate.vendorName} 상세 보기`}
-        {...hoverFocusHandlers}
-        style={[
-          styles.vendorRow,
-          hovered ? { backgroundColor: theme.backgroundSelected } : null,
-          focused ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: -2 } : null,
-        ]}>
+        style={(state) => {
+          const { hovered, focused } = readWebInteractionState(state);
+          return [
+            styles.vendorRow,
+            hovered ? { backgroundColor: theme.backgroundSelected } : null,
+            focused ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: -2 } : null,
+          ];
+        }}>
         <View style={styles.vendorThumb}>
           <VendorImage
             category={mapToUICategory(category)}
@@ -373,7 +388,6 @@ function EmptyHero() {
 
 function StarterSection() {
   const theme = useTheme();
-  const { hovered, focused, hoverFocusHandlers } = useHoverFocus();
   // 웨딩홀 카테고리 기준으로 빠른 진입 제안
   const starters: VendorCategory[] = ['hall', 'sdm', 'snap'];
 
@@ -388,12 +402,14 @@ function StarterSection() {
       <Pressable
         onPress={() => router.push({ pathname: '/search', params: { category: 'hall' } })}
         accessibilityRole="button"
-        {...hoverFocusHandlers}
-        style={[
-          styles.ctaPrimary,
-          { backgroundColor: theme.tint, opacity: hovered ? 0.9 : 1 },
-          focused ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: 2 } : null,
-        ]}>
+        style={(state) => {
+          const { hovered, focused } = readWebInteractionState(state);
+          return [
+            styles.ctaPrimary,
+            { backgroundColor: theme.tint, opacity: hovered ? 0.9 : 1 },
+            focused ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: 2 } : null,
+          ];
+        }}>
         <ThemedText style={[styles.ctaLabel, { color: theme.onTint }]}>
           웨딩홀 둘러보기
         </ThemedText>
@@ -404,19 +420,20 @@ function StarterSection() {
 
 function StarterCard({ cat }: { cat: VendorCategory }) {
   const theme = useTheme();
-  const { hovered, focused, hoverFocusHandlers } = useHoverFocus();
 
   return (
     <Pressable
       onPress={() => router.push({ pathname: '/search', params: { category: cat } })}
       accessibilityRole="button"
       accessibilityLabel={`${VENDOR_CATEGORY_LABEL[cat]} 검색`}
-      {...hoverFocusHandlers}
-      style={[
-        styles.starterCard,
-        hovered ? { opacity: 0.85 } : null,
-        focused ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: 2 } : null,
-      ]}>
+      style={(state) => {
+        const { hovered, focused } = readWebInteractionState(state);
+        return [
+          styles.starterCard,
+          hovered ? { opacity: 0.85 } : null,
+          focused ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: 2 } : null,
+        ];
+      }}>
       <View style={styles.starterImage}>
         <VendorImage
           category={mapToUICategory(cat)}
@@ -444,7 +461,6 @@ function EmptyCategoryList() {
 
 function EmptyCategoryRow({ cat, isLast }: { cat: VendorCategory; isLast: boolean }) {
   const theme = useTheme();
-  const { hovered, focused, hoverFocusHandlers } = useHoverFocus();
 
   return (
     <View>
@@ -452,12 +468,14 @@ function EmptyCategoryRow({ cat, isLast }: { cat: VendorCategory; isLast: boolea
         onPress={() => router.push({ pathname: '/search', params: { category: cat } })}
         accessibilityRole="button"
         accessibilityLabel={`${VENDOR_CATEGORY_LABEL[cat]} 검색`}
-        {...hoverFocusHandlers}
-        style={[
-          styles.categoryRow,
-          hovered ? { backgroundColor: theme.backgroundSelected } : null,
-          focused ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: -2 } : null,
-        ]}>
+        style={(state) => {
+          const { hovered, focused } = readWebInteractionState(state);
+          return [
+            styles.categoryRow,
+            hovered ? { backgroundColor: theme.backgroundSelected } : null,
+            focused ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: -2 } : null,
+          ];
+        }}>
         <ThemedText style={[styles.categoryName, { flex: 1 }]}>
           {VENDOR_CATEGORY_LABEL[cat]}
         </ThemedText>
@@ -483,17 +501,25 @@ function SectionBand() {
 
 function RetryLink({ onPress }: { onPress: () => void }) {
   const theme = useTheme();
-  const { hovered, focused, hoverFocusHandlers } = useHoverFocus();
 
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      {...hoverFocusHandlers}
-      style={focused ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: 2 } : null}>
-      <ThemedText type="t6" style={{ color: theme.tint, textDecorationLine: hovered ? 'underline' : 'none' }}>
-        다시 시도
-      </ThemedText>
+      style={(state) => {
+        const { focused } = readWebInteractionState(state);
+        return focused
+          ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: 2 }
+          : null;
+      }}>
+      {(state) => {
+        const { hovered } = readWebInteractionState(state);
+        return (
+          <ThemedText type="t6" style={{ color: theme.tint, textDecorationLine: hovered ? 'underline' : 'none' }}>
+            다시 시도
+          </ThemedText>
+        );
+      }}
     </Pressable>
   );
 }

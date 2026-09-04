@@ -4,6 +4,7 @@ import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 import { Radius, Spacing } from './theme';
 import { useTheme } from './use-theme';
+import { readWebInteractionState } from './web-interaction';
 
 export type FilterChipProps = {
   label: string;
@@ -23,21 +24,31 @@ export function FilterChip({ label, selected, onPress, role = 'checkbox' }: Filt
       accessibilityState={role === 'radio' ? { selected } : { checked: selected }}
       accessibilityLabel={label}
       onPress={onPress}>
-      <ThemedView
-        style={[
-          styles.chip,
-          {
-            borderColor: selected ? theme.tint : theme.border,
-            backgroundColor: selected ? theme.tint : 'transparent',
-          },
-        ]}>
-        <ThemedText
-          type="small"
-          style={selected ? { color: theme.onTint } : undefined}
-          themeColor={selected ? undefined : 'textSecondary'}>
-          {label}
-        </ThemedText>
-      </ThemedView>
+      {(state) => {
+        const { hovered, focused } = readWebInteractionState(state);
+        return (
+          <ThemedView
+            style={[
+              styles.chip,
+              {
+                borderColor: selected || focused ? theme.tint : theme.border,
+                borderWidth: focused && !selected ? 2 : 1,
+                backgroundColor: selected
+                  ? theme.tint
+                  : hovered
+                    ? theme.backgroundSelected
+                    : 'transparent',
+              },
+            ]}>
+            <ThemedText
+              type="small"
+              style={selected ? { color: theme.onTint } : undefined}
+              themeColor={selected ? undefined : 'textSecondary'}>
+              {label}
+            </ThemedText>
+          </ThemedView>
+        );
+      }}
     </Pressable>
   );
 }

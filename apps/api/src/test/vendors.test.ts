@@ -1,4 +1,8 @@
-import { vendorDetailSchema, vendorSearchResponseSchema } from '@weddingpick/api-contract';
+import {
+  vendorDetailSchema,
+  vendorPhotosResponseSchema,
+  vendorSearchResponseSchema,
+} from '@weddingpick/api-contract';
 import { MAX_COMPARED_VENDORS, PRICING_POLICY, productKey } from '@weddingpick/domain';
 
 import {
@@ -562,6 +566,186 @@ describeWithDb('업체 상세', () => {
     expect(product.stat.sampleCount).toBe(PRICING_POLICY.minimumSampleCount);
     expect(product.stat.periodStart).toBe('2026-06-01');
     expect(product.stat.minVerificationLevel).toBe('L2');
+  });
+});
+
+describeWithDb('WP-VEND-002 업체 이미지', () => {
+  beforeAll(async () => {
+    await resetDatabase();
+    test = await createTestApp();
+  });
+
+  afterAll(async () => {
+    await test?.close();
+  });
+
+  beforeEach(resetDatabase);
+
+  /** vendor_images 행 하나. 기본은 approved에 위치 하나를 채운다. */
+  async function createVendorImage(
+    vendorId: string,
+    overrides: {
+      status?: string;
+      isRepresentative?: boolean;
+      useContain?: boolean;
+      storageKey?: string | null;
+      sourceUrl?: string | null;
+      copyrightNote?: string | null;
+    } = {}
+  ) {
+    const status = overrides.status ?? 'approved';
+    const storageKey = overrides.storageKey ?? null;
+    const sourceUrl = overrides.sourceUrl ?? (storageKey ? null : 'https://example.com/photo.jpg');
+    const rejectionReason = status !== 'approved' && status !== 'pending' ? '테스트 거부' : null;
+    const verifiedAt = status === 'approved' ? new Date() : null;
+
+    const { rows } = await test.pool.query<{ id: string }>(
+      `INSERT INTO structured.vendor_images
+         (vendor_id, storage_key, source_url, copyright_basis, copyright_note,
+          use_contain, status, is_representative, rejection_reason, verified_at)
+       VALUES ($1, $2, $3, 'vendor_provided', $4, $5, $6, $7, $8, $9)
+       RETURNING id`,
+      [
+        vendorId,
+        storageKey,
+        sourceUrl,
+        overrides.copyrightNote ?? null,
+        overrides.useContain ?? false,
+        status,
+        overrides.isRepresentative ?? false,
+        rejectionReason,
+        verifiedAt,
+      ]
+    );
+
+    return rows[0]!.id;
+  }
+
+  it('없는 업체는 404다', async () => {
+    const response = await test.app.inject({
+      method: 'GET',
+      url: `/v1/vendors/${crypto.randomUUID()}/images`,
+    });
+
+    expect(response.statusCode).toBe(404);
+  });
+
+  it('이미지가 없으면 빈 배열이다', async () => {
+    const vendorId = await createVendor({ name: '사진없는홀' });
+
+    const response = await test.app.inject({
+      method: 'GET',
+      url: `/v1/vendors/${vendorId}/images`,
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().photos).toEqual([]);
+  });
+
+  it('로그인 없이도 승인된 이미지를 본다', async () => {
+    // 업체 상세와 같은 접근 레벨(Level 1) — 보기도 전에 계정을 만들라고 하지 않는다.
+    const vendorId = await createVendor({ name: '공개홀' });
+    await createVendorImage(vendorId, { sourceUrl: 'https://example.com/a.jpg' });
+
+    const response = await test.app.inject({
+      method: 'GET',
+      url: `/v1/vendors/${vendorId}/images`,
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().photos).toHaveLength(1);
+  });
+
+  it('승인 전·거부된 이미지는 내려가지 않는다', async () => {
+    const vendorId = await createVendor({ name: '검증중홀' });
+    await createVendorImage(vendorId, { status: 'pending' });
+    await createVendorImage(vendorId, { status: 'quality_rejected' });
+    await createVendorImage(vendorId, { status: 'approved', sourceUrl: 'https://example.com/ok.jpg' });
+
+    const response = await test.app.inject({
+      method: 'GET',
+      url: `/v1/vendors/${vendorId}/images`,
+    });
+
+    expect(response.json().photos).toHaveLength(1);
+    expect(response.json().photos[0].url).toBe('https://example.com/ok.jpg');
+  });
+
+  it('대표 이미지가 맨 앞에 온다', async () => {
+    const vendorId = await createVendor({ name: '대표홀' });
+    await createVendorImage(vendorId, { sourceUrl: 'https://example.com/first.jpg' });
+    const repId = await createVendorImage(vendorId, {
+      sourceUrl: 'https://example.com/rep.jpg',
+      isRepresentative: true,
+    });
+
+    const response = await test.app.inject({
+      method: 'GET',
+      url: `/v1/vendors/${vendorId}/images`,
+    });
+
+    const photos = response.json().photos;
+    expect(photos[0].id).toBe(repId);
+    expect(photos[0].isRepresentative).toBe(true);
+    expect(photos[1].isRepresentative).toBe(false);
+  });
+
+  it('source_url이 있으면 그대로 쓰고, storage_key만 있으면 서명 URL을 발급한다', async () => {
+    const vendorId = await createVendor({ name: '저장소홀' });
+    await createVendorImage(vendorId, { sourceUrl: 'https://example.com/direct.jpg' });
+    await createVendorImage(vendorId, { storageKey: 'vendor-images/keyed.jpg' });
+
+    const response = await test.app.inject({
+      method: 'GET',
+      url: `/v1/vendors/${vendorId}/images`,
+    });
+
+    const urls = response.json().photos.map((photo: { url: string }) => photo.url);
+    expect(urls).toContain('https://example.com/direct.jpg');
+    expect(urls.some((url: string) => url.includes(encodeURIComponent('vendor-images/keyed.jpg')))).toBe(
+      true
+    );
+  });
+
+  it('로고처럼 잘리면 안 되는 이미지는 useContain을 켠 채로 내려간다', async () => {
+    const vendorId = await createVendor({ name: '로고홀' });
+    await createVendorImage(vendorId, { useContain: true });
+
+    const response = await test.app.inject({
+      method: 'GET',
+      url: `/v1/vendors/${vendorId}/images`,
+    });
+
+    expect(response.json().photos[0].useContain).toBe(true);
+  });
+
+  it('출처 문구가 있으면 함께 내려가고, 없으면 지어내지 않는다', async () => {
+    const vendorId = await createVendor({ name: '출처홀' });
+    await createVendorImage(vendorId, { copyrightNote: '업체 제공' });
+    await createVendorImage(vendorId);
+
+    const response = await test.app.inject({
+      method: 'GET',
+      url: `/v1/vendors/${vendorId}/images`,
+    });
+
+    const notes = response.json().photos.map((photo: { sourceNote: string | null }) => photo.sourceNote);
+    expect(notes).toContain('업체 제공');
+    expect(notes).toContain(null);
+  });
+
+  it('응답이 계약과 어긋나지 않는다', async () => {
+    const vendorId = await createVendor({ name: '계약이미지홀' });
+    await createVendorImage(vendorId, { isRepresentative: true, copyrightNote: '공공누리 제1유형' });
+
+    const response = await test.app.inject({
+      method: 'GET',
+      url: `/v1/vendors/${vendorId}/images`,
+    });
+
+    const parsed = vendorPhotosResponseSchema.safeParse(response.json());
+    expect(parsed.error?.issues ?? []).toEqual([]);
+    expect(parsed.success).toBe(true);
   });
 });
 

@@ -1,4 +1,4 @@
-import { ActivityIndicator, Linking, StyleSheet } from 'react-native';
+import { ActivityIndicator, Linking, Platform, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton } from './action-button';
@@ -180,11 +180,15 @@ export function PermissionDeniedView({
       <ThemedText type="t7" themeColor="textSecondary">
         {PERMISSION_DESC[kind]}
       </ThemedText>
-      <ActionButton
-        variant="primary"
-        label="설정 열기"
-        onPress={() => Linking.openSettings()}
-      />
+      {/* 브라우저에는 앱 설정 화면이 없다 — react-native-web에 openSettings가 없어
+          누르면 아무 반응이 없거나 에러가 난다. 네이티브에서만 보여준다. */}
+      {Platform.OS !== 'web' ? (
+        <ActionButton
+          variant="primary"
+          label="설정 열기"
+          onPress={() => Linking.openSettings()}
+        />
+      ) : null}
       {onAlternative && alternativeLabel ? (
         <ActionButton label={alternativeLabel} onPress={onAlternative} />
       ) : null}

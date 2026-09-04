@@ -2,7 +2,7 @@ import type { MyReport } from '@weddingpick/api-contract';
 import { MY_REPORTS_EMPTY, MY_REPORTS_EMPTY_CTA, formatWeddingDate } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -19,6 +19,7 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import { deleteReview, listMyReports } from '@/api/client';
+import { confirmAlert } from '@/components/confirm-alert';
 import { won } from '@/features/quotes/quote-result-view';
 
 /**
@@ -54,7 +55,7 @@ export default function MyReportsScreen() {
 
   function confirmDelete(reviewId: string, vendor: string) {
     // 되돌릴 수 없는 행동은 한 번 더 묻는다. 핸드오프 인터랙션 규칙.
-    Alert.alert('후기를 지울까요', `${vendor}에 쓴 후기가 지워져요. 다시 되돌릴 수 없어요.`, [
+    confirmAlert('후기를 지울까요', `${vendor}에 쓴 후기가 지워져요. 다시 되돌릴 수 없어요.`, [
       { text: '그대로 둘게요', style: 'cancel' },
       {
         text: '지우기',
@@ -170,6 +171,6 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     borderRadius: Radius.pill,
     paddingHorizontal: Spacing.two,
-    paddingVertical: 2,
+    paddingVertical: Spacing.half,
   },
 });

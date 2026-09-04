@@ -63,10 +63,7 @@ export default function WeddingCompleteScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.hero}>
-            <ThemedText type="t2">
-              🎊
-            </ThemedText>
-            <ThemedText type="t4">결혼 축하드려요!</ThemedText>
+            <ThemedText type="t2">결혼 축하드려요!</ThemedText>
             {weddingDateLabel ? (
               <ThemedText type="t7" themeColor="textSecondary">
                 {weddingDateLabel}의 아름다운 예식을 마쳤어요.
