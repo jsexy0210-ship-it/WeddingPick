@@ -1,7 +1,8 @@
 import { MAX_CANDIDATE_NOTE_LENGTH, PREPARATION_STATES } from '@weddingpick/domain';
 import { z } from 'zod';
 
-import { idSchema, timestampSchema, vendorCategorySchema } from './common';
+import { amountSchema, idSchema, timestampSchema, vendorCategorySchema } from './common';
+import { expenseBucketSchema } from './wedding-plan';
 
 /**
  * 담아둔 업체 한 줄.
@@ -80,6 +81,53 @@ export const recordComparisonRequestSchema = z.object({
 
 export type RecordComparisonRequest = z.infer<typeof recordComparisonRequestSchema>;
 
+/**
+ * 결정한 업체. WP-OUR-003.
+ *
+ * 결정정보 · 관련 일정 · 관련 지출을 한 덩어리로 내려준다 — 화면이 세 번 부르지
+ * 않는다. 관련 일정은 그 업체(vendor_id)로 잡힌 일정만이다. 관련 지출은 업체가
+ * 아니라 **업종**으로 묶는다 — 지출 표에는 vendor_id가 없어서(bucketFor) 업체
+ * 단위로는 셀 수 없다.
+ */
+export const decisionEventSchema = z.object({
+  id: idSchema,
+  title: z.string().min(1),
+  startsAt: timestampSchema,
+  location: z.string().nullable(),
+});
+
+export const decisionExpenseSummarySchema = z.object({
+  bucket: expenseBucketSchema,
+  bucketLabel: z.string().min(1),
+  paidTotal: amountSchema,
+  paidCount: z.int().nonnegative(),
+  scheduledTotal: amountSchema,
+  scheduledCount: z.int().nonnegative(),
+});
+
+export const decisionDetailSchema = z.object({
+  category: vendorCategorySchema,
+  categoryLabel: z.string().min(1),
+  vendor: z.object({
+    id: idSchema,
+    name: z.string().min(1),
+    region: z.string().min(1),
+  }),
+  decidedAt: timestampSchema,
+  /** 배우자가 정했는지. */
+  decidedByPartner: z.boolean(),
+  events: z.array(decisionEventSchema),
+  expenses: decisionExpenseSummarySchema,
+});
+
+export const decisionListResponseSchema = z.object({
+  decisions: z.array(decisionDetailSchema),
+});
+
 export type VendorCandidate = z.infer<typeof vendorCandidateSchema>;
 export type CreateCandidateRequest = z.infer<typeof createCandidateRequestSchema>;
 export type CandidateListResponse = z.infer<typeof candidateListResponseSchema>;
+export type DecisionEvent = z.infer<typeof decisionEventSchema>;
+export type DecisionExpenseSummary = z.infer<typeof decisionExpenseSummarySchema>;
+export type DecisionDetail = z.infer<typeof decisionDetailSchema>;
+export type DecisionListResponse = z.infer<typeof decisionListResponseSchema>;

@@ -5,16 +5,22 @@ import {
   candidateListResponseSchema,
   createCandidateRequestSchema,
   decideCategoryRequestSchema,
+  decisionListResponseSchema,
   recordComparisonRequestSchema,
 } from './candidates';
 import {
   createExpenseRequestSchema,
   createVisitNoteRequestSchema,
+  createWeddingNoteRequestSchema,
   createWeddingTaskRequestSchema,
+  expenseDetailSchema,
   expenseSummaryResponseSchema,
   setBudgetRequestSchema,
+  updateExpenseRequestSchema,
+  updateWeddingNoteRequestSchema,
   updateWeddingTaskRequestSchema,
   visitNoteListResponseSchema,
+  weddingNoteListResponseSchema,
   weddingTaskListResponseSchema,
 } from './wedding-plan';
 import {
@@ -377,6 +383,21 @@ export const ENDPOINTS = {
     response: z.null(),
   },
 
+  /** 지출 상세. WP-OUR-010. Pick 인증 배지 · 환불 상태 · 분할 결제를 담는다. */
+  getExpenseDetail: {
+    method: 'GET',
+    path: '/v1/weddings/{weddingId}/expenses/{expenseId}',
+    response: expenseDetailSchema,
+  },
+
+  /** 환불 상태만 고친다. 결제인증에서 온 줄은 404다. */
+  updateExpense: {
+    method: 'PATCH',
+    path: '/v1/weddings/{weddingId}/expenses/{expenseId}',
+    body: updateExpenseRequestSchema,
+    response: z.object({ ok: z.boolean() }),
+  },
+
   setBudget: {
     method: 'PUT',
     path: '/v1/weddings/{weddingId}/budget',
@@ -458,6 +479,41 @@ export const ENDPOINTS = {
   removeCandidate: {
     method: 'DELETE',
     path: '/v1/weddings/{weddingId}/candidates/{candidateId}',
+    response: z.null(),
+  },
+
+  /** 결정한 업체. WP-OUR-003. 업종별 결정정보 · 관련 일정 · 관련 지출을 묶어 준다. */
+  listDecisions: {
+    method: 'GET',
+    path: '/v1/weddings/{weddingId}/decisions',
+    response: decisionListResponseSchema,
+  },
+
+  /** 우리웨딩 — 메모. WP-OUR-011. 업체별 또는 자유 메모. */
+  listWeddingNotes: {
+    method: 'GET',
+    path: '/v1/weddings/{weddingId}/notes',
+    response: weddingNoteListResponseSchema,
+  },
+
+  addWeddingNote: {
+    method: 'POST',
+    path: '/v1/weddings/{weddingId}/notes',
+    body: createWeddingNoteRequestSchema,
+    response: z.object({ noteId: idSchema }),
+  },
+
+  /** version이 다르면 conflict(409) — 배우자가 먼저 고친 것이다. */
+  updateWeddingNote: {
+    method: 'PATCH',
+    path: '/v1/weddings/{weddingId}/notes/{noteId}',
+    body: updateWeddingNoteRequestSchema,
+    response: z.object({ ok: z.boolean() }),
+  },
+
+  removeWeddingNote: {
+    method: 'DELETE',
+    path: '/v1/weddings/{weddingId}/notes/{noteId}',
     response: z.null(),
   },
 
