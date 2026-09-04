@@ -47,11 +47,15 @@ npm run export:web   # 정적 빌드, 프로덕션에 가까운 렌더링 확인
   떨어지는 경우가 있는지 봐야 한다).
 - 줄바꿈·자간 때문에 문구가 잘리거나 겹치지 않는가(버튼 라벨, 긴 업체명 등).
 - 문구 자체는 `packages/domain/src/copy-rules.ts`의 `BANNED_PHRASES`(표본, 데이터,
-  적정가 등)를 새로 만들어 넣지 않았는가 — 화면 수정 중 문구를 건드렸다면 확인.
+  적정가 등)를 새로 만들어 넣지 않았는가 — 화면 수정 중 문구를 건드렸다면 확인. 새
+  문구를 넣거나 고칠 때는 `node lint-copy.js <경로>`로 `spec/glossary.json` 금지어를
+  직접 확인한다(`CLAUDE.md` §3, §13).
 
 ### 4. 디자인 토큰 / 하드코딩
 - 색상·간격·폰트 크기를 직접 하드코딩(`#fff`, `16` 등)하지 않고 `@weddingpick/ui`의
-  `theme.ts`(`palette`, `Spacing`, `Layout` 등)·`typography.ts` 값을 쓰는가.
+  `theme.ts`(`palette`, `Spacing`, `Layout` 등)·`typography.ts` 값을 쓰는가. 값의
+  원본은 `spec/tokens.json`이다 — `theme.ts` 값이 거기서 어긋나 보이면 화면을 고치는
+  게 아니라 `spec/tokens.json` 기준으로 `theme.ts`를 맞춰야 하는 별도 작업이다.
 - Pick Mark(`wedding-mark.tsx`)를 변형(리사이즈 비율 왜곡, 색 변경 등) 없이 그대로
   쓰는가.
 - mock 데이터·데모 API를 새로 만들지 않고 실제 API(`@/api/client`)를 그대로 쓰는가.
