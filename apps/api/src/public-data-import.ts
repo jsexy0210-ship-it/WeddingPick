@@ -5,6 +5,7 @@ import { backfillVendorMatches } from './analysis/vendor-matching';
 import { loadConfig } from './config';
 import { createPool, withTransaction } from './db';
 import { MissingColumnError, parseLocaldataCsv } from './public-data/localdata';
+import { runPublicCollection } from './public-data/run';
 
 /**
  * 공개 인허가 자료로 업체를 등록한다.
@@ -68,6 +69,14 @@ async function inspect(file: string): Promise<void> {
 }
 
 async function main() {
+  if (process.argv.includes('--source')) {
+    await runPublicCollection(process.argv.slice(2));
+    return;
+  }
+  // Legacy localdata files require per-dataset review; they may not silently bypass the allowlist.
+  if (!process.argv.includes('--inspect') && !process.argv.includes('--dry-run')) {
+    throw new Error('저장에는 검증된 --source가 필요합니다. public-data/README.md 확인');
+  }
   const file = argument('file');
   const category = argument('category');
   const regionFilter = argument('region');

@@ -56,6 +56,7 @@ type VendorRow = {
   category: string;
   region: string;
   source: string;
+  source_url: string | null;
   last_verified_at: Date;
   /** 지도 핀 좌표. 아직 지오코딩하지 않았으면 둘 다 null. */
   lat: number | null;
@@ -123,7 +124,7 @@ function toSummary(row: VendorRow) {
     category: row.category as VendorCategory,
     region: row.region,
     coordinates: row.lat !== null && row.lng !== null ? { lat: row.lat, lng: row.lng } : null,
-    sourceNote: vendorSourceNote(row.source),
+    sourceNote: vendorSourceNote(row.source, row.source_url),
     comparableQuoteCount: Number(row.comparable_quote_count),
   };
 }
@@ -158,7 +159,7 @@ function mostCommon(values: string[]): string | null {
  */
 async function loadVendorDetail(pool: Pool, vendorId: string, viewerId: string | null) {
   const { rows } = await pool.query<VendorRow>(
-    `SELECT v.id, v.name, v.category, v.region, v.source, v.last_verified_at, v.lat, v.lng,
+    `SELECT v.id, v.name, v.category, v.region, v.source, to_jsonb(v)->>'source_url' AS source_url, v.last_verified_at, v.lat, v.lng,
             (SELECT count(*) FROM structured.comparable_quotes c WHERE c.vendor_id = v.id)
               AS comparable_quote_count
      FROM structured.vendors v WHERE v.id = $1`,
@@ -427,7 +428,7 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
                      ELSE structured.normalize_vendor_name($1) END AS value
        ),
        found AS (
-         SELECT v.id, v.name, v.category, v.region, v.source, v.last_verified_at, v.lat, v.lng
+         SELECT v.id, v.name, v.category, v.region, v.source, to_jsonb(v)->>'source_url' AS source_url, v.last_verified_at, v.lat, v.lng
          FROM structured.vendors v, needle n
          WHERE (n.value IS NULL
                 OR v.normalized_name LIKE '%' || n.value || '%'
@@ -437,7 +438,7 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
            AND ($2::vendor_category IS NULL OR v.category = $2)
            AND ($3::text IS NULL OR v.region LIKE $3 || '%')
        )
-       SELECT v.id, v.name, v.category, v.region, v.source, v.last_verified_at, v.lat, v.lng,
+       SELECT v.id, v.name, v.category, v.region, v.source, to_jsonb(v)->>'source_url' AS source_url, v.last_verified_at, v.lat, v.lng,
               (SELECT count(*) FROM structured.comparable_quotes c WHERE c.vendor_id = v.id)
                 AS comparable_quote_count,
               coalesce(w.proof_count, 0) AS proof_count,
@@ -677,5 +678,67 @@ async function loadConditionStats(
     auth,
     async (request) =>
       loadConditionStats(context.pool, request.params.vendorId, optionalUserId(request))
+  );
+
+  /**
+   * 업체 이벤트·혜택.
+   *
+   * 별도 수집 파이프라인이 아직 없어 지금은 빈 배열을 돌려준다. vendor_events
+   * 테이블이 생기면 이 핸들러만 채운다 — 응답 모양은 바꾸지 않는다.
+   */
+  app.get<{ Params: { vendorId: string } }>(
+    '/v1/vendors/:vendorId/events',
+    auth,
+    async (request) => {
+      const { vendorId } = request.params;
+
+      const { rows } = await context.pool.query<{ id: string }>(
+        'SELECT id FROM structured.vendors WHERE id = $1',
+        [vendorId]
+      );
+
+      if (!rows[0]) throw notFound('업체');
+
+      return {
+        events: [] as Array<{ id: string; title: string; endsOn: string | null }>,
+      };
+    }
+  );
+
+  /**
+   * 업체 가격 구간 통계.
+   *
+   * Pick 인증된 결제 자료를 바탕으로 가격 구간과 건수를 돌려준다.
+   * 공개 기준(discloseAmounts)을 그대로 따른다.
+   */
+  app.get<{ Params: { vendorId: string } }>(
+    '/v1/vendors/:vendorId/price-range',
+    auth,
+    async (request) => {
+      const { vendorId } = request.params;
+
+      const vendorCheck = await context.pool.query<{ id: string }>(
+        'SELECT id FROM structured.vendors WHERE id = $1',
+        [vendorId]
+      );
+
+      if (!vendorCheck.rows[0]) throw notFound('업체');
+
+      const proofs = await context.pool.query<{ paid_amount: string }>(
+        `SELECT paid_amount
+         FROM structured.usable_payment_proofs
+         WHERE vendor_id = $1
+           AND paid_at >= now() - ($2 || ' months')::interval`,
+        [vendorId, DEFAULT_PERIOD_MONTHS]
+      );
+
+      const amounts = proofs.rows.map((r) => Number(r.paid_amount));
+
+      return {
+        vendorId,
+        ...discloseAmounts({ amounts, period: DEFAULT_PERIOD_LABEL }),
+        caveat: PRICE_REPORT_CAVEAT,
+      };
+    }
   );
 }

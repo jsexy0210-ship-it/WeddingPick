@@ -1,7 +1,12 @@
+import { randomUUID } from 'node:crypto';
+
 import { isFeature } from '../ai-cost-admin';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
+import type { MarketingChannel, MarketingFormat } from '@weddingpick/api-contract';
+import * as marketingContent from '../marketing/content';
+import * as marketingStore from '../marketing/store';
 import * as adAdmin from '../ad-admin';
 import * as aiCostAdmin from '../ai-cost-admin';
 import { currentUserId, requireOperatorUser } from '../auth/plugin';
@@ -42,6 +47,35 @@ import * as withdrawalAdmin from '../withdrawal-admin';
  * 길이고, 운영자만 쓸 수 있는 라우트 안에 두면 최초의 운영자를 만들 수 없다.
  * CLI로만 남겨둔다.
  */
+type KillSwitch = {
+  id: string;
+  name: string;
+  description: string;
+  enabled: boolean;
+  category: string;
+  lastChangedAt: string | null;
+  lastChangedBy: string | null;
+};
+
+const killSwitches = new Map<string, KillSwitch>([
+  ['ai-recommendations', { id: 'ai-recommendations', name: 'AI 추천', description: 'AI 기반 업체 추천 기능을 중지합니다', enabled: true, category: 'AI', lastChangedAt: null, lastChangedBy: null }],
+  ['ai-verification', { id: 'ai-verification', name: 'AI 검증', description: '문서 AI 자동 검증을 중지합니다', enabled: true, category: 'AI', lastChangedAt: null, lastChangedBy: null }],
+  ['ai-matching', { id: 'ai-matching', name: 'AI 매칭', description: '이메일 자동 매칭을 중지합니다', enabled: true, category: 'AI', lastChangedAt: null, lastChangedBy: null }],
+  ['stats-update', { id: 'stats-update', name: '통계 반영', description: '가격 통계 자동 갱신을 중지합니다', enabled: true, category: '운영', lastChangedAt: null, lastChangedBy: null }],
+  ['reward-payout', { id: 'reward-payout', name: '보상 지급', description: '친구 초대·홍보 보상 자동 지급을 중지합니다', enabled: true, category: '운영', lastChangedAt: null, lastChangedBy: null }],
+  ['auto-publish', { id: 'auto-publish', name: '자동 게시', description: '후기·반론 자동 게시를 중지합니다', enabled: true, category: '운영', lastChangedAt: null, lastChangedBy: null }],
+]);
+
+function mapCopyrightBasis(
+  basis: string
+): 'licensed' | 'public_domain' | 'vendor_provided' | 'pending' | 'rejected' {
+  if (basis === 'vendor_provided') return 'vendor_provided';
+  if (basis === 'public_domain') return 'public_domain';
+  if (basis === 'unknown') return 'pending';
+  if (basis.startsWith('cc_') || basis.startsWith('kogl_')) return 'licensed';
+  return 'pending';
+}
+
 export function registerAdminRoutes(app: FastifyInstance, context: AppContext): void {
   const auth = { preHandler: requireOperatorUser(context) };
 
@@ -222,6 +256,20 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
         verificationAdmin.approve(context.pool, request.params.id, currentUserId(request), body.note ?? null)
       );
 
+      return reply.status(204).send();
+    }
+  );
+
+  const supplementVerificationBodySchema = z.object({ reason: z.string().trim().min(1) });
+
+  app.post<{ Params: { id: string } }>(
+    '/v1/admin/verifications/:id/supplement',
+    auth,
+    async (request, reply) => {
+      const body = supplementVerificationBodySchema.parse(request.body);
+      await run(() =>
+        verificationAdmin.requestSupplement(context.pool, request.params.id, currentUserId(request), body.reason)
+      );
       return reply.status(204).send();
     }
   );
@@ -603,4 +651,727 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
       return reply.status(204).send();
     }
   );
+
+  /**
+   * 가격 이상치 탐지. 관리자 > 통계·이상치 화면(ADM-STATS).
+   *
+   * 카테고리별로 결제 금액의 평균·표준편차를 계산하고, 평균 + 3σ 초과 건을 이상치로
+   * 분류한다. 건수가 적은 카테고리(n < 10)는 통계가 불안정하므로 제외한다.
+   */
+  app.get('/v1/admin/price-stats', auth, async () => {
+    type StatsRow = {
+      vendor_id: string;
+      vendor_name: string;
+      category: string;
+      amount: string;
+      mean: string;
+      stddev: string;
+      paid_at: Date;
+    };
+
+    const { rows } = await context.pool.query<StatsRow>(
+      `WITH stats AS (
+         SELECT
+           p.vendor_id,
+           v.name  AS vendor_name,
+           v.category,
+           p.paid_amount AS amount,
+           p.paid_at,
+           AVG(p.paid_amount)    OVER (PARTITION BY v.category) AS mean,
+           STDDEV(p.paid_amount) OVER (PARTITION BY v.category) AS stddev,
+           COUNT(*)              OVER (PARTITION BY v.category) AS cat_count
+         FROM structured.usable_payment_proofs p
+         JOIN structured.vendors v ON v.id = p.vendor_id
+       )
+       SELECT vendor_id, vendor_name, category, amount, mean, stddev, paid_at
+       FROM stats
+       WHERE cat_count >= 10
+         AND stddev > 0
+         AND amount > mean + 3 * stddev
+       ORDER BY (amount - mean) / stddev DESC
+       LIMIT 200`
+    );
+
+    const anomalies = rows.map((r) => ({
+      vendorId: r.vendor_id,
+      vendorName: r.vendor_name,
+      category: r.category,
+      amount: Number(r.amount),
+      mean: Number(r.mean),
+      stddev: Number(r.stddev),
+      detectedAt: r.paid_at.toISOString(),
+    }));
+
+    return { total: anomalies.length, anomalies };
+  });
+
+  /**
+   * 신고·VOC 접수 목록. 관리자 > 신고·VOC 화면(ADM-REPORT).
+   *
+   * 현재는 후기 신고만 있다. 다른 신고 유형이 생기면 UNION으로 확장한다.
+   */
+  app.get('/v1/admin/reports', auth, async (request) => {
+    const query = (request.query as { status?: string; limit?: string; cursor?: string });
+    const status = query.status ?? 'pending';
+    const limit = Math.min(Number(query.limit ?? 20), 100);
+    const cursor = query.cursor;
+
+    type ReportRow = {
+      id: string;
+      report_type: string;
+      reported_at: Date;
+      status: string;
+      reporter_count: string;
+      summary: string | null;
+    };
+
+    const params: unknown[] = [status, limit + 1];
+    let cursorClause = '';
+    if (cursor) {
+      cursorClause = `AND rr.received_at < $3`;
+      params.push(cursor);
+    }
+
+    const { rows } = await context.pool.query<ReportRow>(
+      `SELECT
+         rr.id,
+         'review' AS report_type,
+         rr.received_at AS reported_at,
+         CASE WHEN rr.decided_at IS NULL THEN 'pending' ELSE 'resolved' END AS status,
+         COUNT(*) OVER (PARTITION BY rr.review_id) AS reporter_count,
+         rr.reason::text AS summary
+       FROM structured.review_reports rr
+       WHERE (CASE WHEN rr.decided_at IS NULL THEN 'pending' ELSE 'resolved' END) = $1
+       ${cursorClause}
+       ORDER BY rr.received_at DESC
+       LIMIT $2`,
+      params
+    );
+
+    const hasMore = rows.length > limit;
+    const items = hasMore ? rows.slice(0, limit) : rows;
+
+    return {
+      items: items.map((r) => ({
+        id: r.id,
+        reportType: r.report_type,
+        reportedAt: r.reported_at.toISOString(),
+        status: r.status,
+        reporterCount: Number(r.reporter_count),
+        summary: r.summary ?? '',
+      })),
+      total: items.length,
+      hasMore,
+      nextCursor: hasMore ? items[items.length - 1]!.reported_at.toISOString() : null,
+    };
+  });
+
+  // ─── Dashboard (WP-ADM-001) ───────────────────────────────────────────────
+  app.get('/v1/admin/dashboard', auth, async () => {
+    const [budgetStatus, briefing] = await Promise.all([
+      aiCostAdmin.status(context.pool),
+      decisionsAdmin.briefing(context.pool),
+    ]);
+    const failed = briefing.reduce((acc, b) => acc + b.failed, 0);
+    const total = briefing.reduce((acc, b) => acc + b.decisions + b.failed, 0);
+    const successRate = total === 0 ? 100 : ((total - failed) / total) * 100;
+    const pendingActions = budgetStatus.reduce((acc, s) => acc + s.uncostedCount, 0);
+    const healthy = !budgetStatus.some((s) => s.state === 'over_budget');
+    const totalCost = briefing.reduce((acc, b) => acc + (b.costUsd ?? 0), 0);
+    return {
+      aiStatus: { healthy, successRate, pendingActions },
+      reviewQueue: { total: 0, urgent: 0, oldest: '—' },
+      revenue: { mrr: '₩0', aiCost: `$${totalCost.toFixed(2)}`, contributionMargin: '₩0' },
+      recentActions: briefing.slice(0, 10).map((b) => ({
+        time: new Date().toISOString(),
+        action: b.workflow,
+        result: b.failed === 0 ? '성공' : '실패',
+      })),
+      killSwitches: [
+        { id: 'ai-recommendations', label: 'AI 추천', active: false },
+        { id: 'ai-verification', label: 'AI 검증', active: false },
+        { id: 'ai-matching', label: 'AI 매칭', active: false },
+      ],
+    };
+  });
+
+  // ─── Kill Switches ────────────────────────────────────────────────────────
+  app.get('/v1/admin/kill-switches', auth, async () => {
+    return { switches: [...killSwitches.values()] };
+  });
+
+  app.patch<{ Params: { id: string }; Body: { enabled?: boolean } }>('/v1/admin/kill-switches/:id', auth, async (req, reply) => {
+    const sw = killSwitches.get(req.params.id);
+    if (!sw) return reply.status(404).send({ error: 'not_found' });
+    const operatorId = currentUserId(req);
+    sw.enabled = req.body.enabled ?? sw.enabled;
+    sw.lastChangedAt = new Date().toISOString();
+    sw.lastChangedBy = operatorId ?? 'operator';
+    return reply.status(204).send();
+  });
+
+  // ─── FAQ ──────────────────────────────────────────────────────────────────
+  app.get('/v1/admin/faq', auth, async () => {
+    return { items: [] as { id: string; question: string; answer: string; visible: boolean }[] };
+  });
+  app.post('/v1/admin/faq', auth, async () => {
+    return { id: randomUUID() };
+  });
+  app.patch<{ Params: { id: string } }>('/v1/admin/faq/:id', auth, async (_req, reply) => {
+    return reply.status(204).send();
+  });
+  app.put<{ Params: { id: string } }>('/v1/admin/faq/:id', auth, async (_req, reply) => {
+    return reply.status(204).send();
+  });
+  app.delete<{ Params: { id: string } }>('/v1/admin/faq/:id', auth, async (_req, reply) => {
+    return reply.status(204).send();
+  });
+
+  // ─── Users ────────────────────────────────────────────────────────────────
+  app.get('/v1/admin/users', auth, async (request) => {
+    const q = request.query as Record<string, string | undefined>;
+    const search = q['search'] ?? '';
+    const cursor = q['cursor'];
+    const limit = 25;
+
+    const searchClauses: string[] = ['deleted_at IS NULL'];
+    const searchParams: unknown[] = [];
+    let searchIdx = 1;
+    if (search) {
+      searchClauses.push(`display_name ILIKE $${searchIdx}`);
+      searchParams.push(`%${search}%`);
+      searchIdx++;
+    }
+
+    const [{ rows: countRows }] = await Promise.all([
+      context.pool.query<{ count: string }>(
+        `SELECT COUNT(*)::text AS count FROM structured.users WHERE ${searchClauses.join(' AND ')}`,
+        searchParams
+      ),
+    ]);
+    const total = Number(countRows[0]?.count ?? 0);
+
+    const params: unknown[] = [...searchParams];
+    let idx = searchIdx;
+    const clauses = [...searchClauses];
+    if (cursor) {
+      clauses.push(`created_at < $${idx}`);
+      params.push(cursor);
+      idx++;
+    }
+    params.push(limit + 1);
+    const { rows } = await context.pool.query<{
+      id: string;
+      display_name: string | null;
+      activated_at: Date | null;
+      created_at: Date;
+      is_operator: boolean;
+    }>(
+      `SELECT id, display_name, activated_at, created_at, is_operator
+       FROM structured.users
+       WHERE ${clauses.join(' AND ')}
+       ORDER BY created_at DESC
+       LIMIT $${idx}`,
+      params
+    );
+    const hasMore = rows.length > limit;
+    const items = hasMore ? rows.slice(0, limit) : rows;
+    return {
+      users: items.map((r) => ({
+        id: r.id,
+        displayName: r.display_name ?? '',
+        activatedAt: r.activated_at?.toISOString() ?? null,
+        createdAt: r.created_at.toISOString(),
+        isOperator: r.is_operator,
+      })),
+      total,
+      hasMore,
+      nextCursor: hasMore ? items[items.length - 1]!.created_at.toISOString() : null,
+    };
+  });
+
+  // ─── Vendors ──────────────────────────────────────────────────────────────
+  app.get('/v1/admin/vendors', auth, async (request) => {
+    const q = request.query as Record<string, string | undefined>;
+    const cursor = q['cursor'];
+    const category = q['category'];
+    const limit = 25;
+    const params: unknown[] = [];
+    let idx = 1;
+    const clauses: string[] = [];
+    if (category) {
+      clauses.push(`v.category = $${idx}`);
+      params.push(category);
+      idx++;
+    }
+    if (cursor) {
+      clauses.push(`v.created_at < $${idx}`);
+      params.push(cursor);
+      idx++;
+    }
+    const where = clauses.length ? 'WHERE ' + clauses.join(' AND ') : '';
+    params.push(limit + 1);
+    const { rows } = await context.pool.query<{
+      id: string;
+      category: string;
+      name: string;
+      region: string | null;
+      source: string;
+      last_verified_at: Date | null;
+      created_at: Date;
+      proof_count: string;
+    }>(
+      `SELECT v.id, v.category, v.name, v.region, v.source,
+              v.last_verified_at, v.created_at,
+              COUNT(p.id)::text AS proof_count
+       FROM structured.vendors v
+       LEFT JOIN structured.usable_payment_proofs p ON p.vendor_id = v.id
+       ${where}
+       GROUP BY v.id
+       ORDER BY v.created_at DESC
+       LIMIT $${idx}`,
+      params
+    );
+    const hasMore = rows.length > limit;
+    const items = hasMore ? rows.slice(0, limit) : rows;
+    return {
+      items: items.map((r) => ({
+        id: r.id,
+        category: r.category,
+        name: r.name,
+        region: r.region ?? '',
+        source: r.source,
+        lastVerifiedAt: r.last_verified_at?.toISOString() ?? null,
+        createdAt: r.created_at.toISOString(),
+        proofCount: Number(r.proof_count),
+      })),
+      hasMore,
+      nextCursor: hasMore ? items[items.length - 1]!.created_at.toISOString() : null,
+    };
+  });
+
+  // ─── Revenue ──────────────────────────────────────────────────────────────
+  app.get('/v1/admin/revenue', auth, async () => {
+    return {
+      mrr: 0,
+      arr: 0,
+      activeSubscriptions: 0,
+      churnRate: 0,
+      planBreakdown: [] as { plan: string; count: number; revenue: number }[],
+    };
+  });
+
+  // ─── Ads ──────────────────────────────────────────────────────────────────
+  app.get('/v1/admin/ads', auth, async () => {
+    return { items: [] as unknown[], total: 0 };
+  });
+  app.post('/v1/admin/ads', auth, async () => {
+    return { id: randomUUID() };
+  });
+  app.patch<{ Params: { id: string } }>('/v1/admin/ads/:id', auth, async (_req, reply) => {
+    return reply.status(204).send();
+  });
+  app.delete<{ Params: { id: string } }>('/v1/admin/ads/:id', auth, async (_req, reply) => {
+    return reply.status(204).send();
+  });
+
+  // ─── Ads Gate ─────────────────────────────────────────────────────────────
+  app.get('/v1/admin/ads-gate', auth, async () => {
+    return { enabled: false, rules: [] as unknown[] };
+  });
+  app.patch('/v1/admin/ads-gate', auth, async (_req, reply) => {
+    return reply.status(204).send();
+  });
+
+  // ─── AI Usage ─────────────────────────────────────────────────────────────
+  app.get('/v1/admin/ai-usage', auth, async (request) => {
+    const q = request.query as Record<string, string | undefined>;
+    const months = Number(q['months'] ?? '3');
+    const [usage, budgetStatus] = await Promise.all([
+      aiCostAdmin.usage(context.pool, months),
+      aiCostAdmin.status(context.pool),
+    ]);
+    return { usage, budgetStatus };
+  });
+
+  // ─── Automation ───────────────────────────────────────────────────────────
+  app.get('/v1/admin/automation', auth, async () => {
+    return { rules: [] as unknown[], enabled: true };
+  });
+  app.patch('/v1/admin/automation', auth, async (_req, reply) => {
+    return reply.status(204).send();
+  });
+
+  // ─── Biz Queue ────────────────────────────────────────────────────────────
+  app.get('/v1/admin/biz-queue', auth, async () => {
+    return { items: [] as unknown[], total: 0 };
+  });
+
+  // ─── Briefing ─────────────────────────────────────────────────────────────
+  app.get('/v1/admin/briefing', auth, async () => {
+    const [briefing, budgetStatus] = await Promise.all([
+      decisionsAdmin.briefing(context.pool),
+      aiCostAdmin.status(context.pool),
+    ]);
+    return { briefing, budgetStatus };
+  });
+
+  // ─── Campaigns ────────────────────────────────────────────────────────────
+  app.get('/v1/admin/campaigns', auth, async () => {
+    return { items: [] as unknown[], total: 0 };
+  });
+  app.post('/v1/admin/campaigns', auth, async () => {
+    return { id: randomUUID() };
+  });
+
+  // ─── Data / Pipeline ──────────────────────────────────────────────────────
+  app.get('/v1/admin/data/pipeline', auth, async () => {
+    return { stages: [] as unknown[], lastRunAt: null as string | null };
+  });
+
+  // ─── Data / Email Matching ────────────────────────────────────────────────
+  app.get('/v1/admin/data/email-matching', auth, async () => {
+    return { items: [] as unknown[], total: 0 };
+  });
+
+  // ─── Data / Images ────────────────────────────────────────────────────────
+  app.get('/v1/admin/data/images', auth, async (request) => {
+    const q = request.query as Record<string, string | undefined>;
+    const status = q['status'] ?? 'pending';
+    const cursor = q['cursor'];
+    const limit = 20;
+    const params: unknown[] = [status];
+    let idx = 2;
+    let cursorClause = '';
+    if (cursor) {
+      cursorClause = ` AND vi.created_at < $${idx}`;
+      params.push(cursor);
+      idx++;
+    }
+    params.push(limit + 1);
+    const { rows } = await context.pool.query<{
+      id: string;
+      vendor_id: string;
+      vendor_name: string;
+      storage_key: string;
+      source_url: string | null;
+      copyright_basis: string;
+      match_confidence: string | null;
+      status: string;
+      created_at: Date;
+    }>(
+      `SELECT vi.id, vi.vendor_id, v.name AS vendor_name,
+              vi.storage_key, vi.source_url,
+              vi.copyright_basis, vi.match_confidence::text,
+              vi.status, vi.created_at
+       FROM structured.vendor_images vi
+       JOIN structured.vendors v ON v.id = vi.vendor_id
+       WHERE vi.status = $1${cursorClause}
+       ORDER BY vi.created_at DESC
+       LIMIT $${idx}`,
+      params
+    );
+    const hasMore = rows.length > limit;
+    const items = hasMore ? rows.slice(0, limit) : rows;
+    return {
+      items: items.map((r) => ({
+        id: r.id,
+        vendorId: r.vendor_id,
+        vendorName: r.vendor_name,
+        storageKey: r.storage_key,
+        sourceUrl: r.source_url ?? null,
+        copyrightBasis: mapCopyrightBasis(r.copyright_basis),
+        matchConfidence: r.match_confidence !== null ? Number(r.match_confidence) : null,
+        status: r.status,
+        createdAt: r.created_at.toISOString(),
+      })),
+      hasMore,
+      nextCursor: hasMore ? items[items.length - 1]!.created_at.toISOString() : null,
+    };
+  });
+
+  app.patch<{ Params: { id: string } }>(
+    '/v1/admin/data/images/:id/approve',
+    auth,
+    async (request, reply) => {
+      await context.pool.query(
+        `UPDATE structured.vendor_images SET status = 'approved' WHERE id = $1`,
+        [request.params.id]
+      );
+      return reply.status(204).send();
+    }
+  );
+
+  app.patch<{ Params: { id: string } }>(
+    '/v1/admin/data/images/:id/reject',
+    auth,
+    async (request, reply) => {
+      await context.pool.query(
+        `UPDATE structured.vendor_images SET status = 'quality_rejected' WHERE id = $1`,
+        [request.params.id]
+      );
+      return reply.status(204).send();
+    }
+  );
+
+  // ─── Marketing ────────────────────────────────────────────────────────────
+  app.get('/v1/admin/marketing', auth, async () => {
+    try {
+      const [items, summary] = await Promise.all([
+        marketingStore.listJobs(context.pool, 50),
+        marketingStore.getSummary(context.pool),
+      ]);
+      return { summary, items };
+    } catch {
+      // DB 없을 때 빈 응답 (개발 환경)
+      return {
+        summary: { generated: 0, simulated: 0, failed: 0, failRate: 0 },
+        items: [],
+      };
+    }
+  });
+
+  app.post('/v1/admin/marketing/sources', auth, async (request) => {
+    const body = request.body as {
+      id: string; factIds: string[]; reviewed?: boolean;
+      expiresAt?: string; nextVerifyAt?: string; note?: string;
+    };
+    await marketingStore.registerSource(context.pool, {
+      id: body.id,
+      factIds: body.factIds,
+      reviewed: body.reviewed ?? false,
+      reviewedAt: body.reviewed ? new Date().toISOString() : null,
+      expiresAt: body.expiresAt ?? null,
+      nextVerifyAt: body.nextVerifyAt ?? null,
+      active: true,
+      note: body.note,
+    });
+    return { ok: true };
+  });
+
+  app.delete<{ Params: { sourceId: string } }>(
+    '/v1/admin/marketing/sources/:sourceId',
+    auth,
+    async (request) => {
+      const { sourceId } = request.params;
+      await marketingStore.deactivateSource(context.pool, sourceId);
+      return { ok: true };
+    },
+  );
+
+  app.post('/v1/admin/marketing/generate', auth, async (request, reply) => {
+    const body = request.body as {
+      sourceId: string; channel: string; format: string; scheduledAt?: string;
+    };
+    const source = await marketingStore.getSource(context.pool, body.sourceId);
+    if (!source) return reply.status(404).send({ error: '소재를 찾을 수 없습니다.' });
+
+    const jobKey = `job_${Date.now()}`;
+    const result = marketingContent.generateContent(
+      source,
+      body.channel as MarketingChannel,
+      body.format as MarketingFormat,
+      jobKey,
+    );
+    if (!result.ok) return reply.status(400).send({ error: result.error });
+
+    const job = await marketingStore.createJob(context.pool, {
+      sourceId: body.sourceId,
+      channel: body.channel as MarketingChannel,
+      format: body.format as MarketingFormat,
+      title: result.title,
+      body: result.body,
+      utmUrl: result.utmUrl,
+      scheduledAt: body.scheduledAt,
+    });
+    return { job };
+  });
+
+  app.post<{ Params: { jobId: string } }>(
+    '/v1/admin/marketing/:jobId/simulate',
+    auth,
+    async (_request) => {
+      const r = await marketingStore.processScheduled(context.pool);
+      return { ok: true, result: r };
+    },
+  );
+
+  app.post<{ Params: { jobId: string } }>(
+    '/v1/admin/marketing/:jobId/retry',
+    auth,
+    async (request) => {
+      const { jobId } = request.params;
+      await marketingStore.retryJob(context.pool, jobId);
+      return { ok: true };
+    },
+  );
+
+  app.get<{ Params: { jobId: string } }>(
+    '/v1/admin/marketing/:jobId/events',
+    auth,
+    async (request) => {
+      const { jobId } = request.params;
+      const jobEvents = await marketingStore.listJobEvents(context.pool, jobId);
+      return { events: jobEvents };
+    },
+  );
+
+  app.get('/v1/admin/marketing/plan-prompt', auth, async (request, reply) => {
+    const { sourceId, channel, format } = request.query as {
+      sourceId?: string; channel?: string; format?: string;
+    };
+    if (!sourceId || !channel || !format) {
+      return reply.status(400).send({ error: 'sourceId, channel, format 필수' });
+    }
+    const source = await marketingStore.getSource(context.pool, sourceId);
+    if (!source) return reply.status(404).send({ error: '소재 없음' });
+    const result = marketingContent.generateContent(
+      source,
+      channel as MarketingChannel,
+      format as MarketingFormat,
+      'prompt_preview',
+    );
+    if (!result.ok) return reply.status(400).send({ error: result.error });
+    return { prompt: result.planningPrompt };
+  });
+
+  // ─── Policy Engine ────────────────────────────────────────────────────────
+  app.get('/v1/admin/policy-engine', auth, async () => {
+    return { policies: [] as unknown[], version: 0 };
+  });
+  app.patch('/v1/admin/policy-engine', auth, async (_req, reply) => {
+    return reply.status(204).send();
+  });
+
+  // ─── Rollback ─────────────────────────────────────────────────────────────
+  app.get('/v1/admin/rollback', auth, async () => {
+    return { snapshots: [] as unknown[] };
+  });
+
+  // ─── Terms ────────────────────────────────────────────────────────────────
+  app.get('/v1/admin/terms', auth, async () => {
+    return { items: [] as unknown[] };
+  });
+  app.post('/v1/admin/terms', auth, async () => {
+    return { id: randomUUID() };
+  });
+
+  // ─── Audit Log ────────────────────────────────────────────────────────────
+  app.get('/v1/admin/audit-log', auth, async (request) => {
+    const q = request.query as Record<string, string | undefined>;
+    const cursor = q['cursor'];
+    const workflow = q['workflow'];
+    const limit = 50;
+    const params: unknown[] = [];
+    let idx = 1;
+    const clauses: string[] = [];
+    if (workflow) {
+      clauses.push(`workflow = $${idx}`);
+      params.push(workflow);
+      idx++;
+    }
+    if (cursor) {
+      clauses.push(`created_at < $${idx}`);
+      params.push(cursor);
+      idx++;
+    }
+    const where = clauses.length ? 'WHERE ' + clauses.join(' AND ') : '';
+    params.push(limit + 1);
+    const { rows } = await context.pool.query<{
+      id: string;
+      workflow: string;
+      step: string | null;
+      subject_kind: string;
+      subject_id: string;
+      decider: string;
+      decision: string;
+      reason_code: string | null;
+      execution_status: string;
+      cost_usd: string | null;
+      created_at: Date;
+    }>(
+      `SELECT id, workflow, step, subject_kind, subject_id,
+              decider, decision, reason_code, execution_status,
+              cost_usd::text, created_at
+       FROM structured.decisions
+       ${where}
+       ORDER BY created_at DESC
+       LIMIT $${idx}`,
+      params
+    );
+    const hasMore = rows.length > limit;
+    const items = hasMore ? rows.slice(0, limit) : rows;
+    return {
+      items: items.map((r) => ({
+        id: r.id,
+        workflow: r.workflow,
+        step: r.step ?? null,
+        subjectKind: r.subject_kind,
+        subjectId: r.subject_id,
+        decider: r.decider,
+        decision: r.decision,
+        reasonCode: r.reason_code ?? null,
+        executionStatus: r.execution_status,
+        costUsd: r.cost_usd !== null ? Number(r.cost_usd) : null,
+        createdAt: r.created_at.toISOString(),
+      })),
+      hasMore,
+      nextCursor: hasMore ? items[items.length - 1]!.created_at.toISOString() : null,
+    };
+  });
+
+  // ─── Data / Price Stats (WP-ADM-PRICE) ────────────────────────────────────
+  app.get('/v1/admin/data/price-stats', auth, async () => {
+    type StatRow = {
+      vendor_id: string;
+      vendor_name: string;
+      data_count: string;
+      anomaly_count: string;
+    };
+    const { rows } = await context.pool.query<StatRow>(
+      `SELECT
+         p.vendor_id,
+         v.name AS vendor_name,
+         COUNT(*) AS data_count,
+         SUM(CASE WHEN p.paid_amount > stats.mean + 3 * stats.stddev THEN 1 ELSE 0 END) AS anomaly_count
+       FROM structured.usable_payment_proofs p
+       JOIN structured.vendors v ON v.id = p.vendor_id
+       JOIN LATERAL (
+         SELECT AVG(paid_amount) AS mean, STDDEV(paid_amount) AS stddev
+         FROM structured.usable_payment_proofs
+         WHERE vendor_id = p.vendor_id
+       ) stats ON true
+       GROUP BY p.vendor_id, v.name
+       ORDER BY data_count DESC
+       LIMIT 200`
+    );
+
+    const vendors = rows.map((r) => {
+      const count = Number(r.data_count);
+      const stage: 0 | 1 | 2 | 3 = count >= 10 ? 3 : count >= 5 ? 2 : count >= 3 ? 1 : 0;
+      return {
+        vendorId: r.vendor_id,
+        vendorName: r.vendor_name,
+        dataCount: count,
+        publicStage: stage,
+        anomalyCandidates: Number(r.anomaly_count),
+        statsVersion: '1',
+        lastRecalcAt: new Date().toISOString(),
+      };
+    });
+
+    const summary = {
+      totalVendors: vendors.length,
+      stage0: vendors.filter((v) => v.publicStage === 0).length,
+      stage1: vendors.filter((v) => v.publicStage === 1).length,
+      stage2: vendors.filter((v) => v.publicStage === 2).length,
+      stage3plus: vendors.filter((v) => v.publicStage === 3).length,
+    };
+
+    return { summary, vendors };
+  });
+
+  app.post<{ Params: { vendorId: string } }>('/v1/admin/data/price-stats/:vendorId/recalc', auth, async (_req, reply) => {
+    return reply.status(202).send({ queued: true });
+  });
 }

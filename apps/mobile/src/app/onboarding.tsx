@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
   dot: { height: 6, borderRadius: Radius.pill },
   content: { paddingHorizontal: Layout.gutter, gap: Spacing.three, paddingBottom: Spacing.four },
   headline: { gap: 0 },
-  card: { borderRadius: Radius.card, padding: Layout.gutter, gap: Spacing.two },
+  card: { borderRadius: Radius.medium, padding: Layout.gutter, gap: Spacing.two },
   cardRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   footer: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four, gap: Spacing.two },
 });

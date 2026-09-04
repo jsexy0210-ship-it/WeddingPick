@@ -116,7 +116,7 @@ export default function WeddingQuotesScreen() {
           <ThemedView style={styles.section}>
             <ThemedText type="t2">올린 Pick 인증 자료</ThemedText>
             <ThemedText type="t7" themeColor="textSecondary">
-              앱으로 올린 문서를 AI가 읽어낸 결과예요. 확인 전 자료는 가격 비교에 쓰이지 않아요.
+              앱으로 올린 문서를 웨딩픽이 읽어낸 결과예요. 확인 전 자료는 가격 비교에 쓰이지 않아요.
             </ThemedText>
           </ThemedView>
 
@@ -155,6 +155,6 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   section: { gap: Spacing.one, marginBottom: Spacing.two },
-  card: { borderRadius: Radius.card, padding: Spacing.four, gap: Spacing.two },
+  card: { borderRadius: Radius.medium, padding: Spacing.four, gap: Spacing.two },
   cardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
 });

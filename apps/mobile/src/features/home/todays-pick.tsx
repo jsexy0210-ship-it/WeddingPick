@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
   thumb: { width: '100%', height: 96, borderRadius: Radius.small, overflow: 'hidden' },
   name: { fontWeight: 700 },
   notice: {
-    borderRadius: Radius.card,
+    borderRadius: Radius.medium,
     paddingHorizontal: 20,
     paddingVertical: 18,
     gap: Spacing.two,

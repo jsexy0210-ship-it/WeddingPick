@@ -6,7 +6,7 @@
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
-    "test": "jest --runInBand",
+    "test": "jest --runInBand --forceExit",
     "worker": "tsx src/worker.ts",
     "worker:dev": "tsx watch src/worker.ts",
     "vendors:import": "tsx src/vendors-import.ts",
@@ -26,7 +26,8 @@
     "pii": "tsx src/pii-admin.ts",
     "ai-cost": "tsx src/ai-cost-admin.ts",
     "seed:demo": "tsx src/seed-demo.ts",
-    "analyze": "tsx src/analyze-file.ts"
+    "analyze": "tsx src/analyze-file.ts",
+    "marketing": "tsx src/marketing/cli.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",

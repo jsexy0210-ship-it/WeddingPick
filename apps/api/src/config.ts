@@ -146,5 +146,14 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     throw new Error(`설정이 올바르지 않다: ${fields}`);
   }
 
+  // Production/staging must use durable object storage; local files disappear on restart.
+  if (env.NODE_ENV === 'production' && parsed.data.storage.driver !== 's3') {
+    throw new Error('운영 환경은 STORAGE_DRIVER=s3와 영구 버킷 설정이 필요하다.');
+  }
+
+  if (env.NODE_ENV === 'production' && !env.S3_BUCKET) {
+    throw new Error('운영 환경은 S3_BUCKET 환경변수가 필수다. GitHub Secrets에서 설정하세요.');
+  }
+
   return parsed.data;
 }

@@ -1,12 +1,13 @@
 # 웨딩픽 통합 파이프라인
 #
-# push(main)  → CI → DB 마이그레이션 → Fly.io staging 배포 → /health 확인
+# push(main)  → CI → DB 마이그레이션 → Render 자동 배포 → health check (staging)
 # PR          → CI만 (배포 없음)
 # workflow_dispatch → staging 또는 production 수동 배포
 #
 # 필요한 GitHub Secrets:
-#   FLY_API_TOKEN    fly tokens create deploy -a weddingpickl,weddingpick-api
-#   DATABASE_URL     Neon 연결 문자열
+#   DATABASE_URL              Render PostgreSQL 연결 문자열
+#   RENDER_DEPLOY_HOOK_URL    (선택) Render staging 서비스 Deploy Hook URL
+#   RENDER_DEPLOY_HOOK_URL_PROD (선택) Render production 서비스 Deploy Hook URL
 name: CI / Deploy
 
 on:
@@ -65,6 +66,16 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Marketing preview
+        run: npm run marketing --workspace @weddingpick/api -- demo .marketing-preview
+
+      - name: Upload marketing preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: marketing-preview
+          path: .marketing-preview/
+          retention-days: 7
+
       - name: Bundle (web)
         run: npm run export:web --workspace @weddingpick/mobile
 
@@ -94,26 +105,93 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
-      - uses: superfly/flyctl-actions/setup-flyctl@master
-
-      - name: Deploy (weddingpickl)
-        run: flyctl deploy --config fly.toml --remote-only
+      - name: Trigger Render deploy
+        run: |
+          if [ -n "$RENDER_DEPLOY_HOOK_URL" ]; then
+            curl -sS "$RENDER_DEPLOY_HOOK_URL"
+            echo "API deploy hook triggered"
+          else
+            echo "No API deploy hook configured — relying on Render auto-deploy (autoDeploy: true)"
+          fi
+          if [ -n "$RENDER_DEPLOY_HOOK_WEB_URL" ]; then
+            curl -sS "$RENDER_DEPLOY_HOOK_WEB_URL"
+            echo "Web static site deploy hook triggered"
+          else
+            echo "No web deploy hook configured — relying on Render auto-deploy (autoDeploy: true)"
+          fi
         env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          RENDER_DEPLOY_HOOK_WEB_URL: ${{ secrets.RENDER_DEPLOY_HOOK_WEB_URL }}
+
+      - name: Render Blueprint sync (새 서비스 반영)
+        run: |
+          if [ -z "$RENDER_API_KEY" ]; then
+            echo "RENDER_API_KEY 없음 — Blueprint sync 생략"
+            exit 0
+          fi
+          # 블루프린트 목록에서 이 저장소에 연결된 것을 찾아 sync
+          BLUEPRINTS=$(curl -sf -H "Authorization: Bearer $RENDER_API_KEY" \
+            "https://api.render.com/v1/blueprints?limit=20")
+          BLUEPRINT_ID=$(echo "$BLUEPRINTS" | python3 -c "import sys,json;data=json.load(sys.stdin);[print(item.get('blueprint',item).get('id','')) for item in data if 'WeddingPickl' in str(item.get('blueprint',item).get('repo',''))]" 2>/dev/null | head -1)
+          if [ -z "$BLUEPRINT_ID" ]; then
+            echo "::warning::Render Blueprint sync 생략됨 — 이 Render 계정에 render.yaml과 연결된 Blueprint가 없습니다. render.yaml의 새 서비스(예: weddingpick-admin)는 자동으로 생성되지 않습니다. Render 대시보드 → New → Blueprint에서 이 저장소를 한 번 연결해야 render.yaml 변경이 반영됩니다."
+            exit 0
+          fi
+          echo "Blueprint ID: $BLUEPRINT_ID — sync 요청"
+          RESP=$(curl -sf -X POST \
+            -H "Authorization: Bearer $RENDER_API_KEY" \
+            -H "Content-Type: application/json" \
+            "https://api.render.com/v1/blueprints/$BLUEPRINT_ID/sync")
+          echo "sync 응답: $RESP"
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+
+      - name: Custom domains (weddingpick.kr / admin.weddingpick.kr)
+        run: |
+          if [ -z "$RENDER_API_KEY" ]; then
+            echo "RENDER_API_KEY 없음 — 커스텀 도메인 설정 생략"
+            exit 0
+          fi
+          add_domain() {
+            local SVC_NAME=$1
+            local DOMAIN=$2
+            SVC_ID=$(curl -sf -H "Authorization: Bearer $RENDER_API_KEY" \
+              "https://api.render.com/v1/services?name=${SVC_NAME}&limit=5" \
+              | python3 -c "import sys,json;data=json.load(sys.stdin);items=[i for i in data if i.get('service',i).get('name','')==\"${SVC_NAME}\"];print(items[0].get('service',items[0]).get('id','') if items else '')" 2>/dev/null)
+            if [ -z "$SVC_ID" ]; then
+              echo "::warning::${SVC_NAME} 서비스가 Render 계정에 없어 ${DOMAIN} 도메인을 연결하지 못했습니다. render.yaml에는 정의되어 있지만 실제로 생성된 적이 없습니다 — Render 대시보드에서 수동 생성하거나 Blueprint를 연결해야 합니다."
+              return 0
+            fi
+            echo "${SVC_NAME} (${SVC_ID}): ${DOMAIN} 도메인 추가 시도"
+            RESP=$(curl -s -X POST \
+              -H "Authorization: Bearer $RENDER_API_KEY" \
+              -H "Content-Type: application/json" \
+              -d "{\"name\":\"${DOMAIN}\"}" \
+              "https://api.render.com/v1/services/${SVC_ID}/custom-domains")
+            if echo "$RESP" | python3 -c "import sys,json;d=json.load(sys.stdin);sys.exit(0 if 'id' in d or 'already' in str(d.get('message','')).lower() or 'in use' in str(d.get('message','')).lower() else 1)" 2>/dev/null; then
+              echo "${DOMAIN} 응답 (OK): $RESP"
+            else
+              echo "::warning::${DOMAIN} 도메인 연결 응답이 예상과 다릅니다 — 확인 필요: $RESP"
+            fi
+          }
+          add_domain "weddingpick-web"   "weddingpick.kr"
+          add_domain "weddingpick-admin" "admin.weddingpick.kr"
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
 
       - name: Health check
         run: |
-          echo "Waiting for deployment to settle..."
-          for i in $(seq 1 12); do
-            sleep 5
-            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://weddingpickl.fly.dev/health 2>/dev/null || echo "000")
+          echo "Waiting for Render staging deployment to settle..."
+          for i in $(seq 1 60); do
+            sleep 15
+            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://weddingpickl.onrender.com/health 2>/dev/null || echo "000")
             if [ "$STATUS" = "200" ]; then
               echo "✓ /health 200 OK"
               exit 0
             fi
-            echo "Attempt $i: HTTP $STATUS"
+            echo "Attempt $i/60: HTTP $STATUS"
           done
-          echo "✗ Health check failed after 60 s"
+          echo "✗ Staging health check failed after 900 s"
           exit 1
 
   deploy-production:
@@ -137,24 +215,28 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
-      - uses: superfly/flyctl-actions/setup-flyctl@master
-
-      - name: Deploy (weddingpick-api)
-        run: flyctl deploy --config fly.production.toml --remote-only
+      - name: Trigger Render deploy
+        run: |
+          if [ -n "$RENDER_DEPLOY_HOOK_URL_PROD" ]; then
+            curl -sS "$RENDER_DEPLOY_HOOK_URL_PROD"
+            echo "Production deploy hook triggered"
+          else
+            echo "No production deploy hook configured"
+          fi
         env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          RENDER_DEPLOY_HOOK_URL_PROD: ${{ secrets.RENDER_DEPLOY_HOOK_URL_PROD }}
 
       - name: Health check
         run: |
-          echo "Waiting for deployment to settle..."
-          for i in $(seq 1 12); do
-            sleep 5
-            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://weddingpick-api.fly.dev/health 2>/dev/null || echo "000")
+          echo "Waiting for Render production deployment..."
+          for i in $(seq 1 60); do
+            sleep 15
+            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://weddingpickl.onrender.com/health 2>/dev/null || echo "000")
             if [ "$STATUS" = "200" ]; then
               echo "✓ /health 200 OK"
               exit 0
             fi
-            echo "Attempt $i: HTTP $STATUS"
+            echo "Attempt $i/60: HTTP $STATUS"
           done
-          echo "✗ Health check failed after 60 s"
+          echo "✗ Production health check failed after 900 s"
           exit 1
