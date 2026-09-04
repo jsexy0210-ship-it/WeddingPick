@@ -1,0 +1,77 @@
+name: Wedding public data
+
+on:
+  push:
+    branches: [codex/wedding-public-data-pipeline]
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: '검증 후 운영 DB에 반영'
+        type: boolean
+        default: false
+  schedule:
+    - cron: '17 18 * * 6'
+
+permissions:
+  contents: read
+concurrency:
+  group: wedding-public-data
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: weddingpick
+          POSTGRES_PASSWORD: weddingpick_test
+          POSTGRES_DB: weddingpick_test
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck --workspace @weddingpick/api
+      - run: npm test --workspace @weddingpick/api -- --runTestsByPath src/public-data/collect.test.ts src/public-data/sync.test.ts
+        env:
+          DATABASE_URL: postgres://weddingpick:weddingpick_test@localhost:5432/weddingpick_test
+
+  collect:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        source: [icheon-halls, jecheon-halls]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Collect validated public data
+        run: npm run public-data:import --workspace @weddingpick/api -- --source "$SOURCE" --out ../../.collection
+        env:
+          SOURCE: ${{ matrix.source }}
+      - name: Apply to existing database
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || inputs.apply)
+        run: npm run public-data:import --workspace @weddingpick/api -- --source "$SOURCE" --apply --out ../../.collection
+        env:
+          SOURCE: ${{ matrix.source }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: public-data-${{ matrix.source }}
+          path: .collection/*.json
+          include-hidden-files: true
+          retention-days: 7

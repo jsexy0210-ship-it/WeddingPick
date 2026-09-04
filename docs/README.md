@@ -9,6 +9,10 @@
 
 ## 지금 있는 문서
 
+외부 업체 수집은 통합정책 N-9~N-12(2026-09-04 확정)를 적용한다.
+[실행 안내](../apps/api/src/public-data/README.md),
+[출처 확장안](wedding-data-source-expansion.md), [위험 보고서](wedding-data-source-risks.md)를 함께 확인한다.
+
 | 문서 | 성격 | 통합정책과의 관계 |
 |---|---|---|
 | [통합정책 v3.14](통합정책%20v3.14) | **현재 확정 기준** | 이것이 기준이다 |

@@ -55,6 +55,22 @@
 
 ## 진행 중
 
+### 웨딩픽 전용 공공데이터 수집 (2026-09-04)
+
+- 사용자 확정: 공공데이터·업체 직접 제공·수집 허용 공식 출처를 원천으로 사용.
+  Google·네이버·카카오 결과의 저장용 통합은 제외한다. 통합정책 N-9~N-12와
+  AI_START_HERE.md에 모든 AI의 필수 확인 경로를 추가했다.
+- 최신 main bbc6ce8에서 기존 public-data:import를 확장했다. 이천·제천 공개 CSV
+  자동 다운로드, 전국 상권 CSV 어댑터, 최소 필드 추출, 출처별 최신성·중복·잠금 보호,
+  기존 실행/변경 로그와 연결하는 DB 경로를 추가했다.
+- 로컬 실수집: 이천 6개 + 제천 4개 = 10개, 제외 0개. 기준일과 수집시각을 분리했다.
+  업체 운영 상태는 확인필요이며 전국 전체 수집 완료가 아니다.
+- 로컬 단위/기존 파서 테스트 18개 통과, API 타입 검사 통과.
+- 현재 로컬 DATABASE_URL·공공데이터 API 키가 없다. 운영 DB 반영은 아직 미실행.
+  0071_vendor_public_sources 적용과 GitHub Actions DB 반영 결과를 후속 확인한다.
+- 카카오 API 응답을 저장하는 geocode-vendors.mts는 실행을 차단했다.
+- 실행 안내: apps/api/src/public-data/README.md. 리스크: docs/wedding-data-source-risks.md.
+
 1.  GitHub 중심 단일 CI/CD 통합
 2.  iOS EAS Production Build 정상화
 3.  Render production deploy 정상화
