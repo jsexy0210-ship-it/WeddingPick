@@ -66,6 +66,12 @@
 - 로컬 실수집: 이천 6개 + 제천 4개 = 10개, 제외 0개. 기준일과 수집시각을 분리했다.
   업체 운영 상태는 확인필요이며 전국 전체 수집 완료가 아니다.
 - 로컬 단위/기존 파서 테스트 18개 통과, API 타입 검사 통과.
+- 공유 PR: https://github.com/jsexy0210-ship-it/WeddingPickl/pull/62 (main 미병합).
+  정책 변경도 PR에 있으므로 main 기준으로 적용 완료라고 보고하지 않는다.
+- GitHub Actions 실행 33838694039는 계정 결제 실패 또는 지출 한도 문제로
+  verify 작업 시작 전에 차단됐다(실행 화면 Annotations 확인). PostgreSQL 통합
+  테스트는 미실행, 수집 작업은 skipped다. 계정 소유자가 Billing & plans 문제를
+  해결한 뒤 검증 재실행 → main 병합 → 0071 migration → 수집 apply 순으로 진행한다.
 - 현재 로컬 DATABASE_URL·공공데이터 API 키가 없다. 운영 DB 반영은 아직 미실행.
   0071_vendor_public_sources 적용과 GitHub Actions DB 반영 결과를 후속 확인한다.
 - 카카오 API 응답을 저장하는 geocode-vendors.mts는 실행을 차단했다.
