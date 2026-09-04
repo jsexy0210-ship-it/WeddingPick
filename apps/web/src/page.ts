@@ -1,3 +1,4 @@
+import { socialMeta } from './social-meta';
 import {
   ANALYSIS_DISCLAIMER,
   ANALYSIS_FACTS,
@@ -169,10 +170,7 @@ export function renderLandingPage(styles: string): string {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(BRAND.description)}">
-<meta property="og:title" content="${escapeHtml(title)}">
-<meta property="og:description" content="${escapeHtml(BRAND.description)}">
-<meta property="og:type" content="website">
-<meta property="og:locale" content="ko_KR">
+${socialMeta("/about.html", title, BRAND.description)}
 <style>${styles}</style>
 </head>
 <body>
