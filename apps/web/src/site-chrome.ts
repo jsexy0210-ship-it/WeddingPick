@@ -82,8 +82,9 @@ function gnb(current: string | null): string {
  * 링크로 만들지 않고 상태를 그대로 적는다 — 앱 정책 화면과 소개 한 장이 같은
  * 것을 보고 있어서, 한쪽만 «게시됨»이 되는 일이 없다.
  *
- * 「업체 · 플래너」 열이 B2B 창구 진입점이다. 광고 · 제휴도 이 창구로 받는다 —
- * 따로 주소를 만들면 받는 사람이 둘로 갈린다.
+ * 웹의 「업체 · 플래너」 B2B 문의 창구(광고·제휴, 플래너 등록 포함)는 파기됐다
+ * (2026-09-04 정책 변경 — 플래너 연결 기능 전체 파기, 차후 도입 예정). 업체 정보
+ * 정정은 앱의 MY → 문의하기로만 받는다.
  */
 function footer(): string {
   const policies = POLICY_DOCUMENTS.map((policy) => {
@@ -119,14 +120,6 @@ function footer(): string {
             <ul>${policies}</ul>
           </li>
           <li>
-            <h2>업체 · 플래너</h2>
-            <ul>
-              <li><a class="brand-link" href="#inquiry">업체 · 플래너 문의</a></li>
-              <li><a href="#inquiry">업체 정보 정정</a></li>
-              <li><a href="#inquiry">광고 · 제휴</a></li>
-            </ul>
-          </li>
-          <li>
             <h2>앱</h2>
             <!--
               스토어 주소를 지어 적지 않는다. 아직 올리지 않았고, 없는 주소를 걸면
@@ -140,25 +133,6 @@ function footer(): string {
         </div>
       </div>
     </footer>`;
-}
-
-/**
- * 업체 · 플래너 창구.
- *
- * 웹에서 접수 폼을 열지 않는다 — 문의는 `INQUIRY_CATEGORY_RULES`가 항목마다
- * 무엇을 받아야 하는지 정해두었고, 그것을 웹에 다시 적으면 두 곳이 갈라진다.
- * 여기서 하는 일은 **어디로 오면 되는지 말하는 것**뿐이다.
- */
-function inquiryAnchor(): string {
-  return `<section id="inquiry" class="band">
-      <div class="wrap">
-        <h2>업체 · 플래너 문의</h2>
-        <p class="pending" style="margin-top:24px">
-          업체 정보 정정, 검색 노출 중단, 플래너 등록, 광고 · 제휴를 이 창구로 받아요.
-          앱에서 <b>MY → 문의하기</b>로 보내실 수 있어요. 앱을 쓰지 않고 연락할 방법은 아직 마련하지 못했어요.
-        </p>
-      </div>
-    </section>`;
 }
 
 /** 앱으로 넘어가는 자리. 스토어에 올리기 전이라 링크 대신 상태를 적는다. */
@@ -200,7 +174,6 @@ ${gnb(input.current)}
 <main id="main">
 ${input.body}
 ${appAnchor()}
-${inquiryAnchor()}
 </main>
 ${footer()}
 </body>

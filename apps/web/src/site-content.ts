@@ -80,8 +80,8 @@ export const APP_HANDOFF = {
   note: `${TERMS.pick}과 비교는 앱에서 이어져요. 웹에서는 ${TERMS.verifiedData}만 볼 수 있어요.`,
 } as const;
 
-/** 정보가 틀렸을 때 어디로 오면 되는지. 업체·플래너가 볼 자리다. */
-export const CORRECTION_NOTE = '정보가 틀렸다면 업체 · 플래너 문의로 알려주세요.';
+/** 정보가 틀렸을 때 어디로 오면 되는지. 앱에서만 받는다(웹 문의 창구는 파기됨). */
+export const CORRECTION_NOTE = '정보가 틀렸다면 앱의 MY → 문의하기로 알려주세요.';
 
 /**
  * Footer 아래 두 줄.
@@ -89,7 +89,4 @@ export const CORRECTION_NOTE = '정보가 틀렸다면 업체 · 플래너 문�
  * 사업자등록번호를 지어 적지 않는다. 없는 번호를 적으면 그건 안내가 아니라
  * 거짓이고, 사업자 정보는 특히 그것을 확인하러 오는 사람이 있는 자리다.
  */
-export const FOOTER_BOTTOM = [
-  SITE.name,
-  '광고 · 제휴 문의는 업체 · 플래너 문의로 접수해주세요.',
-] as const;
+export const FOOTER_BOTTOM = [SITE.name] as const;

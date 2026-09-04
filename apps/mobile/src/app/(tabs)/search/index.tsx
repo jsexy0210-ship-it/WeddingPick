@@ -1,7 +1,6 @@
 import {
   VENDOR_SORTS,
   VENDOR_SORT_LABEL,
-  type PlannerSummary,
   type Top3Response,
   type VendorSort,
   type SponsoredCard,
@@ -29,13 +28,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import {
-  getTop3,
-  listPlannerRegions,
-  listVendorRegions,
-  searchPlanners,
-  searchVendors,
-} from '@/api/client';
+import { getTop3, listVendorRegions, searchVendors } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { VendorMap } from '@/features/search/vendor-map';
 import {
@@ -61,18 +54,12 @@ const CATEGORY_ORDER: VendorCategory[] = [...VENDOR_CATEGORIES];
 /** 글자를 칠 때마다 서버를 부르지 않는다. */
 const DEBOUNCE_MS = 350;
 
-type Mode = 'vendor' | 'planner';
-
 type Filters = {
-  mode: Mode;
   q: string;
   category: VendorCategory | null;
   region: string | null;
   sort: VendorSort;
 };
-
-/** 플래너는 업체 부속정보가 아니라 독립 비교대상이다. 사업계획서 11번. */
-const MODE_LABEL: Record<Mode, string> = { vendor: '업체', planner: '플래너' };
 
 /**
  * 화면 상태.
@@ -85,7 +72,6 @@ type ViewState = 'home' | 'results';
 export default function SearchScreen() {
   const theme = useTheme();
   const [filters, setFilters] = useState<Filters>({
-    mode: 'vendor',
     q: '',
     category: null,
     region: null,
@@ -100,8 +86,6 @@ export default function SearchScreen() {
    * 광고 자리. **결과 배열과 따로 둔다**(v2.0 E-1).
    */
   const [sponsored, setSponsored] = useState<SponsoredCard[]>([]);
-  const [planners, setPlanners] = useState<PlannerSummary[] | null>(isServerConfigured ? null : []);
-  const [withdrawalNotice, setWithdrawalNotice] = useState<string | null>(null);
   const [regions, setRegions] = useState<{ name: string; count: number }[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -112,7 +96,7 @@ export default function SearchScreen() {
   const [pickedCategory, setPickedCategory] = useState<VendorCategory | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [top3, setTop3] = useState<Top3Response | null>(null);
-  /** 목록 · 지도. 지도는 업체 모드에서만 쓴다(WP-SRCH-007). */
+  /** 목록 · 지도. */
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   /**
    * 최근 검색. 제출한 검색어를 기억한다.
@@ -127,15 +111,11 @@ export default function SearchScreen() {
   const suggestions = useMemo(() => {
     if (!inputFocused || trimmedQ.length === 0) return [];
     const lower = trimmedQ.toLowerCase();
-    if (filters.mode === 'vendor') {
-      return (vendors ?? []).filter((v) => v.name.toLowerCase().includes(lower)).slice(0, 5);
-    }
-    return (planners ?? []).filter((p) => p.name.toLowerCase().includes(lower)).slice(0, 5);
-  }, [inputFocused, trimmedQ, filters.mode, vendors, planners]);
+    return (vendors ?? []).filter((v) => v.name.toLowerCase().includes(lower)).slice(0, 5);
+  }, [inputFocused, trimmedQ, vendors]);
 
   useEffect(() => {
     if (!isServerConfigured) return;
-    if (filters.mode !== 'vendor') return;
 
     getTop3({
       region: filters.region ?? undefined,
@@ -143,58 +123,39 @@ export default function SearchScreen() {
     })
       .then(setTop3)
       .catch(() => setTop3(null));
-  }, [filters.mode, filters.region, filters.category]);
+  }, [filters.region, filters.category]);
 
   useEffect(() => {
     if (!isServerConfigured) return;
 
-    const load =
-      filters.mode === 'vendor'
-        ? listVendorRegions().then((response) =>
-            response.regions.map((region) => ({ name: region.name, count: region.vendorCount }))
-          )
-        : listPlannerRegions().then((response) =>
-            response.regions.map((region) => ({ name: region.name, count: region.plannerCount }))
-          );
-
-    load.then(setRegions).catch(() => undefined);
-  }, [filters.mode]);
+    listVendorRegions()
+      .then((response) =>
+        response.regions.map((region) => ({ name: region.name, count: region.vendorCount }))
+      )
+      .then(setRegions)
+      .catch(() => undefined);
+  }, []);
 
   const runSearch = useCallback(() => {
     const id = (requestId.current += 1);
-    const shared = {
+
+    searchVendors({
       q: filters.q.trim() || undefined,
       region: filters.region ?? undefined,
-    };
-
-    const search =
-      filters.mode === 'vendor'
-        ? searchVendors({
-            ...shared,
-            category: filters.category ?? undefined,
-            sort: filters.sort,
-          }).then((response) => {
-            setVendors(response.vendors);
-            setSponsored(response.sponsored);
-            setTotal(response.total);
-            return response.nextCursor;
-          })
-        : searchPlanners(shared).then((response) => {
-            setPlanners(response.planners);
-            setWithdrawalNotice(response.withdrawalNotice);
-            return response.nextCursor;
-          });
-
-    search
-      .then((cursor) => {
+      category: filters.category ?? undefined,
+      sort: filters.sort,
+    })
+      .then((response) => {
         if (id !== requestId.current) return;
-        setNextCursor(cursor);
+        setVendors(response.vendors);
+        setSponsored(response.sponsored);
+        setTotal(response.total);
+        setNextCursor(response.nextCursor);
         setError(null);
       })
       .catch((caught: Error) => {
         if (id !== requestId.current) return;
         setVendors([]);
-        setPlanners([]);
         setError(caught.message);
       });
   }, [filters]);
@@ -212,25 +173,15 @@ export default function SearchScreen() {
     setLoadingMore(true);
 
     try {
-      const shared = {
+      const response = await searchVendors({
         q: filters.q.trim() || undefined,
         region: filters.region ?? undefined,
         cursor: nextCursor,
-      };
-
-      if (filters.mode === 'vendor') {
-        const response = await searchVendors({
-          ...shared,
-          category: filters.category ?? undefined,
-          sort: filters.sort,
-        });
-        setVendors((current) => [...(current ?? []), ...response.vendors]);
-        setNextCursor(response.nextCursor);
-      } else {
-        const response = await searchPlanners(shared);
-        setPlanners((current) => [...(current ?? []), ...response.planners]);
-        setNextCursor(response.nextCursor);
-      }
+        category: filters.category ?? undefined,
+        sort: filters.sort,
+      });
+      setVendors((current) => [...(current ?? []), ...response.vendors]);
+      setNextCursor(response.nextCursor);
     } catch (caught) {
       setError((caught as Error).message);
     } finally {
@@ -240,16 +191,6 @@ export default function SearchScreen() {
 
   function toggle<K extends 'category' | 'region'>(key: K, value: Filters[K]) {
     setFilters((current) => ({ ...current, [key]: current[key] === value ? null : value }));
-  }
-
-  function switchMode(mode: Mode) {
-    if (mode === filters.mode) return;
-    setVendors(isServerConfigured ? null : []);
-    setPlanners(isServerConfigured ? null : []);
-    setNextCursor(null);
-    setError(null);
-    setRegions([]);
-    setFilters((current) => ({ ...current, mode, category: null, region: null }));
   }
 
   /**
@@ -417,39 +358,22 @@ export default function SearchScreen() {
       <ThemedView
         type="backgroundElement"
         style={[styles.suggestions, { borderColor: theme.border }]}>
-        {filters.mode === 'vendor'
-          ? (suggestions as VendorSummary[]).map((item) => (
-              <Pressable
-                key={item.id}
-                accessibilityRole="button"
-                onPress={() => {
-                  setInputFocused(false);
-                  router.push(`/search/${item.id}`);
-                }}>
-                <ThemedView type="backgroundElement" style={styles.suggestionRow}>
-                  <ThemedText type="t6">{item.name}</ThemedText>
-                  <ThemedText type="t7" themeColor="textAssistive">
-                    {VENDOR_CATEGORY_LABEL[item.category]} · {item.region}
-                  </ThemedText>
-                </ThemedView>
-              </Pressable>
-            ))
-          : (suggestions as PlannerSummary[]).map((item) => (
-              <Pressable
-                key={item.id}
-                accessibilityRole="button"
-                onPress={() => {
-                  setInputFocused(false);
-                  router.push(`/search/planner/${item.id}`);
-                }}>
-                <ThemedView type="backgroundElement" style={styles.suggestionRow}>
-                  <ThemedText type="t6">{item.name}</ThemedText>
-                  <ThemedText type="t7" themeColor="textAssistive">
-                    {item.regions.join(' · ')}
-                  </ThemedText>
-                </ThemedView>
-              </Pressable>
-            ))}
+        {suggestions.map((item) => (
+          <Pressable
+            key={item.id}
+            accessibilityRole="button"
+            onPress={() => {
+              setInputFocused(false);
+              router.push(`/search/${item.id}`);
+            }}>
+            <ThemedView type="backgroundElement" style={styles.suggestionRow}>
+              <ThemedText type="t6">{item.name}</ThemedText>
+              <ThemedText type="t7" themeColor="textAssistive">
+                {VENDOR_CATEGORY_LABEL[item.category]} · {item.region}
+              </ThemedText>
+            </ThemedView>
+          </Pressable>
+        ))}
       </ThemedView>
     );
   }
@@ -559,170 +483,109 @@ export default function SearchScreen() {
         </ScrollView>
 
         {/* 결과 수 + 정렬 */}
-        {filters.mode === 'vendor' ? (
-          <View style={[styles.sortRow, { backgroundColor: theme.background }]}>
-            <ThemedText type="t7" themeColor="textAssistive">
-              {filters.category ? `${VENDOR_CATEGORY_LABEL[filters.category]} ` : ''}
-              {total}곳
-            </ThemedText>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={styles.sortChips}>
-                {VENDOR_SORTS.filter((sort) => sort !== 'name').map((sort) => (
-                  <FilterChip
-                    key={sort}
-                    role="radio"
-                    label={VENDOR_SORT_LABEL[sort]}
-                    selected={filters.sort === sort}
-                    onPress={() => setFilters((current) => ({ ...current, sort }))}
-                  />
-                ))}
-              </View>
-            </ScrollView>
-          </View>
-        ) : null}
+        <View style={[styles.sortRow, { backgroundColor: theme.background }]}>
+          <ThemedText type="t7" themeColor="textAssistive">
+            {filters.category ? `${VENDOR_CATEGORY_LABEL[filters.category]} ` : ''}
+            {total}곳
+          </ThemedText>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={styles.sortChips}>
+              {VENDOR_SORTS.filter((sort) => sort !== 'name').map((sort) => (
+                <FilterChip
+                  key={sort}
+                  role="radio"
+                  label={VENDOR_SORT_LABEL[sort]}
+                  selected={filters.sort === sort}
+                  onPress={() => setFilters((current) => ({ ...current, sort }))}
+                />
+              ))}
+            </View>
+          </ScrollView>
+        </View>
 
         {/* 결과 목록 */}
-        {filters.mode === 'vendor' ? (
-          vendors === null ? (
-            <ActivityIndicator color={theme.tint} style={styles.spinner} />
-          ) : viewMode === 'map' ? (
-            <VendorMap vendors={vendors} loading={false} onRefresh={runSearch} />
-          ) : (
-            <FlatList
-              data={vendors}
-              keyExtractor={(item) => item.id}
-              contentContainerStyle={styles.resultList}
-              onEndReached={loadMore}
-              onEndReachedThreshold={0.4}
-              showsVerticalScrollIndicator={false}
-              ListHeaderComponent={
-                <>
-                  {/* 광고 — 자연 결과와 별도 배열. 선 하나로 분리 표시. */}
-                  {sponsored.length > 0 ? (
-                    <View style={styles.sponsoredBlock}>
-                      {sponsored.map((ad) => (
-                        <Pressable
-                          key={ad.vendorId}
-                          accessibilityRole="button"
-                          accessibilityLabel={`${ad.label} ${ad.name} 자세히 보기`}
-                          onPress={() => router.push(`/search/${ad.vendorId}`)}>
-                          <View
-                            style={[
-                              styles.adCard,
-                              {
-                                backgroundColor: theme.backgroundElement,
-                                borderColor: theme.border,
-                              },
-                            ]}>
-                            <ThemedText type="badge" themeColor="textAssistive">
-                              {ad.label}
-                            </ThemedText>
-                            <ThemedText type="t5">{ad.name}</ThemedText>
-                            <ThemedText type="t7" themeColor="textSecondary">
-                              {VENDOR_CATEGORY_LABEL[ad.category]} · {ad.region}
-                            </ThemedText>
-                          </View>
-                        </Pressable>
-                      ))}
-                      <View style={[styles.adDivider, { backgroundColor: theme.line }]} />
-                    </View>
-                  ) : null}
-                </>
-              }
-              ListEmptyComponent={
-                <View style={styles.emptyWrap}>
-                  <ThemedText type="t2">조건에 맞는 곳이{'\n'}없어요</ThemedText>
-                  {filters.category || filters.region ? (
-                    <ThemedText type="t6" themeColor="textSecondary">
-                      조건을 하나 풀어보세요
-                    </ThemedText>
-                  ) : (
-                    <ThemedText type="t6" themeColor="textSecondary">
-                      {!isServerConfigured
-                        ? '이 빌드는 서버에 붙어 있지 않아요.'
-                        : error ?? '찾으시는 업체가 아직 등록되지 않았어요.'}
-                    </ThemedText>
-                  )}
-                  {(filters.category || filters.region) ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      style={[styles.filterResetBtn, { backgroundColor: theme.tint }]}
-                      onPress={() =>
-                        setFilters((current) => ({
-                          ...current,
-                          category: null,
-                          region: null,
-                        }))
-                      }>
-                      <ThemedText type="t5" style={styles.filterResetText}>
-                        조건 초기화
-                      </ThemedText>
-                    </Pressable>
-                  ) : null}
-                </View>
-              }
-              ListFooterComponent={
-                loadingMore ? <ActivityIndicator color={theme.tint} style={styles.spinner} /> : null
-              }
-              renderItem={({ item }) => renderVendorCard(item)}
-            />
-          )
-        ) : planners === null ? (
+        {vendors === null ? (
           <ActivityIndicator color={theme.tint} style={styles.spinner} />
+        ) : viewMode === 'map' ? (
+          <VendorMap vendors={vendors} loading={false} onRefresh={runSearch} />
         ) : (
           <FlatList
-            data={planners}
+            data={vendors}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.resultList}
             onEndReached={loadMore}
             onEndReachedThreshold={0.4}
+            showsVerticalScrollIndicator={false}
             ListHeaderComponent={
-              withdrawalNotice ? (
-                <View
-                  style={[styles.adCard, { backgroundColor: theme.backgroundElement }]}>
-                  <ThemedText type="t7" themeColor="textSecondary">
-                    {withdrawalNotice}
-                  </ThemedText>
-                </View>
-              ) : null
+              <>
+                {/* 광고 — 자연 결과와 별도 배열. 선 하나로 분리 표시. */}
+                {sponsored.length > 0 ? (
+                  <View style={styles.sponsoredBlock}>
+                    {sponsored.map((ad) => (
+                      <Pressable
+                        key={ad.vendorId}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${ad.label} ${ad.name} 자세히 보기`}
+                        onPress={() => router.push(`/search/${ad.vendorId}`)}>
+                        <View
+                          style={[
+                            styles.adCard,
+                            {
+                              backgroundColor: theme.backgroundElement,
+                              borderColor: theme.border,
+                            },
+                          ]}>
+                          <ThemedText type="badge" themeColor="textAssistive">
+                            {ad.label}
+                          </ThemedText>
+                          <ThemedText type="t5">{ad.name}</ThemedText>
+                          <ThemedText type="t7" themeColor="textSecondary">
+                            {VENDOR_CATEGORY_LABEL[ad.category]} · {ad.region}
+                          </ThemedText>
+                        </View>
+                      </Pressable>
+                    ))}
+                    <View style={[styles.adDivider, { backgroundColor: theme.line }]} />
+                  </View>
+                ) : null}
+              </>
             }
             ListEmptyComponent={
               <View style={styles.emptyWrap}>
-                <ThemedText type="t2">찾는 플래너가{'\n'}없어요</ThemedText>
-                <ThemedText type="t6" themeColor="textSecondary">
-                  {!isServerConfigured
-                    ? '이 빌드는 서버에 붙어 있지 않아요.'
-                    : error ?? '공개된 자료에 실려 있거나 본인이 밝힌 플래너만 나와요.'}
-                </ThemedText>
+                <ThemedText type="t2">조건에 맞는 곳이{'\n'}없어요</ThemedText>
+                {filters.category || filters.region ? (
+                  <ThemedText type="t6" themeColor="textSecondary">
+                    조건을 하나 풀어보세요
+                  </ThemedText>
+                ) : (
+                  <ThemedText type="t6" themeColor="textSecondary">
+                    {!isServerConfigured
+                      ? '이 빌드는 서버에 붙어 있지 않아요.'
+                      : error ?? '찾으시는 업체가 아직 등록되지 않았어요.'}
+                  </ThemedText>
+                )}
+                {(filters.category || filters.region) ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    style={[styles.filterResetBtn, { backgroundColor: theme.tint }]}
+                    onPress={() =>
+                      setFilters((current) => ({
+                        ...current,
+                        category: null,
+                        region: null,
+                      }))
+                    }>
+                    <ThemedText type="t5" style={styles.filterResetText}>
+                      조건 초기화
+                    </ThemedText>
+                  </Pressable>
+                ) : null}
               </View>
             }
             ListFooterComponent={
               loadingMore ? <ActivityIndicator color={theme.tint} style={styles.spinner} /> : null
             }
-            renderItem={({ item }) => (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`${item.name} 자세히 보기`}
-                onPress={() => router.push(`/search/planner/${item.id}`)}>
-                <View
-                  style={[
-                    styles.adCard,
-                    { backgroundColor: theme.backgroundElement },
-                  ]}>
-                  <ThemedText type="t5">{item.name}</ThemedText>
-                  <ThemedText type="t7" themeColor="textSecondary">
-                    {[item.vendor?.name ?? '프리랜서', item.regions.join(' · ')]
-                      .filter(Boolean)
-                      .join(' · ')}
-                  </ThemedText>
-                  <ThemedText type="t7" themeColor="textSecondary">
-                    {item.comparableQuoteCount === 0
-                      ? '확인된 계약 자료가 아직 없어요'
-                      : `확인된 계약 ${item.comparableQuoteCount}건`}
-                  </ThemedText>
-                </View>
-              </Pressable>
-            )}
+            renderItem={({ item }) => renderVendorCard(item)}
           />
         )}
       </>
@@ -737,21 +600,9 @@ export default function SearchScreen() {
 
         {/* ── 헤더 ── */}
         <ThemedView style={styles.header}>
-          {/* 모드 탭 — 업체 / 플래너 */}
           {viewState === 'home' ? (
             <View style={styles.headerTop}>
               <ThemedText type="t4">검색</ThemedText>
-              <View style={styles.modeSwitcher}>
-                {(Object.keys(MODE_LABEL) as Mode[]).map((mode) => (
-                  <FilterChip
-                    key={mode}
-                    role="radio"
-                    label={MODE_LABEL[mode]}
-                    selected={filters.mode === mode}
-                    onPress={() => switchMode(mode)}
-                  />
-                ))}
-              </View>
             </View>
           ) : null}
 
@@ -772,7 +623,7 @@ export default function SearchScreen() {
               onSubmitEditing={() => submitSearch(filters.q)}
               returnKeyType="search"
               autoCorrect={false}
-              accessibilityLabel={`${MODE_LABEL[filters.mode]} 이름 검색`}
+              accessibilityLabel="업체 이름 검색"
             />
             {viewState === 'results' ? (
               <Pressable accessibilityRole="button" onPress={goHome} style={styles.cancelBtn}>
@@ -785,7 +636,7 @@ export default function SearchScreen() {
           {renderSuggestions()}
 
           {/* 결과 모드 지도/목록 토글 */}
-          {viewState === 'results' && filters.mode === 'vendor' ? (
+          {viewState === 'results' ? (
             <View style={styles.viewToggle}>
               <FilterChip
                 role="radio"
@@ -806,32 +657,22 @@ export default function SearchScreen() {
         {/* ── 본문 ── */}
         {viewState === 'home' ? renderHome() : renderResults()}
 
-        {/* ── 비교함 트레이 (업체 모드에서만) ── */}
-        {filters.mode === 'vendor' ? (
-          <ThemedView style={[styles.tray, { borderTopColor: theme.line }]}>
-            <ThemedText type="t7" themeColor="textSecondary" style={styles.trayNote}>
-              {picked.length === 0
-                ? '같은 업종끼리만 비교할 수 있어요'
-                : picked.length < 2
-                  ? '한 곳 더 담아주세요'
-                  : `${picked.length}곳 담음 · ${MAX_COMPARED_VENDORS}곳까지`}
-            </ThemedText>
-            <ActionButton
-              variant="primary"
-              label="비교함"
-              disabled={picked.length < 2}
-              onPress={() => router.push(`/search/compare?ids=${picked.join(',')}`)}
-            />
-          </ThemedView>
-        ) : (
-          <ThemedView style={styles.footer}>
-            <ActionButton
-              label="자료 촬영하기"
-              hint={`찾는 ${MODE_LABEL[filters.mode]}가 없어도 자료를 올리면 정리해드려요`}
-              onPress={() => router.push('/capture')}
-            />
-          </ThemedView>
-        )}
+        {/* ── 비교함 트레이 ── */}
+        <ThemedView style={[styles.tray, { borderTopColor: theme.line }]}>
+          <ThemedText type="t7" themeColor="textSecondary" style={styles.trayNote}>
+            {picked.length === 0
+              ? '같은 업종끼리만 비교할 수 있어요'
+              : picked.length < 2
+                ? '한 곳 더 담아주세요'
+                : `${picked.length}곳 담음 · ${MAX_COMPARED_VENDORS}곳까지`}
+          </ThemedText>
+          <ActionButton
+            variant="primary"
+            label="비교함"
+            disabled={picked.length < 2}
+            onPress={() => router.push(`/search/compare?ids=${picked.join(',')}`)}
+          />
+        </ThemedView>
 
         <Toast message={toast} onHidden={() => setToast(null)} />
       </SafeAreaView>
@@ -878,10 +719,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  modeSwitcher: {
-    flexDirection: 'row',
-    gap: Spacing.two,
   },
 
   // 검색창. 핸드오프: height 52, radius 6, background recessed
@@ -1124,10 +961,5 @@ const styles = StyleSheet.create({
   },
   trayNote: {
     flex: 1,
-  },
-  footer: {
-    paddingHorizontal: Layout.gutter,
-    paddingBottom: Spacing.three,
-    gap: Spacing.two,
   },
 });
