@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-static.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-scale.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-semantic.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/typography.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/dimension.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/motion.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/base.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/core/core.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/buttons/buttons.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/forms/forms.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/feedback/feedback.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/overlay/overlay.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/display/display.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/styles.css">
+<script src="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/_ds_bundle.js"></script>
+<script src="./image-slot.js"></script>
+<style>
+body{margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#ff6f61;text-decoration:none}
+a:hover{color:#e2564a}
+.nsb::-webkit-scrollbar{display:none}
+image-slot{background:#eaebee}
+image-slot::part(empty){display:none !important}
+</style>
+</helmet>
+
+<section style="{{ rootStyle }}">
+
+<div style="display:flex;flex-direction:column;gap:10px;max-width:1000px;padding-bottom:8px">
+  <span style="font-size:14px;line-height:19px;font-weight:700;color:#ff6f61">WeddingPick · WP-MY</span>
+  <span style="font-size:40px;line-height:52px;font-weight:700;color:#212124">MY 하위</span>
+  <span style="font-size:18px;line-height:26px;color:#393a40;text-wrap:pretty">설정 화면들입니다. 무엇을 바꾸면 무엇이 달라지는지 각 화면 하단에 적고, 되돌릴 수 없는 항목은 미리 알립니다.</span>
+</div>
+
+<div style="display:flex;gap:36px;align-items:flex-start">
+  <sc-for list="{{ screens }}" as="s" hint-placeholder-count="6">
+    <div style="{{ col }}">
+      <div style="{{ tag }}"><span style="{{ tagId }}">{{ s.no }}</span>{{ s.label }}</div>
+      <span style="{{ tagDesc }}">{{ s.desc }}</span>
+      <div style="{{ phone }}">
+        <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+        <div style="{{ navBack }}">
+          <span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span>
+          <span style="flex:1;min-width:0;{{ t18b }}">{{ s.nav }}</span>
+          <sc-if value="{{ s.navRight }}"><span style="{{ s.navRightStyle }}">{{ s.navRight }}</span></sc-if>
+        </div>
+        <div class="nsb" style="{{ scroll }}">
+
+          <sc-if value="{{ s.profile }}" hint-placeholder-val="{{ false }}">
+            <div style="flex-shrink:0;padding:20px 24px 28px;display:flex;flex-direction:column;align-items:center;gap:14px">
+              <div style="{{ avatarBig }}">지</div>
+              <span style="{{ t16a }}">사진 바꾸기</span>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s.line1 }}">
+            <div style="{{ padHero }}">
+              <span style="{{ h26 }}">{{ s.line1 }}<br>{{ s.line2 }}</span>
+              <sc-if value="{{ s.sub }}"><span style="{{ t16n }}">{{ s.sub }}</span></sc-if>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s.swatches }}" hint-placeholder-val="{{ false }}">
+            <div style="flex-shrink:0;padding:0 24px 24px;display:flex;flex-wrap:wrap;gap:12px">
+              <sc-for list="{{ s.swatches }}" as="w" hint-placeholder-count="6"><span style="{{ w.style }}"></span></sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s.preview }}" hint-placeholder-val="{{ false }}">
+            <div style="flex-shrink:0;padding:0 24px 28px">
+              <div style="{{ previewBox }}">
+                <span style="{{ t14a }}">미리보기</span>
+                <span style="{{ t18b2 }}">이번 주엔 드레스를 정할 차례예요</span>
+                <button style="{{ ctaSm }}">3곳 비교</button>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s.taste }}" hint-placeholder-val="{{ false }}">
+            <div style="flex-shrink:0;padding:0 24px 24px;display:grid;grid-template-columns:1fr 1fr;gap:11px">
+              <sc-for list="{{ s.taste }}" as="t" hint-placeholder-count="4">
+                <div style="position:relative;width:100%;height:150px">
+                  <div style="position:absolute;inset:0;border-radius:10px;overflow:hidden"><image-slot id="{{ t.slot }}" src="{{ t.src }}" shape="rect" placeholder=""></image-slot></div>
+                  <span style="{{ t.overlay }}">
+                    <span style="{{ t.check }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg></span>
+                    <span style="{{ tasteLabel }}">{{ t.label }}</span>
+                  </span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-for list="{{ s.groups }}" as="g" hint-placeholder-count="3">
+            <div style="{{ padSec }}">
+              <sc-if value="{{ g.title }}"><span style="{{ g.titleStyle }}">{{ g.title }}</span></sc-if>
+              <div style="display:flex;flex-direction:column;gap:2px">
+                <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="4">
+                  <div>
+                    <div style="{{ r.rowStyle }}">
+                      <sc-if value="{{ r.lead }}"><span style="{{ r.leadStyle }}">{{ r.lead }}</span></sc-if>
+                      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                        <span style="{{ r.nameStyle }}">{{ r.name }}</span>
+                        <sc-if value="{{ r.meta }}"><span style="{{ t14w }}">{{ r.meta }}</span></sc-if>
+                      </div>
+                      <sc-if value="{{ r.tail }}"><span style="{{ r.tailStyle }}">{{ r.tail }}</span></sc-if>
+                      <sc-if value="{{ r.toggle }}" hint-placeholder-val="{{ false }}"><span style="{{ r.toggleStyle }}"><span style="{{ knob }}"></span></span></sc-if>
+                      <sc-if value="{{ r.chevron }}" hint-placeholder-val="{{ false }}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#adb1ba" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 18px;margin-top:3px"><path d="m9 6 6 6-6 6"></path></svg>
+                      </sc-if>
+                    </div>
+                    <div style="{{ hr }}"></div>
+                  </div>
+                </sc-for>
+              </div>
+              <sc-if value="{{ g.empty }}"><div style="{{ emptyBox }}"><span style="{{ t16g }}">{{ g.empty }}</span></div></sc-if>
+            </div>
+          </sc-for>
+
+          <sc-if value="{{ s.note }}">
+            <div style="flex-shrink:0;padding:0 24px 28px">
+              <div style="{{ noteBox }}">
+                <span style="{{ t18b2 }}">{{ s.noteTitle }}</span>
+                <span style="{{ t16g }}">{{ s.note }}</span>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+        <sc-if value="{{ s.cta }}">
+          <div style="{{ dock }}">
+            <sc-if value="{{ s.cta2 }}"><button style="{{ ctaGhost }}">{{ s.cta2 }}</button></sc-if>
+            <button style="{{ s.ctaStyle }}">{{ s.cta }}</button>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-for>
+</div>
+
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:2620,&quot;height&quot;:1100}}">
+class Component extends DCLogic {
+  renderVals() {
+    const C = '#ff6f61';
+    const IMG = {
+      couple: 'uploads/samples-1788175716407-57s9.jpg',
+      arch: 'uploads/samples-1788175716396-jydc.jpg',
+      bride: 'uploads/samples-1788175716389-fion.jpg',
+      hall: 'uploads/samples-1788175716419-flvg.jpg'
+    };
+    const badge = k => 'padding:4px 9px;border-radius:4px;font-size:14px;line-height:19px;font-weight:700;white-space:nowrap;margin-top:2px;'
+      + (k === 'ok' ? 'background:#e8faf6;color:#1aa174;'
+        : k === 'wait' ? 'background:#ffe3ba;color:#805217;'
+          : k === 'no' ? 'background:#ffe5e3;color:#e81607;'
+            : k === 'brand' ? 'background:#ffe8e4;color:' + C + ';'
+              : 'background:#f2f3f6;color:#4d5159;');
+    const row = o => ({
+      lead: o.lead || '', leadStyle: o.leadStyle || '',
+      name: o.name, meta: o.meta || '', tail: o.tail || '',
+      rowStyle: 'display:flex;align-items:' + (o.meta ? 'flex-start' : 'center') + ';gap:12px;min-height:56px;padding:' + (o.meta ? '14px' : '12px') + ' 0;cursor:pointer',
+      nameStyle: 'font-size:18px;line-height:24px;color:' + (o.danger ? '#e81607' : o.off ? '#adb1ba' : '#212124') + ';display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      tailStyle: o.tailKind ? badge(o.tailKind)
+        : 'font-size:16px;line-height:22px;' + (o.tailStrong ? 'font-weight:700;color:#212124;' : 'color:#868b94;')
+          + 'font-variant-numeric:tabular-nums;white-space:nowrap;margin-top:' + (o.meta ? '2px' : '0'),
+      toggle: o.toggle || '',
+      toggleStyle: o.toggle === 'on'
+        ? 'width:52px;height:32px;flex:0 0 52px;border-radius:999px;background:' + C + ';display:flex;align-items:center;justify-content:flex-end;padding:0 3px;box-sizing:border-box'
+        : 'width:52px;height:32px;flex:0 0 52px;border-radius:999px;background:#dcdee3;display:flex;align-items:center;padding:0 3px;box-sizing:border-box',
+      chevron: !!o.chevron
+    });
+    const grp = o => ({
+      title: o.title || '', empty: o.empty || '',
+      titleStyle: o.big ? 'font-size:20px;line-height:27px;font-weight:700;color:#212124' : 'font-size:14px;line-height:19px;font-weight:700;color:#868b94',
+      rows: o.rows || []
+    });
+    const swatch = (hex, on) => ({ style: 'width:52px;height:52px;border-radius:999px;background:' + hex + ';cursor:pointer;'
+      + (on ? 'box-shadow:0 0 0 3px #fff inset,0 0 0 3px ' + hex : 'box-shadow:0 0 0 1px rgba(0,27,55,.10) inset') });
+    const tasteOn = on => 'position:absolute;inset:0;border-radius:10px;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;padding:12px;cursor:pointer;background:linear-gradient(to top,rgba(0,0,0,.42),rgba(0,0,0,0) 58%);'
+      + (on ? 'border:2px solid ' + C + ';box-shadow:inset 0 0 0 100vmax rgba(255,111,97,.18);' : 'border:1px solid rgba(0,27,55,.10);');
+    const tasteCheck = on => on
+      ? 'position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:999px;background:' + C + ';display:flex;align-items:center;justify-content:center'
+      : 'position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:999px;background:rgba(255,255,255,.28);border:1.5px solid rgba(255,255,255,.85);box-sizing:border-box';
+    const sc = o => ({
+      no: o.no, label: o.label, desc: o.desc, nav: o.nav,
+      navRight: o.navRight || '',
+      navRightStyle: 'font-size:16px;line-height:22px;font-weight:700;white-space:nowrap;color:' + (o.navRightBrand ? C : '#4d5159'),
+      profile: !!o.profile,
+      line1: o.hero ? String(o.hero).split('\n')[0] : '',
+      line2: o.hero ? (String(o.hero).split('\n')[1] || '') : '',
+      sub: o.sub || '',
+      swatches: o.swatches || null, preview: !!o.preview, taste: o.taste || null,
+      groups: o.groups || [],
+      noteTitle: o.noteTitle || '', note: o.note || '',
+      cta: o.cta || '', cta2: o.cta2 || '',
+      ctaStyle: 'flex:' + (o.cta2 ? '1.4' : '1') + ';height:52px;border:0;border-radius:6px;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer;'
+        + (o.ctaDanger ? 'background:#ff4133;color:#fff;' : 'background:' + C + ';color:#fff;')
+    });
+    const av = who => 'width:32px;height:32px;flex:0 0 32px;margin-top:1px;border-radius:999px;'
+      + (who === '지' ? 'background:#ffe8e4;color:' + C + ';' : 'background:#f2f3f6;color:#4d5159;')
+      + 'display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700';
+
+    return {
+      rootStyle: 'display:flex;flex-direction:column;gap:48px;align-items:flex-start;padding:64px;width:max-content',
+      col: 'display:flex;flex-direction:column;gap:10px;width:390px',
+      tag: 'height:26px;display:flex;align-items:center;gap:8px;font-size:18px;line-height:24px;font-weight:700;color:#212124;white-space:nowrap;overflow:hidden',
+      tagId: 'width:26px;height:26px;flex:0 0 26px;border-radius:6px;background:#212124;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700',
+      tagDesc: 'height:71px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;line-height:21px;color:#4d5159;text-wrap:pretty',
+      phone: 'width:390px;height:844px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)',
+      bar: 'height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:700;color:#212124',
+      barIcons: 'display:flex;gap:5px;align-items:center',
+      navBack: 'flex:0 0 56px;display:flex;align-items:center;gap:8px;padding:0 20px 0 12px;background:#fff',
+      backBtn: 'width:40px;height:40px;flex:0 0 40px;border-radius:999px;display:flex;align-items:center;justify-content:center',
+      scroll: 'flex:1 1 auto;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;scrollbar-width:none',
+      dock: 'flex:0 0 92px;background:#fff;box-shadow:inset 0 1px 0 #eaebee;padding:12px 24px;display:flex;gap:8px;box-sizing:border-box',
+      padHero: 'flex-shrink:0;padding:12px 24px 24px;display:flex;flex-direction:column;gap:8px',
+      padSec: 'flex-shrink:0;padding:0 24px 24px;display:flex;flex-direction:column;gap:10px',
+      hr: 'height:1px;background:#eaebee',
+      knob: 'width:26px;height:26px;border-radius:999px;background:#fff',
+      noteBox: 'border-radius:10px;background:#f7f8fa;padding:20px;display:flex;flex-direction:column;gap:8px',
+      emptyBox: 'border-radius:10px;background:#f7f8fa;padding:20px;display:flex',
+      previewBox: 'border-radius:10px;border:1px solid #ffd9d4;background:#fff5f2;padding:20px;display:flex;flex-direction:column;gap:10px',
+      avatarBig: 'width:88px;height:88px;border-radius:999px;background:#ffe8e4;color:' + C + ';display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700',
+      tasteLabel: 'font-size:16px;font-weight:700;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.55)',
+      ctaSm: 'height:44px;border:0;border-radius:6px;background:' + C + ';color:#fff;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer',
+      ctaGhost: 'flex:1;height:52px;border:0;border-radius:6px;background:#f2f3f6;color:#393a40;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer',
+
+      h26: 'font-size:26px;line-height:35px;font-weight:700;color:#212124;text-wrap:pretty',
+      t18b: 'font-size:18px;line-height:24px;font-weight:700;color:#212124;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      t18b2: 'font-size:18px;line-height:24px;font-weight:700;color:#212124;text-wrap:pretty',
+      t16g: 'font-size:16px;line-height:24px;color:#4d5159;text-wrap:pretty',
+      t16n: 'display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px;line-height:24px;color:#4d5159',
+      t16a: 'font-size:16px;line-height:22px;font-weight:700;color:' + C + ';cursor:pointer',
+      t14a: 'font-size:14px;line-height:19px;font-weight:700;color:' + C,
+      t14w: 'font-size:14px;line-height:19px;color:#868b94;font-variant-numeric:tabular-nums;text-wrap:pretty',
+
+      screens: [
+        sc({
+          no: '1', label: '프로필 · WP-MY-002', nav: '프로필', navRight: '저장', navRightBrand: true,
+          desc: '이름과 사진만 바꿉니다. 배우자에게 어떻게 보이는지 함께 알려주고, 연결 계정은 읽기만 가능합니다.',
+          profile: true,
+          groups: [
+            grp({ title: '기본', rows: [
+              row({ name: '이름', tail: '지수', tailStrong: true, chevron: true }),
+              row({ name: '배우자에게 보이는 이름', tail: '지수', tailStrong: true, chevron: true })
+            ] }),
+            grp({ title: '연결 계정', rows: [
+              row({ name: '카카오', meta: 'ji***@kakao.com', tail: '연결됨', tailKind: 'ok' }),
+              row({ name: '애플', tail: '연결하기', tailStrong: true, chevron: true })
+            ] }),
+            grp({ title: '인증', rows: [
+              row({ name: 'Pick 인증', meta: '확인된 제보 4건', tail: '인증됨', tailKind: 'ok' })
+            ] })
+          ],
+          noteTitle: '이름은 배우자와 후기에만 보여요', note: '다른 사용자에게는 김OO처럼 일부만 보여드려요.'
+        }),
+        sc({
+          no: '2', label: '취향 다시 고르기 · WP-MY-004', nav: '취향', navRight: '저장', navRightBrand: true,
+          desc: '지금 고른 것을 먼저 보여주고 바꾸게 합니다. 바꾸면 추천이 다시 계산된다는 점을 하단에 적습니다.',
+          hero: '어떤 분위기가\n좋으세요?', sub: '지금은 2개를 골랐어요',
+          taste: [
+            { slot: 'my-t1', src: IMG.bride, label: '깔끔한 화이트', overlay: tasteOn(true), check: tasteCheck(true) },
+            { slot: 'my-t2', src: IMG.couple, label: '야외 자연광', overlay: tasteOn(true), check: tasteCheck(true) },
+            { slot: 'my-t3', src: IMG.arch, label: '플라워 아치', overlay: tasteOn(false), check: tasteCheck(false) },
+            { slot: 'my-t4', src: IMG.hall, label: '클래식 호텔', overlay: tasteOn(false), check: tasteCheck(false) }
+          ],
+          groups: [
+            grp({ title: '중요하게 보는 것', rows: [
+              row({ name: '가격', tail: '1순위', tailKind: 'brand' }),
+              row({ name: '원본 제공', tail: '2순위', tailKind: 'none' }),
+              row({ name: '가능한 날짜', tail: '3순위', tailKind: 'none' }),
+              row({ name: '순서 바꾸기', tail: '', chevron: true })
+            ] })
+          ],
+          noteTitle: '바꾸면 추천이 다시 계산돼요', note: '지금까지 고른 곳과 지출 기록은 그대로 남아요.'
+        }),
+        sc({
+          no: '3', label: '배우자 연결 관리 · WP-MY-006', nav: '배우자 연결',
+          desc: '무엇을 같이 보고 무엇을 각자 보는지 스위치로 보여줍니다. 항목별로 켜고 끌 수 있습니다.',
+          groups: [
+            grp({ title: '연결됨 · 8월 12일부터', rows: [
+              row({ lead: '준', leadStyle: av('준'), name: '준호님', meta: '고른 곳 3곳 · 일정 5개 · 메모 6개', tail: '', chevron: true })
+            ] }),
+            grp({ title: '같이 보는 것', rows: [
+              row({ name: '고른 곳', toggle: 'on' }),
+              row({ name: '일정', toggle: 'on' }),
+              row({ name: '지출', toggle: 'on' }),
+              row({ name: '메모', toggle: 'on' })
+            ] }),
+            grp({ title: '각자 보는 것', rows: [
+              row({ name: '검색 기록', toggle: 'off' }),
+              row({ name: '알림 설정', toggle: 'off' })
+            ] }),
+            grp({ title: '', rows: [
+              row({ name: '변경 내역 보기', meta: '누가 무엇을 바꿨는지', chevron: true }),
+              row({ name: '연결 끊기', danger: true, chevron: true })
+            ] })
+          ],
+          noteTitle: '스위치를 끄면 그 항목만 숨겨져요', note: '연결은 유지되고 언제든 다시 켤 수 있어요.'
+        }),
+        sc({
+          no: '4', label: '계정 · WP-MY-007', nav: '계정',
+          desc: '로그인 수단과 알림 수신을 여기서 관리합니다. 탈퇴는 맨 아래 회색으로 두고 강조하지 않습니다.',
+          groups: [
+            grp({ title: '로그인', rows: [
+              row({ name: '카카오', meta: 'ji***@kakao.com', tail: '주 계정', tailKind: 'brand' }),
+              row({ name: '애플', tail: '연결하기', tailStrong: true, chevron: true }),
+              row({ name: '이메일', tail: 'jisu***@gmail.com', chevron: true })
+            ] }),
+            grp({ title: '알림 수신', rows: [
+              row({ name: '서비스 알림', meta: '일정 · Pick 변화 · 제보 결과', toggle: 'on' }),
+              row({ name: '마케팅 알림', meta: '혜택 · 이벤트', toggle: 'off' }),
+              row({ name: '야간 수신', meta: '밤 9시 이후', toggle: 'off' })
+            ] }),
+            grp({ title: '', rows: [
+              row({ name: '로그아웃', chevron: true }),
+              row({ name: '회원탈퇴', off: true, chevron: true })
+            ] })
+          ]
+        }),
+        sc({
+          no: '5', label: '고객지원 · WP-MY-009', nav: '고객지원',
+          desc: '자주 묻는 질문을 먼저 보여주고, 그다음 문의입니다. 답변 시간을 미리 적어 기다림을 예측 가능하게 합니다.',
+          hero: '무엇을\n도와드릴까요?',
+          groups: [
+            grp({ title: '많이 찾는 질문', rows: [
+              row({ name: 'Pick 인증은 어떻게 하나요?', chevron: true }),
+              row({ name: '확인된 제보는 어떻게 만들어요?', chevron: true }),
+              row({ name: '광고하면 추천에 더 많이 나오나요?', chevron: true }),
+              row({ name: '전체 보기', tail: '32개', chevron: true })
+            ] }),
+            grp({ title: '문의', rows: [
+              row({ name: '문의하기', meta: '평일 오전 10시부터 오후 6시까지 답변드려요', chevron: true }),
+              row({ name: '내 문의 내역', tail: '1건', tailStrong: true, chevron: true }),
+              row({ name: '신고 내역', tail: '없어요', chevron: true })
+            ] }),
+            grp({ title: '', rows: [
+              row({ name: '이용약관', chevron: true }),
+              row({ name: '개인정보 처리방침', chevron: true }),
+              row({ name: '버전', tail: '1.0.0 · 최신' })
+            ] })
+          ]
+        }),
+        sc({
+          no: '6', label: '화면 설정 · WP-MY-005', nav: '화면 설정',
+          desc: '고른 색이 어디에 쓰이는지 미리보기로 보여줍니다. 색은 버튼과 선택 표시에만 적용됩니다.',
+          hero: '어떤 색이\n마음에 드세요?', sub: '버튼과 선택 표시에만 쓰여요',
+          swatches: [
+            swatch('#FF6F61', true), swatch('#FF4D4D', false), swatch('#FFC041', false),
+            swatch('#34C759', false), swatch('#3182F6', false), swatch('#191F28', false)
+          ],
+          preview: true,
+          groups: [
+            grp({ title: '', rows: [
+              row({ name: '어두운 화면', meta: '기기 설정을 따라가요', tail: '자동', chevron: true }),
+              row({ name: '글자 크기', tail: '보통', chevron: true }),
+              row({ name: '애니메이션 줄이기', toggle: 'off' })
+            ] })
+          ],
+          noteTitle: '앱 아이콘은 바뀌지 않아요', note: '아이콘과 첫 화면은 웨딩픽 코랄로 고정이에요.'
+        })
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>
