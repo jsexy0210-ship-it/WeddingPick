@@ -1,5 +1,5 @@
 import iconv from 'iconv-lite';
-import { contentHash, isoDay, parsePublicCsv, type CollectedVendor } from './collect';
+import { contentHash, downloadSbizApiVendors, isoDay, parsePublicCsv, type CollectedVendor } from './collect';
 import { sourceKey } from './sources';
 import { replacementDecision } from './sync';
 
@@ -30,6 +30,31 @@ test('상권 CSV의 일반 미용실·사진관은 자동 등록하지 않는다
 });
 test('Google·네이버·카카오를 저장 허용 출처로 받을 수 없다', () => {
   for(const key of ['google','naver','kakao','__proto__']) expect(()=>sourceKey(key)).toThrow();
+});
+test('sbiz-api 응답에서 서울 예식장만 파싱한다', async () => {
+  const mockPage = {
+    totalCount: 2, currentCount: 2, pageIndex: 1, pageSize: 1000,
+    data: [
+      { bizesId: 'S1', bizesNm: '강남웨딩홀', brchNm: '', indsSclsNm: '예식장', ctprvnCd: '11', rdnmAdr: '서울특별시 강남구 길 1' },
+      { bizesId: 'G1', bizesNm: '수원웨딩홀', brchNm: '', indsSclsNm: '예식장', ctprvnCd: '41', rdnmAdr: '경기도 수원시 길 1' },
+    ],
+  };
+  const origFetch = global.fetch;
+  const body = Buffer.from(JSON.stringify(mockPage));
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    body: { [Symbol.asyncIterator]: async function* () { yield body; } },
+  });
+  try {
+    const vendors = await downloadSbizApiVendors('sbiz-seoul', 'test-key', new Date('2026-09-04T00:00:00Z'));
+    expect(vendors).toHaveLength(1);
+    expect(vendors[0]?.name).toBe('강남웨딩홀');
+    expect(vendors[0]?.region).toBe('서울특별시 강남구');
+    expect(vendors[0]?.category).toBe('hall');
+    expect(vendors[0]?.sourceRecordId).toBe('S1');
+  } finally {
+    global.fetch = origFetch;
+  }
 });
 const incoming: CollectedVendor = {name:'새 이름',region:'경기도 이천시',category:'hall',sourceKey:'icheon-halls',
   sourceUrl:'https://www.data.go.kr/data/15100736/fileData.do',sourceRecordId:'id',publishedOn:'2026-09-02',

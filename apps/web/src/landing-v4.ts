@@ -39,17 +39,21 @@ function storeBadge(label: string): string {
 
 /** GNB — 랜딩 전용 (bg 없음, 영웅 배경 위에 띄워 씀). */
 function gnb(): string {
-  return `<header style="position:relative;height:76px;flex:0 0 76px;display:flex;align-items:center;justify-content:space-between;padding:0 64px;z-index:4">
-  <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit">
+  return `<header class="lv-gnb">
+  <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;flex-shrink:0">
     <span style="color:${esc(C)};display:flex;line-height:0">${pickMark(22, C)}</span>
     <span style="font-size:19px;font-weight:700;color:${esc(INK)}">웨딩픽</span>
   </a>
-  <nav style="display:flex;align-items:center;gap:32px">
+  <input type="checkbox" id="lv-cb" class="lv-ham-cb" aria-hidden="true">
+  <nav class="lv-gnb-nav">
     <a href="/intro.html" style="font-size:16px;line-height:22px;color:${esc(SEC)};text-decoration:none;white-space:nowrap">서비스 소개</a>
     <a href="/faq.html" style="font-size:16px;line-height:22px;color:${esc(SEC)};text-decoration:none;white-space:nowrap">자주 묻는 질문</a>
     <a href="/support.html" style="font-size:16px;line-height:22px;color:${esc(SEC)};text-decoration:none;white-space:nowrap">고객지원</a>
   </nav>
-  <a href="#download" style="height:38px;padding:0 18px;border-radius:999px;background:${esc(C)};color:#fff;display:inline-flex;align-items:center;font-size:15px;font-weight:700;text-decoration:none;white-space:nowrap">앱 다운로드</a>
+  <a href="#download" class="lv-cta-btn" style="border-radius:999px;background:${esc(C)};color:#fff;display:inline-flex;align-items:center;font-size:15px;font-weight:700;text-decoration:none;white-space:nowrap">앱 다운로드</a>
+  <label for="lv-cb" class="lv-ham-btn" aria-label="메뉴 열기">
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M3 6h16M3 11h16M3 16h16" stroke="${esc(INK)}" stroke-width="1.8" stroke-linecap="round"/></svg>
+  </label>
 </header>`;
 }
 
@@ -131,23 +135,25 @@ function hero(): string {
     </span>`,
   );
 
-  return `<section style="position:relative;height:640px;overflow:hidden;display:flex;flex-direction:column;background:${esc(HERO_TINT)}">
-  <!-- 궤도 링 -->
-  <span style="position:absolute;left:50%;top:352px;width:760px;height:760px;margin-left:-380px;margin-top:-380px;border-radius:999px;border:1px solid rgba(58,47,48,.07)"></span>
-  <span style="position:absolute;left:50%;top:352px;width:1040px;height:1040px;margin-left:-520px;margin-top:-520px;border-radius:999px;border:1px solid rgba(58,47,48,.05)"></span>
-  <span style="position:absolute;left:50%;top:352px;width:470px;height:470px;margin-left:-235px;margin-top:-235px;border-radius:999px;background:radial-gradient(circle,rgba(255,111,97,.09),rgba(255,111,97,0) 68%)"></span>
+  return `<section class="lv-hero">
+  <!-- 궤도 링 (태블릿 이하 숨김) -->
+  <span class="lv-orbit" style="position:absolute;left:50%;top:352px;width:760px;height:760px;margin-left:-380px;margin-top:-380px;border-radius:999px;border:1px solid rgba(58,47,48,.07)"></span>
+  <span class="lv-orbit" style="position:absolute;left:50%;top:352px;width:1040px;height:1040px;margin-left:-520px;margin-top:-520px;border-radius:999px;border:1px solid rgba(58,47,48,.05)"></span>
+  <span class="lv-orbit" style="position:absolute;left:50%;top:352px;width:470px;height:470px;margin-left:-235px;margin-top:-235px;border-radius:999px;background:radial-gradient(circle,rgba(255,111,97,.09),rgba(255,111,97,0) 68%)"></span>
   <!-- GNB -->
   ${gnb()}
-  <!-- 플로팅 타일 -->
-  ${markTile}
-  ${priceTile}
-  ${compareTile}
-  ${coupleTile}
+  <!-- 플로팅 타일 (태블릿 이하 숨김) -->
+  <div class="lv-tiles">
+    ${markTile}
+    ${priceTile}
+    ${compareTile}
+    ${coupleTile}
+  </div>
   <!-- 영웅 본문 -->
-  <div style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:20px;padding:0 64px 48px;z-index:3">
-    <h1 style="font-size:58px;line-height:80px;font-weight:700;color:${esc(INK)};letter-spacing:-2px;margin:0">확인하고,<br>비교해서 골라요</h1>
+  <div class="lv-hero-inner">
+    <h1 class="lv-hero-h1">확인하고,<br>비교해서 골라요</h1>
     <p style="font-size:18px;line-height:28px;color:#6B5F60;margin:0">예식일과 예산만 설정하면 끝. 당신을 위한 맞춤 플랫폼, 웨딩픽</p>
-    <div style="display:flex;gap:10px;padding-top:14px">
+    <div style="display:flex;gap:10px;padding-top:14px;flex-wrap:wrap;justify-content:center">
       ${storeBadge('App Store')}
       ${storeBadge('Google Play')}
     </div>
@@ -165,22 +171,22 @@ function featureSection(opts: {
   mockupBg: string;
   mockupContent: string;
 }): string {
-  const text = `<div style="display:flex;flex-direction:column;gap:20px;flex:1;min-width:0">
+  const text = `<div class="lv-feat-text">
     <span style="display:block;width:26px;height:4px;border-radius:2px;background:${esc(C)}"></span>
     <span style="font-size:17px;line-height:24px;color:#6B5F60">${esc(opts.eyebrow)}</span>
-    <h2 style="font-size:38px;line-height:54px;font-weight:700;color:${esc(INK)};letter-spacing:-1.2px;margin:0">${opts.title.replace(/\n/g, '<br>')}</h2>
+    <h2 class="lv-feat-h2">${opts.title.replace(/\n/g, '<br>')}</h2>
     <p style="font-size:15px;line-height:26px;color:${esc(TER)};margin:0;max-width:400px">${esc(opts.body)}</p>
   </div>`;
 
-  const mockup = `<div style="flex:0 0 290px;width:290px">
-    <div style="width:290px;height:540px;border-radius:32px;background:${esc(opts.mockupBg)};box-shadow:0 20px 52px rgba(58,47,48,.16);overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center">
+  const mockup = `<div class="lv-feat-mockup">
+    <div style="width:100%;max-width:290px;height:540px;border-radius:32px;background:${esc(opts.mockupBg)};box-shadow:0 20px 52px rgba(58,47,48,.16);overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto">
       ${opts.mockupContent}
     </div>
   </div>`;
 
   const [left, right] = opts.reversed ? [mockup, text] : [text, mockup];
 
-  return `<section style="padding:104px 64px;background:${esc(opts.bg)};display:flex;align-items:center;gap:80px">
+  return `<section class="lv-feat${opts.reversed ? ' lv-feat-rev' : ''}" style="background:${esc(opts.bg)}">
   ${left}
   ${right}
 </section>`;
@@ -276,7 +282,7 @@ function feature3(): string {
 
 /** 다운로드 섹션 */
 function downloadSection(): string {
-  return `<section id="download" style="padding:104px 64px;background:${esc(HERO_TINT)};display:flex;flex-direction:column;align-items:center;text-align:center;gap:32px">
+  return `<section id="download" class="lv-dl" style="background:${esc(HERO_TINT)}">
   <h2 style="font-size:38px;line-height:54px;font-weight:700;color:${esc(INK)};letter-spacing:-1.2px;margin:0">모르고<br>시작할 필요 없어요</h2>
   <p style="font-size:18px;line-height:28px;color:${esc(SEC)};margin:0">예식일과 예산만 알려주시면 웨딩픽이 먼저 골라드려요.</p>
   <div style="display:flex;flex-direction:column;align-items:center;gap:16px;padding-top:8px">
@@ -298,22 +304,22 @@ function downloadSection(): string {
 function footer(contactEmail: string | null): string {
   const email = contactEmail ? `<a href="mailto:${esc(contactEmail)}" style="font-size:14px;color:rgba(255,255,255,.5);text-decoration:none">${esc(contactEmail)}</a>` : '';
 
-  return `<footer style="background:${esc(FOOT_INK)};padding:0 64px">
-  <div style="display:flex;align-items:center;justify-content:space-between;height:76px;border-bottom:1px solid rgba(255,255,255,.12)">
-    <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none">
+  return `<footer class="lv-foot" style="background:${esc(FOOT_INK)}">
+  <div class="lv-foot-top">
+    <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0">
       <span style="color:${esc(C)};display:flex;line-height:0">${pickMark(20, C)}</span>
       <span style="font-size:17px;font-weight:700;color:#fff">웨딩픽</span>
     </a>
-    <nav style="display:flex;align-items:center;gap:24px">
+    <nav class="lv-foot-nav">
       <a href="/intro.html" style="font-size:14px;color:rgba(255,255,255,.6);text-decoration:none;white-space:nowrap">서비스 소개</a>
       <a href="/faq.html" style="font-size:14px;color:rgba(255,255,255,.6);text-decoration:none;white-space:nowrap">자주 묻는 질문</a>
       <a href="/support.html" style="font-size:14px;color:rgba(255,255,255,.6);text-decoration:none;white-space:nowrap">고객지원</a>
     </nav>
     ${email}
   </div>
-  <div style="display:flex;align-items:center;justify-content:space-between;height:60px">
+  <div class="lv-foot-bot">
     <span style="font-size:13px;color:rgba(255,255,255,.4)">© 2026 웨딩픽. All rights reserved.</span>
-    <nav style="display:flex;align-items:center;gap:16px">
+    <nav class="lv-foot-policy">
       <a href="/terms.html" style="font-size:13px;color:rgba(255,255,255,.5);text-decoration:none;white-space:nowrap">이용약관</a>
       <span style="font-size:13px;color:rgba(255,255,255,.2)">·</span>
       <a href="/privacy.html" style="font-size:13px;color:rgba(255,255,255,.5);text-decoration:none;white-space:nowrap">개인정보처리방침</a>
@@ -351,7 +357,84 @@ ${faviconTags()}
 html{font-family:${FONT_STACK};font-size:16px;-webkit-text-size-adjust:100%}
 body{margin:0;background:#f7f8fa;color:${INK}}
 a{color:inherit}
-.page{width:1280px;margin:0 auto;background:#fff;box-shadow:0 10px 40px rgba(58,47,48,.10);display:flex;flex-direction:column}
+.page{max-width:1280px;width:100%;margin:0 auto;background:#fff;box-shadow:0 10px 40px rgba(58,47,48,.10);display:flex;flex-direction:column;overflow-x:hidden}
+
+/* GNB */
+.lv-gnb{position:relative;height:76px;flex:0 0 76px;display:flex;align-items:center;justify-content:space-between;padding:0 64px;z-index:10;gap:32px}
+.lv-gnb-nav{display:flex;align-items:center;gap:32px;flex:1;justify-content:center}
+.lv-ham-cb{position:absolute;opacity:0;width:0;height:0;pointer-events:none}
+.lv-ham-btn{display:none;background:none;border:none;padding:8px;cursor:pointer;line-height:0;flex-shrink:0}
+.lv-cta-btn{height:38px;padding:0 18px;flex-shrink:0}
+
+/* Hero */
+.lv-hero{position:relative;height:640px;overflow:hidden;display:flex;flex-direction:column;background:${HERO_TINT}}
+.lv-tiles{position:absolute;inset:0;pointer-events:none}
+.lv-orbit{position:absolute}
+.lv-hero-inner{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:20px;padding:0 64px 48px;z-index:3}
+.lv-hero-h1{font-size:58px;line-height:80px;font-weight:700;color:${INK};letter-spacing:-2px;margin:0}
+
+/* Feature sections */
+.lv-feat{padding:104px 64px;display:flex;align-items:center;gap:80px}
+.lv-feat-rev{flex-direction:row-reverse}
+.lv-feat-text{display:flex;flex-direction:column;gap:20px;flex:1;min-width:0}
+.lv-feat-h2{font-size:38px;line-height:54px;font-weight:700;color:${INK};letter-spacing:-1.2px;margin:0}
+.lv-feat-mockup{flex:0 0 290px;width:290px}
+
+/* Download */
+.lv-dl{padding:104px 64px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:32px}
+
+/* Footer */
+.lv-foot{padding:0 64px}
+.lv-foot-top{display:flex;align-items:center;justify-content:space-between;height:76px;border-bottom:1px solid rgba(255,255,255,.12);gap:24px}
+.lv-foot-nav{display:flex;align-items:center;gap:24px;flex:1;justify-content:center}
+.lv-foot-bot{display:flex;align-items:center;justify-content:space-between;height:60px;gap:16px}
+.lv-foot-policy{display:flex;align-items:center;gap:16px}
+
+/* Tablet (≤1023px) */
+@media(max-width:1023px){
+  .lv-gnb{padding:0 32px}
+  .lv-hero{height:auto;min-height:480px}
+  .lv-tiles,.lv-orbit{display:none}
+  .lv-hero-inner{padding:48px 32px}
+  .lv-hero-h1{font-size:46px;line-height:64px;letter-spacing:-1.5px}
+  .lv-feat{padding:80px 32px;gap:48px}
+  .lv-feat-h2{font-size:32px;line-height:46px}
+  .lv-dl{padding:80px 32px}
+  .lv-foot{padding:0 32px}
+}
+
+/* Mobile (≤767px) */
+@media(max-width:767px){
+  .lv-gnb{padding:0 24px;height:64px;flex:0 0 64px;gap:0}
+  .lv-gnb-nav{
+    display:none;position:absolute;top:64px;left:0;right:0;
+    flex-direction:column;align-items:flex-start;gap:0;flex:none;
+    background:#fff;border-top:1px solid #EAEBEE;
+    box-shadow:0 8px 24px rgba(58,47,48,.12);z-index:99
+  }
+  .lv-gnb-nav a{display:block;padding:16px 24px;width:100%;font-size:16px !important;border-bottom:1px solid #f0f1f3}
+  .lv-ham-cb:checked~.lv-gnb-nav{display:flex}
+  .lv-ham-btn{display:flex;margin-left:auto;margin-right:8px}
+  .lv-cta-btn{font-size:14px !important;height:36px;padding:0 14px}
+  .lv-hero{min-height:320px}
+  .lv-hero-inner{padding:40px 24px}
+  .lv-hero-h1{font-size:34px;line-height:48px;letter-spacing:-1px}
+  .lv-feat{padding:56px 24px;flex-direction:column;gap:36px}
+  .lv-feat-rev{flex-direction:column}
+  .lv-feat-mockup{flex:none;width:100%}
+  .lv-feat-h2{font-size:28px;line-height:40px}
+  .lv-dl{padding:56px 24px}
+  .lv-foot{padding:0 24px}
+  .lv-foot-top{height:auto;padding:20px 0;flex-direction:column;align-items:flex-start;gap:12px}
+  .lv-foot-nav{flex-direction:column;align-items:flex-start;gap:8px;flex:none;justify-content:flex-start}
+  .lv-foot-bot{height:auto;padding:16px 0;flex-direction:column;align-items:flex-start;gap:8px}
+}
+
+/* Small mobile (≤479px) */
+@media(max-width:479px){
+  .lv-hero-h1{font-size:28px;line-height:40px}
+  .lv-feat-h2{font-size:24px;line-height:34px}
+}
 </style>
 </head>
 <body>
