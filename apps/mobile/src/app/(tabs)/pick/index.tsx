@@ -40,9 +40,9 @@ export default function PickScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    setError(null);
     getCurrentUser()
       .then(async (current) => {
+        setError(null);
         setMe(current);
         if (!current.weddingId) {
           setPage(null);
