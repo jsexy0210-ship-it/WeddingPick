@@ -37,18 +37,39 @@ jobs:
           fi
 
       # preview profile은 eas.json에 이미 있다 (android.buildType: "apk").
-      # --output 을 주면 빌드 완료 후 산출물을 이 경로로 내려받는다.
+      # `--output`은 `--local` 빌드에서만 쓸 수 있어서(클라우드 빌드는 즉시 실패한다),
+      # --json으로 결과를 받아 artifacts.buildUrl을 직접 내려받는다.
       - name: EAS Build (preview → apk)
         working-directory: apps/mobile
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-        run: >-
-          eas build
-          --platform android
-          --profile preview
-          --non-interactive
-          --wait
-          --output ./weddingpick-preview.apk
+        run: |
+          set -euo pipefail
+
+          eas build \
+            --platform android \
+            --profile preview \
+            --non-interactive \
+            --wait \
+            --json > /tmp/eas-build.json
+
+          cat /tmp/eas-build.json
+
+          status=$(jq -r '(.[0].status // .status // "unknown")' /tmp/eas-build.json | tr 'A-Z' 'a-z')
+          echo "build status: $status"
+
+          if [ "$status" != "finished" ]; then
+            echo "::error::EAS 빌드가 성공적으로 끝나지 않았습니다 (status=$status)"
+            exit 1
+          fi
+
+          url=$(jq -r '(.[0].artifacts.buildUrl // .artifacts.buildUrl // empty)' /tmp/eas-build.json)
+          if [ -z "$url" ]; then
+            echo "::error::빌드 아티팩트 URL(artifacts.buildUrl)을 찾지 못했습니다."
+            exit 1
+          fi
+
+          curl -fL "$url" -o weddingpick-preview.apk
 
       # AAB를 apk로 이름만 바꾼 산출물이 아닌지 여기서 직접 검증한다.
       # apk/aab 둘 다 zip 컨테이너라서 확장자만으로는 구분되지 않는다 —
