@@ -8,7 +8,7 @@ import {
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Modal, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
+import { Modal, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -25,6 +25,7 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import { getSettings, revokePaymentConsent, setDisplayName, updateSettings } from '@/api/client';
+import { confirmAlert } from '@/components/confirm-alert';
 import { useSession } from '@/features/auth/use-session';
 import { APP_VERSION } from '@/features/settings/version';
 
@@ -95,7 +96,7 @@ export default function SettingsScreen() {
   }
 
   function confirmRevoke() {
-    Alert.alert(
+    confirmAlert(
       'Pick 인증 동의를 철회할까요',
       '앞으로 Pick 인증을 할 수 없어요. 이미 올린 자료는 내 제보내역에서 지울 수 있어요',
       [
@@ -118,7 +119,7 @@ export default function SettingsScreen() {
 
   function confirmSignOut() {
     // 파괴적 동작은 컨펌을 거친다. 핸드오프 인터랙션 규칙.
-    Alert.alert('로그아웃할까요', '기기에 저장된 문서는 지워지지 않아요', [
+    confirmAlert('로그아웃할까요', '기기에 저장된 문서는 지워지지 않아요', [
       { text: '그만두기', style: 'cancel' },
       {
         text: '로그아웃',

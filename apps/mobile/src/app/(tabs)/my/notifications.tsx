@@ -11,6 +11,7 @@ import {
   Layout,
   LoadingView,
   MaxContentWidth,
+  readWebInteractionState,
   Spacing,
   ThemedText,
   ThemedView,
@@ -143,7 +144,14 @@ export default function NotificationsScreen() {
                 key={notification.id}
                 accessibilityRole="button"
                 onPress={() => open(notification)}
-                style={[styles.row, { borderBottomColor: theme.line }]}>
+                style={(state) => {
+                  const { hovered } = readWebInteractionState(state);
+                  return [
+                    styles.row,
+                    { borderBottomColor: theme.line },
+                    hovered ? { backgroundColor: theme.backgroundSelected } : null,
+                  ];
+                }}>
                 <ThemedView style={styles.rowHead}>
                   <ThemedText type="t7" themeColor={read ? 'textAssistive' : 'tint'}>
                     {notification.kindLabel}

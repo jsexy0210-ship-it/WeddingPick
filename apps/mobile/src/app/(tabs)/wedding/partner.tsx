@@ -7,7 +7,7 @@ import {
 } from '@weddingpick/domain';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Share, StyleSheet, ScrollView } from 'react-native';
+import { StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -19,6 +19,7 @@ import {
   unlinkPartner,
 } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
+import { shareOrCopy } from '@/components/share-or-copy';
 import { ActionButton, ErrorView, LoadingView, MaxContentWidth, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
 
 /** "8월 31일 오후 3시" — 초대가 언제까지 살아 있는지. */
@@ -45,6 +46,7 @@ export default function PartnerScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmingUnlink, setConfirmingUnlink] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const load = useCallback(async () => {
     if (!isServerConfigured) return;
@@ -95,12 +97,13 @@ export default function PartnerScreen() {
   async function share() {
     if (!code) return;
 
-    try {
-      // 링크와 코드를 함께 보낸다. 앱이 깔린 사람은 한 번에 열리고, 아닌 사람은
-      // 코드를 손으로 넣는다.
-      await Share.share({ message: inviteShareMessage(code) });
-    } catch {
-      // 공유 시트를 닫은 경우가 대부분이라 따로 알리지 않는다.
+    // 링크와 코드를 함께 보낸다. 앱이 깔린 사람은 한 번에 열리고, 아닌 사람은
+    // 코드를 손으로 넣는다. 공유 시트가 없는 환경(주로 데스크톱 웹)에서는
+    // 클립보드 복사로 대신한다.
+    const result = await shareOrCopy(inviteShareMessage(code));
+    if (result.copied) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
     }
   }
 
@@ -237,6 +240,11 @@ export default function PartnerScreen() {
                     </ThemedText>
                   ) : null}
                   <ActionButton variant="primary" label="배우자에게 보내기" onPress={share} />
+                  {copied ? (
+                    <ThemedText type="small" themeColor="tint">
+                      코드를 복사했어요
+                    </ThemedText>
+                  ) : null}
                 </ThemedView>
               ) : invite ? (
                 <ThemedView type="backgroundElement" style={styles.card}>
