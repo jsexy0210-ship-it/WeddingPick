@@ -87,11 +87,7 @@ export default function PickScreen() {
           </View>
 
           {/* ── 스크롤 콘텐츠 ── */}
-          {!me ? (
-            <View style={styles.loadingCenter}>
-              <ActivityIndicator color={theme.tint} />
-            </View>
-          ) : error ? (
+          {error ? (
             <ScrollView contentContainerStyle={styles.scroll}>
               <View style={styles.errorBox}>
                 <ThemedText type="t2">불러오지 못했어요</ThemedText>
@@ -105,6 +101,10 @@ export default function PickScreen() {
                 </Pressable>
               </View>
             </ScrollView>
+          ) : !me ? (
+            <View style={styles.loadingCenter}>
+              <ActivityIndicator color={theme.tint} />
+            </View>
           ) : !me.weddingId || !page || !hasAnyPick ? (
             /* ── 비어 있음 상태 ── */
             <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
