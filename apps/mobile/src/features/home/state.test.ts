@@ -80,11 +80,11 @@ const PRICED = [vendor('general'), vendor('general'), vendor('general')];
 const THIN = [vendor('collecting'), vendor('collecting'), vendor('collecting')];
 
 describe('홈 상태 — 시안 여섯 장', () => {
-  it('시안 0 · 로그인 전이면 개인화를 하나도 꺼내지 않는다', () => {
-    // 이름도 예식일도 모르는 사람에게 현황판을 띄우면 앱이 아는 척을 한다.
-    const view = homeView({ me: null, candidates: null, recommended: PRICED, tasteChosen: true });
+  it('프로필을 못 불러와도 화면이 멈추지 않고 취향 상태로 보여준다', () => {
+    // 비회원 진입은 삭제됐다 — me가 null인 건 오류뿐이고, 그때도 화면은 뜬다.
+    const view = homeView({ me: null, candidates: null, recommended: PRICED, tasteChosen: false });
 
-    expect(view.state).toBe('guest');
+    expect(view.state).toBe('taste');
     expect(view.board).toBe('folded');
     expect(view.focus).toBeNull();
   });
