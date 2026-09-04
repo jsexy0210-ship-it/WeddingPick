@@ -207,8 +207,8 @@ const SANS_STACK =
   "'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif";
 
 export const Fonts = Platform.select({
-  ios: { sans: 'system-ui', serif: 'ui-serif', rounded: 'ui-rounded', mono: 'ui-monospace' },
-  default: { sans: 'normal', serif: 'serif', rounded: 'normal', mono: 'monospace' },
+  ios: { sans: 'Pretendard', serif: 'ui-serif', rounded: 'Pretendard', mono: 'ui-monospace' },
+  default: { sans: 'Pretendard', serif: 'serif', rounded: 'Pretendard', mono: 'monospace' },
   web: { sans: SANS_STACK, serif: 'serif', rounded: SANS_STACK, mono: 'ui-monospace, monospace' },
 });
 

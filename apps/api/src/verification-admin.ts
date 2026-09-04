@@ -52,6 +52,7 @@ type Options = {
   review?: string;
   approve?: string;
   reject?: string;
+  supplement?: string;
   by?: string;
   note?: string;
   reason?: string;
@@ -69,6 +70,7 @@ function parseArgs(argv: string[]): Options {
     else if (arg === '--review') options.review = argv[++i];
     else if (arg === '--approve') options.approve = argv[++i];
     else if (arg === '--reject') options.reject = argv[++i];
+    else if (arg === '--supplement') options.supplement = argv[++i];
     else if (arg === '--by') options.by = argv[++i];
     else if (arg === '--note') options.note = argv[++i];
     else if (arg === '--reason') options.reason = argv[++i];
@@ -259,7 +261,7 @@ async function main(): Promise<void> {
 
       // 결정이 난 뒤에는 화살표를 쓰지 않는다. 승인되면 문서 등급이 이미 목표와 같아져
       // "계약인증 → 계약인증"이 되고, 그건 아무것도 말해주지 않는다.
-      const decided = found.status === 'approved' || found.status === 'rejected';
+      const decided = found.status === 'approved' || found.status === 'rejected' || found.status === 'needs_supplement';
 
       console.log(
         `${found.id}  ${VERIFICATION_STATUS_LABEL[found.status]}  ` +
@@ -316,7 +318,18 @@ async function main(): Promise<void> {
       return;
     }
 
-    console.log('--list, --backlog, --show, --review, --approve, --reject 중 하나가 필요하다.');
+    if (options.supplement) {
+      if (!options.reason) {
+        console.error('보완 요청 사유(--reason)가 필요하다. 신청한 사람이 이걸 읽는다.');
+        process.exitCode = 1;
+        return;
+      }
+
+      await requestSupplement(pool, options.supplement, options.by, options.reason);
+      return;
+    }
+
+    console.log('--list, --backlog, --show, --review, --approve, --reject, --supplement 중 하나가 필요하다.');
   } finally {
     await pool.end();
   }
@@ -450,7 +463,7 @@ export async function approve(
 
     const found = await lock(client, id);
 
-    if (found.status === 'approved' || found.status === 'rejected') {
+    if (found.status === 'approved' || found.status === 'rejected' || found.status === 'needs_supplement') {
       throw new Error(`이미 ${VERIFICATION_STATUS_LABEL[found.status]}된 신청이다.`);
     }
 
@@ -505,7 +518,7 @@ export async function reject(
 
     const found = await lock(client, id);
 
-    if (found.status === 'approved' || found.status === 'rejected') {
+    if (found.status === 'approved' || found.status === 'rejected' || found.status === 'needs_supplement') {
       throw new Error(`이미 ${VERIFICATION_STATUS_LABEL[found.status]}된 신청이다.`);
     }
 
@@ -532,6 +545,46 @@ export async function reject(
   });
 
   console.log('반려했다. 사유는 신청한 사람에게 보인다.');
+}
+
+export async function requestSupplement(
+  pool: ReturnType<typeof createPool>,
+  id: string,
+  by: string,
+  reason: string
+): Promise<void> {
+  await withTransaction(pool, async (client) => {
+    await requireOperator(client, by);
+
+    const found = await lock(client, id);
+
+    if (found.status !== 'received' && found.status !== 'in_review') {
+      throw new Error(`보완 요청은 접수·심사 중 상태에서만 할 수 있다. 현재: ${VERIFICATION_STATUS_LABEL[found.status]}`);
+    }
+
+    if (by === found.requested_by) {
+      throw new Error('신청한 본인은 심사할 수 없다.');
+    }
+
+    await client.query(
+      `UPDATE structured.verification_requests
+       SET status = 'needs_supplement', decided_at = now(), decided_by = $2::uuid, supplement_reason = $3
+       WHERE id = $1::uuid`,
+      [id, by, reason]
+    );
+
+    await logEvent(client, id, 'supplement_requested', by, reason);
+
+    await notify(client, {
+      userId: found.requested_by,
+      kind: 'verification',
+      title: '자료 보완이 필요해요',
+      body: reason,
+      targetId: found.quote_id,
+    });
+  });
+
+  console.log('보완을 요청했다. 사유는 신청한 사람에게 보인다.');
 }
 
 type LockedRow = {
@@ -570,7 +623,7 @@ async function lock(client: PoolClient, id: string): Promise<LockedRow> {
 async function logEvent(
   client: PoolClient,
   requestId: string,
-  kind: 'review_started' | 'approved' | 'rejected',
+  kind: 'review_started' | 'approved' | 'rejected' | 'supplement_requested',
   actor: string,
   note: string | null
 ): Promise<void> {

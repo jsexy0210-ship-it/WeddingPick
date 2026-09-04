@@ -19,21 +19,55 @@ export function registerQuoteRoutes(app: FastifyInstance, context: AppContext): 
     return loadQuote(context.pool, request.params.quoteId);
   });
 
-  app.get<{ Params: { weddingId: string } }>(
+  app.get<{ Params: { weddingId: string }; Querystring: { offset?: string; limit?: string } }>(
     '/v1/weddings/:weddingId/quotes',
     auth,
     async (request) => {
       const userId = currentUserId(request);
       await assertWeddingAccess(context.pool, request.params.weddingId, userId);
 
-      const { rows } = await context.pool.query<{ id: string }>(
-        'SELECT id FROM structured.quotes WHERE wedding_id = $1 ORDER BY created_at DESC LIMIT 50',
+      // 페이지네이션 파라미터 - 에러 처리 강화
+      let offset = 0;
+      let limit = 20;
+
+      if (request.query.offset) {
+        const parsed = parseInt(request.query.offset, 10);
+        if (isNaN(parsed) || parsed < 0) {
+          throw new ApiError('invalid_request', 'offset은 0 이상의 정수여야 합니다.');
+        }
+        offset = parsed;
+      }
+
+      if (request.query.limit) {
+        const parsed = parseInt(request.query.limit, 10);
+        if (isNaN(parsed) || parsed < 1) {
+          throw new ApiError('invalid_request', 'limit은 1 이상의 정수여야 합니다.');
+        }
+        if (parsed > 100) {
+          throw new ApiError('invalid_request', 'limit은 최대 100입니다.');
+        }
+        limit = parsed;
+      }
+
+      // 전체 개수 조회
+      const { rows: countRows } = await context.pool.query<{ total: number }>(
+        'SELECT COUNT(*)::int AS total FROM structured.quotes WHERE wedding_id = $1',
         [request.params.weddingId]
+      );
+      const total = countRows[0]?.total || 0;
+
+      // 페이지네이션된 결과 조회
+      const { rows } = await context.pool.query<{ id: string }>(
+        'SELECT id FROM structured.quotes WHERE wedding_id = $1 ORDER BY created_at DESC OFFSET $2 LIMIT $3',
+        [request.params.weddingId, offset, limit]
       );
 
       const quotes = await Promise.all(rows.map((row) => loadQuote(context.pool, row.id)));
 
-      return { quotes, nextCursor: null };
+      // cursor 기반 페이지네이션 지원
+      const nextCursor = offset + limit < total ? String(offset + limit) : null;
+
+      return { quotes, nextCursor, total, offset, limit };
     }
   );
 

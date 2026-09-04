@@ -26,6 +26,7 @@ function statusLabel(status: VerificationRequest['status']): string {
   switch (status) {
     case 'received': return '접수 완료';
     case 'in_review': return '심사 중';
+    case 'needs_supplement': return '보완 필요';
     case 'approved': return '승인';
     case 'rejected': return '반려';
   }
@@ -35,15 +36,17 @@ function statusHint(status: VerificationRequest['status']): string {
   switch (status) {
     case 'received': return '올려주신 자료를 아직 확인하지 않았어요. 확인이 끝나면 알려드려요.';
     case 'in_review': return '자료를 확인하고 있어요. 조금만 기다려 주세요.';
+    case 'needs_supplement': return '자료를 보완해 주세요. 아래 내용을 확인하고 다시 신청해 주세요.';
     case 'approved': return '자료 확인이 끝났어요. 인증 단계가 올랐어요.';
     case 'rejected': return '자료 확인이 끝났어요. 아래 사유를 확인해 주세요.';
   }
 }
 
 /**
- * 인증 신청 진행 상황.
+ * 인증 신청 진행 상황. WP-RPT-008.
  *
- * 접수·심사 중·승인·반려 중 어느 상태인지 보여준다. 반려면 사유도 함께 보인다.
+ * 접수·심사 중·보완 필요·승인·반려 중 어느 상태인지 보여준다.
+ * 보완 필요면 사유와 재신청 버튼을, 반려면 사유를 함께 보인다.
  * requestId는 createVerificationRequest 응답에서 온다.
  */
 export default function VerifyStatusScreen() {
@@ -68,6 +71,7 @@ export default function VerifyStatusScreen() {
   }
 
   const isSettled = req.status === 'approved' || req.status === 'rejected';
+  const needsSupplement = req.status === 'needs_supplement';
 
   return (
     <ThemedView style={styles.container}>
@@ -88,12 +92,19 @@ export default function VerifyStatusScreen() {
             <ThemedText type="t7" themeColor="textAssistive">
               접수일: {formatDate(req.receivedAt)}
             </ThemedText>
-            {isSettled && req.decidedAt ? (
+            {(isSettled || needsSupplement) && req.decidedAt ? (
               <ThemedText type="t7" themeColor="textAssistive">
                 처리일: {formatDate(req.decidedAt)}
               </ThemedText>
             ) : null}
           </ThemedView>
+
+          {needsSupplement && req.supplementReason ? (
+            <ThemedView type="backgroundElement" style={styles.card}>
+              <ThemedText type="t7" themeColor="textSecondary">보완 요청 내용</ThemedText>
+              <ThemedText type="t6">{req.supplementReason}</ThemedText>
+            </ThemedView>
+          ) : null}
 
           {req.status === 'rejected' && req.rejectionReason ? (
             <ThemedView type="backgroundElement" style={styles.card}>
@@ -102,7 +113,20 @@ export default function VerifyStatusScreen() {
             </ThemedView>
           ) : null}
 
-          {!isSettled ? (
+          {needsSupplement ? (
+            <ActionButton
+              variant="primary"
+              label="자료 보완하러 가기"
+              onPress={() =>
+                router.replace({
+                  pathname: '/(tabs)/capture/verify/[quoteId]',
+                  params: { quoteId: req.quoteId },
+                })
+              }
+            />
+          ) : null}
+
+          {!isSettled && !needsSupplement ? (
             <ActionButton label="새로고침" onPress={load} />
           ) : null}
 
@@ -123,5 +147,5 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   section: { gap: Spacing.one, marginBottom: Spacing.two },
-  card: { borderRadius: Radius.card, padding: Spacing.four, gap: Spacing.two },
+  card: { borderRadius: Radius.medium, padding: Spacing.four, gap: Spacing.two },
 });

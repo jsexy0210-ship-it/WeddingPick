@@ -83,7 +83,7 @@ export const SAMPLE_QUOTE: Quote = {
       amountMin: null,
       amountMax: null,
       standardNote:
-        '드레스 피팅비는 공정거래위원회가 기본 제공에 포함하도록 시정한 항목입니다. 별도 청구인지 확인해보세요.',
+        '드레스 피팅비는 공정위가 기본 제공에 포함하도록 시정한 항목입니다. 별도 청구인지 확인해보세요.',
     },
   ],
   terms: [
@@ -104,7 +104,7 @@ export const SAMPLE_QUOTE: Quote = {
       daysBeforeWedding: 29,
       penaltyRate: 0.5,
       standardNote:
-        '공정거래위원회 소비자분쟁해결기준 (예식업)은 예식 29일 전 취소 시 총 비용의 35%를 기준으로 합니다. 이 조항은 50%로 더 무겁습니다.',
+        '공정위 소비자분쟁해결기준 (예식업)은 예식 29일 전 취소 시 총 비용의 35%를 기준으로 합니다. 이 조항은 50%로 더 무겁습니다.',
     },
     {
       id: 't3',

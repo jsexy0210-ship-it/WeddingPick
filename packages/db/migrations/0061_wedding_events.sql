@@ -11,7 +11,7 @@
 -- 된다(task_state와 같은 이유로, 여기는 override조차 두지 않는다. 일정은
 -- "지났다/안 지났다"를 사람이 다르게 판단할 여지가 없다).
 
-CREATE TABLE structured.wedding_events (
+CREATE TABLE IF NOT EXISTS structured.wedding_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   wedding_id uuid NOT NULL REFERENCES structured.weddings (id) ON DELETE CASCADE,
 
@@ -45,4 +45,4 @@ COMMENT ON COLUMN structured.wedding_events.source IS
 COMMENT ON COLUMN structured.wedding_events.notify_enabled IS
   '알림 켬/끔 데이터만 저장한다. 실제 푸시 발송 로직은 이 마이그레이션 범위 밖이다.';
 
-CREATE INDEX wedding_events_wedding_idx ON structured.wedding_events (wedding_id, starts_at);
+CREATE INDEX IF NOT EXISTS wedding_events_wedding_idx ON structured.wedding_events (wedding_id, starts_at);

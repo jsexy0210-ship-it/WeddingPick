@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-static.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-scale.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-semantic.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/typography.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/dimension.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/motion.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/base.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/core/core.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/buttons/buttons.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/forms/forms.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/feedback/feedback.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/overlay/overlay.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/display/display.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/styles.css">
+<script src="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/_ds_bundle.js"></script>
+<script src="./image-slot.js"></script>
+<style>
+body{margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--wp-accent,#ff6f61);text-decoration:none}
+a:hover{color:#e2564a}
+.nsb::-webkit-scrollbar{display:none}
+image-slot{background:#eaebee}
+image-slot::part(empty){display:none !important}
+@keyframes wpMark{0%{transform:scale(.88);opacity:0}100%{transform:scale(1);opacity:1}}
+@keyframes wpWord{0%{transform:translateY(8px);opacity:0}100%{transform:translateY(0);opacity:1}}
+@keyframes wpSheet{0%{transform:translateY(100%)}100%{transform:translateY(0)}}
+@keyframes wpCheck{0%{transform:scale(0)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
+</style>
+</helmet>
+
+<section style="{{ rootStyle }}">
+
+<div id="11a" style="display:flex;flex-direction:column;gap:14px">
+<div style="font-size:14px;font-weight:700;color:#4d5159">11a · WP-APP-001 앱 아이콘 · WP-APP-002 스플래시</div>
+<div style="display:flex;gap:20px;align-items:flex-start">
+  <div style="width:300px;background:#fff;border:1px solid #eaebee;border-radius:10px;padding:28px;display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <span style="font-size:18px;line-height:24px;font-weight:700;color:#212124">앱 아이콘</span>
+      <span style="font-size:14px;line-height:19px;color:#868b94">스킨과 무관하게 Coral 고정</span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:18px">
+      <sc-for list="{{ icons }}" as="i" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+          <span style="{{ i.box }}">
+            <svg width="{{ i.g }}" height="{{ i.g }}" viewBox="0 0 24 24" fill="none" stroke="{{ i.stroke }}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z"></path><path d="M9.4 11.9l1.7 1.7 3.4-3.4"></path></svg>
+          </span>
+          <span style="font-size:14px;line-height:19px;color:#868b94;text-align:center">{{ i.label }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <span style="font-size:14px;line-height:19px;color:#4d5159;text-wrap:pretty">하트 안에 체크. 결혼과 선택을 한 형태로 묶었습니다. 앱 아이콘 · 스플래시 · Pick 탭 · Pick 완료 · 최종 결정 모션 · 웹 · 관리자까지 같은 마크를 씁니다.</span>
+  </div>
+  <div style="width:390px;height:844px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:var(--wp-accent,#ff6f61);box-shadow:0 15px 75px rgba(0,27,55,.14)">
+    <span style="display:flex;align-items:center;justify-content:center;animation:wpMark 480ms cubic-bezier(.16,1,.3,1) both">
+      <svg width="112" height="112" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z"></path><path d="M9.4 11.9l1.7 1.7 3.4-3.4"></path></svg>
+    </span>
+    <span style="font-size:32px;line-height:43px;font-weight:700;color:#fff;animation:wpWord 400ms cubic-bezier(.16,1,.3,1) 200ms both">웨딩픽</span>
+  </div>
+</div>
+</div>
+
+<div id="11b" style="display:flex;flex-direction:column;gap:14px">
+<div style="font-size:14px;font-weight:700;color:#4d5159">11b · WP-APP-003 최초 실행 소개 · WP-APP-004 시작</div>
+<div style="display:flex;gap:20px">
+  <div style="width:390px;height:844px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)">
+    <div style="height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:700;color:#212124">
+      <span>9:41</span>
+      <span style="display:flex;gap:5px;align-items:center">
+        <svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg>
+      </span>
+    </div>
+    <div style="flex:0 0 56px;display:flex;align-items:center;justify-content:flex-end;padding:0 24px">
+      <span style="font-size:16px;line-height:22px;font-weight:700;color:#868b94;cursor:pointer">건너뛰기</span>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;padding:12px 24px 0">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <span style="font-size:14px;line-height:19px;font-weight:700;color:var(--wp-accent,#ff6f61)">1 / 3</span>
+        <span style="font-size:32px;line-height:43px;font-weight:700;color:#212124">실제로 얼마 냈는지<br>먼저 보세요</span>
+        <span style="font-size:18px;line-height:26px;color:#4d5159;text-wrap:pretty">웨딩픽은 확인된 제보만 모아서 보여줘요. 평균가도, 추정가도 아니에요.</span>
+      </div>
+      <div style="margin-top:32px;border-radius:10px;background:#f7f8fa;padding:24px;display:flex;flex-direction:column;gap:6px">
+        <span style="font-size:32px;line-height:43px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums">152~184만원</span>
+        <span style="font-size:14px;line-height:19px;color:#868b94;font-variant-numeric:tabular-nums">확인된 제보 12건 · 최근 12개월 · 기준금액 168만원</span>
+      </div>
+    </div>
+    <div style="flex:0 0 116px;padding:0 24px 32px;display:flex;flex-direction:column;gap:20px;box-sizing:border-box">
+      <div style="display:flex;justify-content:center;gap:6px">
+        <span style="width:20px;height:6px;border-radius:999px;background:var(--wp-accent,#ff6f61)"></span>
+        <span style="width:6px;height:6px;border-radius:999px;background:#eaebee"></span>
+        <span style="width:6px;height:6px;border-radius:999px;background:#eaebee"></span>
+      </div>
+      <button style="height:56px;border:0;border-radius:6px;background:var(--wp-pick,#ff6f61);color:#fff;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer" style-active="transform:scale(.98)">다음</button>
+    </div>
+  </div>
+  <div style="width:390px;height:844px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)">
+    <div style="height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:700;color:#212124">
+      <span>9:41</span>
+      <span style="display:flex;gap:5px;align-items:center">
+        <svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg>
+      </span>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;padding:0 24px 0">
+      <span style="width:64px;height:64px;border-radius:10px;background:var(--wp-accent,#ff6f61);display:flex;align-items:center;justify-content:center;margin-bottom:24px">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z"></path><path d="M9.4 11.9l1.7 1.7 3.4-3.4"></path></svg>
+      </span>
+      <span style="font-size:32px;line-height:43px;font-weight:700;color:#212124">웨딩픽이 골라주면<br>두 분은 Pick만 하세요</span>
+      <span style="margin-top:12px;font-size:18px;line-height:26px;color:#4d5159">가입하지 않아도 둘러볼 수 있어요</span>
+    </div>
+    <div style="flex:0 0 176px;padding:32px 24px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box">
+      <button style="height:56px;border:0;border-radius:6px;background:var(--wp-pick,#ff6f61);color:#fff;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer" style-active="transform:scale(.98)">둘러보기</button>
+      <button style="height:56px;border:1px solid #dcdee3;border-radius:6px;background:#fff;color:#212124;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer" style-active="background:#f2f3f6">로그인</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<div id="11c" style="display:flex;flex-direction:column;gap:14px">
+<div style="font-size:14px;font-weight:700;color:#4d5159">11c · WP-SHT-001 지연 로그인 · WP-APP-007 권한 요청</div>
+<div style="display:flex;gap:20px">
+  <div style="width:390px;height:844px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)">
+    <div style="height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:700;color:#212124">
+      <span>9:41</span>
+      <span style="display:flex;gap:5px;align-items:center">
+        <svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg>
+      </span>
+    </div>
+    <div style="flex:1;position:relative;overflow:hidden">
+      <div style="position:absolute;inset:0;padding:12px 24px;display:flex;flex-direction:column;gap:12px;filter:blur(1px);opacity:.5">
+        <span style="font-size:26px;line-height:35px;font-weight:700;color:#212124">강남 A 스튜디오</span>
+        <div style="height:200px;border-radius:10px;background:#f2f3f6"></div>
+        <div style="height:120px;border-radius:10px;background:#f2f3f6"></div>
+      </div>
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,.45)"></div>
+      <div style="position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;padding:12px 24px 28px;display:flex;flex-direction:column;gap:20px;animation:wpSheet 350ms cubic-bezier(.16,1,.3,1) both">
+        <span style="width:40px;height:4px;border-radius:999px;background:#eaebee;align-self:center"></span>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:24px;line-height:32px;font-weight:700;color:#212124">Pick한 곳을 저장하려면<br>로그인이 필요해요</span>
+          <span style="font-size:16px;line-height:24px;color:#4d5159">로그인하면 방금 고른 강남 A 스튜디오가 그대로 담겨요</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button style="height:56px;border:0;border-radius:6px;background:#fee500;color:#212124;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer" style-active="transform:scale(.98)">카카오로 계속하기</button>
+          <button style="height:56px;border:1px solid #dcdee3;border-radius:6px;background:#fff;color:#212124;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer" style-active="background:#f2f3f6">다른 방법으로 로그인</button>
+        </div>
+        <span style="font-size:14px;line-height:19px;color:#868b94;text-align:center;cursor:pointer">나중에 할게요</span>
+      </div>
+    </div>
+  </div>
+  <div style="width:390px;height:844px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)">
+    <div style="height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:700;color:#212124">
+      <span>9:41</span>
+      <span style="display:flex;gap:5px;align-items:center">
+        <svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg>
+      </span>
+    </div>
+    <div style="flex:1;position:relative;overflow:hidden">
+      <div style="position:absolute;inset:0;padding:12px 24px;display:flex;flex-direction:column;gap:12px;filter:blur(1px);opacity:.5">
+        <span style="font-size:26px;line-height:35px;font-weight:700;color:#212124">Pick 인증</span>
+        <div style="height:160px;border-radius:10px;background:#f2f3f6"></div>
+      </div>
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,.45)"></div>
+      <div style="position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;padding:12px 24px 28px;display:flex;flex-direction:column;gap:20px;animation:wpSheet 350ms cubic-bezier(.16,1,.3,1) both">
+        <span style="width:40px;height:4px;border-radius:999px;background:#eaebee;align-self:center"></span>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:24px;line-height:32px;font-weight:700;color:#212124">사진 접근을 허용해주세요</span>
+          <span style="font-size:16px;line-height:24px;color:#4d5159;text-wrap:pretty">올려주신 사진에서 금액과 업체를 읽어 자동으로 정리해요. 확인이 끝난 원본은 24시간 안에 지워요.</span>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button style="flex:1;height:56px;border:0;border-radius:6px;background:#f2f3f6;color:#393a40;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer" style-active="background:#eaebee">나중에</button>
+          <button style="flex:1.4;height:56px;border:0;border-radius:6px;background:var(--wp-pick,#ff6f61);color:#fff;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer" style-active="transform:scale(.98)">허용하기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div id="11d" style="display:flex;flex-direction:column;gap:14px">
+<div style="font-size:14px;font-weight:700;color:#4d5159">11d · WP-APP-008~009 예식일 · 지역</div>
+<div style="display:flex;gap:20px">
+
+  <div style="width:390px;height:844px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)">
+    <div style="height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:700;color:#212124">
+      <span>9:41</span>
+      <span style="display:flex;gap:5px;align-items:center">
+        <svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg>
+      </span>
+    </div>
+    <div style="flex:0 0 56px;display:flex;align-items:center;gap:12px;padding:0 24px 0 12px">
+      <span style="width:40px;height:40px;border-radius:999px;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span>
+      <div style="flex:1;height:4px;border-radius:999px;background:#eaebee;overflow:hidden"><div style="width:25%;height:100%;border-radius:999px;background:var(--wp-accent,#ff6f61)"></div></div>
+      <span style="font-size:14px;line-height:19px;font-weight:700;color:#868b94;font-variant-numeric:tabular-nums">1/4</span>
+    </div>
+    <div style="flex:1;padding:12px 24px 0;display:flex;flex-direction:column;gap:24px">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:26px;line-height:35px;font-weight:700;color:#212124">예식일이 언제인가요?</span>
+        <span style="font-size:16px;line-height:24px;color:#4d5159">남은 기간에 맞춰 준비 순서를 잡아드려요</span>
+      </div>
+      <div style="height:56px;border-radius:6px;border:1.5px solid var(--wp-accent,#ff6f61);background:#fff;display:flex;align-items:center;padding:0 16px;font-size:18px;line-height:24px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums">2027년 5월 16일</div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <sc-for list="{{ dateHints }}" as="d" hint-placeholder-count="3">
+          <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;min-height:56px;padding:12px 0;cursor:pointer">
+              <span style="font-size:18px;line-height:24px;color:#212124">{{ d.name }}</span>
+              <span style="font-size:16px;line-height:22px;color:#868b94;font-variant-numeric:tabular-nums">{{ d.sub }}</span>
+            </div>
+            <div style="height:1px;background:#eaebee"></div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="flex:0 0 108px;padding:0 24px 32px;box-sizing:border-box;display:flex">
+      <button style="flex:1;height:56px;border:0;border-radius:6px;background:var(--wp-pick,#ff6f61);color:#fff;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer" style-active="transform:scale(.98)">다음</button>
+    </div>
+  </div>
+
+  <div style="width:390px;height:844px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)">
+    <div style="height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:700;color:#212124">
+      <span>9:41</span>
+      <span style="display:flex;gap:5px;align-items:center">
+        <svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg>
+      </span>
+    </div>
+    <div style="flex:0 0 56px;display:flex;align-items:center;gap:12px;padding:0 24px 0 12px">
+      <span style="width:40px;height:40px;border-radius:999px;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span>
+      <div style="flex:1;height:4px;border-radius:999px;background:#eaebee;overflow:hidden"><div style="width:50%;height:100%;border-radius:999px;background:var(--wp-accent,#ff6f61)"></div></div>
+      <span style="font-size:14px;line-height:19px;font-weight:700;color:#868b94;font-variant-numeric:tabular-nums">2/4</span>
+    </div>
+    <div class="nsb" style="flex:1;overflow-y:auto;padding:12px 24px 0;display:flex;flex-direction:column;gap:24px;scrollbar-width:none">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:26px;line-height:35px;font-weight:700;color:#212124">어디에서 하시나요?</span>
+        <span style="font-size:16px;line-height:24px;color:#4d5159">그 지역의 확인된 제보로 맞춰드려요</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <sc-for list="{{ regions }}" as="r" hint-placeholder-count="9">
+          <span style="{{ r.style }}">{{ r.name }}</span>
+        </sc-for>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <sc-for list="{{ districts }}" as="d2" hint-placeholder-count="4">
+          <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;min-height:56px;padding:12px 0;cursor:pointer">
+              <span style="font-size:18px;line-height:24px;color:#212124">{{ d2.name }}</span>
+              <span style="{{ d2.mark }}"></span>
+            </div>
+            <div style="height:1px;background:#eaebee"></div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="flex:0 0 108px;padding:0 24px 32px;box-sizing:border-box;display:flex">
+      <button style="flex:1;height:56px;border:0;border-radius:6px;background:var(--wp-pick,#ff6f61);color:#fff;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer" style-active="transform:scale(.98)">다음</button>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<div id="11e" style="display:flex;flex-direction:column;gap:14px">
+<div style="font-size:14px;font-weight:700;color:#4d5159">11e · WP-APP-010~012 예산 · 취향 · 완료</div>
+<div style="display:flex;gap:20px">
+
+  <div style="width:390px;height:844px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)">
+    <div style="height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:700;color:#212124">
+      <span>9:41</span>
+      <span style="display:flex;gap:5px;align-items:center">
+        <svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg>
+      </span>
+    </div>
+    <div style="flex:0 0 56px;display:flex;align-items:center;gap:12px;padding:0 24px 0 12px">
+      <span style="width:40px;height:40px;border-radius:999px;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span>
+      <div style="flex:1;height:4px;border-radius:999px;background:#eaebee;overflow:hidden"><div style="width:75%;height:100%;border-radius:999px;background:var(--wp-accent,#ff6f61)"></div></div>
+      <span style="font-size:14px;line-height:19px;font-weight:700;color:#868b94;font-variant-numeric:tabular-nums">3/4</span>
+    </div>
+    <div style="flex:1;padding:12px 24px 0;display:flex;flex-direction:column;gap:24px">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:26px;line-height:35px;font-weight:700;color:#212124">예산은 어느 정도<br>생각하고 계세요?</span>
+        <span style="font-size:16px;line-height:24px;color:#4d5159">나중에 바꿀 수 있어요</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <sc-for list="{{ budgets }}" as="b" hint-placeholder-count="5">
+          <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;min-height:56px;padding:12px 0;cursor:pointer">
+              <span style="{{ b.label }}">{{ b.name }}</span>
+              <span style="{{ b.mark }}"></span>
+            </div>
+            <div style="height:1px;background:#eaebee"></div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="flex:0 0 108px;padding:0 24px 32px;box-sizing:border-box;display:flex">
+      <button style="flex:1;height:56px;border:0;border-radius:6px;background:var(--wp-pick,#ff6f61);color:#fff;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer" style-active="transform:scale(.98)">다음</button>
+    </div>
+  </div>
+
+  <div style="width:390px;height:844px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)">
+    <div style="height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:700;color:#212124">
+      <span>9:41</span>
+      <span style="display:flex;gap:5px;align-items:center">
+        <svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg>
+      </span>
+    </div>
+    <div style="flex:0 0 56px;display:flex;align-items:center;gap:12px;padding:0 24px 0 12px">
+      <span style="width:40px;height:40px;border-radius:999px;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span>
+      <div style="flex:1;height:4px;border-radius:999px;background:#eaebee;overflow:hidden"><div style="width:100%;height:100%;border-radius:999px;background:var(--wp-accent,#ff6f61)"></div></div>
+      <span style="font-size:14px;line-height:19px;font-weight:700;color:#868b94;font-variant-numeric:tabular-nums">4/4</span>
+    </div>
+    <div class="nsb" style="flex:1;overflow-y:auto;padding:12px 24px 0;display:flex;flex-direction:column;gap:20px;scrollbar-width:none">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:26px;line-height:35px;font-weight:700;color:#212124">마음에 드는 분위기를<br>골라주세요</span>
+        <span style="font-size:16px;line-height:24px;color:#4d5159">고른 사진으로 추천을 맞춰드려요</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px">
+        <sc-for list="{{ taste }}" as="t" hint-placeholder-count="4">
+          <div style="position:relative;width:100%;height:158px">
+            <div style="position:absolute;inset:0;border-radius:10px;overflow:hidden;background:#f2f3f6">
+              <image-slot id="{{ t.slotId }}" src="{{ t.src }}" shape="rect" placeholder=""></image-slot>
+            </div>
+            <span style="{{ t.card }}">
+              <span style="{{ t.check }}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg>
+              </span>
+              <span style="font-size:16px;font-weight:700;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.5)">{{ t.label }}</span>
+            </span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="flex:0 0 132px;padding:0 24px 32px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px">
+      <button style="height:56px;border:0;border-radius:6px;background:var(--wp-pick,#ff6f61);color:#fff;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer" style-active="transform:scale(.98)">2개 고르고 시작하기</button>
+      <span style="align-self:center;font-size:14px;line-height:19px;font-weight:700;color:#868b94;cursor:pointer">건너뛰기</span>
+    </div>
+  </div>
+
+  <div style="width:390px;height:844px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)">
+    <div style="height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:700;color:#212124">
+      <span>9:41</span>
+      <span style="display:flex;gap:5px;align-items:center">
+        <svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg>
+      </span>
+    </div>
+    <div style="flex:1;padding:56px 24px 0;display:flex;flex-direction:column;gap:28px">
+      <span style="width:64px;height:64px;border-radius:999px;background:var(--wp-pick,#ff6f61);display:flex;align-items:center;justify-content:center;animation:wpCheck 460ms cubic-bezier(.34,1.56,.64,1) both">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg>
+      </span>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span style="font-size:26px;line-height:35px;font-weight:700;color:#212124">준비 끝났어요<br>지수님 웨딩을 시작해요</span>
+        <span style="font-size:16px;line-height:24px;color:#4d5159">아까 고른 강남 A 스튜디오가 Pick에 담겼어요</span>
+      </div>
+      <div style="border-radius:10px;background:#f7f8fa;padding:20px;display:flex;flex-direction:column;gap:2px">
+        <sc-for list="{{ summarySet }}" as="s3" hint-placeholder-count="4">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:9px 0">
+            <span style="font-size:16px;line-height:22px;color:#4d5159">{{ s3.name }}</span>
+            <span style="font-size:16px;line-height:22px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums">{{ s3.value }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="flex:0 0 108px;padding:0 24px 32px;box-sizing:border-box;display:flex">
+      <button style="flex:1;height:56px;border:0;border-radius:6px;background:var(--wp-pick,#ff6f61);color:#fff;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer" style-active="transform:scale(.98)">홈으로 가기</button>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<div id="11f" style="display:flex;flex-direction:column;gap:14px">
+<div style="font-size:14px;font-weight:700;color:#4d5159">11f · WP-APP-006 진입 예외</div>
+<div style="display:flex;gap:20px">
+  <sc-for list="{{ errors }}" as="e" hint-placeholder-count="3">
+    <div style="width:390px;height:844px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)">
+      <div style="height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:700;color:#212124">
+        <span>9:41</span>
+        <span style="display:flex;gap:5px;align-items:center">
+          <svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg>
+        </span>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:0 32px;text-align:center">
+        <span style="width:56px;height:56px;border-radius:999px;background:#f2f3f6;display:flex;align-items:center;justify-content:center;margin-bottom:6px">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#868b94" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5"></path><path d="M12 16.5h.01"></path><path d="M12 3.5 2.5 20h19z"></path></svg>
+        </span>
+        <span style="font-size:24px;line-height:32px;font-weight:700;color:#212124">{{ e.title }}</span>
+        <span style="font-size:16px;line-height:24px;color:#4d5159;text-wrap:pretty">{{ e.body }}</span>
+      </div>
+      <div style="flex:0 0 132px;padding:0 24px 32px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px">
+        <button style="height:56px;border:0;border-radius:6px;background:var(--wp-pick,#ff6f61);color:#fff;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer" style-active="transform:scale(.98)">{{ e.cta }}</button>
+        <sc-if value="{{ e.sub }}">
+          <span style="align-self:center;font-size:14px;line-height:19px;font-weight:700;color:#868b94;cursor:pointer">{{ e.sub }}</span>
+        </sc-if>
+      </div>
+    </div>
+  </sc-for>
+</div>
+</div>
+
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1800,&quot;height&quot;:1060},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#FF6F61&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;options&quot;:[&quot;#FF6F61&quot;,&quot;#FF4D4D&quot;,&quot;#FFC041&quot;,&quot;#34C759&quot;,&quot;#3182F6&quot;,&quot;#212124&quot;],&quot;section&quot;:&quot;스킨 컬러&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const skin = this.props.accent ?? '#FF6F61';
+    const pickHex = String(skin).toLowerCase() === '#212124' ? '#FF6F61' : skin;
+    const IMG = {
+      couple: 'uploads/samples-1788175716407-57s9.jpg',
+      arch: 'uploads/samples-1788175716396-jydc.jpg',
+      bride: 'uploads/samples-1788175716389-fion.jpg',
+      hall: 'uploads/samples-1788175716419-flvg.jpg'
+    };
+    const chip = on => 'height:40px;display:flex;align-items:center;padding:0 16px;border-radius:999px;font-size:16px;font-weight:700;cursor:pointer;'
+      + (on ? 'background:var(--wp-accent,#ff6f61);color:#fff;' : 'background:#f2f3f6;color:#393a40;');
+    const mark = on => on
+      ? 'width:24px;height:24px;border-radius:999px;background:var(--wp-accent,#ff6f61);display:flex;align-items:center;justify-content:center;background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'3.4\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpath d=\'m5 12.5 4.5 4.5L19 7.5\'/%3E%3C/svg%3E");background-size:16px;background-position:center;background-repeat:no-repeat'
+      : 'width:24px;height:24px;border-radius:999px;border:1.5px solid #dcdee3;box-sizing:border-box';
+    const tasteCard = on => 'position:absolute;inset:0;border-radius:10px;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;padding:12px;cursor:pointer;background:linear-gradient(to top,rgba(0,0,0,.45),rgba(0,12,30,0) 58%);'
+      + (on ? 'border:2px solid var(--wp-accent,#ff6f61);box-shadow:inset 0 0 0 100vmax color-mix(in oklab,var(--wp-accent,#ff6f61) 18%,transparent);' : 'border:1px solid #dcdee3;');
+    const tasteCheck = on => on
+      ? 'position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:999px;background:var(--wp-accent,#ff6f61);display:flex;align-items:center;justify-content:center'
+      : 'position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:999px;background:rgba(255,255,255,.28);border:1.5px solid rgba(255,255,255,.85);box-sizing:border-box';
+    return {
+      rootStyle: 'display:flex;flex-direction:column;gap:56px;align-items:flex-start;padding:64px;width:max-content;--wp-accent:' + skin + ';--wp-pick:' + pickHex,
+      icons: [
+        { label: 'iOS 1024', g: 60, stroke: '#fff', box: 'width:104px;height:104px;border-radius:20px;background:var(--wp-accent,#ff6f61);display:flex;align-items:center;justify-content:center' },
+        { label: 'Android Adaptive', g: 46, stroke: '#fff', box: 'width:80px;height:80px;border-radius:999px;background:var(--wp-accent,#ff6f61);display:flex;align-items:center;justify-content:center' },
+        { label: '알림 · 단색', g: 30, stroke: '#212124', box: 'width:52px;height:52px;border-radius:6px;background:#f2f3f6;display:flex;align-items:center;justify-content:center' },
+        { label: '탭 아이콘 24', g: 24, stroke: '#212124', box: 'width:40px;height:40px;border-radius:6px;background:#fff;border:1px solid #dcdee3;display:flex;align-items:center;justify-content:center' },
+        { label: '작은 크기 40', g: 24, stroke: '#fff', box: 'width:40px;height:40px;border-radius:6px;background:var(--wp-accent,#ff6f61);display:flex;align-items:center;justify-content:center' }
+      ],
+      dateHints: [
+        { name: '아직 정하지 않았어요', sub: '나중에 입력' },
+        { name: '2027년 봄쯤 생각 중', sub: '3~5월' },
+        { name: '2027년 가을쯤 생각 중', sub: '9~11월' }
+      ],
+      regions: [
+        { name: '서울', style: chip(true) },
+        { name: '경기', style: chip(false) },
+        { name: '인천', style: chip(false) },
+        { name: '부산', style: chip(false) },
+        { name: '대구', style: chip(false) },
+        { name: '대전', style: chip(false) },
+        { name: '광주', style: chip(false) },
+        { name: '울산', style: chip(false) },
+        { name: '그 외', style: chip(false) }
+      ],
+      districts: [
+        { name: '강남구', mark: mark(true) },
+        { name: '서초구', mark: mark(false) },
+        { name: '송파구', mark: mark(false) },
+        { name: '마포구', mark: mark(false) }
+      ],
+      budgets: [
+        { name: '2,000만원 이하', label: 'font-size:18px;line-height:24px;color:#212124', mark: mark(false) },
+        { name: '2,000~3,000만원', label: 'font-size:18px;line-height:24px;color:#212124', mark: mark(false) },
+        { name: '3,000~4,000만원', label: 'font-size:18px;line-height:24px;font-weight:700;color:#212124', mark: mark(true) },
+        { name: '4,000만원 이상', label: 'font-size:18px;line-height:24px;color:#212124', mark: mark(false) },
+        { name: '아직 모르겠어요', label: 'font-size:18px;line-height:24px;color:#868b94', mark: mark(false) }
+      ],
+      taste: [
+        { slotId: 'ob-t1', src: IMG.bride, label: '깔끔한 화이트', card: tasteCard(true), check: tasteCheck(true) },
+        { slotId: 'ob-t2', src: IMG.couple, label: '야외 자연광', card: tasteCard(true), check: tasteCheck(true) },
+        { slotId: 'ob-t3', src: IMG.arch, label: '플라워 아치', card: tasteCard(false), check: tasteCheck(false) },
+        { slotId: 'ob-t4', src: IMG.hall, label: '클래식 호텔', card: tasteCard(false), check: tasteCheck(false) }
+      ],
+      summarySet: [
+        { name: '예식일', value: '2027년 5월 16일' },
+        { name: '지역', value: '서울 강남구' },
+        { name: '총예산', value: '3,000~4,000만원' },
+        { name: '취향', value: '화이트 · 자연광' }
+      ],
+      errors: [
+        { title: '연결이 불안정해요', body: '네트워크를 확인하고 다시 시도해주세요', cta: '다시 시도', sub: '' },
+        { title: '잠시 점검 중이에요', body: '오전 3시부터 5시까지 서비스를 점검하고 있어요. 끝나면 알려드릴게요.', cta: '알림 받기', sub: '나중에 다시 열기' },
+        { title: '새 버전이 필요해요', body: '결제 정보 처리 방식이 바뀌어서 업데이트해야 이용할 수 있어요', cta: '업데이트', sub: '' }
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

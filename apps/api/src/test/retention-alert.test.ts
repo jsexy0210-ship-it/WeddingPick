@@ -36,7 +36,15 @@ describeWithDb('파기 일정 알림', () => {
     await test?.close();
   });
 
-  beforeEach(resetDatabase);
+  /*
+   * Pool 연결이 열린 상태에서 DROP SCHEMA CASCADE를 시도하면 deadlock이 발생한다.
+   * 리셋 전에 app(pool)을 먼저 닫고, 리셋 후 새로 만들어 연결 충돌을 피한다.
+   */
+  beforeEach(async () => {
+    await test?.close();
+    await resetDatabase();
+    test = await createTestApp();
+  }, 30_000);
 
   async function createUser({ operator = false } = {}) {
     const { rows } = await test.pool.query<{ id: string }>(

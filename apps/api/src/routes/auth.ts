@@ -8,6 +8,22 @@ import { ApiError } from '../errors';
 
 export function registerAuthRoutes(app: FastifyInstance, context: AppContext): void {
   /**
+   * 네이버는 Callback URL에 HTTPS 주소만 허용한다. 브라우저가 이 주소로
+   * 돌아오면 인증 코드와 state만 앱의 등록된 커스텀 스킴으로 전달한다.
+   * 토큰 교환은 앱이 PKCE verifier를 보유한 상태에서 기존 API로 수행한다.
+   */
+  app.get('/v1/auth/naver/callback', async (request, reply) => {
+    const query = request.query as { code?: string; state?: string; error?: string; error_description?: string };
+    const params = new URLSearchParams();
+
+    for (const [key, value] of Object.entries(query)) {
+      if (typeof value === 'string' && value.length > 0) params.set(key, value);
+    }
+
+    return reply.redirect(`weddingpick://auth/naver?${params.toString()}`);
+  });
+
+  /**
    * 쓸 수 있는 로그인 방법.
    *
    * 앱이 어느 제공자가 켜져 있는지 짐작하지 않게 한다. 개발용 대체 경로는 그렇다고

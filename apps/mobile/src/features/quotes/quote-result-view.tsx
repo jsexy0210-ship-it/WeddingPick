@@ -303,7 +303,7 @@ export function QuoteResultView({
                 {itemAmount(item) ? ` · ${itemAmount(item)}` : ''}
               </ThemedText>
               {item.standardNote ? (
-                <ThemedText type="small" style={styles.standardNote}>
+                <ThemedText type="small" themeColor="cautionary">
                   {item.standardNote}
                 </ThemedText>
               ) : null}
@@ -323,7 +323,7 @@ export function QuoteResultView({
               </ThemedText>
               {/* 공개 기준과 견준 결과. 법률 판단이 아니라 확인해볼 거리다. */}
               {term.standardNote ? (
-                <ThemedText type="small" style={styles.standardNote}>
+                <ThemedText type="small" themeColor="cautionary">
                   {term.standardNote}
                 </ThemedText>
               ) : null}
@@ -401,9 +401,6 @@ const styles = StyleSheet.create({
   },
   rowLabel: {
     flex: 1,
-  },
-  standardNote: {
-    color: '#B4571A',
   },
   input: {
     borderWidth: 1,

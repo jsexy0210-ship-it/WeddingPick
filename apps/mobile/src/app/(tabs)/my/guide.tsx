@@ -1,9 +1,10 @@
-import { ANALYSIS_FACTS, formatAttribution, listDataSources } from '@weddingpick/domain';
+import { ANALYSIS_FACTS, FAQ_ITEMS, formatAttribution, listDataSources } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
+import { Accordion, ActionButton, Layout, MaxContentWidth, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
+import { APP_VERSION } from '@/features/settings/version';
 
 const SHOOTING_TIPS = [
   '문서가 화면에 꽉 차게, 네 귀퉁이가 모두 보이게 찍어주세요.',
@@ -12,12 +13,17 @@ const SHOOTING_TIPS = [
   '메일이나 메신저로 받은 PDF는 촬영하지 말고 파일 그대로 불러오세요. 훨씬 정확해요.',
 ];
 
-/** 촬영 요령과 분석 안내. MY와 촬영 화면에서 들어온다. */
+/** 촬영 요령, FAQ, 분석 안내. MY와 촬영 화면에서 들어온다. */
 export default function GuideScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content}>
+          <ThemedView style={styles.section}>
+            <ThemedText type="subtitle">자주 묻는 것</ThemedText>
+            <Accordion items={FAQ_ITEMS.map((f) => ({ key: f.key, title: f.question, body: f.answer }))} />
+          </ThemedView>
+
           <ThemedView style={styles.section}>
             <ThemedText type="subtitle">이렇게 찍어주세요</ThemedText>
             {SHOOTING_TIPS.map((tip) => (
@@ -74,8 +80,17 @@ export default function GuideScreen() {
               hint="자료를 올리기 전에 결과가 어떤 모습인지 볼 수 있어요"
               onPress={() => router.push('/capture/sample')}
             />
+            <ActionButton
+              label="문의하기"
+              hint="답이 없으면 직접 물어보세요"
+              onPress={() => router.push('/my/contact')}
+            />
             <ActionButton label="돌아가기" onPress={() => router.back()} />
           </ThemedView>
+
+          <ThemedText type="t7" themeColor="textAssistive">
+            앱 버전 {APP_VERSION}
+          </ThemedText>
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -93,7 +108,7 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
   },
   content: {
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.five,
     paddingBottom: Spacing.four,
     gap: Spacing.four,

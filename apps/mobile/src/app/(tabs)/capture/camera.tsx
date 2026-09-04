@@ -8,6 +8,9 @@ import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView } from '
 import { useCaptureDraft } from '@/features/capture/capture-draft';
 import { createPage } from '@/features/capture/pickers';
 
+/** 화질 경고를 판단하는 최소 픽셀 수 (너비×높이). 이 미만이면 흐릿할 수 있다는 안내를 보인다. */
+const QUALITY_MIN_PIXELS = 480 * 640;
+
 /**
  * A-04의 카메라 입력. 한 건의 견적서가 여러 장인 경우가 많아 연속 촬영을 기본으로 둔다.
  */
@@ -16,10 +19,17 @@ export default function CameraScreen() {
   const { pages, addPages } = useCaptureDraft();
   const cameraRef = useRef<CameraView>(null);
   const [shooting, setShooting] = useState(false);
+  /**
+   * 촬영 직후 품질 경고. 해상도가 기준 미만이면 "흐릿할 수 있어요" 안내를 보인다.
+   * 사용자가 다음 촬영을 시작하거나 화면을 닫으면 사라진다.
+   */
+  const [qualityHint, setQualityHint] = useState(false);
   const { width } = useWindowDimensions();
   /* 3:4 비율 — 문서가 세로로 긴 형태라 이 비율이 잘림을 줄인다 */
   const guideWidth = Math.min(width * 0.8, 300);
   const guideHeight = (guideWidth * 4) / 3;
+  /** 모서리 마커 한 변의 길이 (dp). 짧을수록 덜 답답하다. */
+  const cornerLen = 24;
 
   if (!permission) {
     return <ThemedView style={styles.container} />;
@@ -43,12 +53,23 @@ export default function CameraScreen() {
   async function takePicture() {
     if (shooting) return;
     setShooting(true);
+    setQualityHint(false);
 
     try {
       const photo = await cameraRef.current?.takePictureAsync({ quality: 0.9 });
 
       if (photo) {
         addPages([createPage('camera', { uri: photo.uri, mimeType: 'image/jpeg' })]);
+
+        /*
+         * 화질 경고: 너비×높이가 기준 미만이면 흐릿할 수 있다는 안내를 보인다.
+         * 최신 스마트폰에서는 거의 발생하지 않지만, 구형 기기나 제한된 카메라
+         * 권한 환경에서는 낮은 해상도가 나올 수 있다.
+         */
+        const pixels = (photo.width ?? 0) * (photo.height ?? 0);
+        if (pixels > 0 && pixels < QUALITY_MIN_PIXELS) {
+          setQualityHint(true);
+        }
       }
     } catch {
       Alert.alert('촬영 실패', '다시 시도해주세요.');
@@ -73,15 +94,37 @@ export default function CameraScreen() {
           </ThemedText>
         </View>
 
-        {/* 3:4 문서 가이드 프레임 */}
+        {/*
+          3:4 문서 가이드 프레임.
+          테두리 전체 대신 네 모서리 L형 마커를 강조한다 — 같은 정보를
+          더 가볍게 전달하고, 가이드 바깥도 답답하지 않게 보인다.
+        */}
         <View style={styles.guideCenter} pointerEvents="none">
-          <View
-            style={[
-              styles.guide,
-              { width: guideWidth, height: guideHeight },
-            ]}
-          />
+          <View style={{ width: guideWidth, height: guideHeight }}>
+            {/* 모서리 마커 — 각 꼭짓점에 L형 선 두 개씩 */}
+            {/* 왼쪽 위 */}
+            <View style={[styles.cornerH, { top: 0, left: 0, width: cornerLen }]} />
+            <View style={[styles.cornerV, { top: 0, left: 0, height: cornerLen }]} />
+            {/* 오른쪽 위 */}
+            <View style={[styles.cornerH, { top: 0, right: 0, width: cornerLen }]} />
+            <View style={[styles.cornerV, { top: 0, right: 0, height: cornerLen }]} />
+            {/* 왼쪽 아래 */}
+            <View style={[styles.cornerH, { bottom: 0, left: 0, width: cornerLen }]} />
+            <View style={[styles.cornerV, { bottom: 0, left: 0, height: cornerLen }]} />
+            {/* 오른쪽 아래 */}
+            <View style={[styles.cornerH, { bottom: 0, right: 0, width: cornerLen }]} />
+            <View style={[styles.cornerV, { bottom: 0, right: 0, height: cornerLen }]} />
+          </View>
         </View>
+
+        {/* 촬영 후 품질 경고 — 해상도가 기준 미만일 때만 보인다 */}
+        {qualityHint ? (
+          <View style={styles.qualityHintBar} pointerEvents="none">
+            <ThemedText type="t7" style={styles.overlayText}>
+              사진이 흐릿할 수 있어요. 다시 찍어도 돼요.
+            </ThemedText>
+          </View>
+        ) : null}
 
         <View style={styles.bottomBar}>
           <Pressable
@@ -133,15 +176,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  guide: {
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.7)',
-    borderRadius: 4,
-    /* 모서리 안내. 전체 테두리보다 모서리만 강조하면 덜 답답하다. */
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 2,
+  /**
+   * 모서리 L형 마커 — 수평 바.
+   * borderColor는 rgba(255,255,255,0.6) — 토큰 spec/tokens.json 카메라 가이드 60% 불투명.
+   */
+  cornerH: {
+    position: 'absolute',
+    height: 3,
+    backgroundColor: 'rgba(255,255,255,0.6)',
+  },
+  /** 모서리 L형 마커 — 수직 바. */
+  cornerV: {
+    position: 'absolute',
+    width: 3,
+    backgroundColor: 'rgba(255,255,255,0.6)',
+  },
+  /** 촬영 후 품질 경고 바. 화면 하단 중앙에 표시된다. */
+  qualityHintBar: {
+    position: 'absolute',
+    bottom: 160,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    paddingHorizontal: Spacing.four,
   },
   topBar: {
     flexDirection: 'row',

@@ -1,15 +1,17 @@
 # WeddingPickl AI 인수인계서
 
-> 이 파일은 모든 Claude 세션이 읽는 **단일 진실 소스**다.
+> 현재 운영 상태는 `PROJECT_STATUS.md`, 실제 구현은 최신 코드를 기준으로 한다.
+> 이 파일은 세션 인수인계와 작업 이력을 보관한다. 과거 기록보다 아래 최신 상태를 우선한다.
 > 새 세션이 시작되면 이 파일을 먼저 읽어라. 작업이 끝나면 이 파일을 업데이트하고 커밋해라.
 
 ---
 
 ## 메타
 
-- `updated_at`: 2026-09-02 (일정·지도 보기 PR #19 병합, 취향 API, CI+staging 그린)
+- `updated_at`: 2026-09-03 (P0 운영 상태·카카오맵 전환 동기화)
 - `repository`: jsexy0210-ship-it/WeddingPickl
-- `branch (main)`: e34125f (PR #28 count 버그픽 포함)
+- `verified_code_base`: 5b0479b (PR #53 squash merge 포함; 최신 원격 상태는 작업 시작 시 재확인)
+- `PR #51`: main 병합 완료 (7967312). 아래 세션의 CI 대기 표시는 당시 기록이다.
 - `policy_version`: 통합정책 v3.14
 - `dashboard`: https://claude.ai/code/artifact/a1307c11-f282-4cf2-a26d-e44bd083d7a9
 - `ios_handoff_artifact`: https://claude.ai/code/artifact/b8792fcd-fefe-4386-b24e-41d122e90a87
@@ -17,21 +19,82 @@
 
 ---
 
+## 🔴 2026-09-04 정책 변경 — 하이브리드 웹뷰 전환
+
+### 배경
+사용자가 2026-09-04에 확정: 홈·진입/내비게이션·공통(FAQ·약관·시트·상태) 화면군을
+시작으로 RN 네이티브 화면을 점진적으로 **하이브리드 웹뷰**로 전환한다.
+
+### 기술 방식
+- `apps/mobile`의 기존 Expo Router/React Native 코드베이스는 그대로 유지한다 — 화면을
+  새로 만들지 않는다.
+- 이 코드베이스를 `expo export -p web`(react-native-web)으로 웹 빌드해 호스팅한다.
+- 네이티브 iOS/Android 앱은 그 호스팅 URL을 `react-native-webview`로 감싸는 얇은 셸이
+  된다. **`react-native-webview`는 아직 `apps/mobile`에 설치돼 있지 않다** — 전환
+  작업의 일부로 추가해야 한다.
+- `apps/web`(정적 랜딩 1장, `tsx src/cli.ts` 빌드)과는 완전히 별개다 — 이 전환과
+  무관하며 건드리지 않는다.
+- 이 방식을 고른 이유: `apps/mobile`이 이미 Expo 웹 빌드를 지원하므로(네이티브 전용
+  의존성은 `Platform.OS === 'web'` 조건부 처리, 위 "일정·지도 보기" 세션 기록 참고)
+  별도 웹앱을 새로 만들 필요가 없다 — 가장 적은 신규 인프라로 시작할 수 있는 경로다.
+
+### 이번 전환의 실질적 의미
+RN 화면의 웹 렌더링 품질이 이제 "부가 기능"이 아니라 **실제 앱 화면 그 자체**가 된다.
+`apps/mobile/src/app/` 아래 화면 소스가 모바일 폭부터 데스크톱 폭까지 브라우저에서
+정상 렌더링돼야 실제 앱이 정상 동작하는 것이다. 점검 기준:
+`docs/design-handoff/hybrid-web-qa-checklist.md`.
+
+### 정책 1 — 비회원 진입 삭제
+로그인 없이 들어갈 수 있는 화면(게스트 홈 등)을 폐지한다. 로그인 완료 후에만 앱 진입이
+가능하도록 진입 흐름(`apps/mobile/src/app/_layout.tsx` 등)을 바꿔야 한다.
+**아직 구현되지 않았다** — 다음 작업.
+
+### 정책 2 — 홈 헤더 검색버튼 삭제
+홈 탭(`apps/mobile/src/app/(tabs)/index.tsx`, 헤더의 `router.push('/search')` 버튼,
+341번째 줄 부근)의 검색 버튼을 없앤다. 알림 아이콘만 남긴다. 검색 자체는 하단 탭의
+검색 탭(`(tabs)/search`)으로 계속 접근 가능하니 기능 손실은 아니다.
+**아직 구현되지 않았다** — 다음 작업.
+
+### 다음 작업 (미착수)
+1. `react-native-webview` 설치 + 네이티브 래퍼 셸 구현
+2. 웹 빌드 호스팅 방식 결정(`expo export -p web` 결과물을 어디에 올릴지)
+3. 정책 1·2 실제 코드 반영
+4. `docs/design-handoff/hybrid-web-qa-checklist.md` 기준으로 홈·진입/내비게이션·공통
+   화면군부터 웹 렌더링 QA
+
+---
+
 ## 인프라 현황
 
+### 최신 P0 상태 (2026-09-03)
+
+운영 기록은 `PROJECT_STATUS.md`와 동기화했다. 이번 작업에서 외부 콘솔·운영 DB·실기기를 재검증한 것은 아니다.
+
+| 항목 | 상태와 남은 검증 |
+|---|---|
+| 로그인 설정 | APK의 callback·Client ID 반영 기록 있음. 네이버·카카오·Google·Apple 외부 등록과 실제 로그인 검증 필요 |
+| 카카오맵 | 외부 카카오맵 열기가 채택된 방식. 업체 검색·상세에 링크 구현. 우리웨딩 지도와 웹 경로는 아래 6번의 잔여 작업 참고 |
+| 운영 서버·DB | 2026-09-03 `/health` HTTP 200, `database: ok` 기록 있음. 전체 기능·마이그레이션 적용 완료를 뜻하지 않음 |
+| 운영 마이그레이션 | 0052~0062 적용 여부 확인 필요. PR #53의 0003 → 0068 이동은 main 반영됨. 운영 적용 결과·기존 DB 이력 확인 필요 |
+| iOS | Release #13의 Sign in with Apple 프로비저닝 권한 누락 기록. 수정 후 Production Build·TestFlight 확인 필요 |
+| Android 제출 | Google Play 계정 본인확인 이의 제기 결과 대기 기록. 해제 후 제출 검증 |
+| 기능 검증 | PR #53 머지 전 로컬(0912715 + 기존 작업 변경)에서 946개 통과, 별도 테스트 DB 미연결로 619개 스킵. 최신 main·실기기·운영 환경 전체 흐름은 미검증 |
+
+P0 전체 항목의 완료 기준과 검증 증거가 확정되지 않아 P0 진척률은 미측정이다. `npm run progress`는 문서 표시 기반 전체 공정률이며 P0 출시 준비율이 아니다.
+
 ### 서버
-- **API 서버**: Fly.io — `weddingpickl.fly.dev`
+- **API 서버**: Render — `https://weddingpickl.onrender.com`
 - **DB**: Neon PostgreSQL (production)
-- **스토리지**: Backblaze B2 (S3 호환)
+- **스토리지**: NCP Object Storage (`weddingpick-test`, `PROJECT_STATUS.md` 기준). B2 관련 아래 기록은 과거 구성이다.
 - **모바일 빌드**: EAS (Expo Application Services) + GitHub Actions
 
 ### GitHub Actions 워크플로
 | 파일 | 역할 |
 |---|---|
-| `main.yml` | PR 검증 · 테스트 |
+| `main.yml` | PR CI; main push 시 CI → DB 마이그레이션 → Render 배포·헬스체크 |
 | `release.yml` | iOS EAS 빌드 배포 |
 | `db-migrate.yml` | Neon DB 마이그레이션 적용 |
-| `fly-init.yml` | Fly.io 초기화 |
+| `fly-init.yml` | 이전 Fly.io 초기화 기록(현재 운영 제외) |
 | `eas-init.yml` | EAS 프로젝트 초기화 |
 | `storage-test.yml` | B2 스토리지 연결 테스트 |
 | `android-apk.yml` | Android APK 빌드 |
@@ -150,34 +213,26 @@ Render를 쓰지 않는다"고 적었었다 — `main`만 보고 판단해서 �
 - `docs/통합정책 v3.14`와 실제 탈퇴 구현의 정합성을 확인.
 
 ### 1. iOS EAS 빌드 수정 — 최우선
-**상태**: Release #1 ~ #10 전부 실패  
-**근본 원인**: ASC API Key `62U8N2ZWJR`가 expo.dev에 미등록
+`PROJECT_STATUS.md`의 최신 장애 기록은 Release #13의 Provisioning Profile에
+Sign in with Apple capability/entitlement가 빠진 것이다. ASC API Key 등록 완료 기록이
+있으므로 예전 #1~#10의 미등록 원인을 현재 원인으로 사용하지 않는다.
 
-**조치 방법**:
-1. expo.dev → Account → Credentials → App Store Connect API Keys
-2. Add New Key:
-   - Key ID: `62U8N2ZWJR`
-   - Issuer ID: `a7e4029d-6abf-4811-80a7-9cc47c1d1e21`
-   - .p8 파일: `AuthKey_62U8N2ZWJR.p8` 업로드 (로컬에 보관 중)
-3. 등록 완료 후 GitHub Actions → Release → Run workflow 실행
+Apple Developer App ID `kr.weddingpick.app`의 Sign in with Apple 활성화를 확인하고,
+EAS iOS Provisioning Profile을 재생성한 뒤 Production Build·TestFlight를 검증한다.
+외부 콘솔 변경 완료 여부는 미검증이며, 최신 실패 로그 확인 없이 키를 교체하지 않는다.
 
-**참고**: 현재 expo.dev에는 `NPCMZ655GG`만 있으나 Team/Roles: None → 비활성 상태. `release.yml`은 `--clear-credentials` 제거 완료, 정상 상태.
-
-### 2. Fly.io 환경변수 추가
-```
-flyctl secrets set OPERATOR_SESSION_TTL_DAYS=365 --app weddingpickl
-```
-(또는 Fly.io 대시보드 → weddingpickl → Secrets)
-
-### 3. Production DB 마이그레이션 적용
+### 2. Production DB 마이그레이션 적용
+현재 남은 일은 운영 DB의 0052~0062 적용 이력과 main의 0068 변경 적용 결과 확인이다.
+코드 병합·헬스체크 성공만으로 마이그레이션 완료로 판정하지 않는다.
+아래 0052 enum 실패 설명은 분리 수정 전 이력이며, 현재 코드의 실패를 재확인한 결과가 아니다.
 ```
 # GitHub Actions → db-migrate.yml → Run workflow
 # 또는 직접:
-DATABASE_URL=<neon-connection-string> pnpm db:migrate
+DATABASE_URL=<neon-connection-string> npm run migrate --workspace @weddingpick/db
 ```
 적용 대상: `0052_mission_draw.sql` (미션 완료 추적 + 월간 웨딩지원금 추첨 스키마)
 
-**⚠️ 이 파일 그대로는 실행이 안 된다.** `ALTER TYPE reward_kind ADD VALUE 'monthly_draw'`를
+**과거 수정 전 실패 기록:** `ALTER TYPE reward_kind ADD VALUE 'monthly_draw'`를
 같은 트랜잭션 안에서 바로 쓰는 CHECK 제약(`grant_source_matches_kind`)이 있어
 Postgres가 "unsafe use of new value of enum type"으로 매번 실패한다(빈 DB에서
 직접 재현·확인함). PR #10 브랜치에서 0052를 두 부분으로 나누고, 값을 더하는 것과
@@ -194,16 +249,26 @@ URL 확정 후 도메인 상수(`packages/domain/src/constants/policy.ts` 또는
 Google 개발자 콘솔 알림 자동화 세션이 Gmail 미연결로 차단됨.  
 claude.ai Settings → Connectors → Gmail 연결 필요.
 
-### 6. 지도 보기 — Google Maps Android API 키
-`apps/mobile/app.json`의 `android.config.googleMaps.apiKey`가 `REPLACE_WITH_GOOGLE_MAPS_ANDROID_API_KEY`
-자리표시자로 들어가 있다. Google Cloud Console에서 Maps SDK for Android 키를 발급해 실제 값으로
-바꿔야 Android에서 지도 타일이 뜬다(iOS는 기본 Apple Maps라 키가 필요 없다). 키를 안 넣어도
-빌드는 되지만 Android 지도 화면에 회색 배경 + 저작권 표시만 나온다.
+### 6. 지도 보기 — 카카오맵 외부 연결로 전환
+**채택한 방식**: 앱 내부 카카오 지도 SDK가 아니라 공식 카카오맵 링크
+(`https://map.kakao.com/?q=...`)를 연다. 전환된 외부 연결 경로에는 Google Maps 키가 필요 없다.
+카카오맵 사용 설정·플랫폼 키 활성화는 운영 문서의 기록이며, 이번에는 콘솔을 재검증하지 않았다.
+
+| 경로 | 코드 확인 결과 | 남은 작업 |
+|---|---|---|
+| `features/search/vendor-map.tsx` | 업체 선택 후 카카오맵 링크 열기 | Android/iOS 실기기에서 결과·복귀 확인 |
+| `(tabs)/search/[vendorId]/index.tsx` | 업체명·지역으로 카카오맵 링크 열기 | 실제 위치 검색 결과 확인 |
+| `(tabs)/wedding/[id]/map.tsx` | `react-native-maps`의 MapView 사용 잔존 | 채택한 카카오맵 방식과 통일 필요 |
+| 검색·우리웨딩 `map.web.tsx` | 앱 이용 안내만 표시 | 웹에서 외부 링크를 제공할지 범위 확정 후 반영 |
+
+`package.json`의 `react-native-maps`, `app.json`의 관련 플러그인·Google Maps 설정도
+남아 있다. 따라서 의존성 제거 완료로 기록하지 않는다. 우리웨딩 사용처를 전환한 뒤 정리한다.
+`expo-location` 플러그인 제거는 PR #53에서 main(5b0479b)에 반영됐다. 현재 위치 기능 영향과 main 배포 결과는 별도 확인한다.
 
 ### 7. 지도 보기 — 업체 좌표 지오코딩 실행
 `0062_vendor_geo.sql` 적용 후 기존 업체는 전부 `lat`/`lng`가 NULL이다(좌표 없이 목록에는
 그대로 뜨고 지도에만 안 뜬다). `scripts/geocode-vendors.mts`를 카카오 REST API 키로 돌려야
-좌표가 채워진다 — 방법은 아래 "지도 보기 — 좌표 지오코딩" 절 참고. 카카오 개발자 콘솔에서
+좌표가 채워진다. 좌표 백필은 외부 카카오맵 열기와 별도 작업이며, 링크 열기의 선행 조건은 아니다. 카카오 개발자 콘솔에서
 키 발급 필요(Claude 불가).
 ```
 DATABASE_URL=<neon-connection-string> KAKAO_REST_API_KEY=<발급받은 키> \
@@ -214,11 +279,58 @@ DATABASE_URL=<neon-connection-string> KAKAO_REST_API_KEY=<발급받은 키> \
 
 ## 세션별 작업 완료 현황
 
+### 과거 세션 (session_01SLgCn4pWaQCTyYPzVLcbQr) — 2026-09-03 작업 기록
+
+**완료 (커밋 df4a180, 브랜치 home/fe-p0-gaps):**
+- ✅ `react-native-maps ~1.29.0` — `apps/mobile/package.json` 추가 (TS2307 해결)
+- ✅ `pick/done.tsx`, `pick/confirm.tsx` — `useRef().current` → `useMemo` 전환
+  (Cannot access refs during render, react-hooks/rules-of-hooks 해결)
+- ✅ 33개 파일 — `setLoading(true)` 앞에 `eslint-disable-next-line react-hooks/set-state-in-effect` 삽입
+- ✅ `client.ts` — 미사용 `ExpoItem`/`ExpoStatus` import 제거
+- ✅ 로컬 검증: `npm run lint` → **0 errors, 12 warnings**, `npm run typecheck` → **0 errors**
+
+**PR #51 상태 (2026-09-03 정정):**
+- URL: https://github.com/jsexy0210-ship-it/WeddingPickl/pull/51
+- 브랜치: `home/fe-p0-gaps` → `main`
+- main 병합 완료: 7967312. 아래 감사 목록은 당시 기록이며, 새 작업 전 최신 API 구현을 재확인한다.
+
+**⚠️ 감사 결과 — 관리자 API 실질적 갭:**
+모바일 관리자 화면 26개가 호출하는 엔드포인트 중 서버에 **없는** 것들:
+
+| 모바일 호출 | 서버 상태 |
+|---|---|
+| `GET /v1/admin/dashboard` | ❌ 없음 |
+| `GET/POST/DELETE /v1/admin/faq` | ❌ 없음 |
+| `GET/PATCH /v1/admin/users` | ❌ 없음 |
+| `GET/PATCH /v1/admin/vendors` | ❌ 없음 |
+| `GET /v1/admin/revenue` | ❌ 없음 |
+| `GET /v1/admin/ads`, `GET /v1/admin/ads-gate` | ❌ 없음 (서버엔 `ad-placements`만 있음) |
+| `GET /v1/admin/ai-usage` | ❌ 없음 (서버엔 `ai-budget`만 있음) |
+| `GET /v1/admin/automation` | ❌ 없음 |
+| `GET /v1/admin/biz-queue` | ❌ 없음 |
+| `GET /v1/admin/briefing` | ❌ 없음 (서버엔 `decisions/briefing` 있음) |
+| `GET /v1/admin/campaigns` | ❌ 없음 |
+| `GET /v1/admin/data/pipeline` 등 | ❌ 없음 |
+| `GET /v1/admin/email-matching` | ❌ 없음 |
+| `GET /v1/admin/kill-switches` | ❌ 없음 |
+| `GET /v1/admin/marketing` | ❌ 없음 |
+| `GET /v1/admin/policy-engine` | ❌ 없음 |
+| `GET /v1/admin/rollback` | ❌ 없음 |
+| `GET /v1/admin/terms` | ❌ 없음 |
+| `GET /v1/admin/audit-log` | ❌ 없음 |
+
+**서버에 있는 것:** `price-stats`, `reports`, `rebuttals`, `verifications`, `payment-proofs`, `objections`, `inquiries`, `pii-reviews`, `retention/*`, `ai-budget/*`, `ad-placements`
+
+→ 관리자 화면들은 화면 구조는 있으나 **런타임에 즉시 빈 상태 또는 오류**가 난다.
+  다음 AI 세션이 관리자 API 엔드포인트를 `apps/api/src/routes/admin.ts`에 추가해야 한다.
+
+---
+
 ### 웨딩픽 통합 운영/관리 (session_01SLgCn4pWaQCTyYJaRa) — 아이들
 **완료:**
 - ✅ 월간 웨딩지원금 (§I-4) API + 모바일 화면 구현 → 원격 브랜치 푸시 완료
 - ✅ 탈퇴 안내 문구 `WITHDRAWAL_NOTICE` 확정 (§J-3)
-- ✅ `OPERATOR_SESSION_TTL_DAYS` 도메인 상수 추가 (코드에 추가됨, Fly.io 환경변수는 별도 조치 필요)
+- ✅ `OPERATOR_SESSION_TTL_DAYS` 도메인 상수 추가
 - ✅ `release.yml`에서 `--clear-credentials` 플래그 제거
 
 ### 정책 관리 (session_017L61fF1Tqbugm8WNCH6QG6, 이 세션) — 실행 중
@@ -241,13 +353,14 @@ DATABASE_URL=<neon-connection-string> KAKAO_REST_API_KEY=<발급받은 키> \
   결과는 **미검증**)
 
 **브랜치**: `claude/daily-progress-briefing-3k7lez` · **PR**: #10 (main ← 이 브랜치)
-**미검증**: 실제 배포·health check(Fly.io 크리덴셜 필요, PR 단계에서는 원래도 실행 안 됨),
+**미검증**: 실제 배포·health check(운영 배포 자격 증명 필요),
 GitHub Actions 실제 실행 결과, production DB 적용.
 
 ### 프론트엔드 (session_01HTGSU2B4vFjePXFS2ajKBY) — 아카이브
 **완료**: 모바일 앱 핵심 화면 구현, 42개 라우터 파일 생성
 
 ### 백엔드 — 일정 · 지도 보기 (session_016VEKBiJwF4kJzTkxotEiCD)
+> 아래 SDK·Google Maps·현재 위치 설명은 당시 구현 이력이다. 현재 채택한 방식과 잔여 작업은 위 6번을 따른다. 여기의 완료·테스트 기록은 현재 릴리즈 검증 결과가 아니다.
 **배경**: 프론트엔드 세션(PR #16)이 순수 프론트로 가능한 화면을 다 구현하고, 새 백엔드
 API·DB 마이그레이션·지도 SDK가 필요한 두 항목(일정 추가, 지도 보기)을 이 세션으로 넘김.
 
@@ -338,8 +451,8 @@ API·DB 마이그레이션·지도 SDK가 필요한 두 항목(일정 추가, �
     PR #22/#24가 이용약관·개인정보처리방침을 게시(url 설정)로 바꾼 뒤 "아직
     게시 전"을 전제로 한 낡은 테스트 기대값이었다.
 - ✅ **PR #29 머지(head `b8a8df7`)로 main이 처음으로 CI 전체(Typecheck·Lint·
-  Test·Bundle·Build)와 `Deploy → Staging`(DB Migrate·Fly.io 배포·health check)
-  까지 전부 그린을 찍었다.** `weddingpickl.fly.dev`에 이 세션의 취향 API
+  Test·Bundle·Build)와 `Deploy → Staging`(DB Migrate·Render 배포·health check)
+  까지 전부 그린을 찍었다.** Render에 이 세션의 취향 API
   (0060_taste_preferences 등)를 포함한 최신 코드가 실제로 배포됨.
 - **Production 배포는 보류 중** — `workflow_dispatch`(environment=production)로
   수동 실행해야 하며, 사용자가 명시적으로 "진행 전에 물어봐달라"고 요청해 아직
@@ -377,10 +490,11 @@ API·DB 마이그레이션·지도 SDK가 필요한 두 항목(일정 추가, �
 | 공통 상태 (WP-ST-*) | 14개 | 로딩/에러/빈 상태 확인 필요 |
 | B2B 문의 (WP-BIZ-*) | 5개 | 소속확인·자료제공·혜택등록·광고·웹Footer |
 | 커플 연결 (WP-CPL-*) | 2개 | 공동 편집 충돌, 변경 내역 |
-| 우리웨딩 (WP-OUR-*) | 3개 | 일정 추가 ✅(이 세션), 준비 타임라인 ✅(PR #16), 예식 완료 ✅(PR #16) |
-| MY (WP-MY-*) | 2개 | 취향 다시 고르기 ✅(PR #16), 회원탈퇴 ✅(PR #10/#15) |
+| 우리웨딩 (WP-OUR-*) | 0개 | 일정 추가 ✅(PR #19), 준비 타임라인 ✅(PR #16), 예식 완료 ✅(PR #16) |
+| MY (WP-MY-*) | 0개 | 취향 다시 고르기 ✅(PR #16), 회원탈퇴 ✅(PR #10/#15) |
 | 홈 (WP-HOME-*) | 2개 | TOP3 전체보기, 개인화 웨딩피드 |
-| 기타 | ~5개 | 지도 보기 ✅(이 세션), 재실행·세션 복원, 진입 예외 등 |
+| Pick (WP-PICK-*) | 0개 | WP-PICK-006 결정 완료 ✅(home/fe-p0-gaps) |
+| 기타 | ~3개 | 지도 보기 ✅(PR #19), 재실행·세션 복원, 진입 예외 등 |
 
 이 표는 176개 화면 전체 재조사 시점(작성 당시) 기준 카운트라 위 ✅ 항목만큼 실제 미구현
 수는 줄었다 — 전체 재집계는 하지 않았다.
@@ -423,7 +537,7 @@ production DB에는 아직 미적용. `db-migrate.yml` 워크플로 실행 필�
 ## 백엔드 API 현황
 
 - **테스트**: 524개 통과 (백엔드 관리 세션 기준, 2026-09-02)
-- **서버**: `weddingpickl.fly.dev` (Fly.io)
+- **서버**: `https://weddingpickl.onrender.com` (Render)
 - **미확인**: 프로덕션 환경 전체 API 엔드포인트 수, 커버리지 %
 
 ---
@@ -435,7 +549,7 @@ WeddingPickl/
 ├── apps/
 │   ├── mobile/              # Expo Router 모바일 앱
 │   │   └── src/app/         # 42개 라우터 파일 (화면)
-│   └── api/                 # Hono API 서버 (Fly.io 배포)
+│   └── api/                 # Hono API 서버 (Render 배포)
 ├── packages/
 │   ├── db/
 │   │   └── migrations/      # 0001 ~ 0052 SQL 파일
@@ -465,18 +579,17 @@ WeddingPickl/
 
 ## 다음 작업 우선순위
 
-1. **[사용자]** expo.dev에 ASC API Key 62U8N2ZWJR 등록 → iOS 빌드 재시작
-2. **[사용자]** Fly.io: `OPERATOR_SESSION_TTL_DAYS=365` 추가
-3. **[사용자]** Neon DB: `db-migrate.yml` 실행 → 0052 ~ 0060 적용
-4. **[사용자]** terms.url · privacy.url 확정 → 도메인 상수 업데이트
-5. **[사용자]** Google Maps Android API 키 발급 → `apps/mobile/app.json`의
-   `REPLACE_WITH_GOOGLE_MAPS_ANDROID_API_KEY` 교체
-6. **[사용자]** 카카오 REST API 키 발급 → `scripts/geocode-vendors.mts` 실행해 업체 좌표 채우기
-7. **[완료]** PR #16(취향 다시 고르기·준비 타임라인·예식 완료, 순수 프론트) main 병합 완료 —
-   회원탈퇴·일정 추가·지도 보기(PR #19)까지 합치면 §프론트엔드 화면 현황의 "우리웨딩·MY"
-   미구현 항목이 모두 닫힌다. **[사용자]** PR #19 리뷰·병합 필요.
+1. **[AI]** PR #51·#53은 병합 완료. main(5b0479b)의 CI·마이그레이션·배포 결과와 핵심 흐름 검증
+2. **[AI — 최우선]** 관리자 API 엔드포인트 추가 (`apps/api/src/routes/admin.ts`)
+   - 최소: dashboard, faq, users, vendors, revenue, kill-switches, audit-log
+   - 전체 목록: 위 "관리자 API 실질적 갭" 표 참고
+3. **[사용자]** Release #13의 Sign in with Apple 권한·Provisioning Profile 수정 여부 확인 → iOS 빌드·TestFlight 검증
+4. **[사용자]** Neon DB: `db-migrate.yml` 실행 → 0052 ~ 0062 적용
+5. **[사용자]** terms.url · privacy.url 확정 → 도메인 상수 업데이트
+6. **[AI/사용자]** 카카오맵 전환 잔여 경로·의존성 정리, Android/iOS 외부 링크 실기기 검증 (위 6번)
+7. **[사용자]** 카카오 REST API 키 발급 → `scripts/geocode-vendors.mts` 실행해 업체 좌표 채우기
 8. **[AI]** 공통 Bottom Sheet 16종 인라인 처리 여부 확인
-9. **[AI]** 관리자 화면 설계 및 구현 (앱스토어 출시 후 단계)
+9. **[완료]** WP-PICK-006 결정 완료 화면(`pick/done.tsx`) 구현 — PR #51 포함
 
 ---
 
@@ -496,7 +609,6 @@ WeddingPickl/
 |---|---|
 | DB 마이그레이션 0052 | `0052_mission_draw.sql` DROP 구문 없음 — 수동 롤백 필요 |
 | release.yml | git revert로 이전 커밋 복원 |
-| Fly.io 환경변수 | `flyctl secrets unset OPERATOR_SESSION_TTL_DAYS` |
 
 ---
 

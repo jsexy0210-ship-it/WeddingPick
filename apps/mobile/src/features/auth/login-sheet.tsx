@@ -149,6 +149,6 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   headline: { gap: Spacing.one },
-  card: { borderRadius: Radius.card, padding: Spacing.three },
+  card: { borderRadius: Radius.medium, padding: Spacing.three },
   actions: { gap: Spacing.two },
 });
