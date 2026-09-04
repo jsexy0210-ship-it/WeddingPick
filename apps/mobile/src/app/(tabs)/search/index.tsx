@@ -304,7 +304,7 @@ export default function SearchScreen() {
     setPickedCategory(vendor.category);
   }
 
-  // ─── 홈 화면 ──────────────────────────────────────────────────────────────
+  // ─── 홈 화면 ────────────────────────────────────────────
 
   function renderHome() {
     return (
@@ -414,7 +414,7 @@ export default function SearchScreen() {
     );
   }
 
-  // ─── 자동완성 ─────────────────────────────────────────────────────────────
+  // ─── 자동완성 ────────────────────────────────────────────
 
   function renderSuggestions() {
     if (suggestions.length === 0) return null;
@@ -443,7 +443,7 @@ export default function SearchScreen() {
     );
   }
 
-  // ─── 결과 화면 ────────────────────────────────────────────────────────────
+  // ─── 결과 화면 ─────────────────────────────────────────
 
   /** 결과 카드 한 장. WP-SRCH-004 스펙. */
   function renderVendorCard(item: VendorSummary) {
@@ -490,7 +490,7 @@ export default function SearchScreen() {
           {/* 확인된 정보 · 지역 */}
           <ThemedText type="t7" themeColor="textAssistive" numberOfLines={1} style={styles.cardMeta}>
             {isCollecting
-              ? `아직 정보가 적어요 · ${item.paidPrice.count}건 · ${item.region}`
+              ? `${STILL_COLLECTING} · ${item.region}`
               : isLimited
                 ? `${NOT_ENOUGH_DATA} · ${item.paidPrice.count}건 · ${item.region}`
                 : `확인된 정보 ${item.paidPrice.count}건 · ${item.region}`}
@@ -717,7 +717,7 @@ export default function SearchScreen() {
     );
   }
 
-  // ─── 렌더 ─────────────────────────────────────────────────────────────────
+  // ─── 렌더 ────────────────────────────────────────────
 
   return (
     <ThemedView style={styles.container}>
@@ -769,7 +769,7 @@ export default function SearchScreen() {
             ) : null}
           </View>
 
-          {/* 자동완성 — 입력 중에 뜬다 */}
+          {/* 자동완성 — 입력 중에 뜸다 */}
           {renderSuggestions()}
 
           {/* 결과 모드 지도/목록 토글 */}
@@ -839,7 +839,7 @@ function SearchIcon({ color }: { color: string }) {
   );
 }
 
-// ─── 레이아웃 상수 ──────────────────────────────────────────────────────────
+// ─── 레이아웃 상수 ────────────────────────────────────────────
 
 // 핸드오프: 결과 카드 이미지 높이 168px, 2:1 비율 유지
 const CARD_IMAGE_HEIGHT = 168;
