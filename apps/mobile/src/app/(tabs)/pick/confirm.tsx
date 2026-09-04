@@ -52,23 +52,15 @@ export default function PickConfirmScreen() {
   function playCheckPop() {
     /*
       CLAUDE.md §7: 체크 팝 — scale 0 → 1.18 → 1, 460ms,
-      cubic-bezier(.34,1.56,.64,1). React Native Animated에서 spring으로
-      같은 효과를 낸다. Easing.elastic(1.2)은 과탄성 곡선으로 1.18→1을 흉내낸다.
+      cubic-bezier(.34,1.56,.64,1). done.tsx(WP-PICK-006)와 동일한 단일 timing으로
+      구현한다 — bezier의 Y값이 1을 넘어 1.18→1 overshoot을 자연스럽게 만든다.
     */
-    Animated.sequence([
-      Animated.timing(markScale, {
-        toValue: 1.18,
-        duration: 300,
-        easing: Easing.out(Easing.back(2)),
-        useNativeDriver: true,
-      }),
-      Animated.timing(markScale, {
-        toValue: 1,
-        duration: 160,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-    ]).start();
+    Animated.timing(markScale, {
+      toValue: 1,
+      duration: 460,
+      easing: Easing.bezier(0.34, 1.56, 0.64, 1),
+      useNativeDriver: true,
+    }).start();
   }
 
   async function decide() {

@@ -10,12 +10,13 @@ import {
   FontSize,
   Layout,
   LineHeight,
-  LoadingView,
+  MaxContentWidth,
   Radius,
   Skeleton,
   Spacing,
   ThemedText,
   ThemedView,
+  readWebInteractionState,
   useTheme,
 } from '@weddingpick/ui';
 
@@ -209,41 +210,59 @@ export default function PickHistoryScreen() {
               )}
 
               {/* Add candidate CTA */}
-              <Pressable
-                style={({ pressed }) => [
-                  styles.addCta,
-                  { borderColor: theme.border },
-                  pressed && { opacity: 0.6 },
-                ]}
+              <DashedCta
+                label={S['cta.addCandidate']}
+                labelColor="tint"
                 onPress={() => handleAddCandidate(group.category)}
-                hitSlop={8}
-              >
-                <ThemedText themeColor="tint" style={styles.addCtaText}>
-                  {S['cta.addCandidate']}
-                </ThemedText>
-              </Pressable>
+              />
             </View>
           );
         })}
 
         {/* 제거된 후보 링크 — 실제로 제거된 항목이 있을 때만 노출 */}
         {hasRemoved && (
-          <Pressable
-            style={({ pressed }) => [
-              styles.addCta,
-              { borderColor: theme.border },
-              pressed && { opacity: 0.6 },
-            ]}
+          <DashedCta
+            label="제거된 후보 보기"
+            labelColor="textSecondary"
             onPress={() => router.push('/(tabs)/pick/removed' as never)}
-            hitSlop={8}
-          >
-            <ThemedText themeColor="textSecondary" style={styles.addCtaText}>
-              제거된 후보 보기
-            </ThemedText>
-          </Pressable>
+          />
         )}
       </ScrollView>
     </ThemedView>
+  );
+}
+
+function DashedCta({
+  label,
+  labelColor,
+  onPress,
+}: {
+  label: string;
+  labelColor: 'tint' | 'textSecondary';
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+  const styles = makeStyles(theme);
+
+  return (
+    <Pressable
+      style={(state) => {
+        const { pressed, hovered, focused } = readWebInteractionState(state);
+        return [
+          styles.addCta,
+          { borderColor: theme.border },
+          pressed && { opacity: 0.6 },
+          !pressed && hovered ? { backgroundColor: theme.backgroundSelected } : null,
+          focused ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: -2 } : null,
+        ];
+      }}
+      onPress={onPress}
+      hitSlop={8}
+    >
+      <ThemedText themeColor={labelColor} style={styles.addCtaText}>
+        {label}
+      </ThemedText>
+    </Pressable>
   );
 }
 
@@ -254,6 +273,9 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       paddingHorizontal: Layout.gutter,
       paddingTop: Spacing.four,
       paddingBottom: Spacing.six,
+      maxWidth: MaxContentWidth,
+      alignSelf: 'center',
+      width: '100%',
     },
     categoryBlock: {
       marginBottom: Layout.sectionGap,

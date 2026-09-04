@@ -9,7 +9,7 @@ import {
   FontSize,
   Layout,
   LineHeight,
-  LoadingView,
+  MaxContentWidth,
   Radius,
   Skeleton,
   Spacing,
@@ -143,6 +143,9 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       paddingHorizontal: Layout.gutter,
       paddingTop: Spacing.four,
       paddingBottom: Spacing.six,
+      maxWidth: MaxContentWidth,
+      alignSelf: 'center',
+      width: '100%',
     },
     categoryBlock: {
       marginBottom: Layout.sectionGap,

@@ -19,6 +19,7 @@ import {
   Spacing,
   ThemedText,
   ThemedView,
+  readWebInteractionState,
   useTheme,
 } from '@weddingpick/ui';
 import {
@@ -44,7 +45,6 @@ function CandidateCardSkeleton() {
 }
 
 export default function CategoryPickScreen() {
-  const theme = useTheme();
   const { category } = useLocalSearchParams<{ category: string }>();
 
   const [weddingId, setWeddingId] = useState<string | null>(null);
@@ -184,81 +184,18 @@ export default function CategoryPickScreen() {
               onAction={() => router.push({ pathname: '/search', params: { category } })}
             />
           ) : (
-            candidates.map((candidate) => {
-              const isDecidedVendor = candidate.vendorId === decidedVendorId;
-              return (
-                <Pressable
-                  key={candidate.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${candidate.vendorName} 상세 보기`}
-                  onPress={() => router.push(`/search/${candidate.vendorId}`)}
-                >
-                  <ThemedView
-                    type="backgroundElement"
-                    style={[
-                      styles.card,
-                      isDecidedVendor && { borderColor: theme.tint, borderWidth: 2 },
-                    ]}
-                  >
-                    <ThemedView style={styles.cardHeader}>
-                      <ThemedText type="t5" numberOfLines={1} style={styles.cardName}>
-                        {candidate.vendorName}
-                      </ThemedText>
-                      {isDecidedVendor && (
-                        <ThemedView
-                          style={[styles.decidedBadge, { backgroundColor: theme.tint }]}
-                        >
-                          <ThemedText type="badge" style={{ color: theme.onTint }}>
-                            결정
-                          </ThemedText>
-                        </ThemedView>
-                      )}
-                      {candidate.addedByPartner && !isDecidedVendor && (
-                        <ThemedView
-                          style={[styles.partnerBadge, { backgroundColor: theme.tintSubtle }]}
-                        >
-                          <ThemedText type="badge" themeColor="tint">
-                            둘 다 Pick
-                          </ThemedText>
-                        </ThemedView>
-                      )}
-                    </ThemedView>
-
-                    <ThemedText type="t7" themeColor="textSecondary">
-                      {candidate.region}
-                    </ThemedText>
-
-                    {candidate.note ? (
-                      <ThemedText type="t7" themeColor="textAssistive" numberOfLines={2}>
-                        {candidate.note}
-                      </ThemedText>
-                    ) : null}
-
-                    {/* CTA */}
-                    {!isDecided && (
-                      <ThemedView style={styles.cardActions}>
-                        <ActionButton
-                          variant="secondary"
-                          size="large"
-                          label="빼기"
-                          disabled={removing === candidate.id}
-                          onPress={() => void remove(candidate)}
-                        />
-                        <ThemedView style={styles.decideBtn}>
-                          <ActionButton
-                            variant="primary"
-                            size="large"
-                            label={deciding === candidate.id ? '정하는 중' : '최종 결정'}
-                            disabled={deciding === candidate.id}
-                            onPress={() => void decide(candidate)}
-                          />
-                        </ThemedView>
-                      </ThemedView>
-                    )}
-                  </ThemedView>
-                </Pressable>
-              );
-            })
+            candidates.map((candidate) => (
+              <CandidateCard
+                key={candidate.id}
+                candidate={candidate}
+                isDecidedVendor={candidate.vendorId === decidedVendorId}
+                isDecided={isDecided}
+                deciding={deciding === candidate.id}
+                removing={removing === candidate.id}
+                onDecide={() => void decide(candidate)}
+                onRemove={() => void remove(candidate)}
+              />
+            ))
           )}
 
           {/* 비교하기 */}
@@ -280,6 +217,104 @@ export default function CategoryPickScreen() {
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
+  );
+}
+
+function CandidateCard({
+  candidate,
+  isDecidedVendor,
+  isDecided,
+  deciding,
+  removing,
+  onDecide,
+  onRemove,
+}: {
+  candidate: VendorCandidate;
+  isDecidedVendor: boolean;
+  isDecided: boolean;
+  deciding: boolean;
+  removing: boolean;
+  onDecide: () => void;
+  onRemove: () => void;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${candidate.vendorName} 상세 보기`}
+      onPress={() => router.push(`/search/${candidate.vendorId}`)}>
+      {(state) => {
+        const { hovered, focused } = readWebInteractionState(state);
+        return (
+          <ThemedView
+            type="backgroundElement"
+            style={[
+              styles.card,
+              isDecidedVendor && { borderColor: theme.tint, borderWidth: 2 },
+              hovered ? { backgroundColor: theme.backgroundSelected } : null,
+              focused ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: -2 } : null,
+            ]}
+          >
+            <ThemedView style={styles.cardHeader}>
+              <ThemedText type="t5" numberOfLines={1} style={styles.cardName}>
+                {candidate.vendorName}
+              </ThemedText>
+              {isDecidedVendor && (
+                <ThemedView
+                  style={[styles.decidedBadge, { backgroundColor: theme.tint }]}
+                >
+                  <ThemedText type="badge" style={{ color: theme.onTint }}>
+                    결정
+                  </ThemedText>
+                </ThemedView>
+              )}
+              {candidate.addedByPartner && !isDecidedVendor && (
+                <ThemedView
+                  style={[styles.partnerBadge, { backgroundColor: theme.tintSubtle }]}
+                >
+                  <ThemedText type="badge" themeColor="tint">
+                    둘 다 Pick
+                  </ThemedText>
+                </ThemedView>
+              )}
+            </ThemedView>
+
+            <ThemedText type="t7" themeColor="textSecondary">
+              {candidate.region}
+            </ThemedText>
+
+            {candidate.note ? (
+              <ThemedText type="t7" themeColor="textAssistive" numberOfLines={2}>
+                {candidate.note}
+              </ThemedText>
+            ) : null}
+
+            {/* CTA */}
+            {!isDecided && (
+              <ThemedView style={styles.cardActions}>
+                <ActionButton
+                  variant="secondary"
+                  size="large"
+                  label="빼기"
+                  disabled={removing}
+                  onPress={onRemove}
+                />
+                <ThemedView style={styles.decideBtn}>
+                  <ActionButton
+                    variant="primary"
+                    size="large"
+                    label={deciding ? '정하는 중' : '최종 결정'}
+                    disabled={deciding}
+                    onPress={onDecide}
+                  />
+                </ThemedView>
+              </ThemedView>
+            )}
+          </ThemedView>
+        );
+      }}
+    </Pressable>
   );
 }
 
