@@ -736,8 +736,11 @@ async function loadConditionStats(
         source_url: string | null;
         is_representative: boolean;
         use_contain: boolean;
+        copyright_note: string | null;
+        verified_at: Date | null;
       }>(
-        `SELECT id, storage_key, source_url, is_representative, use_contain
+        `SELECT id, storage_key, source_url, is_representative, use_contain,
+                copyright_note, verified_at
          FROM structured.vendor_images
          WHERE vendor_id = $1 AND status = 'approved'
          ORDER BY is_representative DESC, created_at ASC`,
@@ -750,6 +753,8 @@ async function loadConditionStats(
           url: row.source_url ?? (await context.storage.getPublicUrl(row.storage_key!, 3600)),
           isRepresentative: row.is_representative,
           useContain: row.use_contain,
+          sourceNote: row.copyright_note,
+          verifiedAt: row.verified_at ? row.verified_at.toISOString() : null,
         }))
       );
 
