@@ -1,3 +1,4 @@
+import { socialMeta, SHARE_TITLE, SHARE_DESCRIPTION } from './social-meta';
 /**
  * 웨딩픽 랜딩 v4 — 마케팅 랜딩 페이지.
  *
@@ -347,12 +348,9 @@ export function renderLandingV4(): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>웨딩픽 — 확인하고 비교해서 골라요</title>
-<meta name="description" content="웨딩픽이 먼저 골라주고 사용자는 비교해서 Pick해요. 확인된 제보 금액으로 예산에 맞는 웨딩업체를 찾아보세요.">
-<meta property="og:title" content="웨딩픽 — 확인하고 비교해서 골라요">
-<meta property="og:description" content="웨딩픽이 먼저 골라주고 사용자는 비교해서 Pick해요.">
-<meta property="og:type" content="website">
-<meta property="og:locale" content="ko_KR">
+<title>${SHARE_TITLE}</title>
+<meta name="description" content="${SHARE_DESCRIPTION}">
+${socialMeta()}
 ${faviconTags()}
 <style>
 *,::before,::after{box-sizing:border-box}

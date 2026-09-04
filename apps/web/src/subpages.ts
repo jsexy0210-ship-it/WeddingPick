@@ -1,3 +1,4 @@
+import { socialMeta } from './social-meta';
 /**
  * 웨딩픽 랜딩 하위페이지 5종.
  *
@@ -164,6 +165,7 @@ a{color:inherit}
 `.trim();
 
 function subDocument(opts: {
+  path: string;
   title: string;
   description: string;
   activePath: string | null;
@@ -177,9 +179,7 @@ function subDocument(opts: {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(opts.title)} — 웨딩픽</title>
 <meta name="description" content="${esc(opts.description)}">
-<meta property="og:title" content="${esc(opts.title)} — 웨딩픽">
-<meta property="og:type" content="website">
-<meta property="og:locale" content="ko_KR">
+${socialMeta(opts.path, opts.title + " — 웨딩픽", opts.description)}
 ${faviconTags()}
 <style>${BASE_STYLE}</style>
 </head>
@@ -266,6 +266,7 @@ export function renderIntroPage(): string {
   </div>`;
 
   return subDocument({
+    path: "/intro.html",
     title: '서비스 소개',
     description: '웨딩픽이 먼저 골라주고 사용자는 비교해서 Pick하는 서비스예요.',
     activePath: '/intro.html',
@@ -329,6 +330,7 @@ export function renderFaqPage(): string {
   </div>`;
 
   return subDocument({
+    path: "/faq.html",
     title: '자주 묻는 질문',
     description: '웨딩픽 서비스에 대해 자주 묻는 질문과 답변을 확인하세요.',
     activePath: '/faq.html',
@@ -414,6 +416,7 @@ export function renderSupportPage(): string {
   </div>`;
 
   return subDocument({
+    path: "/support.html",
     title: '고객지원',
     description: '웨딩픽 서비스 이용 중 불편한 점이 있으시면 고객센터로 문의해주세요.',
     activePath: '/support.html',
@@ -474,6 +477,7 @@ function legalDocument(articles: TermsArticle[]): string {
 
 export function renderTermsPage(): string {
   return subDocument({
+    path: "/terms.html",
     title: '이용약관',
     description: '웨딩픽 서비스 이용약관을 확인하세요.',
     activePath: null,
@@ -582,6 +586,7 @@ function privacyDocument(sections: PrivacySection[]): string {
 
 export function renderPrivacyPage(): string {
   return subDocument({
+    path: "/privacy.html",
     title: '개인정보처리방침',
     description: '웨딩픽 개인정보 처리방침을 확인하세요.',
     activePath: null,

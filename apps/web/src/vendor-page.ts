@@ -263,6 +263,7 @@ export function renderVendorPage(vendor: VendorDetail): string {
   const where = [VENDOR_CATEGORY_LABEL[vendor.category], vendor.region].join(' · ');
 
   return siteDocument({
+    path: `/v/${encodeURIComponent(vendor.id)}.html`,
     title: `${vendor.name} — ${SITE.name}`,
     description: `${vendor.name} · ${where}. ${vendor.prices.paidPrice.caption}`,
     current: null,

@@ -55,6 +55,28 @@
 
 ## 진행 중
 
+### 웹 링크 공유 미리보기 (2026-09-04)
+
+- 최신 main `7a1ffce` 기준 기존 OG를 공통 `apps/web/src/social-meta.ts`로 통합.
+  공개 페이지별 OG URL·이미지 및 Twitter large image 카드 적용, 기존 favicon/manifest 유지.
+- 공유 이미지: `apps/web/public/assets/weddingpick-og.png` (1200×630), 편집 원본 SVG 동봉.
+  `spec/tokens.json` 공식 Pick Mark path 및 Coral 사용. 핵심 요소를 중앙 안전영역에 배치.
+- 실제 접속 가능한 웹은 `https://weddingpick-web.onrender.com` (HTTP 200).
+  배포 설정의 `weddingpick.kr`은 공용 DNS 8.8.8.8에서도 NXDOMAIN으로 확인되어 OG에 사용하지 않음.
+- 로컬 웹 타입 검사 및 테스트 49개 통과. 실제 build 함수로 공개 HTML의 필수 태그 1회 노출,
+  페이지별 URL, 이미지 규격, 기존 아이콘 파일 보존 검증. 이미지 시각 검수 완료.
+- 시스템 Node에서 빌드/테스트 프로세스가 비정상 종료되어 번들 Node로 테스트·build 함수 검증.
+  기존 main 문구 검사 위반 3건(landing-v4.ts/subpages.ts)은 이번 OG 변경과 무관하게 남아 있음.
+- 완료: PR #64 main 병합 (`706c556`), CI `33847125953` 전체 성공, Render 웹 배포 완료.
+- 2026-09-04 운영 검증: 일반·kakaotalk-scrap·Slackbot User-Agent 모두 HTTP 200.
+  HTML source에 요청한 OG/Twitter 태그 9개가 각각 1회 노출되고 지정 title/description 일치.
+- `https://weddingpick-web.onrender.com/assets/weddingpick-og.png` 인증 없이 HTTP 200,
+  image/png, 1200×630. 브라우저 직접 열기 및 이미지 표시 확인. 검수 PNG와 운영 바이트 일치.
+  SHA256: `40cf031d1d5115aac9ce907cc973826d10650a71214148d2c75e459b53e9a6e7`.
+- 운영 favicon-32.png·apple-touch-icon.png·site.webmanifest 모두 HTTP 200.
+- 남은 확인: 실제 메신저 앱 내부 미리보기/캐시 갱신 미검증.
+  weddingpick.kr DNS 연결 완료 후 SITE_ORIGIN 변경 및 재검증 필요.
+
 ### 홍보 자동화 파이프라인 (2026-09-04)
 
 - 범위: 출시 후 사용할 홍보 포맷과 자동화 파이프라인 준비. 실제 외부 게시 없음. dry_run만 허용.

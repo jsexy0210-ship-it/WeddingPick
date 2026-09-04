@@ -194,6 +194,7 @@ export function renderHomePage(data: SiteData): string {
     ${howItWorks()}`;
 
   return siteDocument({
+    path: '/search.html',
     title: `${SITE.name} — ${SITE.lead}`,
     description: SITE.lead,
     current: '/',
