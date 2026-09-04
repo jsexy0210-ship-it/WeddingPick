@@ -1,42 +1,37 @@
 import type { CandidateListResponse, CurrentUser } from '@weddingpick/api-contract';
 import {
-  CANNOT_COMPARE,
-  PREPARATION_STATE_LABEL,
-  TERMS,
+  VENDOR_CATEGORIES,
+  VENDOR_CATEGORY_LABEL,
   type VendorCategory,
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
 
 import {
-  ActionButton,
   Layout,
   MaxContentWidth,
+  ProgressBar,
   Radius,
-  Spacing,
   ThemedText,
   ThemedView,
+  VendorImage,
+  type VendorCategory as UIVendorCategory,
   useTheme,
 } from '@weddingpick/ui';
-import {
-  decideCategory,
-  getCurrentUser,
-  listCandidates,
-  removeCandidate,
-  removeDecision,
-} from '@/api/client';
+import { getCurrentUser, listCandidates } from '@/api/client';
 
 /**
- * Pick. 통합정책 v3.2 §6.
+ * Pick 홈 · WP-PICK-001.
  *
- * `관심업체`를 대체한다 — 이름만 바꾼 것이 아니라 **끝이 생겼다.** 예전에는
- * 담아두는 것으로 끝났고 목록은 시간이 지나도 줄지 않았다. 이제 업종마다 하나를
- * 정하면 그 업종이 닫히고, 홈의 진행률이 그만큼 올라간다.
+ * 카테고리별 진행 상태 + 배우자와 둘 다 고른 곳을 한눈에 보는 화면.
+ * 이 화면에서 업체를 결정하지 않는다 — 카테고리 화면으로 들어가서 결정한다.
  *
- * 화면은 업종별로 나눈다. 서른 곳을 한 줄로 늘어놓으면 무엇을 견주는 중인지
- * 보이지 않고, 비교는 같은 업종끼리만 뜻이 있다.
+ * 두 상태:
+ *   1. 후보 있음 — 진행 요약 + 카테고리 목록 + 둘 다 고른 곳
+ *   2. 비어 있음 — 안내 + 웨딩홀 제안 카드 + 빈 카테고리 목록
  */
 export default function PickScreen() {
   const theme = useTheme();
@@ -45,15 +40,14 @@ export default function PickScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
+    setError(null);
     getCurrentUser()
       .then(async (current) => {
         setMe(current);
-
         if (!current.weddingId) {
           setPage(null);
           return;
         }
-
         setPage(await listCandidates(current.weddingId));
       })
       .catch((caught: Error) => setError(caught.message));
@@ -61,237 +55,500 @@ export default function PickScreen() {
 
   useEffect(load, [load]);
 
-  const weddingId = me?.weddingId ?? null;
+  // 배우자와 둘 다 고른 곳: addedByPartner=true인 후보가 있는 첫 번째 그룹
+  const sharedGroup = page?.groups.find((g) => g.candidates.some((c) => c.addedByPartner));
+  const sharedCandidates = sharedGroup?.candidates.filter((c) => c.addedByPartner) ?? [];
 
-  async function decide(category: VendorCategory, vendorId: string, vendorName: string) {
-    if (!weddingId) return;
+  const hasAnyPick = (page?.total ?? 0) > 0;
 
-    try {
-      await decideCategory(weddingId, { category, vendorId });
-      load();
-    } catch {
-      Alert.alert('정하지 못했어요', `${vendorName}으로 정하지 못했어요. 잠시 후 다시 시도해주세요.`);
-    }
-  }
+  return (
+    <ThemedView style={styles.root}>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={[styles.wrapper, { maxWidth: MaxContentWidth }]}>
+          {/* ── 헤더 56px (고정) ── */}
+          <View style={[styles.header, { borderBottomColor: theme.border }]}>
+            <ThemedText style={styles.headerTitle}>Pick</ThemedText>
+            {me?.spouseLinked ? (
+              <View style={styles.avatars}>
+                <View style={[styles.avatar, { backgroundColor: theme.tintSubtle }]}>
+                  <ThemedText style={[styles.avatarInitial, { color: theme.tint }]}>
+                    {me.displayName?.[0] ?? 'MY'}
+                  </ThemedText>
+                </View>
+                <View style={[styles.avatar, styles.avatarPartner, { backgroundColor: theme.backgroundSelected }]}>
+                  <ThemedText style={[styles.avatarInitial, { color: theme.textSecondary }]}>
+                    배
+                  </ThemedText>
+                </View>
+              </View>
+            ) : null}
+          </View>
 
-  async function undo(category: VendorCategory) {
-    if (!weddingId) return;
+          {/* ── 스크롤 콘텐츠 ── */}
+          {!me ? (
+            <View style={styles.loadingCenter}>
+              <ActivityIndicator color={theme.tint} />
+            </View>
+          ) : error ? (
+            <ScrollView contentContainerStyle={styles.scroll}>
+              <View style={styles.errorBox}>
+                <ThemedText type="t2">불러오지 못했어요</ThemedText>
+                <ThemedText type="t6" themeColor="textSecondary">
+                  {error}
+                </ThemedText>
+                <Pressable onPress={load} accessibilityRole="button">
+                  <ThemedText type="t6" style={{ color: theme.tint }}>
+                    다시 시도
+                  </ThemedText>
+                </Pressable>
+              </View>
+            </ScrollView>
+          ) : !me.weddingId || !page || !hasAnyPick ? (
+            /* ── 비어 있음 상태 ── */
+            <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+              <EmptyHero />
+              <StarterSection />
+              <SectionBand />
+              <EmptyCategoryList />
+            </ScrollView>
+          ) : (
+            /* ── 후보 있음 상태 ── */
+            <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+              <ProgressSection page={page} />
+              <CategoryList page={page} />
+              {sharedCandidates.length > 0 && sharedGroup ? (
+                <>
+                  <SectionBand />
+                  <SharedSection
+                    group={sharedGroup}
+                    sharedCandidates={sharedCandidates}
+                  />
+                </>
+              ) : null}
+            </ScrollView>
+          )}
+        </View>
+      </SafeAreaView>
+    </ThemedView>
+  );
+}
 
-    try {
-      await removeDecision(weddingId, category);
-      load();
-    } catch {
-      Alert.alert('되돌리지 못했어요', '잠시 후 다시 시도해주세요.');
-    }
-  }
+/* ────────────────────────────────────────────
+   Progress Section — 진행 요약
+──────────────────────────────────────────── */
+function ProgressSection({ page }: { page: CandidateListResponse }) {
+  const { decided, total } = page.progress;
+  const ratio = total > 0 ? decided / total : 0;
 
-  function confirmRemove(candidateId: string, vendorName: string) {
-    // 파괴적 동작은 대상 이름을 함께 보여준다. 두 번째 카드를 지우려다 첫 번째를 지운다.
-    Alert.alert('Pick에서 뺄까요', `${vendorName}이 목록에서 사라져요`, [
-      { text: '그만두기', style: 'cancel' },
-      {
-        text: '빼기',
-        style: 'destructive',
-        onPress: () => {
-          if (!weddingId) return;
-
-          void removeCandidate(weddingId, candidateId).then(load).catch(() => undefined);
-        },
-      },
-    ]);
-  }
-
-  if (error) {
-    return (
-      <Frame>
-        <ThemedText type="t2">{TERMS.picked}</ThemedText>
-        <ThemedText type="t6" themeColor="textSecondary">
-          {error}
+  return (
+    <View style={styles.progressSection}>
+      <ThemedText type="t2">
+        {`${total}개 중 ${decided}개를\n결정했어요`}
+      </ThemedText>
+      <View style={styles.progressRow}>
+        <View style={styles.progressTrack}>
+          <ProgressBar value={ratio} height={6} />
+        </View>
+        <ThemedText
+          style={styles.progressLabel}
+          themeColor="textAssistive"
+          numeric>
+          {`${decided}/${total}`}
         </ThemedText>
-      </Frame>
-    );
-  }
+      </View>
+    </View>
+  );
+}
 
-  if (me && !me.weddingId) {
-    return (
-      <Frame>
-        <ThemedText type="t2">{TERMS.picked}</ThemedText>
-        <ThemedText type="t6" themeColor="textSecondary">
-          마음에 드는 곳을 Pick하면 여기 모여요. 검색에서 마음에 드는 곳을 찾아보세요
-        </ThemedText>
-        <ActionButton variant="primary" label="검색으로 가기" onPress={() => router.push('/search')} />
-      </Frame>
-    );
-  }
+/* ────────────────────────────────────────────
+   Category List — 카테고리별 진행 목록
+──────────────────────────────────────────── */
+function CategoryList({ page }: { page: CandidateListResponse }) {
+  const theme = useTheme();
+  const groupMap = new Map(page.groups.map((g) => [g.category, g]));
 
-  if (!page) {
-    return (
-      <Frame>
-        <ActivityIndicator color={theme.tint} />
-      </Frame>
-    );
+  return (
+    <View style={styles.categorySection}>
+      {VENDOR_CATEGORIES.map((cat, idx) => {
+        const group = groupMap.get(cat);
+        const label = VENDOR_CATEGORY_LABEL[cat];
+        const isLast = idx === VENDOR_CATEGORIES.length - 1;
+
+        let subText: string;
+        let actionText: string;
+        let actionColor: string;
+        let onPress: () => void;
+
+        if (!group) {
+          // 후보 없음
+          subText = '후보 없음';
+          actionText = '둘러보기';
+          actionColor = theme.textAssistive;
+          onPress = () => router.push({ pathname: '/search', params: { category: cat } });
+        } else if (group.state === 'decided') {
+          const decidedName =
+            group.candidates.find((c) => c.vendorId === group.decidedVendorId)?.vendorName ?? '';
+          subText = decidedName ? `${decidedName}으로 결정` : '결정 완료';
+          actionText = '결정 완료';
+          actionColor = theme.positive;
+          onPress = () =>
+            router.push({
+              pathname: '/pick/[category]',
+              params: { category: cat },
+            });
+        } else {
+          const sharedCount = group.candidates.filter((c) => c.addedByPartner).length;
+          const n = group.candidates.length;
+          const sharedNote =
+            sharedCount > 0 ? ` · 둘 다 고른 곳 ${sharedCount}` : n > 0 ? ' · 나만 골랐어요' : '';
+          subText = n > 0 ? `후보 ${n}곳${sharedNote}` : '후보 없음';
+          actionText = group.comparable ? '비교하기' : `${n}곳`;
+          actionColor = sharedCount > 0 ? theme.tint : theme.textAssistive;
+          onPress = () =>
+            router.push({
+              pathname: '/pick/[category]',
+              params: { category: cat },
+            });
+        }
+
+        return (
+          <View key={cat}>
+            <Pressable
+              onPress={onPress}
+              accessibilityRole="button"
+              accessibilityLabel={`${label} 카테고리 보기`}>
+              <View style={styles.categoryRow}>
+                <View style={styles.categoryInfo}>
+                  <ThemedText style={styles.categoryName}>{label}</ThemedText>
+                  <ThemedText style={styles.categorySub} themeColor="textAssistive">
+                    {subText}
+                  </ThemedText>
+                </View>
+                <ThemedText style={[styles.categoryAction, { color: actionColor }]}>
+                  {actionText}
+                </ThemedText>
+                <ChevronRight color={theme.textDisabled} />
+              </View>
+            </Pressable>
+            {!isLast ? <View style={[styles.divider, { backgroundColor: theme.border }]} /> : null}
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+/* ────────────────────────────────────────────
+   Shared Section — 둘 다 고른 곳
+──────────────────────────────────────────── */
+type GroupRow = CandidateListResponse['groups'][number];
+
+function SharedSection({
+  group,
+  sharedCandidates,
+}: {
+  group: GroupRow;
+  sharedCandidates: GroupRow['candidates'];
+}) {
+  const theme = useTheme();
+  const categoryLabel = VENDOR_CATEGORY_LABEL[group.category as VendorCategory] ?? group.categoryLabel;
+  const totalCount = group.candidates.length;
+
+  function goCompare() {
+    router.push({
+      pathname: '/pick/[category]',
+      params: { category: group.category },
+    });
   }
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.content}>
-          <ThemedText type="t2">{TERMS.picked}</ThemedText>
-
-          {/* 진행률. 분모는 업종 수다 — 많이 담을수록 떨어지는 숫자가 아니다. */}
-          <ThemedText type="t6" themeColor="textSecondary">
-            {page.progress.label}
-          </ThemedText>
-          <ThemedText
-            type="t7"
-            themeColor={page.limit - page.total > 0 ? 'textAssistive' : 'negative'}>
-            {page.limit - page.total > 0
-              ? `${page.limit - page.total}곳 더 담을 수 있어요`
-              : '최대로 담았어요. 더는 담을 수 없어요.'}
-          </ThemedText>
-
-          {page.groups.length === 0 ? (
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="t6" themeColor="textSecondary">
-                아직 Pick한 곳이 없어요. 검색에서 마음에 드는 곳을 찾아보세요
-              </ThemedText>
-              <ActionButton label="검색으로 가기" onPress={() => router.push('/search')} />
-            </ThemedView>
-          ) : null}
-
-          {page.groups.map((group) => (
-            <ThemedView key={group.category} type="backgroundElement" style={styles.card}>
-              <ThemedView type="backgroundElement" style={styles.cardHead}>
-                <ThemedText type="t5">
-                  {group.categoryLabel} {group.candidates.length}곳
-                </ThemedText>
-                <ThemedText
-                  type="badge"
-                  themeColor={group.state === 'decided' ? 'positive' : 'textAssistive'}>
-                  {group.stateLabel}
-                </ThemedText>
-              </ThemedView>
-
-              {group.candidates.map((candidate) => {
-                const decided = group.decidedVendorId === candidate.vendorId;
-
-                return (
-                  <ThemedView key={candidate.id} type="backgroundElement" style={styles.row}>
-                    {/*
-                      상세는 행을 눌러 간다. 버튼 셋을 한 행에 늘어놓으면 좁은
-                      화면에서 줄바꿈되면서 CTA 기준선이 어긋나고(v3.2 §11),
-                      무엇보다 이 행에서 가장 강한 행동은 정하기 하나다(v3.1 §1).
-                     */}
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={`${candidate.vendorName} 자세히 보기`}
-                      onPress={() => router.push(`/search/${candidate.vendorId}`)}>
-                    <ThemedView type="backgroundElement" style={styles.rowHead}>
-                      <ThemedText type="t6">{candidate.vendorName}</ThemedText>
-                      {decided ? (
-                        <ThemedText type="badge" themeColor="tint">
-                          여기로 정했어요
-                        </ThemedText>
-                      ) : null}
-                    </ThemedView>
-
-                    <ThemedText type="t7" themeColor="textSecondary">
-                      {candidate.region}
-                      {/* 상대가 마음에 들어 한 곳인지 알아야 이야기가 된다. */}
-                      {candidate.addedByPartner ? ' · 배우자가 Pick' : ''}
+    <View style={styles.sharedSection}>
+      <ThemedText style={styles.sectionTitle}>둘 다 고른 곳</ThemedText>
+      <View>
+        {sharedCandidates.map((candidate, idx) => {
+          const isLast = idx === sharedCandidates.length - 1;
+          return (
+            <View key={candidate.id}>
+              <Pressable
+                onPress={() => router.push(`/search/${candidate.vendorId}`)}
+                accessibilityRole="button"
+                accessibilityLabel={`${candidate.vendorName} 상세 보기`}>
+                <View style={styles.vendorRow}>
+                  <View style={styles.vendorThumb}>
+                    <VendorImage
+                      category={mapToUICategory(group.category as VendorCategory)}
+                      width={52}
+                      height={52}
+                      radius={Radius.small}
+                    />
+                  </View>
+                  <View style={styles.vendorInfo}>
+                    <ThemedText style={styles.vendorName} numberOfLines={1}>
+                      {candidate.vendorName}
                     </ThemedText>
-
-                    {candidate.note ? (
-                      <ThemedText type="t7" themeColor="textSecondary">
-                        {candidate.note}
-                      </ThemedText>
-                    ) : null}
-                    </Pressable>
-
-                    <ThemedView type="backgroundElement" style={styles.actions}>
-                      {/*
-                        결정은 업종에 하나다. 이미 정해둔 곳이면 되돌리기가 되고,
-                        아니면 이곳으로 정하기가 된다.
-                       */}
-                      {decided ? (
-                        <ActionButton label="결정 되돌리기" onPress={() => void undo(group.category)} />
-                      ) : (
-                        <ActionButton
-                          label="여기로 정하기"
-                          onPress={() =>
-                            void decide(group.category, candidate.vendorId, candidate.vendorName)
-                          }
-                        />
-                      )}
-                      <ActionButton
-                        label="빼기"
-                        onPress={() => confirmRemove(candidate.id, candidate.vendorName)}
-                      />
-                    </ThemedView>
-                  </ThemedView>
-                );
-              })}
-
-              {/*
-                비교는 같은 업종에서 두 곳부터다. 한 곳만 담아두고 눌렀을 때
-                "비교할 것이 없어요"가 뜨는 것보다, 그때까지 안 눌리는 편이 낫다.
-               */}
-              {group.comparable ? (
-                <ActionButton
-                  variant="primary"
-                  label={`${group.candidates.length}곳 비교`}
-                  onPress={() =>
-                    router.push(
-                      `/search/compare?ids=${group.candidates
-                        .map((candidate) => candidate.vendorId)
-                        .join(',')}`
-                    )
-                  }
-                />
-              ) : (
-                <ThemedText type="t7" themeColor="textAssistive">
-                  {CANNOT_COMPARE}
-                </ThemedText>
-              )}
-            </ThemedView>
-          ))}
-
-          {/* 다 정했으면 다음을 지어내지 않는다 — 서버가 null을 준다. */}
-          {page.nextCategory ? (
-            <ActionButton
-              label="다음 준비 찾아보기"
-              hint={`${PREPARATION_STATE_LABEL.before}인 업종이 남아 있어요`}
-              onPress={() => router.push(`/search?category=${page.nextCategory}`)}
-            />
-          ) : null}
-        </ScrollView>
-      </SafeAreaView>
-    </ThemedView>
+                    <ThemedText style={styles.vendorMeta} themeColor="textAssistive" numberOfLines={1}>
+                      {candidate.region}
+                    </ThemedText>
+                  </View>
+                </View>
+              </Pressable>
+              {!isLast ? (
+                <View style={[styles.divider, { backgroundColor: theme.border }]} />
+              ) : null}
+            </View>
+          );
+        })}
+      </View>
+      <Pressable
+        onPress={goCompare}
+        accessibilityRole="button"
+        style={[styles.ctaPrimary, { backgroundColor: theme.tint }]}>
+        <ThemedText style={[styles.ctaLabel, { color: theme.onTint }]}>
+          {`${categoryLabel} ${totalCount}곳 비교`}
+        </ThemedText>
+      </Pressable>
+    </View>
   );
 }
 
-function Frame({ children }: { children: React.ReactNode }) {
+/* ────────────────────────────────────────────
+   Empty State — 비어 있음
+──────────────────────────────────────────── */
+function EmptyHero() {
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.content}>{children}</ScrollView>
-      </SafeAreaView>
-    </ThemedView>
+    <View style={styles.emptyHero}>
+      <ThemedText type="t2">{'아직 Pick한 곳이\n없어요'}</ThemedText>
+      <ThemedText style={styles.emptySubtitle} themeColor="textSecondary">
+        마음에 드는 곳을 담아두면 여기서 비교할 수 있어요
+      </ThemedText>
+    </View>
   );
 }
 
+function StarterSection() {
+  const theme = useTheme();
+  // 웨딩홀 카테고리 기준으로 빠른 진입 제안
+  const starters: VendorCategory[] = ['hall', 'sdm', 'snap'];
+
+  return (
+    <View style={styles.starterSection}>
+      <ThemedText style={styles.sectionTitle}>웨딩홀부터 볼까요</ThemedText>
+      <View style={styles.starterGrid}>
+        {starters.map((cat) => (
+          <Pressable
+            key={cat}
+            onPress={() => router.push({ pathname: '/search', params: { category: cat } })}
+            accessibilityRole="button"
+            accessibilityLabel={`${VENDOR_CATEGORY_LABEL[cat]} 검색`}
+            style={styles.starterCard}>
+            <View style={styles.starterImage}>
+              <VendorImage
+                category={mapToUICategory(cat)}
+                width={undefined}
+                height={96}
+                radius={Radius.small}
+              />
+            </View>
+            <ThemedText style={styles.starterName} numberOfLines={1}>
+              {VENDOR_CATEGORY_LABEL[cat]}
+            </ThemedText>
+          </Pressable>
+        ))}
+      </View>
+      <Pressable
+        onPress={() => router.push({ pathname: '/search', params: { category: 'hall' } })}
+        accessibilityRole="button"
+        style={[styles.ctaPrimary, { backgroundColor: theme.tint }]}>
+        <ThemedText style={[styles.ctaLabel, { color: theme.onTint }]}>
+          웨딩홀 둘러보기
+        </ThemedText>
+      </Pressable>
+    </View>
+  );
+}
+
+function EmptyCategoryList() {
+  const theme = useTheme();
+  return (
+    <View style={styles.categorySection}>
+      {VENDOR_CATEGORIES.map((cat, idx) => {
+        const isLast = idx === VENDOR_CATEGORIES.length - 1;
+        return (
+          <View key={cat}>
+            <Pressable
+              onPress={() => router.push({ pathname: '/search', params: { category: cat } })}
+              accessibilityRole="button"
+              accessibilityLabel={`${VENDOR_CATEGORY_LABEL[cat]} 검색`}>
+              <View style={styles.categoryRow}>
+                <ThemedText style={[styles.categoryName, { flex: 1 }]}>
+                  {VENDOR_CATEGORY_LABEL[cat]}
+                </ThemedText>
+                <ThemedText style={styles.categorySub} themeColor="textAssistive">
+                  후보 없음
+                </ThemedText>
+                <ChevronRight color={theme.textDisabled} />
+              </View>
+            </Pressable>
+            {!isLast ? <View style={[styles.divider, { backgroundColor: theme.border }]} /> : null}
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+/* ────────────────────────────────────────────
+   공통 컴포넌트
+──────────────────────────────────────────── */
+function SectionBand() {
+  const theme = useTheme();
+  return (
+    <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} />
+  );
+}
+
+function ChevronRight({ color }: { color: string }) {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="m9 6 6 6-6 6"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+/* ────────────────────────────────────────────
+   카테고리 매핑 — 도메인 → UI 패키지
+──────────────────────────────────────────── */
+function mapToUICategory(cat: VendorCategory): UIVendorCategory {
+  switch (cat) {
+    case 'hall': return 'hall';
+    case 'sdm': return 'studio';
+    case 'snap': return 'video';
+    case 'planner_agency': return 'planner';
+    case 'goods': return 'etc';
+    case 'wedding_info_company': return 'etc';
+    default: return 'etc';
+  }
+}
+
+/* ────────────────────────────────────────────
+   스타일
+──────────────────────────────────────────── */
 const styles = StyleSheet.create({
-  container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
-  safeArea: { flex: 1, maxWidth: MaxContentWidth },
-  content: {
+  root: { flex: 1 },
+  safeArea: { flex: 1, alignItems: 'center' },
+  wrapper: { flex: 1, width: '100%' },
+  loadingCenter: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  scroll: { flexGrow: 1 },
+  errorBox: { padding: Layout.gutter, gap: 12 },
+
+  /* 헤더 */
+  header: {
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: Layout.gutter,
-    paddingTop: Spacing.five,
-    paddingBottom: Spacing.six,
-    gap: Spacing.three,
   },
-  card: { borderRadius: Radius.medium, padding: Spacing.four, gap: Spacing.three },
-  cardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  row: { gap: Spacing.one },
-  rowHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two, paddingTop: Spacing.one },
+  headerTitle: { fontSize: 20, lineHeight: 27, fontWeight: '700' },
+  avatars: { flexDirection: 'row', alignItems: 'center', gap: 0 },
+  avatar: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarPartner: { marginLeft: -10 },
+  avatarInitial: { fontSize: 13, fontWeight: '700' },
+
+  /* 진행 요약 */
+  progressSection: {
+    paddingTop: 12,
+    paddingHorizontal: Layout.gutter,
+    paddingBottom: 26,
+    gap: 12,
+  },
+  progressRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  progressTrack: { flex: 1 },
+  progressLabel: { fontSize: 14, lineHeight: 19, fontWeight: '700' },
+
+  /* 카테고리 목록 */
+  categorySection: {
+    paddingHorizontal: Layout.gutter,
+    paddingBottom: Layout.sectionGap,
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: Layout.rowMinHeight,
+    paddingVertical: 14,
+  },
+  categoryInfo: { flex: 1, minWidth: 0, gap: 2 },
+  categoryName: { fontSize: 18, lineHeight: 24, fontWeight: '700' },
+  categorySub: { fontSize: 14, lineHeight: 19 },
+  categoryAction: {
+    fontSize: 16,
+    lineHeight: 22,
+    fontWeight: '700',
+    flexShrink: 0,
+  },
+  divider: { height: 1 },
+
+  /* 밴드 */
+  band: { height: Layout.sectionBand, marginBottom: Layout.sectionGap },
+
+  /* 둘 다 고른 곳 */
+  sharedSection: {
+    paddingHorizontal: Layout.gutter,
+    paddingBottom: Layout.sectionGap,
+    gap: 12,
+  },
+  sectionTitle: { fontSize: 20, lineHeight: 27, fontWeight: '700' },
+  vendorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: Layout.rowMinHeight,
+    paddingVertical: 12,
+  },
+  vendorThumb: { width: 52, height: 52, borderRadius: Radius.small, overflow: 'hidden' },
+  vendorInfo: { flex: 1, minWidth: 0, gap: 3 },
+  vendorName: { fontSize: 18, lineHeight: 24, fontWeight: '700' },
+  vendorMeta: { fontSize: 14, lineHeight: 19 },
+
+  /* CTA */
+  ctaPrimary: {
+    height: 52,
+    borderRadius: Radius.small,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ctaLabel: { fontSize: 18, lineHeight: 24, fontWeight: '700' },
+
+  /* 빈 상태 */
+  emptyHero: {
+    paddingTop: 12,
+    paddingHorizontal: Layout.gutter,
+    paddingBottom: 26,
+    gap: 10,
+  },
+  emptySubtitle: { fontSize: 16, lineHeight: 24 },
+
+  /* 스타터 섹션 */
+  starterSection: {
+    paddingHorizontal: Layout.gutter,
+    paddingBottom: Layout.sectionGap,
+    gap: 12,
+  },
+  starterGrid: { flexDirection: 'row', gap: 10 },
+  starterCard: { flex: 1, minWidth: 0, gap: 8 },
+  starterImage: { width: '100%', height: 96, borderRadius: Radius.small, overflow: 'hidden' },
+  starterName: { fontSize: 16, lineHeight: 22, fontWeight: '700' },
 });
