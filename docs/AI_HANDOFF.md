@@ -12,7 +12,7 @@
 - `repository`: jsexy0210-ship-it/WeddingPickl
 - `verified_code_base`: 5b0479b (PR #53 squash merge 포함; 최신 원격 상태는 작업 시작 시 재확인)
 - `PR #51`: main 병합 완료 (7967312). 아래 세션의 CI 대기 표시는 당시 기록이다.
-- `policy_version`: 통합정책 v3.14
+- `policy_version`: 통합정책 v3.15
 - `dashboard`: https://claude.ai/code/artifact/a1307c11-f282-4cf2-a26d-e44bd083d7a9
 - `ios_handoff_artifact`: https://claude.ai/code/artifact/b8792fcd-fefe-4386-b24e-41d122e90a87
 - `screen_status_artifact`: https://claude.ai/code/artifact/b99277b7-3bdc-45dc-9614-a1310507df53
@@ -179,17 +179,27 @@ Render를 쓰지 않는다"고 적었었다 — `main`만 보고 판단해서 �
 
 ## 🚨 사용자 직접 조치 필요 (Claude 불가)
 
-### 8. 하이브리드 웹뷰 쉘 POC — Render 서비스 생성 필요 (2026-09-04)
+### 8. 하이브리드 웹뷰 쉘 POC — Render 서비스 생성 필요 (2026-09-04, 도메인 확정 2026-09-05)
 **상태**: `render.yaml`에 `weddingpick-app-web` 정의만 추가됨, 실제 서비스
 미생성.
 
-**필요한 조치**:
+**도메인 결정(2026-09-05, 사용자 확정)**: 커스텀 도메인을 별도로 붙이지 않고
+Render 기본 서브도메인 `weddingpick-app-web.onrender.com`을 그대로 쓴다. DNS
+등록·연결 작업이 필요 없다.
+
+**필요한 조치(사용자만 가능 — Claude는 Render 대시보드 접근 권한 없음)**:
 1. Render 대시보드에서 이 저장소의 Blueprint(`render.yaml`)를 동기화하거나
    `weddingpick-app-web` 정적 사이트를 수동 생성 (새 유료 리소스 — 생성
-   여부·요금제 확인 필요)
-2. 배포된 URL을 `apps/mobile/eas.json`의 `build.preview.env`와
+   여부·요금제 확인 필요). 이름을 `weddingpick-app-web`으로 두면 위 도메인이
+   그대로 나온다.
+2. 생성·배포가 끝나면 운영자는 브라우저로 `https://weddingpick-app-web.onrender.com`에
+   바로 접속해 `apps/mobile`의 실제 화면(react-native-web export)을 검수할 수
+   있다 — 이 용도만으로는 네이티브 앱 빌드나 아래 3번 설정이 필요 없다.
+
+**아래는 별개 작업(네이티브 앱이 자체적으로 이 URL을 웹뷰로 감싸게 하려는 경우에만 필요, 검수 목적이면 생략 가능)**:
+3. 배포된 URL을 `apps/mobile/eas.json`의 `build.preview.env`와
    `build.production.env`에 `EXPO_PUBLIC_WEB_URL`로 추가
-3. 실제로 웹뷰 쉘을 켜보려면 빌드 시 `EXPO_PUBLIC_WEBSHELL_SCREENS=home,pick`도
+4. 실제로 웹뷰 쉘을 켜보려면 빌드 시 `EXPO_PUBLIC_WEBSHELL_SCREENS=home,pick`도
    함께 넣어야 함(기본은 꺼짐)
 
 ### 0. 회원탈퇴 정책 — 최종 확정: 자동삭제 + 운영자 개입 (2026-09-02, 사용자 결정)
@@ -210,7 +220,7 @@ Render를 쓰지 않는다"고 적었었다 — `main`만 보고 판단해서 �
   PR #10의 구현으로 교체(PR #10 자체는 이미 이렇게 병합해뒀다).
 - `WITHDRAWAL_NOTICE`(§J-3)로 확정한 문구가 있다면 PR #10의 실제 탈퇴 화면 문구와
   맞는지 확인 — 서로 다른 문구가 화면에 남지 않게.
-- `docs/통합정책 v3.14`와 실제 탈퇴 구현의 정합성을 확인.
+- `docs/통합정책 v3.15`와 실제 탈퇴 구현의 정합성을 확인.
 
 ### 1. iOS EAS 빌드 수정 — 최우선
 `PROJECT_STATUS.md`의 최신 장애 기록은 Release #13의 Provisioning Profile에
@@ -556,7 +566,7 @@ WeddingPickl/
 │   ├── domain/              # 도메인 상수·정책 (terms.url, privacy.url 여기)
 │   └── ...
 ├── docs/
-│   ├── 통합정책 v3.14       # 현재 확정 기준 정책
+│   ├── 통합정책 v3.15       # 현재 확정 기준 정책
 │   ├── design-handoff/      # 디자인 핸드오프 (IA 176화면)
 │   ├── AI_HANDOFF.md        # 이 파일
 │   └── 05-product-spec.md   # Phase 1 제품 스펙 (A-01~A-18)
@@ -567,7 +577,7 @@ WeddingPickl/
 
 ## 정책 문서 참조
 
-기준: `docs/통합정책 v3.14`
+기준: `docs/통합정책 v3.15`
 코드와 정책이 충돌하면 **정책이 맞다.** 코드를 고친다.
 
 주요 섹션:
@@ -589,6 +599,10 @@ WeddingPickl/
 6. **[AI/사용자]** 카카오맵 전환 잔여 경로·의존성 정리, Android/iOS 외부 링크 실기기 검증 (위 6번)
 7. **[사용자]** 카카오 REST API 키 발급 → `scripts/geocode-vendors.mts` 실행해 업체 좌표 채우기
 8. **[AI]** 공통 Bottom Sheet 16종 인라인 처리 여부 확인
+9. **[사용자]** `weddingpick-app-web` Render 정적 사이트 생성(도메인 확정: 기본
+   서브도메인 `weddingpick-app-web.onrender.com` 그대로 사용, 2026-09-05) — 위
+   "사용자 직접 조치 필요" 8번 참고. 생성되면 운영자가 그 URL로 실제 앱 화면을
+   바로 검수할 수 있다.
 9. **[완료]** WP-PICK-006 결정 완료 화면(`pick/done.tsx`) 구현 — PR #51 포함
 
 ---

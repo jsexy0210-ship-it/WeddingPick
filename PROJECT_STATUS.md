@@ -25,6 +25,14 @@
 -   Naver Cloud Platform Object Storage: `weddingpick-test`
 -   웨딩픽 웹사이트: 서비스 웹·정책·지원 페이지
 -   Render: API 서버·운영 배포 기준 (`https://weddingpickl.onrender.com`)
+-   (2026-09-05) Render Blueprint(`render.yaml`) 최초 동기화로 `weddingpick-web`·
+    `weddingpick-admin`·`weddingpick-app-web`(실제 앱 화면 검수용, 하이브리드
+    웹뷰 정적 호스팅)이 free 플랜으로 배포됨. `weddingpick-api`는 위 운영 API
+    (`weddingpickl.onrender.com`)와 **별개인 신규 중복 서비스**로 함께 생성됨.
+    사용자 최종 결정: 삭제하지 않고 **스테이징 API로 활용** — `NODE_ENV=staging`,
+    `STORAGE_DRIVER=local`로 바꿔 S3 없이도 부팅되게 함(`render.yaml` 반영 완료).
+    `DATABASE_URL`은 아직 미설정 — Render 대시보드에서 수동 입력 필요(운영 Neon과
+    분리된 스테이징 DB 사용을 권장, 최종 결정은 사용자 몫).
 
 ## 완료
 
@@ -213,6 +221,9 @@
 
 ## 제품 범위 결정
 
+-   (2026-09-05) **플래너 기능·광고 제휴 기능을 삭제하기로 확정.** 우선순위는
+    P2(출시 전 처리 필요, P0·P1보다는 후순위) — 상세는 `CLAUDE.md`의 "정책 변경 —
+    2026-09-05" 절 참고. 착수 전 영향범위 조사·계획 보고가 선행되어야 한다.
 -   (2026-09-02) **초기 출시는 예식 당일까지만 지원한다.** 예식 완료(post-wedding)
     이후 단계의 화면·CTA·API는 이번 출시 범위 밖 — 사용자·업체 데이터가 어느
     정도 모인 뒤 운영자가 판단해 추가 lifecycle 정책을 안내한다. 상세 근거와
