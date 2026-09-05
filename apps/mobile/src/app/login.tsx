@@ -28,12 +28,22 @@ const REASONS = [
  * 이 화면이고, 로그인해야만 앱으로 넘어간다. `_layout.tsx`의 진입 로직이
  * 비로그인 상태면 항상 이 화면으로 보낸다 — 뒤에 아무것도 없으니 "나중에
  * 하기"로 건너뛸 수 없다.
+ *
+ * **카카오가 기본, 나머지는 "다른 방법으로 로그인" 뒤로 접는다** — 화면당
+ * Primary CTA는 1개다(CLAUDE.md §3). 카카오 자리에 개발용 대체가 들어온
+ * 경우(`isDevelopmentStandIn`)에는 그걸 기본 자리에 대신 놓는다 — 실제
+ * 제공자가 하나도 없는 개발 환경에서 로그인 버튼이 통째로 접힌 목록 뒤로
+ * 숨는 것을 막는다.
  */
 export default function LoginScreen() {
   const theme = useTheme();
   const { providers, error: loadError } = useAuthProviders();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showOthers, setShowOthers] = useState(false);
+
+  const featured = providers?.find((provider) => provider.provider === 'kakao') ?? providers?.[0] ?? null;
+  const others = providers?.filter((provider) => provider !== featured) ?? [];
 
   async function startSignIn(provider: AuthProvider) {
     if (busy) return;
@@ -104,24 +114,51 @@ export default function LoginScreen() {
             </ThemedView>
           ) : (
             <ThemedView style={styles.section}>
-              {providers.map((provider) => (
+              {featured ? (
                 <ActionButton
-                  key={provider.provider}
-                  variant={provider.isDevelopmentStandIn ? 'secondary' : 'primary'}
+                  key={featured.provider}
+                  variant="primary"
                   label={
-                    provider.isDevelopmentStandIn
-                      ? '개발용 로그인'
-                      : PROVIDER_LABEL[provider.provider]
+                    featured.isDevelopmentStandIn ? '개발용 로그인' : PROVIDER_LABEL[featured.provider]
                   }
                   hint={
-                    provider.isDevelopmentStandIn
+                    featured.isDevelopmentStandIn
                       ? '실제 애플·카카오 로그인이 아니에요. 개발 중인 서버에만 있어요'
                       : undefined
                   }
-                  disabled={busy || !canSignInWith(provider)}
-                  onPress={() => startSignIn(provider)}
+                  disabled={busy || !canSignInWith(featured)}
+                  onPress={() => startSignIn(featured)}
                 />
-              ))}
+              ) : null}
+
+              {others.length > 0 ? (
+                showOthers ? (
+                  others.map((provider) => (
+                    <ActionButton
+                      key={provider.provider}
+                      variant="secondary"
+                      label={
+                        provider.isDevelopmentStandIn
+                          ? '개발용 로그인'
+                          : PROVIDER_LABEL[provider.provider]
+                      }
+                      hint={
+                        provider.isDevelopmentStandIn
+                          ? '실제 애플·카카오 로그인이 아니에요. 개발 중인 서버에만 있어요'
+                          : undefined
+                      }
+                      disabled={busy || !canSignInWith(provider)}
+                      onPress={() => startSignIn(provider)}
+                    />
+                  ))
+                ) : (
+                  <ActionButton
+                    variant="secondary"
+                    label="다른 방법으로 로그인"
+                    onPress={() => setShowOthers(true)}
+                  />
+                )
+              ) : null}
             </ThemedView>
           )}
 
