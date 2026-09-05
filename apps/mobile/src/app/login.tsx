@@ -1,18 +1,10 @@
-import type { AuthProvider } from '@weddingpick/api-contract';
 import { router } from 'expo-router';
-import { useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
-import { getCurrentUser } from '@/api/client';
-import { completeAfterSignIn } from '@/features/auth/after-sign-in';
-import {
-  PROVIDER_LABEL,
-  canSignInWith,
-  signInWith,
-  useAuthProviders,
-} from '@/features/auth/providers';
+import { PROVIDER_LABEL, canSignInWith, useAuthProviders } from '@/features/auth/providers';
+import { useSignIn } from '@/features/auth/use-sign-in';
 
 /** 로그인이 무엇을 위한 것인지. 계정을 요구하는 이유를 먼저 말한다. */
 const REASONS = [
@@ -29,59 +21,19 @@ const REASONS = [
  * 비로그인 상태면 항상 이 화면으로 보낸다 — 뒤에 아무것도 없으니 "나중에
  * 하기"로 건너뛸 수 없다.
  *
- * **카카오가 기본, 나머지는 "다른 방법으로 로그인" 뒤로 접는다** — 화면당
- * Primary CTA는 1개다(CLAUDE.md §3). 카카오 자리에 개발용 대체가 들어온
- * 경우(`isDevelopmentStandIn`)에는 그걸 기본 자리에 대신 놓는다 — 실제
- * 제공자가 하나도 없는 개발 환경에서 로그인 버튼이 통째로 접힌 목록 뒤로
- * 숨는 것을 막는다.
+ * **카카오가 기본, 나머지는 "다른 방법으로 로그인" 화면(`/login-other`)으로
+ * 분리한다** — 화면당 Primary CTA는 1개다(CLAUDE.md §3). 카카오 자리에
+ * 개발용 대체가 들어온 경우(`isDevelopmentStandIn`)에는 그걸 기본 자리에
+ * 대신 놓는다 — 실제 제공자가 하나도 없는 개발 환경에서 로그인 버튼이
+ * 통째로 다음 화면 뒤로 숨는 것을 막는다.
  */
 export default function LoginScreen() {
   const theme = useTheme();
   const { providers, error: loadError } = useAuthProviders();
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [showOthers, setShowOthers] = useState(false);
+  const { signIn, busy, error } = useSignIn();
 
   const featured = providers?.find((provider) => provider.provider === 'kakao') ?? providers?.[0] ?? null;
   const others = providers?.filter((provider) => provider !== featured) ?? [];
-
-  async function startSignIn(provider: AuthProvider) {
-    if (busy) return;
-    setBusy(true);
-    setError(null);
-
-    try {
-      await signInWith(provider);
-      /*
-       * 로그인 전에 기기에 적어둔 최소 온보딩과 멈춰둔 Pick을 여기서도 마친다.
-       * 시트에서만 하면, 이 화면으로 로그인한 사람의 예식일은 서버에 영영 안 올라간다.
-       */
-      const after = await completeAfterSignIn();
-
-      /*
-       * 아직 가입이 끝나지 않았다(v3.13 §N-2). 여기서 그냥 돌아가면 서버가
-       * 모든 경로를 막은 계정으로 앱을 쓰게 되고, 사용자는 로그인이 됐는데
-       * 아무것도 안 되는 화면을 본다.
-       */
-      if (after.needsSignup) {
-        router.replace('/signup');
-
-        return;
-      }
-
-      /*
-       * 방금 만든 웨딩(완료 처리)이거나, 이전에 이미 만들어둔 계정으로 다시
-       * 로그인한 경우 둘 다 있다 — 서버에 다시 물어봐서 정한다.
-       */
-      const me = await getCurrentUser().catch(() => null);
-
-      router.replace(me?.setupComplete || after.savedWedding ? '/(tabs)' : '/setup');
-    } catch (caught) {
-      setError((caught as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
 
   return (
     <ThemedView style={styles.container}>
@@ -127,37 +79,17 @@ export default function LoginScreen() {
                       : undefined
                   }
                   disabled={busy || !canSignInWith(featured)}
-                  onPress={() => startSignIn(featured)}
+                  onPress={() => signIn(featured)}
                 />
               ) : null}
 
               {others.length > 0 ? (
-                showOthers ? (
-                  others.map((provider) => (
-                    <ActionButton
-                      key={provider.provider}
-                      variant="secondary"
-                      label={
-                        provider.isDevelopmentStandIn
-                          ? '개발용 로그인'
-                          : PROVIDER_LABEL[provider.provider]
-                      }
-                      hint={
-                        provider.isDevelopmentStandIn
-                          ? '실제 애플·카카오 로그인이 아니에요. 개발 중인 서버에만 있어요'
-                          : undefined
-                      }
-                      disabled={busy || !canSignInWith(provider)}
-                      onPress={() => startSignIn(provider)}
-                    />
-                  ))
-                ) : (
-                  <ActionButton
-                    variant="secondary"
-                    label="다른 방법으로 로그인"
-                    onPress={() => setShowOthers(true)}
-                  />
-                )
+                <ActionButton
+                  variant="secondary"
+                  label="다른 방법으로 로그인"
+                  disabled={busy}
+                  onPress={() => router.push('/login-other')}
+                />
               ) : null}
             </ThemedView>
           )}
