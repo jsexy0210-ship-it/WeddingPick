@@ -3,7 +3,7 @@ import { ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
-import { PROVIDER_LABEL, canSignInWith, useAuthProviders } from '@/features/auth/providers';
+import { PROVIDER_LABEL, canSignInWith, providerTone, useAuthProviders } from '@/features/auth/providers';
 import { useSignIn } from '@/features/auth/use-sign-in';
 
 /** 로그인이 무엇을 위한 것인지. 계정을 요구하는 이유를 먼저 말한다. */
@@ -70,6 +70,8 @@ export default function LoginScreen() {
                 <ActionButton
                   key={featured.provider}
                   variant="primary"
+                  size="xlarge"
+                  tone={providerTone(featured)}
                   label={
                     featured.isDevelopmentStandIn ? '개발용 로그인' : PROVIDER_LABEL[featured.provider]
                   }
@@ -86,6 +88,7 @@ export default function LoginScreen() {
               {others.length > 0 ? (
                 <ActionButton
                   variant="secondary"
+                  size="xlarge"
                   label="다른 방법으로 로그인"
                   disabled={busy}
                   onPress={() => router.push('/login-other')}

@@ -42,6 +42,7 @@ export {
   Radius,
   BottomTabInset,
   MaxContentWidth,
+  SocialColors,
   type ThemeColor,
 } from './theme';
 export { FontSize, LineHeight, type FontSizeToken } from './typography';

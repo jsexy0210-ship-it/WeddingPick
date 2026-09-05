@@ -2,7 +2,7 @@ import { ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
-import { PROVIDER_LABEL, canSignInWith, useAuthProviders } from '@/features/auth/providers';
+import { PROVIDER_LABEL, canSignInWith, providerTone, useAuthProviders } from '@/features/auth/providers';
 import { useSignIn } from '@/features/auth/use-sign-in';
 
 /**
@@ -44,6 +44,8 @@ export default function LoginOtherScreen() {
                 <ActionButton
                   key={provider.provider}
                   variant="secondary"
+                  size="xlarge"
+                  tone={providerTone(provider)}
                   label={
                     provider.isDevelopmentStandIn ? '개발용 로그인' : PROVIDER_LABEL[provider.provider]
                   }

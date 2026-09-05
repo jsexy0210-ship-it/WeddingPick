@@ -1,4 +1,5 @@
 import type { AuthProvider } from '@weddingpick/api-contract';
+import { SocialColors } from '@weddingpick/ui';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { AuthRequest, ResponseType, makeRedirectUri } from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
@@ -15,6 +16,18 @@ export const PROVIDER_LABEL = {
   google: 'Google로 계속하기',
   naver: '네이버로 계속하기',
 } as const;
+
+/**
+ * 로그인 버튼 색. 제공자 브랜드색은 앱 스킨과 무관하게 고정이다(`SocialColors`
+ * 참고) — `ActionButton`의 `tone`으로 그대로 넘긴다. 개발용 대체
+ * (`isDevelopmentStandIn`)는 실제 브랜드가 아니라서 여기 없다 — 그 경우
+ * 화면이 `tone`을 생략해 기존 테마색(secondary)으로 남는다.
+ */
+export function providerTone(provider: AuthProvider): (typeof SocialColors)[keyof typeof SocialColors] | undefined {
+  if (provider.isDevelopmentStandIn) return undefined;
+
+  return SocialColors[provider.provider];
+}
 
 const KAKAO_CLIENT_ID = process.env.EXPO_PUBLIC_KAKAO_CLIENT_ID;
 const GOOGLE_CLIENT_ID =
