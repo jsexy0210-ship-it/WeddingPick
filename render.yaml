@@ -45,6 +45,7 @@ services:
   - type: web
     name: weddingpick-api
     runtime: docker
+    plan: free
     dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /health
