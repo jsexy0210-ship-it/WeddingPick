@@ -1,8 +1,9 @@
-import { router } from 'expo-router';
+import { useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
+import { OtherLoginSheet } from '@/features/auth/other-login-sheet';
 import { PROVIDER_LABEL, canSignInWith, providerTone, useAuthProviders } from '@/features/auth/providers';
 import { useSignIn } from '@/features/auth/use-sign-in';
 
@@ -21,16 +22,18 @@ const REASONS = [
  * 비로그인 상태면 항상 이 화면으로 보낸다 — 뒤에 아무것도 없으니 "나중에
  * 하기"로 건너뛸 수 없다.
  *
- * **카카오가 기본, 나머지는 "다른 방법으로 로그인" 화면(`/login-other`)으로
- * 분리한다** — 화면당 Primary CTA는 1개다(CLAUDE.md §3). 카카오 자리에
- * 개발용 대체가 들어온 경우(`isDevelopmentStandIn`)에는 그걸 기본 자리에
- * 대신 놓는다 — 실제 제공자가 하나도 없는 개발 환경에서 로그인 버튼이
- * 통째로 다음 화면 뒤로 숨는 것을 막는다.
+ * **카카오가 기본, 나머지는 "다른 방법으로 로그인" 바텀시트로 분리한다** —
+ * 화면당 Primary CTA는 1개다(CLAUDE.md §3). 화면 이동이 아니라 시트인 이유는
+ * `features/auth/other-login-sheet.tsx` 참고. 카카오 자리에 개발용 대체가
+ * 들어온 경우(`isDevelopmentStandIn`)에는 그걸 기본 자리에 대신 놓는다 —
+ * 실제 제공자가 하나도 없는 개발 환경에서 로그인 버튼이 통째로 시트 뒤로
+ * 숨는 것을 막는다.
  */
 export default function LoginScreen() {
   const theme = useTheme();
   const { providers, error: loadError } = useAuthProviders();
   const { signIn, busy, error } = useSignIn();
+  const [showOthers, setShowOthers] = useState(false);
 
   const featured = providers?.find((provider) => provider.provider === 'kakao') ?? providers?.[0] ?? null;
   const others = providers?.filter((provider) => provider !== featured) ?? [];
@@ -91,7 +94,7 @@ export default function LoginScreen() {
                   size="xlarge"
                   label="다른 방법으로 로그인"
                   disabled={busy}
-                  onPress={() => router.push('/login-other')}
+                  onPress={() => setShowOthers(true)}
                 />
               ) : null}
             </ThemedView>
@@ -106,6 +109,15 @@ export default function LoginScreen() {
           ) : null}
         </ScrollView>
       </SafeAreaView>
+
+      <OtherLoginSheet
+        visible={showOthers}
+        providers={others}
+        busy={busy}
+        error={error}
+        onSelect={signIn}
+        onDismiss={() => setShowOthers(false)}
+      />
     </ThemedView>
   );
 }

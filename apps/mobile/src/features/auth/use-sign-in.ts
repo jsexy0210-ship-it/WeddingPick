@@ -7,9 +7,11 @@ import { completeAfterSignIn } from '@/features/auth/after-sign-in';
 import { signInWith } from '@/features/auth/providers';
 
 /**
- * 로그인 화면(`/login`)과 다른 방법으로 로그인 화면(`/login-other`)이 로그인
- * 완료 후 해야 하는 일은 똑같다 — 가입 미완료 처리, 멈춰둔 Pick 마무리,
- * 다음 화면 결정. 두 화면에 각각 적어두면 한쪽만 고쳐지는 날이 온다.
+ * `/login`의 카카오 버튼과, 그 화면이 띄우는 "다른 방법으로 로그인" 시트
+ * (`other-login-sheet.tsx`)가 로그인 완료 후 해야 하는 일은 똑같다 — 가입
+ * 미완료 처리, 멈춰둔 Pick 마무리, 다음 화면 결정. `/login`이 이 훅 하나만
+ * 만들어서 시트에 `onSelect`로 넘긴다 — 두 곳에 따로 적어두면 한쪽만
+ * 고쳐지는 날이 온다.
  */
 export function useSignIn() {
   const [error, setError] = useState<string | null>(null);
