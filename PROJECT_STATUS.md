@@ -31,8 +31,12 @@
     (`weddingpickl.onrender.com`)와 **별개인 신규 중복 서비스**로 함께 생성됨.
     사용자 최종 결정: 삭제하지 않고 **스테이징 API로 활용** — `NODE_ENV=staging`,
     `STORAGE_DRIVER=local`로 바꿔 S3 없이도 부팅되게 함(`render.yaml` 반영 완료).
-    `DATABASE_URL`은 아직 미설정 — Render 대시보드에서 수동 입력 필요(운영 Neon과
-    분리된 스테이징 DB 사용을 권장, 최종 결정은 사용자 몫).
+    Neon에 운영과 분리된 `weddingpick_staging` DB를 새로 만들고
+    `.github/workflows/db-migrate-staging.yml`(운영 `DATABASE_URL` secret과
+    분리된 `STAGING_DATABASE_URL` secret 사용)로 0001~0073 전체 적용 완료.
+    Render `weddingpick-api`에 해당 DB의 연결 문자열을 `DATABASE_URL`로 등록,
+    배포 후 `/health` 응답 `{"ok":true,"database":"ok"}` 확인 완료 —
+    **스테이징 API 정상 동작 확인됨(2026-09-05)**.
 
 ## 완료
 
