@@ -9,7 +9,6 @@ import {
   Layout,
   MaxContentWidth,
   Radius,
-  Skeleton,
   Spacing,
   ThemedText,
   ThemedView,
@@ -73,6 +72,21 @@ export default function CalendarScreen() {
   const [adding, setAdding] = useState<CalendarOption | null>(null);
   const [expo, setExpo] = useState<ExpoDetail | null>(null);
   const [loadError, setLoadError] = useState(false);
+  /**
+   * 웹 안내 문구 — `Alert.alert`는 react-native-web에서 아무 동작도 하지 않는
+   * 빈 구현이라, 웹에서는 캘린더 열기를 실패해도 사용자에게 아무 것도 보이지
+   * 않는다. 웹에서만 화면 안에 문구를 대신 띄운다.
+   */
+  const [webNotice, setWebNotice] = useState<string | null>(null);
+
+  /** 네이티브는 Alert, 웹은 화면 안 안내 문구로 갈라 보여준다. */
+  function notify(title: string, message: string) {
+    if (Platform.OS === 'web') {
+      setWebNotice(message);
+    } else {
+      Alert.alert(title, message);
+    }
+  }
 
   useEffect(() => {
     if (!expoId) return;
@@ -89,6 +103,7 @@ export default function CalendarScreen() {
 
   async function handleAdd(option: CalendarOption) {
     setAdding(option);
+    setWebNotice(null);
 
     try {
       if (option === 'google') {
@@ -101,13 +116,13 @@ export default function CalendarScreen() {
         });
         const canOpen = await Linking.canOpenURL(url);
         if (!canOpen) {
-          Alert.alert('열 수 없어요', 'Google 캘린더를 열 수 없어요. 브라우저가 설치되어 있는지 확인해주세요.');
+          notify('열 수 없어요', 'Google 캘린더를 열 수 없어요. 브라우저가 설치되어 있는지 확인해주세요.');
           return;
         }
         await Linking.openURL(url);
       } else if (option === 'apple') {
         if (Platform.OS !== 'ios') {
-          Alert.alert('지원 안 해요', 'Apple 캘린더는 iPhone에서만 쓸 수 있어요.');
+          notify('지원 안 해요', 'Apple 캘린더는 iPhone에서만 쓸 수 있어요.');
           return;
         }
         // .ics 데이터 URI를 열면 iOS가 캘린더 앱으로 바로 넘긴다 — 네이티브 모듈 불필요.
@@ -134,13 +149,13 @@ export default function CalendarScreen() {
         });
         const canOpen = await Linking.canOpenURL(url);
         if (!canOpen) {
-          Alert.alert('열 수 없어요', 'Outlook을 열 수 없어요.');
+          notify('열 수 없어요', 'Outlook을 열 수 없어요.');
           return;
         }
         await Linking.openURL(url);
       }
     } catch {
-      Alert.alert('오류', '캘린더를 열 수 없어요. 잠시 후 다시 시도해주세요.');
+      notify('오류', '캘린더를 열 수 없어요. 잠시 후 다시 시도해주세요.');
     } finally {
       setAdding(null);
     }
@@ -189,6 +204,15 @@ export default function CalendarScreen() {
             )}
           </ThemedView>
 
+          {/* 웹 안내 문구 — Alert가 뜨지 않는 웹에서 실패를 조용히 넘기지 않는다 */}
+          {webNotice ? (
+            <ThemedView type="backgroundElement" style={styles.card}>
+              <ThemedText type="t7" themeColor="negative">
+                {webNotice}
+              </ThemedText>
+            </ThemedView>
+          ) : null}
+
           {/* 캘린더 선택 */}
           <ThemedView style={styles.optionList}>
             {options.map((opt) => (
@@ -200,12 +224,14 @@ export default function CalendarScreen() {
             ))}
           </ThemedView>
 
-          {/* 권한 거부 안내 */}
-          <ThemedView type="backgroundElement" style={styles.card}>
-            <ThemedText type="t7" themeColor="textSecondary">
-              캘린더 앱이 열리지 않으면 설정에서 접근 권한을 허용해주세요
-            </ThemedText>
-          </ThemedView>
+          {/* 권한 거부 안내 — "설정" 앱 개념이 없는 웹에서는 보여주지 않는다 */}
+          {Platform.OS !== 'web' ? (
+            <ThemedView type="backgroundElement" style={styles.card}>
+              <ThemedText type="t7" themeColor="textSecondary">
+                캘린더 앱이 열리지 않으면 설정에서 접근 권한을 허용해주세요
+              </ThemedText>
+            </ThemedView>
+          ) : null}
 
           <ActionButton label="돌아가기" onPress={() => router.back()} />
         </ScrollView>

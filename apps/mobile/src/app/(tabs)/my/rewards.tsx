@@ -9,7 +9,7 @@ import {
   formatWeddingDate,
 } from '@weddingpick/domain';
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, Share, StyleSheet, TextInput } from 'react-native';
+import { ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -26,6 +26,7 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import { getMyMonthlyDraw, getMyRewards, redeemReferral, submitPromotion } from '@/api/client';
+import { shareOrCopy } from '@/components/share-or-copy';
 
 const won = (amount: number): string => `${amount.toLocaleString('ko-KR')}원`;
 
@@ -64,16 +65,13 @@ export default function MyRewardsScreen() {
   async function shareCode() {
     if (!data) return;
 
-    try {
-      /*
-       * 공유되는 건 코드와 안내뿐이다. 내 견적·계약 정보는 들어가지 않는다 —
-       * 사업계획서 12번.
-       */
-      await Share.share({
-        message: `웨딩픽 초대 코드 ${data.referralCode}\n${REFERRAL_NOTICE}`,
-      });
-    } catch {
-      // 공유 시트를 닫은 경우가 대부분이라 따로 알리지 않는다.
+    /*
+     * 공유되는 건 코드와 안내뿐이다. 내 견적·계약 정보는 들어가지 않는다 —
+     * 사업계획서 12번.
+     */
+    const result = await shareOrCopy(`웨딩픽 초대 코드 ${data.referralCode}\n${REFERRAL_NOTICE}`);
+    if (result.copied) {
+      setMessage('초대 코드를 복사했어요');
     }
   }
 

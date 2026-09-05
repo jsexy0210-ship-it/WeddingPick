@@ -367,4 +367,71 @@ describeWithDb('후보 저장', () => {
       expect(body.nextCategory).toBe('sdm');
     });
   });
+
+  /**
+   * 결정한 업체. WP-OUR-003.
+   */
+  describe('결정한 업체', () => {
+    const decisions = (headers: Record<string, string>, weddingId: string) =>
+      test.app.inject({ method: 'GET', url: `/v1/weddings/${weddingId}/decisions`, headers });
+
+    it('아직 아무것도 안 정했으면 빈 목록이다', async () => {
+      const { headers } = await signInAs(test);
+      const weddingId = await createWedding(test, headers);
+
+      const body = (await decisions(headers, weddingId)).json<{ decisions: unknown[] }>();
+
+      expect(body.decisions).toEqual([]);
+    });
+
+    it('정한 업체의 결정정보 · 관련 일정 · 관련 지출을 함께 준다', async () => {
+      const { owner, partner, weddingId } = await weddingWithPartner();
+      const vendorId = await createVendor('가온예식홀');
+
+      await add(owner.headers, weddingId, vendorId);
+      // 배우자가 정했다 — decidedByPartner가 true여야 한다.
+      await test.app.inject({
+        method: 'PUT',
+        url: `/v1/weddings/${weddingId}/decisions`,
+        headers: partner.headers,
+        payload: { category: 'hall', vendorId },
+      });
+
+      await test.app.inject({
+        method: 'POST',
+        url: `/v1/weddings/${weddingId}/events`,
+        headers: owner.headers,
+        payload: { title: '계약 미팅', startsAt: '2026-11-01T01:00:00.000Z', vendorId },
+      });
+
+      await test.app.inject({
+        method: 'POST',
+        url: `/v1/weddings/${weddingId}/expenses`,
+        headers: owner.headers,
+        payload: { label: '계약금', amount: 3_000_000, category: 'hall' },
+      });
+
+      const body = (await decisions(owner.headers, weddingId)).json<{
+        decisions: {
+          category: string;
+          vendor: { id: string; name: string };
+          decidedByPartner: boolean;
+          events: { title: string }[];
+          expenses: { bucket: string; paidTotal: number; paidCount: number };
+        }[];
+      }>();
+
+      expect(body.decisions).toHaveLength(1);
+
+      const hall = body.decisions[0]!;
+
+      expect(hall.category).toBe('hall');
+      expect(hall.vendor.name).toBe('가온예식홀');
+      expect(hall.decidedByPartner).toBe(true);
+      expect(hall.events[0]!.title).toBe('계약 미팅');
+      expect(hall.expenses.bucket).toBe('hall');
+      expect(hall.expenses.paidTotal).toBe(3_000_000);
+      expect(hall.expenses.paidCount).toBe(1);
+    });
+  });
 });

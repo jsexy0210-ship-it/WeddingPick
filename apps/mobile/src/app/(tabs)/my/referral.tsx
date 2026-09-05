@@ -1,8 +1,9 @@
 import { Stack } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Share, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { getMyInviteCode } from '@/api/client';
+import { shareOrCopy } from '@/components/share-or-copy';
 import {
   ActionButton,
   EmptyView,
@@ -54,17 +55,17 @@ export default function ReferralScreen() {
 
   const handleCopy = useCallback(async () => {
     if (!data) return;
-    // expo-clipboard 미설치 — Share로 코드만 공유한다.
-    await Share.share({ message: data.code });
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
+    // expo-clipboard 미설치 — 공유 시트 또는(웹에서 지원 안 되면) 클립보드 복사로 코드를 내보낸다.
+    const result = await shareOrCopy(data.code);
+    if (result.shared || result.copied) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }
   }, [data]);
 
   const handleShare = useCallback(async () => {
     if (!data) return;
-    await Share.share({
-      message: S.shareText + data.code,
-    });
+    await shareOrCopy(S.shareText + data.code);
   }, [data]);
 
   const styles = makeStyles();

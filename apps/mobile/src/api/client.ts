@@ -1,9 +1,12 @@
 import {
   analysisSchema,
   candidateListResponseSchema,
+  decisionListResponseSchema,
+  expenseDetailSchema,
   expenseSummaryResponseSchema,
   visitNoteListResponseSchema,
   weddingEventListResponseSchema,
+  weddingNoteListResponseSchema,
   weddingTaskListResponseSchema,
   authProvidersResponseSchema,
   comparisonResponseSchema,
@@ -70,9 +73,15 @@ import {
   type UpdateRebuttalRequest,
   type CreateExpenseRequest,
   type CreateVisitNoteRequest,
+  type CreateWeddingNoteRequest,
+  type DecisionListResponse,
+  type ExpenseDetail,
   type ExpenseSummaryResponse,
+  type UpdateExpenseRequest,
+  type UpdateWeddingNoteRequest,
   type UpdateWeddingTaskRequest,
   type VisitNoteListResponse,
+  type WeddingNoteListResponse,
   type WeddingTaskListResponse,
   type CreateWeddingEventRequest,
   type UpdateWeddingEventRequest,
@@ -128,6 +137,8 @@ import {
   type ExpoDetail,
   type WeddingInfoListResponse,
   type WeddingInfoDetail,
+  vendorPhotosResponseSchema,
+  type VendorPhotosResponse,
 } from '@weddingpick/api-contract';
 import { z, type ZodType } from 'zod';
 
@@ -450,6 +461,16 @@ export async function getVendor(vendorId: string): Promise<VendorDetail> {
 }
 
 /**
+ * WP-VEND-002 업체 이미지 전체보기. 승인된 이미지만 온다.
+ *
+ * 대표 이미지가 배열 맨 앞이다 — 화면이 따로 찾을 필요 없이 `photos[0]`을 쓸 수
+ * 있다.
+ */
+export async function listVendorPhotos(vendorId: string): Promise<VendorPhotosResponse> {
+  return request(`/v1/vendors/${vendorId}/images`, vendorPhotosResponseSchema);
+}
+
+/**
  * 조건이 비슷한 결제 사례. v2.0 D-1.
  *
  * 실제 결제 구간(`getVendor`)과 다른 자리다 — 그건 누구나 보고, 이것은 결제인증이
@@ -519,6 +540,26 @@ export async function addExpense(
 /** 직접 입력한 항목만 지워진다. 결제인증에서 온 줄은 404다. */
 export async function removeExpense(weddingId: string, expenseId: string): Promise<void> {
   await request(`/v1/weddings/${weddingId}/expenses/${expenseId}`, z.null(), { method: 'DELETE' });
+}
+
+/** 지출 상세. WP-OUR-010. */
+export async function getExpenseDetail(
+  weddingId: string,
+  expenseId: string
+): Promise<ExpenseDetail> {
+  return request(`/v1/weddings/${weddingId}/expenses/${expenseId}`, expenseDetailSchema);
+}
+
+/** 환불 상태만 고친다. 직접 입력한 항목만 — 결제인증에서 온 줄은 404다. */
+export async function updateExpense(
+  weddingId: string,
+  expenseId: string,
+  body: UpdateExpenseRequest
+): Promise<void> {
+  await request(`/v1/weddings/${weddingId}/expenses/${expenseId}`, z.object({ ok: z.boolean() }), {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  });
 }
 
 export async function setBudget(weddingId: string, budget: number | null): Promise<void> {
@@ -602,6 +643,46 @@ export async function removeCandidate(weddingId: string, candidateId: string): P
   await request(`/v1/weddings/${weddingId}/candidates/${candidateId}`, z.null(), {
     method: 'DELETE',
   });
+}
+
+/** 결정한 업체. WP-OUR-003. 업종별 결정정보 · 관련 일정 · 관련 지출을 묶어 준다. */
+export async function listDecisions(weddingId: string): Promise<DecisionListResponse> {
+  return request(`/v1/weddings/${weddingId}/decisions`, decisionListResponseSchema);
+}
+
+/** 우리웨딩 — 메모. WP-OUR-011. 업체별 또는 자유 메모. */
+export async function listWeddingNotes(weddingId: string): Promise<WeddingNoteListResponse> {
+  return request(`/v1/weddings/${weddingId}/notes`, weddingNoteListResponseSchema);
+}
+
+export async function addWeddingNote(
+  weddingId: string,
+  body: CreateWeddingNoteRequest
+): Promise<{ noteId: string }> {
+  return request(`/v1/weddings/${weddingId}/notes`, z.object({ noteId: z.string() }), {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+/**
+ * 고치기. `version`이 배우자가 먼저 고친 뒤의 값과 다르면 서버가 conflict(409)를
+ * 돌려준다 — 부르는 화면이 `ApiError`의 `code === 'conflict'`를 잡아 충돌 화면으로
+ * 보낸다.
+ */
+export async function updateWeddingNote(
+  weddingId: string,
+  noteId: string,
+  body: UpdateWeddingNoteRequest
+): Promise<void> {
+  await request(`/v1/weddings/${weddingId}/notes/${noteId}`, z.object({ ok: z.boolean() }), {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function removeWeddingNote(weddingId: string, noteId: string): Promise<void> {
+  await request(`/v1/weddings/${weddingId}/notes/${noteId}`, z.null(), { method: 'DELETE' });
 }
 
 /**

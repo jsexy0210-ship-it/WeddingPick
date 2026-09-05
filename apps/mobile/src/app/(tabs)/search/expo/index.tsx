@@ -160,6 +160,7 @@ export default function ExpoListScreen() {
                   key={expo.id}
                   accessibilityRole="button"
                   accessibilityLabel={`${expo.title} 자세히 보기`}
+                  style={({ pressed }) => pressed && styles.cardPressed}
                   onPress={() => router.push(`/search/expo/${expo.id}`)}>
                   <ThemedView type="backgroundElement" style={styles.card}>
                     {/* 상태 배지 */}
@@ -234,6 +235,8 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
     minHeight: Layout.rowMinHeight,
   },
+  /** 카드를 누르는 동안(웹은 클릭 중) 눌림을 알 수 있게 살짝 흐리게 한다. */
+  cardPressed: { opacity: 0.7 },
   skeletonCard: {
     borderRadius: Radius.medium,
     padding: Spacing.three,

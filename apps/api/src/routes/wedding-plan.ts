@@ -1,11 +1,16 @@
 import {
   createExpenseRequestSchema,
   createVisitNoteRequestSchema,
+  createWeddingNoteRequestSchema,
   createWeddingTaskRequestSchema,
   setBudgetRequestSchema,
+  updateExpenseRequestSchema,
+  updateWeddingNoteRequestSchema,
   updateWeddingTaskRequestSchema,
 } from '@weddingpick/api-contract';
 import {
+  EXPENSE_BUCKET_LABEL,
+  EXPENSE_REFUND_STATUS_LABEL,
   EXPENSE_SOURCE_LABEL,
   EXPENSE_STATUS_LABEL,
   SCHEDULED_NOTE,
@@ -16,6 +21,7 @@ import {
   resolveTaskState,
   summarizeExpenses,
   taskProgress,
+  type ExpenseRefundStatus,
   type ExpenseSource,
   type ExpenseStatus,
   type TaskState,
@@ -27,7 +33,7 @@ import type { Pool } from 'pg';
 import { assertWeddingAccess } from '../access';
 import { currentUserId, requireUser } from '../auth/plugin';
 import type { AppContext } from '../context';
-import { notFound } from '../errors';
+import { ApiError, notFound } from '../errors';
 
 type TaskRow = {
   id: string;
@@ -225,8 +231,9 @@ export function registerWeddingPlanRoutes(app: FastifyInstance, context: AppCont
         status: ExpenseStatus;
         spent_on: Date | null;
         source: ExpenseSource;
+        refund_status: ExpenseRefundStatus;
       }>(
-        `SELECT id, label, amount, category, status, spent_on, source
+        `SELECT id, label, amount, category, status, spent_on, source, refund_status
          FROM structured.wedding_expenses
          WHERE wedding_id = $1
          ORDER BY spent_on DESC NULLS LAST`,
@@ -244,6 +251,8 @@ export function registerWeddingPlanRoutes(app: FastifyInstance, context: AppCont
         spentOn: day(row.spent_on),
         source: row.source,
         sourceLabel: EXPENSE_SOURCE_LABEL[row.source],
+        refundStatus: row.refund_status,
+        refundStatusLabel: EXPENSE_REFUND_STATUS_LABEL[row.refund_status],
       }));
 
       const summary = summarizeExpenses(expenses);
@@ -323,6 +332,159 @@ export function registerWeddingPlanRoutes(app: FastifyInstance, context: AppCont
       }
 
       return reply.status(204).send();
+    }
+  );
+
+  /**
+   * 지출 상세. WP-OUR-010.
+   *
+   * 결제인증(payment_proofs)과 직접 입력(expenses)은 다른 표라, wedding_expenses
+   * 뷰를 거치지 않고 두 표를 차례로 본다 — 환불 상태·분할 결제·등록자는 직접
+   * 입력에만 있어서, 뷰 하나로는 결이 다른 두 값을 깔끔히 못 담는다.
+   */
+  app.get<{ Params: { weddingId: string; expenseId: string } }>(
+    '/v1/weddings/:weddingId/expenses/:expenseId',
+    auth,
+    async (request) => {
+      const userId = currentUserId(request);
+
+      await assertWeddingAccess(context.pool, request.params.weddingId, userId);
+
+      const manual = await context.pool.query<{
+        id: string;
+        label: string;
+        amount: string;
+        category: VendorCategory | null;
+        status: ExpenseStatus;
+        spent_on: Date | null;
+        refund_status: ExpenseRefundStatus;
+        added_by: string | null;
+        created_at: Date;
+      }>(
+        `SELECT id, label, amount, category, status, spent_on, refund_status, added_by, created_at
+         FROM structured.expenses
+         WHERE id = $1 AND wedding_id = $2`,
+        [request.params.expenseId, request.params.weddingId]
+      );
+
+      if (manual.rows.length > 0) {
+        const row = manual.rows[0]!;
+        const bucket = bucketFor(row.category);
+
+        const splits = await context.pool.query<{
+          id: string;
+          seq: number;
+          label: string;
+          amount: string;
+          paid_on: Date | null;
+        }>(
+          `SELECT id, seq, label, amount, paid_on
+           FROM structured.expense_split_payments
+           WHERE expense_id = $1
+           ORDER BY seq`,
+          [row.id]
+        );
+
+        return {
+          id: row.id,
+          label: row.label,
+          amount: Number(row.amount),
+          category: row.category,
+          bucket,
+          bucketLabel: EXPENSE_BUCKET_LABEL[bucket],
+          status: row.status,
+          statusLabel: EXPENSE_STATUS_LABEL[row.status],
+          spentOn: day(row.spent_on),
+          source: 'manual' as const,
+          sourceLabel: EXPENSE_SOURCE_LABEL.manual,
+          refundStatus: row.refund_status,
+          refundStatusLabel: EXPENSE_REFUND_STATUS_LABEL[row.refund_status],
+          registeredByPartner: row.added_by !== null && row.added_by !== userId,
+          registeredAt: row.created_at.toISOString(),
+          splitPayments: splits.rows.map((split) => ({
+            id: split.id,
+            seq: split.seq,
+            label: split.label,
+            amount: Number(split.amount),
+            paidOn: day(split.paid_on),
+          })),
+        };
+      }
+
+      // 직접 입력이 아니면 결제인증에서 온 줄인지 본다.
+      const proof = await context.pool.query<{
+        id: string;
+        label: string;
+        amount: string;
+        category: VendorCategory | null;
+        paid_on: Date;
+        reporter_user_id: string;
+        created_at: Date;
+      }>(
+        `SELECT p.id, coalesce(v.name, p.merchant_name) AS label, p.paid_amount AS amount,
+                v.category, p.paid_at::date AS paid_on, p.reporter_user_id, p.created_at
+         FROM structured.payment_proofs p
+         JOIN structured.weddings w
+           ON w.owner_user_id = p.reporter_user_id OR w.partner_user_id = p.reporter_user_id
+         LEFT JOIN structured.vendors v ON v.id = p.vendor_id
+         WHERE p.id = $1 AND w.id = $2`,
+        [request.params.expenseId, request.params.weddingId]
+      );
+
+      if (proof.rows.length === 0) {
+        throw notFound('지출 항목');
+      }
+
+      const row = proof.rows[0]!;
+      const bucket = bucketFor(row.category);
+
+      return {
+        id: row.id,
+        label: row.label,
+        amount: Number(row.amount),
+        category: row.category,
+        bucket,
+        bucketLabel: EXPENSE_BUCKET_LABEL[bucket],
+        status: 'paid' as const,
+        statusLabel: EXPENSE_STATUS_LABEL.paid,
+        spentOn: day(row.paid_on),
+        source: 'payment_proof' as const,
+        sourceLabel: EXPENSE_SOURCE_LABEL.payment_proof,
+        // 결제인증 표는 아직 환불을 추적하지 않는다 — 늘 정상으로 고정한다.
+        refundStatus: 'normal' as const,
+        refundStatusLabel: EXPENSE_REFUND_STATUS_LABEL.normal,
+        registeredByPartner: row.reporter_user_id !== userId,
+        registeredAt: row.created_at.toISOString(),
+        // 결제인증 표에는 분할 결제 개념이 없다.
+        splitPayments: [],
+      };
+    }
+  );
+
+  /**
+   * 환불 상태만 고친다. 직접 입력한 항목만 — 결제인증에서 온 줄은 이 문으로
+   * 고치지 않는다(삭제와 같은 이유). v1 범위: 분할 결제 줄 편집은 아직 없다.
+   */
+  app.patch<{ Params: { weddingId: string; expenseId: string } }>(
+    '/v1/weddings/:weddingId/expenses/:expenseId',
+    auth,
+    async (request) => {
+      const userId = currentUserId(request);
+      const body = updateExpenseRequestSchema.parse(request.body);
+
+      await assertWeddingAccess(context.pool, request.params.weddingId, userId);
+
+      const { rowCount } = await context.pool.query(
+        `UPDATE structured.expenses SET refund_status = $3
+         WHERE id = $1 AND wedding_id = $2`,
+        [request.params.expenseId, request.params.weddingId, body.refundStatus]
+      );
+
+      if (rowCount === 0) {
+        throw notFound('지출 항목');
+      }
+
+      return { ok: true };
     }
   );
 
@@ -430,6 +592,157 @@ export function registerWeddingPlanRoutes(app: FastifyInstance, context: AppCont
 
       if (rowCount === 0) {
         throw notFound('방문노트');
+      }
+
+      return reply.status(204).send();
+    }
+  );
+
+  /* ------------------------------------------------------------------ */
+  /* 메모                                                                 */
+  /* ------------------------------------------------------------------ */
+
+  app.get<{ Params: { weddingId: string } }>(
+    '/v1/weddings/:weddingId/notes',
+    auth,
+    async (request) => {
+      const userId = currentUserId(request);
+
+      await assertWeddingAccess(context.pool, request.params.weddingId, userId);
+
+      const { rows } = await context.pool.query<{
+        id: string;
+        vendor_id: string | null;
+        vendor_label: string | null;
+        body: string;
+        author_user_id: string;
+        edited_by_user_id: string | null;
+        version: number;
+        created_at: Date;
+        updated_at: Date;
+      }>(
+        `SELECT id, vendor_id, vendor_label, body, author_user_id, edited_by_user_id,
+                version, created_at, updated_at
+         FROM structured.wedding_notes
+         WHERE wedding_id = $1
+         ORDER BY created_at DESC`,
+        [request.params.weddingId]
+      );
+
+      return {
+        notes: rows.map((row) => {
+          const edited = row.updated_at.getTime() !== row.created_at.getTime();
+
+          return {
+            id: row.id,
+            vendorId: row.vendor_id,
+            vendorLabel: row.vendor_label,
+            body: row.body,
+            authoredByPartner: row.author_user_id !== userId,
+            edited,
+            editedByPartner: edited
+              ? row.edited_by_user_id !== null && row.edited_by_user_id !== userId
+              : null,
+            createdAt: row.created_at.toISOString(),
+            updatedAt: row.updated_at.toISOString(),
+            version: row.version,
+          };
+        }),
+      };
+    }
+  );
+
+  app.post<{ Params: { weddingId: string } }>(
+    '/v1/weddings/:weddingId/notes',
+    auth,
+    async (request, reply) => {
+      const userId = currentUserId(request);
+      const body = createWeddingNoteRequestSchema.parse(request.body);
+
+      await assertWeddingAccess(context.pool, request.params.weddingId, userId);
+
+      const { rows } = await context.pool.query<{ id: string }>(
+        `INSERT INTO structured.wedding_notes
+           (wedding_id, vendor_id, vendor_label, body, author_user_id)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING id`,
+        [
+          request.params.weddingId,
+          body.vendorId ?? null,
+          body.vendorLabel ?? null,
+          body.body,
+          userId,
+        ]
+      );
+
+      return reply.status(201).send({ noteId: rows[0]!.id });
+    }
+  );
+
+  /**
+   * 고치기. **동시 수정 충돌**을 여기서 판정한다.
+   *
+   * 클라이언트가 마지막으로 본 version을 함께 보낸다. 그 값이 지금 저장된
+   * version과 다르면 배우자가 그 사이에 먼저 고친 것이다 — 그대로 덮어쓰면
+   * 배우자의 수정이 조용히 사라지므로, conflict를 돌려주고 화면이 결론을
+   * 내리게 한다(WP-CPL-005 conflict 화면).
+   */
+  app.patch<{ Params: { weddingId: string; noteId: string } }>(
+    '/v1/weddings/:weddingId/notes/:noteId',
+    auth,
+    async (request) => {
+      const userId = currentUserId(request);
+      const body = updateWeddingNoteRequestSchema.parse(request.body);
+
+      await assertWeddingAccess(context.pool, request.params.weddingId, userId);
+
+      /*
+       * version을 WHERE 절에 같이 걸어 한 문장으로 판정한다. SELECT로 먼저
+       * 읽고 나중에 UPDATE하면 그 사이에 배우자가 끼어드는 경우를 못 잡는다
+       * — 두 요청이 같은 version을 보고 둘 다 통과해버릴 수 있다.
+       */
+      const { rowCount } = await context.pool.query(
+        `UPDATE structured.wedding_notes SET
+           body = $4,
+           edited_by_user_id = $5,
+           version = version + 1,
+           updated_at = now()
+         WHERE id = $1 AND wedding_id = $2 AND version = $3`,
+        [request.params.noteId, request.params.weddingId, body.version, body.body, userId]
+      );
+
+      if (rowCount === 0) {
+        const { rows } = await context.pool.query<{ version: number }>(
+          'SELECT version FROM structured.wedding_notes WHERE id = $1 AND wedding_id = $2',
+          [request.params.noteId, request.params.weddingId]
+        );
+
+        if (!rows[0]) {
+          throw notFound('메모');
+        }
+
+        throw new ApiError('conflict', '배우자가 먼저 이 메모를 고쳤어요.');
+      }
+
+      return { ok: true };
+    }
+  );
+
+  app.delete<{ Params: { weddingId: string; noteId: string } }>(
+    '/v1/weddings/:weddingId/notes/:noteId',
+    auth,
+    async (request, reply) => {
+      const userId = currentUserId(request);
+
+      await assertWeddingAccess(context.pool, request.params.weddingId, userId);
+
+      const { rowCount } = await context.pool.query(
+        'DELETE FROM structured.wedding_notes WHERE id = $1 AND wedding_id = $2',
+        [request.params.noteId, request.params.weddingId]
+      );
+
+      if (rowCount === 0) {
+        throw notFound('메모');
       }
 
       return reply.status(204).send();

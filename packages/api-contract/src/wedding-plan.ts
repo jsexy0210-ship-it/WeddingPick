@@ -1,17 +1,19 @@
 import {
   EXPENSE_BUCKETS,
+  EXPENSE_REFUND_STATUSES,
   EXPENSE_SOURCES,
   EXPENSE_STATUSES,
   TASK_STATES,
 } from '@weddingpick/domain';
 import { z } from 'zod';
 
-import { amountSchema, dateSchema, idSchema, vendorCategorySchema } from './common';
+import { amountSchema, dateSchema, idSchema, timestampSchema, vendorCategorySchema } from './common';
 
 export const taskStateSchema = z.enum(TASK_STATES);
 export const expenseSourceSchema = z.enum(EXPENSE_SOURCES);
 export const expenseStatusSchema = z.enum(EXPENSE_STATUSES);
 export const expenseBucketSchema = z.enum(EXPENSE_BUCKETS);
+export const expenseRefundStatusSchema = z.enum(EXPENSE_REFUND_STATUSES);
 
 /* -------------------------------------------------------------------------- */
 /* 웨딩 스케줄                                                                 */
@@ -72,6 +74,36 @@ export const expenseSchema = z.object({
   /** 어디서 온 값인지. 결제인증인지 직접 입력인지 줄마다 적는다. */
   source: expenseSourceSchema,
   sourceLabel: z.string().min(1),
+  /** 정상/부분환불/전액취소. 결제인증에서 온 줄은 늘 normal이다. */
+  refundStatus: expenseRefundStatusSchema,
+  refundStatusLabel: z.string().min(1),
+});
+
+/** 분할 결제 한 줄. 직접 입력한 지출에만 있다 — 결제인증 줄은 늘 빈 배열이다. */
+export const expenseSplitPaymentSchema = z.object({
+  id: idSchema,
+  seq: z.int().positive(),
+  label: z.string().min(1),
+  amount: amountSchema,
+  paidOn: dateSchema.nullable(),
+});
+
+/**
+ * 지출 상세. WP-OUR-010.
+ *
+ * 목록(expenseSchema)에 없는 것만 더한다 — 업종 이름표(bucketLabel), 누가
+ * 등록했는지(registeredByPartner), 분할 결제 줄, 등록 시각.
+ */
+export const expenseDetailSchema = expenseSchema.extend({
+  bucketLabel: z.string().min(1),
+  /** 배우자가 등록했는지. 방문노트·후보의 addedByPartner와 같은 뜻이다. */
+  registeredByPartner: z.boolean(),
+  registeredAt: timestampSchema,
+  splitPayments: z.array(expenseSplitPaymentSchema),
+});
+
+export const updateExpenseRequestSchema = z.object({
+  refundStatus: expenseRefundStatusSchema,
 });
 
 /**
@@ -148,6 +180,44 @@ export const createVisitNoteRequestSchema = z.object({
   memo: z.string().trim().max(1000).optional(),
 });
 
+/* -------------------------------------------------------------------------- */
+/* 메모                                                                        */
+/* -------------------------------------------------------------------------- */
+
+export const weddingNoteSchema = z.object({
+  id: idSchema,
+  /** 업체에 매달린 메모면 값이 있다. 자유 메모면 둘 다 null. */
+  vendorId: idSchema.nullable(),
+  vendorLabel: z.string().nullable(),
+  body: z.string().min(1),
+  /** 배우자가 썼는지. */
+  authoredByPartner: z.boolean(),
+  /** 고친 적이 있는지. 규칙 — 작성자와 수정 여부를 항상 남긴다. */
+  edited: z.boolean(),
+  /** 고친 사람이 글쓴이와 다른 사람인지. 안 고쳤으면 null. */
+  editedByPartner: z.boolean().nullable(),
+  createdAt: timestampSchema,
+  updatedAt: timestampSchema,
+  /** 동시 수정 충돌 판정용. 고칠 때 그대로 되돌려 보낸다. */
+  version: z.int().positive(),
+});
+
+export const weddingNoteListResponseSchema = z.object({
+  notes: z.array(weddingNoteSchema),
+});
+
+export const createWeddingNoteRequestSchema = z.object({
+  vendorId: idSchema.optional(),
+  vendorLabel: z.string().trim().max(60).optional(),
+  body: z.string().trim().min(1).max(1000),
+});
+
+/** 마지막으로 본 version을 함께 보낸다 — 배우자가 먼저 고쳤으면 conflict를 받는다. */
+export const updateWeddingNoteRequestSchema = z.object({
+  body: z.string().trim().min(1).max(1000),
+  version: z.int().positive(),
+});
+
 export type WeddingTask = z.infer<typeof weddingTaskSchema>;
 export type WeddingTaskListResponse = z.infer<typeof weddingTaskListResponseSchema>;
 export type CreateWeddingTaskRequest = z.infer<typeof createWeddingTaskRequestSchema>;
@@ -156,6 +226,13 @@ export type Expense = z.infer<typeof expenseSchema>;
 export type ExpenseSummaryResponse = z.infer<typeof expenseSummaryResponseSchema>;
 export type CreateExpenseRequest = z.infer<typeof createExpenseRequestSchema>;
 export type SetBudgetRequest = z.infer<typeof setBudgetRequestSchema>;
+export type ExpenseSplitPayment = z.infer<typeof expenseSplitPaymentSchema>;
+export type ExpenseDetail = z.infer<typeof expenseDetailSchema>;
+export type UpdateExpenseRequest = z.infer<typeof updateExpenseRequestSchema>;
 export type VisitNote = z.infer<typeof visitNoteSchema>;
 export type VisitNoteListResponse = z.infer<typeof visitNoteListResponseSchema>;
 export type CreateVisitNoteRequest = z.infer<typeof createVisitNoteRequestSchema>;
+export type WeddingNote = z.infer<typeof weddingNoteSchema>;
+export type WeddingNoteListResponse = z.infer<typeof weddingNoteListResponseSchema>;
+export type CreateWeddingNoteRequest = z.infer<typeof createWeddingNoteRequestSchema>;
+export type UpdateWeddingNoteRequest = z.infer<typeof updateWeddingNoteRequestSchema>;

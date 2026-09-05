@@ -21,9 +21,12 @@ import {
   ThemedView,
   VendorImage,
   type VendorCategory as UIVendorCategory,
+  readWebInteractionState,
   useTheme,
 } from '@weddingpick/ui';
 import { getCurrentUser, listCandidates } from '@/api/client';
+import { isWebShellScreen } from '@/features/webshell/config';
+import { WebShellView } from '@/features/webshell/WebShellView';
 
 /**
  * Pick 홈 · WP-PICK-001.
@@ -42,6 +45,10 @@ export default function PickScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
+    // 하이브리드 웹뷰 쉘 POC로 이 화면을 대체할 때는 이 밑 자료를 안 쓴다 —
+    // 훅 순서를 지키려고 호출 자체는 남기고, 몸통만 건너뛴다.
+    if (isWebShellScreen('pick')) return;
+
     getCurrentUser()
       .then(async (current) => {
         setError(null);
@@ -56,6 +63,12 @@ export default function PickScreen() {
   }, []);
 
   useEffect(load, [load]);
+
+  // 하이브리드 웹뷰 쉘 POC. `EXPO_PUBLIC_WEBSHELL_SCREENS`에 "pick"이 없으면
+  // (기본값) 이 분기는 타지 않고 기존 네이티브 화면 그대로다.
+  if (isWebShellScreen('pick')) {
+    return <WebShellView path="/pick" />;
+  }
 
   // 배우자와 둘 다 고른 곳: addedByPartner=true인 후보가 있는 첫 번째 그룹
   const sharedGroup = page?.groups.find((g) => g.candidates.some((c) => c.addedByPartner));
@@ -94,11 +107,7 @@ export default function PickScreen() {
                 <ThemedText type="t6" themeColor="textSecondary">
                   {error}
                 </ThemedText>
-                <Pressable onPress={load} accessibilityRole="button">
-                  <ThemedText type="t6" style={{ color: theme.tint }}>
-                    다시 시도
-                  </ThemedText>
-                </Pressable>
+                <RetryLink onPress={load} />
               </View>
             </ScrollView>
           ) : !me ? (
@@ -166,76 +175,97 @@ function ProgressSection({ page }: { page: CandidateListResponse }) {
    Category List — 카테고리별 진행 목록
 ──────────────────────────────────────────── */
 function CategoryList({ page }: { page: CandidateListResponse }) {
-  const theme = useTheme();
   const groupMap = new Map(page.groups.map((g) => [g.category, g]));
 
   return (
     <View style={styles.categorySection}>
-      {VENDOR_CATEGORIES.map((cat, idx) => {
-        const group = groupMap.get(cat);
-        const label = VENDOR_CATEGORY_LABEL[cat];
-        const isLast = idx === VENDOR_CATEGORIES.length - 1;
+      {VENDOR_CATEGORIES.map((cat, idx) => (
+        <CategoryRow
+          key={cat}
+          cat={cat}
+          group={groupMap.get(cat)}
+          isLast={idx === VENDOR_CATEGORIES.length - 1}
+        />
+      ))}
+    </View>
+  );
+}
 
-        let subText: string;
-        let actionText: string;
-        let actionColor: string;
-        let onPress: () => void;
+function CategoryRow({
+  cat,
+  group,
+  isLast,
+}: {
+  cat: VendorCategory;
+  group: GroupRow | undefined;
+  isLast: boolean;
+}) {
+  const theme = useTheme();
+  const label = VENDOR_CATEGORY_LABEL[cat];
 
-        if (!group) {
-          // 후보 없음
-          subText = '후보 없음';
-          actionText = '둘러보기';
-          actionColor = theme.textAssistive;
-          onPress = () => router.push({ pathname: '/search', params: { category: cat } });
-        } else if (group.state === 'decided') {
-          const decidedName =
-            group.candidates.find((c) => c.vendorId === group.decidedVendorId)?.vendorName ?? '';
-          subText = decidedName ? `${decidedName}으로 결정` : '결정 완료';
-          actionText = '결정 완료';
-          actionColor = theme.positive;
-          onPress = () =>
-            router.push({
-              pathname: '/pick/[category]',
-              params: { category: cat },
-            });
-        } else {
-          const sharedCount = group.candidates.filter((c) => c.addedByPartner).length;
-          const n = group.candidates.length;
-          const sharedNote =
-            sharedCount > 0 ? ` · 둘 다 고른 곳 ${sharedCount}` : n > 0 ? ' · 나만 골랐어요' : '';
-          subText = n > 0 ? `후보 ${n}곳${sharedNote}` : '후보 없음';
-          actionText = group.comparable ? '비교하기' : `${n}곳`;
-          actionColor = sharedCount > 0 ? theme.tint : theme.textAssistive;
-          onPress = () =>
-            router.push({
-              pathname: '/pick/[category]',
-              params: { category: cat },
-            });
-        }
+  let subText: string;
+  let actionText: string;
+  let actionColor: string;
+  let onPress: () => void;
 
-        return (
-          <View key={cat}>
-            <Pressable
-              onPress={onPress}
-              accessibilityRole="button"
-              accessibilityLabel={`${label} 카테고리 보기`}>
-              <View style={styles.categoryRow}>
-                <View style={styles.categoryInfo}>
-                  <ThemedText style={styles.categoryName}>{label}</ThemedText>
-                  <ThemedText style={styles.categorySub} themeColor="textAssistive">
-                    {subText}
-                  </ThemedText>
-                </View>
-                <ThemedText style={[styles.categoryAction, { color: actionColor }]}>
-                  {actionText}
-                </ThemedText>
-                <ChevronRight color={theme.textDisabled} />
-              </View>
-            </Pressable>
-            {!isLast ? <View style={[styles.divider, { backgroundColor: theme.border }]} /> : null}
-          </View>
-        );
-      })}
+  if (!group) {
+    // 후보 없음
+    subText = '후보 없음';
+    actionText = '둘러보기';
+    actionColor = theme.textAssistive;
+    onPress = () => router.push({ pathname: '/search', params: { category: cat } });
+  } else if (group.state === 'decided') {
+    const decidedName =
+      group.candidates.find((c) => c.vendorId === group.decidedVendorId)?.vendorName ?? '';
+    subText = decidedName ? `${decidedName}으로 결정` : '결정 완료';
+    actionText = '결정 완료';
+    actionColor = theme.positive;
+    onPress = () =>
+      router.push({
+        pathname: '/pick/[category]',
+        params: { category: cat },
+      });
+  } else {
+    const sharedCount = group.candidates.filter((c) => c.addedByPartner).length;
+    const n = group.candidates.length;
+    const sharedNote =
+      sharedCount > 0 ? ` · 둘 다 고른 곳 ${sharedCount}` : n > 0 ? ' · 나만 골랐어요' : '';
+    subText = n > 0 ? `후보 ${n}곳${sharedNote}` : '후보 없음';
+    actionText = group.comparable ? '비교하기' : `${n}곳`;
+    actionColor = sharedCount > 0 ? theme.tint : theme.textAssistive;
+    onPress = () =>
+      router.push({
+        pathname: '/pick/[category]',
+        params: { category: cat },
+      });
+  }
+
+  return (
+    <View>
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={`${label} 카테고리 보기`}
+        style={(state) => {
+          const { hovered, focused } = readWebInteractionState(state);
+          return [
+            styles.categoryRow,
+            hovered ? { backgroundColor: theme.backgroundSelected } : null,
+            focused ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: -2 } : null,
+          ];
+        }}>
+        <View style={styles.categoryInfo}>
+          <ThemedText style={styles.categoryName}>{label}</ThemedText>
+          <ThemedText style={styles.categorySub} themeColor="textAssistive">
+            {subText}
+          </ThemedText>
+        </View>
+        <ThemedText style={[styles.categoryAction, { color: actionColor }]}>
+          {actionText}
+        </ThemedText>
+        <ChevronRight color={theme.textDisabled} />
+      </Pressable>
+      {!isLast ? <View style={[styles.divider, { backgroundColor: theme.border }]} /> : null}
     </View>
   );
 }
@@ -267,48 +297,77 @@ function SharedSection({
     <View style={styles.sharedSection}>
       <ThemedText style={styles.sectionTitle}>둘 다 고른 곳</ThemedText>
       <View>
-        {sharedCandidates.map((candidate, idx) => {
-          const isLast = idx === sharedCandidates.length - 1;
-          return (
-            <View key={candidate.id}>
-              <Pressable
-                onPress={() => router.push(`/search/${candidate.vendorId}`)}
-                accessibilityRole="button"
-                accessibilityLabel={`${candidate.vendorName} 상세 보기`}>
-                <View style={styles.vendorRow}>
-                  <View style={styles.vendorThumb}>
-                    <VendorImage
-                      category={mapToUICategory(group.category as VendorCategory)}
-                      width={52}
-                      height={52}
-                      radius={Radius.small}
-                    />
-                  </View>
-                  <View style={styles.vendorInfo}>
-                    <ThemedText style={styles.vendorName} numberOfLines={1}>
-                      {candidate.vendorName}
-                    </ThemedText>
-                    <ThemedText style={styles.vendorMeta} themeColor="textAssistive" numberOfLines={1}>
-                      {candidate.region}
-                    </ThemedText>
-                  </View>
-                </View>
-              </Pressable>
-              {!isLast ? (
-                <View style={[styles.divider, { backgroundColor: theme.border }]} />
-              ) : null}
-            </View>
-          );
-        })}
+        {sharedCandidates.map((candidate, idx) => (
+          <SharedVendorRow
+            key={candidate.id}
+            candidate={candidate}
+            category={group.category as VendorCategory}
+            isLast={idx === sharedCandidates.length - 1}
+          />
+        ))}
       </View>
       <Pressable
         onPress={goCompare}
         accessibilityRole="button"
-        style={[styles.ctaPrimary, { backgroundColor: theme.tint }]}>
+        style={(state) => {
+          const { hovered, focused } = readWebInteractionState(state);
+          return [
+            styles.ctaPrimary,
+            { backgroundColor: theme.tint, opacity: hovered ? 0.9 : 1 },
+            focused ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: 2 } : null,
+          ];
+        }}>
         <ThemedText style={[styles.ctaLabel, { color: theme.onTint }]}>
           {`${categoryLabel} ${totalCount}곳 비교`}
         </ThemedText>
       </Pressable>
+    </View>
+  );
+}
+
+function SharedVendorRow({
+  candidate,
+  category,
+  isLast,
+}: {
+  candidate: GroupRow['candidates'][number];
+  category: VendorCategory;
+  isLast: boolean;
+}) {
+  const theme = useTheme();
+
+  return (
+    <View>
+      <Pressable
+        onPress={() => router.push(`/search/${candidate.vendorId}`)}
+        accessibilityRole="button"
+        accessibilityLabel={`${candidate.vendorName} 상세 보기`}
+        style={(state) => {
+          const { hovered, focused } = readWebInteractionState(state);
+          return [
+            styles.vendorRow,
+            hovered ? { backgroundColor: theme.backgroundSelected } : null,
+            focused ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: -2 } : null,
+          ];
+        }}>
+        <View style={styles.vendorThumb}>
+          <VendorImage
+            category={mapToUICategory(category)}
+            width={52}
+            height={52}
+            radius={Radius.small}
+          />
+        </View>
+        <View style={styles.vendorInfo}>
+          <ThemedText style={styles.vendorName} numberOfLines={1}>
+            {candidate.vendorName}
+          </ThemedText>
+          <ThemedText style={styles.vendorMeta} themeColor="textAssistive" numberOfLines={1}>
+            {candidate.region}
+          </ThemedText>
+        </View>
+      </Pressable>
+      {!isLast ? <View style={[styles.divider, { backgroundColor: theme.border }]} /> : null}
     </View>
   );
 }
@@ -337,30 +396,20 @@ function StarterSection() {
       <ThemedText style={styles.sectionTitle}>웨딩홀부터 볼까요</ThemedText>
       <View style={styles.starterGrid}>
         {starters.map((cat) => (
-          <Pressable
-            key={cat}
-            onPress={() => router.push({ pathname: '/search', params: { category: cat } })}
-            accessibilityRole="button"
-            accessibilityLabel={`${VENDOR_CATEGORY_LABEL[cat]} 검색`}
-            style={styles.starterCard}>
-            <View style={styles.starterImage}>
-              <VendorImage
-                category={mapToUICategory(cat)}
-                width={undefined}
-                height={96}
-                radius={Radius.small}
-              />
-            </View>
-            <ThemedText style={styles.starterName} numberOfLines={1}>
-              {VENDOR_CATEGORY_LABEL[cat]}
-            </ThemedText>
-          </Pressable>
+          <StarterCard key={cat} cat={cat} />
         ))}
       </View>
       <Pressable
         onPress={() => router.push({ pathname: '/search', params: { category: 'hall' } })}
         accessibilityRole="button"
-        style={[styles.ctaPrimary, { backgroundColor: theme.tint }]}>
+        style={(state) => {
+          const { hovered, focused } = readWebInteractionState(state);
+          return [
+            styles.ctaPrimary,
+            { backgroundColor: theme.tint, opacity: hovered ? 0.9 : 1 },
+            focused ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: 2 } : null,
+          ];
+        }}>
         <ThemedText style={[styles.ctaLabel, { color: theme.onTint }]}>
           웨딩홀 둘러보기
         </ThemedText>
@@ -369,32 +418,73 @@ function StarterSection() {
   );
 }
 
-function EmptyCategoryList() {
+function StarterCard({ cat }: { cat: VendorCategory }) {
   const theme = useTheme();
+
+  return (
+    <Pressable
+      onPress={() => router.push({ pathname: '/search', params: { category: cat } })}
+      accessibilityRole="button"
+      accessibilityLabel={`${VENDOR_CATEGORY_LABEL[cat]} 검색`}
+      style={(state) => {
+        const { hovered, focused } = readWebInteractionState(state);
+        return [
+          styles.starterCard,
+          hovered ? { opacity: 0.85 } : null,
+          focused ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: 2 } : null,
+        ];
+      }}>
+      <View style={styles.starterImage}>
+        <VendorImage
+          category={mapToUICategory(cat)}
+          width={undefined}
+          height={96}
+          radius={Radius.small}
+        />
+      </View>
+      <ThemedText style={styles.starterName} numberOfLines={1}>
+        {VENDOR_CATEGORY_LABEL[cat]}
+      </ThemedText>
+    </Pressable>
+  );
+}
+
+function EmptyCategoryList() {
   return (
     <View style={styles.categorySection}>
-      {VENDOR_CATEGORIES.map((cat, idx) => {
-        const isLast = idx === VENDOR_CATEGORIES.length - 1;
-        return (
-          <View key={cat}>
-            <Pressable
-              onPress={() => router.push({ pathname: '/search', params: { category: cat } })}
-              accessibilityRole="button"
-              accessibilityLabel={`${VENDOR_CATEGORY_LABEL[cat]} 검색`}>
-              <View style={styles.categoryRow}>
-                <ThemedText style={[styles.categoryName, { flex: 1 }]}>
-                  {VENDOR_CATEGORY_LABEL[cat]}
-                </ThemedText>
-                <ThemedText style={styles.categorySub} themeColor="textAssistive">
-                  후보 없음
-                </ThemedText>
-                <ChevronRight color={theme.textDisabled} />
-              </View>
-            </Pressable>
-            {!isLast ? <View style={[styles.divider, { backgroundColor: theme.border }]} /> : null}
-          </View>
-        );
-      })}
+      {VENDOR_CATEGORIES.map((cat, idx) => (
+        <EmptyCategoryRow key={cat} cat={cat} isLast={idx === VENDOR_CATEGORIES.length - 1} />
+      ))}
+    </View>
+  );
+}
+
+function EmptyCategoryRow({ cat, isLast }: { cat: VendorCategory; isLast: boolean }) {
+  const theme = useTheme();
+
+  return (
+    <View>
+      <Pressable
+        onPress={() => router.push({ pathname: '/search', params: { category: cat } })}
+        accessibilityRole="button"
+        accessibilityLabel={`${VENDOR_CATEGORY_LABEL[cat]} 검색`}
+        style={(state) => {
+          const { hovered, focused } = readWebInteractionState(state);
+          return [
+            styles.categoryRow,
+            hovered ? { backgroundColor: theme.backgroundSelected } : null,
+            focused ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: -2 } : null,
+          ];
+        }}>
+        <ThemedText style={[styles.categoryName, { flex: 1 }]}>
+          {VENDOR_CATEGORY_LABEL[cat]}
+        </ThemedText>
+        <ThemedText style={styles.categorySub} themeColor="textAssistive">
+          후보 없음
+        </ThemedText>
+        <ChevronRight color={theme.textDisabled} />
+      </Pressable>
+      {!isLast ? <View style={[styles.divider, { backgroundColor: theme.border }]} /> : null}
     </View>
   );
 }
@@ -406,6 +496,31 @@ function SectionBand() {
   const theme = useTheme();
   return (
     <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} />
+  );
+}
+
+function RetryLink({ onPress }: { onPress: () => void }) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      style={(state) => {
+        const { focused } = readWebInteractionState(state);
+        return focused
+          ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: 2 }
+          : null;
+      }}>
+      {(state) => {
+        const { hovered } = readWebInteractionState(state);
+        return (
+          <ThemedText type="t6" style={{ color: theme.tint, textDecorationLine: hovered ? 'underline' : 'none' }}>
+            다시 시도
+          </ThemedText>
+        );
+      }}
+    </Pressable>
   );
 }
 

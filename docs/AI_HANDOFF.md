@@ -8,84 +8,59 @@
 
 ## 메타
 
-- `updated_at`: 2026-09-04 (하이브리드 전환 · 로그인 필수 정책 변경)
+- `updated_at`: 2026-09-03 (P0 운영 상태·카카오맵 전환 동기화)
 - `repository`: jsexy0210-ship-it/WeddingPickl
-- `verified_code_base`: 확인은 세션 시작 시 `git log origin/main -1`로 재확인 — 이 문서를 쓴 시점의 main은 PR #71(#65 이후) squash merge까지 반영
-- `policy_version`: 통합정책 v3.14 + 2026-09-04 정책 변경(CLAUDE.md 상단 "정책 변경 — 2026-09-04" 절 참고 — 이 문서보다 CLAUDE.md 쪽이 시행 규칙 원본)
+- `verified_code_base`: 5b0479b (PR #53 squash merge 포함; 최신 원격 상태는 작업 시작 시 재확인)
+- `PR #51`: main 병합 완료 (7967312). 아래 세션의 CI 대기 표시는 당시 기록이다.
+- `policy_version`: 통합정책 v3.14
 - `dashboard`: https://claude.ai/code/artifact/a1307c11-f282-4cf2-a26d-e44bd083d7a9
 - `ios_handoff_artifact`: https://claude.ai/code/artifact/b8792fcd-fefe-4386-b24e-41d122e90a87
 - `screen_status_artifact`: https://claude.ai/code/artifact/b99277b7-3bdc-45dc-9614-a1310507df53
 
 ---
 
-## 🔴 2026-09-04 정책 변경 — 다음 세션(Codex 포함)이 이어받을 작업
+## 🔴 2026-09-04 정책 변경 — 하이브리드 웹뷰 전환
 
-사용자가 앱 아키텍처를 바꾸는 정책을 확정했다. 자세한 규칙은 `CLAUDE.md` 최상단
-"정책 변경 — 2026-09-04" 절 참고 (이 문서는 요약 + 작업 순서만).
+### 배경
+사용자가 2026-09-04에 확정: 홈·진입/내비게이션·공통(FAQ·약관·시트·상태) 화면군을
+시작으로 RN 네이티브 화면을 점진적으로 **하이브리드 웹뷰**로 전환한다.
 
-**결정된 내용:**
-1. 모바일 앱(`apps/mobile`)은 원칙적으로 **하이브리드(웹뷰) 구조로 전환**한다.
-   화면 대부분이 `apps/web`의 대응 페이지를 웹뷰로 띄우는 방식이 된다.
-   - RN 유지 예외 2개: `WP-RPT-002`(이미지 선택 — 카메라/갤러리), `WP-NOTI-003`
-     (알림 설정 — OS 권한·푸시 토큰)
-   - 그 외 화면도 작업하다 네이티브가 실제로 필요하면(카메라, 지도, 딥링크 등)
-     그 화면만 추가로 RN 개발 — 임의로 예외를 늘리지 않는다.
-2. **비회원 진입 삭제.** 스플래시 다음 곧바로 로그인 화면 — 로그인 필수.
-   현재 `apps/mobile/src/app/_layout.tsx`의 지연 로그인/최소 온보딩 라우팅
-   (`onboarding → setup → app`, `me.setupComplete` 분기 등)을 걷어내고
-   `스플래시 → 로그인` 단선 흐름으로 바꿔야 한다.
-3. **홈 화면 헤더의 검색 버튼 삭제, 알림 아이콘만 유지.**
-4. **`apps/web`(랜딩·하위페이지)은 이 정책 변경 대상이 아니다.** 비회원 열람,
-   헤더 구성 모두 현행 유지.
+### 기술 방식
+- `apps/mobile`의 기존 Expo Router/React Native 코드베이스는 그대로 유지한다 — 화면을
+  새로 만들지 않는다.
+- 이 코드베이스를 `expo export -p web`(react-native-web)으로 웹 빌드해 호스팅한다.
+- 네이티브 iOS/Android 앱은 그 호스팅 URL을 `react-native-webview`로 감싸는 얇은 셸이
+  된다. **`react-native-webview`는 아직 `apps/mobile`에 설치돼 있지 않다** — 전환
+  작업의 일부로 추가해야 한다.
+- `apps/web`(정적 랜딩 1장, `tsx src/cli.ts` 빌드)과는 완전히 별개다 — 이 전환과
+  무관하며 건드리지 않는다.
+- 이 방식을 고른 이유: `apps/mobile`이 이미 Expo 웹 빌드를 지원하므로(네이티브 전용
+  의존성은 `Platform.OS === 'web'` 조건부 처리, 위 "일정·지도 보기" 세션 기록 참고)
+  별도 웹앱을 새로 만들 필요가 없다 — 가장 적은 신규 인프라로 시작할 수 있는 경로다.
 
-**이 세션이 이미 한 일 (구현 아님 — 문서·정책 기반 작업만):**
-- `CLAUDE.md` 최상단에 이 정책 절 추가.
-- 기존 IA(`docs/design-handoff/seed/웨딩픽 전체 IA.dc.html`)의 190개 화면 ID
-  전체에 "구현 방식"(하이브리드 전환 / RN 유지 / 웹 전용(관리자) / 웹(현행 유지))
-  칼럼을 매겨 대시보드에 반영(§ 아래 대시보드 갱신 참고).
-- 실제 화면 코드는 **아직 하나도 하이브리드로 전환하지 않았다** — 이 문서를 읽는
-  세션이 착수한다.
+### 이번 전환의 실질적 의미
+RN 화면의 웹 렌더링 품질이 이제 "부가 기능"이 아니라 **실제 앱 화면 그 자체**가 된다.
+`apps/mobile/src/app/` 아래 화면 소스가 모바일 폭부터 데스크톱 폭까지 브라우저에서
+정상 렌더링돼야 실제 앱이 정상 동작하는 것이다. 점검 기준:
+`docs/design-handoff/hybrid-web-qa-checklist.md`.
 
-### 하이브리드 기술 방식 — 확정 (2026-09-04, 마스터 세션 결정)
+### 정책 1 — 비회원 진입 삭제
+로그인 없이 들어갈 수 있는 화면(게스트 홈 등)을 폐지한다. 로그인 완료 후에만 앱 진입이
+가능하도록 진입 흐름(`apps/mobile/src/app/_layout.tsx` 등)을 바꿔야 한다.
+**아직 구현되지 않았다** — 다음 작업.
 
-**`apps/web`은 대상이 아니다.** 코드를 직접 확인했다 — `apps/web`은 프레임워크도
-런타임 자바스크립트도 없는 정적 HTML 생성기다(`apps/web/src/build.ts` 상단 주석에
-명시: "프레임워크도 런타임 자바스크립트도 없다"). 랜딩·FAQ·약관 등 6개 정적
-페이지만 만든다. 검색·Pick·우리웨딩·MY 같은 로그인 후 인터랙티브 화면 154개를
-여기 새로 짓는 건 웹앱 프레임워크를 처음부터 구축하는 규모라 "웹뷰로 감싼다"는
-전제와 맞지 않는다.
+### 정책 2 — 홈 헤더 검색버튼 삭제
+홈 탭(`apps/mobile/src/app/(tabs)/index.tsx`, 헤더의 `router.push('/search')` 버튼,
+341번째 줄 부근)의 검색 버튼을 없앤다. 알림 아이콘만 남긴다. 검색 자체는 하단 탭의
+검색 탭(`(tabs)/search`)으로 계속 접근 가능하니 기능 손실은 아니다.
+**아직 구현되지 않았다** — 다음 작업.
 
-**대신 `apps/mobile`의 기존 Expo 웹 export를 쓴다.**
-- `apps/mobile`은 이미 `npm run export:web`(`expo export --platform web`,
-  `react-native-web` 기반, `app.json`의 `expo.web.output: "static"`)으로 **지금
-  있는 RN 화면 그대로**를 인터랙티브 정적 웹 번들로 뽑는다 — CI(`main.yml`의
-  `Bundle (web)` 스텝)에서 이미 매번 빌드해 검증되고 있다.
-- 이 번들을 호스팅(Render 정적 사이트 등 신규 서비스)하고, RN 앱 쉘이
-  `react-native-webview`로 **자기 자신의 웹 빌드**를 불러오는 구조가 된다.
-  네이티브 탭바/네비게이션 껍데기는 RN에 남기고, 탭 콘텐츠는 웹뷰.
-- `WP-RPT-002`(이미지 선택), `WP-NOTI-003`(알림 설정)만 진짜 네이티브 RN 화면으로
-  남는다 — 나머지 154개는 "새로 만들 필요 없이, 웹으로 렌더링될 때도 정상
-  동작·정상 디자인인지 점검하고 고치는" 작업이 된다.
-- **아직 안 정한 것** (착수 세션이 정해야 함): 로그인 세션을 네이티브 쉘 →
-  웹뷰로 넘기는 방식(URL 쿼리 vs postMessage vs 쿠키 공유), 웹뷰 안에서
-  화면 전환 시 RN 라우터와 웹뷰 내부 라우팅을 어떻게 동기화할지, 딥링크
-  처리.
-
-**다음 세션(들)이 할 일:**
-1. `apps/mobile/src/app/_layout.tsx` 진입 로직을 "스플래시 → 로그인 필수"로 교체.
-   `onboarding.tsx`/`setup.tsx`의 지연 온보딩 라우팅을 로그인 이후 흐름으로
-   재배치할지, 완전히 걷어낼지부터 결정 — 온보딩 자체(취향 이미지 선택 등)는
-   정책에서 삭제 대상이 아니므로 순서만 바뀐다.
-2. **하이브리드 쉘 POC** — 웹 export 호스팅 + `react-native-webview` 로드 +
-   로그인 세션 전달, 화면 1~2개로 먼저 검증(다른 작업의 기반이 되므로 우선).
-3. **화면별 web 렌더링 QA** — 154개 화면을 IA 섹션 단위(검색/업체상세/비교,
-   Pick, 우리웨딩/MY, 홈 등)로 나눠 병렬 점검. 기준은 사용자가 준
-   바이브코딩 체크리스트(레이아웃·반응형, 디자인 토큰 하드코딩, 인터랙션
-   상태, 코드 구조/컴포넌트화, z-index/레이어링) — `react-native-web`
-   렌더링 특성상 특히 반응형 브레이크포인트·hover/focus 상태(모바일
-   전용으로 짠 컴포넌트는 이게 없는 경우가 많음)·z-index(네이티브에서는
-   `elevation`/렌더 순서로 처리하던 것들)를 중점 점검.
-4. 진행하며 이 문서와 대시보드를 갱신.
+### 다음 작업 (미착수)
+1. `react-native-webview` 설치 + 네이티브 래퍼 셸 구현
+2. 웹 빌드 호스팅 방식 결정(`expo export -p web` 결과물을 어디에 올릴지)
+3. 정책 1·2 실제 코드 반영
+4. `docs/design-handoff/hybrid-web-qa-checklist.md` 기준으로 홈·진입/내비게이션·공통
+   화면군부터 웹 렌더링 QA
 
 ---
 
@@ -126,7 +101,96 @@ P0 전체 항목의 완료 기준과 검증 증거가 확정되지 않아 P0 진
 
 ---
 
+## 하이브리드 웹뷰 쉘 POC (2026-09-04, `hybrid/shell-poc` 브랜치, PR 별도)
+
+`apps/mobile`의 웹 export(react-native-web, `npm run export:web`, CI `main.yml`의
+`Bundle (web)` 스텝에서 이미 매번 빌드 검증됨)를 실제로 호스팅해서, 네이티브 쉘이
+자기 자신의 웹 빌드를 웹뷰로 띄우는 구조를 검증한 POC다.
+
+**인프라 정정(2026-09-04, 같은 세션 내 수정)**: 이 섹션은 처음에 "이 저장소는
+Render를 쓰지 않는다"고 적었었다 — `main`만 보고 판단해서 생긴 착오다. 실제로는
+`main`이 인프라 문서·CI(`main.yml`의 `flyctl deploy`)·`fly.toml` 전부 Fly.io
+기준으로 **뒤처져** 있고, 실제 운영 인프라는 **Render**다(API:
+`weddingpickl.onrender.com`, `claude/session-a4bq31` 브랜치의 `render.yaml`·
+`docs/AI_HANDOFF.md`가 최신 상태 — 사용자가 직접 확인해준 사실이다). `main`의
+나머지 Fly.io 언급(§인프라 현황, 2번 항목, 코드 구조 등)을 전부 Render로
+갱신하는 것은 이 PR의 범위 밖이다 — 이 PR은 호스팅 설정 하나만 Render로 바꿨다.
+
+### 1. 웹 번들 호스팅 — Render 정적 사이트, 설정만 추가함
+- `main`에 없던 `render.yaml`을 새로 만들었다 — `claude/session-a4bq31`의
+  실제 운영 정의(`weddingpick-web`/`weddingpick-admin`/`weddingpick-api`)를
+  그대로 옮기고, 새 서비스 `weddingpick-app-web`을 추가했다.
+- `weddingpick-app-web`: `buildCommand: npm run export:web --workspace
+  @weddingpick/mobile`, `staticPublishPath: ./apps/mobile/dist`, expo-router
+  클라이언트 라우팅을 위한 `/* → /index.html` rewrite 포함.
+- **실제 Render 서비스 생성·배포는 하지 않았다.** 새 유료 리소스이므로 사용자
+  승인이 필요하다 — 아래 "사용자 직접 조치 필요" 8번 참고.
+
+### 2. 웹뷰 쉘 — 홈 · Pick 두 화면에 opt-in으로 배선
+- `apps/mobile/src/features/webshell/WebShellView.tsx` — `react-native-webview`
+  래퍼. `apps/mobile/src/app/(tabs)/index.tsx`(홈), `.../pick/index.tsx`(Pick)에
+  연결.
+- **기본값은 꺼짐이다.** `EXPO_PUBLIC_WEBSHELL_SCREENS` 환경변수(쉼표 목록, 예
+  `"home,pick"`)에 화면 id가 들어있을 때만 그 화면이 웹뷰로 바뀐다
+  (`features/webshell/config.ts`). eas.json에는 아무 값도 넣지 않았다 — 즉
+  프로덕션·프리뷰 빌드는 지금과 똑같이 100% 네이티브다.
+- **왜 opt-in인가**: 홈(`(tabs)/index.tsx`, 통합정책 C-1)과 Pick(`pick/index.tsx`,
+  v3.2 §6)은 스텁이 아니라 이미 완성된 네이티브 화면이다. 웹뷰로 무조건 대체하면
+  회귀 위험만 있고 얻는 것이 없다 — 그래서 검증용 스위치로만 만들었다. **다른
+  세션이 이 방향을 실제 프로덕션 전환으로 오해하지 말 것.** 화면을 웹으로
+  대체할지는 이 POC가 정하는 게 아니라 별도 결정이 필요하다.
+
+### 3. 로그인 세션 전달 — 기존 `api/session.ts`를 그대로 재사용
+- **결정**: URL 쿼리 파라미터로 최초 1회 전달 + 웹 쪽 저장은 새 메커니즘을 만들지
+  않고 기존 `apps/mobile/src/api/session.ts`(`saveToken`/`loadToken`, AsyncStorage
+  키 `weddingpick.sessionToken.v1`)를 그대로 쓴다. 웹 export는 같은 코드베이스가
+  react-native-web으로 빌드된 것이라 AsyncStorage가 web에서는 localStorage로
+  동작하는 폴리필을 그대로 쓰기 때문에 자연스럽게 맞는다.
+- **흐름**: `WebShellView`가 `loadToken()`으로 토큰을 읽어 `?wp_token=<token>`을
+  최초 진입 URL에 한 번만 붙인다(웹뷰 내부 이동에는 다시 붙이지 않는다) →
+  `apps/mobile/src/app/_layout.tsx`(웹 타깃에서도 같은 파일)가 부팅 시
+  `wp_token`을 읽어 `saveToken()`으로 저장하고 `history.replaceState`로 주소창·
+  히스토리에서 지운다.
+- **왜 postMessage나 쿠키가 아닌가**: 토큰이 opaque 문자열 하나뿐이고(리프레시
+  토큰·만료시각은 클라이언트에 저장하지 않음, `api/client.ts`도 마찬가지), 서버가
+  쿠키 세션을 발급하지 않는다(Bearer 헤더만). 네이티브 웹뷰와 호스팅된 정적
+  사이트는 오리진이 달라 쿠키 공유도 애초에 안 된다. 반면 URL 파라미터 → 기존
+  저장 함수 재사용은 새 프로토콜 없이 HTTPS 한 번으로 끝나고, 받은 즉시
+  `replaceState`로 주소창에서 지워 히스토리·로그에 남지 않는다.
+
+### 4. 네이티브로 유지되는 화면 — 손대지 않음
+- WP-RPT-002(이미지 선택): `apps/mobile/src/app/(tabs)/capture/index.tsx`,
+  `.../capture/camera.tsx`, `apps/mobile/src/features/capture/pickers.ts`
+- WP-NOTI-003(알림 설정): `apps/mobile/src/app/(tabs)/my/notifications.tsx`
+- 이번 POC 브랜치에서 이 파일들은 전혀 수정하지 않았다(git diff로 확인됨).
+
+### 5. 아직 안 정한 것 (이 POC가 답하지 않은 부분)
+- **웹뷰 내부 라우팅과 RN 라우터 동기화**: 지금은 화면 전체를 웹뷰로 통째로
+  바꾸는 구조라, 웹뷰 안에서 (호스팅된 앱의) expo-router가 다른 경로로 이동해도
+  네이티브 탭바·스택은 그 사실을 모른다. 웹뷰 화면 안에서 다른 탭으로 가야 하는
+  링크를 누르면 어떻게 할지(웹뷰 안에서 그대로 이동 vs `postMessage`로 네이티브
+  라우터에 알려서 네이티브 화면 전환) 정하지 않았다.
+- **딥링크**: `weddingpick://` 커스텀 스킴이 웹뷰로 대체된 화면을 가리킬 때 동작을
+  정하지 않았다.
+- **로그아웃 시 웹뷰 쪽 정리**: 네이티브에서 `clearToken()` 호출 시 이미 열려있는
+  웹뷰의 localStorage까지 지울지, 다음 로드 때만 반영할지 정하지 않았다.
+
+---
+
 ## 🚨 사용자 직접 조치 필요 (Claude 불가)
+
+### 8. 하이브리드 웹뷰 쉘 POC — Render 서비스 생성 필요 (2026-09-04)
+**상태**: `render.yaml`에 `weddingpick-app-web` 정의만 추가됨, 실제 서비스
+미생성.
+
+**필요한 조치**:
+1. Render 대시보드에서 이 저장소의 Blueprint(`render.yaml`)를 동기화하거나
+   `weddingpick-app-web` 정적 사이트를 수동 생성 (새 유료 리소스 — 생성
+   여부·요금제 확인 필요)
+2. 배포된 URL을 `apps/mobile/eas.json`의 `build.preview.env`와
+   `build.production.env`에 `EXPO_PUBLIC_WEB_URL`로 추가
+3. 실제로 웹뷰 쉘을 켜보려면 빌드 시 `EXPO_PUBLIC_WEBSHELL_SCREENS=home,pick`도
+   함께 넣어야 함(기본은 꺼짐)
 
 ### 0. 회원탈퇴 정책 — 최종 확정: 자동삭제 + 운영자 개입 (2026-09-02, 사용자 결정)
 **상태**: 해결됨. main의 `release-gate.ts`/`withdrawalReady()` 게이트 방식은 채택하지

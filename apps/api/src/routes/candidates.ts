@@ -4,10 +4,12 @@ import {
   recordComparisonRequestSchema,
 } from '@weddingpick/api-contract';
 import {
+  EXPENSE_BUCKET_LABEL,
   MAX_CANDIDATES,
   PREPARATION_STATE_LABEL,
   VENDOR_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
+  bucketFor,
   canAddCandidate,
   comparableWithin,
   groupByCategory,
@@ -351,6 +353,101 @@ export function registerCandidateRoutes(app: FastifyInstance, context: AppContex
           })),
         })),
       };
+    }
+  );
+
+  /**
+   * 결정한 업체. WP-OUR-003.
+   *
+   * 업종별 결정정보 · 관련 일정 · 관련 지출을 한 번에 묶어 준다. 관련 일정은
+   * 그 업체(vendor_id)로 잡힌 일정만이다. 관련 지출은 지출 표에 vendor_id가
+   * 없어 업체 단위로 셀 수 없으므로, **업종**으로 묶는다(bucketFor) — 지출
+   * 화면(WP-OUR-009)이 쓰는 것과 같은 갈래다.
+   */
+  app.get<{ Params: { weddingId: string } }>(
+    '/v1/weddings/:weddingId/decisions',
+    auth,
+    async (request) => {
+      const userId = currentUserId(request);
+
+      await assertWeddingAccess(context.pool, request.params.weddingId, userId);
+
+      const { rows: decided } = await context.pool.query<{
+        category: VendorCategory;
+        vendor_id: string;
+        vendor_name: string;
+        region: string;
+        decided_at: Date;
+        decided_by: string | null;
+      }>(
+        `SELECT cd.category, cd.vendor_id, v.name AS vendor_name, v.region,
+                cd.decided_at, cd.decided_by
+         FROM structured.category_decisions cd
+         JOIN structured.vendors v ON v.id = cd.vendor_id
+         WHERE cd.wedding_id = $1
+         ORDER BY cd.decided_at DESC`,
+        [request.params.weddingId]
+      );
+
+      const decisions = await Promise.all(
+        decided.map(async (row) => {
+          const events = await context.pool.query<{
+            id: string;
+            title: string;
+            starts_at: Date;
+            location: string | null;
+          }>(
+            `SELECT id, title, starts_at, location
+             FROM structured.wedding_events
+             WHERE wedding_id = $1 AND vendor_id = $2
+             ORDER BY starts_at`,
+            [request.params.weddingId, row.vendor_id]
+          );
+
+          const expenseAgg = await context.pool.query<{
+            paid_total: string;
+            paid_count: string;
+            scheduled_total: string;
+            scheduled_count: string;
+          }>(
+            `SELECT
+               coalesce(sum(amount) FILTER (WHERE status = 'paid'), 0) AS paid_total,
+               count(*) FILTER (WHERE status = 'paid') AS paid_count,
+               coalesce(sum(amount) FILTER (WHERE status = 'scheduled'), 0) AS scheduled_total,
+               count(*) FILTER (WHERE status = 'scheduled') AS scheduled_count
+             FROM structured.wedding_expenses
+             WHERE wedding_id = $1 AND category = $2::vendor_category`,
+            [request.params.weddingId, row.category]
+          );
+
+          const agg = expenseAgg.rows[0]!;
+          const bucket = bucketFor(row.category);
+
+          return {
+            category: row.category,
+            categoryLabel: VENDOR_CATEGORY_LABEL[row.category],
+            vendor: { id: row.vendor_id, name: row.vendor_name, region: row.region },
+            decidedAt: row.decided_at.toISOString(),
+            decidedByPartner: row.decided_by !== null && row.decided_by !== userId,
+            events: events.rows.map((event) => ({
+              id: event.id,
+              title: event.title,
+              startsAt: event.starts_at.toISOString(),
+              location: event.location,
+            })),
+            expenses: {
+              bucket,
+              bucketLabel: EXPENSE_BUCKET_LABEL[bucket],
+              paidTotal: Number(agg.paid_total),
+              paidCount: Number(agg.paid_count),
+              scheduledTotal: Number(agg.scheduled_total),
+              scheduledCount: Number(agg.scheduled_count),
+            },
+          };
+        })
+      );
+
+      return { decisions };
     }
   );
 }

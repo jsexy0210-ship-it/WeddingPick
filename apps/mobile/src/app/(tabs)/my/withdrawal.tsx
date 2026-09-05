@@ -19,7 +19,7 @@ import {
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -34,6 +34,7 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import { getWithdrawalNotice, withdraw } from '@/api/client';
+import { confirmAlert } from '@/components/confirm-alert';
 import { useSession } from '@/features/auth/use-session';
 
 /**
@@ -67,7 +68,7 @@ export default function WithdrawalScreen() {
 
   function confirm() {
     // 되돌릴 수 없는 행동이라 한 번 더 묻는다. 버튼 위계를 뒤집지 않는다.
-    Alert.alert(WITHDRAWAL_SHEET_TITLE, WITHDRAWAL_SHEET_BODY, [
+    confirmAlert(WITHDRAWAL_SHEET_TITLE, WITHDRAWAL_SHEET_BODY, [
       { text: '취소', style: 'cancel' },
       { text: WITHDRAWAL_SUBMIT, style: 'destructive', onPress: () => void submit() },
     ]);
