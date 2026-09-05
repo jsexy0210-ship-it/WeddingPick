@@ -86,7 +86,7 @@ GitHub 최신 main을 공통 기준으로 사용한다.
 
 ### 외부 업체 수집 작업 필수 확인 (2026-09-04 확정)
 
-통합정책 v3.14의 N-9~N-12와 `docs/wedding-data-source-risks.md`,
+통합정책 v3.15의 N-9~N-12와 `docs/wedding-data-source-risks.md`,
 `docs/wedding-data-cost-impact.md`,
 `apps/api/src/public-data/README.md`를 반드시 읽는다. 전국 업체 DB는 이용허락을
 확인한 공공데이터·업체 제공·허용된 공식 출처로 구축한다. Google·네이버·카카오
