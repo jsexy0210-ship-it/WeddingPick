@@ -45,11 +45,6 @@ const PROMO_ITEMS: BizItem[] = [
     description: '웨딩픽 사용자를 위한 할인·혜택을 등록해요.',
     route: '/my/biz/benefit',
   },
-  {
-    title: '광고 문의',
-    description: '검색 결과 상단 노출 및 광고 게재를 문의해요.',
-    route: '/my/biz/ad',
-  },
 ];
 
 const REBUTTAL_ITEMS: BizItem[] = [
@@ -93,7 +88,7 @@ function Section({ title, items }: { title: string; items: BizItem[] }) {
  * WP-BIZ-001: 업체 관계자 허브.
  *
  * 업체 관계자가 쓸 수 있는 기능을 한곳에 모아 보여준다 — 소속 확인,
- * 자료 제공, 혜택 등록, 광고 문의, 후기 반론.
+ * 자료 제공, 혜택 등록, 후기 반론.
  */
 export default function BizHomeScreen() {
   return (
@@ -110,7 +105,7 @@ export default function BizHomeScreen() {
 
           <Section title="소속 확인" items={IDENTITY_ITEMS} />
           <Section title="자료" items={DATA_ITEMS} />
-          <Section title="혜택·광고" items={PROMO_ITEMS} />
+          <Section title="혜택" items={PROMO_ITEMS} />
           <Section title="반론" items={REBUTTAL_ITEMS} />
 
           <ActionButton label="돌아가기" onPress={() => router.back()} />

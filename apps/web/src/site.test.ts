@@ -351,10 +351,11 @@ describe('서비스 웹 — 겉껍데기', () => {
     expect(FOOTER_BOTTOM.join(' ')).not.toContain('000-00-00000');
   });
 
-  it('업체 · 플래너 창구를 둔다', () => {
-    // Footer의 그 열이 B2B 진입점이다. 가리키는 곳이 문서 안에 실제로 있어야 한다.
-    expect(html).toContain('href="#inquiry"');
-    expect(html).toContain('id="inquiry"');
+  it('업체 · 플래너 문의 창구를 두지 않는다', () => {
+    // 2026-09-04 정책 변경 — 플래너 연결 기능 전체 파기(차후 도입 예정).
+    // 업체 정보 정정은 앱의 MY → 문의하기로만 받는다.
+    expect(html).not.toContain('href="#inquiry"');
+    expect(html).not.toContain('id="inquiry"');
   });
 
   it('한국어 문서로 만든다', () => {

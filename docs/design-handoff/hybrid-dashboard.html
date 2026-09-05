@@ -1,0 +1,307 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<title>하이브리드 전환 현황판</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    --ground:    #F2F5F9;
+    --surface:   #FFFFFF;
+    --elevated:  #EBF0F6;
+    --border:    #D0DAE6;
+    --border-hi: #B0BFD0;
+    --accent:    #A87220;
+    --accent-lo: rgba(168,114,32,0.10);
+    --ok:        #059669;
+    --ok-lo:     rgba(5,150,105,0.10);
+    --warn:      #B45309;
+    --warn-lo:   rgba(180,83,9,0.10);
+    --danger:    #DC2626;
+    --danger-lo: rgba(220,38,38,0.10);
+    --info:      #2563EB;
+    --info-lo:   rgba(37,99,235,0.10);
+    --text:      #1A2637;
+    --text-2:    #4A6080;
+    --text-3:    #8A9DB8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:#0B0F14; --surface:#131A22; --elevated:#1C2633; --border:#253040; --border-hi:#354A60;
+      --accent:#C8912A; --accent-lo:rgba(200,145,42,.12);
+      --ok:#34D399; --ok-lo:rgba(52,211,153,.12);
+      --warn:#FBBF24; --warn-lo:rgba(251,191,36,.12);
+      --danger:#F87171; --danger-lo:rgba(248,113,113,.12);
+      --info:#60A5FA; --info-lo:rgba(96,165,250,.12);
+      --text:#E2E8F0; --text-2:#94A8BE; --text-3:#57708A;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:#0B0F14; --surface:#131A22; --elevated:#1C2633; --border:#253040; --border-hi:#354A60;
+    --accent:#C8912A; --accent-lo:rgba(200,145,42,.12);
+    --ok:#34D399; --ok-lo:rgba(52,211,153,.12);
+    --warn:#FBBF24; --warn-lo:rgba(251,191,36,.12);
+    --danger:#F87171; --danger-lo:rgba(248,113,113,.12);
+    --info:#60A5FA; --info-lo:rgba(96,165,250,.12);
+    --text:#E2E8F0; --text-2:#94A8BE; --text-3:#57708A;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--ground); color: var(--text); font-family: 'Noto Sans KR', system-ui, sans-serif; font-size: 14px; line-height: 1.6; }
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .brand { font-family: 'Noto Serif KR', serif; font-size: 18px; font-weight: 700; }
+  .brand span { color: var(--accent); }
+  .sub { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
+  .header-right { display:flex; align-items:center; gap:18px; }
+  .overall { display:flex; align-items:baseline; gap:6px; }
+  .overall b { font-family:'Noto Serif KR',serif; font-size:28px; font-variant-numeric:tabular-nums; color:var(--ok); }
+  .overall .of { font-size:14px; color:var(--text-3); font-variant-numeric:tabular-nums; }
+  .overall .lbl { font-size:10px; color:var(--text-3); text-transform:uppercase; letter-spacing:.06em; margin-left:4px; }
+  .live { display:flex; align-items:center; gap:6px; font-size:11px; color: var(--text-3); }
+  .live .dot { width:7px; height:7px; border-radius:50%; background: var(--ok); box-shadow: 0 0 0 3px var(--ok-lo); }
+  .live.stale .dot { background: var(--text-3); box-shadow: 0 0 0 3px var(--elevated); }
+
+  .stat-row { display:grid; grid-template-columns: repeat(6,1fr); gap:1px; background:var(--border); border-bottom:1px solid var(--border); }
+  .stat { background:var(--surface); padding:14px 18px; display:flex; flex-direction:column; gap:3px; }
+  .stat b { font-family:'Noto Serif KR',serif; font-size:24px; font-variant-numeric:tabular-nums; }
+  .stat span { font-size:10px; color:var(--text-3); text-transform:uppercase; letter-spacing:.06em; }
+  .c-ok{color:var(--ok)} .c-warn{color:var(--warn)} .c-danger{color:var(--danger)} .c-info{color:var(--info)} .c-accent{color:var(--accent)}
+
+  .overall-bar-wrap { padding: 10px 28px; background:var(--surface); border-bottom:1px solid var(--border); }
+  .overall-bar-track { width:100%; height:8px; background:var(--elevated); border-radius:4px; overflow:hidden; }
+  .overall-bar-fill { height:100%; background:var(--ok); border-radius:4px; transition:width .3s; }
+
+  main { max-width: 1200px; margin: 0 auto; padding: 24px 28px 60px; }
+  .sec-title { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); margin: 28px 0 10px; }
+  .sec-title:first-child { margin-top: 0; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 14px; }
+
+  .session-row { display:flex; gap:12px; padding:11px 16px; border-bottom:1px solid var(--border); align-items:flex-start; }
+  .session-row:last-child { border-bottom:none; }
+  .session-badge { font-size:9px; font-weight:700; padding:2px 7px; border-radius:9px; text-transform:uppercase; letter-spacing:.04em; flex-shrink:0; margin-top:2px; }
+  .b-running { background:var(--info-lo); color:var(--info); }
+  .b-done { background:var(--ok-lo); color:var(--ok); }
+  .b-blocked { background:var(--danger-lo); color:var(--danger); }
+  .session-body { flex:1; min-width:0; }
+  .session-name { font-weight:600; }
+  .session-task { color:var(--text-2); font-size:12.5px; margin-top:2px; }
+  .session-meta { color:var(--text-3); font-size:11px; margin-top:4px; display:flex; gap:10px; flex-wrap:wrap; }
+  .session-meta a { color: var(--info); text-decoration:none; }
+  .session-meta a:hover { text-decoration:underline; }
+  .empty { padding:20px 16px; color:var(--text-3); font-size:12.5px; text-align:center; }
+
+  .section-group { background:var(--surface); border:1px solid var(--border); border-radius:10px; margin-bottom:10px; overflow:hidden; }
+  .section-head { display:flex; align-items:center; justify-content:space-between; padding:11px 16px; cursor:pointer; user-select:none; gap:10px; }
+  .section-head:hover { background: var(--elevated); }
+  .section-head-left { display:flex; align-items:center; gap:10px; font-weight:600; }
+  .section-head-right { display:flex; align-items:center; gap:10px; }
+  .chip { font-size:10px; padding:1px 7px; border-radius:8px; font-weight:600; font-variant-numeric:tabular-nums; }
+  .progress-track { width:80px; height:5px; background:var(--elevated); border-radius:3px; overflow:hidden; }
+  .progress-fill { height:100%; background:var(--ok); border-radius:3px; }
+  .chevron { color:var(--text-3); font-size:10px; transition:transform .15s; }
+  .section-group.open .chevron { transform:rotate(90deg); }
+  .screen-list { display:none; border-top:1px solid var(--border); }
+  .section-group.open .screen-list { display:block; }
+  .screen-row { display:grid; grid-template-columns: 96px 1fr 84px; gap:10px; align-items:center; padding:7px 16px 7px 32px; border-bottom:1px solid var(--border); font-size:12.5px; }
+  .screen-row:last-child { border-bottom:none; }
+  .screen-id { font-family: ui-monospace, monospace; font-size:11px; color:var(--text-3); }
+  .screen-name { color:var(--text); }
+  .screen-note { color:var(--text-3); font-size:11px; margin-top:1px; }
+  .status-pill { font-size:9px; padding:2px 7px; border-radius:8px; font-weight:700; text-align:center; text-transform:uppercase; letter-spacing:.03em; white-space:nowrap; }
+  .s-todo { background:var(--elevated); color:var(--text-3); }
+  .s-in_progress { background:var(--info-lo); color:var(--info); }
+  .s-pass { background:var(--ok-lo); color:var(--ok); }
+  .s-fixed { background:var(--ok-lo); color:var(--ok); }
+  .s-blocked { background:var(--danger-lo); color:var(--danger); }
+
+  footer { text-align:center; padding: 20px; color: var(--text-3); font-size: 11px; }
+  footer code { font-family: ui-monospace, monospace; background: var(--elevated); padding: 1px 5px; border-radius: 3px; }
+
+  @media (max-width: 860px) {
+    .stat-row { grid-template-columns: repeat(3,1fr); }
+    .screen-row { grid-template-columns: 1fr 60px; }
+    .screen-id { display:none; }
+    .header-right { gap:10px; }
+    .overall b { font-size:22px; }
+  }
+</style>
+
+<header>
+  <div>
+    <div class="brand">Wedding<span>Pickl</span> · 하이브리드 전환</div>
+    <div class="sub">마스터 세션 병렬 작업 현황판</div>
+  </div>
+  <div class="header-right">
+    <div class="overall">
+      <b id="overallDone">—</b><span class="of" id="overallOf">/ —</span><span class="lbl">완료</span>
+    </div>
+    <div class="live" id="liveIndicator"><span class="dot"></span><span id="liveText">연결 중…</span></div>
+  </div>
+</header>
+
+<div class="overall-bar-wrap">
+  <div class="overall-bar-track"><div class="overall-bar-fill" id="overallBarFill" style="width:0%"></div></div>
+</div>
+
+<div class="stat-row" id="statRow">
+  <div class="stat"><b class="c-accent" id="statTotal">—</b><span>전체 화면</span></div>
+  <div class="stat"><b class="c-ok" id="statPass">—</b><span>통과·수정완료</span></div>
+  <div class="stat"><b class="c-info" id="statProgress">—</b><span>점검 중</span></div>
+  <div class="stat"><b class="c-danger" id="statBlocked">—</b><span>막힘</span></div>
+  <div class="stat"><b id="statTodo">—</b><span>대기</span></div>
+  <div class="stat"><b class="c-info" id="statSessions">—</b><span>가동 세션</span></div>
+</div>
+
+<main>
+  <div class="sec-title">가동 중인 작업 세션</div>
+  <div class="card" id="sessionsCard">
+    <div class="empty">불러오는 중…</div>
+  </div>
+
+  <div class="sec-title">화면별 하이브리드 전환 점검 현황 (섹션별)</div>
+  <div id="sectionsContainer">
+    <div class="empty" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;">불러오는 중…</div>
+  </div>
+</main>
+
+<footer>
+  기준 문서 <code>docs/AI_HANDOFF.md</code> · <code>docs/design-handoff/2026-09-04-hybrid-policy-screens.md</code> ·
+  QA 기준 <code>docs/design-handoff/hybrid-web-qa-checklist.md</code><br>
+  이 페이지는 자동으로 갱신됩니다 (실시간 DB 구독) — 새로고침 불필요
+</footer>
+
+<script>
+(async () => {
+  const liveDot = document.querySelector('#liveIndicator .dot');
+  const liveText = document.getElementById('liveText');
+  const db = (window.claude && window.claude.use) ? await window.claude.use('db') : null;
+
+  if (!db) {
+    liveText.textContent = '실시간 연결 불가 (읽기 전용 보기)';
+    document.getElementById('liveIndicator').classList.add('stale');
+    return;
+  }
+  liveText.textContent = '실시간 연결됨';
+
+  const STATUS_LABEL = { todo: '대기', in_progress: '점검 중', pass: '통과', fixed: '수정완료', blocked: '막힘' };
+  const SESSION_BADGE = { running: ['b-running', '진행 중'], done: ['b-done', '완료'], blocked: ['b-blocked', '막힘'] };
+
+  function fmtTime(iso) {
+    if (!iso) return '';
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' KST';
+    } catch { return iso; }
+  }
+
+  function renderSessions(docs) {
+    const card = document.getElementById('sessionsCard');
+    if (docs.length === 0) {
+      card.innerHTML = '<div class="empty">가동 중인 세션이 없습니다</div>';
+      document.getElementById('statSessions').textContent = '0';
+      return;
+    }
+    const running = docs.filter(d => (d.data().status || 'running') === 'running').length;
+    document.getElementById('statSessions').textContent = String(running);
+
+    card.innerHTML = docs
+      .slice()
+      .sort((a, b) => (a.data().order ?? 0) - (b.data().order ?? 0))
+      .map(d => {
+        const s = d.data();
+        const [cls, label] = SESSION_BADGE[s.status] || SESSION_BADGE.running;
+        const meta = [];
+        if (s.branch) meta.push(`브랜치 <code>${esc(s.branch)}</code>`);
+        if (s.prUrl) meta.push(`<a href="${esc(s.prUrl)}" target="_blank" rel="noreferrer">PR 보기 ↗</a>`);
+        if (s.updatedAt) meta.push(`업데이트 ${fmtTime(s.updatedAt)}`);
+        return `<div class="session-row">
+          <span class="session-badge ${cls}">${label}</span>
+          <div class="session-body">
+            <div class="session-name">${esc(s.name || d.id)}</div>
+            <div class="session-task">${esc(s.task || '')}</div>
+            ${s.note ? `<div class="session-task" style="color:var(--text-3)">${esc(s.note)}</div>` : ''}
+            <div class="session-meta">${meta.join(' · ')}</div>
+          </div>
+        </div>`;
+      })
+      .join('');
+  }
+
+  function esc(str) {
+    return String(str ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  function renderSections(docs) {
+    const container = document.getElementById('sectionsContainer');
+    if (docs.length === 0) {
+      container.innerHTML = '<div class="empty" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;">데이터 없음</div>';
+      return;
+    }
+
+    let total = 0, pass = 0, inProgress = 0, blocked = 0, todo = 0;
+
+    const order = ['entry-nav','home','search-vendor','pick','wedding-couple','report-review','events-noti','my-biz','shared-shortcuts-states','rn-keep','admin-web-only','web-unchanged','other'];
+    const byId = {};
+    docs.forEach(d => { byId[d.id] = d.data(); });
+
+    const html = order.filter(k => byId[k]).map(key => {
+      const sec = byId[key];
+      const screens = sec.screens || [];
+      const done = screens.filter(s => s.status === 'pass' || s.status === 'fixed').length;
+      const prog = screens.filter(s => s.status === 'in_progress').length;
+      const blk = screens.filter(s => s.status === 'blocked').length;
+      const tod = screens.filter(s => !s.status || s.status === 'todo').length;
+      total += screens.length; pass += done; inProgress += prog; blocked += blk; todo += tod;
+
+      const pct = screens.length ? Math.round((done / screens.length) * 100) : 0;
+      const rows = screens.map(s => `
+        <div class="screen-row">
+          <span class="screen-id">${esc(s.id)}</span>
+          <div>
+            <div class="screen-name">${esc(s.name)}</div>
+            ${s.note ? `<div class="screen-note">${esc(s.note)}</div>` : ''}
+          </div>
+          <span class="status-pill s-${esc(s.status || 'todo')}">${esc(STATUS_LABEL[s.status] || '대기')}</span>
+        </div>`).join('');
+
+      return `<div class="section-group" data-key="${esc(key)}">
+        <div class="section-head" onclick="this.closest('.section-group').classList.toggle('open')">
+          <div class="section-head-left">
+            <span>${esc(sec.label || key)}</span>
+            <span class="chip" style="background:var(--elevated);color:var(--text-3)">${done}/${screens.length}</span>
+          </div>
+          <div class="section-head-right">
+            <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+            <span class="chip" style="background:var(--ok-lo);color:var(--ok)">${pct}%</span>
+            <span class="chevron">▶</span>
+          </div>
+        </div>
+        <div class="screen-list">${rows}</div>
+      </div>`;
+    }).join('');
+
+    container.innerHTML = html;
+
+    document.getElementById('statTotal').textContent = String(total);
+    document.getElementById('statPass').textContent = String(pass);
+    document.getElementById('statProgress').textContent = String(inProgress);
+    document.getElementById('statBlocked').textContent = String(blocked);
+    document.getElementById('statTodo').textContent = String(todo);
+
+    document.getElementById('overallDone').textContent = String(pass);
+    document.getElementById('overallOf').textContent = `/ ${total}`;
+    const overallPct = total ? Math.round((pass / total) * 100) : 0;
+    document.getElementById('overallBarFill').style.width = overallPct + '%';
+    document.title = `(${pass}/${total}) 하이브리드 전환 현황판`;
+  }
+
+  db.collection('sessions').onSnapshot(
+    (snap) => renderSessions(snap.docs),
+    () => { liveText.textContent = '연결 끊김'; document.getElementById('liveIndicator').classList.add('stale'); }
+  );
+
+  db.collection('sections').onSnapshot(
+    (snap) => renderSections(snap.docs),
+    () => { liveText.textContent = '연결 끊김'; document.getElementById('liveIndicator').classList.add('stale'); }
+  );
+})();
+</script>
+
+</body></html>
