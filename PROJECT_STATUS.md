@@ -25,6 +25,13 @@
 -   Naver Cloud Platform Object Storage: `weddingpick-test`
 -   웨딩픽 웹사이트: 서비스 웹·정책·지원 페이지
 -   Render: API 서버·운영 배포 기준 (`https://weddingpickl.onrender.com`)
+-   (2026-09-05) Render Blueprint(`render.yaml`) 최초 동기화로 `weddingpick-web`·
+    `weddingpick-admin`·`weddingpick-app-web`(실제 앱 화면 검수용, 하이브리드
+    웹뷰 정적 호스팅)이 free 플랜으로 배포됨. `weddingpick-api`는 위 운영 API
+    (`weddingpickl.onrender.com`)와 **별개인 신규 중복 서비스**로 함께 생성됨 —
+    시크릿 미설정으로 Failed 상태. free 플랜이라 비용 없음을 확인, 사용자가
+    삭제하지 않고 **그대로 유지하기로 결정**(운영 API 대체 아님, 착오로 재생성
+    하지 않을 것).
 
 ## 완료
 
