@@ -28,10 +28,11 @@
 -   (2026-09-05) Render Blueprint(`render.yaml`) 최초 동기화로 `weddingpick-web`·
     `weddingpick-admin`·`weddingpick-app-web`(실제 앱 화면 검수용, 하이브리드
     웹뷰 정적 호스팅)이 free 플랜으로 배포됨. `weddingpick-api`는 위 운영 API
-    (`weddingpickl.onrender.com`)와 **별개인 신규 중복 서비스**로 함께 생성됨 —
-    시크릿 미설정으로 Failed 상태. free 플랜이라 비용 없음을 확인, 사용자가
-    삭제하지 않고 **그대로 유지하기로 결정**(운영 API 대체 아님, 착오로 재생성
-    하지 않을 것).
+    (`weddingpickl.onrender.com`)와 **별개인 신규 중복 서비스**로 함께 생성됨.
+    사용자 최종 결정: 삭제하지 않고 **스테이징 API로 활용** — `NODE_ENV=staging`,
+    `STORAGE_DRIVER=local`로 바꿔 S3 없이도 부팅되게 함(`render.yaml` 반영 완료).
+    `DATABASE_URL`은 아직 미설정 — Render 대시보드에서 수동 입력 필요(운영 Neon과
+    분리된 스테이징 DB 사용을 권장, 최종 결정은 사용자 몫).
 
 ## 완료
 

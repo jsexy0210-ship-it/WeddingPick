@@ -41,7 +41,11 @@ services:
         source: /*
         destination: /index.html
 
-  # API 서버
+  # API 서버 — 2026-09-05: 실제 운영 API(weddingpickl.onrender.com, 이 Blueprint
+  # 밖에서 별도 관리됨)와는 별개로 새로 생성된 서비스. 사용자 결정으로 삭제하지
+  # 않고 스테이징 API로 활용한다. NODE_ENV를 production으로 두지 않는 이유:
+  # apps/api/src/config.ts가 production일 때 STORAGE_DRIVER=s3 + S3_BUCKET을
+  # 강제한다 — 스테이징은 로컬 스토리지로 충분하다.
   - type: web
     name: weddingpick-api
     runtime: docker
@@ -52,7 +56,7 @@ services:
     autoDeploy: true
     envVars:
       - key: NODE_ENV
-        value: production
+        value: staging
       - key: DATABASE_URL
         sync: false
       - key: ANTHROPIC_API_KEY
@@ -86,7 +90,7 @@ services:
       - key: LEGAL_SERVICE_TERMS_URL
         sync: false
       - key: STORAGE_DRIVER
-        value: s3
+        value: local
       - key: S3_BUCKET
         sync: false
       - key: S3_REGION
