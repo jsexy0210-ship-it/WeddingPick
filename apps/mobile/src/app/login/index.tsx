@@ -18,7 +18,7 @@ import { useSignIn } from '@/features/auth/use-sign-in';
  * `auth.login.benefit*`과 같은 문장을 유지한다.
  */
 const REASONS = [
-  '실제 견적 금액을 비교해요',
+  '실제 견적 금액을 비교해요', // pick-language: 업체에서 실제로 받은 금액을 가리키는 말 — 서류를 고르라는 자리가 아니다
   '마음에 드는 곳을 함께 Pick해요',
   '일정과 지출도 한곳에서 관리해요',
 ];
@@ -127,7 +127,7 @@ export default function LoginScreen() {
               <>
                 <ThemedView style={styles.section}>
                   <ThemedText type="t1">
-                    웨딩 준비,{'\n'}진짜 견적부터{'\n'}확인해 보세요
+                    웨딩 준비,{'\n'}진짜 견적부터{'\n'}확인해 보세요{/* pick-language: 업체에서 실제로 받은 금액을 가리키는 말 — 서류를 고르라는 자리가 아니다 */}
                   </ThemedText>
                 </ThemedView>
 

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-import { Layout, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import { FontSize, Layout, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 
 export type AuthTextFieldProps = {
   label: string;
@@ -129,5 +129,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.two,
   },
-  input: { flex: 1, height: '100%', fontSize: 17 },
+  /** 입력 칸의 글자도 본문이다 — `FontSize` 표의 t6. 숫자를 직접 적지 않는다. */
+  input: { flex: 1, height: '100%', fontSize: FontSize.t6 },
 });
