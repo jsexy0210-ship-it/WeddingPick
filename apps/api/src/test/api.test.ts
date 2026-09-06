@@ -94,7 +94,12 @@ describeWithDb('API', () => {
         const response = await test.app.inject({
           method: 'POST',
           url: '/v1/auth/sessions',
-          payload: { provider: 'kakao', idToken: 'x' },
+          payload: {
+            provider: 'kakao',
+            authorizationCode: 'x',
+            state: 'state',
+            redirectUri: 'https://weddingpick-app-web.onrender.com/login',
+          },
         });
 
         expect(response.statusCode).toBe(400);

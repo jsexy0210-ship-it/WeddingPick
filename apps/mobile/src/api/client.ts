@@ -220,7 +220,7 @@ export async function listAuthProviders(): Promise<AuthProvidersResponse> {
 }
 
 export async function signIn(
-  provider: 'apple' | 'kakao' | 'google',
+  provider: 'apple' | 'google',
   idToken: string,
   profileName?: string
 ): Promise<void> {
@@ -233,7 +233,9 @@ export async function signIn(
   await saveToken(session.token);
 }
 
+/** 네이버·카카오. 앱은 일회용 인가 코드만 넘기고 토큰 교환은 서버가 한다. */
 export async function signInWithAuthorizationCode(input: {
+  provider: 'naver' | 'kakao';
   authorizationCode: string;
   state: string;
   redirectUri: string;
@@ -241,7 +243,7 @@ export async function signInWithAuthorizationCode(input: {
 }): Promise<void> {
   const session = await request('/v1/auth/sessions', createSessionResponseSchema, {
     method: 'POST',
-    body: JSON.stringify({ provider: 'naver', ...input }),
+    body: JSON.stringify(input),
     auth: false,
   });
 

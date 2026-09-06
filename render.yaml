@@ -44,8 +44,11 @@ services:
     envVars:
       - key: EXPO_PUBLIC_API_URL
         value: https://weddingpickl.onrender.com
+      # 카카오 REST API 키 — "로그인 리다이렉트 URI"가 등록된 키. 네이티브 앱 키
+      # (73d13d81…)를 넣으면 REST /oauth/authorize가 KOE033으로 거부한다.
+      # 운영 API의 KAKAO_APP_KEY도 같은 값이어야 토큰 교환·id_token aud가 맞는다.
       - key: EXPO_PUBLIC_KAKAO_CLIENT_ID
-        value: 73d13d819afd9d14f20de20b8dff46b8
+        value: 8e9a14dd3a0aa1a420bff858460c415c
       - key: EXPO_PUBLIC_GOOGLE_CLIENT_ID
         value: 595165026523-dd5s0fqtle78e03mb34m9iaclpdmlb9r.apps.googleusercontent.com
       - key: EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID
@@ -85,6 +88,8 @@ services:
       - key: APPLE_CLIENT_ID
         sync: false
       - key: KAKAO_APP_KEY
+        sync: false
+      - key: KAKAO_CLIENT_SECRET
         sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false

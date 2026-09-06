@@ -37,18 +37,22 @@ export type IdentityProvider = {
   | { flow: 'authorization_code'; verify(credential: AuthorizationCodeCredential): Promise<VerifiedIdentity> }
 );
 
-/**
- * OIDC id_token을 제공자의 공개키로 검증한다.
- *
- * Apple과 Kakao 모두 OIDC라 검증 방식이 같다. 우리는 토큰을 만들지 않고 확인만 한다 —
- * 제공자의 비밀키를 서버가 들고 있지 않아도 된다.
- */
-function createOidcProvider(options: {
+type OidcOptions = {
   provider: IdentityProviderName;
   issuer: string | string[];
   jwksUrl: string;
   audience: string | string[];
-}): IdentityProvider {
+};
+
+/**
+ * OIDC id_token을 제공자의 공개키로 검증하는 함수를 만든다.
+ *
+ * Apple·Google·Kakao 모두 OIDC라 검증 방식이 같다. 우리는 토큰을 만들지 않고 확인만
+ * 한다 — 제공자의 비밀키를 서버가 들고 있지 않아도 된다. 앱이 id_token을 직접
+ * 받아오는 제공자(`createOidcProvider`)와 서버가 인가 코드를 교환해서 받는 제공자
+ * (카카오)가 같은 검증을 쓴다.
+ */
+function createIdTokenVerifier(options: OidcOptions): (idToken: string) => Promise<VerifiedIdentity> {
   // jose는 ESM 전용이라 실행 시점에 불러온다. 공개키 묶음은 한 번만 만들어 재사용한다.
   let jwks: Awaited<ReturnType<typeof loadJwks>> | undefined;
 
@@ -57,36 +61,37 @@ function createOidcProvider(options: {
     return createRemoteJWKSet(new URL(options.jwksUrl));
   }
 
-  return {
-    flow: 'id_token',
-    async verify(idToken) {
-      const { jwtVerify } = await import('jose');
-      jwks ??= await loadJwks();
+  return async (idToken) => {
+    const { jwtVerify } = await import('jose');
+    jwks ??= await loadJwks();
 
-      const { payload } = await jwtVerify(idToken, jwks, {
-        issuer: options.issuer,
-        audience: options.audience,
-      });
+    const { payload } = await jwtVerify(idToken, jwks, {
+      issuer: options.issuer,
+      audience: options.audience,
+    });
 
-      if (!payload.sub) {
-        throw new Error('id_token에 sub이 없다.');
-      }
+    if (!payload.sub) {
+      throw new Error('id_token에 sub이 없다.');
+    }
 
-      return {
-        provider: options.provider,
-        subject: payload.sub,
-        email: typeof payload.email === 'string' ? payload.email : undefined,
-        profile: {
-          name: stringValue(payload.name),
-          nickname: stringValue(payload.nickname ?? payload.preferred_username),
-          profileImageUrl: stringValue(payload.picture),
-          gender: stringValue(payload.gender),
-          birthday: stringValue(payload.birthdate),
-          mobile: stringValue(payload.phone_number),
-        },
-      };
-    },
+    return {
+      provider: options.provider,
+      subject: payload.sub,
+      email: typeof payload.email === 'string' ? payload.email : undefined,
+      profile: {
+        name: stringValue(payload.name),
+        nickname: stringValue(payload.nickname ?? payload.preferred_username),
+        profileImageUrl: stringValue(payload.picture),
+        gender: stringValue(payload.gender),
+        birthday: stringValue(payload.birthdate),
+        mobile: stringValue(payload.phone_number),
+      },
+    };
   };
+}
+
+function createOidcProvider(options: OidcOptions): IdentityProvider {
+  return { flow: 'id_token', verify: createIdTokenVerifier(options) };
 }
 
 export function createNaverProvider(options: {
@@ -171,13 +176,60 @@ export function createAppleProvider(clientId: string): IdentityProvider {
   });
 }
 
-export function createKakaoProvider(appKey: string): IdentityProvider {
-  return createOidcProvider({
+/**
+ * 카카오. 앱은 인가 코드만 받고 서버가 `/oauth/token`으로 교환한다.
+ *
+ * 카카오 REST API는 `/oauth/authorize`에서 `response_type=code`만 지원한다 —
+ * `id_token`을 바로 달라고 하면 "지원하지 않는 SDK 버전"(KOE033)으로 거부된다.
+ * OpenID Connect가 켜진 앱은 토큰 교환 응답에 `id_token`이 함께 오므로, 그걸
+ * Apple·Google과 같은 방식으로 공개키 검증한다.
+ *
+ * `appKey`는 REST API 키다 — 앱이 authorize 요청에 쓴 client_id와 같아야 교환도
+ * 되고 id_token의 `aud`도 맞는다. redirect URI 허용목록은 두지 않는다 — 카카오가
+ * 교환 시점에 authorize 때 쓴 값과 같은지 직접 대조하고, 등록되지 않은 주소로는
+ * 애초에 코드가 발급되지 않는다. Client Secret은 카카오 콘솔에서 "사용함"으로
+ * 켠 앱에만 필요하다.
+ */
+export function createKakaoProvider(options: {
+  appKey: string;
+  clientSecret?: string;
+  fetchImpl?: typeof fetch;
+}): IdentityProvider {
+  const fetchImpl = options.fetchImpl ?? fetch;
+  const verifyIdToken = createIdTokenVerifier({
     provider: 'kakao',
     issuer: 'https://kauth.kakao.com',
     jwksUrl: 'https://kauth.kakao.com/.well-known/jwks.json',
-    audience: appKey,
+    audience: options.appKey,
   });
+
+  return {
+    flow: 'authorization_code',
+    async verify(credential) {
+      const tokenBody = new URLSearchParams({
+        grant_type: 'authorization_code',
+        client_id: options.appKey,
+        redirect_uri: credential.redirectUri,
+        code: credential.authorizationCode,
+      });
+      if (options.clientSecret) tokenBody.set('client_secret', options.clientSecret);
+      if (credential.codeVerifier) tokenBody.set('code_verifier', credential.codeVerifier);
+
+      const tokenResponse = await fetchImpl('https://kauth.kakao.com/oauth/token', {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded;charset=utf-8' },
+        body: tokenBody,
+      });
+      if (!tokenResponse.ok) throw new Error('카카오 토큰 교환에 실패했다.');
+
+      const token = (await tokenResponse.json()) as { id_token?: unknown };
+      if (typeof token.id_token !== 'string' || token.id_token.length === 0) {
+        throw new Error('카카오 id_token이 없다. 앱의 OpenID Connect가 꺼져 있거나 scope에 openid가 빠졌다.');
+      }
+
+      return verifyIdToken(token.id_token);
+    },
+  };
 }
 
 export function createGoogleProvider(clientId: string): IdentityProvider {

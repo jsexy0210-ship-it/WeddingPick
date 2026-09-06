@@ -14,7 +14,7 @@
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_API_URL": "https://weddingpickl.onrender.com",
-        "EXPO_PUBLIC_KAKAO_CLIENT_ID": "73d13d819afd9d14f20de20b8dff46b8",
+        "EXPO_PUBLIC_KAKAO_CLIENT_ID": "8e9a14dd3a0aa1a420bff858460c415c",
         "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "595165026523-dd5s0fqtle78e03mb34m9iaclpdmlb9r.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "595165026523-3mlcq960r5q174h6chun8mommjkpt0qi.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "595165026523-bg8hu37bq5mll2gr879artmgh4h2a9v0.apps.googleusercontent.com",
@@ -31,7 +31,7 @@
     "production": {
       "env": {
         "EXPO_PUBLIC_API_URL": "https://weddingpickl.onrender.com",
-        "EXPO_PUBLIC_KAKAO_CLIENT_ID": "73d13d819afd9d14f20de20b8dff46b8",
+        "EXPO_PUBLIC_KAKAO_CLIENT_ID": "8e9a14dd3a0aa1a420bff858460c415c",
         "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "595165026523-dd5s0fqtle78e03mb34m9iaclpdmlb9r.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "595165026523-3mlcq960r5q174h6chun8mommjkpt0qi.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "595165026523-bg8hu37bq5mll2gr879artmgh4h2a9v0.apps.googleusercontent.com",
