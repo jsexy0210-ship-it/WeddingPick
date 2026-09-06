@@ -18,9 +18,9 @@ import { useSignIn } from '@/features/auth/use-sign-in';
  * `auth.login.benefit*`과 같은 문장을 유지한다.
  */
 const REASONS = [
-  '확인된 제보로 실제 금액대를 볼 수 있어요',
-  '배우자와 일정과 지출을 같이 봐요',
-  '기기를 바꿔도 고른 곳이 그대로 있어요',
+  '실제 견적 금액을 비교해요',
+  '마음에 드는 곳을 함께 Pick해요',
+  '일정과 지출도 한곳에서 관리해요',
 ];
 
 /**
@@ -127,10 +127,7 @@ export default function LoginScreen() {
               <>
                 <ThemedView style={styles.section}>
                   <ThemedText type="t1">
-                    웨딩 준비,{'\n'}여기서 같이 해요
-                  </ThemedText>
-                  <ThemedText type="t6" themeColor="textSecondary">
-                    확인된 제보로 고르고 배우자와 함께 정해요
+                    웨딩 준비,{'\n'}진짜 견적부터{'\n'}확인해 보세요
                   </ThemedText>
                 </ThemedView>
 
