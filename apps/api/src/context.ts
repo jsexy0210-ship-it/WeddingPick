@@ -2,6 +2,7 @@ import type { Pool } from 'pg';
 
 import type { PaymentProofReader } from './analysis/payment-reader';
 import type { IdentityProviders } from './auth/identity-provider';
+import type { Mailer } from './auth/mailer';
 import type { Config } from './config';
 import type { Storage } from './storage/port';
 
@@ -10,6 +11,8 @@ export type AppContext = {
   pool: Pool;
   storage: Storage;
   providers: IdentityProviders;
+  /** 비밀번호 재설정 메일을 보내는 곳. */
+  mailer: Mailer;
   config: Config;
   /** 결제내역 이미지를 읽는 쪽. 테스트에서는 가짜를 끼운다. */
   proofReader: PaymentProofReader;

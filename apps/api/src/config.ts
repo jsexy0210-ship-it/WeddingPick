@@ -81,6 +81,21 @@ const configSchema = z.object({
   naverClientId: z.string().optional(),
   naverClientSecret: z.string().optional(),
   naverRedirectUris: z.array(z.string().url()).default([]),
+
+  /**
+   * 인증 메일(비밀번호 재설정 링크)을 보내는 곳. `console`은 보내지 않고 로그에만
+   * 찍는다 — 개발·스테이징용이다. 운영에서 console이면 재설정 링크가 로그에
+   * 남으므로 시작할 때 경고한다.
+   */
+  mail: z.discriminatedUnion('driver', [
+    z.object({ driver: z.literal('resend'), apiKey: z.string().min(1), from: z.string().min(1) }),
+    z.object({ driver: z.literal('console') }),
+  ]),
+  /**
+   * 재설정 메일의 링크가 여는 주소 — 웹 빌드의 `/reset-password`. 서버가 `?token=`을
+   * 붙인다. 없으면 재설정 메일을 보낼 수 없다(이메일 로그인·가입은 된다).
+   */
+  passwordResetUrl: z.string().url().optional(),
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -142,6 +157,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       .split(',')
       .map((uri) => uri.trim())
       .filter(Boolean),
+    mail:
+      env.MAIL_DRIVER === 'resend'
+        ? { driver: 'resend' as const, apiKey: env.RESEND_API_KEY, from: env.MAIL_FROM }
+        : { driver: 'console' as const },
+    passwordResetUrl: env.PASSWORD_RESET_URL,
   });
 
   if (!parsed.success) {
@@ -156,6 +176,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
 
   if (env.NODE_ENV === 'production' && !env.S3_BUCKET) {
     throw new Error('운영 환경은 S3_BUCKET 환경변수가 필수다. GitHub Secrets에서 설정하세요.');
+  }
+
+  // 막지는 않는다 — 메일 없이도 이메일 로그인·가입은 된다. 재설정 링크만 로그로 샌다.
+  if (env.NODE_ENV === 'production' && parsed.data.mail.driver === 'console') {
+    console.warn('⚠ MAIL_DRIVER가 비어 있다. 비밀번호 재설정 링크가 로그에만 찍힌다 — 운영은 resend를 설정한다.');
   }
 
   return parsed.data;

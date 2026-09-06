@@ -38,6 +38,7 @@ export * from './wedding-phase';
 export * from './faq';
 export * from './reidentification';
 export * from './advertising';
+export * from './password';
 export * from './reward';
 export * from './monthly-draw';
 export * from './nudge';

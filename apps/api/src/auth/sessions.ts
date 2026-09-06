@@ -5,7 +5,7 @@ import type { Pool } from 'pg';
 import type { VerifiedIdentity } from './identity-provider';
 
 /** 토큰 원문은 저장하지 않는다. DB가 유출돼도 세션을 되살릴 수 없다. */
-function hashToken(token: string): string {
+export function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
 

@@ -1,12 +1,35 @@
-import { createSessionRequestSchema } from '@weddingpick/api-contract';
+import {
+  createEmailAccountRequestSchema,
+  createSessionRequestSchema,
+  emailLookupRequestSchema,
+  passwordResetConfirmRequestSchema,
+  passwordResetRequestSchema,
+} from '@weddingpick/api-contract';
+import { normalizeEmail } from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
 
+import type { AttemptLimiter } from '../auth/attempt-limiter';
+import {
+  createEmailAccount,
+  createPasswordReset,
+  findEmailAccount,
+  resetPasswordWithToken,
+} from '../auth/email-account';
 import type { IdentityProviderName } from '../auth/identity-provider';
+import { hashPassword, verifyPassword } from '../auth/password';
 import { signIn, signOut } from '../auth/sessions';
 import type { AppContext } from '../context';
 import { ApiError } from '../errors';
 
-export function registerAuthRoutes(app: FastifyInstance, context: AppContext): void {
+/** 비밀번호 시도 5번까지 허용 — WP-AUTH-005 "5번 더 시도할 수 있어요"가 첫 실패 직후의 문구다. */
+export const PASSWORD_MAX_ATTEMPTS = 6;
+export const PASSWORD_ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
+
+export function registerAuthRoutes(
+  app: FastifyInstance,
+  context: AppContext,
+  passwordAttempts: AttemptLimiter
+): void {
   /**
    * 네이버는 Callback URL에 HTTPS 주소만 허용한다. 브라우저가 이 주소로
    * 돌아오면 인증 코드와 state만 앱의 등록된 커스텀 스킴으로 전달한다.
@@ -38,6 +61,41 @@ export function registerAuthRoutes(app: FastifyInstance, context: AppContext): v
 
   app.post('/v1/auth/sessions', async (request, reply) => {
     const body = createSessionRequestSchema.parse(request.body);
+
+    if (body.provider === 'email') {
+      const email = normalizeEmail(body.email);
+
+      if (!passwordAttempts.allowed(email)) {
+        throw new ApiError('rate_limited', '여러 번 틀려서 잠시 막았어요. 15분 뒤에 다시 시도해주세요.');
+      }
+
+      const account = await findEmailAccount(context.pool, email);
+      const correct = account ? await verifyPassword(body.password, account.passwordHash) : false;
+
+      if (!correct) {
+        passwordAttempts.fail(email);
+
+        // 계정이 없어도 "맞지 않다"고만 말한다 — 등록 여부를 여기서 드러내지 않는다.
+        const remaining = PASSWORD_MAX_ATTEMPTS - passwordAttempts.failCount(email);
+        throw new ApiError(
+          'unauthenticated',
+          remaining > 0 ? `비밀번호가 맞지 않아요. ${remaining}번 더 시도할 수 있어요.` : '비밀번호가 맞지 않아요.'
+        );
+      }
+
+      passwordAttempts.reset(email);
+
+      const session = await signIn(
+        context.pool,
+        { provider: 'email', subject: email },
+        context.config.sessionTtlDays
+      );
+
+      return reply
+        .status(201)
+        .send({ token: session.token, userId: session.userId, expiresAt: session.expiresAt.toISOString() });
+    }
+
     const provider = context.providers[body.provider];
 
     if (!provider) {
@@ -78,6 +136,78 @@ export function registerAuthRoutes(app: FastifyInstance, context: AppContext): v
       userId: session.userId,
       expiresAt: session.expiresAt.toISOString(),
     });
+  });
+
+  /**
+   * 이메일 판정(WP-AUTH-002). 있으면 비밀번호 입력으로, 없으면 비밀번호 만들기로 —
+   * 화면이 이 값만 보고 다음 화면을 정한다. 사용자가 가입·로그인을 고르지 않는다.
+   */
+  app.post('/v1/auth/email/lookup', async (request) => {
+    const { email } = emailLookupRequestSchema.parse(request.body);
+    const account = await findEmailAccount(context.pool, normalizeEmail(email));
+
+    return { exists: account !== null };
+  });
+
+  /** 가입(비밀번호 만들기). 성공하면 바로 세션을 연다 — 가입과 로그인을 나눠 다시 묻지 않는다. */
+  app.post('/v1/auth/email/accounts', async (request, reply) => {
+    const { email: rawEmail, password } = createEmailAccountRequestSchema.parse(request.body);
+    const email = normalizeEmail(rawEmail);
+    const passwordHash = await hashPassword(password);
+    const created = await createEmailAccount(context.pool, email, passwordHash);
+
+    if (!created) {
+      throw new ApiError('conflict', '이미 가입된 이메일이에요. 로그인해주세요.');
+    }
+
+    const account = await findEmailAccount(context.pool, email);
+    const session = await signIn(
+      context.pool,
+      { provider: 'email', subject: email },
+      context.config.sessionTtlDays
+    );
+
+    return reply
+      .status(201)
+      .send({ token: session.token, userId: session.userId, expiresAt: session.expiresAt.toISOString() });
+  });
+
+  /**
+   * 비밀번호 찾기(WP-AUTH-006). 계정이 있든 없든 항상 204다 — "메일을 보냈어요"로
+   * 같은 화면을 보여줘서 등록 여부를 드러내지 않는다(§3.3 보안 규칙).
+   */
+  app.post('/v1/auth/email/password-reset', async (request, reply) => {
+    const { email } = passwordResetRequestSchema.parse(request.body);
+    const account = await findEmailAccount(context.pool, normalizeEmail(email));
+
+    if (account) {
+      if (!context.config.passwordResetUrl) {
+        app.log.warn('PASSWORD_RESET_URL이 없어 재설정 메일을 보내지 못했다.');
+      } else {
+        const token = await createPasswordReset(context.pool, account.identityId);
+        const link = `${context.config.passwordResetUrl}?token=${encodeURIComponent(token)}`;
+
+        await context.mailer.send({
+          to: normalizeEmail(email),
+          subject: '웨딩픽 비밀번호 재설정',
+          text: `아래 링크에서 새 비밀번호를 만들어주세요. 30분 동안만 쓸 수 있어요.\n\n${link}`,
+        });
+      }
+    }
+
+    return reply.status(204).send();
+  });
+
+  /** 메일 링크의 토큰으로 새 비밀번호를 만든다. 이 계정의 다른 세션은 전부 끊긴다. */
+  app.post('/v1/auth/email/password-reset/confirm', async (request, reply) => {
+    const { token, password } = passwordResetConfirmRequestSchema.parse(request.body);
+    const ok = await resetPasswordWithToken(context.pool, token, await hashPassword(password));
+
+    if (!ok) {
+      throw new ApiError('invalid_request', '링크가 만료됐거나 이미 사용됐어요. 비밀번호 찾기를 다시 해주세요.');
+    }
+
+    return reply.status(204).send();
   });
 
   app.delete('/v1/auth/sessions', async (request, reply) => {
