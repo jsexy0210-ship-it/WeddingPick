@@ -53,7 +53,9 @@ const KAKAO_CLIENT_ID = process.env.EXPO_PUBLIC_KAKAO_CLIENT_ID;
 const GOOGLE_CLIENT_ID =
   Platform.OS === 'ios'
     ? process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID
-    : process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
+    : Platform.OS === 'web'
+      ? process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID
+      : process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
 const NAVER_CLIENT_ID = process.env.EXPO_PUBLIC_NAVER_CLIENT_ID;
 const NAVER_REDIRECT_URI = process.env.EXPO_PUBLIC_NAVER_REDIRECT_URI;
 // Kakao Native AppKey가 발급한 스킴만 Android/iOS OAuth callback으로 사용한다.
@@ -61,6 +63,18 @@ const KAKAO_REDIRECT_SCHEME = 'kakao8ffc70af8bf397e03d930e10ca38cb22';
 
 // 웹에서는 제공자가 redirect한 창을 닫고 원래 로그인 요청을 완료해야 한다.
 WebBrowser.maybeCompleteAuthSession();
+
+/**
+ * 카카오·Google 로그인 redirect URI. 네이티브 앱 커스텀 스킴(`kakao...://`,
+ * `weddingpick://`)은 웹에서 의미가 없다 — 웹은 실제 페이지 주소로
+ * 돌아와야 팝업이 원래 창에 결과를 돌려줄 수 있다(`WebBrowser.maybeCompleteAuthSession`).
+ * `/login` 고정 경로를 쓴다 — 두 버튼 다 이 화면(또는 그 위 시트)에서만
+ * 눌리므로 항상 이 경로로 돌아온다. 카카오·Google 개발자센터 양쪽에
+ * 이 값을 Redirect URI로 등록해야 한다.
+ */
+function webRedirectUri(): string {
+  return `${window.location.origin}/login`;
+}
 
 /**
  * 쓸 수 있는 로그인 방법.
@@ -152,7 +166,8 @@ export async function signInWith(provider: AuthProvider): Promise<void> {
       throw new Error('카카오 로그인 설정이 아직 완료되지 않았습니다.');
     }
 
-    const redirectUri = makeRedirectUri({ scheme: KAKAO_REDIRECT_SCHEME, path: 'oauth' });
+    const redirectUri =
+      Platform.OS === 'web' ? webRedirectUri() : makeRedirectUri({ scheme: KAKAO_REDIRECT_SCHEME, path: 'oauth' });
     const request = new AuthRequest({
       clientId: KAKAO_CLIENT_ID,
       redirectUri,
@@ -177,7 +192,7 @@ export async function signInWith(provider: AuthProvider): Promise<void> {
     if (!GOOGLE_CLIENT_ID) throw new Error('Google 로그인 설정이 아직 완료되지 않았습니다.');
     const request = new AuthRequest({
       clientId: GOOGLE_CLIENT_ID,
-      redirectUri: makeRedirectUri({ scheme: 'weddingpick' }),
+      redirectUri: Platform.OS === 'web' ? webRedirectUri() : makeRedirectUri({ scheme: 'weddingpick' }),
       responseType: ResponseType.IdToken,
       scopes: ['openid', 'profile', 'email'],
       usePKCE: false,
