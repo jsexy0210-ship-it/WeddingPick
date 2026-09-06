@@ -28,6 +28,7 @@ import { isServerConfigured } from '@/api/config';
 import { loadToken } from '@/api/session';
 import { LoginSheet } from '@/features/auth/login-sheet';
 import { savePendingAction } from '@/features/auth/pending-action';
+import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import {
   ActionButton,
   Colors,
@@ -205,7 +206,7 @@ export default function VendorDetailScreen() {
           <View style={styles.hero}>
             <VendorImage
               source={photos[0] ? { uri: photos[0].url } : undefined}
-              category={vendor.category as Parameters<typeof VendorImage>[0]['category']}
+              category={vendorImageCategory(vendor.category)}
               width={undefined}
               height={HERO_HEIGHT}
               radius={0}

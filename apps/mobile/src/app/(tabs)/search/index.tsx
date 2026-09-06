@@ -30,6 +30,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getTop3, listVendorRegions, searchVendors } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
+import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import { VendorMap } from '@/features/search/vendor-map';
 import {
   ActionButton,
@@ -396,7 +397,7 @@ export default function SearchScreen() {
           onPress={() => router.push(`/search/${item.id}`)}>
           <View style={styles.cardImageWrap}>
             <VendorImage
-              category={item.category as Parameters<typeof VendorImage>[0]['category']}
+              category={vendorImageCategory(item.category)}
               width={undefined}
               height={CARD_IMAGE_HEIGHT}
               radius={Radius.medium}

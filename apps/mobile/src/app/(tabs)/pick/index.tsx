@@ -20,11 +20,11 @@ import {
   ThemedText,
   ThemedView,
   VendorImage,
-  type VendorCategory as UIVendorCategory,
   readWebInteractionState,
   useTheme,
 } from '@weddingpick/ui';
 import { getCurrentUser, listCandidates } from '@/api/client';
+import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import { isWebShellScreen } from '@/features/webshell/config';
 import { WebShellView } from '@/features/webshell/WebShellView';
 
@@ -352,7 +352,7 @@ function SharedVendorRow({
         }}>
         <View style={styles.vendorThumb}>
           <VendorImage
-            category={mapToUICategory(category)}
+            category={vendorImageCategory(category)}
             width={52}
             height={52}
             radius={Radius.small}
@@ -436,7 +436,7 @@ function StarterCard({ cat }: { cat: VendorCategory }) {
       }}>
       <View style={styles.starterImage}>
         <VendorImage
-          category={mapToUICategory(cat)}
+          category={vendorImageCategory(cat)}
           width={undefined}
           height={96}
           radius={Radius.small}
@@ -536,21 +536,6 @@ function ChevronRight({ color }: { color: string }) {
       />
     </Svg>
   );
-}
-
-/* ────────────────────────────────────────────
-   카테고리 매핑 — 도메인 → UI 패키지
-──────────────────────────────────────────── */
-function mapToUICategory(cat: VendorCategory): UIVendorCategory {
-  switch (cat) {
-    case 'hall': return 'hall';
-    case 'sdm': return 'studio';
-    case 'snap': return 'video';
-    case 'planner_agency': return 'planner';
-    case 'goods': return 'etc';
-    case 'wedding_info_company': return 'etc';
-    default: return 'etc';
-  }
 }
 
 /* ────────────────────────────────────────────
