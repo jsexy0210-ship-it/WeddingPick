@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, type PressableProps } from 'react-native';
+import type { ReactNode } from 'react';
+import { Pressable, StyleSheet, View, type PressableProps } from 'react-native';
 
 import { ThemedText } from './themed-text';
 import { Layout, Radius, Spacing } from './theme';
@@ -7,6 +8,8 @@ import { readWebInteractionState } from './web-interaction';
 
 export type ActionButtonProps = Omit<PressableProps, 'children' | 'style'> & {
   label: string;
+  /** 라벨 왼쪽에 붙는 작은 아이콘. 소셜 로그인 버튼의 제공자 로고처럼 라벨과 같은 줄에 놓인다. */
+  icon?: ReactNode;
   /** 보조 설명. 라벨 아래 작은 글씨로 붙는다. */
   hint?: string;
   /**
@@ -41,6 +44,7 @@ const HEIGHT = {
 
 export function ActionButton({
   label,
+  icon,
   hint,
   variant = 'secondary',
   size = 'auto',
@@ -77,13 +81,16 @@ export function ActionButton({
         ];
       }}
       {...rest}>
-      <ThemedText
-        type="t5"
-        numberOfLines={1}
-        themeColor={isPrimary ? 'onTint' : 'text'}
-        style={tone ? { color: tone.text } : undefined}>
-        {label}
-      </ThemedText>
+      <View style={styles.row}>
+        {icon}
+        <ThemedText
+          type="t5"
+          numberOfLines={1}
+          themeColor={isPrimary ? 'onTint' : 'text'}
+          style={tone ? { color: tone.text } : undefined}>
+          {label}
+        </ThemedText>
+      </View>
       {hint ? (
         <ThemedText type="t7" themeColor={isPrimary ? 'onTint' : 'textAssistive'}>
           {hint}
@@ -108,5 +115,10 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
   },
 });

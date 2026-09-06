@@ -31,6 +31,7 @@ export const vendorCategorySchema = z.enum([
   'planner_agency',
   'snap',
   'goods',
+  'honeymoon',
   'etc',
 ]);
 

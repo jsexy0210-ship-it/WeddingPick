@@ -6,6 +6,7 @@ import {
   ActionButton,
   Layout,
   Radius,
+  SocialLogo,
   Spacing,
   ThemedText,
   ThemedView,
@@ -65,6 +66,7 @@ export function OtherLoginSheet({
                 variant="secondary"
                 size="xlarge"
                 tone={providerTone(provider)}
+                icon={provider.isDevelopmentStandIn ? undefined : <SocialLogo provider={provider.provider} />}
                 label={
                   provider.isDevelopmentStandIn ? '개발용 로그인' : PROVIDER_LABEL[provider.provider]
                 }

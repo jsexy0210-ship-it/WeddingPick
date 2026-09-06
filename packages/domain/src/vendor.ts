@@ -9,6 +9,7 @@ export const VENDOR_CATEGORIES = [
   'planner_agency',
   'snap',
   'goods',
+  'honeymoon',
   'etc',
 ] as const;
 
@@ -22,6 +23,7 @@ export const VENDOR_CATEGORY_LABEL: Record<VendorCategory, string> = {
   planner_agency: '플래닝',
   snap: '스냅·영상',
   goods: '예물·예단',
+  honeymoon: '허니문',
   etc: '기타',
 };
 

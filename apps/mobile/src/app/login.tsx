@@ -1,19 +1,40 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
+import {
+  ActionButton,
+  Colors,
+  MaxContentWidth,
+  Radius,
+  SocialLogo,
+  Spacing,
+  ThemedText,
+  ThemedView,
+  WeddingMark,
+  useTheme,
+} from '@weddingpick/ui';
 import { LoginFailureSheet } from '@/features/auth/login-failure-sheet';
 import { OtherLoginSheet } from '@/features/auth/other-login-sheet';
-import { PROVIDER_LABEL, canSignInWith, providerTone, useAuthProviders } from '@/features/auth/providers';
+import {
+  PROVIDER_CONTINUE_LABEL,
+  PROVIDER_LABEL,
+  canSignInWith,
+  providerTone,
+  useAuthProviders,
+} from '@/features/auth/providers';
 import { loadRememberedAccount, type RememberedAccount } from '@/features/auth/remembered-account';
 import { useSignIn } from '@/features/auth/use-sign-in';
 
-/** WP-AUTH-001 "첫 진입" 상태에만 쓴다 — WP-AUTH-003(로그인 유지)엔 없다. */
+/**
+ * WP-AUTH-001 "첫 진입" 상태에만 쓴다 — WP-AUTH-003(로그인 유지)엔 없다.
+ * 디자인 핸드오프 v3.11(`current/html/01a-login.dc.html`)의 확정 카피 —
+ * `spec/strings.ko.json`의 `auth.login.benefit*`과 같은 문장을 유지한다.
+ */
 const REASONS = [
-  '분석한 자료를 기기를 바꿔도 다시 볼 수 있어요.',
-  '자료 확인을 신청하고 진행 상황을 받아볼 수 있어요.',
-  '배우자와 함께 준비 상황을 나눠볼 수 있어요.',
+  '확인된 제보로 실제 금액대를 볼 수 있어요',
+  '배우자와 일정과 지출을 같이 봐요',
+  '기기를 바꿔도 고른 곳이 그대로 있어요',
 ];
 
 /**
@@ -55,40 +76,62 @@ export default function LoginScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content}>
+          <View style={styles.mark}>
+            <WeddingMark size={34} color={Colors.light.onTint} />
+          </View>
+
           {rememberedProvider ? (
             <ThemedView style={styles.section}>
-              <ThemedText type="title">
+              <ThemedText type="t1">
                 {remembered?.displayName ? `${remembered.displayName}님,\n` : ''}다시 오셨네요
               </ThemedText>
-              <ThemedView type="backgroundElement" style={styles.card}>
-                <ThemedText type="small" themeColor="textSecondary">
+              <ThemedView type="backgroundElement" style={styles.accountRow}>
+                <View
+                  style={[
+                    styles.accountAvatar,
+                    { backgroundColor: providerTone(rememberedProvider)?.background ?? theme.backgroundSelected },
+                  ]}>
+                  {rememberedProvider.isDevelopmentStandIn ? null : (
+                    <SocialLogo provider={rememberedProvider.provider} />
+                  )}
+                </View>
+                <View style={styles.accountLabel}>
+                  <ThemedText type="t5">
+                    {rememberedProvider.isDevelopmentStandIn
+                      ? '개발용 로그인'
+                      : rememberedProvider.provider === 'kakao'
+                        ? '카카오'
+                        : rememberedProvider.provider === 'naver'
+                          ? '네이버'
+                          : rememberedProvider.provider === 'google'
+                            ? 'Google'
+                            : 'Apple'}
+                  </ThemedText>
+                </View>
+                <ThemedText type="badge" themeColor="tint" style={styles.recentBadge}>
                   최근 로그인
-                </ThemedText>
-                <ThemedText type="small">
-                  {rememberedProvider.isDevelopmentStandIn
-                    ? '개발용 로그인'
-                    : PROVIDER_LABEL[rememberedProvider.provider]}
                 </ThemedText>
               </ThemedView>
             </ThemedView>
           ) : (
             <>
               <ThemedView style={styles.section}>
-                <ThemedText type="title">
+                <ThemedText type="t1">
                   웨딩 준비,{'\n'}여기서 같이 해요
                 </ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">
+                <ThemedText type="t6" themeColor="textSecondary">
                   확인된 제보로 고르고 배우자와 함께 정해요
                 </ThemedText>
               </ThemedView>
 
-              <ThemedView style={styles.section}>
+              <ThemedView style={styles.benefitList}>
                 {REASONS.map((reason) => (
-                  <ThemedView key={reason} type="backgroundElement" style={styles.card}>
-                    <ThemedText type="small" themeColor="textSecondary">
+                  <View key={reason} style={styles.benefitRow}>
+                    <View style={[styles.dot, { backgroundColor: theme.tint }]} />
+                    <ThemedText type="t6" themeColor="textSecondary" style={styles.benefitText}>
                       {reason}
                     </ThemedText>
-                  </ThemedView>
+                  </View>
                 ))}
               </ThemedView>
             </>
@@ -110,8 +153,13 @@ export default function LoginScreen() {
                   variant="primary"
                   size="xlarge"
                   tone={providerTone(featured)}
+                  icon={featured.isDevelopmentStandIn ? undefined : <SocialLogo provider={featured.provider} />}
                   label={
-                    featured.isDevelopmentStandIn ? '개발용 로그인' : PROVIDER_LABEL[featured.provider]
+                    featured.isDevelopmentStandIn
+                      ? '개발용 로그인'
+                      : rememberedProvider
+                        ? PROVIDER_CONTINUE_LABEL[featured.provider]
+                        : PROVIDER_LABEL[featured.provider]
                   }
                   hint={
                     featured.isDevelopmentStandIn
@@ -207,5 +255,56 @@ const styles = StyleSheet.create({
   },
   terms: {
     textAlign: 'center',
+  },
+  /** WP-AUTH-001/003 상단 Pick Mark. 스킨과 무관한 고정 코랄 — §2 "시작 화면" 적용처. */
+  mark: {
+    width: Spacing.six,
+    height: Spacing.six,
+    borderRadius: Radius.sheet,
+    backgroundColor: Colors.light.tint,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  benefitList: {
+    gap: Spacing.half,
+  },
+  benefitRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.two,
+    paddingVertical: Spacing.one,
+  },
+  benefitText: {
+    flex: 1,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    marginTop: Spacing.two,
+    borderRadius: Radius.pill,
+  },
+  accountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    borderRadius: Radius.medium,
+    padding: Spacing.three,
+  },
+  accountAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  accountLabel: {
+    flex: 1,
+  },
+  recentBadge: {
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.one,
+    borderRadius: Radius.small,
+    backgroundColor: Colors.light.tintSubtle,
+    overflow: 'hidden',
   },
 });
