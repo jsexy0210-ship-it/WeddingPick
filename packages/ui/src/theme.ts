@@ -91,7 +91,8 @@ const palette = {
    * Mark가 스킨과 무관하게 코랄 고정인 것과 같은 이유다.
    */
   kakaoBg: '#fee500',
-  kakaoText: '#212124',
+  /** 카카오 공식 지정값. 앱 잉크(#212124)와 다르다 — spec/tokens.json color.social 참고. */
+  kakaoText: '#191919',
   appleBg: '#000000',
   appleText: '#ffffff',
   googleBg: '#ffffff',

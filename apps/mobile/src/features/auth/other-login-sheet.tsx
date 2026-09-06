@@ -1,5 +1,6 @@
 import type { AuthProvider } from '@weddingpick/api-contract';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   ActionButton,
@@ -10,19 +11,18 @@ import {
   ThemedView,
   useTheme,
 } from '@weddingpick/ui';
-import { PROVIDER_LABEL, canSignInWith, providerTone } from '@/features/auth/providers';
+import { PROVIDER_LABEL, PROVIDER_SHEET_ORDER, canSignInWith, providerTone } from '@/features/auth/providers';
 
 export type OtherLoginSheetProps = {
   visible: boolean;
   providers: AuthProvider[];
   busy: boolean;
-  error: string | null;
   onSelect: (provider: AuthProvider) => void;
   onDismiss: () => void;
 };
 
 /**
- * `/login`의 "다른 방법으로 로그인" — 화면 이동이 아니라 시트로 띄운다.
+ * WP-AUTH-002 "다른 방법으로 시작" — 화면 이동이 아니라 시트로 띄운다.
  *
  * `features/auth/login-sheet.tsx`(구 지연 로그인용)와 구조는 같지만 용도가
  * 다르다 — 그건 로그인을 미룰 수 있었지만(폐기된 정책), 이건 로그인 화면
@@ -33,11 +33,15 @@ export function OtherLoginSheet({
   visible,
   providers,
   busy,
-  error,
   onSelect,
   onDismiss,
 }: OtherLoginSheetProps) {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  /** 디자인 핸드오프 v3.11 순서 고정 — 네이버 → 구글 → 애플. */
+  const ordered = [...providers].sort(
+    (a, b) => PROVIDER_SHEET_ORDER.indexOf(a.provider) - PROVIDER_SHEET_ORDER.indexOf(b.provider)
+  );
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onDismiss}>
@@ -50,11 +54,12 @@ export function OtherLoginSheet({
           onPress={onDismiss}
         />
 
-        <ThemedView style={styles.sheet}>
-          <ThemedText type="t4">다른 방법으로 로그인</ThemedText>
+        {/* spec/tokens.json safeArea.formula.sheetBottomPadding — 28 + safeBottom. */}
+        <ThemedView style={[styles.sheet, { paddingBottom: SHEET_BOTTOM_PADDING + Math.max(insets.bottom, 0) }]}>
+          <ThemedText type="t4">어떤 계정으로 시작할까요?</ThemedText>
 
           <ThemedView style={styles.actions}>
-            {providers.map((provider) => (
+            {ordered.map((provider) => (
               <ActionButton
                 key={provider.provider}
                 variant="secondary"
@@ -73,17 +78,14 @@ export function OtherLoginSheet({
               />
             ))}
           </ThemedView>
-
-          {error ? (
-            <ThemedText type="t7" themeColor="negative">
-              {error}
-            </ThemedText>
-          ) : null}
         </ThemedView>
       </View>
     </Modal>
   );
 }
+
+/** spec/tokens.json safeArea.formula.sheetBottomPadding의 고정항 — Spacing 8단계 밖의 값이라 별도로 둔다. */
+const SHEET_BOTTOM_PADDING = 28;
 
 const styles = StyleSheet.create({
   scrim: { flex: 1, justifyContent: 'flex-end' },
@@ -91,7 +93,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: Radius.sheet,
     borderTopRightRadius: Radius.sheet,
     padding: Layout.gutter,
-    paddingBottom: Spacing.five,
     gap: Spacing.three,
   },
   actions: { gap: Spacing.two },

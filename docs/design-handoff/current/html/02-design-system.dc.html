@@ -653,8 +653,8 @@ class Component extends DCLogic {
         { concept: '자체 콘텐츠', use: '웨딩픽 콘텐츠', avoid: 'AI 웨딩 콘텐츠, AI가 작성한 글' },
         { concept: '정보 부족', use: '아직 정보가 적어요', avoid: '표본 부족, 데이터 부족' },
         { concept: '불확실한 상태', use: '확정 · 미확정 · 검증 전 · 확인 필요 · 조건부 · 측정값 · 추정값', avoid: '거의, 아마, 대략, 어느 정도, 가능성이 높음, ~일 것으로 보임, 근거 없는 약·정도' },
-        { concept: '로그인 전', use: '비회원', avoid: '게스트' },
-        { concept: '로그인 후', use: '회원', avoid: '일반회원' },
+        { concept: '로그인 방법', use: '소셜 로그인 4종 · 카카오 · 네이버 · 구글 · 애플', avoid: '이메일 로그인, 비밀번호, 비회원, 게스트, 둘러보기' },
+        { concept: '회원 구분', use: '회원 · Pick 인증 회원', avoid: '비회원, 게스트, 일반회원' },
         { concept: '신뢰 상태', use: '결제 확인', avoid: '회원등급' }
       ],
       skeletonSpecs: [

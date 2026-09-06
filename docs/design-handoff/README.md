@@ -1,6 +1,8 @@
 # 최신 전달본
 
-현재 사용자가 전달한 디자인 원본은 [current/README.md](current/README.md)를 시작점으로 확인합니다. `current/`의 64개 파일은 전달 ZIP에서 내용 변경 없이 추출했습니다. 구현 시 토큰·화면 명세·기준 PNG·HTML 원본을 함께 확인합니다.
+현재 사용자가 전달한 디자인 원본은 [current/README.md](current/README.md)를 시작점으로 확인합니다. `current/`는 전달 ZIP에서 내용 변경 없이 추출합니다. 구현 시 토큰·화면 명세·기준 PNG·HTML 원본을 함께 확인합니다.
+
+**버전 이력은 [current/CHANGELOG.md](current/CHANGELOG.md)에서 관리합니다**(v3.11부터 동봉 시작, 2026-09-06). 최신이 위입니다 — 정책·화면이 바뀌면 여기부터 확인합니다.
 
 이전 자료는 삭제 범위 확인 전까지 보존합니다. 아래 내용은 이전 핸드오프 설명입니다.
 
