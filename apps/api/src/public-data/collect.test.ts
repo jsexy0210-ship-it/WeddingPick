@@ -56,6 +56,29 @@ test('sbiz-api 응답에서 서울 예식장만 파싱한다', async () => {
     global.fetch = origFetch;
   }
 });
+test('이미 URL-encode된 서비스키를 이중 인코딩하지 않는다', async () => {
+  // 공공데이터포털 인증키는 이미 encode된 값으로 온다('/'→%2F, '='→%3D).
+  // URLSearchParams.set()에 그대로 넘기면 '%'가 %25로 한 번 더 encode되어
+  // 서버가 키를 못 알아본다(403) — apis.data.go.kr 연동 최다 실수.
+  const encodedKey = 'abc%2Fdef%3D%3D';
+  const origFetch = global.fetch;
+  let requestedUrl = '';
+  const body = Buffer.from(JSON.stringify({ data: [] }));
+  global.fetch = jest.fn().mockImplementation((url: string) => {
+    requestedUrl = url;
+    return Promise.resolve({
+      ok: true,
+      body: { [Symbol.asyncIterator]: async function* () { yield body; } },
+    });
+  });
+  try {
+    await listIndustryCategories('small', encodedKey);
+    const sentKey = new URL(requestedUrl).searchParams.get('serviceKey');
+    expect(sentKey).toBe('abc/def==');
+  } finally {
+    global.fetch = origFetch;
+  }
+});
 test('소분류 조회는 코드·이름을 읽고 요청 URL을 올바르게 만든다', async () => {
   // 아래 코드값은 이 테스트 전용 가짜 데이터다 — 실제 sbiz 코드가 아니다.
   // 진짜 코드는 listIndustryCategories를 실키로 호출해 확인해야 한다.

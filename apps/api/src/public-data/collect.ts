@@ -80,6 +80,20 @@ export function parsePublicCsv(bytes: Buffer, key: SourceKey, at = new Date()) {
 
 const ALLOWED_ORIGINS = new Set(['https://www.data.go.kr', 'https://apis.data.go.kr']);
 
+/**
+ * 공공데이터포털이 발급하는 서비스키(일반 인증키)는 이미 URL-encode된 값으로
+ * 준다(예: '/'가 '%2F'로, '='가 '%3D'로). `URLSearchParams.set()`은 넘긴
+ * 값을 그대로 다시 encode하므로, encode된 키를 그대로 넘기면 '%'가
+ * '%25'로 한 번 더 encode되어(이중 인코딩) 서버가 키를 못 알아본다 —
+ * apis.data.go.kr 연동에서 가장 흔한 실수다. 여기서 한 번 decode해 원래
+ * 키로 되돌린 뒤 넘기면 `URLSearchParams`가 정확히 한 번만 encode한다.
+ * 이미 decode된 키가 들어와도(우연히 %XX 패턴이 아닌 한) 그대로 통과한다.
+ */
+function normalizeServiceKey(apiKey: string): string {
+  try { return decodeURIComponent(apiKey); }
+  catch { return apiKey; }
+}
+
 async function fetchWithRetry(url: string, attempts = 3): Promise<Response> {
   for (let i = 0; i < attempts; i++) {
     try { return await fetch(url, { redirect: 'error', signal: AbortSignal.timeout(30_000) }); }
@@ -184,7 +198,7 @@ export async function downloadSbizApiVendors(
 
   for (let pageNo = 1; pageNo <= MAX_PAGES; pageNo++) {
     const url = new URL(source.url);
-    url.searchParams.set('serviceKey', apiKey);
+    url.searchParams.set('serviceKey', normalizeServiceKey(apiKey));
     url.searchParams.set('pageNo', String(pageNo));
     url.searchParams.set('numOfRows', '1000');
     // 업종 대분류 Q = 결혼관련서비스업 (소상공인진흥공단 기준)
@@ -257,7 +271,7 @@ export async function listIndustryCategories(
   parent?: { indsLclsCd?: string; indsMclsCd?: string },
 ): Promise<IndustryCategory[]> {
   const url = new URL(`https://apis.data.go.kr/B553077/api/open/sdsc2/${UPJONG_ENDPOINT[level]}`);
-  url.searchParams.set('serviceKey', apiKey);
+  url.searchParams.set('serviceKey', normalizeServiceKey(apiKey));
   url.searchParams.set('type', 'json');
   if (parent?.indsLclsCd) url.searchParams.set('indsLclsCd', parent.indsLclsCd);
   if (parent?.indsMclsCd) url.searchParams.set('indsMclsCd', parent.indsMclsCd);
