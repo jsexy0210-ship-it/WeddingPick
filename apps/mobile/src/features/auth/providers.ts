@@ -10,7 +10,20 @@ import { listAuthProviders, signIn, signInWithAuthorizationCode } from '@/api/cl
 import { isServerConfigured } from '@/api/config';
 import { DEV_LOGIN_SECRET, devIdToken } from '@/features/auth/dev-login';
 
+/**
+ * 처음 시작할 때(WP-AUTH-001)와 "다른 방법으로 시작" 시트(WP-AUTH-002)가
+ * 쓰는 라벨. "계속하기"는 WP-AUTH-003(로그인 유지)의 기억된 계정 버튼에만
+ * 쓴다 — `PROVIDER_CONTINUE_LABEL` 참고.
+ */
 export const PROVIDER_LABEL = {
+  apple: 'Apple로 시작하기',
+  kakao: '카카오로 시작하기',
+  google: 'Google로 시작하기',
+  naver: '네이버로 시작하기',
+} as const;
+
+/** WP-AUTH-003 기억된 계정 버튼 전용 라벨. */
+export const PROVIDER_CONTINUE_LABEL = {
   apple: 'Apple로 계속하기',
   kakao: '카카오로 계속하기',
   google: 'Google로 계속하기',

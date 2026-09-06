@@ -32,6 +32,7 @@ export { PickStatusBadge, type PickStatusBadgeProps, type PickStatus } from './p
 export { VendorImage, type VendorImageProps, type VendorCategory } from './vendor-image';
 export { DataTierBadge, getDataTier, type DataTierBadgeProps, type DataTier } from './data-tier-badge';
 export { TruncatedText, type TruncatedTextProps } from './truncated-text';
+export { SocialLogo } from './social-logo';
 
 export {
   Colors,
