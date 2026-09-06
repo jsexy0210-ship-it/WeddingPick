@@ -68,9 +68,9 @@ WebBrowser.maybeCompleteAuthSession();
  * 카카오·Google 로그인 redirect URI. 네이티브 앱 커스텀 스킴(`kakao...://`,
  * `weddingpick://`)은 웹에서 의미가 없다 — 웹은 실제 페이지 주소로
  * 돌아와야 팝업이 원래 창에 결과를 돌려줄 수 있다(`WebBrowser.maybeCompleteAuthSession`).
- * `/login` 고정 경로를 쓴다 — 두 버튼 다 이 화면(또는 그 위 시트)에서만
- * 눌리므로 항상 이 경로로 돌아온다. 카카오·Google 개발자센터 양쪽에
- * 이 값을 Redirect URI로 등록해야 한다.
+ * `/login` 고정 경로를 쓴다 — 버튼이 전부 이 화면(또는 그 위 시트)에서만
+ * 눌리므로 항상 이 경로로 돌아온다. 카카오·Google·네이버 개발자센터 모두에
+ * 이 값을 Redirect(Callback) URI로 등록해야 한다.
  */
 function webRedirectUri(): string {
   return `${window.location.origin}/login`;
@@ -131,7 +131,8 @@ export function canSignInWith(provider: AuthProvider): boolean {
     case 'google':
       return Boolean(GOOGLE_CLIENT_ID);
     case 'naver':
-      return Boolean(NAVER_CLIENT_ID && NAVER_REDIRECT_URI);
+      // 웹은 자기 주소(`/login`)로 돌아오므로 서버 콜백 주소가 없어도 된다.
+      return Boolean(NAVER_CLIENT_ID && (Platform.OS === 'web' || NAVER_REDIRECT_URI));
   }
 }
 
@@ -232,13 +233,21 @@ export async function signInWith(provider: AuthProvider): Promise<void> {
     return;
   }
 
-  if (!NAVER_CLIENT_ID || !NAVER_REDIRECT_URI) {
+  /*
+   * 네이티브는 HTTPS만 받는 네이버 Callback 제약 때문에 서버 콜백
+   * (`/v1/auth/naver/callback`)을 거쳐 `weddingpick://`로 돌아온다. 웹은 그
+   * 콜백을 타면 커스텀 스킴에서 끊긴다 — 웹 주소 자체가 HTTPS라 카카오·Google처럼
+   * `/login`으로 바로 돌아온다. 이 주소는 네이버 Developers의 Callback URL과
+   * 서버 `NAVER_REDIRECT_URIS` 허용목록 양쪽에 등록돼 있어야 한다.
+   */
+  const naverRedirectUri = Platform.OS === 'web' ? webRedirectUri() : NAVER_REDIRECT_URI;
+  if (!NAVER_CLIENT_ID || !naverRedirectUri) {
     throw new Error('네이버 로그인 설정이 아직 완료되지 않았습니다.');
   }
 
   const request = new AuthRequest({
     clientId: NAVER_CLIENT_ID,
-    redirectUri: NAVER_REDIRECT_URI,
+    redirectUri: naverRedirectUri,
     responseType: ResponseType.Code,
     usePKCE: true,
   });
@@ -255,7 +264,7 @@ export async function signInWith(provider: AuthProvider): Promise<void> {
     provider: 'naver',
     authorizationCode: result.params.code,
     state: result.params.state ?? request.state,
-    redirectUri: NAVER_REDIRECT_URI,
+    redirectUri: naverRedirectUri,
     codeVerifier: request.codeVerifier,
   });
 }
