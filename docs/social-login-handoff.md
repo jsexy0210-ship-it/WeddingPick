@@ -2,10 +2,10 @@
 
 ## 현재 구현 상태
 
-- API는 `POST /v1/auth/sessions`에서 `apple`, `kakao` ID Token을 검증한다.
+- API는 `POST /v1/auth/sessions`에서 `apple`, `google` ID Token을 검증한다.
 - `GET /v1/auth/providers`는 설정된 제공자만 반환한다.
 - 모바일 로그인 화면과 로그인 시트는 API 제공자 목록을 표시한다.
-- 모바일 `providers.ts`는 Apple 네이티브 로그인과 Kakao OAuth 흐름을 연결하고, 받은 ID Token을 API로 전송한다.
+- 모바일 `providers.ts`는 Apple 네이티브 로그인은 받은 ID Token을 API로 보내고, Kakao는 네이버처럼 인가 코드만 받아 API로 보낸다. 서버가 `https://kauth.kakao.com/oauth/token`으로 교환해 응답의 `id_token`을 검증한다 — 카카오 `/oauth/authorize`는 `response_type=id_token`을 "지원하지 않는 SDK 버전"(KOE033)으로 거부한다.
 - Kakao 버튼을 활성화하려면 앱 빌드 환경에 `EXPO_PUBLIC_KAKAO_CLIENT_ID`를 주입해야 한다.
 - Kakao 네이티브 OAuth callback은 임의의 `weddingpick://`가 아니라 Kakao가 네이티브 앱 키에 발급한 `kakao<key>://oauth` 스킴을 사용한다. 앱 설정의 Android 패키지명·iOS Bundle ID와 함께 등록해야 한다.
 - Google 버튼을 활성화하려면 앱과 API에 `EXPO_PUBLIC_GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_ID`를 주입해야 한다.
@@ -18,7 +18,8 @@ API 서버에만 설정한다. 값은 Git 저장소나 앱 번들에 넣지 않�
 
 ```env
 APPLE_CLIENT_ID=kr.weddingpick.app
-KAKAO_APP_KEY=<Kakao REST 또는 OIDC 설정값>
+KAKAO_APP_KEY=<Kakao REST API 키 — 앱의 EXPO_PUBLIC_KAKAO_CLIENT_ID와 같은 값>
+KAKAO_CLIENT_SECRET=<카카오 콘솔 보안 탭에서 Client Secret을 "사용함"으로 켠 경우에만>
 GOOGLE_CLIENT_ID=<Google OAuth client ID>
 DEV_LOGIN_SECRET=
 NODE_ENV=production

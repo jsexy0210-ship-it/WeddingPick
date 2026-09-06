@@ -143,7 +143,10 @@ export function canSignInWith(provider: AuthProvider): boolean {
  */
 export async function signInWith(provider: AuthProvider): Promise<void> {
   if (provider.isDevelopmentStandIn) {
-    if (provider.provider === 'naver') throw new Error('네이버 개발용 로그인은 지원하지 않습니다.');
+    // 개발용 대체는 서버가 apple 자리에만 만든다 — 인가 코드 제공자에는 없다.
+    if (provider.provider === 'naver' || provider.provider === 'kakao') {
+      throw new Error('이 제공자의 개발용 로그인은 지원하지 않습니다.');
+    }
     await signIn(provider.provider, devIdToken());
     return;
   }
@@ -176,25 +179,38 @@ export async function signInWith(provider: AuthProvider): Promise<void> {
       throw new Error('카카오 로그인 설정이 아직 완료되지 않았습니다.');
     }
 
+    /*
+     * 카카오는 `/oauth/authorize`에서 id_token을 바로 주지 않는다 —
+     * `response_type=id_token`은 "지원하지 않는 SDK 버전"(KOE033)으로 거부된다.
+     * 네이버처럼 인가 코드만 받고, 서버가 `/oauth/token`으로 교환해 그 응답의
+     * id_token을 검증한다. `openid` scope는 교환 응답에 id_token을 싣게 하려고
+     * 필요하다.
+     */
     const redirectUri =
       Platform.OS === 'web' ? webRedirectUri() : makeRedirectUri({ scheme: KAKAO_REDIRECT_SCHEME, path: 'oauth' });
     const request = new AuthRequest({
       clientId: KAKAO_CLIENT_ID,
       redirectUri,
-      responseType: ResponseType.IdToken,
+      responseType: ResponseType.Code,
       scopes: ['openid'],
-      usePKCE: false,
+      usePKCE: true,
     });
     const result = await request.promptAsync({
       authorizationEndpoint: 'https://kauth.kakao.com/oauth/authorize',
     });
 
-    if (result.type !== 'success' || !result.params.id_token) {
+    if (result.type !== 'success' || !result.params.code) {
       if (result.type === 'cancel' || result.type === 'dismiss') return;
       throw new Error('카카오 로그인에 실패했습니다. 다시 시도해 주세요.');
     }
 
-    await signIn('kakao', result.params.id_token);
+    await signInWithAuthorizationCode({
+      provider: 'kakao',
+      authorizationCode: result.params.code,
+      state: result.params.state ?? request.state,
+      redirectUri,
+      codeVerifier: request.codeVerifier,
+    });
     return;
   }
 
@@ -236,6 +252,7 @@ export async function signInWith(provider: AuthProvider): Promise<void> {
   }
 
   await signInWithAuthorizationCode({
+    provider: 'naver',
     authorizationCode: result.params.code,
     state: result.params.state ?? request.state,
     redirectUri: NAVER_REDIRECT_URI,

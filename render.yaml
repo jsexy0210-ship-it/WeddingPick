@@ -86,6 +86,8 @@ services:
         sync: false
       - key: KAKAO_APP_KEY
         sync: false
+      - key: KAKAO_CLIENT_SECRET
+        sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: LEGAL_BUSINESS_NAME

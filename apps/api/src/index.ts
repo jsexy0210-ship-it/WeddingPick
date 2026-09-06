@@ -61,7 +61,9 @@ async function main() {
         : createLocalStorage(`http://localhost:${config.port}/dev-storage`),
     providers: {
       ...(config.appleClientId && { apple: createAppleProvider(config.appleClientId) }),
-      ...(config.kakaoAppKey && { kakao: createKakaoProvider(config.kakaoAppKey) }),
+      ...(config.kakaoAppKey && {
+        kakao: createKakaoProvider({ appKey: config.kakaoAppKey, clientSecret: config.kakaoClientSecret }),
+      }),
       ...(config.googleClientId && { google: createGoogleProvider(config.googleClientId) }),
       ...(config.naverClientId && config.naverClientSecret && config.naverRedirectUris.length > 0 && {
         naver: createNaverProvider({

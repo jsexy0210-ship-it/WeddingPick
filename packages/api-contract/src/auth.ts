@@ -3,18 +3,21 @@ import { z } from 'zod';
 import { idSchema, timestampSchema } from './common';
 
 /**
- * 로그인. OIDC 제공자는 id_token을 검증하고, 네이버는 일회용 인가 코드를 서버에서
- * 교환한다. 네이버 client secret은 앱이 아니라 서버에만 둔다.
+ * 로그인. Apple·Google은 앱이 받은 id_token을 서버가 검증한다. 네이버·카카오는
+ * 앱이 일회용 인가 코드만 받고 서버가 토큰으로 교환한다 — 카카오는
+ * `/oauth/authorize`에서 id_token을 바로 주지 않고(`response_type=id_token`을
+ * 지원하지 않는 SDK 요청으로 거부, KOE033) 토큰 교환 응답에 id_token을 실어 준다.
+ * client secret은 앱이 아니라 서버에만 둔다.
  */
 export const createSessionRequestSchema = z.union([
   z.object({
-    provider: z.enum(['apple', 'kakao', 'google']),
+    provider: z.enum(['apple', 'google']),
     idToken: z.string().min(1),
     /** Apple이 최초 인증 때 토큰 밖에서 한 번만 주는 이름. */
     profileName: z.string().trim().min(1).max(100).optional(),
   }),
   z.object({
-    provider: z.literal('naver'),
+    provider: z.enum(['naver', 'kakao']),
     authorizationCode: z.string().min(1),
     state: z.string().min(1).max(512),
     redirectUri: z.string().url().max(2048),
