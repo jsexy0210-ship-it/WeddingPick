@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
 
 import {
   ActionButton,
@@ -11,7 +12,6 @@ import {
   Spacing,
   ThemedText,
   ThemedView,
-  WeddingMark,
   useTheme,
 } from '@weddingpick/ui';
 import { LoginFailureSheet } from '@/features/auth/login-failure-sheet';
@@ -35,6 +35,19 @@ const REASONS = [
   '확인된 제보로 실제 금액대를 볼 수 있어요',
   '배우자와 일정과 지출을 같이 봐요',
   '기기를 바꿔도 고른 곳이 그대로 있어요',
+];
+
+/**
+ * Pick Mark — spec/tokens.json `symbol` 그대로. 배경 박스 없이 이 2개
+ * path만 그린다(§2 "시작 화면" 적용처 — 앱 아이콘의 코랄 박스+흰 마크와는
+ * 다른 자리). 색은 스킨과 무관한 고정 코랄(`Colors.light.tint`) — 다른
+ * 고정 코랄 요소(앱 아이콘·스플래시)와 같은 이유.
+ */
+const PICK_MARK_VIEWBOX = 24;
+const PICK_MARK_STROKE = 1.9;
+const PICK_MARK_PATHS = [
+  'M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z',
+  'M8.7 11.9l2.2 2.2 4.4-4.4',
 ];
 
 /**
@@ -75,12 +88,23 @@ export default function LoginScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.content}>
-          <View style={styles.mark}>
-            <WeddingMark size={34} color={Colors.light.onTint} />
-          </View>
+        <View style={styles.content}>
+          {/* BrandBlock — flex:1. 심볼·카피·혜택. 화면 안에서 남는 세로 공간을 전부 가져간다. */}
+          <View style={styles.brandBlock}>
+            <Svg width={64} height={64} viewBox={`0 0 ${PICK_MARK_VIEWBOX} ${PICK_MARK_VIEWBOX}`} fill="none">
+              {PICK_MARK_PATHS.map((d) => (
+                <Path
+                  key={d}
+                  d={d}
+                  stroke={Colors.light.tint}
+                  strokeWidth={PICK_MARK_STROKE}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              ))}
+            </Svg>
 
-          {rememberedProvider ? (
+            {rememberedProvider ? (
             <ThemedView style={styles.section}>
               <ThemedText type="t1">
                 {remembered?.displayName ? `${remembered.displayName}님,\n` : ''}다시 오셨네요
@@ -136,7 +160,11 @@ export default function LoginScreen() {
               </ThemedView>
             </>
           )}
+          </View>
 
+          {/* AuthBlock — flex: 0 0 auto. 로그인 버튼·약관·오류. 항상 화면
+              하단에 자기 높이만큼만 차지한다. */}
+          <View style={styles.authBlock}>
           {providers === null || remembered === undefined ? (
             <ActivityIndicator color={theme.tint} />
           ) : providers.length === 0 ? (
@@ -200,7 +228,8 @@ export default function LoginScreen() {
               </ThemedText>
             </ThemedView>
           ) : null}
-        </ScrollView>
+          </View>
+        </View>
       </SafeAreaView>
 
       <OtherLoginSheet
@@ -240,9 +269,21 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
   },
   content: {
+    flex: 1,
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.five,
     paddingBottom: Spacing.four,
+  },
+  /** BrandBlock — flex:1. 남는 세로 공간을 전부 가져가 심볼·카피·혜택을 화면 중앙쪽에 둔다. */
+  brandBlock: {
+    flex: 1,
+    justifyContent: 'center',
+    gap: Spacing.four,
+  },
+  /** AuthBlock — flex: 0 0 auto(RN: flexGrow/flexShrink 0). 로그인 버튼 영역은 항상 자기 높이만 차지한다. */
+  authBlock: {
+    flexGrow: 0,
+    flexShrink: 0,
     gap: Spacing.four,
   },
   section: {
@@ -255,15 +296,6 @@ const styles = StyleSheet.create({
   },
   terms: {
     textAlign: 'center',
-  },
-  /** WP-AUTH-001/003 상단 Pick Mark. 스킨과 무관한 고정 코랄 — §2 "시작 화면" 적용처. */
-  mark: {
-    width: Spacing.six,
-    height: Spacing.six,
-    borderRadius: Radius.sheet,
-    backgroundColor: Colors.light.tint,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   benefitList: {
     gap: Spacing.half,
