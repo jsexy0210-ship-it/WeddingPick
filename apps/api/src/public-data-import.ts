@@ -270,6 +270,9 @@ main().catch((error: Error) => {
     );
   } else {
     console.error(error.message);
+    // "fetch failed"(undici TypeError)는 message만으로는 원인을 알 수 없다 —
+    // 실제 원인(DNS·TLS·연결거부 등)은 cause에 있다.
+    if (error.cause) console.error('원인:', error.cause);
   }
 
   process.exit(1);
