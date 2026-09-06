@@ -77,6 +77,16 @@ function webRedirectUri(): string {
 }
 
 /**
+ * Apple은 `expo-apple-authentication`(iOS 네이티브 전용)으로만 붙어 있다.
+ * Android·웹에서는 눌러도 애초에 될 수 없는 버튼이라 목록에서 아예 뺀다 —
+ * §8 "눌러도 소득이 없는 버튼을 두지 않는다"와 같은 이유다. 서버는 플랫폼을
+ * 모르니 4종을 그대로 내려준다 — 걸러내는 건 여기, 클라이언트 몫이다.
+ */
+function isSelectable(provider: AuthProvider): boolean {
+  return provider.provider !== 'apple' || Platform.OS === 'ios';
+}
+
+/**
  * 쓸 수 있는 로그인 방법.
  *
  * 로그인 화면과 로그인 시트가 **같은 목록을 같은 방법으로** 읽는다. 두 곳에 따로
@@ -98,7 +108,7 @@ export function useAuthProviders(): { providers: AuthProvider[] | null; error: s
     }
 
     listAuthProviders()
-      .then((response) => setProviders(response.providers))
+      .then((response) => setProviders(response.providers.filter(isSelectable)))
       .catch((caught: Error) => {
         setProviders([]);
         setError(caught.message);
