@@ -1,0 +1,28 @@
+/*
+ * 웹 빌드에만 적용되는 보정. 네이티브에서는 이 파일이 무시된다.
+ *
+ * react-native-web은 `TextInput`을 `<input>`으로 그리는데, 브라우저가 그 위에
+ * 자기 규칙을 얹는 자리가 몇 군데 있다. RN `StyleSheet`로는 가상 클래스
+ * (`:-webkit-autofill` 같은 것)를 쓸 수 없어서 여기에만 둔다.
+ */
+
+/*
+ * 자동완성이 입력칸을 자기 색으로 덮어칠하는 것을 막는다.
+ *
+ * Chrome은 자동완성된 입력칸에 연보라(#E8F0FE) 배경과 검은 글자를 강제로 칠한다.
+ * 우리 입력칸은 바깥 상자가 테두리·모서리·배경을 갖고 `<input>`은 그 안쪽에서
+ * 폭만 채우는 구조라, 그 색이 칠해지면 상자 안에 각진 흰 판이 박힌 것처럼 보인다.
+ * 다크 스킨에서는 글자까지 검게 바뀌어 읽기 어려워진다.
+ *
+ * 배경색에 아주 긴 전환을 걸어 실제로 그려지지 않게 한다 — `box-shadow`로 덮는
+ * 흔한 방법은 배경색을 CSS에 박아야 해서 스킨 6종과 다크 모드에서 도로 어긋난다.
+ * 글자와 커서는 화면이 정한 색(`theme.text`)을 그대로 따르게 `currentColor`를 쓴다.
+ */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  transition: background-color 5000s ease-in-out 0s;
+  -webkit-text-fill-color: currentColor;
+  caret-color: currentColor;
+}
