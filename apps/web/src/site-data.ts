@@ -64,7 +64,7 @@ export type SiteData = {
   regions: readonly string[];
 };
 
-function apiBase(): string | null {
+export function apiBase(): string | null {
   const raw = process.env[API_URL_ENV]?.trim();
 
   return raw ? raw.replace(/\/+$/, '') : null;

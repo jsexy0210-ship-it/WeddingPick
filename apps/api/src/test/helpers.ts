@@ -5,6 +5,7 @@ import type { FastifyInstance } from 'fastify';
 import { Client, Pool } from 'pg';
 
 import type { IdentityProvider, VerifiedIdentity } from '../auth/identity-provider';
+import type { Mail } from '../auth/mailer';
 import type { Config } from '../config';
 import type { AppContext } from '../context';
 import { buildServer } from '../server';
@@ -21,6 +22,8 @@ export type TestApp = {
   app: FastifyInstance;
   pool: Pool;
   context: AppContext;
+  /** 가짜 mailer가 잡아둔 메일. */
+  mails: Mail[];
   close(): Promise<void>;
 };
 
@@ -43,10 +46,20 @@ export async function createTestApp(): Promise<TestApp> {
     proofReaderCheapModel: 'claude-haiku-4-5',
     proofReaderStrongModel: 'claude-opus-5',
     naverRedirectUris: [],
+    mail: { driver: 'console' },
+    passwordResetUrl: 'https://app.test/reset-password',
   };
+
+  /* 보내지 않고 잡아둔다 — 테스트가 링크의 토큰을 꺼내 쓴다. */
+  const mails: Mail[] = [];
 
   const context: AppContext = {
     pool,
+    mailer: {
+      async send(mail) {
+        mails.push(mail);
+      },
+    },
     /*
      * 테스트에서는 모델을 부르지 않는다. 실제 호출은 돈이 들고 결과가 매번 다르다.
      * 부르려 하면 여기서 터져, 어느 테스트가 모델을 부르려 했는지 바로 드러난다.
@@ -71,6 +84,7 @@ export async function createTestApp(): Promise<TestApp> {
     app,
     pool,
     context,
+    mails,
     async close() {
       await app.close();
       await pool.end();

@@ -1,6 +1,5 @@
 import type { AuthProvider } from '@weddingpick/api-contract';
 import { SocialColors } from '@weddingpick/ui';
-import * as AppleAuthentication from 'expo-apple-authentication';
 import { AuthRequest, ResponseType, makeRedirectUri } from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
@@ -11,86 +10,42 @@ import { isServerConfigured } from '@/api/config';
 import { DEV_LOGIN_SECRET, devIdToken } from '@/features/auth/dev-login';
 
 /**
- * 처음 시작할 때(WP-AUTH-001)와 "다른 방법으로 시작" 시트(WP-AUTH-002)가
- * 쓰는 라벨. "계속하기"는 WP-AUTH-003(로그인 유지)의 기억된 계정 버튼에만
- * 쓴다 — `PROVIDER_CONTINUE_LABEL` 참고.
- */
-export const PROVIDER_LABEL = {
-  apple: 'Apple로 시작하기',
-  kakao: '카카오로 시작하기',
-  google: 'Google로 시작하기',
-  naver: '네이버로 시작하기',
-} as const;
-
-/** WP-AUTH-003 기억된 계정 버튼 전용 라벨. */
-export const PROVIDER_CONTINUE_LABEL = {
-  apple: 'Apple로 계속하기',
-  kakao: '카카오로 계속하기',
-  google: 'Google로 계속하기',
-  naver: '네이버로 계속하기',
-} as const;
-
-/**
- * WP-AUTH-002 "다른 방법으로 시작" 시트의 고정 노출 순서(spec/tokens.json
- * `auth.sheetOrder`). 카카오는 이 시트에 나오지 않는다 — `/login`의 기본
- * 버튼 자리다.
- */
-export const PROVIDER_SHEET_ORDER: AuthProvider['provider'][] = ['naver', 'google', 'apple'];
-
-/**
- * 로그인 버튼 색. 제공자 브랜드색은 앱 스킨과 무관하게 고정이다(`SocialColors`
- * 참고) — `ActionButton`의 `tone`으로 그대로 넘긴다. 개발용 대체
- * (`isDevelopmentStandIn`)는 실제 브랜드가 아니라서 여기 없다 — 그 경우
- * 화면이 `tone`을 생략해 기존 테마색(secondary)으로 남는다.
+ * 로그인 버튼 색. 카카오 브랜드색은 앱 스킨과 무관하게 고정이다(`SocialColors`
+ * 참고) — `ActionButton`의 `tone`으로 그대로 넘긴다. 개발용 대체는 실제
+ * 브랜드가 아니라서 여기 없다 — 그 경우 화면이 `tone`을 생략해 기존
+ * 테마색(secondary)으로 남는다.
  */
 export function providerTone(provider: AuthProvider): (typeof SocialColors)[keyof typeof SocialColors] | undefined {
   if (provider.isDevelopmentStandIn) return undefined;
 
-  return SocialColors[provider.provider];
+  return SocialColors.kakao;
 }
 
 const KAKAO_CLIENT_ID = process.env.EXPO_PUBLIC_KAKAO_CLIENT_ID;
-const GOOGLE_CLIENT_ID =
-  Platform.OS === 'ios'
-    ? process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID
-    : Platform.OS === 'web'
-      ? process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID
-      : process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID ?? process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
-const NAVER_CLIENT_ID = process.env.EXPO_PUBLIC_NAVER_CLIENT_ID;
-const NAVER_REDIRECT_URI = process.env.EXPO_PUBLIC_NAVER_REDIRECT_URI;
-// Kakao Native AppKey가 발급한 스킴만 Android/iOS OAuth callback으로 사용한다.
+// Kakao REST API 키가 발급한 스킴만 Android/iOS OAuth callback으로 쓴다.
 const KAKAO_REDIRECT_SCHEME = 'kakao8ffc70af8bf397e03d930e10ca38cb22';
 
 // 웹에서는 제공자가 redirect한 창을 닫고 원래 로그인 요청을 완료해야 한다.
 WebBrowser.maybeCompleteAuthSession();
 
 /**
- * 카카오·Google 로그인 redirect URI. 네이티브 앱 커스텀 스킴(`kakao...://`,
- * `weddingpick://`)은 웹에서 의미가 없다 — 웹은 실제 페이지 주소로
- * 돌아와야 팝업이 원래 창에 결과를 돌려줄 수 있다(`WebBrowser.maybeCompleteAuthSession`).
- * `/login` 고정 경로를 쓴다 — 버튼이 전부 이 화면(또는 그 위 시트)에서만
- * 눌리므로 항상 이 경로로 돌아온다. 카카오·Google·네이버 개발자센터 모두에
- * 이 값을 Redirect(Callback) URI로 등록해야 한다.
+ * 카카오 redirect URI. 네이티브 앱 커스텀 스킴(`kakao...://`)은 웹에서 의미가
+ * 없다 — 웹은 실제 페이지 주소로 돌아와야 팝업이 원래 창에 결과를 돌려줄 수
+ * 있다(`WebBrowser.maybeCompleteAuthSession`). `/login` 고정 경로를 쓴다 —
+ * 버튼이 이 화면(또는 그 하위 화면)에서만 눌리므로 항상 이 경로로 돌아온다.
+ * 카카오 개발자센터에 이 값을 Redirect URI로 등록해야 한다.
  */
 function webRedirectUri(): string {
   return `${window.location.origin}/login`;
 }
 
 /**
- * Apple은 `expo-apple-authentication`(iOS 네이티브 전용)으로만 붙어 있다.
- * Android·웹에서는 눌러도 애초에 될 수 없는 버튼이라 목록에서 아예 뺀다 —
- * §8 "눌러도 소득이 없는 버튼을 두지 않는다"와 같은 이유다. 서버는 플랫폼을
- * 모르니 4종을 그대로 내려준다 — 걸러내는 건 여기, 클라이언트 몫이다.
- */
-function isSelectable(provider: AuthProvider): boolean {
-  return provider.provider !== 'apple' || Platform.OS === 'ios';
-}
-
-/**
- * 쓸 수 있는 로그인 방법.
+ * 쓸 수 있는 로그인 방법 — 카카오뿐이다(v3.12, 네이버·구글·애플 폐기).
  *
- * 로그인 화면과 로그인 시트가 **같은 목록을 같은 방법으로** 읽는다. 두 곳에 따로
- * 적어두면 제공자를 붙이는 날 한쪽만 고쳐진다.
+ * 개발용 대체(`isDevelopmentStandIn`)는 실제 카카오가 아니라서 항상 남겨둔다 —
+ * `KAKAO_APP_KEY`가 아직 없는 개발 환경에서도 로그인 흐름을 시험할 수 있어야
+ * 한다. 이메일은 여기 없다 — OAuth 앱 등록 여부에 좌우되지 않고 항상 켜져
+ * 있어서, 화면의 "이메일로 시작하기"는 이 목록이 아니라 고정 버튼이다.
  *
  * `null`은 아직 모르는 상태고 `[]`는 없는 상태다. 둘을 같게 다루면 서버가
  * 늦게 답하는 동안 "로그인할 수 없습니다"라고 잘못 말하게 된다.
@@ -108,7 +63,9 @@ export function useAuthProviders(): { providers: AuthProvider[] | null; error: s
     }
 
     listAuthProviders()
-      .then((response) => setProviders(response.providers.filter(isSelectable)))
+      .then((response) =>
+        setProviders(response.providers.filter((p) => p.provider === 'kakao' || p.isDevelopmentStandIn))
+      )
       .catch((caught: Error) => {
         setProviders([]);
         setError(caught.message);
@@ -122,149 +79,51 @@ export function useAuthProviders(): { providers: AuthProvider[] | null; error: s
 export function canSignInWith(provider: AuthProvider): boolean {
   if (provider.isDevelopmentStandIn) return Boolean(DEV_LOGIN_SECRET);
 
-  switch (provider.provider) {
-    case 'apple':
-      // 현재 구현은 expo-apple-authentication 네이티브 흐름이다.
-      return Platform.OS === 'ios';
-    case 'kakao':
-      return Boolean(KAKAO_CLIENT_ID);
-    case 'google':
-      return Boolean(GOOGLE_CLIENT_ID);
-    case 'naver':
-      // 웹은 자기 주소(`/login`)로 돌아오므로 서버 콜백 주소가 없어도 된다.
-      return Boolean(NAVER_CLIENT_ID && (Platform.OS === 'web' || NAVER_REDIRECT_URI));
-  }
+  return Boolean(KAKAO_CLIENT_ID);
 }
 
 /**
- * 로그인 한 번.
+ * 카카오 로그인 한 번.
  *
- * 제공자 SDK는 클라이언트 ID가 나온 뒤에 붙인다. 그 전까지 실제 제공자 버튼은
- * 눌러도 여기서 멈춘다 — 눌리는 척하고 아무 일도 안 하는 것보다 낫다.
+ * 카카오는 `/oauth/authorize`에서 id_token을 바로 주지 않는다 —
+ * `response_type=id_token`은 "지원하지 않는 SDK 버전"(KOE033)으로 거부된다.
+ * 네이버가 쓰던 것과 같은 구조로 인가 코드만 받고, 서버가 `/oauth/token`으로
+ * 교환한 응답의 id_token을 검증한다.
  */
-export async function signInWith(provider: AuthProvider): Promise<void> {
+export async function signInWithKakao(provider: AuthProvider): Promise<void> {
   if (provider.isDevelopmentStandIn) {
-    // 개발용 대체는 서버가 apple 자리에만 만든다 — 인가 코드 제공자에는 없다.
-    if (provider.provider === 'naver' || provider.provider === 'kakao') {
-      throw new Error('이 제공자의 개발용 로그인은 지원하지 않습니다.');
-    }
-    await signIn(provider.provider, devIdToken());
+    await signIn('apple', devIdToken());
+
     return;
   }
 
-  if (provider.provider === 'apple') {
-    if (!(await AppleAuthentication.isAvailableAsync())) {
-      throw new Error('이 기기에서는 Apple 로그인을 사용할 수 없습니다.');
-    }
-
-    const credential = await AppleAuthentication.signInAsync({
-      requestedScopes: [
-        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-        AppleAuthentication.AppleAuthenticationScope.EMAIL,
-      ],
-    });
-
-    if (!credential.identityToken) {
-      throw new Error('Apple 로그인 토큰을 받지 못했습니다. 다시 시도해 주세요.');
-    }
-
-    const appleName = [credential.fullName?.familyName, credential.fullName?.givenName]
-      .filter(Boolean)
-      .join(' ');
-    await signIn('apple', credential.identityToken, appleName || undefined);
-    return;
+  if (!KAKAO_CLIENT_ID) {
+    throw new Error('카카오 로그인 설정이 아직 완료되지 않았습니다.');
   }
 
-  if (provider.provider === 'kakao') {
-    if (!KAKAO_CLIENT_ID) {
-      throw new Error('카카오 로그인 설정이 아직 완료되지 않았습니다.');
-    }
-
-    /*
-     * 카카오는 `/oauth/authorize`에서 id_token을 바로 주지 않는다 —
-     * `response_type=id_token`은 "지원하지 않는 SDK 버전"(KOE033)으로 거부된다.
-     * 네이버처럼 인가 코드만 받고, 서버가 `/oauth/token`으로 교환해 그 응답의
-     * id_token을 검증한다. `openid` scope는 교환 응답에 id_token을 싣게 하려고
-     * 필요하다.
-     */
-    const redirectUri =
-      Platform.OS === 'web' ? webRedirectUri() : makeRedirectUri({ scheme: KAKAO_REDIRECT_SCHEME, path: 'oauth' });
-    const request = new AuthRequest({
-      clientId: KAKAO_CLIENT_ID,
-      redirectUri,
-      responseType: ResponseType.Code,
-      scopes: ['openid'],
-      usePKCE: true,
-    });
-    const result = await request.promptAsync({
-      authorizationEndpoint: 'https://kauth.kakao.com/oauth/authorize',
-    });
-
-    if (result.type !== 'success' || !result.params.code) {
-      if (result.type === 'cancel' || result.type === 'dismiss') return;
-      throw new Error('카카오 로그인에 실패했습니다. 다시 시도해 주세요.');
-    }
-
-    await signInWithAuthorizationCode({
-      provider: 'kakao',
-      authorizationCode: result.params.code,
-      state: result.params.state ?? request.state,
-      redirectUri,
-      codeVerifier: request.codeVerifier,
-    });
-    return;
-  }
-
-  if (provider.provider === 'google') {
-    if (!GOOGLE_CLIENT_ID) throw new Error('Google 로그인 설정이 아직 완료되지 않았습니다.');
-    const request = new AuthRequest({
-      clientId: GOOGLE_CLIENT_ID,
-      redirectUri: Platform.OS === 'web' ? webRedirectUri() : makeRedirectUri({ scheme: 'weddingpick' }),
-      responseType: ResponseType.IdToken,
-      scopes: ['openid', 'profile', 'email'],
-      usePKCE: false,
-    });
-    const result = await request.promptAsync({ authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth' });
-    if (result.type !== 'success' || !result.params.id_token) {
-      if (result.type === 'cancel' || result.type === 'dismiss') return;
-      throw new Error('Google 로그인에 실패했습니다. 다시 시도해 주세요.');
-    }
-    await signIn('google', result.params.id_token);
-    return;
-  }
-
-  /*
-   * 네이티브는 HTTPS만 받는 네이버 Callback 제약 때문에 서버 콜백
-   * (`/v1/auth/naver/callback`)을 거쳐 `weddingpick://`로 돌아온다. 웹은 그
-   * 콜백을 타면 커스텀 스킴에서 끊긴다 — 웹 주소 자체가 HTTPS라 카카오·Google처럼
-   * `/login`으로 바로 돌아온다. 이 주소는 네이버 Developers의 Callback URL과
-   * 서버 `NAVER_REDIRECT_URIS` 허용목록 양쪽에 등록돼 있어야 한다.
-   */
-  const naverRedirectUri = Platform.OS === 'web' ? webRedirectUri() : NAVER_REDIRECT_URI;
-  if (!NAVER_CLIENT_ID || !naverRedirectUri) {
-    throw new Error('네이버 로그인 설정이 아직 완료되지 않았습니다.');
-  }
-
+  const redirectUri =
+    Platform.OS === 'web' ? webRedirectUri() : makeRedirectUri({ scheme: KAKAO_REDIRECT_SCHEME, path: 'oauth' });
   const request = new AuthRequest({
-    clientId: NAVER_CLIENT_ID,
-    redirectUri: naverRedirectUri,
+    clientId: KAKAO_CLIENT_ID,
+    redirectUri,
     responseType: ResponseType.Code,
+    scopes: ['openid'],
     usePKCE: true,
   });
   const result = await request.promptAsync({
-    authorizationEndpoint: 'https://nid.naver.com/oauth2.0/authorize',
+    authorizationEndpoint: 'https://kauth.kakao.com/oauth/authorize',
   });
 
   if (result.type !== 'success' || !result.params.code) {
     if (result.type === 'cancel' || result.type === 'dismiss') return;
-    throw new Error('네이버 로그인에 실패했습니다. 다시 시도해 주세요.');
+    throw new Error('카카오 로그인에 실패했습니다. 다시 시도해 주세요.');
   }
 
   await signInWithAuthorizationCode({
-    provider: 'naver',
+    provider: 'kakao',
     authorizationCode: result.params.code,
     state: result.params.state ?? request.state,
-    redirectUri: naverRedirectUri,
+    redirectUri,
     codeVerifier: request.codeVerifier,
   });
 }

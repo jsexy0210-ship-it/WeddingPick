@@ -5,7 +5,8 @@ import { renderAdminPage } from './admin-page';
 import { renderHomePage } from './home-page';
 import { renderLandingV4 } from './landing-v4';
 import { renderLandingPage } from './page';
-import { loadSiteData, loadVendor, vendorIdsToBuild } from './site-data';
+import { renderResetPasswordPage } from './reset-password-page';
+import { apiBase, loadSiteData, loadVendor, vendorIdsToBuild } from './site-data';
 import { renderFaqPage, renderIntroPage, renderPrivacyPage, renderSupportPage, renderTermsPage } from './subpages';
 import { STYLES } from './styles';
 import { renderVendorPage } from './vendor-page';
@@ -29,6 +30,7 @@ import { renderVendorPage } from './vendor-page';
  * | `v/<업체 id>.html` | WP-WEB-003 업체 상세 |
  * | `about.html` | 서비스 소개 한 장. 약관·출처·분석 안내가 여기 있다 |
  * | `admin.html` | 관리자 |
+ * | `reset-password.html` | 이메일 로그인 비밀번호 재설정(v3.12). 앱이 아니라 메일 링크로 여기서 처리한다 |
  *
  * **소개 한 장을 지우지 않고 `about.html`로 남긴다.** `POLICY_DOCUMENTS`의 분석
  * 안내가 그 문서 안(`#analysis-notice`)을 가리키고, 앱 정책 화면도 같은 것을
@@ -61,6 +63,7 @@ export async function build(outDir: string): Promise<string> {
 
   writeFileSync(join(outDir, 'about.html'), renderLandingPage(STYLES), 'utf8');
   writeFileSync(join(outDir, 'admin.html'), renderAdminPage(), 'utf8');
+  writeFileSync(join(outDir, 'reset-password.html'), renderResetPasswordPage(apiBase()), 'utf8');
 
   const ids = vendorIdsToBuild();
 

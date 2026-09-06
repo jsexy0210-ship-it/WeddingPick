@@ -1,4 +1,5 @@
-export type IdentityProviderName = 'apple' | 'kakao' | 'google' | 'naver';
+/** `email`은 외부 제공자가 아니다 — 서버가 직접 비밀번호를 확인한다(`email-account.ts`). */
+export type IdentityProviderName = 'apple' | 'kakao' | 'google' | 'naver' | 'email';
 
 export type VerifiedIdentity = {
   provider: IdentityProviderName;

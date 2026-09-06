@@ -11,12 +11,7 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import { completeAfterSignIn, type AfterSignIn } from '@/features/auth/after-sign-in';
-import {
-  PROVIDER_LABEL,
-  canSignInWith,
-  signInWith,
-  useAuthProviders,
-} from '@/features/auth/providers';
+import { canSignInWith, signInWithKakao, useAuthProviders } from '@/features/auth/providers';
 
 export type LoginSheetProps = {
   visible: boolean;
@@ -57,7 +52,7 @@ export function LoginSheet({ visible, reason, onSignedIn, onDismiss }: LoginShee
     setError(null);
 
     try {
-      await signInWith(provider);
+      await signInWithKakao(provider);
       /*
        * 로그인만 하고 시트를 닫으면 사용자가 누른 Pick은 여전히 안 담겨 있다.
        * 멈췄던 일을 여기서 마친 뒤에야 닫는다.
@@ -109,11 +104,7 @@ export function LoginSheet({ visible, reason, onSignedIn, onDismiss }: LoginShee
                 <ActionButton
                   key={provider.provider}
                   variant={provider.isDevelopmentStandIn ? 'secondary' : 'primary'}
-                  label={
-                    provider.isDevelopmentStandIn
-                      ? '개발용 로그인'
-                      : PROVIDER_LABEL[provider.provider]
-                  }
+                  label={provider.isDevelopmentStandIn ? '개발용 로그인' : '카카오로 시작하기'}
                   hint={
                     provider.isDevelopmentStandIn
                       ? '실제 애플·카카오 로그인이 아니에요. 개발 중인 서버에만 있어요'

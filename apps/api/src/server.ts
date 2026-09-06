@@ -2,6 +2,7 @@ import cors from '@fastify/cors';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { ZodError } from 'zod';
 
+import { createAttemptLimiter } from './auth/attempt-limiter';
 import type { AppContext } from './context';
 import { ApiError } from './errors';
 import { registerAdminRoutes } from './routes/admin';
@@ -9,7 +10,7 @@ import { registerAnalysisRoutes } from './routes/analyses';
 import { registerCandidateRoutes } from './routes/candidates';
 import { registerWeddingPlanRoutes } from './routes/wedding-plan';
 import { registerWeddingEventRoutes } from './routes/wedding-events';
-import { registerAuthRoutes } from './routes/auth';
+import { PASSWORD_ATTEMPT_WINDOW_MS, PASSWORD_MAX_ATTEMPTS, registerAuthRoutes } from './routes/auth';
 import { registerDevStorageRoutes } from './routes/dev-storage';
 import { registerDeviceRoutes } from './routes/devices';
 import { registerDocumentRoutes } from './routes/documents';
@@ -106,7 +107,8 @@ export function buildServer(context: AppContext): FastifyInstance {
     version: 'v1',
   }));
 
-  registerAuthRoutes(app, context);
+  const passwordAttempts = createAttemptLimiter({ max: PASSWORD_MAX_ATTEMPTS, windowMs: PASSWORD_ATTEMPT_WINDOW_MS });
+  registerAuthRoutes(app, context, passwordAttempts);
   registerWeddingRoutes(app, context);
   registerDocumentRoutes(app, context);
   registerAnalysisRoutes(app, context);
