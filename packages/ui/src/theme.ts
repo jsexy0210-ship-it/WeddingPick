@@ -84,6 +84,33 @@ const palette = {
   darkLineAlpha: '#ffffff1f',
   /** SEED static-black-alpha-500. */
   scrim: '#00000080',
+
+  /**
+   * 소셜 로그인 버튼 — 제공자 공식 브랜드색. spec/tokens.json `color.social`과
+   * 같은 값이다. 테마(라이트/다크)·사용자 스킨과 무관하게 고정이다 — Pick
+   * Mark가 스킨과 무관하게 코랄 고정인 것과 같은 이유다.
+   */
+  kakaoBg: '#fee500',
+  /** 카카오 공식 지정값. 앱 잉크(#212124)와 다르다 — spec/tokens.json color.social 참고. */
+  kakaoText: '#191919',
+  appleBg: '#000000',
+  appleText: '#ffffff',
+  googleBg: '#ffffff',
+  googleText: '#212124',
+  naverBg: '#03c75a',
+  naverText: '#ffffff',
+} as const;
+
+/**
+ * 소셜 로그인 버튼 색. 라이트/다크 모드로 나뉘지 않는다 — 위 palette 주석 참고.
+ * `apps/mobile/src/features/auth/providers.ts`의 `PROVIDER_TONE`이 이 값을
+ * `AuthProvider`별로 매핑해 로그인 화면에 넘긴다.
+ */
+export const SocialColors = {
+  kakao: { background: palette.kakaoBg, text: palette.kakaoText },
+  apple: { background: palette.appleBg, text: palette.appleText },
+  google: { background: palette.googleBg, text: palette.googleText, border: palette.gray300 },
+  naver: { background: palette.naverBg, text: palette.naverText },
 } as const;
 
 /**

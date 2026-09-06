@@ -25,6 +25,12 @@ export type ActionButtonProps = Omit<PressableProps, 'children' | 'style'> & {
    * 행동에는 `xlarge`를 준다.
    */
   size?: 'auto' | 'medium' | 'large' | 'xlarge';
+  /**
+   * `variant`가 정하는 테마 색 대신 고정 색을 쓴다 — 소셜 로그인처럼 제공자
+   * 브랜드색이 앱 스킨과 무관하게 고정이어야 하는 자리에만 쓴다(`SocialColors`
+   * 참고). 지정하면 `variant`의 배경·테두리·글자색을 전부 덮어쓴다.
+   */
+  tone?: { background: string; text: string; border?: string };
 };
 
 const HEIGHT = {
@@ -38,6 +44,7 @@ export function ActionButton({
   hint,
   variant = 'secondary',
   size = 'auto',
+  tone,
   disabled,
   ...rest
 }: ActionButtonProps) {
@@ -56,19 +63,25 @@ export function ActionButton({
           styles.button,
           size === 'auto' ? null : [styles.fixed, { height: HEIGHT[size] }],
           {
-            backgroundColor: isPrimary
-              ? theme.tint
-              : isGhost
-                ? theme.background
-                : theme.backgroundElement,
-            borderWidth: isGhost || focused ? 1 : 0,
-            borderColor: focused ? theme.tint : theme.track,
+            backgroundColor: tone
+              ? tone.background
+              : isPrimary
+                ? theme.tint
+                : isGhost
+                  ? theme.background
+                  : theme.backgroundElement,
+            borderWidth: tone ? (tone.border ? 1 : 0) : isGhost || focused ? 1 : 0,
+            borderColor: tone ? (tone.border ?? tone.background) : focused ? theme.tint : theme.track,
             opacity: disabled === true ? 0.4 : pressed ? 0.8 : hovered || focused ? 0.9 : 1,
           },
         ];
       }}
       {...rest}>
-      <ThemedText type="t5" numberOfLines={1} themeColor={isPrimary ? 'onTint' : 'text'}>
+      <ThemedText
+        type="t5"
+        numberOfLines={1}
+        themeColor={isPrimary ? 'onTint' : 'text'}
+        style={tone ? { color: tone.text } : undefined}>
         {label}
       </ThemedText>
       {hint ? (

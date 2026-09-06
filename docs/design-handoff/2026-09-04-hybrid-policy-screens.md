@@ -1,7 +1,8 @@
 # 화면별 구현 방식 — 2026-09-04 정책 변경 반영
 
 `CLAUDE.md` 최상단 "정책 변경 — 2026-09-04" 절의 실행 대상 목록. IA는
-`docs/design-handoff/seed/웨딩픽 전체 IA.dc.html`의 190개 화면 ID 기준.
+`docs/design-handoff/current/html/00-ia.dc.html`의 화면 ID 기준(2026-09-06, v3.11
+반영 시 옛 `seed/` 세대에서 갱신).
 
 ## 요약
 

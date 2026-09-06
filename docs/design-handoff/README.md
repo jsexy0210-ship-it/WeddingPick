@@ -1,24 +1,19 @@
 # 최신 전달본
 
-현재 사용자가 전달한 디자인 원본은 [current/README.md](current/README.md)를 시작점으로 확인합니다. `current/`의 64개 파일은 전달 ZIP에서 내용 변경 없이 추출했습니다. 구현 시 토큰·화면 명세·기준 PNG·HTML 원본을 함께 확인합니다.
+현재 사용자가 전달한 디자인 원본은 [current/README.md](current/README.md)를 시작점으로 확인합니다. `current/`는 전달 ZIP에서 내용 변경 없이 추출합니다. 구현 시 토큰·화면 명세·기준 PNG·HTML 원본을 함께 확인합니다.
 
-이전 자료는 삭제 범위 확인 전까지 보존합니다. 아래 내용은 이전 핸드오프 설명입니다.
+**버전 이력은 [current/CHANGELOG.md](current/CHANGELOG.md)에서 관리합니다**(v3.11부터 동봉 시작, 2026-09-06). 최신이 위입니다 — 정책·화면이 바뀌면 여기부터 확인합니다.
+
+2026-09-06(v3.11) 반영 시점에 `seed/`(SEED Design System 기반, 176화면 세대)를
+삭제했다 — `current/`가 그 세대를 완전히 대체하는 자체 완결 패키지가 됐고(189화면,
+`current/tokens.json`·`current/screens.json`·`current/SPEC.md`), 옛 세대만의 값을
+따로 볼 이유가 없어졌다. `seed/`를 가리키던 과거 문서 링크는 `current/`로 갱신한다.
+
+아래 내용은 SEED 세대 자체의 설명이라 대부분 더 이상 유효하지 않다 — 역사적 맥락으로만
+남긴다.
 
 ---
-# 디자인 핸드오프
-
-## 현재 기준: SEED
-
-**[seed/](seed)** 가 현재 디자인 핸드오프다. Claude Design(SEED Design System, 당근마켓 기반)으로
-만들어졌고, Primary만 웨딩픽 코랄(`#FF6F61`)로 치환했다. 색·타이포·컴포넌트 확정값의
-원출처는 [seed/웨딩픽 컴포넌트 시트.dc.html](seed/웨딩픽%20컴포넌트%20시트.dc.html)이고,
-전체 화면 목록(176개)은 [seed/웨딩픽 전체 IA.dc.html](seed/웨딩픽%20전체%20IA.dc.html)의
-JS 배열 `G`에 있다. 개요는 [seed/README.md](seed/README.md), 확정 규칙은
-[seed/PROJECT_RULES.md](seed/PROJECT_RULES.md)를 본다.
-
-**주의:** [seed/README.md](seed/README.md)의 프로즈 색 표는 몇 곳에서 실제
-`웨딩픽 컴포넌트 시트.dc.html`과 어긋난다(예: Primary press · Warning · Danger). 값이
-갈리면 `.dc.html` 인라인 스타일 쪽이 맞다.
+# 디자인 핸드오프 (구 SEED 세대 — 삭제됨, 역사적 맥락용)
 
 이 폴더는 `통합정책 v3.15`와 어긋나는 부분이 있으면 통합정책을 따른다 — 특히 카피·용어·
 정책 규칙은 통합정책이 최종 기준이고, 이 핸드오프는 시각 디자인(색·타이포·간격·컴포넌트

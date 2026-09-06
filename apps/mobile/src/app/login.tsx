@@ -1,20 +1,15 @@
-import type { AuthProvider } from '@weddingpick/api-contract';
-import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
-import { getCurrentUser } from '@/api/client';
-import { completeAfterSignIn } from '@/features/auth/after-sign-in';
-import {
-  PROVIDER_LABEL,
-  canSignInWith,
-  signInWith,
-  useAuthProviders,
-} from '@/features/auth/providers';
+import { LoginFailureSheet } from '@/features/auth/login-failure-sheet';
+import { OtherLoginSheet } from '@/features/auth/other-login-sheet';
+import { PROVIDER_LABEL, canSignInWith, providerTone, useAuthProviders } from '@/features/auth/providers';
+import { loadRememberedAccount, type RememberedAccount } from '@/features/auth/remembered-account';
+import { useSignIn } from '@/features/auth/use-sign-in';
 
-/** 로그인이 무엇을 위한 것인지. 계정을 요구하는 이유를 먼저 말한다. */
+/** WP-AUTH-001 "첫 진입" 상태에만 쓴다 — WP-AUTH-003(로그인 유지)엔 없다. */
 const REASONS = [
   '분석한 자료를 기기를 바꿔도 다시 볼 수 있어요.',
   '자료 확인을 신청하고 진행 상황을 받아볼 수 있어요.',
@@ -22,89 +17,84 @@ const REASONS = [
 ];
 
 /**
- * A-02 로그인/가입.
+ * WP-AUTH-001/003 로그인. 디자인 핸드오프 v3.11(2026-09-06)의 로그인 정책
+ * 전환을 반영한다.
  *
  * 2026-09-04 정책 변경 — 비회원 진입 삭제. 스플래시(온보딩 소개) 다음은
  * 이 화면이고, 로그인해야만 앱으로 넘어간다. `_layout.tsx`의 진입 로직이
- * 비로그인 상태면 항상 이 화면으로 보낸다 — 뒤에 아무것도 없으니 "나중에
- * 하기"로 건너뛸 수 없다.
+ * 비로그인 상태면 항상 이 화면으로 보낸다 — 뒤에 아무것도 없으니 건너뛸 수
+ * 없다. 이메일 로그인은 지원하지 않는다(비밀번호 입력·찾기·재설정 화면 없음).
  *
- * **카카오가 기본, 나머지는 "다른 방법으로 로그인" 뒤로 접는다** — 화면당
- * Primary CTA는 1개다(CLAUDE.md §3). 카카오 자리에 개발용 대체가 들어온
- * 경우(`isDevelopmentStandIn`)에는 그걸 기본 자리에 대신 놓는다 — 실제
- * 제공자가 하나도 없는 개발 환경에서 로그인 버튼이 통째로 접힌 목록 뒤로
- * 숨는 것을 막는다.
+ * **두 상태를 한 컴포넌트에서 가른다**(WP-AUTH-001 첫 진입 / WP-AUTH-003
+ * 로그인 유지) — 레이아웃은 다르지만 "카카오(또는 기억된 계정)가 기본,
+ * 나머지는 시트로"라는 구조는 같다. `featured`가 기억된 계정이 있으면 그
+ * 계정으로, 없으면 카카오로 정해지고 나머지 로직은 그대로 따라간다.
+ *
+ * "다른 방법으로 시작"은 화면 이동이 아니라 시트다(`other-login-sheet.tsx`).
+ * 로그인 실패는 화면에 문구를 깔지 않고 시트로 뜬다(`login-failure-sheet.tsx`,
+ * WP-AUTH-004).
  */
 export default function LoginScreen() {
   const theme = useTheme();
   const { providers, error: loadError } = useAuthProviders();
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const { signIn, busy, error, retry, dismissError } = useSignIn();
   const [showOthers, setShowOthers] = useState(false);
+  /** undefined = 아직 안 읽음, null = 기억된 계정 없음(WP-AUTH-001). */
+  const [remembered, setRemembered] = useState<RememberedAccount | null | undefined>(undefined);
 
-  const featured = providers?.find((provider) => provider.provider === 'kakao') ?? providers?.[0] ?? null;
+  useEffect(() => {
+    loadRememberedAccount().then(setRemembered);
+  }, []);
+
+  const rememberedProvider =
+    remembered && providers?.find((provider) => provider.provider === remembered.provider);
+  const featured = rememberedProvider ?? providers?.find((provider) => provider.provider === 'kakao') ?? providers?.[0] ?? null;
   const others = providers?.filter((provider) => provider !== featured) ?? [];
-
-  async function startSignIn(provider: AuthProvider) {
-    if (busy) return;
-    setBusy(true);
-    setError(null);
-
-    try {
-      await signInWith(provider);
-      /*
-       * 로그인 전에 기기에 적어둔 최소 온보딩과 멈춰둔 Pick을 여기서도 마친다.
-       * 시트에서만 하면, 이 화면으로 로그인한 사람의 예식일은 서버에 영영 안 올라간다.
-       */
-      const after = await completeAfterSignIn();
-
-      /*
-       * 아직 가입이 끝나지 않았다(v3.13 §N-2). 여기서 그냥 돌아가면 서버가
-       * 모든 경로를 막은 계정으로 앱을 쓰게 되고, 사용자는 로그인이 됐는데
-       * 아무것도 안 되는 화면을 본다.
-       */
-      if (after.needsSignup) {
-        router.replace('/signup');
-
-        return;
-      }
-
-      /*
-       * 방금 만든 웨딩(완료 처리)이거나, 이전에 이미 만들어둔 계정으로 다시
-       * 로그인한 경우 둘 다 있다 — 서버에 다시 물어봐서 정한다.
-       */
-      const me = await getCurrentUser().catch(() => null);
-
-      router.replace(me?.setupComplete || after.savedWedding ? '/(tabs)' : '/setup');
-    } catch (caught) {
-      setError((caught as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content}>
-          <ThemedView style={styles.section}>
-            <ThemedText type="title">로그인</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              자료를 분석하려면 계정이 필요해요.
-            </ThemedText>
-          </ThemedView>
-
-          <ThemedView style={styles.section}>
-            {REASONS.map((reason) => (
-              <ThemedView key={reason} type="backgroundElement" style={styles.card}>
+          {rememberedProvider ? (
+            <ThemedView style={styles.section}>
+              <ThemedText type="title">
+                {remembered?.displayName ? `${remembered.displayName}님,\n` : ''}다시 오셨네요
+              </ThemedText>
+              <ThemedView type="backgroundElement" style={styles.card}>
                 <ThemedText type="small" themeColor="textSecondary">
-                  {reason}
+                  최근 로그인
+                </ThemedText>
+                <ThemedText type="small">
+                  {rememberedProvider.isDevelopmentStandIn
+                    ? '개발용 로그인'
+                    : PROVIDER_LABEL[rememberedProvider.provider]}
                 </ThemedText>
               </ThemedView>
-            ))}
-          </ThemedView>
+            </ThemedView>
+          ) : (
+            <>
+              <ThemedView style={styles.section}>
+                <ThemedText type="title">
+                  웨딩 준비,{'\n'}여기서 같이 해요
+                </ThemedText>
+                <ThemedText type="small" themeColor="textSecondary">
+                  확인된 제보로 고르고 배우자와 함께 정해요
+                </ThemedText>
+              </ThemedView>
 
-          {providers === null ? (
+              <ThemedView style={styles.section}>
+                {REASONS.map((reason) => (
+                  <ThemedView key={reason} type="backgroundElement" style={styles.card}>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      {reason}
+                    </ThemedText>
+                  </ThemedView>
+                ))}
+              </ThemedView>
+            </>
+          )}
+
+          {providers === null || remembered === undefined ? (
             <ActivityIndicator color={theme.tint} />
           ) : providers.length === 0 ? (
             <ThemedView type="backgroundElement" style={styles.card}>
@@ -118,6 +108,8 @@ export default function LoginScreen() {
                 <ActionButton
                   key={featured.provider}
                   variant="primary"
+                  size="xlarge"
+                  tone={providerTone(featured)}
                   label={
                     featured.isDevelopmentStandIn ? '개발용 로그인' : PROVIDER_LABEL[featured.provider]
                   }
@@ -127,50 +119,64 @@ export default function LoginScreen() {
                       : undefined
                   }
                   disabled={busy || !canSignInWith(featured)}
-                  onPress={() => startSignIn(featured)}
+                  onPress={() => signIn(featured)}
                 />
               ) : null}
 
               {others.length > 0 ? (
-                showOthers ? (
-                  others.map((provider) => (
-                    <ActionButton
-                      key={provider.provider}
-                      variant="secondary"
-                      label={
-                        provider.isDevelopmentStandIn
-                          ? '개발용 로그인'
-                          : PROVIDER_LABEL[provider.provider]
-                      }
-                      hint={
-                        provider.isDevelopmentStandIn
-                          ? '실제 애플·카카오 로그인이 아니에요. 개발 중인 서버에만 있어요'
-                          : undefined
-                      }
-                      disabled={busy || !canSignInWith(provider)}
-                      onPress={() => startSignIn(provider)}
-                    />
-                  ))
-                ) : (
-                  <ActionButton
-                    variant="secondary"
-                    label="다른 방법으로 로그인"
-                    onPress={() => setShowOthers(true)}
-                  />
-                )
+                <ActionButton
+                  variant="secondary"
+                  size="xlarge"
+                  label={rememberedProvider ? '다른 계정으로 시작하기' : '다른 방법으로 시작하기'}
+                  disabled={busy}
+                  onPress={() => setShowOthers(true)}
+                />
               ) : null}
+
+              {!rememberedProvider ? (
+                <ThemedText type="small" themeColor="textAssistive" style={styles.terms}>
+                  시작하면 이용약관과 개인정보 처리방침에 동의하게 돼요
+                </ThemedText>
+              ) : (
+                <ThemedText type="small" themeColor="textAssistive" style={styles.terms}>
+                  이 기기에서 로그인을 유지하고 있어요
+                </ThemedText>
+              )}
             </ThemedView>
           )}
 
-          {error ?? loadError ? (
+          {loadError ? (
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="small" themeColor="textSecondary">
-                {error ?? loadError}
+                {loadError}
               </ThemedText>
             </ThemedView>
           ) : null}
         </ScrollView>
       </SafeAreaView>
+
+      <OtherLoginSheet
+        visible={showOthers}
+        providers={others}
+        busy={busy}
+        onSelect={(provider) => {
+          /* 실패하면 이 시트가 아니라 LoginFailureSheet가 뜬다 — 두 Modal이
+             동시에 떠 있으면 iOS에서 시트가 겹쳐 그려진다. */
+          setShowOthers(false);
+          signIn(provider);
+        }}
+        onDismiss={() => setShowOthers(false)}
+      />
+
+      <LoginFailureSheet
+        visible={error !== null}
+        onRetry={retry}
+        onOtherAccount={() => {
+          dismissError();
+          setShowOthers(true);
+        }}
+        onDismiss={dismissError}
+      />
     </ThemedView>
   );
 }
@@ -198,5 +204,8 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.three,
     padding: Spacing.three,
     gap: Spacing.one,
+  },
+  terms: {
+    textAlign: 'center',
   },
 });

@@ -22,19 +22,40 @@ services:
         source: /
         destination: /admin.html
 
-  # 모바일 웹 export 정적 호스팅 (하이브리드 웹뷰 쉘 POC)
+  # 모바일 웹 export 정적 호스팅 (실제 앱 화면 검수용 + 하이브리드 웹뷰 쉘 POC)
   #
   # apps/mobile을 react-native-web으로 정적 빌드해 서빙한다. 네이티브 앱 쉘의
   # react-native-webview가 이 URL을 불러온다(apps/mobile/src/features/webshell).
-  # 이 서비스는 아직 실제로 생성되지 않았다 — 새 유료 리소스라 사용자 확인이
-  # 필요하다. 생성 후 배포 URL을 apps/mobile/eas.json의 build profile env에
-  # EXPO_PUBLIC_WEB_URL로 채워야 웹뷰 쉘이 동작한다.
+  # 생성 후 배포 URL을 apps/mobile/eas.json의 build profile env에
+  # EXPO_PUBLIC_WEB_URL로 채우면 웹뷰 쉘도 동작한다(검수 목적만이면 불필요).
+  #
+  # EXPO_PUBLIC_* 값은 apps/mobile/eas.json의 production 프로필과 동일해야
+  # 한다 — 안 넣으면 EXPO_PUBLIC_API_URL이 undefined가 되어 로그인 화면이
+  # 제공자 목록을 못 받아오고 빈 화면("지금은 로그인할 수 없어요")만 보인다
+  # (2026-09-05, 실제로 겪은 문제 — apps/mobile/src/api/config.ts의
+  # isServerConfigured가 false가 되면 provider 목록을 아예 요청하지 않는다).
+  # 값 자체는 비밀이 아니다(공개 OAuth Client ID) — eas.json에도 평문으로 있다.
   - type: web
     name: weddingpick-app-web
     runtime: static
     staticPublishPath: ./apps/mobile/dist
     autoDeploy: true
     buildCommand: npm run export:web --workspace @weddingpick/mobile
+    envVars:
+      - key: EXPO_PUBLIC_API_URL
+        value: https://weddingpickl.onrender.com
+      - key: EXPO_PUBLIC_KAKAO_CLIENT_ID
+        value: 73d13d819afd9d14f20de20b8dff46b8
+      - key: EXPO_PUBLIC_GOOGLE_CLIENT_ID
+        value: 595165026523-dd5s0fqtle78e03mb34m9iaclpdmlb9r.apps.googleusercontent.com
+      - key: EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID
+        value: 595165026523-3mlcq960r5q174h6chun8mommjkpt0qi.apps.googleusercontent.com
+      - key: EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID
+        value: 595165026523-bg8hu37bq5mll2gr879artmgh4h2a9v0.apps.googleusercontent.com
+      - key: EXPO_PUBLIC_NAVER_CLIENT_ID
+        value: tgp4WVYlYO_qd2nyvHug
+      - key: EXPO_PUBLIC_NAVER_REDIRECT_URI
+        value: https://weddingpickl.onrender.com/v1/auth/naver/callback
     routes:
       # expo-router 클라이언트 라우팅 — 없는 경로를 index.html로 되돌린다.
       - type: rewrite
