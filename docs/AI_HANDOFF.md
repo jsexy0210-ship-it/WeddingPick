@@ -27,8 +27,10 @@
 - Open PR: #88·#100 병합, #99 종료(임시 조사 스냅샷 — 실질 내용은 아래 결함 목록으로
   옮겼다). **#101(`claude/stabilize-p0`)은 다른 세션이 지금 작업 중이라 그대로 둔다** —
   `/health`의 스키마 상태 보고와 안정화 기록이다
-- Remote branch 68 → 9. 병합 완료·내용이 main에 들어간 브랜치 58개 삭제
-- 남긴 브랜치(main 미반영 고유 코드가 있어 diff 확인 후 보류): 아래 «보류 브랜치» 절
+- Remote branch 70개 중 **60개를 삭제 대상으로 판정**했다. 다만 이 세션의 git 프록시가
+  ref 삭제 push를 403으로 막아 **실제 삭제는 아직 안 됐다** — 아래 «삭제 대기 브랜치» 절의
+  명령을 사람이 한 번 돌려야 한다
+- 남길 브랜치: `main`, `claude/stabilize-p0`(PR #101 진행 중), 아래 «보류 브랜치» 7개
 - 삭제한 파일: `WeddingPickl`(.gitmodules 없는 깨진 서브모듈 링크),
   `pnpm-lock.yaml`(npm 저장소인데 남아 있던 중복 락파일), `color-test.html`
   (참조 0건, 폐기된 v7 시안 비교용 스크래치)
@@ -39,6 +41,84 @@
 - 문서는 `docs/README.md`가 이미 색인·폐기 기준을 관리하고 있고, `archive/`의 과거
   정책서는 코드 주석이 절 번호로 참조한다(`packages/domain/*`·`api-contract/*`).
   **문서 삭제는 하지 않았다** — 지우면 그 참조가 끊긴다
+
+### 삭제 대기 브랜치 (60개)
+
+판정 근거는 셋 중 하나다 — **PR이 병합돼 내용이 main에 있다**(48개), **tip이 main의
+조상이거나 main과 diff가 없다**(3개), **내용이 이미 main에 반영됐거나 폐기됐음을 diff로
+확인했다**(9개: 마이그레이션 재번호 `0061`·`0062`는 #40/#41로 이미 적용, `flyio-new-files`는
+Render를 쓰는 지금 쓰이지 않는 `fly.toml`, `design/*` 4개는 `design/search-vendor-clean`이
+포함, 조사 스냅샷 브랜치 2개, `fix/render-sync-inputs-context`는 작성자가 진단 철회).
+
+지운 브랜치는 GitHub의 해당 PR 화면에서 되살릴 수 있다. tip SHA는 이 커밋 시점의
+Git history에 남아 있다.
+
+```bash
+for b in \
+  claude/audit-review-2026-09-07 \
+  claude/backend-gaps-olvj3m \
+  claude/daily-progress-briefing-3k7lez \
+  claude/fe-design-pixel-match \
+  claude/fe-screens-admin-p0 \
+  claude/fe-screens-common-states \
+  claude/fe-screens-cpl-biz-sht-2nd \
+  claude/fe-screens-expo \
+  claude/fe-screens-our-my-home \
+  claude/fix-db-migration-0061 \
+  claude/fix-db-migration-0062 \
+  claude/fix-migration-numbering-collision-260902 \
+  claude/home-c1 \
+  claude/information-gathering-sy6e01 \
+  claude/lifecycle-policy-scope \
+  claude/payment-proof-count-fix \
+  claude/render-migration \
+  claude/session-a4bq31 \
+  claude/web-front-office \
+  claude/wedding-events-map-view-260902 \
+  claude/wedding-pick-android-apk-tjo2gg \
+  claude/weddingpick-master-bootstrap-6j1c7o \
+  claude/withdrawal-copy-alignment-15037 \
+  codex/github-audit-handoff-20260907 \
+  codex/social-login-completion \
+  codex/sync-kakao-p0-handoff \
+  codex/web-open-graph \
+  codex/wedding-public-data-pipeline \
+  design/home-screen \
+  design/pick-screen \
+  design/search-vendor \
+  design/wedding-my \
+  docs/consolidate-policy-main \
+  docs/hybrid-web-policy \
+  docs/hybrid-web-qa-checklist \
+  docs/session-handoff-staging-green \
+  feat/auth-v3.11 \
+  feat/email-login \
+  feat/landing-fixed-vendors \
+  feat/render-env-automation \
+  fix/canonical-pick-mark \
+  fix/kakao-authorization-code-flow \
+  fix/lint-set-state-in-effect \
+  fix/monthly-draw-migration-collision \
+  fix/oauth-web-redirect \
+  fix/public-data-workflow-secrets-if \
+  fix/render-blueprint-sync-nonblocking \
+  fix/render-sync-inputs-context \
+  fix/stale-policy-status-tests \
+  fix/vendor-category-and-login-visuals \
+  fix/web-autofill-input \
+  flyio-new-files \
+  home/fe-p0-gaps \
+  hybrid/guest-removal \
+  hybrid/qa-home-entry-shared \
+  hybrid/qa-my-events \
+  hybrid/qa-pick \
+  hybrid/qa-search-vendor \
+  hybrid/shell-poc \
+  hybrid/wedding-followups
+do
+  git push origin --delete "$b"
+done
+```
 
 ### 보류 브랜치 (삭제하지 않음)
 
