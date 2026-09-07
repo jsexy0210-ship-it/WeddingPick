@@ -43,7 +43,8 @@ Render에 밀어넣는다. `render.yaml`의 `envVars`는 반영되지 않는다(
 - 홍보 자동화 파이프라인 골격 — 스키마·CLI·관리자 엔드포인트 8개·0072 마이그레이션(#62 계열)
 - 공공데이터 수집 파이프라인 — 이천·제천 CSV, 전국 상권 CSV 어댑터, 출처별 최신성·중복·잠금
 - Render 환경변수 자동 반영(#96), 서버 로그 활성화(#100), `public-data.yml` 무효 처리 수정(#88)
-- 저장소 정리(2026-09-07) — Open PR 3→0, remote branch 68→9. 상세는 `docs/AI_HANDOFF.md`
+- 저장소 정리(2026-09-07) — remote branch 68→9, Open PR은 진행 중인 #101만 남김.
+  상세는 `docs/AI_HANDOFF.md`의 «저장소 정리» 절
 
 ## 미완료 · 장애
 

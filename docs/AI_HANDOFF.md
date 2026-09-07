@@ -24,9 +24,10 @@
 **Git history는 건드리지 않았다** — history rewrite·force push·PR 이력 삭제 없음.
 
 - 정리 기준 main: `eff6f59` (#88 squash merge)
-- Open PR 3 → 0. #88·#100 병합, #99 종료(임시 조사 스냅샷 — 실질 내용은 아래 결함
-  목록으로 옮겼다)
-- Remote branch 68 → 9. 병합 완료·내용이 main에 들어간 브랜치 57개 삭제
+- Open PR: #88·#100 병합, #99 종료(임시 조사 스냅샷 — 실질 내용은 아래 결함 목록으로
+  옮겼다). **#101(`claude/stabilize-p0`)은 다른 세션이 지금 작업 중이라 그대로 둔다** —
+  `/health`의 스키마 상태 보고와 안정화 기록이다
+- Remote branch 68 → 9. 병합 완료·내용이 main에 들어간 브랜치 58개 삭제
 - 남긴 브랜치(main 미반영 고유 코드가 있어 diff 확인 후 보류): 아래 «보류 브랜치» 절
 - 삭제한 파일: `WeddingPickl`(.gitmodules 없는 깨진 서브모듈 링크),
   `pnpm-lock.yaml`(npm 저장소인데 남아 있던 중복 락파일), `color-test.html`
@@ -42,6 +43,7 @@
 ### 보류 브랜치 (삭제하지 않음)
 
 Closed PR이지만 main에 없는 고유 코드가 남아 있다. 되살릴지 버릴지는 사람이 정한다.
+(`claude/stabilize-p0`은 여기 해당하지 않는다 — 진행 중인 PR #101의 브랜치다.)
 
 | 브랜치 | 무엇이 main에 없나 |
 |---|---|
@@ -52,6 +54,10 @@ Closed PR이지만 main에 없는 고유 코드가 남아 있다. 되살릴지 �
 | `feat/login-other-page` (#85) | `other-login-sheet.tsx` — 단, v3.12에서 소셜 4종이 카카오+이메일로 축소돼 유효성 재확인 필요 |
 | `home/fe-expo-screens` (PR 없음) | WP-EXPO 화면 5종 보완 |
 | `copilot/analyze-code-and-identify-issues` (PR 없음) | 배포 환경별 secret 분리(G05 대응안). Secrets 등록이 선행돼야 해 임의 반영하지 않음 |
+
+**HANDOFF 중복 주의:** PR #101이 저장소 루트에 `HANDOFF.md`를 새로 만든다. 병합되면
+이 파일(`docs/AI_HANDOFF.md`)과 둘이 된다 — 어느 쪽이 정본인지 그 시점에 정하고
+한쪽으로 합쳐야 한다.
 
 `fix/render-sync-inputs-context`(#97)는 삭제했다 — 작성자가 진단을 철회했다.
 `${{ inputs.* }}`는 `workflow_dispatch` 밖에서 빈 값이 될 뿐 오류가 아니고, 실제
