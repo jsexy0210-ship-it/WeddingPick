@@ -134,7 +134,7 @@ export async function signInAs(
       method: 'POST',
       url: '/v1/me/signup',
       headers,
-      payload: { birthDate: '1995-03-15', consents: REQUIRED_CONSENTS },
+      payload: { ageVerified: true, consents: REQUIRED_CONSENTS },
     });
   }
 

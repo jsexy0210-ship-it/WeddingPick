@@ -9,12 +9,13 @@ import { createPool, withTransaction } from './db';
  * 두면서, 그냥 넣으면 데모 화면이 전부 막힌 계정을 보여주게 된다. 연령은 데모
  * 데이터라 통과로 두고, 확인한 때를 남겨 판정이 언제 것인지 보이게 한다.
  */
-const ACTIVE_USER = `INSERT INTO structured.users (age_gate, age_checked_at, activated_at)
-   VALUES ('passed', now(), now()) RETURNING id`;
+const ACTIVE_USER = `INSERT INTO structured.users
+     (age_gate, age_checked_at, age_verified, age_verified_at, activated_at)
+   VALUES ('passed', now(), true, now(), now()) RETURNING id`;
 
 const ACTIVE_OPERATOR = `INSERT INTO structured.users
-     (is_operator, age_gate, age_checked_at, activated_at)
-   VALUES (true, 'passed', now(), now()) RETURNING id`;
+     (is_operator, age_gate, age_checked_at, age_verified, age_verified_at, activated_at)
+   VALUES (true, 'passed', now(), true, now(), now()) RETURNING id`;
 
 
 /**

@@ -272,13 +272,17 @@ describeWithDb('최소 온보딩', () => {
 
     expect(columns.rows.map((row) => row.column_name)).toEqual([
       /*
-       * 0046이 세 칸을 더했다(v3.13 §N). 셋 다 **판정과 시각**이지 값이 아니다 —
-       * 연령을 확인하려고 받은 생년월일은 서버가 세어보고 버리고, 남는 것은
-       * "만 14세 이상인가"와 "언제 확인했나"뿐이다.
+       * 0046이 두 칸을 더했다 — age_gate·age_checked_at. 이후 0078(v3.13 §3.5)이
+       * 생년월일 계산을 자기 신고 체크박스로 바꾸며 age_verified·age_verified_at
+       * 두 칸을 더 얹었다. 옛 칸은 지우지 않았으니(마이그레이션 위험 최소화) 다섯
+       * 칸이 함께 남는다 — 전부 **판정과 시각**이지 값이 아니다. 생년월일 자체는
+       * 받지도 저장하지도 않는다.
        */
       'activated_at',
       'age_checked_at',
       'age_gate',
+      'age_verified',
+      'age_verified_at',
       'created_at',
       'deleted_at',
       'display_name',

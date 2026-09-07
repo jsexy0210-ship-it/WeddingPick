@@ -13,61 +13,22 @@
  * 것을 나눈다** — 로그인은 대기 상태의 계정을 만들고, 동의가 그것을 활성화한다.
  */
 
-/** 이용할 수 있는 나이. v3.13 §N-1. */
+/** 이용할 수 있는 나이. v3.13 §3.5. */
 export const MINIMUM_AGE = 14;
 
 /**
- * 생년월일을 받아 만 나이를 센다.
+ * 만 14세 이상인지는 자기 신고로 받는다. v3.13 §3.5.
  *
- * **이 값을 저장하지 않는다.** 판정만 남기고 생년월일은 버린다 — 정책 §N-3이
- * 기록하라고 한 것은 약관 버전·동의 항목·필수 여부·동의 일시이지 생년월일이
- * 아니고, 우리는 필요 없는 개인정보를 들고 있지 않는다.
- */
-export function ageOn(birthDate: string, today: Date): number | null {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(birthDate.trim());
-
-  if (!match) return null;
-
-  const [, y, m, d] = match;
-  const year = Number(y);
-  const month = Number(m);
-  const day = Number(d);
-
-  const born = new Date(Date.UTC(year, month - 1, day));
-
-  /* `2026-02-30` 같은 값은 Date가 3월로 넘겨준다. 넘어갔으면 없는 날이다. */
-  if (born.getUTCFullYear() !== year || born.getUTCMonth() !== month - 1 || born.getUTCDate() !== day) {
-    return null;
-  }
-
-  if (born.getTime() > today.getTime()) return null;
-
-  let age = today.getUTCFullYear() - year;
-  const hadBirthday =
-    today.getUTCMonth() > month - 1 ||
-    (today.getUTCMonth() === month - 1 && today.getUTCDate() >= day);
-
-  if (!hadBirthday) age -= 1;
-
-  return age;
-}
-
-/**
- * 가입할 수 있는 나이인가.
+ * **생년월일을 받지 않는다.** 예전에는 생년월일로 만 나이를 셌지만, 그 값을
+ * 어차피 저장하지 않을 거라면 처음부터 묻지 않는 편이 낫다 — 개인정보보호법은
+ * 만 14세 미만인지 확인하라고만 정하고 방법을 지정하지 않고, 감독기관
+ * 가이드라인도 "합리적인 노력" 수준을 요구한다. 로그인 화면의 체크박스
+ * 하나(«만 14세 이상이에요»)가 그 확인이다.
  *
- * 읽을 수 없는 날짜는 통과시키지 않는다. 모르는 것을 통과시키면 연령 제한은
- * 잘못 적기만 하면 넘어가는 문이 된다.
+ * **저장하는 것은 두 개뿐이다** — `ageVerified`(확인 여부) · `ageVerifiedAt`
+ * (확인 시점). 생년·생년월일·연령대는 기록하지 않는다. 확인 절차를 뒀다는
+ * 사실을 증명해야 하므로 시점만 로그로 남긴다.
  */
-export function isOldEnough(birthDate: string, today: Date): boolean {
-  const age = ageOn(birthDate, today);
-
-  return age !== null && age >= MINIMUM_AGE;
-}
-
-/** 연령 확인 결과. 값이 아니라 판정만 남긴다. */
-export const AGE_GATE_RESULTS = ['pending', 'passed', 'blocked'] as const;
-
-export type AgeGateResult = (typeof AGE_GATE_RESULTS)[number];
 
 /**
  * 동의 항목.
@@ -149,15 +110,11 @@ export function missingRequiredConsents(
 export type ActivationCheck = { ok: true } | { ok: false; reason: string };
 
 export function canActivate(input: {
-  ageGate: AgeGateResult;
+  ageVerified: boolean;
   granted: readonly { item: string; version: string }[];
 }): ActivationCheck {
-  if (input.ageGate === 'blocked') {
+  if (!input.ageVerified) {
     return { ok: false, reason: AGE_BLOCKED_NOTICE };
-  }
-
-  if (input.ageGate !== 'passed') {
-    return { ok: false, reason: AGE_UNCHECKED_NOTICE };
   }
 
   return missingRequiredConsents(input.granted).length === 0
@@ -165,10 +122,8 @@ export function canActivate(input: {
     : { ok: false, reason: REQUIRED_CONSENT_NOTICE };
 }
 
-/** 만 14세 미만. 왜 안 되는지만 말한다. */
+/** 체크하지 않고 시작하려 했을 때. WP-AUTH-010 이용 불가 안내가 이 문구를 쓴다. */
 export const AGE_BLOCKED_NOTICE = `만 ${MINIMUM_AGE}세부터 이용할 수 있어요`;
-
-export const AGE_UNCHECKED_NOTICE = '생년월일을 확인해야 가입이 끝나요';
 
 export const REQUIRED_CONSENT_NOTICE = '필수 항목에 동의해야 가입이 끝나요';
 
