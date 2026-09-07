@@ -4,13 +4,23 @@ import {
   MINIMUM_AGE,
   WEDDING_BUDGET_BRACKETS,
   WEDDING_DATE_HINT,
+  WEDDING_REGIONS,
   dDay,
-  formatWeddingDate,
+  formatWeddingDateLong,
   type WeddingBudgetBracket,
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  Animated,
+  Easing,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
@@ -19,16 +29,15 @@ import {
   completeSignup,
   getCurrentUser,
   getSignupState,
-  listVendorRegions,
   updateTaste,
 } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { loadToken } from '@/api/session';
 import {
   ActionButton,
-  FilterChip,
   Layout,
   MaxContentWidth,
+  Motion,
   Radius,
   Spacing,
   ThemedText,
@@ -36,7 +45,7 @@ import {
   WeddingCalendar,
   useTheme,
 } from '@weddingpick/ui';
-import { TASTE_LABEL } from '@/features/home/taste';
+import { TASTE_SHORT_LABEL } from '@/features/home/taste';
 import { TastePicker } from '@/features/home/taste-picker';
 import { OnboardingProgress } from '@/features/onboarding/progress';
 import { saveWeddingDraft } from '@/features/onboarding/wedding-draft';
@@ -48,25 +57,22 @@ const STEPS = 4;
  * 온보딩. 디자인 핸드오프 01-onboarding.dc.html #11d·#11e(WP-APP-008~012).
  * 문구는 `spec/strings.ko.json` `onboarding.*`의 확정 카피다.
  *
- * 받는 것은 **예식일 · 지역 · 총예산 · 분위기** 넷이다. 이름은 받지 않는다 —
- * v3.10이 닉네임을 최초 필수입력에서 뺐다.
+ * **화면은 디자인이 내려준 값대로만 만든다.** 서버의 필드 모양이나 응답 목록이
+ * 화면의 선택지·입력 방식·문구를 정하지 않는다 — 예산은 시안의 다섯 구간이고,
+ * 지역은 시안의 아홉 칩이다(업체가 있는 시도만 보여주지 않는다). 서버는 화면이
+ * 보내는 값을 받아들이도록 맞춘다(`packages/domain` budget-bracket · wedding-region).
  *
- * **한 화면에 하나씩 묻는다.** 넷을 한 장에 몰아넣으면 첫 화면이 설문지처럼 보이고,
- * 그때 사람들은 답을 고르는 대신 창을 닫는다. 남은 단계를 위에 표시하는 이유도
- * 같다 — 끝이 보이지 않는 질문은 두 번째에서 끊긴다.
+ * 받는 것은 **예식일 · 지역 · 총예산 · 분위기** 넷이다. 이름은 받지 않는다 —
+ * v3.10이 닉네임을 최초 필수입력에서 뺐다. 한 화면에 하나씩 묻는다 — 넷을 한
+ * 장에 몰아넣으면 첫 화면이 설문지처럼 보이고, 그때 사람들은 창을 닫는다.
  *
  * 2026-09-04 정책 변경(비회원 진입 삭제)으로 이 화면은 **로그인 뒤**에 온다.
  * 그래도 기기에 적어두는 경로를 남겨둔다 — 토큰이 없는 상태로 여기에 닿으면
  * 값을 잃는 대신 적어두고 다음 로그인에 올린다.
  *
- * 예산은 금액이 아니라 **구간**이다(#11e). 숫자를 직접 적게 하면 0을 여덟 개
- * 세는 화면이 되고, 시안이 정한 다섯 구간 밖의 값이 생긴다. 서버가 구간에서
- * 추천용 상한값을 파생한다 — 앱은 구간만 보낸다.
- *
- * 시안과 다른 값 두 곳, 이유가 있다.
- * - CTA·입력칸 높이는 시안의 56이 아니라 토큰 `size.ctaPrimary`·`size.field`의
- *   52다. `spec/tokens.json`이 시안보다 우선한다.
- * - 예산 제목의 «어느 정도»는 §3 금지어라 «얼마나»로 적는다(lint-copy).
+ * 시안과 다른 값은 토큰이 이기는 곳뿐이다: CTA·입력칸 높이 52(size.ctaPrimary ·
+ * size.field, 시안 56) · 칩 높이 36(size.chip, 시안 40) · 상단 바 좌우 24(gutter,
+ * 시안 좌 12). 예산 제목의 «어느 정도»는 §3 금지어라 «얼마나»로 적는다.
  */
 export default function SetupScreen() {
   const theme = useTheme();
@@ -74,7 +80,6 @@ export default function SetupScreen() {
   const [step, setStep] = useState(1);
   const [date, setDate] = useState<string | null>(null);
   const [region, setRegion] = useState<string | null>(null);
-  const [regions, setRegions] = useState<string[] | null>(isServerConfigured ? null : []);
   /** 다섯 구간 중 하나. `아직 모르겠어요`도 고른 것이다 — 안 고른 것(null)과 다르다. */
   const [bracket, setBracket] = useState<WeddingBudgetBracket | null>(null);
   const [tastes, setTastes] = useState<Taste[]>([]);
@@ -105,14 +110,6 @@ export default function SetupScreen() {
         setAskBirth(!state.activated && !state.birthDateVerified);
       })
       .catch(() => undefined);
-
-    /*
-     * 지역 목록은 업체가 실제로 있는 시도만 내려온다. 업체가 아직 없거나 API가
-     * 닿지 않으면 빈 목록으로 두고 화면이 그 사실을 말한다.
-     */
-    void listVendorRegions()
-      .then((response) => setRegions(response.regions.map((item) => item.name)))
-      .catch(() => setRegions([]));
   }, []);
 
   const birthOk = !askBirth || /^\d{4}-\d{2}-\d{2}$/.test(birth);
@@ -180,17 +177,7 @@ export default function SetupScreen() {
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           <ScrollView contentContainerStyle={styles.doneContent}>
-            <View style={[styles.doneMark, { backgroundColor: theme.tint }]}>
-              <Svg width={32} height={32} viewBox="0 0 24 24" fill="none">
-                <Path
-                  d="m5 12.5 4.5 4.5L19 7.5"
-                  stroke={theme.onTint}
-                  strokeWidth={2.8}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </Svg>
-            </View>
+            <DoneMark />
 
             <ThemedView style={styles.headline}>
               <ThemedText type="t2">준비 끝났어요</ThemedText>
@@ -198,7 +185,7 @@ export default function SetupScreen() {
             </ThemedView>
 
             <ThemedView style={[styles.summary, { backgroundColor: theme.backgroundElement }]}>
-              <SummaryRow label="예식일" value={formatWeddingDate(date ?? '')} />
+              <SummaryRow label="예식일" value={formatWeddingDateLong(date ?? '')} />
               <SummaryRow label="지역" value={region ?? ''} />
               <SummaryRow label="총예산" value={BUDGET_BRACKET_LABEL[bracket ?? 'unknown']} />
               <SummaryRow
@@ -206,7 +193,7 @@ export default function SetupScreen() {
                 value={
                   tastes.length === 0
                     ? '고르지 않았어요'
-                    : tastes.map((taste) => TASTE_LABEL[taste]).join(' · ')
+                    : tastes.map((taste) => TASTE_SHORT_LABEL[taste]).join(' · ')
                 }
               />
             </ThemedView>
@@ -231,10 +218,17 @@ export default function SetupScreen() {
         <OnboardingProgress
           step={step}
           total={STEPS}
-          onBack={step > 1 ? () => setStep(step - 1) : undefined}
+          onBack={
+            step > 1
+              ? () => {
+                  setError(null);
+                  setStep(step - 1);
+                }
+              : undefined
+          }
         />
 
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView contentContainerStyle={[styles.content, step === 4 && styles.contentTaste]}>
           {step === 1 ? (
             <>
               <ThemedView style={styles.headline}>
@@ -255,7 +249,7 @@ export default function SetupScreen() {
                   styles.field,
                   {
                     backgroundColor: theme.background,
-                    borderColor: date ? theme.tint : theme.track,
+                    borderColor: date ? theme.tint : theme.fieldBorder,
                   },
                 ]}>
                 <ThemedText
@@ -263,7 +257,7 @@ export default function SetupScreen() {
                   numeric
                   themeColor={date ? 'text' : 'textAssistive'}
                   style={date ? undefined : styles.regular}>
-                  {date ? formatWeddingDate(date) : '예식일을 선택해주세요'}
+                  {date ? formatWeddingDateLong(date) : '예식일을 선택해주세요'}
                 </ThemedText>
               </Pressable>
 
@@ -283,7 +277,7 @@ export default function SetupScreen() {
                       {
                         color: theme.text,
                         backgroundColor: theme.background,
-                        borderColor: birthOk && birth ? theme.tint : theme.track,
+                        borderColor: birthOk && birth ? theme.tint : theme.fieldBorder,
                       },
                     ]}
                   />
@@ -304,27 +298,16 @@ export default function SetupScreen() {
                 </ThemedText>
               </ThemedView>
 
-              {regions === null ? (
-                <ThemedText type="t7" themeColor="textAssistive">
-                  지역을 불러오는 중이에요
-                </ThemedText>
-              ) : regions.length === 0 ? (
-                <ThemedText type="t7" themeColor="textAssistive">
-                  지금은 지역을 불러올 수 없어요
-                </ThemedText>
-              ) : (
-                <ThemedView style={styles.chips}>
-                  {regions.map((item) => (
-                    <FilterChip
-                      key={item}
-                      role="radio"
-                      label={item}
-                      selected={region === item}
-                      onPress={() => setRegion(region === item ? null : item)}
-                    />
-                  ))}
-                </ThemedView>
-              )}
+              <ThemedView style={styles.chips}>
+                {WEDDING_REGIONS.map((item) => (
+                  <RegionChip
+                    key={item}
+                    label={item}
+                    selected={region === item}
+                    onPress={() => setRegion(item)}
+                  />
+                ))}
+              </ThemedView>
             </>
           ) : null}
 
@@ -376,9 +359,7 @@ export default function SetupScreen() {
           <ActionButton
             variant="primary"
             size="xlarge"
-            label={
-              step < STEPS ? '다음' : sending ? '저장하는 중…' : `${tastes.length}개 고르고 시작하기`
-            }
+            label={step < STEPS ? '다음' : `${tastes.length}개 고르고 시작하기`}
             disabled={!canAdvance || sending}
             onPress={() => (step < STEPS ? setStep(step + 1) : void finish())}
           />
@@ -401,7 +382,7 @@ export default function SetupScreen() {
       <Modal visible={calendarOpen} transparent animationType="slide">
         <ThemedView style={[styles.scrim, { backgroundColor: theme.scrim }]}>
           <ThemedView style={styles.sheet}>
-            <ThemedText type="t4">예식일 선택</ThemedText>
+            <ThemedText type="t3">예식일 선택</ThemedText>
             <ThemedText type="t7" themeColor="textSecondary">
               {pending ? dDay(pending).text : WEDDING_DATE_HINT}
             </ThemedText>
@@ -412,7 +393,7 @@ export default function SetupScreen() {
               <ActionButton label="취소" onPress={() => setCalendarOpen(false)} />
               <ActionButton
                 variant="primary"
-                label="선택 완료"
+                label="완료"
                 disabled={pending === null}
                 onPress={() => {
                   setDate(pending);
@@ -424,6 +405,35 @@ export default function SetupScreen() {
         </ThemedView>
       </Modal>
     </ThemedView>
+  );
+}
+
+/**
+ * 지역 칩. 시안 #11d chip() — 채움형, 16px 700, 미선택 gray100/ink2, 선택 코랄/흰색.
+ * 높이만 시안 40이 아니라 토큰 size.chip 36이다.
+ */
+function RegionChip({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityState={{ selected }}
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={[styles.chip, { backgroundColor: selected ? theme.tint : theme.backgroundSelected }]}>
+      <ThemedText type="t6" themeColor={selected ? 'onTint' : 'textStrong'} style={styles.bold}>
+        {label}
+      </ThemedText>
+    </Pressable>
   );
 }
 
@@ -482,6 +492,36 @@ function BudgetRow({
   );
 }
 
+/** 완료 화면 체크 원. 진입할 때 한 번 튄다 — spec/tokens.json motion.checkPop. */
+function DoneMark() {
+  const theme = useTheme();
+  const scale = useMemo(() => new Animated.Value(0), []);
+
+  useEffect(() => {
+    Animated.timing(scale, {
+      toValue: 1,
+      duration: Motion.checkPop.duration,
+      easing: Easing.bezier(...Motion.checkPop.bezier),
+      useNativeDriver: true,
+    }).start();
+  }, [scale]);
+
+  return (
+    <Animated.View
+      style={[styles.doneMark, { backgroundColor: theme.tint, transform: [{ scale }] }]}>
+      <Svg width={32} height={32} viewBox="0 0 24 24" fill="none">
+        <Path
+          d="m5 12.5 4.5 4.5L19 7.5"
+          stroke={theme.onTint}
+          strokeWidth={2.8}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </Svg>
+    </Animated.View>
+  );
+}
+
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
     <ThemedView style={styles.summaryRow}>
@@ -499,13 +539,14 @@ const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
 
-  /* 시안 #11d·#11e: padding 12 24 0 · 블록 사이 24. */
+  /* 시안 #11d·#11e: padding 12 24 0 · 블록 사이 24. 아래 여백은 footer가 맡는다. */
   content: {
     paddingTop: Layout.rowPaddingY,
     paddingHorizontal: Layout.gutter,
-    paddingBottom: Spacing.four,
     gap: Spacing.four,
   },
+  /* 4/4만 제목 블록과 격자 사이가 20이다(#11e). */
+  contentTaste: { gap: Layout.gapHeadlineGrid },
   /* 제목과 서브카피 사이 8. */
   headline: { gap: Spacing.two },
   labeled: { gap: Spacing.two },
@@ -521,8 +562,15 @@ const styles = StyleSheet.create({
   regular: { fontWeight: 400 },
   bold: { fontWeight: 700 },
 
-  /* 칩 사이 8 — spacing.gapChip. */
+  /* 칩 사이 8 — spacing.gapChip. 칩은 토큰 size.chip 36 · 좌우 16 · pill. */
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  chip: {
+    height: Layout.chip,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
   /* 목록. 행 사이 2 · 행 최소 56 · 상하 12 · 아래 1px 선. */
   list: { gap: Spacing.half },
@@ -542,7 +590,7 @@ const styles = StyleSheet.create({
   },
   divider: { height: 1 },
 
-  /* 하단 CTA. 아래 32 — 시안 padding 0 24 32. */
+  /* 하단 CTA. 시안 고정 108 = 24 + CTA 52 + 32(padding 0 24 32). */
   footer: {
     paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.four,
@@ -564,7 +612,6 @@ const styles = StyleSheet.create({
   doneContent: {
     paddingTop: Layout.navBar,
     paddingHorizontal: Layout.gutter,
-    paddingBottom: Spacing.four,
     gap: Layout.sectionGap,
   },
   doneMark: {
@@ -574,7 +621,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  /* 요약 카드. radius.card 10 · 안쪽 20 · 행 사이 2. */
+  /* 요약 카드. radius.card 10 · 안쪽 20 · 행 사이 2 · 행 상하 9. */
   summary: {
     borderRadius: Radius.medium,
     padding: Layout.cardPadding,
@@ -585,7 +632,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: Spacing.three,
-    paddingVertical: Spacing.two,
+    paddingVertical: Layout.summaryRowPaddingY,
   },
   summaryValue: { flexShrink: 1, textAlign: 'right' },
 });

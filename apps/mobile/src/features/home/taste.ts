@@ -26,6 +26,18 @@ export const TASTE_LABEL: Record<Taste, string> = {
   classic: '클래식 호텔',
 };
 
+/**
+ * 요약 한 줄에 쓰는 짧은 이름. 온보딩 완료 시안(01-onboarding #11e summarySet)이
+ * «화이트 · 자연광»으로 적는다 — 카드 라벨의 마지막 낱말이다. 시안이 보여주지 않은
+ * 둘(아치·호텔)도 같은 규칙으로 뽑았다.
+ */
+export const TASTE_SHORT_LABEL: Record<Taste, string> = {
+  white: '화이트',
+  daylight: '자연광',
+  flower: '아치',
+  classic: '호텔',
+};
+
 function isTaste(value: string): value is Taste {
   return (TASTES as readonly string[]).includes(value);
 }

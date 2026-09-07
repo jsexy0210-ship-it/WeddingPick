@@ -27,3 +27,15 @@ ALTER TABLE structured.weddings
 
 COMMENT ON COLUMN structured.weddings.budget_bracket IS
   '온보딩에서 고른 예산 구간. NULL이면 아직 온보딩을 안 마친 것이다. budget_amount는 이 값에서 서버가 파생한다 — 역으로 쓰지 않는다.';
+
+-- 이 컬럼이 생기기 전에 금액을 적어둔 웨딩은 그 금액이 드는 구간으로 한 번만
+-- 채운다. 안 채우면 배포 직후 MY의 «총예산» 줄이 통째로 사라진다. 금액은 그대로
+-- 둔다 — 사용자가 적은 값을 서버가 상한값으로 바꾸지 않는다.
+UPDATE structured.weddings
+SET budget_bracket = CASE
+  WHEN budget_amount <= 20000000 THEN 'under_20m'
+  WHEN budget_amount <= 30000000 THEN '20m_30m'
+  WHEN budget_amount <= 40000000 THEN '30m_40m'
+  ELSE 'over_40m'
+END::wedding_budget_bracket
+WHERE budget_amount IS NOT NULL AND budget_bracket IS NULL;

@@ -105,9 +105,16 @@ export function greeting(name: string | null): string {
   return name === null ? '웨딩픽에 오신 것을 환영해요' : `${name}님,`;
 }
 
-/** "2027. 4. 17" — 핸드오프가 쓴 표기. */
+/** "2027. 4. 17" — 홈·MY 핸드오프가 쓴 표기. */
 export function formatWeddingDate(date: string): string {
   const [year, month, day] = date.split('-').map(Number);
 
   return `${year}. ${month}. ${day}`;
+}
+
+/** "2027년 5월 16일" — 온보딩 핸드오프(01-onboarding #11d·#11e)가 쓴 표기. */
+export function formatWeddingDateLong(date: string): string {
+  const [year, month, day] = date.split('-').map(Number);
+
+  return `${year}년 ${month}월 ${day}일`;
 }

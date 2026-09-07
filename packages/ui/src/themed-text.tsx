@@ -25,6 +25,8 @@ export type ThemedTextProps = TextProps & {
     | 't1'
     /** SEED h4. 화면 헤드라인·섹션 히어로. */
     | 't2'
+    /** 바텀시트 제목. tokens.json heading 24/32. */
+    | 't3'
     /** SEED title2. 섹션 제목. */
     | 't4'
     /** SEED title3. 목록 항목명·강조 값. */
@@ -86,6 +88,7 @@ type TextType = NonNullable<ThemedTextProps['type']>;
 const STYLE_FOR: Record<TextType, keyof typeof styles> = {
   t1: 't1',
   t2: 't2',
+  t3: 't3',
   t4: 't4',
   t5: 't5',
   t6: 't6',
@@ -116,6 +119,8 @@ const styles = StyleSheet.create({
   t1: { fontSize: FontSize.t1, lineHeight: LineHeight.t1, fontWeight: 700 },
   /** SEED h4. 화면 헤드라인·섹션 히어로. 줄바꿈은 수동. */
   t2: { fontSize: FontSize.t2, lineHeight: LineHeight.t2, fontWeight: 700 },
+  /** 바텀시트 제목. */
+  t3: { fontSize: FontSize.t3, lineHeight: LineHeight.t3, fontWeight: 700 },
   /** SEED title2. 섹션 제목. */
   t4: { fontSize: FontSize.t4, lineHeight: LineHeight.t4, fontWeight: 700 },
   /** SEED title3. 목록 항목명, 강조 값. */

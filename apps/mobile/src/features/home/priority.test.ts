@@ -134,6 +134,16 @@ describe('홈 후보 만들기', () => {
     expect(homePriorityItems({ ...NO_FACTS, expenses }, NOW)[0]?.kind).toBe('budget');
   });
 
+  it('온보딩에서 구간을 답했으면 숫자 예산이 없어도 붙잡지 않는다', () => {
+    // «4,000만원 이상»은 상한이 없어 budget.set은 false지만 이미 답한 것이다.
+    const expenses = {
+      budget: { set: false, note: '아직 정하지 않았어요' },
+      budgetBracket: 'over_40m',
+    } as unknown as ExpenseSummaryResponse;
+
+    expect(homePriorityItems({ ...NO_FACTS, expenses }, NOW)).toEqual([]);
+  });
+
   it('예산 안에 있으면 붙잡지 않는다', () => {
     // 잘 쓰고 있는 사람에게 할 말이 없다.
     const expenses = {

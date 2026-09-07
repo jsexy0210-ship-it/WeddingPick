@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Radius, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
+import { Layout, Radius, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
 
 import { CategoryImage } from './category-image';
 import { TASTE_LABEL, TASTES, type Taste } from './taste';
@@ -90,7 +90,8 @@ function Tile({
 }
 
 const styles = StyleSheet.create({
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 11 },
+  /* 2열 카드 사이 — spacing.gap2col. */
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: Layout.gap2col },
   tile: {
     flexBasis: '48%',
     flexGrow: 1,

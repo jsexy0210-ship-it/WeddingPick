@@ -26,6 +26,7 @@ import {
   type ExpenseStatus,
   type TaskState,
   type VendorCategory,
+  type WeddingBudgetBracket,
 } from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
@@ -257,10 +258,12 @@ export function registerWeddingPlanRoutes(app: FastifyInstance, context: AppCont
 
       const summary = summarizeExpenses(expenses);
 
-      const wedding = await context.pool.query<{ budget_amount: string | null }>(
-        'SELECT budget_amount FROM structured.weddings WHERE id = $1',
-        [request.params.weddingId]
-      );
+      const wedding = await context.pool.query<{
+        budget_amount: string | null;
+        budget_bracket: WeddingBudgetBracket | null;
+      }>('SELECT budget_amount, budget_bracket FROM structured.weddings WHERE id = $1', [
+        request.params.weddingId,
+      ]);
 
       const budget = wedding.rows[0]?.budget_amount;
 
@@ -274,6 +277,13 @@ export function registerWeddingPlanRoutes(app: FastifyInstance, context: AppCont
           budget: budget === null || budget === undefined ? null : Number(budget),
           spent: summary.paidTotal,
         }),
+        /*
+         * 온보딩에서 고른 구간. budget_amount는 그 구간에서 서버가 파생한 상한값일
+         * 수 있어 「금액을 정했는가」와 「구간을 답했는가」가 다르다 — «4,000만원
+         * 이상»·«아직 모르겠어요»는 상한이 없어 budget.set이 false여도 이미 답한
+         * 것이다. 화면이 예산 시트를 자동으로 열지 정할 때는 이 값을 본다.
+         */
+        budgetBracket: wedding.rows[0]?.budget_bracket ?? null,
         expenses,
       };
     }

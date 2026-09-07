@@ -1,5 +1,6 @@
 import type { CreateExpenseRequest, ExpenseSummaryResponse } from '@weddingpick/api-contract';
 import {
+  BUDGET_BRACKET_LABEL,
   EXPENSE_BUCKET_COLOR,
   EXPENSE_STATUSES,
   EXPENSE_STATUS_LABEL,
@@ -57,8 +58,15 @@ export default function ExpensesScreen() {
     getExpenses(id)
       .then((loaded) => {
         setPage(loaded);
-        // 예산이 없으면 시트를 연다. 한 틱 뒤에 열어 초기화와 상쇄되지 않게 한다.
-        if (!loaded.budget.set) setTimeout(() => setBudgetOpen(true), 0);
+        /*
+         * 온보딩에서 구간을 이미 답했으면(«4,000만원 이상»·«아직 모르겠어요» 포함)
+         * 시트를 억지로 열지 않는다 — budget.set은 숫자 예산이 없다는 뜻일 뿐,
+         * 안 답했다는 뜻이 아니다. 정말 안 답한 사람에게만, 한 틱 뒤에 열어
+         * 초기화와 상쇄되지 않게 한다.
+         */
+        if (!loaded.budget.set && loaded.budgetBracket === null) {
+          setTimeout(() => setBudgetOpen(true), 0);
+        }
       })
       .catch((caught: Error) => setError(caught.message));
   }, [id]);
@@ -209,6 +217,9 @@ export default function ExpensesScreen() {
                     : `${won(page.budget.remaining)} 남았어요`}
                 </ThemedText>
               </>
+            ) : page.budgetBracket ? (
+              // 답은 했지만(예: «4,000만원 이상») 견줄 숫자가 없다 — 구간 그대로 보여준다.
+              <ThemedText type="t4">{BUDGET_BRACKET_LABEL[page.budgetBracket]}</ThemedText>
             ) : (
               <ThemedText type="t7" themeColor="textSecondary">
                 {page.budget.note}

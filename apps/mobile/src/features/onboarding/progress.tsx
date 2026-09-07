@@ -40,7 +40,7 @@ export function OnboardingProgress({
         onPress={onBack}
         style={[styles.back, !onBack && styles.backHidden]}
         hitSlop={4}>
-        <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+        <Svg width={Layout.iconTab} height={Layout.iconTab} viewBox="0 0 24 24" fill="none">
           <Path
             d="M14.5 5 8 12l6.5 7"
             stroke={theme.text}
