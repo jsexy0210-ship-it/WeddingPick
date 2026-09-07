@@ -1,0 +1,29 @@
+name: Render 배포 상태 확인 (읽기 전용)
+
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: '확인할 서비스'
+        type: choice
+        default: weddingpick-app-web
+        options:
+          - weddingpick-app-web
+          - weddingpick-web
+          - weddingpick-admin
+          - WeddingPickl
+
+permissions:
+  contents: read
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: 조회
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          SERVICE: ${{ github.event.inputs.service }}
+        run: python3 scripts/render-deploy-status.py
