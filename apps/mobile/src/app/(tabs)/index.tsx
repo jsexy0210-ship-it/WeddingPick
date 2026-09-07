@@ -9,12 +9,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import {
-  getCurrentUser,
-  getNotificationSummary,
-  listCandidates,
-  searchVendors,
-} from '@/api/client';
+import { getAppBootstrap } from '@/api/client';
 import {
   ActionButton,
   Layout,
@@ -78,11 +73,6 @@ const EMPTY: HomeData = {
   unread: 0,
 };
 
-/** 오늘의 Pick에 세우는 곳의 수. 셋을 넘기면 한 줄에 들어가지 않는다. */
-const PICK_COUNT = 3;
-/** 많이 확인된 곳에 세우는 줄 수. */
-const POPULAR_COUNT = 4;
-
 export default function HomeScreen() {
   const [data, setData] = useState<HomeData>(EMPTY);
   const [taste, setTaste] = useState<readonly Taste[]>([]);
@@ -100,51 +90,30 @@ export default function HomeScreen() {
     if (isWebShellScreen('home')) return;
 
     void loadTaste().then(setTaste);
+    void listWeddingContent()
+      .then((content) => setData((current) => ({ ...current, content })))
+      .catch(() => undefined);
 
-    /* 하나가 실패해도 나머지는 보여준다 — 개인화 자료 하나가 실패했다고 화면 전체를 비우지 않는다. */
-    void (async () => {
-      const [popular, content] = await Promise.all([
-        searchVendors({ sort: 'data' })
-          .then((page) => page.vendors.slice(0, POPULAR_COUNT))
-          .catch(() => []),
-        listWeddingContent().catch(() => []),
-      ]);
-
-      setData((current) => ({ ...current, popular, content }));
-
-      const me = await getCurrentUser().catch(() => null);
-
-      if (me === null) {
-        setData((current) => ({ ...current, me: null }));
-
-        return;
-      }
-
-      const notifications = await getNotificationSummary().catch(() => null);
-
-      setData((current) => ({ ...current, me, unread: notifications?.unread ?? 0 }));
-
-      if (me.weddingId === null) return;
-
-      const candidates = await listCandidates(me.weddingId).catch(() => null);
-
-      setData((current) => ({ ...current, candidates }));
-
-      /*
-       * 추천은 후보 목록이 지목한 업종에서 가져온다. 업종을 모르면 부르지 않는다 —
-       * 아무 업종에서나 세 곳을 뽑아 «오늘의 Pick»이라고 부를 수는 없다.
-       */
-      if (candidates?.nextCategory == null) return;
-
-      const recommended = await searchVendors({
-        category: candidates.nextCategory,
-        sort: 'data',
+    /*
+     * 회원 · 알림 · 많이 확인된 곳 · 담아둔 후보 · 오늘의 Pick, 다섯을 한 번에
+     * 받는다(GET /v1/app/bootstrap). 서버 안에서 병렬로 모은 것이라 기기가
+     * 인터넷을 여러 번 왕복하지 않는다 — 순서가 남은 것은 담아둔 후보가 지목한
+     * 업종을 알아야 오늘의 Pick이 나오는 진짜 의존관계뿐이고, 그것도 서버 안의
+     * 일이다.
+     */
+    void getAppBootstrap()
+      .then((boot) => {
+        setData((current) => ({
+          ...current,
+          me: boot.member,
+          candidates: boot.candidates,
+          recommended: boot.recommendations,
+          popular: boot.popularVendors,
+          unread: boot.notifications?.unread ?? 0,
+        }));
       })
-        .then((page) => page.vendors.slice(0, PICK_COUNT))
-        .catch(() => []);
-
-      setData((current) => ({ ...current, recommended }));
-    })().finally(() => setSettled(true));
+      .catch(() => undefined)
+      .finally(() => setSettled(true));
   }, []);
 
   useEffect(load, [load]);

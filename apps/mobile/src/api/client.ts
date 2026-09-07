@@ -142,6 +142,8 @@ import {
   emailLookupResponseSchema,
   type EmailLookupResponse,
   type BudgetBracket,
+  appBootstrapResponseSchema,
+  type AppBootstrapResponse,
 } from '@weddingpick/api-contract';
 import { z, type ZodType } from 'zod';
 
@@ -355,6 +357,15 @@ export async function setDisplayName(displayName: string | null) {
 
 export async function getCurrentUser() {
   return request('/v1/me', currentUserSchema);
+}
+
+/**
+ * 홈이 필요로 하는 다섯 가지(회원 · 알림 · 많이 확인된 곳 · 담아둔 후보 · 오늘의
+ * Pick)를 한 번에 받는다. 서버가 안에서 병렬로 모은 것이다 — 기기가 인터넷을
+ * 다섯 번 왕복하던 것을 한 번으로 줄인다. 비회원도 부를 수 있다.
+ */
+export async function getAppBootstrap(): Promise<AppBootstrapResponse> {
+  return request('/v1/app/bootstrap', appBootstrapResponseSchema);
 }
 
 /**

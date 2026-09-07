@@ -59,9 +59,19 @@ export default function RootLayout() {
 
 function RootLayoutContent() {
   const colorScheme = useColorScheme();
-  const [fontsLoaded] = useFonts({
-    Pretendard: require('pretendard/dist/public/variable/PretendardVariable.ttf'),
-  });
+  /*
+   * 웹에서는 이 TTF(약 3MB, 전체 웨이트를 다 담은 가변 폰트)를 부르지 않는다.
+   * 이미 위에서 그 목적으로 부른 `pretendardvariable-dynamic-subset.css`가
+   * 화면에 실제로 쓰인 글자만 필요할 때 WOFF2로 나눠 받아온다 — 여기서
+   * useFonts로 전체 TTF를 또 불러 첫 화면을 막으면, 이미 CSS가 하고 있는 일을
+   * 훨씬 무거운 형식으로 중복해서 기다리는 셈이 된다. 네이티브는 CSS가 없어
+   * 이 경로가 유일한 글꼴 공급원이라 그대로 둔다.
+   */
+  const [fontsLoaded] = useFonts(
+    Platform.OS === 'web'
+      ? {}
+      : { Pretendard: require('pretendard/dist/public/variable/PretendardVariable.ttf') }
+  );
   const [entry, setEntry] = useState<Entry | null>(null);
   /**
    * 스플래시를 이만큼은 보여준다. 핸드오프 0번.

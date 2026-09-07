@@ -8,6 +8,7 @@ import type { AppContext } from './context';
 import { ApiError } from './errors';
 import { registerAdminRoutes } from './routes/admin';
 import { registerAnalysisRoutes } from './routes/analyses';
+import { registerAppRoutes } from './routes/app';
 import { registerCandidateRoutes } from './routes/candidates';
 import { registerWeddingPlanRoutes } from './routes/wedding-plan';
 import { registerWeddingEventRoutes } from './routes/wedding-events';
@@ -145,6 +146,7 @@ export function buildServer(context: AppContext): FastifyInstance {
   const passwordAttempts = createAttemptLimiter({ max: PASSWORD_MAX_ATTEMPTS, windowMs: PASSWORD_ATTEMPT_WINDOW_MS });
   registerAuthRoutes(app, context, passwordAttempts);
   registerWeddingRoutes(app, context);
+  registerAppRoutes(app, context);
   registerDocumentRoutes(app, context);
   registerAnalysisRoutes(app, context);
   registerQuoteRoutes(app, context);
