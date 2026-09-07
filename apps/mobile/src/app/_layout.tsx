@@ -11,7 +11,7 @@ import { useFonts } from 'expo-font';
 import { useEffect, useRef, useState } from 'react';
 import { Platform, useColorScheme } from 'react-native';
 
-import { isAuthPopup } from '@/features/auth/is-auth-popup';
+import { completeAuthPopup, isAuthPopup } from '@/features/auth/is-auth-popup';
 import { CaptureDraftProvider } from '@/features/capture/capture-draft';
 import { DocumentStoreProvider } from '@/features/documents/document-store';
 import { getCurrentUser, getSignupState } from '@/api/client';
@@ -48,6 +48,9 @@ const ENTRY_ROUTE = {
 export default function RootLayout() {
   if (isAuthPopup()) {
     // 훅을 하나도 부르지 않고 빈 화면을 돌려준다 — 부팅을 시작하지 않는다.
+    // opener에게 결과를 넘기는 일은 completeAuthPopup()이 따로 한다(is-auth-popup.ts).
+    completeAuthPopup();
+
     return null;
   }
 
