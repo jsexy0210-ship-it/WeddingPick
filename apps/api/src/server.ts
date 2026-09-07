@@ -60,7 +60,13 @@ export function buildServer(context: AppContext): FastifyInstance {
   if (context.config.corsOrigins.length > 0) {
     app.register(cors, {
       origin: context.config.corsOrigins,
-      methods: ['GET', 'HEAD', 'POST', 'PUT', 'DELETE'],
+      /*
+       * PATCH가 빠져 있었다. 관리자 API에 PATCH 라우트가 실재하고
+       * (`routes/admin.ts`의 ads-gate·automation·policy-engine) 관리자 화면이
+       * 실제로 PATCH를 보내는데, 브라우저 preflight가 전부 막고 있었다.
+       * 라우트가 있는 메서드는 여기에도 있어야 한다.
+       */
+      methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'],
     });
   }
 

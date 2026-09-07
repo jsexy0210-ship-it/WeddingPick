@@ -44,7 +44,10 @@ services:
     vars:
       # 브라우저에서 API를 부르는 출처. 앱 웹 export와 서비스 웹사이트 둘 다 필요하다 —
       # 비밀번호 재설정 페이지(reset-password.html)가 웹사이트 쪽에서 API를 부른다.
-      CORS_ORIGINS: https://weddingpick-app-web.onrender.com,https://weddingpick-web.onrender.com
+      # 브라우저에서 API를 부르는 출처를 전부 적는다. 하나라도 빠지면 그 화면은
+      # preflight에서 막힌다. 관리자(weddingpick-admin)와 커스텀 도메인 두 개가
+      # 빠져 있었고, 커스텀 도메인은 이미 활성이라 실제로 차단되고 있었다.
+      CORS_ORIGINS: https://weddingpick-app-web.onrender.com,https://weddingpick-web.onrender.com,https://weddingpick-admin.onrender.com,https://weddingpick.kr,https://admin.weddingpick.kr
       # 앱의 EXPO_PUBLIC_KAKAO_CLIENT_ID와 같은 값이어야 토큰 교환과 id_token 검증이 맞는다.
       KAKAO_APP_KEY: 8e9a14dd3a0aa1a420bff858460c415c
       MAIL_DRIVER: resend
