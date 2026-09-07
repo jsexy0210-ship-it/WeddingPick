@@ -37,12 +37,11 @@ SplashScreen.preventAutoHideAsync();
  * 그 계정의 다른 경로를 전부 막고 있어서, 그대로 두면 어느 화면을 열어도
  * 막혔다는 말만 듣는다. 마칠 수 있는 화면으로 보낸다.
  */
-type Entry = 'onboarding' | 'login' | 'signup' | 'setup' | 'app';
+type Entry = 'onboarding' | 'login' | 'setup' | 'app';
 
 const ENTRY_ROUTE = {
   onboarding: '/onboarding',
   login: '/login',
-  signup: '/signup',
   setup: '/setup',
 } as const;
 
@@ -129,8 +128,14 @@ function RootLayoutContent() {
        */
       const signup = await getSignupState().catch(() => null);
 
+      /*
+       * 예전에는 여기서 별도 «가입 마무리» 화면으로 보냈다. 그 화면이 하던
+       * 일(동의 기록·연령 확인)은 온보딩 1/4로 옮겼다 — 여기서 옛 화면으로
+       * 계속 보내면 옮긴 게 소용없다. finish-sign-in.ts의 같은 판단과
+       * 다르지 않게 둔다.
+       */
       if (signup && !signup.activated) {
-        setEntry('signup');
+        setEntry('setup');
 
         return;
       }
@@ -182,7 +187,6 @@ function RootLayoutContent() {
               가입이 끝나기 전에는 나갈 곳이 없다. 제스처로 빠져나가면 서버가
               전부 막아둔 계정으로 앱을 헤매게 된다(v3.13 §N-2).
             */}
-            <Stack.Screen name="signup" options={{ gestureEnabled: false }} />
             {/* 예식일·지역 없이는 개인화가 없다. 제스처로도 나갈 수 없게 한다. */}
             <Stack.Screen name="setup" options={{ gestureEnabled: false }} />
             {/* 로그인 없이는 앱을 쓸 수 없다. 제스처로 빠져나가면 뒤에 아무것도 없다. */}

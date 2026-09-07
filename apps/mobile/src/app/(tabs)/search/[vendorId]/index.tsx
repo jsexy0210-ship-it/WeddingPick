@@ -617,7 +617,7 @@ export default function VendorDetailScreen() {
           setLoginOpen(false);
 
           if (result.needsSignup) {
-            router.push('/signup');
+            router.push('/setup');
             return;
           }
 
