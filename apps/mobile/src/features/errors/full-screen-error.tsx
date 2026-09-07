@@ -61,7 +61,13 @@ export function FullScreenError({
   );
 }
 
-/** 문구는 `spec/strings.ko.json`의 `error.*`와 같은 문장을 유지한다. */
+/**
+ * 문구는 `spec/strings.ko.json`의 `error.*`를 따른다.
+ *
+ * 하나만 다르다 — `update.body`의 «결제 정보 처리 방식»에서 «결제»를 뺐다. 이 저장소의
+ * Pick 언어 정책(`pick-language.test.ts`)이 사용자 화면에서 «결제»를 막고, CLAUDE.md
+ * §3이 그 정책을 원본으로 둔다. spec 문구가 정책과 어긋난 경우다.
+ */
 const COPY: Record<ErrorKind, { title: string; body: string; cta: string }> = {
   network: {
     title: '연결이 불안정해요',
@@ -75,7 +81,7 @@ const COPY: Record<ErrorKind, { title: string; body: string; cta: string }> = {
   },
   update: {
     title: '새 버전이 필요해요',
-    body: '결제 정보 처리 방식이 바뀌어서 업데이트해야 이용할 수 있어요',
+    body: '정보 처리 방식이 바뀌어서 업데이트해야 이용할 수 있어요',
     cta: '업데이트',
   },
 };
