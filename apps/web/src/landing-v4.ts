@@ -19,6 +19,53 @@ const FEAT_TINT = '#FDF6F4';
 const DIVIDER = '#EAEBEE';
 const BAND = '#F2F3F6';
 
+/**
+ * 랜딩이 보여주는 업체 정보. **고정값이고 API에서 받지 않는다.**
+ *
+ * 랜딩은 검색으로 처음 들어온 사람이 보는 화면이라, 서버가 자거나 빌드 때
+ * `WEDDINGPICK_API_URL`이 비어 있어도 «정보를 모으는 중»이 되면 안 된다. 실제
+ * 업체 정보를 쓰는 화면은 `search.html`과 업체 상세(`/v/*.html`)이고, 그쪽은
+ * `site-data.ts`가 API에서 받아온다 — 두 경로를 섞지 않는다.
+ *
+ * 값은 디자인 핸드오프 `19-landing.dc.html`의 목업 그대로다. 금액 줄만 CLAUDE.md
+ * §3 "금액 표기 (고정)"을 따른다(«확인된 정보 N건 · 최근 12개월 · 기준금액 …»).
+ */
+const LANDING_VENDORS = {
+  /** 기능 1 — 오늘의 Pick 카드. */
+  today: {
+    label: '오늘의 Pick',
+    name: '강남 A 스튜디오',
+    range: '152~184만원',
+    meta: '확인된 정보 12건 · 최근 12개월 · 기준금액 168만원',
+    reasons: ['고른 사진이랑 가장 비슷해요', '원하는 날에 가능해요', '생각한 예산 안에 들어와요'],
+    cta: 'Pick하기',
+  },
+  /** 기능 2 — 3곳 비교. 항목마다 어느 곳이 나은지 표시한다. */
+  compare: {
+    title: '스튜디오 3곳 비교',
+    lead: '보정 장수가 가장 크게 갈려요',
+    names: ['스튜디오-A', '스튜디오-B', '스튜디오-C'],
+    blocks: [
+      { label: '확인된 금액', values: [['152~184만', true], ['138~171만', true], ['165~203만', true]] },
+      { label: '보정 장수', values: [['20장', true], ['15장', false], ['25장', true]] },
+      { label: '5월 주말', values: [['가능', true], ['가능', true], ['대기', false]] },
+    ],
+  },
+  /** 기능 3 — 둘이 함께 고른 Pick. */
+  picks: {
+    title: '스튜디오 Pick',
+    lead: '3곳 중 2곳은 준호님도 골랐어요',
+    cards: [
+      { name: '강남 A 스튜디오', price: '152~184만원', both: true },
+      { name: '서촌 B 스튜디오', price: '138~171만원', both: true },
+      { name: '청담 C 스튜디오', price: '165~203만원', both: false },
+    ],
+    memoBy: '준호님 메모',
+    memo: '여기 사진 느낌이 제일 좋은듯?',
+    cta: '2곳 비교하기',
+  },
+} as const;
+
 function esc(s: string): string {
   return s
     .replace(/&/g, '&amp;')
@@ -194,30 +241,35 @@ function featureSection(opts: {
 
 /** 기능 1 — 가격 확인 */
 function feature1(): string {
+  const v = LANDING_VENDORS.today;
+  const reasons = v.reasons
+    .map(
+      (reason) => `
+      <span style="display:flex;align-items:center;gap:7px">
+        <span style="width:15px;height:15px;flex:0 0 15px;border-radius:999px;background:${esc(C)};color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center">✓</span>
+        <span style="font-size:12px;line-height:17px;color:${esc(SEC)}">${esc(reason)}</span>
+      </span>`
+    )
+    .join('');
+
   const mockupContent = `<div style="width:100%;padding:20px 18px;display:flex;flex-direction:column;gap:12px">
-    <span style="font-size:11px;font-weight:700;color:${esc(TER)};letter-spacing:.5px">확인된 정보 12건 · 최근 12개월</span>
-    <div style="background:#F7F8FA;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:8px">
-      <span style="font-size:12px;color:${esc(TER)}">기준금액</span>
-      <span style="font-size:24px;font-weight:700;color:${esc(INK)};font-variant-numeric:tabular-nums">168만원</span>
-      <div style="height:4px;border-radius:2px;background:${esc(BAND)}">
-        <div style="width:60%;height:100%;border-radius:2px;background:${esc(C)}"></div>
-      </div>
-      <span style="font-size:12px;color:${esc(TER)}">152~184만원</span>
-    </div>
-    <div style="background:#F7F8FA;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:6px">
-      <span style="font-size:12px;color:${esc(TER)}">기준금액</span>
-      <span style="font-size:24px;font-weight:700;color:${esc(INK)};font-variant-numeric:tabular-nums">92만원</span>
-      <div style="height:4px;border-radius:2px;background:${esc(BAND)}">
-        <div style="width:40%;height:100%;border-radius:2px;background:${esc(C)};opacity:.5"></div>
-      </div>
-      <span style="font-size:12px;color:${esc(TER)}">78~110만원</span>
+    <span style="font-size:11px;font-weight:700;color:${esc(C)};letter-spacing:.5px">${esc(v.label)}</span>
+    <div style="background:#fff;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;box-shadow:inset 0 0 0 1px #EAEBEE">
+      <span style="font-size:15px;font-weight:700;color:${esc(INK)}">${esc(v.name)}</span>
+      <span style="font-size:24px;font-weight:700;color:${esc(INK)};font-variant-numeric:tabular-nums">${esc(v.range)}</span>
+      <span style="font-size:11px;line-height:16px;color:${esc(TER)};font-variant-numeric:tabular-nums">${esc(v.meta)}</span>
+      <span style="display:block;height:1px;background:${esc(BAND)}"></span>
+      <span style="display:flex;flex-direction:column;gap:6px">${reasons}</span>
+      <span style="margin-top:2px;height:34px;border-radius:8px;background:${esc(C)};color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px">
+        <span style="display:flex;line-height:0">${pickMark(15, '#fff')}</span>${esc(v.cta)}
+      </span>
     </div>
   </div>`;
 
   return featureSection({
     eyebrow: '가격, 일일이 찾지 마세요',
     title: '얼마에 했는지\n먼저 보여드려요',
-    body: '직접 제보해 주신 금액 정보를 기반으로 구간과 기준금액을 보여드려요. 업체에 물어보지 않아도 대략의 범위를 먼저 알 수 있어요.',
+    body: '직접 제보해 주신 금액 정보를 기반으로 구간과 기준금액을 보여드려요. 업체에 물어보지 않아도 금액 범위를 먼저 알 수 있어요.',
     bg: '#fff',
     mockupBg: '#F7F8FA',
     mockupContent,
@@ -226,19 +278,30 @@ function feature1(): string {
 
 /** 기능 2 — 비교 */
 function feature2(): string {
-  const mockupContent = `<div style="width:100%;padding:16px 14px;display:flex;flex-direction:column;gap:10px">
-    ${[
-      ['웨딩홀 A', '168만원', 0.92, true],
-      ['웨딩홀 B', '134만원', 0.72, false],
-      ['웨딩홀 C', '212만원', 1.0, false],
-    ].map(([name, price, ratio, picked]) => `
-      <div style="background:${picked ? '#FFF0EE' : '#F7F8FA'};border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px;${picked ? `box-shadow:inset 0 0 0 1.5px ${C}` : ''}">
-        <span style="flex:1;min-width:0">
-          <span style="display:block;font-size:14px;font-weight:700;color:${INK}">${name}</span>
-          <span style="display:block;font-size:13px;color:${TER};font-variant-numeric:tabular-nums">${price}</span>
-        </span>
-        <span style="display:flex;line-height:0;color:${picked ? C : '#ADB1BA'}">${pickMark(18, picked ? C : '#ADB1BA')}</span>
-      </div>`).join('')}
+  const cmp = LANDING_VENDORS.compare;
+  const blocks = cmp.blocks
+    .map(
+      (block) => `
+      <div style="background:#F7F8FA;border-radius:10px;padding:11px 12px;display:flex;flex-direction:column;gap:7px">
+        <span style="font-size:11px;font-weight:700;color:${esc(TER)}">${esc(block.label)}</span>
+        ${block.values
+          .map(
+            ([value, best], index) => `
+          <span style="display:flex;align-items:center;gap:7px">
+            <span style="width:15px;height:15px;flex:0 0 15px;border-radius:999px;background:${best ? esc(C) : '#DCDEE3'};color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center">${best ? '✓' : ''}</span>
+            <span style="flex:1;min-width:0;font-size:12px;color:${esc(SEC)};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(cmp.names[index] ?? '')}</span>
+            <span style="font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;color:${best ? esc(INK) : esc(TER)}">${esc(String(value))}</span>
+          </span>`
+          )
+          .join('')}
+      </div>`
+    )
+    .join('');
+
+  const mockupContent = `<div style="width:100%;padding:16px 14px;display:flex;flex-direction:column;gap:9px">
+    <span style="font-size:13px;font-weight:700;color:${esc(INK)}">${esc(cmp.title)}</span>
+    <span style="font-size:11px;color:${esc(C)};font-weight:700">${esc(cmp.lead)}</span>
+    ${blocks}
   </div>`;
 
   return featureSection({
@@ -254,20 +317,30 @@ function feature2(): string {
 
 /** 기능 3 — 커플 Pick */
 function feature3(): string {
-  const mockupContent = `<div style="width:100%;padding:16px 14px;display:flex;flex-direction:column;gap:10px">
-    ${[
-      ['웨딩홀 A', true, true],
-      ['웨딩홀 B', true, false],
-      ['웨딩홀 C', false, true],
-    ].map(([name, me, partner]) => `
-      <div style="background:#F7F8FA;border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:8px">
-        <span style="flex:1;font-size:14px;font-weight:700;color:${INK}">${name}</span>
-        <span style="display:flex;gap:4px">
-          <span style="display:flex;line-height:0;color:${me ? C : '#ADB1BA'}">${pickMark(16, me ? C : '#ADB1BA')}</span>
-          <span style="display:flex;line-height:0;color:${partner ? '#FFDAD5' : '#ADB1BA'}">${pickMark(16, partner ? '#FFDAD5' : '#ADB1BA')}</span>
+  const picks = LANDING_VENDORS.picks;
+  const cards = picks.cards
+    .map(
+      (card) => `
+      <div style="border-radius:9px;padding:10px;display:flex;align-items:center;gap:8px;background:#fff;box-shadow:inset 0 0 0 ${card.both ? `1.4px ${esc(C)}` : '1px #EAEBEE'}">
+        <span style="width:18px;height:18px;flex:0 0 18px;border-radius:5px;display:flex;align-items:center;justify-content:center;${card.both ? `background:${esc(C)}` : 'box-shadow:inset 0 0 0 1.2px #DCDEE3'}">${card.both ? `<span style="display:flex;line-height:0">${pickMark(12, '#fff')}</span>` : ''}</span>
+        <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+          <span style="font-size:10px;line-height:14px;font-weight:700;padding:1px 5px;border-radius:3px;align-self:flex-start;${card.both ? `background:#FFE9E6;color:${esc(C)}` : 'background:#F2F3F6;color:#868B94'}">${card.both ? '둘 다 고른 곳' : '나만 고른 곳'}</span>
+          <span style="font-size:13px;font-weight:700;color:${esc(INK)};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(card.name)}</span>
+          <span style="font-size:11px;color:${esc(TER)};font-variant-numeric:tabular-nums">${esc(card.price)}</span>
         </span>
-        ${me && partner ? `<span style="font-size:11px;font-weight:700;padding:2px 6px;border-radius:4px;background:${C};color:#fff;white-space:nowrap">둘 다 고른 곳</span>` : ''}
-      </div>`).join('')}
+      </div>`
+    )
+    .join('');
+
+  const mockupContent = `<div style="width:100%;padding:16px 14px;display:flex;flex-direction:column;gap:9px">
+    <span style="font-size:13px;font-weight:700;color:${esc(INK)}">${esc(picks.title)}</span>
+    <span style="font-size:11px;font-weight:700;color:${esc(C)}">${esc(picks.lead)}</span>
+    ${cards}
+    <div style="background:#F7F8FA;border-radius:9px;padding:9px 10px;display:flex;flex-direction:column;gap:3px">
+      <span style="font-size:10px;font-weight:700;color:${esc(TER)}">${esc(picks.memoBy)}</span>
+      <span style="font-size:12px;line-height:17px;color:${esc(SEC)}">${esc(picks.memo)}</span>
+    </div>
+    <span style="height:32px;border-radius:8px;background:${esc(INK)};color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center">${esc(picks.cta)}</span>
   </div>`;
 
   return featureSection({
