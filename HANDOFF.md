@@ -2,7 +2,7 @@
 
 새 기능 개발 중단. 목표는 **사용 가능한 최소 정상 상태** 복구다.
 
-기준 커밋: `b098e3c` (main). 이 문서는 P0 작업의 단일 기록이다.
+기준 커밋: `f617cbb` (main). 이 문서는 P0 작업의 단일 기록이다.
 설계·정책 맥락은 `docs/AI_HANDOFF.md`, 감사 재검증은
 `docs/CLAUDE_AUDIT_REVIEW_2026-09-07.md`를 본다.
 
@@ -12,20 +12,58 @@
 
 | # | 증상 | 상태 | 원인 |
 |---|---|---|---|
-| A | `POST /v1/auth/sessions` → **500** | 🔴 미해결 | 원인 미확정 (아래) |
-| B | `POST /v1/auth/email/lookup` → **500** | 🔴 미해결 | A와 공통 원인으로 추정 |
+| A | `POST /v1/auth/sessions` → **500** | ✅ **해결** | 운영 API가 빈 DB를 보고 있었다 — #104 |
+| B | `POST /v1/auth/email/lookup` → **500** | ✅ **해결** | A와 같은 원인 |
 | C | 서버 오류가 로그에 남지 않음 | ✅ **수정** | `Fastify({ logger: false })` — #100 |
-| D | `/health`가 스키마 상태를 못 봄 | ✅ **수정** | `SELECT 1`만 확인 — 이 브랜치 |
-| E | CORS에 PATCH·관리자 출처 없음 | 🔴 미해결 | 관리자 화면 전체 차단 |
+| D | `/health`가 스키마 상태를 못 봄 | ✅ **수정** | `SELECT 1`만 확인 — #101 |
+| E | CORS에 PATCH·관리자 출처 없음 | 🔄 **수정 대기** | 관리자 화면 전체 차단 — 이 브랜치 |
 | H | `public-data.yml`이 step `if`에서 secrets 참조 | ✅ **수정** | #88 병합 (`eff6f59`) — 수집 성공 여부는 별도 관측 필요 |
 | F | `GET /v1/me` → 401 | ⚪ **정상** | A의 후속 증상 |
 | G | `POST /v1/me/signup` → 401 | ⚪ **정상** | 설계대로 (아래) |
 
 ---
 
-## A·B — 인증 500 (최우선)
+## A·B — 인증 500 ✅ 해결 (2026-09-07)
 
-### 확인된 사실
+### 확정된 원인
+
+**운영 API가 빈 DB를 보고 있었다.** 앱과 배포 파이프라인이 서로 다른 DB를 썼다.
+
+| | 마이그레이션 | 러너에서 접근 |
+|---|---|---|
+| 운영 API가 쓰던 DB (Render 내부 주소) | **0 / 76** — `schema_migrations` 자체가 없음 | 불가 (`EAI_AGAIN`) |
+| CI가 관리해온 DB (`DATABASE_URL`) | 79 / 76 · 밀린 것 0 | 가능 |
+
+CI의 DB Migrate는 매번 "적용할 마이그레이션 없음"을 출력했지만, 운영 DB는 내부
+전용이라 러너가 이름 해석조차 못 한다 — 그 DB일 수 없었다. 아무도 운영 DB를 본 적이
+없었다.
+
+증상 네 개가 이 하나로 전부 설명된다.
+
+```
+POST /v1/auth/sessions      signIn() → identity.identities 없음   → 500
+POST /v1/auth/email/lookup  identity.email_credentials 없음       → 500
+GET  /v1/auth/providers     DB를 안 씀 (설정에서 읽음)            → 200
+GET  /health                SELECT 1만 봄 (연결은 되니까)         → 200
+```
+
+### 수정
+
+`infra/render-env.yml`의 `secrets:`에 `DATABASE_URL`을 넣어 운영 API를 이미
+마이그레이션된 DB로 돌렸다(#104, `f617cbb`). 어느 DB를 쓰는지가 대시보드에만 있어서
+아무도 볼 수 없던 것이 이 장애가 오래 숨은 이유다 — 이제 저장소에 남는다.
+
+### 검증
+
+- 반영 후 `/health` → `{"applied":79,"expected":76,"pending":[],"ok":true}`
+- 카카오 로그인 성공 확인
+
+### 남은 것
+
+`applied 79 / expected 76`의 여분 3개는 저장소에 없는 옛 버전이다(`0047` 중복,
+`0052` 결번). `migrate`가 checksum을 보지 않아 생긴 이력이며 지금 막는 문제는 아니다.
+
+### 이전 조사 기록 (참고)
 
 - `POST /v1/auth/sessions` → 500, `POST /v1/auth/email/lookup` → 500
 - `GET /v1/auth/providers` → 200 — 공개 API는 정상
