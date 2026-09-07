@@ -4,6 +4,7 @@ import path from 'node:path';
 import { backfillVendorMatches } from './analysis/vendor-matching';
 import { loadConfig } from './config';
 import { createPool, withTransaction } from './db';
+import { listIndustryCategories } from './public-data/collect';
 import { MissingColumnError, parseLocaldataCsv } from './public-data/localdata';
 import { runPublicCollection } from './public-data/run';
 
@@ -14,6 +15,10 @@ import { runPublicCollection } from './public-data/run';
  *   npm run public-data:import --workspace @weddingpick/api -- --file 예식장.csv --category hall
  *   ... --dry-run          # 쓰지 않고 무엇이 들어갈지만 본다
  *   ... --region 서울       # 지역 이름이 포함된 것만 (없으면 전국)
+ *   ... --lookup-category --level small --keyword 예식 --sbiz-api-key KEY
+ *                          # sbiz OpenAPI 업종 대/중/소분류 코드 조사 (DB 미반영,
+ *                          # collect.ts의 downloadSbizApiVendors가 쓰는 대분류
+ *                          # 'Q'가 활용가이드에 없는 값이라 진짜 코드를 찾을 때 쓴다)
  *
  * 파일은 공공데이터포털(data.go.kr)에서 "행정안전부 지방행정 인허가 데이터"로 검색해 업종별로 내려받는다.
  * 2026년 4월부터 기존 localdata.go.kr 서비스가 종료되고 공공데이터포털로 통합됐다.
@@ -69,6 +74,27 @@ async function inspect(file: string): Promise<void> {
 }
 
 async function main() {
+  if (process.argv.includes('--lookup-category')) {
+    const apiKey = argument('sbiz-api-key') ?? process.env.SBIZ_API_KEY;
+    if (!apiKey) throw new Error('--sbiz-api-key 또는 SBIZ_API_KEY 환경변수가 필요합니다.');
+    const level = argument('level') ?? 'small';
+    if (level !== 'large' && level !== 'middle' && level !== 'small') {
+      throw new Error("--level 은 large, middle, small 중 하나여야 한다.");
+    }
+    const keyword = argument('keyword');
+    const parentLarge = argument('parent-large');
+    const parentMiddle = argument('parent-middle');
+    const items = await listIndustryCategories(level, apiKey, {
+      indsLclsCd: parentLarge,
+      indsMclsCd: parentMiddle,
+    });
+    const filtered = keyword ? items.filter((item) => item.name.includes(keyword)) : items;
+    if (filtered.length === 0) {
+      console.log('일치하는 항목이 없습니다.');
+    }
+    for (const item of filtered) console.log(`${item.code}\t${item.name}`);
+    return;
+  }
   if (process.argv.includes('--source')) {
     await runPublicCollection(process.argv.slice(2));
     return;
@@ -244,6 +270,9 @@ main().catch((error: Error) => {
     );
   } else {
     console.error(error.message);
+    // "fetch failed"(undici TypeError)는 message만으로는 원인을 알 수 없다 —
+    // 실제 원인(DNS·TLS·연결거부 등)은 cause에 있다.
+    if (error.cause) console.error('원인:', error.cause);
   }
 
   process.exit(1);

@@ -80,6 +80,20 @@ export function parsePublicCsv(bytes: Buffer, key: SourceKey, at = new Date()) {
 
 const ALLOWED_ORIGINS = new Set(['https://www.data.go.kr', 'https://apis.data.go.kr']);
 
+/**
+ * 공공데이터포털이 발급하는 서비스키(일반 인증키)는 이미 URL-encode된 값으로
+ * 준다(예: '/'가 '%2F'로, '='가 '%3D'로). `URLSearchParams.set()`은 넘긴
+ * 값을 그대로 다시 encode하므로, encode된 키를 그대로 넘기면 '%'가
+ * '%25'로 한 번 더 encode되어(이중 인코딩) 서버가 키를 못 알아본다 —
+ * apis.data.go.kr 연동에서 가장 흔한 실수다. 여기서 한 번 decode해 원래
+ * 키로 되돌린 뒤 넘기면 `URLSearchParams`가 정확히 한 번만 encode한다.
+ * 이미 decode된 키가 들어와도(우연히 %XX 패턴이 아닌 한) 그대로 통과한다.
+ */
+function normalizeServiceKey(apiKey: string): string {
+  try { return decodeURIComponent(apiKey); }
+  catch { return apiKey; }
+}
+
 async function fetchWithRetry(url: string, attempts = 3): Promise<Response> {
   for (let i = 0; i < attempts; i++) {
     try { return await fetch(url, { redirect: 'error', signal: AbortSignal.timeout(30_000) }); }
@@ -153,8 +167,15 @@ type SbizApiPage = {
 
 /**
  * 소상공인진흥공단 상권정보 OpenAPI(v2)에서 특정 시도의 웨딩업종을 전수 수집한다.
- * 업종 대분류 코드 'Q'(결혼관련서비스) 기준이며 페이지당 최대 1000건을 처리한다.
- * API 키는 호출 시 전달받으며 코드에 하드코딩하지 않는다.
+ * 페이지당 최대 1000건을 처리한다. API 키는 호출 시 전달받으며 코드에
+ * 하드코딩하지 않는다.
+ *
+ * **주의 — 대분류 코드 'Q'는 확인 전이다.** 2026-08-05 승인된 공식
+ * 활용가이드의 대분류 코드는 전부 "영문자+숫자" 두 글자다(F1·G2·I1·I2·J1·
+ * L1·M1·N1·O1·P1·Q1·R1·S1·S2 등 — 예: Q1=보건의료). 가이드 어디에도 웨딩
+ * 관련 대분류나 'Q' 단독 코드는 없다 — 실제 API가 이 값으로 빈 결과를
+ * 돌려주고 있을 가능성이 높다(수집 자체가 조용히 0건). `listIndustryCategories`로
+ * 중/소분류를 뒤져 진짜 코드를 찾은 뒤 여기 'Q'를 교체해야 한다.
  *
  * 수집 카테고리 (indsSclsNm 기준):
  *   예식장 → hall
@@ -177,7 +198,7 @@ export async function downloadSbizApiVendors(
 
   for (let pageNo = 1; pageNo <= MAX_PAGES; pageNo++) {
     const url = new URL(source.url);
-    url.searchParams.set('serviceKey', apiKey);
+    url.searchParams.set('serviceKey', normalizeServiceKey(apiKey));
     url.searchParams.set('pageNo', String(pageNo));
     url.searchParams.set('numOfRows', '1000');
     // 업종 대분류 Q = 결혼관련서비스업 (소상공인진흥공단 기준)
@@ -226,4 +247,39 @@ export async function downloadSbizApiVendors(
   }
 
   return vendors;
+}
+
+export type IndustryCategory = { code: string; name: string };
+
+const UPJONG_ENDPOINT = { large: 'largeUpjongList', middle: 'middleUpjongList', small: 'smallUpjongList' } as const;
+const UPJONG_CODE_FIELD = { large: 'indsLclsCd', middle: 'indsMclsCd', small: 'indsSclsCd' } as const;
+const UPJONG_NAME_FIELD = { large: 'indsLclsNm', middle: 'indsMclsNm', small: 'indsSclsNm' } as const;
+
+/**
+ * 상권정보 업종 대/중/소분류 코드 조회 — DB 반영용이 아니라 진짜 코드값을
+ * 찾기 위한 조사용이다. `downloadSbizApiVendors`가 쓰는 대분류 'Q'가
+ * 공식 활용가이드에 없는 값이라(위 주석 참고), 이 함수로 중분류·소분류
+ * 이름에서 "예식"·"결혼"·"웨딩" 등을 찾아 진짜 코드를 확인한다.
+ *
+ * `type=json` 응답이 `storeListInUpjong`과 같은 `{ data: [...] }` 모양이라고
+ * 가정한다 — 활용가이드가 XML 예시만 보여줘 실제 JSON 필드명은 실키로
+ * 한 번 호출해 확인 전이다.
+ */
+export async function listIndustryCategories(
+  level: keyof typeof UPJONG_ENDPOINT,
+  apiKey: string,
+  parent?: { indsLclsCd?: string; indsMclsCd?: string },
+): Promise<IndustryCategory[]> {
+  const url = new URL(`https://apis.data.go.kr/B553077/api/open/sdsc2/${UPJONG_ENDPOINT[level]}`);
+  url.searchParams.set('serviceKey', normalizeServiceKey(apiKey));
+  url.searchParams.set('type', 'json');
+  if (parent?.indsLclsCd) url.searchParams.set('indsLclsCd', parent.indsLclsCd);
+  if (parent?.indsMclsCd) url.searchParams.set('indsMclsCd', parent.indsMclsCd);
+
+  const buf = await publicGet(url.toString(), 4 * 1024 * 1024);
+  const page = JSON.parse(buf.toString('utf8')) as { data?: Record<string, string>[] };
+  const codeField = UPJONG_CODE_FIELD[level];
+  const nameField = UPJONG_NAME_FIELD[level];
+
+  return (page.data ?? []).map((row) => ({ code: row[codeField] ?? '', name: row[nameField] ?? '' }));
 }

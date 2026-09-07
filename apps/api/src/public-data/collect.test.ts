@@ -1,5 +1,5 @@
 import iconv from 'iconv-lite';
-import { contentHash, downloadSbizApiVendors, isoDay, parsePublicCsv, type CollectedVendor } from './collect';
+import { contentHash, downloadSbizApiVendors, isoDay, listIndustryCategories, parsePublicCsv, type CollectedVendor } from './collect';
 import { sourceKey } from './sources';
 import { replacementDecision } from './sync';
 
@@ -52,6 +52,61 @@ test('sbiz-api 응답에서 서울 예식장만 파싱한다', async () => {
     expect(vendors[0]?.region).toBe('서울특별시 강남구');
     expect(vendors[0]?.category).toBe('hall');
     expect(vendors[0]?.sourceRecordId).toBe('S1');
+  } finally {
+    global.fetch = origFetch;
+  }
+});
+test('이미 URL-encode된 서비스키를 이중 인코딩하지 않는다', async () => {
+  // 공공데이터포털 인증키는 이미 encode된 값으로 온다('/'→%2F, '='→%3D).
+  // URLSearchParams.set()에 그대로 넘기면 '%'가 %25로 한 번 더 encode되어
+  // 서버가 키를 못 알아본다(403) — apis.data.go.kr 연동 최다 실수.
+  const encodedKey = 'abc%2Fdef%3D%3D';
+  const origFetch = global.fetch;
+  let requestedUrl = '';
+  const body = Buffer.from(JSON.stringify({ data: [] }));
+  global.fetch = jest.fn().mockImplementation((url: string) => {
+    requestedUrl = url;
+    return Promise.resolve({
+      ok: true,
+      body: { [Symbol.asyncIterator]: async function* () { yield body; } },
+    });
+  });
+  try {
+    await listIndustryCategories('small', encodedKey);
+    const sentKey = new URL(requestedUrl).searchParams.get('serviceKey');
+    expect(sentKey).toBe('abc/def==');
+  } finally {
+    global.fetch = origFetch;
+  }
+});
+test('소분류 조회는 코드·이름을 읽고 요청 URL을 올바르게 만든다', async () => {
+  // 아래 코드값은 이 테스트 전용 가짜 데이터다 — 실제 sbiz 코드가 아니다.
+  // 진짜 코드는 listIndustryCategories를 실키로 호출해 확인해야 한다.
+  const mockPage = {
+    data: [
+      { indsLclsCd: 'S1', indsLclsNm: '협회, 단체', indsMclsCd: 'S110', indsMclsNm: '결혼 관련 서비스', indsSclsCd: 'S11001', indsSclsNm: '예식장업' },
+      { indsLclsCd: 'S1', indsLclsNm: '협회, 단체', indsMclsCd: 'S110', indsMclsNm: '결혼 관련 서비스', indsSclsCd: 'S11002', indsSclsNm: '결혼상담소' },
+    ],
+  };
+  const origFetch = global.fetch;
+  let requestedUrl = '';
+  const body = Buffer.from(JSON.stringify(mockPage));
+  global.fetch = jest.fn().mockImplementation((url: string) => {
+    requestedUrl = url;
+    return Promise.resolve({
+      ok: true,
+      body: { [Symbol.asyncIterator]: async function* () { yield body; } },
+    });
+  });
+  try {
+    const items = await listIndustryCategories('small', 'test-key', { indsLclsCd: 'S1', indsMclsCd: 'S110' });
+    expect(items).toEqual([
+      { code: 'S11001', name: '예식장업' },
+      { code: 'S11002', name: '결혼상담소' },
+    ]);
+    expect(requestedUrl).toContain('/smallUpjongList?');
+    expect(requestedUrl).toContain('indsLclsCd=S1');
+    expect(requestedUrl).toContain('indsMclsCd=S110');
   } finally {
     global.fetch = origFetch;
   }
