@@ -152,7 +152,15 @@ import { clearToken, loadToken, saveToken } from '@/api/session';
 export class ApiError extends Error {
   constructor(
     readonly code: ErrorCode,
-    message: string
+    message: string,
+    /**
+     * 응답의 HTTP 상태. 서버에 닿지 못했으면 `null`이다.
+     *
+     * 전면 오류 화면이 «연결 안 됨»과 «점검 중»을 가르는 데 쓴다
+     * (`features/errors/kind.ts`). 코드만으로는 둘이 같은 `internal`이라 갈리지
+     * 않는다 — 그래서 지금까지 점검 화면을 띄울 방법이 없었다.
+     */
+    readonly status: number | null = null
   ) {
     super(message);
     this.name = 'ApiError';
@@ -182,15 +190,26 @@ async function request<T>(
   const { auth = true, headers, ...rest } = init;
   const token = auth ? await loadToken() : null;
 
-  const response = await fetch(`${requireBaseUrl()}${path}`, {
-    ...rest,
-    headers: {
-      // 본문이 없는데 JSON이라고 말하면 서버가 빈 본문을 파싱하려다 막힌다.
-      ...(rest.body !== undefined && { 'content-type': 'application/json' }),
-      ...(token && { authorization: `Bearer ${token}` }),
-      ...headers,
-    },
-  });
+  /*
+   * 서버에 닿지 못한 것과 서버가 거절한 것은 다르다. fetch가 던지는 것을 그대로
+   * 흘려보내면 화면은 `ApiError`만 볼 줄 알아서 «서버 응답을 이해하지 못했습니다»
+   * 같은 엉뚱한 말을 하게 된다. 닿지 못했으면 status를 null로 남겨 전면 오류 화면이
+   * «연결이 불안정해요»로 읽게 한다.
+   */
+  let response: Response;
+  try {
+    response = await fetch(`${requireBaseUrl()}${path}`, {
+      ...rest,
+      headers: {
+        // 본문이 없는데 JSON이라고 말하면 서버가 빈 본문을 파싱하려다 막힌다.
+        ...(rest.body !== undefined && { 'content-type': 'application/json' }),
+        ...(token && { authorization: `Bearer ${token}` }),
+        ...headers,
+      },
+    });
+  } catch {
+    throw new ApiError('internal', '서버와 연결하지 못했습니다.', null);
+  }
 
   if (!response.ok) {
     const body = errorResponseSchema.safeParse(await response.json().catch(() => null));
@@ -200,10 +219,10 @@ async function request<T>(
         await clearToken();
       }
 
-      throw new ApiError(body.data.error.code, body.data.error.message);
+      throw new ApiError(body.data.error.code, body.data.error.message, response.status);
     }
 
-    throw new ApiError('internal', '서버와 통신하지 못했습니다.');
+    throw new ApiError('internal', '서버와 통신하지 못했습니다.', response.status);
   }
 
   // 204는 본문이 없다. json()을 부르면 거기서 터진다.
