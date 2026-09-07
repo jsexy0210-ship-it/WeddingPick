@@ -1,0 +1,51 @@
+name: Render env sync
+
+# `infra/render-env.yml`을 Render 서비스에 밀어넣는다.
+#
+# 대시보드를 손으로 여는 일을 없애려고 만들었다. 값의 원본은 저장소이고, 여기서
+# 고쳐 main에 올리면 반영된다. 비밀 값만은 저장소에 둘 수 없어 GitHub Secrets에서
+# 이름으로 찾아 쓴다.
+#
+# 안전 규칙: **키 하나씩 upsert만 한다.** 선언에 없는 키는 읽지도 지우지도 않는다 —
+# 운영 API에는 이 선언에 없는 비밀(DATABASE_URL·APPLE_PRIVATE_KEY 등)이 있고,
+# 통째로 바꾸는 API를 쓰면 그것들이 지워진다.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'infra/render-env.yml'
+      - '.github/workflows/render-env-sync.yml'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: '실제로 바꾸지 않고 무엇이 바뀔지만 본다'
+        type: boolean
+        default: false
+      redeploy:
+        description: '값을 넣은 뒤 재배포까지 건다'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: render-env-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync env vars to Render
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          # 선언의 `secrets:`가 이름으로 찾아 쓴다. 값은 로그에 찍지 않는다.
+          ALL_SECRETS: ${{ toJSON(secrets) }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          REDEPLOY: ${{ inputs.redeploy == null && 'true' || inputs.redeploy }}
+        run: python3 scripts/render-env-sync.py
