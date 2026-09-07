@@ -1,2 +1,2 @@
-export { MIGRATIONS_DIR, migrate } from './migrate';
+export { MIGRATIONS_DIR, migrate, schemaState } from './migrate';
 export { resetSchema } from './reset';

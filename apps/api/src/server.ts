@@ -1,5 +1,6 @@
 import cors from '@fastify/cors';
 import Fastify, { type FastifyInstance } from 'fastify';
+import { schemaState } from '@weddingpick/db';
 import { ZodError } from 'zod';
 
 import { createAttemptLimiter } from './auth/attempt-limiter';
@@ -110,7 +111,26 @@ export function buildServer(context: AppContext): FastifyInstance {
     // 확인해 Render 헬스체크가 실제로 요청을 처리할 수 있는 인스턴스만 통과시킨다.
     try {
       await context.pool.query('SELECT 1');
-      return { ok: true, database: 'ok' as const };
+
+      /*
+       * 연결되는 것과 쓸 수 있는 것은 다르다. `SELECT 1`만 보던 동안 운영 DB의
+       * 스키마가 코드보다 뒤에 있어도 헬스체크는 초록이었고, 인증 API는 전부
+       * 500이었다. 무엇이 밀렸는지 여기서 바로 보이게 한다.
+       *
+       * 밀렸다고 503을 주지는 않는다 — Render 헬스체크가 실패하면 인스턴스가
+       * 계속 교체되어, 정작 확인하려던 것을 볼 수 없게 된다. 상태만 알리고
+       * 판단은 사람이 한다.
+       */
+      const schema = await schemaState((sql) => context.pool.query(sql));
+
+      if (!schema.ok) {
+        app.log.warn(
+          { applied: schema.applied, expected: schema.expected, pending: schema.pending.slice(0, 10) },
+          '운영 DB 스키마가 코드보다 뒤에 있다'
+        );
+      }
+
+      return { ok: true, database: 'ok' as const, schema };
     } catch {
       return reply.status(503).send({ ok: false, database: 'unavailable' as const });
     }
