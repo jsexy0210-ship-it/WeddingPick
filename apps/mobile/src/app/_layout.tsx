@@ -2,6 +2,8 @@
 // 중요하다 — tokens.css는 자립해야 해서 글꼴을 직접 부르지 않는다.
 import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
 import '@weddingpick/ui/tokens.css';
+// 브라우저가 입력칸에 얹는 자기 규칙(자동완성 배경 등) 보정. 네이티브에서는 무시된다.
+import '@/global.css';
 
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
