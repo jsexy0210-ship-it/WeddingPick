@@ -157,8 +157,16 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       .split(',')
       .map((uri) => uri.trim())
       .filter(Boolean),
+    /*
+     * `resend`라고 적혀 있어도 키나 발신 주소가 없으면 `console`로 내려앉는다.
+     *
+     * 스키마가 그 조합을 거부하면 설정 오류로 서버가 아예 뜨지 않는다 — 메일을
+     * 못 보내는 것과 서비스 전체가 내려가는 것은 무게가 다르다. 키를 나중에
+     * 넣는 순서(선언 먼저, 비밀 나중)가 실제로 있어서 그때 운영이 멈춘다.
+     * 대신 아래에서 시끄럽게 경고한다.
+     */
     mail:
-      env.MAIL_DRIVER === 'resend'
+      env.MAIL_DRIVER === 'resend' && env.RESEND_API_KEY && env.MAIL_FROM
         ? { driver: 'resend' as const, apiKey: env.RESEND_API_KEY, from: env.MAIL_FROM }
         : { driver: 'console' as const },
     passwordResetUrl: env.PASSWORD_RESET_URL,
@@ -180,7 +188,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
 
   // 막지는 않는다 — 메일 없이도 이메일 로그인·가입은 된다. 재설정 링크만 로그로 샌다.
   if (env.NODE_ENV === 'production' && parsed.data.mail.driver === 'console') {
-    console.warn('⚠ MAIL_DRIVER가 비어 있다. 비밀번호 재설정 링크가 로그에만 찍힌다 — 운영은 resend를 설정한다.');
+    console.warn(
+      env.MAIL_DRIVER === 'resend'
+        ? '⚠ MAIL_DRIVER=resend인데 RESEND_API_KEY 또는 MAIL_FROM이 없어 메일을 보내지 않는다. 비밀번호 재설정 링크가 로그에만 찍힌다.'
+        : '⚠ MAIL_DRIVER가 비어 있다. 비밀번호 재설정 링크가 로그에만 찍힌다 — 운영은 resend를 설정한다.'
+    );
   }
 
   return parsed.data;
