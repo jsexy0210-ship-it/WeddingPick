@@ -22,7 +22,12 @@ export async function finishSignIn(identity: { provider: RememberedAccount['prov
       email: identity.email,
       weddingDate: null,
     });
-    router.replace('/signup');
+    /*
+     * 별도의 «가입 마무리» 화면은 없다. 동의는 로그인 화면의 CTA에 붙은 안내
+     * («시작하면 이용약관과 개인정보 처리방침에 동의하게 돼요»)로 받고, 연령 확인은
+     * 온보딩 1/4에서 함께 한다. 온보딩이 그 둘을 서버에 올린다(`/setup`).
+     */
+    router.replace('/setup');
 
     return;
   }
