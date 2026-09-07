@@ -203,7 +203,7 @@ describeWithDb('TOP3 추천', () => {
       payload: {
         weddingDate: new Date(Date.now() + 200 * 86_400_000).toISOString().slice(0, 10),
         region: '서울',
-        budgetAmount: 50_000_000,
+        budgetBracket: '20m_30m',
       },
     });
 

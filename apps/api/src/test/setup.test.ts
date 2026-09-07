@@ -153,15 +153,38 @@ describeWithDb('최소 온보딩', () => {
     expect(body.region).toBe('부산');
   });
 
-  it('총예산은 선택이고 아직 모르겠어요가 null이다', async () => {
+  it('총예산은 구간 선택이고 아직 모르겠어요가 null이다', async () => {
     const { headers } = await signInAs(test);
 
-    await setup(headers, { budgetAmount: 50_000_000 });
-    expect((await me(headers)).json<{ budgetAmount: number | null }>().budgetAmount).toBe(50_000_000);
+    await setup(headers, { budgetBracket: '30m_40m' });
+    const saved = (
+      await me(headers)
+    ).json<{ budgetBracket: string | null; budgetAmount: number | null }>();
 
-    // 명시적인 null은 "아직 모르겠어요"다. 되돌릴 수 있어야 한다.
-    await setup(headers, { budgetAmount: null });
-    expect((await me(headers)).json<{ budgetAmount: number | null }>().budgetAmount).toBeNull();
+    expect(saved.budgetBracket).toBe('30m_40m');
+    // budget_amount는 구간의 상한값을 서버가 파생한 것이다 — top3 추천이 숫자로 쓴다.
+    expect(saved.budgetAmount).toBe(40_000_000);
+
+    // 명시적인 null은 "아직 모르겠어요"가 아니라 "안 정함"이다. 되돌릴 수 있어야 한다.
+    await setup(headers, { budgetBracket: null });
+    const cleared = (
+      await me(headers)
+    ).json<{ budgetBracket: string | null; budgetAmount: number | null }>();
+
+    expect(cleared.budgetBracket).toBeNull();
+    expect(cleared.budgetAmount).toBeNull();
+  });
+
+  it('4,000만원 이상은 상한이 없어 budgetAmount가 null이다', async () => {
+    const { headers } = await signInAs(test);
+
+    await setup(headers, { budgetBracket: 'over_40m' });
+    const body = (
+      await me(headers)
+    ).json<{ budgetBracket: string | null; budgetAmount: number | null }>();
+
+    expect(body.budgetBracket).toBe('over_40m');
+    expect(body.budgetAmount).toBeNull();
   });
 
   it('예산을 안 보내면 건드리지 않는다', async () => {
@@ -171,10 +194,12 @@ describeWithDb('최소 온보딩', () => {
      */
     const { headers } = await signInAs(test);
 
-    await setup(headers, { budgetAmount: 50_000_000 });
+    await setup(headers, { budgetBracket: '30m_40m' });
     await setup(headers, { weddingDate: future(120) });
 
-    expect((await me(headers)).json<{ budgetAmount: number | null }>().budgetAmount).toBe(50_000_000);
+    expect(
+      (await me(headers)).json<{ budgetBracket: string | null }>().budgetBracket
+    ).toBe('30m_40m');
   });
 
   it('로그인해야 등록할 수 있다', async () => {

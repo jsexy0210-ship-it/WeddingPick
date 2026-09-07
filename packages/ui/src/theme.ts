@@ -271,6 +271,10 @@ export const Layout = {
   sectionHeadGap: 14,
   /** 목록 행 최소 높이. */
   rowMinHeight: 56,
+  /** 목록 행 상하 패딩. spec/tokens.json spacing.rowPaddingY. */
+  rowPaddingY: 12,
+  /** 카드 내부 패딩. spec/tokens.json spacing.cardPadding. */
+  cardPadding: 20,
   /** 터치 타깃 최소 크기. */
   touchTarget: 44,
   statusBar: 44,
@@ -281,6 +285,8 @@ export const Layout = {
   controlMedium: 40,
   controlLarge: 48,
   controlXLarge: 52,
+  /** 입력 필드 높이. spec/tokens.json size.field — Primary CTA와 같은 52다. */
+  field: 52,
 } as const;
 
 /**

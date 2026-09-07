@@ -63,7 +63,7 @@ export async function completeAfterSignIn(): Promise<AfterSignIn> {
       await completeSetup({
         weddingDate: draft.weddingDate,
         region: draft.region,
-        budgetAmount: draft.budgetAmount,
+        budgetBracket: draft.budgetBracket,
       });
       await clearWeddingDraft();
       result.savedWedding = true;

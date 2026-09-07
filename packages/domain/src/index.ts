@@ -62,3 +62,4 @@ export * from './competitors';
 export * from './vendor-fact';
 export * from './comparison-axes';
 export * from './signup';
+export * from './budget-bracket';

@@ -1,5 +1,5 @@
 import type { CurrentUser, MyReportListResponse } from '@weddingpick/api-contract';
-import { formatWeddingDate, manwon } from '@weddingpick/domain';
+import { BUDGET_BRACKET_LABEL, formatWeddingDate } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -146,8 +146,8 @@ export default function MyScreen() {
                 {me.region && (
                   <SettingRow label="지역" value={me.region} />
                 )}
-                {me.budgetAmount && (
-                  <SettingRow label="총예산" value={manwon(me.budgetAmount)} />
+                {me.budgetBracket && (
+                  <SettingRow label="총예산" value={BUDGET_BRACKET_LABEL[me.budgetBracket]} />
                 )}
               </View>
               <ChevronRight color={theme.textAssistive} />

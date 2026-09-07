@@ -141,6 +141,7 @@ import {
   type VendorPhotosResponse,
   emailLookupResponseSchema,
   type EmailLookupResponse,
+  type BudgetBracket,
 } from '@weddingpick/api-contract';
 import { z, type ZodType } from 'zod';
 
@@ -329,13 +330,14 @@ export async function signOut(): Promise<void> {
  *
  * 이름은 보내지 않는다 — 닉네임은 최초 필수입력에서 빠졌고 MY에서 정한다.
  *
- * `budgetAmount`를 넘기지 않으면 서버가 예산을 건드리지 않는다. `아직 모르겠어요`는
- * 명시적인 null이다 — 안 고른 것과 모르겠다고 고른 것은 다른 상태다.
+ * `budgetBracket`은 자유 입력이 아니라 다섯 구간 중 하나다. 넘기지 않으면 서버가
+ * 예산을 건드리지 않는다. `아직 모르겠어요`(unknown)는 명시적인 값이다 — 안 고른
+ * 것과 모르겠다고 고른 것은 다른 상태다.
  */
 export async function completeSetup(input: {
   weddingDate: string;
   region: string;
-  budgetAmount?: number | null;
+  budgetBracket?: BudgetBracket | null;
 }) {
   return request('/v1/me/setup', currentUserSchema, {
     method: 'POST',
@@ -1293,4 +1295,5 @@ export async function revokePaymentConsent(): Promise<Settings> {
 // ──────────────────────────────────────────────────────────────────────────────
 export type { ExpoItem, ExpoStatus, ExpoDetail } from '@weddingpick/api-contract';
 export type { WeddingInfoListResponse, WeddingInfoDetail } from '@weddingpick/api-contract';
+export type { BudgetBracket } from '@weddingpick/api-contract';
 

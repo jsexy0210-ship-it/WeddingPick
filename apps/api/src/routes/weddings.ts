@@ -7,10 +7,12 @@ import {
   MEMBER_TIER_LABEL,
   WEDDING_DATE_HINT,
   allMissionsDone,
+  budgetBracketCeiling,
   checkDisplayName,
   isSelectableWeddingDate,
   tierOf,
   type MembershipFacts,
+  type WeddingBudgetBracket,
 } from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
 
@@ -86,6 +88,7 @@ async function loadCurrentUser(context: AppContext, userId: string) {
     wedding_date: Date | null;
     region: string | null;
     budget_amount: string | null;
+    budget_bracket: WeddingBudgetBracket | null;
     display_name: string | null;
     spouse_linked: boolean;
     has_payment_proof: boolean;
@@ -97,6 +100,7 @@ async function loadCurrentUser(context: AppContext, userId: string) {
        w.wedding_date,
        w.region,
        w.budget_amount,
+       w.budget_bracket,
        u.display_name,
        coalesce(w.owner_user_id IS NOT NULL AND w.partner_user_id IS NOT NULL, false)
          AS spouse_linked,
@@ -112,7 +116,7 @@ async function loadCurrentUser(context: AppContext, userId: string) {
        ) AS has_compared
      FROM structured.users u
      LEFT JOIN LATERAL (
-       SELECT id, wedding_date, region, budget_amount, owner_user_id, partner_user_id
+       SELECT id, wedding_date, region, budget_amount, budget_bracket, owner_user_id, partner_user_id
        FROM structured.weddings
        WHERE owner_user_id = u.id OR partner_user_id = u.id
        ORDER BY created_at LIMIT 1
@@ -133,6 +137,7 @@ async function loadCurrentUser(context: AppContext, userId: string) {
     row?.budget_amount === null || row?.budget_amount === undefined
       ? null
       : Number(row.budget_amount);
+  const budgetBracket = row?.budget_bracket ?? null;
 
   const facts = {
     // 이 함수를 부르는 두 경로가 모두 로그인을 요구한다. 여기까지 왔으면 로그인한 사람이다.
@@ -153,6 +158,7 @@ async function loadCurrentUser(context: AppContext, userId: string) {
     displayName,
     weddingDate,
     region,
+    budgetBracket,
     budgetAmount,
     /*
      * 앱이 이 값 하나로 첫 화면을 정한다. 두 값을 따로 보고 판단하게 두면
@@ -191,9 +197,13 @@ export function registerWeddingRoutes(app: FastifyInstance, context: AppContext)
    * 예식일과 지역을 한 번에 받는다. 따로 받으면 날짜만 넣고 나간 사람이 생기고,
    * 그 사람에게 보여줄 수 있는 것은 전국 평균뿐이다.
    *
-   * 총예산은 선택이다. 넘기지 않으면 **건드리지 않는다** — `아직 모르겠어요`를
-   * 고른 것과 이 화면을 다시 열지 않은 것이 같은 결과가 되면 안 된다. 명시적인
-   * null만 "안 정함"으로 되돌린다.
+   * 총예산은 선택이고, 자유 입력이 아니라 다섯 구간 중 하나다(디자인 핸드오프
+   * 01-onboarding.dc.html #11e). 넘기지 않으면 **건드리지 않는다** — `아직
+   * 모르겠어요`를 고른 것과 이 화면을 다시 열지 않은 것이 같은 결과가 되면
+   * 안 된다. 명시적인 null만 "안 정함"으로 되돌린다.
+   *
+   * `budget_amount`는 여기서 직접 받지 않는다. top3 추천이 숫자로 비교할 수
+   * 있게 구간의 상한값을 서버가 파생해서 채운다(budgetBracketCeiling).
    *
    * 웨딩이 없으면 여기서 만든다. "먼저 웨딩을 만드세요"라고 할 자리가 아니다 —
    * 사용자에게 웨딩은 만드는 것이 아니라 이미 있는 것이다.
@@ -208,9 +218,10 @@ export function registerWeddingRoutes(app: FastifyInstance, context: AppContext)
     }
 
     const region = body.region.trim();
-    /* 예산을 아예 안 보냈는가. null을 보낸 것(`아직 모르겠어요`)과 구분해야 한다. */
-    const budgetGiven = 'budgetAmount' in body;
-    const budget = body.budgetAmount ?? null;
+    /* 구간을 아예 안 보냈는가. null을 보낸 것(`아직 모르겠어요`)과 구분해야 한다. */
+    const bracketGiven = 'budgetBracket' in body;
+    const bracket = body.budgetBracket ?? null;
+    const budget = bracket === null ? null : budgetBracketCeiling(bracket);
 
     await withTransaction(context.pool, async (client) => {
       const existing = await client.query<{ id: string }>(
@@ -227,18 +238,19 @@ export function registerWeddingRoutes(app: FastifyInstance, context: AppContext)
           `UPDATE structured.weddings
            SET wedding_date = $2,
                region = $3,
-               budget_amount = CASE WHEN $4::boolean THEN $5::bigint ELSE budget_amount END
+               budget_bracket = CASE WHEN $4::boolean THEN $5::wedding_budget_bracket ELSE budget_bracket END,
+               budget_amount = CASE WHEN $4::boolean THEN $6::bigint ELSE budget_amount END
            WHERE id = $1`,
-          [weddingId, body.weddingDate, region, budgetGiven, budget]
+          [weddingId, body.weddingDate, region, bracketGiven, bracket, budget]
         );
 
         return;
       }
 
       await client.query(
-        `INSERT INTO structured.weddings (owner_user_id, wedding_date, region, budget_amount)
-         VALUES ($1, $2, $3, $4::bigint)`,
-        [userId, body.weddingDate, region, budget]
+        `INSERT INTO structured.weddings (owner_user_id, wedding_date, region, budget_bracket, budget_amount)
+         VALUES ($1, $2, $3, $4::wedding_budget_bracket, $5::bigint)`,
+        [userId, body.weddingDate, region, bracket, budget]
       );
     });
 

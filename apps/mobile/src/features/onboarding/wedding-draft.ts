@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { WEDDING_BUDGET_BRACKETS, type WeddingBudgetBracket } from '@weddingpick/domain';
 
 const STORAGE_KEY = 'weddingpick.weddingDraft.v1';
 
@@ -17,8 +18,8 @@ const STORAGE_KEY = 'weddingpick.weddingDraft.v1';
 export type WeddingDraft = {
   weddingDate: string;
   region: string;
-  /** `아직 모르겠어요`가 null이다. 0원과 다르다. */
-  budgetAmount: number | null;
+  /** 다섯 구간 중 하나. 아직 안 골랐으면 null — `아직 모르겠어요`(unknown)와 다르다. */
+  budgetBracket: WeddingBudgetBracket | null;
 };
 
 export async function saveWeddingDraft(draft: WeddingDraft): Promise<void> {
@@ -41,11 +42,16 @@ export async function loadWeddingDraft(): Promise<WeddingDraft | null> {
       typeof (parsed as WeddingDraft).region === 'string'
     ) {
       const draft = parsed as WeddingDraft;
+      const bracket = WEDDING_BUDGET_BRACKETS.includes(
+        draft.budgetBracket as WeddingBudgetBracket
+      )
+        ? (draft.budgetBracket as WeddingBudgetBracket)
+        : null;
 
       return {
         weddingDate: draft.weddingDate,
         region: draft.region,
-        budgetAmount: typeof draft.budgetAmount === 'number' ? draft.budgetAmount : null,
+        budgetBracket: bracket,
       };
     }
   } catch {

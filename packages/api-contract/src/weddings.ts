@@ -1,7 +1,10 @@
-import { MAX_DISPLAY_NAME_LENGTH, MEMBER_TIERS } from '@weddingpick/domain';
+import { MAX_DISPLAY_NAME_LENGTH, MEMBER_TIERS, WEDDING_BUDGET_BRACKETS } from '@weddingpick/domain';
 import { z } from 'zod';
 
 import { dateSchema, idSchema, timestampSchema } from './common';
+
+/** 온보딩 3/4 예산 스텝. 핸드오프가 정한 다섯 구간 중 하나 — 자유 입력이 아니다. */
+export const budgetBracketSchema = z.enum(WEDDING_BUDGET_BRACKETS);
 
 export const weddingSchema = z.object({
   id: idSchema,
@@ -40,7 +43,14 @@ export const currentUserSchema = z.object({
   weddingDate: dateSchema.nullable(),
   /** 준비 지역. 아직 안 골랐으면 null. 업체 지역 목록과 같은 문자열이다. */
   region: z.string().nullable(),
-  /** 총예산. `아직 모르겠어요`가 null이다 — 0원과 다르다. */
+  /**
+   * 총예산 구간. 온보딩 3/4에서 고른 값 그대로다. 아직 안 골랐으면 null.
+   *
+   * `budgetAmount`는 top3 추천이 숫자로 비교하려고 이 값에서 서버가 파생한 것이다
+   * (packages/domain budgetBracketCeiling) — 화면에 보여줄 값은 이 필드를 쓴다.
+   */
+  budgetBracket: budgetBracketSchema.nullable(),
+  /** budgetBracket에서 서버가 파생한 상한값. 화면 표시용이 아니라 추천 로직용이다. */
   budgetAmount: z.int().positive().nullable(),
   /**
    * 최소 온보딩을 마쳤는가. **예식일과 지역**이 둘 다 있어야 한다(v3.10 §3).
@@ -98,13 +108,13 @@ export const displayNameResponseSchema = z.object({
  * 예식일과 지역은 함께 받는다. 따로 받으면 날짜만 넣고 나간 사람이 생기고, 그
  * 사람에게 보여줄 것은 전국 평균뿐이다.
  *
- * 총예산은 선택이다. `아직 모르겠어요`가 null이고, 그것은 "0원"과 다르다 —
- * 아직 안 정한 것과 안 쓰기로 한 것은 같은 상태가 아니다.
+ * 총예산은 선택이고, 자유 입력이 아니라 다섯 구간 중 하나다(01-onboarding.dc.html
+ * #11e). 안 보내면 아직 안 고른 것이다 — `unknown`("아직 모르겠어요")과는 다르다.
  */
 export const completeSetupRequestSchema = z.object({
   weddingDate: dateSchema,
   region: z.string().trim().min(1),
-  budgetAmount: z.int().positive().nullable().optional(),
+  budgetBracket: budgetBracketSchema.nullable().optional(),
 });
 
 /**
@@ -169,3 +179,4 @@ export type WeddingDetail = z.infer<typeof weddingDetailSchema>;
 export type CreateWeddingRequest = z.infer<typeof createWeddingRequestSchema>;
 export type CurrentUser = z.infer<typeof currentUserSchema>;
 export type CompleteSetupRequest = z.infer<typeof completeSetupRequestSchema>;
+export type BudgetBracket = z.infer<typeof budgetBracketSchema>;

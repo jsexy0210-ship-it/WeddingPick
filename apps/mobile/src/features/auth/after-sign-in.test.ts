@@ -20,7 +20,7 @@ jest.mock('@/api/client', () => ({
   getSignupState: (...args: unknown[]) => mockGetSignupState(...args),
 }));
 
-const DRAFT = { weddingDate: '2027-05-15', region: '서울', budgetAmount: 50_000_000 };
+const DRAFT = { weddingDate: '2027-05-15', region: '서울', budgetBracket: '30m_40m' as const };
 
 beforeEach(async () => {
   await AsyncStorage.clear();
