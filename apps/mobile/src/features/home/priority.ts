@@ -94,8 +94,12 @@ export function homePriorityItems(facts: HomeFacts, now = new Date()): PriorityI
 
   /* 예산. 안 정했거나 넘었을 때만 말한다 — 잘 쓰고 있는 사람을 붙잡지 않는다. */
   const budget = facts.expenses?.budget;
-
-  if (budget?.set === false) {
+  /*
+   * budget.set은 숫자 예산이 없다는 뜻일 뿐이다 — 온보딩에서 «4,000만원 이상»·
+   * «아직 모르겠어요»를 고른 사람도 budget.set은 false이지만 이미 답했다.
+   * 정말 안 답한 사람에게만 이 넛지를 보인다.
+   */
+  if (budget?.set === false && facts.expenses?.budgetBracket == null) {
     items.push({
       kind: 'budget',
       title: '총예산을 정해요',

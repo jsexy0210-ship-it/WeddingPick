@@ -12,6 +12,8 @@ export const FontSize = {
   t1: 32,
   /** 화면 헤드라인. SEED h4. */
   t2: 26,
+  /** 바텀시트 제목. spec/tokens.json heading 24/32. */
+  t3: 24,
   /** 섹션 제목. SEED title2. */
   t4: 20,
   /** 목록 항목명, 강조 값. SEED title3. */
@@ -39,6 +41,7 @@ export const FontSize = {
 export const LineHeight = {
   t1: 43,
   t2: 35,
+  t3: 32,
   t4: 27,
   t5: 24,
   t6: 22,

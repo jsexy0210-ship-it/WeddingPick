@@ -6,10 +6,11 @@ import {
   TOP3_LIMIT,
   TOP3_EMPTY,
   TOP3_PARTIAL_NOTE,
-  coarseRegion,
   discloseAmounts,
   isRecommendable,
   reasonsFor,
+  regionFilter,
+  regionMatches,
   type VendorCategory,
 } from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
@@ -65,7 +66,8 @@ export function registerRecommendationRoutes(app: FastifyInstance, context: AppC
         ).rows[0]
       : undefined;
 
-    const region = query.region ?? viewer?.region ?? null;
+    /* 온보딩의 `그 외`는 전국이다 — 지역으로 거르지 않는다(regionFilter). */
+    const region = regionFilter(query.region ?? viewer?.region ?? null);
     const budgetAmount = viewer?.budget_amount ? Number(viewer.budget_amount) : null;
     /*
      * 업종을 안 주면 웨딩홀부터 본다. 준비 순서에서 가장 먼저 정해지는 업종이고,
@@ -115,8 +117,11 @@ export function registerRecommendationRoutes(app: FastifyInstance, context: AppC
       const amounts = (row.paid_amounts ?? []).map(Number);
       const paidPrice = discloseAmounts({ amounts, period: DEFAULT_PERIOD_LABEL });
       const facts = {
-        /* 지역을 안 고른 사람에게는 지역이 이유가 될 수 없다. */
-        regionMatched: region !== null && coarseRegion(row.region) === coarseRegion(region),
+        /*
+         * 지역을 안 고른 사람에게는 지역이 이유가 될 수 없다. 화면은 "서울"을
+         * 보내고 업체는 "서울특별시 강남구"라 앞글자로 맞춘다 — 위 SQL의 LIKE와 같다.
+         */
+        regionMatched: region !== null && regionMatches(row.region, region),
         confirmedCount: Number(row.confirmed_count),
         recentCount: Number(row.recent_count),
         baseAmount: paidPrice.stage === 'detailed' ? paidPrice.median : null,

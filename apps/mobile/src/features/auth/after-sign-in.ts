@@ -63,7 +63,8 @@ export async function completeAfterSignIn(): Promise<AfterSignIn> {
       await completeSetup({
         weddingDate: draft.weddingDate,
         region: draft.region,
-        budgetAmount: draft.budgetAmount,
+        // 구간이 없으면 키를 아예 보내지 않는다 — 서버는 안 보낸 것을 건드리지 않는다.
+        ...(draft.budgetBracket === null ? {} : { budgetBracket: draft.budgetBracket }),
       });
       await clearWeddingDraft();
       result.savedWedding = true;

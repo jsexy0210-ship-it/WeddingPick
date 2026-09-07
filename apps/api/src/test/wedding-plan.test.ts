@@ -248,6 +248,30 @@ describeWithDb('우리웨딩', () => {
       expect(body.budget.note).toContain('총 예산을 정하시면');
     });
 
+    it('온보딩에서 고른 예산 구간은 숫자 예산과 별개로 내려온다', async () => {
+      /*
+       * «4,000만원 이상»은 상한이 없어 budget.set은 계속 false다 — 그래도 이미
+       * 답했다는 사실은 budgetBracket으로 구분해야, 지출 화면이 답한 사람에게
+       * 예산 정하기 시트를 다시 들이밀지 않는다.
+       */
+      const { headers, weddingId } = await mine();
+
+      await test.app.inject({
+        method: 'POST',
+        url: '/v1/me/setup',
+        headers,
+        payload: { weddingDate: at(200), region: '서울', budgetBracket: 'over_40m' },
+      });
+
+      const body = (await expenses(headers, weddingId)).json<{
+        budget: { set: boolean };
+        budgetBracket: string | null;
+      }>();
+
+      expect(body.budget.set).toBe(false);
+      expect(body.budgetBracket).toBe('over_40m');
+    });
+
     it('예산을 정하면 남은 금액을 준다', async () => {
       const { headers, weddingId } = await mine();
 

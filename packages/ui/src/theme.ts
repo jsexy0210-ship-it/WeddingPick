@@ -140,6 +140,8 @@ export const Colors = {
     line: palette.lineAlpha,
     /** 트랙·미달성 체크. */
     track: palette.gray300,
+    /** 입력 필드 기본 테두리. spec/tokens.json line.fieldBorder. */
+    fieldBorder: palette.gray400,
 
     tint: palette.coral500,
     tintStrong: palette.coral600,
@@ -192,6 +194,7 @@ export const Colors = {
     border: palette.darkGray200,
     line: palette.darkLineAlpha,
     track: palette.darkGray300,
+    fieldBorder: palette.darkGray400,
 
     tint: '#ff8478',
     tintStrong: '#ffa79e',
@@ -271,6 +274,16 @@ export const Layout = {
   sectionHeadGap: 14,
   /** 목록 행 최소 높이. */
   rowMinHeight: 56,
+  /** 목록 행 상하 패딩. spec/tokens.json spacing.rowPaddingY. */
+  rowPaddingY: 12,
+  /** 카드 내부 패딩. spec/tokens.json spacing.cardPadding. */
+  cardPadding: 20,
+  /** 2열 카드 사이. spec/tokens.json spacing.gap2col. */
+  gap2col: 11,
+  /** 요약 카드 행 상하 패딩. spec/tokens.json spacing.summaryRowPaddingY. */
+  summaryRowPaddingY: 9,
+  /** 제목 블록과 2열 격자 사이. spec/tokens.json spacing.gapHeadlineGrid. */
+  gapHeadlineGrid: 20,
   /** 터치 타깃 최소 크기. */
   touchTarget: 44,
   statusBar: 44,
@@ -281,6 +294,12 @@ export const Layout = {
   controlMedium: 40,
   controlLarge: 48,
   controlXLarge: 52,
+  /** 입력 필드 높이. spec/tokens.json size.field — Primary CTA와 같은 52다. */
+  field: 52,
+  /** 칩 높이. spec/tokens.json size.chip.min — 시안의 40이 아니라 토큰 36이다. */
+  chip: 36,
+  /** 탭·내비게이션 아이콘. spec/tokens.json size.iconTab. */
+  iconTab: 24,
 } as const;
 
 /**
@@ -308,6 +327,12 @@ export const Motion = {
   bounce: { duration: 420, easing: 'cubic-bezier(.34,1.56,.64,1)' },
   press: { duration: 100 },
   color: { duration: 175 },
+  /** 체크 팝. scale 0→1.18→1 — bezier의 Y가 1을 넘어 한 번의 timing으로 튀었다 돌아온다. */
+  checkPop: {
+    duration: 460,
+    easing: 'cubic-bezier(.34,1.56,.64,1)',
+    bezier: [0.34, 1.56, 0.64, 1],
+  },
 } as const;
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;

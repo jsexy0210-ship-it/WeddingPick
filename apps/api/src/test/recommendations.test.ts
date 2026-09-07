@@ -203,7 +203,7 @@ describeWithDb('TOP3 추천', () => {
       payload: {
         weddingDate: new Date(Date.now() + 200 * 86_400_000).toISOString().slice(0, 10),
         region: '서울',
-        budgetAmount: 50_000_000,
+        budgetBracket: '20m_30m',
       },
     });
 
@@ -216,6 +216,53 @@ describeWithDb('TOP3 추천', () => {
     expect(body.items).toHaveLength(1);
     // 기준금액이 예산 안이면 그것도 이유가 된다.
     expect(body.items[0]!.reasons).toContain('budget');
+  });
+
+  it('공식 지역 이름의 업체도 화면이 보낸 짧은 지역 이름과 맞는다', async () => {
+    /*
+     * 온보딩은 시안의 «서울»을 그대로 보내고, 공공데이터 업체는 «서울특별시
+     * 강남구»다. 화면 값을 서버 형식으로 바꾸지 않고 서버가 앞글자로 맞춘다.
+     */
+    const { headers } = await signInAs(test);
+
+    await test.app.inject({
+      method: 'POST',
+      url: '/v1/me/setup',
+      headers,
+      payload: {
+        weddingDate: new Date(Date.now() + 200 * 86_400_000).toISOString().slice(0, 10),
+        region: '서울',
+      },
+    });
+    await aVendor({ name: '가온예식홀', region: '서울특별시 강남구', proofs: 6 });
+
+    const body = (await top3('', headers)).json<Top3Body>();
+
+    expect(body.region).toBe('서울');
+    expect(body.items).toHaveLength(1);
+    expect(body.items[0]!.reasons).toContain('region');
+  });
+
+  it('그 외를 고른 사람은 지역으로 거르지 않는다', async () => {
+    // 시안의 아홉 칩 중 마지막. 전국이지 «그 외»라는 지역이 아니다.
+    const { headers } = await signInAs(test);
+
+    await test.app.inject({
+      method: 'POST',
+      url: '/v1/me/setup',
+      headers,
+      payload: {
+        weddingDate: new Date(Date.now() + 200 * 86_400_000).toISOString().slice(0, 10),
+        region: '그 외',
+      },
+    });
+    await aVendor({ name: '가온예식홀', region: '경기도 이천시', proofs: 6 });
+
+    const body = (await top3('', headers)).json<Top3Body>();
+
+    expect(body.region).toBeNull();
+    expect(body.items).toHaveLength(1);
+    expect(body.items[0]!.reasons).not.toContain('region');
   });
 
   it('비회원도 지역만 주면 추천을 받는다', async () => {

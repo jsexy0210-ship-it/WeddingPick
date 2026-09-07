@@ -8,6 +8,7 @@ import {
 import { z } from 'zod';
 
 import { amountSchema, dateSchema, idSchema, timestampSchema, vendorCategorySchema } from './common';
+import { budgetBracketSchema } from './weddings';
 
 export const taskStateSchema = z.enum(TASK_STATES);
 export const expenseSourceSchema = z.enum(EXPENSE_SOURCES);
@@ -136,6 +137,11 @@ export const expenseSummaryResponseSchema = z.object({
       over: z.boolean(),
     }),
   ]),
+  /**
+   * 온보딩에서 고른 구간. budget.set과 다른 값이다 — «4,000만원 이상»·«아직
+   * 모르겠어요»는 상한이 없어 budget.set이 false여도 이미 답한 것이다.
+   */
+  budgetBracket: budgetBracketSchema.nullable(),
   expenses: z.array(expenseSchema),
 });
 

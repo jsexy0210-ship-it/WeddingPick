@@ -1,18 +1,43 @@
 import type { Taste } from '@weddingpick/api-contract';
-import { MINIMUM_AGE, WEDDING_DATE_HINT, dDay, formatWeddingDate, manwon } from '@weddingpick/domain';
+import {
+  BUDGET_BRACKET_LABEL,
+  MINIMUM_AGE,
+  WEDDING_BUDGET_BRACKETS,
+  WEDDING_DATE_HINT,
+  WEDDING_REGIONS,
+  dDay,
+  formatWeddingDateLong,
+  type WeddingBudgetBracket,
+} from '@weddingpick/domain';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  Animated,
+  Easing,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
 
-import { completeSetup, completeSignup, getCurrentUser, getSignupState, listVendorRegions, updateTaste } from '@/api/client';
+import {
+  completeSetup,
+  completeSignup,
+  getCurrentUser,
+  getSignupState,
+  updateTaste,
+} from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { loadToken } from '@/api/session';
 import {
   ActionButton,
-  FilterChip,
   Layout,
   MaxContentWidth,
+  Motion,
   Radius,
   Spacing,
   ThemedText,
@@ -20,33 +45,34 @@ import {
   WeddingCalendar,
   useTheme,
 } from '@weddingpick/ui';
+import { TASTE_SHORT_LABEL } from '@/features/home/taste';
 import { TastePicker } from '@/features/home/taste-picker';
 import { OnboardingProgress } from '@/features/onboarding/progress';
 import { saveWeddingDraft } from '@/features/onboarding/wedding-draft';
-
-/** 예산 입력은 만원 단위로 받는다. 0을 여덟 개 세는 화면을 만들지 않는다. */
-const MANWON = 10_000;
 
 /** 한 화면에 하나씩 묻는다. 디자인 핸드오프 WP-APP-008~012. */
 const STEPS = 4;
 
 /**
- * 온보딩. 디자인 핸드오프 WP-APP-008~012.
+ * 온보딩. 디자인 핸드오프 01-onboarding.dc.html #11d·#11e(WP-APP-008~012).
+ * 문구는 `spec/strings.ko.json` `onboarding.*`의 확정 카피다.
+ *
+ * **화면은 디자인이 내려준 값대로만 만든다.** 서버의 필드 모양이나 응답 목록이
+ * 화면의 선택지·입력 방식·문구를 정하지 않는다 — 예산은 시안의 다섯 구간이고,
+ * 지역은 시안의 아홉 칩이다(업체가 있는 시도만 보여주지 않는다). 서버는 화면이
+ * 보내는 값을 받아들이도록 맞춘다(`packages/domain` budget-bracket · wedding-region).
  *
  * 받는 것은 **예식일 · 지역 · 총예산 · 분위기** 넷이다. 이름은 받지 않는다 —
- * v3.10이 닉네임을 최초 필수입력에서 뺐다. 총예산은 선택이고 비워둘 수 있다.
- *
- * **한 화면에 하나씩 묻는다.** 넷을 한 장에 몰아넣으면 첫 화면이 설문지처럼 보이고,
- * 그때 사람들은 답을 고르는 대신 창을 닫는다. 남은 단계를 위에 표시하는 이유도
- * 같다 — 끝이 보이지 않는 질문은 두 번째에서 끊긴다.
+ * v3.10이 닉네임을 최초 필수입력에서 뺐다. 한 화면에 하나씩 묻는다 — 넷을 한
+ * 장에 몰아넣으면 첫 화면이 설문지처럼 보이고, 그때 사람들은 창을 닫는다.
  *
  * 2026-09-04 정책 변경(비회원 진입 삭제)으로 이 화면은 **로그인 뒤**에 온다.
  * 그래도 기기에 적어두는 경로를 남겨둔다 — 토큰이 없는 상태로 여기에 닿으면
  * 값을 잃는 대신 적어두고 다음 로그인에 올린다.
  *
- * 예산을 구간이 아니라 금액으로 받는 이유: 계약의 `budgetAmount`가 단일 정수다
- * (`packages/api-contract/src/weddings.ts`). 구간을 숫자로 바꿔 저장하면 사용자가
- * 말한 적 없는 금액을 만들어내게 되고, 그 값이 나중에 화면에 그대로 나온다.
+ * 시안과 다른 값은 토큰이 이기는 곳뿐이다: CTA·입력칸 높이 52(size.ctaPrimary ·
+ * size.field, 시안 56) · 칩 높이 36(size.chip, 시안 40) · 상단 바 좌우 24(gutter,
+ * 시안 좌 12). 예산 제목의 «어느 정도»는 §3 금지어라 «얼마나»로 적는다.
  */
 export default function SetupScreen() {
   const theme = useTheme();
@@ -54,9 +80,8 @@ export default function SetupScreen() {
   const [step, setStep] = useState(1);
   const [date, setDate] = useState<string | null>(null);
   const [region, setRegion] = useState<string | null>(null);
-  const [regions, setRegions] = useState<string[] | null>(isServerConfigured ? null : []);
-  /** 예산 입력 칸. 빈 칸은 "안 적음"이고, 그것은 `아직 모르겠어요`와 같은 뜻이다. */
-  const [budget, setBudget] = useState('');
+  /** 다섯 구간 중 하나. `아직 모르겠어요`도 고른 것이다 — 안 고른 것(null)과 다르다. */
+  const [bracket, setBracket] = useState<WeddingBudgetBracket | null>(null);
   const [tastes, setTastes] = useState<Taste[]>([]);
   const [name, setName] = useState<string | null>(null);
   /**
@@ -85,28 +110,17 @@ export default function SetupScreen() {
         setAskBirth(!state.activated && !state.birthDateVerified);
       })
       .catch(() => undefined);
-
-    /*
-     * 지역 목록은 업체가 실제로 있는 시도만 내려온다. 업체가 아직 없거나 API가
-     * 닿지 않으면 빈 목록으로 두고 화면이 그 사실을 말한다.
-     */
-    void listVendorRegions()
-      .then((response) => setRegions(response.regions.map((item) => item.name)))
-      .catch(() => setRegions([]));
   }, []);
 
-  const budgetAmount = budget.trim() === '' ? null : Number(budget.replace(/,/g, '')) * MANWON;
-  const budgetValid = budgetAmount === null || (Number.isInteger(budgetAmount) && budgetAmount > 0);
-
-  /** 이 단계를 넘어갈 수 있는가. 예산은 비워도 넘어간다 — 정책이 선택이라고 정했다. */
   const birthOk = !askBirth || /^\d{4}-\d{2}-\d{2}$/.test(birth);
+  /** 이 단계를 넘어갈 수 있는가. 예산은 `아직 모르겠어요`가 있어 비워둘 이유가 없다. */
   const canAdvance =
     step === 1
       ? date !== null && birthOk
       : step === 2
         ? region !== null
         : step === 3
-          ? budgetValid
+          ? bracket !== null
           : tastes.length > 0;
 
   function toggleTaste(taste: Taste) {
@@ -122,7 +136,7 @@ export default function SetupScreen() {
     setError(null);
 
     try {
-      const draft = { weddingDate: date, region, budgetAmount };
+      const draft = { weddingDate: date, region, budgetBracket: bracket };
 
       if (isServerConfigured && (await loadToken())) {
         /*
@@ -162,27 +176,36 @@ export default function SetupScreen() {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
-          <ScrollView contentContainerStyle={styles.content}>
-            <ThemedView style={[styles.doneMark, { backgroundColor: theme.tint }]} />
+          <ScrollView contentContainerStyle={styles.doneContent}>
+            <DoneMark />
 
             <ThemedView style={styles.headline}>
               <ThemedText type="t2">준비 끝났어요</ThemedText>
               <ThemedText type="t2">{name ? `${name}님 웨딩을 시작해요` : '웨딩을 시작해요'}</ThemedText>
             </ThemedView>
 
-            <ThemedView style={styles.summary}>
-              <SummaryRow label="예식일" value={formatWeddingDate(date ?? '')} />
+            <ThemedView style={[styles.summary, { backgroundColor: theme.backgroundElement }]}>
+              <SummaryRow label="예식일" value={formatWeddingDateLong(date ?? '')} />
               <SummaryRow label="지역" value={region ?? ''} />
+              <SummaryRow label="총예산" value={BUDGET_BRACKET_LABEL[bracket ?? 'unknown']} />
               <SummaryRow
-                label="총예산"
-                value={budgetAmount === null ? '아직 모르겠어요' : manwon(budgetAmount)}
+                label="취향"
+                value={
+                  tastes.length === 0
+                    ? '고르지 않았어요'
+                    : tastes.map((taste) => TASTE_SHORT_LABEL[taste]).join(' · ')
+                }
               />
-              <SummaryRow label="분위기" value={`${tastes.length}개 골랐어요`} />
             </ThemedView>
           </ScrollView>
 
           <ThemedView style={styles.footer}>
-            <ActionButton variant="primary" label="홈으로 가기" onPress={() => router.replace('/')} />
+            <ActionButton
+              variant="primary"
+              size="xlarge"
+              label="홈으로 가기"
+              onPress={() => router.replace('/')}
+            />
           </ThemedView>
         </SafeAreaView>
       </ThemedView>
@@ -192,19 +215,28 @@ export default function SetupScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.navBar}>
-          <OnboardingProgress step={step} total={STEPS} />
-        </ThemedView>
+        <OnboardingProgress
+          step={step}
+          total={STEPS}
+          onBack={
+            step > 1
+              ? () => {
+                  setError(null);
+                  setStep(step - 1);
+                }
+              : undefined
+          }
+        />
 
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView contentContainerStyle={[styles.content, step === 4 && styles.contentTaste]}>
           {step === 1 ? (
             <>
               <ThemedView style={styles.headline}>
                 <ThemedText type="t2">예식일이 언제인가요?</ThemedText>
+                <ThemedText type="body" themeColor="textSecondary">
+                  남은 기간에 맞춰 준비 순서를 잡아드려요
+                </ThemedText>
               </ThemedView>
-              <ThemedText type="t6" themeColor="textSecondary">
-                남은 기간에 맞춰 준비 순서를 잡아드려요
-              </ThemedText>
 
               <Pressable
                 accessibilityRole="button"
@@ -212,22 +244,25 @@ export default function SetupScreen() {
                 onPress={() => {
                   setPending(date);
                   setCalendarOpen(true);
-                }}>
-                <ThemedView style={[styles.dateCard, { backgroundColor: theme.backgroundSelected }]}>
-                  <ThemedText type="t6" themeColor={date ? 'text' : 'textAssistive'}>
-                    {date ? formatWeddingDate(date) : '예식일을 선택해주세요'}
-                  </ThemedText>
-                </ThemedView>
+                }}
+                style={[
+                  styles.field,
+                  {
+                    backgroundColor: theme.background,
+                    borderColor: date ? theme.tint : theme.fieldBorder,
+                  },
+                ]}>
+                <ThemedText
+                  type="t5"
+                  numeric
+                  themeColor={date ? 'text' : 'textAssistive'}
+                  style={date ? undefined : styles.regular}>
+                  {date ? formatWeddingDateLong(date) : '예식일을 선택해주세요'}
+                </ThemedText>
               </Pressable>
 
-              {date ? (
-                <ThemedText type="t7" themeColor="tint">
-                  {dDay(date).text}
-                </ThemedText>
-              ) : null}
-
               {askBirth ? (
-                <ThemedView style={styles.field}>
+                <ThemedView style={styles.labeled}>
                   <ThemedText type="t6">생년월일</ThemedText>
                   <TextInput
                     value={birth}
@@ -237,7 +272,14 @@ export default function SetupScreen() {
                     keyboardType="numbers-and-punctuation"
                     maxLength={10}
                     accessibilityLabel="생년월일"
-                    style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundSelected }]}
+                    style={[
+                      styles.field,
+                      {
+                        color: theme.text,
+                        backgroundColor: theme.background,
+                        borderColor: birthOk && birth ? theme.tint : theme.fieldBorder,
+                      },
+                    ]}
                   />
                   <ThemedText type="t7" themeColor="textAssistive">
                     {`만 ${MINIMUM_AGE}세부터 이용할 수 있어요. 나이를 확인하는 데만 써요`}
@@ -251,31 +293,21 @@ export default function SetupScreen() {
             <>
               <ThemedView style={styles.headline}>
                 <ThemedText type="t2">어디에서 하시나요?</ThemedText>
+                <ThemedText type="body" themeColor="textSecondary">
+                  그 지역의 확인된 정보로 맞춰드려요
+                </ThemedText>
               </ThemedView>
-              <ThemedText type="t6" themeColor="textSecondary">
-                그 지역의 확인된 정보로 맞춰드려요
-              </ThemedText>
 
-              {regions === null ? (
-                <ThemedText type="t7" themeColor="textAssistive">
-                  지역을 불러오는 중이에요
-                </ThemedText>
-              ) : regions.length === 0 ? (
-                <ThemedText type="t7" themeColor="textAssistive">
-                  지금은 지역을 불러올 수 없어요
-                </ThemedText>
-              ) : (
-                <ThemedView style={styles.chips}>
-                  {regions.map((item) => (
-                    <FilterChip
-                      key={item}
-                      label={item}
-                      selected={region === item}
-                      onPress={() => setRegion(region === item ? null : item)}
-                    />
-                  ))}
-                </ThemedView>
-              )}
+              <ThemedView style={styles.chips}>
+                {WEDDING_REGIONS.map((item) => (
+                  <RegionChip
+                    key={item}
+                    label={item}
+                    selected={region === item}
+                    onPress={() => setRegion(item)}
+                  />
+                ))}
+              </ThemedView>
             </>
           ) : null}
 
@@ -284,32 +316,21 @@ export default function SetupScreen() {
               <ThemedView style={styles.headline}>
                 <ThemedText type="t2">예산은 얼마나</ThemedText>
                 <ThemedText type="t2">생각하고 계세요?</ThemedText>
+                <ThemedText type="body" themeColor="textSecondary">
+                  나중에 바꿀 수 있어요
+                </ThemedText>
               </ThemedView>
-              <ThemedText type="t6" themeColor="textSecondary">
-                나중에 바꿀 수 있어요
-              </ThemedText>
 
-              <TextInput
-                style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundSelected }]}
-                value={budget}
-                onChangeText={(text) =>
-                  setBudget(
-                    text.replace(/[^0-9]/g, '').slice(0, 9).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-                  )
-                }
-                keyboardType="number-pad"
-                placeholder="예: 5000"
-                placeholderTextColor={theme.textAssistive}
-                accessibilityLabel="총예산 만원"
-                maxLength={11}
-              />
-              <ThemedText type="t7" themeColor={budgetValid ? 'textAssistive' : 'negative'}>
-                {budgetAmount === null
-                  ? '만원 단위로 적어요. 아직 모르겠으면 비워둬도 돼요'
-                  : budgetValid
-                    ? manwon(budgetAmount)
-                    : '1만원부터 적을 수 있어요. 아직 모르겠으면 비워둬도 돼요'}
-              </ThemedText>
+              <ThemedView style={styles.list}>
+                {WEDDING_BUDGET_BRACKETS.map((option) => (
+                  <BudgetRow
+                    key={option}
+                    bracket={option}
+                    selected={bracket === option}
+                    onPress={() => setBracket(option)}
+                  />
+                ))}
+              </ThemedView>
             </>
           ) : null}
 
@@ -318,18 +339,14 @@ export default function SetupScreen() {
               <ThemedView style={styles.headline}>
                 <ThemedText type="t2">마음에 드는 분위기를</ThemedText>
                 <ThemedText type="t2">골라주세요</ThemedText>
+                <ThemedText type="body" themeColor="textSecondary">
+                  고른 사진으로 추천을 맞춰드려요
+                </ThemedText>
               </ThemedView>
-              <ThemedText type="t6" themeColor="textSecondary">
-                고른 사진으로 추천을 맞춰드려요
-              </ThemedText>
 
               <TastePicker chosen={tastes} onToggle={toggleTaste} />
             </>
           ) : null}
-
-          <ThemedText type="t7" themeColor="textAssistive">
-            입력한 정보는 언제든 설정에서 바꿀 수 있어요
-          </ThemedText>
 
           {error ? (
             <ThemedText type="t7" themeColor="negative">
@@ -341,19 +358,31 @@ export default function SetupScreen() {
         <ThemedView style={styles.footer}>
           <ActionButton
             variant="primary"
-            label={
-              step < STEPS ? '다음' : sending ? '저장하는 중…' : `${tastes.length}개 고르고 시작하기`
-            }
+            size="xlarge"
+            label={step < STEPS ? '다음' : `${tastes.length}개 고르고 시작하기`}
             disabled={!canAdvance || sending}
             onPress={() => (step < STEPS ? setStep(step + 1) : void finish())}
           />
+          {step === STEPS ? (
+            /* 취향은 건너뛸 수 있다. 못 고른 것은 MY에서 다시 고를 수 있다. */
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="건너뛰기"
+              disabled={sending}
+              onPress={() => void finish()}
+              style={styles.skip}>
+              <ThemedText type="t7" themeColor="textAssistive" style={styles.bold}>
+                건너뛰기
+              </ThemedText>
+            </Pressable>
+          ) : null}
         </ThemedView>
       </SafeAreaView>
 
       <Modal visible={calendarOpen} transparent animationType="slide">
         <ThemedView style={[styles.scrim, { backgroundColor: theme.scrim }]}>
           <ThemedView style={styles.sheet}>
-            <ThemedText type="t4">예식일 선택</ThemedText>
+            <ThemedText type="t3">예식일 선택</ThemedText>
             <ThemedText type="t7" themeColor="textSecondary">
               {pending ? dDay(pending).text : WEDDING_DATE_HINT}
             </ThemedText>
@@ -364,7 +393,7 @@ export default function SetupScreen() {
               <ActionButton label="취소" onPress={() => setCalendarOpen(false)} />
               <ActionButton
                 variant="primary"
-                label="선택 완료"
+                label="완료"
                 disabled={pending === null}
                 onPress={() => {
                   setDate(pending);
@@ -379,36 +408,197 @@ export default function SetupScreen() {
   );
 }
 
+/**
+ * 지역 칩. 시안 #11d chip() — 채움형, 16px 700, 미선택 gray100/ink2, 선택 코랄/흰색.
+ * 높이만 시안 40이 아니라 토큰 size.chip 36이다.
+ */
+function RegionChip({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityState={{ selected }}
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={[styles.chip, { backgroundColor: selected ? theme.tint : theme.backgroundSelected }]}>
+      <ThemedText type="t6" themeColor={selected ? 'onTint' : 'textStrong'} style={styles.bold}>
+        {label}
+      </ThemedText>
+    </Pressable>
+  );
+}
+
+/**
+ * 예산 구간 한 줄. #11e — 왼쪽 라벨, 오른쪽 24px 동그라미 표시, 아래 1px 구분선.
+ *
+ * `아직 모르겠어요`만 늘 옅다(textAssistive). 나머지는 고르면 굵어진다.
+ */
+function BudgetRow({
+  bracket,
+  selected,
+  onPress,
+}: {
+  bracket: WeddingBudgetBracket;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+  const label = BUDGET_BRACKET_LABEL[bracket];
+
+  return (
+    <Pressable
+      accessibilityRole="radio"
+      accessibilityState={{ selected }}
+      accessibilityLabel={label}
+      onPress={onPress}>
+      <View style={styles.row}>
+        <ThemedText
+          type="t5"
+          themeColor={bracket === 'unknown' ? 'textAssistive' : 'text'}
+          style={selected ? undefined : styles.regular}>
+          {label}
+        </ThemedText>
+        <View
+          style={[
+            styles.mark,
+            selected
+              ? { backgroundColor: theme.tint }
+              : { borderWidth: 1.5, borderColor: theme.track },
+          ]}>
+          {selected ? (
+            <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="m5 12.5 4.5 4.5L19 7.5"
+                stroke={theme.onTint}
+                strokeWidth={3.4}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
+          ) : null}
+        </View>
+      </View>
+      <View style={[styles.divider, { backgroundColor: theme.border }]} />
+    </Pressable>
+  );
+}
+
+/** 완료 화면 체크 원. 진입할 때 한 번 튄다 — spec/tokens.json motion.checkPop. */
+function DoneMark() {
+  const theme = useTheme();
+  const scale = useMemo(() => new Animated.Value(0), []);
+
+  useEffect(() => {
+    Animated.timing(scale, {
+      toValue: 1,
+      duration: Motion.checkPop.duration,
+      easing: Easing.bezier(...Motion.checkPop.bezier),
+      useNativeDriver: true,
+    }).start();
+  }, [scale]);
+
+  return (
+    <Animated.View
+      style={[styles.doneMark, { backgroundColor: theme.tint, transform: [{ scale }] }]}>
+      <Svg width={32} height={32} viewBox="0 0 24 24" fill="none">
+        <Path
+          d="m5 12.5 4.5 4.5L19 7.5"
+          stroke={theme.onTint}
+          strokeWidth={2.8}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </Svg>
+    </Animated.View>
+  );
+}
+
 function SummaryRow({ label, value }: { label: string; value: string }) {
   return (
     <ThemedView style={styles.summaryRow}>
-      <ThemedText type="t7" themeColor="textSecondary">
+      <ThemedText type="t6" themeColor="textSecondary">
         {label}
       </ThemedText>
-      <ThemedText type="t6">{value}</ThemedText>
+      <ThemedText type="t6" numeric numberOfLines={1} style={[styles.bold, styles.summaryValue]}>
+        {value}
+      </ThemedText>
     </ThemedView>
   );
 }
+
 const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
-  navBar: { height: Layout.navBar },
-  content: { paddingHorizontal: Layout.gutter, gap: Spacing.three, paddingBottom: Spacing.four },
-  headline: { gap: 0 },
-  field: { gap: Spacing.one },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one },
-  input: {
-    height: Layout.rowMinHeight,
-    borderRadius: Radius.input,
-    paddingHorizontal: Spacing.three,
+
+  /* 시안 #11d·#11e: padding 12 24 0 · 블록 사이 24. 아래 여백은 footer가 맡는다. */
+  content: {
+    paddingTop: Layout.rowPaddingY,
+    paddingHorizontal: Layout.gutter,
+    gap: Spacing.four,
   },
-  dateCard: {
-    height: Layout.rowMinHeight,
+  /* 4/4만 제목 블록과 격자 사이가 20이다(#11e). */
+  contentTaste: { gap: Layout.gapHeadlineGrid },
+  /* 제목과 서브카피 사이 8. */
+  headline: { gap: Spacing.two },
+  labeled: { gap: Spacing.two },
+
+  /* 입력칸. 토큰 size.field 52 · radius.control 6 · 테두리 1.5. */
+  field: {
+    height: Layout.field,
     borderRadius: Radius.input,
+    borderWidth: 1.5,
     paddingHorizontal: Spacing.three,
     justifyContent: 'center',
   },
-  footer: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four },
+  regular: { fontWeight: 400 },
+  bold: { fontWeight: 700 },
+
+  /* 칩 사이 8 — spacing.gapChip. 칩은 토큰 size.chip 36 · 좌우 16 · pill. */
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  chip: {
+    height: Layout.chip,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  /* 목록. 행 사이 2 · 행 최소 56 · 상하 12 · 아래 1px 선. */
+  list: { gap: Spacing.half },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: Layout.rowMinHeight,
+    paddingVertical: Layout.rowPaddingY,
+  },
+  mark: {
+    width: Spacing.four,
+    height: Spacing.four,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  divider: { height: 1 },
+
+  /* 하단 CTA. 시안 고정 108 = 24 + CTA 52 + 32(padding 0 24 32). */
+  footer: {
+    paddingHorizontal: Layout.gutter,
+    paddingTop: Spacing.four,
+    paddingBottom: Spacing.five,
+  },
+  /* 터치 영역 44 안에 14/19 글자를 가운데 두면 CTA와의 간격이 시안의 12가 된다. */
+  skip: { minHeight: Layout.touchTarget, alignItems: 'center', justifyContent: 'center' },
+
   scrim: { flex: 1, justifyContent: 'flex-end' },
   sheet: {
     borderTopLeftRadius: Radius.sheet,
@@ -418,8 +608,31 @@ const styles = StyleSheet.create({
   },
   sheetActions: { flexDirection: 'row', gap: Spacing.two, justifyContent: 'flex-end' },
 
-  /* 완료 화면. 체크 원 하나로 끝났다는 것만 말하고 축하 장식은 두지 않는다. */
-  doneMark: { width: 48, height: 48, borderRadius: Radius.pill },
-  summary: { gap: Spacing.three },
-  summaryRow: { gap: Spacing.one },
+  /* 완료 화면. 시안 #11e 셋째 — 상단 56(내비게이션 바 자리) · 블록 사이 28. */
+  doneContent: {
+    paddingTop: Layout.navBar,
+    paddingHorizontal: Layout.gutter,
+    gap: Layout.sectionGap,
+  },
+  doneMark: {
+    width: Spacing.six,
+    height: Spacing.six,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  /* 요약 카드. radius.card 10 · 안쪽 20 · 행 사이 2 · 행 상하 9. */
+  summary: {
+    borderRadius: Radius.medium,
+    padding: Layout.cardPadding,
+    gap: Spacing.half,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.three,
+    paddingVertical: Layout.summaryRowPaddingY,
+  },
+  summaryValue: { flexShrink: 1, textAlign: 'right' },
 });
