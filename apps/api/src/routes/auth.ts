@@ -119,8 +119,11 @@ export function registerAuthRoutes(
       } else {
         throw new Error('로그인 제공자와 인증 방식이 맞지 않는다.');
       }
-    } catch {
-      // 검증 실패 이유를 그대로 내려주면 토큰을 맞춰보는 데 쓰인다.
+    } catch (caught) {
+      // 이유는 서버 로그에만 남긴다. 그대로 내려주면 토큰을 맞춰보는 데 쓰인다.
+      // 로그가 없으면 제공자 설정이 틀렸을 때 아무도 원인을 볼 수 없다 —
+      // 실제로 카카오 로그인이 막혔을 때 서버에도 클라이언트에도 단서가 없었다.
+      request.log.warn({ err: caught, provider: body.provider }, '로그인 검증 실패');
       throw new ApiError('unauthenticated', '로그인 정보를 확인하지 못했습니다.');
     }
 
