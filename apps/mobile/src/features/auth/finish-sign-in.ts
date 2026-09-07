@@ -35,5 +35,20 @@ export async function finishSignIn(identity: { provider: RememberedAccount['prov
     email: identity.email,
     weddingDate: me?.weddingDate ?? null,
   });
-  router.replace(me?.setupComplete || after.savedWedding ? '/(tabs)' : '/setup');
+  router.replace(nextAfterSignIn({ setupComplete: me?.setupComplete, savedWedding: after.savedWedding }));
+}
+
+/**
+ * 로그인·가입을 마친 뒤 어디로 가는가.
+ *
+ * **한 곳에만 적는다.** 로그인 경로와 가입 마무리 경로가 각자 적어두는 바람에
+ * `signup.tsx`가 `'/'`로 굳어 온보딩(`/setup`)을 통째로 건너뛰고 있었다 —
+ * 예식일·지역·예산·분위기를 한 번도 묻지 않고 홈에 도착했다. 같은 결정을 두 곳에
+ * 적으면 한쪽만 고쳐지는 날이 온다.
+ */
+export function nextAfterSignIn(state: {
+  setupComplete?: boolean;
+  savedWedding?: boolean;
+}): '/(tabs)' | '/setup' {
+  return state.setupComplete || state.savedWedding ? '/(tabs)' : '/setup';
 }
