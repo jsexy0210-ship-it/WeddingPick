@@ -489,7 +489,7 @@
     "auth.login.email": "이메일로 시작하기",
     "auth.login.terms": "시작하면 {terms}과 {privacy}에 동의하게 돼요",
     "auth.login.termsLabel": "이용약관",
-    "auth.login.privacyLabel": "개인정보 처리방침",
+    "auth.login.privacyLabel": "개인정보처리방침",
     "auth.email.title": "이메일을\n알려주세요",
     "auth.email.label": "이메일",
     "auth.email.invalid": "이메일 주소를 다시 확인해주세요",

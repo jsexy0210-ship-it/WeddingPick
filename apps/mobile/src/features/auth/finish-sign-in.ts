@@ -23,9 +23,10 @@ export async function finishSignIn(identity: { provider: RememberedAccount['prov
       weddingDate: null,
     });
     /*
-     * 별도의 «가입 마무리» 화면은 없다. 동의는 로그인 화면의 CTA에 붙은 안내
-     * («시작하면 이용약관과 개인정보 처리방침에 동의하게 돼요»)로 받고, 연령 확인은
-     * 온보딩 1/4에서 함께 한다. 온보딩이 그 둘을 서버에 올린다(`/setup`).
+     * 별도의 «가입 마무리» 화면은 없다. 만 14세 확인은 로그인 화면의 체크박스로
+     * 이미 끝났고(v3.13 §3.5), 동의는 그 화면 CTA에 붙은 안내(«시작하면
+     * 이용약관과 개인정보처리방침에 동의하게 돼요»)로 받는다. 온보딩(`/setup`)이
+     * 둘 다 서버에 올린다.
      */
     router.replace('/setup');
 

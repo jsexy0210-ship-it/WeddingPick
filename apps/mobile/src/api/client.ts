@@ -379,11 +379,11 @@ export async function getSignupState() {
 }
 
 /**
- * 연령 확인과 필수 동의.
- *
- * 소셜 제공 생년월일이 없을 때만 `birthDate`를 보내며 서버는 나이만 세고 버린다.
+ * 만 14세 확인과 필수 동의로 가입을 마무리한다. 통합정책 v3.13 §3.5 —
+ * `ageVerified`는 로그인 화면(WP-AUTH-001)의 체크박스 값이다. 생년월일은
+ * 받지 않는다.
  */
-export async function completeSignup(input: { birthDate?: string; consents: string[] }) {
+export async function completeSignup(input: { ageVerified: boolean; consents: string[] }) {
   return request('/v1/me/signup', signupStateSchema, {
     method: 'POST',
     body: JSON.stringify(input),

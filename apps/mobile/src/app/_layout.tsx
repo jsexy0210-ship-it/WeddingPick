@@ -142,10 +142,10 @@ function RootLayoutContent() {
       const signup = await getSignupState().catch(() => null);
 
       /*
-       * 예전에는 여기서 별도 «가입 마무리» 화면으로 보냈다. 그 화면이 하던
-       * 일(동의 기록·연령 확인)은 온보딩 1/4로 옮겼다 — 여기서 옛 화면으로
-       * 계속 보내면 옮긴 게 소용없다. finish-sign-in.ts의 같은 판단과
-       * 다르지 않게 둔다.
+       * 예전에는 여기서 별도 «가입 마무리» 화면으로 보냈다. 만 14세 확인은
+       * 로그인 화면 체크박스로 옮겼고(v3.13), 동의 기록은 온보딩(`/setup`)이
+       * 마친다 — 여기서 옛 화면으로 계속 보내면 옮긴 게 소용없다.
+       * finish-sign-in.ts의 같은 판단과 다르지 않게 둔다.
        */
       if (signup && !signup.activated) {
         setEntry('setup');

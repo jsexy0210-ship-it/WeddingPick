@@ -14,7 +14,7 @@ import {
 } from '@weddingpick/ui';
 
 /**
- * 개인정보 처리방침 뷰어.
+ * 개인정보처리방침 뷰어.
  * 법률 자문 후 확정본을 채운다. 지금은 섹션 뼈대와 상태만 둔다.
  * 각 섹션은 탭으로 펼치고 접을 수 있다.
  */
@@ -100,7 +100,7 @@ export default function PrivacyScreen() {
         <ScrollView contentContainerStyle={styles.content}>
           {/* 헤더 */}
           <ThemedView style={styles.header}>
-            <ThemedText type="t2">개인정보 처리방침</ThemedText>
+            <ThemedText type="t2">개인정보처리방침</ThemedText>
             <ThemedText type="t7" themeColor="textAssistive">
               마지막 업데이트 {LAST_UPDATED}
             </ThemedText>

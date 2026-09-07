@@ -6,15 +6,17 @@ import { ActionButton, Layout, Radius, Spacing, ThemedText, ThemedView, useTheme
 export type LoginFailureSheetProps = {
   visible: boolean;
   onRetry: () => void;
-  onUseEmail: () => void;
   onDismiss: () => void;
 };
 
 /**
  * 카카오 로그인 실패. `useSignIn`이 에러를 잡으면 화면 밑에 문구를 깔지
  * 않고 이 시트로 띄운다 — 규칙: "무엇이 잘못됐는지 대신 무엇을 하면 되는지
- * 적는다." v3.12부터 카카오 대신 고를 다른 소셜 제공자가 없어서, 대안은
- * 이메일 로그인으로 안내한다.
+ * 적는다."
+ *
+ * v3.13부터 초기 버전은 카카오만 쓴다 — 이메일 로그인을 대안으로 안내하지
+ * 않는다("어느 화면에서도 연결하지 않는다"). 카카오 말고는 고를 다른
+ * 방법이 없으므로 "다시 시도"만 남긴다.
  *
  * 디자인 핸드오프는 취소·네트워크·계정 오류 3개 state를 구분하지만, 지금
  * `useSignIn`의 에러는 카카오 SDK/API가 던진 원문 메시지 하나뿐이라 셋을
@@ -22,12 +24,7 @@ export type LoginFailureSheetProps = {
  * 공통 문구 하나로 시작한다. 구분하려면 `signInWithKakao`가 실패 종류를
  * 값으로 반환하도록 먼저 바꿔야 한다.
  */
-export function LoginFailureSheet({
-  visible,
-  onRetry,
-  onUseEmail,
-  onDismiss,
-}: LoginFailureSheetProps) {
+export function LoginFailureSheet({ visible, onRetry, onDismiss }: LoginFailureSheetProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -45,13 +42,12 @@ export function LoginFailureSheet({
           <ThemedView style={styles.headline}>
             <ThemedText type="t4">잠시 후 다시 해볼까요?</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              로그인을 마치지 못했어요.{'\n'}다시 시도하거나 이메일로 시작해보세요.
+              로그인을 마치지 못했어요.{'\n'}다시 시도해주세요.
             </ThemedText>
           </ThemedView>
 
           <ThemedView style={styles.actions}>
             <ActionButton variant="primary" size="xlarge" label="다시 시도" onPress={onRetry} />
-            <ActionButton variant="secondary" size="xlarge" label="이메일로 시작하기" onPress={onUseEmail} />
           </ThemedView>
         </ThemedView>
       </View>
