@@ -1,11 +1,11 @@
 import type { Taste } from '@weddingpick/api-contract';
-import { WEDDING_DATE_HINT, dDay, formatWeddingDate, manwon } from '@weddingpick/domain';
+import { MINIMUM_AGE, WEDDING_DATE_HINT, dDay, formatWeddingDate, manwon } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { completeSetup, getCurrentUser, listVendorRegions, updateTaste } from '@/api/client';
+import { completeSetup, completeSignup, getCurrentUser, getSignupState, listVendorRegions, updateTaste } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { loadToken } from '@/api/session';
 import {
@@ -59,6 +59,16 @@ export default function SetupScreen() {
   const [budget, setBudget] = useState('');
   const [tastes, setTastes] = useState<Taste[]>([]);
   const [name, setName] = useState<string | null>(null);
+  /**
+   * 가입이 아직 안 끝난 계정인가, 그리고 생년월일을 물어야 하는가.
+   *
+   * 별도의 «가입 마무리» 화면을 두지 않는다. 동의는 로그인 CTA의 안내로 받고,
+   * 연령 확인은 여기 1/4에서 함께 한다 — 정책 v3.13 §N이 요구하는 두 가지를
+   * 화면을 늘리지 않고 채운다. 소셜 제공자가 생년월일을 확인해 줬으면 묻지 않는다.
+   */
+  const [needsSignup, setNeedsSignup] = useState(false);
+  const [askBirth, setAskBirth] = useState(false);
+  const [birth, setBirth] = useState('');
 
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [pending, setPending] = useState<string | null>(null);
@@ -68,6 +78,13 @@ export default function SetupScreen() {
 
   useEffect(() => {
     if (!isServerConfigured) return;
+
+    void getSignupState()
+      .then((state) => {
+        setNeedsSignup(!state.activated);
+        setAskBirth(!state.activated && !state.birthDateVerified);
+      })
+      .catch(() => undefined);
 
     /*
      * 지역 목록은 업체가 실제로 있는 시도만 내려온다. 업체가 아직 없거나 API가
@@ -82,8 +99,15 @@ export default function SetupScreen() {
   const budgetValid = budgetAmount === null || (Number.isInteger(budgetAmount) && budgetAmount > 0);
 
   /** 이 단계를 넘어갈 수 있는가. 예산은 비워도 넘어간다 — 정책이 선택이라고 정했다. */
+  const birthOk = !askBirth || /^\d{4}-\d{2}-\d{2}$/.test(birth);
   const canAdvance =
-    step === 1 ? date !== null : step === 2 ? region !== null : step === 3 ? budgetValid : tastes.length > 0;
+    step === 1
+      ? date !== null && birthOk
+      : step === 2
+        ? region !== null
+        : step === 3
+          ? budgetValid
+          : tastes.length > 0;
 
   function toggleTaste(taste: Taste) {
     setTastes((current) =>
@@ -101,6 +125,17 @@ export default function SetupScreen() {
       const draft = { weddingDate: date, region, budgetAmount };
 
       if (isServerConfigured && (await loadToken())) {
+        /*
+         * 가입을 먼저 끝낸다. 서버는 살아 있지 않은 계정의 다른 경로를 전부 막으므로
+         * 순서를 바꾸면 예식일 저장이 거절된다. 필수 동의 두 가지는 로그인 CTA의
+         * 안내로 이미 받았고, 여기서 서버에 기록한다.
+         */
+        if (needsSignup) {
+          await completeSignup({
+            birthDate: askBirth ? birth : undefined,
+            consents: ['terms', 'privacy'],
+          });
+        }
         await completeSetup(draft);
         /*
          * 취향은 실패해도 온보딩을 되돌리지 않는다. 예식일과 지역이 올라갔는데
@@ -189,6 +224,25 @@ export default function SetupScreen() {
                 <ThemedText type="t7" themeColor="tint">
                   {dDay(date).text}
                 </ThemedText>
+              ) : null}
+
+              {askBirth ? (
+                <ThemedView style={styles.field}>
+                  <ThemedText type="t6">생년월일</ThemedText>
+                  <TextInput
+                    value={birth}
+                    onChangeText={(text) => setBirth(text.replace(/[^0-9-]/g, '').slice(0, 10))}
+                    placeholder="2000-01-01"
+                    placeholderTextColor={theme.textAssistive}
+                    keyboardType="numbers-and-punctuation"
+                    maxLength={10}
+                    accessibilityLabel="생년월일"
+                    style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundSelected }]}
+                  />
+                  <ThemedText type="t7" themeColor="textAssistive">
+                    {`만 ${MINIMUM_AGE}세부터 이용할 수 있어요. 나이를 확인하는 데만 써요`}
+                  </ThemedText>
+                </ThemedView>
               ) : null}
             </>
           ) : null}

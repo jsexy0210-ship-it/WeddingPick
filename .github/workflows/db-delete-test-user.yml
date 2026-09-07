@@ -1,0 +1,52 @@
+# 테스트 계정 하나를 지운다. 출시 전, 가입·온보딩을 처음부터 다시 밟아보기 위한 도구다.
+#
+# 저장소의 탈퇴 로직을 그대로 쓴다(apps/api/src/scripts/delete-test-user.ts).
+# 한 번에 한 명만 지우고, 여러 명이 걸리면 지우지 않는다.
+name: DB 테스트 계정 삭제
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'list = 누가 있는지만 본다 / delete = 지운다'
+        type: choice
+        default: list
+        options: [list, delete]
+      by:
+        description: '어떤 값으로 찾는가'
+        type: choice
+        default: nickname
+        options: [nickname, email, subject]
+      value:
+        description: '찾을 값 (delete일 때 필수)'
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: 실행
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          STORAGE_DRIVER: local
+          MODE: ${{ github.event.inputs.mode }}
+          BY: ${{ github.event.inputs.by }}
+          VALUE: ${{ github.event.inputs.value }}
+        run: |
+          if [ "$MODE" = "list" ]; then
+            npx tsx apps/api/src/scripts/delete-test-user.ts --list
+          else
+            if [ -z "$VALUE" ]; then echo "::error::delete에는 value가 필요하다."; exit 1; fi
+            npx tsx apps/api/src/scripts/delete-test-user.ts "--$BY=$VALUE"
+          fi

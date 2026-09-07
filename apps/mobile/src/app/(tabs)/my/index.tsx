@@ -36,7 +36,7 @@ const EMPTY: MyData = { me: null, reports: null };
  */
 export default function MyScreen() {
   const theme = useTheme();
-  const { state } = useSession();
+  const { state, signOut } = useSession();
   const [data, setData] = useState<MyData>(EMPTY);
 
   const isSignedIn = state.status === 'signedIn';
@@ -230,7 +230,15 @@ export default function MyScreen() {
             {isSignedIn ? (
               <Pressable
                 accessibilityRole="button"
-                onPress={() => router.push('/my/logout' as never)}>
+                onPress={() => {
+                  /*
+                   * `/my/logout`이라는 화면은 없다. 없는 경로로 밀어 넣던 `as never`가
+                   * 그 사실을 감추고 있었고, 누르면 오류 화면이 떴다. 세션을 끊고
+                   * 로그인 안내로 보낸다 — CLAUDE.md v3.11 «로그아웃·세션 만료는
+                   * 항상 WP-AUTH-001로 보낸다».
+                   */
+                  void signOut().finally(() => router.replace('/login'));
+                }}>
                 <ThemedText type="t6" themeColor="textAssistive">
                   로그아웃
                 </ThemedText>
