@@ -276,7 +276,7 @@ export default function CompareScreen() {
           setLoginTarget(null);
 
           if (result.needsSignup) {
-            router.push('/signup');
+            router.push('/setup');
             return;
           }
 
