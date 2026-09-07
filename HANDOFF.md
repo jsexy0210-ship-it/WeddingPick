@@ -17,6 +17,7 @@
 | C | 서버 오류가 로그에 남지 않음 | ✅ **수정** | `Fastify({ logger: false })` — #100 |
 | D | `/health`가 스키마 상태를 못 봄 | ✅ **수정** | `SELECT 1`만 확인 — 이 브랜치 |
 | E | CORS에 PATCH·관리자 출처 없음 | 🔴 미해결 | 관리자 화면 전체 차단 |
+| H | `public-data.yml`이 step `if`에서 secrets 참조 | ✅ **수정** | #88 병합 (`eff6f59`) — 수집 성공 여부는 별도 관측 필요 |
 | F | `GET /v1/me` → 401 | ⚪ **정상** | A의 후속 증상 |
 | G | `POST /v1/me/signup` → 401 | ⚪ **정상** | 설계대로 (아래) |
 
@@ -219,8 +220,7 @@ A가 풀리면 F·G는 저절로 사라진다. **401부터 고칠 것이 아니�
 1. A·B 원인 확정 → 수정 → 인증 전 구간 재검증
 2. E (CORS: PATCH + 관리자 출처)
 3. P0-3 핵심 여정 검증
-4. #88 병합 (public-data.yml step if의 secrets 참조)
-5. main 보호 규칙 (현재 deletion·non_fast_forward 2개뿐)
+4. main 보호 규칙 (현재 deletion·non_fast_forward 2개뿐)
 ```
 
 기능 추가는 P0-3까지 끝난 뒤에 판단한다.
