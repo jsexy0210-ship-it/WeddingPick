@@ -1,0 +1,131 @@
+{
+  "task": "앱 UI",
+  "status": "running",
+  "updatedAt": "2026-09-07T20:15:00+09:00",
+  "summary": "앱 초기 로딩 최적화: 스플래시 600ms, 홈 중복 회원 조회 제거·병렬화, Pretendard 배포 제거, Render 정적 자산 장기 캐시 설정. 자동 검증 통과, 운영 배포 후 재측정 대기",
+  "completed": [
+    "Expo SDK 57 문서와 모바일 AGENTS, 핸드오프 우선순위 확인",
+    "WP-HOME-001 헤더 검색 진입점 추가, 우측 gutter 24, Hero 상단 16 적용",
+    "WP-HOME-001 우리 준비를 화면 명세의 4칸 세로 스택으로 변경",
+    "WP-HOME-001 오늘의 Pick을 대표 이미지 342×196, 보조 카드 16:11 및 11 간격, 텍스트 영역 92 토큰으로 변경",
+    "검색 결과 업체명·금액 행 줄바꿈 허용 및 메타가 있는 자동완성 행 패딩 14 적용",
+    "픽 업체 목록 메타 행 패딩 14 적용",
+    "홈의 일반 검색 추천을 실제 getTop3 API로 교체하고 reasons[] 표시",
+    "홈 추천 비교 CTA에 실제 업체 IDs 전달",
+    "실제 예식일 D-day와 업종 결정 진행률 표시",
+    "홈 스켈레톤에 safe area·스크롤·세로 스택·대표/보조 이미지 구조 적용",
+    "승인된 대표 이미지의 HTTP(S) URL·출처·contain·초점좌표를 API에서 RN까지 연결",
+    "이미지 로딩 실패 시 기존 기본 배경으로 복귀",
+    "공개 약관 앱 연결: 게시 목록/본문 API, 로딩·오류·미게시 분기, 정적 미승인 개인정보 본문 제거",
+    "WP-HOME-004와 검색 많이 확인된 곳에 승인 이미지 URL·fit·초점·출처 연결 및 메타 줄바꿈",
+    "사용자 확정 HTML03-home #15d/#15e 기준 Hero20px/제목32px, 준비2×2, 추천3열96px, 섹션28/12, CTA52/18px 적용",
+    "WP-APP-002 최소 노출을 실제 모션 종료 시점 600ms로 단축",
+    "루트 인증 회원 정보를 홈에 공유해 중복 /v1/me 제거",
+    "홈 취향·후보·인기·콘텐츠·알림 병렬 로딩 및 TOP3 점진 반영",
+    "시스템 서체 정책에 맞춰 Pretendard와 직접 expo-font 의존성 제거",
+    "Render weddingpick-app-web 정적 사이트와 해시 자산 1년 캐시 설정"
+  ],
+  "findings": [
+    "vendor_images의 approved 대표 사진만 제공. unknown/kogl_type4 제외, 출처 필수 라이선스에 출처가 없으면 제외. storage_key만 있는 사진은 공개 URL 연결 전 null",
+    "검색/일반 업체 요약의 이미지 계약 및 홈 혜택 행 등은 미완료",
+    "검색 업종·정렬·필터 명세와 현행 도메인/API 차이 남음",
+    "네이티브 픽셀·테마·포커스·긴문구·빈데이터 렌더링 미검증",
+    "2026-09-05 사용자 확정: 충돌 시 전달 HTML·PNG 시각 디자인 우선. 이전 JSON 우선 적용 결과를 홈에서 수정함",
+    "운영 API가 무료 Render Web Service이면 15분 유휴 후 콜드 스타트는 코드 변경 뒤에도 남음",
+    "새 정적 산출물은 폰트 0개지만 운영 URL은 배포 전까지 기존 2.96MB Pretendard preload 유지"
+  ],
+  "remaining": [
+    "390×844 네이티브 화면과 디자인 비교 및 오차 수정",
+    "격리된 실제 DB에서 추천 이미지 SQL·권리필터·클라이언트 응답 통합 검증",
+    "이미지 internal storage URL과 검색/상세 계약 통합",
+    "검색·픽 하위 전체 화면 및 홈 혜택 검수",
+    "디자인 HTML/JSON 충돌 확정",
+    "운영 배포 후 Pretendard preload 제거와 immutable 캐시 헤더 확인",
+    "로그인 계정 cold/warm 진입 시간 재측정",
+    "Render API 무료 인스턴스 여부 확인 및 운영 상시 실행 결정",
+    "Expo web 단일 엔트리 Brotli 약 535KB 추가 분할"
+  ],
+  "files": [
+    "apps/mobile/src/app/(tabs)/index.tsx",
+    "apps/mobile/src/app/(tabs)/search/index.tsx",
+    "apps/mobile/src/app/(tabs)/pick/index.tsx",
+    "apps/mobile/src/features/home/board.tsx",
+    "apps/mobile/src/features/home/todays-pick.tsx",
+    "apps/mobile/src/features/home/state.ts",
+    "apps/mobile/src/features/home/category-image.tsx",
+    "apps/mobile/src/features/home/home-skeleton.tsx",
+    "packages/api-contract/src/recommendations.ts",
+    "packages/api-contract/src/recommendation-image.test.ts",
+    "apps/api/src/routes/recommendations.ts",
+    "apps/mobile/src/app/(tabs)/(home)/top3.tsx",
+    "apps/mobile/src/app/_layout.tsx",
+    "apps/mobile/src/features/auth/session-member.tsx",
+    "apps/mobile/src/features/splash/splash-view.tsx",
+    "apps/mobile/package.json",
+    "packages/ui/package.json",
+    "render.yaml",
+    "docs/HANDOFF_2026-09-07.md"
+  ],
+  "tests": [
+    {
+      "detail": "두 workspace TypeScript 검사 통과",
+      "name": "모바일/API typecheck",
+      "status": "passed"
+    },
+    {
+      "detail": "URL·초점좌표·출처·하위호환 3건 통과",
+      "name": "추천 이미지 계약",
+      "status": "passed"
+    },
+    {
+      "detail": "기존 상태/비교/결정/빈후보 14건 통과",
+      "name": "홈 상태",
+      "status": "passed"
+    },
+    {
+      "detail": "DATABASE_URL 미설정, 네이티브 캡처 없음",
+      "name": "실DB 및 네이티브",
+      "status": "not_run"
+    },
+    {
+      "name": "전체 린트",
+      "status": "passed",
+      "detail": "부모 통합검증 결과 오류 0건, 경고 15건. 권한 차단 해소"
+    },
+    {
+      "name": "공개 약관 API",
+      "status": "passed",
+      "detail": "비회원 공개 조회·미게시404·초안 거부 3건 통과"
+    },
+    {
+      "name": "재개 이미지 연결",
+      "status": "passed",
+      "detail": "모바일 typecheck 및 추천 이미지 계약 3건 통과. 실제 이미지 다운로드/네이티브 픽셀 비교 미수행"
+    },
+    {
+      "name": "재개 변경파일 린트",
+      "status": "blocked",
+      "detail": "하위 에이전트 샌드박스에서 상위 폴더 EPERM 재발, 부모 통합 린트 요청"
+    },
+    {
+      "name": "HTML 홈 적용 타입검사",
+      "status": "passed",
+      "detail": "mobile typecheck 통과. 실제 동일상태 캡처 비교 전 시각검수 미완료"
+    },
+    {
+      "name": "2026-09-07 초기 로딩 회귀",
+      "status": "passed",
+      "detail": "mobile typecheck, Jest 17 suites/86 tests, Expo web export 198 routes 통과; ESLint 오류 0개·기존 경고 19개"
+    },
+    {
+      "name": "2026-09-07 웹 폰트 산출물",
+      "status": "passed",
+      "detail": "폰트 파일 0개, Pretendard/preload 참조 0개; 엔트리 원본 2,959,516B/gzip 704,190B/Brotli 536,531B"
+    },
+    {
+      "name": "운영 성능 재측정",
+      "status": "not_run",
+      "detail": "배포 전이므로 운영 캐시 헤더, 로그인 cold/warm, Render API 콜드 스타트 개선은 미검증"
+    }
+  ]
+}

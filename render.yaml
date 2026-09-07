@@ -9,6 +9,24 @@
 # 여기는 서비스의 생김새(빌드 명령·퍼블리시 경로·routes)를 적어두는 용도로 남긴다.
 
 services:
+  # 하이브리드 앱 WebView가 읽는 Expo 정적 웹
+  - type: web
+    name: weddingpick-app-web
+    runtime: static
+    staticPublishPath: ./apps/mobile/dist
+    autoDeploy: true
+    buildCommand: npm run export:web --workspace @weddingpick/mobile
+    envVars:
+      - key: EXPO_PUBLIC_API_URL
+        value: https://weddingpickl.onrender.com
+    headers:
+      - path: /_expo/static/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+
   # 웹 앱 (정적 사이트)
   - type: web
     name: weddingpick-web
