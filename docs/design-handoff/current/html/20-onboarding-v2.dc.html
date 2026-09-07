@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-static.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-scale.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-semantic.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/typography.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/dimension.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/motion.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/base.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/core/core.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/buttons/buttons.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/forms/forms.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/display/display.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/styles.css">
+<script src="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/_ds_bundle.js"></script>
+<script src="./image-slot.js"></script>
+<style>
+body{margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#ff6f61;text-decoration:none}
+a:hover{color:#e2564a}
+.nsb::-webkit-scrollbar{display:none}
+image-slot{background:#eaebee}
+image-slot::part(empty){display:none !important}
+@keyframes wpRise{0%{transform:translateY(12px);opacity:0}100%{transform:translateY(0);opacity:1}}
+@keyframes wpCheck{0%{transform:scale(0)}60%{transform:scale(1.18)}100%{transform:scale(1)}}
+</style>
+</helmet>
+
+<section style="{{ rootStyle }}">
+
+<div style="display:flex;flex-direction:column;gap:12px;max-width:1180px;padding-bottom:8px">
+  <span style="{{ eyebrowTop }}">WeddingPick · WP-APP-008 개편</span>
+  <span style="font-size:40px;line-height:52px;font-weight:700;color:#212124">초기 설정 · 한 화면</span>
+  <span style="font-size:18px;line-height:26px;color:#393a40;text-wrap:pretty">예식일 · 지역 · 예산을 한 화면에서 이어서 묻습니다. 고르면 다음 질문이 아래에 열리고 끝난 질문은 접혀서 답만 남습니다. 취향 이미지는 성격이 달라 별도 화면으로 유지하고 건너뛰기를 없앴습니다.</span>
+</div>
+
+<div style="{{ row }}">
+  <sc-for list="{{ steps }}" as="s" hint-placeholder-count="5">
+    <div style="{{ col }}">
+      <div style="{{ tag }}"><span style="{{ s.tagIdStyle }}">{{ s.no }}</span>{{ s.label }}</div>
+      <span style="{{ tagDesc }}">{{ s.desc }}</span>
+
+      <div style="{{ phone }}">
+        <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+
+        <div style="{{ nav }}">
+          <sc-if value="{{ s.hasBack }}" hint-placeholder-val="{{ true }}">
+            <span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span>
+          </sc-if>
+          <div style="{{ trackWrap }}"><div style="{{ s.fillStyle }}"></div></div>
+          <span style="{{ stepNum }}">{{ s.stepLabel }}</span>
+        </div>
+
+        <div class="nsb" style="{{ scroll }}">
+
+          <sc-if value="{{ s.answered }}" hint-placeholder-val="{{ false }}">
+            <div style="{{ answeredWrap }}">
+              <sc-for list="{{ s.answered }}" as="a" hint-placeholder-count="2">
+                <div style="{{ answeredRow }}">
+                  <span style="{{ answeredCheck }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg></span>
+                  <span style="{{ answeredK }}">{{ a.k }}</span>
+                  <span style="{{ answeredV }}">{{ a.v }}</span>
+                  <span style="{{ answeredEdit }}">바꾸기</span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s.q }}">
+            <div style="{{ s.qWrap }}">
+              <span style="{{ h26 }}">{{ s.line1 }}<br>{{ s.line2 }}</span>
+              <sc-if value="{{ s.qSub }}"><span style="{{ qSub }}">{{ s.qSub }}</span></sc-if>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s.dateField }}" hint-placeholder-val="{{ false }}">
+            <div style="{{ padSec }}">
+              <div style="{{ s.dateFieldStyle }}">{{ s.dateField }}</div>
+              <div style="{{ chipRow }}">
+                <sc-for list="{{ s.dateChips }}" as="c" hint-placeholder-count="3"><span style="{{ c.style }}">{{ c.label }}</span></sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s.regionChips }}" hint-placeholder-val="{{ false }}">
+            <div style="{{ padSec }}">
+              <div style="{{ chipWrap }}">
+                <sc-for list="{{ s.regionChips }}" as="c" hint-placeholder-count="9"><span style="{{ c.style }}">{{ c.label }}</span></sc-for>
+              </div>
+              <sc-if value="{{ s.districtRows }}">
+                <div style="{{ rowsWrap }}">
+                  <sc-for list="{{ s.districtRows }}" as="d" hint-placeholder-count="4">
+                    <div>
+                      <div style="{{ pickRow }}">
+                        <span style="flex:1;min-width:0;{{ d.nameStyle }}">{{ d.name }}</span>
+                        <span style="{{ d.mark }}"></span>
+                      </div>
+                      <div style="{{ hr }}"></div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s.budgetRows }}" hint-placeholder-val="{{ false }}">
+            <div style="{{ padSec }}">
+              <div style="{{ rowsWrap }}">
+                <sc-for list="{{ s.budgetRows }}" as="b" hint-placeholder-count="5">
+                  <div>
+                    <div style="{{ pickRow }}">
+                      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                        <span style="{{ b.nameStyle }}">{{ b.name }}</span>
+                        <sc-if value="{{ b.meta }}"><span style="{{ metaSm }}">{{ b.meta }}</span></sc-if>
+                      </div>
+                      <span style="{{ b.mark }}"></span>
+                    </div>
+                    <div style="{{ hr }}"></div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s.taste }}" hint-placeholder-val="{{ false }}">
+            <div style="{{ tasteWrap }}">
+              <sc-for list="{{ s.taste }}" as="t" hint-placeholder-count="6">
+                <div style="{{ tasteCell }}">
+                  <div style="{{ tasteImg }}"><image-slot id="{{ t.slot }}" src="{{ t.src }}" shape="rect" placeholder=""></image-slot></div>
+                  <span style="{{ t.overlay }}">
+                    <span style="{{ t.check }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg></span>
+                    <span style="{{ tasteLabel }}">{{ t.label }}</span>
+                  </span>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s.doneRows }}" hint-placeholder-val="{{ false }}">
+            <div style="{{ padSec }}">
+              <div style="{{ summaryBox }}">
+                <sc-for list="{{ s.doneRows }}" as="d" hint-placeholder-count="4">
+                  <div style="{{ summaryRow }}">
+                    <span style="{{ summaryK }}">{{ d.k }}</span>
+                    <span style="{{ summaryV }}">{{ d.v }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s.note }}">
+            <div style="{{ padSec }}">
+              <div style="{{ noteBox }}">
+                <span style="{{ noteTitle }}">{{ s.noteTitle }}</span>
+                <span style="{{ noteBody }}">{{ s.note }}</span>
+              </div>
+            </div>
+          </sc-if>
+
+          <div style="height:24px;flex-shrink:0"></div>
+        </div>
+
+        <sc-if value="{{ s.cta }}">
+          <div style="{{ dock }}"><button style="{{ s.ctaStyle }}">{{ s.cta }}</button></div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-for>
+</div>
+
+<div style="display:flex;gap:20px;flex-wrap:wrap;max-width:1780px">
+  <sc-for list="{{ rules }}" as="r" hint-placeholder-count="6">
+    <div style="{{ ruleCard }}">
+      <span style="{{ ruleTitle }}">{{ r.t }}</span>
+      <span style="{{ ruleBody }}">{{ r.b }}</span>
+    </div>
+  </sc-for>
+</div>
+
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:2200,&quot;height&quot;:1100}}">
+class Component extends DCLogic {
+  renderVals() {
+    const C = '#ff6f61';
+    const IMG = {
+      couple: 'uploads/samples-1788175716407-57s9.jpg',
+      arch: 'uploads/samples-1788175716396-jydc.jpg',
+      bride: 'uploads/samples-1788175716389-fion.jpg',
+      hall: 'uploads/samples-1788175716419-flvg.jpg',
+      dress: 'uploads/samples-1788175716375-3z0c.jpg',
+      white: 'uploads/깔끔한 화이트.jpg',
+      minimal: 'uploads/모던미니멀.jpg',
+      film: 'uploads/따뜻한 필름.jpg'
+    };
+
+    const chip = on => 'flex:0 0 auto;height:40px;display:flex;align-items:center;padding:0 16px;border-radius:999px;font-size:16px;font-weight:700;cursor:pointer;white-space:nowrap;'
+      + (on ? 'background:' + C + ';color:#fff;' : 'background:#f2f3f6;color:#4d5159;');
+    const mark = on => on
+      ? 'width:24px;height:24px;flex:0 0 24px;border-radius:999px;background:' + C + ';background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'3.4\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpath d=\'m5 12.5 4.5 4.5L19 7.5\'/%3E%3C/svg%3E");background-size:16px;background-position:center;background-repeat:no-repeat'
+      : 'width:24px;height:24px;flex:0 0 24px;border-radius:999px;border:1.5px solid #dcdee3;box-sizing:border-box';
+    const rowName = on => 'font-size:18px;line-height:24px;color:#212124;font-weight:' + (on ? '700' : '400');
+    const tOverlay = on => 'position:absolute;inset:0;border-radius:10px;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;padding:11px;cursor:pointer;background:linear-gradient(to top,rgba(0,0,0,.44),rgba(0,0,0,0) 56%);'
+      + (on ? 'box-shadow:inset 0 0 0 2px ' + C + ',inset 0 0 0 100vmax rgba(255,111,97,.16);' : 'box-shadow:inset 0 0 0 1px rgba(0,27,55,.10);');
+    const tCheck = on => on
+      ? 'position:absolute;top:9px;right:9px;width:24px;height:24px;border-radius:999px;background:' + C + ';display:flex;align-items:center;justify-content:center'
+      : 'position:absolute;top:9px;right:9px;width:24px;height:24px;border-radius:999px;background:rgba(255,255,255,.26);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center';
+
+    const st = (o) => ({
+      no: o.no, label: o.label, desc: o.desc,
+      tagIdStyle: 'width:26px;height:26px;flex:0 0 26px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;'
+        + (o.brand ? 'background:' + C + ';color:#fff;' : 'background:#212124;color:#fff;'),
+      hasBack: o.back !== false,
+      fillStyle: 'width:' + o.progress + ';height:100%;border-radius:999px;background:' + C,
+      stepLabel: o.stepLabel,
+      answered: o.answered || null,
+      q: o.q || '',
+      line1: o.q ? String(o.q).split('\n')[0] : '',
+      line2: o.q ? (String(o.q).split('\n')[1] || '') : '',
+      qSub: o.qSub || '',
+      qWrap: 'flex-shrink:0;padding:' + (o.answered ? '4px' : '12px') + ' 24px 20px;display:flex;flex-direction:column;gap:8px;animation:wpRise 380ms cubic-bezier(.16,1,.3,1) both',
+      dateField: o.dateField || '',
+      dateFieldStyle: 'height:56px;border-radius:6px;box-sizing:border-box;display:flex;align-items:center;padding:0 16px;font-size:18px;line-height:24px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums;'
+        + (o.dateFilled ? 'background:#fff;box-shadow:inset 0 0 0 1.5px ' + C + ';' : 'background:#f7f8fa;color:#adb1ba;'),
+      dateChips: o.dateChips || null,
+      regionChips: o.regionChips || null,
+      districtRows: o.districtRows || null,
+      budgetRows: o.budgetRows || null,
+      taste: o.taste || null,
+      doneRows: o.doneRows || null,
+      noteTitle: o.noteTitle || '', note: o.note || '',
+      cta: o.cta || '',
+      ctaStyle: 'flex:1;height:56px;border:0;border-radius:6px;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer;'
+        + (o.ctaOff ? 'background:#f2f3f6;color:#adb1ba;cursor:default;' : 'background:' + C + ';color:#fff;')
+    });
+
+    const ans = (k, v) => ({ k, v });
+
+    return {
+      rootStyle: 'display:flex;flex-direction:column;gap:48px;align-items:flex-start;padding:64px;width:max-content',
+      row: 'display:flex;gap:36px;align-items:flex-start',
+      col: 'display:flex;flex-direction:column;gap:10px;width:390px',
+      eyebrowTop: 'font-size:14px;line-height:19px;font-weight:700;color:' + C,
+      tag: 'height:26px;display:flex;align-items:center;gap:8px;font-size:18px;line-height:24px;font-weight:700;color:#212124;white-space:nowrap;overflow:hidden',
+      tagDesc: 'height:71px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;line-height:21px;color:#4d5159;text-wrap:pretty',
+      phone: 'width:390px;height:844px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)',
+      bar: 'height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:700;color:#212124',
+      barIcons: 'display:flex;gap:5px;align-items:center',
+      nav: 'flex:0 0 56px;display:flex;align-items:center;gap:12px;padding:0 24px 0 12px;background:#fff',
+      backBtn: 'width:40px;height:40px;flex:0 0 40px;border-radius:999px;display:flex;align-items:center;justify-content:center',
+      trackWrap: 'flex:1;height:4px;border-radius:999px;background:#eaebee;overflow:hidden',
+      stepNum: 'font-size:14px;line-height:19px;font-weight:700;color:#868b94;font-variant-numeric:tabular-nums;white-space:nowrap',
+      scroll: 'flex:1 1 auto;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;scrollbar-width:none',
+      dock: 'flex:0 0 92px;background:#fff;box-shadow:inset 0 1px 0 #eaebee;padding:12px 24px;display:flex;box-sizing:border-box',
+      padSec: 'flex-shrink:0;padding:0 24px 24px;display:flex;flex-direction:column;gap:14px;animation:wpRise 380ms cubic-bezier(.16,1,.3,1) both',
+      chipRow: 'display:flex;gap:8px;overflow:hidden',
+      chipWrap: 'display:flex;flex-wrap:wrap;gap:8px',
+      rowsWrap: 'display:flex;flex-direction:column;gap:2px',
+      pickRow: 'display:flex;align-items:center;gap:12px;min-height:56px;padding:12px 0;cursor:pointer',
+      hr: 'height:1px;background:#eaebee',
+
+      answeredWrap: 'flex-shrink:0;padding:12px 24px 4px;display:flex;flex-direction:column;gap:2px',
+      answeredRow: 'display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 0',
+      answeredCheck: 'width:20px;height:20px;flex:0 0 20px;border-radius:999px;background:' + C + ';display:flex;align-items:center;justify-content:center;animation:wpCheck 420ms cubic-bezier(.34,1.56,.64,1) both',
+      answeredK: 'font-size:15px;line-height:22px;color:#868b94;white-space:nowrap',
+      answeredV: 'flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px;line-height:22px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums',
+      answeredEdit: 'font-size:14px;line-height:19px;font-weight:700;color:#868b94;white-space:nowrap;cursor:pointer',
+
+      h26: 'font-size:26px;line-height:35px;letter-spacing:-0.02em;font-weight:700;color:#212124;text-wrap:pretty',
+      qSub: 'font-size:16px;line-height:24px;color:#4d5159;text-wrap:pretty',
+      metaSm: 'font-size:14px;line-height:19px;color:#868b94;font-variant-numeric:tabular-nums',
+
+      tasteWrap: 'flex-shrink:0;padding:0 24px 20px;display:grid;grid-template-columns:1fr 1fr;gap:11px',
+      tasteCell: 'position:relative;width:100%;height:148px',
+      tasteImg: 'position:absolute;inset:0;border-radius:10px;overflow:hidden',
+      tasteLabel: 'font-size:16px;line-height:22px;font-weight:700;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.55)',
+
+      summaryBox: 'border-radius:10px;background:#f7f8fa;padding:20px;display:flex;flex-direction:column;gap:2px',
+      summaryRow: 'display:flex;align-items:center;justify-content:space-between;gap:16px;padding:9px 0',
+      summaryK: 'font-size:16px;line-height:22px;color:#4d5159;white-space:nowrap',
+      summaryV: 'font-size:16px;line-height:22px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums;text-align:right',
+
+      noteBox: 'border-radius:10px;background:#f7f8fa;padding:20px;display:flex;flex-direction:column;gap:8px',
+      noteTitle: 'font-size:18px;line-height:24px;font-weight:700;color:#212124;text-wrap:pretty',
+      noteBody: 'font-size:16px;line-height:24px;color:#4d5159;text-wrap:pretty',
+
+      ruleCard: 'width:566px;background:#fff;border:1px solid #eaebee;border-radius:10px;padding:24px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box',
+      ruleTitle: 'font-size:18px;line-height:24px;font-weight:700;color:#212124',
+      ruleBody: 'font-size:16px;line-height:24px;color:#4d5159;text-wrap:pretty',
+
+      steps: [
+        st({
+          no: '1', label: '예식일 · WP-APP-008', progress: '8%', stepLabel: '1/2',
+          desc: '한 화면의 시작. 예식일만 크게 묻고 나머지는 아직 보이지 않습니다.',
+          q: '예식일이\n언제인가요?', qSub: '남은 기간에 맞춰 준비 순서를 잡아드려요',
+          dateField: '날짜를 골라주세요', dateFilled: false,
+          dateChips: [
+            { label: '아직 미정이에요', style: chip(false) },
+            { label: '2027년 봄', style: chip(false) },
+            { label: '가을', style: chip(false) }
+          ],
+          cta: '다음', ctaOff: true
+        }),
+        st({
+          no: '2', label: '지역 · 같은 화면', progress: '38%', stepLabel: '1/2',
+          desc: '날짜를 고르면 위로 접히고 지역 질문이 아래에서 올라옵니다. 화면을 새로 열지 않습니다.',
+          answered: [ans('예식일', '2027년 5월 16일 토요일')],
+          q: '어디에서\n하시나요?', qSub: '그 지역의 확인된 제보로 맞춰드려요',
+          regionChips: [
+            { label: '서울', style: chip(true) }, { label: '경기', style: chip(false) },
+            { label: '인천', style: chip(false) }, { label: '부산', style: chip(false) },
+            { label: '대구', style: chip(false) }, { label: '대전', style: chip(false) },
+            { label: '광주', style: chip(false) }, { label: '울산', style: chip(false) },
+            { label: '그 외', style: chip(false) }
+          ],
+          districtRows: [
+            { name: '강남구', nameStyle: rowName(false), mark: mark(false) },
+            { name: '서초구', nameStyle: rowName(false), mark: mark(false) },
+            { name: '송파구', nameStyle: rowName(false), mark: mark(false) },
+            { name: '마포구', nameStyle: rowName(false), mark: mark(false) }
+          ],
+          cta: '다음', ctaOff: true
+        }),
+        st({
+          no: '3', label: '예산 · 같은 화면', progress: '68%', stepLabel: '1/2',
+          desc: '답한 두 줄이 위에 쌓입니다. 각 줄의 바꾸기로 되돌아갈 수 있어 뒤로가기를 쓰지 않습니다.',
+          answered: [
+            ans('예식일', '2027년 5월 16일 토요일'),
+            ans('지역', '서울 강남구')
+          ],
+          q: '예산은 어느 정도\n생각하세요?', qSub: '나중에 바꿀 수 있어요',
+          budgetRows: [
+            { name: '2,000만원 이하', nameStyle: rowName(false), mark: mark(false), meta: '' },
+            { name: '2,000~3,000만원', nameStyle: rowName(false), mark: mark(false), meta: '' },
+            { name: '3,000~4,000만원', nameStyle: rowName(true), mark: mark(true), meta: '강남 5월 예식에서 가장 많은 구간이에요' },
+            { name: '4,000만원 이상', nameStyle: rowName(false), mark: mark(false), meta: '' },
+            { name: '아직 모르겠어요', nameStyle: rowName(false), mark: mark(false), meta: '나중에 정해도 괜찮아요' }
+          ],
+          cta: '다음', ctaOff: false
+        }),
+        st({
+          no: '4', label: '취향 이미지 · WP-APP-011', progress: '100%', stepLabel: '2/2', brand: true,
+          desc: '성격이 다르니 화면을 나눕니다. 사진을 훑는 화면이라 목록과 섞으면 둘 다 흐려집니다. 건너뛰기를 없애고 최소 1장을 받습니다.',
+          q: '마음에 드는 분위기를\n골라주세요', qSub: '2장 이상 고르면 더 정확해져요',
+          taste: [
+            { slot: 'ob2-1', src: IMG.white, label: '깔끔한 화이트', overlay: tOverlay(true), check: tCheck(true) },
+            { slot: 'ob2-2', src: IMG.couple, label: '야외 자연광', overlay: tOverlay(true), check: tCheck(true) },
+            { slot: 'ob2-3', src: IMG.arch, label: '플라워 아치', overlay: tOverlay(false), check: tCheck(false) },
+            { slot: 'ob2-4', src: IMG.hall, label: '클래식 호텔', overlay: tOverlay(false), check: tCheck(false) },
+            { slot: 'ob2-5', src: IMG.minimal, label: '모던 미니멀', overlay: tOverlay(false), check: tCheck(false) },
+            { slot: 'ob2-6', src: IMG.film, label: '따뜻한 필름', overlay: tOverlay(false), check: tCheck(false) }
+          ],
+          cta: '2장 고르고 시작하기'
+        }),
+        st({
+          no: '5', label: '완료 · WP-APP-012', progress: '100%', stepLabel: '완료', back: false, brand: true,
+          desc: '설정한 내용을 한 번 확인시키고 홈으로 보냅니다.',
+          q: '준비 끝났어요\n지수님 웨딩을 시작해요', qSub: '',
+          doneRows: [
+            { k: '예식일', v: '2027년 5월 16일' },
+            { k: '지역', v: '서울 강남구' },
+            { k: '총예산', v: '3,000~4,000만원' },
+            { k: '취향', v: '화이트 · 자연광' }
+          ],
+          noteTitle: 'MY에서 언제든 바꿀 수 있어요',
+          note: '내 웨딩 정보를 바꾸면 추천도 새로 반영돼요.',
+          cta: '홈으로 가기'
+        })
+      ],
+
+      rules: [
+        { t: '4단계에서 2단계로', b: '예식일 · 지역 · 예산은 목록에서 하나 고르는 같은 성격이라 한 화면에 묶었습니다. 취향 이미지는 사진을 훑는 다른 성격이라 나눴습니다. 진행 표시도 1/4~4/4에서 1/2, 2/2로 줄었습니다.' },
+        { t: '고르면 다음 질문이 열립니다', b: '값을 고른 질문은 위로 접혀 «예식일 · 2027년 5월 16일» 한 줄이 되고, 다음 질문이 아래에서 올라옵니다. 상단 진행바는 8% → 38% → 68% → 100%로 이어집니다.' },
+        { t: '되돌아가기는 바꾸기로', b: '접힌 각 줄에 바꾸기를 둡니다. 뒤로가기로 화면을 되감지 않고 그 자리에서 다시 펼칩니다. 안드로이드 뒤로가기는 로그인으로 나가는 데만 씁니다.' },
+        { t: '건너뛰기 없음', b: '취향 이미지는 추천의 근거라 건너뛰면 첫 화면에 보여줄 것이 없습니다. 최소 1장을 받고 CTA에 고른 개수를 적습니다. 예산만 «아직 모르겠어요»를 남깁니다.' },
+        { t: '다음 버튼은 고를 때까지 꺼둡니다', b: '값이 없으면 회색 비활성입니다. 마지막 질문에서만 켜집니다. 중간 질문에서는 값을 고르는 순간 다음 질문이 열리므로 다음 버튼을 누를 일이 거의 없습니다.' },
+        { t: '기존 시안은 그대로 둡니다', b: '«웨딩픽 진입 온보딩»의 WP-APP-008~012 4단계 시안은 보존합니다. 이 파일이 확정되면 그쪽을 보류로 표시하고 화면 수를 다시 셉니다.' }
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

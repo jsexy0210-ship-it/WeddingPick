@@ -215,7 +215,7 @@ export default function SettingsScreen() {
           <Section title="지원">
             <ActionButton label="문의하기" onPress={() => router.push('/my/contact')} />
             <ActionButton
-              label="이용약관 · 개인정보 처리방침"
+              label="이용약관 · 개인정보처리방침"
               onPress={() => router.push('/my/policies')}
             />
           </Section>

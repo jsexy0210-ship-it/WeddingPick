@@ -258,6 +258,8 @@ class Component extends DCLogic {
             ] }),
             grp({ title: '연결 계정', rows: [
               row({ name: '카카오', meta: 'ji***@kakao.com', tail: '연결됨', tailKind: 'ok' }),
+              row({ name: '네이버', tail: '연결하기', tailStrong: true, chevron: true }),
+              row({ name: '구글', tail: '연결하기', tailStrong: true, chevron: true }),
               row({ name: '애플', tail: '연결하기', tailStrong: true, chevron: true })
             ] }),
             grp({ title: '인증', rows: [
@@ -316,8 +318,9 @@ class Component extends DCLogic {
           groups: [
             grp({ title: '로그인', rows: [
               row({ name: '카카오', meta: 'ji***@kakao.com', tail: '주 계정', tailKind: 'brand' }),
-              row({ name: '애플', tail: '연결하기', tailStrong: true, chevron: true }),
-              row({ name: '이메일', tail: 'jisu***@gmail.com', chevron: true })
+              row({ name: '네이버', tail: '연결하기', tailStrong: true, chevron: true }),
+              row({ name: '구글', tail: '연결하기', tailStrong: true, chevron: true }),
+              row({ name: '애플', tail: '연결하기', tailStrong: true, chevron: true })
             ] }),
             grp({ title: '알림 수신', rows: [
               row({ name: '서비스 알림', meta: '일정 · Pick 변화 · 제보 결과', toggle: 'on' }),
@@ -348,7 +351,7 @@ class Component extends DCLogic {
             ] }),
             grp({ title: '', rows: [
               row({ name: '이용약관', chevron: true }),
-              row({ name: '개인정보 처리방침', chevron: true }),
+              row({ name: '개인정보처리방침', chevron: true }),
               row({ name: '버전', tail: '1.0.0 · 최신' })
             ] })
           ]

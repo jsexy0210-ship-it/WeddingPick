@@ -24,6 +24,31 @@ export const TASTE_LABEL: Record<Taste, string> = {
   daylight: '야외 자연광',
   flower: '플라워 아치',
   classic: '클래식 호텔',
+  minimal: '모던 미니멀',
+  film: '따뜻한 필름',
+};
+
+/**
+ * 취향 카드 사진. 실제 업체 제공 사진이 아직 없어(계약에 그 필드가 없다)
+ * 임시로 채운다 — 사용자 지시로 하드코딩했다. Unsplash 라이선스는 출처 표시
+ * 없이 상업적으로 써도 되지만, 이 카드에 실제로 뜨는지는 이 저장소에서
+ * 확인하지 못했다(egress가 이미지 CDN을 막아 검증 불가) — 배포 후 실기기에서
+ * 한 번 확인해달라. `CategoryImage`가 로드 실패를 감지하지 않으므로, 깨지면
+ * 조용히 빈 면으로 보이지 않고 로딩 실패 아이콘이 뜰 수 있다.
+ *
+ * minimal·film 둘은 v3.14가 더했다 — 핸드오프는 실제 촬영 사진(업로드 파일)을
+ * 가리키지만 그 파일 자체는 이 저장소에서 받을 수 없어(디자인 툴 내부
+ * 업로드 경로) 나머지 넷과 같은 방식(Unsplash)으로 대신 채웠다.
+ *
+ * TODO: 실제 업체 사진 파이프라인이 생기면 이 상수를 지우고 서버 값을 쓴다.
+ */
+export const TASTE_IMAGE: Record<Taste, string> = {
+  white: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=800&q=80&auto=format&fit=crop',
+  daylight: 'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=800&q=80&auto=format&fit=crop',
+  flower: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=800&q=80&auto=format&fit=crop',
+  classic: 'https://images.unsplash.com/photo-1529636798458-92182e662485?w=800&q=80&auto=format&fit=crop',
+  minimal: 'https://images.unsplash.com/photo-1520854221256-17451cc331bf?w=800&q=80&auto=format&fit=crop',
+  film: 'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=800&q=80&auto=format&fit=crop',
 };
 
 /**
@@ -36,6 +61,8 @@ export const TASTE_SHORT_LABEL: Record<Taste, string> = {
   daylight: '자연광',
   flower: '아치',
   classic: '호텔',
+  minimal: '미니멀',
+  film: '필름',
 };
 
 function isTaste(value: string): value is Taste {

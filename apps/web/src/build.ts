@@ -26,7 +26,7 @@ import { renderVendorPage } from './vendor-page';
  * | `faq.html` | 자주 묻는 질문 |
  * | `support.html` | 고객지원 |
  * | `terms.html` | 이용약관 |
- * | `privacy.html` | 개인정보 처리방침 |
+ * | `privacy.html` | 개인정보처리방침 |
  * | `v/<업체 id>.html` | WP-WEB-003 업체 상세 |
  * | `about.html` | 서비스 소개 한 장. 약관·출처·분석 안내가 여기 있다 |
  * | `admin.html` | 관리자 |

@@ -28,12 +28,12 @@ a:hover{color:#e2564a}
 </style>
 </helmet>
 
-<section style="display:flex;flex-direction:column;gap:64px;align-items:flex-start;padding:64px;width:max-content">
+<section style="display:flex;flex-direction:column;gap:44px;align-items:flex-start;padding:64px;width:max-content">
 
   <div style="display:flex;flex-direction:column;gap:12px;max-width:1100px">
     <span style="font-size:14px;line-height:19px;font-weight:700;color:#ff6f61">WeddingPick · Flow Board</span>
     <span style="font-size:40px;line-height:52px;font-weight:700;color:#212124">사용자 흐름 순서</span>
-    <span style="font-size:18px;line-height:26px;color:#393a40">앱을 켠 순간부터 순서대로 실제 화면을 늘어놓았습니다. 단계 제목을 누르면 원본 디자인 파일이 열립니다. 코랄 번호는 핵심 루프입니다.</span>
+    <span style="font-size:18px;line-height:26px;color:#393a40">앱을 켠 순간부터 순서대로 나열했습니다. 단계 제목을 누르면 원본 디자인 파일이 열립니다. 코랄 번호는 핵심 루프입니다.</span>
     <div style="display:flex;gap:10px;padding-top:6px">
       <span style="{{ legend }}"><span style="{{ dotKey }}"></span>핵심 루프</span>
       <span style="{{ legend }}"><span style="{{ dotPlain }}"></span>일반 화면</span>
@@ -42,7 +42,7 @@ a:hover{color:#e2564a}
   </div>
 
   <sc-for list="{{ stages }}" as="g" hint-placeholder-count="18">
-    <div style="display:flex;flex-direction:column;gap:16px">
+    <div style="display:flex;flex-direction:column;gap:14px">
 
       <a href="{{ g.href }}" style="display:flex;align-items:baseline;gap:12px;text-decoration:none">
         <span style="{{ stageKey }}">{{ g.key }}</span>
@@ -64,9 +64,7 @@ a:hover{color:#e2564a}
         </sc-for>
       </div>
 
-      <a href="{{ g.href }}" style="{{ g.shot }}">
-        <img src="{{ g.png }}" alt="{{ g.title }}" style="{{ g.imgStyle }}">
-      </a>
+
     </div>
   </sc-for>
 
@@ -100,8 +98,8 @@ class Component extends DCLogic {
       file: o.file, href: o.href, png: 'handoff/png/' + o.png,
       range: o.steps.length ? o.steps[0].no + '~' + o.steps[o.steps.length - 1].no : '',
       steps: o.steps,
-      shot: 'display:block;border-radius:12px;overflow:hidden;background:#fff;box-shadow:0 10px 40px rgba(0,27,55,.12);max-width:1760px;text-decoration:none',
-      imgStyle: 'display:block;width:100%;height:auto'
+      shot: 'display:none',
+      imgStyle: 'display:none'
     });
 
     const stages = [
@@ -324,11 +322,11 @@ class Component extends DCLogic {
         ]
       }),
       stage({
-        key: 'Q', title: '이용약관 · 개인정보 처리방침', note: '발췌하지 않고 원문 전체를 노출한다',
+        key: 'Q', title: '이용약관 · 개인정보처리방침', note: '발췌하지 않고 원문 전체를 노출한다',
         file: '약관 방침', href: '웨딩픽 약관 방침.dc.html', png: '16-legal.png',
         steps: [
           st('이용약관', 'WP-LEGAL-001'),
-          st('개인정보 처리방침', 'WP-LEGAL-002'),
+          st('개인정보처리방침', 'WP-LEGAL-002'),
           st('동의 이력', 'WP-LEGAL-003'),
           st('관리자 · 약관 편집', 'WP-ADM-036')
         ]
@@ -365,7 +363,7 @@ class Component extends DCLogic {
           st('자주 묻는 질문', 'WP-LAND-003'),
           st('고객지원', 'WP-LAND-004'),
           st('이용약관', 'WP-LAND-005'),
-          st('개인정보 처리방침', 'WP-LAND-006')
+          st('개인정보처리방침', 'WP-LAND-006')
         ]
       }),
       stage({

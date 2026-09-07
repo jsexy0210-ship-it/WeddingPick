@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Layout, Radius, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
 
 import { CategoryImage } from './category-image';
-import { TASTE_LABEL, TASTES, type Taste } from './taste';
+import { TASTE_IMAGE, TASTE_LABEL, TASTES, type Taste } from './taste';
 
 /**
  * 어떤 결혼식을 원하세요? — 홈 C-1 시안 1의 취향 고르기.
@@ -27,6 +27,7 @@ export function TastePicker({ chosen, onToggle }: TastePickerProps) {
         <Tile
           key={taste}
           label={TASTE_LABEL[taste]}
+          uri={TASTE_IMAGE[taste]}
           selected={chosen.includes(taste)}
           onPress={() => onToggle(taste)}
         />
@@ -37,10 +38,12 @@ export function TastePicker({ chosen, onToggle }: TastePickerProps) {
 
 function Tile({
   label,
+  uri,
   selected,
   onPress,
 }: {
   label: string;
+  uri: string;
   selected: boolean;
   onPress: () => void;
 }) {
@@ -53,7 +56,7 @@ function Tile({
       accessibilityLabel={label}
       onPress={onPress}
       style={({ pressed }) => [styles.tile, pressed && styles.pressed]}>
-      <CategoryImage style={styles.image} />
+      <CategoryImage uri={uri} style={styles.image} />
 
       {/*
         고른 것은 코랄 테두리로 알린다. 색을 더 쓰지 않고 테두리 하나로 끝내는

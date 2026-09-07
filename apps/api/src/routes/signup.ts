@@ -6,9 +6,7 @@ import {
   REQUIRED_CONSENTS,
   canActivate,
   consentVersion,
-  isOldEnough,
   missingRequiredConsents,
-  type AgeGateResult,
   type ConsentItem,
 } from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
@@ -18,22 +16,22 @@ import type { AppContext } from '../context';
 import { ApiError } from '../errors';
 
 /**
- * 가입 완료. 통합정책 v3.13 §N.
+ * 가입 완료. 통합정책 v3.13 §3.5.
  *
  * 여기만 `requireSignup`을 단다 — 아직 활성화되지 않은 계정이 부를 수 있는 유일한
  * 자리다. 다른 모든 경로는 `requireUser`가 막는다.
  *
- * 소셜 제공자가 확인한 생년월일은 다시 묻지 않는다. 제공값이 없어 사용자가 직접
- * 입력한 값은 나이만 세고 버린다.
+ * 만 14세 확인은 로그인 화면의 체크박스 하나다. 생년월일을 받지 않으므로 여기서도
+ * 날짜를 세지 않는다 — `body.ageVerified`가 그 확인의 전부다.
  */
 export function registerSignupRoutes(app: FastifyInstance, context: AppContext): void {
   const auth = { preHandler: requireSignup(context) };
 
   async function loadState(userId: string): Promise<SignupState> {
     const { rows } = await context.pool.query<{
-      age_gate: AgeGateResult;
+      age_verified: boolean;
       activated_at: Date | null;
-    }>('SELECT age_gate, activated_at FROM structured.users WHERE id = $1', [userId]);
+    }>('SELECT age_verified, activated_at FROM structured.users WHERE id = $1', [userId]);
 
     const user = rows[0];
 
@@ -49,13 +47,11 @@ export function registerSignupRoutes(app: FastifyInstance, context: AppContext):
     );
 
     const granted = consents.rows.map((row) => ({ item: row.item, version: row.terms_version }));
-    const verifiedBirthDate = await loadVerifiedBirthDate(context, userId);
 
     return {
       activated: user.activated_at !== null,
-      ageGate: user.age_gate,
+      ageVerified: user.age_verified,
       minimumAge: MINIMUM_AGE,
-      birthDateVerified: verifiedBirthDate !== null,
       items: CONSENT_ITEMS.map((item) => {
         const match = consents.rows.find(
           (row) => row.item === item.key && row.terms_version === item.version
@@ -78,9 +74,6 @@ export function registerSignupRoutes(app: FastifyInstance, context: AppContext):
   app.post('/v1/me/signup', auth, async (request) => {
     const userId = currentUserId(request);
     const body = completeSignupRequestSchema.parse(request.body);
-    const birthDate = (await loadVerifiedBirthDate(context, userId)) ?? body.birthDate;
-    if (!birthDate) throw new ApiError('invalid_request', '생년월일을 확인해 주세요.');
-    const oldEnough = isOldEnough(birthDate, new Date());
 
     const client = await context.pool.connect();
 
@@ -88,29 +81,16 @@ export function registerSignupRoutes(app: FastifyInstance, context: AppContext):
       await client.query('BEGIN');
 
       /*
-       * 판정을 먼저 적는다. 막힌 계정은 되돌리지 않는다 — 생년월일을 몇 번이고
-       * 다시 넣어보며 통과할 때까지 시도하는 문을 열어두지 않는다.
-       *
-       * 그래서 이 요청이 통과했는지가 아니라 **적히고 난 결과**를 보고 갈라진다.
-       * 요청만 보면, 한 번 막힌 계정이 옳은 날짜를 들고 다시 오면 통과한다.
+       * 체크하지 않고 왔으면 계정을 만들지 않는다. 로그인 화면이 이미 막지만
+       * (버튼이 비활성이거나 WP-AUTH-010으로 보낸다), 여기서도 한 번 더
+       * 막는다 — 화면을 거치지 않고 이 요청만 직접 부르는 경로를 남기지 않는다.
+       * `age_gate`·`age_checked_at`(0046)도 함께 채운다 — 그 위의 제약
+       * (`activated_only_when_old_enough`)이 여전히 그 컬럼을 본다.
        */
-      const updated = await client.query<{ age_gate: AgeGateResult }>(
-        `UPDATE structured.users
-         SET age_gate = CASE WHEN age_gate = 'blocked' THEN 'blocked'
-                             WHEN $2 THEN 'passed'
-                             ELSE 'blocked' END::age_gate_result,
-             age_checked_at = now()
-         WHERE id = $1
-         RETURNING age_gate`,
-        [userId, oldEnough]
-      );
+      if (!body.ageVerified) {
+        await client.query('ROLLBACK');
 
-      const ageGate = updated.rows[0]?.age_gate ?? 'blocked';
-
-      if (ageGate !== 'passed') {
-        await client.query('COMMIT');
-
-        // 세션도 끊는다. 막힌 계정이 토큰을 들고 돌아다닐 이유가 없다.
+        // 세션도 끊는다. 확인하지 않은 계정이 토큰을 들고 돌아다닐 이유가 없다.
         await context.pool.query(
           'UPDATE identity.sessions SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL',
           [userId]
@@ -118,6 +98,14 @@ export function registerSignupRoutes(app: FastifyInstance, context: AppContext):
 
         throw new ApiError('forbidden', AGE_BLOCKED_NOTICE);
       }
+
+      await client.query(
+        `UPDATE structured.users
+         SET age_verified = true, age_verified_at = now(),
+             age_gate = 'passed', age_checked_at = now()
+         WHERE id = $1`,
+        [userId]
+      );
 
       /*
        * 받은 항목만 적는다. 선택 항목을 대신 켜주지 않는다(§N-2) — 켜주면 그
@@ -140,7 +128,7 @@ export function registerSignupRoutes(app: FastifyInstance, context: AppContext):
         (body.consents as ConsentItem[]).includes(item)
       ).map((item) => ({ item, version: consentVersion(item) }));
 
-      const check = canActivate({ ageGate, granted });
+      const check = canActivate({ ageVerified: true, granted });
 
       if (!check.ok) {
         /* 필수 동의가 빠졌다. 받은 동의는 그대로 두고 활성화만 하지 않는다. */
@@ -166,17 +154,4 @@ export function registerSignupRoutes(app: FastifyInstance, context: AppContext):
 
     return await loadState(userId);
   });
-}
-
-async function loadVerifiedBirthDate(context: AppContext, userId: string): Promise<string | null> {
-  const { rows } = await context.pool.query<{ birth_date: string | null }>(
-    `SELECT CASE
-       WHEN birth_year ~ '^\\d{4}$' AND birthday ~ '^\\d{2}-\\d{2}$'
-       THEN birth_year || '-' || birthday ELSE NULL END AS birth_date
-     FROM identity.identities
-     WHERE user_id = $1 AND birth_year IS NOT NULL AND birthday IS NOT NULL
-     ORDER BY last_login_at DESC LIMIT 1`,
-    [userId]
-  );
-  return rows[0]?.birth_date ?? null;
 }
