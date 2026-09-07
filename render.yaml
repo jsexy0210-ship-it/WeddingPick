@@ -9,6 +9,16 @@ services:
     envVars:
       - key: WEDDINGPICK_CONTACT_EMAIL
         value: help.weddingpick@gmail.com
+      # 업체·금액은 빌드할 때 API에서 받아 정적 HTML로 굽는다(apps/web/src/site-data.ts).
+      # 이 값이 없으면 search.html의 "많이 확인된 곳"이 «정보를 모으는 중»으로 나가고
+      # 업체 상세(/v/*.html)는 한 장도 만들어지지 않는다 — 실제로 그 상태로 배포돼 있었다.
+      # 랜딩(index.html)은 이 값과 무관하다 — 고정 업체 정보를 쓴다(landing-v4.ts).
+      - key: WEDDINGPICK_API_URL
+        value: https://weddingpickl.onrender.com
+      # 상세를 미리 만들 업체 id를 쉼표로 준다. 비워두면 상세 페이지가 생기지 않는다 —
+      # 어느 업체를 정적으로 낼지는 웹이 고르지 않고 배포하는 쪽이 정한다.
+      - key: WEDDINGPICK_WEB_VENDOR_IDS
+        sync: false
 
   # 관리자 패널 (admin.weddingpick.kr)
   - type: web

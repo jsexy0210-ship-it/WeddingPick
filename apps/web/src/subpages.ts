@@ -256,7 +256,7 @@ export function renderIntroPage(): string {
     ${introCards('확인된 제보란', '직접 등록해 주신 자료를 바탕으로 구성한 금액 정보예요. 개인 정보 보호를 위해 개별 금액 대신 금액 구간과 건수로 안내해 드려요.', [
       { eyebrow: '0~2건', title: '정보 수집 중', body: '기준 제보가 모이면 공개돼요' },
       { eyebrow: '3~9건', title: '금액 구간 안내', body: '모인 제보에 맞춰 금액 구간을 보여드려요' },
-      { eyebrow: '10건 이상', title: '기준금액 안내', body: '제보 금액의 중앙값도 알려드려요', brand: true },
+      { eyebrow: '10건 이상', title: '기준금액 안내', body: '제보 금액의 기준금액도 알려드려요', brand: true },
     ])}
     <div style="height:1px;background:${esc(DIVIDER)}"></div>
     ${introCards('웨딩픽의 약속', '', [
