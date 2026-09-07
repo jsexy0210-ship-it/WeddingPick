@@ -5,9 +5,11 @@
 # workflow_dispatch → staging 또는 production 수동 배포
 #
 # 필요한 GitHub Secrets:
-#   DATABASE_URL              Render PostgreSQL 연결 문자열
-#   RENDER_DEPLOY_HOOK_URL    (선택) Render staging 서비스 Deploy Hook URL
-#   RENDER_DEPLOY_HOOK_URL_PROD (선택) Render production 서비스 Deploy Hook URL
+#   DATABASE_URL   Render PostgreSQL 연결 문자열
+#   RENDER_API_KEY 커스텀 도메인 연결에 쓴다
+#
+# 배포 자체는 이 파일이 걸지 않는다 — Render의 autoDeploy가 main push를 보고 돈다.
+# 환경변수는 infra/render-env.yml이 원본이고 render-env-sync.yml이 밀어넣는다.
 name: CI / Deploy
 
 on:
@@ -105,56 +107,6 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
-      - name: Trigger Render deploy
-        run: |
-          if [ -n "$RENDER_DEPLOY_HOOK_URL" ]; then
-            curl -sS "$RENDER_DEPLOY_HOOK_URL"
-            echo "API deploy hook triggered"
-          else
-            echo "No API deploy hook configured — relying on Render auto-deploy (autoDeploy: true)"
-          fi
-          if [ -n "$RENDER_DEPLOY_HOOK_WEB_URL" ]; then
-            curl -sS "$RENDER_DEPLOY_HOOK_WEB_URL"
-            echo "Web static site deploy hook triggered"
-          else
-            echo "No web deploy hook configured — relying on Render auto-deploy (autoDeploy: true)"
-          fi
-        env:
-          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
-          RENDER_DEPLOY_HOOK_WEB_URL: ${{ secrets.RENDER_DEPLOY_HOOK_WEB_URL }}
-
-      - name: Render Blueprint sync (새 서비스 반영)
-        run: |
-          if [ -z "$RENDER_API_KEY" ]; then
-            echo "RENDER_API_KEY 없음 — Blueprint sync 생략"
-            exit 0
-          fi
-          # 블루프린트 목록에서 이 저장소에 연결된 것을 찾아 sync
-          BLUEPRINTS=$(curl -sf -H "Authorization: Bearer $RENDER_API_KEY" \
-            "https://api.render.com/v1/blueprints?limit=20") || BLUEPRINTS=""
-          BLUEPRINT_ID=$(echo "$BLUEPRINTS" | python3 -c "import sys,json;data=json.load(sys.stdin);[print(item.get('blueprint',item).get('id','')) for item in data if 'WeddingPickl' in str(item.get('blueprint',item).get('repo',''))]" 2>/dev/null | head -1)
-          if [ -z "$BLUEPRINT_ID" ]; then
-            echo "::warning::Render Blueprint sync 생략됨 — 이 Render 계정에 render.yaml과 연결된 Blueprint가 없습니다. render.yaml의 새 서비스(예: weddingpick-admin)는 자동으로 생성되지 않습니다. Render 대시보드 → New → Blueprint에서 이 저장소를 한 번 연결해야 render.yaml 변경이 반영됩니다."
-            exit 0
-          fi
-          echo "Blueprint ID: $BLUEPRINT_ID — sync 요청"
-          # 실패해도 배포를 멈추지 않는다. sync는 render.yaml을 서비스에 밀어넣는
-          # 부가 단계이고, 실제 배포는 앞의 "Trigger Render deploy"(또는 Render
-          # autoDeploy)가 이미 끝냈다. 여기서 죽으면 뒤의 Health check까지 skip돼
-          # 배포를 검증하지 못한 채 main이 빨갛게 남는다.
-          STATUS=$(curl -s -o /tmp/render-sync.json -w '%{http_code}' -X POST \
-            -H "Authorization: Bearer $RENDER_API_KEY" \
-            -H "Content-Type: application/json" \
-            "https://api.render.com/v1/blueprints/$BLUEPRINT_ID/sync") || STATUS="000"
-          BODY=$(cat /tmp/render-sync.json 2>/dev/null || true)
-          if [ "$STATUS" -ge 200 ] 2>/dev/null && [ "$STATUS" -lt 300 ] 2>/dev/null; then
-            echo "sync 응답($STATUS): $BODY"
-          else
-            echo "::warning::Render Blueprint sync 실패 (HTTP $STATUS). render.yaml의 변경(환경변수·routes·새 서비스)이 Render에 반영되지 않습니다 — 대시보드에서 직접 넣어야 합니다. 응답: $BODY"
-          fi
-        env:
-          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
-
       - name: Custom domains (weddingpick.kr / admin.weddingpick.kr)
         run: |
           if [ -z "$RENDER_API_KEY" ]; then
@@ -223,17 +175,6 @@ jobs:
         run: npm run migrate --workspace @weddingpick/db
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-
-      - name: Trigger Render deploy
-        run: |
-          if [ -n "$RENDER_DEPLOY_HOOK_URL_PROD" ]; then
-            curl -sS "$RENDER_DEPLOY_HOOK_URL_PROD"
-            echo "Production deploy hook triggered"
-          else
-            echo "No production deploy hook configured"
-          fi
-        env:
-          RENDER_DEPLOY_HOOK_URL_PROD: ${{ secrets.RENDER_DEPLOY_HOOK_URL_PROD }}
 
       - name: Health check
         run: |

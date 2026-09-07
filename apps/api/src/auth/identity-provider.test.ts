@@ -30,6 +30,19 @@ describe('createKakaoProvider', () => {
     expect(tokenBody.get('code_verifier')).toBe('v'.repeat(43));
   });
 
+  it('카카오가 거부하면 그 이유를 오류에 담는다 — 서버 로그에서 원인을 찾을 수 있어야 한다', async () => {
+    const provider = createKakaoProvider({
+      appKey: 'app-key',
+      fetchImpl: (async () =>
+        new Response('{"error":"invalid_client","error_code":"KOE010"}', { status: 401 })) as typeof fetch,
+    });
+
+    if (provider.flow !== 'authorization_code') throw new Error('잘못된 provider flow');
+    await expect(
+      provider.verify({ authorizationCode: 'code', state: 'state', redirectUri: 'https://example.test/login' })
+    ).rejects.toThrow(/KOE010/);
+  });
+
   it('Client Secret을 켜지 않은 앱은 client_secret을 보내지 않는다', async () => {
     const fetchImpl = jest.fn().mockResolvedValueOnce({ ok: false });
     const provider = createKakaoProvider({ appKey: 'rest-api-key', fetchImpl: fetchImpl as unknown as typeof fetch });

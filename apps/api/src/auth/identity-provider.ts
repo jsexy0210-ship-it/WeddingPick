@@ -221,7 +221,21 @@ export function createKakaoProvider(options: {
         headers: { 'content-type': 'application/x-www-form-urlencoded;charset=utf-8' },
         body: tokenBody,
       });
-      if (!tokenResponse.ok) throw new Error('카카오 토큰 교환에 실패했다.');
+      if (!tokenResponse.ok) {
+        // 카카오가 무엇이 틀렸는지 본문에 적어 보낸다(error_code KOE0xx). 이것을
+        // 버리면 설정이 어긋났을 때 남는 단서가 없다 — 실제로 그래서 원인을
+        // 좁히지 못했다. 사용자에게는 라우트가 일반 문구로 바꿔 내려주고,
+        // 이 문장은 서버 로그에만 남는다. 본문에 우리 비밀은 들어있지 않다.
+        // 본문을 못 읽어도 원래 오류는 던져야 한다 — 오류 경로가 스스로 터지면
+        // 진짜 원인이 가려진다.
+        let detail = '';
+        try {
+          detail = (await tokenResponse.text?.()) ?? '';
+        } catch {
+          detail = '';
+        }
+        throw new Error(`카카오 토큰 교환에 실패했다 (HTTP ${tokenResponse.status}) ${detail.slice(0, 300)}`.trim());
+      }
 
       const token = (await tokenResponse.json()) as { id_token?: unknown };
       if (typeof token.id_token !== 'string' || token.id_token.length === 0) {
