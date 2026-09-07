@@ -155,6 +155,12 @@ jobs:
           echo "✗ Staging health check failed after 900 s"
           exit 1
 
+      # merge 전 검사는 코드를 보고, 이 검사는 배포된 것을 본다.
+      # 2026-09-07에 CI가 전부 초록인 상태로 운영 인증 API가 전부 500이었다 —
+      # 앞의 검사를 아무리 늘려도 그건 안 잡힌다.
+      - name: Smoke (배포된 시스템)
+        run: ./scripts/smoke.sh https://weddingpickl.onrender.com
+
   deploy-production:
     name: Deploy → Production
     needs: [ci]
@@ -190,3 +196,6 @@ jobs:
           done
           echo "✗ Production health check failed after 900 s"
           exit 1
+
+      - name: Smoke (배포된 시스템)
+        run: ./scripts/smoke.sh https://weddingpickl.onrender.com
