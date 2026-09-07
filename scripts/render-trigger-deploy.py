@@ -36,9 +36,18 @@ if not matches:
     sys.exit(1)
 
 svc = matches[0]
-print(f"서비스: {SERVICE} ({svc['id']})")
+detail = call(f"/services/{svc['id']}")
+detail = detail.get("service", detail)
+branch = (detail.get("branch")
+          or (detail.get("serviceDetails") or {}).get("branch")
+          or (detail.get("staticSiteDetails") or {}).get("branch"))
+print(f"서비스: {SERVICE} ({svc['id']}) — 배포 브랜치: {branch}")
 
-# clearCache 없이, main의 최신 커밋으로 배포한다.
+if branch and branch != "main":
+    print(f"::warning::배포 브랜치가 main이 아니라 '{branch}'다. 이 상태로 배포해도 최신 코드가 아닐 수 있다.")
+
+# clearCache 없이, 설정된 브랜치의 최신 커밋으로 배포한다.
 result = call(f"/services/{svc['id']}/deploys", method="POST", body={})
 deploy = result.get("deploy", result)
-print(f"배포 요청됨: id={deploy.get('id')} status={deploy.get('status')}")
+commit = (deploy.get("commit") or {}).get("id", "?")[:8]
+print(f"배포 요청됨: id={deploy.get('id')} status={deploy.get('status')} commit={commit}")
