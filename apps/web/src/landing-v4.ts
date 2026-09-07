@@ -357,7 +357,8 @@ ${faviconTags()}
 html{font-family:${FONT_STACK};font-size:16px;-webkit-text-size-adjust:100%}
 body{margin:0;background:#f7f8fa;color:${INK}}
 a{color:inherit}
-.page{max-width:1280px;width:100%;margin:0 auto;background:#fff;box-shadow:0 10px 40px rgba(58,47,48,.10);display:flex;flex-direction:column;overflow-x:hidden}
+/* 풀 와이드. 1280 카드로 가운데 세우면 넓은 화면에서 양옆이 남아 비율이 어긋나 보인다. */
+.page{width:100%;margin:0;background:#fff;display:flex;flex-direction:column;overflow-x:hidden}
 
 /* GNB */
 .lv-gnb{position:relative;height:76px;flex:0 0 76px;display:flex;align-items:center;justify-content:space-between;padding:0 64px;z-index:10;gap:32px}

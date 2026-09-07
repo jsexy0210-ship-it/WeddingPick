@@ -94,7 +94,8 @@ const BASE_STYLE = `
 html{font-family:${FONT_STACK};font-size:16px;-webkit-text-size-adjust:100%}
 body{margin:0;background:#f7f8fa;color:${INK}}
 a{color:inherit}
-.page{max-width:1280px;width:100%;margin:0 auto;background:#fff;box-shadow:0 10px 40px rgba(58,47,48,.10);display:flex;flex-direction:column;min-height:100vh;overflow-x:hidden}
+/* 풀 와이드. 랜딩(landing-v4.ts)의 .page와 같은 규칙을 쓴다. */
+.page{width:100%;margin:0;background:#fff;display:flex;flex-direction:column;min-height:100vh;overflow-x:hidden}
 
 /* GNB */
 .sp-gnb{height:76px;flex:0 0 76px;display:flex;align-items:center;justify-content:space-between;padding:0 64px;position:relative;gap:32px}

@@ -1,7 +1,7 @@
 import { Tabs, useSegments } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ProductSymbol, useTheme } from '@weddingpick/ui';
+import { ProductSymbol, WeddingMark, useTheme } from '@weddingpick/ui';
 
 /**
  * Bottom Navigation: 홈 | 검색 | 촬영 | 내 웨딩 | MY
@@ -61,7 +61,7 @@ export default function TabLayout() {
         name="pick"
         options={{
           title: 'Pick',
-          tabBarIcon: ({ color, size }) => <ProductSymbol name="pickMark" size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => <WeddingMark size={size} color={color} />,
         }}
       />
       {/*

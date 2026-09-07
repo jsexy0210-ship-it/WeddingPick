@@ -3,9 +3,8 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
 
-import { ActionButton, Colors, MaxContentWidth, Radius, SocialLogo, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
+import { ActionButton, Colors, MaxContentWidth, Radius, SocialLogo, Spacing, ThemedText, ThemedView, WeddingMark, useTheme } from '@weddingpick/ui';
 import { LoginFailureSheet } from '@/features/auth/login-failure-sheet';
 import { maskEmail } from '@/features/auth/mask-email';
 import { canSignInWith, providerTone, useAuthProviders } from '@/features/auth/providers';
@@ -23,16 +22,6 @@ const REASONS = [
   '일정과 지출도 한곳에서 관리해요',
 ];
 
-/**
- * Pick Mark — spec/tokens.json `symbol` 그대로. 배경 박스 없이 이 2개
- * path만 그린다(§2 "시작 화면" 적용처). 색은 스킨과 무관한 고정 코랄.
- */
-const PICK_MARK_VIEWBOX = 24;
-const PICK_MARK_STROKE = 1.9;
-const PICK_MARK_PATHS = [
-  'M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z',
-  'M8.7 11.9l2.2 2.2 4.4-4.4',
-];
 
 /**
  * WP-AUTH-001/008 로그인. 디자인 핸드오프 v3.12(2026-09-06)의 로그인 방식
@@ -73,18 +62,8 @@ export default function LoginScreen() {
         <View style={styles.content}>
           {/* BrandBlock — flex:1. 심볼·카피·혜택. 화면 안에서 남는 세로 공간을 전부 가져간다. */}
           <View style={styles.brandBlock}>
-            <Svg width={64} height={64} viewBox={`0 0 ${PICK_MARK_VIEWBOX} ${PICK_MARK_VIEWBOX}`} fill="none">
-              {PICK_MARK_PATHS.map((d) => (
-                <Path
-                  key={d}
-                  d={d}
-                  stroke={Colors.light.tint}
-                  strokeWidth={PICK_MARK_STROKE}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              ))}
-            </Svg>
+            {/* 배경 박스 없이 마크만 — 색은 스킨과 무관한 고정 코랄(§2 "시작 화면"). */}
+            <WeddingMark size={64} color={Colors.light.tint} />
 
             {showRemembered && remembered ? (
               <ThemedView style={styles.section}>

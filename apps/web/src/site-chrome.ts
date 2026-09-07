@@ -20,14 +20,14 @@ import { SITE_STYLES } from './site-styles';
  * 옮겨 적은 값은 갈라지므로 `site.test.ts`가 두 곳이 같은지 지킨다 —
  * `styles.ts`가 theme.ts의 색을 옮겨 적고 시험으로 지키는 것과 같은 규칙이다.
  *
- * 64칸 격자다. 24칸으로 잡으면 소수점이 붙어 눈으로 고치기 어렵다.
+ * 24칸 격자다 — `spec/tokens.json`의 `symbol`이 정한 확정본 좌표다. 랜딩(v4)과
+ * 서브페이지도 같은 값을 쓴다.
  */
-const MARK_VIEWBOX = 64;
+const MARK_VIEWBOX = 24;
 const MARK_HEART_PATH =
-  'M32 19 C30 15 26 12 20 12 C13 12 8 17 8 24 C8 35 22 44 32 52 ' +
-  'C42 44 56 35 56 24 C56 17 51 12 44 12 C38 12 34 15 32 19 Z';
-const MARK_CHECK_PATH = 'M21 28 L28.5 35.5 L45 19';
-const MARK_STROKE = 5;
+  'M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z';
+const MARK_CHECK_PATH = 'M8.7 11.9l2.2 2.2 4.4-4.4';
+const MARK_STROKE = 1.9;
 
 /**
  * 마크. 색은 `currentColor`로 받는다 — 코랄 바탕에 얹는 날 흰색으로 뒤집을 수
