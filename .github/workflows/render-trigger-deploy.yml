@@ -1,0 +1,29 @@
+name: Render 수동 배포
+
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        description: '배포할 서비스'
+        type: choice
+        default: weddingpick-app-web
+        options:
+          - weddingpick-app-web
+          - weddingpick-web
+          - weddingpick-admin
+          - WeddingPickl
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: 배포 요청
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          SERVICE: ${{ github.event.inputs.service }}
+        run: python3 scripts/render-trigger-deploy.py
