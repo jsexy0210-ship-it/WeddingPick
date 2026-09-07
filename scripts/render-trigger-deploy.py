@@ -44,9 +44,15 @@ branch = (detail.get("branch")
 print(f"서비스: {SERVICE} ({svc['id']}) — 배포 브랜치: {branch}")
 
 if branch and branch != "main":
-    print(f"::warning::배포 브랜치가 main이 아니라 '{branch}'다. 이 상태로 배포해도 최신 코드가 아닐 수 있다.")
+    print(f"branch가 'main'이 아니라 '{branch}'다 — main으로 바로잡는다.")
+    print("오래된 브랜치가 계속 남아 있었던 것이 자동 배포가 멈춰 있던 진짜 원인이다.")
 
-# clearCache 없이, 설정된 브랜치의 최신 커밋으로 배포한다.
+    fixed = call(f"/services/{svc['id']}", method="PATCH", body={"branch": "main"})
+    fixed = fixed.get("service", fixed)
+    new_branch = fixed.get("branch") or (fixed.get("serviceDetails") or {}).get("branch")
+    print(f"branch를 '{new_branch}'로 바꿨다.")
+
+# 바로잡힌(또는 이미 맞던) 브랜치의 최신 커밋으로 배포한다. clearCache 없이.
 result = call(f"/services/{svc['id']}/deploys", method="POST", body={})
 deploy = result.get("deploy", result)
 commit = (deploy.get("commit") or {}).get("id", "?")[:8]
