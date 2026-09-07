@@ -1,8 +1,4 @@
-import {
-  VENDOR_SORTS,
-  VENDOR_SORT_LABEL,
-  type VendorSort,
-} from '@weddingpick/api-contract';
+import { VENDOR_SORTS, type VendorSort } from '@weddingpick/api-contract';
 import {
   VENDOR_CATEGORIES,
   VENDOR_CATEGORY_LABEL,

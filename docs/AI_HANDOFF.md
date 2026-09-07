@@ -8,14 +8,111 @@
 
 ## 메타
 
-- `updated_at`: 2026-09-03 (P0 운영 상태·카카오맵 전환 동기화)
+- `updated_at`: 2026-09-07 (저장소 전수 정리 — 브랜치·PR·문서·워크플로)
 - `repository`: jsexy0210-ship-it/WeddingPickl
-- `verified_code_base`: 5b0479b (PR #53 squash merge 포함; 최신 원격 상태는 작업 시작 시 재확인)
-- `PR #51`: main 병합 완료 (7967312). 아래 세션의 CI 대기 표시는 당시 기록이다.
+- `verified_code_base`: eff6f59 (#88 squash merge 시점의 main; 최신 원격 상태는 작업 시작 시 재확인)
 - `policy_version`: 통합정책 v3.15
 - `dashboard`: https://claude.ai/code/artifact/a1307c11-f282-4cf2-a26d-e44bd083d7a9
 - `ios_handoff_artifact`: https://claude.ai/code/artifact/b8792fcd-fefe-4386-b24e-41d122e90a87
 - `screen_status_artifact`: https://claude.ai/code/artifact/b99277b7-3bdc-45dc-9614-a1310507df53
+
+---
+
+## 저장소 정리 — 2026-09-07
+
+`main`을 유일한 기준으로 만들기 위해 브랜치·PR·문서·워크플로를 전수 점검했다.
+**Git history는 건드리지 않았다** — history rewrite·force push·PR 이력 삭제 없음.
+
+- 정리 기준 main: `eff6f59` (#88 squash merge)
+- Open PR 3 → 0. #88·#100 병합, #99 종료(임시 조사 스냅샷 — 실질 내용은 아래 결함
+  목록으로 옮겼다)
+- Remote branch 68 → 9. 병합 완료·내용이 main에 들어간 브랜치 57개 삭제
+- 남긴 브랜치(main 미반영 고유 코드가 있어 diff 확인 후 보류): 아래 «보류 브랜치» 절
+- 삭제한 파일: `WeddingPickl`(.gitmodules 없는 깨진 서브모듈 링크),
+  `pnpm-lock.yaml`(npm 저장소인데 남아 있던 중복 락파일), `color-test.html`
+  (참조 0건, 폐기된 v7 시안 비교용 스크래치)
+- `public-data.yml`: 삭제된 작업 브랜치를 보던 죽은 push 트리거 제거
+- 워크플로 10개는 전부 목적이 갈린다(로컬 gradle APK / EAS preview APK / EAS init /
+  릴리즈 / CI·배포 / 운영·스테이징 마이그레이션 / 스토리지 점검 / env sync /
+  공공데이터). **삭제·통합 대상 없음**
+- 문서는 `docs/README.md`가 이미 색인·폐기 기준을 관리하고 있고, `archive/`의 과거
+  정책서는 코드 주석이 절 번호로 참조한다(`packages/domain/*`·`api-contract/*`).
+  **문서 삭제는 하지 않았다** — 지우면 그 참조가 끊긴다
+
+### 보류 브랜치 (삭제하지 않음)
+
+Closed PR이지만 main에 없는 고유 코드가 남아 있다. 되살릴지 버릴지는 사람이 정한다.
+
+| 브랜치 | 무엇이 main에 없나 |
+|---|---|
+| `claude/backend-gaps-9xrh1d` (#26) | 관리자 API 13종·네이버 로그인 서버 구현 일부 |
+| `claude/front-dev-start-nrr0jh` (PR 없음) | `routes/wedding-timeline.ts`·`guide-articles.ts` |
+| `claude/frontend-development-i1j2aa` (#16) | `my/preferences.tsx`(WP-MY-004 취향 다시 고르기) |
+| `design/search-vendor-clean` (#70) | 디자인 핸드오프 싱크 정리본 — 나머지 `design/*` 4개는 이 브랜치가 포함하므로 삭제함 |
+| `feat/login-other-page` (#85) | `other-login-sheet.tsx` — 단, v3.12에서 소셜 4종이 카카오+이메일로 축소돼 유효성 재확인 필요 |
+| `home/fe-expo-screens` (PR 없음) | WP-EXPO 화면 5종 보완 |
+| `copilot/analyze-code-and-identify-issues` (PR 없음) | 배포 환경별 secret 분리(G05 대응안). Secrets 등록이 선행돼야 해 임의 반영하지 않음 |
+
+`fix/render-sync-inputs-context`(#97)는 삭제했다 — 작성자가 진단을 철회했다.
+`${{ inputs.* }}`는 `workflow_dispatch` 밖에서 빈 값이 될 뿐 오류가 아니고, 실제
+원인은 계정 차원의 Actions 중단이었다(저장소 공개 전환으로 해소).
+
+---
+
+## 🔴 미해결 결함 (2026-09-07 감사·재검증 기준)
+
+PR #99의 조사 보고서와 그 독립 재검증 결과에서 **코드로 확인된** 항목만 남긴 것이다.
+오탐으로 판정된 항목은 없었다. 원문은 Git history(브랜치 `codex/github-audit-handoff-20260907`,
+`claude/audit-review-2026-09-07`의 커밋)에서 볼 수 있다.
+
+### 출시 차단
+
+| # | 항목 | 위치 · 근거 |
+|---|---|---|
+| N01 | **운영 카카오 로그인이 500으로 실패** | `POST /v1/auth/sessions → 500`. `errors.ts`가 `unauthenticated → 401`로 매핑하므로 카카오 검증 실패가 아니다. `routes/auth.ts`의 `signIn()` DB 작업에서 처리되지 않은 예외. **#100 병합으로 이제 로그가 남는다 — 재현해서 스택을 잡는 것이 다음 한 걸음** |
+| G04 | **CORS 출처·메서드 누락** | `infra/render-env.yml`의 `CORS_ORIGINS`에 admin 출처·커스텀 도메인 없음. `server.ts`의 `methods`에 **PATCH 없음** — 관리자 화면이 실제로 PATCH를 보내므로(`admin/kill-switch.tsx`·`policy-engine.tsx`·`users.tsx`·`vendors.tsx`·`ads.tsx`·`home.tsx`) preflight에서 전부 막힌다. 도메인은 이미 활성이라 미래 위험이 아니라 현재 차단 |
+| G02 | **main 보호 규칙에 필수 PR·CI·리뷰 없음** | `rules/branches/main`이 `deletion`·`non_fast_forward` 2개만 반환. 실패한 변경의 병합을 막는 장치가 없다 |
+
+### 높음
+
+| # | 항목 | 위치 · 근거 |
+|---|---|---|
+| 잔존-A | 관리자 kill switch가 아무것도 끄지 않는다 | `routes/admin.ts`의 `killSwitches` Map을 `admin.ts` 밖에서 조회하는 코드가 0건. 껐다고 표시돼도 기능은 계속 돌고, 재시작하면 상태도 사라진다 |
+| G08 | 이메일 인증 경로에 호출 제한·운영자 TTL 공백 | `passwordAttempts`가 이메일 로그인 한 곳에만 걸려 있다. `/auth/email/lookup`·`/accounts`·`/password-reset`·`/password-reset/confirm`은 무제한이고 요청마다 scrypt를 돈다(계정 열거·자원 소모). 이메일 경로는 `operatorSessionTtlDays`도 넘기지 않는다 |
+| G05 | staging 이름의 job이 운영 대상을 검사 | `main.yml`의 Staging·Production 두 job이 같은 `DATABASE_URL`과 같은 health URL(`weddingpickl.onrender.com`)을 쓴다. `db-migrate-staging.yml`만 `STAGING_DATABASE_URL`을 쓴다 |
+
+### 출시 전 처리
+
+| # | 항목 |
+|---|---|
+| G10 | 마케팅 preview artifact가 업로드되지 않는다 — CLI는 `apps/api/.marketing-preview`에 쓰는데 `main.yml`은 루트를 본다. `.`으로 시작해 `include-hidden-files: true`도 필요 |
+| G13 | 랜딩 목업이 실데이터 표기 형식으로 금액을 보여준다 — `landing-v4.ts`에 시연 표기 0건. CLAUDE.md §3의 «금액 표기(고정)»과 충돌 |
+| G12 | 마케팅 대시보드가 DB 오류를 «0건 성공»으로 숨긴다 — `routes/admin.ts`의 catch에 `NODE_ENV` 검사가 없다 |
+| G11 | 소재를 수정해도 `reviewed`·`reviewed_at`이 갱신되지 않아 과거 승인 상태가 남는다 (`marketing/store.ts`) |
+| 잔존-B | 관리자 클라이언트가 204에도 `res.json()`을 호출한다 (`app/admin/_api.ts`) |
+| 잔존-C | AI 호출 한도가 원자적이지 않다 — `callsToday()`의 SELECT와 `recordUsage()`의 INSERT가 별도 트랜잭션 (`analysis/pipeline.ts`) |
+| 잔존-D | 죽은 워커의 `running` 작업을 회수하는 reaper가 없다 (`analysis/worker.ts`의 `claim()`이 `pending`만 집는다) |
+| 잔존-E | `routes/documents.ts`의 `MAX_FILE_SIZE`가 죽은 상수다. S3 드라이버는 presigned POST 정책이 강제하므로 실질 노출은 local 드라이버 한정 |
+| 잔존-F | `packages/db/src/reset.ts`의 `DROP SCHEMA ... CASCADE`에 테스트 DB 가드가 없다 |
+| sbiz | `collect.ts`의 업종 대분류 `'Q'`가 활용가이드에 없는 값이다. `SBIZ_API_KEY` 등록 후 `public-data.yml`의 `lookup_keyword`로 실제 코드를 찾아 교체해야 `sbiz-seoul`·`sbiz-gyeonggi`가 동작한다 |
+
+### 외부 확인 필요 (저장소 안에서 확인 불가)
+
+- 운영 Render `WeddingPickl`의 `DATABASE_URL`이 GitHub `DATABASE_URL`과 같은 DB인가 — **N01과 직결**
+- 운영 DB의 `schema_migrations` 목록과 `identity.identities` 실제 컬럼
+- 운영 메일 드라이버가 resend인지 console인지
+- 분석 워커 서비스가 Render에 실제로 있는가 (저장소에 선언 없음)
+- TestFlight / Play 제출·심사 상태
+- legacy branch protection API(`branches/main/protection`) 설정
+
+### 권장 순서
+
+1. N01 재현 → Render 로그의 SQL 오류로 원인 확정 → 수정
+2. G04 CORS 수정 (admin 출처·커스텀 도메인 + PATCH). 각 출처에서 PATCH preflight 통과 확인
+3. G02 main 보호 규칙 — 필수 PR + head CI 성공
+4. 잔존-A kill switch 연결, G08 이메일 경로 보강
+5. G05 환경별 secret·health URL 1:1 분리
+6. 나머지 항목에 각각 단위 테스트를 붙이며 정리
 
 ---
 
