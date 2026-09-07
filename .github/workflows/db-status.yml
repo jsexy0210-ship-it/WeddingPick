@@ -1,0 +1,56 @@
+# DB 스키마 상태를 읽기만 한다. 아무것도 바꾸지 않는다.
+#
+# 어느 DB가 어디까지 왔는지 모르는 채로 마이그레이션을 돌리면 엉뚱한 DB를 바꾼다.
+# 운영 인증 API가 500이던 동안 CI의 DB Migrate는 "적용할 마이그레이션 없음"을
+# 출력했다 — 서로 다른 DB였을 가능성이 크다. 손대기 전에 먼저 본다.
+name: DB Status (읽기 전용)
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: '어느 DB를 볼 것인가'
+        type: choice
+        default: production
+        options:
+          - production
+          - default
+          - staging
+
+permissions:
+  contents: read
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: 스키마 상태 조회
+        env:
+          # 셋 다 넘기고 스크립트가 고른다. 값은 로그에 찍지 않는다 —
+          # 출력은 적용/기대 개수와 밀린 마이그레이션 이름뿐이다.
+          PRODUCTION_DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+          DEFAULT_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          TARGET: ${{ github.event.inputs.target }}
+        run: |
+          case "${TARGET:-production}" in
+            production) export DATABASE_URL="$PRODUCTION_DATABASE_URL" ;;
+            staging)    export DATABASE_URL="$STAGING_DATABASE_URL" ;;
+            *)          export DATABASE_URL="$DEFAULT_DATABASE_URL" ;;
+          esac
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::${TARGET:-production} 대상의 접속 정보가 GitHub Secrets에 없다."
+            exit 1
+          fi
+          echo "대상: ${TARGET:-production}"
+          npm run migrate --workspace @weddingpick/db -- --status
