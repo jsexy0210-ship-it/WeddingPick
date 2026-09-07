@@ -11,6 +11,7 @@ import { useFonts } from 'expo-font';
 import { useEffect, useRef, useState } from 'react';
 import { Platform, useColorScheme } from 'react-native';
 
+import { isAuthPopup } from '@/features/auth/is-auth-popup';
 import { CaptureDraftProvider } from '@/features/capture/capture-draft';
 import { DocumentStoreProvider } from '@/features/documents/document-store';
 import { getCurrentUser, getSignupState } from '@/api/client';
@@ -46,6 +47,15 @@ const ENTRY_ROUTE = {
 } as const;
 
 export default function RootLayout() {
+  if (isAuthPopup()) {
+    // 훅을 하나도 부르지 않고 빈 화면을 돌려준다 — 부팅을 시작하지 않는다.
+    return null;
+  }
+
+  return <RootLayoutContent />;
+}
+
+function RootLayoutContent() {
   const colorScheme = useColorScheme();
   const [fontsLoaded] = useFonts({
     Pretendard: require('pretendard/dist/public/variable/PretendardVariable.ttf'),
