@@ -38,7 +38,22 @@ import { registerVerificationRoutes } from './routes/verification';
 import { registerWeddingRoutes } from './routes/weddings';
 
 export function buildServer(context: AppContext): FastifyInstance {
-  const app = Fastify({ logger: false });
+  /*
+   * 로그를 켠다. 꺼두면 `app.log.error`가 아무 일도 하지 않아, 500이 나도
+   * 배포 로그에 아무것도 남지 않는다 — 실제로 카카오 로그인이 500으로 막혔을 때
+   * 서버에도 클라이언트에도 단서가 하나도 없었다.
+   *
+   * 기본은 `warn`이다. `info`로 두면 헬스체크 요청까지 매번 찍혀 정작 봐야 할
+   * 오류가 묻힌다. 파고들 때만 LOG_LEVEL=info로 올린다.
+   *
+   * 토큰이 로그로 새지 않게 인증 헤더는 지운다. 값 자체를 남길 이유가 없다.
+   */
+  const app = Fastify({
+    logger: {
+      level: process.env.LOG_LEVEL ?? 'warn',
+      redact: ['req.headers.authorization', 'req.headers.cookie', 'headers.authorization', 'headers.cookie'],
+    },
+  });
 
   // 허용 출처를 적어준 경우에만 CORS를 연다. 비워두면 브라우저에서 부를 수 없다.
   if (context.config.corsOrigins.length > 0) {
@@ -48,7 +63,7 @@ export function buildServer(context: AppContext): FastifyInstance {
     });
   }
 
-  app.setErrorHandler((error, _request, reply) => {
+  app.setErrorHandler((error, request, reply) => {
     if (error instanceof ApiError) {
       return reply.status(error.status).send(error.toResponse());
     }
@@ -78,7 +93,7 @@ export function buildServer(context: AppContext): FastifyInstance {
         .send({ error: { code: 'invalid_request', message: '요청 형식이 올바르지 않습니다.' } });
     }
 
-    app.log.error(error);
+    request.log.error(error);
 
     // 안쪽 사정을 그대로 내보내지 않는다.
     return reply
