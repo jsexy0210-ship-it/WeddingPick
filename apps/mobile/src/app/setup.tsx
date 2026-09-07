@@ -2,12 +2,15 @@ import type { Taste } from '@weddingpick/api-contract';
 import {
   BUDGET_BRACKET_LABEL,
   MINIMUM_AGE,
+  REGION_DISTRICTS,
   WEDDING_BUDGET_BRACKETS,
   WEDDING_DATE_HINT,
   WEDDING_REGIONS,
+  combineRegion,
   dDay,
   formatWeddingDateLong,
   type WeddingBudgetBracket,
+  type WeddingRegion,
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
@@ -53,6 +56,34 @@ import { saveWeddingDraft } from '@/features/onboarding/wedding-draft';
 /** 한 화면에 하나씩 묻는다. 디자인 핸드오프 WP-APP-008~012. */
 const STEPS = 4;
 
+/** 아직 지나지 않은 다음 그 계절의 연도. 예: 지금이 11월이면 봄쯤은 내년이다. */
+function nextSeasonYear(month: number): number {
+  const now = new Date();
+
+  return now.getMonth() + 1 <= month ? now.getFullYear() : now.getFullYear() + 1;
+}
+
+/**
+ * 시안 #11d의 dateHints 3행. 시안은 예시 연도를 "2027년"으로 박아뒀지만, 실제
+ * 화면은 오늘 기준으로 계산해야 한다 — 그대로 옮기면 그 해가 지나고 나서도
+ * "2027년 봄쯤"이라고 말하게 된다.
+ *
+ * 계약(`completeSetupRequestSchema.weddingDate`)이 날짜를 필수로 받기 때문에,
+ * "아직 정하지 않았어요"는 값을 비워두는 대신 달력을 그대로 연다 — 시안에 없는
+ * 값을 지어내 보내지 않는다. 나머지 둘은 그 계절 중순으로 채우고, 달력에서
+ * 다시 고를 수 있다.
+ */
+function dateHints(): { name: string; sub: string; pick: (() => string) | null }[] {
+  const spring = nextSeasonYear(4);
+  const fall = nextSeasonYear(10);
+
+  return [
+    { name: '아직 정하지 않았어요', sub: '나중에 입력', pick: null },
+    { name: `${spring}년 봄쯤 생각 중`, sub: '3~5월', pick: () => `${spring}-04-15` },
+    { name: `${fall}년 가을쯤 생각 중`, sub: '9~11월', pick: () => `${fall}-10-15` },
+  ];
+}
+
 /**
  * 온보딩. 디자인 핸드오프 01-onboarding.dc.html #11d·#11e(WP-APP-008~012).
  * 문구는 `spec/strings.ko.json` `onboarding.*`의 확정 카피다.
@@ -79,7 +110,9 @@ export default function SetupScreen() {
 
   const [step, setStep] = useState(1);
   const [date, setDate] = useState<string | null>(null);
-  const [region, setRegion] = useState<string | null>(null);
+  const [region, setRegion] = useState<WeddingRegion | null>(null);
+  /** 구·군. 시안 #11d districts — 시/도를 더 좁힌다. 고르지 않아도 다음으로 갈 수 있다. */
+  const [district, setDistrict] = useState<string | null>(null);
   /** 다섯 구간 중 하나. `아직 모르겠어요`도 고른 것이다 — 안 고른 것(null)과 다르다. */
   const [bracket, setBracket] = useState<WeddingBudgetBracket | null>(null);
   const [tastes, setTastes] = useState<Taste[]>([]);
@@ -136,7 +169,11 @@ export default function SetupScreen() {
     setError(null);
 
     try {
-      const draft = { weddingDate: date, region, budgetBracket: bracket };
+      const draft = {
+        weddingDate: date,
+        region: combineRegion(region, district),
+        budgetBracket: bracket,
+      };
 
       if (isServerConfigured && (await loadToken())) {
         /*
@@ -186,7 +223,7 @@ export default function SetupScreen() {
 
             <ThemedView style={[styles.summary, { backgroundColor: theme.backgroundElement }]}>
               <SummaryRow label="예식일" value={formatWeddingDateLong(date ?? '')} />
-              <SummaryRow label="지역" value={region ?? ''} />
+              <SummaryRow label="지역" value={district ? `${region} ${district}` : (region ?? '')} />
               <SummaryRow label="총예산" value={BUDGET_BRACKET_LABEL[bracket ?? 'unknown']} />
               <SummaryRow
                 label="취향"
@@ -286,6 +323,25 @@ export default function SetupScreen() {
                   </ThemedText>
                 </ThemedView>
               ) : null}
+
+              <ThemedView style={styles.list}>
+                {dateHints().map((hint) => (
+                  <DateHintRow
+                    key={hint.name}
+                    hint={hint}
+                    onPress={() => {
+                      if (hint.pick === null) {
+                        setPending(date);
+                        setCalendarOpen(true);
+
+                        return;
+                      }
+
+                      setDate(hint.pick());
+                    }}
+                  />
+                ))}
+              </ThemedView>
             </>
           ) : null}
 
@@ -304,10 +360,26 @@ export default function SetupScreen() {
                     key={item}
                     label={item}
                     selected={region === item}
-                    onPress={() => setRegion(item)}
+                    onPress={() => {
+                      setRegion(item);
+                      setDistrict(null);
+                    }}
                   />
                 ))}
               </ThemedView>
+
+              {region && REGION_DISTRICTS[region] ? (
+                <ThemedView style={styles.list}>
+                  {REGION_DISTRICTS[region]!.map((item) => (
+                    <DistrictRow
+                      key={item}
+                      label={item}
+                      selected={district === item}
+                      onPress={() => setDistrict(district === item ? null : item)}
+                    />
+                  ))}
+                </ThemedView>
+              ) : null}
             </>
           ) : null}
 
@@ -405,6 +477,81 @@ export default function SetupScreen() {
         </ThemedView>
       </Modal>
     </ThemedView>
+  );
+}
+
+/** 예식일 힌트 한 줄. 시안 #11d — 왼쪽 이름, 오른쪽 보조 문구, 아래 1px 구분선. */
+function DateHintRow({
+  hint,
+  onPress,
+}: {
+  hint: { name: string; sub: string };
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel={hint.name} onPress={onPress}>
+      <View style={styles.row}>
+        <ThemedText type="t5" style={styles.regular}>
+          {hint.name}
+        </ThemedText>
+        <ThemedText type="t6" numeric themeColor="textAssistive">
+          {hint.sub}
+        </ThemedText>
+      </View>
+      <View style={[styles.divider, { backgroundColor: theme.border }]} />
+    </Pressable>
+  );
+}
+
+/**
+ * 구·군 한 줄. 시안 #11d districts — 왼쪽 이름, 오른쪽 24px 표시 원, 아래 1px 구분선.
+ * 다시 누르면 선택이 풀린다 — 구까지는 참고일 뿐 필수가 아니다.
+ */
+function DistrictRow({
+  label,
+  selected,
+  onPress,
+}: {
+  label: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+
+  return (
+    <Pressable
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: selected }}
+      accessibilityLabel={label}
+      onPress={onPress}>
+      <View style={styles.row}>
+        <ThemedText type="t5" style={selected ? undefined : styles.regular}>
+          {label}
+        </ThemedText>
+        <View
+          style={[
+            styles.mark,
+            selected
+              ? { backgroundColor: theme.tint }
+              : { borderWidth: 1.5, borderColor: theme.track },
+          ]}>
+          {selected ? (
+            <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+              <Path
+                d="m5 12.5 4.5 4.5L19 7.5"
+                stroke={theme.onTint}
+                strokeWidth={3.4}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
+          ) : null}
+        </View>
+      </View>
+      <View style={[styles.divider, { backgroundColor: theme.border }]} />
+    </Pressable>
   );
 }
 

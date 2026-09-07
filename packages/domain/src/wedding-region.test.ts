@@ -1,4 +1,11 @@
-import { OTHER_REGION, WEDDING_REGIONS, regionFilter, regionMatches } from './wedding-region';
+import {
+  OTHER_REGION,
+  REGION_DISTRICTS,
+  WEDDING_REGIONS,
+  combineRegion,
+  regionFilter,
+  regionMatches,
+} from './wedding-region';
 
 describe('온보딩 지역', () => {
   it('시안 #11d의 아홉 칩을 그 순서로 둔다', () => {
@@ -18,5 +25,28 @@ describe('온보딩 지역', () => {
     expect(regionMatches('서울 강남구', '서울')).toBe(true);
     expect(regionMatches('경기도 이천시', '경기')).toBe(true);
     expect(regionMatches('경기도 이천시', '서울')).toBe(false);
+  });
+
+  it('구를 고르지 않으면 시/도 값 그대로다', () => {
+    expect(combineRegion('서울', null)).toBe('서울');
+  });
+
+  it('구를 고르면 공식 시/도 이름으로 합쳐 업체 지역과 접두어가 맞는다', () => {
+    const combined = combineRegion('서울', '강남구');
+
+    expect(combined).toBe('서울특별시 강남구');
+    expect(regionMatches('서울특별시 강남구', combined)).toBe(true);
+    // 다른 구는 걸러진다 — 접두어가 정확히 구 단위까지 좁혀졌다.
+    expect(regionMatches('서울특별시 서초구', combined)).toBe(false);
+  });
+
+  it('그 외는 구 목록이 없다', () => {
+    expect(REGION_DISTRICTS[OTHER_REGION]).toBeUndefined();
+  });
+
+  it('구가 있는 여덟 지역 모두 목록을 가진다', () => {
+    for (const region of WEDDING_REGIONS.filter((r) => r !== OTHER_REGION)) {
+      expect(REGION_DISTRICTS[region]?.length).toBeGreaterThan(0);
+    }
   });
 });

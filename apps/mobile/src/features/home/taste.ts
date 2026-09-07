@@ -27,6 +27,23 @@ export const TASTE_LABEL: Record<Taste, string> = {
 };
 
 /**
+ * 취향 카드 사진. 실제 업체 제공 사진이 아직 없어(계약에 그 필드가 없다)
+ * 임시로 채운다 — 사용자 지시로 하드코딩했다. Unsplash 라이선스는 출처 표시
+ * 없이 상업적으로 써도 되지만, 이 카드에 실제로 뜨는지는 이 저장소에서
+ * 확인하지 못했다(egress가 이미지 CDN을 막아 검증 불가) — 배포 후 실기기에서
+ * 한 번 확인해달라. `CategoryImage`가 로드 실패를 감지하지 않으므로, 깨지면
+ * 조용히 빈 면으로 보이지 않고 로딩 실패 아이콘이 뜰 수 있다.
+ *
+ * TODO: 실제 업체 사진 파이프라인이 생기면 이 상수를 지우고 서버 값을 쓴다.
+ */
+export const TASTE_IMAGE: Record<Taste, string> = {
+  white: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=800&q=80&auto=format&fit=crop',
+  daylight: 'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=800&q=80&auto=format&fit=crop',
+  flower: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=800&q=80&auto=format&fit=crop',
+  classic: 'https://images.unsplash.com/photo-1529636798458-92182e662485?w=800&q=80&auto=format&fit=crop',
+};
+
+/**
  * 요약 한 줄에 쓰는 짧은 이름. 온보딩 완료 시안(01-onboarding #11e summarySet)이
  * «화이트 · 자연광»으로 적는다 — 카드 라벨의 마지막 낱말이다. 시안이 보여주지 않은
  * 둘(아치·호텔)도 같은 규칙으로 뽑았다.
