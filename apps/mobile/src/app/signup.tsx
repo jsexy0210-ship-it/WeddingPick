@@ -5,8 +5,9 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { completeSignup, getSignupState } from '@/api/client';
+import { completeSignup, getCurrentUser, getSignupState } from '@/api/client';
 import { completeAfterSignIn } from '@/features/auth/after-sign-in';
+import { nextAfterSignIn } from '@/features/auth/finish-sign-in';
 import {
   ActionButton,
   MaxContentWidth,
@@ -81,8 +82,15 @@ export default function SignupScreen() {
        * 가입이 끝나야 기기에 적어둔 예식일과 멈춰둔 Pick이 올라간다. 그 전에는
        * 서버가 막아서 실패하고, 실패하면 적어둔 값이 못 올린 값으로 보인다.
        */
-      await completeAfterSignIn();
-      router.replace('/');
+      const after = await completeAfterSignIn();
+      const me = await getCurrentUser().catch(() => null);
+
+      /*
+       * 여기서 `'/'`로 굳어 있었다. 그래서 가입을 마치면 온보딩을 건너뛰고 홈으로
+       * 갔고, 예식일·지역·예산·분위기를 한 번도 묻지 않았다. 로그인 경로와 같은
+       * 결정을 쓴다(`nextAfterSignIn`).
+       */
+      router.replace(nextAfterSignIn({ setupComplete: me?.setupComplete, savedWedding: after.savedWedding }));
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '가입을 마치지 못했어요.');
     } finally {
