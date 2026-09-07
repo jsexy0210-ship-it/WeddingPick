@@ -1,3 +1,13 @@
+# Render 서비스 정의.
+#
+# **주의 — 이 파일의 `envVars` 값은 Render에 반영되지 않는다.**
+# 반영하려면 Blueprint sync가 돌아야 하는데 `POST /v1/blueprints/{id}/sync`가
+# HTTP 오류를 돌려주며 동작하지 않는다(2026-09-07 확인). 그래서 환경변수의 원본은
+# `infra/render-env.yml`이고 `.github/workflows/render-env-sync.yml`이 서비스
+# 환경변수 API로 직접 넣는다. 값을 바꾸려면 여기가 아니라 그 파일을 고친다.
+#
+# 여기는 서비스의 생김새(빌드 명령·퍼블리시 경로·routes)를 적어두는 용도로 남긴다.
+
 services:
   # 웹 앱 (정적 사이트)
   - type: web
