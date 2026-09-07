@@ -9,6 +9,10 @@ on:
         description: '검증 후 운영 DB에 반영'
         type: boolean
         default: false
+      lookup_keyword:
+        description: '업종 소분류 코드 조사 — 이름에 이 글자가 들어간 항목만 출력(비우면 이 잡을 건너뜀)'
+        type: string
+        default: ''
   schedule:
     - cron: '17 18 * * 6'
 
@@ -47,6 +51,12 @@ jobs:
     needs: verify
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # SBIZ_API_KEY 유무를 `if:`에서 secrets.* 로 직접 참조하면 GitHub Actions가
+    # 워크플로 파일 자체를 무효로 처리한다(잡이 하나도 안 만들어지고 즉시
+    # 실패 — `if:`/`env:`가 아닌 잡 표현식에서 secrets 컨텍스트를 막는 보안
+    # 제약). job-level env로 한 번 옮겨 담아 `env.*`로 우회한다.
+    env:
+      SBIZ_API_KEY: ${{ secrets.SBIZ_API_KEY }}
     strategy:
       fail-fast: false
       matrix:
@@ -67,18 +77,16 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Collect validated public data
-        if: ${{ !matrix.needs_sbiz_key || secrets.SBIZ_API_KEY != '' }}
+        if: ${{ !matrix.needs_sbiz_key || env.SBIZ_API_KEY != '' }}
         run: npm run public-data:import --workspace @weddingpick/api -- --source "$SOURCE" --out ../../.collection
         env:
           SOURCE: ${{ matrix.source }}
-          SBIZ_API_KEY: ${{ secrets.SBIZ_API_KEY }}
       - name: Apply to existing database
-        if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || inputs.apply) && (!matrix.needs_sbiz_key || secrets.SBIZ_API_KEY != '')
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || inputs.apply) && (!matrix.needs_sbiz_key || env.SBIZ_API_KEY != '')
         run: npm run public-data:import --workspace @weddingpick/api -- --source "$SOURCE" --apply --out ../../.collection
         env:
           SOURCE: ${{ matrix.source }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          SBIZ_API_KEY: ${{ secrets.SBIZ_API_KEY }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -86,3 +94,23 @@ jobs:
           path: .collection/*.json
           include-hidden-files: true
           retention-days: 7
+
+  # sbiz 업종 대/중/소분류 진짜 코드 조사용. workflow_dispatch로 lookup_keyword를
+  # 채웠을 때만 돈다 — collect.ts의 downloadSbizApiVendors가 쓰는 대분류 'Q'가
+  # 활용가이드에 없는 값이라(주석 참고) 진짜 코드를 찾아야 한다.
+  lookup-category:
+    if: github.event_name == 'workflow_dispatch' && inputs.lookup_keyword != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: 소분류에서 키워드 검색
+        run: npm run public-data:import --workspace @weddingpick/api -- --lookup-category --level small --keyword "$KEYWORD"
+        env:
+          KEYWORD: ${{ inputs.lookup_keyword }}
+          SBIZ_API_KEY: ${{ secrets.SBIZ_API_KEY }}
