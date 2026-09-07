@@ -46,6 +46,11 @@ jobs:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
           # 선언의 `secrets:`가 이름으로 찾아 쓴다. 값은 로그에 찍지 않는다.
           ALL_SECRETS: ${{ toJSON(secrets) }}
-          DRY_RUN: ${{ inputs.dry_run }}
-          REDEPLOY: ${{ inputs.redeploy == null && 'true' || inputs.redeploy }}
+          # `inputs`는 workflow_dispatch·workflow_call에서만 있는 컨텍스트다. push로
+          # 도는 실행에서 그걸 참조하면 잡이 러너를 받기도 전에 평가 오류로 죽는다
+          # (실제로 첫 실행이 그렇게 실패했다). `github.event.inputs`는 항상 있고
+          # 없을 때는 빈 값이라 안전하다 — 기본값은 스크립트가 정한다
+          # (DRY_RUN 없으면 false, REDEPLOY 없으면 true).
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+          REDEPLOY: ${{ github.event.inputs.redeploy }}
         run: python3 scripts/render-env-sync.py
