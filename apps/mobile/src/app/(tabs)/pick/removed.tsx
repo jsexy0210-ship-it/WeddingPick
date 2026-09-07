@@ -48,7 +48,7 @@ export default function PickRemovedScreen() {
   const theme = useTheme();
 
   const [groups, setGroups] = useState<
-    Array<{ category: string; categoryLabel: string; items: Array<{ id: string; vendorName: string; removedAt: string }> }> | null
+    { category: string; categoryLabel: string; items: { id: string; vendorName: string; removedAt: string }[] }[] | null
   >(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);

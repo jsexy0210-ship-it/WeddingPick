@@ -1168,7 +1168,7 @@ export async function getMyInviteCode(): Promise<{ code: string; uses: number }>
 
 /** 지도용 — 좌표가 있는 Pick 업체 목록. */
 export async function getMapVendors(weddingId: string): Promise<{
-  vendors: Array<{
+  vendors: {
     vendorId: string;
     vendorName: string;
     category: string;
@@ -1176,7 +1176,7 @@ export async function getMapVendors(weddingId: string): Promise<{
     lng: number;
     address: string;
     picked: boolean;
-  }>;
+  }[];
 }> {
   return request(
     `/v1/weddings/${weddingId}/map-vendors`,
@@ -1198,11 +1198,11 @@ export async function getMapVendors(weddingId: string): Promise<{
 
 /** 제외한 후보 목록. 카테고리별로 묶여 온다. */
 export async function getRemovedCandidates(weddingId: string): Promise<{
-  groups: Array<{
+  groups: {
     category: string;
     categoryLabel: string;
-    items: Array<{ id: string; vendorName: string; removedAt: string }>;
-  }>;
+    items: { id: string; vendorName: string; removedAt: string }[];
+  }[];
 }> {
   return request(
     `/v1/weddings/${weddingId}/candidates/removed`,

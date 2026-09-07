@@ -1,8 +1,9 @@
 name: Wedding public data
 
+# 수동 실행과 토요일 정기 크론으로만 돈다. 개발 당시의 작업 브랜치
+# (`codex/wedding-public-data-pipeline`)를 보던 push 트리거가 있었는데, 그 브랜치는
+# PR #62로 main에 들어간 뒤 삭제됐다 — 없는 브랜치를 보는 트리거라 지운다.
 on:
-  push:
-    branches: [codex/wedding-public-data-pipeline]
   workflow_dispatch:
     inputs:
       apply:

@@ -6,7 +6,6 @@ import { Alert, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
-  addCandidate,
   getCurrentUser,
   listCandidates,
   removeCandidate,

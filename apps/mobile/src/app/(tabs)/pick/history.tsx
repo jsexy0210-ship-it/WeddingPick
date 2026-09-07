@@ -55,7 +55,6 @@ export default function PickHistoryScreen() {
   const theme = useTheme();
 
   const [data, setData] = useState<CandidateListResponse | null>(null);
-  const [weddingId, setWeddingId] = useState<string | null>(null);
   const [hasRemoved, setHasRemoved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -67,7 +66,6 @@ export default function PickHistoryScreen() {
           setLoading(false);
           return;
         }
-        setWeddingId(user.weddingId);
         return Promise.all([
           listCandidates(user.weddingId).then(setData),
           getRemovedCandidates(user.weddingId).then((res) =>
