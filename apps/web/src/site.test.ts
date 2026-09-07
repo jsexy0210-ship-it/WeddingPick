@@ -422,11 +422,10 @@ describe('서비스 웹 — 옮겨 적은 값', () => {
     expect(check).toEqual(expect.any(String));
     expect(chrome).toContain(check as string);
 
-    /* 하트는 두 줄로 이어 붙인 문자열이라 조각으로 견준다. */
-    for (const piece of ['M32 19 C30 15 26 12 20 12', 'C42 44 56 35 56 24']) {
-      expect(source).toContain(piece);
-      expect(chrome).toContain(piece);
-    }
+    const heart = source.match(/MARK_HEART_PATH =\s*'([^']+)'/)?.[1];
+
+    expect(heart).toEqual(expect.any(String));
+    expect(chrome).toContain(heart as string);
 
     expect(markStroke(source)).toEqual(markStroke(chrome));
   });
@@ -459,7 +458,7 @@ describe('서비스 웹 — 옮겨 적은 값', () => {
   });
 });
 
-/** 획 두께. 하트와 체크가 같아야 한 손으로 그린 것처럼 보인다. */
+/** 획 두께. 하트와 체크가 같아야 한 손으로 그린 것처럼 보인다. 확정본은 소수(1.9)다. */
 function markStroke(source: string): string | undefined {
-  return source.match(/MARK_STROKE = (\d+)/)?.[1];
+  return source.match(/MARK_STROKE = ([\d.]+)/)?.[1];
 }
