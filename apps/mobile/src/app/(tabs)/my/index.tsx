@@ -1,5 +1,5 @@
 import type { CurrentUser, MyReportListResponse } from '@weddingpick/api-contract';
-import { BUDGET_BRACKET_LABEL, formatWeddingDate } from '@weddingpick/domain';
+import { BUDGET_BRACKET_LABEL, BUSINESS_NOTICE_LINES, formatWeddingDate } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -255,6 +255,17 @@ export default function MyScreen() {
                 </ThemedText>
               </View>
             )}
+            {/*
+              사업자 정보(2026-09-08 등록). 값은 @weddingpick/domain BUSINESS 한 곳에서
+              온다 — 웹 푸터·약관·처리방침과 같은 줄이다.
+            */}
+            <View style={styles.businessNotice}>
+              {BUSINESS_NOTICE_LINES.map((line) => (
+                <ThemedText key={line} type="t7" themeColor="textAssistive" style={styles.businessLine}>
+                  {line}
+                </ThemedText>
+              ))}
+            </View>
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -490,6 +501,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loginHint: {
+    textAlign: 'center',
+  },
+  businessNotice: {
+    width: '100%',
+    marginTop: Spacing.four,
+    gap: Spacing.one,
+  },
+  businessLine: {
     textAlign: 'center',
   },
 

@@ -84,6 +84,8 @@ const palette = {
   darkLineAlpha: '#ffffff1f',
   /** SEED static-black-alpha-500. */
   scrim: '#00000080',
+  /** spec/tokens.json color.accent — 링크 · 정보 배지. */
+  accent: '#0088cc',
 
   /**
    * 소셜 로그인 버튼 — 제공자 공식 브랜드색. spec/tokens.json `color.social`과
@@ -166,6 +168,8 @@ export const Colors = {
     /** 모달·바텀시트 뒤를 덮는 색. */
     scrim: palette.scrim,
     onTint: palette.gray00,
+    /** 본문 속 링크(약관 · 처리방침). 코랄은 CTA·Pick·선택에만 쓴다(CLAUDE.md §5). */
+    link: palette.accent,
   },
 
   /*
@@ -216,6 +220,7 @@ export const Colors = {
 
     scrim: 'rgba(0,0,0,.72)',
     onTint: '#ffffff',
+    link: palette.accent,
   },
 } as const;
 

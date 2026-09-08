@@ -1,4 +1,4 @@
-import { dDay } from '@weddingpick/domain';
+import { POLICY_DOCUMENTS, dDay } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
@@ -11,6 +11,7 @@ import { canSignInWith, providerTone, useAuthProviders } from '@/features/auth/p
 import { loadRememberedAccount, type RememberedAccount } from '@/features/auth/remembered-account';
 import { takePendingSignInError } from '@/features/auth/sign-in-handoff';
 import { useSignIn } from '@/features/auth/use-sign-in';
+import { openExternal } from '@/features/open-external';
 
 /**
  * WP-AUTH-001 "첫 진입" 상태에만 쓴다 — WP-AUTH-008(로그인 유지)엔 없다.
@@ -188,7 +189,7 @@ export default function LoginScreen() {
                     ) : null}
 
                     <ThemedText type="small" themeColor="textAssistive" style={styles.terms}>
-                      시작하면 이용약관과 개인정보처리방침에 동의하게 돼요
+                      시작하면 <PolicyLink id="terms" />과 <PolicyLink id="privacy" />에 동의하게 돼요
                     </ThemedText>
                   </>
                 )}
@@ -208,6 +209,31 @@ export default function LoginScreen() {
 
       <LoginFailureSheet visible={error !== null} onRetry={retry} onDismiss={dismissError} />
     </ThemedView>
+  );
+}
+
+/**
+ * 동의 안내 문장 속 약관 링크. 밑줄 + 링크색(accent)으로, 누르면 웹의 전문을 새 창에 연다.
+ * 주소는 @weddingpick/domain POLICY_DOCUMENTS 한 곳에서 온다 — 웹 푸터와 같은 곳이다.
+ */
+function PolicyLink({ id }: { id: 'terms' | 'privacy' }) {
+  const theme = useTheme();
+  const policy = POLICY_DOCUMENTS.find((document) => document.id === id);
+
+  if (!policy?.url) return <>{id === 'terms' ? '이용약관' : '개인정보처리방침'}</>;
+
+  const { url } = policy;
+
+  return (
+    <ThemedText
+      type="small"
+      accessibilityRole="link"
+      style={[styles.policyLink, { color: theme.link, textDecorationColor: theme.link }]}
+      onPress={() => {
+        void openExternal(url);
+      }}>
+      {policy.title}
+    </ThemedText>
   );
 }
 
@@ -324,5 +350,6 @@ const styles = StyleSheet.create({
   /* 시안 고정 18 — 8단계 타이포와 무관한 아이콘 크기라 토큰이 아닌 값이다. */
   ageCheck: { width: 18, height: 18, borderRadius: Radius.pill, alignItems: 'center', justifyContent: 'center' },
   ageUnderline: { textDecorationLine: 'underline', textDecorationStyle: 'solid' },
+  policyLink: { textDecorationLine: 'underline', textDecorationStyle: 'solid', fontWeight: 700 },
   bold: { fontWeight: 700 },
 });

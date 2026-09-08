@@ -7,6 +7,8 @@ import { socialMeta } from './social-meta';
  * 런타임 JS 없음 · 웹폰트 없음.
  */
 
+import { BUSINESS, BUSINESS_NOTICE_LINES } from '@weddingpick/domain';
+
 import { CONTACT_EMAIL } from './content';
 import { faviconTags } from './landing-v4';
 
@@ -75,8 +77,11 @@ function subFooter(): string {
     </nav>
     ${email}
   </div>
+  <div class="sp-foot-biz">
+    ${BUSINESS_NOTICE_LINES.map((line) => `<span style="font-size:13px;line-height:19px;color:rgba(255,255,255,.4)">${esc(line)}</span>`).join('')}
+  </div>
   <div class="sp-foot-bot">
-    <span style="font-size:13px;color:rgba(255,255,255,.4)">© 2026 웨딩픽. All rights reserved.</span>
+    <span style="font-size:13px;color:rgba(255,255,255,.4)">© 2026 ${esc(BUSINESS.name)}. All rights reserved.</span>
     <nav class="sp-foot-policy">
       <a href="/terms.html" style="font-size:13px;color:rgba(255,255,255,.5);text-decoration:none;white-space:nowrap">이용약관</a>
       <span style="font-size:13px;color:rgba(255,255,255,.2)">·</span>
@@ -116,6 +121,7 @@ a{color:inherit}
 .sp-foot{padding:0 64px}
 .sp-foot-top{display:flex;align-items:center;justify-content:space-between;height:76px;border-bottom:1px solid rgba(255,255,255,.12);gap:24px}
 .sp-foot-nav{display:flex;align-items:center;gap:24px;flex:1;justify-content:center}
+.sp-foot-biz{display:flex;flex-direction:column;gap:4px;padding:20px 0 4px;border-top:1px solid rgba(255,255,255,.1)}
 .sp-foot-bot{display:flex;align-items:center;justify-content:space-between;height:60px;gap:16px}
 .sp-foot-policy{display:flex;align-items:center;gap:16px}
 
@@ -431,7 +437,7 @@ export function renderSupportPage(): string {
 interface TermsArticle { t: string; l: string[] }
 
 const TERMS_ARTICLES: TermsArticle[] = [
-  { t: '제1조 목적', l: ["이 약관은 웨딩픽(이하 '회사')이 제공하는 웨딩픽 서비스의 이용조건, 회사와 회원의 권리·의무, 서비스 운영 및 분쟁 처리 기준을 정하는 것을 목적으로 합니다."] },
+  { t: '제1조 목적', l: [`이 약관은 ${BUSINESS.name}(이하 '회사')이 제공하는 ${BUSINESS.serviceName} 서비스의 이용조건, 회사와 회원의 권리·의무, 서비스 운영 및 분쟁 처리 기준을 정하는 것을 목적으로 합니다.`] },
   { t: '제2조 정의', l: ["'서비스'란 회사가 모바일 애플리케이션과 웹을 통해 제공하는 웨딩업체 정보 검색, Pick, 비교, 일정·지출 관리, 배우자 연결, 후기, 제보 금액 정보, 알림 및 이벤트 기능을 말합니다.", "'회원'이란 소셜 인증, 연령 확인 및 필수 약관 동의를 마치고 계정이 활성화된 이용자를 말합니다.", "'Pick 인증 자료'란 회원이 실제 이용금액 확인을 위해 제출하는 영수증, 결제내역, 결제문자, 계좌이체 또는 간편결제 내역 등을 말합니다.", "'확인된 제보'란 제출 자료에서 필요한 항목을 추출·검증하고 작성자 정보와 분리해 제공하는 금액·품목·이용일·조건 등의 정보를 말합니다.", "'업체'란 서비스에 표시되는 웨딩홀, 스튜디오, 드레스, 메이크업 등 웨딩 관련 사업자를 말합니다. 서비스 노출만으로 제휴관계가 성립하지 않습니다."] },
   { t: '제3조 약관의 게시와 변경', l: ["회사는 회원이 약관을 쉽게 확인할 수 있도록 서비스 내에 게시합니다. 약관을 변경할 때에는 변경 내용, 사유 및 시행일을 관계 법령과 변경의 중대성에 맞는 기간 전에 알립니다. 회원에게 불리하거나 별도 동의가 필요한 변경은 필요한 절차를 거칩니다."] },
   { t: '제4조 이용계약과 가입', l: ["회원가입은 소셜 인증, 만 14세 이상 확인, 필수 약관 동의 및 회사의 가입 승인으로 성립합니다.", "소셜 인증에 성공했더라도 필수 동의가 완료되지 않으면 계정을 활성화하지 않습니다.", "회사는 타인의 정보 도용, 허위정보 입력, 반복적인 부정 가입 또는 기술상 현저한 장애가 있는 경우 가입을 거절하거나 보류할 수 있으며 가능한 범위에서 사유를 안내합니다.", "한 회원은 여러 소셜 계정을 연결할 수 있습니다. 이메일이 같다는 이유만으로 계정을 자동 병합하지 않으며, 기존 계정 재인증 등 본인 확인을 거칩니다."] },
@@ -451,6 +457,7 @@ const TERMS_ARTICLES: TermsArticle[] = [
   { t: '제18조 회원탈퇴', l: ["회원은 서비스 내 탈퇴 기능을 이용할 수 있으며 탈퇴하면 계정과 개인화 정보는 삭제되고 되돌릴 수 없습니다.", "후기와 확인된 제보는 작성자 정보와 분리해 유지될 수 있습니다. 화면에는 해당 항목과 개수를 구체적으로 표시합니다.", "법령상 보관이 필요한 정보는 해당 기간 동안 다른 정보와 분리해 보관하고 목적이 끝나면 삭제합니다.", "연결된 소셜 계정은 제공자 정책에 따른 연결 해제 또는 토큰 폐기 절차를 수행합니다."] },
   { t: '제19조 회사의 책임', l: ["회사는 고의 또는 과실로 회원에게 손해를 발생시킨 경우 관계 법령에 따라 책임을 부담합니다. 회사가 통제할 수 없는 천재지변, 통신망 장애, 회원의 귀책사유로 발생한 손해에는 책임이 제한될 수 있습니다. 이 조항은 회사의 고의·중과실 책임이나 법령상 배제할 수 없는 책임을 면제하지 않습니다."] },
   { t: '제20조 분쟁 처리', l: ["회원은 서비스 내 고객센터를 통해 문의와 이의제기를 할 수 있습니다. 회사와 회원은 분쟁 해결을 위해 성실히 협의하며, 해결되지 않는 경우 대한민국 법령과 민사소송법상 관할법원에 따릅니다."] },
+  { t: '제21조 사업자 정보', l: [`상호: ${BUSINESS.name}`, `대표자: ${BUSINESS.representative}`, `사업자등록번호: ${BUSINESS.registrationNumber}`, `업태·종목: ${BUSINESS.businessType} · ${BUSINESS.businessItem}`, `문의: ${CONTACT_EMAIL ?? 'help.weddingpick@gmail.com'}`] },
 ];
 
 function legalDocument(articles: TermsArticle[]): string {
@@ -536,7 +543,7 @@ const PRIVACY_SECTIONS: PrivacySection[] = [
   { t: '8. 만 14세 미만 아동', l: ["웨딩픽은 만 14세 미만의 회원가입을 받지 않습니다. 가입 과정에서 만 14세 이상 여부만 확인하고, 생년월일 전체를 보관할 필요가 없는 경우 판정 결과와 확인 시각만 보관합니다."] },
   { t: '9. 자동 수집정보와 행태정보', l: ["서비스 안정성과 보안을 위해 접속일시, IP, 기기·앱 정보, 오류 로그를 자동으로 생성할 수 있습니다. 맞춤 추천·광고를 위해 행태정보를 이용하는 경우 수집 항목, 방법, 목적, 보유기간, 통제 방법과 제3자 제공 여부를 별도로 공개합니다."] },
   { t: '10. 안전성 확보조치', l: ["접근권한 최소화와 역할 분리", "전송·저장 구간 암호화", "접속기록 보관과 위변조 방지", "취약점 점검과 침해사고 대응", "수탁자 관리·감독", "원본 이미지 접근 제한과 자동 삭제 검증"] },
-  { t: '11. 개인정보 보호 담당부서', l: [`개인정보 관련 문의와 권리행사는 서비스 내 고객센터 또는 ${CONTACT_EMAIL ?? 'help.weddingpick@gmail.com'} 으로 접수할 수 있습니다. 담당부서는 접수 내용을 확인하여 관계 법령에 따라 처리합니다.`] },
+  { t: '11. 개인정보 보호책임자', l: [`개인정보 보호책임자: ${BUSINESS.representative} (${BUSINESS.name} 대표)`, `연락처: ${CONTACT_EMAIL ?? 'help.weddingpick@gmail.com'}`, `개인정보 관련 문의와 권리행사는 서비스 내 고객센터 또는 위 연락처로 접수할 수 있습니다. 보호책임자는 접수 내용을 확인하여 관계 법령에 따라 처리합니다.`] },
   { t: '12. 권익침해 구제', l: ["이용자는 개인정보침해 신고센터, 개인정보분쟁조정위원회, 경찰청 등 관계기관에 상담이나 분쟁조정을 신청할 수 있습니다. 기관명·연락처는 시행 시점의 공식 정보를 확인해 게시합니다."] },
   { t: '13. 처리방침 변경', l: ["이 처리방침을 변경할 때에는 시행일, 변경 내용과 사유를 서비스에서 알리고 이전 처리방침을 확인할 수 있도록 제공합니다. 별도 동의가 필요한 처리 목적·제3자 제공·국외 이전 등의 변경은 기능 사용 전에 필요한 절차를 거칩니다."] },
 ];

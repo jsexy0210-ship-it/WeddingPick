@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import {
+  BUSINESS,
   MANY_CONFIRMED,
   NOT_ENOUGH_DATA,
   POLICY_DOCUMENTS,
@@ -346,9 +347,14 @@ describe('서비스 웹 — 겉껍데기', () => {
     expect(html).not.toContain('play.google.com');
   });
 
-  it('없는 사업자등록번호를 적지 않는다', () => {
-    expect(html).not.toContain('사업자등록번호');
+  it('사업자 정보를 푸터에 적는다 — 2026-09-08 사업자등록', () => {
+    // 값은 @weddingpick/domain BUSINESS 한 곳에서 온다. 자리 표시용 번호가 아니다.
     expect(FOOTER_BOTTOM.join(' ')).not.toContain('000-00-00000');
+    expect(html).toContain(`사업자등록번호 ${BUSINESS.registrationNumber}`);
+    expect(html).toContain(`상호 ${BUSINESS.name} · 대표 ${BUSINESS.representative}`);
+    // 소재지는 운영자 자택이라 게시하지 않는다.
+    expect(html).not.toContain('사업장 소재지');
+    expect(html).not.toContain('일현로');
   });
 
   it('업체 · 플래너 문의 창구를 두지 않는다', () => {

@@ -1,5 +1,7 @@
-/** Live Render static service from render.yaml; custom weddingpick.kr DNS is not active. */
-export const SITE_ORIGIN = 'https://weddingpick-web.onrender.com';
+import { SITE_ORIGIN } from '@weddingpick/domain';
+
+/** 서비스 주소는 @weddingpick/domain SITE_ORIGIN 한 곳에서 온다(앱 약관 링크와 같은 값). */
+export { SITE_ORIGIN };
 export const SHARE_TITLE = '웨딩픽 - 확인하고 비교해서 골라요';
 export const SHARE_DESCRIPTION = '웨딩 준비에 필요한 정보를 확인하고 비교해, 두 분에게 맞는 곳을 골라드려요.';
 export const SHARE_IMAGE = `${SITE_ORIGIN}/assets/weddingpick-og.png`;
