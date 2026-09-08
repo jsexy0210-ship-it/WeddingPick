@@ -200,9 +200,23 @@ function RootLayoutContent() {
   useEffect(() => {
     if (entry === null || !minimumShown) return;
 
-    if (entry !== 'app' && !redirected.current) {
-      redirected.current = true;
+    if (redirected.current) return;
+
+    redirected.current = true;
+
+    if (entry !== 'app') {
       router.replace(ENTRY_ROUTE[entry]);
+
+      return;
+    }
+
+    /*
+     * 홈으로 갈 사람인데 지금 주소가 로그인·온보딩이면(웹 — 카카오가 등록된
+     * redirect 경로로 돌려보낸 직후, 또는 그 주소로 직접 들어온 경우) 그 화면이
+     * 그대로 그려진다. 홈으로 옮긴다.
+     */
+    if (Platform.OS === 'web' && /^\/(login|setup)(\/|$)/.test(window.location.pathname)) {
+      router.replace('/');
     }
   }, [entry, minimumShown]);
 

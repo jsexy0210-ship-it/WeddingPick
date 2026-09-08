@@ -35,14 +35,19 @@ const KAKAO_REDIRECT_SCHEME = 'kakao8ffc70af8bf397e03d930e10ca38cb22';
 WebBrowser.maybeCompleteAuthSession();
 
 /**
- * 카카오 redirect URI. 네이티브 앱 커스텀 스킴(`kakao...://`)은 웹에서 의미가
- * 없다 — 웹은 실제 페이지 주소로 돌아와야 팝업이 원래 창에 결과를 돌려줄 수
- * 있다(`WebBrowser.maybeCompleteAuthSession`). `/login` 고정 경로를 쓴다 —
- * 버튼이 이 화면(또는 그 하위 화면)에서만 눌리므로 항상 이 경로로 돌아온다.
- * 카카오 개발자센터에 이 값을 Redirect URI로 등록해야 한다.
+ * 카카오 redirect URI(웹). 네이티브 앱 커스텀 스킴(`kakao...://`)은 웹에서
+ * 의미가 없다 — 웹은 실제 페이지 주소로 돌아와야 한다.
+ *
+ * **카카오 개발자센터에 등록한 값과 글자 하나까지 같아야 한다** — 다르면
+ * 카카오가 로그인 화면을 열기도 전에 KOE006으로 막는다. 등록값은
+ * `https://weddingpick-app-web.onrender.com/setup`(2026-09-08). 돌아온 뒤 어느
+ * 화면을 보일지는 이 경로가 아니라 부팅(`app/_layout.tsx`)이 세션 응답으로
+ * 정한다 — 온보딩이 안 끝났으면 `/setup`, 끝났으면 홈.
  */
+export const KAKAO_WEB_REDIRECT_PATH = '/setup';
+
 function webRedirectUri(): string {
-  return `${window.location.origin}/login`;
+  return `${window.location.origin}${KAKAO_WEB_REDIRECT_PATH}`;
 }
 
 /**
