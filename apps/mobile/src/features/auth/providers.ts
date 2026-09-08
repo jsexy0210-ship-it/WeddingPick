@@ -107,7 +107,8 @@ export async function signInWithKakao(provider: AuthProvider): Promise<void> {
     clientId: KAKAO_CLIENT_ID,
     redirectUri,
     responseType: ResponseType.Code,
-    scopes: ['openid'],
+    /* profile_nickname — id_token에 nickname 클레임이 실린다. 화면 이름은 닉네임만 쓴다. */
+    scopes: ['openid', 'profile_nickname'],
     usePKCE: true,
   });
   const result = await request.promptAsync({
