@@ -350,6 +350,6 @@ const styles = StyleSheet.create({
   /* 시안 고정 18 — 8단계 타이포와 무관한 아이콘 크기라 토큰이 아닌 값이다. */
   ageCheck: { width: 18, height: 18, borderRadius: Radius.pill, alignItems: 'center', justifyContent: 'center' },
   ageUnderline: { textDecorationLine: 'underline', textDecorationStyle: 'solid' },
-  policyLink: { textDecorationLine: 'underline', textDecorationStyle: 'solid', fontWeight: 700 },
+  policyLink: { textDecorationLine: 'underline', textDecorationStyle: 'solid' },
   bold: { fontWeight: 700 },
 });

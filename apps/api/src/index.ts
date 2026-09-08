@@ -9,6 +9,7 @@ import { createPool } from './db';
 import { buildServer } from './server';
 import { createLocalStorage } from './storage/local';
 import { createS3Storage } from './storage/s3';
+import { completeWithdrawals } from './withdrawal';
 
 /**
  * 개발용 로그인은 프로덕션이 아니고, 비밀값이 충분히 길 때만 켠다.
@@ -86,6 +87,22 @@ async function main() {
 
   await app.listen({ port: config.port, host: '0.0.0.0' });
   console.log(`API가 ${config.port} 포트에서 돈다.`);
+
+  /*
+   * 탈퇴를 접수했는데 계정 행이 남은 사람을 뜰 때 한 번 지운다.
+   *
+   * 원래 이 일은 worker(`worker.ts`)가 10분마다 하지만, 지금 배포에는 worker
+   * 서비스가 없다(render.yaml). 그동안 Pick 이력 트리거 버그(0080)로 못 지운
+   * 계정이 쌓여 있었다 — 서버가 다시 뜨는 배포 때마다 여기서 정리한다.
+   * 실패해도 서버는 뜬다 — 다음 배포에 다시 시도한다.
+   */
+  try {
+    const deleted = await completeWithdrawals(context.pool);
+
+    if (deleted > 0) console.log(`탈퇴 접수 계정 ${deleted}건을 지웠다.`);
+  } catch (error) {
+    console.error('탈퇴 접수 계정 정리에 실패했다.', error);
+  }
 }
 
 main().catch((error: Error) => {

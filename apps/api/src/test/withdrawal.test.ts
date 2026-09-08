@@ -120,6 +120,44 @@ describeWithDb('회원탈퇴', () => {
     expect(await userExists(me.userId)).toBe(false);
   });
 
+  it('Pick한 업체가 있어도 계정이 그 자리에서 지워진다', async () => {
+    /*
+     * 회귀 — vendor_candidates의 삭제 이력 트리거(0067)가 웨딩이 CASCADE로
+     * 사라지는 도중 이미 없는 wedding_id로 removed_candidates에 INSERT하려다
+     * FK에 걸려, Pick이 하나라도 있는 사람은 계정 행이 끝내 안 지워졌다.
+     * API는 그래도 completed=false로 «접수»라 답해 아무도 눈치채지 못했다.
+     */
+    const me = await signInAs(test, 'picker');
+    const weddingId = await aWedding(me.userId);
+    const vendor = await test.pool.query<{ id: string }>(
+      `INSERT INTO structured.vendors (name, category, region, source)
+       VALUES ('가온예식홀', 'hall', '서울', 'public_data') RETURNING id`
+    );
+
+    await test.pool.query(
+      `INSERT INTO structured.vendor_candidates (wedding_id, vendor_id, added_by)
+       VALUES ($1, $2, $3)`,
+      [weddingId, vendor.rows[0]!.id, me.userId]
+    );
+
+    const response = await test.app.inject({
+      method: 'POST',
+      url: '/v1/me/withdrawal',
+      headers: me.headers,
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({ completed: true });
+    expect(await userExists(me.userId)).toBe(false);
+
+    const failures = await test.pool.query(
+      'SELECT 1 FROM structured.withdrawal_deletion_failures WHERE user_id = $1',
+      [me.userId]
+    );
+
+    expect(failures.rowCount).toBe(0);
+  });
+
   it('탈퇴하면 그 자리에서 못 들어온다', async () => {
     const me = await signInAs(test, 'leaving');
 
