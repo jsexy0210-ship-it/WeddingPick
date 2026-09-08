@@ -53,6 +53,7 @@ export function registerSettingsRoutes(app: FastifyInstance, context: AppContext
     const row = rows[0];
 
     return {
+      userId,
       pushEnabled: row?.push_enabled ?? true,
       priceChangeEnabled: row?.price_change_enabled ?? true,
       paymentConsent: row?.consent_at != null,

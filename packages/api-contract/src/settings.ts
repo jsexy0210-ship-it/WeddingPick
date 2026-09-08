@@ -10,6 +10,8 @@ import { timestampSchema } from './common';
  * 장식이다.
  */
 export const settingsSchema = z.object({
+  /** 계정 ID. 운영자 지정(CLI `--operator <user-id>`)·문의 때 본인이 읽어 줄 값. */
+  userId: z.string(),
   /** 서비스 알림 전체. */
   pushEnabled: z.boolean(),
   /** 관심업체 가격 변동 알림. v2.0 37번 — 서비스 알림과 따로 끈다. */

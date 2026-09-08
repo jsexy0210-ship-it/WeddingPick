@@ -224,6 +224,10 @@ export default function SettingsScreen() {
             <ThemedText type="t7" themeColor="textAssistive">
               앱 버전 {APP_VERSION}
             </ThemedText>
+            {/* 운영자 지정·문의 때 본인이 읽어 줄 값. 길게 눌러 복사할 수 있게 selectable. */}
+            <ThemedText type="t7" themeColor="textAssistive" selectable>
+              계정 ID {settings.userId}
+            </ThemedText>
             <ActionButton label="로그아웃" onPress={confirmSignOut} />
           </ThemedView>
         </ScrollView>
