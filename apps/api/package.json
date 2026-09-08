@@ -27,6 +27,7 @@
     "ai-cost": "tsx src/ai-cost-admin.ts",
     "seed:demo": "tsx src/seed-demo.ts",
     "seed:samples": "tsx src/seed-samples.ts",
+    "seed:sample-images": "tsx src/seed-sample-images.ts",
     "analyze": "tsx src/analyze-file.ts",
     "marketing": "tsx src/marketing/cli.ts"
   },

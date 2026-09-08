@@ -1,4 +1,6 @@
-# 업종별 샘플 업체 100곳씩을 스테이징 DB에 넣거나 걷어낸다 — 화면 검수용(2026-09-08 오더).
+# 업종별 샘플 업체 20곳씩을 스테이징 DB에 넣거나 걷어낸다 — 화면 검수용(2026-09-08 오더).
+# images = 샘플 업체 사진을 네이버 이미지 검색 결과로 바꾼다(검수용 · 출시 전 교체).
+#   저장소 시크릿 NAVER_SEARCH_CLIENT_ID / NAVER_SEARCH_CLIENT_SECRET이 필요하다.
 #
 # 저장소의 apps/api/src/seed-samples.ts를 그대로 쓴다. 고정 시드라 몇 번을 돌려도
 # 같은 업체만 있고, remove는 vendor_source_records(source_key='sample') 표시를
@@ -9,10 +11,10 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'seed = 넣는다 / remove = 걷어낸다'
+        description: 'seed = 넣는다 / remove = 걷어낸다 / images = 사진을 네이버 검색 결과로'
         type: choice
         default: seed
-        options: [seed, remove]
+        options: [seed, remove, images]
 
 permissions:
   contents: read
@@ -33,9 +35,13 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           STORAGE_DRIVER: local
           MODE: ${{ github.event.inputs.mode }}
+          NAVER_SEARCH_CLIENT_ID: ${{ secrets.NAVER_SEARCH_CLIENT_ID }}
+          NAVER_SEARCH_CLIENT_SECRET: ${{ secrets.NAVER_SEARCH_CLIENT_SECRET }}
         run: |
           if [ "$MODE" = "remove" ]; then
             npm run seed:samples --workspace @weddingpick/api -- --remove --yes
+          elif [ "$MODE" = "images" ]; then
+            npm run seed:sample-images --workspace @weddingpick/api -- --yes
           else
             npm run seed:samples --workspace @weddingpick/api -- --yes
           fi
