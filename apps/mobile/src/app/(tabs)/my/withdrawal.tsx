@@ -35,7 +35,7 @@ import {
 } from '@weddingpick/ui';
 import { getWithdrawalNotice, withdraw } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
-import { useSession } from '@/features/auth/use-session';
+import { wipeDevice } from '@/api/session';
 
 /**
  * 회원탈퇴. 디자인 핸드오프 WP-MY-008.
@@ -51,7 +51,6 @@ import { useSession } from '@/features/auth/use-session';
  */
 export default function WithdrawalScreen() {
   const theme = useTheme();
-  const { signOut } = useSession();
   const [notice, setNotice] = useState<WithdrawalNotice | null>(null);
   const [agreed, setAgreed] = useState(false);
   const [done, setDone] = useState<string[] | null>(null);
@@ -78,7 +77,15 @@ export default function WithdrawalScreen() {
     setSending(true);
 
     await withdraw()
-      .then((result) => setDone(result.done))
+      .then(async (result) => {
+        /*
+         * 서버가 계정·세션을 지운 **그 자리에서** 기기도 비운다 — 「확인」을
+         * 기다리지 않는다. 완료 화면에서 앱을 닫아도 토큰·기억된 계정·초안이
+         * 남지 않는다. 다음에 열면 로그인부터 다시, 즉 다시 가입이다.
+         */
+        await wipeDevice();
+        setDone(result.done);
+      })
       .catch(() => setToast('탈퇴하지 못했어요. 잠시 뒤에 다시 시도해주세요'))
       .finally(() => setSending(false));
   }
@@ -112,8 +119,8 @@ export default function WithdrawalScreen() {
             <ActionButton
               label="확인"
               onPress={() => {
-                // 세션은 이미 서버에서 사라졌다. 기기에 남은 것만 치운다.
-                void signOut().finally(() => router.replace('/login'));
+                // 서버 세션도 기기도 이미 비었다. 로그인 화면으로 — 다시 가입해야 쓴다.
+                router.replace('/login');
               }}
             />
           </ScrollView>
