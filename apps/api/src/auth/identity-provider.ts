@@ -1,5 +1,8 @@
-/** `email`은 외부 제공자가 아니다 — 서버가 직접 비밀번호를 확인한다(`email-account.ts`). */
-export type IdentityProviderName = 'apple' | 'kakao' | 'google' | 'naver' | 'email';
+/**
+ * 로그인 제공자. 이메일·비밀번호 로그인(v3.12)은 2026-09-08에 서버에서도 지웠다 —
+ * 남은 것은 카카오와, 이미 가입한 계정을 위한 애플·구글·네이버 검증뿐이다.
+ */
+export type IdentityProviderName = 'apple' | 'kakao' | 'google' | 'naver';
 
 export type VerifiedIdentity = {
   provider: IdentityProviderName;

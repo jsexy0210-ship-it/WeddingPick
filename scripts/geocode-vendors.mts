@@ -17,7 +17,7 @@
  *   DATABASE_URL=... KAKAO_REST_API_KEY=... npx tsx scripts/geocode-vendors.mts
  *
  * 카카오 REST API 키는 https://developers.kakao.com 에서 발급한다(무료 티어
- * 있음). Fly.io에는 KAKAO_REST_API_KEY 시크릿으로 등록해두면 배포 환경에서도
+ * 있음). Render 서비스 환경변수에 KAKAO_REST_API_KEY로 등록해두면 배포 환경에서도
  * 같은 스크립트를 돌릴 수 있다.
  */
 import { Client } from 'pg';

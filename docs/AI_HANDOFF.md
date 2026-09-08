@@ -164,7 +164,6 @@ PR #99의 조사 보고서와 그 독립 재검증 결과에서 **코드로 확�
 | # | 항목 | 위치 · 근거 |
 |---|---|---|
 | 잔존-A | 관리자 kill switch가 아무것도 끄지 않는다 | `routes/admin.ts`의 `killSwitches` Map을 `admin.ts` 밖에서 조회하는 코드가 0건. 껐다고 표시돼도 기능은 계속 돌고, 재시작하면 상태도 사라진다 |
-| G08 | 이메일 인증 경로에 호출 제한·운영자 TTL 공백 | `passwordAttempts`가 이메일 로그인 한 곳에만 걸려 있다. `/auth/email/lookup`·`/accounts`·`/password-reset`·`/password-reset/confirm`은 무제한이고 요청마다 scrypt를 돈다(계정 열거·자원 소모). 이메일 경로는 `operatorSessionTtlDays`도 넘기지 않는다 |
 | G05 | staging 이름의 job이 운영 대상을 검사 | `main.yml`의 Staging·Production 두 job이 같은 `DATABASE_URL`과 같은 health URL(`weddingpickl.onrender.com`)을 쓴다. `db-migrate-staging.yml`만 `STAGING_DATABASE_URL`을 쓴다 |
 
 ### 출시 전 처리
@@ -186,7 +185,6 @@ PR #99의 조사 보고서와 그 독립 재검증 결과에서 **코드로 확�
 
 - 운영 Render `WeddingPickl`의 `DATABASE_URL`이 GitHub `DATABASE_URL`과 같은 DB인가 — **N01과 직결**
 - 운영 DB의 `schema_migrations` 목록과 `identity.identities` 실제 컬럼
-- 운영 메일 드라이버가 resend인지 console인지
 - 분석 워커 서비스가 Render에 실제로 있는가 (저장소에 선언 없음)
 - TestFlight / Play 제출·심사 상태
 - legacy branch protection API(`branches/main/protection`) 설정
@@ -196,7 +194,7 @@ PR #99의 조사 보고서와 그 독립 재검증 결과에서 **코드로 확�
 1. N01 재현 → Render 로그의 SQL 오류로 원인 확정 → 수정
 2. G04 CORS 수정 (admin 출처·커스텀 도메인 + PATCH). 각 출처에서 PATCH preflight 통과 확인
 3. G02 main 보호 규칙 — 필수 PR + head CI 성공
-4. 잔존-A kill switch 연결, G08 이메일 경로 보강
+4. 잔존-A kill switch 연결 (G08 이메일 경로는 2026-09-08 이메일 로그인 삭제로 해소)
 5. G05 환경별 secret·health URL 1:1 분리
 6. 나머지 항목에 각각 단위 테스트를 붙이며 정리
 
@@ -265,22 +263,43 @@ RN 화면의 웹 렌더링 품질이 이제 "부가 기능"이 아니라 **실�
 
 P0 전체 항목의 완료 기준과 검증 증거가 확정되지 않아 P0 진척률은 미측정이다. `npm run progress`는 문서 표시 기반 전체 공정률이며 P0 출시 준비율이 아니다.
 
-### 서버
-- **API 서버**: Render — `https://weddingpickl.onrender.com`
-- **DB**: Neon PostgreSQL (production)
-- **스토리지**: NCP Object Storage (`weddingpick-test`, `PROJECT_STATUS.md` 기준). B2 관련 아래 기록은 과거 구성이다.
-- **모바일 빌드**: EAS (Expo Application Services) + GitHub Actions
+### 서버 · 외부 서비스 (2026-09-08 소유자 확인 — 이 목록이 전부다)
+
+| 구분 | 서비스 | 비고 |
+|---|---|---|
+| API | Render `weddingpickl` — `https://weddingpickl.onrender.com` | Node/Fastify, Docker. 환경변수 원본은 `infra/render-env.yml` |
+| 앱 웹 export | Render `weddingpick-app-web` — `https://weddingpick-app-web.onrender.com` | `apps/mobile` react-native-web 정적 빌드 |
+| 서비스 웹사이트 | Render `weddingpick-web` — `https://weddingpick-web.onrender.com` | `apps/web` 정적 빌드 |
+| 관리자 | Render `weddingpick-admin` | 같은 `apps/web` 빌드의 `admin.html` |
+| DB | Neon PostgreSQL | `DATABASE_URL` |
+| 원본 문서 저장소 | NCP Object Storage (S3 호환) — 버킷 `weddingpick-test` | `STORAGE_DRIVER=s3` + `S3_BUCKET` · `S3_REGION` · `S3_ENDPOINT` · `AWS_ACCESS_KEY_ID` · `AWS_SECRET_ACCESS_KEY` |
+| 모바일 빌드·배포 | Expo EAS · Apple Developer · Google Play Console | `release.yml` · `eas-*.yml` · `android-apk.yml` |
+| 도메인 | `weddingpick.kr` | |
+| 로그인 | Kakao Developers | `KAKAO_APP_KEY` · `KAKAO_CLIENT_SECRET`. 애플·구글·네이버는 기존 계정 검증용 코드만 남아 있고 새 로그인 버튼은 없다 |
+| 문서 분석(Pick 인증) | Anthropic API | `ANTHROPIC_API_KEY` — `apps/api/src/analysis/*`가 읽는다 |
+| 공공데이터 수집 | 소상공인진흥공단 API(무료) | `SBIZ_API_KEY`, `public-data.yml` |
+| CI/CD | GitHub Actions | 아래 표 |
+
+**사용하지 않음(삭제됨, 2026-09-08)**: Resend(비밀번호 재설정 메일 — 이메일 로그인과 함께 삭제), Fly.io(Render로 대체), Backblaze B2(NCP Object Storage로 대체).
 
 ### GitHub Actions 워크플로
 | 파일 | 역할 |
 |---|---|
 | `main.yml` | PR CI; main push 시 CI → DB 마이그레이션 → Render 배포·헬스체크 |
-| `release.yml` | iOS EAS 빌드 배포 |
-| `db-migrate.yml` | Neon DB 마이그레이션 적용 |
-| `fly-init.yml` | 이전 Fly.io 초기화 기록(현재 운영 제외) |
-| `eas-init.yml` | EAS 프로젝트 초기화 |
-| `storage-test.yml` | B2 스토리지 연결 테스트 |
+| `keep-warm.yml` | Render 무료 플랜 API가 잠들지 않게 주기적으로 `/health` 호출 |
+| `db-migrate.yml` | Neon 운영 DB 마이그레이션 적용 |
+| `db-migrate-staging.yml` | 스테이징 DB(`STAGING_DATABASE_URL`) 마이그레이션 적용 |
+| `db-status.yml` | DB 마이그레이션 적용 상태 조회 |
+| `db-seed-samples.yml` | 샘플 업체·이미지 시드 |
+| `db-delete-test-user.yml` | 테스트 계정 삭제(`apps/api/src/scripts/delete-test-user.ts`) |
+| `render-env-sync.yml` | `infra/render-env.yml`을 Render 서비스 환경변수로 upsert |
+| `render-trigger-deploy.yml` | Render 배포 수동 트리거 |
+| `render-deploy-status.yml` | Render 배포 상태 조회 |
+| `storage-test.yml` | NCP Object Storage(S3 호환) 업로드·다운로드·삭제 연결 테스트 |
+| `public-data.yml` | 공공데이터(소상공인진흥공단) 수집 |
 | `android-apk.yml` | Android APK 빌드 |
+| `eas-init.yml` · `eas-apk-preview.yml` | EAS 프로젝트 초기화 · preview APK |
+| `release.yml` | iOS EAS 빌드 배포 |
 
 ---
 
@@ -290,14 +309,8 @@ P0 전체 항목의 완료 기준과 검증 증거가 확정되지 않아 P0 진
 `Bundle (web)` 스텝에서 이미 매번 빌드 검증됨)를 실제로 호스팅해서, 네이티브 쉘이
 자기 자신의 웹 빌드를 웹뷰로 띄우는 구조를 검증한 POC다.
 
-**인프라 정정(2026-09-04, 같은 세션 내 수정)**: 이 섹션은 처음에 "이 저장소는
-Render를 쓰지 않는다"고 적었었다 — `main`만 보고 판단해서 생긴 착오다. 실제로는
-`main`이 인프라 문서·CI(`main.yml`의 `flyctl deploy`)·`fly.toml` 전부 Fly.io
-기준으로 **뒤처져** 있고, 실제 운영 인프라는 **Render**다(API:
-`weddingpickl.onrender.com`, `claude/session-a4bq31` 브랜치의 `render.yaml`·
-`docs/AI_HANDOFF.md`가 최신 상태 — 사용자가 직접 확인해준 사실이다). `main`의
-나머지 Fly.io 언급(§인프라 현황, 2번 항목, 코드 구조 등)을 전부 Render로
-갱신하는 것은 이 PR의 범위 밖이다 — 이 PR은 호스팅 설정 하나만 Render로 바꿨다.
+**인프라(2026-09-08 정리)**: 운영 인프라는 **Render**다(API: `weddingpickl.onrender.com`).
+이전 Fly.io 설정·문서는 저장소에서 모두 지웠다 — §인프라 현황의 서버 표가 현재 기준이다.
 
 ### 1. 웹 번들 호스팅 — Render 정적 사이트, 설정만 추가함
 - `main`에 없던 `render.yaml`을 새로 만들었다 — `claude/session-a4bq31`의

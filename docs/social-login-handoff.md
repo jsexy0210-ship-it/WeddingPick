@@ -1,10 +1,13 @@
 # 로그인 인수인계
 
-## v3.12 정책 — 카카오 + 이메일 2종
+## 정책 — 카카오 1종
 
 핸드오프 v3.12(`docs/design-handoff/current/CHANGELOG.md`)가 로그인 방법을
-소셜 4종에서 **카카오 + 이메일**로 줄였다. **네이버·구글·애플은 화면에서
-폐기했다** — 새 로그인 버튼은 어디에도 없다. 다만 이미 그 방법으로 가입한
+소셜 4종에서 **카카오 + 이메일**로 줄였고, v3.13(2026-09-07)이 초기 버전을
+**카카오만**으로 정했다. 이메일 로그인(WP-AUTH-002~007)은 2026-09-08에 앱 화면·
+서버 라우트(`/v1/auth/email/*`)·비밀번호 재설정 메일(Resend)·웹의
+`reset-password.html`까지 전부 지웠다 — 메일 발송 인프라는 쓰지 않는다.
+**네이버·구글·애플은 화면에서 폐기했다** — 새 로그인 버튼은 어디에도 없다. 다만 이미 그 방법으로 가입한
 계정이 실제로 있을 수 있어서, 서버 쪽 검증 코드(`createNaverProvider`·
 `createGoogleProvider`·`createAppleProvider`, `apps/api/src/auth/identity-provider.ts`)와
 그 계정들의 세션 검증은 그대로 남겨뒀다 — 지우면 그 계정들이 완전히 로그인할
@@ -29,31 +32,6 @@
   리다이렉트 URI로 돌아온다 — 두 값 모두 카카오 콘솔 "로그인 리다이렉트
   URI"에 등록해야 한다.
 
-## 이메일
-
-- API: `POST /v1/auth/email/lookup`(계정 존재 판정) · `POST
-  /v1/auth/email/accounts`(가입, 성공 시 바로 세션) · `POST
-  /v1/auth/sessions`(`provider: 'email'`로 로그인) · `POST
-  /v1/auth/email/password-reset` · `POST
-  /v1/auth/email/password-reset/confirm`.
-- 비밀번호는 scrypt로 해시한다(`apps/api/src/auth/password.ts`). 원문은 어디에도
-  저장하지 않는다.
-- 비밀번호 시도는 이메일당 창(기본 15분, `PASSWORD_ATTEMPT_WINDOW_MS`) 안에서
-  제한한다(`apps/api/src/auth/attempt-limiter.ts`, 프로세스 메모리 — 인스턴스가
-  여럿이면 각자 센다). 오류 문구는 남은 시도 횟수를 숨기지 않는다.
-- **비밀번호는 앱에서 재설정하지 않는다.** `/v1/auth/email/password-reset`이
-  보내는 메일 링크는 서비스 웹사이트(`apps/web`)의 `reset-password.html`을
-  연다 — 모바일 웹 export(`weddingpick-app-web`)가 아니다. 링크는 30분
-  유효(`PASSWORD_RESET_TTL_MINUTES`)하고, 재설정에 성공하면 그 계정의 기존
-  세션을 전부 끊는다.
-- 메일 발송은 `MAIL_DRIVER`로 고른다 — `resend`(운영, `RESEND_API_KEY` ·
-  `MAIL_FROM` 필요, 발신 도메인은 Resend 콘솔에서 인증돼 있어야 한다)와
-  `console`(개발·스테이징, 보내지 않고 로그에만 찍는다 — 운영에서 이 값이면
-  서버가 시작할 때 경고한다).
-- 계정 존재 여부를 드러내지 않는다 — 비밀번호 찾기는 등록 여부와 무관하게
-  항상 204를 답하고 화면은 늘 "메일을 보냈어요"로 간다. 로그인 실패도 계정이
-  없을 때와 비밀번호가 틀렸을 때를 구분하지 않고 같은 401을 준다.
-
 ## 폐기된 방법 — 네이버 · 구글 · 애플
 
 새 로그인 버튼은 없다. 아래는 **이미 가입된 계정**의 세션이 계속 검증되도록
@@ -77,10 +55,6 @@ API 서버에만 설정한다. 값은 Git 저장소나 앱 번들에 넣지 않�
 ```env
 KAKAO_APP_KEY=<카카오 REST API 키 — EXPO_PUBLIC_KAKAO_CLIENT_ID와 같은 값>
 KAKAO_CLIENT_SECRET=<보안 탭에서 Client Secret을 "사용함"으로 켠 경우에만>
-MAIL_DRIVER=resend
-RESEND_API_KEY=
-MAIL_FROM=웨딩픽 <no-reply@weddingpick.kr>
-PASSWORD_RESET_URL=https://weddingpick-web.onrender.com/reset-password.html
 DEV_LOGIN_SECRET=
 NODE_ENV=production
 

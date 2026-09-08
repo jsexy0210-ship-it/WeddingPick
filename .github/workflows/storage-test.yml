@@ -1,4 +1,4 @@
-# Backblaze B2 (S3 호환) 연결 테스트.
+# NCP Object Storage (S3 호환) 연결 테스트.
 #
 # 업로드 → 다운로드 → 삭제를 실제로 수행한다.
 # 필요한 Secrets: S3_BUCKET, S3_REGION, S3_ENDPOINT,
