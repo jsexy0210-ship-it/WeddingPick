@@ -5,7 +5,7 @@ import type {
   WeddingInviteListResponse,
   WeddingTaskListResponse,
 } from '@weddingpick/api-contract';
-import { dDay, manwon } from '@weddingpick/domain';
+import { dDay, lifecycle, manwon } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -146,6 +146,7 @@ export default function WeddingScreen() {
 
   const weddingDate = data.me?.weddingDate ?? null;
   const dDayResult = weddingDate ? dDay(weddingDate) : null;
+  const stage = lifecycle(weddingDate);
   const taskProgress = data.tasks?.progress;
   const progressRatio =
     taskProgress && taskProgress.total > 0 ? taskProgress.done / taskProgress.total : 0;
@@ -241,12 +242,11 @@ export default function WeddingScreen() {
                     <Skeleton width="40%" height={35} style={{ marginTop: 4 }} />
                   </>
                 ) : dDayResult ? (
+                  /* 홈 히어로와 같은 문구 — 남은 기간별 상태는 `lifecycle`이 한 곳에서 정한다. */
                   <ThemedText type="t2">
-                    {dDayResult.kind === 'upcoming'
-                      ? `두근두근\n${dDayResult.days}일 남았어요`
-                      : dDayResult.kind === 'today'
-                        ? '오늘이 예식일이에요'
-                        : `예식이 ${dDayResult.days}일 지났어요`}
+                    {stage.mood}
+                    {'\n'}
+                    {stage.note}
                   </ThemedText>
                 ) : (
                   <ThemedText type="t2" themeColor="textAssistive">

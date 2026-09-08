@@ -44,21 +44,24 @@ export const LIFECYCLE_STAGE_LABEL: Record<LifecycleStage, string> = {
  * 이지만 바뀔 수 있는 종류의 확정이다.
  */
 const MOOD_BANDS = [
-  { minDays: 300, mood: '설렘설렘', stage: 'early' },
-  { minDays: 210, mood: '하나씩 하나씩', stage: 'preparing' },
-  { minDays: 120, mood: '차근차근', stage: 'preparing' },
-  { minDays: 60, mood: '어느새 가까이', stage: 'imminent' },
-  { minDays: 31, mood: '진짜 코앞', stage: 'imminent' },
-  { minDays: 1, mood: '두근두근', stage: 'imminent' },
+  { minDays: 300, mood: '설레는 시작', stage: 'early' },
+  { minDays: 210, mood: '하나씩 천천히', stage: 'preparing' },
+  { minDays: 120, mood: '영차영차', stage: 'preparing' },
+  { minDays: 60, mood: '다가오는 그날', stage: 'imminent' },
+  { minDays: 31, mood: '어느새 코앞', stage: 'imminent' },
+  { minDays: 1, mood: '마지막 준비', stage: 'imminent' },
 ] as const satisfies readonly { minDays: number; mood: string; stage: LifecycleStage }[];
 
 export const WEDDING_DAY_MOOD = '드디어 오늘';
 export const WEDDING_DAY_NOTE = '우리의 결혼식이에요';
 
-/** 예식 뒤. v3.5 §2가 예시로 적은 말들. */
-export const NEWLYWED_MOOD = '우리, 결혼했어요';
-export const MARRIED_LIFE_MOOD = '알콩달콩';
-export const BEYOND_MOOD = '함께하는 중';
+/** 예식일을 아직 안 정했을 때. 준비 초기와 같은 단계지만 문구는 다르다. */
+export const NO_DATE_MOOD = '설렘반 기대반';
+
+/** 예식 뒤. 2026-09-08 문구 개정. */
+export const NEWLYWED_MOOD = '신혼의 시작';
+export const MARRIED_LIFE_MOOD = '신혼의 나날';
+export const BEYOND_MOOD = '함께한 시간';
 
 /**
  * 신혼 초기가 이어지는 기간.
@@ -93,7 +96,7 @@ export type LifecycleView = {
  */
 export function lifecycle(weddingDate: string | null, now: Date = new Date()): LifecycleView {
   if (weddingDate === null) {
-    return { stage: 'early', mood: MOOD_BANDS[0].mood, note: '예식일을 등록해보세요', daysLeft: null };
+    return { stage: 'early', mood: NO_DATE_MOOD, note: '예식일을 등록해보세요', daysLeft: null };
   }
 
   const daysLeft = daysUntil(weddingDate, now);

@@ -29,24 +29,30 @@ describe('Wedding Lifecycle', () => {
       const moods = [400, 250, 150, 90, 45, 10].map((days) => lifecycle(inDays(days), NOW).mood);
 
       expect(moods).toEqual([
-        '설렘설렘',
-        '하나씩 하나씩',
-        '차근차근',
-        '어느새 가까이',
-        '진짜 코앞',
-        '두근두근',
+        '설레는 시작',
+        '하나씩 천천히',
+        '영차영차',
+        '다가오는 그날',
+        '어느새 코앞',
+        '마지막 준비',
       ]);
     });
 
     it('경계값이 정책 그대로다', () => {
-      expect(lifecycle(inDays(300), NOW).mood).toBe('설렘설렘');
-      expect(lifecycle(inDays(299), NOW).mood).toBe('하나씩 하나씩');
-      expect(lifecycle(inDays(210), NOW).mood).toBe('하나씩 하나씩');
-      expect(lifecycle(inDays(209), NOW).mood).toBe('차근차근');
-      expect(lifecycle(inDays(60), NOW).mood).toBe('어느새 가까이');
-      expect(lifecycle(inDays(59), NOW).mood).toBe('진짜 코앞');
-      expect(lifecycle(inDays(31), NOW).mood).toBe('진짜 코앞');
-      expect(lifecycle(inDays(30), NOW).mood).toBe('두근두근');
+      expect(lifecycle(inDays(300), NOW).mood).toBe('설레는 시작');
+      expect(lifecycle(inDays(299), NOW).mood).toBe('하나씩 천천히');
+      expect(lifecycle(inDays(210), NOW).mood).toBe('하나씩 천천히');
+      expect(lifecycle(inDays(209), NOW).mood).toBe('영차영차');
+      expect(lifecycle(inDays(60), NOW).mood).toBe('다가오는 그날');
+      expect(lifecycle(inDays(59), NOW).mood).toBe('어느새 코앞');
+      expect(lifecycle(inDays(31), NOW).mood).toBe('어느새 코앞');
+      expect(lifecycle(inDays(30), NOW).mood).toBe('마지막 준비');
+    });
+
+    it('예식 뒤 문구가 단계마다 다르다', () => {
+      expect(lifecycle(inDays(-10), NOW).mood).toBe('신혼의 시작');
+      expect(lifecycle(inDays(-100), NOW).mood).toBe('신혼의 나날');
+      expect(lifecycle(inDays(-400), NOW).mood).toBe('함께한 시간');
     });
 
     it('남은 날짜를 한 줄로 적는다', () => {
@@ -111,6 +117,7 @@ describe('Wedding Lifecycle', () => {
       const view = lifecycle(null, NOW);
 
       expect(view.stage).toBe('early');
+      expect(view.mood).toBe('설렘반 기대반');
       expect(view.daysLeft).toBeNull();
       expect(isBeforeWedding(view.stage)).toBe(true);
     });

@@ -45,33 +45,16 @@ type Screen = 'questions' | 'taste' | 'done';
 /** 질문이 열릴 때마다 진행바가 이 값으로 채워진다(시안 8%→38%→68%). */
 const QUESTION_PROGRESS: Record<QuestionIndex, number> = { 0: 8, 1: 38, 2: 68 };
 
-/** 아직 지나지 않은 다음 그 계절의 연도. 예: 지금이 11월이면 봄쯤은 내년이다. */
-function nextSeasonYear(month: number): number {
-  const now = new Date();
-
-  return now.getMonth() + 1 <= month ? now.getFullYear() : now.getFullYear() + 1;
-}
-
 /**
- * 시안 20-onboarding-v2 dateChips 3개. 시안은 "2027년 봄"을 그대로 박아뒀지만,
- * 실제 화면은 오늘 기준으로 계산해야 한다 — 그대로 옮기면 그 해가 지나고 나서도
- * "2027년 봄"이라고 말하게 된다.
+ * 예식일 칩은 «아직 미정이에요» 하나뿐이다(2026-09-08 결정). 시안의 «봄»·«가을»
+ * 칩은 뺐다 — "다가오는 그 계절"을 오늘 기준으로 계산하면 9월에 접속한 사람에게
+ * 5주 뒤 가을 예식을 권하게 되어 기준이 애매했다.
  *
  * 계약(`completeSetupRequestSchema.weddingDate`)이 날짜를 필수로 받기 때문에,
- * "아직 미정이에요"는 값을 비워두는 대신 달력을 그대로 연다 — 시안에 없는 값을
- * 지어내 보내지 않는다. 나머지 둘은 그 계절 중순으로 채우고, 달력에서 다시
- * 고를 수 있다.
+ * «아직 미정이에요»는 값을 비워두는 대신 달력을 그대로 연다 — 시안에 없는 값을
+ * 지어내 보내지 않는다.
  */
-function dateChips(): { label: string; pick: (() => string) | null }[] {
-  const spring = nextSeasonYear(4);
-  const fall = nextSeasonYear(10);
-
-  return [
-    { label: '아직 미정이에요', pick: null },
-    { label: `${spring}년 봄`, pick: () => `${spring}-04-15` },
-    { label: `${fall}년 가을`, pick: () => `${fall}-10-15` },
-  ];
-}
+const UNDECIDED_LABEL = '아직 미정이에요';
 
 /**
  * 초기 설정. 디자인 핸드오프 v3.14 20-onboarding-v2.dc.html(WP-APP-020~022).
@@ -301,24 +284,14 @@ export default function SetupScreen() {
               </Pressable>
 
               <ThemedView style={styles.chips}>
-                {dateChips().map((hint) => (
-                  <Chip
-                    key={hint.label}
-                    label={hint.label}
-                    selected={false}
-                    onPress={() => {
-                      if (hint.pick === null) {
-                        setPending(date);
-                        setCalendarOpen(true);
-
-                        return;
-                      }
-
-                      setDate(hint.pick());
-                      answer(0);
-                    }}
-                  />
-                ))}
+                <Chip
+                  label={UNDECIDED_LABEL}
+                  selected={false}
+                  onPress={() => {
+                    setPending(date);
+                    setCalendarOpen(true);
+                  }}
+                />
               </ThemedView>
             </>
           ) : null}
