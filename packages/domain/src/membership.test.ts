@@ -55,13 +55,13 @@ describe('등급', () => {
 });
 
 describe('미션', () => {
-  it('결제내역 제보는 미션이 아니다', () => {
+  it('4번째 미션은 Pick 인증 1건이다', () => {
     /*
-     * v3.7 §9가 뺐다. 처음 온 사람에게 영수증을 내라는 것은 활성화가 아니라
-     * 문턱이다.
+     * v3.22 — «비교하기»를 «Pick 인증 1건»으로 바꿨다. 앱 안에서 끝나는 미션만
+     * 두면 5천원을 주고 데이터를 못 얻는다. 완주 1커플이 곧 실 제보 1건이다.
      */
-    expect([...MISSION_KEYS]).toEqual(['setup', 'first_pick', 'compare', 'partner']);
-    expect(MISSION_KEYS).not.toContain('payment');
+    expect([...MISSION_KEYS]).toEqual(['setup', 'first_pick', 'partner', 'payment_proof']);
+    expect(MISSION_KEYS).not.toContain('compare');
   });
 
   it('아무것도 안 했으면 0/4다', () => {
@@ -76,17 +76,15 @@ describe('미션', () => {
       total: 4,
     });
     expect(
-      missionProgress(facts({ weddingSet: true, hasPick: true, hasCompared: true }))
+      missionProgress(facts({ weddingSet: true, hasPick: true, hasPaymentProof: true }))
     ).toEqual({ done: 3, total: 4 });
   });
 
-  it('비교할 수 있는 것과 비교한 것은 다르다', () => {
-    /*
-     * 후보 두 곳을 담았다고 비교한 것은 아니다. 버튼이 옆에 있는 것과 눌러본
-     * 것은 다르고, 미션은 눌러보게 하려고 있는 장치다.
-     */
-    expect(isMissionDone('compare', facts({ hasPick: true }))).toBe(false);
-    expect(isMissionDone('compare', facts({ hasPick: true, hasCompared: true }))).toBe(true);
+  it('비교해본 것은 미션이 아니다', () => {
+    // v3.22 — 비교는 미션 자리에서 빠졌다. 비교했다고 채워지는 칸이 없다.
+    expect(missionProgress(facts({ hasCompared: true }))).toEqual({ done: 0, total: 4 });
+    expect(isMissionDone('payment_proof', facts({ hasPick: true }))).toBe(false);
+    expect(isMissionDone('payment_proof', facts({ hasPaymentProof: true }))).toBe(true);
   });
 
   it('등급이 미션을 대신 채워주지 않는다', () => {
@@ -106,7 +104,7 @@ describe('미션', () => {
       loggedIn: true,
       weddingSet: true,
       hasPick: true,
-      hasCompared: true,
+      hasPaymentProof: true,
       spouseLinked: true,
     });
 

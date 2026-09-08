@@ -7,8 +7,8 @@ import { notificationSummary } from '../notify';
 /**
  * 홈 부팅 한 번에.
  *
- * 홈은 회원 · 알림 · 많이 확인된 곳 · 담아둔 후보 · 오늘의 Pick을 원래 다섯 번
- * 따로 물었다. 뒤 셋 중 일부는 앞의 답에 진짜로 기댄다(오늘의 Pick은 담아둔
+ * 홈은 회원 · 알림 · 많이 확인된 곳 · 담아둔 후보 · 웨딩픽 추천을 원래 다섯 번
+ * 따로 물었다. 뒤 셋 중 일부는 앞의 답에 진짜로 기댄다(웨딩픽 추천은 담아둔
  * 후보가 지목한 업종을 알아야 나온다) — 그래서 순서를 완전히는 못 없앤다. 다만
  * 그 순서를 **기기와 서버 사이**가 아니라 서버 안에서 오가게 하면, 인터넷을
  * 왕복하는 횟수가 다섯에서 하나로 준다.
@@ -20,7 +20,7 @@ import { notificationSummary } from '../notify';
  */
 /** 많이 확인된 곳에 세우는 줄 수. 홈 화면(apps/mobile (tabs)/index.tsx)과 같은 수다. */
 const POPULAR_COUNT = 4;
-/** 오늘의 Pick에 세우는 곳의 수. 셋을 넘기면 한 줄에 들어가지 않는다. */
+/** 웨딩픽 추천에 세우는 곳의 수. 셋을 넘기면 한 줄에 들어가지 않는다. */
 const PICK_COUNT = 3;
 
 export function registerAppRoutes(app: FastifyInstance, context: AppContext): void {

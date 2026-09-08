@@ -13,7 +13,7 @@ export const REWARDS = {
   referral: { amountKrw: 3_000, campaignLimit: 100 },
   /** 홍보인증. 공개 게시물 URL 자동검증이 기본(I-2). */
   promotion: { amountKrw: 2_000, perPerson: 1 },
-  /** 월간 웨딩지원금. 4개 미션 완료 후 자동 응모, 매월 2명 추첨(§31). */
+  /** 월간 웨딩지원금. 응모 조건 3개를 채우면 자동 응모, 회차당 1커플(v3.22). */
   monthly_draw: { amountKrw: 50_000, winnersPerMonth: 2 },
 } as const;
 
@@ -51,7 +51,7 @@ export function canPayReferral(input: {
 /**
  * 보상은 신뢰도에 더하지 않는다. C-10.
  *
- * > NPay 등 보상 수령 여부는 결제 데이터의 신뢰점수에 가산하지 않는다.
+ * > Npay 등 보상 수령 여부는 결제 데이터의 신뢰점수에 가산하지 않는다.
  *
  * 돈을 받고 낸 자료가 더 믿을 만할 이유가 없고, 그렇게 두면 보상을 노린 자료가
  * 통계를 밀어 올린다. **검증과 보상은 다른 시스템이다.**

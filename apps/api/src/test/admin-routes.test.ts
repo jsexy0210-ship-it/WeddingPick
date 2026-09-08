@@ -480,7 +480,7 @@ describeWithDb('관리자 콘솔 라우트', () => {
       ]);
 
       const pay = await post(`/v1/admin/rewards/${grant.rows[0]!.id}/pay`, operator.headers, {
-        note: 'NPay 송금 완료',
+        note: 'Npay 송금 완료',
       });
       expect(pay.statusCode).toBe(204);
     });

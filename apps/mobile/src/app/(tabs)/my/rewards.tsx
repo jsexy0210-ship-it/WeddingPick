@@ -18,6 +18,8 @@ import {
   FontSize,
   Layout,
   MaxContentWidth,
+  NpayLogo,
+  ProductSymbol,
   Radius,
   Spacing,
   ThemedText,
@@ -30,6 +32,10 @@ import { shareOrCopy } from '@/components/share-or-copy';
 
 const won = (amount: number): string => `${amount.toLocaleString('ko-KR')}원`;
 
+/** 응모 조건 완료 체크 — 24 원 안에 16 획. 시안 15-events. */
+const CONDITION_CHECK = 16;
+const CONDITION_DOT = 24;
+
 /**
  * 친구초대와 홍보인증. 최종통합정책 v2.0 I장.
  *
@@ -37,6 +43,9 @@ const won = (amount: number): string => `${amount.toLocaleString('ko-KR')}원`;
  * "가입만 하면 3,000원"으로 기억된다 — v2.0 K-7이 폐기한 바로 그 규칙이다.
  *
  * 지급 시점도 약속하지 않는다. 지킬 수 있는 날짜가 정해져 있지 않다.
+ *
+ * **운영 기간을 적지 않는다(v3.22).** 「하루 안에」 「매달」 「~까지」처럼 운영이 바뀌면
+ * 틀리는 숫자는 화면에 박지 않는다. 완료된 기록의 날짜(8월 21일 완료)는 사실이라 남긴다.
  */
 export default function MyRewardsScreen() {
   const theme = useTheme();
@@ -143,9 +152,7 @@ export default function MyRewardsScreen() {
 
           <ThemedView type="backgroundElement" style={styles.card}>
             <View style={styles.cardHead}>
-              <ThemedText type="t5">
-                {draw ? `${draw.drawMonth} 응모` : '이번 달 응모'}
-              </ThemedText>
+              <ThemedText type="t5">이번 회차</ThemedText>
               {draw ? (
                 <ThemedText
                   type="badge"
@@ -154,15 +161,56 @@ export default function MyRewardsScreen() {
                 </ThemedText>
               ) : null}
             </View>
+            <View style={styles.amountRow}>
+              <ThemedText type="t1" numeric>
+                {draw ? won(draw.amountKrw) : ' '}
+              </ThemedText>
+              <NpayLogo />
+            </View>
             <ThemedText type="t7" themeColor="textSecondary">
-              {draw ? draw.statusNote : '로딩 중'}
+              {draw ? draw.statusNote : '불러오는 중'}
             </ThemedText>
             {draw ? (
               <ThemedText type="t7" themeColor="textAssistive">
-                {`매월 ${draw.winnersPerMonth}명 추첨 · 1인 ${draw.amountKrw.toLocaleString('ko-KR')}원`}
+                {`${draw.winnersPerMonth}커플 · 자동 응모`}
               </ThemedText>
             ) : null}
           </ThemedView>
+
+          {/* 응모 조건 — 회차 · 조건만 적는다. 마감일 · 발표일 · 당첨 확률은 적지 않는다. */}
+          {draw ? (
+            <ThemedView type="backgroundElement" style={styles.card}>
+              <ThemedText type="t5">응모 조건</ThemedText>
+              {draw.conditions.map((condition) => (
+                <View key={condition.key} style={styles.conditionRow}>
+                  {condition.done ? (
+                    <View style={[styles.conditionDot, { backgroundColor: theme.tint }]}>
+                      <ProductSymbol name="check" size={CONDITION_CHECK} color={theme.onTint} />
+                    </View>
+                  ) : (
+                    <View
+                      style={[
+                        styles.conditionDot,
+                        styles.conditionRing,
+                        { borderColor: theme.fieldBorder },
+                      ]}
+                    />
+                  )}
+                  <ThemedText type="t6" style={styles.grow} numberOfLines={1}>
+                    {condition.label}
+                  </ThemedText>
+                  <ThemedText
+                    type="badge"
+                    themeColor={condition.done ? 'positive' : 'cautionary'}>
+                    {condition.done ? '완료' : '필요'}
+                  </ThemedText>
+                </View>
+              ))}
+              <ThemedText type="t7" themeColor="textAssistive">
+                조건을 채우면 자동으로 응모돼요. 새 회차가 열리면 알려드려요
+              </ThemedText>
+            </ThemedView>
+          ) : null}
 
           {/* ── 친구초대 ── */}
           <ThemedText type="t2">친구초대</ThemedText>
@@ -324,6 +372,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  amountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.three,
+  },
+  conditionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two + Spacing.half,
+    minHeight: Layout.rowMinHeight,
+  },
+  conditionDot: {
+    width: CONDITION_DOT,
+    height: CONDITION_DOT,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  conditionRing: { borderWidth: 1.5 },
+  grow: { flex: 1, minWidth: 0 },
   field: {
     gap: Spacing.one,
   },

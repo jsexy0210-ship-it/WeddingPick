@@ -57,7 +57,11 @@ export function tierOf(facts: MembershipFacts): MemberTier {
  *
  * 미션은 가입 조건도 기능 잠금도 아니다. 안 해도 다 쓸 수 있다.
  */
-export const MISSION_KEYS = ['setup', 'first_pick', 'compare', 'partner'] as const;
+/**
+ * v3.22 — 4번째 미션이 «비교하기»에서 «Pick 인증 1건»으로 바뀌었다. 앱 안에서 끝나는
+ * 미션만 두면 5천원을 주고 데이터를 못 얻는다. 완주 1커플이 곧 실 제보 1건이다.
+ */
+export const MISSION_KEYS = ['setup', 'first_pick', 'partner', 'payment_proof'] as const;
 
 export type MissionKey = (typeof MISSION_KEYS)[number];
 
@@ -79,14 +83,14 @@ export const MISSIONS: readonly Mission[] = [
     description: '검색하다 마음에 드는 곳을 담아두세요',
   },
   {
-    key: 'compare',
-    title: '나란히 놓고 비교해요',
-    description: '같은 업종에서 두 곳부터 견줘볼 수 있어요',
-  },
-  {
     key: 'partner',
     title: '배우자와 함께해요',
-    description: '초대 코드로 배우자를 초대해보세요',
+    description: '초대 링크만 보내면 돼요',
+  },
+  {
+    key: 'payment_proof',
+    title: 'Pick 인증 1건',
+    description: '낸 금액이 보이는 사진 한 장이면 돼요',
   },
 ];
 
@@ -110,10 +114,10 @@ export function isMissionDone(key: MissionKey, facts: MembershipFacts): boolean 
       return facts.weddingSet;
     case 'first_pick':
       return facts.hasPick;
-    case 'compare':
-      return facts.hasCompared;
     case 'partner':
       return facts.spouseLinked;
+    case 'payment_proof':
+      return facts.hasPaymentProof;
   }
 }
 
@@ -131,4 +135,4 @@ export function allMissionsDone(facts: MembershipFacts): boolean {
 /** 미션을 다 마쳤을 때 한 번 뜨는 말. 핸드오프 18번. */
 export const MISSION_COMPLETE_TITLE = '필수 미션을 모두 완료했어요';
 export const MISSION_COMPLETE_BODY = '웨딩픽의 모든 기능을 이용해보세요.';
-export const MISSION_COMPLETE_TAGS = ['업체 탐색', '준비 관리', '배우자 연결', '가격 비교'] as const;
+export const MISSION_COMPLETE_TAGS = ['업체 검색', '준비 관리', '배우자 연결', 'Pick 인증'] as const;

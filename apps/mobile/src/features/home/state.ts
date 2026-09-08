@@ -33,10 +33,10 @@ export type HomeView = {
    * 현황판을 격자로 펼치는가.
    *
    * **빈 칸 네 개를 그대로 보여주지 않는다**(시안이 명시한 규칙). 정할 것이
-   * 하나도 없으면 격자를 접고 «우리 준비 · 아직 시작 전» 한 줄로 대신한다.
+   * 하나도 없으면 격자를 접고 «준비 현황 · 아직 시작 전» 한 줄로 대신한다.
    */
   board: 'grid' | 'folded';
-  /** 오늘의 Pick이 지목하는 업종. 다 정했으면 null — 없는 다음을 지어내지 않는다. */
+  /** 웨딩픽 추천이 지목하는 업종. 다 정했으면 null — 없는 다음을 지어내지 않는다. */
   focus: VendorCategory | null;
   /**
    * 추천 세 곳을 견줄 수 있는가.
@@ -72,7 +72,7 @@ export function comparableCount(vendors: readonly VendorSummary[]): number {
 export function homeView(input: {
   me: CurrentUser | null;
   candidates: CandidateListResponse | null;
-  /** 오늘의 Pick 자리에 올릴 추천 세 곳. */
+  /** 웨딩픽 추천 자리에 올릴 추천 세 곳. */
   recommended: readonly VendorSummary[];
   /** 취향을 고른 적이 있는가. */
   tasteChosen: boolean;
@@ -95,7 +95,7 @@ export function homeView(input: {
 
   /*
    * 정한 것이 하나라도 있으면 그 사실이 화면에서 가장 굳은 정보다. 정한 곳은
-   * 카드가 아니라 한 줄로 내려가고, 오늘의 Pick은 다음 업종으로 넘어간다.
+   * 카드가 아니라 한 줄로 내려가고, 웨딩픽 추천은 다음 업종으로 넘어간다.
    */
   if (decided > 0) {
     return { state: 'decided', board: 'grid', focus, comparable, showsDecided: true };
@@ -105,9 +105,9 @@ export function homeView(input: {
 }
 
 /**
- * 다음 준비 — 오늘의 Pick이 지목한 업종 **다음**에 올 업종.
+ * 다음 준비 — 웨딩픽 추천이 지목한 업종 **다음**에 올 업종.
  *
- * 오늘의 Pick과 같은 업종을 또 적으면 같은 말을 두 번 하는 것이라, 지목받은 것을
+ * 웨딩픽 추천과 같은 업종을 또 적으면 같은 말을 두 번 하는 것이라, 지목받은 것을
  * 빼고 아직 정하지 않은 것 중 첫째를 고른다. 남은 것이 없으면 null이고, 그러면
  * 이 섹션은 뜨지 않는다 — 없는 다음을 지어내지 않는다.
  */

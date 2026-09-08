@@ -4,6 +4,9 @@ import {
 } from '@weddingpick/api-contract';
 import {
   MONTHLY_DRAW_AMOUNT_KRW,
+  MONTHLY_DRAW_CONDITION_KEYS,
+  MONTHLY_DRAW_CONDITION_LABEL,
+  MONTHLY_DRAW_ENTERED_NOTIFICATION,
   MONTHLY_DRAW_STATUS_LABEL,
   MONTHLY_DRAW_STATUS_NOTE,
   MONTHLY_DRAW_WINNERS_PER_MONTH,
@@ -12,12 +15,11 @@ import {
   REWARD_LABEL,
   REWARD_STATUS_LABEL,
   REWARD_STATUS_NOTE,
-  allMissionsDone,
   checkPromotionUrl,
   checkRedeem,
   drawMonthOf,
   isReferralCode,
-  type MembershipFacts,
+  type MonthlyDrawCondition,
   type MonthlyDrawStatus,
   type RewardKind,
   type RewardStatus,
@@ -29,6 +31,7 @@ import { currentUserId, requireUser } from '../auth/plugin';
 import type { AppContext } from '../context';
 import { withTransaction } from '../db';
 import { ApiError, notFound } from '../errors';
+import { notify } from '../notify';
 import { newReferralCode } from '../rewards';
 
 type GrantRow = {
@@ -129,8 +132,12 @@ export function registerRewardRoutes(app: FastifyInstance, context: AppContext):
   /**
    * 월간 웨딩지원금 현황.
    *
-   * 4개 미션이 모두 완료됐으면 이번 달 응모 행을 만들고(없으면 upsert) 상태를 돌려준다.
-   * 미션이 안 됐으면 'not_entered'를 돌려준다.
+   * 응모 조건 3개(예식일과 지역 · Pick 인증 1건 · 배우자 연결)를 다 채웠으면 이번 회차
+   * 응모 행을 만들고(없으면 upsert) 상태를 돌려준다. 아직이면 'not_entered'에 조건별
+   * 완료 여부를 실어 보낸다 — 혜택 안내 시트(WP-SHT-017)가 남은 수로 제목을 만든다.
+   *
+   * **처음 응모되는 순간 알림을 남긴다.** 남은 조건이 0이면 시트를 띄우지 않고 응모
+   * 완료 알림으로 대신한다는 규칙이라, 알림이 없으면 사용자는 응모된 줄 모른다.
    *
    * 당첨 여부는 reward_grants에서 확인한다 — 추첨은 사람이 하고 grant 행이 당첨 증거다.
    */
@@ -138,27 +145,22 @@ export function registerRewardRoutes(app: FastifyInstance, context: AppContext):
     const userId = currentUserId(request);
     const month = drawMonthOf(new Date());
 
-    // 미션 완료 여부를 확인한다.
     const { rows: factRows } = await context.pool.query<{
       wedding_set: boolean;
-      has_pick: boolean;
-      has_compared: boolean;
-      spouse_linked: boolean;
+      payment_proof: boolean;
+      partner: boolean;
     }>(
       `SELECT
-         /* 설정을 마쳤는가 — routes/weddings.ts · auth/sessions.ts와 같은 판단(0088). */
-         (w.setup_completed_at IS NOT NULL) AS wedding_set,
+         /* 예식일과 지역이 둘 다 있어야 한다 — 설정을 마쳤어도 둘 중 하나가 비면 조건 미달. */
+         (w.wedding_date IS NOT NULL AND w.region IS NOT NULL) AS wedding_set,
          EXISTS (
-           SELECT 1 FROM structured.vendor_candidates c WHERE c.wedding_id = w.id
-         ) AS has_pick,
-         EXISTS (
-           SELECT 1 FROM structured.comparisons x WHERE x.wedding_id = w.id
-         ) AS has_compared,
+           SELECT 1 FROM structured.usable_payment_proofs p WHERE p.reporter_user_id = u.id
+         ) AS payment_proof,
          coalesce(w.owner_user_id IS NOT NULL AND w.partner_user_id IS NOT NULL, false)
-           AS spouse_linked
+           AS partner
        FROM structured.users u
        LEFT JOIN LATERAL (
-         SELECT id, wedding_date, region, setup_completed_at, owner_user_id, partner_user_id
+         SELECT id, wedding_date, region, owner_user_id, partner_user_id
          FROM structured.weddings
          WHERE owner_user_id = u.id OR partner_user_id = u.id
          ORDER BY created_at LIMIT 1
@@ -168,39 +170,63 @@ export function registerRewardRoutes(app: FastifyInstance, context: AppContext):
     );
 
     const fr = factRows[0];
-    const facts: MembershipFacts = {
-      loggedIn: true,
-      weddingSet: fr?.wedding_set ?? false,
-      hasPick: fr?.has_pick ?? false,
-      hasCompared: fr?.has_compared ?? false,
-      spouseLinked: fr?.spouse_linked ?? false,
-      hasPaymentProof: false, // 이 판단에 불필요
+    const conditions: MonthlyDrawCondition[] = MONTHLY_DRAW_CONDITION_KEYS.map((key) => ({
+      key,
+      label: MONTHLY_DRAW_CONDITION_LABEL[key],
+      done: fr?.[key] ?? false,
+    }));
+    const remaining = conditions.filter((condition) => !condition.done).length;
+
+    const base = {
+      drawMonth: month,
+      amountKrw: MONTHLY_DRAW_AMOUNT_KRW,
+      winnersPerMonth: MONTHLY_DRAW_WINNERS_PER_MONTH,
+      conditions,
+      remaining,
     };
 
-    if (!allMissionsDone(facts)) {
+    if (remaining > 0) {
       const status: MonthlyDrawStatus = 'not_entered';
       return {
-        drawMonth: month,
+        ...base,
         status,
         statusLabel: MONTHLY_DRAW_STATUS_LABEL[status],
         statusNote: MONTHLY_DRAW_STATUS_NOTE[status],
-        amountKrw: MONTHLY_DRAW_AMOUNT_KRW,
-        winnersPerMonth: MONTHLY_DRAW_WINNERS_PER_MONTH,
       };
     }
 
-    // 미션 완료 — 이번 달 응모 행 upsert
-    const { rows: entryRows } = await context.pool.query<{ id: string }>(
+    // 조건 완료 — 이번 회차 응모 행. 처음 생기는 순간에만 알림을 남긴다.
+    const { rows: inserted } = await context.pool.query<{ id: string }>(
       `INSERT INTO structured.monthly_draw_entries (user_id, draw_month)
        VALUES ($1, $2)
-       ON CONFLICT (user_id, draw_month) DO UPDATE SET draw_month = EXCLUDED.draw_month
+       ON CONFLICT (user_id, draw_month) DO NOTHING
        RETURNING id`,
       [userId, month]
     );
 
-    const entryId = entryRows[0]!.id;
+    let entryId = inserted[0]?.id;
 
-    // 이번 달 당첨 여부 확인
+    if (entryId) {
+      try {
+        await notify(context.pool, {
+          userId,
+          kind: 'notice',
+          title: MONTHLY_DRAW_ENTERED_NOTIFICATION.title,
+          body: MONTHLY_DRAW_ENTERED_NOTIFICATION.body,
+          targetId: entryId,
+        });
+      } catch (caught) {
+        request.log.warn({ err: caught }, '응모 완료 알림을 남기지 못했다');
+      }
+    } else {
+      const { rows: existing } = await context.pool.query<{ id: string }>(
+        `SELECT id FROM structured.monthly_draw_entries WHERE user_id = $1 AND draw_month = $2`,
+        [userId, month]
+      );
+      entryId = existing[0]!.id;
+    }
+
+    // 이번 회차 당첨 여부 확인
     const { rows: grantRows } = await context.pool.query<{ status: RewardStatus }>(
       `SELECT g.status
        FROM structured.reward_grants g
@@ -224,12 +250,10 @@ export function registerRewardRoutes(app: FastifyInstance, context: AppContext):
     }
 
     return {
-      drawMonth: month,
+      ...base,
       status,
       statusLabel: MONTHLY_DRAW_STATUS_LABEL[status],
       statusNote: MONTHLY_DRAW_STATUS_NOTE[status],
-      amountKrw: MONTHLY_DRAW_AMOUNT_KRW,
-      winnersPerMonth: MONTHLY_DRAW_WINNERS_PER_MONTH,
     };
   });
 

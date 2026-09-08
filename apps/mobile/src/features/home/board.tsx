@@ -7,7 +7,7 @@ import { Layout, Radius, Spacing, ThemedText, ThemedView, useTheme } from '@wedd
 import { BOARD_FOLDED_VALUE, boardMark, boardTone, boardValue, type BoardTone } from './state';
 
 /**
- * 우리 준비 — 홈 C-1의 현황판.
+ * 준비 현황 — 홈 C-1의 현황판.
  *
  * 업종마다 지금 어디까지 왔는지를 한눈에 놓는다. **지목받은 칸 하나만 코랄이다** —
  * 넷 다 색이 있으면 무엇이 다음인지가 사라진다.
@@ -19,7 +19,7 @@ import { BOARD_FOLDED_VALUE, boardMark, boardTone, boardValue, type BoardTone } 
 
 export type BoardProps = {
   groups: CandidateListResponse['groups'];
-  /** 오늘의 Pick이 지목한 업종. 이 칸만 코랄이 된다. */
+  /** 웨딩픽 추천이 지목한 업종. 이 칸만 코랄이 된다. */
   focus: VendorCategory | null;
   onPressCategory: (category: VendorCategory) => void;
 };
@@ -113,11 +113,11 @@ export function FoldedBoard({ onPress }: { onPress: () => void }) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`우리 준비 ${BOARD_FOLDED_VALUE}`}
+      accessibilityLabel={`준비 현황 ${BOARD_FOLDED_VALUE}`}
       onPress={onPress}>
       <ThemedView type="backgroundElement" style={styles.folded}>
         <View style={styles.foldedText}>
-          <ThemedText type="t5">우리 준비</ThemedText>
+          <ThemedText type="t5">준비 현황</ThemedText>
           <ThemedText type="t7" themeColor="textAssistive">
             정할 때마다 쌓여요
           </ThemedText>

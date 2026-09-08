@@ -7,7 +7,7 @@ import { ActionButton, Layout, Radius, Spacing, ThemedText, ThemedView } from '@
 import { CategoryImage } from './category-image';
 
 /**
- * 오늘의 Pick — 홈 C-1의 추천 영역.
+ * 웨딩픽 추천 — 홈 C-1의 추천 영역.
  *
  * **가격 TOP3를 따로 두지 않는다.** 시안 확정 단계에서 없앤 자리다 — 추천과 가격
  * 순위가 나란히 서면 둘이 서로 경쟁하고, 사용자는 어느 쪽을 봐야 할지 모른다.

@@ -50,7 +50,7 @@ export const TERMS = {
   /** 프로모션. v3.3이 `현재 혜택·이벤트`를 사용자 화면에서 이 말로 바꿨다. */
   benefits: '받을 수 있는 혜택',
   /** 개인 추천 영역. */
-  todaysPick: '오늘의 Pick',
+  todaysPick: '웨딩픽 추천',
   /** 추천 근거. v3.3이 `추천 이유`를 사용자 화면에서 이 말로 바꿨다. */
   recommendReason: '이런 점이 잘 맞아요',
   guest: '비회원',

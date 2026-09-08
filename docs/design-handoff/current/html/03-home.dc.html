@@ -41,7 +41,7 @@ image-slot::part(empty){display:none !important}
 <div style="display:flex;flex-direction:column;gap:10px;max-width:1000px;padding-bottom:8px">
   <span style="font-size:14px;line-height:19px;font-weight:700;color:#ff6f61">WeddingPick · 홈 확정</span>
   <span style="font-size:40px;line-height:52px;font-weight:700;color:#212124">홈 C-1 · 전 상태</span>
-  <span style="font-size:18px;line-height:26px;color:#393a40;text-wrap:pretty">C-1 확정. 비회원 → 취향 없음 → 후보 없음 → 정보 없음 → Pick 중 → 결정 이후 여섯 상태입니다. 모든 상태가 상황 → 추천 → 근거 → Pick 한 흐름을 따르고, 오늘의 Pick과 경쟁하는 가격 TOP3 섹션은 두지 않습니다. Pick한 곳도, 결제 기록도, 취향도 없습니다. 이 상태에서 «현황판이 주인공»이라는 C-1의 구조를 그대로 쓰면 빈 칸 네 개만 보이므로, 현황판은 한 줄로 접고 그 자리를 취향 고르기가 대신합니다.</span>
+  <span style="font-size:18px;line-height:26px;color:#393a40;text-wrap:pretty">C-1 확정. 비회원 → 취향 없음 → 후보 없음 → 정보 없음 → Pick 중 → 결정 이후 여섯 상태입니다. 모든 상태가 상황 → 추천 → 근거 → Pick 한 흐름을 따르고, 웨딩픽 추천과 경쟁하는 가격 TOP3 섹션은 두지 않습니다. Pick한 곳도, 결제 기록도, 취향도 없습니다. 이 상태에서 «현황판이 주인공»이라는 C-1의 구조를 그대로 쓰면 빈 칸 네 개만 보이므로, 현황판은 한 줄로 접고 그 자리를 취향 고르기가 대신합니다.</span>
 </div>
 
 <div style="display:flex;gap:36px;align-items:flex-start">
@@ -126,7 +126,7 @@ image-slot::part(empty){display:none !important}
       <div style="flex-shrink:0;padding:0 24px 28px">
         <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:16px 18px;border-radius:10px;background:#f7f8fa">
           <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
-            <span style="{{ t18b }}">우리 준비</span>
+            <span style="{{ t18b }}">준비 현황</span>
             <span style="{{ t14n }}">정할 때마다 쌓여요</span>
           </div>
           <span style="{{ t16d }}">아직 시작 전</span>
@@ -207,7 +207,7 @@ image-slot::part(empty){display:none !important}
       </div>
 
       <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:14px">
-        <span style="{{ h26 }}">오늘의 Pick</span>
+        <span style="{{ h26 }}">웨딩픽 추천</span>
         <div style="display:flex;gap:10px">
           <sc-for list="{{ top3 }}" as="v" hint-placeholder-count="3">
             <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px">
@@ -262,7 +262,7 @@ image-slot::part(empty){display:none !important}
       </div>
 
       <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:14px">
-        <span style="{{ h26 }}">오늘의 Pick</span>
+        <span style="{{ h26 }}">웨딩픽 추천</span>
         <div style="display:flex;gap:10px">
           <sc-for list="{{ thinTop3 }}" as="v" hint-placeholder-count="3">
             <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px">
@@ -310,7 +310,7 @@ image-slot::part(empty){display:none !important}
 
 <div id="15d" style="{{ col }}">
   <div style="{{ tag }}"><span style="{{ tagId }}">4</span>Pick 중 · 기본</div>
-  <span style="{{ tagDesc }}">후보가 모였고 아직 결정 전. 현황판이 제 역할을 하고, 오늘의 Pick이 이번 주 좁힐 카테고리를 지목합니다. 가격 TOP3를 따로 두지 않고 근거를 추천 안에 넣습니다.</span>
+  <span style="{{ tagDesc }}">후보가 모였고 아직 결정 전. 현황판이 제 역할을 하고, 웨딩픽 추천이 이번 주 좁힐 카테고리를 지목합니다. 가격 TOP3를 따로 두지 않고 근거를 추천 안에 넣습니다.</span>
   <div style="{{ phone }}">
     <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
     <div style="{{ head }}"><span style="{{ wordmark }}">웨딩픽</span><span style="{{ headIcons }}"><span style="{{ iconBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4d5159" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9.4a6 6 0 1 0-12 0c0 4.8-2 5.8-2 5.8h16s-2-1-2-5.8"></path><path d="M13.7 19.4a2 2 0 0 1-3.4 0"></path></svg></span></span></div>
@@ -329,7 +329,7 @@ image-slot::part(empty){display:none !important}
         </sc-for>
       </div>
       <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:12px">
-        <span style="{{ h26 }}">오늘의 Pick</span>
+        <span style="{{ h26 }}">웨딩픽 추천</span>
         <span style="{{ t16n }}">스튜디오를 정할 차례예요</span>
         <div style="display:flex;gap:10px">
           <sc-for list="{{ top3 }}" as="v" hint-placeholder-count="3">
@@ -372,7 +372,7 @@ image-slot::part(empty){display:none !important}
 
 <div id="15e" style="{{ col }}">
   <div style="{{ tag }}"><span style="{{ tagId }}">5</span>결정 이후</div>
-  <span style="{{ tagDesc }}">스튜디오를 확정한 직후. 현황판에 결정이 찍히고 오늘의 Pick이 다음 카테고리로 자동으로 넘어갑니다. 결정한 업체는 카드가 아니라 한 줄로 내려갑니다.</span>
+  <span style="{{ tagDesc }}">스튜디오를 확정한 직후. 현황판에 결정이 찍히고 웨딩픽 추천이 다음 카테고리로 자동으로 넘어갑니다. 결정한 업체는 카드가 아니라 한 줄로 내려갑니다.</span>
   <div style="{{ phone }}">
     <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
     <div style="{{ head }}"><span style="{{ wordmark }}">웨딩픽</span><span style="{{ headIcons }}"><span style="{{ iconBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4d5159" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9.4a6 6 0 1 0-12 0c0 4.8-2 5.8-2 5.8h16s-2-1-2-5.8"></path><path d="M13.7 19.4a2 2 0 0 1-3.4 0"></path></svg></span></span></div>
@@ -391,7 +391,7 @@ image-slot::part(empty){display:none !important}
         </sc-for>
       </div>
       <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:12px">
-        <span style="{{ h26 }}">오늘의 Pick</span>
+        <span style="{{ h26 }}">웨딩픽 추천</span>
         <span style="{{ t16n }}">이제 드레스를 볼 차례예요</span>
         <div style="display:flex;gap:10px">
           <sc-for list="{{ dressTop3 }}" as="v" hint-placeholder-count="3">
@@ -614,7 +614,7 @@ class Component extends DCLogic {
         { slot: 'ds-b3', src: IMG.bride, noPhoto: false, short: '성수 F 스튜디오', price: '수집 중 · 1건', priceStyle: price('', true) }
       ],
       rules: [
-        { title: '빈 칸 네 개를 그대로 보여주지 않는다', body: '현황판이 전부 비어 있으면 카드 격자를 접고 «우리 준비 · 아직 시작 전» 한 줄로 대신합니다. 정할 것이 하나라도 생기면 격자로 펼칩니다.' },
+        { title: '빈 칸 네 개를 그대로 보여주지 않는다', body: '현황판이 전부 비어 있으면 카드 격자를 접고 «준비 현황 · 아직 시작 전» 한 줄로 대신합니다. 정할 것이 하나라도 생기면 격자로 펼칩니다.' },
         { title: '금액이 없으면 자리를 비우지 않는다', body: '실 제보 3건 미만이면 «수집 중»과 건수를 함께 적습니다. 빈 칸이나 «—»는 쓰지 않습니다.' },
         { title: '사진이 없으면 카테고리 기본 이미지를 쓴다', body: '업체 제공 → 사용 허가 → 공식 → 카테고리 기본 순으로 채웁니다. 빈 상자나 «사진 준비 중» 문구는 노출하지 않습니다.' },
         { title: '섹션 제목은 한 줄, 서브카피는 쓰지 않는다', body: '제목 1줄 · 안내 최대 2줄 · CTA 1줄. 화면을 보면 알 수 있는 내용은 설명하지 않고, 같은 말을 제목과 본문에서 반복하지 않습니다.' },

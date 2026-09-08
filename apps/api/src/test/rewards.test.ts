@@ -1,8 +1,9 @@
-import { REWARDS } from '@weddingpick/domain';
+import { MONTHLY_DRAW_CONDITION_LABEL, MONTHLY_DRAW_ENTERED_NOTIFICATION, REWARDS } from '@weddingpick/domain';
 
 import {
   consentToPaymentProofs,
   createTestApp,
+  createWedding,
   resetDatabase,
   signInAs,
   type TestApp,
@@ -263,6 +264,91 @@ describeWithDb('이벤트 보상', () => {
 
     it('로그인해야 참여할 수 있다', async () => {
       expect((await submit({}, 'https://blog.example.com/a')).statusCode).toBe(401);
+    });
+  });
+
+  describe('월간 웨딩지원금', () => {
+    type Draw = {
+      status: string;
+      remaining: number;
+      conditions: { key: string; label: string; done: boolean }[];
+      winnersPerMonth: number;
+    };
+
+    const draw = async (headers: Record<string, string>) =>
+      (await test.app.inject({ method: 'GET', url: '/v1/me/monthly-draw', headers })).json<Draw>();
+
+    async function enteredNotifications(userId: string): Promise<number> {
+      const { rows } = await test.pool.query<{ n: string }>(
+        `SELECT count(*)::text AS n FROM structured.notifications WHERE user_id = $1 AND title = $2`,
+        [userId, MONTHLY_DRAW_ENTERED_NOTIFICATION.title]
+      );
+      return Number(rows[0]?.n ?? 0);
+    }
+
+    it('조건 3개를 채우기 전에는 남은 수와 함께 응모 전이다', async () => {
+      /*
+       * v3.22 — 응모 조건은 미션 4개가 아니라 예식일과 지역 · Pick 인증 1건 · 배우자
+       * 연결 셋이다. 혜택 안내 시트(WP-SHT-017)가 남은 수로 제목을 만든다.
+       */
+      const who = await signInAs(test, 'solo');
+      await createWedding(test, who.headers);
+
+      const mine = await draw(who.headers);
+
+      expect(mine.status).toBe('not_entered');
+      expect(mine.remaining).toBe(3);
+      expect(mine.conditions.map((c) => c.key)).toEqual(['wedding_set', 'payment_proof', 'partner']);
+      expect(mine.conditions.map((c) => c.label)).toEqual([
+        MONTHLY_DRAW_CONDITION_LABEL.wedding_set,
+        MONTHLY_DRAW_CONDITION_LABEL.payment_proof,
+        MONTHLY_DRAW_CONDITION_LABEL.partner,
+      ]);
+      expect(mine.conditions.every((c) => !c.done)).toBe(true);
+      expect(mine.winnersPerMonth).toBe(1);
+      expect(await enteredNotifications(who.userId)).toBe(0);
+    });
+
+    it('조건을 다 채우면 자동 응모되고 알림은 처음 한 번만 남는다', async () => {
+      const owner = await signInAs(test, 'owner');
+      const partner = await signInAs(test, 'partner');
+      const weddingId = await createWedding(test, owner.headers);
+
+      await test.pool.query(
+        `UPDATE structured.weddings
+         SET wedding_date = '2027-05-16', region = '서울', partner_user_id = $2
+         WHERE id = $1`,
+        [weddingId, partner.userId]
+      );
+
+      // 예식일 · 지역 · 배우자까지 됐고 Pick 인증만 남았다 — «하나만 더 하면».
+      const before = await draw(owner.headers);
+      expect(before.status).toBe('not_entered');
+      expect(before.remaining).toBe(1);
+      expect(before.conditions.find((c) => c.key === 'payment_proof')?.done).toBe(false);
+
+      // Pick 인증 1건 — 업체가 매칭돼야 실 제보(usable_payment_proofs)다.
+      expect((await registerProof(owner.headers)).statusCode).toBe(201);
+      await test.pool.query(
+        `WITH v AS (
+           INSERT INTO structured.vendors (name, category, region, source)
+           VALUES ('가온예식홀', 'hall', '서울', 'public_data') RETURNING id
+         )
+         UPDATE structured.payment_proofs p SET vendor_id = (SELECT id FROM v)
+         WHERE p.reporter_user_id = $1`,
+        [owner.userId]
+      );
+
+      const entered = await draw(owner.headers);
+      expect(entered.status).toBe('entered');
+      expect(entered.remaining).toBe(0);
+      expect(entered.conditions.every((c) => c.done)).toBe(true);
+      // 남은 조건 0 — 시트 대신 응모 완료 알림.
+      expect(await enteredNotifications(owner.userId)).toBe(1);
+
+      // 다시 물어도 응모 행은 하나고 알림도 하나다.
+      expect((await draw(owner.headers)).status).toBe('entered');
+      expect(await enteredNotifications(owner.userId)).toBe(1);
     });
   });
 });

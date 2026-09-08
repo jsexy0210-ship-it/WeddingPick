@@ -1,6 +1,7 @@
 import type {
   CandidateListResponse,
   CurrentUser,
+  MyMonthlyDrawResponse,
   VendorSummary,
 } from '@weddingpick/api-contract';
 import {
@@ -13,11 +14,11 @@ import {
   withObject,
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { getAppBootstrap } from '@/api/client';
+import { getAppBootstrap, getMyMonthlyDraw } from '@/api/client';
 import {
   ActionButton,
   Layout,
@@ -28,8 +29,11 @@ import {
   ThemedText,
   ThemedView,
   useTheme,
+  Motion,
 } from '@weddingpick/ui';
 import { DelayedRecommendingView } from '@/features/loading/delayed-loader';
+import { BenefitSheet } from '@/features/home/benefit-sheet';
+import { hasSeenBenefitSheet, markBenefitSheetSeen } from '@/features/home/benefit-sheet-seen';
 import { Board, FoldedBoard } from '@/features/home/board';
 import { listWeddingContent, type WeddingContentItem } from '@/features/home/content';
 import { homeView, nextUpCategory, type HomeView } from '@/features/home/state';
@@ -55,8 +59,8 @@ import { WebShellView } from '@/features/webshell/WebShellView';
  * 홈. 디자인 확정본 `웨딩픽 홈 C-1 상태`(`03-home.dc.html`).
  *
  * **모든 상태가 상황 → 추천 → 근거 → Pick 한 흐름을 따른다.** 상황은 D-day와
- * 현황판, 추천은 오늘의 Pick, 근거는 그 안의 금액 줄, 행동은 비교 하나다. 가격
- * TOP3처럼 오늘의 Pick과 경쟁하는 영역은 두지 않는다 — 확정 단계에서 없앤 자리다.
+ * 현황판, 추천은 웨딩픽 추천, 근거는 그 안의 금액 줄, 행동은 비교 하나다. 가격
+ * TOP3처럼 웨딩픽 추천과 경쟁하는 영역은 두지 않는다 — 확정 단계에서 없앤 자리다.
  *
  * **섹션 순서는 고정이다.** 이전 홈에는 사용자가 순서를 바꾸는 «홈 편집»이
  * 있었는데, C-1은 위계 자체가 설계라서 순서를 바꾸면 «지금 할 일»이 아래로
@@ -68,7 +72,7 @@ import { WebShellView } from '@/features/webshell/WebShellView';
 type HomeData = {
   me: CurrentUser | null;
   candidates: CandidateListResponse | null;
-  /** 오늘의 Pick 자리에 올릴 세 곳. 지목받은 업종에서 실 제보가 많은 순. */
+  /** 웨딩픽 추천 자리에 올릴 세 곳. 지목받은 업종에서 실 제보가 많은 순. */
   recommended: readonly VendorSummary[];
   /** 많이 확인된 곳. */
   popular: readonly VendorSummary[];
@@ -96,6 +100,14 @@ export default function HomeScreen() {
    */
   // 하이브리드 웹뷰 쉘 POC일 때는 애초에 스켈레톤을 거칠 일이 없어 settled로 시작한다.
   const [settled, setSettled] = useState(() => isWebShellScreen('home'));
+  /*
+   * 혜택 안내 시트(WP-SHT-017) — 온보딩 완료 후 홈 최초 진입 1회, 400ms 뒤. 남은 응모
+   * 조건이 0이면 띄우지 않는다(서버가 응모 완료 알림으로 대신한다). 닫으면 sheetSeen을
+   * 저장해 다시 띄우지 않는다.
+   */
+  const [benefit, setBenefit] = useState<MyMonthlyDrawResponse | null>(null);
+  const [benefitOpen, setBenefitOpen] = useState(false);
+  const benefitChecked = useRef(false);
 
   const load = useCallback(() => {
     // 웹뷰 쉘로 대체할 때는 이 밑 자료를 안 쓴다 — 훅 순서를 지키려고 호출
@@ -108,10 +120,10 @@ export default function HomeScreen() {
       .catch(() => undefined);
 
     /*
-     * 회원 · 알림 · 많이 확인된 곳 · 담아둔 후보 · 오늘의 Pick, 다섯을 한 번에
+     * 회원 · 알림 · 많이 확인된 곳 · 담아둔 후보 · 웨딩픽 추천, 다섯을 한 번에
      * 받는다(GET /v1/app/bootstrap). 서버 안에서 병렬로 모은 것이라 기기가
      * 인터넷을 여러 번 왕복하지 않는다 — 순서가 남은 것은 담아둔 후보가 지목한
-     * 업종을 알아야 오늘의 Pick이 나오는 진짜 의존관계뿐이고, 그것도 서버 안의
+     * 업종을 알아야 웨딩픽 추천이 나오는 진짜 의존관계뿐이고, 그것도 서버 안의
      * 일이다.
      */
     void getAppBootstrap()
@@ -130,6 +142,47 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(load, [load]);
+
+  useEffect(() => {
+    if (!settled || data.me?.setupComplete !== true || benefitChecked.current) return;
+    benefitChecked.current = true;
+
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let alive = true;
+
+    void hasSeenBenefitSheet().then(async (seen) => {
+      if (seen || !alive) return;
+      try {
+        const draw = await getMyMonthlyDraw();
+        if (!alive) return;
+        if (draw.remaining === 0) {
+          // 조건을 다 채웠다 — 시트 대신 응모 완료 알림. 다시 묻지 않는다.
+          void markBenefitSheetSeen();
+          return;
+        }
+        setBenefit(draw);
+        timer = setTimeout(() => setBenefitOpen(true), Motion.benefitSheetDelay.duration);
+      } catch {
+        // 혜택 현황을 못 받았으면 시트를 띄우지 않는다. 다음 진입에 한 번 더 본다.
+      }
+    });
+
+    return () => {
+      alive = false;
+      if (timer !== null) clearTimeout(timer);
+    };
+  }, [settled, data.me?.setupComplete]);
+
+  const dismissBenefit = useCallback(() => {
+    setBenefitOpen(false);
+    void markBenefitSheetSeen();
+  }, []);
+
+  const openBenefit = useCallback(() => {
+    setBenefitOpen(false);
+    void markBenefitSheetSeen();
+    router.push('/my/rewards');
+  }, []);
 
   // 하이브리드 웹뷰 쉘 POC. `EXPO_PUBLIC_WEBSHELL_SCREENS`에 "home"이 없으면
   // (기본값) 이 분기는 타지 않고 기존 네이티브 화면 그대로다.
@@ -186,6 +239,15 @@ export default function HomeScreen() {
           />
         </ScrollView>
       </SafeAreaView>
+
+      {benefit ? (
+        <BenefitSheet
+          visible={benefitOpen}
+          draw={benefit}
+          onDismiss={dismissBenefit}
+          onOpenBenefit={openBenefit}
+        />
+      ) : null}
     </ThemedView>
   );
 }
@@ -275,7 +337,7 @@ function MemberHome({
           />
         </Section>
       ) : (
-        /* 추천 — 오늘의 Pick. 근거와 행동이 이 안에 함께 있다. */
+        /* 추천 — 웨딩픽 추천. 근거와 행동이 이 안에 함께 있다. */
         <ThemedView style={styles.block}>
           <TodaysPick
             /*
@@ -404,7 +466,7 @@ function identityLine(me: CurrentUser | null): string {
 }
 
 /**
- * 오늘의 Pick 부제. 시안 4는 «스튜디오를 정할 차례예요», 시안 5(결정 직후)는
+ * 웨딩픽 추천 부제. 시안 4는 «스튜디오를 정할 차례예요», 시안 5(결정 직후)는
  * «이제 드레스를 볼 차례예요» — 방금 하나를 끝낸 사람에게는 다음이 이어진다는
  * 말이 먼저다.
  */

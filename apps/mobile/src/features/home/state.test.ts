@@ -153,7 +153,7 @@ describe('홈 상태 — 시안 여섯 장', () => {
 
     expect(view.state).toBe('decided');
     expect(view.showsDecided).toBe(true);
-    // 결정이 찍히면 오늘의 Pick이 다음 업종으로 넘어간다.
+    // 결정이 찍히면 웨딩픽 추천이 다음 업종으로 넘어간다.
     expect(view.focus).toBe('studio');
   });
 
@@ -204,7 +204,7 @@ describe('현황판 한 칸', () => {
 });
 
 describe('다음 준비', () => {
-  it('오늘의 Pick이 지목한 업종은 빼고 고른다', () => {
+  it('웨딩픽 추천이 지목한 업종은 빼고 고른다', () => {
     // 같은 업종을 두 번 적으면 같은 말을 두 번 하는 것이다.
     const groups = [group('hall', 'picking', 2), group('studio', 'before', 0)];
 
