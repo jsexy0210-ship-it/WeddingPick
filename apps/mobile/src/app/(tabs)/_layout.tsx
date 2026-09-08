@@ -1,15 +1,12 @@
 import { Tabs, useSegments } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ProductSymbol, WeddingMark, useTheme } from '@weddingpick/ui';
+import { RootTabBar } from '@/features/navigation/tab-bar';
 
 /**
- * Bottom Navigation: 홈 | 검색 | 촬영 | 내 웨딩 | MY
+ * Bottom Navigation: 홈 | 검색 | Pick | 웨딩일정 | MY — 05-root 시안 1:1(`RootTabBar`).
  * 사업계획서 31번 App IA. 4번 탭은 «웨딩일정»(v3.16) — 혼자서도 전면 개방, 배우자 초대는 보조 기능.
  */
 export default function TabLayout() {
-  const theme = useTheme();
-  const insets = useSafeAreaInsets();
   /*
    * 카메라는 전체 화면을 써야 문서를 화면에 맞추기 쉽다.
    *
@@ -22,72 +19,30 @@ export default function TabLayout() {
 
   return (
     <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: theme.text,
-        tabBarInactiveTintColor: theme.textAssistive,
-        tabBarStyle: onCamera
-          ? { display: 'none' }
-          : {
-              backgroundColor: theme.background,
-              borderTopColor: theme.border,
-              paddingBottom: insets.bottom,
-              height: 60 + insets.bottom,
-            },
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: '홈',
-          tabBarIcon: ({ color, size }) => <ProductSymbol name="house" color={color} size={size} />,
-        }}
-      />
-      <Tabs.Screen
-        name="search"
-        options={{
-          title: '검색',
-          tabBarIcon: ({ color, size }) => (
-            <ProductSymbol name="magnifier" color={color} size={size} />
-          ),
-        }}
-      />
+      tabBar={(props) => (onCamera ? null : <RootTabBar {...props} />)}
+      screenOptions={{ headerShown: false }}>
+      <Tabs.Screen name="index" options={{ title: '홈' }} />
+      <Tabs.Screen name="search" options={{ title: '검색' }} />
       {/*
         Pick. 통합정책 v3.2 §1이 루트를 홈/검색/Pick/웨딩일정/MY로 정했다.
         아이콘은 웨딩픽 심볼(하트 안에 체크)을 그대로 쓴다 — 앱 아이콘·스플래시와
         같은 마크라야 "Pick이 이 앱의 중심"이라는 말이 화면에서도 같은 모양으로
-        읽힌다. 색은 다른 탭처럼 선택 상태를 따라간다.
+        읽힌다. 아이콘·라벨·배지는 `RootTabBar`가 그린다.
        */}
-      <Tabs.Screen
-        name="pick"
-        options={{
-          title: 'Pick',
-          tabBarIcon: ({ color, size }) => <WeddingMark size={size} color={color} />,
-        }}
-      />
+      <Tabs.Screen name="pick" options={{ title: 'Pick' }} />
       {/*
         제보는 루트에서 뺀다(v3.2 §1). 화면은 남아 있고 MY와 업체 상세, 건수가
         모자란 자리에서 들어간다 — 맥락 없이 탭으로 세워두면 무엇을 제보하라는
         것인지 알 수 없다.
        */}
       <Tabs.Screen name="capture" options={{ href: null }} />
-      <Tabs.Screen
-        name="wedding"
-        options={{
-          title: '웨딩일정',
-          tabBarIcon: ({ color, size }) => (
-            <ProductSymbol name="calendar" color={color} size={size} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="my"
-        options={{
-          title: 'MY',
-          tabBarIcon: ({ color, size }) => (
-            <ProductSymbol name="person" color={color} size={size} />
-          ),
-        }}
-      />
+      {/*
+        (home)은 홈에서 파고드는 하위 스택(피드 · TOP3)이다. 탭이 아니다 — 숨기지
+        않으면 라우터가 "(home)"이라는 여섯 번째 탭을 만든다.
+       */}
+      <Tabs.Screen name="(home)" options={{ href: null }} />
+      <Tabs.Screen name="wedding" options={{ title: '웨딩일정' }} />
+      <Tabs.Screen name="my" options={{ title: 'MY' }} />
     </Tabs>
   );
 }
