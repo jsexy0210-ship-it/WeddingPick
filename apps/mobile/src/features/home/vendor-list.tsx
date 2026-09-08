@@ -50,7 +50,7 @@ function Row({ vendor, onPress }: { vendor: VendorSummary; onPress: () => void }
       onPress={onPress}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
       <View style={styles.thumb}>
-        <CategoryImage />
+        <CategoryImage uri={vendor.imageUrl} label={vendor.name} />
       </View>
 
       <ThemedView style={styles.body}>

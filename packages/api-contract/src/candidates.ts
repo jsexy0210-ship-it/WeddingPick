@@ -16,6 +16,8 @@ export const vendorCandidateSchema = z.object({
   vendorName: z.string().min(1),
   category: vendorCategorySchema,
   region: z.string().min(1),
+  /** 승인된 대표 이미지. 없으면 null — 카테고리 기본으로 대체한다. */
+  imageUrl: z.string().nullable(),
   note: z.string().nullable(),
   addedAt: timestampSchema,
   /** 배우자가 담았는지. 상대가 마음에 들어 한 곳인지 알아야 이야기가 된다. */

@@ -353,6 +353,7 @@ function SharedVendorRow({
         }}>
         <View style={styles.vendorThumb}>
           <VendorImage
+            source={candidate.imageUrl ? { uri: candidate.imageUrl } : undefined}
             category={vendorImageCategory(category)}
             width={52}
             height={52}

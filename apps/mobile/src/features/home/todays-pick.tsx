@@ -89,7 +89,7 @@ function Card({ vendor, onPress }: { vendor: VendorSummary; onPress: () => void 
       onPress={onPress}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}>
       <View style={styles.thumb}>
-        <CategoryImage />
+        <CategoryImage uri={vendor.imageUrl} label={vendor.name} />
       </View>
       <ThemedText type="t6" numberOfLines={1} style={styles.name}>
         {vendor.name}
