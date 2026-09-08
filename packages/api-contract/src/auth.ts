@@ -39,6 +39,11 @@ export const createSessionResponseSchema = z.object({
   activated: z.boolean(),
   /** 초기 설정(지역)까지 끝났는가. true면 홈으로 바로 간다. */
   setupComplete: z.boolean(),
+  /**
+   * 만 14세 확인이 끝났는가(v3.22 SPEC 3.5). 카카오가 연령대를 줬고 14세 이상이면
+   * 체크박스 없이 여기서 true다. 연령대 자체는 내려가지 않고 저장되지도 않는다.
+   */
+  ageVerified: z.boolean(),
 });
 
 /**

@@ -1,25 +1,22 @@
-import type { CreateExpenseRequest, ExpenseSummaryResponse } from '@weddingpick/api-contract';
+import type { ExpenseSummaryResponse } from '@weddingpick/api-contract';
 import {
   BUDGET_BRACKET_LABEL,
   EXPENSE_BUCKET_COLOR,
-  EXPENSE_STATUSES,
-  EXPENSE_STATUS_LABEL,
   manwon,
   type ExpenseBucket,
 } from '@weddingpick/domain';
-import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { addExpense, getExpenses, removeExpense, setBudget } from '@/api/client';
+import { getExpenses, removeExpense, setBudget } from '@/api/client';
 import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
 import {
   ActionButton,
   DonutChart,
   ErrorView,
   Fab,
-  FilterChip,
   Layout,
   MaxContentWidth,
   Radius,
@@ -40,6 +37,9 @@ import { won } from '@/features/quotes/quote-result-view';
  *
  * 예산을 안 정했으면 시트가 자동으로 뜬다(핸드오프). 다만 **평균값을 깔아두지는
  * 않는다** — 결혼 예산은 사람마다 열 배씩 차이가 나서, 그건 안내가 아니라 유도다.
+ *
+ * 지출 추가는 시트가 아니라 화면이다 — WP-OUR-014(v3.22 SPEC 13.10)가 지출 입력과
+ * Pick 인증을 한 화면에서 처리한다. 돌아오면 다시 읽는다(`useFocusEffect`).
  */
 export default function ExpensesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -48,12 +48,8 @@ export default function ExpensesScreen() {
   const [error, setError] = useState<string | null>(null);
   const [budgetOpen, setBudgetOpen] = useState(false);
   const [draft, setDraft] = useState('');
-  /** 수동 지출 입력 시트 */
-  const [addOpen, setAddOpen] = useState(false);
-  const [addLabel, setAddLabel] = useState('');
-  const [addAmount, setAddAmount] = useState('');
-  const [addStatus, setAddStatus] = useState<CreateExpenseRequest['status']>('paid');
-  const [addSpentOn, setAddSpentOn] = useState('');
+  /** 예산 시트는 화면에 처음 들어왔을 때 한 번만 권한다 — 지출을 넣고 돌아올 때마다 뜨면 방해다. */
+  const budgetPrompted = useRef(false);
 
   const load = useCallback(() => {
     getExpenses(id)
@@ -65,14 +61,15 @@ export default function ExpensesScreen() {
          * 안 답했다는 뜻이 아니다. 정말 안 답한 사람에게만, 한 틱 뒤에 열어
          * 초기화와 상쇄되지 않게 한다.
          */
-        if (!loaded.budget.set && loaded.budgetBracket === null) {
+        if (!loaded.budget.set && loaded.budgetBracket === null && !budgetPrompted.current) {
+          budgetPrompted.current = true;
           setTimeout(() => setBudgetOpen(true), 0);
         }
       })
       .catch((caught: Error) => setError(caught.message));
   }, [id]);
 
-  useEffect(load, [load]);
+  useFocusEffect(load);
 
   if (error) {
     return <ErrorView message={error} onBack={() => router.back()} />;
@@ -91,43 +88,6 @@ export default function ExpensesScreen() {
       load();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '정하지 못했어요.');
-    }
-  }
-
-  function closeAddSheet() {
-    setAddOpen(false);
-    setAddLabel('');
-    setAddAmount('');
-    setAddStatus('paid');
-    setAddSpentOn('');
-  }
-
-  async function submitExpense() {
-    const label = addLabel.trim();
-    const amount = parseInt(addAmount.replace(/[^0-9]/g, ''), 10);
-
-    if (!label) {
-      showAlert('항목 이름을 적어주세요');
-      return;
-    }
-    if (!amount || amount <= 0) {
-      showAlert('금액을 숫자로 적어주세요');
-      return;
-    }
-    const spentOn = addSpentOn.trim();
-    const body: CreateExpenseRequest = {
-      label,
-      amount,
-      status: addStatus,
-      ...(spentOn ? { spentOn } : {}),
-    };
-
-    try {
-      await addExpense(id, body);
-      closeAddSheet();
-      load();
-    } catch (caught) {
-      showAlert('지출 추가 실패', caught instanceof Error ? caught.message : '다시 시도해주세요.');
     }
   }
 
@@ -243,9 +203,8 @@ export default function ExpensesScreen() {
                   아직 항목이 없어요. 지출을 등록하시면 여기 모여요.
                 </ThemedText>
                 <ActionButton
-                  variant="primary"
-                  label="제보하기"
-                  onPress={() => router.push('/capture')}
+                  label="지출 넣기"
+                  onPress={() => router.push(`/wedding/${id}/expenses/add` as never)}
                 />
               </ThemedView>
             ) : (
@@ -298,61 +257,12 @@ export default function ExpensesScreen() {
         </ScrollView>
       </SafeAreaView>
 
-      <Fab label="지출 추가" glyph="+" onPress={() => { closeAddSheet(); setAddOpen(true); }} />
-
-      <BottomSheet dismissible={false} visible={addOpen} onRequestClose={closeAddSheet}>
-          <ThemedView style={[SHEET_PANEL, styles.sheet]}>
-            <ThemedText type="t4">지출 추가</ThemedText>
-            <ThemedText type="t7" themeColor="textSecondary">항목 이름</ThemedText>
-            <TextInput
-              style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundSelected }]}
-              value={addLabel}
-              onChangeText={setAddLabel}
-              placeholder="예: 스튜디오 계약금"
-              placeholderTextColor={theme.textAssistive}
-              returnKeyType="next"
-            />
-            <ThemedText type="t7" themeColor="textSecondary">금액 (원)</ThemedText>
-            <TextInput
-              style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundSelected }]}
-              value={addAmount}
-              onChangeText={(text) =>
-                setAddAmount(
-                  text.replace(/[^0-9]/g, '').slice(0, 12).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-                )
-              }
-              placeholder="예: 500000"
-              placeholderTextColor={theme.textAssistive}
-              keyboardType="number-pad"
-              maxLength={15}
-            />
-            <ThemedText type="t7" themeColor="textSecondary">상태</ThemedText>
-            <ThemedView style={styles.chips}>
-              {EXPENSE_STATUSES.map((s) => (
-                <FilterChip
-                  key={s}
-                  label={EXPENSE_STATUS_LABEL[s]}
-                  selected={addStatus === s}
-                  role="radio"
-                  onPress={() => setAddStatus(s)}
-                />
-              ))}
-            </ThemedView>
-            <ThemedText type="t7" themeColor="textSecondary">지출일 (선택, YYYY-MM-DD)</ThemedText>
-            <TextInput
-              style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundSelected }]}
-              value={addSpentOn}
-              onChangeText={setAddSpentOn}
-              placeholder="예: 2025-04-15"
-              placeholderTextColor={theme.textAssistive}
-              maxLength={10}
-            />
-            <ThemedView style={styles.sheetActions}>
-              <ActionButton label="취소" onPress={closeAddSheet} />
-              <ActionButton variant="primary" label="추가하기" onPress={() => void submitExpense()} />
-            </ThemedView>
-          </ThemedView>
-      </BottomSheet>
+      {/* 지출 추가 — WP-OUR-014로 간다. 시트가 아니라 화면이다. */}
+      <Fab
+        label="지출 추가"
+        glyph="+"
+        onPress={() => router.push(`/wedding/${id}/expenses/add` as never)}
+      />
 
       <BottomSheet dismissible={false} visible={budgetOpen} onRequestClose={() => setBudgetOpen(false)}>
           <ThemedView style={[SHEET_PANEL, styles.sheet]}>
@@ -407,7 +317,6 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   sheetActions: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.two },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   input: {
     height: Layout.rowMinHeight,
     borderRadius: Radius.input,

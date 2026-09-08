@@ -14,6 +14,7 @@ import {
   type MembershipFacts,
   type VendorCategory,
   type WeddingBudgetBracket,
+  isWeddingStyle,
 } from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
 
@@ -102,11 +103,13 @@ async function loadCurrentUser(context: AppContext, userId: string) {
     has_payment_proof: boolean;
     has_pick: boolean;
     has_compared: boolean;
+    style_tags: string[] | null;
   }>(
     `SELECT
        w.id,
        w.wedding_date,
        w.region,
+       w.style_tags::text[] AS style_tags,
        /* enum 배열은 드라이버가 문자열 '{a,b}'로 준다 — text[]로 바꿔 읽는다. */
        w.prepared_categories::text[] AS prepared_categories,
        w.setup_completed_at,
@@ -135,7 +138,7 @@ async function loadCurrentUser(context: AppContext, userId: string) {
        ) AS has_compared
      FROM structured.users u
      LEFT JOIN LATERAL (
-       SELECT id, wedding_date, region, prepared_categories, setup_completed_at,
+       SELECT id, wedding_date, region, prepared_categories, style_tags, setup_completed_at,
               budget_amount, budget_bracket, owner_user_id, partner_user_id
        FROM structured.weddings
        WHERE owner_user_id = u.id OR partner_user_id = u.id
@@ -195,6 +198,7 @@ async function loadCurrentUser(context: AppContext, userId: string) {
      * 뺐다 — 이름이 없다고 첫 화면에 다시 붙잡아두면 그게 강제 가입이다.
      */
     setupComplete: facts.weddingSet,
+    styleTags: (row?.style_tags ?? []).filter(isWeddingStyle),
     spouseLinked: facts.spouseLinked,
     partnerDisplayName: facts.spouseLinked ? (row?.partner_display_name ?? null) : null,
     hasPaymentProof: facts.hasPaymentProof,
@@ -254,6 +258,9 @@ export function registerWeddingRoutes(app: FastifyInstance, context: AppContext)
     /* 준비 현황도 같다 — 안 보내면 그대로, 빈 배열은 «아직 시작 전이에요». 같은 업종을 두 번 보내도 한 번만 적는다. */
     const preparedGiven = body.preparedCategories !== undefined;
     const prepared = [...new Set(body.preparedCategories ?? [])];
+    /* 스타일(5/5 · v3.22)도 같다 — 안 보내면 그대로. 최소 1 · 최대 2는 계약이 지킨다. */
+    const stylesGiven = body.styleTags !== undefined;
+    const styles = [...new Set(body.styleTags ?? [])];
 
     await withTransaction(context.pool, async (client) => {
       const existing = await client.query<{ id: string }>(
@@ -273,9 +280,10 @@ export function registerWeddingRoutes(app: FastifyInstance, context: AppContext)
                budget_bracket = CASE WHEN $4::boolean THEN $5::wedding_budget_bracket ELSE budget_bracket END,
                budget_amount = CASE WHEN $4::boolean THEN $6::bigint ELSE budget_amount END,
                prepared_categories = CASE WHEN $7::boolean THEN $8::vendor_category[] ELSE prepared_categories END,
+               style_tags = CASE WHEN $9::boolean THEN $10::wedding_style[] ELSE style_tags END,
                setup_completed_at = coalesce(setup_completed_at, now())
            WHERE id = $1`,
-          [weddingId, body.weddingDate, region, bracketGiven, bracket, budget, preparedGiven, prepared]
+          [weddingId, body.weddingDate, region, bracketGiven, bracket, budget, preparedGiven, prepared, stylesGiven, styles]
         );
 
         return;
@@ -283,9 +291,9 @@ export function registerWeddingRoutes(app: FastifyInstance, context: AppContext)
 
       await client.query(
         `INSERT INTO structured.weddings
-           (owner_user_id, wedding_date, region, budget_bracket, budget_amount, prepared_categories, setup_completed_at)
-         VALUES ($1, $2, $3, $4::wedding_budget_bracket, $5::bigint, $6::vendor_category[], now())`,
-        [userId, body.weddingDate, region, bracket, budget, prepared]
+           (owner_user_id, wedding_date, region, budget_bracket, budget_amount, prepared_categories, style_tags, setup_completed_at)
+         VALUES ($1, $2, $3, $4::wedding_budget_bracket, $5::bigint, $6::vendor_category[], $7::wedding_style[], now())`,
+        [userId, body.weddingDate, region, bracket, budget, prepared, styles]
       );
     });
 

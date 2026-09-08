@@ -4,7 +4,7 @@ import { paidPriceSchema } from './payment-proofs';
 import { reportedPriceSchema } from './price-reports';
 import { usageScoreSchema } from './reviews';
 
-import { MAX_COMPARED_VENDORS, SPONSORED_LABEL } from '@weddingpick/domain';
+import { MAX_COMPARED_VENDORS, SPONSORED_LABEL, WEDDING_STYLES } from '@weddingpick/domain';
 
 import { coordinateSchema, documentTypeSchema, idSchema, vendorCategorySchema } from './common';
 import { priceStatSchema } from './comparison';
@@ -15,6 +15,16 @@ import { priceStatSchema } from './comparison';
  * 별점도 후기도 없다. 우리가 아는 것은 이 업체가 있다는 사실과, 확인된 계약이 몇 건
  * 모였는지뿐이다. 모르는 것을 아는 척하지 않는다.
  */
+export const weddingStyleSchema = z.enum(WEDDING_STYLES);
+
+/** 업체 안내 가격(정보 0층). packages/domain guide-price.ts와 같은 꼴이다. */
+export const guidePriceSchema = z.object({
+  fromKrw: z.int().positive(),
+  sourceLabel: z.string().min(1),
+});
+
+export type GuidePriceDto = z.infer<typeof guidePriceSchema>;
+
 export const vendorSummarySchema = z.object({
   id: idSchema,
   name: z.string().min(1),
@@ -44,7 +54,23 @@ export const vendorSummarySchema = z.object({
    * 사라지는 일이 생긴다.
    */
   paidPrice: paidPriceSchema,
+  /**
+   * 업체 스타일 태그(v3.22). 개수 제한 없음. 사용자가 고른 것과 겹치는 개수를 정렬에만
+   * 반영한다 — 태그가 다르다고 목록에서 빼지 않는다.
+   */
+  styleTags: z.array(weddingStyleSchema),
+  /**
+   * 업체 안내 가격(정보 0층). 실 제보 3건 미만일 때 «업체 안내 150만원~»를 회색으로
+   * 대신 보여준다. 없으면 null — 그때는 «수집 중» + Pick 인증 CTA.
+   */
+  guidePrice: guidePriceSchema.nullable(),
+  /**
+   * 추천 이유(홈 웨딩픽 추천). 서버가 문장으로 내려준다 — 스타일 일치가 먼저고
+   * «실 제보 N건»은 자료가 생기면 등장한다. 추천 자리가 아니면 없다.
+   */
+  reasons: z.array(z.string().min(1)).optional(),
 });
+
 
 /**
  * 정렬. 핸드오프 7번.

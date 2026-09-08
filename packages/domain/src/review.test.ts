@@ -1,5 +1,5 @@
 import {
-  COLLECTING_LABEL,
+  REVIEW_SCORE_COLLECTING_LABEL,
   MINIMUM_REVIEW_COUNT,
   OBJECTION_HOLD_MAX_DAYS,
   REVIEW_CAVEAT,
@@ -97,7 +97,7 @@ describe('이용점수', () => {
     expect(score.available).toBe(false);
     expect(score.available === false && score.reason).toContain(`${MINIMUM_REVIEW_COUNT}건이`);
     // 스펙 5.5: 기준에 못 미치면 확정 비율을 내보내지 않는다.
-    expect(score.available === false && score.reason).toContain(COLLECTING_LABEL);
+    expect(score.available === false && score.reason).toContain(REVIEW_SCORE_COLLECTING_LABEL);
   });
 
   it('충분하면 평균과 항목별 점수를 함께 준다', () => {

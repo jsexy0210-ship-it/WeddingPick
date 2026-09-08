@@ -126,14 +126,19 @@ export async function signIn(
 export async function sessionEntry(
   pool: Pool,
   userId: string
-): Promise<{ activated: boolean; setupComplete: boolean }> {
-  const { rows } = await pool.query<{ activated: boolean; setup_complete: boolean }>(
+): Promise<{ activated: boolean; setupComplete: boolean; ageVerified: boolean }> {
+  const { rows } = await pool.query<{
+    activated: boolean;
+    setup_complete: boolean;
+    age_verified: boolean;
+  }>(
     `SELECT u.activated_at IS NOT NULL AS activated,
             EXISTS (
               SELECT 1 FROM structured.weddings w
               WHERE (w.owner_user_id = u.id OR w.partner_user_id = u.id)
                 AND w.setup_completed_at IS NOT NULL
-            ) AS setup_complete
+            ) AS setup_complete,
+            u.age_verified
      FROM structured.users u
      WHERE u.id = $1`,
     [userId]
@@ -141,9 +146,40 @@ export async function sessionEntry(
 
   const row = rows[0];
 
-  return { activated: row?.activated ?? false, setupComplete: row?.setup_complete ?? false };
+  return {
+    activated: row?.activated ?? false,
+    setupComplete: row?.setup_complete ?? false,
+    ageVerified: row?.age_verified ?? false,
+  };
 }
 
+/**
+ * 제공자가 준 연령대로 만 14세 확인이 끝났다고 적는다. v3.22 SPEC 3.5.
+ *
+ * 남기는 것은 둘뿐이다 — `age_verified` · `age_verified_at`. 연령대는 여기까지
+ * 오지 않는다(라우트가 판정만 넘긴다). `age_gate` · `age_checked_at`(0046)도 함께
+ * 채운다 — `activated_only_when_old_enough` 제약이 여전히 그 컬럼을 본다.
+ *
+ * 이미 확인된 계정은 건드리지 않는다. 확인 시점은 처음 확인한 때여야 한다.
+ */
+export async function markAgeVerified(pool: Pool, userId: string): Promise<void> {
+  await pool.query(
+    `UPDATE structured.users
+     SET age_verified = true, age_verified_at = now(),
+         age_gate = 'passed', age_checked_at = coalesce(age_checked_at, now())
+     WHERE id = $1 AND age_verified = false`,
+    [userId]
+  );
+}
+
+/**
+ * 소셜 프로필 중 저장하는 것.
+ *
+ * **생년 · 생년월일 · 연령대는 기록하지 않는다**(v3.22 SPEC 3.5 «나이를 저장하지
+ * 않습니다»). 제공자가 줘도 여기서 버린다 — 연령 판정은 라우트가 `age_verified`
+ * 하나로 남기고, 그 근거 숫자는 어디에도 남지 않는다. 컬럼(0011)은 남아 있지만
+ * 새로 채우지 않는다.
+ */
 function identityValues(identity: VerifiedIdentity): Array<string | null> {
   return [
     identity.provider,
@@ -153,9 +189,9 @@ function identityValues(identity: VerifiedIdentity): Array<string | null> {
     identity.profile?.nickname ?? null,
     identity.profile?.profileImageUrl ?? null,
     identity.profile?.gender ?? null,
-    identity.profile?.birthday ?? null,
-    identity.profile?.ageRange ?? null,
-    identity.profile?.birthYear ?? null,
+    /* birthday */ null,
+    /* age_range */ null,
+    /* birth_year */ null,
     identity.profile?.mobile ?? null,
   ];
 }

@@ -70,6 +70,8 @@ export const BASE_AMOUNT_HELP = '실 제보의 중앙값이에요.';
 export const NOT_ENOUGH_DATA = '아직 정보가 적어요';
 /** 아직 모으는 중. 두 화면이 같은 말을 각자 적고 있었다. */
 export const STILL_COLLECTING = '정보를 모으는 중이에요';
+/** 금액 자리의 «수집 중»(SPEC §2 1층). 회색 #868B94로 낮춘다. */
+export const COLLECTING_LABEL = '수집 중';
 export const CANNOT_COMPARE_YET = '아직 비교하기 어려워요';
 export const COMPARE_LATER = '조금 더 모이면 비교할 수 있어요';
 export const MANY_CONFIRMED = '많이 확인된 곳';

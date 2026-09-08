@@ -1,11 +1,4 @@
-import {
-  OTHER_REGION,
-  REGION_DISTRICTS,
-  WEDDING_REGIONS,
-  combineRegion,
-  regionFilter,
-  regionMatches,
-} from './wedding-region';
+import { OTHER_REGION, REGION_DISTRICTS, WEDDING_REGIONS, combineRegion, regionFilter, regionLikePattern, regionMatches } from './wedding-region';
 
 describe('온보딩 지역', () => {
   it('시안 #11d의 아홉 칩을 그 순서로 둔다', () => {
@@ -48,5 +41,21 @@ describe('온보딩 지역', () => {
     for (const region of WEDDING_REGIONS.filter((r) => r !== OTHER_REGION)) {
       expect(REGION_DISTRICTS[region]?.length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('지역 맞추기 — 긴 꼴과 짧은 꼴(v3.24)', () => {
+  it('서울특별시 강남구와 서울 강남구는 같은 곳이다', () => {
+    expect(regionMatches('서울 강남구', '서울특별시 강남구')).toBe(true);
+    expect(regionMatches('서울특별시 강남구', '서울 강남구')).toBe(true);
+    expect(regionMatches('서울특별시 강남구', '서울')).toBe(true);
+    expect(regionMatches('경기 수원시', '서울특별시 강남구')).toBe(false);
+    expect(regionMatches('서울 서초구', '서울특별시 강남구')).toBe(false);
+  });
+
+  it('LIKE 패턴도 같은 규칙이다', () => {
+    expect(regionLikePattern('서울특별시 강남구')).toBe('서울% 강남구%');
+    expect(regionLikePattern('서울')).toBe('서울%');
+    expect(regionLikePattern('경기도 수원시')).toBe('경기% 수원시%');
   });
 });

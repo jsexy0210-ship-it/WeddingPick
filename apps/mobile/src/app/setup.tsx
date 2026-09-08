@@ -1,9 +1,16 @@
-import { combineRegion, dDay, formatDateDot, type VendorCategory } from '@weddingpick/domain';
+import {
+  STYLE_PICK_LIMIT_TOAST,
+  combineRegion,
+  dDay,
+  formatDateDot,
+  type VendorCategory,
+  type WeddingStyle,
+} from '@weddingpick/domain';
 import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { BackHandler, Pressable, StyleSheet, View } from 'react-native';
 
-import { ApiError, completeSetup, completeSignup, getSignupState, updateTaste } from '@/api/client';
+import { ApiError, completeSetup, completeSignup, getCurrentUser, getSignupState } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { loadToken } from '@/api/session';
 import { Layout, Radius, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
@@ -18,31 +25,29 @@ import {
   NEXT_CTA,
   PREV_CTA,
   STEP_TITLE_LINES,
-  TASTE_RESET_NOTICE,
   UNDECIDED_LABEL,
   answeredRows,
   canAdvance,
   ddayParts,
   doneRows,
   nextStep,
-  prepChanged,
   prevStep,
   resumeStep,
   returnStep,
   stepDescription,
   stepProgress,
   stepsFor,
-  tasteCategoryFor,
-  tasteCta,
+  styleCta,
   type Answers,
   type QuestionStep,
 } from '@/features/onboarding/flow';
+import { InlineToast, useInlineToast } from '@/features/onboarding/inline-toast';
 import { OptionChip } from '@/features/onboarding/option-chip';
 import { PrepStatus } from '@/features/onboarding/prep-status';
 import { QuestionHead } from '@/features/onboarding/question-head';
 import { RegionPicker } from '@/features/onboarding/region-picker';
 import { StepFrame } from '@/features/onboarding/step-frame';
-import { TasteGrid } from '@/features/onboarding/taste-grid';
+import { StyleGrid } from '@/features/onboarding/style-grid';
 import {
   clearOnboardingAnswers,
   clearWeddingDraft,
@@ -52,10 +57,10 @@ import {
 } from '@/features/onboarding/wedding-draft';
 
 /**
- * 초기 설정. 디자인 핸드오프 v3.19(재정렬) 20-onboarding-v2.dc.html · SPEC §13.6
+ * 초기 설정. 디자인 핸드오프 v3.22 20-onboarding-v2.dc.html · SPEC §13.6 · §13.7
  * (WP-APP-020 ~ 023).
  *
- *   예식일 1/5 → 지역 2/5 → 준비 현황 3/5 → 예산 4/5 → 취향 5/5 → 완료
+ *   예식일 1/5 → 지역 2/5 → 준비 현황 3/5 → 예산 4/5 → 스타일 5/5 → 완료
  *
  * **큰 질문 하나 = Step 하나.** 순서·건너뛰기·요약은 전부 `features/onboarding/flow.ts`
  * 가 정하고 이 화면은 그 답을 그린다. 답하면 그 질문은 화면 아래로 가라앉아 «라벨 ·
@@ -67,16 +72,17 @@ import {
  * **«바꾸기»**(SPEC §13.6 «「바꾸기」 동작 정의»)는 그 질문만 다시 연다 — 진행바는
  * 그 Step으로 돌아가고 하단은 «다음» 하나뿐이며, 뒤에 답한 값은 그대로 두되 답 줄에서
  * 잠시 숨긴다. 고치고 «다음»을 누르면 원래 있던 Step으로 바로 복귀한다 — 3/5 · 4/5를
- * 다시 묻지 않는다. 연쇄 초기화는 없다. 예외 하나 — 준비 현황(3/5)을 바꾸면 취향
- * 세트가 바뀌므로 취향만 지우고 한 줄로 알린다(`TASTE_RESET_NOTICE`).
+ * 다시 묻지 않는다. 연쇄 초기화는 없다 — 스타일은 업종과 무관한 축이라 준비 현황을
+ * 바꿔도 지우지 않는다(v3.19 «범용 스타일»).
  *
  * **미정을 억지로 받지 않는다.** 예식일 · 지역 «아직 정하지 않았어요», 준비 현황
- * «아직 시작 전이에요», 예산 «아직 모르겠어요». 취향만 최소 1장 필수다 — 추천의
- * 근거라 없으면 첫 화면에 보여줄 것이 없다. 취향은 준비 현황에 없고 사진이 3장
- * 이상인 첫 업종 하나만 묻고, 그런 업종이 없으면 5/5를 통째로 건너뛴다.
+ * «아직 시작 전이에요», 예산 «아직 모르겠어요». 스타일만 최소 1개 필수다 — 추천의
+ * 근거라 없으면 첫 화면에 보여줄 것이 없다. 최대 2개, 3번째는 추가하지 않고 토스트
+ * «2개까지 고를 수 있어요»(SPEC §13.6 «선택 정책»). 5/5는 건너뛰지 않는다. 이미 고른
+ * 스타일이 서버에 있으면(다시 들어온 계정) 초기화하지 않고 복원해서 보여준다.
  *
  * **스크롤은 화면 전체 하나다**(SPEC §13.5.5). 준비 현황이 뷰포트를 넘치면 화면이
- * 스크롤한다 — 목록 전용 스크롤을 두지 않는다. 5/5는 132 × 3행이라 스크롤이 없다.
+ * 스크롤한다 — 목록 전용 스크롤을 두지 않는다. 5/5는 200 × 2행이라 스크롤이 없다.
  *
  * **만 14세 확인은 여기 없다.** 로그인 화면(WP-AUTH-001)의 체크박스 하나로 끝난다 —
  * 이 화면에 닿았다는 것 자체가 확인을 마쳤다는 뜻이라 `completeSignup`에
@@ -90,8 +96,8 @@ import {
  * 시안과 다른 값은 토큰이 이기는 곳뿐이다: CTA·입력칸 높이 52(size.ctaPrimary ·
  * size.field, 시안 56) · 15px 글자는 t6(16) · 13px은 t7(14).
  */
-/** «바꾸기»로 다시 연 질문. `from`은 돌아갈 Step, `prepBefore`는 취향 초기화를 판단할 원래 준비 현황. */
-type Editing = { step: QuestionStep; from: QuestionStep; prepBefore: Answers['prep'] };
+/** «바꾸기»로 다시 연 질문. `from`은 돌아갈 Step. */
+type Editing = { step: QuestionStep; from: QuestionStep };
 
 export default function SetupScreen() {
   const theme = useTheme();
@@ -103,9 +109,12 @@ export default function SetupScreen() {
   /** 가입이 아직 안 끝난 계정인가 — 그러면 답을 다 받은 뒤 가입부터 마친다. */
   const [needsSignup, setNeedsSignup] = useState(false);
   const [editing, setEditing] = useState<Editing | null>(null);
-  /** 준비 현황을 바꿔 취향이 지워졌음을 알리는 한 줄. 다음 Step으로 옮기면 사라진다. */
-  const [notice, setNotice] = useState<string | null>(null);
+  /** 서버에 이미 있는 스타일 — 5/5에 닿았을 때 아직 안 골랐으면 이걸로 복원한다. */
+  const [seedStyle, setSeedStyle] = useState<readonly WeddingStyle[] | null>(null);
+  /** 서버 응답이 올 때 이미 5/5에 있는지 보려고 지금 Step을 적어 둔다. */
+  const stepRef = useRef<QuestionStep | 'done'>('date');
   const [sheetOpen, setSheetOpen] = useState(false);
+  const limitToast = useInlineToast();
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -127,7 +136,26 @@ export default function SetupScreen() {
     void getSignupState()
       .then((state) => setNeedsSignup(!state.activated))
       .catch(() => undefined);
+    /*
+     * 이미 고른 스타일이 있으면 복원한다(SPEC §13.6 «진입 — 기존 선택값을 초기화하지 않고
+     * 복원»). 5/5에 들어설 때 `enter`가 채우고, 응답이 늦어 이미 5/5에 있으면 여기서 채운다.
+     * 못 읽으면 없는 것 — 4/5 이전에는 채우지 않는다(채우면 5/5를 건너뛰게 된다).
+     */
+    void getCurrentUser()
+      .then((me) => {
+        if (me.styleTags.length === 0) return;
+
+        setSeedStyle(me.styleTags);
+        if (stepRef.current === 'style') {
+          setAnswers((current) => (current.style === null ? { ...current, style: me.styleTags } : current));
+        }
+      })
+      .catch(() => undefined);
   }, []);
+
+  useEffect(() => {
+    stepRef.current = step;
+  }, [step]);
 
   useEffect(() => {
     if (!restored || step === 'done') return;
@@ -140,50 +168,50 @@ export default function SetupScreen() {
     setAnswers((current) => ({ ...current, ...patch }));
   }
 
+  /** Step을 연다. 5/5에 처음 닿았고 서버에 고른 스타일이 있으면 그걸로 채운다. */
+  const enter = useCallback(
+    (target: QuestionStep) => {
+      if (target === 'style' && answers.style === null && seedStyle !== null) {
+        setAnswers((current) => (current.style === null ? { ...current, style: seedStyle } : current));
+      }
+      setStep(target);
+    },
+    [answers.style, seedStyle]
+  );
+
   const goPrev = useCallback(() => {
     if (step === 'done' || editing !== null) return;
 
     const previous = prevStep(step, answers);
 
     setError(null);
-    setNotice(null);
 
     if (previous === null) {
       router.replace('/login');
     } else {
-      setStep(previous);
+      enter(previous);
     }
-  }, [step, answers, editing]);
+  }, [step, answers, editing, enter]);
 
   /**
-   * «바꾸기»로 연 질문을 닫는다. 준비 현황이 실제로 바뀌었으면 취향을 지우고 알린 뒤,
-   * 원래 있던 Step으로 바로 돌아간다(`returnStep`). 돌아갈 곳이 없으면 완료다.
+   * «바꾸기»로 연 질문을 닫는다. 원래 있던 Step으로 바로 돌아간다(`returnStep`).
+   * 돌아갈 곳이 없으면 완료다. 연쇄 초기화는 없다.
    */
   const finishEdit = useCallback(() => {
     if (editing === null || step === 'done' || !canAdvance(step, answers)) return;
 
-    let next = answers;
-    let message: string | null = null;
+    const target = returnStep(editing.step, editing.from, answers);
 
-    if (editing.step === 'prep' && prepChanged(editing.prepBefore, answers.prep) && answers.taste !== null) {
-      next = { ...answers, taste: null };
-      message = TASTE_RESET_NOTICE;
-    }
-
-    const target = returnStep(editing.step, editing.from, next);
-
-    setAnswers(next);
     setEditing(null);
     setError(null);
-    setNotice(message);
 
     if (target === null) {
-      void finish(next);
+      void finish(answers);
     } else {
-      setStep(target);
+      enter(target);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- finish는 answers · sending만 읽고 여기서 next를 직접 넘긴다.
-  }, [editing, step, answers]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- finish는 answers · sending만 읽고 여기서 answers를 직접 넘긴다.
+  }, [editing, step, answers, enter]);
 
   /* 안드로이드 물리 뒤로가기 = «이전». 바꾸는 중에는 «다음»과 같고, 완료 화면에서는 아무 데도 가지 않는다. */
   useEffect(() => {
@@ -208,15 +236,14 @@ export default function SetupScreen() {
     setSending(true);
     setError(null);
 
-    const category = tasteCategoryFor(source);
-    const taste = category !== null && source.taste?.category === category ? source.taste : null;
     const region = source.region?.region ?? null;
+    const styleTags = [...(source.style ?? [])];
     const draft = {
       weddingDate: source.date?.value ?? null,
       region: region === null ? null : combineRegion(region, source.region?.district ?? null),
       preparedCategories: source.prep?.categories ?? [],
       budgetBracket: source.budget,
-      taste,
+      styleTags,
     };
 
     try {
@@ -238,16 +265,9 @@ export default function SetupScreen() {
             (category): category is Exclude<VendorCategory, 'etc'> => category !== 'etc'
           ),
           budgetBracket: draft.budgetBracket,
+          /* 계약은 최소 1개를 받는다 — 5/5는 건너뛰지 않으므로 늘 있지만, 없으면 키를 아예 보내지 않는다. */
+          ...(styleTags.length > 0 ? { styleTags } : {}),
         });
-
-        /*
-         * 취향은 실패해도 온보딩을 되돌리지 않는다. 예식일과 지역이 올라갔는데
-         * 취향 한 번 못 보냈다고 처음부터 다시 시키면 사용자는 같은 답을 여러 번
-         * 더 하게 된다. 못 보낸 것은 MY에서 다시 고를 수 있다.
-         */
-        if (taste) {
-          await updateTaste({ category: taste.category, keys: taste.keys }).catch(() => undefined);
-        }
 
         await clearWeddingDraft();
       } else {
@@ -279,23 +299,21 @@ export default function SetupScreen() {
     const next = nextStep(step, answers);
 
     setError(null);
-    setNotice(null);
 
     if (next === null) {
       void finish();
     } else {
-      setStep(next);
+      enter(next);
     }
   }
 
-  /** «바꾸기» — 그 질문만 다시 연다. 돌아갈 곳과 원래 준비 현황을 기억해 둔다. */
+  /** «바꾸기» — 그 질문만 다시 연다. 돌아갈 곳을 기억해 둔다. */
   function beginEdit(target: QuestionStep) {
     if (step === 'done') return;
 
     setError(null);
-    setNotice(null);
-    setEditing({ step: target, from: step, prepBefore: answers.prep });
-    setStep(target);
+    setEditing({ step: target, from: step });
+    enter(target);
   }
 
   if (!restored) {
@@ -340,8 +358,7 @@ export default function SetupScreen() {
   const progress = stepProgress(step);
   /* 바꾸는 중에는 «다음» 하나뿐이다(SPEC §13.6 «하단 CTA 다음 하나만 · 이전 버튼 없음»). */
   const previous = editing === null ? prevStep(step, answers) : null;
-  const tasteCategory = tasteCategoryFor(answers);
-  const tasteKeys = answers.taste?.category === tasteCategory ? answers.taste.keys : [];
+  const chosenStyles = answers.style ?? [];
   const date = answers.date?.value ?? null;
   const dateUndecided = answers.date !== null && date === null;
   const remaining = date ? dDay(date) : null;
@@ -352,25 +369,15 @@ export default function SetupScreen() {
         progress={progress.percent}
         label={progress.label}
         stepKey={step}
-        answered={step === 'taste' ? [] : answeredRows(step, answers, editing !== null)}
+        answered={answeredRows(step, answers, editing !== null)}
         onEdit={beginEdit}
         prevLabel={previous === null ? undefined : PREV_CTA}
         onPrev={previous === null ? undefined : goPrev}
-        nextLabel={step === 'taste' ? tasteCta(tasteKeys.length) : NEXT_CTA}
+        nextLabel={step === 'style' ? styleCta(chosenStyles.length) : NEXT_CTA}
         nextDisabled={!canAdvance(step, answers) || sending}
         onNext={goNext}
         error={error}>
         <QuestionHead lines={STEP_TITLE_LINES[step]} description={stepDescription(step)} />
-
-        {notice ? (
-          <View style={styles.section}>
-            <View style={[styles.notice, { backgroundColor: theme.backgroundElement }]}>
-              <ThemedText type="t7" themeColor="textSecondary" numberOfLines={1}>
-                {notice}
-              </ThemedText>
-            </View>
-          </View>
-        ) : null}
 
         {step === 'date' ? (
           <View style={styles.section}>
@@ -430,21 +437,16 @@ export default function SetupScreen() {
           <BudgetGrid value={answers.budget} onChange={(next) => update({ budget: next })} />
         ) : null}
 
-        {step === 'taste' && tasteCategory !== null ? (
-          <TasteGrid
-            category={tasteCategory}
-            keys={tasteKeys}
-            onToggle={(key) =>
-              update({
-                taste: {
-                  category: tasteCategory,
-                  keys: tasteKeys.includes(key) ? tasteKeys.filter((one) => one !== key) : [...tasteKeys, key],
-                },
-              })
-            }
+        {step === 'style' ? (
+          <StyleGrid
+            chosen={chosenStyles}
+            onChange={(next) => update({ style: next })}
+            onLimited={() => limitToast.show(STYLE_PICK_LIMIT_TOAST)}
           />
         ) : null}
       </StepFrame>
+
+      <InlineToast toast={limitToast.toast} onHidden={limitToast.hide} />
 
       <DatePickerSheet
         visible={sheetOpen}
@@ -483,12 +485,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.half,
   },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  /* 취향 초기화 알림 한 줄 — gray50 · radius 10 · 안쪽 12/16. 느낌표 없이 사실만. */
-  notice: {
-    borderRadius: Radius.medium,
-    paddingVertical: Layout.rowPaddingY,
-    paddingHorizontal: Spacing.three,
-  },
   /* 완료 요약 — gray50 · radius 10 · 안쪽 20 · 행 상하 9. 안쪽 상자 없음. */
   summary: {
     borderRadius: Radius.medium,

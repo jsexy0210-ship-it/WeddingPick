@@ -61,16 +61,19 @@ const TRACK_HEIGHT = 6;
  * 그쪽으로 옮긴다 — 화면 하나가 정한 값이 아니라 시안이 정한 값이다.
  */
 const DATE_COL_WIDTH = 72; // `05.16(토)` 한 줄이 들어가는 폭
-const PREP_LABEL_WIDTH = 76;
 const AVATAR_SIZE = 26;
 
 /**
  * 웨딩일정 홈 · WP-OUR-001 (v3.16 · 핸드오프 08c 18a/18a2).
  *
  * **혼자서도 전면 개방.** 배우자 연결을 전제로 기능을 잠그던 정책은 폐기했다.
- * D-day · 다음 일정 · 지출 · 준비현황은 혼자든 둘이든 완전히 같다.
+ * D-day · 다음 일정 · 지출은 혼자든 둘이든 완전히 같다.
  * 두 상태는 같은 화면이고 다른 것은 둘뿐이다 — 헤더 아바타 1개/2개, 하단
  * «우리둘» 카드(초대하기 버튼 유무). 화면을 두 개 만들지 않는다.
+ *
+ * **준비 현황은 여기 없다(v3.22 SPEC 13.9).** WP-OUR-002 웨딩일정 준비현황은
+ * 폐기했고 홈 4칸 요약 + WP-HOME-009 전체 보기 두 곳뿐이다. 웨딩일정은 결정한
+ * 뒤의 관리(일정 · 지출 · 메모)만 맡는다. 히어로 진행률만 할 일 진행도를 빌려 쓴다.
  *
  * 배우자 초대는 보조 기능이라 진입점이 하단 카드 한 곳(과 MY · 배우자 연결
  * 관리)뿐이다. 혼자인 상태를 결핍으로 적지 않는다.
@@ -153,9 +156,6 @@ export default function WeddingScreen() {
 
   // 지출 버킷: 금액 있는 것만 최대 3개
   const topBuckets = (data.expenses?.buckets ?? []).filter((b) => b.amount > 0).slice(0, 3);
-
-  // 준비현황: 할 일 목록 최대 6개
-  const prepTasks = (data.tasks?.tasks ?? []).slice(0, 6);
 
   /* 홈 히어로와 같은 문구 — 남은 기간별 상태는 `lifecycle`이 한 곳에서 정한다. 예식일이 없어도 답한다. */
   const stage = lifecycle(data.me?.weddingDate ?? null);
@@ -298,7 +298,18 @@ export default function WeddingScreen() {
 
           {/* 지출 — 총액 · 예산 · 진행바 · 항목 · Pick 인증하기가 전부 한 상자 안이다. */}
           <View style={styles.section}>
-            <ThemedText type="t4">지출</ThemedText>
+            <View style={styles.sectionHead}>
+              <ThemedText type="t4">지출</ThemedText>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() =>
+                  weddingId ? router.push(`/wedding/${weddingId}/expenses` as never) : null
+                }>
+                <ThemedText type="t7" themeColor="textAssistive" style={styles.bold}>
+                  전체 보기
+                </ThemedText>
+              </Pressable>
+            </View>
 
             {loading && !data.expenses ? (
               <View style={[styles.statBox, { backgroundColor: theme.backgroundElement }]}>
@@ -346,81 +357,22 @@ export default function WeddingScreen() {
                   </View>
                 ) : null}
 
-                {/* 지출은 Pick 인증에서 온다 — 제보 진입 4곳 중 하나(웨딩일정 지출). */}
+                {/*
+                  지출 입력과 Pick 인증은 한 화면이다(v3.22 SPEC 13.10 · WP-OUR-014).
+                  제보 진입 4곳 중 하나(웨딩일정 지출) — 자료가 없어도 지출은 저장된다.
+                */}
                 <ActionButton
                   variant="ghost"
                   size="large"
                   label="Pick 인증하기"
-                  onPress={() => router.push('/capture' as never)}
+                  onPress={() =>
+                    weddingId
+                      ? router.push(`/wedding/${weddingId}/expenses/add` as never)
+                      : router.push('/capture' as never)
+                  }
                 />
               </View>
             ) : null}
-          </View>
-
-          {/* 밴드 */}
-          <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} />
-
-          {/* 준비현황 */}
-          <View style={styles.section}>
-            <ThemedText type="t4">준비현황</ThemedText>
-
-            {loading && prepTasks.length === 0 ? (
-              <View style={styles.list}>
-                <Skeleton height={Layout.rowMinHeight} />
-                <Skeleton height={Layout.rowMinHeight} />
-                <Skeleton height={Layout.rowMinHeight} />
-              </View>
-            ) : prepTasks.length === 0 ? (
-              <ThemedText type="t6" themeColor="textAssistive">
-                웨딩 스케줄이 없어요
-              </ThemedText>
-            ) : (
-              <View style={styles.list}>
-                {prepTasks.map((task) => {
-                  const isDone = task.state === 'done';
-                  const isInProgress = task.state === 'in_progress';
-                  const badgeBg = isDone
-                    ? theme.positiveBackground
-                    : isInProgress
-                      ? theme.tintSubtle
-                      : theme.backgroundSelected;
-                  const badgeColor = isDone
-                    ? theme.positive
-                    : isInProgress
-                      ? theme.tint
-                      : theme.textAssistive;
-                  const badgeLabel = isDone ? '결정' : isInProgress ? '좁히는 중' : '시작 전';
-                  const hasValue = task.vendorLabel !== null && task.vendorLabel !== '';
-
-                  return (
-                    <View key={task.id}>
-                      <View style={styles.prepRow}>
-                        <ThemedText
-                          type="t6"
-                          themeColor="textSecondary"
-                          numberOfLines={1}
-                          style={styles.prepLabel}>
-                          {task.label}
-                        </ThemedText>
-                        <ThemedText
-                          type="t6"
-                          themeColor={hasValue ? 'text' : 'textDisabled'}
-                          numberOfLines={1}
-                          style={[styles.grow, styles.bold]}>
-                          {hasValue ? task.vendorLabel : '아직 없어요'}
-                        </ThemedText>
-                        <View style={[styles.badge, { backgroundColor: badgeBg }]}>
-                          <ThemedText type="t7" style={[styles.bold, { color: badgeColor }]}>
-                            {badgeLabel}
-                          </ThemedText>
-                        </View>
-                      </View>
-                      <View style={[styles.divider, { backgroundColor: theme.border }]} />
-                    </View>
-                  );
-                })}
-              </View>
-            )}
           </View>
 
           {/* 밴드 */}
@@ -581,25 +533,6 @@ const styles = StyleSheet.create({
   },
   bold: {
     fontWeight: '700',
-  },
-  /* 목업: gap 12 · min-height 56 · padding 12 0. */
-  prepRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Layout.rowPaddingY,
-    minHeight: Layout.rowMinHeight,
-    paddingVertical: Layout.rowPaddingY,
-  },
-  prepLabel: {
-    width: PREP_LABEL_WIDTH,
-    flexShrink: 0,
-  },
-  /* 목업: padding 4 9 · radius 4 · 14/19 bold · nowrap. */
-  badge: {
-    borderRadius: Radius.small,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.one,
-    flexShrink: 0,
   },
   /* 목업: 마지막 섹션은 카드만 — 제목 없이 padding 0 24 28. */
   coupleSection: {

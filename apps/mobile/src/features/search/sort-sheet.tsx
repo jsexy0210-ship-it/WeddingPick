@@ -1,4 +1,5 @@
 import { VENDOR_SORT_LABEL, type VendorSort } from '@weddingpick/api-contract';
+import { TERMS } from '@weddingpick/domain';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -14,6 +15,16 @@ import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
  * `VENDOR_SORTS` 주석). 이름 순은 사람이 고를 이유가 없어 빼둔다.
  */
 export const SELECTABLE_SORTS: readonly VendorSort[] = ['data', 'price_low', 'price_high'];
+
+/**
+ * 사용자 화면의 정렬 라벨. 계약의 `VENDOR_SORT_LABEL`은 내부 이름(«데이터 많은 순»)이라
+ * 화면에 그대로 내보내지 않는다 — 사용자 화면에서는 «실 제보 많은 순»이다(CLAUDE.md 용어).
+ * 검색 결과의 정렬 셀렉트 · 정렬 시트 · 필터 시트가 같은 표를 본다.
+ */
+export const SORT_LABEL: Record<VendorSort, string> = {
+  ...VENDOR_SORT_LABEL,
+  data: `${TERMS.verifiedData} 많은 순`,
+};
 
 export function SortSheet({
   visible,
@@ -46,7 +57,7 @@ export function SortSheet({
                   onPress={() => onSelect(sort)}
                   style={[styles.row, { borderBottomColor: theme.line }]}>
                   <ThemedText type={selected ? 't5' : 't6'} style={selected ? { color: theme.tint } : undefined}>
-                    {VENDOR_SORT_LABEL[sort]}
+                    {SORT_LABEL[sort]}
                   </ThemedText>
                   <View
                     style={[

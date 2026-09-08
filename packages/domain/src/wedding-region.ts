@@ -33,9 +33,39 @@ export function regionFilter(region: string | null | undefined): string | null {
   return trimmed === '' || trimmed === OTHER_REGION ? null : trimmed;
 }
 
-/** 업체 지역이 고른 지역에 드는가. "서울" ↔ "서울특별시 강남구" · "서울 강남구". */
+/**
+ * 시/도 이름의 긴 꼴을 짧은 꼴로. «서울특별시» → «서울», «경기도» → «경기», «제주특별자치도» → «제주».
+ *
+ * 온보딩은 «서울특별시 강남구»로 적고 업체는 «서울 강남구»로도 «서울특별시 강남구»로도
+ * 적혀 있다(공공데이터 · 표본). 앞글자 비교만으로는 둘이 만나지 않아 지역 추천이 비었다.
+ */
+export function regionTokens(region: string): string[] {
+  return region
+    .trim()
+    .split(/\s+/)
+    .filter((token) => token.length > 0)
+    .map((token, index) =>
+      index === 0 ? token.replace(/(특별자치시|특별자치도|특별시|광역시|도)$/, '') : token
+    );
+}
+
+/** 업체 지역이 고른 지역에 드는가. "서울" ↔ "서울특별시 강남구" · "서울 강남구" · "서울특별시 강남구". */
 export function regionMatches(vendorRegion: string, region: string): boolean {
-  return vendorRegion.startsWith(region);
+  const wanted = regionTokens(region);
+  const actual = regionTokens(vendorRegion);
+
+  return wanted.every((token, index) => (actual[index] ?? '').startsWith(token));
+}
+
+/**
+ * SQL LIKE 패턴. «서울특별시 강남구» → «서울% 강남구%», «서울» → «서울%».
+ * regionMatches와 같은 규칙을 DB 쪽에서 쓴다 — 둘이 다르면 SQL이 거른 것과 이유가 어긋난다.
+ */
+export function regionLikePattern(region: string): string {
+  return regionTokens(region)
+    .map((token) => token.replace(/[%_]/g, ''))
+    .map((token) => `${token}%`)
+    .join(' ');
 }
 
 /**

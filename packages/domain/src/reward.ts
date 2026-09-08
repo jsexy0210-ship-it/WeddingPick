@@ -1,5 +1,5 @@
 /**
- * 이벤트 보상. 최종통합정책 v2.0 I장.
+ * 이벤트 보상. 최종통합정책 v2.0 I장 · 핸드오프 v3.22 «이벤트 예산 · 월 50만원».
  *
  * **돈을 실제로 보내는 수단은 아직 없다.** 그래서 조건이 찼다는 판정까지가
  * 자동이고, 지급은 사람이 한다. 그 둘을 다른 상태로 두는 이유는, 하나로 두면
@@ -7,30 +7,61 @@
  * 않았다면 그건 거짓말이다.
  */
 
-/** 지금 정해진 금액. v2.0 I장 — "현재 우선안"이라고 적혀 있어 바뀔 수 있다. */
+import { MONTHLY_DRAW_AMOUNT_KRW, MONTHLY_DRAW_WINNERS_PER_MONTH } from './monthly-draw';
+
+/**
+ * 월 예산. 핸드오프 v3.22 CHANGELOG «이벤트 예산 · 월 50만원».
+ *
+ * ```
+ * 미션 4개 완주      5,000원 × 40커플    200,000
+ * 친구 초대          3,000원 × 50건      150,000
+ * 홍보 인증          2,000원 × 50건      100,000
+ * 월간 웨딩지원금     50,000원 × 1커플     50,000
+ * ```
+ *
+ * 미션 3만원 × 500커플은 1,500만원이라 원래부터 불가능한 숫자였다. **소진되면
+ * 다음 달에 다시 연다** — 한도는 달마다 세고, 넘긴 건은 사람에게 올린다.
+ *
+ * `monthlyCap`은 «이번 달에 지급 대상이 된 건수»의 상한이다. 캠페인 누적이
+ * 아니다 — 누적으로 두면 첫 달에 다 쓴 뒤 영영 닫힌다.
+ */
 export const REWARDS = {
+  /** 미션 4개 완주. 완주 1커플이 곧 실 제보 1건이다(4번째 미션이 Pick 인증). 1인 1회. */
+  mission: { amountKrw: 5_000, monthlyCap: 40, perPerson: 1 },
   /** 친구초대. **가입만으로는 주지 않는다** — 첫 유효 결제인증이 조건이다(I-1). */
-  referral: { amountKrw: 3_000, campaignLimit: 100 },
-  /** 홍보인증. 공개 게시물 URL 자동검증이 기본(I-2). */
-  promotion: { amountKrw: 2_000, perPerson: 1 },
+  referral: { amountKrw: 3_000, monthlyCap: 50 },
+  /** 홍보인증. 공개 게시물 URL 자동검증이 기본(I-2). 1인 1회. */
+  promotion: { amountKrw: 2_000, monthlyCap: 50, perPerson: 1 },
   /** 월간 웨딩지원금. 응모 조건 3개를 채우면 자동 응모, 회차당 1커플(v3.22). */
-  monthly_draw: { amountKrw: 50_000, winnersPerMonth: 2 },
+  monthly_draw: {
+    amountKrw: MONTHLY_DRAW_AMOUNT_KRW,
+    monthlyCap: MONTHLY_DRAW_WINNERS_PER_MONTH,
+    winnersPerMonth: MONTHLY_DRAW_WINNERS_PER_MONTH,
+  },
 } as const;
 
 export type RewardKind = keyof typeof REWARDS;
 
 /** 목록으로도 쓴다. 스키마가 열거하려면 배열이 필요하다. */
 export const REWARD_KINDS = [
+  'mission',
   'referral',
   'promotion',
   'monthly_draw',
 ] as const satisfies readonly RewardKind[];
 
 export const REWARD_LABEL: Record<RewardKind, string> = {
+  mission: '미션 완주',
   referral: '친구초대',
   promotion: '홍보인증',
   monthly_draw: '웨딩지원금',
 };
+
+/** 월 예산 전체. 네 항목의 상한을 다 쓰면 이 값이다 — 50만원. */
+export const REWARD_MONTHLY_BUDGET_KRW = REWARD_KINDS.reduce(
+  (sum, kind) => sum + REWARDS[kind].amountKrw * REWARDS[kind].monthlyCap,
+  0
+);
 
 /**
  * 친구초대 보상 조건. I-1 · K-7.
@@ -208,21 +239,28 @@ export function checkPromotionUrl(url: string): RedeemCheck {
  * **자동으로 끝나는 것과 사람에게 올리는 것을 여기서 가른다.** 설정 한도 안의
  * 정상 지급은 사람이 승인하지 않는다 — 승인 줄을 세워두면 그 줄이 곧 병목이 되고,
  * A-2가 만들지 말라고 한 구조가 된다.
+ *
+ * 한도는 **이번 달** 기준이다(v3.22). `grantedThisMonth`는 이 종류로 이번 달에
+ * 지급 대상이 됐거나 지급한 건수다 — 넘겼으면 `held`로 올리고, 다음 달에 다시
+ * 연다.
  */
+export const REWARD_REASON_CODES = [
+  'condition_met',
+  'suspected_abuse',
+  'over_monthly_limit',
+] as const;
+
+export type RewardReasonCode = (typeof REWARD_REASON_CODES)[number];
+
 export function decideGrant(input: {
   kind: RewardKind;
-  paidCountSoFar: number;
+  grantedThisMonth: number;
   suspectedAbuse: boolean;
-}): { status: Extract<RewardStatus, 'earned' | 'held'>; reasonCode: string } {
+}): { status: Extract<RewardStatus, 'earned' | 'held'>; reasonCode: RewardReasonCode } {
   if (input.suspectedAbuse) return { status: 'held', reasonCode: 'suspected_abuse' };
 
-  const limit =
-    input.kind === 'referral'
-      ? REWARDS.referral.campaignLimit
-      : null;
-
-  if (limit !== null && input.paidCountSoFar >= limit) {
-    return { status: 'held', reasonCode: 'over_campaign_limit' };
+  if (input.grantedThisMonth >= REWARDS[input.kind].monthlyCap) {
+    return { status: 'held', reasonCode: 'over_monthly_limit' };
   }
 
   return { status: 'earned', reasonCode: 'condition_met' };
@@ -235,5 +273,41 @@ export const REFERRAL_NOTICE =
 export const PROMOTION_NOTICE =
   '공개된 글의 주소를 넣어주세요. 담당자가 글을 확인한 뒤에 지급 대상이 돼요';
 
+export const MISSION_REWARD_NOTICE =
+  '미션 4개를 다 마치면 지급 대상이 돼요. 마지막 미션이 Pick 인증이에요';
+
 /** 지급 시점을 약속하지 않는다. 지킬 수 있는 날짜가 정해져 있지 않다. */
 export const REWARD_PAYOUT_NOTICE = '지급되면 알림으로 알려드려요';
+
+/**
+ * 이번 달 한도를 다 썼을 때.
+ *
+ * **운영 기간을 적지 않는다.** «매달» «~까지» «30일 안에»처럼 운영이 바뀌면
+ * 틀리는 말은 넣지 않는다 — 「새 회차가 열리면 알려드려요」로 쓴다.
+ */
+export const REWARD_BUDGET_EXHAUSTED_NOTICE =
+  '이번 회차 지급 대상이 다 찼어요. 새 회차가 열리면 알려드려요';
+
+/** 미션 4개를 다 마친 순간의 알림. 조건이 찬 것이지 돈이 간 것이 아니다. */
+export const MISSION_COMPLETE_REWARD_NOTIFICATION = {
+  title: '미션 4개를 모두 마쳤어요',
+  body: `미션 완주 ${REWARDS.mission.amountKrw.toLocaleString('ko-KR')}원 지급 대상이 되셨어요. 지급되면 알림으로 알려드려요`,
+  held: '한 번 더 확인하고 있어요. 확인이 끝나면 알림으로 알려드려요',
+} as const;
+
+/**
+ * 사용자에게 보이는 보상 문구 전부. 테스트가 운영 기간 표현이 없는지 여기서 본다.
+ *
+ * 화면이 새 문구를 더하면 여기에도 넣는다 — 안 넣으면 그 문구만 검사를 빠져나간다.
+ */
+export const REWARD_USER_FACING_STRINGS: readonly string[] = [
+  ...Object.values(REWARD_LABEL),
+  ...Object.values(REWARD_STATUS_LABEL),
+  ...Object.values(REWARD_STATUS_NOTE),
+  REFERRAL_NOTICE,
+  PROMOTION_NOTICE,
+  MISSION_REWARD_NOTICE,
+  REWARD_PAYOUT_NOTICE,
+  REWARD_BUDGET_EXHAUSTED_NOTICE,
+  ...Object.values(MISSION_COMPLETE_REWARD_NOTIFICATION),
+];

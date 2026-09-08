@@ -3,11 +3,10 @@ import {
   AXIS_KIND_NOTE,
   DOCUMENT_TYPE_LABEL,
   PICK_VERIFICATION,
-  STILL_COLLECTING,
   VENDOR_CATEGORY_LABEL,
   axisLabel,
   manwon,
-  rangeLabel,
+  priceLine,
   withParticle,
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -186,22 +185,22 @@ export default function CompareScreen() {
             vendors={result.vendors}>
             {(vendor) => {
               const pp = vendor.prices.paidPrice;
-              if (pp.stage === 'collecting') {
-                return (
-                  <ThemedText type="t6" themeColor="textAssistive">{STILL_COLLECTING}</ThemedText>
-                );
-              }
+              /* 금액 한 줄 — 0층 «업체 안내 150만원~» 회색 · 1층 «수집 중» 회색 · 3건+ 구간. 검색·상세와 같은 규칙. */
+              const line = priceLine(pp, vendor.guidePrice);
               return (
                 <View style={styles.priceCell}>
-                  <ThemedText type="t5" numeric>
-                    {rangeLabel(pp.low, pp.high)}
+                  <ThemedText
+                    type="t5"
+                    numeric
+                    themeColor={line.dim ? 'textAssistive' : undefined}>
+                    {line.text}
                   </ThemedText>
                   {pp.stage === 'detailed' ? (
                     <ThemedText type="t7" themeColor="textSecondary">
                       기준금액 {manwon(pp.median)}
                     </ThemedText>
                   ) : null}
-                  <ThemedText type="t7" themeColor="textAssistive">{pp.caption}</ThemedText>
+                  <ThemedText type="t7" themeColor="textAssistive">{line.caption}</ThemedText>
                 </View>
               );
             }}

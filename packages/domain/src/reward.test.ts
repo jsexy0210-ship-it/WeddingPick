@@ -1,12 +1,17 @@
+import { MONTHLY_DRAW_WINNERS_PER_MONTH } from './monthly-draw';
 import {
   APP_STORE_REVIEW_REWARD_FORBIDDEN,
+  MISSION_COMPLETE_REWARD_NOTIFICATION,
   REFERRAL_CODE_ALPHABET,
   REFERRAL_NOTICE,
   REWARDS,
   REWARD_DOES_NOT_AFFECT_TRUST,
+  REWARD_KINDS,
   REWARD_LABEL,
+  REWARD_MONTHLY_BUDGET_KRW,
   REWARD_STATUS_LABEL,
   REWARD_STATUS_NOTE,
+  REWARD_USER_FACING_STRINGS,
   canPayReferral,
   checkPromotionUrl,
   checkRedeem,
@@ -38,10 +43,29 @@ describe('이벤트 보상', () => {
     ).toBe(false);
   });
 
-  it('금액이 v2.0이 정한 값이다', () => {
-    expect(REWARDS.referral.amountKrw).toBe(3_000);
-    expect(REWARDS.promotion.amountKrw).toBe(2_000);
-    expect(REWARDS.referral.campaignLimit).toBe(100);
+  it('금액과 월 한도가 v3.22 이벤트 예산이다', () => {
+    /*
+     * 미션 4개 완주 5,000원 × 40커플 · 친구 초대 3,000원 × 50건 · 홍보 인증
+     * 2,000원 × 50건 · 월간 웨딩지원금 50,000원 × 1커플 = 월 50만원.
+     */
+    expect(REWARDS.mission).toMatchObject({ amountKrw: 5_000, monthlyCap: 40 });
+    expect(REWARDS.referral).toMatchObject({ amountKrw: 3_000, monthlyCap: 50 });
+    expect(REWARDS.promotion).toMatchObject({ amountKrw: 2_000, monthlyCap: 50 });
+    expect(REWARDS.monthly_draw).toMatchObject({ amountKrw: 50_000, monthlyCap: 1 });
+    expect(REWARD_MONTHLY_BUDGET_KRW).toBe(500_000);
+  });
+
+  it('웨딩지원금 회차당 당첨 수는 monthly-draw와 같은 값이다', () => {
+    // 두 곳에 따로 적으면 한쪽만 고쳐지는 날이 온다.
+    expect(REWARDS.monthly_draw.winnersPerMonth).toBe(MONTHLY_DRAW_WINNERS_PER_MONTH);
+    expect(REWARDS.monthly_draw.monthlyCap).toBe(MONTHLY_DRAW_WINNERS_PER_MONTH);
+  });
+
+  it('미션 완주가 보상 종류에 있다', () => {
+    expect(REWARD_KINDS).toContain('mission');
+    expect(REWARD_LABEL.mission).toBe('미션 완주');
+    // 1인 1회. 두 번 완주할 수 없다.
+    expect(REWARDS.mission.perPerson).toBe(1);
   });
 
   it('한도 안의 정상 지급은 사람이 승인하지 않는다', () => {
@@ -133,25 +157,38 @@ describe('보상 지급 규칙', () => {
        */
       const decision = decideGrant({
         kind: 'referral',
-        paidCountSoFar: 10,
+        grantedThisMonth: 10,
         suspectedAbuse: false,
       });
 
       expect(decision).toEqual({ status: 'earned', reasonCode: 'condition_met' });
     });
 
-    it('캠페인 한도를 넘으면 사람에게 올린다', () => {
+    it('이번 달 한도를 넘으면 사람에게 올린다', () => {
+      // 소진되면 다음 달에 다시 연다 — 한도는 달마다 센다.
+      for (const kind of REWARD_KINDS) {
+        const decision = decideGrant({
+          kind,
+          grantedThisMonth: REWARDS[kind].monthlyCap,
+          suspectedAbuse: false,
+        });
+
+        expect(decision).toEqual({ status: 'held', reasonCode: 'over_monthly_limit' });
+      }
+    });
+
+    it('한도 직전까지는 자동으로 끝난다', () => {
       const decision = decideGrant({
-        kind: 'referral',
-        paidCountSoFar: REWARDS.referral.campaignLimit,
+        kind: 'mission',
+        grantedThisMonth: REWARDS.mission.monthlyCap - 1,
         suspectedAbuse: false,
       });
 
-      expect(decision).toEqual({ status: 'held', reasonCode: 'over_campaign_limit' });
+      expect(decision.status).toBe('earned');
     });
 
     it('어뷰징이 의심되면 한도와 무관하게 올린다', () => {
-      const decision = decideGrant({ kind: 'promotion', paidCountSoFar: 0, suspectedAbuse: true });
+      const decision = decideGrant({ kind: 'promotion', grantedThisMonth: 0, suspectedAbuse: true });
 
       expect(decision.status).toBe('held');
     });
@@ -169,6 +206,21 @@ describe('보상 지급 규칙', () => {
       expect(REWARD_STATUS_NOTE.earned).not.toBe(REWARD_STATUS_NOTE.paid);
       expect(REWARD_STATUS_LABEL.earned).toBe('지급 대기');
       expect(REWARD_STATUS_LABEL.paid).toBe('지급 완료');
+    });
+
+    it('운영 기간을 적지 않는다', () => {
+      /*
+       * v3.22. «매달» «~까지» «30일 안에»처럼 운영이 바뀌면 틀리는 말은 넣지
+       * 않는다 — 「새 회차가 열리면 알려드려요」로 쓴다.
+       */
+      for (const text of REWARD_USER_FACING_STRINGS) {
+        expect(text).not.toMatch(/매달|매월|까지|일 안에|마감|한도|예산/);
+      }
+    });
+
+    it('미션 완주 알림은 조건이 찬 것과 돈이 간 것을 가른다', () => {
+      expect(MISSION_COMPLETE_REWARD_NOTIFICATION.body).toContain('지급 대상');
+      expect(MISSION_COMPLETE_REWARD_NOTIFICATION.body).not.toContain('받았어요');
     });
 
     it('친구초대 안내가 조건을 먼저 말한다', () => {

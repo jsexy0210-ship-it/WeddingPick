@@ -1,6 +1,8 @@
+import type { VendorCategory } from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
 
 import { optionalUser, optionalUserId } from '../auth/plugin';
+import { recommendVendors } from './recommendations';
 import type { AppContext } from '../context';
 import { notificationSummary } from '../notify';
 
@@ -57,17 +59,43 @@ export function registerAppRoutes(app: FastifyInstance, context: AppContext): vo
     const [notifications, candidates] = await Promise.all([
       notificationSummary(context.pool, userId!),
       member.weddingId
-        ? injectJson<{ nextCategory: string | null }>(
+        ? injectJson<{ nextCategory: string | null; groups: { candidates: unknown[] }[] }>(
             `/v1/weddings/${member.weddingId}/candidates`
           )
         : Promise.resolve(null),
     ]);
 
-    const recommendations = candidates?.nextCategory
-      ? await injectJson<{ vendors: unknown[] }>(
-          `/v1/vendors?sort=data&limit=${PICK_COUNT}&category=${candidates.nextCategory}`
-        ).then((body) => body?.vendors ?? [])
-      : [];
+    /*
+     * 웨딩픽 추천 — TOP3와 같은 함수(지역 + 스타일 + 업체 안내 가격 · 실 제보가 붙는
+     * 대로 가중치 상승). 업종은 담아둔 후보가 지목한 다음 업종, 없으면 준비 현황에서
+     * 아직 안 정한 첫 업종. 이유 문장을 함께 내려 홈 카드가 «고른 스타일이랑 맞아요»를
+     * 적는다.
+     */
+    /*
+     * 업종은 담아둔 후보가 있을 때만 후보가 지목한 다음 업종을 따른다. 아무 데도 담아둔
+     * 곳이 없으면(홈 0개 구간) recommendVendors의 기본 — 준비 현황에서 아직 안 정한
+     * 첫 업종, 웨딩홀부터(SPEC §13.8 «웨딩홀부터 정해볼까요?») — 를 쓴다.
+     */
+    const picking = (candidates?.groups ?? []).some((group) => group.candidates.length > 0);
+    const recommended = await recommendVendors(context, {
+      userId: userId!,
+      category: picking
+        ? ((candidates?.nextCategory as VendorCategory | null | undefined) ?? undefined)
+        : undefined,
+      limit: PICK_COUNT,
+    });
+    let recommendations: unknown[] = recommended.items.map(({ reasonKeys: _keys, ...item }) => item);
+
+    /*
+     * 자격(실 제보 3건 · 업체 안내 · 스타일 일치)을 갖춘 곳이 하나도 없으면 실 제보
+     * 많은 순으로 채운다 — 추천 자리가 비면 홈 골격이 무너진다(SPEC §13.8 «섹션 순서와
+     * 개수는 바뀌지 않는다»). 이때는 이유 문장이 없고, 카드는 이유 줄을 접는다.
+     */
+    if (recommendations.length === 0) {
+      recommendations = await injectJson<{ vendors: unknown[] }>(
+        `/v1/vendors?sort=data&limit=${PICK_COUNT}&category=${recommended.category}`
+      ).then((body) => body?.vendors ?? []);
+    }
 
     return { member, notifications, popularVendors, candidates, recommendations };
   });

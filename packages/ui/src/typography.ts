@@ -22,6 +22,9 @@ export const FontSize = {
   t6: 16,
   /** 캡션, 라벨, 출처. SEED subtitle2. */
   t7: 14,
+  /** Npay 로고 — 원 안의 N 12 · «pay» 14. spec/tokens.json typography npay. 다른 곳에 쓰지 않는다. */
+  npayN: 12,
+  npayPay: 14,
   /** 탭 바. */
   tab: 12,
   /** 배지. */
@@ -47,6 +50,9 @@ export const LineHeight = {
   t6: 22,
   t7: 19,
   micro: 18,
+  /** Npay 로고 — N은 원 높이(20)와 같고 «pay»는 글자 높이와 같다. */
+  npayN: 20,
+  npayPay: 14,
   tab: 16,
   badge: 16,
   amount: 43,

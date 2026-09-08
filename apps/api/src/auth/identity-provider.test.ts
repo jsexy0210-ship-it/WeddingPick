@@ -58,6 +58,68 @@ describe('createKakaoProvider', () => {
   });
 });
 
+describe('createKakaoProvider — 연령대(SPEC 3.5)', () => {
+  const kakaoIdentity = { provider: 'kakao' as const, subject: 'kakao-user', profile: { nickname: '웨픽' } };
+  const credential = { authorizationCode: 'code', state: 'state', redirectUri: 'https://example.test/setup' };
+
+  it('토큰 교환 뒤 /v2/user/me에 연령대만 묻고 profile.ageRange로 준다', async () => {
+    const fetchImpl = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id_token: 'jwt', access_token: 'access-token' }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ kakao_account: { age_range: '20~29' } }) });
+    const provider = createKakaoProvider({
+      appKey: 'app-key',
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+      verifyIdTokenImpl: async () => kakaoIdentity,
+    });
+
+    if (provider.flow !== 'authorization_code') throw new Error('잘못된 provider flow');
+    await expect(provider.verify(credential)).resolves.toMatchObject({
+      subject: 'kakao-user',
+      profile: { nickname: '웨픽', ageRange: '20~29' },
+    });
+
+    expect(fetchImpl.mock.calls[1]?.[0]).toBe('https://kapi.kakao.com/v2/user/me');
+    expect(fetchImpl.mock.calls[1]?.[1]?.headers).toMatchObject({ authorization: 'Bearer access-token' });
+    // 연령대만 달라고 한다 — 필요 없는 것을 받아두면 지울 일만 생긴다.
+    const body = fetchImpl.mock.calls[1]?.[1]?.body as URLSearchParams;
+    expect(body.get('property_keys')).toBe('["kakao_account.age_range"]');
+  });
+
+  it('연령대가 없으면(권한 없음 · 거부) ageRange 없이 그대로 통과한다', async () => {
+    const fetchImpl = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id_token: 'jwt', access_token: 'access-token' }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ kakao_account: {} }) });
+    const provider = createKakaoProvider({
+      appKey: 'app-key',
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+      verifyIdTokenImpl: async () => kakaoIdentity,
+    });
+
+    if (provider.flow !== 'authorization_code') throw new Error('잘못된 provider flow');
+    const identity = await provider.verify(credential);
+
+    expect(identity.profile?.ageRange).toBeUndefined();
+  });
+
+  it('사용자 정보 조회가 실패해도 로그인은 계속된다', async () => {
+    // 검수 전에는 이 호출이 실패한다. 실패했다고 로그인을 막으면 아무도 못 들어온다.
+    const fetchImpl = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id_token: 'jwt', access_token: 'access-token' }) })
+      .mockRejectedValueOnce(new Error('network'));
+    const provider = createKakaoProvider({
+      appKey: 'app-key',
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+      verifyIdTokenImpl: async () => kakaoIdentity,
+    });
+
+    if (provider.flow !== 'authorization_code') throw new Error('잘못된 provider flow');
+    await expect(provider.verify(credential)).resolves.toMatchObject({ subject: 'kakao-user' });
+  });
+});
+
 describe('createNaverProvider', () => {
   it('인가 코드를 서버에서 교환하고 앱별 네이버 ID를 검증한다', async () => {
     const fetchImpl = jest

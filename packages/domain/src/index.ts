@@ -66,3 +66,5 @@ export * from './taste';
 export * from './wedding-region';
 export * from './business';
 export * from './site';
+export * from './style';
+export * from './guide-price';

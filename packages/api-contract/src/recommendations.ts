@@ -4,6 +4,7 @@ import { TOP3_REASONS } from '@weddingpick/domain';
 
 import { idSchema, vendorCategorySchema } from './common';
 import { paidPriceSchema } from './payment-proofs';
+import { guidePriceSchema, weddingStyleSchema } from './vendors';
 
 /**
  * TOP3 추천. 통합정책 v3.10 §2.
@@ -36,6 +37,10 @@ export const top3ItemSchema = z.object({
   confirmedCount: z.int().nonnegative(),
   /** 실제 결제. 공개 사다리를 그대로 쓴다 — 검색·상세와 같은 값이어야 한다. */
   paidPrice: paidPriceSchema,
+  /** 업체 스타일 태그(v3.22). 고른 것과 겹치는 것만 화면이 coral로 켠다. */
+  styleTags: z.array(weddingStyleSchema),
+  /** 업체 안내 가격(정보 0층). 실 제보 3건 미만이면 이것으로 금액 자리를 채운다. */
+  guidePrice: guidePriceSchema.nullable(),
 });
 
 export const top3ResponseSchema = z.object({

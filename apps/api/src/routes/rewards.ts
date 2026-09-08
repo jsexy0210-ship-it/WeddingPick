@@ -32,7 +32,7 @@ import type { AppContext } from '../context';
 import { withTransaction } from '../db';
 import { ApiError, notFound } from '../errors';
 import { notify } from '../notify';
-import { newReferralCode } from '../rewards';
+import { ensureMissionGrant, newReferralCode } from '../rewards';
 
 type GrantRow = {
   id: string;
@@ -90,8 +90,25 @@ async function referralCodeOf(pool: Pool, userId: string): Promise<string> {
 export function registerRewardRoutes(app: FastifyInstance, context: AppContext): void {
   const auth = { preHandler: requireUser(context) };
 
+  /**
+   * 미션 4개를 다 마쳤으면 미션 완주 보상을 만든다(v3.22). 보상을 보러 온 순간에
+   * 만들어도 늦지 않고, 여러 번 불러도 한 번만 생긴다.
+   *
+   * 실패해도 조회를 막지 않는다 — 보상 판정이 안 됐다고 보상 화면이 통째로
+   * 안 열리면, 그 사람은 이미 받은 보상도 못 본다. 대신 로그로 남긴다.
+   */
+  async function settleMissions(request: { log: { warn: (o: object, m: string) => void } }, userId: string) {
+    try {
+      await ensureMissionGrant(context.pool, userId);
+    } catch (caught) {
+      request.log.warn({ err: caught, userId }, '미션 완주 보상을 만들지 못했다');
+    }
+  }
+
   app.get('/v1/me/rewards', auth, async (request) => {
     const userId = currentUserId(request);
+
+    await settleMissions(request, userId);
 
     const [code, counts, grants] = await Promise.all([
       referralCodeOf(context.pool, userId),
@@ -144,6 +161,8 @@ export function registerRewardRoutes(app: FastifyInstance, context: AppContext):
   app.get('/v1/me/monthly-draw', auth, async (request) => {
     const userId = currentUserId(request);
     const month = drawMonthOf(new Date());
+
+    await settleMissions(request, userId);
 
     const { rows: factRows } = await context.pool.query<{
       wedding_set: boolean;

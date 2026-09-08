@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { NpayColors } from './theme';
+import { FontSize, LineHeight } from './typography';
 
 /**
  * Npay 로고 — 이미지 없이 그린다(핸드오프 v3.22 README).
@@ -46,10 +47,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  n: { fontSize: 12, lineHeight: CIRCLE, fontWeight: '800' },
+  n: { fontSize: FontSize.npayN, lineHeight: LineHeight.npayN, fontWeight: '800' },
   pay: {
-    fontSize: 14,
-    lineHeight: 14,
+    fontSize: FontSize.npayPay,
+    lineHeight: LineHeight.npayPay,
     fontWeight: '800',
     letterSpacing: -0.14,
     transform: [{ translateY: -1 }],
