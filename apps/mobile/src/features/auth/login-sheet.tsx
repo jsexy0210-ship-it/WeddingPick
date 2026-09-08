@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 import {
   ActionButton,
@@ -8,8 +8,8 @@ import {
   Spacing,
   ThemedText,
   ThemedView,
-  useTheme,
 } from '@weddingpick/ui';
+import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { completeAfterSignIn, type AfterSignIn } from '@/features/auth/after-sign-in';
 import { canSignInWith, signInWithKakao, useAuthProviders } from '@/features/auth/providers';
@@ -39,7 +39,6 @@ export type LoginSheetProps = {
  * 안 닫히면 그 약속이 거짓이 된다.
  */
 export function LoginSheet({ visible, reason, onSignedIn, onDismiss }: LoginSheetProps) {
-  const theme = useTheme();
   const { providers, error: loadError } = useAuthProviders();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -67,23 +66,9 @@ export function LoginSheet({ visible, reason, onSignedIn, onDismiss }: LoginShee
   }
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onDismiss}>
-      <View style={[styles.scrim, { backgroundColor: theme.scrim }]}>
-        {/*
-          시트 밖을 누르면 닫힌다. 화면 위를 덮은 것이라 뒤로 나갈 길이 있어야 한다.
-
-          시트를 이 안에 넣지 않고 **형제로 둔다.** 누름이 위로 새는 것을 막으려고
-          시트를 다시 Pressable로 감싸면 웹에서 button 안에 button이 들어가고,
-          그건 브라우저가 고쳐 그리는 잘못된 문서다.
-        */}
-        <Pressable
-          style={StyleSheet.absoluteFill}
-          accessibilityRole="button"
-          accessibilityLabel="닫기"
-          onPress={onDismiss}
-        />
-
-        <ThemedView style={styles.sheet}>
+    /* 시트 밖(스크림)을 누르면 닫힌다 — BottomSheet가 스크림 Pressable을 패널의 형제로 둔다. */
+    <BottomSheet visible={visible} onRequestClose={onDismiss}>
+        <ThemedView style={[SHEET_PANEL, styles.sheet]}>
           <ThemedView style={styles.headline}>
             <ThemedText type="t4">로그인하고 이어서 해요</ThemedText>
             <ThemedText type="t6" themeColor="textSecondary">
@@ -126,16 +111,12 @@ export function LoginSheet({ visible, reason, onSignedIn, onDismiss }: LoginShee
 
           <ActionButton label="나중에 하기" disabled={busy} onPress={onDismiss} />
         </ThemedView>
-      </View>
-    </Modal>
+    </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  scrim: { flex: 1, justifyContent: 'flex-end' },
   sheet: {
-    borderTopLeftRadius: Radius.sheet,
-    borderTopRightRadius: Radius.sheet,
     padding: Layout.gutter,
     paddingBottom: Spacing.five,
     gap: Spacing.three,

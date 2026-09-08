@@ -1,14 +1,13 @@
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 import {
   ActionButton,
   Layout,
-  Radius,
   Spacing,
   ThemedText,
   ThemedView,
-  useTheme,
 } from '@weddingpick/ui';
+import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
 
 export type ConfirmSheetProps = {
   visible: boolean;
@@ -38,48 +37,34 @@ export function ConfirmSheet({
   onConfirm,
   onCancel,
 }: ConfirmSheetProps) {
-  const theme = useTheme();
-
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onCancel}>
-      <View style={[styles.scrim, { backgroundColor: theme.scrim }]}>
-        <Pressable
-          style={StyleSheet.absoluteFill}
-          accessibilityRole="button"
-          accessibilityLabel="닫기"
-          onPress={onCancel}
-        />
-
-        <ThemedView style={styles.sheet}>
-          <ThemedView style={styles.headline}>
-            <ThemedText type="t4">{title}</ThemedText>
-            {message ? (
-              <ThemedText type="t6" themeColor="textSecondary">
-                {message}
-              </ThemedText>
-            ) : null}
-          </ThemedView>
-
-          <ThemedView style={styles.actions}>
-            <ActionButton
-              variant="primary"
-              label={busy ? '처리 중…' : confirmLabel}
-              disabled={busy}
-              onPress={onConfirm}
-            />
-            <ActionButton label={cancelLabel} disabled={busy} onPress={onCancel} />
-          </ThemedView>
+    <BottomSheet visible={visible} onRequestClose={onCancel}>
+      <ThemedView style={[SHEET_PANEL, styles.sheet]}>
+        <ThemedView style={styles.headline}>
+          <ThemedText type="t4">{title}</ThemedText>
+          {message ? (
+            <ThemedText type="t6" themeColor="textSecondary">
+              {message}
+            </ThemedText>
+          ) : null}
         </ThemedView>
-      </View>
-    </Modal>
+
+        <ThemedView style={styles.actions}>
+          <ActionButton
+            variant="primary"
+            label={busy ? '처리 중…' : confirmLabel}
+            disabled={busy}
+            onPress={onConfirm}
+          />
+          <ActionButton label={cancelLabel} disabled={busy} onPress={onCancel} />
+        </ThemedView>
+      </ThemedView>
+    </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  scrim: { flex: 1, justifyContent: 'flex-end' },
   sheet: {
-    borderTopLeftRadius: Radius.sheet,
-    borderTopRightRadius: Radius.sheet,
     padding: Layout.gutter,
     paddingBottom: Spacing.five,
     gap: Spacing.three,

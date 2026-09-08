@@ -8,7 +8,7 @@ import {
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -26,6 +26,7 @@ import {
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { getSettings, revokePaymentConsent, setDisplayName, updateSettings } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
+import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
 import { useSession } from '@/features/auth/use-session';
 import { APP_VERSION } from '@/features/settings/version';
 
@@ -233,9 +234,8 @@ export default function SettingsScreen() {
         </ScrollView>
       </SafeAreaView>
 
-      <Modal visible={nameOpen} transparent animationType="slide">
-        <ThemedView style={[styles.scrim, { backgroundColor: theme.scrim }]}>
-          <ThemedView style={styles.sheet}>
+      <BottomSheet visible={nameOpen} onRequestClose={() => setNameOpen(false)}>
+          <ThemedView style={[SHEET_PANEL, styles.sheet]}>
             <ThemedText type="t4">어떻게 불러드릴까요?</ThemedText>
             <TextInput
               style={[
@@ -264,8 +264,7 @@ export default function SettingsScreen() {
               />
             </ThemedView>
           </ThemedView>
-        </ThemedView>
-      </Modal>
+      </BottomSheet>
 
       <Toast message={toast} onHidden={() => setToast(null)} />
     </ThemedView>
@@ -338,10 +337,7 @@ const styles = StyleSheet.create({
   section: {
     gap: Spacing.two,
   },
-  scrim: { flex: 1, justifyContent: 'flex-end' },
   sheet: {
-    borderTopLeftRadius: Radius.sheet,
-    borderTopRightRadius: Radius.sheet,
     padding: Layout.gutter,
     paddingBottom: Spacing.five,
     gap: Spacing.two,

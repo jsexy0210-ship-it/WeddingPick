@@ -1,10 +1,11 @@
 import type { VisitNoteListResponse } from '@weddingpick/api-contract';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, TextInput } from 'react-native';
+import { ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { addVisitNote, listVisitNotes, removeVisitNote } from '@/api/client';
+import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
 import {
   ActionButton,
   ErrorView,
@@ -150,9 +151,8 @@ export default function VisitNotesScreen() {
       {/* 핸드오프 16번의 FAB. 목록 아래 단추 대신 늘 손 닿는 자리에 둔다. */}
       <Fab label="방문노트 더하기" onPress={() => setFormOpen(true)} />
 
-      <Modal visible={formOpen} transparent animationType="slide">
-        <ThemedView style={[styles.scrim, { backgroundColor: theme.scrim }]}>
-          <ScrollView contentContainerStyle={styles.sheet}>
+      <BottomSheet visible={formOpen} onRequestClose={() => setFormOpen(false)}>
+          <ScrollView style={[SHEET_PANEL, { backgroundColor: theme.background }]} contentContainerStyle={styles.sheet}>
             <ThemedText type="t4">방문 적어두기</ThemedText>
 
             <ThemedText type="t7" themeColor="textSecondary">
@@ -222,8 +222,7 @@ export default function VisitNotesScreen() {
               />
             </ThemedView>
           </ScrollView>
-        </ThemedView>
-      </Modal>
+      </BottomSheet>
     </ThemedView>
   );
 }
@@ -239,7 +238,6 @@ const styles = StyleSheet.create({
   },
   section: { gap: Spacing.one },
   card: { borderRadius: Radius.medium, padding: Spacing.three, gap: Spacing.one },
-  scrim: { flex: 1, justifyContent: 'flex-end' },
   sheet: { padding: Layout.gutter, gap: Spacing.two },
   sheetActions: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.two },
   input: {
