@@ -1,0 +1,41 @@
+# 업종별 샘플 업체 100곳씩을 스테이징 DB에 넣거나 걷어낸다 — 화면 검수용(2026-09-08 오더).
+#
+# 저장소의 apps/api/src/seed-samples.ts를 그대로 쓴다. 고정 시드라 몇 번을 돌려도
+# 같은 업체만 있고, remove는 vendor_source_records(source_key='sample') 표시를
+# 따라 업체·이미지·결제인증·표본 계정을 한 번에 지운다.
+name: DB 샘플 업체 시드
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'seed = 넣는다 / remove = 걷어낸다'
+        type: choice
+        default: seed
+        options: [seed, remove]
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: 실행
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          STORAGE_DRIVER: local
+          MODE: ${{ github.event.inputs.mode }}
+        run: |
+          if [ "$MODE" = "remove" ]; then
+            npm run seed:samples --workspace @weddingpick/api -- --remove --yes
+          else
+            npm run seed:samples --workspace @weddingpick/api -- --yes
+          fi
