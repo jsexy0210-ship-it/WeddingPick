@@ -120,7 +120,8 @@ export async function signIn(
  * 시간을 없앤다.
  *
  * `setupComplete`는 routes/weddings.ts의 weddingSet과 같은 판단이어야 한다 —
- * 지역이 있으면 설정을 마친 것이다(예식일은 «아직 미정»으로 비울 수 있다).
+ * setup_completed_at(0088)이 있으면 설정을 마친 것이다. v3.19부터 예식일 · 지역 ·
+ * 준비 현황 · 예산이 전부 «미정»일 수 있어 값의 유무로는 판단하지 않는다.
  */
 export async function sessionEntry(
   pool: Pool,
@@ -131,7 +132,7 @@ export async function sessionEntry(
             EXISTS (
               SELECT 1 FROM structured.weddings w
               WHERE (w.owner_user_id = u.id OR w.partner_user_id = u.id)
-                AND w.region IS NOT NULL
+                AND w.setup_completed_at IS NOT NULL
             ) AS setup_complete
      FROM structured.users u
      WHERE u.id = $1`,

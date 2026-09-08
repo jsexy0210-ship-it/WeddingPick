@@ -12,6 +12,7 @@ import {
   isSelectableWeddingDate,
   tierOf,
   type MembershipFacts,
+  type VendorCategory,
   type WeddingBudgetBracket,
 } from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
@@ -27,13 +28,16 @@ type WeddingRow = {
   wedding_date: Date | null;
   owner_user_id: string;
   partner_user_id: string | null;
+  prepared_categories: VendorCategory[];
   created_at: Date;
   partner_joined_at: Date | null;
 };
 
 async function loadDetail(context: AppContext, weddingId: string, viewerId: string) {
   const { rows } = await context.pool.query<WeddingRow>(
-    `SELECT id, wedding_date, owner_user_id, partner_user_id, created_at, partner_joined_at
+    /* enum 배열은 드라이버가 문자열 '{a,b}'로 준다 — text[]로 바꿔 읽는다. */
+    `SELECT id, wedding_date, owner_user_id, partner_user_id, prepared_categories::text[] AS prepared_categories,
+            created_at, partner_joined_at
      FROM structured.weddings WHERE id = $1`,
     [weddingId]
   );
@@ -70,6 +74,7 @@ async function loadDetail(context: AppContext, weddingId: string, viewerId: stri
     id: row.id,
     weddingDate: row.wedding_date ? row.wedding_date.toISOString().slice(0, 10) : null,
     partnerLinked: row.partner_user_id !== null,
+    preparedCategories: row.prepared_categories,
     createdAt: row.created_at.toISOString(),
     members,
   };
@@ -87,6 +92,8 @@ async function loadCurrentUser(context: AppContext, userId: string) {
     id: string | null;
     wedding_date: Date | null;
     region: string | null;
+    prepared_categories: VendorCategory[] | null;
+    setup_completed_at: Date | null;
     budget_amount: string | null;
     budget_bracket: WeddingBudgetBracket | null;
     display_name: string | null;
@@ -100,6 +107,9 @@ async function loadCurrentUser(context: AppContext, userId: string) {
        w.id,
        w.wedding_date,
        w.region,
+       /* enum 배열은 드라이버가 문자열 '{a,b}'로 준다 — text[]로 바꿔 읽는다. */
+       w.prepared_categories::text[] AS prepared_categories,
+       w.setup_completed_at,
        w.budget_amount,
        w.budget_bracket,
        u.display_name,
@@ -125,7 +135,8 @@ async function loadCurrentUser(context: AppContext, userId: string) {
        ) AS has_compared
      FROM structured.users u
      LEFT JOIN LATERAL (
-       SELECT id, wedding_date, region, budget_amount, budget_bracket, owner_user_id, partner_user_id
+       SELECT id, wedding_date, region, prepared_categories, setup_completed_at,
+              budget_amount, budget_bracket, owner_user_id, partner_user_id
        FROM structured.weddings
        WHERE owner_user_id = u.id OR partner_user_id = u.id
        ORDER BY created_at LIMIT 1
@@ -147,6 +158,7 @@ async function loadCurrentUser(context: AppContext, userId: string) {
       ? null
       : Number(row.budget_amount);
   const budgetBracket = row?.budget_bracket ?? null;
+  const preparedCategories = row?.prepared_categories ?? [];
 
   const facts = {
     // 이 함수를 부르는 두 경로가 모두 로그인을 요구한다. 여기까지 왔으면 로그인한 사람이다.
@@ -154,11 +166,12 @@ async function loadCurrentUser(context: AppContext, userId: string) {
     spouseLinked: row?.spouse_linked ?? false,
     hasPaymentProof: row?.has_payment_proof ?? false,
     /*
-     * 설정을 마쳤는가는 지역으로 판단한다. 예식일은 «아직 미정이에요»로 비워둘
-     * 수 있어서(2026-09-08) 날짜를 조건에 넣으면 미정인 사람이 온보딩에 영영
-     * 붙잡힌다. 지역은 온보딩이 반드시 받는다.
+     * 설정을 마쳤는가는 setup_completed_at(0088)으로 판단한다. v3.19부터 예식일 ·
+     * 지역 · 준비 현황 · 예산이 전부 «미정»일 수 있어(취향만 필수) 값의 유무로는
+     * 알 수 없다 — 값을 조건에 넣으면 미정인 사람이 온보딩에 영영 붙잡힌다.
+     * auth/sessions.ts · routes/rewards.ts도 같은 컬럼을 본다.
      */
-    weddingSet: region !== null,
+    weddingSet: (row?.setup_completed_at ?? null) !== null,
     hasPick: row?.has_pick ?? false,
     hasCompared: row?.has_compared ?? false,
   };
@@ -171,10 +184,11 @@ async function loadCurrentUser(context: AppContext, userId: string) {
     displayName,
     weddingDate,
     region,
+    preparedCategories,
     budgetBracket,
     budgetAmount,
     /*
-     * 앱이 이 값 하나로 첫 화면을 정한다. 두 값을 따로 보고 판단하게 두면
+     * 앱이 이 값 하나로 첫 화면을 정한다. 값들을 따로 보고 판단하게 두면
      * 어느 화면은 날짜만 보고 어느 화면은 지역만 보게 된다.
      *
      * **이름은 여기 들어가지 않는다.** v3.10 §3이 닉네임을 최초 필수입력에서
@@ -203,21 +217,22 @@ export function registerWeddingRoutes(app: FastifyInstance, context: AppContext)
   );
 
   /**
-   * 최소 온보딩. 통합정책 v3.10 §3 — 받는 것은 **예식일과 지역**이다.
+   * 초기 설정 — 5개 질문(핸드오프 v3.19~v3.22 · SPEC §13.6). 1~4(예식일 · 지역 ·
+   * 준비 현황 · 예산)를 한 번에 받는다. 5/5 취향은 `/v1/me/taste`다.
    *
    * 이름은 받지 않는다. v3.10이 닉네임을 최초 필수입력에서 뺐다. 부를 이름은
    * `/v1/me/display-name`으로 나중에 정한다.
    *
-   * 예식일과 지역을 한 번에 받는다. 따로 받으면 날짜만 넣고 나간 사람이 생기고,
-   * 그 사람에게 보여줄 수 있는 것은 전국 평균뿐이다.
+   * **미정을 억지로 받지 않는다.** 예식일 · 지역은 null(«아직 정하지 않았어요»),
+   * 준비 현황은 빈 배열(«아직 시작 전이에요»), 예산은 `unknown`(«아직 모르겠어요»).
+   * 그래서 «설정을 마쳤다»는 값의 유무가 아니라 setup_completed_at(0088)에 적는다.
    *
-   * 총예산은 선택이고, 자유 입력이 아니라 다섯 구간 중 하나다(디자인 핸드오프
-   * 01-onboarding.dc.html #11e). 넘기지 않으면 **건드리지 않는다** — `아직
-   * 모르겠어요`를 고른 것과 이 화면을 다시 열지 않은 것이 같은 결과가 되면
-   * 안 된다. 명시적인 null만 "안 정함"으로 되돌린다.
+   * 예산과 준비 현황은 키를 안 보내면 **건드리지 않는다** — `아직 모르겠어요`를
+   * 고른 것과 이 화면을 다시 열지 않은 것이 같은 결과가 되면 안 된다. 명시적인
+   * null(예산) · 빈 배열(준비 현황)만 되돌린다.
    *
-   * `budget_amount`는 여기서 직접 받지 않는다. top3 추천이 숫자로 비교할 수
-   * 있게 구간의 상한값을 서버가 파생해서 채운다(budgetBracketCeiling).
+   * `budget_amount`는 여기서 직접 받지 않는다. 지출 화면의 «예산 대비»가 숫자
+   * 하나를 쓰므로 구간의 상한값을 서버가 파생해서 채운다(budgetBracketCeiling).
    *
    * 웨딩이 없으면 여기서 만든다. "먼저 웨딩을 만드세요"라고 할 자리가 아니다 —
    * 사용자에게 웨딩은 만드는 것이 아니라 이미 있는 것이다.
@@ -226,16 +241,19 @@ export function registerWeddingRoutes(app: FastifyInstance, context: AppContext)
     const userId = currentUserId(request);
     const body = completeSetupRequestSchema.parse(request.body);
 
-    // 결혼식은 미래다. 오늘과 과거는 고를 수 없다(핸드오프 3번). null은 «아직 미정»이다.
+    // 결혼식은 미래다. 오늘과 과거는 고를 수 없다(핸드오프 3번). null은 «아직 정하지 않았어요»다.
     if (body.weddingDate !== null && !isSelectableWeddingDate(body.weddingDate)) {
       throw new ApiError('invalid_request', WEDDING_DATE_HINT);
     }
 
-    const region = body.region.trim();
+    const region = body.region === null ? null : body.region.trim();
     /* 구간을 아예 안 보냈는가. null을 보낸 것(`아직 모르겠어요`)과 구분해야 한다. */
     const bracketGiven = 'budgetBracket' in body;
     const bracket = body.budgetBracket ?? null;
     const budget = bracket === null ? null : budgetBracketCeiling(bracket);
+    /* 준비 현황도 같다 — 안 보내면 그대로, 빈 배열은 «아직 시작 전이에요». 같은 업종을 두 번 보내도 한 번만 적는다. */
+    const preparedGiven = body.preparedCategories !== undefined;
+    const prepared = [...new Set(body.preparedCategories ?? [])];
 
     await withTransaction(context.pool, async (client) => {
       const existing = await client.query<{ id: string }>(
@@ -253,18 +271,21 @@ export function registerWeddingRoutes(app: FastifyInstance, context: AppContext)
            SET wedding_date = $2,
                region = $3,
                budget_bracket = CASE WHEN $4::boolean THEN $5::wedding_budget_bracket ELSE budget_bracket END,
-               budget_amount = CASE WHEN $4::boolean THEN $6::bigint ELSE budget_amount END
+               budget_amount = CASE WHEN $4::boolean THEN $6::bigint ELSE budget_amount END,
+               prepared_categories = CASE WHEN $7::boolean THEN $8::vendor_category[] ELSE prepared_categories END,
+               setup_completed_at = coalesce(setup_completed_at, now())
            WHERE id = $1`,
-          [weddingId, body.weddingDate, region, bracketGiven, bracket, budget]
+          [weddingId, body.weddingDate, region, bracketGiven, bracket, budget, preparedGiven, prepared]
         );
 
         return;
       }
 
       await client.query(
-        `INSERT INTO structured.weddings (owner_user_id, wedding_date, region, budget_bracket, budget_amount)
-         VALUES ($1, $2, $3, $4::wedding_budget_bracket, $5::bigint)`,
-        [userId, body.weddingDate, region, bracket, budget]
+        `INSERT INTO structured.weddings
+           (owner_user_id, wedding_date, region, budget_bracket, budget_amount, prepared_categories, setup_completed_at)
+         VALUES ($1, $2, $3, $4::wedding_budget_bracket, $5::bigint, $6::vendor_category[], now())`,
+        [userId, body.weddingDate, region, bracket, budget, prepared]
       );
     });
 

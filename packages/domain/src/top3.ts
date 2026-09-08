@@ -1,3 +1,4 @@
+import { budgetOverlaps, type WeddingBudgetBracket } from './budget-bracket';
 import { DISCLOSURE_THRESHOLDS } from './disclosure';
 import { RECENT_PERIOD_LABEL } from './reidentification';
 
@@ -43,7 +44,7 @@ export type Top3Reason = (typeof TOP3_REASONS)[number];
 /** 사용자 화면에 그대로 나가는 문장. 표준 용어는 `이런 점이 잘 맞아요`다(v3.3). */
 export const TOP3_REASON_LABEL: Record<Top3Reason, string> = {
   region: '준비하는 지역이에요',
-  budget: '기준금액이 예산 안이에요',
+  budget: '제보 금액이 준비 예산과 맞아요',
   many_confirmed: '실 제보가 많아요',
   recent_data: `${RECENT_PERIOD_LABEL} 자료가 있어요`,
 };
@@ -65,11 +66,40 @@ export type Top3Facts = {
    * `실 제보가 많아요`와 `최근 자료가 있어요`가 늘 함께 붙는 한 문장이 된다.
    */
   recentCount: number;
-  /** 기준금액. 아직 낼 수 없으면 null. */
-  baseAmount: number | null;
-  /** 총예산. 아직 안 정했으면 null. */
-  budgetAmount: number | null;
+  /**
+   * 제보 금액 구간(공개 사다리의 low~high). 아직 못 내면(collecting) null.
+   *
+   * 예산 매칭은 기준금액 하나가 아니라 이 구간이 준비 예산 구간과 **겹치는지**로
+   * 본다(SPEC §13.6 «예산 매칭 기준»).
+   */
+  priceMin: number | null;
+  priceMax: number | null;
+  /** 준비 예산 구간. 아직 안 골랐으면 null. `unknown`은 범위 제한이 없다. */
+  budgetBracket: WeddingBudgetBracket | null;
 };
+
+/** 예산으로 말할 수 있는 상태인가 — 구간을 골랐고(모르겠어요 제외) 제보 금액이 있다. */
+function budgetComparable(facts: Top3Facts): facts is Top3Facts & {
+  priceMin: number;
+  priceMax: number;
+  budgetBracket: Exclude<WeddingBudgetBracket, 'unknown'>;
+} {
+  return (
+    facts.budgetBracket !== null &&
+    facts.budgetBracket !== 'unknown' &&
+    facts.priceMin !== null &&
+    facts.priceMax !== null
+  );
+}
+
+/**
+ * 예산 밖인가. 고른 구간과 제보 금액 구간이 안 겹치면 추천 대상에서 뺀다
+ * (SPEC §13.6 «제보 3,200~4,000만원 → 제외»). 견줄 수 없는 상태면 빼지 않는다 —
+ * 모르는 것으로 거르지 않는다.
+ */
+export function budgetExcludes(facts: Top3Facts): boolean {
+  return budgetComparable(facts) && !budgetOverlaps(facts.budgetBracket, facts.priceMin, facts.priceMax);
+}
 
 /** 실 제보가 이만큼 넘으면 `많다`고 말한다. 공개 사다리의 `general`이다. */
 export const MANY_CONFIRMED_AT = DISCLOSURE_THRESHOLDS.normal;
@@ -86,10 +116,11 @@ export function reasonsFor(facts: Top3Facts): Top3Reason[] {
   if (facts.regionMatched) reasons.push('region');
 
   /*
-   * 예산은 둘 다 있어야 말할 수 있다. 기준금액이 없는데 "예산 안"이라고 적으면
-   * 무엇과 견줬는지 없는 말이 된다.
+   * 예산은 둘 다 있어야 말할 수 있다. 제보 금액이 없는데 "예산과 맞아요"라고
+   * 적으면 무엇과 견줬는지 없는 말이 된다. «아직 모르겠어요»도 이유가 못 된다 —
+   * 전부 보여주되, 맞는다고 말하지는 않는다.
    */
-  if (facts.budgetAmount !== null && facts.baseAmount !== null && facts.baseAmount <= facts.budgetAmount) {
+  if (budgetComparable(facts) && budgetOverlaps(facts.budgetBracket, facts.priceMin, facts.priceMax)) {
     reasons.push('budget');
   }
 
@@ -99,9 +130,11 @@ export function reasonsFor(facts: Top3Facts): Top3Reason[] {
   return reasons;
 }
 
-/** 추천할 수 있는 상태인가. 자격과 이유를 둘 다 본다. */
+/** 추천할 수 있는 상태인가. 자격 · 예산 · 이유를 다 본다. */
 export function isRecommendable(facts: Top3Facts): boolean {
-  return facts.confirmedCount >= TOP3_MIN_CONFIRMED && reasonsFor(facts).length > 0;
+  return (
+    facts.confirmedCount >= TOP3_MIN_CONFIRMED && !budgetExcludes(facts) && reasonsFor(facts).length > 0
+  );
 }
 
 /** 세 곳을 못 채웠을 때 함께 적는 말. 빈자리를 설명하지 않으면 빠진 것처럼 보인다. */

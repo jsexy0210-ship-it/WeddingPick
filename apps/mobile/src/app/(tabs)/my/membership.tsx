@@ -16,7 +16,6 @@ import {
   ActionButton,
   ErrorView,
   Layout,
-  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
@@ -24,6 +23,7 @@ import {
   ThemedView,
   useTheme,
 } from '@weddingpick/ui';
+import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { getCurrentUser, getMyMonthlyDraw } from '@/api/client';
 
 /**
@@ -61,7 +61,7 @@ export default function MembershipScreen() {
   }
 
   if (!me) {
-    return <LoadingView />;
+    return <DelayedLoadingView />;
   }
 
   const facts: MembershipFacts = {

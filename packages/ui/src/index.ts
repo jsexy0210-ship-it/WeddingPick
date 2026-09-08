@@ -24,12 +24,19 @@ export { Fab, type FabProps } from './fab';
 export { Accordion, type AccordionProps, type AccordionItem } from './accordion';
 export { ProgressBar, type ProgressBarProps } from './progress-bar';
 export { VerificationBadge, type VerificationBadgeProps } from './verification-badge';
-export { LoadingView, SkeletonView, RecommendingView, ErrorView, EmptyView, NetworkErrorView, PermissionDeniedView, ProcessingView, MaintenanceView } from './status-view';
-export type { LoadingViewProps, SkeletonViewProps, ErrorViewProps, EmptyViewProps, NetworkErrorViewProps, PermissionDeniedViewProps, PermissionKind, ProcessingViewProps, MaintenanceViewProps } from './status-view';
-export { Spinner, type SpinnerSize } from './spinner';
-export { CategoryIcon, CATEGORY_CYCLE, CATEGORY_ICON_LABEL, type CategoryIconKind } from './category-icon';
+export { LoadingView, SkeletonView, RecommendingView, RecommendingBody, recommendingTitle, ErrorView, EmptyView, NetworkErrorView, PermissionDeniedView, ProcessingView, MaintenanceView } from './status-view';
+export type { LoadingViewProps, SkeletonViewProps, RecommendingViewProps, RecommendingBodyProps, ErrorViewProps, EmptyViewProps, NetworkErrorViewProps, PermissionDeniedViewProps, PermissionKind, ProcessingViewProps, MaintenanceViewProps } from './status-view';
+/** v3.20 유일한 로더. 700ms 규칙은 useDelayedVisible로 감싼다. */
+export {
+  CategoryCycleLoader,
+  resolveCategoryCycle,
+  categoryCyclePerIconMs,
+  type CategoryCycleLoaderProps,
+  type CategoryCycleLoaderSize,
+} from './category-cycle-loader';
+export { useDelayedVisible } from './use-delayed-visible';
+export { CategoryIcon, CATEGORY_CYCLE_ORDER, CATEGORY_ICON_LABEL, type CategoryIconKind } from './category-icon';
 export { StepList, type Step, type StepState } from './step-list';
-export { CategoryOrbitLoader } from './orbit-loader';
 export { showAlert, type ShowAlertButton } from './show-alert';
 export { ListSkeleton, type ListSkeletonProps } from './list-skeleton';
 export { PickStatusBadge, type PickStatusBadgeProps, type PickStatus } from './pick-status-badge';

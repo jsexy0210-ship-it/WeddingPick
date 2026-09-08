@@ -71,13 +71,25 @@ export function registerCandidateRoutes(app: FastifyInstance, context: AppContex
        * 결정은 후보와 다른 표에 있다(0041). 따로 읽어 붙이는 이유는 "이 업종은
        * 여기로 정했다"가 후보 한 줄의 속성이 아니라 웨딩과 업종에 붙는 결론이기
        * 때문이다.
+       *
+       * 준비 현황(0088 prepared_categories)은 또 다른 결론이다 — «우리 앱 밖에서
+       * 이미 정했다». 업체가 없다. 홈 준비현황에는 똑같이 «결정 완료»로 들어가고
+       * 다음 준비에서 건너뛴다(v3.19).
        */
-      const decisions = await context.pool.query<{ category: VendorCategory; vendor_id: string }>(
-        'SELECT category, vendor_id FROM structured.category_decisions WHERE wedding_id = $1',
-        [request.params.weddingId]
-      );
+      const [decisions, wedding] = await Promise.all([
+        context.pool.query<{ category: VendorCategory; vendor_id: string }>(
+          'SELECT category, vendor_id FROM structured.category_decisions WHERE wedding_id = $1',
+          [request.params.weddingId]
+        ),
+        context.pool.query<{ prepared_categories: VendorCategory[] }>(
+          /* enum 배열은 드라이버가 문자열 '{a,b}'로 준다 — text[]로 바꿔 읽는다. */
+          'SELECT prepared_categories::text[] AS prepared_categories FROM structured.weddings WHERE id = $1',
+          [request.params.weddingId]
+        ),
+      ]);
 
       const decidedBy = new Map(decisions.rows.map((row) => [row.category, row.vendor_id]));
+      const prepared = new Set(wedding.rows[0]?.prepared_categories ?? []);
       const grouped = groupByCategory(rows);
 
       /*
@@ -91,8 +103,10 @@ export function registerCandidateRoutes(app: FastifyInstance, context: AppContex
         return {
           category,
           label: VENDOR_CATEGORY_LABEL[category],
-          state: decided ? 'decided' : picks.length > 0 ? 'picking' : 'before',
+          state:
+            decided || prepared.has(category) ? 'decided' : picks.length > 0 ? 'picking' : 'before',
           pickCount: picks.length,
+          // 앱 밖에서 정한 업종은 업체가 없다 — 결정 완료인데 decidedVendorId가 null이다.
           decidedVendorId: decided,
         };
       });

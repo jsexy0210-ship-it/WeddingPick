@@ -15,7 +15,6 @@ import {
   ActionButton,
   ErrorView,
   Layout,
-  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
@@ -24,6 +23,7 @@ import {
   Toast,
   useTheme,
 } from '@weddingpick/ui';
+import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { getSettings, revokePaymentConsent, setDisplayName, updateSettings } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
 import { useSession } from '@/features/auth/use-session';
@@ -136,7 +136,7 @@ export default function SettingsScreen() {
   }
 
   if (!settings) {
-    return <LoadingView />;
+    return <DelayedLoadingView />;
   }
 
   return (

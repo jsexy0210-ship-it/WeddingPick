@@ -2,16 +2,19 @@ import { top3QuerySchema } from '@weddingpick/api-contract';
 import {
   DEFAULT_PERIOD_LABEL,
   DEFAULT_PERIOD_MONTHS,
+  PREPARATION_CATEGORIES,
   RECENT_PERIOD_MONTHS,
   TOP3_LIMIT,
   TOP3_EMPTY,
   TOP3_PARTIAL_NOTE,
   discloseAmounts,
   isRecommendable,
+  nextTasteCategory,
   reasonsFor,
   regionFilter,
   regionMatches,
   type VendorCategory,
+  type WeddingBudgetBracket,
 } from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
 
@@ -29,7 +32,11 @@ type CandidateRow = {
   paid_amounts: string[] | null;
 };
 
-type ViewerRow = { region: string | null; budget_amount: string | null };
+type ViewerRow = {
+  region: string | null;
+  budget_bracket: WeddingBudgetBracket | null;
+  prepared_categories: VendorCategory[];
+};
 
 /**
  * 추천. 통합정책 v3.10 §2.
@@ -53,13 +60,14 @@ export function registerRecommendationRoutes(app: FastifyInstance, context: AppC
     const userId = optionalUserId(request);
 
     /*
-     * 로그인한 사람이면 자기 웨딩에서 지역과 예산을 읽는다. 쿼리가 있으면
-     * 쿼리가 이긴다 — 화면에서 지역을 바꿔보는 중일 수 있다.
+     * 로그인한 사람이면 자기 웨딩에서 지역 · 준비 예산 · 준비 현황을 읽는다. 쿼리가
+     * 있으면 쿼리가 이긴다 — 화면에서 지역을 바꿔보는 중일 수 있다.
      */
     const viewer = userId
       ? (
           await context.pool.query<ViewerRow>(
-            `SELECT region, budget_amount FROM structured.weddings
+            /* enum 배열은 드라이버가 문자열 '{a,b}'로 준다 — text[]로 바꿔 읽는다. */
+            `SELECT region, budget_bracket, prepared_categories::text[] AS prepared_categories FROM structured.weddings
              WHERE owner_user_id = $1 OR partner_user_id = $1
              ORDER BY created_at LIMIT 1`,
             [userId]
@@ -69,12 +77,20 @@ export function registerRecommendationRoutes(app: FastifyInstance, context: AppC
 
     /* 온보딩의 `그 외`는 전국이다 — 지역으로 거르지 않는다(regionFilter). */
     const region = regionFilter(query.region ?? viewer?.region ?? null);
-    const budgetAmount = viewer?.budget_amount ? Number(viewer.budget_amount) : null;
+    /* 준비 예산 구간. 예산 매칭은 겹침 기준이라(SPEC §13.6) 숫자 하나가 아니라 구간을 넘긴다. */
+    const budgetBracket = viewer?.budget_bracket ?? null;
+    const prepared = viewer?.prepared_categories ?? [];
     /*
-     * 업종을 안 주면 웨딩홀부터 본다. 준비 순서에서 가장 먼저 정해지는 업종이고,
-     * 나머지 업종의 날짜와 예산이 여기서 갈린다.
+     * 업종을 안 주면 준비 현황(3/5)에서 아직 안 정한 첫 업종을 본다 — 이미 정한
+     * 업종을 추천하면 «이미 골랐는데 왜 또?»가 된다(v3.19). 아무것도 안 정했으면
+     * 웨딩홀부터 — 준비 순서에서 가장 먼저 정해지는 업종이고, 나머지 업종의
+     * 날짜와 예산이 여기서 갈린다. 화면이 업종을 콕 집어 보내면 그대로 따른다.
      */
-    const category: VendorCategory = query.category ?? 'hall';
+    const category: VendorCategory =
+      query.category ??
+      nextTasteCategory(prepared) ??
+      PREPARATION_CATEGORIES.find((candidate) => !prepared.includes(candidate)) ??
+      'hall';
 
     /*
      * 후보를 넉넉히 읽는다. 자격 판정(실 제보 수·이유)이 도메인에 있어서
@@ -128,8 +144,10 @@ export function registerRecommendationRoutes(app: FastifyInstance, context: AppC
         regionMatched: region !== null && regionMatches(row.region, region),
         confirmedCount: Number(row.confirmed_count),
         recentCount: Number(row.recent_count),
-        baseAmount: paidPrice.stage === 'detailed' ? paidPrice.median : null,
-        budgetAmount,
+        /* 제보 금액 구간. 모으는 중(collecting)이면 아직 없다 — 그때는 예산으로 말하지도 거르지도 않는다. */
+        priceMin: paidPrice.stage === 'collecting' ? null : paidPrice.low,
+        priceMax: paidPrice.stage === 'collecting' ? null : paidPrice.high,
+        budgetBracket,
       };
 
       if (!isRecommendable(facts)) continue;

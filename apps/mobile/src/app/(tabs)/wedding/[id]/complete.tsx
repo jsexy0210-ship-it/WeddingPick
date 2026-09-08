@@ -6,17 +6,18 @@ import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getExpenses, getWedding, listWeddingTasks } from '@/api/client';
+import { formatDateDot } from '@/features/common/format-date';
 import {
   ActionButton,
   ErrorView,
   Layout,
-  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
   ThemedText,
   ThemedView,
 } from '@weddingpick/ui';
+import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 
 type PageData = {
   wedding: WeddingDetail;
@@ -47,15 +48,11 @@ export default function WeddingCompleteScreen() {
   useEffect(load, [load]);
 
   if (error) return <ErrorView message={error} onBack={() => router.back()} />;
-  if (!data) return <LoadingView />;
+  if (!data) return <DelayedLoadingView />;
 
   const { wedding, tasks, expenses } = data;
   const weddingDateLabel = wedding.weddingDate
-    ? new Date(wedding.weddingDate).toLocaleDateString('ko-KR', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
+    ? formatDateDot(wedding.weddingDate)
     : null;
 
   return (

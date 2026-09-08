@@ -3,15 +3,13 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ActionButton, ErrorView, LoadingView, MaxContentWidth, showAlert, Spacing, ThemedText, ThemedView, VerificationBadge } from '@weddingpick/ui';
+import { ActionButton, ErrorView, MaxContentWidth, showAlert, Spacing, ThemedText, ThemedView, VerificationBadge } from '@weddingpick/ui';
+import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { PageThumbnail } from '@/components/page-thumbnail';
 import { isServerConfigured } from '@/api/config';
+import { formatDateDot } from '@/features/common/format-date';
 import { useDocumentStore } from '@/features/documents/document-store';
 
-function formatDate(iso: string) {
-  const date = new Date(iso);
-  return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 저장`;
-}
 
 /** A-12 견적 상세. 저장된 묶음을 다시 열어보고, 인증 신청과 삭제로 이어진다. */
 export default function DocumentSetScreen() {
@@ -20,7 +18,7 @@ export default function DocumentSetScreen() {
   const set = sets.find((item) => item.id === id);
 
   if (!set) {
-    if (!ready) return <LoadingView />;
+    if (!ready) return <DelayedLoadingView />;
 
     return (
       <ErrorView
@@ -52,7 +50,7 @@ export default function DocumentSetScreen() {
           <ThemedView style={styles.header}>
             <ThemedText type="subtitle">{set.label}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              {formatDate(set.createdAt)} · {set.pages.length}장
+              {formatDateDot(set.createdAt)} 저장 · {set.pages.length}장
             </ThemedText>
             <VerificationBadge level={set.verificationLevel} />
           </ThemedView>

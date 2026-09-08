@@ -3,6 +3,7 @@ import { Directory, File, Paths } from 'expo-file-system';
 import { Platform } from 'react-native';
 
 import type { CapturedPage } from '@/features/capture/types';
+import { formatMonthDayTimeDot } from '@/features/common/format-date';
 import type { DocumentSet, StoredPage } from '@/features/documents/types';
 
 const STORAGE_KEY = 'weddingpick.documentSets.v1';
@@ -104,10 +105,5 @@ export async function deleteDocumentSet(id: string): Promise<void> {
 
 /** 사용자에게 입력시키지 않으므로(제품 원칙 1) 이름은 저장 시각에서 만든다. */
 function formatLabel(date: Date) {
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  const hour = `${date.getHours()}`.padStart(2, '0');
-  const minute = `${date.getMinutes()}`.padStart(2, '0');
-
-  return `${month}월 ${day}일 ${hour}:${minute} 문서`;
+  return `${formatMonthDayTimeDot(date)} 문서`;
 }

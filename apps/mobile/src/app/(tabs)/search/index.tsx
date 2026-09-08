@@ -56,8 +56,8 @@ import {
   VendorImage,
   useTheme,
   ListSkeleton,
-  Spinner,
 } from '@weddingpick/ui';
+import { DelayedLoader } from '@/features/loading/delayed-loader';
 
 /**
  * 검색은 자주 쓰는 분류부터 보여준다. 사업계획서 6번의 확장 순서와 같다.
@@ -699,7 +699,7 @@ export default function SearchScreen() {
               </View>
             }
             ListFooterComponent={
-              loadingMore ? <Spinner size={24} style={styles.spinner} /> : null
+              <DelayedLoader active={loadingMore} size={20} style={styles.loadMore} />
             }
             renderItem={({ item }) => renderVendorCard(item)}
           />
@@ -1079,7 +1079,7 @@ const styles = StyleSheet.create({
     color: Colors.light.onTint,
   },
 
-  spinner: {
+  loadMore: {
     alignSelf: 'center',
     marginVertical: Spacing.five,
   },

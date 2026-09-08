@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { createInquiry, listMyInquiries } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
+import { formatDateDot } from '@/features/common/format-date';
 import {
   Accordion,
   ActionButton,
@@ -28,13 +29,6 @@ import {
 
 function isCategory(value: string | undefined): value is InquiryCategory {
   return (INQUIRY_CATEGORIES as readonly string[]).includes(value ?? '');
-}
-
-/** "2026년 8월 28일" */
-function formatDay(timestamp: string): string {
-  const date = new Date(timestamp);
-
-  return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
 }
 
 /**
@@ -268,7 +262,7 @@ export default function ContactScreen() {
                     {INQUIRY_STATUS_LABEL[inquiry.status]}
                   </ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
-                    {formatDay(inquiry.receivedAt)}
+                    {formatDateDot(inquiry.receivedAt)}
                   </ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
                     {inquiry.body}

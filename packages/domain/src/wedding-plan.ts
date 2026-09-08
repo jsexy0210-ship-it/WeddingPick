@@ -1,3 +1,4 @@
+import { formatMonthDayDot } from './profile';
 import type { VendorCategory } from './vendor';
 
 /**
@@ -101,20 +102,18 @@ export function resolveTaskState(input: {
   };
 }
 
-/** "9월 2일" — 핸드오프가 쓴 표기. */
+/** `05.16(토)` — 할 일의 날짜. 전역 날짜 표기(v3.21)의 연도 없는 꼴이다. */
 export function formatTaskDate(date: string): string {
-  const [, month, day] = date.split('-').map(Number);
-
-  return `${month}월 ${day}일`;
+  return formatMonthDayDot(date);
 }
 
-/** "9월 2일 14:30" — 일정(wedding_events)의 일시 표기. */
+/** `05.16(토) 14:00` — 일정(wedding_events)의 일시 표기. */
 export function formatEventDateTime(isoDateTime: string): string {
   const value = new Date(isoDateTime);
   const hh = String(value.getHours()).padStart(2, '0');
   const mm = String(value.getMinutes()).padStart(2, '0');
 
-  return `${value.getMonth() + 1}월 ${value.getDate()}일 ${hh}:${mm}`;
+  return `${formatMonthDayDot(value)} ${hh}:${mm}`;
 }
 
 /** 준비 진행률. 홈이 "준비 6 / 14 완료"라고 적는다. */

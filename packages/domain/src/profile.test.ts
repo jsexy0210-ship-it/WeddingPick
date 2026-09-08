@@ -5,6 +5,7 @@ import {
   checkDisplayName,
   dDay,
   daysUntil,
+  formatDateDot,
   formatWeddingDate,
   greeting,
   isSelectableWeddingDate,
@@ -90,7 +91,9 @@ describe('예식일', () => {
   });
 
   it('핸드오프가 쓴 날짜 표기를 쓴다', () => {
-    expect(formatWeddingDate('2027-04-17')).toBe('2027. 4. 17');
+    expect(formatWeddingDate('2027-04-17')).toBe('2027.04.17(토)');
+    expect(formatDateDot('2027-05-16')).toBe('2027.05.16(일)');
+    expect(formatDateDot('2026-09-08')).toBe('2026.09.08(화)');
   });
 });
 

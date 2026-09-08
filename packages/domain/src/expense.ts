@@ -67,7 +67,10 @@ export const EXPENSE_BUCKET_COLOR = {
 export function bucketFor(category: VendorCategory | null): ExpenseBucket {
   if (category === 'hall') return 'hall';
   if (category === 'wedding_info_company') return 'agency';
-  if (category === 'studio' || category === 'dress' || category === 'makeup') return 'sdm';
+  /* 헤어변형(v3.22)은 스드메 묶음이다 — 메이크업 샵에서 같이 결제하는 일이 많다. 부케는 기타. */
+  if (category === 'studio' || category === 'dress' || category === 'makeup' || category === 'hair') {
+    return 'sdm';
+  }
 
   return 'etc';
 }

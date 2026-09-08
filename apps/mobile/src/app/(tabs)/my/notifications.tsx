@@ -18,11 +18,8 @@ import {
   SkeletonView,
 } from '@weddingpick/ui';
 import { listNotifications, readAllNotifications, readNotification } from '@/api/client';
+import { formatDateDot } from '@/features/common/format-date';
 
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
-}
 
 /**
  * 알림을 눌렀을 때 어디로 가는가. 디자인 핸드오프 20번.
@@ -170,7 +167,7 @@ export default function NotificationsScreen() {
                   {notification.body}
                 </ThemedText>
                 <ThemedText type="t7" themeColor="textAssistive">
-                  {formatDate(notification.createdAt)}
+                  {formatDateDot(notification.createdAt)}
                 </ThemedText>
               </Pressable>
             );

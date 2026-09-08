@@ -5,8 +5,10 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { FontSize, LineHeight, Spinner } from '@weddingpick/ui';
+import { FontSize, LineHeight } from '@weddingpick/ui';
+import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { formatDateDot } from '@/features/common/format-date';
 
 type GateStepStatus = 'done' | 'in_progress' | 'pending' | 'blocked';
 
@@ -83,7 +85,7 @@ export default function AdsGateScreen() {
         </Pressable>
       </View>
 
-      {loading && <View style={styles.centered}><Spinner size={40} /></View>}
+      <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
           <Text style={styles.errorText}>{error}</Text>
@@ -123,7 +125,7 @@ export default function AdsGateScreen() {
               )}
               {step.completedAt && (
                 <Text style={styles.stepDate}>
-                  완료: {new Date(step.completedAt).toLocaleDateString('ko-KR')}
+                  완료: {formatDateDot(step.completedAt)}
                 </Text>
               )}
               {i < data.steps.length - 1 && <View style={styles.stepConnector} />}

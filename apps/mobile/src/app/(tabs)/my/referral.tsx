@@ -11,13 +11,13 @@ import {
   FontSize,
   Layout,
   LineHeight,
-  LoadingView,
   Radius,
   Spacing,
   ThemedText,
   ThemedView,
   useTheme,
 } from '@weddingpick/ui';
+import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 
 const S = {
   title: '친구 초대',
@@ -74,7 +74,7 @@ export default function ReferralScreen() {
     return (
       <ThemedView style={styles.flex}>
         <Stack.Screen options={{ title: S.title }} />
-        <LoadingView />
+        <DelayedLoadingView />
       </ThemedView>
     );
   }

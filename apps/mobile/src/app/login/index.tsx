@@ -5,7 +5,8 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
-import { ActionButton, Colors, Layout, MaxContentWidth, Radius, SocialLogo, Spacing, ThemedText, ThemedView, WeddingMark, useTheme, Spinner } from '@weddingpick/ui';
+import { ActionButton, Colors, Layout, MaxContentWidth, Radius, SocialLogo, Spacing, ThemedText, ThemedView, WeddingMark, useTheme } from '@weddingpick/ui';
+import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { LoginFailureSheet } from '@/features/auth/login-failure-sheet';
 import { canSignInWith, providerTone, useAuthProviders } from '@/features/auth/providers';
 import { loadRememberedAccount, type RememberedAccount } from '@/features/auth/remembered-account';
@@ -133,7 +134,7 @@ export default function LoginScreen() {
                * 로그인 폼이 떠 있으면 «다시 로그인하라는 건가» 하고 읽힌다.
                */
               <ThemedView style={styles.busy}>
-                <Spinner size={24} />
+                <DelayedLoader size={28} />
                 {busy ? (
                   <ThemedText type="small" themeColor="textAssistive">
                     카카오로 로그인하는 중이에요

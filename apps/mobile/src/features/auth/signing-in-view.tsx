@@ -1,6 +1,7 @@
 import { StyleSheet } from 'react-native';
 
-import { Spacing, ThemedText, ThemedView, Spinner } from '@weddingpick/ui';
+import { Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
+import { DelayedLoader } from '@/features/loading/delayed-loader';
 
 /**
  * 카카오에서 같은 창으로 돌아온 직후, 코드를 세션으로 바꾸는 동안 보이는 화면.
@@ -14,7 +15,7 @@ export function SigningInView() {
 
   return (
     <ThemedView style={styles.container}>
-      <Spinner size={40} />
+      <DelayedLoader size={40} />
       <ThemedText type="small" themeColor="textAssistive">
         카카오로 로그인하는 중이에요
       </ThemedText>

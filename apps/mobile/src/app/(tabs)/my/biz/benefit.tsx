@@ -16,6 +16,7 @@ import {
 } from '@weddingpick/ui';
 import { createInquiry } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
+import { formatDateDot } from '@/features/common/format-date';
 
 /**
  * WP-BIZ-004: 업체 혜택 등록 화면.
@@ -161,7 +162,7 @@ export default function BizBenefitScreen() {
             <TextInput
               value={period}
               onChangeText={setPeriod}
-              placeholder="2026년 12월 31일까지"
+              placeholder={`${formatDateDot('2026-12-31')}까지`}
               placeholderTextColor={theme.textAssistive}
               style={[styles.input, field]}
             />

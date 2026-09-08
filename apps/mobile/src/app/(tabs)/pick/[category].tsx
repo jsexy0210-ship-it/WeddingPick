@@ -1,6 +1,7 @@
 import type { CandidateListResponse, VendorCandidate } from '@weddingpick/api-contract';
 import {
   VENDOR_CATEGORY_LABEL,
+  withInstrument,
   type VendorCategory,
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -157,14 +158,18 @@ export default function CategoryPickScreen() {
             ) : null}
           </ThemedView>
 
-          {/* 결정 완료 배지 */}
-          {isDecided && decidedVendorId ? (
+          {/*
+            결정 완료 배지. 준비 현황(온보딩 3/5)에서 «이미 정했다»고 체크한 업종은
+            업체가 없다(decidedVendorId null) — 이름을 찾다 빈 문장을 만들지 않고
+            어디서 정했는지만 적는다.
+          */}
+          {isDecided ? (
             <ThemedView type="backgroundElement" style={styles.decidedBanner}>
               <ThemedText type="t6" themeColor="positive">
                 결정 완료
               </ThemedText>
               <ThemedText type="t7" themeColor="textSecondary">
-                {candidates.find((c) => c.vendorId === decidedVendorId)?.vendorName ?? ''}으로 정했어요
+                {decidedVendorName(candidates, decidedVendorId) ?? '웨딩픽 밖에서 이미 정한 업종이에요'}
               </ThemedText>
             </ThemedView>
           ) : null}
@@ -218,6 +223,18 @@ export default function CategoryPickScreen() {
       </SafeAreaView>
     </ThemedView>
   );
+}
+
+/** «더채플 강남으로 정했어요». 정한 업체가 후보에 없거나(삭제) 애초에 없으면 null. */
+function decidedVendorName(
+  candidates: readonly { vendorId: string; vendorName: string }[],
+  decidedVendorId: string | null
+): string | null {
+  if (decidedVendorId === null) return null;
+
+  const name = candidates.find((c) => c.vendorId === decidedVendorId)?.vendorName;
+
+  return name ? `${withInstrument(name)} 정했어요` : null;
 }
 
 function CandidateCard({

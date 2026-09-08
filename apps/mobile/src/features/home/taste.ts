@@ -1,104 +1,115 @@
-import { TASTES, type Taste } from '@weddingpick/api-contract';
+import {
+  nextTasteCategory,
+  reconcileTasteSelection,
+  summarizeTasteKeys,
+  TASTE_MIN_PICKS,
+  TASTE_SETS,
+  tasteLabel,
+  tasteStepDescription,
+  type TasteCategory,
+  type TasteOption,
+  type TasteSelection,
+  type VendorCategory,
+} from '@weddingpick/domain';
 
 import { getTaste, updateTaste } from '@/api/client';
 
 /**
- * 취향. 홈 C-1 시안 1 — 사진 넉 장으로 «어떤 결혼식을 원하세요?»를 받는 자리.
+ * 취향. 홈 C-1 시안 1 «어떤 결혼식을 원하세요?» · MY «취향 다시 고르기» ·
+ * 온보딩 5/5(WP-APP-021). 핸드오프 v3.19~v3.22 SPEC §13.6.
  *
- * 서버(`/v1/me/taste`)에 저장한다 — 로그인한 사람에게만 이 화면이 뜨므로
- * (`state.ts`의 `guest` 갈림), 기기를 바꿔도 고른 것이 남는다.
+ * **한 번에 한 업종만 묻는다.** 어느 업종인지는 준비 현황에서 완료로 체크하지
+ * 않은 첫 업종이고(`nextTasteCategory`), 업종마다 세트가 다르다(`TASTE_SETS` —
+ * 각 6장 · 2×3 격자). 아홉 업종을 전부 준비한 사람에게는 물을 것이 없어 null인데,
+ * 홈과 MY는 그래도 화면을 그려야 하므로 웨딩홀로 돌아간다(`tasteCategoryFor`).
  *
- * 화면을 비워두지 않는 이유는, 취향이 없는 사람에게 개인화 추천을 띄우면
- * 앱이 아는 척을 하기 때문이다. 고른 것을 «무엇을 골랐는지»만으로 홈이 다음
- * 얼굴로 넘어갈 수 있다.
+ * 서버(`/v1/me/taste`)에 `{category, keys}`로 저장한다 — 로그인한 사람에게만 이
+ * 화면이 뜨므로(`state.ts`의 `guest` 갈림), 기기를 바꿔도 고른 것이 남는다.
  *
- * 서버가 안 불리면(오프라인 등) 조용히 안 고른 것으로 본다 — 그게 취향
- * 화면이 안 뜨는 것보다 낫다. 화면은 `loadTaste`/`saveTaste` 두 함수만
- * 알고 있어서 저장 방식이 바뀌어도 그대로다.
+ * 서버가 안 불리면(오프라인 등) 조용히 안 고른 것으로 본다 — 그게 취향 화면이
+ * 안 뜨는 것보다 낫다. 화면은 `loadTaste`/`saveTaste` 두 함수만 알고 있어서
+ * 저장 방식이 바뀌어도 그대로다.
+ *
+ * 2026-09-08 이전의 단일 세트(white · daylight · …)와 그 Unsplash 사진은 없앴다 —
+ * 아홉 세트 쉰네 장에 붙일 사진이 아직 없어 카드는 업종 기본 면 위에 라벨 배지만
+ * 얹는다(`taste-picker.tsx`).
  */
 
-export { TASTES, type Taste };
-
-export const TASTE_LABEL: Record<Taste, string> = {
-  white: '깔끔한 화이트',
-  daylight: '야외 자연광',
-  flower: '플라워 아치',
-  classic: '클래식 호텔',
-  minimal: '모던 미니멀',
-  film: '따뜻한 필름',
+export {
+  summarizeTasteKeys,
+  TASTE_SETS,
+  tasteLabel,
+  tasteStepDescription,
+  type TasteCategory,
+  type TasteOption,
+  type TasteSelection,
 };
+
+/** 아직 안 고른 상태. 업종도 없다. */
+export const NO_TASTE: TasteSelection = { category: null, keys: [] };
 
 /**
- * 취향 카드 사진. 실제 업체 제공 사진이 아직 없어(계약에 그 필드가 없다)
- * 임시로 채운다 — 사용자 지시로 하드코딩했다. Unsplash 라이선스는 출처 표시
- * 없이 상업적으로 써도 되지만, 이 카드에 실제로 뜨는지는 이 저장소에서
- * 확인하지 못했다(egress가 이미지 CDN을 막아 검증 불가) — 배포 후 실기기에서
- * 한 번 확인해달라. `CategoryImage`가 로드 실패를 감지하지 않으므로, 깨지면
- * 조용히 빈 면으로 보이지 않고 로딩 실패 아이콘이 뜰 수 있다.
- *
- * minimal·film 둘은 v3.14가 더했다 — 핸드오프는 실제 촬영 사진(업로드 파일)을
- * 가리키지만 그 파일 자체는 이 저장소에서 받을 수 없어(디자인 툴 내부
- * 업로드 경로) 나머지 넷과 같은 방식(Unsplash)으로 대신 채웠다.
- *
- * TODO: 실제 업체 사진 파이프라인이 생기면 이 상수를 지우고 서버 값을 쓴다.
+ * 물을 업종이 없을 때(아홉 업종을 전부 준비함) 돌아가는 업종. 우선순위의 첫째다 —
+ * 온보딩은 이때 5/5를 건너뛰지만 홈·MY는 빈 화면을 둘 수 없다.
  */
-export const TASTE_IMAGE: Record<Taste, string> = {
-  white: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=800&q=80&auto=format&fit=crop',
-  daylight: 'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=800&q=80&auto=format&fit=crop',
-  flower: 'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=800&q=80&auto=format&fit=crop',
-  classic: 'https://images.unsplash.com/photo-1529636798458-92182e662485?w=800&q=80&auto=format&fit=crop',
-  minimal: 'https://images.unsplash.com/photo-1520854221256-17451cc331bf?w=800&q=80&auto=format&fit=crop',
-  film: 'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=800&q=80&auto=format&fit=crop',
-};
+export const DEFAULT_TASTE_CATEGORY: TasteCategory = 'hall';
 
-/**
- * 요약 한 줄에 쓰는 짧은 이름. 온보딩 완료 시안(01-onboarding #11e summarySet)이
- * «화이트 · 자연광»으로 적는다 — 카드 라벨의 마지막 낱말이다. 시안이 보여주지 않은
- * 둘(아치·호텔)도 같은 규칙으로 뽑았다.
- */
-export const TASTE_SHORT_LABEL: Record<Taste, string> = {
-  white: '화이트',
-  daylight: '자연광',
-  flower: '아치',
-  classic: '호텔',
-  minimal: '미니멀',
-  film: '필름',
-};
-
-function isTaste(value: string): value is Taste {
-  return (TASTES as readonly string[]).includes(value);
+/** 이 사람에게 취향을 물을 업종. 준비 현황에서 안 끝낸 첫 업종, 없으면 웨딩홀. */
+export function tasteCategoryFor(prepared: readonly VendorCategory[]): TasteCategory {
+  return nextTasteCategory(prepared) ?? DEFAULT_TASTE_CATEGORY;
 }
 
-/** 저장된 것 중 모르는 값은 버린다. 항목이 바뀌어도 화면이 빈 칸을 그리지 않게. */
-export function reconcileTaste(stored: readonly string[] | null): readonly Taste[] {
-  return (stored ?? []).filter(isTaste);
+/**
+ * 저장된 것 중 모르는 업종·키는 버린다. 항목이 바뀌어도 화면이 빈 칸을 그리지
+ * 않게.
+ */
+export function reconcileTaste(
+  category: string | null,
+  keys: readonly string[] | null
+): TasteSelection {
+  return reconcileTasteSelection(category, keys ?? []);
 }
 
 /** 하나라도 골랐는가. 홈이 취향 고르기를 계속 띄울지 이 값으로 정한다. */
-export function hasTaste(chosen: readonly Taste[]): boolean {
-  return chosen.length > 0;
+export function hasTaste(selection: TasteSelection): boolean {
+  return selection.keys.length >= TASTE_MIN_PICKS;
+}
+
+/**
+ * 지금 그리는 업종에서 고른 키. 저장된 업종이 다르면 빈 배열 — 스튜디오에서
+ * 고른 «필름»을 드레스 격자 위에 체크된 것처럼 그리지 않는다.
+ */
+export function chosenKeysFor(selection: TasteSelection, category: TasteCategory): readonly string[] {
+  return selection.category === category ? selection.keys : [];
 }
 
 /** 눌렀던 것을 다시 누르면 빠진다. 한 번 고르면 못 무르는 화면을 만들지 않는다. */
-export function toggleTaste(chosen: readonly Taste[], taste: Taste): readonly Taste[] {
-  return chosen.includes(taste)
-    ? chosen.filter((row) => row !== taste)
-    : [...chosen, taste];
+export function toggleTaste(chosen: readonly string[], key: string): readonly string[] {
+  return chosen.includes(key) ? chosen.filter((row) => row !== key) : [...chosen, key];
 }
 
-export async function loadTaste(): Promise<readonly Taste[]> {
+export async function loadTaste(): Promise<TasteSelection> {
   try {
-    return reconcileTaste((await getTaste()).tastes);
+    const stored = await getTaste();
+
+    return reconcileTaste(stored.category, stored.keys);
   } catch {
     // 못 불러오거나(오프라인·미로그인) 서버가 이상하면 안 고른 것으로 본다.
     // 홈이 안 뜨는 것보다 낫다.
-    return [];
+    return NO_TASTE;
   }
 }
 
-export async function saveTaste(chosen: readonly Taste[]): Promise<void> {
+/**
+ * 고른 전체를 그대로 덮어쓴다. 최소 1장 — 서버가 빈 배열을 받지 않으므로
+ * (contract `TASTE_MIN_PICKS`) 다 풀었을 때는 보내지 않는다. 화면은 낙관적으로
+ * 갱신돼 있고, 다음에 열면 서버에 남은 마지막 선택으로 돌아갈 뿐이다.
+ */
+export async function saveTaste(category: TasteCategory, keys: readonly string[]): Promise<void> {
+  if (keys.length < TASTE_MIN_PICKS) return;
+
   try {
-    await updateTaste(chosen);
+    await updateTaste({ category, keys: [...keys] });
   } catch {
     // 화면은 이미 낙관적으로 갱신됐다(app/(tabs)/index.tsx) — 저장이 실패해도
     // 다음에 다시 열면 서버 값으로 되돌아갈 뿐, 여기서 사용자를 막지 않는다.

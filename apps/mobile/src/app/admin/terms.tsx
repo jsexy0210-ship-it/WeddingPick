@@ -13,8 +13,10 @@ import {
   View,
 } from 'react-native';
 
-import { FontSize, LineHeight, Spinner } from '@weddingpick/ui';
+import { FontSize, LineHeight } from '@weddingpick/ui';
+import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { formatDateDot } from '@/features/common/format-date';
 
 type DocType = 'terms' | 'privacy' | 'marketing';
 type TermsVersion = {
@@ -126,7 +128,7 @@ export default function TermsScreen() {
         </Pressable>
       </View>
 
-      {loading && <View style={styles.centered}><Spinner size={40} /></View>}
+      <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
           <Text style={styles.errorText}>{error}</Text>
@@ -165,7 +167,7 @@ export default function TermsScreen() {
                   </Text>
                   {activeDocData.publishedAt && (
                     <Text style={styles.dateText}>
-                      공개일: {new Date(activeDocData.publishedAt).toLocaleDateString('ko-KR')}
+                      공개일: {formatDateDot(activeDocData.publishedAt)}
                     </Text>
                   )}
                   {activeDocData.latestDraftVersion && (

@@ -16,6 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listVendorPhotos } from '@/api/client';
+import { formatDateDot } from '@/features/common/format-date';
 import {
   Colors,
   EmptyView,
@@ -145,13 +146,6 @@ function PhotoThumb({ photo, onPress }: { photo: VendorPhoto; onPress: () => voi
   );
 }
 
-/** "2026년 8월 28일" */
-function formatDay(timestamp: string): string {
-  const date = new Date(timestamp);
-
-  return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
-}
-
 /**
  * 전체화면 뷰어. 다크 배경 고정 — 스킨·시스템 모드와 무관하게 사진에 집중하는
  * 자리다(핸드오프 WP-VEND-002).
@@ -257,7 +251,7 @@ function PhotoViewer({
             ) : null}
             {current.verifiedAt ? (
               <ThemedText type="t7" style={styles.viewerCaptionMuted}>
-                확인일 {formatDay(current.verifiedAt)}
+                확인일 {formatDateDot(current.verifiedAt)}
               </ThemedText>
             ) : null}
           </View>

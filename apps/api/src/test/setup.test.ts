@@ -121,11 +121,10 @@ describeWithDb('최소 온보딩', () => {
     });
   });
 
-  it('예식일은 «아직 미정»으로 비워둘 수 있고 그래도 설정은 끝난다', async () => {
+  it('예식일은 «아직 정하지 않았어요»로 비워둘 수 있고 그래도 설정은 끝난다', async () => {
     /*
-     * 2026-09-08. 온보딩의 «아직 미정이에요»는 날짜 없이 다음 질문으로 간다.
-     * 날짜를 설정 완료 조건에 넣으면 미정인 사람이 온보딩에 영영 붙잡힌다 —
-     * 완료는 지역으로만 판단한다.
+     * 2026-09-08. 온보딩의 «아직 정하지 않았어요»는 날짜 없이 다음 질문으로 간다.
+     * 날짜를 설정 완료 조건에 넣으면 미정인 사람이 온보딩에 영영 붙잡힌다.
      */
     const { headers } = await signInAs(test);
 
@@ -167,11 +166,73 @@ describeWithDb('최소 온보딩', () => {
     expect(body.setupComplete).toBe(true);
   });
 
-  it('지역이 없으면 등록할 수 없다', async () => {
+  it('지역도 «아직 정하지 않았어요»(null)로 비울 수 있고 그래도 설정은 끝난다', async () => {
+    /*
+     * v3.19 «미정 허용». 예식일 · 지역 · 준비 현황 · 예산이 전부 미정이어도 설정은
+     * 끝난 것이다 — 값의 유무가 아니라 setup_completed_at(0088)이 판단이다.
+     */
+    const { headers } = await signInAs(test);
+
+    expect((await setup(headers, { weddingDate: null, region: null })).statusCode).toBe(200);
+
+    const body = (await me(headers)).json<{ region: string | null; setupComplete: boolean }>();
+
+    expect(body.region).toBeNull();
+    expect(body.setupComplete).toBe(true);
+  });
+
+  it('빈 문자열은 지역이 아니다 — 미정은 null로만 적는다', async () => {
     const { headers } = await signInAs(test);
 
     expect((await setup(headers, { region: '' })).statusCode).toBe(400);
     expect((await setup(headers, { region: '   ' })).statusCode).toBe(400);
+  });
+
+  it('준비 현황을 저장하고 «아직 시작 전이에요»는 빈 배열이다', async () => {
+    // v3.19 온보딩 3/5. 이미 정한 업종 — 홈 준비현황에 «결정 완료», 추천에서 건너뛴다.
+    const { headers } = await signInAs(test);
+
+    const saved = (
+      await setup(headers, { preparedCategories: ['hall', 'studio', 'hall'] })
+    ).json<{ preparedCategories: string[] }>();
+
+    // 같은 업종을 두 번 보내도 한 번만 적는다.
+    expect(saved.preparedCategories).toEqual(['hall', 'studio']);
+    expect((await me(headers)).json<{ preparedCategories: string[] }>().preparedCategories).toEqual([
+      'hall',
+      'studio',
+    ]);
+
+    // 안 보내면 건드리지 않는다 — 예식일만 고치러 온 사람이 준비 현황을 잃으면 안 된다.
+    await setup(headers, { weddingDate: future(120) });
+    expect((await me(headers)).json<{ preparedCategories: string[] }>().preparedCategories).toEqual([
+      'hall',
+      'studio',
+    ]);
+
+    // 빈 배열은 «아직 시작 전이에요».
+    await setup(headers, { preparedCategories: [] });
+    expect((await me(headers)).json<{ preparedCategories: string[] }>().preparedCategories).toEqual([]);
+  });
+
+  it('«기타»는 준비 현황에 고를 수 없다', async () => {
+    const { headers } = await signInAs(test);
+
+    expect((await setup(headers, { preparedCategories: ['etc'] })).statusCode).toBe(400);
+  });
+
+  it('준비 현황은 웨딩 상세에도 실린다', async () => {
+    const { headers } = await signInAs(test);
+
+    const { weddingId } = (
+      await setup(headers, { preparedCategories: ['bouquet', 'hair'] })
+    ).json<{ weddingId: string }>();
+
+    const detail = (
+      await test.app.inject({ method: 'GET', url: `/v1/weddings/${weddingId}`, headers })
+    ).json<{ preparedCategories: string[] }>();
+
+    expect(detail.preparedCategories).toEqual(['bouquet', 'hair']);
   });
 
   it('이미 있는 웨딩에는 값만 채운다', async () => {
@@ -215,17 +276,17 @@ describeWithDb('최소 온보딩', () => {
     expect(body.region).toBe('부산');
   });
 
-  it('총예산은 구간 선택이고 아직 모르겠어요가 null이다', async () => {
+  it('준비 예산은 구간 선택이고 명시적인 null이 «안 정함»이다', async () => {
     const { headers } = await signInAs(test);
 
-    await setup(headers, { budgetBracket: '30m_40m' });
+    await setup(headers, { budgetBracket: '10m_20m' });
     const saved = (
       await me(headers)
     ).json<{ budgetBracket: string | null; budgetAmount: number | null }>();
 
-    expect(saved.budgetBracket).toBe('30m_40m');
-    // budget_amount는 구간의 상한값을 서버가 파생한 것이다 — top3 추천이 숫자로 쓴다.
-    expect(saved.budgetAmount).toBe(40_000_000);
+    expect(saved.budgetBracket).toBe('10m_20m');
+    // budget_amount는 구간의 상한값을 서버가 파생한 것이다 — 지출 화면의 «예산 대비»가 숫자로 쓴다.
+    expect(saved.budgetAmount).toBe(20_000_000);
 
     // 명시적인 null은 "아직 모르겠어요"가 아니라 "안 정함"이다. 되돌릴 수 있어야 한다.
     await setup(headers, { budgetBracket: null });
@@ -237,16 +298,23 @@ describeWithDb('최소 온보딩', () => {
     expect(cleared.budgetAmount).toBeNull();
   });
 
-  it('4,000만원 이상은 상한이 없어 budgetAmount가 null이다', async () => {
+  it('3,000만원 이상은 상한이 없어 budgetAmount가 null이다', async () => {
     const { headers } = await signInAs(test);
 
-    await setup(headers, { budgetBracket: 'over_40m' });
+    await setup(headers, { budgetBracket: 'over_30m' });
     const body = (
       await me(headers)
     ).json<{ budgetBracket: string | null; budgetAmount: number | null }>();
 
-    expect(body.budgetBracket).toBe('over_40m');
+    expect(body.budgetBracket).toBe('over_30m');
     expect(body.budgetAmount).toBeNull();
+  });
+
+  it('옛 구간(v3.18 이전)은 받지 않는다', async () => {
+    const { headers } = await signInAs(test);
+
+    expect((await setup(headers, { budgetBracket: '30m_40m' })).statusCode).toBe(400);
+    expect((await setup(headers, { budgetBracket: 'over_40m' })).statusCode).toBe(400);
   });
 
   it('예산을 안 보내면 건드리지 않는다', async () => {
@@ -256,12 +324,12 @@ describeWithDb('최소 온보딩', () => {
      */
     const { headers } = await signInAs(test);
 
-    await setup(headers, { budgetBracket: '30m_40m' });
+    await setup(headers, { budgetBracket: '5m_10m' });
     await setup(headers, { weddingDate: future(120) });
 
     expect(
       (await me(headers)).json<{ budgetBracket: string | null }>().budgetBracket
-    ).toBe('30m_40m');
+    ).toBe('5m_10m');
   });
 
   it('로그인해야 등록할 수 있다', async () => {

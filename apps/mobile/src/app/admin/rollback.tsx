@@ -5,8 +5,10 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { FontSize, Spinner } from '@weddingpick/ui';
+import { FontSize } from '@weddingpick/ui';
+import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { formatDateTimeDot } from '@/features/common/format-date';
 
 type RollbackStatus = 'stable' | 'anomaly_detected' | 'rolling_back' | 'rolled_back' | 'pending_approval';
 type RollbackItem = {
@@ -91,7 +93,7 @@ export default function RollbackScreen() {
         </Pressable>
       </View>
 
-      {loading && <View style={styles.centered}><Spinner size={40} /></View>}
+      <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
           <Text style={styles.errorText}>{error}</Text>
@@ -119,7 +121,7 @@ export default function RollbackScreen() {
 
               <View style={styles.itemInfo}>
                 <Text style={styles.infoText}>
-                  {new Date(item.deployedAt).toLocaleString('ko-KR')} · {item.deployedBy}
+                  {formatDateTimeDot(item.deployedAt)} · {item.deployedBy}
                 </Text>
                 <Text style={[styles.infoText, { color: item.autoRollbackEnabled ? '#1aa174' : '#868b94' }]}>
                   자동 롤백: {item.autoRollbackEnabled ? '켜짐' : '꺼짐'}

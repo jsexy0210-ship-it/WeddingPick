@@ -6,6 +6,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listQuotes } from '@/api/client';
+import { formatDateDot } from '@/features/common/format-date';
 import {
   ActionButton,
   ErrorView,
@@ -18,10 +19,6 @@ import {
   SkeletonView,
 } from '@weddingpick/ui';
 
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
-}
 
 function QuoteCard({ quote }: { quote: Quote }) {
   const vendorName = quote.vendor?.name ?? quote.planner?.name ?? '업체 미상';
@@ -54,7 +51,7 @@ function QuoteCard({ quote }: { quote: Quote }) {
       ) : null}
 
       <ThemedText type="t7" themeColor="textAssistive">
-        등록일: {formatDate(quote.createdAt)}
+        등록일: {formatDateDot(quote.createdAt)}
         {quote.confirmedAt ? null : ' · 확인 전'}
       </ThemedText>
 

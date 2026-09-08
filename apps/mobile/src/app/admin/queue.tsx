@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { FontSize, Spinner } from '@weddingpick/ui';
+import { FontSize } from '@weddingpick/ui';
+import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { API_URL } from '@/api/config';
 import { loadToken } from '@/api/session';
+import { formatDateDot, formatDateTimeDot } from '@/features/common/format-date';
 
 type VerificationStatus = 'received' | 'in_review' | 'needs_supplement' | 'approved' | 'rejected';
 
@@ -100,7 +102,7 @@ export default function QueueScreen() {
 
       <View style={styles.body}>
         <View style={styles.list}>
-          {loading && <Spinner size={32} style={styles.centered} />}
+          <DelayedLoader active={loading} size={40} style={styles.centered} />
           {!loading && error && <Text style={styles.errorText}>{error}</Text>}
           {!loading && !error && (
             <ScrollView>
@@ -131,7 +133,7 @@ export default function QueueScreen() {
                     {item.totalAmount ?? '-'}
                   </Text>
                   <Text style={[styles.td, styles.colDate]}>
-                    {new Date(item.receivedAt).toLocaleDateString('ko-KR')}
+                    {formatDateDot(item.receivedAt)}
                   </Text>
                 </Pressable>
               ))}
@@ -167,7 +169,7 @@ export default function QueueScreen() {
 
               <Text style={styles.detailLabel}>접수일</Text>
               <Text style={styles.detailValue}>
-                {new Date(selected.receivedAt).toLocaleString('ko-KR')}
+                {formatDateTimeDot(selected.receivedAt)}
               </Text>
 
               <Text style={[styles.detailSectionTitle, { marginTop: 24 }]}>결정</Text>

@@ -260,7 +260,7 @@ describeWithDb('우리웨딩', () => {
         method: 'POST',
         url: '/v1/me/setup',
         headers,
-        payload: { weddingDate: at(200), region: '서울', budgetBracket: 'over_40m' },
+        payload: { weddingDate: at(200), region: '서울', budgetBracket: 'over_30m' },
       });
 
       const body = (await expenses(headers, weddingId)).json<{
@@ -269,7 +269,7 @@ describeWithDb('우리웨딩', () => {
       }>();
 
       expect(body.budget.set).toBe(false);
-      expect(body.budgetBracket).toBe('over_40m');
+      expect(body.budgetBracket).toBe('over_30m');
     });
 
     it('예산을 정하면 남은 금액을 준다', async () => {

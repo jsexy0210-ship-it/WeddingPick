@@ -5,7 +5,8 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { FontSize, Spinner } from '@weddingpick/ui';
+import { FontSize } from '@weddingpick/ui';
+import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 
 type VendorStat = {
@@ -89,7 +90,7 @@ export default function PriceStatsScreen() {
         </Pressable>
       </View>
 
-      {loading && <View style={styles.centered}><Spinner size={40} /></View>}
+      <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
           <Text style={styles.errorText}>{error}</Text>

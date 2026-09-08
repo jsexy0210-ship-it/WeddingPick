@@ -6,7 +6,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ErrorView,
   Layout,
-  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
@@ -15,6 +14,7 @@ import {
   Toast,
   useTheme,
 } from '@weddingpick/ui';
+import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { getSettings, updateSettings } from '@/api/client';
 
 /**
@@ -74,7 +74,7 @@ export default function NotificationSettingsScreen() {
   }
 
   if (!settings) {
-    return <LoadingView />;
+    return <DelayedLoadingView />;
   }
 
   return (

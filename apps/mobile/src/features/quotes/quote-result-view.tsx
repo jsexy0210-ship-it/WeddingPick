@@ -5,6 +5,7 @@ import type {
   QuoteDocument,
 } from '@weddingpick/api-contract';
 import { ANALYSIS_DISCLAIMER, PRICE_JUDGEMENT_LABEL, needsAttention } from '@weddingpick/domain';
+import { formatDateDot } from '@/features/common/format-date';
 import { ScrollView, StyleSheet, TextInput, type ViewStyle } from 'react-native';
 
 import {
@@ -51,13 +52,6 @@ const ROLE_LABEL = {
 
 export const won = (amount: number) => `${amount.toLocaleString('ko-KR')}원`;
 
-/** "2026년 8월 28일". 화면에는 ISO 문자열을 그대로 내보내지 않는다. */
-function formatDay(timestamp: string): string {
-  const date = new Date(timestamp);
-
-  return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
-}
-
 /**
  * 원본이 언제 지워지는지. A-12가 요구하는 표시다.
  *
@@ -70,14 +64,14 @@ function formatDay(timestamp: string): string {
  */
 function retentionNote(document: QuoteDocument): string {
   if (document.deletedAt) {
-    return `${formatDay(document.deletedAt)}에 원본을 지웠어요. 정리된 결과는 그대로 남아요.`;
+    return `${formatDateDot(document.deletedAt)}에 원본을 지웠어요. 정리된 결과는 그대로 남아요.`;
   }
 
   if (document.retentionUntil) {
     // "자동으로"라고 하지 않는다. 지우는 것은 사람이고, 사용자에게 중요한 것은
     // 누가 지우는지가 아니라 언제 지워지는지다. 운영 방식이 바뀌어도 이 말은
     // 거짓이 되지 않는다.
-    return `${formatDay(document.retentionUntil)}에 원본이 지워져요. 정리된 결과는 그대로 남아요.`;
+    return `${formatDateDot(document.retentionUntil)}에 원본이 지워져요. 정리된 결과는 그대로 남아요.`;
   }
 
   if (document.awaitingVerification) {
@@ -341,7 +335,7 @@ export function QuoteResultView({
               type="backgroundElement"
               style={styles.card}>
               <ThemedText type="small">
-                {formatDay(document.uploadedAt)} 올림 · {document.pageCount}장
+                {formatDateDot(document.uploadedAt)} 올림 · {document.pageCount}장
               </ThemedText>
               <ThemedText type="small" themeColor="textSecondary">
                 {retentionNote(document)}

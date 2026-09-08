@@ -6,6 +6,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listDecisions } from '@/api/client';
+import { formatDateDot, formatMonthDayDot } from '@/features/common/format-date';
 import {
   ActionButton,
   ErrorView,
@@ -82,7 +83,7 @@ export default function DecidedVendorsScreen() {
                   <ThemedText type="t5">{decision.vendor.name}</ThemedText>
                   <ThemedText type="t7" themeColor="textSecondary">
                     {decision.vendor.region} ·{' '}
-                    {new Date(decision.decidedAt).toLocaleDateString('ko-KR')}에 정했어요
+                    {formatDateDot(decision.decidedAt)}에 정했어요
                     {decision.decidedByPartner ? ' · 배우자가 정했어요' : ''}
                   </ThemedText>
 
@@ -93,15 +94,13 @@ export default function DecidedVendorsScreen() {
                   {hasEvents ? (
                     <View style={styles.list}>
                       {decision.events.map((event) => {
-                        const startsAt = new Date(event.startsAt);
-
                         return (
                           <View key={event.id} style={styles.listRow}>
                             <ThemedText type="t7" numberOfLines={1} style={styles.grow}>
                               {event.title}
                             </ThemedText>
                             <ThemedText type="t7" themeColor="textAssistive" numeric>
-                              {startsAt.getMonth() + 1}.{startsAt.getDate()}
+                              {formatMonthDayDot(event.startsAt)}
                             </ThemedText>
                           </View>
                         );

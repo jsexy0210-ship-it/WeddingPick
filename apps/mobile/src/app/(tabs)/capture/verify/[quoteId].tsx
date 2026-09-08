@@ -15,13 +15,13 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { createVerificationRequest, getQuote } from '@/api/client';
-import { ActionButton, ErrorView, FilterChip, LoadingView, MaxContentWidth, Spacing, ThemedText, ThemedView, VerificationBadge, useTheme } from '@weddingpick/ui';
+import { formatMonthDayDot } from '@/features/common/format-date';
+import { ActionButton, ErrorView, FilterChip, MaxContentWidth, Spacing, ThemedText, ThemedView, VerificationBadge, useTheme } from '@weddingpick/ui';
+import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 
 /** 화면에 내보낼 문서 이름. 식별자를 그대로 보여주지 않는다. */
 function documentLabel(document: QuoteDocument, index: number): string {
-  const uploaded = new Date(document.uploadedAt);
-
-  return `${index + 1}번째 문서 · ${uploaded.getMonth() + 1}월 ${uploaded.getDate()}일 올림 · ${document.pageCount}장`;
+  return `${index + 1}번째 문서 · ${formatMonthDayDot(document.uploadedAt)} 올림 · ${document.pageCount}장`;
 }
 
 /**
@@ -76,7 +76,7 @@ export default function VerifyRequestScreen() {
   }
 
   if (!quote) {
-    return <LoadingView />;
+    return <DelayedLoadingView />;
   }
 
   if (receivedAt) {

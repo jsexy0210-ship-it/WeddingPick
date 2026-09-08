@@ -6,21 +6,18 @@ import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getVerificationRequest } from '@/api/client';
+import { formatDateDot } from '@/features/common/format-date';
 import {
   ActionButton,
   ErrorView,
-  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
   ThemedText,
   ThemedView,
 } from '@weddingpick/ui';
+import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
-}
 
 function statusLabel(status: VerificationRequest['status']): string {
   switch (status) {
@@ -67,7 +64,7 @@ export default function VerifyStatusScreen() {
   }
 
   if (!req) {
-    return <LoadingView />;
+    return <DelayedLoadingView />;
   }
 
   const isSettled = req.status === 'approved' || req.status === 'rejected';
@@ -90,11 +87,11 @@ export default function VerifyStatusScreen() {
               {statusHint(req.status)}
             </ThemedText>
             <ThemedText type="t7" themeColor="textAssistive">
-              접수일: {formatDate(req.receivedAt)}
+              접수일: {formatDateDot(req.receivedAt)}
             </ThemedText>
             {(isSettled || needsSupplement) && req.decidedAt ? (
               <ThemedText type="t7" themeColor="textAssistive">
-                처리일: {formatDate(req.decidedAt)}
+                처리일: {formatDateDot(req.decidedAt)}
               </ThemedText>
             ) : null}
           </ThemedView>

@@ -13,8 +13,10 @@ import {
   View,
 } from 'react-native';
 
-import { FontSize, LineHeight, Spinner } from '@weddingpick/ui';
+import { FontSize, LineHeight } from '@weddingpick/ui';
+import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { formatDateTimeDot } from '@/features/common/format-date';
 
 type PolicyType = 'number' | 'percentage' | 'boolean' | 'string';
 type PolicyItem = {
@@ -101,7 +103,7 @@ export default function PolicyEngineScreen() {
         </Pressable>
       </View>
 
-      {loading && <View style={styles.centered}><Spinner size={40} /></View>}
+      <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
           <Text style={styles.errorText}>{error}</Text>
@@ -126,7 +128,7 @@ export default function PolicyEngineScreen() {
                     <Text style={styles.policyDesc}>{item.description}</Text>
                     {item.lastChangedAt && (
                       <Text style={styles.policyMeta}>
-                        {new Date(item.lastChangedAt).toLocaleString('ko-KR')}
+                        {formatDateTimeDot(item.lastChangedAt)}
                         {item.lastChangedBy ? ` · ${item.lastChangedBy}` : ''}
                       </Text>
                     )}

@@ -30,6 +30,7 @@ import {
   listWeddingTasks,
 } from '@/api/client';
 import { useSession } from '@/features/auth/use-session';
+import { formatMonthDayDot, formatTimeHm } from '@/features/common/format-date';
 
 /**
  * 배우자 상태 — 혼자 · 배우자와 함께(v3.16). «미연결»이라는 이름을 쓰지 않는다 —
@@ -59,7 +60,7 @@ const TRACK_HEIGHT = 6;
  * 핸드오프 08c의 폭 값 중 토큰이 없는 것. spec/tokens.json에 토큰이 생기면
  * 그쪽으로 옮긴다 — 화면 하나가 정한 값이 아니라 시안이 정한 값이다.
  */
-const DATE_COL_WIDTH = 52;
+const DATE_COL_WIDTH = 72; // `05.16(토)` 한 줄이 들어가는 폭
 const PREP_LABEL_WIDTH = 76;
 const AVATAR_SIZE = 26;
 
@@ -251,28 +252,19 @@ export default function WeddingScreen() {
               <View style={styles.list}>
                 {upcomingEvents.map((event) => {
                   const d = new Date(event.startsAt);
-                  const month = d.getMonth() + 1;
-                  const day = d.getDate();
                   const diffDays =
                     now === null ? null : Math.ceil((d.getTime() - now) / (1000 * 60 * 60 * 24));
                   const dDayLabel =
                     diffDays === null ? null : diffDays <= 0 ? 'D-day' : `D-${diffDays}`;
-                  const timeStr = d.toLocaleTimeString('ko-KR', {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: true,
-                  });
+                  const timeStr = formatTimeHm(d);
                   const subText = event.location ? `${timeStr} · ${event.location}` : timeStr;
 
                   return (
                     <View key={event.id}>
                       <View style={styles.scheduleRow}>
                         <View style={styles.dateCol}>
-                          <ThemedText type="t7" themeColor="textAssistive">
-                            {month}월
-                          </ThemedText>
-                          <ThemedText type="t3" numeric>
-                            {day}
+                          <ThemedText type="t6" themeColor="textAssistive" numeric>
+                            {formatMonthDayDot(d)}
                           </ThemedText>
                         </View>
                         <View style={styles.rowContent}>

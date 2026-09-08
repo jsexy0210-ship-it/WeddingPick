@@ -82,12 +82,27 @@ export const REVIEW_ASPECTS: Partial<Record<VendorCategory, readonly ReviewAspec
     { key: 'response', label: '요청 반영' },
     { key: 'extra_cost', label: '추가비용' },
   ],
+  /* 헤어변형(v3.22) — 메이크업과 따로 센다. 시술과 스타일, 얼마나 가는지. */
+  hair: [
+    { key: 'treatment', label: '시술' },
+    { key: 'style', label: '스타일' },
+    { key: 'durability', label: '지속력' },
+    { key: 'staff', label: '직원 응대' },
+    { key: 'extra_cost', label: '추가비용' },
+  ],
   snap: [
     { key: 'result', label: '결과물' },
     { key: 'shooting', label: '촬영 진행' },
     { key: 'delivery', label: '전달 기간' },
     { key: 'staff', label: '직원 응대' },
     { key: 'extra_cost', label: '추가비용' },
+  ],
+  /* 부케(v3.22) — 당일 받는 꽃이라 신선도와 전달이 걸려 있다. */
+  bouquet: [
+    { key: 'design', label: '디자인' },
+    { key: 'freshness', label: '신선도' },
+    { key: 'delivery', label: '전달' },
+    { key: 'response', label: '요청 반영' },
   ],
   /* 혼수·청첩장은 물건을 받는 거래라 짧게 묻는다. */
   dowry: [

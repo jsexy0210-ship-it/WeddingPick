@@ -16,7 +16,6 @@ import {
   ErrorView,
   FilterChip,
   Layout,
-  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
@@ -24,6 +23,7 @@ import {
   ThemedView,
   useTheme,
 } from '@weddingpick/ui';
+import { DelayedLoader } from '@/features/loading/delayed-loader';
 
 /**
  * 필터 시트. WP-SRCH-005.
@@ -151,7 +151,7 @@ export default function FilterScreen() {
           <ThemedView style={styles.section}>
             <ThemedText type="smallBold">지역</ThemedText>
             {loadingRegions ? (
-              <LoadingView />
+              <DelayedLoader size={28} />
             ) : (
               <ThemedView style={styles.chips}>
                 {regions.map((r) => (

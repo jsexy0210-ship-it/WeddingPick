@@ -26,9 +26,9 @@ import {
   ThemedText,
   ThemedView,
   useTheme,
-  CategoryOrbitLoader,
   VendorImage,
 } from '@weddingpick/ui';
+import { DelayedRecommendingBody } from '@/features/loading/delayed-loader';
 
 /**
  * TOP3 전체보기. WP-HOME-004.
@@ -88,7 +88,7 @@ export default function Top3Screen() {
           ) : !data ? (
             /* 추천 계산 — 업종 순회 로딩(WP-ST-015). */
             <View style={styles.recommending}>
-              <CategoryOrbitLoader />
+              <DelayedRecommendingBody />
             </View>
           ) : data.items.length > 0 ? (
             <>
