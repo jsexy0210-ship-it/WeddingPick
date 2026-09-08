@@ -7,12 +7,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ErrorView,
   Layout,
-  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
   ThemedText,
   ThemedView,
+  SkeletonView,
 } from '@weddingpick/ui';
 import { listMyVendorClaims } from '@/api/client';
 
@@ -42,7 +42,7 @@ export default function MyVendorClaimsScreen() {
   }
 
   if (claims === null) {
-    return <LoadingView />;
+    return <SkeletonView />;
   }
 
   return (

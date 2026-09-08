@@ -4,10 +4,17 @@
  */
 import { useEffect, useState } from 'react';
 import {
-  ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 
-import { FontSize, LineHeight } from '@weddingpick/ui';
+import { FontSize, LineHeight, Spinner } from '@weddingpick/ui';
 import { apiFetch } from './_api';
 
 type FaqItem = {
@@ -124,7 +131,7 @@ export default function FaqScreen() {
         </Pressable>
       </View>
 
-      {loading && <View style={styles.centered}><ActivityIndicator color="#ff6f61" size="large" /></View>}
+      {loading && <View style={styles.centered}><Spinner size={40} /></View>}
       {!loading && error && (
         <View style={styles.centered}>
           <Text style={styles.errorText}>{error}</Text>

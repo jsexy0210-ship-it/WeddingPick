@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 
 import { getAnalysis } from '@/api/client';
-import { ErrorView, LoadingView } from '@weddingpick/ui';
+import { ErrorView, ProcessingView, type Step } from '@weddingpick/ui';
 
 const POLL_MS = 2000;
 
@@ -21,6 +21,8 @@ export default function AnalysisScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [failure, setFailure] = useState<keyof typeof FAILURE_MESSAGE | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** 서버가 말해준 단계. 큐 대기(pending) → 읽는 중(running). 그 이상은 서버가 모른다. */
+  const [phase, setPhase] = useState<'pending' | 'running'>('pending');
 
   useEffect(() => {
     let active = true;
@@ -41,6 +43,8 @@ export default function AnalysisScreen() {
           setFailure(analysis.reason);
           return;
         }
+
+        setPhase(analysis.status);
 
         timer = setTimeout(poll, POLL_MS);
       } catch (caught) {
@@ -67,7 +71,17 @@ export default function AnalysisScreen() {
     );
   }
 
+  /*
+   * WP-ST-012 처리 중 — 단계 표시. 서버가 알려주는 것은 «대기 → 읽는 중» 둘뿐이라
+   * 그만큼만 체크한다. 가짜 진행률을 만들지 않는다(핸드오프 규칙).
+   */
+  const steps: Step[] = [
+    { label: '글자 읽기', state: phase === 'running' ? 'done' : 'now' },
+    { label: '금액과 날짜 찾기', state: phase === 'running' ? 'now' : 'todo' },
+    { label: '업체 맞춰보기', state: 'todo' },
+  ];
+
   return (
-    <LoadingView label="업체·상품·금액·계약조건을 뽑아내는 중이에요. 잠시만 기다려주세요." />
+    <ProcessingView title={'올려주신 자료를\n읽고 있어요'} estimatedLabel="10초 안에 끝나요" steps={steps} />
   );
 }

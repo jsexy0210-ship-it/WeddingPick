@@ -1,11 +1,11 @@
 import { POLICY_DOCUMENTS, dDay } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
-import { ActionButton, Colors, Layout, MaxContentWidth, Radius, SocialLogo, Spacing, ThemedText, ThemedView, WeddingMark, useTheme } from '@weddingpick/ui';
+import { ActionButton, Colors, Layout, MaxContentWidth, Radius, SocialLogo, Spacing, ThemedText, ThemedView, WeddingMark, useTheme, Spinner } from '@weddingpick/ui';
 import { LoginFailureSheet } from '@/features/auth/login-failure-sheet';
 import { canSignInWith, providerTone, useAuthProviders } from '@/features/auth/providers';
 import { loadRememberedAccount, type RememberedAccount } from '@/features/auth/remembered-account';
@@ -133,7 +133,7 @@ export default function LoginScreen() {
                * 로그인 폼이 떠 있으면 «다시 로그인하라는 건가» 하고 읽힌다.
                */
               <ThemedView style={styles.busy}>
-                <ActivityIndicator color={theme.tint} />
+                <Spinner size={24} />
                 {busy ? (
                   <ThemedText type="small" themeColor="textAssistive">
                     카카오로 로그인하는 중이에요

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { FontSize, Spinner } from '@weddingpick/ui';
 import { API_URL } from '@/api/config';
 import { loadToken } from '@/api/session';
 
@@ -100,7 +100,7 @@ export default function QueueScreen() {
 
       <View style={styles.body}>
         <View style={styles.list}>
-          {loading && <ActivityIndicator style={styles.centered} color="#ff6f61" />}
+          {loading && <Spinner size={32} style={styles.centered} />}
           {!loading && error && <Text style={styles.errorText}>{error}</Text>}
           {!loading && !error && (
             <ScrollView>

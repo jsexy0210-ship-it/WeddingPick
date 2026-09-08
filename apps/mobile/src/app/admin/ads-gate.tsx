@@ -3,9 +3,9 @@
  * 테스트 전체 오픈 → 데이터 축적 → AI 독립 분석 → 보고서 → 최종 결정 → 실운영
  */
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { FontSize, LineHeight } from '@weddingpick/ui';
+import { FontSize, LineHeight, Spinner } from '@weddingpick/ui';
 import { apiFetch } from './_api';
 
 type GateStepStatus = 'done' | 'in_progress' | 'pending' | 'blocked';
@@ -83,7 +83,7 @@ export default function AdsGateScreen() {
         </Pressable>
       </View>
 
-      {loading && <View style={styles.centered}><ActivityIndicator color="#ff6f61" size="large" /></View>}
+      {loading && <View style={styles.centered}><Spinner size={40} /></View>}
       {!loading && error && (
         <View style={styles.centered}>
           <Text style={styles.errorText}>{error}</Text>

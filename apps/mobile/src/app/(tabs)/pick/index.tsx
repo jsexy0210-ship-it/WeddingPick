@@ -6,7 +6,7 @@ import {
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
@@ -22,6 +22,7 @@ import {
   VendorImage,
   readWebInteractionState,
   useTheme,
+  Spinner,
 } from '@weddingpick/ui';
 import { getCurrentUser, listCandidates } from '@/api/client';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
@@ -112,7 +113,7 @@ export default function PickScreen() {
             </ScrollView>
           ) : !me ? (
             <View style={styles.loadingCenter}>
-              <ActivityIndicator color={theme.tint} />
+              <Spinner size={40} />
             </View>
           ) : !me.weddingId || !page || !hasAnyPick ? (
             /* ── 비어 있음 상태 ── */

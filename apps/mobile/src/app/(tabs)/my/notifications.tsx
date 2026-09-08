@@ -9,13 +9,13 @@ import {
   ActionButton,
   ErrorView,
   Layout,
-  LoadingView,
   MaxContentWidth,
   readWebInteractionState,
   Spacing,
   ThemedText,
   ThemedView,
   useTheme,
+  SkeletonView,
 } from '@weddingpick/ui';
 import { listNotifications, readAllNotifications, readNotification } from '@/api/client';
 
@@ -116,7 +116,7 @@ export default function NotificationsScreen() {
   }
 
   if (notifications === null) {
-    return <LoadingView />;
+    return <SkeletonView />;
   }
 
   return (

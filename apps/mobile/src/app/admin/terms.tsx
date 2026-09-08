@@ -4,10 +4,16 @@
  */
 import { useEffect, useState } from 'react';
 import {
-  ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 
-import { FontSize, LineHeight } from '@weddingpick/ui';
+import { FontSize, LineHeight, Spinner } from '@weddingpick/ui';
 import { apiFetch } from './_api';
 
 type DocType = 'terms' | 'privacy' | 'marketing';
@@ -120,7 +126,7 @@ export default function TermsScreen() {
         </Pressable>
       </View>
 
-      {loading && <View style={styles.centered}><ActivityIndicator color="#ff6f61" size="large" /></View>}
+      {loading && <View style={styles.centered}><Spinner size={40} /></View>}
       {!loading && error && (
         <View style={styles.centered}>
           <Text style={styles.errorText}>{error}</Text>

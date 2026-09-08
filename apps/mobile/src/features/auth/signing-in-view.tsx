@@ -1,6 +1,6 @@
-import { ActivityIndicator, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 
-import { Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
+import { Spacing, ThemedText, ThemedView, Spinner } from '@weddingpick/ui';
 
 /**
  * 카카오에서 같은 창으로 돌아온 직후, 코드를 세션으로 바꾸는 동안 보이는 화면.
@@ -11,11 +11,10 @@ import { Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
  * 이어지는 한 단계라는 것만 보인다. 끝나면 온보딩/홈으로 곧장 간다.
  */
 export function SigningInView() {
-  const theme = useTheme();
 
   return (
     <ThemedView style={styles.container}>
-      <ActivityIndicator size="large" color={theme.tint} />
+      <Spinner size={40} />
       <ThemedText type="small" themeColor="textAssistive">
         카카오로 로그인하는 중이에요
       </ThemedText>

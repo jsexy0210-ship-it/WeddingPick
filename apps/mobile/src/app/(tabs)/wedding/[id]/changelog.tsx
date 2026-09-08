@@ -9,13 +9,13 @@ import {
   ActionButton,
   ErrorView,
   Layout,
-  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
   ThemedText,
   ThemedView,
   useTheme,
+  SkeletonView,
 } from '@weddingpick/ui';
 import { listNotifications, readAllNotifications } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
@@ -98,7 +98,7 @@ export default function ChangelogScreen() {
   }
 
   if (notifications === null) {
-    return <LoadingView />;
+    return <SkeletonView />;
   }
 
   // 날짜별 묶기

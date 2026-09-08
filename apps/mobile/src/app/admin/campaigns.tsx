@@ -3,9 +3,9 @@
  * 미션 · 친구초대 · 홍보인증 · 지원금 · 예산 · 지급 상태 · 어뷰징
  */
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { FontSize, Spinner } from '@weddingpick/ui';
 import { apiFetch } from './_api';
 
 type CampaignType = 'mission' | 'referral' | 'promo_cert' | 'grant';
@@ -97,7 +97,7 @@ export default function CampaignsScreen() {
         </Pressable>
       </View>
 
-      {loading && <View style={styles.centered}><ActivityIndicator color="#ff6f61" size="large" /></View>}
+      {loading && <View style={styles.centered}><Spinner size={40} /></View>}
       {!loading && error && (
         <View style={styles.centered}>
           <Text style={styles.errorText}>{error}</Text>

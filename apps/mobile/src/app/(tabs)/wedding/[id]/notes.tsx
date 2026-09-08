@@ -17,7 +17,6 @@ import {
   Fab,
   FilterChip,
   Layout,
-  LoadingView,
   MaxContentWidth,
   Radius,
   showAlert,
@@ -25,6 +24,7 @@ import {
   ThemedText,
   ThemedView,
   useTheme,
+  SkeletonView,
 } from '@weddingpick/ui';
 
 type Filter = 'all' | 'vendor' | 'free';
@@ -107,7 +107,7 @@ export default function WeddingNotesScreen() {
   }
 
   if (!page) {
-    return <LoadingView />;
+    return <SkeletonView />;
   }
 
   const isEmpty = page.notes.length === 0;

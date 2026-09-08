@@ -10,7 +10,6 @@ import {
   ErrorView,
   Fab,
   Layout,
-  LoadingView,
   MaxContentWidth,
   Radius,
   showAlert,
@@ -19,6 +18,7 @@ import {
   ThemedView,
   WeddingCalendar,
   useTheme,
+  SkeletonView,
 } from '@weddingpick/ui';
 import { won } from '@/features/quotes/quote-result-view';
 
@@ -54,7 +54,7 @@ export default function VisitNotesScreen() {
   }
 
   if (!page) {
-    return <LoadingView />;
+    return <SkeletonView />;
   }
 
   const ready = vendor.trim().length > 0 && visitedOn !== null;

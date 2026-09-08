@@ -2,7 +2,7 @@ import type { ReviewListResponse } from '@weddingpick/api-contract';
 import { TERMS, type ReportReason } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listReportReasons, listVendorReviews, reportReview } from '@/api/client';
@@ -15,6 +15,7 @@ import {
   ThemedText,
   ThemedView,
   useTheme,
+  ListSkeleton,
 } from '@weddingpick/ui';
 
 /** "2026년 8월 28일" */
@@ -75,7 +76,7 @@ export default function VendorReviewsScreen() {
   if (!page) {
     return (
       <Frame>
-        <ActivityIndicator color={theme.tint} />
+        <ListSkeleton />
       </Frame>
     );
   }

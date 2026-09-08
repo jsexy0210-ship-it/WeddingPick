@@ -1,31 +1,51 @@
 import { StyleSheet, View } from 'react-native';
 
-import { Radius } from './theme';
+import { Radius, Spacing } from './theme';
 import { Skeleton } from './skeleton';
+import { useTheme } from './use-theme';
 
 export type ListSkeletonProps = {
-  /** 그릴 행 수. 목록은 3줄까지만 뼈대를 그린다. */
+  /** 그릴 행 수. 목록은 3줄까지만 뼈대를 그린다 — 4줄 이상은 실제 내용보다 뼈대가 기억된다. */
   rows?: 1 | 2 | 3;
+  /** 히어로가 있는 화면(업체 상세)은 168 블록 + 제목 20 + 메타 15를 먼저 그린다. */
+  hero?: boolean;
 };
 
-/** WP-ST-007 — 목록 로딩 스켈레톤. 썸네일 + 두 줄 텍스트 패턴. */
-export function ListSkeleton({ rows = 3 }: ListSkeletonProps) {
+/** 시안 고정 — 썸네일 52 · 바 16/13 · 히어로 168 · 제목 20 · 메타 15. */
+const THUMB = 52;
+const HERO = 168;
+
+/**
+ * WP-ST-007 — 목록 뼈대. 썸네일 52 + 바 두 줄(16 · 13) 패턴, 1400ms 숨쉬기.
+ * 목록에는 스피너를 쓰지 않는다.
+ */
+export function ListSkeleton({ rows = 3, hero = false }: ListSkeletonProps) {
+  const theme = useTheme();
   const widths = [
-    ['72%', '48%'],
-    ['58%', '40%'],
-    ['66%', '44%'],
+    ['72%', '46%'],
+    ['58%', '38%'],
+    ['66%', '42%'],
   ] as const;
 
   return (
     <View style={styles.container}>
+      {hero ? (
+        <>
+          <Skeleton height={HERO} radius={Radius.medium} />
+          <Skeleton width="62%" height={20} />
+          <Skeleton width="38%" height={15} style={{ backgroundColor: theme.backgroundElement }} />
+          <View style={[styles.divider, { backgroundColor: theme.backgroundSelected }]} />
+        </>
+      ) : null}
       {Array.from({ length: rows }, (_, i) => {
         const [w1, w2] = widths[i % 3]!;
+
         return (
           <View key={i} style={styles.row}>
-            <Skeleton width={44} height={44} radius={Radius.small} />
+            <Skeleton width={THUMB} height={THUMB} radius={Radius.small} />
             <View style={styles.lines}>
-              <Skeleton width={w1} height={14} />
-              <Skeleton width={w2} height={12} />
+              <Skeleton width={w1} height={16} />
+              <Skeleton width={w2} height={13} style={{ backgroundColor: theme.backgroundElement }} />
             </View>
           </View>
         );
@@ -35,7 +55,8 @@ export function ListSkeleton({ rows = 3 }: ListSkeletonProps) {
 }
 
 const styles = StyleSheet.create({
-  container: { gap: 20 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  lines: { flex: 1, gap: 7 },
+  container: { gap: Spacing.three },
+  divider: { height: 1, marginVertical: Spacing.one },
+  row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, paddingVertical: 6 },
+  lines: { flex: 1, gap: Spacing.two },
 });

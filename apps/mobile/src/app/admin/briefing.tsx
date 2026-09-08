@@ -3,9 +3,9 @@
  * 자동처리 · 성공률 · 자동복구 · 미해결 리스크 · AI비용 · 수익 · 특이사항
  */
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { FontSize, LineHeight } from '@weddingpick/ui';
+import { FontSize, LineHeight, Spinner } from '@weddingpick/ui';
 import { apiFetch } from './_api';
 
 type RiskItem = { id: string; category: string; description: string; severity: 'high' | 'medium' | 'low' };
@@ -74,7 +74,7 @@ export default function BriefingScreen() {
 
       {loading && (
         <View style={styles.centered}>
-          <ActivityIndicator color="#ff6f61" size="large" />
+          <Spinner size={40} />
         </View>
       )}
       {!loading && error && (

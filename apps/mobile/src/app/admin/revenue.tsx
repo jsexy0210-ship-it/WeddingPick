@@ -3,9 +3,9 @@
  * 획득비용 → 유입 → 데이터 기여 → 비교 → 리드 → 수익 → 보상비 → AI비용 → 기여이익
  */
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { FontSize, Spinner } from '@weddingpick/ui';
 import { apiFetch } from './_api';
 
 type FunnelStep = {
@@ -65,7 +65,7 @@ export default function RevenueScreen() {
         </Pressable>
       </View>
 
-      {loading && <View style={styles.centered}><ActivityIndicator color="#ff6f61" size="large" /></View>}
+      {loading && <View style={styles.centered}><Spinner size={40} /></View>}
       {!loading && error && (
         <View style={styles.centered}>
           <Text style={styles.errorText}>{error}</Text>
