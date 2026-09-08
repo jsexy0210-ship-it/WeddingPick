@@ -16,6 +16,7 @@ import {
   type TasteCategory,
 } from '@/features/home/taste';
 import { TastePicker } from '@/features/home/taste-picker';
+import { nextTasteCategoryWithImages } from '@/features/taste/images';
 import {
   ActionButton,
   Layout,
@@ -30,8 +31,10 @@ import { DelayedLoadingView } from '@/features/loading/delayed-loader';
  * 취향 다시 고르기. WP-MY-004.
  *
  * MY 탭에서 진입해 기존에 고른 취향을 다시 선택하거나 바꾼다. 온보딩 5/5와 같은
- * 규칙이다(SPEC §13.6) — **준비 현황에서 아직 안 끝낸 첫 업종** 한 세트만 묻고,
- * 그 업종의 여섯 장 중 최소 한 장을 받는다. 저장돼 있던 업종이 지금 물을 업종과
+ * 규칙이다(SPEC §13.6) — **준비 현황에서 아직 안 끝낸 업종 중 사진이 3장 이상인
+ * 첫 업종** 한 세트만 묻고(IMAGES.md «이미지가 없을 때»), 그 업종의 여섯 장 중
+ * 최소 한 장을 받는다. 온보딩은 그런 업종이 없으면 건너뛰지만 이 화면은 비워 둘 수
+ * 없어 사진 없는 첫 업종으로 돌아간다(`tasteCategoryFor`). 저장돼 있던 업종이 지금 물을 업종과
  * 다르면(그사이 그 업종을 «이미 정했다»로 바꿨다면) 빈 격자에서 다시 고른다 —
  * 다른 업종의 선택을 체크된 것처럼 그리지 않는다.
  *
@@ -52,7 +55,8 @@ export default function TasteScreen() {
       getCurrentUser().catch(() => null),
       loadTaste(),
     ]).then(([me, stored]) => {
-      const category = tasteCategoryFor(me?.preparedCategories ?? []);
+      const prepared = me?.preparedCategories ?? [];
+      const category = nextTasteCategoryWithImages(prepared) ?? tasteCategoryFor(prepared);
 
       setLoaded({ category, chosen: chosenKeysFor(stored, category) });
     });

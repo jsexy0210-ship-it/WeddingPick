@@ -1,38 +1,77 @@
-import { CALENDAR_CELLS, chunk, isPastMonth, monthGrid, splitIso, toIso, yearOptions } from './calendar';
+import {
+  WHEEL_HEIGHT,
+  WHEEL_PAD,
+  WHEEL_ROW,
+  chunk,
+  clampDay,
+  dayOptions,
+  daysInMonth,
+  firstSelectable,
+  monthOptions,
+  normalizeWheelDate,
+  splitIso,
+  toIso,
+  wheelIndexFromOffset,
+  yearOptions,
+} from './calendar';
 
-describe('달력 격자', () => {
-  it('2027년 5월은 앞 타월 6칸 · 31일 · 뒤 타월로 42칸을 채운다 (시안 MAY27)', () => {
-    const cells = monthGrid(2027, 5);
-
-    expect(cells).toHaveLength(CALENDAR_CELLS);
-    /* 4/25(일)부터 시작 — 1일이 토요일이라 앞에 여섯 칸. */
-    expect(cells.slice(0, 6).map((cell) => cell.day)).toEqual([25, 26, 27, 28, 29, 30]);
-    expect(cells.slice(0, 6).every((cell) => !cell.inMonth)).toBe(true);
-    expect(cells[6]).toEqual({ iso: '2027-05-01', day: 1, inMonth: true, weekday: 6 });
-    expect(cells.filter((cell) => cell.inMonth)).toHaveLength(31);
-    /* 15일이 토요일이다 — 시안의 «16(토)»는 실제 달력과 하루 어긋난 예시값이다. */
-    expect(cells.find((cell) => cell.iso === '2027-05-15')?.weekday).toBe(6);
-    expect(cells[37]).toEqual({ iso: '2027-06-01', day: 1, inMonth: false, weekday: 2 });
+describe('휠 3열 날짜 계산', () => {
+  it('휠 규격 — 행 48 · 5행 · 240 · 상하 패딩 96 (SPEC §13.6)', () => {
+    expect(WHEEL_ROW).toBe(48);
+    expect(WHEEL_HEIGHT).toBe(240);
+    expect(WHEEL_PAD).toBe(96);
   });
 
-  it('일요일에서 시작하는 달도 42칸이다', () => {
-    const cells = monthGrid(2026, 11);
+  it('달의 날 수 — 윤년 2월은 29일', () => {
+    expect(daysInMonth(2027, 5)).toBe(31);
+    expect(daysInMonth(2027, 2)).toBe(28);
+    expect(daysInMonth(2028, 2)).toBe(29);
+    expect(dayOptions(2027, 4)).toHaveLength(30);
+    expect(dayOptions(2027, 4)[0]).toBe(1);
+  });
 
-    expect(cells[0]).toEqual({ iso: '2026-11-01', day: 1, inMonth: true, weekday: 0 });
-    expect(cells).toHaveLength(CALENDAR_CELLS);
+  it('월을 바꿔 없는 날짜가 되면 그 달 마지막 날로 당긴다', () => {
+    /* 1월 31일에서 2월로 굴리면 2월 28일. */
+    expect(clampDay(2027, 2, 31)).toBe(28);
+    expect(clampDay(2028, 2, 31)).toBe(29);
+    expect(clampDay(2027, 5, 16)).toBe(16);
+    expect(clampDay(2027, 5, 0)).toBe(1);
+  });
+
+  it('스크롤 오프셋을 가까운 행으로 읽고 목록 밖은 끝으로 막는다', () => {
+    expect(wheelIndexFromOffset(0, 12)).toBe(0);
+    expect(wheelIndexFromOffset(48 * 4, 12)).toBe(4);
+    expect(wheelIndexFromOffset(48 * 4 + 23, 12)).toBe(4);
+    expect(wheelIndexFromOffset(48 * 4 + 25, 12)).toBe(5);
+    expect(wheelIndexFromOffset(-30, 12)).toBe(0);
+    expect(wheelIndexFromOffset(48 * 20, 12)).toBe(11);
+  });
+
+  it('과거는 목록에 없다 — 첫 해는 내일이 속한 달부터, 첫 달은 내일부터', () => {
+    const first = firstSelectable(new Date(2026, 8, 8, 8, 30));
+
+    expect(first).toEqual({ year: 2026, month: 9, day: 9 });
+    expect(monthOptions(2026, first)).toEqual([9, 10, 11, 12]);
+    expect(monthOptions(2027, first)).toHaveLength(12);
+    expect(dayOptions(2026, 9, first)[0]).toBe(9);
+    expect(dayOptions(2026, 9, first)).toHaveLength(22);
+    expect(dayOptions(2026, 10, first)[0]).toBe(1);
+    /* 12월 31일의 «내일»은 다음 해다. */
+    expect(firstSelectable(new Date(2026, 11, 31))).toEqual({ year: 2027, month: 1, day: 1 });
+  });
+
+  it('휠을 굴린 뒤 나머지 값을 목록 안으로 맞춘다', () => {
+    const first = { year: 2026, month: 9, day: 9 };
+
+    /* 2027년 1월 31일에서 월을 2월로 → 2월 28일. */
+    expect(normalizeWheelDate({ year: 2027, month: 2, day: 31 }, first)).toEqual({ year: 2027, month: 2, day: 28 });
+    /* 2027년 3월 5일에서 연도를 2026년으로 → 3월은 목록에 없어 9월, 5일은 9일로. */
+    expect(normalizeWheelDate({ year: 2026, month: 3, day: 5 }, first)).toEqual({ year: 2026, month: 9, day: 9 });
+    expect(normalizeWheelDate({ year: 2027, month: 5, day: 16 }, first)).toEqual({ year: 2027, month: 5, day: 16 });
   });
 
   it('연도는 올해부터 5년 뒤까지 여섯 개다', () => {
     expect(yearOptions(new Date(2026, 8, 8))).toEqual([2026, 2027, 2028, 2029, 2030, 2031]);
-  });
-
-  it('오늘이 속한 달보다 앞은 지난 달이다', () => {
-    const today = new Date(2026, 8, 8);
-
-    expect(isPastMonth(2026, 8, today)).toBe(true);
-    expect(isPastMonth(2026, 9, today)).toBe(false);
-    expect(isPastMonth(2025, 12, today)).toBe(true);
-    expect(isPastMonth(2027, 1, today)).toBe(false);
   });
 
   it('iso 왕복', () => {
