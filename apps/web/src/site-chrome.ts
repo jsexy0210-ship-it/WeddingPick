@@ -67,7 +67,7 @@ function gnb(current: string | null): string {
         <div class="side">
           <!--
             로그인은 앱에서 한다. 웹에 로그인 칸을 두면 웹에서 계정을 만들 수 있다는
-            말이 되고, 우리웨딩·Pick은 웹에 없어서 만들어도 볼 것이 없다.
+            말이 되고, 웨딩일정·Pick은 웹에 없어서 만들어도 볼 것이 없다.
           -->
           <a class="btn btn-primary btn-sm" href="#app">앱에서 시작하기</a>
         </div>
@@ -139,7 +139,7 @@ function footer(): string {
 function appAnchor(): string {
   return `<section id="app" class="wrap" style="padding-block:0 64px">
       <p class="pending">
-        ${escapeHtml(TERMS.pick)}과 우리웨딩은 앱에서 이어져요. 앱은 출시 준비 중이고,
+        ${escapeHtml(TERMS.pick)}과 웨딩일정은 앱에서 이어져요. 앱은 출시 준비 중이고,
         준비되면 이 자리에 받는 곳을 적어요.
       </p>
     </section>`;

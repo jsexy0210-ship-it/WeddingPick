@@ -23,6 +23,7 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import {
+  ensureWedding,
   getCurrentUser,
   getExpenses,
   getWeddingInvite,
@@ -31,7 +32,11 @@ import {
 } from '@/api/client';
 import { useSession } from '@/features/auth/use-session';
 
-type CoupleStatus = 'guest' | 'no-wedding' | 'unlinked' | 'pending' | 'linked';
+/**
+ * 배우자 상태 — 혼자 · 초대 보냄 · 배우자와 함께(v3.16). «미연결»이라는 이름을
+ * 쓰지 않는다 — 혼자인 상태는 결핍이 아니다.
+ */
+type CoupleStatus = 'guest' | 'solo' | 'invited' | 'together';
 
 type WeddingData = {
   me: CurrentUser | null;
@@ -50,15 +55,15 @@ const EMPTY: WeddingData = {
 };
 
 /**
- * 우리웨딩 홈 · WP-OUR-001.
+ * 웨딩일정 홈 · WP-OUR-001 (v3.16).
  *
- * 커플 연결 상태에 따라 세 화면이 된다.
- * - 비로그인: 로그인 CTA
- * - 미연결: 배우자 초대 CTA
- * - 초대 대기: 수락 대기 안내
- * - 연결됨: D-day 히어로 · 일정 · 지출 · 준비현황
+ * **혼자서도 전면 개방.** 배우자 연결을 전제로 기능을 잠그던 정책은 폐기했다.
+ * D-day · 다음 일정 · 지출 · 준비현황 · 메모는 혼자든 둘이든 완전히 같다.
+ * 두 상태는 같은 화면이고 다른 것은 둘뿐이다 — 헤더 아바타 1개/2개, 하단
+ * «우리둘» 카드(초대하기 버튼 유무). 화면을 두 개 만들지 않는다.
  *
- * 비회원에게 개인화 영역(이름 · D-day · 진행률)을 보이지 않는다.
+ * 배우자 초대는 보조 기능이라 진입점이 하단 카드 한 곳(과 MY · 배우자 연결
+ * 관리)뿐이다. 혼자인 상태를 결핍으로 적지 않는다.
  */
 export default function WeddingScreen() {
   const theme = useTheme();
@@ -85,7 +90,13 @@ export default function WeddingScreen() {
 
     void Promise.resolve().then(() => setLoading(true));
     void getCurrentUser()
-      .then(async (me) => {
+      .then(async (first) => {
+        /*
+         * 웨딩이 아직 없으면 만든다 — 혼자서도 전면 개방이라 여기서 막을 이유가
+         * 없다. 온보딩이 지역을 받으며 이미 만들어 두므로 거의 오지 않는 길이다.
+         */
+        const me = first.weddingId ? first : await ensureWedding().then(() => getCurrentUser());
+
         setData((prev) => ({ ...prev, me }));
 
         if (!me.weddingId) {
@@ -122,13 +133,15 @@ export default function WeddingScreen() {
   const coupleStatus: CoupleStatus = (() => {
     if (state.status === 'signedOut') return 'guest';
     if (!data.me) return 'guest';
-    if (!data.me.weddingId) return 'no-wedding';
-    if (data.me.spouseLinked) return 'linked';
-    if (data.invite?.invite) return 'pending';
-    return 'unlinked';
+    if (data.me.spouseLinked) return 'together';
+    if (data.invite?.invite) return 'invited';
+    return 'solo';
   })();
 
-  const initial = data.me?.displayName?.slice(0, 1) ?? '나';
+  const myName = data.me?.displayName ?? null;
+  const partnerName = data.me?.partnerDisplayName ?? null;
+  const initial = myName?.slice(0, 1) ?? '나';
+  const partnerInitial = partnerName?.slice(0, 1) ?? '배';
 
   // 다음 일정: upcoming 상태만 startsAt 순으로 최대 2개
   const upcomingEvents = (data.events?.events ?? [])
@@ -156,24 +169,27 @@ export default function WeddingScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         {/* 헤더 */}
         <View style={[styles.header, { borderBottomColor: theme.border }]}>
-          <ThemedText type="t4">우리웨딩</ThemedText>
-          {coupleStatus === 'linked' && (
+          <ThemedText type="t4">웨딩일정</ThemedText>
+          {/* 아바타 — 혼자면 1개, 배우자와 함께면 2개 겹침. 이것 말고 두 상태의 차이는 하단 카드뿐이다. */}
+          {coupleStatus !== 'guest' && (
             <View style={styles.avatarRow}>
               <View style={[styles.avatarSm, { backgroundColor: theme.tintSubtle }]}>
                 <ThemedText type="badge" themeColor="tint">
                   {initial}
                 </ThemedText>
               </View>
-              <View
-                style={[
-                  styles.avatarSm,
-                  styles.avatarSmOverlap,
-                  { backgroundColor: theme.backgroundSelected },
-                ]}>
-                <ThemedText type="badge" themeColor="textSecondary">
-                  배
-                </ThemedText>
-              </View>
+              {coupleStatus === 'together' ? (
+                <View
+                  style={[
+                    styles.avatarSm,
+                    styles.avatarSmOverlap,
+                    { backgroundColor: theme.backgroundSelected },
+                  ]}>
+                  <ThemedText type="badge" themeColor="textSecondary">
+                    {partnerInitial}
+                  </ThemedText>
+                </View>
+              ) : null}
             </View>
           )}
         </View>
@@ -188,7 +204,7 @@ export default function WeddingScreen() {
             <View style={styles.emptyBlock}>
               <ThemedText type="t2">로그인 후{'\n'}이용할 수 있어요</ThemedText>
               <ThemedText type="body" themeColor="textSecondary">
-                우리웨딩은 로그인한 커플을 위한 공간이에요
+                일정 · 지출 · 준비현황을 한곳에서 볼 수 있어요
               </ThemedText>
               <ActionButton
                 variant="primary"
@@ -198,44 +214,11 @@ export default function WeddingScreen() {
             </View>
           )}
 
-          {/* ── 웨딩 없음 또는 미연결 ── */}
-          {(coupleStatus === 'no-wedding' || coupleStatus === 'unlinked') && (
-            <View style={styles.emptyBlock}>
-              <ThemedText type="t2">배우자와{'\n'}함께 준비해요</ThemedText>
-              <ThemedText type="body" themeColor="textSecondary">
-                Pick한 곳 · 일정 · 지출을 함께 볼 수 있어요
-              </ThemedText>
-              <ActionButton
-                variant="primary"
-                label="배우자 초대하기"
-                onPress={() => router.push('/wedding/partner')}
-              />
-            </View>
-          )}
-
-          {/* ── 초대 대기 ── */}
-          {coupleStatus === 'pending' && (
-            <View style={styles.emptyBlock}>
-              <ThemedText type="t2">배우자 수락{'\n'}대기 중</ThemedText>
-              <ThemedText type="body" themeColor="textSecondary">
-                초대 링크를 전달했나요? 수락하면 바로 연결돼요
-              </ThemedText>
-              <ActionButton
-                label="초대 취소"
-                onPress={() => router.push('/wedding/partner')}
-              />
-            </View>
-          )}
-
-          {/* ── 연결됨 ── */}
-          {coupleStatus === 'linked' && (
+          {/* ── 로그인했으면 전부 열린다 — 혼자든 배우자와 함께든 같은 화면 ── */}
+          {coupleStatus !== 'guest' && (
             <>
-              {/* D-Day 히어로 */}
-              <View
-                style={[
-                  styles.hero,
-                  { backgroundColor: theme.backgroundElement },
-                ]}>
+              {/* D-Day 히어로 — 배경 상자 없이 글과 진행바만(목업). */}
+              <View style={styles.hero}>
                 {loading && !weddingDate ? (
                   <>
                     <Skeleton width="60%" height={35} />
@@ -432,6 +415,8 @@ export default function WeddingScreen() {
                         ))}
                       </View>
                     )}
+                    {/* 지출은 Pick 인증에서 온다 — 제보 진입 4곳 중 하나(웨딩일정 지출). */}
+                    <ActionButton label="Pick 인증하기" onPress={() => router.push('/capture' as never)} />
                   </>
                 ) : null}
               </View>
@@ -554,6 +539,41 @@ export default function WeddingScreen() {
                   </Pressable>
                 </View>
               </View>
+
+              {/* 밴드 */}
+              <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} />
+
+              {/*
+                우리둘 — 배우자 초대의 유일한 진입점(MY 배우자 연결 관리 말고는).
+                혼자면 초대하기 버튼, 함께면 문장만. 기능을 잠그거나 흐리게 하지 않는다.
+              */}
+              <View style={styles.section}>
+                <View style={[styles.coupleCard, { backgroundColor: theme.backgroundElement }]}>
+                  <View style={styles.coupleText}>
+                    <ThemedText type="t7" themeColor="textAssistive" style={styles.bold}>
+                      우리둘
+                    </ThemedText>
+                    {coupleStatus === 'together' ? (
+                      <ThemedText type="t5">
+                        {myName ?? '나'}님과 {partnerName ?? '배우자'}님이{'\n'}함께 준비하고 있어요
+                      </ThemedText>
+                    ) : (
+                      <ThemedText type="t5">함께 Pick하고 준비해요</ThemedText>
+                    )}
+                    {coupleStatus === 'invited' ? (
+                      <ThemedText type="t7" themeColor="textAssistive">
+                        초대를 보냈어요 · 수락하면 바로 같이 볼 수 있어요
+                      </ThemedText>
+                    ) : null}
+                  </View>
+                  {coupleStatus !== 'together' ? (
+                    <ActionButton
+                      label={coupleStatus === 'invited' ? '초대 관리' : '초대하기'}
+                      onPress={() => router.push('/wedding/partner')}
+                    />
+                  ) : null}
+                </View>
+              </View>
             </>
           )}
         </ScrollView>
@@ -603,13 +623,21 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.four,
     gap: Spacing.three,
   },
+  /* 목업: padding 12 24 26 · 배경 없음. */
   hero: {
-    marginHorizontal: Layout.gutter,
-    marginTop: Spacing.three,
-    marginBottom: Spacing.four,
-    borderRadius: Radius.medium,
-    padding: Layout.gutter,
+    paddingHorizontal: Layout.gutter,
+    paddingTop: Layout.rowPaddingY,
+    paddingBottom: Spacing.four,
     gap: Spacing.two,
+  },
+  /* 우리둘 카드 — radius 10 · padding 20 · 요소 사이 14. */
+  coupleCard: {
+    borderRadius: Radius.medium,
+    padding: Layout.cardPadding,
+    gap: Spacing.three,
+  },
+  coupleText: {
+    gap: Spacing.one,
   },
   progressRow: {
     flexDirection: 'row',

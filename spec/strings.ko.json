@@ -192,7 +192,7 @@
     "categoryHint": "둘 다 고른 곳부터 비교해보세요",
     "decideTitle": "{category}는 {vendor}로 결정할까요?",
     "decideNote1": "{partner}님도 Pick한 곳이에요",
-    "decideNote2": "우리웨딩 준비현황과 지출에 자동으로 반영돼요",
+    "decideNote2": "웨딩일정 준비현황과 지출에 자동으로 반영돼요",
     "decideNote3": "결정은 언제든 바꿀 수 있어요",
     "doneTitle": "{category} 준비 완료",
     "doneBody": "{vendor}로 결정했어요",
@@ -204,7 +204,7 @@
   },
 
   "ourWedding": {
-    "title": "우리웨딩",
+    "title": "웨딩일정",
     "heroTogether": "{partner}님과 함께\n{n}가지를 끝냈어요",
     "progress": "{done}/{total} 완료",
     "section.nextSchedule": "다음 일정",
@@ -311,7 +311,7 @@
     "submitted.title": "제보 접수됐어요",
     "submitted.sub": "하루 안에 확인이 끝나요",
     "submitted.next": "확인이 끝나면 알림으로 알려드려요",
-    "submitted.spend": "우리웨딩 지출에 {amount}이 더해졌어요",
+    "submitted.spend": "웨딩일정 지출에 {amount}이 더해졌어요",
     "submitted.origin": "올려주신 사진은 24시간 뒤 삭제돼요",
     "log.title": "내 제보 내역",
     "log.hero": "{total}건 제보했고\n{done}건이 반영됐어요",

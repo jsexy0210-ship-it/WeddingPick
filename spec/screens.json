@@ -13,12 +13,12 @@
       { "id": "home",   "label": "홈",      "screen": "WP-HOME-001", "role": "웨딩픽이 지금 필요한 것을 먼저 제안" },
       { "id": "search", "label": "검색",    "screen": "WP-SRCH-001", "role": "사용자가 직접 찾음. 추천 문구를 넣지 않는 유일한 탭" },
       { "id": "pick",   "label": "Pick",    "screen": "WP-PICK-001", "role": "후보를 모으고 비교해서 최종 결정" },
-      { "id": "couple", "label": "우리웨딩", "screen": "WP-OUR-001",  "role": "결정한 뒤 일정 · 지출 · 준비 관리" },
+      { "id": "couple", "label": "웨딩일정", "screen": "WP-OUR-001",  "role": "결정한 뒤 일정 · 지출 · 준비 관리. 혼자서도 전면 개방" },
       { "id": "my",     "label": "MY",      "screen": "WP-MY-001",   "role": "계정 · 제보 · 혜택 · 설정" }
     ],
     "reportEntryPoints": {
       "$rule": "제보는 Root에 없다. 아래 4곳에서만 맥락형으로 진입한다. 4곳의 문구와 위치를 통일한다.",
-      "points": ["MY 제보 메뉴", "업체상세 확인된 정보 하단", "정보 부족 화면", "우리웨딩 지출 화면"]
+      "points": ["MY 제보 메뉴", "업체상세 확인된 정보 하단", "정보 부족 화면", "웨딩일정 지출 화면"]
     }
   },
 
@@ -111,7 +111,7 @@
     { "id": "WP-PICK-005", "name": "최종 결정 확인", "type": "sheet" },
     { "id": "WP-PICK-006", "name": "결정 완료", "motion": ["checkPop", "ringSpread", "rise ×3"], "sections": ["체크 링", "반영 3건", "다음 카테고리 추천"] },
 
-    { "id": "WP-OUR-001", "name": "우리웨딩 홈", "sections": ["D-day + 진행률", "다음 일정", "지출", "준비현황"] },
+    { "id": "WP-OUR-001", "name": "웨딩일정 홈", "sections": ["D-day + 진행률", "다음 일정", "지출", "준비현황"] },
     { "id": "WP-OUR-007", "name": "체크리스트 편집", "rule": "자동 생성 항목은 삭제 대신 숨기기만" },
     { "id": "WP-OUR-010", "name": "지출 상세", "sections": ["Pick 인증 배지", "금액", "항목 6행", "분할 결제", "안내"] },
 

@@ -579,7 +579,7 @@ export async function compareVendors(ids: string[]): Promise<VendorComparisonRes
 }
 
 /* -------------------------------------------------------------------------- */
-/* 우리웨딩 — 웨딩 스케줄 · 지출내역 · 방문노트                                */
+/* 웨딩일정 — 웨딩 스케줄 · 지출내역 · 방문노트                                */
 /* -------------------------------------------------------------------------- */
 
 /** 처음 부르면 서버가 기본 열넷을 깔아준다. */
@@ -740,7 +740,7 @@ export async function listDecisions(weddingId: string): Promise<DecisionListResp
   return request(`/v1/weddings/${weddingId}/decisions`, decisionListResponseSchema);
 }
 
-/** 우리웨딩 — 메모. WP-OUR-011. 업체별 또는 자유 메모. */
+/** 웨딩일정 — 메모. WP-OUR-011. 업체별 또는 자유 메모. */
 export async function listWeddingNotes(weddingId: string): Promise<WeddingNoteListResponse> {
   return request(`/v1/weddings/${weddingId}/notes`, weddingNoteListResponseSchema);
 }

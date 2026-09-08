@@ -251,7 +251,7 @@ export default function MyScreen() {
                   onPress={() => router.push('/login')}
                 />
                 <ThemedText type="t7" themeColor="textAssistive" style={styles.loginHint}>
-                  우리웨딩과 Pick 인증에 필요해요
+                  웨딩일정과 Pick 인증에 필요해요
                 </ThemedText>
               </View>
             )}

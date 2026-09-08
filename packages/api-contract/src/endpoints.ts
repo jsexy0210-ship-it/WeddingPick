@@ -358,7 +358,7 @@ export const ENDPOINTS = {
   },
 
   /**
-   * 우리웨딩 — 웨딩 스케줄. 핸드오프 15번.
+   * 웨딩일정 — 웨딩 스케줄. 핸드오프 15번.
    *
    * 처음 부르면 서버가 기본 열넷을 깔아준다. 처음 결혼을 준비하는 사람은 무엇을
    * 해야 하는지부터 모른다.
@@ -391,7 +391,7 @@ export const ENDPOINTS = {
   },
 
   /**
-   * 우리웨딩 — 지출내역. 핸드오프 14번.
+   * 웨딩일정 — 지출내역. 핸드오프 14번.
    *
    * `paidTotal`과 `scheduledTotal`이 다른 필드다. 합쳐 보내면 화면이 더할 여지가
    * 남고, 더하면 "지금까지 결제한 금액"이 거짓말이 된다.
@@ -438,7 +438,7 @@ export const ENDPOINTS = {
     response: z.object({ budget: amountSchema.nullable() }),
   },
 
-  /** 우리웨딩 — 방문노트. 제안금액은 가격 통계 어디에도 들어가지 않는다. */
+  /** 웨딩일정 — 방문노트. 제안금액은 가격 통계 어디에도 들어가지 않는다. */
   listVisitNotes: {
     method: 'GET',
     path: '/v1/weddings/{weddingId}/visit-notes',
@@ -459,7 +459,7 @@ export const ENDPOINTS = {
   },
 
   /**
-   * 우리웨딩 — 일정. 웨딩 스케줄(체크리스트)과 다르다 — 일시·장소가 있는
+   * 웨딩일정 — 일정. 웨딩 스케줄(체크리스트)과 다르다 — 일시·장소가 있는
    * 캘린더 이벤트다.
    */
   listWeddingEvents: {
@@ -522,7 +522,7 @@ export const ENDPOINTS = {
     response: decisionListResponseSchema,
   },
 
-  /** 우리웨딩 — 메모. WP-OUR-011. 업체별 또는 자유 메모. */
+  /** 웨딩일정 — 메모. WP-OUR-011. 업체별 또는 자유 메모. */
   listWeddingNotes: {
     method: 'GET',
     path: '/v1/weddings/{weddingId}/notes',

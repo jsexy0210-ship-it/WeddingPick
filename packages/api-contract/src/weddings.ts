@@ -63,6 +63,8 @@ export const currentUserSchema = z.object({
 
   /** 배우자가 연결돼 있는가. 등급과 미션이 이 값을 본다. */
   spouseLinked: z.boolean(),
+  /** 배우자의 부를 이름. 연결 전이거나 상대가 아직 안 정했으면 null. */
+  partnerDisplayName: z.string().nullable(),
   /** 업체가 매칭된 결제인증이 있는가. Level 3 Unlock과 같은 조건이다. */
   hasPaymentProof: z.boolean(),
   /** 한 곳이라도 Pick했는가. 미션 ②가 본다. */
