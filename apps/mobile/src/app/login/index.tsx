@@ -52,7 +52,7 @@ const REASONS = [
 export default function LoginScreen() {
   const theme = useTheme();
   const { providers, error: loadError } = useAuthProviders();
-  const { signIn, busy, error, retry, dismissError } = useSignIn();
+  const { signIn, resumeRedirect, busy, error, retry, dismissError } = useSignIn();
   /** undefined = 아직 안 읽음, null = 기억된 계정 없음(WP-AUTH-001). */
   const [remembered, setRemembered] = useState<RememberedAccount | null | undefined>(undefined);
   /** 만 14세 이상이에요 체크박스. 기본 해제(§3.5 "화면 규칙"). */
@@ -60,7 +60,12 @@ export default function LoginScreen() {
 
   useEffect(() => {
     loadRememberedAccount().then(setRemembered);
-  }, []);
+    /*
+     * 웹에서 카카오가 같은 창으로 `/login?code=…`에 돌려보낸 경우다. 여기서
+     * 마무리하지 않으면 동의까지 마친 사람이 로그인 화면을 다시 보게 된다.
+     */
+    void resumeRedirect();
+  }, [resumeRedirect]);
 
   const kakao = providers?.[0] ?? null;
   const showRemembered = Boolean(remembered);

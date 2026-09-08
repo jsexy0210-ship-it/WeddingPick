@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { AuthProvider } from '@weddingpick/api-contract';
 import { SocialColors } from '@weddingpick/ui';
 import { AuthRequest, ResponseType, makeRedirectUri } from 'expo-auth-session';
@@ -101,23 +102,19 @@ export async function signInWithKakao(provider: AuthProvider): Promise<void> {
     throw new Error('카카오 로그인 설정이 아직 완료되지 않았습니다.');
   }
 
-  const redirectUri =
-    Platform.OS === 'web' ? webRedirectUri() : makeRedirectUri({ scheme: KAKAO_REDIRECT_SCHEME, path: 'oauth' });
-  const request = new AuthRequest({
-    clientId: KAKAO_CLIENT_ID,
-    redirectUri,
-    responseType: ResponseType.Code,
-    /* profile_nickname — id_token에 nickname 클레임이 실린다. 화면 이름은 닉네임만 쓴다. */
-    scopes: ['openid', 'profile_nickname'],
-    usePKCE: true,
-  });
-  const result = await request.promptAsync({
-    authorizationEndpoint: 'https://kauth.kakao.com/oauth/authorize',
-  });
+  if (Platform.OS === 'web') {
+    await startKakaoRedirect();
+
+    return;
+  }
+
+  const redirectUri = makeRedirectUri({ scheme: KAKAO_REDIRECT_SCHEME, path: 'oauth' });
+  const request = kakaoRequest(redirectUri);
+  const result = await request.promptAsync({ authorizationEndpoint: KAKAO_AUTHORIZE });
 
   if (result.type !== 'success' || !result.params.code) {
     if (result.type === 'cancel' || result.type === 'dismiss') return;
-    throw new Error('카카오 로그인에 실패했습니다. 다시 시도해 주세요.');
+    throw new Error(KAKAO_FAILED);
   }
 
   await signInWithAuthorizationCode({
@@ -127,4 +124,116 @@ export async function signInWithKakao(provider: AuthProvider): Promise<void> {
     redirectUri,
     codeVerifier: request.codeVerifier,
   });
+}
+
+const KAKAO_AUTHORIZE = 'https://kauth.kakao.com/oauth/authorize';
+const KAKAO_FAILED = '카카오 로그인에 실패했습니다. 다시 시도해 주세요.';
+
+function kakaoRequest(redirectUri: string): AuthRequest {
+  return new AuthRequest({
+    clientId: KAKAO_CLIENT_ID!,
+    redirectUri,
+    responseType: ResponseType.Code,
+    /* profile_nickname — id_token에 nickname 클레임이 실린다. 화면 이름은 닉네임만 쓴다. */
+    scopes: ['openid', 'profile_nickname'],
+    usePKCE: true,
+  });
+}
+
+/*
+ * ── 웹: 팝업이 아니라 **같은 창에서 갔다 온다** ──────────────────────────
+ *
+ * 예전에는 웹도 `promptAsync`(팝업 + window.opener)였다. 카카오톡 인앱
+ * 브라우저·삼성 인터넷 등 모바일 브라우저는 팝업을 막거나 opener 없이 열어서,
+ * 카카오가 `/login?code=…`로 돌려보내도 그 결과를 받을 창이 없었다 — 동의까지
+ * 마친 사람이 로그인 화면으로 되돌아오는 버그(2026-09-08). 같은 창에서 이동하면
+ * 창이 하나뿐이라 그 문제가 없다.
+ *
+ * 돌아온 뒤 코드를 교환하려면 떠나기 전의 PKCE verifier·state가 필요하다 —
+ * 기기 저장소(웹은 localStorage)에 적어두고 돌아와서 읽는다. 세션 토큰과 같은
+ * 비밀은 아니지만(한 번 쓰면 지운다) 창을 닫아도 남지 않게 쓰자마자 지운다.
+ */
+const REDIRECT_KEY = 'weddingpick.kakaoAuthRequest.v1';
+
+type PendingRedirect = {
+  state: string;
+  codeVerifier?: string;
+  redirectUri: string;
+  startedAt: number;
+};
+
+async function startKakaoRedirect(): Promise<void> {
+  const redirectUri = webRedirectUri();
+  const request = kakaoRequest(redirectUri);
+  const url = await request.makeAuthUrlAsync({ authorizationEndpoint: KAKAO_AUTHORIZE });
+  const pending: PendingRedirect = {
+    state: request.state,
+    codeVerifier: request.codeVerifier,
+    redirectUri,
+    startedAt: Date.now(),
+  };
+
+  await AsyncStorage.setItem(REDIRECT_KEY, JSON.stringify(pending));
+  window.location.assign(url);
+
+  /* 페이지가 떠난다. 여기서 돌아오지 않는 것이 정상이다 — 버튼이 다시 켜지지 않게 붙잡아 둔다. */
+  await new Promise<never>(() => undefined);
+}
+
+/**
+ * 카카오에서 같은 창으로 돌아왔는가. 로그인 화면이 뜰 때 한 번 부른다.
+ *
+ * URL에 `code`가 있으면 떠나기 전에 적어둔 요청과 맞춰 서버에 교환하고 true를
+ * 돌려준다(그 다음은 `finishSignIn`). `code`가 없으면 그냥 연 것이라 false다.
+ * 사용자가 카카오에서 취소했으면(`error=access_denied`) 조용히 false다.
+ * URL의 인증 파라미터는 어느 경우든 지운다 — 새로고침에 코드를 두 번 쓰지 않게.
+ */
+export async function completeKakaoRedirect(): Promise<boolean> {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return false;
+
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  const state = params.get('state');
+  const error = params.get('error');
+
+  if (!code && !error) return false;
+
+  for (const key of ['code', 'state', 'error', 'error_description']) params.delete(key);
+
+  const search = params.toString();
+
+  window.history.replaceState(
+    null,
+    '',
+    `${window.location.pathname}${search ? `?${search}` : ''}${window.location.hash}`
+  );
+
+  const raw = await AsyncStorage.getItem(REDIRECT_KEY);
+
+  await AsyncStorage.removeItem(REDIRECT_KEY);
+
+  if (error) {
+    if (error === 'access_denied') return false;
+    throw new Error(KAKAO_FAILED);
+  }
+
+  if (!raw) {
+    throw new Error('로그인 요청 정보가 없어요. 다시 시도해 주세요.');
+  }
+
+  const pending = JSON.parse(raw) as PendingRedirect;
+
+  if (!state || state !== pending.state) {
+    throw new Error('로그인 요청이 맞지 않아요. 다시 시도해 주세요.');
+  }
+
+  await signInWithAuthorizationCode({
+    provider: 'kakao',
+    authorizationCode: code!,
+    state,
+    redirectUri: pending.redirectUri,
+    codeVerifier: pending.codeVerifier,
+  });
+
+  return true;
 }
