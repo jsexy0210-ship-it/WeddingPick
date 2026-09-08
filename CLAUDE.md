@@ -6,6 +6,11 @@ PR 체크리스트)와 2026-09-04~08 정책 변경 이력은 `docs/CLAUDE-rules-
 이 파일과 충돌하지 않는 한 그쪽도 계속 지킨다. 값(색 · 크기 · 간격 · 문구)은 `spec/tokens.json` ·
 `spec/strings.ko.json` · `spec/glossary.json`에서만 가져온다. 하드코딩 금지.
 
+**지침(2026-09-08, 사용자) — 무조건 최신 핸드오프 md 기준으로 바꾼다.** 코드 · 문서 · 이전 규칙과
+`docs/design-handoff/current/`의 최신 md(SPEC · CHANGELOG · PROJECT_RULES · screens · tokens)가 충돌하면
+묻지 않고 최신 md 쪽으로 코드를 맞춘다. 되묻는 것은 md 자체가 서로 어긋날 때뿐이고, 그때도 먼저
+가장 최근 버전 항목(CHANGELOG 상단)을 따른다.
+
 ## v3.18 용어 통일 — 확인된 제보 → 실 제보
 
 정보 체계 3단: 상위 개념 **실 제보** · 금액 **제보 금액** · 제공 행동 **Pick 인증**.
