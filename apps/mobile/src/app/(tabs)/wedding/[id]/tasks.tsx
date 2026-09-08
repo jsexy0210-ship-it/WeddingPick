@@ -163,7 +163,7 @@ export default function WeddingTasksScreen() {
             const currentIndex = LIFECYCLE_STAGES.indexOf(view.stage);
             return (
               <ThemedView type="backgroundElement" style={styles.timeline}>
-                <ThemedView style={styles.timelineRow}>
+                <View style={styles.timelineRow}>
                   {LIFECYCLE_STAGES.map((stage, i) => (
                     <View
                       key={stage}
@@ -180,7 +180,7 @@ export default function WeddingTasksScreen() {
                       ]}
                     />
                   ))}
-                </ThemedView>
+                </View>
                 <ThemedText type="t5">{view.mood}</ThemedText>
                 <ThemedText type="t7" themeColor="textSecondary">
                   {LIFECYCLE_STAGE_LABEL[view.stage]} · {view.note}
@@ -191,7 +191,7 @@ export default function WeddingTasksScreen() {
 
           {page.tasks.map((task) => (
             <ThemedView key={task.id} type="backgroundElement" style={styles.row}>
-              <ThemedView style={styles.rowMain}>
+              <View style={styles.rowMain}>
                 <ThemedText type="t5">{task.label}</ThemedText>
                 <ThemedText type="t7" themeColor="textSecondary">
                   {task.dueDate ? formatTaskDate(task.dueDate) : '날짜 미정'}
@@ -204,7 +204,7 @@ export default function WeddingTasksScreen() {
                   {/* 이 값은 날짜가 바뀌어도 안 따라간다는 것을 보이게 한다. */}
                   {task.manualState ? ' · 직접 지정' : ''}
                 </ThemedText>
-              </ThemedView>
+              </View>
 
               <ActionButton
                 label="고치기"

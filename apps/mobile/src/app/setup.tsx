@@ -45,33 +45,16 @@ type Screen = 'questions' | 'taste' | 'done';
 /** 질문이 열릴 때마다 진행바가 이 값으로 채워진다(시안 8%→38%→68%). */
 const QUESTION_PROGRESS: Record<QuestionIndex, number> = { 0: 8, 1: 38, 2: 68 };
 
-/** 아직 지나지 않은 다음 그 계절의 연도. 예: 지금이 11월이면 봄쯤은 내년이다. */
-function nextSeasonYear(month: number): number {
-  const now = new Date();
-
-  return now.getMonth() + 1 <= month ? now.getFullYear() : now.getFullYear() + 1;
-}
-
 /**
- * 시안 20-onboarding-v2 dateChips 3개. 시안은 "2027년 봄"을 그대로 박아뒀지만,
- * 실제 화면은 오늘 기준으로 계산해야 한다 — 그대로 옮기면 그 해가 지나고 나서도
- * "2027년 봄"이라고 말하게 된다.
+ * 예식일 칩은 «아직 미정이에요» 하나뿐이다(2026-09-08 결정). 시안의 «봄»·«가을»
+ * 칩은 뺐다 — "다가오는 그 계절"을 오늘 기준으로 계산하면 9월에 접속한 사람에게
+ * 5주 뒤 가을 예식을 권하게 되어 기준이 애매했다.
  *
- * 계약(`completeSetupRequestSchema.weddingDate`)이 날짜를 필수로 받기 때문에,
- * "아직 미정이에요"는 값을 비워두는 대신 달력을 그대로 연다 — 시안에 없는 값을
- * 지어내 보내지 않는다. 나머지 둘은 그 계절 중순으로 채우고, 달력에서 다시
- * 고를 수 있다.
+ * 누르면 **날짜 없이 다음 질문으로 간다.** 예식일은 비워둘 수 있다
+ * (`completeSetupRequestSchema.weddingDate` nullable) — 홈은 lifecycle의
+ * «기대반 설렘반 / 아직 예식일이 없어요»로 부른다. 달력을 열지 않는다.
  */
-function dateChips(): { label: string; pick: (() => string) | null }[] {
-  const spring = nextSeasonYear(4);
-  const fall = nextSeasonYear(10);
-
-  return [
-    { label: '아직 미정이에요', pick: null },
-    { label: `${spring}년 봄`, pick: () => `${spring}-04-15` },
-    { label: `${fall}년 가을`, pick: () => `${fall}-10-15` },
-  ];
-}
+const UNDECIDED_LABEL = '아직 미정이에요';
 
 /**
  * 초기 설정. 디자인 핸드오프 v3.14 20-onboarding-v2.dc.html(WP-APP-020~022).
@@ -111,6 +94,8 @@ export default function SetupScreen() {
   const [active, setActive] = useState<QuestionIndex>(0);
 
   const [date, setDate] = useState<string | null>(null);
+  /** «아직 미정이에요»를 골랐는가. 날짜 없이 답한 것이라 안 고른 것(둘 다 없음)과 다르다. */
+  const [undecided, setUndecided] = useState(false);
   const [region, setRegion] = useState<WeddingRegion | null>(null);
   /** 구·군. 시/도를 더 좁힌다. 고르지 않아도 다음으로 갈 수 있다. */
   const [district, setDistrict] = useState<string | null>(null);
@@ -150,10 +135,11 @@ export default function SetupScreen() {
     );
   }
 
-  const canAdvance = active === 0 ? date !== null : active === 1 ? region !== null : bracket !== null;
+  const canAdvance =
+    active === 0 ? date !== null || undecided : active === 1 ? region !== null : bracket !== null;
 
   async function finish() {
-    if (sending || date === null || region === null) return;
+    if (sending || region === null || (date === null && !undecided)) return;
 
     setSending(true);
     setError(null);
@@ -209,11 +195,15 @@ export default function SetupScreen() {
             </ThemedView>
 
             <ThemedView style={[styles.summary, { backgroundColor: theme.backgroundElement }]}>
-              <SummaryRow label="예식일" value={formatWeddingDateLong(date ?? '')} />
+              <SummaryRow
+                label="예식일"
+                value={date !== null ? formatWeddingDateLong(date) : UNDECIDED_LABEL}
+              />
               <SummaryRow label="지역" value={district ? `${region} ${district}` : (region ?? '')} />
               <SummaryRow label="총예산" value={BUDGET_BRACKET_LABEL[bracket ?? 'unknown']} />
               <SummaryRow
                 label="취향"
+                last
                 value={
                   tastes.length === 0
                     ? '고르지 않았어요'
@@ -252,11 +242,38 @@ export default function SetupScreen() {
         {/* 뒤로가기는 화면을 되감지 않는다 — 온보딩 전체를 나가 로그인으로 간다. */}
         <OnboardingProgress progress={progress} label={label} onBack={() => router.replace('/login')} />
 
-        <ScrollView contentContainerStyle={[styles.content, screen === 'taste' && styles.contentTaste]}>
+        {screen === 'taste' ? (
+          /*
+           * 취향 화면은 스크롤하지 않는다 — 격자가 남는 높이를 나눠 갖는다
+           * (`TastePicker fill`). 사진 여섯 장이 한 눈에 들어와야 훑는 화면이다.
+           */
+          <View style={[styles.content, styles.contentTaste, styles.fill]}>
+            <ThemedView style={styles.headline}>
+              <ThemedText type="t2">마음에 드는 분위기를</ThemedText>
+              <ThemedText type="t2">골라주세요</ThemedText>
+              <ThemedText type="body" themeColor="textSecondary">
+                2장 이상 고르면 더 정확해져요
+              </ThemedText>
+            </ThemedView>
+
+            <TastePicker chosen={tastes} onToggle={toggleTaste} fill />
+
+            {error ? (
+              <ThemedText type="t7" themeColor="negative">
+                {error}
+              </ThemedText>
+            ) : null}
+          </View>
+        ) : (
+        <ScrollView contentContainerStyle={styles.content}>
           {screen === 'questions' ? (
             <ThemedView style={styles.list}>
-              {active > 0 && date !== null ? (
-                <AnsweredRow label="예식일" value={formatWeddingDateLong(date)} onPress={() => reopen(0)} />
+              {active > 0 && (date !== null || undecided) ? (
+                <AnsweredRow
+                  label="예식일"
+                  value={date !== null ? formatWeddingDateLong(date) : UNDECIDED_LABEL}
+                  onPress={() => reopen(0)}
+                />
               ) : null}
               {active > 1 && region !== null ? (
                 <AnsweredRow
@@ -301,24 +318,16 @@ export default function SetupScreen() {
               </Pressable>
 
               <ThemedView style={styles.chips}>
-                {dateChips().map((hint) => (
-                  <Chip
-                    key={hint.label}
-                    label={hint.label}
-                    selected={false}
-                    onPress={() => {
-                      if (hint.pick === null) {
-                        setPending(date);
-                        setCalendarOpen(true);
-
-                        return;
-                      }
-
-                      setDate(hint.pick());
-                      answer(0);
-                    }}
-                  />
-                ))}
+                <Chip
+                  label={UNDECIDED_LABEL}
+                  selected={undecided}
+                  onPress={() => {
+                    /* 날짜 없이 답한 것이다 — 달력을 열지 않고 다음 질문으로 간다. */
+                    setDate(null);
+                    setUndecided(true);
+                    answer(0);
+                  }}
+                />
               </ThemedView>
             </>
           ) : null}
@@ -388,26 +397,13 @@ export default function SetupScreen() {
             </>
           ) : null}
 
-          {screen === 'taste' ? (
-            <>
-              <ThemedView style={styles.headline}>
-                <ThemedText type="t2">마음에 드는 분위기를</ThemedText>
-                <ThemedText type="t2">골라주세요</ThemedText>
-                <ThemedText type="body" themeColor="textSecondary">
-                  2장 이상 고르면 더 정확해져요
-                </ThemedText>
-              </ThemedView>
-
-              <TastePicker chosen={tastes} onToggle={toggleTaste} />
-            </>
-          ) : null}
-
           {error ? (
             <ThemedText type="t7" themeColor="negative">
               {error}
             </ThemedText>
           ) : null}
         </ScrollView>
+        )}
 
         <ThemedView style={styles.footer}>
           {screen === 'questions' ? (
@@ -449,6 +445,7 @@ export default function SetupScreen() {
                 disabled={pending === null}
                 onPress={() => {
                   setDate(pending);
+                  setUndecided(false);
                   setCalendarOpen(false);
                   answer(0);
                 }}
@@ -682,16 +679,26 @@ function DoneMark() {
   );
 }
 
-function SummaryRow({ label, value }: { label: string; value: string }) {
+/**
+ * 요약 한 줄. 카드 안에 다시 상자를 그리지 않는다 — `ThemedView`는 바탕색을
+ * 칠하므로 카드 안에서 쓰면 이중 박스가 된다. 행 사이는 1px 선으로만 가른다.
+ */
+function SummaryRow({ label, value, last }: { label: string; value: string; last?: boolean }) {
+  const theme = useTheme();
+
   return (
-    <ThemedView style={styles.summaryRow}>
+    <View
+      style={[
+        styles.summaryRow,
+        !last && { borderBottomWidth: 1, borderBottomColor: theme.border },
+      ]}>
       <ThemedText type="t6" themeColor="textSecondary">
         {label}
       </ThemedText>
       <ThemedText type="t6" numeric numberOfLines={1} style={[styles.bold, styles.summaryValue]}>
         {value}
       </ThemedText>
-    </ThemedView>
+    </View>
   );
 }
 
@@ -705,7 +712,8 @@ const styles = StyleSheet.create({
     gap: Spacing.four,
   },
   /* 취향 화면만 제목 블록과 격자 사이가 20이다. */
-  contentTaste: { gap: Layout.gapHeadlineGrid },
+  contentTaste: { gap: Layout.gapHeadlineGrid, paddingBottom: Spacing.two },
+  fill: { flex: 1 },
   /* 제목과 서브카피 사이 8. */
   headline: { gap: Spacing.two },
 
@@ -794,11 +802,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  /* 요약 카드. radius.card 10 · 안쪽 20 · 행 사이 2 · 행 상하 9. */
+  /* 요약 카드. radius.card 10 · 안쪽 20. 행은 1px 선으로만 가른다 — 안쪽 상자 없음. */
   summary: {
     borderRadius: Radius.medium,
     padding: Layout.cardPadding,
-    gap: Spacing.half,
   },
   summaryRow: {
     flexDirection: 'row',

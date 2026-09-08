@@ -337,7 +337,8 @@ export async function signOut(): Promise<void> {
  * 것과 모르겠다고 고른 것은 다른 상태다.
  */
 export async function completeSetup(input: {
-  weddingDate: string;
+  /** null = «아직 미정이에요». */
+  weddingDate: string | null;
   region: string;
   budgetBracket?: BudgetBracket | null;
 }) {

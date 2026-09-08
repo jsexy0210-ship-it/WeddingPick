@@ -1,7 +1,7 @@
 import type { WeddingInfoCategory, WeddingInfoItem, WeddingInfoStage } from '@weddingpick/api-contract';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listWeddingInfo } from '@/api/client';
@@ -199,14 +199,14 @@ export default function WeddingInfoListScreen() {
                 onPress={() => router.push(`/search/wedding-info/${item.id}`)}
               >
                 <ThemedView type="backgroundElement" style={styles.card}>
-                  <ThemedView style={styles.cardMeta}>
+                  <View style={styles.cardMeta}>
                     <ThemedText type="badge" themeColor="tint">
                       {CATEGORY_LABEL[item.category]}
                     </ThemedText>
                     <ThemedText type="badge" themeColor="textSecondary">
                       {STAGE_LABEL[item.stage]}
                     </ThemedText>
-                  </ThemedView>
+                  </View>
                   <ThemedText type="t5" numberOfLines={1}>{item.title}</ThemedText>
                   <ThemedText type="t7" themeColor="textSecondary" numberOfLines={2}>
                     {item.summary}

@@ -52,7 +52,7 @@
   },
 
   "home": {
-    "hero.dday": "두근두근\n{n}일 남았어요",
+    "hero.dday": "{mood}\n{n}일 남았어요",
     "hero.couple": "{a} · {b}",
     "hero.solo": "{a}",
     "section.ourPrep": "우리 준비",

@@ -67,7 +67,13 @@ export async function signIn(
       );
     }
 
-    const socialDisplayName = (identity.profile?.nickname ?? identity.profile?.name)?.trim();
+    /*
+     * 화면 이름은 **닉네임만** 쓴다(2026-09-08 결정). 실명(`name`)으로는 절대
+     * 채우지 않는다 — 카카오 실명이 홈 히어로에 그대로 뜨고 있었다. 닉네임이
+     * 없으면 비워 두고 화면이 «우리»로 부른다. 사용자가 MY에서 직접 정한 이름
+     * (`display_name_user_set`)은 건드리지 않는다.
+     */
+    const socialDisplayName = identity.profile?.nickname?.trim();
     if (socialDisplayName) {
       await client.query(
         `UPDATE structured.users

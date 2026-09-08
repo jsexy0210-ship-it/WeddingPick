@@ -106,12 +106,12 @@ function TimelineItem({ task, isLast }: { task: WeddingTask; isLast: boolean }) 
           <ThemedText type="t5" style={styles.taskLabel}>
             {task.label}
           </ThemedText>
-          <ThemedView
+          <View
             style={[styles.stateBadge, { backgroundColor: dotColor + '22', borderColor: dotColor }]}>
             <ThemedText type="badge" style={{ color: dotColor }}>
               {TASK_STATE_LABEL[task.state]}
             </ThemedText>
-          </ThemedView>
+          </View>
         </View>
 
         {task.dueDate ? (

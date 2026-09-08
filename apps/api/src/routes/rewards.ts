@@ -146,7 +146,7 @@ export function registerRewardRoutes(app: FastifyInstance, context: AppContext):
       spouse_linked: boolean;
     }>(
       `SELECT
-         (w.wedding_date IS NOT NULL AND w.region IS NOT NULL) AS wedding_set,
+         (w.region IS NOT NULL) AS wedding_set,
          EXISTS (
            SELECT 1 FROM structured.vendor_candidates c WHERE c.wedding_id = w.id
          ) AS has_pick,

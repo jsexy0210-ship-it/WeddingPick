@@ -2,7 +2,7 @@ import type { Quote } from '@weddingpick/api-contract';
 import { DOCUMENT_TYPE_LABEL, manwon } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listQuotes } from '@/api/client';
@@ -29,10 +29,10 @@ function QuoteCard({ quote }: { quote: Quote }) {
 
   return (
     <ThemedView type="backgroundElement" style={styles.card}>
-      <ThemedView style={styles.cardHead}>
+      <View style={styles.cardHead}>
         <ThemedText type="t5">{vendorName}</ThemedText>
         <VerificationBadge level={quote.verificationLevel} />
-      </ThemedView>
+      </View>
 
       <ThemedText type="t7" themeColor="textSecondary">
         {docLabel}

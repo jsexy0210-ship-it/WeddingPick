@@ -5,11 +5,11 @@ import '@weddingpick/ui/tokens.css';
 // 브라우저가 입력칸에 얹는 자기 규칙(자동완성 배경 등) 보정. 네이티브에서는 무시된다.
 import '@/global.css';
 
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider, router } from 'expo-router';
+import { DefaultTheme, Stack, ThemeProvider, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
 import { useEffect, useRef, useState } from 'react';
-import { Platform, useColorScheme } from 'react-native';
+import { Platform } from 'react-native';
 
 import { completeAuthPopup, isAuthPopup } from '@/features/auth/is-auth-popup';
 import { CaptureDraftProvider } from '@/features/capture/capture-draft';
@@ -58,7 +58,6 @@ export default function RootLayout() {
 }
 
 function RootLayoutContent() {
-  const colorScheme = useColorScheme();
   /*
    * 웹에서는 이 TTF(약 3MB, 전체 웨이트를 다 담은 가변 폰트)를 부르지 않는다.
    * 이미 위에서 그 목적으로 부른 `pretendardvariable-dynamic-subset.css`가
@@ -189,8 +188,9 @@ function RootLayoutContent() {
     return <SplashView />;
   }
 
+  /* 항상 라이트 — 기기 다크 모드를 따르지 않는다(packages/ui use-color-scheme 참고). */
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={DefaultTheme}>
       <DocumentStoreProvider>
         <CaptureDraftProvider>
           <Stack screenOptions={{ headerShown: false }}>

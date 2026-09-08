@@ -112,7 +112,8 @@ export const displayNameResponseSchema = z.object({
  * #11e). 안 보내면 아직 안 고른 것이다 — `unknown`("아직 모르겠어요")과는 다르다.
  */
 export const completeSetupRequestSchema = z.object({
-  weddingDate: dateSchema,
+  /** null = «아직 미정이에요»(2026-09-08). 날짜 없이도 설정은 끝난 것이다 — 홈은 lifecycle의 «기대반 설렘반»으로 부른다. */
+  weddingDate: dateSchema.nullable(),
   region: z.string().trim().min(1),
   budgetBracket: budgetBracketSchema.nullable().optional(),
 });

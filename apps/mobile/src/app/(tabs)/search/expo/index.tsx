@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listExpos, type ExpoItem, type ExpoStatus } from '@/api/client';
@@ -164,22 +164,22 @@ export default function ExpoListScreen() {
                   onPress={() => router.push(`/search/expo/${expo.id}`)}>
                   <ThemedView type="backgroundElement" style={styles.card}>
                     {/* 상태 배지 */}
-                    <ThemedView style={styles.badgeRow}>
-                      <ThemedView
+                    <View style={styles.badgeRow}>
+                      <View
                         style={[styles.badge, { backgroundColor: STATUS_COLOR[expo.status] }]}>
                         <ThemedText type="badge" style={{ color: theme.onTint }}>
                           {STATUS_LABEL[expo.status]}
                         </ThemedText>
-                      </ThemedView>
+                      </View>
                       {expo.isDeadlineSoon && expo.status !== 'closed' && (
-                        <ThemedView
+                        <View
                           style={[styles.badge, { backgroundColor: theme.negative }]}>
                           <ThemedText type="badge" style={{ color: theme.onTint }}>
                             마감 임박
                           </ThemedText>
-                        </ThemedView>
+                        </View>
                       )}
-                    </ThemedView>
+                    </View>
 
                     <ThemedText type="t5" numberOfLines={1}>
                       {expo.title}

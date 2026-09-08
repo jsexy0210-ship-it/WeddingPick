@@ -72,14 +72,14 @@ export default function OnboardingScreen() {
 
           <ThemedView type="backgroundElement" style={styles.card}>
             {step.card.map((row) => (
-              <ThemedView key={row.label} style={styles.cardRow}>
+              <View key={row.label} style={styles.cardRow}>
                 <ThemedText type="t6" themeColor="textSecondary">
                   {row.label}
                 </ThemedText>
                 <ThemedText type="t5" numeric>
                   {row.value}
                 </ThemedText>
-              </ThemedView>
+              </View>
             ))}
           </ThemedView>
 

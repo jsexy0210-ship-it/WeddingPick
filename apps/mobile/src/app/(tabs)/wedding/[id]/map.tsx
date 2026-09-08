@@ -1,7 +1,7 @@
 import { VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -114,7 +114,7 @@ export default function WeddingMapScreen() {
                       isSelected && { borderColor: theme.tint, borderWidth: 1.5 },
                     ]}
                   >
-                    <ThemedView style={styles.vendorInfo}>
+                    <View style={styles.vendorInfo}>
                       <ThemedText type="t6" numberOfLines={1}>
                         {vendor.vendorName}
                       </ThemedText>
@@ -122,9 +122,9 @@ export default function WeddingMapScreen() {
                         {VENDOR_CATEGORY_LABEL[vendor.category as keyof typeof VENDOR_CATEGORY_LABEL] ?? vendor.category}
                         {vendor.address ? ` · ${vendor.address}` : ''}
                       </ThemedText>
-                    </ThemedView>
+                    </View>
                     {isSelected && (
-                      <ThemedView style={styles.selectedActions}>
+                      <View style={styles.selectedActions}>
                         <ActionButton
                           variant="primary"
                           size="large"
@@ -136,7 +136,7 @@ export default function WeddingMapScreen() {
                           label="업체 상세 보기"
                           onPress={() => router.push(`/search/${vendor.vendorId}`)}
                         />
-                      </ThemedView>
+                      </View>
                     )}
                   </ThemedView>
                 </Pressable>

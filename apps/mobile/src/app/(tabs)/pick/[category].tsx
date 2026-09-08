@@ -5,7 +5,7 @@ import {
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -256,29 +256,29 @@ function CandidateCard({
               focused ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: -2 } : null,
             ]}
           >
-            <ThemedView style={styles.cardHeader}>
+            <View style={styles.cardHeader}>
               <ThemedText type="t5" numberOfLines={1} style={styles.cardName}>
                 {candidate.vendorName}
               </ThemedText>
               {isDecidedVendor && (
-                <ThemedView
+                <View
                   style={[styles.decidedBadge, { backgroundColor: theme.tint }]}
                 >
                   <ThemedText type="badge" style={{ color: theme.onTint }}>
                     결정
                   </ThemedText>
-                </ThemedView>
+                </View>
               )}
               {candidate.addedByPartner && !isDecidedVendor && (
-                <ThemedView
+                <View
                   style={[styles.partnerBadge, { backgroundColor: theme.tintSubtle }]}
                 >
                   <ThemedText type="badge" themeColor="tint">
                     둘 다 Pick
                   </ThemedText>
-                </ThemedView>
+                </View>
               )}
-            </ThemedView>
+            </View>
 
             <ThemedText type="t7" themeColor="textSecondary">
               {candidate.region}
@@ -292,7 +292,7 @@ function CandidateCard({
 
             {/* CTA */}
             {!isDecided && (
-              <ThemedView style={styles.cardActions}>
+              <View style={styles.cardActions}>
                 <ActionButton
                   variant="secondary"
                   size="large"
@@ -300,7 +300,7 @@ function CandidateCard({
                   disabled={removing}
                   onPress={onRemove}
                 />
-                <ThemedView style={styles.decideBtn}>
+                <View style={styles.decideBtn}>
                   <ActionButton
                     variant="primary"
                     size="large"
@@ -308,8 +308,8 @@ function CandidateCard({
                     disabled={deciding}
                     onPress={onDecide}
                   />
-                </ThemedView>
-              </ThemedView>
+                </View>
+              </View>
             )}
           </ThemedView>
         );

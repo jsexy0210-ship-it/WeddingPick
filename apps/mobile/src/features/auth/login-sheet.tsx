@@ -107,7 +107,7 @@ export function LoginSheet({ visible, reason, onSignedIn, onDismiss }: LoginShee
                   label={provider.isDevelopmentStandIn ? '개발용 로그인' : '카카오로 시작하기'}
                   hint={
                     provider.isDevelopmentStandIn
-                      ? '실제 애플·카카오 로그인이 아니에요. 개발 중인 서버에만 있어요'
+                      ? '실제 카카오 로그인이 아니에요. 개발 중인 서버에만 있어요'
                       : undefined
                   }
                   disabled={busy || !canSignInWith(provider)}
