@@ -1,6 +1,7 @@
 import { VENDOR_SORTS, type VendorSort } from '@weddingpick/api-contract';
 import {
-  VENDOR_CATEGORIES,
+  TERMS,
+  PREPARATION_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
   type VendorCategory,
 } from '@weddingpick/domain';
@@ -36,7 +37,7 @@ import {
 
 /** 검색 화면이 인식하는 정렬 이름을 표시용 라벨로 바꾼다. */
 const SORT_LABEL_OVERRIDE: Record<VendorSort, string> = {
-  data: '확인된 정보 많은 순',
+  data: `${TERMS.verifiedData} 많은 순`,
   price_low: '금액 낮은 순',
   price_high: '금액 높은 순',
   name: '이름 순',
@@ -170,7 +171,7 @@ export default function FilterScreen() {
           <ThemedView style={styles.section}>
             <ThemedText type="smallBold">카테고리</ThemedText>
             <ThemedView style={styles.chips}>
-              {VENDOR_CATEGORIES.map((cat) => (
+              {PREPARATION_CATEGORIES.map((cat) => (
                 <FilterChip
                   key={cat}
                   label={VENDOR_CATEGORY_LABEL[cat]}

@@ -4,7 +4,7 @@ import { Radius } from './theme';
 import { ThemedText } from './themed-text';
 import { useTheme } from './use-theme';
 
-/** WP-ST-005 — 확인된 정보 4단계. */
+/** WP-ST-005 — 실 제보 4단계. */
 export type DataTier = 'collecting' | 'low' | 'mid' | 'full';
 
 export function getDataTier(count: number): DataTier {
@@ -26,7 +26,7 @@ export type DataTierBadgeProps = {
 };
 
 /**
- * 확인된 정보 건수에 따라 색상이 달라지는 뱃지.
+ * 실 제보 건수에 따라 색상이 달라지는 뱃지.
  * 빈 칸이나 «—»는 쓰지 않는다.
  */
 export function DataTierBadge({ count }: DataTierBadgeProps) {

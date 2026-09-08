@@ -82,11 +82,11 @@ image-slot::part(empty){display:none !important}
     <div style="flex-shrink:0;height:16px;background:#f2f3f6;margin:0 0 28px"></div>
 
     <div style="flex-shrink:0;padding:0 24px;display:flex;flex-direction:column;gap:14px">
-      <span style="font-size:20px;line-height:27px;font-weight:700;color:#212124">확인된 제보</span>
+      <span style="font-size:20px;line-height:27px;font-weight:700;color:#212124">실 제보</span>
       <div style="border-radius:10px;background:#f7f8fa;padding:20px;display:flex;flex-direction:column;gap:6px">
         <span style="font-size:32px;line-height:43px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums">152~184만원</span>
-        <span style="font-size:14px;line-height:19px;color:#868b94;font-variant-numeric:tabular-nums">확인된 제보 12건 · 최근 12개월 · 기준금액 168만원</span>
-        <span style="font-size:14px;line-height:19px;color:#868b94">기준금액은 확인된 제보의 중앙값이에요</span>
+        <span style="font-size:14px;line-height:19px;color:#868b94;font-variant-numeric:tabular-nums">실 제보 12건 · 최근 12개월 · 기준금액 168만원</span>
+        <span style="font-size:14px;line-height:19px;color:#868b94">기준금액은 실 제보의 중앙값이에요</span>
       </div>
       <div style="display:flex;flex-direction:column;gap:2px">
         <sc-for list="{{ priceCond }}" as="p" hint-placeholder-count="3">
@@ -467,8 +467,8 @@ class Component extends DCLogic {
     return {
       rootStyle: 'display:flex;gap:40px;align-items:flex-start;padding:64px;width:max-content;--wp-accent:' + skin + ';--wp-pick:' + pickHex,
       priceCond: [
-        { cond: '평일 촬영', n: '확인된 제보 5건', range: '152~168만원' },
-        { cond: '주말 촬영', n: '확인된 제보 7건', range: '166~184만원' },
+        { cond: '평일 촬영', n: '실 제보 5건', range: '152~168만원' },
+        { cond: '주말 촬영', n: '실 제보 7건', range: '166~184만원' },
         { cond: '야외 추가', n: '아직 정보가 적어요 · 2건', range: '수집 중' }
       ],
       reasons: [
@@ -507,7 +507,7 @@ class Component extends DCLogic {
       cmpRows: [
         row('제보 금액', [['A', '강남 A 스튜디오', '152~184만원', true], ['B', '서촌 B 스튜디오', '138~171만원', true], ['C', '청담 C 스튜디오', '165~203만원', true]]),
         row('기준금액', [['A', '강남 A 스튜디오', '168만원'], ['B', '서촌 B 스튜디오', '155만원'], ['C', '청담 C 스튜디오', '수집 중']]),
-        row('확인된 제보', [['A', '강남 A 스튜디오', '12건'], ['B', '서촌 B 스튜디오', '9건'], ['C', '청담 C 스튜디오', '7건']]),
+        row('실 제보', [['A', '강남 A 스튜디오', '12건'], ['B', '서촌 B 스튜디오', '9건'], ['C', '청담 C 스튜디오', '7건']]),
         row('보정 장수', [['A', '강남 A 스튜디오', '20장', true], ['B', '서촌 B 스튜디오', '15장'], ['C', '청담 C 스튜디오', '25장', true]]),
         row('원본', [['A', '강남 A 스튜디오', '전체'], ['B', '서촌 B 스튜디오', '전체'], ['C', '청담 C 스튜디오', '전체']]),
         row('야외 촬영', [['A', '강남 A 스튜디오', '25만원 별도'], ['B', '서촌 B 스튜디오', '불가'], ['C', '청담 C 스튜디오', '1회 포함', true]]),
@@ -520,17 +520,17 @@ class Component extends DCLogic {
         { k: 'C', key: keyChip('C'), text: '원본을 전부 받고 야외도 포함돼요. 5월 주말은 대기예요.' }
       ],
       pickList: [
-        pk('A', '강남 A 스튜디오', '152~184만원', '확인된 제보 12건 · 최근 12개월', '준호님 메모 · 여기 톤이 제일 좋아 보여요', 'lp-p1', IMG.couple, true),
-        pk('B', '서촌 B 스튜디오', '138~171만원', '확인된 제보 9건 · 최근 12개월', '준호님 메모 · 예산은 여기가 제일 낫다', 'lp-p2', IMG.arch, true),
-        pk('C', '청담 C 스튜디오', '165~203만원', '확인된 제보 7건 · 최근 12개월', '메모 없음', 'lp-p3', IMG.bride, false)
+        pk('A', '강남 A 스튜디오', '152~184만원', '실 제보 12건 · 최근 12개월', '준호님 메모 · 여기 톤이 제일 좋아 보여요', 'lp-p1', IMG.couple, true),
+        pk('B', '서촌 B 스튜디오', '138~171만원', '실 제보 9건 · 최근 12개월', '준호님 메모 · 예산은 여기가 제일 낫다', 'lp-p2', IMG.arch, true),
+        pk('C', '청담 C 스튜디오', '165~203만원', '실 제보 7건 · 최근 12개월', '메모 없음', 'lp-p3', IMG.bride, false)
       ],
       decideNotes: [
         '준호님도 Pick한 곳이에요',
-        '우리웨딩 준비현황과 지출에 자동으로 반영돼요',
+        '웨딩일정 준비현황과 지출에 자동으로 반영돼요',
         '결정은 언제든 바꿀 수 있어요'
       ],
       afterDecide: [
-        { label: '우리웨딩', text: '준비현황에 스튜디오 결정 완료로 반영됐어요' },
+        { label: '웨딩일정', text: '준비현황에 스튜디오 결정 완료로 반영됐어요' },
         { label: '일정', text: '촬영일 5월 12일이 일정에 추가됐어요' },
         { label: '지출', text: 'Pick 인증하면 지출에 연결돼요' }
       ]

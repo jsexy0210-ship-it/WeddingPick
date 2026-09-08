@@ -58,7 +58,7 @@ describe('금액 공개', () => {
     const disclosed = discloseAmounts({ amounts: amounts(5), period: PERIOD });
 
     expect(disclosed.stage).toBe('normal');
-    expect(disclosed.caption).toBe(`확인된 정보 5건 · ${PERIOD}`);
+    expect(disclosed.caption).toBe(`실 제보 5건 · ${PERIOD}`);
   });
 
   it('10건부터 중앙값이 생긴다', () => {
@@ -177,13 +177,13 @@ describe('결제인증이 여는 것', () => {
 describe('캡션', () => {
   it('단계마다 다른 말을 붙인다', () => {
     expect(disclosureCaption({ stage: 'collecting', count: 2, period: PERIOD })).toBe(
-      '확인된 정보 2건 · 수집 중'
+      '실 제보 2건 · 수집 중'
     );
     expect(disclosureCaption({ stage: 'limited', count: 3, period: PERIOD })).toBe(
-      '확인된 정보 3건 · 아직 정보가 적어요'
+      '실 제보 3건 · 아직 정보가 적어요'
     );
     expect(disclosureCaption({ stage: 'normal', count: 8, period: PERIOD })).toBe(
-      '확인된 정보 8건 · 최근 12개월'
+      '실 제보 8건 · 최근 12개월'
     );
   });
 });

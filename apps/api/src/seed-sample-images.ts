@@ -26,12 +26,16 @@ function argv(name: string): boolean {
 
 /** 검색어 — 업종 이름 + 시도. 같은 검색어의 결과를 업체마다 다른 자리(start)에서 잘라 겹치지 않게 한다. */
 const QUERY: Record<VendorCategory, string> = {
+  wedding_info_company: '결혼정보회사',
   hall: '웨딩홀',
-  sdm: '웨딩 스튜디오 촬영',
+  studio: '웨딩 스튜디오 촬영',
+  dress: '웨딩드레스 샵',
+  makeup: '웨딩 메이크업',
   snap: '본식 스냅',
   goods: '예물 반지',
+  dowry: '혼수 가전',
   honeymoon: '허니문 리조트',
-  wedding_info_company: '결혼정보회사',
+  invitation: '청첩장 디자인',
   etc: '웨딩 플라워 데코',
 };
 

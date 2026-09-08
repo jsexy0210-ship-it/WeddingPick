@@ -94,7 +94,7 @@ describe('Pick', () => {
       const progress = preparationProgress([
         row({ category: 'hall', state: 'decided', decidedVendorId: 'v1' }),
         row({ category: 'snap', state: 'picking', pickCount: 9 }),
-        row({ category: 'sdm', state: 'before' }),
+        row({ category: 'studio', state: 'before' }),
       ]);
 
       expect(progress).toEqual({ decided: 1, total: 3, label: '1/3 완료' });

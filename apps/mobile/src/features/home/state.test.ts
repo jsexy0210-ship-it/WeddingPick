@@ -65,14 +65,14 @@ function vendor(stage: 'collecting' | 'general'): VendorSummary {
   return {
     id: Math.random().toString(36),
     name: '모먼트 스튜디오',
-    category: 'sdm',
+    category: 'studio',
     region: '서울',
     sourceNote: null,
     comparableQuoteCount: 0,
     paidPrice:
       stage === 'collecting'
-        ? { stage, count: 2, caption: '확인된 정보 2건 · 수집 중' }
-        : { stage, count: 8, caption: '확인된 정보 8건 · 최근 12개월', low: 1_520_000, high: 1_840_000 },
+        ? { stage, count: 2, caption: '실 제보 2건 · 수집 중' }
+        : { stage, count: 8, caption: '실 제보 8건 · 최근 12개월', low: 1_520_000, high: 1_840_000 },
   } as unknown as VendorSummary;
 }
 
@@ -144,8 +144,8 @@ describe('홈 상태 — 시안 여섯 장', () => {
     const view = homeView({
       me: ME,
       candidates: candidates(
-        [group('hall', 'decided', 2, 'hall-v0'), group('sdm', 'picking', 3)],
-        'sdm'
+        [group('hall', 'decided', 2, 'hall-v0'), group('studio', 'picking', 3)],
+        'studio'
       ),
       recommended: PRICED,
       tasteChosen: true,
@@ -154,7 +154,7 @@ describe('홈 상태 — 시안 여섯 장', () => {
     expect(view.state).toBe('decided');
     expect(view.showsDecided).toBe(true);
     // 결정이 찍히면 오늘의 Pick이 다음 업종으로 넘어간다.
-    expect(view.focus).toBe('sdm');
+    expect(view.focus).toBe('studio');
   });
 
   it('금액이 하나뿐이면 비교로 치지 않는다', () => {
@@ -206,15 +206,15 @@ describe('현황판 한 칸', () => {
 describe('다음 준비', () => {
   it('오늘의 Pick이 지목한 업종은 빼고 고른다', () => {
     // 같은 업종을 두 번 적으면 같은 말을 두 번 하는 것이다.
-    const groups = [group('hall', 'picking', 2), group('sdm', 'before', 0)];
+    const groups = [group('hall', 'picking', 2), group('studio', 'before', 0)];
 
-    expect(nextUpCategory(groups, 'hall')?.category).toBe('sdm');
+    expect(nextUpCategory(groups, 'hall')?.category).toBe('studio');
   });
 
   it('정한 것은 다음 준비가 아니다', () => {
-    const groups = [group('hall', 'decided', 1, 'hall-v0'), group('sdm', 'picking', 2)];
+    const groups = [group('hall', 'decided', 1, 'hall-v0'), group('studio', 'picking', 2)];
 
-    expect(nextUpCategory(groups, 'sdm')).toBeNull();
+    expect(nextUpCategory(groups, 'studio')).toBeNull();
   });
 
   it('남은 것이 없으면 없는 다음을 지어내지 않는다', () => {

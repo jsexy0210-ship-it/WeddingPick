@@ -23,7 +23,7 @@ describe('중앙값과 분위수', () => {
     expect(median(amounts)).toBe(1200);
   });
 
-  it('빈 표본에서는 분위수를 구하지 않는다', () => {
+  it('빈 배열에서는 분위수를 구하지 않는다', () => {
     expect(() => quantile([], 0.5)).toThrow();
   });
 });

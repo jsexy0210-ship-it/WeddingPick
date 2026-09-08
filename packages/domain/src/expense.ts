@@ -36,8 +36,9 @@ export const EXPENSE_STATUS_LABEL: Record<ExpenseStatus, string> = {
 /**
  * 네 갈래로 묶는다. 핸드오프 홈 5번의 4색 누적 막대와 4열 범례.
  *
- * 업종은 일곱인데 막대는 넷이다. 일곱 색을 나란히 놓으면 어느 것이 큰지 읽히지
- * 않는다 — 묶는 이유가 그것이다.
+ * 업종은 열인데 막대는 넷이다. 열 색을 나란히 놓으면 어느 것이 큰지 읽히지
+ * 않는다 — 묶는 이유가 그것이다. `sdm`은 여기서는 업종이 아니라 묶음 이름이다 —
+ * 스튜디오·드레스·메이크업 세 업종이 한 막대에 들어간다.
  */
 export const EXPENSE_BUCKETS = ['hall', 'agency', 'sdm', 'etc'] as const;
 
@@ -66,7 +67,7 @@ export const EXPENSE_BUCKET_COLOR = {
 export function bucketFor(category: VendorCategory | null): ExpenseBucket {
   if (category === 'hall') return 'hall';
   if (category === 'wedding_info_company') return 'agency';
-  if (category === 'sdm') return 'sdm';
+  if (category === 'studio' || category === 'dress' || category === 'makeup') return 'sdm';
 
   return 'etc';
 }

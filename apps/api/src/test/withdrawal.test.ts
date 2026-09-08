@@ -13,7 +13,7 @@ const describeWithDb = process.env.DATABASE_URL ? describe : describe.skip;
  *   1. **원본 파일이 스토리지에 남지 않는다.** 계정을 지웠는데 파일이 남으면
  *      지웠다고 말하고 남긴 것이 된다.
  *   2. **떠나는 사람이 남는 사람의 기록을 지우지 않는다.** 웨딩은 배우자에게 넘어간다.
- *   3. **확인된 정보는 작성자와 끊어질 뿐 사라지지 않는다.** 후기가 사라지면 그
+ *   3. **실 제보는 작성자와 끊어질 뿐 사라지지 않는다.** 후기가 사라지면 그
  *      업체를 보던 다음 사람의 판단 근거가 함께 사라진다.
  */
 describeWithDb('회원탈퇴', () => {
@@ -258,7 +258,7 @@ describeWithDb('회원탈퇴', () => {
     ).json<{ done: string[] }>();
 
     expect(result.done).toContain('계정과 프로필을 삭제했어요');
-    expect(result.done).toContain('후기와 확인된 정보는 나를 알아볼 수 없도록 분리했어요');
+    expect(result.done).toContain('후기와 실 제보는 나를 알아볼 수 없도록 분리했어요');
   });
 
   it('운영자는 앱에서 탈퇴할 수 없다', async () => {

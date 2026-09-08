@@ -491,9 +491,9 @@ describeWithDb('이용 후기', () => {
 
     it('같은 견적에 묶인 다른 업체를 보여준다', async () => {
       const { headers } = await signInAs(test);
-      const studio = await createVendor('sdm', '세컨드플로어');
-      const dress = await createVendor('sdm', '메종드로브');
-      const makeup = await createVendor('sdm', '제니하우스');
+      const studio = await createVendor('studio', '세컨드플로어');
+      const dress = await createVendor('dress', '메종드로브');
+      const makeup = await createVendor('makeup', '제니하우스');
 
       await aPackageQuote(headers, [studio, dress, makeup]);
 
@@ -505,8 +505,8 @@ describeWithDb('이용 후기', () => {
 
     it('이미 후기를 쓴 업체는 다시 권하지 않는다', async () => {
       const { headers } = await signInAs(test);
-      const studio = await createVendor('sdm', '세컨드플로어');
-      const dress = await createVendor('sdm', '메종드로브');
+      const studio = await createVendor('studio', '세컨드플로어');
+      const dress = await createVendor('dress', '메종드로브');
 
       await aPackageQuote(headers, [studio, dress]);
 
@@ -519,7 +519,7 @@ describeWithDb('이용 후기', () => {
           overall: 4,
           title: '드레스가 예뻤어요',
           body: BODY,
-          // sdm 업종의 유효한 항목 키가 아니면 이 요청이 400으로 거절된다.
+          // 드레스 업종의 유효한 항목 키가 아니면 이 요청이 400으로 거절된다.
           aspects: [],
         },
       });
@@ -534,8 +534,8 @@ describeWithDb('이용 후기', () => {
     it('남의 견적에 걸린 업체는 내 목록에 뜨지 않는다', async () => {
       const { headers: mine } = await signInAs(test, 'mine');
       const { headers: theirs } = await signInAs(test, 'theirs');
-      const studio = await createVendor('sdm', '세컨드플로어');
-      const dress = await createVendor('sdm', '메종드로브');
+      const studio = await createVendor('studio', '세컨드플로어');
+      const dress = await createVendor('dress', '메종드로브');
 
       await aPackageQuote(theirs, [studio, dress]);
 
@@ -641,7 +641,7 @@ describeWithDb('이용 후기', () => {
 
   it('업종에 없는 항목도 받지 않는다', async () => {
     const { headers } = await signInAs(test);
-    const vendorId = await createVendor('sdm');
+    const vendorId = await createVendor('studio');
 
     // 'parking'은 웨딩홀 항목이다. 스튜디오에는 없다.
     const response = await write(headers, vendorId, {

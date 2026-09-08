@@ -7,7 +7,7 @@
  * spec/glossary.json 의 banned 목록을 사용자 노출 문자열에서 찾는다.
  * 하나라도 걸리면 exit 1 — CI에서 빌드를 실패시킨다.
  *
- * 검사 대상: .swift .kt .kts .dart .tsx .ts .jsx .js .json .xml .strings .html
+ * 검사 대상: .swift .kt .kts .dart .tsx .ts .jsx .js .json .webmanifest .xml .strings .html
  * 제외: 관리자 · 내부 문서 · 테스트 · node_modules · build 산출물
  */
 
@@ -17,7 +17,7 @@ const path = require('path');
 const GLOSSARY = path.join(__dirname, 'spec', 'glossary.json');
 const g = JSON.parse(fs.readFileSync(GLOSSARY, 'utf8'));
 
-const EXT = /\.(swift|kt|kts|dart|tsx?|jsx?|json|xml|strings|html)$/i;
+const EXT = /\.(swift|kt|kts|dart|tsx?|jsx?|json|webmanifest|xml|strings|html)$/i;
 const SKIP_DIR = /(^|\/)(node_modules|build|dist|\.git|Pods|\.gradle|__snapshots__)(\/|$)/;
 const SKIP_FILE = /(admin|Admin|관리자|internal|test|Test|spec\/|\.d\.ts$|glossary\.json$)/;
 
@@ -70,7 +70,7 @@ function isExempt(line, b) {
   // 법령·기관 고유명사는 제품 용어 치환 대상이 아니다.
   if (b.term === '거래' && line.includes('공정거래위원회')) return true;
   const exemptPhrases = {
-    '중앙값': '확인된 정보의 중앙값이에요',
+    '중앙값': '실 제보의 중앙값이에요',
     '별점': '별점 대신',
     '둘러보기': '둘러보기',
   };

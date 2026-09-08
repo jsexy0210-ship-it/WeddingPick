@@ -229,7 +229,7 @@ image-slot::part(empty){display:none !important}
           <span style="{{ t16b }}">152~184만원</span>
         </div>
         <span style="{{ t16n }}">두 분 취향에 잘 맞아요</span>
-        <span style="{{ t14n }}">확인된 제보 12건</span>
+        <span style="{{ t14n }}">실 제보 12건</span>
         <div style="display:flex;gap:11px;padding-top:2px">
           <sc-for list="{{ runners }}" as="r" hint-placeholder-count="2">
             <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px">
@@ -340,7 +340,7 @@ image-slot::part(empty){display:none !important}
         </div>
         <div style="{{ dataBox }}">
           <span style="{{ h26n }}">152~184만원</span>
-          <span style="{{ t14g }}">확인된 제보 12건 · 최근 12개월 · 기준금액 168만원</span>
+          <span style="{{ t14g }}">실 제보 12건 · 최근 12개월 · 기준금액 168만원</span>
         </div>
         <div style="display:flex;gap:10px">
           <button style="{{ ctaWide }}">Pick하기</button>
@@ -398,7 +398,7 @@ image-slot::part(empty){display:none !important}
           <span style="flex:1;min-width:0;{{ t20b }}">강남 A 스튜디오</span>
           <span style="{{ t16b }}">152~184만원</span>
         </div>
-        <span style="{{ t14g }}">확인된 제보 12건 · 기준금액 168만원</span>
+        <span style="{{ t14g }}">실 제보 12건 · 기준금액 168만원</span>
       </div>
       <div style="flex-shrink:0;padding:0 24px 20px;display:flex;gap:11px">
         <sc-for list="{{ runnerUps }}" as="r" hint-placeholder-count="2">
@@ -413,7 +413,7 @@ image-slot::part(empty){display:none !important}
 
       <div style="{{ bandBox }}"></div>
       <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:14px">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span style="{{ s20 }}">우리 준비</span><span style="{{ t14m }}">우리웨딩</span></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><span style="{{ s20 }}">우리 준비</span><span style="{{ t14m }}">웨딩일정</span></div>
         <div style="display:flex;flex-direction:column;gap:2px">
           <sc-for list="{{ boardCats }}" as="c" hint-placeholder-count="4">
             <div>
@@ -491,7 +491,7 @@ class Component extends DCLogic {
     home: ['M3.6 10.4 12 3.8l8.4 6.6V19a1.6 1.6 0 0 1-1.6 1.6H5.2A1.6 1.6 0 0 1 3.6 19z', 'M9.6 20.6v-6.2h4.8v6.2', ''],
     search: ['M11 4.2a6.9 6.9 0 1 0 0 13.8 6.9 6.9 0 0 0 0-13.8z', 'M16.2 16.2 20.8 20.8', ''],
     pick: ['M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z', 'M9.4 11.9l1.7 1.7 3.4-3.4', ''],
-    couple: ['M8.6 11.2a3.3 3.3 0 1 0 0-6.6 3.3 3.3 0 0 0 0 6.6z', 'M2.6 20.4v-.8a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v.8', 'M16.2 5.4a3.3 3.3 0 0 1 0 5.9M17.6 14.7a5 5 0 0 1 3.8 4.9v.8'],
+    couple: ['M5.2 5.6h13.6a1.8 1.8 0 0 1 1.8 1.8v11.2a1.8 1.8 0 0 1-1.8 1.8H5.2a1.8 1.8 0 0 1-1.8-1.8V7.4a1.8 1.8 0 0 1 1.8-1.8z', 'M3.4 10.4h17.2M8.4 3.4v4M15.6 3.4v4', ''],
     my: ['M12 11.6a4 4 0 1 0 0-8 4 4 0 0 0 0 8z', 'M4.8 20.6v-.6a6 6 0 0 1 6-6h2.4a6 6 0 0 1 6 6v.6', '']
   };
 
@@ -604,16 +604,16 @@ class Component extends DCLogic {
       ctaWide: 'flex:1.6;height:52px;border:0;border-radius:6px;background:' + C + ';color:#fff;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer',
       ctaGhost: 'flex:1;height:52px;border:0;border-radius:6px;background:#f2f3f6;color:#393a40;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer',
 
-      tabs: [tab('홈', 'home', true), tab('검색', 'search', false), tab('Pick', 'pick', false), tab('우리웨딩', 'couple', false), tab('MY', 'my', false)],
+      tabs: [tab('홈', 'home', true), tab('검색', 'search', false), tab('Pick', 'pick', false), tab('웨딩일정', 'couple', false), tab('MY', 'my', false)],
 
       top3: [
-        { rank: '1위', name: '강남 A 스튜디오', short: '강남 A 스튜디오', src: IMG.couple, price: '152~184만원', priceShort: '152~184만', n: '확인된 제보 12건', why: '고른 사진이랑 가장 비슷해요', slotA: 'ha-1', slotB: 'hb-1', slotC: 'hc-1', slotC1: 'hc1-1', slotC2: 'hc2-1' },
-        { rank: '2위', name: '서촌 B 스튜디오', short: '서촌 B 스튜디오', src: IMG.arch, price: '138~171만원', priceShort: '138~171만', n: '확인된 제보 9건', why: '5월 주말에 가능해요', slotA: 'ha-2', slotB: 'hb-2', slotC: 'hc-2', slotC1: 'hc1-2', slotC2: 'hc2-2' },
-        { rank: '3위', name: '청담 C 스튜디오', short: '청담 C 스튜디오', src: IMG.bride, price: '165~203만원', priceShort: '165~203만', n: '확인된 제보 7건', why: '원본을 전부 받을 수 있어요', slotA: 'ha-3', slotB: 'hb-3', slotC: 'hc-3', slotC1: 'hc1-3', slotC2: 'hc2-3' }
+        { rank: '1위', name: '강남 A 스튜디오', short: '강남 A 스튜디오', src: IMG.couple, price: '152~184만원', priceShort: '152~184만', n: '실 제보 12건', why: '고른 사진이랑 가장 비슷해요', slotA: 'ha-1', slotB: 'hb-1', slotC: 'hc-1', slotC1: 'hc1-1', slotC2: 'hc2-1' },
+        { rank: '2위', name: '서촌 B 스튜디오', short: '서촌 B 스튜디오', src: IMG.arch, price: '138~171만원', priceShort: '138~171만', n: '실 제보 9건', why: '5월 주말에 가능해요', slotA: 'ha-2', slotB: 'hb-2', slotC: 'hc-2', slotC1: 'hc1-2', slotC2: 'hc2-2' },
+        { rank: '3위', name: '청담 C 스튜디오', short: '청담 C 스튜디오', src: IMG.bride, price: '165~203만원', priceShort: '165~203만', n: '실 제보 7건', why: '원본을 전부 받을 수 있어요', slotA: 'ha-3', slotB: 'hb-3', slotC: 'hc-3', slotC1: 'hc1-3', slotC2: 'hc2-3' }
       ],
       feed: [
-        { name: '강남 A 드레스', price: '88~124만원', n: '확인된 제보 14건', src: IMG.dress, slotA: 'fa-1', slotD: 'fd-1', slotE: 'fe-1' },
-        { name: '강남 A 웨딩홀', price: '1,480~1,820만원', n: '확인된 제보 21건', src: IMG.hall, slotA: 'fa-2', slotD: 'fd-2', slotE: 'fe-2' }
+        { name: '강남 A 드레스', price: '88~124만원', n: '실 제보 14건', src: IMG.dress, slotA: 'fa-1', slotD: 'fd-1', slotE: 'fe-1' },
+        { name: '강남 A 웨딩홀', price: '1,480~1,820만원', n: '실 제보 21건', src: IMG.hall, slotA: 'fa-2', slotD: 'fd-2', slotE: 'fe-2' }
       ],
       nextSteps: [
         step('드레스 투어 잡기', 'D-90', false),
@@ -636,7 +636,7 @@ class Component extends DCLogic {
         { id: 'B', name: '심플형 · Next Action', pro: '이번 주에 뭘 해야 하는지가 3초 안에 읽히고, 큰 이미지 3장이 판단을 바로 돕습니다. 큰 행동이 하나뿐입니다.', con: '예산 · 일정 · 커플 현황이 홈에서 사라집니다. 준비 후반, 볼 게 많아진 시점에는 답답할 수 있습니다.', when: '초기 사용자와 준비 중반에 가장 잘 맞습니다.' },
         { id: 'C', name: 'Pick Dashboard', pro: '둘이 어디까지 왔는지가 한눈에 보이고, 커플 서비스라는 성격이 가장 뚜렷합니다. 카테고리별 상태가 그대로 진입점입니다.', con: '현황판이 먼저 나와서 추천이 두 번째로 밀립니다. 후보가 없는 초기에는 빈칸만 보입니다.', when: '준비가 어느 정도 진행된 커플, 재방문 중심.' },
         { id: 'D', name: '혁신형 · 결정 하나', pro: '웨딩픽이 골라주고 나는 Pick만 한다는 정체성이 가장 강하게 드러납니다. 첫 화면에 큰 이미지와 결정 버튼만 있습니다.', con: '추천이 빗나가면 홈 전체가 빗나갑니다. 정보가 적은 초기 사용자에게 보여줄 후보가 없으면 성립하지 않습니다.', when: '홈보다 업체 상세의 Hero로 옮겼습니다. 큰 이미지 → 추천 이유 → 실제 결제 데이터 → Pick 흐름이 상세에서 제 힘을 씁니다.' },
-        { id: 'E', name: 'Hybrid Home · 최종 후보', pro: '주인공은 B입니다. 지금 할 일 한 줄과 큰 추천 한 장, 그리고 비교 버튼 하나. C의 현황판은 4줄로 줄여 «어디까지 왔는지»만 답하게 했고, A의 다음 준비와 피드는 남겨 전체 흐름을 놓치지 않습니다.', con: '스크롤이 A 다음으로 깁니다. 준비현황과 다음 준비가 우리웨딩 탭과 겹치므로, 홈에서는 요약 이상으로 키우지 않아야 합니다.', when: '기본 홈. 초기 사용자는 오늘의 Pick 자리가 취향 고르기로 바뀌고, 준비현황은 접힙니다.' }
+        { id: 'E', name: 'Hybrid Home · 최종 후보', pro: '주인공은 B입니다. 지금 할 일 한 줄과 큰 추천 한 장, 그리고 비교 버튼 하나. C의 현황판은 4줄로 줄여 «어디까지 왔는지»만 답하게 했고, A의 다음 준비와 피드는 남겨 전체 흐름을 놓치지 않습니다.', con: '스크롤이 A 다음으로 깁니다. 준비현황과 다음 준비가 웨딩일정 탭과 겹치므로, 홈에서는 요약 이상으로 키우지 않아야 합니다.', when: '기본 홈. 초기 사용자는 오늘의 Pick 자리가 취향 고르기로 바뀌고, 준비현황은 접힙니다.' }
       ]
     };
   }

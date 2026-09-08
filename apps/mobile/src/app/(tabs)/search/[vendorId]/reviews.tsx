@@ -128,7 +128,7 @@ export default function VendorReviewsScreen() {
 
                   {/*
                     체크리스트는 이용 점수와 다른 배열로 온다. 4.2점과 78%는 다른 것을
-                    재는 숫자라 같은 막대로 그리지 않는다. 표본이 모자라면 숫자
+                    재는 숫자라 같은 막대로 그리지 않는다. 실 제보가 모자라면 숫자
                     대신 "수집 중"이다 — 흐린 숫자도 숫자다.
                   */}
                   {page.usageScore.checklist.map((item) => (

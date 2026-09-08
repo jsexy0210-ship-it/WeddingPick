@@ -35,7 +35,7 @@ export default function PickDoneScreen() {
     vendorName: string;
   }>();
 
-  const categoryLabel = VENDOR_CATEGORY_LABEL[(category as VendorCategory) ?? 'venue'] ?? category ?? '';
+  const categoryLabel = VENDOR_CATEGORY_LABEL[category as VendorCategory] ?? category ?? '';
   const vendor = vendorName ?? '';
 
   // ── 애니메이션 값 — useMemo로 생성해 렌더 중 ref 접근을 피한다 ──────

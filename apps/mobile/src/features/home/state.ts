@@ -15,7 +15,7 @@ import { MIN_COMPARABLE, type VendorCategory } from '@weddingpick/domain';
  * | --- | --- | --- |
  * | 1 취향도 후보도 없음 | `taste` | — |
  * | 2 취향은 있고 후보가 없음 | `empty` | true |
- * | 3 후보는 있고 확인된 정보가 없음 | `picking` | **false** |
+ * | 3 후보는 있고 실 제보가 없음 | `picking` | **false** |
  * | 4 Pick 중 · 기본 | `picking` | true |
  * | 5 결정 이후 | `decided` | true |
  *

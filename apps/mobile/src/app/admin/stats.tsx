@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 
+import { VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
 import { FontSize } from '@weddingpick/ui';
 
 import { apiFetch } from './_api';
@@ -24,17 +25,13 @@ function fmt(n: number) {
   return (n / 10000).toFixed(0) + '만원';
 }
 
+/**
+ * 업종 이름은 domain 한 곳(`VENDOR_CATEGORY_LABEL`)에서만 가져온다. 서버가 아직
+ * 모르는 값(DB enum에만 남은 옛 업종 등)이 오면 코드를 그대로 보여 준다 — 관리자
+ * 화면이라 감추기보다 드러내는 쪽이 맞다.
+ */
 function formatCat(category: string) {
-  const MAP: Record<string, string> = {
-    hall: '예식장',
-    sdm: '스드메',
-    snap: '스냅',
-    goods: '혼수',
-    etc: '기타',
-    honeymoon: '허니문',
-    wedding_info_company: '결정사',
-  };
-  return MAP[category] ?? category;
+  return (VENDOR_CATEGORY_LABEL as Record<string, string>)[category] ?? category;
 }
 
 export default function StatsScreen() {

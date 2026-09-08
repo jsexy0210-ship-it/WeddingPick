@@ -1,7 +1,8 @@
 import type { Top3Item, Top3Response } from '@weddingpick/api-contract';
 import {
+  TERMS,
   TOP3_REASON_LABEL,
-  VENDOR_CATEGORIES,
+  PREPARATION_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
   manwon,
   type VendorCategory,
@@ -33,7 +34,7 @@ import {
  * TOP3 전체보기. WP-HOME-004.
  *
  * 홈 탭에서 진입. 카테고리를 선택하면 해당 업종 TOP3를 보여준다.
- * 추천 이유와 실제 결제 데이터를 함께 표시한다.
+ * 추천 이유와 실 제보를 함께 표시한다.
  */
 export default function Top3Screen() {
   const [category, setCategory] = useState<VendorCategory>('hall');
@@ -72,7 +73,7 @@ export default function Top3Screen() {
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.chips}>
-            {VENDOR_CATEGORIES.map((cat) => (
+            {PREPARATION_CATEGORIES.map((cat) => (
               <FilterChip
                 key={cat}
                 label={VENDOR_CATEGORY_LABEL[cat]}
@@ -185,7 +186,7 @@ function Top3Card({ rank, item }: { rank: number; item: Top3Item }) {
       </View>
 
       <ThemedText type="t7" themeColor="textAssistive">
-        확인된 정보 {item.confirmedCount}건
+        {TERMS.verifiedData} {item.confirmedCount}건
       </ThemedText>
     </ThemedView>
   );

@@ -77,13 +77,13 @@ export function registerRecommendationRoutes(app: FastifyInstance, context: AppC
     const category: VendorCategory = query.category ?? 'hall';
 
     /*
-     * 후보를 넉넉히 읽는다. 자격 판정(확인된 정보 수·이유)이 도메인에 있어서
+     * 후보를 넉넉히 읽는다. 자격 판정(실 제보 수·이유)이 도메인에 있어서
      * 여기서는 못 거른다 — 세 줄만 읽으면 그 셋이 전부 탈락했을 때 남는 것이 없다.
      */
     const { rows } = await context.pool.query<CandidateRow>(
       /*
-       * 확인된 정보는 **금액 캡션이 세는 것과 같은 것**을 센다 — 기본 기간 안의
-       * 확인된 결제다. 계약 자료를 따로 세면 카드가 `확인된 정보가 많아요`라고
+       * 실 제보는 **금액 캡션이 세는 것과 같은 것**을 센다 — 기본 기간 안의
+       * 확인된 결제다. 계약 자료를 따로 세면 카드가 `실 제보가 많아요`라고
        * 적어놓고 캡션에 다른 수를 적는다.
        *
        * `최근`은 그보다 짧은 기간이다. 같은 기간을 두 번 세면 두 이유가 늘 붙어

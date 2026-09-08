@@ -7,7 +7,7 @@ import {
   EXPENSE_BUCKET_LABEL,
   MAX_CANDIDATES,
   PREPARATION_STATE_LABEL,
-  VENDOR_CATEGORIES,
+  PREPARATION_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
   bucketFor,
   canAddCandidate,
@@ -84,7 +84,7 @@ export function registerCandidateRoutes(app: FastifyInstance, context: AppContex
        * 진행률은 업종 전체를 분모로 센다. 담은 업종만 세면 아무것도 안 담은
        * 사람의 진행률이 0/0이 되고, 그건 아무 말도 하지 않는 숫자다.
        */
-      const progress: CategoryProgress[] = VENDOR_CATEGORIES.map((category) => {
+      const progress: CategoryProgress[] = PREPARATION_CATEGORIES.map((category) => {
         const picks = grouped.get(category) ?? [];
         const decided = decidedBy.get(category) ?? null;
 

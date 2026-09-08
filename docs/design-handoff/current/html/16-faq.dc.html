@@ -80,11 +80,11 @@ a:hover{color:#e2564a}
   <span style="{{ tagDesc }}">답변 하단은 두 버튼뿐입니다. 해결되지 않았어요를 누르면 문의 유형이 자동으로 선택된 채로 문의 화면이 열립니다.</span>
   <div style="{{ phone }}">
     <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
-    <div style="{{ navBack }}"><span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span><span style="flex:1;min-width:0;{{ t18b }}">확인된 제보</span></div>
+    <div style="{{ navBack }}"><span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span><span style="flex:1;min-width:0;{{ t18b }}">실 제보</span></div>
     <div class="nsb" style="{{ scroll }}">
       <div style="flex-shrink:0;padding:12px 24px 24px;display:flex;flex-direction:column;gap:12px">
-        <span style="{{ badgeCat }}">확인된 제보 · 제보</span>
-        <span style="{{ h26 }}">확인된 제보가<br>무엇인가요?</span>
+        <span style="{{ badgeCat }}">실 제보 · 제보</span>
+        <span style="{{ h26 }}">실 제보가<br>무엇인가요?</span>
       </div>
       <div style="flex-shrink:0;padding:0 24px 24px;display:flex;flex-direction:column;gap:16px">
         <sc-for list="{{ answerParas }}" as="p" hint-placeholder-count="3">
@@ -95,7 +95,7 @@ a:hover{color:#e2564a}
         <div style="{{ noteBox }}">
           <span style="{{ t14m }}">표기 예시</span>
           <span style="{{ h24n }}">152~184만원</span>
-          <span style="{{ t14n }}">확인된 제보 12건 · 최근 12개월 · 기준금액 168만원</span>
+          <span style="{{ t14n }}">실 제보 12건 · 최근 12개월 · 기준금액 168만원</span>
         </div>
       </div>
       <div style="{{ band }}"></div>
@@ -105,7 +105,7 @@ a:hover{color:#e2564a}
           <button style="{{ btnGhost }}">도움이 됐어요</button>
           <button style="{{ btnGhost }}">해결되지 않았어요</button>
         </div>
-        <span style="{{ t14w }}">해결되지 않았어요를 누르면 «확인된 제보» 유형이 선택된 문의 화면으로 넘어가요.</span>
+        <span style="{{ t14w }}">해결되지 않았어요를 누르면 «실 제보» 유형이 선택된 문의 화면으로 넘어가요.</span>
       </div>
       <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:12px">
         <span style="{{ s20 }}">이런 질문도 있어요</span>
@@ -234,7 +234,7 @@ a:hover{color:#e2564a}
       <div style="{{ previewCard }}">
         <span style="{{ badgeCat }}">계정 · 알림</span>
         <span style="{{ h20 }}">탈퇴하면 작성한 후기와 제보도 삭제되나요?</span>
-        <span style="{{ t16g }}">계정과 개인 웨딩 정보는 탈퇴할 때 지워요. 후기와 제보로 확인된 제보는 작성자를 알아볼 수 없도록 분리한 뒤 서비스의 정보 신뢰성을 위해 유지할 수 있어요. 법령에 따라 보관해야 하는 정보는 정해진 기간 동안 따로 보관한 뒤 지워요.</span>
+        <span style="{{ t16g }}">계정과 개인 웨딩 정보는 탈퇴할 때 지워요. 후기와 제보로 실 제보는 작성자를 알아볼 수 없도록 분리한 뒤 서비스의 정보 신뢰성을 위해 유지할 수 있어요. 법령에 따라 보관해야 하는 정보는 정해진 기간 동안 따로 보관한 뒤 지워요.</span>
         <div style="{{ hrIn }}"></div>
         <div style="display:flex;gap:8px">
           <span style="{{ btnGhostMini }}">도움이 됐어요</span>
@@ -334,16 +334,16 @@ class Component extends DCLogic {
 
       faqCats: [
         { name: '웨딩픽 이용', n: '6개' },
-        { name: '확인된 제보 · 제보', n: '13개' },
+        { name: '실 제보 · 제보', n: '13개' },
         { name: 'Pick · 비교', n: '7개' },
         { name: '후기', n: '7개' },
-        { name: '우리웨딩 · 배우자', n: '7개' },
+        { name: '웨딩일정 · 배우자', n: '7개' },
         { name: '일정 · 지출', n: '5개' },
         { name: '계정 · 알림', n: '4개' },
         { name: '업체 · 플래너', n: '12개' }
       ],
       topQuestions: [
-        '확인된 제보가 무엇인가요?',
+        '실 제보가 무엇인가요?',
         '회원가입 없이 사용할 수 있나요?',
         'Pick 인증은 어떻게 하나요?',
         '광고한 업체가 추천에 더 많이 나오나요?',
@@ -382,9 +382,9 @@ class Component extends DCLogic {
         col('관리', '96px', 'right')
       ],
       faqRows: [
-        row(1, '확인된 제보 · 제보', '확인된 제보가 무엇인가요?', '공개', 842, 91, '08-28'),
+        row(1, '실 제보 · 제보', '실 제보가 무엇인가요?', '공개', 842, 91, '08-28'),
         row(2, '웨딩픽 이용', '회원가입 없이 사용할 수 있나요?', '공개', 610, 88, '08-24'),
-        row(3, '확인된 제보 · 제보', 'Pick 인증은 어떻게 하나요?', '공개', 588, 74, '08-27'),
+        row(3, '실 제보 · 제보', 'Pick 인증은 어떻게 하나요?', '공개', 588, 74, '08-27'),
         row(4, '웨딩픽 이용', '광고한 업체가 추천에 더 많이 나오나요?', '공개', 402, 95, '09-01'),
         row(5, '계정 · 알림', '탈퇴하면 작성한 후기와 제보도 삭제되나요?', '공개', 138, 86, '09-01'),
         row(6, '일정 · 지출', '체크리스트를 직접 수정할 수 있나요?', '공개', 214, 52, '08-19'),
@@ -393,7 +393,7 @@ class Component extends DCLogic {
       editorFields: [
         fld('카테고리', '계정 · 알림', true, true, ''),
         fld('질문', '탈퇴하면 작성한 후기와 제보도 삭제되나요?', true, true, '한 문장으로 적어요. 물음표로 끝내요.'),
-        fld('답변', '계정과 개인 웨딩 정보는 탈퇴할 때 지워요. 후기와 제보로 확인된 제보는 작성자를 알아볼 수 없도록 분리한 뒤 서비스의 정보 신뢰성을 위해 유지할 수 있어요. 법령에 따라 보관해야 하는 정보는 정해진 기간 동안 따로 보관한 뒤 지워요.', true, true, '«AI» 대신 «웨딩픽이»로 적어요. 보존기간 같은 확정되지 않은 기준은 숫자를 만들어 쓰지 않아요.'),
+        fld('답변', '계정과 개인 웨딩 정보는 탈퇴할 때 지워요. 후기와 제보로 실 제보는 작성자를 알아볼 수 없도록 분리한 뒤 서비스의 정보 신뢰성을 위해 유지할 수 있어요. 법령에 따라 보관해야 하는 정보는 정해진 기간 동안 따로 보관한 뒤 지워요.', true, true, '«AI» 대신 «웨딩픽이»로 적어요. 보존기간 같은 확정되지 않은 기준은 숫자를 만들어 쓰지 않아요.'),
         fld('연결 문의 유형', '계정', true, false, '해결되지 않았어요를 눌렀을 때 자동으로 선택돼요.'),
         fld('관련 질문', '회원탈퇴는 어디에서 하나요? · 개인정보는 어떻게 처리하나요?', true, false, '최대 3개까지 붙어요.'),
         fld('노출 순서', '3', true, false, '목록에서 드래그로도 바꿀 수 있어요.')

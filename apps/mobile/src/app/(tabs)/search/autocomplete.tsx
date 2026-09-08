@@ -1,5 +1,5 @@
 import type { VendorSummary } from '@weddingpick/api-contract';
-import { VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
+import { TERMS, VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -197,7 +197,7 @@ export default function AutocompleteScreen() {
                       </ThemedText>
                     </ThemedView>
                     <ThemedText type="t7" themeColor="textAssistive">
-                      확인된 정보 {vendor.comparableQuoteCount}건
+                      {TERMS.verifiedData} {vendor.comparableQuoteCount}건
                     </ThemedText>
                   </ThemedView>
                 </Pressable>

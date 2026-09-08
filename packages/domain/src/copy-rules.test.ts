@@ -46,10 +46,10 @@ describe('데이터 — v3.3이 화면에서 걷어낸 말', () => {
     /*
      * v3.1이 정반대를 말했었다(`표본` 대신 `데이터`). 규칙이 뒤집힌 뒤에도 목록이
      * 따라오지 않아 화면 여섯 곳에 남아 있었고, 검색 화면은 같은 자리에서
-     * `확인된 정보`와 `데이터 많은 순`을 함께 적고 있었다.
+     * `실 제보`와 `데이터 많은 순`을 함께 적고 있었다.
      */
     expect(violatesCopyRules('데이터 많은 순')).toBe(true);
-    expect(violatesCopyRules('확인된 정보 많은 순')).toBe(false);
+    expect(violatesCopyRules('실 제보 많은 순')).toBe(false);
   });
 
   it('출처의 이름은 그대로 둔다', () => {

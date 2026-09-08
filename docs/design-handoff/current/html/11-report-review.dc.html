@@ -355,7 +355,7 @@ image-slot::part(empty){display:none !important}
         <span style="font-size:26px;line-height:35px;font-weight:700;color:#212124">강남 A 스튜디오는<br>어땠나요?</span>
         <div style="display:flex;align-items:center;gap:8px">
           <span style="padding:4px 9px;border-radius:4px;background:#e8faf6;color:#1aa174;font-size:14px;line-height:19px;font-weight:700">Pick 인증</span>
-          <span style="font-size:14px;line-height:19px;color:#868b94">확인된 제보가 있어서 자동으로 붙어요</span>
+          <span style="font-size:14px;line-height:19px;color:#868b94">실 제보가 있어서 자동으로 붙어요</span>
         </div>
       </div>
       <div style="flex-shrink:0;padding:0 24px;display:flex;flex-direction:column;gap:20px">
@@ -541,17 +541,17 @@ class Component extends DCLogic {
         fld(5, '상태', '정상', '읽었어요', true, '')
       ],
       vendorGuess: [
-        { slotId: 'rp-v1', src: IMG.couple, name: '강남 A 스튜디오', meta: '강남 · 확인된 제보 12건', mark: mark(true) },
-        { slotId: 'rp-v2', src: IMG.bride, name: '분당 B 웨딩홀', meta: '분당 · 확인된 제보 4건', mark: mark(false) },
+        { slotId: 'rp-v1', src: IMG.couple, name: '강남 A 스튜디오', meta: '강남 · 실 제보 12건', mark: mark(true) },
+        { slotId: 'rp-v2', src: IMG.bride, name: '분당 B 웨딩홀', meta: '분당 · 실 제보 4건', mark: mark(false) },
         { slotId: 'rp-v3', src: IMG.arch, name: '성수 C 스튜디오', meta: '성수 · 아직 정보가 적어요', mark: mark(false) }
       ],
       afterSubmit: [
         { label: '다음', text: '확인이 끝나면 알림으로 알려드려요' },
-        { label: '내 지출', text: '우리웨딩 지출에 152만원이 더해졌어요' },
+        { label: '내 지출', text: '웨딩일정 지출에 152만원이 더해졌어요' },
         { label: '원본', text: '올려주신 사진은 24시간 뒤 삭제돼요' }
       ],
       reportLog: [
-        { state: '반영됨', badge: badge('ok'), date: '8월 28일', name: '강남 A 스튜디오', amount: '168만원', note: '확인된 제보에 반영됐어요. 이제 Pick 인증 회원이에요.', action: '' },
+        { state: '반영됨', badge: badge('ok'), date: '8월 28일', name: '강남 A 스튜디오', amount: '168만원', note: '실 제보에 반영됐어요. 이제 Pick 인증 회원이에요.', action: '' },
         { state: '확인 중', badge: badge('wait'), date: '8월 30일', name: '강남 A 드레스', amount: '112만원', note: '금액과 자료가 맞는지 보고 있어요. 하루 안에 끝나요.', action: '' },
         { state: '보완 필요', badge: badge('wait'), date: '8월 25일', name: '서초 B 드레스', amount: '—', note: '사진에서 날짜를 찾지 못했어요. 날짜만 알려주시면 바로 처리돼요.', action: '날짜 입력하기' },
         { state: '반려', badge: badge('no'), date: '8월 12일', name: '청담 D 스튜디오', amount: '—', note: '같은 자료가 이미 등록돼 있어요.', action: '' }

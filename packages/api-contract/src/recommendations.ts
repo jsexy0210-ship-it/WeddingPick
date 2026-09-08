@@ -32,7 +32,7 @@ export const top3ItemSchema = z.object({
    * 그 업체를 빼는 것 말고 다른 길이 없다.
    */
   reasons: z.array(top3ReasonSchema).min(1),
-  /** 확인된 정보 건수. 추천 자격의 근거라 그대로 내려준다. */
+  /** 실 제보 건수. 추천 자격의 근거라 그대로 내려준다. */
   confirmedCount: z.int().nonnegative(),
   /** 실제 결제. 공개 사다리를 그대로 쓴다 — 검색·상세와 같은 값이어야 한다. */
   paidPrice: paidPriceSchema,

@@ -63,7 +63,7 @@ import { WebShellView } from '@/features/webshell/WebShellView';
 type HomeData = {
   me: CurrentUser | null;
   candidates: CandidateListResponse | null;
-  /** 오늘의 Pick 자리에 올릴 세 곳. 지목받은 업종에서 확인된 정보가 많은 순. */
+  /** 오늘의 Pick 자리에 올릴 세 곳. 지목받은 업종에서 실 제보가 많은 순. */
   recommended: readonly VendorSummary[];
   /** 많이 확인된 곳. */
   popular: readonly VendorSummary[];
@@ -331,7 +331,7 @@ function MemberHome({
         </Section>
       ) : !view.comparable ? (
         /*
-         * 시안 3 — 후보는 있는데 확인된 정보가 없다. 추천이 제보를 권하는 동안
+         * 시안 3 — 후보는 있는데 실 제보가 없다. 추천이 제보를 권하는 동안
          * 그 아래에는 조건 없이 보여줄 수 있는 «많이 확인된 곳»이 온다.
          */
         <Section title={MANY_CONFIRMED}>

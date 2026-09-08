@@ -21,7 +21,7 @@ describe('업체 비교 단서', () => {
     const caveats = comparisonCaveats([hall, { ...hall, category: 'snap' }]);
 
     expect(caveats[0]).toContain('웨딩홀');
-    expect(caveats[0]).toContain('스냅·영상');
+    expect(caveats[0]).toContain('본식스냅');
   });
 
   it('시도가 다르면 알려준다', () => {

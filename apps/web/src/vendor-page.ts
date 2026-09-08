@@ -178,7 +178,7 @@ function mainSection(key: SectionKey, label: string, note: string | undefined, v
 }
 
 /**
- * 우측 기둥의 확인된 정보 카드.
+ * 우측 기둥의 실 제보 카드.
  *
  * 금액 옆에는 **늘 캡션이 함께 간다** — 몇 건이고 어느 기간인지. 숫자만 떼어놓으면
  * 그것이 어디서 왔는지 모르는 채로 읽히고, 그때부터 우리가 정한 값처럼 보인다.

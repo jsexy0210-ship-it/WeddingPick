@@ -1,5 +1,5 @@
 import {
-  VENDOR_CATEGORIES,
+  PREPARATION_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
   aspectsFor,
   checklistFor,
@@ -12,7 +12,9 @@ import { loadConfig } from './config';
 import { createPool, withTransaction } from './db';
 
 /**
- * 업종별 샘플 업체 100곳씩 — 화면 검수용(2026-09-08 오더).
+ * 업종별 샘플 업체 20곳씩 — 화면 검수용(2026-09-08 오더). 준비 순서의 10개 업종
+ * (핸드오프 v3.18 §1.3)만 넣고 «기타»는 넣지 않는다 — 사용자 화면에 업종으로
+ * 내놓지 않는 칸이라 검수할 화면이 없다.
  *
  *   npm run seed:samples --workspace @weddingpick/api -- --yes
  *   npm run seed:samples --workspace @weddingpick/api -- --remove --yes
@@ -26,17 +28,26 @@ import { createPool, withTransaction } from './db';
  * 있다. Flickr CC 사진을 키워드로 돌려주는 loremflickr 주소를 쓴다(cc_by).
  * 실제 업체 사진은 «권리 확보 후 교체» 항목 그대로다(핸드오프 보류 목록).
  *
- * 확인된 정보(결제인증) 건수는 0~2 · 3~4 · 5~9 · 10+ 네 단계가 다 보이게 흩는다
- * (CLAUDE.md §3 «확인된 정보 4단계») — 한 단계만 있으면 화면이 그 경계를
+ * 실 제보(결제인증) 건수는 0~2 · 3~4 · 5~9 · 10+ 네 단계가 다 보이게 흩는다
+ * (CLAUDE.md §3 «실 제보 4단계») — 한 단계만 있으면 화면이 그 경계를
  * 맞게 그리는지 볼 수 없다.
  */
 
 const SOURCE_KEY = 'sample';
 const PER_CATEGORY = 20;
+/** 샘플을 넣는 업종 — «기타»만 빠진다. */
+type SampleCategory = Exclude<VendorCategory, 'etc'>;
+const SAMPLE_CATEGORIES = PREPARATION_CATEGORIES as readonly SampleCategory[];
 const REPORTER_COUNT = 40;
 /** display_name은 5자까지(users_display_name_check). 진짜 계정과는 identities가 없다는 것으로 가른다. */
-const REPORTER_NAME = (n: number) => `표본${n}`;
-const OPERATOR_NAME = '표본운영';
+const REPORTER_NAME = (n: number) => `제보자${n}`;
+const OPERATOR_NAME = '검토운영';
+/**
+ * `--remove`가 지워야 할 이름. v3.18 전에 넣은 «표본N»·«표본운영»도 이미 심어져
+ * 있을 수 있어 옛 이름을 함께 잡는다.
+ */
+const REPORTER_NAME_PATTERN = '^(표본|제보자)[0-9]+$';
+const OPERATOR_NAMES = [OPERATOR_NAME, '표본운영'];
 
 function argv(name: string): boolean {
   return process.argv.includes(`--${name}`);
@@ -92,18 +103,30 @@ type Recipe = {
   amount: [number, number];
 };
 
-const RECIPES: Record<VendorCategory, Recipe> = {
+const RECIPES: Record<SampleCategory, Recipe> = {
   hall: {
     prefixes: ['더채플', '라비돌', '아펠', '그랜드', '루체', '빌라드', '더컨벤션', '파티오', '헤리티지', '노블', '메종', '베르사유', '비체', '오네스타', '드마리스', '플로렌스', '라온', '아모리스', '루이비스', '엘리에나', '더링크', '세인트', '카이저', '더파티', '글로리', '보테가', '까사', '팔레스', '샤르망', '에벤에셀'],
     suffixes: ['웨딩홀', '컨벤션', '호텔웨딩', '채플', '가든', '스퀘어', '팰리스', '하우스'],
     keywords: 'wedding,hall,banquet',
     amount: [15_000_000, 45_000_000],
   },
-  sdm: {
-    prefixes: ['별빛', '하늘', '고운', '온유', '모던', '블랑', '뮤즈', '아뜰리에', '리안', '소예', '라포레', '에스더', '제이', '루나', '베르', '메이', '헤르츠', '오드', '피오니', '샤이닝', '로즈', '아르페', '클로에', '이든', '유니크', '더블유', '벨라', '클래식', '그레이스', '노아'],
-    suffixes: ['스튜디오', '드레스', '메이크업', '스드메', '브라이덜', '살롱'],
-    keywords: 'wedding,dress,studio',
-    amount: [2_200_000, 5_500_000],
+  studio: {
+    prefixes: ['별빛', '하늘', '모던', '블랑', '뮤즈', '아뜰리에', '리안', '라포레', '제이', '루나', '베르', '메이', '헤르츠', '오드', '샤이닝', '아르페', '이든', '유니크', '더블유', '클래식', '그레이스', '노아', '세컨드', '온더', '필름', '화이트', '라움', '테라스', '브릿지', '스토리'],
+    suffixes: ['스튜디오', '포토', '픽처스', '아뜰리에', '스튜디오 본점'],
+    keywords: 'wedding,studio,portrait',
+    amount: [800_000, 2_500_000],
+  },
+  dress: {
+    prefixes: ['하늘', '고운', '온유', '블랑', '뮤즈', '소예', '에스더', '피오니', '로즈', '클로에', '벨라', '메종', '라비', '오뜨', '샤넬', '루체', '아뜰리에', '비앙카', '엘리', '리사', '마리', '줄리', '세라', '앤', '까멜리아', '릴리', '비올라', '오르', '까사', '베일'],
+    suffixes: ['드레스', '브라이덜', '드레스 살롱', '꾸뛰르', '웨딩드레스'],
+    keywords: 'wedding,dress,bride',
+    amount: [1_000_000, 3_000_000],
+  },
+  makeup: {
+    prefixes: ['고운', '온유', '제니', '순수', '정샘', '김청경', '이경민', '뷰티', '라뷰', '아이', '메이', '바이', '올리브', '벨', '루엘', '비비', '리엔', '세라', '헤어', '클로', '샤', '유', '수', '진', '연', '윤', '민', '해', '담', '결'],
+    suffixes: ['메이크업', '헤어메이크업', '살롱', '뷰티', '브라이덜 메이크업'],
+    keywords: 'wedding,makeup,bride',
+    amount: [500_000, 1_500_000],
   },
   snap: {
     prefixes: ['온', '필름', '데이', '모먼트', '기록', '봄날', '순간', '라이트', '포에', '아침', '둘', '오늘', '노을', '숲', '바다', '별', '달', '윤슬', '결', '틈', '여름', '가을', '겨울', '새벽', '해질녘', '밤', '햇살', '바람', '이야기', '너와'],
@@ -117,23 +140,29 @@ const RECIPES: Record<VendorCategory, Recipe> = {
     keywords: 'wedding,ring,jewelry',
     amount: [3_000_000, 15_000_000],
   },
+  dowry: {
+    prefixes: ['혼수', '신혼', '홈', '리빙', '하우스', '라이프', '스마트', '프리미엄', '베스트', '하이', '모던', '심플', '더', '온', '가온', '한샘', '까사', '리바트', '일룸', '에이스', '시몬스', '템퍼', '슬립', '코지', '웰빙', '그린', '클린', '에코', '퓨어', '데일리'],
+    suffixes: ['가전', '가구', '침구', '혼수 백화점', '리빙', '홈퍼니싱'],
+    keywords: 'home,appliance,furniture',
+    amount: [3_000_000, 15_000_000],
+  },
   honeymoon: {
     prefixes: ['블루', '오션', '허니', '아일랜드', '파라다이스', '트래블', '투어', '리조트', '선셋', '팜', '몰디브', '발리', '칸쿤', '하와이', '산토리니', '보라카이', '세부', '푸켓', '코타', '괌', '사이판', '타히티', '피지', '모리셔스', '두바이', '로마', '파리', '프라하', '스위스', '홋카이도'],
     suffixes: ['허니문', '트래블', '투어', '여행사', '홀리데이'],
     keywords: 'honeymoon,beach,resort',
     amount: [4_000_000, 12_000_000],
   },
+  invitation: {
+    prefixes: ['바른', '고운', '단아', '온', '소소', '담다', '봄', '꽃', '레터', '페이퍼', '카드', '캘리', '손글씨', '모던', '클래식', '심플', '더', '아트', '핸드', '프레스', '레트로', '빈티지', '화이트', '골드', '실버', '로즈', '민트', '블루', '라벤더', '아이보리'],
+    suffixes: ['청첩장', '카드', '인비테이션', '페이퍼', '레터프레스'],
+    keywords: 'wedding,invitation,card',
+    amount: [50_000, 400_000],
+  },
   wedding_info_company: {
     prefixes: ['듀오', '가연', '노블', '레드힐', '선우', '바로', '천생', '인연', '커플', '연리지', '결', '만남', '하나', '온리', '베스트', '프리미엄', '로얄', '엘리트', '퍼스트', '스마트', '행복', '좋은', '참', '진', '설렘', '두근', '정담', '연분', '동행', '평생'],
     suffixes: ['결혼정보', '매칭', '커플매니저', '결정사', '메리지'],
     keywords: 'couple,wedding',
     amount: [1_500_000, 6_000_000],
-  },
-  etc: {
-    prefixes: ['플라워', '블룸', '페탈', '데코', '아트', '뮤직', '사회자', '축가', '캘리', '청첩', '카드', '답례', '떡', '케이크', '샴페인', '버스', '리무진', '웨딩카', '주례', '통역', '헬퍼', '이모님', '한복대여', '부케', '리본', '조명', '무대', '음향', '영상편지', '방명록'],
-    suffixes: ['웨딩', '스튜디오', '컴퍼니', '하우스', '랩', '팀'],
-    keywords: 'wedding,flowers',
-    amount: [300_000, 3_000_000],
   },
 };
 
@@ -155,7 +184,7 @@ function pickWeighted(random: () => number): Region {
 
 type Reporter = { id: string; weddingId: string };
 
-/** 제보자 40명 — 각자 웨딩 하나(계약 표본이 웨딩에 매달린다). 부를 이름 «표본N». */
+/** 제보자 40명 — 각자 웨딩 하나(계약 표본이 웨딩에 매달린다). 부를 이름 «제보자N». */
 async function seedReporters(client: PoolClient): Promise<Reporter[]> {
   const reporters: Reporter[] = [];
 
@@ -237,7 +266,7 @@ type Sample = {
 };
 
 /** 후기 문장 — 업종마다 8개. 50자 넘어야 한다(reviews.body CHECK). */
-const REVIEW_TEXTS: Record<VendorCategory, { title: string; body: string }[]> = {
+const REVIEW_TEXTS: Record<SampleCategory, { title: string; body: string }[]> = {
   hall: [
     { title: '식사 반응이 좋았어요', body: '하객분들이 식사 맛과 온도를 제일 많이 칭찬했어요. 뷔페 동선도 넓어서 붐비는 느낌이 덜했고 직원분들이 자리 안내를 꼼꼼히 해주셨어요.' },
     { title: '주차 안내가 잘 돼 있어요', body: '주차장 입구부터 안내 요원이 있어서 하객들이 헤매지 않았어요. 홀 조명이 사진에 예쁘게 나오고 신부 대기실도 넓어서 편했어요.' },
@@ -248,15 +277,35 @@ const REVIEW_TEXTS: Record<VendorCategory, { title: string; body: string }[]> = 
     { title: '하객 응대가 친절했어요', body: '안내 데스크와 홀 직원분들이 하객 한 분 한 분 안내를 잘해 주셨어요. 대중교통으로 오기 편한 위치라 멀리서 오신 분들도 좋아하셨어요.' },
     { title: '전체적으로 만족했어요', body: '상담부터 예식 당일까지 담당자가 바뀌지 않아서 이야기가 잘 이어졌어요. 식사와 주차 모두 무난했고 추가 비용도 처음 안내와 같았어요.' },
   ],
-  sdm: [
+  studio: [
     { title: '보정 결과가 자연스러워요', body: '원본 셀렉 후 보정본이 과하지 않고 자연스러웠어요. 촬영 당일 실장님이 포즈를 계속 잡아 주셔서 어색하지 않게 찍을 수 있었어요.' },
-    { title: '피팅 상태가 좋았어요', body: '드레스 상태가 새것처럼 깨끗했고 피팅 때 요청한 부분을 바로 반영해 주셨어요. 메이크업도 사진에 예쁘게 나왔어요.' },
+    { title: '촬영 시간이 여유로웠어요', body: '촬영 팀이 서두르지 않아서 원하는 컷을 충분히 찍었어요. 결과물 전달도 약속한 날짜에 맞춰 왔어요. 준비 과정에서 물어본 것마다 답이 빨라서 마음이 놓였어요.' },
     { title: '요청 사항 반영이 빨라요', body: '촬영 컨셉과 소품 요청을 미리 전달했더니 당일 그대로 준비돼 있었어요. 추가 비용도 사전에 안내받은 대로였어요.' },
-    { title: '촬영 시간이 여유로웠어요', body: '촬영 팀이 서두르지 않아서 원하는 컷을 충분히 찍었어요. 결과물 전달도 약속한 날짜에 맞춰 왔어요.' },
-    { title: '드레스 종류가 많아요', body: '피팅 때 고를 수 있는 드레스가 다양했고 실장님 추천이 잘 맞았어요. 헬퍼 이모님도 촬영 내내 세심하게 챙겨 주셨어요.' },
     { title: '보정 수정 요청이 편했어요', body: '보정본 수정 요청을 두 번 했는데 모두 빠르게 반영해 주셨어요. 원본 컷 수도 넉넉해서 고르는 재미가 있었어요.' },
+    { title: '세트 구성이 다양해요', body: '실내 세트가 여러 컨셉이라 한 번 촬영으로 분위기가 다른 사진을 여럿 얻었어요. 야외 촬영도 이동이 짧아서 지치지 않았어요.' },
+    { title: '원본을 전부 받았어요', body: '원본 컷을 전부 전달해 주셔서 고르는 폭이 넓었어요. 액자와 앨범 추가 비용은 계약 전에 표로 안내받은 그대로였어요.' },
+    { title: '조명이 잘 맞았어요', body: '스튜디오 조명이 피부 톤에 잘 맞아서 보정 전 원본도 마음에 들었어요. 실장님이 표정 지도를 세세하게 해 주셨어요.' },
+    { title: '무난하게 만족했어요', body: '전체적으로 무난했고 큰 아쉬움은 없었어요. 앨범 제작 기간이 조금 길었지만 안내받은 일정 안에는 들어왔어요.' },
+  ],
+  dress: [
+    { title: '피팅 상태가 좋았어요', body: '드레스 상태가 새것처럼 깨끗했고 피팅 때 요청한 부분을 바로 반영해 주셨어요. 헬퍼 이모님도 촬영 내내 세심하게 챙겨 주셨어요.' },
+    { title: '드레스 종류가 많아요', body: '피팅 때 고를 수 있는 드레스가 다양했고 실장님 추천이 잘 맞았어요. 체형에 맞는 라인을 먼저 골라 주셔서 시간이 절약됐어요.' },
+    { title: '수선이 꼼꼼했어요', body: '허리와 기장 수선을 촬영 전에 두 번 봐 주셨어요. 본식 드레스도 같은 실장님이 맡아 주셔서 이야기가 잘 이어졌어요.' },
+    { title: '추가 비용 안내가 명확했어요', body: '피팅비와 헬퍼비, 드레스 업그레이드 비용을 계약 전에 표로 정리해 주셔서 당일에 놀랄 일이 없었어요. 응대도 친절했어요.' },
+    { title: '요청 사항 반영이 빨라요', body: '원하는 실루엣 사진을 보내드렸더니 비슷한 드레스를 미리 준비해 두셨어요. 피팅 시간이 짧았는데도 결정이 편했어요.' },
+    { title: '피팅 시간이 넉넉했어요', body: '한 벌당 입어보는 시간을 충분히 주셔서 서두르지 않고 골랐어요. 촬영 드레스와 본식 드레스를 같이 정리해 주신 점도 좋았어요.' },
+    { title: '소품 구성이 좋았어요', body: '베일과 티아라, 장갑까지 드레스에 맞춰 같이 골라 주셨어요. 소품 대여 비용도 처음 안내와 같았어요. 준비 과정이 편했어요.' },
+    { title: '무난했어요', body: '드레스 품질과 응대 모두 무난했어요. 피팅 예약이 조금 어려웠지만 한 번 잡히면 진행은 매끄러웠어요. 큰 아쉬움은 없어요.' },
+  ],
+  makeup: [
     { title: '메이크업이 오래 갔어요', body: '이른 아침 메이크업이었는데 저녁까지 잘 유지됐어요. 촬영 스튜디오 조명과 잘 맞는 톤으로 잡아 주셨어요.' },
-    { title: '패키지 구성이 알찼어요', body: '스튜디오 · 드레스 · 메이크업이 한 팀처럼 움직여서 일정 조율이 편했어요. 추가 비용 없이 처음 견적 그대로 끝났어요.' },
+    { title: '헤어가 하루 종일 흐트러지지 않았어요', body: '본식 내내 헤어가 그대로였어요. 피로연 때 스타일을 바꿔 주신 것도 추가 비용 없이 처음 안내 그대로였어요.' },
+    { title: '원하는 분위기를 잘 잡아 주셨어요', body: '참고 사진을 보내드렸더니 얼굴형에 맞게 조정해서 비슷한 분위기를 만들어 주셨어요. 리허설 때 수정 요청도 바로 반영됐어요.' },
+    { title: '피부 표현이 자연스러워요', body: '두껍지 않은데도 사진에 잘 나왔어요. 신랑 메이크업까지 같은 팀이 맡아서 톤이 맞았어요. 준비 과정에서 물어본 것마다 답이 빨랐어요.' },
+    { title: '시간 약속이 정확했어요', body: '새벽 예약이었는데 시간에 맞춰 시작했고 예식장 도착 시간도 여유 있었어요. 어머님 메이크업 비용도 미리 안내받았어요.' },
+    { title: '리허설이 도움이 됐어요', body: '리허설 메이크업 때 두 가지 톤을 비교해 보고 본식 스타일을 정했어요. 당일 실장님이 바뀌지 않아서 안심이 됐어요.' },
+    { title: '추가 비용이 없었어요', body: '헤어 장식과 속눈썹 비용까지 계약 때 안내받은 금액 그대로였어요. 응대가 친절하고 대기 공간도 편했어요. 큰 아쉬움은 없어요.' },
+    { title: '무난했어요', body: '시술과 응대 모두 무난했어요. 대기 시간이 조금 있었지만 진행 자체는 매끄러웠어요. 준비 과정에서 물어본 것마다 답이 빨라서 마음이 놓였어요.' },
   ],
   snap: [
     { title: '순간을 잘 잡아 주셨어요', body: '본식 중 부모님 표정이나 하객 반응처럼 놓치기 쉬운 순간을 잘 담아 주셨어요. 원본 전달도 빨랐어요.' },
@@ -278,6 +327,16 @@ const REVIEW_TEXTS: Record<VendorCategory, { title: string; body: string }[]> = 
     { title: '포장이 정성스러웠어요', body: '예단 포장이 정성스러워서 양가 어른들 반응이 좋았어요. 배송 일정도 정확했어요. 준비 과정에서 물어본 것마다 답이 빨라서 마음이 놓였어요.' },
     { title: '무난했어요', body: '품질과 가격 모두 무난했어요. 매장 방문 예약이 조금 어려웠지만 상담 자체는 친절했어요. 준비 과정에서 물어본 것마다 답이 빨라서 마음이 놓였어요.' },
   ],
+  dowry: [
+    { title: '배송과 설치가 정확했어요', body: '입주일에 맞춰 가전과 가구가 한 번에 들어왔고 설치 기사님이 자리까지 잡아 주셨어요. 포장 회수도 같이 해 주셨어요.' },
+    { title: '구성 상담이 부담 없었어요', body: '예산을 먼저 말씀드리니 그 안에서 필요한 것만 골라 주셨어요. 브랜드를 섞어도 할인 조건이 같았어요. 준비 과정이 편했어요.' },
+    { title: '품질이 기대 이상이에요', body: '침구와 소파 마감이 매장에서 본 것과 같았어요. 사용 한 달 지났는데 문제가 없어요. 사후 문의도 빠르게 답해 주셨어요.' },
+    { title: '가격 설명이 투명했어요', body: '제품별 가격과 혼수 할인 조건을 따로 설명해 주셔서 왜 이 가격인지 이해가 됐어요. 카드 혜택도 미리 알려 주셨어요.' },
+    { title: '일정 조율이 편했어요', body: '집 공사 일정이 밀렸는데 배송일을 추가 비용 없이 바꿔 주셨어요. 담당자가 끝까지 같은 분이라 이야기가 잘 이어졌어요.' },
+    { title: '설치 후 점검이 든든해요', body: '설치 일주일 뒤에 이상 없는지 먼저 연락해 주셨어요. 냉장고 문 방향 변경도 무료로 해 주셨어요. 준비 과정이 편했어요.' },
+    { title: '추가 비용이 없었어요', body: '배송비와 설치비가 견적에 다 들어 있어서 당일 따로 낸 돈이 없어요. 폐가전 수거까지 같이 해 주셨어요. 응대가 친절했어요.' },
+    { title: '무난했어요', body: '품질과 가격 모두 무난했어요. 매장 방문 예약이 조금 어려웠지만 상담 자체는 친절했어요. 준비 과정에서 물어본 것마다 답이 빨랐어요.' },
+  ],
   honeymoon: [
     { title: '일정 조율이 편했어요', body: '항공과 숙소를 한 번에 잡아 주시고 일정표를 미리 보내 주셔서 준비가 편했어요. 현지 연락도 잘 됐어요.' },
     { title: '숙소 추천이 좋았어요', body: '예산 안에서 추천해 주신 숙소가 사진보다 좋았어요. 조식과 픽업까지 포함돼 있어서 편했어요.' },
@@ -287,6 +346,16 @@ const REVIEW_TEXTS: Record<VendorCategory, { title: string; body: string }[]> = 
     { title: '세심한 안내가 좋았어요', body: '출발 전 준비물과 현지 팁을 정리해 주셔서 도움이 됐어요. 공항 픽업 시간도 정확했어요. 준비 과정에서 물어본 것마다 답이 빨라서 마음이 놓였어요.' },
     { title: '패키지 구성이 알찼어요', body: '투어와 자유 일정이 적절히 섞여 있어서 지루하지 않았어요. 식사 옵션도 미리 선택할 수 있었어요.' },
     { title: '무난했어요', body: '큰 문제 없이 다녀왔어요. 항공 좌석 지정은 직접 해야 했지만 나머지는 잘 챙겨 주셨어요.' },
+  ],
+  invitation: [
+    { title: '인쇄 품질이 만족스러워요', body: '종이 질감과 인쇄 색감이 화면으로 본 시안 그대로였어요. 봉투와 스티커까지 세트로 맞춰 주셔서 따로 고를 일이 없었어요.' },
+    { title: '시안 수정이 빨랐어요', body: '문구와 배치 수정을 세 번 요청했는데 매번 하루 안에 새 시안이 왔어요. 모바일 청첩장도 같은 디자인으로 맞춰 주셨어요.' },
+    { title: '제작 기간이 정확했어요', body: '안내받은 제작 기간 안에 도착했고 포장 상태도 깔끔했어요. 추가 인쇄도 같은 단가로 빠르게 처리해 주셨어요.' },
+    { title: '디자인 선택지가 많아요', body: '샘플이 많아서 비교하며 고를 수 있었어요. 샘플 청첩장을 먼저 받아 종이를 만져보고 결정할 수 있어서 좋았어요.' },
+    { title: '요청 사항 반영이 좋았어요', body: '양가 이름 표기 순서와 계좌 안내 문구를 원하는 대로 넣어 주셨어요. 오탈자 검수도 두 번 해 주셔서 안심이 됐어요.' },
+    { title: '가격이 합리적이었어요', body: '비슷한 디자인을 여러 곳에서 비교했는데 구성 대비 가격이 합리적이었어요. 봉투 인쇄와 배송비가 포함이라 계산이 편했어요.' },
+    { title: '모바일 청첩장까지 편했어요', body: '종이 청첩장과 모바일 청첩장을 한 번에 맡겼는데 사진 배치와 지도 안내가 깔끔했어요. 수정 요청도 바로 반영됐어요.' },
+    { title: '무난했어요', body: '큰 아쉬움 없이 무난했어요. 성수기라 제작 기간이 조금 길었지만 안내받은 일정 안에는 들어왔어요. 응대가 친절했어요.' },
   ],
   wedding_info_company: [
     { title: '설명이 솔직했어요', body: '회원권 가격과 만남 횟수를 처음부터 정확히 설명해 주셨어요. 계약서 내용과 상담 내용이 같았어요.' },
@@ -298,27 +367,20 @@ const REVIEW_TEXTS: Record<VendorCategory, { title: string; body: string }[]> = 
     { title: '조건 설명이 명확했어요', body: '추가 비용이 생기는 경우를 미리 알려 주셔서 예상 밖 지출이 없었어요. 상담 분위기도 편안했어요.' },
     { title: '무난했어요', body: '전체적으로 안내받은 대로 진행됐어요. 첫 상담 시간이 길었지만 그만큼 설명이 충분했어요. 준비 과정에서 물어본 것마다 답이 빨라서 마음이 놓였어요.' },
   ],
-  etc: [
-    { title: '준비가 꼼꼼했어요', body: '요청한 컨셉대로 준비해 주셨고 당일 세팅도 빨랐어요. 추가 비용 없이 처음 안내 그대로 진행됐어요.' },
-    { title: '응대가 빨랐어요', body: '문의에 바로 답해 주시고 변경 요청도 잘 받아 주셨어요. 결과물도 기대 이상이었어요. 준비 과정에서 물어본 것마다 답이 빨라서 마음이 놓였어요.' },
-    { title: '가격이 합리적이었어요', body: '비슷한 곳과 비교했을 때 구성 대비 가격이 합리적이었어요. 포함 내역이 명확했어요. 준비 과정에서 물어본 것마다 답이 빨라서 마음이 놓였어요.' },
-    { title: '당일 진행이 매끄러웠어요', body: '예식 당일 시간에 맞춰 도착해 주셨고 진행이 매끄러웠어요. 하객분들 반응도 좋았어요. 준비 과정에서 물어본 것마다 답이 빨라서 마음이 놓였어요.' },
-    { title: '세심하게 챙겨 주셨어요', body: '작은 요청까지 기억해 주셔서 감동이었어요. 마무리까지 깔끔했어요. 준비 과정에서 물어본 것마다 답이 빨라서 마음이 놓였어요.' },
-    { title: '결과물이 마음에 들어요', body: '사진으로 본 것보다 실물이 더 좋았어요. 색상과 크기도 요청한 그대로였어요. 준비 과정에서 물어본 것마다 답이 빨라서 마음이 놓였어요.' },
-    { title: '일정 조율이 편했어요', body: '리허설과 당일 일정 조율을 알아서 잡아 주셔서 신경 쓸 일이 적었어요. 응대가 친절했어요.' },
-    { title: '무난했어요', body: '큰 아쉬움 없이 무난했어요. 예약이 빨리 차니 일찍 문의하는 편이 나아요. 준비 과정에서 물어본 것마다 답이 빨라서 마음이 놓였어요.' },
-  ],
 };
 
 /** 업체 안내에 보일 상품 이름 — 업종당 하나. */
-const PRODUCT_NAME: Record<VendorCategory, string> = {
+const PRODUCT_NAME: Record<SampleCategory, string> = {
+  wedding_info_company: '기본 회원권',
   hall: '그랜드홀 대관 + 식대',
-  sdm: '스드메 기본 패키지',
+  studio: '스튜디오 촬영 기본',
+  dress: '드레스 대여 + 피팅',
+  makeup: '신부 메이크업 + 헤어',
   snap: '본식 스냅 기본',
   goods: '예물 반지 세트',
+  dowry: '혼수 가전 기본 세트',
   honeymoon: '허니문 패키지',
-  wedding_info_company: '기본 회원권',
-  etc: '기본 패키지',
+  invitation: '청첩장 100매 기본',
 };
 
 /** 0~2 · 3~4 · 5~9 · 10+ — 네 단계가 다 보이되, 상세가 채워진 곳이 많게. */
@@ -346,7 +408,7 @@ function slug(category: string, index: number): string {
  * 순서로 쓰기 위해서다 — 이미 있는 업체를 건너뛰면서 난수를 덜 쓰면 그 뒤의
  * 이름이 전부 달라져 두 번째 실행이 새 업체를 또 만든다(처음에 그랬다).
  */
-function drawSamples(category: VendorCategory): Sample[] {
+function drawSamples(category: SampleCategory): Sample[] {
   const recipe = RECIPES[category];
   const random = rng(category.split('').reduce((h, c) => h * 31 + c.charCodeAt(0), 7));
   const used = new Set<string>();
@@ -450,7 +512,7 @@ function drawSamples(category: VendorCategory): Sample[] {
       lat,
       lng,
       address: `${region.name} 샘플로 ${10 + index * 3}`,
-      lock: 1000 + VENDOR_CATEGORIES.indexOf(category) * PER_CATEGORY + index,
+      lock: 1000 + SAMPLE_CATEGORIES.indexOf(category) * PER_CATEGORY + index,
       proofs,
       reviews,
       contracts,
@@ -462,7 +524,7 @@ function drawSamples(category: VendorCategory): Sample[] {
 
 async function seedCategory(
   client: PoolClient,
-  category: VendorCategory,
+  category: SampleCategory,
   reporters: Reporter[],
   operatorId: string
 ) {
@@ -534,7 +596,7 @@ async function seedCategory(
     ]
   );
 
-  /* 확인된 정보 — 최근 12개월 안의 결제인증. 후기의 근거가 되므로 id를 받아둔다. */
+  /* 실 제보 — 최근 12개월 안의 결제인증. 후기의 근거가 되므로 id를 받아둔다. */
   const proofs = inserted.flatMap((sample) =>
     sample.proofs.map((proof) => ({
       reporter: reporters[proof.reporter]!.id,
@@ -612,7 +674,7 @@ async function seedCategory(
       insertedReviews.rows.map((row) => [`${row.vendor_id}|${row.author_user_id}`, row.id])
     );
 
-    /* 항목 평가(웨딩홀·스드메) 또는 체크리스트(결정사) — 한 후기에 둘 중 하나만(DB 트리거). */
+    /* 항목 평가(웨딩홀·스튜디오·드레스·메이크업·본식스냅·혼수·청첩장) 또는 체크리스트(결정사) — 한 후기에 둘 중 하나만(DB 트리거). */
     const aspectRows = reviews.flatMap((review) => {
       const reviewId = reviewIdOf.get(`${review.vendorId}|${review.author}`);
 
@@ -695,7 +757,7 @@ async function remove(client: PoolClient) {
   );
   const ids = vendors.rows.map((row) => row.vendor_id);
   const sampleUsers = `SELECT u.id FROM structured.users u
-     WHERE u.display_name_user_set = false AND (u.display_name ~ '^표본[0-9]+$' OR u.display_name = $1)
+     WHERE u.display_name_user_set = false AND (u.display_name ~ $1 OR u.display_name = ANY($2::text[]))
        AND NOT EXISTS (SELECT 1 FROM identity.identities i WHERE i.user_id = u.id)`;
 
   await client.query('DELETE FROM structured.vendor_source_records WHERE source_key = $1', [SOURCE_KEY]);
@@ -709,9 +771,22 @@ async function remove(client: PoolClient) {
   await client.query('DELETE FROM structured.vendors WHERE id = ANY($1::uuid[])', [ids]);
   await client.query(
     `DELETE FROM structured.payment_proofs WHERE reporter_user_id IN (${sampleUsers})`,
-    [OPERATOR_NAME]
+    [REPORTER_NAME_PATTERN, OPERATOR_NAMES]
   );
-  await client.query(`DELETE FROM structured.users u WHERE u.id IN (${sampleUsers})`, [OPERATOR_NAME]);
+  /*
+   * 웨딩(과 그에 매달린 계약 표본)을 사용자보다 먼저 지운다. 사용자를 한 번에 지우면
+   * 제보자의 웨딩이 CASCADE로 사라진 뒤에 운영자의 quotes.pii_reviewed_by SET NULL이
+   * 같은 quotes 행을 고치려 들고, 이 트랜잭션이 이미 vendor_id를 NULL로 바꾼 행이라
+   * Postgres가 wedding_id 외래키를 다시 검사해 실패한다(quotes_wedding_id_fkey).
+   */
+  await client.query(`DELETE FROM structured.weddings WHERE owner_user_id IN (${sampleUsers})`, [
+    REPORTER_NAME_PATTERN,
+    OPERATOR_NAMES,
+  ]);
+  await client.query(`DELETE FROM structured.users u WHERE u.id IN (${sampleUsers})`, [
+    REPORTER_NAME_PATTERN,
+    OPERATOR_NAMES,
+  ]);
 
   return ids.length;
 }
@@ -741,7 +816,7 @@ async function main(): Promise<void> {
       const reporters = await seedReporters(client);
       const operatorId = await seedOperator(client);
 
-      for (const category of VENDOR_CATEGORIES) {
+      for (const category of SAMPLE_CATEGORIES) {
         const result = await seedCategory(client, category, reporters, operatorId);
 
         console.log(

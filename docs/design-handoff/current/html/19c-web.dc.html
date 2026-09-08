@@ -41,7 +41,7 @@ image-slot::part(empty){display:none !important}
 <div style="display:flex;flex-direction:column;gap:10px;max-width:1000px;padding-bottom:8px">
   <span style="font-size:14px;line-height:19px;font-weight:700;color:#ff6f61">WeddingPick · WP-WEB</span>
   <span style="font-size:40px;line-height:52px;font-weight:700;color:#212124">웹</span>
-  <span style="font-size:18px;line-height:26px;color:#393a40;text-wrap:pretty">웹은 검색 유입과 업체·플래너 창구를 맡습니다. Pick과 우리웨딩 같은 개인화 기능은 앱으로 보내고, 웹에서는 확인된 제보를 로그인 없이 보여줍니다.</span>
+  <span style="font-size:18px;line-height:26px;color:#393a40;text-wrap:pretty">웹은 검색 유입과 업체·플래너 창구를 맡습니다. Pick과 웨딩일정 같은 개인화 기능은 앱으로 보내고, 웹에서는 실 제보를 로그인 없이 보여줍니다.</span>
 </div>
 
 <div style="display:flex;flex-direction:column;gap:36px">
@@ -80,7 +80,7 @@ image-slot::part(empty){display:none !important}
           </div>
         </div>
         <div style="{{ heroStat }}">
-          <span style="{{ t14m }}">지금까지 모인 확인된 제보</span>
+          <span style="{{ t14m }}">지금까지 모인 실 제보</span>
           <span style="{{ h40n }}">1,399건</span>
           <div style="display:flex;flex-direction:column;gap:2px">
             <sc-for list="{{ heroCounts }}" as="h" hint-placeholder-count="4">
@@ -146,7 +146,7 @@ image-slot::part(empty){display:none !important}
 
 <div id="22b" style="{{ colWide }}">
   <div style="{{ tag }}"><span style="{{ tagId }}">WEB 2</span>업체 상세 · WP-WEB-003</div>
-  <span style="{{ tagDescWide }}">앱과 순서를 맞춥니다. 이미지 → 업체명 → 추천 이유 → 확인된 제보 → Pick. 웹에서 Pick을 누르면 앱으로 이어집니다.</span>
+  <span style="{{ tagDescWide }}">앱과 순서를 맞춥니다. 이미지 → 업체명 → 추천 이유 → 실 제보 → Pick. 웹에서 Pick을 누르면 앱으로 이어집니다.</span>
   <div style="{{ web }}">
     <div style="{{ webBar }}"><span style="{{ d1 }}"></span><span style="{{ d2 }}"></span><span style="{{ d3 }}"></span><span style="{{ urlBox }}">weddingpick.kr/v/moment-studio</span></div>
     <div class="nsb" style="{{ webBody }}">
@@ -199,13 +199,13 @@ image-slot::part(empty){display:none !important}
 
         <div style="{{ sideCol }}">
           <div style="{{ sideCard }}">
-            <span style="{{ t14m }}">확인된 제보</span>
+            <span style="{{ t14m }}">실 제보</span>
             <span style="{{ h32n }}">152~184만원</span>
-            <span style="{{ t14n }}">확인된 제보 12건 · 최근 12개월 · 기준금액 168만원</span>
+            <span style="{{ t14n }}">실 제보 12건 · 최근 12개월 · 기준금액 168만원</span>
             <div style="{{ hr }}"></div>
             <span style="{{ btnPrimaryFull }}">앱에서 Pick하기</span>
             <span style="{{ btnGhostFull }}">비교에 담기</span>
-            <span style="{{ t14w }}">Pick과 비교는 앱에서 이어져요. 웹에서는 확인된 제보만 볼 수 있어요.</span>
+            <span style="{{ t14w }}">Pick과 비교는 앱에서 이어져요. 웹에서는 실 제보만 볼 수 있어요.</span>
           </div>
           <div style="{{ sideCardPlain }}">
             <span style="{{ t14m }}">공식정보</span>
@@ -317,7 +317,7 @@ class Component extends DCLogic {
       btnPrimaryFull: 'height:52px;border-radius:6px;background:' + C + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;cursor:pointer',
       btnGhostFull: 'height:52px;border:1px solid #dcdee3;border-radius:6px;background:#fff;color:#212124;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;cursor:pointer',
 
-      gnbMenu: [menu('업체 검색', true), menu('확인된 제보', false), menu('웨딩 정보', false), menu('웨딩박람회', false)],
+      gnbMenu: [menu('업체 검색', true), menu('실 제보', false), menu('웨딩 정보', false), menu('웨딩박람회', false)],
       webChips: ['웨딩홀', '스튜디오', '드레스', '메이크업', '강남'],
       heroCounts: [
         { k: '웨딩홀', v: '412건' },
@@ -326,9 +326,9 @@ class Component extends DCLogic {
         { k: '메이크업', v: '198건' }
       ],
       webCards: [
-        { name: '강남 A 웨딩홀', price: '1,480~1,820만원', n: '확인된 제보 21건', slot: 'wb-c1', src: IMG.hall },
-        { name: '강남 A 스튜디오', price: '152~184만원', n: '확인된 제보 12건', slot: 'wb-c2', src: IMG.couple },
-        { name: '강남 A 드레스', price: '88~124만원', n: '확인된 제보 14건', slot: 'wb-c3', src: IMG.dress }
+        { name: '강남 A 웨딩홀', price: '1,480~1,820만원', n: '실 제보 21건', slot: 'wb-c1', src: IMG.hall },
+        { name: '강남 A 스튜디오', price: '152~184만원', n: '실 제보 12건', slot: 'wb-c2', src: IMG.couple },
+        { name: '강남 A 드레스', price: '88~124만원', n: '실 제보 14건', slot: 'wb-c3', src: IMG.dress }
       ],
       howItWorks: [
         { no: '1', title: '영수증으로 확인해요', body: '사용자가 올린 결제내역을 검증해 업체별 금액 구간을 만들어요. 업체가 알려준 가격과 나눠서 보여드려요.' },
@@ -353,7 +353,7 @@ class Component extends DCLogic {
         { k: '마지막 확인', v: '2026년 8월 28일' }
       ],
       footerCols: [
-        { title: '서비스', items: [link('업체 검색'), link('확인된 제보란'), link('웨딩 정보')] },
+        { title: '서비스', items: [link('업체 검색'), link('실 제보란'), link('웨딩 정보')] },
         { title: '이용안내', items: [link('이용약관'), link('개인정보처리방침'), link('자주 묻는 질문')] },
         { title: '업체 · 플래너', items: [link('업체 · 플래너 문의', true), link('정보 수정 요청'), link('광고 · 제휴')] },
         { title: '앱', items: [link('App Store'), link('Google Play')] }

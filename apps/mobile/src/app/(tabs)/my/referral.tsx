@@ -27,7 +27,7 @@ const S = {
   codeCopied: '공유 완료',
   'cta.copy': '코드 복사',
   'cta.share': '공유하기',
-  shareText: '웨딩픽에서 실제로 낸 금액을 확인하고 Pick해보세요. 초대 코드: ',
+  shareText: '웨딩픽에서 제보 금액을 확인하고 Pick해보세요. 초대 코드: ',
   statsSection: '초대 현황',
   'stats.invited': '초대한 사람',
   'stats.qualified': 'Pick 인증 완료',

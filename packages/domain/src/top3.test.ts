@@ -43,7 +43,7 @@ describe('추천 이유', () => {
     );
   });
 
-  it('확인된 정보가 다섯 건부터 많다고 말한다', () => {
+  it('실 제보가 다섯 건부터 많다고 말한다', () => {
     expect(reasonsFor({ ...BASE, confirmedCount: 4 })).not.toContain('many_confirmed');
     expect(reasonsFor({ ...BASE, confirmedCount: 5 })).toContain('many_confirmed');
   });
@@ -67,7 +67,7 @@ describe('추천 이유', () => {
 });
 
 describe('추천할 자격', () => {
-  it('확인된 정보가 세 건은 있어야 한다', () => {
+  it('실 제보가 세 건은 있어야 한다', () => {
     // 그 아래는 금액 구간조차 못 보여준다. 보여줄 것이 없는 추천은 추천이 아니다.
     expect(TOP3_MIN_CONFIRMED).toBe(3);
     expect(isRecommendable({ ...BASE, confirmedCount: 2 })).toBe(false);

@@ -130,11 +130,11 @@ describeWithDb('광고 지면', () => {
   });
 
   it('업종을 걸어둔 광고는 그 업종에서만 실린다', async () => {
-    const paid = await aVendor('스튜디오하나', 'sdm');
-    await place(paid, { category: 'sdm' });
+    const paid = await aVendor('스튜디오하나', 'studio');
+    await place(paid, { category: 'studio' });
 
     const wrong = (await search('?category=hall')).json<{ sponsored: unknown[] }>();
-    const right = (await search('?category=sdm')).json<{ sponsored: unknown[] }>();
+    const right = (await search('?category=studio')).json<{ sponsored: unknown[] }>();
 
     expect(wrong.sponsored).toEqual([]);
     expect(right.sponsored).toHaveLength(1);

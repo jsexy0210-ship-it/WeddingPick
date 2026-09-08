@@ -85,10 +85,10 @@ describe('결혼정보회사 금액 공개', () => {
     }
   });
 
-  it('공식가격과 확인된 정보를 따로 부른다', () => {
+  it('공식가격과 실 제보를 따로 부른다', () => {
     // 둘을 한 숫자로 합치면 어느 쪽이 근거인지 물을 수 없게 된다.
     expect(AGENCY_PRICE_SOURCE_LABEL.official).toBe('업체 안내');
-    expect(AGENCY_PRICE_SOURCE_LABEL.confirmed).toBe('확인된 정보');
+    expect(AGENCY_PRICE_SOURCE_LABEL.confirmed).toBe('실 제보');
   });
 
   it('가격을 값매김하는 말을 쓰지 않는다', () => {

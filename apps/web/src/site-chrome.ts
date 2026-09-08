@@ -26,7 +26,7 @@ import { SITE_STYLES } from './site-styles';
 const MARK_VIEWBOX = 24;
 const MARK_HEART_PATH =
   'M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z';
-const MARK_CHECK_PATH = 'M8.7 11.9l2.2 2.2 4.4-4.4';
+const MARK_CHECK_PATH = 'M9.4 11.9l1.7 1.7 3.4-3.4';
 const MARK_STROKE = 1.9;
 
 /**

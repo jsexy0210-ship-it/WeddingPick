@@ -40,7 +40,7 @@ function summary(paidPrice: VendorSummary['paidPrice']): VendorSummary {
   return {
     id: '11111111-1111-4111-8111-111111111111',
     name: '모먼트 스튜디오',
-    category: 'sdm',
+    category: 'studio',
     region: '서울 강남구',
     coordinates: null,
     sourceNote: null,
@@ -54,7 +54,7 @@ function detail(overrides: Partial<VendorDetail> = {}): VendorDetail {
   return {
     id: '11111111-1111-4111-8111-111111111111',
     name: '모먼트 스튜디오',
-    category: 'sdm',
+    category: 'studio',
     region: '서울 강남구',
     coordinates: null,
     sourceNote: null,
@@ -251,7 +251,7 @@ describe('서비스 웹 — 업체 상세', () => {
     expect(html).toContain(escapeHtml(reason?.note ?? ''));
   });
 
-  it('확인된 정보에 캡션을 함께 적는다', () => {
+  it('실 제보에 캡션을 함께 적는다', () => {
     const vendor = detail();
     const html = renderVendorPage(vendor);
 

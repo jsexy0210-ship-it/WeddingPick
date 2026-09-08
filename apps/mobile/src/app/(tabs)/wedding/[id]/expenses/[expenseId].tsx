@@ -1,5 +1,5 @@
 import type { ExpenseDetail } from '@weddingpick/api-contract';
-import { manwon } from '@weddingpick/domain';
+import { manwon, TERMS } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -152,7 +152,7 @@ export default function ExpenseDetailScreen() {
 
           {detail.source === 'payment_proof' ? (
             <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="t6">이 금액은 확인된 정보에 들어가요</ThemedText>
+              <ThemedText type="t6">이 금액은 {TERMS.verifiedData}에 들어가요</ThemedText>
               <ThemedText type="t7" themeColor="textSecondary">
                 업체별 금액 구간에 반영되고, 누가 냈는지는 공개하지 않아요.
               </ThemedText>

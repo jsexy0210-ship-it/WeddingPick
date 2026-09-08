@@ -15,6 +15,7 @@
  */
 
 import {
+  PREPARATION_CATEGORIES,
   VENDOR_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
   type VendorCategory,
@@ -40,7 +41,7 @@ export const API_URL_ENV = 'WEDDINGPICK_API_URL';
  *
  * **두 가지 중 지금 셀 수 있는 쪽을 쓴다.**
  *
- *   - `verified` — 확인된 정보 건수. 화면이 원하는 값이지만 이걸 세어 내려주는
+ *   - `verified` — 실 제보 건수. 화면이 원하는 값이지만 이걸 세어 내려주는
  *     경로가 아직 없다. 업체를 한 쪽씩 받아 더하면 그건 그 쪽의 합이지 전체가
  *     아니고, 전체인 척하는 숫자가 가장 나쁘다.
  *   - `vendors` — 검색할 수 있는 업체 수. `GET /v1/vendors`의 `total`이 조건별로
@@ -138,9 +139,13 @@ async function loadStats(): Promise<SiteStats | null> {
     kind: 'vendors',
     title: `${TERMS_SEARCHABLE} 업체`,
     total: `${count(total)}곳`,
-    /* 없는 업종은 줄로 만들지 않는다. 0곳이 늘어선 표는 아직 없는 것을 있는 것처럼 보이게 한다. */
+    /*
+     * 없는 업종은 줄로 만들지 않는다. 0곳이 늘어선 표는 아직 없는 것을 있는 것처럼
+     * 보이게 한다. `기타`도 줄로 만들지 않는다 — 사용자 화면 어디에도 «기타»를
+     * 업종으로 내놓지 않는다(도메인 `PREPARATION_CATEGORIES`). 합계에는 들어간다.
+     */
     rows: rows
-      .filter((row) => row.total > 0)
+      .filter((row) => row.total > 0 && PREPARATION_CATEGORIES.includes(row.category))
       .sort((a, b) => b.total - a.total)
       .map((row) => ({
         label: VENDOR_CATEGORY_LABEL[row.category],

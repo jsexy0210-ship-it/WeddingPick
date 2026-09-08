@@ -18,8 +18,8 @@ export const MARK_VIEWBOX = 24;
 export const MARK_HEART_PATH =
   'M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z';
 
-/** 체크. `spec/tokens.json` `symbol.paths[1]` — 중심이 하트 한가운데(12, 11.9)다. */
-export const MARK_CHECK_PATH = 'M8.7 11.9l2.2 2.2 4.4-4.4';
+/** 체크. `spec/tokens.json` `symbol.paths[1]` — 중심이 하트 한가운데(12, 11.9)다. 핸드오프 v3.10~(PROJECT_RULES) 확정판. */
+export const MARK_CHECK_PATH = 'M9.4 11.9l1.7 1.7 3.4-3.4';
 
 /** 획 두께. 하트와 체크가 같아야 한 손으로 그린 것처럼 보인다. */
 export const MARK_STROKE = 1.9;

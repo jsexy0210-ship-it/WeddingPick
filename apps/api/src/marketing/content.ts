@@ -11,11 +11,11 @@ import type { MarketingChannel, MarketingFormat, MarketingSource } from '@weddin
 /** 검증된 사실 ID → 표현 문장 매핑 (운영자가 검토한 원문) */
 export const VERIFIED_FACTS: Record<string, string> = {
   pick: '웨딩픽은 웨딩업체를 먼저 골라주고 사용자는 비교해서 Pick하는 서비스예요.',
-  compare: '확인된 결제 금액 정보를 바탕으로 업체를 비교할 수 있어요.',
+  compare: '제보 금액을 바탕으로 업체를 비교할 수 있어요.',
   together: '배우자와 함께 업체 후보를 보고 함께 결정할 수 있어요.',
   schedule: '결혼 준비 일정과 지출을 한곳에서 관리할 수 있어요.',
-  data: '실제 결제 금액 정보를 기반으로 구간과 기준금액을 안내해요.',
-  proof: '확인된 결제 정보만 비교에 반영해요.',
+  data: '제보 금액을 기반으로 구간과 기준금액을 안내해요.',
+  proof: '실 제보만 비교에 반영해요.',
   free: '앱 다운로드와 기본 비교 기능은 무료예요.',
   category: '웨딩홀, 스튜디오, 드레스, 결정사 등 카테고리별로 비교할 수 있어요.',
 };

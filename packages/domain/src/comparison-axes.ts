@@ -131,7 +131,7 @@ export const AXIS_KIND_NOTE: Record<AxisKind, string> = {
 /**
  * 같은 표에 넣어도 되는가.
  *
- * 서로 다른 `kind`의 값을 한 칸에 합치는 일을 막는다. 합치면 확인된 금액과
+ * 서로 다른 `kind`의 값을 한 칸에 합치는 일을 막는다. 합치면 제보 금액과
  * 업체가 부른 값이 한 숫자가 되고, 그 숫자는 우리가 확인했다고 읽힌다.
  */
 export function canMerge(a: AxisKind, b: AxisKind): boolean {

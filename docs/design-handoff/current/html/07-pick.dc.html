@@ -45,7 +45,7 @@ image-slot::part(empty){display:none !important}
 <div style="display:flex;flex-direction:column;gap:10px;max-width:1000px;padding-bottom:8px">
   <span style="font-size:14px;line-height:19px;font-weight:700;color:#ff6f61">WeddingPick · WP-PICK</span>
   <span style="font-size:40px;line-height:52px;font-weight:700;color:#212124">Pick</span>
-  <span style="font-size:18px;line-height:26px;color:#393a40;text-wrap:pretty">검색이 «찾는 곳», Pick은 «좁히는 곳»입니다. 관심업체 개념은 폐기하고 Pick 하나로 통합했습니다. 후보를 모으고 → 비교하고 → 배우자와 맞춰보고 → 최종 결정하면 우리웨딩으로 넘어갑니다.</span>
+  <span style="font-size:18px;line-height:26px;color:#393a40;text-wrap:pretty">검색이 «찾는 곳», Pick은 «좁히는 곳»입니다. 관심업체 개념은 폐기하고 Pick 하나로 통합했습니다. 후보를 모으고 → 비교하고 → 배우자와 맞춰보고 → 최종 결정하면 웨딩일정으로 넘어갑니다.</span>
 </div>
 
 <div style="display:flex;gap:36px;align-items:flex-start">
@@ -323,7 +323,7 @@ class Component extends DCLogic {
     home: ['M3.6 10.4 12 3.8l8.4 6.6V19a1.6 1.6 0 0 1-1.6 1.6H5.2A1.6 1.6 0 0 1 3.6 19z', 'M9.6 20.6v-6.2h4.8v6.2', ''],
     search: ['M11 4.2a6.9 6.9 0 1 0 0 13.8 6.9 6.9 0 0 0 0-13.8z', 'M16.2 16.2 20.8 20.8', ''],
     pick: ['M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z', 'M9.4 11.9l1.7 1.7 3.4-3.4', ''],
-    couple: ['M8.6 11.2a3.3 3.3 0 1 0 0-6.6 3.3 3.3 0 0 0 0 6.6z', 'M2.6 20.4v-.8a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v.8', 'M16.2 5.4a3.3 3.3 0 0 1 0 5.9M17.6 14.7a5 5 0 0 1 3.8 4.9v.8'],
+    couple: ['M5.2 5.6h13.6a1.8 1.8 0 0 1 1.8 1.8v11.2a1.8 1.8 0 0 1-1.8 1.8H5.2a1.8 1.8 0 0 1-1.8-1.8V7.4a1.8 1.8 0 0 1 1.8-1.8z', 'M3.4 10.4h17.2M8.4 3.4v4M15.6 3.4v4', ''],
     my: ['M12 11.6a4 4 0 1 0 0-8 4 4 0 0 0 0 8z', 'M4.8 20.6v-.6a6 6 0 0 1 6-6h2.4a6 6 0 0 1 6 6v.6', '']
   };
 
@@ -406,7 +406,7 @@ class Component extends DCLogic {
       ctaGhostHalf: 'flex:1;height:52px;border:0;border-radius:6px;background:#f2f3f6;color:#393a40;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer',
       ctaDanger: 'flex:1.2;height:52px;border:0;border-radius:6px;background:#ff4133;color:#fff;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer',
 
-      tabs: [tab('홈', 'home', false), tab('검색', 'search', false), tab('Pick', 'pick', true), tab('우리웨딩', 'couple', false), tab('MY', 'my', false)],
+      tabs: [tab('홈', 'home', false), tab('검색', 'search', false), tab('Pick', 'pick', true), tab('웨딩일정', 'couple', false), tab('MY', 'my', false)],
 
       pickCats: [
         cat('웨딩홀', '후보 3곳 · 둘 다 고른 곳 2', '비교하기', 'now'),
@@ -415,8 +415,8 @@ class Component extends DCLogic {
         cat('메이크업', '후보 없음', '검색하기', 'none')
       ],
       shared: [
-        { name: '강남 A 웨딩홀', price: '1,480~1,820만원', n: '확인된 제보 21건', slot: 'pk-s1', src: IMG.hall },
-        { name: '서초 B 웨딩홀', price: '1,320~1,610만원', n: '확인된 제보 9건', slot: 'pk-s2', src: IMG.arch }
+        { name: '강남 A 웨딩홀', price: '1,480~1,820만원', n: '실 제보 21건', slot: 'pk-s1', src: IMG.hall },
+        { name: '서초 B 웨딩홀', price: '1,320~1,610만원', n: '실 제보 9건', slot: 'pk-s2', src: IMG.arch }
       ],
       starters: [
         { name: '강남 A 웨딩홀', price: '1,480~1,820만', slot: 'pk-e1', src: IMG.hall },
@@ -430,21 +430,21 @@ class Component extends DCLogic {
         { name: '예물', tail: '63곳' }
       ],
       opinions: [
-        op('강남 A 웨딩홀', '1,480~1,820만원', '확인된 제보 21건', 'pk-o1', IMG.hall, 'both', [
+        op('강남 A 웨딩홀', '1,480~1,820만원', '실 제보 21건', 'pk-o1', IMG.hall, 'both', [
           { initial: '지', who: who(true), text: '홀 자체가 제일 마음에 들어요' },
           { initial: '준', who: who(false), text: '주차가 넉넉해서 좋았어요' }
         ]),
-        op('서초 B 웨딩홀', '1,320~1,610만원', '확인된 제보 9건', 'pk-o2', IMG.arch, 'both', [
+        op('서초 B 웨딩홀', '1,320~1,610만원', '실 제보 9건', 'pk-o2', IMG.arch, 'both', [
           { initial: '지', who: who(true), text: '예산이 여기가 제일 낫네요' },
           { initial: '준', who: who(false), text: '동의해요' }
         ]),
-        op('분당 D 웨딩홀', '1,180~1,470만원', '확인된 제보 6건', 'pk-o3', IMG.bride, 'split', [
+        op('분당 D 웨딩홀', '1,180~1,470만원', '실 제보 6건', 'pk-o3', IMG.bride, 'split', [
           { initial: '준', who: who(false), text: '가격은 좋은데 홀이 좁아 보여요' },
           { initial: '지', who: who(true), text: '실물은 괜찮았어요. 한 번 더 볼까요' }
         ])
       ],
       reflected: [
-        { label: '우리웨딩', text: '준비현황에 웨딩홀 결정 완료로 반영됐어요' },
+        { label: '웨딩일정', text: '준비현황에 웨딩홀 결정 완료로 반영됐어요' },
         { label: '일정', text: '본식 5월 16일이 일정에 추가됐어요' },
         { label: '지출', text: '결제내역을 제보하면 지출에 연결돼요' }
       ],

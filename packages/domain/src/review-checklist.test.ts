@@ -19,13 +19,15 @@ describe('업종이 평가 방식을 정한다', () => {
     expect(checklistFor('wedding_info_company').length).toBeGreaterThan(0);
   });
 
-  it('웨딩홀과 스드메는 별점이다', () => {
+  it('웨딩홀과 스튜디오·드레스·메이크업은 별점이다', () => {
     /*
      * 체크리스트 항목(가격설명·계약일치·매칭이행·과도권유)은 결정사 계약에만 있는
      * 것이라 웨딩홀 음식이나 스튜디오 보정에는 쓸 수 없다.
      */
     expect(evaluationModeFor('hall')).toBe('rating');
-    expect(evaluationModeFor('sdm')).toBe('rating');
+    expect(evaluationModeFor('studio')).toBe('rating');
+    expect(evaluationModeFor('dress')).toBe('rating');
+    expect(evaluationModeFor('makeup')).toBe('rating');
     expect(checklistFor('hall')).toEqual([]);
   });
 });
