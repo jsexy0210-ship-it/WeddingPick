@@ -61,6 +61,15 @@ describe('예식일', () => {
     expect(daysUntil('2026-08-29', new Date('2026-08-29T23:59:00+09:00'))).toBe(0);
   });
 
+  it('오전 9시 이전에도 하루가 어긋나지 않는다 (KST · 로컬 자정 기준)', () => {
+    /*
+     * UTC로 `2026-09-09`를 읽으면 KST 오전 9시 이전에는 «어제»가 돼 D-2가 나온다.
+     * 로컬 자정끼리 빼면 08:30에도 D-1이다(SPEC §13.6 «타임존은 KST 고정»).
+     */
+    expect(daysUntil('2026-09-09', new Date(2026, 8, 8, 8, 30))).toBe(1);
+    expect(daysUntil('2026-09-08', new Date(2026, 8, 8, 0, 0, 1))).toBe(0);
+  });
+
   it('오늘과 과거는 고를 수 없다', () => {
     // 결혼식은 미래다.
     expect(isSelectableWeddingDate('2026-08-30', NOW)).toBe(true);

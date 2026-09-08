@@ -7,6 +7,7 @@ import { ApiError, completeSetup, completeSignup, getSignupState, updateTaste } 
 import { isServerConfigured } from '@/api/config';
 import { loadToken } from '@/api/session';
 import { Layout, Radius, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
+
 import { BudgetGrid } from '@/features/onboarding/budget-grid';
 import { DatePickerSheet } from '@/features/onboarding/date-picker-sheet';
 import {
@@ -17,14 +18,17 @@ import {
   NEXT_CTA,
   PREV_CTA,
   STEP_TITLE_LINES,
+  TASTE_RESET_NOTICE,
   UNDECIDED_LABEL,
   answeredRows,
   canAdvance,
   ddayParts,
   doneRows,
   nextStep,
+  prepChanged,
   prevStep,
   resumeStep,
+  returnStep,
   stepDescription,
   stepProgress,
   stepsFor,
@@ -48,7 +52,8 @@ import {
 } from '@/features/onboarding/wedding-draft';
 
 /**
- * 초기 설정. 디자인 핸드오프 v3.22 20-onboarding-v2.dc.html(WP-APP-020 ~ 023).
+ * 초기 설정. 디자인 핸드오프 v3.19(재정렬) 20-onboarding-v2.dc.html · SPEC §13.6
+ * (WP-APP-020 ~ 023).
  *
  *   예식일 1/5 → 지역 2/5 → 준비 현황 3/5 → 예산 4/5 → 취향 5/5 → 완료
  *
@@ -58,16 +63,20 @@ import {
  *
  * **상단 뒤로가기가 없다.** 첫 질문은 «다음»만, 두 번째부터 «이전 · 다음».
  * 안드로이드 물리 뒤로가기는 «이전»과 같고 첫 질문에서는 로그인으로 나간다.
- * «바꾸기»는 그 질문만 다시 열고 뒤의 답은 그대로 둔다 — 그 뒤 «다음»은 아직
- * 안 답한 질문으로 바로 간다.
+ *
+ * **«바꾸기»**(SPEC §13.6 «「바꾸기」 동작 정의»)는 그 질문만 다시 연다 — 진행바는
+ * 그 Step으로 돌아가고 하단은 «다음» 하나뿐이며, 뒤에 답한 값은 그대로 두되 답 줄에서
+ * 잠시 숨긴다. 고치고 «다음»을 누르면 원래 있던 Step으로 바로 복귀한다 — 3/5 · 4/5를
+ * 다시 묻지 않는다. 연쇄 초기화는 없다. 예외 하나 — 준비 현황(3/5)을 바꾸면 취향
+ * 세트가 바뀌므로 취향만 지우고 한 줄로 알린다(`TASTE_RESET_NOTICE`).
  *
  * **미정을 억지로 받지 않는다.** 예식일 · 지역 «아직 정하지 않았어요», 준비 현황
  * «아직 시작 전이에요», 예산 «아직 모르겠어요». 취향만 최소 1장 필수다 — 추천의
- * 근거라 없으면 첫 화면에 보여줄 것이 없다. 취향은 준비 현황에서 남은 첫 업종
- * 하나만 묻고, 전부 준비했으면 5/5를 통째로 건너뛴다.
+ * 근거라 없으면 첫 화면에 보여줄 것이 없다. 취향은 준비 현황에 없고 사진이 3장
+ * 이상인 첫 업종 하나만 묻고, 그런 업종이 없으면 5/5를 통째로 건너뛴다.
  *
  * **스크롤은 화면 전체 하나다**(SPEC §13.5.5). 준비 현황이 뷰포트를 넘치면 화면이
- * 스크롤한다 — 목록 전용 스크롤을 두지 않는다.
+ * 스크롤한다 — 목록 전용 스크롤을 두지 않는다. 5/5는 132 × 3행이라 스크롤이 없다.
  *
  * **만 14세 확인은 여기 없다.** 로그인 화면(WP-AUTH-001)의 체크박스 하나로 끝난다 —
  * 이 화면에 닿았다는 것 자체가 확인을 마쳤다는 뜻이라 `completeSignup`에
@@ -78,9 +87,12 @@ import {
  * 답하는 중인 값은 기기에 적어둔다 — 앱을 닫았다 열어도 답한 데까지 이어서 묻는다.
  * 서버에 올리고 나면 지운다.
  *
- * 시안과 다른 값은 토큰이 이기는 곳뿐이다: CTA·셀렉트·입력칸 높이 52(size.ctaPrimary ·
+ * 시안과 다른 값은 토큰이 이기는 곳뿐이다: CTA·입력칸 높이 52(size.ctaPrimary ·
  * size.field, 시안 56) · 15px 글자는 t6(16) · 13px은 t7(14).
  */
+/** «바꾸기»로 다시 연 질문. `from`은 돌아갈 Step, `prepBefore`는 취향 초기화를 판단할 원래 준비 현황. */
+type Editing = { step: QuestionStep; from: QuestionStep; prepBefore: Answers['prep'] };
+
 export default function SetupScreen() {
   const theme = useTheme();
 
@@ -90,6 +102,9 @@ export default function SetupScreen() {
   const [restored, setRestored] = useState(false);
   /** 가입이 아직 안 끝난 계정인가 — 그러면 답을 다 받은 뒤 가입부터 마친다. */
   const [needsSignup, setNeedsSignup] = useState(false);
+  const [editing, setEditing] = useState<Editing | null>(null);
+  /** 준비 현황을 바꿔 취향이 지워졌음을 알리는 한 줄. 다음 Step으로 옮기면 사라진다. */
+  const [notice, setNotice] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -126,44 +141,81 @@ export default function SetupScreen() {
   }
 
   const goPrev = useCallback(() => {
-    if (step === 'done') return;
+    if (step === 'done' || editing !== null) return;
 
     const previous = prevStep(step, answers);
 
     setError(null);
+    setNotice(null);
 
     if (previous === null) {
       router.replace('/login');
     } else {
       setStep(previous);
     }
-  }, [step, answers]);
+  }, [step, answers, editing]);
 
-  /* 안드로이드 물리 뒤로가기 = «이전». 완료 화면에서는 아무 데도 가지 않는다. */
+  /**
+   * «바꾸기»로 연 질문을 닫는다. 준비 현황이 실제로 바뀌었으면 취향을 지우고 알린 뒤,
+   * 원래 있던 Step으로 바로 돌아간다(`returnStep`). 돌아갈 곳이 없으면 완료다.
+   */
+  const finishEdit = useCallback(() => {
+    if (editing === null || step === 'done' || !canAdvance(step, answers)) return;
+
+    let next = answers;
+    let message: string | null = null;
+
+    if (editing.step === 'prep' && prepChanged(editing.prepBefore, answers.prep) && answers.taste !== null) {
+      next = { ...answers, taste: null };
+      message = TASTE_RESET_NOTICE;
+    }
+
+    const target = returnStep(editing.step, editing.from, next);
+
+    setAnswers(next);
+    setEditing(null);
+    setError(null);
+    setNotice(message);
+
+    if (target === null) {
+      void finish(next);
+    } else {
+      setStep(target);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- finish는 answers · sending만 읽고 여기서 next를 직접 넘긴다.
+  }, [editing, step, answers]);
+
+  /* 안드로이드 물리 뒤로가기 = «이전». 바꾸는 중에는 «다음»과 같고, 완료 화면에서는 아무 데도 가지 않는다. */
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (step !== 'done') goPrev();
+      if (step === 'done') return true;
+
+      if (editing !== null) {
+        finishEdit();
+      } else {
+        goPrev();
+      }
 
       return true;
     });
 
     return () => subscription.remove();
-  }, [step, goPrev]);
+  }, [step, editing, goPrev, finishEdit]);
 
-  async function finish() {
+  async function finish(source: Answers = answers) {
     if (sending) return;
 
     setSending(true);
     setError(null);
 
-    const category = tasteCategoryFor(answers);
-    const taste = category !== null && answers.taste?.category === category ? answers.taste : null;
-    const region = answers.region?.region ?? null;
+    const category = tasteCategoryFor(source);
+    const taste = category !== null && source.taste?.category === category ? source.taste : null;
+    const region = source.region?.region ?? null;
     const draft = {
-      weddingDate: answers.date?.value ?? null,
-      region: region === null ? null : combineRegion(region, answers.region?.district ?? null),
-      preparedCategories: answers.prep?.categories ?? [],
-      budgetBracket: answers.budget,
+      weddingDate: source.date?.value ?? null,
+      region: region === null ? null : combineRegion(region, source.region?.district ?? null),
+      preparedCategories: source.prep?.categories ?? [],
+      budgetBracket: source.budget,
       taste,
     };
 
@@ -219,15 +271,31 @@ export default function SetupScreen() {
   function goNext() {
     if (step === 'done') return;
 
+    if (editing !== null) {
+      finishEdit();
+      return;
+    }
+
     const next = nextStep(step, answers);
 
     setError(null);
+    setNotice(null);
 
     if (next === null) {
       void finish();
     } else {
       setStep(next);
     }
+  }
+
+  /** «바꾸기» — 그 질문만 다시 연다. 돌아갈 곳과 원래 준비 현황을 기억해 둔다. */
+  function beginEdit(target: QuestionStep) {
+    if (step === 'done') return;
+
+    setError(null);
+    setNotice(null);
+    setEditing({ step: target, from: step, prepBefore: answers.prep });
+    setStep(target);
   }
 
   if (!restored) {
@@ -270,7 +338,8 @@ export default function SetupScreen() {
   }
 
   const progress = stepProgress(step);
-  const previous = prevStep(step, answers);
+  /* 바꾸는 중에는 «다음» 하나뿐이다(SPEC §13.6 «하단 CTA 다음 하나만 · 이전 버튼 없음»). */
+  const previous = editing === null ? prevStep(step, answers) : null;
   const tasteCategory = tasteCategoryFor(answers);
   const tasteKeys = answers.taste?.category === tasteCategory ? answers.taste.keys : [];
   const date = answers.date?.value ?? null;
@@ -283,18 +352,25 @@ export default function SetupScreen() {
         progress={progress.percent}
         label={progress.label}
         stepKey={step}
-        answered={step === 'taste' ? [] : answeredRows(step, answers)}
-        onEdit={(target) => {
-          setError(null);
-          setStep(target);
-        }}
+        answered={step === 'taste' ? [] : answeredRows(step, answers, editing !== null)}
+        onEdit={beginEdit}
         prevLabel={previous === null ? undefined : PREV_CTA}
         onPrev={previous === null ? undefined : goPrev}
         nextLabel={step === 'taste' ? tasteCta(tasteKeys.length) : NEXT_CTA}
         nextDisabled={!canAdvance(step, answers) || sending}
         onNext={goNext}
         error={error}>
-        <QuestionHead lines={STEP_TITLE_LINES[step]} description={stepDescription(step, answers)} />
+        <QuestionHead lines={STEP_TITLE_LINES[step]} description={stepDescription(step)} />
+
+        {notice ? (
+          <View style={styles.section}>
+            <View style={[styles.notice, { backgroundColor: theme.backgroundElement }]}>
+              <ThemedText type="t7" themeColor="textSecondary" numberOfLines={1}>
+                {notice}
+              </ThemedText>
+            </View>
+          </View>
+        ) : null}
 
         {step === 'date' ? (
           <View style={styles.section}>
@@ -407,6 +483,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.half,
   },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  /* 취향 초기화 알림 한 줄 — gray50 · radius 10 · 안쪽 12/16. 느낌표 없이 사실만. */
+  notice: {
+    borderRadius: Radius.medium,
+    paddingVertical: Layout.rowPaddingY,
+    paddingHorizontal: Spacing.three,
+  },
   /* 완료 요약 — gray50 · radius 10 · 안쪽 20 · 행 상하 9. 안쪽 상자 없음. */
   summary: {
     borderRadius: Radius.medium,

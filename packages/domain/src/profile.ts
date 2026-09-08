@@ -48,18 +48,29 @@ export function checkDisplayName(raw: string): NameCheck {
 /* 예식일                                                                      */
 /* -------------------------------------------------------------------------- */
 
-/** 하루의 시작으로 맞춘다. 시각이 섞이면 같은 날이 하루 차이로 세어진다. */
-function atMidnight(value: Date): number {
-  return new Date(value.getFullYear(), value.getMonth(), value.getDate()).getTime();
+/**
+ * 하루의 시작(자정)으로 맞춘다. 시각이 섞이면 같은 날이 하루 차이로 세어진다.
+ *
+ * **기기 로컬 시간이다 — UTC가 아니다.** `Date.parse('2026-09-09')`는 UTC 자정이라
+ * KST에서는 오전 9시 이전에 하루가 어긋난다(SPEC §13.6 «D-day 계산 · 타임존은 KST
+ * 고정»). 그래서 `YYYY-MM-DD`를 쪼개 `new Date(y, m - 1, d)`로 만든다.
+ */
+function startOfDay(year: number, month: number, day: number): number {
+  return new Date(year, month - 1, day).getTime();
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * D = startOfDay(예식일) − startOfDay(오늘), 일 단위 정수. 두 값 모두 로컬 자정이라
+ * 나눗셈은 정수로 떨어진다 — 서머타임이 있는 지역만 한 시간이 남아 반올림한다.
+ */
 export function daysUntil(weddingDate: string, now: Date = new Date()): number {
   const [year, month, day] = weddingDate.split('-').map(Number);
-  const target = new Date(year!, month! - 1, day!);
+  const target = startOfDay(year!, month!, day!);
+  const today = startOfDay(now.getFullYear(), now.getMonth() + 1, now.getDate());
 
-  return Math.round((atMidnight(target) - atMidnight(now)) / DAY_MS);
+  return Math.round((target - today) / DAY_MS);
 }
 
 /**

@@ -2,6 +2,8 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Layout, Radius, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
 
+import { tasteImageSource } from '@/features/taste/images';
+
 import { CategoryImage } from './category-image';
 import { TASTE_SETS, type TasteCategory, type TasteOption } from './taste';
 
@@ -17,10 +19,10 @@ import { TASTE_SETS, type TasteCategory, type TasteOption } from './taste';
  * **업로드 UI가 아니라 선택 카드다.** 사용자가 사진을 올리는 화면이었던 적이
  * 있는데, 그건 취향을 묻는 게 아니라 일을 시키는 것이었다.
  *
- * **사진은 아직 없다.** 아홉 세트 쉰네 장의 실제 촬영물은 자산이 확보되지 않았고
- * (CLAUDE.md «실제 이미지 대기 중»), 그때까지 외부 이미지를 끌어오지 않는다 —
- * 카드는 `CategoryImage`의 업종 기본 면(조용한 단색) 위에 라벨 배지만 얹는다.
- * 사진이 오면 `CategoryImage`에 uri를 넘기는 것으로 끝난다.
+ * **사진은 `features/taste/images`의 표에서 꺼낸다** — 온보딩 5/5와 같은 사진이다.
+ * 오늘은 스튜디오 3장뿐이고(IMAGES.md «보유 3장») 나머지 카드는 `CategoryImage`의
+ * 업종 기본 면(조용한 단색) 위에 라벨 배지만 얹는다. 사진이 오면 그 표에 한 줄
+ * 더하는 것으로 끝난다. 어느 업종을 그릴지(3장 이상 규칙)는 부르는 쪽이 정한다.
  *
  * 라벨은 배지다 — 사진 위에 글자만 얹으면 밝은 사진(화이트 드레스·야외)에서
  * 읽히지 않았다. SPEC §13.6: `rgba(0,0,0,.55)` 배경 + 흰 글자. 그라데이션은 깔지
@@ -112,8 +114,8 @@ function Tile({
       accessibilityLabel={option.label}
       onPress={onPress}
       style={({ pressed }) => [fill ? styles.tileFill : styles.tile, pressed && styles.pressed]}>
-      {/* 사진 자리. uri가 없어 업종 기본 면으로 채워진다 — 빈 상자나 «사진 준비 중»은 아니다. */}
-      <CategoryImage style={styles.image} />
+      {/* 사진 자리. 표에 없는 키는 업종 기본 면으로 채워진다 — 빈 상자나 «사진 준비 중»은 아니다. */}
+      <CategoryImage uri={tasteImageSource(option.key)?.uri ?? null} style={styles.image} />
 
       {/*
         고른 것은 코랄 테두리로 알린다. 색을 더 쓰지 않고 테두리 하나로 끝내는

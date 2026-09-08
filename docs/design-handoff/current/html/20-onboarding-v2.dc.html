@@ -75,7 +75,7 @@ image-slot::part(empty){display:none !important}
             <div style="{{ padSec }}">
               <div style="{{ s.dateFieldStyle }}">{{ s.dateField }}</div>
               <sc-if value="{{ s.dday }}">
-                <div style="{{ ddayRow }}"><span style="{{ ddayText }}">예식일까지</span><span style="{{ ddayNum }}">{{ s.dday }}</span><span style="{{ ddayText }}">남았어요</span></div>
+                <div style="{{ ddayRow }}"><span style="{{ ddayNum }}">{{ s.dday }}</span><span style="{{ ddayText }}">오늘부터 250일 뒤예요</span></div>
               </sc-if>
             </div>
           </sc-if>
@@ -84,15 +84,20 @@ image-slot::part(empty){display:none !important}
             <div style="{{ padSec }}">
               <sc-for list="{{ s.progress }}" as="g" hint-placeholder-count="5">
               <div style="{{ progGroup }}">
-              <sc-if value="{{ g.title }}"><span style="{{ progTitle }}">{{ g.title }}</span></sc-if>
-              <div style="{{ g.gridStyle }}">
+              <sc-if value="{{ g.title }}">
+                <div style="{{ progHead }}">
+                  <span style="{{ progTitle }}">{{ g.title }}</span>
+                  <sc-if value="{{ g.allLabel }}"><span style="{{ g.allStyle }}">{{ g.allLabel }}</span></sc-if>
+                </div>
+              </sc-if>
+              <div style="{{ chipWrap }}">
                 <sc-for list="{{ g.items }}" as="p" hint-placeholder-count="3">
-                  <div style="{{ p.cell }}">
-                    <span style="{{ p.nameStyle }}">{{ p.name }}</span>
+                  <span style="{{ p.cell }}">
                     <sc-if value="{{ p.on }}" hint-placeholder-val="{{ false }}">
-                      <span style="{{ cellCheck }}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg></span>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ff6f61" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg>
                     </sc-if>
-                  </div>
+                    <span style="{{ p.nameStyle }}">{{ p.name }}</span>
+                  </span>
                 </sc-for>
               </div>
               </div>
@@ -213,35 +218,23 @@ image-slot::part(empty){display:none !important}
             <div style="{{ sheet }}">
               <span style="{{ grabber }}"></span>
 
-              <div style="{{ selRow }}">
-                <div style="{{ p.yearStyle }}">
-                  <span style="{{ selVal }}">{{ p.year }}</span>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4d5159" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9.5 6 6 6-6"></path></svg>
-                </div>
-                <div style="{{ p.monthStyle }}">
-                  <span style="{{ selVal }}">{{ p.month }}</span>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4d5159" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9.5 6 6 6-6"></path></svg>
-                </div>
+              <div style="{{ sheetHead }}">
+                <span style="{{ sheetTitle }}">예식일 선택</span>
+                <span style="{{ sheetClose }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#868b94" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></span>
               </div>
 
-              <sc-if value="{{ p.options }}" hint-placeholder-val="{{ false }}">
-                <div style="{{ optWrap }}">
-                  <sc-for list="{{ p.options }}" as="o" hint-placeholder-count="12">
-                    <span style="{{ o.style }}">{{ o.label }}</span>
-                  </sc-for>
-                </div>
-              </sc-if>
-
-              <sc-if value="{{ p.days }}" hint-placeholder-val="{{ true }}">
-                <div style="{{ calWrap }}">
-                  <div style="{{ dowRow }}">
-                    <sc-for list="{{ dow }}" as="d" hint-placeholder-count="7"><span style="{{ d.style }}">{{ d.label }}</span></sc-for>
+              <div style="{{ wheelWrap }}">
+                <div style="{{ wheelBand }}"></div>
+                <sc-for list="{{ p.wheels }}" as="w" hint-placeholder-count="3">
+                  <div class="nsb" style="{{ w.colStyle }}">
+                    <sc-for list="{{ w.items }}" as="i" hint-placeholder-count="7">
+                      <span style="{{ i.style }}">{{ i.label }}</span>
+                    </sc-for>
                   </div>
-                  <div style="{{ calGrid }}">
-                    <sc-for list="{{ p.days }}" as="d" hint-placeholder-count="35"><span style="{{ d.style }}">{{ d.label }}</span></sc-for>
-                  </div>
-                </div>
-              </sc-if>
+                </sc-for>
+                <div style="{{ wheelFadeTop }}"></div>
+                <div style="{{ wheelFadeBottom }}"></div>
+              </div>
 
               <sc-if value="{{ p.picked }}">
                 <div style="{{ pickedRow }}"><span style="{{ pickedVal }}">{{ p.picked }}</span><span style="{{ pickedDday }}">{{ p.dday }}</span></div>
@@ -283,9 +276,9 @@ class Component extends DCLogic {
       + (on ? 'background:' + C + ';color:#fff;' : 'background:#f2f3f6;color:#4d5159;');
     const rowName = on => 'font-size:16px;line-height:22px;color:' + (on ? '#212124;font-weight:700;' : '#4d5159;');
     const prog = (name, on) => ({ name, on,
-      cell: 'height:48px;border-radius:10px;padding:0 14px;display:flex;align-items:center;justify-content:space-between;gap:6px;cursor:pointer;box-sizing:border-box;'
-        + (on ? 'background:#fff;border:1.5px solid ' + C + ';' : 'background:#f7f8fa;border:1.5px solid transparent;'),
-      nameStyle: 'font-size:16px;line-height:22px;font-weight:700;color:' + (on ? '#212124' : '#4d5159') + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis' });
+      cell: 'flex:0 0 auto;height:36px;border-radius:999px;padding:0 13px;display:inline-flex;align-items:center;gap:5px;cursor:pointer;box-sizing:border-box;white-space:nowrap;'
+        + (on ? 'background:#fff5f2;box-shadow:inset 0 0 0 1.5px ' + C + ';' : 'background:#f7f8fa;box-shadow:inset 0 0 0 1.5px transparent;'),
+      nameStyle: 'font-size:14px;line-height:19px;font-weight:700;color:' + (on ? C : '#4d5159') + ';white-space:nowrap' });
     const tasteOn = on => 'position:absolute;inset:0;border-radius:10px;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;padding:10px;cursor:pointer;'
       + (on ? 'border:2px solid ' + C + ';box-shadow:inset 0 0 0 100vmax rgba(255,111,97,.16);' : 'border:1px solid rgba(0,27,55,.10);');
     const tasteCheck = on => on
@@ -300,9 +293,50 @@ class Component extends DCLogic {
     const sheetCta = 'width:100%;flex:0 0 56px;height:56px;box-sizing:border-box;border:0;border-radius:6px;background:' + C + ';color:#fff;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer';
     const selBox = on => 'flex:1;min-width:0;height:52px;padding:0 16px;border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;box-sizing:border-box;'
       + (on ? 'background:#fff;border:1.5px solid ' + C + ';' : 'background:#f7f8fa;border:1.5px solid transparent;');
-    const optCell = (label, on) => ({ label,
-      style: 'height:44px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;cursor:pointer;font-variant-numeric:tabular-nums;'
-        + (on ? 'background:' + C + ';color:#fff;' : 'background:#f7f8fa;color:#4d5159;') });
+    const CARET_DOWN = 'm6 9.5 6 6 6-6';
+    const CARET_UP = 'm6 14.5 6-6 6 6';
+    const wheelItem = (label, dist) => ({ label,
+      style: 'flex:0 0 48px;height:48px;display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums;white-space:nowrap;cursor:pointer;'
+        + (dist === 0
+          ? 'font-size:20px;line-height:27px;font-weight:700;color:#212124;'
+          : dist === 1
+            ? 'font-size:18px;line-height:24px;color:#868b94;'
+            : dist === 2
+              ? 'font-size:17px;line-height:23px;color:#c4c8ce;'
+              : 'font-size:16px;line-height:22px;color:#e2e5e9;') });
+    const wheelCol = (items, sel, flexBasis) => ({
+      colStyle: 'flex:' + flexBasis + ';min-width:0;height:240px;overflow-y:auto;scrollbar-width:none;display:flex;flex-direction:column;padding:96px 0;box-sizing:border-box;position:relative;z-index:2',
+      items: items.map((label, i) => wheelItem(label, Math.abs(i - sel)))
+    });
+    const KOR = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+    const YM = (sel) => {
+      const out = [];
+      let y = 2026, m = 9;
+      for (let i = 0; i < 30; i++) {
+        const label = y + '년 ' + KOR[m - 1];
+        const key = y + '-' + m;
+        out.push(ymRow(label, key === sel, m === 1 ? y + '년 시작' : ''));
+        m += 1; if (m > 12) { m = 1; y += 1; }
+      }
+      return out;
+    };
+    const ymRow = (label, on, meta) => ({ label, meta,
+      style: 'flex:0 0 auto;height:56px;padding:0 18px;display:flex;align-items:center;gap:10px;cursor:pointer;box-shadow:inset 0 -1px 0 #f2f3f6;'
+        + (on ? 'background:#fff5f2;' : 'background:#fff;'),
+      labelStyle: 'flex:1;min-width:0;font-size:17px;line-height:23px;font-variant-numeric:tabular-nums;'
+        + (on ? 'font-weight:700;color:' + C + ';' : 'color:#4d5159;'),
+      metaStyle: 'font-size:13px;line-height:18px;color:#adb1ba;white-space:nowrap',
+      markStyle: on
+        ? 'width:20px;height:20px;flex:0 0 20px;border-radius:999px;background:' + C + ';background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'3.4\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpath d=\'m5 12.5 4.5 4.5L19 7.5\'/%3E%3C/svg%3E");background-size:13px;background-position:center;background-repeat:no-repeat'
+        : 'width:20px;height:20px;flex:0 0 20px' });
+    const optRow = (label, on) => ({ label,
+      style: 'flex:0 0 auto;height:56px;padding:0 18px;display:flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;box-shadow:inset 0 -1px 0 #f2f3f6;'
+        + (on ? 'background:#fff5f2;' : 'background:#fff;'),
+      labelStyle: 'font-size:17px;line-height:23px;font-variant-numeric:tabular-nums;'
+        + (on ? 'font-weight:700;color:' + C + ';' : 'color:#4d5159;'),
+      markStyle: on
+        ? 'width:20px;height:20px;flex:0 0 20px;border-radius:999px;background:' + C + ';background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'3.4\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpath d=\'m5 12.5 4.5 4.5L19 7.5\'/%3E%3C/svg%3E");background-size:13px;background-position:center;background-repeat:no-repeat'
+        : 'width:20px;height:20px;flex:0 0 20px' });
     const dayCell = (label, kind) => ({ label,
       style: 'height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;font-variant-numeric:tabular-nums;'
         + (kind === 'sel' ? 'background:' + C + ';color:#fff;font-weight:700;'
@@ -321,18 +355,27 @@ class Component extends DCLogic {
       return cells;
     };
     const PICKERS = [
-      { no: 'A', label: '닫힌 상태', desc: '연 · 월 셀렉트 두 개와 달력. 좌우 화살표 없이 셀렉트를 눌러 바로 이동합니다.',
-        year: '2027년', month: '5월', yearStyle: selBox(false), monthStyle: selBox(false),
-        options: null, days: MAY27(), picked: '2027.05.16(토)', dday: 'D-250',
-        cta: '이 날짜로 정하기', ctaStyle: sheetCta },
-      { no: 'B', label: '연도 펼침', desc: '연도를 누르면 4열 그리드로 펼쳐집니다. 올해부터 5년 뒤까지. 달력은 잠시 가립니다.',
-        year: '2027년', month: '5월', yearStyle: selBox(true), monthStyle: selBox(false),
-        options: ['2026', '2027', '2028', '2029', '2030', '2031'].map(y => optCell(y + '년', y === '2027')),
-        days: null, picked: '', dday: '', cta: '확인', ctaStyle: sheetCta },
-      { no: 'C', label: '월 펼침', desc: '월도 같은 방식으로 4열 12칸. 두 번 탭으로 어느 달이든 갑니다.',
-        year: '2027년', month: '5월', yearStyle: selBox(false), monthStyle: selBox(true),
-        options: Array.from({ length: 12 }, (_, i) => optCell((i + 1) + '월', i === 4)),
-        days: null, picked: '', dday: '', cta: '확인', ctaStyle: sheetCta }
+      { no: 'A', label: '기본', desc: '연 · 월 · 일 세 휠을 한 화면에서 굴립니다. 중앙 밴드가 선택 값이고 멀어질수록 흐려집니다.',
+        wheels: [
+          wheelCol(['2026년', '2027년', '2028년', '2029년', '2030년', '2031년'], 1, 1.1),
+          wheelCol(KOR, 4, 1),
+          wheelCol(Array.from({ length: 31 }, (_, i) => (i + 1) + '일'), 15, 1)
+        ],
+        picked: '2027.05.16(토)', dday: 'D-250', cta: '확인', ctaStyle: sheetCta },
+      { no: 'B', label: '연도 굴림', desc: '휠을 굴리는 중. 중앙에 걸린 값이 즉시 아래 선택 결과에 반영됩니다.',
+        wheels: [
+          wheelCol(['2026년', '2027년', '2028년', '2029년', '2030년', '2031년'], 2, 1.1),
+          wheelCol(KOR, 4, 1),
+          wheelCol(Array.from({ length: 31 }, (_, i) => (i + 1) + '일'), 15, 1)
+        ],
+        picked: '2028.05.16(화)', dday: 'D-616', cta: '확인', ctaStyle: sheetCta },
+      { no: 'C', label: '일 굴림', desc: '월을 바꾸면 없는 날짜는 자동으로 그 달 마지막 날로 당겨집니다.',
+        wheels: [
+          wheelCol(['2026년', '2027년', '2028년', '2029년', '2030년', '2031년'], 1, 1.1),
+          wheelCol(KOR, 1, 1),
+          wheelCol(Array.from({ length: 28 }, (_, i) => (i + 1) + '일'), 27, 1)
+        ],
+        picked: '2027.02.28(일)', dday: 'D-173', cta: '확인', ctaStyle: sheetCta }
     ];
     const st = o => ({
       no: o.no, label: o.label, desc: o.desc, stepLabel: o.stepLabel,
@@ -346,16 +389,17 @@ class Component extends DCLogic {
     });
     const REGIONS = ['서울', '경기', '인천', '부산', '대구', '대전', '광주', '울산', '그 외'].map((l, i) => ({ label: l, style: chip(i === 0) }));
     const DIST = (sel) => ['강남구', '서초구', '송파구', '마포구'].map(n => ({ name: n, nameStyle: rowName(n === sel), mark: mark(n === sel) }));
-    const budgetCard = on => 'display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:68px;padding:12px 14px;border-radius:10px;cursor:pointer;box-sizing:border-box;'
+    const budgetCard = on => 'width:100%;display:flex;align-items:center;justify-content:space-between;gap:6px;height:76px;padding:0 14px;border-radius:10px;cursor:pointer;box-sizing:border-box;'
       + (on ? 'background:#fff;border:1.5px solid ' + C + ';' : 'background:#f7f8fa;border:1.5px solid transparent;');
-    const budgetName = on => 'display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px;line-height:20px;font-weight:700;font-variant-numeric:tabular-nums;color:' + (on ? '#212124' : '#4d5159');
+    const budgetName = on => 'display:block;white-space:nowrap;font-size:16px;line-height:22px;font-weight:700;font-variant-numeric:tabular-nums;color:' + (on ? '#212124' : '#4d5159');
     const BUDGET = (sel) => [
-      ['500만원 이하', ''], ['500~', '1,000만원'], ['1,000~', '2,000만원'],
-      ['2,000~', '3,000만원'], ['3,000만원 이상', ''], ['아직 모르겠어요', '']
-    ].map(([n, u]) => {
-      const key = u ? n + u : n;
-      const on = key === sel;
-      return { name: n, unit: u, card: budgetCard(on), textWrap: 'display:flex;flex-direction:column;gap:1px;min-width:0', nameStyle: budgetName(on), mark: mark(on) };
+      ['500만원', '이하'], ['500~', '1,000만원'], ['1,000~', '2,000만원'],
+      ['2,000~', '3,000만원'], ['3,000만원', '이상'], ['아직', '모르겠어요']
+    ].map(([a, b]) => {
+      const on = (a + b).replace('이하', '만원 이하').replace('이상', '만원 이상') === sel || a + b === sel;
+      return { name: a, unit: b, card: budgetCard(on),
+        textWrap: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:0',
+        nameStyle: budgetName(on), mark: mark(on) };
     });
     const PROG_GROUPS = [
       ['시작 준비', ['결정사', '웨딩홀']],
@@ -364,11 +408,16 @@ class Component extends DCLogic {
       ['예물 · 신혼', ['예물', '혼수', '허니문']],
       ['기타 상태', ['아직 시작 전이에요']]
     ];
-    const PROG = (done) => PROG_GROUPS.map(([title, items]) => ({
-      title,
-      gridStyle: 'display:grid;grid-template-columns:repeat(' + (items.length === 1 ? 1 : 2) + ',1fr);gap:8px',
-      items: items.map(n => prog(n, done.includes(n)))
-    }));
+    const PROG = (done) => PROG_GROUPS.map(([title, items]) => {
+      const all = items.length > 1 && items.every(n => done.includes(n));
+      return {
+        title,
+        allLabel: items.length > 1 ? (all ? '전체 해제' : '전체 선택') : '',
+        allStyle: 'font-size:13px;line-height:18px;font-weight:700;white-space:nowrap;cursor:pointer;color:' + (all ? C : '#868b94'),
+        gridStyle: 'display:grid;grid-template-columns:repeat(' + (items.length === 1 ? 1 : 2) + ',1fr);gap:8px',
+        items: items.map(n => prog(n, done.includes(n)))
+      };
+    });
 
     return {
       rootStyle: 'display:flex;flex-direction:column;gap:48px;align-items:flex-start;padding:64px;width:max-content',
@@ -394,7 +443,7 @@ class Component extends DCLogic {
       chipWrap: 'display:flex;flex-wrap:wrap;gap:8px',
       rowsWrap: 'display:flex;flex-direction:column;gap:2px',
       pickRow: 'display:flex;align-items:center;gap:12px;min-height:52px;padding:14px 0;cursor:pointer',
-      budgetGrid: 'display:grid;grid-template-columns:1fr 1fr;gap:8px',
+      budgetGrid: 'display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px',
       hr: 'height:1px;background:#eaebee',
       answeredWrap: 'flex-shrink:0;margin:auto 24px 0;padding:6px 0;display:flex;flex-direction:column;gap:2px;animation:wpSettle 320ms cubic-bezier(.16,1,.3,1) both',
       answeredRow: 'display:flex;align-items:center;gap:10px;min-height:40px;padding:6px 0;cursor:pointer',
@@ -406,10 +455,10 @@ class Component extends DCLogic {
       qSub: 'font-size:16px;line-height:24px;color:#4d5159;text-wrap:pretty',
       metaSm: 'font-size:14px;line-height:19px;color:#868b94',
       cellCheck: 'width:20px;height:20px;flex:0 0 20px;border-radius:999px;background:' + C + ';display:flex;align-items:center;justify-content:center;animation:wpCheck 320ms cubic-bezier(.34,1.56,.64,1) both',
-      tasteWrap: 'flex-shrink:0;padding:0 24px 20px;display:grid;grid-template-columns:1fr 1fr;gap:11px;animation:wpDrop 380ms cubic-bezier(.16,1,.3,1) 60ms both',
-      tasteCell: 'position:relative;width:100%;height:148px',
+      tasteWrap: 'flex-shrink:0;padding:0 24px 12px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;animation:wpDrop 380ms cubic-bezier(.16,1,.3,1) 60ms both',
+      tasteCell: 'position:relative;width:100%;height:132px',
       tasteImg: 'position:absolute;inset:0;border-radius:10px;overflow:hidden',
-      tasteLabel: 'display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:6px;background:rgba(0,0,0,.55);font-size:14px;line-height:19px;font-weight:700;color:#fff;white-space:nowrap;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)',
+      tasteLabel: 'display:inline-flex;align-items:center;height:26px;padding:0 9px;border-radius:6px;background:rgba(0,0,0,.55);font-size:14px;line-height:19px;font-weight:700;color:#fff;white-space:nowrap;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)',
       summaryBox: 'border-radius:10px;background:#f7f8fa;padding:20px;display:flex;flex-direction:column;gap:2px',
       summaryRow: 'display:flex;align-items:center;justify-content:space-between;gap:16px;padding:9px 0',
       summaryK: 'font-size:16px;line-height:22px;color:#4d5159;white-space:nowrap',
@@ -425,32 +474,32 @@ class Component extends DCLogic {
       steps: [
         st({ no: '1', label: '예식일 · 1/5', progress: '20%', stepLabel: '1/5',
           desc: '첫 질문. Back 버튼 없음, 다음 CTA만. 날짜를 강제하지 않고 «아직 정하지 않았어요» 칩을 둡니다.',
-          q: '예식일이\n언제인가요?', qSub: '남은 기간에 맞춰 웨딩픽이 도와드려요',
-          dateField: '2027.05.16(토)', dateFilled: true, dday: '250일',
+          q: '예식일은\n언제인가요?', qSub: '남은 기간에 맞춰 준비 순서를 잡아드릴게요',
+          dateField: '2027.05.16(토)', dateFilled: true, dday: 'D-250',
           regionChips: [{ label: '아직 정하지 않았어요', style: chip(false) }],
           cta: '다음' }),
         st({ no: '2', label: '지역 · 2/5', progress: '40%', stepLabel: '2/5',
           desc: '시/도 → 상세지역을 한 화면에서. «아직 정하지 않았어요»를 두어 미정도 진행됩니다.',
-          q: '어디에서\n식을 올리시나요?', qSub: '선택한 지역으로 좁혀드려요',
+          q: '어느 지역에서\n하나요?', qSub: '선택한 지역을 기준으로 찾아드릴게요',
           regionChips: REGIONS.concat([{ label: '아직 정하지 않았어요', style: chip(false) }]), districtRows: DIST('강남구'),
           answered: [ans('예식일', '2027.05.16(토)')],
           prev: '이전', cta: '다음' }),
         st({ no: '3', label: '준비 현황 · 3/5', progress: '60%', stepLabel: '3/5',
           desc: '10개 업종 2열 카드 · 다중 선택. 없으면 «아직 시작 전이에요».',
-          q: '준비는 어디까지\n하셨어요?', qSub: '이미 준비한 건 추천에서 제외해요',
-          progress2: PROG(['웨딩홀', '스튜디오', '드레스']),
+          q: '준비는\n어디까지 했나요?', qSub: '이미 정한 건 빼고 필요한 것만 챙겨드릴게요',
+          progress2: PROG(['결정사', '웨딩홀', '스튜디오', '드레스']),
           answered: [ans('예식일', '2027.05.16(토)'), ans('지역', '서울 강남구')],
           prev: '이전', cta: '다음' }),
         st({ no: '4', label: '준비 예산 · 4/5', progress: '80%', stepLabel: '4/5',
           desc: '전체 예산이 아니라 «앞으로 쓸 예산»으로 통일. 준비 전이면 전체 예산과 같고, 이미 진행 중이면 자연히 남은 예산이 됩니다. 조건 분기 없음. «아직 모르겠어요» 유지. 집계 문구 없음.',
-          q: '앞으로 남은 예산은\n얼마인가요?', qSub: '예산에 맞춰 합리적인 정보를 드려요',
+          q: '앞으로 쓸 예산은\n얼마인가요?', qSub: '예산에 맞는 선택지를 먼저 보여드릴게요',
           budgetRows: BUDGET('1,000~2,000만원'),
 
           answered: [ans('예식일', '2027.05.16(토)'), ans('지역', '서울 강남구'), ans('준비 현황', '웨딩홀 외 2곳')],
           prev: '이전', cta: '다음' }),
         st({ no: '5', label: '취향 · 5/5', progress: '100%', stepLabel: '5/5',
           desc: '취향은 준비 현황에서 미완료로 남은 업종 기준으로만 보여줍니다. 완료 업종의 이미지는 다시 묻지 않습니다. 전부 완료면 이 Step을 건너뛰고 바로 완료 화면으로 갑니다.',
-          q: '남은 준비는\n어떤 분위기가 좋으세요?', qSub: '아직 정하지 않은 취향을 반영할게요',
+          q: '어떤 분위기로\n준비할까요?', qSub: '남은 준비에 취향을 반영할게요',
           taste: [
             { slot: 'ob2-t1', src: IMG.white, label: '깔끔한 화이트', overlay: tasteOn(true), check: tasteCheck(true) },
             { slot: 'ob2-t2', src: IMG.minimal, label: '모던 미니멀', overlay: tasteOn(false), check: tasteCheck(false) },
@@ -459,7 +508,7 @@ class Component extends DCLogic {
             { slot: 'ob2-t5', src: IMG.arch, label: '플라워 아치', overlay: tasteOn(false), check: tasteCheck(false) },
             { slot: 'ob2-t6', src: IMG.hall, label: '클래식 호텔', overlay: tasteOn(false), check: tasteCheck(false) }
           ],
-          prev: '이전', cta: '3장 선택' }),
+          prev: '이전', cta: '3곳 선택' }),
         st({ no: '6', label: '완료', progress: '100%', stepLabel: '완료',
           desc: '입력 요약. 미정값은 빈칸이나 «—» 대신 «미정»으로 적습니다. CTA는 개인화가 시작된다는 뜻.',
           q: '이제 필요한 것만\n보여드릴게요',
@@ -468,6 +517,7 @@ class Component extends DCLogic {
       ],
 
       progGroup: 'display:flex;flex-direction:column;gap:8px',
+      progHead: 'display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:22px',
       progTitle: 'font-size:14px;line-height:19px;font-weight:700;color:#868b94',
       pickerLead: 'font-size:17px;line-height:26px;color:#4d5159;max-width:1180px;text-wrap:pretty',
       dimWrap: 'flex:1;position:relative;overflow:hidden;display:flex;flex-direction:column',
@@ -483,9 +533,17 @@ class Component extends DCLogic {
       scrim: 'position:absolute;inset:0;background:rgba(0,0,0,.45)',
       sheet: 'position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;padding:12px 24px 28px;display:flex;flex-direction:column;gap:16px;animation:wpSheet 350ms cubic-bezier(.16,1,.3,1) both',
       grabber: 'width:40px;height:4px;border-radius:999px;background:#eaebee;align-self:center',
-      selRow: 'display:flex;gap:8px',
+      sheetHead: 'display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:32px',
+      sheetTitle: 'font-size:20px;line-height:27px;font-weight:700;color:#212124',
+      sheetClose: 'width:32px;height:32px;flex:0 0 32px;display:flex;align-items:center;justify-content:center;cursor:pointer',
+      wheelWrap: 'position:relative;display:flex;gap:0;height:240px;overflow:hidden',
+      wheelBand: 'position:absolute;left:0;right:0;top:96px;height:48px;border-radius:10px;background:#f7f8fa;z-index:1',
+      wheelFadeTop: 'position:absolute;left:0;right:0;top:0;height:96px;background:linear-gradient(#fff 30%,rgba(255,255,255,0));pointer-events:none;z-index:3',
+      wheelFadeBottom: 'position:absolute;left:0;right:0;bottom:0;height:96px;background:linear-gradient(rgba(255,255,255,0),#fff 70%);pointer-events:none;z-index:3',
+      selRow: 'display:flex;gap:8px;position:relative;z-index:2',
+      selSlot: 'flex:1;min-width:0;position:relative;display:flex',
+      dropPanel: 'position:absolute;left:0;right:0;top:58px;height:280px;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#fff;border-radius:10px;border:1px solid #eaebee;box-shadow:0 8px 24px rgba(0,27,55,.14);display:flex;flex-direction:column;padding:6px 0;box-sizing:border-box;animation:wpDrop 220ms cubic-bezier(.16,1,.3,1) both;scrollbar-width:none',
       selVal: 'font-size:17px;line-height:22px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums',
-      optWrap: 'display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-height:184px',
       calWrap: 'display:flex;flex-direction:column;gap:8px',
       dowRow: 'display:grid;grid-template-columns:repeat(7,1fr);gap:2px',
       calGrid: 'display:grid;grid-template-columns:repeat(7,1fr);gap:2px',
