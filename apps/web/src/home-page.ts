@@ -12,8 +12,8 @@ import {
   MANY_CONFIRMED,
   NOT_ENOUGH_DATA,
   STILL_COLLECTING,
+  PREPARATION_CATEGORIES,
   TERMS,
-  VENDOR_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
   rangeLabel,
 } from '@weddingpick/domain';
@@ -54,8 +54,12 @@ function search(): string {
  * `/v1/vendors/regions`가 있는 것만 내려주는 이유와 같다.
  */
 function chips(regions: readonly string[]): string {
-  /* `기타`는 칩으로 만들지 않는다 — 무엇을 찾는 것인지 아무에게도 말해주지 않는다. */
-  const categories = VENDOR_CATEGORIES.filter((category) => category !== 'etc').map(
+  /*
+   * 준비 순서 그대로다(핸드오프 v3.18 §1.3 · 19c-web 칩 «웨딩홀 · 스튜디오 · 드레스 ·
+   * 메이크업 …»). `기타`는 칩으로 만들지 않는다 — 무엇을 찾는 것인지 아무에게도
+   * 말해주지 않는다. 그 제외까지 도메인 `PREPARATION_CATEGORIES`가 정한다.
+   */
+  const categories = PREPARATION_CATEGORIES.map(
     (category) =>
       `<li><a class="chip" href="/?category=${escapeHtml(category)}">${escapeHtml(
         VENDOR_CATEGORY_LABEL[category]

@@ -40,7 +40,7 @@ function summary(paidPrice: VendorSummary['paidPrice']): VendorSummary {
   return {
     id: '11111111-1111-4111-8111-111111111111',
     name: '모먼트 스튜디오',
-    category: 'sdm',
+    category: 'studio',
     region: '서울 강남구',
     coordinates: null,
     sourceNote: null,
@@ -54,7 +54,7 @@ function detail(overrides: Partial<VendorDetail> = {}): VendorDetail {
   return {
     id: '11111111-1111-4111-8111-111111111111',
     name: '모먼트 스튜디오',
-    category: 'sdm',
+    category: 'studio',
     region: '서울 강남구',
     coordinates: null,
     sourceNote: null,

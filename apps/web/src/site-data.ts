@@ -15,6 +15,7 @@
  */
 
 import {
+  PREPARATION_CATEGORIES,
   VENDOR_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
   type VendorCategory,
@@ -138,9 +139,13 @@ async function loadStats(): Promise<SiteStats | null> {
     kind: 'vendors',
     title: `${TERMS_SEARCHABLE} 업체`,
     total: `${count(total)}곳`,
-    /* 없는 업종은 줄로 만들지 않는다. 0곳이 늘어선 표는 아직 없는 것을 있는 것처럼 보이게 한다. */
+    /*
+     * 없는 업종은 줄로 만들지 않는다. 0곳이 늘어선 표는 아직 없는 것을 있는 것처럼
+     * 보이게 한다. `기타`도 줄로 만들지 않는다 — 사용자 화면 어디에도 «기타»를
+     * 업종으로 내놓지 않는다(도메인 `PREPARATION_CATEGORIES`). 합계에는 들어간다.
+     */
     rows: rows
-      .filter((row) => row.total > 0)
+      .filter((row) => row.total > 0 && PREPARATION_CATEGORIES.includes(row.category))
       .sort((a, b) => b.total - a.total)
       .map((row) => ({
         label: VENDOR_CATEGORY_LABEL[row.category],
