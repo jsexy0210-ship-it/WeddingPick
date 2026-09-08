@@ -319,6 +319,12 @@ export const Layout = {
   chip: 36,
   /** 탭·내비게이션 아이콘. spec/tokens.json size.iconTab. */
   iconTab: 24,
+  /** 헤더 오른쪽 아이콘 버튼 한 변(40, 원형). spec/tokens.json size.iconButton. */
+  iconButton: 40,
+  /** 행 끝 chevron 한 변. spec/tokens.json size.iconInline. */
+  iconInline: 18,
+  /** 칩 삭제 X 한 변. spec/tokens.json size.iconChipClose. */
+  iconChipClose: 14,
 } as const;
 
 /**
