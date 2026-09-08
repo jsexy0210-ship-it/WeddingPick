@@ -9,6 +9,15 @@ import { API_URL_ENV } from './site-data';
  * 그 분리는 코드를 읽어야만 알 수 있어서 쉽게 깨진다. 여기서 못 박는다.
  */
 describe('서비스 웹 — 랜딩', () => {
+  it('출시 전 다운로드를 약속하지 않고 예시와 실제 정보를 구분한다', () => {
+    const html = renderLandingV4();
+    expect(html).toContain('웨딩픽 출시 준비 중이에요');
+    expect(html).not.toContain('App Store');
+    expect(html).not.toContain('Google Play');
+    expect(html.match(/실제 업체 정보가 아니에요/g)).toHaveLength(3);
+    expect(html).toContain('현재 가격이나 예약 가능 여부를 보장하지 않아요');
+  });
+
   it('API 주소가 없어도 업체 정보가 그대로 나온다', () => {
     const before = process.env[API_URL_ENV];
 

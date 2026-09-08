@@ -1,3 +1,5 @@
+import strings from '../../../spec/strings.ko.json';
+const COPY = strings.webLanding;
 import { socialMeta, SHARE_TITLE, SHARE_DESCRIPTION } from './social-meta';
 /**
  * 웨딩픽 랜딩 v4 — 마케팅 랜딩 페이지.
@@ -6,7 +8,6 @@ import { socialMeta, SHARE_TITLE, SHARE_DESCRIPTION } from './social-meta';
  * 프레임워크 없음 · 런타임 JS 없음 · 웹폰트 없음.
  * 디자인 토큰은 CLAUDE.md § 5 색 / § 6 타이포 기준.
  */
-
 import { BUSINESS, BUSINESS_NOTICE_LINES } from '@weddingpick/domain';
 
 import { CONTACT_EMAIL } from './content';
@@ -81,10 +82,6 @@ function pickMark(size: number, stroke: string): string {
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${esc(stroke)}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z"></path><path d="M8.7 11.9l2.2 2.2 4.4-4.4"></path></svg>`;
 }
 
-/** 앱스토어 뱃지 — 아직 출시 전이므로 앵커로만 이어진다. */
-function storeBadge(label: string): string {
-  return `<a href="#download" style="display:inline-flex;align-items:center;gap:9px;height:44px;padding:0 18px;border-radius:10px;border:1.5px solid ${esc(DIVIDER)};background:#fff;font-size:14px;font-weight:700;color:${esc(INK)};text-decoration:none;white-space:nowrap">${esc(label)}</a>`;
-}
 
 /** GNB — 랜딩 전용 (bg 없음, 영웅 배경 위에 띄워 씀). */
 function gnb(): string {
@@ -99,7 +96,7 @@ function gnb(): string {
     <a href="/faq.html" style="font-size:16px;line-height:22px;color:${esc(SEC)};text-decoration:none;white-space:nowrap">자주 묻는 질문</a>
     <a href="/support.html" style="font-size:16px;line-height:22px;color:${esc(SEC)};text-decoration:none;white-space:nowrap">고객지원</a>
   </nav>
-  <a href="#download" class="lv-cta-btn" style="border-radius:999px;background:${esc(C)};color:#fff;display:inline-flex;align-items:center;font-size:15px;font-weight:700;text-decoration:none;white-space:nowrap">앱 다운로드</a>
+  <a href="#download" class="lv-cta-btn" style="border-radius:999px;background:${esc(C)};color:#fff;display:inline-flex;align-items:center;font-size:15px;font-weight:700;text-decoration:none;white-space:nowrap">${esc(COPY.launchLink)}</a>
   <label for="lv-cb" class="lv-ham-btn" aria-label="메뉴 열기">
     <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M3 6h16M3 11h16M3 16h16" stroke="${esc(INK)}" stroke-width="1.8" stroke-linecap="round"/></svg>
   </label>
@@ -128,20 +125,6 @@ function hero(): string {
     C,
     '0 18px 40px rgba(255,111,97,.30)',
     `<span style="color:#fff;display:flex;line-height:0">${pickMark(52, '#fff')}</span>`,
-  );
-
-  /* 기준금액 타일 */
-  const priceTile = tile(
-    128, 32,
-    'right:96px;top:150px',
-    8,
-    '#fff',
-    '0 18px 40px rgba(58,47,48,.12)',
-    `<span style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:0 16px;text-align:center">
-      <span style="font-size:12px;line-height:16px;font-weight:700;color:${esc(TER)}">기준금액</span>
-      <span style="font-size:26px;line-height:34px;font-weight:700;color:${esc(INK)};font-variant-numeric:tabular-nums;letter-spacing:-.5px">168만원</span>
-      <span style="font-size:11px;line-height:15px;color:${esc(TER)}">확인된 정보 12건</span>
-    </span>`,
   );
 
   /* 비교 바 타일 */
@@ -194,17 +177,16 @@ function hero(): string {
   <!-- 플로팅 타일 (태블릿 이하 숨김) -->
   <div class="lv-tiles">
     ${markTile}
-    ${priceTile}
+
     ${compareTile}
     ${coupleTile}
   </div>
   <!-- 영웅 본문 -->
   <div class="lv-hero-inner">
-    <h1 class="lv-hero-h1">확인하고,<br>비교해서 골라요</h1>
-    <p style="font-size:18px;line-height:28px;color:#6B5F60;margin:0">예식일과 예산만 설정하면 끝. 당신을 위한 맞춤 플랫폼, 웨딩픽</p>
+    <h1 class="lv-hero-h1">${esc(COPY.hero).replace(/\n/g, '<br>')}</h1>
+    <p style="font-size:18px;line-height:28px;color:#6B5F60;margin:0">${esc(COPY.lead)}</p>
     <div style="display:flex;gap:10px;padding-top:14px;flex-wrap:wrap;justify-content:center">
-      ${storeBadge('App Store')}
-      ${storeBadge('Google Play')}
+      <p class="lv-launch">${esc(COPY.launch)}</p>
     </div>
   </div>
 </section>`;
@@ -224,16 +206,18 @@ function featureSection(opts: {
     <span style="display:block;width:26px;height:4px;border-radius:2px;background:${esc(C)}"></span>
     <span style="font-size:17px;line-height:24px;color:#6B5F60">${esc(opts.eyebrow)}</span>
     <h2 class="lv-feat-h2">${opts.title.replace(/\n/g, '<br>')}</h2>
-    <p style="font-size:15px;line-height:26px;color:${esc(TER)};margin:0;max-width:400px">${esc(opts.body)}</p>
+    <p style="font-size:16px;line-height:26px;color:${esc(SEC)};margin:0;max-width:400px">${esc(opts.body)}</p>
   </div>`;
 
   const mockup = `<div class="lv-feat-mockup">
+    <p class="lv-example-label">${esc(COPY.example)}</p>
     <div style="width:100%;max-width:290px;height:540px;border-radius:32px;background:${esc(opts.mockupBg)};box-shadow:0 20px 52px rgba(58,47,48,.16);overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto">
       ${opts.mockupContent}
     </div>
+    <p class="lv-example-note">${esc(COPY.exampleBody)}</p>
   </div>`;
 
-  const [left, right] = opts.reversed ? [mockup, text] : [text, mockup];
+  const [left, right] = [text, mockup];
 
   return `<section class="lv-feat${opts.reversed ? ' lv-feat-rev' : ''}" style="background:${esc(opts.bg)}">
   ${left}
@@ -269,9 +253,9 @@ function feature1(): string {
   </div>`;
 
   return featureSection({
-    eyebrow: '가격, 일일이 찾지 마세요',
-    title: '얼마에 했는지\n먼저 보여드려요',
-    body: '직접 제보해 주신 금액 정보를 기반으로 구간과 기준금액을 보여드려요. 업체에 물어보지 않아도 금액 범위를 먼저 알 수 있어요.',
+    eyebrow: COPY.findLabel,
+    title: COPY.findTitle,
+    body: COPY.findBody,
     bg: '#fff',
     mockupBg: '#F7F8FA',
     mockupContent,
@@ -308,8 +292,8 @@ function feature2(): string {
 
   return featureSection({
     eyebrow: '뭐가 다른지 바로 비교해요',
-    title: '다른 점부터\n보여드려요',
-    body: '가격 구간, 포함 항목, 별도 확인이 필요한 비용을 한 화면에서 비교해요. 업체마다 전화해서 알아보지 않아도 돼요.',
+    title: COPY.compareTitle,
+    body: COPY.compareBody,
     bg: FEAT_TINT,
     reversed: true,
     mockupBg: '#fff',
@@ -355,24 +339,20 @@ function feature3(): string {
   });
 }
 
-/** 다운로드 섹션 */
+function trustSection(): string {
+  return `<section class="lv-trust">
+    <h2 class="lv-feat-h2">${esc(COPY.trustTitle)}</h2>
+    <dl><dt>${esc(COPY.officialTitle)}</dt><dd>${esc(COPY.officialBody)}</dd>
+    <dt>${esc(COPY.verifiedTitle)}</dt><dd>${esc(COPY.verifiedBody)}</dd></dl>
+    <p>${esc(COPY.trustNote)}</p>
+  </section>`;
+}
+
 function downloadSection(): string {
   return `<section id="download" class="lv-dl" style="background:${esc(HERO_TINT)}">
-  <h2 style="font-size:38px;line-height:54px;font-weight:700;color:${esc(INK)};letter-spacing:-1.2px;margin:0">모르고<br>시작할 필요 없어요</h2>
-  <p style="font-size:18px;line-height:28px;color:${esc(SEC)};margin:0">예식일과 예산만 알려주시면 웨딩픽이 먼저 골라드려요.</p>
-  <div style="display:flex;flex-direction:column;align-items:center;gap:16px;padding-top:8px">
-    <div style="width:150px;height:150px;border-radius:16px;background:#fff;box-shadow:0 2px 12px rgba(58,47,48,.10);display:flex;align-items:center;justify-content:center">
-      <span style="display:flex;flex-direction:column;align-items:center;gap:6px">
-        <span style="color:${esc(C)};display:flex;line-height:0">${pickMark(40, C)}</span>
-        <span style="font-size:12px;font-weight:700;color:${esc(TER)}">QR 준비 중</span>
-      </span>
-    </div>
-    <div style="display:flex;gap:8px">
-      ${storeBadge('App Store')}
-      ${storeBadge('Google Play')}
-    </div>
-  </div>
-</section>`;
+    <h2 class="lv-feat-h2">${esc(COPY.launch)}</h2>
+    <p>${esc(COPY.launchBody)}</p>
+  </section>`;
 }
 
 /** Footer — 다크 배경. */
@@ -452,6 +432,14 @@ a{color:inherit}
 .lv-hero-inner{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:20px;padding:0 64px 48px;z-index:3}
 .lv-hero-h1{font-size:58px;line-height:80px;font-weight:700;color:${INK};letter-spacing:-2px;margin:0}
 
+.lv-hero-h1,.lv-feat-h2{word-break:keep-all;overflow-wrap:anywhere}
+.lv-launch,.lv-example-label{font-weight:700;color:${SEC}}
+.lv-example-label,.lv-example-note{font-size:14px;line-height:21px}
+.lv-example-note{color:${SEC}}
+.lv-trust{padding:104px 64px;background:${BAND}}
+.lv-trust p,.lv-trust dd,.lv-dl p{font-size:16px;line-height:26px;color:${SEC};max-width:600px}
+.lv-trust dt{font-weight:700;margin-top:24px}
+.lv-trust dd{margin:8px 0 24px}
 /* Feature sections */
 .lv-feat{padding:104px 64px;display:flex;align-items:center;gap:80px}
 .lv-feat-rev{flex-direction:row-reverse}
@@ -479,7 +467,7 @@ a{color:inherit}
   .lv-hero-h1{font-size:46px;line-height:64px;letter-spacing:-1.5px}
   .lv-feat{padding:80px 32px;gap:48px}
   .lv-feat-h2{font-size:32px;line-height:46px}
-  .lv-dl{padding:80px 32px}
+  .lv-dl,.lv-trust{padding:80px 32px}
   .lv-foot{padding:0 32px}
 }
 
@@ -503,7 +491,7 @@ a{color:inherit}
   .lv-feat-rev{flex-direction:column}
   .lv-feat-mockup{flex:none;width:100%}
   .lv-feat-h2{font-size:28px;line-height:40px}
-  .lv-dl{padding:56px 24px}
+  .lv-dl,.lv-trust{padding:56px 24px}
   .lv-foot{padding:0 24px}
   .lv-foot-top{height:auto;padding:20px 0;flex-direction:column;align-items:flex-start;gap:12px}
   .lv-foot-nav{flex-direction:column;align-items:flex-start;gap:8px;flex:none;justify-content:flex-start}
@@ -512,8 +500,8 @@ a{color:inherit}
 
 /* Small mobile (≤479px) */
 @media(max-width:479px){
-  .lv-hero-h1{font-size:28px;line-height:40px}
-  .lv-feat-h2{font-size:24px;line-height:34px}
+  .lv-hero-h1{font-size:32px;line-height:43px}
+  .lv-feat-h2{font-size:26px;line-height:35px}
 }
 </style>
 </head>
@@ -523,6 +511,7 @@ a{color:inherit}
   ${feature1()}
   ${feature2()}
   ${feature3()}
+  ${trustSection()}
   ${downloadSection()}
   ${footer(CONTACT_EMAIL)}
 </div>
