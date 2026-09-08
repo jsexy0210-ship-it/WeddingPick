@@ -139,8 +139,6 @@ import {
   type WeddingInfoDetail,
   vendorPhotosResponseSchema,
   type VendorPhotosResponse,
-  emailLookupResponseSchema,
-  type EmailLookupResponse,
   type CompleteSetupRequest,
   appBootstrapResponseSchema,
   type AppBootstrapResponse,
@@ -283,49 +281,6 @@ export async function signInWithAuthorizationCode(input: {
   await saveToken(session.token);
 
   return { activated: session.activated, setupComplete: session.setupComplete };
-}
-
-/** WP-AUTH-002. 있으면 비밀번호 입력으로, 없으면 비밀번호 만들기로 — 화면이 이 값만 본다. */
-export async function lookupEmail(email: string): Promise<EmailLookupResponse> {
-  return request('/v1/auth/email/lookup', emailLookupResponseSchema, {
-    method: 'POST',
-    body: JSON.stringify({ email }),
-    auth: false,
-  });
-}
-
-/** WP-AUTH-003 로그인. 실패하면 서버가 남은 시도 횟수를 메시지에 담아준다. */
-export async function signInWithEmail(email: string, password: string): Promise<void> {
-  const session = await request('/v1/auth/sessions', createSessionResponseSchema, {
-    method: 'POST',
-    body: JSON.stringify({ provider: 'email', email, password }),
-    auth: false,
-  });
-
-  await saveToken(session.token);
-}
-
-/** WP-AUTH-004 가입(비밀번호 만들기). 성공하면 바로 세션이 열린다. */
-export async function createEmailAccount(email: string, password: string): Promise<void> {
-  const session = await request('/v1/auth/email/accounts', createSessionResponseSchema, {
-    method: 'POST',
-    body: JSON.stringify({ email, password }),
-    auth: false,
-  });
-
-  await saveToken(session.token);
-}
-
-/**
- * WP-AUTH-006 비밀번호 찾기. 계정이 있든 없든 항상 성공한다 — 등록 여부를
- * 여기서 드러내지 않는다. 실제 재설정은 메일 링크로 웹에서 한다(앱에서 받지 않음).
- */
-export async function requestPasswordReset(email: string): Promise<void> {
-  await request('/v1/auth/email/password-reset', z.null(), {
-    method: 'POST',
-    body: JSON.stringify({ email }),
-    auth: false,
-  });
 }
 
 /** 로그아웃. 서버 세션을 지우고 기기의 토큰도 버린다. */

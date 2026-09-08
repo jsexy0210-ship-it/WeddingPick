@@ -9,7 +9,7 @@ import {
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -19,6 +19,7 @@ import {
   removeWeddingTask,
   updateWeddingTask,
 } from '@/api/client';
+import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
 import {
   ActionButton,
   ErrorView,
@@ -235,9 +236,8 @@ export default function WeddingTasksScreen() {
         }}
       />
 
-      <Modal visible={editing !== null || adding} transparent animationType="slide">
-        <ThemedView style={[styles.scrim, { backgroundColor: theme.scrim }]}>
-          <ScrollView contentContainerStyle={styles.sheet}>
+      <BottomSheet dismissible={false} visible={editing !== null || adding} onRequestClose={closeSheet}>
+          <ScrollView style={[SHEET_PANEL, { backgroundColor: theme.background }]} contentContainerStyle={styles.sheet}>
             {adding ? (
               <>
                 <ThemedText type="t4">일정 더하기</ThemedText>
@@ -323,8 +323,7 @@ export default function WeddingTasksScreen() {
               />
             </ThemedView>
           </ScrollView>
-        </ThemedView>
-      </Modal>
+      </BottomSheet>
     </ThemedView>
   );
 }
@@ -346,7 +345,6 @@ const styles = StyleSheet.create({
     minHeight: Layout.rowMinHeight,
   },
   rowMain: { gap: Spacing.half },
-  scrim: { flex: 1, justifyContent: 'flex-end' },
   sheet: {
     padding: Layout.gutter,
     gap: Spacing.two,

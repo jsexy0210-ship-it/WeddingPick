@@ -1,10 +1,11 @@
 import { dDay, formatDateDot } from '@weddingpick/domain';
 import { useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
 import { ActionButton, Layout, Radius, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
+import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
 
 import {
   WHEEL_HEIGHT,
@@ -61,17 +62,11 @@ export function DatePickerSheet({
   /** 테스트와 시안 재현이 오늘을 정할 수 있게 받는다. */
   today?: Date;
 }) {
-  const theme = useTheme();
-
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onDismiss}>
-      <View style={[styles.scrim, { backgroundColor: theme.scrim }]}>
-        <Pressable style={StyleSheet.absoluteFill} accessibilityRole="button" accessibilityLabel="닫기" onPress={onDismiss} />
-
-        {/* 열 때마다 새로 마운트한다 — 지난번 굴려 놓고 닫은 흔적을 남기지 않는다. */}
-        {visible ? <SheetBody value={value} today={today} onConfirm={onConfirm} onDismiss={onDismiss} /> : null}
-      </View>
-    </Modal>
+    /* BottomSheet는 닫히면 children을 통째로 내린다 — 열 때마다 새로 마운트되어 지난번 굴려 놓고 닫은 흔적을 남기지 않는다. */
+    <BottomSheet visible={visible} onRequestClose={onDismiss}>
+      <SheetBody value={value} today={today} onConfirm={onConfirm} onDismiss={onDismiss} />
+    </BottomSheet>
   );
 }
 
@@ -108,7 +103,7 @@ function SheetBody({
   }
 
   return (
-    <ThemedView style={[styles.sheet, { paddingBottom: SHEET_BOTTOM_PADDING + Math.max(insets.bottom, 0) }]}>
+    <ThemedView style={[SHEET_PANEL, styles.sheet, { paddingBottom: SHEET_BOTTOM_PADDING + Math.max(insets.bottom, 0) }]}>
       <View style={styles.head}>
         <ThemedText type="t4">예식일 선택</ThemedText>
         <Pressable accessibilityRole="button" accessibilityLabel="닫기" onPress={onDismiss} style={styles.close}>
@@ -210,11 +205,8 @@ const HEAD_MIN_HEIGHT = 32;
 const CLOSE_SIZE = 32;
 
 const styles = StyleSheet.create({
-  scrim: { flex: 1, justifyContent: 'flex-end' },
-  /* 시안 sheet — radius 20 · 상 12 · 좌우 24 · 하 28 · 사이 16. */
+  /* 시안 sheet — radius 20(SHEET_PANEL) · 상 12 · 좌우 24 · 하 28 · 사이 16. */
   sheet: {
-    borderTopLeftRadius: Radius.sheet,
-    borderTopRightRadius: Radius.sheet,
     paddingTop: Layout.rowPaddingY,
     paddingHorizontal: Layout.gutter,
     gap: Spacing.three,

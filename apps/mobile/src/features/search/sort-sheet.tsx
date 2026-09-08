@@ -1,8 +1,9 @@
 import { VENDOR_SORT_LABEL, type VendorSort } from '@weddingpick/api-contract';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Layout, Radius, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
+import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
 
 /**
  * 검색 결과 정렬 — WP-SRCH-006. 결과 상단의 «정렬» 셀렉트를 누르면 뜨는
@@ -29,11 +30,8 @@ export function SortSheet({
   const insets = useSafeAreaInsets();
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onDismiss}>
-      <View style={[styles.scrim, { backgroundColor: theme.scrim }]}>
-        <Pressable style={StyleSheet.absoluteFill} accessibilityRole="button" accessibilityLabel="닫기" onPress={onDismiss} />
-
-        <ThemedView style={[styles.sheet, { paddingBottom: SHEET_BOTTOM_PADDING + Math.max(insets.bottom, 0) }]}>
+    <BottomSheet visible={visible} onRequestClose={onDismiss}>
+        <ThemedView style={[SHEET_PANEL, styles.sheet, { paddingBottom: SHEET_BOTTOM_PADDING + Math.max(insets.bottom, 0) }]}>
           <ThemedText type="t4">정렬</ThemedText>
 
           <View>
@@ -67,8 +65,7 @@ export function SortSheet({
             광고는 정렬과 상관없이 따로 표시돼요
           </ThemedText>
         </ThemedView>
-      </View>
-    </Modal>
+    </BottomSheet>
   );
 }
 
@@ -76,10 +73,7 @@ export function SortSheet({
 const SHEET_BOTTOM_PADDING = 28;
 
 const styles = StyleSheet.create({
-  scrim: { flex: 1, justifyContent: 'flex-end' },
   sheet: {
-    borderTopLeftRadius: Radius.sheet,
-    borderTopRightRadius: Radius.sheet,
     padding: Layout.gutter,
     gap: Spacing.three,
   },

@@ -122,16 +122,6 @@ services:
         sync: false
       - key: KAKAO_CLIENT_SECRET
         sync: false
-      # 이메일 로그인 재설정 메일. 스테이징은 console(로그 출력)로 충분하다.
-      # PASSWORD_RESET_URL은 weddingpick-web(서비스 웹사이트)의 reset-password.html이다 —
-      # 모바일 웹 export(weddingpick-app-web)가 아니다. SPEC.md §3.3 "앱에서 재설정
-      # 안 받음 — 메일 링크로 웹에서 처리".
-      - key: MAIL_DRIVER
-        value: console
-      - key: PASSWORD_RESET_URL
-        value: https://weddingpick-web.onrender.com/reset-password.html
-      - key: GOOGLE_CLIENT_ID
-        sync: false
       - key: LEGAL_BUSINESS_NAME
         sync: false
       - key: LEGAL_REPRESENTATIVE

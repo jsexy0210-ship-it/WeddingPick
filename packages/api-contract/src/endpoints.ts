@@ -31,13 +31,8 @@ import {
 import { amountSchema, idSchema } from './common';
 import {
   authProvidersResponseSchema,
-  createEmailAccountRequestSchema,
   createSessionRequestSchema,
   createSessionResponseSchema,
-  emailLookupRequestSchema,
-  emailLookupResponseSchema,
-  passwordResetConfirmRequestSchema,
-  passwordResetRequestSchema,
 } from './auth';
 import { comparisonResponseSchema } from './comparison';
 import {
@@ -156,35 +151,6 @@ export const ENDPOINTS = {
     body: createSessionRequestSchema,
     response: createSessionResponseSchema,
   },
-  /** 이메일 로그인(v3.12) — 아래 넷은 모두 토큰 없이 부른다. */
-  lookupEmail: {
-    method: 'POST',
-    path: '/v1/auth/email/lookup',
-    body: emailLookupRequestSchema,
-    response: emailLookupResponseSchema,
-  },
-  /** 가입(비밀번호 만들기). 성공하면 세션까지 연다. 이미 있으면 409. */
-  createEmailAccount: {
-    method: 'POST',
-    path: '/v1/auth/email/accounts',
-    body: createEmailAccountRequestSchema,
-    response: createSessionResponseSchema,
-  },
-  /** 비밀번호 찾기 — 재설정 링크 메일. 계정 유무와 무관하게 204. */
-  requestPasswordReset: {
-    method: 'POST',
-    path: '/v1/auth/email/password-reset',
-    body: passwordResetRequestSchema,
-    response: z.null(),
-  },
-  /** 메일 링크의 토큰으로 새 비밀번호. 만료·사용됨이면 400. */
-  confirmPasswordReset: {
-    method: 'POST',
-    path: '/v1/auth/email/password-reset/confirm',
-    body: passwordResetConfirmRequestSchema,
-    response: z.null(),
-  },
-
   /** 내 계정과 현재 웨딩. 앱 첫 진입에 한 번. */
   getCurrentUser: {
     method: 'GET',

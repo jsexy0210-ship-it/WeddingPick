@@ -1,7 +1,7 @@
 import type { WeddingNote, WeddingNoteListResponse } from '@weddingpick/api-contract';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -11,6 +11,7 @@ import {
   removeWeddingNote,
   updateWeddingNote,
 } from '@/api/client';
+import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
 import { formatMonthDayTimeDot } from '@/features/common/format-date';
 import {
   ActionButton,
@@ -292,9 +293,8 @@ export default function WeddingNotesScreen() {
 
       <Fab label="메모 추가" glyph="+" onPress={openAdd} />
 
-      <Modal visible={sheetOpen} transparent animationType="slide">
-        <ThemedView style={[styles.scrim, { backgroundColor: theme.scrim }]}>
-          <ThemedView style={styles.sheet}>
+      <BottomSheet dismissible={false} visible={sheetOpen} onRequestClose={closeSheet}>
+          <ThemedView style={[SHEET_PANEL, styles.sheet]}>
             <ThemedText type="t4">{editing ? '메모 고치기' : '메모 추가'}</ThemedText>
 
             {!editing ? (
@@ -338,8 +338,7 @@ export default function WeddingNotesScreen() {
               <ActionButton variant="primary" label="저장하기" onPress={() => void submit()} />
             </ThemedView>
           </ThemedView>
-        </ThemedView>
-      </Modal>
+      </BottomSheet>
     </ThemedView>
   );
 }
@@ -368,10 +367,7 @@ const styles = StyleSheet.create({
   noteBody: { flex: 1, minWidth: 0, gap: Spacing.half },
   noteActions: { flexDirection: 'row', gap: Spacing.three, marginTop: Spacing.half },
   divider: { height: 1 },
-  scrim: { flex: 1, justifyContent: 'flex-end' },
   sheet: {
-    borderTopLeftRadius: Radius.sheet,
-    borderTopRightRadius: Radius.sheet,
     padding: Layout.gutter,
     gap: Spacing.two,
   },

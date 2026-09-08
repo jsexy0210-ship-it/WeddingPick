@@ -1,6 +1,5 @@
 import { createDevProvider } from './auth/dev-provider';
 import { createAppleProvider, createGoogleProvider, createKakaoProvider, createNaverProvider } from './auth/identity-provider';
-import { createConsoleMailer, createResendMailer } from './auth/mailer';
 import { assertReleasable } from '@weddingpick/domain';
 import { loadConfig, loadLegalNotice } from './config';
 import type { AppContext } from './context';
@@ -61,10 +60,6 @@ async function main() {
       config.storage.driver === 's3'
         ? createS3Storage(config.storage)
         : createLocalStorage(`http://localhost:${config.port}/dev-storage`),
-    mailer:
-      config.mail.driver === 'resend'
-        ? createResendMailer({ apiKey: config.mail.apiKey, from: config.mail.from })
-        : createConsoleMailer(),
     providers: {
       ...(config.appleClientId && { apple: createAppleProvider(config.appleClientId) }),
       ...(config.kakaoAppKey && {

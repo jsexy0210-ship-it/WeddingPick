@@ -1,8 +1,9 @@
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { TERMS } from '@weddingpick/domain';
 import { ActionButton, Layout, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
 
 export type GuestGateSheetProps = {
   visible: boolean;
@@ -22,15 +23,10 @@ export function GuestGateSheet({ visible, onDismiss, onKakaoPress }: GuestGateSh
   const insets = useSafeAreaInsets();
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onDismiss}
-      statusBarTranslucent>
-      <Pressable style={[styles.backdrop, { backgroundColor: theme.scrim }]} onPress={onDismiss} />
+    <BottomSheet visible={visible} onRequestClose={onDismiss}>
       <View
         style={[
+          SHEET_PANEL,
           styles.sheet,
           { backgroundColor: theme.background, paddingBottom: insets.bottom + Spacing.three },
         ]}>
@@ -48,17 +44,12 @@ export function GuestGateSheet({ visible, onDismiss, onKakaoPress }: GuestGateSh
           onPress={onKakaoPress}
         />
       </View>
-    </Modal>
+    </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-  },
   sheet: {
-    borderTopLeftRadius: Radius.sheet,
-    borderTopRightRadius: Radius.sheet,
     paddingHorizontal: Layout.gutter,
     paddingTop: 12,
     gap: Spacing.two,

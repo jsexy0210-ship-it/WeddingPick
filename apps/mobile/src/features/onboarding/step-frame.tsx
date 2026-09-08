@@ -48,7 +48,7 @@ export function StepFrame({
 }: {
   progress: number;
   label: string;
-  /** 바뀌면 질문 블록이 위에서 내려온다(시안 wpDrop). */
+  /** 바뀌면 질문 블록이 «요소 상승»으로 나타난다. */
   stepKey: string;
   children: ReactNode;
   answered?: readonly AnsweredRowModel[];
@@ -74,7 +74,7 @@ export function StepFrame({
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
-          <Drop key={stepKey}>{children}</Drop>
+          <Rise key={stepKey}>{children}</Rise>
 
           {answered.length > 0 ? (
             <View style={styles.answered}>
@@ -126,16 +126,17 @@ export function StepFrame({
 }
 
 /**
- * 질문 블록이 위에서 내려온다 — 시안 wpDrop(translateY -14 → 0 · opacity 0 → 1).
- * 답한 질문이 아래로 가라앉고 새 질문이 위에서 오는 «은행앱 방식»(v3.19)의 절반이다.
+ * 질문 블록이 제자리에서 살짝 올라오며 나타난다 — 토큰 «요소 상승»(translateY 10 → 0 ·
+ * opacity 0 → 1 · 420ms). 시안의 wpDrop(위에서 −14 내려옴)은 화면이 위에서 떨어지는
+ * 것처럼 보여 사용자 요청으로 바꿨다(2026-09-08).
  */
-function Drop({ children }: { children: ReactNode }) {
+function Rise({ children }: { children: ReactNode }) {
   const progress = useMemo(() => new Animated.Value(0), []);
 
   useEffect(() => {
     Animated.timing(progress, {
       toValue: 1,
-      duration: Motion.enter.duration,
+      duration: Motion.rise.duration,
       easing: Easing.bezier(...ENTER_BEZIER),
       useNativeDriver: true,
     }).start();
@@ -145,7 +146,7 @@ function Drop({ children }: { children: ReactNode }) {
     <Animated.View
       style={{
         opacity: progress,
-        transform: [{ translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [-DROP_FROM, 0] }) }],
+        transform: [{ translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [Motion.rise.from, 0] }) }],
       }}>
       {children}
     </Animated.View>
@@ -154,8 +155,6 @@ function Drop({ children }: { children: ReactNode }) {
 
 /** spec/tokens.json motion.sheetEnter easing — Motion.enter는 문자열이라 여기 숫자로 둔다. */
 const ENTER_BEZIER = [0.16, 1, 0.3, 1] as const;
-/** 시안 wpDrop 시작 위치. */
-const DROP_FROM = 14;
 /** spec/tokens.json safeArea.formula.sheetBottomPadding의 고정항 — dock도 같은 28이다. */
 const DOCK_BOTTOM = 28;
 

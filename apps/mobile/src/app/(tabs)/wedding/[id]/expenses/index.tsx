@@ -9,10 +9,11 @@ import {
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { addExpense, getExpenses, removeExpense, setBudget } from '@/api/client';
+import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
 import {
   ActionButton,
   DonutChart,
@@ -299,9 +300,8 @@ export default function ExpensesScreen() {
 
       <Fab label="지출 추가" glyph="+" onPress={() => { closeAddSheet(); setAddOpen(true); }} />
 
-      <Modal visible={addOpen} transparent animationType="slide">
-        <ThemedView style={[styles.scrim, { backgroundColor: theme.scrim }]}>
-          <ThemedView style={styles.sheet}>
+      <BottomSheet dismissible={false} visible={addOpen} onRequestClose={closeAddSheet}>
+          <ThemedView style={[SHEET_PANEL, styles.sheet]}>
             <ThemedText type="t4">지출 추가</ThemedText>
             <ThemedText type="t7" themeColor="textSecondary">항목 이름</ThemedText>
             <TextInput
@@ -352,12 +352,10 @@ export default function ExpensesScreen() {
               <ActionButton variant="primary" label="추가하기" onPress={() => void submitExpense()} />
             </ThemedView>
           </ThemedView>
-        </ThemedView>
-      </Modal>
+      </BottomSheet>
 
-      <Modal visible={budgetOpen} transparent animationType="slide">
-        <ThemedView style={[styles.scrim, { backgroundColor: theme.scrim }]}>
-          <ThemedView style={styles.sheet}>
+      <BottomSheet dismissible={false} visible={budgetOpen} onRequestClose={() => setBudgetOpen(false)}>
+          <ThemedView style={[SHEET_PANEL, styles.sheet]}>
             <ThemedText type="t4">총 예산</ThemedText>
             <ThemedText type="t7" themeColor="textSecondary">
               정하시면 남은 금액을 함께 보여드려요. 나중에 바꾸셔도 돼요.
@@ -384,8 +382,7 @@ export default function ExpensesScreen() {
               <ActionButton variant="primary" label="정하기" onPress={() => void saveBudget()} />
             </ThemedView>
           </ThemedView>
-        </ThemedView>
-      </Modal>
+      </BottomSheet>
     </ThemedView>
   );
 }
@@ -405,10 +402,7 @@ const styles = StyleSheet.create({
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   dot: { width: 8, height: 8, borderRadius: Radius.pill },
   card: { borderRadius: Radius.medium, padding: Spacing.three, gap: Spacing.one },
-  scrim: { flex: 1, justifyContent: 'flex-end' },
   sheet: {
-    borderTopLeftRadius: Radius.sheet,
-    borderTopRightRadius: Radius.sheet,
     padding: Layout.gutter,
     gap: Spacing.two,
   },

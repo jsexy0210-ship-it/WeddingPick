@@ -1,7 +1,8 @@
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ActionButton, Layout, Radius, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
+import { ActionButton, Layout, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
+import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
 
 export type LoginFailureSheetProps = {
   visible: boolean;
@@ -25,20 +26,11 @@ export type LoginFailureSheetProps = {
  * 값으로 반환하도록 먼저 바꿔야 한다.
  */
 export function LoginFailureSheet({ visible, onRetry, onDismiss }: LoginFailureSheetProps) {
-  const theme = useTheme();
   const insets = useSafeAreaInsets();
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onDismiss}>
-      <View style={[styles.scrim, { backgroundColor: theme.scrim }]}>
-        <Pressable
-          style={StyleSheet.absoluteFill}
-          accessibilityRole="button"
-          accessibilityLabel="닫기"
-          onPress={onDismiss}
-        />
-
-        <ThemedView style={[styles.sheet, { paddingBottom: SHEET_BOTTOM_PADDING + Math.max(insets.bottom, 0) }]}>
+    <BottomSheet visible={visible} onRequestClose={onDismiss}>
+        <ThemedView style={[SHEET_PANEL, styles.sheet, { paddingBottom: SHEET_BOTTOM_PADDING + Math.max(insets.bottom, 0) }]}>
           <ThemedView style={styles.headline}>
             <ThemedText type="t4">잠시 후 다시 해볼까요?</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
@@ -50,8 +42,7 @@ export function LoginFailureSheet({ visible, onRetry, onDismiss }: LoginFailureS
             <ActionButton variant="primary" size="xlarge" label="다시 시도" onPress={onRetry} />
           </ThemedView>
         </ThemedView>
-      </View>
-    </Modal>
+    </BottomSheet>
   );
 }
 
@@ -59,10 +50,7 @@ export function LoginFailureSheet({ visible, onRetry, onDismiss }: LoginFailureS
 const SHEET_BOTTOM_PADDING = 28;
 
 const styles = StyleSheet.create({
-  scrim: { flex: 1, justifyContent: 'flex-end' },
   sheet: {
-    borderTopLeftRadius: Radius.sheet,
-    borderTopRightRadius: Radius.sheet,
     padding: Layout.gutter,
     gap: Spacing.four,
   },

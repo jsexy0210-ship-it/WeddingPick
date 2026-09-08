@@ -349,6 +349,16 @@ export const Radius = {
  */
 export const Motion = {
   enter: { duration: 350, easing: 'cubic-bezier(.16,1,.3,1)' },
+  /**
+   * 바텀시트. spec/tokens.json motion.sheetEnter · sheetExit · scrimFade.
+   * 패널만 translateY(100%) → 0으로 올라오고, 스크림은 제자리에서 opacity 0 → 1로 깔린다 —
+   * 둘을 한 Modal 슬라이드로 묶으면 스크림까지 같이 올라온다(2026-09-08 제보).
+   */
+  sheetEnter: { duration: 350, easing: 'cubic-bezier(.16,1,.3,1)', bezier: [0.16, 1, 0.3, 1] },
+  sheetExit: { duration: 250, easing: 'ease-in' },
+  scrimFade: { duration: 200, easing: 'ease-out' },
+  /** 요소 상승 — translateY 10 → 0 · opacity 0 → 1. spec/tokens.json motion.rise. 화면 안에서 새 블록이 자리 잡을 때. */
+  rise: { duration: 420, easing: 'cubic-bezier(.16,1,.3,1)', from: 10 },
   bounce: { duration: 420, easing: 'cubic-bezier(.34,1.56,.64,1)' },
   press: { duration: 100 },
   color: { duration: 175 },
