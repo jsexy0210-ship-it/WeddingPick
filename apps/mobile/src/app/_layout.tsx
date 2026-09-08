@@ -15,6 +15,7 @@ import { entryAfterSignIn, rememberSignedIn } from '@/features/auth/finish-sign-
 import { completeAuthPopup, isAuthPopup } from '@/features/auth/is-auth-popup';
 import { completeKakaoRedirect, hasKakaoReturn } from '@/features/auth/providers';
 import { setPendingSignInError } from '@/features/auth/sign-in-handoff';
+import { SigningInView } from '@/features/auth/signing-in-view';
 import { CaptureDraftProvider } from '@/features/capture/capture-draft';
 import { DocumentStoreProvider } from '@/features/documents/document-store';
 import { getCurrentUser, getSignupState } from '@/api/client';
@@ -85,7 +86,13 @@ function RootLayoutContent() {
    * 첫 화면을 빨리 정했다고 스플래시가 깜빡이고 사라지면, 사용자는 무언가
    * 잘못됐다고 느낀다. 애니메이션이 끝나기 전에 화면이 바뀌는 것도 마찬가지다.
    */
-  const [minimumShown, setMinimumShown] = useState(false);
+  /*
+   * 카카오에서 같은 창으로 돌아온 부팅인가. 이때는 스플래시가 아니라 «로그인하는
+   * 중» 화면을 보이고, 스플래시 최소 노출도 기다리지 않는다 — 동의를 마치고
+   * 돌아온 사람에게 앱이 다시 켜지는 것처럼 보이면 안 된다.
+   */
+  const [signingIn] = useState(() => hasKakaoReturn());
+  const [minimumShown, setMinimumShown] = useState(() => hasKakaoReturn());
   const redirected = useRef(false);
   /*
    * 네이티브 쉘의 웹뷰가 최초 진입 URL에 `wp_token`을 한 번 실어 보낸다(하이브리드
@@ -184,10 +191,12 @@ function RootLayoutContent() {
   }, [tokenBootstrapped]);
 
   useEffect(() => {
+    if (signingIn) return;
+
     const timer = setTimeout(() => setMinimumShown(true), SPLASH_MINIMUM_MS);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [signingIn]);
 
   useEffect(() => {
     /*
@@ -225,7 +234,7 @@ function RootLayoutContent() {
    * 홈이 잠깐 스쳤다 사라지는 것을 막는다.
    */
   if (entry === null || !minimumShown || !fontsLoaded) {
-    return <SplashView />;
+    return signingIn ? <SigningInView /> : <SplashView />;
   }
 
   /* 항상 라이트 — 기기 다크 모드를 따르지 않는다(packages/ui use-color-scheme 참고). */
