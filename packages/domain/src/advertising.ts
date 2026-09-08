@@ -41,7 +41,7 @@ export const PROTECTED_SURFACE_LABEL: Record<ProtectedSurface, string> = {
   todays_pick: '오늘의 Pick',
   personalized: '개인화 추천',
   search_ranking: '자연 검색순위',
-  verified_data: '확인된 정보',
+  verified_data: '실 제보',
   reviews: '후기 및 후기 순위',
 };
 

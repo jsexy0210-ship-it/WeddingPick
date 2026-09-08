@@ -21,7 +21,7 @@ import { renderVendorPage } from './vendor-page';
  * | 나오는 것 | 무엇 |
  * |---|---|
  * | `index.html` | 랜딩 v4. 서비스 마케팅 메인 |
- * | `search.html` | WP-WEB-001 홈. 검색과 확인된 금액 |
+ * | `search.html` | WP-WEB-001 홈. 검색과 제보 금액 |
  * | `intro.html` | 서비스 소개 |
  * | `faq.html` | 자주 묻는 질문 |
  * | `support.html` | 고객지원 |

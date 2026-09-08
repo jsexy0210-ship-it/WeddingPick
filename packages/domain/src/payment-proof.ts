@@ -157,7 +157,7 @@ export function canMergeWithMarketPrice(): false {
   return false;
 }
 
-/** 확인된 정보 분포에 늘 붙는 말. 내부에서는 결제인증이라 부르는 그것이다. */
+/** 실 제보 분포에 늘 붙는 말. 내부에서는 결제인증이라 부르는 그것이다. */
 export const PAYMENT_PROOF_CAVEAT =
   'Pick 가격은 이용자가 올린 자료에서 읽은 금액이에요. 계약 전체 금액이 아니라 그때 낸 금액이며, 사람이 확인한 계약 중앙값과는 다른 값이에요.';
 

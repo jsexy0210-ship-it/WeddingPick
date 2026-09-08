@@ -26,8 +26,8 @@ import { createPool, withTransaction } from './db';
  * 있다. Flickr CC 사진을 키워드로 돌려주는 loremflickr 주소를 쓴다(cc_by).
  * 실제 업체 사진은 «권리 확보 후 교체» 항목 그대로다(핸드오프 보류 목록).
  *
- * 확인된 정보(결제인증) 건수는 0~2 · 3~4 · 5~9 · 10+ 네 단계가 다 보이게 흩는다
- * (CLAUDE.md §3 «확인된 정보 4단계») — 한 단계만 있으면 화면이 그 경계를
+ * 실 제보(결제인증) 건수는 0~2 · 3~4 · 5~9 · 10+ 네 단계가 다 보이게 흩는다
+ * (CLAUDE.md §3 «실 제보 4단계») — 한 단계만 있으면 화면이 그 경계를
  * 맞게 그리는지 볼 수 없다.
  */
 
@@ -35,8 +35,14 @@ const SOURCE_KEY = 'sample';
 const PER_CATEGORY = 20;
 const REPORTER_COUNT = 40;
 /** display_name은 5자까지(users_display_name_check). 진짜 계정과는 identities가 없다는 것으로 가른다. */
-const REPORTER_NAME = (n: number) => `표본${n}`;
-const OPERATOR_NAME = '표본운영';
+const REPORTER_NAME = (n: number) => `제보자${n}`;
+const OPERATOR_NAME = '검토운영';
+/**
+ * `--remove`가 지워야 할 이름. v3.18 전에 넣은 «표본N»·«표본운영»도 이미 심어져
+ * 있을 수 있어 옛 이름을 함께 잡는다.
+ */
+const REPORTER_NAME_PATTERN = '^(표본|제보자)[0-9]+$';
+const OPERATOR_NAMES = [OPERATOR_NAME, '표본운영'];
 
 function argv(name: string): boolean {
   return process.argv.includes(`--${name}`);
@@ -155,7 +161,7 @@ function pickWeighted(random: () => number): Region {
 
 type Reporter = { id: string; weddingId: string };
 
-/** 제보자 40명 — 각자 웨딩 하나(계약 표본이 웨딩에 매달린다). 부를 이름 «표본N». */
+/** 제보자 40명 — 각자 웨딩 하나(계약 표본이 웨딩에 매달린다). 부를 이름 «제보자N». */
 async function seedReporters(client: PoolClient): Promise<Reporter[]> {
   const reporters: Reporter[] = [];
 
@@ -534,7 +540,7 @@ async function seedCategory(
     ]
   );
 
-  /* 확인된 정보 — 최근 12개월 안의 결제인증. 후기의 근거가 되므로 id를 받아둔다. */
+  /* 실 제보 — 최근 12개월 안의 결제인증. 후기의 근거가 되므로 id를 받아둔다. */
   const proofs = inserted.flatMap((sample) =>
     sample.proofs.map((proof) => ({
       reporter: reporters[proof.reporter]!.id,
@@ -695,7 +701,7 @@ async function remove(client: PoolClient) {
   );
   const ids = vendors.rows.map((row) => row.vendor_id);
   const sampleUsers = `SELECT u.id FROM structured.users u
-     WHERE u.display_name_user_set = false AND (u.display_name ~ '^표본[0-9]+$' OR u.display_name = $1)
+     WHERE u.display_name_user_set = false AND (u.display_name ~ $1 OR u.display_name = ANY($2::text[]))
        AND NOT EXISTS (SELECT 1 FROM identity.identities i WHERE i.user_id = u.id)`;
 
   await client.query('DELETE FROM structured.vendor_source_records WHERE source_key = $1', [SOURCE_KEY]);
@@ -709,9 +715,12 @@ async function remove(client: PoolClient) {
   await client.query('DELETE FROM structured.vendors WHERE id = ANY($1::uuid[])', [ids]);
   await client.query(
     `DELETE FROM structured.payment_proofs WHERE reporter_user_id IN (${sampleUsers})`,
-    [OPERATOR_NAME]
+    [REPORTER_NAME_PATTERN, OPERATOR_NAMES]
   );
-  await client.query(`DELETE FROM structured.users u WHERE u.id IN (${sampleUsers})`, [OPERATOR_NAME]);
+  await client.query(`DELETE FROM structured.users u WHERE u.id IN (${sampleUsers})`, [
+    REPORTER_NAME_PATTERN,
+    OPERATOR_NAMES,
+  ]);
 
   return ids.length;
 }

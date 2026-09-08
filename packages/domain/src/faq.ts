@@ -29,19 +29,19 @@ export type FaqItem = {
 export const FAQ_ITEMS: readonly FaqItem[] = [
   {
     key: 'price-source',
-    question: '확인된 정보는 어디서 온 금액인가요',
+    question: '실 제보는 어디서 온 금액인가요',
     /*
      * 건수를 글에 박아두지 않는다. 정책이 기준을 바꾸는 날 화면은 옛 수를 말하게
      * 되고, 그 말은 아무도 안 고친다 — 문장이라서 고장으로 보이지 않는다.
      */
     answer:
-      `이용자가 등록한 결제내역에서 읽은 금액이에요. 확인된 정보가 ${DISCLOSURE_THRESHOLDS.limited}건 모이면 구간을 보여드리고, ${DISCLOSURE_THRESHOLDS.detailed}건부터 기준금액까지 보여드려요. 그 아래에서는 숫자를 만들지 않고 모으는 중이라고 알려드려요.`,
+      `이용자가 등록한 결제내역에서 읽은 금액이에요. 실 제보가 ${DISCLOSURE_THRESHOLDS.limited}건 모이면 구간을 보여드리고, ${DISCLOSURE_THRESHOLDS.detailed}건부터 기준금액까지 보여드려요. 그 아래에서는 숫자를 만들지 않고 모으는 중이라고 알려드려요.`,
   },
   {
     key: 'why-locked',
     question: '가격을 보려면 결제내역을 등록해야 하나요',
     answer:
-      '아니요. 확인된 정보는 로그인하지 않아도 보실 수 있어요. 결제내역을 등록하시면 조건이 비슷한 결제 사례를 함께 보실 수 있어요.',
+      '아니요. 실 제보는 로그인하지 않아도 보실 수 있어요. 결제내역을 등록하시면 조건이 비슷한 결제 사례를 함께 보실 수 있어요.',
   },
   {
     key: 'original-image',

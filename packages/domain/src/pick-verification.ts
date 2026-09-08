@@ -27,7 +27,7 @@ export const PICK_VERIFICATION = {
   name: 'Pick 인증',
   /** 그 절차로 확인한 금액 하나. */
   price: 'Pick 가격',
-  /** 확인된 금액의 폭. */
+  /** 제보 금액의 폭. */
   priceRange: 'Pick 가격대',
   /** 사용자가 올리는 것. */
   material: 'Pick 인증 자료',

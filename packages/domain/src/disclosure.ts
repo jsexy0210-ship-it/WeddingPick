@@ -64,7 +64,7 @@ export function disclosureCaption(input: {
   baseAmount?: string;
 }): string {
   /*
-   * v3.3이 사용자 화면의 `결제인증 N건`을 `확인된 정보 N건`으로 바꿨다.
+   * v3.3이 사용자 화면에서 `결제인증 N건`을 걷어냈고, v3.18부터는 `실 제보 N건`이다.
    * 안에서는 여전히 결제인증이고, 이 줄은 밖으로 나가는 말이다.
    */
   const head = `${TERMS.verifiedData} ${input.count}건`;

@@ -43,7 +43,7 @@ export type PriceStat = {
 /** 오름차순으로 정렬된 값에서 분위수를 선형 보간으로 구한다. */
 export function quantile(sorted: number[], q: number): number {
   if (sorted.length === 0) {
-    throw new Error('빈 표본에서는 분위수를 구할 수 없다.');
+    throw new Error('빈 배열에서는 분위수를 구할 수 없다.');
   }
 
   const position = (sorted.length - 1) * q;

@@ -251,7 +251,7 @@ describe('서비스 웹 — 업체 상세', () => {
     expect(html).toContain(escapeHtml(reason?.note ?? ''));
   });
 
-  it('확인된 정보에 캡션을 함께 적는다', () => {
+  it('실 제보에 캡션을 함께 적는다', () => {
     const vendor = detail();
     const html = renderVendorPage(vendor);
 

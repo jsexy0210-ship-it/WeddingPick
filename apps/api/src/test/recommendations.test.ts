@@ -38,7 +38,7 @@ describeWithDb('TOP3 추천', () => {
   /**
    * 업체 하나와 확인된 결제 `proofs`건.
    *
-   * 확인된 정보는 결제인증에서 센다 — 금액 옆 캡션이 세는 것과 같은 수여야
+   * 실 제보는 결제인증에서 센다 — 금액 옆 캡션이 세는 것과 같은 수여야
    * 카드가 자기 말을 뒤집지 않는다. `recent`는 그중 최근 3개월 안에 둘 개수다.
    */
   async function aVendor(input: {
@@ -89,7 +89,7 @@ describeWithDb('TOP3 추천', () => {
     expect(body.note).toContain('자료가 모이지');
   });
 
-  it('확인된 정보가 세 건은 있어야 추천한다', async () => {
+  it('실 제보가 세 건은 있어야 추천한다', async () => {
     // 그 아래는 금액 구간조차 못 보여준다. 보여줄 것이 없는 추천은 추천이 아니다.
     await aVendor({ name: '자료 적은 곳', proofs: 2 });
     await aVendor({ name: '자료 있는 곳', proofs: 3 });
@@ -124,7 +124,7 @@ describeWithDb('TOP3 추천', () => {
 
     expect(body.items).toHaveLength(3);
     expect(body.note).toBeNull();
-    // 확인된 정보가 많은 순이다.
+    // 실 제보가 많은 순이다.
     expect(body.items.map((item) => item.name)).toEqual(['가', '나', '다']);
   });
 
@@ -137,9 +137,9 @@ describeWithDb('TOP3 추천', () => {
     expect(body.items[0]!.reasons).toContain('region');
   });
 
-  it('확인된 정보 수가 캡션이 세는 수와 같다', async () => {
+  it('실 제보 수가 캡션이 세는 수와 같다', async () => {
     /*
-     * 카드가 `확인된 정보가 많아요`라고 적어놓고 바로 아래 캡션에 다른 수를
+     * 카드가 `실 제보가 많아요`라고 적어놓고 바로 아래 캡션에 다른 수를
      * 적으면, 읽는 사람은 어느 쪽을 믿어야 할지 알 수 없다.
      */
     await aVendor({ name: '가온예식홀', proofs: 8 });
@@ -147,7 +147,7 @@ describeWithDb('TOP3 추천', () => {
     const item = (await top3('?region=서울')).json<Top3Body>().items[0]!;
 
     expect(item.paidPrice.count).toBe(item.confirmedCount);
-    expect(item.paidPrice.caption).toContain(`확인된 정보 ${item.confirmedCount}건`);
+    expect(item.paidPrice.caption).toContain(`실 제보 ${item.confirmedCount}건`);
   });
 
   it('최근 자료는 기본 기간보다 짧게 센다', async () => {

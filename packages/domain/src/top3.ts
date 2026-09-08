@@ -18,15 +18,15 @@ import { RECENT_PERIOD_LABEL } from './reidentification';
 export const TOP3_LIMIT = 3;
 
 /**
- * 추천할 자격. 확인된 정보가 이만큼은 있어야 한다.
+ * 추천할 자격. 실 제보가 이만큼은 있어야 한다.
  *
  * 공개 사다리의 `early`(3건)를 그대로 쓴다. 그 아래는 금액 구간조차 못 보여주는
  * 상태라, 추천해봐야 사용자가 볼 것이 이름뿐이다 — 보여줄 것이 없는 추천은
  * 추천이 아니다. 화면마다 기준을 새로 정하지 않는다(v2.0 원문 15번).
  *
- * 여기서 세는 `확인된 정보`는 **금액 옆 캡션이 세는 것과 같은 것**이다. 계약
- * 자료를 따로 세어 자격을 주면, 카드가 `확인된 정보가 많아요`라고 적어놓고 바로
- * 아래 캡션에 `확인된 정보 4건`이라고 적는 화면이 나온다 — 같은 이름의 두 숫자다.
+ * 여기서 세는 `실 제보`는 **금액 옆 캡션이 세는 것과 같은 것**이다. 계약
+ * 자료를 따로 세어 자격을 주면, 카드가 `실 제보가 많아요`라고 적어놓고 바로
+ * 아래 캡션에 `실 제보 4건`이라고 적는 화면이 나온다 — 같은 이름의 두 숫자다.
  */
 export const TOP3_MIN_CONFIRMED = DISCLOSURE_THRESHOLDS.limited;
 
@@ -44,7 +44,7 @@ export type Top3Reason = (typeof TOP3_REASONS)[number];
 export const TOP3_REASON_LABEL: Record<Top3Reason, string> = {
   region: '준비하는 지역이에요',
   budget: '기준금액이 예산 안이에요',
-  many_confirmed: '확인된 정보가 많아요',
+  many_confirmed: '실 제보가 많아요',
   recent_data: `${RECENT_PERIOD_LABEL} 자료가 있어요`,
 };
 
@@ -53,7 +53,7 @@ export type Top3Facts = {
   /** 사용자가 고른 지역과 업체 지역이 맞는가. */
   regionMatched: boolean;
   /**
-   * 확인된 정보 건수. **캡션에 적히는 그 수와 같은 수여야 한다.**
+   * 실 제보 건수. **캡션에 적히는 그 수와 같은 수여야 한다.**
    *
    * 기본 기간(최근 12개월) 안의 확인된 결제를 센다.
    */
@@ -62,7 +62,7 @@ export type Top3Facts = {
    * 그중 최근 3개월 것.
    *
    * 기본 기간보다 짧아야 `최근`이라는 말이 뜻을 갖는다. 같은 기간을 두 번 세면
-   * `확인된 정보가 많아요`와 `최근 자료가 있어요`가 늘 함께 붙는 한 문장이 된다.
+   * `실 제보가 많아요`와 `최근 자료가 있어요`가 늘 함께 붙는 한 문장이 된다.
    */
   recentCount: number;
   /** 기준금액. 아직 낼 수 없으면 null. */
@@ -71,7 +71,7 @@ export type Top3Facts = {
   budgetAmount: number | null;
 };
 
-/** 확인된 정보가 이만큼 넘으면 `많다`고 말한다. 공개 사다리의 `general`이다. */
+/** 실 제보가 이만큼 넘으면 `많다`고 말한다. 공개 사다리의 `general`이다. */
 export const MANY_CONFIRMED_AT = DISCLOSURE_THRESHOLDS.normal;
 
 /**

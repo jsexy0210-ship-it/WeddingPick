@@ -116,9 +116,9 @@ export function decideAgencyDisclosure(input: AgencyDisclosureInput): Disclosure
 }
 
 /**
- * 공식가격과 확인된 정보를 한 줄에 섞지 않는다.
+ * 공식가격과 실 제보를 한 줄에 섞지 않는다.
  *
- * 업체가 안내한 가격은 업체의 말이고, 확인된 정보는 우리가 센 것이다. 둘을 한
+ * 업체가 안내한 가격은 업체의 말이고, 실 제보는 우리가 센 것이다. 둘을 한
  * 숫자로 합치면 어느 쪽이 근거인지 물을 수 없게 된다. 화면은 늘 두 줄로 적는다.
  */
 export const AGENCY_PRICE_SOURCES = ['official', 'confirmed'] as const;
@@ -127,7 +127,7 @@ export type AgencyPriceSource = (typeof AGENCY_PRICE_SOURCES)[number];
 
 export const AGENCY_PRICE_SOURCE_LABEL: Record<AgencyPriceSource, string> = {
   official: '업체 안내',
-  confirmed: '확인된 정보',
+  confirmed: '실 제보',
 };
 
 /** 세부 금액을 열어도 되는 최소 건수. 공개 사다리의 첫 칸과 같다. */

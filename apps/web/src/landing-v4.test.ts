@@ -30,7 +30,7 @@ describe('서비스 웹 — 랜딩', () => {
       /* 기능 1 — 오늘의 Pick. 이름·구간·건수·추천 이유가 모두 있어야 한다. */
       expect(html).toContain('스튜디오 A');
       expect(html).toContain('152~184만원');
-      expect(html).toContain('확인된 정보 12건 · 최근 12개월 · 기준금액 168만원');
+      expect(html).toContain('실 제보 12건 · 최근 12개월 · 기준금액 168만원');
       expect(html).toContain('고른 사진이랑 가장 비슷해요');
 
       /* 기능 2 — 3곳 비교. */
