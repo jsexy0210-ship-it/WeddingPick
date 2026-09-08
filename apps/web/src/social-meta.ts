@@ -16,7 +16,8 @@ export function socialMeta(path = '/', title = SHARE_TITLE, description = SHARE_
   const t = escapeAttribute(title);
   const d = escapeAttribute(description);
   const url = escapeAttribute(new URL(path, SITE_ORIGIN).href);
-  return `<meta property="og:title" content="${t}">
+  return `<link rel="canonical" href="${url}">
+<meta property="og:title" content="${t}">
 <meta property="og:description" content="${d}">
 <meta property="og:image" content="${SHARE_IMAGE}">
 <meta property="og:image:width" content="1200">

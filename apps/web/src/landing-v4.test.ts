@@ -10,16 +10,17 @@ import { renderFaqPage, renderIntroPage, renderSupportPage } from './subpages';
  * 그 분리는 코드를 읽어야만 알 수 있어서 쉽게 깨진다. 여기서 못 박는다.
  */
 describe('서비스 웹 — 랜딩', () => {
-  it('출시 전 다운로드를 약속하지 않고 예시와 실제 정보를 구분한다', () => {
+  it('출시 전 다운로드나 가상의 업체 정보를 약속하지 않는다', () => {
     const html = renderLandingV4();
     expect(html).toContain('웨딩픽 출시 준비 중이에요');
     expect(html).not.toContain('App Store');
     expect(html).not.toContain('Google Play');
-    expect(html.match(/실제 업체 정보가 아니에요/g)).toHaveLength(3);
-    expect(html).toContain('현재 판매가격을 보장하지 않아요');
+    expect(html).not.toMatch(/서비스 사용 예시|실제 업체 정보가 아니에요|설명을 위한 예시|이용 요금|요금제/);
+    expect(html).toContain('시기와 포함 항목에 따라 달라질 수 있어요');
+    expect(html).not.toMatch(/스튜디오 [ABC]|152~184|실 제보 12건|5월 16일/);
   });
 
-  it('API 주소가 없어도 업체 정보가 그대로 나온다', () => {
+  it('API 주소가 없어도 데이터 대신 기능 안내를 보여준다', () => {
     const before = process.env[API_URL_ENV];
 
     delete process.env[API_URL_ENV];
@@ -27,19 +28,17 @@ describe('서비스 웹 — 랜딩', () => {
     try {
       const html = renderLandingV4();
 
-      /* 기능 1 — 오늘의 Pick. 이름·구간·건수·추천 이유가 모두 있어야 한다. */
-      expect(html).toContain('스튜디오 A');
-      expect(html).toContain('152~184만원');
-      expect(html).toContain('실 제보 12건 · 최근 12개월 · 기준금액 168만원');
-      expect(html).toContain('고른 사진이랑 가장 비슷해요');
+      expect(html).toContain('마음에 드는 스튜디오');
+      expect(html).toContain('금액과 포함 항목');
+      expect(html).toContain('제보 건수와 기준 기간도 함께 확인해요');
 
       /* 기능 2 — 3곳 비교. */
-      expect(html).toContain('스튜디오 3곳 비교');
-      expect(html).toContain('보정 장수');
+      expect(html).toContain('한눈에 살펴볼 비교 항목');
+      expect(html).toContain('계약 조건');
 
       /* 기능 3 — 둘이 함께 고른 Pick. */
-      expect(html).toContain('스튜디오 B');
-      expect(html).toContain('스튜디오 C');
+      expect(html).toContain('함께 마음에 든 곳');
+      expect(html).toContain('내가 관심 있는 곳');
       expect(html).toContain('둘 다 고른 곳');
 
       /* 데이터가 없을 때 다른 화면이 쓰는 말이 랜딩에 새어 나오면 안 된다. */
