@@ -451,7 +451,8 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
               (SELECT count(*) FROM structured.comparable_quotes c WHERE c.vendor_id = v.id)
                 AS comparable_quote_count,
               coalesce(w.proof_count, 0) AS proof_count,
-              (SELECT count(*) FROM found) AS total,
+              /* 전체 건수는 한 번만 센다 — 행마다 found를 다시 훑으면 업체 수의 제곱으로 느려진다. */
+              count(*) OVER () AS total,
               ${sort.key ? `(${sort.key})::text` : 'NULL::text'} AS sort_key,
               /*
                * 목록에 실을 금액들. 구간은 도메인이 만든다 — 몇 건부터 무엇을
