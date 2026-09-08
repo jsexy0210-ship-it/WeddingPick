@@ -25,7 +25,7 @@ import { createPool, withTransaction } from './db';
  */
 
 const SOURCE_KEY = 'sample';
-const PER_CATEGORY = 100;
+const PER_CATEGORY = 20;
 const REPORTER_COUNT = 40;
 /** display_name은 5자까지(users_display_name_check). 진짜 계정과는 identities가 없다는 것으로 가른다. */
 const REPORTER_NAME = (n: number) => `표본${n}`;
