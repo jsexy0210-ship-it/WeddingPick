@@ -7,7 +7,6 @@ import Svg, { Path } from 'react-native-svg';
 
 import { ActionButton, Colors, Layout, MaxContentWidth, Radius, SocialLogo, Spacing, ThemedText, ThemedView, WeddingMark, useTheme } from '@weddingpick/ui';
 import { LoginFailureSheet } from '@/features/auth/login-failure-sheet';
-import { maskEmail } from '@/features/auth/mask-email';
 import { canSignInWith, providerTone, useAuthProviders } from '@/features/auth/providers';
 import { loadRememberedAccount, type RememberedAccount } from '@/features/auth/remembered-account';
 import { useSignIn } from '@/features/auth/use-sign-in';
@@ -41,9 +40,11 @@ const REASONS = [
  * 있다 — 이미 확인을 마친 WP-AUTH-008(로그인 유지)에는 없다.
  *
  * **두 상태를 한 컴포넌트에서 가른다**(WP-AUTH-001 첫 진입 / WP-AUTH-008
- * 로그인 유지). 기억된 계정이 있으면 그 계정의 "계속하기" 버튼 하나 +
- * "다른 계정으로 시작하기"만 보여주고, 없거나 다른 계정을 고르면 만 14세
- * 확인과 카카오 버튼을 보여준다.
+ * 로그인 유지). 기억된 계정이 있으면 인사 + «카카오로 계속하기» 하나만
+ * 보여주고, 없으면 만 14세 확인과 카카오 버튼을 보여준다. «다른 계정으로
+ * 시작하기»·«카카오 · 최근 로그인» 계정 행은 없앴다(2026-09-08) — 로그인
+ * 방법이 카카오 하나뿐이라 고를 것도 알려줄 것도 없고, 계정을 바꾸는 일은
+ * 카카오 동의 화면이 맡는다.
  *
  * 카카오 로그인 실패는 화면에 문구를 깔지 않고 시트로 뜬다
  * (`login-failure-sheet.tsx`).
@@ -54,8 +55,6 @@ export default function LoginScreen() {
   const { signIn, busy, error, retry, dismissError } = useSignIn();
   /** undefined = 아직 안 읽음, null = 기억된 계정 없음(WP-AUTH-001). */
   const [remembered, setRemembered] = useState<RememberedAccount | null | undefined>(undefined);
-  /** "다른 계정으로 시작하기"를 누르면 기억된 계정을 무시하고 첫 진입 화면을 보여준다. */
-  const [chooseNew, setChooseNew] = useState(false);
   /** 만 14세 이상이에요 체크박스. 기본 해제(§3.5 "화면 규칙"). */
   const [ageChecked, setAgeChecked] = useState(false);
 
@@ -64,7 +63,7 @@ export default function LoginScreen() {
   }, []);
 
   const kakao = providers?.[0] ?? null;
-  const showRemembered = Boolean(remembered) && !chooseNew;
+  const showRemembered = Boolean(remembered);
 
   return (
     <ThemedView style={styles.container}>
@@ -85,32 +84,11 @@ export default function LoginScreen() {
                     {dDay(remembered.weddingDate).text}
                   </ThemedText>
                 ) : null}
-
-                <ThemedView type="backgroundElement" style={styles.accountRow}>
-                  <View
-                    style={[
-                      styles.accountAvatar,
-                      { backgroundColor: theme.tintSubtle },
-                    ]}>
-                    {remembered.provider === 'email' ? (
-                      <ThemedText type="t5" themeColor="tint">
-                        @
-                      </ThemedText>
-                    ) : (
-                      <SocialLogo provider="kakao" />
-                    )}
-                  </View>
-                  <View style={styles.accountLabel}>
-                    <ThemedText type="t5">
-                      {remembered.provider === 'email'
-                        ? (remembered.email ? maskEmail(remembered.email) : '이메일')
-                        : '카카오'}
-                    </ThemedText>
-                  </View>
-                  <ThemedText type="badge" themeColor="tint" style={styles.recentBadge}>
-                    최근 로그인
-                  </ThemedText>
-                </ThemedView>
+                {/*
+                  «카카오 · 최근 로그인» 계정 행은 없앴다 — 로그인 방법이 카카오
+                  하나뿐이라 어느 계정인지 알려줄 것이 없다. 계정을 바꾸는 일은
+                  카카오 동의 화면이 맡는다.
+                */}
               </ThemedView>
             ) : (
               <>
@@ -159,14 +137,6 @@ export default function LoginScreen() {
                         onPress={() => signIn(kakao)}
                       />
                     ) : null}
-
-                    <ActionButton
-                      variant="secondary"
-                      size="xlarge"
-                      label="다른 계정으로 시작하기"
-                      disabled={busy}
-                      onPress={() => setChooseNew(true)}
-                    />
 
                     <ThemedText type="small" themeColor="textAssistive" style={styles.terms}>
                       이 기기에서 로그인을 유지하고 있어요
@@ -318,30 +288,6 @@ const styles = StyleSheet.create({
     height: 6,
     marginTop: Spacing.two,
     borderRadius: Radius.pill,
-  },
-  accountRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.three,
-    borderRadius: Radius.medium,
-    padding: Spacing.three,
-  },
-  accountAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: Radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  accountLabel: {
-    flex: 1,
-  },
-  recentBadge: {
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.one,
-    borderRadius: Radius.small,
-    backgroundColor: Colors.light.tintSubtle,
-    overflow: 'hidden',
   },
   /* §3.5 — 카드가 아니라 44 터치 영역 안의 텍스트 한 줄이다. 좌측 정렬. */
   ageCard: {

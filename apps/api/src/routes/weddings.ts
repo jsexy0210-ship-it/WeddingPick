@@ -144,8 +144,12 @@ async function loadCurrentUser(context: AppContext, userId: string) {
     loggedIn: true,
     spouseLinked: row?.spouse_linked ?? false,
     hasPaymentProof: row?.has_payment_proof ?? false,
-    /* 최소 온보딩이 받는 것은 예식일과 지역 둘이다(v3.10 §3). 둘 다 있어야 설정한 것이다. */
-    weddingSet: weddingDate !== null && region !== null,
+    /*
+     * 설정을 마쳤는가는 지역으로 판단한다. 예식일은 «아직 미정이에요»로 비워둘
+     * 수 있어서(2026-09-08) 날짜를 조건에 넣으면 미정인 사람이 온보딩에 영영
+     * 붙잡힌다. 지역은 온보딩이 반드시 받는다.
+     */
+    weddingSet: region !== null,
     hasPick: row?.has_pick ?? false,
     hasCompared: row?.has_compared ?? false,
   };
@@ -212,8 +216,8 @@ export function registerWeddingRoutes(app: FastifyInstance, context: AppContext)
     const userId = currentUserId(request);
     const body = completeSetupRequestSchema.parse(request.body);
 
-    // 결혼식은 미래다. 오늘과 과거는 고를 수 없다(핸드오프 3번).
-    if (!isSelectableWeddingDate(body.weddingDate)) {
+    // 결혼식은 미래다. 오늘과 과거는 고를 수 없다(핸드오프 3번). null은 «아직 미정»이다.
+    if (body.weddingDate !== null && !isSelectableWeddingDate(body.weddingDate)) {
       throw new ApiError('invalid_request', WEDDING_DATE_HINT);
     }
 

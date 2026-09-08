@@ -50,9 +50,9 @@ const QUESTION_PROGRESS: Record<QuestionIndex, number> = { 0: 8, 1: 38, 2: 68 };
  * 칩은 뺐다 — "다가오는 그 계절"을 오늘 기준으로 계산하면 9월에 접속한 사람에게
  * 5주 뒤 가을 예식을 권하게 되어 기준이 애매했다.
  *
- * 계약(`completeSetupRequestSchema.weddingDate`)이 날짜를 필수로 받기 때문에,
- * «아직 미정이에요»는 값을 비워두는 대신 달력을 그대로 연다 — 시안에 없는 값을
- * 지어내 보내지 않는다.
+ * 누르면 **날짜 없이 다음 질문으로 간다.** 예식일은 비워둘 수 있다
+ * (`completeSetupRequestSchema.weddingDate` nullable) — 홈은 lifecycle의
+ * «기대반 설렘반 / 아직 예식일이 없어요»로 부른다. 달력을 열지 않는다.
  */
 const UNDECIDED_LABEL = '아직 미정이에요';
 
@@ -94,6 +94,8 @@ export default function SetupScreen() {
   const [active, setActive] = useState<QuestionIndex>(0);
 
   const [date, setDate] = useState<string | null>(null);
+  /** «아직 미정이에요»를 골랐는가. 날짜 없이 답한 것이라 안 고른 것(둘 다 없음)과 다르다. */
+  const [undecided, setUndecided] = useState(false);
   const [region, setRegion] = useState<WeddingRegion | null>(null);
   /** 구·군. 시/도를 더 좁힌다. 고르지 않아도 다음으로 갈 수 있다. */
   const [district, setDistrict] = useState<string | null>(null);
@@ -133,10 +135,11 @@ export default function SetupScreen() {
     );
   }
 
-  const canAdvance = active === 0 ? date !== null : active === 1 ? region !== null : bracket !== null;
+  const canAdvance =
+    active === 0 ? date !== null || undecided : active === 1 ? region !== null : bracket !== null;
 
   async function finish() {
-    if (sending || date === null || region === null) return;
+    if (sending || region === null || (date === null && !undecided)) return;
 
     setSending(true);
     setError(null);
@@ -192,7 +195,10 @@ export default function SetupScreen() {
             </ThemedView>
 
             <ThemedView style={[styles.summary, { backgroundColor: theme.backgroundElement }]}>
-              <SummaryRow label="예식일" value={formatWeddingDateLong(date ?? '')} />
+              <SummaryRow
+                label="예식일"
+                value={date !== null ? formatWeddingDateLong(date) : UNDECIDED_LABEL}
+              />
               <SummaryRow label="지역" value={district ? `${region} ${district}` : (region ?? '')} />
               <SummaryRow label="총예산" value={BUDGET_BRACKET_LABEL[bracket ?? 'unknown']} />
               <SummaryRow
@@ -262,8 +268,12 @@ export default function SetupScreen() {
         <ScrollView contentContainerStyle={styles.content}>
           {screen === 'questions' ? (
             <ThemedView style={styles.list}>
-              {active > 0 && date !== null ? (
-                <AnsweredRow label="예식일" value={formatWeddingDateLong(date)} onPress={() => reopen(0)} />
+              {active > 0 && (date !== null || undecided) ? (
+                <AnsweredRow
+                  label="예식일"
+                  value={date !== null ? formatWeddingDateLong(date) : UNDECIDED_LABEL}
+                  onPress={() => reopen(0)}
+                />
               ) : null}
               {active > 1 && region !== null ? (
                 <AnsweredRow
@@ -310,10 +320,12 @@ export default function SetupScreen() {
               <ThemedView style={styles.chips}>
                 <Chip
                   label={UNDECIDED_LABEL}
-                  selected={false}
+                  selected={undecided}
                   onPress={() => {
-                    setPending(date);
-                    setCalendarOpen(true);
+                    /* 날짜 없이 답한 것이다 — 달력을 열지 않고 다음 질문으로 간다. */
+                    setDate(null);
+                    setUndecided(true);
+                    answer(0);
                   }}
                 />
               </ThemedView>
@@ -433,6 +445,7 @@ export default function SetupScreen() {
                 disabled={pending === null}
                 onPress={() => {
                   setDate(pending);
+                  setUndecided(false);
                   setCalendarOpen(false);
                   answer(0);
                 }}

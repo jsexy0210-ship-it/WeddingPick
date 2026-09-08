@@ -16,7 +16,8 @@ const STORAGE_KEY = 'weddingpick.weddingDraft.v1';
  * 같은 값이 남으면 어느 쪽이 최신인지 알 수 없다.
  */
 export type WeddingDraft = {
-  weddingDate: string;
+  /** null = «아직 미정이에요». */
+  weddingDate: string | null;
   region: string;
   /** 다섯 구간 중 하나. 아직 안 골랐으면 null — `아직 모르겠어요`(unknown)와 다르다. */
   budgetBracket: WeddingBudgetBracket | null;
@@ -38,7 +39,8 @@ export async function loadWeddingDraft(): Promise<WeddingDraft | null> {
     if (
       typeof parsed === 'object' &&
       parsed !== null &&
-      typeof (parsed as WeddingDraft).weddingDate === 'string' &&
+      (typeof (parsed as WeddingDraft).weddingDate === 'string' ||
+        (parsed as WeddingDraft).weddingDate === null) &&
       typeof (parsed as WeddingDraft).region === 'string'
     ) {
       const draft = parsed as WeddingDraft;

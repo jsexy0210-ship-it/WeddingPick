@@ -80,6 +80,27 @@ describeWithDb('최소 온보딩', () => {
     expect(body.weddingId).toBeTruthy();
   });
 
+  it('예식일은 «아직 미정»으로 비워둘 수 있고 그래도 설정은 끝난다', async () => {
+    /*
+     * 2026-09-08. 온보딩의 «아직 미정이에요»는 날짜 없이 다음 질문으로 간다.
+     * 날짜를 설정 완료 조건에 넣으면 미정인 사람이 온보딩에 영영 붙잡힌다 —
+     * 완료는 지역으로만 판단한다.
+     */
+    const { headers } = await signInAs(test);
+
+    expect((await setup(headers, { weddingDate: null })).statusCode).toBe(200);
+
+    const body = (await me(headers)).json<{
+      weddingDate: string | null;
+      region: string;
+      setupComplete: boolean;
+    }>();
+
+    expect(body.weddingDate).toBeNull();
+    expect(body.region).toBe('서울');
+    expect(body.setupComplete).toBe(true);
+  });
+
   it('응답이 /v1/me와 같은 모양이다', async () => {
     /*
      * 계약이 두 경로에 같은 응답을 적어뒀다. 서버가 몇 칸만 채워 보내도 서버는
