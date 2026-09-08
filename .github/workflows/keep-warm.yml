@@ -1,0 +1,29 @@
+# API를 깨워 둔다.
+#
+# weddingpick-api는 Render free 플랜(render.yaml)이라 15분 동안 요청이 없으면
+# 잠들고, 다음 사람이 열 때 30~60초를 기다린다 — «로딩이 길다»의 가장 큰 원인.
+# 10분마다 /health를 한 번 두드려 잠들지 않게 한다. 유료 플랜으로 올리면 이
+# 워크플로는 지워도 된다.
+name: API 깨워 두기
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: /health
+        run: |
+          for i in 1 2 3; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 https://weddingpickl.onrender.com/health || echo 000)
+            echo "attempt $i: $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 20
+          done
+          echo "::warning::API가 60초 안에 깨어나지 않았다."
