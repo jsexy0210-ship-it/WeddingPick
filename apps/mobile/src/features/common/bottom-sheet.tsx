@@ -18,6 +18,11 @@ export type BottomSheetProps = {
   visible: boolean;
   /** 스크림 탭 · Android 뒤로가기. 시트를 닫는 쪽의 단 하나의 길이다. */
   onRequestClose: () => void;
+  /**
+   * 스크림 탭 · Android 뒤로가기로는 닫히지 않는다. 입력 중인 폼 시트(이름 · 노트 · 방문노트 ·
+   * 일정 · 지출)는 취소 버튼으로만 닫는다 — 실수로 딤을 눌러 쓰던 내용을 잃지 않게.
+   */
+  dismissible?: boolean;
   children: ReactNode;
   /** 패널 컨테이너에 얹는 스타일. 배경·둥글기·패딩은 호출하는 쪽이 정한다. */
   style?: StyleProp<ViewStyle>;
@@ -43,7 +48,14 @@ export type BottomSheetProps = {
  * 준다(`SHEET_PANEL` 참고). 스크림 Pressable과 패널은 형제다 — 패널을 Pressable로 감싸면 웹에서
  * button 안에 button이 들어간다.
  */
-export function BottomSheet({ visible, onRequestClose, children, style, testID }: BottomSheetProps) {
+export function BottomSheet({
+  visible,
+  onRequestClose,
+  dismissible = true,
+  children,
+  style,
+  testID,
+}: BottomSheetProps) {
   const theme = useTheme();
   const reduceMotion = useReduceMotion();
 
@@ -163,16 +175,18 @@ export function BottomSheet({ visible, onRequestClose, children, style, testID }
       transparent
       animationType="none"
       statusBarTranslucent
-      onRequestClose={onRequestClose}
+      onRequestClose={dismissible ? onRequestClose : noop}
       testID={testID}>
       <View style={styles.root}>
         <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: theme.scrim, opacity: scrim }]}>
-          <Pressable
-            style={StyleSheet.absoluteFill}
-            accessibilityRole="button"
-            accessibilityLabel="닫기"
-            onPress={onRequestClose}
-          />
+          {dismissible ? (
+            <Pressable
+              style={StyleSheet.absoluteFill}
+              accessibilityRole="button"
+              accessibilityLabel="닫기"
+              onPress={onRequestClose}
+            />
+          ) : null}
         </Animated.View>
 
         <Animated.View
@@ -214,6 +228,9 @@ function useReduceMotion() {
 
   return reduce;
 }
+
+/** dismissible=false — Android 뒤로가기를 먹고 아무것도 하지 않는다(시트가 닫히지 않는다). */
+function noop() {}
 
 /** 패널 높이를 재기 전 임시 위치 — 어떤 화면보다 아래라 첫 프레임에 보이지 않는다. */
 const OFFSCREEN = 10000;

@@ -236,7 +236,7 @@ export default function WeddingTasksScreen() {
         }}
       />
 
-      <BottomSheet visible={editing !== null || adding} onRequestClose={closeSheet}>
+      <BottomSheet dismissible={false} visible={editing !== null || adding} onRequestClose={closeSheet}>
           <ScrollView style={[SHEET_PANEL, { backgroundColor: theme.background }]} contentContainerStyle={styles.sheet}>
             {adding ? (
               <>

@@ -151,7 +151,7 @@ export default function VisitNotesScreen() {
       {/* 핸드오프 16번의 FAB. 목록 아래 단추 대신 늘 손 닿는 자리에 둔다. */}
       <Fab label="방문노트 더하기" onPress={() => setFormOpen(true)} />
 
-      <BottomSheet visible={formOpen} onRequestClose={() => setFormOpen(false)}>
+      <BottomSheet dismissible={false} visible={formOpen} onRequestClose={() => setFormOpen(false)}>
           <ScrollView style={[SHEET_PANEL, { backgroundColor: theme.background }]} contentContainerStyle={styles.sheet}>
             <ThemedText type="t4">방문 적어두기</ThemedText>
 

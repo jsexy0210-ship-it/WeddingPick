@@ -293,7 +293,7 @@ export default function WeddingNotesScreen() {
 
       <Fab label="메모 추가" glyph="+" onPress={openAdd} />
 
-      <BottomSheet visible={sheetOpen} onRequestClose={closeSheet}>
+      <BottomSheet dismissible={false} visible={sheetOpen} onRequestClose={closeSheet}>
           <ThemedView style={[SHEET_PANEL, styles.sheet]}>
             <ThemedText type="t4">{editing ? '메모 고치기' : '메모 추가'}</ThemedText>
 

@@ -300,7 +300,7 @@ export default function ExpensesScreen() {
 
       <Fab label="지출 추가" glyph="+" onPress={() => { closeAddSheet(); setAddOpen(true); }} />
 
-      <BottomSheet visible={addOpen} onRequestClose={closeAddSheet}>
+      <BottomSheet dismissible={false} visible={addOpen} onRequestClose={closeAddSheet}>
           <ThemedView style={[SHEET_PANEL, styles.sheet]}>
             <ThemedText type="t4">지출 추가</ThemedText>
             <ThemedText type="t7" themeColor="textSecondary">항목 이름</ThemedText>
@@ -354,7 +354,7 @@ export default function ExpensesScreen() {
           </ThemedView>
       </BottomSheet>
 
-      <BottomSheet visible={budgetOpen} onRequestClose={() => setBudgetOpen(false)}>
+      <BottomSheet dismissible={false} visible={budgetOpen} onRequestClose={() => setBudgetOpen(false)}>
           <ThemedView style={[SHEET_PANEL, styles.sheet]}>
             <ThemedText type="t4">총 예산</ThemedText>
             <ThemedText type="t7" themeColor="textSecondary">

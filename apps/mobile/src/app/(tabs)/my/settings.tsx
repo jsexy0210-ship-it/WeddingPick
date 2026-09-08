@@ -234,7 +234,7 @@ export default function SettingsScreen() {
         </ScrollView>
       </SafeAreaView>
 
-      <BottomSheet visible={nameOpen} onRequestClose={() => setNameOpen(false)}>
+      <BottomSheet dismissible={false} visible={nameOpen} onRequestClose={() => setNameOpen(false)}>
           <ThemedView style={[SHEET_PANEL, styles.sheet]}>
             <ThemedText type="t4">어떻게 불러드릴까요?</ThemedText>
             <TextInput
