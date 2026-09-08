@@ -4,11 +4,13 @@ import { loadConfig } from './config';
 import { createPool } from './db';
 
 /**
- * 샘플 업체의 사진을 네이버 이미지 검색 결과로 바꾼다 — 검수용, 출시 전 교체
- * (2026-09-08 오더 «실제 웨딩업체 이미지 그대로»).
+ * 샘플 업체의 사진을 카카오(다음) 이미지 검색 결과로 바꾼다 — 검수용, 출시 전
+ * 교체(2026-09-08 오더 «실제 웨딩업체 이미지 그대로»).
  *
- *   NAVER_SEARCH_CLIENT_ID=… NAVER_SEARCH_CLIENT_SECRET=… \
- *   npm run seed:sample-images --workspace @weddingpick/api -- --yes
+ *   KAKAO_APP_KEY=… npm run seed:sample-images --workspace @weddingpick/api -- --yes
+ *
+ * 카카오 개발자센터 «다음 검색» API(이미지). 로그인에 쓰는 앱의 REST API 키를
+ * 그대로 쓴다 — 별도 등록도 검수도 없다. 하루 30,000회, 우리는 업체 수만큼.
  *
  * 저작권 근거는 `unknown`으로 적고 메모에 출처를 남긴다 — 이 상태는 정식 운영에서
  * 노출하지 않기로 한 값이다(0050). 검수용 스테이징에서만 쓰고, 출시 전에
@@ -33,47 +35,38 @@ const QUERY: Record<VendorCategory, string> = {
   etc: '웨딩 플라워 데코',
 };
 
-type NaverImage = { link: string; thumbnail: string; sizewidth: string; sizeheight: string };
+type KakaoImage = { image_url: string; thumbnail_url: string; width: number; height: number; display_sitename: string };
 
-async function searchImages(
-  auth: { id: string; secret: string },
-  query: string,
-  start: number,
-  display: number
-): Promise<NaverImage[]> {
-  const url = new URL('https://openapi.naver.com/v1/search/image');
+async function searchImages(appKey: string, query: string, page: number, size: number): Promise<KakaoImage[]> {
+  const url = new URL('https://dapi.kakao.com/v2/search/image');
 
   url.searchParams.set('query', query);
-  url.searchParams.set('display', String(display));
-  url.searchParams.set('start', String(start));
-  url.searchParams.set('sort', 'sim');
-  url.searchParams.set('filter', 'large');
+  url.searchParams.set('sort', 'accuracy');
+  url.searchParams.set('page', String(page));
+  url.searchParams.set('size', String(size));
 
-  const response = await fetch(url, {
-    headers: { 'X-Naver-Client-Id': auth.id, 'X-Naver-Client-Secret': auth.secret },
-  });
+  const response = await fetch(url, { headers: { Authorization: `KakaoAK ${appKey}` } });
 
   if (!response.ok) {
-    throw new Error(`네이버 이미지 검색 실패 (HTTP ${response.status}) ${(await response.text()).slice(0, 200)}`);
+    throw new Error(`카카오 이미지 검색 실패 (HTTP ${response.status}) ${(await response.text()).slice(0, 200)}`);
   }
 
-  const body = (await response.json()) as { items?: NaverImage[] };
+  const body = (await response.json()) as { documents?: KakaoImage[] };
 
-  return body.items ?? [];
+  return body.documents ?? [];
 }
 
 async function main(): Promise<void> {
   if (!argv('yes')) {
-    console.error('샘플 업체 사진을 네이버 이미지 검색 결과로 바꾼다. 정말이면 --yes를 붙일 것.');
+    console.error('샘플 업체 사진을 카카오 이미지 검색 결과로 바꾼다. 정말이면 --yes를 붙일 것.');
     process.exitCode = 1;
     return;
   }
 
-  const id = process.env.NAVER_SEARCH_CLIENT_ID;
-  const secret = process.env.NAVER_SEARCH_CLIENT_SECRET;
+  const appKey = process.env.KAKAO_APP_KEY;
 
-  if (!id || !secret) {
-    console.error('NAVER_SEARCH_CLIENT_ID / NAVER_SEARCH_CLIENT_SECRET이 필요하다(네이버 개발자센터 · 검색 API).');
+  if (!appKey) {
+    console.error('KAKAO_APP_KEY(카카오 REST API 키)가 필요하다 — infra/render-env.yml과 같은 값.');
     process.exitCode = 1;
     return;
   }
@@ -96,19 +89,20 @@ async function main(): Promise<void> {
     );
 
     let replaced = 0;
-    let position: Partial<Record<string, number>> = {};
+    const position: Partial<Record<string, number>> = {};
 
     for (const vendor of vendors) {
       const city = vendor.region.split(' ')[0] ?? '';
       const query = `${city} ${QUERY[vendor.category] ?? VENDOR_CATEGORY_LABEL[vendor.category]}`;
-      const start = position[query] ?? 1;
+      /* 같은 검색어를 쓰는 업체끼리 결과가 겹치지 않게 쪽을 넘긴다(쪽당 PER_VENDOR장). */
+      const page = position[query] ?? 1;
 
-      position[query] = start + PER_VENDOR;
+      position[query] = page + 1;
 
-      let images: NaverImage[] = [];
+      let images: KakaoImage[] = [];
 
       try {
-        images = await searchImages({ id, secret }, query, start, PER_VENDOR);
+        images = await searchImages(appKey, query, page, PER_VENDOR);
       } catch (error) {
         console.error(`${vendor.record_key}: ${error instanceof Error ? error.message : String(error)}`);
         continue;
@@ -129,17 +123,16 @@ async function main(): Promise<void> {
          FROM UNNEST($3::text[], $4::int[], $5::int[], $6::int[]) AS t(url, w, h, ord)`,
         [
           vendor.id,
-          `네이버 이미지 검색 «${query}» 결과 · 검수용. 출시 전 교체한다.`,
-          images.map((image) => image.link),
-          images.map((image) => Number(image.sizewidth) || 0),
-          images.map((image) => Number(image.sizeheight) || 0),
+          `카카오(다음) 이미지 검색 «${query}» 결과 · 검수용. 출시 전 교체한다.`,
+          images.map((image) => image.image_url),
+          images.map((image) => image.width || 0),
+          images.map((image) => image.height || 0),
           images.map((_, index) => index + 1),
         ]
       );
 
       replaced += 1;
-      /* 네이버 검색 API는 초당 10회 제한이다. */
-      await new Promise((resolve) => setTimeout(resolve, 120));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
     console.log(`샘플 업체 ${vendors.length}곳 중 ${replaced}곳의 사진을 바꿨다.`);
