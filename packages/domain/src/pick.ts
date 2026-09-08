@@ -1,4 +1,4 @@
-import { VENDOR_CATEGORIES, VENDOR_CATEGORY_LABEL, type VendorCategory } from './vendor';
+import { PREPARATION_CATEGORIES, VENDOR_CATEGORY_LABEL, type VendorCategory } from './vendor';
 
 /**
  * Pick. 통합정책 v3.2 §6~7.
@@ -86,7 +86,8 @@ export type CategoryProgress = {
  *
  * **후보를 담다 만 업종이 먼저다.** 이미 고르기 시작한 일을 끝내는 것이,
  * 손대지 않은 일을 새로 여는 것보다 사용자에게 가깝다. 그 다음이 아직 시작하지
- * 않은 업종이고, 순서는 업종 목록의 순서를 따른다.
+ * 않은 업종이고, 순서는 준비 업종 목록(결정사 → 웨딩홀 → 스드메 → …)을 따른다. «기타»는
+ * 준비 단계가 아니라 다음으로 지목하지 않는다.
  *
  * 다 정했으면 null이다 — 없는 다음을 지어내지 않는다.
  */
@@ -95,11 +96,11 @@ export function nextCategory(progress: readonly CategoryProgress[]): VendorCateg
     state === 'picking' ? 0 : state === 'before' ? 1 : 2;
 
   const open = progress
-    .filter((row) => row.state !== 'decided')
+    .filter((row) => row.state !== 'decided' && PREPARATION_CATEGORIES.includes(row.category))
     .sort(
       (a, b) =>
         rank(a.state) - rank(b.state) ||
-        VENDOR_CATEGORIES.indexOf(a.category) - VENDOR_CATEGORIES.indexOf(b.category)
+        PREPARATION_CATEGORIES.indexOf(a.category) - PREPARATION_CATEGORIES.indexOf(b.category)
     );
 
   return open[0]?.category ?? null;

@@ -13,7 +13,7 @@ import {
   STILL_COLLECTING,
   TERMS,
   type VendorCategory,
-  VENDOR_CATEGORIES,
+  PREPARATION_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
@@ -63,7 +63,7 @@ import {
  * 검색은 자주 쓰는 분류부터 보여준다. 사업계획서 6번의 확장 순서와 같다.
  * «기타»는 격자에 두지 않는다 — 고를 이유를 설명할 수 없는 칸이다.
  */
-const CATEGORY_ORDER: VendorCategory[] = VENDOR_CATEGORIES.filter((c) => c !== 'etc');
+const CATEGORY_ORDER: readonly VendorCategory[] = PREPARATION_CATEGORIES;
 
 /** 격자는 2열. 행 단위로 그려야 두 칸의 폭과 gap이 정확히 맞는다. */
 const CATEGORY_ROWS: VendorCategory[][] = CATEGORY_ORDER.reduce<VendorCategory[][]>(

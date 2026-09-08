@@ -43,7 +43,7 @@ function makeHTML(size, scale, bg, fg, transparent) {
         stroke-linecap="round" stroke-linejoin="round"
       />
       <path
-        d="M8.7 11.9l2.2 2.2 4.4-4.4"
+        d="M9.4 11.9l1.7 1.7 3.4-3.4"
         fill="none" stroke="${fg}" stroke-width="1.9"
         stroke-linecap="round" stroke-linejoin="round"
       />

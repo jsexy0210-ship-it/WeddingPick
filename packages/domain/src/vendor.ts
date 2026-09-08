@@ -19,6 +19,16 @@ export const VENDOR_CATEGORIES = [
 
 export type VendorCategory = (typeof VENDOR_CATEGORIES)[number];
 
+/**
+ * 준비 순서에 놓는 업종. «기타»는 준비 단계가 아니라 분류가 안 되는 업체를 담는
+ * 칸이라 빠진다 — 핸드오프 순회 로딩(결정사 → 웨딩홀 → 스튜디오 → 드레스 →
+ * 메이크업)이 «준비 순서와 같게 둔다»고 못박은 그 순서다. 홈의 다음 준비 · Pick 탭 ·
+ * 웨딩일정 준비현황 · 검색 업종 격자가 전부 이 목록을 쓴다.
+ */
+export const PREPARATION_CATEGORIES: readonly VendorCategory[] = VENDOR_CATEGORIES.filter(
+  (category) => category !== 'etc'
+);
+
 /** 화면에 쓰는 이름. 코드를 그대로 보여주지 않는다. */
 export const VENDOR_CATEGORY_LABEL: Record<VendorCategory, string> = {
   /** 결혼정보회사. 사용자가 부르는 이름은 «결정사»다(2026-09-08). */

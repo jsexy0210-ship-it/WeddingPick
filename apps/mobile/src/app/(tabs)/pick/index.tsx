@@ -2,7 +2,7 @@ import type { CandidateListResponse, CurrentUser, VendorSummary } from '@wedding
 import {
   NOT_ENOUGH_DATA,
   TERMS,
-  VENDOR_CATEGORIES,
+  PREPARATION_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
   rangeLabel,
   withInstrument,
@@ -47,7 +47,7 @@ import { WebShellView } from '@/features/webshell/WebShellView';
  */
 
 /** 화면에 늘어놓는 업종. «기타»는 준비 항목이 아니라 뺀다. */
-const PICK_CATEGORIES: readonly VendorCategory[] = VENDOR_CATEGORIES.filter((cat) => cat !== 'etc');
+const PICK_CATEGORIES: readonly VendorCategory[] = PREPARATION_CATEGORIES;
 
 /** 비어 있음 상태가 먼저 제안하는 업종(#17b «웨딩홀부터 볼까요»). */
 const STARTER_CATEGORY: VendorCategory = 'hall';

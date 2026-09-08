@@ -2,7 +2,7 @@ import type { Top3Item, Top3Response } from '@weddingpick/api-contract';
 import {
   TERMS,
   TOP3_REASON_LABEL,
-  VENDOR_CATEGORIES,
+  PREPARATION_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
   manwon,
   type VendorCategory,
@@ -73,7 +73,7 @@ export default function Top3Screen() {
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.chips}>
-            {VENDOR_CATEGORIES.map((cat) => (
+            {PREPARATION_CATEGORIES.map((cat) => (
               <FilterChip
                 key={cat}
                 label={VENDOR_CATEGORY_LABEL[cat]}
