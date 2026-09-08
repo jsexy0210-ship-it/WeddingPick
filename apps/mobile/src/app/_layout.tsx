@@ -11,12 +11,14 @@ import { useFonts } from 'expo-font';
 import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 
+import { entryAfterSignIn, rememberSignedIn } from '@/features/auth/finish-sign-in';
 import { completeAuthPopup, isAuthPopup } from '@/features/auth/is-auth-popup';
+import { completeKakaoRedirect, hasKakaoReturn } from '@/features/auth/providers';
+import { setPendingSignInError } from '@/features/auth/sign-in-handoff';
 import { CaptureDraftProvider } from '@/features/capture/capture-draft';
 import { DocumentStoreProvider } from '@/features/documents/document-store';
 import { getCurrentUser, getSignupState } from '@/api/client';
 import { saveToken } from '@/api/session';
-import { isOnboardingCompleted } from '@/features/onboarding/onboarding-state';
 import { SPLASH_MINIMUM_MS, SplashView } from '@/features/splash/splash-view';
 
 SplashScreen.preventAutoHideAsync();
@@ -37,10 +39,15 @@ SplashScreen.preventAutoHideAsync();
  * 그 계정의 다른 경로를 전부 막고 있어서, 그대로 두면 어느 화면을 열어도
  * 막혔다는 말만 듣는다. 마칠 수 있는 화면으로 보낸다.
  */
-type Entry = 'onboarding' | 'login' | 'setup' | 'app';
+/*
+ * 스플래시 다음은 바로 로그인이다(2026-09-04 · v3.11). 최초 실행 소개 5장
+ * (WP-APP-003, `onboarding.tsx`)은 보류 — 화면 파일은 두되 어디서도 열지 않는다.
+ * 기기 저장소의 «소개를 봤는가» 값으로 갈랐던 것을 없앴다: 카카오톡 인앱
+ * 브라우저처럼 저장소가 새로 시작되는 곳에서 매번 소개가 먼저 떴다.
+ */
+type Entry = 'login' | 'setup' | 'app';
 
 const ENTRY_ROUTE = {
-  onboarding: '/onboarding',
   login: '/login',
   setup: '/setup',
 } as const;
@@ -116,10 +123,29 @@ function RootLayoutContent() {
     if (!tokenBootstrapped) return;
 
     void (async () => {
-      const onboarded = await isOnboardingCompleted().catch(() => false);
+      /*
+       * 카카오에서 같은 창으로 돌아온 직후다(웹). 로그인 화면을 거치지 않고
+       * 스플래시에서 곧장 마무리한다 — 코드를 세션으로 바꾸고, 그 응답이 알려준
+       * 값으로 온보딩/홈을 바로 첫 화면으로 정한다(2026-09-08). 실패한 이유는
+       * 로그인 화면에 넘겨 시트로 띄운다.
+       */
+      if (hasKakaoReturn()) {
+        try {
+          const session = await completeKakaoRedirect();
 
-      if (!onboarded) {
-        setEntry('onboarding');
+          if (session) {
+            const next = await entryAfterSignIn(session);
+
+            void rememberSignedIn({ provider: 'kakao', email: null }, next === '/setup');
+            setEntry(next === '/setup' ? 'setup' : 'app');
+
+            return;
+          }
+        } catch (caught) {
+          setPendingSignInError(caught instanceof Error ? caught.message : '로그인하지 못했어요.');
+        }
+
+        setEntry('login');
 
         return;
       }
@@ -195,7 +221,6 @@ function RootLayoutContent() {
         <CaptureDraftProvider>
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="onboarding" />
             {/*
               가입이 끝나기 전에는 나갈 곳이 없다. 제스처로 빠져나가면 서버가
               전부 막아둔 계정으로 앱을 헤매게 된다(v3.13 §N-2).

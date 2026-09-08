@@ -63,6 +63,15 @@ export const createSessionResponseSchema = z.object({
   token: z.string().min(1),
   userId: idSchema,
   expiresAt: timestampSchema,
+  /**
+   * 로그인 직후 앱이 **한 번 더 묻지 않고** 바로 다음 화면을 고르게 하는 두 값
+   * (2026-09-08). 예전에는 세션을 받고 나서 /v1/me/signup을 다시 물어야 해서
+   * 로그인 화면에 머물렀다 온보딩으로 넘어갔다.
+   */
+  /** 가입(만 14세 확인·필수 동의)이 끝났는가. false면 온보딩(/setup)부터다. */
+  activated: z.boolean(),
+  /** 초기 설정(지역)까지 끝났는가. true면 홈으로 바로 간다. */
+  setupComplete: z.boolean(),
 });
 
 /**

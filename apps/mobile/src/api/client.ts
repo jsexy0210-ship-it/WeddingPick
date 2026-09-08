@@ -243,11 +243,17 @@ export async function listAuthProviders(): Promise<AuthProvidersResponse> {
   return request('/v1/auth/providers', authProvidersResponseSchema, { auth: false });
 }
 
+/**
+ * 로그인 직후 어디로 갈지 세션 응답이 바로 알려준다(2026-09-08) — /v1/me/signup을
+ * 다시 묻느라 로그인 화면에 머물지 않는다.
+ */
+export type SessionEntry = { activated: boolean; setupComplete: boolean };
+
 export async function signIn(
   provider: 'apple' | 'google',
   idToken: string,
   profileName?: string
-): Promise<void> {
+): Promise<SessionEntry> {
   const session = await request(
     '/v1/auth/sessions',
     createSessionResponseSchema,
@@ -255,6 +261,8 @@ export async function signIn(
   );
 
   await saveToken(session.token);
+
+  return { activated: session.activated, setupComplete: session.setupComplete };
 }
 
 /** 네이버·카카오. 앱은 일회용 인가 코드만 넘기고 토큰 교환은 서버가 한다. */
@@ -264,7 +272,7 @@ export async function signInWithAuthorizationCode(input: {
   state: string;
   redirectUri: string;
   codeVerifier?: string;
-}): Promise<void> {
+}): Promise<SessionEntry> {
   const session = await request('/v1/auth/sessions', createSessionResponseSchema, {
     method: 'POST',
     body: JSON.stringify(input),
@@ -272,6 +280,8 @@ export async function signInWithAuthorizationCode(input: {
   });
 
   await saveToken(session.token);
+
+  return { activated: session.activated, setupComplete: session.setupComplete };
 }
 
 /** WP-AUTH-002. 있으면 비밀번호 입력으로, 없으면 비밀번호 만들기로 — 화면이 이 값만 본다. */

@@ -9,6 +9,7 @@ import { ActionButton, Colors, Layout, MaxContentWidth, Radius, SocialLogo, Spac
 import { LoginFailureSheet } from '@/features/auth/login-failure-sheet';
 import { canSignInWith, providerTone, useAuthProviders } from '@/features/auth/providers';
 import { loadRememberedAccount, type RememberedAccount } from '@/features/auth/remembered-account';
+import { takePendingSignInError } from '@/features/auth/sign-in-handoff';
 import { useSignIn } from '@/features/auth/use-sign-in';
 
 /**
@@ -52,7 +53,7 @@ const REASONS = [
 export default function LoginScreen() {
   const theme = useTheme();
   const { providers, error: loadError } = useAuthProviders();
-  const { signIn, busy, error, retry, dismissError } = useSignIn();
+  const { signIn, busy, error, retry, dismissError, reportError } = useSignIn();
   /** undefined = 아직 안 읽음, null = 기억된 계정 없음(WP-AUTH-001). */
   const [remembered, setRemembered] = useState<RememberedAccount | null | undefined>(undefined);
   /** 만 14세 이상이에요 체크박스. 기본 해제(§3.5 "화면 규칙"). */
@@ -60,6 +61,15 @@ export default function LoginScreen() {
 
   useEffect(() => {
     loadRememberedAccount().then(setRemembered);
+    /*
+     * 웹에서 카카오 리다이렉트 마무리는 부팅(app/_layout.tsx)이 스플래시에서
+     * 끝내고 곧장 온보딩/홈으로 간다 — 여기까지 온 것은 그 마무리가 실패했거나
+     * 사용자가 취소한 경우뿐이다. 실패 이유가 넘어왔으면 시트로 띄운다.
+     */
+    const failure = takePendingSignInError();
+
+    if (failure) reportError(failure);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 마운트 때 한 번만
   }, []);
 
   const kakao = providers?.[0] ?? null;
@@ -115,8 +125,20 @@ export default function LoginScreen() {
           {/* AuthBlock — flex: 0 0 auto. 로그인 버튼·약관·오류. 항상 화면
               하단에 자기 높이만큼만 차지한다. */}
           <View style={styles.authBlock}>
-            {providers === null || remembered === undefined ? (
-              <ActivityIndicator color={theme.tint} />
+            {providers === null || remembered === undefined || busy ? (
+              /*
+               * 로그인 진행 중에는 버튼 대신 이것만 보인다. 카카오에서 돌아온 뒤
+               * 세션 교환 한 번(왕복 1회)이 유일한 기다림이다 — 그동안 멀쩡한
+               * 로그인 폼이 떠 있으면 «다시 로그인하라는 건가» 하고 읽힌다.
+               */
+              <ThemedView style={styles.busy}>
+                <ActivityIndicator color={theme.tint} />
+                {busy ? (
+                  <ThemedText type="small" themeColor="textAssistive">
+                    카카오로 로그인하는 중이에요
+                  </ThemedText>
+                ) : null}
+              </ThemedView>
             ) : (
               <ThemedView style={styles.section}>
                 {showRemembered && remembered ? (
@@ -289,6 +311,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.two,
     borderRadius: Radius.pill,
   },
+  busy: { alignItems: 'center', gap: Spacing.two, paddingVertical: Spacing.three },
   /* §3.5 — 카드가 아니라 44 터치 영역 안의 텍스트 한 줄이다. 좌측 정렬. */
   ageCard: {
     flexDirection: 'row',
