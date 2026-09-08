@@ -1,9 +1,10 @@
 import { SITE_ORIGIN } from '@weddingpick/domain';
+import strings from '../../../spec/strings.ko.json';
 
 /** 서비스 주소는 @weddingpick/domain SITE_ORIGIN 한 곳에서 온다(앱 약관 링크와 같은 값). */
 export { SITE_ORIGIN };
-export const SHARE_TITLE = '웨딩픽 - 확인하고 비교해서 골라요';
-export const SHARE_DESCRIPTION = '웨딩 준비에 필요한 정보를 확인하고 비교해, 두 분에게 맞는 곳을 골라드려요.';
+export const SHARE_TITLE = strings.webLanding.metaTitle;
+export const SHARE_DESCRIPTION = strings.webLanding.metaDescription;
 export const SHARE_IMAGE = `${SITE_ORIGIN}/assets/weddingpick-og.png`;
 
 function escapeAttribute(value: string): string {

@@ -1,3 +1,6 @@
+import strings from '../../../spec/strings.ko.json';
+import { marketingHeader, marketingFooter, MARKETING_CHROME } from './landing';
+const COPY = strings.webLanding;
 import { socialMeta } from './social-meta';
 /**
  * 웨딩픽 랜딩 하위페이지 5종.
@@ -41,55 +44,8 @@ const NAV = [
   { label: '고객지원', href: '/support.html' },
 ];
 
-function subGnb(activePath: string | null): string {
-  const links = NAV.map((n) => {
-    const active = n.href === activePath;
-    return `<a href="${esc(n.href)}" class="sp-nav-link${active ? ' sp-nav-active' : ''}" style="color:${active ? INK : SEC};font-weight:${active ? 700 : 400}">${esc(n.label)}</a>`;
-  }).join('');
-
-  return `<header class="sp-gnb" style="border-bottom:1px solid ${esc(DIVIDER)}">
-  <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit;flex-shrink:0">
-    <span style="color:${esc(C)};display:flex;line-height:0">${pickMark(22, C)}</span>
-    <span style="font-size:19px;font-weight:700;color:${esc(INK)}">웨딩픽</span>
-  </a>
-  <input type="checkbox" id="sp-cb" class="sp-ham-cb" aria-hidden="true">
-  <nav class="sp-nav">${links}</nav>
-  <a href="/" class="sp-cta-btn" style="background:${esc(C)};color:#fff">앱 다운로드</a>
-  <label for="sp-cb" class="sp-ham-btn" aria-label="메뉴 열기">
-    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><path d="M3 6h16M3 11h16M3 16h16" stroke="${esc(INK)}" stroke-width="1.8" stroke-linecap="round"/></svg>
-  </label>
-</header>`;
-}
-
-function subFooter(): string {
-  const email = CONTACT_EMAIL
-    ? `<a href="mailto:${esc(CONTACT_EMAIL)}" style="font-size:14px;color:rgba(255,255,255,.5);text-decoration:none">${esc(CONTACT_EMAIL)}</a>`
-    : '';
-
-  return `<footer class="sp-foot" style="background:${esc(FOOT_INK)}">
-  <div class="sp-foot-top">
-    <a href="/" style="display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0">
-      <span style="color:${esc(C)};display:flex;line-height:0">${pickMark(20, C)}</span>
-      <span style="font-size:17px;font-weight:700;color:#fff">웨딩픽</span>
-    </a>
-    <nav class="sp-foot-nav">
-      ${NAV.map((n) => `<a href="${esc(n.href)}" style="font-size:14px;color:rgba(255,255,255,.6);text-decoration:none;white-space:nowrap">${esc(n.label)}</a>`).join('')}
-    </nav>
-    ${email}
-  </div>
-  <div class="sp-foot-biz">
-    ${BUSINESS_NOTICE_LINES.map((line) => `<span style="font-size:13px;line-height:19px;color:rgba(255,255,255,.4)">${esc(line)}</span>`).join('')}
-  </div>
-  <div class="sp-foot-bot">
-    <span style="font-size:13px;color:rgba(255,255,255,.4)">© 2026 ${esc(BUSINESS.name)}. All rights reserved.</span>
-    <nav class="sp-foot-policy">
-      <a href="/terms.html" style="font-size:13px;color:rgba(255,255,255,.5);text-decoration:none;white-space:nowrap">이용약관</a>
-      <span style="font-size:13px;color:rgba(255,255,255,.2)">·</span>
-      <a href="/privacy.html" style="font-size:13px;color:rgba(255,255,255,.5);text-decoration:none;white-space:nowrap">개인정보처리방침</a>
-    </nav>
-  </div>
-</footer>`;
-}
+function subGnb(_activePath: string | null): string { return marketingHeader(); }
+function subFooter(): string { return marketingFooter(); }
 
 const FONT_STACK =
   "-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif";
@@ -188,7 +144,13 @@ function subDocument(opts: {
 <meta name="description" content="${esc(opts.description)}">
 ${socialMeta(opts.path, opts.title + " — 웨딩픽", opts.description)}
 ${faviconTags()}
-<style>${BASE_STYLE}</style>
+<style>${BASE_STYLE}
+${MARKETING_CHROME}
+.sp-titleband,.sp-body,.sp-legal{width:min(1120px,calc(100% - 48px));margin-inline:auto;padding-inline:0}
+.sp-titleband{padding-block:64px 40px}.sp-titleband h1{word-break:keep-all;overflow-wrap:anywhere}.sp-editorial{width:min(760px,calc(100% - 48px));margin:0 auto;padding:48px 0 72px;color:${INK}}
+.sp-editorial section{padding:32px 0;border-bottom:1px solid ${DIVIDER}}.sp-editorial section:first-child{padding-top:0}.sp-editorial h2{font-size:24px;line-height:1.4;margin:8px 0 16px;word-break:keep-all}.sp-editorial p{font-size:16px;line-height:1.85;color:${SEC};word-break:keep-all;overflow-wrap:anywhere}.sp-number{font-size:14px;color:${SEC}}.sp-link{display:inline-flex;align-items:center;min-height:48px;margin-top:16px;font-size:16px;font-weight:700;text-underline-offset:5px}.sp-editorial .sp-support-note{font-size:14px;margin-top:24px}.sp-faq-list details{border-bottom:1px solid ${DIVIDER}}.sp-faq-list summary{cursor:pointer;font-size:18px;font-weight:700;min-height:64px;padding:20px 0;word-break:keep-all}.sp-faq-list details p{padding-bottom:24px}.sp-legal{padding-top:40px}.sp-content p,.sp-content li{overflow-wrap:anywhere}
+@media(max-width:720px){.sp-titleband{padding-block:32px}.sp-titleband h1{font-size:28px;line-height:1.4}.sp-editorial{padding-block:32px 56px}.sp-editorial h2{font-size:22px}.sp-faq-list summary{font-size:16px}}
+</style>
 </head>
 <body>
 <div class="page">
@@ -214,225 +176,25 @@ function titleBand(crumb: string, h1: string, h1sub?: string): string {
 
 /* ───────── 1. 서비스 소개 ───────── */
 
-function introCards(title: string, lead: string, items: { eyebrow?: string; title: string; body?: string; brand?: boolean }[]): string {
-  const cardStyle = (brand: boolean) =>
-    `border-radius:12px;padding:26px 24px;display:flex;flex-direction:column;gap:8px;${brand ? `box-shadow:inset 0 0 0 1.5px ${C};background:${HERO_TINT}` : `background:${RECESSED}`}`;
-
-  const cards = items.map((c) => `
-    <div style="${cardStyle(!!c.brand)}">
-      ${c.eyebrow ? `<span style="font-size:13px;font-weight:700;color:${esc(C)}">${esc(c.eyebrow)}</span>` : ''}
-      <span style="font-size:18px;font-weight:700;color:${esc(INK)}">${esc(c.title)}</span>
-      ${c.body ? `<span style="font-size:15px;line-height:24px;color:${esc(SEC)}">${esc(c.body)}</span>` : ''}
-    </div>`).join('');
-
-  return `<section style="padding:40px 0;display:flex;flex-direction:column;gap:16px">
-    ${title ? `<h2 style="font-size:24px;line-height:32px;font-weight:700;color:${esc(INK)};margin:0">${esc(title)}</h2>` : ''}
-    ${lead ? `<p style="font-size:16px;line-height:26px;color:${esc(SEC)};margin:0">${esc(lead)}</p>` : ''}
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px">${cards}</div>
-  </section>`;
-}
-
-function introSteps(title: string, steps: { no: string; title: string; body: string; meta: string }[]): string {
-  const rows = steps.map((s) => `
-    <div style="display:flex;gap:20px;align-items:flex-start">
-      <span style="width:28px;height:28px;border-radius:999px;background:${esc(C)};color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;margin-top:2px;font-variant-numeric:tabular-nums">${esc(s.no)}</span>
-      <span style="flex:1;display:flex;flex-direction:column;gap:2px">
-        <span style="font-size:18px;font-weight:700;color:${esc(INK)}">${esc(s.title)}</span>
-        <span style="font-size:15px;line-height:24px;color:${esc(SEC)}">${esc(s.body)}</span>
-      </span>
-      <span style="font-size:13px;font-weight:700;color:${esc(TER)};white-space:nowrap;padding-top:4px">${esc(s.meta)}</span>
-    </div>`).join('');
-
-  return `<section style="padding:40px 0;display:flex;flex-direction:column;gap:16px">
-    <h2 style="font-size:24px;line-height:32px;font-weight:700;color:${esc(INK)};margin:0">${esc(title)}</h2>
-    <div style="display:flex;flex-direction:column;gap:16px">${rows}</div>
-  </section>`;
-}
-
 export function renderIntroPage(): string {
-  const body = `<div class="sp-body" style="padding-top:0;display:flex;flex-direction:column;gap:0">
-    <div style="height:1px;background:${esc(DIVIDER)};margin-bottom:0"></div>
-    ${introSteps('이렇게 씁니다', [
-      { no: '1', title: '예식일과 지역을 알려주세요', body: '남은 기간에 맞춰 지금 정할 것부터 순서대로 챙겨드려요.', meta: '30초' },
-      { no: '2', title: '나에게 맞는 3곳을 확인해요', body: '고른 사진과 예산, 날짜를 보고 웨딩픽이 먼저 골라둡니다.', meta: '홈' },
-      { no: '3', title: '금액부터 포함 항목까지 한눈에 비교해요', body: '제보 금액, 포함 항목, 별도로 확인할 비용을 한 화면에서 봐요.', meta: '비교' },
-      { no: '4', title: '둘이 같이 골라요', body: '각자 Pick하고 겹치는 곳부터 좁혀나가요. 고르면 웨딩일정에 바로 반영돼요.', meta: 'Pick' },
-    ])}
-    <div style="height:1px;background:${esc(DIVIDER)}"></div>
-    ${introCards('확인된 제보란', '직접 등록해 주신 자료를 바탕으로 구성한 금액 정보예요. 개인 정보 보호를 위해 개별 금액 대신 금액 구간과 건수로 안내해 드려요.', [
-      { eyebrow: '0~2건', title: '정보 수집 중', body: '기준 제보가 모이면 공개돼요' },
-      { eyebrow: '3~9건', title: '금액 구간 안내', body: '모인 제보에 맞춰 금액 구간을 보여드려요' },
-      { eyebrow: '10건 이상', title: '기준금액 안내', body: '제보 금액의 기준금액도 알려드려요', brand: true },
-    ])}
-    <div style="height:1px;background:${esc(DIVIDER)}"></div>
-    ${introCards('웨딩픽의 약속', '', [
-      { title: '객관적인 정보 제공', body: '조건과 금액을 있는 그대로 전달해 두 분의 합리적인 선택을 도와요.' },
-      { title: '공정한 순위 노출', body: '광고 여부에 상관없이 확인된 제보를 기준으로 추천과 검색 순위를 제공해요.' },
-      { title: '투명한 후기 운영', body: '업체 반론권을 보장하면서도 작성된 후기는 투명하게 유지해요.' },
-    ])}
-  </div>`;
-
-  return subDocument({
-    path: "/intro.html",
-    title: '서비스 소개',
-    description: '웨딩픽이 먼저 골라주고 사용자는 비교해서 Pick하는 서비스예요.',
-    activePath: '/intro.html',
-    titleBand: titleBand('홈 · 서비스 소개', '다른 사람들은\n얼마에 했는지 확인해보세요', '예식일과 예산에 맞는 곳은 웨딩픽이 먼저 골라드려요. 두 분은 비교하고 Pick하면 돼요.'),
-    body,
-  });
+  return subDocument({path:'/intro.html',title:COPY.nav[0]!.label,description:COPY.introBody,activePath:'/intro.html',titleBand:titleBand(COPY.nav[0]!.label,COPY.introTitle,COPY.introBody),body:
+    `<div class="sp-editorial">${COPY.steps.map(s => `<section><span class="sp-number">${esc(s.n)}</span><h2>${esc(s.title)}</h2><p>${esc(s.body)}</p></section>`).join('')}
+    <section><h2>${esc(COPY.pickTitle).replace(/\n/g,' ')}</h2><p>${esc(COPY.pickBody)}</p></section>
+    <section><h2>${esc(COPY.trustTitle).replace(/\n/g,' ')}</h2><p>${esc(COPY.trustBody)}</p><p>${esc(COPY.trustNote)}</p></section>
+    <a class="sp-link" href="/#how">${esc(COPY.introLink)}</a></div>`});
 }
-
-/* ───────── 2. 자주 묻는 질문 ───────── */
-
-const FAQ_CATEGORIES = [
-  { title: '확인된 제보', count: 6 },
-  { title: 'Pick과 비교', count: 5 },
-  { title: '배우자 연결', count: 4 },
-  { title: 'Pick 인증', count: 5 },
-  { title: '후기', count: 4 },
-  { title: '계정과 탈퇴', count: 3 },
-];
-
-const FAQ_ROWS = [
-  { q: '확인된 제보는 어떻게 만들어요?', a: '직접 올려준 자료를 확인해 만들어요. 개인정보를 분리하고 금액 구간과 건수로 보여드려요.' },
-  { q: '회원가입 없이 사용할 수 있나요?', a: '확인된 제보는 로그인 없이 볼 수 있어요. Pick, 웨딩일정, Pick 인증은 가입 후 이용하세요.' },
-  { q: 'Pick 인증은 어떻게 하나요?', a: '금액이 보이는 화면을 올리면 웨딩픽이 자동으로 확인해요. 원본 이미지는 24시간 안에 삭제돼요.' },
-  { q: '광고하면 추천에 더 많이 나오나요?', a: '아니요. 광고는 추천·검색 순위와 완전히 분리되어 있어요. 광고 영역은 별도로 표시해요.' },
-  { q: '배우자는 어떻게 연결하나요?', a: '초대 링크를 보내면 24시간 안에 연결할 수 있어요. 각자 Pick한 곳이 하나로 모여요.' },
-  { q: '탈퇴하면 후기도 삭제되나요?', a: '계정과 개인정보는 삭제돼요. 작성한 후기는 작성자 정보를 분리한 뒤 유지될 수 있어요.' },
-];
 
 export function renderFaqPage(): string {
-  const catGrid = FAQ_CATEGORIES.map((c) => `
-    <div style="background:${RECESSED};border-radius:12px;padding:20px 18px;display:flex;flex-direction:column;gap:4px">
-      <span style="font-size:16px;font-weight:700;color:${INK}">${esc(c.title)}</span>
-      <span style="font-size:14px;color:${TER}">${c.count}개</span>
-    </div>`).join('');
-
-  const faqRows = FAQ_ROWS.map((r, i) => `
-    <div style="border-top:1px solid ${DIVIDER};padding:20px 0${i === FAQ_ROWS.length - 1 ? ';border-bottom:1px solid ' + DIVIDER : ''}">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px">
-        <div style="flex:1;display:flex;flex-direction:column;gap:8px">
-          <span style="font-size:16px;font-weight:700;color:${INK}">${esc(r.q)}</span>
-          <span style="font-size:15px;line-height:24px;color:${SEC}">${esc(r.a)}</span>
-        </div>
-      </div>
-    </div>`).join('');
-
-  const note = `<div style="background:${RECESSED};border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:4px">
-    <span style="font-size:16px;font-weight:700;color:${INK}">찾는 답이 없나요?</span>
-    <span style="font-size:15px;line-height:24px;color:${SEC}">고객센터로 문의를 남겨주시면 친절히 안내해 드릴게요.
-    <a href="/support.html" style="color:${C};font-weight:700;text-decoration:none;margin-left:8px">문의 남기기</a></span>
-  </div>`;
-
-  const body = `<div class="sp-body" style="display:flex;flex-direction:column;gap:40px">
-    <section style="display:flex;flex-direction:column;gap:16px">
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px">${catGrid}</div>
-    </section>
-    <section style="display:flex;flex-direction:column;gap:0">
-      <h2 style="font-size:24px;line-height:32px;font-weight:700;color:${INK};margin:0 0 20px">많이 보는 질문</h2>
-      ${faqRows}
-    </section>
-    ${note}
-  </div>`;
-
-  return subDocument({
-    path: "/faq.html",
-    title: '자주 묻는 질문',
-    description: '웨딩픽 서비스에 대해 자주 묻는 질문과 답변을 확인하세요.',
-    activePath: '/faq.html',
-    titleBand: titleBand('홈 · 자주 묻는 질문', '무엇이 궁금하세요?'),
-    body,
-  });
+  return subDocument({path:'/faq.html',title:COPY.nav[2]!.label,description:COPY.faqTitle,activePath:'/faq.html',titleBand:titleBand(COPY.nav[2]!.label,COPY.faqTitle),body:
+    `<div class="sp-editorial sp-faq-list">${COPY.faq.map(f=>`<details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join('')}
+    <p class="sp-support-note">${esc(COPY.faqSupport)}</p><a class="sp-link" href="/support.html">${esc(COPY.contact)}</a></div>`});
 }
-
-/* ───────── 3. 고객지원 ───────── */
-
-const SUPPORT_CARDS = [
-  { eyebrow: '가장 빠른 방법', title: '자주 묻는 질문', body: '27개 질문에 답을 정리해뒀어요', brand: true, href: '/faq.html' },
-  { title: '문의 남기기', body: '하루 안에 답변드려요', href: '#contact-form' },
-  { title: '신고 · 분쟁', body: '후기 신고와 처리 결과를 확인해요', href: '#contact-form' },
-];
-
-const SUPPORT_ROWS = [
-  { k: 'Pick 인증이 안 됐어요', desc: '이미 등록된 자료이거나 금액을 확인하기 어려울 수 있어요' },
-  { k: '배우자 연결이 안 돼요', desc: '초대 코드는 발급 후 24시간 동안만 쓸 수 있어요' },
-  { k: '업체 정보가 틀렸어요', desc: '업체 상세 하단에서 바로 제보할 수 있어요' },
-  { k: '알림이 오지 않아요', desc: '기기 설정에서 웨딩픽 알림이 켜져 있는지 확인해주세요' },
-  { k: '리워드가 아직 안 들어왔어요', desc: '확인하는 데 최대 하루 걸릴 수 있어요' },
-];
 
 export function renderSupportPage(): string {
-  const quickCards = SUPPORT_CARDS.map((c) => {
-    const cardStyle = c.brand
-      ? `box-shadow:inset 0 0 0 1.5px ${C};background:${HERO_TINT}`
-      : `background:${RECESSED}`;
-    return `<a href="${esc(c.href || '#')}" style="${cardStyle};border-radius:12px;padding:26px 24px;display:flex;flex-direction:column;gap:8px;text-decoration:none">
-      ${c.eyebrow ? `<span style="font-size:13px;font-weight:700;color:${C}">${esc(c.eyebrow)}</span>` : ''}
-      <span style="font-size:18px;font-weight:700;color:${INK}">${esc(c.title)}</span>
-      <span style="font-size:15px;line-height:24px;color:${SEC}">${esc(c.body)}</span>
-    </a>`;
-  }).join('');
-
-  const quickRows = SUPPORT_ROWS.map((r, i) => `
-    <a href="#contact-form" style="display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:56px;padding:0;border-top:1px solid ${DIVIDER}${i === SUPPORT_ROWS.length - 1 ? ';border-bottom:1px solid ' + DIVIDER : ''};text-decoration:none">
-      <span style="display:flex;flex-direction:column;gap:2px">
-        <span style="font-size:16px;font-weight:700;color:${INK}">${esc(r.k)}</span>
-        <span style="font-size:14px;line-height:19px;color:${TER}">${esc(r.desc)}</span>
-      </span>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${TER}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg>
-    </a>`).join('');
-
-  const CATEGORIES = ['일반', 'Pick 인증', '배우자 연결', '업체 정보', '계정', '기타'];
-  const categoryOptions = CATEGORIES.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
-
-  const contactForm = `<section id="contact-form" style="display:flex;flex-direction:column;gap:16px">
-    <h2 style="font-size:24px;line-height:32px;font-weight:700;color:${INK};margin:0">문의 남기기</h2>
-    <form action="mailto:${esc(CONTACT_EMAIL || 'help.weddingpick@gmail.com')}" method="get" style="display:flex;flex-direction:column;gap:16px">
-      <label style="display:flex;flex-direction:column;gap:6px">
-        <span style="font-size:14px;font-weight:700;color:${SEC}">문의 유형</span>
-        <select name="subject" style="height:52px;border-radius:8px;box-shadow:inset 0 0 0 1px ${BORDER};padding:0 14px;font-size:16px;color:${INK};background:#fff;border:none;-webkit-appearance:none;cursor:pointer">
-          <option value="" disabled selected>유형을 골라주세요</option>
-          ${categoryOptions}
-        </select>
-      </label>
-      <label style="display:flex;flex-direction:column;gap:6px">
-        <span style="font-size:14px;font-weight:700;color:${SEC}">이메일</span>
-        <input type="email" name="email" placeholder="답변받을 메일 주소" style="height:52px;border-radius:8px;box-shadow:inset 0 0 0 1px ${BORDER};padding:0 14px;font-size:16px;color:${INK};background:#fff;border:none;outline:none;font-family:inherit">
-      </label>
-      <label style="display:flex;flex-direction:column;gap:6px">
-        <span style="font-size:14px;font-weight:700;color:${SEC}">문의 내용</span>
-        <textarea name="body" placeholder="어떤 점이 불편하셨나요?" rows="5" style="border-radius:8px;box-shadow:inset 0 0 0 1px ${BORDER};padding:14px;font-size:16px;color:${INK};background:#fff;border:none;outline:none;resize:vertical;font-family:inherit;min-height:120px"></textarea>
-      </label>
-      <button type="submit" style="height:52px;border-radius:10px;background:${C};color:#fff;font-size:16px;font-weight:700;border:none;cursor:pointer;font-family:inherit">문의 보내기</button>
-    </form>
-    <div style="background:${RECESSED};border-radius:10px;padding:16px 18px">
-      <span style="font-size:14px;line-height:22px;color:${TER}">평일 오전 10시부터 오후 6시까지 답변드리고, 주말과 공휴일에 남긴 문의는 다음 영업일에 처리해요.</span>
-    </div>
-  </section>`;
-
-  const body = `<div class="sp-body" style="display:flex;flex-direction:column;gap:40px">
-    <section style="display:flex;flex-direction:column;gap:16px">
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">${quickCards}</div>
-    </section>
-    <section style="display:flex;flex-direction:column;gap:12px">
-      <h2 style="font-size:24px;line-height:32px;font-weight:700;color:${INK};margin:0">자주 찾는 항목</h2>
-      ${quickRows}
-    </section>
-    ${contactForm}
-  </div>`;
-
-  return subDocument({
-    path: "/support.html",
-    title: '고객지원',
-    description: '웨딩픽 서비스 이용 중 불편한 점이 있으시면 고객센터로 문의해주세요.',
-    activePath: '/support.html',
-    titleBand: titleBand('홈 · 고객지원', '무엇을 도와드릴까요?'),
-    body,
-  });
+  const contact=CONTACT_EMAIL ? `<a class="sp-link" href="mailto:${esc(CONTACT_EMAIL)}">${esc(COPY.supportMail)}</a><p>${esc(CONTACT_EMAIL)}</p><p>${esc(COPY.supportMailNote)}</p>` : `<p>${esc(COPY.supportFallback)}</p>`;
+  return subDocument({path:'/support.html',title:COPY.footerLinks[1]!.label,description:COPY.supportBody,activePath:'/support.html',titleBand:titleBand(COPY.footerLinks[1]!.label,COPY.supportTitle,COPY.supportBody),body:
+    `<div class="sp-editorial"><section><h2>${esc(COPY.contact)}</h2>${contact}<p class="sp-support-note">${esc(COPY.supportPrivacy)}</p></section><section><h2>${esc(COPY.supportFaq)}</h2><a class="sp-link" href="/faq.html">${esc(COPY.nav[2]!.label)}</a></section></div>`});
 }
-
-/* ───────── 4. 이용약관 ───────── */
 
 interface TermsArticle { t: string; l: string[] }
 
@@ -445,7 +207,7 @@ const TERMS_ARTICLES: TermsArticle[] = [
   { t: '제6조 서비스의 내용', l: ["업체 정보 검색·비교와 Pick", "웨딩 준비 일정·지출 관리 및 배우자 연결", "후기 작성·열람과 업체의 정정·반론 절차", "Pick 인증 자료를 통한 제보 금액 정보 제공", "알림, 이벤트, 광고·스폰서 영역 및 그 밖에 회사가 정하는 기능", "회사는 중개·예약·결제 당사자가 아닌 정보 제공 서비스입니다. 다만 향후 상담·견적·예약 기능을 제공하는 경우 해당 기능의 역할과 책임, 개인정보 제공 기준을 별도로 고지합니다."] },
   { t: '제7조 Pick 인증 자료', l: ["회원은 자신이 적법하게 보유하고 제출할 권한이 있는 자료만 제출해야 합니다.", "회사는 통계 작성에 필요한 업체명, 금액, 이용일, 품목·옵션 등 최소 항목만 이용하고 불필요한 금융정보와 제3자 정보는 가림 또는 삭제합니다.", "원본 이미지는 업로드 완료 시점부터 최대 24시간 이내 삭제합니다. 기한 안에 검증이 끝나지 않으면 연장 보관하지 않고 재제출 또는 별도 확인으로 전환할 수 있습니다.", "삭제 후에도 자료 식별자, 삭제 예정·완료 시각, 결과 코드 등 최소한의 감사기록은 별도로 정한 기간 동안 보관할 수 있습니다.", "회사는 중복·조작·오매칭 가능성을 검토할 수 있으나 이미지 지문이나 자동 점수만으로 부정행위를 확정하지 않습니다."] },
   { t: '제8조 확인된 제보의 이용', l: ["회원은 회사가 제출 자료에서 개인정보와 작성자 정보를 분리한 확인된 제보를 서비스 제공, 통계 작성, 품질 개선 및 오류·분쟁 대응에 필요한 범위에서 이용하는 데 동의합니다. 회사는 필요한 범위를 넘는 영구적 권리를 일괄 취득하지 않으며, 원본 자료 자체를 공개하지 않습니다."] },
-  { t: '제9조 가격정보와 통계', l: ["제보 금액은 실제 제출 사례의 범위와 중앙값 등 통계정보이며 업체의 공식 견적이나 판매가격을 보장하지 않습니다.", "최근 12개월을 기본 구간으로 하되 카테고리 변동성, 계절, 평일·주말, 시간대, 보증인원 및 옵션을 반영할 수 있습니다.", "조건별 정보가 부족하거나 재식별 가능성이 있으면 세부정보를 묶거나 공개하지 않습니다.", "패키지 금액은 항목별 금액이 확인되지 않으면 개별 서비스 가격으로 임의 안분하지 않습니다."] },
+  { t: '제9조 가격정보와 통계', l: ["제보 금액은 실제 제출 사례의 구간과 기준금액 등 통계정보이며 업체의 공식 견적이나 판매가격을 보장하지 않습니다.", "최근 12개월을 기본 구간으로 하되 카테고리 변동성, 계절, 평일·주말, 시간대, 보증인원 및 옵션을 반영할 수 있습니다.", "조건별 정보가 부족하거나 재식별 가능성이 있으면 세부정보를 묶거나 공개하지 않습니다.", "패키지 금액은 항목별 금액이 확인되지 않으면 개별 서비스 가격으로 임의 안분하지 않습니다."] },
   { t: '제10조 후기와 회원 콘텐츠', l: ["회원은 타인의 권리를 침해하지 않는 범위에서 후기와 콘텐츠를 작성할 수 있습니다. 회사는 서비스 표시·운영·백업·신고 처리에 필요한 비독점적 이용권을 보유하되 목적과 기간을 필요한 범위로 제한합니다. 위법, 명예훼손, 개인정보 노출, 광고·도배 또는 무관한 콘텐츠는 기준에 따라 임시 비공개하거나 제한할 수 있고 작성자에게 소명 기회를 제공합니다."] },
   { t: '제11조 배우자 연결', l: ["배우자 연결은 상대방의 명시적 수락으로 성립합니다. 공유 범위는 화면에 표시하며 연결 해제 시 이후 공유를 중단합니다. 각 회원은 본인이 작성한 정보에 대한 권리를 유지합니다."] },
   { t: '제12조 광고와 추천', l: ["회사는 광고·스폰서 영역을 자연 검색·추천과 구분해 표시합니다. 광고비와 제휴 여부는 제보 금액, 후기, 검증 결과 및 비광고 순위에 영향을 주지 않습니다."] },
