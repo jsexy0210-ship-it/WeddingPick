@@ -828,51 +828,108 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   });
 
   // ─── Users ────────────────────────────────────────────────────────────────
+  /*
+   * 계정 목록. **탈퇴를 접수한 계정도 보인다** — 이 화면의 첫 번째 쓰임이
+   * «탈퇴했는데 회원정보가 남았는가»를 확인하는 것이라, 탈퇴 계정을 숨기면 그
+   * 질문에 답할 수 없다(2026-09-08 · 0080 트리거 버그가 그렇게 묻혔다).
+   * 삭제가 끝난 계정은 행 자체가 없어 여기 없다 — 그것이 정상이다.
+   *
+   * 이메일·닉네임은 identity.identities에서 온다(structured.users에는 식별자만).
+   * 상태는 withdrawal-admin과 같은 기준으로 센다 — 두 화면이 다른 말을 하지
+   * 않게.
+   */
   app.get('/v1/admin/users', auth, async (request) => {
     const q = request.query as Record<string, string | undefined>;
-    const search = q['search'] ?? '';
+    const search = (q['search'] ?? '').trim();
+    const filter = q['status'];
     const cursor = q['cursor'];
     const limit = 25;
 
-    const searchClauses: string[] = ['deleted_at IS NULL'];
-    const searchParams: unknown[] = [];
-    let searchIdx = 1;
+    const clauses: string[] = [];
+    const params: unknown[] = [];
+    let idx = 1;
+
+    if (filter === 'withdrawn') clauses.push('u.deleted_at IS NOT NULL');
+    else if (filter === 'active') clauses.push('u.deleted_at IS NULL');
+
     if (search) {
-      searchClauses.push(`display_name ILIKE $${searchIdx}`);
-      searchParams.push(`%${search}%`);
-      searchIdx++;
+      clauses.push(
+        `(u.display_name ILIKE $${idx} OR u.id::text = $${idx + 1}
+          OR EXISTS (
+            SELECT 1 FROM identity.identities i
+            WHERE i.user_id = u.id AND (i.email ILIKE $${idx} OR i.nickname ILIKE $${idx})
+          ))`
+      );
+      params.push(`%${search}%`, search);
+      idx += 2;
     }
 
-    const [{ rows: countRows }] = await Promise.all([
-      context.pool.query<{ count: string }>(
-        `SELECT COUNT(*)::text AS count FROM structured.users WHERE ${searchClauses.join(' AND ')}`,
-        searchParams
-      ),
-    ]);
+    const where = clauses.length > 0 ? `WHERE ${clauses.join(' AND ')}` : '';
+    const { rows: countRows } = await context.pool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM structured.users u ${where}`,
+      params
+    );
     const total = Number(countRows[0]?.count ?? 0);
 
-    const params: unknown[] = [...searchParams];
-    let idx = searchIdx;
-    const clauses = [...searchClauses];
+    const pageClauses = [...clauses];
+    const pageParams = [...params];
     if (cursor) {
-      clauses.push(`created_at < $${idx}`);
-      params.push(cursor);
+      pageClauses.push(`u.created_at < $${idx}`);
+      pageParams.push(cursor);
       idx++;
     }
-    params.push(limit + 1);
+    pageParams.push(limit + 1);
+
     const { rows } = await context.pool.query<{
       id: string;
       display_name: string | null;
       activated_at: Date | null;
       created_at: Date;
+      deleted_at: Date | null;
       is_operator: boolean;
+      pick_verified: boolean;
+      provider: string | null;
+      email: string | null;
+      nickname: string | null;
+      last_login_at: Date | null;
+      withdrawal_status: string | null;
+      failure_message: string | null;
+      failure_attempts: number | null;
     }>(
-      `SELECT id, display_name, activated_at, created_at, is_operator
-       FROM structured.users
-       WHERE ${clauses.join(' AND ')}
-       ORDER BY created_at DESC
+      `SELECT
+         u.id, u.display_name, u.activated_at, u.created_at, u.deleted_at, u.is_operator,
+         EXISTS (
+           SELECT 1 FROM structured.usable_payment_proofs p WHERE p.reporter_user_id = u.id
+         ) AS pick_verified,
+         i.provider::text AS provider, i.email, i.nickname, i.last_login_at,
+         CASE
+           WHEN u.deleted_at IS NULL THEN NULL
+           WHEN EXISTS (
+             SELECT 1 FROM structured.withdrawal_holds h
+             WHERE h.user_id = u.id AND h.resolved_at IS NULL AND h.hold_until > now()
+           ) THEN 'hold'
+           WHEN f.user_id IS NOT NULL THEN 'failed'
+           WHEN EXISTS (
+             SELECT 1 FROM originals.raw_documents d
+             WHERE d.owner_user_id = u.id AND d.status <> 'deleted'
+           ) THEN 'pending'
+           ELSE 'deletion_pending'
+         END AS withdrawal_status,
+         f.error_message AS failure_message,
+         f.attempt_count AS failure_attempts
+       FROM structured.users u
+       LEFT JOIN LATERAL (
+         SELECT provider, email, nickname, last_login_at
+         FROM identity.identities
+         WHERE user_id = u.id
+         ORDER BY last_login_at DESC
+         LIMIT 1
+       ) i ON true
+       LEFT JOIN structured.withdrawal_deletion_failures f ON f.user_id = u.id
+       ${pageClauses.length > 0 ? `WHERE ${pageClauses.join(' AND ')}` : ''}
+       ORDER BY u.created_at DESC
        LIMIT $${idx}`,
-      params
+      pageParams
     );
     const hasMore = rows.length > limit;
     const items = hasMore ? rows.slice(0, limit) : rows;
@@ -880,9 +937,23 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
       users: items.map((r) => ({
         id: r.id,
         displayName: r.display_name ?? '',
-        activatedAt: r.activated_at?.toISOString() ?? null,
+        provider: r.provider,
+        email: r.email,
+        nickname: r.nickname,
         createdAt: r.created_at.toISOString(),
+        activatedAt: r.activated_at?.toISOString() ?? null,
+        lastLoginAt: r.last_login_at?.toISOString() ?? null,
+        deletedAt: r.deleted_at?.toISOString() ?? null,
         isOperator: r.is_operator,
+        pickVerified: r.pick_verified,
+        withdrawal: r.withdrawal_status
+          ? {
+              status: r.withdrawal_status,
+              failure: r.failure_message
+                ? { message: r.failure_message, attemptCount: r.failure_attempts ?? 1 }
+                : null,
+            }
+          : null,
       })),
       total,
       hasMore,
