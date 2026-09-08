@@ -15,6 +15,7 @@ import {
 
 import { FontSize, LineHeight, Spinner } from '@weddingpick/ui';
 import { apiFetch } from './_api';
+import { formatDateDot } from '@/features/common/format-date';
 
 type DocType = 'terms' | 'privacy' | 'marketing';
 type TermsVersion = {
@@ -165,7 +166,7 @@ export default function TermsScreen() {
                   </Text>
                   {activeDocData.publishedAt && (
                     <Text style={styles.dateText}>
-                      공개일: {new Date(activeDocData.publishedAt).toLocaleDateString('ko-KR')}
+                      공개일: {formatDateDot(activeDocData.publishedAt)}
                     </Text>
                   )}
                   {activeDocData.latestDraftVersion && (

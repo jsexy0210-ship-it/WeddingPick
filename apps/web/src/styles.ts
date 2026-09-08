@@ -232,7 +232,6 @@ button:focus-visible {
   flex-direction: column;
   gap: 4px;
   box-shadow: 0 8px 24px rgba(0,0,0,.12);
-  overflow-y: auto;
 }
 .gnb-drawer.open { display: flex; }
 .gnb-drawer a {
@@ -973,15 +972,13 @@ details[open] .faq-chevron { transform: rotate(180deg); }
   flex: 0 0 220px;
   position: sticky;
   top: calc(72px + 24px);
-  max-height: calc(100vh - 72px - 48px);
-  overflow-y: auto;
+  /* 자체 스크롤 없음 — 화면 스크롤 하나만 쓴다(SPEC 13.5.5). */
 }
 @media (max-width: 767px) {
   .terms-toc {
     position: static;
     width: 100%;
     flex: none;
-    max-height: none;
     margin-bottom: 32px;
   }
 }

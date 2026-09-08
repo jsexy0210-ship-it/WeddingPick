@@ -249,9 +249,13 @@ td:first-child{font-family:monospace;font-size:12px}
       .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
+  // 날짜 표기 전역 고정(핸드오프 v3.21) — 2027.05.16(토) 14:30 꼴.
   function fmtDate(s) {
     if (!s) return '—';
-    return new Date(s).toLocaleString('ko-KR', { dateStyle:'short', timeStyle:'short' });
+    const d = new Date(s);
+    const p2 = (n) => String(n).padStart(2, '0');
+    const wd = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()];
+    return d.getFullYear() + '.' + p2(d.getMonth() + 1) + '.' + p2(d.getDate()) + '(' + wd + ') ' + p2(d.getHours()) + ':' + p2(d.getMinutes());
   }
 
   // ── 로그인 ───────────────────────────────────────────────────────

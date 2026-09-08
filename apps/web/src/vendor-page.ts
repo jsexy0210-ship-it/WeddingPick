@@ -15,6 +15,7 @@ import {
   TERMS,
   VENDOR_CATEGORY_LABEL,
   VENDOR_DETAIL_SECTIONS,
+  formatDateDot,
   manwon,
   rangeLabel,
 } from '@weddingpick/domain';
@@ -216,14 +217,12 @@ function verifiedCard(vendor: VendorDetail): string {
  * 요구한다).
  */
 function officialCard(vendor: VendorDetail): string {
-  const verified = new Date(vendor.lastVerifiedAt);
-
   const facts = [
     { label: '업종', value: VENDOR_CATEGORY_LABEL[vendor.category] },
     { label: '지역', value: vendor.region },
     {
       label: '마지막 확인',
-      value: `${verified.getFullYear()}년 ${verified.getMonth() + 1}월 ${verified.getDate()}일`,
+      value: formatDateDot(vendor.lastVerifiedAt),
     },
   ]
     .map(

@@ -7,6 +7,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { FontSize, Spinner } from '@weddingpick/ui';
 import { apiFetch } from './_api';
+import { formatMonthDayDot } from '@/features/common/format-date';
 
 type AdStatus = 'active' | 'paused' | 'expired' | 'pending';
 type AdItem = {
@@ -127,8 +128,8 @@ export default function AdsScreen() {
               <Text style={[styles.td, styles.planTag, { color: PLAN_COLOR[item.plan] }]}>{item.plan}</Text>
               <Text style={[styles.td, styles.colSlot]}>{item.slot}</Text>
               <Text style={[styles.td, styles.colPeriod]}>
-                {new Date(item.startDate).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}~
-                {new Date(item.endDate).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' })}
+                {formatMonthDayDot(item.startDate)}~
+                {formatMonthDayDot(item.endDate)}
               </Text>
               <Text style={[styles.td, styles.colStatus, { color: STATUS_COLOR[item.status] }]}>
                 {STATUS_LABEL[item.status]}

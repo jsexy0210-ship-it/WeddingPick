@@ -20,17 +20,8 @@ import {
 } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { shareOrCopy } from '@/components/share-or-copy';
+import { formatMonthDayTimeDot } from '@/features/common/format-date';
 import { ActionButton, ErrorView, LoadingView, MaxContentWidth, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
-
-/** "8월 31일 오후 3시" — 초대가 언제까지 살아 있는지. */
-function formatDeadline(timestamp: string): string {
-  const date = new Date(timestamp);
-  const hour = date.getHours();
-
-  return `${date.getMonth() + 1}월 ${date.getDate()}일 ${
-    hour < 12 ? '오전' : '오후'
-  } ${hour % 12 || 12}시`;
-}
 
 /**
  * A-18 배우자 초대·연결.
@@ -236,7 +227,7 @@ export default function PartnerScreen() {
                   </ThemedText>
                   {invite ? (
                     <ThemedText type="small" themeColor="textSecondary">
-                      {formatDeadline(invite.expiresAt)}까지 쓸 수 있어요.
+                      {formatMonthDayTimeDot(invite.expiresAt)}까지 쓸 수 있어요.
                     </ThemedText>
                   ) : null}
                   <ActionButton variant="primary" label="배우자에게 보내기" onPress={share} />
@@ -250,7 +241,7 @@ export default function PartnerScreen() {
                 <ThemedView type="backgroundElement" style={styles.card}>
                   <ThemedText type="smallBold">보낸 초대가 있어요</ThemedText>
                   <ThemedText type="small" themeColor="textSecondary">
-                    {formatDeadline(invite.expiresAt)}까지 쓸 수 있어요. 코드는 다시 보여드릴
+                    {formatMonthDayTimeDot(invite.expiresAt)}까지 쓸 수 있어요. 코드는 다시 보여드릴
                     수 없어, 잃어버리셨으면 새로 만들어주세요.
                   </ThemedText>
                 </ThemedView>

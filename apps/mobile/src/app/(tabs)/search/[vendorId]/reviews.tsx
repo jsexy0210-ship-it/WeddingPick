@@ -6,6 +6,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listReportReasons, listVendorReviews, reportReview } from '@/api/client';
+import { formatDateDot } from '@/features/common/format-date';
 import {
   ActionButton,
   FilterChip,
@@ -17,13 +18,6 @@ import {
   useTheme,
   ListSkeleton,
 } from '@weddingpick/ui';
-
-/** "2026년 8월 28일" */
-function formatDay(timestamp: string): string {
-  const date = new Date(timestamp);
-
-  return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일`;
-}
 
 /**
  * 업체의 후기.
@@ -210,7 +204,7 @@ export default function VendorReviewsScreen() {
                   ))}
 
                   <ThemedText type="small" themeColor="textAssistive">
-                    {formatDay(review.createdAt)}
+                    {formatDateDot(review.createdAt)}
                   </ThemedText>
 
                   {/*

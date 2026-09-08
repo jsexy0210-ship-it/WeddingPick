@@ -11,6 +11,7 @@ import {
   removeWeddingNote,
   updateWeddingNote,
 } from '@/api/client';
+import { formatMonthDayTimeDot } from '@/features/common/format-date';
 import {
   ActionButton,
   ErrorView,
@@ -28,14 +29,6 @@ import {
 } from '@weddingpick/ui';
 
 type Filter = 'all' | 'vendor' | 'free';
-
-function formatWhen(iso: string): string {
-  const d = new Date(iso);
-
-  return `${d.getMonth() + 1}.${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(
-    d.getMinutes()
-  ).padStart(2, '0')}`;
-}
 
 /** 업체별 메모를 업체 하나로 묶는 키. vendorId가 없으면 이름으로 묶는다. */
 function groupKey(note: WeddingNote): string {
@@ -206,7 +199,7 @@ export default function WeddingNotesScreen() {
         <View style={styles.noteBody}>
           <ThemedText type="t6">{note.body}</ThemedText>
           <ThemedText type="t7" themeColor="textAssistive" numeric>
-            {note.authoredByPartner ? '배우자' : '나'} · {formatWhen(note.updatedAt)}
+            {note.authoredByPartner ? '배우자' : '나'} · {formatMonthDayTimeDot(note.updatedAt)}
             {note.edited ? ' · 수정됨' : ''}
           </ThemedText>
           <View style={styles.noteActions}>

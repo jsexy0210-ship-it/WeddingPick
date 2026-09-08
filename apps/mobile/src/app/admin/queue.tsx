@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { FontSize, Spinner } from '@weddingpick/ui';
 import { API_URL } from '@/api/config';
 import { loadToken } from '@/api/session';
+import { formatDateDot, formatDateTimeDot } from '@/features/common/format-date';
 
 type VerificationStatus = 'received' | 'in_review' | 'needs_supplement' | 'approved' | 'rejected';
 
@@ -131,7 +132,7 @@ export default function QueueScreen() {
                     {item.totalAmount ?? '-'}
                   </Text>
                   <Text style={[styles.td, styles.colDate]}>
-                    {new Date(item.receivedAt).toLocaleDateString('ko-KR')}
+                    {formatDateDot(item.receivedAt)}
                   </Text>
                 </Pressable>
               ))}
@@ -167,7 +168,7 @@ export default function QueueScreen() {
 
               <Text style={styles.detailLabel}>접수일</Text>
               <Text style={styles.detailValue}>
-                {new Date(selected.receivedAt).toLocaleString('ko-KR')}
+                {formatDateTimeDot(selected.receivedAt)}
               </Text>
 
               <Text style={[styles.detailSectionTitle, { marginTop: 24 }]}>결정</Text>

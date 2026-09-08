@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { FontSize, Spinner } from '@weddingpick/ui';
 import { API_URL } from '@/api/config';
 import { loadToken } from '@/api/session';
+import { formatDateDot, formatDateTimeDot } from '@/features/common/format-date';
 
 type PendingRebuttal = {
   id: string;
@@ -121,7 +122,7 @@ export default function RebuttalScreen() {
                     {item.claimedRole}
                   </Text>
                   <Text style={[styles.td, styles.colDate]}>
-                    {new Date(item.createdAt).toLocaleDateString('ko-KR')}
+                    {formatDateDot(item.createdAt)}
                   </Text>
                 </Pressable>
               ))}
@@ -149,7 +150,7 @@ export default function RebuttalScreen() {
 
               <Text style={styles.detailLabel}>접수일</Text>
               <Text style={styles.detailValue}>
-                {new Date(selected.createdAt).toLocaleString('ko-KR')}
+                {formatDateTimeDot(selected.createdAt)}
               </Text>
 
               <Text style={[styles.detailSectionTitle, { marginTop: 24 }]}>결정</Text>

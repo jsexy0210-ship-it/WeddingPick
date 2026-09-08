@@ -15,6 +15,7 @@ import {
 
 import { FontSize, LineHeight, Spinner } from '@weddingpick/ui';
 import { apiFetch } from './_api';
+import { formatDateTimeDot } from '@/features/common/format-date';
 
 type PolicyType = 'number' | 'percentage' | 'boolean' | 'string';
 type PolicyItem = {
@@ -126,7 +127,7 @@ export default function PolicyEngineScreen() {
                     <Text style={styles.policyDesc}>{item.description}</Text>
                     {item.lastChangedAt && (
                       <Text style={styles.policyMeta}>
-                        {new Date(item.lastChangedAt).toLocaleString('ko-KR')}
+                        {formatDateTimeDot(item.lastChangedAt)}
                         {item.lastChangedBy ? ` · ${item.lastChangedBy}` : ''}
                       </Text>
                     )}

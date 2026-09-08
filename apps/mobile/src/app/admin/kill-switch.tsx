@@ -7,6 +7,7 @@ import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-nat
 
 import { FontSize, LineHeight, Spinner } from '@weddingpick/ui';
 import { apiFetch } from './_api';
+import { formatDateTimeDot } from '@/features/common/format-date';
 
 type SwitchItem = {
   id: string;
@@ -97,7 +98,7 @@ export default function KillSwitchScreen() {
                     <Text style={styles.switchDesc}>{item.description}</Text>
                     {item.lastChangedAt && (
                       <Text style={styles.switchMeta}>
-                        {new Date(item.lastChangedAt).toLocaleString('ko-KR')}
+                        {formatDateTimeDot(item.lastChangedAt)}
                         {item.lastChangedBy ? ` · ${item.lastChangedBy}` : ''}
                       </Text>
                     )}

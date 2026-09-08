@@ -19,18 +19,8 @@ import {
 } from '@weddingpick/ui';
 import { listNotifications, readAllNotifications } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
+import { formatDateDot, formatTimeHm } from '@/features/common/format-date';
 
-function formatDate(ts: string): string {
-  const d = new Date(ts);
-  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
-}
-
-function formatTime(ts: string): string {
-  const d = new Date(ts);
-  const h = d.getHours();
-  const m = String(d.getMinutes()).padStart(2, '0');
-  return `${h < 12 ? '오전' : '오후'} ${h % 12 || 12}:${m}`;
-}
 
 /**
  * WP-CPL-006: 커플 공유 변경 내역 화면.
@@ -105,7 +95,7 @@ export default function ChangelogScreen() {
   type Group = { date: string; items: Notification[] };
   const grouped: Group[] = [];
   for (const n of notifications) {
-    const date = formatDate(n.createdAt);
+    const date = formatDateDot(n.createdAt);
     const last = grouped[grouped.length - 1];
     if (last?.date === date) {
       last.items.push(n);
@@ -163,7 +153,7 @@ export default function ChangelogScreen() {
                           {NOTIFICATION_KIND_LABEL[n.kind]}
                         </ThemedText>
                         <ThemedText type="badge" themeColor="textAssistive">
-                          {formatTime(n.createdAt)}
+                          {formatTimeHm(n.createdAt)}
                         </ThemedText>
                       </View>
                       <ThemedText type="t5">{n.title}</ThemedText>

@@ -6,6 +6,7 @@ import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getExpenses, getWedding, listWeddingTasks } from '@/api/client';
+import { formatDateDot } from '@/features/common/format-date';
 import {
   ActionButton,
   ErrorView,
@@ -51,11 +52,7 @@ export default function WeddingCompleteScreen() {
 
   const { wedding, tasks, expenses } = data;
   const weddingDateLabel = wedding.weddingDate
-    ? new Date(wedding.weddingDate).toLocaleDateString('ko-KR', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
+    ? formatDateDot(wedding.weddingDate)
     : null;
 
   return (

@@ -6,6 +6,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getExpenseDetail } from '@/api/client';
+import { formatDateDot } from '@/features/common/format-date';
 import {
   ActionButton,
   ErrorView,
@@ -62,13 +63,13 @@ export default function ExpenseDetailScreen() {
     themeColor?: 'text' | 'negative' | 'cautionary';
   }[] = [
     { label: '상태', value: detail.statusLabel },
-    { label: '낸 날짜', value: detail.spentOn ?? '아직 없어요', numeric: detail.spentOn !== null },
+    { label: '낸 날짜', value: detail.spentOn ? formatDateDot(detail.spentOn) : '아직 없어요', numeric: detail.spentOn !== null },
     { label: '등록 방법', value: detail.sourceLabel },
     { label: '등록자', value: detail.registeredByPartner ? '배우자' : '나' },
     { label: '환불 상태', value: detail.refundStatusLabel, themeColor: refundColor },
     {
       label: '등록일',
-      value: new Date(detail.registeredAt).toLocaleDateString('ko-KR'),
+      value: formatDateDot(detail.registeredAt),
       numeric: true,
     },
   ];

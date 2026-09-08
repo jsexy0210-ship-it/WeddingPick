@@ -15,6 +15,7 @@ import {
 
 import { FontSize, LineHeight, Spinner } from '@weddingpick/ui';
 import { apiFetch } from './_api';
+import { formatDateTimeDot, formatMonthDayTimeDot } from '@/features/common/format-date';
 
 type Decision = 'approved' | 'rejected' | 'escalated' | 'skipped';
 type AuditEvent = {
@@ -129,7 +130,7 @@ export default function AuditLogScreen() {
                 onPress={() => setSelected(item)}
               >
                 <Text style={[styles.td, styles.colTime]}>
-                  {new Date(item.createdAt).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                  {formatMonthDayTimeDot(item.createdAt)}
                 </Text>
                 <Text style={[styles.td, styles.colSource]} numberOfLines={1}>{item.source}</Text>
                 <Text style={[styles.td, styles.colActor]}>{ACTOR_LABEL[item.actorType]}</Text>
@@ -189,7 +190,7 @@ export default function AuditLogScreen() {
                 </View>
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>시각</Text>
-                  <Text style={styles.detailValue}>{new Date(selected.createdAt).toLocaleString('ko-KR')}</Text>
+                  <Text style={styles.detailValue}>{formatDateTimeDot(selected.createdAt)}</Text>
                 </View>
                 <Text style={styles.evidenceTitle}>evidence</Text>
                 {selected.evidence.map((e, i) => (

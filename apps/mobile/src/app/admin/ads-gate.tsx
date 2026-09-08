@@ -7,6 +7,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { FontSize, LineHeight, Spinner } from '@weddingpick/ui';
 import { apiFetch } from './_api';
+import { formatDateDot } from '@/features/common/format-date';
 
 type GateStepStatus = 'done' | 'in_progress' | 'pending' | 'blocked';
 
@@ -123,7 +124,7 @@ export default function AdsGateScreen() {
               )}
               {step.completedAt && (
                 <Text style={styles.stepDate}>
-                  완료: {new Date(step.completedAt).toLocaleDateString('ko-KR')}
+                  완료: {formatDateDot(step.completedAt)}
                 </Text>
               )}
               {i < data.steps.length - 1 && <View style={styles.stepConnector} />}
