@@ -117,7 +117,8 @@ describe('Wedding Lifecycle', () => {
       const view = lifecycle(null, NOW);
 
       expect(view.stage).toBe('early');
-      expect(view.mood).toBe('설렘반 기대반');
+      expect(view.mood).toBe('기대반 설렘반');
+      expect(view.note).toBe('아직 예식일이 없어요');
       expect(view.daysLeft).toBeNull();
       expect(isBeforeWedding(view.stage)).toBe(true);
     });

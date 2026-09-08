@@ -56,7 +56,8 @@ export const WEDDING_DAY_MOOD = '드디어 오늘';
 export const WEDDING_DAY_NOTE = '우리의 결혼식이에요';
 
 /** 예식일을 아직 안 정했을 때. 준비 초기와 같은 단계지만 문구는 다르다. */
-export const NO_DATE_MOOD = '설렘반 기대반';
+export const NO_DATE_MOOD = '기대반 설렘반';
+export const NO_DATE_NOTE = '아직 예식일이 없어요';
 
 /** 예식 뒤. 2026-09-08 문구 개정. */
 export const NEWLYWED_MOOD = '신혼의 시작';
@@ -96,7 +97,7 @@ export type LifecycleView = {
  */
 export function lifecycle(weddingDate: string | null, now: Date = new Date()): LifecycleView {
   if (weddingDate === null) {
-    return { stage: 'early', mood: NO_DATE_MOOD, note: '예식일을 등록해보세요', daysLeft: null };
+    return { stage: 'early', mood: NO_DATE_MOOD, note: NO_DATE_NOTE, daysLeft: null };
   }
 
   const daysLeft = daysUntil(weddingDate, now);
