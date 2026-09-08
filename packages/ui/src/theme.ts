@@ -349,6 +349,8 @@ export const Radius = {
  */
 export const Motion = {
   enter: { duration: 350, easing: 'cubic-bezier(.16,1,.3,1)' },
+  /** 요소 상승 — translateY 10 → 0 · opacity 0 → 1. spec/tokens.json motion.rise. 화면 안에서 새 블록이 자리 잡을 때. */
+  rise: { duration: 420, easing: 'cubic-bezier(.16,1,.3,1)', from: 10 },
   bounce: { duration: 420, easing: 'cubic-bezier(.34,1.56,.64,1)' },
   press: { duration: 100 },
   color: { duration: 175 },
