@@ -2,9 +2,9 @@ import { Linking, Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton } from './action-button';
+import { CategoryCycleLoader } from './category-cycle-loader';
+import type { CategoryIconKind } from './category-icon';
 import { ListSkeleton } from './list-skeleton';
-import { CategoryOrbitLoader } from './orbit-loader';
-import { Spinner } from './spinner';
 import { StepList, type Step } from './step-list';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
@@ -39,24 +39,30 @@ function StatusFrame({ children }: StatusFrameProps) {
 // ─── WP-ST-007 로딩 ───────────────────────────────────────────────────────────
 
 export type LoadingViewProps = {
-  /** 무엇을 하는 중인지. 없으면 스피너만 돈다. */
+  /** 무엇을 하는 중인지. 없으면 로더만 돈다. */
+  title?: string;
+  /** @deprecated `title`. */
   label?: string;
+  /** 온보딩 결정 완료 업종 — 순회에서 뺀다. */
+  exclude?: readonly CategoryIconKind[];
 };
 
 /**
- * 짧은 처리(3초 이하)의 화면 전체 로딩 — 스피너 40. 폼·상세 하나를 읽어오는 자리.
- * **목록에는 쓰지 않는다** — 목록은 `SkeletonView`다(핸드오프 규칙 «목록에는
- * 스피너를 쓰지 않아요»).
+ * 짧은 처리(3초 이하)의 화면 전체 로딩 — 업종 순회 로더 40. 폼·상세 하나를 읽어오는
+ * 자리. **목록에는 쓰지 않는다** — 목록은 `SkeletonView`다(핸드오프 규칙 «목록에는
+ * 로더를 쓰지 않아요»). 700ms 규칙은 호출하는 화면이 `useDelayedVisible`로 지킨다.
  */
-export function LoadingView({ label }: LoadingViewProps) {
+export function LoadingView({ title, label, exclude }: LoadingViewProps) {
+  const text = title ?? label;
+
   return (
     <StatusFrame>
       <View style={styles.centerRow}>
-        <Spinner size={40} />
+        <CategoryCycleLoader size={40} exclude={exclude} />
       </View>
-      {label ? (
+      {text ? (
         <ThemedText type="t6" themeColor="textSecondary" style={styles.centered}>
-          {label}
+          {text}
         </ThemedText>
       ) : null}
     </StatusFrame>
@@ -85,13 +91,63 @@ export function SkeletonView({ hero = false, rows = 3 }: SkeletonViewProps) {
   );
 }
 
+export type RecommendingBodyProps = {
+  /** 온보딩 닉네임. «{닉네임}님에게 맞는 곳을 찾고 있어요». 없으면 «맞는 곳을 찾고 있어요». */
+  nickname?: string;
+  /** 제목을 통째로 바꿀 때. `nickname`보다 우선. */
+  title?: string;
+  /** 예상 소요 시간. 반드시 적는다. */
+  estimatedLabel?: string;
+  /** 온보딩 3/5에서 결정 완료로 고른 업종. 순회에서 뺀다 — 이미 정한 곳을 다시 찾는 척하지 않는다. */
+  exclude?: readonly CategoryIconKind[];
+  /**
+   * 단계 목록. 끝난 단계는 체크, 진행 중은 코랄, 남은 단계는 회색. **실제 진행
+   * 상태를 넘긴다** — 타이머로 굴리는 가짜 진행률을 만들지 않는다.
+   */
+  steps?: readonly Step[];
+};
+
+export type RecommendingViewProps = RecommendingBodyProps;
+
+/** WP-ST-015 제목. «두 분»을 쓰지 않는다 — 배우자 연결 여부와 무관하게 쓰이던 문구다. */
+export function recommendingTitle(nickname?: string): string {
+  return nickname ? `${nickname}님에게 맞는 곳을\n찾고 있어요` : '맞는 곳을\n찾고 있어요';
+}
+
+/**
+ * WP-ST-015 업종 순회 로딩의 본문 — 로더 40 · 제목 24 · 예상 시간 · 단계 목록.
+ * 화면 전체를 채우지 않는다 — 카드·시트 안처럼 부모가 자리를 정할 때 쓴다.
+ */
+export function RecommendingBody({
+  nickname,
+  title,
+  estimatedLabel = '10초 안에 끝나요',
+  exclude,
+  steps,
+}: RecommendingBodyProps) {
+  return (
+    <View style={styles.processing} accessibilityLabel={estimatedLabel}>
+      <CategoryCycleLoader size={40} exclude={exclude} />
+      <View style={styles.processingText}>
+        <ThemedText type="t3" style={styles.centered}>
+          {title ?? recommendingTitle(nickname)}
+        </ThemedText>
+        <ThemedText type="t6" themeColor="textAssistive" style={styles.centered}>
+          {estimatedLabel}
+        </ThemedText>
+      </View>
+      {steps && steps.length > 0 ? <StepList steps={steps} /> : null}
+    </View>
+  );
+}
+
 /**
  * WP-ST-015 업종 순회 로딩 — 화면 전체. 추천 계산 · 첫 진입에만 쓴다.
  */
-export function RecommendingView(props: { title?: string; estimate?: string }) {
+export function RecommendingView(props: RecommendingViewProps) {
   return (
     <StatusFrame>
-      <CategoryOrbitLoader {...props} />
+      <RecommendingBody {...props} />
     </StatusFrame>
   );
 }
@@ -252,7 +308,7 @@ export type ProcessingViewProps = {
   steps?: readonly Step[];
 };
 
-/** WP-ST-012 처리 중 — 스피너 40 · 제목 24 · 예상 시간 · 단계 목록. */
+/** WP-ST-012 처리 중 — 업종 순회 로더 40 · 제목 24 · 예상 시간 · 단계 목록. */
 export function ProcessingView({
   title = '확인하고 있어요',
   estimatedLabel = '10초 안에 끝나요',
@@ -261,7 +317,7 @@ export function ProcessingView({
   return (
     <StatusFrame>
       <View style={styles.processing}>
-        <Spinner size={40} />
+        <CategoryCycleLoader size={40} />
         <View style={styles.processingText}>
           <ThemedText type="t3" style={styles.centered}>
             {title}
