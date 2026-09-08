@@ -105,16 +105,37 @@ export function greeting(name: string | null): string {
   return name === null ? '웨딩픽에 오신 것을 환영해요' : `${name}님,`;
 }
 
-/** "2027. 4. 17" — 홈·MY 핸드오프가 쓴 표기. */
-export function formatWeddingDate(date: string): string {
-  const [year, month, day] = date.split('-').map(Number);
+const WEEKDAY_SHORT = ['일', '월', '화', '수', '목', '금', '토'] as const;
 
-  return `${year}. ${month}. ${day}`;
+/**
+ * 날짜 표기 — 전역 고정(핸드오프 v3.21). `2027.05.16(토)`.
+ *
+ * 앱 · 웹 · 관리자 공통이고 «2027년 5월 16일 토요일» 같은 서술형은 금지어다
+ * (SPEC 11.1). 약관 본문만 예외. `YYYY-MM-DD` 또는 ISO 문자열을 받는다.
+ */
+export function formatDateDot(date: string | Date): string {
+  const value = typeof date === 'string' ? parseLocalDate(date) : date;
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const day = String(value.getDate()).padStart(2, '0');
+
+  return `${year}.${month}.${day}(${WEEKDAY_SHORT[value.getDay()]})`;
 }
 
-/** "2027년 5월 16일" — 온보딩 핸드오프(01-onboarding #11d·#11e)가 쓴 표기. */
-export function formatWeddingDateLong(date: string): string {
-  const [year, month, day] = date.split('-').map(Number);
+/** `YYYY-MM-DD`는 로컬 날짜로, 그 밖의 ISO 문자열은 그대로 해석한다. */
+function parseLocalDate(date: string): Date {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  if (match) return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
 
-  return `${year}년 ${month}월 ${day}일`;
+  return new Date(date);
+}
+
+/** @deprecated v3.21 — `formatDateDot`을 쓴다. 남아 있는 호출을 위해 같은 표기를 돌려준다. */
+export function formatWeddingDate(date: string): string {
+  return formatDateDot(date);
+}
+
+/** @deprecated v3.21 — `formatDateDot`을 쓴다. */
+export function formatWeddingDateLong(date: string): string {
+  return formatDateDot(date);
 }
