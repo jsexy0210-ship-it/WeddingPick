@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Radius, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
+import { Layout, Radius, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
 
 import { CategoryImage } from './category-image';
 import type { WeddingContentItem } from './content';
@@ -45,7 +45,7 @@ export function WeddingContent({ items, onPressItem }: WeddingContentProps) {
 }
 
 const styles = StyleSheet.create({
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 11 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: Layout.gap2col },
   card: { flexBasis: '48%', flexGrow: 1, minWidth: 0, gap: Spacing.two },
   pressed: { opacity: 0.8 },
   image: { width: '100%', aspectRatio: 1, borderRadius: Radius.medium, overflow: 'hidden' },

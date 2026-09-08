@@ -122,7 +122,7 @@ export function FoldedBoard({ onPress }: { onPress: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 11 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: Layout.gap2col },
   cell: {
     /*
      * 두 칸이 한 줄에 오도록 절반에서 간격의 절반을 뺀다. 화면 폭을 재지 않는
@@ -135,16 +135,17 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
     gap: Spacing.one,
   },
-  mark: { paddingTop: 2, fontWeight: 700 },
+  mark: { paddingTop: Spacing.half, fontWeight: 700 },
   pressed: { opacity: 0.8 },
+  /* 시안: padding 16 18 · gap 12 · min-height 56 · radius 10. */
   folded: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
+    gap: Spacing.three - 4,
     minHeight: Layout.rowMinHeight,
     paddingHorizontal: 18,
     paddingVertical: Spacing.three,
     borderRadius: Radius.medium,
   },
-  foldedText: { flex: 1, minWidth: 0, gap: 2 },
+  foldedText: { flex: 1, minWidth: 0, gap: Spacing.half },
 });
