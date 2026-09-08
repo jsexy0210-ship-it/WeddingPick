@@ -2,7 +2,7 @@ import type { CandidateListResponse } from '@weddingpick/api-contract';
 import { VENDOR_CATEGORY_LABEL, type VendorCategory } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -128,13 +128,13 @@ export default function PickCategoryScreen() {
                   key={candidate.id}
                   type="backgroundElement"
                   style={[styles.card, isDecided && { borderColor: theme.tint, borderWidth: 1.5 }]}>
-                  <ThemedView style={styles.rowMain}>
-                    <ThemedView style={styles.nameRow}>
+                  <View style={styles.rowMain}>
+                    <View style={styles.nameRow}>
                       <ThemedText type="t5">{candidate.vendorName}</ThemedText>
                       {isDecided ? (
                         <WeddingMark size={20} color={theme.tint as string} />
                       ) : null}
-                    </ThemedView>
+                    </View>
                     <ThemedText type="t7" themeColor="textSecondary">
                       {candidate.region}
                       {candidate.addedByPartner ? ' · 배우자도 골랐어요' : ''}
@@ -144,9 +144,9 @@ export default function PickCategoryScreen() {
                         {candidate.note}
                       </ThemedText>
                     ) : null}
-                  </ThemedView>
+                  </View>
 
-                  <ThemedView style={styles.rowActions}>
+                  <View style={styles.rowActions}>
                     {!isDecided ? (
                       <ActionButton
                         variant="primary"
@@ -162,7 +162,7 @@ export default function PickCategoryScreen() {
                       label="빼기"
                       onPress={() => remove(candidate.id, candidate.vendorName)}
                     />
-                  </ThemedView>
+                  </View>
                 </ThemedView>
               );
             })

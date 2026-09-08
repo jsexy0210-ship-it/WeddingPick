@@ -128,25 +128,25 @@ function Top3Card({ rank, item }: { rank: number; item: Top3Item }) {
             {rank}
           </ThemedText>
         </View>
-        <ThemedView style={styles.cardTitle}>
+        <View style={styles.cardTitle}>
           <ThemedText type="t5">{item.name}</ThemedText>
           <ThemedText type="t7" themeColor="textSecondary">
             {item.region} · {VENDOR_CATEGORY_LABEL[item.category]}
           </ThemedText>
-        </ThemedView>
+        </View>
       </View>
 
       <View style={styles.reasons}>
         {item.reasons.map((reason) => (
-          <ThemedView key={reason} style={[styles.reasonChip, { borderColor: theme.tint }]}>
+          <View key={reason} style={[styles.reasonChip, { borderColor: theme.tint }]}>
             <ThemedText type="t7" style={{ color: theme.tint }}>
               {TOP3_REASON_LABEL[reason]}
             </ThemedText>
-          </ThemedView>
+          </View>
         ))}
       </View>
 
-      <ThemedView style={styles.priceRow}>
+      <View style={styles.priceRow}>
         <ThemedText type="t7" themeColor="textSecondary">
           Pick 가격대
         </ThemedText>
@@ -164,7 +164,7 @@ function Top3Card({ rank, item }: { rank: number; item: Top3Item }) {
             </ThemedText>
           </>
         )}
-      </ThemedView>
+      </View>
 
       <ThemedText type="t7" themeColor="textAssistive">
         확인된 정보 {item.confirmedCount}건

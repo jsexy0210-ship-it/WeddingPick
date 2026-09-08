@@ -197,6 +197,7 @@ export default function SetupScreen() {
               <SummaryRow label="총예산" value={BUDGET_BRACKET_LABEL[bracket ?? 'unknown']} />
               <SummaryRow
                 label="취향"
+                last
                 value={
                   tastes.length === 0
                     ? '고르지 않았어요'
@@ -235,7 +236,30 @@ export default function SetupScreen() {
         {/* 뒤로가기는 화면을 되감지 않는다 — 온보딩 전체를 나가 로그인으로 간다. */}
         <OnboardingProgress progress={progress} label={label} onBack={() => router.replace('/login')} />
 
-        <ScrollView contentContainerStyle={[styles.content, screen === 'taste' && styles.contentTaste]}>
+        {screen === 'taste' ? (
+          /*
+           * 취향 화면은 스크롤하지 않는다 — 격자가 남는 높이를 나눠 갖는다
+           * (`TastePicker fill`). 사진 여섯 장이 한 눈에 들어와야 훑는 화면이다.
+           */
+          <View style={[styles.content, styles.contentTaste, styles.fill]}>
+            <ThemedView style={styles.headline}>
+              <ThemedText type="t2">마음에 드는 분위기를</ThemedText>
+              <ThemedText type="t2">골라주세요</ThemedText>
+              <ThemedText type="body" themeColor="textSecondary">
+                2장 이상 고르면 더 정확해져요
+              </ThemedText>
+            </ThemedView>
+
+            <TastePicker chosen={tastes} onToggle={toggleTaste} fill />
+
+            {error ? (
+              <ThemedText type="t7" themeColor="negative">
+                {error}
+              </ThemedText>
+            ) : null}
+          </View>
+        ) : (
+        <ScrollView contentContainerStyle={styles.content}>
           {screen === 'questions' ? (
             <ThemedView style={styles.list}>
               {active > 0 && date !== null ? (
@@ -361,26 +385,13 @@ export default function SetupScreen() {
             </>
           ) : null}
 
-          {screen === 'taste' ? (
-            <>
-              <ThemedView style={styles.headline}>
-                <ThemedText type="t2">마음에 드는 분위기를</ThemedText>
-                <ThemedText type="t2">골라주세요</ThemedText>
-                <ThemedText type="body" themeColor="textSecondary">
-                  2장 이상 고르면 더 정확해져요
-                </ThemedText>
-              </ThemedView>
-
-              <TastePicker chosen={tastes} onToggle={toggleTaste} />
-            </>
-          ) : null}
-
           {error ? (
             <ThemedText type="t7" themeColor="negative">
               {error}
             </ThemedText>
           ) : null}
         </ScrollView>
+        )}
 
         <ThemedView style={styles.footer}>
           {screen === 'questions' ? (
@@ -655,16 +666,26 @@ function DoneMark() {
   );
 }
 
-function SummaryRow({ label, value }: { label: string; value: string }) {
+/**
+ * 요약 한 줄. 카드 안에 다시 상자를 그리지 않는다 — `ThemedView`는 바탕색을
+ * 칠하므로 카드 안에서 쓰면 이중 박스가 된다. 행 사이는 1px 선으로만 가른다.
+ */
+function SummaryRow({ label, value, last }: { label: string; value: string; last?: boolean }) {
+  const theme = useTheme();
+
   return (
-    <ThemedView style={styles.summaryRow}>
+    <View
+      style={[
+        styles.summaryRow,
+        !last && { borderBottomWidth: 1, borderBottomColor: theme.border },
+      ]}>
       <ThemedText type="t6" themeColor="textSecondary">
         {label}
       </ThemedText>
       <ThemedText type="t6" numeric numberOfLines={1} style={[styles.bold, styles.summaryValue]}>
         {value}
       </ThemedText>
-    </ThemedView>
+    </View>
   );
 }
 
@@ -678,7 +699,8 @@ const styles = StyleSheet.create({
     gap: Spacing.four,
   },
   /* 취향 화면만 제목 블록과 격자 사이가 20이다. */
-  contentTaste: { gap: Layout.gapHeadlineGrid },
+  contentTaste: { gap: Layout.gapHeadlineGrid, paddingBottom: Spacing.two },
+  fill: { flex: 1 },
   /* 제목과 서브카피 사이 8. */
   headline: { gap: Spacing.two },
 
@@ -767,11 +789,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  /* 요약 카드. radius.card 10 · 안쪽 20 · 행 사이 2 · 행 상하 9. */
+  /* 요약 카드. radius.card 10 · 안쪽 20. 행은 1px 선으로만 가른다 — 안쪽 상자 없음. */
   summary: {
     borderRadius: Radius.medium,
     padding: Layout.cardPadding,
-    gap: Spacing.half,
   },
   summaryRow: {
     flexDirection: 'row',

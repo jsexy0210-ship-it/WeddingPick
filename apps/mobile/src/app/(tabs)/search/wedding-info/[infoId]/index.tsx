@@ -1,7 +1,7 @@
 import type { WeddingInfoCategory, WeddingInfoDetail, WeddingInfoStage } from '@weddingpick/api-contract';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getWeddingInfo } from '@/api/client';
@@ -136,9 +136,9 @@ export default function WeddingInfoDetailScreen() {
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="t6" style={styles.sectionLabel}>체크리스트</ThemedText>
               {info.checklist.map((item) => (
-                <ThemedView key={item.id} style={styles.checkItem}>
+                <View key={item.id} style={styles.checkItem}>
                   <ThemedText type="t7">{item.label}</ThemedText>
-                </ThemedView>
+                </View>
               ))}
             </ThemedView>
           )}

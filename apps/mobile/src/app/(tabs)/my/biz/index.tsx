@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -67,12 +67,12 @@ function Section({ title, items }: { title: string; items: BizItem[] }) {
           type="backgroundElement"
           style={styles.card}
         >
-          <ThemedView style={styles.cardBody}>
+          <View style={styles.cardBody}>
             <ThemedText type="t5">{item.title}</ThemedText>
             <ThemedText type="t7" themeColor="textSecondary">
               {item.description}
             </ThemedText>
-          </ThemedView>
+          </View>
           <ActionButton
             variant="ghost"
             label="이동"

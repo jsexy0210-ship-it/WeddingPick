@@ -2,7 +2,7 @@ import type { ReviewListResponse } from '@weddingpick/api-contract';
 import { TERMS, type ReportReason } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listReportReasons, listVendorReviews, reportReview } from '@/api/client';
@@ -217,16 +217,16 @@ export default function VendorReviewsScreen() {
                     * 대신 옆에 말을 더한다. 읽는 사람이 양쪽을 다 본다.
                     */}
                   {review.rebuttal ? (
-                    <ThemedView style={[styles.rebuttal, { borderLeftColor: theme.tint }]}>
+                    <View style={[styles.rebuttal, { borderLeftColor: theme.tint }]}>
                       <ThemedText type="t7" themeColor="tint">
                         업체 반론 · {review.rebuttal.claimedRole}
                       </ThemedText>
                       <ThemedText type="small">{review.rebuttal.body}</ThemedText>
-                    </ThemedView>
+                    </View>
                   ) : null}
 
                   {reporting === review.id ? (
-                    <ThemedView style={styles.chips}>
+                    <View style={styles.chips}>
                       {reasons.map((reason) => (
                         <FilterChip
                           key={reason.value}
@@ -237,7 +237,7 @@ export default function VendorReviewsScreen() {
                         />
                       ))}
                       <ActionButton label="그만두기" onPress={() => setReporting(null)} />
-                    </ThemedView>
+                    </View>
                   ) : review.mine ? (
                     <ActionButton
                       label="내 후기 고치기"

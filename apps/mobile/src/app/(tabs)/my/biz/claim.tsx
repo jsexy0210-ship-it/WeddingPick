@@ -1,7 +1,7 @@
 import type { VendorSummary } from '@weddingpick/api-contract';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, TextInput } from 'react-native';
+import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -128,19 +128,19 @@ export default function BizClaimScreen() {
                   type="backgroundElement"
                   style={styles.card}
                 >
-                  <ThemedView style={styles.vendorRow}>
-                    <ThemedView style={styles.vendorInfo}>
+                  <View style={styles.vendorRow}>
+                    <View style={styles.vendorInfo}>
                       <ThemedText type="t5">{vendor.name}</ThemedText>
                       <ThemedText type="t7" themeColor="textAssistive">
                         {vendor.region}
                       </ThemedText>
-                    </ThemedView>
+                    </View>
                     <ActionButton
                       variant="ghost"
                       label="선택"
                       onPress={() => selectVendor(vendor)}
                     />
-                  </ThemedView>
+                  </View>
                 </ThemedView>
               ))}
             </ThemedView>
