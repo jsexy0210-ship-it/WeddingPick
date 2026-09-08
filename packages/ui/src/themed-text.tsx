@@ -69,6 +69,7 @@ export function ThemedText({
         { color: theme[themeColor ?? 'text'] },
         { fontFamily: Fonts.sans },
         styles[STYLE_FOR[type]],
+        androidLetterSpacing(STYLE_FOR[type]),
         numeric && styles.numeric,
         style,
       ]}
@@ -109,10 +110,42 @@ const STYLE_FOR: Record<TextType, keyof typeof styles> = {
 };
 
 /**
+ * 안드로이드 자간. spec/tokens.json `platform.letterSpacing` — iOS는 전부 0이고,
+ * 안드로이드만 display −0.04 · title −0.03 · body −0.02 · caption −0.04em이다.
+ * 넣지 않으면 글자가 벌어져 2줄 제목이 3줄로 터진다(핸드오프 SPEC §14).
+ * em 값을 px로 바꿔 적는다(RN letterSpacing은 px).
+ */
+const ANDROID_LETTER_SPACING_EM: Record<keyof typeof styles, number> = {
+  t1: -0.04,
+  amount: -0.04,
+  t2: -0.03,
+  t3: -0.03,
+  t4: -0.03,
+  t5: -0.03,
+  t6: -0.02,
+  body: -0.02,
+  link: -0.02,
+  t7: -0.04,
+  tab: -0.04,
+  badge: -0.04,
+  code: 0,
+  numeric: 0,
+};
+
+function androidLetterSpacing(key: keyof typeof styles): { letterSpacing: number } | null {
+  if (Platform.OS !== 'android') return null;
+  const em = ANDROID_LETTER_SPACING_EM[key];
+  const size = (styles[key] as { fontSize?: number }).fontSize;
+  if (!em || !size) return null;
+
+  return { letterSpacing: Math.round(em * size * 100) / 100 };
+}
+
+/**
  * SEED 래더. 행간은 135%이고, 여러 줄로 읽히는 `body`만 150%다.
  *
- * **자간은 전부 0이다.** 그래서 letterSpacing을 적지 않는다 — 0을 적어두면 언젠가
- * 누군가 "여기만 조금" 하고 값을 넣는다.
+ * **iOS 자간은 전부 0이다.** 그래서 스타일에 letterSpacing을 적지 않는다 — 안드로이드
+ * 보정은 위 `androidLetterSpacing` 한 곳에서만 붙는다.
  */
 const styles = StyleSheet.create({
   /** SEED h3. 홈 히어로 — `두근두근 / 142일 남았어요`. */

@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { BackHandler, Pressable, StyleSheet, View } from 'react-native';
 
-import { completeSetup, completeSignup, getSignupState, updateTaste } from '@/api/client';
+import { ApiError, completeSetup, completeSignup, getSignupState, updateTaste } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { loadToken } from '@/api/session';
 import { Layout, Radius, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
@@ -205,6 +205,11 @@ export default function SetupScreen() {
       await clearOnboardingAnswers();
       setStep('done');
     } catch (caught) {
+      // 세션이 끝났으면(401) 이 화면에 머물 이유가 없다 — 로그인으로 보낸다.
+      if (caught instanceof ApiError && caught.status === 401) {
+        router.replace('/login');
+        return;
+      }
       setError(caught instanceof Error ? caught.message : '저장하지 못했어요.');
     } finally {
       setSending(false);
