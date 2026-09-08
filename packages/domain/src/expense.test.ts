@@ -15,6 +15,8 @@ describe('네 갈래로 묶는다', () => {
     expect(bucketFor('studio')).toBe('sdm');
     expect(bucketFor('dress')).toBe('sdm');
     expect(bucketFor('makeup')).toBe('sdm');
+    expect(bucketFor('hair')).toBe('sdm');
+    expect(bucketFor('bouquet')).toBe('etc');
     expect(bucketFor('dowry')).toBe('etc');
     expect(bucketFor('invitation')).toBe('etc');
     // 나머지는 전부 기타다. 일곱 색을 나란히 놓으면 어느 것이 큰지 읽히지 않는다.

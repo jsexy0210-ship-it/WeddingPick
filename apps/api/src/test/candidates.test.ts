@@ -366,6 +366,32 @@ describeWithDb('후보 저장', () => {
 
       expect(body.nextCategory).toBe('studio');
     });
+
+    it('준비 현황에서 이미 정한 업종은 업체 없이 «결정 완료»이고 다음에서 건너뛴다', async () => {
+      /*
+       * v3.19 온보딩 3/5. 우리 앱 밖에서 정한 업종이라 업체가 없다 — 결정 완료인데
+       * decidedVendorId가 null이다. 홈 준비현황이 «결정 완료»로 그리고 추천이 건너뛴다.
+       */
+      const { headers } = await signInAs(test);
+      const weddingId = await createWedding(test, headers);
+
+      await test.pool.query(
+        `UPDATE structured.weddings SET prepared_categories = '{wedding_info_company,hall}' WHERE id = $1`,
+        [weddingId]
+      );
+
+      const body = (await list(headers, weddingId)).json<{
+        progress: { decided: number; total: number };
+        nextCategory: string;
+        groups: unknown[];
+      }>();
+
+      expect(body.progress.decided).toBe(2);
+      expect(body.progress.total).toBe(12);
+      expect(body.nextCategory).toBe('studio');
+      // 후보가 없으니 묶음도 없다 — 준비 현황은 후보가 아니다.
+      expect(body.groups).toEqual([]);
+    });
   });
 
   /**

@@ -193,7 +193,7 @@ describeWithDb('TOP3 추천', () => {
     expect(after).not.toContain(under);
   });
 
-  it('로그인하면 자기 지역과 예산을 쓴다', async () => {
+  it('로그인하면 자기 지역과 준비 예산을 쓴다', async () => {
     const { headers } = await signInAs(test);
 
     await test.app.inject({
@@ -207,15 +207,59 @@ describeWithDb('TOP3 추천', () => {
       },
     });
 
-    /* 기준금액은 상세 단계(10건)가 되어야 낼 수 있다. */
     await aVendor({ name: '가온예식홀', proofs: 12, amount: 21_000_000 });
 
     const body = (await top3('', headers)).json<Top3Body>();
 
     expect(body.region).toBe('서울');
     expect(body.items).toHaveLength(1);
-    // 기준금액이 예산 안이면 그것도 이유가 된다.
+    // 제보 금액 구간이 준비 예산 구간과 겹치면 그것도 이유가 된다.
     expect(body.items[0]!.reasons).toContain('budget');
+  });
+
+  it('제보 금액이 준비 예산과 안 겹치는 곳은 뺀다 — 겹침 기준(SPEC §13.6)', async () => {
+    const { headers } = await signInAs(test);
+    const setup = (budgetBracket: string) =>
+      test.app.inject({
+        method: 'POST',
+        url: '/v1/me/setup',
+        headers,
+        payload: { weddingDate: null, region: '서울', budgetBracket },
+      });
+
+    await setup('20m_30m');
+    /* 제보 32,000,000~32,500,000 — 2,000~3,000만원과 겹치지 않는다. */
+    await aVendor({ name: '비싼예식홀', proofs: 6, amount: 32_000_000 });
+    /* 제보 28,000,000~28,500,000 — 상한 쪽이 겹친다. */
+    await aVendor({ name: '맞는예식홀', proofs: 6, amount: 28_000_000 });
+
+    const matched = (await top3('', headers)).json<Top3Body>();
+
+    expect(matched.items.map((item) => item.name)).toEqual(['맞는예식홀']);
+    expect(matched.items[0]!.reasons).toContain('budget');
+
+    /* «아직 모르겠어요»는 범위 제한 없이 전부 보여주되, 맞는다고 말하지는 않는다. */
+    await setup('unknown');
+    const all = (await top3('', headers)).json<Top3Body>();
+
+    expect(all.items.map((item) => item.name).sort()).toEqual(['맞는예식홀', '비싼예식홀']);
+    expect(all.items[0]!.reasons).not.toContain('budget');
+  });
+
+  it('업종을 안 주면 준비 현황에서 아직 안 정한 첫 업종을 본다', async () => {
+    // v3.19 — 이미 정한 업종을 추천하면 «이미 골랐는데 왜 또?»가 된다.
+    const { headers } = await signInAs(test);
+
+    await test.app.inject({
+      method: 'POST',
+      url: '/v1/me/setup',
+      headers,
+      payload: { weddingDate: null, region: '서울', preparedCategories: ['hall'] },
+    });
+
+    expect((await top3('', headers)).json<Top3Body>().category).toBe('studio');
+    // 화면이 콕 집어 보내면 그대로 따른다.
+    expect((await top3('?category=hall', headers)).json<Top3Body>().category).toBe('hall');
   });
 
   it('공식 지역 이름의 업체도 화면이 보낸 짧은 지역 이름과 맞는다', async () => {

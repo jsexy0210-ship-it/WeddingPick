@@ -122,6 +122,18 @@ export function formatDateDot(date: string | Date): string {
   return `${year}.${month}.${day}(${WEEKDAY_SHORT[value.getDay()]})`;
 }
 
+/**
+ * 연도 없는 꼴 — `05.16(토)`. 같은 해 안의 할 일·일정처럼 연도가 군더더기인
+ * 자리에 쓴다. 표기 규칙은 formatDateDot과 같다.
+ */
+export function formatMonthDayDot(date: string | Date): string {
+  const value = typeof date === 'string' ? parseLocalDate(date) : date;
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const day = String(value.getDate()).padStart(2, '0');
+
+  return `${month}.${day}(${WEEKDAY_SHORT[value.getDay()]})`;
+}
+
 /** `YYYY-MM-DD`는 로컬 날짜로, 그 밖의 ISO 문자열은 그대로 해석한다. */
 function parseLocalDate(date: string): Date {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);

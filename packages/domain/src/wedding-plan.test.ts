@@ -133,7 +133,8 @@ describe('진행률과 다음 일정', () => {
     expect(nextTask([{ label: '지난 것', dueDate: at(-1) }], NOW)).toBeNull();
   });
 
-  it('핸드오프가 쓴 날짜 표기를 쓴다', () => {
-    expect(formatTaskDate('2026-09-02')).toBe('9월 2일');
+  it('전역 날짜 표기(v3.21)의 연도 없는 꼴을 쓴다 — 서술형 «9월 2일»은 금지어다', () => {
+    expect(formatTaskDate('2026-09-02')).toBe('09.02(수)');
+    expect(formatTaskDate('2027-05-16')).toBe('05.16(일)');
   });
 });

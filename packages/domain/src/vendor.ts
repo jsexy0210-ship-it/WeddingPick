@@ -1,20 +1,25 @@
 /**
- * 업종. 디자인 핸드오프 v3.18 §1.3 · v3.15 «업종 순회 로딩»의 준비 순서 그대로다.
+ * 업종. 디자인 핸드오프 v3.22 §13.6 «준비 현황 · 그룹 분류 · 12개 업종»(2026-09-08).
  *
- *   결정사 → 웨딩홀 → 스튜디오 → 드레스 → 메이크업 → 본식스냅 → 예물 → 혼수 → 허니문 → 청첩장
+ *   결정사 → 웨딩홀 → 스튜디오 → 드레스 → 메이크업 → 헤어변형 → 본식스냅 → 부케
+ *   → 청첩장 → 예물 → 혼수 → 허니문
  *
  * 순서가 곧 준비 순서라 임의로 섞지 않는다(PREPARATION_CATEGORIES · 순회 로딩 ·
- * Pick 탭 · 웨딩일정 준비현황 · 검색 업종 격자가 전부 이 배열 순서를 쓴다).
+ * Pick 탭 · 웨딩일정 준비현황 · 검색 업종 격자가 전부 이 배열 순서를 쓴다). 순서는
+ * v3.22 준비 현황의 그룹 순서(시작 준비 → 스드메 → 본식 준비 → 예물 · 신혼)와 같다 —
+ * PREPARATION_GROUPS를 펼치면 이 배열이 나와야 한다.
  */
 /*
- * 2026-09-08 변경 이력.
- * - `planner_agency`(플래닝)는 뺐다 — 플래너 기능 삭제(CLAUDE.md 2026-09-05)와 같은
- *   결정. DB enum 값은 남아 있지만(Postgres는 enum 값을 못 지운다) 화면·API·시드
- *   어디에서도 쓰지 않고, 0081이 그 업종의 업체 행을 지웠다.
- * - `sdm`(스드메)도 뺐다 — 핸드오프 v3.18이 스튜디오·드레스·메이크업을 따로 센다.
- *   DB enum 값은 마찬가지로 남아 있고, 0083이 새 값을 더한 뒤 0084가 남은 `sdm`
- *   업체를 `studio`로 옮겼다. 패키지 견적 안의 역할(PACKAGE_ROLES)은 다른 개념이라
- *   그대로다. 지출 묶음(EXPENSE_BUCKETS)의 `sdm`도 묶음 이름이라 그대로다.
+ * 변경 이력.
+ * - 2026-09-08 v3.22: `hair`(헤어변형) · `bouquet`(부케)를 더했다(0085). 청첩장이
+ *   «본식 준비» 그룹으로 들어가며 예물·혼수·허니문보다 앞에 선다.
+ * - 2026-09-08 v3.18: `planner_agency`(플래닝)는 뺐다 — 플래너 기능 삭제(CLAUDE.md
+ *   2026-09-05)와 같은 결정. DB enum 값은 남아 있지만(Postgres는 enum 값을 못 지운다)
+ *   화면·API·시드 어디에서도 쓰지 않고, 0081이 그 업종의 업체 행을 지웠다.
+ *   `sdm`(스드메)도 뺐다 — 스튜디오·드레스·메이크업을 따로 센다. DB enum 값은
+ *   마찬가지로 남아 있고, 0083이 새 값을 더한 뒤 0084가 남은 `sdm` 업체를 `studio`로
+ *   옮겼다. 패키지 견적 안의 역할(PACKAGE_ROLES)은 다른 개념이라 그대로다. 지출
+ *   묶음(EXPENSE_BUCKETS)의 `sdm`도 묶음 이름이라 그대로다.
  */
 export const VENDOR_CATEGORIES = [
   'wedding_info_company',
@@ -22,11 +27,13 @@ export const VENDOR_CATEGORIES = [
   'studio',
   'dress',
   'makeup',
+  'hair',
   'snap',
+  'bouquet',
+  'invitation',
   'goods',
   'dowry',
   'honeymoon',
-  'invitation',
   'etc',
 ] as const;
 
@@ -51,13 +58,67 @@ export const VENDOR_CATEGORY_LABEL: Record<VendorCategory, string> = {
   studio: '스튜디오',
   dress: '드레스',
   makeup: '메이크업',
+  hair: '헤어변형',
   snap: '본식스냅',
+  bouquet: '부케',
+  invitation: '청첩장',
   goods: '예물',
   dowry: '혼수',
   honeymoon: '허니문',
-  invitation: '청첩장',
   etc: '기타',
 };
+
+/**
+ * 준비 현황(온보딩 3/5 · WP-APP-020)의 그룹. 핸드오프 v3.22 §13.6.
+ *
+ *   시작 준비     결정사 · 웨딩홀
+ *   스드메        스튜디오 · 드레스 · 메이크업 · 헤어변형
+ *   본식 준비     본식스냅 · 부케 · 청첩장
+ *   예물 · 신혼   예물 · 혼수 · 허니문
+ *   기타 상태     아직 시작 전이에요        ← PREPARATION_NOT_STARTED_LABEL
+ *
+ * 그룹을 펼친 순서가 PREPARATION_CATEGORIES와 같다(테스트가 지킨다). 다섯째
+ * 그룹은 업종이 아니라 «하나도 안 골랐다»는 상태라 여기 들어 있지 않다 — 화면이
+ * PREPARATION_NOT_STARTED_LABEL로 따로 그린다.
+ */
+export type PreparationGroupKey = 'start' | 'sdm' | 'ceremony' | 'goods';
+
+export type PreparationGroup = {
+  key: PreparationGroupKey;
+  title: string;
+  categories: readonly VendorCategory[];
+};
+
+export const PREPARATION_GROUPS: readonly PreparationGroup[] = [
+  { key: 'start', title: '시작 준비', categories: ['wedding_info_company', 'hall'] },
+  { key: 'sdm', title: '스드메', categories: ['studio', 'dress', 'makeup', 'hair'] },
+  { key: 'ceremony', title: '본식 준비', categories: ['snap', 'bouquet', 'invitation'] },
+  { key: 'goods', title: '예물 · 신혼', categories: ['goods', 'dowry', 'honeymoon'] },
+];
+
+/** 준비 현황의 다섯째 그룹 «기타 상태»의 유일한 항목. 고르면 업종 선택이 전부 풀린다. */
+export const PREPARATION_NOT_STARTED_LABEL = '아직 시작 전이에요';
+
+/** 준비 현황 그룹 제목. 사용자 화면에 «기타 상태»로 적는다. */
+export const PREPARATION_OTHER_GROUP_TITLE = '기타 상태';
+
+/**
+ * 준비 현황 라벨 — 완료 요약과 MY에 적는 이름(v3.19 «진행 상황 → 준비 현황»).
+ */
+export const PREPARED_CATEGORIES_LABEL = '준비 현황';
+
+/**
+ * 고른 업종을 한 줄로 줄인다. 핸드오프 v3.21 «첫 항목 외 N» — «웨딩홀 외 2곳».
+ * 하나도 없으면 «아직 시작 전이에요».
+ */
+export function summarizePreparedCategories(categories: readonly VendorCategory[]): string {
+  const names = categories.filter((category) => category !== 'etc').map((category) => VENDOR_CATEGORY_LABEL[category]);
+
+  if (names.length === 0) return PREPARATION_NOT_STARTED_LABEL;
+  if (names.length === 1) return names[0]!;
+
+  return `${names[0]} 외 ${names.length - 1}곳`;
+}
 
 /**
  * 패키지 견적 안의 개별 업체 역할. `structured.quote_sub_vendors`의 `package_role`과

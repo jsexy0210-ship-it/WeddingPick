@@ -2,6 +2,7 @@ import {
   TOP3_LIMIT,
   TOP3_MIN_CONFIRMED,
   TOP3_REASON_LABEL,
+  budgetExcludes,
   isRecommendable,
   reasonsFor,
   type Top3Facts,
@@ -11,8 +12,9 @@ const BASE: Top3Facts = {
   regionMatched: true,
   confirmedCount: 3,
   recentCount: 0,
-  baseAmount: null,
-  budgetAmount: null,
+  priceMin: null,
+  priceMax: null,
+  budgetBracket: null,
 };
 
 describe('추천 이유', () => {
@@ -21,26 +23,31 @@ describe('추천 이유', () => {
     expect(reasonsFor({ ...BASE, regionMatched: false })).not.toContain('region');
   });
 
-  it('예산은 기준금액이 있어야 말할 수 있다', () => {
-    // 무엇과 견줬는지 없이 "예산 안"이라고 적으면 그건 근거가 아니다.
-    expect(reasonsFor({ ...BASE, budgetAmount: 50_000_000, baseAmount: null })).not.toContain(
-      'budget'
-    );
+  it('예산은 제보 금액이 있어야 말할 수 있다', () => {
+    // 무엇과 견줬는지 없이 "예산과 맞아요"라고 적으면 그건 근거가 아니다.
+    expect(reasonsFor({ ...BASE, budgetBracket: '20m_30m' })).not.toContain('budget');
     expect(
-      reasonsFor({ ...BASE, budgetAmount: 50_000_000, baseAmount: 21_000_000 })
+      reasonsFor({ ...BASE, budgetBracket: '20m_30m', priceMin: 18_000_000, priceMax: 25_000_000 })
     ).toContain('budget');
   });
 
-  it('예산을 넘으면 이유가 아니다', () => {
-    expect(
-      reasonsFor({ ...BASE, budgetAmount: 20_000_000, baseAmount: 21_000_000 })
-    ).not.toContain('budget');
+  it('겹치지 않으면 이유가 아니고 추천 대상에서도 빠진다', () => {
+    const facts: Top3Facts = { ...BASE, budgetBracket: '20m_30m', priceMin: 32_000_000, priceMax: 40_000_000 };
+
+    expect(reasonsFor(facts)).not.toContain('budget');
+    expect(budgetExcludes(facts)).toBe(true);
+    expect(isRecommendable(facts)).toBe(false);
   });
 
-  it('예산을 안 정했으면 말하지 않는다', () => {
-    expect(reasonsFor({ ...BASE, budgetAmount: null, baseAmount: 21_000_000 })).not.toContain(
+  it('예산을 안 정했거나 모르겠으면 말하지도 거르지도 않는다', () => {
+    const unknown: Top3Facts = { ...BASE, budgetBracket: 'unknown', priceMin: 90_000_000, priceMax: 99_000_000 };
+
+    expect(reasonsFor({ ...BASE, budgetBracket: null, priceMin: 21_000_000, priceMax: 21_000_000 })).not.toContain(
       'budget'
     );
+    expect(reasonsFor(unknown)).not.toContain('budget');
+    expect(budgetExcludes(unknown)).toBe(false);
+    expect(isRecommendable(unknown)).toBe(true);
   });
 
   it('실 제보가 다섯 건부터 많다고 말한다', () => {
@@ -58,8 +65,9 @@ describe('추천 이유', () => {
       regionMatched: true,
       confirmedCount: 10,
       recentCount: 4,
-      baseAmount: 21_000_000,
-      budgetAmount: 50_000_000,
+      priceMin: 21_000_000,
+      priceMax: 24_000_000,
+      budgetBracket: '20m_30m',
     })) {
       expect(TOP3_REASON_LABEL[reason]).toBeTruthy();
     }

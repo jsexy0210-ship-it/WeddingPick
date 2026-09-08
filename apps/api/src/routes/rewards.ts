@@ -146,7 +146,8 @@ export function registerRewardRoutes(app: FastifyInstance, context: AppContext):
       spouse_linked: boolean;
     }>(
       `SELECT
-         (w.region IS NOT NULL) AS wedding_set,
+         /* 설정을 마쳤는가 — routes/weddings.ts · auth/sessions.ts와 같은 판단(0088). */
+         (w.setup_completed_at IS NOT NULL) AS wedding_set,
          EXISTS (
            SELECT 1 FROM structured.vendor_candidates c WHERE c.wedding_id = w.id
          ) AS has_pick,
@@ -157,7 +158,7 @@ export function registerRewardRoutes(app: FastifyInstance, context: AppContext):
            AS spouse_linked
        FROM structured.users u
        LEFT JOIN LATERAL (
-         SELECT id, wedding_date, region, owner_user_id, partner_user_id
+         SELECT id, wedding_date, region, setup_completed_at, owner_user_id, partner_user_id
          FROM structured.weddings
          WHERE owner_user_id = u.id OR partner_user_id = u.id
          ORDER BY created_at LIMIT 1
