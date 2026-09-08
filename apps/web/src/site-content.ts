@@ -13,7 +13,7 @@
  * 가졌는지 보이는 것이고, 앱은 그것을 본 다음의 이야기다.
  */
 
-import { TERMS } from '@weddingpick/domain';
+import { BUSINESS_NOTICE_LINES, TERMS } from '@weddingpick/domain';
 
 export const SITE = {
   /** 브라우저 탭과 검색 결과에 나가는 이름. */
@@ -84,9 +84,10 @@ export const APP_HANDOFF = {
 export const CORRECTION_NOTE = '정보가 틀렸다면 앱의 MY → 문의하기로 알려주세요.';
 
 /**
- * Footer 아래 두 줄.
+ * Footer 아래 줄 — 사업자 정보(2026-09-08 사업자등록).
  *
- * 사업자등록번호를 지어 적지 않는다. 없는 번호를 적으면 그건 안내가 아니라
- * 거짓이고, 사업자 정보는 특히 그것을 확인하러 오는 사람이 있는 자리다.
+ * 값은 `@weddingpick/domain`의 `BUSINESS` 한 곳에서만 온다. 여기서 다시 적지
+ * 않는다 — 사업자 정보는 특히 그것을 확인하러 오는 사람이 있는 자리라, 화면마다
+ * 따로 적어 어긋나면 그게 곧 거짓이 된다.
  */
-export const FOOTER_BOTTOM = [SITE.name] as const;
+export const FOOTER_BOTTOM = [SITE.name, ...BUSINESS_NOTICE_LINES] as const;

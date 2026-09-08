@@ -7,6 +7,8 @@ import { socialMeta, SHARE_TITLE, SHARE_DESCRIPTION } from './social-meta';
  * 디자인 토큰은 CLAUDE.md § 5 색 / § 6 타이포 기준.
  */
 
+import { BUSINESS, BUSINESS_NOTICE_LINES } from '@weddingpick/domain';
+
 import { CONTACT_EMAIL } from './content';
 
 const C = '#FF6F61';
@@ -390,8 +392,11 @@ function footer(contactEmail: string | null): string {
     </nav>
     ${email}
   </div>
+  <div class="lv-foot-biz">
+    ${BUSINESS_NOTICE_LINES.map((line) => `<span style="font-size:13px;line-height:19px;color:rgba(255,255,255,.4)">${esc(line)}</span>`).join('')}
+  </div>
   <div class="lv-foot-bot">
-    <span style="font-size:13px;color:rgba(255,255,255,.4)">© 2026 웨딩픽. All rights reserved.</span>
+    <span style="font-size:13px;color:rgba(255,255,255,.4)">© 2026 ${esc(BUSINESS.name)}. All rights reserved.</span>
     <nav class="lv-foot-policy">
       <a href="/terms.html" style="font-size:13px;color:rgba(255,255,255,.5);text-decoration:none;white-space:nowrap">이용약관</a>
       <span style="font-size:13px;color:rgba(255,255,255,.2)">·</span>
@@ -461,6 +466,7 @@ a{color:inherit}
 .lv-foot{padding:0 64px}
 .lv-foot-top{display:flex;align-items:center;justify-content:space-between;height:76px;border-bottom:1px solid rgba(255,255,255,.12);gap:24px}
 .lv-foot-nav{display:flex;align-items:center;gap:24px;flex:1;justify-content:center}
+.lv-foot-biz{display:flex;flex-direction:column;gap:4px;padding:20px 0 4px;border-top:1px solid rgba(255,255,255,.1)}
 .lv-foot-bot{display:flex;align-items:center;justify-content:space-between;height:60px;gap:16px}
 .lv-foot-policy{display:flex;align-items:center;gap:16px}
 
