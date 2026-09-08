@@ -296,16 +296,16 @@ class Component extends DCLogic {
         sc({
           no: '2', label: '제보 금액 상세 · WP-VEND-003', nav: '제보 금액',
           desc: '조건별 분포와 시기별 변화를 나눕니다. 건수가 적은 조건은 수집 중으로 두고 억지로 숫자를 만들지 않습니다.',
-          bigAmount: '152~184만원', bigMeta: '확인된 제보 12건 · 최근 12개월', bigNote: '기준금액 168만원 · 확인된 제보의 중앙값이에요',
+          bigAmount: '152~184만원', bigMeta: '실 제보 12건 · 최근 12개월', bigNote: '기준금액 168만원 · 실 제보의 중앙값이에요',
           bars: [
-            bar('평일 촬영', '152~168만원', '확인된 제보 5건', '68%', false),
-            bar('주말 촬영', '166~184만원', '확인된 제보 7건', '86%', false),
+            bar('평일 촬영', '152~168만원', '실 제보 5건', '68%', false),
+            bar('주말 촬영', '166~184만원', '실 제보 7건', '86%', false),
             bar('야외 추가', '수집 중', '아직 정보가 적어요 · 2건', '18%', true)
           ],
           groups: [
             grp({ small: true, title: '시기별 변화', rows: [
-              row({ name: '2026년 하반기', meta: '확인된 제보 7건', tail: '158~184만원', small: true }),
-              row({ name: '2026년 상반기', meta: '확인된 제보 5건', tail: '152~176만원', small: true }),
+              row({ name: '2026년 하반기', meta: '실 제보 7건', tail: '158~184만원', small: true }),
+              row({ name: '2026년 상반기', meta: '실 제보 5건', tail: '152~176만원', small: true }),
               row({ name: '2025년 하반기', meta: '아직 정보가 적어요 · 1건', tail: '수집 중', tailDim: true, small: true })
             ] }),
             grp({ small: true, title: '내 조건과 비슷한 제보', rows: [

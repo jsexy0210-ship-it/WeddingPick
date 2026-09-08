@@ -1927,12 +1927,12 @@ const AD_VERDICT = [
 ];
 
 const FAQS = [
-  { order: 1, cat: '확인된 제보 · 제보', q: '확인된 제보가 무엇인가요?', state: '공개', view: 842, help: 91, link: '확인된 제보', updated: '08-28' },
+  { order: 1, cat: '실 제보 · 제보', q: '실 제보가 무엇인가요?', state: '공개', view: 842, help: 91, link: '실 제보', updated: '08-28' },
   { order: 2, cat: '웨딩픽 이용', q: '회원가입 없이 사용할 수 있나요?', state: '공개', view: 610, help: 88, link: '서비스 이용', updated: '08-24' },
-  { order: 3, cat: '확인된 제보 · 제보', q: '결제내역은 어떻게 등록하나요?', state: '공개', view: 588, help: 74, link: '제보', updated: '08-27' },
+  { order: 3, cat: '실 제보 · 제보', q: '결제내역은 어떻게 등록하나요?', state: '공개', view: 588, help: 74, link: '제보', updated: '08-27' },
   { order: 4, cat: '웨딩픽 이용', q: '광고한 업체가 추천에 더 많이 나오나요?', state: '공개', view: 402, help: 95, link: '서비스 이용', updated: '09-01' },
   { order: 5, cat: '계정 · 알림', q: '탈퇴하면 작성한 후기와 제보도 삭제되나요?', state: '공개', view: 138, help: 86, link: '계정', updated: '09-01' },
-  { order: 6, cat: '일정 · 지출', q: '체크리스트를 직접 수정할 수 있나요?', state: '공개', view: 214, help: 52, link: '우리웨딩', updated: '08-19' },
+  { order: 6, cat: '일정 · 지출', q: '체크리스트를 직접 수정할 수 있나요?', state: '공개', view: 214, help: 52, link: '웨딩일정', updated: '08-19' },
   { order: 7, cat: '업체 · 플래너', q: '업체가 후기를 삭제할 수 있나요?', state: '비공개', view: 96, help: 41, link: '업체 문의', updated: '08-12' },
 ];
 
@@ -1981,7 +1981,7 @@ const MEMBERS = [
       { k: '예산', v: '5,000만원', d: '잔여 4,128만원 · 직접 입력' },
     ],
     screens: [
-      { s: '우리웨딩 · 지출내역', n: 62 }, { s: '홈', n: 54 }, { s: '검색', n: 38 },
+      { s: '웨딩일정 · 지출내역', n: 62 }, { s: '홈', n: 54 }, { s: '검색', n: 38 },
       { s: '업체 비교', n: 24 }, { s: '체크리스트', n: 19 }, { s: 'MY', n: 11 },
     ],
     events: [
@@ -2009,7 +2009,7 @@ const MEMBERS = [
       { k: '예산', v: '5,000만원 (공유)', d: '배우자가 설정' },
     ],
     screens: [
-      { s: '홈', n: 41 }, { s: '우리웨딩 · 지출내역', n: 28 }, { s: '검색', n: 14 },
+      { s: '홈', n: 41 }, { s: '웨딩일정 · 지출내역', n: 28 }, { s: '검색', n: 14 },
       { s: 'MY', n: 9 }, { s: '체크리스트', n: 7 }, { s: '업체 비교', n: 3 },
     ],
     events: [
@@ -2021,7 +2021,7 @@ const MEMBERS = [
   {
     name: '이*아', id: 'u_71ee02', tier: '메이트', joined: '2026-06-18', verified: 0, reports: 1,
     provider: '구글', os: 'iOS 18.1', device: 'iPhone 14', app: '2.3.8', region: '경기 성남시',
-    lastActive: '2026-08-27 20:02', sessions: 34, avgSession: '2분 48초', notif: '꺼짐', spouse: '미연결',
+    lastActive: '2026-08-27 20:02', sessions: 34, avgSession: '2분 48초', notif: '꺼짐', spouse: '혼자',
     weddingDate: '2027-06-05', budget: '미등록', spend: '0원',
     marketing: '동의', pushOpen: '—', churnRisk: '보통',
     registered: [
@@ -2036,7 +2036,7 @@ const MEMBERS = [
     ],
     screens: [
       { s: '검색', n: 29 }, { s: '홈', n: 18 }, { s: '업체 상세', n: 16 },
-      { s: '업체 비교', n: 8 }, { s: '우리웨딩', n: 4 }, { s: 'MY', n: 2 },
+      { s: '업체 비교', n: 8 }, { s: '웨딩일정', n: 4 }, { s: 'MY', n: 2 },
     ],
     events: [
       { t: '2026-08-27 20:02', e: '결제내역 등록 실패', d: 'VR-2836 · 자동 반려' },
@@ -2047,7 +2047,7 @@ const MEMBERS = [
   {
     name: '정*민', id: 'u_c40a17', tier: '메이트', joined: '2026-07-05', verified: 0, reports: 2,
     provider: '카카오', os: 'Android 14', device: 'Galaxy Z Flip 6', app: '2.4.0', region: '부산 해운대구',
-    lastActive: '2026-08-26 09:31', sessions: 22, avgSession: '3분 30초', notif: '켜짐', spouse: '미연결',
+    lastActive: '2026-08-26 09:31', sessions: 22, avgSession: '3분 30초', notif: '켜짐', spouse: '혼자',
     weddingDate: '2027-10-09', budget: '3,500만원', spend: '240만원',
     marketing: '동의', pushOpen: '55%', churnRisk: '보통',
     registered: [
@@ -2061,7 +2061,7 @@ const MEMBERS = [
       { k: '예산', v: '3,500만원', d: '잔여 3,260만원' },
     ],
     screens: [
-      { s: '홈', n: 20 }, { s: '검색', n: 15 }, { s: '우리웨딩 · 지출내역', n: 11 },
+      { s: '홈', n: 20 }, { s: '검색', n: 15 }, { s: '웨딩일정 · 지출내역', n: 11 },
       { s: '업체 상세', n: 9 }, { s: 'MY', n: 3 }, { s: '업체 비교', n: 2 },
     ],
     events: [
@@ -2072,7 +2072,7 @@ const MEMBERS = [
   {
     name: '최*서', id: 'u_5b2f81', tier: '게스트', joined: '2026-08-21', verified: 0, reports: 0,
     provider: 'Apple', os: 'iOS 17.6', device: 'iPhone 13', app: '2.4.1', region: '인천 연수구',
-    lastActive: '2026-08-27 13:08', sessions: 6, avgSession: '1분 52초', notif: '꺼짐', spouse: '미연결',
+    lastActive: '2026-08-27 13:08', sessions: 6, avgSession: '1분 52초', notif: '꺼짐', spouse: '혼자',
     weddingDate: '미등록', budget: '미등록', spend: '0원',
     marketing: '거부', pushOpen: '—', churnRisk: '높음',
     registered: [
@@ -2087,7 +2087,7 @@ const MEMBERS = [
     ],
     screens: [
       { s: '검색', n: 8 }, { s: '업체 상세', n: 5 }, { s: '홈', n: 4 },
-      { s: '업체 비교', n: 1 }, { s: 'MY', n: 1 }, { s: '우리웨딩', n: 0 },
+      { s: '업체 비교', n: 1 }, { s: 'MY', n: 1 }, { s: '웨딩일정', n: 0 },
     ],
     events: [
       { t: '2026-08-27 13:08', e: '결제내역 등록', d: 'VR-2845 · 청담 E 웨딩홀' },
@@ -2100,7 +2100,7 @@ const USAGE_SCREENS = [
   { s: '홈', dau: 3182, share: 76, avg: '1분 48초' },
   { s: '검색', dau: 2410, share: 58, avg: '3분 12초' },
   { s: '업체 상세', dau: 1986, share: 47, avg: '2분 34초' },
-  { s: '우리웨딩 · 지출내역', dau: 1204, share: 29, avg: '4분 02초' },
+  { s: '웨딩일정 · 지출내역', dau: 1204, share: 29, avg: '4분 02초' },
   { s: '업체 비교', dau: 962, share: 23, avg: '3분 41초' },
   { s: '웨딩 스케줄', dau: 744, share: 18, avg: '1분 26초' },
   { s: '결제내역 등록', dau: 318, share: 8, avg: '2분 08초' },
@@ -3641,7 +3641,7 @@ class Component extends DCLogic {
         { k: '누적 세션', v: mem.sessions + '회 · 평균 ' + mem.avgSession, color: '#212124' },
         { k: '알림 수신', v: mem.notif + ' · 열람 ' + mem.pushOpen, color: mem.notif === '켜짐' ? '#1aa174' : '#868b94' },
         { k: '마케팅 동의', v: mem.marketing, color: mem.marketing === '동의' ? '#1aa174' : '#868b94' },
-        { k: '배우자', v: mem.spouse, color: mem.spouse === '미연결' ? '#868b94' : '#1aa174' },
+        { k: '배우자', v: mem.spouse, color: mem.spouse === '혼자' ? '#868b94' : '#1aa174' },
         { k: '예식일', v: mem.weddingDate, color: mem.weddingDate === '미등록' ? '#805217' : '#212124' },
         { k: '예산', v: mem.budget, color: mem.budget === '미등록' ? '#805217' : '#212124' },
         { k: '누적 지출', v: mem.spend, color: '#212124' },
@@ -3810,7 +3810,7 @@ class Component extends DCLogic {
           { v: a.pick ? String(a.pick) : '—', size: '13px', weight: '400', color: '#393a40' },
           { v: a.click ? (a.pick / a.click * 100).toFixed(1) + '%' : '—', size: '13px', weight: '600', color: '#212124' },
         ]),
-        foot: 'LIGHT 3만 · STANDARD 7만 · PREMIUM 15만원 월 정액이에요. 첫 달 무료 또는 50% 할인은 한 번만 적용하고 영구 무료는 두지 않아요. 광고 슬롯은 자연 추천과 분리된 별도 영역이라 요금제가 올라가도 웨딩픽 TOP3 · 오늘의 Pick · 검색 자연순위 · 확인된 제보 · 후기 순서에는 영향이 없어요. AD-052는 추천 순위 개입 요청이라 반려했어요.\n\n실운영 전환 절차 · ' + AD_GATE.map((g) => g.step + '(' + g.state + ')').join(' → ') + '. 테스트 종료일은 고정하지 않고 판단 데이터 충족 여부로 분석 시점을 정해요. GPT와 Claude가 각각 독립으로 상품별 오픈 · 보류 · 폐기, 권장 시점, 노출 · 클릭 · CTR · Pick 전환, 사용자 이탈 영향, 광고주 수요, 예상 매출과 운영비, 추천 독립성 훼손 여부, UX 위험을 판정하고 보고서를 따로 냅니다. 판단이 갈려도 합의하지 않고 그대로 올려요 — 현재 예상 판정은 ' + AD_VERDICT.map((v) => v.item.split(' · ')[0] + ' GPT ' + v.gpt + ' / Claude ' + v.claude).join(', ') + '. 오픈 스위치는 사람만 올립니다.',
+        foot: 'LIGHT 3만 · STANDARD 7만 · PREMIUM 15만원 월 정액이에요. 첫 달 무료 또는 50% 할인은 한 번만 적용하고 영구 무료는 두지 않아요. 광고 슬롯은 자연 추천과 분리된 별도 영역이라 요금제가 올라가도 웨딩픽 TOP3 · 오늘의 Pick · 검색 자연순위 · 실 제보 · 후기 순서에는 영향이 없어요. AD-052는 추천 순위 개입 요청이라 반려했어요.\n\n실운영 전환 절차 · ' + AD_GATE.map((g) => g.step + '(' + g.state + ')').join(' → ') + '. 테스트 종료일은 고정하지 않고 판단 데이터 충족 여부로 분석 시점을 정해요. GPT와 Claude가 각각 독립으로 상품별 오픈 · 보류 · 폐기, 권장 시점, 노출 · 클릭 · CTR · Pick 전환, 사용자 이탈 영향, 광고주 수요, 예상 매출과 운영비, 추천 독립성 훼손 여부, UX 위험을 판정하고 보고서를 따로 냅니다. 판단이 갈려도 합의하지 않고 그대로 올려요 — 현재 예상 판정은 ' + AD_VERDICT.map((v) => v.item.split(' · ')[0] + ' GPT ' + v.gpt + ' / Claude ' + v.claude).join(', ') + '. 오픈 스위치는 사람만 올립니다.',
       },
       faq: {
         kpis: [

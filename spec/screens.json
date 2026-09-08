@@ -18,7 +18,7 @@
     ],
     "reportEntryPoints": {
       "$rule": "제보는 Root에 없다. 아래 4곳에서만 맥락형으로 진입한다. 4곳의 문구와 위치를 통일한다.",
-      "points": ["MY 제보 메뉴", "업체상세 확인된 정보 하단", "정보 부족 화면", "웨딩일정 지출 화면"]
+      "points": ["MY 제보 메뉴", "업체상세 실 제보 하단", "정보 부족 화면", "웨딩일정 지출 화면"]
     }
   },
 
@@ -51,7 +51,7 @@
           { "type": "image", "spec": "homePickHero", "badge": "순위 · 좌상단" },
           { "type": "row", "left": "업체명 section bold", "right": "금액 sub bold" },
           { "type": "text", "role": "sub", "value": "strings.reason.*", "maxLines": 1 },
-          { "type": "text", "role": "caption", "value": "확인된 정보 N건", "maxLines": 1 },
+          { "type": "text", "role": "caption", "value": "실 제보 N건", "maxLines": 1 },
           { "type": "grid2", "label": "2·3위", "image": "16:11" },
           { "type": "cta", "height": 52, "value": "strings.common.cta.compare3" }
         ]},
@@ -62,7 +62,7 @@
         { "order": 8, "id": "benefitLine", "style": "tertiary 한 줄 + chevron" }
       ],
       "states": [
-        { "id": "guest",        "spec": "개인화 영역 없음. 확인된 정보와 카테고리만. 우상단 로그인 버튼" },
+        { "id": "guest",        "spec": "개인화 영역 없음. 실 제보와 카테고리만. 우상단 로그인 버튼" },
         { "id": "noTaste",      "spec": "현황판을 «아직 시작 전» 한 줄로 접고 취향 이미지 2×2로 대체" },
         { "id": "noPick",       "spec": "현황판 격자 표시, 첫 카테고리만 primary 테두리로 지목" },
         { "id": "noInfo",       "spec": "금액 자리에 «수집 중 · N건». 비교 CTA 내리고 Pick 인증 권유" },
@@ -80,7 +80,7 @@
     },
 
     { "id": "WP-SRCH-001", "name": "검색 홈", "file": "웨딩픽 검색.dc.html", "sections": ["검색창 52", "카테고리 grid2 8개", "최근 검색 칩", "많이 확인된 곳"], "forbidden": ["추천 문구", "개인화 영역"] },
-    { "id": "WP-SRCH-002", "name": "자동완성", "groups": ["업체", "지역", "이 말로 검색"], "eachRow": "이름 + 확인된 정보 건수" },
+    { "id": "WP-SRCH-002", "name": "자동완성", "groups": ["업체", "지역", "이 말로 검색"], "eachRow": "이름 + 실 제보 건수" },
     { "id": "WP-SRCH-004", "name": "결과", "sticky": ["필터바 56 가로스크롤", "정렬 40"], "card": ["이미지 342×168", "업체명 ↔ 금액", "건수", "Pick 48"], "ad": "이미지 좌상단 «광고» 라벨. 자연 결과와 분리" },
     { "id": "WP-SRCH-005", "name": "필터", "type": "sheet", "cta": "결과 수 실시간 반영" },
     { "id": "WP-SRCH-007", "name": "지도", "spec": "핀에 금액만. 선택 시 하단 카드 1장" },
@@ -95,7 +95,7 @@
         { "order": 1,  "id": "hero",       "spec": "대표 이미지 390×260" },
         { "order": 2,  "id": "identity",   "spec": "영업 배지 → 업체명 title → 핵심 조건 sub" },
         { "order": 3,  "id": "reason",     "title": "추천 이유", "spec": "불릿 3개 · primary 점" },
-        { "order": 4,  "id": "verified",   "title": "확인된 정보", "spec": "금액 display → 메타 → 조건별 3행" },
+        { "order": 4,  "id": "verified",   "title": "실 제보", "spec": "금액 display → 메타 → 조건별 3행" },
         { "order": 5,  "id": "action",     "spec": "Pick 52 primary + 비교 secondary. 근거를 다 읽은 자리" },
         { "order": 6,  "id": "guide",      "title": "업체 안내", "spec": "포함 항목 + 별도로 확인할 비용" },
         { "order": 7,  "id": "benefit",    "title": "현재 혜택", "spec": "primary 테두리 박스" },
@@ -136,7 +136,7 @@
     "promo": "첫 달 무료 또는 50% 할인 1회. 영구 무료 없음.",
     "independence": {
       "rule": "광고비와 요금제 등급은 아래에 영향을 주지 않는다",
-      "protected": ["웨딩픽 TOP3", "오늘의 Pick", "개인화 추천", "자연 검색순위", "확인된 정보", "후기", "후기 순위"],
+      "protected": ["웨딩픽 TOP3", "오늘의 Pick", "개인화 추천", "자연 검색순위", "실 제보", "후기", "후기 순위"],
       "implementation": "광고 랭킹은 자연 추천과 분리된 별도 테이블로 관리한다. 추천 쿼리에 광고 필드를 조인하지 않는다.",
       "labeling": "광고 노출 시 «광고» 라벨을 반드시 표시한다"
     },

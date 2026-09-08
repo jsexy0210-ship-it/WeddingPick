@@ -72,7 +72,7 @@ image-slot::part(empty){display:none !important}
                   <span style="{{ t12a }}">오늘의 Pick</span>
                   <div style="{{ heroImg }}"><image-slot id="st-1-hero" src="uploads/samples-1788175716407-57s9.jpg" shape="rect" placeholder=""></image-slot></div>
                   <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px"><span style="{{ t15b }}">강남 A 스튜디오</span><span style="{{ t13b }}">152~184만원</span></div>
-                  <span style="{{ t12g }}">확인된 제보 12건</span>
+                  <span style="{{ t12g }}">실 제보 12건</span>
                   <div style="{{ ctaSm }}">3곳 비교</div>
                 </div>
                 <div style="{{ pad }}">
@@ -102,7 +102,7 @@ image-slot::part(empty){display:none !important}
                   </div>
                   <div style="{{ dataBox }}">
                     <span style="{{ h20n }}">152~184만원</span>
-                    <span style="{{ t11g }}">확인된 제보 12건 · 기준금액 168만원</span>
+                    <span style="{{ t11g }}">실 제보 12건 · 기준금액 168만원</span>
                   </div>
                   <div style="display:flex;gap:6px"><div style="{{ ctaFlex }}">Pick하기</div><div style="{{ ctaGhostSm }}">비교</div></div>
                 </div>
@@ -327,9 +327,9 @@ class Component extends DCLogic {
       shots: [
         shot({ no: '1', label: '가격 투명성', bg: C, fg: '#fff', sub: 'rgba(255,255,255,.82)', isHome: true,
           eyebrow: '웨딩 준비, 가격을 모르고 시작하지 마세요', line1: '남들은 얼마 냈는지', line2: '부터 보세요',
-          note: '검색 결과 첫 칸입니다. 설명 대신 금액과 확인된 제보 건수를 바로 보여줍니다.' }),
+          note: '검색 결과 첫 칸입니다. 설명 대신 금액과 실 제보 건수를 바로 보여줍니다.' }),
         shot({ no: '2', label: '신뢰', bg: '#212124', fg: '#fff', sub: 'rgba(255,255,255,.74)', isVendor: true,
-          eyebrow: '가격과 조건을 함께 보고 후보만 Pick', line1: '광고 말고,', line2: '확인된 제보로 골라요',
+          eyebrow: '가격과 조건을 함께 보고 후보만 Pick', line1: '광고 말고,', line2: '실 제보로 골라요',
           note: '광고비가 순위를 바꾸지 않는다는 점이 이 앱의 차별점입니다.' }),
         shot({ no: '3', label: '비교', bg: '#f7f8fa', fg: '#212124', sub: '#4d5159', isCompare: true,
           eyebrow: '금액 · 포함항목 · 조건까지 한눈에', line1: '가격만 같다고', line2: '같은 조건은 아니니까' ,
@@ -338,7 +338,7 @@ class Component extends DCLogic {
           eyebrow: '각자 Pick하고, 겹치는 후보부터 비교', line1: '둘이 고른 곳만', line2: '남겨보세요',
           note: '혼자 쓰는 앱이 아니라 둘이 쓰는 앱임을 보여줍니다.' }),
         shot({ no: '5', label: '선순환', bg: '#212124', fg: '#fff', sub: 'rgba(255,255,255,.74)', isReport: true,
-          eyebrow: 'Pick 인증하면 확인된 제보가 더 정확해져요', line1: '내 정보 하나가', line2: '다음 선택의 기준으로',
+          eyebrow: 'Pick 인증하면 실 제보가 더 정확해져요', line1: '내 정보 하나가', line2: '다음 선택의 기준으로',
           note: '왜 정보를 남겨야 하는지 이유를 줍니다. 참여가 서비스를 키우는 구조입니다.' })
       ],
 
@@ -346,9 +346,9 @@ class Component extends DCLogic {
       kvRow: 'display:flex;align-items:center;gap:8px;min-height:30px;box-shadow:inset 0 -1px 0 #f2f3f6',
       memoBox: 'border-radius:8px;background:#f7f8fa;padding:10px 11px;display:flex;flex-direction:column;gap:2px',
       more: [
-        { name: '강남 A 웨딩홀', price: '1,480~1,820만원', n: '확인된 제보 21건', slot: 'st-1-m1', src: IMG.hall },
-        { name: '강남 A 드레스', price: '88~124만원', n: '확인된 제보 14건', slot: 'st-1-m2', src: IMG.dress },
-        { name: '청담 C 스튜디오', price: '165~203만원', n: '확인된 제보 7건', slot: 'st-1-m3', src: IMG.bride }
+        { name: '강남 A 웨딩홀', price: '1,480~1,820만원', n: '실 제보 21건', slot: 'st-1-m1', src: IMG.hall },
+        { name: '강남 A 드레스', price: '88~124만원', n: '실 제보 14건', slot: 'st-1-m2', src: IMG.dress },
+        { name: '청담 C 스튜디오', price: '165~203만원', n: '실 제보 7건', slot: 'st-1-m3', src: IMG.bride }
       ],
       included: [
         { k: '촬영 시간', v: '4시간' },

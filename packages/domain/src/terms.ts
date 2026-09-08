@@ -21,7 +21,8 @@ export const TERMS = {
   /** 골라둔 곳 목록. */
   picked: 'Pick한 곳',
   /** 검증된 결제정보. v3.3이 `실제 결제 데이터`를 사용자 화면에서 이 말로 바꿨다. */
-  verifiedData: '확인된 정보',
+  /** v3.18: 정보 체계 상위 개념. «확인된 제보»·«확인된 정보»를 대체한다. */
+  verifiedData: '실 제보',
   /** 중앙값의 사용자 표기. 통계는 그대로 중앙값이고 이름만 바꾼다. */
   baseAmount: '기준금액',
   /** 집계 기간. */
@@ -55,7 +56,7 @@ export const TERMS = {
 } as const;
 
 /** `기준금액`이 무슨 값인지 묻는 사람에게. 정책이 문장까지 정했다. */
-export const BASE_AMOUNT_HELP = 'Pick 인증으로 확인된 금액의 중앙값이에요.';
+export const BASE_AMOUNT_HELP = '실 제보의 중앙값이에요.';
 
 /**
  * 자료가 모자랄 때.
@@ -70,11 +71,13 @@ export const STILL_COLLECTING = '정보를 모으는 중이에요';
 export const CANNOT_COMPARE_YET = '아직 비교하기 어려워요';
 export const COMPARE_LATER = '조금 더 모이면 비교할 수 있어요';
 export const MANY_CONFIRMED = '많이 확인된 곳';
+/** 검색 홈 섹션 제목(v3.17). 홈의 «많이 확인된 곳»과 다른 자리다. */
+export const MOST_VIEWED = '많이 본 곳';
 
 /**
  * 금액 옆에 늘 함께 적는 줄. v3.1 §11.
  *
- *   `확인된 정보 12건 · 최근 12개월 · 기준금액 168만원`
+ *   `실 제보 12건 · 최근 12개월 · 기준금액 168만원`
  *
  * 숫자만 떼어놓으면 그것이 어디서 왔는지 모르는 채로 읽히고, 그때부터 그 숫자는
  * 우리가 정한 값처럼 보인다.

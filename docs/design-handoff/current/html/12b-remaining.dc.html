@@ -252,12 +252,12 @@ class Component extends DCLogic {
         hero: '지수님 조건에\n맞는 순서예요', sub: '강남 · 5월 · 예산 180만원 기준',
         chips: [{ label: '스튜디오', style: chip(true) }, { label: '웨딩홀', style: chip(false) }, { label: '드레스', style: chip(false) }, { label: '메이크업', style: chip(false) }],
         groups: [grp({ small: true, rows: [
-          row({ lead: '1', leadStyle: rank(1, true), slot: 'rs-t1', src: IMG.couple, name: '강남 A 스튜디오', meta: '고른 사진이랑 가장 비슷해요 · 확인된 제보 12건', tail: '152~184만원' }),
+          row({ lead: '1', leadStyle: rank(1, true), slot: 'rs-t1', src: IMG.couple, name: '강남 A 스튜디오', meta: '고른 사진이랑 가장 비슷해요 · 실 제보 12건', tail: '152~184만원' }),
           row({ lead: '2', leadStyle: rank(2, false), slot: 'rs-t2', src: IMG.arch, name: '서촌 B 스튜디오', meta: '제보 금액은 여기부터 시작해요 · 9건', tail: '138~171만원' }),
           row({ lead: '3', leadStyle: rank(3, false), slot: 'rs-t3', src: IMG.bride, name: '청담 C 스튜디오', meta: '원본을 전부 받을 수 있어요 · 7건', tail: '165~203만원' }),
           row({ lead: '4', leadStyle: rank(4, false), slot: 'rs-t4', src: IMG.dress, name: '성수 D 스튜디오', meta: '아직 정보가 적어요 · 3건', tail: '수집 중', tailDim: true })
         ] })],
-        noteTitle: '광고는 섞지 않아요', note: '이 순서는 두 분 조건과 확인된 제보로만 정해요.',
+        noteTitle: '광고는 섞지 않아요', note: '이 순서는 두 분 조건과 실 제보로만 정해요.',
         cta: '3곳 비교'
       }),
       sc({
@@ -342,8 +342,8 @@ class Component extends DCLogic {
             row({ check: true, name: '반영', meta: '8월 29일 · 금액 구간에 들어갔어요', tail: '완료', tailKind: 'ok' })
           ] }),
           grp({ small: true, title: '반영된 곳', rows: [
-            row({ name: '강남 A 스튜디오 금액 구간', meta: '152~184만원 · 확인된 제보 12건', chevron: true }),
-            row({ name: '우리웨딩 지출', meta: '168만원 추가', chevron: true }),
+            row({ name: '강남 A 스튜디오 금액 구간', meta: '152~184만원 · 실 제보 12건', chevron: true }),
+            row({ name: '웨딩일정 지출', meta: '168만원 추가', chevron: true }),
             row({ name: '내 상태', meta: 'Pick 인증 회원이 됐어요', tail: '인증', tailKind: 'ok' })
           ] })
         ],
@@ -351,7 +351,7 @@ class Component extends DCLogic {
       }),
       sc({
         no: '7', label: '가격 제보 · WP-RPT-010', nav: '가격 제보', close: true,
-        desc: '증빙 없는 제보임을 먼저 밝힙니다. 확인된 제보와 섞이지 않는다는 점이 핵심입니다.',
+        desc: '증빙 없는 제보임을 먼저 밝힙니다. 실 제보와 섞이지 않는다는 점이 핵심입니다.',
         hero: '들은 금액을\n알려주세요', sub: '자료가 없어도 괜찮아요',
         fields: [
           fld('업체', '강남 A 스튜디오'),
@@ -359,7 +359,7 @@ class Component extends DCLogic {
           fld('언제 들었나요', '2026년 8월'),
           fld('조건', '주말 · 원본 전부 · 야외 없음')
         ],
-        noteTitle: '확인된 제보와 따로 관리해요', note: '가격 제보는 참고용으로만 보여드리고 금액 구간에는 넣지 않아요.',
+        noteTitle: '실 제보와 따로 관리해요', note: '가격 제보는 참고용으로만 보여드리고 금액 구간에는 넣지 않아요.',
         cta: '제보하기'
       }),
       sc({
@@ -463,7 +463,7 @@ class Component extends DCLogic {
             row({ check: true, name: '촬영일과 본식일 나눠 생각하기', meta: '같은 곳에서 둘 다 하면 할인되는 경우가 있어요' })
           ] }),
           grp({ small: true, title: '이 글과 관련된 곳', rows: [
-            row({ slot: 'rs-d1', src: IMG.dress, name: '라비드레스', meta: '88~124만원 · 확인된 제보 14건', tail: 'Pick', tailKind: 'brand' }),
+            row({ slot: 'rs-d1', src: IMG.dress, name: '라비드레스', meta: '88~124만원 · 실 제보 14건', tail: 'Pick', tailKind: 'brand' }),
             row({ slot: 'rs-d2', src: IMG.bride, name: '메종 브라이드', meta: '수집 중 · 3건', tail: 'Pick', tailKind: 'brand' })
           ] }),
           grp({ small: true, title: '체크리스트에 넣기', rows: [
@@ -474,14 +474,14 @@ class Component extends DCLogic {
       }),
       sc({
         no: '14', label: '업종별 · WP-SRCH-003', nav: '스튜디오',
-        desc: '업종 안에서 지역과 예산으로 좁힙니다. 상단에 확인된 제보 건수를 두어 정보량을 먼저 보여줍니다.',
-        hero: '스튜디오\n286곳', sub: '확인된 제보 286건 · 강남 82곳',
+        desc: '업종 안에서 지역과 예산으로 좁힙니다. 상단에 실 제보 건수를 두어 정보량을 먼저 보여줍니다.',
+        hero: '스튜디오\n286곳', sub: '실 제보 286건 · 강남 82곳',
         chips: [{ label: '강남', style: chip(true) }, { label: '예산', style: chip(false) }, { label: '5월', style: chip(false) }, { label: '정보 있는 곳', style: chip(false) }],
         groups: [
           grp({ small: true, title: '많이 확인된 곳', rows: [
-            row({ slot: 'rs-c1', src: IMG.couple, name: '강남 A 스튜디오', meta: '확인된 제보 12건', tail: '152~184만원' }),
-            row({ slot: 'rs-c2', src: IMG.arch, name: '서촌 B 스튜디오', meta: '확인된 제보 9건', tail: '138~171만원' }),
-            row({ slot: 'rs-c3', src: IMG.bride, name: '청담 C 스튜디오', meta: '확인된 제보 7건', tail: '165~203만원' })
+            row({ slot: 'rs-c1', src: IMG.couple, name: '강남 A 스튜디오', meta: '실 제보 12건', tail: '152~184만원' }),
+            row({ slot: 'rs-c2', src: IMG.arch, name: '서촌 B 스튜디오', meta: '실 제보 9건', tail: '138~171만원' }),
+            row({ slot: 'rs-c3', src: IMG.bride, name: '청담 C 스튜디오', meta: '실 제보 7건', tail: '165~203만원' })
           ] }),
           grp({ small: true, title: '새로 등록된 곳', rows: [
             row({ slot: 'rs-c4', src: IMG.dress, name: '성수 D 스튜디오', meta: '아직 정보가 적어요 · 3건', tail: '수집 중', tailDim: true }),
@@ -495,7 +495,7 @@ class Component extends DCLogic {
         hero: '어떤 순서로\n볼까요?',
         groups: [grp({ small: true, rows: [
           row({ check: true, name: '추천순', meta: '두 분 조건에 맞는 순서예요' }),
-          row({ check: false, name: '제보 금액 낮은순', meta: '확인된 제보 기준이에요' }),
+          row({ check: false, name: '제보 금액 낮은순', meta: '실 제보 기준이에요' }),
           row({ check: false, name: '제보 금액 높은순' }),
           row({ check: false, name: '많이 확인된 순', meta: '제보 건수가 많은 순서예요' }),
           row({ check: false, name: '최근 등록순' })

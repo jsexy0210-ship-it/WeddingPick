@@ -89,7 +89,7 @@ a:hover{color:#e2564a}
       <div style="flex-shrink:0;padding:0 24px 24px">
         <div style="{{ tocBox }}">
           <span style="{{ t14m }}">조문 15개</span>
-          <span style="{{ t14w }}">목적 · 서비스 성격 · 계정 · Pick과 추천 · 확인된 제보와 제보 · 후기 · 배우자 연결 · 콘텐츠 · 광고 제휴 · 금지행위 · 변경 중단 · 회원탈퇴 · 책임 · 약관 변경 · 문의</span>
+          <span style="{{ t14w }}">목적 · 서비스 성격 · 계정 · Pick과 추천 · 실 제보와 제보 · 후기 · 배우자 연결 · 콘텐츠 · 광고 제휴 · 금지행위 · 변경 중단 · 회원탈퇴 · 책임 · 약관 변경 · 문의</span>
         </div>
       </div>
       <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:24px">
@@ -309,7 +309,7 @@ class Component extends DCLogic {
         { name: '이용약관', sub: 'v0.1 · 시행일 미정', tail: '' },
         { name: '개인정보처리방침', sub: 'v0.1 · 시행일 미정', tail: '' },
         { name: '위치기반서비스 이용약관', sub: '지도 기능 도입 시 적용', tail: '' },
-        { name: '확인된 제보 운영 기준', sub: '수집 · 검증 · 공개 단계', tail: '' },
+        { name: '실 제보 운영 기준', sub: '수집 · 검증 · 공개 단계', tail: '' },
         { name: '오픈소스 라이선스', sub: '', tail: '' },
         { name: '버전 정보', sub: '', tail: 'v1.0.0' }
       ],
@@ -317,13 +317,13 @@ class Component extends DCLogic {
         { title: '제2조 서비스의 성격', items: [
           { no: '1', text: '웨딩픽은 웨딩 관련 정보를 수집하고 확인해 정리하고, 사용자의 선택과 비교를 돕는 서비스예요.' },
           { no: '2', text: '웨딩픽은 업체와의 계약 당사자가 아니에요. 상담 · 계약 · 결제 · 이행 · 환불에 관한 책임은 거래 당사자에게 있어요.' },
-          { no: '3', text: '업체 공식정보, 확인된 제보, 사용자 후기, 웨딩픽 콘텐츠를 성격에 따라 구분해서 보여드려요.' }
+          { no: '3', text: '업체 공식정보, 실 제보, 사용자 후기, 웨딩픽 콘텐츠를 성격에 따라 구분해서 보여드려요.' }
         ] },
         { title: '제4조 Pick · 비교 및 추천', items: [
           { no: '1', text: 'Pick은 관심 있는 업체를 저장하고 비교하기 위한 기능이에요.' },
-          { no: '2', text: '웨딩픽 추천은 사용자가 알려준 조건과 이용 과정에서 확인된 제보를 바탕으로 구성해요.' },
+          { no: '2', text: '웨딩픽 추천은 사용자가 알려준 조건과 이용 과정에서 실 제보를 바탕으로 구성해요.' },
           { no: '3', text: '판단 근거가 부족하면 개인화 결과를 확정된 사실처럼 표시하지 않아요.' },
-          { no: '4', text: '광고비는 웨딩픽 TOP3, 오늘의 Pick, 개인화 추천, 자연 검색순위, 확인된 제보와 후기 순위에 영향을 주지 않아요.' }
+          { no: '4', text: '광고비는 웨딩픽 TOP3, 오늘의 Pick, 개인화 추천, 자연 검색순위, 실 제보와 후기 순위에 영향을 주지 않아요.' }
         ] },
         { title: '제12조 회원탈퇴', items: [
           { no: '1', text: '계정 · 프로필 · Pick · 취향 · 개인 일정과 체크리스트 · 지출은 법령이나 별도 보존 근거가 없으면 삭제해요.' },
@@ -356,14 +356,14 @@ class Component extends DCLogic {
         artFn('제2조 서비스의 성격', false, false),
         artFn('제3조 회원가입 및 계정', false, false),
         artFn('제4조 Pick · 비교 및 추천', false, false),
-        artFn('제5조 확인된 제보 및 제보', false, false),
+        artFn('제5조 실 제보 및 제보', false, false),
         artFn('제9조 광고 · 제휴', true, false),
         artFn('제12조 회원탈퇴', false, false),
         artFn('제15조 문의', false, false)
       ],
       editItems: [
         { no: '1', text: '광고 · 스폰서 · 제휴 콘텐츠는 일반 정보 및 자연 추천과 구분해서 표시합니다.' },
-        { no: '2', text: '광고비는 자연 추천과 확인된 제보의 평가 · 순위에 영향을 주지 않습니다.' },
+        { no: '2', text: '광고비는 자연 추천과 실 제보의 평가 · 순위에 영향을 주지 않습니다.' },
         { no: '3', text: '테스트 단계의 광고 상품과 가격은 검증 목적의 운영안이며 실운영 상품은 별도로 확정합니다.' }
       ],
       versions: [

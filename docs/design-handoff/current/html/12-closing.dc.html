@@ -280,7 +280,7 @@ image-slot::part(empty){display:none !important}
       </div>
       <div style="flex-shrink:0;padding:0 24px 28px">
         <div style="{{ noteBox }}">
-          <span style="{{ t18b2 }}">이 금액은 확인된 제보에 들어가요</span>
+          <span style="{{ t18b2 }}">이 금액은 실 제보에 들어가요</span>
           <span style="{{ t16g }}">업체별 금액 구간에 반영되고, 누가 냈는지는 공개하지 않아요.</span>
         </div>
       </div>
@@ -437,7 +437,7 @@ class Component extends DCLogic {
         ] },
         { title: '이번 주', items: [
           noti('강남 A 스튜디오 제보가 반영됐어요', '이제 Pick 인증 회원이에요', '내 제보 내역으로 이동', '2일 전', false),
-          noti('강남 A 웨딩홀 금액이 바뀌었어요', '1,480~1,820만원 · 확인된 제보 21건', '업체 상세로 이동', '3일 전', false),
+          noti('강남 A 웨딩홀 금액이 바뀌었어요', '1,480~1,820만원 · 실 제보 21건', '업체 상세로 이동', '3일 전', false),
           noti('받을 수 있는 혜택이 2개 남았어요', '9월 30일까지', '혜택 허브로 이동', '4일 전', false),
           noti('9월 정기 점검을 마쳤어요', '3시부터 5시까지 진행했어요', '공지로 이동', '5일 전', false)
         ] }
@@ -450,9 +450,9 @@ class Component extends DCLogic {
         { k: '마지막 확인', v: '2026년 8월 28일' }
       ],
       expoVendors: [
-        { name: '강남 A 웨딩홀', n: '확인된 제보 21건', slot: 'fn-v1', src: IMG.hall, pick: 'Pick함', pickStyle: 'font-size:14px;line-height:19px;font-weight:700;color:' + C + ';white-space:nowrap' },
-        { name: '강남 A 드레스', n: '확인된 제보 14건', slot: 'fn-v2', src: IMG.dress, pick: 'Pick하기', pickStyle: 'font-size:14px;line-height:19px;font-weight:700;color:#868b94;white-space:nowrap' },
-        { name: '서초 B 웨딩홀', n: '확인된 제보 9건', slot: 'fn-v3', src: IMG.arch, pick: 'Pick하기', pickStyle: 'font-size:14px;line-height:19px;font-weight:700;color:#868b94;white-space:nowrap' }
+        { name: '강남 A 웨딩홀', n: '실 제보 21건', slot: 'fn-v1', src: IMG.hall, pick: 'Pick함', pickStyle: 'font-size:14px;line-height:19px;font-weight:700;color:' + C + ';white-space:nowrap' },
+        { name: '강남 A 드레스', n: '실 제보 14건', slot: 'fn-v2', src: IMG.dress, pick: 'Pick하기', pickStyle: 'font-size:14px;line-height:19px;font-weight:700;color:#868b94;white-space:nowrap' },
+        { name: '서초 B 웨딩홀', n: '실 제보 9건', slot: 'fn-v3', src: IMG.arch, pick: 'Pick하기', pickStyle: 'font-size:14px;line-height:19px;font-weight:700;color:#868b94;white-space:nowrap' }
       ],
       reportReasons: [
         { name: '광고나 홍보 링크가 있어요', desc: '외부 연락처 · 할인 유도 링크', mark: mark(true) },
@@ -494,7 +494,7 @@ class Component extends DCLogic {
       ],
       kept: [
         { name: '작성한 후기 2건', desc: '나를 알아볼 수 없도록 분리해 유지될 수 있어요' },
-        { name: '제보로 확인된 제보 4건', desc: '업체별 금액 구간에만 반영돼요' },
+        { name: '제보로 실 제보 4건', desc: '업체별 금액 구간에만 반영돼요' },
         { name: '신고 · 분쟁 기록', desc: '처리와 법적 필요 기간 동안 따로 보관해요' },
         { name: '법령상 보존 의무 정보', desc: '정해진 기간만 따로 보관한 뒤 지워요' }
       ]
