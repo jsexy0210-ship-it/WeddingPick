@@ -11,10 +11,10 @@ import { paidPriceSchema } from './payment-proofs';
  * 한 줄의 위계는 정책이 정했다(v3.10 디자인 §): `대표 이미지 → 추천 이유 →
  * 업체명 → 핵심 조건 → 실제 결제 데이터 → 현재 혜택 → Pick`.
  *
- * **이 계약에 이미지와 혜택 칸이 없다.** 둘 다 아직 우리가 가진 자료가 아니다 —
- * 업체 제공 이미지도, 혜택·이벤트 표도 만들어지지 않았다. 칸을 미리 뚫어두고
- * 늘 null을 채워 보내면 화면은 그 칸을 그리려 들고, 그러다 빈 회색 자리가
- * 남는다(정책이 금지한 그 화면이다). 자료가 생기는 날 칸을 연다.
+ * **혜택 칸은 없다.** 아직 우리가 가진 자료가 아니다. 칸을 미리 뚫어두고 늘
+ * null을 채워 보내면 화면은 그 칸을 그리려 들고, 그러다 빈 회색 자리가 남는다
+ * (정책이 금지한 그 화면이다). 이미지 칸은 vendor_images가 생기면서 열었다
+ * (2026-09-08) — 없으면 카테고리 기본으로 대체한다.
  */
 export const top3ReasonSchema = z.enum(TOP3_REASONS);
 
@@ -23,6 +23,8 @@ export const top3ItemSchema = z.object({
   name: z.string().min(1),
   category: vendorCategorySchema,
   region: z.string().min(1),
+  /** 승인된 대표 이미지. 없으면 null — 카테고리 기본으로 대체한다. */
+  imageUrl: z.string().nullable(),
   /**
    * 왜 이 곳인지. **비어 있을 수 없다.**
    *

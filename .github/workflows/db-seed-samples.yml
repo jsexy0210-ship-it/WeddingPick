@@ -1,4 +1,6 @@
-# 업종별 샘플 업체 100곳씩을 스테이징 DB에 넣거나 걷어낸다 — 화면 검수용(2026-09-08 오더).
+# 업종별 샘플 업체 20곳씩을 스테이징 DB에 넣거나 걷어낸다 — 화면 검수용(2026-09-08 오더).
+# images = 샘플 업체 사진을 카카오(다음) 이미지 검색 결과로 바꾼다(검수용 · 출시 전 교체).
+#   로그인용 카카오 앱의 REST API 키를 infra/render-env.yml에서 읽어 쓴다 — 별도 시크릿 없음.
 #
 # 저장소의 apps/api/src/seed-samples.ts를 그대로 쓴다. 고정 시드라 몇 번을 돌려도
 # 같은 업체만 있고, remove는 vendor_source_records(source_key='sample') 표시를
@@ -9,10 +11,10 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'seed = 넣는다 / remove = 걷어낸다'
+        description: 'seed = 넣는다 / remove = 걷어낸다 / images = 사진을 카카오 검색 결과로'
         type: choice
         default: seed
-        options: [seed, remove]
+        options: [seed, remove, images]
 
 permissions:
   contents: read
@@ -34,8 +36,12 @@ jobs:
           STORAGE_DRIVER: local
           MODE: ${{ github.event.inputs.mode }}
         run: |
+          # 공개 클라이언트 키(EXPO_PUBLIC_KAKAO_CLIENT_ID와 같은 값) — 한 곳(infra/render-env.yml)에서 읽는다.
+          export KAKAO_APP_KEY=$(grep -m1 '^ *KAKAO_APP_KEY:' infra/render-env.yml | awk '{print $2}')
           if [ "$MODE" = "remove" ]; then
             npm run seed:samples --workspace @weddingpick/api -- --remove --yes
+          elif [ "$MODE" = "images" ]; then
+            npm run seed:sample-images --workspace @weddingpick/api -- --yes
           else
             npm run seed:samples --workspace @weddingpick/api -- --yes
           fi

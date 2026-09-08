@@ -27,13 +27,11 @@ export function VendorList({ vendors, onPressVendor }: VendorListProps) {
 
   return (
     <ThemedView style={styles.list}>
-      {vendors.map((vendor, index) => (
+      {vendors.map((vendor) => (
         <Fragment key={vendor.id}>
           <Row vendor={vendor} onPress={() => onPressVendor(vendor.id)} />
-          {/* 마지막 줄 아래에는 선을 긋지 않는다. 목록이 끝났는데 선이 남으면 다음이 있는 것처럼 보인다. */}
-          {index === vendors.length - 1 ? null : (
-            <View style={[styles.divider, { backgroundColor: theme.border }]} />
-          )}
+          {/* 시안(03-home)은 마지막 행 아래에도 선을 긋는다 — 행마다 hr이 붙는다. */}
+          <View style={[styles.divider, { backgroundColor: theme.border }]} />
         </Fragment>
       ))}
     </ThemedView>
@@ -50,7 +48,7 @@ function Row({ vendor, onPress }: { vendor: VendorSummary; onPress: () => void }
       onPress={onPress}
       style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
       <View style={styles.thumb}>
-        <CategoryImage />
+        <CategoryImage uri={vendor.imageUrl} label={vendor.name} />
       </View>
 
       <ThemedView style={styles.body}>
@@ -78,13 +76,13 @@ function Row({ vendor, onPress }: { vendor: VendorSummary; onPress: () => void }
 }
 
 const styles = StyleSheet.create({
-  list: { gap: 2 },
+  list: { gap: Spacing.half },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.three - 4,
     minHeight: Layout.rowMinHeight,
-    paddingVertical: 12,
+    paddingVertical: Layout.rowPaddingY,
   },
   pressed: { opacity: 0.8 },
   thumb: { width: 52, height: 52, borderRadius: Radius.small, overflow: 'hidden' },

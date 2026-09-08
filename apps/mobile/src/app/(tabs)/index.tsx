@@ -3,9 +3,16 @@ import type {
   CurrentUser,
   VendorSummary,
 } from '@weddingpick/api-contract';
-import { hasUnread, lifecycle, TERMS, VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
+import {
+  hasUnread,
+  lifecycle,
+  MANY_CONFIRMED,
+  TERMS,
+  VENDOR_CATEGORY_LABEL,
+  withObject,
+} from '@weddingpick/domain';
 import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -14,6 +21,7 @@ import {
   ActionButton,
   Layout,
   MaxContentWidth,
+  ProductSymbol,
   Radius,
   Spacing,
   ThemedText,
@@ -39,7 +47,7 @@ import { isWebShellScreen } from '@/features/webshell/config';
 import { WebShellView } from '@/features/webshell/WebShellView';
 
 /**
- * 홈. 디자인 확정본 `웨딩픽 홈 C-1 상태`.
+ * 홈. 디자인 확정본 `웨딩픽 홈 C-1 상태`(`03-home.dc.html`).
  *
  * **모든 상태가 상황 → 추천 → 근거 → Pick 한 흐름을 따른다.** 상황은 D-day와
  * 현황판, 추천은 오늘의 Pick, 근거는 그 안의 금액 줄, 행동은 비교 하나다. 가격
@@ -197,6 +205,8 @@ function MemberHome({
   const stage = lifecycle(me?.weddingDate ?? null);
   const groups = candidates?.groups ?? [];
   const focusGroup = groups.find((group) => group.category === view.focus) ?? null;
+  const focusLabel =
+    focusGroup?.categoryLabel ?? (view.focus === null ? null : VENDOR_CATEGORY_LABEL[view.focus]);
   const upNext = nextUpCategory(groups, view.focus);
   const decided = groups.filter((group) => group.decidedVendorId !== null);
 
@@ -206,11 +216,10 @@ function MemberHome({
         <ThemedView style={styles.who}>
           <Avatar name={me?.displayName ?? null} role="primary" />
           {me?.spouseLinked === true && (
-            <Avatar name={null} role="secondary" />
+            <Avatar name={me.partnerDisplayName} role="secondary" />
           )}
-          <ThemedText type="t6" themeColor="textSecondary" numberOfLines={1}>
-            {me?.displayName ?? '우리'}
-            {me?.spouseLinked === true ? ' · 함께 준비 중' : ''}
+          <ThemedText type="body" themeColor="textSecondary" numberOfLines={1}>
+            {identityLine(me)}
           </ThemedText>
         </ThemedView>
         <ThemedText type="t1">
@@ -249,7 +258,11 @@ function MemberHome({
         /* 추천 — 오늘의 Pick. 근거와 행동이 이 안에 함께 있다. */
         <ThemedView style={styles.block}>
           <TodaysPick
-            categoryLabel={focusGroup?.categoryLabel ?? null}
+            /*
+             * 시안 2(후보 없음)는 부제를 두지 않는다 — 바로 아래 «다음 준비» 카드가
+             * «{업종} 먼저 정하기»로 같은 말을 하기 때문이다.
+             */
+            subtitle={view.state === 'empty' ? null : pickSubtitle(view.state, focusLabel)}
             vendors={recommended}
             comparable={view.comparable}
             onPressVendor={openVendor}
@@ -275,7 +288,7 @@ function MemberHome({
               <ThemedView type="backgroundElement" style={styles.note}>
                 <ThemedText type="t5">정보 수집 중</ThemedText>
                 <ThemedText type="body" themeColor="textSecondary">
-                  정보가 더 모이면 금액 범위를 보여드려요
+                  정보가 더 모이면 금액 범위를 보여드려요.
                 </ThemedText>
               </ThemedView>
             </ThemedView>
@@ -286,15 +299,23 @@ function MemberHome({
         <Section title="정한 곳">
           <ThemedView style={styles.decidedList}>
             {decided.map((group) => (
-              <ThemedView key={group.category} style={styles.decidedRow}>
-                <ThemedText type="t6" themeColor="textSecondary" style={styles.decidedCategory}>
-                  {group.categoryLabel}
-                </ThemedText>
-                <ThemedText type="t5" numberOfLines={1} style={styles.grow}>
-                  {group.candidates.find((row) => row.vendorId === group.decidedVendorId)
-                    ?.vendorName ?? '결정 완료'}
-                </ThemedText>
-              </ThemedView>
+              <Fragment key={group.category}>
+                <ThemedView style={styles.decidedRow}>
+                  <ThemedText type="t6" themeColor="textSecondary" style={styles.decidedCategory}>
+                    {group.categoryLabel}
+                  </ThemedText>
+                  <ThemedText type="t5" numberOfLines={1} style={styles.grow}>
+                    {group.candidates.find((row) => row.vendorId === group.decidedVendorId)
+                      ?.vendorName ?? '결정 완료'}
+                  </ThemedText>
+                  {/*
+                    시안은 오른쪽에 정한 금액(«1,620만원»)을 둔다. 후보 목록 계약은
+                    가격을 싣지 않아(Level 3 잠금 우회 방지) 지금은 그 자리가 없다 —
+                    금액이 계약에 실리면 여기에 t6 · bold · tabular로 붙인다.
+                  */}
+                </ThemedView>
+                <Divider />
+              </Fragment>
             ))}
           </ThemedView>
         </Section>
@@ -302,9 +323,19 @@ function MemberHome({
         /* 비어있는 상태 — 지목된 업종을 카드로 보여 첫 발을 내딛게 한다. */
         <Section title="다음 준비">
           <NextStepCard
-            categoryLabel={focusGroup?.categoryLabel ?? VENDOR_CATEGORY_LABEL[view.focus]}
+            category={view.focus}
+            categoryLabel={focusLabel ?? VENDOR_CATEGORY_LABEL[view.focus]}
+            daysLeft={stage.daysLeft}
             onPress={() => router.push(`/pick?category=${view.focus!}`)}
           />
+        </Section>
+      ) : !view.comparable ? (
+        /*
+         * 시안 3 — 후보는 있는데 확인된 정보가 없다. 추천이 제보를 권하는 동안
+         * 그 아래에는 조건 없이 보여줄 수 있는 «많이 확인된 곳»이 온다.
+         */
+        <Section title={MANY_CONFIRMED}>
+          <VendorList vendors={popular} onPressVendor={openVendor} />
         </Section>
       ) : upNext === null ? null : (
         /* 진행 중 — 다음 업종을 한 줄로, D-day를 붙여서. */
@@ -317,28 +348,51 @@ function MemberHome({
               {upNext.categoryLabel}
             </ThemedText>
             {stage.daysLeft !== null && (
-              <ThemedText type="t7" themeColor="textAssistive">
+              <ThemedText type="t6" numeric themeColor="textAssistive">
                 D-{stage.daysLeft}
               </ThemedText>
             )}
-            <ThemedText type="t6" themeColor="textAssistive">
-              ›
-            </ThemedText>
+            <Chevron />
           </Pressable>
         </Section>
       )}
 
       {view.state === 'taste' ? null : (
-        <>
-          <Band />
-          <ContentSection
-            title={me?.spouseLinked === true ? '두 분을 위한 웨딩 정보' : '웨딩 정보'}
-            items={content}
-          />
-        </>
+        <ContentSection
+          title={me?.spouseLinked === true ? '두 분을 위한 웨딩 정보' : '웨딩 정보'}
+          items={content}
+        />
       )}
     </>
   );
+}
+
+/**
+ * 히어로의 이름 줄. 배우자가 연결돼 있고 이름을 정했으면 «지수 · 준호».
+ *
+ * 이름이 없는 사람에게 없는 이름을 지어내 부르지 않는다 — 그때는 «우리»다.
+ */
+function identityLine(me: CurrentUser | null): string {
+  const name = me?.displayName ?? '우리';
+
+  if (me?.spouseLinked === true && me.partnerDisplayName !== null) {
+    return `${name} · ${me.partnerDisplayName}`;
+  }
+
+  return name;
+}
+
+/**
+ * 오늘의 Pick 부제. 시안 4는 «스튜디오를 정할 차례예요», 시안 5(결정 직후)는
+ * «이제 드레스를 볼 차례예요» — 방금 하나를 끝낸 사람에게는 다음이 이어진다는
+ * 말이 먼저다.
+ */
+function pickSubtitle(state: HomeView['state'], categoryLabel: string | null): string | null {
+  if (categoryLabel === null) return null;
+
+  return state === 'decided'
+    ? `이제 ${withObject(categoryLabel)} 볼 차례예요`
+    : `${withObject(categoryLabel)} 정할 차례예요`;
 }
 
 /* ---------------------------------------------------------------- 공통 조각 */
@@ -354,8 +408,8 @@ function Header({ unread, onPressBell }: { unread: number; onPressBell: () => vo
         accessibilityRole="button"
         accessibilityLabel={hasUnread({ unread, total: unread }) ? `알림 ${unread}건` : '알림'}
         onPress={onPressBell}
-        style={styles.bell}>
-        <ThemedText type="t4">🔔</ThemedText>
+        style={({ pressed }) => [styles.bell, pressed && styles.pressed]}>
+        <ProductSymbol name="bell" size={Layout.iconTab} color={theme.textSecondary} />
         {/* 개수를 적지 않는다. 세는 것이 목적이 아니다. */}
         {hasUnread({ unread, total: unread }) ? (
           <View style={[styles.bellDot, { backgroundColor: theme.negative }]} />
@@ -382,7 +436,12 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-/** 콘텐츠가 없으면 섹션째 접는다 — 빈 자리를 제목으로 알리지 않는다. */
+/**
+ * 콘텐츠가 없으면 섹션째 접는다 — 빈 자리를 제목으로 알리지 않는다.
+ *
+ * 앞의 밴드도 함께 접는다. 섹션이 없는데 밴드만 남으면 화면 끝에 회색 띠 하나가
+ * 이유 없이 놓인다(시안 2·3에는 이 섹션도 밴드도 없다).
+ */
 function ContentSection({
   title,
   items,
@@ -393,9 +452,12 @@ function ContentSection({
   if (items.length === 0) return null;
 
   return (
-    <Section title={title}>
-      <WeddingContent items={items} onPressItem={(id) => router.push(`/search?content=${id}`)} />
-    </Section>
+    <>
+      <Band />
+      <Section title={title}>
+        <WeddingContent items={items} onPressItem={(id) => router.push(`/search?content=${id}`)} />
+      </Section>
+    </>
   );
 }
 
@@ -404,6 +466,20 @@ function Band() {
   const theme = useTheme();
 
   return <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} />;
+}
+
+/** 행 아래 1px 선. 시안은 마지막 행 아래에도 긋는다. */
+function Divider() {
+  const theme = useTheme();
+
+  return <View style={[styles.divider, { backgroundColor: theme.border }]} />;
+}
+
+/** 행 끝 chevron. 18 · textDisabled — 핸드오프 값 그대로다. */
+function Chevron() {
+  const theme = useTheme();
+
+  return <ProductSymbol name="chevronRight" size={Layout.iconInline} color={theme.textDisabled} />;
 }
 
 function Avatar({ name, role = 'primary' }: { name: string | null; role?: 'primary' | 'secondary' }) {
@@ -421,7 +497,7 @@ function Avatar({ name, role = 'primary' }: { name: string | null; role?: 'prima
       ]}>
       <ThemedText
         type="t7"
-        themeColor={isSecondary ? 'textAssistive' : 'tint'}
+        themeColor={isSecondary ? 'textSecondary' : 'tint'}
         style={styles.avatarLabel}>
         {(name ?? '배').slice(0, 1)}
       </ThemedText>
@@ -432,12 +508,19 @@ function Avatar({ name, role = 'primary' }: { name: string | null; role?: 'prima
 /**
  * 빈 상태 "다음 준비" 카드. 후보가 하나도 없을 때 지목된 업종을 강조해서 보여준다.
  * 누르면 해당 업종 Pick 화면으로 이동한다.
+ *
+ * 보조 줄은 웨딩홀에만 있다 — «날짜와 예산이 여기서 정해져요»는 웨딩홀이 먼저인
+ * 이유이고, 다른 업종에는 그런 이유를 지어 붙이지 않는다.
  */
 function NextStepCard({
+  category,
   categoryLabel,
+  daysLeft,
   onPress,
 }: {
+  category: string;
   categoryLabel: string;
+  daysLeft: number | null;
   onPress: () => void;
 }) {
   const theme = useTheme();
@@ -453,15 +536,20 @@ function NextStepCard({
       ]}>
       <ThemedView style={styles.nextCardBody}>
         <ThemedText type="t5" numberOfLines={1}>
-          {categoryLabel}
+          {categoryLabel} 먼저 정하기
         </ThemedText>
-        <ThemedText type="t7" themeColor="textAssistive" numberOfLines={1}>
-          정할 때마다 쌓여요
-        </ThemedText>
+        {category === 'hall' ? (
+          <ThemedText type="t7" themeColor="textAssistive" numberOfLines={1}>
+            날짜와 예산이 여기서 정해져요
+          </ThemedText>
+        ) : null}
       </ThemedView>
-      <ThemedText type="t6" themeColor="textAssistive">
-        ›
-      </ThemedText>
+      {daysLeft !== null && (
+        <ThemedText type="t6" numeric themeColor="textAssistive">
+          D-{daysLeft}
+        </ThemedText>
+      )}
+      <Chevron />
     </Pressable>
   );
 }
@@ -474,6 +562,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
 
+  /* 시안 head: 56 · padding 0 20 0 24. 오른쪽이 4 좁은 것은 40 원형 버튼 안의 24 아이콘이 거터선에 앉게 하려는 것이다. */
   header: {
     height: Layout.navBar,
     flexDirection: 'row',
@@ -483,8 +572,9 @@ const styles = StyleSheet.create({
     paddingRight: 20,
   },
   bell: {
-    minWidth: Layout.touchTarget,
-    minHeight: Layout.touchTarget,
+    width: Layout.iconButton,
+    height: Layout.iconButton,
+    borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -496,11 +586,12 @@ const styles = StyleSheet.create({
    */
   content: { paddingBottom: Spacing.six },
 
+  /* 시안: padding 20 24 24 · gap 10. */
   hero: {
     paddingHorizontal: Layout.gutter,
     paddingTop: 20,
     paddingBottom: Layout.gutter,
-    gap: 10,
+    gap: Layout.cardGap,
   },
   who: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   avatar: {
@@ -516,18 +607,19 @@ const styles = StyleSheet.create({
   block: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionGap },
   section: { gap: Layout.sectionHeadGap },
   band: { height: Layout.sectionBand, marginBottom: Layout.sectionGap },
+  divider: { height: 1 },
 
   pressed: { opacity: 0.8 },
 
-  note: { borderRadius: Radius.medium, padding: 20, gap: Spacing.two },
+  note: { borderRadius: Radius.medium, padding: Layout.cardPadding, gap: Spacing.two },
 
-  decidedList: { gap: 2 },
+  decidedList: { gap: Spacing.half },
   decidedRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.three - 4,
     minHeight: Layout.rowMinHeight,
-    paddingVertical: 12,
+    paddingVertical: Layout.rowPaddingY,
   },
   decidedCategory: { width: 76 },
   grow: { flex: 1, minWidth: 0 },
@@ -537,15 +629,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.three - 4,
     minHeight: Layout.rowMinHeight,
-    paddingHorizontal: 2,
+    paddingHorizontal: Spacing.half,
   },
+  /* 시안: padding 16 18 · gap 12 · min-height 56 · radius 10. */
   nextCard: {
     flexDirection: 'row',
     alignItems: 'center',
+    minHeight: Layout.rowMinHeight,
     borderRadius: Radius.medium,
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: 18,
     paddingVertical: Spacing.three,
-    gap: Spacing.two,
+    gap: Spacing.three - 4,
   },
-  nextCardBody: { flex: 1, gap: 3 },
+  nextCardBody: { flex: 1, minWidth: 0, gap: Spacing.half },
 });

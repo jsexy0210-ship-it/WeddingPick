@@ -23,6 +23,7 @@ type CandidateRow = {
   name: string;
   category: VendorCategory;
   region: string;
+  image_url: string | null;
   confirmed_count: string;
   recent_count: string;
   paid_amounts: string[] | null;
@@ -90,6 +91,9 @@ export function registerRecommendationRoutes(app: FastifyInstance, context: AppC
        */
       `SELECT
          v.id, v.name, v.category, v.region,
+         (SELECT i.source_url FROM structured.vendor_images i
+            WHERE i.vendor_id = v.id AND i.status = 'approved' AND i.source_url IS NOT NULL
+            ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url,
          (SELECT count(*) FROM structured.usable_payment_proofs p
           WHERE p.vendor_id = v.id AND p.paid_at >= now() - ($3 || ' months')::interval)
            AS confirmed_count,
@@ -135,6 +139,7 @@ export function registerRecommendationRoutes(app: FastifyInstance, context: AppC
         name: row.name,
         category: row.category,
         region: row.region,
+        imageUrl: row.image_url ?? null,
         reasons: reasonsFor(facts),
         confirmedCount: facts.confirmedCount,
         paidPrice,

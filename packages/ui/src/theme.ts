@@ -299,6 +299,16 @@ export const Layout = {
   listGap: 20,
   /** SEED 핸드오프: 72 + Safe Area. */
   tabBar: 72,
+  /** 탭 바 위 패딩. spec/tokens.json tabBar.paddingTop. */
+  tabBarPaddingTop: 9,
+  /** 탭 항목 최소 높이. spec/tokens.json tabBar.itemMinHeight. */
+  tabItemMinHeight: 52,
+  /** 탭 아이콘과 라벨 사이. spec/tokens.json tabBar.itemGap. */
+  tabItemGap: 3,
+  /** Pick 탭 점 배지 지름·테두리·위치. spec/tokens.json tabBar.pickDot. */
+  tabPickDot: 7,
+  tabPickDotBorder: 1.5,
+  tabPickDotOffset: -1,
   /** SEED 컨트롤 높이. 화면당 Primary CTA는 xlarge다. */
   controlMedium: 40,
   controlLarge: 48,
@@ -309,6 +319,12 @@ export const Layout = {
   chip: 36,
   /** 탭·내비게이션 아이콘. spec/tokens.json size.iconTab. */
   iconTab: 24,
+  /** 헤더 오른쪽 아이콘 버튼 한 변(40, 원형). spec/tokens.json size.iconButton. */
+  iconButton: 40,
+  /** 행 끝 chevron 한 변. spec/tokens.json size.iconInline. */
+  iconInline: 18,
+  /** 칩 삭제 X 한 변. spec/tokens.json size.iconChipClose. */
+  iconChipClose: 14,
 } as const;
 
 /**

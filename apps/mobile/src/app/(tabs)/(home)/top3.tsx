@@ -12,6 +12,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getTop3 } from '@/api/client';
+import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import {
   ActionButton,
   EmptyView,
@@ -25,6 +26,7 @@ import {
   ThemedView,
   useTheme,
   CategoryOrbitLoader,
+  VendorImage,
 } from '@weddingpick/ui';
 
 /**
@@ -120,11 +122,24 @@ export default function Top3Screen() {
   );
 }
 
+/* 검색 카드와 같은 이미지 높이(WP-SRCH-004). */
+const CARD_IMAGE_HEIGHT = 168;
+
 function Top3Card({ rank, item }: { rank: number; item: Top3Item }) {
   const theme = useTheme();
 
   return (
     <ThemedView type="backgroundElement" style={styles.card}>
+      {/* 대표 이미지 — 검색 카드와 같은 2:1. 없으면 카테고리 기본. */}
+      <View style={styles.cardImage}>
+        <VendorImage
+          source={item.imageUrl ? { uri: item.imageUrl } : undefined}
+          category={vendorImageCategory(item.category)}
+          width={undefined}
+          height={CARD_IMAGE_HEIGHT}
+          radius={Radius.medium}
+        />
+      </View>
       <View style={styles.cardHeader}>
         <View style={[styles.rankBadge, { backgroundColor: theme.tint }]}>
           <ThemedText type="badge" themeColor="onTint">
@@ -177,6 +192,7 @@ function Top3Card({ rank, item }: { rank: number; item: Top3Item }) {
 }
 
 const styles = StyleSheet.create({
+  cardImage: { width: '100%', height: CARD_IMAGE_HEIGHT, borderRadius: Radius.medium, overflow: 'hidden' },
   recommending: { paddingVertical: Spacing.five },
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },

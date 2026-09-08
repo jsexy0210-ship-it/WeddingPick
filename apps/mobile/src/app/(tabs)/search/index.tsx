@@ -10,6 +10,7 @@ import {
   NOT_ENOUGH_DATA,
   rangeLabel,
   STILL_COLLECTING,
+  TERMS,
   type VendorCategory,
   VENDOR_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
@@ -29,7 +30,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getTop3, listVendorRegions, searchVendors } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
-import { categoryIconKind } from '@/features/search/category-icon-kind';
+import {
+  addRecentSearch,
+  clearRecentSearches,
+  loadRecentSearches,
+  removeRecentSearch,
+} from '@/features/search/recent-searches';
 import { SortSheet } from '@/features/search/sort-sheet';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import {
@@ -40,6 +46,7 @@ import {
   Layout,
   LineHeight,
   MaxContentWidth,
+  ProductSymbol,
   Radius,
   Spacing,
   ThemedText,
@@ -49,11 +56,26 @@ import {
   useTheme,
   ListSkeleton,
   Spinner,
-  CategoryIcon,
 } from '@weddingpick/ui';
 
-/** 검색은 자주 쓰는 분류부터 보여준다. 사업계획서 6번의 확장 순서와 같다. */
-const CATEGORY_ORDER: VendorCategory[] = [...VENDOR_CATEGORIES];
+/**
+ * 검색은 자주 쓰는 분류부터 보여준다. 사업계획서 6번의 확장 순서와 같다.
+ * «기타»는 격자에 두지 않는다 — 고를 이유를 설명할 수 없는 칸이다.
+ */
+const CATEGORY_ORDER: VendorCategory[] = VENDOR_CATEGORIES.filter((c) => c !== 'etc');
+
+/** 격자는 2열. 행 단위로 그려야 두 칸의 폭과 gap이 정확히 맞는다. */
+const CATEGORY_ROWS: VendorCategory[][] = CATEGORY_ORDER.reduce<VendorCategory[][]>(
+  (rows, category, i) => {
+    if (i % 2 === 0) rows.push([category]);
+    else rows[rows.length - 1]!.push(category);
+    return rows;
+  },
+  []
+);
+
+/** 0~2건은 금액 구간을 비공개한다(CLAUDE.md §3 «수집 중»). */
+const COLLECTING_LABEL = '수집 중';
 
 /** 글자를 칠 때마다 서버를 부르지 않는다. */
 const DEBOUNCE_MS = 350;
@@ -102,11 +124,12 @@ export default function SearchScreen() {
   const [top3, setTop3] = useState<Top3Response | null>(null);
   /** 정렬 시트(WP-SRCH-006)가 떠 있는가. */
   const [sortOpen, setSortOpen] = useState(false);
-  /**
-   * 최근 검색. 제출한 검색어를 기억한다.
-   * 영구 보존은 다음 단계(AsyncStorage)에서 한다.
-   */
+  /** 최근 검색. 자동완성 화면과 같은 저장소(`features/search/recent-searches`)를 본다. */
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+
+  useEffect(() => {
+    loadRecentSearches().then(setRecentSearches);
+  }, []);
 
   const requestId = useRef(0);
 
@@ -204,8 +227,7 @@ export default function SearchScreen() {
     const trimmed = q.trim();
     if (!trimmed) return;
 
-    // 최근 검색에 추가 (중복 제거, 최신 우선, 최대 10개)
-    setRecentSearches((prev) => [trimmed, ...prev.filter((s) => s !== trimmed)].slice(0, 10));
+    addRecentSearch(trimmed, recentSearches).then(setRecentSearches);
     setFilters((current) => ({ ...current, q: trimmed }));
     setViewState('results');
     setInputFocused(false);
@@ -243,9 +265,48 @@ export default function SearchScreen() {
     setPickedCategory(vendor.category);
   }
 
+  // ─── 검색창 ───────────────────────────────────────────────────────────────
+
+  /**
+   * 검색창. 홈에서는 스크롤 콘텐츠 맨 위에, 결과에서는 헤더에 앉는다 — 목업
+   * 9a(홈)의 헤더는 제목과 알림 벨뿐이다.
+   */
+  function renderSearchBox() {
+    return (
+      <View style={[styles.searchBox, { backgroundColor: theme.backgroundSelected }]}>
+        <ProductSymbol name="magnifier" size={Layout.iconTab} color={theme.textAssistive} />
+        <TextInput
+          style={[styles.searchInput, { color: theme.text }]}
+          placeholder="업체나 지역을 검색해보세요"
+          placeholderTextColor={theme.textAssistive}
+          value={filters.q}
+          onChangeText={(text) => setFilters((current) => ({ ...current, q: text }))}
+          onFocus={() => setInputFocused(true)}
+          onBlur={() => setInputFocused(false)}
+          onSubmitEditing={() => submitSearch(filters.q)}
+          returnKeyType="search"
+          autoCorrect={false}
+          accessibilityLabel="업체 이름 검색"
+        />
+        {viewState === 'results' ? (
+          <Pressable accessibilityRole="button" onPress={goHome} style={styles.cancelBtn}>
+            <ThemedText type="t6" themeColor="textSecondary">취소</ThemedText>
+          </Pressable>
+        ) : null}
+      </View>
+    );
+  }
+
   // ─── 홈 화면 ──────────────────────────────────────────────────────────────
 
+  /**
+   * 목업 9a. 검색창 → 카테고리 → 밴드 → 최근 검색 → 지금 많이 찾는 곳.
+   * 비교함 트레이는 여기 없다 — 결과 상태에서만 뜬다.
+   */
   function renderHome() {
+    const hasRecent = recentSearches.length > 0;
+    const hasTrend = top3 !== null && top3.items.length > 0;
+
     return (
       <ScrollView
         style={styles.scroll}
@@ -253,105 +314,147 @@ export default function SearchScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
 
-        {/* 카테고리 그리드 — 2열 */}
-        <View style={styles.homeSection}>
+        {/* 검색창 — 목업: padding 4 24 24 */}
+        <View style={styles.searchBlock}>
+          {renderSearchBox()}
+          {renderSuggestions()}
+        </View>
+
+        {/* 카테고리 — 2열 격자, gap 11 */}
+        <View style={styles.section}>
           <ThemedText type="t4">카테고리</ThemedText>
           <View style={styles.categoryGrid}>
-            {CATEGORY_ORDER.map((category) => (
-              <Pressable
-                key={category}
-                accessibilityRole="button"
-                style={[styles.categoryCell, { backgroundColor: theme.backgroundElement }]}
-                onPress={() => {
-                  setFilters((current) => ({ ...current, category }));
-                  setViewState('results');
-                }}>
-                {/* 업종 아이콘(WP-ST-016) — 순회 로딩과 같은 글리프. 기타는 글리프가 없다. */}
-                {categoryIconKind(category) ? (
-                  <CategoryIcon kind={categoryIconKind(category)!} size={24} color={theme.textSecondary} />
-                ) : null}
-                <ThemedText type="t5">{VENDOR_CATEGORY_LABEL[category]}</ThemedText>
-              </Pressable>
+            {CATEGORY_ROWS.map((row) => (
+              <View key={row.join('-')} style={styles.categoryRow}>
+                {row.map((category) => (
+                  <Pressable
+                    key={category}
+                    accessibilityRole="button"
+                    style={[styles.categoryCell, { backgroundColor: theme.backgroundElement }]}
+                    onPress={() => {
+                      setFilters((current) => ({ ...current, category }));
+                      setViewState('results');
+                    }}>
+                    {/*
+                      업종별 «확인된 정보 N건»은 아직 서버가 주지 않는다 — 지어내지
+                      않고 이름만 적는다. 엔드포인트가 생기면 t7 textAssistive 한 줄을 붙인다.
+                    */}
+                    <ThemedText type="t5" numberOfLines={1}>
+                      {VENDOR_CATEGORY_LABEL[category]}
+                    </ThemedText>
+                  </Pressable>
+                ))}
+                {row.length === 1 ? <View style={styles.categoryCellEmpty} /> : null}
+              </View>
             ))}
           </View>
         </View>
 
-        {/* 최근 검색 */}
-        {recentSearches.length > 0 ? (
-          <>
-            <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} />
-            <View style={styles.homeSection}>
-              <View style={styles.sectionRow}>
-                <ThemedText type="t4">최근 검색</ThemedText>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => setRecentSearches([])}>
-                  <ThemedText type="t7" themeColor="textAssistive">전체 삭제</ThemedText>
-                </Pressable>
-              </View>
-              <View style={styles.chipRow}>
-                {recentSearches.map((term) => (
-                  <Pressable
-                    key={term}
-                    accessibilityRole="button"
-                    onPress={() => submitSearch(term)}
-                    style={[styles.recentChip, { borderColor: theme.border }]}>
-                    <ThemedText type="t6">{term}</ThemedText>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-          </>
+        {/* 섹션 밴드 — 카테고리와 그 아래를 가른다. 아래에 아무것도 없으면 두지 않는다. */}
+        {hasRecent || hasTrend ? (
+          <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} />
         ) : null}
 
-        {/* 많이 확인된 곳 */}
-        {top3 && top3.items.length > 0 ? (
-          <>
-            <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} />
-            <View style={styles.homeSection}>
-              <ThemedText type="t4">많이 확인된 곳</ThemedText>
-              {top3.items.map((item, idx) => (
-                <View key={item.vendorId}>
+        {/* 최근 검색 — 칩 하나마다 X로 그 하나만 지운다 */}
+        {hasRecent ? (
+          <View style={[styles.section, styles.sectionAfterBand]}>
+            <View style={styles.sectionRow}>
+              <ThemedText type="t4">최근 검색</ThemedText>
+              <Pressable
+                accessibilityRole="button"
+                hitSlop={Spacing.two}
+                onPress={() => clearRecentSearches().then(() => setRecentSearches([]))}>
+                <ThemedText type="t7" themeColor="textAssistive" style={styles.bold}>
+                  전체 삭제
+                </ThemedText>
+              </Pressable>
+            </View>
+            <View style={styles.chipRow}>
+              {recentSearches.map((term) => (
+                <View
+                  key={term}
+                  style={[styles.recentChip, { backgroundColor: theme.backgroundSelected }]}>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={`${item.name} 자세히 보기`}
-                    onPress={() =>
-                      router.push({
-                        pathname: '/search/[vendorId]',
-                        params: { vendorId: item.vendorId, reasons: item.reasons.join(',') },
-                      })
-                    }>
-                    <View style={styles.trendRow}>
-                      <ThemedText type="t6" themeColor="textAssistive" style={styles.rankNo}>
-                        {idx + 1}
-                      </ThemedText>
-                      <View style={styles.trendBody}>
-                        <ThemedText type="t5" numberOfLines={1}>{item.name}</ThemedText>
-                        <View style={styles.trendMeta}>
-                          {item.paidPrice.stage !== 'collecting' ? (
-                            <ThemedText type="t6" numeric numberOfLines={1}>
-                              {rangeLabel(item.paidPrice.low, item.paidPrice.high)}
-                            </ThemedText>
-                          ) : null}
-                          <ThemedText type="t7" themeColor="textAssistive" numberOfLines={1}>
-                            {item.confirmedCount > 0
-                              ? `확인된 정보 ${item.confirmedCount}건`
-                              : STILL_COLLECTING}
-                          </ThemedText>
-                        </View>
-                      </View>
-                    </View>
+                    onPress={() => submitSearch(term)}
+                    style={styles.recentChipLabel}>
+                    <ThemedText type="t6" themeColor="textStrong" style={styles.bold}>
+                      {term}
+                    </ThemedText>
                   </Pressable>
-                  {idx < top3.items.length - 1 ? (
-                    <View style={[styles.divider, { backgroundColor: theme.line }]} />
-                  ) : null}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`${term} 지우기`}
+                    hitSlop={CHIP_CLOSE_HIT_SLOP}
+                    onPress={() =>
+                      removeRecentSearch(term, recentSearches).then(setRecentSearches)
+                    }>
+                    <ProductSymbol
+                      name="close"
+                      size={Layout.iconChipClose}
+                      color={theme.textDisabled}
+                    />
+                  </Pressable>
                 </View>
               ))}
-              {top3.note ? (
-                <ThemedText type="t7" themeColor="textAssistive">{top3.note}</ThemedText>
-              ) : null}
             </View>
-          </>
+          </View>
+        ) : null}
+
+        {/* 지금 많이 찾는 곳 — 순번 · 이름/건수 · 금액. 마지막 행 아래에도 선을 긋는다. */}
+        {hasTrend ? (
+          <View style={[styles.section, styles.sectionAfterBand]}>
+            <ThemedText type="t4">지금 많이 찾는 곳</ThemedText>
+            <View style={styles.trendList}>
+              {top3!.items.map((item, idx) => {
+                const paidPrice = item.paidPrice;
+                const collecting = paidPrice.stage === 'collecting';
+                const limited = paidPrice.stage === 'limited';
+                const count = paidPrice.count;
+                return (
+                  <View key={item.vendorId}>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`${item.name} 자세히 보기`}
+                      onPress={() =>
+                        router.push({
+                          pathname: '/search/[vendorId]',
+                          params: { vendorId: item.vendorId, reasons: item.reasons.join(',') },
+                        })
+                      }>
+                      <View style={styles.trendRow}>
+                        <ThemedText
+                          type="t6"
+                          themeColor="textAssistive"
+                          numeric
+                          style={[styles.rankNo, styles.bold]}>
+                          {idx + 1}
+                        </ThemedText>
+                        <View style={styles.trendBody}>
+                          <ThemedText type="t5" numberOfLines={1}>{item.name}</ThemedText>
+                          <ThemedText type="t7" themeColor="textAssistive" numeric numberOfLines={1}>
+                            {collecting || limited
+                              ? `${NOT_ENOUGH_DATA} · ${count}건`
+                              : `${TERMS.verifiedData} ${count}건 · ${VENDOR_CATEGORY_LABEL[item.category]}`}
+                          </ThemedText>
+                        </View>
+                        {paidPrice.stage === 'collecting' ? (
+                          <ThemedText type="t6" themeColor="textAssistive" style={styles.trendPrice}>
+                            {COLLECTING_LABEL}
+                          </ThemedText>
+                        ) : (
+                          <ThemedText type="t6" numeric style={[styles.trendPrice, styles.bold]}>
+                            {rangeLabel(paidPrice.low, paidPrice.high)}
+                          </ThemedText>
+                        )}
+                      </View>
+                    </Pressable>
+                    <View style={[styles.divider, { backgroundColor: theme.border }]} />
+                  </View>
+                );
+              })}
+            </View>
+          </View>
         ) : null}
       </ScrollView>
     );
@@ -611,63 +714,48 @@ export default function SearchScreen() {
       <SafeAreaView style={styles.safeArea}>
 
         {/* ── 헤더 ── */}
-        <ThemedView style={styles.header}>
-          {viewState === 'home' ? (
-            <View style={styles.headerTop}>
-              <ThemedText type="t4">검색</ThemedText>
-            </View>
-          ) : null}
-
-          {/* 검색창 */}
-          <View style={[styles.searchBox, { backgroundColor: theme.backgroundSelected }]}>
-            {/* 검색 아이콘 */}
-            <View style={styles.searchIcon}>
-              <SearchIcon color={theme.textAssistive} />
-            </View>
-            <TextInput
-              style={[styles.searchInput, { color: theme.text }]}
-              placeholder={`업체나 지역을 검색해보세요`}
-              placeholderTextColor={theme.textAssistive}
-              value={filters.q}
-              onChangeText={(text) => setFilters((current) => ({ ...current, q: text }))}
-              onFocus={() => setInputFocused(true)}
-              onBlur={() => setInputFocused(false)}
-              onSubmitEditing={() => submitSearch(filters.q)}
-              returnKeyType="search"
-              autoCorrect={false}
-              accessibilityLabel="업체 이름 검색"
-            />
-            {viewState === 'results' ? (
-              <Pressable accessibilityRole="button" onPress={goHome} style={styles.cancelBtn}>
-                <ThemedText type="t6" themeColor="textSecondary">취소</ThemedText>
-              </Pressable>
-            ) : null}
-          </View>
-
-          {/* 자동완성 — 입력 중에 뜬다 */}
-          {renderSuggestions()}
-          {/* 지도 보기는 여기 없다(2026-09-08) — 위치는 업체 상세에서만 보인다. */}
-        </ThemedView>
+        {viewState === 'home' ? (
+          /* 목업 9a: 56 · 제목 «검색» · 오른쪽 알림 벨(40 원형). 검색창은 본문 맨 위다. */
+          <ThemedView style={styles.homeHeader}>
+            <ThemedText type="t4">검색</ThemedText>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="알림"
+              onPress={() => router.push('/my/notifications')}
+              style={styles.bellBtn}>
+              <ProductSymbol name="bell" size={Layout.iconTab} color={theme.textStrong} />
+            </Pressable>
+          </ThemedView>
+        ) : (
+          <ThemedView style={styles.header}>
+            {renderSearchBox()}
+            {/* 자동완성 — 입력 중에 뜬다 */}
+            {renderSuggestions()}
+            {/* 지도 보기는 여기 없다(2026-09-08) — 위치는 업체 상세에서만 보인다. */}
+          </ThemedView>
+        )}
 
         {/* ── 본문 ── */}
         {viewState === 'home' ? renderHome() : renderResults()}
 
-        {/* ── 비교함 트레이 ── */}
-        <ThemedView style={[styles.tray, { borderTopColor: theme.line }]}>
-          <ThemedText type="t7" themeColor="textSecondary" style={styles.trayNote}>
-            {picked.length === 0
-              ? '같은 업종끼리만 비교할 수 있어요'
-              : picked.length < 2
-                ? '한 곳 더 담아주세요'
-                : `${picked.length}곳 담음 · ${MAX_COMPARED_VENDORS}곳까지`}
-          </ThemedText>
-          <ActionButton
-            variant="primary"
-            label="비교함"
-            disabled={picked.length < 2}
-            onPress={() => router.push(`/search/compare?ids=${picked.join(',')}`)}
-          />
-        </ThemedView>
+        {/* ── 비교함 트레이 — 결과 상태에서만. 검색 홈(목업 9a)에는 없다. */}
+        {viewState === 'results' ? (
+          <ThemedView style={[styles.tray, { borderTopColor: theme.line }]}>
+            <ThemedText type="t7" themeColor="textSecondary" style={styles.trayNote}>
+              {picked.length === 0
+                ? '같은 업종끼리만 비교할 수 있어요'
+                : picked.length < 2
+                  ? '한 곳 더 담아주세요'
+                  : `${picked.length}곳 담음 · ${MAX_COMPARED_VENDORS}곳까지`}
+            </ThemedText>
+            <ActionButton
+              variant="primary"
+              label="비교함"
+              disabled={picked.length < 2}
+              onPress={() => router.push(`/search/compare?ids=${picked.join(',')}`)}
+            />
+          </ThemedView>
+        ) : null}
 
         <Toast message={toast} onHidden={() => setToast(null)} />
         <SortSheet
@@ -693,22 +781,13 @@ function ChevronDownIcon({ color }: { color: string }) {
   );
 }
 
-/** 검색 아이콘 (돋보기). */
-function SearchIcon({ color }: { color: string }) {
-  return (
-    <View accessibilityElementsHidden>
-      {/* SVG를 React Native에서 인라인으로 쓸 수 없으므로 Text 대체 */}
-      <ThemedText type="t6" style={{ color }}>
-        🔍
-      </ThemedText>
-    </View>
-  );
-}
-
 // ─── 레이아웃 상수 ──────────────────────────────────────────────────────────
 
 // 핸드오프: 결과 카드 이미지 높이 168px, 2:1 비율 유지
 const CARD_IMAGE_HEIGHT = 168;
+
+/** 칩의 14px X를 44 터치 영역으로 넓힌다. */
+const CHIP_CLOSE_HIT_SLOP = (Layout.touchTarget - Layout.iconChipClose) / 2;
 
 
 const styles = StyleSheet.create({
@@ -723,28 +802,45 @@ const styles = StyleSheet.create({
   },
 
   // ── 헤더 ──
+  /* 홈 헤더. 목업: height 56 · padding 0 20 0 24 · 제목 좌 · 벨 우. 테두리 없음. */
+  homeHeader: {
+    height: Layout.navBar,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingLeft: Layout.gutter,
+    /* 오른쪽 20 = 거터 24에서 4 안쪽. 40 원형 버튼 안의 24 아이콘이 거터선에 앉는다. */
+    paddingRight: Layout.gutter - Spacing.one,
+  },
+  bellBtn: {
+    width: Layout.iconButton,
+    height: Layout.iconButton,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  /* 결과 헤더 — 검색창이 헤더에 앉는다. */
   header: {
     paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.three,
     gap: Spacing.two,
   },
-  headerTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
 
-  // 검색창. 핸드오프: height 52, radius 6, background recessed
+  /* 홈의 검색창 블록. 목업: padding 4 24 24. */
+  searchBlock: {
+    paddingTop: Spacing.one,
+    paddingHorizontal: Layout.gutter,
+    paddingBottom: Spacing.four,
+    gap: Spacing.two,
+  },
+  // 검색창. 목업: height 52, radius 6, bg gray100, padding 0 16, gap 10
   searchBox: {
-    height: Layout.controlXLarge,
+    height: Layout.field,
     borderRadius: Radius.input,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.three,
-    gap: Spacing.two,
-  },
-  searchIcon: {
-    flexShrink: 0,
+    gap: Layout.cardGap,
   },
   searchInput: {
     flex: 1,
@@ -775,80 +871,104 @@ const styles = StyleSheet.create({
   scroll: {
     flex: 1,
   },
+  /* 목업: 마지막 섹션 아래 32 여백. */
   homeContent: {
-    paddingBottom: Spacing.three,
+    paddingBottom: Spacing.five,
   },
-  homeSection: {
+  /* 섹션. 목업: padding 0 24 · 제목→콘텐츠 14. 섹션 아래 28은 밴드/다음 섹션이 잡는다. */
+  section: {
     paddingHorizontal: Layout.gutter,
-    paddingTop: Spacing.three,
-    paddingBottom: Layout.sectionGap,
-    gap: Spacing.three,
+    gap: Layout.sectionHeadGap,
+  },
+  /* 밴드 뒤·섹션 뒤 28. 목업: 밴드 margin 28 0, 마지막 섹션 padding-top 28. */
+  sectionAfterBand: {
+    paddingTop: Layout.sectionGap,
   },
   sectionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  bold: {
+    fontWeight: 700,
+  },
 
-  // 카테고리 2열 그리드. 핸드오프: gap 11, height 52, radius 10, bg recessed
+  // 카테고리 2열 격자. 목업: gap 11 · min-height 56 · radius 6 · bg gray50 · padding 14 16 · 세로 배치
   categoryGrid: {
+    gap: Layout.gap2col,
+  },
+  categoryRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 11,
+    gap: Layout.gap2col,
   },
   categoryCell: {
-    width: '47.5%',
-    height: Layout.controlXLarge,
-    borderRadius: Radius.medium,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
+    flex: 1,
+    minHeight: Layout.rowMinHeight,
+    borderRadius: Radius.input,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    gap: Spacing.half,
+    /* 목업 세로 14 — 토큰이 없어 가장 가까운 행 상하 패딩 12를 쓴다. */
+    paddingVertical: Layout.rowPaddingY,
     paddingHorizontal: Spacing.three,
   },
+  /* 홀수 개일 때 마지막 행의 빈 칸 — 칸 폭을 지킨다. */
+  categoryCellEmpty: {
+    flex: 1,
+  },
 
-  // 최근 검색 칩. 핸드오프: height 36, border, radius 999, padding 0 14
+  // 최근 검색 칩. 목업: height 36 · radius 999 · bg gray100 · 테두리 없음 · padding 0 14 · 라벨↔X 6
   chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.two,
   },
   recentChip: {
-    height: 36,
+    height: Layout.chip,
     borderRadius: Radius.pill,
-    borderWidth: 1,
-    paddingHorizontal: 14,
+    flexDirection: 'row',
     alignItems: 'center',
+    /* 목업 좌우 14·라벨↔X 6 — 토큰이 없어 가장 가까운 16·8을 쓴다. */
+    paddingHorizontal: Spacing.three,
+    gap: Spacing.two,
+  },
+  recentChipLabel: {
+    height: '100%',
     justifyContent: 'center',
   },
 
-  // 많이 확인된 곳 — 리스트 행
+  // 지금 많이 찾는 곳 — 목업: 행 gap 2 · 행 min-height 56 · padding 12 0 · 순번 18 · 요소 gap 14
+  trendList: {
+    gap: Spacing.half,
+  },
   trendRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    /* 목업 14 — 토큰이 없어 가장 가까운 16을 쓴다. */
     gap: Spacing.three,
     minHeight: Layout.rowMinHeight,
-    paddingVertical: Spacing.two,
+    paddingVertical: Layout.rowPaddingY,
   },
   rankNo: {
-    width: 18,
-    textAlign: 'center',
-    fontVariant: ['tabular-nums'],
+    /* 목업 18 — 같은 값의 인라인 아이콘 토큰을 쓴다. */
+    width: Layout.iconInline,
+    flexShrink: 0,
   },
   trendBody: {
     flex: 1,
     minWidth: 0,
-    gap: Spacing.one,
+    gap: Spacing.half,
   },
-  trendMeta: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: Spacing.two,
+  trendPrice: {
+    flexShrink: 0,
   },
   divider: {
     height: 1,
   },
+  /* 목업: 밴드 위 28. 아래 28은 다음 섹션의 paddingTop. */
   band: {
     height: Layout.sectionBand,
+    marginTop: Layout.sectionGap,
   },
 
   // ── 결과 ──

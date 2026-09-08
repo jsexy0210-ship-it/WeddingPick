@@ -34,6 +34,7 @@ type CandidateRow = {
   note: string | null;
   added_at: Date;
   added_by: string | null;
+  image_url?: string | null;
 };
 
 export function registerCandidateRoutes(app: FastifyInstance, context: AppContext): void {
@@ -55,7 +56,10 @@ export function registerCandidateRoutes(app: FastifyInstance, context: AppContex
 
       const { rows } = await context.pool.query<CandidateRow>(
         `SELECT c.id, c.vendor_id, v.name AS vendor_name, v.category, v.region,
-                c.note, c.added_at, c.added_by
+                c.note, c.added_at, c.added_by,
+                (SELECT i.source_url FROM structured.vendor_images i
+            WHERE i.vendor_id = v.id AND i.status = 'approved' AND i.source_url IS NOT NULL
+            ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url
          FROM structured.vendor_candidates c
          JOIN structured.vendors v ON v.id = c.vendor_id
          WHERE c.wedding_id = $1
@@ -103,6 +107,7 @@ export function registerCandidateRoutes(app: FastifyInstance, context: AppContex
             vendorName: row.vendor_name,
             category: row.category,
             region: row.region,
+            imageUrl: row.image_url ?? null,
             note: row.note,
             addedAt: row.added_at.toISOString(),
             // 상대가 마음에 들어 한 곳인지 알아야 이야기가 된다.
