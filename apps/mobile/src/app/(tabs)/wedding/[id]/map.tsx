@@ -8,7 +8,6 @@ import {
   ActionButton,
   ErrorView,
   Layout,
-  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
@@ -16,6 +15,7 @@ import {
   ThemedView,
   useTheme,
 } from '@weddingpick/ui';
+import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { getMapVendors } from '@/api/client';
 
 /**
@@ -70,7 +70,7 @@ export default function WeddingMapScreen() {
   }
 
   if (pinned === null) {
-    return <LoadingView />;
+    return <DelayedLoadingView />;
   }
 
   const selected = pinned.find((v) => v.vendorId === selectedId) ?? null;

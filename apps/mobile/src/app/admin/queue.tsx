@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { FontSize, Spinner } from '@weddingpick/ui';
+import { FontSize } from '@weddingpick/ui';
+import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { API_URL } from '@/api/config';
 import { loadToken } from '@/api/session';
 import { formatDateDot, formatDateTimeDot } from '@/features/common/format-date';
@@ -101,7 +102,7 @@ export default function QueueScreen() {
 
       <View style={styles.body}>
         <View style={styles.list}>
-          {loading && <Spinner size={32} style={styles.centered} />}
+          <DelayedLoader active={loading} size={40} style={styles.centered} />
           {!loading && error && <Text style={styles.errorText}>{error}</Text>}
           {!loading && !error && (
             <ScrollView>

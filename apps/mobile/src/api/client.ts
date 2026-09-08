@@ -151,6 +151,7 @@ import type { VendorCategory } from '@weddingpick/domain';
 
 import { API_URL } from '@/api/config';
 import { clearToken, loadToken, saveToken } from '@/api/session';
+import { rememberCurrentUser } from '@/features/loading/current-user-snapshot';
 
 export class ApiError extends Error {
   constructor(
@@ -334,6 +335,7 @@ export async function signOut(): Promise<void> {
   } finally {
     // 서버를 못 불러도 기기의 토큰은 버린다. 남겨두면 로그아웃한 척만 한 것이 된다.
     await clearToken();
+    rememberCurrentUser(null);
   }
 }
 
@@ -364,7 +366,10 @@ export async function setDisplayName(displayName: string | null) {
 }
 
 export async function getCurrentUser() {
-  return request('/v1/me', currentUserSchema);
+  const me = await request('/v1/me', currentUserSchema);
+  // 로더가 닉네임·결정 완료 업종을 읽는다 — 그 때문에 다시 부르지 않도록 적어둔다.
+  rememberCurrentUser(me);
+  return me;
 }
 
 /**
@@ -373,7 +378,9 @@ export async function getCurrentUser() {
  * 다섯 번 왕복하던 것을 한 번으로 줄인다. 비회원도 부를 수 있다.
  */
 export async function getAppBootstrap(): Promise<AppBootstrapResponse> {
-  return request('/v1/app/bootstrap', appBootstrapResponseSchema);
+  const boot = await request('/v1/app/bootstrap', appBootstrapResponseSchema);
+  if (boot.member) rememberCurrentUser(boot.member);
+  return boot;
 }
 
 /**

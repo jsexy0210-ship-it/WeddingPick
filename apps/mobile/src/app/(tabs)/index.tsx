@@ -28,8 +28,8 @@ import {
   ThemedText,
   ThemedView,
   useTheme,
-  RecommendingView,
 } from '@weddingpick/ui';
+import { DelayedRecommendingView } from '@/features/loading/delayed-loader';
 import { Board, FoldedBoard } from '@/features/home/board';
 import { listWeddingContent, type WeddingContentItem } from '@/features/home/content';
 import { homeView, nextUpCategory, type HomeView } from '@/features/home/state';
@@ -142,7 +142,7 @@ export default function HomeScreen() {
    * 보고 있는지 순서대로 보여준다. 핸드오프 v3.15 «추천 계산 · 첫 진입».
    */
   if (!settled) {
-    return <RecommendingView />;
+    return <DelayedRecommendingView nickname={data.me?.displayName ?? undefined} />;
   }
 
   const view = homeView({

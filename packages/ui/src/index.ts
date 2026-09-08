@@ -35,12 +35,8 @@ export {
   type CategoryCycleLoaderSize,
 } from './category-cycle-loader';
 export { useDelayedVisible } from './use-delayed-visible';
-/** @deprecated 원형 스피너 폐기(v3.20). CategoryCycleLoader로 옮기는 동안만 남는 별칭. */
-export { Spinner, type SpinnerSize } from './spinner';
 export { CategoryIcon, CATEGORY_CYCLE_ORDER, CATEGORY_ICON_LABEL, type CategoryIconKind } from './category-icon';
 export { StepList, type Step, type StepState } from './step-list';
-/** @deprecated 궤도 링 폐기(v3.20). RecommendingView · RecommendingBody를 쓴다. */
-export { CategoryOrbitLoader } from './orbit-loader';
 export { showAlert, type ShowAlertButton } from './show-alert';
 export { ListSkeleton, type ListSkeletonProps } from './list-skeleton';
 export { PickStatusBadge, type PickStatusBadgeProps, type PickStatus } from './pick-status-badge';

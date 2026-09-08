@@ -20,13 +20,13 @@ import {
   ProgressBar,
   Radius,
   Spacing,
-  Spinner,
   ThemedText,
   ThemedView,
   VendorImage,
   readWebInteractionState,
   useTheme,
 } from '@weddingpick/ui';
+import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { getCurrentUser, listCandidates, searchVendors } from '@/api/client';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import { isWebShellScreen } from '@/features/webshell/config';
@@ -127,7 +127,7 @@ export default function PickScreen() {
             </ScrollView>
           ) : !me ? (
             <View style={styles.loadingCenter}>
-              <Spinner size={40} />
+              <DelayedLoader size={40} />
             </View>
           ) : !me.weddingId || !page || !hasAnyPick ? (
             /* ── 비어 있음 · #17b ── */

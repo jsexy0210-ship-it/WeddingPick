@@ -9,8 +9,8 @@ import {
   ThemedText,
   ThemedView,
   useTheme,
-  Spinner,
 } from '@weddingpick/ui';
+import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { completeAfterSignIn, type AfterSignIn } from '@/features/auth/after-sign-in';
 import { canSignInWith, signInWithKakao, useAuthProviders } from '@/features/auth/providers';
 
@@ -92,7 +92,7 @@ export function LoginSheet({ visible, reason, onSignedIn, onDismiss }: LoginShee
           </ThemedView>
 
           {providers === null ? (
-            <Spinner size={32} />
+            <DelayedLoader size={28} />
           ) : providers.length === 0 ? (
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="t7" themeColor="textSecondary">

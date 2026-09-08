@@ -11,7 +11,6 @@ import {
   ActionButton,
   ErrorView,
   Layout,
-  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
@@ -19,6 +18,7 @@ import {
   ThemedView,
   useTheme,
 } from '@weddingpick/ui';
+import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 
 /**
  * 지출 상세. WP-OUR-010. 지출내역(WP-OUR-009) 목록에서 줄을 누르면 들어온다.
@@ -46,7 +46,7 @@ export default function ExpenseDetailScreen() {
   }
 
   if (!detail) {
-    return <LoadingView />;
+    return <DelayedLoadingView />;
   }
 
   const refundColor =

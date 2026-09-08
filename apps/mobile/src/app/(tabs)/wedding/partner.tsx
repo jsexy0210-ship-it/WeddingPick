@@ -21,7 +21,8 @@ import {
 import { isServerConfigured } from '@/api/config';
 import { shareOrCopy } from '@/components/share-or-copy';
 import { formatMonthDayTimeDot } from '@/features/common/format-date';
-import { ActionButton, ErrorView, LoadingView, MaxContentWidth, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
+import { ActionButton, ErrorView, MaxContentWidth, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
+import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 
 /**
  * A-18 배우자 초대·연결.
@@ -143,7 +144,7 @@ export default function PartnerScreen() {
       return <ErrorView message={error} onBack={() => router.back()} />;
     }
 
-    return <LoadingView />;
+    return <DelayedLoadingView />;
   }
 
   return (

@@ -15,7 +15,6 @@ import {
   ActionButton,
   ErrorView,
   FilterChip,
-  LoadingView,
   MaxContentWidth,
   Radius,
   RatingPicker,
@@ -24,6 +23,7 @@ import {
   ThemedView,
   useTheme,
 } from '@weddingpick/ui';
+import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 
 /**
  * 후기 쓰기.
@@ -66,7 +66,7 @@ export default function WriteReviewScreen() {
   }
 
   if (!form) {
-    return <LoadingView />;
+    return <DelayedLoadingView />;
   }
 
   if (done) {

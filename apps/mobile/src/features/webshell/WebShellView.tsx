@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { WebView } from 'react-native-webview';
 
-import { Layout, MaxContentWidth, Spacing, ThemedText, ThemedView, Spinner } from '@weddingpick/ui';
+import { Layout, MaxContentWidth, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
+import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { loadToken } from '@/api/session';
 
 import { WEB_SHELL_URL } from './config';
@@ -58,7 +59,7 @@ export function WebShellView({ path }: Props) {
   if (!uri) {
     return (
       <Frame>
-        <Spinner size={40} />
+        <DelayedLoader size={40} />
       </Frame>
     );
   }
@@ -70,7 +71,7 @@ export function WebShellView({ path }: Props) {
       startInLoadingState
       renderLoading={() => (
         <Frame>
-          <Spinner size={40} />
+          <DelayedLoader size={40} />
         </Frame>
       )}
       renderError={() => (

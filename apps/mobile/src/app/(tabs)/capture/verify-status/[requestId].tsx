@@ -10,13 +10,13 @@ import { formatDateDot } from '@/features/common/format-date';
 import {
   ActionButton,
   ErrorView,
-  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
   ThemedText,
   ThemedView,
 } from '@weddingpick/ui';
+import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 
 
 function statusLabel(status: VerificationRequest['status']): string {
@@ -64,7 +64,7 @@ export default function VerifyStatusScreen() {
   }
 
   if (!req) {
-    return <LoadingView />;
+    return <DelayedLoadingView />;
   }
 
   const isSettled = req.status === 'approved' || req.status === 'rejected';

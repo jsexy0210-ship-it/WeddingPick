@@ -16,7 +16,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { createVerificationRequest, getQuote } from '@/api/client';
 import { formatMonthDayDot } from '@/features/common/format-date';
-import { ActionButton, ErrorView, FilterChip, LoadingView, MaxContentWidth, Spacing, ThemedText, ThemedView, VerificationBadge, useTheme } from '@weddingpick/ui';
+import { ActionButton, ErrorView, FilterChip, MaxContentWidth, Spacing, ThemedText, ThemedView, VerificationBadge, useTheme } from '@weddingpick/ui';
+import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 
 /** 화면에 내보낼 문서 이름. 식별자를 그대로 보여주지 않는다. */
 function documentLabel(document: QuoteDocument, index: number): string {
@@ -75,7 +76,7 @@ export default function VerifyRequestScreen() {
   }
 
   if (!quote) {
-    return <LoadingView />;
+    return <DelayedLoadingView />;
   }
 
   if (receivedAt) {

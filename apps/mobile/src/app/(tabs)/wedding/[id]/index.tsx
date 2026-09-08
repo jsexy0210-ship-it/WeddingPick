@@ -3,7 +3,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ActionButton, ErrorView, LoadingView, MaxContentWidth, showAlert, Spacing, ThemedText, ThemedView, VerificationBadge } from '@weddingpick/ui';
+import { ActionButton, ErrorView, MaxContentWidth, showAlert, Spacing, ThemedText, ThemedView, VerificationBadge } from '@weddingpick/ui';
+import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { PageThumbnail } from '@/components/page-thumbnail';
 import { isServerConfigured } from '@/api/config';
 import { formatDateDot } from '@/features/common/format-date';
@@ -17,7 +18,7 @@ export default function DocumentSetScreen() {
   const set = sets.find((item) => item.id === id);
 
   if (!set) {
-    if (!ready) return <LoadingView />;
+    if (!ready) return <DelayedLoadingView />;
 
     return (
       <ErrorView

@@ -10,7 +10,6 @@ import {
   ActionButton,
   ErrorView,
   Layout,
-  LoadingView,
   MaxContentWidth,
   Radius,
   showAlert,
@@ -20,6 +19,7 @@ import {
   WeddingCalendar,
   useTheme,
 } from '@weddingpick/ui';
+import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 
 const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
@@ -83,7 +83,7 @@ export default function WeddingEventDetailScreen() {
   }
 
   if (!event) {
-    return <LoadingView />;
+    return <DelayedLoadingView />;
   }
 
   function startEditing() {

@@ -19,12 +19,12 @@ import { TastePicker } from '@/features/home/taste-picker';
 import {
   ActionButton,
   Layout,
-  LoadingView,
   MaxContentWidth,
   Spacing,
   ThemedText,
   ThemedView,
 } from '@weddingpick/ui';
+import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 
 /**
  * 취향 다시 고르기. WP-MY-004.
@@ -77,7 +77,7 @@ export default function TasteScreen() {
     }
   }
 
-  if (!loaded) return <LoadingView />;
+  if (!loaded) return <DelayedLoadingView />;
 
   const count = loaded.chosen.length;
 

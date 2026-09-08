@@ -11,13 +11,13 @@ import {
   ActionButton,
   ErrorView,
   Layout,
-  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
   ThemedText,
   ThemedView,
 } from '@weddingpick/ui';
+import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 
 type PageData = {
   wedding: WeddingDetail;
@@ -48,7 +48,7 @@ export default function WeddingCompleteScreen() {
   useEffect(load, [load]);
 
   if (error) return <ErrorView message={error} onBack={() => router.back()} />;
-  if (!data) return <LoadingView />;
+  if (!data) return <DelayedLoadingView />;
 
   const { wedding, tasks, expenses } = data;
   const weddingDateLabel = wedding.weddingDate

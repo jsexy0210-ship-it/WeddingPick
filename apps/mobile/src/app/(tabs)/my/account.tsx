@@ -8,13 +8,13 @@ import {
   ActionButton,
   ErrorView,
   Layout,
-  LoadingView,
   MaxContentWidth,
   Spacing,
   ThemedText,
   ThemedView,
   Toast,
 } from '@weddingpick/ui';
+import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { getCurrentUser } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
 import { useSession } from '@/features/auth/use-session';
@@ -67,7 +67,7 @@ export default function AccountScreen() {
   }
 
   if (!me) {
-    return <LoadingView />;
+    return <DelayedLoadingView />;
   }
 
   return (
