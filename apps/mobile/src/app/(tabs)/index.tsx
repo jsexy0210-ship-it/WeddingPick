@@ -7,6 +7,7 @@ import {
   hasUnread,
   lifecycle,
   MANY_CONFIRMED,
+  PREPARATION_STATE_LABEL,
   TERMS,
   VENDOR_CATEGORY_LABEL,
   withObject,
@@ -33,11 +34,15 @@ import { Board, FoldedBoard } from '@/features/home/board';
 import { listWeddingContent, type WeddingContentItem } from '@/features/home/content';
 import { homeView, nextUpCategory, type HomeView } from '@/features/home/state';
 import {
+  chosenKeysFor,
   hasTaste,
   loadTaste,
+  NO_TASTE,
   saveTaste,
+  tasteCategoryFor,
   toggleTaste,
-  type Taste,
+  type TasteCategory,
+  type TasteSelection,
 } from '@/features/home/taste';
 import { TastePicker } from '@/features/home/taste-picker';
 import { TodaysPick } from '@/features/home/todays-pick';
@@ -83,7 +88,7 @@ const EMPTY: HomeData = {
 
 export default function HomeScreen() {
   const [data, setData] = useState<HomeData>(EMPTY);
-  const [taste, setTaste] = useState<readonly Taste[]>([]);
+  const [taste, setTaste] = useState<TasteSelection>(NO_TASTE);
   /*
    * 한 번이라도 받아왔는가. **자료가 없는 것과 아직 모르는 것은 다르다** — 앞은
    * '취향 고르기' 상태고 뒤는 스켈레톤이다. 하나로 뭉치면 프로필을 못 불러온
@@ -147,11 +152,19 @@ export default function HomeScreen() {
     tasteChosen: hasTaste(taste),
   });
 
-  const onToggleTaste = (picked: Taste) => {
-    const next = toggleTaste(taste, picked);
+  /*
+   * 취향은 준비 현황에서 안 끝낸 첫 업종 한 세트만 묻는다(SPEC §13.6). 저장된
+   * 업종이 다르면 그 격자에는 아무것도 체크돼 있지 않다 — 누르는 순간 이 업종의
+   * 선택으로 새로 시작한다.
+   */
+  const tasteCategory = tasteCategoryFor(data.me?.preparedCategories ?? []);
+  const tasteChosen = chosenKeysFor(taste, tasteCategory);
 
-    setTaste(next);
-    void saveTaste(next);
+  const onToggleTaste = (key: string) => {
+    const next = toggleTaste(tasteChosen, key);
+
+    setTaste({ category: tasteCategory, keys: next });
+    void saveTaste(tasteCategory, next);
   };
 
   return (
@@ -167,7 +180,8 @@ export default function HomeScreen() {
             popular={data.popular}
             content={data.content}
             view={view}
-            taste={taste}
+            tasteCategory={tasteCategory}
+            tasteChosen={tasteChosen}
             onToggleTaste={onToggleTaste}
           />
         </ScrollView>
@@ -185,7 +199,8 @@ function MemberHome({
   popular,
   content,
   view,
-  taste,
+  tasteCategory,
+  tasteChosen,
   onToggleTaste,
 }: {
   me: CurrentUser | null;
@@ -194,8 +209,9 @@ function MemberHome({
   popular: readonly VendorSummary[];
   content: readonly WeddingContentItem[];
   view: HomeView;
-  taste: readonly Taste[];
-  onToggleTaste: (taste: Taste) => void;
+  tasteCategory: TasteCategory;
+  tasteChosen: readonly string[];
+  onToggleTaste: (key: string) => void;
 }) {
   /*
    * 남은 기간에 맞는 상태 문구를 도메인이 고른다. 시안은 «두근두근»으로 그려져
@@ -208,7 +224,11 @@ function MemberHome({
   const focusLabel =
     focusGroup?.categoryLabel ?? (view.focus === null ? null : VENDOR_CATEGORY_LABEL[view.focus]);
   const upNext = nextUpCategory(groups, view.focus);
-  const decided = groups.filter((group) => group.decidedVendorId !== null);
+  /*
+   * 정한 곳 — 앱에서 정한 업종과 준비 현황(온보딩 3/5)에서 «이미 정했다»고 체크한
+   * 업종 둘 다다. 뒤쪽은 업체가 없어 `decidedVendorId`가 null이라 상태로 거른다.
+   */
+  const decided = groups.filter((group) => group.state === 'decided');
 
   return (
     <>
@@ -245,12 +265,12 @@ function MemberHome({
       {view.state === 'taste' ? (
         /* 추천이 아직 성립하지 않는다. 그 자리를 취향 고르기가 대신한다. */
         <Section title="어떤 결혼식을 원하세요?">
-          <TastePicker chosen={taste} onToggle={onToggleTaste} />
+          <TastePicker category={tasteCategory} chosen={tasteChosen} onToggle={onToggleTaste} />
           <ActionButton
             label="취향 고르고 추천받기"
             variant="primary"
             size="xlarge"
-            disabled={taste.length === 0}
+            disabled={tasteChosen.length === 0}
             onPress={() => router.push('/search')}
           />
         </Section>
@@ -305,8 +325,9 @@ function MemberHome({
                     {group.categoryLabel}
                   </ThemedText>
                   <ThemedText type="t5" numberOfLines={1} style={styles.grow}>
+                    {/* 앱 밖에서 이미 정한 업종은 업체가 없다 — 이름 대신 «결정 완료». */}
                     {group.candidates.find((row) => row.vendorId === group.decidedVendorId)
-                      ?.vendorName ?? '결정 완료'}
+                      ?.vendorName ?? PREPARATION_STATE_LABEL.decided}
                   </ThemedText>
                   {/*
                     시안은 오른쪽에 정한 금액(«1,620만원»)을 둔다. 후보 목록 계약은

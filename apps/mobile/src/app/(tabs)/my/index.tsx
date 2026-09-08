@@ -1,5 +1,12 @@
 import type { CurrentUser, MyReportListResponse } from '@weddingpick/api-contract';
-import { BUDGET_BRACKET_LABEL, BUSINESS_NOTICE_LINES, formatWeddingDateLong } from '@weddingpick/domain';
+import {
+  BUDGET_BRACKET_FIELD_LABEL,
+  BUDGET_BRACKET_LABEL,
+  BUSINESS_NOTICE_LINES,
+  formatDateDot,
+  PREPARED_CATEGORIES_LABEL,
+  summarizePreparedCategories,
+} from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -59,7 +66,12 @@ const S = {
   bizCta: '문의하기',
   'setting.date': '예식일',
   'setting.region': '지역',
-  'setting.budget': '총예산',
+  /*
+   * v3.19가 «총예산»을 «준비 예산»으로 바꿨다(앞으로 준비에 쓸 예산) — 라벨은
+   * domain BUDGET_BRACKET_FIELD_LABEL 한 곳에서 온다. 준비 현황(v3.22)도 같다.
+   */
+  'setting.budget': BUDGET_BRACKET_FIELD_LABEL,
+  'setting.prepared': PREPARED_CATEGORIES_LABEL,
   logout: '로그아웃',
   loginCta: '로그인 · 가입하기',
   loginHint: '웨딩일정과 Pick 인증에 필요해요',
@@ -134,7 +146,13 @@ export default function MyScreen() {
   const reports = data.reports?.reports ?? [];
   const totalReports = reports.length;
   const totalReviews = reports.filter((report) => report.kind === 'review').length;
-  const hasWeddingSetting = Boolean(me?.weddingDate || me?.region || me?.budgetBracket);
+  /*
+   * 설정을 한 번이라도 마쳤으면 박스를 둔다 — v3.19부터 예식일 · 지역 · 예산이 전부
+   * «미정»일 수 있어 값의 유무로는 알 수 없다. 그때도 준비 현황 한 줄은 있다.
+   */
+  const hasWeddingSetting = Boolean(
+    me?.setupComplete || me?.weddingDate || me?.region || me?.budgetBracket
+  );
 
   return (
     <ThemedView style={styles.container}>
@@ -196,9 +214,16 @@ export default function MyScreen() {
             <View style={styles.weddingBoxWrap}>
               <View style={[styles.weddingBox, { backgroundColor: theme.backgroundElement }]}>
                 {me?.weddingDate && (
-                  <SettingRow label={S['setting.date']} value={formatWeddingDateLong(me.weddingDate)} />
+                  <SettingRow label={S['setting.date']} value={formatDateDot(me.weddingDate)} />
                 )}
                 {me?.region && <SettingRow label={S['setting.region']} value={me.region} />}
+                {/* 준비 현황(온보딩 3/5) — «웨딩홀 외 2곳». 하나도 없으면 «아직 시작 전이에요». */}
+                {me && (
+                  <SettingRow
+                    label={S['setting.prepared']}
+                    value={summarizePreparedCategories(me.preparedCategories)}
+                  />
+                )}
                 {me?.budgetBracket && (
                   <SettingRow label={S['setting.budget']} value={BUDGET_BRACKET_LABEL[me.budgetBracket]} />
                 )}

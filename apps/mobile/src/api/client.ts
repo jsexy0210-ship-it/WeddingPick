@@ -67,8 +67,8 @@ import {
   type UpdateReviewRequest,
   type Settings,
   type UpdateSettingsRequest,
-  type Taste,
   type TasteListResponse,
+  type UpdateTasteRequest,
   type VendorSort,
   type UpdateRebuttalRequest,
   type CreateExpenseRequest,
@@ -141,7 +141,7 @@ import {
   type VendorPhotosResponse,
   emailLookupResponseSchema,
   type EmailLookupResponse,
-  type BudgetBracket,
+  type CompleteSetupRequest,
   appBootstrapResponseSchema,
   type AppBootstrapResponse,
 } from '@weddingpick/api-contract';
@@ -338,20 +338,17 @@ export async function signOut(): Promise<void> {
 }
 
 /**
- * 최소 온보딩. 예식일과 지역을 한 번에 보낸다(v3.10 §3).
+ * 초기 설정 — 5개 질문 중 1~4(예식일 · 지역 · 준비 현황 · 예산)를 한 번에 보낸다
+ * (핸드오프 v3.19~v3.22 · SPEC §13.6). 5/5 취향은 `updateTaste`로 따로 간다.
  *
  * 이름은 보내지 않는다 — 닉네임은 최초 필수입력에서 빠졌고 MY에서 정한다.
  *
- * `budgetBracket`은 자유 입력이 아니라 다섯 구간 중 하나다. 넘기지 않으면 서버가
- * 예산을 건드리지 않는다. `아직 모르겠어요`(unknown)는 명시적인 값이다 — 안 고른
- * 것과 모르겠다고 고른 것은 다른 상태다.
+ * **미정을 억지로 받지 않는다.** 예식일 · 지역은 null(«아직 정하지 않았어요»),
+ * 준비 현황은 빈 배열(«아직 시작 전이에요»), 예산은 `unknown`(«아직 모르겠어요»).
+ * 예산과 준비 현황은 키를 아예 안 보내면 서버가 건드리지 않는다 — 안 고른 것과
+ * 모르겠다고 고른 것은 다른 상태다.
  */
-export async function completeSetup(input: {
-  /** null = «아직 미정이에요». */
-  weddingDate: string | null;
-  region: string;
-  budgetBracket?: BudgetBracket | null;
-}) {
+export async function completeSetup(input: CompleteSetupRequest) {
   return request('/v1/me/setup', currentUserSchema, {
     method: 'POST',
     body: JSON.stringify(input),
@@ -1280,16 +1277,22 @@ export async function updateSettings(body: UpdateSettingsRequest): Promise<Setti
   });
 }
 
-/** 취향. 홈 C-1 시안 1. 아직 안 골랐으면 빈 배열이 온다. */
+/**
+ * 취향. 홈 C-1 시안 1 · 온보딩 5/5. 한 업종의 세트만 저장돼 있다 — 아직 안
+ * 골랐으면 `category`가 null이고 `keys`는 빈 배열이다.
+ */
 export async function getTaste(): Promise<TasteListResponse> {
   return request('/v1/me/taste', tasteListResponseSchema);
 }
 
-/** 고른 전체를 그대로 보낸다 — "추가"가 아니라 "지금 고른 전체"다. */
-export async function updateTaste(tastes: readonly Taste[]): Promise<TasteListResponse> {
+/**
+ * 고른 전체를 그대로 보낸다 — "추가"가 아니라 "지금 고른 전체"다. 업종과 그 업종
+ * 세트의 키만 받는다(최소 1장).
+ */
+export async function updateTaste(input: UpdateTasteRequest): Promise<TasteListResponse> {
   return request('/v1/me/taste', tasteListResponseSchema, {
     method: 'PUT',
-    body: JSON.stringify({ tastes }),
+    body: JSON.stringify(input),
   });
 }
 

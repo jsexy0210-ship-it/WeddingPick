@@ -1,5 +1,5 @@
 import type { CandidateListResponse } from '@weddingpick/api-contract';
-import type { VendorCategory } from '@weddingpick/domain';
+import { PREPARATION_STATE_LABEL, type VendorCategory } from '@weddingpick/domain';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Layout, Radius, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
@@ -32,17 +32,26 @@ export function Board({ groups, focus, onPressCategory }: BoardProps) {
           key={group.category}
           label={group.categoryLabel}
           pickCount={group.candidates.length}
-          decidedName={
-            group.decidedVendorId === null
-              ? null
-              : (group.candidates.find((row) => row.vendorId === group.decidedVendorId)
-                  ?.vendorName ?? null)
-          }
+          decidedName={decidedName(group)}
           tone={boardTone({ state: group.state, isFocus: group.category === focus })}
           onPress={() => onPressCategory(group.category)}
         />
       ))}
     </View>
+  );
+}
+
+/**
+ * 정한 칸의 값 줄. 앱에서 정했으면 업체 이름, 준비 현황(온보딩 3/5)에서 «이미
+ * 정했다»고 체크한 업종은 업체가 없어(`decidedVendorId`가 null) «결정 완료»만
+ * 적는다 — 없는 이름을 찾다 빈 칸을 그리지 않는다.
+ */
+function decidedName(group: CandidateListResponse['groups'][number]): string | null {
+  if (group.state !== 'decided') return null;
+
+  return (
+    group.candidates.find((row) => row.vendorId === group.decidedVendorId)?.vendorName ??
+    PREPARATION_STATE_LABEL.decided
   );
 }
 

@@ -135,10 +135,10 @@ describe('홈 후보 만들기', () => {
   });
 
   it('온보딩에서 구간을 답했으면 숫자 예산이 없어도 붙잡지 않는다', () => {
-    // «4,000만원 이상»은 상한이 없어 budget.set은 false지만 이미 답한 것이다.
+    // «3,000만원 이상»은 상한이 없어 budget.set은 false지만 이미 답한 것이다.
     const expenses = {
       budget: { set: false, note: '아직 정하지 않았어요' },
-      budgetBracket: 'over_40m',
+      budgetBracket: 'over_30m',
     } as unknown as ExpenseSummaryResponse;
 
     expect(homePriorityItems({ ...NO_FACTS, expenses }, NOW)).toEqual([]);
