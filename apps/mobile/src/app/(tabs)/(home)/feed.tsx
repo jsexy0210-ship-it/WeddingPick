@@ -10,11 +10,11 @@ import {
   EmptyView,
   ErrorView,
   Layout,
-  LoadingView,
   MaxContentWidth,
   Spacing,
   ThemedText,
   ThemedView,
+  SkeletonView,
 } from '@weddingpick/ui';
 
 /**
@@ -40,7 +40,7 @@ export default function FeedScreen() {
   useEffect(load, [load]);
 
   if (error) return <ErrorView message={error} onBack={() => router.back()} />;
-  if (!items) return <LoadingView />;
+  if (!items) return <SkeletonView />;
 
   return (
     <ThemedView style={styles.container}>

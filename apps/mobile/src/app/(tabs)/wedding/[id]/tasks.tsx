@@ -25,7 +25,6 @@ import {
   Fab,
   FilterChip,
   Layout,
-  LoadingView,
   MaxContentWidth,
   Radius,
   showAlert,
@@ -34,6 +33,7 @@ import {
   ThemedView,
   WeddingCalendar,
   useTheme,
+  SkeletonView,
 } from '@weddingpick/ui';
 
 /**
@@ -76,7 +76,7 @@ export default function WeddingTasksScreen() {
   }
 
   if (!page) {
-    return <LoadingView />;
+    return <SkeletonView />;
   }
 
   function closeSheet() {

@@ -10,13 +10,13 @@ import {
   ActionButton,
   ErrorView,
   Layout,
-  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
   ThemedText,
   ThemedView,
   useTheme,
+  SkeletonView,
 } from '@weddingpick/ui';
 
 /**
@@ -46,7 +46,7 @@ export default function DecidedVendorsScreen() {
   }
 
   if (!page) {
-    return <LoadingView />;
+    return <SkeletonView />;
   }
 
   return (

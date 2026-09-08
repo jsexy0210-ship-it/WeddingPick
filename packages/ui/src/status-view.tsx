@@ -1,7 +1,11 @@
-import { ActivityIndicator, Linking, Platform, StyleSheet } from 'react-native';
+import { Linking, Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton } from './action-button';
+import { ListSkeleton } from './list-skeleton';
+import { CategoryOrbitLoader } from './orbit-loader';
+import { Spinner } from './spinner';
+import { StepList, type Step } from './step-list';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 import { Layout, MaxContentWidth, Spacing } from './theme';
@@ -39,17 +43,55 @@ export type LoadingViewProps = {
   label?: string;
 };
 
+/**
+ * 짧은 처리(3초 이하)의 화면 전체 로딩 — 스피너 40. 폼·상세 하나를 읽어오는 자리.
+ * **목록에는 쓰지 않는다** — 목록은 `SkeletonView`다(핸드오프 규칙 «목록에는
+ * 스피너를 쓰지 않아요»).
+ */
 export function LoadingView({ label }: LoadingViewProps) {
-  const theme = useTheme();
-
   return (
     <StatusFrame>
-      <ActivityIndicator color={theme.tint} size="large" />
+      <View style={styles.centerRow}>
+        <Spinner size={40} />
+      </View>
       {label ? (
-        <ThemedText type="t6" themeColor="textSecondary">
+        <ThemedText type="t6" themeColor="textSecondary" style={styles.centered}>
           {label}
         </ThemedText>
       ) : null}
+    </StatusFrame>
+  );
+}
+
+export type SkeletonViewProps = {
+  /** 위에 히어로 이미지 자리(168)를 먼저 그린다 — 업체 상세 첫 로딩. */
+  hero?: boolean;
+  rows?: 1 | 2 | 3;
+};
+
+/**
+ * WP-ST-007 목록 뼈대 — 화면 전체. 검색 결과·목록·업체 상세 첫 로딩.
+ * 3줄까지만 그린다 — 4줄 이상은 실제 내용보다 뼈대가 기억된다.
+ */
+export function SkeletonView({ hero = false, rows = 3 }: SkeletonViewProps) {
+  return (
+    <ThemedView style={styles.container}>
+      <SafeAreaView style={styles.safeArea}>
+        <ThemedView style={styles.skeletonContent}>
+          <ListSkeleton hero={hero} rows={rows} />
+        </ThemedView>
+      </SafeAreaView>
+    </ThemedView>
+  );
+}
+
+/**
+ * WP-ST-015 업종 순회 로딩 — 화면 전체. 추천 계산 · 첫 진입에만 쓴다.
+ */
+export function RecommendingView(props: { title?: string; estimate?: string }) {
+  return (
+    <StatusFrame>
+      <CategoryOrbitLoader {...props} />
     </StatusFrame>
   );
 }
@@ -199,27 +241,37 @@ export function PermissionDeniedView({
 // ─── WP-ST-012 처리 중 ────────────────────────────────────────────────────────
 
 export type ProcessingViewProps = {
-  /** 무슨 처리인지. 기본: "확인하고 있어요". */
+  /** 무슨 처리인지. 2줄까지. 기본: "확인하고 있어요". */
   title?: string;
-  /** 예상 소요 시간 안내. 기본: "보통 10초 안에 끝나요". */
+  /** 예상 소요 시간. 반드시 적는다 — 없으면 얼마나 기다릴지 알 수 없다. */
   estimatedLabel?: string;
+  /**
+   * 단계가 있는 처리면 어디까지 왔는지. 끝난 단계는 체크, 진행 중은 700,
+   * 남은 단계는 회색. 3초 넘게 걸리는 처리는 무엇을 하는 중인지 말한다.
+   */
+  steps?: readonly Step[];
 };
 
+/** WP-ST-012 처리 중 — 스피너 40 · 제목 24 · 예상 시간 · 단계 목록. */
 export function ProcessingView({
   title = '확인하고 있어요',
-  estimatedLabel = '보통 10초 안에 끝나요',
+  estimatedLabel = '10초 안에 끝나요',
+  steps,
 }: ProcessingViewProps) {
-  const theme = useTheme();
-
   return (
     <StatusFrame>
-      <ActivityIndicator color={theme.tint} size="large" />
-      <ThemedText type="t4" style={styles.centered}>
-        {title}
-      </ThemedText>
-      <ThemedText type="t7" themeColor="textSecondary" style={styles.centered}>
-        {estimatedLabel}
-      </ThemedText>
+      <View style={styles.processing}>
+        <Spinner size={40} />
+        <View style={styles.processingText}>
+          <ThemedText type="t3" style={styles.centered}>
+            {title}
+          </ThemedText>
+          <ThemedText type="t6" themeColor="textAssistive" style={styles.centered}>
+            {estimatedLabel}
+          </ThemedText>
+        </View>
+        {steps && steps.length > 0 ? <StepList steps={steps} /> : null}
+      </View>
     </StatusFrame>
   );
 }
@@ -262,4 +314,12 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   centered: { textAlign: 'center' },
+  centerRow: { alignItems: 'center' },
+  skeletonContent: {
+    flex: 1,
+    paddingHorizontal: Layout.gutter,
+    paddingTop: Spacing.three,
+  },
+  processing: { alignItems: 'center', gap: Spacing.five },
+  processingText: { alignItems: 'center', gap: Spacing.two },
 });

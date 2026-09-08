@@ -11,13 +11,13 @@ import {
   EmptyView,
   ErrorView,
   Layout,
-  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
   ThemedText,
   ThemedView,
   useTheme,
+  SkeletonView,
 } from '@weddingpick/ui';
 
 /**
@@ -43,7 +43,7 @@ export default function TimelineScreen() {
   useEffect(load, [load]);
 
   if (error) return <ErrorView message={error} onBack={() => router.back()} />;
-  if (!page) return <LoadingView />;
+  if (!page) return <SkeletonView />;
 
   const sorted = [...page.tasks].sort((a, b) => {
     if (!a.dueDate && !b.dueDate) return 0;

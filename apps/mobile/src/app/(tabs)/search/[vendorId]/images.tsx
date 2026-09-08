@@ -21,13 +21,13 @@ import {
   EmptyView,
   ErrorView,
   Layout,
-  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
   ThemedText,
   ThemedView,
   useTheme,
+  SkeletonView,
 } from '@weddingpick/ui';
 
 /**
@@ -67,7 +67,7 @@ export default function VendorImagesScreen() {
   }
 
   if (!photos) {
-    return <LoadingView />;
+    return <SkeletonView />;
   }
 
   return (

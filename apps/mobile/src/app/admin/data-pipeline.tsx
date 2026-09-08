@@ -3,9 +3,9 @@
  * 자동 처리 건수 · 단계별 적체 · 실패 큐 · 재처리
  */
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { FontSize, Spinner } from '@weddingpick/ui';
 import { apiFetch } from './_api';
 
 type StageCount = { stage: string; count: number; avgWaitMin: number };
@@ -76,7 +76,7 @@ export default function DataPipelineScreen() {
         </Pressable>
       </View>
 
-      {loading && <View style={styles.centered}><ActivityIndicator color="#ff6f61" size="large" /></View>}
+      {loading && <View style={styles.centered}><Spinner size={40} /></View>}
       {!loading && error && (
         <View style={styles.centered}>
           <Text style={styles.errorText}>{error}</Text>

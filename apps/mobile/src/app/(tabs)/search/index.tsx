@@ -17,7 +17,6 @@ import {
 import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   Pressable,
   ScrollView,
@@ -30,6 +29,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getTop3, listVendorRegions, searchVendors } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
+import { categoryIconKind } from '@/features/search/category-icon-kind';
 import { SortSheet } from '@/features/search/sort-sheet';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import {
@@ -47,6 +47,9 @@ import {
   Toast,
   VendorImage,
   useTheme,
+  ListSkeleton,
+  Spinner,
+  CategoryIcon,
 } from '@weddingpick/ui';
 
 /** 검색은 자주 쓰는 분류부터 보여준다. 사업계획서 6번의 확장 순서와 같다. */
@@ -263,6 +266,10 @@ export default function SearchScreen() {
                   setFilters((current) => ({ ...current, category }));
                   setViewState('results');
                 }}>
+                {/* 업종 아이콘(WP-ST-016) — 순회 로딩과 같은 글리프. 기타는 글리프가 없다. */}
+                {categoryIconKind(category) ? (
+                  <CategoryIcon kind={categoryIconKind(category)!} size={24} color={theme.textSecondary} />
+                ) : null}
                 <ThemedText type="t5">{VENDOR_CATEGORY_LABEL[category]}</ThemedText>
               </Pressable>
             ))}
@@ -505,7 +512,10 @@ export default function SearchScreen() {
 
         {/* 결과 목록 */}
         {vendors === null ? (
-          <ActivityIndicator color={theme.tint} style={styles.spinner} />
+          /* 목록에는 스피너를 쓰지 않는다 — 뼈대 3줄(WP-ST-007). 카드 이미지 자리(168)부터. */
+          <View style={styles.resultList}>
+            <ListSkeleton hero rows={3} />
+          </View>
         ) : (
           <FlatList
             data={vendors}
@@ -585,7 +595,7 @@ export default function SearchScreen() {
               </View>
             }
             ListFooterComponent={
-              loadingMore ? <ActivityIndicator color={theme.tint} style={styles.spinner} /> : null
+              loadingMore ? <Spinner size={24} style={styles.spinner} /> : null
             }
             renderItem={({ item }) => renderVendorCard(item)}
           />
@@ -790,8 +800,9 @@ const styles = StyleSheet.create({
     width: '47.5%',
     height: Layout.controlXLarge,
     borderRadius: Radius.medium,
-    alignItems: 'flex-start',
-    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
     paddingHorizontal: Spacing.three,
   },
 
@@ -948,7 +959,8 @@ const styles = StyleSheet.create({
   },
 
   spinner: {
-    paddingVertical: Spacing.five,
+    alignSelf: 'center',
+    marginVertical: Spacing.five,
   },
 
   // ── 하단 트레이 ──

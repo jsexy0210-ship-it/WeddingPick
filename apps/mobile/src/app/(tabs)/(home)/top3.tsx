@@ -18,13 +18,13 @@ import {
   ErrorView,
   FilterChip,
   Layout,
-  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
   ThemedText,
   ThemedView,
   useTheme,
+  CategoryOrbitLoader,
 } from '@weddingpick/ui';
 
 /**
@@ -83,7 +83,10 @@ export default function Top3Screen() {
           {error ? (
             <ErrorView message={error} onBack={() => router.back()} />
           ) : !data ? (
-            <LoadingView />
+            /* 추천 계산 — 업종 순회 로딩(WP-ST-015). */
+            <View style={styles.recommending}>
+              <CategoryOrbitLoader />
+            </View>
           ) : data.items.length > 0 ? (
             <>
               {data.region || data.category ? (
@@ -174,6 +177,7 @@ function Top3Card({ rank, item }: { rank: number; item: Top3Item }) {
 }
 
 const styles = StyleSheet.create({
+  recommending: { paddingVertical: Spacing.five },
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
   content: {

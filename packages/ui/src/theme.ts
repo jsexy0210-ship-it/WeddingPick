@@ -342,6 +342,15 @@ export const Motion = {
     easing: 'cubic-bezier(.34,1.56,.64,1)',
     bezier: [0.34, 1.56, 0.64, 1],
   },
+  /* 로딩 — 핸드오프 v3.15. 반복 애니메이션이 허용되는 유일한 자리(스피너·뼈대). */
+  /** 스피너 한 바퀴. */
+  spin: { duration: 900 },
+  /** 순회 로딩의 코랄 점 한 바퀴. */
+  orbit: { duration: 2400 },
+  /** 순회 로딩의 중앙 아이콘 교체 간격. 5개 × 1400 = 7000 한 사이클. */
+  iconSwap: { duration: 1400 },
+  /** 뼈대 숨쉬기 한 사이클(1 → .45 → 1). */
+  skeleton: { duration: 1400 },
 } as const;
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;

@@ -20,7 +20,6 @@ import {
   Fab,
   FilterChip,
   Layout,
-  LoadingView,
   MaxContentWidth,
   Radius,
   showAlert,
@@ -28,6 +27,7 @@ import {
   ThemedText,
   ThemedView,
   useTheme,
+  SkeletonView,
 } from '@weddingpick/ui';
 import { won } from '@/features/quotes/quote-result-view';
 
@@ -78,7 +78,7 @@ export default function ExpensesScreen() {
   }
 
   if (!page) {
-    return <LoadingView />;
+    return <SkeletonView />;
   }
 
   async function saveBudget() {

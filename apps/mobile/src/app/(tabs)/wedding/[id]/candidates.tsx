@@ -9,12 +9,12 @@ import {
   ActionButton,
   ErrorView,
   Layout,
-  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
   ThemedText,
   ThemedView,
+  SkeletonView,
 } from '@weddingpick/ui';
 
 /**
@@ -41,7 +41,7 @@ export default function WeddingCandidatesScreen() {
   }
 
   if (!page) {
-    return <LoadingView />;
+    return <SkeletonView />;
   }
 
   const remaining = page.limit - page.total;

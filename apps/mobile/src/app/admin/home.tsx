@@ -3,9 +3,9 @@
  * AI 운영현황 · 진짜 확인 필요 · 비용·수익 · AI 행동·변경 요약 · 긴급 중지
  */
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { FontSize, Spinner } from '@weddingpick/ui';
 import { apiFetch } from './_api';
 
 type DashboardMetric = {
@@ -96,7 +96,7 @@ export default function AdminHomeScreen() {
 
       {loading && (
         <View style={styles.centered}>
-          <ActivityIndicator color="#ff6f61" size="large" />
+          <Spinner size={40} />
         </View>
       )}
 

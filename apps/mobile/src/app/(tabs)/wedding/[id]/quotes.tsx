@@ -9,13 +9,13 @@ import { listQuotes } from '@/api/client';
 import {
   ActionButton,
   ErrorView,
-  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
   ThemedText,
   ThemedView,
   VerificationBadge,
+  SkeletonView,
 } from '@weddingpick/ui';
 
 function formatDate(iso: string): string {
@@ -103,7 +103,7 @@ export default function WeddingQuotesScreen() {
     }
   }
 
-  if (loading) return <LoadingView />;
+  if (loading) return <SkeletonView />;
 
   if (error && quotes.length === 0) {
     return <ErrorView message={error} onBack={() => router.back()} />;

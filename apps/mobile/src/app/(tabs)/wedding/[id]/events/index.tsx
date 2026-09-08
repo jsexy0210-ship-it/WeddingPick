@@ -11,12 +11,12 @@ import {
   ErrorView,
   Fab,
   Layout,
-  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
   ThemedText,
   ThemedView,
+  SkeletonView,
 } from '@weddingpick/ui';
 
 const SOURCE_LABEL: Record<WeddingEvent['source'], string> = {
@@ -60,7 +60,7 @@ export default function WeddingEventsScreen() {
   }
 
   if (!page) {
-    return <LoadingView />;
+    return <SkeletonView />;
   }
 
   const today = page.events.filter((event) => event.status === 'upcoming' && isToday(event.startsAt));

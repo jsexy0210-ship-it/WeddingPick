@@ -3,9 +3,9 @@
  * 기능별 중지 · 통계 반영 중지 · 보상 지급 중지 · 자동 게시 중지 · 추천 중지
  */
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
-import { FontSize, LineHeight } from '@weddingpick/ui';
+import { FontSize, LineHeight, Spinner } from '@weddingpick/ui';
 import { apiFetch } from './_api';
 
 type SwitchItem = {
@@ -73,7 +73,7 @@ export default function KillSwitchScreen() {
         </Pressable>
       </View>
 
-      {loading && <View style={styles.centered}><ActivityIndicator color="#ff6f61" size="large" /></View>}
+      {loading && <View style={styles.centered}><Spinner size={40} /></View>}
       {!loading && error && (
         <View style={styles.centered}>
           <Text style={styles.errorText}>{error}</Text>

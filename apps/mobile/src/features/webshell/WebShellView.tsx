@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { WebView } from 'react-native-webview';
 
-import { Layout, MaxContentWidth, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
+import { Layout, MaxContentWidth, Spacing, ThemedText, ThemedView, Spinner } from '@weddingpick/ui';
 import { loadToken } from '@/api/session';
 
 import { WEB_SHELL_URL } from './config';
@@ -26,7 +26,6 @@ type Props = {
  * 웹 쪽 스토리지(AsyncStorage의 web 폴리필, 즉 localStorage)에 남기 때문이다.
  */
 export function WebShellView({ path }: Props) {
-  const theme = useTheme();
   const [uri, setUri] = useState<string | null>(null);
 
   useEffect(() => {
@@ -59,7 +58,7 @@ export function WebShellView({ path }: Props) {
   if (!uri) {
     return (
       <Frame>
-        <ActivityIndicator color={theme.tint} />
+        <Spinner size={40} />
       </Frame>
     );
   }
@@ -71,7 +70,7 @@ export function WebShellView({ path }: Props) {
       startInLoadingState
       renderLoading={() => (
         <Frame>
-          <ActivityIndicator color={theme.tint} />
+          <Spinner size={40} />
         </Frame>
       )}
       renderError={() => (

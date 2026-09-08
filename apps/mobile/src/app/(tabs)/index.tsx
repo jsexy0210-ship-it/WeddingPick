@@ -19,10 +19,10 @@ import {
   ThemedText,
   ThemedView,
   useTheme,
+  RecommendingView,
 } from '@weddingpick/ui';
 import { Board, FoldedBoard } from '@/features/home/board';
 import { listWeddingContent, type WeddingContentItem } from '@/features/home/content';
-import { HomeSkeleton } from '@/features/home/home-skeleton';
 import { homeView, nextUpCategory, type HomeView } from '@/features/home/state';
 import {
   hasTaste,
@@ -124,9 +124,12 @@ export default function HomeScreen() {
     return <WebShellView path="/" />;
   }
 
-  // 골격이 같은 스켈레톤을 덮는다. 자료가 왔을 때 화면이 튀지 않게 하려는 것이다.
+  /*
+   * 첫 진입 — 추천을 계산하는 동안 업종 순회 로딩(WP-ST-015). 웨딩픽이 무엇을
+   * 보고 있는지 순서대로 보여준다. 핸드오프 v3.15 «추천 계산 · 첫 진입».
+   */
   if (!settled) {
-    return <HomeSkeleton />;
+    return <RecommendingView />;
   }
 
   const view = homeView({

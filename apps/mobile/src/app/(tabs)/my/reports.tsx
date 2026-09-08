@@ -9,7 +9,6 @@ import {
   ActionButton,
   ErrorView,
   Layout,
-  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
@@ -17,6 +16,7 @@ import {
   ThemedView,
   Toast,
   useTheme,
+  SkeletonView,
 } from '@weddingpick/ui';
 import { deleteReview, listMyReports } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
@@ -50,7 +50,7 @@ export default function MyReportsScreen() {
   }
 
   if (reports === null) {
-    return <LoadingView />;
+    return <SkeletonView />;
   }
 
   function confirmDelete(reviewId: string, vendor: string) {

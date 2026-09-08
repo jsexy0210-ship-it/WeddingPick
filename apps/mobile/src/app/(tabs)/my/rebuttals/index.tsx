@@ -9,13 +9,13 @@ import {
   ActionButton,
   ErrorView,
   Layout,
-  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
   ThemedText,
   ThemedView,
   useTheme,
+  SkeletonView,
 } from '@weddingpick/ui';
 import { listMyRebuttals, removeRebuttal } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
@@ -47,7 +47,7 @@ export default function MyRebuttalsScreen() {
   }
 
   if (rebuttals === null) {
-    return <LoadingView />;
+    return <SkeletonView />;
   }
 
   function confirmRemove(rebuttal: MyRebuttal) {

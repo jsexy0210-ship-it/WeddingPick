@@ -30,13 +30,13 @@ import {
   Colors,
   ErrorView,
   Layout,
-  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
   ThemedText,
   ThemedView,
   useTheme,
+  SkeletonView,
 } from '@weddingpick/ui';
 
 /**
@@ -101,7 +101,7 @@ export default function CompareScreen() {
   }
 
   if (!result) {
-    return <LoadingView />;
+    return <SkeletonView />;
   }
 
   /**

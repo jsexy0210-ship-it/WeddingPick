@@ -17,13 +17,13 @@ import {
   ErrorView,
   FontSize,
   Layout,
-  LoadingView,
   MaxContentWidth,
   Radius,
   Spacing,
   ThemedText,
   ThemedView,
   useTheme,
+  SkeletonView,
 } from '@weddingpick/ui';
 import { getMyMonthlyDraw, getMyRewards, redeemReferral, submitPromotion } from '@/api/client';
 import { shareOrCopy } from '@/components/share-or-copy';
@@ -119,7 +119,7 @@ export default function MyRewardsScreen() {
   }
 
   if (!data) {
-    return <LoadingView />;
+    return <SkeletonView />;
   }
 
   const field = {

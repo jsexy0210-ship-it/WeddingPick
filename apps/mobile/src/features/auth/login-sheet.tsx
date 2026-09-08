@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
 
 import {
   ActionButton,
@@ -9,6 +9,7 @@ import {
   ThemedText,
   ThemedView,
   useTheme,
+  Spinner,
 } from '@weddingpick/ui';
 import { completeAfterSignIn, type AfterSignIn } from '@/features/auth/after-sign-in';
 import { canSignInWith, signInWithKakao, useAuthProviders } from '@/features/auth/providers';
@@ -91,7 +92,7 @@ export function LoginSheet({ visible, reason, onSignedIn, onDismiss }: LoginShee
           </ThemedView>
 
           {providers === null ? (
-            <ActivityIndicator color={theme.tint} />
+            <Spinner size={32} />
           ) : providers.length === 0 ? (
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="t7" themeColor="textSecondary">

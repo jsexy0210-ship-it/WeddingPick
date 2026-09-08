@@ -36,7 +36,6 @@ import {
   ErrorView,
   Layout,
   LineHeight,
-  LoadingView,
   MaxContentWidth,
   ProgressBar,
   Radius,
@@ -45,6 +44,7 @@ import {
   ThemedView,
   VendorImage,
   useTheme,
+  SkeletonView,
 } from '@weddingpick/ui';
 
 /**
@@ -127,7 +127,7 @@ export default function VendorDetailScreen() {
   }
 
   if (!vendor) {
-    return <LoadingView />;
+    return <SkeletonView hero />;
   }
 
   /**
