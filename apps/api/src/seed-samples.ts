@@ -252,61 +252,90 @@ function drawSamples(category: VendorCategory): Sample[] {
 
 async function seedCategory(client: PoolClient, category: VendorCategory, reporters: string[]) {
   const recipe = RECIPES[category];
-  let inserted = 0;
-  let skipped = 0;
+  const samples = drawSamples(category);
 
-  for (const sample of drawSamples(category)) {
-    const { rows } = await client.query<{ id: string }>(
-      `INSERT INTO structured.vendors (category, name, region, source, lat, lng, collection_status)
-       VALUES ($1, $2, $3, 'vendor_official', $4, $5, 'operating')
-       ON CONFLICT (normalized_name, region) DO NOTHING
-       RETURNING id`,
-      [category, sample.name, sample.region.name, sample.lat, sample.lng]
-    );
+  /*
+   * 한 업종을 질의 네 번으로 넣는다(업체 · 출처 표시 · 이미지 · 결제인증). 한 행씩
+   * 넣으면 5,700번 왕복이라 원격 DB에서는 20분 제한을 넘겼다(2026-09-08 run 1).
+   * UNNEST로 배열을 행으로 펼쳐 한 번에 넣고, 유일 제약에 걸린 업체는
+   * RETURNING에 안 나오므로 그 뒤 것들도 자연히 빠진다.
+   */
+  const { rows } = await client.query<{ id: string; name: string; region: string }>(
+    `INSERT INTO structured.vendors (category, name, region, source, lat, lng, collection_status)
+     SELECT $1::vendor_category, name, region, 'vendor_official', lat, lng, 'operating'
+     FROM UNNEST($2::text[], $3::text[], $4::float8[], $5::float8[]) AS t(name, region, lat, lng)
+     ON CONFLICT (normalized_name, region) DO NOTHING
+     RETURNING id, name, region`,
+    [
+      category,
+      samples.map((sample) => sample.name),
+      samples.map((sample) => sample.region.name),
+      samples.map((sample) => sample.lat),
+      samples.map((sample) => sample.lng),
+    ]
+  );
 
-    if (!rows[0]) {
-      skipped += 1;
-      continue;
-    }
+  const idOf = new Map(rows.map((row) => [`${row.name}|${row.region}`, row.id]));
+  const inserted = samples.filter((sample) => idOf.has(`${sample.name}|${sample.region.name}`));
+  const skipped = samples.length - inserted.length;
 
-    const vendorId = rows[0].id;
+  if (inserted.length === 0) return { inserted: 0, skipped };
 
-    inserted += 1;
+  const vendorId = (sample: Sample) => idOf.get(`${sample.name}|${sample.region.name}`)!;
 
+  await client.query(
+    `INSERT INTO structured.vendor_source_records
+       (source_key, record_key, vendor_id, source_url, collected_at, content_hash)
+     SELECT $1, key, vendor_id::uuid, 'sample://weddingpick/' || key, now(), 'sample'
+     FROM UNNEST($2::text[], $3::text[]) AS t(key, vendor_id)
+     ON CONFLICT (source_key, record_key) DO NOTHING`,
+    [SOURCE_KEY, inserted.map((sample) => sample.key), inserted.map(vendorId)]
+  );
+
+  /* 대표 이미지 한 장씩. lock 값이 같으면 같은 사진이 돌아온다 — 새로고침마다 바뀌지 않는다. */
+  await client.query(
+    `INSERT INTO structured.vendor_images
+       (vendor_id, source_url, copyright_basis, copyright_note, match_confidence,
+        width_px, height_px, status, is_representative, verified_at)
+     SELECT vendor_id::uuid, url, 'cc_by', $3, 0, 800, 500, 'approved', true, now()
+     FROM UNNEST($1::text[], $2::text[]) AS t(vendor_id, url)`,
+    [
+      inserted.map(vendorId),
+      inserted.map((sample) => `https://loremflickr.com/800/500/${recipe.keywords}?lock=${sample.lock}`),
+      '샘플 이미지 · Flickr CC BY(loremflickr). 실제 업체 사진이 아니다.',
+    ]
+  );
+
+  /* 확인된 정보 — 최근 12개월 안의 결제인증. 업종당 한 번에. */
+  const proofs = inserted.flatMap((sample) =>
+    sample.proofs.map((proof) => ({
+      reporter: reporters[proof.reporter]!,
+      vendorId: vendorId(sample),
+      merchant: sample.name,
+      amount: proof.amount,
+      daysAgo: proof.daysAgo,
+    }))
+  );
+
+  if (proofs.length > 0) {
     await client.query(
-      `INSERT INTO structured.vendor_source_records
-         (source_key, record_key, vendor_id, source_url, collected_at, content_hash)
-       VALUES ($1, $2, $3, $4, now(), 'sample')
-       ON CONFLICT (source_key, record_key) DO NOTHING`,
-      [SOURCE_KEY, sample.key, vendorId, `sample://weddingpick/${sample.key}`]
-    );
-
-    /* 대표 이미지 한 장. lock 값이 같으면 같은 사진이 돌아온다 — 새로고침마다 바뀌지 않는다. */
-    await client.query(
-      `INSERT INTO structured.vendor_images
-         (vendor_id, source_url, copyright_basis, copyright_note, match_confidence,
-          width_px, height_px, status, is_representative, verified_at)
-       VALUES ($1, $2, 'cc_by', $3, 0, 800, 500, 'approved', true, now())`,
+      `INSERT INTO structured.payment_proofs
+         (reporter_user_id, vendor_id, merchant_name, paid_amount, paid_at, method, analyzed_at)
+       SELECT reporter::uuid, vendor_id::uuid, merchant, amount, now() - (days || ' days')::interval, 'card', now()
+       FROM UNNEST($1::text[], $2::text[], $3::text[], $4::bigint[], $5::text[])
+         AS t(reporter, vendor_id, merchant, amount, days)
+       ON CONFLICT DO NOTHING`,
       [
-        vendorId,
-        `https://loremflickr.com/800/500/${recipe.keywords}?lock=${sample.lock}`,
-        '샘플 이미지 · Flickr CC BY(loremflickr). 실제 업체 사진이 아니다.',
+        proofs.map((proof) => proof.reporter),
+        proofs.map((proof) => proof.vendorId),
+        proofs.map((proof) => proof.merchant),
+        proofs.map((proof) => proof.amount),
+        proofs.map((proof) => String(proof.daysAgo)),
       ]
     );
-
-    /* 확인된 정보 — 최근 12개월 안의 결제인증. */
-    for (const proof of sample.proofs) {
-      await client.query(
-        `INSERT INTO structured.payment_proofs
-           (reporter_user_id, vendor_id, merchant_name, paid_amount, paid_at, method, analyzed_at)
-         VALUES ($1, $2, $3, $4, now() - ($5 || ' days')::interval, 'card', now())
-         ON CONFLICT DO NOTHING`,
-        [reporters[proof.reporter]!, vendorId, sample.name, proof.amount, String(proof.daysAgo)]
-      );
-    }
   }
 
-  return { inserted, skipped };
+  return { inserted: inserted.length, skipped };
 }
 
 async function remove(client: PoolClient) {
