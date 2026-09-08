@@ -290,7 +290,7 @@ export default function VendorDetailScreen() {
             </>
           ) : null}
 
-          {/* ④ 확인된 정보 — 4단계 표시 */}
+          {/* ④ 실 제보 — 4단계 표시 */}
           <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} />
           <View style={styles.section}>
             <ThemedText type="t4">{TERMS.verifiedData}</ThemedText>
@@ -740,7 +740,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // ── 확인된 정보 금액 블록 ──
+  // ── 실 제보 금액 블록 ──
   priceBlock: {
     gap: Spacing.one,
   },

@@ -2,6 +2,7 @@ import type { Taste } from '@weddingpick/api-contract';
 import {
   BUDGET_BRACKET_LABEL,
   REGION_DISTRICTS,
+  TERMS,
   WEDDING_BUDGET_BRACKETS,
   WEDDING_DATE_HINT,
   WEDDING_REGIONS,
@@ -337,7 +338,7 @@ export default function SetupScreen() {
               <ThemedView style={styles.headline}>
                 <ThemedText type="t2">어디에서 하시나요?</ThemedText>
                 <ThemedText type="body" themeColor="textSecondary">
-                  그 지역의 확인된 정보로 맞춰드려요
+                  그 지역의 {TERMS.verifiedData}로 맞춰드려요
                 </ThemedText>
               </ThemedView>
 

@@ -1,6 +1,7 @@
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { TERMS } from '@weddingpick/domain';
 import { ActionButton, Layout, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 
 export type GuestGateSheetProps = {
@@ -14,7 +15,7 @@ export type GuestGateSheetProps = {
  * WP-ST-001 — 비회원 게이트.
  *
  * 비회원이 Pick·저장 등 로그인이 필요한 행동을 했을 때 바텀시트로 로그인을 유도한다.
- * 비회원에게 개인화 영역을 보여주지 않는다 — 이 시트 밖에서는 확인된 정보만 열려 있다.
+ * 비회원에게 개인화 영역을 보여주지 않는다 — 이 시트 밖에서는 실 제보만 열려 있다.
  */
 export function GuestGateSheet({ visible, onDismiss, onKakaoPress }: GuestGateSheetProps) {
   const theme = useTheme();
@@ -38,7 +39,7 @@ export function GuestGateSheet({ visible, onDismiss, onKakaoPress }: GuestGateSh
           로그인하면 저장돼요
         </ThemedText>
         <ThemedText type="body" themeColor="textSecondary" style={styles.body}>
-          확인된 정보는 로그인 없이도 볼 수 있어요
+          {TERMS.verifiedData}는 로그인 없이도 볼 수 있어요
         </ThemedText>
         <ActionButton
           variant="primary"

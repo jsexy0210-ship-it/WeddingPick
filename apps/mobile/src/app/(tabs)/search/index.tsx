@@ -7,6 +7,7 @@ import {
 } from '@weddingpick/api-contract';
 import {
   MAX_COMPARED_VENDORS,
+  MOST_VIEWED,
   NOT_ENOUGH_DATA,
   rangeLabel,
   STILL_COLLECTING,
@@ -300,7 +301,7 @@ export default function SearchScreen() {
   // ─── 홈 화면 ──────────────────────────────────────────────────────────────
 
   /**
-   * 목업 9a. 검색창 → 카테고리 → 밴드 → 최근 검색 → 지금 많이 찾는 곳.
+   * 목업 9a. 검색창 → 카테고리 → 밴드 → 최근 검색 → 많이 본 곳.
    * 비교함 트레이는 여기 없다 — 결과 상태에서만 뜬다.
    */
   function renderHome() {
@@ -336,7 +337,7 @@ export default function SearchScreen() {
                       setViewState('results');
                     }}>
                     {/*
-                      업종별 «확인된 정보 N건»은 아직 서버가 주지 않는다 — 지어내지
+                      업종별 «실 제보 N건»은 아직 서버가 주지 않는다 — 지어내지
                       않고 이름만 적는다. 엔드포인트가 생기면 t7 textAssistive 한 줄을 붙인다.
                     */}
                     <ThemedText type="t5" numberOfLines={1}>
@@ -401,10 +402,10 @@ export default function SearchScreen() {
           </View>
         ) : null}
 
-        {/* 지금 많이 찾는 곳 — 순번 · 이름/건수 · 금액. 마지막 행 아래에도 선을 긋는다. */}
+        {/* 많이 본 곳(v3.17) — 순번 · 이름/건수 · 금액. 마지막 행 아래에도 선을 긋는다. */}
         {hasTrend ? (
           <View style={[styles.section, styles.sectionAfterBand]}>
-            <ThemedText type="t4">지금 많이 찾는 곳</ThemedText>
+            <ThemedText type="t4">{MOST_VIEWED}</ThemedText>
             <View style={styles.trendList}>
               {top3!.items.map((item, idx) => {
                 const paidPrice = item.paidPrice;
@@ -539,13 +540,13 @@ export default function SearchScreen() {
             )}
           </View>
 
-          {/* 확인된 정보 · 지역 */}
+          {/* 실 제보 · 지역 */}
           <ThemedText type="t7" themeColor="textAssistive" numberOfLines={1} style={styles.cardMeta}>
             {isCollecting
               ? `${STILL_COLLECTING} · ${item.region}`
               : isLimited
                 ? `${NOT_ENOUGH_DATA} · ${paidPrice.count}건 · ${item.region}`
-                : `확인된 정보 ${paidPrice.count}건 · ${item.region}`}
+                : `${TERMS.verifiedData} ${paidPrice.count}건 · ${item.region}`}
           </ThemedText>
         </Pressable>
 
@@ -937,7 +938,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // 지금 많이 찾는 곳 — 목업: 행 gap 2 · 행 min-height 56 · padding 12 0 · 순번 18 · 요소 gap 14
+  // 많이 본 곳 — 목업: 행 gap 2 · 행 min-height 56 · padding 12 0 · 순번 18 · 요소 gap 14
   trendList: {
     gap: Spacing.half,
   },

@@ -71,8 +71,8 @@ function vendor(stage: 'collecting' | 'general'): VendorSummary {
     comparableQuoteCount: 0,
     paidPrice:
       stage === 'collecting'
-        ? { stage, count: 2, caption: '확인된 정보 2건 · 수집 중' }
-        : { stage, count: 8, caption: '확인된 정보 8건 · 최근 12개월', low: 1_520_000, high: 1_840_000 },
+        ? { stage, count: 2, caption: '실 제보 2건 · 수집 중' }
+        : { stage, count: 8, caption: '실 제보 8건 · 최근 12개월', low: 1_520_000, high: 1_840_000 },
   } as unknown as VendorSummary;
 }
 

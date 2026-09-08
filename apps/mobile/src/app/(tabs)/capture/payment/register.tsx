@@ -102,7 +102,7 @@ export default function RegisterPaymentProofScreen() {
             </ThemedText>
 
             {/*
-              실제 결제 구간이 "열렸다"고 말하지 않는다 — 그건 등록 전에도 보였다
+              제보 금액 구간이 "열렸다"고 말하지 않는다 — 그건 등록 전에도 보였다
               (v2.0 K-6). 여기서 늘어난 것은 조건이 비슷한 사례다.
             */}
             {done.deepData ? (

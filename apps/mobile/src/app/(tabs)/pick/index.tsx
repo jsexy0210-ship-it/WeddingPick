@@ -389,7 +389,7 @@ function SharedVendorRow({
           <ThemedText type="t5" numberOfLines={1}>
             {candidate.vendorName}
           </ThemedText>
-          {/* 후보 목록에는 확인된 정보 건수·금액이 안 실린다(api-contract candidates.ts) — 지역 · 업종만 적는다 */}
+          {/* 후보 목록에는 실 제보 건수·금액이 안 실린다(api-contract candidates.ts) — 지역 · 업종만 적는다 */}
           <ThemedText type="t7" themeColor="textAssistive" numeric numberOfLines={1}>
             {`${candidate.region} · ${categoryLabel}`}
           </ThemedText>

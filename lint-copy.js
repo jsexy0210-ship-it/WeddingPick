@@ -70,7 +70,7 @@ function isExempt(line, b) {
   // 법령·기관 고유명사는 제품 용어 치환 대상이 아니다.
   if (b.term === '거래' && line.includes('공정거래위원회')) return true;
   const exemptPhrases = {
-    '중앙값': '확인된 정보의 중앙값이에요',
+    '중앙값': '실 제보의 중앙값이에요',
     '별점': '별점 대신',
     '둘러보기': '둘러보기',
   };

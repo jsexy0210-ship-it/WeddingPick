@@ -182,7 +182,7 @@ function requireBaseUrl(): string {
  * 서버 응답을 계약 스키마로 검사한 뒤에 쓴다.
  *
  * 서버가 계약을 어기면 화면이 이상한 값을 그리기 전에 여기서 걸린다. 특히 가격은
- * 표본 수·기준 기간과 한 덩어리로만 오게 돼 있어(사업계획서 9번), 중앙값만 담긴 응답은
+ * 실 제보 건수·기준 기간과 한 덩어리로만 오게 돼 있어(사업계획서 9번), 중앙값만 담긴 응답은
  * 통과하지 못한다.
  */
 async function request<T>(
@@ -563,7 +563,7 @@ export async function listVendorPhotos(vendorId: string): Promise<VendorPhotosRe
 /**
  * 조건이 비슷한 결제 사례. v2.0 D-1.
  *
- * 실제 결제 구간(`getVendor`)과 다른 자리다 — 그건 누구나 보고, 이것은 결제인증이
+ * 제보 금액 구간(`getVendor`)과 다른 자리다 — 그건 누구나 보고, 이것은 결제인증이
  * 여는 깊이다.
  */
 export async function getVendorConditions(vendorId: string): Promise<ConditionStats> {
@@ -811,7 +811,7 @@ export async function registerPaymentProof(
 /**
  * 내가 낸 결제인증과, 그것으로 열린 것.
  *
- * **가격을 여는 값이 아니다.** v2.0 K-6이 그 잠금을 폐기했다 — 실제 결제 구간은
+ * **가격을 여는 값이 아니다.** v2.0 K-6이 그 잠금을 폐기했다 — 제보 금액 구간은
  * 누구나 본다. 여기서 열리는 것은 조건이 비슷한 사례다.
  */
 export async function getDataUnlock() {

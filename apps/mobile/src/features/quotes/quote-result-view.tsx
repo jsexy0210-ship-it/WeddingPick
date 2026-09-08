@@ -276,7 +276,7 @@ export function QuoteResultView({
                   내 견적 {won(comparison.myAmount)} · 실제 계약 기준금액{' '}
                   {won(comparison.stat.median)}
                 </ThemedText>
-                {/* 사업계획서 9번: 표본 수와 기준 기간을 늘 함께 보인다. */}
+                {/* 사업계획서 9번: 실 제보 건수와 기준 기간을 늘 함께 보인다. */}
                 <ThemedText type="small" themeColor="textSecondary">
                   인증된 계약 {comparison.stat.sampleCount}건 · {comparison.stat.periodStart}~
                   {comparison.stat.periodEnd}

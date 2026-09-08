@@ -46,8 +46,8 @@ describe('서버 응답 검사', () => {
     await expect(getComparison('quote-1')).resolves.toMatchObject({ judgement: 'high' });
   });
 
-  it('표본 수 없이 중앙값만 온 응답은 거부한다', async () => {
-    // 사업계획서 9번: 가격은 표본 수·기준 기간과 함께여야 한다.
+  it('실 제보 건수 없이 중앙값만 온 응답은 거부한다', async () => {
+    // 사업계획서 9번: 가격은 실 제보 건수·기준 기간과 함께여야 한다.
     const { sampleCount, ...statWithoutSampleCount } = VALID_COMPARISON.stat;
     respondWith({ ...VALID_COMPARISON, stat: statWithoutSampleCount });
 
