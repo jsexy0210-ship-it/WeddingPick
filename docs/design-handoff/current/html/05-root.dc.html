@@ -183,7 +183,7 @@ image-slot::part(empty){display:none !important}
 </div>
 
 <div id="9c" style="display:flex;flex-direction:column;gap:14px">
-<div style="font-size:14px;font-weight:700;color:#4d5159">9c · WP-OUR-001 우리웨딩</div>
+<div style="font-size:14px;font-weight:700;color:#4d5159">9c · WP-OUR-001 웨딩일정</div>
 <div style="width:390px;height:844px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)">
   <div style="height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:700;color:#212124">
     <span>9:41</span>
@@ -193,7 +193,7 @@ image-slot::part(empty){display:none !important}
     </span>
   </div>
   <div style="flex:0 0 56px;display:flex;align-items:center;justify-content:space-between;padding:0 20px 0 24px;background:#fff">
-    <span style="font-size:20px;line-height:27px;font-weight:700;color:#212124">우리웨딩</span>
+    <span style="font-size:20px;line-height:27px;font-weight:700;color:#212124">웨딩일정</span>
     <span style="width:40px;height:40px;border-radius:999px;display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#393a40" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 13.4a1.4 1.4 0 1 0 0-2.8 1.4 1.4 0 0 0 0 2.8zM12 7a1.4 1.4 0 1 0 0-2.8A1.4 1.4 0 0 0 12 7zM12 19.8a1.4 1.4 0 1 0 0-2.8 1.4 1.4 0 0 0 0 2.8z"></path></svg></span>
   </div>
   <div class="nsb" style="flex:1 1 auto;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;scrollbar-width:none">
@@ -343,7 +343,7 @@ class Component extends DCLogic {
     home: ['M3.6 10.4 12 3.8l8.4 6.6V19a1.6 1.6 0 0 1-1.6 1.6H5.2A1.6 1.6 0 0 1 3.6 19z', 'M9.6 20.6v-6.2h4.8v6.2', ''],
     search: ['M11 4.2a6.9 6.9 0 1 0 0 13.8 6.9 6.9 0 0 0 0-13.8z', 'M16.2 16.2 20.8 20.8', ''],
     pick: ['M6.2 21V4.4h5.6a4.6 4.6 0 0 1 0 9.2H6.2', 'm6.2 13.6 5 5 8.6-9.2', ''],
-    couple: ['M8.6 11.2a3.3 3.3 0 1 0 0-6.6 3.3 3.3 0 0 0 0 6.6z', 'M2.6 20.4v-.8a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v.8', 'M16.2 5.4a3.3 3.3 0 0 1 0 5.9M17.6 14.7a5 5 0 0 1 3.8 4.9v.8'],
+    couple: ['M5.2 5.6h13.6a1.8 1.8 0 0 1 1.8 1.8v11.2a1.8 1.8 0 0 1-1.8 1.8H5.2a1.8 1.8 0 0 1-1.8-1.8V7.4a1.8 1.8 0 0 1 1.8-1.8z', 'M3.4 10.4h17.2M8.4 3.4v4M15.6 3.4v4', ''],
     my: ['M12 11.6a4 4 0 1 0 0-8 4 4 0 0 0 0 8z', 'M4.8 20.6v-.6a6 6 0 0 1 6-6h2.4a6 6 0 0 1 6 6v.6', '']
   };
 
@@ -365,7 +365,7 @@ class Component extends DCLogic {
       this.tab('홈', 'home', active === 'home'),
       this.tab('검색', 'search', active === 'search'),
       this.tab('Pick', 'pick', active === 'pick'),
-      this.tab('우리웨딩', 'couple', active === 'couple'),
+      this.tab('웨딩일정', 'couple', active === 'couple'),
       this.tab('MY', 'my', active === 'my')
     ];
   }

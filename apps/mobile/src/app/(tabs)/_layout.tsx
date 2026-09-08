@@ -5,7 +5,7 @@ import { ProductSymbol, WeddingMark, useTheme } from '@weddingpick/ui';
 
 /**
  * Bottom Navigation: 홈 | 검색 | 촬영 | 내 웨딩 | MY
- * 사업계획서 31번 App IA. 배우자 연결(Phase 3) 후 "내 웨딩" 라벨은 "우리 웨딩"으로 바뀐다.
+ * 사업계획서 31번 App IA. 4번 탭은 «웨딩일정»(v3.16) — 혼자서도 전면 개방, 배우자 초대는 보조 기능.
  */
 export default function TabLayout() {
   const theme = useTheme();
@@ -52,7 +52,7 @@ export default function TabLayout() {
         }}
       />
       {/*
-        Pick. 통합정책 v3.2 §1이 루트를 홈/검색/Pick/우리웨딩/MY로 정했다.
+        Pick. 통합정책 v3.2 §1이 루트를 홈/검색/Pick/웨딩일정/MY로 정했다.
         아이콘은 웨딩픽 심볼(하트 안에 체크)을 그대로 쓴다 — 앱 아이콘·스플래시와
         같은 마크라야 "Pick이 이 앱의 중심"이라는 말이 화면에서도 같은 모양으로
         읽힌다. 색은 다른 탭처럼 선택 상태를 따라간다.
@@ -73,9 +73,9 @@ export default function TabLayout() {
       <Tabs.Screen
         name="wedding"
         options={{
-          title: '우리웨딩',
+          title: '웨딩일정',
           tabBarIcon: ({ color, size }) => (
-            <ProductSymbol name="twoPeople" color={color} size={size} />
+            <ProductSymbol name="calendar" color={color} size={size} />
           ),
         }}
       />

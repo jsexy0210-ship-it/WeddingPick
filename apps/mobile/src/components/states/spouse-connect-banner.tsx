@@ -9,7 +9,7 @@ export type SpouseConnectBannerProps = {
 /**
  * WP-ST-002 — 배우자 미연결 배너.
  *
- * 홈·우리웨딩·Pick 상단에 붙는다. 연결을 강요하지 않고 혼자서도 완결되게 둔다.
+ * 홈·웨딩일정·Pick 상단에 붙는다. 연결을 강요하지 않고 혼자서도 완결되게 둔다.
  */
 export function SpouseConnectBanner({ onInvite }: SpouseConnectBannerProps) {
   const theme = useTheme();
@@ -18,10 +18,10 @@ export function SpouseConnectBanner({ onInvite }: SpouseConnectBannerProps) {
     <View style={[styles.banner, { backgroundColor: theme.tintSubtle }]}>
       <View style={styles.text}>
         <ThemedText type="t5" style={{ color: theme.tint }}>
-          혼자 준비 중이에요
+          혼자서도 다 쓸 수 있어요
         </ThemedText>
         <ThemedText type="t7" themeColor="textSecondary">
-          둘이 같이 보면 결정이 빨라져요
+          배우자를 초대하면 같이 볼 수 있어요
         </ThemedText>
       </View>
       <Pressable

@@ -90,6 +90,7 @@ async function loadCurrentUser(context: AppContext, userId: string) {
     budget_amount: string | null;
     budget_bracket: WeddingBudgetBracket | null;
     display_name: string | null;
+    partner_display_name: string | null;
     spouse_linked: boolean;
     has_payment_proof: boolean;
     has_pick: boolean;
@@ -102,6 +103,14 @@ async function loadCurrentUser(context: AppContext, userId: string) {
        w.budget_amount,
        w.budget_bracket,
        u.display_name,
+       /*
+        * 배우자의 «부를 이름». 원본 문서·개인정보는 연결해도 공유하지 않지만(약관
+        * 제5조) 부를 이름은 서로 부르라고 정한 값이다 — 웨딩일정 홈이
+        * «지영님과 준호님이 함께 준비하고 있어요»라고 적는다(v3.16).
+        */
+       (SELECT p.display_name FROM structured.users p
+         WHERE p.id = CASE WHEN w.owner_user_id = u.id THEN w.partner_user_id ELSE w.owner_user_id END)
+         AS partner_display_name,
        coalesce(w.owner_user_id IS NOT NULL AND w.partner_user_id IS NOT NULL, false)
          AS spouse_linked,
        EXISTS (
@@ -173,6 +182,7 @@ async function loadCurrentUser(context: AppContext, userId: string) {
      */
     setupComplete: facts.weddingSet,
     spouseLinked: facts.spouseLinked,
+    partnerDisplayName: facts.spouseLinked ? (row?.partner_display_name ?? null) : null,
     hasPaymentProof: facts.hasPaymentProof,
     hasPick: facts.hasPick,
     hasCompared: facts.hasCompared,

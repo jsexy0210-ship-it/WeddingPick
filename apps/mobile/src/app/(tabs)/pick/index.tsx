@@ -93,7 +93,7 @@ export default function PickScreen() {
                 </View>
                 <View style={[styles.avatar, styles.avatarPartner, { backgroundColor: theme.backgroundSelected }]}>
                   <ThemedText style={[styles.avatarInitial, { color: theme.textSecondary }]}>
-                    배
+                    {me.partnerDisplayName?.[0] ?? '배'}
                   </ThemedText>
                 </View>
               </View>

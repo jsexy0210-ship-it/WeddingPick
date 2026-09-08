@@ -42,7 +42,7 @@ export const TERMS = {
   priceReport: '가격 제보',
   directInput: '직접입력',
   /** 커플 공동 공간. */
-  ourWedding: '우리웨딩',
+  ourWedding: '웨딩일정',
   spouse: '배우자',
   /** 프로모션. v3.3이 `현재 혜택·이벤트`를 사용자 화면에서 이 말로 바꿨다. */
   benefits: '받을 수 있는 혜택',
