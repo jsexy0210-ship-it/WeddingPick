@@ -1,6 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import { VENDOR_CATEGORIES } from '@weddingpick/domain';
+
 import { backfillVendorMatches } from './analysis/vendor-matching';
 import { loadConfig } from './config';
 import { createPool, withTransaction } from './db';
@@ -26,10 +28,11 @@ import { runPublicCollection } from './public-data/run';
  *
  * **모르는 파일은 --inspect 부터.** 업종과 배포 시점에 따라 컬럼 이름과 내용이
  * 다르고, 어떤 업종이 우리 분류 중 무엇에 해당하는지도 파일을 봐야 안다.
- * 잘못 넣으면 미용실 전부가 스드메로 들어오는 식의 일이 생긴다.
+ * 잘못 넣으면 미용실 전부가 메이크업 업체로 들어오는 식의 일이 생긴다.
  */
 
-const CATEGORIES = ['wedding_info_company', 'hall', 'sdm', 'snap', 'goods', 'honeymoon', 'etc'];
+/** 받는 업종 — 도메인 목록 그대로(핸드오프 v3.18 §1.3). */
+const CATEGORIES: readonly string[] = VENDOR_CATEGORIES;
 
 const SOURCE_KEY = 'localdata';
 

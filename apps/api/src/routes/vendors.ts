@@ -21,7 +21,7 @@ import {
   type PriceSample,
   type VendorCategory,
 } from '@weddingpick/domain';
-import { vendorSortSchema } from '@weddingpick/api-contract';
+import { vendorCategorySchema, vendorSortSchema } from '@weddingpick/api-contract';
 import type { FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
 import { z } from 'zod';
@@ -34,9 +34,8 @@ import { vendorSourceNote } from '../vendor-view';
 
 const searchQuerySchema = z.object({
   q: z.string().trim().max(60).optional(),
-  category: z
-    .enum(['wedding_info_company', 'hall', 'sdm', 'snap', 'goods', 'honeymoon', 'etc'])
-    .optional(),
+  /** 업종 목록은 계약(`vendorCategorySchema`)이 들고 있다 — 여기서 따로 베끼면 v3.18처럼 업종이 바뀔 때 어긋난다. */
+  category: vendorCategorySchema.optional(),
   /** "서울"처럼 시도까지만. region은 "서울 마포구" 형태라 앞부분으로 맞춘다. */
   region: z.string().trim().max(20).optional(),
   cursor: z.string().max(200).optional(),

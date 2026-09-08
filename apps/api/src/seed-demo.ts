@@ -46,11 +46,10 @@ const HALLS = [
   { name: '마루예식장', region: '서울 송파구' },
 ];
 
-const SDM = [
-  { name: '별빛스튜디오', region: '서울 강남구' },
-  { name: '하늘드레스', region: '서울 강남구' },
-  { name: '고운메이크업', region: '서울 서초구' },
-];
+/* v3.18 — 스튜디오·드레스·메이크업은 업종이 셋이다(`sdm` 폐지). */
+const STUDIOS = [{ name: '별빛스튜디오', region: '서울 강남구' }];
+const DRESSES = [{ name: '하늘드레스', region: '서울 강남구' }];
+const MAKEUPS = [{ name: '고운메이크업', region: '서울 서초구' }];
 
 const PLANNERS = [
   // 공개 근거가 있는 사람과 없는 사람을 함께 둔다. 검색에는 앞쪽만 나와야 한다.
@@ -84,7 +83,9 @@ async function seedVendors(client: PoolClient) {
 
   for (const [category, list] of [
     ['hall', HALLS],
-    ['sdm', SDM],
+    ['studio', STUDIOS],
+    ['dress', DRESSES],
+    ['makeup', MAKEUPS],
   ] as const) {
     for (const vendor of list) {
       const { rows } = await client.query<{ id: string }>(
@@ -216,7 +217,7 @@ async function main(): Promise<void> {
         PRICING_POLICY.minimumSampleCount - 1,
         24_000_000
       );
-      await seedMarketSamples(client, vendors['별빛스튜디오']!, '스드메 패키지', enough, 3_400_000);
+      await seedMarketSamples(client, vendors['별빛스튜디오']!, '스튜디오 촬영 패키지', enough, 3_400_000);
 
       // ── 내 웨딩: 화면에서 실제로 열어볼 문서들 ───────────────────────────
       const me = await client.query<{ id: string }>(
@@ -329,7 +330,7 @@ async function main(): Promise<void> {
       // 개인정보 재검토를 아직 안 받은 문서. 검토 대기 목록에 뜬다.
       await addDocument({
         vendorId: vendors['별빛스튜디오']!,
-        productName: '스드메 패키지',
+        productName: '스튜디오 촬영 패키지',
         amount: 3_800_000,
         uploadedDaysAgo: 2,
         confirmed: true,

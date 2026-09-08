@@ -191,7 +191,7 @@ describeWithDb('조건이 비슷한 사례', () => {
 
     const studio = await test.pool.query<{ id: string }>(
       `INSERT INTO structured.vendors (name, category, region, source)
-       VALUES ('스튜디오하나', 'sdm', '서울 강남구', 'public_data') RETURNING id`
+       VALUES ('스튜디오하나', 'studio', '서울 강남구', 'public_data') RETURNING id`
     );
 
     await ownProof(who.userId, seoul);

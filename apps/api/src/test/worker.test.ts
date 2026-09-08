@@ -434,7 +434,7 @@ describeWithDb('분석 워커', () => {
     // 스튜디오만 등록해두면 그것만 연결돼야 한다.
     await test.pool.query(
       `INSERT INTO structured.vendors (category, name, region, source)
-       VALUES ('sdm', '세컨드플로어', '서울 강남구', 'vendor_official')`
+       VALUES ('studio', '세컨드플로어', '서울 강남구', 'vendor_official')`
     );
 
     const { headers, analysisId } = await queueAnalysis();

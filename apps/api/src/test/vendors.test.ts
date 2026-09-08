@@ -282,7 +282,7 @@ describeWithDb('업체 검색', () => {
     const { headers } = await signInAs(test);
     await createVendor({ name: '가나홀', region: '서울 마포구' });
     await createVendor({ name: '다라홀', region: '경기 성남시' });
-    await createVendor({ name: '마바스튜디오', region: '서울 마포구', category: 'sdm' });
+    await createVendor({ name: '마바스튜디오', region: '서울 마포구', category: 'studio' });
 
     const seoul = await search(headers, '?region=' + encodeURIComponent('서울'));
     expect(seoul.vendors.map((v: { name: string }) => v.name)).toEqual(['가나홀', '마바스튜디오']);

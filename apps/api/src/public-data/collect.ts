@@ -7,7 +7,7 @@ import { PUBLIC_SOURCES, type SourceKey } from './sources';
 export type CollectedVendor = {
   name: string;
   region: string;
-  category: 'hall' | 'sdm' | 'snap' | 'wedding_info_company';
+  category: 'hall' | 'studio' | 'dress' | 'makeup' | 'snap' | 'wedding_info_company';
   sourceKey: SourceKey;
   sourceUrl: string;
   sourceRecordId: string | null;
@@ -22,6 +22,26 @@ export function isoDay(value: string, today: string): string | null {
   const date = new Date(`${day}T00:00:00Z`);
   return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === day && day <= today
     ? day : null;
+}
+
+/**
+ * 상권 소분류 + 상호로 업종을 고른다. 사진관·미용실·의류대여점 전체를 웨딩 업체로
+ * 추정하지 않는다 — 상호에 «웨딩»·«본식»·«브라이덜»이 있어야 받는다.
+ *
+ * v3.18부터 스튜디오·드레스·메이크업이 따로다(전에는 `sdm` 하나였다). 사진 업종은
+ * 상호로 가른다 — «본식»·«스냅»이면 본식스냅, «스튜디오»면 스튜디오, 그 밖의
+ * «웨딩 사진»은 전처럼 본식스냅으로 둔다.
+ */
+export function classifyWeddingIndustry(industry: string, name: string): CollectedVendor['category'] | null {
+  if (/사진|촬영|스튜디오/.test(industry)) {
+    if (/본식|스냅/.test(name)) return 'snap';
+    if (/스튜디오/.test(name) && /웨딩|브라이덜/.test(name)) return 'studio';
+    return /웨딩/.test(name) ? 'snap' : null;
+  }
+  if (!/웨딩|브라이덜/.test(name)) return null;
+  if (/의류.*대여|드레스/.test(industry)) return 'dress';
+  if (/미용|메이크업/.test(industry)) return 'makeup';
+  return null;
 }
 
 export function normalizeName(value: string): string {
@@ -62,8 +82,7 @@ export function parsePublicCsv(bytes: Buffer, key: SourceKey, at = new Date()) {
       // 사진관·미용실 전체를 웨딩 업체로 추정하지 않는다.
       if (/예식장/.test(industry)) category = 'hall';
       else if (/결혼.*중개|결혼.*상담/.test(industry)) category = 'wedding_info_company';
-      else if (/사진/.test(industry) && /웨딩|본식/.test(name)) category = 'snap';
-      else if (/미용|메이크업|의류.*대여/.test(industry) && /웨딩|브라이덜/.test(name)) category = 'sdm';
+      else category = classifyWeddingIndustry(industry, name);
     }
     const publishedOn = source.dateColumn ? isoDay(row[source.dateColumn] ?? '', at.toISOString().slice(0, 10)) : null;
     if (!name || name.length > 500 || !category || !/^\S+(?:시|도)\s+\S+/.test(region)
@@ -180,8 +199,11 @@ type SbizApiPage = {
  * 수집 카테고리 (indsSclsNm 기준):
  *   예식장 → hall
  *   결혼정보·결혼상담 → wedding_info_company
- *   사진 + 웨딩|본식 이름 → snap
- *   미용|메이크업|의류대여 + 웨딩|브라이덜 이름 → sdm
+ *   사진|촬영|스튜디오 + 본식|스냅 이름 → snap (웨딩 이름만 있어도 snap)
+ *   사진|촬영|스튜디오 + 웨딩|브라이덜 스튜디오 이름 → studio
+ *   의류대여|드레스 + 웨딩|브라이덜 이름 → dress
+ *   미용|메이크업 + 웨딩|브라이덜 이름 → makeup
+ *   (classifyWeddingIndustry)
  */
 export async function downloadSbizApiVendors(
   key: SourceKey,
@@ -222,8 +244,7 @@ export async function downloadSbizApiVendors(
       let category: CollectedVendor['category'] | null = null;
       if (/예식장/.test(industry)) category = 'hall';
       else if (/결혼.*중개|결혼.*상담/.test(industry)) category = 'wedding_info_company';
-      else if (/사진/.test(industry) && /웨딩|본식/.test(name)) category = 'snap';
-      else if (/미용|메이크업|의류.*대여/.test(industry) && /웨딩|브라이덜/.test(name)) category = 'sdm';
+      else category = classifyWeddingIndustry(industry, name);
 
       if (!name || name.length > 500 || !category || !/^\S+(?:시|도)\s+\S+/.test(region)) continue;
 

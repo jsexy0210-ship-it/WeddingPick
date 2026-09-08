@@ -164,19 +164,19 @@ describeWithDb('후보 저장', () => {
 
     await add(headers, weddingId, await createVendor('가온예식홀', 'hall'));
     await add(headers, weddingId, await createVendor('한빛예식홀', 'hall'));
-    await add(headers, weddingId, await createVendor('스튜디오온', 'sdm'));
+    await add(headers, weddingId, await createVendor('스튜디오온', 'studio'));
 
     const body = (await list(headers, weddingId)).json<{
       groups: { category: string; categoryLabel: string; comparable: boolean }[];
     }>();
 
     const halls = body.groups.find((group) => group.category === 'hall')!;
-    const sdm = body.groups.find((group) => group.category === 'sdm')!;
+    const studios = body.groups.find((group) => group.category === 'studio')!;
 
     // 비교는 같은 업종끼리만 뜻이 있다. 웨딩홀과 스튜디오를 나란히 놓은 표는
     // 아무것도 말하지 않는다.
     expect(halls.comparable).toBe(true);
-    expect(sdm.comparable).toBe(false);
+    expect(studios.comparable).toBe(false);
     // 화면에 나가는 것은 우리말 이름이지 내부 키가 아니다.
     expect(halls.categoryLabel).toMatch(/[가-힣]/);
   });
@@ -263,7 +263,7 @@ describeWithDb('후보 저장', () => {
     it('업종이 맞지 않으면 받지 않는다', async () => {
       const { headers } = await signInAs(test);
       const weddingId = await createWedding(test, headers);
-      const vendorId = await createVendor('스튜디오하나', 'sdm');
+      const vendorId = await createVendor('스튜디오하나', 'studio');
 
       await add(headers, weddingId, vendorId);
 
@@ -360,11 +360,11 @@ describeWithDb('후보 저장', () => {
       const { headers } = await signInAs(test);
       const weddingId = await createWedding(test, headers);
 
-      await add(headers, weddingId, await createVendor('스튜디오하나', 'sdm'));
+      await add(headers, weddingId, await createVendor('스튜디오하나', 'studio'));
 
       const body = (await list(headers, weddingId)).json<{ nextCategory: string }>();
 
-      expect(body.nextCategory).toBe('sdm');
+      expect(body.nextCategory).toBe('studio');
     });
   });
 
