@@ -114,6 +114,35 @@ export async function signIn(
   }
 }
 
+/**
+ * 로그인 직후 앱이 어느 화면으로 갈지 정하는 두 값. 세션 응답에 함께 실린다
+ * (2026-09-08) — 앱이 /v1/me/signup·/v1/me를 다시 묻느라 로그인 화면에 머무는
+ * 시간을 없앤다.
+ *
+ * `setupComplete`는 routes/weddings.ts의 weddingSet과 같은 판단이어야 한다 —
+ * 지역이 있으면 설정을 마친 것이다(예식일은 «아직 미정»으로 비울 수 있다).
+ */
+export async function sessionEntry(
+  pool: Pool,
+  userId: string
+): Promise<{ activated: boolean; setupComplete: boolean }> {
+  const { rows } = await pool.query<{ activated: boolean; setup_complete: boolean }>(
+    `SELECT u.activated_at IS NOT NULL AS activated,
+            EXISTS (
+              SELECT 1 FROM structured.weddings w
+              WHERE (w.owner_user_id = u.id OR w.partner_user_id = u.id)
+                AND w.region IS NOT NULL
+            ) AS setup_complete
+     FROM structured.users u
+     WHERE u.id = $1`,
+    [userId]
+  );
+
+  const row = rows[0];
+
+  return { activated: row?.activated ?? false, setupComplete: row?.setup_complete ?? false };
+}
+
 function identityValues(identity: VerifiedIdentity): Array<string | null> {
   return [
     identity.provider,

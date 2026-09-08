@@ -36,7 +36,15 @@ export type AfterSignIn = {
  * 로그아웃시키면 사용자는 로그인이 안 되는 앱을 보게 된다. 대신 무엇이 안 됐는지
  * 그대로 돌려주고, 화면이 그 말을 한다.
  */
-export async function completeAfterSignIn(): Promise<AfterSignIn> {
+export async function completeAfterSignIn(
+  options: {
+    /**
+     * 세션 응답이 이미 알려준 가입 여부(2026-09-08). 있으면 /v1/me/signup을
+     * 다시 묻지 않는다 — 로그인 직후 그 왕복 하나 때문에 로그인 화면에 머물렀다.
+     */
+    activated?: boolean;
+  } = {}
+): Promise<AfterSignIn> {
   const result: AfterSignIn = {
     needsSignup: false,
     savedWedding: false,
@@ -48,9 +56,9 @@ export async function completeAfterSignIn(): Promise<AfterSignIn> {
    * 가입이 끝났는지 먼저 본다. 안 끝났으면 여기서 멈춘다 — 적어둔 값은 기기에
    * 그대로 남고, 동의를 마친 뒤 이 함수를 다시 부르면 그때 올라간다.
    */
-  const signup = await getSignupState();
+  const activated = options.activated ?? (await getSignupState()).activated;
 
-  if (!signup.activated) {
+  if (!activated) {
     result.needsSignup = true;
 
     return result;

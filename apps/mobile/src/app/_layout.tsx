@@ -11,7 +11,10 @@ import { useFonts } from 'expo-font';
 import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 
+import { entryAfterSignIn, rememberSignedIn } from '@/features/auth/finish-sign-in';
 import { completeAuthPopup, isAuthPopup } from '@/features/auth/is-auth-popup';
+import { completeKakaoRedirect, hasKakaoReturn } from '@/features/auth/providers';
+import { setPendingSignInError } from '@/features/auth/sign-in-handoff';
 import { CaptureDraftProvider } from '@/features/capture/capture-draft';
 import { DocumentStoreProvider } from '@/features/documents/document-store';
 import { getCurrentUser, getSignupState } from '@/api/client';
@@ -120,6 +123,33 @@ function RootLayoutContent() {
     if (!tokenBootstrapped) return;
 
     void (async () => {
+      /*
+       * 카카오에서 같은 창으로 돌아온 직후다(웹). 로그인 화면을 거치지 않고
+       * 스플래시에서 곧장 마무리한다 — 코드를 세션으로 바꾸고, 그 응답이 알려준
+       * 값으로 온보딩/홈을 바로 첫 화면으로 정한다(2026-09-08). 실패한 이유는
+       * 로그인 화면에 넘겨 시트로 띄운다.
+       */
+      if (hasKakaoReturn()) {
+        try {
+          const session = await completeKakaoRedirect();
+
+          if (session) {
+            const next = await entryAfterSignIn(session);
+
+            void rememberSignedIn({ provider: 'kakao', email: null }, next === '/setup');
+            setEntry(next === '/setup' ? 'setup' : 'app');
+
+            return;
+          }
+        } catch (caught) {
+          setPendingSignInError(caught instanceof Error ? caught.message : '로그인하지 못했어요.');
+        }
+
+        setEntry('login');
+
+        return;
+      }
+
       /* 로그인한 사람은 서버가 답한다. */
       const me = await getCurrentUser().catch(() => null);
 

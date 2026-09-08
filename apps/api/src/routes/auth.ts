@@ -17,7 +17,7 @@ import {
 } from '../auth/email-account';
 import type { IdentityProviderName } from '../auth/identity-provider';
 import { hashPassword, verifyPassword } from '../auth/password';
-import { signIn, signOut } from '../auth/sessions';
+import { sessionEntry, signIn, signOut } from '../auth/sessions';
 import type { AppContext } from '../context';
 import { ApiError } from '../errors';
 
@@ -91,9 +91,12 @@ export function registerAuthRoutes(
         context.config.sessionTtlDays
       );
 
-      return reply
-        .status(201)
-        .send({ token: session.token, userId: session.userId, expiresAt: session.expiresAt.toISOString() });
+      return reply.status(201).send({
+        token: session.token,
+        userId: session.userId,
+        expiresAt: session.expiresAt.toISOString(),
+        ...(await sessionEntry(context.pool, session.userId)),
+      });
     }
 
     const provider = context.providers[body.provider];
@@ -138,6 +141,7 @@ export function registerAuthRoutes(
       token: session.token,
       userId: session.userId,
       expiresAt: session.expiresAt.toISOString(),
+      ...(await sessionEntry(context.pool, session.userId)),
     });
   });
 

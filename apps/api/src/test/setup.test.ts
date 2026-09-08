@@ -1,3 +1,5 @@
+import { REQUIRED_CONSENTS } from '@weddingpick/domain';
+
 import { createTestApp, resetDatabase, signInAs, type TestApp } from './helpers';
 
 let test: TestApp;
@@ -78,6 +80,45 @@ describeWithDb('최소 온보딩', () => {
     expect(body.setupComplete).toBe(true);
     // 웨딩이 없으면 여기서 만든다. "먼저 웨딩을 만드세요"라고 할 자리가 아니다.
     expect(body.weddingId).toBeTruthy();
+  });
+
+  it('세션 응답이 다음 화면을 바로 알려준다', async () => {
+    /*
+     * 2026-09-08. 로그인 직후 앱이 /v1/me/signup·/v1/me를 다시 묻지 않고
+     * 세션 응답만 보고 온보딩/홈을 고른다 — 그 왕복 하나 때문에 카카오 동의를
+     * 마친 사람이 로그인 화면에 머물렀다.
+     */
+    const pendingSession = await signInAs(test, 'entry-user', { completeSignup: false });
+    const again = () =>
+      test.app.inject({
+        method: 'POST',
+        url: '/v1/auth/sessions',
+        payload: { provider: 'apple', idToken: 'whatever' },
+      });
+
+    await expect(again().then((r) => r.json())).resolves.toMatchObject({
+      activated: false,
+      setupComplete: false,
+    });
+
+    await test.app.inject({
+      method: 'POST',
+      url: '/v1/me/signup',
+      headers: pendingSession.headers,
+      payload: { ageVerified: true, consents: REQUIRED_CONSENTS },
+    });
+
+    await expect(again().then((r) => r.json())).resolves.toMatchObject({
+      activated: true,
+      setupComplete: false,
+    });
+
+    await setup(pendingSession.headers, { weddingDate: null });
+
+    await expect(again().then((r) => r.json())).resolves.toMatchObject({
+      activated: true,
+      setupComplete: true,
+    });
   });
 
   it('예식일은 «아직 미정»으로 비워둘 수 있고 그래도 설정은 끝난다', async () => {
