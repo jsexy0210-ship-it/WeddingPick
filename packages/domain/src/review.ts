@@ -53,14 +53,54 @@ export const REVIEW_ASPECTS: Partial<Record<VendorCategory, readonly ReviewAspec
      */
     { key: 'extra_cost', label: '추가비용 사전안내' },
   ],
-  sdm: [
+  /*
+   * 스튜디오·드레스·메이크업은 v3.18부터 업종이 셋이다(전에는 `sdm` 하나였다).
+   * 항목도 따로 둔다 — 스튜디오는 촬영과 결과물이, 드레스는 피팅이, 메이크업은
+   * 시술이 걸려 있어 한 목록으로는 무엇이 좋았는지 남지 않는다. 사업계획서 19번.
+   */
+  studio: [
+    { key: 'shooting', label: '촬영 구성' },
     { key: 'result', label: '결과물' },
-    { key: 'shooting', label: '촬영' },
-    { key: 'retouch', label: '보정' },
-    { key: 'fitting', label: '피팅' },
-    { key: 'condition', label: '상태' },
+    { key: 'retouch', label: '원본·수정본' },
+    { key: 'staff', label: '직원 응대' },
     { key: 'response', label: '요청 반영' },
     { key: 'extra_cost', label: '추가비용' },
+  ],
+  dress: [
+    { key: 'fitting', label: '피팅' },
+    { key: 'variety', label: '드레스 구성' },
+    { key: 'condition', label: '드레스 상태' },
+    { key: 'staff', label: '직원 응대' },
+    { key: 'response', label: '요청 반영' },
+    { key: 'extra_cost', label: '추가비용' },
+  ],
+  makeup: [
+    { key: 'makeup', label: '메이크업 시술' },
+    { key: 'hair', label: '헤어' },
+    { key: 'durability', label: '지속력' },
+    { key: 'staff', label: '직원 응대' },
+    { key: 'response', label: '요청 반영' },
+    { key: 'extra_cost', label: '추가비용' },
+  ],
+  snap: [
+    { key: 'result', label: '결과물' },
+    { key: 'shooting', label: '촬영 진행' },
+    { key: 'delivery', label: '전달 기간' },
+    { key: 'staff', label: '직원 응대' },
+    { key: 'extra_cost', label: '추가비용' },
+  ],
+  /* 혼수·청첩장은 물건을 받는 거래라 짧게 묻는다. */
+  dowry: [
+    { key: 'quality', label: '품질' },
+    { key: 'delivery', label: '배송·설치' },
+    { key: 'staff', label: '직원 응대' },
+    { key: 'extra_cost', label: '추가비용' },
+  ],
+  invitation: [
+    { key: 'quality', label: '인쇄 품질' },
+    { key: 'design', label: '디자인 구성' },
+    { key: 'delivery', label: '제작 기간' },
+    { key: 'response', label: '요청 반영' },
   ],
 };
 

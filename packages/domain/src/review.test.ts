@@ -22,7 +22,7 @@ import {
 
 describe('누가 무엇에 답하는가', () => {
   it('하객은 계약 조건을 모르므로 묻지 않는다', () => {
-    const forGuest = aspectsForRole('sdm', 'guest').map((a) => a.key);
+    const forGuest = aspectsForRole('studio', 'guest').map((a) => a.key);
 
     // 모르는 것을 물으면 짐작으로 채우고, 그 짐작이 점수가 된다.
     expect(forGuest).not.toContain('extra_cost');
@@ -51,12 +51,19 @@ describe('누가 무엇에 답하는가', () => {
 
   it('업종마다 항목이 다르다', () => {
     const hall = aspectsFor('hall').map((a) => a.key);
-    const sdm = aspectsFor('sdm').map((a) => a.key);
+    const studio = aspectsFor('studio').map((a) => a.key);
+    const dress = aspectsFor('dress').map((a) => a.key);
+    const makeup = aspectsFor('makeup').map((a) => a.key);
 
     // 웨딩홀에서 중요한 것과 스튜디오에서 중요한 것은 겹치지 않는다.
     expect(hall).toContain('food_taste');
-    expect(sdm).not.toContain('food_taste');
-    expect(sdm).toContain('retouch');
+    expect(studio).not.toContain('food_taste');
+    expect(studio).toContain('retouch');
+    // 스튜디오·드레스·메이크업도 하나로 묶지 않는다 — 피팅은 드레스만, 헤어는 메이크업만 묻는다.
+    expect(dress).toContain('fitting');
+    expect(studio).not.toContain('fitting');
+    expect(makeup).toContain('hair');
+    expect(dress).not.toContain('hair');
   });
 });
 
@@ -125,7 +132,7 @@ describe('이용점수', () => {
   });
 });
 
-describe('스드메 세 업체를 합치지 않는다', () => {
+describe('스튜디오·드레스·메이크업 세 업체를 합치지 않는다', () => {
   it('업체가 둘 이상이면 하나로 만들 수 없다', () => {
     // 사업계획서 19번. 스튜디오는 좋았고 드레스는 나빴던 경험을 3.5점 하나로
     // 만들면 다음 사람은 무엇이 문제였는지 알 수 없다.

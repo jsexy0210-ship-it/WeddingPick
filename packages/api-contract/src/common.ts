@@ -24,13 +24,18 @@ export const documentTypeSchema = z.enum([
   'unknown',
 ]);
 
+/** 업종. `packages/domain` VENDOR_CATEGORIES와 같은 값·같은 순서(핸드오프 v3.18 §1.3). */
 export const vendorCategorySchema = z.enum([
   'wedding_info_company',
   'hall',
-  'sdm',
+  'studio',
+  'dress',
+  'makeup',
   'snap',
   'goods',
+  'dowry',
   'honeymoon',
+  'invitation',
   'etc',
 ]);
 

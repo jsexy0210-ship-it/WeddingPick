@@ -3,11 +3,13 @@ import Svg, { Path } from 'react-native-svg';
 import { useTheme } from './use-theme';
 
 /**
- * WP-ST-016 — 업종 아이콘 8종. 24 viewBox · stroke 1.7 · round cap · path 2개.
+ * WP-ST-016 — 업종 아이콘. 24 viewBox · stroke 1.7 · round cap · path 2개.
  *
  * 순회 로딩(WP-ST-015)과 업종 칩·검색 업종에 **같은 글리프**를 쓴다. 다른 아이콘
- * 라이브러리로 대체하지 않는다. path는 핸드오프 `30-loading.dc.html`의 값
- * 그대로다 — 손대지 않는다.
+ * 라이브러리로 대체하지 않는다. 핸드오프 8종(결정사 · 웨딩홀 · 스튜디오 · 드레스 ·
+ * 메이크업 · 본식스냅 · 예물 · 허니문)의 path는 `30-loading.dc.html`의 값 그대로다 —
+ * 손대지 않는다. 혼수·청첩장은 v3.18 §1.3 업종 10종을 채우려고 같은 규격으로
+ * 그린 것이다(핸드오프에 글리프가 없다).
  */
 export type CategoryIconKind =
   | 'agency'
@@ -17,7 +19,9 @@ export type CategoryIconKind =
   | 'makeup'
   | 'snap'
   | 'ring'
-  | 'honeymoon';
+  | 'dowry'
+  | 'honeymoon'
+  | 'invitation';
 
 export const CATEGORY_ICON_LABEL: Record<CategoryIconKind, string> = {
   agency: '결정사',
@@ -27,7 +31,9 @@ export const CATEGORY_ICON_LABEL: Record<CategoryIconKind, string> = {
   makeup: '메이크업',
   snap: '본식스냅',
   ring: '예물',
+  dowry: '혼수',
   honeymoon: '허니문',
+  invitation: '청첩장',
 };
 
 const GLYPH: Record<CategoryIconKind, [string, string]> = {
@@ -50,7 +56,17 @@ const GLYPH: Record<CategoryIconKind, [string, string]> = {
     'm5.4 16.4 4.2-4.2 3.2 3.2 2.8-2.8 3.8 3.8M9.2 9.4a1.3 1.3 0 1 0 0-2.6 1.3 1.3 0 0 0 0 2.6z',
   ],
   ring: ['M12 20.4a6.2 6.2 0 1 0 0-12.4 6.2 6.2 0 0 0 0 12.4z', 'M9.4 8.6 12 3.6l2.6 5'],
+  /* 혼수 — 리본 묶은 상자. */
+  dowry: [
+    'M3.6 10.4h16.8v8.6a1.6 1.6 0 0 1-1.6 1.6H5.2a1.6 1.6 0 0 1-1.6-1.6zM12 10.4v10.2',
+    'M3.6 10.4V7.2h16.8v3.2M12 7.2c-3.2 0-4.6-1.2-4.6-2.4A1.4 1.4 0 0 1 9.2 3.6c1.5 0 2.8 2.1 2.8 3.6 0-1.5 1.3-3.6 2.8-3.6a1.4 1.4 0 0 1 1.8 1.2c0 1.2-1.4 2.4-4.6 2.4z',
+  ],
   honeymoon: ['M20.4 12.6a8.4 8.4 0 0 1-16.8 0', 'M12 3.4v9.2M3.6 12.6h16.8M7.4 7.2 12 12.6l4.6-5.4'],
+  /* 청첩장 — 봉투와 그 안의 카드. */
+  invitation: [
+    'M3.4 9.6 12 4.2l8.6 5.4v9.2a1.6 1.6 0 0 1-1.6 1.6H5a1.6 1.6 0 0 1-1.6-1.6z',
+    'M3.6 10 12 15.4 20.4 10M6.4 7.7V6.2h11.2v1.5',
+  ],
 };
 
 /** 순회 로딩 순서. 준비 순서와 같다 — 임의로 섞지 않는다. */

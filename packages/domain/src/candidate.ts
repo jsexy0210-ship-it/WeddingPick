@@ -33,7 +33,7 @@ export function canAddCandidate(input: { currentCount: number }): CandidateCheck
 /**
  * 업종별로 몇 곳이 담겼는지.
  *
- * 화면이 "웨딩홀 3곳, 스드메 2곳"처럼 보여줄 수 있어야 한다. 서른 곳을 한 줄로
+ * 화면이 "웨딩홀 3곳, 스튜디오 2곳"처럼 보여줄 수 있어야 한다. 서른 곳을 한 줄로
  * 늘어놓으면 무엇을 견주는 중인지 보이지 않는다.
  */
 export function groupByCategory<T extends { category: VendorCategory }>(
