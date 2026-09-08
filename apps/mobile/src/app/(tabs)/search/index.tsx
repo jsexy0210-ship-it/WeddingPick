@@ -1,6 +1,5 @@
 import {
-  VENDOR_SORT_LABEL,
-  type Top3Response,
+  VENDOR_SORTS,
   type VendorSort,
   type SponsoredCard,
   type VendorSummary,
@@ -9,14 +8,13 @@ import {
   MAX_COMPARED_VENDORS,
   MOST_VIEWED,
   NOT_ENOUGH_DATA,
-  rangeLabel,
-  STILL_COLLECTING,
+  priceLine,
   TERMS,
   type VendorCategory,
   PREPARATION_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
 } from '@weddingpick/domain';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
@@ -29,7 +27,7 @@ import {
 import Svg, { Path } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { getTop3, listVendorRegions, searchVendors } from '@/api/client';
+import { listVendorRegions, searchVendors } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import {
   addRecentSearch,
@@ -37,7 +35,7 @@ import {
   loadRecentSearches,
   removeRecentSearch,
 } from '@/features/search/recent-searches';
-import { SortSheet } from '@/features/search/sort-sheet';
+import { SORT_LABEL, SortSheet } from '@/features/search/sort-sheet';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import {
   ActionButton,
@@ -75,11 +73,22 @@ const CATEGORY_ROWS: VendorCategory[][] = CATEGORY_ORDER.reduce<VendorCategory[]
   []
 );
 
-/** 0~2건은 금액 구간을 비공개한다(CLAUDE.md §3 «수집 중»). */
-const COLLECTING_LABEL = '수집 중';
-
 /** 글자를 칠 때마다 서버를 부르지 않는다. */
 const DEBOUNCE_MS = 350;
+
+/** 검색 홈 «많이 본 곳» 행 수. 전체 기준 실 제보 많은 순의 앞 네 곳이다. */
+const POPULAR_LIMIT = 4;
+
+/** 검색 홈 «많이 본 곳» 섹션 우측 라벨 — 내 지역이 아니라 전체 기준임을 적는다(SPEC §13.7). */
+const POPULAR_SCOPE_LABEL = '전체';
+
+function isVendorCategory(value: string | undefined): value is VendorCategory {
+  return value !== undefined && value in VENDOR_CATEGORY_LABEL;
+}
+
+function isVendorSort(value: string | undefined): value is VendorSort {
+  return value !== undefined && (VENDOR_SORTS as readonly string[]).includes(value);
+}
 
 type Filters = {
   q: string;
@@ -96,8 +105,18 @@ type Filters = {
  */
 type ViewState = 'home' | 'results';
 
+/**
+ * 밖에서 조건을 걸어 들어오는 길. 홈 조건 칩 · Pick 탭 «검색으로 가기»(`category` ·
+ * `region`) · 필터 시트 «필터 적용»(`sort`까지)이 넘긴다.
+ *
+ * **검색은 스스로 조건을 걸지 않는다**(SPEC §13.7). 여기 값은 사용자가 그 화면에서
+ * 눌러서 넘긴 것뿐이고, 온보딩 값은 어디서도 자동으로 읽어 오지 않는다.
+ */
+type EntryParams = { category?: string; region?: string; sort?: string };
+
 export default function SearchScreen() {
   const theme = useTheme();
+  const entry = useLocalSearchParams<EntryParams>();
   const [filters, setFilters] = useState<Filters>({
     q: '',
     category: null,
@@ -122,7 +141,8 @@ export default function SearchScreen() {
   const [picked, setPicked] = useState<string[]>([]);
   const [pickedCategory, setPickedCategory] = useState<VendorCategory | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [top3, setTop3] = useState<Top3Response | null>(null);
+  /** 많이 본 곳 — 전체 기준. 지역·업종을 걸지 않는다(SPEC §13.7). null이면 아직 못 읽었다. */
+  const [popular, setPopular] = useState<VendorSummary[] | null>(null);
   /** 정렬 시트(WP-SRCH-006)가 떠 있는가. */
   const [sortOpen, setSortOpen] = useState(false);
   /** 최근 검색. 자동완성 화면과 같은 저장소(`features/search/recent-searches`)를 본다. */
@@ -145,13 +165,42 @@ export default function SearchScreen() {
   useEffect(() => {
     if (!isServerConfigured) return;
 
-    getTop3({
-      region: filters.region ?? undefined,
-      category: filters.category ?? undefined,
-    })
-      .then(setTop3)
-      .catch(() => setTop3(null));
-  }, [filters.region, filters.category]);
+    /*
+     * 전체 업체를 실 제보 많은 순으로 — 보는 사람의 지역을 넘기지 않는다. 검색에도
+     * 온보딩 값을 걸면 홈과 같은 목록이 되고 검색에 갈 이유가 사라진다(SPEC §13.7).
+     */
+    searchVendors({ sort: 'data' })
+      .then((response) => setPopular(response.vendors.slice(0, POPULAR_LIMIT)))
+      .catch(() => setPopular(null));
+  }, []);
+
+  /*
+   * 밖에서 걸어 들어온 조건(홈 조건 칩 · Pick 탭 · 필터 시트)을 그대로 적용해 결과로
+   * 연다. 사용자가 그 화면에서 누른 값이지 자동 적용이 아니다. 아무 값도 없으면 홈
+   * 그대로다 — 필터 칩은 모두 꺼진 채 열린다.
+   *
+   * 파라미터가 바뀐 그 렌더에서 상태를 맞춘다(React «prop이 바뀔 때 state 조정»
+   * 패턴) — 이펙트에서 setState를 부르면 한 번 더 그리게 된다.
+   */
+  const entryCategory = isVendorCategory(entry.category) ? entry.category : null;
+  const entryRegion = entry.region?.trim() ? entry.region.trim() : null;
+  const entrySort = isVendorSort(entry.sort) ? entry.sort : null;
+  const entryKey = `${entryCategory ?? ''}|${entryRegion ?? ''}|${entrySort ?? ''}`;
+  const [appliedEntryKey, setAppliedEntryKey] = useState<string | null>(null);
+
+  if (entryKey !== appliedEntryKey) {
+    setAppliedEntryKey(entryKey);
+    if (entryCategory || entryRegion || entrySort) {
+      setFilters((current) => ({
+        ...current,
+        category: entryCategory,
+        region: entryRegion,
+        sort: entrySort ?? current.sort,
+      }));
+      setViewState('results');
+      setInputFocused(false);
+    }
+  }
 
   useEffect(() => {
     if (!isServerConfigured) return;
@@ -238,6 +287,8 @@ export default function SearchScreen() {
     setViewState('home');
     setFilters((current) => ({ ...current, q: '' }));
     setInputFocused(false);
+    /* 들어올 때 걸린 조건을 비운다 — 같은 조건으로 다시 들어와도 결과로 열리게. */
+    router.setParams({ category: '', region: '', sort: '' });
   }
 
   /**
@@ -306,7 +357,7 @@ export default function SearchScreen() {
    */
   function renderHome() {
     const hasRecent = recentSearches.length > 0;
-    const hasTrend = top3 !== null && top3.items.length > 0;
+    const hasTrend = popular !== null && popular.length > 0;
 
     return (
       <ScrollView
@@ -402,25 +453,30 @@ export default function SearchScreen() {
           </View>
         ) : null}
 
-        {/* 많이 본 곳(v3.17) — 순번 · 이름/건수 · 금액. 마지막 행 아래에도 선을 긋는다. */}
+        {/* 많이 본 곳(v3.17) — 순번 · 이름/건수 · 금액. 전체 기준이라 우측에 «전체». 마지막 행 아래에도 선을 긋는다. */}
         {hasTrend ? (
           <View style={[styles.section, styles.sectionAfterBand]}>
-            <ThemedText type="t4">{MOST_VIEWED}</ThemedText>
+            <View style={styles.sectionRow}>
+              <ThemedText type="t4">{MOST_VIEWED}</ThemedText>
+              <ThemedText type="t7" themeColor="textAssistive">{POPULAR_SCOPE_LABEL}</ThemedText>
+            </View>
             <View style={styles.trendList}>
-              {top3!.items.map((item, idx) => {
+              {popular!.map((item, idx) => {
                 const paidPrice = item.paidPrice;
-                const collecting = paidPrice.stage === 'collecting';
+                const line = priceLine(paidPrice, item.guidePrice);
                 const limited = paidPrice.stage === 'limited';
                 const count = paidPrice.count;
                 return (
-                  <View key={item.vendorId}>
+                  <View key={item.id}>
                     <Pressable
                       accessibilityRole="button"
                       accessibilityLabel={`${item.name} 자세히 보기`}
                       onPress={() =>
                         router.push({
                           pathname: '/search/[vendorId]',
-                          params: { vendorId: item.vendorId, reasons: item.reasons.join(',') },
+                          params: item.reasons?.length
+                            ? { vendorId: item.id, reasons: item.reasons.join(',') }
+                            : { vendorId: item.id },
                         })
                       }>
                       <View style={styles.trendRow}>
@@ -434,18 +490,21 @@ export default function SearchScreen() {
                         <View style={styles.trendBody}>
                           <ThemedText type="t5" numberOfLines={1}>{item.name}</ThemedText>
                           <ThemedText type="t7" themeColor="textAssistive" numeric numberOfLines={1}>
-                            {collecting || limited
-                              ? `${NOT_ENOUGH_DATA} · ${count}건`
-                              : `${TERMS.verifiedData} ${count}건 · ${VENDOR_CATEGORY_LABEL[item.category]}`}
+                            {line.dim
+                              ? `${line.caption} · ${VENDOR_CATEGORY_LABEL[item.category]}`
+                              : limited
+                                ? `${NOT_ENOUGH_DATA} · ${count}건`
+                                : `${TERMS.verifiedData} ${count}건 · ${VENDOR_CATEGORY_LABEL[item.category]}`}
                           </ThemedText>
                         </View>
-                        {paidPrice.stage === 'collecting' ? (
-                          <ThemedText type="t6" themeColor="textAssistive" style={styles.trendPrice}>
-                            {COLLECTING_LABEL}
+                        {/* 0층·1층은 회색(#868B94)으로 낮춘다. 빈 칸이나 «—»는 없다. */}
+                        {line.dim ? (
+                          <ThemedText type="t6" themeColor="textAssistive" numeric style={styles.trendPrice}>
+                            {line.text}
                           </ThemedText>
                         ) : (
                           <ThemedText type="t6" numeric style={[styles.trendPrice, styles.bold]}>
-                            {rangeLabel(paidPrice.low, paidPrice.high)}
+                            {line.text}
                           </ThemedText>
                         )}
                       </View>
@@ -500,7 +559,8 @@ export default function SearchScreen() {
   function renderVendorCard(item: VendorSummary) {
     const chosen = picked.includes(item.id);
     const paidPrice = item.paidPrice;
-    const isCollecting = paidPrice.stage === 'collecting';
+    /* 금액 한 줄 — 0층 «업체 안내 150만원~» · 1층 «수집 중» · 3건+ 구간. 검색·상세·비교가 같은 규칙. */
+    const line = priceLine(paidPrice, item.guidePrice);
     const isLimited = paidPrice.stage === 'limited';
 
     return (
@@ -529,21 +589,19 @@ export default function SearchScreen() {
             <ThemedText type="t4" numberOfLines={1} style={styles.cardName}>
               {item.name}
             </ThemedText>
-            {paidPrice.stage !== 'collecting' ? (
-              <ThemedText type="t6" numeric style={styles.cardPrice}>
-                {rangeLabel(paidPrice.low, paidPrice.high)}
-              </ThemedText>
-            ) : (
-              <ThemedText type="t7" themeColor="textAssistive">
-                {STILL_COLLECTING}
-              </ThemedText>
-            )}
+            <ThemedText
+              type="t6"
+              numeric
+              themeColor={line.dim ? 'textAssistive' : undefined}
+              style={styles.cardPrice}>
+              {line.text}
+            </ThemedText>
           </View>
 
-          {/* 실 제보 · 지역 */}
+          {/* 출처 또는 실 제보 · 지역 */}
           <ThemedText type="t7" themeColor="textAssistive" numberOfLines={1} style={styles.cardMeta}>
-            {isCollecting
-              ? `${STILL_COLLECTING} · ${item.region}`
+            {line.dim
+              ? `${line.caption} · ${item.region}`
               : isLimited
                 ? `${NOT_ENOUGH_DATA} · ${paidPrice.count}건 · ${item.region}`
                 : `${TERMS.verifiedData} ${paidPrice.count}건 · ${item.region}`}
@@ -604,11 +662,11 @@ export default function SearchScreen() {
           {/* 정렬 — 셀렉트. 누르면 바텀시트(WP-SRCH-006)에서 하나를 고른다. */}
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`정렬: ${VENDOR_SORT_LABEL[filters.sort]}`}
+            accessibilityLabel={`정렬: ${SORT_LABEL[filters.sort]}`}
             onPress={() => setSortOpen(true)}
             style={styles.sortSelect}>
             <ThemedText type="t7" themeColor="textSecondary">
-              {VENDOR_SORT_LABEL[filters.sort]}
+              {SORT_LABEL[filters.sort]}
             </ThemedText>
             <ChevronDownIcon color={theme.textSecondary} />
           </Pressable>

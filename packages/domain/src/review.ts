@@ -248,7 +248,7 @@ export const MINIMUM_REVIEW_COUNT = 5;
  * 내보내지 않는다.** 4건에서 계산한 4.5점을 회색으로 흐려 보여주는 것도 안 된다.
  * 흐린 숫자도 숫자고, 사람들은 숫자를 읽는다.
  */
-export const COLLECTING_LABEL = '데이터 수집 중';
+export const REVIEW_SCORE_COLLECTING_LABEL = '후기 수집 중';
 
 export type UsageScore =
   | { available: true; average: number; count: number; byAspect: Record<string, number> }
@@ -267,7 +267,7 @@ export function computeUsageScore(
   if (counted.length < MINIMUM_REVIEW_COUNT) {
     return {
       available: false,
-      reason: `${COLLECTING_LABEL} — 확인된 후기가 ${withSubject(`${MINIMUM_REVIEW_COUNT}건`)} 모여야 점수를 만들어요.`,
+      reason: `${REVIEW_SCORE_COLLECTING_LABEL} — 확인된 후기가 ${withSubject(`${MINIMUM_REVIEW_COUNT}건`)} 모여야 점수를 만들어요.`,
       count: counted.length,
     };
   }

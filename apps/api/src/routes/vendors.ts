@@ -20,6 +20,7 @@ import {
   widestDisclosable,
   type PriceSample,
   type VendorCategory,
+  isWeddingStyle,
 } from '@weddingpick/domain';
 import { vendorCategorySchema, vendorSortSchema } from '@weddingpick/api-contract';
 import type { FastifyInstance } from 'fastify';
@@ -63,6 +64,11 @@ type VendorRow = {
   /** 승인된 대표 이미지 주소. 검색·상세 질의가 서브쿼리로 채운다. */
   image_url?: string | null;
   comparable_quote_count: string;
+  /** 스타일 태그(0090). enum 배열은 드라이버가 문자열로 주므로 text[]로 읽는다. */
+  style_tags: string[] | null;
+  /** 업체 안내 가격(정보 0층). 없으면 null. */
+  guide_price_from: string | number | null;
+  guide_price_source: string | null;
   /** 검색 목록에서만 채워진다. 상세는 따로 읽는다. */
   proof_count?: string;
   total?: string;
@@ -128,7 +134,20 @@ function toSummary(row: VendorRow) {
     sourceNote: vendorSourceNote(row.source, row.source_url),
     imageUrl: row.image_url ?? null,
     comparableQuoteCount: Number(row.comparable_quote_count),
+    styleTags: (row.style_tags ?? []).filter(isWeddingStyle),
+    guidePrice: guidePriceOf(row),
   };
+}
+
+/**
+ * 업체 안내 가격(정보 0층 · v3.22). 금액과 출처가 같이 있어야 한다 — 출처 없는
+ * 숫자는 «업체 안내»라고 적을 수 없다(마이그레이션 0090의 CHECK와 같은 규칙).
+ */
+function guidePriceOf(row: Pick<VendorRow, 'guide_price_from' | 'guide_price_source'>) {
+  if (row.guide_price_from === null || row.guide_price_from === undefined) return null;
+  const fromKrw = Number(row.guide_price_from);
+  if (!Number.isFinite(fromKrw) || fromKrw <= 0) return null;
+  return { fromKrw, sourceLabel: row.guide_price_source ?? '업체 안내' };
 }
 
 /** 같은 상품을 두고 표기가 갈릴 때 가장 많이 쓰인 표기를 고른다. */
@@ -162,6 +181,7 @@ function mostCommon(values: string[]): string | null {
 async function loadVendorDetail(pool: Pool, vendorId: string, viewerId: string | null) {
   const { rows } = await pool.query<VendorRow>(
     `SELECT v.id, v.name, v.category, v.region, v.source, to_jsonb(v)->>'source_url' AS source_url, v.last_verified_at, v.lat, v.lng,
+              v.style_tags::text[] AS style_tags, v.guide_price_from, v.guide_price_source,
               (SELECT i.source_url FROM structured.vendor_images i
                  WHERE i.vendor_id = v.id AND i.status = 'approved' AND i.source_url IS NOT NULL
                  ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url,
@@ -433,7 +453,8 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
                      ELSE structured.normalize_vendor_name($1) END AS value
        ),
        found AS (
-         SELECT v.id, v.name, v.category, v.region, v.source, to_jsonb(v)->>'source_url' AS source_url, v.last_verified_at, v.lat, v.lng
+         SELECT v.id, v.name, v.category, v.region, v.source, to_jsonb(v)->>'source_url' AS source_url, v.last_verified_at, v.lat, v.lng,
+                v.style_tags, v.guide_price_from, v.guide_price_source
          FROM structured.vendors v, needle n
          WHERE (n.value IS NULL
                 OR v.normalized_name LIKE '%' || n.value || '%'
@@ -444,6 +465,7 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
            AND ($3::text IS NULL OR v.region LIKE $3 || '%')
        )
        SELECT v.id, v.name, v.category, v.region, v.source, to_jsonb(v)->>'source_url' AS source_url, v.last_verified_at, v.lat, v.lng,
+              v.style_tags::text[] AS style_tags, v.guide_price_from, v.guide_price_source,
               (SELECT i.source_url FROM structured.vendor_images i
                  WHERE i.vendor_id = v.id AND i.status = 'approved' AND i.source_url IS NOT NULL
                  ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url,

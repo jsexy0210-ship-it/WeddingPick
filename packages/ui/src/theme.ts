@@ -101,6 +101,9 @@ const palette = {
   googleText: '#212124',
   naverBg: '#03c75a',
   naverText: '#ffffff',
+  /** Npay 로고. spec/tokens.json color.social.npayBg · npayInk. 이미지 없이 그린다. */
+  npayBg: '#03c75a',
+  npayInk: '#1e1e1e',
 } as const;
 
 /**
@@ -113,6 +116,17 @@ export const SocialColors = {
   apple: { background: palette.appleBg, text: palette.appleText },
   google: { background: palette.googleBg, text: palette.googleText, border: palette.gray300 },
   naver: { background: palette.naverBg, text: palette.naverText },
+} as const;
+
+/**
+ * Npay 로고 색. 로그인 제공자(`SocialColors`)와 따로 둔다 — Npay는 로그인이 아니라
+ * 리워드 수령 수단이고, 제공자 목록에 섞이면 로그인 버튼이 하나 늘어난다.
+ * spec/tokens.json color.social.npayBg · npayInk.
+ */
+export const NpayColors = {
+  background: palette.npayBg,
+  ink: palette.npayInk,
+  text: '#ffffff',
 } as const;
 
 /**
@@ -349,6 +363,8 @@ export const Radius = {
  */
 export const Motion = {
   enter: { duration: 350, easing: 'cubic-bezier(.16,1,.3,1)' },
+  /** 혜택 안내 시트(WP-SHT-017) — 홈 최초 진입 후 이만큼 있다가 올라온다. spec/tokens.json motion.benefitSheetDelay. */
+  benefitSheetDelay: { duration: 400 },
   /**
    * 바텀시트. spec/tokens.json motion.sheetEnter · sheetExit · scrimFade.
    * 패널만 translateY(100%) → 0으로 올라오고, 스크림은 제자리에서 opacity 0 → 1로 깔린다 —

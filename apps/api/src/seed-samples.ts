@@ -5,6 +5,8 @@ import {
   checklistFor,
   productKey,
   type VendorCategory,
+  WEDDING_STYLES,
+  type WeddingStyle,
 } from '@weddingpick/domain';
 import type { PoolClient } from 'pg';
 
@@ -277,7 +279,32 @@ type Sample = {
   reviews: ReviewDraft[];
   /** 업체 안내 — 같은 상품의 확인된 계약. 5건부터 기준금액이 생긴다. */
   contracts: { reporter: number; amount: number; daysAgo: number }[];
+  /** 스타일 태그(v3.22). lock에서 정한다 — 난수를 더 쓰면 그 뒤 이름이 전부 바뀐다. */
+  styles: WeddingStyle[];
+  /** 업체 안내 시작 금액(정보 0층). 실 제보가 적은 업체가 «수집 중»으로만 남지 않게 3곳 중 2곳에 둔다. */
+  guideFrom: number | null;
 };
+
+/**
+ * 스타일 · 업체 안내 가격을 lock(업체마다 고정된 번호)에서 정한다.
+ *
+ * drawSamples의 난수 순서를 건드리지 않는다 — 난수를 하나라도 더 쓰면 그 뒤 업체
+ * 이름이 전부 달라져 두 번째 실행이 새 업체를 또 만든다.
+ */
+function stylesFor(lock: number): WeddingStyle[] {
+  const first = WEDDING_STYLES[lock % WEDDING_STYLES.length]!;
+  /* 셋 중 둘은 태그 2개 — 교집합이 0 · 1 · 2로 골고루 나오게. */
+  if (lock % 3 === 0) return [first];
+  const second = WEDDING_STYLES[(lock + 1 + (lock % 2)) % WEDDING_STYLES.length]!;
+  return second === first ? [first] : [first, second];
+}
+
+function guideFromFor(lock: number, amount: [number, number]): number | null {
+  if (lock % 3 === 2) return null;
+  const [low, high] = amount;
+  const ratio = (lock % 7) / 10; /* 0 ~ 0.6 */
+  return Math.round((low + (high - low) * ratio) / 100_000) * 100_000;
+}
 
 /** 후기 문장 — 업종마다 8개. 50자 넘어야 한다(reviews.body CHECK). */
 const REVIEW_TEXTS: Record<SampleCategory, { title: string; body: string }[]> = {
@@ -549,6 +576,8 @@ function drawSamples(category: SampleCategory): Sample[] {
       lng,
       address: `${region.name} 샘플로 ${10 + index * 3}`,
       lock: 1000 + SAMPLE_CATEGORIES.indexOf(category) * PER_CATEGORY + index,
+      styles: stylesFor(1000 + SAMPLE_CATEGORIES.indexOf(category) * PER_CATEGORY + index),
+      guideFrom: guideFromFor(1000 + SAMPLE_CATEGORIES.indexOf(category) * PER_CATEGORY + index, recipe.amount),
       proofs,
       reviews,
       contracts,
@@ -589,6 +618,28 @@ async function seedCategory(
       samples.map((sample) => sample.lat),
       samples.map((sample) => sample.lng),
       samples.map((sample) => sample.address),
+    ]
+  );
+
+  /*
+   * 스타일 · 업체 안내 가격(0090)은 이미 있던 업체에도 채운다 — 이 컬럼이 생기기 전에
+   * 심은 스테이징 표본이 그대로 «수집 중»으로 남지 않게. 표본 업체만 건드린다.
+   */
+  await client.query(
+    `UPDATE structured.vendors v
+     SET style_tags = string_to_array(t.styles, ',')::wedding_style[],
+         guide_price_from = t.guide_from,
+         guide_price_source = CASE WHEN t.guide_from IS NULL THEN NULL ELSE $5 END,
+         guide_price_checked_at = CASE WHEN t.guide_from IS NULL THEN NULL ELSE now() END
+     FROM UNNEST($2::text[], $3::text[], $4::text[], $6::bigint[]) AS t(name, region, styles, guide_from)
+     WHERE v.category = $1::vendor_category AND v.name = t.name AND v.region = t.region`,
+    [
+      category,
+      samples.map((sample) => sample.name),
+      samples.map((sample) => sample.region.name),
+      samples.map((sample) => sample.styles.join(',')),
+      '업체 홈페이지 안내(표본)',
+      samples.map((sample) => sample.guideFrom),
     ]
   );
 

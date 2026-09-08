@@ -46,6 +46,8 @@ function summary(paidPrice: VendorSummary['paidPrice']): VendorSummary {
     sourceNote: null,
     imageUrl: null,
     comparableQuoteCount: 12,
+    styleTags: [],
+    guidePrice: null,
     paidPrice,
   };
 }
@@ -60,6 +62,8 @@ function detail(overrides: Partial<VendorDetail> = {}): VendorDetail {
     sourceNote: null,
     imageUrl: null,
     comparableQuoteCount: 12,
+    styleTags: [],
+    guidePrice: null,
     lastVerifiedAt: '2026-08-28T00:00:00.000Z',
     usageScore: { available: false, reason: NOT_ENOUGH_DATA, count: 0 },
     prices: {

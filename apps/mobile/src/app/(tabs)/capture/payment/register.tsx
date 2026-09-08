@@ -9,7 +9,7 @@ import {
   type PaymentMethod,
   type PaymentProofField,
 } from '@weddingpick/domain';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +18,7 @@ import { parsePaymentText, registerPaymentProof } from '@/api/client';
 import { PermissionDeniedError, pickFromLibrary } from '@/features/capture/pickers';
 import { uploadPaymentProof } from '@/features/capture/upload';
 import type { CapturedPage } from '@/features/capture/types';
+import { paramToDay } from '@/features/wedding/expense-day';
 import {
   ActionButton,
   FilterChip,
@@ -53,10 +54,21 @@ function toTimestamp(day: string): string | null {
  */
 export default function RegisterPaymentProofScreen() {
   const theme = useTheme();
+  /*
+   * 지출 추가(WP-OUR-014)에서 «지출 넣고 인증하기»로 오면 적은 값을 그대로 받는다 —
+   * 같은 것을 두 번 적지 않게 미리 채울 뿐, 나머지는 그대로다.
+   */
+  const prefill = useLocalSearchParams<{
+    merchantName?: string;
+    paidAmount?: string;
+    paidAt?: string;
+  }>();
 
-  const [merchantName, setMerchantName] = useState('');
-  const [amount, setAmount] = useState('');
-  const [day, setDay] = useState('');
+  const [merchantName, setMerchantName] = useState(prefill.merchantName ?? '');
+  const [amount, setAmount] = useState(() =>
+    (prefill.paidAmount ?? '').replace(/[^0-9]/g, '').slice(0, 12).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  );
+  const [day, setDay] = useState(() => paramToDay(prefill.paidAt) ?? '');
   const [method, setMethod] = useState<PaymentMethod>('card');
   const [identifiers, setIdentifiers] = useState<MaskedIdentifierKind[]>([]);
 

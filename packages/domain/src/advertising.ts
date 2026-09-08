@@ -14,7 +14,7 @@
 /**
  * 광고가 영향을 줄 수 없는 것들. v3.10 §4가 목록을 다시 적었다.
  *
- * v2.0 E-1의 여섯 가지를 대체한다 — 그때는 없던 추천(TOP3·오늘의 Pick·개인화)이
+ * v2.0 E-1의 여섯 가지를 대체한다 — 그때는 없던 추천(TOP3·웨딩픽 추천·개인화)이
  * 생겼고, **새로 만든 것부터 광고가 붙기 쉽다.** 목록을 갱신하지 않으면 새 기능은
  * 아무도 지키지 않는 자리가 된다.
  */
@@ -38,7 +38,7 @@ export type ProtectedSurface = (typeof ADVERTISING_MUST_NOT_AFFECT)[number];
  */
 export const PROTECTED_SURFACE_LABEL: Record<ProtectedSurface, string> = {
   top3: 'AI TOP3',
-  todays_pick: '오늘의 Pick',
+  todays_pick: '웨딩픽 추천',
   personalized: '개인화 추천',
   search_ranking: '자연 검색순위',
   verified_data: '실 제보',

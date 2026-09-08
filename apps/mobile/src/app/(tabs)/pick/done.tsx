@@ -1,9 +1,10 @@
 import { VENDOR_CATEGORY_LABEL, type VendorCategory } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Animated, Easing, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { getCurrentUser } from '@/api/client';
 import {
   ActionButton,
   Layout,
@@ -27,6 +28,11 @@ import {
  * 2. ringSpread — 체크 링 뒤 원형 scale 1→2.5 & opacity 1→0, 600ms
  * 3. rise×3    — 반영 3건 각각 translateY 10→0 & opacity 0→1, 420ms,
  *               cubic-bezier(.16,1,.3,1), 200/320/440ms 딜레이로 순차 등장
+ *
+ * **결정 직후가 지출을 넣을 때다(v3.22 SPEC 13.10).** 반영 3건 아래에 «지출을
+ * 넣어두시겠어요?» 카드를 두고 WP-OUR-014로 보낸다 — 그 순간이 사용자가 금액을
+ * 기억하고 있는 유일한 때다. 화면의 coral Primary는 이 «지출 넣기» 하나이고
+ * «홈으로»는 보조다.
  */
 export default function PickDoneScreen() {
   const theme = useTheme();
@@ -37,6 +43,41 @@ export default function PickDoneScreen() {
 
   const categoryLabel = VENDOR_CATEGORY_LABEL[category as VendorCategory] ?? category ?? '';
   const vendor = vendorName ?? '';
+
+  /** 지출 추가 화면이 웨딩 id를 경로에 쓴다. 없으면(아직 못 읽었으면) 누를 때 한 번 더 읽는다. */
+  const [weddingId, setWeddingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+
+    getCurrentUser()
+      .then((me) => {
+        if (alive) setWeddingId(me.weddingId ?? null);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  async function goAddExpense() {
+    const target = weddingId ?? (await getCurrentUser().then((me) => me.weddingId ?? null).catch(() => null));
+
+    if (!target) {
+      router.replace('/');
+
+      return;
+    }
+
+    router.push({
+      pathname: `/wedding/${target}/expenses/add`,
+      params: {
+        ...(vendor ? { vendorName: vendor } : {}),
+        ...(category ? { category } : {}),
+      },
+    } as never);
+  }
 
   // ── 애니메이션 값 — useMemo로 생성해 렌더 중 ref 접근을 피한다 ──────
   const markScale = useMemo(() => new Animated.Value(0), []);
@@ -110,7 +151,7 @@ export default function PickDoneScreen() {
   // ── 반영 3건 ────────────────────────────────────────────────
   const reflectItems = [
     vendor ? `${vendor}로 결정했어요` : '결정했어요',
-    '웨딩일정 준비현황과 지출에 자동으로 반영돼요',
+    '홈 준비 현황과 웨딩일정 지출에 자동으로 반영돼요',
     '결정은 언제든 바꿀 수 있어요',
   ];
 
@@ -119,7 +160,7 @@ export default function PickDoneScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView
           contentContainerStyle={styles.scroll}
-          scrollEnabled={false}>
+          showsVerticalScrollIndicator={false}>
 
           {/* ── 1. 체크 링 ─────────────────────────────── */}
           <View style={styles.markArea}>
@@ -166,13 +207,29 @@ export default function PickDoneScreen() {
             ))}
           </ThemedView>
 
-          {/* ── 3. 다음 카테고리 추천 ───────────────────── */}
-          <ActionButton
-            variant="primary"
-            size="xlarge"
-            label="완료"
-            onPress={() => router.replace('/(tabs)/pick')}
-          />
+          {/* ── 3. 지출 넣기 — 금액을 기억하는 지금이 가장 정확하다(WP-OUR-014로). ── */}
+          <ThemedView type="backgroundElement" style={styles.card}>
+            <ThemedText type="t5">지출을 넣어두시겠어요?</ThemedText>
+            <ThemedText type="t7" themeColor="textSecondary">
+              금액을 기억하는 지금이 가장 정확해요
+            </ThemedText>
+            <ActionButton
+              variant="primary"
+              size="xlarge"
+              label="지출 넣기"
+              onPress={() => void goAddExpense()}
+            />
+          </ThemedView>
+
+          {/* ── 4. 홈으로 — 보조. Primary는 위의 «지출 넣기» 하나다. ── */}
+          <View style={styles.footer}>
+            <ActionButton
+              variant="ghost"
+              size="xlarge"
+              label="홈으로"
+              onPress={() => router.replace('/')}
+            />
+          </View>
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -226,5 +283,8 @@ const styles = StyleSheet.create({
   },
   reflectRow: {
     lineHeight: LineHeight.t7,
+  },
+  footer: {
+    width: '100%',
   },
 });

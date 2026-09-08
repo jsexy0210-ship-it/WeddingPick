@@ -1,8 +1,10 @@
 import { createSessionRequestSchema } from '@weddingpick/api-contract';
+import { AGE_BLOCKED_NOTICE } from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
 
+import { ageVerdictFromRange } from '../auth/age-range';
 import type { IdentityProviderName } from '../auth/identity-provider';
-import { sessionEntry, signIn, signOut } from '../auth/sessions';
+import { markAgeVerified, sessionEntry, signIn, signOut } from '../auth/sessions';
 import type { AppContext } from '../context';
 import { ApiError } from '../errors';
 
@@ -69,12 +71,36 @@ export function registerAuthRoutes(app: FastifyInstance, context: AppContext): v
       throw new ApiError('unauthenticated', '로그인 정보를 확인하지 못했습니다.');
     }
 
+    /*
+     * 연령대(v3.22 SPEC 3.5). 판정 하나만 꺼내고 문자열은 여기서 버린다 —
+     * `signIn`에 넘기기 전에 지워야 identities에도 남지 않는다.
+     *
+     *   있음 · 14세 이상 → 체크박스 없이 통과(age_verified)
+     *   있음 · 미만      → 계정을 만들지 않고 403 under_age(앱은 WP-AUTH-010)
+     *   없음             → 체크박스 그대로
+     */
+    const ageVerdict = ageVerdictFromRange(identity.profile?.ageRange);
+
+    if (identity.profile) {
+      const { ageRange: _dropped, ...rest } = identity.profile;
+      identity.profile = rest;
+    }
+
+    if (ageVerdict === 'under_age') {
+      // 아무것도 만들지 않았다. 지울 것도 없다.
+      throw new ApiError('under_age', AGE_BLOCKED_NOTICE);
+    }
+
     const session = await signIn(
       context.pool,
       identity,
       context.config.sessionTtlDays,
       context.config.operatorSessionTtlDays
     );
+
+    if (ageVerdict === 'verified') {
+      await markAgeVerified(context.pool, session.userId);
+    }
 
     return reply.status(201).send({
       token: session.token,

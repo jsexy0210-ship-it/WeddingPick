@@ -13,7 +13,7 @@ type BootstrapBody = {
 };
 
 /**
- * 홈 부팅. 회원 · 알림 · 많이 확인된 곳 · 담아둔 후보 · 오늘의 Pick을 한 번에
+ * 홈 부팅. 회원 · 알림 · 많이 확인된 곳 · 담아둔 후보 · 웨딩픽 추천을 한 번에
  * 받는 자리다 — 서버 안에서 그 다섯을 병렬로 모아 화면이 인터넷을 여러 번
  * 왕복하지 않게 한다.
  */
@@ -65,7 +65,7 @@ describeWithDb('홈 부팅', () => {
     expect(body.recommendations).toEqual([]);
   });
 
-  it('후보가 지목한 업종에서 오늘의 Pick을 뽑는다', async () => {
+  it('후보가 지목한 업종에서 웨딩픽 추천을 뽑는다', async () => {
     const { headers } = await signInAs(test);
     const weddingId = await createWedding(test, headers);
     const picked = await aVendor('가온예식홀');

@@ -221,6 +221,103 @@ describeWithDb('사용자 알림', () => {
     });
   });
 
+  describe('하루 한도 — SPEC 13.12', () => {
+    /** 한 사람이 Pick한 업체 여럿. 각각 가격 변동이 일어나게 만든다. */
+    async function pickMany(count: number) {
+      const { headers, userId } = await signInAs(test);
+      const weddingId = await createWedding(test, headers);
+      const vendorIds: string[] = [];
+
+      for (let index = 0; index < count; index += 1) {
+        const vendor = await test.pool.query<{ id: string }>(
+          `INSERT INTO structured.vendors (name, category, region, source)
+           VALUES ($1, 'hall', '서울', 'public_data') RETURNING id`,
+          [`예식홀 ${index}`]
+        );
+        const vendorId = vendor.rows[0]!.id;
+
+        await test.pool.query(
+          `INSERT INTO structured.vendor_candidates (wedding_id, vendor_id, added_by)
+           VALUES ($1, $2, $3)`,
+          [weddingId, vendorId, userId]
+        );
+        vendorIds.push(vendorId);
+      }
+
+      return { headers, userId, weddingId, vendorIds };
+    }
+
+    async function proofsFor(vendorIds: string[], count: number) {
+      for (const vendorId of vendorIds) {
+        for (let index = 0; index < count; index += 1) {
+          const reporter = await test.pool.query<{ id: string }>(
+            'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
+          );
+          await test.pool.query(
+            `INSERT INTO structured.payment_proofs
+               (reporter_user_id, vendor_id, merchant_name, paid_amount, paid_at)
+             VALUES ($1, $2, '가맹점', $3, now() - interval '1 month')`,
+            [reporter.rows[0]!.id, vendorId, 3_000_000 + index]
+          );
+        }
+      }
+    }
+
+    it('가격 변동은 하루 두 건까지만 간다', async () => {
+      const { headers, vendorIds } = await pickMany(3);
+      const { push } = fakePush();
+
+      // 첫 바퀴는 기준점만 남긴다.
+      await sendPriceChangeNudges({ pool: test.pool, push });
+      await proofsFor(vendorIds, 5);
+
+      const result = await sendPriceChangeNudges({ pool: test.pool, push });
+
+      expect(result.stored).toBe(2);
+      expect(result.capped).toBe(1);
+      expect(await inbox(headers)).toHaveLength(2);
+    });
+
+    it('일정 알림은 한도를 세지 않는다', async () => {
+      // «하루 최대 2건. 일정 알림은 예외입니다.»
+      const { headers, weddingId, vendorIds } = await pickMany(2);
+      const { push } = fakePush();
+
+      await sendPriceChangeNudges({ pool: test.pool, push });
+      await proofsFor(vendorIds, 5);
+      expect((await sendPriceChangeNudges({ pool: test.pool, push })).stored).toBe(2);
+
+      await addTask(weddingId, inDays(1), '드레스 투어');
+      await addTask(weddingId, inDays(7), '스튜디오 촬영');
+
+      const tasks = await sendTaskNudges({ pool: test.pool, push });
+
+      expect(tasks.stored).toBe(2);
+      expect(tasks.capped).toBe(0);
+      expect(await inbox(headers)).toHaveLength(4);
+    });
+
+    it('이미 보낸 알림은 한도에 막힌 것으로 세지 않는다', async () => {
+      const { vendorIds } = await pickMany(2);
+      const { push } = fakePush();
+
+      await sendPriceChangeNudges({ pool: test.pool, push });
+      await proofsFor(vendorIds, 5);
+      await sendPriceChangeNudges({ pool: test.pool, push });
+
+      // 기준점을 멀리 되돌려 같은 날 또 «변화»가 잡히게 한다 — 열쇠가 같아
+      // 건너뛴 것이지 한도 때문이 아니다.
+      await test.pool.query(
+        'UPDATE structured.price_alert_marks SET low = 1000000, high = 1100000'
+      );
+      const again = await sendPriceChangeNudges({ pool: test.pool, push });
+
+      expect(again.stored).toBe(0);
+      expect(again.capped).toBe(0);
+      expect(again.skipped).toBe(2);
+    });
+  });
+
   describe('가격 변동 알림', () => {
     async function candidateWith(count: number, amount: number) {
       const { headers, userId } = await signInAs(test);
@@ -307,6 +404,43 @@ describeWithDb('사용자 알림', () => {
 
       expect(first.stored).toBe(1);
       expect(second.stored).toBe(0);
+    });
+
+    it('결정을 끝낸 업종의 업체에는 알리지 않는다', async () => {
+      /*
+       * SPEC 13.12 — 알림은 진행 중 업종에서만 온다. 정한 뒤에 «다른 곳이
+       * 싸졌어요»는 정보가 아니라 후회다.
+       */
+      const { headers, userId, vendorId } = await candidateWith(1, 3_000_000);
+      const { push } = fakePush();
+
+      await sendPriceChangeNudges({ pool: test.pool, push });
+      await seedProofs(vendorId, 5, 3_000_000);
+
+      await test.pool.query(
+        `INSERT INTO structured.category_decisions (wedding_id, category, vendor_id, decided_by)
+         SELECT c.wedding_id, 'hall', c.vendor_id, $1
+         FROM structured.vendor_candidates c WHERE c.vendor_id = $2`,
+        [userId, vendorId]
+      );
+
+      expect((await sendPriceChangeNudges({ pool: test.pool, push })).stored).toBe(0);
+      expect(await inbox(headers)).toHaveLength(0);
+    });
+
+    it('앱 밖에서 이미 정했다고 고른 업종에도 알리지 않는다', async () => {
+      const { headers, vendorId } = await candidateWith(1, 3_000_000);
+      const { push } = fakePush();
+
+      await sendPriceChangeNudges({ pool: test.pool, push });
+      await seedProofs(vendorId, 5, 3_000_000);
+
+      await test.pool.query(
+        `UPDATE structured.weddings SET prepared_categories = ARRAY['hall']::vendor_category[]`
+      );
+
+      expect((await sendPriceChangeNudges({ pool: test.pool, push })).stored).toBe(0);
+      expect(await inbox(headers)).toHaveLength(0);
     });
 
     it('가격 알림만 따로 끌 수 있다', async () => {

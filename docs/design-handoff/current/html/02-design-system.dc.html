@@ -647,7 +647,7 @@ class Component extends DCLogic {
         { concept: '커플 공간', use: '웨딩일정', avoid: '커플공간' },
         { concept: '파트너', use: '배우자', avoid: '파트너, 동반자' },
         { concept: '프로모션', use: '현재 혜택·이벤트', avoid: '딜, 특가존' },
-        { concept: '개인 추천', use: '오늘의 Pick', avoid: 'AI 추천' },
+        { concept: '개인 추천', use: '웨딩픽 추천', avoid: 'AI 추천' },
         { concept: '추천 근거', use: '추천 이유', avoid: 'AI 분석 결과' },
         { concept: '추천 주체', use: '웨딩픽이 골랐어요 · 웨딩픽이 비교했어요', avoid: 'AI가 분석했어요, AI 추천, AI TOP3' },
         { concept: '자체 콘텐츠', use: '웨딩픽 콘텐츠', avoid: 'AI 웨딩 콘텐츠, AI가 작성한 글' },
@@ -658,7 +658,7 @@ class Component extends DCLogic {
         { concept: '신뢰 상태', use: '결제 확인', avoid: '회원등급' }
       ],
       skeletonSpecs: [
-        { where: '홈', what: 'Hero 2줄 · 현황판 4칸 · 오늘의 Pick 이미지 16:9 + 3줄 · 콘텐츠 1:1 2장', n: '4블록' },
+        { where: '홈', what: 'Hero 2줄 · 현황판 4칸 · 웨딩픽 추천 이미지 16:9 + 3줄 · 콘텐츠 1:1 2장', n: '4블록' },
         { where: '검색', what: '결과 카드 2:1 + 제목 · 금액 · 건수 3줄', n: '3장' },
         { where: '업체 상세', what: '히어로 3:2 · 업체명 2줄 · 실 제보 박스 · 후기 2건', n: '4블록' },
         { where: 'Pick', what: '카테고리 행 4개 · 후보 카드 107×96 + 2줄', n: '4행' },
@@ -669,7 +669,7 @@ class Component extends DCLogic {
       ],
       imageSpecs: [
         { where: '업체 상세 히어로', spec: '390×260 · 3:2' },
-        { where: '홈 오늘의 Pick 대형', spec: '342×196 · 16:9' },
+        { where: '홈 웨딩픽 추천 대형', spec: '342×196 · 16:9' },
         { where: '검색 결과 카드', spec: '342×168 · 2:1' },
         { where: '2열 피드 카드', spec: '16:11' },
         { where: '취향 이미지 카드', spec: '1:1' },

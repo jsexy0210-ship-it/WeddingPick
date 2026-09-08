@@ -5,6 +5,7 @@ import {
   budgetExcludes,
   isRecommendable,
   reasonsFor,
+  recommendScore,
   type Top3Facts,
 } from './top3';
 
@@ -15,6 +16,9 @@ const BASE: Top3Facts = {
   priceMin: null,
   priceMax: null,
   budgetBracket: null,
+  chosenStyles: 0,
+  styleOverlap: 0,
+  hasGuidePrice: false,
 };
 
 describe('추천 이유', () => {
@@ -63,6 +67,9 @@ describe('추천 이유', () => {
   it('모든 이유에 사용자 문장이 있다', () => {
     for (const reason of reasonsFor({
       regionMatched: true,
+      chosenStyles: 2,
+      styleOverlap: 2,
+      hasGuidePrice: true,
       confirmedCount: 10,
       recentCount: 4,
       priceMin: 21_000_000,
@@ -92,5 +99,29 @@ describe('추천할 자격', () => {
 
   it('세 곳이 최대다', () => {
     expect(TOP3_LIMIT).toBe(3);
+  });
+});
+
+describe('v3.22 — 스타일 · 업체 안내 가격', () => {
+  it('스타일 이유가 맨 앞이고, 다 맞으면 개수를 적는다', () => {
+    expect(reasonsFor({ ...BASE, chosenStyles: 2, styleOverlap: 2 })[0]).toBe('style_all');
+    expect(reasonsFor({ ...BASE, chosenStyles: 2, styleOverlap: 1 })[0]).toBe('style');
+    expect(reasonsFor({ ...BASE, chosenStyles: 1, styleOverlap: 1 })[0]).toBe('style');
+    expect(reasonsFor({ ...BASE, chosenStyles: 2, styleOverlap: 0 })).not.toContain('style');
+  });
+
+  it('실 제보가 없어도 업체 안내 가격이나 스타일 일치로 추천이 선다', () => {
+    const cold = { ...BASE, confirmedCount: 0, recentCount: 0, priceMin: null, priceMax: null };
+    expect(isRecommendable({ ...cold, hasGuidePrice: true })).toBe(true);
+    expect(isRecommendable({ ...cold, chosenStyles: 1, styleOverlap: 1 })).toBe(true);
+    expect(isRecommendable({ ...cold, regionMatched: false })).toBe(false);
+  });
+
+  it('점수는 스타일 교집합이 가장 무겁고 실 제보가 붙으면 오른다', () => {
+    const a = recommendScore({ ...BASE, chosenStyles: 2, styleOverlap: 2, confirmedCount: 0 });
+    const b = recommendScore({ ...BASE, chosenStyles: 2, styleOverlap: 1, confirmedCount: 12 });
+    const c = recommendScore({ ...BASE, chosenStyles: 2, styleOverlap: 1, confirmedCount: 0, hasGuidePrice: true });
+    expect(a).toBeGreaterThan(b);
+    expect(b).toBeGreaterThan(c);
   });
 });

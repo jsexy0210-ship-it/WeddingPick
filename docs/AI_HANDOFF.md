@@ -777,7 +777,7 @@ WeddingPickl/
 코드와 정책이 충돌하면 **정책이 맞다.** 코드를 고친다.
 
 주요 섹션:
-- `§I-4` — 월간 웨딩지원금 추첨 (4개 미션 완료 조건, NPay 5만원×2명)
+- `§I-4` — 월간 웨딩지원금 추첨 (4개 미션 완료 조건, Npay 5만원×2명)
 - `§J-3` — 탈퇴 화면 UX 문구
 - `§A~§H` — 업체·검색·Pick·비교 핵심 정책
 
@@ -903,7 +903,7 @@ WeddingPickl/
 ## 변경 금지 / 주의
 - do_not_change:
   - **회원탈퇴 자동 삭제 백엔드를 만들지 말 것.** `packages/domain/src/withdrawal.ts`의 `WITHDRAWAL_NOTICE`가 개인정보처리방침 확정 전까지 `null`인 명시적 게이트다. 스키마상 `structured.users` 하드 삭제는 FK CASCADE로 확인된 정보(quotes)까지 지운다 — 위험. `payment_proofs`/`price_reports`를 "통계 제외"할지 "익명화 유지"할지도 정책 §46이 명확히 안 정했다. 이 정책들이 정해지기 전엔 손대지 말 것.
-  - NPay·월간 웨딩지원금 기능을 만들지 말 것(위 미완료 항목 참조, 개인정보 처리방침과 함께 정리해야 함).
+  - Npay·월간 웨딩지원금 기능을 만들지 말 것(위 미완료 항목 참조, 개인정보 처리방침과 함께 정리해야 함).
   - 네이버 authorization code 교환과 프로필 조회 경로가 구현됐다. 서버와 앱 환경값 및 네이버 Developers callback URL이 모두 설정된 경우에만 노출한다(`docs/social-login-handoff.md` 참조).
   - `docs/design-handoff/current/`는 원본 그대로 유지 — 화면 구현할 때 이 폴더 안의 `.dc.html` 파일을 직접 고치지 않는다(참고용 원본). 옛 `seed/`는 v3.11 반영 시점(2026-09-06)에 삭제했다.
 

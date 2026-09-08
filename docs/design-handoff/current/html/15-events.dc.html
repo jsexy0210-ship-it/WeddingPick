@@ -222,34 +222,34 @@ class Component extends DCLogic {
       screens: [
         sc({
           no: '1', label: '혜택 모아보기 · WP-EVT-001', nav: '혜택',
-          desc: '참여 가능한 것만 위로 올립니다. 마감된 캠페인은 회색으로 내려 시선을 빼앗지 않습니다.',
-          hero: '2개를 더 하면\n3만원을 받아요', sub: '9월 30일까지 · 커플당 한 번',
+          desc: '참여 가능한 것만 위로 올립니다. 종료된 캠페인은 회색으로 내립니다. 날짜와 기간을 화면에 적지 않습니다 — 운영이 바뀌면 전부 틀립니다.',
+          hero: '2개를 더 하면\n5천원을 받아요', sub: '커플당 한 번 · 선착순 40커플',
           cards: [
-            card({ badge: '진행 중 2/4', kind: 'brand', title: '미션 4개 완주', body: '업체 둘러보기 · 준비 관리 · 배우자 연결 · 비교하기', pct: '50%', cta: '이어서 하기', brand: true }),
-            card({ badge: '3,000원', title: '친구 초대', body: '친구가 첫 Pick 인증을 하면 받아요', meta: '62/100건 남음', cta: '초대 링크 보내기' }),
-            card({ badge: '2,000원', title: '홍보 인증', body: '블로그나 SNS에 올린 글 주소를 남겨주세요', cta: '인증하기' }),
-            card({ badge: '마감', title: '8월 웨딩지원금', body: '9월 5일에 당첨자를 알려드려요', cta: '응모 내역 보기', ctaOff: true })
+            card({ badge: '진행 중 2/4', kind: 'brand', title: '미션 4개 완주', body: '업체 둘러보기 · 준비 관리 · 배우자 연결 · Pick 인증', meta: '27/40커플 남음', pct: '50%', cta: '이어서 하기', brand: true }),
+            card({ badge: '3,000원', title: '친구 초대', body: '친구가 첫 Pick 인증을 하면 받아요', meta: '31/50건 남음', cta: '초대 링크 보내기' }),
+            card({ badge: '2,000원', title: '홍보 인증', body: '블로그나 SNS에 올린 글 주소를 남겨주세요', meta: '38/50건 남음', cta: '인증하기' }),
+            card({ badge: '종료', title: '지난 웨딩지원금', body: '당첨자 1커플을 알림으로 알려드려요', cta: '응모 내역 보기', ctaOff: true })
           ],
-          noteTitle: '혜택은 기능을 잠그지 않아요', note: '참여하지 않아도 모든 기능을 그대로 쓸 수 있어요.'
+          noteTitle: '준비하면서 자연스럽게 받아요', note: '준비하다 보면 하나씩 채워져요.'
         }),
         sc({
           no: '2', label: '미션 4개 · WP-EVT-002', nav: '미션',
-          desc: '완료한 것은 회색으로 내리고 남은 것만 눈에 걸리게 합니다. 미션이 권한과 무관함을 하단에 명시합니다.',
+          desc: '네 번째 미션이 Pick 인증입니다. 앱 안에서 끝나는 미션만 두면 5천원을 주고 데이터를 하나도 못 얻습니다. 완주율은 낮아지지만 완주 40커플이 곧 실 제보 40건입니다.',
           eyebrow: '2 / 4 완료', hero: '두 개 남았어요',
-          bigNum: '30,000원', bigNote: '네 개를 다 하면 네이버페이로 드려요 · 선착순 500커플', bigPct: '50%',
+          bigNum: '5,000원', bigNote: '네 개를 다 하면 Npay로 드려요 · 선착순 40커플', bigPct: '50%',
           rows: [
             row({ lead: ' ', leadStyle: check(true), name: '업체 5곳 둘러보기', meta: '8월 21일 완료', off: true }),
             row({ lead: ' ', leadStyle: check(true), name: '예식일과 예산 설정', meta: '8월 20일 완료', off: true }),
             row({ lead: ' ', leadStyle: check(false), name: '배우자와 연결하기', meta: '초대 링크만 보내면 돼요', tail: '하기', tailDim: true }),
-            row({ lead: ' ', leadStyle: check(false), name: '업체 두 곳 비교하기', meta: '같은 업종 2곳을 골라주세요', tail: '하기', tailDim: true })
+            row({ lead: ' ', leadStyle: check(false), name: 'Pick 인증 1건', meta: '낸 금액이 보이는 사진 한 장이면 돼요', tail: '하기', tailDim: true })
           ],
-          noteTitle: '미션은 기능을 잠그지 않아요', note: '안 해도 모든 기능을 그대로 쓸 수 있어요. 리워드만 받지 못해요.'
+          noteTitle: '준비 순서대로 하나씩 채워져요', note: '네 개를 다 채우면 Npay로 바로 보내드려요.'
         }),
         sc({
           no: '3', label: '친구 초대 · WP-EVT-003', nav: '친구 초대',
           desc: '내 코드와 현재 진행 상황을 먼저 보여주고, 초대한 친구의 상태를 단계별로 나눕니다.',
           hero: '친구가 시작하면\n3,000원을 받아요', sub: '친구의 첫 Pick 인증이 확인되면 지급돼요',
-          bigNum: '9,000원', bigNote: '3명 받음 · 남은 자리 62/100건', bigPct: '38%',
+          bigNum: '9,000원', bigNote: '3명 받음 · 남은 자리 31/50건', bigPct: '38%',
           rowsTitle: '초대 현황',
           rows: [
             row({ name: '민지', meta: '8월 12일 가입 · Pick 인증 완료', tail: '지급됨', tailKind: 'ok' }),
@@ -269,18 +269,18 @@ class Component extends DCLogic {
             row({ lead: ' ', leadStyle: check(true), name: '블로그 · 인스타그램 · 카페', meta: '공개 게시물이어야 해요' }),
             row({ lead: ' ', leadStyle: check(true), name: '웨딩픽을 써본 이야기', meta: '두 문장 이상' }),
             row({ lead: ' ', leadStyle: check(true), name: '앱 화면 캡처 한 장', meta: '어느 화면이든 괜찮아요' }),
-            row({ lead: ' ', leadStyle: check(false), name: '게시물 주소', meta: '아직 입력하지 않았어요', tail: '입력', tailDim: true })
+            row({ lead: ' ', leadStyle: check(false), name: '게시물 주소', meta: '올린 글 주소를 붙여주세요', tail: '입력', tailDim: true })
           ],
-          noteTitle: '확인은 하루 안에 끝나요', note: '조건이 맞지 않으면 무엇이 빠졌는지 알려드릴게요. 다시 올릴 수 있어요.',
+          noteTitle: '확인 후 알려드려요', note: '보완할 게 있으면 어떤 부분인지 알려드릴게요.',
           cta: '인증 신청'
         }),
         sc({
           no: '5', label: '월간 웨딩지원금 · WP-EVT-005', nav: '웨딩지원금',
-          desc: '회차 · 조건 · 발표일을 한 화면에 담습니다. 당첨 확률처럼 확인할 수 없는 숫자는 쓰지 않습니다.',
-          eyebrow: '9월 회차 · 9월 30일 마감', hero: '이번 달 웨딩지원금\n100만원',
+          desc: '회차와 조건만 담습니다. 마감일 · 발표일 · 당첨 확률처럼 운영이 바뀌면 틀리는 숫자를 화면에 박지 않습니다.',
+          eyebrow: '이번 회차 · 진행 중', hero: '웨딩지원금\n5만원 · 1커플',
           cards: [
-            card({ badge: '응모 완료', kind: 'ok', meta: '9월 2일', title: '9월 회차', body: '10월 5일에 당첨자를 알려드려요' }),
-            card({ badge: '미당첨', meta: '8월 회차', title: '9월 5일 발표', body: '다음 회차에 다시 응모할 수 있어요' })
+            card({ badge: '응모 완료', kind: 'ok', title: '이번 회차', body: '당첨자를 알림으로 알려드려요' }),
+            card({ badge: '미당첨', title: '지난 회차', body: '다음 회차에 다시 응모할 수 있어요' })
           ],
           rowsTitle: '응모 조건',
           rows: [
@@ -288,35 +288,34 @@ class Component extends DCLogic {
             row({ lead: ' ', leadStyle: check(true), name: 'Pick 인증 1건 이상', tail: '완료', tailKind: 'ok' }),
             row({ lead: ' ', leadStyle: check(false), name: '배우자와 연결', tail: '필요', tailKind: 'wait' })
           ],
-          noteTitle: '한 회차에 한 번만 응모돼요', note: '조건을 모두 채우면 자동으로 응모돼요. 따로 신청하지 않아도 괜찮아요.'
+          noteTitle: '조건을 채우면 자동으로 응모돼요', note: '새 회차가 열리면 알려드려요.'
         }),
         sc({
-          no: '6', label: '네이버페이 수령 · WP-EVT-006', nav: '리워드 받기',
+          no: '6', label: 'Npay 수령 · WP-EVT-006', nav: '리워드 받기',
           desc: '받는 정보 확인과 동의만 남깁니다. 개인정보를 왜 받고 언제 지우는지 함께 적습니다.',
-          hero: '30,000원을\n받을 수 있어요', sub: '받는 분 정보만 확인하면 끝나요',
+          hero: '5,000원을\n받을 수 있어요', sub: '받는 분 정보만 확인하면 끝나요',
           rows: [
             row({ name: '받는 분', tail: '지수', tailDim: true }),
             row({ name: '휴대폰 번호', tail: '010-1234-5678', tailDim: true }),
-            row({ name: '받는 방법', tail: '네이버페이 포인트', tailDim: true }),
+            row({ name: '받는 방법', tail: 'Npay', tailDim: true }),
             row({ lead: ' ', leadStyle: check(true), name: '개인정보 제공 동의', meta: '필수' })
           ],
-          noteTitle: '리워드 지급에만 써요', note: '지급이 끝나면 30일 안에 지워요. 다른 곳에 쓰지 않아요.',
-          cta: '30,000원 받기'
+          noteTitle: '리워드를 보내는 데만 써요', note: '보내드린 뒤 지워요.',
+          cta: '5,000원 받기'
         }),
         sc({
           no: '7', label: '참여·지급 내역 · WP-EVT-007', nav: '참여 내역',
           desc: '지급된 것과 실패한 것을 같은 목록에 두고, 실패에는 이유와 다음 행동을 붙입니다.',
-          bigNum: '11,000원', bigNote: '받은 리워드 합계 · 8월 12일부터',
+          bigNum: '13,000원', bigNote: '받은 리워드 합계 · 8월 12일부터',
           rowsTitle: '내역',
           rows: [
             row({ name: '친구 초대 · 민지', meta: '8월 14일', tail: '3,000원' }),
             row({ name: '친구 초대 · 현우', meta: '8월 22일', tail: '3,000원' }),
             row({ name: '홍보 인증', meta: '8월 25일', tail: '2,000원' }),
-            row({ name: '미션 2개 완료', meta: '8월 21일', tail: '2,000원' }),
-            row({ name: '미션 1개 완료', meta: '8월 20일', tail: '1,000원' }),
-            row({ name: '친구 초대 · 수빈', meta: '번호가 맞지 않아 지급하지 못했어요', tail: '다시 받기', tailKind: 'no' })
+            row({ name: '미션 4개 완료', meta: '8월 21일', tail: '5,000원' }),
+            row({ name: '친구 초대 · 수빈', meta: '휴대폰 번호를 확인해주세요', tail: '다시 받기', tailKind: 'wait' })
           ],
-          noteTitle: '받지 못한 리워드가 있어요', note: '휴대폰 번호를 고치면 바로 다시 보내드려요.'
+          noteTitle: '다시 보내드릴 수 있어요', note: '휴대폰 번호를 고치면 바로 보내드려요.'
         })
       ]
     };

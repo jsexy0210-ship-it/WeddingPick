@@ -1,8 +1,14 @@
-import { REWARDS } from '@weddingpick/domain';
+import {
+  MISSION_COMPLETE_REWARD_NOTIFICATION,
+  MONTHLY_DRAW_CONDITION_LABEL,
+  MONTHLY_DRAW_ENTERED_NOTIFICATION,
+  REWARDS,
+} from '@weddingpick/domain';
 
 import {
   consentToPaymentProofs,
   createTestApp,
+  createWedding,
   resetDatabase,
   signInAs,
   type TestApp,
@@ -156,16 +162,9 @@ describeWithDb('이벤트 보상', () => {
       expect((await redeem(who.headers, 'ZZZZZZ')).statusCode).toBe(404);
     });
 
-    it('한도를 넘으면 사람에게 올린다', async () => {
-      /*
-       * I-3: 설정 한도 내 정상 지급은 사람이 승인하지 않고, 한도 초과만 위로
-       * 보낸다. 한도만큼 이미 지급한 상태를 만들어놓고 확인한다.
-       */
-      const inviter = await signInAs(test, 'inviter');
-      const invited = await signInAs(test, 'invited');
-
-      // 한도만큼 지급된 친구초대를 심는다. 근거는 각각 다른 초대여야 한다.
-      for (let i = 0; i < REWARDS.referral.campaignLimit; i += 1) {
+    /** 한도만큼 지급된 친구초대를 심는다. 근거는 각각 다른 초대여야 한다. */
+    async function seedPaidReferrals(count: number, createdAt = 'now()') {
+      for (let i = 0; i < count; i += 1) {
         const { rows } = await test.pool.query<{ id: string }>(
           `WITH pair AS (
              INSERT INTO structured.users DEFAULT VALUES RETURNING id
@@ -179,12 +178,24 @@ describeWithDb('이벤트 보상', () => {
 
         await test.pool.query(
           `INSERT INTO structured.reward_grants
-             (user_id, kind, amount_krw, status, reason_code, referral_id, decided_at, decided_by)
-           SELECT r.inviter_user_id, 'referral', 3000, 'paid', 'seed', r.id, now(), r.invited_user_id
+             (user_id, kind, amount_krw, status, reason_code, referral_id, decided_at, decided_by, created_at)
+           SELECT r.inviter_user_id, 'referral', 3000, 'paid', 'seed', r.id, now(), r.invited_user_id, ${createdAt}
            FROM structured.referrals r WHERE r.id = $1`,
           [rows[0]!.id]
         );
       }
+    }
+
+    it('이번 달 한도를 넘으면 사람에게 올린다', async () => {
+      /*
+       * I-3: 설정 한도 내 정상 지급은 사람이 승인하지 않고, 한도 초과만 위로
+       * 보낸다. v3.22 이벤트 예산 — 친구 초대는 월 50건. 한도만큼 이미 지급한
+       * 상태를 만들어놓고 확인한다.
+       */
+      const inviter = await signInAs(test, 'inviter');
+      const invited = await signInAs(test, 'invited');
+
+      await seedPaidReferrals(REWARDS.referral.monthlyCap);
 
       await redeem(invited.headers, await codeOf(inviter.headers));
       await registerProof(invited.headers);
@@ -201,7 +212,22 @@ describeWithDb('이벤트 보상', () => {
         `SELECT reason_code FROM structured.open_decisions WHERE subject_kind = 'reward_grant'`
       );
 
-      expect(open.rows).toEqual([{ reason_code: 'over_campaign_limit' }]);
+      expect(open.rows).toEqual([{ reason_code: 'over_monthly_limit' }]);
+    });
+
+    it('지난달에 다 썼어도 이번 달은 다시 열린다', async () => {
+      // «소진되면 다음 달에 다시 엽니다» — 한도는 캠페인 누적이 아니라 달마다 센다.
+      const inviter = await signInAs(test, 'inviter');
+      const invited = await signInAs(test, 'invited');
+
+      await seedPaidReferrals(REWARDS.referral.monthlyCap, "now() - interval '1 month'");
+
+      await redeem(invited.headers, await codeOf(inviter.headers));
+      await registerProof(invited.headers);
+
+      const mine = (await rewards(inviter.headers)).json<{ grants: { status: string }[] }>();
+
+      expect(mine.grants[0]?.status).toBe('earned');
     });
 
     it('한도 안이면 사람을 기다리지 않는다', async () => {
@@ -263,6 +289,195 @@ describeWithDb('이벤트 보상', () => {
 
     it('로그인해야 참여할 수 있다', async () => {
       expect((await submit({}, 'https://blog.example.com/a')).statusCode).toBe(401);
+    });
+  });
+
+  describe('미션 완주', () => {
+    type Grant = { kind: string; amountKrw: number; status: string; kindLabel: string };
+
+    const grantsOf = async (headers: Record<string, string>) =>
+      (await rewards(headers)).json<{ grants: Grant[] }>().grants;
+
+    async function missionNotifications(userId: string): Promise<number> {
+      const { rows } = await test.pool.query<{ n: string }>(
+        `SELECT count(*)::text AS n FROM structured.notifications WHERE user_id = $1 AND title = $2`,
+        [userId, MISSION_COMPLETE_REWARD_NOTIFICATION.title]
+      );
+      return Number(rows[0]?.n ?? 0);
+    }
+
+    /** 설정 완료 · 첫 Pick · 배우자 연결 · Pick 인증 1건 — 미션 넷을 다 채운다. */
+    async function completeAllMissions() {
+      const owner = await signInAs(test, 'owner');
+      const partner = await signInAs(test, 'partner');
+      const weddingId = await createWedding(test, owner.headers);
+
+      await test.pool.query(
+        `UPDATE structured.weddings
+         SET setup_completed_at = now(), partner_user_id = $2
+         WHERE id = $1`,
+        [weddingId, partner.userId]
+      );
+
+      const vendor = await test.pool.query<{ id: string }>(
+        `INSERT INTO structured.vendors (name, category, region, source)
+         VALUES ('가온예식홀', 'hall', '서울', 'public_data') RETURNING id`
+      );
+
+      await test.pool.query(
+        `INSERT INTO structured.vendor_candidates (wedding_id, vendor_id, added_by)
+         VALUES ($1, $2, $3)`,
+        [weddingId, vendor.rows[0]!.id, owner.userId]
+      );
+
+      return { owner, partner, weddingId, vendorId: vendor.rows[0]!.id };
+    }
+
+    it('미션 셋까지는 보상이 생기지 않는다', async () => {
+      const { owner } = await completeAllMissions();
+
+      // Pick 인증(4번째 미션)이 아직 없다.
+      expect(await grantsOf(owner.headers)).toEqual([]);
+      expect(await missionNotifications(owner.userId)).toBe(0);
+    });
+
+    it('넷을 다 마치면 5,000원 지급 대상이 되고, 한 번만 생긴다', async () => {
+      /*
+       * v3.22 — 4번째 미션이 «비교하기»에서 «Pick 인증 1건»으로 바뀌었다.
+       * 완주 1커플이 곧 실 제보 1건이다. 조건이 찬 것이지 돈이 간 것이 아니다.
+       */
+      const { owner, vendorId } = await completeAllMissions();
+
+      expect((await registerProof(owner.headers)).statusCode).toBe(201);
+      // 업체가 매칭돼야 실 제보(usable_payment_proofs)다.
+      await test.pool.query(
+        `UPDATE structured.payment_proofs SET vendor_id = $2 WHERE reporter_user_id = $1`,
+        [owner.userId, vendorId]
+      );
+
+      const grants = await grantsOf(owner.headers);
+
+      expect(grants).toHaveLength(1);
+      expect(grants[0]).toMatchObject({
+        kind: 'mission',
+        kindLabel: '미션 완주',
+        amountKrw: REWARDS.mission.amountKrw,
+        status: 'earned',
+      });
+      expect(await missionNotifications(owner.userId)).toBe(1);
+
+      // 다시 봐도, 웨딩지원금 화면에서 봐도 하나다.
+      await test.app.inject({ method: 'GET', url: '/v1/me/monthly-draw', headers: owner.headers });
+      expect(await grantsOf(owner.headers)).toHaveLength(1);
+      expect(await missionNotifications(owner.userId)).toBe(1);
+    });
+
+    it('이번 달 40커플이 찼으면 사람에게 올린다', async () => {
+      const { owner, vendorId } = await completeAllMissions();
+
+      // 다른 사람들이 이번 달 한도만큼 이미 지급 대상이 됐다.
+      for (let i = 0; i < REWARDS.mission.monthlyCap; i += 1) {
+        await test.pool.query(
+          `WITH u AS (INSERT INTO structured.users DEFAULT VALUES RETURNING id)
+           INSERT INTO structured.reward_grants (user_id, kind, amount_krw, status, reason_code)
+           SELECT id, 'mission', 5000, 'earned', 'seed' FROM u`
+        );
+      }
+
+      await registerProof(owner.headers);
+      await test.pool.query(
+        `UPDATE structured.payment_proofs SET vendor_id = $2 WHERE reporter_user_id = $1`,
+        [owner.userId, vendorId]
+      );
+
+      const grants = await grantsOf(owner.headers);
+
+      expect(grants[0]?.status).toBe('held');
+    });
+  });
+
+  describe('월간 웨딩지원금', () => {
+    type Draw = {
+      status: string;
+      remaining: number;
+      conditions: { key: string; label: string; done: boolean }[];
+      winnersPerMonth: number;
+    };
+
+    const draw = async (headers: Record<string, string>) =>
+      (await test.app.inject({ method: 'GET', url: '/v1/me/monthly-draw', headers })).json<Draw>();
+
+    async function enteredNotifications(userId: string): Promise<number> {
+      const { rows } = await test.pool.query<{ n: string }>(
+        `SELECT count(*)::text AS n FROM structured.notifications WHERE user_id = $1 AND title = $2`,
+        [userId, MONTHLY_DRAW_ENTERED_NOTIFICATION.title]
+      );
+      return Number(rows[0]?.n ?? 0);
+    }
+
+    it('조건 3개를 채우기 전에는 남은 수와 함께 응모 전이다', async () => {
+      /*
+       * v3.22 — 응모 조건은 미션 4개가 아니라 예식일과 지역 · Pick 인증 1건 · 배우자
+       * 연결 셋이다. 혜택 안내 시트(WP-SHT-017)가 남은 수로 제목을 만든다.
+       */
+      const who = await signInAs(test, 'solo');
+      await createWedding(test, who.headers);
+
+      const mine = await draw(who.headers);
+
+      expect(mine.status).toBe('not_entered');
+      expect(mine.remaining).toBe(3);
+      expect(mine.conditions.map((c) => c.key)).toEqual(['wedding_set', 'payment_proof', 'partner']);
+      expect(mine.conditions.map((c) => c.label)).toEqual([
+        MONTHLY_DRAW_CONDITION_LABEL.wedding_set,
+        MONTHLY_DRAW_CONDITION_LABEL.payment_proof,
+        MONTHLY_DRAW_CONDITION_LABEL.partner,
+      ]);
+      expect(mine.conditions.every((c) => !c.done)).toBe(true);
+      expect(mine.winnersPerMonth).toBe(1);
+      expect(await enteredNotifications(who.userId)).toBe(0);
+    });
+
+    it('조건을 다 채우면 자동 응모되고 알림은 처음 한 번만 남는다', async () => {
+      const owner = await signInAs(test, 'owner');
+      const partner = await signInAs(test, 'partner');
+      const weddingId = await createWedding(test, owner.headers);
+
+      await test.pool.query(
+        `UPDATE structured.weddings
+         SET wedding_date = '2027-05-16', region = '서울', partner_user_id = $2
+         WHERE id = $1`,
+        [weddingId, partner.userId]
+      );
+
+      // 예식일 · 지역 · 배우자까지 됐고 Pick 인증만 남았다 — «하나만 더 하면».
+      const before = await draw(owner.headers);
+      expect(before.status).toBe('not_entered');
+      expect(before.remaining).toBe(1);
+      expect(before.conditions.find((c) => c.key === 'payment_proof')?.done).toBe(false);
+
+      // Pick 인증 1건 — 업체가 매칭돼야 실 제보(usable_payment_proofs)다.
+      expect((await registerProof(owner.headers)).statusCode).toBe(201);
+      await test.pool.query(
+        `WITH v AS (
+           INSERT INTO structured.vendors (name, category, region, source)
+           VALUES ('가온예식홀', 'hall', '서울', 'public_data') RETURNING id
+         )
+         UPDATE structured.payment_proofs p SET vendor_id = (SELECT id FROM v)
+         WHERE p.reporter_user_id = $1`,
+        [owner.userId]
+      );
+
+      const entered = await draw(owner.headers);
+      expect(entered.status).toBe('entered');
+      expect(entered.remaining).toBe(0);
+      expect(entered.conditions.every((c) => c.done)).toBe(true);
+      // 남은 조건 0 — 시트 대신 응모 완료 알림.
+      expect(await enteredNotifications(owner.userId)).toBe(1);
+
+      // 다시 물어도 응모 행은 하나고 알림도 하나다.
+      expect((await draw(owner.headers)).status).toBe('entered');
+      expect(await enteredNotifications(owner.userId)).toBe(1);
     });
   });
 });

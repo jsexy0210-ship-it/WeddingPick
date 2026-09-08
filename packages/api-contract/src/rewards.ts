@@ -1,4 +1,5 @@
 import {
+  MONTHLY_DRAW_CONDITION_KEYS,
   MONTHLY_DRAW_STATUSES,
   REFERRAL_CODE_LENGTH,
   REWARD_KINDS,
@@ -61,6 +62,12 @@ export type SubmitPromotionRequest = z.infer<typeof submitPromotionRequestSchema
  * 응모 여부·당첨 여부를 화면이 계산하지 않고 서버가 내려준다.
  * 화면은 `status`에 따른 말만 고른다.
  */
+export const monthlyDrawConditionSchema = z.object({
+  key: z.enum(MONTHLY_DRAW_CONDITION_KEYS),
+  label: z.string().min(1),
+  done: z.boolean(),
+});
+
 export const myMonthlyDrawResponseSchema = z.object({
   drawMonth: z.string(),
   status: z.enum(MONTHLY_DRAW_STATUSES),
@@ -68,6 +75,12 @@ export const myMonthlyDrawResponseSchema = z.object({
   statusNote: z.string(),
   amountKrw: z.int().positive(),
   winnersPerMonth: z.int().positive(),
+  /** 응모 조건 3개. 순서가 화면 순서다(WP-EVT-005 · WP-SHT-017). */
+  conditions: z.array(monthlyDrawConditionSchema),
+  /** 아직 안 채운 조건 수. 혜택 안내 시트 제목이 이 수로 정해진다. */
+  remaining: z.int().nonnegative(),
 });
+
+export type MonthlyDrawCondition = z.infer<typeof monthlyDrawConditionSchema>;
 
 export type MyMonthlyDrawResponse = z.infer<typeof myMonthlyDrawResponseSchema>;

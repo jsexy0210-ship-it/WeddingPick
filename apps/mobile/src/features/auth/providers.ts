@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 
 import {
+  ApiError,
   listAuthProviders,
   signIn,
   signInWithAuthorizationCode,
@@ -14,6 +15,25 @@ import {
 } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { DEV_LOGIN_SECRET, devIdToken } from '@/features/auth/dev-login';
+import { UNDER_AGE_SIGN_IN_MESSAGE } from '@/features/auth/sign-in-handoff';
+
+/**
+ * 인가 코드를 세션으로 바꾼다. 서버가 만 14세 미만으로 판정하면(`under_age`,
+ * v3.22 SPEC 3.5) 정해진 문장으로 바꿔 던진다 — 부팅 경로는 실패를 문장 하나로만
+ * 넘기므로, 그 경로에서도 WP-AUTH-010으로 갈 수 있어야 한다.
+ */
+async function exchangeKakaoCode(
+  input: Parameters<typeof signInWithAuthorizationCode>[0]
+): Promise<SessionEntry> {
+  try {
+    return await signInWithAuthorizationCode(input);
+  } catch (caught) {
+    if (caught instanceof ApiError && caught.code === 'under_age') {
+      throw new Error(UNDER_AGE_SIGN_IN_MESSAGE);
+    }
+    throw caught;
+  }
+}
 
 /**
  * 로그인 버튼 색. 카카오 브랜드색은 앱 스킨과 무관하게 고정이다(`SocialColors`
@@ -130,7 +150,7 @@ export async function signInWithKakao(provider: AuthProvider): Promise<SessionEn
     throw new Error(KAKAO_FAILED);
   }
 
-  return await signInWithAuthorizationCode({
+  return await exchangeKakaoCode({
     provider: 'kakao',
     authorizationCode: result.params.code,
     state: result.params.state ?? request.state,
@@ -249,7 +269,7 @@ export async function completeKakaoRedirect(): Promise<SessionEntry | null> {
     throw new Error('로그인 요청이 맞지 않아요. 다시 시도해 주세요.');
   }
 
-  return await signInWithAuthorizationCode({
+  return await exchangeKakaoCode({
     provider: 'kakao',
     authorizationCode: code!,
     state,

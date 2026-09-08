@@ -1,14 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   PREPARATION_CATEGORIES,
+  STYLE_PICK_MAX,
   WEDDING_BUDGET_BRACKETS,
   WEDDING_REGIONS,
-  isTasteCategory,
-  isTasteKey,
-  type TasteCategory,
+  isWeddingStyle,
   type VendorCategory,
   type WeddingBudgetBracket,
   type WeddingRegion,
+  type WeddingStyle,
 } from '@weddingpick/domain';
 
 import type { Answers } from './flow';
@@ -28,7 +28,7 @@ const ANSWERS_KEY = 'weddingpick.onboardingAnswers.v1';
  * 서버에 이미 올라간 값의 사본으로 쓰지 않는다. 올리고 나면 지운다 — 두 곳에
  * 같은 값이 남으면 어느 쪽이 최신인지 알 수 없다.
  *
- * v3.22에서 준비 현황 · 취향이 더해졌다. 둘은 없어도 되는 칸이다 — 옛 초안을
+ * v3.22에서 준비 현황 · 스타일이 더해졌다. 둘은 없어도 되는 칸이다 — 옛 초안을
  * 읽을 때 없는 칸을 지어내지 않는다.
  */
 export type WeddingDraft = {
@@ -40,8 +40,8 @@ export type WeddingDraft = {
   budgetBracket: WeddingBudgetBracket | null;
   /** 준비 현황(3/5). 빈 배열 = «아직 시작 전이에요». */
   preparedCategories?: VendorCategory[];
-  /** 취향(5/5). 물을 업종이 없어 건너뛰었으면 null. */
-  taste?: { category: TasteCategory; keys: string[] } | null;
+  /** 스타일(5/5). 고른 순서 그대로 최소 1 · 최대 2. */
+  styleTags?: WeddingStyle[];
 };
 
 export async function saveWeddingDraft(draft: WeddingDraft): Promise<void> {
@@ -71,10 +71,10 @@ export async function loadWeddingDraft(): Promise<WeddingDraft | null> {
         budgetBracket: readBracket(draft.budgetBracket),
       };
       const prepared = readCategories(draft.preparedCategories);
-      const taste = readTaste(draft.taste);
+      const styleTags = readStyleTags(draft.styleTags);
 
       if (prepared !== undefined) result.preparedCategories = prepared;
-      if (taste !== undefined) result.taste = taste;
+      if (styleTags !== undefined) result.styleTags = styleTags;
 
       return result;
     }
@@ -117,7 +117,7 @@ export async function loadOnboardingAnswers(): Promise<Answers | null> {
       region: readRegionAnswer(value.region),
       prep: readPrepAnswer(value.prep),
       budget: readBracket(value.budget),
-      taste: readTaste(value.taste) ?? null,
+      style: readStyleTags(value.style) ?? null,
     };
   } catch {
     return null;
@@ -140,19 +140,20 @@ function readCategories(value: unknown): VendorCategory[] | undefined {
   return value.filter((item): item is VendorCategory => PREPARATION_CATEGORIES.includes(item as VendorCategory));
 }
 
-/** undefined = 칸이 없음 · null = 건너뜀. 세트에 없는 키는 버린다. */
-function readTaste(value: unknown): { category: TasteCategory; keys: string[] } | null | undefined {
-  if (value === undefined) return undefined;
-  if (value === null || typeof value !== 'object') return null;
+/**
+ * undefined = 칸이 없음(옛 초안 · 배열이 아님). 네 스타일 밖의 값은 버리고, 중복을 걷고,
+ * 최대 2개(`STYLE_PICK_MAX`)까지만 — 옛 형식을 억지로 읽어 서버가 거절할 값을 만들지 않는다.
+ */
+function readStyleTags(value: unknown): WeddingStyle[] | undefined {
+  if (!Array.isArray(value)) return undefined;
 
-  const { category, keys } = value as { category?: unknown; keys?: unknown };
+  const styles: WeddingStyle[] = [];
 
-  if (typeof category !== 'string' || !isTasteCategory(category) || !Array.isArray(keys)) return null;
+  for (const item of value) {
+    if (isWeddingStyle(item) && !styles.includes(item)) styles.push(item);
+  }
 
-  return {
-    category,
-    keys: keys.filter((key): key is string => typeof key === 'string' && isTasteKey(category, key)),
-  };
+  return styles.slice(0, STYLE_PICK_MAX);
 }
 
 function readDateAnswer(value: unknown): Answers['date'] {

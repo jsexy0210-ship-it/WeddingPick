@@ -198,14 +198,21 @@ export function createKakaoProvider(options: {
   appKey: string;
   clientSecret?: string;
   fetchImpl?: typeof fetch;
+  /**
+   * id_token 검증을 바꿔 끼우는 자리. **테스트용이다** — 실제 공개키 검증은
+   * 기본값이 한다. 프로덕션 코드가 이 값을 넘길 이유는 없다.
+   */
+  verifyIdTokenImpl?: (idToken: string) => Promise<VerifiedIdentity>;
 }): IdentityProvider {
   const fetchImpl = options.fetchImpl ?? fetch;
-  const verifyIdToken = createIdTokenVerifier({
-    provider: 'kakao',
-    issuer: 'https://kauth.kakao.com',
-    jwksUrl: 'https://kauth.kakao.com/.well-known/jwks.json',
-    audience: options.appKey,
-  });
+  const verifyIdToken =
+    options.verifyIdTokenImpl ??
+    createIdTokenVerifier({
+      provider: 'kakao',
+      issuer: 'https://kauth.kakao.com',
+      jwksUrl: 'https://kauth.kakao.com/.well-known/jwks.json',
+      audience: options.appKey,
+    });
 
   return {
     flow: 'authorization_code',
@@ -240,14 +247,56 @@ export function createKakaoProvider(options: {
         throw new Error(`카카오 토큰 교환에 실패했다 (HTTP ${tokenResponse.status}) ${detail.slice(0, 300)}`.trim());
       }
 
-      const token = (await tokenResponse.json()) as { id_token?: unknown };
+      const token = (await tokenResponse.json()) as { id_token?: unknown; access_token?: unknown };
       if (typeof token.id_token !== 'string' || token.id_token.length === 0) {
         throw new Error('카카오 id_token이 없다. 앱의 OpenID Connect가 꺼져 있거나 scope에 openid가 빠졌다.');
       }
 
-      return verifyIdToken(token.id_token);
+      const identity = await verifyIdToken(token.id_token);
+      const ageRange = await fetchKakaoAgeRange(fetchImpl, token.access_token);
+
+      if (!ageRange) return identity;
+
+      return { ...identity, profile: { ...identity.profile, ageRange } };
     },
   };
+}
+
+/**
+ * 카카오 사용자 정보에서 연령대만 묻는다. v3.22 SPEC 3.5 «카카오에서 받는 것».
+ *
+ * `age_range`는 현재 권한이 없고, 비즈 검수를 통과해도 선택 동의라 사용자가
+ * 거부하면 빈 값이 온다. 그래서 **못 받아도 로그인은 계속된다** — 이 호출이
+ * 실패했다고 로그인을 막으면 검수 전에는 아무도 못 들어온다. 없으면 체크박스가
+ * 그대로 판정한다.
+ *
+ * `property_keys`로 연령대만 달라고 한다 — 필요 없는 것을 받아두면 지울 일만
+ * 생긴다. 받은 값은 라우트가 판정만 뽑고 버린다. 저장하지 않는다.
+ */
+async function fetchKakaoAgeRange(
+  fetchImpl: typeof fetch,
+  accessToken: unknown
+): Promise<string | undefined> {
+  if (typeof accessToken !== 'string' || accessToken.length === 0) return undefined;
+
+  try {
+    const response = await fetchImpl('https://kapi.kakao.com/v2/user/me', {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${accessToken}`,
+        'content-type': 'application/x-www-form-urlencoded;charset=utf-8',
+      },
+      body: new URLSearchParams({ property_keys: '["kakao_account.age_range"]' }),
+    });
+
+    if (!response.ok) return undefined;
+
+    const body = (await response.json()) as { kakao_account?: { age_range?: unknown } };
+
+    return stringValue(body.kakao_account?.age_range);
+  } catch {
+    return undefined;
+  }
 }
 
 export function createGoogleProvider(clientId: string): IdentityProvider {

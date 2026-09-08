@@ -1,15 +1,27 @@
-import type { ConditionStats, Review, VendorDetail, VendorPhoto } from '@weddingpick/api-contract';
+import type {
+  ConditionStats,
+  CurrentUser,
+  Review,
+  VendorDetail,
+  VendorPhoto,
+} from '@weddingpick/api-contract';
 import {
+  DISCLOSURE_THRESHOLDS,
   manwon,
   MAX_RATING,
   NOT_ENOUGH_DATA,
   PAYMENT_PROOF_CAVEAT,
-  STILL_COLLECTING,
   TERMS,
+  WEDDING_STYLE_LABEL,
   countsTowardScore,
+  needsPickProof,
+  priceLine,
   rangeLabel,
+  styleMatchReason,
+  styleOverlap,
   VENDOR_CATEGORY_LABEL,
   withParticle,
+  type WeddingStyle,
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -19,6 +31,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   addCandidate,
   ensureWedding,
+  getCurrentUser,
   getVendor,
   getVendorConditions,
   listVendorPhotos,
@@ -29,6 +42,7 @@ import { loadToken } from '@/api/session';
 import { BackButton } from '@/components/back-button';
 import { LoginSheet } from '@/features/auth/login-sheet';
 import { savePendingAction } from '@/features/auth/pending-action';
+import { readCurrentUserSnapshot } from '@/features/loading/current-user-snapshot';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import {
   ActionButton,
@@ -37,6 +51,7 @@ import {
   Layout,
   LineHeight,
   MaxContentWidth,
+  ProductSymbol,
   ProgressBar,
   Radius,
   Spacing,
@@ -46,6 +61,18 @@ import {
   useTheme,
   SkeletonView,
 } from '@weddingpick/ui';
+
+/**
+ * «이용한 사람들의 경험»을 보여주는 최소 답한 사람 수(SPEC §2 빈 섹션 처리).
+ * 그 아래면 섹션째 숨긴다 — 두 사람의 점수는 경험이 아니라 두 사람이다.
+ */
+const EXPERIENCE_MIN_PEOPLE = 3;
+
+/** 후기 0건일 때의 한 줄(SPEC §2). 빈 섹션 대신 이 줄이 들어간다. */
+const NO_REVIEWS_YET = '아직 후기가 없어요 · 첫 후기를 남겨주세요';
+
+/** 0층일 때 실 제보 금액으로 자동 교체된다는 안내. 기준 건수는 공개 사다리에서 읽는다. */
+const GUIDE_REPLACED_NOTE = [TERMS.verifiedData, `${DISCLOSURE_THRESHOLDS.limited}건이 되면`, TERMS.verifiedData, '금액으로 바뀌어요'].join(' ');
 
 /**
  * WP-VEND-001 업체 상세. 섹션 순서 고정(orderLocked).
@@ -79,6 +106,13 @@ export default function VendorDetailScreen() {
   const [sourceOpen, setSourceOpen] = useState(false);
   /** 로그인 시트가 떠 있는가. 첫 Pick이 대표 트리거다(v3.10 §3). */
   const [loginOpen, setLoginOpen] = useState(false);
+  /**
+   * «나». 고른 스타일과 업체 태그의 일치를 그리려고 읽는다(SPEC §13.6). 로그인 전이면
+   * null이고 그때는 칩이 전부 회색이다 — 없는 취향을 지어내지 않는다.
+   */
+  const [me, setMe] = useState<CurrentUser | null>(() => readCurrentUserSnapshot());
+  /** 후기 목록을 읽어 왔는가. 읽기 전에는 «아직 후기가 없어요»를 단정하지 않는다. */
+  const [reviewsLoaded, setReviewsLoaded] = useState(false);
 
   /**
    * 검색·TOP3에서 넘어올 때만 존재. 쉼표로 구분된 이유 문장.
@@ -118,9 +152,27 @@ export default function VendorDetailScreen() {
         const regular = res.reviews.filter((r) => !countsTowardScore(r.verification));
         setVerifiedReviews(verified.slice(0, 3));
         setPreviewReviews(regular.slice(0, 3));
+        setReviewsLoaded(true);
       })
       .catch(() => undefined);
   }, [vendorId]);
+
+  useEffect(() => {
+    if (!isServerConfigured) return;
+    let alive = true;
+
+    /* 로그인 전에는 «나»가 없다 — 부르지 않는다. 실패해도 상세는 그대로 뜬다. */
+    loadToken()
+      .then((token) => (token ? getCurrentUser() : null))
+      .then((loaded) => {
+        if (alive) setMe(loaded);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   if (error) {
     return <ErrorView message={error} onBack={() => router.back()} />;
@@ -157,39 +209,40 @@ export default function VendorDetailScreen() {
   }
 
   /**
-   * 비교에 담기. 이 앱에는 별도의 "비교 바구니"가 없다 — 비교는 같은 업종에
-   * Pick해둔 후보끼리 한다(Pick 탭 SharedSection과 동일한 모델). 그래서 이
-   * 버튼도 Pick과 같은 저장을 하고, 대신 바로 그 업종의 후보 목록으로
-   * 이동시켜 비교가 시작되는 자리를 보여준다.
+   * 비교에 담기(SPEC §13.11). 비교 화면은 WP-CMP-002 하나고 진입에 따라 후보 초기값만
+   * 다르다 — 업체 상세에서는 **현재 업체를 A로 고정**하고 B·C는 같은 업종 후보 또는
+   * 웨딩픽 추천으로 채운다. 후보를 바꾸는 건 그 화면의 시트에서만 한다.
    */
-  async function addToCompare() {
-    setSaving(true);
-    setSaveNote(null);
-
-    try {
-      if (isServerConfigured && !(await loadToken())) {
-        await savePendingAction({ kind: 'pick', vendorId: vendor!.id, vendorName: vendor!.name });
-        setLoginOpen(true);
-        return;
-      }
-
-      const weddingId = await ensureWedding();
-      await addCandidate(weddingId, vendor!.id);
-      router.push({
-        pathname: '/pick/[category]',
-        params: { category: vendor!.category },
-      });
-    } catch (caught) {
-      setSaveNote(caught instanceof Error ? caught.message : '담지 못했어요.');
-    } finally {
-      setSaving(false);
-    }
+  function addToCompare() {
+    router.push({
+      pathname: '/pick/compare',
+      params: { category: vendor!.category, fixed: vendor!.id, fixedName: vendor!.name },
+    });
   }
 
   const paidPrice = vendor.prices.paidPrice;
   const isCollecting = paidPrice.stage === 'collecting';
   const isLimited = paidPrice.stage === 'limited';
   const isDetailed = paidPrice.stage === 'detailed';
+  /* 금액 한 줄 — 0층 «업체 안내 150만원~» · 1층 «수집 중» · 3건+ 구간. 검색·비교와 같은 규칙. */
+  const line = priceLine(paidPrice, vendor.guidePrice);
+  /* 실 제보도 업체 안내도 없다 — «수집 중» + Pick 인증 CTA로 채운다(빈 섹션 처리). */
+  const wantsPickProof = needsPickProof(paidPrice, vendor.guidePrice);
+
+  /* 고른 스타일과 업체 태그의 일치. 로그인 전·미선택이면 겹침이 없고 칩은 전부 회색이다. */
+  const chosenStyles: readonly WeddingStyle[] = me?.styleTags ?? [];
+  const matchedStyles = styleOverlap(chosenStyles, vendor.styleTags);
+  const styleReason = styleMatchReason(chosenStyles, vendor.styleTags);
+  /* 첫 불릿은 스타일 일치, 그 뒤가 넘어온 이유들. 같은 문장이 두 번 오지 않게 거른다. */
+  const reasonLines = [
+    ...(styleReason ? [styleReason] : []),
+    ...reasons.filter((reason) => reason !== styleReason),
+  ];
+  const hasRecommendation = vendor.styleTags.length > 0 || reasonLines.length > 0;
+
+  /* «이용한 사람들의 경험»은 3명 미만이면 섹션째 숨긴다(SPEC §2). */
+  const showExperience = vendor.usageScore.count >= EXPERIENCE_MIN_PEOPLE;
+  const hasReviews = verifiedReviews.length > 0 || previewReviews.length > 0;
 
   return (
     <ThemedView style={styles.container}>
@@ -272,20 +325,63 @@ export default function VendorDetailScreen() {
             </ThemedText>
           </View>
 
-          {/* ③ 추천 이유 — 검색·TOP3에서 넘어올 때만 */}
-          {reasons.length > 0 ? (
+          {/*
+            ③ 추천 이유. 첫 줄은 업체 styleTags 전부를 칩으로 — 내가 고른 것과 겹치는
+            것만 coral + 체크, 업체만 가진 것은 회색(SPEC §13.6). 첫 불릿은 일치 개수.
+            조건 칩에 «도시적인»이 떠도 이 업체에 어떻게 반영됐는지 보이지 않으면 추천을
+            믿지 않는다.
+          */}
+          {hasRecommendation ? (
             <>
               <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} />
               <View style={styles.section}>
                 <ThemedText type="t4">추천 이유</ThemedText>
-                <View style={styles.bulletList}>
-                  {reasons.map((reason) => (
-                    <View key={reason} style={styles.bulletRow}>
-                      <View style={[styles.bullet, { backgroundColor: theme.tint }]} />
-                      <ThemedText type="t6" style={styles.bulletText}>{reason}</ThemedText>
-                    </View>
-                  ))}
-                </View>
+                {vendor.styleTags.length > 0 ? (
+                  <View style={styles.styleChipRow}>
+                    {vendor.styleTags.map((style) => {
+                      const matched = matchedStyles.includes(style);
+                      return (
+                        <View
+                          key={style}
+                          accessibilityLabel={
+                            matched
+                              ? `${WEDDING_STYLE_LABEL[style]} · 고른 스타일`
+                              : WEDDING_STYLE_LABEL[style]
+                          }
+                          style={[
+                            styles.styleChip,
+                            { backgroundColor: matched ? theme.tint : theme.backgroundSelected },
+                          ]}>
+                          {matched ? (
+                            <ProductSymbol
+                              name="check"
+                              size={Layout.iconChipClose}
+                              color={theme.onTint}
+                            />
+                          ) : null}
+                          <ThemedText
+                            type="badge"
+                            style={[
+                              styles.styleChipText,
+                              { color: matched ? theme.onTint : theme.textSecondary },
+                            ]}>
+                            {WEDDING_STYLE_LABEL[style]}
+                          </ThemedText>
+                        </View>
+                      );
+                    })}
+                  </View>
+                ) : null}
+                {reasonLines.length > 0 ? (
+                  <View style={styles.bulletList}>
+                    {reasonLines.map((reason) => (
+                      <View key={reason} style={styles.bulletRow}>
+                        <View style={[styles.bullet, { backgroundColor: theme.tint }]} />
+                        <ThemedText type="t6" style={styles.bulletText}>{reason}</ThemedText>
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
               </View>
             </>
           ) : null}
@@ -296,22 +392,44 @@ export default function VendorDetailScreen() {
             <ThemedText type="t4">{TERMS.verifiedData}</ThemedText>
 
             {isCollecting ? (
-              /* 0~2건: 수집 중, 금액 구간 비공개 */
-              <ThemedView type="backgroundElement" style={styles.card}>
-                <ThemedText type="t5" themeColor="textSecondary">{STILL_COLLECTING}</ThemedText>
-                <ThemedText type="t7" themeColor="textAssistive">
-                  {paidPrice.caption}
+              /*
+               * 실 제보 3건 미만. 업체 안내가 있으면 0층 — «업체 안내 150만원~» 회색 +
+               * 출처 + 3건이 되면 바뀐다는 한 줄. 둘 다 없으면 1층 — «수집 중» + Pick 인증
+               * CTA. 화면 절반이 빈 채로 나오지 않는다(SPEC §2 빈 섹션 처리).
+               */
+              <View style={styles.priceBlock}>
+                <ThemedText
+                  type="amount"
+                  numeric
+                  themeColor="textAssistive"
+                  style={styles.amountText}>
+                  {line.text}
                 </ThemedText>
-              </ThemedView>
+                <ThemedText type="t7" themeColor="textAssistive">
+                  {line.caption}
+                </ThemedText>
+                {line.guide ? (
+                  <ThemedText type="t7" themeColor="textSecondary">
+                    {GUIDE_REPLACED_NOTE}
+                  </ThemedText>
+                ) : null}
+                {wantsPickProof ? (
+                  <ActionButton
+                    label="Pick 인증"
+                    hint="금액과 조건을 알려주시면 이 업체의 제보 금액이 여기 생겨요"
+                    onPress={() => router.push(`/search/${vendor.id}/price-report`)}
+                  />
+                ) : null}
+              </View>
             ) : (
               <>
                 {/* 3~4건: 구간 + 정보가 적다는 안내 / 5+ 건: 구간 */}
                 <View style={styles.priceBlock}>
                   <ThemedText type="amount" numeric style={styles.amountText}>
-                    {rangeLabel(paidPrice.low, paidPrice.high)}
+                    {line.text}
                   </ThemedText>
                   <ThemedText type="t7" themeColor="textAssistive">
-                    {paidPrice.caption}
+                    {line.caption}
                   </ThemedText>
                   {/* 10+ 건: 기준금액 추가 */}
                   {isDetailed ? (
@@ -424,65 +542,74 @@ export default function VendorDetailScreen() {
             />
           </View>
 
-          {/* ⑧ 후기 */}
+          {/*
+            ⑧ 경험 · 후기. «이용한 사람들의 경험»은 3명 미만이면 섹션째 숨기고 «후기»만
+            남긴다. 후기가 0건이면 빈 섹션 대신 한 줄(SPEC §2 빈 섹션 처리).
+          */}
           <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} />
           <View style={styles.section}>
-            <ThemedText type="t4">{TERMS.experience}</ThemedText>
+            {showExperience ? (
+              <ThemedText type="t4">{TERMS.experience}</ThemedText>
+            ) : (
+              <ThemedText type="t4">{TERMS.review}</ThemedText>
+            )}
 
-            <ThemedView type="backgroundElement" style={styles.card}>
-              {vendor.usageScore.available ? (
-                <>
-                  <ThemedText type="t1" numeric>{vendor.usageScore.average.toFixed(1)}</ThemedText>
-                  <ThemedText type="t7" themeColor="textSecondary">
-                    확인된 후기 {vendor.usageScore.count}건
-                  </ThemedText>
-                  {vendor.usageScore.aspects.map((aspect) => (
-                    <View key={aspect.key} style={styles.meter}>
-                      <View style={styles.meterHead}>
-                        <ThemedText type="t7" themeColor="textSecondary">{aspect.label}</ThemedText>
-                        <ThemedText type="t7" numeric>{aspect.average.toFixed(1)}</ThemedText>
-                      </View>
-                      <ProgressBar value={aspect.average / MAX_RATING} />
-                    </View>
-                  ))}
-                  {vendor.usageScore.checklist.map((item) => (
-                    <View key={item.key} style={styles.meter}>
-                      <View style={styles.meterHead}>
-                        <ThemedText
-                          type="t7"
-                          themeColor={item.needsAttention ? 'cautionary' : 'textSecondary'}>
-                          {item.label}
-                        </ThemedText>
-                        <ThemedText
-                          type="t7"
-                          numeric
-                          themeColor={item.collecting ? 'textAssistive' : undefined}>
-                          {item.collecting ? '수집 중' : `${item.percent}%`}
-                        </ThemedText>
-                      </View>
-                      <ProgressBar
-                        value={item.collecting ? 0 : item.percent / 100}
-                        color={item.needsAttention ? 'cautionary' : 'tint'}
-                      />
-                      {item.collecting ? null : (
-                        <ThemedText type="t7" themeColor="textAssistive">
-                          {item.answered}명 답함
-                        </ThemedText>
-                      )}
-                    </View>
-                  ))}
-                  {vendor.usageScore.caption ? (
-                    <ThemedText type="t7" themeColor="textAssistive">
-                      {vendor.usageScore.caption}
+            {showExperience ? (
+              <ThemedView type="backgroundElement" style={styles.card}>
+                {vendor.usageScore.available ? (
+                  <>
+                    <ThemedText type="t1" numeric>{vendor.usageScore.average.toFixed(1)}</ThemedText>
+                    <ThemedText type="t7" themeColor="textSecondary">
+                      확인된 후기 {vendor.usageScore.count}건
                     </ThemedText>
-                  ) : null}
-                </>
-              ) : (
-                <ThemedText type="t6" themeColor="textSecondary">
-                  {vendor.usageScore.reason}
-                </ThemedText>
-              )}
-            </ThemedView>
+                    {vendor.usageScore.aspects.map((aspect) => (
+                      <View key={aspect.key} style={styles.meter}>
+                        <View style={styles.meterHead}>
+                          <ThemedText type="t7" themeColor="textSecondary">{aspect.label}</ThemedText>
+                          <ThemedText type="t7" numeric>{aspect.average.toFixed(1)}</ThemedText>
+                        </View>
+                        <ProgressBar value={aspect.average / MAX_RATING} />
+                      </View>
+                    ))}
+                    {vendor.usageScore.checklist.map((item) => (
+                      <View key={item.key} style={styles.meter}>
+                        <View style={styles.meterHead}>
+                          <ThemedText
+                            type="t7"
+                            themeColor={item.needsAttention ? 'cautionary' : 'textSecondary'}>
+                            {item.label}
+                          </ThemedText>
+                          <ThemedText
+                            type="t7"
+                            numeric
+                            themeColor={item.collecting ? 'textAssistive' : undefined}>
+                            {item.collecting ? '수집 중' : `${item.percent}%`}
+                          </ThemedText>
+                        </View>
+                        <ProgressBar
+                          value={item.collecting ? 0 : item.percent / 100}
+                          color={item.needsAttention ? 'cautionary' : 'tint'}
+                        />
+                        {item.collecting ? null : (
+                          <ThemedText type="t7" themeColor="textAssistive">
+                            {item.answered}명 답함
+                          </ThemedText>
+                        )}
+                      </View>
+                    ))}
+                    {vendor.usageScore.caption ? (
+                      <ThemedText type="t7" themeColor="textAssistive">
+                        {vendor.usageScore.caption}
+                      </ThemedText>
+                    ) : null}
+                  </>
+                ) : (
+                  <ThemedText type="t6" themeColor="textSecondary">
+                    {vendor.usageScore.reason}
+                  </ThemedText>
+                )}
+              </ThemedView>
+            ) : null}
 
             {/* Pick 인증 후기 */}
             {verifiedReviews.length > 0 ? (
@@ -524,11 +651,22 @@ export default function VendorDetailScreen() {
               </ThemedView>
             ))}
 
-            <ActionButton
-              label="후기 보기"
-              hint="이용하신 분들이 남긴 글이에요"
-              onPress={() => router.push(`/search/${vendor.id}/reviews`)}
-            />
+            {hasReviews ? (
+              <ActionButton
+                label="후기 보기"
+                hint="이용하신 분들이 남긴 글이에요"
+                onPress={() => router.push(`/search/${vendor.id}/reviews`)}
+              />
+            ) : reviewsLoaded ? (
+              /* 후기 0건 — 빈 섹션 대신 한 줄. 누르면 첫 후기를 쓰는 자리로 간다. */
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={NO_REVIEWS_YET}
+                onPress={() => router.push(`/search/${vendor.id}/write-review`)}
+                style={styles.noReviewsRow}>
+                <ThemedText type="t6" themeColor="textSecondary">{NO_REVIEWS_YET}</ThemedText>
+              </Pressable>
+            ) : null}
           </View>
 
           {/* 공식정보 — 출처 근거 */}
@@ -566,7 +704,7 @@ export default function VendorDetailScreen() {
               accessibilityLabel="비교에 담기"
               disabled={saving}
               style={[styles.compareBtn, { borderColor: theme.border }]}
-              onPress={() => void addToCompare()}>
+              onPress={addToCompare}>
               <ThemedText type="t6" themeColor="text">비교에 담기</ThemedText>
             </Pressable>
           </View>
@@ -650,6 +788,14 @@ export default function VendorDetailScreen() {
 /** 핸드오프 WP-VEND-001 대표 이미지 높이 260px */
 const HERO_HEIGHT = 260;
 
+/**
+ * 스타일 칩(SPEC §13.6): 28px · radius 999 · 13px 700. 글자 13은 spec/tokens.json
+ * typography «micro»(13/18/700)다 — @weddingpick/ui FontSize에는 아직 없어 줄 높이만
+ * 토큰(LineHeight.micro)을 쓴다. 높이 28은 핸드오프 값 그대로다.
+ */
+const STYLE_CHIP_HEIGHT = 28;
+const STYLE_CHIP_FONT_SIZE = 13;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -718,6 +864,26 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.three,
     paddingBottom: Layout.sectionGap,
     gap: Spacing.two,
+  },
+
+  // ── 추천 이유 · 스타일 칩 (SPEC §13.6: 28px · radius 999 · 13px 700) ──
+  styleChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+  },
+  styleChip: {
+    height: STYLE_CHIP_HEIGHT,
+    borderRadius: Radius.pill,
+    paddingHorizontal: Layout.cardGap,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+  },
+  styleChipText: {
+    fontSize: STYLE_CHIP_FONT_SIZE,
+    lineHeight: LineHeight.micro,
+    fontWeight: 700,
   },
 
   // ── 추천 이유 불릿 ──
@@ -793,6 +959,11 @@ const styles = StyleSheet.create({
   },
 
   // ── 후기 ──
+  /* 후기 0건 한 줄. 행 최소 높이 44 — 눌러서 첫 후기로 간다. */
+  noReviewsRow: {
+    minHeight: Layout.touchTarget,
+    justifyContent: 'center',
+  },
   reviewHead: {
     flexDirection: 'row',
     alignItems: 'center',

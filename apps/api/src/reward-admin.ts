@@ -13,14 +13,14 @@ import { notify } from './notify';
 /**
  * 보상 지급 도구. 최종통합정책 v2.0 I장.
  *
- * **돈을 보내는 것은 이 도구가 아니다.** 사람이 NPay로 보내고, 보냈다는 사실을
+ * **돈을 보내는 것은 이 도구가 아니다.** 사람이 Npay로 보내고, 보냈다는 사실을
  * 여기에 적는다. 판정은 이미 자동으로 끝나 있다(I-3의 조건확인~한도확인) —
  * 남은 것은 실제 송금뿐이고, 그것을 자동으로 할 수단이 아직 없다.
  *
  *   npm run rewards --workspace @weddingpick/api -- --list
  *   npm run rewards --workspace @weddingpick/api -- --held
  *   npm run rewards --workspace @weddingpick/api -- --paid <id> --by <user-id> \
- *     --note "NPay 송금 완료"
+ *     --note "Npay 송금 완료"
  *   npm run rewards --workspace @weddingpick/api -- --block <id> --by <user-id> \
  *     --note "중복 계정으로 확인됨"
  *

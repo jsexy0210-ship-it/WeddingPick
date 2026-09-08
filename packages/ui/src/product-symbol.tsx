@@ -8,13 +8,13 @@ import { Colors } from './theme';
  * 한때 `pickMark`가 여기 사본으로 있었는데 획 두께가 1.8로 확정본(1.9)과 달라
  * 탭 바만 다른 마크를 쓰고 있었다.
  */
-export type ProductSymbolName = 'house' | 'magnifier' | 'twoPeople' | 'calendar' | 'person' | 'hall' | 'sdm' | 'snap' | 'planner' | 'warning' | 'bell' | 'gear' | 'more' | 'chevronRight' | 'chevronLeft' | 'close';
+export type ProductSymbolName = 'house' | 'magnifier' | 'twoPeople' | 'calendar' | 'person' | 'hall' | 'sdm' | 'snap' | 'planner' | 'warning' | 'bell' | 'gear' | 'more' | 'chevronRight' | 'chevronLeft' | 'close' | 'check';
 
 /**
  * 획 두께. 헤더·탭 아이콘(24)은 1.8, chevron(18)은 2, 닫기(14)는 2.4 — 05-root ·
  * 08c 핸드오프 값 그대로다. 작은 아이콘일수록 굵어야 같은 무게로 보인다.
  */
-const STROKE: Partial<Record<ProductSymbolName, number>> = { chevronRight: 2, chevronLeft: 2, close: 2.4 };
+const STROKE: Partial<Record<ProductSymbolName, number>> = { chevronRight: 2, chevronLeft: 2, close: 2.4, check: 3.6 };
 
 export function ProductSymbol({ name, size = 24, color = Colors.light.text }: { name: ProductSymbolName; size?: number; color?: ColorValue }) {
   const common = { stroke: color, strokeWidth: STROKE[name] ?? 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, fill: 'none' };
@@ -41,6 +41,8 @@ export function ProductSymbol({ name, size = 24, color = Colors.light.text }: { 
       {name === 'chevronRight' && <Path {...common} d="m9 6 6 6-6 6" />}
       {name === 'chevronLeft' && <Path {...common} d="M14.5 5 8 12l6.5 7" />}
       {name === 'close' && <Path {...common} d="M6 6l12 12M18 6 6 18" />}
+      {/* 완료 체크(11 · 획 3.6) — 혜택 안내 시트 조건 행. 시안 path 그대로. */}
+      {name === 'check' && <Path {...common} d="m5 12.5 4.5 4.5L19 7.5" />}
       {name === 'warning' && <><Path {...common} d="M12 3.8 21 19.5H3z" /><Path {...common} d="M12 10v4.2M12 16.8v.1" /></>}
     </Svg>
   );

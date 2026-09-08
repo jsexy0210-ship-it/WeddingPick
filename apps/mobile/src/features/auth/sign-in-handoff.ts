@@ -1,3 +1,5 @@
+import { ApiError } from '@/api/client';
+
 /**
  * 부팅(app/_layout.tsx)이 카카오 리다이렉트를 마무리하다 실패했을 때, 그 이유를
  * 로그인 화면에 넘기는 손잡이. 화면은 뜨자마자 한 번 꺼내 실패 시트를 띄운다.
@@ -17,3 +19,22 @@ export function takePendingSignInError(): string | null {
 
   return message;
 }
+
+/**
+ * 서버가 만 14세 미만으로 판정했다(`under_age`, v3.22 SPEC 3.5). 실패 시트가
+ * 아니라 WP-AUTH-010(이용 불가 안내)으로 간다.
+ *
+ * 부팅 경로는 실패를 **문장 하나**로만 넘기므로(`setPendingSignInError`), 그
+ * 경로에서도 알아볼 수 있게 정해진 문장을 쓴다. 카카오 제공자(`providers.ts`)가
+ * `ApiError`를 이 문장으로 바꿔 던지고, 로그인 훅은 둘 다 알아본다.
+ */
+export const UNDER_AGE_SIGN_IN_MESSAGE = '만 14세부터 이용할 수 있어요';
+
+export function isUnderAgeSignInError(error: unknown): boolean {
+  if (error instanceof ApiError) return error.code === 'under_age';
+
+  return error instanceof Error && error.message === UNDER_AGE_SIGN_IN_MESSAGE;
+}
+
+/** WP-AUTH-010. 로그인 화면(`app/login/age-required.tsx`)과 같은 경로여야 한다. */
+export const AGE_REQUIRED_ROUTE = '/login/age-required' as const;

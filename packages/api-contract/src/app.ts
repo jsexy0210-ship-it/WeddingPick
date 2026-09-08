@@ -8,8 +8,8 @@ import { currentUserSchema } from './weddings';
 /**
  * 홈이 한 번에 필요로 하는 것을 한 응답으로 묶는다. GET /v1/app/bootstrap.
  *
- * 홈은 원래 회원 · 알림 · 많이 확인된 곳 · 담아둔 후보 · 오늘의 Pick을 다섯 번
- * 따로 물었다. 그중 뒤 셋은 앞의 답에 기대는 것도 있어(오늘의 Pick은 담아둔
+ * 홈은 원래 회원 · 알림 · 많이 확인된 곳 · 담아둔 후보 · 웨딩픽 추천을 다섯 번
+ * 따로 물었다. 그중 뒤 셋은 앞의 답에 기대는 것도 있어(웨딩픽 추천은 담아둔
  * 후보가 지목한 업종을 봐야 나온다), 기기와 서버 사이를 여러 번 오가야 했다 —
  * 각 왕복이 인터넷을 타는 이상 서버 안에서 합치는 것과는 체감 속도가 다르다.
  *
@@ -25,7 +25,7 @@ export const appBootstrapResponseSchema = z.object({
   popularVendors: z.array(vendorSummarySchema),
   /** 로그인하지 않았으면 null. */
   candidates: candidateListResponseSchema.nullable(),
-  /** 오늘의 Pick. 지목된 업종이 없으면 빈 배열. */
+  /** 웨딩픽 추천. 지목된 업종이 없으면 빈 배열. */
   recommendations: z.array(vendorSummarySchema),
 });
 

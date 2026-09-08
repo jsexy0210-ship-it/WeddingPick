@@ -37,12 +37,18 @@ export const TOP3_MIN_CONFIRMED = DISCLOSURE_THRESHOLDS.limited;
  * `분위기가 좋아요` 같은 말이 없는 이유: 우리는 분위기를 재지 않는다. 여기 있는
  * 넷은 모두 데이터 한 줄로 참·거짓을 가릴 수 있는 문장이다.
  */
-export const TOP3_REASONS = ['region', 'budget', 'many_confirmed', 'recent_data'] as const;
+/**
+ * v3.22 — 스타일이 먼저다. 출시 초기 추천 근거는 지역 + 스타일 + 업체 안내 가격이고,
+ * «실 제보 N건»은 자료가 생기면 등장한다(SPEC §2 «출시 초기 추천 근거»).
+ */
+export const TOP3_REASONS = ['style_all', 'style', 'region', 'budget', 'many_confirmed', 'recent_data'] as const;
 
 export type Top3Reason = (typeof TOP3_REASONS)[number];
 
 /** 사용자 화면에 그대로 나가는 문장. 표준 용어는 `이런 점이 잘 맞아요`다(v3.3). */
 export const TOP3_REASON_LABEL: Record<Top3Reason, string> = {
+  style_all: '고른 스타일 2개가 다 맞아요',
+  style: '고른 스타일이랑 맞아요',
   region: '준비하는 지역이에요',
   budget: '제보 금액이 준비 예산과 맞아요',
   many_confirmed: '실 제보가 많아요',
@@ -53,6 +59,11 @@ export const TOP3_REASON_LABEL: Record<Top3Reason, string> = {
 export type Top3Facts = {
   /** 사용자가 고른 지역과 업체 지역이 맞는가. */
   regionMatched: boolean;
+  /** 사용자가 고른 스타일 수(0~2)와 업체 태그와 겹치는 수. 안 골랐으면 둘 다 0. */
+  chosenStyles: number;
+  styleOverlap: number;
+  /** 업체 안내 가격(정보 0층)이 있는가. 실 제보가 없어도 이것으로 추천이 선다. */
+  hasGuidePrice: boolean;
   /**
    * 실 제보 건수. **캡션에 적히는 그 수와 같은 수여야 한다.**
    *
@@ -113,6 +124,13 @@ export const MANY_CONFIRMED_AT = DISCLOSURE_THRESHOLDS.normal;
 export function reasonsFor(facts: Top3Facts): Top3Reason[] {
   const reasons: Top3Reason[] = [];
 
+  /* 스타일이 먼저다(v3.22). 고른 것이 다 맞으면 개수를, 일부면 «맞아요»를 적는다. */
+  if (facts.chosenStyles >= 2 && facts.styleOverlap === facts.chosenStyles) {
+    reasons.push('style_all');
+  } else if (facts.styleOverlap > 0) {
+    reasons.push('style');
+  }
+
   if (facts.regionMatched) reasons.push('region');
 
   /*
@@ -132,8 +150,28 @@ export function reasonsFor(facts: Top3Facts): Top3Reason[] {
 
 /** 추천할 수 있는 상태인가. 자격 · 예산 · 이유를 다 본다. */
 export function isRecommendable(facts: Top3Facts): boolean {
+  /*
+   * 자격은 셋 중 하나다 — 실 제보 3건 이상, 업체 안내 가격(0층), 또는 스타일이 맞는
+   * 곳(출시 초기). 출시 첫날 실 제보는 0건이라 실 제보만 자격으로 두면 빈 앱이 된다.
+   */
+  const qualified =
+    facts.confirmedCount >= TOP3_MIN_CONFIRMED || facts.hasGuidePrice || facts.styleOverlap > 0;
+
+  return qualified && !budgetExcludes(facts) && reasonsFor(facts).length > 0;
+}
+
+/**
+ * 순위 점수. 큰 것이 앞이다. 스타일 교집합이 가장 무겁고, 실 제보가 붙는 대로
+ * 가중치가 오른다(«이후 실 제보가 붙는 대로 가중치 상승»). 태그가 다르다고 빼지는
+ * 않는다 — 순서에만 반영한다.
+ */
+export function recommendScore(facts: Top3Facts): number {
   return (
-    facts.confirmedCount >= TOP3_MIN_CONFIRMED && !budgetExcludes(facts) && reasonsFor(facts).length > 0
+    facts.styleOverlap * 100 +
+    (facts.confirmedCount >= TOP3_MIN_CONFIRMED ? 50 : 0) +
+    (facts.hasGuidePrice ? 20 : 0) +
+    (facts.regionMatched ? 10 : 0) +
+    Math.min(facts.confirmedCount, 30)
   );
 }
 

@@ -1,7 +1,14 @@
-import { MAX_DISPLAY_NAME_LENGTH, MEMBER_TIERS, WEDDING_BUDGET_BRACKETS } from '@weddingpick/domain';
+import {
+  MAX_DISPLAY_NAME_LENGTH,
+  MEMBER_TIERS,
+  STYLE_PICK_MAX,
+  STYLE_PICK_MIN,
+  WEDDING_BUDGET_BRACKETS,
+} from '@weddingpick/domain';
 import { z } from 'zod';
 
 import { dateSchema, idSchema, preparationCategorySchema, timestampSchema } from './common';
+import { weddingStyleSchema } from './vendors';
 
 /** 온보딩 4/5 예산 스텝. 핸드오프 v3.19가 정한 여섯 구간 중 하나 — 자유 입력이 아니다. */
 export const budgetBracketSchema = z.enum(WEDDING_BUDGET_BRACKETS);
@@ -73,6 +80,11 @@ export const currentUserSchema = z.object({
    * 없다고 첫 화면에 다시 붙잡아두면 그게 강제 가입이다.
    */
   setupComplete: z.boolean(),
+  /**
+   * 스타일(온보딩 5/5 · v3.22). 도시적인 · 자연스러운 · 로맨틱한 · 화려한 중 최소 1 최대 2.
+   * 홈 조건 칩과 추천 정렬 · 업체 상세의 스타일 일치 표기가 이 값을 본다.
+   */
+  styleTags: z.array(weddingStyleSchema).max(STYLE_PICK_MAX),
 
   /** 배우자가 연결돼 있는가. 등급과 미션이 이 값을 본다. */
   spouseLinked: z.boolean(),
@@ -139,6 +151,8 @@ export const completeSetupRequestSchema = z.object({
   /** 준비 현황(3/5). 안 보내면 그대로, 빈 배열은 «아직 시작 전이에요». 새 웨딩의 기본은 빈 배열. */
   preparedCategories: preparedCategoriesSchema.optional(),
   budgetBracket: budgetBracketSchema.nullable().optional(),
+  /** 스타일(5/5). 안 보내면 그대로. 보내면 최소 1 · 최대 2 — 재클릭 해제, 3번째는 토스트. */
+  styleTags: z.array(weddingStyleSchema).min(STYLE_PICK_MIN).max(STYLE_PICK_MAX).optional(),
 });
 
 /**
