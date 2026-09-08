@@ -70,6 +70,65 @@ describeWithDb('관리자 콘솔 라우트', () => {
     });
   });
 
+  describe('계정 목록', () => {
+    it('탈퇴를 접수한 계정도 상태와 함께 보인다', async () => {
+      const operator = await operatorHeaders();
+      const leaving = await signInAs(test, 'leaving-user');
+
+      await test.pool.query(
+        `UPDATE structured.users SET display_name = '떠난사람', deleted_at = now() WHERE id = $1`,
+        [leaving.userId]
+      );
+      await test.pool.query(
+        `INSERT INTO structured.withdrawal_deletion_failures (user_id, error_message)
+         VALUES ($1, 'removed_candidates FK')`,
+        [leaving.userId]
+      );
+
+      const all = await get('/v1/admin/users', operator.headers);
+
+      expect(all.statusCode).toBe(200);
+
+      const users = all.json<{ users: { id: string; withdrawal: unknown; provider: string | null }[] }>().users;
+      const gone = users.find((u) => u.id === leaving.userId);
+
+      expect(gone).toMatchObject({
+        provider: 'apple',
+        withdrawal: { status: 'failed', failure: { message: 'removed_candidates FK', attemptCount: 1 } },
+      });
+      expect(users.find((u) => u.id === operator.userId)).toMatchObject({ withdrawal: null, isOperator: true });
+
+      const withdrawn = await get('/v1/admin/users?status=withdrawn', operator.headers);
+
+      expect(withdrawn.json<{ users: { id: string }[]; total: number }>()).toMatchObject({ total: 1 });
+      expect(withdrawn.json<{ users: { id: string }[] }>().users.map((u) => u.id)).toEqual([leaving.userId]);
+
+      const searched = await get('/v1/admin/users?search=떠난', operator.headers);
+
+      expect(searched.json<{ users: { id: string }[] }>().users.map((u) => u.id)).toEqual([leaving.userId]);
+    });
+
+    it('삭제에 실패한 탈퇴 계정을 다시 지운다', async () => {
+      const operator = await operatorHeaders();
+      const leaving = await signInAs(test, 'leaving-user');
+
+      await test.pool.query('UPDATE structured.users SET deleted_at = now() WHERE id = $1', [leaving.userId]);
+      await test.pool.query(
+        `INSERT INTO structured.withdrawal_deletion_failures (user_id, error_message) VALUES ($1, 'x')`,
+        [leaving.userId]
+      );
+
+      const retried = await post(`/v1/admin/withdrawals/${leaving.userId}/retry`, operator.headers);
+
+      expect(retried.statusCode).toBe(200);
+      expect(retried.json()).toMatchObject({ completed: true });
+
+      const after = await get('/v1/admin/users?status=withdrawn', operator.headers);
+
+      expect(after.json<{ total: number }>().total).toBe(0);
+    });
+  });
+
   describe('반론', () => {
     async function aPendingRebuttal() {
       const vendor = await test.pool.query<{ id: string }>(
