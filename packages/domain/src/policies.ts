@@ -8,6 +8,8 @@
  * 결과의 성격이지 무엇으로 읽었는지가 아니다.
  */
 
+import { SITE_ORIGIN } from './site';
+
 export type PolicyStatus = '자문 대기' | '작성 필요' | '초안 게시';
 
 export type PolicyDocument = {
@@ -25,14 +27,14 @@ export const POLICY_DOCUMENTS: readonly PolicyDocument[] = [
     title: '이용약관',
     status: '초안 게시',
     note: '법률 자문을 마친 초안이에요. 확정 전 내용으로 언제든 바뀔 수 있어요.',
-    url: 'https://weddingpick.kr/terms.html',
+    url: `${SITE_ORIGIN}/terms.html`,
   },
   {
     id: 'privacy',
     title: '개인정보처리방침',
     status: '초안 게시',
     note: '법률 자문을 마친 초안이에요. 확정 전 내용으로 언제든 바뀔 수 있어요.',
-    url: 'https://weddingpick.kr/privacy.html',
+    url: `${SITE_ORIGIN}/privacy.html`,
   },
   {
     id: 'analysis-notice',

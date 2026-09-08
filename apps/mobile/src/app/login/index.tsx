@@ -1,7 +1,7 @@
 import { POLICY_DOCUMENTS, dDay } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
@@ -11,6 +11,7 @@ import { canSignInWith, providerTone, useAuthProviders } from '@/features/auth/p
 import { loadRememberedAccount, type RememberedAccount } from '@/features/auth/remembered-account';
 import { takePendingSignInError } from '@/features/auth/sign-in-handoff';
 import { useSignIn } from '@/features/auth/use-sign-in';
+import { openExternal } from '@/features/open-external';
 
 /**
  * WP-AUTH-001 "첫 진입" 상태에만 쓴다 — WP-AUTH-008(로그인 유지)엔 없다.
@@ -212,7 +213,7 @@ export default function LoginScreen() {
 }
 
 /**
- * 동의 안내 문장 속 약관 링크. 밑줄 + 링크색(accent)으로, 누르면 웹의 전문을 연다.
+ * 동의 안내 문장 속 약관 링크. 밑줄 + 링크색(accent)으로, 누르면 웹의 전문을 새 창에 연다.
  * 주소는 @weddingpick/domain POLICY_DOCUMENTS 한 곳에서 온다 — 웹 푸터와 같은 곳이다.
  */
 function PolicyLink({ id }: { id: 'terms' | 'privacy' }) {
@@ -229,7 +230,7 @@ function PolicyLink({ id }: { id: 'terms' | 'privacy' }) {
       accessibilityRole="link"
       style={[styles.policyLink, { color: theme.link, textDecorationColor: theme.link }]}
       onPress={() => {
-        void Linking.openURL(url);
+        void openExternal(url);
       }}>
       {policy.title}
     </ThemedText>

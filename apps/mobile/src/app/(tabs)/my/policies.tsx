@@ -1,9 +1,11 @@
 import { POLICY_DOCUMENTS, WITHDRAWAL_SEPARATED_NOTE } from '@weddingpick/domain';
 import { router } from 'expo-router';
-import { ScrollView, StyleSheet } from 'react-native';
+import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
+import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
+
+import { openExternal } from '@/features/open-external';
 
 /**
  * A-15 정책.
@@ -15,6 +17,8 @@ import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView } from '
  * "게시됨"으로 바뀌면 어느 쪽이 맞는지 아무도 모르게 된다.
  */
 export default function PoliciesScreen() {
+  const theme = useTheme();
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
@@ -34,6 +38,21 @@ export default function PoliciesScreen() {
                 <ThemedText type="small" themeColor="textSecondary">
                   {policy.status} · {policy.note}
                 </ThemedText>
+                {/* 전문은 웹에 있다. 새 창으로 연다 — 랜딩 안 앵커('#…')는 앱의 안내 화면이 대신한다. */}
+                {policy.url && !policy.url.startsWith('#') ? (
+                  <Pressable
+                    accessibilityRole="link"
+                    hitSlop={Spacing.two}
+                    onPress={() => {
+                      void openExternal(policy.url!);
+                    }}>
+                    <ThemedText
+                      type="smallBold"
+                      style={[styles.link, { color: theme.link, textDecorationColor: theme.link }]}>
+                      전문 보기
+                    </ThemedText>
+                  </Pressable>
+                ) : null}
               </ThemedView>
             ))}
           </ThemedView>
@@ -63,6 +82,7 @@ export default function PoliciesScreen() {
 }
 
 const styles = StyleSheet.create({
+  link: { textDecorationLine: 'underline', textDecorationStyle: 'solid', alignSelf: 'flex-start' },
   container: {
     flex: 1,
     flexDirection: 'row',
