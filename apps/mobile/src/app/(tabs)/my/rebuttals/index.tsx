@@ -2,7 +2,7 @@ import type { MyRebuttal } from '@weddingpick/api-contract';
 import { isEditable } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -88,7 +88,7 @@ export default function MyRebuttalsScreen() {
 
           {rebuttals.map((rebuttal) => (
             <ThemedView key={rebuttal.id} type="backgroundElement" style={styles.card}>
-              <ThemedView type="backgroundElement" style={styles.cardHead}>
+              <View style={styles.cardHead}>
                 <ThemedText type="t7" themeColor="textSecondary">
                   {rebuttal.review.vendorName}
                 </ThemedText>
@@ -97,7 +97,7 @@ export default function MyRebuttalsScreen() {
                   themeColor={rebuttal.status === 'published' ? 'positive' : 'textAssistive'}>
                   {rebuttal.statusLabel}
                 </ThemedText>
-              </ThemedView>
+              </View>
 
               {/* 원본 후기 — 무엇에 대한 답인지가 먼저 보여야 한다. */}
               <ThemedText type="t5">{rebuttal.review.title}</ThemedText>
@@ -106,14 +106,14 @@ export default function MyRebuttalsScreen() {
               </ThemedText>
 
               {/* 게시되면 붙을 모양 그대로. */}
-              <ThemedView
-                type="backgroundElement"
+              <View
+               
                 style={[styles.rebuttal, { borderLeftColor: theme.tint }]}>
                 <ThemedText type="t7" themeColor="tint">
                   업체 반론 · {rebuttal.claimedRole}
                 </ThemedText>
                 <ThemedText type="t6">{rebuttal.body}</ThemedText>
-              </ThemedView>
+              </View>
 
               <ThemedText type="t7" themeColor="textSecondary">
                 {rebuttal.statusNote}
@@ -130,7 +130,7 @@ export default function MyRebuttalsScreen() {
                 </ThemedText>
               ) : null}
 
-              <ThemedView type="backgroundElement" style={styles.actions}>
+              <View style={styles.actions}>
                 {isEditable(rebuttal.status) ? (
                   <ActionButton
                     label="수정"
@@ -139,7 +139,7 @@ export default function MyRebuttalsScreen() {
                 ) : null}
                 {/* 지우기는 게시된 뒤에도 된다. 자기 말을 거두는 것은 언제든 되어야 한다. */}
                 <ActionButton label="삭제" onPress={() => confirmRemove(rebuttal)} />
-              </ThemedView>
+              </View>
             </ThemedView>
           ))}
         </ScrollView>

@@ -1,5 +1,4 @@
 import {
-  VENDOR_SORTS,
   VENDOR_SORT_LABEL,
   type Top3Response,
   type VendorSort,
@@ -26,12 +25,13 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getTop3, listVendorRegions, searchVendors } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
+import { SortSheet } from '@/features/search/sort-sheet';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
-import { VendorMap } from '@/features/search/vendor-map';
 import {
   ActionButton,
   Colors,
@@ -97,8 +97,8 @@ export default function SearchScreen() {
   const [pickedCategory, setPickedCategory] = useState<VendorCategory | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [top3, setTop3] = useState<Top3Response | null>(null);
-  /** 목록 · 지도. */
-  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  /** 정렬 시트(WP-SRCH-006)가 떠 있는가. */
+  const [sortOpen, setSortOpen] = useState(false);
   /**
    * 최근 검색. 제출한 검색어를 기억한다.
    * 영구 보존은 다음 단계(AsyncStorage)에서 한다.
@@ -367,12 +367,12 @@ export default function SearchScreen() {
               setInputFocused(false);
               router.push(`/search/${item.id}`);
             }}>
-            <ThemedView type="backgroundElement" style={styles.suggestionRow}>
+            <View style={styles.suggestionRow}>
               <ThemedText type="t6">{item.name}</ThemedText>
               <ThemedText type="t7" themeColor="textAssistive">
                 {VENDOR_CATEGORY_LABEL[item.category]} · {item.region}
               </ThemedText>
-            </ThemedView>
+            </View>
           </Pressable>
         ))}
       </ThemedView>
@@ -381,7 +381,11 @@ export default function SearchScreen() {
 
   // ─── 결과 화면 ────────────────────────────────────────────────────────────
 
-  /** 결과 카드 한 장. WP-SRCH-004 스펙. */
+  /**
+   * 결과 카드 한 장. WP-SRCH-004 스펙 — 이미지 168 / 업체명 20 ↔ 금액 16 /
+   * 건수 14 / Pick 48. 카드에 배경 상자를 두지 않는다 — 이미지와 글이 곧
+   * 카드다(이중 컨테이너 금지, 2026-09-08).
+   */
   function renderVendorCard(item: VendorSummary) {
     const chosen = picked.includes(item.id);
     const paidPrice = item.paidPrice;
@@ -390,13 +394,14 @@ export default function SearchScreen() {
 
     return (
       <View style={styles.resultCard}>
-        {/* 대표 이미지 — 업체 제공 이미지가 없으면 카테고리 기본 */}
+        {/* 대표 이미지 — 승인된 대표 사진이 없으면 카테고리 기본(CLAUDE.md §8) */}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`${item.name} 자세히 보기`}
           onPress={() => router.push(`/search/${item.id}`)}>
           <View style={styles.cardImageWrap}>
             <VendorImage
+              source={item.imageUrl ? { uri: item.imageUrl } : undefined}
               category={vendorImageCategory(item.category)}
               width={undefined}
               height={CARD_IMAGE_HEIGHT}
@@ -465,14 +470,10 @@ export default function SearchScreen() {
           showsHorizontalScrollIndicator={false}
           style={[styles.filterBar, { backgroundColor: theme.background }]}
           contentContainerStyle={styles.filterBarContent}>
-          {CATEGORY_ORDER.map((category) => (
-            <FilterChip
-              key={category}
-              label={VENDOR_CATEGORY_LABEL[category]}
-              selected={filters.category === category}
-              onPress={() => toggle('category', category)}
-            />
-          ))}
+          {/*
+            업종 칩은 두지 않는다(2026-09-08) — 업종은 검색 홈의 격자에서 이미
+            골랐고, 결과에서 또 고르게 하면 같은 선택을 두 번 시킨다. 지역만 남긴다.
+          */}
           {regions.map((region) => (
             <FilterChip
               key={region.name}
@@ -489,26 +490,22 @@ export default function SearchScreen() {
             {filters.category ? `${VENDOR_CATEGORY_LABEL[filters.category]} ` : ''}
             {total}곳
           </ThemedText>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.sortChips}>
-              {VENDOR_SORTS.filter((sort) => sort !== 'name').map((sort) => (
-                <FilterChip
-                  key={sort}
-                  role="radio"
-                  label={VENDOR_SORT_LABEL[sort]}
-                  selected={filters.sort === sort}
-                  onPress={() => setFilters((current) => ({ ...current, sort }))}
-                />
-              ))}
-            </View>
-          </ScrollView>
+          {/* 정렬 — 셀렉트. 누르면 바텀시트(WP-SRCH-006)에서 하나를 고른다. */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`정렬: ${VENDOR_SORT_LABEL[filters.sort]}`}
+            onPress={() => setSortOpen(true)}
+            style={styles.sortSelect}>
+            <ThemedText type="t7" themeColor="textSecondary">
+              {VENDOR_SORT_LABEL[filters.sort]}
+            </ThemedText>
+            <ChevronDownIcon color={theme.textSecondary} />
+          </Pressable>
         </View>
 
         {/* 결과 목록 */}
         {vendors === null ? (
           <ActivityIndicator color={theme.tint} style={styles.spinner} />
-        ) : viewMode === 'map' ? (
-          <VendorMap vendors={vendors} loading={false} onRefresh={runSearch} />
         ) : (
           <FlatList
             data={vendors}
@@ -527,23 +524,27 @@ export default function SearchScreen() {
                         key={ad.vendorId}
                         accessibilityRole="button"
                         accessibilityLabel={`${ad.label} ${ad.name} 자세히 보기`}
-                        onPress={() => router.push(`/search/${ad.vendorId}`)}>
-                        <View
-                          style={[
-                            styles.adCard,
-                            {
-                              backgroundColor: theme.backgroundElement,
-                              borderColor: theme.border,
-                            },
-                          ]}>
-                          <ThemedText type="badge" themeColor="textAssistive">
-                            {ad.label}
-                          </ThemedText>
-                          <ThemedText type="t5">{ad.name}</ThemedText>
-                          <ThemedText type="t7" themeColor="textSecondary">
-                            {VENDOR_CATEGORY_LABEL[ad.category]} · {ad.region}
-                          </ThemedText>
+                        onPress={() => router.push(`/search/${ad.vendorId}`)}
+                        style={styles.resultCard}>
+                        {/* 광고 라벨은 이미지 좌상단에 — 카드 모양은 자연 결과와 같고 라벨로만 가른다. */}
+                        <View style={styles.cardImageWrap}>
+                          <VendorImage
+                            source={ad.imageUrl ? { uri: ad.imageUrl } : undefined}
+                            category={vendorImageCategory(ad.category)}
+                            width={undefined}
+                            height={CARD_IMAGE_HEIGHT}
+                            radius={Radius.medium}
+                          />
+                          <View style={[styles.adPill, { backgroundColor: theme.scrim }]}>
+                            <ThemedText type="badge" style={{ color: theme.onTint }}>
+                              {ad.label}
+                            </ThemedText>
+                          </View>
                         </View>
+                        <ThemedText type="t4" numberOfLines={1}>{ad.name}</ThemedText>
+                        <ThemedText type="t7" themeColor="textAssistive" numberOfLines={1}>
+                          {VENDOR_CATEGORY_LABEL[ad.category]} · {ad.region}
+                        </ThemedText>
                       </Pressable>
                     ))}
                     <View style={[styles.adDivider, { backgroundColor: theme.line }]} />
@@ -635,24 +636,7 @@ export default function SearchScreen() {
 
           {/* 자동완성 — 입력 중에 뜬다 */}
           {renderSuggestions()}
-
-          {/* 결과 모드 지도/목록 토글 */}
-          {viewState === 'results' ? (
-            <View style={styles.viewToggle}>
-              <FilterChip
-                role="radio"
-                label="목록"
-                selected={viewMode === 'list'}
-                onPress={() => setViewMode('list')}
-              />
-              <FilterChip
-                role="radio"
-                label="지도"
-                selected={viewMode === 'map'}
-                onPress={() => setViewMode('map')}
-              />
-            </View>
-          ) : null}
+          {/* 지도 보기는 여기 없다(2026-09-08) — 위치는 업체 상세에서만 보인다. */}
         </ThemedView>
 
         {/* ── 본문 ── */}
@@ -676,8 +660,26 @@ export default function SearchScreen() {
         </ThemedView>
 
         <Toast message={toast} onHidden={() => setToast(null)} />
+        <SortSheet
+          visible={sortOpen}
+          value={filters.sort}
+          onSelect={(sort) => {
+            setFilters((current) => ({ ...current, sort }));
+            setSortOpen(false);
+          }}
+          onDismiss={() => setSortOpen(false)}
+        />
       </SafeAreaView>
     </ThemedView>
+  );
+}
+
+/** 셀렉트의 ▾. */
+function ChevronDownIcon({ color }: { color: string }) {
+  return (
+    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+      <Path d="M6 9l6 6 6-6" stroke={color} strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
   );
 }
 
@@ -757,10 +759,6 @@ const styles = StyleSheet.create({
     minHeight: Layout.rowMinHeight,
     justifyContent: 'center',
     gap: Spacing.one,
-  },
-  viewToggle: {
-    flexDirection: 'row',
-    gap: Spacing.two,
   },
 
   // ── 홈 ──
@@ -864,20 +862,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: Layout.gutter,
     flexShrink: 0,
   },
-  sortChips: {
+  /* 정렬 셀렉트. 44 터치 영역, 오른쪽 정렬. */
+  sortSelect: {
     flexDirection: 'row',
-    gap: Spacing.two,
+    alignItems: 'center',
+    gap: Spacing.one,
+    minHeight: Layout.touchTarget,
+    paddingLeft: Spacing.two,
   },
+  /* 목업: padding 4 24 28 · 카드 사이 20. */
   resultList: {
     paddingHorizontal: Layout.gutter,
-    paddingTop: Spacing.two,
-    paddingBottom: Spacing.three,
-    gap: Spacing.five,
+    paddingTop: Spacing.one,
+    paddingBottom: Layout.sectionGap,
+    gap: Layout.listGap,
   },
 
-  // 결과 카드. 핸드오프: 이미지(full-width × 168) + 이름↔금액 + 건수 + Pick 버튼
+  // 결과 카드. 핸드오프: 이미지(full-width × 168) + 이름↔금액 + 건수 + Pick 버튼, 사이 10
   resultCard: {
-    gap: Spacing.two,
+    gap: Layout.cardGap,
   },
   cardImageWrap: {
     width: '100%',
@@ -899,28 +902,26 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     fontVariant: ['tabular-nums'],
   },
-  cardMeta: {
-    marginTop: -Spacing.one,
-  },
+  cardMeta: {},
   // Pick 버튼. 핸드오프: height 48, radius 6
   pickBtn: {
     height: Layout.controlLarge,
     borderRadius: Radius.input,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: Spacing.one,
   },
   pickBtnTextOn: {
     color: Colors.light.onTint,
   },
 
-  // 광고 카드
-  adCard: {
-    borderRadius: Radius.medium,
-    padding: Spacing.three,
-    gap: Spacing.one,
-    borderWidth: 1,
-    borderColor: 'transparent',
+  // 광고 — 이미지 좌상단 라벨
+  adPill: {
+    position: 'absolute',
+    top: Spacing.two,
+    left: Spacing.two,
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.half,
   },
   sponsoredBlock: {
     gap: Spacing.two,

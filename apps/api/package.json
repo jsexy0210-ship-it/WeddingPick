@@ -26,6 +26,7 @@
     "pii": "tsx src/pii-admin.ts",
     "ai-cost": "tsx src/ai-cost-admin.ts",
     "seed:demo": "tsx src/seed-demo.ts",
+    "seed:samples": "tsx src/seed-samples.ts",
     "analyze": "tsx src/analyze-file.ts",
     "marketing": "tsx src/marketing/cli.ts"
   },

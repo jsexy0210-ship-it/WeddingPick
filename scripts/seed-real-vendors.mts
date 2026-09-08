@@ -13,7 +13,7 @@ if (!DATABASE_URL) {
 
 const sql = postgres(DATABASE_URL, { ssl: 'require' });
 
-type Category = 'hall' | 'sdm' | 'planner_agency' | 'snap' | 'goods' | 'etc' | 'wedding_info_company';
+type Category = 'hall' | 'sdm' | 'snap' | 'goods' | 'honeymoon' | 'etc' | 'wedding_info_company';
 
 const VENDORS: { category: Category; name: string; region: string }[] = [
   // ── 웨딩홀 ─────────────────────────────────────────────
@@ -156,23 +156,6 @@ const VENDORS: { category: Category; name: string; region: string }[] = [
   { category: 'snap', name: '해운대스냅포토', region: '부산' },
   { category: 'snap', name: '제주스냅 바이정', region: '제주' },
 
-  // ── 플래너/에이전시 (planner_agency) ─────────────────────
-  { category: 'planner_agency', name: '더웨딩아이 플래너', region: '서울' },
-  { category: 'planner_agency', name: '브릿지웨딩 플래너', region: '서울' },
-  { category: 'planner_agency', name: '웨딩나라 플래너', region: '서울' },
-  { category: 'planner_agency', name: '럭키웨딩 플래너', region: '서울' },
-  { category: 'planner_agency', name: '소울웨딩 플래너', region: '서울' },
-  { category: 'planner_agency', name: '드림웨딩 플래너', region: '서울' },
-  { category: 'planner_agency', name: '마이웨딩 플래너', region: '서울' },
-  { category: 'planner_agency', name: '웨딩블리스 플래너', region: '서울' },
-  { category: 'planner_agency', name: '투하트 웨딩플래너', region: '서울' },
-  { category: 'planner_agency', name: '에버웨딩 플래너', region: '서울' },
-  { category: 'planner_agency', name: '클로버 웨딩플래너', region: '서울' },
-  { category: 'planner_agency', name: '아이유웨딩 플래너', region: '서울' },
-  { category: 'planner_agency', name: '원웨딩 플래너 성남', region: '경기' },
-  { category: 'planner_agency', name: '웨딩스토리 플래너 수원', region: '경기' },
-  { category: 'planner_agency', name: '로즈웨딩 플래너 부산', region: '부산' },
-  { category: 'planner_agency', name: '해피데이 플래너 대구', region: '대구' },
 
   // ── 예물/예단 (goods) ────────────────────────────────────
   { category: 'goods', name: '골든듀 종로본점', region: '서울' },

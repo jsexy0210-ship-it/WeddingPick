@@ -29,7 +29,7 @@ import { runPublicCollection } from './public-data/run';
  * 잘못 넣으면 미용실 전부가 스드메로 들어오는 식의 일이 생긴다.
  */
 
-const CATEGORIES = ['wedding_info_company', 'hall', 'sdm', 'planner_agency', 'snap', 'goods', 'etc'];
+const CATEGORIES = ['wedding_info_company', 'hall', 'sdm', 'snap', 'goods', 'honeymoon', 'etc'];
 
 const SOURCE_KEY = 'localdata';
 

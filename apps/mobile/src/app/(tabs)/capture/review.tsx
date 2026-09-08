@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ensureSignedIn } from '@/api/auth';
@@ -98,7 +98,7 @@ export default function ReviewScreen() {
             <ThemedView key={page.id} type="backgroundElement" style={styles.row}>
               <PageThumbnail page={page} />
 
-              <ThemedView type="backgroundElement" style={styles.rowText}>
+              <View style={styles.rowText}>
                 <ThemedText type="smallBold">
                   {index + 1}. {page.name ?? `${SOURCE_LABEL[page.source]} ${index + 1}`}
                 </ThemedText>
@@ -107,7 +107,7 @@ export default function ReviewScreen() {
                     .filter(Boolean)
                     .join(' · ')}
                 </ThemedText>
-              </ThemedView>
+              </View>
 
               <Pressable
                 accessibilityLabel={`${index + 1}번째 문서 빼기`}

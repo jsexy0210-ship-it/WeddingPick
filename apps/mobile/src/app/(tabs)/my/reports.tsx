@@ -90,7 +90,7 @@ export default function MyReportsScreen() {
 
           {reports.map((report) => (
             <ThemedView key={report.id} type="backgroundElement" style={styles.card}>
-              <ThemedView type="backgroundElement" style={styles.cardHead}>
+              <View style={styles.cardHead}>
                 <View style={[styles.badge, { backgroundColor: theme.tintSubtle }]}>
                   <ThemedText type="badge" themeColor="tint">
                     {report.kindLabel}
@@ -102,7 +102,7 @@ export default function MyReportsScreen() {
                     ? formatWeddingDate(report.reportedAt.slice(0, 10))
                     : '사용 안 함'}
                 </ThemedText>
-              </ThemedView>
+              </View>
 
               <ThemedText type="t5">{report.subject}</ThemedText>
 

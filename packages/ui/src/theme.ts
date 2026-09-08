@@ -293,6 +293,10 @@ export const Layout = {
   touchTarget: 44,
   statusBar: 44,
   navBar: 56,
+  /** 카드 안 요소 사이. spec/tokens.json spacing.cardGap. */
+  cardGap: 10,
+  /** 세로 목록의 카드 사이. spec/tokens.json spacing.listGap. */
+  listGap: 20,
   /** SEED 핸드오프: 72 + Safe Area. */
   tabBar: 72,
   /** SEED 컨트롤 높이. 화면당 Primary CTA는 xlarge다. */

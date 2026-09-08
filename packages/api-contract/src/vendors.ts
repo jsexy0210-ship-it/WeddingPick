@@ -25,6 +25,12 @@ export const vendorSummarySchema = z.object({
   /** 공공데이터에서 온 업체면 출처 문장. 서버가 만들어 내려준다. */
   sourceNote: z.string().nullable(),
   /**
+   * 대표 이미지. 승인된(status=approved) 이미지 중 대표 한 장의 주소. 없으면
+   * null — 화면은 카테고리 기본 이미지로 대체한다(CLAUDE.md §8). «사진 준비 중»
+   * 상자를 그리지 않는다.
+   */
+  imageUrl: z.string().nullable(),
+  /**
    * 가격 비교에 쓸 수 있는 계약이 몇 건 모였는지.
    *
    * 0이어도 숨기지 않는다 — "아직 자료가 없다"는 것도 사용자가 알아야 할 사실이다.
@@ -73,6 +79,8 @@ export const sponsoredCardSchema = z.object({
   name: z.string().min(1),
   category: vendorCategorySchema,
   region: z.string().min(1),
+  /** 대표 이미지. 없으면 null — 카드가 카테고리 기본으로 대체한다. */
+  imageUrl: z.string().nullable(),
   /** 유료 노출임을 밝히는 말. 애매한 말을 쓰지 않는다. */
   label: z.literal(SPONSORED_LABEL),
 });

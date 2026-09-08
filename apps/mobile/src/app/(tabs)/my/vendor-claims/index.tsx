@@ -1,7 +1,7 @@
 import type { MyVendorClaim } from '@weddingpick/api-contract';
 import { CLAIM_EVIDENCE_NOTICE } from '@weddingpick/domain';
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -60,14 +60,14 @@ export default function MyVendorClaimsScreen() {
 
           {claims.map((claim) => (
             <ThemedView key={claim.id} type="backgroundElement" style={styles.card}>
-              <ThemedView type="backgroundElement" style={styles.cardHead}>
+              <View style={styles.cardHead}>
                 <ThemedText type="t5">{claim.vendorName}</ThemedText>
                 <ThemedText
                   type="badge"
                   themeColor={claim.status === 'approved' ? 'positive' : 'textAssistive'}>
                   {claim.statusLabel}
                 </ThemedText>
-              </ThemedView>
+              </View>
 
               <ThemedText type="t7" themeColor="textSecondary">
                 {claim.claimedRole} · {claim.methodLabel}

@@ -1,6 +1,6 @@
 import { DOCUMENT_TYPE_LABEL } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton, ErrorView, LoadingView, MaxContentWidth, showAlert, Spacing, ThemedText, ThemedView, VerificationBadge } from '@weddingpick/ui';
@@ -94,12 +94,12 @@ export default function DocumentSetScreen() {
               {set.pages.map((page, index) => (
                 <ThemedView key={page.id} type="backgroundElement" style={styles.row}>
                   <PageThumbnail page={page} />
-                  <ThemedView type="backgroundElement" style={styles.rowText}>
+                  <View style={styles.rowText}>
                     <ThemedText type="smallBold">{index + 1}번째 장</ThemedText>
                     <ThemedText type="small" themeColor="textSecondary">
                       {page.name ?? (page.mimeType === 'application/pdf' ? 'PDF 파일' : '사진')}
                     </ThemedText>
-                  </ThemedView>
+                  </View>
                 </ThemedView>
               ))}
             </ThemedView>

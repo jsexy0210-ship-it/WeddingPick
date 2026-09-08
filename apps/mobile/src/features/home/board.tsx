@@ -107,12 +107,12 @@ export function FoldedBoard({ onPress }: { onPress: () => void }) {
       accessibilityLabel={`우리 준비 ${BOARD_FOLDED_VALUE}`}
       onPress={onPress}>
       <ThemedView type="backgroundElement" style={styles.folded}>
-        <ThemedView type="backgroundElement" style={styles.foldedText}>
+        <View style={styles.foldedText}>
           <ThemedText type="t5">우리 준비</ThemedText>
           <ThemedText type="t7" themeColor="textAssistive">
             정할 때마다 쌓여요
           </ThemedText>
-        </ThemedView>
+        </View>
         <ThemedText type="t6" themeColor="textAssistive" numberOfLines={1}>
           {BOARD_FOLDED_VALUE}
         </ThemedText>

@@ -74,11 +74,11 @@ export default function DecidedVendorsScreen() {
                   type="backgroundElement"
                   style={styles.card}>
                   {/* 결정정보 */}
-                  <ThemedView type="backgroundElement" style={styles.cardHead}>
+                  <View style={styles.cardHead}>
                     <ThemedText type="badge" themeColor="tint">
                       {decision.categoryLabel}
                     </ThemedText>
-                  </ThemedView>
+                  </View>
                   <ThemedText type="t5">{decision.vendor.name}</ThemedText>
                   <ThemedText type="t7" themeColor="textSecondary">
                     {decision.vendor.region} ·{' '}

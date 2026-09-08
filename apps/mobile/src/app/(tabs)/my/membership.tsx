@@ -187,7 +187,7 @@ export default function MembershipScreen() {
             <ThemedText type="t4">웨딩지원금 응모</ThemedText>
             {draw ? (
               <ThemedView type="backgroundElement" style={styles.drawCard}>
-                <ThemedView type="backgroundElement" style={styles.drawHead}>
+                <View style={styles.drawHead}>
                   <ThemedText type="t5">{draw.drawMonth} 응모</ThemedText>
                   <ThemedText
                     type="badge"
@@ -195,7 +195,7 @@ export default function MembershipScreen() {
                   >
                     {draw.statusLabel}
                   </ThemedText>
-                </ThemedView>
+                </View>
                 <ThemedText type="t7" themeColor="textSecondary">
                   {draw.statusNote}
                 </ThemedText>

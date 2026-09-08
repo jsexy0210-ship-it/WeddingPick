@@ -9,7 +9,7 @@ import {
   formatWeddingDate,
 } from '@weddingpick/domain';
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, TextInput } from 'react-native';
+import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -142,7 +142,7 @@ export default function MyRewardsScreen() {
           </ThemedView>
 
           <ThemedView type="backgroundElement" style={styles.card}>
-            <ThemedView type="backgroundElement" style={styles.cardHead}>
+            <View style={styles.cardHead}>
               <ThemedText type="t5">
                 {draw ? `${draw.drawMonth} 응모` : '이번 달 응모'}
               </ThemedText>
@@ -153,7 +153,7 @@ export default function MyRewardsScreen() {
                   {draw.statusLabel}
                 </ThemedText>
               ) : null}
-            </ThemedView>
+            </View>
             <ThemedText type="t7" themeColor="textSecondary">
               {draw ? draw.statusNote : '로딩 중'}
             </ThemedText>
@@ -258,7 +258,7 @@ export default function MyRewardsScreen() {
 
           {data.grants.map((grant) => (
             <ThemedView key={grant.id} type="backgroundElement" style={styles.card}>
-              <ThemedView type="backgroundElement" style={styles.cardHead}>
+              <View style={styles.cardHead}>
                 <ThemedText type="t5">
                   {grant.kindLabel} {won(grant.amountKrw)}
                 </ThemedText>
@@ -267,7 +267,7 @@ export default function MyRewardsScreen() {
                   themeColor={grant.status === 'paid' ? 'positive' : 'textAssistive'}>
                   {grant.statusLabel}
                 </ThemedText>
-              </ThemedView>
+              </View>
 
               <ThemedText type="t7" themeColor="textSecondary">
                 {grant.statusNote}

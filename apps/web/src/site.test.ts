@@ -44,6 +44,7 @@ function summary(paidPrice: VendorSummary['paidPrice']): VendorSummary {
     region: '서울 강남구',
     coordinates: null,
     sourceNote: null,
+    imageUrl: null,
     comparableQuoteCount: 12,
     paidPrice,
   };
@@ -57,6 +58,7 @@ function detail(overrides: Partial<VendorDetail> = {}): VendorDetail {
     region: '서울 강남구',
     coordinates: null,
     sourceNote: null,
+    imageUrl: null,
     comparableQuoteCount: 12,
     lastVerifiedAt: '2026-08-28T00:00:00.000Z',
     usageScore: { available: false, reason: NOT_ENOUGH_DATA, count: 0 },

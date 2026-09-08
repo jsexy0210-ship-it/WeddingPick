@@ -193,7 +193,7 @@ describeWithDb('플래너 검색', () => {
     const { headers } = await signInAs(test);
     const { rows } = await test.pool.query<{ id: string }>(
       `INSERT INTO structured.vendors (category, name, region, source)
-       VALUES ('planner_agency', '가나플래닝', '서울 강남구', 'public_data') RETURNING id`
+       VALUES ('etc', '가나플래닝', '서울 강남구', 'public_data') RETURNING id`
     );
 
     await createPlanner({ name: '소속플래너', vendorId: rows[0]!.id });
