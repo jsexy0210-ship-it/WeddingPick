@@ -308,7 +308,7 @@ export default function ExpensesScreen() {
               style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundSelected }]}
               value={addLabel}
               onChangeText={setAddLabel}
-              placeholder="예: 스드메 계약금"
+              placeholder="예: 스튜디오 계약금"
               placeholderTextColor={theme.textAssistive}
               returnKeyType="next"
             />

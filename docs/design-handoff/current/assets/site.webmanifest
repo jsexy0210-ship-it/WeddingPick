@@ -1,7 +1,7 @@
 {
   "name": "웨딩픽",
   "short_name": "웨딩픽",
-  "description": "확인된 제보로 고르는 웨딩 준비",
+  "description": "실 제보로 고르는 웨딩 준비",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#FFFFFF",
