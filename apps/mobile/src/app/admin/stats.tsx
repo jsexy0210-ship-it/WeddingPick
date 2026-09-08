@@ -29,10 +29,10 @@ function formatCat(category: string) {
     hall: '예식장',
     sdm: '스드메',
     snap: '스냅',
-    planner_agency: '플래너',
     goods: '혼수',
     etc: '기타',
-    wedding_info_company: '정보사',
+    honeymoon: '허니문',
+    wedding_info_company: '결정사',
   };
   return MAP[category] ?? category;
 }

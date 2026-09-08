@@ -35,7 +35,7 @@ import { vendorSourceNote } from '../vendor-view';
 const searchQuerySchema = z.object({
   q: z.string().trim().max(60).optional(),
   category: z
-    .enum(['wedding_info_company', 'hall', 'sdm', 'planner_agency', 'snap', 'goods', 'etc'])
+    .enum(['wedding_info_company', 'hall', 'sdm', 'snap', 'goods', 'honeymoon', 'etc'])
     .optional(),
   /** "서울"처럼 시도까지만. region은 "서울 마포구" 형태라 앞부분으로 맞춘다. */
   region: z.string().trim().max(20).optional(),
@@ -61,6 +61,8 @@ type VendorRow = {
   /** 지도 핀 좌표. 아직 지오코딩하지 않았으면 둘 다 null. */
   lat: number | null;
   lng: number | null;
+  /** 승인된 대표 이미지 주소. 검색·상세 질의가 서브쿼리로 채운다. */
+  image_url?: string | null;
   comparable_quote_count: string;
   /** 검색 목록에서만 채워진다. 상세는 따로 읽는다. */
   proof_count?: string;
@@ -125,6 +127,7 @@ function toSummary(row: VendorRow) {
     region: row.region,
     coordinates: row.lat !== null && row.lng !== null ? { lat: row.lat, lng: row.lng } : null,
     sourceNote: vendorSourceNote(row.source, row.source_url),
+    imageUrl: row.image_url ?? null,
     comparableQuoteCount: Number(row.comparable_quote_count),
   };
 }
@@ -160,6 +163,9 @@ function mostCommon(values: string[]): string | null {
 async function loadVendorDetail(pool: Pool, vendorId: string, viewerId: string | null) {
   const { rows } = await pool.query<VendorRow>(
     `SELECT v.id, v.name, v.category, v.region, v.source, to_jsonb(v)->>'source_url' AS source_url, v.last_verified_at, v.lat, v.lng,
+              (SELECT i.source_url FROM structured.vendor_images i
+                 WHERE i.vendor_id = v.id AND i.status = 'approved' AND i.source_url IS NOT NULL
+                 ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url,
             (SELECT count(*) FROM structured.comparable_quotes c WHERE c.vendor_id = v.id)
               AS comparable_quote_count
      FROM structured.vendors v WHERE v.id = $1`,
@@ -439,6 +445,9 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
            AND ($3::text IS NULL OR v.region LIKE $3 || '%')
        )
        SELECT v.id, v.name, v.category, v.region, v.source, to_jsonb(v)->>'source_url' AS source_url, v.last_verified_at, v.lat, v.lng,
+              (SELECT i.source_url FROM structured.vendor_images i
+                 WHERE i.vendor_id = v.id AND i.status = 'approved' AND i.source_url IS NOT NULL
+                 ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url,
               (SELECT count(*) FROM structured.comparable_quotes c WHERE c.vendor_id = v.id)
                 AS comparable_quote_count,
               coalesce(w.proof_count, 0) AS proof_count,
@@ -524,12 +533,13 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
 async function loadSponsored(
   pool: Pool,
   filter: { category?: string; region?: string }
-): Promise<{ vendorId: string; name: string; category: VendorCategory; region: string; label: typeof SPONSORED_LABEL }[]> {
+): Promise<{ vendorId: string; name: string; category: VendorCategory; region: string; imageUrl: string | null; label: typeof SPONSORED_LABEL }[]> {
   const { rows } = await pool.query<{
     vendor_id: string;
     name: string;
     category: string;
     region: string;
+    image_url: string | null;
   }>(
     /*
      * 한 업체는 한 번만 실린다.
@@ -538,7 +548,10 @@ async function loadSponsored(
      * 나온다. 렌더해보고 잡았다 — 표에서 막기보다 여기서 묶는 이유는, 겹치는
      * 기간을 표로 막으려면 자리를 나눠 잡는 정상적인 경우까지 걸리기 때문이다.
      */
-    `SELECT picked.vendor_id, picked.name, picked.category, picked.region
+    `SELECT picked.vendor_id, picked.name, picked.category, picked.region,
+            (SELECT i.source_url FROM structured.vendor_images i
+             WHERE i.vendor_id = picked.vendor_id AND i.status = 'approved' AND i.source_url IS NOT NULL
+             ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url
      FROM (
        SELECT DISTINCT ON (p.vendor_id)
               p.vendor_id, v.name, v.category, v.region
@@ -564,6 +577,7 @@ async function loadSponsored(
     name: row.name,
     category: row.category as VendorCategory,
     region: row.region,
+    imageUrl: row.image_url ?? null,
     label: SPONSORED_LABEL,
   }));
 }

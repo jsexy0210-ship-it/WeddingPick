@@ -1,7 +1,7 @@
 import type { CandidateListResponse } from '@weddingpick/api-contract';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listCandidates } from '@/api/client';
@@ -73,7 +73,7 @@ export default function WeddingCandidatesScreen() {
 
           {page.groups.map((group) => (
             <ThemedView key={group.category} type="backgroundElement" style={styles.card}>
-              <ThemedView type="backgroundElement" style={styles.cardHead}>
+              <View style={styles.cardHead}>
                 <ThemedText type="t5">
                   {group.categoryLabel} {group.candidates.length}곳
                 </ThemedText>
@@ -82,7 +82,7 @@ export default function WeddingCandidatesScreen() {
                   themeColor={group.state === 'decided' ? 'positive' : 'textAssistive'}>
                   {group.stateLabel}
                 </ThemedText>
-              </ThemedView>
+              </View>
 
               {group.candidates.map((candidate) => {
                 const decided = group.decidedVendorId === candidate.vendorId;
@@ -93,15 +93,15 @@ export default function WeddingCandidatesScreen() {
                     accessibilityRole="button"
                     accessibilityLabel={`${candidate.vendorName} 상세 보기`}
                     onPress={() => router.push(`/search/${candidate.vendorId}`)}>
-                    <ThemedView type="backgroundElement" style={styles.row}>
-                      <ThemedView type="backgroundElement" style={styles.rowHead}>
+                    <View style={styles.row}>
+                      <View style={styles.rowHead}>
                         <ThemedText type="t6">{candidate.vendorName}</ThemedText>
                         {decided ? (
                           <ThemedText type="badge" themeColor="tint">
                             여기로 정했어요
                           </ThemedText>
                         ) : null}
-                      </ThemedView>
+                      </View>
                       <ThemedText type="t7" themeColor="textSecondary">
                         {candidate.region}
                         {candidate.addedByPartner ? ' · 배우자가 Pick' : ''}
@@ -111,7 +111,7 @@ export default function WeddingCandidatesScreen() {
                           {candidate.note}
                         </ThemedText>
                       ) : null}
-                    </ThemedView>
+                    </View>
                   </Pressable>
                 );
               })}

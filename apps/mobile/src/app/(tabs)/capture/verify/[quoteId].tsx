@@ -11,7 +11,7 @@ import {
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { createVerificationRequest, getQuote } from '@/api/client';
@@ -190,7 +190,8 @@ export default function VerifyRequestScreen() {
                     style={styles.card}>
                     <ThemedText type="small">{documentLabel(document, index)}</ThemedText>
 
-                    <ThemedView type="backgroundElement" style={styles.kindRow}>
+                    {/* 카드 안의 칩 줄 — 배경 상자를 또 두지 않는다(이중 컨테이너 금지). */}
+                    <View style={styles.kindRow}>
                       {(
                         Object.keys(VERIFICATION_EVIDENCE_RULES) as VerificationEvidenceKind[]
                       ).map((kind) => (
@@ -214,7 +215,7 @@ export default function VerifyRequestScreen() {
                           }
                         />
                       ))}
-                    </ThemedView>
+                    </View>
                   </ThemedView>
                 ))}
               </ThemedView>

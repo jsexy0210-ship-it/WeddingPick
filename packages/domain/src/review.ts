@@ -62,11 +62,6 @@ export const REVIEW_ASPECTS: Partial<Record<VendorCategory, readonly ReviewAspec
     { key: 'response', label: '요청 반영' },
     { key: 'extra_cost', label: '추가비용' },
   ],
-  planner_agency: [
-    { key: 'response', label: '응대' },
-    { key: 'extra_cost', label: '추가비용 사전안내' },
-    { key: 'schedule', label: '일정 관리' },
-  ],
 };
 
 export function aspectsFor(category: VendorCategory): readonly ReviewAspect[] {

@@ -26,6 +26,7 @@ import {
 } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { loadToken } from '@/api/session';
+import { BackButton } from '@/components/back-button';
 import { LoginSheet } from '@/features/auth/login-sheet';
 import { savePendingAction } from '@/features/auth/pending-action';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
@@ -193,6 +194,14 @@ export default function VendorDetailScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        {/*
+          뒤로가기. 스택 헤더를 끈 화면이라(search/_layout) 화면 안에 둔다 —
+          데스크톱 웹은 이 버튼이 유일한 길이다(2026-09-08).
+        */}
+        <View style={styles.navBar}>
+          <BackButton />
+        </View>
+
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}>
@@ -653,6 +662,12 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: Spacing.six,
+  },
+  /* 상단 내비 56 — 핸드오프 navBar. */
+  navBar: {
+    height: Layout.navBar,
+    paddingHorizontal: Layout.gutter,
+    justifyContent: 'center',
   },
 
   // ── 대표 이미지 ──

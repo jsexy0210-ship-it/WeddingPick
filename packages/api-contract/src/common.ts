@@ -28,7 +28,6 @@ export const vendorCategorySchema = z.enum([
   'wedding_info_company',
   'hall',
   'sdm',
-  'planner_agency',
   'snap',
   'goods',
   'honeymoon',

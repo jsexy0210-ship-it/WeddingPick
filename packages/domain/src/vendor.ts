@@ -2,11 +2,15 @@
  * 서비스 카테고리. 사업계획서 6번의 확장 순서와 같다.
  * 초기부터 모든 카테고리를 같은 깊이로 다루지 않는다.
  */
+/*
+ * 2026-09-08: `planner_agency`(플래닝)는 뺐다 — 플래너 기능 삭제(CLAUDE.md 2026-09-05)
+ * 와 같은 결정. DB enum 값은 남아 있지만(Postgres는 enum 값을 못 지운다) 화면·API·
+ * 시드 어디에서도 쓰지 않고, 0081이 그 업종의 업체 행을 지웠다.
+ */
 export const VENDOR_CATEGORIES = [
   'wedding_info_company',
   'hall',
   'sdm',
-  'planner_agency',
   'snap',
   'goods',
   'honeymoon',
@@ -17,10 +21,10 @@ export type VendorCategory = (typeof VENDOR_CATEGORIES)[number];
 
 /** 화면에 쓰는 이름. 코드를 그대로 보여주지 않는다. */
 export const VENDOR_CATEGORY_LABEL: Record<VendorCategory, string> = {
-  wedding_info_company: '웨딩정보회사',
+  /** 결혼정보회사. 사용자가 부르는 이름은 «결정사»다(2026-09-08). */
+  wedding_info_company: '결정사',
   hall: '웨딩홀',
   sdm: '스드메',
-  planner_agency: '플래닝',
   snap: '스냅·영상',
   goods: '예물·예단',
   honeymoon: '허니문',
