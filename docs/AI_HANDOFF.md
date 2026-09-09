@@ -159,7 +159,7 @@ PR #99의 조사 보고서와 그 독립 재검증 결과에서 **코드로 확�
 
 | # | 항목 | 위치 · 근거 |
 |---|---|---|
-| N01 | **운영 카카오 로그인이 500으로 실패** | `POST /v1/auth/sessions → 500`. `errors.ts`가 `unauthenticated → 401`로 매핑하므로 카카오 검증 실패가 아니다. `auth/sessions.ts`의 `signIn()` 트랜잭션에서 처리되지 않은 예외. **「운영 스키마가 뒤처져서」 가설은 2026-09-09 죽었다** — `db-status.yml` 실측이 운영 = 적용 95 / 기대 92(밀린 것 0)였다. `signIn()`이 쓰는 컬럼은 전부 0059까지에 있고, 저장소 마이그레이션 중 `structured.users`에 기본값 없는 NOT NULL을 추가한 것이 없어 `INSERT ... DEFAULT VALUES`(sessions.ts:57)는 저장소와 일치하는 스키마면 반드시 성공한다. **남은 유력 후보는 「운영에만 있는 제약」** — 아래 «저장소에 없는 마이그레이션 3개» 참조 |
+| N01 | **운영 카카오 로그인이 500으로 실패** | `POST /v1/auth/sessions → 500`. **스키마 가설은 2026-09-09 죽었다**(아래 DB-1). 같은 날 코드로 범위를 좁혔다 — 아래 «N01 좁힌 범위». 남은 것은 **검증 성공 이후의 DB 경로 세 곳**뿐이고, 다음 한 걸음은 재현 시 Render 로그의 스택·SQL 원문이다 |
 | G04 | **CORS 출처 누락** (메서드는 해소) | `infra/render-env.yml`의 `CORS_ORIGINS`에 admin 출처·커스텀 도메인이 없다. 도메인은 이미 활성이라 미래 위험이 아니라 현재 차단. **`server.ts`의 `methods`에 PATCH가 없던 절반은 #134로 해소됐다** |
 | G02 | **main 보호 규칙에 필수 PR·CI·리뷰 없음** | `rules/branches/main`이 `deletion`·`non_fast_forward` 2개만 반환. 실패한 변경의 병합을 막는 장치가 없다 |
 
@@ -169,8 +169,7 @@ PR #99의 조사 보고서와 그 독립 재검증 결과에서 **코드로 확�
 |---|---|---|
 | 잔존-A′ | kill switch 6종(AI 3 · 통계 · 보상 · 자동게시)이 여전히 인메모리다 | `routes/admin.ts`의 `killSwitches` Map은 그대로다 — 껐다고 표시돼도 기능은 돌고 재시작하면 상태가 사라진다. **수집 출처 스위치만 #134로 DB(`import_switches`)에 연결됐다.** 나머지 6종은 각각 읽는 쪽을 만들어야 한다 |
 | G05 | staging 이름의 job이 운영 대상을 검사 | `main.yml`의 Staging·Production 두 job이 같은 `DATABASE_URL`과 같은 health URL(`weddingpickl.onrender.com`)을 쓴다. `db-migrate-staging.yml`만 `STAGING_DATABASE_URL`을 쓴다. **처리 방침은 `docs/release-env-split.md`가 정본이다** — 사용자 결정(2026-09-09) 「우선 현재 DB 그대로, 차후에 분리」로 §3의 0·0b·1·2는 나누는 날로 미뤄졌다. `PRODUCTION_DATABASE_URL`에 Render 내부망 주소가 들어 있어(`getaddrinfo EAI_AGAIN`) 이름부터 옮기면 어떤 워크플로도 운영 DB에 닿지 못한다 |
-| DB-1 | **저장소에 없는 마이그레이션 3개가 운영 DB에 적용돼 있다** | 운영 `schema_migrations` = 95행, 저장소 파일 = 92개(2026-09-09 `db-status.yml`). 이름은 미확인 — `/health`나 `db-status.yml`의 unknown 값으로 확인한다. Git 이력에서 「한때 있었으나 지금 없는」 버전 이름 20개를 추렸다(재번호 `ff84c32`·`1c0b122`·`a25781a`·`4be7da7`·`f6c7a5c` 18개 + 삭제 2개: `0003_integrity_constraints`·`0052_mission_draw`). **`0003_integrity_constraints`는 `weddings` 배우자 쌍 UNIQUE와 `analyses.unique_analysis_per_document`를 만든다 — 삭제됐는데 운영에는 남아 있을 수 있다.** 즉 운영에만 있는 제약이 실재할 수 있고, 이것이 N01의 남은 후보다. `schema_migrations` 행 삭제는 사용자 승인 없이 하지 않는다 |
-| DB-2 | 스테이징 DB가 19개 밀려 있다 | 적용 73 / 기대 92(0074~0091a 미적용, 2026-09-09 실측). 「스테이징에서 먼저 검수한다」가 지금 성립하지 않는다. `db-migrate-staging.yml` 실행은 사용자 승인 대기 |
+| DB-2 | 스테이징 DB가 19개 밀려 있다 | 적용 73 / 기대 92(0074~0091a 미적용, 2026-09-09 실측). 「스테이징에서 먼저 검수한다」가 지금 성립하지 않는다. `db-migrate-staging.yml` 실행은 사용자 승인 대기. **N01 재현용으로서의 값은 없다** — 스키마 가설이 죽어 그 실험이 가르는 것이 없다 |
 
 ### 출시 전 처리
 
@@ -186,6 +185,53 @@ PR #99의 조사 보고서와 그 독립 재검증 결과에서 **코드로 확�
 | 잔존-F | `packages/db/src/reset.ts`의 `DROP SCHEMA ... CASCADE`에 테스트 DB 가드가 없다 |
 | sbiz | `collect.ts`의 업종 대분류 `'Q'`가 활용가이드에 없는 값이다. `SBIZ_API_KEY` 등록 후 `public-data.yml`의 `lookup_keyword`로 실제 코드를 찾아 교체해야 `sbiz-seoul`·`sbiz-gyeonggi`가 동작한다 |
 
+### DB-1 — 운영에만 있는 마이그레이션 3개: 확인 끝났다. 스키마는 정상이다
+
+**다시 파지 마라.** 2026-09-09 `db-status.yml` target=default(실행 34309171711)로 이름까지 확인했다.
+
+```
+적용 96 / 기대 93 · 밀린 것 없음
+저장소에 없는 것: 0052_mission_draw · 0059_wedding_events · 0060_vendor_geo
+```
+
+셋 다 **번호를 다시 매긴 흔적**이고 사고가 아니다. 저장소에서 대조했다.
+
+| 운영 DB에 적힌 것 | 지금 저장소 | 무엇이 달라졌나 |
+|---|---|---|
+| `0052_mission_draw` | `0053_reward_kind_monthly_draw`가 이어받음 | `ALTER TYPE ... ADD VALUE`로 더한 값은 같은 트랜잭션에서 쓸 수 없어 다음 마이그레이션으로 미뤘다(파일 첫 줄에 그 이유가 있다) |
+| `0059_wedding_events` | `0061_wedding_events` | `CREATE TABLE`·`CREATE INDEX` → `IF NOT EXISTS` |
+| `0060_vendor_geo` | `0062_vendor_geo` | `ADD COLUMN` → `IF NOT EXISTS`, 제약은 `DO $$ ... EXCEPTION WHEN duplicate_object THEN NULL` |
+
+즉 **이미 옛 번호로 적용된 DB 위에 새 번호가 다시 돌아도 안전하도록** 멱등 가드를 넣은 것이다. 재적용은 무해한 no-op이었고 그래서 「밀린 것 없음」이다.
+
+**그래서 운영 스키마는 저장소가 기대하는 모양과 같다.** 다음 셋이 모두 성립하지 않는다.
+
+- 「`structured.users`에 기본값 없는 NOT NULL이 붙었다」 — 셋 중 users에 컬럼을 더하는 것이 없다. `0061`이 users를 보는 곳은 `added_by uuid REFERENCES structured.users (id)` 외래키 한 줄뿐이다(37행).
+- 「`identity.identities`에 모르는 제약이 붙었다」 — 셋 중 identities를 건드리는 것이 없다.
+- 「같은 번호로 내용만 바뀌어 옛 정의가 남았다」 — 번호가 **다르게** 바뀌었고 방향은 「더 안전하게」였다.
+
+`schema_migrations`의 그 세 행은 **지우지 않는다.** 지울 이유가 없고, 지우면 이 기록 자체가 사라진다.
+
+### N01 좁힌 범위 (2026-09-09 · 코드)
+
+500이 날 수 있는 자리를 `routes/auth.ts`의 `POST /v1/auth/sessions`에서 하나씩 지웠다.
+
+- **카카오 검증 실패가 아니다.** `try/catch`가 `provider.verify()`만 감싸고 잡은 것을 전부 `ApiError('unauthenticated')`로 바꾼다(`routes/auth.ts:66~71`). `errors.ts`가 그것을 401로 매핑한다. 토큰 교환 실패·`id_token` 없음·JWKS 검증 실패는 **어느 것도 500이 될 수 없다.**
+- **요청 형식 문제가 아니다.** `createSessionRequestSchema.parse`의 `ZodError`는 `server.ts:74`가 400으로 바꾼다.
+- **Fastify가 붙인 4xx도 아니다.** `server.ts:91~94`가 그대로 통과시킨다.
+
+남은 것은 `try/catch` **바깥**, 즉 검증이 성공한 뒤의 DB 경로 셋뿐이다.
+
+| 자리 | 무엇을 하는가 |
+|---|---|
+| `signIn()` (`auth/sessions.ts:26~113`) | identities 조회·갱신 또는 users INSERT + identities INSERT, `display_name` 갱신, `is_operator` 조회, sessions INSERT — 한 트랜잭션 |
+| `markAgeVerified()` (같은 파일 166행) | `age_verified` · `age_gate` 갱신. `age_verdict === 'verified'`일 때만 |
+| `sessionEntry()` (같은 파일 135행) | `activated_at` · `weddings` 존재 여부 · `age_verified` 조회 |
+
+스키마가 정상인데 이 셋이 터진다면 데이터에 딸린 것이다(제약 위반·유일키 충돌 등). **다음 한 걸음은 재현 시 Render 로그의 스택·SQL 원문 하나다** — #100으로 로그는 살아 있다. 그것이 오면 위 셋 중 어디인지 즉시 갈린다.
+
+한 가지 더 확인할 것: **500이 정말 500인지.** 브라우저에서 시작하는 흐름이면 CORS preflight 차단(G04)이 500처럼 보일 수 있다. 응답 본문과 상태 코드를 함께 봐야 한다.
+
 ### 해소 (2026-09-09)
 
 | # | 무엇이었나 | 어떻게 해소됐나 |
@@ -198,9 +244,8 @@ PR #99의 조사 보고서와 그 독립 재검증 결과에서 **코드로 확�
 
 ### 외부 확인 필요 (저장소 안에서 확인 불가)
 
-- **운영 `schema_migrations`의 unknown 3개 이름** — `/health` 또는 `db-status.yml` target=default. DB-1의 다음 한 걸음
-- 운영 `identity.identities` · `structured.users`의 실제 컬럼(`is_nullable` · `column_default`) — N01을 가른다
-- 카카오 로그인 재현 시 Render 로그의 스택·SQL 오류 원문 — 있으면 위 둘 없이 N01이 끝난다
+- **카카오 로그인 재현 시 Render 로그의 스택·SQL 오류 원문** — N01의 다음 한 걸음. 위 «N01 좁힌 범위»의 셋 중 어디인지 즉시 갈린다
+- 그때의 **응답 상태 코드와 본문** — 500이 진짜 500인지, CORS preflight 차단(G04)이 그렇게 보이는 것인지
 - 운영 Render `WeddingPickl`의 `DATABASE_URL`이 GitHub `DATABASE_URL`과 같은 DB인가
 - 분석 워커 서비스가 Render에 실제로 있는가 (저장소에 선언 없음)
 - TestFlight / Play 제출·심사 상태
@@ -208,12 +253,12 @@ PR #99의 조사 보고서와 그 독립 재검증 결과에서 **코드로 확�
 
 ### 권장 순서
 
-1. N01 — 운영 `/health`의 unknown 3개 이름 확인 → `information_schema`로 운영에만 있는 제약 확인 → 수정.
-   재현 로그를 먼저 잡으면 이 둘을 건너뛴다
+1. N01 — 재현 시 Render 로그의 스택·SQL 원문을 잡는다 → «N01 좁힌 범위»의 셋 중 하나로 확정 → 수정.
+   스키마 갈래는 닫혔다(DB-1)
 2. G04 — `CORS_ORIGINS`에 admin 출처·커스텀 도메인 추가. 각 출처에서 preflight 통과 확인
 3. G02 — main 보호 규칙에 필수 PR + head CI 성공
 4. 잔존-A′ — kill switch 6종을 읽는 쪽 만들기. 수집 스위치(#134)와 같은 방식으로 DB에 둔다
-5. DB-2 — 사용자 승인 후 스테이징을 92까지. 그래야 「스테이징에서 먼저」가 성립한다
+5. DB-2 — 사용자 승인 후 스테이징을 92까지. 그래야 「스테이징에서 먼저」가 성립한다(N01 재현용은 아니다)
 6. G05 — `docs/release-env-split.md` §3의 0 → 0b → 1 → 2 순서. 0은 사용자만 할 수 있다
 7. 나머지 항목에 각각 단위 테스트를 붙이며 정리
 
