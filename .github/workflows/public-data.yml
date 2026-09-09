@@ -108,8 +108,10 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # 반영할 때는 아래 스텝이 같은 수집을 --apply로 다시 한다 — 두 번 부르면
+      # 공공데이터 호출량과 잡 시간이 두 배가 된다. 이 스텝은 반영하지 않을 때만 돈다.
       - name: Collect validated public data
-        if: ${{ !matrix.needs_sbiz_key || (env.SBIZ_API_KEY != '' && env.SBIZ_UPJONG_CODES != '') }}
+        if: ${{ !(github.ref == 'refs/heads/main' && inputs.apply) && (!matrix.needs_sbiz_key || (env.SBIZ_API_KEY != '' && env.SBIZ_UPJONG_CODES != '')) }}
         run: npm run public-data:import --workspace @weddingpick/api -- --source "$SOURCE" --out ../../.collection
         env:
           SOURCE: ${{ matrix.source }}
