@@ -616,18 +616,32 @@ export async function searchVendors(input: {
   region?: string;
   cursor?: string;
   sort?: VendorSort;
+  /** 몇 곳까지 받을 것인가. 안 넘기면 서버 기본값(20). 수만 필요하면 1로 줄인다. */
+  limit?: number;
 }): Promise<VendorSearchResponse> {
   const query = new URLSearchParams();
 
   for (const [key, value] of Object.entries(input)) {
     if (value) {
-      query.set(key, value);
+      query.set(key, String(value));
     }
   }
 
   const suffix = query.size > 0 ? `?${query.toString()}` : '';
 
   return request(`/v1/vendors${suffix}`, vendorSearchResponseSchema);
+}
+
+/**
+ * 그 업종에 업체가 몇 곳인가. 목록은 안 쓴다.
+ *
+ * Pick 화면의 업종 줄이 꼬리에 수를 적으려고 업종마다 검색을 부르는데, 그동안은
+ * 스무 곳을 전부 받아 `total` 하나만 쓰고 버렸다(2026-09-09 감사: 화면 한 번에
+ * 열한 번). 한 곳만 달라고 하면 서버도 한 곳 몫만 셈한다 — `total`은 조건에
+ * 맞는 전체 수라 줄여도 값이 달라지지 않는다.
+ */
+export async function countVendors(category: VendorCategory): Promise<number> {
+  return (await searchVendors({ category, limit: 1 })).total;
 }
 
 /**

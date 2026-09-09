@@ -27,7 +27,7 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
-import { getCurrentUser, listCandidates, searchVendors } from '@/api/client';
+import { countVendors, getCurrentUser, listCandidates, searchVendors } from '@/api/client';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import { isWebShellScreen } from '@/features/webshell/config';
 import { WebShellView } from '@/features/webshell/WebShellView';
@@ -105,9 +105,10 @@ export default function PickScreen() {
           const totals: Partial<Record<VendorCategory, number>> = {};
           await Promise.all(
             PICK_CATEGORIES.filter((cat) => cat !== STARTER_CATEGORY).map((cat) =>
-              searchVendors({ category: cat })
-                .then((result) => {
-                  totals[cat] = result.total;
+              // 수만 필요한 자리다 — 목록까지 받지 않는다(api/client.ts countVendors).
+              countVendors(cat)
+                .then((total) => {
+                  totals[cat] = total;
                 })
                 .catch(() => undefined)
             )
