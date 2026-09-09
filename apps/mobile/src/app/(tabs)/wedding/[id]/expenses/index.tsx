@@ -292,7 +292,7 @@ export default function ExpensesScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingBottom: Spacing.six },
+  content: { paddingBottom: Spacing.two },
   block: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four, gap: Layout.cardGap },
   spendHead: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: Layout.rowPaddingY },
   stackBlock: { gap: Layout.sectionHeadGap },
@@ -304,14 +304,14 @@ const styles = StyleSheet.create({
   },
   legend: { flexDirection: 'row', flexWrap: 'wrap', columnGap: Spacing.three, rowGap: Layout.cardGap },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one + Spacing.half },
-  legendDot: { width: 10, height: 10, borderRadius: 3 },
+  legendDot: { width: 10, height: 10, borderRadius: Radius.pill },
   bold: { fontWeight: 700 },
   sheet: { gap: Layout.rowPaddingY },
   input: {
     height: Layout.field,
     borderRadius: Radius.input,
     borderWidth: 1,
-    paddingHorizontal: Spacing.three - Spacing.half,
+    paddingHorizontal: Layout.fieldPaddingX,
   },
   sheetActions: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.two },
   sheetButton: { flex: 1 },

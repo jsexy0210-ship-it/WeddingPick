@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.five,
-    paddingBottom: Spacing.six,
+    paddingBottom: Spacing.four,
     gap: Spacing.three,
   },
   header: {
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
   },
   input: {
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Layout.fieldPaddingX,
     paddingVertical: Spacing.three,
     fontSize: FontSize.t6,
     minHeight: Layout.rowMinHeight,

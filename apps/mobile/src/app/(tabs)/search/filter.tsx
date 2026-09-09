@@ -324,12 +324,12 @@ const styles = StyleSheet.create({
     flex: 1,
     height: Layout.rowMinHeight,
     borderRadius: Radius.input,
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Layout.fieldPaddingX,
   },
   input: {
     height: Layout.rowMinHeight,
     borderRadius: Radius.input,
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Layout.fieldPaddingX,
   },
   footer: {
     paddingHorizontal: Layout.gutter,

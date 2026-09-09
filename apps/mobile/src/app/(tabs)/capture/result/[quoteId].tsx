@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { confirmFields, getComparison, getQuote } from '@/api/client';
-import { ActionButton, ErrorView, MaxContentWidth, Spacing, ThemedView } from '@weddingpick/ui';
+import { ActionButton, ErrorView, Layout, MaxContentWidth, Spacing, ThemedView } from '@weddingpick/ui';
 import { NavBar, Screen } from '@/features/wedding/screen-kit';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { AnalysisNotice, QuoteResultView } from '@/features/quotes/quote-result-view';
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.four,
     gap: Spacing.two,
   },

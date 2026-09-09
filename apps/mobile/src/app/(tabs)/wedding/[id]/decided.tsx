@@ -135,6 +135,6 @@ export default function DecidedVendorsScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingBottom: Spacing.six },
+  content: { paddingBottom: Spacing.two },
   emptyAction: { paddingHorizontal: Layout.gutter },
 });

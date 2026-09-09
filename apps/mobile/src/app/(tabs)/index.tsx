@@ -488,7 +488,7 @@ const styles = StyleSheet.create({
    * 가로 여백을 여기 두지 않는다. 회색 밴드가 화면 끝까지 닿아야 해서, 거터는
    * 섹션마다 준다.
    */
-  content: { paddingBottom: Spacing.six },
+  content: { paddingBottom: Spacing.two },
 
   /* 시안 heroWrap: padding 14 24 24 · gap 10. */
   hero: {

@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   ActionButton,
+  Border,
   Layout,
   NpayLogo,
   ProductSymbol,
@@ -141,11 +142,12 @@ function formatManwon(amountKrw: number): string {
 
 /** 시안 sheet padding-bottom 28 = spec/tokens.json spacing.sectionBottom. */
 const SHEET_BOTTOM_PADDING = Layout.sectionGap;
-const CLOSE_ICON = 20;
+/** 닫기 X — size.iconRow 20. 시안 체크 획 11은 토큰 밖의 값이라 이 자리에서만 든다. */
+const CLOSE_ICON = Layout.iconRow;
 const CHECK_ICON = 11;
-/** 시안 — 조건 점 18 · 진행바 4 · 그래버 40×4. */
-const DOT = 18;
-const TRACK = 4;
+/** 시안 — 조건 점 18(spacing.stepDot) · 진행바 4 · 그래버 40×4(component.sheet.grabber). */
+const DOT = Layout.stepDot;
+const TRACK = Layout.grabberHeight;
 
 const styles = StyleSheet.create({
   /* 시안 sheet: padding 12 24 28 · gap 16. */
@@ -154,7 +156,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Layout.gutter,
     gap: Spacing.three,
   },
-  grabber: { width: 40, height: TRACK, borderRadius: 999, alignSelf: 'center' },
+  grabber: { width: Layout.grabberWidth, height: Layout.grabberHeight, borderRadius: Radius.pill, alignSelf: 'center' },
   head: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -181,18 +183,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: Spacing.three,
   },
-  track: { height: TRACK, borderRadius: 999, overflow: 'hidden' },
-  fill: { height: '100%', borderRadius: 999 },
+  track: { height: TRACK, borderRadius: Radius.pill, overflow: 'hidden' },
+  fill: { height: '100%', borderRadius: Radius.pill },
   list: { gap: Spacing.two + Spacing.half },
   item: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two + Spacing.half },
   dot: {
     width: DOT,
     height: DOT,
-    borderRadius: 999,
+    borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  ring: { borderWidth: 1.5 },
+  ring: { borderWidth: Border.selected },
   itemText: { flex: 1, minWidth: 0 },
   strike: { textDecorationLine: 'line-through' },
   actions: { flexDirection: 'row', gap: Spacing.two },

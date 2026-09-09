@@ -161,7 +161,7 @@ export default function ExpenseDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingBottom: Spacing.six },
+  content: { paddingBottom: Spacing.two },
   hero: {
     paddingHorizontal: Layout.gutter,
     paddingTop: Layout.rowPaddingY,

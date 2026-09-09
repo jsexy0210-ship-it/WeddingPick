@@ -291,7 +291,7 @@ export default function WeddingEventDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingBottom: Spacing.six },
+  content: { paddingBottom: Spacing.two },
   fields: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four, gap: Spacing.three },
   error: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.three },
   noteWrap: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionGap },

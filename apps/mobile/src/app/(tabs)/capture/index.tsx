@@ -141,7 +141,7 @@ export default function CaptureScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingBottom: Spacing.six },
+  content: { paddingBottom: Spacing.two },
   cards: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four, gap: Layout.rowPaddingY },
   /* 제보 카드 — radius 10 · 테두리 1 · padding 20 · gap 14. */
   card: {

@@ -7,9 +7,7 @@ import type { CandidateListResponse } from '@weddingpick/api-contract';
 import {
   EmptyView,
   ErrorView,
-  FontSize,
   Layout,
-  LineHeight,
   MaxContentWidth,
   Radius,
   Skeleton,
@@ -47,8 +45,8 @@ function HistorySkeleton() {
       {[1, 2, 3].map((i) => (
         <View key={i} style={{ marginBottom: Spacing.four }}>
           <Skeleton width={80} height={14} radius={4} style={{ marginBottom: Spacing.two }} />
-          <Skeleton width="100%" height={72} radius={Radius.card} style={{ marginBottom: Spacing.one }} />
-          <Skeleton width="100%" height={72} radius={Radius.card} />
+          <Skeleton width="100%" height={72} radius={Radius.medium} style={{ marginBottom: Spacing.one }} />
+          <Skeleton width="100%" height={72} radius={Radius.medium} />
         </View>
       ))}
     </View>
@@ -143,10 +141,10 @@ export default function PickHistoryScreen() {
             <View key={group.category} style={styles.categoryBlock}>
               {/* Category header */}
               <View style={styles.categoryHeader}>
-                <ThemedText themeColor="textSecondary" style={styles.categoryLabel}>
+                <ThemedText type="t6" themeColor="textSecondary" style={styles.categoryLabel}>
                   {group.categoryLabel}
                 </ThemedText>
-                <ThemedText themeColor="textAssistive" style={styles.stateLabel}>
+                <ThemedText type="t7" themeColor="textAssistive">
                   {group.stateLabel}
                 </ThemedText>
               </View>
@@ -154,7 +152,7 @@ export default function PickHistoryScreen() {
               {/* Decided vendor */}
               {decidedCandidate && (
                 <View style={styles.subSection}>
-                  <ThemedText themeColor="textAssistive" style={styles.subSectionLabel}>
+                  <ThemedText type="t7" themeColor="textAssistive" style={styles.subSectionLabel}>
                     {S['section.decided']}
                   </ThemedText>
                   <View
@@ -165,16 +163,17 @@ export default function PickHistoryScreen() {
                     ]}
                   >
                     <View style={styles.vendorInfo}>
-                      <ThemedText style={styles.vendorName} numberOfLines={1}>
+                      <ThemedText type="t6" style={styles.vendorName} numberOfLines={1}>
                         {decidedCandidate.vendorName}
                       </ThemedText>
-                      <ThemedText themeColor="textAssistive" style={styles.vendorMeta}>
+                      <ThemedText type="t7" themeColor="textAssistive">
                         {formatDate(decidedCandidate.addedAt)}
                       </ThemedText>
                     </View>
                     <View style={[styles.decidedBadge, { backgroundColor: theme.tint }]}>
                       <ThemedText
-                        style={[styles.decidedBadgeText, { color: theme.onTint }]}
+                        type="badge"
+                        style={[styles.bold, { color: theme.onTint }]}
                       >
                         {S.decided}
                       </ThemedText>
@@ -186,7 +185,7 @@ export default function PickHistoryScreen() {
               {/* Other candidates */}
               {otherCandidates.length > 0 && (
                 <View style={styles.subSection}>
-                  <ThemedText themeColor="textAssistive" style={styles.subSectionLabel}>
+                  <ThemedText type="t7" themeColor="textAssistive" style={styles.subSectionLabel}>
                     {S['section.candidates']}
                   </ThemedText>
                   {otherCandidates.map((candidate) => (
@@ -198,10 +197,10 @@ export default function PickHistoryScreen() {
                       ]}
                     >
                       <View style={styles.vendorInfo}>
-                        <ThemedText style={styles.vendorName} numberOfLines={1}>
+                        <ThemedText type="t6" style={styles.vendorName} numberOfLines={1}>
                           {candidate.vendorName}
                         </ThemedText>
-                        <ThemedText themeColor="textAssistive" style={styles.vendorMeta}>
+                        <ThemedText type="t7" themeColor="textAssistive">
                           {formatDate(candidate.addedAt)}
                           {candidate.addedByPartner ? ' · 배우자 추가' : ''}
                         </ThemedText>
@@ -261,7 +260,7 @@ function DashedCta({
       onPress={onPress}
       hitSlop={8}
     >
-      <ThemedText themeColor={labelColor} style={styles.addCtaText}>
+      <ThemedText type="t6" themeColor={labelColor} style={styles.bold}>
         {label}
       </ThemedText>
     </Pressable>
@@ -273,7 +272,7 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
     scroll: {
       paddingHorizontal: Layout.gutter,
       paddingTop: Spacing.four,
-      paddingBottom: Spacing.six,
+      paddingBottom: Spacing.two,
       maxWidth: MaxContentWidth,
       alignSelf: 'center',
       width: '100%',
@@ -288,30 +287,23 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       marginBottom: Spacing.two,
     },
     categoryLabel: {
-      fontSize: FontSize.t6,
-      lineHeight: LineHeight.t6,
       fontWeight: '700',
-    },
-    stateLabel: {
-      fontSize: FontSize.t7,
-      lineHeight: LineHeight.t7,
     },
     subSection: {
       marginBottom: Spacing.two,
     },
     subSectionLabel: {
-      fontSize: FontSize.t7,
-      lineHeight: LineHeight.t7,
       marginBottom: Spacing.one,
     },
+    /* 카드 — component.card «radius 10 · paddingCompact 18px 20px». */
     vendorRow: {
       flexDirection: 'row',
       alignItems: 'center',
       minHeight: Layout.rowMinHeight,
-      borderRadius: Radius.card,
+      borderRadius: Radius.medium,
       borderWidth: 1,
-      paddingHorizontal: Spacing.three,
-      paddingVertical: Spacing.two,
+      paddingHorizontal: Layout.cardPadding,
+      paddingVertical: Layout.cardPaddingCompactY,
       marginBottom: Spacing.one,
     },
     decidedRow: {
@@ -321,14 +313,8 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       flex: 1,
     },
     vendorName: {
-      fontSize: FontSize.t6,
-      lineHeight: LineHeight.t6,
       fontWeight: '700',
-      marginBottom: 2,
-    },
-    vendorMeta: {
-      fontSize: FontSize.t7,
-      lineHeight: LineHeight.t7,
+      marginBottom: Spacing.half,
     },
     decidedBadge: {
       borderRadius: Radius.pill,
@@ -336,10 +322,7 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       paddingVertical: 3,
       marginLeft: Spacing.two,
     },
-    decidedBadgeText: {
-      fontSize: FontSize.badge,
-      fontWeight: '700',
-    },
+
     addCta: {
       height: Layout.controlMedium,
       borderRadius: Radius.medium,
@@ -349,9 +332,7 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       justifyContent: 'center',
       marginTop: Spacing.one,
     },
-    addCtaText: {
-      fontSize: FontSize.t6,
-      lineHeight: LineHeight.t6,
+    bold: {
       fontWeight: '700',
     },
   });

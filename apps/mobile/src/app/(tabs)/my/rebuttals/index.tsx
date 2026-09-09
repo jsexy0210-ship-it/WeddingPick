@@ -167,12 +167,12 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.five,
-    paddingBottom: Spacing.six,
+    paddingBottom: Spacing.four,
     gap: Spacing.three,
   },
   card: {
     borderRadius: Radius.medium,
-    padding: Spacing.four,
+    padding: Layout.cardPadding,
     gap: Spacing.two,
   },
   cardHead: {

@@ -1195,10 +1195,14 @@ const styles = StyleSheet.create({
   homeContent: {
     paddingBottom: Spacing.five,
   },
-  /* 섹션. 목업: padding 0 24 · 제목→콘텐츠 14. 섹션 아래 28은 밴드/다음 섹션이 잡는다. */
+  /*
+   * 섹션. 목업(06-search): padding 0 24 · 제목→콘텐츠 12. 02-design-system은 14라 갈리는데,
+   * 그 화면 시안을 따른다(2026-09-09 패딩 감사) — spacing.sectionGapCompact.
+   * 섹션 아래 28은 밴드/다음 섹션이 잡는다.
+   */
   section: {
     paddingHorizontal: Layout.gutter,
-    gap: Layout.sectionHeadGap,
+    gap: Layout.sectionHeadGapCompact,
   },
   /* 밴드 뒤·섹션 뒤 28. 목업: 밴드 margin 28 0, 마지막 섹션 padding-top 28. */
   sectionAfterBand: {
@@ -1254,8 +1258,8 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
     flexDirection: 'row',
     alignItems: 'center',
-    /* 목업 좌우 14·라벨↔X 6 — 토큰이 없어 가장 가까운 16·8을 쓴다. */
-    paddingHorizontal: Spacing.three,
+    /* 목업 좌우 14 — component.chip.paddingX. 라벨↔X 6은 토큰이 없어 가장 가까운 8을 쓴다. */
+    paddingHorizontal: Layout.chipPaddingX,
     gap: Spacing.two,
   },
   recentChipLabel: {

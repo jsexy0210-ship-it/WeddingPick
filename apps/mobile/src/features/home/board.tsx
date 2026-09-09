@@ -1,7 +1,7 @@
 import type { VendorCategory } from '@weddingpick/domain';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Layout, Radius, ThemedText, useTheme } from '@weddingpick/ui';
+import { Border, Layout, Radius, ThemedText, useTheme } from '@weddingpick/ui';
 
 import type { BoardCell, BoardTone } from './state';
 
@@ -76,8 +76,8 @@ function Cell({ cell, onPress }: { cell: BoardCell; onPress: () => void }) {
   );
 }
 
-/** 지금 칸의 코랄 테두리 굵기. 시안 `inset 0 0 0 1.5px`. */
-const NOW_BORDER = 1.5;
+/** 지금 칸의 코랄 테두리 굵기. 시안 `inset 0 0 0 1.5px` — spec/tokens.json border.selected. */
+const NOW_BORDER = Border.selected;
 
 const styles = StyleSheet.create({
   /* 시안: repeat(4, minmax(0,1fr)) · gap 7. 네 칸이 한 줄에 같은 폭으로 선다. */

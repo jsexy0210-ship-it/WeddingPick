@@ -189,7 +189,7 @@ export default function VisitNotesScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingBottom: Spacing.six },
+  content: { paddingBottom: Spacing.two },
   emptyAction: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four },
   noteWrap: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionGap },
   sheet: { padding: Layout.gutter },

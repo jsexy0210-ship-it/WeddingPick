@@ -99,7 +99,7 @@ function TimelineItem({ task, isLast }: { task: WeddingTask; isLast: boolean }) 
 }
 
 const styles = StyleSheet.create({
-  content: { paddingBottom: Spacing.six },
+  content: { paddingBottom: Spacing.two },
   timeline: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionGap },
   item: { flexDirection: 'row', gap: Layout.sectionHeadGap },
   spine: { width: Layout.iconTab, alignItems: 'center' },

@@ -1,5 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
+
 import { Layout, TextField, Toast } from '@weddingpick/ui';
 import { createInquiry } from '@/api/client';
 import { CheckCircle } from '@/features/onboarding/check-circle';

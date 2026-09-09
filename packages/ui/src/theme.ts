@@ -521,6 +521,14 @@ export const Layout = {
   avatarRow: 32,
   avatarProfile: 56,
   avatarLarge: 88,
+  /**
+   * 제출 완료 히어로의 상하 패딩과 체크 원. component.doneHero — 11-report-review
+   * «padding:64px 24px 40px · gap 24 · 원 72»(WP-RPT-007). 64·40은 간격 사다리 밖이라
+   * `Spacing`이 아니라 이 이름으로만 든다.
+   */
+  doneHeroPaddingTop: 64,
+  doneHeroPaddingBottom: 40,
+  doneHeroRing: 72,
   /** 진행바 트랙 · 누적 막대 높이. component.progressTrack · stackedBar. */
   progressTrack: 6,
   stackedBar: 10,

@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
     height: Layout.field,
     borderWidth: 1,
     borderRadius: Radius.input,
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Layout.fieldPaddingX,
     fontSize: FontSize.t6,
   },
   decision: { gap: Spacing.two },

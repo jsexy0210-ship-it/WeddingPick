@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
     gap: Layout.cardGap,
   },
   card: {
-    borderRadius: Spacing.three,
+    borderRadius: Radius.medium,
     padding: Spacing.three,
     gap: Spacing.one,
   },

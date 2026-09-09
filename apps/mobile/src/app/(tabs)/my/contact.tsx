@@ -20,7 +20,9 @@ import {
   ActionButton,
   FilterChip,
   FontSize,
+  Layout,
   MaxContentWidth,
+  Radius,
   Spacing,
   ThemedText,
   ThemedView,
@@ -291,7 +293,7 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
   },
   content: {
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.five,
     paddingBottom: Spacing.four,
     gap: Spacing.four,
@@ -305,14 +307,14 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   card: {
-    borderRadius: Spacing.three,
+    borderRadius: Radius.medium,
     padding: Spacing.three,
     gap: Spacing.one,
   },
   input: {
     borderWidth: 1,
-    borderRadius: Spacing.three,
-    paddingHorizontal: Spacing.three,
+    borderRadius: Radius.input,
+    paddingHorizontal: Layout.fieldPaddingX,
     paddingVertical: Spacing.two,
     /* 입력 칸 글자도 본문이다. 토큰 밖의 크기를 쓰지 않는다. */
     fontSize: FontSize.t6,

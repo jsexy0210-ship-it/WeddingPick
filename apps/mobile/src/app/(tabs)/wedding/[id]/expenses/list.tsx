@@ -124,7 +124,7 @@ export default function ExpenseListScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingBottom: Spacing.six },
+  content: { paddingBottom: Spacing.two },
   /* 칩 줄 — padding 0 24 20 · gap 8. */
   chips: {
     flexDirection: 'row',

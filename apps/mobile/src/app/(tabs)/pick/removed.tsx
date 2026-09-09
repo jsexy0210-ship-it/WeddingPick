@@ -5,9 +5,7 @@ import { getCurrentUser, getRemovedCandidates } from '@/api/client';
 import {
   EmptyView,
   ErrorView,
-  FontSize,
   Layout,
-  LineHeight,
   MaxContentWidth,
   Radius,
   Skeleton,
@@ -39,8 +37,8 @@ function RemovedSkeleton() {
       {[1, 2, 3].map((i) => (
         <View key={i} style={{ marginBottom: Spacing.four }}>
           <Skeleton width={80} height={14} radius={4} style={{ marginBottom: Spacing.two }} />
-          <Skeleton width="100%" height={56} radius={Radius.card} style={{ marginBottom: Spacing.one }} />
-          <Skeleton width="100%" height={56} radius={Radius.card} />
+          <Skeleton width="100%" height={56} radius={Radius.medium} style={{ marginBottom: Spacing.one }} />
+          <Skeleton width="100%" height={56} radius={Radius.medium} />
         </View>
       ))}
     </View>
@@ -111,7 +109,7 @@ export default function PickRemovedScreen() {
           .filter((g) => g.items.length > 0)
           .map((group) => (
             <View key={group.category} style={styles.categoryBlock}>
-              <ThemedText themeColor="textSecondary" style={styles.categoryLabel}>
+              <ThemedText type="t6" themeColor="textSecondary" style={styles.categoryLabel}>
                 {group.categoryLabel}
               </ThemedText>
               {group.items.map((item) => (
@@ -123,10 +121,10 @@ export default function PickRemovedScreen() {
                   ]}
                 >
                   <View style={styles.vendorInfo}>
-                    <ThemedText style={styles.vendorName} numberOfLines={1}>
+                    <ThemedText type="t6" style={styles.vendorName} numberOfLines={1}>
                       {item.vendorName}
                     </ThemedText>
-                    <ThemedText themeColor="textAssistive" style={styles.vendorMeta}>
+                    <ThemedText type="t7" themeColor="textAssistive">
                       {formatDate(item.removedAt)} 제거
                     </ThemedText>
                   </View>
@@ -144,7 +142,7 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
     scroll: {
       paddingHorizontal: Layout.gutter,
       paddingTop: Spacing.four,
-      paddingBottom: Spacing.six,
+      paddingBottom: Spacing.two,
       maxWidth: MaxContentWidth,
       alignSelf: 'center',
       width: '100%',
@@ -153,33 +151,26 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       marginBottom: Layout.sectionGap,
     },
     categoryLabel: {
-      fontSize: FontSize.t6,
-      lineHeight: LineHeight.t6,
       fontWeight: '700',
       marginBottom: Spacing.two,
     },
+    /* 카드 — component.card «radius 10 · paddingCompact 18px 20px». */
     vendorRow: {
       flexDirection: 'row',
       alignItems: 'center',
       minHeight: Layout.rowMinHeight,
-      borderRadius: Radius.card,
+      borderRadius: Radius.medium,
       borderWidth: 1,
-      paddingHorizontal: Spacing.three,
-      paddingVertical: Spacing.two,
+      paddingHorizontal: Layout.cardPadding,
+      paddingVertical: Layout.cardPaddingCompactY,
       marginBottom: Spacing.one,
     },
     vendorInfo: {
       flex: 1,
     },
     vendorName: {
-      fontSize: FontSize.t6,
-      lineHeight: LineHeight.t6,
       fontWeight: '700',
-      marginBottom: 2,
-    },
-    vendorMeta: {
-      fontSize: FontSize.t7,
-      lineHeight: LineHeight.t7,
+      marginBottom: Spacing.half,
     },
   });
 }

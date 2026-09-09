@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
   /* 목업: gap 6 + margin-left -10 → 겹침 4. */
   avatarOverlap: { marginLeft: -Spacing.one },
   scroll: { flex: 1 },
-  scrollContent: { paddingBottom: Spacing.six },
+  scrollContent: { paddingBottom: Spacing.two },
   /* 목업: padding 12 24 26 · gap 12 · 배경 없음. */
   hero: {
     paddingHorizontal: Layout.gutter,

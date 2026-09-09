@@ -177,11 +177,11 @@ const styles = StyleSheet.create({
   },
   header: { gap: Spacing.one, marginBottom: Spacing.one },
   emptyCard: {
-    borderRadius: Radius.card,
+    borderRadius: Radius.medium,
     padding: Spacing.three,
   },
   vendorCard: {
-    borderRadius: Radius.card,
+    borderRadius: Radius.medium,
     padding: Spacing.three,
     gap: Spacing.two,
   },

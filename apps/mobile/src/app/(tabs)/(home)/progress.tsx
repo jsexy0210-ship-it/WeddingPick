@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
   },
   navTitle: { flex: 1, textAlign: 'center' },
 
-  content: { paddingBottom: Spacing.six },
+  content: { paddingBottom: Spacing.two },
   /* 시안 padHero: padding 12 24 24 · gap 8. */
   hero: {
     paddingHorizontal: Layout.gutter,

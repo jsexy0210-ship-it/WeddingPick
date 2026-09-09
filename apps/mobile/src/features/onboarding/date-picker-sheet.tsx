@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
     height: Layout.field,
     borderRadius: Radius.medium,
     borderWidth: 1.5,
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Layout.fieldPaddingX,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

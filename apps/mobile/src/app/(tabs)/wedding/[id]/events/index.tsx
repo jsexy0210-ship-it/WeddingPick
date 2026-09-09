@@ -155,6 +155,6 @@ export default function WeddingEventsScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingBottom: Spacing.six },
+  content: { paddingBottom: Spacing.two },
   emptyAction: { paddingHorizontal: Layout.gutter },
 });

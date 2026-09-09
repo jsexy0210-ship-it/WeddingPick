@@ -314,11 +314,14 @@ export default function CompareScreen() {
   );
 }
 
-/** 시안 #10b — 후보 칩 36 · 키 칩 22 · 행 48(padding 8 0). Layout에 이름이 없는 값. */
-const CAND_CHIP_HEIGHT = 36;
-const KEY_CHIP = 22;
-const ROW_HEIGHT = 48;
-const BULLET = 6;
+/*
+ * 시안 #10b — 후보 칩 36(component.chip.height) · 키 칩 22(component.badge.height) ·
+ * 행 48(size.rowMinHeightCompact) · 목록 앞 점 6(spacing.bulletDot). 전부 토큰에 이름이 있다.
+ */
+const CAND_CHIP_HEIGHT = Layout.chip;
+const KEY_CHIP = Layout.badgeHeight;
+const ROW_HEIGHT = Layout.rowMinHeightCompact;
+const BULLET = Layout.bulletDot;
 
 const styles = StyleSheet.create({
   container: {
@@ -396,7 +399,7 @@ const styles = StyleSheet.create({
   summary: { paddingHorizontal: Layout.gutter, gap: Layout.sectionHeadGap },
   summaryList: { gap: Layout.rowPaddingY },
   summaryRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Layout.cardGap },
-  bullet: { width: BULLET, height: BULLET, borderRadius: BULLET / 2, marginTop: (Spacing.four - BULLET) / 2, flexShrink: 0 },
+  bullet: { width: BULLET, height: BULLET, borderRadius: Radius.pill, marginTop: (Spacing.four - BULLET) / 2, flexShrink: 0 },
   summaryText: { flex: 1 },
   bottomPad: { height: Spacing.four },
 

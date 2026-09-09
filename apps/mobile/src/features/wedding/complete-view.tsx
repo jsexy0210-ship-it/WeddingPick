@@ -158,7 +158,7 @@ export function WeddingCompleteView({ weddingId }: { weddingId: string }) {
 
 
 const styles = StyleSheet.create({
-  content: { paddingBottom: Spacing.six },
+  content: { paddingBottom: Spacing.two },
   block: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four },
   spendHead: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: Layout.rowPaddingY },
   noteWrap: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionGap },

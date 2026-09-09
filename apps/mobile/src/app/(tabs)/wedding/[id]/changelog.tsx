@@ -123,6 +123,6 @@ export default function ChangelogScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingTop: Spacing.two, paddingBottom: Spacing.six },
+  content: { paddingTop: Spacing.two, paddingBottom: Spacing.two },
   firstGroup: {},
 });

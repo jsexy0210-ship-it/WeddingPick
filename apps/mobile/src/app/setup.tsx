@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
     height: Layout.field,
     borderRadius: Radius.input,
     borderWidth: 1.5,
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Layout.fieldPaddingX,
     justifyContent: 'center',
   },
   /* «예식일까지 250일 남았어요» — 숫자만 코랄. baseline 정렬 · 사이 8 · 좌우 2. */

@@ -617,7 +617,7 @@ const styles = StyleSheet.create({
   check: {
     width: Layout.iconTab,
     height: Layout.iconTab,
-    borderRadius: 4,
+    borderRadius: Radius.badge,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -637,7 +637,7 @@ const styles = StyleSheet.create({
     minHeight: Layout.field,
     borderRadius: Radius.input,
     borderWidth: 1,
-    paddingHorizontal: Spacing.three - Spacing.half,
+    paddingHorizontal: Layout.fieldPaddingX,
   },
   inputButton: { justifyContent: 'center' },
 

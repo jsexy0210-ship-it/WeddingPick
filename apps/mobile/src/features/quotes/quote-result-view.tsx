@@ -11,6 +11,7 @@ import { ScrollView, StyleSheet, TextInput, type ViewStyle } from 'react-native'
 import {
   ActionButton,
   FontSize,
+  Radius,
   Spacing,
   ThemedText,
   ThemedView,
@@ -368,7 +369,7 @@ export function AnalysisNotice() {
 
 const styles = StyleSheet.create({
   notice: {
-    borderRadius: Spacing.two,
+    borderRadius: Radius.medium,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
   },
@@ -381,7 +382,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   card: {
-    borderRadius: Spacing.three,
+    borderRadius: Radius.medium,
     padding: Spacing.three,
     gap: Spacing.one,
   },
@@ -389,7 +390,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderRadius: Spacing.three,
+    borderRadius: Radius.medium,
     padding: Spacing.three,
     gap: Spacing.three,
   },
@@ -398,7 +399,7 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderRadius: Spacing.two,
+    borderRadius: Radius.input,
     paddingHorizontal: Spacing.two,
     paddingVertical: Spacing.two,
     /* 입력 칸 글자도 본문이다. 토큰 밖의 크기를 쓰지 않는다. */

@@ -584,15 +584,21 @@ const styles = StyleSheet.create({
   pictureWrap: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four, gap: Spacing.two },
   picture: { width: 120, height: 156, borderRadius: Radius.medium },
   error: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.three },
-  /* 제출 완료 — padding 64 24 40 · gap 24 · 체크 원 72. */
+  /* 제출 완료 — component.doneHero «padding:64px 24px 40px · gap 24 · 원 72»(11-report-review). */
   doneHero: {
     paddingHorizontal: Layout.gutter,
-    paddingTop: Spacing.six,
-    paddingBottom: Spacing.four + Spacing.three,
+    paddingTop: Layout.doneHeroPaddingTop,
+    paddingBottom: Layout.doneHeroPaddingBottom,
     gap: Spacing.four,
     alignItems: 'center',
   },
-  ring: { width: 72, height: 72, borderRadius: Radius.pill, alignItems: 'center', justifyContent: 'center' },
+  ring: {
+    width: Layout.doneHeroRing,
+    height: Layout.doneHeroRing,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   doneText: { gap: Spacing.two, alignItems: 'center' },
   cards: { paddingHorizontal: Layout.gutter, gap: Layout.rowPaddingY },
   bold: { fontWeight: 700 },

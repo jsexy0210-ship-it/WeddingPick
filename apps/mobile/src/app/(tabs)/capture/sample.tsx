@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
-import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
+import { ActionButton, Layout, MaxContentWidth, Radius, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
 import { NavBar, Screen } from '@/features/wedding/screen-kit';
 import { QuoteResultView } from '@/features/quotes/quote-result-view';
 import { SAMPLE_COMPARISON, SAMPLE_QUOTE } from '@/features/sample/sample-quote';
@@ -51,13 +51,13 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.four,
     gap: Spacing.two,
   },
   banner: {
     backgroundColor: '#7A4DD1',
-    borderRadius: Spacing.two,
+    borderRadius: Radius.medium,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     gap: Spacing.half,
