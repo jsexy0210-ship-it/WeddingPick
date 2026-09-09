@@ -88,6 +88,15 @@ function RootLayoutContent() {
   const [minimumShown, setMinimumShown] = useState(() => hasKakaoReturn());
   const redirected = useRef(false);
   /*
+   * 지금 열린 것이 관리자 콘솔인가. 관리자는 웹 전용이고(`admin/_layout.tsx`),
+   * 커플 앱의 첫 화면 규칙 밖에 있다. 주소가 바뀌면 페이지가 다시 뜨는 정적
+   * export라 매 렌더 계산해도 값이 흔들리지 않는다.
+   */
+  const isAdminPath =
+    Platform.OS === 'web' &&
+    typeof window !== 'undefined' &&
+    window.location.pathname.startsWith('/admin');
+  /*
    * 네이티브 쉘의 웹뷰가 최초 진입 URL에 `wp_token`을 한 번 실어 보낸다(하이브리드
    * 웹뷰 쉘, `features/webshell`). 웹 export는 이 값을 받아 저장하고 주소창에서
    * 지운다 — 네이티브에서는 애초에 필요 없는 단계라 곧장 완료로 둔다. 토큰이
@@ -241,6 +250,20 @@ function RootLayoutContent() {
   }, []);
 
   useEffect(() => {
+    /*
+     * **관리자 콘솔은 앱의 첫 화면 규칙을 타지 않는다.**
+     *
+     * 아래 규칙은 커플 앱을 위한 것이다 — 로그인했나, 온보딩을 마쳤나를 보고
+     * 첫 화면을 정한다. 그런데 그 판단이 주소를 가리지 않아서 `/admin`으로 들어온
+     * 운영자도 `/login`이나 `/setup`으로 밀려났다. **관리자 화면이 한 장도 안 뜨던
+     * 원인이 이것이다**(2026-09-09).
+     *
+     * 관리자는 자체 인증이 있다 — `admin/_api.ts`가 토큰을 실어 보내고, 권한이
+     * 없으면 서버가 401·403으로 답한다. 화면이 그 오류를 보여주는 것이 맞지,
+     * 커플 앱 온보딩으로 보내는 것은 맞지 않다.
+     */
+    if (isAdminPath) return;
+
     if (entry === null || !minimumShown) return;
 
     if (redirected.current) return;
@@ -267,7 +290,7 @@ function RootLayoutContent() {
    * 첫 화면을 정할 때까지, 그리고 스플래시를 충분히 보여줄 때까지 덮어둔다.
    * 홈이 잠깐 스쳤다 사라지는 것을 막는다.
    */
-  if (entry === null || !minimumShown) {
+  if (!isAdminPath && (entry === null || !minimumShown)) {
     return signingIn ? <SigningInView /> : <SplashView />;
   }
 
