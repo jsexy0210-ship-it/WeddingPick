@@ -1,5 +1,7 @@
 import {
+  BANNED_PHRASES,
   EXEMPT_PHRASES,
+  PENDING_PHRASES,
   STATE_WORDS,
   findBannedPhrases,
   isVague,
@@ -61,5 +63,70 @@ describe('데이터 — v3.3이 화면에서 걷어낸 말', () => {
   it('예외가 다른 금지어를 가려주지는 않는다', () => {
     // 예외는 그 낱말 하나를 덮을 뿐이고, 옆에 붙은 금지어는 그대로 걸린다.
     expect(violatesCopyRules('공공데이터 · 데이터 많은 순')).toBe(true);
+  });
+});
+
+/**
+ * 게이트가 무엇을 잡는지 못으로 박는다.
+ *
+ * **2026-09-09까지 이 여섯을 하나도 잡지 못했다.** 목록이 `spec/glossary.json`과
+ * `copy-rules.ts` 두 곳에 따로 있었고, v3.18·v3.22가 금지어를 정할 때 코드 쪽 목록이
+ * 따라오지 않았다. 규칙은 문서에 있는데 게이트는 통과시키고 있었다 — 잔존이 0이던 것은
+ * 사람이 손으로 지웠기 때문이고, 지키는 장치가 있었기 때문이 아니다.
+ *
+ * 그래서 「목록을 읽어 온다」가 아니라 「이 말들이 실제로 걸린다」를 검사한다.
+ */
+describe('v3.18 · v3.22 금지어를 게이트가 잡는다', () => {
+  it.each([
+    ['AI', 'AI 추천'],
+    ['탐색', '업체 탐색'],
+    ['관심업체', '관심업체 목록'],
+    ['확인된 제보', '확인된 제보 12건'],
+    ['오늘의 Pick', '오늘의 Pick'],
+    ['네이버페이 포인트', '네이버페이 포인트 5,000원'],
+  ])('%s', (phrase, copy) => {
+    expect(violatesCopyRules(copy)).toBe(true);
+    expect(findBannedPhrases(copy).map((v) => v.phrase)).toContain(phrase);
+  });
+
+  it('대신 쓰는 말은 통과한다', () => {
+    for (const text of ['웨딩픽 추천', '업체 검색', 'Pick 목록', '실 제보 12건', 'Npay 5,000원']) {
+      expect(violatesCopyRules(text)).toBe(false);
+    }
+  });
+});
+
+describe('금지어 목록의 원본은 spec/glossary.json이다', () => {
+  it('코드가 목록을 따로 갖지 않는다', () => {
+    // 두 곳에 적으면 한 곳만 고치는 날이 온다. 실제로 그랬다.
+    expect(BANNED_PHRASES).toContain('오늘의 Pick');
+    expect(BANNED_PHRASES).toContain('우리 준비');
+  });
+
+  it('라틴 낱말은 낱말 경계까지 본다', () => {
+    /*
+     * `AI`를 그냥 찾으면 식별자가 전부 걸린다 — 실제로 43건이 걸렸고 화면 문구는
+     * 0건이었다. 잡아야 할 것을 못 잡는 것만큼 엉뚱한 것을 잡는 것도 게이트를 죽인다.
+     */
+    for (const identifier of ['FAILURE_MESSAGE', 'CLAIM_METHODS', 'MAIN', 'detail']) {
+      expect(violatesCopyRules(identifier)).toBe(false);
+    }
+
+    expect(violatesCopyRules('AI가 분석했어요')).toBe(true);
+  });
+
+  it('allow는 낱말이 아니라 문구 하나만 풀어준다', () => {
+    /*
+     * 「중앙값」을 통째로 풀어주면 「중앙값 168만원」까지 통과한다. 승인된 문구
+     * 하나만 풀어야 그 자리만 지나간다 — glossary의 note가 원래 그렇게 적고 있었다.
+     */
+    expect(violatesCopyRules('기준금액은 실 제보의 중앙값이에요')).toBe(false);
+    expect(violatesCopyRules('중앙값 168만원')).toBe(true);
+  });
+
+  it('아직 강제하지 않는 항목을 이름으로 남긴다', () => {
+    // 조용히 빠지면 영영 안 켜진다. 목록이 바뀌면 이 검사가 먼저 깨진다.
+    expect([...PENDING_PHRASES]).toEqual(['둘러보기']);
+    expect(BANNED_PHRASES).not.toContain('둘러보기');
   });
 });
