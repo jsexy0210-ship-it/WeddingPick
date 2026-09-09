@@ -32,7 +32,7 @@ const S = {
   heroDone: MISSION_COMPLETE_REWARD_NOTIFICATION.title,
   sub: `커플당 한 번 · 선착순 ${REWARDS.mission.monthlyCap}커플`,
   mission: '미션 4개 완주',
-  missionDesc: '업체 둘러보기 · 준비 관리 · 배우자 연결 · Pick 인증',
+  missionDesc: '업체 검색 · 준비 관리 · 배우자 연결 · Pick 인증',
   missionBadge: (done: number, total: number) => `진행 중 ${done}/${total}`,
   missionBadgeDone: '완주',
   missionCta: '이어서 하기',
