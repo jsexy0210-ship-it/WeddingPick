@@ -37,7 +37,7 @@ export default function TimelineScreen() {
 
   useEffect(load, [load]);
 
-  if (error) return <ErrorView message={error} onBack={() => router.back()} />;
+  if (error) return <ErrorView message={error} onBack={() => router.back()} onRetry={load} />;
   if (!page) return <SkeletonView />;
 
   const sorted = [...page.tasks].sort((a, b) => {

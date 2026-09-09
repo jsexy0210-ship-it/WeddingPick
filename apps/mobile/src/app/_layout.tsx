@@ -19,6 +19,7 @@ import { setPendingSignInError } from '@/features/auth/sign-in-handoff';
 import { SigningInView } from '@/features/auth/signing-in-view';
 import { CaptureDraftProvider } from '@/features/capture/capture-draft';
 import { DocumentStoreProvider } from '@/features/documents/document-store';
+import { FullScreenError } from '@/features/errors/full-screen-error';
 import { getAppBootstrap, getCurrentUser, getSignupState } from '@/api/client';
 import { loadToken, saveToken } from '@/api/session';
 import { SPLASH_MINIMUM_MS, SplashView } from '@/features/splash/splash-view';
@@ -87,6 +88,15 @@ function RootLayoutContent() {
   const [signingIn] = useState(() => hasKakaoReturn());
   const [minimumShown, setMinimumShown] = useState(() => hasKakaoReturn());
   const redirected = useRef(false);
+  /*
+   * 지금 열린 것이 관리자 콘솔인가. 관리자는 웹 전용이고(`admin/_layout.tsx`),
+   * 커플 앱의 첫 화면 규칙 밖에 있다. 주소가 바뀌면 페이지가 다시 뜨는 정적
+   * export라 매 렌더 계산해도 값이 흔들리지 않는다.
+   */
+  const isAdminPath =
+    Platform.OS === 'web' &&
+    typeof window !== 'undefined' &&
+    window.location.pathname.startsWith('/admin');
   /*
    * 네이티브 쉘의 웹뷰가 최초 진입 URL에 `wp_token`을 한 번 실어 보낸다(하이브리드
    * 웹뷰 쉘, `features/webshell`). 웹 export는 이 값을 받아 저장하고 주소창에서
@@ -209,7 +219,7 @@ function RootLayoutContent() {
 
       /*
        * 예전에는 여기서 별도 «가입 마무리» 화면으로 보냈다. 만 14세 확인은
-       * 로그인 화면 체크박스로 옮겼고(v3.13), 동의 기록은 온보딩(`/setup`)이
+       * 카카오 출생 연도 판정으로 옮겼고(v3.24), 동의 기록은 온보딩(`/setup`)이
        * 마친다 — 여기서 옛 화면으로 계속 보내면 옮긴 게 소용없다.
        * finish-sign-in.ts의 같은 판단과 다르지 않게 둔다.
        */
@@ -241,6 +251,20 @@ function RootLayoutContent() {
   }, []);
 
   useEffect(() => {
+    /*
+     * **관리자 콘솔은 앱의 첫 화면 규칙을 타지 않는다.**
+     *
+     * 아래 규칙은 커플 앱을 위한 것이다 — 로그인했나, 온보딩을 마쳤나를 보고
+     * 첫 화면을 정한다. 그런데 그 판단이 주소를 가리지 않아서 `/admin`으로 들어온
+     * 운영자도 `/login`이나 `/setup`으로 밀려났다. **관리자 화면이 한 장도 안 뜨던
+     * 원인이 이것이다**(2026-09-09).
+     *
+     * 관리자는 자체 인증이 있다 — `admin/_api.ts`가 토큰을 실어 보내고, 권한이
+     * 없으면 서버가 401·403으로 답한다. 화면이 그 오류를 보여주는 것이 맞지,
+     * 커플 앱 온보딩으로 보내는 것은 맞지 않다.
+     */
+    if (isAdminPath) return;
+
     if (entry === null || !minimumShown) return;
 
     if (redirected.current) return;
@@ -267,7 +291,7 @@ function RootLayoutContent() {
    * 첫 화면을 정할 때까지, 그리고 스플래시를 충분히 보여줄 때까지 덮어둔다.
    * 홈이 잠깐 스쳤다 사라지는 것을 막는다.
    */
-  if (entry === null || !minimumShown) {
+  if (!isAdminPath && (entry === null || !minimumShown)) {
     return signingIn ? <SigningInView /> : <SplashView />;
   }
 
@@ -292,4 +316,30 @@ function RootLayoutContent() {
       </DocumentStoreProvider>
     </ThemeProvider>
   );
+}
+
+/**
+ * 앱 전체의 오류 경계. expo-router가 이 이름의 export를 찾아 쓴다.
+ *
+ * **없었다**(Release Audit 1차 P0-4, 2026-09-09). `ErrorBoundary` ·
+ * `componentDidCatch` · `getDerivedStateFromError`가 저장소 전체에 0건이었다.
+ * 개발 빌드에서는 expo-router의 기본 오류 화면이 떠서 눈에 띄지 않지만
+ * **프로덕션 빌드에는 그 화면이 없다** — 그리다 죽으면 흰 화면만 남고
+ * 사용자가 할 수 있는 일은 앱을 껐다 켜는 것뿐이었다.
+ *
+ * 뿌리에 두는 이유는 여기가 마지막 그물이기 때문이다. 화면 하나가 실패한 것은
+ * 그 화면 안에서 말하는 것이 맞고(`ErrorView`), 여기까지 올라온 것은 그 화면이
+ * 스스로 말할 수 없었던 실패다.
+ *
+ * `retry`는 expo-router가 준다 — 경계를 비우고 다시 그린다. 앱을 껐다 켜는 것과
+ * 달리 스택이 남는다.
+ *
+ * **문구는 «잠시 문제가 생겼어요»다**(`error.general.*`). 오류 내용을 그대로
+ * 보여주지 않는다 — 스택 트레이스에는 파일 경로와 내부 이름이 들어 있고,
+ * 사용자가 그걸로 할 수 있는 일이 없다. 진단은 로그가 맡는다.
+ */
+export function ErrorBoundary({ error, retry }: { error: Error; retry: () => Promise<void> }) {
+  console.error('화면을 그리다 죽었다.', error);
+
+  return <FullScreenError kind="general" onRetry={() => void retry()} />;
 }

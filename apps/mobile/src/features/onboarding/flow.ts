@@ -79,7 +79,15 @@ export const STEP_TITLE_LINES: Record<QuestionStep, readonly [string, string]> =
   style: ['어떤 분위기로', '준비할까요?'],
 };
 
-export const DONE_TITLE_LINES = ['이제 필요한 것만', '보여드릴게요'] as const;
+/**
+ * 완료 화면 제목.
+ *
+ * **가입이 끝났다는 사실을 먼저 말한다**(2026-09-09 사용자 결정). 예전 제목은
+ * 「이제 필요한 것만 보여드릴게요」로 개인화 이야기만 해서, 이 화면이 회원가입의
+ * 마지막 단계라는 것이 드러나지 않았다 — 카카오 개인정보 동의항목 심사가 가입
+ * 절차를 확인할 수 없다고 반려한 것과 같은 문제다.
+ */
+export const DONE_TITLE_LINES = ['가입이', '완료됐어요'] as const;
 
 /** 질문 아래 한 줄 — 서비스가 무엇을 해주는지(SPEC §13.6 첫 표 «설명»). */
 export const STEP_DESCRIPTION: Record<QuestionStep, string> = {

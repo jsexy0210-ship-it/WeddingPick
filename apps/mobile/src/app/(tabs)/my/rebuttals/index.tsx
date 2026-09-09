@@ -44,7 +44,7 @@ export default function MyRebuttalsScreen() {
   useEffect(load, [load]);
 
   if (loadError) {
-    return <ErrorView message={loadError} onBack={load} />;
+    return <ErrorView message={loadError} onRetry={load} />;
   }
 
   if (rebuttals === null) {

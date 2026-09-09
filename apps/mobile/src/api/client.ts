@@ -200,6 +200,14 @@ function requireBaseUrl(): string {
  * 무관하게 캐시를 통째로 버리므로(아래 `request`의 쓰기 분기), 이 30초 때문에
  * 내가 방금 한 일이 화면에 안 보이는 일은 없다.
  */
+/**
+ * 한 요청을 얼마나 기다리는가.
+ *
+ * Render 무료 요금제는 잠들었다 깨는 데 30초 넘게 걸린다 — 그보다 짧게 잡으면
+ * 첫 요청이 늘 실패한다. 그보다 훨씬 길면 사용자는 화면이 멈춘 줄 안다.
+ */
+const REQUEST_TIMEOUT_MS = 45_000;
+
 const READ_FRESH_MS = 3_000;
 const READ_TTL_MS = 30_000;
 
@@ -280,6 +288,19 @@ async function send<T>(
   try {
     response = await fetch(`${requireBaseUrl()}${path}`, {
       ...rest,
+      /*
+       * 답이 오지 않는 요청을 영원히 기다리지 않는다.
+       *
+       * **타임아웃이 없었다**(Release Audit 1차 P1-4). `AbortController`도
+       * `AbortSignal`도 저장소 전체에 0건이라, 응답이 끊긴 요청은 무한 로딩으로
+       * 남았고 사용자가 할 수 있는 일은 앱을 껐다 켜는 것뿐이었다.
+       *
+       * 끊긴 요청은 «닿지 못한 것»으로 다룬다 — 아래 catch가 status를 null로
+       * 남기고, 전면 오류 화면이 「연결이 불안정해요」로 읽는다.
+       *
+       * 호출하는 쪽이 `signal`을 주면 그쪽이 이긴다(업로드 취소 등).
+       */
+      signal: rest.signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       headers: {
         // 본문이 없는데 JSON이라고 말하면 서버가 빈 본문을 파싱하려다 막힌다.
         ...(rest.body !== undefined && { 'content-type': 'application/json' }),
@@ -514,7 +535,7 @@ export async function getSignupState() {
 
 /**
  * 만 14세 확인과 필수 동의로 가입을 마무리한다. 통합정책 v3.13 §3.5 —
- * `ageVerified`는 로그인 화면(WP-AUTH-001)의 체크박스 값이다. 생년월일은
+ * `ageVerified`는 서버가 카카오 출생 연도로 내린 판정이다. 생년월일은
  * 받지 않는다.
  */
 export async function completeSignup(input: { ageVerified: boolean; consents: string[] }) {
@@ -1466,6 +1487,15 @@ export async function grantPaymentConsent(): Promise<Settings> {
 
 export async function revokePaymentConsent(): Promise<Settings> {
   return request('/v1/me/payment-consent', settingsSchema, { method: 'DELETE' });
+}
+
+/** 견적서 업로드 동의. 결제인증과 따로 받는다 — 읽어가는 것도 쓰는 곳도 다르다. */
+export async function grantDocumentConsent(): Promise<Settings> {
+  return request('/v1/me/document-consent', settingsSchema, { method: 'POST' });
+}
+
+export async function revokeDocumentConsent(): Promise<Settings> {
+  return request('/v1/me/document-consent', settingsSchema, { method: 'DELETE' });
 }
 
 // ──────────────────────────────────────────────────────────────────────────────

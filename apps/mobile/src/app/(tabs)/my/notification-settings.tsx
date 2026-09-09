@@ -54,7 +54,7 @@ export default function NotificationSettingsScreen() {
       });
   }
 
-  if (loadError) return <ErrorView message={loadError} onBack={load} />;
+  if (loadError) return <ErrorView message={loadError} onRetry={load} />;
   if (!settings) return <DelayedLoadingView />;
 
   const switchProps = {

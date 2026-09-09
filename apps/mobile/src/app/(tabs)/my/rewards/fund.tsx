@@ -37,8 +37,8 @@ const S = {
 export default function FundScreen() {
   const { draw, loading, error, reload } = useBenefitData();
 
-  if (error) return <ErrorView message={error} onBack={reload} />;
-  if (!draw) return loading ? <DelayedLoadingView /> : <ErrorView message={MONTHLY_DRAW_NOTICE} onBack={reload} />;
+  if (error) return <ErrorView message={error} onRetry={reload} />;
+  if (!draw) return loading ? <DelayedLoadingView /> : <ErrorView message={MONTHLY_DRAW_NOTICE} onRetry={reload} />;
 
   return (
     <SubScreen title={S.title}>

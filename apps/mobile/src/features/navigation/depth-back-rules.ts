@@ -44,6 +44,7 @@ export const ROUTES: readonly string[] = [
   '/admin/briefing',
   '/admin/campaigns',
   '/admin/data-pipeline',
+  '/admin/decisions',
   '/admin/email-matching',
   '/admin/faq',
   '/admin/home',
@@ -53,6 +54,8 @@ export const ROUTES: readonly string[] = [
   '/admin/policy-engine',
   '/admin/price-stats',
   '/admin/queue',
+  '/admin/objections',
+  '/admin/pii-reviews',
   '/admin/rebuttal',
   '/admin/report',
   '/admin/revenue',
@@ -66,6 +69,7 @@ export const ROUTES: readonly string[] = [
   '/capture/camera',
   '/capture/payment/consent',
   '/capture/payment/register',
+  '/capture/quote/consent',
   '/capture/result/[quoteId]',
   '/capture/review',
   '/capture/sample',
@@ -171,7 +175,7 @@ export const TAB_ROOTS: readonly string[] = ['/', '/search', '/pick', '/wedding'
  *                          `_layout.tsx`가 `gestureEnabled: false`로 스와이프도 막아둔다 —
  *                          그 정책은 그대로 둔다.
  *   `/login`            WP-AUTH-001. 앞이 스플래시라 돌아갈 곳이 없다.
- *   `/login/age-required`  WP-AUTH-010. 계정을 만들지 않고 로그인으로만 되돌린다 —
+ *   `/login/age-required`  WP-AUTH-009. 계정을 만들지 않고 로그인으로만 되돌린다 —
  *                          화면이 직접 `replace('/login')`를 넘긴다.
  *   `/my/membership`    화면이 아니라 `Redirect` 한 줄이다(v3.22가 미션으로 옮겼다).
  *   `/admin/**`         관리자 콘솔은 좌측 사이드바가 이동을 맡는다.

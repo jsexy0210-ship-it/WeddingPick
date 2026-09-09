@@ -88,7 +88,12 @@ function createIdTokenVerifier(options: OidcOptions): (idToken: string) => Promi
         profileImageUrl: stringValue(payload.picture),
         gender: stringValue(payload.gender),
         birthday: stringValue(payload.birthdate),
-        mobile: stringValue(payload.phone_number),
+        /*
+         * 전화번호는 읽지 않는다(2026-09-09 사용자 결정). 카카오 동의항목에서
+         * `phone_number`를 뺐으므로 클레임 자체가 오지 않지만, 읽는 자리를
+         * 남겨두면 나중에 스코프가 늘었을 때 조용히 저장되기 시작한다. 번호가
+         * 필요한 곳은 Npay 지급 하나뿐이고 거기서는 사용자가 그때 직접 적는다.
+         */
       },
     };
   };
@@ -253,31 +258,35 @@ export function createKakaoProvider(options: {
       }
 
       const identity = await verifyIdToken(token.id_token);
-      const ageRange = await fetchKakaoAgeRange(fetchImpl, token.access_token);
+      const extra = await fetchKakaoBirthYear(fetchImpl, token.access_token);
 
-      if (!ageRange) return identity;
+      /* 못 받았으면 붙일 것이 없다 — 빈 키로 프로필을 늘리지 않는다. */
+      if (!extra.birthYear) return identity;
 
-      return { ...identity, profile: { ...identity.profile, ageRange } };
+      return { ...identity, profile: { ...identity.profile, ...extra } };
     },
   };
 }
 
 /**
- * 카카오 사용자 정보에서 연령대만 묻는다. v3.22 SPEC 3.5 «카카오에서 받는 것».
+ * 카카오에서 출생 연도만 묻는다. 2026-09-09 사용자 결정.
  *
- * `age_range`는 현재 권한이 없고, 비즈 검수를 통과해도 선택 동의라 사용자가
- * 거부하면 빈 값이 온다. 그래서 **못 받아도 로그인은 계속된다** — 이 호출이
- * 실패했다고 로그인을 막으면 검수 전에는 아무도 못 들어온다. 없으면 체크박스가
- * 그대로 판정한다.
+ * **필수 동의는 출생 연도 하나다.** 연령대 · 생일은 「사용 안 함」으로 내렸다 —
+ * 카카오 신청 화면이 「필요한 최소한만 신청하라」고 적은 자리라, 판정을 조금 더
+ * 정확하게 만드는 값이라도 필수가 아니면 받지 않기로 했다.
  *
- * `property_keys`로 연령대만 달라고 한다 — 필요 없는 것을 받아두면 지울 일만
- * 생긴다. 받은 값은 라우트가 판정만 뽑고 버린다. 저장하지 않는다.
+ * `property_keys`로 필요한 것만 달라고 한다 — 안 쓸 것을 받아두면 지울 일만 생긴다.
+ *
+ * **못 받아도 로그인은 계속된다.** 이 호출이 실패했다고 로그인을 막으면 카카오가
+ * 잠깐 흔들릴 때 아무도 못 들어온다. 판정은 라우트가 하고, 모르면 `unknown`이다.
+ *
+ * 받은 값은 판정에만 쓰고 버린다 — 라우트가 `profile`에서 떼어낸 뒤 저장에 넘긴다.
  */
-async function fetchKakaoAgeRange(
+async function fetchKakaoBirthYear(
   fetchImpl: typeof fetch,
   accessToken: unknown
-): Promise<string | undefined> {
-  if (typeof accessToken !== 'string' || accessToken.length === 0) return undefined;
+): Promise<{ birthYear?: string }> {
+  if (typeof accessToken !== 'string' || accessToken.length === 0) return {};
 
   try {
     const response = await fetchImpl('https://kapi.kakao.com/v2/user/me', {
@@ -286,16 +295,20 @@ async function fetchKakaoAgeRange(
         authorization: `Bearer ${accessToken}`,
         'content-type': 'application/x-www-form-urlencoded;charset=utf-8',
       },
-      body: new URLSearchParams({ property_keys: '["kakao_account.age_range"]' }),
+      body: new URLSearchParams({
+        property_keys: '["kakao_account.birthyear"]',
+      }),
     });
 
-    if (!response.ok) return undefined;
+    if (!response.ok) return {};
 
-    const body = (await response.json()) as { kakao_account?: { age_range?: unknown } };
+    const body = (await response.json()) as {
+      kakao_account?: { birthyear?: unknown };
+    };
 
-    return stringValue(body.kakao_account?.age_range);
+    return { birthYear: stringValue(body.kakao_account?.birthyear) };
   } catch {
-    return undefined;
+    return {};
   }
 }
 

@@ -36,6 +36,8 @@ export default function VisitNotesScreen() {
   const [page, setPage] = useState<VisitNoteListResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  /* 두 번 눌러도 한 번만 보낸다. 눌린 동안 버튼을 잠근다. */
+  const [saving, setSaving] = useState(false);
 
   const [vendor, setVendor] = useState('');
   const [visitedOn, setVisitedOn] = useState<string | null>(null);
@@ -51,7 +53,7 @@ export default function VisitNotesScreen() {
   useEffect(load, [load]);
 
   if (error) {
-    return <ErrorView message={error} onBack={() => router.back()} />;
+    return <ErrorView message={error} onBack={() => router.back()} onRetry={load} />;
   }
 
   if (!page) {
@@ -61,10 +63,12 @@ export default function VisitNotesScreen() {
   const ready = vendor.trim().length > 0 && visitedOn !== null;
 
   async function save() {
-    if (!ready || visitedOn === null) return;
+    if (!ready || visitedOn === null || saving) return;
 
     /* 화면은 만원 단위로 받는다. 서버에는 원 단위로 보낸다. */
     const inTenThousand = Number(amount.replace(/[^\d]/g, ''));
+
+    setSaving(true);
 
     try {
       await addVisitNote(id, {
@@ -82,6 +86,8 @@ export default function VisitNotesScreen() {
       load();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '적지 못했어요.');
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -178,7 +184,13 @@ export default function VisitNotesScreen() {
                 <ActionButton size="xlarge" label="취소" onPress={() => setFormOpen(false)} />
               </View>
               <View style={styles.sheetButton}>
-                <ActionButton size="xlarge" variant="primary" label="적어두기" disabled={!ready} onPress={() => void save()} />
+                <ActionButton
+                  size="xlarge"
+                  variant="primary"
+                  label={saving ? '저장 중…' : '적어두기'}
+                  disabled={!ready || saving}
+                  onPress={() => void save()}
+                />
               </View>
             </View>
           </ThemedView>

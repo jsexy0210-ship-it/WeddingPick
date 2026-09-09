@@ -48,8 +48,8 @@ export default function NpayPayoutScreen() {
   const [sending, setSending] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
-  if (error) return <ErrorView message={error} onBack={reload} />;
-  if (!payout) return loading ? <DelayedLoadingView /> : <ErrorView message="정보를 불러오지 못했어요" onBack={reload} />;
+  if (error) return <ErrorView message={error} onRetry={reload} />;
+  if (!payout) return loading ? <DelayedLoadingView /> : <ErrorView message="정보를 불러오지 못했어요" onRetry={reload} />;
 
   const name = nameEdited ?? payout.recipientNameDefault ?? '';
   const amount = won(payout.receivableKrw);

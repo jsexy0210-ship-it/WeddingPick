@@ -10,7 +10,6 @@ on:
         options:
           - weddingpick-app-web
           - weddingpick-web
-          - weddingpick-admin
           - WeddingPickl
 
 permissions:

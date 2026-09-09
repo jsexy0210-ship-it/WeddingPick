@@ -94,11 +94,11 @@ export default function WeddingEventDetailScreen() {
   useEffect(load, [load]);
 
   if (error && !event) {
-    return <ErrorView message={error} onBack={() => router.back()} />;
+    return <ErrorView message={error} onBack={() => router.back()} onRetry={load} />;
   }
 
   if (notFound) {
-    return <ErrorView title="일정을 찾을 수 없어요" onBack={() => router.back()} />;
+    return <ErrorView title="일정을 찾을 수 없어요" onBack={() => router.back()} onRetry={load} />;
   }
 
   if (!event || now === null) {

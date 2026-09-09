@@ -53,8 +53,8 @@ export default function PromotionScreen() {
   const [sending, setSending] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
-  if (error) return <ErrorView message={error} onBack={reload} />;
-  if (!rewards) return loading ? <DelayedLoadingView /> : <ErrorView message="정보를 불러오지 못했어요" onBack={reload} />;
+  if (error) return <ErrorView message={error} onRetry={reload} />;
+  if (!rewards) return loading ? <DelayedLoadingView /> : <ErrorView message="정보를 불러오지 못했어요" onRetry={reload} />;
 
   const submitted = grantsOf(rewards, 'promotion')[0];
   const check = checkPromotionUrl(url);

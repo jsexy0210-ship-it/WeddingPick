@@ -122,7 +122,7 @@ export function canActivate(input: {
     : { ok: false, reason: REQUIRED_CONSENT_NOTICE };
 }
 
-/** 체크하지 않고 시작하려 했을 때. WP-AUTH-010 이용 불가 안내가 이 문구를 쓴다. */
+/** 체크하지 않고 시작하려 했을 때. WP-AUTH-009 이용 불가 안내가 이 문구를 쓴다. */
 export const AGE_BLOCKED_NOTICE = `만 ${MINIMUM_AGE}세부터 이용할 수 있어요`;
 
 export const REQUIRED_CONSENT_NOTICE = '필수 항목에 동의해야 가입이 끝나요';
@@ -132,3 +132,22 @@ export const CONSENT_INTRO = '가입을 마치려면 필수 항목에 동의해�
 
 /** 아직 가입이 끝나지 않은 계정이 무언가를 하려 할 때. */
 export const NOT_ACTIVATED_NOTICE = '아직 가입이 끝나지 않았어요. 동의 화면에서 마저 진행해주세요';
+
+/* ── 회원가입 때 카카오에서 받는 정보 ─────────────────────────────────────
+ *
+ * **로그인 화면에 그대로 적는다.** 카카오 개인정보 동의항목 심사가
+ * 「회원가입 화면 내 수집 항목 · 수집 조건 기재 필수」를 요구한다(2026-09-09 반려).
+ * 처음 제출한 화면은 「웨딩 준비, 진짜 견적부터 확인해 보세요」만 보여서
+ * 심사자가 회원가입 절차로 읽지 못했다.
+ *
+ * **카카오 개발자센터의 설정과 이 표가 같아야 한다.** 한쪽만 고치면 화면이
+ * 말하는 것과 실제로 받는 것이 갈라진다 — 받는 항목은
+ * `apps/mobile/src/features/auth/providers.ts`의 `scopes`가 정한다.
+ */
+export const SIGNUP_PROFILE_FIELDS = [
+  { label: '출생 연도', required: true, why: '만 14세 이상인지 확인해요' },
+  { label: '프로필 (닉네임 · 사진)', required: true, why: '후기와 제보에 표시해요' },
+] as const satisfies readonly { label: string; required: boolean; why: string }[];
+
+/** 화면에 적는 안내 한 줄. 무엇을 위한 절차인지 먼저 말한다. */
+export const SIGNUP_COLLECT_NOTICE = '카카오 계정으로 회원가입해요. 받는 정보는 아래와 같아요.';

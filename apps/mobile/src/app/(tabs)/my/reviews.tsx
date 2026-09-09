@@ -72,7 +72,7 @@ export default function MyReviewsScreen() {
 
   useEffect(load, [load]);
 
-  if (error) return <ErrorView message={error} onBack={load} />;
+  if (error) return <ErrorView message={error} onRetry={load} />;
   if (reports === null) return <DelayedLoadingView />;
 
   const written = reports.filter((report) => report.kind === 'review');

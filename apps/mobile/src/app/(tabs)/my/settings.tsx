@@ -134,7 +134,7 @@ export default function SettingsScreen() {
   }
 
   if (loadError) {
-    return <ErrorView message={loadError} onBack={load} />;
+    return <ErrorView message={loadError} onRetry={load} />;
   }
 
   if (!settings) {

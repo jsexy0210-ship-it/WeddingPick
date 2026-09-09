@@ -17,6 +17,19 @@ export type WorkerDeps = {
   dailyCallLimit?: number | null;
 };
 
+/**
+ * 얼마나 오래 `running`이면 죽은 것으로 보는가.
+ *
+ * **회수하는 자리가 없었다**(Release Audit 1차 P1-20). `claim()`이 `pending`만
+ * 집어서, 프로세스가 잡아둔 채 죽으면 그 문서는 영원히 `running`에 갇히고
+ * 화면은 계속 「분석 중」이었다. 실패 표시조차 없어 재시도할 방법도 없었다.
+ *
+ * 값은 모델 호출 한도(`CLIENT_LIMITS.timeout` 2분)보다 넉넉히 길어야 한다 —
+ * 살아서 일하는 중인 것을 남이 뺏어가면 같은 문서를 두 번 분석하게 되고,
+ * 그건 돈이다. 30분이면 어느 쪽으로도 애매하지 않다.
+ */
+const STUCK_AFTER = '30 minutes';
+
 type ClaimedAnalysis = {
   id: string;
   raw_document_id: string;
@@ -38,11 +51,13 @@ async function claim(pool: Pool): Promise<ClaimedAnalysis | null> {
      WHERE id = (
        SELECT id FROM structured.analyses
        WHERE status = 'pending'
+          OR (status = 'running' AND started_at < now() - $1::interval)
        ORDER BY created_at
        FOR UPDATE SKIP LOCKED
        LIMIT 1
      )
-     RETURNING id, raw_document_id, wedding_id`
+     RETURNING id, raw_document_id, wedding_id`,
+    [STUCK_AFTER]
   );
 
   const claimed = rows[0];

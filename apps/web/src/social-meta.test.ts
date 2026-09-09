@@ -8,8 +8,7 @@ test('built public HTML exposes one complete sharing card and preserved icons wi
   await build(out);
   const required = ['og:title', 'og:description', 'og:image', 'og:url', 'og:type',
     'twitter:card', 'twitter:title', 'twitter:description', 'twitter:image'];
-  // admin.html은 공유되지 않는 내부 페이지다 — 소셜 공유 카드가 필요 없다.
-  for (const name of readdirSync(out).filter((n) => n.endsWith('.html') && n !== 'admin.html')) {
+  for (const name of readdirSync(out).filter((n) => n.endsWith('.html'))) {
     const html = readFileSync(join(out, name), 'utf8');
     const head = html.split('</head>')[0] ?? '';
     for (const tag of required) {

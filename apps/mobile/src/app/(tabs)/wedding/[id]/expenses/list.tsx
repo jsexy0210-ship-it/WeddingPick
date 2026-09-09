@@ -43,7 +43,7 @@ export default function ExpenseListScreen() {
   useFocusEffect(load);
 
   if (error) {
-    return <ErrorView message={error} onBack={() => router.back()} />;
+    return <ErrorView message={error} onBack={() => router.back()} onRetry={load} />;
   }
 
   if (!page) {

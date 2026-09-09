@@ -10,6 +10,7 @@ import * as marketingStore from '../marketing/store';
 import * as adAdmin from '../ad-admin';
 import * as aiCostAdmin from '../ai-cost-admin';
 import { currentUserId, requireOperatorUser } from '../auth/plugin';
+import { isKnownSourceKey } from '../public-data/sources';
 import type { AppContext } from '../context';
 import * as decisionsAdmin from '../decisions-admin';
 import { NotAnOperator } from '../decisions';
@@ -895,18 +896,39 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
         return reply.status(400).send({ error: 'enabled_required' });
       }
 
-      // 누가 언제 바꿨는지 남길 자리는 이 테이블의 reason·updated_at뿐이다.
-      const { rowCount } = await context.pool.query(
+      const key = req.params.id.slice(IMPORT_SWITCH_PREFIX.length);
+      /* 누가 언제 바꿨는지 남길 자리는 이 테이블의 reason·updated_at뿐이다. */
+      const reason = `${enabled ? '재개' : '중단'} — 관리자 ${operatorId ?? 'operator'}`;
+
+      /*
+       * **행이 없는 출처도 켜고 끌 수 있어야 한다**(Release Audit 1차 P1-12).
+       * UPDATE만 하던 때는 `sbiz-seoul` · `sbiz-gyeonggi`가 행이 없어 404였고,
+       * 그동안 `sync.ts`는 「행이 없으면 막는다」로 매주 수집을 통째로 거부했다.
+       * 행이 없다는 것과 사람이 껐다는 것은 다른 상태여야 한다.
+       *
+       * **아무 문자열이나 만들지는 않는다.** 오타 하나가 스위치 목록에 쓰레기
+       * 행을 남긴다. 만드는 것은 임포터가 아는 출처(`PUBLIC_SOURCES`)뿐이고,
+       * 이미 행이 있는 옛 출처(`localdata` 등)는 UPDATE로 그대로 바뀐다.
+       */
+      const updated = await context.pool.query(
         `UPDATE structured.import_switches
             SET enabled = $1, reason = $2, updated_at = now()
           WHERE source_key = $3`,
-        [
-          enabled,
-          `${enabled ? '재개' : '중단'} — 관리자 ${operatorId ?? 'operator'}`,
-          req.params.id.slice(IMPORT_SWITCH_PREFIX.length),
-        ]
+        [enabled, reason, key]
       );
-      if (!rowCount) return reply.status(404).send({ error: 'not_found' });
+
+      if (updated.rowCount === 0) {
+        if (!isKnownSourceKey(key)) return reply.status(404).send({ error: 'not_found' });
+
+        await context.pool.query(
+          `INSERT INTO structured.import_switches (source_key, enabled, reason)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (source_key) DO UPDATE
+              SET enabled = EXCLUDED.enabled, reason = EXCLUDED.reason, updated_at = now()`,
+          [key, enabled, reason]
+        );
+      }
+
       return reply.status(204).send();
     }
 

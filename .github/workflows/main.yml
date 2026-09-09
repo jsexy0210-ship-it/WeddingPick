@@ -67,6 +67,12 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # 금지어 게이트. `spec/glossary.json`을 읽는 것은 이 스크립트뿐인데
+      # **어느 워크플로에도 연결돼 있지 않았다** — 48개 금지어 중 37개가
+      # 검사되지 않고 있었다(Release Audit 1차 P1-10).
+      - name: Copy lint (금지어)
+        run: node lint-copy.js spec/strings.ko.json apps packages
+
       - name: Test
         run: npm test
 
@@ -101,6 +107,11 @@ jobs:
       github.event_name == 'push' && github.ref == 'refs/heads/main' ||
       github.event_name == 'workflow_dispatch' && inputs.environment == 'staging'
     runs-on: ubuntu-latest
+    # 이 잡이 운영 DB를 바꾼다. GitHub의 Environment 보호 규칙(required reviewer)을
+    # 이 이름에 걸어두면 사람이 승인해야 넘어간다 — 저장소 설정에서 켠다
+    # (Settings → Environments → production → Required reviewers).
+    # 없어도 워크플로는 돌지만, 그때는 승인 없이 지나간다(Release Audit 1차 P0-6).
+    environment: production
 
     steps:
       - uses: actions/checkout@v4
@@ -112,12 +123,27 @@ jobs:
 
       - run: npm ci
 
+      # 무엇이 적용될지 먼저 보여준다. 승인하는 사람이 목록을 보고 정한다.
+      - name: DB 상태 (적용 전)
+        run: npm run migrate --workspace @weddingpick/db -- --status
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      # 되돌릴 수 없는 구문이 섞여 있으면 멈춘다. 저장소에는 실제로 DELETE를
+      # 담은 마이그레이션이 있다(0081 · 0089). 의도한 것이면 그 파일 안에
+      # `-- allow-destructive: <이유>` 한 줄을 적는다 — 승인하는 사람이 무엇을
+      # 승인하는지 알 수 있게 하려는 것이지, 막으려는 것이 아니다.
+      - name: 파괴적 구문 확인
+        run: node scripts/check-destructive-migrations.js
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
       - name: DB Migrate
         run: npm run migrate --workspace @weddingpick/db
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
-      - name: Custom domains (weddingpick.kr / admin.weddingpick.kr)
+      - name: Custom domains (weddingpick.kr)
         run: |
           if [ -z "$RENDER_API_KEY" ]; then
             echo "RENDER_API_KEY 없음 — 커스텀 도메인 설정 생략"
@@ -146,7 +172,6 @@ jobs:
             fi
           }
           add_domain "weddingpick-web"   "weddingpick.kr"
-          add_domain "weddingpick-admin" "admin.weddingpick.kr"
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
 
@@ -172,6 +197,8 @@ jobs:
     needs: [ci]
     if: github.event_name == 'workflow_dispatch' && inputs.environment == 'production'
     runs-on: ubuntu-latest
+    # deploy-staging과 같은 DB를 본다. 승인 게이트도 같아야 한다.
+    environment: production
 
     steps:
       - uses: actions/checkout@v4
@@ -182,6 +209,16 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      - name: DB 상태 (적용 전)
+        run: npm run migrate --workspace @weddingpick/db -- --status
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: 파괴적 구문 확인
+        run: node scripts/check-destructive-migrations.js
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: DB Migrate
         run: npm run migrate --workspace @weddingpick/db

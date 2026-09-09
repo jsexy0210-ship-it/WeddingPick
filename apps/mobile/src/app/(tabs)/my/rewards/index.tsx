@@ -67,7 +67,7 @@ const S = {
 export default function BenefitsScreen() {
   const { me, rewards, draw, payout, loading, error, reload } = useBenefitData();
 
-  if (error) return <ErrorView message={error} onBack={reload} />;
+  if (error) return <ErrorView message={error} onRetry={reload} />;
   if (loading && !me && !rewards && !draw) return <DelayedLoadingView />;
 
   const missions = me ? missionCount(me) : null;

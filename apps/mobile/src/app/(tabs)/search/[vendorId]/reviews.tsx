@@ -14,6 +14,7 @@ import {
   ListSkeleton,
   MaxContentWidth,
   Radius,
+  RatingStars,
   Spacing,
   ThemedText,
   ThemedView,
@@ -182,8 +183,14 @@ export default function VendorReviewsScreen() {
               reviews.map((review) => (
                 <ThemedView key={review.id} type="backgroundElement" style={styles.card}>
                   <ThemedText type="smallBold">{review.title}</ThemedText>
-                  <ThemedText type="small" numeric themeColor="textSecondary">
-                    {review.overall.toFixed(1)} · {review.roleLabel} · {review.verificationLabel}
+                  {/*
+                    별점을 그린다(2026-09-09 사용자 결정 · 5.0 만점). 예전에는 «4.0»처럼
+                    숫자만 적었는데, 그 숫자가 5점 만점인지 10점 만점인지 화면이 말하지
+                    않았다. 별 다섯 칸이 만점을 보여주고 숫자가 정확한 값을 말한다.
+                  */}
+                  <RatingStars value={review.overall} />
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {review.roleLabel} · {review.verificationLabel}
                   </ThemedText>
                   <ThemedText type="small">{review.body}</ThemedText>
 

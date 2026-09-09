@@ -13,7 +13,7 @@ export const ERROR_CODES = [
   'rate_limited',
   /**
    * 만 14세 미만으로 확인됐다(핸드오프 v3.22 SPEC 3.5). 계정을 만들지 않았고,
-   * 앱은 WP-AUTH-010(이용 불가 안내)으로 보낸다.
+   * 앱은 WP-AUTH-009(이용 불가 안내)으로 보낸다.
    */
   'under_age',
   'internal',

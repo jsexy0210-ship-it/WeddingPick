@@ -102,7 +102,7 @@ export async function resetDatabase(): Promise<void> {
 export async function signInAs(
   test: TestApp,
   subject = 'apple-user-1',
-  options: { completeSignup?: boolean } = {}
+  options: { completeSignup?: boolean; grantUploadConsent?: boolean } = {}
 ): Promise<{ token: string; userId: string; headers: Record<string, string> }> {
   test.context.providers.apple = fakeProvider({ provider: 'apple', subject });
 
@@ -122,6 +122,25 @@ export async function signInAs(
       headers,
       payload: { ageVerified: true, consents: REQUIRED_CONSENTS },
     });
+
+    /*
+     * 자료 업로드 동의도 함께 남긴다.
+     *
+     * `/v1/documents/uploads`가 동의 없이는 서명 URL을 내주지 않는다 — 견적서는
+     * `active_document_consents`, 결제 증빙은 `active_payment_consents`를 본다
+     * (Release Audit 1차 P0-5). 실전에서는 앱이 동의 화면을 먼저 지나므로,
+     * 「가입을 끝낸 사람」을 만드는 이 헬퍼가 그 상태까지 만들어준다.
+     *
+     * **결제 증빙 동의는 여기서 하지 않는다.** 그쪽은 이미 `consentToPaymentProofs`로
+     * 각 시험이 필요할 때 부르고 있고, 「동의 없이는 등록할 수 없다」처럼 동의하지
+     * **않은** 사람을 만들어야 하는 시험이 있다.
+     *
+     * **관문 자체는 따로 검증한다** — `signInAs(test, subject, { grantUploadConsent: false })`로
+     * 동의 없는 사람을 만들어 403을 확인하는 테스트가 `api.test.ts`에 있다.
+     */
+    if (options.grantUploadConsent !== false) {
+      await grantUploadConsent(test, headers, 'document');
+    }
   }
 
   return { token: body.token, userId: body.userId, headers };
@@ -137,6 +156,30 @@ export async function createWedding(test: TestApp, headers: Record<string, strin
   });
 
   return response.json<{ id: string }>().id;
+}
+
+/**
+ * 자료 업로드 동의를 남긴다.
+ *
+ * `/v1/documents/uploads`가 동의 없이는 서명 URL을 내주지 않는다 — 견적서는
+ * `active_document_consents`, 결제 증빙은 `active_payment_consents`를 본다
+ * (Release Audit 1차 P0-5로 견적서 쪽 관문이 생겼다). 실전에서는 앱이 동의
+ * 화면을 먼저 지나므로, 테스트도 그 순서를 그대로 밟아야 실제와 같아진다.
+ */
+export async function grantUploadConsent(
+  test: TestApp,
+  headers: Record<string, string>,
+  kind: 'document' | 'payment_proof' = 'document'
+): Promise<void> {
+  const response = await test.app.inject({
+    method: 'POST',
+    url: kind === 'payment_proof' ? '/v1/me/payment-consent' : '/v1/me/document-consent',
+    headers,
+  });
+
+  if (response.statusCode >= 400) {
+    throw new Error(`동의를 남기지 못했다: ${response.statusCode} ${response.body}`);
+  }
 }
 
 /**

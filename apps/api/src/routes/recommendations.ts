@@ -159,7 +159,8 @@ export async function recommendVendors(
        v.id, v.name, v.category, v.region, v.source, to_jsonb(v)->>'source_url' AS source_url, v.lat, v.lng,
        v.style_tags::text[] AS style_tags, v.guide_price_from, v.guide_price_source,
        (SELECT i.source_url FROM structured.vendor_images i
-          WHERE i.vendor_id = v.id AND i.status = 'approved' AND i.source_url IS NOT NULL
+          WHERE i.vendor_id = v.id AND i.status = 'approved' AND i.copyright_basis <> 'unknown'
+            AND i.source_url IS NOT NULL
           ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url,
        (SELECT count(*) FROM structured.comparable_quotes c WHERE c.vendor_id = v.id)
          AS comparable_quote_count,

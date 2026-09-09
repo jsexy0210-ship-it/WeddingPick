@@ -22,7 +22,7 @@ export function takePendingSignInError(): string | null {
 
 /**
  * 서버가 만 14세 미만으로 판정했다(`under_age`, v3.22 SPEC 3.5). 실패 시트가
- * 아니라 WP-AUTH-010(이용 불가 안내)으로 간다.
+ * 아니라 WP-AUTH-009(이용 불가 안내)으로 간다.
  *
  * 부팅 경로는 실패를 **문장 하나**로만 넘기므로(`setPendingSignInError`), 그
  * 경로에서도 알아볼 수 있게 정해진 문장을 쓴다. 카카오 제공자(`providers.ts`)가
@@ -36,5 +36,5 @@ export function isUnderAgeSignInError(error: unknown): boolean {
   return error instanceof Error && error.message === UNDER_AGE_SIGN_IN_MESSAGE;
 }
 
-/** WP-AUTH-010. 로그인 화면(`app/login/age-required.tsx`)과 같은 경로여야 한다. */
+/** WP-AUTH-009. 로그인 화면(`app/login/age-required.tsx`)과 같은 경로여야 한다. */
 export const AGE_REQUIRED_ROUTE = '/login/age-required' as const;

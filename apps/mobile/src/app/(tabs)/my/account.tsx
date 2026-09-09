@@ -83,7 +83,7 @@ export default function AccountScreen() {
     ]);
   }
 
-  if (loadError) return <ErrorView message={loadError} onBack={load} />;
+  if (loadError) return <ErrorView message={loadError} onRetry={load} />;
   if (!settings) return <DelayedLoadingView />;
 
   const switchProps = {

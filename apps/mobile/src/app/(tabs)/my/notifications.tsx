@@ -90,7 +90,7 @@ export default function NotificationsScreen() {
       });
   }
 
-  if (loadError) return <ErrorView message={loadError} onBack={load} />;
+  if (loadError) return <ErrorView message={loadError} onRetry={load} />;
   if (notifications === null) return <DelayedLoadingView />;
 
   return (

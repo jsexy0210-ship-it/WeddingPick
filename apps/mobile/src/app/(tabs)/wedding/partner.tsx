@@ -189,13 +189,12 @@ export default function PartnerScreen() {
       <ErrorView
         title={S.inviteNav}
         message="이 빌드는 서버에 붙어 있지 않아 연결할 수 없어요."
-        onBack={() => router.back()}
-      />
+        onBack={() => router.back()} onRetry={load} />
     );
   }
 
   if (!me || !weddingId) {
-    if (error) return <ErrorView message={error} onBack={() => router.back()} />;
+    if (error) return <ErrorView message={error} onBack={() => router.back()} onRetry={load} />;
 
     return <DelayedLoadingView />;
   }

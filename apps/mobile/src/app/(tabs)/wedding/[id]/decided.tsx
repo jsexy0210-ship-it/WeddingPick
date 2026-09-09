@@ -46,7 +46,7 @@ export default function DecidedVendorsScreen() {
   useEffect(load, [load]);
 
   if (error) {
-    return <ErrorView message={error} onBack={() => router.back()} />;
+    return <ErrorView message={error} onBack={() => router.back()} onRetry={load} />;
   }
 
   if (!page) {

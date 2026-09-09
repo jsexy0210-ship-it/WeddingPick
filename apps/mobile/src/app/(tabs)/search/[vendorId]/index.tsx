@@ -57,13 +57,14 @@ import {
   ProductSymbol,
   ProgressBar,
   Radius,
+  RatingStars,
+  SkeletonView,
   Spacing,
   ThemedText,
   ThemedView,
   Toast,
-  VendorImage,
   useTheme,
-  SkeletonView,
+  VendorImage,
 } from '@weddingpick/ui';
 
 /**
@@ -615,7 +616,18 @@ export default function VendorDetailScreen() {
             </>
           ) : null}
 
-          {/* ⑧ 이용한 사람들의 경험 — 막대. 3명 미만이면 섹션째 숨긴다. 숫자 평점은 없다(§6.1). */}
+          {/*
+            ⑧ 이용한 사람들의 경험 — 5.0 만점 별점 + 항목별 막대. 3명 미만이면 섹션째 숨긴다.
+
+            **별점을 쓴다(2026-09-09 사용자 결정).** SPEC §6.1은 「별점을 쓰지 않습니다 ·
+            평점 숫자를 만들지 않습니다」이지만 사용자가 뒤집었다 — 후기는 별점으로
+            나타내고 무조건 5.0 만점으로 환산한다. 명세보다 사용자 결정이 앞선다.
+            `docs/AI_HANDOFF.md` 「사용자 결정」 표에 같은 내용이 있다.
+
+            평균은 서버가 이미 준다(`usageScore.average`, 1~5). 화면이 안 그리고 있었을 뿐이다.
+            항목별 막대는 그대로 둔다 — 별점은 «얼마나 좋았나», 막대는 «무엇이 좋았나»라
+            서로를 대신하지 못한다.
+          */}
           {showExperience && experience.available ? (
             <>
               <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} />
@@ -626,6 +638,7 @@ export default function VendorDetailScreen() {
                     {EXPERIENCE_COUNT(experience.count)}
                   </ThemedText>
                 </View>
+                <RatingStars value={experience.average} count={experience.count} size="large" />
                 <View style={styles.meters}>
                   {experience.checklist
                     .filter((item) => !item.collecting)
