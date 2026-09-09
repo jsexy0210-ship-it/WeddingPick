@@ -23,17 +23,19 @@ const SCREEN = 'apps/mobile/src/app/(tabs)/search/[vendorId]/index.tsx';
  * 각 자리를 화면에서 알아보는 표시.
  *
  * 화면에 나가는 말이 아니라 **소스에 있는 문자열**이다. 문구는 바뀌어도 자리는
- * 남으므로, 자리를 가리키는 가장 짧은 조각을 고른다.
+ * 남으므로, 자리를 가리키는 가장 짧은 조각을 고른다. 첫 등장 위치로 재므로 머리
+ * 주석이나 헬퍼에도 나오는 말(«공식정보» 낱말 · `{vendor.name}`)은 쓰지 않고, 그
+ * 자리를 실제로 그리는 줄에만 있는 조각을 고른다.
  */
 const ANCHORS: Record<string, string> = {
-  name: '{vendor.name}',
+  name: 'styles.navTitle',
   key_conditions: 'VENDOR_CATEGORY_LABEL[vendor.category]',
-  verified_data: '{TERMS.verifiedData}',
-  experience: '{TERMS.experience}',
-  reviews: '후기 보기',
-  official_source: '공식정보',
-  pick: 'Pick하기',
-  report_error: '업체 정보가 달라요',
+  verified_data: 'type="t4">{TERMS.verifiedData}',
+  pick: 'styles.actionRow',
+  experience: 'type="t4">{TERMS.experience}',
+  reviews: 'type="t4">{TERMS.review}',
+  official_source: 'type="t4">공식정보',
+  report_error: '{REPORT_ERROR}',
 };
 
 /**

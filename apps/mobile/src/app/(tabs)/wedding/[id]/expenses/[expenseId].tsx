@@ -123,7 +123,7 @@ export default function ExpenseDetailScreen() {
         {current.splitPayments.length > 0 ? (
           <>
             <Band />
-            <Section title="분할 결제">
+            <Section title="분할 결제" /* pick-language: 시안 WP-OUR-014 밴드 제목 «분할 결제» — 나눠 낸 줄의 이름 */>
               {current.splitPayments.map((split) => (
                 <ListRow
                   key={split.id}

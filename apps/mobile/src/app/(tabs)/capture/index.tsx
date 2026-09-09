@@ -22,8 +22,8 @@ const S = {
   priceDesc: '증빙 없이 들은 금액만 알려주는 방법이에요',
   vendorInfo: '업체정보 제보',
   vendorInfoDesc: '새 업체 등록 · 정보 정정 · 영업종료 알림',
-  quote: '견적서 정리',
-  quoteDesc: '견적서를 읽어 항목과 별도로 확인할 비용을 정리해요',
+  quote: '견적서 정리', // pick-language: 받는 서류 이름
+  quoteDesc: '견적서를 읽어 항목과 별도로 확인할 비용을 정리해요', // pick-language: 받는 서류 이름
   logTitle: TERMS.myReports.replace('내역', ' 내역'),
   seeAll: '전체 보기',
   logEmpty: '아직 제보한 것이 없어요',

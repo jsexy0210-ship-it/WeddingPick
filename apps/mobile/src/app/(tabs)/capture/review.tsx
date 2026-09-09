@@ -126,8 +126,8 @@ export default function ReviewScreen() {
 
         <View style={styles.noteWrap}>
           <NoteCard
-            title="계약서는 받지 않아요"
-            body="비밀유지 조항이 있는 경우가 있어 법률 확인이 끝날 때까지 미뤄두었어요. 견적서만 올려주세요."
+            title="계약서는 받지 않아요" // pick-language: 안 받는 서류 이름
+            body="비밀유지 조항이 있는 경우가 있어 법률 확인이 끝날 때까지 미뤄두었어요. 견적서만 올려주세요." // pick-language: 받는 서류 이름과 이유
           />
         </View>
 
