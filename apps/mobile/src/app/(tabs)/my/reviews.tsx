@@ -52,6 +52,10 @@ function monthDay(iso: string): string {
  *     하나씩 붙는다 — 행을 글자만으로 둔다.
  *   - «도움돼요 14» · «반론 1» 배지: 도움돼요 수와 반론 수가 계약에 없다. 지어내지 않는다.
  *     대신 서버가 «지금 쓰이고 있는가»(`inUse`)는 알려주므로 그것만 «확인 중»으로 적는다.
+ *
+ * 행을 누르면 그 업체의 후기 목록으로 간다. 시안이 가리키는 후기 상세(WP-REV-003)는 아직 화면이
+ * 없고, 고치기 화면(`edit-review`)은 별점 · 제목 · 본문을 params로 받는데 `/v1/me/reports`가 그 셋을
+ * 주지 않는다 — 없는 값을 채워 보내는 대신 글이 실제로 보이는 자리로 보낸다.
  */
 export default function MyReviewsScreen() {
   const [reports, setReports] = useState<MyReport[] | null>(null);
