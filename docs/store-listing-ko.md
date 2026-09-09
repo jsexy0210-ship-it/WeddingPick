@@ -68,11 +68,11 @@ Pick한 곳의 중요한 정보를 한눈에 비교하고, 업종마다 한 곳�
 
 | 항목 | 규격 | 상태 |
 |---|---|---|
-| 앱 아이콘 | 512×512 PNG | `apps/mobile/assets/images/`의 아이콘에서 뽑는다 |
-| 그래픽 이미지 | 1024×500 | **새로 만들어야 한다** |
-| 휴대전화 스크린샷 | 최소 2장 · 최대 8장 · 16:9 또는 9:16 | 동작 중인 앱 6장을 이미 캡처해 두었다(시작 · 홈 · 검색 · 업체 상세 · Pick · MY) |
+| 앱 아이콘 | 512×512 PNG | **있다** — `docs/store-assets/android/icon-512.png`. 앱 아이콘 원본(`apps/mobile/assets/images/icon.png` 1024)과 같은 도안임을 픽셀 비교로 확인했다(차이가 마크 외곽선에만, 배경 완전 일치). 새로 뽑을 이유가 없다 |
+| 그래픽 이미지 | 1024×500 | **없다** — `docs/` 전체에 그 규격 파일 0건. 도안이 정해지지 않았다(7절) |
+| 휴대전화 스크린샷 | 최소 2장 · 최대 8장 · 16:9 또는 9:16 | 저장소에는 **2장**뿐이다(`docs/store-assets/android/01-hero.png` · `02-recommend.png`, 각 1080×1920). 최소 요건은 넘는다. 캡처해 둔 6장 중 나머지 4장은 저장소 밖에 있다 |
 
-스크린샷은 규격에 맞춰 다시 뽑는다. 지금 캡처본은 390×844(2배)이고 세로 비율이 맞다.
+iOS용은 `docs/store-assets/ios/`에 따로 있다(아이콘 1024×1024, 스크린샷 1290×2796 2장).
 
 ## 5. 구글에 신고하는 항목 — 틀리면 나중에 앱이 내려간다
 
@@ -94,12 +94,26 @@ Pick한 곳의 중요한 정보를 한눈에 비교하고, 업종마다 한 곳�
 | 권한 | 실제로 쓰는가 | 처리 |
 |---|---|---|
 | `CAMERA` | 쓴다 — `apps/mobile/src/app/(tabs)/capture/camera.tsx` | 남긴다. 데이터 안전에 신고 |
-| `RECORD_AUDIO` | 0건 — `app.json`이 expo-camera의 마이크를 꺼 둔다 | **지운다** |
-| `ACCESS_COARSE_LOCATION` | 0건 — `expo-location` 의존성 자체가 없다 | **지운다**(지도 보기 보류 결정과 일치) |
-| `ACCESS_FINE_LOCATION` | 0건 — 위와 같다 | **지운다** |
+| `RECORD_AUDIO` | 0건 | **지웠다** (#148) |
+| `ACCESS_COARSE_LOCATION` | 0건 — `expo-location` 의존성 자체가 없다 | **지웠다** (#148, 지도 보기 보류 결정과 일치) |
+| `ACCESS_FINE_LOCATION` | 0건 — 위와 같다 | **지웠다** (#148) |
+| `SYSTEM_ALERT_WINDOW` | 0건 — `canDrawOverlays` · `TYPE_APPLICATION_OVERLAY` 참조 없음 | **막았다** (#153) |
+| `VIBRATE` | 확인함 | **둔다.** 민감 권한이 아니고 데이터 안전 신고 항목도 아니며 `expo-notifications`가 알림 진동에 쓸 수 있다 |
 
-지우고 나면 빌드 산출물의 `AndroidManifest.xml`에서 세 권한이 실제로 사라지는지 확인해야 한다.
-플러그인이 자동으로 다시 넣으면 `android.blockedPermissions`로 막는다.
+**빌드 산출물로 확인을 마쳤다(추정 아님).** `npx expo prebuild --platform android --clean` 후
+`android/app/src/main/AndroidManifest.xml`을 직접 읽었고, 두 가지가 드러났다.
+
+- `app.json`의 `permissions`에서 세 줄을 지우자 위치 둘은 사라졌으나 **`RECORD_AUDIO`는 남았다.**
+  `expo-image-picker`의 config plugin이 `microphonePermission`을 `false`로 주지 않으면 되넣는다
+  (`node_modules/expo-image-picker/plugin/build/withImagePicker.js` L11-13). 같은 플러그인이 `false`일 때는
+  차단까지 스스로 걸어 주므로(L16-19) `app.json`에 그 옵션을 줘서 껐다.
+- `SYSTEM_ALERT_WINDOW`는 어느 플러그인도 아닌 **expo의 기본 매니페스트 템플릿**에서 나온다
+  (`@expo/config-plugins/build/plugins/withAndroidBaseMods.js` L54-62). 끌 옵션이 없어
+  `android.blockedPermissions`로 막았다. 앱의 `main` 소스셋에 있으므로 디버그 전용이 아니고
+  릴리즈 AAB에 그대로 실린다 — 라이브러리의 debug 매니페스트만 보고 판정하면 틀린다.
+
+**최종 AAB에 실리는 권한은 `CAMERA` · `INTERNET` · `READ/WRITE_EXTERNAL_STORAGE` · `VIBRATE` 넷이다.**
+심사에서 설명하지 못할 권한은 남아 있지 않다.
 
 ### 제3자 공유 — 반드시 신고한다
 
@@ -110,9 +124,50 @@ Pick한 곳의 중요한 정보를 한눈에 비교하고, 업종마다 한 곳�
 
 ---
 
-## 7. 아직 사람이 정할 것
+## 7. 첫 AAB를 올리기까지 — 순서
+
+앞 절들이 「무엇을 넣는가」라면 이 절은 「어떤 차례로 하는가」다. 위에서부터 막힌 것을 풀어야
+다음이 열린다.
+
+| # | 할 일 | 누가 | 상태 |
+|---|---|---|---|
+| 1 | 스토어 등록정보 채우기(1~5절 값) | 사용자 | 콘솔 작업. 이 문서가 값을 다 갖고 있다 |
+| 2 | Play Console → 설정 → **API 액세스** → 서비스 계정 생성 → JSON 키 발급 | 사용자 | **미완** |
+| 3 | Play Console → 사용자 및 권한 → 그 서비스 계정에 「릴리스 관리자」 부여 | 사용자 | **미완** |
+| 4 | `cd apps/mobile && eas credentials` → Android → Google Service Account 등록 | 사용자 | **미완** |
+| 5 | AAB 빌드 — `release.yml` 수동 실행(`platform: android`) | — | 2~4가 끝나야 제출이 붙는다 |
+| 6 | 비공개 테스트 버전 게시 | 사용자 | 1번이 끝나야 열린다 |
+| 7 | 테스터 12명이 각자 «참여 선택»을 누름 | 사용자 | **여기서부터 14일 시계가 돈다** |
+| 8 | 14일 연속 실행 → 프로덕션 액세스 신청 → 심사 | 사용자 | 줄일 수 없는 기간 |
+
+**JSON 키는 저장소에 커밋하지 않는다.** `release.yml`도 키 파일을 다루지 않는다 — EAS에 등록된
+자격을 `EXPO_TOKEN`으로 꺼내 쓴다.
+
+**versionCode는 사람이 올리지 않는다.** `eas.json`의 `cli.appVersionSource`가 `remote`이고
+`build.production.android.autoIncrement`가 `versionCode`라 EAS 서버가 번호를 관리한다(#141).
+이 설정이 없으면 매 빌드가 versionCode 1로 나와 두 번째 업로드부터 거부된다.
+다만 같은 설정이 iOS `buildNumber` 관리도 remote로 바꾸므로, `app.json`의 `buildNumber: "2"`와
+어긋나지 않는지 **첫 iOS 빌드에서 확인해야 한다 — 미확인이다.**
+
+**제출은 `submit` 입력을 켰을 때만 나간다.** `release.yml`의 `submit-android` 잡이
+`inputs.submit == true`를 함께 보므로, 빌드만 하고 스토어에 올리지 않을 수 있다.
+트랙을 지정하지 않아 EAS 기본값인 **internal 트랙**으로 올라간다.
+
+### 배포 상태를 GitHub 초록으로 판단하지 않는다
+
+`main.yml`의 Deploy 잡은 Render 배포 결과를 읽지 않는다. `/health`가 200이면 통과인데,
+새 빌드가 취소돼도 **이전 빌드가 계속 200을 돌려주므로** 잡은 초록으로 끝난다. 즉 이 초록은
+「서버가 살아 있다」는 뜻이지 「이 커밋이 배포됐다」는 뜻이 아니다.
+
+배포 여부는 `render-deploy-status.yml`을 돌려 최신 deploy의 `status`와 `commit`을 보고 말한다
+(`scripts/render-deploy-status.py`가 `/services/{id}/deploys`를 조회한다).
+
+## 8. 아직 사람이 정할 것
 
 - 카테고리(라이프스타일 · 도구 등 중 하나)
-- 그래픽 이미지 도안
+- 그래픽 이미지 도안 — 1024×500, 아직 없다
+- 스크린샷 최종 선정 — 저장소에 2장, 캡처본 6장 중 나머지는 저장소 밖
 - 개인정보처리방침이 확정본인지
 - 심사자용 접속 방법을 어떻게 줄지
+- 견적서·계약서 업로드 경로(경로 A)의 동의 절차 — 결제 증빙 경로와 달리 동의를 묻는 단계가
+  없다. 등급과 최소 수정안은 판정 대기다
