@@ -23,10 +23,43 @@ type CampaignItem = {
   createdAt: string;
 };
 
+type CampaignBudget = { total: string; used: string; remaining: string };
+
 type CampaignData = {
-  budget: { total: string; used: string; remaining: string };
+  budget: CampaignBudget;
   items: CampaignItem[];
 };
+
+/**
+ * 서버 응답을 화면이 쓰는 모양으로 맞춘다.
+ *
+ * `GET /v1/admin/campaigns`는 아직 `{ items: [], total: 0 }`을 그대로 돌려주는
+ * 자리다(`apps/api/src/routes/admin.ts`). 예산 칸이 없는데 화면이 `data.budget.total`을
+ * 바로 읽어서, **이 화면은 열면 그 자리에서 죽었다**(2026-09-09 확인). 서버가 무엇을
+ * 주든 화면이 죽지 않게 여기서 한 번 걸러 낸다 — 관리자 화면이 안 열리면 무슨 일이
+ * 일어나는지 볼 수단까지 같이 사라진다.
+ *
+ * 없는 값을 0으로 지어내지 않는다. `아직 없음`으로 그 자리가 비었다는 것을 그대로 보인다.
+ */
+const BUDGET_UNKNOWN = '아직 없음';
+
+function toCampaignData(raw: unknown): CampaignData {
+  const at = (value: unknown, key: string): unknown =>
+    value !== null && typeof value === 'object' ? (value as Record<string, unknown>)[key] : undefined;
+
+  const text = (value: unknown): string => (typeof value === 'string' ? value : BUDGET_UNKNOWN);
+  const budget = at(raw, 'budget');
+  const items = at(raw, 'items');
+
+  return {
+    budget: {
+      total: text(at(budget, 'total')),
+      used: text(at(budget, 'used')),
+      remaining: text(at(budget, 'remaining')),
+    },
+    items: Array.isArray(items) ? (items as CampaignItem[]) : [],
+  };
+}
 
 const TYPE_LABEL: Record<CampaignType, string> = {
   mission: '미션',
@@ -53,6 +86,8 @@ export default function CampaignsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [rev, setRev] = useState(0);
   const [acting, setActing] = useState<string | null>(null);
+  /** 버튼을 눌러 실패한 것. 목록 조회 오류와 자리를 나눈다. */
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,7 +96,7 @@ export default function CampaignsScreen() {
     apiFetch('/v1/admin/campaigns')
       .then((d) => {
         if (cancelled) return;
-        setData(d as CampaignData);
+        setData(toCampaignData(d));
         setError(null);
         setLoading(false);
       })
@@ -73,21 +108,30 @@ export default function CampaignsScreen() {
     return () => { cancelled = true; };
   }, [rev]);
 
-  async function block(id: string) {
-    setActing(id);
+  /*
+   * 실패를 삼키지 않는다. 이 두 주소는 서버에 아직 없어 404가 온다 — 예전에는
+   * 빈 catch가 그것을 먹어 **눌러도 아무 일이 없는데 성공한 것처럼 보였다.**
+   * 무엇이 안 됐는지 관리자가 알아야 다음 판단을 한다.
+   */
+  async function act(id: string, path: 'block' | 'pay', busyKey: string) {
+    setActing(busyKey);
     try {
-      await apiFetch(`/v1/admin/campaigns/${id}/block`, { method: 'POST' });
+      await apiFetch(`/v1/admin/campaigns/${id}/${path}`, { method: 'POST' });
+      setActionError(null);
       setRev((r) => r + 1);
-    } catch { /* 무시 */ } finally { setActing(null); }
+    } catch (e: unknown) {
+      /*
+       * 목록 조회 오류(`error`)와 다른 칸에 담는다. 같은 칸을 쓰면 버튼 한 번에
+       * 표가 통째로 사라져, 무엇에 실패했는지 보려다 보던 것을 잃는다.
+       */
+      setActionError(e instanceof Error ? e.message : '요청 실패');
+    } finally {
+      setActing(null);
+    }
   }
 
-  async function pay(id: string) {
-    setActing(id + '_pay');
-    try {
-      await apiFetch(`/v1/admin/campaigns/${id}/pay`, { method: 'POST' });
-      setRev((r) => r + 1);
-    } catch { /* 무시 */ } finally { setActing(null); }
-  }
+  const block = (id: string) => act(id, 'block', id);
+  const pay = (id: string) => act(id, 'pay', id + '_pay');
 
   return (
     <View style={styles.root}>
@@ -110,6 +154,7 @@ export default function CampaignsScreen() {
 
       {!loading && !error && data && (
         <View style={styles.body}>
+          {actionError ? <Text style={styles.actionErrorText}>{actionError}</Text> : null}
           <View style={styles.budgetRow}>
             <View style={styles.budgetCell}>
               <Text style={styles.budgetLabel}>총 예산</Text>
@@ -190,6 +235,7 @@ const styles = StyleSheet.create({
   body: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
   errorText: { fontSize: FontSize.t6, color: '#e53e3e', marginBottom: 16 },
+  actionErrorText: { fontSize: FontSize.t7, color: '#e53e3e', marginBottom: 8 },
   retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: '#ff6f61' },
   retryText: { fontSize: FontSize.t7, fontWeight: '700', color: '#fff' },
   budgetRow: {

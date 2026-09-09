@@ -502,17 +502,24 @@ DATABASE_URL=<neon-connection-string> KAKAO_REST_API_KEY=<발급받은 키> \
 과거 세션 44개 중 활성 20개를 정리해 아래 5개만 남기고 나머지는 종료(아카이브)했다.
 종료한 세션의 작업물은 전부 main 또는 원격 브랜치에 있다 — 대화는 복원하지 않는다.
 
-### 활성 세션 5개
+### 활성 세션 7개
 
 | 세션 | ID | 담당 |
 |---|---|---|
 | WeddingPick MASTER | `session_01RHos8CRUgW7VXAnxs2BwjD` | 전체 조율 · 정책 · 우선순위 · 진행 상태 · 작업 분배. 직접 구현은 최소화 |
 | WeddingPick FE | `session_01MZiSWesap8CuxobSyGWodh` | 모바일/웹 UI · UX · 온보딩 · 화면 구현 · 프론트 QA/PR |
 | WeddingPick BE | `session_0168q4Vv8AeFiTN4AfFtDkP9` | API · DB · 인증 · 배치 · 마이그레이션 · 서버 |
-| WeddingPick DATA | `session_01Nd4sgG6xYjyadUahtrEtMd` | 업체·공공데이터 수집 · 크롤링 · 자동화 · 데이터 정제 |
+| WeddingPick DATA | `session_01MXSCVKR29GAZWPTr9FsLM2` | 업체·공공 정보 수집 · 크롤링 · 자동화 · 정제 |
 | WeddingPick RELEASE | `session_01116ZtAK5g2tZT9RToadrfv` | CI/CD · EAS · Android/iOS · 스토어 · 배포/인프라 |
+| WeddingPick 알림톡 | `session_016TtFWvSqNa24ck593iAoKp` | 알림 채널 중앙화 · 카카오 알림톡 정책과 구현 |
+| WeddingPick 홍보 자동화 | `session_014Vxuyp3FYqihn7D5iPFm9Y` | 마케팅 문구 · 캠페인 화면 · 홍보 파이프라인 |
 
-세션 태그는 `weddingpick` + `wp-master` / `wp-fe` / `wp-be` / `wp-data` / `wp-release`.
+세션 태그는 `weddingpick` + `wp-master` / `wp-fe` / `wp-be` / `wp-data` / `wp-release` /
+`wp-alimtalk` / `wp-promo`.
+
+**DATA 세션이 한때 둘이었다(2026-09-09).** `session_01Nd4sgG6xYjyadUahtrEtMd`는 같은 역할의
+중복이라 인계 후 보관 처리했다. 그 세션의 작업물은 PR #135(브랜치 `claude/data-collect-refine-d1d3`)에
+남아 있고 위 DATA 세션이 이어받는다. 이 표의 ID를 그 세션으로 고쳤다.
 
 ### 운영 규칙
 
@@ -555,12 +562,21 @@ mcp__Claude_Code_Remote__create_trigger
 `cron_expression`은 쓰지 않는다 — 보고는 일회성이고, 반복 루틴을 만들면 같은 보고가
 계속 쌓인다. MASTER 세션 ID가 바뀌면 위 표와 이 문단의 ID를 함께 갱신한다.
 
+세 가지가 더 있다. 이것 때문에 이 규칙이 생겼다.
+
+- **사람만 할 수 있는 것**(시크릿 값 · 외부 계정 · 계약 · 권한)은 세션이 스스로 못 푼다.
+  MASTER가 그런 것만 모아 사용자 조치 목록으로 한 번에 올린다.
+- **돈이 드는 선택과 되돌리기 어려운 선택은 MASTER도 정하지 않는다.** 선택지와 권고안을
+  붙여 사용자에게 올린다. 발송사 계약 · 운영 DB 변경 · 스토어 정책이 그런 자리다.
+- **값은 보고에도 적지 않는다.** 접속 문자열 · API 키 · 휴대폰 번호는 이름과 증상만 적는다.
+  보고는 저장되고 다시 읽힌다.
+
 ### 루틴 (Routines)
 
 | 루틴 | 주기 | 목적 |
 |---|---|---|
 | 공정률 브리핑 | 매일 09:00 KST | main 기준 공정률 계산·보고. 공정률 정의의 단일 출처. 저장소에 쓰지 않는다 |
-| #131 CI 확인 · 머지 · 배포 | 일회성(MASTER) | PR #131 오더 6건 완료 → 머지 → 배포 확인까지. 끝나면 삭제한다 |
+| 토요일 크론 차단 확인 | 일회성(MASTER · 2026-09-11) | `public-data.yml`의 무인 운영 DB 쓰기 차단이 main에 들어갔는지. 크론은 2026-09-13 03:17 KST |
 
 - 특정 PR·일회성 지시용 루틴은 만들지 않는다. 필요하면 MASTER 세션에 직접 지시한다.
   부득이하게 만들면 목적 달성 즉시 삭제한다.
@@ -572,8 +588,12 @@ mcp__Claude_Code_Remote__create_trigger
 
 ### 정리 시점의 미완료 · 블로커 (세션 종료로 주인이 없어진 것)
 
-- **PR #131** — MASTER가 들고 있다. 사용자 오더 6건(카카오 문구 중첩 · 홈 D-day 코랄 ·
-  패딩 전면 재검토 · Depth Back · 이동 잔상과 로딩 속도 · 시안 미매핑 화면)이 다 들어간 뒤에 머지한다.
+- **PR #131 — 머지 완료**(main `59e8838`). 사용자 오더 6건(카카오 문구 중첩 · 홈 D-day 코랄 ·
+  패딩 전면 재검토 · Depth Back · 이동 잔상과 로딩 속도 · 시안 미매핑 화면 1차)이 전부 들어갔다.
+- **PR #134 — 머지 완료**(main `451c36c`). 수집 중단 스위치 실연결 · 시드 워크플로의 운영 DB 경로 차단.
+- **토요일 크론이 무인으로 운영 DB에 쓴다** — `public-data.yml`의 `17 18 * * 6`이 2026-09-13
+  03:17 KST에 뜬다. 막는 변경(대상 선택 · 기본 staging)은 만들어져 있고 PR #133에 얹는 중이다.
+  그날 전에 머지되어야 한다. 가장 급한 미완료다.
 - **PR #103** — 2026-09-07부터 열린 채로 방치. 루트 `HANDOFF.md`가 저장소에 없는
   `docs/CLAUDE_AUDIT_REVIEW_2026-09-07.md`를 가리키는 것을 고치는 문서 한 줄짜리 PR이다.
   #131 머지 후 main과 맞춰 처리한다. 머지되면 그 브랜치를 포함해 삭제 대상 브랜치가 늘어난다.
