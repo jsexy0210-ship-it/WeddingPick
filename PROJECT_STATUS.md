@@ -4,7 +4,7 @@
 > `docs/AI_HANDOFF.md`, 그보다 오래된 것은 Git history에서 본다.
 > 작업 시작 시 `/AI_START_HERE.md` → 최신 통합정책서 → 이 문서 → 최신 코드 순으로 확인한다.
 
-- 기준 main: `eff6f59` (2026-09-07)
+- 기준 main: `f8cd22c` (2026-09-09)
 - 정책 기준: `docs/통합정책 v3.15` + `CLAUDE.md`의 «정책 변경» 절(위쪽이 최신, 아래보다 우선)
 - 미해결 결함 목록: `docs/AI_HANDOFF.md`의 «미해결 결함» 절
 
