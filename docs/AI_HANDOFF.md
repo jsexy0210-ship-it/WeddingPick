@@ -217,6 +217,8 @@ PR #99의 조사 보고서와 그 독립 재검증 결과에서 **코드로 확�
 500이 날 수 있는 자리를 `routes/auth.ts`의 `POST /v1/auth/sessions`에서 하나씩 지웠다.
 
 - **카카오 검증 실패가 아니다.** `try/catch`가 `provider.verify()`만 감싸고 잡은 것을 전부 `ApiError('unauthenticated')`로 바꾼다(`routes/auth.ts:66~71`). `errors.ts`가 그것을 401로 매핑한다. 토큰 교환 실패·`id_token` 없음·JWKS 검증 실패는 **어느 것도 500이 될 수 없다.**
+  - 그래서 `KAKAO_CLIENT_SECRET` · 리다이렉트 URI · 앱 키가 어긋난 경우도 배제된다. 그건 `identity-provider.ts:247`이 던지고 **401로 나온다.**
+  - 동의항목(scope)도 배제된다. 두 겹이다 — `apps/mobile/src/features/auth/providers.ts:171`이 이미 `scopes: ['openid', 'profile_nickname']`이고, 설령 `openid`가 빠져도 「카카오 id_token이 없다」 throw(`identity-provider.ts:251`)는 같은 `try/catch` 안이라 401이 된다.
 - **요청 형식 문제가 아니다.** `createSessionRequestSchema.parse`의 `ZodError`는 `server.ts:74`가 400으로 바꾼다.
 - **Fastify가 붙인 4xx도 아니다.** `server.ts:91~94`가 그대로 통과시킨다.
 
