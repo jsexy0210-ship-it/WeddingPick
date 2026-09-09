@@ -1,9 +1,9 @@
 import { ANALYSIS_FACTS, FAQ_ITEMS, formatAttribution, listDataSources } from '@weddingpick/domain';
 import { router } from 'expo-router';
-import { ScrollView, StyleSheet } from 'react-native';
+import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Accordion, ActionButton, Layout, MaxContentWidth, Radius, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
+import { ActionButton, Layout, MaxContentWidth, Radius, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
 import { APP_VERSION } from '@/features/settings/version';
 
 const SHOOTING_TIPS = [
@@ -21,7 +21,21 @@ export default function GuideScreen() {
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.section}>
             <ThemedText type="subtitle">자주 묻는 것</ThemedText>
-            <Accordion items={FAQ_ITEMS.map((f) => ({ key: f.key, title: f.question, body: f.answer }))} />
+            {/*
+              아코디언이 아니라 상세로 보낸다(WP-FAQ-003). 접었다 펴는 것만으로는
+              답을 읽은 뒤에 할 수 있는 일이 없다 — 상세에는 관련 질문과
+              「해결되지 않았어요」가 있고, 그것이 문의로 이어지는 유일한 길이다.
+            */}
+            {FAQ_ITEMS.map((faq) => (
+              <Pressable
+                key={faq.key}
+                accessibilityRole="button"
+                onPress={() => router.push(`/my/faq/${faq.key}` as never)}>
+                <ThemedView type="backgroundElement" style={styles.card}>
+                  <ThemedText type="smallBold">{faq.question}</ThemedText>
+                </ThemedView>
+              </Pressable>
+            ))}
           </ThemedView>
 
           <ThemedView style={styles.section}>

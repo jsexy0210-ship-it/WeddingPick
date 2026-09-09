@@ -193,7 +193,13 @@ export function renderFaqPage(): string {
 export function renderSupportPage(): string {
   const contact=CONTACT_EMAIL ? `<a class="sp-link" href="mailto:${esc(CONTACT_EMAIL)}">${esc(COPY.supportMail)}</a><p>${esc(CONTACT_EMAIL)}</p><p>${esc(COPY.supportMailNote)}</p>` : `<p>${esc(COPY.supportFallback)}</p>`;
   return subDocument({path:'/support.html',title:COPY.footerLinks[1]!.label,description:COPY.supportBody,activePath:'/support.html',titleBand:titleBand(COPY.footerLinks[1]!.label,COPY.supportTitle,COPY.supportBody),body:
-    `<div class="sp-editorial"><section><h2>${esc(COPY.contact)}</h2>${contact}<p class="sp-support-note">${esc(COPY.supportPrivacy)}</p></section><section><h2>${esc(COPY.supportFaq)}</h2><a class="sp-link" href="/faq.html">${esc(COPY.nav[2]!.label)}</a></section></div>`});
+    /*
+     * WP-BIZ-008 웹 하단 업체 문의 진입. **앱과 같은 창구로 보낸다** — 업체용
+     * 접수 경로를 따로 만들면 두 큐를 사람이 나눠 봐야 하고, 한쪽이 밀린다.
+     * 로그인을 먼저 요구하지 않는다: 소속 확인은 접수한 뒤의 일이고, 앞에 두면
+     * 정보가 틀렸다고 알리러 온 사람이 가입부터 해야 한다.
+     */
+    `<div class="sp-editorial"><section><h2>${esc(COPY.contact)}</h2>${contact}<p class="sp-support-note">${esc(COPY.supportPrivacy)}</p></section><section id="vendor"><h2>${esc(COPY.supportVendorTitle)}</h2><p>${esc(COPY.supportVendorBody)}</p>${contact}<p class="sp-support-note">${esc(COPY.supportVendorNote)}</p></section><section><h2>${esc(COPY.supportFaq)}</h2><a class="sp-link" href="/faq.html">${esc(COPY.nav[2]!.label)}</a></section></div>`});
 }
 
 interface TermsArticle { t: string; l: string[] }

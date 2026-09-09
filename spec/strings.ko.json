@@ -177,6 +177,10 @@
         "href": "/support.html"
       },
       {
+        "label": "업체 문의",
+        "href": "/support.html#vendor"
+      },
+      {
         "label": "이용약관",
         "href": "/terms.html"
       },
@@ -195,6 +199,9 @@
     "supportFallback": "문의 채널을 준비하고 있어요. 자주 묻는 질문을 먼저 확인해주세요.",
     "supportPrivacy": "문의에는 비밀번호, 카드번호, 계좌번호 등 민감한 정보를 적지 마세요.",
     "supportFaq": "문의 전에 확인해보세요",
+    "supportVendorTitle": "업체 문의",
+    "supportVendorBody": "정보 오류·오매칭·후기 이의는 여기로 접수하세요. 앱과 같은 창구로 들어갑니다.",
+    "supportVendorNote": "로그인 없이 접수할 수 있고, 접수한 뒤에 업체 소속을 확인합니다.",
     "introTitle": "찾고 비교하고,\n마음에 들면 Pick",
     "introBody": "웨딩픽은 내 조건에 맞는 곳을 찾고 비교해 Pick하는 웨딩 준비 앱이에요.",
     "introLink": "서비스 살펴보기",

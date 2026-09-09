@@ -59,7 +59,8 @@ export default function SupportScreen() {
               key={item.key}
               name={item.question}
               chevron
-              onPress={() => router.push('/my/guide' as never)}
+              /* 질문을 누르면 그 질문의 답으로 간다(WP-FAQ-003). 예전에는 안내 목록 전체로 갔다. */
+              onPress={() => router.push(`/my/faq/${item.key}` as never)}
             />
           ))}
           <Row name={S.faqAll} tail={S.faqCount(FAQ_ITEMS.length)} tailDim chevron onPress={() => router.push('/my/guide' as never)} />
