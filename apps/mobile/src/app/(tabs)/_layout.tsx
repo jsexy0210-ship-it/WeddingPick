@@ -1,6 +1,7 @@
 import { Tabs, useSegments } from 'expo-router';
 
 import { RootTabBar } from '@/features/navigation/tab-bar';
+import { useTabScreenOptions } from '@/features/navigation/screen-options';
 
 /**
  * Bottom Navigation: 홈 | 검색 | Pick | 웨딩일정 | MY — 05-root 시안 1:1(`RootTabBar`).
@@ -16,11 +17,16 @@ export default function TabLayout() {
    */
   const segments: readonly string[] = useSegments();
   const onCamera = segments.includes('camera');
+  /*
+   * 탭 한 칸의 바탕. 이걸 비워두면 옮겨간 탭 아래로 지나온 탭이 비친다 —
+   * 웹에서는 안 보이는 탭이 떼어지지도 않았다(features/navigation/screen-options).
+   */
+  const screenOptions = useTabScreenOptions();
 
   return (
     <Tabs
       tabBar={(props) => (onCamera ? null : <RootTabBar {...props} />)}
-      screenOptions={{ headerShown: false }}>
+      screenOptions={screenOptions}>
       <Tabs.Screen name="index" options={{ title: '홈' }} />
       <Tabs.Screen name="search" options={{ title: '검색' }} />
       {/*

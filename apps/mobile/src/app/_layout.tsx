@@ -6,8 +6,11 @@ import '@/global.css';
 
 import { DefaultTheme, Stack, ThemeProvider, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Platform } from 'react-native';
+
+import { useTheme } from '@weddingpick/ui';
+import { useStackScreenOptions } from '@/features/navigation/screen-options';
 
 import { entryAfterSignIn, rememberSignedIn } from '@/features/auth/finish-sign-in';
 import { completeAuthPopup, isAuthPopup } from '@/features/auth/is-auth-popup';
@@ -16,8 +19,8 @@ import { setPendingSignInError } from '@/features/auth/sign-in-handoff';
 import { SigningInView } from '@/features/auth/signing-in-view';
 import { CaptureDraftProvider } from '@/features/capture/capture-draft';
 import { DocumentStoreProvider } from '@/features/documents/document-store';
-import { getCurrentUser, getSignupState } from '@/api/client';
-import { saveToken } from '@/api/session';
+import { getAppBootstrap, getCurrentUser, getSignupState } from '@/api/client';
+import { loadToken, saveToken } from '@/api/session';
 import { SPLASH_MINIMUM_MS, SplashView } from '@/features/splash/splash-view';
 
 SplashScreen.preventAutoHideAsync();
@@ -96,6 +99,27 @@ function RootLayoutContent() {
 
     return !new URLSearchParams(window.location.search).has('wp_token');
   });
+  const theme = useTheme();
+  const stackScreenOptions = useStackScreenOptions();
+  /*
+   * 라우터가 화면 뒤에 까는 색. 기본값(react-navigation `DefaultTheme`)은
+   * rgb(242,242,242)로 우리 토큰에 없는 회색이라, 화면이 그려지기 전 한 프레임과
+   * 화면이 밀려나는 동안 그 회색이 보였다. 값은 전부 spec/tokens.json에서 온다.
+   */
+  const navigationTheme = useMemo(
+    () => ({
+      ...DefaultTheme,
+      colors: {
+        ...DefaultTheme.colors,
+        primary: theme.tint,
+        background: theme.background,
+        card: theme.background,
+        text: theme.text,
+        border: theme.border,
+      },
+    }),
+    [theme]
+  );
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
@@ -147,8 +171,29 @@ function RootLayoutContent() {
         return;
       }
 
-      /* 로그인한 사람은 서버가 답한다. */
-      const me = await getCurrentUser().catch(() => null);
+      /*
+       * 토큰이 없으면 물어볼 것도 없다. 예전에는 여기서도 `/v1/me`를 부르고 그게
+       * 401로 돌아오기를 기다렸다 — 로그인 화면이 그만큼 늦게 떴다.
+       */
+      if (!(await loadToken())) {
+        setEntry('login');
+
+        return;
+      }
+
+      /*
+       * 로그인한 사람은 서버가 답한다. **두 가지를 한꺼번에 묻는다**(2026-09-09).
+       *
+       * 첫 화면을 정하는 데는 `/v1/me`만 있으면 되지만, 홈으로 갈 사람은 그
+       * 직후에 홈이 `/v1/app/bootstrap`을 다시 묻는다. 순서대로 두면 스플래시가
+       * 끝난 뒤 빈 홈을 한 번 더 기다리게 된다 — 왕복 두 번이 줄줄이 이어진다.
+       * 같이 보내면 스플래시를 보여주는 동안 둘 다 끝나고, 홈은 읽기 캐시에서
+       * 곧바로 받아 그린다(api/client.ts). 실패는 어느 쪽도 부팅을 막지 않는다.
+       */
+      const [me] = await Promise.all([
+        getCurrentUser().catch(() => null),
+        getAppBootstrap().catch(() => undefined),
+      ]);
 
       if (me) {
         setEntry(me.setupComplete ? 'app' : 'setup');
@@ -157,9 +202,8 @@ function RootLayoutContent() {
       }
 
       /*
-       * 못 물어본 이유가 둘이다 — 토큰이 없거나(비로그인), 토큰은 있는데
-       * 가입이 안 끝났거나. 앞의 경우 이 요청도 실패해 null이 되고, 뒤의
-       * 경우에만 대기 상태가 돌아온다.
+       * 토큰은 있는데 «나»를 못 물었다. 가입이 안 끝난 계정이면 대기 상태가
+       * 돌아온다.
        */
       const signup = await getSignupState().catch(() => null);
 
@@ -229,10 +273,10 @@ function RootLayoutContent() {
 
   /* 항상 라이트 — 기기 다크 모드를 따르지 않는다(packages/ui use-color-scheme 참고). */
   return (
-    <ThemeProvider value={DefaultTheme}>
+    <ThemeProvider value={navigationTheme}>
       <DocumentStoreProvider>
         <CaptureDraftProvider>
-          <Stack screenOptions={{ headerShown: false }}>
+          <Stack screenOptions={stackScreenOptions}>
             <Stack.Screen name="(tabs)" />
             {/*
               가입이 끝나기 전에는 나갈 곳이 없다. 제스처로 빠져나가면 서버가

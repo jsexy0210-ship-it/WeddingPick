@@ -183,13 +183,75 @@ function requireBaseUrl(): string {
 }
 
 /**
+ * 읽기 캐시의 두 시간값. 2026-09-09 성능 감사에서 정했다.
+ *
+ * ```
+ * 0~READ_FRESH_MS      캐시를 그대로 준다. 서버를 부르지 않는다.
+ * ~READ_TTL_MS         캐시를 그대로 주고, 뒤에서 서버에 다시 물어 캐시를 고친다.
+ * READ_TTL_MS 초과     캐시를 버리고 서버를 기다린다.
+ * ```
+ *
+ * `READ_FRESH_MS`(3초)는 «한 화면을 그리는 동안»이다. 홈이 회원을 묻고 그 답으로
+ * 후보를 묻는 것처럼, 한 번의 진입이 같은 주소를 여러 번 부르는 자리를 덮는다.
+ *
+ * `READ_TTL_MS`(30초)는 «탭을 한 바퀴 도는 동안»이다. 홈 → 검색 → Pick → 웨딩일정 →
+ * MY를 오가는 사이에는 같은 것을 다시 묻지 않는다. 이보다 오래 지났으면 사람이
+ * 다른 일을 하다 온 것이라 보고 새로 받는다. 내가 무엇을 바꾼 뒤에는 시간과
+ * 무관하게 캐시를 통째로 버리므로(아래 `request`의 쓰기 분기), 이 30초 때문에
+ * 내가 방금 한 일이 화면에 안 보이는 일은 없다.
+ */
+const READ_FRESH_MS = 3_000;
+const READ_TTL_MS = 30_000;
+
+/**
+ * 캐시하지 않는 주소.
+ *
+ * 분석 진행 상황(`/v1/analyses/:id`)은 2초마다 다시 물어 «끝났는가»를 본다
+ * (capture/analysis/[id].tsx). 캐시가 끼면 끝난 줄 모르고 계속 돈다. 서류 · 견적 ·
+ * 확인 요청도 같은 흐름 위에 있어 함께 뺀다 — 이 화면들은 값이 바뀌기를 기다리는
+ * 자리라 «방금 받은 답»이 오히려 틀린 답이다.
+ */
+const NEVER_CACHED = ['/v1/analyses/', '/v1/documents/', '/v1/quotes/', '/v1/verification-requests/'];
+
+type ReadEntry = { at: number; value: unknown };
+
+/** 주소 → 마지막으로 받은 답. 앱이 살아 있는 동안만이고 기기에 남기지 않는다. */
+const readCache = new Map<string, ReadEntry>();
+/** 지금 서버에 가 있는 읽기. 같은 주소를 동시에 두 번 묻지 않게 하나로 합친다. */
+const inFlightReads = new Map<string, Promise<unknown>>();
+
+/**
+ * 읽기 캐시를 통째로 버린다.
+ *
+ * 부르는 곳은 셋이다 — 무언가를 바꾼 직후(아래 쓰기 분기), 로그인·로그아웃처럼
+ * «누구인가»가 달라진 때, 그리고 서버가 토큰을 거절한 때. 앞의 것을 주소별로
+ * 골라 지우려면 어느 쓰기가 어느 읽기를 흔드는지 표를 들고 있어야 하고, 그 표는
+ * 라우트가 늘 때마다 조용히 틀려진다. 통째로 버리는 편이 틀리지 않는다.
+ */
+export function clearReadCache(): void {
+  readCache.clear();
+  inFlightReads.clear();
+}
+
+/** 이미 받아둔 답을 캐시에 넣어둔다. 같은 것을 다시 묻지 않게. */
+function seedReadCache(path: string, value: unknown): void {
+  readCache.set(path, { at: Date.now(), value });
+}
+
+function isCacheableRead(path: string, method: string): boolean {
+  if (method !== 'GET') return false;
+
+  return !NEVER_CACHED.some((prefix) => path.startsWith(prefix));
+}
+
+/**
  * 서버 응답을 계약 스키마로 검사한 뒤에 쓴다.
  *
  * 서버가 계약을 어기면 화면이 이상한 값을 그리기 전에 여기서 걸린다. 특히 가격은
  * 실 제보 건수·기준 기간과 한 덩어리로만 오게 돼 있어(사업계획서 9번), 중앙값만 담긴 응답은
  * 통과하지 못한다.
  */
-async function request<T>(
+async function send<T>(
   path: string,
   schema: ZodType<T>,
   init: RequestInit & { auth?: boolean } = {}
@@ -224,6 +286,8 @@ async function request<T>(
     if (body.success) {
       if (body.data.error.code === 'unauthenticated') {
         await clearToken();
+        // 남의 답을 다음 사람에게 주지 않는다.
+        clearReadCache();
       }
 
       throw new ApiError(body.data.error.code, body.data.error.message, response.status);
@@ -240,6 +304,69 @@ async function request<T>(
   }
 
   return parsed.data;
+}
+
+/** 서버에 한 번만 가고, 받은 답을 캐시에 적어둔다. 같은 주소가 겹치면 하나로 합친다. */
+function startRead<T>(
+  path: string,
+  schema: ZodType<T>,
+  init: RequestInit & { auth?: boolean }
+): Promise<T> {
+  const existing = inFlightReads.get(path);
+
+  if (existing) return existing as Promise<T>;
+
+  const pending = send(path, schema, init).then((value) => {
+    readCache.set(path, { at: Date.now(), value });
+
+    return value;
+  });
+
+  inFlightReads.set(path, pending);
+  // 실패도 «가 있는 중»에서 지운다. 붙잡아두면 다음 화면이 같은 실패를 물려받는다.
+  void pending.catch(() => undefined).finally(() => inFlightReads.delete(path));
+
+  return pending;
+}
+
+/**
+ * 서버에 묻는다. 읽기는 캐시를 거치고, 쓰기는 거치지 않는다.
+ *
+ * **화면을 다시 열 때 처음부터 다시 받지 않는다.** 탭을 옮길 때마다 같은 주소를
+ * 새로 물어서 화면이 비었다가 채워지던 것을(2026-09-09 감사: `/v1/me`만 한 번의
+ * 둘러보기에서 62번) 캐시가 있는 동안에는 바로 그린다. 오래된 값을 그대로 두지는
+ * 않는다 — `READ_FRESH_MS`를 넘긴 값은 화면에 즉시 주면서 뒤에서 다시 받아 고친다.
+ *
+ * **무언가를 바꾼 뒤에는 캐시를 버린다.** 쓰기(POST · PATCH · DELETE)가 성공하든
+ * 실패하든 지운다 — 실패한 줄 알았는데 서버에는 남는 경우가 있고, 그때 옛 목록을
+ * 계속 보여주면 사람이 같은 일을 두 번 한다.
+ */
+async function request<T>(
+  path: string,
+  schema: ZodType<T>,
+  init: RequestInit & { auth?: boolean } = {}
+): Promise<T> {
+  const method = (init.method ?? 'GET').toUpperCase();
+
+  if (!isCacheableRead(path, method)) {
+    try {
+      return await send(path, schema, init);
+    } finally {
+      if (method !== 'GET') clearReadCache();
+    }
+  }
+
+  const hit = readCache.get(path);
+  const age = hit ? Date.now() - hit.at : Number.POSITIVE_INFINITY;
+
+  if (hit && age < READ_TTL_MS) {
+    // 조금 지난 값은 화면에 바로 주고, 다음 화면이 새 값을 받도록 뒤에서 고쳐둔다.
+    if (age >= READ_FRESH_MS) void startRead(path, schema, init).catch(() => undefined);
+
+    return hit.value as T;
+  }
+
+  return startRead(path, schema, init);
 }
 
 /** 서버가 켜둔 로그인 방법. 앱이 짐작하지 않는다. */
@@ -265,6 +392,8 @@ export async function signIn(
   );
 
   await saveToken(session.token);
+  // 로그인 전에 비로그인으로 받아둔 답은 이 사람의 것이 아니다.
+  clearReadCache();
 
   return { activated: session.activated, setupComplete: session.setupComplete };
 }
@@ -284,6 +413,7 @@ export async function signInWithAuthorizationCode(input: {
   });
 
   await saveToken(session.token);
+  clearReadCache();
 
   return { activated: session.activated, setupComplete: session.setupComplete };
 }
@@ -295,6 +425,7 @@ export async function signOut(): Promise<void> {
   } finally {
     // 서버를 못 불러도 기기의 토큰은 버린다. 남겨두면 로그아웃한 척만 한 것이 된다.
     await clearToken();
+    clearReadCache();
     rememberCurrentUser(null);
   }
 }
@@ -340,7 +471,16 @@ export async function getCurrentUser() {
  */
 export async function getAppBootstrap(): Promise<AppBootstrapResponse> {
   const boot = await request('/v1/app/bootstrap', appBootstrapResponseSchema);
-  if (boot.member) rememberCurrentUser(boot.member);
+  if (boot.member) {
+    rememberCurrentUser(boot.member);
+    /*
+     * 여기 담겨 온 «나»는 서버가 `/v1/me`를 그대로 불러 넣은 것이다(apps/api
+     * routes/app.ts). 같은 답을 그 주소 자리에도 적어두면 Pick · 웨딩일정 · MY가
+     * 화면을 열자마자 `getCurrentUser()`로 한 번 더 왕복하지 않는다 — 그 세 화면은
+     * «나»를 받고 나서야 제 목록을 물으므로, 이 한 번이 통째로 순서를 늦춘다.
+     */
+    seedReadCache('/v1/me', boot.member);
+  }
   return boot;
 }
 
