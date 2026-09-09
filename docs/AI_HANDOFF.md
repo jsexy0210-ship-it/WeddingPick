@@ -227,21 +227,34 @@ RN 화면의 웹 렌더링 품질이 이제 "부가 기능"이 아니라 **실�
 
 ### 정책 1 — 비회원 진입 삭제
 로그인 없이 들어갈 수 있는 화면(게스트 홈 등)을 폐지한다. 로그인 완료 후에만 앱 진입이
-가능하도록 진입 흐름(`apps/mobile/src/app/_layout.tsx` 등)을 바꿔야 한다.
-**아직 구현되지 않았다** — 다음 작업.
+가능하도록 진입 흐름을 바꾼다.
+**구현 완료** — `apps/mobile/src/app/_layout.tsx:188` 「비회원 진입 삭제 — 로그인이
+안 된 사람은 무조건 로그인 화면으로」 뒤 `setEntry('login')`. 같은 파일 33번째 줄에
+정책 근거 주석이 있다.
 
 ### 정책 2 — 홈 헤더 검색버튼 삭제
-홈 탭(`apps/mobile/src/app/(tabs)/index.tsx`, 헤더의 `router.push('/search')` 버튼,
-341번째 줄 부근)의 검색 버튼을 없앤다. 알림 아이콘만 남긴다. 검색 자체는 하단 탭의
+홈 탭 헤더의 검색 버튼을 없애고 알림 아이콘만 남긴다. 검색 자체는 하단 탭의
 검색 탭(`(tabs)/search`)으로 계속 접근 가능하니 기능 손실은 아니다.
-**아직 구현되지 않았다** — 다음 작업.
+**구현 완료** — `apps/mobile/src/app/(tabs)/index.tsx`에 `router.push('/search')`가
+0건이다. 헤더는 177번째 줄 `<Header unread={…} onPressBell={…} />` 하나만 남았다.
 
-### 다음 작업 (미착수)
-1. `react-native-webview` 설치 + 네이티브 래퍼 셸 구현
-2. 웹 빌드 호스팅 방식 결정(`expo export -p web` 결과물을 어디에 올릴지)
-3. 정책 1·2 실제 코드 반영
-4. `docs/design-handoff/hybrid-web-qa-checklist.md` 기준으로 홈·진입/내비게이션·공통
-   화면군부터 웹 렌더링 QA
+### 다음 작업
+
+완료 — 근거는 코드로 확인했다(2026-09-09 · FE).
+
+1. `react-native-webview` 설치 + 네이티브 래퍼 셸 — `apps/mobile/package.json:41`에
+   `react-native-webview@14.0.1`, 셸은 `apps/mobile/src/features/webshell/WebShellView.tsx`.
+2. 정책 1·2 실제 코드 반영 — 바로 위 두 절의 근거 줄.
+3. v3.22 · v3.24 금지어 정리 — `확인된 제보` · `확인된 정보` · `오늘의 Pick` ·
+   `우리 준비` · `네이버페이 포인트`가 `apps/` · `packages/` · `spec/`에 0건이다.
+   금지어 목록 자체인 `spec/glossary.json`의 `term` 항목만 남아 있고 이것이 정상이다.
+
+미착수 — 선행조건이 있다.
+
+4. 웹 빌드 호스팅 방식 결정(`expo export -p web` 결과물을 어디에 올릴지).
+   스테이징 서버 분리가 먼저다 — 순서는 `docs/release-env-split.md`.
+5. `docs/design-handoff/hybrid-web-qa-checklist.md` 기준으로 홈·진입/내비게이션·공통
+   화면군부터 웹 렌더링 QA. 4번이 끝나야 돌릴 수 있다.
 
 ---
 
