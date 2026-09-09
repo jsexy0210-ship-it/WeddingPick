@@ -5,6 +5,18 @@ import { downloadPublicCsv, downloadSbizApiVendors, parsePublicCsv } from './col
 import { PUBLIC_SOURCES, sourceKey } from './sources';
 import { syncCollected } from './sync';
 
+/**
+ * 한 번에 넘기는 업체 수. 예전에는 이 수를 넘으면 던지고 「지역·업종별로 나누세요」라고
+ * 안내했는데, 그건 할 수 없는 일을 시키는 말이었다 — `sbiz-seoul`은 이미 시도 하나이고
+ * 서울을 더 쪼갤 출처 정의가 없다. 업종 코드를 고쳐 서울 전수가 들어오는 순간 코드를
+ * 바꾸기 전에는 영원히 반영이 안 되는 상태였다.
+ *
+ * 그래서 거절하는 대신 이 수만큼 잘라서 반복한다. 한 번에 너무 많이 쓰지 않는다는
+ * 원래 의도는 그대로다 — `syncCollected`는 어차피 행마다 따로 트랜잭션을 열므로
+ * (`sync.ts`) 이 값이 지키는 것은 트랜잭션 크기가 아니라 사고 시 되돌릴 크기다.
+ */
+const APPLY_CHUNK = 2000;
+
 /** Invoked through the existing public-data:import CLI. --apply is an explicit DB write. */
 export async function runPublicCollection(args: string[]) {
   function arg(name: string) { const i=args.indexOf(name); return i<0 ? undefined : args[i+1]; }
@@ -45,9 +57,14 @@ export async function runPublicCollection(args: string[]) {
 
   let db = null;
   if (apply) {
-    if (vendors.length > 2000) throw new Error('1회 DB 반영은 최대 2,000개입니다. 지역·업종별로 나누세요.');
     const pool = createPool(process.env.DATABASE_URL!);
-    try { db = await syncCollected(pool, vendors); } finally { await pool.end(); }
+    try {
+      db = {created: 0, updated: 0, unchanged: 0, held: 0, errors: 0};
+      for (let from = 0; from < vendors.length; from += APPLY_CHUNK) {
+        const counts = await syncCollected(pool, vendors.slice(from, from + APPLY_CHUNK));
+        for (const field of Object.keys(db) as (keyof typeof db)[]) db[field] += counts[field];
+      }
+    } finally { await pool.end(); }
   }
   const report = {source: key, sourceUrl: source.url, collectedAt: at.toISOString(),
     total, accepted: vendors.length, rejected, duplicates, databaseApplied: apply, db};
