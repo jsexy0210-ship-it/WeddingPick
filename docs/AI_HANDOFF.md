@@ -61,7 +61,7 @@ Build Pipeline에서 요금제나 빌드 지출 한도를 올려야 한다.
 | 카카오 알림톡 | **보류 · 최종 릴리즈 때 추가** | PR #142는 열어둔 채 두고 진행하지 않는다 |
 | DB 분리 | **지금은 한 벌 · 차후 분리** | `docs/release-env-split.md`의 0 · 0b · 1단계는 나누는 날 시작 |
 | 공공데이터 계정 | **운영계정 하나로 통일** | `SBIZ_API_KEY` 시크릿에는 **운영계정 키**만 넣는다. 개발계정 키는 하루 1,000건이고 오퍼레이션마다 승인 범위가 달라 같은 코드가 어떤 날은 되고 어떤 날은 403이다. 포털 활용신청을 운영계정으로 올려 승인받은 뒤 시크릿을 교체한다. 코드는 `collect.ts`의 `assertServiceOk`가 resultCode를 읽어 무엇을 해야 하는지 말해준다 |
-| 관리자 화면 | **`/admin` 하나로 통일** | 관리자가 둘이었다. `weddingpick-app-web.onrender.com/admin`(expo 콘솔 27화면)만 남기고 `admin.html`·`weddingpick-admin` 서비스·`admin.weddingpick.kr`을 지웠다(2026-09-09 사용자 결정). **`admin.html`에만 있던 화면 넷은 사라졌다** — 개인정보 검토(`pii-reviews`) · 이의제기(`objections`) · 결정 브리핑·열린 결정(`decisions/*`). **API는 살아 있다.** 필요해지면 `/admin`에 만든다 |
+| 관리자 화면 | **`/admin` 하나로 통일** | 관리자가 둘이었다. `weddingpick-app-web.onrender.com/admin`(expo 콘솔 27화면)만 남기고 `admin.html`·`weddingpick-admin` 서비스·`admin.weddingpick.kr`을 지웠다(2026-09-09 사용자 결정). **`admin.html`에만 있던 화면 넷은 사라졌다** — 개인정보 검토(`pii-reviews`) · 이의제기(`objections`) · 결정 브리핑·열린 결정(`decisions/*`). **넷 다 `/admin`에 새로 만들어 넣었다** — 개인정보 검토 · 후기 이의제기 · 자동 결정 현황(브리핑+열린 결정 한 화면). 없어진 기능은 없다 |
 | 커스텀 도메인 | **DNS 미연결 — 사람이 해야 한다** | `weddingpick.kr` · `admin.weddingpick.kr` · `www.weddingpick.kr` **셋 다 이름 풀이가 안 된다**(2026-09-09 실측, `NXDOMAIN`). `main.yml`의 「Custom domains」 스텝은 Render 쪽에 **등록만** 하고, 실제 레코드는 등록처(가비아)에 사람이 넣어야 한다. 그래서 워크플로가 초록이어도 도메인은 죽어 있다. onrender 주소는 정상. **이 주소로 재현한 장애 보고는 전부 무효다** — 열린 적이 없다 |
 | 광고 실운영 | **오더 대기** | 스토어 등록정보의 「광고 포함」은 «없음» |
 
