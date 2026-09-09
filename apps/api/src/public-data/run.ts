@@ -11,6 +11,8 @@ export async function runPublicCollection(args: string[]) {
   const key = sourceKey(arg('--source') ?? '');
   const file = arg('--file');
   const sbizApiKey = arg('--sbiz-api-key') ?? process.env.SBIZ_API_KEY;
+  const upjongCodes = arg('--upjong-codes');
+  const upjongDivId = arg('--upjong-div-id');
   const apply = args.includes('--apply');
   if (apply && args.includes('--dry-run')) throw new Error('--apply와 --dry-run은 함께 사용할 수 없습니다.');
   if (apply && !process.env.DATABASE_URL) throw new Error('DATABASE_URL 없음: --apply를 제외하면 수집·검증 가능합니다.');
@@ -24,7 +26,9 @@ export async function runPublicCollection(args: string[]) {
 
   if (source.format === 'sbiz-api') {
     if (!sbizApiKey) throw new Error('SBIZ_API_KEY 환경변수 또는 --sbiz-api-key 옵션이 필요합니다.');
-    vendors = await downloadSbizApiVendors(key, sbizApiKey, at);
+    // 업종코드는 하드코딩하지 않는다 — CLI 또는 SBIZ_UPJONG_CODES에서 온다.
+    vendors = await downloadSbizApiVendors(key, sbizApiKey, at,
+      upjongCodes ? { divId: upjongDivId ?? 'indsLclsCd', codes: upjongCodes.split(',') } : undefined);
     total = vendors.length;
     rejected = 0;
     duplicates = 0;

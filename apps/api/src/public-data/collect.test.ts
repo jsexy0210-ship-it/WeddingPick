@@ -46,7 +46,9 @@ test('sbiz-api 응답에서 서울 예식장만 파싱한다', async () => {
     body: { [Symbol.asyncIterator]: async function* () { yield body; } },
   });
   try {
-    const vendors = await downloadSbizApiVendors('sbiz-seoul', 'test-key', new Date('2026-09-04T00:00:00Z'));
+    // 업종코드는 호출자가 넘긴다 — 아래 값은 테스트 전용 가짜 코드다.
+    const vendors = await downloadSbizApiVendors('sbiz-seoul', 'test-key', new Date('2026-09-04T00:00:00Z'),
+      { divId: 'indsSclsCd', codes: ['TEST01'] });
     expect(vendors).toHaveLength(1);
     expect(vendors[0]?.name).toBe('강남웨딩홀');
     expect(vendors[0]?.region).toBe('서울특별시 강남구');
@@ -54,6 +56,17 @@ test('sbiz-api 응답에서 서울 예식장만 파싱한다', async () => {
     expect(vendors[0]?.sourceRecordId).toBe('S1');
   } finally {
     global.fetch = origFetch;
+  }
+});
+test('업종코드가 없으면 수집을 시작하지 않는다', async () => {
+  // 코드가 틀리거나 비면 API는 오류 대신 빈 목록을 준다 — 조용한 0건 수집을 막는다.
+  const saved = process.env.SBIZ_UPJONG_CODES;
+  delete process.env.SBIZ_UPJONG_CODES;
+  try {
+    await expect(downloadSbizApiVendors('sbiz-seoul', 'test-key')).rejects.toThrow('SBIZ_UPJONG_CODES');
+  } finally {
+    if (saved === undefined) delete process.env.SBIZ_UPJONG_CODES;
+    else process.env.SBIZ_UPJONG_CODES = saved;
   }
 });
 test('이미 URL-encode된 서비스키를 이중 인코딩하지 않는다', async () => {

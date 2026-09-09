@@ -179,7 +179,7 @@ PR #99의 조사 보고서와 그 독립 재검증 결과에서 **코드로 확�
 | 잔존-D | 죽은 워커의 `running` 작업을 회수하는 reaper가 없다 (`analysis/worker.ts`의 `claim()`이 `pending`만 집는다) |
 | 잔존-E | `routes/documents.ts`의 `MAX_FILE_SIZE`가 죽은 상수다. S3 드라이버는 presigned POST 정책이 강제하므로 실질 노출은 local 드라이버 한정 |
 | 잔존-F | `packages/db/src/reset.ts`의 `DROP SCHEMA ... CASCADE`에 테스트 DB 가드가 없다 |
-| sbiz | `collect.ts`의 업종 대분류 `'Q'`가 활용가이드에 없는 값이다. `SBIZ_API_KEY` 등록 후 `public-data.yml`의 `lookup_keyword`로 실제 코드를 찾아 교체해야 `sbiz-seoul`·`sbiz-gyeonggi`가 동작한다 |
+| sbiz | 운영계정 승인 완료(2026-09-08, 활용기간 2028-09-08까지). 업종코드는 `collect.ts`에서 제거해 설정값(`SBIZ_UPJONG_CODES`)으로 옮겼다 — 코드가 비면 수집이 즉시 실패한다. `SBIZ_API_KEY` 등록 후 `public-data.yml`의 `lookup_level`로 실제 코드를 찾아 저장소 Variables에 넣어야 `sbiz-seoul`·`sbiz-gyeonggi`가 동작한다 |
 
 ### 외부 확인 필요 (저장소 안에서 확인 불가)
 

@@ -63,3 +63,7 @@ services:
       # 없으면 인가 코드까지는 받고 /oauth/token에서 거부당한다
       # (apps/api/src/auth/identity-provider.ts — 값이 있을 때만 보낸다).
       - KAKAO_CLIENT_SECRET
+      # 공공데이터포털 「소상공인시장진흥공단_상가(상권)정보_API」 운영계정 일반 인증키.
+      # 활용기간 2026-09-08~2028-09-08. 값은 GitHub Secrets의 같은 이름에서 읽는다 —
+      # 저장소·문서·로그에 값을 적지 않는다. public-data.yml도 같은 시크릿을 쓴다.
+      - SBIZ_API_KEY

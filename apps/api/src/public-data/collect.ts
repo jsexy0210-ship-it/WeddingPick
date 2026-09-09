@@ -189,12 +189,13 @@ type SbizApiPage = {
  * 페이지당 최대 1000건을 처리한다. API 키는 호출 시 전달받으며 코드에
  * 하드코딩하지 않는다.
  *
- * **주의 — 대분류 코드 'Q'는 확인 전이다.** 2026-08-05 승인된 공식
- * 활용가이드의 대분류 코드는 전부 "영문자+숫자" 두 글자다(F1·G2·I1·I2·J1·
- * L1·M1·N1·O1·P1·Q1·R1·S1·S2 등 — 예: Q1=보건의료). 가이드 어디에도 웨딩
- * 관련 대분류나 'Q' 단독 코드는 없다 — 실제 API가 이 값으로 빈 결과를
- * 돌려주고 있을 가능성이 높다(수집 자체가 조용히 0건). `listIndustryCategories`로
- * 중/소분류를 뒤져 진짜 코드를 찾은 뒤 여기 'Q'를 교체해야 한다.
+ * **업종코드는 코드에 박지 않는다.** 예전 구현은 대분류 `'Q'`를 하드코딩했는데
+ * 2026-08-05 활용가이드 어디에도 없는 값이라 수집이 조용히 0건이 됐다. 이제
+ * 조회할 업종코드는 호출자가 넘기거나 `SBIZ_UPJONG_CODES`(쉼표 구분)로 준다 —
+ * 값이 없으면 수집을 시작하지 않고 즉시 실패한다. 진짜 코드는
+ * `listIndustryCategories`(largeUpjongList·middleUpjongList·smallUpjongList)를
+ * 실 키로 호출해 확인한 뒤 넣는다. 코드 자리(`divId`)도 대분류 대신 소분류로
+ * 좁힐 수 있게 `SBIZ_UPJONG_DIV_ID`로 바꾼다.
  *
  * 수집 카테고리 (indsSclsNm 기준):
  *   예식장 → hall
@@ -205,32 +206,51 @@ type SbizApiPage = {
  *   미용|메이크업 + 웨딩|브라이덜 이름 → makeup
  *   (classifyWeddingIndustry)
  */
+export type SbizUpjongQuery = { divId: string; codes: string[] };
+
+/** 조회할 업종 자리와 코드. 코드가 없으면 수집을 시작하지 않는다. */
+export function resolveUpjongQuery(override?: SbizUpjongQuery): SbizUpjongQuery {
+  const divId = override?.divId ?? process.env.SBIZ_UPJONG_DIV_ID ?? 'indsLclsCd';
+  const codes = (override?.codes ?? (process.env.SBIZ_UPJONG_CODES ?? '').split(','))
+    .map((c) => c.trim()).filter(Boolean);
+  if (!codes.length)
+    throw new Error(
+      'SBIZ_UPJONG_CODES가 비어 있습니다. --lookup-category로 실제 업종코드를 확인한 뒤 지정하세요.');
+  if (divId !== 'indsLclsCd' && divId !== 'indsMclsCd' && divId !== 'indsSclsCd')
+    throw new Error('SBIZ_UPJONG_DIV_ID는 indsLclsCd·indsMclsCd·indsSclsCd 중 하나여야 합니다.');
+  return { divId, codes };
+}
+
 export async function downloadSbizApiVendors(
   key: SourceKey,
   apiKey: string,
   at = new Date(),
+  upjong?: SbizUpjongQuery,
 ): Promise<CollectedVendor[]> {
   const source = PUBLIC_SOURCES[key];
   if (source.format !== 'sbiz-api') throw new Error('sbiz-api 형식 출처가 아닙니다.');
   const ctprvnCd = (source as { ctprvnCd: string }).ctprvnCd;
+  const query = resolveUpjongQuery(upjong);
 
   const vendors: CollectedVendor[] = [];
   const seen = new Set<string>();
   const MAX_PAGES = 20;
 
+  for (const code of query.codes) {
+  let seenForCode = 0;
   for (let pageNo = 1; pageNo <= MAX_PAGES; pageNo++) {
     const url = new URL(source.url);
     url.searchParams.set('serviceKey', normalizeServiceKey(apiKey));
     url.searchParams.set('pageNo', String(pageNo));
     url.searchParams.set('numOfRows', '1000');
-    // 업종 대분류 Q = 결혼관련서비스업 (소상공인진흥공단 기준)
-    url.searchParams.set('divId', 'indsLclsCd');
-    url.searchParams.set('key', 'Q');
+    url.searchParams.set('divId', query.divId);
+    url.searchParams.set('key', code);
     url.searchParams.set('type', 'json');
 
     const buf = await publicGet(url.toString(), 8 * 1024 * 1024);
     const page = JSON.parse(buf.toString('utf8')) as SbizApiPage;
     const records = page.data ?? [];
+    seenForCode += records.length;
 
     for (const r of records) {
       // 시도 코드로 지역 필터
@@ -265,6 +285,9 @@ export async function downloadSbizApiVendors(
 
     const fetched = (pageNo - 1) * 1000 + records.length;
     if (!page.totalCount || fetched >= page.totalCount || records.length < 1000) break;
+  }
+  // 코드가 틀리면 API는 오류 대신 빈 목록을 준다 — 조용한 0건 수집을 막는다.
+  if (!seenForCode) throw new Error(`업종코드 ${query.divId}=${code} 응답이 0건입니다. 코드를 확인하세요.`);
   }
 
   return vendors;

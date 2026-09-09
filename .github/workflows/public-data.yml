@@ -11,7 +11,20 @@ on:
         type: boolean
         default: false
       lookup_keyword:
-        description: '업종 소분류 코드 조사 — 이름에 이 글자가 들어간 항목만 출력(비우면 이 잡을 건너뜀)'
+        description: '업종 코드 조사 — 이름에 이 글자가 들어간 항목만 출력(비우면 해당 단계 전체 출력)'
+        type: string
+        default: ''
+      lookup_level:
+        description: '업종 코드 조사 단계. off면 조사 잡을 건너뜀'
+        type: choice
+        options: ['off', 'large', 'middle', 'small']
+        default: 'off'
+      lookup_parent_large:
+        description: '중/소분류 조사 시 상위 대분류 코드(indsLclsCd)'
+        type: string
+        default: ''
+      lookup_parent_middle:
+        description: '소분류 조사 시 상위 중분류 코드(indsMclsCd)'
         type: string
         default: ''
   schedule:
@@ -58,6 +71,10 @@ jobs:
     # 제약). job-level env로 한 번 옮겨 담아 `env.*`로 우회한다.
     env:
       SBIZ_API_KEY: ${{ secrets.SBIZ_API_KEY }}
+      # 조회할 업종코드. 저장소 Variables에 쉼표로 넣는다(비밀 아님). 비어 있으면
+      # sbiz 출처는 건너뛴다 — 코드를 모른 채 호출하면 조용히 0건이 되기 때문이다.
+      SBIZ_UPJONG_CODES: ${{ vars.SBIZ_UPJONG_CODES }}
+      SBIZ_UPJONG_DIV_ID: ${{ vars.SBIZ_UPJONG_DIV_ID }}
     strategy:
       fail-fast: false
       matrix:
@@ -78,12 +95,12 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Collect validated public data
-        if: ${{ !matrix.needs_sbiz_key || env.SBIZ_API_KEY != '' }}
+        if: ${{ !matrix.needs_sbiz_key || (env.SBIZ_API_KEY != '' && env.SBIZ_UPJONG_CODES != '') }}
         run: npm run public-data:import --workspace @weddingpick/api -- --source "$SOURCE" --out ../../.collection
         env:
           SOURCE: ${{ matrix.source }}
       - name: Apply to existing database
-        if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || inputs.apply) && (!matrix.needs_sbiz_key || env.SBIZ_API_KEY != '')
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || inputs.apply) && (!matrix.needs_sbiz_key || (env.SBIZ_API_KEY != '' && env.SBIZ_UPJONG_CODES != ''))
         run: npm run public-data:import --workspace @weddingpick/api -- --source "$SOURCE" --apply --out ../../.collection
         env:
           SOURCE: ${{ matrix.source }}
@@ -96,11 +113,12 @@ jobs:
           include-hidden-files: true
           retention-days: 7
 
-  # sbiz 업종 대/중/소분류 진짜 코드 조사용. workflow_dispatch로 lookup_keyword를
-  # 채웠을 때만 돈다 — collect.ts의 downloadSbizApiVendors가 쓰는 대분류 'Q'가
-  # 활용가이드에 없는 값이라(주석 참고) 진짜 코드를 찾아야 한다.
+  # sbiz 업종 대/중/소분류 진짜 코드 조사용. lookup_level을 고르면 돈다.
+  # 수집기는 업종코드를 하드코딩하지 않으므로(collect.ts) 여기서 확인한 코드를
+  # 저장소 Variables의 SBIZ_UPJONG_CODES에 넣어야 sbiz 출처가 돈다.
+  # 대분류 → 중분류 → 소분류 순으로 상위 코드를 넣어가며 좁힌다.
   lookup-category:
-    if: github.event_name == 'workflow_dispatch' && inputs.lookup_keyword != ''
+    if: github.event_name == 'workflow_dispatch' && inputs.lookup_level != 'off'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -110,8 +128,16 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: 소분류에서 키워드 검색
-        run: npm run public-data:import --workspace @weddingpick/api -- --lookup-category --level small --keyword "$KEYWORD"
+      - name: 업종 코드 조회
+        run: |
+          npm run public-data:import --workspace @weddingpick/api -- \
+            --lookup-category --level "$LEVEL" \
+            ${KEYWORD:+--keyword "$KEYWORD"} \
+            ${PARENT_LARGE:+--parent-large "$PARENT_LARGE"} \
+            ${PARENT_MIDDLE:+--parent-middle "$PARENT_MIDDLE"}
         env:
+          LEVEL: ${{ inputs.lookup_level }}
           KEYWORD: ${{ inputs.lookup_keyword }}
+          PARENT_LARGE: ${{ inputs.lookup_parent_large }}
+          PARENT_MIDDLE: ${{ inputs.lookup_parent_middle }}
           SBIZ_API_KEY: ${{ secrets.SBIZ_API_KEY }}
