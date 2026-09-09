@@ -60,7 +60,9 @@ export function buildServer(context: AppContext): FastifyInstance {
   if (context.config.corsOrigins.length > 0) {
     app.register(cors, {
       origin: context.config.corsOrigins,
-      methods: ['GET', 'HEAD', 'POST', 'PUT', 'DELETE'],
+      // 관리자 화면은 PATCH로 바꾼다(kill-switch·users·vendors·ads·policy-engine).
+      // 빠져 있으면 preflight에서 전부 막혀 화면에서 아무것도 끌 수 없다.
+      methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'],
     });
   }
 

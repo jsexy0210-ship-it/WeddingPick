@@ -15,6 +15,11 @@ on:
         type: choice
         default: seed
         options: [seed, remove, images]
+      target:
+        description: '대상 DB. 검수용이라 staging이 기본 — production은 사람이 고를 때만'
+        type: choice
+        default: staging
+        options: [staging, production]
 
 permissions:
   contents: read
@@ -32,10 +37,23 @@ jobs:
       - run: npm ci
       - name: 실행
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          PRODUCTION_DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
           STORAGE_DRIVER: local
           MODE: ${{ github.event.inputs.mode }}
+          TARGET: ${{ github.event.inputs.target }}
         run: |
+          # 이 워크플로는 검수용 샘플이고 remove는 업체·이미지·표본 계정을 지운다.
+          # 운영 DB(DATABASE_URL)를 그대로 쓰던 것을 대상 선택으로 바꾼다.
+          case "${TARGET:-staging}" in
+            production) export DATABASE_URL="$PRODUCTION_DATABASE_URL" ;;
+            *)          export DATABASE_URL="$STAGING_DATABASE_URL" ;;
+          esac
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::${TARGET:-staging} 대상의 접속 정보가 GitHub Secrets에 없다."
+            exit 1
+          fi
+          echo "대상: ${TARGET:-staging}"
           # 공개 클라이언트 키(EXPO_PUBLIC_KAKAO_CLIENT_ID와 같은 값) — 한 곳(infra/render-env.yml)에서 읽는다.
           export KAKAO_APP_KEY=$(grep -m1 '^ *KAKAO_APP_KEY:' infra/render-env.yml | awk '{print $2}')
           if [ "$MODE" = "remove" ]; then
