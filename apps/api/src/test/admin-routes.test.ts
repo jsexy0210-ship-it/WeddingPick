@@ -78,6 +78,62 @@ describeWithDb('관리자 콘솔 라우트', () => {
     });
   });
 
+  /*
+   * 기능 스위치가 **실제로 기능을 끄는가.** 예전에는 인메모리 Map을 껐다 켤 뿐
+   * 읽는 쪽이 한 곳도 없어서, 껐다고 표시돼도 기능은 계속 돌았다.
+   */
+  describe('기능 중지 스위치', () => {
+    it('목록에 6종이 나오고 배선 여부가 함께 온다', async () => {
+      const operator = await operatorHeaders();
+
+      const listed = (await get('/v1/admin/kill-switches', operator.headers)).json() as {
+        switches: { id: string; enabled: boolean; wired: boolean }[];
+      };
+
+      // 읽는 쪽을 만든 셋은 wired=true, 아직 못 만든 셋은 false다. 화면이
+      // 「꺼도 아무 일이 안 일어난다」를 보여줄 수 있어야 한다.
+      expect(listed.switches.find((s) => s.id === 'ai-recommendations')).toMatchObject({
+        enabled: true,
+        wired: true,
+      });
+      expect(listed.switches.find((s) => s.id === 'stats-update')).toMatchObject({ wired: false });
+    });
+
+    it('끄면 DB에 남고, 다시 조회하면 꺼져 있다', async () => {
+      const operator = await operatorHeaders();
+
+      const off = await patch('/v1/admin/kill-switches/ai-recommendations', operator.headers, {
+        enabled: false,
+      });
+      expect(off.statusCode).toBe(204);
+
+      const { rows } = await test.pool.query<{ enabled: boolean; updated_by: string | null }>(
+        `SELECT enabled, updated_by FROM structured.kill_switches WHERE id = 'ai-recommendations'`
+      );
+      expect(rows[0]?.enabled).toBe(false);
+      expect(rows[0]?.updated_by).toBe(operator.userId);
+    });
+
+    it('끈 기능을 부르면 503이다 — 빈 결과로 조용히 성공하지 않는다', async () => {
+      const operator = await operatorHeaders();
+      await patch('/v1/admin/kill-switches/ai-recommendations', operator.headers, {
+        enabled: false,
+      });
+
+      const response = await get('/v1/recommendations/top3?category=hall', operator.headers);
+      expect(response.statusCode).toBe(503);
+      expect(response.json()).toMatchObject({ error: { code: 'feature_disabled' } });
+    });
+
+    it('없는 스위치는 404다', async () => {
+      const operator = await operatorHeaders();
+      const response = await patch('/v1/admin/kill-switches/no-such-switch', operator.headers, {
+        enabled: false,
+      });
+      expect(response.statusCode).toBe(404);
+    });
+  });
+
   describe('관문', () => {
     it('토큰이 없으면 401이다', async () => {
       expect((await get('/v1/admin/decisions/open')).statusCode).toBe(401);
