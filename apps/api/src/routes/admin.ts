@@ -53,18 +53,47 @@ type KillSwitch = {
   description: string;
   enabled: boolean;
   category: string;
+  /**
+   * 이 스위치를 읽는 코드가 실제로 있는가. false면 껐다 켜도 동작이 바뀌지 않는다.
+   * 화면이 그 사실을 그대로 보여줘야 한다 — 끈 줄 알고 손을 놓는 것이 가장 나쁘다.
+   */
+  wired: boolean;
   lastChangedAt: string | null;
   lastChangedBy: string | null;
 };
 
-const killSwitches = new Map<string, KillSwitch>([
-  ['ai-recommendations', { id: 'ai-recommendations', name: 'AI 추천', description: 'AI 기반 업체 추천 기능을 중지합니다', enabled: true, category: 'AI', lastChangedAt: null, lastChangedBy: null }],
-  ['ai-verification', { id: 'ai-verification', name: 'AI 검증', description: '문서 AI 자동 검증을 중지합니다', enabled: true, category: 'AI', lastChangedAt: null, lastChangedBy: null }],
-  ['ai-matching', { id: 'ai-matching', name: 'AI 매칭', description: '이메일 자동 매칭을 중지합니다', enabled: true, category: 'AI', lastChangedAt: null, lastChangedBy: null }],
-  ['stats-update', { id: 'stats-update', name: '통계 반영', description: '가격 통계 자동 갱신을 중지합니다', enabled: true, category: '운영', lastChangedAt: null, lastChangedBy: null }],
-  ['reward-payout', { id: 'reward-payout', name: '보상 지급', description: '친구 초대·홍보 보상 자동 지급을 중지합니다', enabled: true, category: '운영', lastChangedAt: null, lastChangedBy: null }],
-  ['auto-publish', { id: 'auto-publish', name: '자동 게시', description: '후기·반론 자동 게시를 중지합니다', enabled: true, category: '운영', lastChangedAt: null, lastChangedBy: null }],
-]);
+/*
+ * 기능 스위치는 DB(`structured.kill_switches`, 0095)에 있다. 예전에는 이 파일 안의
+ * 인메모리 Map이었고 **읽는 쪽이 한 곳도 없었다** — 껐다고 표시돼도 기능은 계속 돌고
+ * 재시작하면 껐다는 사실조차 사라졌다.
+ */
+type KillSwitchRow = {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  enabled: boolean;
+  wired: boolean;
+  updated_at: Date | string | null;
+  updated_by: string | null;
+};
+
+function toIso(value: Date | string | null): string | null {
+  return value instanceof Date ? value.toISOString() : value;
+}
+
+function toFeatureKillSwitch(row: KillSwitchRow): KillSwitch {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    enabled: row.enabled,
+    category: row.category,
+    wired: row.wired,
+    lastChangedAt: toIso(row.updated_at),
+    lastChangedBy: row.updated_by,
+  };
+}
 
 /*
  * 수집 중단 스위치는 위 Map과 달리 DB(`structured.import_switches`)에 있다.
@@ -88,7 +117,9 @@ function toImportKillSwitch(row: ImportSwitchRow): KillSwitch {
     description: row.reason ?? '이 출처의 공개 데이터 수집을 중지합니다',
     enabled: row.enabled,
     category: '수집',
-    lastChangedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : row.updated_at,
+    // sync.ts가 임포트 직전에 읽는다. 수집 스위치는 전부 배선돼 있다.
+    wired: true,
+    lastChangedAt: toIso(row.updated_at),
     lastChangedBy: null,
   };
 }
@@ -840,7 +871,19 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
       app.log.warn({ err: error }, 'import_switches 조회 실패 — 수집 스위치를 표시하지 못한다');
     }
 
-    return { switches: [...killSwitches.values(), ...importSwitches] };
+    let featureSwitches: KillSwitch[] = [];
+    try {
+      const { rows } = await context.pool.query<KillSwitchRow>(
+        `SELECT id, name, description, category, enabled, wired, updated_at, updated_by
+           FROM structured.kill_switches
+          ORDER BY category, id`
+      );
+      featureSwitches = rows.map(toFeatureKillSwitch);
+    } catch (error) {
+      app.log.warn({ err: error }, 'kill_switches 조회 실패 — 기능 스위치를 표시하지 못한다');
+    }
+
+    return { switches: [...featureSwitches, ...importSwitches] };
   });
 
   app.patch<{ Params: { id: string }; Body: { enabled?: boolean } }>('/v1/admin/kill-switches/:id', auth, async (req, reply) => {
@@ -867,11 +910,23 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
       return reply.status(204).send();
     }
 
-    const sw = killSwitches.get(req.params.id);
-    if (!sw) return reply.status(404).send({ error: 'not_found' });
-    sw.enabled = req.body.enabled ?? sw.enabled;
-    sw.lastChangedAt = new Date().toISOString();
-    sw.lastChangedBy = operatorId ?? 'operator';
+    const enabled = req.body.enabled;
+    if (typeof enabled !== 'boolean') {
+      return reply.status(400).send({ error: 'enabled_required' });
+    }
+
+    const { rowCount } = await context.pool.query(
+      `UPDATE structured.kill_switches
+          SET enabled = $1, reason = $2, updated_at = now(), updated_by = $3
+        WHERE id = $4`,
+      [
+        enabled,
+        `${enabled ? '재개' : '중단'} — 관리자 ${operatorId ?? 'operator'}`,
+        operatorId ?? 'operator',
+        req.params.id,
+      ]
+    );
+    if (!rowCount) return reply.status(404).send({ error: 'not_found' });
     return reply.status(204).send();
   });
 

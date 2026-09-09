@@ -16,6 +16,11 @@ type SwitchItem = {
   description: string;
   enabled: boolean;
   category: string;
+  /**
+   * 이 스위치를 읽는 코드가 실제로 있는가. false면 껐다 켜도 동작이 바뀌지 않는다.
+   * 화면이 그 사실을 숨기면, 끈 줄 알고 손을 놓는 일이 생긴다.
+   */
+  wired?: boolean;
   lastChangedAt: string | null;
   lastChangedBy: string | null;
 };
@@ -97,6 +102,11 @@ export default function KillSwitchScreen() {
                   <View style={styles.switchInfo}>
                     <Text style={styles.switchName}>{item.name}</Text>
                     <Text style={styles.switchDesc}>{item.description}</Text>
+                    {item.wired === false && (
+                      <Text style={styles.switchUnwired}>
+                        아직 연결되지 않았습니다 — 꺼도 기능은 그대로 돕니다
+                      </Text>
+                    )}
                     {item.lastChangedAt && (
                       <Text style={styles.switchMeta}>
                         {formatDateTimeDot(item.lastChangedAt)}
@@ -164,6 +174,8 @@ const styles = StyleSheet.create({
   switchInfo: { flex: 1, marginRight: 12 },
   switchName: { fontSize: FontSize.t7, fontWeight: '700', color: '#17181c', marginBottom: 2 },
   switchDesc: { fontSize: FontSize.tab, color: '#868b94', lineHeight: LineHeight.micro },
+  // 끈 줄 알고 손을 놓는 것을 막는 줄이다. 회색으로 묻히면 안 된다.
+  switchUnwired: { fontSize: FontSize.tab, color: '#ff4d4d', lineHeight: LineHeight.micro, marginTop: 2 },
   switchMeta: { fontSize: FontSize.tab, color: '#adb1ba', marginTop: 4 },
   switchRight: { alignItems: 'flex-end', gap: 4 },
   switchStatus: { fontSize: FontSize.tab, fontWeight: '700' },
