@@ -39,9 +39,21 @@ for entry in deploys:
     commit = (d.get("commit") or {}).get("id", "?")[:8]
     print(f"  {d.get('status', '?'):16} commit={commit} 시작={d.get('createdAt', '?')} 마침={d.get('finishedAt', '-')}")
 
-# 가장 최근 배포가 실패했으면 이유를 찾는다 — 배포 객체 자체와 빌드 로그.
-latest = deploys[0].get("deploy", deploys[0]) if deploys else None
-if latest and str(latest.get("status", "")).endswith("failed"):
+# 실패한 배포가 있으면 이유를 찾는다 — 배포 객체 자체와 빌드 로그.
+#
+# **「가장 최근」이 아니라 「가장 최근에 실패한 것」을 본다.** 실패 직후 새 배포가
+# 시작되면 목록 첫 줄이 `build_in_progress`가 되고, 그때 첫 줄만 보면 방금 무엇이
+# 왜 깨졌는지 못 읽는다 — 실제로 그렇게 놓쳤다(2026-09-09).
+failed = next(
+    (
+        entry.get("deploy", entry)
+        for entry in deploys
+        if str((entry.get("deploy", entry)).get("status", "")).endswith("failed")
+    ),
+    None,
+)
+if failed:
+    latest = failed
     print("\n최근 배포 상세:")
     print(json.dumps(latest, ensure_ascii=False, indent=2)[:3000])
     owner = svc.get("ownerId")
