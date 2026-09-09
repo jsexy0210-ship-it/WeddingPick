@@ -44,7 +44,7 @@ function HistorySkeleton() {
     <View style={{ paddingHorizontal: Layout.gutter, paddingTop: Spacing.four }}>
       {[1, 2, 3].map((i) => (
         <View key={i} style={{ marginBottom: Spacing.four }}>
-          <Skeleton width={80} height={14} radius={4} style={{ marginBottom: Spacing.two }} />
+          <Skeleton width={80} height={14} radius={Radius.badge} style={{ marginBottom: Spacing.two }} />
           <Skeleton width="100%" height={72} radius={Radius.medium} style={{ marginBottom: Spacing.one }} />
           <Skeleton width="100%" height={72} radius={Radius.medium} />
         </View>
