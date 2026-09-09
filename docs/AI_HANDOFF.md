@@ -18,6 +18,39 @@
 
 ---
 
+## 배포가 멈춰 있다 — 2026-09-09 05:24 실측
+
+**Render 워크스페이스의 빌드 시간이 소진됐다. 코드 문제가 아니다.**
+
+```
+==> Build canceled: your workspace has run out of build pipeline minutes
+    for the current billing period.
+```
+
+서비스 이벤트 이름이 `pipeline_minutes_exhausted`다. **빌드가 시작조차 못 하고 취소된다.**
+2026-09-09에 main에 들어간 커밋이 전부 이 벽에 부딪혔다 — 04:50 · 04:56 · 05:02 · 05:03 · 05:14
+다섯 회차 전부 `deploy_ended · failed`. Render 서비스 4개가 모두 「Failed deploy」다(DB는 정상).
+
+### 여기서 배운 것 — 「배포 성공」을 GitHub만 보고 말하지 마라
+
+`main.yml`의 Deploy 잡은 **Render에 배포를 요청하는 데까지만** 초록이다. 그 뒤 Render가
+자기 인프라에서 빌드하다 실패해도 GitHub은 초록으로 끝난다. 오늘 여러 세션이 「배포까지
+성공」이라고 보고했고 전부 틀렸다. **배포 확인은 `render-deploy-status.yml`을 돌려
+`deploy_ended`의 `deployStatus`를 봐야 한다.**
+
+### 풀리기 전까지
+
+머지는 해도 된다(코드는 main에 쌓인다). 다만 **화면에는 아무것도 반영되지 않는다.**
+「배포 확인」을 완료로 적지 마라. 사람이 Render 대시보드 → Workspace Settings →
+Build Pipeline에서 요금제나 빌드 지출 한도를 올려야 한다.
+
+### 곁가지
+
+`weddingpick-api`(Oregon)가 `render.yaml`에 없는 서비스인데 워크스페이스에 떠 있다.
+정리 대상인지 확인이 필요하다 — 쓰지 않는다면 빌드 시간을 갉아먹고 있을 수 있다.
+
+---
+
 ## 사용자 결정 — 2026-09-09
 
 새 세션이 이 항목을 다시 파지 않도록 여기 적는다. **아래는 사람이 내린 결정이다.**
@@ -28,6 +61,7 @@
 | 카카오 알림톡 | **보류 · 최종 릴리즈 때 추가** | PR #142는 열어둔 채 두고 진행하지 않는다 |
 | DB 분리 | **지금은 한 벌 · 차후 분리** | `docs/release-env-split.md`의 0 · 0b · 1단계는 나누는 날 시작 |
 | 공공데이터 계정 | **운영계정 하나로 통일** | `SBIZ_API_KEY` 시크릿에는 **운영계정 키**만 넣는다. 개발계정 키는 하루 1,000건이고 오퍼레이션마다 승인 범위가 달라 같은 코드가 어떤 날은 되고 어떤 날은 403이다. 포털 활용신청을 운영계정으로 올려 승인받은 뒤 시크릿을 교체한다. 코드는 `collect.ts`의 `assertServiceOk`가 resultCode를 읽어 무엇을 해야 하는지 말해준다 |
+| 커스텀 도메인 | **DNS 미연결 — 사람이 해야 한다** | `weddingpick.kr` · `admin.weddingpick.kr` · `www.weddingpick.kr` **셋 다 이름 풀이가 안 된다**(2026-09-09 실측, `NXDOMAIN`). `main.yml`의 「Custom domains」 스텝은 Render 쪽에 **등록만** 하고, 실제 레코드는 등록처(가비아)에 사람이 넣어야 한다. 그래서 워크플로가 초록이어도 도메인은 죽어 있다. onrender 주소는 정상. **이 주소로 재현한 장애 보고는 전부 무효다** — 열린 적이 없다 |
 | 광고 실운영 | **오더 대기** | 스토어 등록정보의 「광고 포함」은 «없음» |
 
 ---

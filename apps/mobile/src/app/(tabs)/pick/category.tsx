@@ -113,7 +113,7 @@ export default function PickCategoryScreen() {
               </ThemedText>
               <ActionButton
                 variant="primary"
-                label={`${categoryLabel} 둘러보기`}
+                label={`${categoryLabel} 검색`}
                 onPress={() =>
                   router.push({ pathname: '/(tabs)/search', params: { filterCategory: cat } })
                 }
