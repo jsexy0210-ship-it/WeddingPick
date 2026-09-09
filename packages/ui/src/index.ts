@@ -15,6 +15,7 @@ export { ActionButton, type ActionButtonProps } from './action-button';
 export { FilterChip, type FilterChipProps } from './filter-chip';
 export { TextField, type TextFieldProps } from './text-field';
 export { RatingPicker, type RatingPickerProps } from './rating-picker';
+export { RatingStars, type RatingStarsProps } from './rating-stars';
 export { WeddingCalendar, type WeddingCalendarProps } from './wedding-calendar';
 export { WeddingMark, type WeddingMarkProps } from './wedding-mark';
 export { ProductSymbol, type ProductSymbolName } from './product-symbol';
