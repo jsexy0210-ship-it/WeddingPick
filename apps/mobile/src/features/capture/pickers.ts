@@ -20,6 +20,24 @@ export class PermissionDeniedError extends Error {
   }
 }
 
+/**
+ * 지금 사진 권한이 어떤 상태인가. **묻지 않고 본다** — 기기가 띄우는 창은 한 번뿐이라,
+ * 왜 필요한지 먼저 말할 기회를 잃지 않으려면 요청 전에 상태만 확인해야 한다.
+ *
+ *   granted  이미 허용됨 — 설명 없이 바로 앨범을 연다
+ *   ask      아직 묻지 않았거나 다시 물을 수 있다 — 설명 시트를 먼저 띄운다
+ *   blocked  기기가 더 묻지 않는다 — 「허용하기」를 눌러도 아무 일도 없으니 설정으로 보낸다
+ */
+export type PhotoPermissionState = 'granted' | 'ask' | 'blocked';
+
+export async function photoPermissionState(): Promise<PhotoPermissionState> {
+  const current = await ImagePicker.getMediaLibraryPermissionsAsync();
+
+  if (current.granted) return 'granted';
+
+  return current.canAskAgain ? 'ask' : 'blocked';
+}
+
 /** 사진 앨범에서 견적서·계약서 사진을 여러 장 고른다. 취소하면 빈 배열. */
 export async function pickFromLibrary(): Promise<CapturedPage[]> {
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
