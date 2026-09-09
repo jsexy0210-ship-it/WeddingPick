@@ -53,3 +53,11 @@ export function sourceKey(value: string): SourceKey {
   if (!Object.hasOwn(PUBLIC_SOURCES, value)) throw new Error('출처가 허용 목록에 없습니다.');
   return value as SourceKey;
 }
+
+/**
+ * 아는 출처인가. `sourceKey`와 달리 던지지 않는다 — 부르는 쪽이 404로 답해야 하는
+ * 자리(관리자 수집 스위치)에서는 예외보다 참·거짓이 쓰기 편하다.
+ */
+export function isKnownSourceKey(value: string): value is SourceKey {
+  return Object.hasOwn(PUBLIC_SOURCES, value);
+}
