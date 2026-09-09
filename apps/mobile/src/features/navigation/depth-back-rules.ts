@@ -69,6 +69,7 @@ export const ROUTES: readonly string[] = [
   '/capture/camera',
   '/capture/payment/consent',
   '/capture/payment/register',
+  '/capture/quote/consent',
   '/capture/result/[quoteId]',
   '/capture/review',
   '/capture/sample',

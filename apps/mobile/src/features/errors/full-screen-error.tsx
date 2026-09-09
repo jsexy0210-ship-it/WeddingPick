@@ -84,6 +84,11 @@ const COPY: Record<ErrorKind, { title: string; body: string; cta: string }> = {
     body: '정보 처리 방식이 바뀌어서 업데이트해야 이용할 수 있어요',
     cta: '업데이트',
   },
+  general: {
+    title: '잠시 문제가 생겼어요',
+    body: '다시 시도해도 안 되면 알려주세요',
+    cta: '다시 시도',
+  },
 };
 
 const styles = StyleSheet.create({

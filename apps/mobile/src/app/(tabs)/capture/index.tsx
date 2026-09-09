@@ -75,7 +75,12 @@ export default function CaptureScreen() {
     {
       title: pages.length > 0 ? `${S.quote} · 작성 중 ${pages.length}장` : S.quote,
       desc: S.quoteDesc,
-      onPress: () => router.push(pages.length > 0 ? '/capture/review' : '/capture/camera'),
+      /*
+       * **동의 화면을 먼저 지난다**(Release Audit 1차 P0-5, 2026-09-09). 예전에는
+       * 촬영으로 바로 갔다 — 견적서 원본도 결제 증빙과 똑같이 외부로 나가는데
+       * 묻지도 기록하지도 않았다. 이미 동의한 사람은 그 화면이 지나쳐 보낸다.
+       */
+      onPress: () => router.push('/capture/quote/consent'),
     },
   ];
 

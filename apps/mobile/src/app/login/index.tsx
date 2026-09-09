@@ -1,9 +1,7 @@
 import { POLICY_DOCUMENTS, dDay } from '@weddingpick/domain';
-import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
 
 import {
   ActionButton,
@@ -312,8 +310,6 @@ function PolicyLink({ id }: { id: 'terms' | 'privacy' }) {
 const MARK_SIZE = 64;
 const KAKAO_LOGO = 20;
 const AVATAR_LOGO = 18;
-const AGE_CHECK = 18;
-const AGE_CHECK_GLYPH = 12;
 const BADGE_PADDING_X = 9;
 const ACCOUNT_PADDING_Y = 16;
 const ACCOUNT_PADDING_X = 18;
@@ -418,7 +414,6 @@ const styles = StyleSheet.create({
     minHeight: Layout.touchTarget,
     paddingHorizontal: Spacing.one,
   },
-  ageCheck: { width: AGE_CHECK, height: AGE_CHECK, borderRadius: Radius.pill, alignItems: 'center', justifyContent: 'center' },
   ageUnderline: { textDecorationLine: 'underline', textDecorationStyle: 'solid' },
   policyLink: { fontWeight: 700, textDecorationLine: 'underline', textDecorationStyle: 'solid' },
   bold: { fontWeight: 700 },

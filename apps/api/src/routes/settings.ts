@@ -1,5 +1,5 @@
 import { updateSettingsRequestSchema } from '@weddingpick/api-contract';
-import { PAYMENT_CONSENT_VERSION } from '@weddingpick/domain';
+import { DOCUMENT_CONSENT_VERSION, PAYMENT_CONSENT_VERSION } from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
 
 import { currentUserId, requireUser } from '../auth/plugin';
@@ -10,6 +10,7 @@ type SettingsRow = {
   push_enabled: boolean;
   price_change_enabled: boolean;
   consent_at: Date | null;
+  document_consent_at: Date | null;
   wedding_date: Date | null;
   region: string | null;
   display_name: string | null;
@@ -32,6 +33,7 @@ export function registerSettingsRoutes(app: FastifyInstance, context: AppContext
          coalesce(s.push_enabled, true) AS push_enabled,
          coalesce(s.price_change_enabled, true) AS price_change_enabled,
          c.granted_at AS consent_at,
+         d.granted_at AS document_consent_at,
          w.wedding_date,
          w.region,
          u.display_name,
@@ -40,6 +42,7 @@ export function registerSettingsRoutes(app: FastifyInstance, context: AppContext
        FROM structured.users u
        LEFT JOIN structured.notification_settings s ON s.user_id = u.id
        LEFT JOIN structured.active_payment_consents c ON c.user_id = u.id
+       LEFT JOIN structured.active_document_consents d ON d.user_id = u.id
        LEFT JOIN LATERAL (
          SELECT wedding_date, region, owner_user_id, partner_user_id
          FROM structured.weddings
@@ -58,6 +61,8 @@ export function registerSettingsRoutes(app: FastifyInstance, context: AppContext
       priceChangeEnabled: row?.price_change_enabled ?? true,
       paymentConsent: row?.consent_at != null,
       paymentConsentAt: row?.consent_at?.toISOString() ?? null,
+      documentConsent: row?.document_consent_at != null,
+      documentConsentAt: row?.document_consent_at?.toISOString() ?? null,
       weddingDate: row?.wedding_date ? row.wedding_date.toISOString().slice(0, 10) : null,
       region: row?.region ?? null,
       spouseLinked: row?.spouse_linked ?? false,
@@ -118,6 +123,42 @@ export function registerSettingsRoutes(app: FastifyInstance, context: AppContext
    * 지운다), 철회 한 번으로 남의 통계에서 조용히 빠지면 그건 철회가 아니라
    * 되돌리기다.
    */
+  /**
+   * 견적서 업로드 동의. 결제인증과 같은 모양이다 — **최초 1회만.**
+   *
+   * 따로 받는 이유는 읽어가는 것도 쓰는 곳도 다르기 때문이다. 하나로 묶으면
+   * Pick 인증만 하고 싶은 사람이 견적서 전송까지 동의하게 된다.
+   */
+  app.post('/v1/me/document-consent', auth, async (request) => {
+    const userId = currentUserId(request);
+
+    await context.pool.query(
+      `INSERT INTO structured.document_consents (user_id, consent_version)
+       VALUES ($1, $2)
+       ON CONFLICT (user_id) WHERE revoked_at IS NULL DO NOTHING`,
+      [userId, DOCUMENT_CONSENT_VERSION]
+    );
+
+    return await load(userId);
+  });
+
+  /** 견적서 동의 철회. 결제인증 철회와 같다 — 지우지 않고 철회 시각을 적는다. */
+  app.delete('/v1/me/document-consent', auth, async (request) => {
+    const userId = currentUserId(request);
+
+    const { rowCount } = await context.pool.query(
+      `UPDATE structured.document_consents SET revoked_at = now()
+       WHERE user_id = $1 AND revoked_at IS NULL`,
+      [userId]
+    );
+
+    if (rowCount === 0) {
+      throw new ApiError('conflict', '아직 동의하지 않으셨습니다.');
+    }
+
+    return await load(userId);
+  });
+
   app.delete('/v1/me/payment-consent', auth, async (request) => {
     const userId = currentUserId(request);
 

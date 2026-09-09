@@ -19,6 +19,7 @@ import { setPendingSignInError } from '@/features/auth/sign-in-handoff';
 import { SigningInView } from '@/features/auth/signing-in-view';
 import { CaptureDraftProvider } from '@/features/capture/capture-draft';
 import { DocumentStoreProvider } from '@/features/documents/document-store';
+import { FullScreenError } from '@/features/errors/full-screen-error';
 import { getAppBootstrap, getCurrentUser, getSignupState } from '@/api/client';
 import { loadToken, saveToken } from '@/api/session';
 import { SPLASH_MINIMUM_MS, SplashView } from '@/features/splash/splash-view';
@@ -315,4 +316,30 @@ function RootLayoutContent() {
       </DocumentStoreProvider>
     </ThemeProvider>
   );
+}
+
+/**
+ * 앱 전체의 오류 경계. expo-router가 이 이름의 export를 찾아 쓴다.
+ *
+ * **없었다**(Release Audit 1차 P0-4, 2026-09-09). `ErrorBoundary` ·
+ * `componentDidCatch` · `getDerivedStateFromError`가 저장소 전체에 0건이었다.
+ * 개발 빌드에서는 expo-router의 기본 오류 화면이 떠서 눈에 띄지 않지만
+ * **프로덕션 빌드에는 그 화면이 없다** — 그리다 죽으면 흰 화면만 남고
+ * 사용자가 할 수 있는 일은 앱을 껐다 켜는 것뿐이었다.
+ *
+ * 뿌리에 두는 이유는 여기가 마지막 그물이기 때문이다. 화면 하나가 실패한 것은
+ * 그 화면 안에서 말하는 것이 맞고(`ErrorView`), 여기까지 올라온 것은 그 화면이
+ * 스스로 말할 수 없었던 실패다.
+ *
+ * `retry`는 expo-router가 준다 — 경계를 비우고 다시 그린다. 앱을 껐다 켜는 것과
+ * 달리 스택이 남는다.
+ *
+ * **문구는 «잠시 문제가 생겼어요»다**(`error.general.*`). 오류 내용을 그대로
+ * 보여주지 않는다 — 스택 트레이스에는 파일 경로와 내부 이름이 들어 있고,
+ * 사용자가 그걸로 할 수 있는 일이 없다. 진단은 로그가 맡는다.
+ */
+export function ErrorBoundary({ error, retry }: { error: Error; retry: () => Promise<void> }) {
+  console.error('화면을 그리다 죽었다.', error);
+
+  return <FullScreenError kind="general" onRetry={() => void retry()} />;
 }

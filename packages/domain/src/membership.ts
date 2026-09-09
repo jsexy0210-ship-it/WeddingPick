@@ -11,7 +11,7 @@ export const MEMBER_TIERS = ['guest', 'mate', 'friend', 'family'] as const;
 export type MemberTier = (typeof MEMBER_TIERS)[number];
 
 export const MEMBER_TIER_LABEL: Record<MemberTier, string> = {
-  guest: '게스트',
+  guest: '게스트', // lint-copy: 등급 코드의 내부 이름 — v3.12에서 비회원 이용을 폐기해 화면에 나가지 않는다
   mate: '메이트',
   friend: '프렌드',
   family: '패밀리',

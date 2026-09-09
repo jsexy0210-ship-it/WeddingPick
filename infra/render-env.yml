@@ -72,3 +72,24 @@ services:
       # 없으면 인가 코드까지는 받고 /oauth/token에서 거부당한다
       # (apps/api/src/auth/identity-provider.ts — 값이 있을 때만 보낸다).
       - KAKAO_CLIENT_SECRET
+      #
+      # ── 법적 고지 8개 ──────────────────────────────────────────────────
+      #
+      # **하나라도 비어 있으면 운영 API가 뜨지 않는다.** production일 때
+      # `assertReleasable`이 던지고, 그 호출이 부팅 경로에 있다
+      # (packages/domain/src/release-gate.ts · apps/api/src/index.ts).
+      # `TBD` · `미정` · `확인 필요` 같은 임시값도 같은 결과다.
+      #
+      # 지금까지 이 값들은 Render 대시보드에만 있어서 **저장소에서 채워졌는지
+      # 확인할 방법이 없었다**(Release Audit 1차 P0-7). 이름을 여기 적어 두면
+      # GitHub Secrets에 같은 이름으로 넣은 값이 흘러가고, 무엇이 필요한지는
+      # 이 파일만 보면 된다. 키 하나씩 upsert하므로 GitHub Secrets에 없는
+      # 이름은 건너뛴다 — 대시보드에 이미 들어 있는 값을 지우지 않는다.
+      - LEGAL_BUSINESS_NAME
+      - LEGAL_REPRESENTATIVE
+      - LEGAL_REGISTRATION_NUMBER
+      - LEGAL_ADDRESS
+      - LEGAL_SUPPORT_CONTACT
+      - LEGAL_PRIVACY_OFFICER
+      - LEGAL_TERMS_EFFECTIVE_ON
+      - LEGAL_PRIVACY_EFFECTIVE_ON

@@ -205,6 +205,7 @@ describeWithDb('결제인증', () => {
 
   it('원본은 24시간 뒤에 지워진다', async () => {
     const { headers, userId } = await signInAs(test);
+    await consentToPaymentProofs(test, headers);
     await createVendor();
     const weddingId = await createWedding(test, headers);
 

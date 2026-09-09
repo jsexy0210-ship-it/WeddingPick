@@ -84,7 +84,7 @@ export const VENDOR_SORTS = ['data', 'price_low', 'price_high', 'name'] as const
 export const vendorSortSchema = z.enum(VENDOR_SORTS);
 
 export const VENDOR_SORT_LABEL: Record<(typeof VENDOR_SORTS)[number], string> = {
-  data: '데이터 많은 순',
+  data: '실 제보 많은 순',
   price_low: '금액 낮은 순',
   price_high: '금액 높은 순',
   name: '이름 순',

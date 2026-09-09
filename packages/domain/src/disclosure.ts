@@ -226,7 +226,7 @@ export function canDiscloseCondition(input: {
   );
 }
 
-export const CONDITION_NOT_ENOUGH = '이 조건은 아직 데이터가 모이는 중이에요';
+export const CONDITION_NOT_ENOUGH = '이 조건은 아직 정보가 적어요';
 
 /**
  * 결제인증이 여는 것.

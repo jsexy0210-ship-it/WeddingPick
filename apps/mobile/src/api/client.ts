@@ -1468,6 +1468,15 @@ export async function revokePaymentConsent(): Promise<Settings> {
   return request('/v1/me/payment-consent', settingsSchema, { method: 'DELETE' });
 }
 
+/** 견적서 업로드 동의. 결제인증과 따로 받는다 — 읽어가는 것도 쓰는 곳도 다르다. */
+export async function grantDocumentConsent(): Promise<Settings> {
+  return request('/v1/me/document-consent', settingsSchema, { method: 'POST' });
+}
+
+export async function revokeDocumentConsent(): Promise<Settings> {
+  return request('/v1/me/document-consent', settingsSchema, { method: 'DELETE' });
+}
+
 // ──────────────────────────────────────────────────────────────────────────────
 // 타입 재내보내기 — 화면이 @weddingpick/api-contract 직접 의존 없이 쓸 수 있다.
 // ──────────────────────────────────────────────────────────────────────────────
