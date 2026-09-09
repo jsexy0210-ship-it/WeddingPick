@@ -124,9 +124,12 @@ describe('금지어 목록의 원본은 spec/glossary.json이다', () => {
     expect(violatesCopyRules('중앙값 168만원')).toBe(true);
   });
 
-  it('아직 강제하지 않는 항목을 이름으로 남긴다', () => {
-    // 조용히 빠지면 영영 안 켜진다. 목록이 바뀌면 이 검사가 먼저 깨진다.
-    expect([...PENDING_PHRASES]).toEqual(['둘러보기']);
-    expect(BANNED_PHRASES).not.toContain('둘러보기');
+  it('강제를 미룬 항목이 없다', () => {
+    /*
+     * `pending`은 도망갈 구멍이라 비어 있는 것이 정상이다. 무언가 들어오면 이
+     * 검사가 먼저 깨지고, 깨진 자리에서 «왜 미뤘는지»를 읽게 된다.
+     */
+    expect([...PENDING_PHRASES]).toEqual([]);
+    expect(BANNED_PHRASES).toContain('둘러보기');
   });
 });

@@ -215,9 +215,7 @@
     },
     {
       "term": "둘러보기",
-      "use": "검색",
-      "note": "온보딩 «비회원으로 둘러보기» CTA는 예외",
-      "pending": "화면 문구 2곳이 걸린다(rewards/index.tsx missionDesc · pick/category.tsx label). 이 둘은 note가 말하는 온보딩 «비회원으로 둘러보기» CTA가 아니고, 그 CTA는 2026-09-04 비회원 진입 삭제로 이미 없다. 문구를 고칠지 allow로 둘지는 MASTER 판단."
+      "use": "검색"
     },
     {
       "term": "관심업체",
