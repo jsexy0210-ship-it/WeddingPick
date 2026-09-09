@@ -27,6 +27,10 @@ on:
         description: '소분류 조사 시 상위 중분류 코드(indsMclsCd)'
         type: string
         default: ''
+      lookup_raw:
+        description: '업종 조회 응답 원문 앞부분을 출력(파싱 0건일 때 응답 모양 확인용)'
+        type: boolean
+        default: false
   schedule:
     - cron: '17 18 * * 6'
 
@@ -134,8 +138,10 @@ jobs:
             --lookup-category --level "$LEVEL" \
             ${KEYWORD:+--keyword "$KEYWORD"} \
             ${PARENT_LARGE:+--parent-large "$PARENT_LARGE"} \
-            ${PARENT_MIDDLE:+--parent-middle "$PARENT_MIDDLE"}
+            ${PARENT_MIDDLE:+--parent-middle "$PARENT_MIDDLE"} \
+            $RAW
         env:
+          RAW: ${{ inputs.lookup_raw && '--raw' || '' }}
           LEVEL: ${{ inputs.lookup_level }}
           KEYWORD: ${{ inputs.lookup_keyword }}
           PARENT_LARGE: ${{ inputs.lookup_parent_large }}

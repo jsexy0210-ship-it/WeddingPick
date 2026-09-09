@@ -309,18 +309,40 @@ const UPJONG_NAME_FIELD = { large: 'indsLclsNm', middle: 'indsMclsNm', small: 'i
  * 가정한다 — 활용가이드가 XML 예시만 보여줘 실제 JSON 필드명은 실키로
  * 한 번 호출해 확인 전이다.
  */
-export async function listIndustryCategories(
+function upjongUrl(
   level: keyof typeof UPJONG_ENDPOINT,
   apiKey: string,
   parent?: { indsLclsCd?: string; indsMclsCd?: string },
-): Promise<IndustryCategory[]> {
+): string {
   const url = new URL(`https://apis.data.go.kr/B553077/api/open/sdsc2/${UPJONG_ENDPOINT[level]}`);
   url.searchParams.set('serviceKey', normalizeServiceKey(apiKey));
   url.searchParams.set('type', 'json');
   if (parent?.indsLclsCd) url.searchParams.set('indsLclsCd', parent.indsLclsCd);
   if (parent?.indsMclsCd) url.searchParams.set('indsMclsCd', parent.indsMclsCd);
+  return url.toString();
+}
 
-  const buf = await publicGet(url.toString(), 4 * 1024 * 1024);
+/**
+ * 업종코드 응답 원문 앞부분을 그대로 돌려준다 — 응답 모양이 우리 가정과
+ * 다를 때 무엇이 왔는지 보기 위한 진단용이다. 서비스키는 URL에만 있고
+ * 본문에는 없으므로 이 값을 출력해도 키가 새지 않는다. 저장하지 않는다.
+ */
+export async function fetchIndustryCategoriesRaw(
+  level: keyof typeof UPJONG_ENDPOINT,
+  apiKey: string,
+  parent?: { indsLclsCd?: string; indsMclsCd?: string },
+  limit = 2000,
+): Promise<string> {
+  const buf = await publicGet(upjongUrl(level, apiKey, parent), 4 * 1024 * 1024);
+  return buf.toString('utf8').slice(0, limit);
+}
+
+export async function listIndustryCategories(
+  level: keyof typeof UPJONG_ENDPOINT,
+  apiKey: string,
+  parent?: { indsLclsCd?: string; indsMclsCd?: string },
+): Promise<IndustryCategory[]> {
+  const buf = await publicGet(upjongUrl(level, apiKey, parent), 4 * 1024 * 1024);
   const page = JSON.parse(buf.toString('utf8')) as { data?: Record<string, string>[] };
   const codeField = UPJONG_CODE_FIELD[level];
   const nameField = UPJONG_NAME_FIELD[level];

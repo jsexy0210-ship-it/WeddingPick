@@ -6,7 +6,7 @@ import { VENDOR_CATEGORIES } from '@weddingpick/domain';
 import { backfillVendorMatches } from './analysis/vendor-matching';
 import { loadConfig } from './config';
 import { createPool, withTransaction } from './db';
-import { listIndustryCategories } from './public-data/collect';
+import { fetchIndustryCategoriesRaw, listIndustryCategories } from './public-data/collect';
 import { MissingColumnError, parseLocaldataCsv } from './public-data/localdata';
 import { runPublicCollection } from './public-data/run';
 
@@ -87,10 +87,14 @@ async function main() {
     const keyword = argument('keyword');
     const parentLarge = argument('parent-large');
     const parentMiddle = argument('parent-middle');
-    const items = await listIndustryCategories(level, apiKey, {
-      indsLclsCd: parentLarge,
-      indsMclsCd: parentMiddle,
-    });
+    const parent = { indsLclsCd: parentLarge, indsMclsCd: parentMiddle };
+    // 응답 모양이 우리 가정과 다르면 파싱 결과가 조용히 0건이 된다.
+    // --raw는 본문 앞부분을 그대로 보여준다(키는 URL에만 있어 노출되지 않는다).
+    if (process.argv.includes('--raw')) {
+      console.log(await fetchIndustryCategoriesRaw(level, apiKey, parent));
+      return;
+    }
+    const items = await listIndustryCategories(level, apiKey, parent);
     const filtered = keyword ? items.filter((item) => item.name.includes(keyword)) : items;
     if (filtered.length === 0) {
       console.log('일치하는 항목이 없습니다.');
