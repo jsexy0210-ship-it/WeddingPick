@@ -77,13 +77,44 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # 키가 없을 때 수집 스텝을 건너뛰면 잡이 초록으로 끝나 수집 0건인 것을
+      # 아무도 모른다. 건너뛰지 않고 명시적으로 실패시켜 드러낸다.
+      - name: SBIZ_API_KEY 확인
+        if: ${{ matrix.needs_sbiz_key }}
+        env:
+          SOURCE: ${{ matrix.source }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SBIZ_API_KEY:-}" ]; then
+            echo "::error::SBIZ_API_KEY 시크릿이 없어 '$SOURCE' 수집을 실행할 수 없습니다. GitHub 저장소 → Settings → Secrets and variables → Actions → Repository secrets → New repository secret 에서 이름을 SBIZ_API_KEY 로 등록하세요(공공데이터포털 일반 인증키의 Encoding 값 그대로)."
+            exit 1
+          fi
       - name: Collect validated public data
-        if: ${{ !matrix.needs_sbiz_key || env.SBIZ_API_KEY != '' }}
         run: npm run public-data:import --workspace @weddingpick/api -- --source "$SOURCE" --out ../../.collection
         env:
           SOURCE: ${{ matrix.source }}
+      # 0건 수집은 성공이 아니다. run.ts는 vendors가 비어도 report만 쓰고 정상
+      # 종료하므로(0건 가드 없음) 잡이 초록으로 끝난다. 특히 sbiz-* 는
+      # collect.ts의 대분류 코드 'Q'가 미확인 값이라 API가 빈 결과를 줄 수
+      # 있다. 운영 DB에 반영하기 전에 여기서 멈춘다.
+      - name: 수집 결과 0건 확인
+        env:
+          SOURCE: ${{ matrix.source }}
+        run: |
+          set -euo pipefail
+          REPORT=".collection/$SOURCE-report.json"
+          if [ ! -f "$REPORT" ]; then
+            echo "::error::$REPORT 이 없습니다. 수집이 리포트를 남기지 못했습니다."
+            exit 1
+          fi
+          ACCEPTED=$(node -e "process.stdout.write(String(require('./$REPORT').accepted ?? 0))")
+          echo "$SOURCE accepted=$ACCEPTED"
+          if [ "$ACCEPTED" -eq 0 ]; then
+            echo "::error::'$SOURCE' 수집 결과가 0건입니다. 초록으로 넘기지 않고 멈춥니다 — 출처 응답 또는 업종 코드를 확인하세요."
+            exit 1
+          fi
       - name: Apply to existing database
-        if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || inputs.apply) && (!matrix.needs_sbiz_key || env.SBIZ_API_KEY != '')
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || inputs.apply)
         run: npm run public-data:import --workspace @weddingpick/api -- --source "$SOURCE" --apply --out ../../.collection
         env:
           SOURCE: ${{ matrix.source }}
