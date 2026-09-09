@@ -249,13 +249,12 @@ export default function MyScreen() {
               onPress={() => guestPush('/capture')}
             />
             <Row name={S['item.reportLog']} chevron onPress={() => guestPush('/my/reports')} />
-            {/* 내 후기만 모아 보는 화면은 아직 없다 — 제보 내역이 후기도 같이 보여준다. */}
             <Row
               name={S['item.myReview']}
               tail={totalReviews > 0 ? S.count(totalReviews) : undefined}
               tailDim
               chevron
-              onPress={() => guestPush('/my/reports')}
+              onPress={() => guestPush('/my/reviews')}
             />
             <Row
               name={S['item.benefit']}
@@ -268,7 +267,7 @@ export default function MyScreen() {
 
           {/* 웨딩 설정 */}
           <MenuGroup title={S['group.wedding']}>
-            <Row name={S['item.weddingSetting']} chevron onPress={() => guestPush('/setup')} />
+            <Row name={S['item.weddingSetting']} chevron onPress={() => guestPush('/my/wedding-settings')} />
             <Row name={S['item.taste']} chevron onPress={() => guestPush('/my/taste')} />
             <Row
               name={S['item.partner']}
@@ -278,8 +277,7 @@ export default function MyScreen() {
               onPress={() => guestPush('/wedding/partner')}
             />
             <Row name={S['item.notification']} chevron onPress={() => guestPush('/my/notification-settings')} />
-            {/* 화면(스킨) 설정 화면은 아직 없다 — 설정으로 보낸다. 스킨 값도 저장되는 곳이 없어 적지 않는다. */}
-            <Row name={S['item.display']} chevron onPress={() => guestPush('/my/settings')} />
+            <Row name={S['item.display']} chevron onPress={() => guestPush('/my/display')} />
           </MenuGroup>
 
           {/* 계정 */}

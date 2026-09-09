@@ -763,17 +763,8 @@ export default function VendorDetailScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={REPORT_ERROR}
-              onPress={() =>
-                router.push({
-                  pathname: '/my/contact',
-                  params: {
-                    category: 'data_correction',
-                    subjectKind: 'vendor',
-                    subjectId: vendor.id,
-                    subjectName: vendor.name,
-                  },
-                })
-              }>
+              /* WP-VEND-006 — 무엇이 틀렸는지 고르는 화면. 범용 문의로 보내지 않는다. */
+              onPress={() => router.push(`/search/${vendor.id}/fix-report`)}>
               <View style={styles.row}>
                 <ThemedText type="t6" themeColor="textSecondary" style={styles.rowGrow}>{REPORT_ERROR}</ThemedText>
                 <ProductSymbol name="chevronRight" size={Layout.iconInline} color={theme.textDisabled} />

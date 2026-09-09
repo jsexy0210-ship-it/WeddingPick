@@ -221,6 +221,16 @@ const readCache = new Map<string, ReadEntry>();
 const inFlightReads = new Map<string, Promise<unknown>>();
 
 /**
+ * 몇 번째 캐시인가. 버릴 때마다 하나 오른다.
+ *
+ * 버리는 순간 이미 서버에 가 있던 읽기가 있다. 그것이 돌아와 캐시에 적으면,
+ * 방금 버린 이유(내가 무언가를 바꿨다)보다 **먼저 떠난 답**이 새 캐시로 앉는다 —
+ * 바꾸기 전 목록이 다시 붙는 것이다. 떠날 때의 번호를 들고 갔다가 돌아와서
+ * 달라졌으면 적지 않는다.
+ */
+let cacheGeneration = 0;
+
+/**
  * 읽기 캐시를 통째로 버린다.
  *
  * 부르는 곳은 셋이다 — 무언가를 바꾼 직후(아래 쓰기 분기), 로그인·로그아웃처럼
@@ -229,6 +239,7 @@ const inFlightReads = new Map<string, Promise<unknown>>();
  * 라우트가 늘 때마다 조용히 틀려진다. 통째로 버리는 편이 틀리지 않는다.
  */
 export function clearReadCache(): void {
+  cacheGeneration += 1;
   readCache.clear();
   inFlightReads.clear();
 }
@@ -316,15 +327,22 @@ function startRead<T>(
 
   if (existing) return existing as Promise<T>;
 
+  const generation = cacheGeneration;
   const pending = send(path, schema, init).then((value) => {
-    readCache.set(path, { at: Date.now(), value });
+    // 떠난 뒤에 캐시를 버린 일이 있으면 적지 않는다 — 옛 답이 새 캐시가 된다.
+    if (generation === cacheGeneration) readCache.set(path, { at: Date.now(), value });
 
     return value;
   });
 
   inFlightReads.set(path, pending);
   // 실패도 «가 있는 중»에서 지운다. 붙잡아두면 다음 화면이 같은 실패를 물려받는다.
-  void pending.catch(() => undefined).finally(() => inFlightReads.delete(path));
+  void pending
+    .catch(() => undefined)
+    .finally(() => {
+      // 그새 다시 떠난 요청이 있으면 그쪽 것을 지우지 않는다.
+      if (inFlightReads.get(path) === pending) inFlightReads.delete(path);
+    });
 
   return pending;
 }
