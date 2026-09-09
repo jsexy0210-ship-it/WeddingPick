@@ -5,6 +5,11 @@
 # 저장소의 apps/api/src/seed-samples.ts를 그대로 쓴다. 고정 시드라 몇 번을 돌려도
 # 같은 업체만 있고, remove는 vendor_source_records(source_key='sample') 표시를
 # 따라 업체·이미지·결제인증·표본 계정을 한 번에 지운다.
+#
+# target=production은 지금 쓸 수 없다(2026-09-09 실측). `PRODUCTION_DATABASE_URL`에
+# Render 내부망에서만 풀리는 이름이 들어 있어 GitHub Actions에서는 이름 풀이가
+# 실패한다(`getaddrinfo EAI_AGAIN`). 밖에서 닿는 주소를 그 시크릿에 넣기 전까지
+# production을 고르면 접속 단계에서 멈춘다 — 조용히 운영에 쓰지는 않는다.
 name: DB 샘플 업체 시드
 
 on:
