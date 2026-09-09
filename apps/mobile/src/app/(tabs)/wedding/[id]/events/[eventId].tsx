@@ -1,65 +1,84 @@
-import type { WeddingEvent } from '@weddingpick/api-contract';
-import { formatEventDateTime } from '@weddingpick/domain';
+import type { CurrentUser, WeddingEvent } from '@weddingpick/api-contract';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
-import { listWeddingEvents, removeWeddingEvent, updateWeddingEvent } from '@/api/client';
-import {
-  ActionButton,
-  ErrorView,
-  Layout,
-  MaxContentWidth,
-  Radius,
-  showAlert,
-  Spacing,
-  ThemedText,
-  ThemedView,
-  WeddingCalendar,
-  useTheme,
-} from '@weddingpick/ui';
+import { getCurrentUser, listWeddingEvents, removeWeddingEvent, updateWeddingEvent } from '@/api/client';
+import { formatDateDot, formatMonthDayDot } from '@/features/common/format-date';
+import { ErrorView, Layout, Spacing, ThemedText, showAlert } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
+import { DateTimeField, combineDayTime, splitDayTime } from '@/features/wedding/event-form';
+import {
+  Badge,
+  CheckBox,
+  Dock,
+  DockButton,
+  Field,
+  Hero,
+  ListRow,
+  NavBar,
+  NoteCard,
+  RowValue,
+  Screen,
+  Section,
+  eventTime,
+} from '@/features/wedding/screen-kit';
 
-const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
-const splitStartsAt = (isoDateTime: string) => {
-  const value = new Date(isoDateTime);
-  const date = `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(
-    value.getDate()
-  ).padStart(2, '0')}`;
-  const time = `${String(value.getHours()).padStart(2, '0')}:${String(value.getMinutes()).padStart(
-    2,
-    '0'
-  )}`;
+/** eyebrow — «D-11 · 2027.03.14(금)» · «오늘 · …» · 지난 일정은 «완료 · …». */
+function eyebrowOf(event: WeddingEvent, now: number): string {
+  const date = formatDateDot(event.startsAt);
 
-  return { date, time };
-};
+  if (event.status === 'done') return `완료 · ${date}`;
+
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+  const startOfDay = new Date(event.startsAt);
+  startOfDay.setHours(0, 0, 0, 0);
+  const diff = Math.round((startOfDay.getTime() - startOfToday.getTime()) / DAY_MS);
+
+  return `${diff <= 0 ? '오늘' : `D-${diff}`} · ${date}`;
+}
 
 /**
- * 일정 상세. 핸드오프 WP-OUR-005.
+ * 일정 상세. WP-OUR-005 · 핸드오프 08-schedule-sub #2.
  *
- * 단건 조회 API를 따로 두지 않는다 — wedding_tasks·visit_notes와 같은 이유로,
- * 목록을 불러와 id로 찾는다. 외부 캘린더 등록(WP-EXPO-005)은 이 화면 범위가
- * 아니다 — 손대지 않는다.
+ *   nav       제목 · 오른쪽 «수정»
+ *   hero      eyebrow «D-11 · 2027.03.14(금)» + «14:00 라비드레스»
+ *   일정       일시 · 장소 · 관련 업체 — 라벨 18/24 · 값 16/22 tertiary
+ *   알림       «하루 전에 알려주기» 체크 + 켬/끔 배지 — 누르면 바로 저장
+ *   메모       있으면 한 행
+ *   note      배우자가 있으면 «{이름}님에게도 보여요»
+ *
+ * 시안의 «두 시간 전 알림» · «휴대폰 캘린더에 넣기» · «등록 · 지수 · 2월 28일»은 서버에 그 값이
+ * 없어 넣지 않았다 — 없는 데이터를 있는 것처럼 그리지 않는다. 단건 조회 API가 없어 목록을
+ * 불러 id로 찾는다.
  */
 export default function WeddingEventDetailScreen() {
   const { id, eventId } = useLocalSearchParams<{ id: string; eventId: string }>();
-  const theme = useTheme();
 
   const [event, setEvent] = useState<WeddingEvent | null>(null);
+  const [me, setMe] = useState<CurrentUser | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [now, setNow] = useState<number | null>(null);
 
   const [title, setTitle] = useState('');
-  const [date, setDate] = useState<string | null>(null);
+  const [day, setDay] = useState<string | null>(null);
   const [time, setTime] = useState('');
   const [location, setLocation] = useState('');
   const [vendorLabel, setVendorLabel] = useState('');
   const [memo, setMemo] = useState('');
-  const [notifyEnabled, setNotifyEnabled] = useState(true);
+
+  useEffect(() => {
+    void Promise.resolve().then(() => setNow(Date.now()));
+    getCurrentUser()
+      .then(setMe)
+      .catch(() => undefined);
+  }, []);
 
   const load = useCallback(() => {
     listWeddingEvents(id)
@@ -74,7 +93,7 @@ export default function WeddingEventDetailScreen() {
 
   useEffect(load, [load]);
 
-  if (error) {
+  if (error && !event) {
     return <ErrorView message={error} onBack={() => router.back()} />;
   }
 
@@ -82,27 +101,31 @@ export default function WeddingEventDetailScreen() {
     return <ErrorView title="일정을 찾을 수 없어요" onBack={() => router.back()} />;
   }
 
-  if (!event) {
+  if (!event || now === null) {
     return <DelayedLoadingView />;
   }
 
-  function startEditing() {
-    const split = splitStartsAt(event!.startsAt);
+  const current = event;
+  const partner = me?.spouseLinked ? (me.partnerDisplayName ?? '배우자') : null;
 
-    setTitle(event!.title);
-    setDate(split.date);
+  function startEditing() {
+    const split = splitDayTime(current.startsAt);
+
+    setTitle(current.title);
+    setDay(split.day);
     setTime(split.time);
-    setLocation(event!.location ?? '');
-    setVendorLabel(event!.vendorLabel ?? '');
-    setMemo(event!.memo ?? '');
-    setNotifyEnabled(event!.notifyEnabled);
+    setLocation(current.location ?? '');
+    setVendorLabel(current.vendorLabel ?? '');
+    setMemo(current.memo ?? '');
+    setError(null);
     setEditing(true);
   }
 
-  const ready = title.trim().length > 0 && date !== null && TIME_PATTERN.test(time);
+  const startsAt = combineDayTime(day, time);
+  const ready = title.trim().length > 0 && startsAt !== null;
 
   async function save() {
-    if (!ready || date === null) return;
+    if (!ready || startsAt === null || saving) return;
 
     setSaving(true);
     setError(null);
@@ -110,11 +133,10 @@ export default function WeddingEventDetailScreen() {
     try {
       await updateWeddingEvent(id, eventId, {
         title: title.trim(),
-        startsAt: new Date(`${date}T${time}:00`).toISOString(),
+        startsAt,
         location: location.trim() === '' ? null : location.trim(),
         vendorLabel: vendorLabel.trim() === '' ? null : vendorLabel.trim(),
         memo: memo.trim() === '' ? null : memo.trim(),
-        notifyEnabled,
       });
 
       setEditing(false);
@@ -126,216 +148,151 @@ export default function WeddingEventDetailScreen() {
     }
   }
 
-  async function toggleNotify(next: boolean) {
-    setNotifyEnabled(next);
+  async function toggleNotify() {
+    const next = !current.notifyEnabled;
+
+    setEvent({ ...current, notifyEnabled: next });
 
     try {
       await updateWeddingEvent(id, eventId, { notifyEnabled: next });
       load();
     } catch (caught) {
+      setEvent(current);
       setError(caught instanceof Error ? caught.message : '고치지 못했어요.');
     }
   }
 
   function remove() {
-    showAlert('일정 빼기', '이 일정을 빼시겠어요? 되돌릴 수 없어요.', [
+    showAlert('일정을 삭제할까요?', '삭제하면 되돌릴 수 없어요.', [
       { text: '취소', style: 'cancel' },
       {
-        text: '빼기',
+        text: '삭제',
         style: 'destructive',
         onPress: () =>
           removeWeddingEvent(id, eventId)
             .then(() => router.back())
-            .catch((caught: Error) => setError(caught.message ?? '지우지 못했어요.')),
+            .catch((caught: Error) => setError(caught.message ?? '삭제하지 못했어요.')),
       },
     ]);
   }
 
   if (editing) {
     return (
-      <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          <ScrollView contentContainerStyle={styles.content}>
-            <ThemedText type="t2">일정 고치기</ThemedText>
+      <Screen>
+        <NavBar title="일정 수정" variant="close" onBack={() => setEditing(false)} />
 
-            <ThemedText type="t7" themeColor="textSecondary">
-              제목
-            </ThemedText>
-            <TextInput
-              style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundSelected }]}
-              value={title}
-              onChangeText={setTitle}
-              accessibilityLabel="제목"
-            />
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}>
+          <Hero title="무엇을 바꿀까요?" />
 
-            <ThemedText type="t7" themeColor="textSecondary">
-              날짜
-            </ThemedText>
-            <WeddingCalendar value={date} onChange={setDate} today={new Date(1970, 0, 1)} />
-
-            <ThemedText type="t7" themeColor="textSecondary">
-              시각 (HH:MM)
-            </ThemedText>
-            <TextInput
-              style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundSelected }]}
-              value={time}
-              onChangeText={setTime}
-              keyboardType="numbers-and-punctuation"
-              accessibilityLabel="시각"
-            />
-
-            <ThemedText type="t7" themeColor="textSecondary">
-              장소
-            </ThemedText>
-            <TextInput
-              style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundSelected }]}
+          <View style={styles.fields}>
+            <Field label="제목" value={title} onChangeText={setTitle} maxLength={60} />
+            <DateTimeField day={day} time={time} onChangeDay={setDay} onChangeTime={setTime} allowPast />
+            <Field
+              label="장소"
               value={location}
               onChangeText={setLocation}
-              accessibilityLabel="장소"
+              placeholder="어디에서 만나요?"
+              maxLength={120}
             />
-
-            <ThemedText type="t7" themeColor="textSecondary">
-              관련 업체
-            </ThemedText>
-            <TextInput
-              style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundSelected }]}
+            <Field
+              label="관련 업체"
               value={vendorLabel}
               onChangeText={setVendorLabel}
-              accessibilityLabel="관련 업체"
+              placeholder="업체 이름"
+              maxLength={60}
             />
-
-            <ThemedText type="t7" themeColor="textSecondary">
-              메모
-            </ThemedText>
-            <TextInput
-              style={[
-                styles.input,
-                styles.memo,
-                { color: theme.text, backgroundColor: theme.backgroundSelected },
-              ]}
+            <Field
+              label="메모"
               value={memo}
               onChangeText={setMemo}
+              placeholder="준비물이나 확인할 것"
               multiline
-              accessibilityLabel="메모"
-            />
-
-            <View style={styles.switchRow}>
-              <ThemedText type="t6">알림</ThemedText>
-              <Switch
-                value={notifyEnabled}
-                onValueChange={setNotifyEnabled}
-                accessibilityLabel="알림"
-                trackColor={{ true: theme.tint, false: theme.track }}
-              />
-            </View>
-
-            {error ? (
-              <ThemedText type="t7" themeColor="negative">
-                {error}
-              </ThemedText>
-            ) : null}
-
-            <ThemedView style={styles.actions}>
-              <ActionButton label="취소" onPress={() => setEditing(false)} />
-              <ActionButton
-                variant="primary"
-                label="저장"
-                disabled={!ready || saving}
-                onPress={() => void save()}
-              />
-            </ThemedView>
-          </ScrollView>
-        </SafeAreaView>
-      </ThemedView>
-    );
-  }
-
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.content}>
-          <ThemedText type="t2">{event.title}</ThemedText>
-          <ThemedText type="t7" themeColor="textSecondary">
-            {formatEventDateTime(event.startsAt)}
-          </ThemedText>
-
-          {event.location ? (
-            <ThemedView style={styles.section}>
-              <ThemedText type="t6">장소</ThemedText>
-              <ThemedText type="t7">{event.location}</ThemedText>
-            </ThemedView>
-          ) : null}
-
-          {event.vendorLabel ? (
-            <ThemedView style={styles.section}>
-              <ThemedText type="t6">관련 업체</ThemedText>
-              <ThemedText type="t7">{event.vendorLabel}</ThemedText>
-            </ThemedView>
-          ) : null}
-
-          {event.memo ? (
-            <ThemedView style={styles.section}>
-              <ThemedText type="t6">메모</ThemedText>
-              <ThemedText type="t7">{event.memo}</ThemedText>
-            </ThemedView>
-          ) : null}
-
-          <View style={styles.switchRow}>
-            <View style={styles.switchText}>
-              <ThemedText type="t6">알림</ThemedText>
-              <ThemedText type="t7" themeColor="textSecondary">
-                일정 전에 알려드려요
-              </ThemedText>
-            </View>
-            <Switch
-              value={event.notifyEnabled}
-              onValueChange={(next) => void toggleNotify(next)}
-              accessibilityLabel="알림"
-              trackColor={{ true: theme.tint, false: theme.track }}
+              maxLength={1000}
             />
           </View>
 
           {error ? (
-            <ThemedText type="t7" themeColor="negative">
+            <ThemedText type="t7" themeColor="negative" style={styles.error}>
               {error}
             </ThemedText>
           ) : null}
-
-          <ThemedView style={styles.actions}>
-            <ActionButton label="수정" onPress={startEditing} />
-            <ActionButton label="빼기" onPress={remove} />
-          </ThemedView>
-
-          <ActionButton label="돌아가기" onPress={() => router.back()} />
         </ScrollView>
-      </SafeAreaView>
-    </ThemedView>
+
+        <Dock>
+          <DockButton label="삭제" onPress={remove} />
+          <DockButton
+            variant="primary"
+            label={saving ? '저장 중…' : '저장'}
+            disabled={!ready || saving}
+            onPress={() => void save()}
+          />
+        </Dock>
+      </Screen>
+    );
+  }
+
+  const place = current.location ?? current.vendorLabel;
+
+  return (
+    <Screen>
+      <NavBar title={current.title} right={{ label: '수정', onPress: startEditing }} />
+
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <Hero
+          eyebrow={eyebrowOf(current, now)}
+          title={place ? `${eventTime(current.startsAt)} ${place}` : eventTime(current.startsAt)}
+        />
+
+        <Section label="일정">
+          <ListRow
+            title="일시"
+            right={<RowValue>{`${formatMonthDayDot(current.startsAt)} ${eventTime(current.startsAt)}`}</RowValue>}
+          />
+          {current.location ? <ListRow title="장소" right={<RowValue numeric={false}>{current.location}</RowValue>} /> : null}
+          {current.vendorLabel ? (
+            <ListRow title="관련 업체" right={<RowValue numeric={false}>{current.vendorLabel}</RowValue>} />
+          ) : null}
+          {current.source === 'auto' ? <ListRow title="등록" right={<RowValue numeric={false}>자동 추가</RowValue>} /> : null}
+        </Section>
+
+        <Section label="알림">
+          <ListRow
+            left={<CheckBox checked={current.notifyEnabled} />}
+            title="하루 전에 알려주기"
+            right={<Badge label={current.notifyEnabled ? '켬' : '끔'} tone={current.notifyEnabled ? 'ok' : 'none'} />}
+            accessibilityLabel={`하루 전에 알려주기 ${current.notifyEnabled ? '켬' : '끔'}`}
+            onPress={() => void toggleNotify()}
+          />
+        </Section>
+
+        {current.memo ? (
+          <Section label="메모">
+            <ListRow title="메모" sub={current.memo} subLines={4} />
+          </Section>
+        ) : null}
+
+        {error ? (
+          <ThemedText type="t7" themeColor="negative" style={styles.error}>
+            {error}
+          </ThemedText>
+        ) : null}
+
+        {partner ? (
+          <View style={styles.noteWrap}>
+            <NoteCard title={`${partner}님에게도 보여요`} body="일정을 바꾸면 둘 다 알림을 받아요." />
+          </View>
+        ) : null}
+      </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
-  safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
-  content: {
-    paddingHorizontal: Layout.gutter,
-    paddingTop: Spacing.five,
-    paddingBottom: Spacing.four,
-    gap: Spacing.two,
-  },
-  section: { gap: Spacing.half },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.three,
-    marginTop: Spacing.two,
-  },
-  switchText: { flex: 1, gap: Spacing.half },
-  actions: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.two },
-  input: {
-    height: Layout.rowMinHeight,
-    borderRadius: Radius.input,
-    paddingHorizontal: Spacing.three,
-  },
-  memo: { minHeight: 100, textAlignVertical: 'top', paddingTop: Spacing.three },
+  content: { paddingBottom: Spacing.six },
+  fields: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four, gap: Spacing.three },
+  error: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.three },
+  noteWrap: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionGap },
 });

@@ -1,13 +1,11 @@
-// Pretendard를 먼저 싣고, 그 위에 글꼴 변수를 얹는다. 순서가 아니라 두 줄인 것이
-// 중요하다 — tokens.css는 자립해야 해서 글꼴을 직접 부르지 않는다.
-import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
+// 글꼴 변수(시스템 서체 스택)와 글자 크기 변수. 웹폰트는 싣지 않는다 — spec/tokens.json
+// typography.$fontFamily · CLAUDE.md 「폰트는 시스템 서체 유지(Pretendard 미적용)」.
 import '@weddingpick/ui/tokens.css';
 // 브라우저가 입력칸에 얹는 자기 규칙(자동완성 배경 등) 보정. 네이티브에서는 무시된다.
 import '@/global.css';
 
 import { DefaultTheme, Stack, ThemeProvider, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useFonts } from 'expo-font';
 import { useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 
@@ -67,18 +65,10 @@ export default function RootLayout() {
 
 function RootLayoutContent() {
   /*
-   * 웹에서는 이 TTF(약 3MB, 전체 웨이트를 다 담은 가변 폰트)를 부르지 않는다.
-   * 이미 위에서 그 목적으로 부른 `pretendardvariable-dynamic-subset.css`가
-   * 화면에 실제로 쓰인 글자만 필요할 때 WOFF2로 나눠 받아온다 — 여기서
-   * useFonts로 전체 TTF를 또 불러 첫 화면을 막으면, 이미 CSS가 하고 있는 일을
-   * 훨씬 무거운 형식으로 중복해서 기다리는 셈이 된다. 네이티브는 CSS가 없어
-   * 이 경로가 유일한 글꼴 공급원이라 그대로 둔다.
+   * 글꼴을 싣지 않는다 — 시스템 서체다(iOS Apple SD Gothic Neo · Android Roboto/Noto Sans KR ·
+   * 웹 시스템 스택). 한때 Pretendard TTF를 useFonts로 받아 첫 화면을 그만큼 늦췄는데, 핸드오프
+   * v3.24까지 「Pretendard 도입 보류」라 2026-09-09 감사에서 뺐다(packages/ui theme.ts Fonts 참고).
    */
-  const [fontsLoaded] = useFonts(
-    Platform.OS === 'web'
-      ? {}
-      : { Pretendard: require('pretendard/dist/public/variable/PretendardVariable.ttf') }
-  );
   const [entry, setEntry] = useState<Entry | null>(null);
   /**
    * 스플래시를 이만큼은 보여준다. 핸드오프 0번.
@@ -233,7 +223,7 @@ function RootLayoutContent() {
    * 첫 화면을 정할 때까지, 그리고 스플래시를 충분히 보여줄 때까지 덮어둔다.
    * 홈이 잠깐 스쳤다 사라지는 것을 막는다.
    */
-  if (entry === null || !minimumShown || !fontsLoaded) {
+  if (entry === null || !minimumShown) {
     return signingIn ? <SigningInView /> : <SplashView />;
   }
 

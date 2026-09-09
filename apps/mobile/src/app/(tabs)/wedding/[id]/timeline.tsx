@@ -1,30 +1,25 @@
 import type { WeddingTask, WeddingTaskListResponse } from '@weddingpick/api-contract';
-import { TASK_STATE_LABEL, formatTaskDate } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listWeddingTasks } from '@/api/client';
-import {
-  ActionButton,
-  EmptyView,
-  ErrorView,
-  Layout,
-  MaxContentWidth,
-  Radius,
-  Spacing,
-  ThemedText,
-  ThemedView,
-  useTheme,
-  SkeletonView,
-} from '@weddingpick/ui';
+import { formatMonthDayDot } from '@/features/common/format-date';
+import { ErrorView, Layout, Radius, SkeletonView, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import { Hero, NavBar, Screen } from '@/features/wedding/screen-kit';
+
+/** 핸드오프 08c #18b: 점 10 · 선 2 · 점↔글 14 · 행 아래 22. */
+const DOT = 10;
+const LINE = 2;
 
 /**
- * 준비 타임라인. WP-OUR-012.
+ * 준비 타임라인. WP-OUR-012 · 핸드오프 08c-schedule-my #2.
  *
- * 모든 태스크를 시간순으로 읽기 전용으로 본다.
- * 편집은 웨딩 스케줄(tasks.tsx)에서 한다.
+ *   nav    «준비 타임라인»
+ *   hero   «준비 N개 중 M개를 끝냈어요»
+ *   행     점(끝난 것은 coral) + 세로선 · 날짜 14/19 · 제목 18/24 700 · 내용 16/24
+ *
+ * 최근 것이 위다. 편집은 하지 않는다 — 읽기 전용 기록이다.
  */
 export default function TimelineScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -37,7 +32,7 @@ export default function TimelineScreen() {
         setError(null);
         setPage(result);
       })
-      .catch((e: Error) => setError(e.message));
+      .catch((caught: Error) => setError(caught.message));
   }, [id]);
 
   useEffect(load, [load]);
@@ -49,132 +44,66 @@ export default function TimelineScreen() {
     if (!a.dueDate && !b.dueDate) return 0;
     if (!a.dueDate) return 1;
     if (!b.dueDate) return -1;
-    return a.dueDate.localeCompare(b.dueDate);
+
+    return b.dueDate.localeCompare(a.dueDate);
   });
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.content}>
-          <ThemedView style={styles.header}>
-            <ThemedText type="t4">준비 타임라인</ThemedText>
-            <ThemedText type="t7" themeColor="textSecondary">
-              준비 {page.progress.done} / {page.progress.total} 완료
-            </ThemedText>
-          </ThemedView>
+    <Screen>
+      <NavBar title="준비 타임라인" />
 
-          {sorted.length === 0 ? (
-            <EmptyView title="아직 준비 항목이 없어요." />
-          ) : (
-            <View style={styles.timeline}>
-              {sorted.map((task, index) => (
-                <TimelineItem
-                  key={task.id}
-                  task={task}
-                  isLast={index === sorted.length - 1}
-                />
-              ))}
-            </View>
-          )}
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <Hero
+          title={
+            page.progress.total > 0
+              ? `준비 ${page.progress.total}개 중 ${page.progress.done}개를 끝냈어요`
+              : '아직 기록이 없어요'
+          }
+          sub={page.progress.total > 0 ? null : '결정하고 일정을 넣으면 여기 시간순으로 쌓여요'}
+        />
 
-          <ActionButton label="돌아가기" onPress={() => router.back()} />
-        </ScrollView>
-      </SafeAreaView>
-    </ThemedView>
+        {sorted.length > 0 ? (
+          <View style={styles.timeline}>
+            {sorted.map((task, index) => (
+              <TimelineItem key={task.id} task={task} isLast={index === sorted.length - 1} />
+            ))}
+          </View>
+        ) : null}
+      </ScrollView>
+    </Screen>
   );
 }
 
 function TimelineItem({ task, isLast }: { task: WeddingTask; isLast: boolean }) {
   const theme = useTheme();
-
-  const dotColor =
-    task.state === 'done'
-      ? theme.tint
-      : task.state === 'in_progress'
-        ? theme.positive
-        : theme.border;
+  const key = task.state === 'done';
+  const body = task.vendorLabel ? `${task.stateLabel} · ${task.vendorLabel}` : task.stateLabel;
 
   return (
     <View style={styles.item}>
       <View style={styles.spine}>
-        <View style={[styles.dot, { backgroundColor: dotColor, borderColor: dotColor }]} />
-        {!isLast && <View style={[styles.line, { backgroundColor: theme.border }]} />}
+        <View style={[styles.dot, { backgroundColor: key ? theme.tint : theme.track }]} />
+        {!isLast ? <View style={[styles.line, { backgroundColor: theme.border }]} /> : null}
       </View>
-
-      <ThemedView type="backgroundElement" style={styles.card}>
-        <View style={styles.cardTop}>
-          <ThemedText type="t5" style={styles.taskLabel}>
-            {task.label}
-          </ThemedText>
-          <View
-            style={[styles.stateBadge, { backgroundColor: dotColor + '22', borderColor: dotColor }]}>
-            <ThemedText type="badge" style={{ color: dotColor }}>
-              {TASK_STATE_LABEL[task.state]}
-            </ThemedText>
-          </View>
-        </View>
-
-        {task.dueDate ? (
-          <ThemedText type="t7" themeColor="textSecondary">
-            {formatTaskDate(task.dueDate)}
-          </ThemedText>
-        ) : null}
-
-        {task.vendorLabel ? (
-          <ThemedText type="t7" themeColor="textAssistive">
-            {task.vendorLabel}
-          </ThemedText>
-        ) : null}
-
-        {task.manualState ? (
-          <ThemedText type="smallBold" themeColor="textAssistive">
-            직접 지정
-          </ThemedText>
-        ) : null}
-      </ThemedView>
+      <View style={styles.itemBody}>
+        <ThemedText type="t7" themeColor="textAssistive" numeric>
+          {task.dueDate ? formatMonthDayDot(task.dueDate) : '날짜 미정'}
+        </ThemedText>
+        <ThemedText type="t5">{task.label}</ThemedText>
+        <ThemedText type="body" themeColor="textSecondary">
+          {body}
+        </ThemedText>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
-  safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
-  content: {
-    paddingHorizontal: Layout.gutter,
-    paddingTop: Spacing.five,
-    paddingBottom: Spacing.four,
-    gap: Spacing.three,
-  },
-  header: { gap: Spacing.two },
-  timeline: { gap: 0 },
-  item: { flexDirection: 'row', gap: Spacing.two },
-  spine: { alignItems: 'center', paddingTop: 14 },
-  dot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 2,
-    zIndex: 1,
-  },
-  line: { width: 2, flex: 1, marginTop: 4 },
-  card: {
-    flex: 1,
-    borderRadius: Radius.medium,
-    padding: Spacing.three,
-    gap: Spacing.one,
-    marginBottom: Spacing.two,
-  },
-  cardTop: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.two,
-    justifyContent: 'space-between',
-  },
-  taskLabel: { flex: 1 },
-  stateBadge: {
-    borderWidth: 1,
-    borderRadius: Radius.pill,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.half,
-  },
+  content: { paddingBottom: Spacing.six },
+  timeline: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionGap },
+  item: { flexDirection: 'row', gap: Layout.sectionHeadGap },
+  spine: { width: Layout.iconTab, alignItems: 'center' },
+  dot: { width: DOT, height: DOT, borderRadius: Radius.pill, marginTop: Spacing.one + Spacing.half },
+  line: { width: LINE, flex: 1, marginTop: Spacing.one },
+  itemBody: { flex: 1, minWidth: 0, gap: 3, paddingBottom: Spacing.four - Spacing.half },
 });

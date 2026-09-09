@@ -4,8 +4,6 @@ import {
   BUDGET_BRACKET_LABEL,
   BUSINESS_NOTICE_LINES,
   formatDateDot,
-  PREPARED_CATEGORIES_LABEL,
-  summarizePreparedCategories,
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -23,8 +21,16 @@ import {
   ThemedView,
   useTheme,
 } from '@weddingpick/ui';
-import { getCurrentUser, getWeddingInvite, listMyReports } from '@/api/client';
+import {
+  getCurrentUser,
+  getMyMonthlyDraw,
+  getMyRewards,
+  getWeddingInvite,
+  listMyReports,
+} from '@/api/client';
 import { useSession } from '@/features/auth/use-session';
+import { participableCount } from '@/features/membership/use-benefit-data';
+import { Avatar, Badge, Row, Rows, SectionTitle } from '@/features/settings/my-kit';
 import { APP_VERSION } from '@/features/settings/version';
 
 /** 배우자 연결 상태 — CLAUDE.md §8 «커플: 미연결 · 초대 대기 · 연결됨». */
@@ -34,18 +40,23 @@ type MyData = {
   me: CurrentUser | null;
   reports: MyReportListResponse | null;
   couple: CoupleState | null;
+  /** 혜택 · 이벤트 «N개 참여 가능». 셋 중 하나라도 못 불러오면 적지 않는다. */
+  benefits: number | null;
 };
 
-const EMPTY: MyData = { me: null, reports: null, couple: null };
+const EMPTY: MyData = { me: null, reports: null, couple: null, benefits: null };
 
-/** `spec/strings.ko.json` `my.*`의 확정 카피. */
+/** `spec/strings.ko.json` `my.*`의 확정 카피. 시안 05-root 9d WP-MY-001. */
 const S = {
   title: 'MY',
+  settings: '설정',
   verifiedBadge: 'Pick 인증 완료',
+  nameless: '이름을 정해주세요',
   'group.activity': '내 활동',
   'group.wedding': '웨딩 설정',
   'group.account': '계정',
   'group.biz': '업체 · 플래너',
+  'item.report': '제보',
   'item.reportLog': '내 제보 내역',
   'item.myReview': '내 후기',
   'item.benefit': '혜택 · 이벤트',
@@ -58,6 +69,8 @@ const S = {
   'item.support': '고객지원',
   'item.serviceInfo': '서비스 정보',
   'item.bizInquiry': '업체 · 플래너 문의',
+  count: (n: number) => `${n}건`,
+  benefitCount: (n: number) => `${n}개 참여 가능`,
   /*
    * 시안(08c 18c)은 «광고 제휴»까지 적지만, 광고 제휴 기능은 2026-09-05 정책으로
    * 삭제됐다(CLAUDE.md) — 접수 창구에서도 뺀다.
@@ -66,12 +79,8 @@ const S = {
   bizCta: '문의하기',
   'setting.date': '예식일',
   'setting.region': '지역',
-  /*
-   * v3.19가 «총예산»을 «준비 예산»으로 바꿨다(앞으로 준비에 쓸 예산) — 라벨은
-   * domain BUDGET_BRACKET_FIELD_LABEL 한 곳에서 온다. 준비 현황(v3.22)도 같다.
-   */
+  /* v3.19가 «총예산»을 «준비 예산»으로 바꿨다 — 라벨은 domain BUDGET_BRACKET_FIELD_LABEL 한 곳에서 온다. */
   'setting.budget': BUDGET_BRACKET_FIELD_LABEL,
-  'setting.prepared': PREPARED_CATEGORIES_LABEL,
   logout: '로그아웃',
   loginCta: '로그인 · 가입하기',
   loginHint: '웨딩일정과 Pick 인증에 필요해요',
@@ -84,11 +93,13 @@ const COUPLE_LABEL: Record<CoupleState, string> = {
 };
 
 /**
- * MY 홈 · WP-MY-001. 디자인 핸드오프 v3.16 `08c-schedule-my.dc.html` 18c.
+ * MY 홈 · WP-MY-001. 디자인 핸드오프 `05-root.dc.html` 9d.
  *
- * 프로필 → 웨딩 설정 → 밴드 → 메뉴 3그룹(내 활동 · 웨딩 설정 · 계정) → 밴드 →
- * 업체 · 플래너 문의. 그 아래는 시안에 없지만 남겨야 하는 것 — 로그아웃과 사업자
- * 정보 공시(법정 표시).
+ * 헤더(MY + 설정 톱니) → 프로필 → 웨딩 설정 요약 3행 → 밴드 → 메뉴 3그룹(내 활동 · 웨딩 설정 ·
+ * 계정) → 밴드 → 업체 · 플래너 문의(08c · screens.json WP-MY-001 «맨 아래 업체·플래너 문의»).
+ * 그 아래는 시안에 없지만 남겨야 하는 것 — 로그아웃과 사업자 정보 공시(법정 표시).
+ *
+ * **준비 현황은 여기 두지 않는다.** 홈 4칸과 WP-HOME-009 두 곳뿐이다(SPEC §13.9).
  *
  * 로그인 없이는 앱을 쓸 수 없어(2026-09-04) 비회원 상태는 세션이 끊긴 잠깐뿐이다.
  * 그때는 개인화 영역(이름 · 웨딩 정보)을 아는 척하지 않고 로그인 CTA만 둔다.
@@ -109,12 +120,14 @@ export default function MyScreen() {
     void getCurrentUser()
       .then(async (me) => {
         setData((prev) => ({ ...prev, me }));
-        const [reports, invite] = await Promise.allSettled([
+        const [reports, invite, rewards, draw] = await Promise.allSettled([
           listMyReports(),
           /* 연결 전이면 살아 있는 초대가 있는지 본다 — «초대 대기»는 그때만이다. */
           me.spouseLinked || !me.weddingId
             ? Promise.resolve(null)
             : getWeddingInvite(me.weddingId),
+          getMyRewards(),
+          getMyMonthlyDraw(),
         ]);
         const couple: CoupleState = me.spouseLinked
           ? 'linked'
@@ -125,6 +138,11 @@ export default function MyScreen() {
           ...prev,
           reports: reports.status === 'fulfilled' ? reports.value : null,
           couple,
+          benefits: participableCount({
+            me,
+            rewards: rewards.status === 'fulfilled' ? rewards.value : null,
+            draw: draw.status === 'fulfilled' ? draw.value : null,
+          }),
         }));
       })
       .catch(() => setData(EMPTY));
@@ -144,11 +162,12 @@ export default function MyScreen() {
   const me = data.me;
   const initial = me?.displayName?.slice(0, 1) ?? '나';
   const reports = data.reports?.reports ?? [];
-  const totalReports = reports.length;
+  /* «제보 N건»은 후기를 빼고 센다 — 후기는 «내 후기» 줄이 따로 센다. */
+  const totalReports = reports.filter((report) => report.kind !== 'review').length;
   const totalReviews = reports.filter((report) => report.kind === 'review').length;
   /*
    * 설정을 한 번이라도 마쳤으면 박스를 둔다 — v3.19부터 예식일 · 지역 · 예산이 전부
-   * «미정»일 수 있어 값의 유무로는 알 수 없다. 그때도 준비 현황 한 줄은 있다.
+   * «미정»일 수 있어 값의 유무로는 알 수 없다.
    */
   const hasWeddingSetting = Boolean(
     me?.setupComplete || me?.weddingDate || me?.region || me?.budgetBracket
@@ -157,42 +176,36 @@ export default function MyScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        {/* 헤더 — 08c 18c는 오른쪽 아이콘이 없다. 아래 선도 없다. */}
+        {/* 헤더 56 — 제목 20/27 · 오른쪽 설정 톱니 40 원형. 아래 선 없다. */}
         <View style={styles.header}>
           <ThemedText type="t4">{S.title}</ThemedText>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={S.settings}
+            onPress={() => guestPush('/my/settings')}
+            style={({ pressed }) => [styles.headerIcon, pressed && styles.pressed]}>
+            <ProductSymbol name="gear" size={Layout.iconTab} color={theme.textStrong} />
+          </Pressable>
         </View>
 
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}>
-
-          {/* 프로필 행 */}
+          {/* 프로필 — 아바타 56 · 이름 24/32 · Pick 인증 배지 · chevron 18 */}
           {isSignedIn ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="계정"
+              accessibilityLabel="프로필"
               style={styles.profileRow}
-              onPress={() => router.push('/my/account' as never)}>
-              <View style={[styles.avatar, { backgroundColor: theme.backgroundSelected }]}>
-                <ThemedText type="t4" themeColor="textAssistive">
-                  {initial}
-                </ThemedText>
-              </View>
-
+              onPress={() => router.push('/my/profile' as never)}>
+              <Avatar initial={initial} />
               <View style={styles.profileInfo}>
                 <ThemedText type="t3" numberOfLines={1}>
-                  {me?.displayName ? `${me.displayName}님` : '이름을 정해주세요'}
+                  {me?.displayName ? `${me.displayName}님` : S.nameless}
                 </ThemedText>
-                {me?.hasPaymentProof && (
-                  <View style={[styles.verifiedBadge, { backgroundColor: theme.positiveBackground }]}>
-                    <ThemedText type="t7" style={[styles.bold, { color: theme.positive }]}>
-                      {S.verifiedBadge}
-                    </ThemedText>
-                  </View>
-                )}
+                {me?.hasPaymentProof ? <Badge kind="ok">{S.verifiedBadge}</Badge> : null}
               </View>
-
               <ProductSymbol name="chevronRight" size={Layout.iconInline} color={theme.textDisabled} />
             </Pressable>
           ) : (
@@ -209,96 +222,95 @@ export default function MyScreen() {
             </View>
           )}
 
-          {/* 웨딩 설정 박스 — 누르는 곳이 아니다. 바꾸기는 아래 «내 웨딩 설정»이 한다. */}
+          {/* 웨딩 설정 요약 3행 — 누르는 곳이 아니다. 바꾸기는 아래 «내 웨딩 설정»이 한다. */}
           {isSignedIn && hasWeddingSetting && (
             <View style={styles.weddingBoxWrap}>
-              <View style={[styles.weddingBox, { backgroundColor: theme.backgroundElement }]}>
+              <ThemedView type="backgroundElement" style={styles.weddingBox}>
                 {me?.weddingDate && (
                   <SettingRow label={S['setting.date']} value={formatDateDot(me.weddingDate)} />
                 )}
                 {me?.region && <SettingRow label={S['setting.region']} value={me.region} />}
-                {/* 준비 현황(온보딩 3/5) — «웨딩홀 외 2곳». 하나도 없으면 «아직 시작 전이에요». */}
-                {me && (
-                  <SettingRow
-                    label={S['setting.prepared']}
-                    value={summarizePreparedCategories(me.preparedCategories)}
-                  />
-                )}
                 {me?.budgetBracket && (
                   <SettingRow label={S['setting.budget']} value={BUDGET_BRACKET_LABEL[me.budgetBracket]} />
                 )}
-              </View>
+              </ThemedView>
             </View>
           )}
 
           <Band />
 
-          {/* 내 활동 */}
+          {/* 내 활동 — 제보 · 내 제보 내역 · 내 후기 · 혜택 · 이벤트 */}
           <MenuGroup title={S['group.activity']}>
-            <MenuItem
-              label={S['item.reportLog']}
-              value={totalReports > 0 ? `${totalReports}건` : undefined}
-              onPress={() => guestPush('/my/reports')}
+            <Row
+              name={S['item.report']}
+              tail={totalReports > 0 ? S.count(totalReports) : undefined}
+              tailDim
+              chevron
+              onPress={() => guestPush('/capture')}
             />
+            <Row name={S['item.reportLog']} chevron onPress={() => guestPush('/my/reports')} />
             {/* 내 후기만 모아 보는 화면은 아직 없다 — 제보 내역이 후기도 같이 보여준다. */}
-            <MenuItem
-              label={S['item.myReview']}
-              value={totalReviews > 0 ? `${totalReviews}건` : undefined}
+            <Row
+              name={S['item.myReview']}
+              tail={totalReviews > 0 ? S.count(totalReviews) : undefined}
+              tailDim
+              chevron
               onPress={() => guestPush('/my/reports')}
             />
-            <MenuItem label={S['item.benefit']} onPress={() => guestPush('/my/rewards')} />
+            <Row
+              name={S['item.benefit']}
+              tail={data.benefits !== null && data.benefits > 0 ? S.benefitCount(data.benefits) : undefined}
+              tailDim
+              chevron
+              onPress={() => guestPush('/my/rewards')}
+            />
           </MenuGroup>
 
           {/* 웨딩 설정 */}
           <MenuGroup title={S['group.wedding']}>
-            <MenuItem label={S['item.weddingSetting']} onPress={() => guestPush('/setup')} />
-            <MenuItem label={S['item.taste']} onPress={() => guestPush('/my/taste')} />
-            <MenuItem
-              label={S['item.partner']}
-              value={data.couple ? COUPLE_LABEL[data.couple] : undefined}
+            <Row name={S['item.weddingSetting']} chevron onPress={() => guestPush('/setup')} />
+            <Row name={S['item.taste']} chevron onPress={() => guestPush('/my/taste')} />
+            <Row
+              name={S['item.partner']}
+              tail={data.couple ? COUPLE_LABEL[data.couple] : undefined}
+              tailDim
+              chevron
               onPress={() => guestPush('/wedding/partner')}
             />
-            <MenuItem label={S['item.notification']} onPress={() => guestPush('/my/notification-settings')} />
-            {/* 화면(스킨) 설정 화면은 아직 없다 — 설정으로 보낸다. */}
-            <MenuItem label={S['item.display']} onPress={() => guestPush('/my/settings')} />
+            <Row name={S['item.notification']} chevron onPress={() => guestPush('/my/notification-settings')} />
+            {/* 화면(스킨) 설정 화면은 아직 없다 — 설정으로 보낸다. 스킨 값도 저장되는 곳이 없어 적지 않는다. */}
+            <Row name={S['item.display']} chevron onPress={() => guestPush('/my/settings')} />
           </MenuGroup>
 
           {/* 계정 */}
           <MenuGroup title={S['group.account']}>
-            <MenuItem label={S['item.account']} onPress={() => guestPush('/my/account')} />
-            <MenuItem label={S['item.support']} onPress={() => guestPush('/my/contact')} />
-            {/* 이용약관 · 개인정보처리방침이 이 화면(약관 및 정책)에 있다. */}
-            <MenuItem
-              label={S['item.serviceInfo']}
-              value={`v${APP_VERSION}`}
+            <Row name={S['item.account']} chevron onPress={() => guestPush('/my/account')} />
+            <Row name={S['item.support']} chevron onPress={() => guestPush('/my/support')} />
+            <Row
+              name={S['item.serviceInfo']}
+              tail={`v${APP_VERSION}`}
+              tailDim
+              chevron
               onPress={() => router.push('/my/policies' as never)}
             />
           </MenuGroup>
 
           <Band />
 
-          {/* 업체 · 플래너 문의 — 사용자용 메뉴와 구분한다. */}
+          {/* 업체 · 플래너 문의 — 사용자용 메뉴와 구분한다(08c 18c). */}
           <View style={styles.bizSection}>
-            <ThemedText type="t7" themeColor="textAssistive" style={styles.bold}>
-              {S['group.biz']}
-            </ThemedText>
-            <View
-              style={[
-                styles.bizBox,
-                { backgroundColor: theme.background, borderColor: theme.track },
-              ]}>
+            <SectionTitle>{S['group.biz']}</SectionTitle>
+            <View style={[styles.bizBox, { backgroundColor: theme.background, borderColor: theme.track }]}>
               <ThemedText type="t5">{S['item.bizInquiry']}</ThemedText>
               <ThemedText type="body" themeColor="textSecondary">
                 {S.bizBody}
               </ThemedText>
-              <View style={styles.bizCta}>
-                <ActionButton
-                  variant="ghost"
-                  size="large"
-                  label={S.bizCta}
-                  onPress={() => router.push('/my/biz' as never)}
-                />
-              </View>
+              <ActionButton
+                variant="secondary"
+                size="large"
+                label={S.bizCta}
+                onPress={() => router.push('/my/biz' as never)}
+              />
             </View>
           </View>
 
@@ -317,10 +329,7 @@ export default function MyScreen() {
                 </ThemedText>
               </Pressable>
             )}
-            {/*
-              사업자 정보(2026-09-08 등록). 값은 @weddingpick/domain BUSINESS 한 곳에서
-              온다 — 웹 푸터·약관·처리방침과 같은 줄이다.
-            */}
+            {/* 사업자 정보(2026-09-08 등록). 값은 @weddingpick/domain BUSINESS 한 곳에서 온다. */}
             <View style={styles.businessNotice}>
               {BUSINESS_NOTICE_LINES.map((line) => (
                 <ThemedText key={line} type="t7" themeColor="textAssistive" style={styles.center}>
@@ -337,54 +346,24 @@ export default function MyScreen() {
 
 // ─── Sub-components ───────────────────────────────────────────────
 
-/** 섹션 구분 밴드. 08c는 웨딩 설정 박스 뒤와 업체 · 플래너 앞, 두 곳에만 둔다. */
+/** 섹션 구분 밴드 16 · 위아래 28. 웨딩 설정 박스 뒤와 업체 · 플래너 앞, 두 곳. */
 function Band() {
   const theme = useTheme();
 
   return <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} />;
 }
 
+/** 메뉴 그룹 — 제목 14/19 700 gray600, 아래 10, 행 사이 2. */
 function MenuGroup({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View style={styles.menuGroup}>
-      <ThemedText type="t7" themeColor="textAssistive" style={styles.bold}>
-        {title}
-      </ThemedText>
-      <View style={styles.menuItems}>{children}</View>
+      <SectionTitle>{title}</SectionTitle>
+      <Rows>{children}</Rows>
     </View>
   );
 }
 
-function MenuItem({
-  label,
-  value,
-  onPress,
-}: {
-  label: string;
-  value?: string;
-  onPress: () => void;
-}) {
-  const theme = useTheme();
-
-  return (
-    <View>
-      <Pressable accessibilityRole="button" style={styles.menuItem} onPress={onPress}>
-        <ThemedText type="t5" numberOfLines={1} style={styles.menuItemLabel}>
-          {label}
-        </ThemedText>
-        {value !== undefined && (
-          <ThemedText type="t6" themeColor="textAssistive" numeric numberOfLines={1}>
-            {value}
-          </ThemedText>
-        )}
-        <ProductSymbol name="chevronRight" size={Layout.iconInline} color={theme.textDisabled} />
-      </Pressable>
-      {/* 08c는 마지막 항목 아래에도 선을 둔다. */}
-      <View style={[styles.divider, { backgroundColor: theme.border }]} />
-    </View>
-  );
-}
-
+/** 웨딩 설정 요약 행 — 16/22 gray700 ↔ 16/22 700 tabular · 상하 9. */
 function SettingRow({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.settingRow}>
@@ -411,11 +390,23 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     width: '100%',
   },
+  /* 헤더 56 · 왼쪽 24 · 오른쪽 아이콘 버튼 40이 거터선에 앉는다. */
   header: {
     height: Layout.navBar,
-    justifyContent: 'center',
-    paddingHorizontal: Layout.gutter,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingLeft: Layout.gutter,
+    paddingRight: Layout.gutter - (Layout.iconButton - Layout.iconTab) / 2,
   },
+  headerIcon: {
+    width: Layout.iconButton,
+    height: Layout.iconButton,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pressed: { opacity: 0.6 },
   scroll: {
     flex: 1,
   },
@@ -430,7 +421,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  /* 프로필 — 08c: padding 12 24 24 · gap 14 */
+  /* 프로필 — 05-root: padding 12 24 24 · gap 14 · 이름 아래 3 */
   profileRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -439,25 +430,10 @@ const styles = StyleSheet.create({
     paddingTop: Layout.rowPaddingY,
     paddingBottom: Spacing.four,
   },
-  /* 시안 아바타 56. 아바타 토큰이 없어 같은 값의 행 최소 높이를 빌려 쓴다. */
-  avatar: {
-    width: Layout.rowMinHeight,
-    height: Layout.rowMinHeight,
-    borderRadius: Radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
   profileInfo: {
     flex: 1,
     minWidth: 0,
     gap: Spacing.one,
-  },
-  verifiedBadge: {
-    alignSelf: 'flex-start',
-    borderRadius: Radius.small,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.one,
   },
   loginCta: {
     paddingHorizontal: Layout.gutter,
@@ -466,7 +442,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
 
-  /* 웨딩 설정 박스 — 08c statBox: radius 10 · padding 20 */
+  /* 웨딩 설정 박스 — radius 10 · padding 20 · 행 사이 2 · 아래 밴드까지 28 */
   weddingBoxWrap: {
     paddingHorizontal: Layout.gutter,
     paddingBottom: Layout.sectionGap,
@@ -487,39 +463,20 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
 
-  /* 밴드 — 16 · 아래 28 */
+  /* 밴드 16 · 아래 28 */
   band: {
     height: Layout.sectionBand,
     marginBottom: Layout.sectionGap,
   },
 
-  /* 메뉴 그룹 — 08c: padding 0 24 28 · gap 8 · 항목 사이 2 */
+  /* 메뉴 그룹 — 0 24 28 · 제목 아래 10 */
   menuGroup: {
     paddingHorizontal: Layout.gutter,
     paddingBottom: Layout.sectionGap,
-    gap: Spacing.two,
-  },
-  menuItems: {
-    gap: Spacing.half,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: Layout.cardGap,
-    minHeight: Layout.rowMinHeight,
-    paddingVertical: Layout.rowPaddingY,
-  },
-  /* 항목명은 18/24 regular — t5는 bold라 굵기만 내린다. */
-  menuItemLabel: {
-    flex: 1,
-    minWidth: 0,
-    fontWeight: '400',
-  },
-  divider: {
-    height: 1,
   },
 
-  /* 업체 · 플래너 — 08c: padding 0 24 32 · gap 10 · 박스 border 1 · padding 20 · gap 8 */
+  /* 업체 · 플래너 — 08c: 0 24 32 · gap 10 · 박스 1 테두리 · 20 · gap 8 */
   bizSection: {
     paddingHorizontal: Layout.gutter,
     paddingBottom: Spacing.five,
@@ -530,9 +487,6 @@ const styles = StyleSheet.create({
     borderRadius: Radius.medium,
     padding: Layout.cardPadding,
     gap: Spacing.two,
-  },
-  bizCta: {
-    marginTop: Spacing.half,
   },
 
   /* 푸터 — 시안 아래 16 띄우고 로그아웃 · 사업자 정보 */

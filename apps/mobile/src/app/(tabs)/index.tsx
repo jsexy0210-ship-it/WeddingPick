@@ -184,14 +184,17 @@ export default function HomeScreen() {
             <ThemedView style={styles.section}>
               <View style={styles.sectionHead}>
                 <ThemedText type="t4">준비 현황</ThemedText>
-                <Pressable
-                  accessibilityRole="link"
-                  onPress={() => router.push('/progress')}
-                  style={({ pressed }) => pressed && styles.pressed}>
-                  <ThemedText type="t7" themeColor="textAssistive" style={styles.more}>
-                    {view.boardMore}
-                  </ThemedText>
-                </Pressable>
+                {/* 시작 전 구간에는 링크가 없다(시안 1) — 펼쳐도 빈 칸 12개다. */}
+                {view.boardMore === null ? null : (
+                  <Pressable
+                    accessibilityRole="link"
+                    onPress={() => router.push('/progress')}
+                    style={({ pressed }) => pressed && styles.pressed}>
+                    <ThemedText type="t7" themeColor="textAssistive" style={styles.more}>
+                      {view.boardMore}
+                    </ThemedText>
+                  </Pressable>
+                )}
               </View>
               <Board
                 cells={view.cells}
@@ -288,7 +291,7 @@ function openSearchWithout(chip: ConditionChip, view: HomeView, me: CurrentUser 
 /**
  * 히어로. 아바타 + 닉네임 ↔ D-day, 26px 두 줄 제목, 진행바 + N / 12.
  *
- * D-day는 회색이다 — 코랄은 진행바 몫이다.
+ * D-day는 회색이다 — 코랄은 진행바 몫이다. 시안의 D-day 15px은 토큰 사다리에 없어 14(t7).
  */
 function Hero({ me, view, daysLeft }: { me: CurrentUser | null; view: HomeView; daysLeft: number | null }) {
   return (
@@ -310,10 +313,11 @@ function Hero({ me, view, daysLeft }: { me: CurrentUser | null; view: HomeView; 
       </ThemedText>
 
       <View style={styles.progressRow}>
+        {/* 시안 track: 6 · #EAEBEE(border) · 채움 coral. ProgressBar 기본값이 그대로다. */}
         <View style={styles.progressTrack}>
-          <ProgressBar value={view.progress} height={6} />
+          <ProgressBar value={view.progress} />
         </View>
-        <ThemedText type="t7" numeric themeColor="textAssistive" style={styles.progressText}>
+        <ThemedText type="micro" numeric themeColor="textAssistive">
           {view.progressText}
         </ThemedText>
       </View>
@@ -366,7 +370,8 @@ function Header({ unread, onPressBell }: { unread: number; onPressBell: () => vo
         accessibilityLabel={hasUnread({ unread, total: unread }) ? `알림 ${unread}건` : '알림'}
         onPress={onPressBell}
         style={({ pressed }) => [styles.bell, pressed && styles.pressed]}>
-        <ProductSymbol name="bell" size={Layout.iconTab} color={theme.textSecondary} />
+        {/* 시안 head 아이콘 stroke #212124. */}
+        <ProductSymbol name="bell" size={Layout.iconTab} color={theme.text} />
         {/* 개수를 적지 않는다. 세는 것이 목적이 아니다. */}
         {hasUnread({ unread, total: unread }) ? (
           <View style={[styles.bellDot, { backgroundColor: theme.negative }]} />
@@ -406,7 +411,9 @@ function NextRow({
       <ThemedText type="t7" numeric themeColor="textAssistive" style={styles.nextAside}>
         {aside}
       </ThemedText>
-      <ProductSymbol name="chevronRight" size={Layout.iconInline} color={theme.textDisabled} />
+      <View style={styles.nextChevron}>
+        <ProductSymbol name="chevronRight" size={Layout.iconInline} color={theme.textDisabled} />
+      </View>
     </Pressable>
   );
 }
@@ -454,14 +461,14 @@ const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
 
-  /* 시안 head: 56 · padding 0 20 0 24. 오른쪽이 4 좁은 것은 40 원형 버튼 안의 24 아이콘이 거터선에 앉게 하려는 것이다. */
+  /* 시안 head: 56 · 아이콘 24가 거터선(24)에 앉는다. 40 원형 버튼이라 오른쪽 여백은 24 − 8. */
   header: {
     height: Layout.navBar,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingLeft: Layout.gutter,
-    paddingRight: 20,
+    paddingRight: Layout.gutter - (Layout.iconButton - Layout.iconTab) / 2,
   },
   bell: {
     width: Layout.iconButton,
@@ -496,9 +503,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarLabel: { fontWeight: 700 },
+  /* 시안 progRow: gap 10 · padding-top 2 · track 6 r999 · progText 13/18 700. */
   progressRow: { flexDirection: 'row', alignItems: 'center', gap: Layout.cardGap, paddingTop: Spacing.half },
   progressTrack: { flex: 1 },
-  progressText: { fontWeight: 700 },
 
   block: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionGap },
   /* 시안 padSec: gap 11. */
@@ -524,4 +531,5 @@ const styles = StyleSheet.create({
   },
   nextBody: { flex: 1, minWidth: 0, gap: 3 },
   nextAside: { paddingTop: 3 },
+  nextChevron: { paddingTop: 3 },
 });

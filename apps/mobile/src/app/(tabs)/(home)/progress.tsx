@@ -1,5 +1,5 @@
 import type { CurrentUser, DecisionListResponse } from '@weddingpick/api-contract';
-import { dDay, formatDateDot, PREPARATION_STATE_LABEL } from '@weddingpick/domain';
+import { dDay, formatMonthDayDot } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { Fragment, useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -7,6 +7,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getAppBootstrap, listDecisions } from '@/api/client';
 import {
+  Badge,
+  type BadgeKind,
   ErrorView,
   Layout,
   MaxContentWidth,
@@ -33,10 +35,14 @@ import {
  * 준비현황(WP-OUR-002)은 폐기하고 여기로 옮겼다 — 같은 내용을 두 탭에서 보여주면
  * 사용자가 어디서 봐야 할지 헷갈린다.
  *
- *   히어로       12개 중 N개를 끝냈어요 + 예식까지 D일
- *   결정 완료    업체명(없으면 «결정 완료») + 결정일 + 완료 배지
- *   진행 중      후보 N곳 · 현재 업종만 코랄 bold + 좁히는 중 배지
- *   아직 시작 전  회색 · 시작 전
+ * 레이아웃은 `08-schedule-sub.dc.html` 7번(준비현황) 그대로다.
+ *
+ *   히어로       «12개 중 / N개를 끝냈어요» 26/35 두 줄 + «예식까지 D일 남았어요» 16
+ *   그룹 제목    14/19 700 #868B94 (small)
+ *   행           업종 18/24 · 메타 14 · 배지(4 9 · r4 · 14 700) · chevron 18 · 구분선 1
+ *   결정 완료    메타 «업체명 · 05.16(토)» · 배지 «완료»(success)
+ *   진행 중      메타 «후보 N곳» · 현재 업종만 bold + coral 배지 «좁히는 중» · 나머지 «모으는 중»
+ *   아직 시작 전  배지 «시작 전» 회색
  *
  * 비어 있는 그룹은 제목까지 접는다. 빈 자리를 제목으로 알리지 않는다.
  */
@@ -107,9 +113,13 @@ export default function ProgressScreen() {
 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <ThemedView style={styles.hero}>
-            <ThemedText type="t2">{`${HOME_TOTAL}개 중 ${decided}개를 끝냈어요`}</ThemedText>
-            <ThemedText type="t6" themeColor="textSecondary">
-              {weddingDate === null ? '예식일 미정' : dDay(weddingDate).text}
+            <ThemedText type="t2">
+              {`${HOME_TOTAL}개 중`}
+              {'\n'}
+              {`${decided}개를 끝냈어요`}
+            </ThemedText>
+            <ThemedText type="t6" themeColor="textSecondary" numberOfLines={1}>
+              {weddingLine(weddingDate)}
             </ThemedText>
           </ThemedView>
 
@@ -119,8 +129,7 @@ export default function ProgressScreen() {
                 <Row
                   key={row.category}
                   label={row.label}
-                  value={row.decidedName ?? PREPARATION_STATE_LABEL.decided}
-                  meta={data.decidedAt[row.category] === undefined ? null : formatDateDot(data.decidedAt[row.category]!)}
+                  meta={decidedMeta(row.decidedName, data.decidedAt[row.category] ?? null)}
                   badge="완료"
                   tone="done"
                   onPress={() => router.push(`/pick?category=${row.category}`)}
@@ -135,10 +144,9 @@ export default function ProgressScreen() {
                 <Row
                   key={row.category}
                   label={row.label}
-                  value={`후보 ${row.pickCount}곳`}
-                  meta={null}
-                  badge="좁히는 중"
-                  tone={row.category === data.current ? 'now' : 'going'}
+                  meta={`후보 ${row.pickCount}곳`}
+                  badge={row.category === data.current ? '좁히는 중' : '모으는 중'}
+                  tone={row.category === data.current ? 'now' : 'none'}
                   onPress={() => router.push(`/pick?category=${row.category}`)}
                 />
               ))}
@@ -151,9 +159,9 @@ export default function ProgressScreen() {
                 <Row
                   key={row.category}
                   label={row.label}
-                  value="시작 전"
                   meta={null}
-                  badge={null}
+                  /* 아직 아무 데도 담지 않았을 때(0개 구간)는 첫 업종이 «먼저»다 — 홈 4칸과 같은 말. */
+                  badge={row.category === data.current ? '먼저' : '시작 전'}
                   tone={row.category === data.current ? 'now' : 'none'}
                   onPress={() => router.push(`/pick?category=${row.category}`)}
                 />
@@ -167,6 +175,24 @@ export default function ProgressScreen() {
 }
 
 /* ---------------------------------------------------------------- 조각 */
+
+/** 히어로 둘째 줄. 시안 «예식까지 140일 남았어요». 오늘·지난 뒤는 도메인 문장 그대로. */
+function weddingLine(weddingDate: string | null): string {
+  if (weddingDate === null) return '예식일 미정';
+
+  const day = dDay(weddingDate);
+
+  return day.kind === 'upcoming' ? `예식까지 ${day.days}일 남았어요` : day.text;
+}
+
+/** 결정 완료 행의 메타. «업체명 · 05.16(토)». 앱 밖에서 정했다고 체크만 한 업종은 둘 다 없어 null. */
+function decidedMeta(name: string | null, decidedAt: string | null): string | null {
+  const parts = [name, decidedAt === null ? null : formatMonthDayDot(decidedAt)].filter(
+    (part): part is string => part !== null
+  );
+
+  return parts.length === 0 ? null : parts.join(' · ');
+}
 
 function NavBar({ title, onBack }: { title: string; onBack: () => void }) {
   const theme = useTheme();
@@ -189,62 +215,68 @@ function NavBar({ title, onBack }: { title: string; onBack: () => void }) {
   );
 }
 
+/** 그룹. 시안 grp small — 제목 14/19 700 #868B94, 행 사이 2. */
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <ThemedView style={styles.group}>
-      <ThemedText type="t4">{title}</ThemedText>
+      <ThemedText type="t7" themeColor="textAssistive" style={styles.bold}>
+        {title}
+      </ThemedText>
       <View style={styles.list}>{children}</View>
     </ThemedView>
   );
 }
 
-type RowTone = 'done' | 'now' | 'going' | 'none';
+type RowTone = 'done' | 'now' | 'none';
 
 /**
- * 한 행. 업종 · 값 · (결정일) · 배지 · chevron.
+ * 배지 종류. 시안 badge(k): 완료 ok · 현재 업종 brand · 그 밖 none.
  *
- * 현재 업종만 코랄 bold다. 완료는 초록이 아니라 `textSecondary`, 시작 전은 회색.
+ * 완료가 초록인 것은 이 화면(WP-HOME-009)만이다 — 홈 4칸은 코랄 네 곳 규칙(SPEC §13.13)
+ * 때문에 완료를 짙은 회색으로 낮췄고, 여기는 상태색 토큰(status.success «결정 완료»)을 그대로 쓴다.
+ */
+function badgeKind(tone: RowTone): BadgeKind {
+  if (tone === 'done') return 'ok';
+  if (tone === 'now') return 'brand';
+
+  return 'none';
+}
+
+/**
+ * 한 행. 시안 row — 업종 18/24(현재 업종만 700) · 메타 14/19 #868B94 · 배지 · chevron 18.
+ *
+ * 메타가 있으면 위 정렬 · 상하 14, 없으면 가운데 정렬 · 상하 12. 업종 이름은 시작 전이어도
+ * 흐리게 하지 않는다 — 상태는 배지가 말한다.
  */
 function Row({
   label,
-  value,
   meta,
   badge,
   tone,
   onPress,
 }: {
   label: string;
-  value: string;
   meta: string | null;
-  badge: string | null;
+  badge: string;
   tone: RowTone;
   onPress: () => void;
 }) {
   const theme = useTheme();
-  const valueColor =
-    tone === 'now' ? 'tint' : tone === 'none' ? 'textDisabled' : tone === 'done' ? 'textSecondary' : 'text';
 
   return (
     <Fragment>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${label} ${value}${badge === null ? '' : ` ${badge}`}`}
+        accessibilityLabel={`${label} ${badge}${meta === null ? '' : ` ${meta}`}`}
         onPress={onPress}
-        style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
-        <ThemedText
-          type="t7"
-          themeColor={tone === 'none' ? 'textDisabled' : 'textAssistive'}
-          numberOfLines={1}
-          style={styles.rowLabel}>
-          {label}
-        </ThemedText>
+        style={({ pressed }) => [
+          styles.row,
+          meta === null ? styles.rowCentered : styles.rowWithMeta,
+          pressed && styles.pressed,
+        ]}>
         <View style={styles.rowBody}>
-          <ThemedText
-            type="t6"
-            numberOfLines={1}
-            themeColor={valueColor}
-            style={tone === 'now' ? styles.bold : undefined}>
-            {value}
+          <ThemedText type="t5" numberOfLines={1} style={tone === 'now' ? styles.bold : styles.regular}>
+            {label}
           </ThemedText>
           {meta === null ? null : (
             <ThemedText type="t7" numeric themeColor="textAssistive" numberOfLines={1}>
@@ -252,22 +284,12 @@ function Row({
             </ThemedText>
           )}
         </View>
-        {badge === null ? null : (
-          <View
-            style={[
-              styles.badge,
-              { backgroundColor: tone === 'done' ? theme.backgroundSelected : theme.backgroundElement },
-            ]}>
-            <ThemedText
-              type="t7"
-              numberOfLines={1}
-              themeColor={tone === 'done' ? 'textSecondary' : 'text'}
-              style={styles.bold}>
-              {badge}
-            </ThemedText>
-          </View>
-        )}
-        <ProductSymbol name="chevronRight" size={Layout.iconInline} color={theme.textDisabled} />
+        <Badge kind={badgeKind(tone)} style={meta === null ? undefined : styles.badgeWithMeta}>
+          {badge}
+        </Badge>
+        <View style={meta === null ? null : styles.chevronWithMeta}>
+          <ProductSymbol name="chevronRight" size={Layout.iconInline} color={theme.textDisabled} />
+        </View>
       </Pressable>
       <View style={[styles.divider, { backgroundColor: theme.border }]} />
     </Fragment>
@@ -296,33 +318,30 @@ const styles = StyleSheet.create({
   navTitle: { flex: 1, textAlign: 'center' },
 
   content: { paddingBottom: Spacing.six },
+  /* 시안 padHero: padding 12 24 24 · gap 8. */
   hero: {
     paddingHorizontal: Layout.gutter,
-    paddingTop: 14,
-    paddingBottom: Layout.sectionGap,
+    paddingTop: Layout.rowPaddingY,
+    paddingBottom: Layout.gutter,
     gap: Spacing.two,
   },
-  group: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionGap, gap: Layout.gap2col },
+  /* 시안 padSec: padding 0 24 24 · gap 10. 행 사이 2. */
+  group: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four, gap: Layout.cardGap },
   list: { gap: Spacing.half },
+  /* 시안 row: gap 12 · min-height 56 · 메타 있으면 위 정렬 · 상하 14, 없으면 가운데 · 상하 12. */
   row: {
     flexDirection: 'row',
-    alignItems: 'center',
     gap: Spacing.three - 4,
     minHeight: Layout.rowMinHeight,
-    paddingVertical: Layout.rowPaddingY,
   },
-  rowLabel: { width: 76 },
+  rowCentered: { alignItems: 'center', paddingVertical: Layout.rowPaddingY },
+  rowWithMeta: { alignItems: 'flex-start', paddingVertical: Layout.sectionHeadGap },
   rowBody: { flex: 1, minWidth: 0, gap: 3 },
   bold: { fontWeight: 700 },
-  /* 배지: height 22 · padding 4 9 · radius 4 · 한 줄 nowrap. */
-  badge: {
-    height: 22,
-    paddingHorizontal: 9,
-    borderRadius: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
+  regular: { fontWeight: 400 },
+  /* 시안 badge margin-top 2 · chevron은 첫 줄(18/24) 가운데에 맞춘다. */
+  badgeWithMeta: { marginTop: Spacing.half },
+  chevronWithMeta: { paddingTop: 3 },
   divider: { height: 1 },
   pressed: { opacity: 0.8 },
 });

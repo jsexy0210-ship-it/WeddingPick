@@ -107,7 +107,7 @@ export default function BizBenefitScreen() {
 
           <ThemedView type="backgroundElement" style={styles.notice}>
             <ThemedText type="t6">
-              접수 즉시 노출되지 않아요. 담당자 확인 후 게재 여부를 연락드려요.
+              담당자가 확인한 뒤 게재 여부를 연락드려요.
             </ThemedText>
           </ThemedView>
 

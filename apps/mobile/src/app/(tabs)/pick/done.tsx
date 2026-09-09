@@ -1,15 +1,15 @@
-import { VENDOR_CATEGORY_LABEL, type VendorCategory } from '@weddingpick/domain';
+import { VENDOR_CATEGORY_LABEL, withInstrument, type VendorCategory } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Animated, Easing, ScrollView, StyleSheet, View } from 'react-native';
+import { Animated, Easing, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getCurrentUser } from '@/api/client';
 import {
-  ActionButton,
   Layout,
-  LineHeight,
   MaxContentWidth,
+  Motion,
+  ProductSymbol,
   Radius,
   Spacing,
   ThemedText,
@@ -19,20 +19,23 @@ import {
 } from '@weddingpick/ui';
 
 /**
- * 결정 완료 축하 화면. WP-PICK-006.
+ * 결정 완료 · WP-PICK-006. 시안 07-pick.dc.html #17d · 09-core-loop.dc.html #10e.
  *
- * confirm.tsx(WP-PICK-005)가 decideCategory 성공 후 navigate 한다.
+ *   머리     padding 64 24 40 · 가운데 · gap 24 — 체크 원 72(coral · Pick Mark 36 white) + 링
+ *   제목     26 «스튜디오 준비 완료» + 16/24 «강남 A 스튜디오로 결정했어요»
+ *   반영 카드 bg gray50 · radius 10 · padding 18 20 · 라벨 14 gray / 글 18 700 / chevron — 웨딩일정 · 지출
+ *   다음 준비 brand 카드 — v3.24 «지출을 넣어두시겠어요?» + CTA 52 «지출 넣기»(화면의 유일한 coral CTA · tokens size.ctaPrimary)
+ *   «홈으로»  16 700 gray · 가운데
  *
- * 애니메이션 순서 (CLAUDE.md §7):
- * 1. checkPop  — scale 0→1.18→1, 460ms, cubic-bezier(.34,1.56,.64,1)
- * 2. ringSpread — 체크 링 뒤 원형 scale 1→2.5 & opacity 1→0, 600ms
- * 3. rise×3    — 반영 3건 각각 translateY 10→0 & opacity 0→1, 420ms,
- *               cubic-bezier(.16,1,.3,1), 200/320/440ms 딜레이로 순차 등장
+ * 모션(SPEC §13.2 · tokens.json motion.*):
+ *   1. 체크 원  scale 0 → 1.18 → 1 · 460ms · cubic-bezier(.34,1.56,.64,1)   checkPop
+ *   2. 링 확산  scale .5 opacity .45 → scale 2.4 opacity 0 · 1000ms · (.16,1,.3,1)  ringSpread
+ *   3. 제목     translateY 10 → 0 · opacity 0 → 1 · 420ms · delay 150         rise
+ *   4. 반영 카드 같은 모션 · delay 260
+ *   5. 다음 준비 같은 모션 · delay 380
  *
- * **결정 직후가 지출을 넣을 때다(v3.22 SPEC 13.10).** 반영 3건 아래에 «지출을
- * 넣어두시겠어요?» 카드를 두고 WP-OUR-014로 보낸다 — 그 순간이 사용자가 금액을
- * 기억하고 있는 유일한 때다. 화면의 coral Primary는 이 «지출 넣기» 하나이고
- * «홈으로»는 보조다.
+ * **결정 직후가 지출을 넣을 때다(SPEC §13.10 · CHANGELOG v3.24).** 지출 카드가 WP-OUR-014로 보낸다 —
+ * 그 순간이 사용자가 금액을 기억하고 있는 유일한 때다.
  */
 export default function PickDoneScreen() {
   const theme = useTheme();
@@ -81,66 +84,51 @@ export default function PickDoneScreen() {
 
   // ── 애니메이션 값 — useMemo로 생성해 렌더 중 ref 접근을 피한다 ──────
   const markScale = useMemo(() => new Animated.Value(0), []);
-  const ringScale = useMemo(() => new Animated.Value(1), []);
-  const ringOpacity = useMemo(() => new Animated.Value(0), []);
-
-  const riseY0 = useMemo(() => new Animated.Value(10), []);
-  const riseY1 = useMemo(() => new Animated.Value(10), []);
-  const riseY2 = useMemo(() => new Animated.Value(10), []);
-  const riseOp0 = useMemo(() => new Animated.Value(0), []);
-  const riseOp1 = useMemo(() => new Animated.Value(0), []);
-  const riseOp2 = useMemo(() => new Animated.Value(0), []);
-  const riseY = useMemo(() => [riseY0, riseY1, riseY2], [riseY0, riseY1, riseY2]);
-  const riseOpacity = useMemo(() => [riseOp0, riseOp1, riseOp2], [riseOp0, riseOp1, riseOp2]);
+  const ringScale = useMemo(() => new Animated.Value(RING_FROM_SCALE), []);
+  const ringOpacity = useMemo(() => new Animated.Value(RING_FROM_OPACITY), []);
+  const riseY = useMemo(() => RISE_DELAYS.map(() => new Animated.Value(Motion.rise.from)), []);
+  const riseOpacity = useMemo(() => RISE_DELAYS.map(() => new Animated.Value(0)), []);
 
   useEffect(() => {
-    // 1. checkPop — 460ms, cubic-bezier(.34,1.56,.64,1) (CLAUDE.md §7)
-    // 단일 timing으로 구현: bezier의 Y값이 1을 넘어 자연스러운 overshoot을 만든다.
+    // 1. checkPop
     Animated.timing(markScale, {
       toValue: 1,
-      duration: 460,
-      easing: Easing.bezier(0.34, 1.56, 0.64, 1),
+      duration: Motion.checkPop.duration,
+      easing: Easing.bezier(...Motion.checkPop.bezier),
       useNativeDriver: true,
     }).start();
 
-    // ringSpread — 마크와 동시에 시작, 페이드아웃과 확장
-    Animated.sequence([
-      Animated.timing(ringOpacity, {
-        toValue: 0.35,
-        duration: 60,
+    // 2. ringSpread — 마크와 동시에 시작
+    Animated.parallel([
+      Animated.timing(ringScale, {
+        toValue: RING_TO_SCALE,
+        duration: RING_DURATION,
+        easing: Easing.bezier(...Motion.ringSpread.bezier),
         useNativeDriver: true,
       }),
-      Animated.parallel([
-        Animated.timing(ringScale, {
-          toValue: 2.5,
-          duration: 540,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.timing(ringOpacity, {
-          toValue: 0,
-          duration: 540,
-          easing: Easing.in(Easing.quad),
-          useNativeDriver: true,
-        }),
-      ]),
+      Animated.timing(ringOpacity, {
+        toValue: 0,
+        duration: RING_DURATION,
+        easing: Easing.bezier(...Motion.ringSpread.bezier),
+        useNativeDriver: true,
+      }),
     ]).start();
 
-    // 2. rise×3 — 200ms 딜레이 후 순차 등장
-    riseY.forEach((y, i) => {
+    // 3~5. rise — 제목 150 · 반영 카드 260 · 다음 준비 380
+    RISE_DELAYS.forEach((delay, i) => {
       Animated.sequence([
-        Animated.delay(200 + i * 120),
+        Animated.delay(delay),
         Animated.parallel([
-          Animated.timing(y, {
+          Animated.timing(riseY[i]!, {
             toValue: 0,
-            duration: 420,
-            easing: Easing.bezier(0.16, 1, 0.3, 1), // cubic-bezier(.16,1,.3,1) — CLAUDE.md §7
+            duration: Motion.rise.duration,
+            easing: Easing.bezier(...Motion.sheetEnter.bezier),
             useNativeDriver: true,
           }),
-          Animated.timing(riseOpacity[i], {
+          Animated.timing(riseOpacity[i]!, {
             toValue: 1,
-            duration: 320,
-            easing: Easing.out(Easing.quad),
+            duration: Motion.rise.duration,
+            easing: Easing.bezier(...Motion.sheetEnter.bezier),
             useNativeDriver: true,
           }),
         ]),
@@ -148,11 +136,22 @@ export default function PickDoneScreen() {
     });
   }, [markScale, ringOpacity, ringScale, riseOpacity, riseY]);
 
-  // ── 반영 3건 ────────────────────────────────────────────────
-  const reflectItems = [
-    vendor ? `${vendor}로 결정했어요` : '결정했어요',
-    '홈 준비 현황과 웨딩일정 지출에 자동으로 반영돼요',
-    '결정은 언제든 바꿀 수 있어요',
+  const rise = (i: number) => ({ transform: [{ translateY: riseY[i]! }], opacity: riseOpacity[i]! });
+
+  // ── 반영 카드 — 무엇이 자동으로 반영됐는지. 있는 사실만 적는다. ────
+  const reflected = [
+    {
+      key: 'wedding',
+      label: '웨딩일정',
+      text: `준비 현황에 ${categoryLabel} 결정 완료로 반영됐어요`,
+      onPress: () => router.replace('/wedding'),
+    },
+    {
+      key: 'expense',
+      label: '지출',
+      text: 'Pick 인증하면 지출에 연결돼요',
+      onPress: () => void goAddExpense(),
+    },
   ];
 
   return (
@@ -162,79 +161,94 @@ export default function PickDoneScreen() {
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}>
 
-          {/* ── 1. 체크 링 ─────────────────────────────── */}
-          <View style={styles.markArea}>
-            {/* ringSpread 원형 */}
-            <Animated.View
-              style={[
-                styles.ring,
-                {
-                  borderColor: theme.tint,
-                  transform: [{ scale: ringScale }],
-                  opacity: ringOpacity,
-                },
-              ]}
-            />
-            {/* Pick Mark */}
-            <Animated.View
-              style={[
-                styles.markWrap,
-                { backgroundColor: theme.tint },
-                { transform: [{ scale: markScale }] },
-              ]}>
-              <WeddingMark size={64} color={theme.onTint} />
+          {/* ── 1·2. 체크 원 72 + 링 · 3. 제목 ─────────────────── */}
+          <View style={styles.head}>
+            <View style={styles.markArea}>
+              <Animated.View
+                style={[
+                  styles.ring,
+                  { backgroundColor: theme.tint, transform: [{ scale: ringScale }], opacity: ringOpacity },
+                ]}
+              />
+              <Animated.View
+                style={[styles.markWrap, { backgroundColor: theme.tint, transform: [{ scale: markScale }] }]}>
+                <WeddingMark size={MARK_ICON} color={theme.onTint} />
+              </Animated.View>
+            </View>
+            <Animated.View style={[styles.titleBlock, rise(0)]}>
+              <ThemedText type="t2" style={styles.center}>{categoryLabel} 준비 완료</ThemedText>
+              {vendor ? (
+                <ThemedText type="body" themeColor="textSecondary" style={styles.center}>
+                  {withInstrument(vendor)} 결정했어요
+                </ThemedText>
+              ) : null}
             </Animated.View>
           </View>
 
-          {/* ── 타이틀 ─────────────────────────────────── */}
-          <ThemedText type="t2" style={styles.title}>
-            {categoryLabel} 준비 완료
-          </ThemedText>
-
-          {/* ── 2. 반영 3건 ────────────────────────────── */}
-          <ThemedView type="backgroundElement" style={styles.card}>
-            {reflectItems.map((item, i) => (
-              <Animated.View
-                key={i}
-                style={{
-                  transform: [{ translateY: riseY[i] }],
-                  opacity: riseOpacity[i],
-                }}>
-                <ThemedText type="t7" themeColor="textSecondary" style={styles.reflectRow}>
-                  {item}
-                </ThemedText>
-              </Animated.View>
+          {/* ── 4. 반영 카드 ──────────────────────────────── */}
+          <Animated.View style={[styles.cards, rise(1)]}>
+            {reflected.map((item) => (
+              <Pressable
+                key={item.key}
+                accessibilityRole="button"
+                accessibilityLabel={`${item.label} · ${item.text}`}
+                onPress={item.onPress}
+                style={({ pressed }) => [
+                  styles.card,
+                  { backgroundColor: pressed ? theme.backgroundSelected : theme.backgroundElement },
+                ]}>
+                <View style={styles.cardBody}>
+                  <ThemedText type="t7" themeColor="textAssistive">{item.label}</ThemedText>
+                  <ThemedText type="t5">{item.text}</ThemedText>
+                </View>
+                <ProductSymbol name="chevronRight" size={Layout.iconInline} color={theme.textDisabled} />
+              </Pressable>
             ))}
-          </ThemedView>
+          </Animated.View>
 
-          {/* ── 3. 지출 넣기 — 금액을 기억하는 지금이 가장 정확하다(WP-OUR-014로). ── */}
-          <ThemedView type="backgroundElement" style={styles.card}>
-            <ThemedText type="t5">지출을 넣어두시겠어요?</ThemedText>
-            <ThemedText type="t7" themeColor="textSecondary">
-              금액을 기억하는 지금이 가장 정확해요
-            </ThemedText>
-            <ActionButton
-              variant="primary"
-              size="xlarge"
-              label="지출 넣기"
-              onPress={() => void goAddExpense()}
-            />
-          </ThemedView>
+          {/* ── 5. 다음 준비 — 지출 넣기(WP-OUR-014). 화면의 유일한 coral CTA. ── */}
+          <Animated.View style={[styles.next, rise(2)]}>
+            <View style={[styles.nextBox, { backgroundColor: theme.tintSurface, borderColor: theme.tintBorder }]}>
+              <View style={styles.nextText}>
+                <ThemedText type="t7" themeColor="tint" style={styles.bold}>다음 준비 · 지출</ThemedText>
+                <ThemedText type="t5">지출을 넣어두시겠어요? 금액을 기억하는 지금이 가장 정확해요</ThemedText>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="지출 넣기"
+                onPress={() => void goAddExpense()}
+                style={({ pressed }) => [styles.cta, { backgroundColor: theme.tint, opacity: pressed ? 0.8 : 1 }]}>
+                <ThemedText type="t5" themeColor="onTint">지출 넣기</ThemedText>
+              </Pressable>
+            </View>
+          </Animated.View>
 
-          {/* ── 4. 홈으로 — 보조. Primary는 위의 «지출 넣기» 하나다. ── */}
-          <View style={styles.footer}>
-            <ActionButton
-              variant="ghost"
-              size="xlarge"
-              label="홈으로"
-              onPress={() => router.replace('/')}
-            />
-          </View>
+          {/* ── 홈으로 — 보조 ───────────────────────────────── */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="홈으로"
+            onPress={() => router.replace('/')}
+            style={styles.homeLink}>
+            <ThemedText type="t6" themeColor="textAssistive" style={styles.bold}>홈으로</ThemedText>
+          </Pressable>
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
   );
 }
+
+/** 시안 doneMark 72 · 안의 마크 36 · 링은 같은 원이 .5 → 2.4로 퍼진다(tokens.json motion.ringSpread). */
+const MARK_SIZE = 72;
+const MARK_ICON = 36;
+const RING_FROM_SCALE = 0.5;
+const RING_TO_SCALE = 2.4;
+const RING_FROM_OPACITY = 0.45;
+const RING_DURATION = Motion.ringSpread.duration;
+/** rise 딜레이 — 제목 150 · 반영 카드 260 · 다음 준비 380(SPEC §13.2 · Motion.rise.delays). */
+const RISE_DELAYS = Motion.rise.delays;
+/** 시안: 머리 padding 64 24 40. */
+const HEAD_PAD_TOP = 64;
+const HEAD_PAD_BOTTOM = 40;
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
@@ -245,46 +259,73 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   scroll: {
+    paddingBottom: Spacing.five,
+  },
+  bold: { fontWeight: 700 },
+  center: { textAlign: 'center' },
+
+  head: {
+    paddingTop: HEAD_PAD_TOP,
     paddingHorizontal: Layout.gutter,
-    paddingTop: Spacing.five,
-    paddingBottom: Layout.sectionGap,
-    gap: Spacing.four,
+    paddingBottom: HEAD_PAD_BOTTOM,
     alignItems: 'center',
+    gap: Spacing.four,
   },
   markArea: {
-    width: 120,
-    height: 120,
+    width: MARK_SIZE,
+    height: MARK_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Spacing.two,
   },
   ring: {
     position: 'absolute',
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 2,
+    width: MARK_SIZE,
+    height: MARK_SIZE,
+    borderRadius: Radius.pill,
   },
   markWrap: {
-    width: 96,
-    height: 96,
+    width: MARK_SIZE,
+    height: MARK_SIZE,
     borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: {
-    textAlign: 'center',
-  },
+  titleBlock: { gap: Spacing.two, alignItems: 'center' },
+
+  /* 반영 카드 · padding 0 24 · 카드 사이 12 · 카드 padding 18 20 · gap 14 */
+  cards: { paddingHorizontal: Layout.gutter, gap: Layout.rowPaddingY },
   card: {
-    borderRadius: Radius.card,
-    padding: Spacing.three,
-    gap: Spacing.two,
-    width: '100%',
+    borderRadius: Radius.medium,
+    paddingVertical: Spacing.three + Spacing.half,
+    paddingHorizontal: Layout.cardPadding,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Layout.sectionHeadGap,
   },
-  reflectRow: {
-    lineHeight: LineHeight.t7,
+  cardBody: { flex: 1, minWidth: 0, gap: Spacing.half + 1 },
+
+  /* 다음 준비 · padding 28 24 0 · 카드 radius 10 · 테두리 1 · padding 20 · gap 14 */
+  next: { paddingTop: Layout.sectionGap, paddingHorizontal: Layout.gutter },
+  nextBox: {
+    borderRadius: Radius.medium,
+    borderWidth: 1,
+    padding: Layout.cardPadding,
+    gap: Layout.sectionHeadGap,
   },
-  footer: {
-    width: '100%',
+  nextText: { gap: Spacing.one + Spacing.half },
+  cta: {
+    height: Layout.controlXLarge,
+    borderRadius: Radius.input,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  /* 홈으로 · padding 20 24 32 · 가운데 */
+  homeLink: {
+    paddingTop: Layout.cardPadding,
+    paddingBottom: Spacing.five,
+    minHeight: Layout.touchTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

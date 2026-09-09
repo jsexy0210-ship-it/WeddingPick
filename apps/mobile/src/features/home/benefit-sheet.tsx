@@ -139,7 +139,8 @@ function formatManwon(amountKrw: number): string {
   return `${Number.isInteger(man) ? man : man.toFixed(1)}만원`;
 }
 
-const SHEET_BOTTOM_PADDING = 28;
+/** 시안 sheet padding-bottom 28 = spec/tokens.json spacing.sectionBottom. */
+const SHEET_BOTTOM_PADDING = Layout.sectionGap;
 const CLOSE_ICON = 20;
 const CHECK_ICON = 11;
 /** 시안 — 조건 점 18 · 진행바 4 · 그래버 40×4. */
@@ -147,10 +148,11 @@ const DOT = 18;
 const TRACK = 4;
 
 const styles = StyleSheet.create({
+  /* 시안 sheet: padding 12 24 28 · gap 16. */
   sheet: {
-    paddingTop: Spacing.three,
+    paddingTop: Layout.rowPaddingY,
     paddingHorizontal: Layout.gutter,
-    gap: Spacing.four,
+    gap: Spacing.three,
   },
   grabber: { width: 40, height: TRACK, borderRadius: 999, alignSelf: 'center' },
   head: {
@@ -167,10 +169,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: -Spacing.two,
   },
+  /* 시안 stepCard: radius 12 · padding 20 · gap 14. 12는 spec/tokens.json radius에 없어 card 10. */
   card: {
     borderRadius: Radius.medium,
-    padding: Spacing.five,
-    gap: Spacing.three + Spacing.half,
+    padding: Layout.cardPadding,
+    gap: Layout.sectionHeadGap,
   },
   amountRow: {
     flexDirection: 'row',

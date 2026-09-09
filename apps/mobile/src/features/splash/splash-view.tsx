@@ -1,18 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 
-import {
-  Colors,
-  FontSize,
-  LineHeight,
-  WeddingMark,
-} from '@weddingpick/ui';
+import { Colors, FontSize, LineHeight, Spacing, WeddingMark } from '@weddingpick/ui';
 
 /**
- * 스플래시. 디자인 핸드오프 0번.
+ * 스플래시(WP-APP-002). 시안 `01-onboarding.dc.html` #11a —
  *
- * 키 컬러 전면에 심볼과 이름만. **슬로건은 넣지 않는다** — 핸드오프가 그렇게
- * 정했고, 서비스 설명은 바로 다음 온보딩에서 한다.
+ *   코랄 바탕 · 세로 중앙 · 마크 112(흰색) · 아래 18 · «웨딩픽» 32/43 700 흰색
+ *
+ * 키 컬러 전면에 심볼과 이름만. **슬로건도 영문 이름도 넣지 않는다** — 시안이 그렇게
+ * 정했고, 서비스 설명은 바로 다음 화면(로그인)이 한다. 마크의 획은 확정본 1.9
+ * (`WeddingMark` · CLAUDE.md «심볼 — 절대 변경 금지»)를 그대로 쓴다.
  *
  * 화면(route)이 아니라 컴포넌트다. 첫 화면을 정하는 동안 `_layout`이 이걸 덮어
  * 두므로, 뒤로가기로 돌아올 자리를 만들지 않는다.
@@ -21,14 +19,16 @@ import {
 /*
  * 이만큼은 보여준다. 핸드오프 0번이 1400을 적어뒀지만, 그 값은 로딩 자체가
  * 오래 걸리던 시절 "너무 빨리 사라지지 않게" 잡은 하한이었다 — 정작 애니메이션은
- * 심볼(480) · 제목(지연 200+320=520) · 부제(지연 280+320=600)로 600ms에 다
- * 끝난다. 1400까지 붙잡아두면 그 뒤 800ms는 그냥 멎어 있는 화면이다. 진입
- * 애니메이션이 끝까지 보이는 선(600)까지만 낮춘다.
+ * 심볼(wpMark 480) · 이름(wpWord 지연 200 + 400 = 600)으로 600ms에 다 끝난다.
+ * 1400까지 붙잡아두면 그 뒤 800ms는 그냥 멎어 있는 화면이다. 진입 애니메이션이
+ * 끝까지 보이는 선(600)까지만 낮춘다.
  */
 export const SPLASH_MINIMUM_MS = 600;
 
+/** 시안 wpMark 480 · wpWord 400(지연 200). */
 const SYMBOL_MS = 480;
-const TEXT_MS = 320;
+const TEXT_MS = 400;
+const TEXT_DELAY_MS = 200;
 
 /** 핸드오프의 `cubic-bezier(.16,1,.3,1)`. */
 const ENTER = Easing.bezier(0.16, 1, 0.3, 1);
@@ -41,12 +41,11 @@ export function SplashView() {
    */
   const [symbol] = useState(() => new Animated.Value(0));
   const [title] = useState(() => new Animated.Value(0));
-  const [subtitle] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     /*
-     * 심볼이 먼저 커지며 나타나고, 글자 둘이 200ms·280ms 늦게 8px 아래에서
-     * 올라온다. 핸드오프가 정한 순서와 지연이다.
+     * 심볼이 먼저 커지며 나타나고, 이름이 200ms 늦게 8px 아래에서 올라온다.
+     * 핸드오프가 정한 순서와 지연이다.
      */
     Animated.parallel([
       Animated.timing(symbol, {
@@ -57,28 +56,13 @@ export function SplashView() {
       }),
       Animated.timing(title, {
         toValue: 1,
-        delay: 200,
-        duration: TEXT_MS,
-        easing: ENTER,
-        useNativeDriver: true,
-      }),
-      Animated.timing(subtitle, {
-        toValue: 1,
-        delay: 280,
+        delay: TEXT_DELAY_MS,
         duration: TEXT_MS,
         easing: ENTER,
         useNativeDriver: true,
       }),
     ]).start();
-  }, [symbol, title, subtitle]);
-
-  /** 8px 아래에서 제자리로. */
-  const rise = (value: Animated.Value) => ({
-    opacity: value,
-    transform: [
-      { translateY: value.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) },
-    ],
-  });
+  }, [symbol, title]);
 
   return (
     <View style={[styles.screen, { backgroundColor: Colors.light.tint }]}>
@@ -88,14 +72,26 @@ export function SplashView() {
           // 0.88에서 1로. 커지는 것이 아니라 다가오는 느낌이어야 한다.
           transform: [{ scale: symbol.interpolate({ inputRange: [0, 1], outputRange: [0.88, 1] }) }],
         }}>
-        <WeddingMark size={88} color={Colors.light.onTint} />
+        <WeddingMark size={MARK_SIZE} color={Colors.light.onTint} />
       </Animated.View>
 
-      <Animated.Text style={[styles.title, rise(title)]}>웨딩픽</Animated.Text>
-      <Animated.Text style={[styles.subtitle, rise(subtitle)]}>WeddingPick</Animated.Text>
+      <Animated.Text
+        style={[
+          styles.title,
+          {
+            opacity: title,
+            transform: [{ translateY: title.interpolate({ inputRange: [0, 1], outputRange: [Spacing.two, 0] }) }],
+          },
+        ]}>
+        웨딩픽
+      </Animated.Text>
     </View>
   );
 }
+
+/* 시안 고정값 — 마크 112 · 마크와 이름 사이 18. */
+const MARK_SIZE = 112;
+const TITLE_GAP = 18;
 
 const styles = StyleSheet.create({
   screen: {
@@ -103,21 +99,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  /* 시안 — 32/43 700 흰색. 자간은 iOS 0(spec/tokens.json platform.letterSpacing). */
   title: {
-    marginTop: 20,
-    fontSize: FontSize.t2,
-    lineHeight: LineHeight.t2,
-    letterSpacing: -0.6,
+    marginTop: TITLE_GAP,
+    fontSize: FontSize.t1,
+    lineHeight: LineHeight.t1,
     fontWeight: '700',
     color: Colors.light.onTint,
-  },
-  subtitle: {
-    marginTop: 4,
-    fontSize: FontSize.t7,
-    lineHeight: LineHeight.t7,
-    letterSpacing: 1.4,
-    fontWeight: '600',
-    // 핸드오프: 흰색 62%.
-    color: 'rgba(255, 255, 255, 0.62)',
   },
 });

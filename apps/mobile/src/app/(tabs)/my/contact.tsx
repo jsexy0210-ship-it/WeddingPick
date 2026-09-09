@@ -131,7 +131,7 @@ export default function ContactScreen() {
           <ThemedView style={styles.section}>
             <ThemedText type="subtitle">문의하기</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              사람이 직접 읽고 답해요. 이름이나 주소는 묻지 않아요.
+              사람이 직접 읽고 답해요. 이름이나 주소 없이 보낼 수 있어요.
             </ThemedText>
           </ThemedView>
 

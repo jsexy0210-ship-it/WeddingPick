@@ -120,7 +120,7 @@ export default function SettingsScreen() {
 
   function confirmSignOut() {
     // 파괴적 동작은 컨펌을 거친다. 핸드오프 인터랙션 규칙.
-    confirmAlert('로그아웃할까요', '기기에 저장된 문서는 지워지지 않아요', [
+    confirmAlert('로그아웃할까요', '기기에 저장된 문서는 그대로 남아요', [
       { text: '그만두기', style: 'cancel' },
       {
         text: '로그아웃',

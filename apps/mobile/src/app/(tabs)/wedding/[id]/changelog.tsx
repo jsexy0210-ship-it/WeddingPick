@@ -1,209 +1,128 @@
 import type { Notification } from '@weddingpick/api-contract';
-import { NOTIFICATION_KIND_LABEL } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScrollView, StyleSheet } from 'react-native';
 
-import {
-  ActionButton,
-  ErrorView,
-  Layout,
-  MaxContentWidth,
-  Radius,
-  Spacing,
-  ThemedText,
-  ThemedView,
-  useTheme,
-  SkeletonView,
-} from '@weddingpick/ui';
-import { listNotifications, readAllNotifications } from '@/api/client';
+import { listNotifications } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
-import { formatDateDot, formatTimeHm } from '@/features/common/format-date';
+import { formatDateDot } from '@/features/common/format-date';
+import { ErrorView, SkeletonView, Spacing } from '@weddingpick/ui';
+import { Hero, ListRow, NavBar, RowValue, Screen, Section, relativeTime } from '@/features/wedding/screen-kit';
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** «오늘» · «이번 주» · 그 밖은 날짜 `2027.05.16(토)`. */
+function groupLabel(iso: string, now: number): string {
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+  const at = new Date(iso).getTime();
+
+  if (at >= startOfToday.getTime()) return '오늘';
+  if (at >= startOfToday.getTime() - 6 * DAY_MS) return '이번 주';
+
+  return formatDateDot(iso);
+}
 
 /**
- * WP-CPL-006: 커플 공유 변경 내역 화면.
+ * 변경 내역. WP-CPL-005 · 핸드오프 14-couple #5.
  *
- * 커플 간 공유 일정·예산에 관련된 알림 이력을 날짜별로 묶어 보여준다.
- * 알림 API는 웨딩 ID로 필터하지 않아 사용자의 전체 알림을 보여준다 —
- * 커플용 변경 로그 전용 엔드포인트가 추가되면 교체한다.
+ *   nav    «변경 내역»
+ *   그룹    오늘 · 이번 주 · 날짜 — 라벨 14/19 700
+ *   행     무엇 18/24 · 상세 14/19 · 시간 14/19
+ *
+ * 커플이 함께 받은 알림 이력을 시간순으로 본다. 알림 API는 웨딩 ID로 거르지 않아 전체
+ * 알림이 보인다 — 변경 로그 전용 엔드포인트가 생기면 바꾼다. 시안의 «되돌리기»와 작성자
+ * 아바타는 서버가 그 값을 주지 않아 넣지 않았다.
  */
 export default function ChangelogScreen() {
   useLocalSearchParams<{ id: string }>();
-  const theme = useTheme();
   const [notifications, setNotifications] = useState<Notification[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [marking, setMarking] = useState(false);
+  const [now, setNow] = useState<number | null>(null);
 
   function load() {
     if (!isServerConfigured) return;
     listNotifications()
-      .then((r) => {
-        setNotifications(r.notifications);
+      .then((result) => {
+        setNotifications(result.notifications);
         setError(null);
       })
-      .catch((e: Error) => setError(e.message));
+      .catch((caught: Error) => setError(caught.message));
   }
 
-  function retry() {
-    setError(null);
+  useEffect(() => {
+    void Promise.resolve().then(() => setNow(Date.now()));
     load();
-  }
-
-  useEffect(() => { load(); }, []);
-
-  async function markAllRead() {
-    if (marking) return;
-    setMarking(true);
-    try {
-      await readAllNotifications();
-      const r = await listNotifications();
-      setNotifications(r.notifications);
-    } catch {
-      // 알림 읽음 실패는 조용히 — 목록은 그대로 보인다
-    } finally {
-      setMarking(false);
-    }
-  }
+  }, []);
 
   if (!isServerConfigured) {
     return (
-      <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          <ThemedView style={styles.content}>
-            <ThemedText type="t2">변경 내역</ThemedText>
-            <ThemedText type="t6" themeColor="textSecondary">
-              이 빌드는 서버에 붙어 있지 않아 내역을 불러올 수 없어요.
-            </ThemedText>
-            <ActionButton label="돌아가기" onPress={() => router.back()} />
-          </ThemedView>
-        </SafeAreaView>
-      </ThemedView>
+      <Screen>
+        <NavBar title="변경 내역" />
+        <Hero title="아직 내역을 불러올 수 없어요" sub="이 빌드는 서버에 붙어 있지 않아요." />
+      </Screen>
     );
   }
 
   if (error) {
-    return <ErrorView message={error} onBack={retry} />;
+    return (
+      <ErrorView
+        message={error}
+        onRetry={() => {
+          setError(null);
+          load();
+        }}
+        onBack={() => router.back()}
+      />
+    );
   }
 
-  if (notifications === null) {
+  if (notifications === null || now === null) {
     return <SkeletonView />;
   }
 
-  // 날짜별 묶기
-  type Group = { date: string; items: Notification[] };
+  type Group = { label: string; items: Notification[] };
   const grouped: Group[] = [];
-  for (const n of notifications) {
-    const date = formatDateDot(n.createdAt);
+
+  for (const item of notifications) {
+    const label = groupLabel(item.createdAt, now);
     const last = grouped[grouped.length - 1];
-    if (last?.date === date) {
-      last.items.push(n);
-    } else {
-      grouped.push({ date, items: [n] });
-    }
+
+    if (last?.label === label) last.items.push(item);
+    else grouped.push({ label, items: [item] });
   }
 
-  const unread = notifications.filter((n) => !n.readAt).length;
-
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.content}>
-          <ThemedView style={styles.header}>
-            <ThemedText type="t2">변경 내역</ThemedText>
-            <ThemedText type="t6" themeColor="textSecondary">
-              커플이 함께 받은 알림과 변경 이력이에요.
-            </ThemedText>
-          </ThemedView>
+    <Screen>
+      <NavBar title="변경 내역" />
 
-          {notifications.length === 0 ? (
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="t6" themeColor="textSecondary">
-                아직 변경 내역이 없어요.
-              </ThemedText>
-            </ThemedView>
-          ) : (
-            <>
-              {unread > 0 ? (
-                <ActionButton
-                  label={marking ? '처리 중…' : `읽지 않은 ${unread}건 모두 읽음`}
-                  disabled={marking}
-                  onPress={() => void markAllRead()}
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {notifications.length === 0 ? (
+          <Hero title="아직 바뀐 것이 없어요" sub="일정 · 지출 · 메모가 바뀌면 여기에 쌓여요" />
+        ) : (
+          grouped.map(({ label, items }) => (
+            <Section key={label} label={label} style={styles.firstGroup}>
+              {items.map((item) => (
+                <ListRow
+                  key={item.id}
+                  title={item.title}
+                  sub={item.body}
+                  right={
+                    <RowValue color="textAssistive" numeric={false}>
+                      {relativeTime(item.createdAt, now)}
+                    </RowValue>
+                  }
                 />
-              ) : null}
-
-              {grouped.map(({ date, items }) => (
-                <ThemedView key={date} style={styles.group}>
-                  <ThemedText type="t7" themeColor="textAssistive">
-                    {date}
-                  </ThemedText>
-
-                  {items.map((n) => (
-                    <ThemedView
-                      key={n.id}
-                      type="backgroundElement"
-                      style={[
-                        styles.card,
-                        !n.readAt && { borderLeftWidth: 3, borderLeftColor: theme.tint },
-                      ]}
-                    >
-                      <View style={styles.cardHead}>
-                        <ThemedText type="badge" themeColor="textAssistive">
-                          {NOTIFICATION_KIND_LABEL[n.kind]}
-                        </ThemedText>
-                        <ThemedText type="badge" themeColor="textAssistive">
-                          {formatTimeHm(n.createdAt)}
-                        </ThemedText>
-                      </View>
-                      <ThemedText type="t5">{n.title}</ThemedText>
-                      <ThemedText type="t6" themeColor="textSecondary">
-                        {n.body}
-                      </ThemedText>
-                    </ThemedView>
-                  ))}
-                </ThemedView>
               ))}
-            </>
-          )}
-
-          <ActionButton label="돌아가기" onPress={() => router.back()} />
-        </ScrollView>
-      </SafeAreaView>
-    </ThemedView>
+            </Section>
+          ))
+        )}
+      </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-  },
-  content: {
-    paddingHorizontal: Layout.gutter,
-    paddingTop: Spacing.five,
-    paddingBottom: Spacing.six,
-    gap: Spacing.three,
-  },
-  header: {
-    gap: Spacing.two,
-  },
-  group: {
-    gap: Spacing.two,
-  },
-  card: {
-    borderRadius: Radius.medium,
-    padding: Spacing.three,
-    gap: Spacing.one,
-  },
-  cardHead: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
+  content: { paddingTop: Spacing.two, paddingBottom: Spacing.six },
+  firstGroup: {},
 });

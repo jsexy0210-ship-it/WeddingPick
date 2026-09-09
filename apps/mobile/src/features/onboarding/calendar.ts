@@ -18,14 +18,6 @@ export const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as con
 export const CALENDAR_ROWS = 6;
 export const CALENDAR_CELLS = CALENDAR_ROWS * WEEKDAYS.length;
 
-/*
- * 달력 색(WP-APP-023 · SPEC §13.7). spec/tokens.json에 달력 항목이 없어 여기 이름 붙여
- * 둔다 — 일요일 · 토요일 · 타월(다른 달의 날). 토큰이 생기면 여기만 바꾼다.
- */
-export const CALENDAR_SUNDAY = '#E8735F';
-export const CALENDAR_SATURDAY = '#5B8DEF';
-export const CALENDAR_MUTED = '#DCDEE3';
-
 const pad = (value: number) => String(value).padStart(2, '0');
 
 export function toIso(year: number, month: number, day: number): string {
