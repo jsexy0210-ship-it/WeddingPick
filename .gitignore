@@ -43,3 +43,6 @@ ds-bundle/
 .design-sync/learnings/
 .design-sync/node_modules
 packages/ui/dist/
+
+# 화면 확인용 임시 캡처 — 저장소에 남기지 않는다
+.tmp-shots/
