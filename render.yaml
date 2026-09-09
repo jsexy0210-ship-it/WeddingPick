@@ -149,3 +149,47 @@ services:
         sync: false
       - key: AWS_SECRET_ACCESS_KEY
         sync: false
+
+  # ── 주기 작업 워커 ────────────────────────────────────────────────────
+  #
+  # 파기 정리(24시간 자동삭제) · 알림 · 문서 분석을 돌린다. 이 서비스가 없어서
+  # 처리방침이 약속한 자동파기가 한 번도 실행되지 않았고, 올린 견적서는 집어갈
+  # 프로세스가 없어 「분석 중」에서 나오지 못했다(Release Audit 1차 P0-2 · P0-3).
+  #
+  # **지금 실제로 도는 것은 API 프로세스 안쪽이다**(apps/api/src/index.ts).
+  # Blueprint 동기화가 깨져 있어 이 선언만으로는 서비스가 생기지 않는다 —
+  # 사람이 대시보드에서 만들어야 한다. 만든 뒤에는 운영 API의 환경변수에
+  # `RUN_WORKER_IN_API=false`를 넣어 한쪽만 돌게 한다. 둘 다 돌아도 같은 문서를
+  # 두 번 분석하지는 않는다(FOR UPDATE SKIP LOCKED).
+  #
+  # DATABASE_URL · ANTHROPIC_API_KEY · S3 자격은 운영 API와 같은 값을 넣는다.
+  - type: worker
+    name: weddingpick-worker
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: npm run worker --workspace @weddingpick/api
+    autoDeploy: false
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      # 원본을 실제로 지우려면 automatic이어야 한다. manual이면 알리기만 한다.
+      - key: RETENTION_MODE
+        value: automatic
+      - key: STORAGE_DRIVER
+        value: s3
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_REGION
+        value: kr-standard
+      - key: S3_ENDPOINT
+        value: https://kr.object.ncloudstorage.com
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
