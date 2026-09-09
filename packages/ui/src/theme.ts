@@ -394,6 +394,12 @@ export const Layout = {
   sectionGap: 28,
   /** 섹션 제목에서 첫 콘텐츠까지. */
   sectionHeadGap: 14,
+  /**
+   * 촘촘한 섹션의 제목→내용. spacing.sectionGapCompact — **검색 홈(06-search)만** 이 값이다.
+   * 그 시안의 섹션 컨테이너가 `gap:12px`이고, 02-design-system(14)과 갈릴 때는 그 화면 시안을
+   * 따른다(2026-09-09 패딩 감사). 다른 화면은 `sectionHeadGap` 14 그대로다.
+   */
+  sectionHeadGapCompact: 12,
   /** 목록 행 최소 높이. component.row.minHeight. */
   rowMinHeight: 56,
   /** 촘촘한 행 최소 높이. size.rowMinHeightCompact. */
@@ -434,6 +440,15 @@ export const Layout = {
   touchTarget: 44,
   statusBar: 44,
   navBar: 56,
+  /**
+   * 하위 화면 상단 내비의 좌우. component.navBack «padding:0 20px 0 12px» — 시안 18개가 모두 같다.
+   * 거터(24)와 다른 이유는 뒤로가기가 40 원형이라 그 안의 아이콘 24가 20 선에 앉기 때문이다.
+   * 화면이 24에서 직접 빼 계산하면 버튼 크기가 바뀔 때 한 곳만 어긋난다.
+   */
+  navPaddingLeft: 12,
+  navPaddingRight: 20,
+  /** 상단 내비 요소 사이. component.navBack.gap. */
+  navGap: 8,
   /** 검색 헤더 높이. size.headerSearch. */
   headerSearch: 60,
   /** 하단 dock 높이(+ safeBottom). size.dock. */
