@@ -117,7 +117,7 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
-      - name: Custom domains (weddingpick.kr / admin.weddingpick.kr)
+      - name: Custom domains (weddingpick.kr)
         run: |
           if [ -z "$RENDER_API_KEY" ]; then
             echo "RENDER_API_KEY 없음 — 커스텀 도메인 설정 생략"
@@ -146,7 +146,6 @@ jobs:
             fi
           }
           add_domain "weddingpick-web"   "weddingpick.kr"
-          add_domain "weddingpick-admin" "admin.weddingpick.kr"
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
 

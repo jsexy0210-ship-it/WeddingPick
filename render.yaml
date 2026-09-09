@@ -30,18 +30,6 @@ services:
       - key: WEDDINGPICK_WEB_VENDOR_IDS
         sync: false
 
-  # 관리자 패널 (admin.weddingpick.kr)
-  - type: web
-    name: weddingpick-admin
-    runtime: static
-    staticPublishPath: ./apps/web/dist
-    autoDeploy: true
-    buildCommand: npm run build --workspace @weddingpick/web
-    routes:
-      - type: redirect
-        source: /
-        destination: /admin.html
-
   # 모바일 웹 export 정적 호스팅 (실제 앱 화면 검수용 + 하이브리드 웹뷰 쉘 POC)
   #
   # apps/mobile을 react-native-web으로 정적 빌드해 서빙한다. 네이티브 앱 쉘의

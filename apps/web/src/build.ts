@@ -1,7 +1,6 @@
-import { cpSync, mkdirSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { renderAdminPage } from './admin-page';
 import { renderHomePage } from './home-page';
 import { renderLandingV4 } from './landing-v4';
 import { renderLandingPage } from './page';
@@ -28,7 +27,6 @@ import { renderVendorPage } from './vendor-page';
  * | `privacy.html` | 개인정보처리방침 |
  * | `v/<업체 id>.html` | WP-WEB-003 업체 상세 |
  * | `about.html` | 서비스 소개 한 장. 약관·출처·분석 안내가 여기 있다 |
- * | `admin.html` | 관리자 |
  *
  * **소개 한 장을 지우지 않고 `about.html`로 남긴다.** `POLICY_DOCUMENTS`의 분석
  * 안내가 그 문서 안(`#analysis-notice`)을 가리키고, 앱 정책 화면도 같은 것을
@@ -39,6 +37,13 @@ import { renderVendorPage } from './vendor-page';
  * 내보내는 것보다 낫다.
  */
 export async function build(outDir: string): Promise<string> {
+  /*
+   * 먼저 비운다. 안 비우면 **지운 페이지가 계속 서빙된다** — 이 함수는 쓰기만 하고
+   * 지우지 않아서, 예전 빌드가 남긴 파일이 그대로 남는다. 2026-09-09에 `admin.html`을
+   * 없앴는데 `dist/admin.html`이 남아 테스트가 그것을 집어 든 것이 그 증상이다.
+   * 빌드 산출물 전용 디렉터리라 통째로 지워도 잃을 것이 없다.
+   */
+  rmSync(outDir, { recursive: true, force: true });
   mkdirSync(outDir, { recursive: true });
 
   // Copy public assets (favicons, manifest, etc.)
@@ -60,7 +65,6 @@ export async function build(outDir: string): Promise<string> {
   writeFileSync(join(outDir, 'privacy.html'), renderPrivacyPage(), 'utf8');
 
   writeFileSync(join(outDir, 'about.html'), renderLandingPage(STYLES), 'utf8');
-  writeFileSync(join(outDir, 'admin.html'), renderAdminPage(), 'utf8');
 
   const ids = vendorIdsToBuild();
 

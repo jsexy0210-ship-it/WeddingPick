@@ -33,27 +33,20 @@ services:
       # 업체 상세(/v/*.html)가 한 장도 만들어지지 않는다.
       WEDDINGPICK_API_URL: https://weddingpickl.onrender.com
 
-  # 관리자 (같은 빌드를 쓴다)
-  weddingpick-admin:
-    vars:
-      WEDDINGPICK_CONTACT_EMAIL: help.weddingpick@gmail.com
-      WEDDINGPICK_API_URL: https://weddingpickl.onrender.com
-
   # 운영 API
   WeddingPickl:
     vars:
       # 브라우저에서 API를 부르는 출처. 빠진 출처는 preflight에서 막히고,
       # 브라우저에는 CORS 오류로 뜨지만 서버 로그에는 아무것도 남지 않는다.
       #
-      #   app-web        expo 관리자 콘솔이 여기서 뜬다(PATCH 5곳)
+      #   app-web        앱 화면과 **관리자 콘솔**이 여기서 뜬다(/admin, 27개 화면)
       #   web            서비스 웹사이트
-      #   admin(.kr)     admin.html이 여기서 뜬다 — /v1/admin/* 과 /v1/auth/sessions를 부른다
-      #                  (apps/web/src/admin-page.ts · render.yaml의 weddingpick-admin)
       #   weddingpick.kr web의 커스텀 도메인. onrender 주소만 있으면 이쪽으로 들어온 사람이 막힌다
       #
-      # 커스텀 도메인 둘은 main.yml의 「Custom domains」 스텝이 붙이는 그 값이다.
-      # www는 붙이는 코드가 없어 넣지 않는다 — 쓰기로 정해지는 날 한 줄 더한다.
-      CORS_ORIGINS: https://weddingpick-app-web.onrender.com,https://weddingpick-web.onrender.com,https://weddingpick-admin.onrender.com,https://admin.weddingpick.kr,https://weddingpick.kr
+      # 관리자 출처 둘(`weddingpick-admin.onrender.com` · `admin.weddingpick.kr`)은
+      # 2026-09-09 사용자 결정으로 뺐다 — 관리자는 app-web의 `/admin` 하나로 통일했고
+      # 그 서비스와 도메인이 없어졌다. 살아 있지도 않은 출처를 허용 목록에 두지 않는다.
+      CORS_ORIGINS: https://weddingpick-app-web.onrender.com,https://weddingpick-web.onrender.com,https://weddingpick.kr
       # 앱의 EXPO_PUBLIC_KAKAO_CLIENT_ID와 같은 값이어야 토큰 교환과 id_token 검증이 맞는다.
       KAKAO_APP_KEY: 8e9a14dd3a0aa1a420bff858460c415c
     secrets:
