@@ -173,6 +173,45 @@ export async function downloadPublicCsv(key: SourceKey): Promise<Buffer> {
   throw new Error('공식 다운로드 메타데이터 또는 이용허락 확인 실패');
 }
 
+/**
+ * 공공데이터포털 응답 봉투는 오퍼레이션마다 다르다 — sdsc2의 업종코드 조회는
+ * `{ data: [...] }`가 아니라 여러 겹으로 감싼 모양으로 온다(2026-09-09 실 응답
+ * 확인). 봉투 이름을 추측하는 대신, 기대하는 필드를 가진 첫 객체 배열을 찾는다.
+ * 봉투가 바뀌어도 레코드 필드가 그대로면 계속 읽힌다.
+ */
+export function findRecords<T>(payload: unknown, requiredField: string): T[] {
+  const queue: unknown[] = [payload];
+  while (queue.length) {
+    const node = queue.shift();
+    if (Array.isArray(node)) {
+      const rows = node.filter(
+        (row): row is Record<string, unknown> =>
+          !!row && typeof row === 'object' && requiredField in row);
+      if (rows.length) return rows as T[];
+      queue.push(...node);
+    } else if (node && typeof node === 'object') {
+      queue.push(...Object.values(node));
+    }
+  }
+  return [];
+}
+
+/** 봉투 어디에 있든 이름이 같은 첫 숫자 값을 찾는다(totalCount 등). */
+export function findNumber(payload: unknown, key: string): number | null {
+  const queue: unknown[] = [payload];
+  while (queue.length) {
+    const node = queue.shift();
+    if (Array.isArray(node)) queue.push(...node);
+    else if (node && typeof node === 'object') {
+      const value = (node as Record<string, unknown>)[key];
+      if (typeof value === 'number') return value;
+      if (typeof value === 'string' && /^\d+$/.test(value)) return Number(value);
+      queue.push(...Object.values(node));
+    }
+  }
+  return null;
+}
+
 /** sbiz OpenAPI 응답의 data 배열 한 항목 */
 type SbizApiRecord = {
   bizesId?: string;
@@ -181,14 +220,6 @@ type SbizApiRecord = {
   indsSclsNm?: string;
   ctprvnCd?: string;
   rdnmAdr?: string;
-};
-
-type SbizApiPage = {
-  currentCount?: number;
-  totalCount?: number;
-  pageIndex?: number;
-  pageSize?: number;
-  data?: SbizApiRecord[];
 };
 
 /**
@@ -255,8 +286,9 @@ export async function downloadSbizApiVendors(
     url.searchParams.set('type', 'json');
 
     const buf = await publicGet(url.toString(), 8 * 1024 * 1024);
-    const page = JSON.parse(buf.toString('utf8')) as SbizApiPage;
-    const records = page.data ?? [];
+    const payload = JSON.parse(buf.toString('utf8')) as unknown;
+    const records = findRecords<SbizApiRecord>(payload, 'bizesNm');
+    const totalCount = findNumber(payload, 'totalCount');
     seenForCode += records.length;
 
     for (const r of records) {
@@ -291,7 +323,7 @@ export async function downloadSbizApiVendors(
     }
 
     const fetched = (pageNo - 1) * 1000 + records.length;
-    if (!page.totalCount || fetched >= page.totalCount || records.length < 1000) break;
+    if (!totalCount || fetched >= totalCount || records.length < 1000) break;
   }
   // 코드가 틀리면 API는 오류 대신 빈 목록을 준다 — 조용한 0건 수집을 막는다.
   if (!seenForCode) throw new Error(`업종코드 ${query.divId}=${code} 응답이 0건입니다. 코드를 확인하세요.`);
@@ -350,9 +382,9 @@ export async function listIndustryCategories(
   parent?: { indsLclsCd?: string; indsMclsCd?: string },
 ): Promise<IndustryCategory[]> {
   const buf = await publicGet(upjongUrl(level, apiKey, parent), 4 * 1024 * 1024);
-  const page = JSON.parse(buf.toString('utf8')) as { data?: Record<string, string>[] };
   const codeField = UPJONG_CODE_FIELD[level];
   const nameField = UPJONG_NAME_FIELD[level];
+  const rows = findRecords<Record<string, string>>(JSON.parse(buf.toString('utf8')), codeField);
 
-  return (page.data ?? []).map((row) => ({ code: row[codeField] ?? '', name: row[nameField] ?? '' }));
+  return rows.map((row) => ({ code: row[codeField] ?? '', name: row[nameField] ?? '' }));
 }
