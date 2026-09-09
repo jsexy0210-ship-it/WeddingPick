@@ -104,6 +104,7 @@ export const ROUTES: readonly string[] = [
   '/my/taste',
   '/my/vendor-claims',
   '/my/vendor-claims/[vendorId]',
+  '/my/wedding-settings',
   '/my/withdrawal',
   '/onboarding',
   '/pick',
