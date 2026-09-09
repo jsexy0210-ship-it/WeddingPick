@@ -88,7 +88,12 @@ function createIdTokenVerifier(options: OidcOptions): (idToken: string) => Promi
         profileImageUrl: stringValue(payload.picture),
         gender: stringValue(payload.gender),
         birthday: stringValue(payload.birthdate),
-        mobile: stringValue(payload.phone_number),
+        /*
+         * 전화번호는 읽지 않는다(2026-09-09 사용자 결정). 카카오 동의항목에서
+         * `phone_number`를 뺐으므로 클레임 자체가 오지 않지만, 읽는 자리를
+         * 남겨두면 나중에 스코프가 늘었을 때 조용히 저장되기 시작한다. 번호가
+         * 필요한 곳은 Npay 지급 하나뿐이고 거기서는 사용자가 그때 직접 적는다.
+         */
       },
     };
   };
