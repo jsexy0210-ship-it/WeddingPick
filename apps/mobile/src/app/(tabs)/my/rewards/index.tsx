@@ -1,4 +1,4 @@
-import { MISSION_COMPLETE_REWARD_NOTIFICATION, REWARDS } from '@weddingpick/domain';
+import { MISSION_COMPLETE_REWARD_NOTIFICATION, REWARDS, REWARD_PAYOUT_COPY } from '@weddingpick/domain';
 import { router } from 'expo-router';
 
 import { ErrorView } from '@weddingpick/ui';
@@ -50,6 +50,12 @@ const S = {
   fundCtaPast: '응모 내역 보기',
   noteTitle: '준비하면서 자연스럽게 받아요',
   noteBody: '준비하다 보면 하나씩 채워져요.',
+  /** Npay 수령(WP-EVT-006) — 받을 수 있는 금액이 있을 때만 맨 위 카드. */
+  payoutTitle: '리워드 받기',
+  payoutBody: REWARD_PAYOUT_COPY.sub,
+  payoutOpenBody: REWARD_PAYOUT_COPY.requested,
+  payoutCta: (amount: string) => REWARD_PAYOUT_COPY.cta(amount),
+  payoutCtaOpen: '확인 중',
 } as const;
 
 /**
@@ -59,7 +65,7 @@ const S = {
  * 운영이 바뀌면 전부 틀린다(SPEC §11.3). 응답에 없는 숫자(«27/40커플 남음»)도 적지 않는다.
  */
 export default function BenefitsScreen() {
-  const { me, rewards, draw, loading, error, reload } = useBenefitData();
+  const { me, rewards, draw, payout, loading, error, reload } = useBenefitData();
 
   if (error) return <ErrorView message={error} onBack={reload} />;
   if (loading && !me && !rewards && !draw) return <DelayedLoadingView />;
@@ -82,6 +88,18 @@ export default function BenefitsScreen() {
 
       <Section gap="events">
         <CardList>
+          {payout && (payout.receivableKrw > 0 || payout.open) ? (
+            <CampaignCard
+              brand={!payout.open}
+              badge={payout.open ? payout.open.statusLabel : won(payout.receivableKrw)}
+              badgeKind={payout.open ? 'wait' : 'brand'}
+              title={S.payoutTitle}
+              body={payout.open ? payout.open.statusNote : S.payoutBody}
+              cta={payout.open ? S.payoutCtaOpen : S.payoutCta(won(payout.receivableKrw))}
+              ctaOff={Boolean(payout.open)}
+              onPress={() => router.push('/my/rewards/npay' as never)}
+            />
+          ) : null}
           {missions ? (
             <CampaignCard
               brand={!missionsDone}

@@ -26,6 +26,16 @@ Pick 인증 = 지출 입력  WP-OUR-014 «지출 추가 · Pick 인증 통합» 
 날짜 선택            WP-APP-023 연월 셀렉트 + 달력으로 복귀(휠 3열 폐기)
 ```
 
+### 이후 구현 (같은 날)
+
+```
+WP-EVT-006 Npay 수령     reward_payouts(0092) — 받는 분 · 휴대폰 번호(010-XXXX-XXXX) · 동의 → 요청 →
+                        운영자가 Npay로 보내고 «보냈다»고 적으면(reward-admin --sent) 보상 paid · 번호 삭제 · 알림.
+                        못 보내면(--payout-failed) 보상은 풀려 «다시 받기». 번호는 requested 동안만 있다(CHECK).
+전 화면 1:1 대조         html 시안 renderVals 값 기준 6갈래(로그인·온보딩 / 홈 / 검색·상세·Pick / 웨딩일정·Pick 인증 /
+                        MY·혜택 / 디자인 토큰) — 토큰 · Badge · TextField · SheetPanel 신설, 시스템 서체, 탭 바는 Root 5탭만.
+```
+
 ### 결정 · 보류
 
 - 스타일 이미지 4장(uploads/도시적인.png 등)은 zip에 없었다. `apps/mobile/assets/images/style/*.png`에 **임시 그라데이션**을 두었다 — 같은 파일명으로 덮어쓰면 된다.

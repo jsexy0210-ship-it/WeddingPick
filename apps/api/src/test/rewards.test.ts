@@ -5,6 +5,7 @@ import {
   REWARDS,
 } from '@weddingpick/domain';
 
+import { settlePayout } from '../reward-admin';
 import {
   consentToPaymentProofs,
   createTestApp,
@@ -478,6 +479,130 @@ describeWithDb('이벤트 보상', () => {
       // 다시 물어도 응모 행은 하나고 알림도 하나다.
       expect((await draw(owner.headers)).status).toBe('entered');
       expect(await enteredNotifications(owner.userId)).toBe(1);
+    });
+  });
+
+  describe('Npay 리워드 수령 (WP-EVT-006)', () => {
+    type Payout = {
+      receivableKrw: number;
+      receivableGrantIds: string[];
+      open: { id: string; status: string; phoneMasked: string | null; amountKrw: number } | null;
+      history: { id: string; status: string; phoneMasked: string | null; failureReason: string | null }[];
+    };
+
+    const payout = async (headers: Record<string, string>) =>
+      (await test.app.inject({ method: 'GET', url: '/v1/me/rewards/payout', headers })).json<Payout>();
+
+    const request = (headers: Record<string, string>, body: Record<string, unknown>) =>
+      test.app.inject({ method: 'POST', url: '/v1/me/rewards/payout', headers, payload: body });
+
+    /** 초대한 사람에게 지급 대기 보상 한 건(3,000원)을 만든다. */
+    async function earned() {
+      const inviter = await signInAs(test, 'inviter');
+      const invited = await signInAs(test, 'invited');
+      await redeem(invited.headers, await codeOf(inviter.headers));
+      expect((await registerProof(invited.headers)).statusCode).toBe(201);
+      return inviter;
+    }
+
+    async function operator(): Promise<string> {
+      const { rows } = await test.pool.query<{ id: string }>(
+        'INSERT INTO structured.users (is_operator) VALUES (true) RETURNING id'
+      );
+      return rows[0]!.id;
+    }
+
+    it('받을 수 있는 금액은 지급 대기 보상의 합이고, 요청하면 묶인다', async () => {
+      const inviter = await earned();
+
+      const before = await payout(inviter.headers);
+      expect(before.receivableKrw).toBe(REWARDS.referral.amountKrw);
+      expect(before.receivableGrantIds).toHaveLength(1);
+      expect(before.open).toBeNull();
+
+      const response = await request(inviter.headers, {
+        recipientName: '지수',
+        phone: '010 1234 5678',
+        consent: true,
+      });
+      expect(response.statusCode).toBe(201);
+      // 본인에게도 번호 전체를 되돌려주지 않는다.
+      expect(response.json<{ phoneMasked: string }>().phoneMasked).toBe('010-****-5678');
+
+      const after = await payout(inviter.headers);
+      expect(after.receivableKrw).toBe(0);
+      expect(after.open?.status).toBe('requested');
+      expect(after.open?.amountKrw).toBe(REWARDS.referral.amountKrw);
+
+      // 열린 요청이 있으면 또 요청할 수 없다.
+      expect((await request(inviter.headers, { recipientName: '지수', phone: '01012345678', consent: true })).statusCode).toBe(409);
+    });
+
+    it('번호가 010 열한 자리가 아니거나 동의가 없으면 받지 않는다', async () => {
+      const inviter = await earned();
+      expect((await request(inviter.headers, { recipientName: '지수', phone: '02-123-4567', consent: true })).statusCode).toBe(400);
+      expect((await request(inviter.headers, { recipientName: '지수', phone: '01012345678', consent: false })).statusCode).toBe(400);
+      expect((await payout(inviter.headers)).open).toBeNull();
+    });
+
+    it('받을 보상이 없으면 요청이 서지 않는다', async () => {
+      const who = await signInAs(test, 'nobody');
+      expect((await request(who.headers, { recipientName: '지수', phone: '01012345678', consent: true })).statusCode).toBe(409);
+    });
+
+    it('보냈다고 적으면 보상은 지급 완료, 번호는 지워지고, 알림이 간다', async () => {
+      const inviter = await earned();
+      await request(inviter.headers, { recipientName: '지수', phone: '01012345678', consent: true });
+      const { open } = await payout(inviter.headers);
+
+      await settlePayout(test.pool, open!.id, 'sent', await operator(), 'Npay 송금 완료');
+
+      const after = await payout(inviter.headers);
+      expect(after.open).toBeNull();
+      expect(after.history[0]?.status).toBe('sent');
+      expect(after.history[0]?.phoneMasked).toBeNull();
+
+      const { rows: phones } = await test.pool.query<{ recipient_phone: string | null; phone_deleted_at: Date | null }>(
+        'SELECT recipient_phone, phone_deleted_at FROM structured.reward_payouts WHERE id = $1',
+        [open!.id]
+      );
+      expect(phones[0]?.recipient_phone).toBeNull();
+      expect(phones[0]?.phone_deleted_at).not.toBeNull();
+
+      const mine = (await rewards(inviter.headers)).json<{ grants: { status: string }[] }>();
+      expect(mine.grants[0]?.status).toBe('paid');
+
+      const { rows: notes } = await test.pool.query<{ title: string }>(
+        'SELECT title FROM structured.notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 1',
+        [inviter.userId]
+      );
+      expect(notes[0]?.title).toContain('Npay로 보내드렸어요');
+    });
+
+    it('못 보냈다고 적으면 보상은 풀려서 다시 받을 수 있고 사유가 남는다', async () => {
+      const inviter = await earned();
+      await request(inviter.headers, { recipientName: '지수', phone: '01012345678', consent: true });
+      const { open } = await payout(inviter.headers);
+
+      await settlePayout(test.pool, open!.id, 'failed', await operator(), '휴대폰 번호를 확인해주세요');
+
+      const after = await payout(inviter.headers);
+      expect(after.open).toBeNull();
+      expect(after.receivableKrw).toBe(REWARDS.referral.amountKrw);
+      expect(after.history[0]?.status).toBe('failed');
+      expect(after.history[0]?.failureReason).toBe('휴대폰 번호를 확인해주세요');
+      expect(after.history[0]?.phoneMasked).toBeNull();
+
+      // 다시 요청할 수 있다.
+      expect((await request(inviter.headers, { recipientName: '지수', phone: '01098765432', consent: true })).statusCode).toBe(201);
+    });
+
+    it('받는 본인은 자기 요청을 보냈다고 적을 수 없다', async () => {
+      const inviter = await earned();
+      await request(inviter.headers, { recipientName: '지수', phone: '01012345678', consent: true });
+      const { open } = await payout(inviter.headers);
+      await test.pool.query('UPDATE structured.users SET is_operator = true WHERE id = $1', [inviter.userId]);
+      await expect(settlePayout(test.pool, open!.id, 'sent', inviter.userId, 'x')).rejects.toThrow('본인');
     });
   });
 });

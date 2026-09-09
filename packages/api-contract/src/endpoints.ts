@@ -91,6 +91,9 @@ import {
   myRewardsResponseSchema,
   redeemReferralRequestSchema,
   submitPromotionRequestSchema,
+  myRewardPayoutResponseSchema,
+  requestRewardPayoutRequestSchema,
+  rewardPayoutSchema,
 } from './rewards';
 import {
   conditionStatsSchema,
@@ -693,6 +696,22 @@ export const ENDPOINTS = {
     path: '/v1/referrals/redeem',
     body: redeemReferralRequestSchema,
     response: z.null(),
+  },
+
+  /**
+   * Npay 리워드 수령(WP-EVT-006). 지급 대기 보상을 한 요청으로 묶어 «받는 분 · 휴대폰
+   * 번호 · 동의»를 받는다. 돈은 사람이 보내고, 보낸 뒤 번호는 지워진다.
+   */
+  getMyRewardPayout: {
+    method: 'GET',
+    path: '/v1/me/rewards/payout',
+    response: myRewardPayoutResponseSchema,
+  },
+  requestRewardPayout: {
+    method: 'POST',
+    path: '/v1/me/rewards/payout',
+    body: requestRewardPayoutRequestSchema,
+    response: rewardPayoutSchema,
   },
 
   /** 홍보인증. 사람이 글을 확인한 뒤에 지급 대상이 된다(I-2). */

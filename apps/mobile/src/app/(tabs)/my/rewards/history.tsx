@@ -1,4 +1,5 @@
-import { REWARD_PAYOUT_NOTICE, formatDateDot } from '@weddingpick/domain';
+import { REWARD_PAYOUT_COPY, REWARD_PAYOUT_NOTICE, formatDateDot } from '@weddingpick/domain';
+import { router } from 'expo-router';
 import { StyleSheet } from 'react-native';
 
 import { ErrorView, Layout } from '@weddingpick/ui';
@@ -23,6 +24,8 @@ const S = {
   empty: '아직 받은 리워드가 없어요',
   noteTitle: REWARD_PAYOUT_NOTICE,
   noteBody: '한 번 더 확인이 필요한 건은 이유를 함께 적어드려요.',
+  payouts: 'Npay 수령',
+  retry: REWARD_PAYOUT_COPY.ctaRetry,
 } as const;
 
 /**
@@ -32,7 +35,7 @@ const S = {
  * 합계는 `paid`만 더한다 — 조건만 찬 건(`earned`)은 아직 아무도 돈을 보내지 않았다.
  */
 export default function RewardHistoryScreen() {
-  const { rewards, loading, error, reload } = useBenefitData();
+  const { rewards, payout, loading, error, reload } = useBenefitData();
 
   if (error) return <ErrorView message={error} onBack={reload} />;
   if (!rewards) return loading ? <DelayedLoadingView /> : <ErrorView message="내역을 불러오지 못했어요" onBack={reload} />;
@@ -73,6 +76,30 @@ export default function RewardHistoryScreen() {
           </Rows>
         )}
       </Section>
+
+      {payout && (payout.open || payout.history.length > 0) ? (
+        <Section gap="events" title={S.payouts}>
+          <Rows>
+            {[...(payout.open ? [payout.open] : []), ...payout.history].map((item) => (
+              <Row
+                key={item.id}
+                name={won(item.amountKrw)}
+                meta={
+                  item.status === 'failed'
+                    ? (item.failureReason ?? item.statusNote)
+                    : item.settledAt
+                      ? formatDateDot(item.settledAt.slice(0, 10))
+                      : item.statusNote
+                }
+                tail={item.status === 'failed' && payout.receivableKrw > 0 ? S.retry : item.statusLabel}
+                tailBadge={item.status === 'sent' ? 'ok' : item.status === 'failed' ? (payout.receivableKrw > 0 ? 'brand' : 'no') : 'wait'}
+                onPress={item.status === 'failed' && payout.receivableKrw > 0 ? () => router.push('/my/rewards/npay' as never) : undefined}
+                chevron={item.status === 'failed' && payout.receivableKrw > 0}
+              />
+            ))}
+          </Rows>
+        </Section>
+      ) : null}
 
       <Section gap="events">
         <NoteBox title={S.noteTitle} body={S.noteBody} />

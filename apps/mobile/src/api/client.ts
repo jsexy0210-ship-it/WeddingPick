@@ -142,6 +142,11 @@ import {
   type CompleteSetupRequest,
   appBootstrapResponseSchema,
   type AppBootstrapResponse,
+  myRewardPayoutResponseSchema,
+  rewardPayoutSchema,
+  type MyRewardPayoutResponse,
+  type RequestRewardPayoutRequest,
+  type RewardPayout,
 } from '@weddingpick/api-contract';
 import { z, type ZodType } from 'zod';
 
@@ -1091,6 +1096,19 @@ export async function getMyRewards(): Promise<MyRewardsResponse> {
 
 export async function getMyMonthlyDraw(): Promise<MyMonthlyDrawResponse> {
   return request('/v1/me/monthly-draw', myMonthlyDrawResponseSchema);
+}
+
+/** Npay 리워드 수령 현황(WP-EVT-006). 번호는 가린 꼴만 온다. */
+export async function getMyRewardPayout(): Promise<MyRewardPayoutResponse> {
+  return request('/v1/me/rewards/payout', myRewardPayoutResponseSchema);
+}
+
+/** 수령 요청 — 그 순간 지급 대기인 보상 전부가 한 요청으로 묶인다. */
+export async function requestRewardPayout(body: RequestRewardPayoutRequest): Promise<RewardPayout> {
+  return request('/v1/me/rewards/payout', rewardPayoutSchema, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
 }
 
 /**

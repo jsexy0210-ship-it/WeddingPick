@@ -1,6 +1,7 @@
 import type {
   CurrentUser,
   MyMonthlyDrawResponse,
+  MyRewardPayoutResponse,
   MyRewardsResponse,
   RewardGrant,
 } from '@weddingpick/api-contract';
@@ -13,7 +14,7 @@ import {
 } from '@weddingpick/domain';
 import { useCallback, useEffect, useState } from 'react';
 
-import { getCurrentUser, getMyMonthlyDraw, getMyRewards } from '@/api/client';
+import { getCurrentUser, getMyMonthlyDraw, getMyRewardPayout, getMyRewards } from '@/api/client';
 
 /**
  * 혜택 화면(WP-EVT-001~007)이 같이 쓰는 데이터. 세 응답을 한 번에 받는다.
@@ -27,6 +28,8 @@ export type BenefitData = {
   me: CurrentUser | null;
   rewards: MyRewardsResponse | null;
   draw: MyMonthlyDrawResponse | null;
+  /** Npay 수령 현황(WP-EVT-006). 받을 수 있는 금액 · 열린 요청 · 지난 요청. */
+  payout: MyRewardPayoutResponse | null;
   loading: boolean;
   /** 셋 다 실패했을 때만. 화면은 이때 ErrorView를 띄운다. */
   error: string | null;
@@ -37,6 +40,7 @@ export function useBenefitData(): BenefitData {
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [rewards, setRewards] = useState<MyRewardsResponse | null>(null);
   const [draw, setDraw] = useState<MyMonthlyDrawResponse | null>(null);
+  const [payout, setPayout] = useState<MyRewardPayoutResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,8 +49,8 @@ export function useBenefitData(): BenefitData {
    * 있던 화면 위에서 값만 바뀐다(effect 안에서 setState를 동기로 부르지 않는다).
    */
   const reload = useCallback(() => {
-    void Promise.allSettled([getCurrentUser(), getMyRewards(), getMyMonthlyDraw()]).then(
-      ([meResult, rewardsResult, drawResult]) => {
+    void Promise.allSettled([getCurrentUser(), getMyRewards(), getMyMonthlyDraw(), getMyRewardPayout()]).then(
+      ([meResult, rewardsResult, drawResult, payoutResult]) => {
         const nextMe = meResult.status === 'fulfilled' ? meResult.value : null;
         const nextRewards = rewardsResult.status === 'fulfilled' ? rewardsResult.value : null;
         const nextDraw = drawResult.status === 'fulfilled' ? drawResult.value : null;
@@ -54,6 +58,7 @@ export function useBenefitData(): BenefitData {
         setMe(nextMe);
         setRewards(nextRewards);
         setDraw(nextDraw);
+        setPayout(payoutResult.status === 'fulfilled' ? payoutResult.value : null);
         setError(
           !nextMe && !nextRewards && !nextDraw ? '혜택 정보를 불러오지 못했어요' : null
         );
@@ -64,7 +69,7 @@ export function useBenefitData(): BenefitData {
 
   useEffect(reload, [reload]);
 
-  return { me, rewards, draw, loading, error, reload };
+  return { me, rewards, draw, payout, loading, error, reload };
 }
 
 // ─── 파생 값 — 응답에서 세기만 한다 ───────────────────────────────
