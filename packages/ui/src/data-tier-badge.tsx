@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
-import { Radius } from './theme';
+import { Layout, Radius } from './theme';
 import { ThemedText } from './themed-text';
 import { useTheme } from './use-theme';
 
@@ -26,7 +26,11 @@ export type DataTierBadgeProps = {
 };
 
 /**
- * 실 제보 건수에 따라 색상이 달라지는 뱃지.
+ * 실 제보 건수에 따라 색상이 달라지는 배지 — 17-sheets-states WP-ST-005 tier.
+ *
+ *   micro 13/18/700 · padding 3 8 · radius 4 · 한 줄
+ *   0~2건  #FFE3BA / #805217      3~9건  #F2F3F6 / #4D5159      10건+  #E8FAF6 / #1AA174
+ *
  * 빈 칸이나 «—»는 쓰지 않는다.
  */
 export function DataTierBadge({ count }: DataTierBadgeProps) {
@@ -49,7 +53,7 @@ export function DataTierBadge({ count }: DataTierBadgeProps) {
 
   return (
     <View style={[styles.badge, { backgroundColor: bgColor }]}>
-      <ThemedText type="badge" style={{ color: textColor }}>
+      <ThemedText type="micro" numeric numberOfLines={1} style={{ color: textColor }}>
         {TIER_RANGE[tier]}
       </ThemedText>
     </View>
@@ -59,8 +63,8 @@ export function DataTierBadge({ count }: DataTierBadgeProps) {
 const styles = StyleSheet.create({
   badge: {
     alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: Radius.small,
+    paddingHorizontal: Layout.tierBadgePaddingX,
+    paddingVertical: Layout.tierBadgePaddingY,
+    borderRadius: Radius.badge,
   },
 });

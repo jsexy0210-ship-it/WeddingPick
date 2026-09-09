@@ -13,6 +13,7 @@ export { ThemedText, type ThemedTextProps } from './themed-text';
 export { ThemedView, type ThemedViewProps } from './themed-view';
 export { ActionButton, type ActionButtonProps } from './action-button';
 export { FilterChip, type FilterChipProps } from './filter-chip';
+export { TextField, type TextFieldProps } from './text-field';
 export { RatingPicker, type RatingPickerProps } from './rating-picker';
 export { WeddingCalendar, type WeddingCalendarProps } from './wedding-calendar';
 export { WeddingMark, type WeddingMarkProps } from './wedding-mark';
@@ -40,7 +41,8 @@ export { CategoryIcon, CATEGORY_CYCLE_ORDER, CATEGORY_ICON_LABEL, type CategoryI
 export { StepList, type Step, type StepState } from './step-list';
 export { showAlert, type ShowAlertButton } from './show-alert';
 export { ListSkeleton, type ListSkeletonProps } from './list-skeleton';
-export { PickStatusBadge, type PickStatusBadgeProps, type PickStatus } from './pick-status-badge';
+export { PickStatusBadge, STATUS_BADGE_STYLE, type PickStatusBadgeProps, type PickStatus } from './pick-status-badge';
+export { Badge, type BadgeProps, type BadgeKind } from './badge';
 export { VendorImage, type VendorImageProps, type VendorCategory } from './vendor-image';
 export { DataTierBadge, getDataTier, type DataTierBadgeProps, type DataTier } from './data-tier-badge';
 export { TruncatedText, type TruncatedTextProps } from './truncated-text';
@@ -53,11 +55,17 @@ export {
   Layout,
   Motion,
   Radius,
+  Border,
+  Elevation,
+  Skins,
+  DEFAULT_SKIN,
+  pickTintFor,
   BottomTabInset,
   MaxContentWidth,
   SocialColors,
   NpayColors,
   type ThemeColor,
+  type SkinId,
 } from './theme';
 export { FontSize, LineHeight, type FontSizeToken } from './typography';
 export { useTheme } from './use-theme';

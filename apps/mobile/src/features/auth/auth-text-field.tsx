@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     height: Layout.controlXLarge,
     borderWidth: 1,
     borderRadius: Radius.input,
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Layout.fieldPaddingX,
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,

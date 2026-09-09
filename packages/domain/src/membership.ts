@@ -74,17 +74,17 @@ export type Mission = {
 export const MISSIONS: readonly Mission[] = [
   {
     key: 'setup',
-    title: '내 웨딩을 설정해요',
+    title: '예식일과 예산 설정',
     description: '예식일과 지역을 알려주시면 맞춰서 찾아드려요',
   },
   {
     key: 'first_pick',
-    title: '마음에 드는 곳을 Pick해요',
+    title: '마음에 드는 곳 Pick하기',
     description: '검색하다 마음에 드는 곳을 담아두세요',
   },
   {
     key: 'partner',
-    title: '배우자와 함께해요',
+    title: '배우자와 연결하기',
     description: '초대 링크만 보내면 돼요',
   },
   {
@@ -105,7 +105,7 @@ export const MISSION_HEADLINE = '웨딩픽 시작하기';
  * 없던 일이 된다.
  *
  * 미션은 등급과 따로 센다. 결제인증만 내고 배우자를 연결하지 않은 사람은 패밀리
- * 등급이지만 '배우자와 함께해요'는 아직 안 한 것이다 — **등급이 미션을 대신
+ * 등급이지만 '배우자와 연결하기'는 아직 안 한 것이다 — **등급이 미션을 대신
  * 채워주면 그 체크 표시는 거짓이 된다.**
  */
 export function isMissionDone(key: MissionKey, facts: MembershipFacts): boolean {

@@ -28,6 +28,13 @@ export const VENDOR_DETAIL_SECTIONS = [
     note: '주차·식대·보증인원 같은 항목은 vendor-fact.ts가 목록을 갖는다',
   },
   {
+    key: 'recommend_reason',
+    label: TERMS.recommendReason,
+    ready: false,
+    /* 추천 이유는 지금 추천 목록에서만 만든다. 상세에서는 무엇과 견줘 고른 것인지가 없다. */
+    note: '추천 목록에서만 만들 수 있어요',
+  },
+  {
     key: 'verified_data',
     label: TERMS.verifiedData,
     ready: true,
@@ -38,13 +45,8 @@ export const VENDOR_DETAIL_SECTIONS = [
      */
     note: '실 제보와 확인된 계약 두 덩어리다',
   },
-  {
-    key: 'recommend_reason',
-    label: TERMS.recommendReason,
-    ready: false,
-    /* 추천 이유는 지금 추천 목록에서만 만든다. 상세에서는 무엇과 견줘 고른 것인지가 없다. */
-    note: '추천 목록에서만 만들 수 있어요',
-  },
+  /* 핸드오프 WP-VEND-001 rule — Pick 버튼은 근거를 다 읽은 자리(제보 금액 다음)에 둔다. */
+  { key: 'pick', label: `${TERMS.pick} · 비교`, ready: true },
   {
     key: 'vendor_notice',
     label: TERMS.vendorNotice,
@@ -69,7 +71,6 @@ export const VENDOR_DETAIL_SECTIONS = [
     note: '후기 화면 안에 함께 있어요',
   },
   { key: 'official_source', label: '공식정보', ready: true },
-  { key: 'pick', label: `${TERMS.pick} · 비교`, ready: true },
   { key: 'report_error', label: '정보 오류 제보', ready: true },
 ] as const satisfies readonly {
   key: string;

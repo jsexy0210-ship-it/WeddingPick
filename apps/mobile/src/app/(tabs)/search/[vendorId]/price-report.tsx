@@ -216,15 +216,15 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.five,
-    paddingBottom: Spacing.six,
+    paddingBottom: Spacing.four,
     gap: Spacing.three,
   },
   section: { gap: Spacing.one },
-  card: { borderRadius: Radius.medium, padding: Spacing.four, gap: Spacing.two },
+  card: { borderRadius: Radius.medium, padding: Layout.cardPadding, gap: Spacing.two },
   input: {
     height: Layout.controlXLarge,
     borderRadius: Radius.input,
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Layout.fieldPaddingX,
     fontSize: FontSize.t6,
   },
   textarea: {

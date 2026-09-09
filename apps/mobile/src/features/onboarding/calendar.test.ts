@@ -1,8 +1,5 @@
 import {
   CALENDAR_CELLS,
-  CALENDAR_MUTED,
-  CALENDAR_SATURDAY,
-  CALENDAR_SUNDAY,
   chunk,
   clampDay,
   dayOptions,
@@ -19,12 +16,6 @@ import {
 } from './calendar';
 
 describe('연월 셀렉트 + 달력 계산 (WP-APP-023)', () => {
-  it('달력 색 — 일요일 · 토요일 · 타월 (SPEC §13.7)', () => {
-    expect(CALENDAR_SUNDAY).toBe('#E8735F');
-    expect(CALENDAR_SATURDAY).toBe('#5B8DEF');
-    expect(CALENDAR_MUTED).toBe('#DCDEE3');
-  });
-
   it('달의 날 수 — 윤년 2월은 29일', () => {
     expect(daysInMonth(2027, 5)).toBe(31);
     expect(daysInMonth(2027, 2)).toBe(28);

@@ -14,6 +14,7 @@ import {
   ThemedView,
   SkeletonView,
 } from '@weddingpick/ui';
+import { NavBar } from '@/features/wedding/screen-kit';
 import { listMyVendorClaims } from '@/api/client';
 
 /**
@@ -48,6 +49,11 @@ export default function MyVendorClaimsScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        {/*
+          시안 layoutStack «header 56». 뒤로는 Depth Back — MY로 내려간다.
+          제목은 화면이 아래 Hero로 들고 있어 nav에 다시 적지 않는다.
+        */}
+        <NavBar />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedText type="t2">업체 관계자 인증</ThemedText>
 
@@ -112,12 +118,12 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.five,
-    paddingBottom: Spacing.six,
+    paddingBottom: Spacing.four,
     gap: Spacing.three,
   },
   card: {
     borderRadius: Radius.medium,
-    padding: Spacing.four,
+    padding: Layout.cardPadding,
     gap: Spacing.two,
   },
   cardHead: {

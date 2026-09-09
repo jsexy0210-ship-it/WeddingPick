@@ -44,7 +44,7 @@ import { WebShellView } from '@/features/webshell/WebShellView';
  * 순서는 고정이다. 히어로 → 준비 현황 → 웨딩픽 추천 → 밴드 → 다음 준비 → 웨딩 콘텐츠.
  *
  * **코랄은 네 곳뿐이다**(SPEC §13.13). 준비 현황 현재 업종 테두리 · 진행바 ·
- * 웨딩픽 추천 라벨 · CTA. D-day · 조건 칩 · 완료 표시 · 아바타는 무채색이다.
+ * 웨딩픽 추천 라벨 · CTA · D-day. 조건 칩 · 완료 표시 · 아바타는 무채색이다.
  *
  * 화면이 무엇을 보여주는지는 전부 `features/home/state.ts`가 정한다. 여기는 그린다.
  */
@@ -184,14 +184,17 @@ export default function HomeScreen() {
             <ThemedView style={styles.section}>
               <View style={styles.sectionHead}>
                 <ThemedText type="t4">준비 현황</ThemedText>
-                <Pressable
-                  accessibilityRole="link"
-                  onPress={() => router.push('/progress')}
-                  style={({ pressed }) => pressed && styles.pressed}>
-                  <ThemedText type="t7" themeColor="textAssistive" style={styles.more}>
-                    {view.boardMore}
-                  </ThemedText>
-                </Pressable>
+                {/* 시작 전 구간에는 링크가 없다(시안 1) — 펼쳐도 빈 칸 12개다. */}
+                {view.boardMore === null ? null : (
+                  <Pressable
+                    accessibilityRole="link"
+                    onPress={() => router.push('/progress')}
+                    style={({ pressed }) => pressed && styles.pressed}>
+                    <ThemedText type="t7" themeColor="textAssistive" style={styles.more}>
+                      {view.boardMore}
+                    </ThemedText>
+                  </Pressable>
+                )}
               </View>
               <Board
                 cells={view.cells}
@@ -288,7 +291,10 @@ function openSearchWithout(chip: ConditionChip, view: HomeView, me: CurrentUser 
 /**
  * 히어로. 아바타 + 닉네임 ↔ D-day, 26px 두 줄 제목, 진행바 + N / 12.
  *
- * D-day는 회색이다 — 코랄은 진행바 몫이다.
+ * **D-day는 코랄이다**(2026-09-09 사용자 오더 · screens.json WP-HOME-001 «D-day 15 coral»).
+ * v3.21이 홈 코랄을 네 곳으로 줄이며 D-day를 무채색으로 바꿨는데, 그러면 예식일이
+ * 화면에서 사라진다 — 홈에서 가장 먼저 찾는 값이라 다섯째 코랄로 되돌린다.
+ * 시안의 D-day 15px은 토큰 사다리에 없어 14(t7).
  */
 function Hero({ me, view, daysLeft }: { me: CurrentUser | null; view: HomeView; daysLeft: number | null }) {
   return (
@@ -298,7 +304,7 @@ function Hero({ me, view, daysLeft }: { me: CurrentUser | null; view: HomeView; 
         <ThemedText type="t7" themeColor="textSecondary" numberOfLines={1} style={styles.whoName}>
           {identityLine(me)}
         </ThemedText>
-        <ThemedText type="t7" numeric themeColor="textAssistive" style={styles.dday}>
+        <ThemedText type="t7" numeric themeColor="tint" style={styles.dday}>
           {daysLeft === null ? '예식일 미정' : `D-${daysLeft}`}
         </ThemedText>
       </View>
@@ -310,10 +316,11 @@ function Hero({ me, view, daysLeft }: { me: CurrentUser | null; view: HomeView; 
       </ThemedText>
 
       <View style={styles.progressRow}>
+        {/* 시안 track: 6 · #EAEBEE(border) · 채움 coral. ProgressBar 기본값이 그대로다. */}
         <View style={styles.progressTrack}>
-          <ProgressBar value={view.progress} height={6} />
+          <ProgressBar value={view.progress} />
         </View>
-        <ThemedText type="t7" numeric themeColor="textAssistive" style={styles.progressText}>
+        <ThemedText type="micro" numeric themeColor="textAssistive">
           {view.progressText}
         </ThemedText>
       </View>
@@ -366,7 +373,8 @@ function Header({ unread, onPressBell }: { unread: number; onPressBell: () => vo
         accessibilityLabel={hasUnread({ unread, total: unread }) ? `알림 ${unread}건` : '알림'}
         onPress={onPressBell}
         style={({ pressed }) => [styles.bell, pressed && styles.pressed]}>
-        <ProductSymbol name="bell" size={Layout.iconTab} color={theme.textSecondary} />
+        {/* 시안 head 아이콘 stroke #212124. */}
+        <ProductSymbol name="bell" size={Layout.iconTab} color={theme.text} />
         {/* 개수를 적지 않는다. 세는 것이 목적이 아니다. */}
         {hasUnread({ unread, total: unread }) ? (
           <View style={[styles.bellDot, { backgroundColor: theme.negative }]} />
@@ -406,7 +414,9 @@ function NextRow({
       <ThemedText type="t7" numeric themeColor="textAssistive" style={styles.nextAside}>
         {aside}
       </ThemedText>
-      <ProductSymbol name="chevronRight" size={Layout.iconInline} color={theme.textDisabled} />
+      <View style={styles.nextChevron}>
+        <ProductSymbol name="chevronRight" size={Layout.iconInline} color={theme.textDisabled} />
+      </View>
     </Pressable>
   );
 }
@@ -454,14 +464,16 @@ const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
 
-  /* 시안 head: 56 · padding 0 20 0 24. 오른쪽이 4 좁은 것은 40 원형 버튼 안의 24 아이콘이 거터선에 앉게 하려는 것이다. */
+  /*
+   * 시안 head: 56 · padding 0 24. 03-home(오른쪽 20)과 03-home-states(오른쪽 24)가 갈려
+   * 최신인 03-home-states를 따른다(2026-09-09 패딩 감사).
+   */
   header: {
     height: Layout.navBar,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingLeft: Layout.gutter,
-    paddingRight: 20,
+    paddingHorizontal: Layout.gutter,
   },
   bell: {
     width: Layout.iconButton,
@@ -476,7 +488,7 @@ const styles = StyleSheet.create({
    * 가로 여백을 여기 두지 않는다. 회색 밴드가 화면 끝까지 닿아야 해서, 거터는
    * 섹션마다 준다.
    */
-  content: { paddingBottom: Spacing.six },
+  content: { paddingBottom: Spacing.two },
 
   /* 시안 heroWrap: padding 14 24 24 · gap 10. */
   hero: {
@@ -496,9 +508,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   avatarLabel: { fontWeight: 700 },
+  /* 시안 progRow: gap 10 · padding-top 2 · track 6 r999 · progText 13/18 700. */
   progressRow: { flexDirection: 'row', alignItems: 'center', gap: Layout.cardGap, paddingTop: Spacing.half },
   progressTrack: { flex: 1 },
-  progressText: { fontWeight: 700 },
 
   block: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionGap },
   /* 시안 padSec: gap 11. */
@@ -524,4 +536,5 @@ const styles = StyleSheet.create({
   },
   nextBody: { flex: 1, minWidth: 0, gap: 3 },
   nextAside: { paddingTop: 3 },
+  nextChevron: { paddingTop: 3 },
 });

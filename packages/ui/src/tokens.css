@@ -1,29 +1,19 @@
 /*
- * 웹 토큰 — 디자인 핸드오프(v7)를 따른다.
+ * 웹 토큰 — spec/tokens.json을 따른다.
  *
  * 색은 theme.ts가 값으로 들고 있으므로 여기 없다. 여기 있는 것은 React Native가
  * 웹에서 var()로 넘기는 글꼴 변수뿐이다.
  *
- * **핸드오프의 첫 글꼴은 'Toss Product Sans'인데 우리에게 그 파일이 없다.** 없는
- * 것을 적으면 조용히 다음 후보로 떨어지고 왜 다르게 보이는지 아무도 모른다. 대신
- * 우리가 이미 싣고 있는 Pretendard를 앞에 두고, 그 뒤로는 핸드오프가 적은 순서를
- * 그대로 따른다 — 시스템 글꼴로 떨어지면 한글이 눈에 띄게 나빠진다.
- *
- * 이 파일은 Pretendard 웹폰트를 직접 끌어오지 않는다 — 자립해야 하기 때문이다.
- * 예전에는 여기서 pretendard 패키지를 가리켰는데, 그건 번들러가 node_modules를
- * 풀어주는 곳에서만 도는 경로다. 이 파일이 그대로 복사되어 나가는 곳(디자인 시스템
- * 번들)에서는 그 경로가 없어 글꼴이 통째로 빠진다. 그래서 글꼴을 싣는 일은 이 파일을
- * 쓰는 쪽이 진다: 앱은 _layout.tsx에서 pretendard 패키지를 함께 가져오고, 디자인
- * 번들은 config.json의 extraFonts로 폰트 파일을 실어 간다.
- *
- * 아래 스택은 Pretendard가 실리지 않은 곳에서도 한글이 읽히도록 시스템 한글 글꼴까지
- * 내려간다.
+ * **글꼴은 시스템 서체다.** spec/tokens.json `typography.$fontFamily.web` 그대로 — 웹폰트를
+ * 넣지 않는다(CLAUDE.md 「Pretendard 미적용」 · 핸드오프 tokens.json `webfont: null`). 이 파일은
+ * 어디에도 폰트 파일을 요구하지 않으므로 그대로 복사되어 나가는 곳(디자인 시스템 번들)에서도
+ * 자립한다.
  */
 
 :root {
   --font-sans:
-    'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont,
-    'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+    -apple-system, BlinkMacSystemFont, system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic',
+    'Segoe UI', Roboto, 'Noto Sans KR', 'Helvetica Neue', Arial, sans-serif;
   --font-mono:
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
   --font-serif: Georgia, 'Times New Roman', serif;
@@ -37,19 +27,26 @@
    */
   --text-t1: 32px;
   --text-t2: 26px;
+  --text-t3: 24px;
   --text-t4: 20px;
   --text-t5: 18px;
   --text-t6: 16px;
   --text-t7: 14px;
-  --text-badge: 12px;
+  --text-micro: 13px;
+  --text-tab: 12px;
+  --text-badge: 14px;
   --text-amount: 32px;
 
-  --leading-t1: 40px;
+  /* 줄 높이 — typography.ts LineHeight와 같은 수. */
+  --leading-t1: 43px;
   --leading-t2: 35px;
-  --leading-t4: 28px;
-  --leading-t5: 25.5px;
-  --leading-t6: 22.5px;
-  --leading-t7: 19.5px;
-  --leading-badge: 16px;
-  --leading-amount: 48px;
+  --leading-t3: 32px;
+  --leading-t4: 27px;
+  --leading-t5: 24px;
+  --leading-t6: 22px;
+  --leading-t7: 19px;
+  --leading-micro: 18px;
+  --leading-tab: 16px;
+  --leading-badge: 19px;
+  --leading-amount: 43px;
 }

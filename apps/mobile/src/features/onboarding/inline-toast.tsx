@@ -12,6 +12,12 @@ import { Layout, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
  * 화면 하단 dock(92 + 안전영역) 바로 위에 뜬다. 같은 말을 연달아 띄워도 다시 뜨도록
  * `key`로 구분한다 — 3번째 카드를 두 번 눌러도 두 번 답해야 한다.
  */
+/** 떠 있는 시간 2초 · 나타나고 사라지는 데 175ms(토큰 motion.color와 같은 길이). */
+export const TOAST_MS = 2000;
+const FADE_MS = 175;
+/** spec/tokens.json size.dock — 토스트는 dock 바로 위에 뜬다. */
+const DOCK_HEIGHT = 92;
+
 export type InlineToastState = { message: string; key: number };
 
 export function useInlineToast() {
@@ -63,12 +69,6 @@ export function InlineToast({ toast, onHidden }: { toast: InlineToastState | nul
     </Animated.View>
   );
 }
-
-/** 떠 있는 시간 2초 · 나타나고 사라지는 데 175ms(토큰 motion.color와 같은 길이). */
-export const TOAST_MS = 2000;
-const FADE_MS = 175;
-/** spec/tokens.json size.dock — 토스트는 dock 바로 위에 뜬다. */
-const DOCK_HEIGHT = 92;
 
 const styles = StyleSheet.create({
   toast: {

@@ -1,9 +1,11 @@
 import { CALL_BLOCKED_NOTICE } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
 import { getAnalysis } from '@/api/client';
-import { ErrorView, ProcessingView, type Step } from '@weddingpick/ui';
+import { ErrorView, Layout, RecommendingBody, type Step } from '@weddingpick/ui';
+import { NavBar, Screen } from '@/features/wedding/screen-kit';
 
 const POLL_MS = 2000;
 
@@ -16,7 +18,13 @@ const FAILURE_MESSAGE = {
   unavailable: CALL_BLOCKED_NOTICE,
 } as const;
 
-/** A-06 분석 중. 끝나면 결과로 넘어간다. */
+/**
+ * A-06 분석 중 · WP-RPT-003. 시안 11-report-review 12b — statusBar 위에 **close nav**(제목
+ * 없이 ✕만)를 두고 본문은 가운데 정렬이다.
+ *
+ * ✕는 흐름 밖으로 빠지는 문이라 Depth Back으로 제보 홈(`/capture`)에 내려놓는다 —
+ * 중간 단계(이미지 선택)로 되돌리면 방금 취소한 것을 다시 고르는 화면이 나온다.
+ */
 export default function AnalysisScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [failure, setFailure] = useState<keyof typeof FAILURE_MESSAGE | null>(null);
@@ -82,6 +90,20 @@ export default function AnalysisScreen() {
   ];
 
   return (
-    <ProcessingView title={'올려주신 자료를\n읽고 있어요'} estimatedLabel="10초 안에 끝나요" steps={steps} />
+    <Screen>
+      <NavBar variant="close" />
+      <View style={styles.body}>
+        <RecommendingBody
+          title={'올려주신 자료를\n읽고 있어요'}
+          estimatedLabel="10초 안에 끝나요"
+          steps={steps}
+        />
+      </View>
+    </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  /** 시안: nav 아래를 본문이 다 쓰고 가운데에 선다. 좌우는 Gutter 24. */
+  body: { flex: 1, justifyContent: 'center', paddingHorizontal: Layout.gutter },
+});

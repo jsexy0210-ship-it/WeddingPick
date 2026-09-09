@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View, type PressableProps } from 'react-native';
 
 import { ThemedText } from './themed-text';
-import { Layout, Radius, Spacing } from './theme';
+import { Border, Layout, Motion, Radius, Spacing } from './theme';
 import { useTheme } from './use-theme';
 import { readWebInteractionState } from './web-interaction';
 
@@ -13,15 +13,18 @@ export type ActionButtonProps = Omit<PressableProps, 'children' | 'style'> & {
   /** 보조 설명. 라벨 아래 작은 글씨로 붙는다. */
   hint?: string;
   /**
-   * `ghost`는 흰 바탕에 테두리만 있는 보조 버튼이다.
+   * 02-design-system «Button».
    *
-   * 비교할 것이 없을 때 권하는 제보처럼 **Primary가 이미 다른 곳에 있거나 아예
-   * 없어야 하는 자리**에 쓴다 — 화면당 Primary CTA는 하나라는 규칙을 지키면서도
-   * 행동을 남긴다.
+   * - `primary`   코랄 채움 · 흰 글자. 화면당 하나.
+   * - `secondary` 밴드(#F2F3F6) 채움 · #393A40 글자 — 시트의 「다시 볼게요」 같은 보조 행동.
+   * - `ghost`     흰 바탕 · 1px #DCDEE3 테두리 · #212124 글자 — 시안의 Secondary 48 · Small 40.
+   *               Primary가 이미 다른 곳에 있거나 없어야 하는 자리에 쓴다.
+   * - `selected`  Pick 완료 — 1.5px 코랄 테두리 · #FFF5F2 면 · 코랄 글자.
+   * - `danger`    탈퇴 · 신고 · 빼기 — #FF4133 채움 · 흰 글자.
    */
-  variant?: 'primary' | 'secondary' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'selected' | 'danger';
   /**
-   * SEED 컨트롤 높이.
+   * SEED 컨트롤 높이 — xlarge 52(Primary CTA) · large 48(Secondary) · medium 40(Small).
    *
    * 기본값 `auto`는 높이를 고정하지 않고 안쪽 여백으로 부푼다 — 목록 안에서 한
    * 줄짜리로 쓰이던 기존 자리들이 그대로 있어 기본값을 바꾸지 않았다. 화면의 주
@@ -42,6 +45,16 @@ const HEIGHT = {
   xlarge: Layout.controlXLarge,
 } as const;
 
+/**
+ * 버튼. 02-design-system · tokens.json size.cta.
+ *
+ * - 라벨은 Primary CTA(52)만 body 18, 나머지는 sub 16 — 둘 다 700(«본문 · 금액 · 버튼» = sub).
+ * - 누르면 `scale(.98)` 100ms, **색은 바꾸지 않는다**(motion.pressButton).
+ * - Disabled는 회색 채움 — #F2F3F6 위 #ADB1BA(20-onboarding-v2 ctaDisabled · CHANGELOG v3.19 «값이 없으면
+ *   회색 비활성»). 02-design-system의 «투명도 0.4»보다 뒤에 나온 규칙이라 이쪽을 따른다.
+ * - 아이콘과 라벨 사이 8(01a-login ctaKakao).
+ * - 모서리 6(radius.control).
+ */
 export function ActionButton({
   label,
   icon,
@@ -53,8 +66,18 @@ export function ActionButton({
   ...rest
 }: ActionButtonProps) {
   const theme = useTheme();
-  const isPrimary = variant === 'primary';
-  const isGhost = variant === 'ghost';
+
+  const look: Look =
+    disabled === true
+      ? { background: theme.backgroundSelected, text: theme.textDisabled, borderWidth: 0, hint: theme.textDisabled }
+      : tone
+        ? {
+            background: tone.background,
+            text: tone.text,
+            border: tone.border,
+            borderWidth: tone.border ? Border.hairline : 0,
+          }
+        : LOOK[variant](theme);
 
   return (
     <Pressable
@@ -62,21 +85,16 @@ export function ActionButton({
       accessibilityState={{ disabled: disabled === true }}
       disabled={disabled}
       style={(state) => {
-        const { pressed, hovered, focused } = readWebInteractionState(state);
+        const { pressed, focused } = readWebInteractionState(state);
         return [
           styles.button,
           size === 'auto' ? null : [styles.fixed, { height: HEIGHT[size] }],
           {
-            backgroundColor: tone
-              ? tone.background
-              : isPrimary
-                ? theme.tint
-                : isGhost
-                  ? theme.background
-                  : theme.backgroundElement,
-            borderWidth: tone ? (tone.border ? 1 : 0) : isGhost || focused ? 1 : 0,
-            borderColor: tone ? (tone.border ?? tone.background) : focused ? theme.tint : theme.track,
-            opacity: disabled === true ? 0.4 : pressed ? 0.8 : hovered || focused ? 0.9 : 1,
+            backgroundColor: look.background,
+            /* 키보드 포커스(웹)만 코랄 링을 얹는다 — 마우스 오버 · 누름은 색을 바꾸지 않는다. */
+            borderWidth: focused ? Math.max(look.borderWidth, Border.focus) : look.borderWidth,
+            borderColor: focused ? theme.tint : look.border ?? look.background,
+            transform: [{ scale: pressed && !disabled ? Motion.pressButton.scale : 1 }],
           },
         ];
       }}
@@ -84,15 +102,14 @@ export function ActionButton({
       <View style={styles.row}>
         {icon}
         <ThemedText
-          type="t5"
+          type={size === 'xlarge' ? 't5' : 't6'}
           numberOfLines={1}
-          themeColor={isPrimary ? 'onTint' : 'text'}
-          style={tone ? { color: tone.text } : undefined}>
+          style={[styles.label, { color: look.text }]}>
           {label}
         </ThemedText>
       </View>
       {hint ? (
-        <ThemedText type="t7" themeColor={isPrimary ? 'onTint' : 'textAssistive'}>
+        <ThemedText type="t7" style={{ color: look.hint ?? look.text }}>
           {hint}
         </ThemedText>
       ) : null}
@@ -100,10 +117,37 @@ export function ActionButton({
   );
 }
 
+type Look = { background: string; text: string; border?: string; borderWidth: number; hint?: string };
+
+type Theme = ReturnType<typeof useTheme>;
+
+const LOOK: Record<NonNullable<ActionButtonProps['variant']>, (theme: Theme) => Look> = {
+  primary: (theme) => ({ background: theme.tint, text: theme.onTint, borderWidth: 0 }),
+  secondary: (theme) => ({
+    background: theme.backgroundSelected,
+    text: theme.textStrong,
+    borderWidth: 0,
+    hint: theme.textAssistive,
+  }),
+  ghost: (theme) => ({
+    background: theme.background,
+    text: theme.text,
+    border: theme.track,
+    borderWidth: Border.hairline,
+    hint: theme.textAssistive,
+  }),
+  selected: (theme) => ({
+    background: theme.tintSurface,
+    text: theme.tint,
+    border: theme.tint,
+    borderWidth: Border.selected,
+  }),
+  danger: (theme) => ({ background: theme.negativeAction, text: theme.onTint, borderWidth: 0 }),
+};
+
 const styles = StyleSheet.create({
   button: {
-    /** SEED 박스 버튼은 6이다. TDS에서는 14였고, 이 값이 인상을 가장 크게 바꾼다. */
-    borderRadius: Radius.small,
+    borderRadius: Radius.control,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.three,
     gap: Spacing.one,
@@ -116,9 +160,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  /** 아이콘(소셜 로고)과 라벨 사이 8 — 01a-login ctaKakao gap. */
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.one,
+    gap: Spacing.two,
   },
+  /** 버튼 라벨은 크기와 무관하게 700 — sub(16)의 400 기본값을 덮는다. */
+  label: { fontWeight: 700 },
 });

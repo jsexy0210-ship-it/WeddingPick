@@ -1,5 +1,7 @@
 import {
   STYLE_PICK_LIMIT_TOAST,
+  preparationSkippedToast,
+  skippedPreparationCategories,
   combineRegion,
   dDay,
   formatDateDot,
@@ -115,6 +117,8 @@ export default function SetupScreen() {
   const stepRef = useRef<QuestionStep | 'done'>('date');
   const [sheetOpen, setSheetOpen] = useState(false);
   const limitToast = useInlineToast();
+  /** 준비 현황에서 «앞 단계 비움» 토스트를 이미 보여준 상태(비운 업종 목록). 같은 상태로 다시 누르면 넘어간다. */
+  const prepWarnedRef = useRef<string | null>(null);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -290,6 +294,22 @@ export default function SetupScreen() {
 
   function goNext() {
     if (step === 'done') return;
+
+    /*
+     * 준비 현황(3/5) — 앞 그룹을 비워두고 뒤 그룹만 고른 채 «다음»이면 한 번 알리고 머문다
+     * (v3.23 «앞 단계도 확인해주세요 · 결정사 · 웨딩홀»). 막지는 않는다 — 같은 상태로 다시
+     * 누르면 그대로 넘어간다. 진행 중이 아니라 이미 지난 업종을 빠뜨렸는지 짚어 주는 것뿐이다.
+     */
+    if (step === 'prep') {
+      const skipped = skippedPreparationCategories(answers.prep?.categories ?? []);
+      const signature = skipped.join(',');
+
+      if (skipped.length > 0 && prepWarnedRef.current !== signature) {
+        prepWarnedRef.current = signature;
+        limitToast.show(preparationSkippedToast(skipped));
+        return;
+      }
+    }
 
     if (editing !== null) {
       finishEdit();
@@ -474,7 +494,7 @@ const styles = StyleSheet.create({
     height: Layout.field,
     borderRadius: Radius.input,
     borderWidth: 1.5,
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Layout.fieldPaddingX,
     justifyContent: 'center',
   },
   /* «예식일까지 250일 남았어요» — 숫자만 코랄. baseline 정렬 · 사이 8 · 좌우 2. */

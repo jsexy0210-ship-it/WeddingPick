@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 import { Alert, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
+import { ActionButton, Layout, MaxContentWidth, Radius, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
 import { useCaptureDraft } from '@/features/capture/capture-draft';
 import { createPage } from '@/features/capture/pickers';
 
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
   permissionArea: {
     flex: 1,
     maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.five,
     gap: Spacing.three,
   },
@@ -198,13 +198,13 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Layout.gutter,
   },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.three,
   },
   bottomBar: {
@@ -215,14 +215,14 @@ const styles = StyleSheet.create({
   shutter: {
     width: 72,
     height: 72,
-    borderRadius: 36,
+    borderRadius: Radius.pill,
     backgroundColor: '#ffffff',
     borderWidth: 4,
     borderColor: 'rgba(0, 0, 0, 0.25)',
   },
   doneButton: {
     backgroundColor: 'rgba(0, 0, 0, 0.55)',
-    borderRadius: Spacing.three,
+    borderRadius: Radius.control,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
   },

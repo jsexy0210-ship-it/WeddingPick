@@ -1,42 +1,63 @@
 import type { InvitePreviewResponse } from '@weddingpick/api-contract';
-import { inviteCodeFromLink } from '@weddingpick/domain';
+import { TERMS, inviteCodeFromLink } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, TextInput } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { acceptWeddingInvite, previewWeddingInvite } from '@/api/client';
+import { Layout, ProductSymbol, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import {
-  ActionButton,
-  FontSize,
-  MaxContentWidth,
-  Spacing,
-  ThemedText,
-  ThemedView,
-  useTheme,
-} from '@weddingpick/ui';
+  Avatar,
+  Badge,
+  Dock,
+  DockButton,
+  Field,
+  Hero,
+  InfoCard,
+  ListRow,
+  NavBar,
+  NoteCard,
+  Screen,
+  Section,
+} from '@/features/wedding/screen-kit';
+
+/** `spec/strings.ko.json` `couple.*` · 시안 14-couple #2 · #3. */
+const S = {
+  nav: '초대 받음',
+  codeTitle: '초대 코드를 넣어주세요',
+  codeSub: '배우자에게 받은 코드나 링크를 그대로 붙여도 돼요',
+  codeField: '초대 코드',
+  check: '확인하기',
+  acceptTitle: '함께 준비하자고 해요',
+  acceptSub: 'Pick한 곳 · 일정 · 지출이 함께 보여요',
+  sharedLabel: '수락하면 같이 보게 돼요',
+  notSharedLabel: '각자 남아요',
+  noteTitle: '내 검색 기록은 보이지 않아요',
+  noteBody: '알림 설정과 검색 기록은 각자의 것으로 남아요.',
+  later: '나중에',
+  accept: '수락하기',
+  doneTitle: '연결됐어요',
+  doneSub: '이제 Pick한 곳과 일정이 둘 다에게 보여요',
+  goWedding: `${TERMS.ourWedding} 보기`,
+} as const;
+
+/** 체크 링 72 — 연결 완료. `motion.checkPop`은 RN Animated 없이 정지 상태로 그린다. */
+const RING = 72;
 
 /**
- * A-18 초대 받아들이기.
+ * 초대 수락. WP-CPL-002 → WP-CPL-003 · 핸드오프 14-couple #2 · #3.
  *
- * 연결의 나머지 한쪽 동의다. **받아들이기 전에 무엇에 동의하는지 먼저 보여준다** —
- * 동의는 무엇에 동의하는지 알 때만 동의다. 그래서 코드를 넣으면 바로 연결되지 않고
- * 공유 범위를 한 번 거친다.
+ *   코드 전     hero «초대 코드를 넣어주세요» + 필드 52 + dock «확인하기»
+ *   미리보기     아바타 2 겹침 44 · «함께 준비하자고 해요» 26/35 · 공유 4행 + «공유» 배지 · note · dock «나중에» + «수락하기»
+ *   연결 완료    체크 링 72 · «연결됐어요» · 반영 카드 3 · dock «웨딩일정 보기»
+ *
+ * **받아들이기 전에 무엇에 동의하는지 먼저 보여준다** — 동의는 무엇에 동의하는지 알 때만
+ * 동의다. 링크로 들어와도(weddingpick://join?code=…) 코드만 채우고 자동으로 연결하지는 않는다.
+ * 초대한 사람의 이름 · 예식일은 서버가 주지 않아(개인정보) 미리보기에 적지 않는다.
  */
 export default function JoinScreen() {
   const theme = useTheme();
-  /*
-   * 링크로 들어온 경우 코드가 여기 실려 온다 (weddingpick://join?code=...).
-   *
-   * 채워만 두고 자동으로 연결하지는 않는다. 링크를 눌렀다는 것이 공유 범위에
-   * 동의했다는 뜻은 아니다 — 무엇에 동의하는지 보여주는 단계는 그대로 거친다.
-   */
   const params = useLocalSearchParams<{ code?: string }>();
-  /*
-   * 손으로 넣은 값. 아직 아무것도 넣지 않았으면 null이고, 그때는 링크로 실려 온
-   * 코드를 쓴다. state를 링크에 맞춰 되돌리는 대신 이렇게 두면, 화면이 떠 있는
-   * 동안 다른 링크로 다시 들어와도 알아서 따라간다.
-   */
   const [typed, setTyped] = useState<string | null>(null);
   const code = typed ?? params.code?.trim() ?? '';
   const [preview, setPreview] = useState<InvitePreviewResponse | null>(null);
@@ -75,148 +96,145 @@ export default function JoinScreen() {
 
   if (joined) {
     return (
-      <Frame>
-        <ThemedText type="subtitle">연결했어요</ThemedText>
-        <ThemedText type="small" themeColor="textSecondary">
-          이제 두 분이 같은 자료와 비교 결과를 봐요.
-        </ThemedText>
-        <ActionButton variant="primary" label="내 웨딩 보기" onPress={() => router.push('/wedding')} />
-      </Frame>
+      <Screen>
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={styles.doneHero}>
+            <View style={[styles.ring, { backgroundColor: theme.tint }]}>
+              <ProductSymbol name="check" size={36} color={theme.onTint} />
+            </View>
+            <View style={styles.doneText}>
+              <ThemedText type="t2">{S.doneTitle}</ThemedText>
+              <ThemedText type="body" themeColor="textSecondary">
+                {S.doneSub}
+              </ThemedText>
+            </View>
+          </View>
+          <View style={styles.cards}>
+            <InfoCard label={TERMS.picked} value="둘 다 고른 곳이 위로 올라가요" />
+            <InfoCard label="일정" value="한 명이 넣으면 둘 다 알림을 받아요" />
+            <InfoCard label="지출" value="누가 얼마 냈는지 같이 보여요" />
+          </View>
+        </ScrollView>
+        <Dock>
+          <DockButton variant="primary" label={S.goWedding} onPress={() => router.replace('/wedding' as never)} />
+        </Dock>
+      </Screen>
     );
   }
 
+  const usable = preview?.usable === true ? preview : null;
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.content}>
-          <ThemedView style={styles.section}>
-            <ThemedText type="subtitle">초대 코드 넣기</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              배우자에게 받은 코드를 넣어주세요. 무엇이 공유되는지 보고 나서 결정하실 수
-              있어요.
-            </ThemedText>
-          </ThemedView>
+    <Screen>
+      <NavBar title={S.nav} />
 
-          <ThemedView style={styles.section}>
-            <TextInput
-              style={[styles.input, { color: theme.text, borderColor: theme.border }]}
-              value={code}
-              onChangeText={(text) => {
-                // 링크를 통째로 붙여넣는 사람이 많다. 그럴 때 "코드가 아닙니다"라고
-                // 되돌려주는 대신 코드를 꺼내 쓴다.
-                setTyped(inviteCodeFromLink(text.trim()) ?? text);
-                setPreview(null);
-              }}
-              autoCapitalize="none"
-              autoCorrect={false}
-              placeholder="초대 코드"
-              placeholderTextColor={theme.textSecondary}
-              accessibilityLabel="초대 코드"
-            />
-            <ActionButton
-              label={busy ? '확인 중…' : '확인하기'}
-              disabled={busy || code.trim().length === 0}
-              onPress={check}
-            />
-          </ThemedView>
-
-          {preview && !preview.usable ? (
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="small" themeColor="textSecondary">
-                {preview.message}
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}>
+        {usable ? (
+          <>
+            {/* 아바타 2 겹침 44 — 초대한 사람은 서버가 이름을 주지 않아 «?»로 둔다. */}
+            <View style={styles.acceptHero}>
+              <View style={styles.avatars}>
+                <Avatar initial="?" tone="unknown" size={44} />
+                <View style={styles.avatarOverlap}>
+                  <Avatar initial="나" tone="me" size={44} />
+                </View>
+              </View>
+              <ThemedText type="t2">{S.acceptTitle}</ThemedText>
+              <ThemedText type="body" themeColor="textSecondary">
+                {S.acceptSub}
               </ThemedText>
-            </ThemedView>
-          ) : null}
+            </View>
 
-          {preview?.usable ? (
-            <>
-              <ThemedView style={styles.section}>
-                <ThemedText type="smallBold">함께 보게 되는 것</ThemedText>
-                {preview.shared.map((item) => (
-                  <ThemedView key={item} type="backgroundElement" style={styles.card}>
-                    <ThemedText type="small" themeColor="textSecondary">
-                      {item}
-                    </ThemedText>
-                  </ThemedView>
-                ))}
-              </ThemedView>
+            <Section label={S.sharedLabel}>
+              {usable.shared.map((item) => (
+                <ListRow key={item} title={item} right={<Badge label="공유" tone="ok" />} />
+              ))}
+            </Section>
 
-              <ThemedView style={styles.section}>
-                <ThemedText type="smallBold">공유하지 않는 것</ThemedText>
-                {preview.notShared.map((item) => (
-                  <ThemedView key={item} type="backgroundElement" style={styles.card}>
-                    <ThemedText type="small" themeColor="textSecondary">
-                      {item}
-                    </ThemedText>
-                  </ThemedView>
-                ))}
-              </ThemedView>
+            <Section label={S.notSharedLabel}>
+              {usable.notShared.map((item) => (
+                <ListRow key={item} title={item} right={<Badge label="각자" tone="none" />} />
+              ))}
+            </Section>
 
-              <ActionButton
-                variant="primary"
-                label={busy ? '연결 중…' : '이대로 연결하기'}
-                hint="연결한 뒤에도 어느 쪽이든 끊을 수 있어요"
-                disabled={busy}
-                onPress={join}
+            <View style={styles.noteWrap}>
+              <NoteCard title={S.noteTitle} body={S.noteBody} />
+            </View>
+          </>
+        ) : (
+          <>
+            <Hero title={S.codeTitle} sub={S.codeSub} />
+            <View style={styles.fields}>
+              <Field
+                label={S.codeField}
+                value={code}
+                onChangeText={(text) => {
+                  // 링크를 통째로 붙여넣는 사람이 많다. 코드가 아니라고 되돌려주는 대신 코드를 꺼내 쓴다.
+                  setTyped(inviteCodeFromLink(text.trim()) ?? text);
+                  setPreview(null);
+                }}
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholder="WPK-0000"
+                hint={preview && !preview.usable ? preview.message : null}
+                hintColor="negative"
               />
-            </>
-          ) : null}
+            </View>
+          </>
+        )}
 
-          {error ? (
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="small" themeColor="textSecondary">
-                {error}
-              </ThemedText>
-            </ThemedView>
-          ) : null}
+        {error ? (
+          <ThemedText type="t7" themeColor="negative" style={styles.error}>
+            {error}
+          </ThemedText>
+        ) : null}
+      </ScrollView>
 
-          <ActionButton label="돌아가기" onPress={() => router.back()} />
-        </ScrollView>
-      </SafeAreaView>
-    </ThemedView>
-  );
-}
-
-function Frame({ children }: { children: React.ReactNode }) {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.content}>{children}</ThemedView>
-      </SafeAreaView>
-    </ThemedView>
+      {usable ? (
+        <Dock>
+          <DockButton label={S.later} onPress={() => router.back()} />
+          <DockButton variant="primary" label={busy ? '연결 중…' : S.accept} disabled={busy} onPress={() => void join()} />
+        </Dock>
+      ) : (
+        <Dock>
+          <DockButton
+            variant="primary"
+            label={busy ? '확인 중…' : S.check}
+            disabled={busy || code.trim().length === 0}
+            onPress={() => void check()}
+          />
+        </Dock>
+      )}
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-  },
-  content: {
-    paddingHorizontal: Spacing.four,
+  content: { paddingBottom: Spacing.four },
+  fields: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four },
+  /* 수락 히어로 — padding 32 24 28 · gap 14. */
+  acceptHero: {
+    paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.five,
-    paddingBottom: Spacing.four,
+    paddingBottom: Layout.sectionGap,
+    gap: Layout.sectionHeadGap,
+  },
+  avatars: { flexDirection: 'row', alignItems: 'center' },
+  avatarOverlap: { marginLeft: -Layout.rowPaddingY },
+  noteWrap: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionGap },
+  error: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.three },
+  /* 연결 완료 — padding 72 24 40 · gap 24. */
+  doneHero: {
+    paddingHorizontal: Layout.gutter,
+    paddingTop: Layout.tabBar,
+    paddingBottom: Spacing.four + Spacing.three,
     gap: Spacing.four,
+    alignItems: 'center',
   },
-  section: {
-    gap: Spacing.two,
-  },
-  card: {
-    borderRadius: Spacing.three,
-    padding: Spacing.three,
-    gap: Spacing.one,
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: Spacing.three,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    /* 입력 칸 글자도 본문이다. 토큰 밖의 크기를 쓰지 않는다. */
-    fontSize: FontSize.t6,
-  },
+  ring: { width: RING, height: RING, borderRadius: Radius.pill, alignItems: 'center', justifyContent: 'center' },
+  doneText: { gap: Spacing.two, alignItems: 'center' },
+  cards: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionGap, gap: Layout.rowPaddingY },
 });

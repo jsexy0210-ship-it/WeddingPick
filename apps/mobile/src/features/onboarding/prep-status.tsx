@@ -3,16 +3,19 @@ import {
   PREPARATION_NOT_STARTED_LABEL,
   PREPARATION_OTHER_GROUP_TITLE,
   VENDOR_CATEGORY_LABEL,
-  type PreparationGroup,
   type VendorCategory,
 } from '@weddingpick/domain';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 
-import { Colors, Layout, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import { Layout, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+
+import { chunk } from './calendar';
+import { CheckCircle } from './check-circle';
 
 /**
- * 준비 현황(3/5). SPEC §13.6 «컨트롤 규격 (확정) · 진행 현황 칩».
+ * 준비 현황(3/5). 시안 20-onboarding-v2 `prog()` · screens.json WP-APP-020 ③ ·
+ * CHANGELOG v3.22 «그룹 제목 14px #868B94 · 2열 카드 48px · radius 10 · 글자 16 ·
+ * 체크 20 · gap 8. 항목 1개 그룹은 1열 full-width».
  *
  *   시작 준비     결정사 · 웨딩홀
  *   스드메        스튜디오 · 드레스 · 메이크업 · 헤어변형
@@ -20,10 +23,11 @@ import { Colors, Layout, Radius, Spacing, ThemedText, useTheme } from '@weddingp
  *   예물 · 신혼   예물 · 혼수 · 허니문
  *   기타 상태     아직 시작 전이에요
  *
- * **2열 카드가 아니라 줄바꿈하는 칩이다** — height 36 · radius 999 · padding 0 13 ·
- * gap 5 · 글자 14/700 · 체크 12. 선택하면 `#FFF5F2` 바탕 + 코랄 1.5px 안쪽 테두리 +
- * 코랄 글자, 왼쪽에 체크. 칩은 `flexShrink: 0`(`flex:0 0 auto`) — 없으면 줄 끝의
- * 칩이 눌려 잘린다. 그룹 제목 14/700 gray600, 오른쪽에 «전체 선택 / 전체 해제».
+ * **2열 카드다** — v3.19의 «칩 가로 wrap»(36 · «전체 선택/해제»)은 v3.22가 다시
+ * 카드로 되돌렸고(최신 md가 이긴다) 시안도 카드라 그 형태만 남긴다. 카드 48 ·
+ * radius 10 · 좌우 14 · 이름과 체크 사이 6 · 켜지면 흰 바탕 + 코랄 1.5px 테두리 +
+ * 오른쪽 체크 20, 꺼지면 gray50 바탕에 투명 테두리(자리를 지켜 크기가 안 튄다).
+ * 이름 16/700 — 켜지면 ink, 꺼지면 #4D5159.
  *
  * 다중 선택이고, «아직 시작 전이에요»는 나머지 전부와 배타다 — 고르면 업종 선택이
  * 다 풀리고, 업종을 하나라도 고르면 이것이 풀린다.
@@ -51,61 +55,32 @@ export function PrepStatus({
     );
   }
 
-  function toggleGroup(group: PreparationGroup) {
-    const whole = group.categories.every((category) => selected.includes(category));
-
-    onChange(
-      whole
-        ? selected.filter((one) => !group.categories.includes(one))
-        : [...selected, ...group.categories.filter((one) => !selected.includes(one))]
-    );
-  }
-
   return (
     <View style={styles.section}>
-      {PREPARATION_GROUPS.map((group) => {
-        const whole = group.categories.every((category) => selected.includes(category));
+      {PREPARATION_GROUPS.map((group) => (
+        <View key={group.key} style={styles.group}>
+          <ThemedText type="t7" themeColor="textAssistive" style={styles.title}>
+            {group.title}
+          </ThemedText>
 
-        return (
-          <View key={group.key} style={styles.group}>
-            <View style={styles.head}>
-              <ThemedText type="t7" themeColor="textAssistive" style={styles.title}>
-                {group.title}
-              </ThemedText>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`${group.title} ${whole ? '전체 해제' : '전체 선택'}`}
-                hitSlop={Spacing.two}
-                onPress={() => toggleGroup(group)}>
-                <ThemedText type="t7" themeColor={whole ? 'tint' : 'textAssistive'} style={whole && styles.title}>
-                  {whole ? '전체 해제' : '전체 선택'}
-                </ThemedText>
-              </Pressable>
-            </View>
-
-            <View style={styles.chips}>
-              {group.categories.map((category) => (
-                <Chip
-                  key={category}
-                  label={VENDOR_CATEGORY_LABEL[category]}
-                  selected={selected.includes(category)}
-                  onPress={() => toggle(category)}
-                />
-              ))}
-            </View>
-          </View>
-        );
-      })}
+          <CardGrid
+            items={group.categories.map((category) => ({
+              key: category,
+              label: VENDOR_CATEGORY_LABEL[category],
+              selected: selected.includes(category),
+              onPress: () => toggle(category),
+            }))}
+          />
+        </View>
+      ))}
 
       <View style={styles.group}>
-        <View style={styles.head}>
-          <ThemedText type="t7" themeColor="textAssistive" style={styles.title}>
-            {PREPARATION_OTHER_GROUP_TITLE}
-          </ThemedText>
-        </View>
-        <View style={styles.chips}>
-          <Chip label={PREPARATION_NOT_STARTED_LABEL} selected={notStarted} onPress={onNotStarted} />
-        </View>
+        <ThemedText type="t7" themeColor="textAssistive" style={styles.title}>
+          {PREPARATION_OTHER_GROUP_TITLE}
+        </ThemedText>
+        <CardGrid
+          items={[{ key: 'not-started', label: PREPARATION_NOT_STARTED_LABEL, selected: notStarted, onPress: onNotStarted }]}
+        />
       </View>
 
       <ThemedText type="t7" themeColor="textAssistive">
@@ -115,15 +90,35 @@ export function PrepStatus({
   );
 }
 
+type CardItem = { key: string; label: string; selected: boolean; onPress: () => void };
+
 /**
- * 칩 하나. 시안 `prog()` — 36 · pill · 좌우 13 · 켜지면 #FFF5F2 바탕에 코랄 1.5px
- * 테두리와 코랄 글자 + 12px 체크, 꺼지면 gray50 바탕에 투명 테두리(자리를 지켜
- * 크기가 안 튄다).
+ * 2열 격자(`repeat(2, 1fr)` · gap 8). 항목이 하나뿐인 그룹은 1열 full-width다.
+ * 3개짜리 그룹의 마지막 줄은 빈 칸으로 채워 카드 폭을 맞춘다 — 홀로 남은 카드가
+ * 가로로 늘어나면 위 줄과 어긋난다.
  */
-function Chip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+function CardGrid({ items }: { items: readonly CardItem[] }) {
+  const columns = items.length === 1 ? 1 : COLUMNS;
+
+  return (
+    <View style={styles.grid}>
+      {chunk(items, columns).map((row) => (
+        <View key={row.map((item) => item.key).join('-')} style={styles.row}>
+          {row.map(({ key, ...item }) => (
+            <Card key={key} {...item} />
+          ))}
+          {Array.from({ length: columns - row.length }, (_, index) => (
+            <View key={`pad-${index}`} style={styles.cell} />
+          ))}
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/** 카드 하나. 시안 `prog()` — 48 · radius 10 · 좌우 14 · 이름 16/700 · 오른쪽 체크 20. */
+function Card({ label, selected, onPress }: Omit<CardItem, 'key'>) {
   const theme = useTheme();
-  /* #FFF5F2는 라이트 값이다 — 어두운 모드에는 그 자리의 토큰(tintSubtle)을 쓴다. */
-  const selectedBackground = theme === Colors.light ? PREP_CHIP_SELECTED_BACKGROUND : theme.tintSubtle;
 
   return (
     <Pressable
@@ -132,44 +127,33 @@ function Chip({ label, selected, onPress }: { label: string; selected: boolean; 
       accessibilityLabel={label}
       onPress={onPress}
       style={[
-        styles.chip,
+        styles.cell,
+        styles.card,
         selected
-          ? { backgroundColor: selectedBackground, borderColor: theme.tint }
+          ? { backgroundColor: theme.background, borderColor: theme.tint }
           : { backgroundColor: theme.backgroundElement, borderColor: 'transparent' },
       ]}>
-      {selected ? (
-        <Svg width={CHECK} height={CHECK} viewBox="0 0 24 24" fill="none">
-          <Path
-            d="m5 12.5 4.5 4.5L19 7.5"
-            stroke={theme.tint}
-            strokeWidth={CHECK_STROKE}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </Svg>
-      ) : null}
-      <ThemedText type="t7" numberOfLines={1} themeColor={selected ? 'tint' : 'textSecondary'} style={styles.label}>
+      <ThemedText
+        type="t6"
+        numberOfLines={1}
+        themeColor={selected ? 'text' : 'textSecondary'}
+        style={styles.label}>
         {label}
       </ThemedText>
+      <CheckCircle size={CHECK} checked={selected} />
     </Pressable>
   );
 }
 
-/**
- * 선택 칩 바탕. SPEC §13.6 «선택 시 #FFF5F2» = §14 `color-mix()` 고정값 «#FFF5F2(surface)».
- * 테마 토큰 tintSubtle(#FFF0EE)과 다른 값이라 여기 이름 붙여 둔다. 토큰이 생기면
- * 여기만 바꾼다.
- */
-const PREP_CHIP_SELECTED_BACKGROUND = '#FFF5F2';
+const COLUMNS = 2;
 /*
- * 시안 고정값 — 칩 좌우 13 · 칩 사이 5 · 체크 12 · 체크 선 3.4 · 테두리 1.5.
- * spacing 토큰에 13과 5가 없다(gapChip은 8이지만 SPEC이 이 칩의 gap을 5로 못박았다).
+ * 시안 고정값 — 카드 좌우 14 · 이름과 체크 사이 6 · 체크 20 · 테두리 1.5.
+ * 카드 높이 48은 토큰 Layout.controlLarge와 같다.
  */
-const CHIP_PADDING_X = 13;
-const CHIP_GAP = 5;
-const CHECK = 12;
-const CHECK_STROKE = 3.4;
-const CHIP_BORDER = 1.5;
+const CARD_PADDING_X = 14;
+const CARD_GAP = 6;
+const CHECK = 20;
+const CARD_BORDER = 1.5;
 
 const styles = StyleSheet.create({
   /* 시안 padSec — 좌우 24 · 아래 24 · 그룹 사이 12. */
@@ -178,20 +162,22 @@ const styles = StyleSheet.create({
     paddingBottom: Layout.gutter,
     gap: Layout.rowPaddingY,
   },
+  /* 시안 progGroup — 제목과 격자 사이 8. */
   group: { gap: Spacing.two },
-  head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   title: { fontWeight: 700 },
-  /* 시안 chipWrap — 줄바꿈 · 사이 5. */
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: CHIP_GAP },
-  chip: {
-    flexShrink: 0,
-    height: Layout.chip,
-    borderRadius: Radius.pill,
-    borderWidth: CHIP_BORDER,
-    paddingHorizontal: CHIP_PADDING_X,
+  grid: { gap: Spacing.two },
+  row: { flexDirection: 'row', gap: Spacing.two },
+  /* minmax(0,1fr). */
+  cell: { flex: 1, flexBasis: 0, minWidth: 0 },
+  card: {
+    height: Layout.controlLarge,
+    borderRadius: Radius.medium,
+    borderWidth: CARD_BORDER,
+    paddingHorizontal: CARD_PADDING_X,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: CHIP_GAP,
+    justifyContent: 'space-between',
+    gap: CARD_GAP,
   },
-  label: { fontWeight: 700 },
+  label: { flex: 1, minWidth: 0, fontWeight: 700 },
 });

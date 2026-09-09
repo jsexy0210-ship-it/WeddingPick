@@ -1,17 +1,17 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { ensureSignedIn } from '@/api/auth';
 import { ApiError } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
-import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
+import { ActionButton, Layout, Spacing, ThemedText, showAlert } from '@weddingpick/ui';
 import { PageThumbnail } from '@/components/page-thumbnail';
 import { useCaptureDraft } from '@/features/capture/capture-draft';
 import type { CapturedPage } from '@/features/capture/types';
 import { uploadForAnalysis } from '@/features/capture/upload';
 import { useDocumentStore } from '@/features/documents/document-store';
+import { Dock, DockButton, Hero, ListRow, NavBar, NoteCard, Screen, Section } from '@/features/wedding/screen-kit';
 
 const SOURCE_LABEL: Record<CapturedPage['source'], string> = {
   camera: '촬영',
@@ -21,11 +21,17 @@ const SOURCE_LABEL: Record<CapturedPage['source'], string> = {
 
 function formatSize(bytes?: number) {
   if (!bytes) return null;
+
   return `${Math.max(1, Math.round(bytes / 1024))}KB`;
 }
 
 /**
- * A-05 문서 확인. 저장하기 전에 장 단위로 다시 찍거나 뺄 수 있게 한다.
+ * 문서 확인 — 견적서 정리 흐름. 저장하기 전에 장 단위로 다시 찍거나 뺄 수 있게 한다.
+ *
+ *   nav     «문서 확인» · 오른쪽 «장 추가»
+ *   hero    «N장을 확인해주세요» · «글씨가 잘리거나 흐린 장이 있으면 빼고 다시 찍어주세요»
+ *   행      썸네일 52 · «1. 촬영 1» 18/24 · «촬영 · 320KB» · 오른쪽 «빼기»
+ *   dock    «기기에만 저장» + «정리 시작»(서버가 있을 때)
  */
 export default function ReviewScreen() {
   const { pages, removePage, clearDraft } = useCaptureDraft();
@@ -33,7 +39,6 @@ export default function ReviewScreen() {
   const [saving, setSaving] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
 
-  /** 서버가 있으면 올려서 분석한다. 없으면 기기 저장까지만 된다. */
   async function analyze() {
     if (analyzing) return;
     setAnalyzing(true);
@@ -51,7 +56,7 @@ export default function ReviewScreen() {
         return;
       }
 
-      Alert.alert('분석 요청 실패', (error as Error).message);
+      showAlert('정리를 시작하지 못했어요', (error as Error).message);
     } finally {
       setAnalyzing(false);
     }
@@ -63,10 +68,11 @@ export default function ReviewScreen() {
 
     try {
       const saved = await saveDraft(pages);
+
       clearDraft();
       router.replace(`/wedding/${saved.id}`);
     } catch {
-      Alert.alert('저장 실패', '문서를 저장하지 못했어요. 다시 시도해주세요.');
+      showAlert('저장하지 못했어요', '다시 시도해주세요.');
     } finally {
       setSaving(false);
     }
@@ -74,118 +80,91 @@ export default function ReviewScreen() {
 
   if (pages.length === 0) {
     return (
-      <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          <ThemedText type="subtitle">확인할 문서가 없어요</ThemedText>
-          <ActionButton variant="primary" label="촬영하러 가기" onPress={() => router.back()} />
-        </SafeAreaView>
-      </ThemedView>
+      <Screen>
+        <NavBar title="문서 확인" />
+        <Hero title="확인할 문서가 없어요" sub="촬영하거나 앨범에서 골라 넣어주세요" />
+        <Dock>
+          <DockButton variant="primary" label="촬영하러 가기" onPress={() => router.replace('/capture/camera')} />
+        </Dock>
+      </Screen>
     );
   }
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.header}>
-          <ThemedText type="subtitle">{pages.length}장 확인</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            글씨가 잘리거나 흐린 장이 있으면 빼고 다시 찍어주세요.
-          </ThemedText>
-        </ThemedView>
+    <Screen>
+      <NavBar
+        title="문서 확인"
+        right={{ label: '장 추가', brand: true, onPress: () => router.push('/capture/camera') }}
+      />
 
-        <ScrollView contentContainerStyle={styles.list}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <Hero title={`${pages.length}장을 확인해주세요`} sub="글씨가 잘리거나 흐린 장이 있으면 빼고 다시 찍어주세요" />
+
+        <Section>
           {pages.map((page, index) => (
-            <ThemedView key={page.id} type="backgroundElement" style={styles.row}>
-              <PageThumbnail page={page} />
-
-              <View style={styles.rowText}>
-                <ThemedText type="smallBold">
-                  {index + 1}. {page.name ?? `${SOURCE_LABEL[page.source]} ${index + 1}`}
-                </ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">
-                  {[SOURCE_LABEL[page.source], formatSize(page.sizeBytes)]
-                    .filter(Boolean)
-                    .join(' · ')}
-                </ThemedText>
-              </View>
-
-              <Pressable
-                accessibilityLabel={`${index + 1}번째 문서 빼기`}
-                accessibilityRole="button"
-                hitSlop={12}
-                onPress={() => removePage(page.id)}>
-                <ThemedText type="small" themeColor="textSecondary">
-                  빼기
-                </ThemedText>
-              </Pressable>
-            </ThemedView>
-          ))}
-        </ScrollView>
-
-        <ThemedView style={styles.footer}>
-          {isServerConfigured ? (
-            <ActionButton
-              variant="primary"
-              label={analyzing ? '올리는 중…' : '분석 시작'}
-              hint="업체·금액·계약조건을 읽어 실제 계약과 비교해요"
-              disabled={analyzing || saving}
-              onPress={analyze}
+            <ListRow
+              key={page.id}
+              left={<PageThumbnail page={page} />}
+              title={`${index + 1}. ${page.name ?? `${SOURCE_LABEL[page.source]} ${index + 1}`}`}
+              sub={[SOURCE_LABEL[page.source], formatSize(page.sizeBytes)].filter(Boolean).join(' · ')}
+              subLines={1}
+              right={
+                <Pressable
+                  accessibilityLabel={`${index + 1}번째 문서 빼기`}
+                  accessibilityRole="button"
+                  hitSlop={12}
+                  onPress={() => removePage(page.id)}>
+                  <ThemedText type="t7" themeColor="textAssistive" style={styles.bold}>
+                    빼기
+                  </ThemedText>
+                </Pressable>
+              }
             />
-          ) : null}
-          <ActionButton
-            variant={isServerConfigured ? 'secondary' : 'primary'}
-            label={saving ? '저장 중…' : '기기에만 저장'}
-            hint={isServerConfigured ? undefined : '서버가 연결되면 분석할 수 있어요'}
-            disabled={saving || analyzing}
-            onPress={save}
+          ))}
+        </Section>
+
+        <View style={styles.noteWrap}>
+          <NoteCard
+            title="계약서는 받지 않아요" // pick-language: 안 받는 서류 이름
+            body="비밀유지 조항이 있는 경우가 있어 법률 확인이 끝날 때까지 미뤄두었어요. 견적서만 올려주세요." // pick-language: 받는 서류 이름과 이유
           />
-          <ActionButton label="장 추가하기" onPress={() => router.push('/capture/camera')} />
+        </View>
+
+        <View style={styles.clear}>
           <ActionButton
+            variant="ghost"
+            size="large"
             label="전부 지우기"
             onPress={() => {
               clearDraft();
               router.back();
             }}
           />
-        </ThemedView>
-      </SafeAreaView>
-    </ThemedView>
+        </View>
+      </ScrollView>
+
+      <Dock>
+        <DockButton
+          label={saving ? '저장 중…' : '기기에만 저장'}
+          disabled={saving || analyzing}
+          onPress={() => void save()}
+        />
+        {isServerConfigured ? (
+          <DockButton
+            variant="primary"
+            label={analyzing ? '올리는 중…' : '정리 시작'}
+            disabled={analyzing || saving}
+            onPress={() => void analyze()}
+          />
+        ) : null}
+      </Dock>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.five,
-    gap: Spacing.three,
-  },
-  header: {
-    gap: Spacing.two,
-  },
-  list: {
-    gap: Spacing.two,
-    paddingBottom: Spacing.three,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.three,
-    borderRadius: Spacing.three,
-    padding: Spacing.two,
-  },
-  rowText: {
-    flex: 1,
-    gap: Spacing.half,
-  },
-  footer: {
-    gap: Spacing.two,
-    paddingBottom: Spacing.four,
-  },
+  content: { paddingBottom: Spacing.four },
+  noteWrap: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four },
+  clear: { paddingHorizontal: Layout.gutter },
+  bold: { fontWeight: 700 },
 });

@@ -408,63 +408,85 @@ export function registerCandidateRoutes(app: FastifyInstance, context: AppContex
         [request.params.weddingId]
       );
 
-      const decisions = await Promise.all(
-        decided.map(async (row) => {
-          const events = await context.pool.query<{
-            id: string;
-            title: string;
-            starts_at: Date;
-            location: string | null;
-          }>(
-            `SELECT id, title, starts_at, location
-             FROM structured.wedding_events
-             WHERE wedding_id = $1 AND vendor_id = $2
-             ORDER BY starts_at`,
-            [request.params.weddingId, row.vendor_id]
-          );
+      /*
+       * 일정과 지출은 **결정 하나마다 묻지 않는다**(2026-09-09 성능 감사).
+       *
+       * 예전에는 결정된 업종마다 일정 한 번 · 지출 한 번을 따로 물었다 — 열두
+       * 업종을 다 정한 사람이 이 화면을 열면 스물넷 + 한 번이었다. 어차피 같은
+       * 웨딩 안의 일정과 지출이라 한 번씩 통째로 읽고 여기서 갈라 담는 편이
+       * 왕복도 적고 결과도 같다.
+       */
+      const [allEvents, expenseByCategory] = await Promise.all([
+        context.pool.query<{
+          vendor_id: string;
+          id: string;
+          title: string;
+          starts_at: Date;
+          location: string | null;
+        }>(
+          `SELECT vendor_id, id, title, starts_at, location
+           FROM structured.wedding_events
+           WHERE wedding_id = $1 AND vendor_id = ANY($2::uuid[])
+           ORDER BY starts_at`,
+          [request.params.weddingId, decided.map((row) => row.vendor_id)]
+        ),
+        context.pool.query<{
+          category: VendorCategory;
+          paid_total: string;
+          paid_count: string;
+          scheduled_total: string;
+          scheduled_count: string;
+        }>(
+          `SELECT category,
+                  coalesce(sum(amount) FILTER (WHERE status = 'paid'), 0) AS paid_total,
+                  count(*) FILTER (WHERE status = 'paid') AS paid_count,
+                  coalesce(sum(amount) FILTER (WHERE status = 'scheduled'), 0) AS scheduled_total,
+                  count(*) FILTER (WHERE status = 'scheduled') AS scheduled_count
+           FROM structured.wedding_expenses
+           WHERE wedding_id = $1
+           GROUP BY category`,
+          [request.params.weddingId]
+        ),
+      ]);
 
-          const expenseAgg = await context.pool.query<{
-            paid_total: string;
-            paid_count: string;
-            scheduled_total: string;
-            scheduled_count: string;
-          }>(
-            `SELECT
-               coalesce(sum(amount) FILTER (WHERE status = 'paid'), 0) AS paid_total,
-               count(*) FILTER (WHERE status = 'paid') AS paid_count,
-               coalesce(sum(amount) FILTER (WHERE status = 'scheduled'), 0) AS scheduled_total,
-               count(*) FILTER (WHERE status = 'scheduled') AS scheduled_count
-             FROM structured.wedding_expenses
-             WHERE wedding_id = $1 AND category = $2::vendor_category`,
-            [request.params.weddingId, row.category]
-          );
+      const eventsByVendor = new Map<string, typeof allEvents.rows>();
 
-          const agg = expenseAgg.rows[0]!;
-          const bucket = bucketFor(row.category);
+      for (const event of allEvents.rows) {
+        const list = eventsByVendor.get(event.vendor_id) ?? [];
 
-          return {
-            category: row.category,
-            categoryLabel: VENDOR_CATEGORY_LABEL[row.category],
-            vendor: { id: row.vendor_id, name: row.vendor_name, region: row.region },
-            decidedAt: row.decided_at.toISOString(),
-            decidedByPartner: row.decided_by !== null && row.decided_by !== userId,
-            events: events.rows.map((event) => ({
-              id: event.id,
-              title: event.title,
-              startsAt: event.starts_at.toISOString(),
-              location: event.location,
-            })),
-            expenses: {
-              bucket,
-              bucketLabel: EXPENSE_BUCKET_LABEL[bucket],
-              paidTotal: Number(agg.paid_total),
-              paidCount: Number(agg.paid_count),
-              scheduledTotal: Number(agg.scheduled_total),
-              scheduledCount: Number(agg.scheduled_count),
-            },
-          };
-        })
-      );
+        list.push(event);
+        eventsByVendor.set(event.vendor_id, list);
+      }
+
+      const sumsByCategory = new Map(expenseByCategory.rows.map((row) => [row.category, row]));
+
+      const decisions = decided.map((row) => {
+        // 그 업종에 지출이 하나도 없으면 행이 없다. 0으로 읽는다.
+        const agg = sumsByCategory.get(row.category);
+        const bucket = bucketFor(row.category);
+
+        return {
+          category: row.category,
+          categoryLabel: VENDOR_CATEGORY_LABEL[row.category],
+          vendor: { id: row.vendor_id, name: row.vendor_name, region: row.region },
+          decidedAt: row.decided_at.toISOString(),
+          decidedByPartner: row.decided_by !== null && row.decided_by !== userId,
+          events: (eventsByVendor.get(row.vendor_id) ?? []).map((event) => ({
+            id: event.id,
+            title: event.title,
+            startsAt: event.starts_at.toISOString(),
+            location: event.location,
+          })),
+          expenses: {
+            bucket,
+            bucketLabel: EXPENSE_BUCKET_LABEL[bucket],
+            paidTotal: Number(agg?.paid_total ?? 0),
+            paidCount: Number(agg?.paid_count ?? 0),
+            scheduledTotal: Number(agg?.scheduled_total ?? 0),
+            scheduledCount: Number(agg?.scheduled_count ?? 0),
+          },
+        };
+      });
 
       return { decisions };
     }

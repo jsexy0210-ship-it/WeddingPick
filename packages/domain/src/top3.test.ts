@@ -125,3 +125,17 @@ describe('v3.22 — 스타일 · 업체 안내 가격', () => {
     expect(b).toBeGreaterThan(c);
   });
 });
+
+describe('예산 제외 기준 — 못 사는 곳만 뺀다', () => {
+  it('구간보다 싼 곳은 겹치지 않아도 빼지 않는다', () => {
+    const cheap = { ...BASE, budgetBracket: '10m_20m' as const, priceMin: 500_000, priceMax: 1_500_000 };
+    expect(budgetExcludes(cheap)).toBe(false);
+    // «맞아요»라고는 말하지 않는다 — 겹치지 않으니 예산 이유는 붙지 않는다.
+    expect(reasonsFor(cheap)).not.toContain('budget');
+  });
+
+  it('구간 상한을 넘는 곳은 뺀다(SPEC §13.6 예시)', () => {
+    const over = { ...BASE, budgetBracket: '20m_30m' as const, priceMin: 32_000_000, priceMax: 40_000_000 };
+    expect(budgetExcludes(over)).toBe(true);
+  });
+});

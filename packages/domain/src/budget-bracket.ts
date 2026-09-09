@@ -91,6 +91,27 @@ export function budgetOverlaps(
 }
 
 /**
+ * 예산 안인가 — **제외 기준**. 제보 금액의 하한이 고른 구간의 상한을 넘으면(예산으로
+ * 못 사는 곳) 뺀다. 그 아래는 전부 예산 안이다 — 남은 예산 1,000~2,000만원인 사람에게
+ * 50~150만원 메이크업이 «예산과 안 맞는다»고 빼면 작은 업종은 추천이 전부 비어 버린다.
+ * «맞아요»라고 말하는 것(budgetOverlaps)과 빼는 것(이 함수)은 다르다.
+ *
+ *   고른 구간 2,000~3,000만원 · 제보 3,200~4,000만원 → 제외 (SPEC §13.6 예시 그대로)
+ *   고른 구간 2,000~3,000만원 · 제보 50~150만원      → 예산 안 (빼지 않는다)
+ */
+export function budgetAffordable(
+  bracket: WeddingBudgetBracket,
+  priceMin: number,
+  priceMax: number
+): boolean {
+  const range = budgetBracketRange(bracket);
+
+  if (range === null || range.max === null) return true;
+
+  return Math.min(priceMin, priceMax) <= range.max;
+}
+
+/**
  * 구간의 상한값(원). `structured.weddings.budget_amount`를 서버가 이 값으로
  * 파생한다(0077) — 지출 화면의 «예산 대비»가 숫자 하나를 쓰기 때문이다.
  *

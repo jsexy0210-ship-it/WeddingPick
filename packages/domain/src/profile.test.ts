@@ -85,7 +85,7 @@ describe('예식일', () => {
     expect(dDay('2027-04-17', NOW)).toEqual({
       kind: 'upcoming',
       days: 231,
-      text: '예식까지 231일이 남았어요',
+      text: '예식까지 231일 남았어요',
     });
   });
 
