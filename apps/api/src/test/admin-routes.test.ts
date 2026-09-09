@@ -35,8 +35,48 @@ describeWithDb('관리자 콘솔 라우트', () => {
     test.app.inject({ method: 'GET', url, headers });
   const post = (url: string, headers: Record<string, string>, payload?: Record<string, unknown>) =>
     test.app.inject({ method: 'POST', url, headers, payload });
+  const patch = (url: string, headers: Record<string, string>, payload?: Record<string, unknown>) =>
+    test.app.inject({ method: 'PATCH', url, headers, payload });
   const del = (url: string, headers: Record<string, string>) =>
     test.app.inject({ method: 'DELETE', url, headers });
+
+  /*
+   * 수집을 늘리기 전에 멈출 수단이 먼저 있어야 한다. 화면의 스위치가 실제로
+   * `structured.import_switches`를 바꾸는지를 본다 — 이 값을 `public-data/sync.ts`가
+   * 임포트 직전에 읽어 `SOURCE_DISABLED`로 거부한다.
+   */
+  describe('수집 중단 스위치', () => {
+    it('목록에 출처가 나오고, 끄면 import_switches가 바뀐다', async () => {
+      const operator = await operatorHeaders();
+
+      const listed = (await get('/v1/admin/kill-switches', operator.headers)).json() as {
+        switches: { id: string; category: string; enabled: boolean }[];
+      };
+      expect(listed.switches.find((s) => s.id === 'import:localdata')).toMatchObject({
+        category: '수집',
+        enabled: true,
+      });
+
+      const off = await patch('/v1/admin/kill-switches/import:localdata', operator.headers, {
+        enabled: false,
+      });
+      expect(off.statusCode).toBe(204);
+
+      const { rows } = await test.pool.query<{ enabled: boolean; reason: string | null }>(
+        `SELECT enabled, reason FROM structured.import_switches WHERE source_key = 'localdata'`
+      );
+      expect(rows[0]?.enabled).toBe(false);
+      expect(rows[0]?.reason).toContain('중단');
+    });
+
+    it('없는 출처는 404다', async () => {
+      const operator = await operatorHeaders();
+      const response = await patch('/v1/admin/kill-switches/import:no-such-source', operator.headers, {
+        enabled: false,
+      });
+      expect(response.statusCode).toBe(404);
+    });
+  });
 
   describe('관문', () => {
     it('토큰이 없으면 401이다', async () => {
