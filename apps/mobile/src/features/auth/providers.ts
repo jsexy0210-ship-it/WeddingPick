@@ -170,9 +170,13 @@ function kakaoRequest(redirectUri: string): AuthRequest {
     /*
      * 2026-09-09 사용자 결정 — 카카오 동의항목을 이렇게 정했다.
      *
-     *   필수  이름 · 성별 · 출생 연도 · 프로필(닉네임 · 사진)
+     *   필수  출생 연도 · 프로필(닉네임 · 사진)
      *   선택  연령대 · 생일 · 전화번호
-     *   안 씀 CI · 배송지
+     *   안 씀 이름 · 성별 · CI · 배송지
+     *
+     * **이름·성별은 뺐다**(2026-09-09). 받아서 넣는 자리는 있는데 읽는 코드가
+     * 한 군데도 없었다. 카카오 신청 화면이 「필요한 최소한만 신청하라 · 불필요한
+     * 개인정보를 받으면 제재 대상」이라고 적어 둔 그 자리다. 쓸 일이 생기면 그때 켠다.
      *
      * `openid`가 있어야 id_token이 오고, 닉네임은 그 클레임으로 온다.
      * **출생 연도가 만 14세 판정의 근거다** — 서버가 `/v2/user/me`로 받아
@@ -185,8 +189,6 @@ function kakaoRequest(redirectUri: string): AuthRequest {
       'openid',
       'profile_nickname',
       'profile_image',
-      'name',
-      'gender',
       'birthyear',
       'birthday',
       'age_range',
