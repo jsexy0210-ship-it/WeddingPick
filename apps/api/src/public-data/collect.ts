@@ -1,13 +1,15 @@
 import { createHash } from 'node:crypto';
 import { parse } from 'csv-parse/sync';
 import iconv from 'iconv-lite';
-import { toRegion } from './localdata';
+import { regionTokens, type VendorCategory } from '@weddingpick/domain';
+import { operatingState, toRegion } from './localdata';
 import { PUBLIC_SOURCES, type SourceKey } from './sources';
 
 export type CollectedVendor = {
   name: string;
   region: string;
-  category: 'hall' | 'studio' | 'dress' | 'makeup' | 'snap' | 'wedding_info_company';
+  /** 업종 12종 + «기타»(VENDOR_CATEGORIES). 못 고른 웨딩 업체는 'etc'로 남긴다. */
+  category: VendorCategory;
   sourceKey: SourceKey;
   sourceUrl: string;
   sourceRecordId: string | null;
@@ -25,23 +27,67 @@ export function isoDay(value: string, today: string): string | null {
 }
 
 /**
- * 상권 소분류 + 상호로 업종을 고른다. 사진관·미용실·의류대여점 전체를 웨딩 업체로
- * 추정하지 않는다 — 상호에 «웨딩»·«본식»·«브라이덜»이 있어야 받는다.
+ * 상호에 이 표시가 있어야 웨딩 업체로 받는다. 사진관·미용실·꽃집·여행사 업종
+ * 전체를 끌어오지 않게 막는 마지막 방어선이라 느슨하게 풀지 않는다.
+ */
+const WEDDING_NAME = /웨딩|브라이덜|bridal|wedding/i;
+
+/**
+ * 상권 소분류 + 상호로 업종을 고른다. 업종만으로는 절대 받지 않는다 —
+ * 예식장·결혼중개를 뺀 나머지는 상호에 웨딩 표시(WEDDING_NAME)가 있어야 한다.
  *
  * v3.18부터 스튜디오·드레스·메이크업이 따로다(전에는 `sdm` 하나였다). 사진 업종은
  * 상호로 가른다 — «본식»·«스냅»이면 본식스냅, «스튜디오»면 스튜디오, 그 밖의
  * «웨딩 사진»은 전처럼 본식스냅으로 둔다.
+ *
+ * v3.22 12종(packages/domain vendor.ts)에 맞춰 헤어변형·부케·청첩장·예물·혼수·
+ * 허니문을 더했다. 업종 이름은 실제 상권 소분류명을 확인하기 전이라(SBIZ_API_KEY
+ * 대기 — README «업종 코드 조사» 참고) 넓게 잡되, 상호 조건으로 좁힌다.
  */
-export function classifyWeddingIndustry(industry: string, name: string): CollectedVendor['category'] | null {
+export function classifyWeddingIndustry(industry: string, name: string): VendorCategory | null {
   if (/사진|촬영|스튜디오/.test(industry)) {
     if (/본식|스냅/.test(name)) return 'snap';
-    if (/스튜디오/.test(name) && /웨딩|브라이덜/.test(name)) return 'studio';
-    return /웨딩/.test(name) ? 'snap' : null;
+    if (/스튜디오/.test(name) && WEDDING_NAME.test(name)) return 'studio';
+    return WEDDING_NAME.test(name) ? 'snap' : null;
   }
-  if (!/웨딩|브라이덜/.test(name)) return null;
+  if (!WEDDING_NAME.test(name)) return null;
   if (/의류.*대여|드레스/.test(industry)) return 'dress';
-  if (/미용|메이크업/.test(industry)) return 'makeup';
+  // 헤어변형과 메이크업은 같은 미용업으로 잡히니 상호로 가른다.
+  if (/미용|메이크업|이용/.test(industry)) return /헤어|hair/i.test(name) ? 'hair' : 'makeup';
+  if (/화훼|생화|꽃|플라워/.test(industry)) return 'bouquet';
+  if (/인쇄|청첩|카드/.test(industry)) return 'invitation';
+  if (/귀금속|보석|금은|시계/.test(industry)) return 'goods';
+  if (/가구|침구|주단|포목|혼수/.test(industry)) return 'dowry';
+  if (/여행/.test(industry)) return 'honeymoon';
   return null;
+}
+
+/**
+ * 상권 자료 한 행의 업종을 정한다. `parsePublicCsv`(CSV)와
+ * `downloadSbizApiVendors`(OpenAPI)가 같은 규칙을 쓰도록 한 곳에 둔다.
+ *
+ * 업종을 못 골랐는데 상호에 웨딩 표시가 있으면 버리지 않고 'etc'로 남긴다 —
+ * 실제 웨딩 업체인데 소분류명이 우리 규칙에 없는 경우다. 수집 결과는 전부
+ * `needs_verification`이라 사람이 보고 업종을 정한다. 상호 표시도 없으면
+ * 웨딩과 무관한 행이므로 버린다(전국 상권 자료 전체를 «기타»로 담지 않는다).
+ */
+export function resolveSbizCategory(industry: string, name: string): VendorCategory | null {
+  if (/예식장/.test(industry)) return 'hall';
+  if (/결혼.*중개|결혼.*상담|결혼정보/.test(industry)) return 'wedding_info_company';
+  return classifyWeddingIndustry(industry, name) ?? (WEDDING_NAME.test(name) ? 'etc' : null);
+}
+
+/**
+ * 주소 앞 두 토막이 «시·도 + 시·군·구»로 읽히는가.
+ *
+ * 토막내기는 도메인 `regionTokens`를 그대로 쓴다 — 검색·추천의 지역 비교
+ * (`regionMatches`)와 같은 규칙이어야 수집한 region이 화면에서 걸린다.
+ * 첫 토막의 «시/도» 끝소리는 여기서 따로 본다. regionTokens가 «특별시·광역시·도»를
+ * 떼고 넘겨주기 때문에, 떼기 전 원문으로 확인해야 «길 1» 같은 주소 조각이 통과하지 않는다.
+ */
+export function isVendorRegion(region: string): boolean {
+  const first = region.trim().split(/\s+/)[0] ?? '';
+  return regionTokens(region).length === 2 && /(시|도)$/.test(first);
 }
 
 export function normalizeName(value: string): string {
@@ -72,20 +118,20 @@ export function parsePublicCsv(bytes: Buffer, key: SourceKey, at = new Date()) {
   const seen = new Set<string>();
   let rejected = 0;
   let duplicates = 0;
+  let closed = 0;
   for (const row of rows) {
+    // 폐업·휴업 행은 수집하지 않는다. rejected와 따로 센다 — 자료에 폐업으로
+    // 적힌 업체가 몇이었는지는 «형식이 틀린 행»과 다른 신호다(운영 중 업체의
+    // 폐업 전환은 아직 자동으로 하지 않는다. README «레거시 및 제한» 참고).
+    if (operatingState(row, headers) === 'closed') { closed++; continue; }
     const branch = source.format === 'sbiz' ? row['지점명']?.trim() : '';
     const name = [row[source.nameColumn]?.trim(), branch].filter(Boolean).join(' ');
     const region = toRegion(row['도로명주소']?.trim() ?? '');
-    let category: CollectedVendor['category'] | null = source.format === 'municipal' ? 'hall' : null;
-    if (source.format === 'sbiz') {
-      const industry = row['상권업종소분류명']?.trim() ?? '';
-      // 사진관·미용실 전체를 웨딩 업체로 추정하지 않는다.
-      if (/예식장/.test(industry)) category = 'hall';
-      else if (/결혼.*중개|결혼.*상담/.test(industry)) category = 'wedding_info_company';
-      else category = classifyWeddingIndustry(industry, name);
-    }
+    const category: VendorCategory | null = source.format === 'municipal'
+      ? 'hall'
+      : resolveSbizCategory(row['상권업종소분류명']?.trim() ?? '', name);
     const publishedOn = source.dateColumn ? isoDay(row[source.dateColumn] ?? '', at.toISOString().slice(0, 10)) : null;
-    if (!name || name.length > 500 || !category || !/^\S+(?:시|도)\s+\S+/.test(region)
+    if (!name || name.length > 500 || !category || !isVendorRegion(region)
       || (source.dateColumn && !publishedOn)) { rejected++; continue; }
     const identity = `${normalizeName(name)}|${region}`;
     if (seen.has(identity)) { duplicates++; continue; }
@@ -94,7 +140,7 @@ export function parsePublicCsv(bytes: Buffer, key: SourceKey, at = new Date()) {
       sourceRecordId: source.format === 'sbiz' ? row['상가업소번호']?.trim() || null : null,
       publishedOn, collectedAt: at.toISOString(), status: 'needs_verification' });
   }
-  return { vendors, total: rows.length, rejected, duplicates };
+  return { vendors, total: rows.length, rejected, duplicates, closed };
 }
 
 const ALLOWED_ORIGINS = new Set(['https://www.data.go.kr', 'https://apis.data.go.kr']);
@@ -220,14 +266,8 @@ type SbizApiPage = {
  * 돌려주고 있을 가능성이 높다(수집 자체가 조용히 0건). `listIndustryCategories`로
  * 중/소분류를 뒤져 진짜 코드를 찾은 뒤 여기 'Q'를 교체해야 한다.
  *
- * 수집 카테고리 (indsSclsNm 기준):
- *   예식장 → hall
- *   결혼정보·결혼상담 → wedding_info_company
- *   사진|촬영|스튜디오 + 본식|스냅 이름 → snap (웨딩 이름만 있어도 snap)
- *   사진|촬영|스튜디오 + 웨딩|브라이덜 스튜디오 이름 → studio
- *   의류대여|드레스 + 웨딩|브라이덜 이름 → dress
- *   미용|메이크업 + 웨딩|브라이덜 이름 → makeup
- *   (classifyWeddingIndustry)
+ * 수집 카테고리는 `resolveSbizCategory`(indsSclsNm + 상호) 하나로 정한다 —
+ * CSV 경로와 같은 규칙이다. 업종을 못 고른 웨딩 상호는 'etc'로 남긴다.
  */
 export async function downloadSbizApiVendors(
   key: SourceKey,
@@ -263,14 +303,9 @@ export async function downloadSbizApiVendors(
       const branch = r.brchNm?.trim() ?? '';
       const name = [r.bizesNm?.trim(), branch].filter(Boolean).join(' ');
       const region = toRegion(r.rdnmAdr?.trim() ?? '');
-      const industry = r.indsSclsNm?.trim() ?? '';
+      const category = resolveSbizCategory(r.indsSclsNm?.trim() ?? '', name);
 
-      let category: CollectedVendor['category'] | null = null;
-      if (/예식장/.test(industry)) category = 'hall';
-      else if (/결혼.*중개|결혼.*상담/.test(industry)) category = 'wedding_info_company';
-      else category = classifyWeddingIndustry(industry, name);
-
-      if (!name || name.length > 500 || !category || !/^\S+(?:시|도)\s+\S+/.test(region)) continue;
+      if (!name || name.length > 500 || !category || !isVendorRegion(region)) continue;
 
       const identity = `${normalizeName(name)}|${region}`;
       if (seen.has(identity)) continue;
