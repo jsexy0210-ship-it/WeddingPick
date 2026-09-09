@@ -8,6 +8,7 @@ import {
   ThemedView,
   useDelayedVisible,
   type CategoryCycleLoaderSize,
+  type CategoryIconKind,
   type LoadingViewProps,
   type RecommendingBodyProps,
 } from '@weddingpick/ui';
@@ -66,17 +67,25 @@ export function DelayedLoadingView({
   return <LoadingView {...props} exclude={exclude} />;
 }
 
-type DelayedRecommendingProps = Omit<RecommendingBodyProps, 'exclude'> & { active?: boolean };
+type DelayedRecommendingProps = Omit<RecommendingBodyProps, 'exclude'> & {
+  active?: boolean;
+  /**
+   * 순회에서 뺄 업종을 화면이 직접 넘긴다. 온보딩 5/5처럼 **답을 방금 받았지만 아직
+   * 서버에 없는** 자리를 위한 것이다 — 그때 «나»의 스냅숏에는 결정 완료 업종이
+   * 없어서, 넘기지 않으면 방금 «결정 완료»로 고른 웨딩홀이 로더에서 계속 돈다.
+   */
+  exclude?: readonly CategoryIconKind[];
+};
 
 /**
  * 닉네임은 화면이 넘긴 값 → 마지막으로 알려진 «나» 순. 홈은 부트스트랩이 끝나기
  * 전에 이 로더를 보여주므로 화면에는 아직 이름이 없다 — 그때는 로그인 · 설정에서
  * 이미 받아둔 값으로 부른다. 그것도 없으면 «맞는 곳을 찾고 있어요».
  */
-function useRecommendingProps({ nickname, ...rest }: Omit<DelayedRecommendingProps, 'active'>) {
+function useRecommendingProps({ nickname, exclude, ...rest }: Omit<DelayedRecommendingProps, 'active'>) {
   const me = useCurrentUserSnapshot();
-  const exclude = usePreparedExclude();
-  return { ...rest, nickname: nickname ?? me?.displayName ?? undefined, exclude };
+  const known = usePreparedExclude();
+  return { ...rest, nickname: nickname ?? me?.displayName ?? undefined, exclude: exclude ?? known };
 }
 
 /** WP-ST-015 추천 계산 — 화면 전체. 700ms 전에는 빈 화면. */
