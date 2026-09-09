@@ -1,0 +1,57 @@
+# 운영 데이터가 실제로 얼마나 모였는지 세기만 한다. 아무것도 바꾸지 않는다.
+#
+# 스키마가 어디까지 왔는지는 `DB Status`가 본다. 이것은 **내용물**을 본다 —
+# 업체 몇 곳, 이미지 몇 장, 그 중 대표로 쓸 수 있는 것은 몇 장인지.
+#
+# 출력은 집계 숫자와 상태 이름뿐이다. 업체명 · 이미지 URL · 이용자 정보는 찍지 않는다 —
+# 이 로그는 GitHub Actions에 남고, 남으면 지우기 어렵다.
+name: DB Inventory (읽기 전용)
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: '어느 DB를 볼 것인가'
+        type: choice
+        default: production
+        options:
+          - production
+          - default
+          - staging
+
+permissions:
+  contents: read
+
+jobs:
+  inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: 데이터 현황 조회
+        env:
+          # 셋 다 넘기고 아래에서 고른다. 값 자체는 어디에도 찍지 않는다.
+          PRODUCTION_DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+          DEFAULT_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          TARGET: ${{ github.event.inputs.target }}
+        run: |
+          case "${TARGET:-production}" in
+            production) export DATABASE_URL="$PRODUCTION_DATABASE_URL" ;;
+            staging)    export DATABASE_URL="$STAGING_DATABASE_URL" ;;
+            *)          export DATABASE_URL="$DEFAULT_DATABASE_URL" ;;
+          esac
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::${TARGET:-production} 대상의 접속 정보가 GitHub Secrets에 없다."
+            exit 1
+          fi
+          echo "대상: ${TARGET:-production}"
+          npx tsx scripts/db-inventory.ts
