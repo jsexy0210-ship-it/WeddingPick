@@ -1,4 +1,4 @@
-import { POLICY_DOCUMENTS, dDay } from '@weddingpick/domain';
+import { POLICY_DOCUMENTS, SIGNUP_COLLECT_NOTICE, SIGNUP_PROFILE_FIELDS, dDay } from '@weddingpick/domain';
 import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -209,6 +209,8 @@ export default function LoginScreen() {
                     <ThemedText type="micro" themeColor="textAssistive" style={styles.terms}>
                       시작하면 <PolicyLink id="terms" />과 <PolicyLink id="privacy" />에 동의하게 돼요
                     </ThemedText>
+
+                    <CollectNotice />
                   </>
                 )}
               </ThemedView>
@@ -227,6 +229,35 @@ export default function LoginScreen() {
 
       <LoginFailureSheet visible={error !== null} onRetry={retry} onDismiss={dismissError} />
     </ThemedView>
+  );
+}
+
+/**
+ * 회원가입 때 카카오에서 받는 정보.
+ *
+ * **카카오 심사가 요구해서 넣었다**(2026-09-09 반려). 「회원가입 화면 내 수집
+ * 항목 · 수집 조건 기재 필수」이고, 처음 제출한 화면은 히어로 문구만 보여서
+ * 심사자가 회원가입 절차로 읽지 못했다 — 「견적 확인 절차는 회원가입/로그인
+ * 프로세스라고 보기 어렵다」는 사유였다.
+ *
+ * **시안(WP-AUTH-001)에는 없는 블록이다.** 히어로와 카카오 버튼 사이가 아니라
+ * 약관 줄 아래에 두어 Primary CTA와 경쟁하지 않게 했다. 글자도 가장 작은 단계다.
+ * 목록은 `@weddingpick/domain`에서 온다 — 화면이 말하는 것과 실제로 받는 것이
+ * 갈라지지 않게 한 곳에만 적는다.
+ */
+function CollectNotice() {
+  return (
+    <View style={styles.collect}>
+      <ThemedText type="micro" themeColor="textAssistive" style={styles.collectLead}>
+        {SIGNUP_COLLECT_NOTICE}
+      </ThemedText>
+
+      {SIGNUP_PROFILE_FIELDS.map((field) => (
+        <ThemedText key={field.label} type="micro" themeColor="textAssistive" style={styles.collectRow}>
+          {field.required ? '필수' : '선택'} · {field.label} — {field.why}
+        </ThemedText>
+      ))}
+    </View>
   );
 }
 
@@ -359,6 +390,13 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.two - Spacing.half,
     fontWeight: 400,
   },
+  /* 수집 항목 안내 — 약관 줄 아래 12 · 줄 사이 2. 시안에 없는 블록이다(카카오 심사 요건). */
+  collect: {
+    paddingTop: Layout.rowPaddingY,
+    gap: Spacing.half,
+  },
+  collectLead: { fontWeight: 400 },
+  collectRow: { fontWeight: 400 },
   /* 시안 benefitWrap — 위 28(섹션 사이) · 줄 사이 2. */
   benefitList: {
     paddingTop: Layout.sectionGap,
