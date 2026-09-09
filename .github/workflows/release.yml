@@ -17,8 +17,16 @@
 #
 # ── Google Play 제출 ────────────────────────────────────────────────────
 #
-#   계정 본인확인 제한으로 비활성 상태.
-#   제한 해제 후 submit-android 잡 주석을 해제하면 된다.
+#   계정 본인확인 제한이 풀려(2026-09-09) submit-android 잡을 활성화했다.
+#
+#   EAS가 Google Play에 올리려면 Google Play 서비스 계정 JSON이 필요하다.
+#   `apps/mobile/eas.json`의 `submit.production`은 비어 있으므로, 자격이
+#   expo.dev(EAS credentials)에 올라가 있어야 제출이 성공한다. 없으면
+#   Play Console → 설정 → API 액세스에서 서비스 계정을 만들어 JSON을 받고
+#   `eas credentials`로 등록해야 한다. 이 워크플로는 키 파일을 다루지 않는다.
+#
+#   트랙을 지정하지 않았으므로 EAS 기본값인 internal 트랙으로 올라간다.
+#   공개 트랙으로 바꾸려면 eas.json의 `submit.production.android.track`을 정한다.
 #
 # 필요한 GitHub Secrets:
 #   EXPO_TOKEN                        expo.dev Access Tokens에서 발급
@@ -37,7 +45,7 @@ on:
         default: all
         required: true
       submit:
-        description: 빌드 완료 후 TestFlight 제출 (iOS만, Android Google Play는 비활성)
+        description: 빌드 완료 후 스토어 제출 (iOS → TestFlight, Android → Google Play internal 트랙)
         type: boolean
         default: false
 
@@ -171,23 +179,31 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-  # submit-android:
-  #   name: Android → Google Play 제출
-  #   needs: [build-android]
-  #   # Google Play Console 계정 본인확인 완료 후 아래 if 조건을 활성화한다:
-  #   # if: inputs.platform == 'android' || inputs.platform == 'all'
-  #   if: false
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 22
-  #         cache: npm
-  #     - run: npm i -g eas-cli
-  #     - run: npm ci
-  #     - name: Submit to Google Play
-  #       working-directory: apps/mobile
-  #       run: eas submit --platform android --latest --non-interactive
-  #       env:
-  #         EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+  submit-android:
+    name: Android → Google Play 제출
+    needs: [build-android]
+    # 원래 주석은 `inputs.platform` 조건만 지시했지만, 그러면 submit 체크를
+    # 끄고 돌린 안드로이드 빌드도 매번 스토어로 올라간다. submit-ios와 같은
+    # 게이트를 걸어 사용자가 체크했을 때만 제출한다.
+    if: |
+      (inputs.platform == 'android' || inputs.platform == 'all') &&
+      inputs.submit == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm i -g eas-cli
+
+      - run: npm ci
+
+      - name: Submit to Google Play
+        working-directory: apps/mobile
+        run: eas submit --platform android --latest --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
