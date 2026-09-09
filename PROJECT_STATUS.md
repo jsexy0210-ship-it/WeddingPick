@@ -112,7 +112,9 @@ Render에 밀어넣는다. `render.yaml`의 `envVars`는 반영되지 않는다(
 6. iOS Sign in with Apple 권한·Provisioning Profile 수정 후 Production Build·TestFlight
 7. 운영 Neon 마이그레이션 상태 확인 및 적용
 8. Google Play 계정 제한 해제 후 Android 제출 자동화
-9. `SBIZ_API_KEY` 등록 → 업종 소분류 코드 조사 → `collect.ts`의 `'Q'` 교체
+9. `SBIZ_API_KEY`(운영계정, 활용기간 2026-09-08~2028-09-08) GitHub Secrets 등록 →
+   `public-data.yml`의 `lookup_level`로 업종코드 조사 → 저장소 Variables `SBIZ_UPJONG_CODES` 등록
+   (`collect.ts`의 하드코딩 `'Q'`는 제거했다 — 코드는 이제 설정에서만 온다)
 10. 카카오 REST API 키 발급 → 업체 좌표 백필
 
 ## 제품 범위 결정

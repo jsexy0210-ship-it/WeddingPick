@@ -1,5 +1,5 @@
 import iconv from 'iconv-lite';
-import { contentHash, downloadSbizApiVendors, isoDay, listIndustryCategories, parsePublicCsv, type CollectedVendor } from './collect';
+import { contentHash, downloadSbizApiVendors, findNumber, findRecords, isoDay, listIndustryCategories, parsePublicCsv, type CollectedVendor } from './collect';
 import { sourceKey } from './sources';
 import { replacementDecision } from './sync';
 
@@ -46,7 +46,12 @@ test('sbiz-api 응답에서 서울 예식장만 파싱한다', async () => {
     body: { [Symbol.asyncIterator]: async function* () { yield body; } },
   });
   try {
-    const vendors = await downloadSbizApiVendors('sbiz-seoul', 'test-key', new Date('2026-09-04T00:00:00Z'));
+    // 업종코드는 호출자가 넘긴다 — 아래 값은 테스트 전용 가짜 코드다.
+    const { vendors, fetched, rejected } = await downloadSbizApiVendors(
+      'sbiz-seoul', 'test-key', new Date('2026-09-04T00:00:00Z'),
+      { divId: 'indsSclsCd', codes: ['S21101'] });
+    expect(fetched).toBe(2);
+    expect(rejected).toBe(1); // 경기 업체는 시도 필터에서 빠진다
     expect(vendors).toHaveLength(1);
     expect(vendors[0]?.name).toBe('강남웨딩홀');
     expect(vendors[0]?.region).toBe('서울특별시 강남구');
@@ -56,6 +61,30 @@ test('sbiz-api 응답에서 서울 예식장만 파싱한다', async () => {
     global.fetch = origFetch;
   }
 });
+test('봉투가 중첩돼 있어도 레코드 배열을 찾는다', () => {
+  // 2026-09-09 실 응답 확인: sdsc2 업종코드 조회는 { data: [...] }가 아니라
+  // 여러 겹으로 감싼 모양으로 온다. 봉투 이름에 의존하지 않는다.
+  const nested = { response: { header: { resultCode: '00' },
+    body: { totalCount: '2', items: [
+      { indsLclsCd: 'Q1', indsLclsNm: '보건의료', stdrDt: '2023-02-28' },
+      { indsLclsCd: 'R1', indsLclsNm: '예술·스포츠', stdrDt: '2023-02-28' },
+    ] } } };
+  expect(findRecords<{ indsLclsCd: string }>(nested, 'indsLclsCd').map((r) => r.indsLclsCd))
+    .toEqual(['Q1', 'R1']);
+  expect(findNumber(nested, 'totalCount')).toBe(2);
+  expect(findRecords(nested, '없는필드')).toEqual([]);
+});
+test('업종코드가 없으면 수집을 시작하지 않는다', async () => {
+  // 코드가 틀리거나 비면 API는 오류 대신 빈 목록을 준다 — 조용한 0건 수집을 막는다.
+  const saved = process.env.SBIZ_UPJONG_CODES;
+  delete process.env.SBIZ_UPJONG_CODES;
+  try {
+    await expect(downloadSbizApiVendors('sbiz-seoul', 'test-key')).rejects.toThrow('SBIZ_UPJONG_CODES');
+  } finally {
+    if (saved === undefined) delete process.env.SBIZ_UPJONG_CODES;
+    else process.env.SBIZ_UPJONG_CODES = saved;
+  }
+});
 test('이미 URL-encode된 서비스키를 이중 인코딩하지 않는다', async () => {
   // 공공데이터포털 인증키는 이미 encode된 값으로 온다('/'→%2F, '='→%3D).
   // URLSearchParams.set()에 그대로 넘기면 '%'가 %25로 한 번 더 encode되어
@@ -63,7 +92,8 @@ test('이미 URL-encode된 서비스키를 이중 인코딩하지 않는다', as
   const encodedKey = 'abc%2Fdef%3D%3D';
   const origFetch = global.fetch;
   let requestedUrl = '';
-  const body = Buffer.from(JSON.stringify({ data: [] }));
+  // 목록이 비면 «봉투를 못 찾음»으로 던진다. 여기서 보는 것은 URL이므로 한 줄 채운다.
+  const body = Buffer.from(JSON.stringify({ data: [{ indsSclsCd: 'S21101', indsSclsNm: '예식장업' }] }));
   global.fetch = jest.fn().mockImplementation((url: string) => {
     requestedUrl = url;
     return Promise.resolve({

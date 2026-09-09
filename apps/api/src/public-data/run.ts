@@ -11,23 +11,30 @@ export async function runPublicCollection(args: string[]) {
   const key = sourceKey(arg('--source') ?? '');
   const file = arg('--file');
   const sbizApiKey = arg('--sbiz-api-key') ?? process.env.SBIZ_API_KEY;
+  const upjongCodes = arg('--upjong-codes');
+  const upjongDivId = arg('--upjong-div-id');
   const apply = args.includes('--apply');
   if (apply && args.includes('--dry-run')) throw new Error('--apply와 --dry-run은 함께 사용할 수 없습니다.');
   if (apply && !process.env.DATABASE_URL) throw new Error('DATABASE_URL 없음: --apply를 제외하면 수집·검증 가능합니다.');
 
   const source = PUBLIC_SOURCES[key];
   const at = new Date();
-  let vendors: Awaited<ReturnType<typeof downloadSbizApiVendors>>;
+  let vendors: Awaited<ReturnType<typeof parsePublicCsv>>['vendors'];
   let total: number;
   let rejected: number;
   let duplicates: number;
 
   if (source.format === 'sbiz-api') {
     if (!sbizApiKey) throw new Error('SBIZ_API_KEY 환경변수 또는 --sbiz-api-key 옵션이 필요합니다.');
-    vendors = await downloadSbizApiVendors(key, sbizApiKey, at);
-    total = vendors.length;
-    rejected = 0;
-    duplicates = 0;
+    // 업종코드는 하드코딩하지 않는다 — CLI 또는 SBIZ_UPJONG_CODES에서 온다.
+    const result = await downloadSbizApiVendors(key, sbizApiKey, at,
+      upjongCodes ? { divId: upjongDivId ?? 'indsLclsCd', codes: upjongCodes.split(',') } : undefined);
+    vendors = result.vendors;
+    // total은 API가 돌려준 원본 건수다. accepted가 0인데 total이 크면 지역·분류
+    // 필터가 응답 필드와 어긋난 것이므로 리포트만 보고 구분할 수 있어야 한다.
+    total = result.fetched;
+    rejected = result.rejected;
+    duplicates = result.duplicates;
   } else {
     if (file && (await stat(file)).size > 64 * 1024 * 1024) throw new Error('64 MiB 이하 지역별 CSV가 필요합니다.');
     const bytes = file ? await readFile(file) : await downloadPublicCsv(key);

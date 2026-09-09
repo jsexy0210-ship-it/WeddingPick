@@ -113,12 +113,23 @@ function normalizeServiceKey(apiKey: string): string {
   catch { return apiKey; }
 }
 
-async function fetchWithRetry(url: string, attempts = 3): Promise<Response> {
+/**
+ * apis.data.go.kr 연결은 간헐적으로 끊긴다 — 같은 커밋·같은 키로 한 번은
+ * 1초 만에 응답하고(2026-09-09 02:47) 5분 뒤에는 3회 연속 connect timeout이
+ * 났다(02:52). 서버 오류가 아니라 연결 자체가 안 맺어지는 것이라 짧은 재시도로는
+ * 넘기지 못한다.
+ *
+ * 관측된 끊김은 한 번에 2~5분 이어진다 — 약 1분 창(2·4·8·16·32초)으로도 모자라
+ * 03:19 수집이 통째로 실패했다. 주 1회 배치라 몇 분 더 기다리는 편이 실행 자체를
+ * 잃는 것보다 낫다. 대기를 60초에서 멈추고 시도를 늘려 총 4분쯤 버틴다.
+ * 여기서도 못 넘기면 진짜 장애로 보고 실패시킨다 — 성공으로 바꾸지 않는다.
+ */
+async function fetchWithRetry(url: string, attempts = 8): Promise<Response> {
   for (let i = 0; i < attempts; i++) {
     try { return await fetch(url, { redirect: 'error', signal: AbortSignal.timeout(30_000) }); }
     catch (err) {
       if (i === attempts - 1 || !(err instanceof TypeError)) throw err;
-      await new Promise((r) => setTimeout(r, 2000 * (i + 1)));
+      await new Promise((r) => setTimeout(r, Math.min(2000 * 2 ** i, 60_000)));
     }
   }
   throw new Error('unreachable');
@@ -130,7 +141,14 @@ export async function publicGet(url: string, limit: number): Promise<Buffer> {
   if (!ALLOWED_ORIGINS.has(parsed.origin) || parsed.username || parsed.password)
     throw new Error('허용되지 않은 수집 주소');
   const response = await fetchWithRetry(url);
-  if (!response.ok) throw new Error(`공공데이터 응답 오류 ${response.status}`);
+  if (!response.ok) {
+    // 오류 본문에 이유가 들어 있다(등록되지 않은 서비스, 파라미터 오류 등).
+    // 상태코드만으로는 무엇이 잘못됐는지 알 수 없어 앞부분을 함께 올린다.
+    // 서비스키는 URL에만 있고 본문에는 없으므로 키가 새지 않는다.
+    const detail = await response.text().then((t) => t.slice(0, 500).replace(/\s+/g, ' ').trim())
+      .catch(() => '');
+    throw new Error(`공공데이터 응답 오류 ${response.status}${detail ? ` — ${detail}` : ''}`);
+  }
   const chunks: Buffer[] = [];
   let size = 0;
   if (!response.body) throw new Error('응답 본문 없음');
@@ -166,6 +184,45 @@ export async function downloadPublicCsv(key: SourceKey): Promise<Buffer> {
   throw new Error('공식 다운로드 메타데이터 또는 이용허락 확인 실패');
 }
 
+/**
+ * 공공데이터포털 응답 봉투는 오퍼레이션마다 다르다 — sdsc2의 업종코드 조회는
+ * `{ data: [...] }`가 아니라 여러 겹으로 감싼 모양으로 온다(2026-09-09 실 응답
+ * 확인). 봉투 이름을 추측하는 대신, 기대하는 필드를 가진 첫 객체 배열을 찾는다.
+ * 봉투가 바뀌어도 레코드 필드가 그대로면 계속 읽힌다.
+ */
+export function findRecords<T>(payload: unknown, requiredField: string): T[] {
+  const queue: unknown[] = [payload];
+  while (queue.length) {
+    const node = queue.shift();
+    if (Array.isArray(node)) {
+      const rows = node.filter(
+        (row): row is Record<string, unknown> =>
+          !!row && typeof row === 'object' && requiredField in row);
+      if (rows.length) return rows as T[];
+      queue.push(...node);
+    } else if (node && typeof node === 'object') {
+      queue.push(...Object.values(node));
+    }
+  }
+  return [];
+}
+
+/** 봉투 어디에 있든 이름이 같은 첫 숫자 값을 찾는다(totalCount 등). */
+export function findNumber(payload: unknown, key: string): number | null {
+  const queue: unknown[] = [payload];
+  while (queue.length) {
+    const node = queue.shift();
+    if (Array.isArray(node)) queue.push(...node);
+    else if (node && typeof node === 'object') {
+      const value = (node as Record<string, unknown>)[key];
+      if (typeof value === 'number') return value;
+      if (typeof value === 'string' && /^\d+$/.test(value)) return Number(value);
+      queue.push(...Object.values(node));
+    }
+  }
+  return null;
+}
+
 /** sbiz OpenAPI 응답의 data 배열 한 항목 */
 type SbizApiRecord = {
   bizesId?: string;
@@ -176,25 +233,18 @@ type SbizApiRecord = {
   rdnmAdr?: string;
 };
 
-type SbizApiPage = {
-  currentCount?: number;
-  totalCount?: number;
-  pageIndex?: number;
-  pageSize?: number;
-  data?: SbizApiRecord[];
-};
-
 /**
  * 소상공인진흥공단 상권정보 OpenAPI(v2)에서 특정 시도의 웨딩업종을 전수 수집한다.
  * 페이지당 최대 1000건을 처리한다. API 키는 호출 시 전달받으며 코드에
  * 하드코딩하지 않는다.
  *
- * **주의 — 대분류 코드 'Q'는 확인 전이다.** 2026-08-05 승인된 공식
- * 활용가이드의 대분류 코드는 전부 "영문자+숫자" 두 글자다(F1·G2·I1·I2·J1·
- * L1·M1·N1·O1·P1·Q1·R1·S1·S2 등 — 예: Q1=보건의료). 가이드 어디에도 웨딩
- * 관련 대분류나 'Q' 단독 코드는 없다 — 실제 API가 이 값으로 빈 결과를
- * 돌려주고 있을 가능성이 높다(수집 자체가 조용히 0건). `listIndustryCategories`로
- * 중/소분류를 뒤져 진짜 코드를 찾은 뒤 여기 'Q'를 교체해야 한다.
+ * **업종코드는 코드에 박지 않는다.** 예전 구현은 대분류 `'Q'`를 하드코딩했는데
+ * 2026-08-05 활용가이드 어디에도 없는 값이라 수집이 조용히 0건이 됐다. 이제
+ * 조회할 업종코드는 호출자가 넘기거나 `SBIZ_UPJONG_CODES`(쉼표 구분)로 준다 —
+ * 값이 없으면 수집을 시작하지 않고 즉시 실패한다. 진짜 코드는
+ * `listIndustryCategories`(largeUpjongList·middleUpjongList·smallUpjongList)를
+ * 실 키로 호출해 확인한 뒤 넣는다. 코드 자리(`divId`)도 대분류 대신 소분류로
+ * 좁힐 수 있게 `SBIZ_UPJONG_DIV_ID`로 바꾼다.
  *
  * 수집 카테고리 (indsSclsNm 기준):
  *   예식장 → hall
@@ -205,36 +255,61 @@ type SbizApiPage = {
  *   미용|메이크업 + 웨딩|브라이덜 이름 → makeup
  *   (classifyWeddingIndustry)
  */
+export type SbizUpjongQuery = { divId: string; codes: string[] };
+
+/** 조회할 업종 자리와 코드. 코드가 없으면 수집을 시작하지 않는다. */
+export function resolveUpjongQuery(override?: SbizUpjongQuery): SbizUpjongQuery {
+  const divId = override?.divId ?? process.env.SBIZ_UPJONG_DIV_ID ?? 'indsLclsCd';
+  const codes = (override?.codes ?? (process.env.SBIZ_UPJONG_CODES ?? '').split(','))
+    .map((c) => c.trim()).filter(Boolean);
+  if (!codes.length)
+    throw new Error(
+      'SBIZ_UPJONG_CODES가 비어 있습니다. --lookup-category로 실제 업종코드를 확인한 뒤 지정하세요.');
+  if (divId !== 'indsLclsCd' && divId !== 'indsMclsCd' && divId !== 'indsSclsCd')
+    throw new Error('SBIZ_UPJONG_DIV_ID는 indsLclsCd·indsMclsCd·indsSclsCd 중 하나여야 합니다.');
+  return { divId, codes };
+}
+
 export async function downloadSbizApiVendors(
   key: SourceKey,
   apiKey: string,
   at = new Date(),
-): Promise<CollectedVendor[]> {
+  upjong?: SbizUpjongQuery,
+): Promise<{ vendors: CollectedVendor[]; fetched: number; rejected: number; duplicates: number }> {
   const source = PUBLIC_SOURCES[key];
   if (source.format !== 'sbiz-api') throw new Error('sbiz-api 형식 출처가 아닙니다.');
   const ctprvnCd = (source as { ctprvnCd: string }).ctprvnCd;
+  const query = resolveUpjongQuery(upjong);
 
   const vendors: CollectedVendor[] = [];
   const seen = new Set<string>();
   const MAX_PAGES = 20;
 
+  let fetched = 0;
+  let rejected = 0;
+  let duplicates = 0;
+
+  for (const code of query.codes) {
+  let seenForCode = 0;
   for (let pageNo = 1; pageNo <= MAX_PAGES; pageNo++) {
     const url = new URL(source.url);
     url.searchParams.set('serviceKey', normalizeServiceKey(apiKey));
     url.searchParams.set('pageNo', String(pageNo));
     url.searchParams.set('numOfRows', '1000');
-    // 업종 대분류 Q = 결혼관련서비스업 (소상공인진흥공단 기준)
-    url.searchParams.set('divId', 'indsLclsCd');
-    url.searchParams.set('key', 'Q');
+    url.searchParams.set('divId', query.divId);
+    url.searchParams.set('key', code);
     url.searchParams.set('type', 'json');
 
     const buf = await publicGet(url.toString(), 8 * 1024 * 1024);
-    const page = JSON.parse(buf.toString('utf8')) as SbizApiPage;
-    const records = page.data ?? [];
+    const payload = JSON.parse(buf.toString('utf8')) as unknown;
+    const records = findRecords<SbizApiRecord>(payload, 'bizesNm');
+    const totalCount = findNumber(payload, 'totalCount');
+    seenForCode += records.length;
+    fetched += records.length;
 
     for (const r of records) {
       // 시도 코드로 지역 필터
-      if (r.ctprvnCd !== ctprvnCd) continue;
+      if (r.ctprvnCd !== ctprvnCd) { rejected++; continue; }
 
       const branch = r.brchNm?.trim() ?? '';
       const name = [r.bizesNm?.trim(), branch].filter(Boolean).join(' ');
@@ -246,10 +321,12 @@ export async function downloadSbizApiVendors(
       else if (/결혼.*중개|결혼.*상담/.test(industry)) category = 'wedding_info_company';
       else category = classifyWeddingIndustry(industry, name);
 
-      if (!name || name.length > 500 || !category || !/^\S+(?:시|도)\s+\S+/.test(region)) continue;
+      if (!name || name.length > 500 || !category || !/^\S+(?:시|도)\s+\S+/.test(region)) {
+        rejected++; continue;
+      }
 
       const identity = `${normalizeName(name)}|${region}`;
-      if (seen.has(identity)) continue;
+      if (seen.has(identity)) { duplicates++; continue; }
       seen.add(identity);
 
       vendors.push({
@@ -263,11 +340,13 @@ export async function downloadSbizApiVendors(
       });
     }
 
-    const fetched = (pageNo - 1) * 1000 + records.length;
-    if (!page.totalCount || fetched >= page.totalCount || records.length < 1000) break;
+    if (!totalCount || seenForCode >= totalCount || records.length < 1000) break;
+  }
+  // 코드가 틀리면 API는 오류 대신 빈 목록을 준다 — 조용한 0건 수집을 막는다.
+  if (!seenForCode) throw new Error(`업종코드 ${query.divId}=${code} 응답이 0건입니다. 코드를 확인하세요.`);
   }
 
-  return vendors;
+  return { vendors, fetched, rejected, duplicates };
 }
 
 export type IndustryCategory = { code: string; name: string };
@@ -277,73 +356,77 @@ const UPJONG_CODE_FIELD = { large: 'indsLclsCd', middle: 'indsMclsCd', small: 'i
 const UPJONG_NAME_FIELD = { large: 'indsLclsNm', middle: 'indsMclsNm', small: 'indsSclsNm' } as const;
 
 /**
- * 상권정보 업종 대/중/소분류 코드 조회 — DB 반영용이 아니라 진짜 코드값을
- * 찾기 위한 조사용이다. `downloadSbizApiVendors`가 쓰는 대분류 'Q'가
- * 공식 활용가이드에 없는 값이라(위 주석 참고), 이 함수로 중분류·소분류
- * 이름에서 "예식"·"결혼"·"웨딩" 등을 찾아 진짜 코드를 확인한다.
+ * 상권정보 업종 대/중/소분류 코드 조회 — DB 반영용이 아니라 수집에 넣을 진짜
+ * 코드값을 찾기 위한 조사용이다. 이름에서 "예식"·"결혼"·"웨딩" 등을 찾아
+ * `SBIZ_UPJONG_CODES`에 넣을 코드를 확인한다.
+ *
+ * 2026-09-09 실키 호출로 확인한 웨딩 관련 소분류(`indsSclsCd`):
+ *   S21101 예식장업 · S21105 결혼 상담 서비스업 · M11301 사진촬영업 ·
+ *   N11004 의류 대여업 · S20701 미용실.
+ * 대분류는 두 글자 열아홉 개이고 한 글자 'Q'는 없다 — 예전 하드코딩이 틀렸다.
  *
  * **응답 껍데기가 한 가지가 아니다**(2026-09-09 실키 호출로 확인). 공공데이터포털은
  * `{ response: { body: { items: [...] } } }` 표준 봉투를 쓰는 곳과 `{ data: [...] }`를
  * 그대로 주는 곳이 섞여 있고, `items`가 `{ item: [...] }`로 한 겹 더 싸이기도 한다.
  * 한 모양만 보면 목록을 못 찾고도 «0건»으로 조용히 끝난다 — 실제로 그랬다.
- * 그래서 알려진 자리를 차례로 보고, 어디서도 못 찾으면 그 사실을 알린다.
+ * 그래서 `findRecords`로 기대 필드를 가진 배열을 봉투 어디서든 찾고,
+ * 어디서도 못 찾으면 그 사실을 알린다.
  */
-export async function listIndustryCategories(
+function upjongUrl(
   level: keyof typeof UPJONG_ENDPOINT,
   apiKey: string,
   parent?: { indsLclsCd?: string; indsMclsCd?: string },
-): Promise<IndustryCategory[]> {
+): string {
   const url = new URL(`https://apis.data.go.kr/B553077/api/open/sdsc2/${UPJONG_ENDPOINT[level]}`);
   url.searchParams.set('serviceKey', normalizeServiceKey(apiKey));
   url.searchParams.set('type', 'json');
   if (parent?.indsLclsCd) url.searchParams.set('indsLclsCd', parent.indsLclsCd);
   if (parent?.indsMclsCd) url.searchParams.set('indsMclsCd', parent.indsMclsCd);
+  return url.toString();
+}
 
-  const buf = await publicGet(url.toString(), 4 * 1024 * 1024);
+/**
+ * 업종코드 응답 원문 앞부분을 그대로 돌려준다 — 응답 모양이 우리 가정과
+ * 다를 때 무엇이 왔는지 보기 위한 진단용이다. 서비스키는 URL에만 있고
+ * 본문에는 없으므로 이 값을 출력해도 키가 새지 않는다. 저장하지 않는다.
+ */
+export async function fetchIndustryCategoriesRaw(
+  level: keyof typeof UPJONG_ENDPOINT,
+  apiKey: string,
+  parent?: { indsLclsCd?: string; indsMclsCd?: string },
+  limit = 2000,
+): Promise<string> {
+  const buf = await publicGet(upjongUrl(level, apiKey, parent), 4 * 1024 * 1024);
+  return buf.toString('utf8').slice(0, limit);
+}
+
+export async function listIndustryCategories(
+  level: keyof typeof UPJONG_ENDPOINT,
+  apiKey: string,
+  parent?: { indsLclsCd?: string; indsMclsCd?: string },
+): Promise<IndustryCategory[]> {
+  const buf = await publicGet(upjongUrl(level, apiKey, parent), 4 * 1024 * 1024);
   const page = JSON.parse(buf.toString('utf8')) as unknown;
   const codeField = UPJONG_CODE_FIELD[level];
   const nameField = UPJONG_NAME_FIELD[level];
 
-  const rows = findCategoryRows(page);
-  if (rows === null) {
-    /*
-     * 목록을 못 찾았다. «0건»과 구분되어야 한다 — 0건은 조회가 된 것이고 이쪽은
-     * 응답 모양을 모르는 것이다. 값이 아니라 **자리 이름만** 알린다(키에 개인정보나
-     * 인증 정보가 담기지 않는다). 본문 전체를 찍으면 서비스 키가 섞여 나올 수 있다.
-     */
+  /*
+   * #137은 알려진 봉투 자리를 나열해 찾았다. 여기서는 `findRecords`로 기대 필드를
+   * 가진 배열을 봉투 어디서든 찾는다 — 2026-09-09 실 응답이 나열된 자리 중 어디에도
+   * 없는 모양이었고, 자리를 하나씩 추가하는 방식은 다음 변형에서 또 막힌다.
+   * 못 찾았을 때 던지는 것은 #137 그대로다 — «0건»과 «모양을 모름»은 다르다.
+   * findRecords는 비어 있지 않은 배열만 돌려주므로 빈 결과는 곧 «못 찾음»이다.
+   */
+  const rows = findRecords<Record<string, string>>(page, codeField);
+  if (!rows.length) {
+    // 값이 아니라 **자리 이름만** 알린다. 본문을 찍으면 서비스 키가 섞여 나올 수 있다.
     throw new Error(
       `업종 목록을 응답에서 찾지 못했다. 최상위 키: ${describeShape(page)}. ` +
-        '봉투 모양이 또 다르다 — findCategoryRows에 그 자리를 추가해야 한다.'
+        `찾던 필드: ${codeField}.`
     );
   }
 
   return rows.map((row) => ({ code: row[codeField] ?? '', name: row[nameField] ?? '' }));
-}
-
-/** 알려진 자리를 차례로 본다. 어디에도 없으면 `null` — 빈 배열과 구분한다. */
-function findCategoryRows(page: unknown): Record<string, string>[] | null {
-  const asRows = (value: unknown): Record<string, string>[] | null =>
-    Array.isArray(value) ? (value as Record<string, string>[]) : null;
-
-  const at = (value: unknown, key: string): unknown =>
-    value !== null && typeof value === 'object' ? (value as Record<string, unknown>)[key] : undefined;
-
-  const body = at(at(page, 'response'), 'body');
-  const candidates: unknown[] = [
-    at(page, 'data'),
-    at(body, 'items'),
-    at(at(body, 'items'), 'item'),
-    at(body, 'item'),
-    at(page, 'items'),
-    at(at(page, 'items'), 'item'),
-    page,
-  ];
-
-  for (const candidate of candidates) {
-    const rows = asRows(candidate);
-    if (rows) return rows;
-  }
-  return null;
 }
 
 /** 응답의 «모양»만 한 줄로. 값은 담지 않는다. */
