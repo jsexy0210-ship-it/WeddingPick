@@ -9,7 +9,24 @@
 |---|---|---|
 | `DATABASE_URL` | **운영 DB** | `infra/render-env.yml`이 운영 API 서비스(`WeddingPickl`)에 이 값을 넣는다. `db-migrate-staging.yml` 머리 주석도 「`db-migrate.yml`의 `DATABASE_URL`(운영 DB)」이라고 적었다 |
 | `STAGING_DATABASE_URL` | 스테이징 DB | `db-migrate-staging.yml`만 쓴다. 자동 파이프라인은 건드리지 않는다 |
-| `PRODUCTION_DATABASE_URL` | 운영 DB | `db-status.yml`의 조회에서만 쓴다. `DATABASE_URL`과 같은 곳을 가리키면 값이 둘로 갈린다 |
+| `PRODUCTION_DATABASE_URL` | **밖에서는 못 쓴다** | 2026-09-09 `db-status.yml` 실행 결과, GitHub Actions에서 주소를 찾지 못하고 끝났다(`getaddrinfo EAI_AGAIN`). Render 내부망에서만 풀리는 이름이 들어 있다 |
+
+**측정한 것(2026-09-09 · `db-status.yml` 실행 3 · 4).**
+
+| 대상 | 결과 |
+|---|---|
+| `PRODUCTION_DATABASE_URL` | 이름 풀이 실패. **저장소 워크플로에서는 쓸 수 없다** |
+| `STAGING_DATABASE_URL` | 접속됨. **적용 73 / 기대 92 — 19개 밀려 있다**(0074~0091a) |
+| `DATABASE_URL` | 조회 실행함 · 결과 확인 필요 |
+
+두 가지가 따라 나온다.
+
+1. **`PRODUCTION_DATABASE_URL`은 `DATABASE_URL`을 물려받을 수 없다.** 아래 「이름 정리」는
+   값을 그대로 옮기는 것이 아니라, **밖에서 닿는 주소를 새로 넣는 일**이다. 내부 주소를 그대로
+   두면 이름만 바꾼 채 아무 워크플로도 운영 DB에 닿지 못한다.
+2. **스테이징 DB는 지금 쓸 수 없는 상태다.** 19개가 밀려 있어 지금 코드가 기대하는 테이블이
+   없다. 서버를 나누기 전에 `db-migrate-staging.yml`을 한 번 돌려 92까지 올려야 하고,
+   그 전까지 「스테이징에서 먼저 검수한다」는 절차는 성립하지 않는다.
 
 **가장 큰 문제는 `main.yml`의 잡 이름이다.** 잡 이름이 `deploy-staging`이고 조건도
 「환경 = staging」인데, 그 안에서 마이그레이션에 쓰는 값은 `secrets.DATABASE_URL` — 곧 운영 DB다.
@@ -42,7 +59,9 @@ Render 쪽도 한 벌뿐이다. `render.yaml`의 네 서비스(`weddingpick-web`
 
 **`DATABASE_URL`은 없앤다.** 이름이 어느 환경인지 말하지 않아 사고를 부른다. 지우기 전에
 `main.yml` · `db-migrate.yml` · `db-seed-samples.yml` · `public-data.yml` · `render-env.yml`의
-참조를 전부 새 이름으로 옮긴다. `PRODUCTION_DATABASE_URL`이 지금의 `DATABASE_URL`을 물려받는다.
+참조를 전부 새 이름으로 옮긴다. **`PRODUCTION_DATABASE_URL`에는 지금의 `DATABASE_URL` 값을
+넣는다** — 지금 그 자리에 든 내부 주소는 저장소 워크플로에서 닿지 않는다(위 1절 측정).
+Render 서비스 안에서만 쓰는 내부 주소가 따로 필요하면 `render-env.yml` 쪽에 다른 이름으로 둔다.
 
 ### 환경변수 선언
 
@@ -75,7 +94,9 @@ Render 쪽도 한 벌뿐이다. `render.yaml`의 네 서비스(`weddingpick-web`
 나누는 날 한 번에 하지 않는다. 앞의 셋은 지금 해도 안전하다.
 
 ```
-1  이름 정리     DATABASE_URL 참조를 PRODUCTION_DATABASE_URL로 옮긴다. 값은 그대로 — 동작은 안 바뀐다
+0  주소 교체     PRODUCTION_DATABASE_URL에 밖에서 닿는 주소를 넣는다(지금은 내부 주소라 못 쓴다)
+0b 스테이징 갱신  db-migrate-staging.yml로 스테이징 DB를 92까지 올린다(지금 19개 밀림)
+1  이름 정리     DATABASE_URL 참조를 PRODUCTION_DATABASE_URL로 옮긴다. 0을 먼저 해야 동작이 안 바뀐다
 2  잡 이름 정정   main.yml의 «deploy-staging»을 사실대로 고친다. 지금은 운영 배포다
 3  시드 차단     db-seed-samples를 스테이징 전용으로 묶는다
 4  서비스 생성    Render에 스테이징 4종 · 스테이징 Neon DB
