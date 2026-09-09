@@ -76,6 +76,7 @@ export const ROUTES: readonly string[] = [
   '/capture/verify-status/[requestId]',
   '/capture/verify/[quoteId]',
   '/feed',
+  '/home-edit',
   '/login',
   '/login/age-required',
   '/my',
@@ -190,6 +191,8 @@ export const NO_BACK_ROUTES: readonly string[] = [
   '/login/age-required',
   '/my/membership',
   '/capture/camera',
+  // 홈 편집은 닫기(X)로 나간다 — 뒤로가기 화살표를 두지 않는다(시안 close: true).
+  '/home-edit',
 ];
 
 /**
