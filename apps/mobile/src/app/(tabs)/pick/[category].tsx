@@ -200,7 +200,7 @@ export default function CategoryPickScreen() {
       <SafeAreaView style={styles.safeArea}>
         {/* nav 56 · 뒤로 40 + 제목 18 + «편집» 16 700 */}
         <View style={styles.navBar}>
-          <BackButton fallback="/pick" />
+          <BackButton />
           <ThemedText type="t5" numberOfLines={1} style={styles.navTitle}>
             {categoryLabel} {TERMS.pick}
           </ThemedText>

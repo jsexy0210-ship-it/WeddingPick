@@ -81,7 +81,7 @@ export default function ReviewScreen() {
   if (pages.length === 0) {
     return (
       <Screen>
-        <NavBar title="문서 확인" fallback="/capture" />
+        <NavBar title="문서 확인" />
         <Hero title="확인할 문서가 없어요" sub="촬영하거나 앨범에서 골라 넣어주세요" />
         <Dock>
           <DockButton variant="primary" label="촬영하러 가기" onPress={() => router.replace('/capture/camera')} />
@@ -94,7 +94,6 @@ export default function ReviewScreen() {
     <Screen>
       <NavBar
         title="문서 확인"
-        fallback="/capture"
         right={{ label: '장 추가', brand: true, onPress: () => router.push('/capture/camera') }}
       />
 

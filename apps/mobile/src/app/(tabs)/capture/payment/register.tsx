@@ -289,7 +289,7 @@ export default function RegisterPaymentProofScreen() {
   if (step === 'pick') {
     return (
       <Screen>
-        <NavBar title={S.nav} fallback="/capture" />
+        <NavBar title={S.nav} />
 
         <ScrollView
           contentContainerStyle={styles.content}

@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import type { ComponentProps, ReactNode } from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type TextInputProps, type ViewStyle } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,6 +18,7 @@ import {
   type ThemeColor,
 } from '@weddingpick/ui';
 import { formatMonthDayDot } from '@/features/common/format-date';
+import { useDepthBack } from '@/features/navigation/depth-back';
 
 /**
  * 웨딩일정 · 제보 하위 화면의 공용 조각 — 핸드오프 08-schedule-sub · 08c · 11-report-review ·
@@ -50,33 +50,32 @@ export function Screen({ children }: { children: ReactNode }) {
 }
 
 export type NavBarProps = {
-  title: string;
+  /** 없으면 뒤로가기만 있는 56 줄이 된다 — 화면이 제 제목을 Hero로 들고 있을 때. */
+  title?: string;
   /** «<»(기본) 또는 흐름 밖으로 빠지는 «✕». */
   variant?: 'back' | 'close';
-  /** 되돌아갈 화면이 없을 때 갈 곳. */
-  fallback?: string;
+  /** 진짜 예외 — 화면 안에서 단계를 되돌릴 때만 넘긴다(편집 취소 등). */
   onBack?: () => void;
   /** 오른쪽 텍스트 액션 — «추가»(brand) · «수정»(회색). */
   right?: { label: string; onPress: () => void; brand?: boolean; disabled?: boolean } | null;
 };
 
-/** 하위 화면 헤더. 시안 `navBack` — 제목은 뒤로가기 옆에 왼쪽 정렬로 앉는다. */
-export function NavBar({ title, variant = 'back', fallback = '/wedding', onBack, right }: NavBarProps) {
+/**
+ * 하위 화면 헤더. 시안 `navBack` — 제목은 뒤로가기 옆에 왼쪽 정렬로 앉는다.
+ *
+ * 뒤로가기는 **Depth Back**이다(`features/navigation/depth-back-rules.ts`). 화면마다
+ * `fallback`을 적던 자리를 없앴다 — 규칙이 현재 경로에서 부모를 계산한다.
+ */
+export function NavBar({ title, variant = 'back', onBack, right }: NavBarProps) {
   const theme = useTheme();
+  const depthBack = useDepthBack();
 
   return (
     <View style={styles.nav}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={variant === 'close' ? '닫기' : '뒤로'}
-        onPress={() => {
-          if (onBack) {
-            onBack();
-            return;
-          }
-          if (router.canGoBack()) router.back();
-          else router.replace(fallback as never);
-        }}
+        onPress={onBack ?? depthBack}
         style={({ pressed }) => [styles.navButton, pressed && styles.pressed]}>
         <ProductSymbol
           name={variant === 'close' ? 'close' : 'chevronLeft'}
@@ -85,7 +84,7 @@ export function NavBar({ title, variant = 'back', fallback = '/wedding', onBack,
         />
       </Pressable>
       <ThemedText type="t5" numberOfLines={1} style={styles.navTitle}>
-        {title}
+        {title ?? ''}
       </ThemedText>
       {right ? (
         <Pressable

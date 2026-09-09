@@ -80,7 +80,6 @@ export default function PromotionScreen() {
   return (
     <SubScreen
       title={S.title}
-      fallback="/my/rewards"
       dock={
         submitted ? undefined : (
           <Dock

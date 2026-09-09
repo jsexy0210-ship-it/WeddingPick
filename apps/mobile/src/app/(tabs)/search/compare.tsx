@@ -192,7 +192,7 @@ export default function CompareScreen() {
       <SafeAreaView style={styles.safeArea}>
         {/* nav 56 · 뒤로 + «스튜디오 3곳 비교» */}
         <View style={styles.navBar}>
-          <BackButton fallback="/pick" />
+          <BackButton />
           <ThemedText type="t5" numberOfLines={1} style={styles.navTitle}>
             {categoryLabel} {vendors.length}곳 비교
           </ThemedText>

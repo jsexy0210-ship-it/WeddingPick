@@ -83,7 +83,7 @@ export default function CaptureScreen() {
 
   return (
     <Screen>
-      <NavBar title={S.nav} fallback="/my" />
+      <NavBar title={S.nav} />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Hero title={S.heroTitle} sub={S.heroSub} />

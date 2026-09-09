@@ -108,7 +108,7 @@ export default function VerifyStatusScreen() {
 
   return (
     <Screen>
-      <NavBar title="인증 결과" fallback="/my/reports" />
+      <NavBar title="인증 결과" />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Hero

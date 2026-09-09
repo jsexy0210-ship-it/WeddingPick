@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +17,7 @@ import {
   useTheme,
   type ThemeColor,
 } from '@weddingpick/ui';
+import { useDepthBack } from '@/features/navigation/depth-back';
 
 /**
  * MY 하위 · 혜택 화면 공통 부품. 디자인 핸드오프 `13-my-sub` · `15-events` · `13b-withdrawal`의
@@ -36,11 +36,15 @@ import {
 
 // ─── 화면 껍데기 ───────────────────────────────────────────────
 
+/**
+ * MY 하위 화면 껍데기. 뒤로가기는 **Depth Back**이다 —
+ * `features/navigation/depth-back-rules.ts`가 현재 경로에서 부모를 계산한다.
+ * 화면마다 `fallback`을 적던 자리는 없앴다(혜택 하위가 MY로 튀던 원인).
+ */
 export function SubScreen({
   title,
   right,
   onBack,
-  fallback = '/my',
   children,
   dock,
   contentStyle,
@@ -48,14 +52,14 @@ export function SubScreen({
   title: string;
   /** 오른쪽 글자 액션(«저장» · «참여 내역»). */
   right?: ReactNode;
+  /** 진짜 예외 — 화면 안에서 단계를 되돌릴 때만 넘긴다. */
   onBack?: () => void;
-  /** 되돌아갈 곳이 없을 때(링크로 바로 들어옴). */
-  fallback?: string;
   children: ReactNode;
   dock?: ReactNode;
   contentStyle?: StyleProp<ViewStyle>;
 }) {
   const theme = useTheme();
+  const depthBack = useDepthBack();
 
   return (
     <ThemedView style={styles.container}>
@@ -65,14 +69,7 @@ export function SubScreen({
             accessibilityRole="button"
             accessibilityLabel="뒤로"
             hitSlop={Spacing.one}
-            onPress={() => {
-              if (onBack) {
-                onBack();
-                return;
-              }
-              if (router.canGoBack()) router.back();
-              else router.replace(fallback as never);
-            }}
+            onPress={onBack ?? depthBack}
             style={({ pressed }) => [styles.back, pressed && styles.pressed]}>
             <ProductSymbol name="chevronLeft" size={Layout.iconTab} color={theme.text} />
           </Pressable>

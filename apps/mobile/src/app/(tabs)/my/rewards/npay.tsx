@@ -82,7 +82,7 @@ export default function NpayPayoutScreen() {
   /* 열린 요청 — 폼 대신 상태. 번호는 가린 꼴로만 보인다. */
   if (open) {
     return (
-      <SubScreen title={C.title} fallback="/my/rewards">
+      <SubScreen title={C.title}>
         <Hero eyebrow={open.statusLabel} lines={[`${won(open.amountKrw)}을`, '보내드릴게요']} sub={open.statusNote.split('. ')[0]} />
         <Section gap="events">
           <Rows>
@@ -104,7 +104,6 @@ export default function NpayPayoutScreen() {
   return (
     <SubScreen
       title={C.title}
-      fallback="/my/rewards"
       dock={
         payout.receivableKrw > 0 ? (
           <Dock primary={{ label: failed ? C.ctaRetry : C.cta(amount), disabled: !canSend, onPress: () => void send() }} />

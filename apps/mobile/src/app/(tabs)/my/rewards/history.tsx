@@ -45,7 +45,7 @@ export default function RewardHistoryScreen() {
   const firstPaid = paid.length > 0 ? paid[paid.length - 1] : undefined;
 
   return (
-    <SubScreen title={S.title} fallback="/my/rewards">
+    <SubScreen title={S.title}>
       <Section gap="events" style={styles.top}>
         <StatBox
           value={won(paidSum(grants))}

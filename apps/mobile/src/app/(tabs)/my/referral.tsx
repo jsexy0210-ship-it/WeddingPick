@@ -118,7 +118,6 @@ export default function ReferralScreen() {
   return (
     <SubScreen
       title={S.title}
-      fallback="/my/rewards"
       dock={
         <Dock
           secondary={{ label: S['cta.copy'], onPress: () => void copy() }}

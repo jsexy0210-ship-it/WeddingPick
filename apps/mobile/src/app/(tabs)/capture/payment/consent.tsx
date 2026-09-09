@@ -63,7 +63,7 @@ export default function PaymentProofConsentScreen() {
 
   return (
     <Screen>
-      <NavBar title="Pick 인증" fallback="/capture" />
+      <NavBar title="Pick 인증" />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Hero title="자료를 올리기 전에" sub="서류 전체가 아니라 금액을 확인할 수 있는 자료만 받아요" />

@@ -138,7 +138,7 @@ export default function AddExpenseScreen() {
 
   return (
     <Screen>
-      <NavBar title="지출 추가" variant="close" fallback={`/wedding/${id}/expenses`} />
+      <NavBar title="지출 추가" variant="close" />
 
       <ScrollView
         contentContainerStyle={styles.content}

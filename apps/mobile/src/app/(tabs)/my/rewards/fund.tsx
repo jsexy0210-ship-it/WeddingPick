@@ -41,7 +41,7 @@ export default function FundScreen() {
   if (!draw) return loading ? <DelayedLoadingView /> : <ErrorView message={MONTHLY_DRAW_NOTICE} onBack={reload} />;
 
   return (
-    <SubScreen title={S.title} fallback="/my/rewards">
+    <SubScreen title={S.title}>
       <Hero
         eyebrow={S.eyebrow(draw.statusLabel)}
         lines={S.hero(won(draw.amountKrw), draw.winnersPerMonth).split('\n')}

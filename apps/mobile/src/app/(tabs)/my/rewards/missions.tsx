@@ -57,7 +57,7 @@ export default function MissionsScreen() {
   const rows = missionRows(me);
 
   return (
-    <SubScreen title={S.title} fallback="/my/rewards">
+    <SubScreen title={S.title}>
       <Hero
         eyebrow={S.eyebrow(count.done, count.total)}
         lines={[count.remaining === 0 ? S.heroDone : S.hero(count.remaining)]}

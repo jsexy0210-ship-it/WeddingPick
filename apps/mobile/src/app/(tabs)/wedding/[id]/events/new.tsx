@@ -85,7 +85,7 @@ export default function AddWeddingEventScreen() {
 
   return (
     <Screen>
-      <NavBar title="일정 추가" variant="close" fallback={`/wedding/${id}/events`} />
+      <NavBar title="일정 추가" variant="close" />
 
       <ScrollView
         contentContainerStyle={styles.content}
