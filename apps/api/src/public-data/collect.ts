@@ -113,12 +113,36 @@ function normalizeServiceKey(apiKey: string): string {
   catch { return apiKey; }
 }
 
-async function fetchWithRetry(url: string, attempts = 3): Promise<Response> {
+/**
+ * 공공데이터포털은 여기서 자주 못 붙는다.
+ *
+ * GitHub 러너에서 `apis.data.go.kr:443`으로 붙을 때 **연결 단계에서 10초에 끊긴다**
+ * (`ConnectTimeoutError` · undici 기본 연결 제한). 2026-09-09에 세 번 불러 한 번만
+ * 붙었다 — 서버가 죽은 것이 아니라 간헐적이다. `AbortSignal.timeout(30_000)`은 연결
+ * 단계를 못 늘린다(그건 전체 응답 제한이다). 연결 제한 자체를 바꾸려면 undici
+ * 디스패처가 필요한데 그 의존을 이 하나 때문에 더하지 않는다.
+ *
+ * 그래서 **시도 횟수를 늘리고 간격을 벌린다.** 최악이 5회 × 10초 + 대기 30초로
+ * 80초 남짓이고, 이 함수를 쓰는 잡의 제한은 10~15분이라 여유가 있다.
+ *
+ * 재시도할 것과 아닌 것을 가른다. 연결 실패는 `TypeError`(`fetch failed`)로 오고
+ * 전체 제한 초과는 `TimeoutError`/`AbortError`로 온다 — 둘 다 다시 걸어볼 값이 있다.
+ * 그 밖(주소가 틀렸다거나 리다이렉트 거부)은 다시 걸어도 같으므로 바로 던진다.
+ */
+function isRetriable(err: unknown): boolean {
+  if (err instanceof TypeError) return true;
+  const name = err instanceof Error ? err.name : '';
+  return name === 'TimeoutError' || name === 'AbortError';
+}
+
+async function fetchWithRetry(url: string, attempts = 5): Promise<Response> {
   for (let i = 0; i < attempts; i++) {
     try { return await fetch(url, { redirect: 'error', signal: AbortSignal.timeout(30_000) }); }
     catch (err) {
-      if (i === attempts - 1 || !(err instanceof TypeError)) throw err;
-      await new Promise((r) => setTimeout(r, 2000 * (i + 1)));
+      if (i === attempts - 1 || !isRetriable(err)) throw err;
+      /* 주소는 찍지 않는다 — 질의 문자열에 서비스 키가 들어 있다. */
+      console.warn(`공공데이터 연결 실패 ${i + 1}/${attempts} — 다시 시도한다.`);
+      await new Promise((r) => setTimeout(r, 2000 * 2 ** i));
     }
   }
   throw new Error('unreachable');
