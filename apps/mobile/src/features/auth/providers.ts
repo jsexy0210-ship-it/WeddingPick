@@ -20,7 +20,7 @@ import { UNDER_AGE_SIGN_IN_MESSAGE } from '@/features/auth/sign-in-handoff';
 /**
  * 인가 코드를 세션으로 바꾼다. 서버가 만 14세 미만으로 판정하면(`under_age`,
  * v3.22 SPEC 3.5) 정해진 문장으로 바꿔 던진다 — 부팅 경로는 실패를 문장 하나로만
- * 넘기므로, 그 경로에서도 WP-AUTH-010으로 갈 수 있어야 한다.
+ * 넘기므로, 그 경로에서도 WP-AUTH-009으로 갈 수 있어야 한다.
  */
 async function exchangeKakaoCode(
   input: Parameters<typeof signInWithAuthorizationCode>[0]

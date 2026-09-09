@@ -514,7 +514,7 @@ export async function getSignupState() {
 
 /**
  * 만 14세 확인과 필수 동의로 가입을 마무리한다. 통합정책 v3.13 §3.5 —
- * `ageVerified`는 로그인 화면(WP-AUTH-001)의 체크박스 값이다. 생년월일은
+ * `ageVerified`는 서버가 카카오 출생 연도로 내린 판정이다. 생년월일은
  * 받지 않는다.
  */
 export async function completeSignup(input: { ageVerified: boolean; consents: string[] }) {

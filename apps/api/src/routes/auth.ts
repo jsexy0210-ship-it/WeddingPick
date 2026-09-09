@@ -81,7 +81,7 @@ export function registerAuthRoutes(app: FastifyInstance, context: AppContext): v
      *   아무것도 없음  → `unknown`
      *
      *   14세 이상 → age_verified 기록
-     *   미만      → 계정을 만들지 않고 403 under_age(앱은 WP-AUTH-010)
+     *   미만      → 계정을 만들지 않고 403 under_age(앱은 WP-AUTH-009)
      *   모름      → 계정은 만들되 확인 표시를 남기지 않는다
      *
      * 판정 하나만 꺼내고 원래 값은 여기서 버린다 — `signIn`에 넘기기 전에 지워야

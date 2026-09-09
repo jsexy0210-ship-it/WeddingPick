@@ -16,8 +16,7 @@ import { AGE_REQUIRED_ROUTE, isUnderAgeSignInError } from '@/features/auth/sign-
  * 결과 중 실패만 `reportError`로 넘겨받아 시트로 띄운다.
  *
  * 서버가 만 14세 미만으로 판정한 것(`under_age`, v3.22 SPEC 3.5)은 실패가 아니라
- * 안내다 — 시트 대신 WP-AUTH-010으로 간다. 체크박스는 그대로 둔다: 카카오가
- * 연령대를 안 주는 사람에게는 여전히 그게 확인이다.
+ * 안내다 — 시트 대신 WP-AUTH-009으로 간다.
  */
 export function useSignIn() {
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +42,7 @@ export function useSignIn() {
     }
   }
 
-  /** 실패 하나를 시트 또는 WP-AUTH-010으로. 두 진입(버튼 · 부팅)이 같은 판단을 쓴다. */
+  /** 실패 하나를 시트 또는 WP-AUTH-009으로. 두 진입(버튼 · 부팅)이 같은 판단을 쓴다. */
   function fail(caught: unknown) {
     if (isUnderAgeSignInError(caught)) {
       router.replace(AGE_REQUIRED_ROUTE);

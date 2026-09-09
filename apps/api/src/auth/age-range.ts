@@ -1,19 +1,20 @@
 import { MINIMUM_AGE } from '@weddingpick/domain';
 
 /**
- * 제공자가 준 연령대로 만 14세 판정만 뽑는다. 핸드오프 v3.22 SPEC 3.5 «카카오에서 받는 것».
+ * 제공자가 준 값으로 만 14세 판정만 뽑는다. 핸드오프 v3.24(2026-09-09).
  *
  * ```
- * age_range 있음    14세 이상 → 체크박스 없이 통과 · 미만 → WP-AUTH-010
- * age_range 없음    체크박스 그대로
+ * 14세 이상 → 통과 · 미만 → WP-AUTH-009 · 못 읽음 → unknown
  * ```
+ *
+ * 로그인 화면에 체크박스가 없다(v3.24). 판정은 전부 여기서만 난다.
  *
  * **연령대는 저장하지 않는다.** 남기는 것은 `age_verified` · `age_verified_at`
  * 둘뿐이다. 이 파일은 문자열에서 판정 하나를 꺼내고 문자열은 버린다.
  *
  * 카카오 연령대 꼴: `1~9` `10~14` `15~19` `20~29` … `90~`. 네이버는 `20-29`다.
- * 둘 다 읽는다 — 구분자가 다르다고 판정을 못 하면 사람이 체크박스를 한 번 더
- * 누르게 되는데, 그건 오류가 아니라 헛수고다.
+ * 둘 다 읽는다 — 구분자가 다르다고 판정을 놓치면 통과할 사람이 `unknown`으로
+ * 남는다.
  */
 
 export type AgeVerdict = 'verified' | 'under_age' | 'unknown';
@@ -33,8 +34,8 @@ export function ageRangeLowerBound(range: string | undefined | null): number | n
  * 만 14세 이상인가.
  *
  * 구간의 **아래끝**으로 본다 — `10~14`는 14세도 들어 있지만 13세도 들어 있어
- * 확인이 아니다. 확인 못 한 것은 통과가 아니라 WP-AUTH-010이다(SPEC 3.5).
- * 연령대가 없거나 못 읽으면 `unknown` — 체크박스가 그대로 판정한다.
+ * 확인이 아니다. 확인 못 한 것은 통과가 아니라 WP-AUTH-009이다(SPEC 3.5).
+ * 연령대가 없거나 못 읽으면 `unknown` — 계정은 만들되 확인 표시를 남기지 않는다.
  */
 export function ageVerdictFromRange(range: string | undefined | null): AgeVerdict {
   const lower = ageRangeLowerBound(range);
@@ -46,7 +47,7 @@ export function ageVerdictFromRange(range: string | undefined | null): AgeVerdic
 
 /**
  * 출생 연도로 만 14세 이상인가. 2026-09-09 사용자 결정 — **출생 연도를 필수 동의로
- * 받고 이것으로 판정한다.** 로그인 화면의 체크박스는 없앤다.
+ * 받고 이것으로 판정한다.** 로그인 화면의 체크박스는 없앴다(v3.24).
  *
  * **연도만으로는 만 나이가 하나로 떨어지지 않는다.** 생일이 지났는지 모르기 때문이다.
  *

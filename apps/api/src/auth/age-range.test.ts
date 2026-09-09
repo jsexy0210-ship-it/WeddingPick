@@ -26,7 +26,7 @@ describe('연령대 판정 — SPEC 3.5', () => {
     expect(ageVerdictFromRange('90~')).toBe('verified');
   });
 
-  it('미만이면 WP-AUTH-010이다', () => {
+  it('미만이면 WP-AUTH-009이다', () => {
     // 10~14는 14세도 들어 있지만 13세도 들어 있어 확인이 아니다.
     expect(ageVerdictFromRange('1~9')).toBe('under_age');
     expect(ageVerdictFromRange('10~14')).toBe('under_age');

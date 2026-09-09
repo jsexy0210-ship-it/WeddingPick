@@ -122,7 +122,7 @@ export function canActivate(input: {
     : { ok: false, reason: REQUIRED_CONSENT_NOTICE };
 }
 
-/** 체크하지 않고 시작하려 했을 때. WP-AUTH-010 이용 불가 안내가 이 문구를 쓴다. */
+/** 체크하지 않고 시작하려 했을 때. WP-AUTH-009 이용 불가 안내가 이 문구를 쓴다. */
 export const AGE_BLOCKED_NOTICE = `만 ${MINIMUM_AGE}세부터 이용할 수 있어요`;
 
 export const REQUIRED_CONSENT_NOTICE = '필수 항목에 동의해야 가입이 끝나요';
