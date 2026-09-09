@@ -171,7 +171,7 @@ PR #99의 조사 보고서와 그 독립 재검증 결과에서 **코드로 확�
 | # | 항목 |
 |---|---|
 | G10 | 마케팅 preview artifact가 업로드되지 않는다 — CLI는 `apps/api/.marketing-preview`에 쓰는데 `main.yml`은 루트를 본다. `.`으로 시작해 `include-hidden-files: true`도 필요 |
-| G13 | 랜딩 목업이 실데이터 표기 형식으로 금액을 보여준다 — `landing-v4.ts`에 시연 표기 0건. CLAUDE.md §3의 «금액 표기(고정)»과 충돌 |
+| ~~G13~~ | **2026-09-09 PR #136에서 해소 — 실제 위반 지점은 `home-page.ts` · `vendor-page.ts`였다.** 원문 근거(`landing-v4.ts`에 시연 표기 0건)는 사실이 아니다: 그 파일은 2줄짜리 re-export 껍데기고 랜딩 카피는 전부 `spec/strings.ko.json`에서 오며 구체 금액이 한 건도 없다 — **다시 열어보지 않아도 된다.** 진짜 위반은 두 웹 화면이 `guidePrice`를 읽지 않고 금액을 직접 그린 것이었다(v3.24 «금액 한 줄은 어느 화면이든 `priceLine`으로만»). 그 탓에 실 제보 3건 미만 업체는 업체 안내 금액이 있어도 「아직 정보가 적어요」로만 나왔고, 출시 첫날 실 제보 0건이면 웹 전체가 빈 화면이 된다 |
 | G12 | 마케팅 대시보드가 DB 오류를 «0건 성공»으로 숨긴다 — `routes/admin.ts`의 catch에 `NODE_ENV` 검사가 없다 |
 | G11 | 소재를 수정해도 `reviewed`·`reviewed_at`이 갱신되지 않아 과거 승인 상태가 남는다 (`marketing/store.ts`) |
 | 잔존-B | 관리자 클라이언트가 204에도 `res.json()`을 호출한다 (`app/admin/_api.ts`) |
