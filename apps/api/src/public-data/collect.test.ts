@@ -127,6 +127,37 @@ test('표준 봉투로 감싸 와도 업종 목록을 찾는다', async () => {
   }
 });
 
+test('키를 거절당한 200 응답을 «0건»이 아니라 계정 문제로 알린다', async () => {
+  /*
+   * 포털은 키를 거절해도 HTTP 200으로 답한다. 머리만 실패고 몸통이 비어 있어서
+   * 검사하지 않으면 조용히 0건으로 끝난다. 코드마다 사람이 할 일이 다르다 —
+   * 사용자 결정(2026-09-09)대로 운영계정 키 하나로 통일하는 것이 답인 코드들이다.
+   */
+  const cases: [string, RegExp][] = [
+    ['22', /하루 1,000건.*운영계정 키로 바꿔라/],
+    ['30', /등록되지 않은 서비스 키/],
+    ['20', /운영계정 활용신청에 포함/],
+  ];
+
+  for (const [code, expected] of cases) {
+    const restore = respondWith({ header: { resultCode: code, resultMsg: 'X' }, body: { items: [] } });
+    try {
+      await expect(listIndustryCategories('middle', 'test-key')).rejects.toThrow(expected);
+    } finally {
+      restore();
+    }
+  }
+});
+
+test('정상 코드 «00»은 그대로 통과한다', async () => {
+  const restore = respondWith({ header: { resultCode: '00' }, body: { items: [] } });
+  try {
+    await expect(listIndustryCategories('middle', 'test-key')).resolves.toEqual([]);
+  } finally {
+    restore();
+  }
+});
+
 test('아는 자리 어디에도 목록이 없으면 «0건»으로 끝내지 않고 알린다', async () => {
   const restore = respondWith({ resultCode: '99', resultMsg: 'SERVICE ERROR' });
   try {

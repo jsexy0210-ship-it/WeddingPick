@@ -328,6 +328,8 @@ export async function listIndustryCategories(
   const codeField = UPJONG_CODE_FIELD[level];
   const nameField = UPJONG_NAME_FIELD[level];
 
+  assertServiceOk(page);
+
   const rows = findCategoryRows(page);
   if (rows === null) {
     /*
@@ -343,6 +345,45 @@ export async function listIndustryCategories(
 
   return rows.map((row) => ({ code: row[codeField] ?? '', name: row[nameField] ?? '' }));
 }
+
+/**
+ * 응답 머리의 결과 코드를 먼저 본다.
+ *
+ * 공공데이터포털은 **키를 거절해도 HTTP 200**으로 답한다. 머리만 실패고 몸통은
+ * 비어 있어서, 검사하지 않으면 「업종 0건」으로 조용히 끝난다. 실제로 그렇게 끝났다.
+ *
+ * 여기서 갈리는 것은 대부분 **개발계정과 운영계정의 차이**다. 개발계정 키는 하루
+ * 1,000건이고 오퍼레이션마다 승인 범위가 다르다. 운영계정은 활용신청이 승인돼야
+ * 나온다. 사용자 결정(2026-09-09) — **운영계정 키 하나로 통일한다.** 그래서 코드를
+ * 그대로 던지지 않고, 사람이 무엇을 해야 하는지까지 적는다.
+ *
+ * 메시지에 키를 담지 않는다 — 코드와 서비스가 준 문구만 옮긴다.
+ */
+function assertServiceOk(page: unknown): void {
+  const at = (value: unknown, key: string): unknown =>
+    value !== null && typeof value === 'object' ? (value as Record<string, unknown>)[key] : undefined;
+
+  const header = at(at(page, 'response'), 'header') ?? at(page, 'header');
+  const code = at(header, 'resultCode');
+  if (typeof code !== 'string' || code === '' || Number(code) === 0) return;
+
+  const message = typeof at(header, 'resultMsg') === 'string' ? (at(header, 'resultMsg') as string) : '';
+  const guide = SERVICE_RESULT_GUIDE[code];
+
+  throw new Error(
+    `공공데이터 응답이 실패다(resultCode ${code}${message ? ` · ${message}` : ''}). ` +
+      (guide ?? '포털 마이페이지 → 오픈API → 개발계정에서 이 오퍼레이션의 승인 상태를 확인해라.')
+  );
+}
+
+/** 계정 때문에 나는 코드만 적는다. 나머지는 서비스가 준 문구를 그대로 보여준다. */
+const SERVICE_RESULT_GUIDE: Record<string, string> = {
+  '20': '접근이 거부됐다 — 이 오퍼레이션이 승인 범위 밖이다. 운영계정 활용신청에 포함시켜야 한다.',
+  '22': '요청 한도를 넘겼다 — 개발계정은 하루 1,000건이다. 운영계정 키로 바꿔라.',
+  '30': '등록되지 않은 서비스 키다 — SBIZ_API_KEY에 운영계정 키가 들어 있는지 확인해라.',
+  '31': '활용기간이 끝났다 — 포털에서 연장을 신청해야 한다.',
+  '32': '등록되지 않은 주소에서 불렀다 — 활용신청의 허용 주소를 확인해라.',
+};
 
 /** 알려진 자리를 차례로 본다. 어디에도 없으면 `null` — 빈 배열과 구분한다. */
 function findCategoryRows(page: unknown): Record<string, string>[] | null {
