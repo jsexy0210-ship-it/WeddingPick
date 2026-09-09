@@ -2,7 +2,7 @@ import { createSessionRequestSchema } from '@weddingpick/api-contract';
 import { AGE_BLOCKED_NOTICE } from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
 
-import { ageVerdictFromRange } from '../auth/age-range';
+import { ageVerdictFromBirthDate, ageVerdictFromRange, type AgeVerdict } from '../auth/age-range';
 import type { IdentityProviderName } from '../auth/identity-provider';
 import { markAgeVerified, sessionEntry, signIn, signOut } from '../auth/sessions';
 import type { AppContext } from '../context';
@@ -72,17 +72,25 @@ export function registerAuthRoutes(app: FastifyInstance, context: AppContext): v
     }
 
     /*
-     * 연령대(v3.22 SPEC 3.5). 판정 하나만 꺼내고 문자열은 여기서 버린다 —
-     * `signIn`에 넘기기 전에 지워야 identities에도 남지 않는다.
+     * 만 14세 판정. **출생 연도가 주된 근거다**(2026-09-09 사용자 결정 — 카카오
+     * 동의항목에서 출생 연도를 필수로 받고, 로그인 화면의 체크박스는 없앴다).
      *
-     *   있음 · 14세 이상 → 체크박스 없이 통과(age_verified)
-     *   있음 · 미만      → 계정을 만들지 않고 403 under_age(앱은 WP-AUTH-010)
-     *   없음             → 체크박스 그대로
+     *   생일까지 있음 → 만 나이를 정확히 센다
+     *   출생 연도만    → 경계(올해 - 연도 == 14)는 만 13일 수도 14일 수도 있어 `unknown`
+     *   연령대만       → 예전 경로. 구간 아래끝으로 본다
+     *   아무것도 없음  → `unknown`
+     *
+     *   14세 이상 → age_verified 기록
+     *   미만      → 계정을 만들지 않고 403 under_age(앱은 WP-AUTH-010)
+     *   모름      → 계정은 만들되 확인 표시를 남기지 않는다
+     *
+     * 판정 하나만 꺼내고 원래 값은 여기서 버린다 — `signIn`에 넘기기 전에 지워야
+     * identities에도 남지 않는다. **나이는 판정이지 보관 대상이 아니다.**
      */
-    const ageVerdict = ageVerdictFromRange(identity.profile?.ageRange);
+    const ageVerdict = verdictFor(identity.profile);
 
     if (identity.profile) {
-      const { ageRange: _dropped, ...rest } = identity.profile;
+      const { ageRange: _r, birthYear: _y, birthday: _d, ...rest } = identity.profile;
       identity.profile = rest;
     }
 
@@ -119,4 +127,17 @@ export function registerAuthRoutes(app: FastifyInstance, context: AppContext): v
 
     return reply.status(204).send();
   });
+}
+
+/**
+ * 어떤 값이 왔든 만 14세 판정 하나로 모은다.
+ *
+ * 출생 연도가 필수 동의라 대부분 그것으로 갈린다. 생일까지 있으면 정확해지고,
+ * 둘 다 없는 옛 경로(연령대만)도 계속 받는다 — 동의항목을 바꾸기 전에 가입한
+ * 사람이 다시 로그인할 때 이 길로 온다.
+ */
+function verdictFor(profile: { ageRange?: string; birthYear?: string; birthday?: string } | undefined): AgeVerdict {
+  if (profile?.birthYear) return ageVerdictFromBirthDate(profile.birthYear, profile.birthday);
+
+  return ageVerdictFromRange(profile?.ageRange);
 }

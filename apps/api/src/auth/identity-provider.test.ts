@@ -81,9 +81,15 @@ describe('createKakaoProvider — 연령대(SPEC 3.5)', () => {
 
     expect(fetchImpl.mock.calls[1]?.[0]).toBe('https://kapi.kakao.com/v2/user/me');
     expect(fetchImpl.mock.calls[1]?.[1]?.headers).toMatchObject({ authorization: 'Bearer access-token' });
-    // 연령대만 달라고 한다 — 필요 없는 것을 받아두면 지울 일만 생긴다.
+    /*
+     * 만 14세 판정에 쓸 것만 달라고 한다 — 필요 없는 것을 받아두면 지울 일만 생긴다.
+     * 2026-09-09 사용자 결정으로 **출생 연도가 주된 근거**가 됐다. 생일은 있으면
+     * 만 나이를 정확히 세고, 연령대는 옛 경로다.
+     */
     const body = fetchImpl.mock.calls[1]?.[1]?.body as URLSearchParams;
-    expect(body.get('property_keys')).toBe('["kakao_account.age_range"]');
+    expect(body.get('property_keys')).toBe(
+      '["kakao_account.birthyear","kakao_account.birthday","kakao_account.age_range"]'
+    );
   });
 
   it('연령대가 없으면(권한 없음 · 거부) ageRange 없이 그대로 통과한다', async () => {

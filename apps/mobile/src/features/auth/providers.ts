@@ -167,8 +167,31 @@ function kakaoRequest(redirectUri: string): AuthRequest {
     clientId: KAKAO_CLIENT_ID!,
     redirectUri,
     responseType: ResponseType.Code,
-    /* profile_nickname — id_token에 nickname 클레임이 실린다. 화면 이름은 닉네임만 쓴다. */
-    scopes: ['openid', 'profile_nickname'],
+    /*
+     * 2026-09-09 사용자 결정 — 카카오 동의항목을 이렇게 정했다.
+     *
+     *   필수  이름 · 성별 · 출생 연도 · 프로필(닉네임 · 사진)
+     *   선택  연령대 · 생일 · 전화번호
+     *   안 씀 CI · 배송지
+     *
+     * `openid`가 있어야 id_token이 오고, 닉네임은 그 클레임으로 온다.
+     * **출생 연도가 만 14세 판정의 근거다** — 서버가 `/v2/user/me`로 받아
+     * 판정만 뽑고 버린다(`routes/auth.ts`). 그래서 로그인 화면에 체크박스가 없다.
+     *
+     * 선택 항목은 사용자가 거부해도 로그인이 계속돼야 한다. 거부되면 그 값이
+     * 안 올 뿐이고, 판정은 출생 연도만으로도 선다.
+     */
+    scopes: [
+      'openid',
+      'profile_nickname',
+      'profile_image',
+      'name',
+      'gender',
+      'birthyear',
+      'birthday',
+      'age_range',
+      'phone_number',
+    ],
     usePKCE: true,
   });
 }

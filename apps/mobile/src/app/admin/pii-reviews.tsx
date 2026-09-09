@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
   detailSectionTitle: { fontSize: FontSize.badge, fontWeight: '700', color: '#868b94', marginBottom: 12 },
   detailLabel: { fontSize: FontSize.tab, fontWeight: '600', color: '#868b94', marginBottom: 3, marginTop: 14 },
   detailValue: { fontSize: FontSize.t7, color: '#17181c' },
-  fieldValue: { fontSize: FontSize.t7, color: '#3a3b40', lineHeight: 20 },
+  fieldValue: { fontSize: FontSize.t7, color: '#3a3b40' },
   detailHint: { fontSize: FontSize.badge, color: '#868b94', marginTop: 8 },
   hintRow: {
     flexDirection: 'row',
