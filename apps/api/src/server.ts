@@ -1,6 +1,7 @@
 import cors from '@fastify/cors';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { schemaState } from '@weddingpick/db';
+import { FeatureDisabledError } from './kill-switches';
 import { ZodError } from 'zod';
 
 import type { AppContext } from './context';
@@ -69,6 +70,19 @@ export function buildServer(context: AppContext): FastifyInstance {
   app.setErrorHandler((error, request, reply) => {
     if (error instanceof ApiError) {
       return reply.status(error.status).send(error.toResponse());
+    }
+
+    /*
+     * 관리자가 끈 기능이다. 고장이 아니라 지금 일부러 멈춰 둔 것이므로 500이 아니다 —
+     * 500으로 내려주면 화면이 "다시 시도해주세요"라고 말하고, 다시 시도해도 같다.
+     * 무엇을 껐는지는 로그에만 남긴다.
+     */
+    if (error instanceof FeatureDisabledError) {
+      request.log.warn({ switchId: error.switchId }, '중지된 기능이 호출됐다');
+
+      return reply
+        .status(503)
+        .send({ error: { code: 'feature_disabled', message: '지금은 사용할 수 없는 기능입니다.' } });
     }
 
     if (error instanceof ZodError) {

@@ -9,6 +9,7 @@ import { randomUUID } from 'node:crypto';
 import type { Pool, PoolClient } from 'pg';
 
 import { newEventId, recordDecision } from './decisions';
+import { assertFeatureEnabled } from './kill-switches';
 import { notify } from './notify';
 
 /**
@@ -39,6 +40,14 @@ export async function grantReward(
     suspectedAbuse?: boolean;
   }
 ): Promise<{ id: string; status: 'earned' | 'held' } | null> {
+  /*
+   * 관리자가 «보상 지급»을 껐으면 여기서 멈춘다. **null을 돌려주지 않는다** — null은
+   * 「한도가 찼다」는 정상 경로라 끈 것과 구분되지 않고, 부른 쪽은 조건을 충족했는데도
+   * 아무 일이 없었다는 사실을 모르게 된다. 부르는 쪽이 트랜잭션 안이라 던지면 함께
+   * 되감긴다 — 원장에 반쪽만 남지 않는다.
+   */
+  await assertFeatureEnabled(db, 'reward-payout');
+
   /*
    * 이 종류로 **이번 달에** 지급했거나 지급하기로 한 것이 몇 건인지. 한도는 달마다
    * 서비스 전체를 두고 세는 값이라 사용자별이 아니다(v3.22: 미션 40 · 초대 50 ·

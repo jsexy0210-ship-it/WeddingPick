@@ -1,6 +1,7 @@
 import type { Pool } from 'pg';
 
 import { withTransaction } from '../db';
+import { featureEnabled } from '../kill-switches';
 import type { Storage } from '../storage/port';
 import type { Analyzer, DocumentPage } from './analyzer';
 import { persistExtraction } from './persist';
@@ -114,6 +115,16 @@ export async function runOnce(deps: WorkerDeps): Promise<boolean> {
 
     if (pages.length === 0) {
       await fail(deps.pool, analysis.id, 'internal');
+      return true;
+    }
+
+    /*
+     * 관리자가 «AI 검증»을 껐으면 부르지 않는다. 예산·한도 관문과 같은 자리에서
+     * 같은 모양으로 멈춘다 — 조용히 성공한 것처럼 끝내지 않고 실패로 적는다.
+     */
+    if (!(await featureEnabled(deps.pool, 'ai-verification'))) {
+      console.warn(`문서 분석이 관리자에 의해 중지돼 있다 (${analysis.id})`);
+      await fail(deps.pool, analysis.id, 'unavailable');
       return true;
     }
 

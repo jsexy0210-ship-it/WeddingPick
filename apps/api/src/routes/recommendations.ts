@@ -28,6 +28,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { optionalUser, optionalUserId } from '../auth/plugin';
 import type { AppContext } from '../context';
+import { assertFeatureEnabled } from '../kill-switches';
 import { vendorSourceNote } from '../vendor-view';
 
 type CandidateRow = {
@@ -91,6 +92,10 @@ export async function recommendVendors(
   context: AppContext,
   input: { userId: string | null; category?: VendorCategory; region?: string | null; limit?: number }
 ): Promise<{ region: string | null; category: VendorCategory; items: Recommendation[] }> {
+  // 관리자가 «AI 추천»을 껐으면 빈 목록을 돌려주지 않는다 — 「추천할 것이 없다」와
+  // 「추천을 껐다」는 화면에서 같아 보이면 안 된다. 503으로 멈춘다.
+  await assertFeatureEnabled(context.pool, 'ai-recommendations');
+
   const viewer = input.userId
     ? (
         await context.pool.query<ViewerRow>(
