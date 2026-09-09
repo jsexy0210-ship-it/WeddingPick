@@ -23,6 +23,7 @@ import {
   Toast,
   useTheme,
 } from '@weddingpick/ui';
+import { NavBar } from '@/features/wedding/screen-kit';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { getSettings, revokePaymentConsent, setDisplayName, updateSettings } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
@@ -143,6 +144,11 @@ export default function SettingsScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        {/*
+          시안 layoutStack «header 56». 뒤로는 Depth Back — MY로 내려간다.
+          제목은 화면이 아래 Hero로 들고 있어 nav에 다시 적지 않는다.
+        */}
+        <NavBar />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedText type="t2">설정</ThemedText>
 

@@ -1,4 +1,3 @@
-import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
@@ -14,10 +13,14 @@ import {
   Skeleton,
   Spacing,
   ThemedText,
-  ThemedView,
   useTheme,
 } from '@weddingpick/ui';
+import { NavBar, Screen } from '@/features/wedding/screen-kit';
 
+/**
+ * 제거된 후보. WP-PICK-007 결정 내역의 «제거된 후보 보기»에서만 들어오므로 뒤로는
+ * 결정 내역(`/pick/history`)이다 — Depth Back 예외표에 근거를 적어뒀다.
+ */
 const S = {
   title: '제거된 후보',
   'empty.title': '제거된 후보가 없어요',
@@ -70,19 +73,19 @@ export default function PickRemovedScreen() {
 
   if (loading) {
     return (
-      <ThemedView style={styles.flex}>
-        <Stack.Screen options={{ title: S.title }} />
+      <Screen>
+        <NavBar title={S.title} />
         <RemovedSkeleton />
-      </ThemedView>
+      </Screen>
     );
   }
 
   if (error) {
     return (
-      <ThemedView style={styles.flex}>
-        <Stack.Screen options={{ title: S.title }} />
+      <Screen>
+        <NavBar title={S.title} />
         <ErrorView message={S.error} />
-      </ThemedView>
+      </Screen>
     );
   }
 
@@ -90,19 +93,19 @@ export default function PickRemovedScreen() {
 
   if (!hasItems) {
     return (
-      <ThemedView style={styles.flex}>
-        <Stack.Screen options={{ title: S.title }} />
+      <Screen>
+        <NavBar title={S.title} />
         <EmptyView
           title={S['empty.title']}
           description={S['empty.description']}
         />
-      </ThemedView>
+      </Screen>
     );
   }
 
   return (
-    <ThemedView style={styles.flex}>
-      <Stack.Screen options={{ title: S.title }} />
+    <Screen>
+      <NavBar title={S.title} />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {groups!
           .filter((g) => g.items.length > 0)
@@ -132,13 +135,12 @@ export default function PickRemovedScreen() {
             </View>
           ))}
       </ScrollView>
-    </ThemedView>
+    </Screen>
   );
 }
 
 function makeStyles(theme: ReturnType<typeof useTheme>) {
   return StyleSheet.create({
-    flex: { flex: 1 },
     scroll: {
       paddingHorizontal: Layout.gutter,
       paddingTop: Spacing.four,

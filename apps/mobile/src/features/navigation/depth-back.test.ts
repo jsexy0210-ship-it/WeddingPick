@@ -1,10 +1,3 @@
-/** 테스트 러너(CommonJS)의 전역. 앱 번들에는 들어가지 않는다. */
-declare const require: (id: string) => unknown;
-declare const __dirname: string;
-
-const nodeRequire = require;
-const dirName = __dirname;
-
 import {
   DEPTH_BACK_EXCEPTIONS,
   NO_BACK_ROUTES,
@@ -13,6 +6,13 @@ import {
   hasDepthBack,
   matchRoute,
 } from './depth-back-rules';
+
+/** 테스트 러너(CommonJS)의 전역. 앱 번들에는 들어가지 않는다. */
+declare const require: (id: string) => unknown;
+declare const __dirname: string;
+
+const nodeRequire = require;
+const dirName = __dirname;
 
 /**
  * Depth Back — 「부모로 간다」가 경로마다 실제로 무엇을 뜻하는지 표로 못박는다.

@@ -1,8 +1,8 @@
 import { router } from 'expo-router';
-import { StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, View } from 'react-native';
 
 import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
+import { NavBar, Screen } from '@/features/wedding/screen-kit';
 import { QuoteResultView } from '@/features/quotes/quote-result-view';
 import { SAMPLE_COMPARISON, SAMPLE_QUOTE } from '@/features/sample/sample-quote';
 
@@ -13,11 +13,14 @@ import { SAMPLE_COMPARISON, SAMPLE_QUOTE } from '@/features/sample/sample-quote'
  * 컴포넌트로 그리므로 샘플이 실제와 다른 약속을 하지 않는다.
  *
  * 화면 위아래로 샘플임을 알린다 — 여기 숫자는 지어낸 것이고 실제 업체·계약이 아니다.
+ *
+ * nav «샘플»의 뒤로는 제보 홈(`/capture`)이다 — 샘플은 거기서만 들어온다.
  */
 export default function SampleScreen() {
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+    <Screen>
+      <NavBar title="샘플" />
+      <View style={styles.safeArea}>
         <ThemedView style={styles.banner}>
           <ThemedText type="smallBold" style={styles.bannerText}>
             샘플 화면이에요
@@ -39,17 +42,12 @@ export default function SampleScreen() {
             onPress={() => router.replace('/capture')}
           />
         </ThemedView>
-      </SafeAreaView>
-    </ThemedView>
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
   safeArea: {
     flex: 1,
     maxWidth: MaxContentWidth,

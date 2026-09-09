@@ -32,6 +32,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { listVendorRegions, searchVendors } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { LoginSheet } from '@/features/auth/login-sheet';
+import { InfoDot, InfoSheet, type InfoTopic } from '@/features/common/info-sheet';
 import { savePendingAction } from '@/features/auth/pending-action';
 import { PickDoneSheet, UnpickSheet } from '@/features/pick/pick-sheets';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
@@ -190,6 +191,8 @@ export default function SearchScreen() {
   const [popular, setPopular] = useState<VendorSummary[] | null>(null);
   /** 정렬 시트(WP-SRCH-006)가 떠 있는가. */
   const [sortOpen, setSortOpen] = useState(false);
+  /** 금액 옆 ⓘ가 연 설명 시트(WP-SHT-014). null이면 닫혀 있다. */
+  const [infoTopic, setInfoTopic] = useState<InfoTopic | null>(null);
   /** 최근 검색. 자동완성 화면과 같은 저장소(`features/search/recent-searches`)를 본다. */
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
@@ -917,10 +920,18 @@ export default function SearchScreen() {
 
         {/* 결과 수 + 정렬 — 40. 시안: 결과 수 t14n · 정렬 t14m */}
         <View style={[styles.sortRow, { backgroundColor: theme.background }]}>
-          <ThemedText type="t7" themeColor="textAssistive" numeric>
-            {filters.category ? `${VENDOR_CATEGORY_LABEL[filters.category]} ` : ''}
-            {total}곳
-          </ThemedText>
+          {/*
+            결과 수 옆 ⓘ — WP-SHT-014 «실 제보가 뭔가요?». screens.json은 «금액 옆 ⓘ»라고 적지만,
+            카드마다 붙이면 카드 전체를 누르는 링크 안에 버튼이 하나씩 더 들어간다. 목록의 금액은
+            전부 같은 규칙으로 만든 값이라 목록 머리에 하나만 둔다.
+          */}
+          <View style={styles.countWithInfo}>
+            <ThemedText type="t7" themeColor="textAssistive" numeric>
+              {filters.category ? `${VENDOR_CATEGORY_LABEL[filters.category]} ` : ''}
+              {total}곳
+            </ThemedText>
+            <InfoDot label="실 제보 설명" onPress={() => setInfoTopic('verifiedData')} />
+          </View>
           {/* 정렬 — 셀렉트. 누르면 바텀시트(WP-SRCH-006)에서 하나를 고른다. */}
           <Pressable
             accessibilityRole="button"
@@ -1026,6 +1037,10 @@ export default function SearchScreen() {
         {viewState === 'home' ? renderHome() : renderResults()}
 
         <Toast message={toast} onHidden={() => setToast(null)} />
+
+        {/* 결과 머리 ⓘ가 여는 설명 시트 — WP-SHT-014. */}
+        <InfoSheet topic={infoTopic} onClose={() => setInfoTopic(null)} />
+
         <SortSheet
           visible={sortOpen}
           value={filters.sort}
@@ -1306,6 +1321,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: Layout.gutter,
     flexShrink: 0,
+  },
+  /* 결과 수 + ⓘ. 글자와 같은 줄, 사이 4. */
+  countWithInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
   },
   /* 정렬 셀렉트. 44 터치 영역, 오른쪽 정렬. */
   sortSelect: {

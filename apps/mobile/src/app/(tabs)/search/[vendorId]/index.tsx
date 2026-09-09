@@ -40,10 +40,12 @@ import { isServerConfigured } from '@/api/config';
 import { loadToken } from '@/api/session';
 import { BackButton } from '@/components/back-button';
 import { LoginSheet } from '@/features/auth/login-sheet';
+import { InfoDot, InfoSheet, type InfoTopic } from '@/features/common/info-sheet';
 import { savePendingAction } from '@/features/auth/pending-action';
 import { readCurrentUserSnapshot } from '@/features/loading/current-user-snapshot';
 import { PickDoneSheet, UnpickSheet } from '@/features/pick/pick-sheets';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
+import { vendorBenefit } from '@/features/search/vendor-benefit';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import {
   ActionButton,
@@ -78,6 +80,9 @@ const NO_REVIEWS_YET = '아직 후기가 없어요 · 첫 후기를 남겨주세
 
 /** 0층일 때 실 제보 금액으로 자동 교체된다는 안내. 기준 건수는 공개 사다리에서 읽는다. */
 const GUIDE_REPLACED_NOTE = [TERMS.verifiedData, `${DISCLOSURE_THRESHOLDS.limited}건이 되면`, TERMS.verifiedData, '금액으로 바뀌어요'].join(' ');
+
+/** ⑦ 현재 혜택 섹션 제목. spec/strings.ko.json `vendor.section.benefit`. */
+const VENDOR_BENEFIT = '현재 혜택';
 
 /** 공식정보 · 업체 안내 문구. spec/strings.ko.json vendor.* */
 const OFFICIAL_LAST_CHECK = '마지막 확인';
@@ -114,8 +119,8 @@ function formatYearMonth(iso: string): string {
  * WP-VEND-001 업체 상세. 시안 09-core-loop.dc.html #10a. 섹션 순서 고정(screens.json layout):
  *
  *   ① 대표 이미지 260 + 카운터  ② 배지 → 업체명 26 → 핵심 조건 16  ③ 추천 이유(스타일 칩 + 불릿)
- *   ④ 실 제보(금액 카드 + 조건별 행)  ⑤ Pick 56 + 비교  ⑥ 업체 안내  ⑧ 이용한 사람들의 경험
- *   ⑨ 후기 + 업체 반론  ⑩ 공식정보 + 정보 오류 제보
+ *   ④ 실 제보(금액 카드 + 조건별 행)  ⑤ Pick 56 + 비교  ⑥ 업체 안내  ⑦ 현재 혜택 brand 카드
+ *   ⑧ 이용한 사람들의 경험  ⑨ 후기 + 업체 반론  ⑩ 공식정보 + 정보 오류 제보
  *
  * **Pick 버튼은 근거를 다 읽은 자리(④ 다음)에 둔다.** 별점은 쓰지 않는다(SPEC §6.1) — 경험은
  * «N명»과 막대로만, 후기는 글로만 보여준다. 빈 섹션은 접는다(SPEC §2): 후기 0건은 한 줄, 경험
@@ -152,6 +157,8 @@ export default function VendorDetailScreen() {
   const [me, setMe] = useState<CurrentUser | null>(() => readCurrentUserSnapshot());
   /** 후기 목록을 읽어 왔는가. 읽기 전에는 «아직 후기가 없어요»를 단정하지 않는다. */
   const [reviewsLoaded, setReviewsLoaded] = useState(false);
+  /** 금액 옆 ⓘ가 연 설명 시트(WP-SHT-014 · WP-SHT-015). null이면 닫혀 있다. */
+  const [infoTopic, setInfoTopic] = useState<InfoTopic | null>(null);
 
   /* 내 후보 — 검색 카드 · 비교 dock과 같은 목록. Pick 전·후를 여기서 읽는다. */
   const candidates = useMyCandidates();
@@ -270,6 +277,8 @@ export default function VendorDetailScreen() {
   const line = priceLine(paidPrice, vendor.guidePrice);
   /* 실 제보도 업체 안내도 없다 — «수집 중» + Pick 인증 CTA로 채운다(빈 섹션 처리). */
   const wantsPickProof = needsPickProof(paidPrice, vendor.guidePrice);
+  /* ⑦ 현재 혜택. 서버에 혜택 자료가 없어 지금은 늘 null이고, null이면 섹션을 그리지 않는다. */
+  const benefit = vendorBenefit(vendor);
 
   /* 고른 스타일과 업체 태그의 일치. 로그인 전·미선택이면 겹침이 없고 칩은 전부 회색이다. */
   const chosenStyles: readonly WeddingStyle[] = me?.styleTags ?? [];
@@ -432,7 +441,14 @@ export default function VendorDetailScreen() {
           {/* ④ 실 제보 — 정보 5단계(SPEC §2). 금액 카드 + 조건별 행 + Pick·비교 */}
           <View style={[styles.band, styles.bandFirst, { backgroundColor: theme.backgroundSelected }]} />
           <View style={styles.section}>
-            <ThemedText type="t4">{TERMS.verifiedData}</ThemedText>
+            {/* 제목 옆 ⓘ — WP-SHT-014 «실 제보가 뭔가요?»(screens.json entry «금액 옆 ⓘ»). */}
+            <View style={styles.titleWithInfo}>
+              <ThemedText type="t4">{TERMS.verifiedData}</ThemedText>
+              <InfoDot
+                label={`${TERMS.verifiedData} 설명`}
+                onPress={() => setInfoTopic('verifiedData')}
+              />
+            </View>
 
             <View style={[styles.priceCard, { backgroundColor: theme.backgroundElement }]}>
               {/* 0층·1층은 회색(#868B94)으로 낮춘다. 빈 칸이나 «—»는 없다. */}
@@ -446,9 +462,16 @@ export default function VendorDetailScreen() {
                 {line.caption}
               </ThemedText>
               {isDetailed ? (
-                <ThemedText type="t7" themeColor="textAssistive">
-                  {BASE_AMOUNT_NOTE}
-                </ThemedText>
+                /* 기준금액 옆 ⓘ — WP-SHT-015 «기준금액이 뭔가요?». */
+                <View style={styles.noteWithInfo}>
+                  <ThemedText type="t7" themeColor="textAssistive" style={styles.noteText}>
+                    {BASE_AMOUNT_NOTE}
+                  </ThemedText>
+                  <InfoDot
+                    label={`${TERMS.baseAmount} 설명`}
+                    onPress={() => setInfoTopic('baseAmount')}
+                  />
+                </View>
               ) : null}
               {isLimited ? (
                 <ThemedText type="t7" themeColor="textAssistive">
@@ -563,6 +586,30 @@ export default function VendorDetailScreen() {
                     </View>
                     <View style={[styles.divider, { backgroundColor: theme.border }]} />
                   </View>
+                </View>
+              </View>
+            </>
+          ) : null}
+
+          {/*
+            ⑦ 현재 혜택 — 업체가 지금 주는 것. brand 카드(coral 7% 바탕 · 32% 테두리) 한 장.
+            **자료가 없으면 섹션째 그리지 않는다**(SPEC §2 빈 섹션 · states «혜택 있음·없음·만료»).
+            지금 서버는 혜택을 내려주지 않아 늘 이 자리가 비어 있다 — 근거는 `vendor-benefit.ts`.
+          */}
+          {benefit ? (
+            <>
+              <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} />
+              <View style={styles.section}>
+                <ThemedText type="t4">{VENDOR_BENEFIT}</ThemedText>
+                <View
+                  style={[
+                    styles.benefitCard,
+                    { backgroundColor: theme.tintSubtle, borderColor: theme.tintBorder },
+                  ]}>
+                  <ThemedText type="t5">{benefit.title}</ThemedText>
+                  <ThemedText type="t7" themeColor="textAssistive" numeric>
+                    {benefit.meta}
+                  </ThemedText>
                 </View>
               </View>
             </>
@@ -739,6 +786,9 @@ export default function VendorDetailScreen() {
       </SafeAreaView>
 
       <Toast message={toast} onHidden={() => setToast(null)} />
+
+      {/* 금액 옆 ⓘ가 여는 설명 시트 — WP-SHT-014 · WP-SHT-015. */}
+      <InfoSheet topic={infoTopic} onClose={() => setInfoTopic(null)} />
       <PickDoneSheet visible={pickDoneOpen} onDismiss={() => setPickDoneOpen(false)} />
       <UnpickSheet
         candidate={unpickTarget}
@@ -915,6 +965,29 @@ const styles = StyleSheet.create({
   },
   bulletText: {
     flex: 1,
+  },
+
+  // ── 제목·안내 줄 옆 ⓘ — 글자와 같은 줄, 사이 4 ──
+  titleWithInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+  },
+  noteWithInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+  },
+  noteText: {
+    flexShrink: 1,
+  },
+
+  // ── ⑦ 현재 혜택 brand 카드 · 시안: coral 7% 바탕 · 32% 테두리 · radius 10 · padding 20 · gap 6 ──
+  benefitCard: {
+    borderRadius: Radius.medium,
+    borderWidth: 1,
+    padding: Layout.cardPadding,
+    gap: Spacing.one + Spacing.half,
   },
 
   // ── 실 제보 금액 카드 · 시안: bg gray50 · radius 10 · padding 20 · gap 6 ──

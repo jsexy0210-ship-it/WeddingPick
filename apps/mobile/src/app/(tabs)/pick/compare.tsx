@@ -16,6 +16,7 @@ import {
   readWebInteractionState,
   useTheme,
 } from '@weddingpick/ui';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import { getCurrentUser, getVendor, listCandidates } from '@/api/client';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 
@@ -83,6 +84,7 @@ function RowSkeleton() {
 }
 
 export default function PickCompareScreen() {
+  const depthBack = useDepthBack();
   const theme = useTheme();
   const { category, fixed, fixedName } = useLocalSearchParams<{
     category?: string;
@@ -156,10 +158,12 @@ export default function PickCompareScreen() {
     }, [])
   );
 
+  /* 시트를 닫는 것은 «연 자리로 되돌아가기»라 History Back이다. 되돌아갈 곳이 없을 때만
+     Depth Back 규칙이 한 단계 위(Pick 탭)로 내려놓는다. */
   function dismiss() {
     setVisible(false);
     if (router.canGoBack()) router.back();
-    else router.replace('/pick');
+    else depthBack();
   }
 
   if (error) {

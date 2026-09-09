@@ -13,6 +13,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { addExpense } from '@/api/client';
 import { dayToTimestamp, isDay, todayDay } from '@/features/wedding/expense-day';
 import { FilterChip, Layout, Spacing, ThemedText } from '@weddingpick/ui';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import {
   CheckBox,
   Dock,
@@ -48,6 +49,7 @@ function isVendorCategory(value: string | undefined): value is VendorCategory {
  * 금액을 기억하는 유일한 때라 `vendorName` · `category`를 파라미터로 받아 미리 채운다.
  */
 export default function AddExpenseScreen() {
+  const depthBack = useDepthBack();
   const { id, vendorName, category } = useLocalSearchParams<{
     id: string;
     vendorName?: string;
@@ -106,9 +108,9 @@ export default function AddExpenseScreen() {
     setSaving(null);
     if (!ok) return;
 
-    /* 링크로 곧장 들어와 되돌아갈 곳이 없으면 지출 요약으로. */
+    /* 링크로 곧장 들어와 되돌아갈 곳이 없으면 Depth Back이 한 단계 위(지출 요약)로 보낸다. */
     if (router.canGoBack()) router.back();
-    else router.replace(`/wedding/${id}/expenses` as never);
+    else depthBack();
   }
 
   /**

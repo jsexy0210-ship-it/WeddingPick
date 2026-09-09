@@ -1,4 +1,4 @@
-import { router, Stack } from 'expo-router';
+import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
@@ -15,13 +15,17 @@ import {
   Skeleton,
   Spacing,
   ThemedText,
-  ThemedView,
   readWebInteractionState,
   useTheme,
 } from '@weddingpick/ui';
+import { NavBar, Screen } from '@/features/wedding/screen-kit';
 
+/**
+ * WP-PICK-007 결정 내역. 시안 07-pick #17e — navBack «결정 내역» + Hero.
+ * 뒤로는 Pick 탭(WP-PICK-001)이다.
+ */
 const S = {
-  title: 'Pick 히스토리',
+  title: '결정 내역',
   decided: '결정',
   'section.decided': '결정한 곳',
   'section.candidates': '후보',
@@ -88,19 +92,19 @@ export default function PickHistoryScreen() {
 
   if (loading) {
     return (
-      <ThemedView style={styles.flex}>
-        <Stack.Screen options={{ title: S.title }} />
+      <Screen>
+        <NavBar title={S.title} />
         <HistorySkeleton />
-      </ThemedView>
+      </Screen>
     );
   }
 
   if (error) {
     return (
-      <ThemedView style={styles.flex}>
-        <Stack.Screen options={{ title: S.title }} />
+      <Screen>
+        <NavBar title={S.title} />
         <ErrorView message={S.error} />
-      </ThemedView>
+      </Screen>
     );
   }
 
@@ -109,21 +113,21 @@ export default function PickHistoryScreen() {
 
   if (!data || !hasAnyCandidate) {
     return (
-      <ThemedView style={styles.flex}>
-        <Stack.Screen options={{ title: S.title }} />
+      <Screen>
+        <NavBar title={S.title} />
         <EmptyView
           title={S['empty.title']}
           description={S['empty.description']}
           actionLabel={S['empty.cta']}
           onAction={() => router.push('/(tabs)/search')}
         />
-      </ThemedView>
+      </Screen>
     );
   }
 
   return (
-    <ThemedView style={styles.flex}>
-      <Stack.Screen options={{ title: S.title }} />
+    <Screen>
+      <NavBar title={S.title} />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {data.groups.map((group) => {
           const decidedCandidate = group.decidedVendorId
@@ -226,7 +230,7 @@ export default function PickHistoryScreen() {
           />
         )}
       </ScrollView>
-    </ThemedView>
+    </Screen>
   );
 }
 
@@ -266,7 +270,6 @@ function DashedCta({
 
 function makeStyles(theme: ReturnType<typeof useTheme>) {
   return StyleSheet.create({
-    flex: { flex: 1 },
     scroll: {
       paddingHorizontal: Layout.gutter,
       paddingTop: Spacing.four,

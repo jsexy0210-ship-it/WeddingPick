@@ -5,6 +5,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { addWeddingEvent, getCurrentUser } from '@/api/client';
 import { Layout, Spacing, ThemedText } from '@weddingpick/ui';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import { DateTimeField, combineDayTime } from '@/features/wedding/event-form';
 import {
   Badge,
@@ -33,6 +34,7 @@ import {
  * 두지 않는다.
  */
 export default function AddWeddingEventScreen() {
+  const depthBack = useDepthBack();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const [me, setMe] = useState<CurrentUser | null>(null);
@@ -71,9 +73,9 @@ export default function AddWeddingEventScreen() {
         notifyEnabled,
       });
 
-      /* 링크로 곧장 들어와 되돌아갈 곳이 없으면 목록으로. */
+      /* 링크로 곧장 들어와 되돌아갈 곳이 없으면 Depth Back이 한 단계 위(일정 목록)로 보낸다. */
       if (router.canGoBack()) router.back();
-      else router.replace(`/wedding/${id}/events` as never);
+      else depthBack();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '넣지 못했어요. 다시 시도해주세요.');
     } finally {
