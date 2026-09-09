@@ -464,14 +464,16 @@ const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
 
-  /* 시안 head: 56 · 아이콘 24가 거터선(24)에 앉는다. 40 원형 버튼이라 오른쪽 여백은 24 − 8. */
+  /*
+   * 시안 head: 56 · padding 0 24. 03-home(오른쪽 20)과 03-home-states(오른쪽 24)가 갈려
+   * 최신인 03-home-states를 따른다(2026-09-09 패딩 감사).
+   */
   header: {
     height: Layout.navBar,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingLeft: Layout.gutter,
-    paddingRight: Layout.gutter - (Layout.iconButton - Layout.iconTab) / 2,
+    paddingHorizontal: Layout.gutter,
   },
   bell: {
     width: Layout.iconButton,

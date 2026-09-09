@@ -300,13 +300,14 @@ const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
 
-  /* header 56 · 뒤로가기 40 원형 안의 24 아이콘이 거터선에 앉는다. */
+  /* navBack 56 · padding 0 20 0 12 · gap 8 — component.navBack. 뒤로 40 원형. */
   nav: {
     height: Layout.navBar,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Layout.gutter - (Layout.iconButton - Layout.iconTab) / 2,
-    gap: Spacing.two,
+    paddingLeft: Layout.navPaddingLeft,
+    paddingRight: Layout.navPaddingRight,
+    gap: Layout.navGap,
   },
   back: {
     width: Layout.iconButton,

@@ -343,8 +343,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.one,
-    paddingLeft: Layout.rowPaddingY,
-    paddingRight: Layout.gutter - Spacing.one,
+    paddingLeft: Layout.navPaddingLeft,
+    paddingRight: Layout.navPaddingRight,
   },
   navTitle: { flex: 1, minWidth: 0 },
 

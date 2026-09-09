@@ -493,14 +493,14 @@ const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
 
-  /* navBack 56 · 뒤로 40 원형 — 아이콘 24가 거터선(24)에 앉는다. */
+  /* navBack 56 · padding 0 20 0 12 · gap 8 — component.navBack. 뒤로 40 원형. */
   nav: {
     height: Layout.navBar,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: Layout.gutter - (Layout.iconButton - Layout.iconTab) / 2,
-    paddingRight: Layout.gutter,
-    gap: Spacing.two,
+    paddingLeft: Layout.navPaddingLeft,
+    paddingRight: Layout.navPaddingRight,
+    gap: Layout.navGap,
   },
   back: {
     width: Layout.iconButton,

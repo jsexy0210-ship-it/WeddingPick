@@ -469,6 +469,12 @@ export const Layout = {
   controlMedium: 40,
   controlLarge: 48,
   controlXLarge: 52,
+  /**
+   * Pick CTA 높이. size.ctaPick — 09-core-loop의 «Pick하기 · N곳 비교하기»가 56이다
+   * (screens.json WP-VEND-001도 56). 업체 상세·비교의 Pick 자리에만 쓰고,
+   * 나머지 Primary CTA는 `controlXLarge` 52 그대로다.
+   */
+  ctaPick: 56,
   /** 카드 안 CTA. size.ctaInCard. */
   ctaInCard: 44,
   /** 입력 필드 높이. size.field — Primary CTA와 같은 52다. */
@@ -521,6 +527,8 @@ export const Layout = {
   /** 처리 단계 점 지름 · 행 높이. spacing.stepDot(WP-ST-012). */
   stepDot: 18,
   stepRow: 30,
+  /** 목록 앞 점 지름. spacing.bulletDot — 시안 «width:6px;height:6px;border-radius:999px». */
+  bulletDot: 6,
   /** 바텀시트 패널 — padding 12 24 28(+ safeBottom) · 요소 간격 20 · 제목과 본문 사이 6. component.sheet. */
   sheetPaddingTop: 12,
   sheetPaddingBottom: 28,

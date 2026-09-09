@@ -1115,8 +1115,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingLeft: Layout.gutter,
-    /* 오른쪽 20 = 거터 24에서 4 안쪽. 40 원형 버튼 안의 24 아이콘이 거터선에 앉는다. */
-    paddingRight: Layout.gutter - Spacing.one,
+    /* 오른쪽 20 — 06-search head «padding:0 20px 0 24px». component.navBack.paddingRight와 같은 값이다. */
+    paddingRight: Layout.navPaddingRight,
   },
   bellBtn: {
     width: Layout.iconButton,

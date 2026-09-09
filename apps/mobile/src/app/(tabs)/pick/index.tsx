@@ -622,7 +622,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingLeft: Layout.gutter,
-    paddingRight: Layout.gutter - Spacing.one,
+    /* 오른쪽 20 — 05-root head «padding:0 20px 0 24px». */
+    paddingRight: Layout.navPaddingRight,
   },
   partnerChip: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one + Spacing.half },
   partnerAvatar: {

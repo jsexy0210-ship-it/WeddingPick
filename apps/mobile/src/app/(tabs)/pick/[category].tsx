@@ -9,7 +9,7 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   Badge,
@@ -78,6 +78,7 @@ function CandidateCardSkeleton() {
 export default function CategoryPickScreen() {
   const { category } = useLocalSearchParams<{ category: string }>();
   const colors = useTheme();
+  const insets = useSafeAreaInsets();
 
   const [weddingId, setWeddingId] = useState<string | null>(null);
   const [partner, setPartner] = useState<string | null>(null);
@@ -197,7 +198,7 @@ export default function CategoryPickScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         {/* nav 56 · 뒤로 40 + 제목 18 + «편집» 16 700 */}
         <View style={styles.navBar}>
           <BackButton />
@@ -263,9 +264,17 @@ export default function CategoryPickScreen() {
           <View style={styles.bottomPad} />
         </ScrollView>
 
-        {/* dock 92 · «N곳 비교하기» 56 — 체크 2~3곳일 때만 산다 */}
+        {/* dock 92 + safeBottom · «N곳 비교하기» — 체크 2~3곳일 때만 산다 */}
         {!isDecided && candidates.length >= MIN_COMPARE ? (
-          <ThemedView style={[styles.dock, { borderTopColor: colors.border }]}>
+          <ThemedView
+            style={[
+              styles.dock,
+              {
+                borderTopColor: colors.border,
+                minHeight: Layout.dock + insets.bottom,
+                paddingBottom: Layout.sectionGap + insets.bottom,
+              },
+            ]}>
             <Pressable
               accessibilityRole="button"
               accessibilityState={{ disabled: !canCompare }}
@@ -428,8 +437,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.one,
-    paddingLeft: Layout.rowPaddingY,
-    paddingRight: Layout.gutter - Spacing.one,
+    paddingLeft: Layout.navPaddingLeft,
+    paddingRight: Layout.navPaddingRight,
   },
   navTitle: { flex: 1, minWidth: 0 },
   navAction: { minHeight: Layout.touchTarget, justifyContent: 'center', paddingLeft: Spacing.two },
@@ -469,12 +478,17 @@ const styles = StyleSheet.create({
   cardFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.three },
   memo: { flex: 1, minWidth: 0 },
 
-  /* dock 92 · border-top 1 · padding 12 24 · CTA 56 */
+  /*
+   * dock 92 · border-top 1 · padding 12 24. 높이를 92로 박으면 노치 기기에서 CTA가 홈
+   * 인디케이터에 물린다 — `screen-kit`의 Dock처럼 minHeight·paddingBottom에 safeBottom을
+   * 더한다(화면이 34 같은 수를 상수로 들지 않는다).
+   */
   dock: {
-    height: Layout.dock,
+    minHeight: Layout.dock,
     borderTopWidth: 1,
     paddingHorizontal: Layout.gutter,
     paddingTop: Layout.rowPaddingY,
+    paddingBottom: Layout.sectionGap,
   },
   dockBtn: {
     height: Layout.controlXLarge,

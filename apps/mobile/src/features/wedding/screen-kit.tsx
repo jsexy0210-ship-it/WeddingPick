@@ -561,13 +561,14 @@ const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
 
+  /* navBack 56 · padding 0 20 0 12 · gap 8 — component.navBack. */
   nav: {
     height: Layout.navBar,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: Layout.gutter - Layout.rowPaddingY,
-    paddingRight: Layout.gutter - Spacing.one,
-    gap: Spacing.two,
+    paddingLeft: Layout.navPaddingLeft,
+    paddingRight: Layout.navPaddingRight,
+    gap: Layout.navGap,
   },
   navButton: {
     width: Layout.iconButton,
