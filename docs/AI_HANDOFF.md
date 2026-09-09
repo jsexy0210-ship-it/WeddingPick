@@ -145,26 +145,32 @@ Closed PR이지만 main에 없는 고유 코드가 남아 있다. 되살릴지 �
 
 ---
 
-## 🔴 미해결 결함 (2026-09-07 감사·재검증 기준)
+## 🔴 미해결 결함 (2026-09-07 감사 · 2026-09-09 갱신)
 
 PR #99의 조사 보고서와 그 독립 재검증 결과에서 **코드로 확인된** 항목만 남긴 것이다.
 오탐으로 판정된 항목은 없었다. 원문은 Git history(브랜치 `codex/github-audit-handoff-20260907`,
 `claude/audit-review-2026-09-07`의 커밋)에서 볼 수 있다.
 
+2026-09-09에 해소된 것은 아래 «해소» 절로 옮겼다. N01과 G05는 같은 날 실측으로
+근거가 바뀌어 본문을 고쳤다 — 옛 근거를 그대로 두면 다음 사람이 이미 죽은 가설을
+쫓는다.
+
 ### 출시 차단
 
 | # | 항목 | 위치 · 근거 |
 |---|---|---|
-| N01 | **운영 카카오 로그인이 500으로 실패** | `POST /v1/auth/sessions → 500`. `errors.ts`가 `unauthenticated → 401`로 매핑하므로 카카오 검증 실패가 아니다. `routes/auth.ts`의 `signIn()` DB 작업에서 처리되지 않은 예외. **#100 병합으로 이제 로그가 남는다 — 재현해서 스택을 잡는 것이 다음 한 걸음** |
-| G04 | **CORS 출처·메서드 누락** | `infra/render-env.yml`의 `CORS_ORIGINS`에 admin 출처·커스텀 도메인 없음. `server.ts`의 `methods`에 **PATCH 없음** — 관리자 화면이 실제로 PATCH를 보내므로(`admin/kill-switch.tsx`·`policy-engine.tsx`·`users.tsx`·`vendors.tsx`·`ads.tsx`·`home.tsx`) preflight에서 전부 막힌다. 도메인은 이미 활성이라 미래 위험이 아니라 현재 차단 |
+| N01 | **운영 카카오 로그인이 500으로 실패** | `POST /v1/auth/sessions → 500`. `errors.ts`가 `unauthenticated → 401`로 매핑하므로 카카오 검증 실패가 아니다. `auth/sessions.ts`의 `signIn()` 트랜잭션에서 처리되지 않은 예외. **「운영 스키마가 뒤처져서」 가설은 2026-09-09 죽었다** — `db-status.yml` 실측이 운영 = 적용 95 / 기대 92(밀린 것 0)였다. `signIn()`이 쓰는 컬럼은 전부 0059까지에 있고, 저장소 마이그레이션 중 `structured.users`에 기본값 없는 NOT NULL을 추가한 것이 없어 `INSERT ... DEFAULT VALUES`(sessions.ts:57)는 저장소와 일치하는 스키마면 반드시 성공한다. **남은 유력 후보는 「운영에만 있는 제약」** — 아래 «저장소에 없는 마이그레이션 3개» 참조 |
+| G04 | **CORS 출처 누락** (메서드는 해소) | `infra/render-env.yml`의 `CORS_ORIGINS`에 admin 출처·커스텀 도메인이 없다. 도메인은 이미 활성이라 미래 위험이 아니라 현재 차단. **`server.ts`의 `methods`에 PATCH가 없던 절반은 #134로 해소됐다** |
 | G02 | **main 보호 규칙에 필수 PR·CI·리뷰 없음** | `rules/branches/main`이 `deletion`·`non_fast_forward` 2개만 반환. 실패한 변경의 병합을 막는 장치가 없다 |
 
 ### 높음
 
 | # | 항목 | 위치 · 근거 |
 |---|---|---|
-| 잔존-A | 관리자 kill switch가 아무것도 끄지 않는다 | `routes/admin.ts`의 `killSwitches` Map을 `admin.ts` 밖에서 조회하는 코드가 0건. 껐다고 표시돼도 기능은 계속 돌고, 재시작하면 상태도 사라진다 |
-| G05 | staging 이름의 job이 운영 대상을 검사 | `main.yml`의 Staging·Production 두 job이 같은 `DATABASE_URL`과 같은 health URL(`weddingpickl.onrender.com`)을 쓴다. `db-migrate-staging.yml`만 `STAGING_DATABASE_URL`을 쓴다 |
+| 잔존-A′ | kill switch 6종(AI 3 · 통계 · 보상 · 자동게시)이 여전히 인메모리다 | `routes/admin.ts`의 `killSwitches` Map은 그대로다 — 껐다고 표시돼도 기능은 돌고 재시작하면 상태가 사라진다. **수집 출처 스위치만 #134로 DB(`import_switches`)에 연결됐다.** 나머지 6종은 각각 읽는 쪽을 만들어야 한다 |
+| G05 | staging 이름의 job이 운영 대상을 검사 | `main.yml`의 Staging·Production 두 job이 같은 `DATABASE_URL`과 같은 health URL(`weddingpickl.onrender.com`)을 쓴다. `db-migrate-staging.yml`만 `STAGING_DATABASE_URL`을 쓴다. **처리 방침은 `docs/release-env-split.md`가 정본이다** — 사용자 결정(2026-09-09) 「우선 현재 DB 그대로, 차후에 분리」로 §3의 0·0b·1·2는 나누는 날로 미뤄졌다. `PRODUCTION_DATABASE_URL`에 Render 내부망 주소가 들어 있어(`getaddrinfo EAI_AGAIN`) 이름부터 옮기면 어떤 워크플로도 운영 DB에 닿지 못한다 |
+| DB-1 | **저장소에 없는 마이그레이션 3개가 운영 DB에 적용돼 있다** | 운영 `schema_migrations` = 95행, 저장소 파일 = 92개(2026-09-09 `db-status.yml`). 이름은 미확인 — `/health`나 `db-status.yml`의 unknown 값으로 확인한다. Git 이력에서 「한때 있었으나 지금 없는」 버전 이름 20개를 추렸다(재번호 `ff84c32`·`1c0b122`·`a25781a`·`4be7da7`·`f6c7a5c` 18개 + 삭제 2개: `0003_integrity_constraints`·`0052_mission_draw`). **`0003_integrity_constraints`는 `weddings` 배우자 쌍 UNIQUE와 `analyses.unique_analysis_per_document`를 만든다 — 삭제됐는데 운영에는 남아 있을 수 있다.** 즉 운영에만 있는 제약이 실재할 수 있고, 이것이 N01의 남은 후보다. `schema_migrations` 행 삭제는 사용자 승인 없이 하지 않는다 |
+| DB-2 | 스테이징 DB가 19개 밀려 있다 | 적용 73 / 기대 92(0074~0091a 미적용, 2026-09-09 실측). 「스테이징에서 먼저 검수한다」가 지금 성립하지 않는다. `db-migrate-staging.yml` 실행은 사용자 승인 대기 |
 
 ### 출시 전 처리
 
@@ -174,29 +180,42 @@ PR #99의 조사 보고서와 그 독립 재검증 결과에서 **코드로 확�
 | G13 | 랜딩 목업이 실데이터 표기 형식으로 금액을 보여준다 — `landing-v4.ts`에 시연 표기 0건. CLAUDE.md §3의 «금액 표기(고정)»과 충돌 |
 | G12 | 마케팅 대시보드가 DB 오류를 «0건 성공»으로 숨긴다 — `routes/admin.ts`의 catch에 `NODE_ENV` 검사가 없다 |
 | G11 | 소재를 수정해도 `reviewed`·`reviewed_at`이 갱신되지 않아 과거 승인 상태가 남는다 (`marketing/store.ts`) |
-| 잔존-B | 관리자 클라이언트가 204에도 `res.json()`을 호출한다 (`app/admin/_api.ts`) |
 | 잔존-C | AI 호출 한도가 원자적이지 않다 — `callsToday()`의 SELECT와 `recordUsage()`의 INSERT가 별도 트랜잭션 (`analysis/pipeline.ts`) |
 | 잔존-D | 죽은 워커의 `running` 작업을 회수하는 reaper가 없다 (`analysis/worker.ts`의 `claim()`이 `pending`만 집는다) |
 | 잔존-E | `routes/documents.ts`의 `MAX_FILE_SIZE`가 죽은 상수다. S3 드라이버는 presigned POST 정책이 강제하므로 실질 노출은 local 드라이버 한정 |
 | 잔존-F | `packages/db/src/reset.ts`의 `DROP SCHEMA ... CASCADE`에 테스트 DB 가드가 없다 |
 | sbiz | `collect.ts`의 업종 대분류 `'Q'`가 활용가이드에 없는 값이다. `SBIZ_API_KEY` 등록 후 `public-data.yml`의 `lookup_keyword`로 실제 코드를 찾아 교체해야 `sbiz-seoul`·`sbiz-gyeonggi`가 동작한다 |
 
+### 해소 (2026-09-09)
+
+| # | 무엇이었나 | 어떻게 해소됐나 |
+|---|---|---|
+| 잔존-A(수집분) | 수집 출처를 화면에서 끌 수단이 0건이었다 | #134 — `GET/PATCH /v1/admin/kill-switches`가 `structured.import_switches`를 읽고 쓴다(`import:<source_key>` · 카테고리 `수집`). 나머지 6종은 위 잔존-A′로 남았다 |
+| 잔존-B | 관리자 클라이언트가 204에 `res.json()`을 불러 성공한 PATCH가 실패로 잡혔다 | #134 — `apps/mobile/src/app/admin/_api.ts`가 204에 `null`을 돌려준다 |
+| G04(메서드분) | CORS `methods`에 PATCH가 없어 관리자 화면의 PATCH가 preflight에서 전부 막혔다 | #134 — `server.ts`에 `PATCH` 추가. 출처 누락은 위 G04로 남았다 |
+| 시드 워크플로 | `db-seed-samples.yml`이 「스테이징」이라 적고 운영 시크릿을 썼다. `remove`는 업체·이미지·결제인증·계정을 지운다 | #134 — 대상 선택(기본 staging)으로 바꿨다. 운영 전용 고정은 DB를 나누는 날로 미뤄졌다 |
+| 수집 크론 | `public-data.yml`의 `--apply`가 토요일 크론으로 **사람 없이 운영 DB에 썼다** | DATA 세션 소관(PR #133 계열)으로 넘겼다 — 이 목록에서는 그쪽 진행을 따른다 |
+
 ### 외부 확인 필요 (저장소 안에서 확인 불가)
 
-- 운영 Render `WeddingPickl`의 `DATABASE_URL`이 GitHub `DATABASE_URL`과 같은 DB인가 — **N01과 직결**
-- 운영 DB의 `schema_migrations` 목록과 `identity.identities` 실제 컬럼
+- **운영 `schema_migrations`의 unknown 3개 이름** — `/health` 또는 `db-status.yml` target=default. DB-1의 다음 한 걸음
+- 운영 `identity.identities` · `structured.users`의 실제 컬럼(`is_nullable` · `column_default`) — N01을 가른다
+- 카카오 로그인 재현 시 Render 로그의 스택·SQL 오류 원문 — 있으면 위 둘 없이 N01이 끝난다
+- 운영 Render `WeddingPickl`의 `DATABASE_URL`이 GitHub `DATABASE_URL`과 같은 DB인가
 - 분석 워커 서비스가 Render에 실제로 있는가 (저장소에 선언 없음)
 - TestFlight / Play 제출·심사 상태
 - legacy branch protection API(`branches/main/protection`) 설정
 
 ### 권장 순서
 
-1. N01 재현 → Render 로그의 SQL 오류로 원인 확정 → 수정
-2. G04 CORS 수정 (admin 출처·커스텀 도메인 + PATCH). 각 출처에서 PATCH preflight 통과 확인
-3. G02 main 보호 규칙 — 필수 PR + head CI 성공
-4. 잔존-A kill switch 연결 (G08 이메일 경로는 2026-09-08 이메일 로그인 삭제로 해소)
-5. G05 환경별 secret·health URL 1:1 분리
-6. 나머지 항목에 각각 단위 테스트를 붙이며 정리
+1. N01 — 운영 `/health`의 unknown 3개 이름 확인 → `information_schema`로 운영에만 있는 제약 확인 → 수정.
+   재현 로그를 먼저 잡으면 이 둘을 건너뛴다
+2. G04 — `CORS_ORIGINS`에 admin 출처·커스텀 도메인 추가. 각 출처에서 preflight 통과 확인
+3. G02 — main 보호 규칙에 필수 PR + head CI 성공
+4. 잔존-A′ — kill switch 6종을 읽는 쪽 만들기. 수집 스위치(#134)와 같은 방식으로 DB에 둔다
+5. DB-2 — 사용자 승인 후 스테이징을 92까지. 그래야 「스테이징에서 먼저」가 성립한다
+6. G05 — `docs/release-env-split.md` §3의 0 → 0b → 1 → 2 순서. 0은 사용자만 할 수 있다
+7. 나머지 항목에 각각 단위 테스트를 붙이며 정리
 
 ---
 
