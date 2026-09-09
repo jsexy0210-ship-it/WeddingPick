@@ -117,15 +117,19 @@ function normalizeServiceKey(apiKey: string): string {
  * apis.data.go.kr 연결은 간헐적으로 끊긴다 — 같은 커밋·같은 키로 한 번은
  * 1초 만에 응답하고(2026-09-09 02:47) 5분 뒤에는 3회 연속 connect timeout이
  * 났다(02:52). 서버 오류가 아니라 연결 자체가 안 맺어지는 것이라 짧은 재시도로는
- * 넘기지 못한다. 시도 횟수를 늘리고 대기를 지수적으로 벌린다(2·4·8·16·32초,
- * 최대 약 1분). 여기서 못 넘기면 진짜 장애로 보고 실패시킨다.
+ * 넘기지 못한다.
+ *
+ * 관측된 끊김은 한 번에 2~5분 이어진다 — 약 1분 창(2·4·8·16·32초)으로도 모자라
+ * 03:19 수집이 통째로 실패했다. 주 1회 배치라 몇 분 더 기다리는 편이 실행 자체를
+ * 잃는 것보다 낫다. 대기를 60초에서 멈추고 시도를 늘려 총 4분쯤 버틴다.
+ * 여기서도 못 넘기면 진짜 장애로 보고 실패시킨다 — 성공으로 바꾸지 않는다.
  */
-async function fetchWithRetry(url: string, attempts = 6): Promise<Response> {
+async function fetchWithRetry(url: string, attempts = 8): Promise<Response> {
   for (let i = 0; i < attempts; i++) {
     try { return await fetch(url, { redirect: 'error', signal: AbortSignal.timeout(30_000) }); }
     catch (err) {
       if (i === attempts - 1 || !(err instanceof TypeError)) throw err;
-      await new Promise((r) => setTimeout(r, 2000 * 2 ** i));
+      await new Promise((r) => setTimeout(r, Math.min(2000 * 2 ** i, 60_000)));
     }
   }
   throw new Error('unreachable');
