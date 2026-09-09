@@ -33,8 +33,17 @@ function toContentBlock(page: DocumentPage) {
   };
 }
 
+/**
+ * Anthropic 클라이언트의 한도.
+ *
+ * **인자 없이 만들고 있었다**(Release Audit 1차 P1-9). SDK 기본값은 10분
+ * 타임아웃에 재시도가 붙어 요청 하나가 워커를 최대 30분 붙잡을 수 있다.
+ * 그동안 뒤의 문서는 전부 대기다.
+ */
+const CLIENT_LIMITS = { timeout: 120_000, maxRetries: 2 };
+
 export function createClaudeAnalyzer(options: { model?: string } = {}): Analyzer {
-  const client = new Anthropic();
+  const client = new Anthropic(CLIENT_LIMITS);
   const model = options.model ?? 'claude-opus-5';
 
   return {

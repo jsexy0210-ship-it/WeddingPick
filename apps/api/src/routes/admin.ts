@@ -852,11 +852,18 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
         return reply.status(400).send({ error: 'enabled_required' });
       }
 
-      // 누가 언제 바꿨는지 남길 자리는 이 테이블의 reason·updated_at뿐이다.
+      /*
+       * 누가 언제 바꿨는지 남길 자리는 이 테이블의 reason·updated_at뿐이다.
+       *
+       * **upsert다.** UPDATE만 하면 아직 행이 없는 출처는 404가 나서 켤 수도
+       * 끌 수도 없었다(Release Audit 1차 P1-12). 행이 없다는 것과 사람이 껐다는
+       * 것은 다른 상태여야 한다.
+       */
       const { rowCount } = await context.pool.query(
-        `UPDATE structured.import_switches
-            SET enabled = $1, reason = $2, updated_at = now()
-          WHERE source_key = $3`,
+        `INSERT INTO structured.import_switches (source_key, enabled, reason)
+         VALUES ($3, $1, $2)
+         ON CONFLICT (source_key) DO UPDATE
+            SET enabled = EXCLUDED.enabled, reason = EXCLUDED.reason, updated_at = now()`,
         [
           enabled,
           `${enabled ? '재개' : '중단'} — 관리자 ${operatorId ?? 'operator'}`,

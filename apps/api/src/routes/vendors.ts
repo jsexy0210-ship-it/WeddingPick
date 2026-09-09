@@ -183,7 +183,8 @@ async function loadVendorDetail(pool: Pool, vendorId: string, viewerId: string |
     `SELECT v.id, v.name, v.category, v.region, v.source, to_jsonb(v)->>'source_url' AS source_url, v.last_verified_at, v.lat, v.lng,
               v.style_tags::text[] AS style_tags, v.guide_price_from, v.guide_price_source,
               (SELECT i.source_url FROM structured.vendor_images i
-                 WHERE i.vendor_id = v.id AND i.status = 'approved' AND i.source_url IS NOT NULL
+                 WHERE i.vendor_id = v.id AND i.status = 'approved' AND i.copyright_basis <> 'unknown'
+                   AND i.source_url IS NOT NULL
                  ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url,
             (SELECT count(*) FROM structured.comparable_quotes c WHERE c.vendor_id = v.id)
               AS comparable_quote_count
@@ -467,7 +468,8 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
        SELECT v.id, v.name, v.category, v.region, v.source, to_jsonb(v)->>'source_url' AS source_url, v.last_verified_at, v.lat, v.lng,
               v.style_tags::text[] AS style_tags, v.guide_price_from, v.guide_price_source,
               (SELECT i.source_url FROM structured.vendor_images i
-                 WHERE i.vendor_id = v.id AND i.status = 'approved' AND i.source_url IS NOT NULL
+                 WHERE i.vendor_id = v.id AND i.status = 'approved' AND i.copyright_basis <> 'unknown'
+                   AND i.source_url IS NOT NULL
                  ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url,
               (SELECT count(*) FROM structured.comparable_quotes c WHERE c.vendor_id = v.id)
                 AS comparable_quote_count,
@@ -572,7 +574,8 @@ async function loadSponsored(
      */
     `SELECT picked.vendor_id, picked.name, picked.category, picked.region,
             (SELECT i.source_url FROM structured.vendor_images i
-             WHERE i.vendor_id = picked.vendor_id AND i.status = 'approved' AND i.source_url IS NOT NULL
+             WHERE i.vendor_id = picked.vendor_id AND i.status = 'approved' AND i.copyright_basis <> 'unknown'
+               AND i.source_url IS NOT NULL
              ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url
      FROM (
        SELECT DISTINCT ON (p.vendor_id)
@@ -778,7 +781,7 @@ async function loadConditionStats(
         `SELECT id, storage_key, source_url, is_representative, use_contain,
                 copyright_note, verified_at
          FROM structured.vendor_images
-         WHERE vendor_id = $1 AND status = 'approved'
+         WHERE vendor_id = $1 AND status = 'approved' AND copyright_basis <> 'unknown'
          ORDER BY is_representative DESC, created_at ASC`,
         [vendorId]
       );

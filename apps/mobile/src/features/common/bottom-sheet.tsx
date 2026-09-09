@@ -3,7 +3,9 @@ import {
   AccessibilityInfo,
   Animated,
   Easing,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   View,
@@ -179,7 +181,19 @@ export function BottomSheet({
       statusBarTranslucent
       onRequestClose={dismissible ? onRequestClose : noop}
       testID={testID}>
-      <View style={styles.root}>
+      {/*
+        키보드가 올라오면 패널을 그만큼 밀어 올린다.
+        **`KeyboardAvoidingView`가 저장소 전체에 0건이었다**(Release Audit 1차 P1-3).
+        입력이 있는 시트(이름 · 노트 · 방문노트 · 일정 · 지출)에서 키보드가 저장 ·
+        취소 버튼을 덮어 입력을 끝낼 수 없었다. 여기 한 곳에 두면 그 시트가 전부
+        해소된다 — 시트마다 붙이면 새로 만드는 시트가 조용히 빠진다.
+
+        iOS는 `padding`, Android는 `height`가 맞다. Android는 창 크기 조절을
+        시스템이 이미 하므로 `padding`을 주면 두 번 밀린다.
+      */}
+      <KeyboardAvoidingView
+        style={styles.root}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: theme.scrim, opacity: scrim }]}>
           {dismissible ? (
             <Pressable
@@ -196,7 +210,7 @@ export function BottomSheet({
           style={[styles.panel, style, { opacity: panel, transform: [{ translateY }] }]}>
           {children}
         </Animated.View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

@@ -58,7 +58,8 @@ export function registerCandidateRoutes(app: FastifyInstance, context: AppContex
         `SELECT c.id, c.vendor_id, v.name AS vendor_name, v.category, v.region,
                 c.note, c.added_at, c.added_by,
                 (SELECT i.source_url FROM structured.vendor_images i
-            WHERE i.vendor_id = v.id AND i.status = 'approved' AND i.source_url IS NOT NULL
+            WHERE i.vendor_id = v.id AND i.status = 'approved' AND i.copyright_basis <> 'unknown'
+              AND i.source_url IS NOT NULL
             ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url
          FROM structured.vendor_candidates c
          JOIN structured.vendors v ON v.id = c.vendor_id
