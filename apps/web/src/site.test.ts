@@ -329,6 +329,33 @@ describe('서비스 웹 — 업체 상세', () => {
     expect(html).toContain('class="amount none"');
   });
 
+  /*
+   * 링크 미리보기는 화면과 다른 자리에서 만들어진다 — 그래서 갈리기 쉽다. 화면이
+   * «업체 안내»를 보여주는데 카카오톡 미리보기가 «실 제보 0건»이라고 말하면 한 링크가
+   * 두 말을 하는 것이고, 없는 실 제보를 미리보기가 먼저 꺼내는 쪽이라 더 나쁘다.
+   */
+  it('링크 미리보기가 화면과 같은 금액 한 줄을 쓴다', () => {
+    const html = renderVendorPage(
+      detail({
+        guidePrice: { fromKrw: 1_500_000, sourceLabel: '업체 홈페이지' },
+        prices: {
+          ...detail().prices,
+          paidPrice: {
+            stage: 'collecting',
+            count: 0,
+            caption: `${TERMS.verifiedData} 0건 · 수집 중`,
+          },
+        },
+      })
+    );
+
+    const description = /<meta property="og:description" content="([^"]*)"/.exec(html)?.[1];
+
+    expect(description).toBeDefined();
+    expect(description).toContain('출처 · 업체 홈페이지');
+    expect(description).not.toContain(`${TERMS.verifiedData} 0건`);
+  });
+
   it('Pick과 비교가 앱에서 이어지는 것을 밝힌다', () => {
     const html = renderVendorPage(detail());
 
