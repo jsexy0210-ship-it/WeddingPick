@@ -18,6 +18,39 @@
 
 ---
 
+## 배포가 멈춰 있다 — 2026-09-09 05:24 실측
+
+**Render 워크스페이스의 빌드 시간이 소진됐다. 코드 문제가 아니다.**
+
+```
+==> Build canceled: your workspace has run out of build pipeline minutes
+    for the current billing period.
+```
+
+서비스 이벤트 이름이 `pipeline_minutes_exhausted`다. **빌드가 시작조차 못 하고 취소된다.**
+2026-09-09에 main에 들어간 커밋이 전부 이 벽에 부딪혔다 — 04:50 · 04:56 · 05:02 · 05:03 · 05:14
+다섯 회차 전부 `deploy_ended · failed`. Render 서비스 4개가 모두 「Failed deploy」다(DB는 정상).
+
+### 여기서 배운 것 — 「배포 성공」을 GitHub만 보고 말하지 마라
+
+`main.yml`의 Deploy 잡은 **Render에 배포를 요청하는 데까지만** 초록이다. 그 뒤 Render가
+자기 인프라에서 빌드하다 실패해도 GitHub은 초록으로 끝난다. 오늘 여러 세션이 「배포까지
+성공」이라고 보고했고 전부 틀렸다. **배포 확인은 `render-deploy-status.yml`을 돌려
+`deploy_ended`의 `deployStatus`를 봐야 한다.**
+
+### 풀리기 전까지
+
+머지는 해도 된다(코드는 main에 쌓인다). 다만 **화면에는 아무것도 반영되지 않는다.**
+「배포 확인」을 완료로 적지 마라. 사람이 Render 대시보드 → Workspace Settings →
+Build Pipeline에서 요금제나 빌드 지출 한도를 올려야 한다.
+
+### 곁가지
+
+`weddingpick-api`(Oregon)가 `render.yaml`에 없는 서비스인데 워크스페이스에 떠 있다.
+정리 대상인지 확인이 필요하다 — 쓰지 않는다면 빌드 시간을 갉아먹고 있을 수 있다.
+
+---
+
 ## 사용자 결정 — 2026-09-09
 
 새 세션이 이 항목을 다시 파지 않도록 여기 적는다. **아래는 사람이 내린 결정이다.**
