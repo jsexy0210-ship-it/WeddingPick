@@ -165,7 +165,9 @@ function FixedRow() {
         <ThemedText type="t5" numberOfLines={1} style={styles.rowName}>
           {HOME_FIXED_LABEL}
         </ThemedText>
-        <Badge kind="none">{S.fixedTail}</Badge>
+        <Badge kind="none" style={styles.badge}>
+          {S.fixedTail}
+        </Badge>
       </View>
       <View style={[styles.hr, { backgroundColor: theme.border }]} />
     </View>
@@ -278,7 +280,9 @@ function OrderRow({
             style={styles.rowName}>
             {label}
           </ThemedText>
-          <Badge kind={hidden ? 'none' : 'ok'}>{hidden ? S.off : S.on}</Badge>
+          <Badge kind={hidden ? 'none' : 'ok'} style={styles.badge}>
+            {hidden ? S.off : S.on}
+          </Badge>
         </Pressable>
       </View>
       <View style={[styles.hr, { backgroundColor: theme.border }]} />
@@ -340,6 +344,11 @@ const styles = StyleSheet.create({
     minHeight: Layout.rowMinHeight,
   },
   rowName: { flex: 1 },
+  /*
+   * 배지는 기본이 `alignSelf: 'flex-start'`다(pick-status-badge STATUS_BADGE_STYLE).
+   * 행 높이를 56으로 잡아둔 이 목록에서는 그대로 두면 이름보다 17px 위로 뜬다.
+   */
+  badge: { alignSelf: 'center' },
   hr: { height: 1 },
 
   resetRow: { minHeight: Layout.rowMinHeight, justifyContent: 'center' },
