@@ -48,6 +48,8 @@ jobs:
 
     env:
       DATABASE_URL: postgres://weddingpick:weddingpick@localhost:5432/weddingpick_test
+      # 미리보기 산출물 경로는 여기서만 정한다. 만드는 쪽과 올리는 쪽이 각자 알면 어긋난다.
+      MARKETING_PREVIEW_DIR: .marketing-preview
 
     steps:
       - uses: actions/checkout@v4
@@ -69,13 +71,17 @@ jobs:
         run: npm test
 
       - name: Marketing preview
-        run: npm run marketing --workspace @weddingpick/api -- demo .marketing-preview
+        run: npm run marketing --workspace @weddingpick/api -- demo "$GITHUB_WORKSPACE/$MARKETING_PREVIEW_DIR"
 
       - name: Upload marketing preview
         uses: actions/upload-artifact@v4
         with:
           name: marketing-preview
-          path: .marketing-preview/
+          path: ${{ env.MARKETING_PREVIEW_DIR }}/
+          # 산출물 디렉터리가 점으로 시작한다. v4.4부터 숨김 파일이 기본 제외라 빼면 아무것도 안 올라간다.
+          include-hidden-files: true
+          # 다른 두 워크플로와 같게 — 못 찾으면 경고가 아니라 실패다. 조용히 초록으로 끝나는 것을 막는다.
+          if-no-files-found: error
           retention-days: 7
 
       - name: Bundle (web)

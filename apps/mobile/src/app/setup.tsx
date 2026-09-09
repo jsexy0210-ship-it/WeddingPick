@@ -17,6 +17,8 @@ import { isServerConfigured } from '@/api/config';
 import { loadToken } from '@/api/session';
 import { Layout, Radius, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
 
+import { DelayedRecommendingView } from '@/features/loading/delayed-loader';
+import { categoryKindsFor } from '@/features/loading/exclude';
 import { BudgetGrid } from '@/features/onboarding/budget-grid';
 import { DatePickerSheet } from '@/features/onboarding/date-picker-sheet';
 import {
@@ -273,13 +275,17 @@ export default function SetupScreen() {
           ...(styleTags.length > 0 ? { styleTags } : {}),
         });
 
-        await clearWeddingDraft();
+        void clearWeddingDraft().catch(() => undefined);
       } else {
         await saveWeddingDraft(draft);
       }
 
-      await clearOnboardingAnswers();
       setStep('done');
+      /*
+       * 남은 정리는 화면을 막지 않는다. `done`을 그린 뒤에 지워도 결과가 같고,
+       * 여기서 기다리면 저장이 끝난 뒤에도 로더가 더 떠 있다.
+       */
+      void clearOnboardingAnswers().catch(() => undefined);
     } catch (caught) {
       // 세션이 끝났으면(401) 이 화면에 머물 이유가 없다 — 로그인으로 보낸다.
       if (caught instanceof ApiError && caught.status === 401) {
@@ -338,6 +344,19 @@ export default function SetupScreen() {
 
   if (!restored) {
     return <ThemedView style={styles.blank} />;
+  }
+
+  /*
+   * 5/5에서 «완료»를 누른 뒤. 여기서 가입과 초기 설정 두 번을 서버에 보내는데,
+   * 그동안 화면에는 CTA가 눌리지 않는 것 말고 아무 표시가 없어 멈춘 것처럼 보였다.
+   * WP-ST-015 추천 계산 화면을 띄운다 — 700ms 안에 끝나면 이것도 뜨지 않는다.
+   *
+   * 순회에서 뺄 업종은 방금 받은 답에서 가져온다. 서버에 아직 안 들어가 있어
+   * «나»의 스냅숏으로는 알 수 없고, 넘기지 않으면 방금 «결정 완료»로 고른 업종이
+   * 로더에서 계속 돈다.
+   */
+  if (sending) {
+    return <DelayedRecommendingView exclude={categoryKindsFor(answers.prep?.categories ?? [])} />;
   }
 
   if (step === 'done') {

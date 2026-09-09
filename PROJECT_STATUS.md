@@ -4,7 +4,7 @@
 > `docs/AI_HANDOFF.md`, 그보다 오래된 것은 Git history에서 본다.
 > 작업 시작 시 `/AI_START_HERE.md` → 최신 통합정책서 → 이 문서 → 최신 코드 순으로 확인한다.
 
-- 기준 main: `f8cd22c` (2026-09-09)
+- 기준 main: `97a1980` (2026-09-09)
 - 정책 기준: `docs/통합정책 v3.15` + `CLAUDE.md`의 «정책 변경» 절(위쪽이 최신, 아래보다 우선)
 - 미해결 결함 목록: `docs/AI_HANDOFF.md`의 «미해결 결함» 절
 
@@ -25,7 +25,7 @@
 | Render — 운영 API | `https://weddingpickl.onrender.com`. Blueprint 밖에서 별도 관리 |
 | Render — 스테이징 API | `weddingpick-api` (`NODE_ENV=staging`, `STORAGE_DRIVER=local`). `/health` = `{"ok":true,"database":"ok"}` 확인(2026-09-05) |
 | Render — 웹 | `weddingpick-web` · `weddingpick-admin` · `weddingpick-app-web`(모바일 웹 export). 모두 free 플랜 |
-| Neon PostgreSQL | 운영 DB + `weddingpick_staging`(0001~0073 적용 완료) |
+| Neon PostgreSQL | 운영 DB(스키마 정상 · 96/93) + `weddingpick_staging`(73/92 — 19개 밀림). 아래 «운영 DB» 참조 |
 | Naver Cloud Object Storage | `weddingpick-test`. 업로드/다운로드/삭제 테스트 성공 |
 | Expo / EAS | Android·iOS 빌드 |
 | Apple Developer / App Store Connect | ASC API Key `EAS Build` 등록 완료 |
@@ -36,7 +36,7 @@ Render에 밀어넣는다. `render.yaml`의 `envVars`는 반영되지 않는다(
 
 ## 완료
 
-- Neon 연결·마이그레이션 적용 (스테이징 0001~0073)
+- Neon 연결·마이그레이션 적용 — 운영은 저장소의 92개가 전부 적용됨(2026-09-09 실측). 스테이징은 73까지
 - Object Storage 연결·왕복 테스트
 - 일정(`wedding_events`, 0061)·지도 보기(업체 좌표, 0062) 백엔드·화면. 업체 검색·상세는
   카카오맵 외부 링크를 쓴다. 좌표 백필은 `scripts/geocode-vendors.mts` 수동 실행
@@ -67,8 +67,17 @@ Render에 밀어넣는다. `render.yaml`의 `envVars`는 반영되지 않는다(
 
 ### 운영 DB
 
-- 운영 Neon에 `db-migrate.yml` 실행 여부를 확인해야 한다. 스테이징만 최신이다.
-- 0072(마케팅)·0071(공공데이터 출처) 운영 반영 미확인.
+2026-09-09 `db-status.yml`(읽기 전용)로 세 대상을 실측했다. 앞선 「스테이징만 최신」은 뒤집혔다.
+
+| 대상 | 결과 |
+|---|---|
+| `DATABASE_URL`(운영) | **적용 96 / 기대 93 — 밀린 것 없음.** 저장소에 파일이 없는 기록 3개는 정체 확인됨(아래) |
+| `STAGING_DATABASE_URL` | **적용 73 / 기대 92 — 19개 밀림**(0074~0091a). 지금 코드가 기대하는 테이블이 없다 |
+| `PRODUCTION_DATABASE_URL` | **저장소 워크플로에서 쓸 수 없다.** Render 내부망 전용 주소라 GitHub Actions에서 이름 풀이 실패(`getaddrinfo EAI_AGAIN`) |
+
+- **운영 스키마는 정상이다.** 저장소가 기대하는 모양과 같다.
+- 저장소에 없는 3개(`0052_mission_draw` · `0059_wedding_events` · `0060_vendor_geo`)는 **번호를 다시 매긴 흔적**이고 사고가 아니다. 새 번호 쪽에 멱등 가드(`IF NOT EXISTS` · `duplicate_object` 예외)가 들어 있어 재적용이 무해한 no-op이었다. 근거와 대조표는 `docs/AI_HANDOFF.md`의 «DB-1» 절. **그 세 행은 지우지 않는다.**
+- 스테이징을 92까지 올리는 것은 사용자 승인 대기.
 
 ### 검증 못 한 것
 
@@ -104,13 +113,14 @@ Render에 밀어넣는다. `render.yaml`의 `envVars`는 반영되지 않는다(
 
 ## 다음 작업 우선순위
 
-1. **N01** — 운영 카카오 로그인 500 재현 → Render 로그의 SQL 오류로 원인 확정 → 수정
-2. **G04** — CORS 출처(admin·커스텀 도메인)와 PATCH 메서드 허용
+1. **N01** — 재현 시 Render 로그의 스택·SQL 원문 확보 → 검증 성공 이후 DB 경로 셋 중 하나로 확정 → 수정.
+   스키마 갈래는 닫혔다. 범위는 `docs/AI_HANDOFF.md`의 «N01 좁힌 범위»
+2. **G04** — `CORS_ORIGINS`에 admin 출처·커스텀 도메인 추가. PATCH 메서드는 #134로 해소됨
 3. **G02** — main 보호 규칙에 필수 PR + head CI 성공 추가
-4. 관리자 kill switch 실제 연결(잔존-A), 이메일 인증 경로 호출 제한(G08)
-5. 배포 환경별 secret·health URL 분리(G05)
+4. kill switch 6종(AI 3 · 통계 · 보상 · 자동게시)을 읽는 쪽 만들기(잔존-A′). 수집 스위치는 #134로 연결됨
+5. 스테이징 DB를 92까지(승인 후) — 그래야 「스테이징에서 먼저 검수」가 성립한다
 6. iOS Sign in with Apple 권한·Provisioning Profile 수정 후 Production Build·TestFlight
-7. 운영 Neon 마이그레이션 상태 확인 및 적용
+7. 환경 분리(G05) — `docs/release-env-split.md` §3의 0 → 0b → 1 → 2. 사용자 결정으로 나누는 날까지 보류
 8. Google Play 계정 제한 해제 후 Android 제출 자동화
 9. `SBIZ_API_KEY` 등록 → 업종 소분류 코드 조사 → `collect.ts`의 `'Q'` 교체
 10. 카카오 REST API 키 발급 → 업체 좌표 백필
@@ -137,4 +147,4 @@ P0 항목별 완료 기준과 검증 증거가 확정되기 전에는 P0 진척�
 
 ## 마지막 상태 기준일
 
-2026-09-07
+2026-09-09
