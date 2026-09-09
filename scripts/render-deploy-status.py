@@ -8,6 +8,7 @@ GitHub Actions CI가 통과한 것과 Render 정적 사이트가 실제로 새�
 import json
 import os
 import sys
+import urllib.parse
 import urllib.request
 
 API_KEY = os.environ["RENDER_API_KEY"]
@@ -32,6 +33,9 @@ if not matches:
 
 svc = matches[0]
 print(f"서비스: {SERVICE} ({svc['id']})")
+# **어느 브랜치를 빌드하는지 먼저 본다.** 서비스가 main이 아닌 브랜치를 보고 있으면
+# main을 아무리 고쳐도 배포되는 내용이 바뀌지 않는다.
+print(f"  repo={svc.get('repo', '?')} branch={svc.get('branch', '?')} autoDeploy={svc.get('autoDeploy', '?')}")
 
 deploys = call(f"/services/{svc['id']}/deploys?limit=5")
 for entry in deploys:
@@ -53,19 +57,37 @@ failed = next(
     None,
 )
 if failed:
-    latest = failed
-    print("\n최근 배포 상세:")
-    print(json.dumps(latest, ensure_ascii=False, indent=2)[:3000])
+    print("\n최근 실패 배포 상세:")
+    print(json.dumps(failed, ensure_ascii=False, indent=2)[:2000])
     owner = svc.get("ownerId")
+
+    # **로그는 페이지로 나눠 받는다.** 한 번에 100줄뿐이라 backward 한 장만 받으면
+    # 스택 트레이스의 꼬리만 남고 정작 원인이 적힌 첫 줄이 잘린다 — 그래서 무엇이
+    # 왜 깨졌는지 못 읽었다(2026-09-09). 뒤에서 앞으로 여러 장 받아 시간순으로 찍는다.
+    collected: list[dict] = []
+    end_time = None
     try:
-        logs = call(
-            f"/logs?ownerId={owner}&resource={svc['id']}&type=build&limit=100&direction=backward"
-        )
-        print("\n빌드 로그(최근 100줄):")
-        for line in (logs.get("logs") if isinstance(logs, dict) else logs) or []:
-            print(f"  {line.get('timestamp', '')} {line.get('message', '')}"[:400])
+        for _ in range(8):
+            path = f"/logs?ownerId={owner}&resource={svc['id']}&type=build&limit=100&direction=backward"
+            if end_time:
+                path += f"&endTime={urllib.parse.quote(end_time)}"
+            page = call(path)
+            lines = (page.get("logs") if isinstance(page, dict) else page) or []
+            if not lines:
+                break
+            collected = list(lines) + collected
+            if not (isinstance(page, dict) and page.get("hasMore")):
+                break
+            end_time = page.get("nextEndTime")
+            if not end_time:
+                break
     except Exception as error:  # noqa: BLE001 — 로그를 못 읽어도 상태는 이미 찍었다
         print(f"\n빌드 로그 조회 실패: {error}")
+
+    print(f"\n빌드 로그({len(collected)}줄, 시간순):")
+    for line in collected:
+        print(f"  {line.get('timestamp', '')} {line.get('message', '')}"[:500])
+
     try:
         events = call(f"/services/{svc['id']}/events?limit=10")
         print("\n서비스 이벤트(최근 10):")

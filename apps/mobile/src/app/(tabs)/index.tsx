@@ -5,8 +5,8 @@ import type {
   VendorSummary,
 } from '@weddingpick/api-contract';
 import { daysUntil, hasUnread } from '@weddingpick/domain';
-import { router } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -28,6 +28,13 @@ import { BenefitSheet } from '@/features/home/benefit-sheet';
 import { hasSeenBenefitSheet, markBenefitSheetSeen } from '@/features/home/benefit-sheet-seen';
 import { Board } from '@/features/home/board';
 import { listWeddingContent, type WeddingContentItem } from '@/features/home/content';
+import {
+  DEFAULT_HOME_LAYOUT,
+  readHomeLayout,
+  visibleHomeSections,
+  type HomeLayout,
+  type HomeSectionKey,
+} from '@/features/home/layout';
 import { Recommendation } from '@/features/home/recommendation';
 import { homeView, type ConditionChip, type HomeView } from '@/features/home/state';
 import { WeddingContent } from '@/features/home/wedding-content';
@@ -41,7 +48,9 @@ import { WebShellView } from '@/features/webshell/WebShellView';
  * 준비 현황 4칸 · 다음 준비 자리를 정하고, 2층 정보량(실 제보 3건 이상 · 미만)은
  * 금액 글자색과 CTA만 바꾼다. 어느 층도 섹션 순서와 개수를 바꾸지 않는다.
  *
- * 순서는 고정이다. 히어로 → 준비 현황 → 웨딩픽 추천 → 밴드 → 다음 준비 → 웨딩 콘텐츠.
+ * 기본 순서는 히어로 → 준비 현황 → 웨딩픽 추천 → 밴드 → 다음 준비 → 웨딩 콘텐츠다.
+ * 히어로는 늘 맨 위 고정이고, 그 아래는 홈 편집(WP-HOME-007)이 정한 순서를 따른다 —
+ * 상태(2층)는 여전히 순서와 개수를 바꾸지 않는다. 바꾸는 것은 사람뿐이다.
  *
  * **코랄은 네 곳뿐이다**(SPEC §13.13). 준비 현황 현재 업종 테두리 · 진행바 ·
  * 웨딩픽 추천 라벨 · CTA · D-day. 조건 칩 · 완료 표시 · 아바타는 무채색이다.
@@ -78,6 +87,11 @@ export default function HomeScreen() {
   const [benefit, setBenefit] = useState<MyMonthlyDrawResponse | null>(null);
   const [benefitOpen, setBenefitOpen] = useState(false);
   const benefitChecked = useRef(false);
+  /*
+   * 홈 편집이 정한 구성. 기기에서 읽으므로 기본값으로 시작한다 — 읽는 동안 홈이
+   * 비어 보이면 안 된다. 편집하고 돌아왔을 때 반영되도록 화면이 뜰 때마다 다시 읽는다.
+   */
+  const [layout, setLayout] = useState<HomeLayout>(DEFAULT_HOME_LAYOUT);
 
   const load = useCallback(() => {
     // 웹뷰 쉘로 대체할 때는 이 밑 자료를 안 쓴다 — 훅 순서를 지키려고 호출
@@ -107,6 +121,20 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(load, [load]);
+
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+
+      void readHomeLayout().then((stored) => {
+        if (alive) setLayout(stored);
+      });
+
+      return () => {
+        alive = false;
+      };
+    }, []),
+  );
 
   useEffect(() => {
     if (!settled || data.me?.setupComplete !== true || benefitChecked.current) return;
@@ -170,6 +198,7 @@ export default function HomeScreen() {
     recommended: data.recommended,
     daysLeft,
   });
+  const sections = homeSectionBlocks({ view, data, layout });
 
   return (
     <ThemedView style={styles.container}>
@@ -179,83 +208,27 @@ export default function HomeScreen() {
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Hero me={data.me} view={view} daysLeft={daysLeft} />
 
-          {/* 준비 현황 — 항상 4칸. 완료 개수는 격자가 아니라 헤더 링크에 적는다. */}
-          <ThemedView style={styles.block}>
-            <ThemedView style={styles.section}>
-              <View style={styles.sectionHead}>
-                <ThemedText type="t4">준비 현황</ThemedText>
-                {/* 시작 전 구간에는 링크가 없다(시안 1) — 펼쳐도 빈 칸 12개다. */}
-                {view.boardMore === null ? null : (
-                  <Pressable
-                    accessibilityRole="link"
-                    onPress={() => router.push('/progress')}
-                    style={({ pressed }) => pressed && styles.pressed}>
-                    <ThemedText type="t7" themeColor="textAssistive" style={styles.more}>
-                      {view.boardMore}
-                    </ThemedText>
-                  </Pressable>
-                )}
-              </View>
-              <Board
-                cells={view.cells}
-                onPressCategory={(category) => router.push(`/pick?category=${category}`)}
-              />
-              {view.boardNote === null ? null : (
-                <ThemedText type="t7" themeColor="textAssistive">
-                  {view.boardNote}
-                </ThemedText>
-              )}
+          {/*
+            히어로 밑은 홈 편집(WP-HOME-007)이 정한 순서대로 그린다. 회색 밴드는 섹션
+            사이를 가르는 것이라 섹션을 따라 움직이고, 둘이 붙으면 하나만 남긴다.
+          */}
+          {sections.map((section, position) => (
+            <ThemedView key={section.key}>
+              {section.bandBefore && sections[position - 1]?.bandAfter !== true ? <Band /> : null}
+              {section.node}
+              {section.bandAfter && position < sections.length - 1 ? <Band /> : null}
             </ThemedView>
-          </ThemedView>
+          ))}
 
-          {/* 웨딩픽 추천 — 근거(조건 칩 · 금액 줄)와 행동(CTA)이 이 안에 함께 있다. */}
-          <ThemedView style={styles.block}>
-            <Recommendation
-              categoryLabel={view.currentLabel}
-              chips={view.chips}
-              vendors={data.recommended}
-              cta={view.cta}
-              onPressChip={(chip) => openSearchWithout(chip, view, data.me)}
-              onPressVendor={openVendor}
-              onPressCta={() => {
-                if (view.cta.kind === 'compare') {
-                  /* 홈 추천 CTA — 추천 세 곳이 그대로 A·B·C(SPEC §13.11). */
-                  router.push({
-                    pathname: '/search/compare',
-                    params: { ids: view.cta.ids.join(',') },
-                  });
-                } else {
-                  router.push('/capture');
-                }
-              }}
-            />
-          </ThemedView>
-
-          <Band />
-
-          {view.next === null ? null : (
-            <ThemedView style={styles.block}>
-              <ThemedView style={styles.section}>
-                <ThemedText type="t4">{view.next.title}</ThemedText>
-                <NextRow
-                  name={view.next.name}
-                  meta={view.next.meta}
-                  aside={view.next.aside}
-                  onPress={() => {
-                    const target = view.next!.target;
-
-                    if (target.kind === 'capture') router.push('/capture');
-                    else router.push(`/pick?category=${target.category}`);
-                  }}
-                />
-              </ThemedView>
-            </ThemedView>
-          )}
-
-          <ContentSection
-            title={data.me?.spouseLinked === true ? '두 분을 위한 웨딩 정보' : '웨딩 정보'}
-            items={data.content}
-          />
+          {/* 홈 편집 — 온보딩이 «홈 맨 아래 홈 편집에서 바꿀 수 있어요»라고 약속한 자리다. */}
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/home-edit')}
+            style={({ pressed }) => [styles.editEntry, pressed && styles.pressed]}>
+            <ThemedText type="t7" themeColor="textAssistive">
+              홈 편집
+            </ThemedText>
+          </Pressable>
         </ScrollView>
       </SafeAreaView>
 
@@ -269,6 +242,134 @@ export default function HomeScreen() {
       ) : null}
     </ThemedView>
   );
+}
+
+/** 히어로 밑 섹션 하나 — 무엇을 그리는지, 회색 밴드를 어느 쪽에 두는지. */
+type HomeSectionBlock = {
+  key: HomeSectionKey;
+  node: ReactNode;
+  bandBefore?: boolean;
+  bandAfter?: boolean;
+};
+
+/**
+ * 홈 편집이 정한 순서대로, 보여줄 섹션만.
+ *
+ * 그릴 것이 없는 섹션은 자리도 차지하지 않는다(SPEC §2) — 안 그러면 회색 밴드만
+ * 둘 남아 빈 칸처럼 보인다.
+ */
+function homeSectionBlocks({
+  view,
+  data,
+  layout,
+}: {
+  view: HomeView;
+  data: HomeData;
+  layout: HomeLayout;
+}): readonly HomeSectionBlock[] {
+  const blocks: Record<HomeSectionKey, HomeSectionBlock> = {
+    /* 준비 현황 — 항상 4칸. 완료 개수는 격자가 아니라 헤더 링크에 적는다. */
+    board: {
+      key: 'board',
+      node: (
+        <ThemedView style={styles.block}>
+          <ThemedView style={styles.section}>
+            <View style={styles.sectionHead}>
+              <ThemedText type="t4">준비 현황</ThemedText>
+              {/* 시작 전 구간에는 링크가 없다(시안 1) — 펼쳐도 빈 칸 12개다. */}
+              {view.boardMore === null ? null : (
+                <Pressable
+                  accessibilityRole="link"
+                  onPress={() => router.push('/progress')}
+                  style={({ pressed }) => pressed && styles.pressed}>
+                  <ThemedText type="t7" themeColor="textAssistive" style={styles.more}>
+                    {view.boardMore}
+                  </ThemedText>
+                </Pressable>
+              )}
+            </View>
+            <Board
+              cells={view.cells}
+              onPressCategory={(category) => router.push(`/pick?category=${category}`)}
+            />
+            {view.boardNote === null ? null : (
+              <ThemedText type="t7" themeColor="textAssistive">
+                {view.boardNote}
+              </ThemedText>
+            )}
+          </ThemedView>
+        </ThemedView>
+      ),
+    },
+
+    /* 웨딩픽 추천 — 근거(조건 칩 · 금액 줄)와 행동(CTA)이 이 안에 함께 있다. */
+    recommendation: {
+      key: 'recommendation',
+      bandAfter: true,
+      node: (
+        <ThemedView style={styles.block}>
+          <Recommendation
+            categoryLabel={view.currentLabel}
+            chips={view.chips}
+            vendors={data.recommended}
+            cta={view.cta}
+            onPressChip={(chip) => openSearchWithout(chip, view, data.me)}
+            onPressVendor={openVendor}
+            onPressCta={() => {
+              if (view.cta.kind === 'compare') {
+                /* 홈 추천 CTA — 추천 세 곳이 그대로 A·B·C(SPEC §13.11). */
+                router.push({
+                  pathname: '/search/compare',
+                  params: { ids: view.cta.ids.join(',') },
+                });
+              } else {
+                router.push('/capture');
+              }
+            }}
+          />
+        </ThemedView>
+      ),
+    },
+
+    next: {
+      key: 'next',
+      node:
+        view.next === null ? null : (
+          <ThemedView style={styles.block}>
+            <ThemedView style={styles.section}>
+              <ThemedText type="t4">{view.next.title}</ThemedText>
+              <NextRow
+                name={view.next.name}
+                meta={view.next.meta}
+                aside={view.next.aside}
+                onPress={() => {
+                  const target = view.next!.target;
+
+                  if (target.kind === 'capture') router.push('/capture');
+                  else router.push(`/pick?category=${target.category}`);
+                }}
+              />
+            </ThemedView>
+          </ThemedView>
+        ),
+    },
+
+    content: {
+      key: 'content',
+      bandBefore: true,
+      node:
+        data.content.length === 0 ? null : (
+          <ContentSection
+            title={data.me?.spouseLinked === true ? '두 분을 위한 웨딩 정보' : '웨딩 정보'}
+            items={data.content}
+          />
+        ),
+    },
+  };
+
+  return visibleHomeSections(layout)
+    .map((key) => blocks[key])
+    .filter((block) => block.node !== null);
 }
 
 /**
@@ -434,18 +535,13 @@ function ContentSection({
   title: string;
   items: readonly WeddingContentItem[];
 }) {
-  if (items.length === 0) return null;
-
   return (
-    <>
-      <Band />
-      <ThemedView style={styles.block}>
-        <ThemedView style={styles.section}>
-          <ThemedText type="t4">{title}</ThemedText>
-          <WeddingContent items={items} onPressItem={(id) => router.push(`/search?content=${id}`)} />
-        </ThemedView>
+    <ThemedView style={styles.block}>
+      <ThemedView style={styles.section}>
+        <ThemedText type="t4">{title}</ThemedText>
+        <WeddingContent items={items} onPressItem={(id) => router.push(`/search?content=${id}`)} />
       </ThemedView>
-    </>
+    </ThemedView>
   );
 }
 
@@ -489,6 +585,14 @@ const styles = StyleSheet.create({
    * 섹션마다 준다.
    */
   content: { paddingBottom: Spacing.two },
+
+  /* 홈 편집 — 맨 아래 한 줄. 눈에 띄지 않게 두되 누를 수 있는 높이는 준다. */
+  editEntry: {
+    minHeight: Layout.rowMinHeight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Layout.gutter,
+  },
 
   /* 시안 heroWrap: padding 14 24 24 · gap 10. */
   hero: {

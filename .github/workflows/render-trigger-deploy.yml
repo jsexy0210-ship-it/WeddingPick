@@ -11,6 +11,10 @@ on:
           - weddingpick-app-web
           - weddingpick-web
           - WeddingPickl
+      clear_cache:
+        description: '빌드 캐시를 지우고 배포한다 (캐시가 깨졌을 때만)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -25,4 +29,5 @@ jobs:
         env:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
           SERVICE: ${{ github.event.inputs.service }}
+          CLEAR_CACHE: ${{ github.event.inputs.clear_cache }}
         run: python3 scripts/render-trigger-deploy.py

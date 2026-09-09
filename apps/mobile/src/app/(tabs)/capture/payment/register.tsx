@@ -16,7 +16,13 @@ import { useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { parsePaymentText, registerPaymentProof } from '@/api/client';
-import { PermissionDeniedError, pickFromLibrary } from '@/features/capture/pickers';
+import {
+  PermissionDeniedError,
+  photoPermissionState,
+  pickFromLibrary,
+  type PhotoPermissionState,
+} from '@/features/capture/pickers';
+import { PermissionSheet } from '@/features/permissions/permission-sheet';
 import type { CapturedPage } from '@/features/capture/types';
 import { uploadPaymentProof } from '@/features/capture/upload';
 import { formatDateDot } from '@/features/common/format-date';
@@ -123,6 +129,8 @@ export default function RegisterPaymentProofScreen() {
   const [pasted, setPasted] = useState('');
   const [picture, setPicture] = useState<CapturedPage | null>(null);
   const [reading, setReading] = useState(false);
+  /** 사진 권한 설명 시트(WP-SHT-016). null이면 닫혀 있다. */
+  const [permission, setPermission] = useState<Exclude<PhotoPermissionState, 'granted'> | null>(null);
   const [readingId, setReadingId] = useState<string | null>(null);
   const [rawDocumentId, setRawDocumentId] = useState<string | null>(null);
   const [asRead, setAsRead] = useState<Record<string, string> | null>(null);
@@ -178,6 +186,19 @@ export default function RegisterPaymentProofScreen() {
       parsed.notice ??
         (unread.length > 0 ? `${unread.map((field) => FIELD_LABEL[field]).join(' · ')}은(는) 읽지 못했어요` : null)
     );
+  }
+
+  /*
+   * 앨범을 열기 전에 왜 사진이 필요한지 먼저 말한다(WP-SHT-016). 이미 허용돼 있으면
+   * 설명 없이 바로 연다 — 허락한 사람에게 같은 설명을 다시 읽히지 않는다.
+   */
+  async function openAlbum() {
+    if (reading) return;
+
+    const state = await photoPermissionState().catch<PhotoPermissionState>(() => 'ask');
+
+    if (state === 'granted') void readFromImages(pickFromLibrary);
+    else setPermission(state);
   }
 
   async function readFromImages(pick: () => Promise<CapturedPage[]>) {
@@ -300,7 +321,7 @@ export default function RegisterPaymentProofScreen() {
           {/* 2열 격자 — 촬영 · 앨범 · 문자. 시안의 «선택된 사진» 자리는 고르면 확인 단계로 넘어가므로 붙여넣기가 앉는다. */}
           <View style={styles.grid}>
             <Tile label={S.shoot} disabled={reading} onPress={() => router.push('/capture/camera')} />
-            <Tile label={S.album} disabled={reading} onPress={() => void readFromImages(pickFromLibrary)} />
+            <Tile label={S.album} disabled={reading} onPress={() => void openAlbum()} />
             <Tile label={S.paste} disabled={reading} selected={pasting} onPress={() => setPasting((current) => !current)} />
           </View>
 
@@ -342,6 +363,18 @@ export default function RegisterPaymentProofScreen() {
             <DockButton label="사진 없이 직접 적기" onPress={() => setStep('review')} />
           )}
         </Dock>
+
+        {/* 권한 요청 설명 · WP-SHT-016. 기기 창을 띄우기 전에 왜 필요한지 먼저 말한다. */}
+        <PermissionSheet
+          visible={permission !== null}
+          purpose="photo"
+          blocked={permission === 'blocked'}
+          onAllow={() => {
+            setPermission(null);
+            void readFromImages(pickFromLibrary);
+          }}
+          onLater={() => setPermission(null)}
+        />
       </Screen>
     );
   }

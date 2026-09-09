@@ -20,7 +20,7 @@ import { UNDER_AGE_SIGN_IN_MESSAGE } from '@/features/auth/sign-in-handoff';
 /**
  * 인가 코드를 세션으로 바꾼다. 서버가 만 14세 미만으로 판정하면(`under_age`,
  * v3.22 SPEC 3.5) 정해진 문장으로 바꿔 던진다 — 부팅 경로는 실패를 문장 하나로만
- * 넘기므로, 그 경로에서도 WP-AUTH-009으로 갈 수 있어야 한다.
+ * 넘기므로, 그 경로에서도 WP-AUTH-010으로 갈 수 있어야 한다.
  */
 async function exchangeKakaoCode(
   input: Parameters<typeof signInWithAuthorizationCode>[0]
@@ -167,35 +167,8 @@ function kakaoRequest(redirectUri: string): AuthRequest {
     clientId: KAKAO_CLIENT_ID!,
     redirectUri,
     responseType: ResponseType.Code,
-    /*
-     * 2026-09-09 사용자 결정 — 카카오 동의항목을 이렇게 정했다.
-     *
-     *   필수  출생 연도 · 프로필(닉네임 · 사진)
-     *   안 씀 연령대 · 생일 · 이름 · 성별 · 전화번호 · CI · 배송지
-     *
-     * **선택 항목을 하나도 두지 않는다**(2026-09-09 사용자 결정). 카카오 신청
-     * 화면이 「필요한 최소한만 신청하라 · 불필요한 개인정보를 받으면 제재 대상」
-     * 이라고 적어 둔 자리라, 지금 읽는 코드가 없는 것은 전부 뺐다. 번호가 필요한
-     * 곳은 Npay 지급 하나뿐이고 거기서는 사용자가 그때 직접 적는다 — 보낸 뒤
-     * 지운다(`reward_payouts` CHECK). 쓸 일이 생기면 그때 켠다.
-     *
-     * **연령대 · 생일을 뺀 대가는 경계 나이다.** 출생 연도만으로는 생일이
-     * 지났는지 모른다 — 「올해 − 출생연도 == 14」인 사람은 만 13일 수도 14일
-     * 수도 있다. 그 경계를 막는 쪽으로 정했다(`auth/age-range.ts`).
-     *
-     * `openid`가 있어야 id_token이 오고, 닉네임은 그 클레임으로 온다.
-     * **출생 연도가 만 14세 판정의 근거다** — 서버가 `/v2/user/me`로 받아
-     * 판정만 뽑고 버린다(`routes/auth.ts`). 그래서 로그인 화면에 체크박스가 없다.
-     *
-     * 선택 항목은 사용자가 거부해도 로그인이 계속돼야 한다. 거부되면 그 값이
-     * 안 올 뿐이고, 판정은 출생 연도만으로도 선다.
-     */
-    scopes: [
-      'openid',
-      'profile_nickname',
-      'profile_image',
-      'birthyear',
-    ],
+    /* profile_nickname — id_token에 nickname 클레임이 실린다. 화면 이름은 닉네임만 쓴다. */
+    scopes: ['openid', 'profile_nickname'],
     usePKCE: true,
   });
 }

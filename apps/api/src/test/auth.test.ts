@@ -16,7 +16,7 @@ function fakeCodeProvider(identity: VerifiedIdentity): IdentityProvider {
  * 카카오 연령대. 핸드오프 v3.22 SPEC 3.5 «카카오에서 받는 것».
  *
  * ```
- * age_range 있음    14세 이상 → 체크박스 없이 통과 · 미만 → WP-AUTH-009
+ * age_range 있음    14세 이상 → 체크박스 없이 통과 · 미만 → WP-AUTH-010
  * age_range 없음    체크박스 그대로
  * ```
  *
@@ -111,77 +111,6 @@ describeWithDb('카카오 연령대', () => {
     );
 
     expect(counts.rows[0]).toEqual({ users: '0', identities: '0', sessions: '0' });
-  });
-
-  /*
-   * 실제 운영 경로다 — 카카오 동의항목이 출생 연도 하나뿐이라(2026-09-09),
-   * 들어오는 값은 `birthYear`이고 `ageRange`는 오지 않는다.
-   */
-  function kakaoWithBirthYear(birthYear: string, subject = 'kakao-user-1') {
-    test.context.providers.kakao = fakeCodeProvider({
-      provider: 'kakao',
-      subject,
-      profile: { nickname: '웨픽', birthYear },
-    });
-  }
-
-  it('출생 연도가 충분하면 통과하고 판정만 남긴다', async () => {
-    const born = new Date().getFullYear() - 30;
-    kakaoWithBirthYear(String(born));
-
-    const response = await signIn();
-    const body = response.json<{ userId: string; ageVerified: boolean }>();
-
-    expect(response.statusCode).toBe(201);
-    expect(body.ageVerified).toBe(true);
-    expect((await userRow(body.userId)).age_verified).toBe(true);
-
-    /* 근거 숫자는 어디에도 남지 않는다. */
-    const { rows } = await test.pool.query<{ birth_year: string | null }>(
-      'SELECT birth_year FROM identity.identities WHERE user_id = $1',
-      [body.userId]
-    );
-
-    expect(rows[0]?.birth_year).toBeNull();
-  });
-
-  it('출생 연도가 미달이면 계정을 만들지 않는다', async () => {
-    const born = new Date().getFullYear() - 10;
-    kakaoWithBirthYear(String(born));
-
-    const response = await signIn();
-
-    expect(response.statusCode).toBe(403);
-    expect(response.json<{ error: { code: string } }>().error.code).toBe('under_age');
-
-    const counts = await test.pool.query<{ users: string; identities: string; sessions: string }>(
-      `SELECT (SELECT count(*) FROM structured.users) AS users,
-              (SELECT count(*) FROM identity.identities) AS identities,
-              (SELECT count(*) FROM identity.sessions) AS sessions`
-    );
-
-    expect(counts.rows[0]).toEqual({ users: '0', identities: '0', sessions: '0' });
-  });
-
-  /*
-   * **경계 연령.** 「올해 − 출생연도 == 14」인 사람은 생일이 지났으면 만 14세,
-   * 안 지났으면 만 13세다. 생일을 받지 않으므로 가릴 수단이 없다. 통과시키면
-   * 만 14세 미만이 가입하게 되므로 막는다 — 그 사람은 다음 해에 가입한다.
-   */
-  it('경계 연령(올해 − 출생연도 == 14)도 계정을 만들지 않는다', async () => {
-    const born = new Date().getFullYear() - 14;
-    kakaoWithBirthYear(String(born));
-
-    const response = await signIn();
-
-    expect(response.statusCode).toBe(403);
-    expect(response.json<{ error: { code: string } }>().error.code).toBe('under_age');
-
-    const counts = await test.pool.query<{ users: string }>(
-      'SELECT count(*) AS users FROM structured.users'
-    );
-
-    expect(counts.rows[0]?.users).toBe('0');
   });
 
   it('연령대가 없으면 체크박스가 그대로 판정한다', async () => {
