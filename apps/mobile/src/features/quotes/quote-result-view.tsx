@@ -4,7 +4,12 @@ import type {
   Quote,
   QuoteDocument,
 } from '@weddingpick/api-contract';
-import { ANALYSIS_DISCLAIMER, PRICE_JUDGEMENT_LABEL, needsAttention } from '@weddingpick/domain';
+import {
+  ANALYSIS_DISCLAIMER,
+  PRICE_JUDGEMENT_LABEL,
+  needsAttention,
+  splitPayment,
+} from '@weddingpick/domain';
 import { formatDateDot } from '@/features/common/format-date';
 import { ScrollView, StyleSheet, TextInput, type ViewStyle } from 'react-native';
 
@@ -135,6 +140,9 @@ export function QuoteResultView({
     (field) =>
       !field.requiresConfirmation && !field.confirmedByUser && needsAttention(field)
   );
+
+  /* 나눠 적힌 금액이 둘 이상이면 합계를 알려준다(WP-RPT-006). 하나뿐이면 null이다. */
+  const split = splitPayment({ deposit: quote.depositAmount, balance: quote.balanceAmount });
 
   return (
     <ScrollView contentContainerStyle={[styles.content, contentStyle]}>
@@ -345,6 +353,24 @@ export function QuoteResultView({
           ))}
         </ThemedView>
       ) : null}
+
+      {/*
+        분할 결제 연결 · WP-RPT-006. 계약금과 잔금이 따로 읽혔을 때만 나온다(상태 「분할 감지」).
+        하나뿐인 「단건」에는 묶을 것이 없어 카드째 그리지 않는다.
+
+        **원 단위 그대로 적는다.** 시안 문구는 «총 182만원이에요»지만 만원 표기는 반올림한
+        값이라 확인 화면에는 쓰지 않기로 돼 있다(domain/disclosure.ts manwon 주석 — 내
+        지출내역·결제 등록 확인). 바로 위 계약금액도 원 단위라, 여기만 반올림하면 두 숫자가
+        어긋나 보인다.
+      */}
+      {split === null ? null : (
+        <ThemedView type="backgroundElement" style={styles.card}>
+          <ThemedText type="subtitle">같이 묶으면 총 {won(split.total)}이에요</ThemedText>
+          <ThemedText type="small" themeColor="textSecondary">
+            {split.parts.map((part) => `${part.label} ${won(part.amount)}`).join(' + ')}
+          </ThemedText>
+        </ThemedView>
+      )}
 
       {footer}
     </ScrollView>
