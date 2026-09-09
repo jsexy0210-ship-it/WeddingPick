@@ -17,7 +17,7 @@ import {
   VENDOR_DETAIL_SECTIONS,
   formatDateDot,
   manwon,
-  rangeLabel,
+  priceLine,
 } from '@weddingpick/domain';
 import type { VendorDetail } from '@weddingpick/api-contract';
 
@@ -183,20 +183,19 @@ function mainSection(key: SectionKey, label: string, note: string | undefined, v
  *
  * 금액 옆에는 **늘 캡션이 함께 간다** — 몇 건이고 어느 기간인지. 숫자만 떼어놓으면
  * 그것이 어디서 왔는지 모르는 채로 읽히고, 그때부터 우리가 정한 값처럼 보인다.
- * 캡션은 도메인이 만들어 API가 내려준 것을 그대로 쓴다.
+ *
+ * 금액과 캡션을 짝지어 만드는 것은 도메인의 `priceLine`이다(v3.24 — 금액 한 줄은
+ * 어느 화면이든 이 함수로만 만든다). 실 제보 3건 미만이면 업체 안내 금액이 대신
+ * 서고 캡션이 «출처 · …»로 바뀐다 — 회색까지 함께 가야 **실 제보로 집계한 값과
+ * 섞이지 않는다.** 홈 카드와 같은 함수를 쓰므로 두 화면의 금액이 갈릴 수 없다.
  */
 function verifiedCard(vendor: VendorDetail): string {
-  const paid = vendor.prices.paidPrice;
-
-  const amount =
-    paid.stage === 'collecting'
-      ? `<b class="amount none">${escapeHtml(NOT_ENOUGH_DATA)}</b>`
-      : `<b class="amount">${escapeHtml(rangeLabel(paid.low, paid.high))}</b>`;
+  const line = priceLine(vendor.prices.paidPrice, vendor.guidePrice);
 
   return `<div class="card-outline">
       <h2>${escapeHtml(TERMS.verifiedData)}</h2>
-      ${amount}
-      <p class="caption">${escapeHtml(paid.caption)}</p>
+      <b class="amount${line.dim ? ' none' : ''}">${escapeHtml(line.text)}</b>
+      <p class="caption">${escapeHtml(line.caption)}</p>
       <div class="rule"></div>
       <!--
         화면당 Primary CTA 하나. Pick이 가장 중요한 행동이고 비교는 보조다.
