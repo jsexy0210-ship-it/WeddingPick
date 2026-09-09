@@ -118,8 +118,19 @@ export default function LoginScreen() {
               </>
             ) : (
               <>
-                <ThemedText type="t1">
-                  웨딩 준비,{'\n'}진짜 견적부터{'\n'}확인해 보세요{/* pick-language: 업체에서 실제로 받은 금액을 가리키는 말 — 서류를 고르라는 자리가 아니다 */}
+                {/*
+                  **회원가입 화면임을 제목이 먼저 말한다**(2026-09-09 사용자 결정).
+                  예전 제목은 「웨딩 준비, 진짜 견적부터 확인해 보세요」였는데, 카카오
+                  개인정보 동의항목 심사가 그 화면을 보고 「견적 확인 절차는
+                  회원가입/로그인 프로세스라고 보기 어렵다」며 반려했다. 시안
+                  WP-AUTH-001의 히어로 3줄은 이 결정으로 무효다.
+
+                  **기존 회원 쪽(WP-AUTH-008)은 그대로다** — 그쪽은 가입이 아니라
+                  로그인이라 「다시 오셨네요 · 카카오로 계속하기」를 유지한다.
+                */}
+                <ThemedText type="t1">웨딩픽 회원가입</ThemedText>
+                <ThemedText type="body" themeColor="textSecondary" style={styles.heroSub}>
+                  가입하고 결혼 준비를 시작해 보세요.
                 </ThemedText>
 
                 {/* 시안 benefitWrap — 위 28 · 줄 사이 2. 줄은 최소 44 · 상하 9 · 점과 글자 사이 10. */}
@@ -195,7 +206,7 @@ export default function LoginScreen() {
                         size="xlarge"
                         tone={providerTone(kakao)}
                         icon={kakao.isDevelopmentStandIn ? undefined : <SocialLogo provider="kakao" size={KAKAO_LOGO} />}
-                        label={kakao.isDevelopmentStandIn ? '개발용 로그인' : '카카오로 시작하기'}
+                        label={kakao.isDevelopmentStandIn ? '개발용 로그인' : '카카오로 가입하기'}
                         hint={
                           kakao.isDevelopmentStandIn
                             ? '실제 카카오 로그인이 아니에요. 개발 중인 서버에만 있어요'
