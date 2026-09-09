@@ -27,6 +27,7 @@ import {
 import { createVendorClaim } from '@/api/client';
 import { pickFromLibrary } from '@/features/capture/pickers';
 import { uploadBusinessDocument } from '@/features/capture/upload';
+import { BackBar } from '@/components/back-bar';
 
 /**
  * 업체 관계자 인증 신청. 최종통합정책 v2.0 26번.
@@ -112,6 +113,7 @@ export default function VendorClaimScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedText type="t2">{'이 업체의\n관계자이신가요'}</ThemedText>
 

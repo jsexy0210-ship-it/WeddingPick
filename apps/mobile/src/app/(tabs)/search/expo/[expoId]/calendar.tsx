@@ -4,6 +4,7 @@ import { Alert, Linking, Platform, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getExpo, type ExpoDetail } from '@/api/client';
+import { BackBar } from '@/components/back-bar';
 import {
   ActionButton,
   Layout,
@@ -169,6 +170,7 @@ export default function CalendarScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.header}>
             <ThemedText type="t2">캘린더에 추가</ThemedText>

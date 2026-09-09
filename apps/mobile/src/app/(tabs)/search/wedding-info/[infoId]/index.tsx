@@ -5,6 +5,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getWeddingInfo } from '@/api/client';
+import { BackBar } from '@/components/back-bar';
 import {
   ActionButton,
   ErrorView,
@@ -100,6 +101,7 @@ export default function WeddingInfoDetailScreen() {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
+          <BackBar />
           <WeddingInfoDetailSkeleton />
         </SafeAreaView>
       </ThemedView>
@@ -109,6 +111,7 @@ export default function WeddingInfoDetailScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView contentContainerStyle={styles.content}>
           {/* 헤더 */}
           <ThemedView style={styles.header}>

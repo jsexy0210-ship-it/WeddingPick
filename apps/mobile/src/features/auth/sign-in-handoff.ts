@@ -21,6 +21,31 @@ export function takePendingSignInError(): string | null {
 }
 
 /**
+ * 「카카오로 로그인하는 중이에요」를 **누가 말하는가**.
+ *
+ * 부팅 화면(`SigningInView`)과 로그인 화면(`SigningInBody`)이 같은 문장을 들고 있어서,
+ * 카카오에서 돌아온 한 번의 로그인에 문장이 두 번 나왔다(2026-09-09 사용자 보고).
+ *
+ * v3.25는 로그인 화면에 `!hasKakaoReturn()` 가드를 달아 막으려 했는데 그게 듣지 않았다 —
+ * **`completeKakaoRedirect()`가 URL에서 `code`를 지우는 것이 먼저다.** 지운 뒤에는
+ * `hasKakaoReturn()`이 false가 되어 가드가 풀리고, 로그인 화면이 같은 말을 다시 한다.
+ * 네이티브는 URL이 없어 애초에 늘 false였다.
+ *
+ * 그래서 URL이 아니라 **깃발**로 정한다. 부팅이 카카오 복귀를 발견하면 이 페이지가
+ * 살아 있는 동안 문장을 계속 맡는다 — 교환에 실패해 로그인 화면으로 떨어져도 거기서는
+ * 실패 시트가 말하지, 진행 문구가 다시 나오지 않는다.
+ */
+let bootOwnsMessage = false;
+
+export function claimSigningInMessageForBoot(): void {
+  bootOwnsMessage = true;
+}
+
+export function bootOwnsSigningInMessage(): boolean {
+  return bootOwnsMessage;
+}
+
+/**
  * 서버가 만 14세 미만으로 판정했다(`under_age`, v3.22 SPEC 3.5). 실패 시트가
  * 아니라 WP-AUTH-010(이용 불가 안내)으로 간다.
  *

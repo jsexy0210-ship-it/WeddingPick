@@ -29,6 +29,7 @@ import {
   VendorImage,
 } from '@weddingpick/ui';
 import { DelayedRecommendingBody } from '@/features/loading/delayed-loader';
+import { BackBar } from '@/components/back-bar';
 
 /**
  * TOP3 전체보기. WP-HOME-004.
@@ -61,6 +62,7 @@ export default function Top3Screen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.pageHeader}>
             <ThemedText type="t4">TOP 3</ThemedText>

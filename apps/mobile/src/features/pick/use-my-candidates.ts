@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { addCandidate, ensureWedding, getCurrentUser, listCandidates, removeCandidate } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { loadToken } from '@/api/session';
+import { readCurrentUserSnapshot } from '@/features/loading/current-user-snapshot';
 
 /**
  * 내 Pick 후보 — 검색 결과 카드 · 업체 상세 · 비교 dock이 같은 것을 본다.
@@ -24,10 +25,29 @@ export function useMyCandidates() {
   const [busyVendorId, setBusyVendorId] = useState<string | null>(null);
   const alive = useRef(true);
 
+  /*
+   * **아는 웨딩이 있으면 «나»를 기다리지 않는다**(2026-09-09 사용자 오더 「출력 속도
+   * 최고로」). 예전에는 토큰 → «나» → 후보를 차례로 기다렸다 — 왕복 두 번이고,
+   * 이 훅은 업체 상세 · 검색 · Pick에 다 걸려 있어 그 두 번이 화면마다 붙었다.
+   * 지난번에 받아둔 «나»에 웨딩이 있으면 후보를 **동시에** 띄우고, 돌아온 «나»의
+   * 웨딩이 그대로면 먼저 띄운 답을 그냥 쓴다.
+   */
   const reload = useCallback(async () => {
     if (!isServerConfigured) return;
     const token = await loadToken();
     if (!token) return;
+
+    const known = readCurrentUserSnapshot();
+    const early = known?.weddingId ? listCandidates(known.weddingId) : null;
+
+    // 먼저 띄운 요청이 실패해도 여기서 앱이 멈추지 않게 잡아 둔다 — 아래에서 다시 본다.
+    early?.catch(() => undefined);
+
+    if (known && alive.current) {
+      setMe((current) => current ?? known);
+      setWeddingId((current) => current ?? known.weddingId ?? null);
+    }
+
     const me = await getCurrentUser();
     if (!alive.current) return;
     setMe(me);
@@ -36,7 +56,10 @@ export function useMyCandidates() {
       setPage(null);
       return;
     }
-    const next = await listCandidates(me.weddingId);
+
+    const next =
+      early && known?.weddingId === me.weddingId ? await early : await listCandidates(me.weddingId);
+
     if (alive.current) setPage(next);
   }, []);
 

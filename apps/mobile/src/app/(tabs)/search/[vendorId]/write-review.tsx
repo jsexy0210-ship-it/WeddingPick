@@ -25,6 +25,7 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
+import { BackBar } from '@/components/back-bar';
 
 /**
  * 후기 쓰기.
@@ -169,6 +170,7 @@ export default function WriteReviewScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.section}>
             <ThemedText type="subtitle">{form.vendorName}</ThemedText>
@@ -352,6 +354,7 @@ function Frame({ children }: { children: React.ReactNode }) {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ThemedView style={styles.content}>{children}</ThemedView>
       </SafeAreaView>
     </ThemedView>

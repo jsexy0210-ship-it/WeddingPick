@@ -4,6 +4,7 @@ import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getExpo, toggleExpoNotify, type ExpoDetail, type ExpoStatus } from '@/api/client';
+import { BackBar } from '@/components/back-bar';
 import {
   ActionButton,
   ErrorView,
@@ -114,6 +115,7 @@ export default function ExpoDetailScreen() {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
+          <BackBar />
           <ExpoDetailSkeleton />
         </SafeAreaView>
       </ThemedView>
@@ -125,6 +127,7 @@ export default function ExpoDetailScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView contentContainerStyle={styles.scrollContent}>
           {/* 상태 배지 */}
           <ThemedView style={styles.badgeRow}>

@@ -15,7 +15,7 @@ import { useStackScreenOptions } from '@/features/navigation/screen-options';
 import { entryAfterSignIn, rememberSignedIn } from '@/features/auth/finish-sign-in';
 import { completeAuthPopup, isAuthPopup } from '@/features/auth/is-auth-popup';
 import { completeKakaoRedirect, hasKakaoReturn } from '@/features/auth/providers';
-import { setPendingSignInError } from '@/features/auth/sign-in-handoff';
+import { claimSigningInMessageForBoot, setPendingSignInError } from '@/features/auth/sign-in-handoff';
 import { SigningInView } from '@/features/auth/signing-in-view';
 import { CaptureDraftProvider } from '@/features/capture/capture-draft';
 import { DocumentStoreProvider } from '@/features/documents/document-store';
@@ -85,7 +85,18 @@ function RootLayoutContent() {
    * 중» 화면을 보이고, 스플래시 최소 노출도 기다리지 않는다 — 동의를 마치고
    * 돌아온 사람에게 앱이 다시 켜지는 것처럼 보이면 안 된다.
    */
-  const [signingIn] = useState(() => hasKakaoReturn());
+  /*
+   * 카카오에서 돌아왔는가. 여기서 한 번 붙잡아 두는 이유는 두 가지다 — 아래에서
+   * `completeKakaoRedirect()`가 URL의 `code`를 지워 버리므로 나중에 다시 물어볼 수 없고,
+   * 「로그인하는 중이에요」를 이 부팅이 맡는다는 것도 같은 순간에 정해야 한다.
+   */
+  const [signingIn] = useState(() => {
+    const returning = hasKakaoReturn();
+
+    if (returning) claimSigningInMessageForBoot();
+
+    return returning;
+  });
   const [minimumShown, setMinimumShown] = useState(() => hasKakaoReturn());
   const redirected = useRef(false);
   /*

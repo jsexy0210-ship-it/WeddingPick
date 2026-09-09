@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { createInquiry, listMyInquiries } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { formatDateDot } from '@/features/common/format-date';
+import { BackBar } from '@/components/back-bar';
 import {
   Accordion,
   ActionButton,
@@ -109,6 +110,7 @@ export default function ContactScreen() {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
+          <BackBar />
           <ThemedView style={styles.content}>
             <ThemedText type="subtitle">보냈어요</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
@@ -129,6 +131,7 @@ export default function ContactScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.section}>
             <ThemedText type="subtitle">문의하기</ThemedText>
