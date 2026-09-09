@@ -1,4 +1,3 @@
-import { Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
@@ -6,18 +5,20 @@ import { getCurrentUser, getRemovedCandidates } from '@/api/client';
 import {
   EmptyView,
   ErrorView,
-  FontSize,
   Layout,
-  LineHeight,
   MaxContentWidth,
   Radius,
   Skeleton,
   Spacing,
   ThemedText,
-  ThemedView,
   useTheme,
 } from '@weddingpick/ui';
+import { NavBar, Screen } from '@/features/wedding/screen-kit';
 
+/**
+ * 제거된 후보. WP-PICK-007 결정 내역의 «제거된 후보 보기»에서만 들어오므로 뒤로는
+ * 결정 내역(`/pick/history`)이다 — Depth Back 예외표에 근거를 적어뒀다.
+ */
 const S = {
   title: '제거된 후보',
   'empty.title': '제거된 후보가 없어요',
@@ -35,9 +36,9 @@ function RemovedSkeleton() {
     <View style={{ paddingHorizontal: Layout.gutter, paddingTop: Spacing.four }}>
       {[1, 2, 3].map((i) => (
         <View key={i} style={{ marginBottom: Spacing.four }}>
-          <Skeleton width={80} height={14} radius={4} style={{ marginBottom: Spacing.two }} />
-          <Skeleton width="100%" height={56} radius={Radius.card} style={{ marginBottom: Spacing.one }} />
-          <Skeleton width="100%" height={56} radius={Radius.card} />
+          <Skeleton width={80} height={14} radius={Radius.badge} style={{ marginBottom: Spacing.two }} />
+          <Skeleton width="100%" height={56} radius={Radius.medium} style={{ marginBottom: Spacing.one }} />
+          <Skeleton width="100%" height={56} radius={Radius.medium} />
         </View>
       ))}
     </View>
@@ -70,19 +71,19 @@ export default function PickRemovedScreen() {
 
   if (loading) {
     return (
-      <ThemedView style={styles.flex}>
-        <Stack.Screen options={{ title: S.title }} />
+      <Screen>
+        <NavBar title={S.title} />
         <RemovedSkeleton />
-      </ThemedView>
+      </Screen>
     );
   }
 
   if (error) {
     return (
-      <ThemedView style={styles.flex}>
-        <Stack.Screen options={{ title: S.title }} />
+      <Screen>
+        <NavBar title={S.title} />
         <ErrorView message={S.error} />
-      </ThemedView>
+      </Screen>
     );
   }
 
@@ -90,25 +91,25 @@ export default function PickRemovedScreen() {
 
   if (!hasItems) {
     return (
-      <ThemedView style={styles.flex}>
-        <Stack.Screen options={{ title: S.title }} />
+      <Screen>
+        <NavBar title={S.title} />
         <EmptyView
           title={S['empty.title']}
           description={S['empty.description']}
         />
-      </ThemedView>
+      </Screen>
     );
   }
 
   return (
-    <ThemedView style={styles.flex}>
-      <Stack.Screen options={{ title: S.title }} />
+    <Screen>
+      <NavBar title={S.title} />
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {groups!
           .filter((g) => g.items.length > 0)
           .map((group) => (
             <View key={group.category} style={styles.categoryBlock}>
-              <ThemedText themeColor="textSecondary" style={styles.categoryLabel}>
+              <ThemedText type="t6" themeColor="textSecondary" style={styles.categoryLabel}>
                 {group.categoryLabel}
               </ThemedText>
               {group.items.map((item) => (
@@ -120,10 +121,10 @@ export default function PickRemovedScreen() {
                   ]}
                 >
                   <View style={styles.vendorInfo}>
-                    <ThemedText style={styles.vendorName} numberOfLines={1}>
+                    <ThemedText type="t6" style={styles.vendorName} numberOfLines={1}>
                       {item.vendorName}
                     </ThemedText>
-                    <ThemedText themeColor="textAssistive" style={styles.vendorMeta}>
+                    <ThemedText type="t7" themeColor="textAssistive">
                       {formatDate(item.removedAt)} 제거
                     </ThemedText>
                   </View>
@@ -132,17 +133,16 @@ export default function PickRemovedScreen() {
             </View>
           ))}
       </ScrollView>
-    </ThemedView>
+    </Screen>
   );
 }
 
 function makeStyles(theme: ReturnType<typeof useTheme>) {
   return StyleSheet.create({
-    flex: { flex: 1 },
     scroll: {
       paddingHorizontal: Layout.gutter,
       paddingTop: Spacing.four,
-      paddingBottom: Spacing.six,
+      paddingBottom: Spacing.two,
       maxWidth: MaxContentWidth,
       alignSelf: 'center',
       width: '100%',
@@ -151,33 +151,26 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       marginBottom: Layout.sectionGap,
     },
     categoryLabel: {
-      fontSize: FontSize.t6,
-      lineHeight: LineHeight.t6,
       fontWeight: '700',
       marginBottom: Spacing.two,
     },
+    /* 카드 — component.card «radius 10 · paddingCompact 18px 20px». */
     vendorRow: {
       flexDirection: 'row',
       alignItems: 'center',
       minHeight: Layout.rowMinHeight,
-      borderRadius: Radius.card,
+      borderRadius: Radius.medium,
       borderWidth: 1,
-      paddingHorizontal: Spacing.three,
-      paddingVertical: Spacing.two,
+      paddingHorizontal: Layout.cardPadding,
+      paddingVertical: Layout.cardPaddingCompactY,
       marginBottom: Spacing.one,
     },
     vendorInfo: {
       flex: 1,
     },
     vendorName: {
-      fontSize: FontSize.t6,
-      lineHeight: LineHeight.t6,
       fontWeight: '700',
-      marginBottom: 2,
-    },
-    vendorMeta: {
-      fontSize: FontSize.t7,
-      lineHeight: LineHeight.t7,
+      marginBottom: Spacing.half,
     },
   });
 }

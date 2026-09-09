@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
   input: {
     height: Layout.rowMinHeight,
     borderRadius: Radius.input,
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Layout.fieldPaddingX,
   },
   timeline: {
     borderRadius: Radius.medium,
@@ -371,7 +371,7 @@ const styles = StyleSheet.create({
   timelineDot: {
     width: 10,
     height: 10,
-    borderRadius: 5,
+    borderRadius: Radius.pill,
     flex: 1,
   },
 });

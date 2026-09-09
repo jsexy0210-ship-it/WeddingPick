@@ -226,7 +226,9 @@ describe('보상 지급 규칙', () => {
     it('친구초대 안내가 조건을 먼저 말한다', () => {
       // 가입만으로 준다고 읽히면 안 된다. K-7이 그 규칙을 폐기했다.
       expect(REFERRAL_NOTICE).toContain('Pick 인증');
-      expect(REFERRAL_NOTICE).toContain('가입만으로는');
+      // 가입만으로 준다고 읽히면 안 된다 — 조건(첫 Pick 인증)이 금액보다 앞에 온다.
+      expect(REFERRAL_NOTICE.indexOf('Pick 인증')).toBeLessThan(REFERRAL_NOTICE.indexOf('3,000원'));
+      expect(REFERRAL_NOTICE).not.toMatch(/않아요$/);
     });
   });
 });

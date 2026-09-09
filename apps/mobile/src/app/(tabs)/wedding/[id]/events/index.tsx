@@ -1,51 +1,71 @@
 import type { WeddingEvent, WeddingEventListResponse } from '@weddingpick/api-contract';
-import { formatEventDateTime } from '@weddingpick/domain';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { listWeddingEvents } from '@/api/client';
+import { ActionButton, ErrorView, Layout, SkeletonView, Spacing } from '@weddingpick/ui';
 import {
-  ActionButton,
-  ErrorView,
-  Fab,
-  Layout,
-  MaxContentWidth,
-  Radius,
-  Spacing,
-  ThemedText,
-  ThemedView,
-  SkeletonView,
-} from '@weddingpick/ui';
+  DateChip,
+  Hero,
+  ListRow,
+  NavBar,
+  RowValue,
+  Screen,
+  Section,
+  eventTime,
+} from '@/features/wedding/screen-kit';
 
-const SOURCE_LABEL: Record<WeddingEvent['source'], string> = {
-  manual: '직접 추가',
-  auto: '자동 생성',
-};
+const DAY_MS = 24 * 60 * 60 * 1000;
 
-function isToday(isoDateTime: string): boolean {
-  const value = new Date(isoDateTime);
-  const now = new Date();
+/** «오늘» · «D-11». 지난 일정은 라벨이 없다. */
+function dDayLabel(startsAt: string, now: number): string {
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+  const startOfDay = new Date(startsAt);
+  startOfDay.setHours(0, 0, 0, 0);
+  const diff = Math.round((startOfDay.getTime() - startOfToday.getTime()) / DAY_MS);
 
-  return (
-    value.getFullYear() === now.getFullYear() &&
-    value.getMonth() === now.getMonth() &&
-    value.getDate() === now.getDate()
-  );
+  return diff <= 0 ? '오늘' : `D-${diff}`;
+}
+
+function isSameMonth(iso: string, now: number): boolean {
+  const a = new Date(iso);
+  const b = new Date(now);
+
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth();
+}
+
+/** 부제 — «14:00 · 라비드레스» · 자동 생성은 «자동 추가 · 업체». */
+function subtitle(event: WeddingEvent): string {
+  const place = event.location ?? event.vendorLabel;
+
+  if (event.source === 'auto') return place ? `자동 추가 · ${place}` : '자동 추가';
+
+  return place ? `${eventTime(event.startsAt)} · ${place}` : eventTime(event.startsAt);
 }
 
 /**
- * 일정 목록. 핸드오프 WP-OUR-004.
+ * 일정 목록. WP-OUR-004 · 핸드오프 08-schedule-sub #1.
  *
- * 웨딩 스케줄(체크리스트, tasks.tsx)과 다른 화면이다 — 여기는 일시·장소가 있는
- * 캘린더 이벤트다. 예정/완료는 서버가 계산해서 준다(status 필드) — 화면이
- * 다시 세지 않는다.
+ *   nav        «일정» · 오른쪽 «추가»(coral)
+ *   hero       «이번 달에 N곳을 다녀와요» — 이번 달 일정이 없으면 «다가오는 일정이 N개 있어요»
+ *   다가오는 일정  날짜칩 52 + 제목 18/24 + 시각·장소 14/19 + D-day 16/22
+ *   지난 일정     회색 — 제목 disabled · 부제 «완료»
+ *
+ * 자동 생성 일정은 부제에 «자동 추가»를 달아 직접 넣은 것과 구분한다(screens.json rule).
+ * 예정/완료는 서버가 `status`로 계산해 준다 — 화면이 다시 세지 않는다.
  */
 export default function WeddingEventsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [page, setPage] = useState<WeddingEventListResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** D-day 기준 시각. 렌더 중에는 Date.now()를 부르지 않는다. */
+  const [now, setNow] = useState<number | null>(null);
+
+  useEffect(() => {
+    void Promise.resolve().then(() => setNow(Date.now()));
+  }, []);
 
   const load = useCallback(() => {
     listWeddingEvents(id)
@@ -53,109 +73,88 @@ export default function WeddingEventsScreen() {
       .catch((caught: Error) => setError(caught.message));
   }, [id]);
 
-  useEffect(load, [load]);
+  /* 추가 · 수정 화면에서 돌아오면 다시 읽는다. */
+  useFocusEffect(load);
 
   if (error) {
     return <ErrorView message={error} onBack={() => router.back()} />;
   }
 
-  if (!page) {
+  if (!page || now === null) {
     return <SkeletonView />;
   }
 
-  const today = page.events.filter((event) => event.status === 'upcoming' && isToday(event.startsAt));
-  const upcoming = page.events.filter(
-    (event) => event.status === 'upcoming' && !isToday(event.startsAt)
-  );
-  const done = page.events.filter((event) => event.status === 'done');
+  const upcoming = page.events
+    .filter((event) => event.status === 'upcoming')
+    .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
+  const done = page.events
+    .filter((event) => event.status === 'done')
+    .sort((a, b) => b.startsAt.localeCompare(a.startsAt));
+  const thisMonth = upcoming.filter((event) => isSameMonth(event.startsAt, now)).length;
 
-  function Row({ event }: { event: WeddingEvent }) {
-    return (
-      <Pressable onPress={() => router.push(`/wedding/${id}/events/${event.id}`)}>
-        <ThemedView type="backgroundElement" style={styles.card}>
-          <ThemedText type="t5">{event.title}</ThemedText>
-          <ThemedText type="t7" themeColor="textSecondary">
-            {formatEventDateTime(event.startsAt)}
-            {event.location ? ` · ${event.location}` : ''}
-          </ThemedText>
-          <ThemedText type="badge" themeColor="tint">
-            {SOURCE_LABEL[event.source]}
-          </ThemedText>
-        </ThemedView>
-      </Pressable>
-    );
-  }
+  const heroTitle =
+    thisMonth > 0
+      ? `이번 달에 ${thisMonth}곳을 다녀와요`
+      : upcoming.length > 0
+        ? `다가오는 일정이 ${upcoming.length}개 있어요`
+        : '아직 일정이 없어요';
+  const heroSub =
+    upcoming.length === 0 && done.length === 0
+      ? '상견례 · 촬영 · 상담처럼 시간이 정해진 일을 넣어두세요'
+      : null;
+
+  const openAdd = () => router.push(`/wedding/${id}/events/new`);
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.content}>
-          <ThemedView style={styles.section}>
-            <ThemedText type="t2">일정</ThemedText>
-            <ThemedText type="t7" themeColor="textSecondary">
-              전체 {page.events.length}개
-            </ThemedText>
-          </ThemedView>
+    <Screen>
+      <NavBar title="일정" right={{ label: '추가', brand: true, onPress: openAdd }} />
 
-          {page.events.length === 0 ? (
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="t7" themeColor="textSecondary">
-                아직 등록된 일정이 없어요. 상견례, 촬영, 계약 미팅처럼 시간이 정해진
-                일을 적어두세요.
-              </ThemedText>
-            </ThemedView>
-          ) : (
-            <>
-              {today.length > 0 ? (
-                <ThemedView style={styles.group}>
-                  <ThemedText type="t6">오늘 일정</ThemedText>
-                  {today.map((event) => (
-                    <Row key={event.id} event={event} />
-                  ))}
-                </ThemedView>
-              ) : null}
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <Hero title={heroTitle} sub={heroSub} />
 
-              <ThemedView style={styles.group}>
-                <ThemedText type="t6">예정된 일정</ThemedText>
-                {upcoming.length === 0 && today.length === 0 ? (
-                  <ThemedText type="t7" themeColor="textSecondary">
-                    다가오는 일정이 없어요.
-                  </ThemedText>
-                ) : (
-                  upcoming.map((event) => <Row key={event.id} event={event} />)
-                )}
-              </ThemedView>
+        {upcoming.length > 0 ? (
+          <Section title="다가오는 일정">
+            {upcoming.map((event) => (
+              <ListRow
+                key={event.id}
+                left={<DateChip date={event.startsAt} />}
+                title={event.title}
+                sub={subtitle(event)}
+                subLines={1}
+                right={<RowValue>{dDayLabel(event.startsAt, now)}</RowValue>}
+                onPress={() => router.push(`/wedding/${id}/events/${event.id}`)}
+              />
+            ))}
+          </Section>
+        ) : null}
 
-              {done.length > 0 ? (
-                <ThemedView style={styles.group}>
-                  <ThemedText type="t6">지난 일정</ThemedText>
-                  {done.map((event) => (
-                    <Row key={event.id} event={event} />
-                  ))}
-                </ThemedView>
-              ) : null}
-            </>
-          )}
+        {done.length > 0 ? (
+          <Section label="지난 일정">
+            {done.map((event) => (
+              <ListRow
+                key={event.id}
+                left={<DateChip date={event.startsAt} />}
+                title={event.title}
+                titleColor="textDisabled"
+                sub="완료"
+                right={null}
+                onPress={() => router.push(`/wedding/${id}/events/${event.id}`)}
+              />
+            ))}
+          </Section>
+        ) : null}
 
-          <ActionButton label="돌아가기" onPress={() => router.back()} />
-        </ScrollView>
-      </SafeAreaView>
-
-      <Fab label="일정 더하기" glyph="✎" onPress={() => router.push(`/wedding/${id}/events/new`)} />
-    </ThemedView>
+        {page.events.length === 0 ? (
+          <View style={styles.emptyAction}>
+            <ActionButton variant="ghost" size="large" label="일정 넣기" onPress={openAdd} />
+          </View>
+        ) : null}
+      </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
-  safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
-  content: {
-    paddingHorizontal: Layout.gutter,
-    paddingTop: Spacing.five,
-    paddingBottom: Spacing.four,
-    gap: Spacing.two,
-  },
-  section: { gap: Spacing.one },
-  group: { gap: Spacing.two },
-  card: { borderRadius: Radius.medium, padding: Spacing.three, gap: Spacing.one },
+  content: { paddingBottom: Spacing.two },
+  emptyAction: { paddingHorizontal: Layout.gutter },
 });

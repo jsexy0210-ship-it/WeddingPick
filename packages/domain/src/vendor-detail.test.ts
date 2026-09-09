@@ -12,28 +12,29 @@ describe('업체 상세 순서', () => {
       'hero_image',
       'name',
       'key_conditions',
-      'verified_data',
       'recommend_reason',
+      'verified_data',
+      'pick',
       'vendor_notice',
       'benefits',
       'experience',
       'reviews',
       'rebuttals',
       'official_source',
-      'pick',
       'report_error',
     ]);
   });
 
-  it('공식정보가 후기 다음, Pick 앞이다', () => {
+  it('공식정보가 후기 다음이고, Pick은 제보 금액 바로 다음이다', () => {
     /*
-     * 예전에는 업체명 바로 아래에 있었다. 이름을 꾸며주는 배지처럼 보였는데,
-     * 읽는 사람이 출처를 궁금해하는 때는 고르기 직전이다.
+     * 공식정보는 예전에 업체명 바로 아래에 있었다. 이름을 꾸며주는 배지처럼 보였는데,
+     * 읽는 사람이 출처를 궁금해하는 때는 후기까지 읽은 뒤다.
+     * Pick은 핸드오프 WP-VEND-001 rule — «근거를 다 읽은 자리(제보 금액 다음)에 둔다».
      */
     const keys = VENDOR_DETAIL_SECTIONS.map((section) => section.key);
 
     expect(keys.indexOf('official_source')).toBeGreaterThan(keys.indexOf('reviews'));
-    expect(keys.indexOf('official_source')).toBeLessThan(keys.indexOf('pick'));
+    expect(keys.indexOf('pick')).toBe(keys.indexOf('verified_data') + 1);
   });
 
   it('아직 못 그리는 자리도 목록에 남는다', () => {
@@ -61,11 +62,11 @@ describe('업체 상세 순서', () => {
       'name',
       'key_conditions',
       'verified_data',
+      'pick',
       'experience',
       'reviews',
       'rebuttals',
       'official_source',
-      'pick',
       'report_error',
     ]);
   });

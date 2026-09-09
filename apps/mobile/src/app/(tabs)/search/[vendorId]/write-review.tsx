@@ -15,6 +15,7 @@ import {
   ActionButton,
   ErrorView,
   FilterChip,
+  Layout,
   MaxContentWidth,
   Radius,
   RatingPicker,
@@ -368,7 +369,7 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
   },
   content: {
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.five,
     paddingBottom: Spacing.four,
     gap: Spacing.four,

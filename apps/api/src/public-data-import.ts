@@ -100,9 +100,15 @@ async function main() {
     const filtered = words.length
       ? items.filter((item) => words.some((word) => item.name.includes(word)))
       : items;
-    if (filtered.length === 0) {
-      console.log('일치하는 항목이 없습니다.');
-    }
+
+    /*
+     * 받은 개수를 먼저 찍는다. «일치하는 항목이 없습니다» 한 줄만 보면 목록을
+     * 0건 받은 것인지, 잘 받았는데 그 낱말이 없는 것인지 구분할 수 없다 —
+     * 실제로 그 둘을 헷갈려 원인 조사가 한 번 헛돌았다(2026-09-09).
+     */
+    console.log(`받은 항목 ${items.length}개 · 일치 ${filtered.length}개`);
+    if (filtered.length === 0 && items.length > 0 && words.length) {
+      console.log(`«${words.join(' · ')}» 중 어느 것도 이름에 든 항목이 없습니다. 다른 낱말로 다시 찾아보세요.`);    }
     for (const item of filtered) console.log(`${item.code}\t${item.name}`);
     return;
   }

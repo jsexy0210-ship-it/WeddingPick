@@ -1,145 +1,157 @@
+import type { MyReportListResponse } from '@weddingpick/api-contract';
+import { TERMS, manwon } from '@weddingpick/domain';
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { Alert, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useCallback, useEffect, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
-import { ActionButton, MaxContentWidth, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
+import { listMyReports } from '@/api/client';
+import { isServerConfigured } from '@/api/config';
+import { formatMonthDayDot } from '@/features/common/format-date';
+import { Layout, ProductSymbol, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import { Badge, Band, Hero, ListRow, NavBar, Screen, Section, type BadgeTone } from '@/features/wedding/screen-kit';
 import { useCaptureDraft } from '@/features/capture/capture-draft';
-import { PermissionDeniedError, pickFromLibrary, pickPdf } from '@/features/capture/pickers';
-import type { CapturedPage } from '@/features/capture/types';
+
+/** `spec/strings.ko.json` `report.*` · 시안 11-report-review #12a. */
+const S = {
+  nav: TERMS.report,
+  heroTitle: '얼마 냈는지 알려주면 다음 사람이 덜 헤매요',
+  heroSub: '사진 한 장이면 자동으로 정리돼요',
+  pickVerify: 'Pick 인증',
+  pickVerifyDesc: '낸 금액이 보이는 사진 한 장이면 업체와 금액을 자동으로 읽어요',
+  price: TERMS.priceReport,
+  priceDesc: '증빙 없이 들은 금액만 알려주는 방법이에요',
+  vendorInfo: '업체정보 제보',
+  vendorInfoDesc: '새 업체 등록 · 정보 정정 · 영업종료 알림',
+  quote: '견적서 정리', // pick-language: 받는 서류 이름
+  quoteDesc: '견적서를 읽어 항목과 별도로 확인할 비용을 정리해요', // pick-language: 받는 서류 이름
+  logTitle: TERMS.myReports.replace('내역', ' 내역'),
+  seeAll: '전체 보기',
+  logEmpty: '아직 제보한 것이 없어요',
+} as const;
+
+/** 내 제보 내역 요약의 배지 — 쓰이고 있으면 «반영됨», 사유가 있으면 «확인 필요», 아니면 «반영 전». */
+function badgeOf(report: MyReportListResponse['reports'][number]): { label: string; tone: BadgeTone } {
+  if (report.inUse) return { label: '반영됨', tone: 'ok' };
+  if (report.note) return { label: '확인 필요', tone: 'wait' };
+
+  return { label: '반영 전', tone: 'none' };
+}
 
 /**
- * 제보.
+ * 제보 홈. WP-RPT-001 · 핸드오프 11-report-review #12a.
  *
- * 사업계획서 v3 8번이 이 자리를 하단 내비게이션 가운데(Primary Action)에 뒀다.
- * 웨딩홀·스튜디오·드레스·메이크업은 공공데이터가 없어 제보로만 자료가 쌓이기 때문이다.
+ *   nav      «제보»
+ *   hero     «얼마 냈는지 알려주면 다음 사람이 덜 헤매요» · «사진 한 장이면 자동으로 정리돼요»
+ *   카드 3    Pick 인증 · 가격 제보 · 업체정보 제보 — 테두리 1 · radius 10 · padding 20 · 제목 18/24 · 설명 14/19 · chevron
+ *   밴드
+ *   내 제보 내역  «전체 보기» · 업체명 18/24 700 · «168만원 · 05.16(토)» · 상태 배지
  *
- * **결제인증이 앞이고 견적서가 뒤다.** v3 6번이 계약서 원본 업로드를 P1에서 뺐다 —
- * 웨딩홀 약관의 비밀유지 조항(위약벌 계약금 2배)이 확인됐고, 그 위험을 지는 쪽이
- * 이 앱을 쓴 사용자다. 결제내역에는 계약 조건이 없어 그 조항이 걸리지 않는다.
+ * 제보는 루트 탭이 아니다(v3.2 §1) — MY와 업체 상세, 웨딩일정 지출에서 들어온다.
+ * **Pick 인증이 앞이고 견적서가 뒤다.** 계약서 원본은 받지 않는다(비밀유지 조항 · 법률 확인 전).
+ * 견적서 정리는 네 번째 카드로 남긴다 — 촬영 · 앨범 · PDF 입력이 그 안에서 이어진다.
  */
-/**
- * 어떤 서류를 받고 어떤 서류를 왜 안 받는지.
- *
- * v3.13 §O-10이 사용자 UI에서 `견적서`·`계약서`를 막았지만 **여기는 그 이름이 있어야
- * 뜻이 통하는 자리**다. 둘 다 `자료`라고 적으면 "자료는 받고 자료는 안 받습니다"가
- * 되어, 사용자는 무엇을 가져와야 하는지도 무엇이 거절되는지도 알 수 없다.
- * 받지 않는 이유가 법률 확인이라는 것도 사실 그대로 적어야 한다.
- */
-const WHAT_WE_READ =
-  '견적서를 읽어 항목과 추가비용 후보를 정리해 드려요. ' + // pick-language: 받는 서류 이름
-  '계약서는 지금 받지 않아요 — 계약서에 비밀유지 조항이 있는 경우가 있어, ' + // pick-language: 안 받는 서류 이름과 그 이유
-  '법률 확인이 끝날 때까지 미뤄두었어요.';
-
 export default function CaptureScreen() {
-  const { pages, addPages } = useCaptureDraft();
-  const [busy, setBusy] = useState(false);
+  const theme = useTheme();
+  const { pages } = useCaptureDraft();
+  const [reports, setReports] = useState<MyReportListResponse | null>(null);
 
-  async function runPicker(pick: () => Promise<CapturedPage[]>) {
-    if (busy) return;
-    setBusy(true);
+  const load = useCallback(() => {
+    if (!isServerConfigured) return;
+    listMyReports()
+      .then(setReports)
+      .catch(() => setReports(null));
+  }, []);
 
-    try {
-      const picked = await pick();
+  useEffect(load, [load]);
 
-      if (picked.length > 0) {
-        addPages(picked);
-        router.push('/capture/review');
-      }
-    } catch (error) {
-      const message =
-        error instanceof PermissionDeniedError
-          ? error.message
-          : '문서를 불러오지 못했어요. 다시 시도해주세요.';
-      Alert.alert('불러오기 실패', message);
-    } finally {
-      setBusy(false);
-    }
-  }
+  const cards: { title: string; desc: string; onPress: () => void }[] = [
+    { title: S.pickVerify, desc: S.pickVerifyDesc, onPress: () => router.push('/capture/payment/consent') },
+    { title: S.price, desc: S.priceDesc, onPress: () => router.push('/search' as never) },
+    {
+      title: S.vendorInfo,
+      desc: S.vendorInfoDesc,
+      onPress: () => router.push({ pathname: '/my/contact', params: { category: 'vendor_info' } } as never),
+    },
+    {
+      title: pages.length > 0 ? `${S.quote} · 작성 중 ${pages.length}장` : S.quote,
+      desc: S.quoteDesc,
+      onPress: () => router.push(pages.length > 0 ? '/capture/review' : '/capture/camera'),
+    },
+  ];
+
+  const recent = reports?.reports.slice(0, 3) ?? [];
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.header}>
-          <ThemedText type="subtitle">실제로 내신 금액을 알려주세요</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            카드 승인 문자나 영수증이면 돼요. 한 건만 올려주셔도 다른 분들이 실제로
-            얼마를 냈는지 보실 수 있어요.
-          </ThemedText>
-        </ThemedView>
+    <Screen>
+      <NavBar title={S.nav} />
 
-        <ThemedView style={styles.actions}>
-          <ActionButton
-            variant="primary"
-            label="제보하기"
-            hint="안내 문자 캡처도 괜찮아요"
-            onPress={() => router.push('/capture/payment/consent')}
-          />
-        </ThemedView>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <Hero title={S.heroTitle} sub={S.heroSub} />
 
-        <ThemedView style={styles.actions}>
-          <ThemedText type="smallBold">자료 분석</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            {WHAT_WE_READ}
-          </ThemedText>
-          <ActionButton
-            label="카메라로 촬영"
-            hint="여러 장을 이어서 찍을 수 있어요"
-            disabled={busy}
-            onPress={() => router.push('/capture/camera')}
-          />
-          <ActionButton
-            label="사진에서 불러오기"
-            hint="앨범에 저장해둔 자료 사진"
-            disabled={busy}
-            onPress={() => runPicker(pickFromLibrary)}
-          />
-          <ActionButton
-            label="PDF 불러오기"
-            hint="메일이나 메신저로 받은 자료 파일"
-            disabled={busy}
-            onPress={() => runPicker(pickPdf)}
-          />
-        </ThemedView>
+        <View style={styles.cards}>
+          {cards.map((card) => (
+            <Pressable
+              key={card.title}
+              accessibilityRole="button"
+              accessibilityLabel={card.title}
+              onPress={card.onPress}
+              style={({ pressed }) => [styles.card, { borderColor: theme.track }, pressed && styles.pressed]}>
+              <View style={styles.cardText}>
+                <ThemedText type="t5">{card.title}</ThemedText>
+                <ThemedText type="t7" themeColor="textAssistive">
+                  {card.desc}
+                </ThemedText>
+              </View>
+              <ProductSymbol name="chevronRight" size={Layout.iconInline} color={theme.textDisabled} />
+            </Pressable>
+          ))}
+        </View>
 
-        <ThemedView style={styles.actions}>
-          <ActionButton
-            label="이렇게 찍어주세요"
-            hint="잘 읽히는 촬영 방법과 분석 안내"
-            onPress={() => router.push('/my/guide')}
-          />
-          <ActionButton label="샘플 결과 보기" onPress={() => router.push('/capture/sample')} />
-        </ThemedView>
+        {isServerConfigured ? (
+          <>
+            <Band />
+            <Section title={S.logTitle} action={{ label: S.seeAll, onPress: () => router.push('/my/reports' as never) }}>
+              {recent.length === 0 ? (
+                <ListRow title={S.logEmpty} titleColor="textAssistive" divider={false} />
+              ) : (
+                recent.map((report) => {
+                  const badge = badgeOf(report);
 
-        {pages.length > 0 ? (
-          <ActionButton
-            label={`작성 중인 문서 ${pages.length}장 이어서 보기`}
-            onPress={() => router.push('/capture/review')}
-          />
+                  return (
+                    <ListRow
+                      key={report.id}
+                      title={report.subject}
+                      titleBold
+                      sub={[report.amount != null ? manwon(report.amount) : report.kindLabel, formatMonthDayDot(report.reportedAt)]
+                        .filter(Boolean)
+                        .join(' · ')}
+                      subLines={1}
+                      right={<Badge label={badge.label} tone={badge.tone} />}
+                      onPress={() => router.push('/my/reports' as never)}
+                    />
+                  );
+                })
+              )}
+            </Section>
+          </>
         ) : null}
-
-      </SafeAreaView>
-    </ThemedView>
+      </ScrollView>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  content: { paddingBottom: Spacing.two },
+  cards: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four, gap: Layout.rowPaddingY },
+  /* 제보 카드 — radius 10 · 테두리 1 · padding 20 · gap 14. */
+  card: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    alignItems: 'center',
+    gap: Layout.sectionHeadGap,
+    borderRadius: Radius.medium,
+    borderWidth: 1,
+    padding: Layout.cardPadding,
   },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.five,
-    gap: Spacing.four,
-  },
-  header: {
-    gap: Spacing.two,
-  },
-  actions: {
-    gap: Spacing.two,
-  },
+  cardText: { flex: 1, minWidth: 0, gap: Spacing.one },
+  pressed: { opacity: 0.8 },
 });

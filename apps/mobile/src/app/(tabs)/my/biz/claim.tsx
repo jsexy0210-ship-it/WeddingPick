@@ -79,8 +79,8 @@ export default function BizClaimScreen() {
 
           <ThemedView type="backgroundElement" style={styles.notice}>
             <ThemedText type="t6" themeColor="tint">
-              담당자가 알려주신 정보로 연락해 확인해요. 확인 전에는 관계자로 표시되지
-              않아요.
+              담당자가 알려주신 정보로 연락해 확인해요. 확인이 끝나면 관계자로
+              표시돼요.
             </ThemedText>
           </ThemedView>
 
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.five,
-    paddingBottom: Spacing.six,
+    paddingBottom: Spacing.four,
     gap: Spacing.three,
   },
   header: {
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
   },
   input: {
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Layout.fieldPaddingX,
     paddingVertical: Spacing.three,
     fontSize: FontSize.t6,
     minHeight: Layout.rowMinHeight,

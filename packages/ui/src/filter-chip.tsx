@@ -2,7 +2,7 @@ import { Pressable, StyleSheet } from 'react-native';
 
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
-import { Radius, Spacing } from './theme';
+import { Border, Layout, Radius } from './theme';
 import { useTheme } from './use-theme';
 import { readWebInteractionState } from './web-interaction';
 
@@ -12,38 +12,71 @@ export type FilterChipProps = {
   onPress: () => void;
   /** 여럿 중 하나만 고르는 자리인지. 스크린 리더가 읽는 역할이 달라진다. */
   role?: 'checkbox' | 'radio';
+  /**
+   * `default` 36 · 글자 14/700 · padding 0 14 — 검색 필터 · 조건 칩(component.chip).
+   * `small` 28 · 글자 micro 13/700 · padding 0 10 — 스타일 태그(v3.24 «추천 이유 첫 줄 칩 28»).
+   */
+  size?: 'default' | 'small';
+  /**
+   * 선택 색. 기본 `ink`(#212124 채움 · 흰 글자 — tokens.json component.chip.activeBg).
+   * `tint`는 스킨 코랄 — 홈 코랄 네 곳 규칙(v3.24) 밖에서는 쓰지 않는다. 내가 고른 스타일과 겹치는
+   * 태그(coral + 체크)처럼 시안이 코랄로 그린 자리에만.
+   */
+  accent?: 'ink' | 'tint';
+  disabled?: boolean;
 };
 
-/** 눌러서 켜고 끄는 작은 조건 단추. 검색 필터와 증빙 종류 선택이 같은 것을 쓴다. */
-export function FilterChip({ label, selected, onPress, role = 'checkbox' }: FilterChipProps) {
+/**
+ * 눌러서 켜고 끄는 작은 조건 단추 — tokens.json component.chip · 02-design-system «Chip».
+ *
+ *   높이 36 · radius 999 · padding 0 14 · 14px 700
+ *   켬   #212124 / #FFFFFF        끔   #F2F3F6 / #4D5159        비활성  opacity .5
+ *
+ * 테두리는 없다 — 채움으로만 구분한다. 키보드 포커스(웹)만 2px 코랄 링을 얹는다.
+ * 가로 스크롤 영역에서는 `flex: 0 0 auto`가 필요하다 — 부모가 `flexShrink: 0`을 준다.
+ */
+export function FilterChip({
+  label,
+  selected,
+  onPress,
+  role = 'checkbox',
+  size = 'default',
+  accent = 'ink',
+  disabled = false,
+}: FilterChipProps) {
   const theme = useTheme();
+  const small = size === 'small';
+  const paddingX = small ? Layout.chipSmallPaddingX : Layout.chipPaddingX;
+  const selectedBackground = accent === 'tint' ? theme.tint : theme.text;
 
   return (
     <Pressable
       accessibilityRole={role}
-      accessibilityState={role === 'radio' ? { selected } : { checked: selected }}
+      accessibilityState={role === 'radio' ? { selected, disabled } : { checked: selected, disabled }}
       accessibilityLabel={label}
+      disabled={disabled}
       onPress={onPress}>
       {(state) => {
-        const { hovered, focused } = readWebInteractionState(state);
+        const { focused } = readWebInteractionState(state);
+        const ring = focused ? Border.focus : 0;
         return (
           <ThemedView
             style={[
               styles.chip,
               {
-                borderColor: selected || focused ? theme.tint : theme.border,
-                borderWidth: focused && !selected ? 2 : 1,
-                backgroundColor: selected
-                  ? theme.tint
-                  : hovered
-                    ? theme.backgroundSelected
-                    : 'transparent',
+                height: small ? Layout.chipSmall : Layout.chip,
+                /* 포커스 링은 패딩을 그만큼 줄여 폭이 변하지 않게 한다. */
+                paddingHorizontal: paddingX - ring,
+                borderWidth: ring,
+                borderColor: theme.tint,
+                backgroundColor: selected ? selectedBackground : theme.backgroundSelected,
+                opacity: disabled ? 0.5 : 1,
               },
             ]}>
             <ThemedText
-              type="small"
-              style={selected ? { color: theme.onTint } : undefined}
-              themeColor={selected ? undefined : 'textSecondary'}>
+              type={small ? 'micro' : 't7'}
+              numberOfLines={1}
+              style={[styles.label, { color: selected ? theme.onTint : theme.textSecondary }]}>
               {label}
             </ThemedText>
           </ThemedView>
@@ -55,12 +88,11 @@ export function FilterChip({ label, selected, onPress, role = 'checkbox' }: Filt
 
 const styles = StyleSheet.create({
   chip: {
-    /* SEED 핸드오프: 칩 36px · Radius pill(999). */
-    minHeight: 36,
     justifyContent: 'center',
+    alignItems: 'center',
     borderRadius: Radius.pill,
-    borderWidth: 1,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.one,
+    alignSelf: 'flex-start',
   },
+  /** 칩 글자는 700 — caption(14)의 400 기본값을 덮는다. */
+  label: { fontWeight: 700 },
 });

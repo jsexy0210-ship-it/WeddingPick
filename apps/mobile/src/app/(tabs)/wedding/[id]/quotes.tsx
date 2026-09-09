@@ -10,13 +10,14 @@ import { formatDateDot } from '@/features/common/format-date';
 import {
   ActionButton,
   ErrorView,
+  Layout,
   MaxContentWidth,
   Radius,
+  SkeletonView,
   Spacing,
   ThemedText,
   ThemedView,
   VerificationBadge,
-  SkeletonView,
 } from '@weddingpick/ui';
 
 
@@ -146,12 +147,12 @@ const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
   content: {
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.five,
     paddingBottom: Spacing.four,
     gap: Spacing.three,
   },
   section: { gap: Spacing.one, marginBottom: Spacing.two },
-  card: { borderRadius: Radius.medium, padding: Spacing.four, gap: Spacing.two },
+  card: { borderRadius: Radius.medium, padding: Layout.cardPadding, gap: Spacing.two },
   cardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
 });

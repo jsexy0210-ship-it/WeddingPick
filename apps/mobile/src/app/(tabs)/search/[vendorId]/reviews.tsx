@@ -10,13 +10,14 @@ import { formatDateDot } from '@/features/common/format-date';
 import {
   ActionButton,
   FilterChip,
+  Layout,
+  ListSkeleton,
   MaxContentWidth,
   Radius,
   Spacing,
   ThemedText,
   ThemedView,
   useTheme,
-  ListSkeleton,
 } from '@weddingpick/ui';
 
 /**
@@ -310,7 +311,7 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
   },
   content: {
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.five,
     paddingBottom: Spacing.four,
     gap: Spacing.four,

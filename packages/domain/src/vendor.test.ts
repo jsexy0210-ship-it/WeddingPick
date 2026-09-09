@@ -1,6 +1,8 @@
 import {
   PREPARATION_CATEGORIES,
   PREPARATION_GROUPS,
+  preparationSkippedToast,
+  skippedPreparationCategories,
   PREPARATION_NOT_STARTED_LABEL,
   VENDOR_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
@@ -26,6 +28,26 @@ describe('업종', () => {
     ]);
     expect(PREPARATION_CATEGORIES).toHaveLength(12);
     expect(PREPARATION_CATEGORIES).not.toContain('etc');
+  });
+
+  it('앞 그룹을 비워두고 뒤 그룹만 고르면 비운 앞 그룹의 업종을 짚는다 (v3.23 토스트)', () => {
+    expect(skippedPreparationCategories([])).toEqual([]);
+    expect(skippedPreparationCategories(['wedding_info_company', 'hall'])).toEqual([]);
+    expect(skippedPreparationCategories(['hall', 'studio'])).toEqual([]);
+    expect(skippedPreparationCategories(['studio', 'dress'])).toEqual(['wedding_info_company', 'hall']);
+    expect(skippedPreparationCategories(['hall', 'snap'])).toEqual(['studio', 'dress', 'makeup', 'hair']);
+    expect(skippedPreparationCategories(['honeymoon'])).toEqual([
+      'wedding_info_company',
+      'hall',
+      'studio',
+      'dress',
+      'makeup',
+      'hair',
+      'snap',
+      'bouquet',
+      'invitation',
+    ]);
+    expect(preparationSkippedToast(['wedding_info_company', 'hall'])).toBe('앞 단계도 확인해주세요 · 결정사 · 웨딩홀');
   });
 
   it('준비 현황 그룹을 펼치면 준비 순서와 같다', () => {

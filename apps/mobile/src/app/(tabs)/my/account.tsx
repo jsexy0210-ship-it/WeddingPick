@@ -1,143 +1,145 @@
-import type { CurrentUser } from '@weddingpick/api-contract';
+import type { Settings } from '@weddingpick/api-contract';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Switch } from 'react-native';
 
-import {
-  ActionButton,
-  ErrorView,
-  Layout,
-  MaxContentWidth,
-  Spacing,
-  ThemedText,
-  ThemedView,
-  Toast,
-} from '@weddingpick/ui';
-import { DelayedLoadingView } from '@/features/loading/delayed-loader';
-import { getCurrentUser } from '@/api/client';
+import { ErrorView, Layout, Toast, useTheme } from '@weddingpick/ui';
+import { getSettings, updateSettings } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
 import { useSession } from '@/features/auth/use-session';
+import { DelayedLoadingView } from '@/features/loading/delayed-loader';
+import { Row, Rows, Section, SubScreen } from '@/features/settings/my-kit';
+
+/** 시안 13-my-sub WP-MY-007. */
+const S = {
+  title: '계정',
+  login: '로그인',
+  loginMethod: '소셜 로그인',
+  primary: '주 계정',
+  notify: '알림 수신',
+  service: '서비스 알림',
+  serviceMeta: '일정 · Pick 변화 · 제보 결과',
+  price: '가격 변동 알림',
+  priceMeta: 'Pick한 곳의 제보 금액이 크게 바뀌면',
+  logout: '로그아웃',
+  withdraw: '회원탈퇴',
+  logoutTitle: '로그아웃할까요',
+  logoutBody: '기기에 저장된 문서는 그대로 남아요',
+  stay: '그만두기',
+  toggleFail: '설정을 바꾸지 못했어요',
+  logoutFail: '로그아웃하지 못했어요',
+} as const;
 
 /**
- * 계정 정보. 디자인 핸드오프 19번.
+ * 계정 · WP-MY-007. 로그인 수단과 알림 수신을 여기서 관리한다.
+ * 탈퇴는 맨 아래 회색으로 두고 강조하지 않는다(screens.json rule).
  *
- * **여기에 개인정보를 두지 않는다.** 이름·예식일·지역은 설정 화면에서 고친다.
- * 여기서 보여주는 것은 로그인 방식뿐이다.
- *
- * **로그인 제공자는 서버 응답에 포함되지 않는다.** 현재 `/v1/me` 계약이 provider를
- * 돌려주지 않아, 화면은 "소셜 로그인"으로만 표기한다. 계약이 추가되는 날 여기에
- * 제공자명(카카오·네이버·애플·구글)을 채운다.
+ * **로그인 제공자는 `/v1/me`가 내려주지 않는다.** 시안은 카카오 · 네이버 · 구글 · 애플 4행이지만
+ * 계약이 없어 «소셜 로그인 · 주 계정» 한 줄만 둔다 — 다른 제공자 «연결하기»도 API가 없다.
+ * 마케팅 · 야간 수신 스위치도 계약에 없어 두지 않는다 — 저장되지 않는 스위치는 거짓말이다.
  */
 export default function AccountScreen() {
+  const theme = useTheme();
   const { signOut } = useSession();
-  const [me, setMe] = useState<CurrentUser | null>(null);
+  const [settings, setSettings] = useState<Settings | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    void getCurrentUser()
+    void getSettings()
       .then((response) => {
         setLoadError(null);
-        setMe(response);
+        setSettings(response);
       })
-      .catch((caught: Error) =>
-        setLoadError(caught.message ?? '계정 정보를 불러오지 못했어요.')
-      );
+      .catch((caught: Error) => setLoadError(caught.message ?? '계정 정보를 불러오지 못했어요'));
   }, []);
 
   useEffect(load, [load]);
 
+  async function toggle(key: 'pushEnabled' | 'priceChangeEnabled', value: boolean) {
+    if (!settings) return;
+    /* 먼저 화면을 바꾼다. 서버를 기다리면 스위치가 늦게 따라와 두 번 누르게 된다. */
+    setSettings({ ...settings, [key]: value });
+    await updateSettings({ [key]: value })
+      .then(setSettings)
+      .catch(() => {
+        setSettings(settings);
+        setToast(S.toggleFail);
+      });
+  }
+
   function confirmSignOut() {
-    // 파괴적 동작은 컨펌을 거친다. 핸드오프 인터랙션 규칙.
-    confirmAlert('로그아웃할까요', '기기에 저장된 문서는 지워지지 않아요', [
-      { text: '그만두기', style: 'cancel' },
+    confirmAlert(S.logoutTitle, S.logoutBody, [
+      { text: S.stay, style: 'cancel' },
       {
-        text: '로그아웃',
+        text: S.logout,
         style: 'destructive',
         onPress: () => {
-          void signOut().catch(() => setToast('로그아웃하지 못했어요'));
+          void signOut()
+            .then(() => router.replace('/login'))
+            .catch(() => setToast(S.logoutFail));
         },
       },
     ]);
   }
 
-  if (loadError) {
-    return <ErrorView message={loadError} onBack={load} />;
-  }
+  if (loadError) return <ErrorView message={loadError} onBack={load} />;
+  if (!settings) return <DelayedLoadingView />;
 
-  if (!me) {
-    return <DelayedLoadingView />;
-  }
+  const switchProps = {
+    trackColor: { true: theme.tint, false: theme.track },
+    thumbColor: theme.onTint,
+    ios_backgroundColor: theme.track,
+  };
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.content}>
-          <ThemedText type="t2">계정</ThemedText>
+    <SubScreen title={S.title} contentStyle={{ paddingTop: TOP }}>
+      <Section title={S.login}>
+        <Rows>
+          <Row name={S.loginMethod} tail={S.primary} tailBadge="brand" />
+        </Rows>
+      </Section>
 
-          <ThemedView style={styles.section}>
-            <ThemedText type="t7" themeColor="textSecondary">
-              로그인 방식
-            </ThemedText>
-            {/*
-              `/v1/me`가 provider를 내려주지 않아 지금은 "소셜 로그인"으로만 표기한다.
-              계약이 추가되면 여기에 제공자명을 채운다.
-            */}
-            <ThemedView type="backgroundElement" style={styles.infoRow}>
-              <ThemedText type="t5">로그인 방법</ThemedText>
-              <ThemedText type="t6" themeColor="textSecondary">
-                소셜 로그인
-              </ThemedText>
-            </ThemedView>
-          </ThemedView>
+      <Section title={S.notify}>
+        <Rows>
+          <Row
+            name={S.service}
+            meta={S.serviceMeta}
+            right={
+              <Switch
+                value={settings.pushEnabled}
+                onValueChange={(next) => void toggle('pushEnabled', next)}
+                accessibilityLabel={S.service}
+                {...switchProps}
+              />
+            }
+          />
+          <Row
+            name={S.price}
+            meta={S.priceMeta}
+            right={
+              <Switch
+                value={settings.priceChangeEnabled}
+                onValueChange={(next) => void toggle('priceChangeEnabled', next)}
+                accessibilityLabel={S.price}
+                {...switchProps}
+              />
+            }
+          />
+        </Rows>
+      </Section>
 
-          <ThemedView style={styles.section}>
-            <ThemedText type="t7" themeColor="textSecondary">
-              계정 관리
-            </ThemedText>
-            <ActionButton
-              variant="secondary"
-              label="로그아웃"
-              onPress={confirmSignOut}
-            />
-            <ActionButton
-              label="회원탈퇴"
-              onPress={() => router.push('/my/withdrawal' as never)}
-            />
-          </ThemedView>
-        </ScrollView>
-      </SafeAreaView>
+      <Section>
+        <Rows>
+          <Row name={S.logout} chevron onPress={confirmSignOut} />
+          <Row name={S.withdraw} off chevron onPress={() => router.push('/my/withdrawal' as never)} />
+        </Rows>
+      </Section>
 
       <Toast message={toast} onHidden={() => setToast(null)} />
-    </ThemedView>
+    </SubScreen>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-  },
-  content: {
-    paddingHorizontal: Layout.gutter,
-    paddingTop: Spacing.five,
-    paddingBottom: Spacing.six,
-    gap: Spacing.four,
-  },
-  section: {
-    gap: Spacing.two,
-  },
-  infoRow: {
-    padding: Spacing.three,
-    gap: Spacing.one,
-    borderRadius: Spacing.three,
-    minHeight: Layout.rowMinHeight,
-    justifyContent: 'center',
-  },
-});
+/* 히어로 없는 화면 — 첫 섹션이 nav 아래 12에서 시작한다(padHero의 위 여백). */
+const TOP = Layout.rowPaddingY;

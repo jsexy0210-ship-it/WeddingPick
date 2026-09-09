@@ -356,14 +356,21 @@ const UPJONG_CODE_FIELD = { large: 'indsLclsCd', middle: 'indsMclsCd', small: 'i
 const UPJONG_NAME_FIELD = { large: 'indsLclsNm', middle: 'indsMclsNm', small: 'indsSclsNm' } as const;
 
 /**
- * 상권정보 업종 대/중/소분류 코드 조회 — DB 반영용이 아니라 진짜 코드값을
- * 찾기 위한 조사용이다. `downloadSbizApiVendors`가 쓰는 대분류 'Q'가
- * 공식 활용가이드에 없는 값이라(위 주석 참고), 이 함수로 중분류·소분류
- * 이름에서 "예식"·"결혼"·"웨딩" 등을 찾아 진짜 코드를 확인한다.
+ * 상권정보 업종 대/중/소분류 코드 조회 — DB 반영용이 아니라 수집에 넣을 진짜
+ * 코드값을 찾기 위한 조사용이다. 이름에서 "예식"·"결혼"·"웨딩" 등을 찾아
+ * `SBIZ_UPJONG_CODES`에 넣을 코드를 확인한다.
  *
- * `type=json` 응답이 `storeListInUpjong`과 같은 `{ data: [...] }` 모양이라고
- * 가정한다 — 활용가이드가 XML 예시만 보여줘 실제 JSON 필드명은 실키로
- * 한 번 호출해 확인 전이다.
+ * 2026-09-09 실키 호출로 확인한 웨딩 관련 소분류(`indsSclsCd`):
+ *   S21101 예식장업 · S21105 결혼 상담 서비스업 · M11301 사진촬영업 ·
+ *   N11004 의류 대여업 · S20701 미용실.
+ * 대분류는 두 글자 열아홉 개이고 한 글자 'Q'는 없다 — 예전 하드코딩이 틀렸다.
+ *
+ * **응답 껍데기가 한 가지가 아니다**(2026-09-09 실키 호출로 확인). 공공데이터포털은
+ * `{ response: { body: { items: [...] } } }` 표준 봉투를 쓰는 곳과 `{ data: [...] }`를
+ * 그대로 주는 곳이 섞여 있고, `items`가 `{ item: [...] }`로 한 겹 더 싸이기도 한다.
+ * 한 모양만 보면 목록을 못 찾고도 «0건»으로 조용히 끝난다 — 실제로 그랬다.
+ * 그래서 `findRecords`로 기대 필드를 가진 배열을 봉투 어디서든 찾고,
+ * 어디서도 못 찾으면 그 사실을 알린다.
  */
 function upjongUrl(
   level: keyof typeof UPJONG_ENDPOINT,
@@ -399,9 +406,34 @@ export async function listIndustryCategories(
   parent?: { indsLclsCd?: string; indsMclsCd?: string },
 ): Promise<IndustryCategory[]> {
   const buf = await publicGet(upjongUrl(level, apiKey, parent), 4 * 1024 * 1024);
+  const page = JSON.parse(buf.toString('utf8')) as unknown;
   const codeField = UPJONG_CODE_FIELD[level];
   const nameField = UPJONG_NAME_FIELD[level];
-  const rows = findRecords<Record<string, string>>(JSON.parse(buf.toString('utf8')), codeField);
+
+  /*
+   * #137은 알려진 봉투 자리를 나열해 찾았다. 여기서는 `findRecords`로 기대 필드를
+   * 가진 배열을 봉투 어디서든 찾는다 — 2026-09-09 실 응답이 나열된 자리 중 어디에도
+   * 없는 모양이었고, 자리를 하나씩 추가하는 방식은 다음 변형에서 또 막힌다.
+   * 못 찾았을 때 던지는 것은 #137 그대로다 — «0건»과 «모양을 모름»은 다르다.
+   * findRecords는 비어 있지 않은 배열만 돌려주므로 빈 결과는 곧 «못 찾음»이다.
+   */
+  const rows = findRecords<Record<string, string>>(page, codeField);
+  if (!rows.length) {
+    // 값이 아니라 **자리 이름만** 알린다. 본문을 찍으면 서비스 키가 섞여 나올 수 있다.
+    throw new Error(
+      `업종 목록을 응답에서 찾지 못했다. 최상위 키: ${describeShape(page)}. ` +
+        `찾던 필드: ${codeField}.`
+    );
+  }
 
   return rows.map((row) => ({ code: row[codeField] ?? '', name: row[nameField] ?? '' }));
+}
+
+/** 응답의 «모양»만 한 줄로. 값은 담지 않는다. */
+function describeShape(page: unknown): string {
+  if (page === null || typeof page !== 'object') return typeof page;
+  if (Array.isArray(page)) return `array(${page.length})`;
+
+  const keys = Object.keys(page as Record<string, unknown>);
+  return keys.length ? keys.join(' · ') : '(빈 객체)';
 }

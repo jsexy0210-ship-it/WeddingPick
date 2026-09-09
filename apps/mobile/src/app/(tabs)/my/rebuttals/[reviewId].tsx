@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.five,
-    paddingBottom: Spacing.six,
+    paddingBottom: Spacing.four,
     gap: Spacing.three,
   },
   notice: {
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
   },
   input: {
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Layout.fieldPaddingX,
     paddingVertical: Spacing.three,
     /* 입력 칸 글자도 본문이다. 토큰 밖의 크기를 쓰지 않는다. */
     fontSize: FontSize.t6,

@@ -13,6 +13,7 @@ import {
   VENDOR_DETAIL_SECTIONS,
   findBannedPhrases,
   findVaguePhrases,
+  guidePriceLabel,
   hasExclamationOrEmoji,
   rangeLabel,
 } from '@weddingpick/domain';
@@ -36,7 +37,10 @@ const ROOT = join(__dirname, '..', '..', '..');
 
 const EMPTY: SiteData = { vendors: [], stats: null, regions: [] };
 
-function summary(paidPrice: VendorSummary['paidPrice']): VendorSummary {
+function summary(
+  paidPrice: VendorSummary['paidPrice'],
+  guidePrice: VendorSummary['guidePrice'] = null
+): VendorSummary {
   return {
     id: '11111111-1111-4111-8111-111111111111',
     name: '모먼트 스튜디오',
@@ -47,7 +51,7 @@ function summary(paidPrice: VendorSummary['paidPrice']): VendorSummary {
     imageUrl: null,
     comparableQuoteCount: 12,
     styleTags: [],
-    guidePrice: null,
+    guidePrice,
     paidPrice,
   };
 }
@@ -199,6 +203,30 @@ describe('서비스 웹 — 홈', () => {
     expect(html).not.toContain('만원');
   });
 
+  /*
+   * 정보 0층(v3.24). 실 제보가 3건이 못 되면 업체가 안내한 시작 금액이 대신 선다.
+   * 그 값이 **실 제보로 집계한 구간처럼 보이면 안 된다** — 라벨이 «업체 안내»로
+   * 다르고, 회색이고(`.none`), 캡션이 출처를 밝힌다. 웹이 도메인의 `priceLine`을
+   * 거치지 않고 직접 그리면 이 셋이 한꺼번에 사라진다.
+   */
+  it('실 제보가 모자라면 업체 안내 금액을 실 제보와 구분해 보여준다', () => {
+    const html = renderHomePage({
+      ...EMPTY,
+      vendors: [
+        summary(
+          { stage: 'collecting', count: 1, caption: `${TERMS.verifiedData} 1건 · 수집 중` },
+          { fromKrw: 1_500_000, sourceLabel: '업체 홈페이지' }
+        ),
+      ],
+    });
+
+    expect(html).toContain(escapeHtml(guidePriceLabel(1_500_000)));
+    expect(html).toContain(escapeHtml('출처 · 업체 홈페이지'));
+    expect(html).toContain('class="price none"');
+    /* 실 제보 쪽 캡션은 이 자리에 오지 않는다 — 0층은 출처를 밝힌다. */
+    expect(html).not.toContain(escapeHtml(`${TERMS.verifiedData} 1건 · 수집 중`));
+  });
+
   it('금액 옆에 캡션을 함께 적는다', () => {
     const caption = `${TERMS.verifiedData} 6건 · ${TERMS.period}`;
     const html = renderHomePage({
@@ -279,6 +307,26 @@ describe('서비스 웹 — 업체 상세', () => {
 
     expect(html).toContain(escapeHtml(NOT_ENOUGH_DATA));
     expect(html).not.toContain('만원');
+  });
+
+  it('실 제보가 모자라면 업체 안내 금액을 실 제보와 구분해 보여준다', () => {
+    const html = renderVendorPage(
+      detail({
+        guidePrice: { fromKrw: 1_500_000, sourceLabel: '업체 홈페이지' },
+        prices: {
+          ...detail().prices,
+          paidPrice: {
+            stage: 'collecting',
+            count: 2,
+            caption: `${TERMS.verifiedData} 2건 · 수집 중`,
+          },
+        },
+      })
+    );
+
+    expect(html).toContain(escapeHtml(guidePriceLabel(1_500_000)));
+    expect(html).toContain(escapeHtml('출처 · 업체 홈페이지'));
+    expect(html).toContain('class="amount none"');
   });
 
   it('Pick과 비교가 앱에서 이어지는 것을 밝힌다', () => {

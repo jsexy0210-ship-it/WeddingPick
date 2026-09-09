@@ -68,3 +68,4 @@ export * from './business';
 export * from './site';
 export * from './style';
 export * from './guide-price';
+export * from './reward-payout';

@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ActionButton, ErrorView, MaxContentWidth, showAlert, Spacing, ThemedText, ThemedView, VerificationBadge } from '@weddingpick/ui';
+import { ActionButton, ErrorView, Layout, MaxContentWidth, Radius, showAlert, Spacing, ThemedText, ThemedView, VerificationBadge } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { PageThumbnail } from '@/components/page-thumbnail';
 import { isServerConfigured } from '@/api/config';
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Layout.gutter,
     gap: Spacing.three,
   },
   content: {
@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   card: {
-    borderRadius: Spacing.three,
+    borderRadius: Radius.medium,
     padding: Spacing.three,
   },
   list: {
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.three,
-    borderRadius: Spacing.three,
+    borderRadius: Radius.medium,
     padding: Spacing.two,
   },
   rowText: {

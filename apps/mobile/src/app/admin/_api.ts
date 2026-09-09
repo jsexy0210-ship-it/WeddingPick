@@ -16,5 +16,7 @@ export async function apiFetch(path: string, options?: RequestInit): Promise<unk
     },
   });
   if (!res.ok) throw new Error(`API ${path} → ${res.status}`);
+  // 204에는 본문이 없다. res.json()을 부르면 성공한 PATCH가 호출부에서 실패로 잡힌다.
+  if (res.status === 204) return null;
   return res.json();
 }

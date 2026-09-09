@@ -1,32 +1,47 @@
 import type { MyReport } from '@weddingpick/api-contract';
-import { MY_REPORTS_EMPTY, MY_REPORTS_EMPTY_CTA, formatWeddingDate } from '@weddingpick/domain';
+import { MY_REPORTS_EMPTY, MY_REPORTS_EMPTY_CTA, formatDateDot } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, View } from 'react-native';
 
 import {
   ActionButton,
   ErrorView,
   Layout,
-  MaxContentWidth,
   Radius,
   Spacing,
   ThemedText,
-  ThemedView,
   Toast,
   useTheme,
-  SkeletonView,
 } from '@weddingpick/ui';
 import { deleteReview, listMyReports } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
+import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { won } from '@/features/quotes/quote-result-view';
+import { Badge, Dock, EmptyBox, Hero, Section, SubScreen } from '@/features/settings/my-kit';
+
+/** 시안 11-report-review 12c WP-RPT-009. */
+const S = {
+  title: '내 제보 내역',
+  hero: (total: number, used: number) => [`${total}건 제보했고`, `${used}건이 반영됐어요`],
+  heroEmpty: ['아직 제보한 것이', '없어요'],
+  inUse: '반영됨',
+  notInUse: '반영 전',
+  review: '후기',
+  deleteReview: '후기 지우기',
+  deleteTitle: '후기를 지울까요',
+  deleteBody: (vendor: string) => `${vendor}에 쓴 후기가 지워져요. 다시 되돌릴 수 없어요.`,
+  keep: '그대로 둘게요',
+  remove: '지우기',
+  removeFail: '지우지 못했어요',
+} as const;
 
 /**
- * 내 제보 내역. 디자인 핸드오프 20번.
+ * 내 제보 내역 · WP-RPT-009. 카드마다 상태 배지 + 날짜 · 업체명 ↔ 금액 · 사유. 행동 버튼은 할 일이
+ * 남은 카드에만 둔다(rule «보완 필요에만 행동 버튼») — 지금은 후기 지우기가 그 자리다.
  *
- * 종류가 행마다 붙고, **그 자료가 어디에 쓰이는지도 함께 붙는다.** 내가 낸 것이
- * 무엇에 쓰이는지 모르는 채로 쌓이면 그건 제보가 아니라 수집이다.
+ * **남아 있는 것과 쓰이는 것은 다르다.** 업체를 못 찾은 Pick 인증처럼 남아 있지만 쓰이지 않는 것은
+ * «반영 전»으로 적고 서버가 보낸 사유를 붙인다.
  */
 export default function MyReportsScreen() {
   const theme = useTheme();
@@ -40,137 +55,105 @@ export default function MyReportsScreen() {
         setLoadError(null);
         setReports(response.reports);
       })
-      .catch((caught: Error) => setLoadError(caught.message ?? '제보내역을 불러오지 못했어요.'));
+      .catch((caught: Error) => setLoadError(caught.message ?? '제보 내역을 불러오지 못했어요'));
   }, []);
 
   useEffect(load, [load]);
 
-  if (loadError) {
-    return <ErrorView message={loadError} onBack={load} />;
-  }
-
-  if (reports === null) {
-    return <SkeletonView />;
-  }
+  if (loadError) return <ErrorView message={loadError} onBack={load} />;
+  if (reports === null) return <DelayedLoadingView />;
 
   function confirmDelete(reviewId: string, vendor: string) {
-    // 되돌릴 수 없는 행동은 한 번 더 묻는다. 핸드오프 인터랙션 규칙.
-    confirmAlert('후기를 지울까요', `${vendor}에 쓴 후기가 지워져요. 다시 되돌릴 수 없어요.`, [
-      { text: '그대로 둘게요', style: 'cancel' },
+    confirmAlert(S.deleteTitle, S.deleteBody(vendor), [
+      { text: S.keep, style: 'cancel' },
       {
-        text: '지우기',
+        text: S.remove,
         style: 'destructive',
         onPress: () => {
           void deleteReview(reviewId)
             .then(load)
-            .catch(() => setToast('지우지 못했어요'));
+            .catch(() => setToast(S.removeFail));
         },
       },
     ]);
   }
 
+  const used = reports.filter((report) => report.inUse).length;
+  const empty = reports.length === 0;
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.content}>
-          <ThemedText type="t2">내 제보내역</ThemedText>
+    <SubScreen
+      title={S.title}
+      dock={
+        empty ? (
+          <Dock primary={{ label: MY_REPORTS_EMPTY_CTA, onPress: () => router.push('/capture/payment/consent') }} />
+        ) : undefined
+      }>
+      <Hero lines={empty ? S.heroEmpty : S.hero(reports.length, used)} />
 
-          {reports.length === 0 ? (
-            <ThemedView style={styles.empty}>
-              <ThemedText type="t6" themeColor="textSecondary">
-                {MY_REPORTS_EMPTY}
-              </ThemedText>
-              <ActionButton
-                variant="primary"
-                label={MY_REPORTS_EMPTY_CTA}
-                onPress={() => router.push('/capture/payment/consent')}
-              />
-            </ThemedView>
-          ) : null}
-
-          {reports.map((report) => (
-            <ThemedView key={report.id} type="backgroundElement" style={styles.card}>
-              <View style={styles.cardHead}>
-                <View style={[styles.badge, { backgroundColor: theme.tintSubtle }]}>
-                  <ThemedText type="badge" themeColor="tint">
-                    {report.kindLabel}
+      <Section gap="events">
+        {empty ? (
+          <EmptyBox>{MY_REPORTS_EMPTY}</EmptyBox>
+        ) : (
+          <View style={styles.list}>
+            {reports.map((report) => (
+              <View key={report.id} style={[styles.card, { borderColor: theme.track }]}>
+                <View style={styles.cardHead}>
+                  <Badge kind={report.kind === 'review' ? 'none' : report.inUse ? 'ok' : 'wait'}>
+                    {report.kind === 'review' ? S.review : report.inUse ? S.inUse : S.notInUse}
+                  </Badge>
+                  <ThemedText type="t7" themeColor="textAssistive" numeric>
+                    {formatDateDot(report.reportedAt.slice(0, 10))}
                   </ThemedText>
                 </View>
-                {/* 남아 있는 것과 쓰이는 것은 다르다. 다르면 다르다고 적는다. */}
-                <ThemedText type="t7" themeColor="textAssistive">
-                  {report.inUse
-                    ? formatWeddingDate(report.reportedAt.slice(0, 10))
-                    : '사용 안 함'}
+                <View style={styles.nameRow}>
+                  <ThemedText type="t5" numberOfLines={1} style={styles.name}>
+                    {report.subject}
+                  </ThemedText>
+                  {report.amount === null ? null : (
+                    <ThemedText type="t6" numeric numberOfLines={1} style={styles.amount}>
+                      {won(report.amount)}
+                    </ThemedText>
+                  )}
+                </View>
+                <ThemedText type="t7" themeColor="textSecondary">
+                  {report.note ?? report.use}
                 </ThemedText>
+                {/* 후기는 한 사람이 한 업체에 하나다. 지우는 길이 없으면 다시 쓸 수도 없다. */}
+                {report.kind === 'review' ? (
+                  <View style={styles.action}>
+                    <ActionButton
+                      variant="ghost"
+                      size="medium"
+                      label={S.deleteReview}
+                      onPress={() => confirmDelete(report.id, report.subject)}
+                    />
+                  </View>
+                ) : null}
               </View>
-
-              <ThemedText type="t5">{report.subject}</ThemedText>
-
-              {report.amount === null ? null : (
-                <ThemedText type="t5" numeric>
-                  {won(report.amount)}
-                </ThemedText>
-              )}
-
-              <ThemedText type="t7" themeColor="textSecondary">
-                {report.note ?? report.use}
-              </ThemedText>
-
-              {/*
-                후기는 한 사람이 한 업체에 하나다. 지우는 길이 없으면 다시 쓸 수도
-                없어서 지금까지는 문의 창구로 와야 했다.
-              */}
-              {report.kind === 'review' ? (
-                <ActionButton
-                  label="후기 지우기"
-                  variant="secondary"
-                  onPress={() => confirmDelete(report.id, report.subject)}
-                />
-              ) : null}
-            </ThemedView>
-          ))}
-        </ScrollView>
-      </SafeAreaView>
+            ))}
+          </View>
+        )}
+      </Section>
 
       <Toast message={toast} onHidden={() => setToast(null)} />
-    </ThemedView>
+    </SubScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-  },
-  content: {
-    paddingHorizontal: Layout.gutter,
-    paddingTop: Spacing.five,
-    paddingBottom: Spacing.six,
-    gap: Spacing.three,
-  },
-  empty: {
-    gap: Spacing.three,
-    paddingVertical: Spacing.five,
-  },
+  list: { gap: Layout.rowPaddingY },
+  /* 카드 radius 10 · 1 gray300 · 18 20 · gap 10 */
   card: {
     borderRadius: Radius.medium,
-    padding: Spacing.four,
-    gap: Spacing.one,
+    borderWidth: 1,
+    paddingHorizontal: Layout.cardPadding,
+    paddingVertical: Layout.cardPadding - Spacing.half,
+    gap: Layout.cardGap,
   },
-  cardHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  badge: {
-    alignSelf: 'flex-start',
-    borderRadius: Radius.pill,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.half,
-  },
+  cardHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  nameRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: Layout.rowPaddingY },
+  name: { flex: 1, minWidth: 0 },
+  amount: { fontWeight: '700' },
+  action: { alignSelf: 'flex-start' },
 });

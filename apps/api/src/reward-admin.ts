@@ -9,6 +9,7 @@ import { loadConfig } from './config';
 import { newEventId, recordDecision, requireOperator } from './decisions';
 import { createPool, withTransaction } from './db';
 import { notify } from './notify';
+import { PAYOUT_COLUMNS, markPayoutFailed, markPayoutSent, type PayoutRow } from './reward-payout';
 
 /**
  * 보상 지급 도구. 최종통합정책 v2.0 I장.
@@ -31,20 +32,29 @@ import { notify } from './notify';
 type Options = {
   list: boolean;
   held: boolean;
+  /** Npay 수령 요청 목록(WP-EVT-006) — 보낼 번호를 여기서 본다. */
+  payouts: boolean;
   paid?: string;
   block?: string;
+  /** 수령 요청을 보냈다고 적는다(보상 → paid · 번호 삭제 · 알림). */
+  sent?: string;
+  /** 수령 요청을 못 보냈다고 적는다(보상 풀림 · 번호 삭제 · 사유 알림). */
+  payoutFailed?: string;
   by?: string;
   note?: string;
 };
 
 function parseArgs(argv: string[]): Options {
-  const options: Options = { list: false, held: false };
+  const options: Options = { list: false, held: false, payouts: false };
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
 
     if (arg === '--list') options.list = true;
     else if (arg === '--held') options.held = true;
+    else if (arg === '--payouts') options.payouts = true;
+    else if (arg === '--sent') options.sent = argv[++i];
+    else if (arg === '--payout-failed') options.payoutFailed = argv[++i];
     else if (arg === '--paid') options.paid = argv[++i];
     else if (arg === '--block') options.block = argv[++i];
     else if (arg === '--by') options.by = argv[++i];
@@ -183,11 +193,51 @@ export async function list(
   }));
 }
 
+/** 열린 Npay 수령 요청. 운영자가 보낼 번호를 본다 — 이 화면 밖으로 번호를 옮기지 않는다. */
+export async function listPayouts(pool: ReturnType<typeof createPool>): Promise<PayoutRow[]> {
+  const { rows } = await pool.query<PayoutRow>(
+    `SELECT ${PAYOUT_COLUMNS} FROM structured.reward_payouts WHERE status = 'requested' ORDER BY requested_at`
+  );
+  return rows;
+}
+
+export async function settlePayout(
+  pool: ReturnType<typeof createPool>,
+  payoutId: string,
+  to: 'sent' | 'failed',
+  by: string,
+  note: string
+): Promise<void> {
+  await requireOperator(pool, by);
+  await withTransaction(pool, (client) =>
+    to === 'sent' ? markPayoutSent(client, payoutId, by, note) : markPayoutFailed(client, payoutId, by, note)
+  );
+  console.log(
+    to === 'sent'
+      ? '보냈다고 적었다. 보상은 지급 완료가 됐고 번호는 지웠다. 받는 사람에게 알림이 갔다.'
+      : '못 보냈다고 적었다. 보상은 다시 받을 수 있게 풀렸고 번호는 지웠다. 사유가 받는 사람에게 보인다.'
+  );
+}
+
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
   const pool = createPool(loadConfig().databaseUrl);
 
   try {
+    if (options.payouts) {
+      const rows = await listPayouts(pool);
+      if (rows.length === 0) {
+        console.log('보낼 Npay 수령 요청이 없다.');
+        return;
+      }
+      console.log(`Npay 보낼 요청 ${rows.length}건 · 합계 ${won(rows.reduce((sum, r) => sum + r.amount_krw, 0))}:`);
+      for (const row of rows) {
+        console.log(`  ${row.id}  ${won(row.amount_krw)}  ${row.recipient_name}  ${row.recipient_phone}  ${when(row.requested_at)}`);
+      }
+      console.log('보낸 뒤: --sent <id> --by <user-id> --note "Npay 송금 완료" · 못 보냈으면 --payout-failed <id> --by … --note "휴대폰 번호를 확인해주세요"');
+      return;
+    }
+
     if (options.list || options.held) {
       const status = options.list ? 'earned' : 'held';
       const rows = await list(pool, status);
@@ -231,6 +281,16 @@ async function main(): Promise<void> {
       return;
     }
 
+    if (options.sent) {
+      await settlePayout(pool, options.sent, 'sent', options.by, options.note);
+      return;
+    }
+
+    if (options.payoutFailed) {
+      await settlePayout(pool, options.payoutFailed, 'failed', options.by, options.note);
+      return;
+    }
+
     if (options.paid) {
       await decide(pool, options.paid, 'paid', options.by, options.note);
       return;
@@ -241,7 +301,7 @@ async function main(): Promise<void> {
       return;
     }
 
-    console.error('무엇을 할지 정해라: --list | --held | --paid | --block');
+    console.error('무엇을 할지 정해라: --list | --held | --payouts | --paid | --block | --sent | --payout-failed');
     process.exitCode = 1;
   } finally {
     await pool.end();

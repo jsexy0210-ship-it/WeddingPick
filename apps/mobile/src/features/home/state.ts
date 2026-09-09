@@ -3,6 +3,7 @@ import {
   BUDGET_BRACKET_LABEL,
   MIN_COMPARABLE,
   PREPARATION_CATEGORIES,
+  regionTokens,
   VENDOR_CATEGORY_LABEL,
   WEDDING_STYLE_LABEL,
   withSubject,
@@ -265,8 +266,15 @@ export function boardCells(input: {
     .map(toCell);
 }
 
-/** 섹션 헤더 오른쪽 링크. 완료 개수는 격자가 아니라 여기에 적는다. */
-export function boardMoreLabel(tier: HomeTier, decided: number): string {
+/**
+ * 섹션 헤더 오른쪽 링크. 완료 개수는 격자가 아니라 여기에 적는다.
+ *
+ * 시작 전 구간에는 링크가 없다(시안 1 `boardMore: ''`) — 펼쳐도 빈 칸 12개라 볼 것이
+ * 없고, 그래서 4칸 요약으로 줄인 것이다. null이면 화면이 링크를 그리지 않는다.
+ */
+export function boardMoreLabel(tier: HomeTier, decided: number): string | null {
+  if (tier === 'start') return null;
+
   return tier === 'finishing' ? `완료 ${decided}개 · 전체 보기` : '전체 보기';
 }
 
@@ -316,7 +324,7 @@ export function homeCta(recommended: readonly VendorSummary[]): HomeCta {
 export type ConditionChip = {
   kind: 'region' | 'budget' | 'style' | 'date';
   label: string;
-  /** 날짜 칩은 흐리게. 추천 조건이 아니라 참고다. */
+  /** 흐리게. 추천 조건이 아니라 참고인 칩(날짜)이다. */
   dim: boolean;
 };
 
@@ -327,23 +335,54 @@ export function dateChipLabel(date: string): string {
   return `${month}월 ${day}일`;
 }
 
+/** «5월». 웨딩홀을 고를 때의 날짜 칩 — 홀은 달 단위로 자리를 본다(시안 1 «5월 셋째 주 가능»). */
+export function monthChipLabel(date: string): string {
+  const [, month] = date.split('-').map(Number);
+
+  return `${month}월`;
+}
+
+/**
+ * 지역 칩 문구. 온보딩이 «서울특별시 강남구»로 적어 두는데 칩에는 «강남구»만 쓴다 —
+ * 시안의 «강남»처럼 짧아야 한 줄에 조건이 다 들어간다. 구가 없으면(«서울») 시/도 짧은 꼴.
+ */
+export function regionChipLabel(region: string): string {
+  const tokens = regionTokens(region);
+
+  return tokens[tokens.length - 1] ?? region;
+}
+
 /**
  * 웨딩픽 추천 라벨 아래 조건 칩. 온보딩에서 받은 값을 그대로 보인다 — 무엇을
  * 기준으로 골랐는지 보여야 추천을 믿는다. 없는 조건은 칩을 만들지 않는다.
+ *
+ * 순서와 밝기는 시안 1 · 2 · 3 그대로다.
+ *
+ *   웨딩홀을 고를 때   강남 · 5월 · 3,000만원 이상 · 도시적인 · 로맨틱한    날짜는 달만 · 진하게(홀은 달이 조건)
+ *   그 밖의 업종      강남 · 3,000만원 이상 · 도시적인 · 로맨틱한 · 5월 12일  날짜는 맨 뒤 · 흐리게(참고)
  */
-export function conditionChips(me: CurrentUser | null): ConditionChip[] {
+export function conditionChips(
+  me: CurrentUser | null,
+  current: VendorCategory | null = null
+): ConditionChip[] {
   if (me === null) return [];
 
   const chips: ConditionChip[] = [];
+  const dateIsCondition = current === 'hall';
 
-  if (me.region !== null) chips.push({ kind: 'region', label: me.region, dim: false });
+  if (me.region !== null) {
+    chips.push({ kind: 'region', label: regionChipLabel(me.region), dim: false });
+  }
+  if (dateIsCondition && me.weddingDate !== null) {
+    chips.push({ kind: 'date', label: monthChipLabel(me.weddingDate), dim: false });
+  }
   if (me.budgetBracket !== null && me.budgetBracket !== 'unknown') {
     chips.push({ kind: 'budget', label: BUDGET_BRACKET_LABEL[me.budgetBracket], dim: false });
   }
   for (const style of me.styleTags) {
     chips.push({ kind: 'style', label: WEDDING_STYLE_LABEL[style], dim: false });
   }
-  if (me.weddingDate !== null) {
+  if (!dateIsCondition && me.weddingDate !== null) {
     chips.push({ kind: 'date', label: dateChipLabel(me.weddingDate), dim: true });
   }
 
@@ -430,7 +469,8 @@ export type HomeView = {
   progress: number;
   progressText: string;
   cells: BoardCell[];
-  boardMore: string;
+  /** 헤더 오른쪽 «전체 보기». 시작 전 구간은 null — 링크를 그리지 않는다. */
+  boardMore: string | null;
   boardNote: string | null;
   chips: ConditionChip[];
   cta: HomeCta;
@@ -465,7 +505,7 @@ export function homeView(input: {
     cells: boardCells({ tier, statuses, current }),
     boardMore: boardMoreLabel(tier, decided),
     boardNote: boardNote(tier, current),
-    chips: conditionChips(input.me),
+    chips: conditionChips(input.me, current),
     cta: homeCta(input.recommended),
     next: nextStep({ tier, statuses, current, daysLeft: input.daysLeft }),
   };

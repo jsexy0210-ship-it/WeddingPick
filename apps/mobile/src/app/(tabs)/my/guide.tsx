@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Accordion, ActionButton, Layout, MaxContentWidth, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
+import { Accordion, ActionButton, Layout, MaxContentWidth, Radius, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
 import { APP_VERSION } from '@/features/settings/version';
 
 const SHOOTING_TIPS = [
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   card: {
-    borderRadius: Spacing.three,
+    borderRadius: Radius.medium,
     padding: Spacing.three,
     gap: Spacing.one,
   },

@@ -66,6 +66,33 @@ const killSwitches = new Map<string, KillSwitch>([
   ['auto-publish', { id: 'auto-publish', name: '자동 게시', description: '후기·반론 자동 게시를 중지합니다', enabled: true, category: '운영', lastChangedAt: null, lastChangedBy: null }],
 ]);
 
+/*
+ * 수집 중단 스위치는 위 Map과 달리 DB(`structured.import_switches`)에 있다.
+ * `public-data/sync.ts`가 임포트 직전에 이 값을 읽어 `SOURCE_DISABLED`로 거부하므로,
+ * 여기서 끄면 배포 없이 그 출처의 수집이 실제로 멈춘다. 프로세스 메모리에 두면
+ * 재시작에 사라지고, 별도 프로세스로 도는 임포트에는 보이지도 않는다.
+ */
+const IMPORT_SWITCH_PREFIX = 'import:';
+
+type ImportSwitchRow = {
+  source_key: string;
+  enabled: boolean;
+  reason: string | null;
+  updated_at: Date | string | null;
+};
+
+function toImportKillSwitch(row: ImportSwitchRow): KillSwitch {
+  return {
+    id: `${IMPORT_SWITCH_PREFIX}${row.source_key}`,
+    name: `수집 — ${row.source_key}`,
+    description: row.reason ?? '이 출처의 공개 데이터 수집을 중지합니다',
+    enabled: row.enabled,
+    category: '수집',
+    lastChangedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : row.updated_at,
+    lastChangedBy: null,
+  };
+}
+
 function mapCopyrightBasis(
   basis: string
 ): 'licensed' | 'public_domain' | 'vendor_provided' | 'pending' | 'rejected' {
@@ -797,13 +824,51 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
 
   // ─── Kill Switches ────────────────────────────────────────────────────────
   app.get('/v1/admin/kill-switches', auth, async () => {
-    return { switches: [...killSwitches.values()] };
+    /*
+     * 수집 스위치 조회가 실패해도 나머지는 보여준다 — 운영 DB에 0049가 아직 없을 수
+     * 있고, 그때 화면 전체가 죽으면 끌 수단까지 같이 사라진다.
+     */
+    let importSwitches: KillSwitch[] = [];
+    try {
+      const { rows } = await context.pool.query<ImportSwitchRow>(
+        `SELECT source_key, enabled, reason, updated_at
+           FROM structured.import_switches
+          ORDER BY source_key`
+      );
+      importSwitches = rows.map(toImportKillSwitch);
+    } catch (error) {
+      app.log.warn({ err: error }, 'import_switches 조회 실패 — 수집 스위치를 표시하지 못한다');
+    }
+
+    return { switches: [...killSwitches.values(), ...importSwitches] };
   });
 
   app.patch<{ Params: { id: string }; Body: { enabled?: boolean } }>('/v1/admin/kill-switches/:id', auth, async (req, reply) => {
+    const operatorId = currentUserId(req);
+
+    if (req.params.id.startsWith(IMPORT_SWITCH_PREFIX)) {
+      const enabled = req.body.enabled;
+      if (typeof enabled !== 'boolean') {
+        return reply.status(400).send({ error: 'enabled_required' });
+      }
+
+      // 누가 언제 바꿨는지 남길 자리는 이 테이블의 reason·updated_at뿐이다.
+      const { rowCount } = await context.pool.query(
+        `UPDATE structured.import_switches
+            SET enabled = $1, reason = $2, updated_at = now()
+          WHERE source_key = $3`,
+        [
+          enabled,
+          `${enabled ? '재개' : '중단'} — 관리자 ${operatorId ?? 'operator'}`,
+          req.params.id.slice(IMPORT_SWITCH_PREFIX.length),
+        ]
+      );
+      if (!rowCount) return reply.status(404).send({ error: 'not_found' });
+      return reply.status(204).send();
+    }
+
     const sw = killSwitches.get(req.params.id);
     if (!sw) return reply.status(404).send({ error: 'not_found' });
-    const operatorId = currentUserId(req);
     sw.enabled = req.body.enabled ?? sw.enabled;
     sw.lastChangedAt = new Date().toISOString();
     sw.lastChangedBy = operatorId ?? 'operator';

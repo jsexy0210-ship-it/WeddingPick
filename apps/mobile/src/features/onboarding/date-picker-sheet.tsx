@@ -1,16 +1,12 @@
 import { dDay, formatDateDot } from '@weddingpick/domain';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
-import { ActionButton, Layout, Radius, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
-import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
+import { ActionButton, Layout, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 
 import {
-  CALENDAR_MUTED,
-  CALENDAR_SATURDAY,
-  CALENDAR_SUNDAY,
   MONTHS,
   WEEKDAYS,
   chunk,
@@ -30,8 +26,8 @@ import { ddayLabel } from './flow';
 /**
  * 날짜 선택 시트(WP-APP-023). SPEC §13.7 «날짜 선택 · 연월 셀렉트».
  *
- *   예식일 선택                    ✕
- *   [2027년 ▾]  [5월 ▾]             셀렉트 2개 · 52
+ *   ━━                              그래버 40×4(공용 SheetPanel) — 제목·닫기 버튼 없음(시안 sheet)
+ *   [2027년 ▾]  [5월 ▾]             셀렉트 2개 · 52 · 닫힘 gray50 · 열림 흰 바탕 + 코랄 1.5
  *    일 월 화 수 목 금 토             요일 헤더 28
  *    25 26 27 28 29 30  1            날짜 셀 40 · 타월은 옅게
  *    …  16  …                        선택일 코랄 원 · 흰 700
@@ -46,7 +42,12 @@ import { ddayLabel } from './flow';
  * 연 · 월을 바꿔 없는 날짜가 되면 그 달 마지막 날로 당긴다(`normalizeDate`). 오늘
  * 포함 과거와 첫 날 앞의 달은 비활성이다 — 목록에서 빼지 않고 옅게 그린다.
  *
- * 색은 `calendar.ts`의 상수다(일요일 · 토요일 · 타월 — tokens.json에 달력 항목이 없다).
+ * 격자가 펼쳐진 동안(시안 B · C)은 결과 줄을 숨기고 CTA가 «확인»이 된다 — 누르면
+ * 격자를 접고 달력으로 돌아온다. 칸을 고르면 바로 접히므로 «확인»은 값을 바꾸지
+ * 않고 나올 때만 쓴다.
+ *
+ * 색은 테마 토큰 `calendarSunday · calendarSaturday · calendarMuted`다. 패널(radius 20 ·
+ * padding 12/24/28+안전영역 · 그래버)은 공용 `SheetPanel`이 그리고 요소 간격만 시안 16으로 좁힌다.
  * CTA 높이는 토큰 size.ctaPrimary 52(시안 56)이고 `flexGrow 0 · flexShrink 0 · width 100%`
  * 라 세로 컨테이너에서 늘어나지 않는다.
  */
@@ -68,7 +69,7 @@ export function DatePickerSheet({
   return (
     /* BottomSheet는 닫히면 children을 통째로 내린다 — 열 때마다 새로 마운트되어 지난번 펼쳐 놓고 닫은 격자가 남지 않는다. */
     <BottomSheet visible={visible} onRequestClose={onDismiss}>
-      <SheetBody value={value} today={today} onConfirm={onConfirm} onDismiss={onDismiss} />
+      <SheetBody value={value} today={today} onConfirm={onConfirm} />
     </BottomSheet>
   );
 }
@@ -79,15 +80,11 @@ function SheetBody({
   value,
   today,
   onConfirm,
-  onDismiss,
 }: {
   value: string | null;
   today: Date;
   onConfirm: (iso: string) => void;
-  onDismiss: () => void;
 }) {
-  const theme = useTheme();
-  const insets = useSafeAreaInsets();
   const first = firstSelectable(today);
 
   const [picked, setPicked] = useState<PickedDate>(() => {
@@ -117,15 +114,7 @@ function SheetBody({
   }
 
   return (
-    <ThemedView style={[SHEET_PANEL, styles.sheet, { paddingBottom: SHEET_BOTTOM_PADDING + Math.max(insets.bottom, 0) }]}>
-      <View style={styles.head}>
-        <ThemedText type="t4">예식일 선택</ThemedText>
-        <Pressable accessibilityRole="button" accessibilityLabel="닫기" onPress={onDismiss} style={styles.close}>
-          <Svg width={Layout.iconTab} height={Layout.iconTab} viewBox="0 0 24 24" fill="none">
-            <Path d="M6 6l12 12M18 6L6 18" stroke={theme.text} strokeWidth={2} strokeLinecap="round" />
-          </Svg>
-        </Pressable>
-      </View>
+    <SheetPanel style={styles.sheet}>
 
       <View style={styles.selects}>
         <Select
@@ -162,23 +151,29 @@ function SheetBody({
         <Calendar picked={picked} first={first} onPick={pickDay} />
       )}
 
-      <View style={styles.picked}>
-        <ThemedText type="t5" numeric>
-          {formatDateDot(iso)}
-        </ThemedText>
-        <ThemedText type="t6" numeric themeColor="tint" style={styles.bold}>
-          {ddayLabel(remaining.kind === 'upcoming' ? remaining.days : 0)}
-        </ThemedText>
-      </View>
+      {expanded === null ? (
+        <View style={styles.picked}>
+          <ThemedText type="t5" numeric>
+            {formatDateDot(iso)}
+          </ThemedText>
+          <ThemedText type="t6" numeric themeColor="tint" style={styles.bold}>
+            {ddayLabel(remaining.kind === 'upcoming' ? remaining.days : 0)}
+          </ThemedText>
+        </View>
+      ) : null}
 
       <View style={styles.cta}>
-        <ActionButton variant="primary" size="xlarge" label={CONFIRM_CTA} onPress={() => onConfirm(iso)} />
+        {expanded === null ? (
+          <ActionButton variant="primary" size="xlarge" label={CONFIRM_CTA} onPress={() => onConfirm(iso)} />
+        ) : (
+          <ActionButton variant="primary" size="xlarge" label={COLLAPSE_CTA} onPress={() => setExpanded(null)} />
+        )}
       </View>
-    </ThemedView>
+    </SheetPanel>
   );
 }
 
-/** 연 · 월 셀렉트 — 높이 52 · radius 10 · 열리면 코랄 1.5px. */
+/** 연 · 월 셀렉트(시안 selBox) — 높이 52 · radius 10 · 닫힘 gray50 + 투명 테두리 · 열림 흰 바탕 + 코랄 1.5px. 화살표는 늘 #4D5159. */
 function Select({
   label,
   accessibilityLabel,
@@ -200,20 +195,17 @@ function Select({
       onPress={onPress}
       style={[
         styles.select,
-        { backgroundColor: theme.background, borderColor: open ? theme.tint : theme.border },
+        open
+          ? { backgroundColor: theme.background, borderColor: theme.tint }
+          : { backgroundColor: theme.backgroundElement, borderColor: 'transparent' },
       ]}>
       <ThemedText type="t6" numeric style={styles.bold}>
         {label}
       </ThemedText>
-      <Svg
-        width={Layout.iconInline}
-        height={Layout.iconInline}
-        viewBox="0 0 24 24"
-        fill="none"
-        style={open ? styles.chevronOpen : undefined}>
+      <Svg width={Layout.iconInline} height={Layout.iconInline} viewBox="0 0 24 24" fill="none">
         <Path
-          d="M6 9l6 6 6-6"
-          stroke={open ? theme.tint : theme.textAssistive}
+          d="m6 9.5 6 6 6-6"
+          stroke={theme.textSecondary}
           strokeWidth={2}
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -225,7 +217,7 @@ function Select({
 
 type GridOption = { key: number; label: string; disabled: boolean };
 
-/** 연도 · 월 펼침 — 4열 · 셀 44. 마지막 줄이 모자라면 빈 칸으로 채워 폭을 맞춘다. */
+/** 연도 · 월 펼침(시안 optCell) — 4열 · 셀 44 · 고른 칸 코랄 바탕 + 흰 700 · 나머지 gray50 + #4D5159. 마지막 줄이 모자라면 빈 칸으로 채워 폭을 맞춘다. */
 function OptionGrid({
   options,
   selected,
@@ -252,14 +244,12 @@ function OptionGrid({
                 accessibilityLabel={option.label}
                 disabled={option.disabled}
                 onPress={() => onPick(option.key)}
-                style={[styles.gridCell, active && { backgroundColor: theme.tintSubtle }]}>
+                style={[styles.gridCell, { backgroundColor: active ? theme.tint : theme.backgroundElement }]}>
                 <ThemedText
                   type="t6"
                   numeric
-                  style={[
-                    active && [styles.bold, { color: theme.tint }],
-                    option.disabled && { color: CALENDAR_MUTED },
-                  ]}>
+                  themeColor={active ? 'onTint' : 'textSecondary'}
+                  style={[active && styles.bold, option.disabled && { color: theme.calendarMuted }]}>
                   {option.label}
                 </ThemedText>
               </Pressable>
@@ -296,7 +286,7 @@ function Calendar({
             <ThemedText
               type="t7"
               themeColor="textAssistive"
-              style={[index === 0 && { color: CALENDAR_SUNDAY }, index === 6 && { color: CALENDAR_SATURDAY }]}>
+              style={[styles.bold, index === 0 && { color: theme.calendarSunday }, index === 6 && { color: theme.calendarSaturday }]}>
               {weekday}
             </ThemedText>
           </View>
@@ -309,11 +299,11 @@ function Calendar({
             const selectable = cell.inMonth && isDaySelectable(cell, first);
             const active = cell.iso === selectedIso;
             const color = !selectable
-              ? CALENDAR_MUTED
+              ? theme.calendarMuted
               : cell.weekday === 0
-                ? CALENDAR_SUNDAY
+                ? theme.calendarSunday
                 : cell.weekday === 6
-                  ? CALENDAR_SATURDAY
+                  ? theme.calendarSaturday
                   : theme.text;
 
             return (
@@ -343,31 +333,16 @@ function Calendar({
 }
 
 const CONFIRM_CTA = '이 날짜로 정하기';
-/** spec/tokens.json safeArea.formula.sheetBottomPadding의 고정항. */
-const SHEET_BOTTOM_PADDING = 28;
-/* 시안 고정값 — 시트 헤더 최소 32 · 닫기 버튼 32 · 셀렉트 좌우 16. */
-const HEAD_MIN_HEIGHT = 32;
-const CLOSE_SIZE = 32;
+/** 연도 · 월 격자가 펼쳐진 동안의 CTA(시안 B · C) — 격자를 접는다. */
+const COLLAPSE_CTA = '확인';
 /* WP-APP-023 고정값 — 연 · 월 펼침 4열 · 셀 44(Layout.touchTarget) · 요일 헤더 28 · 날짜 셀 40. */
 const GRID_COLUMNS = 4;
 const WEEKDAY_HEADER = 28;
 const DAY_CELL = 40;
 
 const styles = StyleSheet.create({
-  /* 시안 sheet — radius 20(SHEET_PANEL) · 상 12 · 좌우 24 · 하 28 · 사이 16. */
-  sheet: {
-    paddingTop: Layout.rowPaddingY,
-    paddingHorizontal: Layout.gutter,
-    gap: Spacing.three,
-  },
-  head: {
-    minHeight: HEAD_MIN_HEIGHT,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Layout.rowPaddingY,
-  },
-  close: { width: CLOSE_SIZE, height: CLOSE_SIZE, alignItems: 'center', justifyContent: 'center' },
+  /* 시안 sheet — 패딩 · 둥글기 · 그래버는 SheetPanel. 요소 사이만 16(공용 20보다 좁다). */
+  sheet: { gap: Spacing.three },
   selects: { flexDirection: 'row', gap: Spacing.two },
   /* 셀렉트 — 높이 52(Layout.field) · radius 10 · 테두리 1.5(열리면 코랄). */
   select: {
@@ -376,14 +351,13 @@ const styles = StyleSheet.create({
     height: Layout.field,
     borderRadius: Radius.medium,
     borderWidth: 1.5,
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Layout.fieldPaddingX,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: Spacing.two,
   },
-  chevronOpen: { transform: [{ rotate: '180deg' }] },
-  /* 연도 · 월 펼침 — 4열 · 셀 44 · 사이 8. */
+  /* 연도 · 월 펼침 — 4열 · 셀 44 · 사이 8 · radius 8(토큰 Radius.medium 10). */
   grid: { gap: Spacing.two },
   gridRow: { flexDirection: 'row', gap: Spacing.two },
   gridCell: {
@@ -395,8 +369,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  /* 시안 dowRow · calGrid — 칸 사이 2. */
   calendar: { gap: Spacing.half },
-  week: { flexDirection: 'row' },
+  week: { flexDirection: 'row', gap: Spacing.half },
   weekdayCell: { flex: 1, flexBasis: 0, minWidth: 0, height: WEEKDAY_HEADER, alignItems: 'center', justifyContent: 'center' },
   dayCell: { flex: 1, flexBasis: 0, minWidth: 0, height: DAY_CELL, alignItems: 'center', justifyContent: 'center' },
   /* 선택일의 코랄 원 — 셀과 같은 40. */

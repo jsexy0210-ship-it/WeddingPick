@@ -38,3 +38,27 @@ for entry in deploys:
     d = entry.get("deploy", entry)
     commit = (d.get("commit") or {}).get("id", "?")[:8]
     print(f"  {d.get('status', '?'):16} commit={commit} 시작={d.get('createdAt', '?')} 마침={d.get('finishedAt', '-')}")
+
+# 가장 최근 배포가 실패했으면 이유를 찾는다 — 배포 객체 자체와 빌드 로그.
+latest = deploys[0].get("deploy", deploys[0]) if deploys else None
+if latest and str(latest.get("status", "")).endswith("failed"):
+    print("\n최근 배포 상세:")
+    print(json.dumps(latest, ensure_ascii=False, indent=2)[:3000])
+    owner = svc.get("ownerId")
+    try:
+        logs = call(
+            f"/logs?ownerId={owner}&resource={svc['id']}&type=build&limit=100&direction=backward"
+        )
+        print("\n빌드 로그(최근 100줄):")
+        for line in (logs.get("logs") if isinstance(logs, dict) else logs) or []:
+            print(f"  {line.get('timestamp', '')} {line.get('message', '')}"[:400])
+    except Exception as error:  # noqa: BLE001 — 로그를 못 읽어도 상태는 이미 찍었다
+        print(f"\n빌드 로그 조회 실패: {error}")
+    try:
+        events = call(f"/services/{svc['id']}/events?limit=10")
+        print("\n서비스 이벤트(최근 10):")
+        for entry in events:
+            e = entry.get("event", entry)
+            print(f"  {e.get('timestamp', '')} {e.get('type', '')} {json.dumps(e.get('details', {}), ensure_ascii=False)[:300]}")
+    except Exception as error:  # noqa: BLE001
+        print(f"\n이벤트 조회 실패: {error}")

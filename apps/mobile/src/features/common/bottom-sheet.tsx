@@ -12,7 +12,9 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { Motion, Radius, useTheme } from '@weddingpick/ui';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { Layout, Motion, Radius, ThemedView, useTheme } from '@weddingpick/ui';
 
 export type BottomSheetProps = {
   visible: boolean;
@@ -202,11 +204,55 @@ export function BottomSheet({
 /**
  * 시트 패널 공통 겉모습 — 상단 둥글기 20(`Radius.sheet`). 배경 · 패딩 · 안전영역은 각 시트가 더한다.
  * `<ThemedView style={[SHEET_PANEL, styles.sheet]}>`처럼 children 루트에 얹는다.
+ * 새 시트는 아래 `SheetPanel`을 쓰면 패딩 · 그래버 · 안전영역까지 한 번에 맞는다.
  */
 export const SHEET_PANEL: ViewStyle = {
   borderTopLeftRadius: Radius.sheet,
   borderTopRightRadius: Radius.sheet,
 };
+
+/**
+ * 시트 그래버 — tokens.json component.sheet.grabber: 40×4 · radius 999 · #EAEBEE · 가운데.
+ * 패널 맨 위(padding-top 12 안쪽)에 놓는다.
+ */
+export function SheetGrabber() {
+  const theme = useTheme();
+
+  return <View style={[styles.grabber, { backgroundColor: theme.border }]} accessibilityElementsHidden />;
+}
+
+export type SheetPanelProps = {
+  children: ReactNode;
+  /** 그래버를 그리지 않는다 — 폼 시트처럼 드래그로 닫히지 않는 시트. 기본은 그린다. */
+  grabber?: boolean;
+  /** 패널에 더 얹는 스타일(gap 조정 등). 패딩 · 둥글기 · 배경은 여기서 정하므로 덮지 않는다. */
+  style?: StyleProp<ViewStyle>;
+};
+
+/**
+ * 시트 패널 — tokens.json component.sheet · 17-sheets-states 1:1.
+ *
+ *   radius 20 20 0 0 · 흰 배경 · padding 12 24 (28 + safeBottom) · 요소 간격 20 · 그래버 40×4
+ *
+ * 하단 안전영역은 여기서 한 번만 더한다(safeArea.formula.sheetBottomPadding). 스크롤 내용에는
+ * 넣지 않는다 — 넣으면 스크롤 끝에 빈 공간이 두 번 생긴다.
+ */
+export function SheetPanel({ children, grabber = true, style }: SheetPanelProps) {
+  const insets = useSafeAreaInsets();
+
+  return (
+    <ThemedView
+      style={[
+        SHEET_PANEL,
+        styles.sheetPanel,
+        { paddingBottom: Layout.sheetPaddingBottom + Math.max(insets.bottom, 0) },
+        style,
+      ]}>
+      {grabber ? <SheetGrabber /> : null}
+      {children}
+    </ThemedView>
+  );
+}
 
 /** 「움직임 줄이기」 — 켜져 있으면 이동 없이 페이드만 한다. 웹은 prefers-reduced-motion을 본다. */
 function useReduceMotion() {
@@ -242,4 +288,15 @@ const styles = StyleSheet.create({
   /* overflow hidden — 아래로 밀려난 패널이 웹에서 스크롤 영역을 늘리지 않게 한다. */
   root: { flex: 1, justifyContent: 'flex-end', overflow: 'hidden' },
   panel: { width: '100%', maxHeight: MAX_PANEL_HEIGHT },
+  sheetPanel: {
+    paddingTop: Layout.sheetPaddingTop,
+    paddingHorizontal: Layout.gutter,
+    gap: Layout.sheetGap,
+  },
+  grabber: {
+    width: Layout.grabberWidth,
+    height: Layout.grabberHeight,
+    borderRadius: Radius.pill,
+    alignSelf: 'center',
+  },
 });

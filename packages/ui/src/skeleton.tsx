@@ -28,6 +28,10 @@ export type SkeletonProps = {
  * 그건 **장식**을 두고 한 말이고, 이건 아직 기다리는 중이라는 표시다 — 멈춰
  * 있으면 로딩이 끝난 빈 화면과 구별되지 않는다.
  */
+/**
+ * WP-ST-007 뼈대 블록 — 바 radius 4 · #EAEBEE(imagePlaceholder) · 1400ms 숨쉬기(1 → .45 → 1).
+ * 보조 바(#F2F3F6)는 `style`로 배경을 덮는다(`ListSkeleton` 참고). 이미지 자리는 `radius`를 10(medium)으로.
+ */
 export function Skeleton({ width = '100%', height = 16, radius, style }: SkeletonProps) {
   const theme = useTheme();
   const [pulse] = useState(() => new Animated.Value(0));
@@ -66,9 +70,9 @@ export function Skeleton({ width = '100%', height = 16, radius, style }: Skeleto
         {
           width,
           height,
-          borderRadius: radius ?? Radius.small,
-          backgroundColor: theme.backgroundSelected,
-          opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 0.45] }),
+          borderRadius: radius ?? Radius.badge,
+          backgroundColor: theme.imagePlaceholder,
+          opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [1, Motion.skeleton.minOpacity] }),
         },
         style,
       ]}

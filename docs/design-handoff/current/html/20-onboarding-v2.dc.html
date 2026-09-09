@@ -149,6 +149,10 @@ image-slot::part(empty){display:none !important}
             </div>
           </sc-if>
 
+          <sc-if value="{{ s.toast }}" hint-placeholder-val="{{ false }}">
+            <div style="{{ toastWrap }}"><span style="{{ toastBox }}">{{ s.toast }}</span></div>
+          </sc-if>
+
           <sc-if value="{{ s.doneRows }}" hint-placeholder-val="{{ false }}">
             <div style="{{ padSec }}">
               <div style="{{ summaryBox }}">
@@ -340,7 +344,7 @@ class Component extends DCLogic {
       q: !!o.q, line1: o.q ? o.q.split('\n')[0] : '', line2: o.q ? (o.q.split('\n')[1] || '') : '', qSub: o.qSub || '',
       dateField: o.dateField || '', dateFieldStyle: dateStyle(!!o.dateFilled), dday: o.dday || '',
       progress: o.progress2 || null, regionChips: o.regionChips || null, districtRows: o.districtRows || null,
-      budgetRows: o.budgetRows || null, taste: o.taste || null, doneRows: o.doneRows || null,
+      budgetRows: o.budgetRows || null, taste: o.taste || null, toast: o.toast || '', doneRows: o.doneRows || null,
       answered: o.answered || null,
       prev: o.prev || '', cta: o.cta, ctaStyle: ctaStyle(!o.ctaOff)
     });
@@ -406,6 +410,8 @@ class Component extends DCLogic {
       qSub: 'font-size:16px;line-height:24px;color:#4d5159;text-wrap:pretty',
       metaSm: 'font-size:14px;line-height:19px;color:#868b94',
       cellCheck: 'width:20px;height:20px;flex:0 0 20px;border-radius:999px;background:' + C + ';display:flex;align-items:center;justify-content:center;animation:wpCheck 320ms cubic-bezier(.34,1.56,.64,1) both',
+      toastWrap: 'flex-shrink:0;padding:0 24px 12px;display:flex;justify-content:center',
+      toastBox: 'display:inline-flex;align-items:center;height:44px;padding:0 18px;border-radius:999px;background:rgba(33,33,36,.92);color:#fff;font-size:15px;line-height:20px;font-weight:700;white-space:nowrap',
       tasteWrap: 'flex-shrink:0;padding:0 24px 20px;display:grid;grid-template-columns:1fr 1fr;gap:11px;animation:wpDrop 380ms cubic-bezier(.16,1,.3,1) 60ms both',
       tasteCell: 'position:relative;width:100%;height:148px',
       tasteImg: 'position:absolute;inset:0;border-radius:10px;overflow:hidden',
@@ -430,13 +436,14 @@ class Component extends DCLogic {
           regionChips: [{ label: '아직 정하지 않았어요', style: chip(false) }],
           cta: '다음' }),
         st({ no: '2', label: '지역 · 2/5', progress: '40%', stepLabel: '2/5',
-          desc: '시/도 → 상세지역을 한 화면에서. «아직 정하지 않았어요»를 두어 미정도 진행됩니다.',
+          desc: '시/도 칩과 상세지역 행 모두 단일 선택 라디오입니다(v3.23). 다중 선택 불가 — 시/도 하나, 시/군/구 하나만 고정됩니다. «아직 정하지 않았어요»를 두어 미정도 진행됩니다.',
           q: '어디에서\n식을 올리시나요?', qSub: '선택한 지역으로 좁혀드려요',
           regionChips: REGIONS.concat([{ label: '아직 정하지 않았어요', style: chip(false) }]), districtRows: DIST('강남구'),
           answered: [ans('예식일', '2027.05.16(토)')],
           prev: '이전', cta: '다음' }),
         st({ no: '3', label: '준비 현황 · 3/5', progress: '60%', stepLabel: '3/5',
-          desc: '10개 업종 2열 카드 · 다중 선택. 없으면 «아직 시작 전이에요».',
+          desc: '카테고리별 2열 그리드 · 다중 선택. 이전 카테고리를 비워두고 넘기면 토스트로 안내합니다(v3.23). 없으면 «아직 시작 전이에요».',
+          toast: '앞 단계도 확인해주세요 · 결정사 · 웨딩홀',
           q: '준비는 어디까지\n하셨어요?', qSub: '이미 준비한 건 추천에서 제외해요',
           progress2: PROG(['웨딩홀', '스튜디오', '드레스']),
           answered: [ans('예식일', '2027.05.16(토)'), ans('지역', '서울 강남구')],

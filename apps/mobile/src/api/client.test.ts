@@ -1,6 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { ApiError, getComparison } from '@/api/client';
+import {
+  ApiError,
+  clearReadCache,
+  getAnalysis,
+  listVendorRegions,
+  setDisplayName,
+  getComparison,
+} from '@/api/client';
 import { loadToken, saveToken } from '@/api/session';
 
 // EXPO_PUBLIC_* 값은 빌드 시점에 박히므로 테스트에서는 설정 모듈을 갈아 끼운다.
@@ -37,6 +44,8 @@ function respondWith(body: unknown, status = 200) {
 beforeEach(async () => {
   await AsyncStorage.clear();
   await saveToken('token');
+  // 캐시는 앱이 사는 동안 남는다 — 시험끼리 섞이지 않게 비우고 시작한다.
+  clearReadCache();
 });
 
 describe('서버 응답 검사', () => {
@@ -77,5 +86,57 @@ describe('서버 응답 검사', () => {
 
     await expect(getComparison('quote-1')).rejects.toThrow('로그인이 필요합니다.');
     expect(await loadToken()).toBeNull();
+  });
+});
+
+/**
+ * 읽기 캐시. 화면을 다시 열 때 서버를 다시 묻지 않게 하되, 내가 바꾼 것은 바로
+ * 보여야 하고, 답이 바뀌기를 기다리는 주소는 캐시에 걸리면 안 된다.
+ */
+describe('읽기 캐시', () => {
+  const REGIONS = { regions: [{ name: '서울', vendorCount: 3 }] };
+
+  it('같은 주소를 두 번 물어도 서버에는 한 번만 간다', async () => {
+    respondWith(REGIONS);
+
+    await listVendorRegions();
+    await listVendorRegions();
+
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('동시에 부르면 하나로 합친다', async () => {
+    respondWith(REGIONS);
+
+    await Promise.all([listVendorRegions(), listVendorRegions(), listVendorRegions()]);
+
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('무언가를 바꾼 뒤에는 다시 묻는다', async () => {
+    respondWith(REGIONS);
+    await listVendorRegions();
+
+    respondWith({ displayName: '우리' });
+    await setDisplayName('우리');
+
+    respondWith(REGIONS);
+    await listVendorRegions();
+
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('답이 바뀌기를 기다리는 주소는 캐시하지 않는다', async () => {
+    // 분석 진행 상황은 2초마다 다시 묻는다 — 캐시가 끼면 끝난 줄 모른다.
+    respondWith({
+      id: '11111111-1111-4111-8111-111111111111',
+      status: 'running',
+      startedAt: '2026-09-09T00:00:00.000Z',
+    });
+
+    await getAnalysis('a-1');
+    await getAnalysis('a-1');
+
+    expect(globalThis.fetch).toHaveBeenCalledTimes(2);
   });
 });

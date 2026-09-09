@@ -8,7 +8,7 @@
 
 ## 메타
 
-- `updated_at`: 2026-09-07 (저장소 전수 정리 — 브랜치·PR·문서·워크플로)
+- `updated_at`: 2026-09-09 (세션·루틴 전면 정리 — 역할 기준 5개 세션 + 루틴 2개)
 - `repository`: jsexy0210-ship-it/WeddingPickl
 - `verified_code_base`: eff6f59 (#88 squash merge 시점의 main; 최신 원격 상태는 작업 시작 시 재확인)
 - `policy_version`: 통합정책 v3.15
@@ -227,21 +227,34 @@ RN 화면의 웹 렌더링 품질이 이제 "부가 기능"이 아니라 **실�
 
 ### 정책 1 — 비회원 진입 삭제
 로그인 없이 들어갈 수 있는 화면(게스트 홈 등)을 폐지한다. 로그인 완료 후에만 앱 진입이
-가능하도록 진입 흐름(`apps/mobile/src/app/_layout.tsx` 등)을 바꿔야 한다.
-**아직 구현되지 않았다** — 다음 작업.
+가능하도록 진입 흐름을 바꾼다.
+**구현 완료** — `apps/mobile/src/app/_layout.tsx:188` 「비회원 진입 삭제 — 로그인이
+안 된 사람은 무조건 로그인 화면으로」 뒤 `setEntry('login')`. 같은 파일 33번째 줄에
+정책 근거 주석이 있다.
 
 ### 정책 2 — 홈 헤더 검색버튼 삭제
-홈 탭(`apps/mobile/src/app/(tabs)/index.tsx`, 헤더의 `router.push('/search')` 버튼,
-341번째 줄 부근)의 검색 버튼을 없앤다. 알림 아이콘만 남긴다. 검색 자체는 하단 탭의
+홈 탭 헤더의 검색 버튼을 없애고 알림 아이콘만 남긴다. 검색 자체는 하단 탭의
 검색 탭(`(tabs)/search`)으로 계속 접근 가능하니 기능 손실은 아니다.
-**아직 구현되지 않았다** — 다음 작업.
+**구현 완료** — `apps/mobile/src/app/(tabs)/index.tsx`에 `router.push('/search')`가
+0건이다. 헤더는 177번째 줄 `<Header unread={…} onPressBell={…} />` 하나만 남았다.
 
-### 다음 작업 (미착수)
-1. `react-native-webview` 설치 + 네이티브 래퍼 셸 구현
-2. 웹 빌드 호스팅 방식 결정(`expo export -p web` 결과물을 어디에 올릴지)
-3. 정책 1·2 실제 코드 반영
-4. `docs/design-handoff/hybrid-web-qa-checklist.md` 기준으로 홈·진입/내비게이션·공통
-   화면군부터 웹 렌더링 QA
+### 다음 작업
+
+완료 — 근거는 코드로 확인했다(2026-09-09 · FE).
+
+1. `react-native-webview` 설치 + 네이티브 래퍼 셸 — `apps/mobile/package.json:41`에
+   `react-native-webview@14.0.1`, 셸은 `apps/mobile/src/features/webshell/WebShellView.tsx`.
+2. 정책 1·2 실제 코드 반영 — 바로 위 두 절의 근거 줄.
+3. v3.22 · v3.24 금지어 정리 — `확인된 제보` · `확인된 정보` · `오늘의 Pick` ·
+   `우리 준비` · `네이버페이 포인트`가 `apps/` · `packages/` · `spec/`에 0건이다.
+   금지어 목록 자체인 `spec/glossary.json`의 `term` 항목만 남아 있고 이것이 정상이다.
+
+미착수 — 선행조건이 있다.
+
+4. 웹 빌드 호스팅 방식 결정(`expo export -p web` 결과물을 어디에 올릴지).
+   스테이징 서버 분리가 먼저다 — 순서는 `docs/release-env-split.md`.
+5. `docs/design-handoff/hybrid-web-qa-checklist.md` 기준으로 홈·진입/내비게이션·공통
+   화면군부터 웹 렌더링 QA. 4번이 끝나야 돌릴 수 있다.
 
 ---
 
@@ -483,193 +496,114 @@ DATABASE_URL=<neon-connection-string> KAKAO_REST_API_KEY=<발급받은 키> \
 
 ---
 
-## 세션별 작업 완료 현황
+## 세션 운영 구조 (2026-09-09 전면 정리)
 
-### 과거 세션 (session_01SLgCn4pWaQCTyYPzVLcbQr) — 2026-09-03 작업 기록
+세션과 루틴을 역할 기준 5개로 통합했다. **기능마다 새 세션·루틴을 만들지 않는다.**
+과거 세션 44개 중 활성 20개를 정리해 아래 5개만 남기고 나머지는 종료(아카이브)했다.
+종료한 세션의 작업물은 전부 main 또는 원격 브랜치에 있다 — 대화는 복원하지 않는다.
 
-**완료 (커밋 df4a180, 브랜치 home/fe-p0-gaps):**
-- ✅ `react-native-maps ~1.29.0` — `apps/mobile/package.json` 추가 (TS2307 해결)
-- ✅ `pick/done.tsx`, `pick/confirm.tsx` — `useRef().current` → `useMemo` 전환
-  (Cannot access refs during render, react-hooks/rules-of-hooks 해결)
-- ✅ 33개 파일 — `setLoading(true)` 앞에 `eslint-disable-next-line react-hooks/set-state-in-effect` 삽입
-- ✅ `client.ts` — 미사용 `ExpoItem`/`ExpoStatus` import 제거
-- ✅ 로컬 검증: `npm run lint` → **0 errors, 12 warnings**, `npm run typecheck` → **0 errors**
+### 활성 세션 7개
 
-**PR #51 상태 (2026-09-03 정정):**
-- URL: https://github.com/jsexy0210-ship-it/WeddingPickl/pull/51
-- 브랜치: `home/fe-p0-gaps` → `main`
-- main 병합 완료: 7967312. 아래 감사 목록은 당시 기록이며, 새 작업 전 최신 API 구현을 재확인한다.
+| 세션 | ID | 담당 |
+|---|---|---|
+| WeddingPick MASTER | `session_01RHos8CRUgW7VXAnxs2BwjD` | 전체 조율 · 정책 · 우선순위 · 진행 상태 · 작업 분배. 직접 구현은 최소화 |
+| WeddingPick FE | `session_01MZiSWesap8CuxobSyGWodh` | 모바일/웹 UI · UX · 온보딩 · 화면 구현 · 프론트 QA/PR |
+| WeddingPick BE | `session_0168q4Vv8AeFiTN4AfFtDkP9` | API · DB · 인증 · 배치 · 마이그레이션 · 서버 |
+| WeddingPick DATA | `session_01MXSCVKR29GAZWPTr9FsLM2` | 업체·공공 정보 수집 · 크롤링 · 자동화 · 정제 |
+| WeddingPick RELEASE | `session_01116ZtAK5g2tZT9RToadrfv` | CI/CD · EAS · Android/iOS · 스토어 · 배포/인프라 |
+| WeddingPick 알림톡 | `session_016TtFWvSqNa24ck593iAoKp` | 알림 채널 중앙화 · 카카오 알림톡 정책과 구현 |
+| WeddingPick 홍보 자동화 | `session_014Vxuyp3FYqihn7D5iPFm9Y` | 마케팅 문구 · 캠페인 화면 · 홍보 파이프라인 |
 
-**⚠️ 감사 결과 — 관리자 API 실질적 갭:**
-모바일 관리자 화면 26개가 호출하는 엔드포인트 중 서버에 **없는** 것들:
+세션 태그는 `weddingpick` + `wp-master` / `wp-fe` / `wp-be` / `wp-data` / `wp-release` /
+`wp-alimtalk` / `wp-promo`.
 
-| 모바일 호출 | 서버 상태 |
-|---|---|
-| `GET /v1/admin/dashboard` | ❌ 없음 |
-| `GET/POST/DELETE /v1/admin/faq` | ❌ 없음 |
-| `GET/PATCH /v1/admin/users` | ❌ 없음 |
-| `GET/PATCH /v1/admin/vendors` | ❌ 없음 |
-| `GET /v1/admin/revenue` | ❌ 없음 |
-| `GET /v1/admin/ads`, `GET /v1/admin/ads-gate` | ❌ 없음 (서버엔 `ad-placements`만 있음) |
-| `GET /v1/admin/ai-usage` | ❌ 없음 (서버엔 `ai-budget`만 있음) |
-| `GET /v1/admin/automation` | ❌ 없음 |
-| `GET /v1/admin/biz-queue` | ❌ 없음 |
-| `GET /v1/admin/briefing` | ❌ 없음 (서버엔 `decisions/briefing` 있음) |
-| `GET /v1/admin/campaigns` | ❌ 없음 |
-| `GET /v1/admin/data/pipeline` 등 | ❌ 없음 |
-| `GET /v1/admin/email-matching` | ❌ 없음 |
-| `GET /v1/admin/kill-switches` | ❌ 없음 |
-| `GET /v1/admin/marketing` | ❌ 없음 |
-| `GET /v1/admin/policy-engine` | ❌ 없음 |
-| `GET /v1/admin/rollback` | ❌ 없음 |
-| `GET /v1/admin/terms` | ❌ 없음 |
-| `GET /v1/admin/audit-log` | ❌ 없음 |
+**DATA 세션이 한때 둘이었다(2026-09-09).** `session_01Nd4sgG6xYjyadUahtrEtMd`는 같은 역할의
+중복이라 인계 후 보관 처리했다. 그 세션의 작업물은 PR #135(브랜치 `claude/data-collect-refine-d1d3`)에
+남아 있고 위 DATA 세션이 이어받는다. 이 표의 ID를 그 세션으로 고쳤다.
 
-**서버에 있는 것:** `price-stats`, `reports`, `rebuttals`, `verifications`, `payment-proofs`, `objections`, `inquiries`, `pii-reviews`, `retention/*`, `ai-budget/*`, `ad-placements`
+### 운영 규칙
 
-→ 관리자 화면들은 화면 구조는 있으나 **런타임에 즉시 빈 상태 또는 오류**가 난다.
-  다음 AI 세션이 관리자 API 엔드포인트를 `apps/api/src/routes/admin.ts`에 추가해야 한다.
+- Source of Truth는 과거 대화가 아니라 Git이다 — 최신 코드 · `CLAUDE.md` ·
+  `PROJECT_STATUS.md` · 이 파일 · `docs/design-handoff/current/`의 최신 md.
+- 새 세션은 과거 대화 전체를 옮겨받지 않는다. Git과 관련 파일만 읽고 시작한다.
+- 지시는 MASTER에서 각 영역 세션으로 간다. 영역 세션끼리 같은 파일을 동시에 고치지 않는다.
+- 컨텍스트 40~60%에 도달하면 상태를 Git에 최소 반영한 뒤 같은 역할의 새 버전 세션으로 교체한다.
+  교체 시 이 표의 ID를 갱신한다(공정률 브리핑 루틴이 이 절을 읽는다).
+- 남기는 정보는 **확정 결정사항 · 미완료 · 블로커** 셋뿐이다. 이미 코드 · 커밋 ·
+  정책서에 있는 내용은 여기 다시 적지 않는다.
 
----
+### 보고 경로 — 사용자에게 직접 올리지 않는다 (2026-09-09 사용자 오더)
 
-### 웨딩픽 통합 운영/관리 (session_01SLgCn4pWaQCTyYJaRa) — 아이들
-**완료:**
-- ✅ 월간 웨딩지원금 (§I-4) API + 모바일 화면 구현 → 원격 브랜치 푸시 완료
-- ✅ 탈퇴 안내 문구 `WITHDRAWAL_NOTICE` 확정 (§J-3)
-- ✅ `OPERATOR_SESSION_TTL_DAYS` 도메인 상수 추가
-- ✅ `release.yml`에서 `--clear-credentials` 플래그 제거
+막힌 것 · 실패 · 위험 · **사용자가 골라야 하는 것**은 사용자에게 직접 올리지 않고
+MASTER(`session_01RHos8CRUgW7VXAnxs2BwjD`)를 거친다. 스스로 판단해 진행할 수 있는 것은
+그냥 진행한다 — 이 규칙은 사용자 눈에 닿아야 하는 것만 모으라는 뜻이지 사소한 것까지
+올리라는 뜻이 아니다. 급하지 않은 진행 상황은 모아서 한 번에 보내고, 같은 내용을
+반복해 보내지 않는다. CI 실패는 담당 세션이 먼저 고치고, 두 번 고쳐도 안 되면 올린다.
 
-### 정책 관리 (session_017L61fF1Tqbugm8WNCH6QG6, 이 세션) — 실행 중
-**완료:**
-- ✅ PR #9 머지: `0052_mission_draw.sql` — 미션 완료 추적 + 월간 웨딩지원금 추첨 스키마
-- ✅ UX 정책 업데이트: J-3 탈퇴 화면, I-4 월간 웨딩지원금 (PR #8 포함)
-- ✅ 개발 현황 대시보드 생성 (artifact a1307c11)
+올릴 때 반드시 담을 것 넷:
 
-### 백엔드 관리 (session_01GcqCiteAfxQ5X6SaHDhbDq) — PR #10 병합 대기 (Sonnet 5)
-**완료:**
-- ✅ 최신 main(이 커밋 포함)을 브랜치에 병합, 충돌 21개 전부 해소
-- ✅ 회원탈퇴 운영자 개입(조회·HOLD·RESUME·RETRY, `withdrawal-admin.ts`) +
-  삭제 워커 트랜잭션 안전성(`FOR UPDATE`, 멱등) — 사용자 지시로 자동파기 유지 결정,
-  아래 «회원탈퇴 정책 충돌» 참고
-- ✅ 마이그레이션 0055~0058(회원탈퇴/AI라우터/이의만료/탈퇴관리자) — main의
-  0052_mission_draw.sql 뒤로 재번호
-- ✅ typecheck 7개 워크스페이스·lint 0 error·test 543개(API 기준, 전체 1537개) 전부 통과
-  — CI와 동일한 명령(typecheck/lint/test/export:web/build)을 로컬에서 재현해 확인함
-  (이 PR에서 GitHub Actions check-run이 뜨지 않아 — 원인 미확인 — 실제 워크플로 실행
-  결과는 **미검증**)
+1. 무슨 일인지 한 줄
+2. 지금 무엇이 안 되는지 — 영향 범위
+3. 사용자가 골라야 하는 것이면 **선택지와 권고안**
+4. 근거 파일·줄, 또는 워크플로 실행 링크
 
-**브랜치**: `claude/daily-progress-briefing-3k7lez` · **PR**: #10 (main ← 이 브랜치)
-**미검증**: 실제 배포·health check(운영 배포 자격 증명 필요),
-GitHub Actions 실제 실행 결과, production DB 적용.
+보내는 법 — `create_trigger`로 MASTER 세션에 1회만 쏜다. 새 세션은 이 문단만 읽고
+그대로 따라 할 수 있어야 한다.
 
-### 프론트엔드 (session_01HTGSU2B4vFjePXFS2ajKBY) — 아카이브
-**완료**: 모바일 앱 핵심 화면 구현, 42개 라우터 파일 생성
+```
+mcp__Claude_Code_Remote__create_trigger
+  name                   보고 제목 한 줄
+  persistent_session_id  session_01RHos8CRUgW7VXAnxs2BwjD   (MASTER · 위 표의 ID)
+  initiation             own_followup
+  run_once_at            지금부터 1~2분 뒤 (RFC3339 · 예 2026-09-09T03:11:00Z)
+  prompt                 위 네 가지를 담은 보고 본문
+```
 
-### 백엔드 — 일정 · 지도 보기 (session_016VEKBiJwF4kJzTkxotEiCD)
-> 아래 SDK·Google Maps·현재 위치 설명은 당시 구현 이력이다. 현재 채택한 방식과 잔여 작업은 위 6번을 따른다. 여기의 완료·테스트 기록은 현재 릴리즈 검증 결과가 아니다.
-**배경**: 프론트엔드 세션(PR #16)이 순수 프론트로 가능한 화면을 다 구현하고, 새 백엔드
-API·DB 마이그레이션·지도 SDK가 필요한 두 항목(일정 추가, 지도 보기)을 이 세션으로 넘김.
+`cron_expression`은 쓰지 않는다 — 보고는 일회성이고, 반복 루틴을 만들면 같은 보고가
+계속 쌓인다. MASTER 세션 ID가 바뀌면 위 표와 이 문단의 ID를 함께 갱신한다.
 
-**완료**:
-- ✅ `wedding_events` 테이블(마이그레이션 `0061_wedding_events.sql`) — 웨딩 스케줄
-  (`wedding_tasks`, 체크리스트)과 다른 개념으로 분리: 일시·장소·업체·메모·알림 여부가
-  있는 캘린더 이벤트. `source`(manual/auto) 컬럼은 지금은 항상 manual — 업체 결정에서
-  자동 생성하는 기능은 이번 범위 밖.
-- ✅ `packages/api-contract/src/wedding-events.ts` + `endpoints.ts` 등록,
-  `apps/api/src/routes/wedding-events.ts` CRUD 4종(list/add/update/remove),
-  `apps/api/src/test/wedding-events.test.ts`(DB 테스트, 로컬 Postgres로 통과 확인)
-- ✅ 모바일 화면 3개: `wedding/[id]/events/index.tsx`(목록, 오늘·예정·지난 구분),
-  `events/new.tsx`(추가), `events/[eventId].tsx`(상세 — 수정·삭제·알림 토글).
-  `wedding/index.tsx`에 진입 항목 추가. 외부 캘린더 등록(WP-EXPO-005)은 손대지 않음.
-- ✅ `vendors` 테이블에 `address`/`lat`/`lng` 컬럼(마이그레이션 `0062_vendor_geo.sql`,
-  둘 다 없거나 둘 다 있게 하는 CHECK, 기본값 없음 — 지오코딩 전 업체는 지도에 안 뜬다)
-- ✅ `packages/api-contract`의 `vendorSummarySchema`에 `coordinates` 필드,
-  `apps/api/src/routes/vendors.ts` 검색·상세 쿼리에 `lat`/`lng` 반영
-- ✅ 좌표 백필 스크립트 `scripts/geocode-vendors.mts` — **결정**: vendors에는 구 단위
-  region만 있고 정확한 주소가 없어(0001/0007), 업체명+지역을 카카오 로컬 키워드검색
-  API에 그대로 넘겨 지오코딩한다(구 중심 좌표를 박아넣는 것보다 정확). 수동 실행
-  스크립트로 CI에 물리지 않음 — 실제 실행은 KAKAO_REST_API_KEY 발급 후 사용자 조치
-  (위 "사용자 직접 조치 필요" 6·7번 참고).
-- ✅ 모바일 지도 SDK: `expo-location` + `react-native-maps` 채택. **결정 근거**:
-  Expo 공식 `expo-maps`(57.0.2)는 alpha·Expo Go 미지원·플랫폼별(Apple/Google) 컴포넌트가
-  분리돼 있고 **웹 지원이 전혀 없다** — 이 앱은 `export:web`으로 웹도 배포한다.
-  `react-native-maps`(1.29.0)는 안정판이고 RN 0.86.3/React 19.2.3과 호환되며, 웹에서는
-  `MapView.web.ts`가 `UnimplementedView`로 빌드는 막지 않는다(지도 자체는 웹에서 안 뜸 —
-  `apps/mobile/src/features/search/vendor-map.tsx`가 `Platform.OS === 'web'`일 때 안내
-  문구로 대체). `apps/mobile/AGENTS.md` 지침대로 두 패키지 다 SDK 57 호환 버전 확인 후
-  설치(npm 레지스트리로 확인 — `docs.expo.dev`는 이 환경에서 egress 차단됨).
-- ✅ `apps/mobile/src/app/(tabs)/search/index.tsx`에 목록/지도 토글 칩 추가.
-  지도는 **새 검색 로직을 만들지 않고** 기존 검색 결과(`vendors` 상태) 위에 좌표
-  있는 업체만 핀으로 얹는다. 핀 탭 시 요약 카드, 현재 위치 버튼(`expo-location` 권한
-  요청), "이 조건으로 다시 찾기"는 기존 검색을 재실행(별도 영역-기반 쿼리는 만들지
-  않음 — 지시사항 범위 밖). 빈 상태: 위치 권한 거부/결과 없음/좌표 미확보 각각 안내.
-- ✅ `npm run typecheck`/`lint`/`test`(로컬 Postgres 16 기동, migrate 79개 스키마 테스트+
-  API 549개 테스트 전부 통과) + `export:web` + `build --workspace @weddingpick/web` 전부
-  통과 확인 — CI(`main.yml`)와 동일한 단계.
+세 가지가 더 있다. 이것 때문에 이 규칙이 생겼다.
 
-**미검증**: 실제 Neon production 배포(마이그레이션 0059·0060 미적용), Android 실기기에서
-지도 렌더링(Google Maps API 키 미설정), 카카오 지오코딩 스크립트 실제 실행(API 키 없음).
+- **사람만 할 수 있는 것**(시크릿 값 · 외부 계정 · 계약 · 권한)은 세션이 스스로 못 푼다.
+  MASTER가 그런 것만 모아 사용자 조치 목록으로 한 번에 올린다.
+- **돈이 드는 선택과 되돌리기 어려운 선택은 MASTER도 정하지 않는다.** 선택지와 권고안을
+  붙여 사용자에게 올린다. 발송사 계약 · 운영 DB 변경 · 스토어 정책이 그런 자리다.
+- **값은 보고에도 적지 않는다.** 접속 문자열 · API 키 · 휴대폰 번호는 이름과 증상만 적는다.
+  보고는 저장되고 다시 읽힌다.
 
-**PR 작업 중 main 병합**: PR #16(프론트 화면 구현)이 이 세션 도중 main에 병합돼(5090d24)
-`wedding/index.tsx` 진입 항목이 충돌(이 세션의 `events` vs PR #16의 `quotes`) — 둘 다
-살리는 방향으로 해소. 병합이 main 전체를 다시 lint하게 만들면서 PR #16이 들여온
-`react-hooks/set-state-in-effect` 위반 6곳(`my/rebuttals`·`reports`·`rewards`·
-`vendor-claims`·`notifications`·`settings.tsx`의 `load` 콜백이 `.then()` 이전에
-`setLoadError(null)`을 동기로 부르던 패턴 — clean main worktree에서도 재현 확인, 이
-세션 코드가 만든 문제 아님)을 함께 고쳤다. 고치면서 같은 파일들에 있던 "재시도해도
-이전 에러 문구가 안 지워지는" 버그도 함께 해소됨(`setLoadError(null)`을 `.then()`
-성공 분기 안으로 옮기면 두 문제가 한 번에 풀린다).
+### 루틴 (Routines)
 
-**브랜치**: `claude/wedding-events-map-view-260902` · **PR**: #19 (병합 완료)
+| 루틴 | 주기 | 목적 |
+|---|---|---|
+| 공정률 브리핑 | 매일 09:00 KST | main 기준 공정률 계산·보고. 공정률 정의의 단일 출처. 저장소에 쓰지 않는다 |
+| 토요일 크론 차단 확인 | 일회성(MASTER · 2026-09-11) | `public-data.yml`의 무인 운영 DB 쓰기 차단이 main에 들어갔는지. 크론은 2026-09-13 03:17 KST |
 
-### 백엔드 갭 투입 (session_01BY3GppUAGgA58aci9XXH3a, Sonnet 5)
-**완료:**
-- ✅ 취향(홈 C-1 시안 1) 서버 API 신설 — `GET`/`PUT /v1/me/taste`
-  (`packages/db/migrations/0059_taste_preferences.sql`,
-  `packages/api-contract/src/taste.ts`, `apps/api/src/routes/taste.ts`).
-  기존에는 `apps/mobile/src/features/home/taste.ts`가 서버에 자리가 없어
-  AsyncStorage에만 저장했다(기기를 바꾸면 다시 물었다) — 이제 로그인한 사용자의
-  취향이 서버에 남는다. 모바일 쪽(`loadTaste`/`saveTaste`)을 그 API를 부르도록
-  교체, 저장 실패는 조용히 넘어가게 유지(낙관적 갱신 유지).
-- 조사 방법: Explore 서브에이전트로 `apps/mobile/src/api/client.ts`의 ~83개
-  엔드포인트 호출을 `apps/api/src/routes/*`와 전수 대조 — 나머지는 전부 대응하는
-  라우트가 있었고, 이 취향 기능과 홈 개인화 피드(`listWeddingContent`, 아래 참고)
-  둘만 "프론트는 있는데 백엔드가 없는" 실제 갭이었다.
-- typecheck(api-contract/api/mobile) 통과, mobile lint 0 error(기존 무관 경고 1개
-  그대로), API 테스트 549개 전체·mobile 테스트 66개 전체 통과(로컬에 Postgres 16을
-  띄우고 `npm run migrate --workspace @weddingpick/db`로 0059까지 재현해 확인).
+- 특정 PR·일회성 지시용 루틴은 만들지 않는다. 필요하면 MASTER 세션에 직접 지시한다.
+  부득이하게 만들면 목적 달성 즉시 삭제한다.
+- 2026-09-09에 삭제한 루틴 7개: `wedding-couple-final-directive` ·
+  `nudge-wedding-couple-2`(WP-OUR-003/010/011은 이미 main에 구현됨) · `pick-ci-recheck`(PR #76 종료) ·
+  `FE-1차-PR-오픈` · `FE 1차 PR 오픈 지시`(중복 · PR 오픈 완료) · `PR #16 #21 충돌 해결 지시`(완료) ·
+  `WeddingPickl main 변경 감지`(비활성 · 대상 브랜치 폐기).
+- 계정에 남아 있는 `매일 09:00 메일함 자동 정리`는 웨딩픽 프로젝트 루틴이 아니다 — 이 정리 대상에서 제외했다.
 
-- ✅ PR #17 머지 후 main이 계속 CI 빨간불이길래 계속 파봤다 — 이 세션과 무관한
-  두 가지 원인을 찾아 고쳤다:
-  - **PR #23**: `eslint-plugin-react-hooks` 7.x의 `set-state-in-effect` 규칙이
-    표준 fetch-in-effect 패턴을 오탐지 — 6개 파일에 `eslint-disable-next-line`
-    (나중에 다른 세션이 더 나은 방식으로 재작성해 그 코멘트는 지금은 없다. 문제
-    없음 — Lint는 계속 0 error).
-  - **마이그레이션 충돌**: `0047_monthly_draw.sql`(PR #20)과 `0052_mission_draw.sql`
-    (예전 세션)이 같은 정책(월간 웨딩지원금)을 독립적으로 구현하면서
-    `reward_grants.draw_entry_id` 컬럼을 두 번 만들려다 매 마이그레이션마다
-    확정적으로 실패 — 동시성 문제가 아니었다. 내가 로컬에서 root-cause를 찾아
-    수정을 준비하는 사이 다른 세션이 **PR #25/#27**로 거의 같은 진단·해법(0052
-    삭제, 0053에 `IF NOT EXISTS`, production 첫 적용 대비 정리)을 먼저 머지해서
-    내 수정은 버리고 검증만 했다.
-  - **PR #29**: 마이그레이션 충돌 해소 후 main에 남은 마지막 2개 실패
-    (`release-gate.test.ts`, `page.test.ts`)를 고쳤다 — 코드 버그가 아니라
-    PR #22/#24가 이용약관·개인정보처리방침을 게시(url 설정)로 바꾼 뒤 "아직
-    게시 전"을 전제로 한 낡은 테스트 기대값이었다.
-- ✅ **PR #29 머지(head `b8a8df7`)로 main이 처음으로 CI 전체(Typecheck·Lint·
-  Test·Bundle·Build)와 `Deploy → Staging`(DB Migrate·Render 배포·health check)
-  까지 전부 그린을 찍었다.** Render에 이 세션의 취향 API
-  (0060_taste_preferences 등)를 포함한 최신 코드가 실제로 배포됨.
-- **Production 배포는 보류 중** — `workflow_dispatch`(environment=production)로
-  수동 실행해야 하며, 사용자가 명시적으로 "진행 전에 물어봐달라"고 요청해 아직
-  실행하지 않았다. 다음 세션이 이어받으면: staging이 계속 정상인지 확인 후
-  사용자에게 production 배포 여부를 물어볼 것.
+### 정리 시점의 미완료 · 블로커 (세션 종료로 주인이 없어진 것)
 
-**미착수(다음 사람 참고)**:
-- 홈 개인화 웨딩피드 — `apps/mobile/src/features/home/content.ts`의
-  `listWeddingContent()`가 `TODO`로 빈 배열만 반환. 계약에도 API에도 "콘텐츠"라는
-  개념이 아직 없다 — 무엇을 콘텐츠로 볼지(에디토리얼? 업체 추천 큐레이션?)부터
-  정책이 필요해 보여 손대지 않았다.
+- **PR #131 — 머지 완료**(main `59e8838`). 사용자 오더 6건(카카오 문구 중첩 · 홈 D-day 코랄 ·
+  패딩 전면 재검토 · Depth Back · 이동 잔상과 로딩 속도 · 시안 미매핑 화면 1차)이 전부 들어갔다.
+- **PR #134 — 머지 완료**(main `451c36c`). 수집 중단 스위치 실연결 · 시드 워크플로의 운영 DB 경로 차단.
+- **토요일 크론이 무인으로 운영 DB에 쓴다** — `public-data.yml`의 `17 18 * * 6`이 2026-09-13
+  03:17 KST에 뜬다. 막는 변경(대상 선택 · 기본 staging)은 만들어져 있고 PR #133에 얹는 중이다.
+  그날 전에 머지되어야 한다. 가장 급한 미완료다.
+- **PR #103** — 2026-09-07부터 열린 채로 방치. 루트 `HANDOFF.md`가 저장소에 없는
+  `docs/CLAUDE_AUDIT_REVIEW_2026-09-07.md`를 가리키는 것을 고치는 문서 한 줄짜리 PR이다.
+  #131 머지 후 main과 맞춰 처리한다. 머지되면 그 브랜치를 포함해 삭제 대상 브랜치가 늘어난다.
+- **원격 브랜치 81개** — 대부분 병합 완료·폐기 대상인데 세션 프록시가 ref 삭제를 막아 남아 있다.
+  근거와 삭제 명령은 위 «삭제 대기 브랜치» 절. 사용자 또는 권한 있는 환경에서 한 번에 처리한다.
+- 그 밖의 미해결 결함·외부 조치 대기 항목은 이 파일의 «미해결 결함» 절과
+  `PROJECT_STATUS.md`가 정본이다. 여기에 중복해 적지 않는다.
+
+> 2026-09-09 이전의 세션별 작업 기록(마스터 · FE 1~3차 · BE PR #10/#14/#19/#28/#32 ·
+> 하이브리드 QA 5개 등)은 Git history와 각 PR 본문에 남아 있다. 세션 단위 기록은 더 쌓지 않는다.
 
 ---
 

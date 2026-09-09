@@ -21,6 +21,7 @@ import {
   homeTier,
   homeView,
   nextStep,
+  regionChipLabel,
   type CategoryStatus,
 } from './state';
 
@@ -306,7 +307,8 @@ describe('준비 현황 4칸', () => {
   });
 
   it('완료 개수는 격자가 아니라 헤더에 적는다', () => {
-    expect(boardMoreLabel('start', 0)).toBe('전체 보기');
+    // 시안 1 — 시작 전에는 링크가 없다. 펼쳐도 빈 칸 12개다.
+    expect(boardMoreLabel('start', 0)).toBeNull();
     expect(boardMoreLabel('going', 3)).toBe('전체 보기');
     expect(boardMoreLabel('finishing', 9)).toBe('완료 9개 · 전체 보기');
   });
@@ -349,13 +351,34 @@ describe('2층 · 정보량', () => {
 
 describe('조건 칩', () => {
   it('지역 · 예산 · 스타일 · 날짜(흐리게) 순', () => {
-    expect(conditionChips(ME)).toEqual([
+    // 시안 2 — 메이크업 차례. 날짜는 참고라 맨 뒤 · 흐리게.
+    expect(conditionChips(ME, 'makeup')).toEqual([
       { kind: 'region', label: '강남', dim: false },
       { kind: 'budget', label: '3,000만원 이상', dim: false },
       { kind: 'style', label: '도시적인', dim: false },
       { kind: 'style', label: '로맨틱한', dim: false },
       { kind: 'date', label: '5월 12일', dim: true },
     ]);
+  });
+
+  it('웨딩홀을 고를 때는 달이 조건이다 — 둘째 자리 · 진하게', () => {
+    // 시안 1 — 강남 · 5월 · 3천만원대 · 도시적인 · 로맨틱한.
+    expect(conditionChips(ME, 'hall').map((chip) => chip.label)).toEqual([
+      '강남',
+      '5월',
+      '3,000만원 이상',
+      '도시적인',
+      '로맨틱한',
+    ]);
+    expect(conditionChips(ME, 'hall').every((chip) => !chip.dim)).toBe(true);
+  });
+
+  it('지역 칩은 구 이름만 — «서울특별시 강남구» → «강남구»', () => {
+    const seoul = { ...ME, region: '서울특별시 강남구' } as unknown as CurrentUser;
+
+    expect(conditionChips(seoul, 'makeup')[0]).toEqual({ kind: 'region', label: '강남구', dim: false });
+    expect(regionChipLabel('서울')).toBe('서울');
+    expect(regionChipLabel('경기도 성남시')).toBe('성남시');
   });
 
   it('없는 조건은 칩을 만들지 않는다', () => {

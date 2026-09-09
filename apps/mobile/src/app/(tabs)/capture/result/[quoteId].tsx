@@ -1,15 +1,19 @@
 import type { ComparisonResponse, Quote } from '@weddingpick/api-contract';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, View } from 'react-native';
 
 import { confirmFields, getComparison, getQuote } from '@/api/client';
-import { ActionButton, ErrorView, MaxContentWidth, Spacing, ThemedView } from '@weddingpick/ui';
+import { ActionButton, ErrorView, Layout, MaxContentWidth, Spacing, ThemedView } from '@weddingpick/ui';
+import { NavBar, Screen } from '@/features/wedding/screen-kit';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { AnalysisNotice, QuoteResultView } from '@/features/quotes/quote-result-view';
 
-/** A-08 분석 결과 + A-07 확인 단계 + A-09 가격 비교. */
+/**
+ * A-08 분석 결과 + A-07 확인 단계 + A-09 가격 비교 · WP-RPT-004.
+ * 시안 11-report-review 12b — navBack «확인». 뒤로는 제보 홈으로 내려간다
+ * (`/capture/result`는 폴더일 뿐 화면이 아니라 Depth Back이 한 칸 더 올라간다).
+ */
 export default function ResultScreen() {
   const { quoteId } = useLocalSearchParams<{ quoteId: string }>();
   const [quote, setQuote] = useState<Quote | null>(null);
@@ -65,8 +69,9 @@ export default function ResultScreen() {
   }
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+    <Screen>
+      <NavBar title="확인" />
+      <View style={styles.safeArea}>
         <AnalysisNotice />
         <QuoteResultView
           quote={quote}
@@ -112,21 +117,16 @@ export default function ResultScreen() {
             </ThemedView>
           }
         />
-      </SafeAreaView>
-    </ThemedView>
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
   safeArea: {
     flex: 1,
     maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.four,
     gap: Spacing.two,
   },

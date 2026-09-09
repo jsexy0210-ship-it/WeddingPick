@@ -92,7 +92,8 @@ test('이미 URL-encode된 서비스키를 이중 인코딩하지 않는다', as
   const encodedKey = 'abc%2Fdef%3D%3D';
   const origFetch = global.fetch;
   let requestedUrl = '';
-  const body = Buffer.from(JSON.stringify({ data: [] }));
+  // 목록이 비면 «봉투를 못 찾음»으로 던진다. 여기서 보는 것은 URL이므로 한 줄 채운다.
+  const body = Buffer.from(JSON.stringify({ data: [{ indsSclsCd: 'S21101', indsSclsNm: '예식장업' }] }));
   global.fetch = jest.fn().mockImplementation((url: string) => {
     requestedUrl = url;
     return Promise.resolve({
@@ -108,6 +109,59 @@ test('이미 URL-encode된 서비스키를 이중 인코딩하지 않는다', as
     global.fetch = origFetch;
   }
 });
+/**
+ * 응답 껍데기가 한 가지가 아니다. 공공데이터포털은 표준 봉투
+ * `{ response: { body: { items: { item: [...] } } } }`를 쓰는 곳과 `{ data: [...] }`를
+ * 그대로 주는 곳이 섞여 있다. 한 모양만 보면 목록을 못 찾고도 «0건»으로 조용히
+ * 끝나 원인 조사가 헛돈다 — 실제로 그랬다(2026-09-09).
+ */
+function respondWith(page: unknown): () => void {
+  const origFetch = global.fetch;
+  const body = Buffer.from(JSON.stringify(page));
+  global.fetch = jest.fn().mockImplementation(() =>
+    Promise.resolve({
+      ok: true,
+      body: { [Symbol.asyncIterator]: async function* () { yield body; } },
+    })
+  );
+  return () => {
+    global.fetch = origFetch;
+  };
+}
+
+test('표준 봉투로 감싸 와도 업종 목록을 찾는다', async () => {
+  const row = { indsSclsCd: 'S11001', indsSclsNm: '예식장업' };
+  const shapes: unknown[] = [
+    { response: { body: { items: { item: [row] } } } },
+    { response: { body: { items: [row] } } },
+    { items: { item: [row] } },
+    [row],
+  ];
+
+  for (const shape of shapes) {
+    const restore = respondWith(shape);
+    try {
+      await expect(listIndustryCategories('small', 'test-key')).resolves.toEqual([
+        { code: 'S11001', name: '예식장업' },
+      ]);
+    } finally {
+      restore();
+    }
+  }
+});
+
+test('아는 자리 어디에도 목록이 없으면 «0건»으로 끝내지 않고 알린다', async () => {
+  const restore = respondWith({ resultCode: '99', resultMsg: 'SERVICE ERROR' });
+  try {
+    // 모양만 알린다 — 본문을 그대로 찍으면 서비스 키가 섞여 나올 수 있다.
+    await expect(listIndustryCategories('small', 'test-key')).rejects.toThrow(
+      /최상위 키: resultCode · resultMsg/
+    );
+  } finally {
+    restore();
+  }
+});
+
 test('소분류 조회는 코드·이름을 읽고 요청 URL을 올바르게 만든다', async () => {
   // 아래 코드값은 이 테스트 전용 가짜 데이터다 — 실제 sbiz 코드가 아니다.
   // 진짜 코드는 listIndustryCategories를 실키로 호출해 확인해야 한다.
