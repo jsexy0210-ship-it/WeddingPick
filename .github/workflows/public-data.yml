@@ -113,8 +113,13 @@ jobs:
         run: npm run public-data:import --workspace @weddingpick/api -- --source "$SOURCE" --out ../../.collection
         env:
           SOURCE: ${{ matrix.source }}
+      # **크론은 DB에 쓰지 않는다.** 전에는 조건에 `github.event_name == 'schedule'`이
+      # 있어서 토요일 크론(17 18 * * 6)이 사람 없이 secrets.DATABASE_URL(운영 DB)에
+      # 반영했다. 아직 한 번도 실제 수집이 성공한 적 없는 파이프라인이라 첫 쓰기가
+      # 무인 실행이 될 참이었다. 이제 반영은 사람이 workflow_dispatch에서 apply를
+      # 켤 때만 한다 — 크론은 수집·검증까지만 하고 산출물만 남긴다.
       - name: Apply to existing database
-        if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || inputs.apply) && (!matrix.needs_sbiz_key || (env.SBIZ_API_KEY != '' && env.SBIZ_UPJONG_CODES != ''))
+        if: github.ref == 'refs/heads/main' && inputs.apply && (!matrix.needs_sbiz_key || (env.SBIZ_API_KEY != '' && env.SBIZ_UPJONG_CODES != ''))
         run: npm run public-data:import --workspace @weddingpick/api -- --source "$SOURCE" --apply --out ../../.collection
         env:
           SOURCE: ${{ matrix.source }}
