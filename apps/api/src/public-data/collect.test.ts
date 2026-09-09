@@ -106,6 +106,13 @@ test('표준 봉투로 감싸 와도 업종 목록을 찾는다', async () => {
     { response: { body: { items: [row] } } },
     { items: { item: [row] } },
     [row],
+    /*
+     * 이 서비스가 실제로 주는 모양(2026-09-09 실키 확인) — `response` 껍데기 없이
+     * 최상위에 header · body가 온다. 실측 전에는 이 자리를 안 봤고, 그래서
+     * 「업종 목록을 응답에서 찾지 못했다」로 멈췄다.
+     */
+    { header: { resultCode: '00' }, body: { items: { item: [row] } } },
+    { header: { resultCode: '00' }, body: { items: [row] } },
   ];
 
   for (const shape of shapes) {

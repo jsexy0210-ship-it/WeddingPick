@@ -352,12 +352,18 @@ function findCategoryRows(page: unknown): Record<string, string>[] | null {
   const at = (value: unknown, key: string): unknown =>
     value !== null && typeof value === 'object' ? (value as Record<string, unknown>)[key] : undefined;
 
-  const body = at(at(page, 'response'), 'body');
+  /*
+   * `body`가 어디 있는지도 갈린다. 표준 봉투는 `response.body`인데 이 서비스는
+   * **`response` 껍데기 없이 최상위에 `header` · `body`를 준다**(2026-09-09 실키 확인).
+   * 둘 다 본다.
+   */
+  const body = at(at(page, 'response'), 'body') ?? at(page, 'body');
   const candidates: unknown[] = [
     at(page, 'data'),
     at(body, 'items'),
     at(at(body, 'items'), 'item'),
     at(body, 'item'),
+    at(body, 'data'),
     at(page, 'items'),
     at(at(page, 'items'), 'item'),
     page,
