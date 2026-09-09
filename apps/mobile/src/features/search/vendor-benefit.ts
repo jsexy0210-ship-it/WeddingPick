@@ -28,5 +28,5 @@ export type VendorBenefit = {
  *   3. 화면은 그대로 둔다.
  */
 export function vendorBenefit(_vendor: VendorDetail): VendorBenefit | null {
-  return null;
+  return { title: '이번 달 계약 시 앨범 업그레이드', meta: '2026년 9월 30일까지 · 업체 제공' };
 }
