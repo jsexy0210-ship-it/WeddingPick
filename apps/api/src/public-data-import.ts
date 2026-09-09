@@ -95,7 +95,11 @@ async function main() {
       return;
     }
     const items = await listIndustryCategories(level, apiKey, parent);
-    const filtered = keyword ? items.filter((item) => item.name.includes(keyword)) : items;
+    // 소분류는 1,400건이 넘는다. 쉼표로 여러 낱말을 넘겨 한 번에 좁힌다.
+    const words = (keyword ?? '').split(',').map((w) => w.trim()).filter(Boolean);
+    const filtered = words.length
+      ? items.filter((item) => words.some((word) => item.name.includes(word)))
+      : items;
     if (filtered.length === 0) {
       console.log('일치하는 항목이 없습니다.');
     }
