@@ -264,7 +264,7 @@ export async function downloadSbizApiVendors(
   apiKey: string,
   at = new Date(),
   upjong?: SbizUpjongQuery,
-): Promise<CollectedVendor[]> {
+): Promise<{ vendors: CollectedVendor[]; fetched: number; rejected: number; duplicates: number }> {
   const source = PUBLIC_SOURCES[key];
   if (source.format !== 'sbiz-api') throw new Error('sbiz-api 형식 출처가 아닙니다.');
   const ctprvnCd = (source as { ctprvnCd: string }).ctprvnCd;
@@ -273,6 +273,10 @@ export async function downloadSbizApiVendors(
   const vendors: CollectedVendor[] = [];
   const seen = new Set<string>();
   const MAX_PAGES = 20;
+
+  let fetched = 0;
+  let rejected = 0;
+  let duplicates = 0;
 
   for (const code of query.codes) {
   let seenForCode = 0;
@@ -290,10 +294,11 @@ export async function downloadSbizApiVendors(
     const records = findRecords<SbizApiRecord>(payload, 'bizesNm');
     const totalCount = findNumber(payload, 'totalCount');
     seenForCode += records.length;
+    fetched += records.length;
 
     for (const r of records) {
       // 시도 코드로 지역 필터
-      if (r.ctprvnCd !== ctprvnCd) continue;
+      if (r.ctprvnCd !== ctprvnCd) { rejected++; continue; }
 
       const branch = r.brchNm?.trim() ?? '';
       const name = [r.bizesNm?.trim(), branch].filter(Boolean).join(' ');
@@ -305,10 +310,12 @@ export async function downloadSbizApiVendors(
       else if (/결혼.*중개|결혼.*상담/.test(industry)) category = 'wedding_info_company';
       else category = classifyWeddingIndustry(industry, name);
 
-      if (!name || name.length > 500 || !category || !/^\S+(?:시|도)\s+\S+/.test(region)) continue;
+      if (!name || name.length > 500 || !category || !/^\S+(?:시|도)\s+\S+/.test(region)) {
+        rejected++; continue;
+      }
 
       const identity = `${normalizeName(name)}|${region}`;
-      if (seen.has(identity)) continue;
+      if (seen.has(identity)) { duplicates++; continue; }
       seen.add(identity);
 
       vendors.push({
@@ -322,14 +329,13 @@ export async function downloadSbizApiVendors(
       });
     }
 
-    const fetched = (pageNo - 1) * 1000 + records.length;
-    if (!totalCount || fetched >= totalCount || records.length < 1000) break;
+    if (!totalCount || seenForCode >= totalCount || records.length < 1000) break;
   }
   // 코드가 틀리면 API는 오류 대신 빈 목록을 준다 — 조용한 0건 수집을 막는다.
   if (!seenForCode) throw new Error(`업종코드 ${query.divId}=${code} 응답이 0건입니다. 코드를 확인하세요.`);
   }
 
-  return vendors;
+  return { vendors, fetched, rejected, duplicates };
 }
 
 export type IndustryCategory = { code: string; name: string };

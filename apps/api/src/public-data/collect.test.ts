@@ -47,8 +47,11 @@ test('sbiz-api 응답에서 서울 예식장만 파싱한다', async () => {
   });
   try {
     // 업종코드는 호출자가 넘긴다 — 아래 값은 테스트 전용 가짜 코드다.
-    const vendors = await downloadSbizApiVendors('sbiz-seoul', 'test-key', new Date('2026-09-04T00:00:00Z'),
-      { divId: 'indsSclsCd', codes: ['TEST01'] });
+    const { vendors, fetched, rejected } = await downloadSbizApiVendors(
+      'sbiz-seoul', 'test-key', new Date('2026-09-04T00:00:00Z'),
+      { divId: 'indsSclsCd', codes: ['S21101'] });
+    expect(fetched).toBe(2);
+    expect(rejected).toBe(1); // 경기 업체는 시도 필터에서 빠진다
     expect(vendors).toHaveLength(1);
     expect(vendors[0]?.name).toBe('강남웨딩홀');
     expect(vendors[0]?.region).toBe('서울특별시 강남구');

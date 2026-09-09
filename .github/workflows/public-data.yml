@@ -31,6 +31,15 @@ on:
         description: '업종 조회 응답 원문 앞부분을 출력(파싱 0건일 때 응답 모양 확인용)'
         type: boolean
         default: false
+      upjong_codes:
+        description: '이번 실행에만 쓸 업종코드(쉼표 구분). 비우면 저장소 Variables의 SBIZ_UPJONG_CODES를 쓴다'
+        type: string
+        default: ''
+      upjong_div_id:
+        description: '업종코드 자리. 비우면 저장소 Variables 또는 indsLclsCd'
+        type: choice
+        options: ['', 'indsLclsCd', 'indsMclsCd', 'indsSclsCd']
+        default: ''
   schedule:
     - cron: '17 18 * * 6'
 
@@ -77,8 +86,9 @@ jobs:
       SBIZ_API_KEY: ${{ secrets.SBIZ_API_KEY }}
       # 조회할 업종코드. 저장소 Variables에 쉼표로 넣는다(비밀 아님). 비어 있으면
       # sbiz 출처는 건너뛴다 — 코드를 모른 채 호출하면 조용히 0건이 되기 때문이다.
-      SBIZ_UPJONG_CODES: ${{ vars.SBIZ_UPJONG_CODES }}
-      SBIZ_UPJONG_DIV_ID: ${{ vars.SBIZ_UPJONG_DIV_ID }}
+      # 수동 실행 입력이 있으면 그쪽이 이긴다 — 소량 샘플 검증용.
+      SBIZ_UPJONG_CODES: ${{ inputs.upjong_codes || vars.SBIZ_UPJONG_CODES }}
+      SBIZ_UPJONG_DIV_ID: ${{ inputs.upjong_div_id || vars.SBIZ_UPJONG_DIV_ID }}
     strategy:
       fail-fast: false
       matrix:

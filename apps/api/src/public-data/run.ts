@@ -19,7 +19,7 @@ export async function runPublicCollection(args: string[]) {
 
   const source = PUBLIC_SOURCES[key];
   const at = new Date();
-  let vendors: Awaited<ReturnType<typeof downloadSbizApiVendors>>;
+  let vendors: Awaited<ReturnType<typeof parsePublicCsv>>['vendors'];
   let total: number;
   let rejected: number;
   let duplicates: number;
@@ -27,11 +27,14 @@ export async function runPublicCollection(args: string[]) {
   if (source.format === 'sbiz-api') {
     if (!sbizApiKey) throw new Error('SBIZ_API_KEY 환경변수 또는 --sbiz-api-key 옵션이 필요합니다.');
     // 업종코드는 하드코딩하지 않는다 — CLI 또는 SBIZ_UPJONG_CODES에서 온다.
-    vendors = await downloadSbizApiVendors(key, sbizApiKey, at,
+    const result = await downloadSbizApiVendors(key, sbizApiKey, at,
       upjongCodes ? { divId: upjongDivId ?? 'indsLclsCd', codes: upjongCodes.split(',') } : undefined);
-    total = vendors.length;
-    rejected = 0;
-    duplicates = 0;
+    vendors = result.vendors;
+    // total은 API가 돌려준 원본 건수다. accepted가 0인데 total이 크면 지역·분류
+    // 필터가 응답 필드와 어긋난 것이므로 리포트만 보고 구분할 수 있어야 한다.
+    total = result.fetched;
+    rejected = result.rejected;
+    duplicates = result.duplicates;
   } else {
     if (file && (await stat(file)).size > 64 * 1024 * 1024) throw new Error('64 MiB 이하 지역별 CSV가 필요합니다.');
     const bytes = file ? await readFile(file) : await downloadPublicCsv(key);
