@@ -93,7 +93,7 @@ export default function ProfileScreen() {
     }
   }
 
-  if (loadError) return <ErrorView message={loadError} onBack={load} />;
+  if (loadError) return <ErrorView message={loadError} onRetry={load} />;
   if (!me) return <DelayedLoadingView />;
 
   return (

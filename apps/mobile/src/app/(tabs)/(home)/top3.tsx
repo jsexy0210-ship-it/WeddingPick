@@ -84,7 +84,7 @@ export default function Top3Screen() {
           </ScrollView>
 
           {error ? (
-            <ErrorView message={error} onBack={() => router.back()} />
+            <ErrorView message={error} onBack={() => router.back()} onRetry={load} />
           ) : !data ? (
             /* 추천 계산 — 업종 순회 로딩(WP-ST-015). */
             <View style={styles.recommending}>

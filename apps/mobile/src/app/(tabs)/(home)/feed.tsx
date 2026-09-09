@@ -39,7 +39,7 @@ export default function FeedScreen() {
 
   useEffect(load, [load]);
 
-  if (error) return <ErrorView message={error} onBack={() => router.back()} />;
+  if (error) return <ErrorView message={error} onBack={() => router.back()} onRetry={load} />;
   if (!items) return <SkeletonView />;
 
   return (

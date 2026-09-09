@@ -104,7 +104,7 @@ export default function WeddingQuotesScreen() {
   if (loading) return <SkeletonView />;
 
   if (error && quotes.length === 0) {
-    return <ErrorView message={error} onBack={() => router.back()} />;
+    return <ErrorView message={error} onBack={() => router.back()} onRetry={load} />;
   }
 
   return (

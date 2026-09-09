@@ -37,8 +37,8 @@ const S = {
 export default function RewardHistoryScreen() {
   const { rewards, payout, loading, error, reload } = useBenefitData();
 
-  if (error) return <ErrorView message={error} onBack={reload} />;
-  if (!rewards) return loading ? <DelayedLoadingView /> : <ErrorView message="내역을 불러오지 못했어요" onBack={reload} />;
+  if (error) return <ErrorView message={error} onRetry={reload} />;
+  if (!rewards) return loading ? <DelayedLoadingView /> : <ErrorView message="내역을 불러오지 못했어요" onRetry={reload} />;
 
   const grants = [...rewards.grants].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
   const paid = grants.filter((grant) => grant.status === 'paid');

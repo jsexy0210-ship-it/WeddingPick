@@ -50,6 +50,8 @@ export default function WeddingTasksScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const theme = useTheme();
   const [page, setPage] = useState<WeddingTaskListResponse | null>(null);
+  /* 두 번 눌러도 한 번만 보낸다. 눌린 동안 버튼을 잠근다. */
+  const [saving, setSaving] = useState(false);
   const [weddingInfo, setWeddingInfo] = useState<WeddingDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   /** 수정 중인 일정. 닫으면 버린다. */
@@ -73,7 +75,7 @@ export default function WeddingTasksScreen() {
   }, [id]);
 
   if (error) {
-    return <ErrorView message={error} onBack={() => router.back()} />;
+    return <ErrorView message={error} onBack={() => router.back()} onRetry={load} />;
   }
 
   if (!page) {
@@ -90,11 +92,15 @@ export default function WeddingTasksScreen() {
   }
 
   async function add() {
+    if (saving) return;
+
     if (draftLabel.trim().length === 0) {
       setError('무슨 일인지 적어주세요.');
 
       return;
     }
+
+    setSaving(true);
 
     try {
       /*
@@ -111,11 +117,15 @@ export default function WeddingTasksScreen() {
       load();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '더하지 못했어요.');
+    } finally {
+      setSaving(false);
     }
   }
 
   async function save(state?: 'auto' | (typeof TASK_STATES)[number]) {
-    if (!editing) return;
+    if (!editing || saving) return;
+
+    setSaving(true);
 
     try {
       await updateWeddingTask(id, editing.id, {
@@ -129,6 +139,8 @@ export default function WeddingTasksScreen() {
       load();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '고치지 못했어요.');
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -318,7 +330,8 @@ export default function WeddingTasksScreen() {
               <ActionButton label="취소" onPress={closeSheet} />
               <ActionButton
                 variant="primary"
-                label="완료"
+                label={saving ? '저장 중…' : '완료'}
+                disabled={saving}
                 onPress={() => void (adding ? add() : save())}
               />
             </ThemedView>

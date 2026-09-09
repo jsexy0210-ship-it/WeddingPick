@@ -50,8 +50,8 @@ const MISSION_ROUTE: Record<MissionKey, string> = {
 export default function MissionsScreen() {
   const { me, loading, error, reload } = useBenefitData();
 
-  if (error) return <ErrorView message={error} onBack={reload} />;
-  if (!me) return loading ? <DelayedLoadingView /> : <ErrorView message="정보를 불러오지 못했어요" onBack={reload} />;
+  if (error) return <ErrorView message={error} onRetry={reload} />;
+  if (!me) return loading ? <DelayedLoadingView /> : <ErrorView message="정보를 불러오지 못했어요" onRetry={reload} />;
 
   const count = missionCount(me);
   const rows = missionRows(me);

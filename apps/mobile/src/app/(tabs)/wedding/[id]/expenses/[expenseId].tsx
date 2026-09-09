@@ -46,7 +46,7 @@ export default function ExpenseDetailScreen() {
   useEffect(load, [load]);
 
   if (error && !detail) {
-    return <ErrorView message={error} onBack={() => router.back()} />;
+    return <ErrorView message={error} onBack={() => router.back()} onRetry={load} />;
   }
 
   if (!detail) {

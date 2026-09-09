@@ -84,7 +84,7 @@ export default function PickCategoryScreen() {
   }
 
   if (error) {
-    return <ErrorView message={error} onBack={() => router.back()} />;
+    return <ErrorView message={error} onBack={() => router.back()} onRetry={load} />;
   }
 
   const categoryLabel = VENDOR_CATEGORY_LABEL[cat] ?? cat;

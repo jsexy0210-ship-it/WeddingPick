@@ -60,7 +60,7 @@ export default function MyReportsScreen() {
 
   useEffect(load, [load]);
 
-  if (loadError) return <ErrorView message={loadError} onBack={load} />;
+  if (loadError) return <ErrorView message={loadError} onRetry={load} />;
   if (reports === null) return <DelayedLoadingView />;
 
   function confirmDelete(reviewId: string, vendor: string) {

@@ -83,6 +83,8 @@ export default function WeddingNotesScreen() {
     vendorLabel: paramVendorLabel,
   } = useLocalSearchParams<{ id: string; vendorId?: string; vendorLabel?: string }>();
   const [page, setPage] = useState<WeddingNoteListResponse | null>(null);
+  /* 두 번 눌러도 한 번만 보낸다. 눌린 동안 버튼을 잠근다. */
+  const [saving, setSaving] = useState(false);
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>(paramVendorId ? 'vendor' : 'all');
@@ -113,7 +115,7 @@ export default function WeddingNotesScreen() {
   const freeNotes = useMemo(() => (page ? page.notes.filter((note) => !isVendorNote(note)) : []), [page]);
 
   if (error) {
-    return <ErrorView message={error} onBack={() => router.back()} />;
+    return <ErrorView message={error} onBack={() => router.back()} onRetry={load} />;
   }
 
   if (!page || now === null) {
@@ -149,12 +151,16 @@ export default function WeddingNotesScreen() {
   }
 
   async function submit() {
+    if (saving) return;
+
     const body = draftBody.trim();
 
     if (!body) {
       showAlert('메모를 적어주세요');
       return;
     }
+
+    setSaving(true);
 
     try {
       if (editing) {
@@ -182,6 +188,8 @@ export default function WeddingNotesScreen() {
       }
 
       showAlert('저장하지 못했어요', caught instanceof Error ? caught.message : '다시 시도해주세요.');
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -323,7 +331,13 @@ export default function WeddingNotesScreen() {
               </View>
             )}
             <View style={styles.sheetButton}>
-              <ActionButton size="xlarge" variant="primary" label="저장" onPress={() => void submit()} />
+              <ActionButton
+                size="xlarge"
+                variant="primary"
+                label={saving ? '저장 중…' : '저장'}
+                disabled={saving}
+                onPress={() => void submit()}
+              />
             </View>
           </View>
           {editing ? (

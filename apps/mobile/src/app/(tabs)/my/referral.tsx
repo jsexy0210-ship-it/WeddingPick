@@ -82,8 +82,8 @@ export default function ReferralScreen() {
   const [code, setCode] = useState('');
   const [sending, setSending] = useState(false);
 
-  if (error) return <ErrorView message={error} onBack={reload} />;
-  if (!rewards) return loading ? <DelayedLoadingView /> : <ErrorView message="초대 현황을 불러오지 못했어요" onBack={reload} />;
+  if (error) return <ErrorView message={error} onRetry={reload} />;
+  if (!rewards) return loading ? <DelayedLoadingView /> : <ErrorView message="초대 현황을 불러오지 못했어요" onRetry={reload} />;
 
   const referralGrants = grantsOf(rewards, 'referral');
   const paidCount = referralGrants.filter((grant) => grant.status === 'paid').length;
