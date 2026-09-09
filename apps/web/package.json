@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "build": "tsx src/cli.ts",
+    "build": "node ../../scripts/ensure-modules.mjs && tsx src/cli.ts",
     "typecheck": "tsc --noEmit",
     "test": "jest --forceExit"
   },

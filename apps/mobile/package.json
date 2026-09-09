@@ -57,7 +57,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
-    "export:web": "expo export --platform web",
+    "export:web": "node ../../scripts/ensure-modules.mjs && expo export --platform web",
     "test": "jest --forceExit"
   },
   "private": true
