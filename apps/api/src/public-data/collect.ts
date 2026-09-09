@@ -141,7 +141,14 @@ export async function publicGet(url: string, limit: number): Promise<Buffer> {
   if (!ALLOWED_ORIGINS.has(parsed.origin) || parsed.username || parsed.password)
     throw new Error('허용되지 않은 수집 주소');
   const response = await fetchWithRetry(url);
-  if (!response.ok) throw new Error(`공공데이터 응답 오류 ${response.status}`);
+  if (!response.ok) {
+    // 오류 본문에 이유가 들어 있다(등록되지 않은 서비스, 파라미터 오류 등).
+    // 상태코드만으로는 무엇이 잘못됐는지 알 수 없어 앞부분을 함께 올린다.
+    // 서비스키는 URL에만 있고 본문에는 없으므로 키가 새지 않는다.
+    const detail = await response.text().then((t) => t.slice(0, 500).replace(/\s+/g, ' ').trim())
+      .catch(() => '');
+    throw new Error(`공공데이터 응답 오류 ${response.status}${detail ? ` — ${detail}` : ''}`);
+  }
   const chunks: Buffer[] = [];
   let size = 0;
   if (!response.body) throw new Error('응답 본문 없음');
