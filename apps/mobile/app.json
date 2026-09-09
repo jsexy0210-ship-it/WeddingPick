@@ -26,10 +26,7 @@
       },
       "predictiveBackGestureEnabled": false,
       "permissions": [
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "android.permission.CAMERA"
       ]
     },
     "web": {
@@ -58,7 +55,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "저장된 문서 사진을 불러오려면 사진 접근이 필요합니다."
+          "photosPermission": "저장된 문서 사진을 불러오려면 사진 접근이 필요합니다.",
+          "microphonePermission": false
         }
       ],
       [
