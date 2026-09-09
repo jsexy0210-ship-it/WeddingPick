@@ -53,13 +53,18 @@ export function ageVerdictFromRange(range: string | undefined | null): AgeVerdic
  *
  * ```
  * 올해 - 출생연도 >= 15   만 14 또는 15 → 어느 쪽이든 14 이상   verified
- * 올해 - 출생연도 == 14   만 13 또는 14 → 갈린다               unknown
+ * 올해 - 출생연도 == 14   만 13 또는 14 → 갈린다               under_age
  * 올해 - 출생연도 <= 13   만 13 이하                          under_age
  * ```
  *
- * **경계(== 14)를 통과로 처리하지 않는다.** 그러면 아직 열세 살인 사람이 들어온다.
- * 막지도 않는다 — 그러면 진짜 열네 살이 막힌다. 모르는 것은 `unknown`으로 두고,
- * 판정은 생일까지 받은 경우에만 정확해진다(`ageVerdictFromBirthDate`).
+ * **경계(== 14)를 막는다**(2026-09-09 사용자 결정으로 생일 동의를 뺀 뒤). 예전에는
+ * `unknown`으로 두고 생일까지 받아 가렸는데, 생일을 안 받기로 했으므로 가릴 수단이
+ * 없어졌다. 남은 선택은 둘뿐이다 — 통과시키면 **아직 열세 살인 사람이 들어오고**,
+ * 막으면 진짜 열네 살인 사람이 생일까지 기다린다. 개인정보 보호법이 금지하는 것은
+ * 앞쪽이라 뒤쪽을 고른다. 막힌 사람이 보는 화면도 「만 14세가 되면 이용할 수
+ * 있어요」라 그 사람에게는 사실이다.
+ *
+ * `unknown`은 값을 못 읽었을 때만 남는다.
  */
 export function ageVerdictFromBirthYear(
   birthYear: string | number | undefined | null,
@@ -72,9 +77,9 @@ export function ageVerdictFromBirthYear(
   const elapsed = now.getFullYear() - year;
 
   if (elapsed >= MINIMUM_AGE + 1) return 'verified';
-  if (elapsed <= MINIMUM_AGE - 1) return 'under_age';
 
-  return 'unknown';
+  /* 경계(== 14)도 막는다. 생일을 받지 않으므로 가릴 수단이 없다. */
+  return 'under_age';
 }
 
 /**

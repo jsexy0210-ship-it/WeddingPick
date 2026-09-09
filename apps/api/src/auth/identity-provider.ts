@@ -258,10 +258,10 @@ export function createKakaoProvider(options: {
       }
 
       const identity = await verifyIdToken(token.id_token);
-      const extra = await fetchKakaoAgeFields(fetchImpl, token.access_token);
+      const extra = await fetchKakaoBirthYear(fetchImpl, token.access_token);
 
-      /* 셋 다 못 받았으면 붙일 것이 없다 — 빈 키로 프로필을 늘리지 않는다. */
-      if (!extra.ageRange && !extra.birthYear && !extra.birthday) return identity;
+      /* 못 받았으면 붙일 것이 없다 — 빈 키로 프로필을 늘리지 않는다. */
+      if (!extra.birthYear) return identity;
 
       return { ...identity, profile: { ...identity.profile, ...extra } };
     },
@@ -269,21 +269,23 @@ export function createKakaoProvider(options: {
 }
 
 /**
- * 카카오에서 만 14세 판정에 쓸 값만 묻는다. 2026-09-09 사용자 결정 반영.
+ * 카카오에서 출생 연도만 묻는다. 2026-09-09 사용자 결정.
  *
- * **출생 연도가 필수 동의다.** 그래서 이제 판정의 주된 근거는 `birthyear`이고,
- * `age_range`(선택 동의)와 `birthday`(선택 동의)는 있으면 더 정확해지는 보조값이다.
- * 셋 다 `property_keys`로 필요한 것만 달라고 한다 — 안 쓸 것을 받아두면 지울 일만 생긴다.
+ * **필수 동의는 출생 연도 하나다.** 연령대 · 생일은 「사용 안 함」으로 내렸다 —
+ * 카카오 신청 화면이 「필요한 최소한만 신청하라」고 적은 자리라, 판정을 조금 더
+ * 정확하게 만드는 값이라도 필수가 아니면 받지 않기로 했다.
+ *
+ * `property_keys`로 필요한 것만 달라고 한다 — 안 쓸 것을 받아두면 지울 일만 생긴다.
  *
  * **못 받아도 로그인은 계속된다.** 이 호출이 실패했다고 로그인을 막으면 카카오가
  * 잠깐 흔들릴 때 아무도 못 들어온다. 판정은 라우트가 하고, 모르면 `unknown`이다.
  *
  * 받은 값은 판정에만 쓰고 버린다 — 라우트가 `profile`에서 떼어낸 뒤 저장에 넘긴다.
  */
-async function fetchKakaoAgeFields(
+async function fetchKakaoBirthYear(
   fetchImpl: typeof fetch,
   accessToken: unknown
-): Promise<{ ageRange?: string; birthYear?: string; birthday?: string }> {
+): Promise<{ birthYear?: string }> {
   if (typeof accessToken !== 'string' || accessToken.length === 0) return {};
 
   try {
@@ -294,22 +296,17 @@ async function fetchKakaoAgeFields(
         'content-type': 'application/x-www-form-urlencoded;charset=utf-8',
       },
       body: new URLSearchParams({
-        property_keys:
-          '["kakao_account.birthyear","kakao_account.birthday","kakao_account.age_range"]',
+        property_keys: '["kakao_account.birthyear"]',
       }),
     });
 
     if (!response.ok) return {};
 
     const body = (await response.json()) as {
-      kakao_account?: { age_range?: unknown; birthyear?: unknown; birthday?: unknown };
+      kakao_account?: { birthyear?: unknown };
     };
 
-    return {
-      ageRange: stringValue(body.kakao_account?.age_range),
-      birthYear: stringValue(body.kakao_account?.birthyear),
-      birthday: stringValue(body.kakao_account?.birthday),
-    };
+    return { birthYear: stringValue(body.kakao_account?.birthyear) };
   } catch {
     return {};
   }

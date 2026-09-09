@@ -54,8 +54,13 @@ describe('출생 연도로 만 14세 판정 (2026-09-09 사용자 결정)', () =
    * 경계다. 2012년생은 오늘 만 13일 수도 14일 수도 있다. 통과로 처리하면 아직
    * 열세 살인 사람이 들어오고, 막으면 진짜 열네 살이 막힌다. 모르는 것은 모른다고 한다.
    */
-  it('경계(올해 - 연도 == 14)는 통과도 차단도 아니다', () => {
-    expect(ageVerdictFromBirthYear(2012, now)).toBe('unknown');
+  /*
+   * 생일 동의를 뺐으므로(2026-09-09) 경계를 가릴 수단이 없다. 통과시키면 아직
+   * 열세 살인 사람이 들어오고, 막으면 진짜 열네 살이 생일까지 기다린다.
+   * 법이 금지하는 것은 앞쪽이라 뒤쪽을 고른다.
+   */
+  it('경계(올해 - 연도 == 14)는 막는다', () => {
+    expect(ageVerdictFromBirthYear(2012, now)).toBe('under_age');
   });
 
   it('연도가 없거나 꼴이 아니면 모른다', () => {
@@ -74,7 +79,7 @@ describe('출생 연도로 만 14세 판정 (2026-09-09 사용자 결정)', () =
   });
 
   it('생일 꼴이 아니면 연도만으로 돌아간다 — 틀린 값으로 판정하지 않는다', () => {
-    expect(ageVerdictFromBirthDate(2012, '4월21일', now)).toBe('unknown');
-    expect(ageVerdictFromBirthDate(2012, '9999', now)).toBe('unknown');
+    expect(ageVerdictFromBirthDate(2012, '4월21일', now)).toBe('under_age');
+    expect(ageVerdictFromBirthDate(2012, '9999', now)).toBe('under_age');
   });
 });

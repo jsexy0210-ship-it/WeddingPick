@@ -58,15 +58,15 @@ describe('createKakaoProvider', () => {
   });
 });
 
-describe('createKakaoProvider — 연령대(SPEC 3.5)', () => {
+describe('createKakaoProvider — 출생 연도(2026-09-09 사용자 결정)', () => {
   const kakaoIdentity = { provider: 'kakao' as const, subject: 'kakao-user', profile: { nickname: '웨픽' } };
   const credential = { authorizationCode: 'code', state: 'state', redirectUri: 'https://example.test/setup' };
 
-  it('토큰 교환 뒤 /v2/user/me에 연령대만 묻고 profile.ageRange로 준다', async () => {
+  it('토큰 교환 뒤 /v2/user/me에 출생 연도만 묻고 profile.birthYear로 준다', async () => {
     const fetchImpl = jest
       .fn()
       .mockResolvedValueOnce({ ok: true, json: async () => ({ id_token: 'jwt', access_token: 'access-token' }) })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ kakao_account: { age_range: '20~29' } }) });
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ kakao_account: { birthyear: '2000' } }) });
     const provider = createKakaoProvider({
       appKey: 'app-key',
       fetchImpl: fetchImpl as unknown as typeof fetch,
@@ -76,20 +76,18 @@ describe('createKakaoProvider — 연령대(SPEC 3.5)', () => {
     if (provider.flow !== 'authorization_code') throw new Error('잘못된 provider flow');
     await expect(provider.verify(credential)).resolves.toMatchObject({
       subject: 'kakao-user',
-      profile: { nickname: '웨픽', ageRange: '20~29' },
+      profile: { nickname: '웨픽', birthYear: '2000' },
     });
 
     expect(fetchImpl.mock.calls[1]?.[0]).toBe('https://kapi.kakao.com/v2/user/me');
     expect(fetchImpl.mock.calls[1]?.[1]?.headers).toMatchObject({ authorization: 'Bearer access-token' });
     /*
-     * 만 14세 판정에 쓸 것만 달라고 한다 — 필요 없는 것을 받아두면 지울 일만 생긴다.
-     * 2026-09-09 사용자 결정으로 **출생 연도가 주된 근거**가 됐다. 생일은 있으면
-     * 만 나이를 정확히 세고, 연령대는 옛 경로다.
+     * 출생 연도 하나만 달라고 한다. 연령대 · 생일은 「사용 안 함」으로 내렸다
+     * (2026-09-09 사용자 결정) — 필요 없는 것을 받아두면 지울 일만 생기고,
+     * 카카오가 「불필요한 개인정보를 받으면 제재」라고 적어 둔 자리다.
      */
     const body = fetchImpl.mock.calls[1]?.[1]?.body as URLSearchParams;
-    expect(body.get('property_keys')).toBe(
-      '["kakao_account.birthyear","kakao_account.birthday","kakao_account.age_range"]'
-    );
+    expect(body.get('property_keys')).toBe('["kakao_account.birthyear"]');
   });
 
   it('연령대가 없으면(권한 없음 · 거부) ageRange 없이 그대로 통과한다', async () => {

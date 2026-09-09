@@ -147,8 +147,6 @@ export const NOT_ACTIVATED_NOTICE = '아직 가입이 끝나지 않았어요. �
 export const SIGNUP_PROFILE_FIELDS = [
   { label: '출생 연도', required: true, why: '만 14세 이상인지 확인해요' },
   { label: '프로필 (닉네임 · 사진)', required: true, why: '후기와 제보에 표시해요' },
-  { label: '연령대', required: false, why: '출생 연도를 못 받았을 때 대신 확인해요' },
-  { label: '생일', required: false, why: '경계 나이일 때만 함께 봐요' },
 ] as const satisfies readonly { label: string; required: boolean; why: string }[];
 
 /** 화면에 적는 안내 한 줄. 무엇을 위한 절차인지 먼저 말한다. */
