@@ -19,12 +19,12 @@ import {
   WeddingMark,
   useTheme,
 } from '@weddingpick/ui';
-import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { LoginFailureSheet } from '@/features/auth/login-failure-sheet';
 import { maskEmail } from '@/features/auth/mask-email';
-import { canSignInWith, providerTone, useAuthProviders } from '@/features/auth/providers';
+import { canSignInWith, hasKakaoReturn, providerTone, useAuthProviders } from '@/features/auth/providers';
 import { loadRememberedAccount, type RememberedAccount } from '@/features/auth/remembered-account';
 import { takePendingSignInError } from '@/features/auth/sign-in-handoff';
+import { SigningInBody } from '@/features/auth/signing-in-view';
 import { useSignIn } from '@/features/auth/use-sign-in';
 import { openExternal } from '@/features/open-external';
 
@@ -153,12 +153,13 @@ export default function LoginScreen() {
                * 로그인 폼이 떠 있으면 «다시 로그인하라는 건가» 하고 읽힌다.
                */
               <ThemedView style={styles.busy}>
-                <DelayedLoader size={28} />
-                {busy ? (
-                  <ThemedText type="small" themeColor="textAssistive">
-                    카카오로 로그인하는 중이에요
-                  </ThemedText>
-                ) : null}
+                {/*
+                  문장은 `SigningInBody` 한 곳에만 있다. 카카오에서 돌아온 부팅이면
+                  그 말은 부팅 화면(`SigningInView`)이 이미 하고 있으므로 여기서는
+                  로더만 남긴다 — 두 화면이 한 프레임에 겹칠 때 같은 말이 두 번
+                  보이던 문제(2026-09-09 보고).
+                */}
+                <SigningInBody size={28} message={busy && !hasKakaoReturn()} />
               </ThemedView>
             ) : (
               <ThemedView style={styles.section}>

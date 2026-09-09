@@ -25,7 +25,8 @@ PR 체크리스트)와 2026-09-04~08 정책 변경 이력은 `docs/CLAUDE-rules-
   금액 한 줄은 어느 화면이든 `priceLine(paidPrice, guidePrice)`(packages/domain guide-price.ts)로만 만든다.
 - 스타일은 `WeddingStyle`(URBAN · NATURAL · ROMANTIC · GLAMOROUS) 넷뿐. 화면 라벨은 도시적인 · 자연스러운 · 로맨틱한 · 화려한.
   최소 1 · 최대 2. 태그는 정렬 가중치로만 쓴다 — 태그가 다르다고 업체를 빼지 않는다.
-- 홈 상태는 2층(진행 0 · 1~8 · 9+ / 정보량 3건 기준)이다. 준비 현황은 홈 4칸 + WP-HOME-009 두 곳뿐. 코랄은 홈에서 네 곳.
+- 홈 상태는 2층(진행 0 · 1~8 · 9+ / 정보량 3건 기준)이다. 준비 현황은 홈 4칸 + WP-HOME-009 두 곳뿐.
+  코랄은 홈에서 다섯 곳 — 현재 업종 테두리 · 진행바 · 웨딩픽 추천 라벨 · CTA · D-day(2026-09-09 사용자 오더).
 - 검색은 온보딩 값을 미리 걸지 않는다. 알림은 진행 중 업종만 · 하루 2건. 날짜 선택은 WP-APP-023(연월 셀렉트 + 달력).
 - Npay 수령(WP-EVT-006): 휴대폰 번호는 보내는 데만 쓰고 보낸 뒤 지운다(reward_payouts CHECK). 돈은 사람이 보내고
   `reward-admin --payouts / --sent / --payout-failed`로 사실만 적는다. 본인에게도 번호 전체를 되돌려주지 않는다.
