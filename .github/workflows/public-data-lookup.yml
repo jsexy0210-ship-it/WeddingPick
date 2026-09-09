@@ -1,0 +1,86 @@
+# 상권정보 업종 코드를 찾기만 한다. DB에 닿지 않는다.
+#
+# `public-data.yml`의 `lookup-category` 잡은 `--level small`로 고정돼 있는데,
+# 활용가이드(2026-08-05판)를 보면 **소분류 조회는 대분류·중분류를 둘 다 요구한다**:
+#
+#   largeUpjongList?type=json
+#   middleUpjongList?indsLclsCd=I2&type=json
+#   smallUpjongList?indsLclsCd=I2&indsMclsCd=I201&type=json
+#
+# 부모 없이 소분류를 부르면 아무것도 못 받는다 — 2026-09-09에 「예식」으로 조회해
+# 「일치하는 항목이 없습니다」가 나온 원인이 이것이다. 그래서 세 단계를 다 부를 수
+# 있는 조회를 따로 둔다.
+#
+# `public-data.yml`을 고치지 않고 새 파일로 두는 이유는 하나다 — 그 파일은 지금
+# 수집 담당이 잡고 있어 같이 고치면 충돌한다. 그쪽 정리가 끝나면 `lookup-category`
+# 잡을 지우고 이 파일 하나만 남긴다.
+name: 업종 코드 조회 (읽기 전용)
+
+on:
+  workflow_dispatch:
+    inputs:
+      level:
+        description: '어느 단계를 볼 것인가'
+        type: choice
+        default: large
+        options:
+          - large
+          - middle
+          - small
+      parent_large:
+        description: '대분류 코드 — middle · small에 필요 (예 I2)'
+        type: string
+        default: ''
+      parent_middle:
+        description: '중분류 코드 — small에 필요 (예 I201)'
+        type: string
+        default: ''
+      keyword:
+        description: '이름에 이 글자가 든 것만 출력 (비우면 전부)'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  lookup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: 업종 코드 조회
+        env:
+          # 키는 여기서만 쓰고 출력에는 담기지 않는다 — 출력은 코드와 이름뿐이다.
+          SBIZ_API_KEY: ${{ secrets.SBIZ_API_KEY }}
+          LEVEL: ${{ inputs.level }}
+          PARENT_LARGE: ${{ inputs.parent_large }}
+          PARENT_MIDDLE: ${{ inputs.parent_middle }}
+          KEYWORD: ${{ inputs.keyword }}
+        run: |
+          if [ -z "$SBIZ_API_KEY" ]; then
+            echo "::error::SBIZ_API_KEY가 GitHub Secrets에 없다."
+            exit 1
+          fi
+          # 가이드가 요구하는 부모를 빠뜨리면 빈 결과가 온다. 먼저 막는다.
+          if [ "$LEVEL" != "large" ] && [ -z "$PARENT_LARGE" ]; then
+            echo "::error::$LEVEL 조회에는 parent_large(대분류 코드)가 필요하다."
+            exit 1
+          fi
+          if [ "$LEVEL" = "small" ] && [ -z "$PARENT_MIDDLE" ]; then
+            echo "::error::소분류 조회에는 parent_middle(중분류 코드)도 필요하다."
+            exit 1
+          fi
+
+          set -- --lookup-category --level "$LEVEL"
+          [ -n "$PARENT_LARGE" ] && set -- "$@" --parent-large "$PARENT_LARGE"
+          [ -n "$PARENT_MIDDLE" ] && set -- "$@" --parent-middle "$PARENT_MIDDLE"
+          [ -n "$KEYWORD" ] && set -- "$@" --keyword "$KEYWORD"
+
+          echo "단계: $LEVEL / 대분류: ${PARENT_LARGE:-(없음)} / 중분류: ${PARENT_MIDDLE:-(없음)} / 낱말: ${KEYWORD:-(전부)}"
+          npm run public-data:import --workspace @weddingpick/api -- "$@"
