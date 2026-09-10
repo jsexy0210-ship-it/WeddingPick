@@ -58,7 +58,8 @@
     ]
   },
   "delivery": {
-    "status": "pending-pull-request"
+    "pullRequest": "https://github.com/jsexy0210-ship-it/WeddingPick/pull/183",
+    "note": "병합·CI·운영 반영의 최신 상태는 PR과 해당 실행 기록에서 확인한다."
   },
   "evidence": "../REPOSITORY_CLEANUP_2026-09-10.md"
 }
