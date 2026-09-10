@@ -17,7 +17,6 @@ import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 
 import { saveAdminToken } from './_session';
 
-const CORAL = '#ff6f61';
 
 /**
  * Pick Mark — `spec/tokens.json`의 `symbol`. **절대 변경 금지.**
@@ -32,14 +31,14 @@ function PickMark() {
     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
       <Path
         d="M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z"
-        stroke={CORAL}
+        stroke={Colors.light.tint}
         strokeWidth={1.9}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <Path
         d="M9.4 11.9l1.7 1.7 3.4-3.4"
-        stroke={CORAL}
+        stroke={Colors.light.tint}
         strokeWidth={1.9}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -118,7 +117,7 @@ export default function AdminLoginScreen() {
                 setError(null);
               }}
               placeholder="아이디"
-              placeholderTextColor="#adb1ba"
+              placeholderTextColor={Colors.light.textDisabled}
               autoCapitalize="none"
               autoCorrect={false}
               onSubmitEditing={submit}
@@ -134,7 +133,7 @@ export default function AdminLoginScreen() {
                 setError(null);
               }}
               placeholder="비밀번호"
-              placeholderTextColor="#adb1ba"
+              placeholderTextColor={Colors.light.textDisabled}
               secureTextEntry
               onSubmitEditing={submit}
             />
@@ -148,7 +147,7 @@ export default function AdminLoginScreen() {
         ) : null}
 
         <Pressable style={styles.cta} onPress={submit} disabled={busy}>
-          {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.ctaText}>로그인</Text>}
+          {busy ? <ActivityIndicator color={Colors.light.background} /> : <Text style={styles.ctaText}>로그인</Text>}
         </Pressable>
 
         <View style={styles.note}>
@@ -176,43 +175,64 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     minHeight: '100vh' as unknown as number,
   },
   /* 520 · 좌우 72 — 시안값. */
   panel: { width: 520, flexShrink: 0, justifyContent: 'center', paddingHorizontal: 72 },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingBottom: 34 },
-  brandText: { fontSize: FontSize.t6, fontWeight: '700', color: '#212124' },
-  title: { fontSize: 26, lineHeight: 36, fontWeight: '700', color: '#212124', paddingBottom: 10 },
-  lead: { fontSize: FontSize.t7, lineHeight: LineHeight.t7, color: '#4d5159', paddingBottom: 30 },
+  brandText: { fontSize: FontSize.t6, fontWeight: '700', color: Colors.light.text },
+  title: {
+    fontSize: FontSize.t2,
+    lineHeight: LineHeight.t2,
+    fontWeight: '700',
+    color: Colors.light.text,
+    paddingBottom: 10,
+  },
+  lead: {
+    fontSize: FontSize.t7,
+    lineHeight: LineHeight.t7,
+    color: Colors.light.textSecondary,
+    paddingBottom: 30,
+  },
   fields: { gap: 10 },
   field: { gap: 6 },
-  fieldLabel: { fontSize: FontSize.tab, fontWeight: '700', color: '#4d5159' },
+  fieldLabel: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.textSecondary },
   input: {
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: Colors.light.fieldBorder,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: FontSize.t7,
-    color: '#212124',
-    backgroundColor: '#fff',
+    color: Colors.light.text,
+    backgroundColor: Colors.light.background,
   },
-  errorBox: { backgroundColor: '#ffe5e3', borderRadius: 10, padding: 13, marginTop: 12 },
-  errorText: { fontSize: FontSize.t7, lineHeight: LineHeight.t7, fontWeight: '700', color: '#e81607' },
+  errorBox: {
+    backgroundColor: Colors.light.negativeBackground,
+    borderRadius: 10,
+    padding: 13,
+    marginTop: 12,
+  },
+  errorText: { fontSize: FontSize.t7, lineHeight: LineHeight.t7, fontWeight: '700', color: Colors.light.negative },
   cta: {
     marginTop: 18,
     height: 52,
     borderRadius: 10,
-    backgroundColor: CORAL,
+    backgroundColor: Colors.light.tint,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  ctaText: { fontSize: FontSize.t6, fontWeight: '700', color: '#fff' },
-  note: { marginTop: 22, padding: 15, borderRadius: 10, backgroundColor: '#f7f8fa', gap: 6 },
-  noteTitle: { fontSize: FontSize.tab, fontWeight: '700', color: '#4d5159' },
-  noteBody: { fontSize: FontSize.tab, lineHeight: 19, color: '#868b94' },
-  foot: { fontSize: FontSize.tab, lineHeight: 19, color: '#868b94', paddingTop: 18 },
+  ctaText: { fontSize: FontSize.t6, fontWeight: '700', color: Colors.light.background },
+  note: { marginTop: 22, padding: 15, borderRadius: 10, backgroundColor: Colors.light.backgroundElement, gap: 6 },
+  noteTitle: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.textSecondary },
+  noteBody: { fontSize: FontSize.tab, lineHeight: LineHeight.t7, color: Colors.light.textAssistive },
+  foot: {
+    fontSize: FontSize.tab,
+    lineHeight: LineHeight.t7,
+    color: Colors.light.textAssistive,
+    paddingTop: 18,
+  },
   side: {
     flex: 1,
     minWidth: 0,
@@ -221,7 +241,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 72,
     gap: 26,
   },
-  sideLabel: { fontSize: FontSize.t7, fontWeight: '700', letterSpacing: 0.4, color: '#4d5159' },
-  sideTitle: { fontSize: 24, lineHeight: 32, fontWeight: '700', color: '#fff' },
-  sideBody: { fontSize: FontSize.tab, lineHeight: 19, color: '#393a40' },
+  sideLabel: {
+    fontSize: FontSize.t7,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    color: Colors.light.textSecondary,
+  },
+  sideTitle: {
+    fontSize: FontSize.t3,
+    lineHeight: LineHeight.t3,
+    fontWeight: '700',
+    color: Colors.light.background,
+  },
+  sideBody: { fontSize: FontSize.tab, lineHeight: LineHeight.t7, color: Colors.light.textStrong },
 });
