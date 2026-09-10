@@ -1,6 +1,6 @@
 import { completeSignupRequestSchema, type SignupState } from '@weddingpick/api-contract';
 import {
-  AGE_BLOCKED_NOTICE,
+  AGE_UNVERIFIED_NOTICE,
   CONSENT_ITEMS,
   MINIMUM_AGE,
   REQUIRED_CONSENTS,
@@ -21,14 +21,13 @@ import { ApiError } from '../errors';
  * 여기만 `requireSignup`을 단다 — 아직 활성화되지 않은 계정이 부를 수 있는 유일한
  * 자리다. 다른 모든 경로는 `requireUser`가 막는다.
  *
- * 만 14세 확인은 **로그인 때 끝난다** — 카카오 연령대의 아래끝으로 본다
- * (`auth/age-range.ts`). 생년월일을 받지 않으므로 여기서도 날짜를 세지 않고,
- * 그때 적어둔 `structured.users.age_verified`가 확인의 전부다.
+ * **만 14세 확인은 여기서 하지 않는다.** 로그인(`POST /v1/auth/sessions`)이 이미
+ * 했고, 그 결과가 DB의 `age_verified`에 있다. 이 라우트는 그 값을 **읽어서 관문을
+ * 지킬 뿐** 새로 켜지 않는다.
  *
- * **요청 본문의 `ageVerified`는 보지 않는다.** 앱은 그 자리에 늘 `true`를 넣고
- * (v3.24가 체크박스를 없앤 뒤로 넣을 다른 값이 없다), 이 요청만 직접 부르는
- * 쪽은 무엇이든 넣을 수 있다. 클라이언트가 말한 것이 아니라 서버가 확인한 것을
- * 본다.
+ * 예전에는 `body.ageVerified`를 봤는데, 앱은 그 자리에 늘 `true`를 넣었다
+ * (`apps/mobile/src/app/setup.tsx`). 즉 그 관문은 아무도 막지 못했다 —
+ * 자기 신고를 관문으로 쓰면 관문이 아니라 통과 버튼이다(2026-09-10).
  */
 export function registerSignupRoutes(app: FastifyInstance, context: AppContext): void {
   const auth = { preHandler: requireSignup(context) };
@@ -87,24 +86,20 @@ export function registerSignupRoutes(app: FastifyInstance, context: AppContext):
       await client.query('BEGIN');
 
       /*
-       * 나이 확인이 끝나지 않았으면 계정을 살리지 않는다.
+       * **서버가 확인한 값만 본다.** 요청 본문이 아니라 DB다 — 본문의
+       * `ageVerified`는 앱이 늘 `true`로 채우던 자리라 관문 노릇을 못 했다.
        *
-       * **보는 것은 서버가 적어둔 값이다.** 예전에는 요청 본문의 `ageVerified`를
-       * 봤는데, 그건 클라이언트가 보내는 값이고 앱은 그 자리에 늘 `true`를
-       * 넣는다(`setup.tsx` — v3.24가 체크박스를 없앤 뒤로 넣을 다른 값이 없다).
-       * 즉 이 관문은 **아무도 막지 못하는 상태**였다. 지금은 로그인 때 카카오
-       * 연령대로 확인하고 `markAgeVerified`가 적어둔 `age_verified`를 본다 —
-       * 클라이언트가 무엇을 보내든 바뀌지 않는다.
-       *
-       * `age_gate`·`age_checked_at`(0046)도 함께 채운다 — 그 위의 제약
-       * (`activated_only_when_old_enough`)이 여전히 그 컬럼을 본다.
+       * `FOR UPDATE`로 잠근다. 아래에서 같은 행의 `activated_at`을 올리므로,
+       * 판정과 활성화 사이에 다른 요청이 그 행을 바꾸는 자리를 남기지 않는다.
        */
-      const verified = await client.query<{ age_verified: boolean }>(
+      const { rows } = await client.query<{ age_verified: boolean }>(
         'SELECT age_verified FROM structured.users WHERE id = $1 FOR UPDATE',
         [userId]
       );
 
-      if (!verified.rows[0]?.age_verified) {
+      const ageVerified = rows[0]?.age_verified ?? false;
+
+      if (!ageVerified) {
         await client.query('ROLLBACK');
 
         // 세션도 끊는다. 확인하지 않은 계정이 토큰을 들고 돌아다닐 이유가 없다.
@@ -113,9 +108,23 @@ export function registerSignupRoutes(app: FastifyInstance, context: AppContext):
           [userId]
         );
 
-        throw new ApiError('forbidden', AGE_BLOCKED_NOTICE);
+        /*
+         * 미달로 확인된 것이 아니라 확인 자체가 없는 상태다. 여기까지 온 계정은
+         * 로그인이 관문을 지키기 전에 만들어진 것뿐이다 — 다시 로그인하면
+         * 로그인이 판정한다.
+         */
+        throw new ApiError('age_unverified', AGE_UNVERIFIED_NOTICE);
       }
 
+      /*
+       * 옛 칸(`age_gate`·`age_checked_at`, 0046)을 맞춰둔다. 확인 자체는 로그인이
+       * 이미 적었고 여기서 다시 켜지 않는다 — `COALESCE`로 처음 확인한 시점을
+       * 지키는 이유가 그것이다. 그래도 이 줄을 두는 것은 그 위의 제약
+       * (`activated_only_when_old_enough`)이 아래 활성화 직전에 `age_gate`를 보기
+       * 때문이다. 지금 도달할 수 있는 상태에서는 로그인이 이미 'passed'로 만들어
+       * 두지만, 옛 칸을 보는 제약이 남아 있는 한 활성화 직전에 한 번 맞추는 편이
+       * 안전하다.
+       */
       await client.query(
         `UPDATE structured.users
          SET age_verified_at = COALESCE(age_verified_at, now()),
@@ -145,7 +154,7 @@ export function registerSignupRoutes(app: FastifyInstance, context: AppContext):
         (body.consents as ConsentItem[]).includes(item)
       ).map((item) => ({ item, version: consentVersion(item) }));
 
-      const check = canActivate({ ageVerified: true, granted });
+      const check = canActivate({ ageVerified, granted });
 
       if (!check.ok) {
         /* 필수 동의가 빠졌다. 받은 동의는 그대로 두고 활성화만 하지 않는다. */

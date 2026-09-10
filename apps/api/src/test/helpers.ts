@@ -12,25 +12,30 @@ import { createLocalStorage } from '../storage/local';
 
 export const connectionString = process.env.DATABASE_URL;
 
-/** 제공자를 부르지 않고 신원을 정해준다. 실제 Apple·Kakao 검증은 여기서 확인하지 않는다. */
 /**
- * 신원을 정해주는 대역.
+ * 시험용 기본 연령대. 만 14세 이상이면 어떤 값이든 되고, 판정에 쓰이는 것은
+ * 아래끝뿐이다(`auth/age-range.ts`).
+ */
+const TEST_AGE_RANGE = '20~29';
+
+/**
+ * 제공자를 부르지 않고 신원을 정해준다. 실제 Apple·Kakao 검증은 여기서 확인하지 않는다.
  *
- * **연령대를 함께 넣는다.** 로그인은 나이를 확인하지 못하면 막는다
- * (`auth.ts` — 2026-09-10). 여기서 만드는 것은 「로그인을 통과한 사람」이므로
- * 확인을 통과한 값이 있어야 한다. 넣지 않으면 이 대역을 쓰는 모든 시험이
- * 로그인에서부터 403으로 떨어진다.
+ * **연령대를 기본으로 넣는다.** 로그인은 나이를 확인하지 못한 사람에게 계정을
+ * 만들어주지 않으므로(`age_unverified`), 연령대가 없는 신원으로는 「로그인을
+ * 통과한 사람」이라는 픽스처 자체가 성립하지 않는다. 예전에는 성립했고 그것이
+ * 곧 구멍이었다 — 시험이 그 구멍 위에 서 있었다.
  *
- * 부르는 쪽이 `profile.ageRange`를 직접 넣었으면 그것을 쓴다 — 미만·없음을
- * 일부러 만들어야 하는 시험이 있다.
+ * 신원이 연령대를 직접 정하면 그쪽이 이긴다. 관문을 시험하는 쪽(`auth.test.ts`)은
+ * 이 헬퍼를 쓰지 않고 제공자를 직접 만든다.
  */
 export function fakeProvider(identity: VerifiedIdentity): IdentityProvider {
-  const withAge: VerifiedIdentity = {
+  const withAgeRange: VerifiedIdentity = {
     ...identity,
-    profile: { ageRange: '30~39', ...identity.profile },
+    profile: { ageRange: TEST_AGE_RANGE, ...identity.profile },
   };
 
-  return { flow: 'id_token', verify: async () => withAge };
+  return { flow: 'id_token', verify: async () => withAgeRange };
 }
 
 export type TestApp = {
@@ -136,7 +141,7 @@ export async function signInAs(
       method: 'POST',
       url: '/v1/me/signup',
       headers,
-      payload: { ageVerified: true, consents: REQUIRED_CONSENTS },
+      payload: { consents: REQUIRED_CONSENTS },
     });
 
     /*

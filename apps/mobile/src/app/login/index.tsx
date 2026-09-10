@@ -1,6 +1,6 @@
 import { POLICY_DOCUMENTS, dDay } from '@weddingpick/domain';
 import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -22,6 +22,7 @@ import { maskEmail } from '@/features/auth/mask-email';
 import { canSignInWith, providerTone, useAuthProviders } from '@/features/auth/providers';
 import { loadRememberedAccount, type RememberedAccount } from '@/features/auth/remembered-account';
 import { bootOwnsSigningInMessage, takePendingSignInError } from '@/features/auth/sign-in-handoff';
+import { CheckDot } from '@/features/settings/my-kit';
 import { SigningInBody } from '@/features/auth/signing-in-view';
 import { useSignIn } from '@/features/auth/use-sign-in';
 import { openExternal } from '@/features/open-external';
@@ -36,6 +37,13 @@ const REASONS = [
   '마음에 드는 곳을 함께 Pick해요',
   '일정과 지출도 한곳에서 관리해요',
 ];
+
+/**
+ * 카카오가 연령대를 주지 않았을 때만 뜨는 확인 — strings.ko.json
+ * `onboarding.auth.login.ageConfirm` · `.ageConfirmNotice`.
+ */
+const AGE_CONFIRM_LABEL = '만 14세 이상이에요';
+const AGE_CONFIRM_NOTICE = '만 14세 이상인지 확인하면 시작할 수 있어요';
 
 /** WP-AUTH-008 마지막 계정 카드의 배지 — strings.ko.json `onboarding.auth.remember.recentLabel`. */
 const RECENT_LOGIN_BADGE = '최근 로그인';
@@ -56,17 +64,20 @@ const KAKAO_PROVIDER_NAME = '카카오';
  * 2026-09-04 정책 변경 — 비회원 진입 삭제. 스플래시(온보딩 소개) 다음은
  * 이 화면이고, 로그인해야만 앱으로 넘어간다.
  *
- * **만 14세 확인 체크박스는 두지 않는다**(핸드오프 v3.24 · CHANGELOG «14세 동의
- * 체크박스 삭제» · 시안 `27-login.dc.html` WP-AUTH-001). 나이는 서버가 카카오
- * 연령대로 판정한다. 미달이면 인가 코드 교환이 `under_age`로 떨어지고
+ * **만 14세 확인은 평소에 묻지 않는다.** 카카오가 연령대를 필수 동의로 넘기므로
+ * 나이는 서버가 판정한다. 미달이면 인가 코드 교환이 `under_age`로 떨어지고
  * `use-sign-in.ts`가 `login/age-required`(WP-AUTH-009)로 보낸다 — 화면이 미리
  * 막지 않는다. 카카오 앱 설정이 14세 미만을 동의 화면 전에 되돌려 보내는 경우도
  * 같은 경로다(`providers.ts` `isUnderAgeDenial`).
  *
- * **이 화면에서 체크박스를 뺀 것은 카카오가 나이를 준다는 전제 위에 서 있다.**
- * 전제가 깨지면(연령대 동의항목이 꺼져 있거나 사용자가 거부) 서버가
- * `age_unverified`로 막고 실패 시트가 무엇을 하면 되는지 말한다. 화면이 다시
- * 체크박스를 들지 않는다 — 자기 신고는 확인이 아니다(2026-09-10).
+ * **묻는 경우가 하나 있다**(2026-09-10 사용자 지시). 서버가 연령대를 받지 못하면
+ * (`age_unverified`) 판정할 근거가 없다 — 그때만 «만 14세 이상이에요» 확인이
+ * 뜨고, 체크하기 전에는 카카오 버튼이 눌리지 않는다.
+ *
+ * 그 값은 **사람이 실제로 누른 것일 때만** 서버로 간다. 화면이 미리 켜두거나
+ * 훅이 대신 채우지 않는다 — v3.24가 체크박스를 지운 뒤에도 앱은 가입 요청에
+ * `ageVerified: true`를 늘 넣어 보냈고, 서버가 그것을 믿어 만 14세 미만 계정이
+ * 실제로 들어왔다(2026-09-10). 서버도 이 값을 연령대가 없을 때만 본다.
  *
  * **두 상태를 한 컴포넌트에서 가른다**(WP-AUTH-001 첫 진입 / WP-AUTH-008
  * 로그인 유지). 기억된 계정이 있으면 인사 · D-day · 마지막 계정 카드(카카오
@@ -80,7 +91,9 @@ const KAKAO_PROVIDER_NAME = '카카오';
 export default function LoginScreen() {
   const theme = useTheme();
   const { providers, error: loadError } = useAuthProviders();
-  const { signIn, busy, error, retry, dismissError, reportError } = useSignIn();
+  const { signIn, busy, error, retry, dismissError, reportError, needsAgeConfirm } = useSignIn();
+  /** «만 14세 이상이에요»를 사람이 눌렀는가. 기본값은 꺼짐 — 미리 켜두지 않는다. */
+  const [ageChecked, setAgeChecked] = useState(false);
   /** undefined = 아직 안 읽음, null = 기억된 계정 없음(WP-AUTH-001). */
   const [remembered, setRemembered] = useState<RememberedAccount | null | undefined>(undefined);
 
@@ -174,13 +187,19 @@ export default function LoginScreen() {
                       첫 진입의 카카오 노란 버튼과 다르다. 이미 최소 한 번 확인을 마친
                       계정이다.
                     */}
+                    <AgeConfirmRow
+                      visible={needsAgeConfirm}
+                      checked={ageChecked}
+                      onToggle={() => setAgeChecked((was) => !was)}
+                    />
+
                     {kakao ? (
                       <ActionButton
                         variant="primary"
                         size="xlarge"
                         label={kakao.isDevelopmentStandIn ? '개발용 로그인' : '카카오로 계속하기'}
-                        disabled={busy || !canSignInWith(kakao)}
-                        onPress={() => signIn(kakao)}
+                        disabled={busy || !canSignInWith(kakao) || (needsAgeConfirm && !ageChecked)}
+                        onPress={() => signIn(kakao, { ageAcknowledged: ageChecked })}
                       />
                     ) : null}
 
@@ -190,6 +209,12 @@ export default function LoginScreen() {
                   </>
                 ) : (
                   <>
+                    <AgeConfirmRow
+                      visible={needsAgeConfirm}
+                      checked={ageChecked}
+                      onToggle={() => setAgeChecked((was) => !was)}
+                    />
+
                     {kakao ? (
                       <ActionButton
                         variant="primary"
@@ -202,8 +227,8 @@ export default function LoginScreen() {
                             ? '실제 카카오 로그인이 아니에요. 개발 중인 서버에만 있어요'
                             : undefined
                         }
-                        disabled={busy || !canSignInWith(kakao)}
-                        onPress={() => signIn(kakao)}
+                        disabled={busy || !canSignInWith(kakao) || (needsAgeConfirm && !ageChecked)}
+                        onPress={() => signIn(kakao, { ageAcknowledged: ageChecked })}
                       />
                     ) : null}
 
@@ -240,6 +265,49 @@ function remainingLine(weddingDate: string): string {
   const remaining = dDay(weddingDate);
 
   return remaining.kind === 'upcoming' ? `예식까지 ${remaining.days}일 남았어요` : remaining.text;
+}
+
+/**
+ * «만 14세 이상이에요» 확인 행. **서버가 연령대를 못 받았을 때만 뜬다** —
+ * 평소에는 아무것도 그리지 않는다(시안 WP-AUTH-001 «별도 동의 체크박스를 두지
+ * 않습니다»는 그 평소를 말한 것이다).
+ *
+ * 체크 원은 탈퇴 화면과 같은 `CheckDot`을 쓴다 — 되돌릴 수 없는 행동 앞에서 한 번
+ * 멈추게 하는 자리라 생김새도 같아야 한다.
+ *
+ * 왜 떴는지 한 줄로 먼저 말한다. 체크박스만 덩그러니 나오면, 방금까지 없던 것이
+ * 왜 생겼는지 알 수 없다.
+ */
+function AgeConfirmRow({
+  visible,
+  checked,
+  onToggle,
+}: {
+  visible: boolean;
+  checked: boolean;
+  onToggle: () => void;
+}) {
+  if (!visible) return null;
+
+  return (
+    <View style={styles.ageConfirm}>
+      <ThemedText type="micro" themeColor="textSecondary">
+        {AGE_CONFIRM_NOTICE}
+      </ThemedText>
+
+      <Pressable
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked }}
+        accessibilityLabel={AGE_CONFIRM_LABEL}
+        onPress={onToggle}
+        style={styles.ageConfirmRow}>
+        <CheckDot on={checked} />
+        <ThemedText type="body" themeColor="textStrong" style={styles.grow}>
+          {AGE_CONFIRM_LABEL}
+        </ThemedText>
+      </Pressable>
+    </View>
+  );
 }
 
 /**
@@ -346,6 +414,17 @@ const styles = StyleSheet.create({
   section: {
     gap: Layout.cardGap,
   },
+  /* 확인 행 — 안내 한 줄 위, 체크 행 아래. 사이는 authWrap과 같은 10. */
+  ageConfirm: {
+    gap: Layout.cardGap,
+  },
+  /* 시안 21a 동의 행과 같은 규칙 — gap 12 · 위 정렬. */
+  ageConfirmRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Layout.rowPaddingY,
+  },
+  grow: { flex: 1 },
   card: {
     borderRadius: Radius.medium,
     padding: Spacing.three,
