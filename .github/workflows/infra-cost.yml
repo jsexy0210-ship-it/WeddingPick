@@ -46,6 +46,10 @@ jobs:
           RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
           # 아직 없다. 없으면 그 공급자만 건너뛰고 이유를 적는다.
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          # 네이버 클라우드는 계정 전체가 인증키 하나를 쓴다 — Object Storage에 쓰는
+          # 것과 같은 쌍이다. 비용 조회용으로 따로 발급할 것이 없다.
+          NCP_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          NCP_SECRET_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           WRITE: ${{ github.event_name == 'schedule' && 'true' || github.event.inputs.write }}
         run: |
           set -euo pipefail

@@ -15,6 +15,7 @@
  *   확인만:  npx tsx scripts/infra-cost.ts
  *   적는다:  npx tsx scripts/infra-cost.ts --write
  */
+import { createHmac } from 'node:crypto';
 import { Pool } from 'pg';
 
 const url = process.env.DATABASE_URL;
@@ -171,6 +172,77 @@ async function neon(): Promise<CostRow[]> {
       ];
 }
 
+/**
+ * 네이버 클라우드 — 이번 달 요금.
+ *
+ * **키는 이미 있다.** Object Storage에 쓰는 것과 **같은 한 쌍**이다(마이페이지 →
+ * 인증키 관리). NCP는 계정 전체가 인증키 하나를 쓰므로 비용 조회용으로 따로 발급할
+ * 것이 없다.
+ *
+ * 다만 **서명 방식이 다르다.** Object Storage는 S3 호환이라 AWS SDK가 알아서 서명하는데,
+ * 비용 API는 NCP 자체 방식(`x-ncp-apigw-signature-v2`)이라 직접 만들어야 한다. 같은
+ * 키로 다른 서명을 하는 것이라, S3가 된다고 이쪽도 된다는 뜻은 아니다.
+ *
+ * 서브 계정이면 「비용 조회」 권한이 따로 있어야 한다 — 없으면 403이 오고, 그때는
+ * 금액을 지어내지 않고 건너뛴 이유로 적는다.
+ */
+async function ncp(): Promise<CostRow[]> {
+  const accessKey = process.env.NCP_ACCESS_KEY ?? process.env.AWS_ACCESS_KEY_ID;
+  const secretKey = process.env.NCP_SECRET_KEY ?? process.env.AWS_SECRET_ACCESS_KEY;
+
+  if (!accessKey || !secretKey) {
+    skipped.push('네이버 클라우드 — 인증키 없음 (마이페이지 → 인증키 관리)');
+
+    return [];
+  }
+
+  const now = new Date();
+  const month = `${now.getUTCFullYear()}${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
+  const path = `/cost/v1/cost/getContractSummaryList?startMonth=${month}&endMonth=${month}`;
+  const timestamp = String(Date.now());
+
+  /*
+   * 서명 문자열은 «메서드 공백 경로 개행 타임스탬프 개행 액세스키»다. 순서와 공백이
+   * 하나라도 어긋나면 401이 온다 — 값을 조립하는 자리를 한 곳에 두는 이유다.
+   */
+  const message = `GET ${path}\n${timestamp}\n${accessKey}`;
+  const signature = createHmac('sha256', secretKey).update(message).digest('base64');
+
+  const body = await getJson(`https://ncloud.apigw.ntruss.com${path}`, {
+    'x-ncp-apigw-timestamp': timestamp,
+    'x-ncp-iam-access-key': accessKey,
+    'x-ncp-apigw-signature-v2': signature,
+    accept: 'application/json',
+  });
+
+  if (body === null) {
+    skipped.push('네이버 클라우드 — 요금 조회 실패 (서브 계정이면 「비용 조회」 권한을 확인한다)');
+
+    return [];
+  }
+
+  const rows = findRecords(body, 'useAmount');
+
+  if (rows.length === 0) {
+    skipped.push('네이버 클라우드 — 응답에서 금액을 찾지 못함');
+
+    return [];
+  }
+
+  const { start, end } = thisMonth();
+
+  return rows.map((row) => ({
+    provider: 'ncp',
+    resource: str(row.productName ?? row.contractNo) ?? null,
+    periodStart: start,
+    periodEnd: end,
+    amount: Number(row.useAmount ?? 0),
+    /* 네이버 클라우드는 원으로 청구한다. 달러로 바꾸지 않는다 — 환산은 보는 쪽에서 한다. */
+    currency: 'KRW',
+    metrics: null,
+  }));
+}
+
 /** 봉투 어디에 있든 기대하는 필드를 가진 첫 객체 배열을 찾는다. */
 function findRecords(payload: unknown, requiredField: string): Record<string, unknown>[] {
   const queue: unknown[] = [payload];
@@ -200,7 +272,7 @@ function str(value: unknown): string | undefined {
 async function main(): Promise<void> {
   console.log(`인프라 요금 — ${WRITE ? '받아서 적는다' : '받아만 본다'}\n`);
 
-  const rows = [...(await render()), ...(await neon())];
+  const rows = [...(await render()), ...(await neon()), ...(await ncp())];
 
   console.log(`\n받은 줄 ${rows.length}개`);
   for (const row of rows) {
