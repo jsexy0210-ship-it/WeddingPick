@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { ErrorView, Layout, Spacing, ThemedText, readWebInteractionState, useTheme } from '@weddingpick/ui';
+import { ErrorView, Layout, Radius, Spacing, ThemedText, readWebInteractionState, useTheme } from '@weddingpick/ui';
 import { listNotifications, readAllNotifications, readNotification } from '@/api/client';
 import { formatDateDot } from '@/features/common/format-date';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
@@ -119,15 +119,17 @@ export default function NotificationsScreen() {
                       return [styles.row, hovered || pressed ? { backgroundColor: theme.backgroundElement } : null];
                     }}>
                     <View style={styles.rowHead}>
+                      {/* 시안 dot — 8×8 · 위 8 · 안 읽음만 코랄, 읽음은 같은 자리를 비운다(12-closing.dc.html L366). */}
+                      <View style={[styles.dot, read ? null : { backgroundColor: theme.tint }]} />
                       <ThemedText type="t7" themeColor={read ? 'textAssistive' : 'tint'} style={styles.bold}>
                         {notification.kindLabel}
                       </ThemedText>
-                      {read ? null : <Badge kind="brand">{S.fresh}</Badge>}
                     </View>
                     <ThemedText type="t5" themeColor={read ? 'textAssistive' : 'text'}>
                       {notification.title}
                     </ThemedText>
-                    <ThemedText type="body" themeColor={read ? 'textAssistive' : 'textSecondary'}>
+                    {/* 시안 t14w — 알림 본문은 14/21이다(L427). 16/24는 제목과 무게가 비슷해져 줄이 구분되지 않는다. */}
+                    <ThemedText type="note" themeColor="textAssistive">
                       {notification.body}
                     </ThemedText>
                     <ThemedText type="t7" themeColor="textAssistive" numeric>
@@ -150,9 +152,11 @@ const styles = StyleSheet.create({
   row: {
     gap: Spacing.one,
     minHeight: Layout.rowMinHeight,
-    paddingVertical: Layout.rowPaddingY,
+    /* 시안 noti 행 — padding:14px 0(L63). */
+    paddingVertical: Layout.rowPaddingYWithMeta,
   },
-  rowHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  rowHead: { flexDirection: 'row', alignItems: 'center', gap: Layout.iconTextGap },
+  dot: { width: 8, height: 8, borderRadius: Radius.pill, backgroundColor: 'transparent' },
   bold: { fontWeight: '700' },
   hr: { height: 1 },
 });

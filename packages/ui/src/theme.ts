@@ -696,6 +696,13 @@ export const Layout = {
   loaderMedium: 28,
   loaderLarge: 40,
   loaderBoxPadding: 10,
+  /**
+   * 인라인 토스트 좌우 안여백. component.toast.paddingX.
+   *
+   * `20-onboarding-v2.dc.html`의 `toastBox`가 `padding:0 18px`다(L414). 18은 `Spacing`
+   * 사다리(2·4·8·16·24·32·64)에도 다른 `Layout` 여백에도 없다 — 16으로 대신하면 pill이 글자에 붙는다.
+   */
+  toastPaddingX: 18,
 } as const;
 
 /**
@@ -744,6 +751,13 @@ export const Border = {
   selected: 1.5,
   checkbox: 1.5,
   focus: 2,
+  /**
+   * 화면 설정 스킨 스와치의 두 겹 링. border.swatchRing.
+   *
+   * `13-my-sub.dc.html` L189-190이 `box-shadow:0 0 0 3px #fff inset, 0 0 0 3px <hex>` —
+   * 안팎 모두 3이다. `focus`(2)로 대신하면 흰 테가 얇아져 스킨 색이 서로 붙어 보인다.
+   */
+  swatchRing: 3,
 } as const;
 
 /**

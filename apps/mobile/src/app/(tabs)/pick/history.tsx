@@ -152,14 +152,14 @@ export default function PickHistoryScreen() {
               {/* Decided vendor */}
               {decidedCandidate && (
                 <View style={styles.subSection}>
-                  <ThemedText type="t7" themeColor="textAssistive" style={styles.subSectionLabel}>
+                  {/* 시안 s20 — 섹션 제목 20/27 검정(07-pick.dc.html L393). t7 회색은 라벨이지 제목이 아니다. */}
+                  <ThemedText type="t4" style={styles.subSectionLabel}>
                     {S['section.decided']}
                   </ThemedText>
                   <View
                     style={[
                       styles.vendorRow,
-                      styles.decidedRow,
-                      { borderColor: theme.tint, backgroundColor: theme.tintSubtle },
+                      { borderColor: theme.track, backgroundColor: theme.background },
                     ]}
                   >
                     <View style={styles.vendorInfo}>
@@ -185,7 +185,7 @@ export default function PickHistoryScreen() {
               {/* Other candidates */}
               {otherCandidates.length > 0 && (
                 <View style={styles.subSection}>
-                  <ThemedText type="t7" themeColor="textAssistive" style={styles.subSectionLabel}>
+                  <ThemedText type="t4" style={styles.subSectionLabel}>
                     {S['section.candidates']}
                   </ThemedText>
                   {otherCandidates.map((candidate) => (
@@ -302,12 +302,10 @@ function makeStyles(theme: ReturnType<typeof useTheme>) {
       minHeight: Layout.rowMinHeight,
       borderRadius: Radius.medium,
       borderWidth: 1,
-      paddingHorizontal: Layout.cardPadding,
+      /* 시안 decCard — padding:18px(07-pick.dc.html L386). */
+      paddingHorizontal: Layout.cardPaddingCompactY,
       paddingVertical: Layout.cardPaddingCompactY,
       marginBottom: Spacing.one,
-    },
-    decidedRow: {
-      borderWidth: 1.5,
     },
     vendorInfo: {
       flex: 1,

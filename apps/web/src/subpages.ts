@@ -1,5 +1,5 @@
 import strings from '../../../spec/strings.ko.json';
-import { marketingHeader, marketingFooter, MARKETING_CHROME } from './landing';
+
 const COPY = strings.webLanding;
 import { socialMeta } from './social-meta';
 import { legalEffectiveDate } from './legal-config';
@@ -49,8 +49,55 @@ const NAV = [
   { label: '고객지원', href: '/support.html' },
 ];
 
-function subGnb(_activePath: string | null): string { return marketingHeader(); }
-function subFooter(): string { return marketingFooter(); }
+/**
+ * 하위 5종(소개 · FAQ · 고객지원 · 이용약관 · 처리방침)의 GNB.
+ *
+ * `19b-landing-sub.dc.html`의 `gnb`(L504) · `gnbWord`(L505) · `gnbCta`(L506)를 그린다 —
+ * 높이 76 · 좌우 64 · 아래 1px 선, 브랜드 19/700, CTA는 코랄 pill 38 · radius 999.
+ * 랜딩 본 화면의 `marketingHeader()`(흰 테두리 버튼 · 80)와는 다른 chrome이다.
+ *
+ * 좁은 화면에서는 `.sp-ham-cb` 체크박스가 `.sp-nav`를 펼친다(자바스크립트 없이 CSS만).
+ * 체크박스가 `.sp-nav`보다 **앞에** 있어야 `~` 선택자가 걸린다.
+ */
+function subGnb(activePath: string | null): string {
+  const links = NAV.map(n => {
+    const on = activePath === n.href;
+    return `<a class="sp-nav-link" href="${esc(n.href)}"${on ? ' aria-current="page"' : ''}${on ? ` style="color:${INK};font-weight:700"` : ''}>${esc(n.label)}</a>`;
+  }).join('');
+  return `<header class="sp-gnb">
+    <a class="sp-brand" href="/">${pickMark(24, C)}<span>${esc(COPY.brand)}</span></a>
+    <input class="sp-ham-cb" type="checkbox" id="sp-nav-toggle" tabindex="-1" aria-hidden="true">
+    <label class="sp-ham-btn" for="sp-nav-toggle" aria-label="${esc(COPY.navLabel)}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${INK}" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></label>
+    <nav class="sp-nav" aria-label="${esc(COPY.navLabel)}">${links}</nav>
+    <a class="sp-cta-btn" href="/#download">${esc(COPY.launchLink)}</a>
+  </header>`;
+}
+
+/**
+ * 하위 5종의 Footer. `19b-landing-sub.dc.html`의 `footer`(L547) 이하 —
+ * 바탕 `#3A2F30`, 1행 76(브랜드 · 메뉴 · 메일), 1px 구분선, 2행 60(저작권 · 약관 링크).
+ *
+ * 시안에 없는 `.sp-foot-biz` 한 덩어리는 남긴다 — 사업자 정보는 표시 의무가 있다.
+ */
+function subFooter(): string {
+  const nav = NAV.map(n => `<a href="${esc(n.href)}">${esc(n.label)}</a>`).join('');
+  const legal = [
+    { label: '이용약관', href: '/terms.html' },
+    { label: '개인정보처리방침', href: '/privacy.html' },
+  ].map(l => `<a href="${esc(l.href)}">${esc(l.label)}</a>`).join('');
+  return `<footer class="sp-foot">
+    <div class="sp-foot-top">
+      <a class="sp-foot-brand" href="/">${pickMark(20, C)}<span>${esc(COPY.brand)}</span></a>
+      <nav class="sp-foot-nav" aria-label="${esc(COPY.footerLabel)}">${nav}</nav>
+      ${CONTACT_EMAIL ? `<a class="sp-foot-mail" href="mailto:${esc(CONTACT_EMAIL)}">${esc(CONTACT_EMAIL)}</a>` : ''}
+    </div>
+    <div class="sp-foot-biz">${BUSINESS_NOTICE_LINES.map(l => `<p>${esc(l)}</p>`).join('')}</div>
+    <div class="sp-foot-bot">
+      <p>© ${new Date().getFullYear()} ${esc(BUSINESS.name)}. ${esc(COPY.copyright)}</p>
+      <div class="sp-foot-policy">${legal}</div>
+    </div>
+  </footer>`;
+}
 
 const FONT_STACK =
   "-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif";
@@ -64,12 +111,14 @@ a{color:inherit}
 .page{width:100%;margin:0;background:#fff;display:flex;flex-direction:column;min-height:100vh}
 
 /* GNB */
-.sp-gnb{height:76px;flex:0 0 76px;display:flex;align-items:center;justify-content:space-between;padding:0 64px;position:relative;gap:32px}
+.sp-gnb{height:76px;flex:0 0 76px;display:flex;align-items:center;justify-content:space-between;padding:0 64px;position:relative;gap:32px;background:#fff;box-shadow:inset 0 -1px 0 ${DIVIDER}}
+.sp-brand{display:inline-flex;align-items:center;gap:9px;text-decoration:none;font-size:19px;font-weight:700;color:${INK};white-space:nowrap}
+.sp-brand svg{flex:0 0 24px}
 .sp-nav{display:flex;align-items:center;gap:32px;flex:1;justify-content:center}
-.sp-nav-link{font-size:16px;line-height:22px;text-decoration:none;white-space:nowrap}
+.sp-nav-link{font-size:16px;line-height:22px;text-decoration:none;white-space:nowrap;color:${SEC}}
 .sp-ham-cb{position:absolute;opacity:0;width:0;height:0;pointer-events:none}
 .sp-ham-btn{display:none;background:none;border:none;padding:8px;cursor:pointer;line-height:0;flex-shrink:0}
-.sp-cta-btn{height:38px;padding:0 18px;border-radius:999px;display:inline-flex;align-items:center;font-size:15px;font-weight:700;text-decoration:none;white-space:nowrap;flex-shrink:0}
+.sp-cta-btn{height:38px;padding:0 18px;border-radius:999px;display:inline-flex;align-items:center;font-size:15px;font-weight:700;text-decoration:none;white-space:nowrap;flex-shrink:0;background:${C};color:#fff}
 
 /* Title band */
 .sp-titleband{padding:52px 64px 44px;border-bottom:1px solid ${DIVIDER}}
@@ -79,12 +128,18 @@ a{color:inherit}
 .sp-body{padding:52px 64px 72px}
 
 /* Footer */
-.sp-foot{padding:0 64px}
+.sp-foot{padding:0 64px;background:${FOOT_INK};color:rgba(255,255,255,.72)}
 .sp-foot-top{display:flex;align-items:center;justify-content:space-between;height:76px;border-bottom:1px solid rgba(255,255,255,.12);gap:24px}
+.sp-foot-brand{display:inline-flex;align-items:center;gap:8px;text-decoration:none;font-size:17px;font-weight:700;color:#fff;white-space:nowrap}
+.sp-foot-brand svg{flex:0 0 20px}
 .sp-foot-nav{display:flex;align-items:center;gap:24px;flex:1;justify-content:center}
+.sp-foot-nav a,.sp-foot-mail{font-size:15px;line-height:22px;color:rgba(255,255,255,.72);text-decoration:none;white-space:nowrap}
 .sp-foot-biz{display:flex;flex-direction:column;gap:4px;padding:20px 0 4px;border-top:1px solid rgba(255,255,255,.1)}
+.sp-foot-biz p{margin:0;font-size:13px;line-height:19px;color:rgba(255,255,255,.44)}
 .sp-foot-bot{display:flex;align-items:center;justify-content:space-between;height:60px;gap:16px}
+.sp-foot-bot p{margin:0;font-size:13px;line-height:19px;color:rgba(255,255,255,.44)}
 .sp-foot-policy{display:flex;align-items:center;gap:16px}
+.sp-foot-policy a{font-size:13px;line-height:19px;color:rgba(255,255,255,.72);text-decoration:none;white-space:nowrap}
 
 /* Legal layout */
 .sp-legal{padding:56px 64px 72px;display:flex;gap:56px;align-items:flex-start}
@@ -171,7 +226,6 @@ function subDocument(opts: {
 ${socialMeta(opts.path, opts.title + " — 웨딩픽", opts.description)}
 ${faviconTags()}
 <style>${BASE_STYLE}
-${MARKETING_CHROME}
 .sp-titleband,.sp-body,.sp-legal{width:min(1120px,calc(100% - 48px));margin-inline:auto;padding-inline:0}
 .sp-titleband{padding-block:64px 40px}.sp-titleband h1{word-break:keep-all;overflow-wrap:anywhere}.sp-editorial{width:min(760px,calc(100% - 48px));margin:0 auto;padding:48px 0 72px;color:${INK}}
 .sp-editorial section{padding:32px 0;border-bottom:1px solid ${DIVIDER}}.sp-editorial section:first-child{padding-top:0}.sp-editorial h2{font-size:24px;line-height:1.4;margin:8px 0 16px;word-break:keep-all}.sp-editorial p{font-size:16px;line-height:1.85;color:${SEC};word-break:keep-all;overflow-wrap:anywhere}.sp-number{font-size:14px;color:${SEC}}.sp-link{display:inline-flex;align-items:center;min-height:48px;margin-top:16px;font-size:16px;font-weight:700;text-underline-offset:5px}.sp-editorial .sp-support-note{font-size:14px;margin-top:24px}.sp-faq-list details{border-bottom:1px solid ${DIVIDER}}.sp-faq-list summary{cursor:pointer;font-size:18px;font-weight:700;min-height:64px;padding:20px 0;word-break:keep-all}.sp-faq-list details p{padding-bottom:24px}.sp-legal{padding-top:40px}.sp-content p,.sp-content li{overflow-wrap:anywhere}
