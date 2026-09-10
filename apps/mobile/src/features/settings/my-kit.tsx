@@ -27,7 +27,7 @@ import { useDepthBack } from '@/features/navigation/depth-back';
  *   padHero   12 24 24 · gap 8 · 26/35 700 + 16/24 gray700
  *   padSec    0 24 28(24) · 섹션 제목 14/19 700 gray600
  *   row       min 56 · 12 0 · gap 12 · 이름 18/24 400 · 메타 14/19 gray600 · 꼬리 16/22 700 · 구분선 1 gray200
- *   badge     @weddingpick/ui Badge — 22 · 4 9 · radius 4 · 14/19 700
+ *   badge     @weddingpick/ui Badge — 최소 22 · 4 9 · radius 4 · 14/19 700
  *   check     24 원 · coral + 흰 체크 16 / 1.5 gray300 테두리
  *   statBox   radius 10 · gray50 · 20 · gap 10        noteBox  radius 10 · gray50 · 20 · gap 8
  *   card      radius 10 · 1 gray300 · 18 20 · gap 10  brand 카드는 coral 7% 바탕 · 32% 테두리

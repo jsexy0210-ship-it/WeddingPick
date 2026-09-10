@@ -637,7 +637,11 @@ export const Layout = {
   /** 작은 칩(스타일 태그 · 취향 배지). v3.24 «추천 이유 첫 줄 칩 28» · image.textOnImage.tasteCard. */
   chipSmall: 28,
   chipSmallPaddingX: 10,
-  /** 배지. component.badge — 항상 한 줄, height 22 고정. */
+  /**
+   * 배지. component.badge — 항상 한 줄. **22는 최소 높이다.** 핸드오프 배지는 height를
+   * 적지 않고 `padding:4px 9px; line-height:19px`로만 그려서 27이 된다(pick-status-badge
+   * `STATUS_BADGE_STYLE` 주석). 22를 고정 높이로 쓰면 글자가 상자에 닿는다.
+   */
   badgeHeight: 22,
   badgePaddingX: 9,
   badgePaddingY: 4,
