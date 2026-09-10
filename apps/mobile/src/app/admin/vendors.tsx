@@ -13,7 +13,7 @@ import {
   View,
 } from 'react-native';
 
-import { Colors, FontSize } from '@weddingpick/ui';
+import { Colors, FontSize, Spacing } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 
@@ -46,6 +46,9 @@ type MergePreview = {
   counts: MergeCount[];
   categoryDiffers: boolean;
 };
+
+/** 「제보」·「후기」·「Pick」·「이미지」가 같은 선에서 시작하도록 잡아 두는 폭. */
+const MERGE_LABEL_WIDTH = 64;
 
 const STATUS_LABEL: Record<VendorStatus, string> = {
   active: '영업중',
@@ -375,10 +378,19 @@ export default function VendorsScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
-  mergeSummary: { fontSize: FontSize.t6, fontWeight: '700', marginTop: 8 },
-  mergeWarn: { fontSize: FontSize.t7, color: Colors.light.negative, marginTop: 6 },
-  mergeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 },
-  mergeRowLabel: { fontSize: FontSize.t7, color: Colors.light.textAssistive, width: 64 },
+  mergeSummary: { fontSize: FontSize.t6, fontWeight: '700', marginTop: Spacing.two },
+  mergeWarn: { fontSize: FontSize.t7, color: Colors.light.negative, marginTop: Spacing.one },
+  mergeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    paddingVertical: Spacing.one,
+  },
+  mergeRowLabel: {
+    fontSize: FontSize.t7,
+    color: Colors.light.textAssistive,
+    width: MERGE_LABEL_WIDTH,
+  },
   mergeRowValue: { fontSize: FontSize.t7, fontWeight: '700' },
   mergeRowBlocked: { fontSize: FontSize.micro, color: Colors.light.cautionary },
   header: {
