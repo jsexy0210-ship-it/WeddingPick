@@ -158,7 +158,7 @@ export async function sessionEntry(
  * 만 14세 확인이 끝났다고 적는다. v3.22 SPEC 3.5 · 2026-09-10 사용자 지시.
  *
  * 남기는 것은 셋뿐이다 — `age_verified` · `age_verified_at` · `age_verified_via`
- * (0102). 연령대 문자열은 여기까지 오지 않는다: 라우트가 판정과 경로만 넘긴다.
+ * (0104). 연령대 문자열은 여기까지 오지 않는다: 라우트가 판정과 경로만 넘긴다.
  * `age_gate` · `age_checked_at`(0046)도 함께 채운다 —
  * `activated_only_when_old_enough` 제약이 여전히 그 컬럼을 본다.
  *

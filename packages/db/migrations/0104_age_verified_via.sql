@@ -17,7 +17,7 @@ ALTER TABLE structured.users
   ADD COLUMN age_verified_via age_verified_via;
 
 COMMENT ON COLUMN structured.users.age_verified_via IS
-  '만 14세 확인의 근거. provider = 로그인 제공자가 준 연령대로 서버가 판정. self_declared = 제공자가 연령대를 주지 않아 화면에서 사람이 확인. NULL = 0102 이전에 확인된 계정이라 경로를 가릴 수 없다.';
+  '만 14세 확인의 근거. provider = 로그인 제공자가 준 연령대로 서버가 판정. self_declared = 제공자가 연령대를 주지 않아 화면에서 사람이 확인. NULL = 0104 이전에 확인된 계정이라 경로를 가릴 수 없다.';
 
 -- 확인하지 않은 계정에 근거만 남는 일을 막는다. 반대 방향(확인했는데 근거가
 -- NULL)은 허용한다 — 이 마이그레이션 이전 계정이 정확히 그 상태이고, 그것을
