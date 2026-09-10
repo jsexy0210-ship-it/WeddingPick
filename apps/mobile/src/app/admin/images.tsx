@@ -84,6 +84,8 @@ export default function ImagesScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rev, setRev] = useState(0);
+  // 처리 결과 한 줄. 눌렀는데 조용한 것이 이 화면의 원래 문제였다.
+  const [actionNote, setActionNote] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -106,19 +108,23 @@ export default function ImagesScreen() {
 
   const reload = () => setRev((r) => r + 1);
 
-  async function approve(id: string) {
+  async function decide(id: string, to: 'approve' | 'reject') {
+    setActionNote(null);
     try {
-      await apiFetch(`/v1/admin/data/images/${id}/approve`, { method: 'POST' });
+      await apiFetch(`/v1/admin/data/images/${id}/${to}`, { method: 'POST' });
       reload();
-    } catch { /* 목록을 다시 불러오면 실제 상태가 드러난다 */ }
+    } catch (e) {
+      /*
+       * 목록을 다시 불러오면 실제 상태가 드러나기는 한다. 다만 실패했을 때는
+       * 「눌렀는데 아무것도 안 바뀐다」로만 보여서, 서버가 거절한 것인지 내가
+       * 잘못 본 것인지 알 수가 없다. 이유를 그대로 적는다.
+       */
+      setActionNote(e instanceof Error ? e.message : '처리 실패');
+    }
   }
 
-  async function reject(id: string) {
-    try {
-      await apiFetch(`/v1/admin/data/images/${id}/reject`, { method: 'POST' });
-      reload();
-    } catch { /* 위와 같다 */ }
-  }
+  const approve = (id: string) => decide(id, 'approve');
+  const reject = (id: string) => decide(id, 'reject');
 
   /**
    * 마지막 열. 권리가 확인됐으면 승인, 아니면 폐기만 — 미확인에는 승인 버튼을 만들지 않는다.
@@ -163,6 +169,16 @@ export default function ImagesScreen() {
 
       {!loading && !error && data ? (
         <>
+          {/* 처리가 거절당하면 그 이유부터 맨 위에 — v3.27 「지금 봐야 할 것이 맨 위」. */}
+          {actionNote ? (
+            <StatusBanner
+              tone="bad"
+              title="처리하지 못했어요"
+              detail={actionNote}
+              cta={{ label: '닫기', onPress: () => setActionNote(null) }}
+            />
+          ) : null}
+
           <StatusBanner
             tone={pending === 0 ? 'ok' : 'warn'}
             title={

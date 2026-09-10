@@ -147,7 +147,10 @@ export default function EmailMatchingScreen() {
             }
           />
 
-          <PendingBackendNotice actions="반영 · 재시도" />
+          <PendingBackendNotice
+            actions="반영 · 재시도"
+            reason="업체 회신을 받아 두는 곳이 아직 없어요. 회신이 쌓이면 반영 · 재시도를 열어요."
+          />
 
           <KpiRow
             items={[

@@ -56,4 +56,30 @@ dbDescribe('공공데이터 DB 반영',()=>{
     await syncCollected(pool,[base]);
     expect((await pool.query('SELECT is_active FROM structured.vendors')).rows[0].is_active).toBe(false);
   });
+  /*
+   * 병합한 업체는 되살리지 않는다(0120).
+   *
+   * 수집이 끊었던 업체를 관리자가 나중에 다른 업체로 합치면, `collection_status`는
+   * 'closed'인 채로 남는다. 그 상태에서 원천에 다시 잡히면 예전 조건으로는
+   * 되살리기에 걸려들었고 — 사람의 판단이 자동 수집에 덮이는 것에 더해,
+   * 「병합됐는데 영업 중」이 CHECK에 걸려 **임포트 전체가 되돌아갔다.**
+   */
+  test('병합·정지된 업체는 되살리지 않는다',async()=>{
+    await resetDatabase();
+    const base={...vendor,name:'병합검증웨딩',sourceRecordId:'merged-1'};
+    expect((await syncCollected(pool,[base])).created).toBe(1);
+    const target=await pool.query<{id:string}>(
+      `INSERT INTO structured.vendors(category,name,region,source)
+       VALUES('hall','흡수한웨딩','경기도 이천시','public_data') RETURNING id`);
+    await pool.query(`UPDATE structured.vendors
+      SET is_active=false,collection_status='closed',merged_into_vendor_id=$2
+      WHERE name=$1`,[base.name,target.rows[0]!.id]);
+
+    // 터지지 않고 조용히 넘어가야 한다 — 임포트가 통째로 되돌아가면 그날 수집이 없어진다.
+    await syncCollected(pool,[base]);
+
+    const v=await pool.query<{is_active:boolean}>(
+      'SELECT is_active FROM structured.vendors WHERE name=$1',[base.name]);
+    expect(v.rows[0]!.is_active).toBe(false);
+  });
 });

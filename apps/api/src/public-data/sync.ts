@@ -104,12 +104,18 @@ async function syncOne(client: PoolClient, v: CollectedVendor, runId: string) {
    * 채로 남는다. 상권정보는 폐업을 알려주지 않으므로 「없었다가 다시 있다」는
    * 「잠깐 못 받았다」인 경우가 많고, 그것을 되돌릴 자리가 여기밖에 없다.
    *
-   * 조건 셋이 전부 맞을 때만 손댄다. `collection_status='closed'`는 **수집이 끊었다**는
+   * 조건이 전부 맞을 때만 손댄다. `collection_status='closed'`는 **수집이 끊었다**는
    * 표시이므로, 사람이 다른 이유로 내린 업체(그 표시가 없다)는 되살아나지 않는다.
+   *
+   * 병합·정지도 따로 막는다(0120). 관리자가 합치거나 내린 업체는 수집이 끊었던
+   * 표시를 아직 달고 있을 수 있는데, 그때 되살리면 두 가지가 한꺼번에 잘못된다 —
+   * 사람의 판단이 자동 수집에 덮이고, 「병합됐는데 영업 중」이 CHECK에 걸려
+   * 임포트 전체가 되돌아간다.
    */
   const revived = await client.query(
     `UPDATE structured.vendors SET is_active=true, closed_at=NULL, collection_status='needs_verification'
-      WHERE id=$1 AND admin_locked=false AND is_active=false AND collection_status='closed'`, [old.id]);
+      WHERE id=$1 AND admin_locked=false AND is_active=false AND collection_status='closed'
+        AND merged_into_vendor_id IS NULL AND suspended_at IS NULL`, [old.id]);
   if (revived.rowCount) {
     await client.query(`INSERT INTO structured.vendor_change_log
       (vendor_id,field_name,old_value,new_value,cause,import_run_id)
