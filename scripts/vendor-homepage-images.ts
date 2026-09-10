@@ -210,6 +210,7 @@ type Vendor = { id: string; name: string; region: string };
  *   페이지 못 읽음      막혔거나 죽은 주소다
  *   이름 확인 실패      찾긴 했는데 그 업체 페이지가 아니다
  *   대표 이미지 없음    맞는 페이지인데 og:image가 없다
+ *   모음 사이트        한 호스트가 여러 업체에 걸렸다 — 업체 홈페이지가 아니다
  */
 type Outcome =
   | '붙임'
@@ -217,9 +218,18 @@ type Outcome =
   | '전부 포털·블로그'
   | '페이지 못 읽음'
   | '이름 확인 실패'
-  | '대표 이미지 없음';
+  | '대표 이미지 없음'
+  | '모음 사이트';
 
-async function forVendor(vendor: Vendor): Promise<{ outcome: Outcome; homepage: string | null }> {
+type Found = {
+  outcome: Outcome;
+  homepage: string | null;
+  host?: string;
+  image?: string;
+  matched?: number;
+};
+
+async function forVendor(vendor: Vendor): Promise<Found> {
   /* 지역을 함께 넣는다 — 같은 이름의 다른 지역 업체를 잡지 않기 위해서다. */
   const documents = await searchWeb(`${vendor.name} ${vendor.region.split(' ')[0] ?? ''}`.trim());
 
@@ -253,42 +263,11 @@ async function forVendor(vendor: Vendor): Promise<{ outcome: Outcome; homepage: 
 
     if (!image) return { outcome: '대표 이미지 없음', homepage: page.finalUrl };
 
-    if (APPLY) {
-      /*
-       * 대표 이미지는 업체마다 하나다(0050 vendor_images_representative_idx).
-       * 이미 있으면 대표로 세우지 않고 한 장 더 붙인다 — 먼저 있던 것을
-       * 끌어내리지 않는다.
-       */
-      const { rows } = await pool.query<{ 있다: boolean }>(
-        `SELECT EXISTS (
-           SELECT 1 FROM structured.vendor_images
-            WHERE vendor_id = $1 AND is_representative AND status = 'approved') AS 있다`,
-        [vendor.id],
-      );
-
-      await pool.query(
-        `INSERT INTO structured.vendor_images
-           (vendor_id, source_url, copyright_basis, copyright_note,
-            match_confidence, status, is_representative, verified_at)
-         VALUES ($1, $2, 'vendor_homepage', $3, $4, 'approved', $5, now())`,
-        [vendor.id, image, `업체 공식 홈페이지 대표 이미지 · ${host}`, matched, !rows[0]?.있다],
-      );
-
-      await pool.query(
-        'UPDATE structured.vendors SET homepage_url = $2, homepage_checked_at = now() WHERE id = $1',
-        [vendor.id, page.finalUrl],
-      );
-    }
-
-    return { outcome: '붙임', homepage: page.finalUrl };
-  }
-
-  if (APPLY) {
-    /* 못 찾았어도 본 시각을 적는다 — 같은 업체를 매번 다시 찾지 않기 위해서다. */
-    await pool.query(
-      'UPDATE structured.vendors SET homepage_checked_at = now() WHERE id = $1',
-      [vendor.id],
-    );
+    /*
+     * **여기서 붙이지 않는다.** 한 호스트가 여러 업체에 걸리는지는 이 업체 하나만
+     * 봐서는 알 수 없다. 다 모은 뒤에 main이 판단한다.
+     */
+    return { outcome: '붙임', homepage: page.finalUrl, host, image, matched };
   }
 
   /* 가장 멀리 간 곳을 이유로 삼는다 — 「검색은 됐는데 전부 포털」과 「아예 안 나왔다」는 다른 말이다. */
@@ -322,14 +301,93 @@ async function main(): Promise<void> {
   console.log(`${APPLY ? '붙인다' : '확인만 한다'} — 대상 업체 ${vendors.length}곳\n`);
 
   const tally = new Map<Outcome, number>();
+  const found: { vendor: Vendor; hit: Found }[] = [];
 
   for (const vendor of vendors) {
-    const { outcome, homepage } = await forVendor(vendor);
+    const hit = await forVendor(vendor);
 
-    tally.set(outcome, (tally.get(outcome) ?? 0) + 1);
+    if (hit.outcome === '붙임') found.push({ vendor, hit });
+    else tally.set(hit.outcome, (tally.get(hit.outcome) ?? 0) + 1);
+  }
 
-    /* 업체 이름과 결과만 찍는다. 이미지 주소 전체는 로그에 남기지 않는다. */
-    if (outcome === '붙임') console.log(`  ${vendor.name}  ←  ${homepage ? new URL(homepage).host : ''}`);
+  /*
+   * **한 호스트가 여러 업체에 걸리면 그것은 업체 홈페이지가 아니다.**
+   *
+   * 첫 실행에서 carmap.co.kr이 「게스트하우스컨벤션」과 「견우와직녀」 둘에 붙었다.
+   * 웨딩홀을 모아 놓은 사이트라 페이지에 업체 이름이 있고, 그래서 이름 확인을
+   * 통과한다. 하지만 og:image는 그 사이트의 배너지 그 업체의 사진이 아니다.
+   *
+   * 그대로 붙이면 지금 고치려던 문제를 그대로 반복한다 — 남의 사진을 그 업체
+   * 사진으로 보여주는 것. 막을 목록을 손으로 늘리는 대신 **한 호스트가 몇 업체에
+   * 걸렸는지**로 판단한다. 목록은 새 사이트가 나오면 또 뚫리지만 이 규칙은 안 뚫린다.
+   */
+  const perHost = new Map<string, number>();
+
+  for (const { hit } of found) perHost.set(hit.host!, (perHost.get(hit.host!) ?? 0) + 1);
+
+  const shared = [...perHost].filter(([, count]) => count > 1);
+
+  if (shared.length) {
+    console.log('모음 사이트로 판단해 뺀다 — 한 호스트가 여러 업체에 걸렸다');
+    for (const [host, count] of shared.sort((a, b) => b[1] - a[1])) {
+      console.log(`  ${host}  ${count}곳`);
+    }
+    console.log('');
+  }
+
+  for (const { vendor, hit } of found) {
+    if ((perHost.get(hit.host!) ?? 0) > 1) {
+      tally.set('모음 사이트', (tally.get('모음 사이트') ?? 0) + 1);
+      continue;
+    }
+
+    tally.set('붙임', (tally.get('붙임') ?? 0) + 1);
+    /* 업체 이름과 호스트만 찍는다. 이미지 주소 전체는 로그에 남기지 않는다. */
+    console.log(`  ${vendor.name}  ←  ${hit.host}`);
+
+    if (!APPLY) continue;
+
+    /*
+     * 대표 이미지는 업체마다 하나다(0050 vendor_images_representative_idx).
+     * 이미 있으면 대표로 세우지 않고 한 장 더 붙인다 — 먼저 있던 것을 끌어내리지 않는다.
+     */
+    const { rows } = await pool.query<{ 있다: boolean }>(
+      `SELECT EXISTS (
+         SELECT 1 FROM structured.vendor_images
+          WHERE vendor_id = $1 AND is_representative AND status = 'approved') AS 있다`,
+      [vendor.id],
+    );
+
+    await pool.query(
+      `INSERT INTO structured.vendor_images
+         (vendor_id, source_url, copyright_basis, copyright_note,
+          match_confidence, status, is_representative, verified_at)
+       VALUES ($1, $2, 'vendor_homepage', $3, $4, 'approved', $5, now())`,
+      [vendor.id, hit.image, `업체 공식 홈페이지 대표 이미지 · ${hit.host}`, hit.matched, !rows[0]?.있다],
+    );
+
+    await pool.query(
+      'UPDATE structured.vendors SET homepage_url = $2, homepage_checked_at = now() WHERE id = $1',
+      [vendor.id, hit.homepage],
+    );
+  }
+
+  /*
+   * 못 찾은 곳도 본 시각을 적는다 — 같은 업체를 매번 다시 찾지 않기 위해서다.
+   * 모음 사이트로 뺀 곳도 여기 든다. 다시 찾아도 같은 모음 사이트가 나온다.
+   */
+  if (APPLY) {
+    const done = new Set(
+      found.filter(({ hit }) => (perHost.get(hit.host!) ?? 0) === 1).map(({ vendor }) => vendor.id),
+    );
+
+    for (const vendor of vendors) {
+      if (done.has(vendor.id)) continue;
+      await pool.query(
+        'UPDATE structured.vendors SET homepage_checked_at = now() WHERE id = $1',
+        [vendor.id],
+      );
+    }
   }
 
   console.log('\n결과');
