@@ -243,6 +243,84 @@ async function ncp(): Promise<CostRow[]> {
   }));
 }
 
+/**
+ * GitHub — Actions 실행 시간과 저장소 사용량.
+ *
+ * **기본 토큰으로는 못 읽는다.** 워크플로가 받는 `GITHUB_TOKEN`에는 청구 정보 권한이
+ * 없다. 개인 접근 토큰(`read:user` 또는 요금 읽기 권한)을 `GH_BILLING_TOKEN`으로
+ * 따로 넣어야 한다 — 없으면 건너뛰고 그 사실을 적는다.
+ *
+ * 계정 종류에 따라 주는 것이 다르다. 새 청구 체계를 쓰는 계정은 `/settings/billing/usage`가
+ * **금액**을 주고, 아닌 계정은 `/settings/billing/actions`가 **분과 용량**만 준다.
+ * 금액이 오면 금액으로 적고, 아니면 사용량만 metrics에 적는다 — 분을 돈으로 환산하지
+ * 않는다. 요금제마다 포함 분이 다르고, 그 계산을 여기 박아두면 요금제가 바뀔 때
+ * 조용히 틀린 값이 남는다.
+ */
+async function github(): Promise<CostRow[]> {
+  const token = process.env.GH_BILLING_TOKEN;
+  const account = process.env.GITHUB_REPOSITORY_OWNER ?? process.env.GH_BILLING_ACCOUNT;
+
+  if (!token) {
+    skipped.push('GitHub — GH_BILLING_TOKEN 없음 (기본 GITHUB_TOKEN에는 청구 권한이 없다)');
+
+    return [];
+  }
+  if (!account) {
+    skipped.push('GitHub — 계정 이름을 알 수 없다 (GH_BILLING_ACCOUNT)');
+
+    return [];
+  }
+
+  const headers = {
+    authorization: `Bearer ${token}`,
+    accept: 'application/vnd.github+json',
+    'x-github-api-version': '2022-11-28',
+  };
+  const { start, end } = thisMonth();
+
+  /* 새 청구 체계 — 금액이 온다. */
+  const usage = await getJson(`https://api.github.com/users/${account}/settings/billing/usage`, headers);
+  const items = usage === null ? [] : findRecords(usage, 'netAmount');
+
+  if (items.length > 0) {
+    return items.map((item) => ({
+      provider: 'github',
+      resource: str(item.product ?? item.sku) ?? null,
+      periodStart: start,
+      periodEnd: end,
+      amount: Number(item.netAmount ?? 0),
+      currency: 'USD',
+      metrics: { quantity: item.quantity ?? null, unitType: item.unitType ?? null },
+    }));
+  }
+
+  /* 옛 체계 — 분과 용량만 온다. 금액을 지어내지 않는다. */
+  const actions = await getJson(`https://api.github.com/users/${account}/settings/billing/actions`, headers);
+  const storage = await getJson(`https://api.github.com/users/${account}/settings/billing/shared-storage`, headers);
+
+  if (actions === null && storage === null) {
+    skipped.push('GitHub — 요금 조회 실패 (토큰 권한을 확인한다)');
+
+    return [];
+  }
+
+  return [
+    {
+      provider: 'github',
+      resource: null,
+      periodStart: start,
+      periodEnd: end,
+      amount: 0,
+      currency: 'USD',
+      metrics: {
+        note: '사용량만 받는다 — 분을 돈으로 환산하지 않는다. 요금제마다 포함 분이 다르다',
+        actions,
+        storage,
+      },
+    },
+  ];
+}
+
 /** 봉투 어디에 있든 기대하는 필드를 가진 첫 객체 배열을 찾는다. */
 function findRecords(payload: unknown, requiredField: string): Record<string, unknown>[] {
   const queue: unknown[] = [payload];
@@ -272,7 +350,7 @@ function str(value: unknown): string | undefined {
 async function main(): Promise<void> {
   console.log(`인프라 요금 — ${WRITE ? '받아서 적는다' : '받아만 본다'}\n`);
 
-  const rows = [...(await render()), ...(await neon()), ...(await ncp())];
+  const rows = [...(await render()), ...(await neon()), ...(await ncp()), ...(await github())];
 
   console.log(`\n받은 줄 ${rows.length}개`);
   for (const row of rows) {

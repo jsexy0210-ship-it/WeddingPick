@@ -50,6 +50,9 @@ jobs:
           # 것과 같은 쌍이다. 비용 조회용으로 따로 발급할 것이 없다.
           NCP_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY_ID }}
           NCP_SECRET_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          # 워크플로가 받는 기본 GITHUB_TOKEN에는 청구 정보 권한이 없다. 개인 접근
+          # 토큰을 따로 넣어야 읽힌다 — 없으면 GitHub만 건너뛰고 이유를 적는다.
+          GH_BILLING_TOKEN: ${{ secrets.GH_BILLING_TOKEN }}
           WRITE: ${{ github.event_name == 'schedule' && 'true' || github.event.inputs.write }}
         run: |
           set -euo pipefail
