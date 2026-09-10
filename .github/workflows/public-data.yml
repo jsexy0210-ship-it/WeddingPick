@@ -153,6 +153,22 @@ jobs:
           fi
           ACCEPTED=$(node -e "process.stdout.write(String(require('./$REPORT').accepted ?? 0))")
           echo "$SOURCE accepted=$ACCEPTED"
+          # 잡 요약에 숫자를 남긴다 — 로그 꼬리에 묻히면 매번 로그를 뒤져야 한다.
+          node -e "
+            const r = require('./$REPORT');
+            const t = r.truncated ?? [];
+            const line = [
+              '### ' + r.source,
+              '',
+              '| 받은 원본 | 받아들임 | 거른 것 | 중복 |',
+              '| --- | --- | --- | --- |',
+              '| ' + r.total + ' | ' + r.accepted + ' | ' + r.rejected + ' | ' + r.duplicates + ' |',
+              '',
+              t.length ? '전수가 아니다 — ' + JSON.stringify(t) : '전수로 받았다.',
+              '',
+            ].join('\n');
+            require('fs').appendFileSync(process.env.GITHUB_STEP_SUMMARY, line);
+          "
           # 상한에 걸려 다 못 받았으면 전수가 아니다. 초록으로 넘기되 눈에 띄게 남긴다.
           node -e "const t=require('./$REPORT').truncated??[];if(t.length)console.log('::warning::전수가 아니다 — 상한에 걸린 업종코드 '+JSON.stringify(t))"
           if [ "$ACCEPTED" -eq 0 ]; then
