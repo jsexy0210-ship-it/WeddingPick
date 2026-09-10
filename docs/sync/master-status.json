@@ -1,0 +1,86 @@
+{
+  "schemaVersion": 1,
+  "updatedDate": "2026-09-10",
+  "masterThreadId": "01a08b64-9e88-7991-a1ed-90f446e3760b",
+  "scope": "앱 속도·UX·UX라이팅·사용자 여정",
+  "baselineCommit": "8f3d3766b69138cbeb300d9a6e075c4c5f475fb2",
+  "status": "in-progress",
+  "sessions": [
+    {
+      "name": "app_performance",
+      "branch": "codex/app-loading-20260910",
+      "scope": "API 캐시·진입 대기·검색·웨딩 부분 표시",
+      "status": "in-progress"
+    },
+    {
+      "name": "app_ux_writing",
+      "branch": "codex/app-ux-writing-20260910",
+      "scope": "실제 행동과 오류·빈 상태·수령 문구 정합성",
+      "status": "in-progress"
+    },
+    {
+      "name": "app_journey",
+      "branch": "codex/app-journey-20260910",
+      "scope": "앱 전체 경로 검토·제보·MY·알림·복귀 경로",
+      "status": "in-progress"
+    }
+  ],
+  "absorbedSessions": [
+    {
+      "threadId": "01a08af0-1c25-7fb3-b77a-9e65c8f20718",
+      "title": "현재 웹사이트와 정책 대조",
+      "result": "정책 비교와 업체 이메일 자동화 검토 결과 인수. 실제 발송·업체 관리 기능 완료로 보지 않음.",
+      "remaining": "공식 연락처·발송 동의·업체 인증을 갖춘 구현 필요. 이번 앱 UX 작업에서 발송하지 않음."
+    },
+    {
+      "threadId": "01a08122-a0a3-7ff2-9386-eddd7412aa9c",
+      "title": "WeddingPick 웹사이트 전면 개선",
+      "result": "기존 웹 구조 유지 조건과 미배포 문구 요청 인수.",
+      "remaining": "직접 남긴 후기도 함께 문구의 현행 반영 여부는 웹 후속 작업으로 보존. 임의 배포하지 않음."
+    },
+    {
+      "threadId": "01a06c95-2c8d-7192-91bc-3e32e6d40c8e",
+      "title": "마스터 세션",
+      "result": "제한 중단된 이전 성능·로그인 통합 작업을 현재 마스터가 인수.",
+      "remaining": "루트의 기존 미커밋 변경은 보존. 낡은 수정안을 현재 main에 그대로 복제하지 않고 성능 전담이 현행 경로로 재검증."
+    }
+  ],
+  "retainedSessions": [
+    {
+      "threadId": "01a081bd-bff3-7272-bba9-816c3e998981",
+      "title": "이미지 생성",
+      "reason": "내용 조회 실패로 완료·불필요 여부 미확인. 보관 처리 보류."
+    }
+  ],
+  "claudeCompatibility": {
+    "status": "pending-integration-review",
+    "overlap": [
+      {
+        "pr": 178,
+        "files": [
+          "apps/mobile/src/api/client.ts",
+          "spec/strings.ko.json"
+        ],
+        "rule": "성능 변경과 나이·가입 정책을 분리해 결합 검증"
+      },
+      {
+        "pr": 177,
+        "files": [
+          "CLAUDE.md",
+          "infra/render-env.yml"
+        ],
+        "rule": "공통 규칙·미사용 도메인 정정을 유지"
+      },
+      {
+        "prs": [
+          179,
+          180,
+          181,
+          182
+        ],
+        "rule": "관리자 작업은 이번 앱 전담 수정 범위와 분리. 클로드 PR끼리 충돌은 별도 검증"
+      }
+    ]
+  },
+  "completionRule": "각 전담 PR의 실제 결과·회귀·정책·통합 검증을 마스터가 확인한 뒤 흡수. 미검증 화면을 완료 처리하지 않음."
+}
