@@ -8,6 +8,17 @@
 한 번 치우고 끝나면 다시 쌓인다. 그래서 규칙을 여기 적고, 쌓이면 알려주는 워크플로를
 `.github/workflows/retention-check.yml`에 둔다.
 
+## 어디에 무엇이 적혀 있나
+
+정리에 관한 문서가 넷이라 여는 순서를 적어 둔다.
+
+| 문서 | 무엇 |
+|---|---|
+| 이 파일 | **규칙.** 무엇을 몇 건 남기고 무엇은 손대지 않는지 |
+| [unmerged-branches.md](unmerged-branches.md) | 브랜치의 **지금 상태**와 한 건씩의 판단 |
+| [branch-cleanup-2026-09-10.md](branch-cleanup-2026-09-10.md) | 브랜치를 **되살릴 SHA 기록** |
+| [REPOSITORY_CLEANUP_2026-09-10.md](REPOSITORY_CLEANUP_2026-09-10.md) | 2026-09-10 저장소 정리(중복 문서 · 구형 스크립트)의 근거 |
+
 ## 무엇에 걸리는가
 
 **같은 것이 판을 바꿔가며 쌓이는 것**에 걸린다.
@@ -117,5 +128,5 @@ release/public-data-sbiz-key-guard           흡수 전 (0건 수집을 초록�
 |---|---|
 | `docs/archive/통합정책 v3.10` (688K) | 판으로는 오래됐으나 코드 16곳이 인용 중 |
 | `docs/design-handoff/archive-toss-v7-README.md` | 세 세대 중 가장 오래됐지만 `README.md` 두 곳이 「역사적 맥락용」으로 의도해 남김 |
-| `scripts/gen-icons.js` · `scripts/gen-store-screenshots.js` | 참조 0건이나 사람이 손으로 돌리는 자산 생성기 |
+| `scripts/gen-store-screenshots.js` | 참조 0건이나 사람이 손으로 돌리는 자산 생성기. 대체품이 있는지 먼저 본다 |
 | `structured.vendor_change_log` | 위 참조 |

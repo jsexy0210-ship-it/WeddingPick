@@ -15,7 +15,8 @@ describe('링크 미리보기 이미지', () => {
   it('저장된 SVG가 지금 문구로 만든 것과 같다', () => {
     const committed = readFileSync(join(assets, 'weddingpick-og.svg'), 'utf8');
 
-    expect(committed).toBe(ogImageSvg());
+    // Git의 Windows CRLF 변환은 SVG 내용 변경이 아니다. 실제 문구·마크업은 그대로 비교한다.
+    expect(committed.replace(/\r\n/g, '\n')).toBe(ogImageSvg());
   });
 
   it('그림의 글자가 spec의 카드 문구에서 온다', () => {
