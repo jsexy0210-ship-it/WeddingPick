@@ -54,6 +54,7 @@ export const ROUTES: readonly string[] = [
   '/admin/policy-engine',
   '/admin/price-stats',
   '/admin/queue',
+  '/admin/login',
   '/admin/objections',
   '/admin/og-card',
   '/admin/pii-reviews',
