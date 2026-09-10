@@ -20,11 +20,10 @@
 | [통합정책 v3.14 충돌·리스크.md](통합정책%20v3.14%20충돌·리스크.md) | 시행 전 검토(v3.14 시점 작성, T장 추가로는 갱신되지 않음) | 미확정 법률·보안·운영 쟁점을 관리한다 |
 | [legal/](legal/) | 외부 배포용 Word 약관·방침 | 통합정책과 확정된 실제 운영값을 반영한다 |
 | [archive/통합정책 v3.13](archive/통합정책%20v3.13) | 과거본 | 세부 도메인은 v3.15와 충돌하지 않는 범위에서만 유효하다 |
-| [archive/통합정책 v3.12](archive/통합정책%20v3.12) | 과거본 | 기준이 아니다 |
-| [archive/통합정책 v3.10](archive/통합정책%20v3.10) | 과거본 | 기준이 아니다 |
+| [archive/통합정책 v3.10](archive/통합정책%20v3.10) | 과거본 — 코드 16곳이 `v3.10 §…`로 인용해서 남긴다 | 기준이 아니다 |
 | [05-product-spec.md](05-product-spec.md) | 개발용 — Phase 1 범위·화면·데이터 모델 | 과거 범위 기준. 통합정책이 우선한다 |
 | [05a-screen-data-spec.md](05a-screen-data-spec.md) | 개발용 — 화면·데이터 구조 스펙 | 과거 범위 기준. 통합정책이 우선한다 |
-| [design-handoff](design-handoff) | 디자인 핸드오프 — 현재 기준은 [current/](design-handoff/current)(v3.11, 189화면, 코랄). 옛 SEED·Toss/blue v7 세대는 삭제, archive-toss-v7-README.md만 역사적 맥락으로 남겨둠 | 통합정책 v3.15와 어긋나는 부분은 통합정책을 따른다 |
+| [design-handoff](design-handoff) | 디자인 핸드오프 — 현재 기준은 [current/](design-handoff/current)(버전은 [current/CHANGELOG.md](design-handoff/current/CHANGELOG.md) 맨 위). 옛 SEED·Toss/blue v7 세대는 삭제, archive-toss-v7-README.md만 역사적 맥락으로 남겨둠 | 통합정책 v3.15와 어긋나는 부분은 통합정책을 따른다 |
 | [AI_HANDOFF.md](AI_HANDOFF.md) | 작업 인수인계 서식 | — |
 
 ## 과거 버전 번호를 어떻게 읽을 것인가
