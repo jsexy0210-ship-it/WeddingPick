@@ -9,10 +9,15 @@ import { clearAdminToken, loadAdminToken, readAdminTokenSync, subscribeAdminToke
 /**
  * 관리자 콘솔 좌측 사이드바.
  *
- * 메뉴 이름과 묶음은 `docs/design-handoff/current/ADMIN.md`와 v3.27 시안
- * `html/22-admin-ops.dc.html`의 NAV를 그대로 따른다 — 여섯 묶음(보고 · 데이터 · 사용자 ·
- * 성장 · 운영 · 시스템)이고, 이름은 ADMIN.md의 화면 이름이다. 코드가 따로 부르던
- * 이름(Kill Switch · Policy Engine · Revenue · 롤백 관리)은 md 쪽으로 맞췄다.
+ * 묶음도 이름도 v3.27 시안 `html/22-admin-ops.dc.html`의 `NAV`를 그대로 따른다 —
+ * 여섯 묶음(보고 · 데이터 · 사용자 · 성장 · 운영 · 시스템)이다.
+ *
+ * **사이드바 이름과 화면 이름은 다르다.** 시안이 그렇게 그린다 — WP-ADM-013은
+ * 상단바 제목이 「이상치 · 조작 탐지」이고 사이드바는 「이상치 탐지」다. ADMIN.md의
+ * 긴 화면 이름을 사이드바에 그대로 넣으면 240 폭에서 잘려 「광고 실운영 전환 조건…」이
+ * 된다. 잘린 이름은 어느 화면인지 말해주지 못한다.
+ *
+ * SPEC 본문과 목업이 어긋나면 목업이 이긴다(CLAUDE.md) — 여기서는 목업 쪽이다.
  */
 type NavEntry = { group: string } | { key: string; label: string; href: string; readOnly?: boolean };
 
@@ -24,23 +29,17 @@ type NavEntry = { group: string } | { key: string; label: string; href: string; 
  * 메뉴만 보고는 어느 것이 실제로 일을 하는지 알 수 없어서, 운영자는 하나씩 눌러
  * 보고서야 알게 된다.
  *
- * **메뉴를 죽이지는 않는다.** 이 아홉 곳도 조회는 전부 된다 — 목록 · 지표 · 상태가
+ * **메뉴를 죽이지는 않는다.** 여기 적힌 곳도 조회는 전부 된다 — 목록 · 지표 · 상태가
  * 실제 서버 값으로 나온다. 눌리지 않게 막으면 되는 것까지 못 보게 된다.
+ *
+ * 아홉이던 것이 하나로 줄었다. 검토 · 데이터 · 운영 계열의 서버 동작이 붙으면서
+ * 그 화면들의 `BACKEND_PENDING`이 사라졌고, 여기 이름도 함께 지웠다. 남은 하나는
+ * `biz-queue` — 업체 신청 처리는 아직 서버에 없다.
  *
  * 서버 동작이 붙으면 그 화면의 `BACKEND_PENDING`과 여기 이름을 **함께** 지운다.
  * 한쪽만 지우면 말이 어긋난다.
  */
-const READ_ONLY = new Set([
-  'ads',
-  'ads-gate',
-  'biz-queue',
-  'campaigns',
-  'data-pipeline',
-  'objections',
-  'policy-engine',
-  'terms',
-  'vendors',
-]);
+const READ_ONLY = new Set(['biz-queue', 'terms']);
 
 /**
  * ADMIN.md 26화면 목록에 아직 없는 라우트. 지우면 기능이 사라지므로 남기되
@@ -54,37 +53,37 @@ const NAV: NavEntry[] = [
   { key: 'briefing', label: '일일 브리핑', href: '/admin/briefing' },
   { key: 'decisions', label: '자동 결정 현황', href: '/admin/decisions' },
   { group: '데이터' },
-  { key: 'data-pipeline', label: '제보 처리 현황', href: '/admin/data-pipeline' },
-  { key: 'queue', label: '확인 필요 목록', href: '/admin/queue' },
+  { key: 'data-pipeline', label: '제보 처리', href: '/admin/data-pipeline' },
+  { key: 'queue', label: '확인 필요', href: '/admin/queue' },
   { key: 'price-stats', label: '가격 통계', href: '/admin/price-stats' },
-  { key: 'stats', label: '이상치 · 조작 탐지', href: '/admin/stats' },
+  { key: 'stats', label: '이상치 탐지', href: '/admin/stats' },
   { key: 'vendors', label: '업체 관리', href: '/admin/vendors' },
-  { key: 'images', label: '이미지 자동 수급', href: '/admin/images' },
-  { key: 'email-matching', label: '이메일 회신 자동 매칭', href: '/admin/email-matching' },
+  { key: 'images', label: '이미지 수급', href: '/admin/images' },
+  { key: 'email-matching', label: '이메일 매칭', href: '/admin/email-matching' },
   { group: '사용자' },
-  { key: 'users', label: '사용자 계정 관리', href: '/admin/users' },
-  { key: 'report', label: '고객 의견 · 문의 관리', href: '/admin/report' },
-  { key: 'rebuttal', label: '후기 · 반론 관리', href: '/admin/rebuttal' },
-  { key: 'biz-queue', label: '업체 문의 처리 목록', href: '/admin/biz-queue' },
+  { key: 'users', label: '계정 관리', href: '/admin/users' },
+  { key: 'report', label: '고객 문의', href: '/admin/report' },
+  { key: 'rebuttal', label: '후기 · 반론', href: '/admin/rebuttal' },
+  { key: 'biz-queue', label: '업체 문의', href: '/admin/biz-queue' },
   { key: 'objections', label: '후기 이의제기', href: '/admin/objections' },
   { key: 'pii-reviews', label: '개인정보 검토', href: '/admin/pii-reviews' },
   { group: '성장' },
   { key: 'marketing', label: '마케팅 자동화', href: '/admin/marketing' },
-  { key: 'campaigns', label: '캠페인 · 보상 관리', href: '/admin/campaigns' },
+  { key: 'campaigns', label: '캠페인 · 보상', href: '/admin/campaigns' },
   { key: 'revenue', label: '수익 현황', href: '/admin/revenue' },
-  { key: 'ads', label: '광고 집행 관리', href: '/admin/ads' },
-  { key: 'ads-gate', label: '광고 실운영 전환 조건 관리', href: '/admin/ads-gate' },
+  { key: 'ads', label: '광고 집행', href: '/admin/ads' },
+  { key: 'ads-gate', label: '광고 전환 게이트', href: '/admin/ads-gate' },
   { group: '운영' },
   { key: 'automation', label: '자동화 상태', href: '/admin/automation' },
   { key: 'kill-switch', label: '긴급 중지', href: '/admin/kill-switch' },
-  { key: 'rollback', label: '변경 복구 관리', href: '/admin/rollback' },
+  { key: 'rollback', label: '변경 복구', href: '/admin/rollback' },
   { group: '시스템' },
-  { key: 'faq', label: '자주 묻는 질문 관리', href: '/admin/faq' },
-  { key: 'terms', label: '약관 · 방침 관리', href: '/admin/terms' },
+  { key: 'faq', label: 'FAQ 관리', href: '/admin/faq' },
+  { key: 'terms', label: '약관 · 방침', href: '/admin/terms' },
   { key: 'og-card', label: '링크 미리보기', href: '/admin/og-card' },
-  { key: 'ai-usage', label: 'AI 사용량 · 비용', href: '/admin/ai-usage' },
+  { key: 'ai-usage', label: 'AI 비용', href: '/admin/ai-usage' },
   /* 이름은 v3.27 시안 것을 쓴다(#172). 관리자 계정은 이 브랜치가 새로 더한 화면이다. */
-  { key: 'policy-engine', label: '정책 규칙 관리', href: '/admin/policy-engine' },
+  { key: 'policy-engine', label: '정책 규칙', href: '/admin/policy-engine' },
   { key: 'audit-log', label: '감사 기록', href: '/admin/audit-log' },
   { key: 'admins', label: '관리자 계정', href: '/admin/admins' },
 ];
@@ -99,7 +98,11 @@ function Sidebar({ pathname }: { pathname: string }) {
         <WeddingMark size={20} color={Colors.light.tint} />
         <Text style={styles.sidebarTitle}>웨딩픽 관리자</Text>
       </View>
-      <ScrollView style={styles.sidebarScroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.sidebarScroll}
+        contentContainerStyle={styles.sidebarScrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {NAV.map((item, i) => {
           if ('group' in item) {
             return (
@@ -279,27 +282,34 @@ const styles = StyleSheet.create({
     backgroundColor: C.adminChrome,
     flexShrink: 0,
     flexDirection: 'column',
+    /* 시안 side «padding:20px 12px». 메뉴 자체의 좌우 12와 합쳐 글자가 24에서 시작한다. */
+    paddingVertical: A.sidebarPaddingY,
+    paddingHorizontal: A.sidebarPaddingX,
   },
   sidebarLogo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    paddingTop: Spacing.four,
-    paddingBottom: Spacing.four,
+    /* 시안 brandRow «padding:0 12px 18px;gap:9px». 좌우는 사이드바 패딩 안쪽으로 한 겹 더. */
+    gap: A.iconTextGap,
+    paddingHorizontal: A.btnPaddingX,
+    paddingBottom: A.brandPaddingBottom,
   },
   sidebarTitle: {
-    fontSize: FontSize.t6,
-    lineHeight: LineHeight.t6,
+    /* 시안 brandName «font-size:15px». 본문 sub(16)이 아니다. */
+    fontSize: FontSize.adminBanner,
+    lineHeight: LineHeight.adminBanner,
     fontWeight: '700',
     color: C.onTint,
   },
   sidebarScroll: {
     flex: 1,
-    paddingHorizontal: Spacing.two,
+  },
+  /* 시안 side «gap:3px» — 메뉴 사이. */
+  sidebarScrollContent: {
+    gap: A.stackGap,
   },
   signOut: {
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: A.btnPaddingX,
     paddingVertical: Spacing.three,
     borderTopWidth: 1,
     borderTopColor: C.adminSidebarLine,
@@ -310,9 +320,10 @@ const styles = StyleSheet.create({
     color: C.adminSidebarLabel,
   },
   navGroup: {
-    paddingHorizontal: Spacing.two,
+    /* 시안 navGroup «padding:16px 12px 6px». */
+    paddingHorizontal: A.btnPaddingX,
     paddingTop: Spacing.three,
-    paddingBottom: Spacing.half,
+    paddingBottom: A.navGroupPaddingBottom,
     fontSize: FontSize.adminNavGroup,
     lineHeight: LineHeight.adminNavGroup,
     fontWeight: '700',
@@ -322,7 +333,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     height: A.navItemHeight,
-    paddingHorizontal: Spacing.two,
+    /* 시안 «height:34px;padding:0 12px;border-radius:6px». */
+    paddingHorizontal: A.btnPaddingX,
     borderRadius: Radius.control,
   },
   /* 활성 메뉴는 코랄 — 화면당 네 곳 이하로 쓰는 강조색의 첫 자리다(ADMIN.md 공통 규칙). */

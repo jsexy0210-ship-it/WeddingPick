@@ -112,6 +112,87 @@ describe('목업 CSS와 토큰이 같은 값을 든다', () => {
     );
   });
 
+  /*
+   * v3.27 관리자 — 줄 높이가 앱 스케일과 다르다.
+   *
+   * 2026-09-10 재검수에서 드러난 것: 열한 화면이 앱 짝(`tab` 12/16 · `micro` 13/18 ·
+   * `t7` 14/19 · `t5` 18/24)을 그대로 쓰고 있었는데, 시안은 같은 크기에 다른 줄 높이를
+   * 준다. 표 한 줄이 1px씩 어긋나면 여덟 줄에서 8px이 밀리고, 1920 기준으로 맞춰 둔
+   * 카드 높이가 따라 어긋난다. 가까운 값으로 대신하지 않는다 — 토큰에 더한다.
+   */
+  it('관리자 줄 높이가 시안 값이다', () => {
+    const scale = tokens().typography.scale as { role: string; size: number; lineHeight: number }[];
+    const role = (name: string) => {
+      const found = scale.find((r) => r.role === name);
+      if (!found) throw new Error(`typography.scale에 ${name}이 없다`);
+      return found;
+    };
+
+    const cases: [string, string, string][] = [
+      /* [토큰 이름, 목업 상수, 목업이 그 줄 높이를 쓰는 자리] */
+      ['adminMeta', 'cardSub', '카드 부제'],
+      ['adminMeta', 'rowMeta', '행 메타'],
+      ['adminMeta', 'barLabel', '막대 라벨'],
+      ['adminNote', 'noteLine', '카드 각주'],
+      ['adminCell', 'alertBody', '배너 풀이'],
+      ['adminConfirmTitle', 'confirmTitle', '확인 카드 제목'],
+    ];
+
+    for (const [token, constName, where] of cases) {
+      const t = role(token);
+      expect({
+        where,
+        size: px(decl('22-admin-ops.dc.html', constName, 'font-size')),
+        lineHeight: px(decl('22-admin-ops.dc.html', constName, 'line-height')),
+      }).toEqual({ where, size: t.size, lineHeight: t.lineHeight });
+    }
+
+    /* 빈 상태 제목은 배너 제목과 같은 15/21이다. */
+    expect(px(decl('22-admin-ops.dc.html', 'emptyTitle', 'font-size'))).toBe(role('adminBanner').size);
+    expect(px(decl('22-admin-ops.dc.html', 'emptyTitle', 'line-height'))).toBe(
+      role('adminBanner').lineHeight
+    );
+  });
+
+  /*
+   * 표 머리 아래 선과 본문 행 사이 선은 **다른 색**이다. 같은 색으로 두면 열 이름이
+   * 본문 첫 줄과 붙어 읽혀서 데이터처럼 보인다.
+   */
+  it('표 머리 선이 본문 행 선보다 진하다', () => {
+    const t = tokens();
+    const rowLine = t.color.admin.rowLine.value.toLowerCase();
+    const headLine = t.color.line.border.value.toLowerCase();
+
+    expect(decl('22-admin-ops.dc.html', 'tbodyRow', 'box-shadow').toLowerCase()).toContain(rowLine);
+    expect(decl('22-admin-ops.dc.html', 'theadRow', 'box-shadow').toLowerCase()).toContain(headLine);
+    expect(decl('22-admin-ops.dc.html', 'hr', 'background').toLowerCase()).toBe(rowLine);
+    expect(rowLine).not.toBe(headLine);
+  });
+
+  /* 재검수에서 어긋나 있던 간격들. 8배수 사다리에 없는 값이라 이름으로 든다. */
+  it('관리자 간격이 시안 값이다', () => {
+    const sp = tokens().spacing;
+    const M = '22-admin-ops.dc.html';
+
+    expect(px(decl(M, 'topbar', 'gap'))).toBe(sp.adminTableGap.value);
+    expect(px(decl(M, 'cardHead', 'min-height'))).toBe(sp.adminCardHeadHeight.value);
+    expect(px(decl(M, 'kpiCard', 'gap'))).toBe(sp.adminKpiGap.value);
+    expect(px(decl(M, 'barsWrap', 'height'))).toBe(sp.adminBarsHeight.value);
+    expect(px(decl(M, 'brandRow', 'gap'))).toBe(sp.adminIconTextGap.value);
+    expect(px(decl(M, 'confirmItem', 'gap'))).toBe(sp.adminIconTextGap.value);
+    expect(px(decl(M, 'confirmActions', 'gap'))).toBe(sp.adminConfirmActionsGap.value);
+    expect(px(decl(M, 'confirmCard', 'gap'))).toBe(sp.adminBannerGap.value);
+    /* side «padding:20px 12px» — 상하 · 좌우 순. */
+    const [sideY, sideX] = decl(M, 'side', 'padding').split(/\s+/);
+    expect(px(sideY ?? '')).toBe(sp.adminSidebarPaddingY.value);
+    expect(px(sideX ?? '')).toBe(sp.adminSidebarPaddingX.value);
+    /* navGroup «padding:16px 12px 6px» — 아래가 6이다. */
+    const navGroupBottom = decl(M, 'navGroup', 'padding').split(/\s+/)[2];
+    expect(px(navGroupBottom ?? '')).toBe(sp.adminNavGroupPaddingBottom.value);
+    /* 확인 카드 항목 상자는 radius.picker(8)다 — control(6)이 아니다. */
+    expect(px(decl(M, 'confirmList', 'border-radius'))).toBe(tokens().radius.picker);
+  });
+
   /* 화면 설정 스와치 — 시안은 안팎 모두 3이다. focus(2)로 대신하면 흰 테가 얇아진다. */
   it('스킨 스와치 링 두께가 border.swatchRing이다', () => {
     const shadow = decl('13-my-sub.dc.html', 'swatch', 'box-shadow');

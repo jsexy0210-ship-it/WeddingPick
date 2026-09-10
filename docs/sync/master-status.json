@@ -1,6 +1,23 @@
 {
   "schemaVersion": 1,
   "updatedDate": "2026-09-11",
+  "pendingAdminDeployment": {
+    "dateKst": "2026-09-11",
+    "baselineCommit": "516a4dfa1211c604ea624715e304beabd525f973",
+    "status": "local-review-complete-ci-and-deployment-pending",
+    "sourcePrs": { "189": "b99aef3398df794f2b8926c081ea4890e846472e", "191": "87e6258f8f7e862f7c1d4b6226d2aa69e0e101d3" },
+    "integration": "PR189의 관리자 기능과 PR191의 화면 변경을 통합했다. _ui.tsx 충돌은 구분선 hr와 rowChevron을 모두 보존했다. 가입 복구 수정과 main 운영 규칙은 유지한다.",
+    "reviewFixes": [
+      "실제 사용자 공개 판정과 연결되지 않은 공개 기준 DB 편집을 차단한다. domain 공개 상수 3/5/10과 readOnlyReason을 반환하며 관리자 통계도 같은 값을 사용한다.",
+      "실제 앱 약관·동의 기록과 연결되지 않은 약관 생성·편집·공개를 API와 UI에서 차단한다. 저장 없는 임의 ID 성공 응답을 제거하고 조회만 표시한다."
+    ],
+    "validation": "모바일 268시험/23스위트, API 149시험/20스위트 통과. API typecheck·copy lint 통과. 모바일 lint 오류 0·기존 경고 2. 최신 UI 패키지 소스 스냅샷에서 모바일 typecheck·Expo export 통과. 로컬 DB 부재로 API DB 723시험/50스위트는 건너뛰었으며 최종 PR CI가 필요하다.",
+    "uiEvidence": "1920×1080 실제 웹과 분리된 합성 API: 운영 11화면 정상 데이터 표시, 11화면 빈 목록·500 오류 및 재시도 표시를 관찰했다. 긴급 중지 확인 카드 취소, 정책 편집 카드와 공개 기준 3/5/10 읽기전용, 약관 편집·공개 비활성화를 확인했다. 캡처는 대화에 표시했으며 파일로 저장하지 않았다. 수익 빈 상태 fixture는 퍼널만 비웠으므로 수익 0원 분기의 검증 증거는 아니다.",
+    "deploymentOrder": "최종 PR CI 통과 → 검토 브랜치 DBStatus default 확인 → 신규 0110·0120·0121·0130 migration 적용 → main 병합 → Render API·앱 웹·랜딩 Live와 health 확인. Render main 자동배포가 CI와 독립적이므로 migration을 먼저 적용한다.",
+    "databaseBefore": "DBStatus 34500571297 default 성공: 적용 109/기대 106, pending 0. 기존 unknown 3개는 보존한다. 이 기록 시점에는 신규 운영 migration 미실행이다.",
+    "otherPendingPrs": "179·180·181·182는189에 포함. 133·164 제품 변경은 main에 이미 포함. 135는 영속 hold와 충돌하는 구판이므로 선택 통합 필요. 142는 알림톡 공급사 연결 미완성. 152는 과거 감사 문서. 170은 보관정책 초안으로 서비스 배포 대상이 아니다.",
+    "limits": "원본 전 화면 픽셀 대조·네이티브 실기기 검수·운영 데이터 쓰기 검증은 완료하지 않았다. 이번 UI 관찰은 전 제품 디자인 완료 선언이 아니다. 사용자가 대기 변경 전체 배포와 인계 대기 해제 후 작업 재개를 명시했다."
+  },
   "signupRecovery": {
     "dateKst": "2026-09-11",
     "baselineCommit": "eccf540f3d0025c4f34d1da36afb71d223f6d380",

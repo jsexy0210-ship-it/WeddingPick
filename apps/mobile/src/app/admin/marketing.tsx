@@ -173,7 +173,7 @@ export default function MarketingScreen() {
               title="자동 소재"
               sub="생성 · 모의 실행 · 실패 사유"
               full
-              note="클릭률이 2% 아래로 3일 연속이면 자동으로 멈추고 일일 브리핑에 올라와요."
+              note="클릭률이 2% 아래로 3일 연속이면 자동으로 멈추고 브리핑에 올라와요."
             >
               <DataTable cols={COLS} rows={rows} empty="돌고 있는 소재가 없어요" />
             </Card>

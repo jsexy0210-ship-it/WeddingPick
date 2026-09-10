@@ -78,6 +78,16 @@ const palette = {
   warningBorder: '#facc87',
   dangerBox: '#fff3f2',
   dangerBorder: '#fcd2cf',
+  /*
+   * 「돈을 쓰는 것」 배지. spec/tokens.json color.status.costFg — 21-admin.dc.html
+   * `dashCards`의 «비용» 모드가 modeFg #e0404e · modeBg #fff1f2다.
+   *
+   * **반려·오류의 dangerText(#e81607)와 다르다.** 비용 카드는 잘못된 상태가
+   * 아니라 지출을 말한다 — 같은 빨강으로 칠하면 매달 정상으로 나가는 돈이
+   * 고장으로 보인다.
+   */
+  costText: '#e0404e',
+  costSurface: '#fff1f2',
   /**
    * 관리자 콘솔의 어두운 면 — 사이드바 · 로그인 오른쪽 판.
    *
@@ -101,6 +111,12 @@ const palette = {
   adminBannerWarn: '#fff6e6',
   adminBannerOkIcon: '#c9f2e8',
   adminBannerBadIcon: '#ffd0cb',
+  /*
+   * 관리자 행 · 표 본문 구분선. 시안 hr · tbodyRow가 «#f2f3f6»(gray100)이고,
+   * 표 **머리** 아래 선 «#dcdee3»(gray300 · track)보다 두 단 옅다. 둘을 같은 색으로
+   * 두면 머리 행이 본문 첫 줄과 붙어 읽혀서 열 이름이 데이터처럼 보인다.
+   */
+  adminRowLine: '#f2f3f6',
   adminDotWarn: '#e5a12c',
   adminBarFill: '#ffc9c2',
 
@@ -268,6 +284,12 @@ export const Colors = {
     cautionaryBorder: palette.warningBorder,
     negativeBoxBackground: palette.dangerBox,
     negativeBorder: palette.dangerBorder,
+    /**
+     * 「돈을 쓰는 것」 — 관리자 요약 대시보드의 비용 카드 배지. color.status.costFg.
+     * 반려(`negative`)와 나누어 둔다 — 지출은 고장이 아니다.
+     */
+    cost: palette.costText,
+    costBackground: palette.costSurface,
     /** 관리자 콘솔의 어두운 면(사이드바 · 로그인 오른쪽 판). color.status.adminChrome. */
     adminChrome: palette.adminChrome,
     /** 파괴적 행동 버튼(탈퇴 · 신고 · 빼기). status.dangerAction. */
@@ -284,6 +306,7 @@ export const Colors = {
     adminBannerWarn: palette.adminBannerWarn,
     adminBannerOkIcon: palette.adminBannerOkIcon,
     adminBannerBadIcon: palette.adminBannerBadIcon,
+    adminRowLine: palette.adminRowLine,
     adminDotWarn: palette.adminDotWarn,
     adminBarFill: palette.adminBarFill,
 
@@ -365,6 +388,9 @@ export const Colors = {
     negativeBackground: '#2e1614',
     negativeBoxBackground: '#211010',
     negativeBorder: '#4d2422',
+    /* 관리자 콘솔은 라이트 전용이다. 역할 표를 비워두지 않으려고 어두운 벌만 맞춰 둔다. */
+    cost: '#ff8a94',
+    costBackground: '#2b1518',
     negativeAction: palette.dangerAction,
     accent: palette.accentAction,
     accentText: '#57c7ff',
@@ -377,6 +403,7 @@ export const Colors = {
     adminBannerWarn: palette.adminBannerWarn,
     adminBannerOkIcon: palette.adminBannerOkIcon,
     adminBannerBadIcon: palette.adminBannerBadIcon,
+    adminRowLine: palette.adminRowLine,
     adminDotWarn: palette.adminDotWarn,
     adminBarFill: palette.adminBarFill,
 
@@ -480,6 +507,12 @@ export const AdminSpacing = {
   cardGap: 14,
   cardPadding: 20,
   gridGap: 20,
+  /** 카드 머리 최소 높이 — 시안 cardHead «min-height:28px». 제목만 있는 카드도 이 높이다. */
+  cardHeadHeight: 28,
+  /** KPI 카드 안 세 줄 사이 — 시안 kpiCard «gap:5px». stackGap(3)과 다른 값이다. */
+  kpiGap: 5,
+  /** 추이 막대 칸 높이 — 시안 barsWrap «height:150px». 막대는 이 안에서 바닥에 붙는다. */
+  barsHeight: 150,
   /** 본문 · 상단바. */
   bodyPaddingTop: 24,
   bodyPaddingX: 32,
@@ -495,6 +528,17 @@ export const AdminSpacing = {
   /** 사이드바. */
   navItemHeight: 34,
   sidebarWidth: 240,
+  /** 사이드바 바깥 패딩 — 시안 side «padding:20px 12px». 메뉴 좌우 12는 btnPaddingX와 같은 값이다. */
+  sidebarPaddingY: 20,
+  sidebarPaddingX: 12,
+  /** 그룹 제목 아래 — 시안 navGroup «padding:16px 12px 6px». 위 16은 Spacing.three와 같다. */
+  navGroupPaddingBottom: 6,
+  /** 브랜드 줄 아래 — 시안 brandRow «padding:0 12px 18px». */
+  brandPaddingBottom: 18,
+  /** 표식과 글 사이 9 — 시안 brandRow «gap:9px»와 confirmItem «gap:9px»가 같은 값이다. */
+  iconTextGap: 9,
+  /** 확인 카드 단추 사이 — 시안 confirmActions «gap:10px». */
+  confirmActionsGap: 10,
 } as const;
 
 /**

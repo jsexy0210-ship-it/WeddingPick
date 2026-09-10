@@ -66,7 +66,7 @@ const COLS: Col[] = [
   { key: 'eventId', label: 'event_id', width: 130 },
   { key: 'source', label: 'source', width: 130 },
   { key: 'confidence', label: 'confidence', width: 100, align: 'right' },
-  { key: 'decision', label: 'decision', width: 110 },
+  { key: 'decision', label: 'decision', width: 130 },
   { key: 'reasonCode', label: 'reason_code', width: 180 },
   { key: 'evidence', label: 'evidence', width: 280, grow: true },
   { key: 'createdAt', label: '시각', width: 130 },
@@ -189,7 +189,7 @@ export default function AuditLogScreen() {
           <CardGrid>
             <Card
               title="기록"
-              sub="최근 순"
+              sub="최근 순 · 필터 없음"
               full
               note="rollback_target이 비어 있으면 되돌릴 수 없는 일괄 작업이에요."
             >
