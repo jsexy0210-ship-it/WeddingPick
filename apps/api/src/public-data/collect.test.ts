@@ -1,5 +1,5 @@
 import iconv from 'iconv-lite';
-import { contentHash, downloadSbizApiVendors, findNumber, findRecords, isoDay, listIndustryCategories, parsePublicCsv, type CollectedVendor } from './collect';
+import { WEDDING_UPJONG_CODES, contentHash, downloadSbizApiVendors, findNumber, findRecords, isoDay, listIndustryCategories, parsePublicCsv, resolveUpjongQuery, type CollectedVendor } from './collect';
 import { sourceKey } from './sources';
 import { replacementDecision } from './sync';
 
@@ -74,16 +74,26 @@ test('봉투가 중첩돼 있어도 레코드 배열을 찾는다', () => {
   expect(findNumber(nested, 'totalCount')).toBe(2);
   expect(findRecords(nested, '없는필드')).toEqual([]);
 });
-test('업종코드가 없으면 수집을 시작하지 않는다', async () => {
-  // 코드가 틀리거나 비면 API는 오류 대신 빈 목록을 준다 — 조용한 0건 수집을 막는다.
+test('환경변수가 없으면 확인된 소분류 코드를 쓴다', () => {
+  /*
+   * 전에는 여기서 던졌다 — 코드를 몰랐기 때문이다. 대분류 'Q'가 활용가이드에
+   * 없는 값이라 조용한 0건이 나던 시절의 가드다. 2026-09-10에 smallUpjongList를
+   * 실 키로 불러 실제 코드를 확인했으므로 이제 기본값이 있다. 그래도 «코드 없이
+   * 부르지 않는다»는 원래 뜻은 그대로다 — 아래 테스트가 지킨다.
+   */
   const saved = process.env.SBIZ_UPJONG_CODES;
   delete process.env.SBIZ_UPJONG_CODES;
   try {
-    await expect(downloadSbizApiVendors('sbiz-seoul', 'test-key')).rejects.toThrow('SBIZ_UPJONG_CODES');
+    expect(resolveUpjongQuery()).toEqual({ divId: 'indsSclsCd', codes: [...WEDDING_UPJONG_CODES] });
   } finally {
     if (saved === undefined) delete process.env.SBIZ_UPJONG_CODES;
     else process.env.SBIZ_UPJONG_CODES = saved;
   }
+});
+
+test('빈 업종코드를 넘기면 수집을 시작하지 않는다', () => {
+  // 코드가 틀리거나 비면 API는 오류 대신 빈 목록을 준다 — 조용한 0건 수집을 막는다.
+  expect(() => resolveUpjongQuery({ divId: 'indsSclsCd', codes: [] })).toThrow('SBIZ_UPJONG_CODES');
 });
 test('이미 URL-encode된 서비스키를 이중 인코딩하지 않는다', async () => {
   // 공공데이터포털 인증키는 이미 encode된 값으로 온다('/'→%2F, '='→%3D).

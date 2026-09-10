@@ -9,7 +9,8 @@ import { FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 
-type RightsStatus = 'licensed' | 'public_domain' | 'vendor_provided' | 'pending' | 'rejected';
+type RightsStatus =
+  | 'licensed' | 'public_domain' | 'vendor_provided' | 'vendor_homepage' | 'pending' | 'rejected';
 type ImageItem = {
   id: string;
   vendorName: string;
@@ -29,6 +30,7 @@ const RIGHTS_LABEL: Record<RightsStatus, string> = {
   licensed: '허가',
   public_domain: '공개',
   vendor_provided: '업체 제공',
+  vendor_homepage: '업체 홈페이지',
   pending: '검토 중',
   rejected: '반려',
 };
@@ -36,6 +38,7 @@ const RIGHTS_COLOR: Record<RightsStatus, string> = {
   licensed: '#1aa174',
   public_domain: '#0088cc',
   vendor_provided: '#0088cc',
+  vendor_homepage: '#0088cc',
   pending: '#805217',
   rejected: '#e81607',
 };
