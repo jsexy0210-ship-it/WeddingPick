@@ -2,6 +2,14 @@
   "schemaVersion": 1,
   "updatedDate": "2026-09-11",
   "masterThreadId": "01a08b64-9e88-7991-a1ed-90f446e3760b",
+  "concurrentWorkPriority": {
+    "authorizedDate": "2026-09-11",
+    "rule": "클로드 작업과 겹치면 masterThreadId로 식별한 사용자 지정 Codex 마스터가 수정·검수한 변경을 우선한다.",
+    "preservation": "겹치지 않는 상대 변경은 보존하고 충돌 부분에만 우선순위를 적용한다. 브랜치 전체를 덮어쓰지 않는다.",
+    "handoff": "충돌 해결 사유, 양쪽 PR·검토 SHA, 선택·보존한 변경, 통합 검증 결과와 미해결 항목을 PR 및 이 파일에 인계한다.",
+    "mergeGate": "우선권은 검수된 변경 간 충돌 해결 기준이며 미검증 자동 병합 근거가 아니다. 최신 사용자 지시·정책과 원래 디자인 기준, 마스터의 독립 검수와 관련 통합 검증을 통과한 뒤 병합한다.",
+    "revision": "사용자가 우선순위를 명시적으로 바꾸면 AGENTS.md·CLAUDE.md·두 전달문·이 파일을 함께 갱신하고 같은 작업에서 PR로 main에 반영한 뒤 병합 결과를 확인한다."
+  },
   "scope": "앱 속도·UX·UX라이팅·사용자 여정",
   "baselineCommit": "8f3d3766b69138cbeb300d9a6e075c4c5f475fb2",
   "status": "reviewed-with-followups",
@@ -31,9 +39,11 @@
     {
       "name": "app_session_recovery",
       "branch": "codex/app-session-recovery-20260911",
+      "pr": 188,
       "scope": "일시적인 회원 조회 실패를 로그아웃으로 처리하는 P1 수정",
       "status": "reviewed-and-absorbed",
-      "verification": "모바일252시험, typecheck, lint 오류0; 390x844에서500재시도복구 및401로그인차단"
+      "verification": "모바일252시험, typecheck, lint 오류0; 390x844에서500재시도복구 및401로그인차단",
+      "independentVerification": "인증 복구 7파일 반례 검수에서 신규 P1/P2 없음. 관련 18시험·2 suite 독립 실행 통과."
     }
   ],
   "absorbedSessions": [
