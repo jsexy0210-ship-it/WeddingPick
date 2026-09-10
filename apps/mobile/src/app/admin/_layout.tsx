@@ -102,7 +102,12 @@ const styles = StyleSheet.create({
     minHeight: '100vh' as unknown as number,
   },
   sidebar: {
-    width: 216,
+    /*
+     * 240 — 핸드오프 v3.27이 관리자 콘솔 기준을 1920×1080으로 올리면서 사이드바도
+     * 216에서 240으로 넓혔다. 감사 기록처럼 컬럼이 여덟 개인 표가 1440에서는 가로
+     * 스크롤 없이 들어가지 않았던 것이 폭을 올린 이유다.
+     */
+    width: 240,
     backgroundColor: '#17181c',
     flexShrink: 0,
     flexDirection: 'column',
