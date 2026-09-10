@@ -46,3 +46,13 @@ packages/ui/dist/
 
 # 화면 확인용 임시 캡처 — 저장소에 남기지 않는다
 .tmp-shots/
+
+# 로컬 검수·격리 체크아웃 (공유 검수 기록은 docs/audits/에 보관)
+/.audit-*/
+/.audit-*.cjs
+/.audit-*.log
+/.tmp-chrome-audit/
+/.worktrees/
+/WeddingPickl/
+# 로컬 자격증명 전달 폴더
+/iOS_액세스 토큰(중요)/

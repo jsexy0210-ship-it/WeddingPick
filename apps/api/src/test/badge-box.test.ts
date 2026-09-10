@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -20,8 +20,9 @@ const ROOT = join(__dirname, '..', '..', '..', '..');
  * 지켜지지 않는다.
  */
 function sourceFiles(): string[] {
-  const out = execSync(
-    "git ls-files 'packages/**/*.ts' 'packages/**/*.tsx' 'apps/mobile/**/*.ts' 'apps/mobile/**/*.tsx'",
+  const out = execFileSync(
+    'git',
+    ['ls-files', 'packages/**/*.ts', 'packages/**/*.tsx', 'apps/mobile/**/*.ts', 'apps/mobile/**/*.tsx'],
     { cwd: ROOT, encoding: 'utf8' }
   );
 
@@ -128,7 +129,7 @@ describe('배지 상자', () => {
      * 기준은 최신 핸드오프다. 시안이 배지에 height를 적기 시작하면 위 규칙이 틀린
      * 것이 되므로, 시안 쪽이 바뀌는 순간을 여기서 잡는다.
      */
-    const html = execSync("git ls-files 'docs/design-handoff/current/html/*.dc.html'", {
+    const html = execFileSync('git', ['ls-files', 'docs/design-handoff/current/html/*.dc.html'], {
       cwd: ROOT,
       encoding: 'utf8',
     })

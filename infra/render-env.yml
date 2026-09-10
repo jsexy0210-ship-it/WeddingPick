@@ -59,12 +59,13 @@ services:
       #
       #   app-web        앱 화면과 **관리자 콘솔**이 여기서 뜬다(/admin, 27개 화면)
       #   web            서비스 웹사이트
-      #   weddingpick.kr web의 커스텀 도메인. onrender 주소만 있으면 이쪽으로 들어온 사람이 막힌다
+      # weddingpick.kr은 보유한 커스텀 도메인이지만 현재 미사용이다(2026-09-10 사용자 확인).
+      # 다시 사용하기로 결정할 때 DNS·연결·CORS를 함께 검증한다.
       #
       # 관리자 출처 둘(`weddingpick-admin.onrender.com` · `admin.weddingpick.kr`)은
       # 2026-09-09 사용자 결정으로 뺐다 — 관리자는 app-web의 `/admin` 하나로 통일했고
       # 그 서비스와 도메인이 없어졌다. 살아 있지도 않은 출처를 허용 목록에 두지 않는다.
-      CORS_ORIGINS: https://weddingpick-app-web.onrender.com,https://weddingpick-web.onrender.com,https://weddingpick.kr
+      CORS_ORIGINS: https://weddingpick-app-web.onrender.com,https://weddingpick-web.onrender.com
       # 앱의 EXPO_PUBLIC_KAKAO_CLIENT_ID와 같은 값이어야 토큰 교환과 id_token 검증이 맞는다.
       KAKAO_APP_KEY: 8e9a14dd3a0aa1a420bff858460c415c
       # 원본을 실제로 지운다. **기본값 manual로 두면 아무것도 지워지지 않는다** —

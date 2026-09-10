@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "recordedDate": "2026-09-10",
+  "timezone": "Asia/Seoul",
+  "scope": "repository-cleanup",
+  "baselineCommit": "e34193ee1644c664f107d529002ae53ef775389a",
+  "status": "validated-locally",
+  "branch": "codex/repository-cleanup-20260910",
+  "validation": {
+    "typecheck": {
+      "status": "passed",
+      "command": "npm run typecheck",
+      "followup": "변경한 API·웹 테스트 파일의 워크스페이스 타입 검사도 재통과"
+    },
+    "lint": {
+      "status": "passed",
+      "warnings": 2,
+      "note": "기존 경고: _layout.tsx useEffect 의존성, is-auth-popup.test.ts import 순서. Windows 상위 경로 EPERM 후 동일 검사를 정상 권한으로 재실행."
+    },
+    "copyLint": {
+      "status": "passed",
+      "command": "node lint-copy.js spec/strings.ko.json apps packages"
+    },
+    "tests": {
+      "status": "passed-with-skips",
+      "command": "npm test",
+      "passed": 1307,
+      "failed": 0,
+      "skipped": 701,
+      "passedSuites": 100,
+      "skippedSuites": 47,
+      "note": "운영 DB 환경변수를 제공하지 않았다. DB 의존 테스트는 미실행이며 통과로 계산하지 않음."
+    },
+    "diagnostics": {
+      "status": "executed",
+      "contractCases": 5,
+      "adminCalls": 60,
+      "note": "종료 코드 0은 진단 실행 성공. 제품 결함 해결을 뜻하지 않음."
+    },
+    "ui": {
+      "status": "not-applicable-to-cleanup",
+      "note": "제품 화면·스타일 변경 없음. 전체 제품 시각 검수는 미완료."
+    },
+    "repositoryStructure": {
+      "relativeLinks": 75,
+      "status": "passed",
+      "jsonFiles": 7,
+      "diffCheck": "passed",
+      "deletedFiles": 4,
+      "yamlFiles": 2
+    }
+  },
+  "independentReview": {
+    "status": "passed",
+    "findings": [
+      "관리자 기본 HTML과 운영 HTML 캔버스 충돌을 접수 기록에 정정",
+      "감사 스크립트에 실제 HEAD와 대상 소스 dirty 여부 기록"
+    ]
+  },
+  "delivery": {
+    "status": "pending-pull-request"
+  },
+  "evidence": "../REPOSITORY_CLEANUP_2026-09-10.md"
+}

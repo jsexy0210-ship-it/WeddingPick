@@ -1,6 +1,6 @@
 # 최신 전달본
 
-현재 사용자가 전달한 디자인 원본은 [current/README.md](current/README.md)를 시작점으로 확인합니다. `current/`는 전달 ZIP에서 내용 변경 없이 추출합니다. 구현 시 토큰·화면 명세·기준 PNG·HTML 원본을 함께 확인합니다.
+최신 사용자 ZIP은 [2026-09-10 접수 기록](INTAKE-2026-09-10.md)과 [대조 결과](../DESIGN_ZIP_AUDIT_2026-09-10.md)를 먼저 확인합니다. Git 반영본은 [current/README.md](current/README.md)를 시작점으로 확인합니다. `current/`와 새 ZIP은 완전히 일치하지 않으며, 여러 세대가 섞인 ZIP을 통째로 덮어쓰지 않습니다. 구현 시 토큰·화면 명세·기준 이미지·HTML 원본을 함께 확인합니다.
 
 **버전 이력은 [current/CHANGELOG.md](current/CHANGELOG.md)에서 관리합니다**(v3.11부터 동봉 시작, 2026-09-06). 최신이 위입니다 — 정책·화면이 바뀌면 여기부터 확인합니다.
 
