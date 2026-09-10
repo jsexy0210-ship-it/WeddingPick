@@ -142,6 +142,7 @@ import {
   type CompleteSetupRequest,
   appBootstrapResponseSchema,
   type AppBootstrapResponse,
+  type CurrentUser,
   myRewardPayoutResponseSchema,
   rewardPayoutSchema,
   type MyRewardPayoutResponse,
@@ -183,24 +184,6 @@ function requireBaseUrl(): string {
 }
 
 /**
- * 읽기 캐시의 두 시간값. 2026-09-09 성능 감사에서 정했다.
- *
- * ```
- * 0~READ_FRESH_MS      캐시를 그대로 준다. 서버를 부르지 않는다.
- * ~READ_TTL_MS         캐시를 그대로 주고, 뒤에서 서버에 다시 물어 캐시를 고친다.
- * READ_TTL_MS 초과     캐시를 버리고 서버를 기다린다.
- * ```
- *
- * `READ_FRESH_MS`(3초)는 «한 화면을 그리는 동안»이다. 홈이 회원을 묻고 그 답으로
- * 후보를 묻는 것처럼, 한 번의 진입이 같은 주소를 여러 번 부르는 자리를 덮는다.
- *
- * `READ_TTL_MS`(30초)는 «탭을 한 바퀴 도는 동안»이다. 홈 → 검색 → Pick → 웨딩일정 →
- * MY를 오가는 사이에는 같은 것을 다시 묻지 않는다. 이보다 오래 지났으면 사람이
- * 다른 일을 하다 온 것이라 보고 새로 받는다. 내가 무엇을 바꾼 뒤에는 시간과
- * 무관하게 캐시를 통째로 버리므로(아래 `request`의 쓰기 분기), 이 30초 때문에
- * 내가 방금 한 일이 화면에 안 보이는 일은 없다.
- */
-/**
  * 한 요청을 얼마나 기다리는가.
  *
  * Render 무료 요금제는 잠들었다 깨는 데 30초 넘게 걸린다 — 그보다 짧게 잡으면
@@ -210,6 +193,11 @@ const REQUEST_TIMEOUT_MS = 45_000;
 
 const READ_FRESH_MS = 3_000;
 const READ_TTL_MS = 30_000;
+// 최신 응답을 현재 화면에 반영하는 업체 검색에서만 재방문 대기를 줄인다.
+const OBSERVED_READ_TTL_MS = 120_000;
+// 거래 상태가 아닌 선택지는 5분 동안 재사용한다.
+const REFERENCE_TTL_MS = 5 * 60_000;
+const REFERENCE_PATHS = new Set(['/v1/vendors/regions', '/v1/planners/regions', '/v1/review-report-reasons']);
 
 /**
  * 캐시하지 않는 주소.
@@ -220,6 +208,13 @@ const READ_TTL_MS = 30_000;
  * 자리라 «방금 받은 답»이 오히려 틀린 답이다.
  */
 const NEVER_CACHED = ['/v1/analyses/', '/v1/documents/', '/v1/quotes/', '/v1/verification-requests/'];
+
+type ReadRefresh<T> = {
+  force?: boolean;
+  onValue: (value: T) => void;
+  onError: (error: Error) => void;
+  onRefreshing: (refreshing: boolean) => void;
+};
 
 type ReadEntry = { at: number; value: unknown };
 
@@ -237,19 +232,41 @@ const inFlightReads = new Map<string, Promise<unknown>>();
  * 달라졌으면 적지 않는다.
  */
 let cacheGeneration = 0;
+const pathGenerations = new Map<string, number>();
+const matchesPrefix = (path: string, prefix: string) =>
+  path === prefix || path.startsWith(`${prefix}/`) || path.startsWith(`${prefix}?`);
+function readGeneration(path: string): string {
+  let version = 0;
+  for (const [prefix, value] of pathGenerations) if (matchesPrefix(path, prefix)) version += value;
+  return `${cacheGeneration}:${version}`;
+}
+let cacheToken: string | null | undefined;
 
-/**
- * 읽기 캐시를 통째로 버린다.
- *
- * 부르는 곳은 셋이다 — 무언가를 바꾼 직후(아래 쓰기 분기), 로그인·로그아웃처럼
- * «누구인가»가 달라진 때, 그리고 서버가 토큰을 거절한 때. 앞의 것을 주소별로
- * 골라 지우려면 어느 쓰기가 어느 읽기를 흔드는지 표를 들고 있어야 하고, 그 표는
- * 라우트가 늘 때마다 조용히 틀려진다. 통째로 버리는 편이 틀리지 않는다.
- */
+/** 계정이 바뀌거나 영향 범위를 모르는 쓰기는 전체 캐시를 버린다. */
 export function clearReadCache(): void {
   cacheGeneration += 1;
+  pathGenerations.clear();
   readCache.clear();
   inFlightReads.clear();
+  rememberCurrentUser(null);
+}
+
+/** 영향이 명확한 쓰기만 좁게 지운다. 새 API는 기본적으로 전체 무효화한다. */
+function invalidateAfterWrite(path: string): void {
+  const affected = path === '/v1/me/display-name'
+    ? ['/v1/me', '/v1/app/bootstrap']
+    : path.startsWith('/v1/me/notifications/')
+      ? ['/v1/me/notifications', '/v1/app/bootstrap']
+      : path === '/v1/devices' ? [] : null;
+  if (affected === null) {
+    clearReadCache();
+    return;
+  }
+  for (const prefix of affected) pathGenerations.set(prefix, (pathGenerations.get(prefix) ?? 0) + 1);
+  const matches = (key: string) => affected.some((prefix) => matchesPrefix(key, prefix));
+  for (const key of readCache.keys()) if (matches(key)) readCache.delete(key);
+  for (const key of inFlightReads.keys()) if (matches(key)) inFlightReads.delete(key);
+  if (affected.includes('/v1/me')) rememberCurrentUser(null);
 }
 
 /** 이미 받아둔 답을 캐시에 넣어둔다. 같은 것을 다시 묻지 않게. */
@@ -277,6 +294,7 @@ async function send<T>(
 ): Promise<T> {
   const { auth = true, headers, ...rest } = init;
   const token = auth ? await loadToken() : null;
+  const generation = readGeneration(path);
 
   /*
    * 서버에 닿지 못한 것과 서버가 거절한 것은 다르다. fetch가 던지는 것을 그대로
@@ -312,16 +330,26 @@ async function send<T>(
     throw new ApiError('internal', '서버와 연결하지 못했습니다.', null);
   }
 
+  // 이전 계정의 응답은 새 토큰이나 화면을 건드리지 않는다.
+  if (auth && token !== await loadToken()) {
+    throw new ApiError('internal', '계정이 변경되어 요청을 다시 확인해야 합니다.', 401);
+  }
+
   if (!response.ok) {
     const body = errorResponseSchema.safeParse(await response.json().catch(() => null));
 
+    if (auth && token !== await loadToken()) {
+      throw new ApiError('internal', '계정이 변경되어 요청을 다시 확인해야 합니다.', 401);
+    }
+    if (response.status === 403) {
+      readCache.delete(path);
+      inFlightReads.delete(path);
+    }
+    if (auth && (response.status === 401 || (body.success && body.data.error.code === 'unauthenticated'))) {
+      await clearToken();
+      clearReadCache();
+    }
     if (body.success) {
-      if (body.data.error.code === 'unauthenticated') {
-        await clearToken();
-        // 남의 답을 다음 사람에게 주지 않는다.
-        clearReadCache();
-      }
-
       throw new ApiError(body.data.error.code, body.data.error.message, response.status);
     }
 
@@ -331,10 +359,24 @@ async function send<T>(
   // 204는 본문이 없다. json()을 부르면 거기서 터진다.
   const parsed = schema.safeParse(response.status === 204 ? null : await response.json());
 
+  if (auth && token !== await loadToken()) {
+    throw new ApiError('internal', '계정이 변경되어 요청을 다시 확인해야 합니다.', 401);
+  }
+
   if (!parsed.success) {
     throw new ApiError('internal', '서버 응답을 이해하지 못했습니다.');
   }
 
+  if (generation === readGeneration(path)) {
+    if (path === '/v1/me') rememberCurrentUser(parsed.data as CurrentUser);
+    if (path === '/v1/app/bootstrap') {
+      const boot = parsed.data as AppBootstrapResponse;
+      if (boot.member) {
+        rememberCurrentUser(boot.member);
+        seedReadCache('/v1/me', boot.member);
+      }
+    }
+  }
   return parsed.data;
 }
 
@@ -348,10 +390,12 @@ function startRead<T>(
 
   if (existing) return existing as Promise<T>;
 
-  const generation = cacheGeneration;
+  const generation = readGeneration(path);
   const pending = send(path, schema, init).then((value) => {
     // 떠난 뒤에 캐시를 버린 일이 있으면 적지 않는다 — 옛 답이 새 캐시가 된다.
-    if (generation === cacheGeneration) readCache.set(path, { at: Date.now(), value });
+    if (generation === readGeneration(path) && inFlightReads.get(path) === pending) {
+      readCache.set(path, { at: Date.now(), value });
+    }
 
     return value;
   });
@@ -376,36 +420,64 @@ function startRead<T>(
  * 둘러보기에서 62번) 캐시가 있는 동안에는 바로 그린다. 오래된 값을 그대로 두지는
  * 않는다 — `READ_FRESH_MS`를 넘긴 값은 화면에 즉시 주면서 뒤에서 다시 받아 고친다.
  *
- * **무언가를 바꾼 뒤에는 캐시를 버린다.** 쓰기(POST · PATCH · DELETE)가 성공하든
+ * **무언가를 바꾼 뒤에는 영향받는 캐시를 버린다.** 쓰기가 성공하든
  * 실패하든 지운다 — 실패한 줄 알았는데 서버에는 남는 경우가 있고, 그때 옛 목록을
  * 계속 보여주면 사람이 같은 일을 두 번 한다.
  */
 async function request<T>(
   path: string,
   schema: ZodType<T>,
-  init: RequestInit & { auth?: boolean } = {}
+  init: RequestInit & { auth?: boolean } = {},
+  refresh?: ReadRefresh<T>
 ): Promise<T> {
+  const token = await loadToken();
+  refresh?.onRefreshing(false);
+  if (token !== cacheToken) {
+    clearReadCache();
+    cacheToken = token;
+  }
   const method = (init.method ?? 'GET').toUpperCase();
 
   if (!isCacheableRead(path, method)) {
     try {
       return await send(path, schema, init);
     } finally {
-      if (method !== 'GET') clearReadCache();
+      if (method !== 'GET') invalidateAfterWrite(path);
     }
   }
 
   const hit = readCache.get(path);
   const age = hit ? Date.now() - hit.at : Number.POSITIVE_INFINITY;
 
-  if (hit && age < READ_TTL_MS) {
+  const reference = REFERENCE_PATHS.has(path);
+  const ttl = reference ? REFERENCE_TTL_MS : refresh ? OBSERVED_READ_TTL_MS : READ_TTL_MS;
+  if (hit && age < ttl && !refresh?.force) {
     // 조금 지난 값은 화면에 바로 주고, 다음 화면이 새 값을 받도록 뒤에서 고쳐둔다.
-    if (age >= READ_FRESH_MS) void startRead(path, schema, init).catch(() => undefined);
+    if (!reference && age >= READ_FRESH_MS) {
+      const generation = readGeneration(path);
+      refresh?.onRefreshing(true);
+      void startRead(path, schema, init)
+        .then((value) => { if (generation === readGeneration(path)) refresh?.onValue(value); })
+        .catch(async (error: Error) => {
+          const currentToken = await loadToken();
+          const revoked = currentToken === null && error instanceof ApiError && error.status === 401;
+          if ((currentToken === token && generation === readGeneration(path)) || revoked) refresh?.onError(error);
+        })
+        .finally(async () => {
+          const currentToken = await loadToken();
+          if (currentToken === token || currentToken === null) refresh?.onRefreshing(false);
+        });
+    }
 
     return hit.value as T;
   }
 
-  return startRead(path, schema, init);
+  refresh?.onRefreshing(true);
+  try {
+    return await startRead(path, schema, init);
+  } finally {
+    refresh?.onRefreshing(false);
+  }
 }
 
 /** 서버가 켜둔 로그인 방법. 앱이 짐작하지 않는다. */
@@ -497,30 +569,12 @@ export async function setDisplayName(displayName: string | null) {
 }
 
 export async function getCurrentUser() {
-  const me = await request('/v1/me', currentUserSchema);
-  // 로더가 닉네임·결정 완료 업종을 읽는다 — 그 때문에 다시 부르지 않도록 적어둔다.
-  rememberCurrentUser(me);
-  return me;
+  return request('/v1/me', currentUserSchema);
 }
 
-/**
- * 홈이 필요로 하는 다섯 가지(회원 · 알림 · 많이 확인된 곳 · 담아둔 후보 · 오늘의
- * Pick)를 한 번에 받는다. 서버가 안에서 병렬로 모은 것이다 — 기기가 인터넷을
- * 다섯 번 왕복하던 것을 한 번으로 줄인다. 비회원도 부를 수 있다.
- */
+/** 홈 데이터를 미리 받으면 인증 확인과 병렬로 준비할 수 있다. */
 export async function getAppBootstrap(): Promise<AppBootstrapResponse> {
-  const boot = await request('/v1/app/bootstrap', appBootstrapResponseSchema);
-  if (boot.member) {
-    rememberCurrentUser(boot.member);
-    /*
-     * 여기 담겨 온 «나»는 서버가 `/v1/me`를 그대로 불러 넣은 것이다(apps/api
-     * routes/app.ts). 같은 답을 그 주소 자리에도 적어두면 Pick · 웨딩일정 · MY가
-     * 화면을 열자마자 `getCurrentUser()`로 한 번 더 왕복하지 않는다 — 그 세 화면은
-     * «나»를 받고 나서야 제 목록을 물으므로, 이 한 번이 통째로 순서를 늦춘다.
-     */
-    seedReadCache('/v1/me', boot.member);
-  }
-  return boot;
+  return request('/v1/app/bootstrap', appBootstrapResponseSchema);
 }
 
 /**
@@ -657,7 +711,7 @@ export async function searchVendors(input: {
   sort?: VendorSort;
   /** 몇 곳까지 받을 것인가. 안 넘기면 서버 기본값(20). 수만 필요하면 1로 줄인다. */
   limit?: number;
-}): Promise<VendorSearchResponse> {
+}, refresh?: ReadRefresh<VendorSearchResponse>): Promise<VendorSearchResponse> {
   const query = new URLSearchParams();
 
   for (const [key, value] of Object.entries(input)) {
@@ -668,7 +722,7 @@ export async function searchVendors(input: {
 
   const suffix = query.size > 0 ? `?${query.toString()}` : '';
 
-  return request(`/v1/vendors${suffix}`, vendorSearchResponseSchema);
+  return request(`/v1/vendors${suffix}`, vendorSearchResponseSchema, {}, refresh);
 }
 
 /**

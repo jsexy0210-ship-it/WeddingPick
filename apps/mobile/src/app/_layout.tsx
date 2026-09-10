@@ -202,19 +202,9 @@ function RootLayoutContent() {
         return;
       }
 
-      /*
-       * 로그인한 사람은 서버가 답한다. **두 가지를 한꺼번에 묻는다**(2026-09-09).
-       *
-       * 첫 화면을 정하는 데는 `/v1/me`만 있으면 되지만, 홈으로 갈 사람은 그
-       * 직후에 홈이 `/v1/app/bootstrap`을 다시 묻는다. 순서대로 두면 스플래시가
-       * 끝난 뒤 빈 홈을 한 번 더 기다리게 된다 — 왕복 두 번이 줄줄이 이어진다.
-       * 같이 보내면 스플래시를 보여주는 동안 둘 다 끝나고, 홈은 읽기 캐시에서
-       * 곧바로 받아 그린다(api/client.ts). 실패는 어느 쪽도 부팅을 막지 않는다.
-       */
-      const [me] = await Promise.all([
-        getCurrentUser().catch(() => null),
-        getAppBootstrap().catch(() => undefined),
-      ]);
+      // 홈 데이터는 미리 받되, 첫 화면 진입은 회원 확인이 끝나는 즉시 진행한다.
+      void getAppBootstrap().catch(() => undefined);
+      const me = await getCurrentUser().catch(() => null);
 
       if (me) {
         setEntry(me.setupComplete ? 'app' : 'setup');
