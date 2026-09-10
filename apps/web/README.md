@@ -51,3 +51,27 @@ npm run build --workspace @weddingpick/web
 웹 테스트는 출시 상태, 가상 데이터 미노출, 공유 아이콘, 도메인 정보 규칙을 검증합니다. 공개 페이지는 360·390·430·768·1024·1280·1440px에서 가로 넘침, 기능 설명 순서, 내부 링크와 FAQ 키보드 조작을 브라우저로 확인합니다.
 
 Render의 `weddingpick-web` 정적 서비스가 이 산출물을 배포합니다. 배포 요청 성공과 운영 화면 반영은 별도로 확인해야 합니다.
+
+## 링크 미리보기 이미지
+
+카카오톡·슬랙에 주소를 붙이면 뜨는 카드(OG 카드)의 그림은 `public/assets/weddingpick-og.png`이고, 그 원본은 같은 폴더의 `.svg`다.
+
+**그림 안의 글자를 손으로 고치지 않는다.** 문구는 `spec/strings.ko.json`의 랜딩 히어로에서, 색은 `spec/tokens.json`에서 온다(`src/og-image.ts`). 손으로 적어 두면 랜딩 문구를 바꿀 때 한쪽만 바뀌고, 그림 안의 글자라 아무도 눈치채지 못한다 — 실제로 랜딩이 「웨딩 준비, 하나씩 쉽게 골라봐요」로 바뀐 뒤에도 카드는 「확인하고 비교해서 골라요」를 내보내고 있었다.
+
+문구가 바뀌면 두 단계로 다시 만든다.
+
+```sh
+npm run og --workspace @weddingpick/web        # SVG를 다시 만든다
+```
+
+PNG는 브라우저와 한글 폰트가 있어야 굽는다. 크롤러가 SVG를 읽지 않아 실제로 나가는 것은 PNG다.
+
+```sh
+sudo apt-get install -y fonts-nanum && fc-cache -f
+printf '<!doctype html><meta charset="utf-8"><style>html,body{margin:0}svg{display:block}</style>' > /tmp/og.html
+cat apps/web/public/assets/weddingpick-og.svg >> /tmp/og.html
+chromium --headless --no-sandbox --hide-scrollbars --force-device-scale-factor=1 \
+  --window-size=1200,630 --screenshot=apps/web/public/assets/weddingpick-og.png file:///tmp/og.html
+```
+
+`og-image.test.ts`가 저장된 SVG와 지금 문구로 만든 SVG가 같은지, PNG가 1200×630인지 본다. 다시 굽지 않고 문구만 바꾸면 테스트가 막는다.
