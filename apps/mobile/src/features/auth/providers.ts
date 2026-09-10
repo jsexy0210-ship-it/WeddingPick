@@ -20,7 +20,7 @@ import { UNDER_AGE_SIGN_IN_MESSAGE } from '@/features/auth/sign-in-handoff';
 /**
  * 인가 코드를 세션으로 바꾼다. 서버가 만 14세 미만으로 판정하면(`under_age`,
  * v3.22 SPEC 3.5) 정해진 문장으로 바꿔 던진다 — 부팅 경로는 실패를 문장 하나로만
- * 넘기므로, 그 경로에서도 WP-AUTH-010으로 갈 수 있어야 한다.
+ * 넘기므로, 그 경로에서도 WP-AUTH-009으로 갈 수 있어야 한다.
  */
 async function exchangeKakaoCode(
   input: Parameters<typeof signInWithAuthorizationCode>[0]
@@ -246,7 +246,7 @@ export function hasKakaoReturn(): boolean {
  * 이용 불가」로 설정하면, 14세 미만이 로그인할 때 카카오가 동의 화면을 띄우기도
  * 전에 `access_denied`로 되돌려 보낸다. 그것을 취소로 처리하면 아무 일도 없었던
  * 것처럼 로그인 화면에 남아, 그 사람은 왜 안 되는지 모른 채 계속 시도한다.
- * 이유는 `error_description`에 실려 온다 — 그 경우에는 WP-AUTH-010으로 보낸다.
+ * 이유는 `error_description`에 실려 온다 — 그 경우에는 WP-AUTH-009으로 보낸다.
  */
 /**
  * 카카오가 나이 때문에 막은 것인가.

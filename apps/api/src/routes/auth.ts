@@ -72,21 +72,21 @@ export function registerAuthRoutes(app: FastifyInstance, context: AppContext): v
     }
 
     /*
-     * 연령대(v3.22 SPEC 3.5). 판정 하나만 꺼내고 문자열은 여기서 버린다 —
+     * 나이 판정. 연령대에서 판정 하나만 꺼내고 문자열은 여기서 버린다 —
      * `signIn`에 넘기기 전에 지워야 identities에도 남지 않는다.
      *
      *   있음 · 14세 이상 → 체크박스 없이 통과(age_verified)
-     *   있음 · 미만      → 계정을 만들지 않고 403 under_age(앱은 WP-AUTH-010)
+     *   있음 · 미만      → 계정을 만들지 않고 403 under_age(앱은 WP-AUTH-009)
      *   없음             → 체크박스 그대로
      */
-    const ageVerdict = ageVerdictFromRange(identity.profile?.ageRange);
+    const verdict = ageVerdictFromRange(identity.profile?.ageRange);
 
     if (identity.profile) {
       const { ageRange: _dropped, ...rest } = identity.profile;
       identity.profile = rest;
     }
 
-    if (ageVerdict === 'under_age') {
+    if (verdict === 'under_age') {
       // 아무것도 만들지 않았다. 지울 것도 없다.
       throw new ApiError('under_age', AGE_BLOCKED_NOTICE);
     }
@@ -98,7 +98,7 @@ export function registerAuthRoutes(app: FastifyInstance, context: AppContext): v
       context.config.operatorSessionTtlDays
     );
 
-    if (ageVerdict === 'verified') {
+    if (verdict === 'verified') {
       await markAgeVerified(context.pool, session.userId);
     }
 

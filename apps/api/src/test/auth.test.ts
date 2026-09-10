@@ -16,7 +16,7 @@ function fakeCodeProvider(identity: VerifiedIdentity): IdentityProvider {
  * 카카오 연령대. 핸드오프 v3.22 SPEC 3.5 «카카오에서 받는 것».
  *
  * ```
- * age_range 있음    14세 이상 → 체크박스 없이 통과 · 미만 → WP-AUTH-010
+ * age_range 있음    14세 이상 → 체크박스 없이 통과 · 미만 → WP-AUTH-009
  * age_range 없음    체크박스 그대로
  * ```
  *
