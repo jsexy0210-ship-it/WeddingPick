@@ -422,12 +422,17 @@ export type SessionEntry = { activated: boolean; setupComplete: boolean };
 export async function signIn(
   provider: 'apple' | 'google',
   idToken: string,
-  profileName?: string
+  profileName?: string,
+  ageAcknowledged?: boolean
 ): Promise<SessionEntry> {
   const session = await request(
     '/v1/auth/sessions',
     createSessionResponseSchema,
-    { method: 'POST', body: JSON.stringify({ provider, idToken, profileName }), auth: false }
+    {
+      method: 'POST',
+      body: JSON.stringify({ provider, idToken, profileName, ageAcknowledged }),
+      auth: false,
+    }
   );
 
   await saveToken(session.token);
@@ -444,6 +449,12 @@ export async function signInWithAuthorizationCode(input: {
   state: string;
   redirectUri: string;
   codeVerifier?: string;
+  /**
+   * 로그인 화면의 «만 14세 이상이에요» 확인. 서버는 **제공자가 연령대를 주지
+   * 않았을 때만** 이 값을 본다 — 제공자가 미달로 판정한 사람을 이 값이 뒤집지
+   * 못한다. 보내지 않으면 확인받지 못한 것으로 본다.
+   */
+  ageAcknowledged?: boolean;
 }): Promise<SessionEntry> {
   const session = await request('/v1/auth/sessions', createSessionResponseSchema, {
     method: 'POST',
@@ -534,11 +545,13 @@ export async function getSignupState() {
 }
 
 /**
- * 만 14세 확인과 필수 동의로 가입을 마무리한다. 통합정책 v3.13 §3.5 —
- * `ageVerified`는 로그인 화면(WP-AUTH-001)의 체크박스 값이다. 생년월일은
- * 받지 않는다.
+ * 필수 동의로 가입을 마무리한다. 통합정책 v3.13 §3.5.
+ *
+ * **나이는 보내지 않는다**(2026-09-10). 만 14세 확인은 로그인이 이미 했고 결과는
+ * 서버에 있다 — 예전에는 이 자리에 `ageVerified: true`를 늘 넣어 보냈고, 서버가
+ * 그것으로 관문을 지켰다. 앱이 채우는 값은 관문이 될 수 없다.
  */
-export async function completeSignup(input: { ageVerified: boolean; consents: string[] }) {
+export async function completeSignup(input: { consents: string[] }) {
   return request('/v1/me/signup', signupStateSchema, {
     method: 'POST',
     body: JSON.stringify(input),

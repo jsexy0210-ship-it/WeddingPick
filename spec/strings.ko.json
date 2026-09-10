@@ -698,6 +698,8 @@
     "auth.login.terms": "시작하면 {terms}과 {privacy}에 동의하게 돼요",
     "auth.login.termsLabel": "이용약관",
     "auth.login.privacyLabel": "개인정보처리방침",
+    "auth.login.ageConfirm": "만 14세 이상이에요",
+    "auth.login.ageConfirmNotice": "만 14세 이상인지 확인하면 시작할 수 있어요",
     "auth.email.title": "이메일을\n알려주세요",
     "auth.email.label": "이메일",
     "auth.email.invalid": "이메일 주소를 다시 확인해주세요",

@@ -1,5 +1,14 @@
 # WeddingPick 문서
 
+작업 시작은 [AI_START_HERE.md](../AI_START_HERE.md), 확인된 현재 상태는 [PROJECT_STATUS.md](../PROJECT_STATUS.md)를 따른다. 최신 사용자 지시가 문서보다 우선한다.
+
+## 2026-09-10 검수 자료
+
+- [앱·관리자 기능 검수](INFORMATION_AUDIT_2026-09-10.md)
+- [최신 디자인 ZIP 검수](DESIGN_ZIP_AUDIT_2026-09-10.md) · [접수 기록과 적용 경계](design-handoff/INTAKE-2026-09-10.md)
+- [인프라 접근·연결 점검](INFRA_ACCESS_AUDIT_2026-09-10.md)
+- [저장소 정리 기록](REPOSITORY_CLEANUP_2026-09-10.md)
+
 ## 기준 문서 — 계열이 둘이다
 
 **번호가 둘 다 `v3.x`지만 같은 줄이 아니다.** 서로 다른 문서 계열이고 각자 최신판이 있다.
@@ -53,7 +62,7 @@
 | [archive/통합정책 v3.10](archive/통합정책%20v3.10) | 과거본 | 기준이 아니다 |
 | [05-product-spec.md](05-product-spec.md) | 개발용 — Phase 1 범위·화면·데이터 모델 | 과거 범위 기준. 통합정책이 우선한다 |
 | [05a-screen-data-spec.md](05a-screen-data-spec.md) | 개발용 — 화면·데이터 구조 스펙 | 과거 범위 기준. 통합정책이 우선한다 |
-| [design-handoff](design-handoff) | 디자인 핸드오프 — 현재 기준은 [current/](design-handoff/current)(v3.11, 189화면, 코랄). 옛 SEED·Toss/blue v7 세대는 삭제, archive-toss-v7-README.md만 역사적 맥락으로 남겨둠 | 통합정책 v3.15와 어긋나는 부분은 통합정책을 따른다 |
+| [design-handoff](design-handoff) | Git 반영본은 [current/](design-handoff/current) v3.27. 최신 ZIP의 추가·충돌은 [접수 기록](design-handoff/INTAKE-2026-09-10.md) 참조. 화면 수를 완료율로 사용하지 않음 | 운영 정책과 시각 디자인의 적용 범위를 구분함 |
 | [AI_HANDOFF.md](AI_HANDOFF.md) | 작업 인수인계 서식 | — |
 
 ## 과거 버전 번호를 어떻게 읽을 것인가

@@ -1,152 +1,82 @@
-# WeddingPick Project Status
+# WeddingPick 프로젝트 상태
 
-> 웨딩픽의 **현재** 상태를 적는다. 세션 기록은 여기 쌓지 않는다 — 작업 이력은
-> `docs/AI_HANDOFF.md`, 그보다 오래된 것은 Git history에서 본다.
-> 작업 시작 시 `/AI_START_HERE.md` → 최신 통합정책서 → 이 문서 → 최신 코드 순으로 확인한다.
+**확인 기준: 2026-09-10 KST, `main`의 `e34193ee1644c664f107d529002ae53ef775389a`.** 이 문서는 해당 시점의 검증 결과다. 이후 작업에서는 최신 `main`과 배포 버전을 다시 확인한다. 이번 저장소 정리는 문서·자료 정합성 작업이며 아래 제품 결함의 해결이나 출시 완료를 뜻하지 않는다.
 
-- 기준 main: `97a1980` (2026-09-09)
-- 정책 기준: `docs/통합정책 v3.15` + `CLAUDE.md`의 «정책 변경» 절(위쪽이 최신, 아래보다 우선)
-- 미해결 결함 목록: `docs/AI_HANDOFF.md`의 «미해결 결함» 절
+기준 저장소는 [`jsexy0210-ship-it/WeddingPick`](https://github.com/jsexy0210-ship-it/WeddingPick)이다. 문서의 적용 범위는 [AI_START_HERE.md](AI_START_HERE.md)를 따른다. 통합정책 v3.15와 디자인 핸드오프 v3.27은 별개 계열이며, 최신 사용자 지시가 우선한다.
 
-## 현재 운영 기준
+## 제품·검수 상태
 
-- 공식 Source of Truth: GitHub `jsexy0210-ship-it/WeddingPickl`의 `main` 하나다.
-- 실제 구현 여부는 문서가 아니라 최신 코드로 확인한다.
-- 기존 구현 확인 → 재사용 → 통합/재가공 → 없는 것만 신규 개발.
-- GitHub Actions를 개발·검증·배포의 단일 컨트롤 타워로 운영한다.
-- Claude 세션은 역할 기준 5개(MASTER · FE · BE · DATA · RELEASE)만 유지하고, 루틴은 반복
-  가치가 있는 것만 남긴다. 세션·루틴 구성과 운영 규칙은 `docs/AI_HANDOFF.md`의 «세션 운영 구조» 절.
+- 앱·관리자 실제 로그인 후 주요 경로를 검수했다. 관리자 응답 계약 불일치 8개 화면과 실제 저장·작업 실행이 없는 성공 응답을 확인했다.
+- 별점·수동 가격 제보 잔존, 뒤로 이동, 지역 중복, 검수용 표본 표시 문제가 남아 있다. 구현 파일 존재를 완료 근거로 삼지 않는다.
+- 최신 사용자 디자인 ZIP 420개 파일을 구조 검증하고 주요 화면과 대조했다. ZIP 내부에도 검색·제보·나이 확인 등 명세 충돌이 있어 원본 일괄 덮어쓰기는 하지 않았다.
+- RN 셸 + 하이브리드 전환은 확정 방향이다. 전 화면 전환·동작·디자인 검수가 완료된 상태는 아니다. `apps/web`는 별도 제품으로 유지한다.
+- 전 화면 동일 상태의 390×844 픽셀 대조, 관리자 1,920×1,080 대조, 실기기 카메라·푸시·로그인, 실제 업로드·저장 결과 검증은 미완료다. 정밀 성능 수치는 미측정이다.
 
-## 인프라
+상세 증거와 재현 범위:
 
-| 대상 | 상태 |
+- [앱·관리자 통합 검수](docs/INFORMATION_AUDIT_2026-09-10.md)
+- [최신 디자인 ZIP 대조](docs/DESIGN_ZIP_AUDIT_2026-09-10.md)
+- [인프라 접근·연결 점검](docs/INFRA_ACCESS_AUDIT_2026-09-10.md)
+
+## 현재 운영 주소·인프라
+
+| 대상 | 확인한 사실과 한계 |
 |---|---|
-| GitHub | 코드·정책·Actions·Secrets 기준 |
-| Render — 운영 API | `https://weddingpickl.onrender.com`. Blueprint 밖에서 별도 관리 |
-| Render — 스테이징 API | `weddingpick-api` (`NODE_ENV=staging`, `STORAGE_DRIVER=local`). `/health` = `{"ok":true,"database":"ok"}` 확인(2026-09-05) |
-| Render — 웹 | `weddingpick-web` · `weddingpick-admin` · `weddingpick-app-web`(모바일 웹 export). 모두 free 플랜 |
-| Neon PostgreSQL | 운영 DB(스키마 정상 · 96/93) + `weddingpick_staging`(73/92 — 19개 밀림). 아래 «운영 DB» 참조 |
-| Naver Cloud Object Storage | `weddingpick-test`. 업로드/다운로드/삭제 테스트 성공 |
-| Expo / EAS | Android·iOS 빌드 |
-| Apple Developer / App Store Connect | ASC API Key `EAS Build` 등록 완료 |
-| Google Play Console | 개발자 계정 본인확인 이의 제기 결과 대기 중 |
+| GitHub | 저장소·Actions 실행·로그 조회 가능. 조회 가능과 배포 통제 완료는 별개 |
+| Render 운영 API | `https://weddingpickl.onrender.com`, Live `e34193e`. Free·Ohio 리전 |
+| Render 앱 웹·관리자 | `https://weddingpick-app-web.onrender.com`, 관리자는 같은 주소의 `/admin`. Live `e34193e` |
+| Render 웹사이트 | `https://weddingpick-web.onrender.com`, Live `e34193e` |
+| Neon | 프로젝트 콘솔 접근, production 브랜치의 `neondb`·`weddingpick_staging` 존재 확인. 이번 점검에서는 직접 SQL 실행 안 함 |
+| NCP Object Storage | `weddingpick-test` 버킷 및 계정 권한 조회. 목록 공개 꺼짐. 이번 점검의 업로드·다운로드·삭제 왕복 검증은 미실행 |
+| Expo/EAS | Owner 계정·프로젝트·기존 빌드 조회 가능. 최근 조회 빌드는 아래 표 참조 |
+| Kakao Developers | 앱 콘솔 접근. `age_range` 필수 동의·`birthyear` 권한 없음 확인. 현재 카카오 단일 로그인 구현과 구분해 동의·안내 문서를 맞춰야 함 |
+| App Store Connect | iOS 1.0 ‘제출 준비 중’, TestFlight 1.0.0 빌드 2 ‘제출 준비 완료’. 스토어 출시·실기기 검증 완료가 아님 |
+| Google Play | 앱 상태 ‘임시’. 앱 설정·비공개 테스트·프로덕션 액세스 절차 미완료 |
+| Cloudflare | 연결 계정 인증 가능, zone 목록 비어 있음. 현재 사용하지 않는 도메인 부재를 장애로 분류하지 않음 |
 
-환경변수의 원본은 `infra/render-env.yml`이고 `.github/workflows/render-env-sync.yml`이
-Render에 밀어넣는다. `render.yaml`의 `envVars`는 반영되지 않는다(Blueprint sync API 미동작).
+`weddingpick.kr`은 **보유한 커스텀 도메인이지만 현재 미사용**이다. 폐기·삭제 대상이 아니며, DNS 연결·커스텀 도메인 전환을 현재의 필수 작업으로 두지 않는다. 위 `onrender.com` 주소로 검수한다.
 
-## 완료
+Render의 환경변수 선언은 [infra/render-env.yml](infra/render-env.yml), 반영 경로는 [render-env-sync.yml](.github/workflows/render-env-sync.yml)이다. 서비스 표시 이름과 URL 호스트는 다를 수 있으므로 오래된 이름만으로 리소스를 삭제하거나 대체하지 않는다. 남은 별도 DB·관리자 리소스의 사용 여부는 추가 확인 대상이다.
 
-- Neon 연결·마이그레이션 적용 — 운영은 저장소의 92개가 전부 적용됨(2026-09-09 실측). 스테이징은 73까지
-- Object Storage 연결·왕복 테스트
-- 일정(`wedding_events`, 0061)·지도 보기(업체 좌표, 0062) 백엔드·화면. 업체 검색·상세는
-  카카오맵 외부 링크를 쓴다. 좌표 백필은 `scripts/geocode-vendors.mts` 수동 실행
-- 로그인 전면 개편 v3.12 — 카카오 + 이메일 2종(#86·#89·#90·#91·#93)
-- 웹 링크 공유 미리보기(OG/Twitter) — 운영 검증 완료(#64)
-- 홍보 자동화 파이프라인 골격 — 스키마·CLI·관리자 엔드포인트 8개·0072 마이그레이션(#62 계열)
-- 공공데이터 수집 파이프라인 — 이천·제천 CSV, 전국 상권 CSV 어댑터, 출처별 최신성·중복·잠금
-- Render 환경변수 자동 반영(#96), 서버 로그 활성화(#100), `public-data.yml` 무효 처리 수정(#88)
-- 저장소 정리(2026-09-07) — Open PR은 진행 중인 #101만 남김. remote branch 60개는
-  삭제 대상으로 판정했으나 **아직 남아 있다**(세션 프록시가 ref 삭제를 막았다).
-  삭제 명령과 근거는 `docs/AI_HANDOFF.md`의 «삭제 대기 브랜치» 절
+## DB 확인 결과
 
-## 미완료 · 장애
+운영 API `/health`에서 `database: "ok"`, `schema.ok: true`, 적용 106개·기대 103개·미적용 0개를 확인했다. 저장소 기준 밖의 이력 3개는 이전 번호 변경 기록으로 설명돼 있으며 임의 삭제하지 않는다. 이 결과는 관리자 응답 계약·전체 DB 기능의 정상 증거가 아니다.
 
-**출시 차단 3건과 그 아래 결함 목록은 `docs/AI_HANDOFF.md`의 «미해결 결함» 절이 정본이다.**
-여기서는 인프라·외부 계정 쪽만 적는다.
+[DB Inventory 실행 34476381128](https://github.com/jsexy0210-ship-it/WeddingPick/actions/runs/34476381128)은 전체 success 표시와 달리 `PRODUCTION_DATABASE_URL` 대상 조회에서 호스트 이름 해석 오류 `EAI_AGAIN`을 남겼다. 공개 API health 성공과 GitHub의 별도 DB 연결 실패를 구분해야 한다. Secret 변경이나 migration은 이번 점검에서 실행하지 않았다.
 
-### iOS
+스테이징 DB가 운영과 같은 Neon 브랜치에 존재함은 확인했지만, 최신 마이그레이션 적용 수는 이번에 재검증하지 않았다. 과거 ‘73/92’를 현재 수치로 재사용하거나 상태를 모른 채 마이그레이션을 실행하지 않는다.
 
-- Release #13에서 Provisioning Profile에 Sign in with Apple capability/entitlement가
-  없어 빌드 실패. App ID `kr.weddingpick.app`에 활성화 후 EAS credentials에서 Profile 재생성 필요.
-- 추측으로 Apple Credential/API Key를 재생성하지 않는다.
+## 웹·네이티브 버전 차이
 
-### Google Play
-
-- 계정 제한 해제 전 production submit을 강제 실행하지 않는다.
-- 해제 후 기존 release workflow에 제출 자동화를 연결한다.
-
-### 운영 DB
-
-2026-09-09 `db-status.yml`(읽기 전용)로 세 대상을 실측했다. 앞선 「스테이징만 최신」은 뒤집혔다.
-
-| 대상 | 결과 |
+| 대상 | 최근 확인한 배포·빌드 |
 |---|---|
-| `DATABASE_URL`(운영) | **적용 96 / 기대 93 — 밀린 것 없음.** 저장소에 파일이 없는 기록 3개는 정체 확인됨(아래) |
-| `STAGING_DATABASE_URL` | **적용 73 / 기대 92 — 19개 밀림**(0074~0091a). 지금 코드가 기대하는 테이블이 없다 |
-| `PRODUCTION_DATABASE_URL` | **저장소 워크플로에서 쓸 수 없다.** Render 내부망 전용 주소라 GitHub Actions에서 이름 풀이 실패(`getaddrinfo EAI_AGAIN`) |
+| Render API·앱 웹·웹사이트 | 2026-09-10 22:19:16 KST, `e34193e` |
+| EAS Android preview | 2026-09-04 생성, `33701bf`, FINISHED |
+| EAS Android production | 2026-09-04 생성, `e4e3327`, FINISHED |
+| EAS iOS production | 2026-09-03 생성, `3e10bbc`, FINISHED |
 
-- **운영 스키마는 정상이다.** 저장소가 기대하는 모양과 같다.
-- 저장소에 없는 3개(`0052_mission_draw` · `0059_wedding_events` · `0060_vendor_geo`)는 **번호를 다시 매긴 흔적**이고 사고가 아니다. 새 번호 쪽에 멱등 가드(`IF NOT EXISTS` · `duplicate_object` 예외)가 들어 있어 재적용이 무해한 no-op이었다. 근거와 대조표는 `docs/AI_HANDOFF.md`의 «DB-1» 절. **그 세 행은 지우지 않는다.**
-- 스테이징을 92까지 올리는 것은 사용자 승인 대기.
+EAS 최근 5개 조회 기준이다. 실제 기기 설치 버전과 TestFlight 빌드 연결은 미확인이다. 과거 iOS 빌드 실패 기록만으로 현재 인증서·권한 오류가 계속된다고 단정하거나 자격증명을 재생성하지 않는다.
 
-### 검증 못 한 것
+## CI/CD와 속도 확인 범위
 
-- 실기기(Android/iOS) 로그인·지도 링크 검증
-- 메신저 앱 내부 링크 미리보기 캐시 갱신
-- `weddingpick.kr` DNS 연결 후 `SITE_ORIGIN` 변경 및 재검증
-- 홍보 파이프라인의 DB 통합 테스트(격리 PostgreSQL 필요), 관리자 화면 실제 실행
-
-## CI/CD 구조
-
-```
-일반 개발   수정 → push → CI → 필요한 DB migration → Render 자동 배포 → health check
-앱 릴리즈   Release workflow 1회 → EAS Production Build → iOS/Android → Store Submit
-```
-
-- 앱은 매 commit마다 production build하지 않는다.
-- CI·migration·deploy·health check 중 하나라도 실패하면 이후 production 단계를 중단한다.
-
-워크플로 10개(`.github/workflows/`)는 목적이 각각 다르다 — 중복 없음.
-
-| 파일 | 언제 도는가 |
-|---|---|
-| `main.yml` | main push · PR → CI. workflow_dispatch → staging/production 배포 |
-| `release.yml` | 수동 — EAS Production Build + 스토어 제출 |
-| `android-apk.yml` | 수동 — EAS 없이 로컬 gradle로 검수용 APK |
-| `eas-apk-preview.yml` | 수동 — EAS preview 프로필로 설치용 APK |
-| `eas-init.yml` | 수동 — EAS 프로젝트 연결(사실상 1회성, 계정 이전 시 재사용) |
-| `db-migrate.yml` | 수동 — 운영 Neon 마이그레이션 |
-| `db-migrate-staging.yml` | 수동 — `STAGING_DATABASE_URL` 대상 |
-| `render-env-sync.yml` | `infra/render-env.yml` 변경 push · 수동 |
-| `storage-test.yml` | 수동 — S3 호환 스토리지 왕복 점검 |
-| `public-data.yml` | 수동 · 토요일 크론 — 공공데이터 수집·검증 |
+- GitHub CI와 Render main 자동배포는 독립 경로다. Actions 승인 대기 중 Render가 같은 커밋을 배포한 사례를 확인했다. ‘CI → migration → 배포’ 순서가 강제된다고 보고하지 않는다.
+- HTTP 200만으로 health를 통과시키는 검사와 실제 `schema.ok` 판정이 다를 수 있다. 배포 관문과 DB 검사 실패 전파를 함께 보완해야 한다.
+- 워크플로 목록과 트리거는 [.github/workflows/](.github/workflows/)의 현재 파일이 기준이다. 과거의 ‘10개·중복 없음’ 목록은 현황 근거에서 제외했다.
+- Render Free의 유휴 기동 지연 가능성을 콘솔에서 확인했다. 운영 API·DB·스토리지가 여러 리전에 분포한다. 실제 응답 시간·왕복 지연은 추가 계측 대상이다.
+- 앱 진입의 장시간 요청 대기·인증 오류 구분과 관리자 요청 타임아웃 문제는 코드 검수 결과이며, 측정된 속도 수치가 아니다.
 
 ## 다음 작업 우선순위
 
-1. **N01** — 재현 시 Render 로그의 스택·SQL 원문 확보 → 검증 성공 이후 DB 경로 셋 중 하나로 확정 → 수정.
-   스키마 갈래는 닫혔다. 범위는 `docs/AI_HANDOFF.md`의 «N01 좁힌 범위»
-2. **G04** — `CORS_ORIGINS`에 admin 출처·커스텀 도메인 추가. PATCH 메서드는 #134로 해소됨
-3. **G02** — main 보호 규칙에 필수 PR + head CI 성공 추가
-4. kill switch 6종(AI 3 · 통계 · 보상 · 자동게시)을 읽는 쪽 만들기(잔존-A′). 수집 스위치는 #134로 연결됨
-5. 스테이징 DB를 92까지(승인 후) — 그래야 「스테이징에서 먼저 검수」가 성립한다
-6. iOS Sign in with Apple 권한·Provisioning Profile 수정 후 Production Build·TestFlight
-7. 환경 분리(G05) — `docs/release-env-split.md` §3의 0 → 0b → 1 → 2. 사용자 결정으로 나누는 날까지 보류
-8. Google Play 계정 제한 해제 후 Android 제출 자동화
-9. `SBIZ_API_KEY`(운영계정, 활용기간 2026-09-08~2028-09-08) GitHub Secrets 등록 →
-   `public-data.yml`의 `lookup_level`로 업종코드 조사 → 저장소 Variables `SBIZ_UPJONG_CODES` 등록
-   (`collect.ts`의 하드코딩 `'Q'`는 제거했다 — 코드는 이제 설정에서만 온다)
-10. 카카오 REST API 키 발급 → 업체 좌표 백필
+1. 관리자 API·화면의 공유 응답 계약과 렌더링 오류, FAQ 저장·재계산의 실제 실행을 연결한다. 정상 0건·미연결·오류를 구분한다.
+2. 배포 승인·CI·migration·health 판정을 연결하고, GitHub DB 연결 실패와 스테이징 현황을 재확인한다.
+3. 최신 디자인 원본의 화면별 충돌을 정리하고, 폐기 흐름·별점·나이 안내·이동·지역·표본 표시를 수정한다. 화면 ID별 증거를 남긴다.
+4. 인증·초기 로딩 대기와 오류 표시를 개선하고 실제 기기·네트워크에서 성능을 측정한다.
+5. 격리 환경의 업로드·저장·작업 완료 시험 후 RN 권한·카메라·푸시를 실기기로 검수한다. 확인된 소스 버전으로 빌드·스토어 절차를 이어간다.
 
-## 제품 범위 결정
-
-- (2026-09-05) **플래너 기능·광고 제휴 기능 삭제 확정.** 우선순위 P2 — 상세는
-  `CLAUDE.md`의 «정책 변경 — 2026-09-05» 절. 착수 전 영향범위 조사·계획 보고가 선행된다.
-- (2026-09-02) **초기 출시는 예식 당일까지만 지원한다.** 예식 완료(post-wedding)
-  이후 화면·CTA·API는 이번 출시 범위 밖이다. 근거는 통합정책 D-4.
+광고 실운영 전환 등 별도 확정이 필요한 제품 결정은 기존 정책·사용자 지시에 따른다. 콘솔 접근이나 문서 정리가 그 실행 승인을 대체하지 않는다.
 
 ## 갱신 규칙
 
-이 문서는 **현재 상태**만 담는다. 세션에서 무엇을 했는지는 `docs/AI_HANDOFF.md`에 적고,
-여기에는 그 결과로 바뀐 상태만 반영한다. 과거 세션 기록을 최신 완료 근거로 쓰지 않는다.
-운영 기록과 코드·실기기 검증 결과를 구분하고 확인 날짜·커밋을 남긴다.
+현재 상태와 미완료 검증만 유지하고 과거 작업은 검수 보고서·Git 이력으로 추적한다. 새 검증으로 상태를 바꿀 때 확인 날짜·커밋·환경·증거를 함께 적는다. `docs/sync/`의 체크리스트·작업 상태·화면 점검도 같은 증거로 갱신한다.
 
-다음이 바뀌면 작업과 함께 갱신한다 — 기능 완료 · 인프라 연결/제거 · 배포 구조 변경 ·
-장애 발생/해결 · 외부 심사나 계정 상태 변경 · 작업 우선순위 변경.
-단순 리팩터링처럼 상태 변화가 없는 작업은 갱신하지 않아도 된다.
-
-P0 항목별 완료 기준과 검증 증거가 확정되기 전에는 P0 진척률을 미측정으로 표시한다.
-`npm run progress`의 전체 문서 공정률은 P0 출시 준비율이 아니다.
-
-## 마지막 상태 기준일
-
-2026-09-09
+출시 준비율은 완료 기준과 실제 검증 증거가 확정될 때까지 **미측정**이다. 문서 공정률·파일 수·CI 통과율을 출시 준비율로 바꾸지 않는다.
