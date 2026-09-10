@@ -1,0 +1,69 @@
+# 운영 권한을 켜고 끈다.
+#
+# **관리자 로그인은 권한을 주지 않는다.** `POST /v1/admin/login`이 하는 일은
+# 「이 사람이 그 아이디의 주인인가」까지고, 운영 권한(`is_operator`)은 사람이 따로
+# 켠다 — 로그인 경로가 권한까지 줄 수 있으면 그 한 곳이 뚫렸을 때 권한도 함께
+# 넘어간다.
+#
+# 그 「따로」가 지금까지 CLI뿐이었다. 서버 셸에 들어갈 수 없으면 첫 로그인 뒤
+# 403에서 더 나아갈 수 없다 — 로그인은 되는데 들어갈 수는 없는 상태다. 이 워크플로가
+# 그 한 걸음을 대신한다.
+#
+# 사용자 id는 첫 로그인 실패 응답이 알려준다.
+name: 관리자 운영 권한
+
+on:
+  workflow_dispatch:
+    inputs:
+      user_id:
+        description: '사용자 id (첫 로그인 응답이 알려준다)'
+        type: string
+        required: true
+      off:
+        description: '켜지 않고 내린다'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: admin-operator
+  cancel-in-progress: false
+
+jobs:
+  grant:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: 권한 바꾸기
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          USER_ID: ${{ github.event.inputs.user_id }}
+          OFF: ${{ github.event.inputs.off }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DATABASE_URL:-}" ]; then
+            echo "::error::DATABASE_URL 시크릿이 없다."
+            exit 1
+          fi
+          # 꼴을 먼저 본다. 틀린 값을 넘기면 SQL이 uuid 캐스팅에서 죽는데,
+          # 그 오류 메시지는 무엇이 잘못됐는지 말해주지 않는다.
+          if ! printf '%s' "$USER_ID" | grep -Eq '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'; then
+            echo "::error::사용자 id가 uuid 꼴이 아니다. 첫 로그인 응답에 적힌 값을 그대로 넣는다."
+            exit 1
+          fi
+          if [ "$OFF" = "true" ]; then
+            npm run retention --workspace @weddingpick/api -- --operator "$USER_ID" --off
+          else
+            npm run retention --workspace @weddingpick/api -- --operator "$USER_ID"
+          fi
