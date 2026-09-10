@@ -1,0 +1,143 @@
+{
+  "note": "Static literal/template apiFetch mapping. Dynamic segments collapse to *. Missing entries require manual review; registration does not imply persistence or response compatibility.",
+  "calls": 60,
+  "missing": [
+    {
+      "file": "apps/mobile/src/app/admin/ads-gate.tsx",
+      "line": 75,
+      "method": "POST",
+      "url": "/v1/admin/ads-gate/approve",
+      "registered": false,
+      "pendingGuardFile": true
+    },
+    {
+      "file": "apps/mobile/src/app/admin/ads.tsx",
+      "line": 82,
+      "method": "PATCH",
+      "url": "/v1/admin/ads/${id}/status",
+      "registered": false,
+      "pendingGuardFile": true
+    },
+    {
+      "file": "apps/mobile/src/app/admin/biz-queue.tsx",
+      "line": 79,
+      "method": "POST",
+      "url": "/v1/admin/biz-queue/${selected.id}/${action}",
+      "registered": false,
+      "pendingGuardFile": true
+    },
+    {
+      "file": "apps/mobile/src/app/admin/campaigns.tsx",
+      "line": 120,
+      "method": "POST",
+      "url": "/v1/admin/campaigns/${id}/${path}",
+      "registered": false,
+      "pendingGuardFile": true
+    },
+    {
+      "file": "apps/mobile/src/app/admin/data-pipeline.tsx",
+      "line": 51,
+      "method": "POST",
+      "url": "/v1/admin/data/pipeline/retry/${id}",
+      "registered": false,
+      "pendingGuardFile": true
+    },
+    {
+      "file": "apps/mobile/src/app/admin/data-pipeline.tsx",
+      "line": 63,
+      "method": "POST",
+      "url": "/v1/admin/data/pipeline/retry-all",
+      "registered": false,
+      "pendingGuardFile": true
+    },
+    {
+      "file": "apps/mobile/src/app/admin/images.tsx",
+      "line": 111,
+      "method": "POST",
+      "url": "/v1/admin/data/images/${id}/approve",
+      "registered": false,
+      "pendingGuardFile": false
+    },
+    {
+      "file": "apps/mobile/src/app/admin/images.tsx",
+      "line": 118,
+      "method": "POST",
+      "url": "/v1/admin/data/images/${id}/reject",
+      "registered": false,
+      "pendingGuardFile": false
+    },
+    {
+      "file": "apps/mobile/src/app/admin/objections.tsx",
+      "line": 79,
+      "method": "POST",
+      "url": "/v1/admin/objections/${selected.id}/${path}",
+      "registered": false,
+      "pendingGuardFile": true
+    },
+    {
+      "file": "apps/mobile/src/app/admin/queue.tsx",
+      "line": 66,
+      "method": "POST",
+      "url": "/v1/admin/verifications/${selected.id}/${action}",
+      "registered": false,
+      "pendingGuardFile": false
+    },
+    {
+      "file": "apps/mobile/src/app/admin/rebuttal.tsx",
+      "line": 58,
+      "method": "POST",
+      "url": "/v1/admin/rebuttals/${selected.id}/${action}",
+      "registered": false,
+      "pendingGuardFile": false
+    },
+    {
+      "file": "apps/mobile/src/app/admin/terms.tsx",
+      "line": 96,
+      "method": "PUT",
+      "url": "/v1/admin/terms/${activeDoc}/clauses/${editingClause.id}",
+      "registered": false,
+      "pendingGuardFile": true
+    },
+    {
+      "file": "apps/mobile/src/app/admin/terms.tsx",
+      "line": 114,
+      "method": "POST",
+      "url": "/v1/admin/terms/${activeDoc}/publish",
+      "registered": false,
+      "pendingGuardFile": true
+    },
+    {
+      "file": "apps/mobile/src/app/admin/users.tsx",
+      "line": 102,
+      "method": "GET",
+      "url": "/v1/admin/users${qs ? `?${qs}` : ''}",
+      "registered": false,
+      "pendingGuardFile": false
+    },
+    {
+      "file": "apps/mobile/src/app/admin/vendors.tsx",
+      "line": 92,
+      "method": "PATCH",
+      "url": "/v1/admin/vendors/${selected.id}/name",
+      "registered": false,
+      "pendingGuardFile": true
+    },
+    {
+      "file": "apps/mobile/src/app/admin/vendors.tsx",
+      "line": 110,
+      "method": "PATCH",
+      "url": "/v1/admin/vendors/${selected.id}/status",
+      "registered": false,
+      "pendingGuardFile": true
+    },
+    {
+      "file": "apps/mobile/src/app/admin/vendors.tsx",
+      "line": 128,
+      "method": "POST",
+      "url": "/v1/admin/vendors/${selected.id}/merge",
+      "registered": false,
+      "pendingGuardFile": true
+    }
+  ],
+  "registeredRoutes": 100
+}

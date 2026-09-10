@@ -63,3 +63,22 @@ export function isUnderAgeSignInError(error: unknown): boolean {
 
 /** WP-AUTH-009. 로그인 화면(`app/login/age-required.tsx`)과 같은 경로여야 한다. */
 export const AGE_REQUIRED_ROUTE = '/login/age-required' as const;
+
+/**
+ * 서버가 나이를 **확인하지 못했다**(`age_unverified`, 2026-09-10). 미달로 확인된
+ * 것과 다르다 — 카카오가 연령대를 주지 않아 판정할 근거가 없었다는 뜻이다.
+ *
+ * 이때는 WP-AUTH-009(이용 불가)으로 보내지 않는다. 그 화면은 「만 14세가 되면」을
+ * 말하는데, 이 사람은 미달이라고 확인된 적이 없다. 로그인 화면이 «만 14세
+ * 이상이에요» 확인을 한 번 받고 다시 시도한다.
+ *
+ * 부팅 경로는 실패를 **문장 하나**로만 넘기므로(`setPendingSignInError`) 여기서도
+ * 정해진 문장을 쓴다 — `UNDER_AGE_SIGN_IN_MESSAGE`와 같은 방식이다.
+ */
+export const AGE_UNVERIFIED_SIGN_IN_MESSAGE = '만 14세 이상인지 확인하면 시작할 수 있어요';
+
+export function isAgeUnverifiedSignInError(error: unknown): boolean {
+  if (error instanceof ApiError) return error.code === 'age_unverified';
+
+  return error instanceof Error && error.message === AGE_UNVERIFIED_SIGN_IN_MESSAGE;
+}
