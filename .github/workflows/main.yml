@@ -1,12 +1,14 @@
 # 웨딩픽 통합 파이프라인
 #
-# push(main)  → CI → DB 마이그레이션 → Render 자동 배포 → health check (staging)
+# push(main)  → CI → 승인된 DB 마이그레이션 → health check (staging)
+# Render 자동 배포는 위 순서와 독립적으로 main push를 보고 실행된다.
 # PR          → CI만 (배포 없음)
 # workflow_dispatch → staging 또는 production 수동 배포
 #
 # 필요한 GitHub Secrets:
-#   DATABASE_URL   Render PostgreSQL 연결 문자열
-#   RENDER_API_KEY 커스텀 도메인 연결에 쓴다
+#   DATABASE_URL   staging 작업의 DB 연결 문자열
+#   PRODUCTION_DATABASE_URL production 작업의 DB 연결 문자열
+# weddingpick.kr은 현재 미사용이므로 이 워크플로에서 도메인을 연결하지 않는다.
 #
 # 배포 자체는 이 파일이 걸지 않는다 — Render의 autoDeploy가 main push를 보고 돈다.
 # 환경변수는 infra/render-env.yml이 원본이고 render-env-sync.yml이 밀어넣는다.
