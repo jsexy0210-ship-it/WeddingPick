@@ -4,19 +4,21 @@
  * 시안 `22-admin-ops.dc.html` 9번. ADMIN.md — **되돌리기 가능/불가를 구분하고, 전체에
  * 영향을 주는 일괄 작업은 불가이며, 30일 보관**이다. 그 셋이 이 화면의 전부다.
  *
- * 되돌리기 자체는 아직 서버에 없다(`/v1/admin/rollback`은 조회 하나뿐). 그래서 누를 것을
- * 만들지 않는다 — 눌러도 아무 일이 없는 「되돌리기」는 되돌렸다고 착각하게 만든다.
- * 서버가 생기면 `ConfirmCard`로 무엇이 바뀌는지 보여준 뒤 진행한다.
+ * 되돌리기는 **승인과 실행 두 단계**다. 승인 전에는 실행 단추가 아예 뜨지 않는다 —
+ * 서버도 승인 없는 실행을 거부하지만(0130 `trigger_follows_approval`), 누를 수 있는데
+ * 거부당하는 단추는 「왜 안 되지」만 남긴다.
+ *
+ * 실행은 `ConfirmCard`로 무엇이 바뀌는지 보여준 뒤 진행한다.
  */
 import { useEffect, useState } from 'react';
 
 import { formatDateTimeDot } from '@/features/common/format-date';
-import { PendingBackendNotice } from '@/features/admin/pending-backend';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import {
   Card,
   CardGrid,
+  ConfirmCard,
   DataTable,
   KpiRow,
   LoadError,
@@ -76,6 +78,7 @@ const COLS: Col[] = [
   { key: 'impact', label: '영향 범위', width: 260, grow: true },
   { key: 'revertable', label: '되돌리기', width: 110 },
   { key: 'status', label: '상태', width: 100 },
+  { key: 'act', label: '조치', width: 130 },
 ];
 
 /**
@@ -91,6 +94,11 @@ export default function RollbackScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rev, setRev] = useState(0);
+  /** 단추를 눌러 실패한 것. 목록 조회 오류와 자리를 나눈다. */
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  /** 실행을 확인받는 중인 대상. 승인은 되돌릴 것이 없어 확인창 없이 간다. */
+  const [triggering, setTriggering] = useState<RollbackItem | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -113,6 +121,21 @@ export default function RollbackScreen() {
 
   const reload = () => setRev((r) => r + 1);
 
+  /* 실패를 삼키지 않는다 — 눌렀는데 아무 일도 없는 것이 성공처럼 보이면 안 된다. */
+  async function act(id: string, path: 'approve' | 'trigger') {
+    setBusy(true);
+    try {
+      await apiFetch(`/v1/admin/rollback/${id}/${path}`, { method: 'POST' });
+      setActionError(null);
+      reload();
+    } catch (e: unknown) {
+      setActionError(e instanceof Error ? e.message : '요청 실패');
+    } finally {
+      setBusy(false);
+      setTriggering(null);
+    }
+  }
+
   const items = data?.items ?? data?.snapshots ?? [];
   const canRevert = items.filter(revertable).length;
   const needsPerson = items.filter((i) => i.status === 'pending_approval' || i.status === 'anomaly_detected').length;
@@ -134,6 +157,17 @@ export default function RollbackScreen() {
         ? { v: '가능', badge: 'ok' }
         : { v: '불가', badge: 'none' },
       { v: STATUS_LABEL[item.status], badge: STATUS_KIND[item.status] },
+      /*
+       * 두 단계가 화면에서도 두 단계로 보인다. 승인 전에는 «실행»이 없고,
+       * 승인 뒤에는 «승인»이 없다 — 한 줄에 두 단추가 같이 뜨는 순간이 없다.
+       */
+      busy
+        ? { v: '…', kind: 'dim' }
+        : item.status === 'pending_approval'
+          ? { v: '롤백 승인', kind: 'brand', onPress: () => void act(item.id, 'approve') }
+          : item.status === 'anomaly_detected'
+            ? { v: '롤백 실행', kind: 'bad', onPress: () => setTriggering(item) }
+            : { v: '—', kind: 'dim' },
     ],
   }));
 
@@ -145,20 +179,23 @@ export default function RollbackScreen() {
       {!loading && !error && data ? (
         <>
           <StatusBanner
-            tone={needsPerson === 0 ? 'ok' : 'warn'}
+            tone={actionError ? 'bad' : needsPerson === 0 ? 'ok' : 'warn'}
             title={
-              needsPerson === 0
+              actionError
+                ? '조치하지 못했어요'
+                : needsPerson === 0
                 ? '사람이 되돌려야 하는 건은 없어요'
                 : `사람이 볼 변경 ${needsPerson}건이 있어요`
             }
             detail={
-              needsPerson === 0
-                ? '아래는 원하면 되돌릴 수 있는 목록이에요.'
-                : '이상이 감지됐거나 승인을 기다리는 변경이에요.'
+              actionError
+                ? actionError
+                : needsPerson === 0
+                  ? '아래는 원하면 되돌릴 수 있는 목록이에요.'
+                  : '이상이 감지됐거나 승인을 기다리는 변경이에요.'
             }
           />
 
-          <PendingBackendNotice actions="승인 · 실행" />
 
           <KpiRow
             items={[
@@ -184,6 +221,28 @@ export default function RollbackScreen() {
               <DataTable cols={COLS} rows={rows} empty="되돌릴 것이 없어요" />
             </Card>
           </CardGrid>
+
+          {/* 무엇이 바뀌는지 항목으로 보인 뒤 진행한다(v3.27). */}
+          {triggering ? (
+            <ConfirmCard
+              title="롤백을 실행할까요?"
+              body={`${triggering.name}을(를) 적용 직전 상태로 되돌려요.`}
+              items={[
+                triggering.type === 'policy'
+                  ? '정책 값이 변경 직전 값으로 지금 되돌아가요'
+                  : '되돌리기 요청만 기록돼요 — 배포 되돌리기는 사람이 이어받아요',
+                triggering.anomalyMetric
+                  ? `근거: ${triggering.anomalyMetric} ${triggering.anomalyValue ?? '—'} · 기준 ${triggering.threshold ?? '—'}`
+                  : '이상 지표 없이 실행해요',
+                '되돌린 뒤에는 이 화면에서 다시 앞으로 감을 수 없어요',
+                '누가 언제 실행했는지 감사 기록에 남아요',
+              ]}
+              cta="롤백 실행"
+              danger
+              onConfirm={() => void act(triggering.id, 'trigger')}
+              onCancel={() => setTriggering(null)}
+            />
+          ) : null}
         </>
       ) : null}
     </Page>

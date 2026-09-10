@@ -16,8 +16,8 @@ import {
 import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
-import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 import { formatDateDot } from '@/features/common/format-date';
+import { ConfirmCard } from './_ui';
 
 type DocType = 'terms' | 'privacy' | 'marketing';
 type TermsVersion = {
@@ -59,6 +59,8 @@ export default function TermsScreen() {
   const [clauseBody, setClauseBody] = useState('');
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  /** 공개를 확인받는 중. 공개한 판은 다시 고칠 수 없어 한 번 더 묻는다(v3.27). */
+  const [askingPublish, setAskingPublish] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -117,6 +119,8 @@ export default function TermsScreen() {
       setActionError(e instanceof Error ? e.message : '공개 실패');
     } finally {
       setPublishing(false);
+      // 실패해도 닫는다 — 창이 떠 있으면 오류 문구가 창에 가린다.
+      setAskingPublish(false);
     }
   }
 
@@ -129,7 +133,6 @@ export default function TermsScreen() {
         </Pressable>
       </View>
 
-      <PendingBackendNotice actions="조문 저장 · 초안 공개" />
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
@@ -180,9 +183,9 @@ export default function TermsScreen() {
                 </View>
                 {activeDocData.latestDraftVersion && (
                   <Pressable
-                    style={[styles.publishBtn, (BACKEND_PENDING || publishing) && styles.btnDisabled]}
-                    onPress={() => void publish()}
-                    disabled={BACKEND_PENDING || publishing}
+                    style={[styles.publishBtn, publishing && styles.btnDisabled]}
+                    onPress={() => { setActionError(null); setAskingPublish(true); }}
+                    disabled={publishing}
                   >
                     <Text style={styles.publishBtnText}>
                       {publishing ? '공개 중…' : '초안 공개'}
@@ -234,9 +237,9 @@ export default function TermsScreen() {
                 <Text style={styles.cancelBtnText}>취소</Text>
               </Pressable>
               <Pressable
-                style={[styles.saveBtn, (BACKEND_PENDING || saving) && styles.btnDisabled]}
+                style={[styles.saveBtn, saving && styles.btnDisabled]}
                 onPress={() => void saveClause()}
-                disabled={BACKEND_PENDING || saving}
+                disabled={saving}
               >
                 <Text style={styles.saveBtnText}>{saving ? '저장 중…' : '저장'}</Text>
               </Pressable>
@@ -244,6 +247,32 @@ export default function TermsScreen() {
           </View>
         </View>
       </Modal>
+
+      {/*
+        공개한 판은 얼어붙는다 — 사용자가 동의한 글이라 나중에 고칠 수 없다.
+        무엇이 바뀌는지 항목으로 보인 뒤 한 번 더 확인한다(v3.27).
+      */}
+      {/*
+        공개한 판은 얼어붙는다 — 사용자가 동의한 글이라 나중에 고칠 수 없다.
+        무엇이 바뀌는지 항목으로 보인 뒤 진행한다(v3.27).
+      */}
+      {askingPublish && activeDocData ? (
+        <ConfirmCard
+          title="초안을 공개할까요?"
+          body="공개한 판의 조문은 다시 고칠 수 없어요."
+          items={[
+            `${activeDocData.label} ${activeDocData.latestDraftVersion ?? ''} 판이 공개돼요`,
+            '공개된 조문은 잠기고, 이어서 고칠 새 초안이 만들어져요',
+            '사용자에게 이 판이 현행으로 보여요',
+            '공개한 사람과 시각이 감사 기록에 남아요',
+          ]}
+          cta="초안 공개"
+          danger
+          onConfirm={() => void publish()}
+          onCancel={() => setAskingPublish(false)}
+        />
+      ) : null}
+
     </View>
   );
 }

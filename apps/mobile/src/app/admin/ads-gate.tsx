@@ -5,11 +5,11 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
+import { Colors, FontSize, LineHeight, Spacing } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
-import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 import { formatDateDot } from '@/features/common/format-date';
+import { ConfirmCard } from './_ui';
 
 type GateStepStatus = 'done' | 'in_progress' | 'pending' | 'blocked';
 
@@ -49,6 +49,9 @@ export default function AdsGateScreen() {
   const [error, setError] = useState<string | null>(null);
   const [rev, setRev] = useState(0);
   const [confirming, setConfirming] = useState(false);
+  /** 확인창을 띄운 상태. 누르는 것과 확정하는 것을 나눈다(v3.27). */
+  const [asking, setAsking] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -73,8 +76,16 @@ export default function AdsGateScreen() {
     setConfirming(true);
     try {
       await apiFetch('/v1/admin/ads-gate/approve', { method: 'POST' });
+      setActionError(null);
       setRev((r) => r + 1);
-    } catch { /* 무시 */ } finally { setConfirming(false); }
+    } catch (e: unknown) {
+      // 삼키지 않는다. 눌렀는데 아무 일도 없는 것처럼 보이는 것이 가장 나쁘다.
+      setActionError(e instanceof Error ? e.message : '요청 실패');
+    } finally {
+      setConfirming(false);
+      // 실패해도 닫는다 — 창이 떠 있으면 오류 문구가 창에 가린다.
+      setAsking(false);
+    }
   }
 
   return (
@@ -86,7 +97,6 @@ export default function AdsGateScreen() {
         </Pressable>
       </View>
 
-      <PendingBackendNotice actions="실운영 전환 확정" />
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
@@ -143,24 +153,52 @@ export default function AdsGateScreen() {
                 실운영 전환을 확정하려면 아래 버튼을 눌러주세요.
               </Text>
               <Pressable
-                style={[styles.approvalBtn, (BACKEND_PENDING || confirming) && styles.btnDisabled]}
-                onPress={() => void approveProduction()}
-                disabled={BACKEND_PENDING || confirming}
+                style={[styles.approvalBtn, confirming && styles.btnDisabled]}
+                onPress={() => { setActionError(null); setAsking(true); }}
+                disabled={confirming}
               >
                 <Text style={styles.approvalBtnText}>
                   {confirming ? '처리 중…' : '실운영 전환 확정'}
                 </Text>
               </Pressable>
+              {actionError && <Text style={styles.actionError}>{actionError}</Text>}
             </View>
           )}
         </ScrollView>
       )}
+
+      {/*
+        **승인은 전환이 아니다.** 확인창이 그 사실을 먼저 말한다 — 이 단추를
+        누르면 실제로 광고가 켜진다고 읽히면 안 된다(대표 오더 대기).
+      */}
+      {/*
+        **승인은 전환이 아니다.** 확인 항목이 그 사실을 먼저 말한다 — 이 단추를
+        누르면 광고가 켜진다고 읽히면 안 된다(대표 오더 대기).
+      */}
+      {asking ? (
+        <ConfirmCard
+          title="실운영 전환을 승인할까요?"
+          body="승인은 기록으로 남고, 광고가 지금 켜지지는 않아요."
+          items={[
+            '실운영 전환 승인이 기록돼요',
+            '광고는 켜지지 않아요 — 실제 전환은 대표 오더를 기다립니다',
+            '승인한 사람과 시각이 감사 기록에 남아요',
+            '승인은 한 번만 할 수 있어요',
+          ]}
+          cta="승인"
+          danger
+          onConfirm={() => void approveProduction()}
+          onCancel={() => setAsking(false)}
+        />
+      ) : null}
+
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
+  actionError: { color: Colors.light.negative, fontSize: FontSize.t7, marginTop: Spacing.two },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

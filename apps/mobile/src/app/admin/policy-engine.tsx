@@ -14,7 +14,6 @@ import { StyleSheet, TextInput } from 'react-native';
 import { Colors, FontSize, LineHeight, Radius, Spacing } from '@weddingpick/ui';
 
 import { formatDateTimeDot } from '@/features/common/format-date';
-import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import {
@@ -146,8 +145,6 @@ export default function PolicyEngineScreen() {
               label: '변경 사항 저장',
               onPress: () => setConfirming(true),
               kind: 'brand',
-              /* PATCH가 204만 돌려주는 자리라 저장해도 값이 남지 않는다. */
-              disabled: BACKEND_PENDING,
             }
           : undefined
       }
@@ -157,8 +154,6 @@ export default function PolicyEngineScreen() {
 
       {!loading && !error && data ? (
         <>
-          <PendingBackendNotice actions="규칙 저장" />
-
           <StatusBanner
             tone={saveError ? 'bad' : changed.length === 0 ? 'ok' : 'warn'}
             title={
