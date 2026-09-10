@@ -1,5 +1,6 @@
 import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { common as commonCopy, error as errorCopy } from '../../../../../spec/strings.ko.json';
 
 import {
   ActionButton,
@@ -26,16 +27,20 @@ import type { ErrorKind } from './kind';
 export function FullScreenError({
   kind,
   onRetry,
+  onUpdate,
   maintenanceFrom,
   maintenanceTo,
 }: {
   kind: ErrorKind;
   onRetry?: () => void;
+  /** 설치 화면을 여는 동작. 단순 재시도와 구분한다. */
+  onUpdate?: () => void;
   maintenanceFrom?: string;
   maintenanceTo?: string;
 }) {
   const theme = useTheme();
   const copy = COPY[kind];
+  const onAction = kind === 'update' ? onUpdate : onRetry;
 
   return (
     <ThemedView style={styles.container}>
@@ -47,47 +52,43 @@ export function FullScreenError({
             <ThemedText type="t2">{copy.title}</ThemedText>
             <ThemedText type="t6" themeColor="textSecondary" style={styles.centered}>
               {kind === 'maintenance' && maintenanceFrom && maintenanceTo
-                ? `${maintenanceFrom}부터 ${maintenanceTo}까지 서비스를 점검하고 있어요. 끝나면 알려드릴게요.`
+                ? errorCopy['maintenance.body'].replace('{from}', maintenanceFrom).replace('{to}', maintenanceTo)
                 : copy.body}
             </ThemedText>
           </ThemedView>
         </ThemedView>
 
-        <ThemedView style={styles.footer}>
-          <ActionButton variant="primary" label={copy.cta} onPress={onRetry ?? (() => undefined)} />
-        </ThemedView>
+        {onAction ? (
+          <ThemedView style={styles.footer}>
+            <ActionButton variant="primary" label={copy.cta} onPress={onAction} />
+          </ThemedView>
+        ) : null}
       </SafeAreaView>
     </ThemedView>
   );
 }
 
-/**
- * 문구는 `spec/strings.ko.json`의 `error.*`를 따른다.
- *
- * 하나만 다르다 — `update.body`의 «결제 정보 처리 방식»에서 «결제»를 뺐다. 이 저장소의
- * Pick 언어 정책(`pick-language.test.ts`)이 사용자 화면에서 «결제»를 막고, CLAUDE.md
- * §3이 그 정책을 원본으로 둔다. spec 문구가 정책과 어긋난 경우다.
- */
+/** 실제 실행할 수 있는 행동만 표시한다. 점검 알림 등록 기능은 연결되어 있지 않다. */
 const COPY: Record<ErrorKind, { title: string; body: string; cta: string }> = {
   network: {
-    title: '연결이 불안정해요',
-    body: '네트워크를 확인하고 다시 시도해주세요',
-    cta: '다시 시도',
+    title: errorCopy['network.title'],
+    body: errorCopy['network.body'],
+    cta: commonCopy['cta.retry'],
   },
   maintenance: {
-    title: '잠시 점검 중이에요',
-    body: '점검이 끝나면 알려드릴게요',
-    cta: '알림 받기',
+    title: errorCopy['maintenance.title'],
+    body: errorCopy['maintenance.bodyNoTime'],
+    cta: commonCopy['cta.retry'],
   },
   update: {
-    title: '새 버전이 필요해요',
-    body: '정보 처리 방식이 바뀌어서 업데이트해야 이용할 수 있어요',
-    cta: '업데이트',
+    title: errorCopy['update.title'],
+    body: errorCopy['update.body'],
+    cta: errorCopy['update.cta'],
   },
   general: {
-    title: '잠시 문제가 생겼어요',
-    body: '다시 시도해도 안 되면 알려주세요',
-    cta: '다시 시도',
+    title: errorCopy['general.title'],
+    body: errorCopy['general.body'],
+    cta: commonCopy['cta.retry'],
   },
 };
 
