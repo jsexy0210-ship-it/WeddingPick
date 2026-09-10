@@ -101,6 +101,12 @@ const palette = {
   adminBannerWarn: '#fff6e6',
   adminBannerOkIcon: '#c9f2e8',
   adminBannerBadIcon: '#ffd0cb',
+  /*
+   * 관리자 행 · 표 본문 구분선. 시안 hr · tbodyRow가 «#f2f3f6»(gray100)이고,
+   * 표 **머리** 아래 선 «#dcdee3»(gray300 · track)보다 두 단 옅다. 둘을 같은 색으로
+   * 두면 머리 행이 본문 첫 줄과 붙어 읽혀서 열 이름이 데이터처럼 보인다.
+   */
+  adminRowLine: '#f2f3f6',
   adminDotWarn: '#e5a12c',
   adminBarFill: '#ffc9c2',
 
@@ -284,6 +290,7 @@ export const Colors = {
     adminBannerWarn: palette.adminBannerWarn,
     adminBannerOkIcon: palette.adminBannerOkIcon,
     adminBannerBadIcon: palette.adminBannerBadIcon,
+    adminRowLine: palette.adminRowLine,
     adminDotWarn: palette.adminDotWarn,
     adminBarFill: palette.adminBarFill,
 
@@ -377,6 +384,7 @@ export const Colors = {
     adminBannerWarn: palette.adminBannerWarn,
     adminBannerOkIcon: palette.adminBannerOkIcon,
     adminBannerBadIcon: palette.adminBannerBadIcon,
+    adminRowLine: palette.adminRowLine,
     adminDotWarn: palette.adminDotWarn,
     adminBarFill: palette.adminBarFill,
 
@@ -480,6 +488,12 @@ export const AdminSpacing = {
   cardGap: 14,
   cardPadding: 20,
   gridGap: 20,
+  /** 카드 머리 최소 높이 — 시안 cardHead «min-height:28px». 제목만 있는 카드도 이 높이다. */
+  cardHeadHeight: 28,
+  /** KPI 카드 안 세 줄 사이 — 시안 kpiCard «gap:5px». stackGap(3)과 다른 값이다. */
+  kpiGap: 5,
+  /** 추이 막대 칸 높이 — 시안 barsWrap «height:150px». 막대는 이 안에서 바닥에 붙는다. */
+  barsHeight: 150,
   /** 본문 · 상단바. */
   bodyPaddingTop: 24,
   bodyPaddingX: 32,
@@ -495,6 +509,17 @@ export const AdminSpacing = {
   /** 사이드바. */
   navItemHeight: 34,
   sidebarWidth: 240,
+  /** 사이드바 바깥 패딩 — 시안 side «padding:20px 12px». 메뉴 좌우 12는 btnPaddingX와 같은 값이다. */
+  sidebarPaddingY: 20,
+  sidebarPaddingX: 12,
+  /** 그룹 제목 아래 — 시안 navGroup «padding:16px 12px 6px». 위 16은 Spacing.three와 같다. */
+  navGroupPaddingBottom: 6,
+  /** 브랜드 줄 아래 — 시안 brandRow «padding:0 12px 18px». */
+  brandPaddingBottom: 18,
+  /** 표식과 글 사이 9 — 시안 brandRow «gap:9px»와 confirmItem «gap:9px»가 같은 값이다. */
+  iconTextGap: 9,
+  /** 확인 카드 단추 사이 — 시안 confirmActions «gap:10px». */
+  confirmActionsGap: 10,
 } as const;
 
 /**

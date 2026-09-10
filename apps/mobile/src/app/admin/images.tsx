@@ -72,7 +72,7 @@ const MATCH_FLOOR = 0.7;
 
 const COLS: Col[] = [
   { key: 'vendor', label: '업체', width: 190 },
-  { key: 'source', label: '출처', width: 260, grow: true },
+  { key: 'source', label: '출처', width: 220, grow: true },
   { key: 'rights', label: '권리', width: 110 },
   { key: 'match', label: '매칭', width: 90, align: 'right' },
   { key: 'created', label: '수집', width: 120 },

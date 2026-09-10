@@ -80,6 +80,22 @@ export const LineHeight = {
   adminKpi: 38,
   adminBanner: 21,
   adminNavGroup: 15,
+  /*
+   * 관리자 콘솔 전용 줄 높이. v3.27 `html/22-admin-ops.dc.html`이 앱 스케일과 다른 짝을
+   * 쓴다 — 같은 12px이라도 앱은 16, 관리자 표는 17이다. **가까운 값으로 대신하지 않는다.**
+   * 표 한 줄이 1px씩 어긋나면 여덟 줄에서 8px이 밀리고, 1920 기준으로 맞춰 둔 카드 높이가
+   * 따라 어긋난다. 글자 크기는 t 스케일에 이미 있어 새로 만들지 않았고 줄 높이만 더한다.
+   */
+  /** 12px 메타 — cardSub · kpiNote · rowMeta · 표 머리 · 막대 라벨(`12/17`). */
+  adminMeta: 17,
+  /** 12px 각주 — 카드 맨 아래 회색 한 줄(noteLine `12/18`). */
+  adminNote: 18,
+  /** 13px 본문 — 표 셀 · 배너 풀이 · 빈 상태 설명(`13/19`). */
+  adminCell: 19,
+  /** 14px 행 — 행 이름과 오른쪽 숫자(`14/20`). 확인 카드 항목(13)도 이 높이다. */
+  adminRow: 20,
+  /** 18px 확인 카드 제목(`18/25`). */
+  adminConfirmTitle: 25,
 } as const;
 
 export type FontSizeToken = keyof typeof FontSize;

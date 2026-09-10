@@ -11,6 +11,7 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, TextInput } from 'react-native';
 
+import { withParticle } from '@weddingpick/domain';
 import { Colors, FontSize, LineHeight, Radius, Spacing } from '@weddingpick/ui';
 
 import { formatDateTimeDot } from '@/features/common/format-date';
@@ -195,7 +196,7 @@ export default function PolicyEngineScreen() {
 
           {editing ? (
             <ConfirmCard
-              title={`${editing.label}을(를) 얼마로 할까요?`}
+              title={`${withParticle(editing.label, '을를')} 얼마로 할까요?`}
               body={editing.description}
               items={[
                 `지금 값 ${editing.value}`,

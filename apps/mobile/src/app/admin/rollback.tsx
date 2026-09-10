@@ -74,7 +74,7 @@ const COLS: Col[] = [
   { key: 'type', label: '종류', width: 90 },
   { key: 'deployed', label: '적용', width: 160 },
   { key: 'impact', label: '영향 범위', width: 260, grow: true },
-  { key: 'revertable', label: '되돌리기', width: 110 },
+  { key: 'revertable', label: '되돌리기', width: 100 },
   { key: 'status', label: '상태', width: 100 },
 ];
 

@@ -123,7 +123,11 @@ export default function AutomationScreen() {
   return (
     <Page
       title="자동화 상태"
-      sub="주기 작업 · 마지막 실행과 결과"
+      sub={
+        workflows.length > 0
+          ? `주기 작업 ${workflows.length}개 · 마지막 실행과 결과`
+          : '주기 작업 · 마지막 실행과 결과'
+      }
       action={{ label: '새로 고침', onPress: reload }}
     >
       <DelayedLoader active={loading} size={40} />
