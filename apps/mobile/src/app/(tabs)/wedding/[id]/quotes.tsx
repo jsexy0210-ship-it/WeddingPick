@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import strings from '../../../../../../../spec/strings.ko.json';
 import { listQuotes } from '@/api/client';
 import { formatDateDot } from '@/features/common/format-date';
 import { BackBar } from '@/components/back-bar';
@@ -134,8 +135,12 @@ export default function WeddingQuotesScreen() {
           {quotes.length === 0 ? (
             <ThemedView type="backgroundElement" style={styles.card}>
               <ThemedText type="t7" themeColor="textSecondary">
-                아직 올린 문서가 없어요. 촬영·업로드 탭에서 Pick 인증 자료를 올려보세요.
+                {strings.journey.documentEmpty}
               </ThemedText>
+              <ActionButton
+                label={strings.journey.uploadDocument}
+                onPress={() => router.push('/capture/quote/consent')}
+              />
             </ThemedView>
           ) : (
             quotes.map((q) => <QuoteCard key={q.id} quote={q} />)
