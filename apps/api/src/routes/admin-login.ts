@@ -112,6 +112,41 @@ export function registerAdminLoginRoutes(app: FastifyInstance, context: AppConte
       context.config.operatorSessionTtlDays
     );
 
+    /*
+     * **관리자 계정을 활성으로 표시한다.**
+     *
+     * `requireOperatorUser`는 권한을 보기 전에 `activated`를 먼저 본다. 그 값은
+     * `structured.active_users` 뷰가 정하고, 뷰는 `activated_at IS NOT NULL`인
+     * 사람만 담는다. 그 시각은 **소비자가 가입 동의를 끝낼 때** 찍힌다
+     * (v3.13 §N-2 — 소셜 로그인 성공만으로 서비스를 쓰게 하지 않는다).
+     *
+     * 관리자는 그 절차를 거치지 않는다. 그래서 로그인은 되는데(로그인은
+     * `is_operator`만 본다) 관리자 API가 전부 403으로 막혔고, 화면은 그 403을
+     * 「다시 로그인」으로 읽어 로그인으로 되돌렸다 — **들어갔다가 튕겨 나온다**
+     * (2026-09-10 사용자 보고).
+     *
+     * §N-2가 막으려는 것은 「소셜 로그인만 한 대기 계정」이다. 이 경로는 그것이
+     * 아니다 — `ADMIN_LOGIN_ID`와 `ADMIN_PASSWORD_HASH`를 아는 사람만 여기 닿고,
+     * 그 자격은 운영자가 직접 심는다. 소비자 동의 관문의 대상이 아니다.
+     *
+     * `age_gate`도 함께 채운다 — `activated_only_when_old_enough` 제약이
+     * `activated_at IS NULL OR age_gate = 'passed'`를 요구하고, `age_check_has_time`이
+     * 그 짝으로 `age_checked_at`을 요구한다. 셋을 한 번에 맞추지 않으면 제약에서
+     * 막힌다.
+     *
+     * 이미 활성인 계정은 건드리지 않는다(`COALESCE`) — 다시 로그인할 때마다
+     * 가입 시각이 밀리면 「언제부터 쓴 계정인가」에 답할 수 없게 된다.
+     */
+    await context.pool.query(
+      `UPDATE structured.users
+          SET age_gate = 'passed',
+              age_checked_at = COALESCE(age_checked_at, now()),
+              activated_at = COALESCE(activated_at, now())
+        WHERE id = $1
+          AND activated_at IS NULL`,
+      [session.userId]
+    );
+
     const { rows } = await context.pool.query<{ is_operator: boolean }>(
       'SELECT is_operator FROM structured.users WHERE id = $1',
       [session.userId]
