@@ -7,7 +7,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { Layout, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
+import { ActionButton, Layout, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
 import { Hero, Row, Rows, Section, SubScreen } from '@/features/settings/my-kit';
 
 /**
@@ -55,7 +55,7 @@ export default function FaqDetailScreen() {
       </View>
 
       {related.length > 0 ? (
-        <Section title="관련 질문">
+        <Section title="관련 질문" big>
           <Rows>
             {related.map((entry) => (
               <Row
@@ -70,25 +70,31 @@ export default function FaqDetailScreen() {
         </Section>
       ) : null}
 
-      <Section title="이 답이 도움이 됐나요">
+      <Section title="이 답이 도움이 됐나요" big>
         {thanked ? (
           <ThemedView type="backgroundElement" style={styles.thanks}>
             <ThemedText type="t6">알려주셔서 고마워요</ThemedText>
           </ThemedView>
         ) : (
-          <Rows>
-            <Row name="도움됐어요" onPress={() => setThanked(true)} />
-            <Row
-              name="해결되지 않았어요"
-              chevron
-              onPress={() =>
-                router.push({
-                  pathname: '/my/contact',
-                  params: { category: FAQ_UNRESOLVED_CATEGORY[item.key] ?? 'other' },
-                } as never)
-              }
-            />
-          </Rows>
+          /* 시안 L104 — `display:flex;gap:8px` 안에 고스트 버튼 둘. 목록 행은 「더 볼 것」으로 읽혀 답이 아니다. */
+          <View style={styles.helpful}>
+            <View style={styles.helpfulBtn}>
+              <ActionButton label="도움이 됐어요" variant="ghost" size="large" onPress={() => setThanked(true)} />
+            </View>
+            <View style={styles.helpfulBtn}>
+              <ActionButton
+                label="해결되지 않았어요"
+                variant="ghost"
+                size="large"
+                onPress={() =>
+                  router.push({
+                    pathname: '/my/contact',
+                    params: { category: FAQ_UNRESOLVED_CATEGORY[item.key] ?? 'other' },
+                  } as never)
+                }
+              />
+            </View>
+          </View>
         )}
       </Section>
     </SubScreen>
@@ -97,6 +103,9 @@ export default function FaqDetailScreen() {
 
 const styles = StyleSheet.create({
   answer: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionGap },
+  /* 시안 L104 — 버튼 둘이 나란히, 사이 8. */
+  helpful: { flexDirection: 'row', gap: Spacing.two, paddingHorizontal: Layout.gutter },
+  helpfulBtn: { flex: 1 },
   thanks: {
     marginHorizontal: Layout.gutter,
     borderRadius: Layout.cardGap,

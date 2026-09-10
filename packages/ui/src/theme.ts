@@ -675,6 +675,13 @@ export const Border = {
   selected: 1.5,
   checkbox: 1.5,
   focus: 2,
+  /**
+   * 화면 설정 스킨 스와치의 두 겹 링. border.swatchRing.
+   *
+   * `13-my-sub.dc.html` L189-190이 `box-shadow:0 0 0 3px #fff inset, 0 0 0 3px <hex>` —
+   * 안팎 모두 3이다. `focus`(2)로 대신하면 흰 테가 얇아져 스킨 색이 서로 붙어 보인다.
+   */
+  swatchRing: 3,
 } as const;
 
 /**

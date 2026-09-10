@@ -186,30 +186,44 @@ export function Hero({
   );
 }
 
-/** padSec — 제목 14/19 700 gray600 한 줄, 아래 내용. */
+/** padSec — 제목 14/19 700 gray600 한 줄, 아래 내용. `big`이면 20/27 700 먹색. */
 export function Section({
   title,
   children,
   gap = 'my',
+  big = false,
   style,
 }: {
   title?: string;
   children: ReactNode;
   /** 13-my-sub는 아래 24 · gap 10, 15-events는 아래 28 · gap 12. */
   gap?: 'my' | 'events';
+  /** 시안 s20 — 화면을 나누는 큰 제목. 13-my-sub L186이 두 단계를 함께 정의한다. */
+  big?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
   return (
     <View style={[gap === 'events' ? styles.sectionEvents : styles.section, style]}>
-      {title ? <SectionTitle>{title}</SectionTitle> : null}
+      {title ? <SectionTitle big={big}>{title}</SectionTitle> : null}
       {children}
     </View>
   );
 }
 
-export function SectionTitle({ children }: { children: string }) {
+/**
+ * 섹션 제목. 두 단계다 — `13-my-sub.dc.html` L186이 `o.big ? 20/27 #212124 : 14/19 #868b94`로
+ * 한 줄에 적어 둔 그대로다.
+ *
+ * 작은 쪽은 목록 위 라벨이고 큰 쪽은 화면을 나누는 제목이다. 큰 자리에 작은 것을 쓰면
+ * (FAQ 답변의 「비슷한 질문」처럼) 제목이 앞 내용의 꼬리처럼 붙어 읽힌다.
+ */
+export function SectionTitle({ children, big = false }: { children: string; big?: boolean }) {
   return (
-    <ThemedText type="t7" themeColor="textAssistive" numberOfLines={1} style={styles.bold}>
+    <ThemedText
+      type={big ? 't4' : 't7'}
+      themeColor={big ? 'text' : 'textAssistive'}
+      numberOfLines={1}
+      style={styles.bold}>
       {children}
     </ThemedText>
   );
