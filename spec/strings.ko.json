@@ -747,6 +747,12 @@
     "permission.allow": "허용하기"
   },
 
+  "journey": {
+    "loadFailed": "정보를 불러오지 못했어요",
+    "readFailed": "읽음 상태를 저장하지 못했어요",
+    "loading": "불러오는 중이에요"
+  },
+
   "error": {
     "network.title": "연결이 불안정해요",
     "network.body": "네트워크를 확인하고 다시 시도해주세요",
