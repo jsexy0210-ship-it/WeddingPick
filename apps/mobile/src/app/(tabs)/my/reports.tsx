@@ -1,7 +1,7 @@
 import type { MyReport } from '@weddingpick/api-contract';
 import { MY_REPORTS_EMPTY, MY_REPORTS_EMPTY_CTA, formatDateDot } from '@weddingpick/domain';
-import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import {
@@ -47,18 +47,26 @@ export default function MyReportsScreen() {
   const theme = useTheme();
   const [reports, setReports] = useState<MyReport[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const loadVersion = useRef(0);
   const [toast, setToast] = useState<string | null>(null);
 
   const load = useCallback(() => {
+    const version = ++loadVersion.current;
     void listMyReports()
       .then((response) => {
+        if (version !== loadVersion.current) return;
         setLoadError(null);
         setReports(response.reports);
       })
-      .catch((caught: Error) => setLoadError(caught.message ?? '제보 내역을 불러오지 못했어요'));
+      .catch((caught: Error) => {
+        if (version === loadVersion.current) setLoadError(caught.message ?? '제보 내역을 불러오지 못했어요');
+      });
   }, []);
 
-  useEffect(load, [load]);
+  useFocusEffect(useCallback(() => {
+    load();
+    return () => { loadVersion.current += 1; };
+  }, [load]));
 
   if (loadError) return <ErrorView message={loadError} onRetry={load} />;
   if (reports === null) return <DelayedLoadingView />;

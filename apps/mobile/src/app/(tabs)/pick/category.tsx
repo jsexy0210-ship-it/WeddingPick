@@ -117,7 +117,7 @@ export default function PickCategoryScreen() {
                 variant="primary"
                 label={`${categoryLabel} 검색`}
                 onPress={() =>
-                  router.push({ pathname: '/(tabs)/search', params: { filterCategory: cat } })
+                  router.push({ pathname: '/(tabs)/search', params: { category: cat } })
                 }
               />
             </ThemedView>

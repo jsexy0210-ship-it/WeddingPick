@@ -13,6 +13,7 @@ import {
   unlinkPartner,
 } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
+import strings from '../../../../../../spec/strings.ko.json';
 import { shareOrCopy } from '@/components/share-or-copy';
 import { formatDateTimeDot } from '@/features/common/format-date';
 import { ErrorView, Layout, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
@@ -39,8 +40,8 @@ const S = {
   inviteCode: '초대 코드',
   sharedLabel: '연결하면 같이 보여요',
   ownLabel: '각자 남아요',
-  noteTitle: '공유 범위는 언제든 바꿀 수 있어요',
-  noteBody: '설정에서 원하는 항목만 골라 함께 볼 수 있어요.',
+  noteTitle: strings.journey.partnerShareTitle,
+  noteBody: strings.journey.partnerShareBody,
   copy: '코드 복사',
   copied: '복사했어요',
   send: '링크 보내기',
@@ -134,13 +135,20 @@ export default function PartnerScreen() {
   async function copyCode() {
     if (!code) return;
 
-    if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard) {
-      await navigator.clipboard.writeText(code).catch(() => undefined);
-    } else {
-      await shareOrCopy(code);
+    setError(null);
+    try {
+      if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(code);
+      } else {
+        const result = await shareOrCopy(code);
+        // 시스템 공유는 복사가 아니다. 취소한 경우에도 복사 완료를 표시하지 않는다.
+        if (!result.copied) return;
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      setError(strings.error['general.title']);
     }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
   }
 
   async function share() {

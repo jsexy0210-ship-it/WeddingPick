@@ -1,14 +1,15 @@
 import type { Notification } from '@weddingpick/api-contract';
 import { NOTIFICATIONS_EMPTY, hasUnread } from '@weddingpick/domain';
 import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { ErrorView, Layout, Radius, Spacing, ThemedText, readWebInteractionState, useTheme } from '@weddingpick/ui';
+import { ErrorView, Layout, Radius, Spacing, ThemedText, Toast, readWebInteractionState, useTheme } from '@weddingpick/ui';
 import { listNotifications, readAllNotifications, readNotification } from '@/api/client';
 import { formatDateDot } from '@/features/common/format-date';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
-import { Badge, EmptyBox, NavAction, Section, SubScreen } from '@/features/settings/my-kit';
+import strings from '../../../../../../spec/strings.ko.json';
+import { EmptyBox, NavAction, Section, SubScreen } from '@/features/settings/my-kit';
 
 const S = {
   title: '알림',
@@ -45,6 +46,10 @@ export default function NotificationsScreen() {
   const [notifications, setNotifications] = useState<Notification[] | null>(null);
   const [unread, setUnread] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const reading = useRef(new Set<string>());
+  const readingAll = useRef(false);
+  const [readBusy, setReadBusy] = useState(false);
 
   const load = useCallback(() => {
     void listNotifications()
@@ -58,35 +63,51 @@ export default function NotificationsScreen() {
 
   useEffect(load, [load]);
 
-  async function open(notification: Notification) {
-    if (!notification.readAt) {
-      /* 먼저 화면에서 읽음으로 바꾼다. 서버 답을 기다리면 눌렀는데 아무 일도 없는 순간이 생긴다. */
-      setNotifications(
-        (current) =>
-          current?.map((row) =>
-            row.id === notification.id ? { ...row, readAt: new Date().toISOString() } : row
-          ) ?? null
-      );
-      await readNotification(notification.id)
-        .then((summary) => setUnread(summary.unread))
-        .catch(() => undefined);
-    }
+  function open(notification: Notification) {
+    // 읽음 저장이 느리거나 실패해도 사용자가 누른 내용은 바로 연다.
     go(notification);
+    if (notification.readAt || reading.current.has(notification.id) || readingAll.current) return;
+    reading.current.add(notification.id);
+    setReadBusy(true);
+    setNotifications((current) => current?.map((row) =>
+      row.id === notification.id ? { ...row, readAt: new Date().toISOString() } : row
+    ) ?? null);
+    setUnread((current) => Math.max(0, current - 1));
+    void readNotification(notification.id)
+      .catch(() => {
+        setNotifications((current) => current?.map((row) =>
+          row.id === notification.id ? { ...row, readAt: notification.readAt } : row
+        ) ?? null);
+        setUnread((current) => current + 1);
+        setToast(strings.journey.readFailed);
+      })
+      .finally(() => {
+        reading.current.delete(notification.id);
+        setReadBusy(reading.current.size > 0);
+      });
   }
 
   async function readAll() {
+    if (readingAll.current || reading.current.size > 0) return;
     const before = notifications;
-    setNotifications(
-      (current) =>
-        current?.map((row) => ({ ...row, readAt: row.readAt ?? new Date().toISOString() })) ?? null
-    );
+    const beforeUnread = unread;
+    readingAll.current = true;
+    setReadBusy(true);
+    setNotifications((current) => current?.map((row) =>
+      ({ ...row, readAt: row.readAt ?? new Date().toISOString() })
+    ) ?? null);
     setUnread(0);
     await readAllNotifications()
       .then((summary) => setUnread(summary.unread))
       .catch(() => {
-        /* 못 바꿨으면 되돌린다. 읽지 않은 것을 읽었다고 두는 편이 더 나쁘다. */
         setNotifications(before);
-        setUnread(before?.filter((row) => !row.readAt).length ?? 0);
+        // 목록 바깥의 오래된 미확인 알림도 있으므로 서버에서 받은 개수를 보존한다.
+        setUnread(beforeUnread);
+        setToast(strings.journey.readFailed);
+      })
+      .finally(() => {
+        readingAll.current = false;
+        setReadBusy(false);
       });
   }
 
@@ -99,7 +120,7 @@ export default function NotificationsScreen() {
       contentStyle={{ paddingTop: Layout.rowPaddingY }}
       right={
         hasUnread({ unread, total: notifications.length }) ? (
-          <NavAction label={S.readAll} onPress={() => void readAll()} />
+          <NavAction label={S.readAll} disabled={readBusy} onPress={() => void readAll()} />
         ) : undefined
       }>
       <Section>
@@ -143,6 +164,7 @@ export default function NotificationsScreen() {
           </View>
         )}
       </Section>
+      <Toast message={toast} onHidden={() => setToast(null)} />
     </SubScreen>
   );
 }
