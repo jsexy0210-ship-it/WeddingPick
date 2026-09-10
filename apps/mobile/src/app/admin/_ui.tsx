@@ -20,7 +20,7 @@
  * 값은 전부 `spec/tokens.json`에서 온다 — 이 파일에 hex를 적지 않는다.
  */
 import { type ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { AdminSpacing as A, Colors, FontSize, LineHeight, Radius, Spacing } from '@weddingpick/ui';
 
@@ -28,8 +28,14 @@ const C = Colors.light;
 
 /** 상태 세 가지. ADMIN.md — 문제 없으면 초록, 확인할 것이 있으면 주황, 조치가 필요하면 빨강. */
 export type Tone = 'ok' | 'warn' | 'bad';
-/** 배지·숫자에만 쓰는 보조 색. `brand`는 강조색이라 화면당 네 곳 이하를 지켜야 한다. */
-export type Kind = Tone | 'brand' | 'none' | 'dim';
+/**
+ * 배지·숫자에만 쓰는 보조 색. `brand`는 강조색이라 화면당 네 곳 이하를 지켜야 한다.
+ *
+ * `cost`는 「내가 돈을 쓰는 것」이다. **`bad`와 나눠 둔다** — 지출은 잘못된 상태가
+ * 아니다. 같은 빨강으로 칠하면 매달 정상으로 나가는 돈이 고장으로 보인다
+ * (21-admin.dc.html `dashCards`의 «비용» 배지가 반려 빨강과 다른 색을 쓴다).
+ */
+export type Kind = Tone | 'brand' | 'cost' | 'none' | 'dim';
 
 /**
  * 흐르는 글 한 줄의 상한. ADMIN.md — 「글이 흐르는 블록은 한 줄 100자에서 멈춤」.
@@ -63,6 +69,7 @@ const KIND_FG: Record<Kind, string> = {
   warn: C.cautionary,
   bad: C.negative,
   brand: C.tint,
+  cost: C.cost,
   dim: C.textAssistive,
   none: C.text,
 };
@@ -72,6 +79,7 @@ const KIND_BG: Record<Kind, string> = {
   warn: C.cautionaryBackground,
   bad: C.negativeBackground,
   brand: C.tintSubtle,
+  cost: C.costBackground,
   dim: C.backgroundSelected,
   none: C.backgroundSelected,
 };
@@ -172,6 +180,13 @@ export type KpiItem = {
   /** 값 아래 한 줄 — 어제 대비 · 한도 대비처럼 값을 읽는 기준. */
   note?: string;
   kind?: Kind;
+  /** 라벨 옆 배지 — 이 숫자가 어떻게 처리되는지(«위험» · «비용» · «지표» · «자동»). */
+  badge?: string;
+  badgeKind?: Kind;
+  /** 눌러서 그 화면으로. `Rows`의 `onPress`와 같은 자리다. */
+  onPress?: () => void;
+  /** 값 뒤에 붙는 단위. 숫자와 단위는 글자 크기가 다르다. */
+  unit?: string;
 };
 
 /** KPI 한 줄. 칸 수는 항목 수를 따르고 폭은 고르게 나눈다. */
@@ -179,11 +194,17 @@ export function KpiRow({ items }: { items: KpiItem[] }) {
   return (
     <View style={styles.kpiRow}>
       {items.map((k) => (
-        <View key={k.label} style={styles.kpiCard}>
-          <Text style={styles.kpiLabel} numberOfLines={1}>{k.label}</Text>
-          <Text style={[styles.kpiValue, { color: KIND_FG[k.kind ?? 'none'] }]} numberOfLines={1}>
-            {k.value}
-          </Text>
+        <Wrap key={k.label} onPress={k.onPress} style={styles.kpiCard}>
+          <View style={styles.kpiHead}>
+            <Text style={styles.kpiLabel} numberOfLines={1}>{k.label}</Text>
+            {k.badge ? <Badge label={k.badge} kind={k.badgeKind ?? 'none'} /> : null}
+          </View>
+          <View style={styles.kpiValueRow}>
+            <Text style={[styles.kpiValue, { color: KIND_FG[k.kind ?? 'none'] }]} numberOfLines={1}>
+              {k.value}
+            </Text>
+            {k.unit ? <Text style={styles.kpiUnit}>{k.unit}</Text> : null}
+          </View>
           {k.note ? (
             <Text
               style={[styles.kpiNote, k.kind === 'bad' && { color: C.negative }]}
@@ -192,7 +213,7 @@ export function KpiRow({ items }: { items: KpiItem[] }) {
               {k.note}
             </Text>
           ) : null}
-        </View>
+        </Wrap>
       ))}
     </View>
   );
@@ -279,14 +300,28 @@ export type RowItem = {
   tailKind?: Kind;
   btn?: { label: string; onPress: () => void; kind?: 'danger' | 'brand' | 'plain' };
   toggle?: { on: boolean; onPress: () => void };
+  /**
+   * 줄 전체를 눌러 그 화면으로 간다. 21-admin.dc.html `dash`의 「안대표가 볼 일」이
+   * 그렇다 — 볼 일 목록에서 한 줄은 「무엇을」이 아니라 「어디로」다.
+   *
+   * `btn`과 같이 쓰지 않는다. 줄에도 단추에도 눌리는 자리가 있으면 어느 쪽이
+   * 무엇을 하는지 알 수 없다.
+   */
+  onPress?: () => void;
 };
+
+/** 눌리는 줄만 Pressable로 감싼다 — 누를 수 없는 줄에 누를 수 있는 표시를 두지 않는다. */
+function Wrap({ onPress, style, children }: { onPress?: () => void; style: StyleProp<ViewStyle>; children: ReactNode }) {
+  if (!onPress) return <View style={style}>{children}</View>;
+  return <Pressable onPress={onPress} style={style}>{children}</Pressable>;
+}
 
 export function Rows({ items }: { items: RowItem[] }) {
   return (
     <View>
       {items.map((r, i) => (
         <View key={r.key}>
-          <View style={[styles.row, r.meta ? styles.rowTop : styles.rowCenter]}>
+          <Wrap onPress={r.onPress} style={[styles.row, r.meta ? styles.rowTop : styles.rowCenter]}>
             {r.dot ? (
               <View
                 style={[
@@ -324,7 +359,8 @@ export function Rows({ items }: { items: RowItem[] }) {
               </Pressable>
             ) : null}
             {r.toggle ? <Toggle on={r.toggle.on} onPress={r.toggle.onPress} /> : null}
-          </View>
+            {r.onPress ? <Text style={styles.rowChevron}>›</Text> : null}
+          </Wrap>
           {i < items.length - 1 ? <View style={styles.hr} /> : null}
         </View>
       ))}
@@ -624,7 +660,10 @@ const styles = StyleSheet.create({
     padding: A.cardPadding,
     gap: A.stackGap,
   },
-  kpiLabel: { fontSize: FontSize.micro, lineHeight: LineHeight.micro, color: C.textAssistive },
+  kpiHead: { flexDirection: 'row', alignItems: 'center', gap: A.stackGap },
+  kpiLabel: { flex: 1, minWidth: 0, fontSize: FontSize.micro, lineHeight: LineHeight.micro, color: C.textAssistive },
+  kpiValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: A.stackGap },
+  kpiUnit: { fontSize: FontSize.micro, lineHeight: LineHeight.micro, color: C.textAssistive },
   kpiValue: {
     fontSize: FontSize.adminKpi,
     lineHeight: LineHeight.adminKpi,
@@ -701,6 +740,8 @@ const styles = StyleSheet.create({
   rowBtnBrand: { backgroundColor: C.tint },
   rowBtnLabel: { fontSize: FontSize.micro, fontWeight: '700', color: C.textSecondary },
   hr: { height: 1, backgroundColor: C.line },
+  /** 눌리는 줄 끝의 꺾쇠. 누를 수 있다는 것을 말하는 자리라 회색으로 둔다. */
+  rowChevron: { fontSize: FontSize.t6, lineHeight: LineHeight.t6, color: C.textDisabled },
 
   badge: { paddingHorizontal: A.badgePaddingX, paddingVertical: A.stackGap, borderRadius: Radius.badge },
   badgeLabel: { fontSize: FontSize.micro, lineHeight: LineHeight.micro, fontWeight: '700' },

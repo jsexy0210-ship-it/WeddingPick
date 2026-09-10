@@ -47,14 +47,6 @@ export const FontSize = {
    * display(32)와 그 위가 비어 있어서 t 스케일에 자리가 없다.
    */
   adminHero: 40,
-  /**
-   * 관리자 요약 대시보드 카드의 처리 방식 배지(«위험» · «비용» · «지표» · «자동»).
-   * spec/tokens.json typography.scale adminTag — 21-admin.dc.html `dashCards`가
-   * `font-size:10px`다. t 스케일의 최소가 12(tab)라 그 자리가 없다.
-   *
-   * **관리자 콘솔 밖에서 쓰지 않는다.** 사용자 화면의 최소 글자는 micro(13)다.
-   */
-  adminTag: 10,
   /** 코드·식별자(관리자 · 내부). */
   code: 12,
   /** 관리자 KPI 숫자 30/38. 웹 전용 `/admin`만 쓴다 — spec typography.scale adminKpi. */
@@ -89,7 +81,6 @@ export const LineHeight = {
   npayPay: 14,
   /** letter-spacing -1.4는 화면이 따로 준다 — LineHeight는 높이만 든다. */
   adminHero: 40,
-  adminTag: 14,
   tab: 16,
   badge: 19,
   amount: 43,
