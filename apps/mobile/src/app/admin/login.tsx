@@ -9,7 +9,8 @@
  */
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 
 import { API_URL } from '@/api/config';
 import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
@@ -18,21 +19,32 @@ import { saveAdminToken } from './_session';
 
 const CORAL = '#ff6f61';
 
+/**
+ * Pick Mark — `spec/tokens.json`의 `symbol`. **절대 변경 금지.**
+ *
+ * `react-native-svg`로 그린다. 저장소의 다른 화면이 전부 그렇게 하고 있다.
+ * 처음에는 `dangerouslySetInnerHTML`로 원본 SVG를 밀어 넣었는데, 이 저장소에
+ * 전례가 없는 방식이고 react-native-web이 View의 알 수 없는 속성을 걸러낼 수 있어
+ * 마크가 아예 안 그려질 수 있었다.
+ */
 function PickMark() {
-  /* 절대 변경 금지 — spec/tokens.json symbol. */
-  if (Platform.OS !== 'web') return null;
-
   return (
-    <View
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      {...({
-        dangerouslySetInnerHTML: {
-          __html:
-            '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff6f61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z"></path><path d="M9.4 11.9l1.7 1.7 3.4-3.4"></path></svg>',
-        },
-      } as any)}
-      style={styles.mark}
-    />
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z"
+        stroke={CORAL}
+        strokeWidth={1.9}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M9.4 11.9l1.7 1.7 3.4-3.4"
+        stroke={CORAL}
+        strokeWidth={1.9}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
   );
 }
 
@@ -170,7 +182,6 @@ const styles = StyleSheet.create({
   /* 520 · 좌우 72 — 시안값. */
   panel: { width: 520, flexShrink: 0, justifyContent: 'center', paddingHorizontal: 72 },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingBottom: 34 },
-  mark: { width: 24, height: 24 },
   brandText: { fontSize: FontSize.t6, fontWeight: '700', color: '#212124' },
   title: { fontSize: 26, lineHeight: 36, fontWeight: '700', color: '#212124', paddingBottom: 10 },
   lead: { fontSize: FontSize.t7, lineHeight: LineHeight.t7, color: '#4d5159', paddingBottom: 30 },

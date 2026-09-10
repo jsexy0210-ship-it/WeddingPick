@@ -39,6 +39,19 @@ export async function apiFetch(path: string, options?: RequestInit): Promise<unk
      */
     await clearAdminToken();
 
+    /*
+     * **여기서 직접 보낸다.** 던지기만 하면 화면마다 그것을 알아보고 이동시켜야
+     * 하는데, 관리자 화면이 서른 개가 넘어서 한 곳만 빠뜨려도 그 화면은 계속
+     * «잠시 문제가 생겼어요»를 띄운다. 실제로 처음 만들었을 때 **서른 화면 전부**가
+     * 이 예외를 처리하지 않았다.
+     *
+     * 콘솔은 웹 전용이라 이 길로 충분하다. 던지기도 계속한다 — 이동은 즉시가
+     * 아니고, 그 사이에 호출부가 응답을 받은 것처럼 진행하면 안 된다.
+     */
+    if (typeof window !== 'undefined' && !window.location.pathname.endsWith('/admin/login')) {
+      window.location.assign('/admin/login');
+    }
+
     throw new AdminUnauthorized(res.status);
   }
 

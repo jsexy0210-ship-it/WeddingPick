@@ -3,8 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 
 import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
-import { API_URL } from '@/api/config';
-import { loadToken } from '@/api/session';
+import { apiFetch } from './_api';
 import { formatDateDot, formatDateTimeDot } from '@/features/common/format-date';
 
 type VerificationStatus = 'received' | 'in_review' | 'needs_supplement' | 'approved' | 'rejected';
@@ -26,19 +25,6 @@ const STATUS_LABEL: Record<VerificationStatus, string> = {
   rejected: '반려',
 };
 
-async function apiFetch(path: string, options?: RequestInit): Promise<unknown> {
-  const token = await loadToken();
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options?.headers as Record<string, string> | undefined),
-    },
-  });
-  if (!res.ok) throw new Error(`API ${path} → ${res.status}`);
-  return res.json();
-}
 
 export default function QueueScreen() {
   const [items, setItems] = useState<PendingVerification[]>([]);

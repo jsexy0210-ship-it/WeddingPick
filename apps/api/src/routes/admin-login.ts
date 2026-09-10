@@ -42,6 +42,16 @@ const attempts = new Map<string, { count: number; first: number }>();
 
 function recordFailure(key: string): void {
   const now = Date.now();
+
+  /*
+   * **넣기 전에 지난 것을 치운다.** 치우지 않으면 실패한 주소마다 줄이 하나씩
+   * 남고 지워지지 않는다 — 성공해야만 지워지는데, 밀어보는 쪽은 성공하지 않는다.
+   * 주소를 바꿔 가며 두드리면 그것이 그대로 메모리가 된다.
+   */
+  for (const [seenKey, seenAt] of attempts) {
+    if (now - seenAt.first > ATTEMPT_WINDOW_MS) attempts.delete(seenKey);
+  }
+
   const seen = attempts.get(key);
 
   if (!seen || now - seen.first > ATTEMPT_WINDOW_MS) {
