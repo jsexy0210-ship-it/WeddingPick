@@ -1,3 +1,5 @@
+import { FullScreenError } from '@/features/errors/full-screen-error';
+import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import type {
   CurrentUser,
   ExpenseSummaryResponse,
@@ -5,7 +7,7 @@ import type {
   WeddingTaskListResponse,
 } from '@weddingpick/api-contract';
 import { TERMS, isBeforeWedding, lifecycle, manwon } from '@weddingpick/domain';
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -83,7 +85,7 @@ const S = {
  */
 export default function WeddingScreen() {
   const theme = useTheme();
-  const { state } = useSession();
+  const { state, refresh } = useSession();
   const [data, setData] = useState<WeddingData>(EMPTY);
   const [loading, setLoading] = useState(true);
   /** 일정 D-day 계산용 기준 시각. 렌더 중에는 Date.now()를 부르지 않는다 — 마운트 후 한 번 정한다. */
@@ -187,6 +189,10 @@ export default function WeddingScreen() {
       ) : null}
     </View>
   );
+
+  if (state.status === 'error') return <FullScreenError kind={state.kind} onRetry={() => void refresh()} />;
+  if (state.status === 'loading') return <DelayedLoadingView />;
+  if (state.status === 'signedOut') return <Redirect href="/login" />;
 
   /* 예식 완료 — WP-OUR-001 «예식 완료» 상태는 WP-OUR-013 본문이다. */
   if (weddingOver && weddingId) {
