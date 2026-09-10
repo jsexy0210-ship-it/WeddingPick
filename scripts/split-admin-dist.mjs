@@ -44,7 +44,7 @@ const ADMIN_ORIGIN = (process.env.ADMIN_ORIGIN || 'https://weddingpick-admin.onr
  * 관리자 출처에 조용히 남는다. 남길 것만 세어두면 그런 일이 없다.
  */
 const ADMIN_KEEP = new Set([
-  'admin', // 관리자 화면 33개
+  'admin', // 관리자 화면 32장 + 모듈 산출물 2장(_api·_session)
   '_expo', // JS·CSS 번들 (사용자 화면과 같은 번들 하나다 — 갈라지지 않는다)
   'assets', // 폰트·이미지
   'favicon.ico',

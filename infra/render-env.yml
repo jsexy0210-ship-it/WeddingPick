@@ -34,12 +34,14 @@ services:
   # 그 항목을 실패로 세고 **워크플로 전체를 exit 1로 끝낸다**(main:188). 서비스가
   # 생기기 전에 여기를 켜면 main에 푸시할 때마다 빨간 워크플로가 남는다.
   #
-  # 켜는 시점 — Render 대시보드에 `weddingpick-admin` 서비스를 만든 뒤. 그때
-  # 아래 주석을 풀고, **대시보드의 실제 서비스 이름과 글자 하나까지 맞춘다**
-  # (이 저장소는 슬러그를 쓰지만 운영 API는 `WeddingPickl`처럼 표시 이름과
-  # API 이름이 다른 전례가 있다). 절차는 docs/admin-origin-split.md.
+  # 켜는 시점 — Render 대시보드에 관리자 서비스가 살아난 뒤. 그때 아래 주석을 푼다.
   #
-  # weddingpick-admin:
+  # 이름은 **위 서비스들과 같은 규칙**으로 대시보드 표시 이름을 그대로 쓴다
+  # (2026-09-10 이름 변경). 주소의 슬러그(`weddingpick-admin.onrender.com`)와
+  # 다른 값이라는 데 주의한다 — 동기화 스크립트가 보는 것은 표시 이름 쪽이다.
+  # 절차는 docs/admin-origin-split.md.
+  #
+  # WeddingPick-관리자 사이트:
   #   vars:
   #     EXPO_PUBLIC_API_URL: https://weddingpickl.onrender.com
   #     EXPO_PUBLIC_KAKAO_CLIENT_ID: 8e9a14dd3a0aa1a420bff858460c415c
@@ -74,7 +76,7 @@ services:
       # 브라우저에는 CORS 오류로 뜨지만 서버 로그에는 아무것도 남지 않는다.
       #
       #   app-web        앱 화면. 관리자는 여기서 빠졌다 — admin 출처로 넘긴다
-      #   admin          관리자 콘솔(/admin/*, 화면 31장). 별도 출처다
+      #   admin          관리자 콘솔(/admin/*, 화면 32장). 별도 출처다
       #   web            서비스 웹사이트
       #   weddingpick.kr web의 커스텀 도메인. onrender 주소만 있으면 이쪽으로 들어온 사람이 막힌다
       #

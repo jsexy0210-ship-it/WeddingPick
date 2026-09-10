@@ -53,10 +53,10 @@ services:
     # 넘기는 단계다**(2026-09-10 사용자 결정으로 관리자를 다시 분리했다).
     # 이걸 빼면 관리자가 두 곳에 살아 있고, 한쪽을 고치면 다른 쪽이 낡는다.
     #
-    # **넣는 시점이 중요하다.** 관리자 로그인(PR #167)이 들어오기 전에 이 단계를
-    # 켜면 관리자 콘솔에 아예 못 들어간다 — 넘겨준 새 출처에는 localStorage가
-    # 비어 있고, 지금 코드에는 그 출처에서 토큰을 받을 로그인 화면이 없다.
-    # 순서는 docs/admin-origin-split.md의 전환 절차를 따른다.
+    # **넣는 시점이 중요하다.** 관리자 서비스가 실제로 뜨고 그 출처에서 로그인이
+    # 되는 것을 확인한 뒤에 이 단계를 켠다 — 먼저 켜면 옛 주소가 아직 살아나지
+    # 않은 곳으로 넘어가 관리자 콘솔에 못 들어간다. 로그인 자체는 PR #167로
+    # 들어와 있다. 순서는 docs/admin-origin-split.md의 전환 절차를 따른다.
     buildCommand: npm run export:web --workspace @weddingpick/mobile && node scripts/split-admin-dist.mjs app
     envVars:
       - key: EXPO_PUBLIC_API_URL
@@ -112,6 +112,12 @@ services:
   # **이 선언만으로는 서비스가 생기지 않는다** — Blueprint sync가 깨져 있다(위 머리말).
   # 사람이 대시보드에서 만들고 Build Command·Publish Directory를 손으로 넣어야 한다.
   # 절차는 docs/admin-origin-split.md에 있다.
+  #
+  # **이름이 두 벌이라는 데 주의한다.** 아래 `name`은 이 파일의 다른 서비스들과 같은
+  # 규칙인 주소 슬러그(`weddingpick-admin.onrender.com`)다. 대시보드의 표시 이름은
+  # **`WeddingPick-관리자 사이트`**이고, `infra/render-env.yml`은 그쪽을 써야 한다 —
+  # `scripts/render-env-sync.py`가 표시 이름으로 서비스를 찾기 때문이다(2026-09-10
+  # 이름 변경으로 그 파일의 서비스 이름이 전부 표시 이름으로 바뀌었다).
   - type: web
     name: weddingpick-admin
     runtime: static

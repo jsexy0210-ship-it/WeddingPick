@@ -4,7 +4,7 @@
 
 ```
 weddingpick-app-web.onrender.com          사용자 앱
-weddingpick-admin.onrender.com/admin/*    관리자 콘솔 (화면 31장)
+weddingpick-admin.onrender.com/admin/*    관리자 콘솔 (화면 32장)
 ```
 
 2026-09-09에 「관리자를 `/admin` 하나로 통일한다」고 정했던 것을 되돌린 것이다.
@@ -59,11 +59,11 @@ npm run export:web --workspace @weddingpick/mobile
 
 - expo-router의 static 출력은 **URL 경로로 라우트를 찾는다.** `/admin/home`을
   `/home`으로 바꿔 내보내면 서버가 보낸 HTML과 클라이언트 라우터가 어긋난다.
-- `_api.ts`가 401·403에서 보내는 `/admin/login`(PR #167)이 **고칠 것 없이 맞는다.**
+- `_api.ts`가 401·403에서 보내는 `/admin/login`(PR #167)이 **고칠 것 없이 맞는다** — 실제로 이 분리에서 화면 코드를 한 줄도 고치지 않았다.
 
 ### 왜 따로 빌드하지 않았나 (갈래 B)
 
-화면 31장이 expo-router 트리 하나에 묶여 있고 `react-native`의 `View`·`Text`·
+화면 32장이 expo-router 트리 하나에 묶여 있고 `react-native`의 `View`·`Text`·
 `Pressable`·`ScrollView`·`StyleSheet`를 그대로 쓴다. `apps/admin`을 따로 세우려면
 react-native-web 빌드 파이프라인을 새로 세워야 한다. 그런데 **출처 분리라는 목적은
 그것 없이 달성되고**, 따로 빌드해서 얻는 것은 사용자에게 안 보내도 될 바이트를 안
@@ -79,24 +79,31 @@ react-native-web 빌드 파이프라인을 새로 세워야 한다. 그런데 **
    `localStorage`를 주기 때문이고, 고장이 아니다.
 3. 사용자 앱 쪽은 아무 변화가 없다.
 
-## ⚠️ 전환 순서 — PR #167보다 먼저 하면 안 된다
+## 전환 순서
 
-**지금 main에는 관리자 로그인이 없다.** PR #167(머지 대기)에 들어 있다. 현재 상태는
+**관리자 로그인은 들어와 있다** — PR #167(`af698bd`)이 2026-09-10에 머지됐고 #168이
+「로그인 되돌아오기」를 고쳤다. `admin/login.tsx` · `admin/_session.ts`가 있고
+토큰은 `weddingpick.adminToken.v1`, `_api.ts`는 401·403에서 토큰을 지우고
+`/admin/login`으로 보낸다. 그래서 분리를 막던 조건은 없다.
 
-- `_layout.tsx`에 인증 게이트가 없다 — `Platform.OS !== 'web'` 검사뿐이다
-- `_api.ts`가 **사용자 토큰**(`weddingpick.sessionToken.v1`)을 쓴다. 관리자 전용
-  토큰도, 401 리다이렉트도 없다
+### 서비스 이름이 두 벌이다 — 여기서 틀리면 조용히 어긋난다
 
-이 상태로 출처를 가르면 새 출처의 `localStorage`가 비어 토큰이 없고, **그 출처에는
-토큰을 받을 로그인 화면이 없다.** 관리자 콘솔에 들어갈 방법이 사라진다.
+| 쓰는 곳 | 값 |
+|---|---|
+| 주소 슬러그 | `weddingpick-admin` (→ `weddingpick-admin.onrender.com`) |
+| 대시보드 표시 이름 | **`WeddingPick-관리자 사이트`** |
+| `render.yaml`의 `name` | 슬러그 (이 파일의 다른 서비스와 같은 규칙) |
+| `infra/render-env.yml`의 서비스 키 | **표시 이름** — `scripts/render-env-sync.py`가 이걸로 찾는다 |
+
+2026-09-10에 대시보드 이름이 바뀌면서 `infra/render-env.yml`의 서비스 키가 전부
+표시 이름으로 옮겨갔다(`WeddingPick-웹뷰(앱 테스트)` 등). 관리자도 같은 규칙을 따른다.
 
 ### 절차
 
-1. **PR #167을 머지한다.** 관리자 로그인·`_session.ts`·인증 게이트가 들어온다.
-2. Render 대시보드에서 `weddingpick-admin` 서비스를 확인하거나 새로 만든다
-   (Static Site). 저장소 문서가 엇갈린다 — `docs/AI_HANDOFF.md`는 2026-09-09에
-   「지웠다」고 적혀 있다. **실제 존재 여부를 눈으로 확인한다.**
-3. 그 서비스에 손으로 넣는다 — Blueprint sync가 깨져 있어 `render.yaml`만으로는
+1. Render 대시보드에서 관리자 서비스를 확인하거나 새로 만든다(Static Site).
+   저장소 문서가 엇갈린다 — `docs/AI_HANDOFF.md`는 2026-09-09에 「지웠다」고 적혀
+   있다. **실제 존재 여부를 눈으로 확인한다.**
+2. 그 서비스에 손으로 넣는다 — Blueprint sync가 깨져 있어 `render.yaml`만으로는
    아무것도 반영되지 않는다.
 
    | 항목 | 값 |
@@ -105,15 +112,17 @@ react-native-web 빌드 파이프라인을 새로 세워야 한다. 그런데 **
    | Build Command | `npm run export:web --workspace @weddingpick/mobile && node scripts/split-admin-dist.mjs admin` |
    | Publish Directory | `apps/mobile/dist` |
    | Auto-Deploy | 켠다 |
-   | 환경변수 | `render.yaml`의 `weddingpick-admin` 블록에 적힌 `EXPO_PUBLIC_*` 일습 |
+   | 환경변수 | `render.yaml`의 관리자 블록에 적힌 `EXPO_PUBLIC_*` 일습 |
 
-4. 배포된 `weddingpick-admin.onrender.com/admin/login`에서 **실제로 로그인해 본다.**
-   여기까지 되고 나서 다음으로 간다.
-5. `weddingpick-app-web`의 Build Command 끝에 `&& node scripts/split-admin-dist.mjs app`을
-   붙이고 재배포한다. 이때부터 옛 주소가 새 주소로 넘어간다.
-6. `infra/render-env.yml`의 `weddingpick-admin` 블록 주석을 풀어 환경변수 원본을
-   저장소로 옮긴다. **대시보드의 실제 서비스 이름과 글자 하나까지 맞춘다** — 이름이
-   어긋나면 sync 워크플로가 exit 1로 끝나 main 푸시마다 빨갛게 남는다.
+3. 배포된 `weddingpick-admin.onrender.com/admin/login`에서 **실제로 로그인해 본다.**
+   서버 쪽에 `ADMIN_LOGIN_ID` · `ADMIN_PASSWORD_HASH`가 들어가 있어야 한다
+   (`infra/render-env.yml`의 운영 API `secrets`). 여기까지 되고 나서 다음으로 간다.
+4. `WeddingPick-웹뷰(앱 테스트)`의 Build Command 끝에
+   `&& node scripts/split-admin-dist.mjs app`을 붙이고 재배포한다. 이때부터 옛
+   주소가 새 주소로 넘어간다.
+5. `infra/render-env.yml`의 관리자 블록 주석을 푼다. 키는 **`WeddingPick-관리자 사이트`**
+   — 대시보드와 글자 하나까지 같아야 한다. 어긋나면 sync 워크플로가 exit 1로
+   끝나 main 푸시마다 빨갛게 남는다(`scripts/render-env-sync.py` main:188).
 
 `CORS_ORIGINS`에 `https://weddingpick-admin.onrender.com`을 넣는 것은 **먼저 해도
 안전하다** — 아직 아무것도 서빙하지 않는 출처를 허용 목록에 넣는 것뿐이고 기존
@@ -121,5 +130,5 @@ react-native-web 빌드 파이프라인을 새로 세워야 한다. 그런데 **
 
 ## 되돌리려면
 
-`weddingpick-app-web`의 Build Command에서 `&& node scripts/split-admin-dist.mjs app`을
+`WeddingPick-웹뷰(앱 테스트)`의 Build Command에서 `&& node scripts/split-admin-dist.mjs app`을
 빼고 재배포하면 옛 주소의 관리자 화면이 그대로 돌아온다. 화면 코드는 손대지 않았다.
