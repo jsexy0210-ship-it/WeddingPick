@@ -32,7 +32,7 @@ export const FontSize = {
   npayPay: 14,
   /** 탭 바 라벨. tabBar.labelSize 12/16. */
   tab: 12,
-  /** 상태 배지(Pick 완료 · 인증완료 · 결정 완료). component.badge 14/19/700 · height 22. */
+  /** 상태 배지(Pick 완료 · 인증완료 · 결정 완료). component.badge 14/19/700 · minHeight 22. */
   badge: 14,
   /** 금액 한 덩어리. display와 같다. */
   amount: 32,

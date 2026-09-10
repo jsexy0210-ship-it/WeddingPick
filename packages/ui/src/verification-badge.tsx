@@ -12,7 +12,7 @@ export type VerificationBadgeProps = {
 };
 
 /**
- * 상자는 상태 배지와 같다 — height 22 · padding 4 9 · radius 4 · 14/19/700 · 한 줄
+ * 상자는 상태 배지와 같다 — minHeight 22 · padding 4 9 · radius 4 · 14/19/700 · 한 줄
  * (tokens.json component.badge). 등급별 색은 `VERIFICATION_LEVEL_ACCENT`(고정).
  */
 export function VerificationBadge({ level }: VerificationBadgeProps) {
