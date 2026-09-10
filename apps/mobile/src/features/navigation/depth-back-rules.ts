@@ -35,6 +35,7 @@
 export const ROUTES: readonly string[] = [
   '/',
   '/admin',
+  '/admin/admins',
   '/admin/ads',
   '/admin/ads-gate',
   '/admin/ai-usage',

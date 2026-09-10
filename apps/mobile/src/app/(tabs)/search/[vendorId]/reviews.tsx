@@ -214,7 +214,8 @@ export default function VendorReviewsScreen() {
                   <ThemedText type="small" themeColor="textSecondary">
                     {review.roleLabel} · {review.verificationLabel}
                   </ThemedText>
-                  <ThemedText type="small">{review.body}</ThemedText>
+                  {/* 시안 L415 — 후기 본문 16/24 #393a40. 14/19는 메타 크기라 본문이 메타처럼 읽힌다. */}
+                  <ThemedText type="body" themeColor="textStrong">{review.body}</ThemedText>
 
                   {review.pros ? (
                     <ThemedText type="small" themeColor="textSecondary">
@@ -242,11 +243,11 @@ export default function VendorReviewsScreen() {
                     * 대신 옆에 말을 더한다. 읽는 사람이 양쪽을 다 본다.
                     */}
                   {review.rebuttal ? (
-                    <View style={[styles.rebuttal, { borderLeftColor: theme.tint }]}>
-                      <ThemedText type="t7" themeColor="tint">
+                    <View style={[styles.rebuttal, { backgroundColor: theme.backgroundElement }]}>
+                      <ThemedText type="t7" themeColor="textSecondary" style={styles.bold}>
                         업체 반론 · {review.rebuttal.claimedRole}
                       </ThemedText>
-                      <ThemedText type="small">{review.rebuttal.body}</ThemedText>
+                      <ThemedText type="body" themeColor="textStrong">{review.rebuttal.body}</ThemedText>
                     </View>
                   ) : null}
 
@@ -325,12 +326,19 @@ function Frame({ children }: { children: React.ReactNode }) {
 }
 
 const styles = StyleSheet.create({
-  /** 후기 아래 세로선 블록. 핸드오프가 정한 모양이다. */
+  /**
+   * 후기 아래 업체 반론 상자. 시안 11-report-review.dc.html L417 —
+   * `border-radius:10px;background:#f7f8fa;padding:16px;gap:6px`.
+   *
+   * 왼쪽 코랄 세로선이었는데, 시안은 상자다. 선은 인용으로 읽히고 상자는 나란한
+   * 다른 목소리로 읽힌다 — 후기를 가리지 않고 옆에 말을 더하는 쪽이 뒤다.
+   */
   rebuttal: {
-    borderLeftWidth: 2,
-    paddingLeft: Spacing.three,
-    gap: Spacing.one,
+    borderRadius: Radius.medium,
+    padding: Spacing.three,
+    gap: Layout.menuGroupGap,
   },
+  bold: { fontWeight: '700' },
   container: {
     flex: 1,
     flexDirection: 'row',

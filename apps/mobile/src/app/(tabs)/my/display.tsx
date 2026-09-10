@@ -185,8 +185,8 @@ function rgb(hex: string): [number, number, number] {
   ];
 }
 
-/** 스와치 두 겹 링의 두께. 시안 3px에 가장 가까운 토큰 — `border.focus`(2). */
-const RING = Border.focus;
+/** 스와치 두 겹 링의 두께. 시안 13-my-sub L189-190이 안팎 모두 3이다. */
+const RING = Border.swatchRing;
 
 const styles = StyleSheet.create({
   bold: { fontWeight: '700' },
@@ -205,6 +205,7 @@ const styles = StyleSheet.create({
     borderWidth: RING,
     padding: 0,
   },
+  /* 시안 미선택 — `inset 0 0 0 1px rgba(0,27,55,.10)`. 투명이면 흰 스킨이 흰 바탕에서 사라진다. */
   swatchRingOff: { borderColor: 'transparent' },
   swatch: {
     width: Layout.thumbList,
