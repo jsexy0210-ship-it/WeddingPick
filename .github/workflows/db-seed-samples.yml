@@ -16,10 +16,10 @@ on:
         default: seed
         options: [seed, remove, images]
       target:
-        description: '대상 DB. 검수용이라 staging이 기본 — production은 사람이 고를 때만'
+        description: '대상 DB. 검수용이라 staging이 기본 — default(운영)는 걷어낼 때만 쓴다'
         type: choice
         default: staging
-        options: [staging, production]
+        options: [staging, default, production]
 
 permissions:
   contents: read
@@ -39,18 +39,31 @@ jobs:
         env:
           STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
           PRODUCTION_DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+          DEFAULT_DATABASE_URL: ${{ secrets.DATABASE_URL }}
           STORAGE_DRIVER: local
           MODE: ${{ github.event.inputs.mode }}
           TARGET: ${{ github.event.inputs.target }}
         run: |
           # 이 워크플로는 검수용 샘플이고 remove는 업체·이미지·표본 계정을 지운다.
           # 운영 DB(DATABASE_URL)를 그대로 쓰던 것을 대상 선택으로 바꾼다.
+          #
+          # **`production`은 여기서 닿지 않는다.** PRODUCTION_DATABASE_URL은 Render
+          # 내부망에서만 풀리는 이름이라 러너에서 getaddrinfo EAI_AGAIN으로 죽는다
+          # (2026-09-09 db-status.yml 실측). 운영 API가 실제로 쓰는 DB는
+          # DATABASE_URL이고, 그것이 여기의 `default`다. 선택지는 남겨 둔다 —
+          # 밖에서 닿는 주소가 그 이름에 들어오면 그때 그대로 쓴다.
           case "${TARGET:-staging}" in
             production) export DATABASE_URL="$PRODUCTION_DATABASE_URL" ;;
+            default)    export DATABASE_URL="$DEFAULT_DATABASE_URL" ;;
             *)          export DATABASE_URL="$STAGING_DATABASE_URL" ;;
           esac
           if [ -z "$DATABASE_URL" ]; then
             echo "::error::${TARGET:-staging} 대상의 접속 정보가 GitHub Secrets에 없다."
+            exit 1
+          fi
+          # 지어낸 업체를 운영 DB에 **넣는** 일은 하지 않는다. 걷어내는 것만 허용한다.
+          if [ "${TARGET:-staging}" = "default" ] && [ "$MODE" != "remove" ]; then
+            echo "::error::운영 DB에는 remove만 돌린다. 샘플을 넣거나 사진을 바꾸는 것은 staging에서 한다."
             exit 1
           fi
           echo "대상: ${TARGET:-staging}"
