@@ -57,6 +57,7 @@ const NAV: NavEntry[] = [
   { key: 'terms', label: '약관 · 방침 관리', href: '/admin/terms' },
   { key: 'og-card', label: '링크 미리보기', href: '/admin/og-card' },
   { key: 'ai-usage', label: 'AI 사용량 · 비용', href: '/admin/ai-usage' },
+  /* 이름은 v3.27 시안 것을 쓴다(#172). 관리자 계정은 이 브랜치가 새로 더한 화면이다. */
   { key: 'policy-engine', label: '정책 규칙 관리', href: '/admin/policy-engine' },
   { key: 'audit-log', label: '감사 기록', href: '/admin/audit-log' },
   { key: 'admins', label: '관리자 계정', href: '/admin/admins' },
