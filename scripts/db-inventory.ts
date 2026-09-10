@@ -132,11 +132,53 @@ async function main(): Promise<void> {
        FROM structured.wedding_info`,
   );
 
-  console.log('\n이용자가 넣은 것');
-  await count('회원', 'SELECT count(*) AS 건수 FROM structured.users');
+  /*
+   * **샘플과 진짜를 갈라 센다.** 합계만 세면 「후기 1,603건」이 실제 이용자가 쓴 것처럼
+   * 읽힌다. 시드(`seed-samples.ts`)가 «표본N» · «제보자N»이라는 이름으로 회원과 후기 ·
+   * 제보를 함께 심어 두었고, 그 계정은 소셜 로그인(identities)이 붙어 있지 않다 —
+   * 그것이 사람과 시드를 가르는 유일하게 확실한 표식이다.
+   */
+  const SEEDED_USER = `u.display_name_user_set = false
+       AND (u.display_name ~ '^(표본|제보자)[0-9]+$' OR u.display_name IN ('운영자', '표본운영'))
+       AND NOT EXISTS (SELECT 1 FROM identity.identities i WHERE i.user_id = u.id)`;
+
+  console.log('\n이용자가 넣은 것 — 시드와 사람을 가른다');
+  await count(
+    '회원',
+    `SELECT count(*) FILTER (WHERE ${SEEDED_USER}) AS 시드,
+            count(*) FILTER (WHERE NOT (${SEEDED_USER})) AS 사람
+       FROM structured.users u`,
+  );
+  await count(
+    '로그인이 붙은 계정',
+    `SELECT count(DISTINCT user_id) AS 건수 FROM identity.identities`,
+  );
+  await count(
+    '후기',
+    `SELECT count(*) FILTER (WHERE EXISTS (
+              SELECT 1 FROM structured.users u WHERE u.id = r.author_user_id AND ${SEEDED_USER})) AS 시드,
+            count(*) FILTER (WHERE NOT EXISTS (
+              SELECT 1 FROM structured.users u WHERE u.id = r.author_user_id AND ${SEEDED_USER})) AS 사람
+       FROM structured.reviews r`,
+  );
+  await count(
+    '업체가 시드인 후기',
+    `SELECT count(*) AS 건수 FROM structured.reviews r
+      WHERE EXISTS (SELECT 1 FROM structured.vendor_source_records s
+                     WHERE s.vendor_id = r.vendor_id AND s.source_key = 'sample')`,
+  );
   await count('웨딩', 'SELECT count(*) AS 건수 FROM structured.weddings');
-  await count('후기', 'SELECT count(*) AS 건수 FROM structured.reviews');
   await count('제보(견적·결제)', 'SELECT count(*) AS 건수 FROM structured.quotes');
+  await count(
+    '업체가 시드인 제보',
+    `SELECT count(*) AS 건수 FROM structured.quotes q
+      WHERE EXISTS (SELECT 1 FROM structured.vendor_source_records s
+                     WHERE s.vendor_id = q.vendor_id AND s.source_key = 'sample')`,
+  );
+  await count(
+    '시드 표시가 붙은 업체',
+    `SELECT count(*) AS 건수 FROM structured.vendor_source_records WHERE source_key = 'sample'`,
+  );
 
   await pool.end();
 }
