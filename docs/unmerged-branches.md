@@ -1,11 +1,21 @@
 # 원격 브랜치 조사 — 2026-09-10
 
-`origin`에 브랜치가 **112개**(`main` 포함) 있다.
+> **아래 숫자는 2026-09-11 02:05 KST 스냅샷이다. 지금 값이 아니다.**
+>
+> 이 저장소는 한 시간에도 여러 번 움직인다. 처음 이 문서를 쓴 뒤 두 시간 만에
+> 브랜치가 112 → 128개, 지워도 되는 것이 17 → 29개로 바뀌었다. **손으로 적은 숫자를
+> 현재값으로 믿지 않는다** — 지우기 전에는 언제나 다시 센다.
+>
+> **지금 값은 Actions → 「브랜치 정리」가 센다.** 돌 때마다 다시 세고, 열린 PR의
+> head와 최근 브랜치를 걸러내며, `dry_run`을 켠 채로 목록만 보여준다. 아래 표는
+> 그때의 판단 근거이지 실행 목록이 아니다.
+
+스냅샷 시점(2026-09-11 02:05 KST) 기준 `origin`에 브랜치가 **128개**(`main` 포함) 있다.
 
 | | 수 |
 |---|---|
-| 내용이 이미 `main`에 있다 → 지운다 | **17** |
-| `main`과 실제로 다르다 → 남긴다 | **94** |
+| 내용이 이미 `main`에 있다 → 지운다 | **29** |
+| `main`과 실제로 다르다 → 남긴다 | **98** |
 | `main` | 1 |
 
 ## 재는 방법 — 얕은 클론에서 재면 전부 틀린다
@@ -36,11 +46,14 @@
 `main`이 그 파일을 다시 손댔는지 센 것이다. 전부 다시 손댔으면 `main`이 그 자리를 이미
 지나갔다는 뜻이고, 하나도 안 손댔으면 그 브랜치에만 있는 것일 가능성이 높다.
 
-## 지워도 되는 17개
+## 지워도 되는 29개 — 2026-09-11 02:05 KST 기준
 
-내용이 `main`과 한 글자도 다르지 않다.
+내용이 `main`과 한 글자도 다르지 않다. **보호 목록은 뺐다** — 이 계산은 「내용이
+main에 있는가」만 보므로, 흡수가 끝난 살아 있는 전담 브랜치도 걸린다. 실제로
+`claude/weddingpick-master-bootstrap-6j1c7o`(MASTER)가 걸려서 뺐다. 지금 돌고 있는
+세션의 브랜치를 지우면 그 세션이 푸시할 곳을 잃는다.
 
-**아직 한 개도 지워지지 않았다.** 원격 브랜치는 여전히 112개다
+**아직 한 개도 지워지지 않았다.** 원격 브랜치는 여전히 128개다
 (`git ls-remote --heads origin | wc -l`). 컨테이너에서는 `git push origin --delete`가
 HTTP 403으로 막힌다 — 같은 자격으로 브랜치 **푸시는 된다**.
 
@@ -56,23 +69,35 @@ head와 최근 브랜치도 알아서 걸러낸다. `dry_run`을 켠 채 돌려 
 
 | 브랜치 | 팁 SHA | 마지막 커밋 |
 |---|---|---|
+| `claude/home-c1` | `b719c880` | 2026-09-01 |
 | `claude/daily-progress-briefing-3k7lez` | `a3ead320` | 2026-09-02 |
 | `claude/fix-db-migration-0061` | `856c37b3` | 2026-09-02 |
 | `claude/fix-db-migration-0062` | `94feee79` | 2026-09-02 |
-| `claude/home-c1` | `b719c880` | 2026-09-01 |
-| `claude/marketing-banned-terms` | `fc1d14c4` | 2026-09-09 |
 | `claude/payment-proof-count-fix` | `08fce744` | 2026-09-02 |
-| `claude/wedding-pick-android-apk-tjo2gg` | `512e6b08` | 2026-09-04 |
-| `claude/weddingpick-handoff-link-fix` | `6fb28ccf` | 2026-09-07 |
 | `claude/withdrawal-copy-alignment-15037` | `bcbdab8e` | 2026-09-02 |
-| `codex/social-login-completion` | `2bf2186b` | 2026-09-03 |
-| `codex/web-copy-responsive` | `09615398` | 2026-09-08 |
-| `codex/web-open-graph` | `7bcb57de` | 2026-09-04 |
 | `fix/monthly-draw-migration-collision` | `0ea99ffb` | 2026-09-02 |
 | `fix/stale-policy-status-tests` | `553a79e9` | 2026-09-02 |
+| `codex/social-login-completion` | `2bf2186b` | 2026-09-03 |
+| `claude/wedding-pick-android-apk-tjo2gg` | `512e6b08` | 2026-09-04 |
+| `codex/web-open-graph` | `7bcb57de` | 2026-09-04 |
+| `codex/web-copy-responsive` | `09615398` | 2026-09-08 |
+| `claude/marketing-banned-terms` | `fc1d14c4` | 2026-09-09 |
 | `release/block-system-alert-window` | `79341cdd` | 2026-09-09 |
 | `release/enable-google-play-submit` | `fee8f019` | 2026-09-09 |
 | `release/play-first-release-checklist` | `6f73f50e` | 2026-09-09 |
+| `claude/admin-actions-data` | `c253fb4b` | 2026-09-10 |
+| `claude/admin-actions-ops` | `0316a90e` | 2026-09-10 |
+| `claude/admin-actions-review` | `5a6ef2ce` | 2026-09-10 |
+| `claude/admin-dashboard` | `45b78ed1` | 2026-09-10 |
+| `codex/app-experience-master-20260910` | `6471569c` | 2026-09-10 |
+| `codex/app-loading-20260910` | `02fde828` | 2026-09-10 |
+| `codex/app-ux-writing-20260910` | `cbd5dd76` | 2026-09-10 |
+| `codex/app-journey-20260910` | `7707938c` | 2026-09-11 |
+| `codex/app-session-recovery-20260911` | `f15b278b` | 2026-09-11 |
+| `codex/master-priority-handoff-20260911` | `c8d30a2a` | 2026-09-11 |
+| `codex/pending-admin-deploy` | `bccff2b3` | 2026-09-11 |
+| `codex/signup-entry-recovery` | `0ccafd76` | 2026-09-11 |
+
 되돌리려면 `git branch <이름> <SHA>`.
 
 열린 PR 6건(#168 · #164 · #152 · #142 · #135 · #133)의 head 브랜치는 **하나도 이 17개에

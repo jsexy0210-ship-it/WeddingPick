@@ -32,9 +32,13 @@ on:
         type: string
         default: '3'
       protect:
-        description: '추가로 지키고 싶은 브랜치 (쉼표로 구분)'
+        description: '지킬 브랜치 (쉼표로 구분). 기본값은 살아 있는 전담 브랜치다'
         type: string
-        default: ''
+        # 살아 있는 전담 브랜치와 아직 흡수되지 않은 것. 비워 두면 본선만 지켜지고,
+        # 「마지막 커밋이 오래됐다」 조건에 걸리는 순간 돌고 있는 세션의 브랜치가
+        # 지워진다 — 나이로 걸러지는 것은 우연이지 보호가 아니다.
+        # 세션이 끝나면 여기서 뺀다. 그때 비로소 정리 대상이 된다.
+        default: 'claude/weddingpick-master-bootstrap-6j1c7o,claude/admin-console,claude/webview-design,claude/inapp-browser,claude/admin-accounts,claude/admin-split,claude/badge-clipping,claude/retention-3,release/public-data-sbiz-key-guard'
 
 permissions:
   contents: write
