@@ -90,6 +90,9 @@ export default function UsersScreen() {
   const [acting, setActing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionNote, setActionNote] = useState<string | null>(null);
+  /** 대신 탈퇴시키기 — 확인 단계와 사유. 되돌릴 수 없어 한 번 더 묻는다. */
+  const [confirmWithdraw, setConfirmWithdraw] = useState(false);
+  const [withdrawReason, setWithdrawReason] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -130,6 +133,46 @@ export default function UsersScreen() {
         setSelected(null);
         setRev((r) => r + 1);
       }
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : '처리 실패');
+    } finally {
+      setActing(false);
+    }
+  }
+
+  /**
+   * 운영자가 대신 탈퇴시킨다(2026-09-10 대표 지시).
+   *
+   * **두 단계로 나눈다**(v3.27 관리자 공통 규칙 — 위험한 조작은 무엇이 바뀌는지
+   * 항목으로 보여준 뒤 한 번 더 확인). 첫 단추는 확인 화면을 열기만 하고, 실제
+   * 요청은 사유를 적은 뒤에야 나간다.
+   *
+   * 되돌릴 수 없다. 사유는 감사 기록에 그대로 남는다.
+   */
+  async function forceWithdraw() {
+    if (!selected) return;
+    const reason = withdrawReason.trim();
+
+    if (reason === '') {
+      setActionError('사유를 적어주세요. 기록에 남습니다.');
+
+      return;
+    }
+
+    setActing(true);
+    setActionError(null);
+    setActionNote(null);
+    try {
+      const result = (await apiFetch(`/v1/admin/users/${selected.id}/withdraw`, {
+        method: 'POST',
+        body: JSON.stringify({ reason }),
+      })) as { completed: boolean; note: string };
+
+      setActionNote(result.note);
+      setConfirmWithdraw(false);
+      setWithdrawReason('');
+      setRev((r) => r + 1);
+      if (result.completed) setSelected(null);
     } catch (e) {
       setActionError(e instanceof Error ? e.message : '처리 실패');
     } finally {
@@ -250,10 +293,61 @@ export default function UsersScreen() {
               </>
             )}
 
+            {/*
+              대신 탈퇴시키기. 아직 탈퇴하지 않은 계정에만 뜬다 — 이미 접수된 계정은
+              위의 «삭제 다시 시도»가 맡는다. 운영자 계정에는 두지 않는다(서버도
+              막지만, 눌러도 안 되는 단추를 보여줄 이유가 없다).
+            */}
+            {selected && !selected.deletedAt && !selected.isOperator && !confirmWithdraw && (
+              <Pressable
+                style={styles.withdrawAction}
+                onPress={() => { setConfirmWithdraw(true); setActionError(null); setActionNote(null); }}
+              >
+                <Text style={styles.withdrawActionText}>이 계정 탈퇴시키기</Text>
+              </Pressable>
+            )}
+
+            {confirmWithdraw && (
+              <View style={styles.confirmBox}>
+                <Text style={styles.confirmTitle}>탈퇴시키면 이렇게 됩니다</Text>
+                <Text style={styles.confirmItem}>· 로그인 수단과 세션이 곧바로 끊깁니다</Text>
+                <Text style={styles.confirmItem}>· 올린 원본 자료가 파기 대상이 됩니다</Text>
+                <Text style={styles.confirmItem}>· 파기가 끝나면 계정이 지워집니다</Text>
+                <Text style={styles.confirmItem}>· 되돌릴 수 없습니다</Text>
+                <Text style={styles.fieldLabel}>사유 (감사 기록에 남습니다)</Text>
+                <TextInput
+                  style={styles.reasonInput}
+                  value={withdrawReason}
+                  onChangeText={setWithdrawReason}
+                  placeholder="예: 본인 요청 · 전화 접수"
+                  placeholderTextColor={Colors.light.textAssistive}
+                />
+                <View style={styles.confirmRow}>
+                  <Pressable
+                    style={styles.confirmCancel}
+                    onPress={() => { setConfirmWithdraw(false); setWithdrawReason(''); }}
+                    disabled={acting}
+                  >
+                    <Text style={styles.confirmCancelText}>취소</Text>
+                  </Pressable>
+                  <Pressable
+                    style={styles.confirmGo}
+                    onPress={() => void forceWithdraw()}
+                    disabled={acting}
+                  >
+                    <Text style={styles.confirmGoText}>{acting ? '처리 중…' : '탈퇴시키기'}</Text>
+                  </Pressable>
+                </View>
+              </View>
+            )}
+
             {actionNote && <Text style={styles.actionNote}>{actionNote}</Text>}
             {actionError && <Text style={styles.actionError}>{actionError}</Text>}
 
-            <Pressable style={styles.closeBtn} onPress={() => setSelected(null)}>
+            <Pressable
+              style={styles.closeBtn}
+              onPress={() => { setSelected(null); setConfirmWithdraw(false); setWithdrawReason(''); }}
+            >
               <Text style={styles.closeBtnText}>닫기</Text>
             </Pressable>
           </View>
@@ -337,6 +431,56 @@ const styles = StyleSheet.create({
   retryAction: { marginTop: 12, paddingVertical: 10, borderRadius: 6, backgroundColor: Colors.light.tint, alignItems: 'center' },
   retryActionText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   actionNote: { fontSize: FontSize.t7, color: Colors.light.positive, marginTop: 8 },
+  /*
+   * 위험한 조작은 위험해 보이게 둔다 — 지우는 단추는 테두리만 두고 채우지 않는다.
+   * 채운 단추는 「추천하는 다음 걸음」으로 읽히는데, 이건 그런 자리가 아니다.
+   */
+  withdrawAction: {
+    marginTop: 18,
+    paddingVertical: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: Colors.light.negative,
+    alignItems: 'center',
+  },
+  withdrawActionText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.negative },
+  confirmBox: {
+    marginTop: 18,
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.light.negative,
+    backgroundColor: Colors.light.backgroundSelected,
+  },
+  confirmTitle: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.negative, marginBottom: 10 },
+  confirmItem: { fontSize: FontSize.t7, color: Colors.light.textSecondary, marginBottom: 4 },
+  reasonInput: {
+    height: 36,
+    borderWidth: 1,
+    borderColor: Colors.light.fieldBorder,
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    fontSize: FontSize.t7,
+    color: Colors.light.text,
+    backgroundColor: Colors.light.background,
+  },
+  confirmRow: { flexDirection: 'row', gap: 8, marginTop: 14 },
+  confirmCancel: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 6,
+    backgroundColor: Colors.light.background,
+    alignItems: 'center',
+  },
+  confirmCancelText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.textSecondary },
+  confirmGo: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 6,
+    backgroundColor: Colors.light.negative,
+    alignItems: 'center',
+  },
+  confirmGoText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
   modalBox: { backgroundColor: Colors.light.background, borderRadius: 14, padding: 24, width: 440 },
   modalTitle: { fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text, marginBottom: 4 },

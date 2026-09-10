@@ -36,10 +36,40 @@ export function hashAdminPassword(password: string): string {
  * 맞는가.
  *
  * 꼴이 아니거나 해시가 없으면 `false`다 — 설정이 빠진 것을 「통과」로 읽지 않는다.
+ *
+ * **원문 비밀번호도 받는다**(2026-09-10 대표 지시). `ADMIN_PASSWORD`에 원문을 넣어
+ * 두면 그것으로 대조한다. 해시를 만들어 환경변수에 옮기는 두 단계가 없어져서
+ * 「비밀번호를 바꾸고 바로 들어간다」가 한 번에 끝난다.
+ *
+ * **대신 원문이 Render 환경변수에 남는다.** 대시보드를 볼 수 있는 사람은 그대로
+ * 읽는다. 해시는 읽어도 원문을 되돌릴 수 없으니 그만큼 약해진다. 해시 쪽을 없애지는
+ * 않았으므로 `ADMIN_PASSWORD`를 지우면 곧바로 예전 방식으로 돌아간다.
+ *
+ * 둘 다 있으면 **하나만 맞아도 통과한다.** 해시를 이기게 두면 원문을 넣어도
+ * 아무 일이 일어나지 않고, 들어가려면 해시를 먼저 지워야 한다 — 없애려던 단계가
+ * 그대로 남는다. 대신 **잊고 둔 옛 원문이 계속 통한다**는 것이 이 선택의 값이다.
+ * 비밀번호를 바꿀 때는 두 환경변수를 함께 손봐야 한다.
+ *
+ * 맞는 쪽을 찾아도 나머지를 건너뛰지 않는다. 먼저 맞았을 때만 빨리 돌아오면 응답
+ * 시간으로 「어느 쪽이 설정돼 있는가」를 알 수 있다.
+ *
+ * 비교는 여기서도 `timingSafeEqual`이다. 원문이라고 `===`로 두면 응답 시간으로
+ * 한 글자씩 맞춰볼 수 있다.
  */
-export async function verifyAdminPassword(password: string, stored: string | undefined): Promise<boolean> {
-  if (!stored) return false;
+export async function verifyAdminPassword(
+  password: string,
+  stored: string | undefined,
+  plain?: string | undefined
+): Promise<boolean> {
+  const expectedPlain = plain?.trim();
+  const plainOk = expectedPlain ? sameSecret(password, expectedPlain) : false;
 
+  if (!stored) return plainOk;
+
+  return (await verifyHashedPassword(password, stored)) || plainOk;
+}
+
+async function verifyHashedPassword(password: string, stored: string): Promise<boolean> {
   const parts = stored.split('$');
 
   if (parts.length !== 3 || parts[0] !== 'scrypt') return false;
@@ -59,6 +89,21 @@ export async function verifyAdminPassword(password: string, stored: string | und
   const derived = await scrypt(password, salt, KEY_LENGTH);
 
   return timingSafeEqual(derived, expected);
+}
+
+/**
+ * 원문끼리 대조. 길이가 다르면 어차피 다르므로 그때만 빠르게 끝낸다.
+ *
+ * 길이가 새는 것은 감수한다 — `timingSafeEqual`이 같은 길이를 요구하고, 비밀번호
+ * 길이 하나로 좁혀지는 폭은 글자를 한 자씩 맞추는 것에 비하면 없는 것과 같다.
+ */
+function sameSecret(given: string, expected: string): boolean {
+  const a = Buffer.from(given);
+  const b = Buffer.from(expected);
+
+  if (a.length !== b.length) return false;
+
+  return timingSafeEqual(a, b);
 }
 
 /**

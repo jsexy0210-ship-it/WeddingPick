@@ -564,6 +564,37 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
     }
   );
 
+  /*
+   * **운영자가 대신 탈퇴시킨다**(2026-09-10 대표 지시).
+   *
+   * 위의 셋(hold · resume · retry)은 전부 사용자가 이미 낸 탈퇴에 개입하는 것이다.
+   * 시작을 대신 누르는 자리가 없어서, 운영자는 지워야 할 계정을 보고도 손이 없었다.
+   *
+   * 사유를 반드시 받는다. 되돌릴 수 없는 조작이고, 남이 대신 지운 계정은 본인이
+   * 지운 계정과 결과가 같아서 기록이 없으면 나중에 둘을 가릴 방법이 없다.
+   *
+   * 주소를 `/withdrawals/` 아래가 아니라 `/users/` 아래에 둔다 — 앞의 셋은 이미
+   * 탈퇴한 계정을 다루고, 이것은 **아직 탈퇴하지 않은 계정**에 대고 누른다.
+   */
+  const forceWithdrawBodySchema = z.object({ reason: z.string().trim().min(1) });
+
+  app.post<{ Params: { userId: string } }>(
+    '/v1/admin/users/:userId/withdraw',
+    auth,
+    async (request) => {
+      const body = forceWithdrawBodySchema.parse(request.body);
+
+      return await run(() =>
+        withdrawalAdmin.forceWithdraw(
+          { pool: context.pool, storage: context.storage },
+          request.params.userId,
+          currentUserId(request),
+          body.reason
+        )
+      );
+    }
+  );
+
   const resumeWithdrawalBodySchema = z.object({ reason: z.string().trim().min(1) });
 
   app.post<{ Params: { userId: string } }>(
