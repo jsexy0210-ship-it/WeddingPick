@@ -15,6 +15,7 @@ import { BackHandler, Pressable, StyleSheet, View } from 'react-native';
 import { ApiError, completeSetup, completeSignup, getCurrentUser, getSignupState } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { loadToken } from '@/api/session';
+import { error as errorCopy } from '../../../../spec/strings.ko.json';
 import { Layout, Radius, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
 
 import { DelayedRecommendingView } from '@/features/loading/delayed-loader';
@@ -111,8 +112,6 @@ export default function SetupScreen() {
   const [step, setStep] = useState<QuestionStep | 'done'>('date');
   /** 기기에 적어둔 답을 읽기 전에는 첫 질문을 그리지 않는다 — 잠깐 스쳤다 바뀌면 안 된다. */
   const [restored, setRestored] = useState(false);
-  /** 가입이 아직 안 끝난 계정인가 — 그러면 답을 다 받은 뒤 가입부터 마친다. */
-  const [needsSignup, setNeedsSignup] = useState(false);
   const [editing, setEditing] = useState<Editing | null>(null);
   /** 서버에 이미 있는 스타일 — 5/5에 닿았을 때 아직 안 골랐으면 이걸로 복원한다. */
   const [seedStyle, setSeedStyle] = useState<readonly WeddingStyle[] | null>(null);
@@ -140,17 +139,22 @@ export default function SetupScreen() {
   useEffect(() => {
     if (!isServerConfigured) return;
 
-    void getSignupState()
-      .then((state) => setNeedsSignup(!state.activated))
-      .catch(() => undefined);
     /*
      * 이미 고른 스타일이 있으면 복원한다(SPEC §13.6 «진입 — 기존 선택값을 초기화하지 않고
      * 복원»). 5/5에 들어설 때 `enter`가 채우고, 응답이 늦어 이미 5/5에 있으면 여기서 채운다.
      * 못 읽으면 없는 것 — 4/5 이전에는 채우지 않는다(채우면 5/5를 건너뛰게 된다).
      */
-    void getCurrentUser()
+    let active = true;
+    void (async () => {
+      const token = await loadToken();
+      if (!token) return null;
+      const state = await getSignupState();
+      if (!active || !state.activated || await loadToken() !== token) return null;
+      const me = await getCurrentUser();
+      return await loadToken() === token ? me : null;
+    })()
       .then((me) => {
-        if (me.styleTags.length === 0) return;
+        if (!active || !me || me.styleTags.length === 0) return;
 
         setSeedStyle(me.styleTags);
         if (stepRef.current === 'style') {
@@ -158,6 +162,7 @@ export default function SetupScreen() {
         }
       })
       .catch(() => undefined);
+    return () => { active = false; };
   }, []);
 
   useEffect(() => {
@@ -254,14 +259,31 @@ export default function SetupScreen() {
     };
 
     try {
-      if (isServerConfigured && (await loadToken())) {
+      if (isServerConfigured) {
+        const token = await loadToken();
+        if (!token) {
+          router.replace('/login');
+          return;
+        }
         /*
          * 가입을 먼저 끝낸다. 서버는 살아 있지 않은 계정의 다른 경로를 전부 막으므로
          * 순서를 바꾸면 예식일 저장이 거절된다. 필수 동의는 로그인 CTA의 안내로 이미
          * 받았다 — 여기서 서버에 기록한다. 나이는 보내지 않는다(로그인이 판정했다).
          */
-        if (needsSignup) {
-          await completeSignup({ consents: ['terms', 'privacy'] });
+        // 화면 진입 시 조회가 늦거나 실패해도 가입 완료로 간주하지 않는다.
+        const signup = await getSignupState();
+        if (await loadToken() !== token) {
+          router.replace('/login');
+          return;
+        }
+        if (!signup.activated) {
+          const completed = await completeSignup({ consents: ['terms', 'privacy'] });
+          if (!completed.activated) throw new Error(errorCopy['general.body']);
+        }
+
+        if (await loadToken() !== token) {
+          router.replace('/login');
+          return;
         }
 
         await completeSetup({
@@ -275,6 +297,11 @@ export default function SetupScreen() {
           /* 계약은 최소 1개를 받는다 — 5/5는 건너뛰지 않으므로 늘 있지만, 없으면 키를 아예 보내지 않는다. */
           ...(styleTags.length > 0 ? { styleTags } : {}),
         });
+
+        if (await loadToken() !== token) {
+          router.replace('/login');
+          return;
+        }
 
         void clearWeddingDraft().catch(() => undefined);
       } else {
