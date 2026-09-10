@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { FontSize, LineHeight } from '@weddingpick/ui';
+import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 
 import { apiFetch } from './_api';
 
@@ -105,11 +105,11 @@ export default function ReportScreen() {
               <View style={styles.cardTop}>
                 <View style={[
                   styles.typeBadge,
-                  { backgroundColor: item.status === 'pending' ? '#fff3f2' : '#f0f7f4' },
+                  { backgroundColor: item.status === 'pending' ? Colors.light.negativeBackground : Colors.light.positiveBackground },
                 ]}>
                   <Text style={[
                     styles.typeText,
-                    { color: item.status === 'pending' ? '#e81607' : '#1aa174' },
+                    { color: item.status === 'pending' ? Colors.light.negative : Colors.light.positive },
                   ]}>
                     {STATUS_LABEL[item.status]}
                   </Text>
@@ -128,20 +128,20 @@ export default function ReportScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f3f6' },
+  root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
-  title: { fontSize: FontSize.t5, fontWeight: '700', color: '#17181c' },
+  title: { fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text },
   tabs: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
     paddingHorizontal: 24,
   },
   tab: {
@@ -151,21 +151,21 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
     marginRight: 4,
   },
-  tabActive: { borderBottomColor: '#ff6f61' },
-  tabText: { fontSize: FontSize.t6, color: '#868b94' },
-  tabTextActive: { color: '#ff6f61', fontWeight: '700' },
+  tabActive: { borderBottomColor: Colors.light.tint },
+  tabText: { fontSize: FontSize.t6, color: Colors.light.textAssistive },
+  tabTextActive: { color: Colors.light.tint, fontWeight: '700' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  hint: { fontSize: FontSize.t7, color: '#868b94' },
-  errorText: { fontSize: FontSize.t7, color: '#e81607' },
+  hint: { fontSize: FontSize.t7, color: Colors.light.textAssistive },
+  errorText: { fontSize: FontSize.t7, color: Colors.light.negative },
   list: { padding: 16, gap: 10 },
   sep: { height: 6 },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderRadius: 10,
     padding: 16,
     gap: 8,
     borderWidth: 1,
-    borderColor: '#e4e5ea',
+    borderColor: Colors.light.border,
   },
   cardTop: {
     flexDirection: 'row',
@@ -178,8 +178,8 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   typeText: { fontSize: FontSize.badge, fontWeight: '700' },
-  typeLabel: { fontSize: FontSize.t7, color: '#4d5159', flex: 1 },
-  dateText: { fontSize: FontSize.badge, color: '#adb1ba' },
-  summary: { fontSize: FontSize.t7, color: '#3a3b40', lineHeight: LineHeight.t7 },
-  reporterCount: { fontSize: FontSize.badge, color: '#868b94' },
+  typeLabel: { fontSize: FontSize.t7, color: Colors.light.textSecondary, flex: 1 },
+  dateText: { fontSize: FontSize.badge, color: Colors.light.textDisabled },
+  summary: { fontSize: FontSize.t7, color: Colors.light.textStrong, lineHeight: LineHeight.t7 },
+  reporterCount: { fontSize: FontSize.badge, color: Colors.light.textAssistive },
 });

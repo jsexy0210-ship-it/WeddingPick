@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
@@ -34,10 +34,10 @@ const STATUS_LABEL: Record<MatchStatus, string> = {
   failed: '실패',
 };
 const STATUS_COLOR: Record<MatchStatus, string> = {
-  matched: '#0088cc',
-  unmatched: '#805217',
-  applied: '#1aa174',
-  failed: '#e81607',
+  matched: Colors.light.accent,
+  unmatched: Colors.light.cautionary,
+  applied: Colors.light.positive,
+  failed: Colors.light.negative,
 };
 
 export default function EmailMatchingScreen() {
@@ -168,42 +168,42 @@ export default function EmailMatchingScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f3f6' },
+  root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
-  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: '#17181c' },
-  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: '#f2f3f6' },
-  refreshText: { fontSize: FontSize.t7, color: '#5a5d6a' },
+  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text },
+  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: Colors.light.backgroundSelected },
+  refreshText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
   body: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  errorText: { fontSize: FontSize.t6, color: '#e53e3e', marginBottom: 16 },
-  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: '#ff6f61' },
-  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: '#fff' },
+  errorText: { fontSize: FontSize.t6, color: Colors.light.negative, marginBottom: 16 },
+  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: Colors.light.tint },
+  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   summaryRow: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
     paddingVertical: 12,
     paddingHorizontal: 24,
   },
   summaryCell: { flex: 1, alignItems: 'center' },
   summaryValue: { fontSize: FontSize.t4, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  summaryLabel: { fontSize: FontSize.tab, color: '#868b94', marginTop: 2 },
+  summaryLabel: { fontSize: FontSize.tab, color: Colors.light.textAssistive, marginTop: 2 },
   tableHead: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: Colors.light.backgroundElement,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
     alignItems: 'center',
   },
   tableRow: {
@@ -211,12 +211,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f1f4',
+    borderBottomColor: Colors.light.backgroundSelected,
     alignItems: 'center',
   },
-  tableRowZebra: { backgroundColor: '#fafbfc' },
-  th: { fontSize: FontSize.tab, fontWeight: '700', color: '#868b94', textTransform: 'uppercase' as const },
-  td: { fontSize: FontSize.t7, color: '#3a3b40' },
+  tableRowZebra: { backgroundColor: Colors.light.backgroundElement },
+  th: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.textAssistive, textTransform: 'uppercase' as const },
+  td: { fontSize: FontSize.t7, color: Colors.light.textStrong },
   colSubject: { flex: 2 },
   colFrom: { flex: 2 },
   colVendor: { flex: 2 },
@@ -227,10 +227,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
-    backgroundColor: '#f2f3f6',
+    backgroundColor: Colors.light.backgroundSelected,
     borderWidth: 1,
-    borderColor: '#d1d3d8',
+    borderColor: Colors.light.fieldBorder,
   },
-  inlineBtnText: { fontSize: FontSize.tab, color: '#5a5d6a' },
+  inlineBtnText: { fontSize: FontSize.tab, color: Colors.light.textSecondary },
   btnDisabled: { opacity: 0.5 },
 });

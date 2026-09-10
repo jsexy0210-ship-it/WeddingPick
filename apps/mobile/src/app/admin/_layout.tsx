@@ -1,7 +1,7 @@
 import { Link, Slot, usePathname } from 'expo-router';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { Colors, FontSize } from '@weddingpick/ui';
 
 const NAV_GROUPS: { group?: string; key?: string; label?: string; href?: string }[] = [
   { group: '대시보드' },
@@ -98,12 +98,12 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: '#f2f3f6',
+    backgroundColor: Colors.light.backgroundSelected,
     minHeight: '100vh' as unknown as number,
   },
   sidebar: {
     width: 216,
-    backgroundColor: '#17181c',
+    backgroundColor: Colors.light.text,
     flexShrink: 0,
     flexDirection: 'column',
   },
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
   sidebarTitle: {
     fontSize: FontSize.t6,
     fontWeight: '700',
-    color: '#fff',
+    color: Colors.light.background,
   },
   sidebarScroll: {
     flex: 1,
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.tab,
     fontWeight: '700',
     letterSpacing: 0.6,
-    color: '#393a40',
+    color: Colors.light.textStrong,
     textTransform: 'uppercase' as const,
   },
   navItem: {
@@ -144,10 +144,10 @@ const styles = StyleSheet.create({
   navLabel: {
     flex: 1,
     fontSize: FontSize.t7,
-    color: '#868b94',
+    color: Colors.light.textAssistive,
   },
   navLabelActive: {
-    color: '#fff',
+    color: Colors.light.background,
     fontWeight: '700',
   },
   main: {
@@ -163,6 +163,6 @@ const styles = StyleSheet.create({
   },
   notWebText: {
     fontSize: FontSize.t6,
-    color: '#868b94',
+    color: Colors.light.textAssistive,
   },
 });

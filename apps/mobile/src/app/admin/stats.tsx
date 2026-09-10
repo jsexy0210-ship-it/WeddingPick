@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 
 import { VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
-import { FontSize } from '@weddingpick/ui';
+import { Colors, FontSize } from '@weddingpick/ui';
 
 import { apiFetch } from './_api';
 
@@ -109,44 +109,44 @@ export default function StatsScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f3f6' },
+  root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  title: { fontSize: FontSize.t5, fontWeight: '700', color: '#17181c' },
-  subtitle: { fontSize: FontSize.t7, color: '#868b94' },
+  title: { fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text },
+  subtitle: { fontSize: FontSize.t7, color: Colors.light.textAssistive },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  hint: { fontSize: FontSize.t7, color: '#868b94' },
-  errorText: { fontSize: FontSize.t7, color: '#e81607' },
+  hint: { fontSize: FontSize.t7, color: Colors.light.textAssistive },
+  errorText: { fontSize: FontSize.t7, color: Colors.light.negative },
   list: { padding: 16, gap: 12 },
   sep: { height: 8 },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderRadius: 10,
     padding: 16,
     gap: 6,
     borderWidth: 1,
-    borderColor: '#e4e5ea',
+    borderColor: Colors.light.border,
   },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  vendorName: { flex: 1, fontSize: FontSize.t6, fontWeight: '700', color: '#17181c' },
+  vendorName: { flex: 1, fontSize: FontSize.t6, fontWeight: '700', color: Colors.light.text },
   catBadge: {
-    backgroundColor: '#f0f1f4',
+    backgroundColor: Colors.light.backgroundSelected,
     borderRadius: 4,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
-  catText: { fontSize: FontSize.badge, color: '#4d5159' },
+  catText: { fontSize: FontSize.badge, color: Colors.light.textSecondary },
   cardRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  label: { fontSize: FontSize.t7, color: '#868b94' },
-  value: { fontSize: FontSize.t7, fontWeight: '600', color: '#17181c' },
-  valueRed: { fontSize: FontSize.t7, fontWeight: '700', color: '#e81607' },
-  detectedAt: { fontSize: FontSize.badge, color: '#adb1ba', marginTop: 4 },
+  label: { fontSize: FontSize.t7, color: Colors.light.textAssistive },
+  value: { fontSize: FontSize.t7, fontWeight: '600', color: Colors.light.text },
+  valueRed: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.negative },
+  detectedAt: { fontSize: FontSize.badge, color: Colors.light.textDisabled, marginTop: 4 },
 });
