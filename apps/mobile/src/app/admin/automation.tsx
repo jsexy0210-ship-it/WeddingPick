@@ -9,6 +9,7 @@
  */
 import { useEffect, useState } from 'react';
 
+import { PendingBackendNotice } from '@/features/admin/pending-backend';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import {
@@ -149,6 +150,8 @@ export default function AutomationScreen() {
                   : '아래 표에서 결과가 회색이 아닌 줄만 보면 돼요.'
             }
           />
+
+          <PendingBackendNotice actions="복구 실행 · DLQ 재처리" />
 
           <KpiRow
             items={[

@@ -1,7 +1,10 @@
-import { Link, Slot, usePathname } from 'expo-router';
+import { Link, Redirect, Slot, usePathname } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Colors, FontSize, LineHeight, Radius, Spacing, WeddingMark } from '@weddingpick/ui';
+
+import { clearAdminToken, loadAdminToken } from './_session';
 
 /**
  * 관리자 콘솔 좌측 사이드바.
@@ -13,11 +16,16 @@ import { Colors, FontSize, LineHeight, Radius, Spacing, WeddingMark } from '@wed
  */
 type NavEntry = { group: string } | { key: string; label: string; href: string };
 
+/**
+ * ADMIN.md 26화면 목록에 아직 없는 라우트. 지우면 기능이 사라지므로 남기되
+ * 어느 것이 목록 밖인지 한 곳에 적어 둔다 — `docs/admin-screen-audit.md` 참고.
+ */
+const OUTSIDE_ADMIN_MD = new Set(['decisions', 'objections', 'pii-reviews', 'og-card']);
+
 const NAV: NavEntry[] = [
   { group: '보고' },
   { key: 'home', label: 'AI 운영현황', href: '/admin/home' },
   { key: 'briefing', label: '일일 브리핑', href: '/admin/briefing' },
-  /* 아래 셋은 ADMIN.md 26화면 목록에 아직 없다 — docs/admin-screen-audit.md 참고. */
   { key: 'decisions', label: '자동 결정 현황', href: '/admin/decisions' },
   { group: '데이터' },
   { key: 'data-pipeline', label: '제보 처리 현황', href: '/admin/data-pipeline' },
@@ -39,7 +47,7 @@ const NAV: NavEntry[] = [
   { key: 'campaigns', label: '캠페인 · 보상 관리', href: '/admin/campaigns' },
   { key: 'revenue', label: '수익 현황', href: '/admin/revenue' },
   { key: 'ads', label: '광고 집행 관리', href: '/admin/ads' },
-  { key: 'ads-gate', label: '광고 실운영 전환 게이트', href: '/admin/ads-gate' },
+  { key: 'ads-gate', label: '광고 실운영 전환 조건 관리', href: '/admin/ads-gate' },
   { group: '운영' },
   { key: 'automation', label: '자동화 상태', href: '/admin/automation' },
   { key: 'kill-switch', label: '긴급 중지', href: '/admin/kill-switch' },
@@ -47,10 +55,13 @@ const NAV: NavEntry[] = [
   { group: '시스템' },
   { key: 'faq', label: '자주 묻는 질문 관리', href: '/admin/faq' },
   { key: 'terms', label: '약관 · 방침 관리', href: '/admin/terms' },
+  { key: 'og-card', label: '링크 미리보기', href: '/admin/og-card' },
   { key: 'ai-usage', label: 'AI 사용량 · 비용', href: '/admin/ai-usage' },
   { key: 'policy-engine', label: '정책 규칙 관리', href: '/admin/policy-engine' },
   { key: 'audit-log', label: '감사 기록', href: '/admin/audit-log' },
 ];
+
+const LOGIN_PATH = '/admin/login';
 
 function Sidebar({ pathname }: { pathname: string }) {
   return (
@@ -73,7 +84,14 @@ function Sidebar({ pathname }: { pathname: string }) {
           return (
             <Link key={item.key} href={item.href as never} asChild>
               <Pressable style={[styles.navItem, active && styles.navItemActive]}>
-                <Text style={[styles.navLabel, active && styles.navLabelActive]} numberOfLines={1}>
+                <Text
+                  style={[
+                    styles.navLabel,
+                    OUTSIDE_ADMIN_MD.has(item.key) && styles.navLabelOutside,
+                    active && styles.navLabelActive,
+                  ]}
+                  numberOfLines={1}
+                >
                   {item.label}
                 </Text>
               </Pressable>
@@ -81,12 +99,56 @@ function Sidebar({ pathname }: { pathname: string }) {
           );
         })}
       </ScrollView>
+      <Pressable
+        style={styles.signOut}
+        onPress={() => {
+          void clearAdminToken().then(() => {
+            /* 화면 상태를 되돌리는 가장 단순한 길. 관리자 콘솔은 웹 전용이다. */
+            window.location.assign(LOGIN_PATH);
+          });
+        }}
+      >
+        <Text style={styles.signOutText}>로그아웃</Text>
+      </Pressable>
     </View>
   );
 }
 
+/**
+ * 관리자 콘솔의 관문.
+ *
+ * 2026-09-10까지 이 자리에 아무것도 없었다. `/admin`을 열면 확인 없이 내부 화면으로
+ * 들어가고, 서버가 403을 주지만 그 뜻을 말해 줄 자리가 없어 화면에는
+ * «잠시 문제가 생겼어요»만 떴다(사용자 보고).
+ *
+ * **토큰이 있는지만 본다.** 그 토큰이 진짜인지는 서버가 판단한다 — 화면이 판단하면
+ * 만료된 토큰을 들고 들어가 모든 화면이 같은 오류를 내게 된다. 서버가 401·403을
+ * 주면 `_api`가 토큰을 지우므로, 다음 이동에서 여기로 걸린다.
+ */
+function useAdminToken(): { token: string | null; checked: boolean } {
+  const [token, setToken] = useState<string | null>(null);
+  const [checked, setChecked] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void loadAdminToken().then((value) => {
+      if (cancelled) return;
+      setToken(value);
+      setChecked(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return { token, checked };
+}
+
 export default function AdminLayout() {
   const pathname = usePathname();
+  const { token, checked } = useAdminToken();
 
   if (Platform.OS !== 'web') {
     return (
@@ -95,6 +157,18 @@ export default function AdminLayout() {
       </View>
     );
   }
+
+  /* 로그인 화면은 사이드바 없이 홀로 선다 — 아직 들어온 것이 아니다. */
+  if (pathname === LOGIN_PATH) return <Slot />;
+
+  /*
+   * 확인이 끝나기 전에는 아무것도 그리지 않는다. 저장소를 읽는 것은 한 번의
+   * 비동기라, 그 사이에 화면을 그리면 로그인한 사람에게도 로그인 화면이 한 번
+   * 스쳤다 사라진다.
+   */
+  if (!checked) return <View style={styles.root} />;
+
+  if (!token) return <Redirect href={LOGIN_PATH as never} />;
 
   return (
     <View style={styles.root}>
@@ -122,7 +196,12 @@ const styles = StyleSheet.create({
      * 스크롤 없이 들어가지 않았던 것이 폭을 올린 이유다.
      */
     width: 240,
-    backgroundColor: C.adminSidebar,
+    /*
+     * 사이드바 바탕은 시안의 #17181c다. 잠깐 `Colors.light.text`(#212124)로 바뀌어
+     * 있었는데, 하드코딩을 없애려다 **다른 색이 됐다** — 토큰으로 바꾸는 것과
+     * 아무 토큰이나 갖다 쓰는 것은 다른 일이다. 시안 값으로 만든 토큰이 이것이다.
+     */
+    backgroundColor: C.adminChrome,
     flexShrink: 0,
     flexDirection: 'column',
   },
@@ -143,6 +222,17 @@ const styles = StyleSheet.create({
   sidebarScroll: {
     flex: 1,
     paddingHorizontal: Spacing.two,
+  },
+  signOut: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.three,
+    borderTopWidth: 1,
+    borderTopColor: C.adminSidebarLine,
+  },
+  signOutText: {
+    fontSize: FontSize.micro,
+    lineHeight: LineHeight.micro,
+    color: C.adminSidebarLabel,
   },
   navGroup: {
     paddingHorizontal: Spacing.two,
@@ -169,6 +259,10 @@ const styles = StyleSheet.create({
     fontSize: FontSize.micro,
     lineHeight: LineHeight.micro,
     color: C.adminSidebarLabel,
+  },
+  /* ADMIN.md 목록 밖의 라우트는 한 단 흐리게 — 지운 것이 아니라 아직 목록에 없는 것이다. */
+  navLabelOutside: {
+    color: C.adminSidebarGroup,
   },
   navLabelActive: {
     color: C.onTint,

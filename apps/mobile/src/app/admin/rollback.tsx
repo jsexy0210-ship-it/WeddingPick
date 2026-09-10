@@ -11,6 +11,7 @@
 import { useEffect, useState } from 'react';
 
 import { formatDateTimeDot } from '@/features/common/format-date';
+import { PendingBackendNotice } from '@/features/admin/pending-backend';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import {
@@ -156,6 +157,8 @@ export default function RollbackScreen() {
                 : '이상이 감지됐거나 승인을 기다리는 변경이에요.'
             }
           />
+
+          <PendingBackendNotice actions="승인 · 실행" />
 
           <KpiRow
             items={[

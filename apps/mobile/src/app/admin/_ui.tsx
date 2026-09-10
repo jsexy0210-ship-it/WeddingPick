@@ -83,7 +83,12 @@ export type PageProps = {
   /** 제목 아래 한 줄. 지금 무엇을 보고 있는지. */
   sub?: string;
   /** 오른쪽 위 동작 하나. 내려받기 · 규칙 열기처럼 화면 전체에 걸리는 것만. */
-  action?: { label: string; onPress: () => void; kind?: 'brand' | 'danger' | 'plain' };
+  /**
+   * 오른쪽 위 동작 하나. `disabled`는 서버가 아직 없는 자리에 쓴다 — 이름은 그대로 두고
+   * 흐리게만 만든다(`features/admin/pending-backend`). 이름을 「준비 중」으로 바꾸면
+   * 그 단추가 원래 무엇을 하는 자리인지가 사라진다.
+   */
+  action?: { label: string; onPress: () => void; kind?: 'brand' | 'danger' | 'plain'; disabled?: boolean };
   children: ReactNode;
 };
 
@@ -99,10 +104,12 @@ export function Page({ title, sub, action, children }: PageProps) {
         {action ? (
           <Pressable
             onPress={action.onPress}
+            disabled={action.disabled}
             style={[
               styles.topAction,
               action.kind === 'brand' && styles.topActionBrand,
               action.kind === 'danger' && styles.topActionDanger,
+              action.disabled && styles.topActionDisabled,
             ]}
           >
             <Text
@@ -568,6 +575,7 @@ const styles = StyleSheet.create({
   },
   topActionBrand: { backgroundColor: C.tint },
   topActionDanger: { backgroundColor: C.negativeBackground },
+  topActionDisabled: { opacity: 0.4 },
   topActionLabel: { fontSize: FontSize.micro, fontWeight: '700', color: C.textSecondary },
   onTintLabel: { color: C.onTint },
   dangerLabel: { color: C.negative },

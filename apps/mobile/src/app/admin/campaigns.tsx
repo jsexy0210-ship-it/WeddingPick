@@ -5,9 +5,10 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 
 type CampaignType = 'mission' | 'referral' | 'promo_cert' | 'grant';
 type PayoutStatus = 'pending' | 'paid' | 'failed' | 'blocked';
@@ -74,10 +75,10 @@ const PAYOUT_LABEL: Record<PayoutStatus, string> = {
   blocked: '차단',
 };
 const PAYOUT_COLOR: Record<PayoutStatus, string> = {
-  pending: '#805217',
-  paid: '#1aa174',
-  failed: '#e81607',
-  blocked: '#e81607',
+  pending: Colors.light.cautionary,
+  paid: Colors.light.positive,
+  failed: Colors.light.negative,
+  blocked: Colors.light.negative,
 };
 
 export default function CampaignsScreen() {
@@ -142,6 +143,7 @@ export default function CampaignsScreen() {
         </Pressable>
       </View>
 
+      <PendingBackendNotice actions="지급 · 차단" />
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
@@ -162,11 +164,11 @@ export default function CampaignsScreen() {
             </View>
             <View style={styles.budgetCell}>
               <Text style={styles.budgetLabel}>사용됨</Text>
-              <Text style={[styles.budgetValue, { color: '#0088cc' }]}>{data.budget.used}</Text>
+              <Text style={[styles.budgetValue, { color: Colors.light.accent }]}>{data.budget.used}</Text>
             </View>
             <View style={styles.budgetCell}>
               <Text style={styles.budgetLabel}>잔여</Text>
-              <Text style={[styles.budgetValue, { color: '#1aa174' }]}>{data.budget.remaining}</Text>
+              <Text style={[styles.budgetValue, { color: Colors.light.positive }]}>{data.budget.remaining}</Text>
             </View>
           </View>
           <ScrollView>
@@ -186,24 +188,24 @@ export default function CampaignsScreen() {
                 <Text style={[styles.td, styles.colStatus, { color: PAYOUT_COLOR[item.payoutStatus] }]}>
                   {PAYOUT_LABEL[item.payoutStatus]}
                 </Text>
-                <Text style={[styles.td, styles.colAbuse, item.abuseFlag && { color: '#e81607', fontWeight: '700' }]}>
+                <Text style={[styles.td, styles.colAbuse, item.abuseFlag && { color: Colors.light.negative, fontWeight: '700' }]}>
                   {item.abuseFlag ? '의심' : '정상'}
                 </Text>
                 <View style={[styles.colAction, { flexDirection: 'row', gap: 4 }]}>
                   {item.payoutStatus === 'pending' && !item.abuseFlag && (
                     <Pressable
-                      style={[styles.payBtn, acting === item.id + '_pay' && styles.btnDisabled]}
+                      style={[styles.payBtn, (BACKEND_PENDING || acting === item.id + '_pay') && styles.btnDisabled]}
                       onPress={() => void pay(item.id)}
-                      disabled={acting !== null}
+                      disabled={BACKEND_PENDING || acting !== null}
                     >
                       <Text style={styles.payBtnText}>{acting === item.id + '_pay' ? '…' : '지급'}</Text>
                     </Pressable>
                   )}
                   {item.abuseFlag && item.payoutStatus !== 'blocked' && (
                     <Pressable
-                      style={[styles.blockBtn, acting === item.id && styles.btnDisabled]}
+                      style={[styles.blockBtn, (BACKEND_PENDING || acting === item.id) && styles.btnDisabled]}
                       onPress={() => void block(item.id)}
-                      disabled={acting !== null}
+                      disabled={BACKEND_PENDING || acting !== null}
                     >
                       <Text style={styles.blockBtnText}>{acting === item.id ? '…' : '차단'}</Text>
                     </Pressable>
@@ -219,44 +221,44 @@ export default function CampaignsScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f3f6' },
+  root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
-  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: '#17181c' },
-  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: '#f2f3f6' },
-  refreshText: { fontSize: FontSize.t7, color: '#5a5d6a' },
+  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text },
+  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: Colors.light.backgroundSelected },
+  refreshText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
   body: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  errorText: { fontSize: FontSize.t6, color: '#e53e3e', marginBottom: 16 },
-  actionErrorText: { fontSize: FontSize.t7, color: '#e53e3e', marginBottom: 8 },
-  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: '#ff6f61' },
-  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: '#fff' },
+  errorText: { fontSize: FontSize.t6, color: Colors.light.negative, marginBottom: 16 },
+  actionErrorText: { fontSize: FontSize.t7, color: Colors.light.negative, marginBottom: 8 },
+  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: Colors.light.tint },
+  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   budgetRow: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
     paddingVertical: 14,
     paddingHorizontal: 24,
     gap: 24,
   },
   budgetCell: {},
-  budgetLabel: { fontSize: FontSize.tab, color: '#868b94', marginBottom: 2 },
-  budgetValue: { fontSize: FontSize.t5, fontWeight: '700', color: '#17181c', fontVariant: ['tabular-nums'] },
+  budgetLabel: { fontSize: FontSize.tab, color: Colors.light.textAssistive, marginBottom: 2 },
+  budgetValue: { fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text, fontVariant: ['tabular-nums'] },
   tableHead: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: Colors.light.backgroundElement,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
     alignItems: 'center',
   },
   tableRow: {
@@ -264,13 +266,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f1f4',
+    borderBottomColor: Colors.light.backgroundSelected,
     alignItems: 'center',
   },
-  tableRowZebra: { backgroundColor: '#fafbfc' },
-  tableRowAbuse: { backgroundColor: '#fff5f5' },
-  th: { fontSize: FontSize.tab, fontWeight: '700', color: '#868b94', textTransform: 'uppercase' as const },
-  td: { fontSize: FontSize.t7, color: '#3a3b40' },
+  tableRowZebra: { backgroundColor: Colors.light.backgroundElement },
+  tableRowAbuse: { backgroundColor: Colors.light.negativeBoxBackground },
+  th: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.textAssistive, textTransform: 'uppercase' as const },
+  td: { fontSize: FontSize.t7, color: Colors.light.textStrong },
   colType: { width: 70 },
   colDesc: { flex: 1 },
   colAmount: { width: 80 },
@@ -281,15 +283,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
-    backgroundColor: '#e8faf6',
+    backgroundColor: Colors.light.positiveBackground,
   },
-  payBtnText: { fontSize: FontSize.tab, fontWeight: '700', color: '#1aa174' },
+  payBtnText: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.positive },
   blockBtn: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
-    backgroundColor: '#fff0ee',
+    backgroundColor: Colors.light.negativeBoxBackground,
   },
-  blockBtnText: { fontSize: FontSize.tab, fontWeight: '700', color: '#e81607' },
+  blockBtnText: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.negative },
   btnDisabled: { opacity: 0.5 },
 });

@@ -10,6 +10,7 @@
  */
 import { useEffect, useState } from 'react';
 
+import { PendingBackendNotice } from '@/features/admin/pending-backend';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import {
@@ -145,6 +146,8 @@ export default function EmailMatchingScreen() {
                 : `나머지 ${autoMatched}건은 자동으로 붙었고 문의 담당자에게 이미 알림이 갔어요.`
             }
           />
+
+          <PendingBackendNotice actions="반영 · 재시도" />
 
           <KpiRow
             items={[
