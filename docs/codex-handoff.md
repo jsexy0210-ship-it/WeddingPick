@@ -20,6 +20,9 @@ Codex에 일을 넘길 때 **아래 블록을 그대로 붙여넣는다.** 맨 �
 
 ## 먼저 읽을 것
 
+전담 배정·독립 반례 검수·완료 세션 흡수와 정리는 뿌리 `AGENTS.md`의 마스터 운영 규칙을 따른다.
+결과와 미해결 항목은 `docs/sync/master-status.json`으로 인계하며 작업을 마치면 PR을 건다.
+
 1. 뿌리의 `CLAUDE.md` — 이 저장소의 고정 규칙이다.
 2. `docs/design-handoff/current/CHANGELOG.md` **맨 위** — 화면·값·용어의 현행.
 3. `docs/design-handoff/current/` 의 SPEC · PROJECT_RULES · ADMIN.md · tokens.json.
