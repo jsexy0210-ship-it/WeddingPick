@@ -19,7 +19,9 @@ on:
         description: '사용자 id (첫 로그인 응답이 알려준다)'
         type: string
         required: true
-      off:
+      # 이름을 `off`로 두지 않는다 — YAML이 그것을 불리언 거짓으로 읽어서
+      # 입력 이름 자체가 사라진다(`on:`이 참이 되는 것과 같은 문제다).
+      disable:
         description: '켜지 않고 내린다'
         type: boolean
         default: false
@@ -49,7 +51,7 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           USER_ID: ${{ github.event.inputs.user_id }}
-          OFF: ${{ github.event.inputs.off }}
+          DISABLE: ${{ github.event.inputs.disable }}
         run: |
           set -euo pipefail
           if [ -z "${DATABASE_URL:-}" ]; then
@@ -62,7 +64,7 @@ jobs:
             echo "::error::사용자 id가 uuid 꼴이 아니다. 첫 로그인 응답에 적힌 값을 그대로 넣는다."
             exit 1
           fi
-          if [ "$OFF" = "true" ]; then
+          if [ "$DISABLE" = "true" ]; then
             npm run retention --workspace @weddingpick/api -- --operator "$USER_ID" --off
           else
             npm run retention --workspace @weddingpick/api -- --operator "$USER_ID"
