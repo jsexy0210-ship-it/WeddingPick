@@ -128,10 +128,11 @@ jobs:
             echo "::error::SBIZ_API_KEY 시크릿이 없어 '$SOURCE' 수집을 실행할 수 없습니다. GitHub 저장소 → Settings → Secrets and variables → Actions → Repository secrets → New repository secret 에서 이름을 SBIZ_API_KEY 로 등록하세요(공공데이터포털 일반 인증키의 Encoding 값 그대로)."
             exit 1
           fi
-          # 업종코드도 없으면 수집기가 즉시 실패한다. 여기서 먼저 이유를 말한다.
+          # 업종코드가 비어 있어도 멈추지 않는다. 수집기에 조회로 확인한 기본값이
+          # 있다(collect.ts WEDDING_UPJONG_CODES · 2026-09-10 smallUpjongList 실측).
+          # 이 확인이 멈춰 세우던 때는 코드를 아무도 몰라 조용한 0건이 나던 시절이다.
           if [ -z "${SBIZ_UPJONG_CODES:-}" ]; then
-            echo "::error::업종코드가 없어 '$SOURCE' 수집을 실행할 수 없습니다. 저장소 Variables에 SBIZ_UPJONG_CODES(쉼표 구분)를 넣거나 수동 실행 입력 upjong_codes를 채우세요. 코드는 lookup_level로 조사합니다."
-            exit 1
+            echo "업종코드 설정이 없어 확인된 기본값으로 수집합니다."
           fi
       - name: Collect validated public data
         run: npm run public-data:import --workspace @weddingpick/api -- --source "$SOURCE" --out ../../.collection

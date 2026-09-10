@@ -304,10 +304,7 @@ export type SbizUpjongQuery = { divId: string; codes: string[] };
  *   S21105  결혼 상담 서비스업   → wedding_info_company
  *   M11301  사진촬영업          → studio · snap (상호에 웨딩·본식·스냅이 있어야 받는다)
  *   S20701  미용실              → makeup (상호에 웨딩·브라이덜이 있어야 받는다)
- *
- * 드레스(의류 임대)는 아직 코드를 확인하지 못했다 — 「드레스」로 찾으면 소분류
- * 이름에 없다. 확인되면 여기 더한다. 추측한 코드는 넣지 않는다: 틀린 코드는
- * 오류가 아니라 빈 목록으로 돌아와 조용한 0건이 된다.
+ *   N11004  의류 대여업          → dress (상호에 웨딩·브라이덜이 있어야 받는다)
  *
  * 업종 이름만으로 받는 것은 앞의 둘뿐이다. 사진관·미용실·임대업 전체를 웨딩
  * 업체로 들이지 않는다 — 상호를 함께 본다(`classifyWeddingIndustry`).
@@ -320,7 +317,7 @@ export type SbizUpjongQuery = { divId: string; codes: string[] };
  * 이제 실제 코드를 확인했으므로 확인한 값을 적어 둔다. 바꿔야 하면
  * `SBIZ_UPJONG_CODES` · `SBIZ_UPJONG_DIV_ID`가 이긴다.
  */
-export const WEDDING_UPJONG_CODES = ['S21101', 'S21105', 'M11301', 'S20701'] as const;
+export const WEDDING_UPJONG_CODES = ['S21101', 'S21105', 'M11301', 'S20701', 'N11004'] as const;
 
 /** 조회할 업종 자리와 코드. 확인된 소분류 코드가 기본이고 환경변수가 이긴다. */
 export function resolveUpjongQuery(override?: SbizUpjongQuery): SbizUpjongQuery {
