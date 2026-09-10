@@ -1,0 +1,60 @@
+# 인프라 요금을 하루 한 번 받아 적는다.
+#
+# 「A. 하루 한 번 수집」(2026-09-10 사용자 결정). 분 단위로 볼 값이 아니고, 화면을 열
+# 때마다 외부 API를 부르면 그쪽이 죽었을 때 관리자 화면이 함께 멈춘다.
+#
+# **이 크론은 운영 DB에 쓴다.** 저장소의 다른 크론(public-data)은 그래서 꺼 두었는데,
+# 그쪽은 업체 정보를 고치는 일이라 사람이 봐야 했다. 이쪽이 쓰는 것은 전용 표에
+# 줄을 더하는 것뿐이고 다른 자료를 건드리지 않는다 — 사람이 매일 눌러야 할 이유가 없다.
+name: 인프라 요금 수집
+
+on:
+  schedule:
+    # 매일 UTC 20:10 = KST 05:10. 달이 바뀌는 경계에서 앞뒤 달을 다 받도록 이른 시각에 둔다.
+    - cron: '10 20 * * *'
+  workflow_dispatch:
+    inputs:
+      write:
+        description: '실제로 적는다 (끄면 받아만 본다)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+concurrency:
+  group: infra-cost
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: 요금 받기
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          # 배포 상태를 보는 데 이미 쓰는 키다. 새로 발급할 것이 없다.
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          # 아직 없다. 없으면 그 공급자만 건너뛰고 이유를 적는다.
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          WRITE: ${{ github.event_name == 'schedule' && 'true' || github.event.inputs.write }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DATABASE_URL:-}" ]; then
+            echo "::error::DATABASE_URL 시크릿이 없다."
+            exit 1
+          fi
+          if [ "$WRITE" = "true" ]; then
+            npx tsx scripts/infra-cost.ts --write
+          else
+            npx tsx scripts/infra-cost.ts
+          fi
