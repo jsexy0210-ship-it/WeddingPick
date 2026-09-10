@@ -64,14 +64,14 @@ export function shortRegionName(token: string): string {
 /**
  * 시/군/구 한 낱말을 짧은 꼴로. «성남시» → «성남» · «강남구» → «강남» · «가평군» → «가평».
  *
- * **떼고 나서 한 글자가 되면 떼지 않는다.** 「중구」 「동구」 「서구」 「남구」 「북구」는
- * 부산 · 대구 · 광주 · 인천에 실제로 있는 이름이고, 「중」 「동」만 남기면 무슨 말인지
- * 알 수 없다. 「성남」 「수원」처럼 두 글자 이상 남을 때만 떼는 이유가 이것이다.
+ * **기준은 이름 길이 두 글자다**(2026-09-10 사용자 지시). 두 글자면 그대로 두고,
+ * 세 글자부터 뗀다 — 「중구」 「동구」 「서구」 「남구」 「북구」는 부산 · 대구 · 광주 ·
+ * 인천에 실제로 있는 이름이라 손대지 않는다.
  */
 export function shortDistrictName(token: string): string {
-  const shortened = token.replace(/(시|군|구)$/, '');
+  if (token.length <= 2) return token;
 
-  return shortened.length >= 2 ? shortened : token;
+  return token.replace(/(시|군|구)$/, '');
 }
 
 /**

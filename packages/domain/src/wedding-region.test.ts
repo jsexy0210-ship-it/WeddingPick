@@ -96,7 +96,7 @@ describe('화면에 적을 지역 이름 — 시·군·구까지 뗀다', () => 
     expect(shortDistrictName('가평군')).toBe('가평');
   });
 
-  it('떼면 한 글자가 되는 이름은 그대로 둔다', () => {
+  it('두 글자는 그대로 두고 세 글자부터 뗀다', () => {
     /*
      * 「중구」 「동구」는 부산 · 대구 · 광주 · 인천에 실제로 있는 이름이다.
      * 「중」 「동」만 남기면 무슨 말인지 알 수 없다.
@@ -104,6 +104,10 @@ describe('화면에 적을 지역 이름 — 시·군·구까지 뗀다', () => 
     for (const name of ['중구', '동구', '서구', '남구', '북구']) {
       expect(shortDistrictName(name)).toBe(name);
     }
+    // 세 글자부터는 뗀다.
+    expect(shortDistrictName('서구청')).toBe('서구청');
+    expect(shortDistrictName('부천시')).toBe('부천');
+    expect(shortDistrictName('서귀포시')).toBe('서귀포');
   });
 
   it('시도와 시군구를 함께 줄인다', () => {
