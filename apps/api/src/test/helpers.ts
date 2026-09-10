@@ -1,3 +1,5 @@
+import { randomBytes } from 'node:crypto';
+
 import type { Extraction } from '../analysis/schema';
 import { resetSchema } from '@weddingpick/db';
 import { REQUIRED_CONSENTS } from '@weddingpick/domain';
@@ -8,6 +10,7 @@ import type { IdentityProvider, VerifiedIdentity } from '../auth/identity-provid
 import type { Config } from '../config';
 import type { AppContext } from '../context';
 import { buildServer } from '../server';
+import { hashToken } from '../auth/sessions';
 import { createLocalStorage } from '../storage/local';
 
 export const connectionString = process.env.DATABASE_URL;
@@ -64,6 +67,16 @@ export async function createTestApp(): Promise<TestApp> {
     proofReaderCheapModel: 'claude-haiku-4-5',
     proofReaderStrongModel: 'claude-opus-5',
     naverRedirectUris: [],
+    /*
+     * **관리자 부트스트랩 자격은 환경에서 읽는다.**
+     *
+     * 이 config는 손으로 만든 것이라 `loadConfig`를 지나지 않는다. 그래서 여기 적지
+     * 않은 값은 전부 `undefined`다 — 관리자 로그인이 `process.env`를 직접 읽던
+     * 시절에는 상관없었지만, 지금은 `context.config`에서 읽는다(#173 관리자 등급).
+     *
+     * 잇지 않으면 아이디가 비어 대조가 실패하고 로그인이 **401**로 떨어진다.
+     * 「비밀번호가 틀렸다」와 같은 응답이라, 시험이 깨져도 원인이 안 보인다.
+     */
   };
 
   const context: AppContext = {
@@ -329,4 +342,50 @@ export function extractionFixture(overrides: Partial<Extraction> = {}): Extracti
     personalInfoKinds: ['name', 'phone'],
     ...overrides,
   };
+}
+
+/**
+ * 관리자 등급을 가진 세션을 만든다.
+ *
+ * **로그인 라우트를 거치지 않는다.** 등급별로 계정을 만들려면 비밀번호를 정하고
+ * 밀어보기 지연을 기다려야 하는데, 여기서 보려는 것은 관문이지 로그인이 아니다.
+ * 로그인 자체는 `admin-accounts.test.ts`가 따로 본다.
+ *
+ * `role`이 `null`이면 관리자가 아닌 평범한 계정이다 — 막히는 쪽을 보는 시험에 쓴다.
+ */
+export async function adminSession(
+  test: TestApp,
+  role: 'super' | 'operator' | 'viewer' | null,
+  loginId = `admin-${role ?? 'none'}`
+): Promise<{ token: string; userId: string; headers: Record<string, string> }> {
+  const { rows } = await test.pool.query<{ id: string }>(
+    `INSERT INTO structured.users
+       (age_gate, age_checked_at, age_verified, age_verified_at, activated_at)
+     VALUES ('passed', now(), true, now(), now()) RETURNING id`
+  );
+  const userId = rows[0]!.id;
+
+  if (role) {
+    await test.pool.query(
+      `INSERT INTO identity.identities (user_id, provider, subject) VALUES ($1, 'admin', $2)`,
+      [userId, loginId]
+    );
+
+    /* 해시 자리에는 꼴만 맞는 값을 넣는다 — 이 세션은 비밀번호로 열지 않는다. */
+    await test.pool.query(
+      `INSERT INTO structured.admin_accounts (user_id, login_id, password_hash, role)
+       VALUES ($1, $2, 'scrypt$dGVzdA==$dGVzdA==', $3::admin_role)`,
+      [userId, loginId, role]
+    );
+  }
+
+  const token = randomBytes(32).toString('base64url');
+
+  await test.pool.query(
+    `INSERT INTO identity.sessions (user_id, token_hash, expires_at)
+     VALUES ($1, $2, now() + interval '1 day')`,
+    [userId, hashToken(token)]
+  );
+
+  return { token, userId, headers: { authorization: `Bearer ${token}` } };
 }

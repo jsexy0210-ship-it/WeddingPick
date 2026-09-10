@@ -211,7 +211,8 @@ function PhotoViewer({
         {/* close nav + 페이지 인디케이터 */}
         <View style={styles.viewerHeader}>
           <CloseButton onPress={onClose} />
-          <ThemedText type="t7" style={styles.viewerIndicator} numeric>
+          {/* 시안 t18w — 뷰어 제목은 18/24 흰 700이다(09b-vendor-sub.dc.html L56·L279). */}
+          <ThemedText type="t5" style={styles.viewerIndicator} numeric>
             {index + 1}/{photos.length}
           </ThemedText>
         </View>

@@ -25,7 +25,7 @@ export type BadgeProps = {
 /**
  * 배지 — tokens.json component.badge · SPEC §12.3.
  *
- *   height 22 고정 · 한 줄 · nowrap · padding 4 9 · radius 4 · 14/19/700
+ *   minHeight 22 · 한 줄 · nowrap · padding 4 9 · radius 4 · 14/19/700 — 실제 높이 27
  *
  * 배지를 아래로 내리지 않는다 — 공간이 부족하면 옆 텍스트를 말줄임한다.
  */

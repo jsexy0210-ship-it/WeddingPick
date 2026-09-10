@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "recordedDate": "2026-09-10",
+  "timezone": "Asia/Seoul",
+  "scope": "repository-cleanup",
+  "baselineCommit": "e34193ee1644c664f107d529002ae53ef775389a",
+  "items": [
+    {
+      "id": "cleanup-duplicates",
+      "status": "complete",
+      "evidence": "../REPOSITORY_CLEANUP_2026-09-10.md"
+    },
+    {
+      "id": "cleanup-current-sources",
+      "status": "complete",
+      "evidence": "../../AI_START_HERE.md"
+    },
+    {
+      "id": "cleanup-design-intake",
+      "status": "complete",
+      "evidence": "../design-handoff/INTAKE-2026-09-10.md"
+    },
+    {
+      "id": "cleanup-validation",
+      "status": "complete",
+      "evidence": "repository-cleanup-status.json"
+    }
+  ],
+  "note": "이번 저장소 정리 범위의 체크리스트다. 제품 전체 구현·화면 완료 목록이 아니다."
+}

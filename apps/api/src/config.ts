@@ -81,6 +81,7 @@ const configSchema = z.object({
   naverClientId: z.string().optional(),
   naverClientSecret: z.string().optional(),
   naverRedirectUris: z.array(z.string().url()).default([]),
+
 });
 
 export type Config = z.infer<typeof configSchema>;

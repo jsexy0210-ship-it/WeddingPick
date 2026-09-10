@@ -37,12 +37,18 @@ export const FontSize = {
   npayPay: 14,
   /** 탭 바 라벨. tabBar.labelSize 12/16. */
   tab: 12,
-  /** 상태 배지(Pick 완료 · 인증완료 · 결정 완료). component.badge 14/19/700 · height 22. */
+  /** 상태 배지(Pick 완료 · 인증완료 · 결정 완료). component.badge 14/19/700 · minHeight 22. */
   badge: 14,
   /** 금액 한 덩어리. display와 같다. */
   amount: 32,
   /** 코드·식별자(관리자 · 내부). */
   code: 12,
+  /** 관리자 KPI 숫자 30/38. 웹 전용 `/admin`만 쓴다 — spec typography.scale adminKpi. */
+  adminKpi: 30,
+  /** 관리자 상단 상태 배너 제목 15/21. adminBanner. */
+  adminBanner: 15,
+  /** 관리자 사이드바 그룹 제목 11/15. adminNavGroup. */
+  adminNavGroup: 11,
 } as const;
 
 /**
@@ -71,6 +77,9 @@ export const LineHeight = {
   badge: 19,
   amount: 43,
   link: 19,
+  adminKpi: 38,
+  adminBanner: 21,
+  adminNavGroup: 15,
 } as const;
 
 export type FontSizeToken = keyof typeof FontSize;

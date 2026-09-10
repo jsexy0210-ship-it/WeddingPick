@@ -1,14 +1,30 @@
 /**
- * WP-ADM-016 데이터 · 이메일 회신 자동매칭
- * 업체 회신 파싱 · 업체 매칭 · 반영 · 실패 재시도
+ * WP-ADM-016 이메일 회신 자동 매칭
+ *
+ * 시안 `22-admin-ops.dc.html` 4번. 업체가 보낸 메일을 어느 문의에 붙였는지와 확신도를
+ * 보여준다. **확신도 0.85 미만만 확인 필요로 남긴다**(ADMIN.md WP-ADM-016) — 나머지는
+ * 이미 붙었고 사람이 볼 것이 없다.
+ *
+ * 목록은 읽기 전용이다. 서버에 반영·재시도 엔드포인트가 없어서(`admin.ts`에 GET 하나뿐)
+ * 누를 것을 만들지 않는다 — 눌러도 아무 일이 없는 버튼은 상태를 잘못 말한다.
  */
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Colors, FontSize } from '@weddingpick/ui';
+import { PendingBackendNotice } from '@/features/admin/pending-backend';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
-import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
+import {
+  Card,
+  CardGrid,
+  DataTable,
+  KpiRow,
+  LoadError,
+  Page,
+  StatusBanner,
+  type Col,
+  type Kind,
+  type TableRow,
+} from './_ui';
 
 type MatchStatus = 'matched' | 'unmatched' | 'applied' | 'failed';
 type EmailItem = {
@@ -28,24 +44,36 @@ type EmailData = {
 };
 
 const STATUS_LABEL: Record<MatchStatus, string> = {
-  matched: '매칭됨',
-  unmatched: '미매칭',
+  matched: '자동 연결',
+  unmatched: '확인 필요',
   applied: '반영됨',
-  failed: '실패',
+  failed: '확인 필요',
 };
-const STATUS_COLOR: Record<MatchStatus, string> = {
-  matched: Colors.light.accent,
-  unmatched: Colors.light.cautionary,
-  applied: Colors.light.positive,
-  failed: Colors.light.negative,
+
+const STATUS_KIND: Record<MatchStatus, Kind> = {
+  matched: 'ok',
+  unmatched: 'warn',
+  applied: 'ok',
+  failed: 'bad',
 };
+
+/** 이 아래는 자동으로 붙이지 않고 확인 필요로 남긴다(ADMIN.md). */
+const CONFIDENCE_FLOOR = 0.85;
+
+const COLS: Col[] = [
+  { key: 'from', label: '보낸 사람', width: 220 },
+  { key: 'subject', label: '제목', width: 300, grow: true },
+  { key: 'vendor', label: '붙인 문의', width: 220 },
+  { key: 'received', label: '수신', width: 120 },
+  { key: 'confidence', label: '확신도', width: 90, align: 'right' },
+  { key: 'status', label: '상태', width: 100 },
+];
 
 export default function EmailMatchingScreen() {
   const [data, setData] = useState<EmailData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rev, setRev] = useState(0);
-  const [acting, setActing] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,171 +94,87 @@ export default function EmailMatchingScreen() {
     return () => { cancelled = true; };
   }, [rev]);
 
-  async function apply(id: string) {
-    setActing(id);
-    try {
-      await apiFetch(`/v1/admin/data/email-matching/${id}/apply`, { method: 'POST' });
-      setRev((r) => r + 1);
-    } catch { /* 무시 */ } finally { setActing(null); }
-  }
+  const reload = () => setRev((r) => r + 1);
 
-  async function retry(id: string) {
-    setActing(id + '_retry');
-    try {
-      await apiFetch(`/v1/admin/data/email-matching/${id}/retry`, { method: 'POST' });
-      setRev((r) => r + 1);
-    } catch { /* 무시 */ } finally { setActing(null); }
-  }
+  const items = data?.items ?? [];
+  const needsCheck = items.filter((i) => i.parseConfidence < CONFIDENCE_FLOOR).length;
+  const autoMatched = items.length - needsCheck;
+  const avgConfidence = items.length === 0
+    ? 0
+    : items.reduce((sum, i) => sum + i.parseConfidence, 0) / items.length;
+
+  const rows: TableRow[] = items.map((item) => ({
+    key: item.id,
+    cells: [
+      { v: item.from, mono: true },
+      { v: item.subject || '(제목 없음)', kind: item.subject ? 'none' : 'dim' },
+      {
+        v: item.matchedVendor ?? '붙이지 못했어요',
+        kind: item.matchedVendor ? 'none' : 'bad',
+      },
+      { v: item.receivedAt.slice(0, 10), kind: 'dim' },
+      {
+        v: item.parseConfidence.toFixed(2),
+        bold: true,
+        kind: item.parseConfidence < CONFIDENCE_FLOOR ? 'bad' : 'ok',
+      },
+      { v: STATUS_LABEL[item.matchStatus], badge: STATUS_KIND[item.matchStatus] },
+    ],
+  }));
 
   return (
-    <View style={styles.root}>
-      <View style={styles.header}>
-        <Text style={styles.title}>데이터 · 이메일 회신 자동매칭</Text>
-        <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
-          <Text style={styles.refreshText}>새로 고침</Text>
-        </Pressable>
-      </View>
+    <Page
+      title="이메일 회신 자동 매칭"
+      sub="업체 회신을 어느 문의에 붙였는지"
+      action={{ label: '새로 고침', onPress: reload }}
+    >
+      <DelayedLoader active={loading} size={40} />
+      {!loading && error ? <LoadError message={error} onRetry={reload} /> : null}
 
-      <PendingBackendNotice actions="반영 · 재시도" />
-      <DelayedLoader active={loading} size={40} style={styles.centered} />
-      {!loading && error && (
-        <View style={styles.centered}>
-          <Text style={styles.errorText}>{error}</Text>
-          <Pressable style={styles.retryBtn} onPress={() => setRev((r) => r + 1)}>
-            <Text style={styles.retryText}>다시 시도</Text>
-          </Pressable>
-        </View>
-      )}
+      {!loading && !error && data ? (
+        <>
+          <StatusBanner
+            tone={needsCheck === 0 ? 'ok' : 'warn'}
+            title={
+              needsCheck === 0
+                ? '확인할 것이 없어요'
+                : `확신도 낮음 ${needsCheck}건만 확인하면 돼요`
+            }
+            detail={
+              needsCheck === 0
+                ? `받은 회신이 모두 확신도 ${CONFIDENCE_FLOOR} 이상으로 붙었어요.`
+                : `나머지 ${autoMatched}건은 자동으로 붙었고 문의 담당자에게 이미 알림이 갔어요.`
+            }
+          />
 
-      {!loading && !error && data && (
-        <View style={styles.body}>
-          <View style={styles.summaryRow}>
-            {(['matched', 'unmatched', 'applied', 'failed'] as MatchStatus[]).map((s) => (
-              <View key={s} style={styles.summaryCell}>
-                <Text style={[styles.summaryValue, { color: STATUS_COLOR[s] }]}>
-                  {data.summary[s]}
-                </Text>
-                <Text style={styles.summaryLabel}>{STATUS_LABEL[s]}</Text>
-              </View>
-            ))}
-          </View>
-          <ScrollView>
-            <View style={styles.tableHead}>
-              <Text style={[styles.th, styles.colSubject]}>제목</Text>
-              <Text style={[styles.th, styles.colFrom]}>발신자</Text>
-              <Text style={[styles.th, styles.colVendor]}>업체</Text>
-              <Text style={[styles.th, styles.colStatus]}>상태</Text>
-              <Text style={[styles.th, styles.colConf]}>신뢰도</Text>
-              <Text style={[styles.th, styles.colAction]} />
-            </View>
-            {data.items.map((item, i) => (
-              <View key={item.id} style={[styles.tableRow, i % 2 === 1 && styles.tableRowZebra]}>
-                <Text style={[styles.td, styles.colSubject]} numberOfLines={1}>{item.subject}</Text>
-                <Text style={[styles.td, styles.colFrom]} numberOfLines={1}>{item.from}</Text>
-                <Text style={[styles.td, styles.colVendor]} numberOfLines={1}>
-                  {item.matchedVendor ?? '—'}
-                </Text>
-                <Text style={[styles.td, styles.colStatus, { color: STATUS_COLOR[item.matchStatus] }]}>
-                  {STATUS_LABEL[item.matchStatus]}
-                </Text>
-                <Text style={[styles.td, styles.colConf]}>
-                  {(item.parseConfidence * 100).toFixed(0)}%
-                </Text>
-                <View style={styles.colAction}>
-                  {item.matchStatus === 'matched' && (
-                    <Pressable
-                      style={[styles.inlineBtn, (BACKEND_PENDING || acting === item.id) && styles.btnDisabled]}
-                      onPress={() => void apply(item.id)}
-                      disabled={BACKEND_PENDING || acting !== null}
-                    >
-                      <Text style={styles.inlineBtnText}>{acting === item.id ? '…' : '반영'}</Text>
-                    </Pressable>
-                  )}
-                  {item.matchStatus === 'failed' && (
-                    <Pressable
-                      style={[styles.inlineBtn, (BACKEND_PENDING || acting === item.id + '_retry') && styles.btnDisabled]}
-                      onPress={() => void retry(item.id)}
-                      disabled={BACKEND_PENDING || acting !== null}
-                    >
-                      <Text style={styles.inlineBtnText}>
-                        {acting === item.id + '_retry' ? '…' : '재시도'}
-                      </Text>
-                    </Pressable>
-                  )}
-                </View>
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-      )}
-    </View>
+          <PendingBackendNotice actions="반영 · 재시도" />
+
+          <KpiRow
+            items={[
+              { label: '수신', value: `${data.summary.total}통`, note: '업체 회신' },
+              { label: '자동 매칭', value: `${autoMatched}통`, note: `확신도 ${CONFIDENCE_FLOOR} 이상`, kind: 'ok' },
+              {
+                label: '확신도 낮음',
+                value: `${needsCheck}통`,
+                note: needsCheck === 0 ? '확인할 것이 없어요' : '수동 연결 필요',
+                kind: needsCheck === 0 ? 'ok' : 'brand',
+              },
+              { label: '평균 확신도', value: avgConfidence.toFixed(2), note: '수신 전체' },
+            ]}
+          />
+
+          <CardGrid>
+            <Card
+              title="수신 목록"
+              sub="최근 순"
+              full
+              note={`확신도 ${CONFIDENCE_FLOOR} 미만은 자동으로 붙이지 않고 확인 필요로 남겨요.`}
+            >
+              <DataTable cols={COLS} rows={rows} empty="받은 회신이 없어요" />
+            </Card>
+          </CardGrid>
+        </>
+      ) : null}
+    </Page>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    backgroundColor: Colors.light.background,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
-  },
-  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text },
-  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: Colors.light.backgroundSelected },
-  refreshText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
-  body: { flex: 1 },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  errorText: { fontSize: FontSize.t6, color: Colors.light.negative, marginBottom: 16 },
-  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: Colors.light.tint },
-  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
-  summaryRow: {
-    flexDirection: 'row',
-    backgroundColor: Colors.light.background,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-  },
-  summaryCell: { flex: 1, alignItems: 'center' },
-  summaryValue: { fontSize: FontSize.t4, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  summaryLabel: { fontSize: FontSize.tab, color: Colors.light.textAssistive, marginTop: 2 },
-  tableHead: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: Colors.light.backgroundElement,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
-    alignItems: 'center',
-  },
-  tableRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.backgroundSelected,
-    alignItems: 'center',
-  },
-  tableRowZebra: { backgroundColor: Colors.light.backgroundElement },
-  th: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.textAssistive, textTransform: 'uppercase' as const },
-  td: { fontSize: FontSize.t7, color: Colors.light.textStrong },
-  colSubject: { flex: 2 },
-  colFrom: { flex: 2 },
-  colVendor: { flex: 2 },
-  colStatus: { width: 60 },
-  colConf: { width: 50, textAlign: 'right' as const },
-  colAction: { width: 60, alignItems: 'flex-end' },
-  inlineBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    backgroundColor: Colors.light.backgroundSelected,
-    borderWidth: 1,
-    borderColor: Colors.light.fieldBorder,
-  },
-  inlineBtnText: { fontSize: FontSize.tab, color: Colors.light.textSecondary },
-  btnDisabled: { opacity: 0.5 },
-});
