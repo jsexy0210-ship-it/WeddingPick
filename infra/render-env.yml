@@ -132,5 +132,14 @@ services:
       - LEGAL_ADDRESS
       - LEGAL_SUPPORT_CONTACT
       - LEGAL_PRIVACY_OFFICER
+      # 관리자 「저장 후 반영하기」가 당기는 주소. Render → weddingpick-web →
+      # Settings → Deploy Hook에서 만들어 GitHub Secrets에 같은 이름으로 넣는다.
+      #
+      # **Render API 키를 쓰지 않는다.** API 키는 계정의 모든 서비스를 건드릴 수
+      # 있어서 인터넷에 열린 서버에 두기에는 넓다. 배포 훅은 웹 서비스 하나만
+      # 다시 배포하는 주소라 새어도 할 수 있는 일이 그것뿐이다.
+      #
+      # 없으면 「반영하기」가 무엇이 빠졌는지 화면에 말한다. 저장은 그대로 된다.
+      - RENDER_WEB_DEPLOY_HOOK
       # 시행일 둘은 위 vars로 옮겼다. 비밀이 아니고 — 약관 페이지에 그대로 찍힌다 —
       # 양쪽에 두면 둘 중 어느 값이 반영되는지가 sync 순서에 달리게 된다.

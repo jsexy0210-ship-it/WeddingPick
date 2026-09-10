@@ -34,6 +34,7 @@ const NAV_GROUPS: { group?: string; key?: string; label?: string; href?: string 
   { group: '콘텐츠' },
   { key: 'faq', label: 'FAQ 관리', href: '/admin/faq' },
   { key: 'terms', label: '약관 · 방침', href: '/admin/terms' },
+  { key: 'og-card', label: '링크 미리보기', href: '/admin/og-card' },
   { group: '운영' },
   { key: 'automation', label: '자동화 상태', href: '/admin/automation' },
   { key: 'kill-switch', label: 'Kill Switch', href: '/admin/kill-switch' },

@@ -1,5 +1,7 @@
 import type { Pool } from 'pg';
 
+import { SITE_ORIGIN } from '@weddingpick/domain';
+
 import strings from '../../../spec/strings.ko.json';
 
 /**
@@ -26,9 +28,18 @@ export type SiteMetaAdminView = {
   defaults: SiteMeta;
   overrides: Partial<Record<keyof SiteMeta, string | null>>;
   updatedAt: string | null;
-  publishedAt: string | null;
-  /** 저장했지만 아직 웹 빌드에 실려 나가지 않았다. */
-  pendingPublish: boolean;
+  /** 마지막으로 「반영하기」를 눌러 배포를 건 때. 배포가 끝난 때가 아니다. */
+  publishRequestedAt: string | null;
+  /**
+   * **지금 사이트에 실제로 나가 있는 제목.**
+   *
+   * 저장 시각과 배포 시각을 비교해 「반영됨」이라고 말하지 않는다. 배포는 실패할 수
+   * 있고 정적 사이트는 실패하면 옛 빌드를 계속 내보내므로, 시각만 보면 안 바뀐
+   * 화면을 바뀐 것으로 읽는다. 그래서 공개 페이지를 직접 읽어 og:title을 꺼낸다.
+   *
+   * 못 읽으면 `null`이다 — 「기본값과 같다」가 아니라 「모른다」로 화면에 적는다.
+   */
+  liveOgTitle: string | null;
 };
 
 type Row = {
@@ -79,8 +90,6 @@ export async function effective(pool: Pool): Promise<SiteMeta> {
 
 export async function adminView(pool: Pool): Promise<SiteMetaAdminView> {
   const row = await readRow(pool);
-  const updatedAt = row?.updated_at ?? null;
-  const publishedAt = row?.published_at ?? null;
 
   return {
     effective: merge(row),
@@ -91,10 +100,39 @@ export async function adminView(pool: Pool): Promise<SiteMetaAdminView> {
       ogImageUrl: row?.og_image_url ?? null,
       ogImageAlt: row?.og_image_alt ?? null,
     },
-    updatedAt: updatedAt?.toISOString() ?? null,
-    publishedAt: publishedAt?.toISOString() ?? null,
-    pendingPublish: updatedAt !== null && (publishedAt === null || publishedAt < updatedAt),
+    updatedAt: row?.updated_at?.toISOString() ?? null,
+    publishRequestedAt: row?.published_at?.toISOString() ?? null,
+    liveOgTitle: await liveOgTitle(),
   };
+}
+
+/**
+ * 공개 사이트가 지금 내보내고 있는 og:title.
+ *
+ * 정적 HTML이라 태그가 소스에 그대로 있다. 읽지 못하면 `null`을 준다 — 사이트가
+ * 자고 있거나 느린 것을 「바뀌지 않았다」로 단정하지 않는다.
+ */
+async function liveOgTitle(): Promise<string | null> {
+  try {
+    const response = await fetch(SITE_ORIGIN, { signal: AbortSignal.timeout(4_000) });
+
+    if (!response.ok) return null;
+
+    const html = await response.text();
+    const found = /<meta property="og:title" content="([^"]*)"/.exec(html)?.[1];
+
+    return found ? decodeAttribute(found) : null;
+  } catch {
+    return null;
+  }
+}
+
+function decodeAttribute(value: string): string {
+  return value
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&');
 }
 
 /**
@@ -139,11 +177,11 @@ export async function save(
 }
 
 /**
- * 웹 빌드가 이 문구를 실어 나갔다고 적는다.
+ * 「반영하기」를 눌러 배포를 걸었다고 적는다.
  *
- * 배포를 건 시점이 아니라 **빌드가 실제로 읽어간 시점**에 찍어야 한다. 배포는 실패할 수
- * 있고, 걸자마자 「반영됨」으로 바꾸면 실패한 배포까지 반영된 것으로 보인다.
+ * **이것은 「반영됨」이 아니다.** 배포는 실패할 수 있고, 정적 사이트는 실패하면 옛
+ * 빌드를 계속 내보낸다. 실제로 나갔는지는 `liveOgTitle`이 사이트를 읽어 말한다.
  */
-export async function markPublished(pool: Pool): Promise<void> {
+export async function markPublishRequested(pool: Pool): Promise<void> {
   await pool.query('UPDATE structured.site_meta SET published_at = now() WHERE id = true');
 }

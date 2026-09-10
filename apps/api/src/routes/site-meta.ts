@@ -58,9 +58,9 @@ export function registerSiteMetaRoutes(app: FastifyInstance, context: AppContext
    * 건드릴 수 있어서, 인터넷에 열린 서버에 두기에는 너무 넓다. 배포 훅은 웹 서비스
    * 하나만 다시 배포하는 주소다.
    *
-   * **`published_at`은 여기서 찍지 않는다.** 배포는 실패할 수 있고, 걸자마자
-   * 「반영됨」으로 바꾸면 실패한 배포까지 반영된 것으로 보인다. 빌드가 실제로
-   * `/v1/site-meta`를 읽어갈 때 찍는다.
+   * 배포를 건 시각은 적지만 그것을 「반영됨」으로 부르지 않는다. 배포는 실패할 수
+   * 있고 정적 사이트는 실패하면 옛 빌드를 계속 내보낸다 — 실제로 나갔는지는
+   * 관리자 조회가 공개 페이지를 직접 읽어 말한다(`liveOgTitle`).
    */
   app.post('/v1/admin/site-meta/publish', auth, async () => {
     const hook = process.env.RENDER_WEB_DEPLOY_HOOK?.trim();
@@ -78,6 +78,8 @@ export function registerSiteMetaRoutes(app: FastifyInstance, context: AppContext
     if (!response.ok) {
       throw new ApiError('internal', `배포를 걸지 못했어요 — 응답 ${response.status}`);
     }
+
+    await siteMeta.markPublishRequested(context.pool);
 
     return { started: true };
   });

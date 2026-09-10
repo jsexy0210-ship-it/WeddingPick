@@ -4,7 +4,8 @@ import { join } from 'node:path';
 import { renderHomePage } from './home-page';
 import { renderLandingV4 } from './landing-v4';
 import { renderLandingPage } from './page';
-import { apiBase, loadSiteData, loadVendor, vendorIdsToBuild } from './site-data';
+import { apiBase, loadSiteData, loadSiteMeta, loadVendor, vendorIdsToBuild } from './site-data';
+import { applySiteMeta } from './social-meta';
 import { renderFaqPage, renderIntroPage, renderPrivacyPage, renderSupportPage, renderTermsPage } from './subpages';
 import { STYLES } from './styles';
 import { validateLegalDates } from './legal-config';
@@ -48,6 +49,12 @@ export async function build(outDir: string): Promise<string> {
    */
   rmSync(outDir, { recursive: true, force: true });
   mkdirSync(outDir, { recursive: true });
+
+  /*
+   * 카드 문구는 **모든 페이지를 그리기 전에** 한 번 읽어 넣는다. 중간에 넣으면
+   * 먼저 그려진 페이지만 옛 문구를 들고 나간다.
+   */
+  applySiteMeta(await loadSiteMeta());
 
   // Copy public assets (favicons, manifest, etc.)
   const publicDir = join(__dirname, '..', 'public');
