@@ -12,7 +12,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { API_URL } from '@/api/config';
-import { FontSize, LineHeight } from '@weddingpick/ui';
+import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 
 import { saveAdminToken } from './_session';
 
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
   side: {
     flex: 1,
     minWidth: 0,
-    backgroundColor: '#17181c',
+    backgroundColor: Colors.light.adminChrome,
     justifyContent: 'center',
     paddingHorizontal: 72,
     gap: 26,

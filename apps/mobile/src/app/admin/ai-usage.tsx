@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 
@@ -96,11 +96,11 @@ export default function AiUsageScreen() {
                 <Text style={styles.providerName}>{m.provider}</Text>
               </View>
               <Text style={[styles.td, styles.colCalls]}>{m.callCount.toLocaleString()}</Text>
-              <Text style={[styles.td, styles.colSuccess, m.successRate < 0.95 && { color: '#e81607' }]}>
+              <Text style={[styles.td, styles.colSuccess, m.successRate < 0.95 && { color: Colors.light.negative }]}>
                 {(m.successRate * 100).toFixed(1)}%
               </Text>
               <Text style={[styles.td, styles.colLatency]}>{m.avgLatencyMs.toLocaleString()}</Text>
-              <Text style={[styles.td, styles.colEdit, m.userEditRate > 0.3 && { color: '#805217' }]}>
+              <Text style={[styles.td, styles.colEdit, m.userEditRate > 0.3 && { color: Colors.light.cautionary }]}>
                 {(m.userEditRate * 100).toFixed(1)}%
               </Text>
               <Text style={[styles.td, styles.colCost]}>{m.costToday}</Text>
@@ -114,33 +114,33 @@ export default function AiUsageScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f3f6' },
+  root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
     gap: 12,
   },
-  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: '#17181c' },
+  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text },
   headerCosts: { flexDirection: 'row', gap: 12 },
-  costText: { fontSize: FontSize.t7, fontWeight: '700', color: '#1aa174' },
-  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: '#f2f3f6' },
-  refreshText: { fontSize: FontSize.t7, color: '#5a5d6a' },
+  costText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.positive },
+  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: Colors.light.backgroundSelected },
+  refreshText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  errorText: { fontSize: FontSize.t6, color: '#e53e3e', marginBottom: 16 },
-  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: '#ff6f61' },
-  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: '#fff' },
+  errorText: { fontSize: FontSize.t6, color: Colors.light.negative, marginBottom: 16 },
+  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: Colors.light.tint },
+  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   tableHead: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: Colors.light.backgroundElement,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
     alignItems: 'center',
   },
   tableRow: {
@@ -148,16 +148,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f1f4',
+    borderBottomColor: Colors.light.backgroundSelected,
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
   },
-  tableRowZebra: { backgroundColor: '#fafbfc' },
-  th: { fontSize: FontSize.tab, fontWeight: '700', color: '#868b94', textTransform: 'uppercase' as const },
-  td: { fontSize: FontSize.t7, color: '#3a3b40', fontVariant: ['tabular-nums'] },
+  tableRowZebra: { backgroundColor: Colors.light.backgroundElement },
+  th: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.textAssistive, textTransform: 'uppercase' as const },
+  td: { fontSize: FontSize.t7, color: Colors.light.textStrong, fontVariant: ['tabular-nums'] },
   colModel: { flex: 2 },
-  modelName: { fontSize: FontSize.t7, fontWeight: '700', color: '#17181c' },
-  providerName: { fontSize: FontSize.tab, color: '#868b94' },
+  modelName: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.text },
+  providerName: { fontSize: FontSize.tab, color: Colors.light.textAssistive },
   colCalls: { width: 60, textAlign: 'right' as const },
   colSuccess: { width: 56, textAlign: 'right' as const },
   colLatency: { width: 64, textAlign: 'right' as const },

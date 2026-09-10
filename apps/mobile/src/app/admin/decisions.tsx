@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { formatDateTimeDot } from '@/features/common/format-date';
 
@@ -169,41 +169,41 @@ export default function DecisionsScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f3f6' },
+  root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
-  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: '#17181c' },
-  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: '#f2f3f6' },
-  refreshText: { fontSize: FontSize.t7, color: '#5a5d6a' },
+  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text },
+  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: Colors.light.backgroundSelected },
+  refreshText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
   centered: { marginTop: 40 },
   content: { padding: 24, gap: 20 },
-  card: { backgroundColor: '#fff', borderRadius: 10, padding: 20, borderWidth: 1, borderColor: '#e4e5ea' },
+  card: { backgroundColor: Colors.light.background, borderRadius: 10, padding: 20, borderWidth: 1, borderColor: Colors.light.border },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  cardTitle: { fontSize: FontSize.t6, fontWeight: '700', color: '#17181c' },
-  cardHint: { fontSize: FontSize.badge, color: '#868b94', marginBottom: 12 },
-  failBadge: { fontSize: FontSize.badge, fontWeight: '700', color: '#e53e3e' },
-  openBadge: { fontSize: FontSize.badge, fontWeight: '700', color: '#868b94' },
-  emptyText: { color: '#868b94', fontSize: FontSize.t7, paddingVertical: 16 },
-  errorText: { color: '#e53e3e', fontSize: FontSize.t7, padding: 24 },
+  cardTitle: { fontSize: FontSize.t6, fontWeight: '700', color: Colors.light.text },
+  cardHint: { fontSize: FontSize.badge, color: Colors.light.textAssistive, marginBottom: 12 },
+  failBadge: { fontSize: FontSize.badge, fontWeight: '700', color: Colors.light.negative },
+  openBadge: { fontSize: FontSize.badge, fontWeight: '700', color: Colors.light.textAssistive },
+  emptyText: { color: Colors.light.textAssistive, fontSize: FontSize.t7, paddingVertical: 16 },
+  errorText: { color: Colors.light.negative, fontSize: FontSize.t7, padding: 24 },
   tableHead: {
     flexDirection: 'row',
     paddingVertical: 8,
     marginTop: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
-  tableRow: { flexDirection: 'row', paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: '#f0f1f4' },
-  th: { fontSize: FontSize.tab, fontWeight: '700', color: '#868b94', textTransform: 'uppercase' },
-  td: { fontSize: FontSize.t7, color: '#3a3b40' },
+  tableRow: { flexDirection: 'row', paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: Colors.light.backgroundSelected },
+  th: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.textAssistive, textTransform: 'uppercase' },
+  td: { fontSize: FontSize.t7, color: Colors.light.textStrong },
   numText: { fontVariant: ['tabular-nums'], textAlign: 'right' },
-  failText: { color: '#e53e3e', fontWeight: '700' },
+  failText: { color: Colors.light.negative, fontWeight: '700' },
   colWorkflow: { flex: 1 },
   colDecider: { width: 140 },
   colStep: { width: 130 },

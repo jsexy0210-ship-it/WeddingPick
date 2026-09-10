@@ -2,7 +2,7 @@ import { Link, Redirect, Slot, usePathname } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { Colors, FontSize } from '@weddingpick/ui';
 
 import { clearAdminToken, loadAdminToken } from './_session';
 
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: '#f2f3f6',
+    backgroundColor: Colors.light.backgroundSelected,
     minHeight: '100vh' as unknown as number,
   },
   sidebar: {
@@ -170,7 +170,12 @@ const styles = StyleSheet.create({
      * 스크롤 없이 들어가지 않았던 것이 폭을 올린 이유다.
      */
     width: 240,
-    backgroundColor: '#17181c',
+    /*
+     * 사이드바 바탕은 시안의 #17181c다. 잠깐 `Colors.light.text`(#212124)로 바뀌어
+     * 있었는데, 하드코딩을 없애려다 **다른 색이 됐다** — 토큰으로 바꾸는 것과
+     * 아무 토큰이나 갖다 쓰는 것은 다른 일이다. 시안 값으로 토큰을 새로 만들었다.
+     */
+    backgroundColor: Colors.light.adminChrome,
     flexShrink: 0,
     flexDirection: 'column',
   },
@@ -182,7 +187,7 @@ const styles = StyleSheet.create({
   sidebarTitle: {
     fontSize: FontSize.t6,
     fontWeight: '700',
-    color: '#fff',
+    color: Colors.light.background,
   },
   sidebarScroll: {
     flex: 1,
@@ -204,7 +209,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.tab,
     fontWeight: '700',
     letterSpacing: 0.6,
-    color: '#393a40',
+    color: Colors.light.textStrong,
     textTransform: 'uppercase' as const,
   },
   navItem: {
@@ -221,10 +226,10 @@ const styles = StyleSheet.create({
   navLabel: {
     flex: 1,
     fontSize: FontSize.t7,
-    color: '#868b94',
+    color: Colors.light.textAssistive,
   },
   navLabelActive: {
-    color: '#fff',
+    color: Colors.light.background,
     fontWeight: '700',
   },
   main: {
@@ -240,6 +245,6 @@ const styles = StyleSheet.create({
   },
   notWebText: {
     fontSize: FontSize.t6,
-    color: '#868b94',
+    color: Colors.light.textAssistive,
   },
 });
