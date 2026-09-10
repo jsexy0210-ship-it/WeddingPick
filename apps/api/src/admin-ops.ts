@@ -1063,6 +1063,9 @@ export async function setAdStatus(
 
 export type GateStepStatus = 'done' | 'in_progress' | 'pending' | 'blocked';
 
+/** `ads.launch_reports.analyst`(0043)의 두 갈래. 각각 따로 낸다 — 합치지 않는다. */
+const ANALYSTS = ['gpt', 'claude'] as const;
+
 export type GateStep = {
   id: string;
   label: string;
@@ -1103,10 +1106,10 @@ export async function adsGate(db: Queryable): Promise<AdsGateData> {
   const activated = gate[0]?.activated ?? false;
 
   const iso = (value: Date | null | undefined): string | null => value?.toISOString() ?? null;
-  const analystAt = (who: 'gpt' | 'claude'): Date | null =>
+  const analystAt = (who: (typeof ANALYSTS)[number]): Date | null =>
     reports.find((r) => r.analyst === who)?.submitted_at ?? null;
 
-  const bothAnalyzed = analysts.has('gpt') && analysts.has('claude');
+  const bothAnalyzed = ANALYSTS.every((who) => analysts.has(who));
 
   const steps: GateStep[] = [
     {
@@ -1131,24 +1134,22 @@ export async function adsGate(db: Queryable): Promise<AdsGateData> {
       detail: '노출·클릭 집계는 아직 준비되지 않았어요',
       requiresAction: false,
     },
-    {
-      id: 'analysis_gpt',
-      label: 'GPT 독립 분석',
-      description: 'GPT가 단독으로 판정합니다',
-      status: analysts.has('gpt') ? 'done' : 'pending',
-      completedAt: iso(analystAt('gpt')),
+    /*
+     * 분석자 두 갈래를 한 자리에서 만든다. 이름은 `ads.launch_reports.analyst`
+     * 값에서 그대로 온다 — 화면에 적을 이름을 코드에 따로 두면 표와 갈라진다.
+     *
+     * **두 결론을 합치지 않는다**(0043). 한 줄로 묶으면 어느 쪽이 무엇을 봤는지
+     * 사라지고, 사용자가 결정할 재료가 없어진다.
+     */
+    ...ANALYSTS.map((who): GateStep => ({
+      id: `analysis_${who}`,
+      label: `${who.toUpperCase()} 독립 분석`,
+      description: '단독으로 판정합니다. 다른 분석과 결론을 합치지 않아요',
+      status: analysts.has(who) ? 'done' : 'pending',
+      completedAt: iso(analystAt(who)),
       detail: null,
       requiresAction: false,
-    },
-    {
-      id: 'analysis_claude',
-      label: 'AI 독립 분석',
-      description: '다른 AI가 단독으로 판정합니다. 두 결론을 합치지 않아요',
-      status: analysts.has('claude') ? 'done' : 'pending',
-      completedAt: iso(analystAt('claude')),
-      detail: null,
-      requiresAction: false,
-    },
+    })),
     {
       id: 'reports',
       label: '보고서 제출',
