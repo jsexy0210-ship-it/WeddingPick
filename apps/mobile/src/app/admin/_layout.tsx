@@ -24,23 +24,17 @@ type NavEntry = { group: string } | { key: string; label: string; href: string; 
  * 메뉴만 보고는 어느 것이 실제로 일을 하는지 알 수 없어서, 운영자는 하나씩 눌러
  * 보고서야 알게 된다.
  *
- * **메뉴를 죽이지는 않는다.** 이 아홉 곳도 조회는 전부 된다 — 목록 · 지표 · 상태가
+ * **메뉴를 죽이지는 않는다.** 여기 적힌 곳도 조회는 전부 된다 — 목록 · 지표 · 상태가
  * 실제 서버 값으로 나온다. 눌리지 않게 막으면 되는 것까지 못 보게 된다.
+ *
+ * 아홉이던 것이 하나로 줄었다. 검토 · 데이터 · 운영 계열의 서버 동작이 붙으면서
+ * 그 화면들의 `BACKEND_PENDING`이 사라졌고, 여기 이름도 함께 지웠다. 남은 하나는
+ * `biz-queue` — 업체 신청 처리는 아직 서버에 없다.
  *
  * 서버 동작이 붙으면 그 화면의 `BACKEND_PENDING`과 여기 이름을 **함께** 지운다.
  * 한쪽만 지우면 말이 어긋난다.
  */
-const READ_ONLY = new Set([
-  'ads',
-  'ads-gate',
-  'biz-queue',
-  'campaigns',
-  'data-pipeline',
-  'objections',
-  'policy-engine',
-  'terms',
-  'vendors',
-]);
+const READ_ONLY = new Set(['biz-queue']);
 
 /**
  * ADMIN.md 26화면 목록에 아직 없는 라우트. 지우면 기능이 사라지므로 남기되
