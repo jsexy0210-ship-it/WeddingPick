@@ -25,6 +25,11 @@ export const FontSize = {
   t6: 16,
   /** caption 14/19 — 메타 · 건수 · 섹션 라벨 · 상태 배지. */
   t7: 14,
+  /**
+   * 날짜 선택의 칸 글자. component.datePicker.cellFontSize — 20-onboarding-v2의
+   * `optCell` · `dayCell`이 15다. t 스케일에는 없는 값이고 이 시트에서만 쓴다.
+   */
+  dateCell: 15,
   /** micro 13/18 — 정보 단계 배지 · 스타일 칩(28) · 이미지 위 순위 pill. */
   micro: 13,
   /** Npay 로고 — 원 안의 N 12 · «pay» 14. spec/tokens.json typography npay. 다른 곳에 쓰지 않는다. */
