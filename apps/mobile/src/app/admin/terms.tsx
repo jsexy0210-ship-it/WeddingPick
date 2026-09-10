@@ -17,7 +17,7 @@ import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { formatDateDot } from '@/features/common/format-date';
-import { DangerConfirm } from '@/features/admin/danger-confirm';
+import { ConfirmCard } from './_ui';
 
 type DocType = 'terms' | 'privacy' | 'marketing';
 type TermsVersion = {
@@ -252,25 +252,27 @@ export default function TermsScreen() {
         공개한 판은 얼어붙는다 — 사용자가 동의한 글이라 나중에 고칠 수 없다.
         무엇이 바뀌는지 항목으로 보인 뒤 한 번 더 확인한다(v3.27).
       */}
-      <DangerConfirm
-        visible={askingPublish}
-        title="초안을 공개할까요?"
-        description="공개한 판의 조문은 다시 고칠 수 없어요."
-        changes={
-          activeDocData
-            ? [
-                `${activeDocData.label} ${activeDocData.latestDraftVersion ?? ''} 판이 공개돼요`,
-                '공개된 조문은 잠기고, 이어서 고칠 새 초안이 만들어져요',
-                '사용자에게 이 판이 현행으로 보여요',
-                '공개한 사람과 시각이 감사 기록에 남아요',
-              ]
-            : []
-        }
-        confirmLabel="초안 공개"
-        busy={publishing}
-        onConfirm={() => void publish()}
-        onCancel={() => setAskingPublish(false)}
-      />
+      {/*
+        공개한 판은 얼어붙는다 — 사용자가 동의한 글이라 나중에 고칠 수 없다.
+        무엇이 바뀌는지 항목으로 보인 뒤 진행한다(v3.27).
+      */}
+      {askingPublish && activeDocData ? (
+        <ConfirmCard
+          title="초안을 공개할까요?"
+          body="공개한 판의 조문은 다시 고칠 수 없어요."
+          items={[
+            `${activeDocData.label} ${activeDocData.latestDraftVersion ?? ''} 판이 공개돼요`,
+            '공개된 조문은 잠기고, 이어서 고칠 새 초안이 만들어져요',
+            '사용자에게 이 판이 현행으로 보여요',
+            '공개한 사람과 시각이 감사 기록에 남아요',
+          ]}
+          cta="초안 공개"
+          danger
+          onConfirm={() => void publish()}
+          onCancel={() => setAskingPublish(false)}
+        />
+      ) : null}
+
     </View>
   );
 }

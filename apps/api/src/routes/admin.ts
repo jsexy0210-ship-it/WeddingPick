@@ -166,7 +166,11 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
     status: z.enum(['active', 'paused']),
     reason: z.string().trim().min(1).optional(),
   });
-  const policyValueBody = z.object({ value: z.string() });
+  const policyChangesBody = z.object({
+    changes: z
+      .array(z.object({ key: z.string().trim().min(1), value: z.string() }))
+      .min(1),
+  });
   const clauseBody = z.object({ body: z.string() });
 
   // ── 결정 브리핑 ──────────────────────────────────────────────
@@ -1553,29 +1557,23 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
 
   // ─── Policy Engine ────────────────────────────────────────────────────────
   app.get('/v1/admin/policy-engine', auth, async () => adminOps.policyRules(context.pool));
-  app.patch('/v1/admin/policy-engine', auth, async (_req, reply) => {
-    return reply.status(204).send();
-  });
 
   /*
-   * 기준값 하나를 고친다. 화면(`policy-engine.tsx`)이 PATCH로 `{ value }`를 보낸다.
+   * 기준값을 고친다. 화면(`policy-engine.tsx`)이 고친 줄을 모아 **한 번에** 보낸다 —
+   * `PATCH /v1/admin/policy-engine` 에 `{ changes: [{ key, value }, …] }`.
+   *
+   * 줄마다 부르지 않는 이유가 화면 쪽에 있다: 여러 값을 같이 보고 고친 뒤 «변경 사항
+   * 저장» 하나로 끝낸다. 서버도 한 트랜잭션으로 받아야 중간에 하나가 실패했을 때
+   * 앞의 것만 남는 상태가 생기지 않는다.
    *
    * 고칠 때마다 되돌릴 자리를 하나 만든다 — 되돌리는 길이 없으면 고치기 전에
    * 손이 멈추고, 그러면 이 화면이 있을 이유가 없다.
    */
-  app.patch<{ Params: { id: string }; Body: unknown }>(
-    '/v1/admin/policy-engine/:id',
-    auth,
-    async (request) =>
-      run(() =>
-        adminOps.setPolicyRule(
-          context.pool,
-          request.params.id,
-          policyValueBody.parse(request.body ?? {}).value,
-          currentUserId(request)
-        )
-      )
-  );
+  app.patch<{ Body: unknown }>('/v1/admin/policy-engine', auth, async (request, reply) => {
+    const body = policyChangesBody.parse(request.body ?? {});
+    await run(() => adminOps.setPolicyRules(context.pool, body.changes, currentUserId(request)));
+    return reply.status(204).send();
+  });
 
   // ─── Rollback ─────────────────────────────────────────────────────────────
   app.get('/v1/admin/rollback', auth, async () => adminOps.rollbackTargets(context.pool));

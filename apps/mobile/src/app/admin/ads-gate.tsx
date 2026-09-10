@@ -9,7 +9,7 @@ import { Colors, FontSize, LineHeight, Spacing } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { formatDateDot } from '@/features/common/format-date';
-import { DangerConfirm } from '@/features/admin/danger-confirm';
+import { ConfirmCard } from './_ui';
 
 type GateStepStatus = 'done' | 'in_progress' | 'pending' | 'blocked';
 
@@ -171,21 +171,27 @@ export default function AdsGateScreen() {
         **승인은 전환이 아니다.** 확인창이 그 사실을 먼저 말한다 — 이 단추를
         누르면 실제로 광고가 켜진다고 읽히면 안 된다(대표 오더 대기).
       */}
-      <DangerConfirm
-        visible={asking}
-        title="실운영 전환을 승인할까요?"
-        description="승인은 기록으로 남고, 광고가 지금 켜지지는 않아요."
-        changes={[
-          '실운영 전환 승인이 기록돼요',
-          '광고는 켜지지 않아요 — 실제 전환은 대표 오더를 기다립니다',
-          '승인한 사람과 시각이 감사 기록에 남아요',
-          '승인은 한 번만 할 수 있어요',
-        ]}
-        confirmLabel="승인"
-        busy={confirming}
-        onConfirm={() => void approveProduction()}
-        onCancel={() => setAsking(false)}
-      />
+      {/*
+        **승인은 전환이 아니다.** 확인 항목이 그 사실을 먼저 말한다 — 이 단추를
+        누르면 광고가 켜진다고 읽히면 안 된다(대표 오더 대기).
+      */}
+      {asking ? (
+        <ConfirmCard
+          title="실운영 전환을 승인할까요?"
+          body="승인은 기록으로 남고, 광고가 지금 켜지지는 않아요."
+          items={[
+            '실운영 전환 승인이 기록돼요',
+            '광고는 켜지지 않아요 — 실제 전환은 대표 오더를 기다립니다',
+            '승인한 사람과 시각이 감사 기록에 남아요',
+            '승인은 한 번만 할 수 있어요',
+          ]}
+          cta="승인"
+          danger
+          onConfirm={() => void approveProduction()}
+          onCancel={() => setAsking(false)}
+        />
+      ) : null}
+
     </View>
   );
 }

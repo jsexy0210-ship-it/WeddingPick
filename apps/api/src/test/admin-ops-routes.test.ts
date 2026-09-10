@@ -133,17 +133,51 @@ describeWithDb('관리자 운영·시스템 라우트', () => {
   // ── 정책 규칙 ───────────────────────────────────────────────
 
   describe('정책 규칙', () => {
-    it('화면이 보내는 PATCH를 받는다', async () => {
+    /*
+     * 화면(`policy-engine.tsx`)은 고친 줄을 `draft`에 모아 «변경 사항 저장» 한 번으로
+     * 보낸다 — 주소에 id가 없고 본문에 `changes` 배열이 온다.
+     */
+    it('화면이 보내는 batch PATCH를 받는다', async () => {
       const operator = await operatorHeaders();
 
-      const response = await patch(
-        '/v1/admin/policy-engine/public_stage.stage1_min',
-        operator.headers,
-        { value: '4' }
-      );
+      const response = await patch('/v1/admin/policy-engine', operator.headers, {
+        changes: [
+          { key: 'public_stage.stage1_min', value: '4' },
+          { key: 'public_stage.stage2_min', value: '7' },
+        ],
+      });
 
-      expect(response.statusCode).toBe(200);
-      expect(response.json()).toMatchObject({ value: '4', defaultValue: '3' });
+      expect(response.statusCode).toBe(204);
+
+      const body = (await get('/v1/admin/policy-engine', operator.headers)).json() as {
+        policies: { key: string; value: string; defaultValue: string }[];
+      };
+      expect(body.policies.find((p) => p.key === 'public_stage.stage1_min')).toMatchObject({
+        value: '4',
+        defaultValue: '3',
+      });
+      expect(body.policies.find((p) => p.key === 'public_stage.stage2_min')?.value).toBe('7');
+    });
+
+    /*
+     * 한 트랜잭션이다. 중간이 틀리면 앞의 것도 남지 않는다 — 앞의 것만 적용되면
+     * 화면이 보여주는 값과 표가 갈라진다.
+     */
+    it('한 줄이 틀리면 같이 보낸 것도 남지 않는다', async () => {
+      const operator = await operatorHeaders();
+
+      const response = await patch('/v1/admin/policy-engine', operator.headers, {
+        changes: [
+          { key: 'public_stage.stage1_min', value: '4' },
+          { key: 'automation.success_rate_down', value: '80' },
+        ],
+      });
+      expect(response.statusCode).toBe(400);
+
+      const body = (await get('/v1/admin/policy-engine', operator.headers)).json() as {
+        policies: { key: string; value: string }[];
+      };
+      expect(body.policies.find((p) => p.key === 'public_stage.stage1_min')?.value).toBe('3');
     });
 
     it('고친 값을 실제로 읽는 자리가 있다 — 공개 단계 기준', async () => {
@@ -158,8 +192,8 @@ describeWithDb('관리자 운영·시스템 라우트', () => {
       };
       expect(before.summary).toBeDefined();
 
-      await patch('/v1/admin/policy-engine/public_stage.stage1_min', operator.headers, {
-        value: '99',
+      await patch('/v1/admin/policy-engine', operator.headers, {
+        changes: [{ key: 'public_stage.stage1_min', value: '99' }],
       });
 
       const after = (await get('/v1/admin/data/price-stats', operator.headers)).json() as {
@@ -170,29 +204,25 @@ describeWithDb('관리자 운영·시스템 라우트', () => {
 
     it('숫자 칸에 말을 넣으면 거부한다', async () => {
       const operator = await operatorHeaders();
-      const response = await patch(
-        '/v1/admin/policy-engine/automation.dlq_alert_size',
-        operator.headers,
-        { value: '곧' }
-      );
+      const response = await patch('/v1/admin/policy-engine', operator.headers, {
+        changes: [{ key: 'automation.dlq_alert_size', value: '곧' }],
+      });
       expect(response.statusCode).toBe(400);
     });
 
     it('비율은 0과 1 사이만 받는다', async () => {
       const operator = await operatorHeaders();
-      const response = await patch(
-        '/v1/admin/policy-engine/automation.success_rate_down',
-        operator.headers,
-        { value: '80' }
-      );
+      const response = await patch('/v1/admin/policy-engine', operator.headers, {
+        changes: [{ key: 'automation.success_rate_down', value: '80' }],
+      });
       expect(response.statusCode).toBe(400);
     });
 
     it('고치면 되돌릴 자리가 하나 생긴다', async () => {
       const operator = await operatorHeaders();
 
-      await patch('/v1/admin/policy-engine/public_stage.stage2_min', operator.headers, {
-        value: '6',
+      await patch('/v1/admin/policy-engine', operator.headers, {
+        changes: [{ key: 'public_stage.stage2_min', value: '6' }],
       });
 
       const body = (await get('/v1/admin/rollback', operator.headers)).json() as {
@@ -207,7 +237,9 @@ describeWithDb('관리자 운영·시스템 라우트', () => {
 
   describe('롤백', () => {
     async function policyRollbackTarget(headers: Record<string, string>): Promise<string> {
-      await patch('/v1/admin/policy-engine/public_stage.stage3_min', headers, { value: '12' });
+      await patch('/v1/admin/policy-engine', headers, {
+        changes: [{ key: 'public_stage.stage3_min', value: '12' }],
+      });
       const { rows } = await test.pool.query<{ id: string }>(
         'SELECT id FROM structured.rollback_targets LIMIT 1'
       );

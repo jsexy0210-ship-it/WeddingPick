@@ -152,66 +152,96 @@ function assertPolicyValue(kind: PolicyKind, value: string): void {
  * 변경은 사용자 화면이 바로 바뀌는 조작이라, 되돌리는 길이 없으면 고치기 전에
  * 손이 멈춘다 — 그러면 이 화면이 있는 이유가 없어진다.
  */
-export async function setPolicyRule(
+export async function setPolicyRules(
   pool: Pool,
-  id: string,
-  value: string,
+  changes: { key: string; value: string }[],
   by: string
-): Promise<PolicyItem> {
+): Promise<{ changed: number }> {
+  if (changes.length === 0) {
+    throw new ApiError('invalid_request', '바꿀 값이 없습니다.');
+  }
+
+  const seen = new Set<string>();
+  for (const change of changes) {
+    if (seen.has(change.key)) {
+      throw new ApiError('invalid_request', '같은 규칙이 두 번 들어왔습니다.');
+    }
+    seen.add(change.key);
+  }
+
+  /*
+   * **한 트랜잭션이다.** 화면이 여러 줄을 한 번에 저장하는데(`policy-engine.tsx`가
+   * 고친 것을 `draft`에 모아 «변경 사항 저장» 한 번으로 보낸다), 중간에 하나가
+   * 실패하고 앞의 것만 남으면 어느 것이 적용됐는지 화면과 표가 갈라진다.
+   */
   return withTransaction(pool, async (client) => {
-    const { rows } = await client.query<{ kind: PolicyKind; value: string; label: string }>(
-      'SELECT kind, value, label FROM structured.policy_rules WHERE id = $1 FOR UPDATE',
-      [id]
+    // 키 순서로 잠근다. 두 요청이 같은 두 줄을 반대 순서로 잡으면 서로 기다린다.
+    const keys = [...seen].sort();
+
+    const { rows } = await client.query<{
+      id: string;
+      key: string;
+      kind: PolicyKind;
+      value: string;
+      label: string;
+    }>(
+      `SELECT id, key, kind, value, label FROM structured.policy_rules
+       WHERE key = ANY($1::text[]) ORDER BY key FOR UPDATE`,
+      [keys]
     );
 
-    const found = rows[0];
-    if (!found) throw notFound('정책 규칙');
+    const byKey = new Map(rows.map((row) => [row.key, row]));
 
-    assertPolicyValue(found.kind, value);
+    let changed = 0;
 
-    const next = value.trim();
+    for (const change of changes) {
+      const found = byKey.get(change.key);
+      if (!found) throw notFound('정책 규칙');
 
-    if (next === found.value) {
+      assertPolicyValue(found.kind, change.value);
+
+      const next = change.value.trim();
+
+      // 같은 값은 조용히 넘긴다. 여러 줄을 한 번에 보내는 자리라 하나가 안 바뀌었다고
+      // 나머지를 되돌릴 이유가 없다.
+      if (next === found.value) continue;
+
+      await client.query(
+        `UPDATE structured.policy_rules
+         SET value = $2, last_changed_at = now(), last_changed_by = $3::uuid
+         WHERE id = $1`,
+        [found.id, next, by]
+      );
+
+      await client.query(
+        `INSERT INTO structured.rollback_targets
+           (name, kind, deployed_by, policy_rule_id, previous_value)
+         VALUES ($1, 'policy', $2::uuid, $3, $4)`,
+        [`정책 · ${found.label}`, by, found.id, found.value]
+      );
+
+      await recordDecision(client, {
+        eventId: newEventId(),
+        workflow: 'policy_engine',
+        step: 'set',
+        subjectKind: 'policy_rule',
+        // 정책 규칙 id는 uuid가 아니라 사람이 읽는 text다. subject_id는 uuid만 받는다.
+        subjectId: null,
+        decider: { kind: 'human', userId: by },
+        decision: 'changed',
+        reasonCode: 'policy_edited',
+        // 가리키기만 한다. 바뀐 값 자체는 policy_rules에 있고 이 로그에 복사하지 않는다.
+        evidence: [],
+      });
+
+      changed++;
+    }
+
+    if (changed === 0) {
       throw new ApiError('invalid_request', '지금 값과 같습니다.');
     }
 
-    await client.query(
-      `UPDATE structured.policy_rules
-       SET value = $2, last_changed_at = now(), last_changed_by = $3::uuid
-       WHERE id = $1`,
-      [id, next, by]
-    );
-
-    await client.query(
-      `INSERT INTO structured.rollback_targets
-         (name, kind, deployed_by, policy_rule_id, previous_value)
-       VALUES ($1, 'policy', $2::uuid, $3, $4)`,
-      [`정책 · ${found.label}`, by, id, found.value]
-    );
-
-    await recordDecision(client, {
-      eventId: newEventId(),
-      workflow: 'policy_engine',
-      step: 'set',
-      subjectKind: 'policy_rule',
-      // 정책 규칙 id는 uuid가 아니라 사람이 읽는 text다. subject_id는 uuid만 받는다.
-      subjectId: null,
-      decider: { kind: 'human', userId: by },
-      decision: 'changed',
-      reasonCode: 'policy_edited',
-      // 가리키기만 한다. 바뀐 값 자체는 policy_rules에 있고 이 로그에 복사하지 않는다.
-      evidence: [],
-    });
-
-    const { rows: after } = await client.query<PolicyRow>(
-      `SELECT ${POLICY_COLUMNS}
-       FROM structured.policy_rules p
-       LEFT JOIN structured.users u ON u.id = p.last_changed_by
-       WHERE p.id = $1`,
-      [id]
-    );
-
-    return toPolicyItem(after[0]!);
+    return { changed };
   });
 }
 
@@ -544,8 +574,15 @@ function toRollbackItem(row: RollbackRow, downAt: number): RollbackItem {
      * 단계로 보인다.
      */
     requiresApproval: row.approved_at === null,
-    /** 사람 없이 도는 길은 만들지 않았다. `CLAUDE.md` v3.27 «위험한 조작». */
-    autoRollbackEnabled: false,
+    /*
+     * **이 서버가 실제로 되돌릴 수 있는가.** 정책 값은 되돌린다. 배포는 되돌릴
+     * 수단이 여기 없어 요청만 기록된다.
+     *
+     * 화면(`rollback.tsx` `revertable()`)이 이 값과 `requiresApproval`을 함께 보고
+     * «되돌리기 가능/불가»를 그린다 — 승인 전에는 «불가», 승인 뒤 정책 변경만
+     * «가능»이 된다. 사람 승인 없이 도는 길은 여전히 없다.
+     */
+    autoRollbackEnabled: row.kind === 'policy',
   };
 }
 
