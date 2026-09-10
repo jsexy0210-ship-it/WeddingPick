@@ -395,6 +395,14 @@ export const Layout = {
   /** 섹션 제목에서 첫 콘텐츠까지. */
   sectionHeadGap: 14,
   /**
+   * MY 메뉴 그룹의 제목→목록과 행 사이. spacing.menuGroupGap.
+   *
+   * 05-root의 `myGroups`가 `padding:0 24px 28px; gap:6px`다. 6은 8배수 사다리에
+   * 없는 값이라 화면이 숫자로 적지 않게 여기서 이름을 든다 — 이 파일이 이미
+   * 그렇게 하기로 적어 둔 방식이다(cardGap 10 · inlineGap 12 …).
+   */
+  menuGroupGap: 6,
+  /**
    * 촘촘한 섹션의 제목→내용. spacing.sectionGapCompact — **검색 홈(06-search)만** 이 값이다.
    * 그 시안의 섹션 컨테이너가 `gap:12px`이고, 02-design-system(14)과 갈릴 때는 그 화면 시안을
    * 따른다(2026-09-09 패딩 감사). 다른 화면은 `sectionHeadGap` 14 그대로다.

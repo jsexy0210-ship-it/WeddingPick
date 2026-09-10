@@ -827,8 +827,16 @@ export default function VendorDetailScreen() {
 /** 핸드오프 WP-VEND-001 대표 이미지 높이 260px */
 const HERO_HEIGHT = 260;
 
-/** Pick·비교 버튼 — tokens.json size.ctaPrimary 52. 시안 10a의 56보다 토큰이 우선한다. */
-const PICK_CTA_HEIGHT = Layout.controlXLarge;
+/**
+ * Pick·비교 버튼 높이. tokens.json `size.ctaPick` 56.
+ *
+ * 전에는 `ctaPrimary` 52를 쓰고 「시안 10a의 56보다 토큰이 우선한다」고 적어
+ * 두었는데, 그 뒤 핸드오프가 **이 자리 전용 토큰**을 따로 만들었다 —
+ * 「ctaPick 56은 업체 상세·비교의 Pick CTA 전용이다」(tokens.json size 주석 ·
+ * 09-core-loop «height:56px» · screens.json WP-VEND-001). 토큰이 우선한다는
+ * 원칙은 그대로고, 이 자리의 토큰이 바뀐 것이다.
+ */
+const PICK_CTA_HEIGHT = Layout.ctaPick;
 
 /** 스타일 칩(SPEC §13.6 · screens.json styleMatch.chip): 28 · radius 999 · padding 0 10 · micro 13/18/700. */
 const STYLE_CHIP_HEIGHT = 28;
