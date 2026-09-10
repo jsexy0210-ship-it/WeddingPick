@@ -545,12 +545,27 @@ export const Layout = {
    * 나머지 Primary CTA는 `controlXLarge` 52 그대로다.
    */
   ctaPick: 56,
+  /**
+   * 바텀시트 확정 CTA 높이. size.ctaSheet — SPEC 13.7이 «시트 CTA는 width:100% +
+   * flex:0 0 56px»라고 적는다. 시트는 세로로 쌓이는 통이라 CTA에 flex를 주면
+   * 늘어나므로, 높이를 못박고 폭만 100%로 편다.
+   *
+   * `controlXLarge` 52와 4 차이라 눈에 안 띄어 보이지만, 시안과 나란히 놓으면
+   * 시트 아래가 그만큼 얕아 보인다. 값이 다른 자리는 값이 다르게 적혀 있다.
+   */
+  ctaSheet: 56,
   /** 카드 안 CTA. size.ctaInCard. */
   ctaInCard: 44,
   /** 입력 필드 높이. size.field — Primary CTA와 같은 52다. */
   field: 52,
   /** 입력 필드 좌우 패딩. component.field.padding. */
   fieldPaddingX: 14,
+  /**
+   * 날짜 선택 연 · 월 셀렉트의 좌우 패딩. component.datePicker.selectPaddingX —
+   * 20-onboarding-v2의 `selBox`가 «padding:0 16px»다. 일반 입력 필드(14)와
+   * 값이 다른 자리라 따로 둔다.
+   */
+  datePickerSelectPaddingX: 16,
   /** 여러 줄 입력 최소 높이. size.textarea. */
   textarea: 88,
   /** 체크박스 한 변. size.checkbox. */
@@ -642,6 +657,14 @@ export const Radius = {
   badge: 4,
   /** 버튼 · 입력 필드 · 작은 썸네일. radius.control. */
   control: 6,
+  /**
+   * 날짜 선택의 연 · 월 펼침 칸과 날짜 칸. radius.picker — 20-onboarding-v2의
+   * `optCell` · `dayCell`이 «border-radius:8px»다.
+   *
+   * **선택한 날짜도 원이 아니라 이 값이다.** SPEC 13.7 본문은 「coral 원」이라
+   * 적지만 목업은 사각이고, 목업과 1:1로 맞춘다(2026-09-10 사용자 결정).
+   */
+  picker: 8,
   small: 6,
   input: 6,
   /**
