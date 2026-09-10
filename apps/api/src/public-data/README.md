@@ -26,7 +26,66 @@ npm run public-data:import --workspace @weddingpick/api -- --source sbiz --file 
 ```
 
 [공식 출처](https://www.data.go.kr/data/15012005/openapi.do).
-전국 API는 활용신청·키가 필요하며 이번 구현에는 인증 API 자동 순회가 포함되지 않는다.
+
+## 운영 OpenAPI (sbiz-seoul · sbiz-gyeonggi)
+
+운영계정 승인 완료 — 신청유형 운영계정, 처리상태 승인, 활용기간 2026-09-08~2028-09-08.
+End Point `https://apis.data.go.kr/B553077/api/open/sdsc2`, 상세기능 19종, 각 일일 트래픽 1,000,000.
+이용허락범위 제한 없음이라 별도 출처표시 의무는 없다 — 화면 문구는 바꾸지 않는다.
+
+키는 `SBIZ_API_KEY`로만 읽는다(GitHub Secrets → `infra/render-env.yml`이 Render로 전달).
+저장소·문서·로그·리포트 JSON 어디에도 키 값을 적지 않는다.
+
+## 전국 수집 (sbiz-all)
+
+`storeListInUpjong`은 업종코드로 묻고 **전국을 돌려준다**. 시도 출처는 그 전국 응답을
+받아 `ctprvnCd`로 걸러 나머지를 버리므로, 시도 17곳을 그렇게 하면 같은 응답을 17번
+내려받는다. 전국은 `sbiz-all` 하나로 받는다 — 지역을 거르지 않는다.
+
+```sh
+npm run public-data:import --workspace @weddingpick/api -- --source sbiz-all --out ../../.collection
+```
+
+페이지 상한은 500(`SBIZ_MAX_PAGES`)이고, 상한에 걸려 다 못 받으면 리포트의 `truncated`에
+업종코드와 받은 수·전체 수가 남는다. 비어 있어야 전수다.
+
+## 확인된 업종 소분류 코드
+
+2026-09-10 `smallUpjongList`를 실 키로 불러 소분류 1,255개 중에서 골랐다. 추측이 아니라
+조회 결과이고, 환경변수가 없으면 이 값이 기본으로 쓰인다(`WEDDING_UPJONG_CODES`).
+
+| 코드 | 업종 | 우리 분류 | 상호 조건 |
+| --- | --- | --- | --- |
+| S21101 | 예식장업 | hall | 없음 |
+| S21105 | 결혼 상담 서비스업 | 결정사 | 없음 |
+| M11301 | 사진촬영업 | studio · snap | 웨딩 · 본식 · 스냅 |
+| S20701 | 미용실 | makeup | 웨딩 · 브라이덜 |
+| N11004 | 의류 대여업 | dress | 웨딩 · 브라이덜 |
+
+한복 소매업(G20904) · 뷔페(I20702 · I20801)는 웨딩 전용이 아니고 우리 업종 분류에
+자리가 없어 넣지 않았다. 꽃집(G21901)도 웨딩 전용이 아니라 뺐다 — 부케는 우리 업종
+분류에 있지만 수집기가 받는 여섯 분류에는 없다.
+
+드레스는 「드레스」로 찾으면 소분류 이름에 없다. 「대여」로 찾아 N11004 의류 대여업을
+확인했다(2026-09-10).
+
+**업종코드를 바꿀 때는 조회로 확인한다.** 조회할 업종은 설정이 이긴다:
+
+```sh
+# 1) 코드 조사 — DB 미반영. 대분류 → 중분류 → 소분류 순으로 좁힌다.
+npm run public-data:import --workspace @weddingpick/api -- --lookup-category --level large
+npm run public-data:import --workspace @weddingpick/api -- --lookup-category --level small --parent-large <대분류> --keyword 예식
+
+# 2) 확인한 코드로 한 지역만 소량 수집 (--apply 없이)
+npm run public-data:import --workspace @weddingpick/api -- --source sbiz-seoul \
+  --upjong-div-id indsSclsCd --upjong-codes <코드1>,<코드2> --out ../../.collection
+```
+
+`--upjong-codes`(또는 `SBIZ_UPJONG_CODES`)를 **명시로 비워 넘기면** 수집을 시작하지 않고
+실패한다. 아무것도 주지 않으면 위 표의 확인된 코드를 쓴다.
+어떤 코드가 0건을 돌려주면 그것도 실패로 올린다 — 틀린 코드는 오류 대신 빈 목록으로 오기 때문에
+조용한 0건 수집이 예전 `'Q'` 하드코딩에서 실제로 일어났다.
+CI에서는 저장소 Variables `SBIZ_UPJONG_CODES`·`SBIZ_UPJONG_DIV_ID`가 있으면 그쪽이 이긴다.
 CSV 어댑터는 업종명·웨딩 관련 상호로 제한적으로 분류한다. 일반 사진관·미용실은 제외하며,
 이 분류도 웨딩 전문성 확정은 아니다. 상가업소번호를 원천 식별키로 쓰고 원본 기준일이
 없으면 null을 유지한다. 64 MiB 이하 파일, DB 반영은 실행당 1,000업체 이내로 제한한다.

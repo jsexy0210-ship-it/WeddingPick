@@ -11,15 +11,15 @@
 | 파일 | 자리 | 시안 | 코드 | 고치는 법 | 상태 |
 |---|---|---|---|---|---|
 | `app/(tabs)/index.tsx:474` | 헤더 오른쪽 | 24 (03-home-states) | 16 | `Layout.gutter` — 시안 두 개가 20/24로 갈려 최신(home-states)을 따른다 | **반영함** — `paddingHorizontal: Layout.gutter`. 40 원형 버튼 안의 24 아이콘은 32 선에 앉는다(검색·Pick 헤더와 같은 방식) |
-| `app/(tabs)/my/index.tsx:400` | 헤더 오른쪽 | 20 (05-root) | 16 | `Layout.gutter - Spacing.one` | 남김 — 다른 작업이 이 파일을 잡고 있다 |
-| `app/(tabs)/my/index.tsx:476` | 메뉴 그룹 제목→목록 | 6 | 10 | 토큰에 6이 없다 — `spacing.menuGroupGap: 6` 추가 | 남김 — 같은 이유 |
-| `app/(tabs)/my/index.tsx:414` | 스크롤 아래 | 16 | 64 | `Layout.sectionBand` | 남김 — 같은 이유. `Spacing.six`가 남은 마지막 자리다 |
+| `app/(tabs)/my/index.tsx:400` | 헤더 오른쪽 | 20 (05-root) | 16 | `Layout.gutter - Spacing.one` | **반영돼 있었다**(2026-09-10 재확인) — 홈·검색과 같은 «40 원형 버튼 안 24 아이콘은 32 선에 앉는다» 식이다 |
+| `app/(tabs)/my/index.tsx:476` | 메뉴 그룹 제목→목록 | 6 | 10 | 토큰에 6이 없다 — `spacing.menuGroupGap: 6` 추가 | **반영함**(2026-09-10) — 05-root `myGroups` «padding:0 24px 28px;gap:6px» 원본 확인. `Layout.menuGroupGap` 신설 |
+| `app/(tabs)/my/index.tsx:414` | 스크롤 아래 | 16 | 64 | `Layout.sectionBand` | **반영함**(2026-09-10) — 05-root 마지막 그룹 뒤 «height:16px» 원본 확인. `Spacing.six`(64)의 마지막 자리가 없어졌다 |
 | `features/settings/my-kit.tsx:501` | 상단 내비 좌우 | 12 / 20 | 16 / 24 | `screen-kit.tsx`와 같은 식으로. **MY 하위 전 화면이 이 한 곳을 공유한다** | **반영함** — `Layout.navPaddingLeft/Right/navGap`(새 토큰 `component.navBack`). `screen-kit.tsx` · `progress.tsx` · `compare.tsx` · `pick/[category].tsx`도 같은 이름으로 통일 |
 | `app/(tabs)/search/index.tsx:1186,1258` | 섹션 제목→내용 | 12 (06-search) | 14 | 02-design-system은 14라 시안끼리 충돌 — 결정 먼저 | **반영함** — 그 화면 시안(06-search 12)을 따랐다. 새 토큰 `spacing.sectionGapCompact` · `Layout.sectionHeadGapCompact`. 전역 `sectionGap` 14는 그대로 |
 | `app/(tabs)/search/index.tsx:1078` | 결과 카드 이미지 | 342×168 | `100%` + 고정 168 | 비율(`aspectRatio`)로 잡거나 `MaxContentWidth`를 390으로 | 남김 — 이번 작업 범위(패딩·간격) 밖이다. 이미지 규격은 따로 |
 | `features/home/recommendation.tsx:216` | 추천 대표 이미지 | 180 · r10 | 고정 180 | 위와 같다 | 남김 — 같은 이유 |
 | `app/(tabs)/index.tsx:489` | 스크롤 아래 | 8 | 64 | `Spacing.two` | **반영함** |
-| `app/(tabs)/search/[vendorId]/index.tsx:777` | Pick CTA 높이 | 56 (09-core-loop · screens.json) | 52 | 토큰에 56이 없다 — `size.ctaPick: 56` 추가 | 토큰만 반영함 — `size.ctaPick: 56` · `Layout.ctaPick`. **적용은 남김**(다른 작업이 이 파일을 잡고 있다) |
+| `app/(tabs)/search/[vendorId]/index.tsx:777` | Pick CTA 높이 | 56 (09-core-loop · screens.json) | 52 | 토큰에 56이 없다 — `size.ctaPick: 56` 추가 | **적용까지 반영함**(2026-09-10) — 업체 상세와 비교 dock 둘 다. 09-core-loop의 92 dock 안 버튼이 «height:56px»다 |
 | `app/(tabs)/pick/[category].tsx:474` | dock 안전영역 | 92 + inset | 92 고정 | `screen-kit.tsx` Dock처럼 `insets.bottom` 가산. **노치 기기에서 CTA가 물린다** | **반영함** — `SafeAreaView edges={['top']}` + dock `minHeight: Layout.dock + insets.bottom` · `paddingBottom: Layout.sectionGap + insets.bottom`. dock 흰 면이 화면 아래 끝까지 닿는다 |
 | `app/(tabs)/pick/removed.tsx` · `history.tsx` | 카드 | r10 · padding 18 | r14 · 16/8 | `Radius.medium` + `Layout.cardPaddingCompactY` | **반영함** — 좌우는 `Layout.cardPadding` 20(component.card.paddingCompact «18px 20px»). `FontSize`/`LineHeight` 직접 사용도 `ThemedText` 타입으로 옮겼다 |
 | 입력 필드 15곳 | 좌우 | 14 (`component.field.padding`) | 16 | `Layout.fieldPaddingX` | **반영함** — 17곳(금지 파일 제외). 이미 14였지만 식으로 적던 두 곳(`screen-kit` · `expenses/index`)도 토큰 이름으로 |

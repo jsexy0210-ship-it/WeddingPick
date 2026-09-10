@@ -127,8 +127,10 @@ function toImportKillSwitch(row: ImportSwitchRow): KillSwitch {
 
 function mapCopyrightBasis(
   basis: string
-): 'licensed' | 'public_domain' | 'vendor_provided' | 'pending' | 'rejected' {
+): 'licensed' | 'public_domain' | 'vendor_provided' | 'vendor_homepage' | 'pending' | 'rejected' {
   if (basis === 'vendor_provided') return 'vendor_provided';
+  // 업체가 자기 홈페이지에 대표 이미지로 올려 둔 것. 직접 받은 것과 구분해서 보인다.
+  if (basis === 'vendor_homepage') return 'vendor_homepage';
   if (basis === 'public_domain') return 'public_domain';
   if (basis === 'unknown') return 'pending';
   if (basis.startsWith('cc_') || basis.startsWith('kogl_')) return 'licensed';

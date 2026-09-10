@@ -413,8 +413,13 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   dockBtn: {
+    /*
+     * 비교 dock의 버튼도 Pick CTA다 — 09-core-loop의 `flex:0 0 92px; padding:12px 24px;
+     * gap:8px` dock 안 버튼이 `height:56px`이고, tokens.json이 그 자리를
+     * `size.ctaPick`으로 이름 붙였다(「업체 상세·비교의 Pick CTA 전용」).
+     */
     flex: 1,
-    height: Layout.controlXLarge,
+    height: Layout.ctaPick,
     borderRadius: Radius.input,
     alignItems: 'center',
     justifyContent: 'center',

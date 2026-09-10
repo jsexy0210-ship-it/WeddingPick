@@ -1,5 +1,5 @@
 import iconv from 'iconv-lite';
-import { contentHash, downloadSbizApiVendors, isoDay, listIndustryCategories, parsePublicCsv, type CollectedVendor } from './collect';
+import { WEDDING_UPJONG_CODES, contentHash, downloadSbizApiVendors, findNumber, findRecords, isoDay, listIndustryCategories, parsePublicCsv, resolveUpjongQuery, type CollectedVendor } from './collect';
 import { sourceKey } from './sources';
 import { replacementDecision } from './sync';
 
@@ -46,7 +46,12 @@ test('sbiz-api 응답에서 서울 예식장만 파싱한다', async () => {
     body: { [Symbol.asyncIterator]: async function* () { yield body; } },
   });
   try {
-    const vendors = await downloadSbizApiVendors('sbiz-seoul', 'test-key', new Date('2026-09-04T00:00:00Z'));
+    // 업종코드는 호출자가 넘긴다 — 아래 값은 테스트 전용 가짜 코드다.
+    const { vendors, fetched, rejected } = await downloadSbizApiVendors(
+      'sbiz-seoul', 'test-key', new Date('2026-09-04T00:00:00Z'),
+      { divId: 'indsSclsCd', codes: ['S21101'] });
+    expect(fetched).toBe(2);
+    expect(rejected).toBe(1); // 경기 업체는 시도 필터에서 빠진다
     expect(vendors).toHaveLength(1);
     expect(vendors[0]?.name).toBe('강남웨딩홀');
     expect(vendors[0]?.region).toBe('서울특별시 강남구');
@@ -56,6 +61,58 @@ test('sbiz-api 응답에서 서울 예식장만 파싱한다', async () => {
     global.fetch = origFetch;
   }
 });
+test('봉투가 중첩돼 있어도 레코드 배열을 찾는다', () => {
+  // 2026-09-09 실 응답 확인: sdsc2 업종코드 조회는 { data: [...] }가 아니라
+  // 여러 겹으로 감싼 모양으로 온다. 봉투 이름에 의존하지 않는다.
+  const nested = { response: { header: { resultCode: '00' },
+    body: { totalCount: '2', items: [
+      { indsLclsCd: 'Q1', indsLclsNm: '보건의료', stdrDt: '2023-02-28' },
+      { indsLclsCd: 'R1', indsLclsNm: '예술·스포츠', stdrDt: '2023-02-28' },
+    ] } } };
+  expect(findRecords<{ indsLclsCd: string }>(nested, 'indsLclsCd').map((r) => r.indsLclsCd))
+    .toEqual(['Q1', 'R1']);
+  expect(findNumber(nested, 'totalCount')).toBe(2);
+  expect(findRecords(nested, '없는필드')).toEqual([]);
+});
+test('환경변수가 없으면 확인된 소분류 코드를 쓴다', () => {
+  /*
+   * 전에는 여기서 던졌다 — 코드를 몰랐기 때문이다. 대분류 'Q'가 활용가이드에
+   * 없는 값이라 조용한 0건이 나던 시절의 가드다. 2026-09-10에 smallUpjongList를
+   * 실 키로 불러 실제 코드를 확인했으므로 이제 기본값이 있다. 그래도 «코드 없이
+   * 부르지 않는다»는 원래 뜻은 그대로다 — 아래 테스트가 지킨다.
+   */
+  const saved = process.env.SBIZ_UPJONG_CODES;
+  delete process.env.SBIZ_UPJONG_CODES;
+  try {
+    expect(resolveUpjongQuery()).toEqual({ divId: 'indsSclsCd', codes: [...WEDDING_UPJONG_CODES] });
+  } finally {
+    if (saved === undefined) delete process.env.SBIZ_UPJONG_CODES;
+    else process.env.SBIZ_UPJONG_CODES = saved;
+  }
+});
+
+test('빈 문자열로 온 설정은 «없음»으로 본다', () => {
+  /*
+   * GitHub Actions는 정의되지 않은 Variables를 빈 값으로 넘긴다. `??`만 쓰면
+   * `''`가 값으로 통과해 「셋 중 하나여야 한다」로 죽는다 — 실제로 그렇게 죽었다.
+   */
+  const saved = [process.env.SBIZ_UPJONG_CODES, process.env.SBIZ_UPJONG_DIV_ID];
+  process.env.SBIZ_UPJONG_CODES = '';
+  process.env.SBIZ_UPJONG_DIV_ID = '';
+  try {
+    expect(resolveUpjongQuery()).toEqual({ divId: 'indsSclsCd', codes: [...WEDDING_UPJONG_CODES] });
+  } finally {
+    for (const [name, value] of [['SBIZ_UPJONG_CODES', saved[0]], ['SBIZ_UPJONG_DIV_ID', saved[1]]] as const) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+  }
+});
+
+test('빈 업종코드를 넘기면 수집을 시작하지 않는다', () => {
+  // 코드가 틀리거나 비면 API는 오류 대신 빈 목록을 준다 — 조용한 0건 수집을 막는다.
+  expect(() => resolveUpjongQuery({ divId: 'indsSclsCd', codes: [] })).toThrow('SBIZ_UPJONG_CODES');
+});
 test('이미 URL-encode된 서비스키를 이중 인코딩하지 않는다', async () => {
   // 공공데이터포털 인증키는 이미 encode된 값으로 온다('/'→%2F, '='→%3D).
   // URLSearchParams.set()에 그대로 넘기면 '%'가 %25로 한 번 더 encode되어
@@ -63,7 +120,8 @@ test('이미 URL-encode된 서비스키를 이중 인코딩하지 않는다', as
   const encodedKey = 'abc%2Fdef%3D%3D';
   const origFetch = global.fetch;
   let requestedUrl = '';
-  const body = Buffer.from(JSON.stringify({ data: [] }));
+  // 목록이 비면 «봉투를 못 찾음»으로 던진다. 여기서 보는 것은 URL이므로 한 줄 채운다.
+  const body = Buffer.from(JSON.stringify({ data: [{ indsSclsCd: 'S21101', indsSclsNm: '예식장업' }] }));
   global.fetch = jest.fn().mockImplementation((url: string) => {
     requestedUrl = url;
     return Promise.resolve({
@@ -216,4 +274,53 @@ test('최신 동일 출처 갱신, 과거·다른 출처·잠금은 보류한다
 });
 test('해시는 수집 시각에 영향받지 않는다', () => {
   expect(contentHash(incoming)).toBe(contentHash({...incoming,collectedAt:'later'} as CollectedVendor));
+});
+
+test('한 페이지가 끊겨도 그때까지 모은 것을 버리지 않는다', async () => {
+  /*
+   * 전국 전수를 돌리다 apis.data.go.kr이 4분 끊기면 이미 받아 둔 수천 건이 통째로
+   * 사라졌다(2026-09-10 run 34427466145). 페이지가 수천 개면 어느 하나는 반드시
+   * 끊긴다 — 전부 아니면 전무는 전수 수집에서 성립하지 않는다.
+   */
+  const page = (rows: number, offset: number) => ({
+    totalCount: 3000,
+    data: Array.from({ length: rows }, (_, i) => ({
+      bizesId: `V${offset + i}`, bizesNm: `업체${offset + i}웨딩홀`, brchNm: '',
+      indsSclsNm: '예식장업', ctprvnCd: '11', rdnmAdr: '서울특별시 강남구 길 1',
+    })),
+  });
+
+  const origFetch = global.fetch;
+  const savedRetries = process.env.PUBLIC_DATA_RETRIES;
+  // 실제로 4분을 기다리지 않는다 — 여기서 보는 것은 끊긴 뒤의 처리다.
+  process.env.PUBLIC_DATA_RETRIES = '1';
+  let call = 0;
+
+  global.fetch = jest.fn().mockImplementation(() => {
+    call += 1;
+    // 첫 쪽은 가득 채워 주고, 둘째 쪽부터 연결이 끊긴다.
+    if (call > 1) return Promise.reject(new TypeError('fetch failed'));
+
+    const body = Buffer.from(JSON.stringify(page(1000, 0)));
+
+    return Promise.resolve({
+      ok: true,
+      body: { [Symbol.asyncIterator]: async function* () { yield body; } },
+    });
+  });
+
+  try {
+    const result = await downloadSbizApiVendors(
+      'sbiz-seoul', 'test-key', new Date('2026-09-10T00:00:00Z'),
+      { divId: 'indsSclsCd', codes: ['S21101'] });
+
+    expect(result.vendors).toHaveLength(1000);
+    expect(result.truncated).toEqual([
+      { code: 'S21101', got: 1000, total: 3000, reason: '연결 끊김' },
+    ]);
+  } finally {
+    global.fetch = origFetch;
+    if (savedRetries === undefined) delete process.env.PUBLIC_DATA_RETRIES;
+    else process.env.PUBLIC_DATA_RETRIES = savedRetries;
+  }
 });

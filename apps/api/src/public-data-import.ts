@@ -6,7 +6,7 @@ import { VENDOR_CATEGORIES } from '@weddingpick/domain';
 import { backfillVendorMatches } from './analysis/vendor-matching';
 import { loadConfig } from './config';
 import { createPool, withTransaction } from './db';
-import { listIndustryCategories } from './public-data/collect';
+import { fetchIndustryCategoriesRaw, listIndustryCategories } from './public-data/collect';
 import { MissingColumnError, parseLocaldataCsv } from './public-data/localdata';
 import { runPublicCollection } from './public-data/run';
 
@@ -87,11 +87,19 @@ async function main() {
     const keyword = argument('keyword');
     const parentLarge = argument('parent-large');
     const parentMiddle = argument('parent-middle');
-    const items = await listIndustryCategories(level, apiKey, {
-      indsLclsCd: parentLarge,
-      indsMclsCd: parentMiddle,
-    });
-    const filtered = keyword ? items.filter((item) => item.name.includes(keyword)) : items;
+    const parent = { indsLclsCd: parentLarge, indsMclsCd: parentMiddle };
+    // 응답 모양이 우리 가정과 다르면 파싱 결과가 조용히 0건이 된다.
+    // --raw는 본문 앞부분을 그대로 보여준다(키는 URL에만 있어 노출되지 않는다).
+    if (process.argv.includes('--raw')) {
+      console.log(await fetchIndustryCategoriesRaw(level, apiKey, parent));
+      return;
+    }
+    const items = await listIndustryCategories(level, apiKey, parent);
+    // 소분류는 1,400건이 넘는다. 쉼표로 여러 낱말을 넘겨 한 번에 좁힌다.
+    const words = (keyword ?? '').split(',').map((w) => w.trim()).filter(Boolean);
+    const filtered = words.length
+      ? items.filter((item) => words.some((word) => item.name.includes(word)))
+      : items;
 
     /*
      * 받은 개수를 먼저 찍는다. «일치하는 항목이 없습니다» 한 줄만 보면 목록을
@@ -99,9 +107,8 @@ async function main() {
      * 실제로 그 둘을 헷갈려 원인 조사가 한 번 헛돌았다(2026-09-09).
      */
     console.log(`받은 항목 ${items.length}개 · 일치 ${filtered.length}개`);
-    if (filtered.length === 0 && items.length > 0 && keyword) {
-      console.log(`«${keyword}»(이)가 이름에 든 항목이 없습니다. 다른 낱말로 다시 찾아보세요.`);
-    }
+    if (filtered.length === 0 && items.length > 0 && words.length) {
+      console.log(`«${words.join(' · ')}» 중 어느 것도 이름에 든 항목이 없습니다. 다른 낱말로 다시 찾아보세요.`);    }
     for (const item of filtered) console.log(`${item.code}\t${item.name}`);
     return;
   }

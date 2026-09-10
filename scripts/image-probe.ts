@@ -149,6 +149,34 @@ async function main(): Promise<void> {
   console.log(`  표본 합계                   ${mb(bytesTotal)} MB`);
   console.log(`  전체 ${all}장 환산            ${mb(average * all)} MB`);
 
+  /*
+   * **연결 비용과 전송 비용을 갈라 놓는다.** 내부 저장소로 옮기면 달라지는 것이 다르기
+   * 때문이다 — 호스트가 하나로 모이면 연결 비용이 줄고, 리사이즈하면 전송 비용이 준다.
+   * 갈라 두지 않으면 「옮기면 얼마나 빨라지나」에 답할 수 없다.
+   */
+  const ttfbs = ok.map((r) => r.ttfbMs!);
+  const transferMs = ok.map((r) => Math.max(1, r.totalMs! - r.ttfbMs!));
+  const throughput = ok.reduce((sum, r) => sum + r.bytes! / Math.max(1, r.totalMs! - r.ttfbMs!), 0) / (ok.length || 1);
+
+  console.log('\n첫 바이트까지 (연결 + 서버 응답)');
+  console.log(`  중앙값                     ${percentile(ttfbs, 50)} ms`);
+  console.log(`  p90                       ${percentile(ttfbs, 90)} ms`);
+
+  console.log('\n몸통 전송만');
+  console.log(`  중앙값                     ${percentile(transferMs, 50)} ms`);
+  console.log(`  p90                       ${percentile(transferMs, 90)} ms`);
+  console.log(`  실측 처리량                  ${((throughput * 1000) / 1_048_576).toFixed(1)} MB/s`);
+
+  /*
+   * 리사이즈했을 때를 재지 않고 셈한다 — 카드에 그리는 크기(가로 400px)로 줄이면
+   * 몇 KB가 되는지는 원본을 다시 인코딩해야 정확하지만, 여기서는 **전송 시간이
+   * 바이트에 비례한다**는 실측 처리량으로 환산만 해 둔다. 연결 비용은 그대로 둔다.
+   */
+  const RESIZED_KB = 30;
+  const resizedTransfer = (RESIZED_KB * 1024) / (throughput || 1);
+
+  console.log(`  ${RESIZED_KB}KB로 줄이면 전송      약 ${Math.round(resizedTransfer)} ms (연결 비용 별도)`);
+
   console.log('\n응답 시간 (내려받기 완료까지)');
   console.log(`  중앙값                     ${percentile(times, 50)} ms`);
   console.log(`  p90                       ${percentile(times, 90)} ms`);

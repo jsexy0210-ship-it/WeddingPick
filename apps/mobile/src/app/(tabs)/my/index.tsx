@@ -409,7 +409,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: Spacing.six,
+    /*
+     * 05-root은 마지막 메뉴 그룹 뒤에 16 한 칸을 둔다(`height:16px`). 그룹 자체가
+     * 아래 28을 이미 갖고 있어서 여기서 64를 더하면 빈 화면이 한 뼘 더 생긴다.
+     * `Spacing.six`(64)는 핸드오프에 없는 값이라 쓰지 않기로 한 자리이기도 하다.
+     */
+    paddingBottom: Layout.sectionBand,
   },
   /* SEED는 400 · 700 둘뿐이다 — 굵기는 이 한 곳에서만 올린다. */
   bold: {
@@ -467,11 +472,11 @@ const styles = StyleSheet.create({
     marginBottom: Layout.sectionGap,
   },
 
-  /* 메뉴 그룹 — 0 24 28 · 제목 아래 10 */
+  /* 메뉴 그룹 — 05-root myGroups «padding:0 24px 28px; gap:6px» */
   menuGroup: {
     paddingHorizontal: Layout.gutter,
     paddingBottom: Layout.sectionGap,
-    gap: Layout.cardGap,
+    gap: Layout.menuGroupGap,
   },
 
   /* 업체 · 플래너 — 08c: 0 24 32 · gap 10 · 박스 1 테두리 · 20 · gap 8 */

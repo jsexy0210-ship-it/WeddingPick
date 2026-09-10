@@ -1,0 +1,62 @@
+# 시드가 심은 **업체 사진만** 지운다. 업체 · 회원 · 후기 · 제보는 건드리지 않는다.
+#
+# `seed:samples --remove`를 쓰지 않는 이유가 여기 있다 — 그것은 업체를 지우고 후기 ·
+# 사진 · 후보가 CASCADE로 따라간다. 운영에서 돌리면 업체 240곳과 함께 후기 1,603건 ·
+# 제보 1,260건이 사라진다.
+#
+# 기본은 **확인만** 한다. 실제로 지우려면 apply를 true로 준다.
+name: 시드 이미지 삭제
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: '어느 DB에서'
+        type: choice
+        default: default
+        options:
+          - default
+          - staging
+      apply:
+        description: '실제로 지운다 (끄면 세어보기만)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  remove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: 시드 이미지 정리
+        env:
+          DEFAULT_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          TARGET: ${{ github.event.inputs.target }}
+          APPLY: ${{ github.event.inputs.apply }}
+        run: |
+          case "${TARGET:-default}" in
+            staging) export DATABASE_URL="$STAGING_DATABASE_URL" ;;
+            *)       export DATABASE_URL="$DEFAULT_DATABASE_URL" ;;
+          esac
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::${TARGET:-default} 대상의 접속 정보가 GitHub Secrets에 없다."
+            exit 1
+          fi
+          echo "대상: ${TARGET:-default}"
+          if [ "$APPLY" = "true" ]; then
+            npx tsx scripts/remove-sample-images.ts --yes
+          else
+            npx tsx scripts/remove-sample-images.ts
+          fi

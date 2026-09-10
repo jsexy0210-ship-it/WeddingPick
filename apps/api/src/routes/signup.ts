@@ -82,7 +82,7 @@ export function registerSignupRoutes(app: FastifyInstance, context: AppContext):
 
       /*
        * 체크하지 않고 왔으면 계정을 만들지 않는다. 로그인 화면이 이미 막지만
-       * (버튼이 비활성이거나 WP-AUTH-010으로 보낸다), 여기서도 한 번 더
+       * (버튼이 비활성이거나 WP-AUTH-009으로 보낸다), 여기서도 한 번 더
        * 막는다 — 화면을 거치지 않고 이 요청만 직접 부르는 경로를 남기지 않는다.
        * `age_gate`·`age_checked_at`(0046)도 함께 채운다 — 그 위의 제약
        * (`activated_only_when_old_enough`)이 여전히 그 컬럼을 본다.

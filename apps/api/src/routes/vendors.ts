@@ -1,6 +1,5 @@
 import {
   CONDITION_NARROWING,
-  SPONSORED_LABEL,
   DEEP_DATA_NOTE,
   DEFAULT_PERIOD_LABEL,
   DEFAULT_PERIOD_MONTHS,
@@ -9,18 +8,20 @@ import {
   PRICE_REPORT_CAVEAT,
   RECENT_PERIOD_LABEL,
   RECENT_PERIOD_MONTHS,
+  SPONSORED_LABEL,
   VENDOR_CATEGORY_LABEL,
   coarseRegion,
   comparisonCaveats,
   computePriceStat,
   discloseAmounts,
+  displayableImageCondition,
   hasDeepData,
+  isWeddingStyle,
   narrowedLabel,
   summarizeReports,
-  widestDisclosable,
   type PriceSample,
   type VendorCategory,
-  isWeddingStyle,
+  widestDisclosable,
 } from '@weddingpick/domain';
 import { vendorCategorySchema, vendorSortSchema } from '@weddingpick/api-contract';
 import type { FastifyInstance } from 'fastify';
@@ -183,7 +184,7 @@ async function loadVendorDetail(pool: Pool, vendorId: string, viewerId: string |
     `SELECT v.id, v.name, v.category, v.region, v.source, to_jsonb(v)->>'source_url' AS source_url, v.last_verified_at, v.lat, v.lng,
               v.style_tags::text[] AS style_tags, v.guide_price_from, v.guide_price_source,
               (SELECT i.source_url FROM structured.vendor_images i
-                 WHERE i.vendor_id = v.id AND i.status = 'approved' AND i.copyright_basis <> 'unknown'
+                 WHERE i.vendor_id = v.id AND ${displayableImageCondition('i')}
                    AND i.source_url IS NOT NULL
                  ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url,
             (SELECT count(*) FROM structured.comparable_quotes c WHERE c.vendor_id = v.id)
@@ -468,7 +469,7 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
        SELECT v.id, v.name, v.category, v.region, v.source, to_jsonb(v)->>'source_url' AS source_url, v.last_verified_at, v.lat, v.lng,
               v.style_tags::text[] AS style_tags, v.guide_price_from, v.guide_price_source,
               (SELECT i.source_url FROM structured.vendor_images i
-                 WHERE i.vendor_id = v.id AND i.status = 'approved' AND i.copyright_basis <> 'unknown'
+                 WHERE i.vendor_id = v.id AND ${displayableImageCondition('i')}
                    AND i.source_url IS NOT NULL
                  ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url,
               (SELECT count(*) FROM structured.comparable_quotes c WHERE c.vendor_id = v.id)
@@ -574,7 +575,7 @@ async function loadSponsored(
      */
     `SELECT picked.vendor_id, picked.name, picked.category, picked.region,
             (SELECT i.source_url FROM structured.vendor_images i
-             WHERE i.vendor_id = picked.vendor_id AND i.status = 'approved' AND i.copyright_basis <> 'unknown'
+             WHERE i.vendor_id = picked.vendor_id AND ${displayableImageCondition('i')}
                AND i.source_url IS NOT NULL
              ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url
      FROM (
@@ -781,7 +782,7 @@ async function loadConditionStats(
         `SELECT id, storage_key, source_url, is_representative, use_contain,
                 copyright_note, verified_at
          FROM structured.vendor_images
-         WHERE vendor_id = $1 AND status = 'approved' AND copyright_basis <> 'unknown'
+         WHERE vendor_id = $1 AND ${displayableImageCondition('vendor_images')}
          ORDER BY is_representative DESC, created_at ASC`,
         [vendorId]
       );
