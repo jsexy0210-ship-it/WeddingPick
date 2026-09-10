@@ -1,6 +1,8 @@
 {
   "checkedAtKst": "2026-09-11 00:05 KST",
-  "sourceCommit": "ef24c29",
+  "sourceCommit": "8f3d376",
+  "integratedBase": "43eea50",
+  "integratedSiblingPr": 185,
   "handoffChangelog": "v3.27",
   "scope": "비관리자 앱 102개 라우트 파일의 이동 행동·목적지·로딩·빈 상태·오류 분기 소스 검토. 화면 캡처·실 API·기기 검증과 구별한다. 웹사이트·관리자 제외.",
   "limits": [
@@ -204,7 +206,7 @@
   ],
   "checks": {
     "regressionTests": 84,
-    "mobileJest": "212건 통과 (18 suites)",
+    "mobileJest": "원래 변경 단독 212건 (18 suites), 최신 main 및 PR185 통합 후 216건 (19 suites) 통과",
     "mobileTypecheck": "passed",
     "mobileLint": "passed: 0 errors, 2 existing warnings",
     "copyLint": "passed",
