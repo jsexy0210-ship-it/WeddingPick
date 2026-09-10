@@ -1,4 +1,5 @@
 import { createTestApp, resetDatabase, signInAs, type TestApp } from './helpers';
+import { DISCLOSURE_THRESHOLDS } from '@weddingpick/domain';
 import { publishTerms } from '../admin-ops';
 
 let test: TestApp;
@@ -240,6 +241,101 @@ describeWithDb('관리자 운영·시스템 라우트', () => {
       expect(body.items[0]).toMatchObject({ type: 'policy', requiresApproval: true });
     });
   });
+
+  // ── 공개 기준 반례 검수 (2026-09-11) ─────────────────────────
+
+  describe('공개 기준 차단을 반례로 뚫어본다', () => {
+    /**
+     * 정상 키 여럿과 공개 기준 하나를 섞어 보낸다.
+     *
+     * 가드가 루프 안에 있었다면 앞의 것들만 써지고 뒤에서 막혀 **부분 적용**이 남는다.
+     * 화면은 「저장됨」과 「실패」를 동시에 보이게 되고, 어느 값이 살아 있는지 아무도 모른다.
+     */
+    it('정상 키 뒤에 섞어 보내도 앞의 값이 남지 않는다', async () => {
+      const operator = await operatorHeaders();
+
+      const response = await patch('/v1/admin/policy-engine', operator.headers, {
+        changes: [
+          { key: 'automation.dlq_alert_size', value: '20' },
+          { key: 'automation.success_rate_degraded', value: '0.9' },
+          { key: 'public_stage.stage2_min', value: '99' },
+        ],
+      });
+      expect(response.statusCode).toBe(400);
+
+      const body = (await get('/v1/admin/policy-engine', operator.headers)).json() as {
+        policies: { key: string; value: string }[];
+      };
+      const valueOf = (key: string) => body.policies.find((p) => p.key === key)?.value;
+
+      expect(valueOf('automation.dlq_alert_size')).toBe('10');
+      expect(valueOf('automation.success_rate_degraded')).toBe('0.95');
+      expect(valueOf('public_stage.stage2_min')).toBe(String(DISCLOSURE_THRESHOLDS.normal));
+
+      // 되돌릴 자리도 생기지 않았다 — 쓰이지 않은 변경의 롤백 대상이 남으면 그것이 다음 혼란이다.
+      const { rows } = await test.pool.query<{ n: string }>(
+        `SELECT count(*) AS n FROM structured.rollback_targets WHERE kind = 'policy'`
+      );
+      expect(rows[0]!.n).toBe('0');
+    });
+
+    /** 이름을 비틀어 가드를 지나가도 DB의 값은 그대로다. */
+    it.each([
+      'public_stage.stage3_min ',
+      ' public_stage.stage3_min',
+      'PUBLIC_STAGE.STAGE3_MIN',
+    ])('%j로 비틀어 보내도 값이 바뀌지 않는다', async (key) => {
+      const operator = await operatorHeaders();
+
+      const response = await patch('/v1/admin/policy-engine', operator.headers, {
+        changes: [{ key, value: '99' }],
+      });
+      expect(response.statusCode).toBeGreaterThanOrEqual(400);
+
+      const { rows } = await test.pool.query<{ value: string }>(
+        `SELECT value FROM structured.policy_rules WHERE key = 'public_stage.stage3_min'`
+      );
+      expect(rows[0]!.value).toBe(String(DISCLOSURE_THRESHOLDS.detailed));
+    });
+
+    /**
+     * 관리자 통계의 사다리가 domain과 **정말** 같은가.
+     *
+     * 경계에서만 갈린다. 2·3·4 / 4·5·6 / 9·10·11을 넣어 단계가 어디서 올라가는지 본다 —
+     * 「3/5/10을 쓴다」고 적어 두는 것과 3에서 실제로 올라가는 것은 다른 말이다.
+     */
+    it.each([
+      [2, 0], [3, 1], [4, 1],
+      [4, 1], [5, 2], [6, 2],
+      [9, 2], [10, 3], [11, 3],
+    ])('실 제보 %i건이면 공개 단계는 %i다', async (count, expected) => {
+      const operator = await operatorHeaders();
+
+      const { rows } = await test.pool.query<{ id: string }>(
+        `INSERT INTO structured.vendors (name, category, region, source)
+         VALUES ('경계 업체 ' || gen_random_uuid(), 'etc', '서울', 'public_data')
+         RETURNING id`
+      );
+      const vendorId = rows[0]!.id;
+
+      for (let i = 0; i < count; i += 1) {
+        await test.pool.query(
+          `INSERT INTO structured.payment_proofs
+             (reporter_user_id, vendor_id, merchant_name, paid_amount, paid_at)
+           VALUES ($1, $2, '경계 결제', 1000000, now())`,
+          [operator.userId, vendorId]
+        );
+      }
+
+      const body = (await get('/v1/admin/data/price-stats', operator.headers)).json() as {
+        vendors: { vendorId: string; dataCount: number; publicStage: number }[];
+      };
+      const found = body.vendors.find((v) => v.vendorId === vendorId);
+
+      expect(found).toMatchObject({ dataCount: count, publicStage: expected });
+    });
+  });
+
 
   // ── 롤백 ────────────────────────────────────────────────────
 

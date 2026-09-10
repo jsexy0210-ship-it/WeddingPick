@@ -45,12 +45,19 @@ const OPERATOR_LABEL = '운영자';
 
 export type PolicyKind = 'number' | 'percentage' | 'boolean' | 'string';
 
-// 실제 공개 판정은 도메인 상수를 쓴다. 관리자 DB 값만 바꿔 적용됐다고 표시하지 않는다.
-const PUBLIC_STAGE_VALUES: Readonly<Record<string, number>> = {
-  'public_stage.stage1_min': DISCLOSURE_THRESHOLDS.limited,
-  'public_stage.stage2_min': DISCLOSURE_THRESHOLDS.normal,
-  'public_stage.stage3_min': DISCLOSURE_THRESHOLDS.detailed,
-};
+/*
+ * 실제 공개 판정은 도메인 상수를 쓴다. 관리자 DB 값만 바꿔 적용됐다고 표시하지 않는다.
+ *
+ * **Map으로 둔다.** 객체 리터럴이면 `values['__proto__']`가 `Object.prototype`을 주고
+ * `values['toString']`이 함수를 준다 — 둘 다 `undefined`가 아니라서, 있지도 않은 키가
+ * 「공개 기준」으로 읽힌다. 조회 쪽에서는 그 함수가 그대로 문자열이 되어 값 자리에
+ * 실린다. 키를 밖에서 받는 자리라 프로토타입 사슬을 아예 끊는다.
+ */
+const PUBLIC_STAGE_VALUES = new Map<string, number>([
+  ['public_stage.stage1_min', DISCLOSURE_THRESHOLDS.limited],
+  ['public_stage.stage2_min', DISCLOSURE_THRESHOLDS.normal],
+  ['public_stage.stage3_min', DISCLOSURE_THRESHOLDS.detailed],
+]);
 const PUBLIC_STAGE_READ_ONLY = '실제 공개 기준과 연결되기 전까지 조회만 할 수 있어요.';
 
 export type PolicyItem = {
@@ -93,11 +100,11 @@ const toPolicyItem = (row: PolicyRow): PolicyItem => ({
   description: row.description,
   category: row.category,
   type: row.kind,
-  value: String(PUBLIC_STAGE_VALUES[row.key] ?? row.value),
-  defaultValue: String(PUBLIC_STAGE_VALUES[row.key] ?? row.default_value),
+  value: String(PUBLIC_STAGE_VALUES.get(row.key) ?? row.value),
+  defaultValue: String(PUBLIC_STAGE_VALUES.get(row.key) ?? row.default_value),
   lastChangedAt: row.last_changed_at?.toISOString() ?? null,
   lastChangedBy: row.changed_by_name,
-  readOnlyReason: PUBLIC_STAGE_VALUES[row.key] === undefined ? null : PUBLIC_STAGE_READ_ONLY,
+  readOnlyReason: PUBLIC_STAGE_VALUES.has(row.key) ? PUBLIC_STAGE_READ_ONLY : null,
 });
 
 export async function policyRules(db: Queryable): Promise<{ policies: PolicyItem[] }> {
@@ -174,7 +181,7 @@ export async function setPolicyRules(
 
   const seen = new Set<string>();
   for (const change of changes) {
-    if (PUBLIC_STAGE_VALUES[change.key] !== undefined) {
+    if (PUBLIC_STAGE_VALUES.has(change.key)) {
       throw new ApiError('invalid_request', PUBLIC_STAGE_READ_ONLY);
     }
     if (seen.has(change.key)) {
@@ -748,7 +755,12 @@ const DOC_LABEL: Record<DocType, string> = {
   marketing: '마케팅 정보 수신 동의',
 };
 
-export const isDocType = (value: string): value is DocType => value in DOC_LABEL;
+/*
+ * `in`을 쓰지 않는다. `'toString' in DOC_LABEL`은 참이라 주소에 아무 프로토타입
+ * 이름이나 넣으면 문서로 통과하고, 그 뒤 `DOC_LABEL[doc]`은 이름 대신 함수를 준다.
+ * 지금은 뒤에서 바로 막혀 드러나지 않지만, 편집·공개가 열리는 날 그 길이 열린다.
+ */
+export const isDocType = (value: string): value is DocType => Object.hasOwn(DOC_LABEL, value);
 
 export type TermsClause = { id: string; articleNumber: string; title: string; body: string };
 export type TermsVersion = { version: string; publishedAt: string | null; isDraft: boolean };
