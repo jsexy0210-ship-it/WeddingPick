@@ -522,6 +522,58 @@ describeWithDb('관리자 — 데이터 · 업체 조작', () => {
       expect(after.rows[0]!.status).toBe('approved');
     });
 
+    it('화면이 읽는 모양으로 목록이 나온다', async () => {
+      const op = await operator();
+      const vendorId = await makeVendor('이미지 업체');
+      await test.pool.query(
+        `INSERT INTO structured.vendor_images
+           (vendor_id, storage_key, copyright_basis, status, rejection_reason)
+         VALUES ($1, 'k-a', 'vendor_provided', 'approved', NULL),
+                ($1, 'k-b', 'unknown', 'pending', NULL),
+                ($1, 'k-c', 'vendor_provided', 'rights_rejected', '권리 미확인')`,
+        [vendorId]
+      );
+
+      const body = (await get('/v1/admin/data/images', op.headers)).json() as {
+        summary: { total: number; licensed: number; pending: number; rejected: number };
+        items: { rightsStatus: string; vendorName: string }[];
+      };
+
+      // 예전에는 summary가 아예 없어서 `data.summary.total`에서 화면이 죽었다.
+      expect(body.summary).toEqual({ total: 3, licensed: 1, pending: 1, rejected: 1 });
+      // 폐기된 것은 권리가 확인됐어도 「폐기됨」이다 — 화면이 보는 것은
+      // 「내보낼 수 있나」 하나다.
+      expect(body.items.map((i) => i.rightsStatus).sort()).toEqual([
+        'pending',
+        'rejected',
+        'vendor_provided',
+      ]);
+      expect(body.items[0]!.vendorName).toBe('이미지 업체');
+    });
+
+    it('폐기하면 이유가 함께 남는다', async () => {
+      const op = await operator();
+      const vendorId = await makeVendor('이미지 업체');
+      const { rows } = await test.pool.query<{ id: string }>(
+        `INSERT INTO structured.vendor_images (vendor_id, storage_key, copyright_basis, status)
+         VALUES ($1, 'k-x', 'unknown', 'pending') RETURNING id`,
+        [vendorId]
+      );
+
+      // 0050 image_rejection_has_reason이 이유 없는 거부를 막는다. 예전 라우트는
+      // 이유를 안 적어서 폐기를 누를 때마다 CHECK에 걸려 500이 났다.
+      const res = await post(`/v1/admin/data/images/${rows[0]!.id}/reject`, op.headers);
+      expect(res.statusCode).toBe(204);
+
+      const after = await test.pool.query<{ status: string; rejection_reason: string | null }>(
+        `SELECT status::text AS status, rejection_reason
+           FROM structured.vendor_images WHERE id = $1`,
+        [rows[0]!.id]
+      );
+      expect(after.rows[0]!.status).toBe('rights_rejected');
+      expect(after.rows[0]!.rejection_reason).not.toBeNull();
+    });
+
     it('없는 이미지를 승인하면 조용히 넘어가지 않는다', async () => {
       const op = await operator();
       const res = await post(

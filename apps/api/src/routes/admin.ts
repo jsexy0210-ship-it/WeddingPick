@@ -1304,58 +1304,59 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   });
 
   // ─── Data / Images ────────────────────────────────────────────────────────
-  app.get('/v1/admin/data/images', auth, async (request) => {
-    const q = request.query as Record<string, string | undefined>;
-    const status = q['status'] ?? 'pending';
-    const cursor = q['cursor'];
-    const limit = 20;
-    const params: unknown[] = [status];
-    let idx = 2;
-    let cursorClause = '';
-    if (cursor) {
-      cursorClause = ` AND vi.created_at < $${idx}`;
-      params.push(cursor);
-      idx++;
-    }
-    params.push(limit + 1);
+  /*
+   * WP-ADM-015가 읽는 모양으로 돌려준다.
+   *
+   * 예전에는 `{items, hasMore, nextCursor}`에 `copyrightBasis` · `status`를 따로
+   * 담아 내보냈다. 화면은 `data.summary.total`과 `item.rightsStatus`를 읽으므로
+   * summary에서 곧바로 죽었다. **권리와 처리 상태를 한 값으로 합친다** — 화면이
+   * 보는 것은 「이 사진을 내보낼 수 있나」 하나이고, 폐기됐으면 권리가 무엇이든
+   * 못 내보낸다.
+   */
+  app.get('/v1/admin/data/images', auth, async () => {
     const { rows } = await context.pool.query<{
       id: string;
-      vendor_id: string;
       vendor_name: string;
-      storage_key: string;
       source_url: string | null;
       copyright_basis: string;
       match_confidence: string | null;
       status: string;
       created_at: Date;
     }>(
-      `SELECT vi.id, vi.vendor_id, v.name AS vendor_name,
-              vi.storage_key, vi.source_url,
+      `SELECT vi.id, v.name AS vendor_name, vi.source_url,
               vi.copyright_basis, vi.match_confidence::text,
               vi.status, vi.created_at
-       FROM structured.vendor_images vi
-       JOIN structured.vendors v ON v.id = vi.vendor_id
-       WHERE vi.status = $1${cursorClause}
-       ORDER BY vi.created_at DESC
-       LIMIT $${idx}`,
-      params
+         FROM structured.vendor_images vi
+         JOIN structured.vendors v ON v.id = vi.vendor_id
+        ORDER BY vi.created_at DESC
+        LIMIT 200`
     );
-    const hasMore = rows.length > limit;
-    const items = hasMore ? rows.slice(0, limit) : rows;
+
+    const items = rows.map((r) => ({
+      id: r.id,
+      vendorName: r.vendor_name,
+      // 출처는 사람이 눈으로 확인하는 자리라 도메인만으로 줄이지 않는다.
+      source: r.source_url ?? '출처 없음',
+      // 거부 상태 넷은 화면에서 전부 「폐기됨」 하나로 보인다 — 왜 뺐는지는
+      // 운영 기록의 몫이고, 이 표가 답하는 질문은 「내보낼 수 있나」다.
+      rightsStatus: r.status.endsWith('_rejected') || r.status === 'crop_failed'
+        ? ('rejected' as const)
+        : mapCopyrightBasis(r.copyright_basis),
+      matchConfidence: r.match_confidence !== null ? Number(r.match_confidence) : 0,
+      createdAt: r.created_at.toISOString(),
+      url: r.source_url ?? null,
+    }));
+
     return {
-      items: items.map((r) => ({
-        id: r.id,
-        vendorId: r.vendor_id,
-        vendorName: r.vendor_name,
-        storageKey: r.storage_key,
-        sourceUrl: r.source_url ?? null,
-        copyrightBasis: mapCopyrightBasis(r.copyright_basis),
-        matchConfidence: r.match_confidence !== null ? Number(r.match_confidence) : null,
-        status: r.status,
-        createdAt: r.created_at.toISOString(),
-      })),
-      hasMore,
-      nextCursor: hasMore ? items[items.length - 1]!.created_at.toISOString() : null,
+      summary: {
+        total: items.length,
+        licensed: items.filter(
+          (i) => i.rightsStatus !== 'pending' && i.rightsStatus !== 'rejected'
+        ).length,
+        pending: items.filter((i) => i.rightsStatus === 'pending').length,
+        rejected: items.filter((i) => i.rightsStatus === 'rejected').length,
+      },
+      items,
     };
   });
 
@@ -1367,14 +1368,39 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
    * 없는 이미지를 승인해도 조용히 204가 나가던 것도 같이 고친다. 운영자에게는
    * 「승인됐다」로 보이는데 아무 일도 안 일어난 상태였다.
    */
-  async function setImageStatus(id: string, status: 'approved' | 'quality_rejected') {
+  /**
+   * 승인 · 폐기.
+   *
+   * 폐기에는 **이유를 반드시 적는다** — 0050의 `image_rejection_has_reason`이
+   * 거부 상태에 이유 없이 들어가는 것을 막는다. 예전 라우트는 이유 없이
+   * `quality_rejected`를 넣어서, 폐기를 누를 때마다 CHECK에 걸려 500이 났다.
+   *
+   * 상태도 `rights_rejected`로 바로잡는다. 화면(WP-ADM-015)이 폐기 단추를 내놓는
+   * 것은 **권리가 확인되지 않은** 사진이지 화질이 나쁜 사진이 아니다.
+   */
+  async function setImageStatus(id: string, decision: 'approve' | 'reject') {
     // uuid가 아닌 것을 넣으면 Postgres가 22P02로 터져 500이 된다. 실제로는 ID가
     // 잘못된 것이므로 404로 답한다.
     if (!UUID_RE.test(id)) throw notFound('이미지');
-    const { rowCount } = await context.pool.query(
-      `UPDATE structured.vendor_images SET status = $2 WHERE id = $1`,
-      [id, status]
-    );
+
+    const { rowCount } =
+      decision === 'approve'
+        ? await context.pool.query(
+            `UPDATE structured.vendor_images
+                SET status = 'approved', rejection_reason = NULL, verified_at = now()
+              WHERE id = $1`,
+            [id]
+          )
+        : await context.pool.query(
+            `UPDATE structured.vendor_images
+                SET status = 'rights_rejected',
+                    rejection_reason = '운영자 폐기 — 권리 미확인',
+                    is_representative = false,
+                    verified_at = now()
+              WHERE id = $1`,
+            [id]
+          );
+
     if (rowCount === 0) throw notFound('이미지');
   }
 
@@ -1382,7 +1408,7 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
     '/v1/admin/data/images/:id/approve',
     auth,
     async (request, reply) => {
-      await setImageStatus(request.params.id, 'approved');
+      await setImageStatus(request.params.id, 'approve');
       return reply.status(204).send();
     }
   );
@@ -1391,7 +1417,7 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
     '/v1/admin/data/images/:id/reject',
     auth,
     async (request, reply) => {
-      await setImageStatus(request.params.id, 'quality_rejected');
+      await setImageStatus(request.params.id, 'reject');
       return reply.status(204).send();
     }
   );
