@@ -177,7 +177,8 @@ const styles = StyleSheet.create({
   hollowFill: { ...FILL, borderRadius: Radius.pill, opacity: HOLLOW_FILL_OPACITY },
   hollowRing: { ...FILL, borderRadius: Radius.pill, borderWidth: 1.5, opacity: HOLLOW_RING_OPACITY },
   badge: {
-    height: BADGE_HEIGHT,
+    /* 배지는 세로를 고정하지 않는다 — 28은 최소 높이다(pick-status-badge `STATUS_BADGE_STYLE`). */
+    minHeight: BADGE_HEIGHT,
     paddingHorizontal: Layout.cardGap,
     borderRadius: Radius.small,
     backgroundColor: BADGE_BACKGROUND,

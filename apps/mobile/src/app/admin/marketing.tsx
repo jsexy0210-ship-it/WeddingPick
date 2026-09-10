@@ -1,14 +1,27 @@
 /**
- * WP-ADM-030 성장 · 마케팅 자동화
- * 소재 · 생성 · 모의 실행 · 채널별 게시 · 성과 · 실패율
+ * WP-ADM-030 마케팅 자동화
+ *
+ * 시안 `22-admin-ops.dc.html` 5번. 조건이 맞으면 자동으로 나가는 소재와 성과다.
+ * 성과가 떨어지면 자동으로 멈추고 사람에게 알린다 — 그래서 실패가 있을 때만 상단이
+ * 주황으로 바뀌고, 없으면 초록으로 「볼 것 없음」을 말한다.
  */
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
-import { OpsAlert, OpsEmpty } from '@/features/admin/ops-kit';
+import {
+  Card,
+  CardGrid,
+  DataTable,
+  KpiRow,
+  LoadError,
+  Page,
+  StatusBanner,
+  type Cell,
+  type Col,
+  type Kind,
+  type TableRow,
+} from './_ui';
 
 type ContentStatus = 'queued' | 'simulated' | 'failed';
 type MarketingItem = {
@@ -31,18 +44,31 @@ const STATUS_LABEL: Record<ContentStatus, string> = {
   simulated: '모의 완료',
   failed: '실패',
 };
-const STATUS_COLOR: Record<ContentStatus, string> = {
-  queued: Colors.light.textAssistive,
-  simulated: Colors.light.positive,
-  failed: Colors.light.negative,
+
+const STATUS_KIND: Record<ContentStatus, Kind> = {
+  queued: 'none',
+  simulated: 'ok',
+  failed: 'bad',
 };
+
+/** 이 위로 올라가면 사람이 봐야 한다. */
+const FAIL_RATE_CEILING = 0.1;
+
+const COLS: Col[] = [
+  { key: 'title', label: '소재', width: 240 },
+  { key: 'channel', label: '채널', width: 120 },
+  { key: 'created', label: '생성', width: 120 },
+  { key: 'simulated', label: '모의 실행', width: 120 },
+  { key: 'reason', label: '실패 사유', width: 280, grow: true },
+  { key: 'status', label: '상태', width: 100 },
+  { key: 'action', label: '', width: 100, align: 'right' },
+];
 
 export default function MarketingScreen() {
   const [data, setData] = useState<MarketingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rev, setRev] = useState(0);
-  const [acting, setActing] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -63,202 +89,97 @@ export default function MarketingScreen() {
     return () => { cancelled = true; };
   }, [rev]);
 
+  const reload = () => setRev((r) => r + 1);
+
   async function retry(id: string) {
-    setActing(id);
     try {
       await apiFetch(`/v1/admin/marketing/${id}/retry`, { method: 'POST' });
-      setRev((r) => r + 1);
-    } catch { /* 무시 */ } finally { setActing(null); }
+      reload();
+    } catch { /* 다시 불러오면 실제 상태가 드러난다 */ }
   }
 
   async function simulate(id: string) {
-    setActing(id);
     try {
       await apiFetch(`/v1/admin/marketing/${id}/simulate`, { method: 'POST' });
-      setRev((r) => r + 1);
-    } catch { /* 무시 */ } finally { setActing(null); }
+      reload();
+    } catch { /* 위와 같다 */ }
   }
 
+  /** 실패한 것은 다시 보내고, 대기 중인 것은 모의 실행한다. 끝난 것은 누를 것이 없다. */
+  function actionCell(item: MarketingItem): Cell {
+    if (item.status === 'failed') return { v: '다시 보내기', kind: 'bad', onPress: () => void retry(item.id) };
+    if (item.status === 'queued') return { v: '모의 실행', kind: 'none', onPress: () => void simulate(item.id) };
+    return { v: '—', kind: 'dim' };
+  }
+
+  const items = data?.items ?? [];
+  const failed = data?.summary.failed ?? 0;
+  const failRate = data?.summary.failRate ?? 0;
+
+  const rows: TableRow[] = items.map((item) => ({
+    key: item.id,
+    cells: [
+      { v: item.title, bold: true, kind: 'none' },
+      { v: item.channel },
+      { v: item.createdAt.slice(0, 10), kind: 'dim' },
+      { v: item.simulatedAt ? item.simulatedAt.slice(0, 10) : '—', kind: 'dim' },
+      { v: item.failReason ?? '—', kind: item.failReason ? 'bad' : 'dim' },
+      { v: STATUS_LABEL[item.status], badge: STATUS_KIND[item.status] },
+      actionCell(item),
+    ],
+  }));
+
   return (
-    <View style={styles.root}>
-      <View style={styles.header}>
-        <Text style={styles.title}>마케팅 자동화</Text>
-        <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
-          <Text style={styles.refreshText}>새로 고침</Text>
-        </Pressable>
-      </View>
+    <Page
+      title="마케팅 자동화"
+      sub="자동 생성 소재 · 모의 실행 · 실패"
+      action={{ label: '새로 고침', onPress: reload }}
+    >
+      <DelayedLoader active={loading} size={40} />
+      {!loading && error ? <LoadError message={error} onRetry={reload} /> : null}
 
-      <DelayedLoader active={loading} size={40} style={styles.centered} />
-      {!loading && error && (
-        <View style={styles.centered}>
-          <Text style={styles.errorText}>{error}</Text>
-          <Pressable style={styles.retryBtn} onPress={() => setRev((r) => r + 1)}>
-            <Text style={styles.retryText}>다시 시도</Text>
-          </Pressable>
-        </View>
-      )}
+      {!loading && !error && data ? (
+        <>
+          <StatusBanner
+            tone={failed === 0 ? 'ok' : failRate > FAIL_RATE_CEILING ? 'bad' : 'warn'}
+            title={
+              failed === 0
+                ? '멈춘 소재가 없어요'
+                : `실패한 소재 ${failed}건이 있어요`
+            }
+            detail={
+              failed === 0
+                ? '생성된 소재가 모두 정상으로 끝났어요.'
+                : `실패율이 ${(failRate * 100).toFixed(1)}%예요. 사유를 확인하고 다시 보내면 돼요.`
+            }
+          />
 
-      {!loading && !error && data && (
-        <View style={styles.opsBannerWrap}>
-          {/* 지금 봐야 할 것이 맨 위. */}
-          {data.summary.failed > 0 ? (
-            <OpsAlert kind="warn" title={`만들지 못한 콘텐츠가 ${data.summary.failed}건 있어요`} sub={`실패율 ${data.summary.failRate.toFixed(1)}%`} />
-          ) : (
-            <OpsAlert kind="ok" title="확인할 것이 없어요" sub="실패한 생성이 없어요." />
-          )}
-          {/* 빈 상태가 정상 상태. */}
-          {data.items.length === 0 ? (
-            <OpsEmpty title="확인할 것이 없어요" sub="만든 콘텐츠가 없어요." />
-          ) : null}
-        </View>
-      )}
+          <KpiRow
+            items={[
+              { label: '생성', value: `${data.summary.generated}건`, note: '자동 생성 소재' },
+              { label: '모의 완료', value: `${data.summary.simulated}건`, note: '보낼 준비가 된 것', kind: 'ok' },
+              { label: '실패', value: `${failed}건`, note: failed === 0 ? '확인할 것이 없어요' : '사유 확인 필요', kind: failed === 0 ? 'ok' : 'bad' },
+              {
+                label: '실패율',
+                value: `${(failRate * 100).toFixed(1)}%`,
+                note: `기준 ${(FAIL_RATE_CEILING * 100).toFixed(0)}% 이하`,
+                kind: failRate > FAIL_RATE_CEILING ? 'bad' : 'ok',
+              },
+            ]}
+          />
 
-      {!loading && !error && data && (
-        <View style={styles.body}>
-          <View style={styles.summaryRow}>
-            <View style={styles.summaryCell}>
-              <Text style={styles.summaryValue}>{data.summary.generated}</Text>
-              <Text style={styles.summaryLabel}>생성</Text>
-            </View>
-            <View style={styles.summaryCell}>
-              <Text style={[styles.summaryValue, { color: Colors.light.positive }]}>{data.summary.simulated}</Text>
-              <Text style={styles.summaryLabel}>모의 완료</Text>
-            </View>
-            <View style={styles.summaryCell}>
-              <Text style={[styles.summaryValue, { color: Colors.light.negative }]}>{data.summary.failed}</Text>
-              <Text style={styles.summaryLabel}>실패</Text>
-            </View>
-            <View style={styles.summaryCell}>
-              <Text style={[styles.summaryValue, data.summary.failRate > 0.1 && { color: Colors.light.negative }]}>
-                {(data.summary.failRate * 100).toFixed(1)}%
-              </Text>
-              <Text style={styles.summaryLabel}>실패율</Text>
-            </View>
-          </View>
-          <ScrollView>
-            <View style={styles.tableHead}>
-              <Text style={[styles.th, styles.colTitle]}>제목</Text>
-              <Text style={[styles.th, styles.colChannel]}>채널</Text>
-              <Text style={[styles.th, styles.colStatus]}>상태</Text>
-              <Text style={[styles.th, styles.colSimulatedAt]}>모의완료</Text>
-              <Text style={[styles.th, styles.colAction]} />
-            </View>
-            {data.items.map((item, i) => (
-              <View key={item.id} style={[styles.tableRow, i % 2 === 1 && styles.tableRowZebra]}>
-                <View style={styles.colTitle}>
-                  <Text style={styles.td} numberOfLines={1}>{item.title}</Text>
-                  {item.failReason != null && (
-                    <Text style={styles.failReason} numberOfLines={1}>{item.failReason}</Text>
-                  )}
-                </View>
-                <Text style={[styles.td, styles.colChannel]}>{item.channel}</Text>
-                <Text style={[styles.td, styles.colStatus, { color: STATUS_COLOR[item.status] }]}>
-                  {STATUS_LABEL[item.status]}
-                </Text>
-                <Text style={[styles.td, styles.colSimulatedAt]}>
-                  {item.simulatedAt ? item.simulatedAt.slice(0, 10) : '—'}
-                </Text>
-                <View style={styles.colAction}>
-                  {item.status === 'queued' && (
-                    <Pressable
-                      style={[styles.inlineBtn, styles.inlineBtnPrimary, acting === item.id && styles.btnDisabled]}
-                      onPress={() => void simulate(item.id)}
-                      disabled={acting !== null}
-                    >
-                      <Text style={[styles.inlineBtnText, styles.inlineBtnTextPrimary]}>
-                        {acting === item.id ? '…' : '모의'}
-                      </Text>
-                    </Pressable>
-                  )}
-                  {item.status === 'failed' && (
-                    <Pressable
-                      style={[styles.inlineBtn, acting === item.id && styles.btnDisabled]}
-                      onPress={() => void retry(item.id)}
-                      disabled={acting !== null}
-                    >
-                      <Text style={styles.inlineBtnText}>{acting === item.id ? '…' : '재시도'}</Text>
-                    </Pressable>
-                  )}
-                </View>
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-      )}
-    </View>
+          <CardGrid>
+            <Card
+              title="자동 소재"
+              sub="생성 · 모의 실행 · 실패 사유"
+              full
+              note="클릭률이 2% 아래로 3일 연속이면 자동으로 멈추고 일일 브리핑에 올라와요."
+            >
+              <DataTable cols={COLS} rows={rows} empty="돌고 있는 소재가 없어요" />
+            </Card>
+          </CardGrid>
+        </>
+      ) : null}
+    </Page>
   );
 }
-
-const styles = StyleSheet.create({
-  opsBannerWrap: { paddingHorizontal: 24, paddingTop: 16, gap: 12 },
-  root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    backgroundColor: Colors.light.background,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
-  },
-  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text },
-  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: Colors.light.backgroundSelected },
-  refreshText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
-  body: { flex: 1 },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  errorText: { fontSize: FontSize.t6, color: Colors.light.negative, marginBottom: 16 },
-  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: Colors.light.tint },
-  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
-  summaryRow: {
-    flexDirection: 'row',
-    backgroundColor: Colors.light.background,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-  },
-  summaryCell: { flex: 1, alignItems: 'center' },
-  summaryValue: { fontSize: FontSize.t4, fontWeight: '700', color: Colors.light.text, fontVariant: ['tabular-nums'] },
-  summaryLabel: { fontSize: FontSize.tab, color: Colors.light.textAssistive, marginTop: 2 },
-  tableHead: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: Colors.light.backgroundElement,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
-    alignItems: 'center',
-  },
-  tableRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.backgroundSelected,
-    alignItems: 'center',
-  },
-  tableRowZebra: { backgroundColor: Colors.light.backgroundElement },
-  th: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.textAssistive, textTransform: 'uppercase' as const },
-  td: { fontSize: FontSize.t7, color: Colors.light.textStrong },
-  failReason: { fontSize: FontSize.tab, color: Colors.light.negative, marginTop: 2 },
-  colTitle: { flex: 3 },
-  colChannel: { width: 72 },
-  colStatus: { width: 72 },
-  colSimulatedAt: { width: 76, textAlign: 'right' as const, fontSize: FontSize.tab, color: Colors.light.textAssistive },
-  colAction: { width: 60, alignItems: 'flex-end' },
-  inlineBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    backgroundColor: Colors.light.backgroundSelected,
-    borderWidth: 1,
-    borderColor: Colors.light.fieldBorder,
-  },
-  inlineBtnPrimary: {
-    backgroundColor: Colors.light.accent,
-    borderColor: Colors.light.accent,
-  },
-  inlineBtnText: { fontSize: FontSize.tab, color: Colors.light.textSecondary },
-  inlineBtnTextPrimary: { color: Colors.light.background, fontWeight: '700' },
-  btnDisabled: { opacity: 0.5 },
-});
