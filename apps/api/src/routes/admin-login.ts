@@ -13,8 +13,17 @@ import { ApiError } from '../errors';
  * 관리자는 예외로 둔다(2026-09-10 사용자 결정) — 카카오 계정에 운영 권한을 매달면
  * 그 계정을 잃었을 때 권한을 회수할 방법이 카카오 쪽에 있게 된다.
  *
- * **원문 비밀번호는 저장소에 없다.** 서버가 아는 것은 `ADMIN_LOGIN_ID`와
- * `ADMIN_PASSWORD_HASH` 둘뿐이고, 뒤의 것은 소금과 해시만 담는다.
+ * **비밀번호는 두 가지로 받는다**(2026-09-10 대표 지시). `ADMIN_PASSWORD_HASH`
+ * (소금 + scrypt)가 있으면 그것으로, 없으면 `ADMIN_PASSWORD`의 원문으로 대조한다.
+ * 둘 다 저장소가 아니라 배포 환경변수에 있다.
+ *
+ * 원문 쪽이 약하다 — Render 대시보드를 볼 수 있는 사람은 그대로 읽는다. 해시는
+ * 읽어도 원문을 되돌릴 수 없다. 그래도 여는 이유는 해시를 만들어 옮기는 두 단계가
+ * 「비밀번호를 바꾸고 바로 들어간다」를 매번 막았기 때문이다. `ADMIN_PASSWORD`를
+ * 지우면 곧바로 해시 방식으로 돌아간다.
+ *
+ * **비밀번호를 바꿀 때는 둘을 함께 손본다.** 하나만 맞아도 통과하므로, 원문만
+ * 바꾸고 옛 해시를 두면 옛 비밀번호가 계속 통한다.
  *
  * **로그인이 곧 권한은 아니다.** 여기서 하는 일은 「이 사람이 그 아이디의 주인인가」
  * 까지다. 운영 권한(`is_operator`)은 CLI로만 켠다 — 라우트가 권한까지 줄 수 있으면
@@ -87,13 +96,18 @@ export function registerAdminLoginRoutes(app: FastifyInstance, context: AppConte
 
     const expectedId = process.env.ADMIN_LOGIN_ID?.trim();
     const expectedHash = process.env.ADMIN_PASSWORD_HASH?.trim();
+    /*
+     * **원문 비밀번호도 받는다**(2026-09-10 대표 지시). 해시를 만들어 옮기는 두
+     * 단계 없이 아이디·비밀번호만 맞으면 통과한다. 둘 다 있으면 하나만 맞아도 된다.
+     */
+    const expectedPlain = process.env.ADMIN_PASSWORD?.trim();
 
     /*
      * **아이디가 틀려도 비밀번호를 끝까지 대조한다.** 아이디에서 바로 돌아오면 응답
      * 시간만으로 「이 아이디는 있다」를 알 수 있다. scrypt 한 번은 어차피 치른다.
      */
     const idOk = sameId(parsed.data.id, expectedId);
-    const passwordOk = await verifyAdminPassword(parsed.data.password, expectedHash);
+    const passwordOk = await verifyAdminPassword(parsed.data.password, expectedHash, expectedPlain);
 
     if (!idOk || !passwordOk) {
       recordFailure(key);
