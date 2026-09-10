@@ -490,8 +490,14 @@ const styles = StyleSheet.create({
     paddingTop: Layout.rowPaddingY,
     paddingBottom: Layout.sectionGap,
   },
+  /*
+   * 시안 09-core-loop 10c(WP-PICK-002) dock 버튼은 «2곳 비교하기» height 56이다.
+   * `size.ctaPick`이 그 값이고, tokens.json이 「업체 상세·비교의 Pick CTA 전용 —
+   * Pick하기 · N곳 비교하기」로 적어둔 바로 그 버튼이다. 화면당 Primary CTA는
+   * 여전히 하나다.
+   */
   dockBtn: {
-    height: Layout.controlXLarge,
+    height: Layout.ctaPick,
     borderRadius: Radius.input,
     alignItems: 'center',
     justifyContent: 'center',
