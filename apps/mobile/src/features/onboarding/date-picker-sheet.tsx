@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-import { ActionButton, Border, Layout, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import { ActionButton, Border, FontSize, Layout, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 
 import {
@@ -249,7 +249,7 @@ function OptionGrid({
                   type="t6"
                   numeric
                   themeColor={active ? 'onTint' : 'textSecondary'}
-                  style={[active && styles.bold, option.disabled && { color: theme.calendarMuted }]}>
+                  style={[styles.cellText, active && styles.bold, option.disabled && { color: theme.calendarMuted }]}>
                   {option.label}
                 </ThemedText>
               </Pressable>
@@ -319,7 +319,7 @@ function Calendar({
                   <ThemedText
                     type="t6"
                     numeric
-                    style={[{ color }, active && [styles.bold, { color: theme.onTint }]]}>
+                    style={[styles.cellText, { color }, active && [styles.bold, { color: theme.onTint }]]}>
                     {cell.day}
                   </ThemedText>
                 </View>
@@ -344,20 +344,20 @@ const styles = StyleSheet.create({
   /* 시안 sheet — 패딩 · 둥글기 · 그래버는 SheetPanel. 요소 사이만 16(공용 20보다 좁다). */
   sheet: { gap: Spacing.three },
   selects: { flexDirection: 'row', gap: Spacing.two },
-  /* 셀렉트 — 높이 52(Layout.field) · radius 10 · 테두리 1.5(Border.selected · 열리면 코랄). */
+  /* 셀렉트 — 시안 selBox: 높이 52 · radius 10 · 테두리 1.5 · 좌우 16. */
   select: {
     flex: 1,
     minWidth: 0,
     height: Layout.field,
     borderRadius: Radius.medium,
     borderWidth: Border.selected,
-    paddingHorizontal: Layout.fieldPaddingX,
+    paddingHorizontal: Layout.datePickerSelectPaddingX,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: Spacing.two,
   },
-  /* 연도 · 월 펼침 — 4열 · 셀 44 · 사이 8 · radius 8(토큰 Radius.medium 10). */
+  /* 연도 · 월 펼침 — 시안 optCell: 4열 · 셀 44 · 사이 8 · radius 8. */
   grid: { gap: Spacing.two },
   gridRow: { flexDirection: 'row', gap: Spacing.two },
   gridCell: {
@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
     flexBasis: 0,
     minWidth: 0,
     height: Layout.touchTarget,
-    borderRadius: Radius.medium,
+    borderRadius: Radius.picker,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -374,8 +374,11 @@ const styles = StyleSheet.create({
   week: { flexDirection: 'row', gap: Spacing.half },
   weekdayCell: { flex: 1, flexBasis: 0, minWidth: 0, height: WEEKDAY_HEADER, alignItems: 'center', justifyContent: 'center' },
   dayCell: { flex: 1, flexBasis: 0, minWidth: 0, height: DAY_CELL, alignItems: 'center', justifyContent: 'center' },
-  /* 선택일의 코랄 원 — 셀과 같은 40. */
-  day: { width: DAY_CELL, height: DAY_CELL, borderRadius: Radius.pill, alignItems: 'center', justifyContent: 'center' },
+  /*
+   * 선택일 — 시안 dayCell이 «border-radius:8px»라 원이 아니라 둥근 사각이다.
+   * SPEC 13.7 본문은 「coral 원」이라 적지만 목업과 1:1로 맞춘다(2026-09-10 사용자 결정).
+   */
+  day: { width: DAY_CELL, height: DAY_CELL, borderRadius: Radius.picker, alignItems: 'center', justifyContent: 'center' },
   /* 시안 pickedRow — 결과 줄 · baseline 정렬 · 좌우 2. */
   picked: {
     flexDirection: 'row',
@@ -386,5 +389,7 @@ const styles = StyleSheet.create({
   },
   /* width 100% · flex 0 0 — 세로 컨테이너에서 늘어나지 않는다(SPEC §13.7). */
   cta: { width: '100%', flexGrow: 0, flexShrink: 0 },
+  /* 시안 optCell · dayCell 글자 15. t 스케일에 없는 값이라 이 시트에서만 쓴다. */
+  cellText: { fontSize: FontSize.dateCell },
   bold: { fontWeight: 700 },
 });

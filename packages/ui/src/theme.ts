@@ -531,6 +531,12 @@ export const Layout = {
   field: 52,
   /** 입력 필드 좌우 패딩. component.field.padding. */
   fieldPaddingX: 14,
+  /**
+   * 날짜 선택 연 · 월 셀렉트의 좌우 패딩. component.datePicker.selectPaddingX —
+   * 20-onboarding-v2의 `selBox`가 «padding:0 16px»다. 일반 입력 필드(14)와
+   * 값이 다른 자리라 따로 둔다.
+   */
+  datePickerSelectPaddingX: 16,
   /** 여러 줄 입력 최소 높이. size.textarea. */
   textarea: 88,
   /** 체크박스 한 변. size.checkbox. */
@@ -615,6 +621,14 @@ export const Radius = {
   badge: 4,
   /** 버튼 · 입력 필드 · 작은 썸네일. radius.control. */
   control: 6,
+  /**
+   * 날짜 선택의 연 · 월 펼침 칸과 날짜 칸. radius.picker — 20-onboarding-v2의
+   * `optCell` · `dayCell`이 «border-radius:8px»다.
+   *
+   * **선택한 날짜도 원이 아니라 이 값이다.** SPEC 13.7 본문은 「coral 원」이라
+   * 적지만 목업은 사각이고, 목업과 1:1로 맞춘다(2026-09-10 사용자 결정).
+   */
+  picker: 8,
   small: 6,
   input: 6,
   /** 카드 · 이미지 · 안내 박스. radius.card. */
