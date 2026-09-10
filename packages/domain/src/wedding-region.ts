@@ -61,6 +61,37 @@ export function shortRegionName(token: string): string {
   return token.replace(new RegExp(REGION_SUFFIX_PATTERN), '');
 }
 
+/**
+ * 시/군/구 한 낱말을 짧은 꼴로. «성남시» → «성남» · «강남구» → «강남» · «가평군» → «가평».
+ *
+ * **떼고 나서 한 글자가 되면 떼지 않는다.** 「중구」 「동구」 「서구」 「남구」 「북구」는
+ * 부산 · 대구 · 광주 · 인천에 실제로 있는 이름이고, 「중」 「동」만 남기면 무슨 말인지
+ * 알 수 없다. 「성남」 「수원」처럼 두 글자 이상 남을 때만 떼는 이유가 이것이다.
+ */
+export function shortDistrictName(token: string): string {
+  const shortened = token.replace(/(시|군|구)$/, '');
+
+  return shortened.length >= 2 ? shortened : token;
+}
+
+/**
+ * 화면에 적을 지역 이름. «경기도 성남시» → «경기 성남» · «서울특별시 강남구» → «서울 강남».
+ *
+ * 저장된 값을 바꾸지 않는다 — 보여줄 때만 줄인다(2026-09-10 사용자 지시). 출처마다
+ * 꼴이 달라도(공공데이터는 도로명주소 그대로, 표본은 이미 짧은 꼴) 화면에서는 한 가지로
+ * 보인다. 거르는 일은 여전히 `regionMatches` · `regionLikePattern`이 두 꼴을 다 잡는다.
+ */
+export function regionLabel(region: string | null | undefined): string {
+  if (!region) return '';
+
+  return region
+    .trim()
+    .split(/\s+/)
+    .filter((token) => token.length > 0)
+    .map((token, index) => (index === 0 ? shortRegionName(token) : shortDistrictName(token)))
+    .join(' ');
+}
+
 /** 업체 지역이 고른 지역에 드는가. "서울" ↔ "서울특별시 강남구" · "서울 강남구" · "서울특별시 강남구". */
 export function regionMatches(vendorRegion: string, region: string): boolean {
   const wanted = regionTokens(region);

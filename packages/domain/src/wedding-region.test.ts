@@ -1,4 +1,4 @@
-import { OTHER_REGION, REGION_DISTRICTS, WEDDING_REGIONS, combineRegion, regionFilter, regionLikePattern, regionMatches, shortRegionName } from './wedding-region';
+import { OTHER_REGION, REGION_DISTRICTS, WEDDING_REGIONS, combineRegion, regionFilter, regionLikePattern, regionMatches, regionLabel, shortDistrictName, shortRegionName } from './wedding-region';
 
 describe('온보딩 지역', () => {
   it('시안 #11d의 아홉 칩을 그 순서로 둔다', () => {
@@ -85,5 +85,43 @@ describe('시도 이름 짧은 꼴 — 지역 칩이 갈리지 않게', () => {
   it('두 꼴이 같은 이름으로 모인다', () => {
     expect(shortRegionName('경기도')).toBe(shortRegionName('경기'));
     expect(shortRegionName('서울특별시')).toBe(shortRegionName('서울'));
+  });
+});
+
+describe('화면에 적을 지역 이름 — 시·군·구까지 뗀다', () => {
+  it('시·군·구를 뗀다', () => {
+    expect(shortDistrictName('성남시')).toBe('성남');
+    expect(shortDistrictName('수원시')).toBe('수원');
+    expect(shortDistrictName('강남구')).toBe('강남');
+    expect(shortDistrictName('가평군')).toBe('가평');
+  });
+
+  it('떼면 한 글자가 되는 이름은 그대로 둔다', () => {
+    /*
+     * 「중구」 「동구」는 부산 · 대구 · 광주 · 인천에 실제로 있는 이름이다.
+     * 「중」 「동」만 남기면 무슨 말인지 알 수 없다.
+     */
+    for (const name of ['중구', '동구', '서구', '남구', '북구']) {
+      expect(shortDistrictName(name)).toBe(name);
+    }
+  });
+
+  it('시도와 시군구를 함께 줄인다', () => {
+    expect(regionLabel('경기도 성남시')).toBe('경기 성남');
+    expect(regionLabel('서울특별시 강남구')).toBe('서울 강남');
+    expect(regionLabel('제주특별자치도 서귀포시')).toBe('제주 서귀포');
+    expect(regionLabel('부산광역시 중구')).toBe('부산 중구');
+  });
+
+  it('이미 짧은 꼴도 같은 값으로 나온다', () => {
+    // 출처마다 꼴이 달라도 화면에서는 한 가지로 보여야 한다.
+    expect(regionLabel('경기 성남시')).toBe(regionLabel('경기도 성남시'));
+    expect(regionLabel('서울 강남구')).toBe(regionLabel('서울특별시 강남구'));
+  });
+
+  it('빈 값은 빈 문자열이다', () => {
+    expect(regionLabel(null)).toBe('');
+    expect(regionLabel(undefined)).toBe('');
+    expect(regionLabel('  ')).toBe('');
   });
 });

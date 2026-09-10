@@ -21,6 +21,7 @@ import {
   styleMatchReason,
   styleOverlap,
   VENDOR_CATEGORY_LABEL,
+  regionLabel,
   withParticle,
   type WeddingStyle,
 } from '@weddingpick/domain';
@@ -379,7 +380,7 @@ export default function VendorDetailScreen() {
               {vendor.sourceNote ? <Badge style={styles.statusBadge}>공공기관 확인</Badge> : null}
               <ThemedText type="t2">{vendor.name}</ThemedText>
               <ThemedText type="body" themeColor="textSecondary">
-                {VENDOR_CATEGORY_LABEL[vendor.category]} · {vendor.region}
+                {VENDOR_CATEGORY_LABEL[vendor.category]} · {regionLabel(vendor.region)}
               </ThemedText>
             </View>
 
@@ -735,7 +736,7 @@ export default function VendorDetailScreen() {
               <View>
                 <View style={styles.row}>
                   <ThemedText type="t6" themeColor="textAssistive">지역</ThemedText>
-                  <ThemedText type="t6" style={styles.rowTail}>{vendor.region}</ThemedText>
+                  <ThemedText type="t6" style={styles.rowTail}>{regionLabel(vendor.region)}</ThemedText>
                 </View>
                 <View style={[styles.divider, { backgroundColor: theme.border }]} />
               </View>

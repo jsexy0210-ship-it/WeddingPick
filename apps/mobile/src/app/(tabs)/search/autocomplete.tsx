@@ -1,5 +1,5 @@
 import type { VendorSummary } from '@weddingpick/api-contract';
-import { TERMS, VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
+import { TERMS, VENDOR_CATEGORY_LABEL, regionLabel } from '@weddingpick/domain';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -195,7 +195,7 @@ export default function AutocompleteScreen() {
                         {vendor.name}
                       </ThemedText>
                       <ThemedText type="t7" themeColor="textAssistive">
-                        {VENDOR_CATEGORY_LABEL[vendor.category]} · {vendor.region}
+                        {VENDOR_CATEGORY_LABEL[vendor.category]} · {regionLabel(vendor.region)}
                       </ThemedText>
                     </ThemedView>
                     <ThemedText type="t7" themeColor="textAssistive">

@@ -18,6 +18,7 @@ import {
   formatDateDot,
   manwon,
   priceLine,
+  regionLabel,
 } from '@weddingpick/domain';
 import type { PriceLine } from '@weddingpick/domain';
 import type { VendorDetail } from '@weddingpick/api-contract';
@@ -72,7 +73,7 @@ function pending(label: string, note: string | undefined): string {
 
 /** 업체명 자리. 이름과 함께 업종·지역까지가 «무엇을 보고 있는지»다. */
 function nameBlock(vendor: VendorDetail): string {
-  const where = [VENDOR_CATEGORY_LABEL[vendor.category], vendor.region]
+  const where = [VENDOR_CATEGORY_LABEL[vendor.category], regionLabel(vendor.region)]
     .filter(Boolean)
     .join(' · ');
 
@@ -229,7 +230,7 @@ function verifiedCard(vendor: VendorDetail): string {
 function officialCard(vendor: VendorDetail): string {
   const facts = [
     { label: '업종', value: VENDOR_CATEGORY_LABEL[vendor.category] },
-    { label: '지역', value: vendor.region },
+    { label: '지역', value: regionLabel(vendor.region) },
     {
       label: '마지막 확인',
       value: formatDateDot(vendor.lastVerifiedAt),
@@ -269,7 +270,7 @@ export function renderVendorPage(vendor: VendorDetail): string {
       </div>
     </section>`;
 
-  const where = [VENDOR_CATEGORY_LABEL[vendor.category], vendor.region].join(' · ');
+  const where = [VENDOR_CATEGORY_LABEL[vendor.category], regionLabel(vendor.region)].join(' · ');
 
   /*
    * 링크 미리보기도 화면과 같은 한 줄을 쓴다.
