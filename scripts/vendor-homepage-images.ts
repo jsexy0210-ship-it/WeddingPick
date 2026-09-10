@@ -177,11 +177,34 @@ function confidence(vendorName: string, page: Page): number {
 
 type Vendor = { id: string; name: string; region: string };
 
-type Outcome = '붙임' | '홈페이지 없음' | '이름 확인 실패' | '대표 이미지 없음';
+/**
+ * 왜 못 붙였는가.
+ *
+ * **한 이름으로 묶지 않는다.** 처음에는 후보가 하나도 안 남은 것과 페이지를 못 읽은
+ * 것과 이름이 안 맞은 것을 전부 「이름 확인 실패」로 셌다. 100곳이 전부 그 하나로
+ * 나왔는데, 어디서 떨어지는지 알 수 없어 무엇을 고쳐야 할지도 알 수 없었다.
+ *
+ *   검색 결과 없음     묻는 말이 틀렸다
+ *   전부 포털·블로그    거르는 목록이 너무 넓거나, 그 업체에 공식 홈페이지가 없다
+ *   페이지 못 읽음      막혔거나 죽은 주소다
+ *   이름 확인 실패      찾긴 했는데 그 업체 페이지가 아니다
+ *   대표 이미지 없음    맞는 페이지인데 og:image가 없다
+ */
+type Outcome =
+  | '붙임'
+  | '검색 결과 없음'
+  | '전부 포털·블로그'
+  | '페이지 못 읽음'
+  | '이름 확인 실패'
+  | '대표 이미지 없음';
 
 async function forVendor(vendor: Vendor): Promise<{ outcome: Outcome; homepage: string | null }> {
   /* 지역을 함께 넣는다 — 같은 이름의 다른 지역 업체를 잡지 않기 위해서다. */
   const documents = await searchWeb(`${vendor.name} ${vendor.region.split(' ')[0] ?? ''}`.trim());
+
+  /* 어디서 떨어졌는지 세어 둔다. 마지막에 가장 멀리 간 이유를 결과로 쓴다. */
+  let candidates = 0;
+  let fetched = 0;
 
   for (const document of documents) {
     let host: string;
@@ -193,9 +216,13 @@ async function forVendor(vendor: Vendor): Promise<{ outcome: Outcome; homepage: 
     }
     if (NOT_A_HOMEPAGE.test(host)) continue;
 
+    candidates += 1;
+
     const page = await get(document.url);
 
     if (!page) continue;
+
+    fetched += 1;
 
     const matched = confidence(vendor.name, page);
 
@@ -243,7 +270,12 @@ async function forVendor(vendor: Vendor): Promise<{ outcome: Outcome; homepage: 
     );
   }
 
-  return { outcome: documents.length ? '이름 확인 실패' : '홈페이지 없음', homepage: null };
+  /* 가장 멀리 간 곳을 이유로 삼는다 — 「검색은 됐는데 전부 포털」과 「아예 안 나왔다」는 다른 말이다. */
+  if (documents.length === 0) return { outcome: '검색 결과 없음', homepage: null };
+  if (candidates === 0) return { outcome: '전부 포털·블로그', homepage: null };
+  if (fetched === 0) return { outcome: '페이지 못 읽음', homepage: null };
+
+  return { outcome: '이름 확인 실패', homepage: null };
 }
 
 async function main(): Promise<void> {
