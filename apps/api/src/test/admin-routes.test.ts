@@ -342,6 +342,72 @@ describeWithDb('관리자 콘솔 라우트', () => {
 
       expect((await get('/v1/admin/objections', operator.headers)).json<{ objections: unknown[] }>().objections).toHaveLength(0);
     });
+
+    /*
+     * 내리기는 되돌릴 수 없다. 화면의 「내리기」 단추가 실제로 후기를 내리는지와,
+     * 운영자가 적은 사유가 남는지를 함께 본다 — 사유를 받아놓고 버리면 나중에
+     * 「왜 내렸느냐」에 답할 수 없다(0110).
+     */
+    it('내리면 후기가 사라지고 적은 사유가 남는다', async () => {
+      const reviewId = await aPublishedReview();
+      const operator = await operatorHeaders();
+
+      await post(`/v1/admin/objections/${reviewId}/hold`, operator.headers, {
+        note: '업체가 계약한 적이 없다고 이의 제기',
+      });
+
+      const remove = await post(`/v1/admin/objections/${reviewId}/remove`, operator.headers, {
+        note: '계약 사실이 확인되지 않음',
+      });
+      expect(remove.statusCode).toBe(204);
+
+      const review = await test.pool.query<{ status: string }>(
+        'SELECT status FROM structured.reviews WHERE id = $1',
+        [reviewId]
+      );
+      expect(review.rows[0]?.status).toBe('removed');
+
+      expect(
+        (await get('/v1/admin/objections', operator.headers)).json<{ objections: unknown[] }>()
+          .objections
+      ).toHaveLength(0);
+
+      const logged = await test.pool.query<{
+        action: string;
+        note: string;
+        before_status: string;
+        after_status: string;
+      }>(
+        `SELECT action, note, before_status, after_status
+         FROM structured.review_objection_log
+         WHERE review_id = $1 ORDER BY created_at`,
+        [reviewId]
+      );
+      expect(logged.rows.map((row) => row.action)).toEqual(['hold', 'remove']);
+      expect(logged.rows[1]).toMatchObject({
+        note: '계약 사실이 확인되지 않음',
+        before_status: 'under_objection',
+        after_status: 'removed',
+      });
+    });
+
+    it('사유 없이는 내리지 못한다', async () => {
+      const reviewId = await aPublishedReview();
+      const operator = await operatorHeaders();
+
+      await post(`/v1/admin/objections/${reviewId}/hold`, operator.headers, { note: '확인 중' });
+
+      const blank = await post(`/v1/admin/objections/${reviewId}/remove`, operator.headers, {
+        note: '   ',
+      });
+      expect(blank.statusCode).toBe(400);
+
+      const review = await test.pool.query<{ status: string }>(
+        'SELECT status FROM structured.reviews WHERE id = $1',
+        [reviewId]
+      );
+      expect(review.rows[0]?.status).toBe('under_objection');
+    });
   });
 
   describe('인증 심사', () => {
@@ -390,6 +456,50 @@ describeWithDb('관리자 콘솔 라우트', () => {
 
       const approve = await post(`/v1/admin/verifications/${requestId}/approve`, operator.headers, {
         note: '계약서 3면 도장 확인',
+      });
+      expect(approve.statusCode).toBe(204);
+
+      const show = await get(`/v1/admin/verifications/${requestId}`, operator.headers);
+      expect(show.json<{ status: string }>().status).toBe('approved');
+    });
+
+    /*
+     * 화면이 「반려」를 누르면 사유가 신청한 사람에게 그대로 간다. 사유 없이
+     * 반려되면 신청한 쪽은 무엇을 고쳐야 할지 알 수 없으므로 라우트가 먼저 막는다.
+     */
+    it('반려는 사유를 요구하고, 적은 사유가 신청에 남는다', async () => {
+      const requester = await signInAs(test, 'verification-requester-2');
+      const requestId = await aVerificationRequest(requester.headers, requester.userId);
+      const operator = await operatorHeaders();
+
+      const blank = await post(`/v1/admin/verifications/${requestId}/reject`, operator.headers, {
+        reason: '  ',
+      });
+      expect(blank.statusCode).toBe(400);
+
+      const rejected = await post(`/v1/admin/verifications/${requestId}/reject`, operator.headers, {
+        reason: '올린 문서가 계약서가 아니라 견적서다',
+      });
+      expect(rejected.statusCode).toBe(204);
+
+      const { rows } = await test.pool.query<{ status: string; rejection_reason: string | null }>(
+        'SELECT status, rejection_reason FROM structured.verification_requests WHERE id = $1',
+        [requestId]
+      );
+      expect(rows[0]).toMatchObject({
+        status: 'rejected',
+        rejection_reason: '올린 문서가 계약서가 아니라 견적서다',
+      });
+    });
+
+    /* 승인 메모는 선택이다. 화면이 빈 칸을 `null`로 보내는 것과 짝이다. */
+    it('승인 메모 없이도 승인된다', async () => {
+      const requester = await signInAs(test, 'verification-requester-3');
+      const requestId = await aVerificationRequest(requester.headers, requester.userId);
+      const operator = await operatorHeaders();
+
+      const approve = await post(`/v1/admin/verifications/${requestId}/approve`, operator.headers, {
+        note: null,
       });
       expect(approve.statusCode).toBe(204);
 
