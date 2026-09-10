@@ -20,8 +20,8 @@ const NAV_GROUPS: { group?: string; key?: string; label?: string; href?: string 
   { key: 'data-pipeline', label: '제보 처리 현황', href: '/admin/data-pipeline' },
   { key: 'price-stats', label: '가격 통계', href: '/admin/price-stats' },
   { key: 'vendors', label: '업체 관리', href: '/admin/vendors' },
-  { key: 'images', label: '이미지 자동수급', href: '/admin/images' },
-  { key: 'email-matching', label: '이메일 자동매칭', href: '/admin/email-matching' },
+  { key: 'images', label: '이미지 수급', href: '/admin/images' },
+  { key: 'email-matching', label: '이메일 매칭', href: '/admin/email-matching' },
   { group: '지표를 봐요' },
   { key: 'stats', label: '이상치 · 조작 탐지', href: '/admin/stats' },
   { group: '사용자' },
@@ -31,7 +31,7 @@ const NAV_GROUPS: { group?: string; key?: string; label?: string; href?: string 
   { group: '성장 · 광고' },
   { key: 'marketing', label: '마케팅 자동화', href: '/admin/marketing' },
   { key: 'campaigns', label: '캠페인 · 보상', href: '/admin/campaigns' },
-  { key: 'revenue', label: 'Revenue', href: '/admin/revenue' },
+  { key: 'revenue', label: '수익 현황', href: '/admin/revenue' },
   { key: 'ads', label: '광고 집행 관리', href: '/admin/ads' },
   { key: 'ads-gate', label: '광고 실운영 게이트', href: '/admin/ads-gate' },
   { group: '콘텐츠' },
@@ -40,12 +40,12 @@ const NAV_GROUPS: { group?: string; key?: string; label?: string; href?: string 
   { key: 'og-card', label: '링크 미리보기', href: '/admin/og-card' },
   { group: '운영' },
   { key: 'automation', label: '자동화 상태', href: '/admin/automation' },
-  { key: 'kill-switch', label: 'Kill Switch', href: '/admin/kill-switch' },
-  { key: 'rollback', label: '롤백 관리', href: '/admin/rollback' },
+  { key: 'kill-switch', label: '긴급 중지', href: '/admin/kill-switch' },
+  { key: 'rollback', label: '변경 복구', href: '/admin/rollback' },
   { group: '시스템' },
-  { key: 'ai-usage', label: 'AI 사용량 · 비용', href: '/admin/ai-usage' },
-  { key: 'policy-engine', label: 'Policy Engine', href: '/admin/policy-engine' },
-  { key: 'audit-log', label: '감사 로그', href: '/admin/audit-log' },
+  { key: 'ai-usage', label: 'AI 비용', href: '/admin/ai-usage' },
+  { key: 'policy-engine', label: '정책 규칙', href: '/admin/policy-engine' },
+  { key: 'audit-log', label: '감사 기록', href: '/admin/audit-log' },
 ];
 
 const LOGIN_PATH = '/admin/login';
@@ -56,7 +56,10 @@ function Sidebar({ pathname }: { pathname: string }) {
       <View style={styles.sidebarLogo}>
         <Text style={styles.sidebarTitle}>웨딩픽 관리자</Text>
       </View>
-      <ScrollView style={styles.sidebarScroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.sidebarScroll}
+        contentContainerStyle={styles.sidebarScrollBody}
+        showsVerticalScrollIndicator={false}>
         {NAV_GROUPS.map((item, i) => {
           if (item.group) {
             return (
@@ -179,10 +182,11 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     flexDirection: 'column',
   },
+  /* 시안 sideBrand — 좌 24 · 위 20 · 아래 18(L722·723). */
   sidebarLogo: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     paddingTop: 20,
-    paddingBottom: 22,
+    paddingBottom: 18,
   },
   sidebarTitle: {
     fontSize: FontSize.t6,
@@ -191,6 +195,12 @@ const styles = StyleSheet.create({
   },
   sidebarScroll: {
     flex: 1,
+  },
+  /* 시안 side — padding:20px 12px · gap:3(22-admin-ops.dc.html L722). pill 폭은 240이 아니라 216이다. */
+  sidebarScrollBody: {
+    paddingHorizontal: 12,
+    paddingBottom: 20,
+    gap: 3,
   },
   signOut: {
     paddingHorizontal: 12,
@@ -202,26 +212,30 @@ const styles = StyleSheet.create({
     fontSize: FontSize.t7,
     color: '#868b94',
   },
+  /*
+   * 시안 groupLabel — `padding:16px 12px 6px` · `color:#5f6570` · **대문자 변환 없음**(L725).
+   * 라벨이 한국어라 uppercase는 효과가 없고, #393a40(textStrong)은 사이드바 #17181c 위에서
+   * 거의 안 보인다. 글자 크기 11은 8단 스케일 밖이라 tab(12)으로 앉힌다.
+   */
   navGroup: {
     paddingHorizontal: 12,
-    paddingTop: 14,
-    paddingBottom: 5,
+    paddingTop: 16,
+    paddingBottom: 6,
     fontSize: FontSize.tab,
     fontWeight: '700',
-    letterSpacing: 0.6,
-    color: Colors.light.textStrong,
-    textTransform: 'uppercase' as const,
+    color: Colors.light.adminGroupLabel,
   },
+  /* 시안 navItem — height 34 · 좌우 12 · radius 6(L229). */
   navItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    height: 34,
     paddingHorizontal: 12,
-    paddingVertical: 9,
-    marginHorizontal: 0,
     borderRadius: 6,
   },
+  /* 시안 navOn — 코랄 단색이다(L230). 22% 반투명은 어두운 사이드바 위에서 코랄로 읽히지 않는다. */
   navItemActive: {
-    backgroundColor: 'rgba(255,111,97,0.22)',
+    backgroundColor: Colors.light.tint,
   },
   navLabel: {
     flex: 1,

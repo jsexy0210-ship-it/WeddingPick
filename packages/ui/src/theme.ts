@@ -33,6 +33,24 @@ const palette = {
   /** primaryBorder — 코랄 카드 테두리. */
   coralBorder: '#ffd9d4',
 
+  /**
+   * v3.27 관리자 상단 상태 배너의 원형 아이콘 칠. color.status.*.iconBg.
+   *
+   * `22-admin-ops.dc.html` `alertIconStyle`(L299)이 배너 바탕과 테두리 사이의 한 단계를 쓴다 —
+   * `successSurface`(#e8faf6)로 칠하면 배너 바탕과 같아져 원이 사라진다.
+   */
+  /**
+   * 관리자 사이드바 그룹 라벨. `22-admin-ops.dc.html` `groupLabel`의 `color:#5f6570`(L725).
+   *
+   * gray 램프의 어느 단계도 아니다 — 어두운 사이드바(#17181c) 위에서만 쓰는 색이라
+   * `textStrong`(#393a40)으로 대신하면 바탕에 묻히고 `textAssistive`(#868b94)로는 항목보다 튄다.
+   */
+  adminGroupLabel: '#5f6570',
+
+  successIcon: '#c9f2e8',
+  warningIcon: '#ffe3ba',
+  dangerIcon: '#ffd0cb',
+
   /* SEED gray 램프 (light). */
   gray900: '#212124',
   gray800: '#393a40',
@@ -254,6 +272,12 @@ export const Colors = {
      * 배지 칠을 쓰면 목록 안에서 필요 이상으로 튄다. status.boxBg · status.border.
      */
     positiveBorder: palette.successBorder,
+    /** v3.27 관리자 상태 배너의 원형 아이콘 칠. status.*.iconBg. */
+    /** 관리자 사이드바 그룹 라벨. color.status.adminGroupLabel. */
+    adminGroupLabel: palette.adminGroupLabel,
+    positiveIcon: palette.successIcon,
+    cautionaryIcon: palette.warningIcon,
+    negativeIcon: palette.dangerIcon,
     cautionaryBoxBackground: palette.warningBox,
     cautionaryBorder: palette.warningBorder,
     negativeBoxBackground: palette.dangerBox,
@@ -337,6 +361,11 @@ export const Colors = {
     positive: '#3ecf8e',
     positiveBackground: '#12281d',
     positiveBorder: '#1f4a34',
+    /** 관리자 콘솔은 밝은 면만 쓰지만 두 모드의 키가 같아야 한다 — 어두운 쪽은 배경과 테두리 사이 한 단계. */
+    adminGroupLabel: '#5f6570',
+    positiveIcon: '#1a3d2b',
+    cautionaryIcon: '#3a2e16',
+    negativeIcon: '#3d1d1b',
     cautionary: '#e0a340',
     cautionaryBackground: '#2b2113',
     cautionaryBoxBackground: '#1f180e',

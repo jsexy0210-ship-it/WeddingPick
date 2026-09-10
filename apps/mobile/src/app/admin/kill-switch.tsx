@@ -8,6 +8,7 @@ import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-nat
 import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { OpsAlert, OpsConfirm, OpsEmpty } from '@/features/admin/ops-kit';
 import { formatDateTimeDot } from '@/features/common/format-date';
 
 type SwitchItem = {
@@ -33,6 +34,8 @@ export default function KillSwitchScreen() {
   const [error, setError] = useState<string | null>(null);
   const [rev, setRev] = useState(0);
   const [toggling, setToggling] = useState<string | null>(null);
+  /* 시안 confirmCard — 스위치를 내릴 때만 묻는다. 다시 켜는 것은 한 번에 된다. */
+  const [pending, setPending] = useState<SwitchItem | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,6 +67,8 @@ export default function KillSwitchScreen() {
     } catch { /* 무시 */ } finally { setToggling(null); }
   }
 
+  const stopped = data?.switches.filter((s2) => !s2.enabled) ?? [];
+
   const grouped = data?.switches.reduce<Record<string, SwitchItem[]>>((acc, item) => {
     const cat = item.category || '기타';
     if (!acc[cat]) acc[cat] = [];
@@ -74,7 +79,10 @@ export default function KillSwitchScreen() {
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <Text style={styles.title}>Kill Switch</Text>
+        <View style={styles.titleWrap}>
+          <Text style={styles.title}>긴급 중지</Text>
+          <Text style={styles.subtitle}>기능별 스위치 · 끄면 무엇이 멈추는지 보여요</Text>
+        </View>
         <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
           <Text style={styles.refreshText}>새로 고침</Text>
         </Pressable>
@@ -91,7 +99,26 @@ export default function KillSwitchScreen() {
       )}
 
       {!loading && !error && data && (
-        <ScrollView>
+        <ScrollView contentContainerStyle={styles.scrollBody}>
+          {/* 지금 봐야 할 것이 맨 위 — 하나라도 내려가 있으면 그것부터 말한다. */}
+          <View style={styles.bannerWrap}>
+            {stopped.length > 0 ? (
+              <OpsAlert
+                kind="bad"
+                title={`${stopped.length}개가 멈춰 있어요`}
+                sub={stopped.map((s2) => s2.name).join(' · ')}
+              />
+            ) : (
+              <OpsAlert kind="ok" title="모두 켜져 있어요" sub="멈춰 있는 기능이 없어요." />
+            )}
+          </View>
+
+          {data.switches.length === 0 ? (
+            <View style={styles.bannerWrap}>
+              <OpsEmpty title="확인할 것이 없어요" sub="등록된 스위치가 없어요." />
+            </View>
+          ) : null}
+
           {Object.entries(grouped).map(([cat, items]) => (
             <View key={cat}>
               <View style={styles.categoryHeader}>
@@ -120,7 +147,10 @@ export default function KillSwitchScreen() {
                     </Text>
                     <Switch
                       value={item.enabled}
-                      onValueChange={() => void toggle(item.id, item.enabled)}
+                      onValueChange={() => {
+                        if (item.enabled) setPending(item);
+                        else void toggle(item.id, item.enabled);
+                      }}
                       disabled={toggling !== null}
                       trackColor={{ true: Colors.light.tint, false: Colors.light.border }}
                     />
@@ -131,11 +161,30 @@ export default function KillSwitchScreen() {
           ))}
         </ScrollView>
       )}
+
+      {/* 위험한 조작은 한 번 더 — 무엇이 멈추는지 항목으로 보인 뒤 진행한다. */}
+      <OpsConfirm
+        visible={pending !== null}
+        title={pending ? `${pending.name}을(를) 끌까요?` : ''}
+        body="끄는 즉시 아래가 멈춰요. 다시 켜면 바로 복구돼요."
+        items={pending ? [pending.description, '멈춘 동안 쌓인 건은 확인 필요 목록에 남아요.'].filter(Boolean) : []}
+        confirmLabel="끄기"
+        onConfirm={() => {
+          const target = pending;
+          setPending(null);
+          if (target) void toggle(target.id, target.enabled);
+        }}
+        onCancel={() => setPending(null)}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  titleWrap: { flex: 1 },
+  subtitle: { fontSize: FontSize.micro, lineHeight: LineHeight.micro, color: Colors.light.textAssistive, marginTop: 2 },
+  scrollBody: { paddingBottom: 24 },
+  bannerWrap: { paddingHorizontal: 24, paddingTop: 16 },
   root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     flexDirection: 'row',

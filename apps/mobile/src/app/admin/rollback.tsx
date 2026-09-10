@@ -5,9 +5,10 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Colors, FontSize } from '@weddingpick/ui';
+import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { OpsAlert, OpsConfirm, OpsEmpty } from '@/features/admin/ops-kit';
 import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 import { formatDateTimeDot } from '@/features/common/format-date';
 
@@ -49,6 +50,8 @@ export default function RollbackScreen() {
   const [error, setError] = useState<string | null>(null);
   const [rev, setRev] = useState(0);
   const [acting, setActing] = useState<string | null>(null);
+  /* 시안 confirmCard — 되돌리기는 무엇이 바뀌는지 항목으로 보인 뒤 진행한다. */
+  const [pending, setPending] = useState<{ item: RollbackItem; kind: 'approve' | 'trigger' } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -85,10 +88,15 @@ export default function RollbackScreen() {
     } catch { /* 무시 */ } finally { setActing(null); }
   }
 
+  const waiting = data?.items.filter((it) => it.status === 'pending_approval') ?? [];
+
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <Text style={styles.title}>롤백 관리</Text>
+        <View style={styles.titleWrap}>
+          <Text style={styles.title}>변경 복구 관리</Text>
+          <Text style={styles.subtitle}>되돌리기 전에 무엇이 바뀌는지 보여요</Text>
+        </View>
         <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
           <Text style={styles.refreshText}>새로 고침</Text>
         </Pressable>
@@ -106,7 +114,22 @@ export default function RollbackScreen() {
       )}
 
       {!loading && !error && data && (
-        <ScrollView>
+        <ScrollView contentContainerStyle={styles.scrollBody}>
+          {/* 지금 봐야 할 것이 맨 위 — 승인을 기다리는 건이 있으면 그것부터 말한다. */}
+          <View style={styles.bannerWrap}>
+            {waiting.length > 0 ? (
+              <OpsAlert kind="warn" title={`${waiting.length}건이 승인을 기다려요`} sub={waiting.map((w) => w.name).join(' · ')} />
+            ) : (
+              <OpsAlert kind="ok" title="확인할 것이 없어요" sub="되돌릴 변경이 없어요." />
+            )}
+          </View>
+
+          {data.items.length === 0 ? (
+            <View style={styles.bannerWrap}>
+              <OpsEmpty title="확인할 것이 없어요" sub="최근 되돌린 변경이 없어요." />
+            </View>
+          ) : null}
+
           {data.items.map((item, i) => (
             <View key={item.id} style={[styles.itemCard, i % 2 === 1 && styles.itemCardZebra]}>
               <View style={styles.itemHeader}>
@@ -142,7 +165,7 @@ export default function RollbackScreen() {
                 {item.status === 'pending_approval' && (
                   <Pressable
                     style={[styles.approveBtn, (BACKEND_PENDING || acting === item.id + '_approve') && styles.btnDisabled]}
-                    onPress={() => void approveRollback(item.id)}
+                    onPress={() => setPending({ item, kind: 'approve' })}
                     disabled={BACKEND_PENDING || acting !== null}
                   >
                     <Text style={styles.approveBtnText}>
@@ -153,7 +176,7 @@ export default function RollbackScreen() {
                 {item.status === 'anomaly_detected' && !item.requiresApproval && (
                   <Pressable
                     style={[styles.triggerBtn, (BACKEND_PENDING || acting === item.id + '_trigger') && styles.btnDisabled]}
-                    onPress={() => void triggerRollback(item.id)}
+                    onPress={() => setPending({ item, kind: 'trigger' })}
                     disabled={BACKEND_PENDING || acting !== null}
                   >
                     <Text style={styles.triggerBtnText}>
@@ -166,12 +189,45 @@ export default function RollbackScreen() {
           ))}
         </ScrollView>
       )}
+
+      {/* 위험한 조작은 한 번 더. */}
+      <OpsConfirm
+        visible={pending !== null}
+        title={pending ? `${pending.item.name}을(를) 되돌릴까요?` : ''}
+        body="되돌리는 즉시 아래가 바뀌어요."
+        items={
+          pending
+            ? [
+                pending.item.type === 'deploy'
+                  ? `${formatDateTimeDot(pending.item.deployedAt)} 배포 전으로 돌아가요 (${pending.item.deployedBy})`
+                  : `${formatDateTimeDot(pending.item.deployedAt)} 정책 변경 전으로 돌아가요 (${pending.item.deployedBy})`,
+                pending.item.anomalyMetric && pending.item.anomalyValue
+                  ? `${pending.item.anomalyMetric} ${pending.item.anomalyValue}가 되돌린 뒤 값으로 다시 집계돼요`
+                  : '되돌린 뒤 지표는 다음 집계부터 반영돼요',
+                '기록은 감사 기록에 남고 다시 되돌릴 수 있어요',
+              ]
+            : []
+        }
+        confirmLabel={pending?.kind === 'approve' ? '되돌리기 승인' : '지금 되돌리기'}
+        onConfirm={() => {
+          const target = pending;
+          setPending(null);
+          if (!target) return;
+          if (target.kind === 'approve') void approveRollback(target.item.id);
+          else void triggerRollback(target.item.id);
+        }}
+        onCancel={() => setPending(null)}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
+  titleWrap: { flex: 1 },
+  subtitle: { fontSize: FontSize.micro, lineHeight: LineHeight.micro, color: Colors.light.textAssistive, marginTop: 2 },
+  scrollBody: { paddingBottom: 24 },
+  bannerWrap: { paddingHorizontal: 24, paddingTop: 16 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
