@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-import { ActionButton, Layout, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import { ActionButton, Border, Layout, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 
 import {
@@ -344,13 +344,13 @@ const styles = StyleSheet.create({
   /* 시안 sheet — 패딩 · 둥글기 · 그래버는 SheetPanel. 요소 사이만 16(공용 20보다 좁다). */
   sheet: { gap: Spacing.three },
   selects: { flexDirection: 'row', gap: Spacing.two },
-  /* 셀렉트 — 높이 52(Layout.field) · radius 10 · 테두리 1.5(열리면 코랄). */
+  /* 셀렉트 — 높이 52(Layout.field) · radius 10 · 테두리 1.5(Border.selected · 열리면 코랄). */
   select: {
     flex: 1,
     minWidth: 0,
     height: Layout.field,
     borderRadius: Radius.medium,
-    borderWidth: 1.5,
+    borderWidth: Border.selected,
     paddingHorizontal: Layout.fieldPaddingX,
     flexDirection: 'row',
     alignItems: 'center',

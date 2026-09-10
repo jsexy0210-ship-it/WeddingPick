@@ -1232,16 +1232,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Layout.gap2col,
   },
+  /* 시안 06-search catBox — min-height 56 · radius 10 · padding 16 전면 · gap 3. */
   categoryCell: {
     flex: 1,
     minHeight: Layout.rowMinHeight,
-    borderRadius: Radius.input,
+    borderRadius: Radius.medium,
     flexDirection: 'column',
     justifyContent: 'center',
+    /* 시안 gap 3은 간격 사다리(2 · 4 · 6 …)에 없다 — 가장 가까운 2를 쓴다. */
     gap: Spacing.half,
-    /* 목업 세로 14 — 토큰이 없어 가장 가까운 행 상하 패딩 12를 쓴다. */
-    paddingVertical: Layout.rowPaddingY,
-    paddingHorizontal: Spacing.three,
+    padding: Spacing.three,
   },
   /* 홀수 개일 때 마지막 행의 빈 칸 — 칸 폭을 지킨다. */
   categoryCellEmpty: {

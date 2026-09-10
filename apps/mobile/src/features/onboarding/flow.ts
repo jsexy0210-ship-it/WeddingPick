@@ -76,7 +76,7 @@ export const STEP_TITLE_LINES: Record<QuestionStep, readonly [string, string]> =
   region: ['어느 지역에서', '하나요?'],
   prep: ['준비는 어디까지', '했나요?'],
   budget: ['앞으로 쓸 예산은', '얼마인가요?'],
-  style: ['어떤 스타일을', '좋아하세요?'],
+  style: ['어떤 분위기로', '준비할까요?'],
 };
 
 /**
