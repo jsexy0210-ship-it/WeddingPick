@@ -25,10 +25,14 @@
  */
 import { Pool } from 'pg';
 
+import { SITE_ORIGIN } from '@weddingpick/domain';
+
 const url = process.env.DATABASE_URL;
 const APPLY = process.argv.includes('--yes');
 /** 한 번에 볼 업체 수. 카카오 검색은 하루 30,000회라 나눠 돌린다. */
 const LIMIT = Number(process.env.LIMIT ?? 300);
+/* 왜 떨어졌는지 한 줄씩 보고 싶을 때. 기본은 끈다 — 300곳이면 로그가 그것으로 덮인다. */
+const VERBOSE = process.env.VERBOSE === 'true';
 /** 한 페이지에 이만큼 넘게 기다리지 않는다. */
 const TIMEOUT_MS = 10_000;
 
@@ -93,11 +97,21 @@ function squash(value: string): string {
 
 type Page = { html: string; finalUrl: string };
 
+/*
+ * **헤더 값은 ASCII여야 한다.** 여기 한글이 들어 있었다 — `(+대표 이미지 확인)`.
+ * fetch는 요청을 보내지도 못하고 ByteString 변환에서 던졌고, 아래 빈 catch가 그것을
+ * 삼켜 모든 업체가 「페이지 못 읽음」이 됐다(2026-09-10, 60곳 중 60곳).
+ *
+ * 한 곳도 못 붙인 채 워크플로는 초록으로 끝났다. 실패가 «없음»처럼 보인 것이다.
+ */
+const USER_AGENT = `WeddingpickBot/1.0 (+${SITE_ORIGIN})`;
+
 async function get(target: string): Promise<Page | null> {
   try {
     const response = await fetch(target, {
-      headers: { accept: 'text/html,*/*', 'user-agent': 'WeddingpickBot/1.0 (+대표 이미지 확인)' },
+      headers: { accept: 'text/html,*/*', 'user-agent': USER_AGENT },
       signal: AbortSignal.timeout(TIMEOUT_MS),
+      redirect: 'follow',
     });
 
     if (!response.ok) return null;
@@ -110,7 +124,14 @@ async function get(target: string): Promise<Page | null> {
     const html = (await response.text()).slice(0, 200 * 1024);
 
     return { html, finalUrl: response.url || target };
-  } catch {
+  } catch (error) {
+    /*
+     * 왜 못 읽었는지 남긴다. 조용히 null을 돌려주면 「막힌 사이트」와 「우리 코드가
+     * 요청조차 못 만든 것」이 같은 이름으로 세어진다 — 실제로 그것 때문에 원인을
+     * 찾는 데 두 번을 돌렸다.
+     */
+    if (VERBOSE) console.warn(`    못 읽음 ${new URL(target).host} — ${(error as Error).message.slice(0, 80)}`);
+
     return null;
   }
 }
