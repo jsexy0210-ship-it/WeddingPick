@@ -12,7 +12,6 @@ on:
           - WeddingPick-웹뷰(앱 테스트)
           - WeddingPick-웹사이트
           - WeddingPick-운영 API 서버
-          - WeddingPick-관리자 사이트
 
 permissions:
   contents: read
