@@ -24,7 +24,10 @@ def call(path: str):
         return json.load(resp)
 
 
-services = call(f"/services?name={SERVICE}&limit=5")
+# 서비스 이름에 공백과 한글이 들어간다(2026-09-10 이름 변경). 그대로 붙이면
+# urllib이 요청을 만들지도 못하고 InvalidURL로 죽는다 — 조회가 「서비스 없음」이
+# 아니라 「워크플로 실패」로 끝나서 배포 상태를 아예 못 본다.
+services = call(f"/services?name={urllib.parse.quote(SERVICE)}&limit=5")
 matches = [s.get("service", s) for s in services if s.get("service", s).get("name") == SERVICE]
 
 if not matches:
