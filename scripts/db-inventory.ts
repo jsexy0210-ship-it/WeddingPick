@@ -95,6 +95,27 @@ async function main(): Promise<void> {
     `SELECT copyright_basis AS 근거, count(*) AS 건수
        FROM structured.vendor_images GROUP BY copyright_basis ORDER BY count(*) DESC`,
   );
+  /*
+   * **저작권과 업체 매칭은 다른 값이다.** copyright_basis는 「이 그림을 써도 되는가」,
+   * match_confidence는 「이 그림이 정말 그 업체 것인가」를 말한다. 0이면 매칭을 아예
+   * 하지 않았다는 뜻이다 — 노출하면 남의 사진을 그 업체 사진으로 보여주는 것이 된다.
+   */
+  await count(
+    '업체 매칭 신뢰도',
+    `SELECT match_confidence AS 신뢰도, count(*) AS 건수
+       FROM structured.vendor_images GROUP BY match_confidence ORDER BY match_confidence`,
+  );
+  await count(
+    '출처 메모(앞 40자)별',
+    `SELECT left(copyright_note, 40) AS 메모, count(*) AS 건수
+       FROM structured.vendor_images GROUP BY left(copyright_note, 40) ORDER BY count(*) DESC LIMIT 5`,
+  );
+  await count(
+    '업체당 이미지 장수',
+    `SELECT 장수, count(*) AS 업체수 FROM (
+       SELECT vendor_id, count(*) AS 장수 FROM structured.vendor_images GROUP BY vendor_id
+     ) t GROUP BY 장수 ORDER BY 장수`,
+  );
   await count(
     '내부 저장소에 올라간 것',
     `SELECT count(*) FILTER (WHERE storage_key IS NOT NULL) AS 저장소,
