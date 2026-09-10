@@ -1,0 +1,101 @@
+# 보존 3건 규칙이 지켜지고 있는지 센다. 규칙은 docs/retention-policy.md.
+#
+# 한 번 치우고 끝나면 다시 쌓인다. 이 워크플로는 **세기만 한다** — 아무것도 지우지
+# 않고, DB에 붙지도 않는다. 넘치면 잡이 빨개져서 알림이 간다.
+#
+# Actions 탭 → "보존 3건 점검" → Run workflow 로 언제든 손으로도 돌린다.
+name: 보존 3건 점검
+
+on:
+  schedule:
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # 얕은 클론에서는 브랜치와 main에 공통 조상이 없어 git diff가 no merge base로 죽는다.
+      # 그 빈 출력을 「차이 없음」으로 읽으면 살아 있는 브랜치가 삭제 목록에 올라간다.
+      - name: 클론이 얕지 않은지 확인한다
+        run: |
+          if [ "$(git rev-parse --is-shallow-repository)" != "false" ]; then
+            echo '::error::클론이 얕다. checkout의 fetch-depth를 0으로 둬야 이 점검이 맞는 답을 낸다.'
+            exit 1
+          fi
+
+      - name: 이미 main에 들어간 원격 브랜치를 센다
+        id: branches
+        run: |
+          set -u
+          stale=0
+          : > stale-branches.txt
+          for ref in $(git for-each-ref --format='%(refname:short)' refs/remotes/origin \
+                       | sed 's|^origin/||' | grep -vx 'main' | grep -vx 'HEAD'); do
+            # 이름에 공백이 있는 파일이 있어서 널 구분으로 읽는다
+            mapfile -d '' changed < <(git diff --name-only -z "origin/main...origin/$ref")
+            if [ "${#changed[@]}" -eq 0 ]; then
+              echo "$ref" >> stale-branches.txt; stale=$((stale + 1)); continue
+            fi
+            # 스쿼시 머지 탐지: 브랜치가 건드린 파일이 main과 한 글자도 다르지 않으면 흡수된 것이다
+            if [ -z "$(git diff --name-only "origin/$ref" origin/main -- "${changed[@]}")" ]; then
+              echo "$ref" >> stale-branches.txt; stale=$((stale + 1))
+            fi
+          done
+          echo "stale=$stale" >> "$GITHUB_OUTPUT"
+
+      - name: 판이 쌓인 문서를 센다
+        id: docs
+        run: |
+          set -u
+          policy=$(find docs -maxdepth 2 -name '통합정책*' | wc -l)
+          echo "policy=$policy" >> "$GITHUB_OUTPUT"
+
+      - name: 결과를 적는다
+        run: |
+          set -u
+          stale='${{ steps.branches.outputs.stale }}'
+          policy='${{ steps.docs.outputs.policy }}'
+          fail=0
+          {
+            echo '## 보존 3건 점검'
+            echo
+            echo '| 대상 | 지금 | 한도 |'
+            echo '|---|---|---|'
+            echo "| 내용이 이미 main에 있는 원격 브랜치 | $stale | 0 |"
+            echo "| 통합정책 판 | $policy | 3 |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$stale" -gt 0 ]; then
+            fail=1
+            {
+              echo
+              echo "### 지워도 되는 브랜치 $stale개"
+              echo
+              echo '```'
+              cat stale-branches.txt
+              echo '```'
+              echo
+              echo '지우기 전에 열린 PR의 head인지 본다 — head를 지우면 그 PR이 닫힌다.'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if [ "$policy" -gt 3 ]; then
+            fail=1
+            echo >> "$GITHUB_STEP_SUMMARY"
+            echo "### 통합정책이 $policy판 있다 — 최신 3판만 남긴다" >> "$GITHUB_STEP_SUMMARY"
+            echo '지우기 전에 코드가 그 판을 인용하는지 본다: `grep -rn "통합정책 v3.x" packages apps`' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if [ "$fail" -eq 1 ]; then
+            echo '::error::보존 3건 규칙을 넘겼다. 요약(Summary)에 무엇이 쌓였는지 적었다 — docs/retention-policy.md'
+            exit 1
+          fi
+          echo '쌓인 것이 없다.' >> "$GITHUB_STEP_SUMMARY"
