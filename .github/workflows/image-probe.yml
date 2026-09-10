@@ -1,0 +1,59 @@
+# 업체 이미지가 외부 URL이라 생기는 값을 **실제로 잰다**. 아무것도 바꾸지 않는다.
+#
+# 「외부 URL이면 출력 속도 문제가 없는가 · 내부 저장소로 옮기면 요금이 얼마인가」는
+# 바이트와 밀리초를 재야 답할 수 있다. 크기 · 응답 시간 · 핫링크 차단 · 호스트 분포를
+# 표본으로 재서 집계만 찍는다. 이미지 URL 전체는 로그에 남기지 않는다.
+name: 이미지 측정 (읽기 전용)
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: '어느 DB의 이미지를 잴 것인가'
+        type: choice
+        default: default
+        options:
+          - default
+          - staging
+          - production
+      sample:
+        description: '표본 장수'
+        type: string
+        default: '120'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: 이미지 측정
+        env:
+          PRODUCTION_DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+          DEFAULT_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          TARGET: ${{ github.event.inputs.target }}
+          SAMPLE: ${{ github.event.inputs.sample }}
+        run: |
+          case "${TARGET:-default}" in
+            production) export DATABASE_URL="$PRODUCTION_DATABASE_URL" ;;
+            staging)    export DATABASE_URL="$STAGING_DATABASE_URL" ;;
+            *)          export DATABASE_URL="$DEFAULT_DATABASE_URL" ;;
+          esac
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::${TARGET:-default} 대상의 접속 정보가 GitHub Secrets에 없다."
+            exit 1
+          fi
+          echo "대상: ${TARGET:-default}"
+          npx tsx scripts/image-probe.ts
