@@ -1,10 +1,10 @@
 import { Link, Redirect, Slot, usePathname } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AdminSpacing as A, Colors, FontSize, LineHeight, Radius, Spacing, WeddingMark } from '@weddingpick/ui';
 
-import { clearAdminToken, loadAdminToken } from './_session';
+import { clearAdminToken, loadAdminToken, readAdminTokenSync, subscribeAdminToken } from './_session';
 
 /**
  * 관리자 콘솔 좌측 사이드바.
@@ -14,7 +14,33 @@ import { clearAdminToken, loadAdminToken } from './_session';
  * 성장 · 운영 · 시스템)이고, 이름은 ADMIN.md의 화면 이름이다. 코드가 따로 부르던
  * 이름(Kill Switch · Policy Engine · Revenue · 롤백 관리)은 md 쪽으로 맞췄다.
  */
-type NavEntry = { group: string } | { key: string; label: string; href: string };
+type NavEntry = { group: string } | { key: string; label: string; href: string; readOnly?: boolean };
+
+/**
+ * **「조회만」은 「이 화면은 지금 조작이 안 된다」는 표시다**(2026-09-10 대표 지시 —
+ * 「서버에 없는 동작들 화면에도 목록 디스에이블 처리해」).
+ *
+ * 화면 안쪽은 이미 잠겨 있다(`BACKEND_PENDING`). 그런데 그것은 **들어가 봐야** 보인다.
+ * 메뉴만 보고는 어느 것이 실제로 일을 하는지 알 수 없어서, 운영자는 하나씩 눌러
+ * 보고서야 알게 된다.
+ *
+ * **메뉴를 죽이지는 않는다.** 이 아홉 곳도 조회는 전부 된다 — 목록 · 지표 · 상태가
+ * 실제 서버 값으로 나온다. 눌리지 않게 막으면 되는 것까지 못 보게 된다.
+ *
+ * 서버 동작이 붙으면 그 화면의 `BACKEND_PENDING`과 여기 이름을 **함께** 지운다.
+ * 한쪽만 지우면 말이 어긋난다.
+ */
+const READ_ONLY = new Set([
+  'ads',
+  'ads-gate',
+  'biz-queue',
+  'campaigns',
+  'data-pipeline',
+  'objections',
+  'policy-engine',
+  'terms',
+  'vendors',
+]);
 
 /**
  * ADMIN.md 26화면 목록에 아직 없는 라우트. 지우면 기능이 사라지므로 남기되
@@ -105,12 +131,20 @@ function Sidebar({ pathname }: { pathname: string }) {
                   style={[
                     styles.navLabel,
                     OUTSIDE_ADMIN_MD.has(item.key) && styles.navLabelOutside,
+                    READ_ONLY.has(item.key) && !active && styles.navLabelReadOnly,
                     active && styles.navLabelActive,
                   ]}
                   numberOfLines={1}
                 >
                   {item.label}
                 </Text>
+                {/*
+                  * 조회만 되는 곳은 목록에서 미리 말한다. 들어가 봐야 아는 것을
+                  * 아홉 곳이나 두면 운영자가 하나씩 눌러 보게 된다.
+                  */}
+                {READ_ONLY.has(item.key) && (
+                  <Text style={[styles.navChip, active && styles.navChipActive]}>조회만</Text>
+                )}
               </Pressable>
             </Link>
           );
@@ -142,17 +176,41 @@ function Sidebar({ pathname }: { pathname: string }) {
  * 만료된 토큰을 들고 들어가 모든 화면이 같은 오류를 내게 된다. 서버가 401·403을
  * 주면 `_api`가 토큰을 지우므로, 다음 이동에서 여기로 걸린다.
  */
+/**
+ * 저장된 관리자 토큰. **바뀌면 곧바로 안다.**
+ *
+ * 예전에는 마운트에서 한 번만 읽었다. 그런데 이 레이아웃은 로그인 화면까지 감싸고
+ * 있어서 로그인하는 시점에 이미 「토큰 없음」으로 굳어 있고, 방금 저장한 토큰을 모른
+ * 채 로그인으로 되돌렸다 — **로그인할수록 로그인 화면으로 왔다.**
+ *
+ * 그때는 로그인 쪽을 전체 새로고침으로 바꿔 덮었다. 그것이 **느림의 원인**이 됐다 —
+ * 웹 번들이 한 덩어리로 3.2MB(gzip 0.8MB)라 새로고침이 그것을 다시 파싱한다. 캐시가
+ * 있어도 파싱은 다시 하고, 로그인 직후 몇 초가 거기서 나왔다(2026-09-10 대표
+ * 「관리자 로딩도 왜 이리 느리냐」).
+ *
+ * **`useSyncExternalStore`로 읽는다.** 그냥 렌더 안에서 `localStorage`를 읽으면 안
+ * 된다 — React Compiler가 그 호출을 순수한 것으로 보고 값을 기억해 버린다. 저장소에는
+ * 값이 있는데 읽은 값만 `null`로 얼어붙는다:
+ *
+ *   layout 렌더 /admin/queue  sync=null  raw=["weddingpick.adminToken.v1"]
+ *
+ * 걷어낸 뒤 실제 브라우저로 재어 로그인부터 콘솔 진입까지 209ms다.
+ */
 function useAdminToken(): { token: string | null; checked: boolean } {
-  const [token, setToken] = useState<string | null>(null);
+  const token = useSyncExternalStore(subscribeAdminToken, readAdminTokenSync, () => null);
+
+  /*
+   * 네이티브에는 `localStorage`가 없어 위가 늘 `null`이다. 관리자 콘솔은 웹 전용이라
+   * 그 자리에 닿지 않지만, 「없다」와 「아직 모른다」를 가르는 것은 남겨 둔다 —
+   * 확인이 끝나기 전에 그리면 로그인한 사람에게도 로그인 화면이 한 번 스친다.
+   */
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
-    void loadAdminToken().then((value) => {
-      if (cancelled) return;
-      setToken(value);
-      setChecked(true);
+    void loadAdminToken().then(() => {
+      if (!cancelled) setChecked(true);
     });
 
     return () => {
@@ -160,7 +218,7 @@ function useAdminToken(): { token: string | null; checked: boolean } {
     };
   }, []);
 
-  return { token, checked };
+  return { token, checked: token !== null || checked };
 }
 
 export default function AdminLayout() {
@@ -280,6 +338,30 @@ const styles = StyleSheet.create({
   /* ADMIN.md 목록 밖의 라우트는 한 단 흐리게 — 지운 것이 아니라 아직 목록에 없는 것이다. */
   navLabelOutside: {
     color: C.adminSidebarGroup,
+  },
+  /*
+   * 조회만 되는 곳은 한 단계 흐리게 둔다. 지우지는 않는다 — 조회는 실제로 되고,
+   * 못 쓰는 것처럼 보이면 열어보지 않게 된다.
+   *
+   * 보고 있는 화면(active)에는 흐림을 걸지 않는다. 선택된 줄은 코랄 위의 흰 글자라,
+   * 거기에 흐림까지 얹으면 어느 화면에 있는지가 안 읽힌다.
+   */
+  navLabelReadOnly: {
+    opacity: 0.55,
+  },
+  navChip: {
+    flexShrink: 0,
+    marginLeft: Spacing.one,
+    paddingHorizontal: Spacing.one,
+    borderRadius: Radius.small,
+    fontSize: FontSize.tab,
+    fontWeight: '700',
+    color: C.cautionary,
+    backgroundColor: C.cautionaryBackground,
+  },
+  navChipActive: {
+    color: C.onTint,
+    backgroundColor: 'rgba(255,255,255,0.24)',
   },
   navLabelActive: {
     color: C.onTint,

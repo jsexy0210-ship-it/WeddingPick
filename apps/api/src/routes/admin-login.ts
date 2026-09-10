@@ -2,7 +2,12 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
 import { sameId, verifyAdminPassword } from '../auth/admin-password';
-import { bootstrapLoginId, bootstrapPasswordHash, resolveAdmin } from '../auth/admin-role';
+import {
+  bootstrapLoginId,
+  bootstrapPassword,
+  bootstrapPasswordHash,
+  resolveAdmin,
+} from '../auth/admin-role';
 import { signIn } from '../auth/sessions';
 import type { AppContext } from '../context';
 import { ApiError } from '../errors';
@@ -14,8 +19,14 @@ import { ApiError } from '../errors';
  * 관리자는 예외로 둔다(2026-09-10 사용자 결정) — 카카오 계정에 운영 권한을 매달면
  * 그 계정을 잃었을 때 권한을 회수할 방법이 카카오 쪽에 있게 된다.
  *
- * **원문 비밀번호는 어디에도 없다.** DB에 있는 것도 환경변수에 있는 것도 소금과
- * 해시뿐이다.
+ * **원문 비밀번호는 표에 없다.** `structured.admin_accounts`가 담는 것은 소금과
+ * 해시뿐이다. **부트스트랩 자리에만** 원문을 받는다(2026-09-10 대표 지시) —
+ * `ADMIN_PASSWORD_HASH`가 있으면 그것으로, `ADMIN_PASSWORD`가 있으면 원문으로
+ * 대조한다. 둘 다 있으면 하나만 맞아도 통과하므로 **바꿀 때는 둘을 함께 손본다.**
+ *
+ * 원문 쪽이 약하다 — 배포 대시보드를 볼 수 있는 사람은 그대로 읽는다. 그래도 여는
+ * 이유는 해시를 만들어 옮기는 두 단계가 「비밀번호를 바꾸고 바로 들어간다」를 매번
+ * 막았기 때문이다. `ADMIN_PASSWORD`를 지우면 곧바로 해시 방식으로 돌아간다.
  *
  * **로그인이 곧 권한은 아니다.** 여기서 하는 일은 「이 사람이 그 아이디의 주인인가」
  * 까지다(2026-09-10 결정). 등급을 주고 바꾸는 일은 계정 관리 경로
@@ -143,13 +154,20 @@ export function registerAdminLoginRoutes(app: FastifyInstance, context: AppConte
 
     const expectedId = stored[0]?.login_id ?? bootstrap?.id;
     const expectedHash = stored[0]?.password_hash ?? bootstrap?.hash;
+    /*
+     * **원문은 부트스트랩에만 준다.** 표에 줄이 있는 계정은 해시로만 대조한다 —
+     * 콘솔에서 만든 계정에 원문 통로를 열면, 환경변수 하나로 남의 계정에 들어갈 수
+     * 있게 된다.
+     */
+    const expectedPlain = stored[0] ? undefined : bootstrapPassword();
+
 
     /*
      * **아이디가 틀려도 비밀번호를 끝까지 대조한다.** 아이디에서 바로 돌아오면 응답
      * 시간만으로 「이 아이디는 있다」를 알 수 있다. scrypt 한 번은 어차피 치른다.
      */
     const idOk = sameId(parsed.data.id, expectedId);
-    const passwordOk = await verifyAdminPassword(parsed.data.password, expectedHash);
+    const passwordOk = await verifyAdminPassword(parsed.data.password, expectedHash, expectedPlain);
 
     if (!idOk || !passwordOk) {
       recordFailure(key);
