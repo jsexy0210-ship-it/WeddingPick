@@ -47,7 +47,19 @@ async function count(label: string, sql: string): Promise<void> {
 async function main(): Promise<void> {
   console.log('운영 데이터 현황 — 세기만 한다\n');
 
-  console.log('업체');
+  /*
+   * **어느 DB를 보고 있는지 먼저 밝힌다.** 접속 문자열은 절대 찍지 않는다 — DB 이름과
+   * 마이그레이션 진도만으로도 둘을 가려낼 수 있고, 그 둘은 비밀이 아니다.
+   * 2026-09-07에 「앱과 배포 파이프라인이 서로 다른 DB를 보고 있던」 일이 있었다.
+   */
+  console.log('신원');
+  await count('DB 이름', 'SELECT current_database() AS 이름');
+  await count(
+    '적용된 마이그레이션',
+    'SELECT count(*) AS 개수, max(version) AS 마지막 FROM public.schema_migrations',
+  );
+
+  console.log('\n업체');
   await count('업체 전체', 'SELECT count(*) AS 건수 FROM structured.vendors');
   await count(
     '업종별',

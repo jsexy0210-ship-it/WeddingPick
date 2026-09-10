@@ -55,3 +55,13 @@ jobs:
           fi
           echo "대상: ${TARGET:-production}"
           npx tsx scripts/db-inventory.ts
+
+      # 운영 API가 **어느 DB를 보고 있는지** 가려내는 유일한 공개 신호.
+      # /health가 적용/기대 마이그레이션 개수를 알려주므로, 위 집계의 「적용된
+      # 마이그레이션」과 맞춰 보면 같은 DB인지 알 수 있다. 비밀은 오가지 않는다.
+      - name: 운영 API가 보는 스키마 (공개 /health)
+        run: |
+          echo "운영 API /health:"
+          curl -s --max-time 90 https://weddingpickl.onrender.com/health \
+            | python3 -c 'import json,sys; d=json.load(sys.stdin); print("  database=", d.get("database"), " schema=", json.dumps(d.get("schema"), ensure_ascii=False))' \
+            || echo "  운영 API에 닿지 못했다"
