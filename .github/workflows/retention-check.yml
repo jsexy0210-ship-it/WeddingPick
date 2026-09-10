@@ -54,18 +54,39 @@ jobs:
           done
           echo "stale=$stale" >> "$GITHUB_OUTPUT"
 
+      # 판이 넷인데 한도가 셋이면 이 잡은 매주 빨갛게 뜬다. 매주 빨간 알림은
+      # 아무도 안 본다 — 진짜로 쌓였을 때 그것이 묻힌다. 그래서 「남기기로 판단한
+      # 판」은 세지 않고, 그 판단이 docs/retention-policy.md에 적혀 있는지를 본다.
+      # 예외가 문서에 없으면 예외로 쳐주지 않는다.
       - name: 판이 쌓인 문서를 센다
         id: docs
         run: |
           set -u
-          policy=$(find docs -maxdepth 2 -name '통합정책*' | wc -l)
+          # 남기기로 판단한 판. 늘릴 때는 retention-policy.md에 이유를 함께 적는다.
+          KEEP='통합정책 v3.10'   # 코드가 `v3.10 §…`로 인용한다
+
+          total=$(find docs -maxdepth 2 -name '통합정책*' | wc -l)
+          kept=0
+          if find docs -maxdepth 2 -name "$KEEP" | grep -q .; then
+            if grep -qF "$KEEP" docs/retention-policy.md; then
+              kept=1
+            else
+              echo "::error::「$KEEP」을 예외로 두면서 docs/retention-policy.md에 이유를 적지 않았다."
+              exit 1
+            fi
+          fi
+          policy=$((total - kept))
           echo "policy=$policy" >> "$GITHUB_OUTPUT"
+          echo "policy_total=$total" >> "$GITHUB_OUTPUT"
+          echo "policy_kept=$kept" >> "$GITHUB_OUTPUT"
 
       - name: 결과를 적는다
         run: |
           set -u
           stale='${{ steps.branches.outputs.stale }}'
           policy='${{ steps.docs.outputs.policy }}'
+          policy_total='${{ steps.docs.outputs.policy_total }}'
+          policy_kept='${{ steps.docs.outputs.policy_kept }}'
           fail=0
           {
             echo '## 보존 3건 점검'
@@ -74,6 +95,8 @@ jobs:
             echo '|---|---|---|'
             echo "| 내용이 이미 main에 있는 원격 브랜치 | $stale | 0 |"
             echo "| 통합정책 판 | $policy | 3 |"
+            echo
+            echo "통합정책 파일은 $policy_total개이고 그중 $policy_kept개는 남기기로 판단해 세지 않았다(docs/retention-policy.md)." 
           } >> "$GITHUB_STEP_SUMMARY"
 
           if [ "$stale" -gt 0 ]; then
