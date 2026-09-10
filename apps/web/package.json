@@ -5,7 +5,8 @@
   "scripts": {
     "build": "node ../../scripts/ensure-modules.mjs && tsx src/cli.ts",
     "typecheck": "tsc --noEmit",
-    "test": "jest --forceExit"
+    "test": "jest --forceExit",
+    "og": "tsx src/og-cli.ts"
   },
   "dependencies": {
     "@weddingpick/api-contract": "*",

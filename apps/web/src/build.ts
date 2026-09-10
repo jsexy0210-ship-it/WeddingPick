@@ -7,6 +7,7 @@ import { renderLandingPage } from './page';
 import { apiBase, loadSiteData, loadVendor, vendorIdsToBuild } from './site-data';
 import { renderFaqPage, renderIntroPage, renderPrivacyPage, renderSupportPage, renderTermsPage } from './subpages';
 import { STYLES } from './styles';
+import { validateLegalDates } from './legal-config';
 import { renderVendorPage } from './vendor-page';
 
 /**
@@ -37,6 +38,8 @@ import { renderVendorPage } from './vendor-page';
  * 내보내는 것보다 낫다.
  */
 export async function build(outDir: string): Promise<string> {
+  // 잘못된 시행일이면 기존 산출물을 지우기 전에 중단한다.
+  validateLegalDates();
   /*
    * 먼저 비운다. 안 비우면 **지운 페이지가 계속 서빙된다** — 이 함수는 쓰기만 하고
    * 지우지 않아서, 예전 빌드가 남긴 파일이 그대로 남는다. 2026-09-09에 `admin.html`을
