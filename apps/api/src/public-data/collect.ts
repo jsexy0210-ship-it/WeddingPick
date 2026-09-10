@@ -322,8 +322,14 @@ export const WEDDING_UPJONG_CODES = ['S21101', 'S21105', 'M11301', 'S20701', 'N1
 /** 조회할 업종 자리와 코드. 확인된 소분류 코드가 기본이고 환경변수가 이긴다. */
 export function resolveUpjongQuery(override?: SbizUpjongQuery): SbizUpjongQuery {
   const fromEnv = (process.env.SBIZ_UPJONG_CODES ?? '').split(',').map((c) => c.trim()).filter(Boolean);
+  /*
+   * **빈 문자열은 «없음»이다.** GitHub Actions는 정의되지 않은 Variables를
+   * 「지우고 부르기」가 아니라 **빈 값으로 넘긴다** — `??`만 쓰면 `''`가 값으로
+   * 통과해 「셋 중 하나여야 한다」로 죽는다. 실제로 그렇게 죽었다(2026-09-10 run 150).
+   */
+  const divIdEnv = process.env.SBIZ_UPJONG_DIV_ID?.trim() || undefined;
   const divId = override?.divId
-    ?? process.env.SBIZ_UPJONG_DIV_ID
+    ?? divIdEnv
     ?? (fromEnv.length ? 'indsLclsCd' : 'indsSclsCd');
   const codes = (override?.codes ?? (fromEnv.length ? fromEnv : [...WEDDING_UPJONG_CODES]))
     .map((c) => c.trim()).filter(Boolean);

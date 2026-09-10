@@ -91,6 +91,24 @@ test('환경변수가 없으면 확인된 소분류 코드를 쓴다', () => {
   }
 });
 
+test('빈 문자열로 온 설정은 «없음»으로 본다', () => {
+  /*
+   * GitHub Actions는 정의되지 않은 Variables를 빈 값으로 넘긴다. `??`만 쓰면
+   * `''`가 값으로 통과해 「셋 중 하나여야 한다」로 죽는다 — 실제로 그렇게 죽었다.
+   */
+  const saved = [process.env.SBIZ_UPJONG_CODES, process.env.SBIZ_UPJONG_DIV_ID];
+  process.env.SBIZ_UPJONG_CODES = '';
+  process.env.SBIZ_UPJONG_DIV_ID = '';
+  try {
+    expect(resolveUpjongQuery()).toEqual({ divId: 'indsSclsCd', codes: [...WEDDING_UPJONG_CODES] });
+  } finally {
+    for (const [name, value] of [['SBIZ_UPJONG_CODES', saved[0]], ['SBIZ_UPJONG_DIV_ID', saved[1]]] as const) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+  }
+});
+
 test('빈 업종코드를 넘기면 수집을 시작하지 않는다', () => {
   // 코드가 틀리거나 비면 API는 오류 대신 빈 목록을 준다 — 조용한 0건 수집을 막는다.
   expect(() => resolveUpjongQuery({ divId: 'indsSclsCd', codes: [] })).toThrow('SBIZ_UPJONG_CODES');
