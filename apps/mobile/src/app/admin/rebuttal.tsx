@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { Colors, FontSize } from '@weddingpick/ui';
+import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { ConfirmDecision } from '@/features/admin/confirm-decision';
@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
   },
   actionErrorText: { color: Colors.light.negative, fontSize: FontSize.t7, marginTop: 8 },
   unverifiedText: { color: Colors.light.negative, fontWeight: '600' },
-  longText: { fontSize: FontSize.t7, color: Colors.light.text, lineHeight: 20 },
+  longText: { fontSize: FontSize.t7, color: Colors.light.text, lineHeight: LineHeight.t7Loose },
   offlineRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 },
   checkbox: {
     width: 18,
