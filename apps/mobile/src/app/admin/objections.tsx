@@ -6,7 +6,7 @@ import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { formatDateTimeDot } from '@/features/common/format-date';
 
 import { apiFetch } from './_api';
-import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
+import { ConfirmDecision } from '@/features/admin/confirm-decision';
 
 /**
  * 후기 이의제기 — 업체가 후기에 이의를 걸면 그 후기를 잠시 내리고 사람이 판단한다.
@@ -16,6 +16,10 @@ import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-
  * 세 갈래다. **되살리기**는 후기를 다시 보이게 하고, **내리기**는 영구히 감춘다.
  * **기한 늘리기**는 판단을 미루는 것이라 결론이 아니다 — 그래서 다른 자리에 뒀다.
  * 셋 다 메모가 필수다. 왜 그렇게 판단했는지 없으면 나중에 답할 수 없다.
+ *
+ * 되살리기 · 내리기는 서버가 없다고 잠가 뒀었는데(2026-09-09), 서버에는
+ * `POST /v1/admin/objections/:reviewId/restore` · `/remove`가 있다. 잠금을 걷고
+ * 대신 결론 두 갈래에 확인 단계를 뒀다 — 둘 다 큐에서 항목을 빼고 되돌릴 수 없다.
  */
 type ObjectedReview = {
   id: string;
@@ -36,6 +40,8 @@ export default function ObjectionsScreen() {
   const [days, setDays] = useState('');
   const [acting, setActing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  /** 확인을 기다리는 결론. 누른 즉시 보내지 않는다 — 되돌릴 수 없다. */
+  const [pending, setPending] = useState<'restore' | 'remove' | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -63,7 +69,22 @@ export default function ObjectionsScreen() {
     setSelected(null);
     setNote('');
     setDays('');
+    setPending(null);
     setRev((r) => r + 1);
+  }
+
+  /**
+   * 결론 두 갈래는 확인을 한 번 더 거친다. 메모가 비었는지는 여기서 먼저 본다 —
+   * 확인 화면까지 갔다가 「메모를 입력해주세요」로 돌아오면 두 번 눌러야 한다.
+   */
+  function ask(to: 'restore' | 'remove') {
+    if (!note.trim()) {
+      setActionError('메모를 입력해주세요.');
+      return;
+    }
+
+    setActionError(null);
+    setPending(to);
   }
 
   async function send(path: string, body: Record<string, unknown>) {
@@ -108,8 +129,7 @@ export default function ObjectionsScreen() {
 
       <View style={styles.body}>
         <View style={styles.list}>
-          <PendingBackendNotice actions="되살리기 · 내리기" />
-      <DelayedLoader active={loading} size={40} style={styles.centered} />
+          <DelayedLoader active={loading} size={40} style={styles.centered} />
           {!loading && error && <Text style={styles.errorText}>{error}</Text>}
           {!loading && !error && (
             <ScrollView>
@@ -130,6 +150,7 @@ export default function ObjectionsScreen() {
                     setNote('');
                     setDays('');
                     setActionError(null);
+                    setPending(null);
                   }}>
                   <Text style={[styles.td, styles.colVendor]} numberOfLines={1}>
                     {item.vendorName}
@@ -187,20 +208,50 @@ export default function ObjectionsScreen() {
 
               {actionError && <Text style={styles.actionErrorText}>{actionError}</Text>}
 
-              <View style={styles.actionRow}>
-                <Pressable
-                  disabled={BACKEND_PENDING || acting}
-                  style={[styles.restoreBtn, (BACKEND_PENDING || acting) && styles.btnDisabled]}
-                  onPress={() => void send('restore', {})}>
-                  <Text style={styles.restoreBtnText}>되살리기</Text>
-                </Pressable>
-                <Pressable
-                  disabled={BACKEND_PENDING || acting}
-                  style={[styles.removeBtn, (BACKEND_PENDING || acting) && styles.btnDisabled]}
-                  onPress={() => void send('remove', {})}>
-                  <Text style={styles.removeBtnText}>내리기</Text>
-                </Pressable>
-              </View>
+              {pending === null ? (
+                <View style={styles.actionRow}>
+                  <Pressable
+                    disabled={acting}
+                    style={[styles.restoreBtn, acting && styles.btnDisabled]}
+                    onPress={() => ask('restore')}>
+                    <Text style={styles.restoreBtnText}>되살리기</Text>
+                  </Pressable>
+                  <Pressable
+                    disabled={acting}
+                    style={[styles.removeBtn, acting && styles.btnDisabled]}
+                    onPress={() => ask('remove')}>
+                    <Text style={styles.removeBtnText}>내리기</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <ConfirmDecision
+                  question={
+                    pending === 'restore'
+                      ? '이 후기를 다시 보이게 할까요?'
+                      : '이 후기를 내릴까요?'
+                  }
+                  changes={
+                    pending === 'restore'
+                      ? [
+                          `${selected.vendorName} 업체 화면에 이 후기가 다시 보입니다.`,
+                          '쓴 사람에게 다시 보인다는 알림이 갑니다.',
+                          '이의는 확인 완료로 닫히고 큐에서 빠져요.',
+                          '적은 메모는 처리 기록에만 남고, 밖으로 나가지 않아요.',
+                        ]
+                      : [
+                          `${selected.vendorName} 업체 화면에서 이 후기가 사라집니다.`,
+                          '한 번 내리면 되살리기로 돌아오지 않아요.',
+                          '쓴 사람에게 내렸다는 알림이 갑니다.',
+                          '적은 메모는 처리 기록에만 남고, 밖으로 나가지 않아요.',
+                        ]
+                  }
+                  confirmLabel={pending === 'restore' ? '되살리기' : '내리기'}
+                  tone={pending === 'restore' ? 'primary' : 'danger'}
+                  busy={acting}
+                  onConfirm={() => void send(pending, {})}
+                  onCancel={() => setPending(null)}
+                />
+              )}
 
               <Text style={[styles.detailSectionTitle, { marginTop: 28 }]}>아직 못 정했다면</Text>
               <Text style={styles.detailHint}>
