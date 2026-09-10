@@ -1,0 +1,139 @@
+# 다 쓴 브랜치를 정리한다.
+#
+# 컨테이너에서는 브랜치를 지울 수 없다 — `git push --delete`가 게이트웨이에서
+# 403으로 막힌다. 그래서 지우는 일만 이쪽으로 옮긴다.
+#
+# **목록을 미리 적어 두지 않는다.** 사람이 센 목록은 적는 순간부터 낡고, 낡은
+# 목록으로 지우면 그 사이에 살아난 브랜치를 지운다. 돌 때마다 다시 센다.
+#
+# 지우는 조건은 넷이고 **전부** 맞아야 한다.
+#
+#   1. main과 파일 차이가 0        하려던 일이 이미 main에 있다
+#   2. 열린 PR이 없다              누가 아직 보고 있는 브랜치가 아니다
+#   3. 마지막 커밋이 N일보다 오래됐다  방금 만든 브랜치를 지우지 않는다
+#   4. 보호 목록에 없다
+#
+# 1번을 `git branch --merged`로 판단하지 않는다. 이 저장소는 스쿼시 머지를 써서
+# 원본 커밋 SHA가 main에 남지 않고, 그래서 내용이 다 들어간 브랜치도 「머지 안 됨」
+# 으로 세어진다. 실제로 102 대 81로 갈렸다. 파일 차이를 직접 본다.
+#
+# 기본은 시늉만 한다(`dry_run: true`). 무엇을 지울지 먼저 보고 실행한다.
+name: 브랜치 정리
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: '지우지 않고 목록만 본다'
+        type: boolean
+        default: true
+      min_age_days:
+        description: '이 일수보다 새 브랜치는 건드리지 않는다'
+        type: string
+        default: '3'
+      protect:
+        description: '추가로 지키고 싶은 브랜치 (쉼표로 구분)'
+        type: string
+        default: ''
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: branch-cleanup
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 세고 지운다
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+          MIN_AGE_DAYS: ${{ github.event.inputs.min_age_days }}
+          EXTRA_PROTECT: ${{ github.event.inputs.protect }}
+        run: |
+          set -euo pipefail
+
+          DEFAULT_BRANCH=$(gh repo view --json defaultBranchRef --jq .defaultBranchRef.name)
+          echo "본선: $DEFAULT_BRANCH"
+
+          # 열린 PR이 head로 쓰는 브랜치는 건드리지 않는다. 사람이 아직 보고 있다.
+          gh pr list --state open --limit 500 --json headRefName --jq '.[].headRefName' \
+            | sort -u > /tmp/open-pr-heads.txt
+          echo "열린 PR의 브랜치: $(wc -l < /tmp/open-pr-heads.txt)개"
+
+          cutoff=$(( $(date +%s) - MIN_AGE_DAYS * 86400 ))
+
+          # 보호 목록. 본선은 무슨 일이 있어도 지우지 않는다.
+          printf '%s\n' "$DEFAULT_BRANCH" > /tmp/protect.txt
+          if [ -n "${EXTRA_PROTECT:-}" ]; then
+            printf '%s' "$EXTRA_PROTECT" | tr ',' '\n' | sed 's/^ *//; s/ *$//' \
+              | grep -v '^$' >> /tmp/protect.txt || true
+          fi
+
+          : > /tmp/delete.txt
+          : > /tmp/keep.txt
+
+          for ref in $(git for-each-ref --format='%(refname:short)' refs/remotes/origin \
+                       | grep -v '^origin/HEAD$' | sed 's|^origin/||'); do
+            if grep -Fxq "$ref" /tmp/protect.txt; then
+              echo "지킴(보호 목록)  $ref" >> /tmp/keep.txt; continue
+            fi
+            if grep -Fxq "$ref" /tmp/open-pr-heads.txt; then
+              echo "지킴(열린 PR)    $ref" >> /tmp/keep.txt; continue
+            fi
+
+            last=$(git log -1 --format=%ct "origin/$ref")
+            if [ "$last" -gt "$cutoff" ]; then
+              echo "지킴(최근)       $ref" >> /tmp/keep.txt; continue
+            fi
+
+            # 파일 차이가 0이어야 한다. --merged를 쓰지 않는 이유는 위 주석에 있다.
+            changed=$(git diff --name-only "origin/$DEFAULT_BRANCH...origin/$ref" | wc -l)
+            if [ "$changed" -ne 0 ]; then
+              echo "지킴(차이 ${changed}파일) $ref" >> /tmp/keep.txt; continue
+            fi
+
+            printf '%s %s\n' "$(git rev-parse "origin/$ref")" "$ref" >> /tmp/delete.txt
+          done
+
+          echo
+          echo "== 지울 것 $(wc -l < /tmp/delete.txt)개 =="
+          # SHA를 함께 남긴다. 지운 뒤에도
+          # git push origin <SHA>:refs/heads/<이름> 으로 되살릴 수 있다.
+          cat /tmp/delete.txt || true
+          echo
+          echo "== 남길 것 $(wc -l < /tmp/keep.txt)개 =="
+          cat /tmp/keep.txt || true
+
+          {
+            echo "## 브랜치 정리"
+            echo
+            echo "지울 것 **$(wc -l < /tmp/delete.txt)개** · 남길 것 **$(wc -l < /tmp/keep.txt)개**"
+            echo
+            echo '지운 브랜치는 아래 SHA로 되살린다: `git push origin <SHA>:refs/heads/<이름>`'
+            echo
+            echo '```'
+            cat /tmp/delete.txt || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$DRY_RUN" = "true" ]; then
+            echo
+            echo "시늉만 했다. 실제로 지우려면 dry_run을 끄고 다시 돌린다."
+            exit 0
+          fi
+
+          while read -r sha ref; do
+            [ -z "${ref:-}" ] && continue
+            echo "지움 $ref ($sha)"
+            git push origin --delete "$ref"
+          done < /tmp/delete.txt

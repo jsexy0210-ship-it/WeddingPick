@@ -87,6 +87,21 @@ export default function AdminLoginScreen() {
       }
 
       await saveAdminToken(body.token);
+
+      /*
+       * **전체 새로고침으로 들어간다.** `router.replace`로 옮기면 로그인 화면에서
+       * 그대로 튕겨 돌아온다 — `_layout`이 토큰을 마운트할 때 한 번만 읽는데, 그
+       * 레이아웃은 로그인 화면까지 감싸고 있어서 이 시점에는 이미 「토큰 없음」으로
+       * 굳어 있다. 방금 저장한 토큰을 레이아웃은 모른 채 로그인으로 되돌린다.
+       *
+       * 로그아웃이 이미 같은 길을 쓴다. 콘솔은 웹 전용이라 이 길로 충분하다.
+       */
+      if (typeof window !== 'undefined') {
+        window.location.assign('/admin/queue');
+
+        return;
+      }
+
       router.replace('/admin/queue' as never);
     } catch {
       setError('서버에 닿지 못했어요. 잠시 뒤 다시 시도해주세요');
