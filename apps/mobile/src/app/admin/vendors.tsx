@@ -13,9 +13,10 @@ import {
   View,
 } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 
 type VendorStatus = 'active' | 'closed' | 'suspended' | 'merged';
 type HistoryItem = { at: string; action: string; note: string };
@@ -39,10 +40,10 @@ const STATUS_LABEL: Record<VendorStatus, string> = {
   merged: '병합됨',
 };
 const STATUS_COLOR: Record<VendorStatus, string> = {
-  active: '#1aa174',
-  closed: '#868b94',
-  suspended: '#e81607',
-  merged: '#0088cc',
+  active: Colors.light.positive,
+  closed: Colors.light.textAssistive,
+  suspended: Colors.light.negative,
+  merged: Colors.light.accent,
 };
 
 export default function VendorsScreen() {
@@ -150,6 +151,7 @@ export default function VendorsScreen() {
         </Pressable>
       </View>
 
+      <PendingBackendNotice actions="상호 저장 · 영업 상태 · 병합" />
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
@@ -210,9 +212,9 @@ export default function VendorsScreen() {
               onChangeText={setNameEdit}
             />
             <Pressable
-              style={[styles.primaryBtn, acting && styles.btnDisabled]}
+              style={[styles.primaryBtn, (BACKEND_PENDING || acting) && styles.btnDisabled]}
               onPress={() => void updateName()}
-              disabled={acting}
+              disabled={BACKEND_PENDING || acting}
             >
               <Text style={styles.primaryBtnText}>상호 저장</Text>
             </Pressable>
@@ -224,7 +226,7 @@ export default function VendorsScreen() {
                   key={s}
                   style={[styles.statusBtn, selected?.status === s && { borderColor: STATUS_COLOR[s] }]}
                   onPress={() => void updateStatus(s)}
-                  disabled={acting}
+                  disabled={BACKEND_PENDING || acting}
                 >
                   <Text style={[styles.statusBtnText, selected?.status === s && { color: STATUS_COLOR[s] }]}>
                     {STATUS_LABEL[s]}
@@ -241,9 +243,9 @@ export default function VendorsScreen() {
               placeholder="병합할 대상 업체 ID"
             />
             <Pressable
-              style={[styles.dangerBtn, acting && styles.btnDisabled]}
+              style={[styles.dangerBtn, (BACKEND_PENDING || acting) && styles.btnDisabled]}
               onPress={() => void mergeVendor()}
-              disabled={acting || !mergeTarget.trim()}
+              disabled={BACKEND_PENDING || acting || !mergeTarget.trim()}
             >
               <Text style={styles.dangerBtnText}>이 업체를 대상으로 병합</Text>
             </Pressable>
@@ -275,75 +277,75 @@ export default function VendorsScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f3f6' },
+  root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
-  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: '#17181c' },
+  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text },
   refreshBtn: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
-    backgroundColor: '#f2f3f6',
+    backgroundColor: Colors.light.backgroundSelected,
   },
-  refreshText: { fontSize: FontSize.t7, color: '#5a5d6a' },
+  refreshText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
   body: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  errorText: { fontSize: FontSize.t6, color: '#e53e3e', marginBottom: 16 },
+  errorText: { fontSize: FontSize.t6, color: Colors.light.negative, marginBottom: 16 },
   retryBtn: {
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 6,
-    backgroundColor: '#ff6f61',
+    backgroundColor: Colors.light.tint,
   },
-  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: '#fff' },
+  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
     gap: 12,
   },
   searchInput: {
     flex: 1,
     height: 36,
     borderWidth: 1,
-    borderColor: '#d1d3d8',
+    borderColor: Colors.light.fieldBorder,
     borderRadius: 6,
     paddingHorizontal: 12,
     fontSize: FontSize.t7,
-    backgroundColor: '#f7f8fa',
+    backgroundColor: Colors.light.backgroundElement,
   },
-  totalText: { fontSize: FontSize.t7, color: '#868b94' },
+  totalText: { fontSize: FontSize.t7, color: Colors.light.textAssistive },
   tableHead: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: Colors.light.backgroundElement,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
   tableRow: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f1f4',
+    borderBottomColor: Colors.light.backgroundSelected,
     alignItems: 'center',
   },
-  tableRowZebra: { backgroundColor: '#fafbfc' },
+  tableRowZebra: { backgroundColor: Colors.light.backgroundElement },
   tableRowActive: { backgroundColor: 'rgba(255,111,97,0.08)' },
-  th: { fontSize: FontSize.tab, fontWeight: '700', color: '#868b94', textTransform: 'uppercase' as const },
-  td: { fontSize: FontSize.t7, color: '#3a3b40' },
+  th: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.textAssistive, textTransform: 'uppercase' as const },
+  td: { fontSize: FontSize.t7, color: Colors.light.textStrong },
   colName: { flex: 3 },
   colCategory: { flex: 2 },
   colStatus: { width: 60 },
@@ -355,66 +357,66 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   modalBox: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderRadius: 14,
     padding: 24,
     width: 480,
     maxHeight: '80%',
   },
-  modalTitle: { fontSize: FontSize.t5, fontWeight: '700', color: '#17181c', marginBottom: 4 },
-  modalSub: { fontSize: FontSize.t7, color: '#868b94', marginBottom: 20 },
-  fieldLabel: { fontSize: FontSize.t7, fontWeight: '700', color: '#868b94', marginBottom: 6, marginTop: 14 },
+  modalTitle: { fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text, marginBottom: 4 },
+  modalSub: { fontSize: FontSize.t7, color: Colors.light.textAssistive, marginBottom: 20 },
+  fieldLabel: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.textAssistive, marginBottom: 6, marginTop: 14 },
   fieldInput: {
     height: 40,
     borderWidth: 1,
-    borderColor: '#d1d3d8',
+    borderColor: Colors.light.fieldBorder,
     borderRadius: 6,
     paddingHorizontal: 12,
     fontSize: FontSize.t7,
     marginBottom: 8,
   },
   primaryBtn: {
-    backgroundColor: '#ff6f61',
+    backgroundColor: Colors.light.tint,
     borderRadius: 6,
     paddingVertical: 10,
     alignItems: 'center',
   },
-  primaryBtnText: { fontSize: FontSize.t7, fontWeight: '700', color: '#fff' },
+  primaryBtnText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   dangerBtn: {
-    backgroundColor: '#fff5f5',
+    backgroundColor: Colors.light.negativeBoxBackground,
     borderWidth: 1,
-    borderColor: '#e81607',
+    borderColor: Colors.light.negative,
     borderRadius: 6,
     paddingVertical: 10,
     alignItems: 'center',
     marginTop: 4,
   },
-  dangerBtnText: { fontSize: FontSize.t7, fontWeight: '700', color: '#e81607' },
+  dangerBtnText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.negative },
   statusRow: { flexDirection: 'row', gap: 8, marginBottom: 4 },
   statusBtn: {
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#d1d3d8',
+    borderColor: Colors.light.fieldBorder,
   },
-  statusBtnText: { fontSize: FontSize.t7, color: '#5a5d6a' },
-  actionError: { fontSize: FontSize.t7, color: '#e53e3e', marginTop: 8 },
+  statusBtnText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
+  actionError: { fontSize: FontSize.t7, color: Colors.light.negative, marginTop: 8 },
   historyRow: {
     flexDirection: 'row',
     gap: 8,
     marginBottom: 4,
   },
-  historyTime: { fontSize: FontSize.tab, color: '#868b94', width: 80 },
-  historyAction: { fontSize: FontSize.tab, fontWeight: '700', color: '#3a3b40', width: 80 },
-  historyNote: { flex: 1, fontSize: FontSize.tab, color: '#5a5d6a' },
+  historyTime: { fontSize: FontSize.tab, color: Colors.light.textAssistive, width: 80 },
+  historyAction: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.textStrong, width: 80 },
+  historyNote: { flex: 1, fontSize: FontSize.tab, color: Colors.light.textSecondary },
   closeBtn: {
     marginTop: 20,
     paddingVertical: 10,
     borderRadius: 6,
-    backgroundColor: '#f2f3f6',
+    backgroundColor: Colors.light.backgroundSelected,
     alignItems: 'center',
   },
-  closeBtnText: { fontSize: FontSize.t7, color: '#3a3b40' },
+  closeBtnText: { fontSize: FontSize.t7, color: Colors.light.textStrong },
   btnDisabled: { opacity: 0.5 },
 });

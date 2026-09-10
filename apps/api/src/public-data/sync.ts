@@ -16,6 +16,24 @@ export function replacementDecision(old: Existing, incoming: CollectedVendor): '
   return 'update';
 }
 
+type HoldReason = 'admin_locked' | 'multiple_matches' | 'ambiguous_name' | 'insert_conflict' | 'field_conflict';
+
+/**
+ * 보류를 남긴다. 전에는 그냥 `return 'held'`로 끝나서 무엇이 왜 걸렸는지
+ * 아무 데도 안 남았다 — 건수만 skipped_count에 뭉쳐 들어갔다. 보류는 대부분
+ * 사람이 봐야 하는 것이라, 되살릴 수 없으면 없는 것과 같다.
+ *
+ * 여기 쓰는 트랜잭션은 그대로 커밋된다 — 보류는 실패가 아니라 판정이다.
+ */
+async function holdRecord(client: PoolClient, v: CollectedVendor, runId: string, recordKey: string,
+  reason: HoldReason, vendorId?: string, field?: { name: string; old: string | null; next: string | null }) {
+  await client.query(`INSERT INTO structured.vendor_import_holds
+    (import_run_id,source_key,record_key,vendor_id,reason,field_name,old_value,new_value)
+    VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,
+    [runId, v.sourceKey, recordKey, vendorId ?? null, reason, field?.name ?? null, field?.old ?? null, field?.next ?? null]);
+  return 'held' as const;
+}
+
 async function syncOne(client: PoolClient, v: CollectedVendor, runId: string) {
   // Global import lock serializes concurrent provider runs; still rely on DB unique constraints.
   await client.query(`SELECT pg_advisory_xact_lock(7140904)`);
@@ -31,15 +49,15 @@ async function syncOne(client: PoolClient, v: CollectedVendor, runId: string) {
          WHERE r.vendor_id=v.id AND r.source_url=v.source_url))::text AS data_published_at,v.admin_locked
        FROM structured.vendors v WHERE v.id=$1 OR (v.normalized_name=structured.normalize_vendor_name($2) AND v.region=$3)
        FOR UPDATE OF v`, [mapped.rows[0]?.vendor_id ?? null, v.name, v.region]);
-  if (selected.rows.length > 1) return 'held' as const;
+  if (selected.rows.length > 1) return holdRecord(client, v, runId, recordKey, 'multiple_matches');
   let old = selected.rows[0];
   // Existing aliases and region granularity differences require verification, not duplicate creation.
   if (!old) {
-    const ambiguous = await client.query(
+    const ambiguous = await client.query<{ id: string }>(
       `SELECT v.id FROM structured.vendors v LEFT JOIN structured.vendor_aliases a ON a.vendor_id=v.id
         WHERE v.normalized_name=structured.normalize_vendor_name($1)
            OR a.normalized_alias=structured.normalize_vendor_name($1) LIMIT 1`, [v.name]);
-    if (ambiguous.rowCount) return 'held' as const;
+    if (ambiguous.rowCount) return holdRecord(client, v, runId, recordKey, 'ambiguous_name', ambiguous.rows[0]?.id);
   }
   let action: 'created' | 'updated' | 'unchanged' = 'unchanged';
   if (!old) {
@@ -50,7 +68,7 @@ async function syncOne(client: PoolClient, v: CollectedVendor, runId: string) {
        RETURNING id,name,region,category,source,source_url,data_published_at::text,admin_locked`,
       [v.category,v.name,v.region,v.sourceUrl,v.publishedOn,v.collectedAt]);
     old = inserted.rows[0];
-    if (!old) return 'held' as const;
+    if (!old) return holdRecord(client, v, runId, recordKey, 'insert_conflict');
     action = 'created';
     for (const [field, value] of Object.entries({name:v.name,region:v.region,category:v.category,source_url:v.sourceUrl})) {
       await client.query(`INSERT INTO structured.vendor_change_log(vendor_id,field_name,new_value,cause,import_run_id)
@@ -58,7 +76,15 @@ async function syncOne(client: PoolClient, v: CollectedVendor, runId: string) {
     }
   } else {
     const decision = replacementDecision(old, v);
-    if (decision === 'hold') return 'held' as const;
+    if (decision === 'hold') {
+      // 잠금과 값 충돌은 사람이 할 일이 다르다 — 잠금은 풀지 말지를, 충돌은 어느 쪽이
+      // 맞는지를 정해야 한다. 업종 변경이 vendor_change_log에 안 남는 것도 이 자리다.
+      const changed = (['category', 'name', 'region'] as const).find((f) => old![f] !== v[f]);
+      return old.admin_locked
+        ? holdRecord(client, v, runId, recordKey, 'admin_locked', old.id)
+        : holdRecord(client, v, runId, recordKey, 'field_conflict', old.id,
+            changed ? { name: changed, old: old[changed], next: v[changed] } : undefined);
+    }
     if (decision === 'update') {
       for (const field of ['name','region'] as const) {
         if (old[field] === v[field]) continue;
@@ -70,6 +96,26 @@ async function syncOne(client: PoolClient, v: CollectedVendor, runId: string) {
       action = 'updated';
     }
   }
+  /*
+   * 다시 나타났으면 되살린다.
+   *
+   * `vendor-retire-missing`이 「응답에 없다」로 끊은 업체는 원천 매핑을 그대로 남긴다.
+   * 그 업체가 다음 수집에 다시 잡히면 여기로 온다 — 되살리지 않으면 영영 안 보이는
+   * 채로 남는다. 상권정보는 폐업을 알려주지 않으므로 「없었다가 다시 있다」는
+   * 「잠깐 못 받았다」인 경우가 많고, 그것을 되돌릴 자리가 여기밖에 없다.
+   *
+   * 조건 셋이 전부 맞을 때만 손댄다. `collection_status='closed'`는 **수집이 끊었다**는
+   * 표시이므로, 사람이 다른 이유로 내린 업체(그 표시가 없다)는 되살아나지 않는다.
+   */
+  const revived = await client.query(
+    `UPDATE structured.vendors SET is_active=true, closed_at=NULL, collection_status='needs_verification'
+      WHERE id=$1 AND admin_locked=false AND is_active=false AND collection_status='closed'`, [old.id]);
+  if (revived.rowCount) {
+    await client.query(`INSERT INTO structured.vendor_change_log
+      (vendor_id,field_name,old_value,new_value,cause,import_run_id)
+      VALUES($1,'collection_status','closed','needs_verification','import',$2)`, [old.id, runId]);
+  }
+
   await client.query(`INSERT INTO structured.vendor_source_records
     (source_key,record_key,vendor_id,source_url,published_on,collected_at,content_hash)
     VALUES($1,$2,$3,$4,$5,$6,$7)

@@ -14,7 +14,7 @@ import {
   View,
 } from 'react-native';
 
-import { FontSize, LineHeight } from '@weddingpick/ui';
+import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 
@@ -154,7 +154,7 @@ export default function FaqScreen() {
                   <View style={styles.faqMain}>
                     <View style={styles.faqTopRow}>
                       <Text style={styles.faqQ} numberOfLines={1}>{item.question}</Text>
-                      <Text style={[styles.faqPublished, { color: item.published ? '#1aa174' : '#868b94' }]}>
+                      <Text style={[styles.faqPublished, { color: item.published ? Colors.light.positive : Colors.light.textAssistive }]}>
                         {item.published ? '공개' : '비공개'}
                       </Text>
                       <Text style={styles.faqOrder}>순서 {item.order}</Text>
@@ -226,7 +226,7 @@ export default function FaqScreen() {
                   <Switch
                     value={editing.published}
                     onValueChange={(v) => setEditing((prev) => prev ? { ...prev, published: v } : prev)}
-                    trackColor={{ true: '#ff6f61' }}
+                    trackColor={{ true: Colors.light.tint }}
                   />
                 </View>
                 {saveError && <Text style={styles.saveError}>{saveError}</Text>}
@@ -256,76 +256,76 @@ export default function FaqScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f3f6' },
+  root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
     gap: 8,
   },
-  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: '#17181c' },
-  addBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 6, backgroundColor: '#ff6f61' },
-  addBtnText: { fontSize: FontSize.t7, fontWeight: '700', color: '#fff' },
-  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: '#f2f3f6' },
-  refreshText: { fontSize: FontSize.t7, color: '#5a5d6a' },
+  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text },
+  addBtn: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 6, backgroundColor: Colors.light.tint },
+  addBtnText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
+  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: Colors.light.backgroundSelected },
+  refreshText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  errorText: { fontSize: FontSize.t6, color: '#e53e3e', marginBottom: 16 },
-  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: '#ff6f61' },
-  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: '#fff' },
+  errorText: { fontSize: FontSize.t6, color: Colors.light.negative, marginBottom: 16 },
+  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: Colors.light.tint },
+  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   categoryHeader: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: Colors.light.backgroundElement,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
-  categoryLabel: { fontSize: FontSize.t7, fontWeight: '700', color: '#4d5159' },
+  categoryLabel: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.textSecondary },
   faqRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f1f4',
+    borderBottomColor: Colors.light.backgroundSelected,
   },
-  faqRowZebra: { backgroundColor: '#fafbfc' },
+  faqRowZebra: { backgroundColor: Colors.light.backgroundElement },
   faqMain: { flex: 1, marginRight: 12 },
   faqTopRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  faqQ: { flex: 1, fontSize: FontSize.t7, fontWeight: '700', color: '#17181c' },
+  faqQ: { flex: 1, fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.text },
   faqPublished: { fontSize: FontSize.tab, fontWeight: '700' },
-  faqOrder: { fontSize: FontSize.tab, color: '#868b94' },
-  faqA: { fontSize: FontSize.tab, color: '#868b94', lineHeight: LineHeight.micro },
+  faqOrder: { fontSize: FontSize.tab, color: Colors.light.textAssistive },
+  faqA: { fontSize: FontSize.tab, color: Colors.light.textAssistive, lineHeight: LineHeight.micro },
   faqActions: { flexDirection: 'row', gap: 6 },
   editBtn: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 4,
-    backgroundColor: '#f2f3f6',
+    backgroundColor: Colors.light.backgroundSelected,
     borderWidth: 1,
-    borderColor: '#d1d3d8',
+    borderColor: Colors.light.fieldBorder,
   },
-  editBtnText: { fontSize: FontSize.tab, color: '#3a3b40' },
+  editBtnText: { fontSize: FontSize.tab, color: Colors.light.textStrong },
   deleteBtn: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 4,
-    backgroundColor: '#fff0ee',
+    backgroundColor: Colors.light.negativeBoxBackground,
     borderWidth: 1,
-    borderColor: '#ffb5ae',
+    borderColor: Colors.light.negativeBorder,
   },
-  deleteBtnText: { fontSize: FontSize.tab, color: '#e81607', fontWeight: '700' },
+  deleteBtnText: { fontSize: FontSize.tab, color: Colors.light.negative, fontWeight: '700' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
-  modalBox: { backgroundColor: '#fff', borderRadius: 14, padding: 24, width: 520, maxHeight: '85%' },
-  modalTitle: { fontSize: FontSize.t5, fontWeight: '700', color: '#17181c', marginBottom: 16 },
-  fieldLabel: { fontSize: FontSize.t7, fontWeight: '700', color: '#868b94', marginBottom: 6, marginTop: 12 },
+  modalBox: { backgroundColor: Colors.light.background, borderRadius: 14, padding: 24, width: 520, maxHeight: '85%' },
+  modalTitle: { fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text, marginBottom: 16 },
+  fieldLabel: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.textAssistive, marginBottom: 6, marginTop: 12 },
   fieldInput: {
     borderWidth: 1,
-    borderColor: '#d1d3d8',
+    borderColor: Colors.light.fieldBorder,
     borderRadius: 6,
     paddingHorizontal: 12,
     height: 40,
@@ -333,24 +333,24 @@ const styles = StyleSheet.create({
   },
   multilineInput: { height: 96, paddingTop: 10 },
   publishRow: { flexDirection: 'row', alignItems: 'center', marginTop: 14, gap: 12 },
-  publishLabel: { flex: 1, fontSize: FontSize.t7, color: '#17181c' },
-  saveError: { fontSize: FontSize.t7, color: '#e53e3e', marginTop: 8 },
+  publishLabel: { flex: 1, fontSize: FontSize.t7, color: Colors.light.text },
+  saveError: { fontSize: FontSize.t7, color: Colors.light.negative, marginTop: 8 },
   modalActions: { flexDirection: 'row', gap: 10, marginTop: 20 },
   cancelBtn: {
     flex: 1,
     paddingVertical: 10,
     borderRadius: 6,
     alignItems: 'center',
-    backgroundColor: '#f2f3f6',
+    backgroundColor: Colors.light.backgroundSelected,
   },
-  cancelBtnText: { fontSize: FontSize.t7, color: '#3a3b40' },
+  cancelBtnText: { fontSize: FontSize.t7, color: Colors.light.textStrong },
   saveBtn: {
     flex: 1,
     paddingVertical: 10,
     borderRadius: 6,
     alignItems: 'center',
-    backgroundColor: '#ff6f61',
+    backgroundColor: Colors.light.tint,
   },
-  saveBtnText: { fontSize: FontSize.t7, fontWeight: '700', color: '#fff' },
+  saveBtnText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   btnDisabled: { opacity: 0.5 },
 });

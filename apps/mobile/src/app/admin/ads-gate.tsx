@@ -5,9 +5,10 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { FontSize, LineHeight } from '@weddingpick/ui';
+import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 import { formatDateDot } from '@/features/common/format-date';
 
 type GateStepStatus = 'done' | 'in_progress' | 'pending' | 'blocked';
@@ -30,10 +31,10 @@ type AdsGateData = {
 };
 
 const STEP_COLOR: Record<GateStepStatus, string> = {
-  done: '#1aa174',
-  in_progress: '#0088cc',
-  pending: '#868b94',
-  blocked: '#e81607',
+  done: Colors.light.positive,
+  in_progress: Colors.light.accent,
+  pending: Colors.light.textAssistive,
+  blocked: Colors.light.negative,
 };
 const STEP_LABEL: Record<GateStepStatus, string> = {
   done: '완료',
@@ -85,6 +86,7 @@ export default function AdsGateScreen() {
         </Pressable>
       </View>
 
+      <PendingBackendNotice actions="실운영 전환 확정" />
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
@@ -141,9 +143,9 @@ export default function AdsGateScreen() {
                 실운영 전환을 확정하려면 아래 버튼을 눌러주세요.
               </Text>
               <Pressable
-                style={[styles.approvalBtn, confirming && styles.btnDisabled]}
+                style={[styles.approvalBtn, (BACKEND_PENDING || confirming) && styles.btnDisabled]}
                 onPress={() => void approveProduction()}
-                disabled={confirming}
+                disabled={BACKEND_PENDING || confirming}
               >
                 <Text style={styles.approvalBtnText}>
                   {confirming ? '처리 중…' : '실운영 전환 확정'}
@@ -158,56 +160,56 @@ export default function AdsGateScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f3f6' },
+  root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
-  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: '#17181c' },
-  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: '#f2f3f6' },
-  refreshText: { fontSize: FontSize.t7, color: '#5a5d6a' },
+  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text },
+  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: Colors.light.backgroundSelected },
+  refreshText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
   body: { flex: 1 },
   bodyContent: { padding: 24, gap: 12 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  errorText: { fontSize: FontSize.t6, color: '#e53e3e', marginBottom: 16 },
-  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: '#ff6f61' },
-  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: '#fff' },
+  errorText: { fontSize: FontSize.t6, color: Colors.light.negative, marginBottom: 16 },
+  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: Colors.light.tint },
+  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   statusBanner: {
     borderRadius: 10,
     padding: 16,
   },
-  bannerGreen: { backgroundColor: '#e8faf6', borderWidth: 1, borderColor: '#1aa174' },
-  bannerBlue: { backgroundColor: '#ebf7fa', borderWidth: 1, borderColor: '#0088cc' },
-  bannerTitle: { fontSize: FontSize.t6, fontWeight: '700', color: '#17181c', marginBottom: 4 },
-  bannerSub: { fontSize: FontSize.t7, color: '#e81607' },
+  bannerGreen: { backgroundColor: Colors.light.positiveBackground, borderWidth: 1, borderColor: Colors.light.positive },
+  bannerBlue: { backgroundColor: Colors.light.accentBackground, borderWidth: 1, borderColor: Colors.light.accent },
+  bannerTitle: { fontSize: FontSize.t6, fontWeight: '700', color: Colors.light.text, marginBottom: 4 },
+  bannerSub: { fontSize: FontSize.t7, color: Colors.light.negative },
   stepCard: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderRadius: 10,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e4e5ea',
+    borderColor: Colors.light.border,
   },
   stepHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   stepDot: { width: 10, height: 10, borderRadius: 5, marginTop: 4, flexShrink: 0 },
   stepMain: { flex: 1 },
-  stepLabel: { fontSize: FontSize.t7, fontWeight: '700', color: '#17181c' },
-  stepDesc: { fontSize: FontSize.t7, color: '#868b94', marginTop: 2 },
+  stepLabel: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.text },
+  stepDesc: { fontSize: FontSize.t7, color: Colors.light.textAssistive, marginTop: 2 },
   stepStatus: { fontSize: FontSize.tab, fontWeight: '700', flexShrink: 0 },
   stepDetail: {
     fontSize: FontSize.t7,
-    color: '#3a3b40',
+    color: Colors.light.textStrong,
     marginTop: 8,
     paddingLeft: 22,
     lineHeight: LineHeight.t7,
   },
   stepDate: {
     fontSize: FontSize.tab,
-    color: '#868b94',
+    color: Colors.light.textAssistive,
     marginTop: 4,
     paddingLeft: 22,
   },
@@ -217,24 +219,24 @@ const styles = StyleSheet.create({
     bottom: -12,
     width: 1,
     height: 12,
-    backgroundColor: '#e4e5ea',
+    backgroundColor: Colors.light.border,
   },
   approvalBox: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderRadius: 10,
     padding: 20,
     borderWidth: 2,
-    borderColor: '#ff6f61',
+    borderColor: Colors.light.tint,
     marginTop: 8,
   },
-  approvalTitle: { fontSize: FontSize.t6, fontWeight: '700', color: '#17181c', marginBottom: 8 },
-  approvalDesc: { fontSize: FontSize.t7, color: '#5a5d6a', lineHeight: LineHeight.t7, marginBottom: 16 },
+  approvalTitle: { fontSize: FontSize.t6, fontWeight: '700', color: Colors.light.text, marginBottom: 8 },
+  approvalDesc: { fontSize: FontSize.t7, color: Colors.light.textSecondary, lineHeight: LineHeight.t7, marginBottom: 16 },
   approvalBtn: {
-    backgroundColor: '#ff6f61',
+    backgroundColor: Colors.light.tint,
     borderRadius: 6,
     paddingVertical: 12,
     alignItems: 'center',
   },
-  approvalBtnText: { fontSize: FontSize.t6, fontWeight: '700', color: '#fff' },
+  approvalBtnText: { fontSize: FontSize.t6, fontWeight: '700', color: Colors.light.background },
   btnDisabled: { opacity: 0.5 },
 });

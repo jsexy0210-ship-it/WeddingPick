@@ -5,9 +5,10 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 
 type RightsStatus =
   | 'licensed' | 'public_domain' | 'vendor_provided' | 'vendor_homepage' | 'pending' | 'rejected';
@@ -35,12 +36,12 @@ const RIGHTS_LABEL: Record<RightsStatus, string> = {
   rejected: '반려',
 };
 const RIGHTS_COLOR: Record<RightsStatus, string> = {
-  licensed: '#1aa174',
-  public_domain: '#0088cc',
-  vendor_provided: '#0088cc',
-  vendor_homepage: '#0088cc',
-  pending: '#805217',
-  rejected: '#e81607',
+  licensed: Colors.light.positive,
+  public_domain: Colors.light.accent,
+  vendor_provided: Colors.light.accent,
+  vendor_homepage: Colors.light.accent,
+  pending: Colors.light.cautionary,
+  rejected: Colors.light.negative,
 };
 
 export default function ImagesScreen() {
@@ -94,6 +95,7 @@ export default function ImagesScreen() {
         </Pressable>
       </View>
 
+      <PendingBackendNotice actions="승인 · 반려" />
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
@@ -112,15 +114,15 @@ export default function ImagesScreen() {
               <Text style={styles.summaryLabel}>전체</Text>
             </View>
             <View style={styles.summaryCell}>
-              <Text style={[styles.summaryValue, { color: '#1aa174' }]}>{data.summary.licensed}</Text>
+              <Text style={[styles.summaryValue, { color: Colors.light.positive }]}>{data.summary.licensed}</Text>
               <Text style={styles.summaryLabel}>허가됨</Text>
             </View>
             <View style={styles.summaryCell}>
-              <Text style={[styles.summaryValue, { color: '#805217' }]}>{data.summary.pending}</Text>
+              <Text style={[styles.summaryValue, { color: Colors.light.cautionary }]}>{data.summary.pending}</Text>
               <Text style={styles.summaryLabel}>검토 중</Text>
             </View>
             <View style={styles.summaryCell}>
-              <Text style={[styles.summaryValue, { color: '#e81607' }]}>{data.summary.rejected}</Text>
+              <Text style={[styles.summaryValue, { color: Colors.light.negative }]}>{data.summary.rejected}</Text>
               <Text style={styles.summaryLabel}>반려</Text>
             </View>
           </View>
@@ -145,16 +147,16 @@ export default function ImagesScreen() {
                 {item.rightsStatus === 'pending' ? (
                   <View style={[styles.colActions, { flexDirection: 'row', gap: 6 }]}>
                     <Pressable
-                      style={[styles.approveBtn, acting === item.id && styles.btnDisabled]}
+                      style={[styles.approveBtn, (BACKEND_PENDING || acting === item.id) && styles.btnDisabled]}
                       onPress={() => void approve(item.id)}
-                      disabled={acting !== null}
+                      disabled={BACKEND_PENDING || acting !== null}
                     >
                       <Text style={styles.approveBtnText}>{acting === item.id ? '…' : '승인'}</Text>
                     </Pressable>
                     <Pressable
-                      style={[styles.rejectBtn, acting === item.id + '_reject' && styles.btnDisabled]}
+                      style={[styles.rejectBtn, (BACKEND_PENDING || acting === item.id + '_reject') && styles.btnDisabled]}
                       onPress={() => void reject(item.id)}
-                      disabled={acting !== null}
+                      disabled={BACKEND_PENDING || acting !== null}
                     >
                       <Text style={styles.rejectBtnText}>{acting === item.id + '_reject' ? '…' : '반려'}</Text>
                     </Pressable>
@@ -172,42 +174,42 @@ export default function ImagesScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f3f6' },
+  root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
-  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: '#17181c' },
-  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: '#f2f3f6' },
-  refreshText: { fontSize: FontSize.t7, color: '#5a5d6a' },
+  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text },
+  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: Colors.light.backgroundSelected },
+  refreshText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
   body: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  errorText: { fontSize: FontSize.t6, color: '#e53e3e', marginBottom: 16 },
-  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: '#ff6f61' },
-  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: '#fff' },
+  errorText: { fontSize: FontSize.t6, color: Colors.light.negative, marginBottom: 16 },
+  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: Colors.light.tint },
+  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   summaryRow: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
     paddingVertical: 12,
     paddingHorizontal: 24,
   },
   summaryCell: { flex: 1, alignItems: 'center' },
-  summaryValue: { fontSize: FontSize.t4, fontWeight: '700', color: '#17181c', fontVariant: ['tabular-nums'] },
-  summaryLabel: { fontSize: FontSize.tab, color: '#868b94', marginTop: 2 },
+  summaryValue: { fontSize: FontSize.t4, fontWeight: '700', color: Colors.light.text, fontVariant: ['tabular-nums'] },
+  summaryLabel: { fontSize: FontSize.tab, color: Colors.light.textAssistive, marginTop: 2 },
   tableHead: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: Colors.light.backgroundElement,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
     alignItems: 'center',
   },
   tableRow: {
@@ -215,12 +217,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f1f4',
+    borderBottomColor: Colors.light.backgroundSelected,
     alignItems: 'center',
   },
-  tableRowZebra: { backgroundColor: '#fafbfc' },
-  th: { fontSize: FontSize.tab, fontWeight: '700', color: '#868b94', textTransform: 'uppercase' as const },
-  td: { fontSize: FontSize.t7, color: '#3a3b40' },
+  tableRowZebra: { backgroundColor: Colors.light.backgroundElement },
+  th: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.textAssistive, textTransform: 'uppercase' as const },
+  td: { fontSize: FontSize.t7, color: Colors.light.textStrong },
   colVendor: { flex: 2 },
   colSource: { flex: 2 },
   colRights: { width: 70 },
@@ -231,15 +233,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
-    backgroundColor: '#e8faf6',
+    backgroundColor: Colors.light.positiveBackground,
   },
-  approveBtnText: { fontSize: FontSize.tab, fontWeight: '700', color: '#1aa174' },
+  approveBtnText: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.positive },
   rejectBtn: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
-    backgroundColor: '#fff0ee',
+    backgroundColor: Colors.light.negativeBoxBackground,
   },
-  rejectBtnText: { fontSize: FontSize.tab, fontWeight: '700', color: '#e81607' },
+  rejectBtnText: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.negative },
   btnDisabled: { opacity: 0.5 },
 });

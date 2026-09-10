@@ -13,7 +13,7 @@ import {
   View,
 } from 'react-native';
 
-import { FontSize, LineHeight } from '@weddingpick/ui';
+import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { formatDateTimeDot, formatMonthDayTimeDot } from '@/features/common/format-date';
@@ -47,10 +47,10 @@ const DECISION_LABEL: Record<Decision, string> = {
   skipped: '스킵',
 };
 const DECISION_COLOR: Record<Decision, string> = {
-  approved: '#1aa174',
-  rejected: '#e81607',
-  escalated: '#805217',
-  skipped: '#868b94',
+  approved: Colors.light.positive,
+  rejected: Colors.light.negative,
+  escalated: Colors.light.cautionary,
+  skipped: Colors.light.textAssistive,
 };
 const ACTOR_LABEL: Record<AuditEvent['actorType'], string> = {
   ai: 'AI',
@@ -135,7 +135,7 @@ export default function AuditLogScreen() {
                 </Text>
                 <Text style={[styles.td, styles.colSource]} numberOfLines={1}>{item.source}</Text>
                 <Text style={[styles.td, styles.colActor]}>{ACTOR_LABEL[item.actorType]}</Text>
-                <Text style={[styles.td, styles.colConfidence, item.confidence < 0.7 && { color: '#805217' }]}>
+                <Text style={[styles.td, styles.colConfidence, item.confidence < 0.7 && { color: Colors.light.cautionary }]}>
                   {(item.confidence * 100).toFixed(0)}%
                 </Text>
                 <Text style={[styles.td, styles.colDecision, { color: DECISION_COLOR[item.decision] }]}>
@@ -210,42 +210,42 @@ export default function AuditLogScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f3f6' },
+  root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
     gap: 12,
   },
-  title: { fontSize: FontSize.t5, fontWeight: '700', color: '#17181c', flexShrink: 0 },
+  title: { fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text, flexShrink: 0 },
   searchInput: {
     flex: 1,
     height: 36,
     borderWidth: 1,
-    borderColor: '#d1d3d8',
+    borderColor: Colors.light.fieldBorder,
     borderRadius: 6,
     paddingHorizontal: 12,
     fontSize: FontSize.t7,
-    color: '#17181c',
-    backgroundColor: '#f8f9fa',
+    color: Colors.light.text,
+    backgroundColor: Colors.light.backgroundElement,
   },
-  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: '#f2f3f6' },
-  refreshText: { fontSize: FontSize.t7, color: '#5a5d6a' },
+  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: Colors.light.backgroundSelected },
+  refreshText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  errorText: { fontSize: FontSize.t6, color: '#e53e3e', marginBottom: 16 },
-  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: '#ff6f61' },
-  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: '#fff' },
+  errorText: { fontSize: FontSize.t6, color: Colors.light.negative, marginBottom: 16 },
+  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: Colors.light.tint },
+  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   tableHead: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: Colors.light.backgroundElement,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
     alignItems: 'center',
   },
   tableRow: {
@@ -253,40 +253,40 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f1f4',
+    borderBottomColor: Colors.light.backgroundSelected,
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
   },
-  tableRowZebra: { backgroundColor: '#fafbfc' },
-  th: { fontSize: FontSize.tab, fontWeight: '700', color: '#868b94', textTransform: 'uppercase' as const },
-  td: { fontSize: FontSize.t7, color: '#3a3b40' },
+  tableRowZebra: { backgroundColor: Colors.light.backgroundElement },
+  th: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.textAssistive, textTransform: 'uppercase' as const },
+  td: { fontSize: FontSize.t7, color: Colors.light.textStrong },
   colTime: { width: 100, fontSize: FontSize.tab },
   colSource: { flex: 2, paddingRight: 8 },
   colActor: { width: 48, textAlign: 'center' as const, fontSize: FontSize.tab },
   colConfidence: { width: 52, textAlign: 'right' as const, fontVariant: ['tabular-nums'] as const },
   colDecision: { width: 72, textAlign: 'center' as const, fontWeight: '700', fontSize: FontSize.tab },
-  colReason: { flex: 1, paddingLeft: 8, fontSize: FontSize.tab, color: '#868b94' },
+  colReason: { flex: 1, paddingLeft: 8, fontSize: FontSize.tab, color: Colors.light.textAssistive },
   moreRow: {
     padding: 16,
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: Colors.light.backgroundElement,
   },
-  moreText: { fontSize: FontSize.tab, color: '#868b94' },
+  moreText: { fontSize: FontSize.tab, color: Colors.light.textAssistive },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
-  modalBox: { backgroundColor: '#fff', borderRadius: 14, padding: 24, width: 560, maxHeight: '80%' },
-  modalTitle: { fontSize: FontSize.t6, fontWeight: '700', color: '#17181c', marginBottom: 16 },
+  modalBox: { backgroundColor: Colors.light.background, borderRadius: 14, padding: 24, width: 560, maxHeight: '80%' },
+  modalTitle: { fontSize: FontSize.t6, fontWeight: '700', color: Colors.light.text, marginBottom: 16 },
   modalScroll: { maxHeight: 400 },
-  detailRow: { flexDirection: 'row', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#f0f1f4' },
-  detailLabel: { width: 100, fontSize: FontSize.tab, fontWeight: '700', color: '#868b94' },
-  detailValue: { flex: 1, fontSize: FontSize.t7, color: '#17181c' },
-  evidenceTitle: { fontSize: FontSize.t7, fontWeight: '700', color: '#17181c', marginTop: 16, marginBottom: 8 },
-  evidenceItem: { fontSize: FontSize.t7, color: '#5a5d6a', lineHeight: LineHeight.t7, marginBottom: 4 },
+  detailRow: { flexDirection: 'row', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: Colors.light.backgroundSelected },
+  detailLabel: { width: 100, fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.textAssistive },
+  detailValue: { flex: 1, fontSize: FontSize.t7, color: Colors.light.text },
+  evidenceTitle: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.text, marginTop: 16, marginBottom: 8 },
+  evidenceItem: { fontSize: FontSize.t7, color: Colors.light.textSecondary, lineHeight: LineHeight.t7, marginBottom: 4 },
   closeBtn: {
     marginTop: 16,
     paddingVertical: 10,
     borderRadius: 6,
     alignItems: 'center',
-    backgroundColor: '#f2f3f6',
+    backgroundColor: Colors.light.backgroundSelected,
   },
-  closeBtnText: { fontSize: FontSize.t7, color: '#3a3b40' },
+  closeBtnText: { fontSize: FontSize.t7, color: Colors.light.textStrong },
 });

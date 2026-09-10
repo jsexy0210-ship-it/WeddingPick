@@ -5,9 +5,10 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 import { formatDateTimeDot } from '@/features/common/format-date';
 
 type RollbackStatus = 'stable' | 'anomaly_detected' | 'rolling_back' | 'rolled_back' | 'pending_approval';
@@ -35,11 +36,11 @@ const STATUS_LABEL: Record<RollbackStatus, string> = {
   pending_approval: '승인 대기',
 };
 const STATUS_COLOR: Record<RollbackStatus, string> = {
-  stable: '#1aa174',
-  anomaly_detected: '#805217',
-  rolling_back: '#0088cc',
-  rolled_back: '#868b94',
-  pending_approval: '#e81607',
+  stable: Colors.light.positive,
+  anomaly_detected: Colors.light.cautionary,
+  rolling_back: Colors.light.accent,
+  rolled_back: Colors.light.textAssistive,
+  pending_approval: Colors.light.negative,
 };
 
 export default function RollbackScreen() {
@@ -93,6 +94,7 @@ export default function RollbackScreen() {
         </Pressable>
       </View>
 
+      <PendingBackendNotice actions="승인 · 실행" />
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
@@ -123,7 +125,7 @@ export default function RollbackScreen() {
                 <Text style={styles.infoText}>
                   {formatDateTimeDot(item.deployedAt)} · {item.deployedBy}
                 </Text>
-                <Text style={[styles.infoText, { color: item.autoRollbackEnabled ? '#1aa174' : '#868b94' }]}>
+                <Text style={[styles.infoText, { color: item.autoRollbackEnabled ? Colors.light.positive : Colors.light.textAssistive }]}>
                   자동 롤백: {item.autoRollbackEnabled ? '켜짐' : '꺼짐'}
                 </Text>
               </View>
@@ -139,9 +141,9 @@ export default function RollbackScreen() {
               <View style={styles.actions}>
                 {item.status === 'pending_approval' && (
                   <Pressable
-                    style={[styles.approveBtn, acting === item.id + '_approve' && styles.btnDisabled]}
+                    style={[styles.approveBtn, (BACKEND_PENDING || acting === item.id + '_approve') && styles.btnDisabled]}
                     onPress={() => void approveRollback(item.id)}
-                    disabled={acting !== null}
+                    disabled={BACKEND_PENDING || acting !== null}
                   >
                     <Text style={styles.approveBtnText}>
                       {acting === item.id + '_approve' ? '처리 중…' : '롤백 승인'}
@@ -150,9 +152,9 @@ export default function RollbackScreen() {
                 )}
                 {item.status === 'anomaly_detected' && !item.requiresApproval && (
                   <Pressable
-                    style={[styles.triggerBtn, acting === item.id + '_trigger' && styles.btnDisabled]}
+                    style={[styles.triggerBtn, (BACKEND_PENDING || acting === item.id + '_trigger') && styles.btnDisabled]}
                     onPress={() => void triggerRollback(item.id)}
-                    disabled={acting !== null}
+                    disabled={BACKEND_PENDING || acting !== null}
                   >
                     <Text style={styles.triggerBtnText}>
                       {acting === item.id + '_trigger' ? '처리 중…' : '즉시 롤백'}
@@ -169,63 +171,63 @@ export default function RollbackScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f3f6' },
+  root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
-  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: '#17181c' },
-  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: '#f2f3f6' },
-  refreshText: { fontSize: FontSize.t7, color: '#5a5d6a' },
+  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text },
+  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: Colors.light.backgroundSelected },
+  refreshText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  errorText: { fontSize: FontSize.t6, color: '#e53e3e', marginBottom: 16 },
-  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: '#ff6f61' },
-  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: '#fff' },
+  errorText: { fontSize: FontSize.t6, color: Colors.light.negative, marginBottom: 16 },
+  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: Colors.light.tint },
+  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   itemCard: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f1f4',
+    borderBottomColor: Colors.light.backgroundSelected,
   },
-  itemCardZebra: { backgroundColor: '#fafbfc' },
+  itemCardZebra: { backgroundColor: Colors.light.backgroundElement },
   itemHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   itemMeta: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
   typeBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  typeDeploy: { backgroundColor: '#ebf5ff' },
-  typePolicy: { backgroundColor: '#fff0ee' },
-  typeBadgeText: { fontSize: FontSize.tab, fontWeight: '700', color: '#17181c' },
-  itemName: { flex: 1, fontSize: FontSize.t7, fontWeight: '700', color: '#17181c' },
+  typeDeploy: { backgroundColor: Colors.light.accentBackground },
+  typePolicy: { backgroundColor: Colors.light.negativeBoxBackground },
+  typeBadgeText: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.text },
+  itemName: { flex: 1, fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.text },
   statusLabel: { fontSize: FontSize.t7, fontWeight: '700', flexShrink: 0 },
   itemInfo: { flexDirection: 'row', gap: 16, marginBottom: 8 },
-  infoText: { fontSize: FontSize.tab, color: '#868b94' },
+  infoText: { fontSize: FontSize.tab, color: Colors.light.textAssistive },
   anomalyBox: {
-    backgroundColor: '#fff8ec',
+    backgroundColor: Colors.light.cautionaryBoxBackground,
     borderRadius: 6,
     padding: 10,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#f5c842',
+    borderColor: Colors.light.cautionaryBorder,
   },
-  anomalyText: { fontSize: FontSize.tab, color: '#805217' },
+  anomalyText: { fontSize: FontSize.tab, color: Colors.light.cautionary },
   actions: { flexDirection: 'row', gap: 8 },
   approveBtn: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
-    backgroundColor: '#ff6f61',
+    backgroundColor: Colors.light.tint,
   },
-  approveBtnText: { fontSize: FontSize.tab, fontWeight: '700', color: '#fff' },
+  approveBtnText: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.background },
   triggerBtn: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
-    backgroundColor: '#e81607',
+    backgroundColor: Colors.light.negative,
   },
-  triggerBtnText: { fontSize: FontSize.tab, fontWeight: '700', color: '#fff' },
+  triggerBtnText: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.background },
   btnDisabled: { opacity: 0.5 },
 });

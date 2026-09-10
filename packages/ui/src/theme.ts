@@ -71,6 +71,21 @@ const palette = {
   warningSurface: '#ffe3ba',
   dangerText: '#e81607',
   dangerSurface: '#ffe5e3',
+  /* 안내 상자 — 배지 칠(Surface)보다 옅은 바탕과 그 테두리. 20-admin.dc.html의
+     «자동 승인» · «보류 · 사람 확인» · «자동 반려» 상자가 bg와 border를 따로 쓴다. */
+  successBorder: '#96ebc3',
+  warningBox: '#fff7e6',
+  warningBorder: '#facc87',
+  dangerBox: '#fff3f2',
+  dangerBorder: '#fcd2cf',
+  /**
+   * 관리자 콘솔의 어두운 면 — 사이드바 · 로그인 오른쪽 판.
+   *
+   * **본문 먹색(gray900 #212124)과 다르다.** 한때 사이드바가 gray900으로 바뀐 적이
+   * 있는데, 하드코딩을 없애려다 아무 토큰이나 갖다 쓴 것이었다. 시안(21-admin ·
+   * 22-admin-ops)이 쓰는 값은 이것이다.
+   */
+  adminChrome: '#17181c',
   /** 탈퇴 · 신고 · 빼기 같은 파괴적 행동 버튼. */
   dangerAction: '#ff4133',
   accentText: '#0077b2',
@@ -232,6 +247,19 @@ export const Colors = {
     cautionaryBackground: palette.warningSurface,
     negative: palette.dangerText,
     negativeBackground: palette.dangerSurface,
+
+    /**
+     * 안내 상자용 — `...Background`는 배지 칠이고 이쪽이 더 옅은 상자 바탕이다.
+     * 시안이 둘을 구분해 쓴다(예: 반려는 배지 #ffe5e3, 상자 #fff3f2). 상자에
+     * 배지 칠을 쓰면 목록 안에서 필요 이상으로 튄다. status.boxBg · status.border.
+     */
+    positiveBorder: palette.successBorder,
+    cautionaryBoxBackground: palette.warningBox,
+    cautionaryBorder: palette.warningBorder,
+    negativeBoxBackground: palette.dangerBox,
+    negativeBorder: palette.dangerBorder,
+    /** 관리자 콘솔의 어두운 면(사이드바 · 로그인 오른쪽 판). color.status.adminChrome. */
+    adminChrome: palette.adminChrome,
     /** 파괴적 행동 버튼(탈퇴 · 신고 · 빼기). status.dangerAction. */
     negativeAction: palette.dangerAction,
     /** 관리자 차트 · 정보 배지. status.accentAction · accentText · accentSurface. */
@@ -308,10 +336,15 @@ export const Colors = {
 
     positive: '#3ecf8e',
     positiveBackground: '#12281d',
+    positiveBorder: '#1f4a34',
     cautionary: '#e0a340',
     cautionaryBackground: '#2b2113',
+    cautionaryBoxBackground: '#1f180e',
+    cautionaryBorder: '#4a3a1c',
     negative: palette.red400,
     negativeBackground: '#2e1614',
+    negativeBoxBackground: '#211010',
+    negativeBorder: '#4d2422',
     negativeAction: palette.dangerAction,
     accent: palette.accentAction,
     accentText: '#57c7ff',

@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { FontSize, LineHeight } from '@weddingpick/ui';
+import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 
@@ -25,9 +25,9 @@ type BriefingData = {
 };
 
 const SEVERITY_COLOR: Record<RiskItem['severity'], string> = {
-  high: '#e81607',
-  medium: '#805217',
-  low: '#1aa174',
+  high: Colors.light.negative,
+  medium: Colors.light.cautionary,
+  low: Colors.light.positive,
 };
 
 const SEVERITY_LABEL: Record<RiskItem['severity'], string> = {
@@ -170,48 +170,48 @@ export default function BriefingScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f3f6' },
+  root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
-  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: '#17181c' },
-  subtitle: { fontSize: FontSize.t7, color: '#868b94', marginTop: 2 },
+  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text },
+  subtitle: { fontSize: FontSize.t7, color: Colors.light.textAssistive, marginTop: 2 },
   refreshBtn: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
-    backgroundColor: '#f2f3f6',
+    backgroundColor: Colors.light.backgroundSelected,
   },
-  refreshText: { fontSize: FontSize.t7, color: '#5a5d6a' },
+  refreshText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
   body: { flex: 1 },
   bodyContent: { padding: 24, gap: 12 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  errorText: { fontSize: FontSize.t6, color: '#e53e3e', marginBottom: 16 },
+  errorText: { fontSize: FontSize.t6, color: Colors.light.negative, marginBottom: 16 },
   retryBtn: {
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 6,
-    backgroundColor: '#ff6f61',
+    backgroundColor: Colors.light.tint,
   },
-  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: '#fff' },
+  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   summaryBox: {
-    backgroundColor: '#ebf7fa',
+    backgroundColor: Colors.light.accentBackground,
     borderRadius: 10,
     padding: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#0088cc',
+    borderLeftColor: Colors.light.accent,
   },
-  summaryText: { fontSize: FontSize.t6, color: '#17181c', lineHeight: LineHeight.t6 },
+  summaryText: { fontSize: FontSize.t6, color: Colors.light.text, lineHeight: LineHeight.t6 },
   sectionTitle: {
     fontSize: FontSize.t7,
     fontWeight: '700',
-    color: '#868b94',
+    color: Colors.light.textAssistive,
     textTransform: 'uppercase' as const,
     letterSpacing: 0.6,
     marginTop: 8,
@@ -219,31 +219,31 @@ const styles = StyleSheet.create({
   statsGrid: { flexDirection: 'row', gap: 12 },
   statCell: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderRadius: 10,
     padding: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e4e5ea',
+    borderColor: Colors.light.border,
   },
-  statValue: { fontSize: FontSize.t4, fontWeight: '700', color: '#17181c', fontVariant: ['tabular-nums'] },
-  valueDanger: { color: '#e81607' },
-  statLabel: { fontSize: FontSize.tab, color: '#868b94', marginTop: 4 },
+  statValue: { fontSize: FontSize.t4, fontWeight: '700', color: Colors.light.text, fontVariant: ['tabular-nums'] },
+  valueDanger: { color: Colors.light.negative },
+  statLabel: { fontSize: FontSize.tab, color: Colors.light.textAssistive, marginTop: 4 },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e4e5ea',
+    borderColor: Colors.light.border,
     overflow: 'hidden',
   },
-  emptyText: { fontSize: FontSize.t7, color: '#868b94', padding: 16 },
+  emptyText: { fontSize: FontSize.t7, color: Colors.light.textAssistive, padding: 16 },
   riskRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     padding: 14,
     gap: 12,
   },
-  riskRowBorder: { borderBottomWidth: 1, borderBottomColor: '#f0f1f4' },
+  riskRowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.light.backgroundSelected },
   severityBadge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -251,14 +251,14 @@ const styles = StyleSheet.create({
   },
   severityText: { fontSize: FontSize.tab, fontWeight: '700' },
   riskContent: { flex: 1 },
-  riskCategory: { fontSize: FontSize.t7, fontWeight: '700', color: '#3a3b40', marginBottom: 2 },
-  riskDesc: { fontSize: FontSize.t7, color: '#868b94' },
+  riskCategory: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.textStrong, marginBottom: 2 },
+  riskDesc: { fontSize: FontSize.t7, color: Colors.light.textAssistive },
   anomalyRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     padding: 14,
     gap: 12,
   },
-  anomalyTime: { fontSize: FontSize.t7, color: '#868b94', width: 88 },
-  anomalyDesc: { flex: 1, fontSize: FontSize.t7, color: '#3a3b40' },
+  anomalyTime: { fontSize: FontSize.t7, color: Colors.light.textAssistive, width: 88 },
+  anomalyDesc: { flex: 1, fontSize: FontSize.t7, color: Colors.light.textStrong },
 });
