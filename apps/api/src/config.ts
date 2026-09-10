@@ -81,6 +81,23 @@ const configSchema = z.object({
   naverClientId: z.string().optional(),
   naverClientSecret: z.string().optional(),
   naverRedirectUris: z.array(z.string().url()).default([]),
+
+  /**
+   * 관리자 콘솔 부트스트랩 계정.
+   *
+   * **부트스트랩 전용이다**(2026-09-10 결정). 0102가 계정을 DB로 옮긴 뒤로 이 둘은
+   * 「DB에 켜져 있는 슈퍼 관리자가 하나도 없을 때」만 통한다. 그래야 슈퍼 관리자를
+   * 전부 꺼뜨린 날에도 되살릴 길이 남고, 평소에는 환경변수를 아는 사람이 등급
+   * 체계를 우회하지 못한다.
+   *
+   * 값 자체는 GitHub Secrets → render-env-sync로 들어온다. **코드·주석·커밋에 실제
+   * 아이디나 해시를 적지 않는다.** 여기 있는 것은 이름뿐이다.
+   *
+   * 설정에 두는 이유는 `process.env`를 라우트 안에서 읽으면 시험에서 그 값을
+   * 갈아끼우려고 전역을 건드려야 하기 때문이다 — 시험끼리 서로의 환경을 덮는다.
+   */
+  adminLoginId: z.string().min(1).optional(),
+  adminPasswordHash: z.string().min(1).optional(),
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -142,6 +159,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       .split(',')
       .map((uri) => uri.trim())
       .filter(Boolean),
+    adminLoginId: env.ADMIN_LOGIN_ID?.trim() || undefined,
+    adminPasswordHash: env.ADMIN_PASSWORD_HASH?.trim() || undefined,
   });
 
   if (!parsed.success) {

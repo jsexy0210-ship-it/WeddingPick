@@ -6,6 +6,7 @@ import { ZodError } from 'zod';
 
 import type { AppContext } from './context';
 import { ApiError } from './errors';
+import { registerAdminAccountRoutes } from './routes/admin-accounts';
 import { registerAdminLoginRoutes } from './routes/admin-login';
 import { registerAdminRoutes } from './routes/admin';
 import { registerAnalysisRoutes } from './routes/analyses';
@@ -201,6 +202,7 @@ export function buildServer(context: AppContext): FastifyInstance {
   registerSignupRoutes(app, context);
   registerDevStorageRoutes(app, context);
   registerAdminRoutes(app, context);
+  registerAdminAccountRoutes(app, context);
 
   // 정적 파일 서빙 (웹앱) - API는 이미 위에 등록되어 있으므로 마지막에 캐치올 추가
   app.get('/*', async (_request, reply) => {

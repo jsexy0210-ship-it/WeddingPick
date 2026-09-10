@@ -46,6 +46,7 @@ const NAV_GROUPS: { group?: string; key?: string; label?: string; href?: string 
   { key: 'ai-usage', label: 'AI 사용량 · 비용', href: '/admin/ai-usage' },
   { key: 'policy-engine', label: 'Policy Engine', href: '/admin/policy-engine' },
   { key: 'audit-log', label: '감사 로그', href: '/admin/audit-log' },
+  { key: 'admins', label: '관리자 계정', href: '/admin/admins' },
 ];
 
 const LOGIN_PATH = '/admin/login';
