@@ -1,15 +1,28 @@
 /**
- * WP-ADM-015 데이터 · 이미지 자동수급
- * 수급 소스 · 권리 상태 · 자동 매칭 결과 · 교체 · 반려
+ * WP-ADM-015 이미지 자동 수급
+ *
+ * 시안 `22-admin-ops.dc.html` 3번. 권리 확인이 필수 관문이다 —
+ * **권리 미확인은 어떤 경로로도 앱에 노출되지 않고, 승인 버튼이 아예 뜨지 않는다**
+ * (ADMIN.md WP-ADM-015). 폐기만 할 수 있다.
  */
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
-import { OpsAlert, OpsEmpty } from '@/features/admin/ops-kit';
-import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
+import {
+  Card,
+  CardGrid,
+  DataTable,
+  KpiRow,
+  LoadError,
+  Page,
+  Rows,
+  StatusBanner,
+  type Cell,
+  type Col,
+  type Kind,
+  type TableRow,
+} from './_ui';
 
 type RightsStatus =
   | 'licensed' | 'public_domain' | 'vendor_provided' | 'vendor_homepage' | 'pending' | 'rejected';
@@ -29,28 +42,48 @@ type ImagesData = {
 };
 
 const RIGHTS_LABEL: Record<RightsStatus, string> = {
-  licensed: '허가',
-  public_domain: '공개',
-  vendor_provided: '업체 제공',
-  vendor_homepage: '업체 홈페이지',
-  pending: '검토 중',
-  rejected: '반려',
+  licensed: '확인됨',
+  public_domain: '확인됨',
+  vendor_provided: '확인됨',
+  vendor_homepage: '확인됨',
+  pending: '미확인',
+  rejected: '폐기됨',
 };
-const RIGHTS_COLOR: Record<RightsStatus, string> = {
-  licensed: Colors.light.positive,
-  public_domain: Colors.light.accent,
-  vendor_provided: Colors.light.accent,
-  vendor_homepage: Colors.light.accent,
-  pending: Colors.light.cautionary,
-  rejected: Colors.light.negative,
+
+const RIGHTS_KIND: Record<RightsStatus, Kind> = {
+  licensed: 'ok',
+  public_domain: 'ok',
+  vendor_provided: 'ok',
+  vendor_homepage: 'ok',
+  pending: 'bad',
+  rejected: 'dim',
 };
+
+/** 권리가 확인된 것만 승인할 수 있다. 이 판단이 화면의 전부다. */
+function rightsConfirmed(status: RightsStatus) {
+  return status === 'licensed'
+    || status === 'public_domain'
+    || status === 'vendor_provided'
+    || status === 'vendor_homepage';
+}
+
+/** 매칭 신뢰도가 이 아래면 업체를 사람이 다시 확인한다. */
+const MATCH_FLOOR = 0.7;
+
+const COLS: Col[] = [
+  { key: 'vendor', label: '업체', width: 190 },
+  { key: 'source', label: '출처', width: 260, grow: true },
+  { key: 'rights', label: '권리', width: 110 },
+  { key: 'match', label: '매칭', width: 90, align: 'right' },
+  { key: 'created', label: '수집', width: 120 },
+  { key: 'action', label: '', width: 110, align: 'right' },
+];
 
 export default function ImagesScreen() {
   const [data, setData] = useState<ImagesData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rev, setRev] = useState(0);
-  const [acting, setActing] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,196 +104,111 @@ export default function ImagesScreen() {
     return () => { cancelled = true; };
   }, [rev]);
 
+  const reload = () => setRev((r) => r + 1);
+
   async function approve(id: string) {
-    setActing(id);
     try {
       await apiFetch(`/v1/admin/data/images/${id}/approve`, { method: 'POST' });
-      setRev((r) => r + 1);
-    } catch { /* 무시 */ } finally { setActing(null); }
+      reload();
+    } catch { /* 목록을 다시 불러오면 실제 상태가 드러난다 */ }
   }
 
   async function reject(id: string) {
-    setActing(id + '_reject');
     try {
       await apiFetch(`/v1/admin/data/images/${id}/reject`, { method: 'POST' });
-      setRev((r) => r + 1);
-    } catch { /* 무시 */ } finally { setActing(null); }
+      reload();
+    } catch { /* 위와 같다 */ }
   }
 
+  /**
+   * 마지막 열. 권리가 확인됐으면 승인, 아니면 폐기만 — 미확인에는 승인 버튼을 만들지 않는다.
+   * 이미 폐기된 것은 누를 것이 없다.
+   */
+  function actionCell(item: ImageItem): Cell {
+    if (item.rightsStatus === 'rejected') return { v: '—', kind: 'dim' };
+    if (rightsConfirmed(item.rightsStatus)) {
+      return { v: '승인', kind: 'ok', onPress: () => void approve(item.id) };
+    }
+    return { v: '폐기', kind: 'bad', onPress: () => void reject(item.id) };
+  }
+
+  const items = data?.items ?? [];
+  const pending = data?.summary.pending ?? 0;
+  const lowMatch = items.filter((i) => i.matchConfidence < MATCH_FLOOR).length;
+
+  const rows: TableRow[] = items.map((item) => ({
+    key: item.id,
+    cells: [
+      { v: item.vendorName, bold: true, kind: 'none' },
+      { v: item.source, kind: rightsConfirmed(item.rightsStatus) ? 'dim' : 'bad' },
+      { v: RIGHTS_LABEL[item.rightsStatus], badge: RIGHTS_KIND[item.rightsStatus] },
+      {
+        v: item.matchConfidence.toFixed(2),
+        bold: true,
+        kind: item.matchConfidence < MATCH_FLOOR ? 'bad' : 'none',
+      },
+      { v: item.createdAt.slice(0, 10), kind: 'dim' },
+      actionCell(item),
+    ],
+  }));
+
   return (
-    <View style={styles.root}>
-      <View style={styles.header}>
-        <Text style={styles.title}>이미지 자동 수급</Text>
-        <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
-          <Text style={styles.refreshText}>새로 고침</Text>
-        </Pressable>
-      </View>
+    <Page
+      title="이미지 자동 수급"
+      sub="권리 확인이 필수 관문 · 미확인은 노출되지 않아요"
+      action={{ label: '새로 고침', onPress: reload }}
+    >
+      <DelayedLoader active={loading} size={40} />
+      {!loading && error ? <LoadError message={error} onRetry={reload} /> : null}
 
-      <PendingBackendNotice actions="승인 · 반려" />
-      <DelayedLoader active={loading} size={40} style={styles.centered} />
-      {!loading && error && (
-        <View style={styles.centered}>
-          <Text style={styles.errorText}>{error}</Text>
-          <Pressable style={styles.retryBtn} onPress={() => setRev((r) => r + 1)}>
-            <Text style={styles.retryText}>다시 시도</Text>
-          </Pressable>
-        </View>
-      )}
+      {!loading && !error && data ? (
+        <>
+          <StatusBanner
+            tone={pending === 0 ? 'ok' : 'warn'}
+            title={
+              pending === 0
+                ? '노출을 막고 있는 것이 없어요'
+                : `권리 미확인 ${pending}건이 노출을 막고 있어요`
+            }
+            detail={
+              pending === 0
+                ? '수집된 사진의 권리가 모두 확인됐어요.'
+                : '권리 확인 전에는 승인할 수 없어요. 출처를 확인하거나 폐기하면 돼요.'
+            }
+          />
 
-      {!loading && !error && data && (
-        <View style={styles.opsBannerWrap}>
-          {/* 지금 봐야 할 것이 맨 위. */}
-          {data.summary.pending > 0 ? (
-            <OpsAlert kind="warn" title={`권리 확인이 ${data.summary.pending}건 밀려 있어요`} sub="확인 전 이미지는 노출되지 않아요." />
-          ) : data.summary.rejected > 0 ? (
-            <OpsAlert kind="warn" title={`반려된 이미지가 ${data.summary.rejected}건 있어요`} sub="반려 사유를 보고 다시 수급할 수 있어요." />
-          ) : (
-            <OpsAlert kind="ok" title="확인할 것이 없어요" sub="권리 확인을 기다리는 이미지가 없어요." />
-          )}
-          {/* 빈 상태가 정상 상태. */}
-          {data.items.length === 0 ? (
-            <OpsEmpty title="확인할 것이 없어요" sub="수급한 이미지가 없어요." />
-          ) : null}
-        </View>
-      )}
+          <KpiRow
+            items={[
+              { label: '수집', value: `${data.summary.total}장`, note: '전체' },
+              { label: '권리 확인', value: `${data.summary.licensed}장`, note: '노출 가능', kind: 'ok' },
+              { label: '권리 미확인', value: `${pending}장`, note: '노출 차단 중', kind: pending === 0 ? 'ok' : 'bad' },
+              { label: '매칭 신뢰도 낮음', value: `${lowMatch}장`, note: `${MATCH_FLOOR} 미만`, kind: 'brand' },
+            ]}
+          />
 
-      {!loading && !error && data && (
-        <View style={styles.body}>
-          <View style={styles.summaryRow}>
-            <View style={styles.summaryCell}>
-              <Text style={styles.summaryValue}>{data.summary.total}</Text>
-              <Text style={styles.summaryLabel}>전체</Text>
-            </View>
-            <View style={styles.summaryCell}>
-              <Text style={[styles.summaryValue, { color: Colors.light.positive }]}>{data.summary.licensed}</Text>
-              <Text style={styles.summaryLabel}>허가됨</Text>
-            </View>
-            <View style={styles.summaryCell}>
-              <Text style={[styles.summaryValue, { color: Colors.light.cautionary }]}>{data.summary.pending}</Text>
-              <Text style={styles.summaryLabel}>검토 중</Text>
-            </View>
-            <View style={styles.summaryCell}>
-              <Text style={[styles.summaryValue, { color: Colors.light.negative }]}>{data.summary.rejected}</Text>
-              <Text style={styles.summaryLabel}>반려</Text>
-            </View>
-          </View>
-          <ScrollView>
-            <View style={styles.tableHead}>
-              <Text style={[styles.th, styles.colVendor]}>업체</Text>
-              <Text style={[styles.th, styles.colSource]}>소스</Text>
-              <Text style={[styles.th, styles.colRights]}>권리</Text>
-              <Text style={[styles.th, styles.colConf]}>신뢰도</Text>
-              <Text style={[styles.th, styles.colActions]} />
-            </View>
-            {data.items.map((item, i) => (
-              <View key={item.id} style={[styles.tableRow, i % 2 === 1 && styles.tableRowZebra]}>
-                <Text style={[styles.td, styles.colVendor]} numberOfLines={1}>{item.vendorName}</Text>
-                <Text style={[styles.td, styles.colSource]} numberOfLines={1}>{item.source}</Text>
-                <View style={styles.colRights}>
-                  <Text style={[styles.rightsTag, { color: RIGHTS_COLOR[item.rightsStatus] }]}>
-                    {RIGHTS_LABEL[item.rightsStatus]}
-                  </Text>
-                </View>
-                <Text style={[styles.td, styles.colConf]}>{(item.matchConfidence * 100).toFixed(0)}%</Text>
-                {item.rightsStatus === 'pending' ? (
-                  <View style={[styles.colActions, { flexDirection: 'row', gap: 6 }]}>
-                    <Pressable
-                      style={[styles.approveBtn, (BACKEND_PENDING || acting === item.id) && styles.btnDisabled]}
-                      onPress={() => void approve(item.id)}
-                      disabled={BACKEND_PENDING || acting !== null}
-                    >
-                      <Text style={styles.approveBtnText}>{acting === item.id ? '…' : '승인'}</Text>
-                    </Pressable>
-                    <Pressable
-                      style={[styles.rejectBtn, (BACKEND_PENDING || acting === item.id + '_reject') && styles.btnDisabled]}
-                      onPress={() => void reject(item.id)}
-                      disabled={BACKEND_PENDING || acting !== null}
-                    >
-                      <Text style={styles.rejectBtnText}>{acting === item.id + '_reject' ? '…' : '반려'}</Text>
-                    </Pressable>
-                  </View>
-                ) : (
-                  <View style={styles.colActions} />
-                )}
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-      )}
-    </View>
+          <CardGrid>
+            <Card
+              title="승인 대기"
+              sub="권리 확인이 끝난 것만 승인할 수 있어요"
+              full
+              note="권리 미확인은 승인 버튼이 아예 뜨지 않아요. 출처를 보강하거나 폐기만 할 수 있어요."
+            >
+              <DataTable cols={COLS} rows={rows} empty="승인을 기다리는 사진이 없어요" />
+            </Card>
+
+            <Card title="권리 확인 경로" sub="자동 확인이 되는 출처">
+              <Rows
+                items={[
+                  { key: 'homepage', name: '업체 공식 채널', meta: '홈페이지 · 인스타그램 · 블로그', num: '자동', numKind: 'ok' },
+                  { key: 'provided', name: '업체 제공', meta: 'WP-BIZ-005 자료 제공으로 받은 것', num: '자동', numKind: 'ok' },
+                  { key: 'public', name: '공공 데이터', meta: '공공누리 1~4유형', num: '자동', numKind: 'ok' },
+                  { key: 'crawl', name: '크롤링', meta: '출처를 특정할 수 없는 것', num: '불가', numKind: 'bad' },
+                ]}
+              />
+            </Card>
+          </CardGrid>
+        </>
+      ) : null}
+    </Page>
   );
 }
-
-const styles = StyleSheet.create({
-  opsBannerWrap: { paddingHorizontal: 24, paddingTop: 16, gap: 12 },
-  root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    backgroundColor: Colors.light.background,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
-  },
-  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text },
-  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: Colors.light.backgroundSelected },
-  refreshText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
-  body: { flex: 1 },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  errorText: { fontSize: FontSize.t6, color: Colors.light.negative, marginBottom: 16 },
-  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: Colors.light.tint },
-  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
-  summaryRow: {
-    flexDirection: 'row',
-    backgroundColor: Colors.light.background,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-  },
-  summaryCell: { flex: 1, alignItems: 'center' },
-  summaryValue: { fontSize: FontSize.t4, fontWeight: '700', color: Colors.light.text, fontVariant: ['tabular-nums'] },
-  summaryLabel: { fontSize: FontSize.tab, color: Colors.light.textAssistive, marginTop: 2 },
-  tableHead: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: Colors.light.backgroundElement,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
-    alignItems: 'center',
-  },
-  tableRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.backgroundSelected,
-    alignItems: 'center',
-  },
-  tableRowZebra: { backgroundColor: Colors.light.backgroundElement },
-  th: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.textAssistive, textTransform: 'uppercase' as const },
-  td: { fontSize: FontSize.t7, color: Colors.light.textStrong },
-  colVendor: { flex: 2 },
-  colSource: { flex: 2 },
-  colRights: { width: 70 },
-  colConf: { width: 50, textAlign: 'right' as const },
-  colActions: { width: 100, alignItems: 'flex-end' },
-  rightsTag: { fontSize: FontSize.tab, fontWeight: '700' },
-  approveBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    backgroundColor: Colors.light.positiveBackground,
-  },
-  approveBtnText: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.positive },
-  rejectBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    backgroundColor: Colors.light.negativeBoxBackground,
-  },
-  rejectBtnText: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.negative },
-  btnDisabled: { opacity: 0.5 },
-});

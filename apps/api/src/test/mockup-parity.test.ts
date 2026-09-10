@@ -46,6 +46,14 @@ function decl(file: string, constName: string, prop: string): string {
   return m[1].trim();
 }
 
+/** 이름 붙은 상수 뒤 한 덩어리를 그대로 준다 — 색이 삼항으로 붙는 자리를 볼 때 쓴다. */
+function block(file: string, constName: string): string {
+  const src = mockup(file);
+  const at = src.search(new RegExp(`(^|[\\s{,])${constName}\\s*[:=]`, 'm'));
+  if (at < 0) throw new Error(`${file}에 ${constName}이 없다`);
+  return src.slice(at, at + 700);
+}
+
 function px(value: string): number {
   const m = value.match(/^(-?\d+(?:\.\d+)?)px$/);
   if (!m) throw new Error(`px 값이 아니다: ${value}`);
@@ -80,19 +88,27 @@ describe('목업 CSS와 토큰이 같은 값을 든다', () => {
     expect(decl('20-onboarding-v2.dc.html', 'toastBox', 'border-radius')).toBe(`${t.radius}px`);
   });
 
-  /* v3.27 관리자 — 상단 상태 배너의 원형 아이콘 칠. 배너 바탕으로 칠하면 원이 사라진다. */
-  it('관리자 상태 배너의 아이콘 칠이 배너 바탕과 다르다', () => {
-    const status = tokens().color.status;
-    for (const key of ['successFg', 'warningFg', 'dangerFg'] as const) {
-      expect(status[key].iconBg).toBeTruthy();
-    }
-    expect(status.successFg.iconBg.toLowerCase()).not.toBe(status.successFg.bg.toLowerCase());
-    expect(status.dangerFg.iconBg.toLowerCase()).not.toBe(status.dangerFg.bg.toLowerCase());
+  /*
+   * v3.27 관리자 — 상단 상태 배너의 원형 아이콘 칠은 배너 바탕과 달라야 한다.
+   * 같은 색으로 칠하면 원이 사라진다.
+   */
+  it('관리자 상태 배너 색이 시안 값이다', () => {
+    const admin = tokens().color.admin;
+    /* alertIconStyle의 색은 문자열 뒤 삼항으로 붙는다 — 덩어리 안에 값이 있는지로 본다. */
+    const iconBlock = block('22-admin-ops.dc.html', 'alertIconStyle').toLowerCase();
+    expect(iconBlock).toContain(admin.bannerOkIconBg.value.toLowerCase());
+    expect(iconBlock).toContain(admin.bannerBadIconBg.value.toLowerCase());
+    expect(admin.bannerOkIconBg.value.toLowerCase()).not.toBe(
+      tokens().color.status.successFg.bg.toLowerCase()
+    );
+    expect(admin.bannerBadIconBg.value.toLowerCase()).not.toBe(
+      tokens().color.status.dangerFg.bg.toLowerCase()
+    );
   });
 
   it('관리자 사이드바 그룹 라벨 색이 시안 값이다', () => {
     expect(decl('22-admin-ops.dc.html', 'navGroup', 'color').toLowerCase()).toBe(
-      tokens().color.status.adminGroupLabel.value.toLowerCase()
+      tokens().color.admin.sidebarGroup.value.toLowerCase()
     );
   });
 
