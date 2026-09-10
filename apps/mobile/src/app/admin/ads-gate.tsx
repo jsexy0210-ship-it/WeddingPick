@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
+import { Colors, FontSize, LineHeight, Spacing } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { formatDateDot } from '@/features/common/format-date';
@@ -192,7 +192,7 @@ export default function AdsGateScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
-  actionError: { color: Colors.light.negative, fontSize: FontSize.t7, marginTop: 8 },
+  actionError: { color: Colors.light.negative, fontSize: FontSize.t7, marginTop: Spacing.two },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

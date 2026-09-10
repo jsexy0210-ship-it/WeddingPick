@@ -83,7 +83,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   box: {
-    width: 520,
+    // 관리자 콘솔의 기존 모달(vendors.tsx)과 같은 너비. 확인창만 다른 폭이면 눈에 걸린다.
+    width: 480,
     maxWidth: '90%',
     backgroundColor: Colors.light.background,
     borderRadius: Radius.medium,

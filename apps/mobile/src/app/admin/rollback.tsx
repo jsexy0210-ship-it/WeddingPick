@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Colors, FontSize } from '@weddingpick/ui';
+import { Colors, FontSize, Layout, Spacing } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { formatDateTimeDot } from '@/features/common/format-date';
@@ -218,8 +218,8 @@ const styles = StyleSheet.create({
   actionError: {
     color: Colors.light.negative,
     fontSize: FontSize.t7,
-    paddingHorizontal: 24,
-    paddingTop: 8,
+    paddingHorizontal: Layout.gutter,
+    paddingTop: Spacing.two,
   },
   header: {
     flexDirection: 'row',
