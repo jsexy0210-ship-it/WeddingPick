@@ -1,3 +1,4 @@
+import { FullScreenError } from '@/features/errors/full-screen-error';
 import type { CurrentUser, MyReportListResponse } from '@weddingpick/api-contract';
 import {
   BUDGET_BRACKET_FIELD_LABEL,
@@ -5,7 +6,7 @@ import {
   BUSINESS_NOTICE_LINES,
   formatDateDot,
 } from '@weddingpick/domain';
-import { router, useFocusEffect } from 'expo-router';
+import { Redirect, router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -31,7 +32,7 @@ import {
 import { useSession } from '@/features/auth/use-session';
 import { participableCount } from '@/features/membership/use-benefit-data';
 import { Avatar, Badge, Row, Rows, SectionTitle } from '@/features/settings/my-kit';
-import { DelayedLoader } from '@/features/loading/delayed-loader';
+import { DelayedLoader, DelayedLoadingView } from '@/features/loading/delayed-loader';
 import strings from '../../../../../../spec/strings.ko.json';
 import { APP_VERSION } from '@/features/settings/version';
 
@@ -108,7 +109,7 @@ const COUPLE_LABEL: Record<CoupleState, string> = {
  */
 export default function MyScreen() {
   const theme = useTheme();
-  const { state, signOut } = useSession();
+  const { state, signOut, refresh } = useSession();
   const [data, setData] = useState<MyData>(EMPTY);
   const [loadFailed, setLoadFailed] = useState(false);
   const loadVersion = useRef(0);
@@ -185,6 +186,10 @@ export default function MyScreen() {
   const hasWeddingSetting = Boolean(
     me?.setupComplete || me?.weddingDate || me?.region || me?.budgetBracket
   );
+
+  if (state.status === 'error') return <FullScreenError kind={state.kind} onRetry={() => void refresh()} />;
+  if (state.status === 'loading') return <DelayedLoadingView />;
+  if (state.status === 'signedOut') return <Redirect href="/login" />;
 
   return (
     <ThemedView style={styles.container}>
