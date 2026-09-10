@@ -524,8 +524,8 @@ export default function VendorDetailScreen() {
             {wantsPickProof ? (
               <ActionButton
                 label="Pick 인증"
-                hint="금액과 조건을 알려주시면 이 업체의 제보 금액이 여기 생겨요"
-                onPress={() => router.push(`/search/${vendor.id}/price-report`)}
+                hint="낸 금액이 보이는 사진 한 장이면 업체와 금액을 자동으로 읽어요"
+                onPress={() => router.push('/capture/payment/consent')}
               />
             ) : null}
 

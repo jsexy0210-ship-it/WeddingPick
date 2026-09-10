@@ -1,5 +1,6 @@
 import { REWARDS, type MissionKey } from '@weddingpick/domain';
 import { router } from 'expo-router';
+import { benefit as benefitCopy } from '../../../../../../../spec/strings.ko.json';
 
 import { ErrorView } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
@@ -30,7 +31,7 @@ const S = {
   statNote: `네 개를 다 하면 Npay로 드려요 · 선착순 ${REWARDS.mission.monthlyCap}커플`,
   go: '하기',
   noteTitle: '준비 순서대로 하나씩 채워져요',
-  noteBody: '네 개를 다 채우면 Npay로 바로 보내드려요.',
+  noteBody: benefitCopy.missionNoteBody,
 } as const;
 
 /** 미션마다 하러 가는 곳. 서버가 경로를 정하지 않는다 — 화면 이름이 바뀌면 여기만 고친다. */

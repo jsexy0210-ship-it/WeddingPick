@@ -9,12 +9,28 @@ import { idSchema, timestampSchema } from './common';
  * 지원하지 않는 SDK 요청으로 거부, KOE033) 토큰 교환 응답에 id_token을 실어 준다.
  * client secret은 앱이 아니라 서버에만 둔다.
  */
+/**
+ * 로그인 화면(WP-AUTH-001)의 «만 14세 이상이에요» 확인.
+ *
+ * **서버가 이 값을 그대로 믿지 않는다.** 제공자가 연령대를 준 경우에는 아예 보지
+ * 않는다 — 제공자가 미달로 판정한 사람을 이 값이 뒤집지 못한다. 서버가 이것을
+ * 보는 자리는 제공자가 연령대를 주지 않은 경우 하나뿐이고, 그때도 「확인했다」가
+ * 아니라 「사람이 화면에서 눌렀다」로 기록한다(`age_verified_via`).
+ *
+ * 이 구분이 요점이다. 2026-09-10에 뚫린 이유가 정확히 그 반대였다 — 앱이 늘
+ * `true`를 보냈고 서버가 그것 하나로 관문을 지켰다.
+ *
+ * 없으면 확인받지 못한 것으로 본다. 기본값을 `true`로 두지 않는다.
+ */
+const ageAcknowledged = z.boolean().optional();
+
 export const createSessionRequestSchema = z.union([
   z.object({
     provider: z.enum(['apple', 'google']),
     idToken: z.string().min(1),
     /** Apple이 최초 인증 때 토큰 밖에서 한 번만 주는 이름. */
     profileName: z.string().trim().min(1).max(100).optional(),
+    ageAcknowledged,
   }),
   z.object({
     provider: z.enum(['naver', 'kakao']),
@@ -22,6 +38,7 @@ export const createSessionRequestSchema = z.union([
     state: z.string().min(1).max(512),
     redirectUri: z.string().url().max(2048),
     codeVerifier: z.string().min(43).max(128).optional(),
+    ageAcknowledged,
   }),
 ]);
 
@@ -40,8 +57,11 @@ export const createSessionResponseSchema = z.object({
   /** 초기 설정(지역)까지 끝났는가. true면 홈으로 바로 간다. */
   setupComplete: z.boolean(),
   /**
-   * 만 14세 확인이 끝났는가(v3.22 SPEC 3.5). 카카오가 연령대를 줬고 14세 이상이면
-   * 체크박스 없이 여기서 true다. 연령대 자체는 내려가지 않고 저장되지도 않는다.
+   * 만 14세 확인이 끝났는가(v3.22 SPEC 3.5 · 2026-09-10 사용자 지시). 세션이 열린
+   * 이상 **언제나 true다** — 확인하지 못한 로그인은 계정을 만들지 않고
+   * `age_unverified`로 떨어지기 때문이다. 앱이 이 값을 보고 확인 화면을 다시
+   * 띄울 일은 없고, 남겨두는 것은 응답만 보고도 관문이 열렸음을 말할 수 있게
+   * 하기 위해서다. 연령대 자체는 내려가지 않고 저장되지도 않는다.
    */
   ageVerified: z.boolean(),
 });

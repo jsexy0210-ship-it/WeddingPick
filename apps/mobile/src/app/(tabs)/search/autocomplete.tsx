@@ -109,7 +109,7 @@ export default function AutocompleteScreen() {
     setError(null);
 
     Promise.all([
-      searchVendors({ q: query }).catch(() => ({ vendors: [] as VendorSummary[] })),
+      searchVendors({ q: query }),
       listVendorRegions().catch(() => ({ regions: [] as { name: string }[] })),
     ])
       .then(([vendorRes, regionRes]) => {

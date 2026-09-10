@@ -1,5 +1,5 @@
 import type { Settings } from '@weddingpick/api-contract';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Switch } from 'react-native';
 
 import { ErrorView, Layout, Toast, useTheme } from '@weddingpick/ui';
@@ -30,6 +30,8 @@ export default function NotificationSettingsScreen() {
   const theme = useTheme();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const savingRef = useRef(false);
+  const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   const load = useCallback(() => {
@@ -44,13 +46,19 @@ export default function NotificationSettingsScreen() {
   useEffect(load, [load]);
 
   async function toggle(key: 'pushEnabled' | 'priceChangeEnabled', value: boolean) {
-    if (!settings) return;
+    if (!settings || savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
     setSettings({ ...settings, [key]: value });
     await updateSettings({ [key]: value })
       .then(setSettings)
       .catch(() => {
         setSettings(settings);
         setToast(S.fail);
+      })
+      .finally(() => {
+        savingRef.current = false;
+        setSaving(false);
       });
   }
 
@@ -72,6 +80,7 @@ export default function NotificationSettingsScreen() {
             meta={S.serviceMeta}
             right={
               <Switch
+                disabled={saving}
                 value={settings.pushEnabled}
                 onValueChange={(next) => void toggle('pushEnabled', next)}
                 accessibilityLabel={S.service}
@@ -84,6 +93,7 @@ export default function NotificationSettingsScreen() {
             meta={S.priceMeta}
             right={
               <Switch
+                disabled={saving}
                 value={settings.priceChangeEnabled}
                 onValueChange={(next) => void toggle('priceChangeEnabled', next)}
                 accessibilityLabel={S.price}

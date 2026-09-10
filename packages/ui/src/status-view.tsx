@@ -1,5 +1,6 @@
 import { Linking, Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { error as errorCopy } from '../../../spec/strings.ko.json';
 
 import { ActionButton } from './action-button';
 import { CategoryCycleLoader } from './category-cycle-loader';
@@ -223,8 +224,8 @@ export type ErrorViewProps = {
 };
 
 export function ErrorView({
-  title = '잠시 문제가 생겼어요',
-  message = '다시 시도해도 안 되면 알려주세요',
+  title = errorCopy['general.title'],
+  message = errorCopy['general.body'],
   onRetry,
   retryLabel = '다시 시도',
   onBack,
