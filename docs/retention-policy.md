@@ -85,22 +85,31 @@ release/public-data-sbiz-key-guard           흡수 전 (0건 수집을 초록�
 
 ## DB 보존 계획 — 승인 대기
 
-**아직 한 건도 지우지 않았다.** 이 세션에는 `DATABASE_URL`이 없어 건수를 세지 못했다.
-읽기 전용 워크플로 `DB Inventory`로 아래를 먼저 센 뒤, 사용자 승인을 받고 실행한다.
+**아직 한 건도 지우지 않았다.** 대상은 전부 **수집·사용량 이력**이고 운영 데이터가 아니다.
 
-대상은 전부 **수집·사용량 이력**이고, 운영 데이터가 아니다.
+### 먼저 센다 — Actions → 「DB Inventory (읽기 전용)」
 
-| 표 | 성격 | 제안 보존 | 세는 SQL |
-|---|---|---|---|
-| `structured.import_runs` | 수집 실행 이력 | 출처별 최근 3회 + 90일 | `select source_id, count(*) from structured.import_runs group by 1;` |
-| `structured.import_errors` | 실행별 오류 | 남은 `import_runs`에 딸린 것만 | `select count(*) from structured.import_errors;` |
-| `structured.vendor_source_records` | 출처 원본 행 | 업체별 최신 1건 | `select count(*) from structured.vendor_source_records;` |
-| `structured.ai_usage` | 모델 사용량 기록 | 90일(월별 집계는 남긴다) | `select date_trunc('month', created_at), count(*) from structured.ai_usage group by 1;` |
-| `structured.infra_costs` | 요금 수집 스냅샷 | 월별 최신 1건 | `select count(*) from structured.infra_costs;` |
-| `ads.launch_reports` | 광고 개시 보고서 | 최근 3건 | `select count(*) from ads.launch_reports;` |
+`scripts/db-inventory.ts`가 아래 여덟 줄을 함께 찍는다(「보존 대상 이력」 절).
+**세기만 하고 아무것도 바꾸지 않는다.** 건수와 함께 가장 오래된 것 · 가장 최근 것의
+시각을 찍는 것은, 건수만으로는 「90일 보존」이 몇 건을 지우게 되는지 알 수 없기 때문이다.
 
-`structured.vendor_change_log`는 **판단 필요**로 남긴다 — 이력이지만 업체 정보가 언제
-왜 바뀌었는지를 되짚는 유일한 기록이고, 관리자 화면이 읽는다.
+| 표 | 성격 | 제안 보존 |
+|---|---|---|
+| `structured.import_runs` | 수집 실행 이력 | 출처별 최근 3회 + 90일 |
+| `structured.import_errors` | 실행별 오류 | 남은 `import_runs`에 딸린 것만(FK가 `ON DELETE CASCADE`라 함께 지워진다) |
+| `structured.vendor_source_records` | 출처 원본 행 | 업체별 최신 1건 |
+| `structured.ai_usage` | 모델 사용량 기록 | 90일(월별 집계는 남긴다) |
+| `structured.infra_costs` | 요금 수집 스냅샷 | 월별 최신 1건 |
+| `ads.launch_reports` | 광고 개시 보고서 | 최근 3건 |
+
+`structured.vendor_change_log`는 **판단 필요**라 지우는 대상에 넣지 않았지만 건수는 함께
+찍는다 — 이력이지만 업체 정보가 언제 왜 바뀌었는지를 되짚는 유일한 기록이고, 관리자
+화면이 읽는다.
+
+### 그다음에 승인을 받는다
+
+나온 숫자를 계획서에 적어 사용자에게 올리고, 승인을 받은 뒤에 실행한다. 실행 직전에
+다시 세어 계획서 숫자와 맞는지 확인한다. 다르면 **실행하지 않고 다시 보고한다.**
 
 ## 판단 필요 — 지우지 않고 올린다
 
