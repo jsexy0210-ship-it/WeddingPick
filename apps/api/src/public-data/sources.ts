@@ -43,6 +43,26 @@ export const PUBLIC_SOURCES = {
     ctprvnCd: '11',
     checkedOn: '2026-09-04',
   },
+  /**
+   * 소상공인진흥공단 OpenAPI — **전국** 웨딩업종 전수 (SBIZ_API_KEY 필수).
+   *
+   * `storeListInUpjong`은 업종코드로 묻고 **전국을 돌려준다**. 시도별 출처
+   * (`sbiz-seoul` · `sbiz-gyeonggi`)는 그 전국 응답을 받아 `ctprvnCd`로 걸러
+   * 나머지를 버린다 — 서울 155건을 얻으려고 전국을 내려받고 그 밖을 전부
+   * 버렸다(2026-09-09 실행). 시도 17곳을 그렇게 하면 같은 응답을 17번
+   * 내려받게 된다.
+   *
+   * 그래서 지역을 거르지 않는 출처를 따로 둔다. 한 번 내려받아 전국을 다 쓴다.
+   * 「웨딩 관련업체 싹다」(2026-09-10 사용자 오더)가 쓰는 출처다.
+   */
+  'sbiz-all': {
+    url: 'https://apis.data.go.kr/B553077/api/open/sdsc2/storeListInUpjong',
+    name: '소상공인시장진흥공단 전국 상권정보',
+    format: 'sbiz-api' as const,
+    nameColumn: 'bizesNm',
+    dateColumn: '',
+    checkedOn: '2026-09-10',
+  },
   /** 소상공인진흥공단 OpenAPI — 경기도 웨딩업종 전수 (SBIZ_API_KEY 필수) */
   'sbiz-gyeonggi': {
     url: 'https://apis.data.go.kr/B553077/api/open/sdsc2/storeListInUpjong',

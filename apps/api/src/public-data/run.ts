@@ -35,6 +35,8 @@ export async function runPublicCollection(args: string[]) {
   let total: number;
   let rejected: number;
   let duplicates: number;
+  /** sbiz 전용 — 페이지 상한에 걸려 다 못 받은 업종코드. 비어 있어야 전수다. */
+  let truncated: { code: string; got: number; total: number }[] = [];
 
   if (source.format === 'sbiz-api') {
     if (!sbizApiKey) throw new Error('SBIZ_API_KEY 환경변수 또는 --sbiz-api-key 옵션이 필요합니다.');
@@ -47,6 +49,7 @@ export async function runPublicCollection(args: string[]) {
     total = result.fetched;
     rejected = result.rejected;
     duplicates = result.duplicates;
+    truncated = result.truncated;
   } else {
     if (file && (await stat(file)).size > 64 * 1024 * 1024) throw new Error('64 MiB 이하 지역별 CSV가 필요합니다.');
     const bytes = file ? await readFile(file) : await downloadPublicCsv(key);
@@ -74,7 +77,7 @@ export async function runPublicCollection(args: string[]) {
     } finally { await pool.end(); }
   }
   const report = {source: key, sourceUrl: source.url, collectedAt: at.toISOString(),
-    total, accepted: vendors.length, rejected, duplicates, databaseApplied: apply, db};
+    total, accepted: vendors.length, rejected, duplicates, truncated, databaseApplied: apply, db};
   await writeFile(join(output, `${key}-report.json`), JSON.stringify(report, null, 2) + '\n', 'utf8');
   console.log(JSON.stringify(report));
   if (db?.errors) throw new Error('일부 DB 반영 실패. import_errors 확인');

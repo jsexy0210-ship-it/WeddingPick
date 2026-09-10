@@ -80,7 +80,8 @@ jobs:
   collect:
     needs: verify
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # 전국 전수는 업종코드마다 1,000건씩 페이지를 넘긴다 — 15분으로는 모자란다.
+    timeout-minutes: 60
     # SBIZ_API_KEY 유무를 `if:`에서 secrets.* 로 직접 참조하면 GitHub Actions가
     # 워크플로 파일 자체를 무효로 처리한다(잡이 하나도 안 만들어지고 즉시
     # 실패 — `if:`/`env:`가 아닌 잡 표현식에서 secrets 컨텍스트를 막는 보안
@@ -100,6 +101,10 @@ jobs:
             needs_sbiz_key: false
           - source: jecheon-halls
             needs_sbiz_key: false
+          # 전국 전수. 시도 출처는 같은 전국 응답을 받아 그 밖을 버리므로,
+          # 「웨딩 관련업체 싹다」는 이 출처 하나로 받는다.
+          - source: sbiz-all
+            needs_sbiz_key: true
           - source: sbiz-seoul
             needs_sbiz_key: true
           - source: sbiz-gyeonggi
@@ -147,6 +152,8 @@ jobs:
           fi
           ACCEPTED=$(node -e "process.stdout.write(String(require('./$REPORT').accepted ?? 0))")
           echo "$SOURCE accepted=$ACCEPTED"
+          # 상한에 걸려 다 못 받았으면 전수가 아니다. 초록으로 넘기되 눈에 띄게 남긴다.
+          node -e "const t=require('./$REPORT').truncated??[];if(t.length)console.log('::warning::전수가 아니다 — 상한에 걸린 업종코드 '+JSON.stringify(t))"
           if [ "$ACCEPTED" -eq 0 ]; then
             echo "::error::'$SOURCE' 수집 결과가 0건입니다. 초록으로 넘기지 않고 멈춥니다 — 출처 응답 또는 업종 코드를 확인하세요."
             exit 1

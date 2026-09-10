@@ -314,19 +314,33 @@ export async function downloadSbizApiVendors(
   apiKey: string,
   at = new Date(),
   upjong?: SbizUpjongQuery,
-): Promise<{ vendors: CollectedVendor[]; fetched: number; rejected: number; duplicates: number }> {
+): Promise<{ vendors: CollectedVendor[]; fetched: number; rejected: number; duplicates: number;
+  truncated: { code: string; got: number; total: number }[] }> {
   const source = PUBLIC_SOURCES[key];
   if (source.format !== 'sbiz-api') throw new Error('sbiz-api 형식 출처가 아닙니다.');
-  const ctprvnCd = (source as { ctprvnCd: string }).ctprvnCd;
+  /*
+   * 지역 필터. 시도 출처(`sbiz-seoul` 등)는 값이 있고, 전국 출처(`sbiz-all`)는
+   * 없다 — 없으면 거르지 않고 전부 받는다. API가 전국을 돌려주므로 전국 출처는
+   * 같은 응답을 한 번만 내려받아 다 쓴다.
+   */
+  const ctprvnCd = (source as { ctprvnCd?: string }).ctprvnCd;
   const query = resolveUpjongQuery(upjong);
 
   const vendors: CollectedVendor[] = [];
   const seen = new Set<string>();
-  const MAX_PAGES = 20;
+  /*
+   * 페이지 상한. 20페이지(2만 건)는 시도 하나를 걸러낼 때의 값이었다. 전국
+   * 전수는 그보다 크다 — 상한에 걸려 조용히 잘리면 「싹다」가 아니게 되므로
+   * 넉넉히 두고, 대신 잘렸을 때 그 사실을 리포트에 남긴다(truncated).
+   * 무한 루프 방지용 안전장치로만 쓴다.
+   */
+  const MAX_PAGES = Number(process.env.SBIZ_MAX_PAGES ?? 500);
 
   let fetched = 0;
   let rejected = 0;
   let duplicates = 0;
+  /** 상한에 걸려 다 못 받은 업종코드. 비어 있어야 「전수」다. */
+  const truncated: { code: string; got: number; total: number }[] = [];
 
   for (const code of query.codes) {
   let seenForCode = 0;
@@ -347,8 +361,8 @@ export async function downloadSbizApiVendors(
     fetched += records.length;
 
     for (const r of records) {
-      // 시도 코드로 지역 필터
-      if (r.ctprvnCd !== ctprvnCd) { rejected++; continue; }
+      // 시도 코드로 지역 필터. 전국 출처는 거르지 않는다.
+      if (ctprvnCd && r.ctprvnCd !== ctprvnCd) { rejected++; continue; }
 
       const branch = r.brchNm?.trim() ?? '';
       const name = [r.bizesNm?.trim(), branch].filter(Boolean).join(' ');
@@ -380,12 +394,14 @@ export async function downloadSbizApiVendors(
     }
 
     if (!totalCount || seenForCode >= totalCount || records.length < 1000) break;
+    // 상한에서 멈추는 것은 다 받은 것과 다르다. 그 사실을 리포트로 넘긴다.
+    if (pageNo === MAX_PAGES) truncated.push({ code, got: seenForCode, total: totalCount });
   }
   // 코드가 틀리면 API는 오류 대신 빈 목록을 준다 — 조용한 0건 수집을 막는다.
   if (!seenForCode) throw new Error(`업종코드 ${query.divId}=${code} 응답이 0건입니다. 코드를 확인하세요.`);
   }
 
-  return { vendors, fetched, rejected, duplicates };
+  return { vendors, fetched, rejected, duplicates, truncated };
 }
 
 export type IndustryCategory = { code: string; name: string };
