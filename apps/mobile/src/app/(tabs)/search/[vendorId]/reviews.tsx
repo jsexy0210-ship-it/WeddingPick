@@ -129,8 +129,14 @@ export default function VendorReviewsScreen() {
               {page.usageScore.available ? (
                 <>
                   <ThemedText type="subtitle">{page.usageScore.average.toFixed(1)}</ThemedText>
+                  {/*
+                    v3.18 용어 — «확인된 ~»은 쓰지 않는다(CLAUDE.md «확인된 제보» ·
+                    «확인된 정보» 폐기). 이 자리는 몇 명이 답했는지를 말하는 자리라
+                    업체 상세(`index.tsx` EXPERIENCE_COUNT)와 같은 말을 쓴다 —
+                    screens.json WP-REV-006 «N명이 답했어요».
+                  */}
                   <ThemedText type="small" themeColor="textSecondary">
-                    확인된 후기 {page.usageScore.count}건
+                    {page.usageScore.count}명이 답했어요
                   </ThemedText>
                   {page.usageScore.aspects.map((aspect) => (
                     <ThemedText key={aspect.key} type="small" themeColor="textSecondary">

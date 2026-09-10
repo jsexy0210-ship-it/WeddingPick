@@ -102,9 +102,17 @@ export const DONE_CTA = '웨딩픽 시작하기';
 export const NEXT_CTA = '다음';
 export const PREV_CTA = '이전';
 
-/** 스타일 CTA — 고른 수 그대로 «N개 선택». 완료 화면이 뒤에 있으므로 «시작하기»를 붙이지 않는다. 0개면 비활성. */
+/**
+ * 스타일 CTA — 고른 **장수** 그대로 «N장 선택». 완료 화면이 뒤에 있으므로
+ * «시작하기»를 붙이지 않는다. 0장이면 비활성.
+ *
+ * 세는 것이 이미지 장수라 단위는 «장»이다 — `spec/strings.ko.json`
+ * `onboarding.taste.cta` · SPEC.md §「CTA는 «N장 선택»」 · 시안
+ * `20-onboarding-v2.dc.html` «3장 선택». CHANGELOG v3.19가 한 번 «곳»으로
+ * 적었지만 «곳»은 업체를 세는 말이고, 그 뒤의 SPEC과 시안이 «장»으로 돌아왔다.
+ */
 export function styleCta(count: number): string {
-  return `${count}개 선택`;
+  return `${count}장 선택`;
 }
 
 /** 이 답 상태에서 묻는 Step. 다섯 개 전부 — 건너뛰는 질문이 없다. */

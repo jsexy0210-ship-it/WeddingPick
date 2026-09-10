@@ -147,9 +147,9 @@ describe('답 줄과 완료 요약', () => {
     expect(doneRows(FULL)[4]).toEqual({ step: 'style', label: '스타일', value: '도시적인 · 로맨틱한' });
   });
 
-  it('스타일 CTA는 고른 수 그대로 «N개 선택»이다', () => {
-    expect(styleCta(0)).toBe('0개 선택');
-    expect(styleCta(2)).toBe('2개 선택');
+  it('스타일 CTA는 고른 장수 그대로 «N장 선택»이다', () => {
+    expect(styleCta(0)).toBe('0장 선택');
+    expect(styleCta(2)).toBe('2장 선택');
   });
 
   it('시트의 D-day는 «D-250», 당일은 «D-DAY»다', () => {

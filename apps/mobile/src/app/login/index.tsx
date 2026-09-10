@@ -1,9 +1,7 @@
 import { POLICY_DOCUMENTS, dDay } from '@weddingpick/domain';
-import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
 
 import {
   ActionButton,
@@ -53,21 +51,22 @@ const KAKAO_PROVIDER_NAME = '카카오';
  * 레이아웃은 시안 `01a-login.dc.html` #27a · #27h 그대로다(SPEC §13.5) —
  *
  *   BrandBlock  flex 1 · 세로 중앙 · 마크 64 (아래 24) · 제목 32/43 · 혜택 3줄(위 28)
- *   AuthBlock   flex 0 0 auto · 위 24 · 아래 32 · 사이 10 · 동의 44 · 카카오 · 약관 13px
+ *   AuthBlock   flex 0 0 auto · 위 24 · 아래 32 · 사이 10 · 카카오 · 약관 13px
  *
  * 2026-09-04 정책 변경 — 비회원 진입 삭제. 스플래시(온보딩 소개) 다음은
  * 이 화면이고, 로그인해야만 앱으로 넘어간다.
  *
- * **만 14세 확인은 여기서 체크박스 하나로 끝낸다**(§3.5). 별도 화면을 두지
- * 않는다. 체크하지 않고 카카오를 누르면 로그인을 시작하지도 않고
- * `login/age-required`(WP-AUTH-009)로 보낸다 — 버튼을 진짜로 비활성화하면
- * 왜 안 눌리는지 말할 자리가 없다. 체크박스는 첫 진입(WP-AUTH-001)에만
- * 있다 — 이미 확인을 마친 WP-AUTH-008(로그인 유지)에는 없다.
+ * **만 14세 확인 체크박스는 두지 않는다**(핸드오프 v3.24 · CHANGELOG «14세 동의
+ * 체크박스 삭제» · 시안 `27-login.dc.html` WP-AUTH-001). 카카오가 출생연도를
+ * 필수 동의로 넘기므로 나이는 서버가 판정한다. 미달이면 인가 코드 교환이
+ * `under_age`로 떨어지고 `use-sign-in.ts`가 `login/age-required`(WP-AUTH-009)로
+ * 보낸다 — 화면이 미리 막지 않는다. 카카오 앱 설정이 14세 미만을 동의 화면
+ * 전에 되돌려 보내는 경우도 같은 경로다(`providers.ts` `isUnderAgeDenial`).
  *
  * **두 상태를 한 컴포넌트에서 가른다**(WP-AUTH-001 첫 진입 / WP-AUTH-008
  * 로그인 유지). 기억된 계정이 있으면 인사 · D-day · 마지막 계정 카드(카카오
  * 아바타 40 · 마스킹 이메일 · «최근 로그인» 배지) + «카카오로 계속하기» 하나만
- * 보여주고, 없으면 만 14세 확인과 카카오 버튼을 보여준다. 계정 전환 버튼은
+ * 보여주고, 없으면 카카오 버튼 하나만 보여준다. 계정 전환 버튼은
  * 두지 않는다(SPEC §3.4 — 초기 버전은 카카오만이라 고를 것이 없다).
  *
  * 카카오 로그인 실패는 화면에 문구를 깔지 않고 시트로 뜬다
@@ -79,8 +78,6 @@ export default function LoginScreen() {
   const { signIn, busy, error, retry, dismissError, reportError } = useSignIn();
   /** undefined = 아직 안 읽음, null = 기억된 계정 없음(WP-AUTH-001). */
   const [remembered, setRemembered] = useState<RememberedAccount | null | undefined>(undefined);
-  /** 만 14세 이상이에요 체크박스. 기본 해제(§3.5 "화면 규칙"). */
-  const [ageChecked, setAgeChecked] = useState(false);
 
   useEffect(() => {
     loadRememberedAccount().then(setRemembered);
@@ -170,7 +167,7 @@ export default function LoginScreen() {
                     {/*
                       시안 #27h — «카카오로 계속하기»는 ctaPrimary(코랄 · 로고 없음)다.
                       첫 진입의 카카오 노란 버튼과 다르다. 이미 최소 한 번 확인을 마친
-                      계정이라 여기엔 만 14세 체크박스도 없다.
+                      계정이다.
                     */}
                     {kakao ? (
                       <ActionButton
@@ -188,25 +185,21 @@ export default function LoginScreen() {
                   </>
                 ) : (
                   <>
-                    <AgeConsentCheckbox checked={ageChecked} onToggle={() => setAgeChecked((v) => !v)} />
-
                     {kakao ? (
-                      <View style={{ opacity: ageChecked ? 1 : 0.4 }}>
-                        <ActionButton
-                          variant="primary"
-                          size="xlarge"
-                          tone={providerTone(kakao)}
-                          icon={kakao.isDevelopmentStandIn ? undefined : <SocialLogo provider="kakao" size={KAKAO_LOGO} />}
-                          label={kakao.isDevelopmentStandIn ? '개발용 로그인' : '카카오로 시작하기'}
-                          hint={
-                            kakao.isDevelopmentStandIn
-                              ? '실제 카카오 로그인이 아니에요. 개발 중인 서버에만 있어요'
-                              : undefined
-                          }
-                          disabled={busy || !canSignInWith(kakao)}
-                          onPress={() => (ageChecked ? signIn(kakao) : router.push('/login/age-required'))}
-                        />
-                      </View>
+                      <ActionButton
+                        variant="primary"
+                        size="xlarge"
+                        tone={providerTone(kakao)}
+                        icon={kakao.isDevelopmentStandIn ? undefined : <SocialLogo provider="kakao" size={KAKAO_LOGO} />}
+                        label={kakao.isDevelopmentStandIn ? '개발용 로그인' : '카카오로 시작하기'}
+                        hint={
+                          kakao.isDevelopmentStandIn
+                            ? '실제 카카오 로그인이 아니에요. 개발 중인 서버에만 있어요'
+                            : undefined
+                        }
+                        disabled={busy || !canSignInWith(kakao)}
+                        onPress={() => signIn(kakao)}
+                      />
                     ) : null}
 
                     <ThemedText type="micro" themeColor="textAssistive" style={styles.terms}>
@@ -308,58 +301,11 @@ function PolicyLink({ id }: { id: 'terms' | 'privacy' }) {
   );
 }
 
-/**
- * «만 14세 이상이에요» 체크박스. §3.5 "화면 규칙" — 카카오 위 · 배경 없는
- * 텍스트 · 터치 영역 44 · coral은 체크 원에만 쓰고 라벨은 밑줄로만 표시한다.
- * 카드나 버튼으로 만들면 카카오와 경쟁하게 되어 낮춘 형태다.
- *
- * 시안 ageCard — 높이 44 · 좌우 4 · 사이 8 · 라벨 15/700 #4D5159(토큰 t6 16) ·
- * 밑줄 #DCDEE3 · 체크 18 코랄 원 + 흰 체크 12(선 3.6).
- */
-function AgeConsentCheckbox({ checked, onToggle }: { checked: boolean; onToggle: () => void }) {
-  const theme = useTheme();
-
-  return (
-    <Pressable
-      accessibilityRole="checkbox"
-      accessibilityState={{ checked }}
-      accessibilityLabel="만 14세 이상이에요"
-      onPress={onToggle}
-      style={styles.ageCard}
-      hitSlop={4}>
-      <View
-        style={[
-          styles.ageCheck,
-          checked ? { backgroundColor: theme.tint } : { borderWidth: 1.5, borderColor: theme.track },
-        ]}>
-        {checked ? (
-          <Svg width={AGE_CHECK_GLYPH} height={AGE_CHECK_GLYPH} viewBox="0 0 24 24" fill="none">
-            <Path
-              d="m5 12.5 4.5 4.5L19 7.5"
-              stroke={theme.onTint}
-              strokeWidth={3.6}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </Svg>
-        ) : null}
-      </View>
-      <ThemedText
-        type="t6"
-        themeColor="textSecondary"
-        style={[styles.bold, styles.ageUnderline, { textDecorationColor: theme.track }]}>
-        만 14세 이상이에요
-      </ThemedText>
-    </Pressable>
-  );
-}
-
-/* 시안 고정값 — 마크 64 · 카카오 로고 20 · 아바타 40(로고 18) · 체크 원 18(글리프 12) · 배지 좌우 9 · 카드 안쪽 16/18. */
+/* 시안 고정값 — 마크 64 · 카카오 로고 20 · 아바타 40(로고 18) · 배지 좌우 9 · 카드 안쪽 16/18. */
+/* 시안 고정값 — 마크 64 · 카카오 로고 20 · 아바타 40(로고 18) · 배지 좌우 9 · 카드 안쪽 16/18. */
 const MARK_SIZE = 64;
 const KAKAO_LOGO = 20;
 const AVATAR_LOGO = 18;
-const AGE_CHECK = 18;
-const AGE_CHECK_GLYPH = 12;
 const BADGE_PADDING_X = 9;
 const ACCOUNT_PADDING_Y = 16;
 const ACCOUNT_PADDING_X = 18;
@@ -455,17 +401,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: BADGE_PADDING_X,
     borderRadius: Radius.badge,
   },
-  /* §3.5 — 카드가 아니라 44 터치 영역 안의 텍스트 한 줄이다. 좌측 정렬. */
-  ageCard: {
-    flexDirection: 'row',
-    alignSelf: 'flex-start',
-    alignItems: 'center',
-    gap: Spacing.two,
-    minHeight: Layout.touchTarget,
-    paddingHorizontal: Spacing.one,
-  },
-  ageCheck: { width: AGE_CHECK, height: AGE_CHECK, borderRadius: Radius.pill, alignItems: 'center', justifyContent: 'center' },
-  ageUnderline: { textDecorationLine: 'underline', textDecorationStyle: 'solid' },
   policyLink: { fontWeight: 700, textDecorationLine: 'underline', textDecorationStyle: 'solid' },
   bold: { fontWeight: 700 },
 });
