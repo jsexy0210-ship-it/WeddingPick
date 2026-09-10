@@ -54,7 +54,8 @@ export function StepList({ steps }: { steps: readonly Step[] }) {
 const STATE_LABEL: Record<StepState, string> = { done: '끝남', now: '진행 중', todo: '남음' };
 
 const styles = StyleSheet.create({
-  list: { alignSelf: 'stretch', gap: Spacing.one },
+  /* 시안 stepList — 좌우 24(30-loading.dc.html L347). 거터 없이 두면 글이 화면 끝에 붙는다. */
+  list: { alignSelf: 'stretch', gap: Spacing.one, paddingHorizontal: Layout.gutter },
   row: { flexDirection: 'row', alignItems: 'center', gap: Layout.iconTextGap, minHeight: Layout.stepRow },
   /** 30-loading step — 점 18 · 라벨 16/22 · 진행 중만 700. */
   dot: {

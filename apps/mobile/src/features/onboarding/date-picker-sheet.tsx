@@ -30,7 +30,7 @@ import { ddayLabel } from './flow';
  *   [2027년 ▾]  [5월 ▾]             셀렉트 2개 · 52 · 닫힘 gray50 · 열림 흰 바탕 + 코랄 1.5
  *    일 월 화 수 목 금 토             요일 헤더 28
  *    25 26 27 28 29 30  1            날짜 셀 40 · 타월은 옅게
- *    …  16  …                        선택일 코랄 원 · 흰 700
+ *    …  16  …                        선택일 코랄 8px 사각 · 흰 700
  *   2027.05.16(토)              D-250
  *   [       이 날짜로 정하기       ]  width 100% · flex 0 0
  *
@@ -344,20 +344,20 @@ const styles = StyleSheet.create({
   /* 시안 sheet — 패딩 · 둥글기 · 그래버는 SheetPanel. 요소 사이만 16(공용 20보다 좁다). */
   sheet: { gap: Spacing.three },
   selects: { flexDirection: 'row', gap: Spacing.two },
-  /* 셀렉트 — 높이 52(Layout.field) · radius 10 · 테두리 1.5(열리면 코랄). */
+  /* 셀렉트 — 높이 52(Layout.field) · radius 10 · 좌우 16(시안 selBox padding:0 16px) · 테두리 1.5(열리면 코랄). */
   select: {
     flex: 1,
     minWidth: 0,
     height: Layout.field,
     borderRadius: Radius.medium,
     borderWidth: 1.5,
-    paddingHorizontal: Layout.fieldPaddingX,
+    paddingHorizontal: Spacing.three,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: Spacing.two,
   },
-  /* 연도 · 월 펼침 — 4열 · 셀 44 · 사이 8 · radius 8(토큰 Radius.medium 10). */
+  /* 연도 · 월 펼침 — 4열 · 셀 44 · 사이 8 · radius 8(Radius.picker). */
   grid: { gap: Spacing.two },
   gridRow: { flexDirection: 'row', gap: Spacing.two },
   gridCell: {
@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
     flexBasis: 0,
     minWidth: 0,
     height: Layout.touchTarget,
-    borderRadius: Radius.medium,
+    borderRadius: Radius.picker,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -374,8 +374,8 @@ const styles = StyleSheet.create({
   week: { flexDirection: 'row', gap: Spacing.half },
   weekdayCell: { flex: 1, flexBasis: 0, minWidth: 0, height: WEEKDAY_HEADER, alignItems: 'center', justifyContent: 'center' },
   dayCell: { flex: 1, flexBasis: 0, minWidth: 0, height: DAY_CELL, alignItems: 'center', justifyContent: 'center' },
-  /* 선택일의 코랄 원 — 셀과 같은 40. */
-  day: { width: DAY_CELL, height: DAY_CELL, borderRadius: Radius.pill, alignItems: 'center', justifyContent: 'center' },
+  /* 선택일의 코랄 칸 — 셀과 같은 40 · radius 8(Radius.picker). 시안 dayCell은 원이 아니라 사각이다. */
+  day: { width: DAY_CELL, height: DAY_CELL, borderRadius: Radius.picker, alignItems: 'center', justifyContent: 'center' },
   /* 시안 pickedRow — 결과 줄 · baseline 정렬 · 좌우 2. */
   picked: {
     flexDirection: 'row',

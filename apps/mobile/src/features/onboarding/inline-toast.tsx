@@ -76,10 +76,12 @@ const styles = StyleSheet.create({
     left: Layout.gutter,
     right: Layout.gutter,
     zIndex: 100,
-    borderRadius: Radius.medium,
-    paddingVertical: Layout.rowPaddingY,
-    paddingHorizontal: Spacing.three,
+    /* 시안 toastBox — 높이 44 · 좌우 18 · 완전한 pill(20-onboarding-v2.dc.html L414). */
+    borderRadius: Radius.pill,
+    height: Layout.touchTarget,
+    paddingHorizontal: Layout.toastPaddingX,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   label: { textAlign: 'center' },
 });

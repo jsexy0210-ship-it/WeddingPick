@@ -591,6 +591,13 @@ export const Layout = {
   loaderMedium: 28,
   loaderLarge: 40,
   loaderBoxPadding: 10,
+  /**
+   * 인라인 토스트 좌우 안여백. component.toast.paddingX.
+   *
+   * `20-onboarding-v2.dc.html`의 `toastBox`가 `padding:0 18px`다(L414). 18은 `Spacing`
+   * 사다리(2·4·8·16·24·32·64)에도 다른 `Layout` 여백에도 없다 — 16으로 대신하면 pill이 글자에 붙는다.
+   */
+  toastPaddingX: 18,
 } as const;
 
 /**
@@ -608,6 +615,14 @@ export const Radius = {
   control: 6,
   small: 6,
   input: 6,
+  /**
+   * 날짜 선택의 연 · 월 칸과 날짜 칸. radius.picker.
+   *
+   * `20-onboarding-v2.dc.html`의 `optCell` · `dayCell`이 둘 다 `border-radius:8px`다(L307 · L310).
+   * 8은 `control`(6)도 `medium`(10)도 아니다 — 가까운 값으로 대신하면 시안과 다른 모양이 된다.
+   * SPEC 13.7 본문은 선택일을 「coral 원」이라 적지만 목업은 사각이고, 목업이 이긴다.
+   */
+  picker: 8,
   /** 카드 · 이미지 · 안내 박스. radius.card. */
   medium: 10,
   /** Pick 카드. radius.pick. */

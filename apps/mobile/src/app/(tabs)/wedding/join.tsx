@@ -216,11 +216,13 @@ const styles = StyleSheet.create({
   content: { paddingBottom: Spacing.four },
   fields: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four },
   /* 수락 히어로 — padding 32 24 28 · gap 14. */
+  /* 시안 acceptHero — 가운데 정렬(14-couple.dc.html L116 `align-items:center;text-align:center`). */
   acceptHero: {
     paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.five,
     paddingBottom: Layout.sectionGap,
     gap: Layout.sectionHeadGap,
+    alignItems: 'center',
   },
   avatars: { flexDirection: 'row', alignItems: 'center' },
   avatarOverlap: { marginLeft: -Layout.rowPaddingY },

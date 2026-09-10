@@ -434,7 +434,8 @@ export function CampaignCard({
       style={[
         styles.card,
         brand
-          ? { backgroundColor: theme.tintSubtle, borderColor: theme.tintBorder }
+          /* 시안 15-events.dc.html L157 — 코랄 7%(tintSurface)다. tintSubtle은 12%라 더 짙다. */
+          ? { backgroundColor: theme.tintSurface, borderColor: theme.tintBorder }
           : { backgroundColor: theme.background, borderColor: theme.track },
       ]}>
       <View style={styles.cardHead}>
@@ -468,14 +469,16 @@ export function CardList({ children }: { children: ReactNode }) {
 /** 아바타 원 — 이니셜 한 글자. Layout.avatarProfile(56 · MY 홈) · avatarRow(32) · avatarLarge(88). */
 export function Avatar({ initial, size = Layout.avatarProfile }: { initial: string; size?: number }) {
   const theme = useTheme();
+  const big = size >= Layout.avatarProfile;
 
   return (
     <View
       style={[
         styles.avatar,
-        { width: size, height: size, backgroundColor: theme.backgroundSelected },
+        { width: size, height: size, backgroundColor: big ? theme.tintSubtle : theme.backgroundSelected },
       ]}>
-      <ThemedText type={size >= Layout.avatarProfile ? 't4' : 't7'} themeColor="textAssistive">
+      {/* 시안 13-my-sub.dc.html L235 — 88 아바타는 코랄틴트 바탕에 코랄 32/700이다. 작은 아바타는 회색 그대로. */}
+      <ThemedText type={big ? 't1' : 't7'} themeColor={big ? 'tint' : 'textAssistive'}>
         {initial}
       </ThemedText>
     </View>
