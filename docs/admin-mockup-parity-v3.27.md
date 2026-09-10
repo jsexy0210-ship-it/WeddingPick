@@ -35,6 +35,9 @@
   `admin-dashboard`)이 이 화면들의 서버 동작을 만들고 있어 여기서 라우트를 건드리지 않았다.
 - **판단 필요** — 시안과 ADMIN.md 공통 규칙이 서로 다른 것을 말한다. 사람이 정해야 한다.
 
+작업 중 `main`이 두 번 움직였다(`373ee02`까지). 시작 전과 올리기 전 두 번 머지했고,
+그 사이에 들어온 것은 아래 1-4에 적었다.
+
 ---
 
 ## 1. 공용 부품 — `_ui.tsx` · `_layout.tsx`
@@ -129,20 +132,28 @@
 12px 18px;gap:9px»`(723) · `navGroup «padding:16px 12px 6px»`(725) · 메뉴 사이 `gap:3px`(722) ·
 메뉴 좌우 `12`(코드는 8이라 글자가 16에서 시작했다. 시안은 24다). 토큰 다섯 개를 더했다.
 
-### 1-4. 사이드바 「조회만」 표시가 없다 · **판단 필요**
+### 1-4. 사이드바 「조회만」 표시 — 검수 도중 `main`이 채웠다
 
-지시문은 「서버에 없는 동작은 화면에서 잠겨 있고 **사이드바에 「조회만」으로 표시**된다
-(`BACKEND_PENDING` ↔ `_layout.tsx`의 `READ_ONLY`)」라고 했다. **그 짝이 지금 없다.**
+이 브랜치를 딸 때(`b6f0953`)는 **그 짝이 없었다.** `_layout.tsx`에 `READ_ONLY`도
+「조회만」도 없었고, 있는 것은 `OUTSIDE_ADMIN_MD`(ADMIN.md 목록 밖 라우트를 흐리게
+하는 다른 개념)뿐이었다. 「조회만」이라는 말은 `features/admin/pending-backend.tsx`의
+안내 본문 안에만 있었다.
 
-- `_layout.tsx`에 `READ_ONLY`도 「조회만」도 없다. 있는 것은 `OUTSIDE_ADMIN_MD`뿐이고,
-  이것은 **ADMIN.md 26화면 목록 밖의 라우트**를 흐리게 하는 다른 개념이다.
-- 「조회만」이라는 말은 `features/admin/pending-backend.tsx`의 `PendingBackendNotice`
-  **본문 안**에만 있다 — 화면 위 안내 한 줄이지 사이드바 표시가 아니다.
+**작업 중에 `main`이 움직여 그 자리를 채웠다.** 지금 `_layout.tsx`에는 `READ_ONLY`
+아홉 개(`ads` · `ads-gate` · `biz-queue` · `campaigns` · `data-pipeline` ·
+`objections` · `policy-engine` · `terms` · `vendors`)와 메뉴 옆 「조회만」 칩이 있다.
 
-깨뜨리지 말라고 한 짝이 애초에 없어서, **없다는 사실만 적고 손대지 않았다.** 사이드바에
-「조회만」배지를 새로 만드는 것은 목업에 없는 것을 더하는 일이라 검수의 몫이 아니다.
+`main`을 머지해 그대로 받았고 **짝을 깨지 않았다** — 이 브랜치가 고친 것은 `label`
+문자열뿐이고 `key`는 하나도 건드리지 않았다. `READ_ONLY`는 `key`로 맞추므로 아홉 개가
+그대로 붙는다. 「조회만」 칩은 시안에 없는 것이지만 대표 지시로 들어온 것이라
+(CLAUDE.md 「서버에 없는 동작은 화면에서 잠그고 목록에도 조회만으로 표시한다」)
+목업 1:1의 예외로 두고 손대지 않았다.
+
 이 열한 화면 중 `BACKEND_PENDING`을 쓰는 것은 네 곳이다 — `email-matching` ·
-`automation` · `rollback` · `policy-engine`.
+`automation` · `rollback` · `policy-engine`. 그중 `policy-engine`만 `READ_ONLY`에
+들어 있다. 나머지 셋(`email-matching` · `automation` · `rollback`)은 화면 안은
+잠겨 있는데 **사이드바에는 「조회만」이 붙지 않는다** — 짝이 세 곳 비어 있다.
+이 브랜치는 화면 값만 손대므로 적어만 둔다.
 
 ---
 
@@ -328,9 +339,11 @@ WP-ADM-032(수익 현황) · WP-ADM-052(감사 기록). 시안에는 `alert`가 
 시안 카드 부제가 `최근 24시간`인데 서버가 그 범위로 잘라 준다는 보장이 없다. 글자만
 옮기면 화면이 **확인되지 않은 사실**을 말하게 된다. `최근 순`으로 두고 적어 둔다.
 
-### 3-4. 사이드바 「조회만」 표시 (1-4 참고)
+### 3-4. 「조회만」이 붙지 않은 화면 셋 (1-4 참고)
 
-지시문이 말한 `READ_ONLY` ↔ `BACKEND_PENDING` 짝이 `_layout.tsx`에 없다.
+`email-matching` · `automation` · `rollback`은 화면 안이 `BACKEND_PENDING`으로 잠겨
+있는데 사이드바 `READ_ONLY`에는 없다. 짝을 맞추려면 세 이름을 더해야 하지만, 그것은
+사이드바 동작을 바꾸는 일이라 화면 값 검수의 몫이 아니다.
 
 ---
 
