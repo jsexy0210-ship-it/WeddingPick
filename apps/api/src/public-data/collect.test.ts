@@ -275,3 +275,52 @@ test('최신 동일 출처 갱신, 과거·다른 출처·잠금은 보류한다
 test('해시는 수집 시각에 영향받지 않는다', () => {
   expect(contentHash(incoming)).toBe(contentHash({...incoming,collectedAt:'later'} as CollectedVendor));
 });
+
+test('한 페이지가 끊겨도 그때까지 모은 것을 버리지 않는다', async () => {
+  /*
+   * 전국 전수를 돌리다 apis.data.go.kr이 4분 끊기면 이미 받아 둔 수천 건이 통째로
+   * 사라졌다(2026-09-10 run 34427466145). 페이지가 수천 개면 어느 하나는 반드시
+   * 끊긴다 — 전부 아니면 전무는 전수 수집에서 성립하지 않는다.
+   */
+  const page = (rows: number, offset: number) => ({
+    totalCount: 3000,
+    data: Array.from({ length: rows }, (_, i) => ({
+      bizesId: `V${offset + i}`, bizesNm: `업체${offset + i}웨딩홀`, brchNm: '',
+      indsSclsNm: '예식장업', ctprvnCd: '11', rdnmAdr: '서울특별시 강남구 길 1',
+    })),
+  });
+
+  const origFetch = global.fetch;
+  const savedRetries = process.env.PUBLIC_DATA_RETRIES;
+  // 실제로 4분을 기다리지 않는다 — 여기서 보는 것은 끊긴 뒤의 처리다.
+  process.env.PUBLIC_DATA_RETRIES = '1';
+  let call = 0;
+
+  global.fetch = jest.fn().mockImplementation(() => {
+    call += 1;
+    // 첫 쪽은 가득 채워 주고, 둘째 쪽부터 연결이 끊긴다.
+    if (call > 1) return Promise.reject(new TypeError('fetch failed'));
+
+    const body = Buffer.from(JSON.stringify(page(1000, 0)));
+
+    return Promise.resolve({
+      ok: true,
+      body: { [Symbol.asyncIterator]: async function* () { yield body; } },
+    });
+  });
+
+  try {
+    const result = await downloadSbizApiVendors(
+      'sbiz-seoul', 'test-key', new Date('2026-09-10T00:00:00Z'),
+      { divId: 'indsSclsCd', codes: ['S21101'] });
+
+    expect(result.vendors).toHaveLength(1000);
+    expect(result.truncated).toEqual([
+      { code: 'S21101', got: 1000, total: 3000, reason: '연결 끊김' },
+    ]);
+  } finally {
+    global.fetch = origFetch;
+    if (savedRetries === undefined) delete process.env.PUBLIC_DATA_RETRIES;
+    else process.env.PUBLIC_DATA_RETRIES = savedRetries;
+  }
+});

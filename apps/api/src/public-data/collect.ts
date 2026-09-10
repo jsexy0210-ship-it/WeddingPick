@@ -137,7 +137,10 @@ function isRetriable(err: unknown): boolean {
   return name === 'TimeoutError' || name === 'AbortError';
 }
 
-async function fetchWithRetry(url: string, attempts = 8): Promise<Response> {
+/** 시도 횟수. 테스트가 실제로 4분을 기다리지 않게 환경변수로 줄일 수 있다. */
+const RETRY_ATTEMPTS = () => Number(process.env.PUBLIC_DATA_RETRIES ?? 8);
+
+async function fetchWithRetry(url: string, attempts = RETRY_ATTEMPTS()): Promise<Response> {
   for (let i = 0; i < attempts; i++) {
     try { return await fetch(url, { redirect: 'error', signal: AbortSignal.timeout(30_000) }); }
     catch (err) {
@@ -347,7 +350,7 @@ export async function downloadSbizApiVendors(
   at = new Date(),
   upjong?: SbizUpjongQuery,
 ): Promise<{ vendors: CollectedVendor[]; fetched: number; rejected: number; duplicates: number;
-  truncated: { code: string; got: number; total: number }[] }> {
+  truncated: { code: string; got: number; total: number | null; reason: '상한' | '연결 끊김' }[] }> {
   const source = PUBLIC_SOURCES[key];
   if (source.format !== 'sbiz-api') throw new Error('sbiz-api 형식 출처가 아닙니다.');
   /*
@@ -371,11 +374,13 @@ export async function downloadSbizApiVendors(
   let fetched = 0;
   let rejected = 0;
   let duplicates = 0;
-  /** 상한에 걸려 다 못 받은 업종코드. 비어 있어야 「전수」다. */
-  const truncated: { code: string; got: number; total: number }[] = [];
+  /** 다 못 받은 업종코드. 비어 있어야 「전수」다. */
+  const truncated: { code: string; got: number; total: number | null; reason: '상한' | '연결 끊김' }[] = [];
 
   for (const code of query.codes) {
   let seenForCode = 0;
+  /** 마지막으로 본 전체 건수. 끊겼을 때 「얼마 중 얼마를 받았나」를 적는 데 쓴다. */
+  let lastTotalCount: number | null = null;
   for (let pageNo = 1; pageNo <= MAX_PAGES; pageNo++) {
     const url = new URL(source.url);
     url.searchParams.set('serviceKey', normalizeServiceKey(apiKey));
@@ -385,10 +390,34 @@ export async function downloadSbizApiVendors(
     url.searchParams.set('key', code);
     url.searchParams.set('type', 'json');
 
-    const buf = await publicGet(url.toString(), 8 * 1024 * 1024);
+    /*
+     * **한 페이지가 끊겨도 그때까지 모은 것을 버리지 않는다.**
+     *
+     * 전에는 여기서 그대로 던져서, 전국 전수를 돌리다 apis.data.go.kr이 4분 끊기면
+     * 이미 받아 둔 수천 건이 통째로 사라졌다(2026-09-10 run 34427466145). 페이지가
+     * 수천 개면 어느 하나는 반드시 끊긴다 — 전부 아니면 전무는 전수 수집에서
+     * 성립하지 않는 규칙이다.
+     *
+     * `fetchWithRetry`가 이미 8회 · 최대 4분을 버틴 뒤다. 그러고도 안 되면 이
+     * 업종코드는 여기까지로 접고 다음 코드로 넘어간다. 무엇을 못 받았는지는
+     * `truncated`에 남는다 — 반영은 원천 식별키로 upsert하므로(sync.ts) 다음 실행이
+     * 나머지를 채운다.
+     */
+    let buf: Buffer;
+
+    try {
+      buf = await publicGet(url.toString(), 8 * 1024 * 1024);
+    } catch (error) {
+      console.warn(`업종코드 ${code} ${pageNo}쪽에서 멈춘다 — ${(error as Error).message.split('\n')[0]}`);
+      truncated.push({ code, got: seenForCode, total: lastTotalCount, reason: '연결 끊김' });
+      break;
+    }
+
     const payload = JSON.parse(buf.toString('utf8')) as unknown;
     const records = findRecords<SbizApiRecord>(payload, 'bizesNm');
     const totalCount = findNumber(payload, 'totalCount');
+
+    lastTotalCount = totalCount;
     seenForCode += records.length;
     fetched += records.length;
 
@@ -427,10 +456,16 @@ export async function downloadSbizApiVendors(
 
     if (!totalCount || seenForCode >= totalCount || records.length < 1000) break;
     // 상한에서 멈추는 것은 다 받은 것과 다르다. 그 사실을 리포트로 넘긴다.
-    if (pageNo === MAX_PAGES) truncated.push({ code, got: seenForCode, total: totalCount });
+    if (pageNo === MAX_PAGES) truncated.push({ code, got: seenForCode, total: totalCount, reason: '상한' });
   }
-  // 코드가 틀리면 API는 오류 대신 빈 목록을 준다 — 조용한 0건 수집을 막는다.
-  if (!seenForCode) throw new Error(`업종코드 ${query.divId}=${code} 응답이 0건입니다. 코드를 확인하세요.`);
+  /*
+   * 코드가 틀리면 API는 오류 대신 빈 목록을 준다 — 조용한 0건 수집을 막는다.
+   * 다만 첫 쪽부터 연결이 끊겨 0건인 것은 코드 문제가 아니다. 그건 truncated에
+   * 이미 적혔으므로 던지지 않고 넘어간다 — 던지면 다른 코드로 받아 둔 것까지 잃는다.
+   */
+  if (!seenForCode && !truncated.some((t) => t.code === code)) {
+    throw new Error(`업종코드 ${query.divId}=${code} 응답이 0건입니다. 코드를 확인하세요.`);
+  }
   }
 
   return { vendors, fetched, rejected, duplicates, truncated };

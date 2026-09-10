@@ -35,8 +35,8 @@ export async function runPublicCollection(args: string[]) {
   let total: number;
   let rejected: number;
   let duplicates: number;
-  /** sbiz 전용 — 페이지 상한에 걸려 다 못 받은 업종코드. 비어 있어야 전수다. */
-  let truncated: { code: string; got: number; total: number }[] = [];
+  /** sbiz 전용 — 다 못 받은 업종코드와 그 이유. 비어 있어야 전수다. */
+  let truncated: { code: string; got: number; total: number | null; reason: string }[] = [];
 
   if (source.format === 'sbiz-api') {
     if (!sbizApiKey) throw new Error('SBIZ_API_KEY 환경변수 또는 --sbiz-api-key 옵션이 필요합니다.');
