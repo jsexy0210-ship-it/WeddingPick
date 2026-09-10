@@ -1,28 +1,39 @@
 {
   "schemaVersion": 1,
-  "updatedDate": "2026-09-10",
+  "updatedDate": "2026-09-11",
   "masterThreadId": "01a08b64-9e88-7991-a1ed-90f446e3760b",
   "scope": "앱 속도·UX·UX라이팅·사용자 여정",
   "baselineCommit": "8f3d3766b69138cbeb300d9a6e075c4c5f475fb2",
-  "status": "in-progress",
+  "status": "reviewed-with-followups",
   "sessions": [
     {
       "name": "app_performance",
       "branch": "codex/app-loading-20260910",
       "scope": "API 캐시·진입 대기·검색·웨딩 부분 표시",
-      "status": "in-progress"
+      "status": "reviewed-and-absorbed",
+      "pr": 186,
+      "mergedCommit": "373ee02d5c4c7940adb463d3cf77f76f6d4d821a"
     },
     {
       "name": "app_ux_writing",
       "branch": "codex/app-ux-writing-20260910",
       "scope": "실제 행동과 오류·빈 상태·수령 문구 정합성",
-      "status": "in-progress"
+      "status": "reviewed-and-absorbed",
+      "pr": 185
     },
     {
       "name": "app_journey",
       "branch": "codex/app-journey-20260910",
       "scope": "앱 전체 경로 검토·제보·MY·알림·복귀 경로",
-      "status": "in-progress"
+      "status": "reviewed-and-absorbed",
+      "pr": 187
+    },
+    {
+      "name": "app_session_recovery",
+      "branch": "codex/app-session-recovery-20260911",
+      "scope": "일시적인 회원 조회 실패를 로그아웃으로 처리하는 P1 수정",
+      "status": "reviewed-and-absorbed",
+      "verification": "모바일252시험, typecheck, lint 오류0; 390x844에서500재시도복구 및401로그인차단"
     }
   ],
   "absorbedSessions": [
@@ -30,19 +41,22 @@
       "threadId": "01a08af0-1c25-7fb3-b77a-9e65c8f20718",
       "title": "현재 웹사이트와 정책 대조",
       "result": "정책 비교와 업체 이메일 자동화 검토 결과 인수. 실제 발송·업체 관리 기능 완료로 보지 않음.",
-      "remaining": "공식 연락처·발송 동의·업체 인증을 갖춘 구현 필요. 이번 앱 UX 작업에서 발송하지 않음."
+      "remaining": "공식 연락처·발송 동의·업체 인증을 갖춘 구현 필요. 이번 앱 UX 작업에서 발송하지 않음.",
+      "archived": true
     },
     {
       "threadId": "01a08122-a0a3-7ff2-9386-eddd7412aa9c",
       "title": "WeddingPick 웹사이트 전면 개선",
       "result": "기존 웹 구조 유지 조건과 미배포 문구 요청 인수.",
-      "remaining": "직접 남긴 후기도 함께 문구의 현행 반영 여부는 웹 후속 작업으로 보존. 임의 배포하지 않음."
+      "remaining": "직접 남긴 후기도 함께 문구의 현행 반영 여부는 웹 후속 작업으로 보존. 임의 배포하지 않음.",
+      "archived": true
     },
     {
       "threadId": "01a06c95-2c8d-7192-91bc-3e32e6d40c8e",
       "title": "마스터 세션",
       "result": "제한 중단된 이전 성능·로그인 통합 작업을 현재 마스터가 인수.",
-      "remaining": "루트의 기존 미커밋 변경은 보존. 낡은 수정안을 현재 main에 그대로 복제하지 않고 성능 전담이 현행 경로로 재검증."
+      "remaining": "루트의 기존 미커밋 변경은 보존. 낡은 수정안을 현재 main에 그대로 복제하지 않고 성능 전담이 현행 경로로 재검증.",
+      "archived": true
     }
   ],
   "retainedSessions": [
@@ -53,7 +67,7 @@
     }
   ],
   "claudeCompatibility": {
-    "status": "pending-integration-review",
+    "status": "verified-at-listed-heads",
     "overlap": [
       {
         "pr": 178,
@@ -69,7 +83,8 @@
           "CLAUDE.md",
           "infra/render-env.yml"
         ],
-        "rule": "공통 규칙·미사용 도메인 정정을 유지"
+        "rule": "공통 규칙·미사용 도메인 정정을 유지",
+        "status": "main에 PR177 포함"
       },
       {
         "prs": [
@@ -80,7 +95,90 @@
         ],
         "rule": "관리자 작업은 이번 앱 전담 수정 범위와 분리. 클로드 PR끼리 충돌은 별도 검증"
       }
+    ],
+    "combined": {
+      "base": "ce87914",
+      "heads": {
+        "178": "48ad23a48ce530ec8813bc2047e56a87b7a88e36",
+        "179": "0316a90e1063e77fe6b6602d34a89bd51028b62c",
+        "180": "5a6ef2ce4e66550051e4c0adb0df895eda80118c",
+        "181": "45b78ed116de52527a670bd84b570927423d91ca",
+        "182": "c253fb4b10a924bd660799f93d1c18784fac9731"
+      },
+      "syntheticTree": "60c10a1b961e033d4c89e909a40c8e84e43c6ea6",
+      "conflicts": 0,
+      "tests": 250,
+      "typecheck": [
+        "api-contract",
+        "mobile",
+        "api"
+      ],
+      "copyLint": "passed",
+      "limits": "성능·문구 변경까지의 합본. DB 적용, 관리자 UI, 외부 실인증은 수행하지 않음. 해당 원격 PR을 병합한 결과가 아님."
+    },
+    "journeyIntegration": {
+      "tree": "1bf7984c9c378c9a51a94537fe06433b78d31bfe",
+      "conflicts": 0,
+      "note": "여정최종합본과관리자4PR합성충돌없음. 인증복구는동일파일후속수정으로추가검증필요."
+    }
+  },
+  "completionRule": "각 전담 PR의 실제 결과·회귀·정책·통합 검증을 마스터가 확인한 뒤 흡수. 미검증 화면을 완료 처리하지 않음.",
+  "verification": {
+    "environment": "별도 worktree, 390x844 하이브리드 웹, 로컬 가상 API 응답; 운영 쓰기 없음",
+    "sourceReview": "비관리자 앱 102개 route의 action, 목적지, 로딩, 빈 상태, 오류 분기 검토",
+    "ui": [
+      {
+        "route": "/capture",
+        "case": "bootstrap 20초 지연 중 진입; 제보 조회500을 빈 내역으로 오인하지 않고 재시도 표시"
+      },
+      {
+        "route": "/wedding",
+        "case": "지출20초 지연 중 일정 카드, 준비 현황, 배우자 영역 표시; 지출만 스켈레톤"
+      },
+      {
+        "route": "/search?q=검수",
+        "case": "검색어 전달과 업체1곳 렌더, 탭 왕복 후 기존 목록 유지"
+      },
+      {
+        "route": "/my/notification-settings",
+        "case": "저장10초 지연 중 두 스위치 비활성,500실패 후 이전 상태 복원"
+      },
+      {
+        "route": "/my/notifications",
+        "case": "읽음저장10초 지연 중 배우자 화면 즉시 이동"
+      },
+      {
+        "route": "/wedding/[id]/quotes",
+        "case": "빈 목록 자료 올리기에서 견적서 동의 진입, 뒤로는 웨딩 탭 복귀"
+      },
+      {
+        "route": "/my/rewards/missions",
+        "case": "390x844에서 수정안내2줄, 가로넘침0, 탭과겹침0"
+      },
+      {
+        "route": "/my",
+        "case": "회원조회/bootstrap500에서 재시도화면, 정상전환후 재로그인없이MY복구;401은로그인으로이동"
+      }
+    ],
+    "independentReview": "별도 검수자가 알림, 토글, focus, 뒤로가기, clipboard 수정 반례 검토 및 관련83시험 통과; 회원조회500을로그아웃으로오인하는P1을추가발견하여복구분기수정",
+    "limits": [
+      "네이티브 실기기, 카메라, OS권한, 푸시 미검증",
+      "전체 디자인180항목 1:1 시각검수 완료를 의미하지 않음",
+      "운영 API지연 시간/콜드스타트 개선율 미측정"
+    ],
+    "integratedMobile": {
+      "tests": 252,
+      "typecheck": "passed",
+      "lint": "0 errors, 2 existing warnings",
+      "includes": "PR185+186+187, main의178, 회원조회오류복구"
+    },
+    "resolvedFollowups": [
+      "검색 q 딥링크 전달은 PR186 및 fixture 검수로 해결",
+      "서버 weddingId 문서 목록의 뒤로가기는 fixture에서 웨딩 탭 복귀 확인"
     ]
   },
-  "completionRule": "각 전담 PR의 실제 결과·회귀·정책·통합 검증을 마스터가 확인한 뒤 흡수. 미검증 화면을 완료 처리하지 않음."
+  "followups": [
+    "docs/sync/app-journey-audit.json의서버계약/네이티브/전체시각검수미완료항목을보존",
+    "개별PR CI 및배포완료상태는GitHub/배포서비스의실제상태로확인"
+  ]
 }
