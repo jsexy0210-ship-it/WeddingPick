@@ -1,14 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
-<rect width="1200" height="630" fill="#FFFFFF"/>
-<rect width="1200" height="18" fill="#FF6F61"/>
-<rect x="48" y="48" width="1104" height="534" rx="28" fill="#FFF5F2"/>
-<g transform="translate(480 146) scale(3)" fill="none" stroke="#FF6F61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z"/><path d="M9.4 11.9l1.7 1.7 3.4-3.4"/></g>
-<g font-family="NanumSquare, 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif">
-<text x="576" y="198" font-size="48" font-weight="700" fill="#212124">웨딩픽</text>
-<g text-anchor="middle">
-<text x="600" y="304" font-size="26" fill="#4D5159">웨딩홀부터 스드메까지</text>
-<text x="600" y="386" font-size="58" font-weight="700" fill="#212124">웨딩 준비,</text>
-<text x="600" y="470" font-size="58" font-weight="700" fill="#FF6F61">하나씩 쉽게 골라봐요</text>
-</g>
+<rect width="1200" height="630" fill="#FF6F61"/>
+<circle cx="1010" cy="560" r="250" fill="#FFFFFF" opacity="0.08"/>
+<g transform="translate(95 142) scale(3.4)" fill="none" stroke="#FFFFFF" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z"/><path d="M9.4 11.9l1.7 1.7 3.4-3.4"/></g>
+<g font-family="NanumSquare, 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif" fill="#FFFFFF">
+<text x="196.6" y="194" font-size="30" font-weight="700">웨딩픽</text>
+<text x="95" y="366" font-size="66" font-weight="700">진짜 견적부터</text>
+<text x="95" y="466" font-size="66" font-weight="700">확인해 보세요</text>
+<text x="95" y="548" font-size="26" opacity="0.72">실 제보 · 웨딩픽 추천 · Pick</text>
 </g>
 </svg>
