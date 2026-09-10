@@ -4,7 +4,7 @@
 
 ## 확인 순서
 
-1. 현재 사용자 지시와 적용되는 `AGENTS.md`, [CLAUDE.md](CLAUDE.md)의 작업 규칙을 확인한다.
+1. 최신 main의 [AGENTS.md](AGENTS.md), [CLAUDE.md](CLAUDE.md)를 공통 규칙으로 확인한다. 새 사용자 결정으로 규칙이 바뀌면 같은 작업에서 main에 반영한다.
 2. GitHub [`jsexy0210-ship-it/WeddingPick`](https://github.com/jsexy0210-ship-it/WeddingPick)의 최신 `main`과 로컬 작업 상태를 확인한다. 사용자 미커밋 변경을 보존한다.
 3. 작업 범위에 맞는 아래 기준 문서와 [PROJECT_STATUS.md](PROJECT_STATUS.md)를 읽는다.
 4. 실제 코드·API 계약·검수 증거를 대조하고, 과거 대화·이력은 보조 자료로 사용한다.
