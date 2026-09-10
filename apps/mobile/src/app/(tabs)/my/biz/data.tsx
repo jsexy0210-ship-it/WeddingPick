@@ -16,6 +16,7 @@ import {
 } from '@weddingpick/ui';
 import { createInquiry } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
+import { BackBar } from '@/components/back-bar';
 
 /**
  * WP-BIZ-003: 업체 자료 제공 화면.
@@ -63,6 +64,7 @@ export default function BizDataScreen() {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
+          <BackBar />
           <ThemedView style={styles.content}>
             <ThemedText type="t2">접수했어요</ThemedText>
             <ThemedText type="t6" themeColor="textSecondary">
@@ -78,6 +80,7 @@ export default function BizDataScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.header}>
             <ThemedText type="t2">자료 제공</ThemedText>

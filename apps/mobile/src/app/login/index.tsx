@@ -21,9 +21,9 @@ import {
 } from '@weddingpick/ui';
 import { LoginFailureSheet } from '@/features/auth/login-failure-sheet';
 import { maskEmail } from '@/features/auth/mask-email';
-import { canSignInWith, hasKakaoReturn, providerTone, useAuthProviders } from '@/features/auth/providers';
+import { canSignInWith, providerTone, useAuthProviders } from '@/features/auth/providers';
 import { loadRememberedAccount, type RememberedAccount } from '@/features/auth/remembered-account';
-import { takePendingSignInError } from '@/features/auth/sign-in-handoff';
+import { bootOwnsSigningInMessage, takePendingSignInError } from '@/features/auth/sign-in-handoff';
 import { SigningInBody } from '@/features/auth/signing-in-view';
 import { useSignIn } from '@/features/auth/use-sign-in';
 import { openExternal } from '@/features/open-external';
@@ -154,12 +154,14 @@ export default function LoginScreen() {
                */
               <ThemedView style={styles.busy}>
                 {/*
-                  문장은 `SigningInBody` 한 곳에만 있다. 카카오에서 돌아온 부팅이면
-                  그 말은 부팅 화면(`SigningInView`)이 이미 하고 있으므로 여기서는
-                  로더만 남긴다 — 두 화면이 한 프레임에 겹칠 때 같은 말이 두 번
-                  보이던 문제(2026-09-09 보고).
+                  문장은 `SigningInBody` 한 곳에만 있고, **누가 말하는지**는
+                  `bootOwnsSigningInMessage()`가 정한다. 카카오에서 돌아온 부팅이면
+                  그 말은 부팅 화면(`SigningInView`)이 맡으므로 여기서는 로더만 남긴다.
+                  URL의 `code`를 보고 판단하던 예전 가드는 듣지 않았다 —
+                  `completeKakaoRedirect()`가 그 `code`를 먼저 지워서, 지운 뒤에 뜬
+                  로그인 화면이 같은 말을 다시 했다(2026-09-09 보고).
                 */}
-                <SigningInBody size={28} message={busy && !hasKakaoReturn()} />
+                <SigningInBody size={28} message={busy && !bootOwnsSigningInMessage()} />
               </ThemedView>
             ) : (
               <ThemedView style={styles.section}>

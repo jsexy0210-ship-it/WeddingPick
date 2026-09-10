@@ -193,6 +193,13 @@ export const NO_BACK_ROUTES: readonly string[] = [
   '/capture/camera',
   // 홈 편집은 닫기(X)로 나간다 — 뒤로가기 화살표를 두지 않는다(시안 close: true).
   '/home-edit',
+  /*
+   * Pick 비교 · Pick 확정은 화면이 아니라 **바텀시트**다. 나가는 길은 시트가 이미
+   * 셋을 들고 있다(딤 탭 · 안드로이드 뒤로가기 · 시트 안 버튼) — 여기에 뒤로가기 줄을
+   * 얹으면 시트 위에 화면 헤더가 떠서 무엇을 닫는 버튼인지 알 수 없게 된다.
+   */
+  '/pick/compare',
+  '/pick/confirm',
 ];
 
 /**

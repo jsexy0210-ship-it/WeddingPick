@@ -14,6 +14,7 @@ import {
   ThemedView,
 } from '@weddingpick/ui';
 import { openExternal } from '@/features/open-external';
+import { BackBar } from '@/components/back-bar';
 
 /**
  * 개인정보처리방침 — 요약과 전문 링크.
@@ -92,6 +93,7 @@ export default function PrivacyScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.header}>
             <ThemedText type="t2">개인정보처리방침</ThemedText>

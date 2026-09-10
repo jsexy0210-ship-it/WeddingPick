@@ -28,6 +28,7 @@ import {
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { readCurrentUserSnapshot } from '@/features/loading/current-user-snapshot';
 import { SORT_LABEL } from '@/features/search/sort-sheet';
+import { BackBar } from '@/components/back-bar';
 
 /**
  * 필터 시트. WP-SRCH-005.
@@ -149,6 +150,7 @@ export default function FilterScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ThemedView style={styles.header}>
           <ThemedText type="t4">필터</ThemedText>
           <Pressable

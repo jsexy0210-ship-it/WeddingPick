@@ -5,6 +5,7 @@ import { Animated, Easing, Pressable, ScrollView, StyleSheet, View } from 'react
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getCurrentUser } from '@/api/client';
+import { BackBar } from '@/components/back-bar';
 import {
   Layout,
   MaxContentWidth,
@@ -163,6 +164,7 @@ export default function PickDoneScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}>

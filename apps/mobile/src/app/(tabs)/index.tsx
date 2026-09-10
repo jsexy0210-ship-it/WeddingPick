@@ -23,7 +23,8 @@ import {
   ThemedView,
   useTheme,
 } from '@weddingpick/ui';
-import { DelayedRecommendingView } from '@/features/loading/delayed-loader';
+import { DelayedLoader, DelayedRecommendingView } from '@/features/loading/delayed-loader';
+import { takeFullScreenLoading } from '@/features/loading/first-run';
 import { BenefitSheet } from '@/features/home/benefit-sheet';
 import { hasSeenBenefitSheet, markBenefitSheetSeen } from '@/features/home/benefit-sheet-seen';
 import { Board } from '@/features/home/board';
@@ -92,6 +93,11 @@ export default function HomeScreen() {
    * 비어 보이면 안 된다. 편집하고 돌아왔을 때 반영되도록 화면이 뜰 때마다 다시 읽는다.
    */
   const [layout, setLayout] = useState<HomeLayout>(DEFAULT_HOME_LAYOUT);
+  /*
+   * 이 홈이 전체 화면 로딩을 써도 되는가. 마운트 때 한 번만 묻는다 — 렌더마다 물으면
+   * 첫 렌더가 예산을 쓰고 두 번째 렌더가 못 받아 로더가 도중에 바뀐다.
+   */
+  const [fullScreen] = useState(takeFullScreenLoading);
 
   const load = useCallback(() => {
     // 웹뷰 쉘로 대체할 때는 이 밑 자료를 안 쓴다 — 훅 순서를 지키려고 호출
@@ -184,11 +190,20 @@ export default function HomeScreen() {
   }
 
   /*
-   * 첫 진입 — 추천을 계산하는 동안 업종 순회 로딩(WP-ST-015). 웨딩픽이 무엇을
-   * 보고 있는지 순서대로 보여준다. 핸드오프 v3.15 «추천 계산 · 첫 진입».
+   * 아직 못 받았을 때.
+   *
+   * **업종 순회 로딩(WP-ST-015)은 앱을 켠 뒤 한 번뿐이다**(2026-09-09 사용자 오더).
+   * 그 화면은 «앱이 지금 막 켜졌다»는 신호라, 홈에 들어올 때마다 뜨면 매번 처음부터
+   * 시작하는 것처럼 읽힌다. 두 번째부터는 자리만 지키는 아이콘 로더로 대신한다.
    */
   if (!settled) {
-    return <DelayedRecommendingView nickname={data.me?.displayName ?? undefined} />;
+    return fullScreen ? (
+      <DelayedRecommendingView nickname={data.me?.displayName ?? undefined} />
+    ) : (
+      <ThemedView style={styles.loading}>
+        <DelayedLoader size={40} />
+      </ThemedView>
+    );
   }
 
   const daysLeft = data.me?.weddingDate == null ? null : daysUntil(data.me.weddingDate);
@@ -585,6 +600,9 @@ const styles = StyleSheet.create({
    * 섹션마다 준다.
    */
   content: { paddingBottom: Spacing.two },
+
+  /* 두 번째부터의 로딩 — 아이콘 로더 하나만 가운데 둔다. */
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
   /* 홈 편집 — 맨 아래 한 줄. 눈에 띄지 않게 두되 누를 수 있는 높이는 준다. */
   editEntry: {

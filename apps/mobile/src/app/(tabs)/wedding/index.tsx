@@ -23,6 +23,7 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import { ensureWedding, getCurrentUser, getExpenses, listWeddingEvents, listWeddingTasks } from '@/api/client';
+import { readCurrentUserSnapshot } from '@/features/loading/current-user-snapshot';
 import { useSession } from '@/features/auth/use-session';
 import { WeddingCompleteView } from '@/features/wedding/complete-view';
 import { Avatar, DateChip, RowValue, eventTime } from '@/features/wedding/screen-kit';
@@ -94,6 +95,17 @@ export default function WeddingScreen() {
 
   const isSignedIn = state.status === 'signedIn';
 
+  /** 일정 · 지출 · 할 일을 한꺼번에. 하나가 실패해도 나머지는 그린다. */
+  const loadLists = useCallback(
+    (weddingId: string) =>
+      Promise.allSettled([
+        listWeddingEvents(weddingId),
+        getExpenses(weddingId),
+        listWeddingTasks(weddingId),
+      ]),
+    [],
+  );
+
   const load = useCallback(() => {
     if (!isSignedIn) {
       void Promise.resolve().then(() => {
@@ -103,7 +115,22 @@ export default function WeddingScreen() {
       return;
     }
 
-    void Promise.resolve().then(() => setLoading(true));
+    /*
+     * **아는 웨딩이 있으면 «나»를 기다리지 않는다**(2026-09-09 사용자 오더 「출력 속도
+     * 최고로」). 예전에는 `getCurrentUser()`가 돌아와야 `weddingId`를 알고, 그제서야
+     * 일정 · 지출 · 할 일을 물었다 — 들어올 때마다 왕복 두 번이었다. 지난번에 받아둔
+     * «나»에 웨딩이 있으면 두 묶음을 **동시에** 띄우고, 돌아온 «나»의 웨딩이 그대로면
+     * 먼저 띄운 답을 그냥 쓴다.
+     */
+    const known = readCurrentUserSnapshot();
+    const early = known?.weddingId ? loadLists(known.weddingId) : null;
+
+    // 이미 그릴 것이 있으면 뼈대로 덮지 않는다 — 다시 들어올 때마다 깜빡이던 자리다.
+    void Promise.resolve().then(() => {
+      if (known) setData((prev) => ({ ...prev, me: prev.me ?? known }));
+      setLoading((current) => (known ? current : true));
+    });
+
     void getCurrentUser()
       .then(async (first) => {
         /* 웨딩이 아직 없으면 만든다 — 혼자서도 전면 개방이라 여기서 막을 이유가 없다. */
@@ -117,11 +144,8 @@ export default function WeddingScreen() {
         }
 
         const weddingId = me.weddingId;
-        const [events, expenses, tasks] = await Promise.allSettled([
-          listWeddingEvents(weddingId),
-          getExpenses(weddingId),
-          listWeddingTasks(weddingId),
-        ]);
+        const [events, expenses, tasks] =
+          early && known?.weddingId === weddingId ? await early : await loadLists(weddingId);
 
         setData((prev) => ({
           ...prev,
@@ -135,7 +159,7 @@ export default function WeddingScreen() {
         setData(EMPTY);
         setLoading(false);
       });
-  }, [isSignedIn]);
+  }, [isSignedIn, loadLists]);
 
   useEffect(load, [load]);
 

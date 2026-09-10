@@ -1,12 +1,13 @@
 import type { Quote } from '@weddingpick/api-contract';
 import { DOCUMENT_TYPE_LABEL, manwon } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listQuotes } from '@/api/client';
 import { formatDateDot } from '@/features/common/format-date';
+import { BackBar } from '@/components/back-bar';
 import {
   ActionButton,
   ErrorView,
@@ -71,6 +72,8 @@ function QuoteCard({ quote }: { quote: Quote }) {
  */
 export default function WeddingQuotesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  /** 지금 이어받는 중인 커서. 같은 것을 두 번 붙이지 않으려고 든다. */
+  const loadingCursor = useRef<string | null>(null);
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -90,14 +93,23 @@ export default function WeddingQuotesScreen() {
 
   useEffect(load, [load]);
 
+  /* 같은 커서를 두 번 이어붙이지 않는다 — 연달아 누르면 같은 견적이 두 번 보인다. */
   async function loadMore() {
-    if (!nextCursor) return;
+    if (!nextCursor || loadingCursor.current === nextCursor) return;
+
+    const cursor = nextCursor;
+
+    loadingCursor.current = cursor;
+
     try {
-      const res = await listQuotes(id, nextCursor);
+      const res = await listQuotes(id, cursor);
+
       setQuotes((prev) => [...prev, ...res.quotes]);
       setNextCursor(res.nextCursor);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '더 불러오지 못했어요.');
+    } finally {
+      loadingCursor.current = null;
     }
   }
 
@@ -110,6 +122,7 @@ export default function WeddingQuotesScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.section}>
             <ThemedText type="t2">올린 Pick 인증 자료</ThemedText>

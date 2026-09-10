@@ -23,6 +23,7 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import { createRebuttal, listMyRebuttals, updateRebuttal } from '@/api/client';
+import { BackBar } from '@/components/back-bar';
 
 /**
  * 업체 반론 등록. 디자인 핸드오프 20번.
@@ -91,6 +92,7 @@ export default function WriteRebuttalScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedText type="t2">{REBUTTAL_HEADLINE}</ThemedText>
 

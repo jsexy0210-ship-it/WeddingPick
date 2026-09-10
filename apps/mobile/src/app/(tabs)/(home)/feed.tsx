@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listWeddingContent, type WeddingContentItem } from '@/features/home/content';
 import { WeddingContent } from '@/features/home/wedding-content';
+import { BackBar } from '@/components/back-bar';
 import {
   ActionButton,
   EmptyView,
@@ -45,6 +46,7 @@ export default function FeedScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.header}>
             <ThemedText type="t4">웨딩픽 콘텐츠</ThemedText>

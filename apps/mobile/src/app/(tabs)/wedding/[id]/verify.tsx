@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton, Layout, MaxContentWidth, Radius, Spacing, ThemedText, ThemedView, VerificationBadge } from '@weddingpick/ui';
 import { useDocumentStore } from '@/features/documents/document-store';
+import { BackBar } from '@/components/back-bar';
 import { VERIFICATION_LEVELS, VERIFICATION_LEVEL_RULES } from '@weddingpick/domain';
 
 /**
@@ -21,6 +22,7 @@ export default function VerifyScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.header}>
             <ThemedText type="subtitle">자료 확인</ThemedText>

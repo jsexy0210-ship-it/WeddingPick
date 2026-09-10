@@ -17,6 +17,7 @@ import {
   ThemedView,
 } from '@weddingpick/ui';
 import { searchVendors, listVendorRegions } from '@/api/client';
+import { BackBar } from '@/components/back-bar';
 
 /**
  * 자동완성 패널. 핸드오프 WP-SRCH-002.
@@ -168,6 +169,7 @@ export default function AutocompleteScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"

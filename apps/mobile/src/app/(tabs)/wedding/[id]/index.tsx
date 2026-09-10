@@ -9,6 +9,7 @@ import { PageThumbnail } from '@/components/page-thumbnail';
 import { isServerConfigured } from '@/api/config';
 import { formatDateDot } from '@/features/common/format-date';
 import { useDocumentStore } from '@/features/documents/document-store';
+import { BackBar } from '@/components/back-bar';
 
 
 /** A-12 견적 상세. 저장된 묶음을 다시 열어보고, 인증 신청과 삭제로 이어진다. */
@@ -46,6 +47,7 @@ export default function DocumentSetScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.header}>
             <ThemedText type="subtitle">{set.label}</ThemedText>

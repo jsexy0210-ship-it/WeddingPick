@@ -17,6 +17,7 @@ import {
 } from '@weddingpick/ui';
 import { searchVendors } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
+import { BackBar } from '@/components/back-bar';
 
 /**
  * WP-BIZ-002: 소속 확인 요청 진입.
@@ -69,6 +70,7 @@ export default function BizClaimScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <ThemedView style={styles.header}>
             <ThemedText type="t2">{`소속 업체를\n찾아주세요`}</ThemedText>

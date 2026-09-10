@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listCandidates } from '@/api/client';
+import { BackBar } from '@/components/back-bar';
 import {
   ActionButton,
   ErrorView,
@@ -49,6 +50,7 @@ export default function WeddingCandidatesScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.header}>
             <ThemedText type="t2">담아둔 곳</ThemedText>

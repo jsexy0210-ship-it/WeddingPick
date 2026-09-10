@@ -5,6 +5,7 @@ import { Alert, ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { createPriceReport } from '@/api/client';
+import { BackBar } from '@/components/back-bar';
 import {
   ActionButton,
   FontSize,
@@ -81,6 +82,7 @@ export default function PriceReportScreen() {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
+          <BackBar />
           <ScrollView contentContainerStyle={styles.content}>
             <ThemedText type="t2">제보 완료</ThemedText>
             <ThemedView type="backgroundElement" style={styles.card}>
@@ -99,6 +101,7 @@ export default function PriceReportScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <ThemedView style={styles.section}>
             <ThemedText type="t2">가격 제보</ThemedText>

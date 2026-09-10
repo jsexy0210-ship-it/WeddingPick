@@ -20,6 +20,7 @@ import {
   updateWeddingTask,
 } from '@/api/client';
 import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
+import { BackBar } from '@/components/back-bar';
 import {
   ActionButton,
   ErrorView,
@@ -163,6 +164,7 @@ export default function WeddingTasksScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.section}>
             <ThemedText type="t2">웨딩 스케줄</ThemedText>

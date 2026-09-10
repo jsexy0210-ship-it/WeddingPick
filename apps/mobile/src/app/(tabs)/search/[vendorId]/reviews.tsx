@@ -1,12 +1,13 @@
 import type { ReviewListResponse } from '@weddingpick/api-contract';
 import { TERMS, type ReportReason } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listReportReasons, listVendorReviews, reportReview } from '@/api/client';
 import { formatDateDot } from '@/features/common/format-date';
+import { BackBar } from '@/components/back-bar';
 import {
   ActionButton,
   FilterChip,
@@ -30,6 +31,8 @@ import {
 export default function VendorReviewsScreen() {
   const { vendorId } = useLocalSearchParams<{ vendorId: string }>();
   const theme = useTheme();
+  /** 지금 이어받는 중인 커서. 같은 것을 두 번 붙이지 않으려고 든다. */
+  const loadingCursor = useRef<string | null>(null);
   const [page, setPage] = useState<ReviewListResponse | null>(null);
   const [more, setMore] = useState<ReviewListResponse['reviews']>([]);
   const [error, setError] = useState<string | null>(null);
@@ -91,7 +94,17 @@ export default function VendorReviewsScreen() {
     }
   }
 
+  /*
+   * **같은 커서를 두 번 이어붙이지 않는다.** 「더 보기」를 연달아 누르면 같은 요청이
+   * 두 번 나가고, 돌아온 두 답이 그대로 뒤에 붙어 **같은 후기가 두 번 보였다**
+   * (2026-09-09 사용자 보고 「정보 두 번씩 출력」). 진행 중 커서를 들고 있다가
+   * 같은 것이면 되돌린다.
+   */
   async function loadMore(cursor: string) {
+    if (loadingCursor.current === cursor) return;
+
+    loadingCursor.current = cursor;
+
     try {
       const next = await listVendorReviews(vendorId, cursor);
 
@@ -99,12 +112,15 @@ export default function VendorReviewsScreen() {
       setPage((current) => (current ? { ...current, nextCursor: next.nextCursor } : current));
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '더 불러오지 못했어요.');
+    } finally {
+      loadingCursor.current = null;
     }
   }
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.section}>
             <ThemedText type="subtitle">{TERMS.experience}</ThemedText>
@@ -295,6 +311,7 @@ function Frame({ children }: { children: React.ReactNode }) {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ThemedView style={styles.content}>{children}</ThemedView>
       </SafeAreaView>
     </ThemedView>
