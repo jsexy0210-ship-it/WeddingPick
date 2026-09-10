@@ -10,6 +10,7 @@ import {
   searchVendors,
   getCurrentUser,
   getAppBootstrap,
+  getSignupState,
   updateSettings,
   readAllNotifications,
 } from '@/api/client';
@@ -55,6 +56,18 @@ beforeEach(async () => {
 });
 
 describe('서버 응답 검사', () => {
+  it('가입 상태는 직전 응답이 있어도 서버에서 다시 확인한다', async () => {
+    const state = { activated: false, ageVerified: true, minimumAge: 14, items: [], missingRequired: ['terms', 'privacy'] };
+    respondWith(state);
+    await expect(getSignupState()).resolves.toMatchObject({ activated: false });
+    jest.mocked(globalThis.fetch).mockResolvedValueOnce({
+      ok: true, status: 200,
+      json: async () => ({ ...state, activated: true, missingRequired: [] }),
+    } as Response);
+    await expect(getSignupState()).resolves.toMatchObject({ activated: true });
+    expect(globalThis.fetch).toHaveBeenCalledTimes(2);
+  });
+
   it('계약대로 온 응답은 그대로 쓴다', async () => {
     respondWith(VALID_COMPARISON);
 

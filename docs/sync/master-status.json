@@ -1,6 +1,19 @@
 {
   "schemaVersion": 1,
   "updatedDate": "2026-09-11",
+  "signupRecovery": {
+    "dateKst": "2026-09-11",
+    "baselineCommit": "eccf540f3d0025c4f34d1da36afb71d223f6d380",
+    "branch": "codex/signup-entry-recovery",
+    "deliveryAuthorization": "2026-09-11 KST 네이티브 실기기 미검증에 따른 자동 승인 차단을 설명한 뒤 사용자가 '푸시하고 배포해'라고 명시했다. 이번 웹 검증 범위로 main 반영·배포를 진행하며 실기기 미검증 사실은 유지한다.",
+    "cause": "가입 미완료 계정에도 재실행 bootstrap·회원 조회와 초기 설정 스타일 조회가 먼저 실행됐다. needsSignup 기본 false와 첫 조회 오류 무시 때문에 가입 완료 저장이 생략될 수 있었다.",
+    "fix": "가입 상태를 캐시 없이 먼저 확인하고 활성 계정만 보호 API를 호출한다. 설정 제출 직전 다시 확인하여 가입 완료 활성 응답 이후 설정을 저장한다. 요청 사이 계정 변경·토큰 없음·실패는 완료로 진행하지 않는다.",
+    "serverReview": "서버는 요청마다 활성 계정을 DB 조회한다. 가입 POST는 미활성 계정 접근을 허용하고 트랜잭션 커밋 후 상태를 반환한다. 서버 인증 조건과 운영 DB는 변경하지 않았다.",
+    "tests": "모바일 264시험·22스위트, typecheck 통과. lint 오류 0·기존 경고 2. 원본 setup은 신규 회귀 9건 중 8건 실패, 수정본 9건 통과.",
+    "uiEvidence": "분리된 로컬 API, 실제 웹 390×844: 미활성 토큰으로 /my 재실행→/setup 마지막 저장 답 복원. 초기 GET signup 2회만 있고 보호 API 호출 없음. 완료 버튼에서 GET signup→POST signup→POST setup(활성 상태)→가입 완료 화면. CUA 화면 관찰이며 저장된 캡처 파일은 없음.",
+    "absorbedAgents": ["signup_server_review", "signup_regression"],
+    "limits": "운영 사용자가 겪은 개별 요청의 서버 로그·배포 버전과 실기기 카카오 로그인 재현은 미확인. 전 화면 디자인 완료를 뜻하지 않는다. 재실행 시 활성 확인을 위한 상태 조회가 선행되며 bootstrap은 이후 비동기로 유지한다."
+  },
   "masterThreadId": "01a08b64-9e88-7991-a1ed-90f446e3760b",
   "concurrentWorkPriority": {
     "authorizedDate": "2026-09-11",

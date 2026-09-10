@@ -6,6 +6,11 @@
   "baselineCommit": "e34193ee1644c664f107d529002ae53ef775389a",
   "items": [
     {
+      "id": "signup-entry-recovery-20260911",
+      "status": "verified-locally",
+      "evidence": "master-status.json#signupRecovery"
+    },
+    {
       "id": "cleanup-duplicates",
       "status": "complete",
       "evidence": "../REPOSITORY_CLEANUP_2026-09-10.md"
