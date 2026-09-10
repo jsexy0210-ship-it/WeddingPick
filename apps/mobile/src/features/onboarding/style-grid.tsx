@@ -9,8 +9,9 @@ import { CheckCircle } from './check-circle';
 
 /**
  * 스타일(5/5 · WP-APP-020 ⑤). SPEC §13.6 «스타일 4종 · 최대 2개» — 2×2 이미지 카드
- * 200 · 도시적인 · 자연스러운 · 로맨틱한 · 화려한. 카드 166×200 · 이미지 5:6 · 사람
- * 없음(넷 다 예식 공간 컷 — 피사체를 섞으면 스타일이 아니라 업종을 고른다).
+ * 200 · 도시적인 · 자연스러운 · 로맨틱한 · 화려한. 카드 166×200 · 이미지 5:6.
+ * v3.19의 «사람 없는 예식 공간 컷»은 v3.26이 실제 웨딩 컷 4장으로 바꿨다 — 넷 다
+ * 신랑신부가 있고 얼굴이 위쪽에 있어 `contentPosition="top"`으로 자른다.
  *
  * 격자 사이 11(토큰 gap2col · 시안 tasteWrap). **라벨은 배지다**(SPEC §13.6 «취향 카드
  * 라벨은 배지입니다» · 시안 tasteLabel) — 높이 28 · 좌우 10 · radius 6 · rgba(0,0,0,.55)
@@ -68,8 +69,24 @@ function Tile({ style, selected, onPress }: { style: WeddingStyle; selected: boo
       accessibilityLabel={label}
       onPress={onPress}
       style={({ pressed }) => [styles.tile, { backgroundColor: theme.backgroundElement }, pressed && styles.pressed]}>
-      {/* 가운데를 기준으로 자른다 — 5:6 원본이 카드와 비율이 같아 잘리는 곳이 거의 없다. */}
-      <Image source={STYLE_IMAGE[style]} style={styles.photo} contentFit="cover" transition={0} />
+      {/*
+        **위를 기준으로 자른다.** 카드는 높이가 200으로 고정이고 폭만 늘어난다 —
+        390 폰에서는 카드가 5:6이라 원본과 거의 같지만, 웹뷰가 넓어지면(최대 800)
+        카드가 370×200까지 가로로 길어져 원본 높이의 절반이 잘린다. 가운데를
+        기준으로 자르면 그 절반이 사진 한가운데라 **네 장 모두 얼굴이 프레임 밖으로
+        나간다.**
+
+        네 장 다 신랑신부 얼굴이 위쪽(원본 높이의 2~28% 구간)에 있어 한 값으로
+        맞는다 — 장마다 다른 값을 주지 않는다. 얼굴이 아래쪽에 있는 사진으로
+        갈아끼우면 그때 장별로 나눈다.
+      */}
+      <Image
+        source={STYLE_IMAGE[style]}
+        style={styles.photo}
+        contentFit="cover"
+        contentPosition="top"
+        transition={0}
+      />
 
       {/* 고른 카드의 옅은 코랄 덮개 — 시안 rgba(255,111,97,.16). */}
       {selected ? <View style={[styles.wash, { backgroundColor: theme.tint }]} /> : null}
@@ -104,8 +121,8 @@ function Tile({ style, selected, onPress }: { style: WeddingStyle; selected: boo
 }
 
 /**
- * 스타일 이미지 4장 — `assets/images/style/README.md`. 지금은 임시 그라데이션이고
- * 권리 확보한 사진이 같은 파일명으로 덮어쓴다. 화면은 이 표에서만 사진을 꺼낸다.
+ * 스타일 이미지 4장 — `assets/images/style/README.md`. CHANGELOG v3.26에서 실제
+ * 웨딩 컷으로 교체됐다(1145×1374 · 5:6). 화면은 이 표에서만 사진을 꺼낸다.
  */
 const STYLE_IMAGE: Record<WeddingStyle, number> = {
   URBAN: require('../../../assets/images/style/urban.png'),
