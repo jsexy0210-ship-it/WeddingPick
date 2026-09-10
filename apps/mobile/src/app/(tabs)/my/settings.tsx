@@ -7,7 +7,7 @@ import {
   formatWeddingDate,
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -42,6 +42,8 @@ export default function SettingsScreen() {
   const theme = useTheme();
   const { signOut } = useSession();
   const [settings, setSettings] = useState<Settings | null>(null);
+  const savingRef = useRef(false);
+  const [savingSettings, setSavingSettings] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   /** 이름 고치는 시트. 화면을 옮기지 않는다 — 한 칸 고치러 다른 화면까지 가지 않는다. */
   const [nameOpen, setNameOpen] = useState(false);
@@ -84,7 +86,9 @@ export default function SettingsScreen() {
   useEffect(load, [load]);
 
   async function toggle(key: 'pushEnabled' | 'priceChangeEnabled', value: boolean) {
-    if (!settings) return;
+    if (!settings || savingRef.current) return;
+    savingRef.current = true;
+    setSavingSettings(true);
 
     // 먼저 화면을 바꾼다. 서버를 기다리면 스위치가 늦게 따라와 두 번 누르게 된다.
     setSettings({ ...settings, [key]: value });
@@ -94,6 +98,10 @@ export default function SettingsScreen() {
       .catch(() => {
         setSettings(settings);
         setToast('설정을 바꾸지 못했어요');
+      })
+      .finally(() => {
+        savingRef.current = false;
+        setSavingSettings(false);
       });
   }
 
@@ -307,6 +315,7 @@ export default function SettingsScreen() {
           </ThemedText>
         </View>
         <Switch
+          disabled={savingSettings}
           value={value}
           onValueChange={onChange}
           accessibilityLabel={label}

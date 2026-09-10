@@ -1,0 +1,573 @@
+{
+  "checkedAtKst": "2026-09-11 00:05 KST",
+  "sourceCommit": "ef24c29",
+  "handoffChangelog": "v3.27",
+  "scope": "비관리자 앱 102개 라우트 파일의 이동 행동·목적지·로딩·빈 상태·오류 분기 소스 검토. 화면 캡처·실 API·기기 검증과 구별한다. 웹사이트·관리자 제외.",
+  "limits": [
+    "화면 ID는 소스 주석 참조이며 구현 완료 증거가 아니다. 간접 렌더링 화면과 시트는 sourceRoutes가 비어 있을 수 있다.",
+    "주요 변경 경로는 마스터 로컬 fixture CUA로 390x844 상태 검수. 전 화면 원본 대조와 네이티브 실기기·OS 권한·카메라·푸시 검수는 미수행.",
+    "screens.json 버전 3.22 및 일부 폐기 표기가 CHANGELOG v3.24~27과 다르므로 최신 CHANGELOG 우선."
+  ],
+  "counts": {
+    "routeFiles": 102,
+    "handoffAppEntries": 180,
+    "sourceReferencedScreenIds": 96,
+    "sourceActionsAndStatesReviewed": 102
+  },
+  "fixed": [
+    {
+      "id": "journey-01",
+      "routes": [
+        "/capture",
+        "/search/[vendorId]",
+        "/search/[vendorId]/price-report"
+      ],
+      "finding": "폐기된 수동 가격 제보 폼 노출",
+      "change": "메뉴 제거 및 기존 딥링크를 Pick 인증 동의로 전환",
+      "evidence": "app-journey.test.tsx 폐기 링크 회귀시험"
+    },
+    {
+      "id": "journey-02",
+      "routes": [
+        "/capture"
+      ],
+      "finding": "조회 전·실패 모두 제보 0건 안내",
+      "change": "로딩·실패·성공한 빈 목록 분리, 기존 내역 유지",
+      "evidence": "소스 분기 검토; UI 검수 대기"
+    },
+    {
+      "id": "journey-03",
+      "routes": [
+        "/my"
+      ],
+      "finding": "미조회·실패를 이름 미설정으로, 초대 조회 실패를 미연결로 안내",
+      "change": "미확인 상태 구분과 재시도, 프로필 보존, focus 재조회",
+      "evidence": "소스 분기 검토; UI 검수 대기"
+    },
+    {
+      "id": "journey-04",
+      "routes": [
+        "/my/notifications"
+      ],
+      "finding": "읽음 저장이 끝나야 이동하고 실패해도 읽음으로 남음",
+      "change": "즉시 이동, 개별 실패 롤백, 모두 읽음 경합 차단 및 목록 밖 미확인 수 보존",
+      "evidence": "app-journey.test.tsx 3건"
+    },
+    {
+      "id": "journey-05",
+      "routes": [
+        "/my/notification-settings",
+        "/my/account",
+        "/my/settings"
+      ],
+      "finding": "토글 연속 저장 응답 순서로 다른 설정이 덮어써짐",
+      "change": "저장 중 두 스위치 비활성, ref 중복 호출 방지, 실패 복구",
+      "evidence": "app-journey.test.tsx 3화면 각각 성공/실패 6건"
+    },
+    {
+      "id": "journey-06",
+      "routes": [
+        "/my/reports"
+      ],
+      "finding": "제보 후 내역으로 복귀해도 최초 로드만 수행",
+      "change": "focus 진입 시 내역 재조회",
+      "evidence": "소스 검토; 통합 UI 검수 대기"
+    },
+    {
+      "id": "journey-07",
+      "routes": [
+        "/wedding/[id]/quotes"
+      ],
+      "finding": "빈 상태가 없는 촬영·업로드 탭을 안내",
+      "change": "문서 없음 안내와 자료 올리기 버튼으로 기존 견적서 동의 경로 연결",
+      "evidence": "소스 목적지검토; UI 검수 대기"
+    },
+    {
+      "id": "journey-08",
+      "routes": [
+        "/pick/category"
+      ],
+      "finding": "빈 상태 업종검색 버튼의 filterCategory를 검색 화면에서 읽지 않음",
+      "change": "지원하는 category 쿼리로 전달",
+      "evidence": "검색 EntryParams 계약대조"
+    },
+    {
+      "id": "journey-09",
+      "routes": [
+        "/wedding/partner"
+      ],
+      "finding": "클립보드 실패·시스템 공유 후에도 복사 완료 표시",
+      "change": "실제 clipboard 저장 또는 copied 응답에서만 복사완료; 실패시 오류 표시",
+      "evidence": "소스 성공/실패분기 검토; 기기검수 미수행"
+    },
+    {
+      "id": "journey-10",
+      "routes": [
+        "/wedding/[id]/events",
+        "/wedding/[id]/expenses",
+        "/wedding/[id]/notes",
+        "/wedding/[id]/complete"
+      ],
+      "finding": "서버 weddingId 하위화면 뒤로가기가 같은형태의 로컬 documentSet 상세로 향함",
+      "change": "서버웨딩 하위13개 부모를 /wedding으로 명시. /wedding/document-id/verify 로컬문서복귀는 유지",
+      "evidence": "depth-back.test.ts 전체71건 및 새 서버/로컬분리12건"
+    },
+    {
+      "id": "journey-11",
+      "routes": [
+        "/capture",
+        "/my",
+        "/my/reports"
+      ],
+      "finding": "이전 focus의 늦은 응답이 새 focus 상태를 덮을 수 있음",
+      "change": "요청세대값과 focus cleanup으로 오래된 응답 무시",
+      "evidence": "focus-load.test.ts 대기/실패/재시도와 역순응답 2건"
+    },
+    {
+      "id": "journey-12",
+      "routes": [
+        "/search/autocomplete"
+      ],
+      "finding": "업체조회실패를 빈배열로 삼켜 결과없음처럼 표시",
+      "change": "업체조회실패는 기존 오류·재시도 분기로 전달. 부가 지역목록 실패는 업체결과 표시 유지",
+      "evidence": "기존 Promise.all 실패분기 및 ErrorView 재시도 검토"
+    },
+    {
+      "id": "journey-13",
+      "routes": [
+        "/wedding/partner"
+      ],
+      "finding": "존재하지 않는 공유범위설정 안내",
+      "change": "연결/해제 시 실제 지원되는 공유범위만 안내",
+      "evidence": "설정 UI/API 및 공유정책 대조. 문구 최종 통합확인은 마스터 담당"
+    }
+  ],
+  "open": [
+    {
+      "id": "journey-open-01",
+      "priority": "P1",
+      "screenIds": [
+        "WP-RPT-002",
+        "WP-RPT-004",
+        "WP-RPT-007",
+        "WP-RPT-008"
+      ],
+      "routes": [
+        "/capture/payment/register"
+      ],
+      "finding": "최신 사진→자동접수 여정과 달리 문자·수동입력·확인 단계 잔존. 촬영 CTA는 별도 견적서 camera로 이동.",
+      "reason": "registerPaymentProof는 금액·업체·날짜 필수이고 OCR 누락/낮은신뢰도 접수 보류 계약 없음. UI만으로 값을 지어낼 수 없음.",
+      "next": "API·보관/검수 계약과 camera 반환 연결을 별도 구현하고 분리 DB로 검증"
+    },
+    {
+      "id": "journey-open-02",
+      "priority": "P2",
+      "screenIds": [
+        "WP-NOTI-003"
+      ],
+      "routes": [
+        "/my/notification-settings"
+      ],
+      "finding": "야간 수신·마케팅·배우자 공유 설정 API 필드 없음; 화면은 서비스/가격 2개만 표시",
+      "next": "이미 존재하는 RN 푸시 정책과 실제 서버 계약을 연결해 범위 확정"
+    },
+    {
+      "id": "journey-open-03",
+      "priority": "P2",
+      "routes": [
+        "/wedding/[id]/quotes"
+      ],
+      "finding": "빈상태 탭안내는 수정했지만 목록은 견적서 분석 결과인데 화면상단이 Pick 인증으로 표기되어 의미 혼용",
+      "next": "사진제보 자동접수 계약 작업에서 견적서정리와 Pick 인증자료 목록 명칭 일괄정리"
+    },
+    {
+      "id": "journey-open-04",
+      "priority": "P2",
+      "routes": [
+        "/my/contact",
+        "/my/taste",
+        "/pick/category"
+      ],
+      "finding": "일부 완료/오류 버튼은 router.back만 호출하므로 직접 딥링크 진입 시 부모로 복귀 보장 안 됨",
+      "next": "Depth Back 규칙으로 통일하고 정상·오류·직접 진입 검증"
+    },
+    {
+      "id": "journey-policy-01",
+      "priority": "reference",
+      "routes": [
+        "/search/[vendorId]",
+        "/search/[vendorId]/reviews"
+      ],
+      "finding": "SPEC 별점 금지와 2026-09-09 사용자 별점 사용 결정이 코드 주석에 함께 존재",
+      "decision": "최신 사용자 결정 근거를 보존하고 이번 패치에서 별점 제거 안 함"
+    }
+  ],
+  "checks": {
+    "regressionTests": 84,
+    "mobileJest": "212건 통과 (18 suites)",
+    "mobileTypecheck": "passed",
+    "mobileLint": "passed: 0 errors, 2 existing warnings",
+    "copyLint": "passed",
+    "database": "미적용",
+    "visual": "마스터 로컬 fixture CUA 관찰, 390x844, 2026-09-11 00시대 KST. 별도 캡처파일 없음."
+  },
+  "categoryReview": [
+    {
+      "routes": "login, age-required, onboarding, setup",
+      "result": "카카오 단일 진입, 로그인 실패 재시도/닫기, 나이거절 로그인 복귀, 온보딩 단계·완료 routing 검토. 로그인 연령은 동시 PR178 소유이므로 변경하지 않음.",
+      "unverified": "카카오 실계정·provider callback·운영 회원가입"
+    },
+    {
+      "routes": "/, feed, top3, progress, home-edit",
+      "result": "루트5탭과 홈 하위 이동, 추천 업체상세, 준비현황 업종별Pick, 편집닫기 검토. 일부 하위 onBack=router.back 직접진입 복귀 한계 기록.",
+      "unverified": "실추천 응답·손가락 reorder·390x844 시안대조"
+    },
+    {
+      "routes": "search, autocomplete, filter, compare, vendor detail/reviews/images/write/edit/fix",
+      "result": "필터 적용, 검색→업체, 비교 후보→결과, 사진 전체보기, 후기 제출/삭제/정정 흐름 검토. 수동가격 딥링크 폐기연결 수정. q/content 진입값 미지원 의심은 성능 담당에게 전달.",
+      "unverified": "실후기등록·사진전장·비교 fixture·관리자 반론처리"
+    },
+    {
+      "routes": "pick category/compare/confirm/done/history/removed",
+      "result": "빈후보→업종검색, 선택/확정/제거 확인, 비교닫기 fallback, 확정완료→웨딩·지출 검토. 빈 업종검색 filterCategory→category 수정.",
+      "unverified": "실 Pick 변경·동시배우자 변경"
+    },
+    {
+      "routes": "capture home/camera/quote-consent/payment-consent/payment-register/review/analysis/result/verify/verify-status/sample",
+      "result": "제보 홈 경로, 동의선행, 업로드→분석상태→결과, 제출 후 복귀·오류 분기 검토. 견적서·결제사진 여정 및 v3.24 불일치 별도 기록.",
+      "unverified": "네이티브 카메라권한·촬영·앨범·OCR·원본파기·서버등록"
+    },
+    {
+      "routes": "wedding root/partner/join/complete/events/expenses/candidates/decided/changelog/conflict/map/notes/tasks/timeline/verify/visit-notes",
+      "result": "일정·지출·메모 CRUD 제출대기와 오류, 초대/해제확인, 완료 후 정리, 외부지도 진입 검토. 문서빈상태 업로드CTA 복원, 클립보드 실패 허위복사표시 수정. 서버 weddingId와 로컬문서 [id] 부모경로 혼용 발견.",
+      "unverified": "서버웨딩 UUID 왕복·공동편집 충돌·실일정등록·기기지도"
+    },
+    {
+      "routes": "my index/profile/taste/wedding-settings/settings/account/notifications/notification-settings/reports/reviews/display/withdrawal/privacy/policies",
+      "result": "메뉴 연결, 프로필저장, 스타일 제한/저장, 설정 토글, 탈퇴조건/확인/로그인복귀, 제보·후기목록 검토. 미조회상태 구분·초대API실패오인·focus재조회·설정경합·읽음롤백 수정.",
+      "unverified": "탈퇴실행·OS알림권한·실사용자설정·약관외부링크"
+    },
+    {
+      "routes": "my/rewards/*, membership, referral",
+      "result": "혜택→미션/초대/프로모션/기금/수령/참여내역, 실패재시도, 수령동의와 submit guard, 기존membership redirect 검토. 수령문구는 UX담당 변경.",
+      "unverified": "수령요청·실송금·보상심사·추첨회차"
+    },
+    {
+      "routes": "my/support/contact/faq/guide/biz/*/vendor-claims/*/rebuttals/*; search/expo/*; search/wedding-info/*",
+      "result": "문의·FAQ·약관·업체자료/혜택접수·인증·반론, 박람회필터/알림/캘린더, 정보상세 업체검색 CTA 검토. 접수화면은 실제 API acknowledgement 이후에만 성공 표시. 외부캘린더는 열기를 성공으로 표현.",
+      "unverified": "실문의·제휴등록·사업자서류 업로드·캘린더앱 호출"
+    }
+  ],
+  "uiEvidence": [
+    {
+      "route": "/capture",
+      "result": "조회 실패 시 다시 시도 표시, 빈 제보 안내 숨김"
+    },
+    {
+      "route": "/my",
+      "result": "fixture 프로필 정상표시"
+    },
+    {
+      "route": "/my/notification-settings",
+      "result": "10초 지연/실패 중 두 토글 disabled, 실패 후 기존 true 복원"
+    },
+    {
+      "route": "/my/notifications",
+      "result": "읽음 API 10초 지연 중 배우자 페이지 3초 내 표시"
+    },
+    {
+      "route": "/wedding/[id]/quotes",
+      "result": "문서 없음에서 자료 올리기 → /capture/quote/consent 실제 이동"
+    },
+    {
+      "route": "/wedding/[id]/quotes",
+      "result": "좌상단 뒤로 → /wedding 정상복귀"
+    }
+  ],
+  "routes": [
+    {"route":"/feed","file":"apps/mobile/src/app/(tabs)/(home)/feed.tsx","referencedScreenIds":["WP-HOME-006"],"referencedNames":["개인화 웨딩 소식"],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[43,69]},
+    {"route":"/progress","file":"apps/mobile/src/app/(tabs)/(home)/progress.tsx","referencedScreenIds":["WP-HOME-009","WP-OUR-002"],"referencedNames":["준비 현황 전체"],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[100,112,135,150,166]},
+    {"route":"/top3","file":"apps/mobile/src/app/(tabs)/(home)/top3.tsx","referencedScreenIds":["WP-HOME-004","WP-ST-015","WP-SRCH-004"],"referencedNames":["추천 상위 3곳 전체보기","업종 순회 로딩","검색 결과"],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[89,121]},
+    {"route":"/capture/analysis/[id]","file":"apps/mobile/src/app/(tabs)/capture/analysis/[id].tsx","referencedScreenIds":["WP-RPT-003","WP-ST-012"],"referencedNames":["문서 분석 중","처리 중"],"sourceSignals":{"error":true,"loading":false,"empty":false,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[46,76]},
+    {"route":"/capture/camera","file":"apps/mobile/src/app/(tabs)/capture/camera.tsx","referencedScreenIds":[],"referencedNames":[],"sourceSignals":{"error":false,"loading":false,"empty":false,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[47,87,140]},
+    {"route":"/capture","file":"apps/mobile/src/app/(tabs)/capture/index.tsx","referencedScreenIds":["WP-RPT-001"],"referencedNames":["제보 홈"],"sourceSignals":{"error":false,"loading":true,"empty":true,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[75,79,89,124,144]},
+    {"route":"/capture/payment/consent","file":"apps/mobile/src/app/(tabs)/capture/payment/consent.tsx","referencedScreenIds":[],"referencedNames":[],"sourceSignals":{"error":true,"loading":false,"empty":false,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[34,56]},
+    {"route":"/capture/payment/register","file":"apps/mobile/src/app/(tabs)/capture/payment/register.tsx","referencedScreenIds":["WP-RPT-002","WP-RPT-004","WP-RPT-007","WP-OUR-014","WP-SHT-016"],"referencedNames":["이미지 선택","자동 입력 결과 확인","제출 완료","지출 추가 · Pick 인증 통합","권한 요청 설명"],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[303,323,397]},
+    {"route":"/capture/quote/consent","file":"apps/mobile/src/app/(tabs)/capture/quote/consent.tsx","referencedScreenIds":[],"referencedNames":[],"sourceSignals":{"error":true,"loading":false,"empty":false,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[38,60]},
+    {"route":"/capture/result/[quoteId]","file":"apps/mobile/src/app/(tabs)/capture/result/[quoteId].tsx","referencedScreenIds":["WP-RPT-004"],"referencedNames":["자동 입력 결과 확인"],"sourceSignals":{"error":true,"loading":true,"empty":false,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[63,64,67,99,106]},
+    {"route":"/capture/review","file":"apps/mobile/src/app/(tabs)/capture/review.tsx","referencedScreenIds":[],"referencedNames":[],"sourceSignals":{"error":false,"loading":false,"empty":true,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[51,54,55,73,87,97,140]},
+    {"route":"/capture/sample","file":"apps/mobile/src/app/(tabs)/capture/sample.tsx","referencedScreenIds":[],"referencedNames":[],"sourceSignals":{"error":false,"loading":false,"empty":false,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[42]},
+    {"route":"/capture/verify/[quoteId]","file":"apps/mobile/src/app/(tabs)/capture/verify/[quoteId].tsx","referencedScreenIds":[],"referencedNames":[],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[91,92,95,114,117,222]},
+    {"route":"/capture/verify-status/[requestId]","file":"apps/mobile/src/app/(tabs)/capture/verify-status/[requestId].tsx","referencedScreenIds":["WP-RPT-008"],"referencedNames":["처리 결과"],"sourceSignals":{"error":true,"loading":true,"empty":false,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[96,97,166]},
+    {"route":"/","file":"apps/mobile/src/app/(tabs)/index.tsx","referencedScreenIds":["WP-HOME-001","WP-HOME-007","WP-SHT-017","WP-ST-015"],"referencedNames":["홈","홈 편집","혜택 안내 시트","업종 순회 로딩"],"sourceSignals":{"error":false,"loading":true,"empty":true,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[183,221,241,298,308,336,341,363,364,402,557,571]},
+    {"route":"/my/account","file":"apps/mobile/src/app/(tabs)/my/account.tsx","referencedScreenIds":["WP-MY-007"],"referencedNames":["계정 관리"],"sourceSignals":{"error":true,"loading":true,"empty":false,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[87,94,145]},
+    {"route":"/my/biz/benefit","file":"apps/mobile/src/app/(tabs)/my/biz/benefit.tsx","referencedScreenIds":["WP-BIZ-004"],"referencedNames":["반론 등록"],"sourceSignals":{"error":true,"loading":false,"empty":false,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[91,213]},
+    {"route":"/my/biz/claim","file":"apps/mobile/src/app/(tabs)/my/biz/claim.tsx","referencedScreenIds":["WP-BIZ-002"],"referencedNames":["소속 확인"],"sourceSignals":{"error":false,"loading":false,"empty":false,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[57,158]},
+    {"route":"/my/biz/data","file":"apps/mobile/src/app/(tabs)/my/biz/data.tsx","referencedScreenIds":["WP-BIZ-003"],"referencedNames":["문의 내역"],"sourceSignals":{"error":true,"loading":false,"empty":false,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[73,161]},
+    {"route":"/my/biz","file":"apps/mobile/src/app/(tabs)/my/biz/index.tsx","referencedScreenIds":["WP-BIZ-001"],"referencedNames":["문의 유형 선택"],"sourceSignals":{"error":false,"loading":false,"empty":false,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[46]},
+    {"route":"/my/contact","file":"apps/mobile/src/app/(tabs)/my/contact.tsx","referencedScreenIds":[],"referencedNames":[],"sourceSignals":{"error":true,"loading":false,"empty":false,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[124,257]},
+    {"route":"/my/display","file":"apps/mobile/src/app/(tabs)/my/display.tsx","referencedScreenIds":["WP-MY-005"],"referencedNames":["화면 설정"],"sourceSignals":{"error":false,"loading":false,"empty":false,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[]},
+    {"route":"/my/faq/[faqKey]","file":"apps/mobile/src/app/(tabs)/my/faq/[faqKey].tsx","referencedScreenIds":["WP-FAQ-003","WP-FAQ-001"],"referencedNames":["질문 답변 상세","자주 묻는 질문 홈"],"sourceSignals":{"error":false,"loading":false,"empty":false,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[66,90]},
+    {"route":"/my/guide","file":"apps/mobile/src/app/(tabs)/my/guide.tsx","referencedScreenIds":["WP-FAQ-003"],"referencedNames":["질문 답변 상세"],"sourceSignals":{"error":false,"loading":false,"empty":false,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[35,97,102,104]},
+    {"route":"/my","file":"apps/mobile/src/app/(tabs)/my/index.tsx","referencedScreenIds":["WP-MY-001","WP-HOME-009","WP-AUTH-001"],"referencedNames":["마이페이지 홈","준비 현황 전체","로그인"],"sourceSignals":{"error":false,"loading":true,"empty":false,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[169,172,214,236,317,335,348]},
+    {"route":"/my/membership","file":"apps/mobile/src/app/(tabs)/my/membership.tsx","referencedScreenIds":["WP-EVT-002"],"referencedNames":["미션 4개"],"sourceSignals":{"error":false,"loading":false,"empty":false,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[8]},
+    {"route":"/my/notification-settings","file":"apps/mobile/src/app/(tabs)/my/notification-settings.tsx","referencedScreenIds":["WP-MY-007"],"referencedNames":["계정 관리"],"sourceSignals":{"error":true,"loading":true,"empty":false,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[65]},
+    {"route":"/my/notifications","file":"apps/mobile/src/app/(tabs)/my/notifications.tsx","referencedScreenIds":[],"referencedNames":[],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[28,31,34,37,114]},
+    {"route":"/my/policies","file":"apps/mobile/src/app/(tabs)/my/policies.tsx","referencedScreenIds":["WP-MY-010","WP-LEGAL-001"],"referencedNames":["서비스 정보","이용약관 본문"],"sourceSignals":{"error":false,"loading":false,"empty":false,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[38]},
+    {"route":"/my/privacy","file":"apps/mobile/src/app/(tabs)/my/privacy.tsx","referencedScreenIds":[],"referencedNames":[],"sourceSignals":{"error":false,"loading":false,"empty":false,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[129]},
+    {"route":"/my/profile","file":"apps/mobile/src/app/(tabs)/my/profile.tsx","referencedScreenIds":["WP-MY-002"],"referencedNames":["프로필"],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[96,97]},
+    {"route":"/my/rebuttals","file":"apps/mobile/src/app/(tabs)/my/rebuttals/index.tsx","referencedScreenIds":[],"referencedNames":[],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[47,143]},
+    {"route":"/my/rebuttals/[reviewId]","file":"apps/mobile/src/app/(tabs)/my/rebuttals/[reviewId].tsx","referencedScreenIds":[],"referencedNames":[],"sourceSignals":{"error":false,"loading":false,"empty":false,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[78,149]},
+    {"route":"/my/referral","file":"apps/mobile/src/app/(tabs)/my/referral.tsx","referencedScreenIds":["WP-EVT-003"],"referencedNames":["친구 초대"],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[85,86]},
+    {"route":"/my/reports","file":"apps/mobile/src/app/(tabs)/my/reports.tsx","referencedScreenIds":["WP-RPT-009"],"referencedNames":["내 제보 내역"],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[71,97]},
+    {"route":"/my/reviews","file":"apps/mobile/src/app/(tabs)/my/reviews.tsx","referencedScreenIds":["WP-REV-004","WP-REV-003"],"referencedNames":["내 후기","후기 상세"],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[75,107,125]},
+    {"route":"/my/rewards/fund","file":"apps/mobile/src/app/(tabs)/my/rewards/fund.tsx","referencedScreenIds":["WP-EVT-005"],"referencedNames":["월간 웨딩지원금"],"sourceSignals":{"error":true,"loading":true,"empty":false,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[40,41]},
+    {"route":"/my/rewards/history","file":"apps/mobile/src/app/(tabs)/my/rewards/history.tsx","referencedScreenIds":["WP-EVT-007"],"referencedNames":["참여 · 지급 내역"],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[40,41,96]},
+    {"route":"/my/rewards","file":"apps/mobile/src/app/(tabs)/my/rewards/index.tsx","referencedScreenIds":["WP-EVT-001","WP-EVT-006"],"referencedNames":["혜택 모아보기","네이버페이 보상 수령"],"sourceSignals":{"error":true,"loading":true,"empty":false,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[70,71,81,100,113,122,132,143]},
+    {"route":"/my/rewards/missions","file":"apps/mobile/src/app/(tabs)/my/rewards/missions.tsx","referencedScreenIds":["WP-EVT-002"],"referencedNames":["미션 4개"],"sourceSignals":{"error":true,"loading":true,"empty":false,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[53,54,81]},
+    {"route":"/my/rewards/npay","file":"apps/mobile/src/app/(tabs)/my/rewards/npay.tsx","referencedScreenIds":["WP-EVT-006"],"referencedNames":["네이버페이 보상 수령"],"sourceSignals":{"error":true,"loading":true,"empty":false,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[51,52]},
+    {"route":"/my/rewards/promotion","file":"apps/mobile/src/app/(tabs)/my/rewards/promotion.tsx","referencedScreenIds":["WP-EVT-004"],"referencedNames":["홍보 인증"],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[56,57]},
+    {"route":"/my/settings","file":"apps/mobile/src/app/(tabs)/my/settings.tsx","referencedScreenIds":[],"referencedNames":[],"sourceSignals":{"error":true,"loading":true,"empty":false,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[145,196,201,206,208,212,231,234]},
+    {"route":"/my/support","file":"apps/mobile/src/app/(tabs)/my/support.tsx","referencedScreenIds":["WP-MY-009","WP-FAQ-003"],"referencedNames":["고객지원","질문 답변 상세"],"sourceSignals":{"error":false,"loading":false,"empty":false,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[63,66,72,78]},
+    {"route":"/my/taste","file":"apps/mobile/src/app/(tabs)/my/taste.tsx","referencedScreenIds":["WP-MY-004"],"referencedNames":["취향 다시 고르기"],"sourceSignals":{"error":true,"loading":true,"empty":false,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[65,68,78]},
+    {"route":"/my/vendor-claims","file":"apps/mobile/src/app/(tabs)/my/vendor-claims/index.tsx","referencedScreenIds":[],"referencedNames":[],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[42]},
+    {"route":"/my/vendor-claims/[vendorId]","file":"apps/mobile/src/app/(tabs)/my/vendor-claims/[vendorId].tsx","referencedScreenIds":[],"referencedNames":[],"sourceSignals":{"error":false,"loading":false,"empty":true,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[99,234]},
+    {"route":"/my/wedding-settings","file":"apps/mobile/src/app/(tabs)/my/wedding-settings.tsx","referencedScreenIds":["WP-MY-003","WP-APP-023","WP-MY-004"],"referencedNames":["내 웨딩 설정","날짜 선택 시트","취향 다시 고르기"],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[93,128,222]},
+    {"route":"/my/withdrawal","file":"apps/mobile/src/app/(tabs)/my/withdrawal.tsx","referencedScreenIds":["WP-MY-008"],"referencedNames":["회원 탈퇴"],"sourceSignals":{"error":false,"loading":false,"empty":true,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[95,96,128]},
+    {"route":"/pick/category","file":"apps/mobile/src/app/(tabs)/pick/category.tsx","referencedScreenIds":["WP-PICK-002"],"referencedNames":["업종별 픽"],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[52,66,87,88,120,173]},
+    {"route":"/pick/compare","file":"apps/mobile/src/app/(tabs)/pick/compare.tsx","referencedScreenIds":["WP-CMP-001","WP-SHT-004","WP-CMP-002"],"referencedNames":["비교 후보 선택","비교 후보 선택","비교 결과"],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[108,165,169,174,176,208]},
+    {"route":"/pick/confirm","file":"apps/mobile/src/app/(tabs)/pick/confirm.tsx","referencedScreenIds":["WP-PICK-005","WP-SHT-005","WP-PICK-002","WP-PICK-006"],"referencedNames":["최종 결정 확인","최종 결정 확인","업종별 픽","결정 완료"],"sourceSignals":{"error":true,"loading":true,"empty":false,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[89,94,100,102]},
+    {"route":"/pick/done","file":"apps/mobile/src/app/(tabs)/pick/done.tsx","referencedScreenIds":["WP-PICK-006","WP-OUR-014"],"referencedNames":["결정 완료","지출 추가 · Pick 인증 통합"],"sourceSignals":{"error":false,"loading":false,"empty":false,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[78,83,154,238]},
+    {"route":"/pick/history","file":"apps/mobile/src/app/(tabs)/pick/history.tsx","referencedScreenIds":["WP-PICK-007","WP-PICK-001"],"referencedNames":["결정 내역","픽 홈"],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[84,91,100,120,228]},
+    {"route":"/pick","file":"apps/mobile/src/app/(tabs)/pick/index.tsx","referencedScreenIds":["WP-PICK-001","WP-CMP-001"],"referencedNames":["픽 홈","비교 후보 선택"],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[261,272,282,377,421,454,520,533]},
+    {"route":"/pick/removed","file":"apps/mobile/src/app/(tabs)/pick/removed.tsx","referencedScreenIds":["WP-PICK-007"],"referencedNames":["결정 내역"],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[72,81]},
+    {"route":"/pick/[category]","file":"apps/mobile/src/app/(tabs)/pick/[category].tsx","referencedScreenIds":["WP-PICK-002","WP-PICK-005","WP-SHT-003"],"referencedNames":["업종별 픽","최종 결정 확인","픽 해제 확인"],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[120,125,127,150,181,245,358]},
+    {"route":"/search/autocomplete","file":"apps/mobile/src/app/(tabs)/search/autocomplete.tsx","referencedScreenIds":["WP-SRCH-002"],"referencedNames":["검색어 입력 · 자동완성"],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[144,159,177,181,183]},
+    {"route":"/search/compare","file":"apps/mobile/src/app/(tabs)/search/compare.tsx","referencedScreenIds":["WP-CMP-002"],"referencedNames":["비교 결과"],"sourceSignals":{"error":true,"loading":true,"empty":false,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[107,304]},
+    {"route":"/search/expo","file":"apps/mobile/src/app/(tabs)/search/expo/index.tsx","referencedScreenIds":["WP-EXPO-001"],"referencedNames":["박람회 목록"],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[86,91,170]},
+    {"route":"/search/expo/[expoId]/calendar","file":"apps/mobile/src/app/(tabs)/search/expo/[expoId]/calendar.tsx","referencedScreenIds":["WP-EXPO-005"],"referencedNames":["외부 달력에 일정 등록"],"sourceSignals":{"error":true,"loading":false,"empty":false,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[238]},
+    {"route":"/search/expo/[expoId]","file":"apps/mobile/src/app/(tabs)/search/expo/[expoId]/index.tsx","referencedScreenIds":["WP-EXPO-002"],"referencedNames":["박람회 상세"],"sourceSignals":{"error":true,"loading":true,"empty":false,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[102,106,108,262]},
+    {"route":"/search/filter","file":"apps/mobile/src/app/(tabs)/search/filter.tsx","referencedScreenIds":["WP-SRCH-005"],"referencedNames":["검색 필터"],"sourceSignals":{"error":true,"loading":true,"empty":false,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[141,142]},
+    {"route":"/search","file":"apps/mobile/src/app/(tabs)/search/index.tsx","referencedScreenIds":["WP-SRCH-002","WP-SRCH-008","WP-SRCH-006","WP-SHT-014","WP-SHT-002","WP-SHT-003","WP-SRCH-005","WP-SRCH-004","WP-ST-007"],"referencedNames":["검색어 입력 · 자동완성","검색 결과 없음 · 오류","검색 결과 정렬","데이터 설명","픽 완료","픽 해제 확인","검색 필터","검색 결과","불러오는 중"],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[404,421,616,771,786,873,974,1026,1077]},
+    {"route":"/search/wedding-info","file":"apps/mobile/src/app/(tabs)/search/wedding-info/index.tsx","referencedScreenIds":["WP-EXPO-003"],"referencedNames":["웨딩 정보 목록"],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[103,108,205]},
+    {"route":"/search/wedding-info/[infoId]","file":"apps/mobile/src/app/(tabs)/search/wedding-info/[infoId]/index.tsx","referencedScreenIds":["WP-EXPO-004"],"referencedNames":["웨딩 정보 상세"],"sourceSignals":{"error":true,"loading":true,"empty":false,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[87,92,94,159,176,180]},
+    {"route":"/search/[vendorId]/edit-review","file":"apps/mobile/src/app/(tabs)/search/[vendorId]/edit-review.tsx","referencedScreenIds":[],"referencedNames":[],"sourceSignals":{"error":true,"loading":false,"empty":false,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[83,163]},
+    {"route":"/search/[vendorId]/fix-report","file":"apps/mobile/src/app/(tabs)/search/[vendorId]/fix-report.tsx","referencedScreenIds":["WP-VEND-006","WP-VEND-005"],"referencedNames":["정보 오류 제보","공식 정보"],"sourceSignals":{"error":false,"loading":false,"empty":false,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[107]},
+    {"route":"/search/[vendorId]/images","file":"apps/mobile/src/app/(tabs)/search/[vendorId]/images.tsx","referencedScreenIds":["WP-VEND-002"],"referencedNames":["이미지 전체보기"],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[60,65,81]},
+    {"route":"/search/[vendorId]","file":"apps/mobile/src/app/(tabs)/search/[vendorId]/index.tsx","referencedScreenIds":["WP-VEND-001","WP-VEND-002","WP-SHT-002","WP-SHT-003","WP-SHT-014","WP-SHT-015","WP-CMP-002","WP-VEND-006"],"referencedNames":["업체 상세","이미지 전체보기","픽 완료","픽 해제 확인","데이터 설명","기준금액 설명","비교 결과","정보 오류 제보"],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[227,228,269,359,528,685,724,781,812]},
+    {"route":"/search/[vendorId]/price-report","file":"apps/mobile/src/app/(tabs)/search/[vendorId]/price-report.tsx","referencedScreenIds":["WP-RPT-010"],"referencedNames":["가격 제보"],"sourceSignals":{"error":false,"loading":false,"empty":false,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[5]},
+    {"route":"/search/[vendorId]/reviews","file":"apps/mobile/src/app/(tabs)/search/[vendorId]/reviews.tsx","referencedScreenIds":["WP-REV-006"],"referencedNames":["이용자 경험"],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[63,70,75,104,193,271,296,310]},
+    {"route":"/search/[vendorId]/write-review","file":"apps/mobile/src/app/(tabs)/search/[vendorId]/write-review.tsx","referencedScreenIds":[],"referencedNames":[],"sourceSignals":{"error":true,"loading":true,"empty":false,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[67,103,111,125,345]},
+    {"route":"/wedding","file":"apps/mobile/src/app/(tabs)/wedding/index.tsx","referencedScreenIds":["WP-OUR-001","WP-OUR-002","WP-HOME-009","WP-OUR-013","WP-OUR-008","WP-OUR-014"],"referencedNames":["웨딩일정 홈","준비 현황 전체","예식 완료","지출 요약","지출 추가 · Pick 인증 통합"],"sourceSignals":{"error":false,"loading":true,"empty":true,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[141,255,289,326,367,392]},
+    {"route":"/wedding/join","file":"apps/mobile/src/app/(tabs)/wedding/join.tsx","referencedScreenIds":["WP-CPL-002","WP-CPL-003"],"referencedNames":["초대 수락","연결 완료"],"sourceSignals":{"error":true,"loading":false,"empty":true,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[119,198]},
+    {"route":"/wedding/partner","file":"apps/mobile/src/app/(tabs)/wedding/partner.tsx","referencedScreenIds":["WP-CPL-001","WP-CPL-006"],"referencedNames":["배우자 초대","연결 해제"],"sourceSignals":{"error":true,"loading":true,"empty":false,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[200,204,205,338]},
+    {"route":"/wedding/[id]/candidates","file":"apps/mobile/src/app/(tabs)/wedding/[id]/candidates.tsx","referencedScreenIds":[],"referencedNames":[],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[40,41,44,72,97,126,128]},
+    {"route":"/wedding/[id]/changelog","file":"apps/mobile/src/app/(tabs)/wedding/[id]/changelog.tsx","referencedScreenIds":["WP-CPL-005"],"referencedNames":["변경 내역"],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[67,71,75]},
+    {"route":"/wedding/[id]/complete","file":"apps/mobile/src/app/(tabs)/wedding/[id]/complete.tsx","referencedScreenIds":["WP-OUR-013"],"referencedNames":["예식 완료"],"sourceSignals":{"error":false,"loading":false,"empty":false,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[],"delegatedComponent":"apps/mobile/src/features/wedding/complete-view.tsx"},
+    {"route":"/wedding/[id]/conflict","file":"apps/mobile/src/app/(tabs)/wedding/[id]/conflict.tsx","referencedScreenIds":["WP-CPL-004"],"referencedNames":["공동 편집 충돌 해결"],"sourceSignals":{"error":false,"loading":false,"empty":false,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[98,99]},
+    {"route":"/wedding/[id]/decided","file":"apps/mobile/src/app/(tabs)/wedding/[id]/decided.tsx","referencedScreenIds":["WP-OUR-003"],"referencedNames":["결정한 업체"],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[48,49,52,70,96,115,123]},
+    {"route":"/wedding/[id]/events","file":"apps/mobile/src/app/(tabs)/wedding/[id]/events/index.tsx","referencedScreenIds":["WP-OUR-004"],"referencedNames":["일정 목록"],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[79,80,83,106,125,141]},
+    {"route":"/wedding/[id]/events/new","file":"apps/mobile/src/app/(tabs)/wedding/[id]/events/new.tsx","referencedScreenIds":["WP-OUR-006"],"referencedNames":["일정 추가"],"sourceSignals":{"error":true,"loading":false,"empty":true,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[77]},
+    {"route":"/wedding/[id]/events/[eventId]","file":"apps/mobile/src/app/(tabs)/wedding/[id]/events/[eventId].tsx","referencedScreenIds":["WP-OUR-005"],"referencedNames":["일정 상세"],"sourceSignals":{"error":true,"loading":true,"empty":false,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[96,97,101,173]},
+    {"route":"/wedding/[id]/expenses/add","file":"apps/mobile/src/app/(tabs)/wedding/[id]/expenses/add.tsx","referencedScreenIds":["WP-OUR-014","WP-PICK-006"],"referencedNames":["지출 추가 · Pick 인증 통합","결정 완료"],"sourceSignals":{"error":true,"loading":false,"empty":true,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[112,131]},
+    {"route":"/wedding/[id]/expenses","file":"apps/mobile/src/app/(tabs)/wedding/[id]/expenses/index.tsx","referencedScreenIds":["WP-OUR-008","WP-OUR-009"],"referencedNames":["지출 요약","지출 내역"],"sourceSignals":{"error":true,"loading":true,"empty":false,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[103,104,107,146,255]},
+    {"route":"/wedding/[id]/expenses/list","file":"apps/mobile/src/app/(tabs)/wedding/[id]/expenses/list.tsx","referencedScreenIds":["WP-OUR-009","WP-OUR-008","WP-OUR-014","WP-OUR-010"],"referencedNames":["지출 내역","지출 요약","지출 추가 · Pick 인증 통합","지출 상세"],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[45,46,49,56,114]},
+    {"route":"/wedding/[id]/expenses/[expenseId]","file":"apps/mobile/src/app/(tabs)/wedding/[id]/expenses/[expenseId].tsx","referencedScreenIds":["WP-OUR-010","WP-OUR-014"],"referencedNames":["지출 상세","지출 추가 · Pick 인증 통합"],"sourceSignals":{"error":true,"loading":true,"empty":false,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[48,49,73]},
+    {"route":"/wedding/[id]","file":"apps/mobile/src/app/(tabs)/wedding/[id]/index.tsx","referencedScreenIds":[],"referencedNames":[],"sourceSignals":{"error":true,"loading":true,"empty":false,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[27,41,70,84,122]},
+    {"route":"/wedding/[id]/map","file":"apps/mobile/src/app/(tabs)/wedding/[id]/map.tsx","referencedScreenIds":[],"referencedNames":[],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[60,65,67,139,159]},
+    {"route":"/wedding/[id]/map","file":"apps/mobile/src/app/(tabs)/wedding/[id]/map.web.tsx","referencedScreenIds":[],"referencedNames":[],"sourceSignals":{"error":false,"loading":false,"empty":false,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[28]},
+    {"route":"/wedding/[id]/notes","file":"apps/mobile/src/app/(tabs)/wedding/[id]/notes.tsx","referencedScreenIds":["WP-OUR-011","WP-OUR-003"],"referencedNames":["메모","결정한 업체"],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[117,118,121,183]},
+    {"route":"/wedding/[id]/quotes","file":"apps/mobile/src/app/(tabs)/wedding/[id]/quotes.tsx","referencedScreenIds":[],"referencedNames":[],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[63,117,119,120,142,157]},
+    {"route":"/wedding/[id]/tasks","file":"apps/mobile/src/app/(tabs)/wedding/[id]/tasks.tsx","referencedScreenIds":[],"referencedNames":[],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[78,79,82,236]},
+    {"route":"/wedding/[id]/timeline","file":"apps/mobile/src/app/(tabs)/wedding/[id]/timeline.tsx","referencedScreenIds":["WP-OUR-012"],"referencedNames":["준비 타임라인"],"sourceSignals":{"error":true,"loading":true,"empty":false,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[40,41]},
+    {"route":"/wedding/[id]/verify","file":"apps/mobile/src/app/(tabs)/wedding/[id]/verify.tsx","referencedScreenIds":[],"referencedNames":[],"sourceSignals":{"error":false,"loading":false,"empty":false,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[68,70]},
+    {"route":"/wedding/[id]/visit-notes","file":"apps/mobile/src/app/(tabs)/wedding/[id]/visit-notes.tsx","referencedScreenIds":[],"referencedNames":[],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[55,56,59]},
+    {"route":"/home-edit","file":"apps/mobile/src/app/home-edit.tsx","referencedScreenIds":["WP-HOME-007"],"referencedNames":["홈 편집"],"sourceSignals":{"error":false,"loading":false,"empty":false,"historyBack":true},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[92,101]},
+    {"route":"/login/age-required","file":"apps/mobile/src/app/login/age-required.tsx","referencedScreenIds":["WP-AUTH-009","WP-AUTH-001"],"referencedNames":["나이 확인 · 폐기","로그인"],"sourceSignals":{"error":false,"loading":false,"empty":false,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[48,75]},
+    {"route":"/login","file":"apps/mobile/src/app/login/index.tsx","referencedScreenIds":["WP-AUTH-001","WP-AUTH-008","WP-AUTH-002","WP-AUTH-009"],"referencedNames":["로그인","로그인 유지","이메일 입력 · 보류","나이 확인 · 폐기"],"sourceSignals":{"error":false,"loading":false,"empty":false,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[224]},
+    {"route":"/onboarding","file":"apps/mobile/src/app/onboarding.tsx","referencedScreenIds":[],"referencedNames":[],"sourceSignals":{"error":false,"loading":false,"empty":false,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[34]},
+    {"route":"/setup","file":"apps/mobile/src/app/setup.tsx","referencedScreenIds":["WP-APP-020","WP-AUTH-001","WP-ST-015"],"referencedNames":["초기 설정 · 5개 질문","로그인","업종 순회 로딩"],"sourceSignals":{"error":true,"loading":true,"empty":true,"historyBack":false},"review":"source-actions-and-states-reviewed","actionAndStateEvidence":[196,292,369]}
+  ],
+  "screenCoverage": [
+    {"id":"WP-APP-001","name":"앱 아이콘","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 로그인.dc.html","웨딩픽 온보딩 v2.dc.html","웨딩픽 진입 온보딩.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-APP-002","name":"시작 로딩 화면","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 로그인.dc.html","웨딩픽 온보딩 v2.dc.html","웨딩픽 진입 온보딩.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-APP-003","name":"최초 실행 소개 · 보류","excluded":true,"sourceRoutes":[],"reference":["웨딩픽 로그인.dc.html","웨딩픽 온보딩 v2.dc.html","웨딩픽 진입 온보딩.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-AUTH-001","name":"로그인","excluded":false,"sourceRoutes":["/my","/login/age-required","/login","/setup"],"reference":["웨딩픽 로그인.dc.html","웨딩픽 온보딩 v2.dc.html","웨딩픽 진입 온보딩.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-AUTH-002","name":"이메일 입력 · 보류","excluded":true,"sourceRoutes":["/login"],"reference":["웨딩픽 로그인.dc.html","웨딩픽 온보딩 v2.dc.html","웨딩픽 진입 온보딩.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-AUTH-003","name":"비밀번호 입력 · 보류","excluded":true,"sourceRoutes":[],"reference":["웨딩픽 로그인.dc.html","웨딩픽 온보딩 v2.dc.html","웨딩픽 진입 온보딩.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-AUTH-004","name":"비밀번호 만들기 · 보류","excluded":true,"sourceRoutes":[],"reference":["웨딩픽 로그인.dc.html","웨딩픽 온보딩 v2.dc.html","웨딩픽 진입 온보딩.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-AUTH-005","name":"입력 오류 · 보류","excluded":true,"sourceRoutes":[],"reference":["웨딩픽 로그인.dc.html","웨딩픽 온보딩 v2.dc.html","웨딩픽 진입 온보딩.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-AUTH-006","name":"비밀번호 찾기 · 보류","excluded":true,"sourceRoutes":[],"reference":["웨딩픽 로그인.dc.html","웨딩픽 온보딩 v2.dc.html","웨딩픽 진입 온보딩.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-AUTH-007","name":"메일 보냈어요 · 보류","excluded":true,"sourceRoutes":[],"reference":["웨딩픽 로그인.dc.html","웨딩픽 온보딩 v2.dc.html","웨딩픽 진입 온보딩.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-AUTH-008","name":"로그인 유지","excluded":false,"sourceRoutes":["/login"],"reference":["웨딩픽 로그인.dc.html","웨딩픽 온보딩 v2.dc.html","웨딩픽 진입 온보딩.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-AUTH-009","name":"나이 확인 · 폐기","excluded":true,"sourceRoutes":["/login/age-required","/login"],"reference":["웨딩픽 로그인.dc.html","웨딩픽 온보딩 v2.dc.html","웨딩픽 진입 온보딩.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-AUTH-010","name":"이용 불가 안내","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 로그인.dc.html","웨딩픽 온보딩 v2.dc.html","웨딩픽 진입 온보딩.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-APP-004","name":"시작 · 폐기","excluded":true,"sourceRoutes":[],"reference":["웨딩픽 로그인.dc.html","웨딩픽 온보딩 v2.dc.html","웨딩픽 진입 온보딩.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-APP-005","name":"재실행 · 로그인 상태 복원","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 로그인.dc.html","웨딩픽 온보딩 v2.dc.html","웨딩픽 진입 온보딩.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-APP-006","name":"앱 진입 오류 안내","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 로그인.dc.html","웨딩픽 온보딩 v2.dc.html","웨딩픽 진입 온보딩.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-APP-007","name":"권한 요청","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 로그인.dc.html","웨딩픽 온보딩 v2.dc.html","웨딩픽 진입 온보딩.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-APP-020","name":"초기 설정 · 5개 질문","excluded":false,"sourceRoutes":["/setup"],"reference":["웨딩픽 로그인.dc.html","웨딩픽 온보딩 v2.dc.html","웨딩픽 진입 온보딩.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-APP-023","name":"날짜 선택 시트","excluded":false,"sourceRoutes":["/my/wedding-settings"],"reference":["웨딩픽 로그인.dc.html","웨딩픽 온보딩 v2.dc.html","웨딩픽 진입 온보딩.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-APP-021","name":"취향 이미지 선택 · WP-APP-020 5/5에 통합","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 로그인.dc.html","웨딩픽 온보딩 v2.dc.html","웨딩픽 진입 온보딩.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-APP-022","name":"초기 설정 완료","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 로그인.dc.html","웨딩픽 온보딩 v2.dc.html","웨딩픽 진입 온보딩.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-APP-008","name":"초기 설정 — 예식일 · 보류","excluded":true,"sourceRoutes":[],"reference":["웨딩픽 로그인.dc.html","웨딩픽 온보딩 v2.dc.html","웨딩픽 진입 온보딩.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-APP-009","name":"초기 설정 — 지역 · 보류","excluded":true,"sourceRoutes":[],"reference":["웨딩픽 로그인.dc.html","웨딩픽 온보딩 v2.dc.html","웨딩픽 진입 온보딩.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-APP-010","name":"초기 설정 — 총예산 · 보류","excluded":true,"sourceRoutes":[],"reference":["웨딩픽 로그인.dc.html","웨딩픽 온보딩 v2.dc.html","웨딩픽 진입 온보딩.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-APP-011","name":"초기 설정 — 취향 이미지 선택 · 보류","excluded":true,"sourceRoutes":[],"reference":["웨딩픽 로그인.dc.html","웨딩픽 온보딩 v2.dc.html","웨딩픽 진입 온보딩.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-APP-012","name":"초기 설정 완료 · 보류","excluded":true,"sourceRoutes":[],"reference":["웨딩픽 로그인.dc.html","웨딩픽 온보딩 v2.dc.html","웨딩픽 진입 온보딩.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-NAV-001","name":"홈 탭","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 홈 진행상태.dc.html","웨딩픽 검색.dc.html","웨딩픽 Pick 탭.dc.html","웨딩픽 웨딩일정 MY.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-NAV-002","name":"검색 탭","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 홈 진행상태.dc.html","웨딩픽 검색.dc.html","웨딩픽 Pick 탭.dc.html","웨딩픽 웨딩일정 MY.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-NAV-003","name":"픽 탭","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 홈 진행상태.dc.html","웨딩픽 검색.dc.html","웨딩픽 Pick 탭.dc.html","웨딩픽 웨딩일정 MY.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-NAV-004","name":"웨딩일정 탭","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 홈 진행상태.dc.html","웨딩픽 검색.dc.html","웨딩픽 Pick 탭.dc.html","웨딩픽 웨딩일정 MY.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-NAV-005","name":"마이페이지 탭","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 홈 진행상태.dc.html","웨딩픽 검색.dc.html","웨딩픽 Pick 탭.dc.html","웨딩픽 웨딩일정 MY.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-NAV-006","name":"상황별 제보 진입점","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 홈 진행상태.dc.html","웨딩픽 검색.dc.html","웨딩픽 Pick 탭.dc.html","웨딩픽 웨딩일정 MY.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-HOME-001","name":"홈","excluded":false,"sourceRoutes":["/"],"reference":["웨딩픽 홈 진행상태.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-HOME-002","name":"우선순위별 홈 콘텐츠 분기","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 홈 진행상태.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-HOME-003","name":"오늘의 픽","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 홈 진행상태.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-HOME-004","name":"추천 상위 3곳 전체보기","excluded":false,"sourceRoutes":["/top3"],"reference":["웨딩픽 홈 진행상태.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-HOME-005","name":"다음 준비","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 홈 진행상태.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-HOME-006","name":"개인화 웨딩 소식","excluded":false,"sourceRoutes":["/feed"],"reference":["웨딩픽 홈 진행상태.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-HOME-007","name":"홈 편집","excluded":false,"sourceRoutes":["/","/home-edit"],"reference":["웨딩픽 홈 진행상태.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-HOME-008","name":"비회원 홈 · 폐기","excluded":true,"sourceRoutes":[],"reference":["웨딩픽 홈 진행상태.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-HOME-009","name":"준비 현황 전체","excluded":false,"sourceRoutes":["/progress","/my","/wedding"],"reference":["웨딩픽 홈 진행상태.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-SRCH-001","name":"검색 홈","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 검색.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-SRCH-002","name":"검색어 입력 · 자동완성","excluded":false,"sourceRoutes":["/search/autocomplete","/search"],"reference":["웨딩픽 검색.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-SRCH-003","name":"업종별 탐색 · 진입점 없음","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 검색.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-SRCH-004","name":"검색 결과","excluded":false,"sourceRoutes":["/top3","/search"],"reference":["웨딩픽 검색.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-SRCH-005","name":"검색 필터","excluded":false,"sourceRoutes":["/search/filter","/search"],"reference":["웨딩픽 검색.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-SRCH-006","name":"검색 결과 정렬","excluded":false,"sourceRoutes":["/search"],"reference":["웨딩픽 검색.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-SRCH-007","name":"지도 보기","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 검색.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-SRCH-008","name":"검색 결과 없음 · 오류","excluded":false,"sourceRoutes":["/search"],"reference":["웨딩픽 검색.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-VEND-001","name":"업체 상세","excluded":false,"sourceRoutes":["/search/[vendorId]"],"reference":["웨딩픽 핵심루프.dc.html","웨딩픽 업체상세 하위.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-VEND-002","name":"이미지 전체보기","excluded":false,"sourceRoutes":["/search/[vendorId]/images","/search/[vendorId]"],"reference":["웨딩픽 핵심루프.dc.html","웨딩픽 업체상세 하위.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-VEND-003","name":"제보 금액 상세","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 핵심루프.dc.html","웨딩픽 업체상세 하위.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-VEND-004","name":"업체 안내","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 핵심루프.dc.html","웨딩픽 업체상세 하위.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-VEND-005","name":"공식 정보","excluded":false,"sourceRoutes":["/search/[vendorId]/fix-report"],"reference":["웨딩픽 핵심루프.dc.html","웨딩픽 업체상세 하위.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-VEND-006","name":"정보 오류 제보","excluded":false,"sourceRoutes":["/search/[vendorId]/fix-report","/search/[vendorId]"],"reference":["웨딩픽 핵심루프.dc.html","웨딩픽 업체상세 하위.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-CMP-001","name":"비교 후보 선택","excluded":false,"sourceRoutes":["/pick/compare","/pick"],"review":"reference-and-route-index-only"},
+    {"id":"WP-CMP-002","name":"비교 결과","excluded":false,"sourceRoutes":["/pick/compare","/search/compare","/search/[vendorId]"],"review":"reference-and-route-index-only"},
+    {"id":"WP-CMP-003","name":"비교 요약","excluded":false,"sourceRoutes":[],"review":"reference-and-route-index-only"},
+    {"id":"WP-CMP-004","name":"비교 화면에서 픽하기","excluded":false,"sourceRoutes":[],"review":"reference-and-route-index-only"},
+    {"id":"WP-PICK-001","name":"픽 홈","excluded":false,"sourceRoutes":["/pick/history","/pick"],"reference":["웨딩픽 Pick 탭.dc.html","웨딩픽 핵심루프.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-PICK-002","name":"업종별 픽","excluded":false,"sourceRoutes":["/pick/category","/pick/confirm","/pick/[category]"],"reference":["웨딩픽 Pick 탭.dc.html","웨딩픽 핵심루프.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-PICK-003","name":"후보 비교","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 Pick 탭.dc.html","웨딩픽 핵심루프.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-PICK-004","name":"배우자 공동 결정","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 Pick 탭.dc.html","웨딩픽 핵심루프.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-PICK-005","name":"최종 결정 확인","excluded":false,"sourceRoutes":["/pick/confirm","/pick/[category]"],"reference":["웨딩픽 Pick 탭.dc.html","웨딩픽 핵심루프.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-PICK-006","name":"결정 완료","excluded":false,"sourceRoutes":["/pick/confirm","/pick/done","/wedding/[id]/expenses/add"],"reference":["웨딩픽 Pick 탭.dc.html","웨딩픽 핵심루프.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-PICK-007","name":"결정 내역","excluded":false,"sourceRoutes":["/pick/history","/pick/removed"],"reference":["웨딩픽 Pick 탭.dc.html","웨딩픽 핵심루프.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-PICK-008","name":"픽 해제","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 Pick 탭.dc.html","웨딩픽 핵심루프.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-OUR-001","name":"웨딩일정 홈","excluded":false,"sourceRoutes":["/wedding"],"reference":["웨딩픽 웨딩일정 MY.dc.html","웨딩픽 웨딩일정 하위.dc.html","웨딩픽 마감 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-OUR-003","name":"결정한 업체","excluded":false,"sourceRoutes":["/wedding/[id]/decided","/wedding/[id]/notes"],"reference":["웨딩픽 웨딩일정 MY.dc.html","웨딩픽 웨딩일정 하위.dc.html","웨딩픽 마감 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-OUR-004","name":"일정 목록","excluded":false,"sourceRoutes":["/wedding/[id]/events"],"reference":["웨딩픽 웨딩일정 MY.dc.html","웨딩픽 웨딩일정 하위.dc.html","웨딩픽 마감 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-OUR-005","name":"일정 상세","excluded":false,"sourceRoutes":["/wedding/[id]/events/[eventId]"],"reference":["웨딩픽 웨딩일정 MY.dc.html","웨딩픽 웨딩일정 하위.dc.html","웨딩픽 마감 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-OUR-006","name":"일정 추가","excluded":false,"sourceRoutes":["/wedding/[id]/events/new"],"reference":["웨딩픽 웨딩일정 MY.dc.html","웨딩픽 웨딩일정 하위.dc.html","웨딩픽 마감 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-OUR-007","name":"준비 체크리스트","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 웨딩일정 MY.dc.html","웨딩픽 웨딩일정 하위.dc.html","웨딩픽 마감 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-OUR-008","name":"지출 요약","excluded":false,"sourceRoutes":["/wedding","/wedding/[id]/expenses","/wedding/[id]/expenses/list"],"reference":["웨딩픽 웨딩일정 MY.dc.html","웨딩픽 웨딩일정 하위.dc.html","웨딩픽 마감 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-OUR-009","name":"지출 내역","excluded":false,"sourceRoutes":["/wedding/[id]/expenses","/wedding/[id]/expenses/list"],"reference":["웨딩픽 웨딩일정 MY.dc.html","웨딩픽 웨딩일정 하위.dc.html","웨딩픽 마감 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-OUR-010","name":"지출 상세","excluded":false,"sourceRoutes":["/wedding/[id]/expenses/list","/wedding/[id]/expenses/[expenseId]"],"reference":["웨딩픽 웨딩일정 MY.dc.html","웨딩픽 웨딩일정 하위.dc.html","웨딩픽 마감 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-OUR-011","name":"메모","excluded":false,"sourceRoutes":["/wedding/[id]/notes"],"reference":["웨딩픽 웨딩일정 MY.dc.html","웨딩픽 웨딩일정 하위.dc.html","웨딩픽 마감 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-OUR-012","name":"준비 타임라인","excluded":false,"sourceRoutes":["/wedding/[id]/timeline"],"reference":["웨딩픽 웨딩일정 MY.dc.html","웨딩픽 웨딩일정 하위.dc.html","웨딩픽 마감 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-OUR-013","name":"예식 완료","excluded":false,"sourceRoutes":["/wedding","/wedding/[id]/complete"],"reference":["웨딩픽 웨딩일정 MY.dc.html","웨딩픽 웨딩일정 하위.dc.html","웨딩픽 마감 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-OUR-014","name":"지출 추가 · Pick 인증 통합","excluded":false,"sourceRoutes":["/capture/payment/register","/pick/done","/wedding","/wedding/[id]/expenses/add","/wedding/[id]/expenses/list","/wedding/[id]/expenses/[expenseId]"],"reference":["웨딩픽 웨딩일정 MY.dc.html","웨딩픽 웨딩일정 하위.dc.html","웨딩픽 마감 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-RPT-001","name":"제보 홈","excluded":false,"sourceRoutes":["/capture"],"reference":["웨딩픽 제보 후기.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-RPT-002","name":"이미지 선택","excluded":false,"sourceRoutes":["/capture/payment/register"],"reference":["웨딩픽 제보 후기.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-RPT-003","name":"문서 분석 중","excluded":false,"sourceRoutes":["/capture/analysis/[id]"],"reference":["웨딩픽 제보 후기.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-RPT-004","name":"자동 입력 결과 확인","excluded":false,"sourceRoutes":["/capture/payment/register","/capture/result/[quoteId]"],"reference":["웨딩픽 제보 후기.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-RPT-005","name":"업체 확인","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 제보 후기.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-RPT-006","name":"분할 결제 연결","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 제보 후기.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-RPT-007","name":"제출 완료","excluded":false,"sourceRoutes":["/capture/payment/register"],"reference":["웨딩픽 제보 후기.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-RPT-008","name":"처리 결과","excluded":false,"sourceRoutes":["/capture/verify-status/[requestId]"],"reference":["웨딩픽 제보 후기.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-RPT-009","name":"내 제보 내역","excluded":false,"sourceRoutes":["/my/reports"],"reference":["웨딩픽 제보 후기.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-RPT-010","name":"가격 제보","excluded":false,"sourceRoutes":["/search/[vendorId]/price-report"],"reference":["웨딩픽 제보 후기.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-RPT-011","name":"업체 정보 제보","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 제보 후기.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-REV-001","name":"후기 목록","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 제보 후기.dc.html","웨딩픽 마감 화면.dc.html","웨딩픽 잔여 화면.dc.html","웨딩픽 업체상세 하위.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-REV-002","name":"후기 작성","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 제보 후기.dc.html","웨딩픽 마감 화면.dc.html","웨딩픽 잔여 화면.dc.html","웨딩픽 업체상세 하위.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-REV-003","name":"후기 상세","excluded":false,"sourceRoutes":["/my/reviews"],"reference":["웨딩픽 제보 후기.dc.html","웨딩픽 마감 화면.dc.html","웨딩픽 잔여 화면.dc.html","웨딩픽 업체상세 하위.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-REV-004","name":"내 후기","excluded":false,"sourceRoutes":["/my/reviews"],"reference":["웨딩픽 제보 후기.dc.html","웨딩픽 마감 화면.dc.html","웨딩픽 잔여 화면.dc.html","웨딩픽 업체상세 하위.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-REV-005","name":"후기 신고","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 제보 후기.dc.html","웨딩픽 마감 화면.dc.html","웨딩픽 잔여 화면.dc.html","웨딩픽 업체상세 하위.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-REV-006","name":"이용자 경험","excluded":false,"sourceRoutes":["/search/[vendorId]/reviews"],"reference":["웨딩픽 제보 후기.dc.html","웨딩픽 마감 화면.dc.html","웨딩픽 잔여 화면.dc.html","웨딩픽 업체상세 하위.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-REV-007","name":"업체 반론 표시","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 제보 후기.dc.html","웨딩픽 마감 화면.dc.html","웨딩픽 잔여 화면.dc.html","웨딩픽 업체상세 하위.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-EXPO-001","name":"박람회 목록","excluded":false,"sourceRoutes":["/search/expo"],"reference":["웨딩픽 마감 화면.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-EXPO-002","name":"박람회 상세","excluded":false,"sourceRoutes":["/search/expo/[expoId]"],"reference":["웨딩픽 마감 화면.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-EXPO-003","name":"웨딩 정보 목록","excluded":false,"sourceRoutes":["/search/wedding-info"],"reference":["웨딩픽 마감 화면.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-EXPO-004","name":"웨딩 정보 상세","excluded":false,"sourceRoutes":["/search/wedding-info/[infoId]"],"reference":["웨딩픽 마감 화면.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-EXPO-005","name":"외부 달력에 일정 등록","excluded":false,"sourceRoutes":["/search/expo/[expoId]/calendar"],"reference":["웨딩픽 마감 화면.dc.html","웨딩픽 잔여 화면.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-EVT-001","name":"혜택 모아보기","excluded":false,"sourceRoutes":["/my/rewards"],"review":"reference-and-route-index-only"},
+    {"id":"WP-EVT-002","name":"미션 4개","excluded":false,"sourceRoutes":["/my/membership","/my/rewards/missions"],"review":"reference-and-route-index-only"},
+    {"id":"WP-EVT-003","name":"친구 초대","excluded":false,"sourceRoutes":["/my/referral"],"review":"reference-and-route-index-only"},
+    {"id":"WP-EVT-004","name":"홍보 인증","excluded":false,"sourceRoutes":["/my/rewards/promotion"],"review":"reference-and-route-index-only"},
+    {"id":"WP-EVT-005","name":"월간 웨딩지원금","excluded":false,"sourceRoutes":["/my/rewards/fund"],"review":"reference-and-route-index-only"},
+    {"id":"WP-EVT-006","name":"네이버페이 보상 수령","excluded":false,"sourceRoutes":["/my/rewards","/my/rewards/npay"],"review":"reference-and-route-index-only"},
+    {"id":"WP-EVT-007","name":"참여 · 지급 내역","excluded":false,"sourceRoutes":["/my/rewards/history"],"review":"reference-and-route-index-only"},
+    {"id":"WP-NOTI-001","name":"알림센터","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 마감 화면.dc.html","웨딩픽 MY 하위.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-NOTI-002","name":"알림 유형별 연결","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 마감 화면.dc.html","웨딩픽 MY 하위.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-NOTI-003","name":"알림 설정","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 마감 화면.dc.html","웨딩픽 MY 하위.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-MY-001","name":"마이페이지 홈","excluded":false,"sourceRoutes":["/my"],"reference":["웨딩픽 웨딩일정 MY.dc.html","웨딩픽 MY 하위.dc.html","웨딩픽 회원탈퇴.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-MY-002","name":"프로필","excluded":false,"sourceRoutes":["/my/profile"],"reference":["웨딩픽 웨딩일정 MY.dc.html","웨딩픽 MY 하위.dc.html","웨딩픽 회원탈퇴.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-MY-003","name":"내 웨딩 설정","excluded":false,"sourceRoutes":["/my/wedding-settings"],"reference":["웨딩픽 웨딩일정 MY.dc.html","웨딩픽 MY 하위.dc.html","웨딩픽 회원탈퇴.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-MY-004","name":"취향 다시 고르기","excluded":false,"sourceRoutes":["/my/taste","/my/wedding-settings"],"reference":["웨딩픽 웨딩일정 MY.dc.html","웨딩픽 MY 하위.dc.html","웨딩픽 회원탈퇴.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-MY-005","name":"화면 설정","excluded":false,"sourceRoutes":["/my/display"],"reference":["웨딩픽 웨딩일정 MY.dc.html","웨딩픽 MY 하위.dc.html","웨딩픽 회원탈퇴.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-MY-006","name":"배우자 연결 관리","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 웨딩일정 MY.dc.html","웨딩픽 MY 하위.dc.html","웨딩픽 회원탈퇴.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-MY-007","name":"계정 관리","excluded":false,"sourceRoutes":["/my/account","/my/notification-settings"],"reference":["웨딩픽 웨딩일정 MY.dc.html","웨딩픽 MY 하위.dc.html","웨딩픽 회원탈퇴.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-MY-008","name":"회원 탈퇴","excluded":false,"sourceRoutes":["/my/withdrawal"],"reference":["웨딩픽 웨딩일정 MY.dc.html","웨딩픽 MY 하위.dc.html","웨딩픽 회원탈퇴.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-MY-009","name":"고객지원","excluded":false,"sourceRoutes":["/my/support"],"reference":["웨딩픽 웨딩일정 MY.dc.html","웨딩픽 MY 하위.dc.html","웨딩픽 회원탈퇴.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-MY-010","name":"서비스 정보","excluded":false,"sourceRoutes":["/my/policies"],"reference":["웨딩픽 웨딩일정 MY.dc.html","웨딩픽 MY 하위.dc.html","웨딩픽 회원탈퇴.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-CPL-001","name":"배우자 초대","excluded":false,"sourceRoutes":["/wedding/partner"],"review":"reference-and-route-index-only"},
+    {"id":"WP-CPL-002","name":"초대 수락","excluded":false,"sourceRoutes":["/wedding/join"],"review":"reference-and-route-index-only"},
+    {"id":"WP-CPL-003","name":"연결 완료","excluded":false,"sourceRoutes":["/wedding/join"],"review":"reference-and-route-index-only"},
+    {"id":"WP-CPL-004","name":"공동 편집 충돌 해결","excluded":false,"sourceRoutes":["/wedding/[id]/conflict"],"review":"reference-and-route-index-only"},
+    {"id":"WP-CPL-005","name":"변경 내역","excluded":false,"sourceRoutes":["/wedding/[id]/changelog"],"review":"reference-and-route-index-only"},
+    {"id":"WP-CPL-006","name":"연결 해제","excluded":false,"sourceRoutes":["/wedding/partner"],"review":"reference-and-route-index-only"},
+    {"id":"WP-BIZ-001","name":"문의 유형 선택","excluded":false,"sourceRoutes":["/my/biz"],"reference":["웨딩픽 업체문의.dc.html","웨딩픽 웨딩일정 MY.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-BIZ-002","name":"소속 확인","excluded":false,"sourceRoutes":["/my/biz/claim"],"reference":["웨딩픽 업체문의.dc.html","웨딩픽 웨딩일정 MY.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-BIZ-003","name":"문의 내역","excluded":false,"sourceRoutes":["/my/biz/data"],"reference":["웨딩픽 업체문의.dc.html","웨딩픽 웨딩일정 MY.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-BIZ-004","name":"반론 등록","excluded":false,"sourceRoutes":["/my/biz/benefit"],"reference":["웨딩픽 업체문의.dc.html","웨딩픽 웨딩일정 MY.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-BIZ-005","name":"자료 제공","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 업체문의.dc.html","웨딩픽 웨딩일정 MY.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-BIZ-006","name":"혜택 등록","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 업체문의.dc.html","웨딩픽 웨딩일정 MY.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-BIZ-007","name":"광고 · 제휴 문의","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 업체문의.dc.html","웨딩픽 웨딩일정 MY.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-BIZ-008","name":"웹 하단 업체 문의 진입","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 업체문의.dc.html","웨딩픽 웨딩일정 MY.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-FAQ-001","name":"자주 묻는 질문 홈","excluded":false,"sourceRoutes":["/my/faq/[faqKey]"],"reference":["웨딩픽 FAQ.dc.html","웨딩픽 약관 방침.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-FAQ-003","name":"질문 답변 상세","excluded":false,"sourceRoutes":["/my/faq/[faqKey]","/my/guide","/my/support"],"reference":["웨딩픽 FAQ.dc.html","웨딩픽 약관 방침.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-LEGAL-001","name":"이용약관 본문","excluded":false,"sourceRoutes":["/my/policies"],"reference":["웨딩픽 FAQ.dc.html","웨딩픽 약관 방침.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-LEGAL-002","name":"개인정보처리방침 본문","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 FAQ.dc.html","웨딩픽 약관 방침.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-SHT-001","name":"다른 방법으로 시작","excluded":false,"sourceRoutes":[],"review":"reference-and-route-index-only"},
+    {"id":"WP-SHT-002","name":"픽 완료","excluded":false,"sourceRoutes":["/search","/search/[vendorId]"],"review":"reference-and-route-index-only"},
+    {"id":"WP-SHT-003","name":"픽 해제 확인","excluded":false,"sourceRoutes":["/pick/[category]","/search","/search/[vendorId]"],"review":"reference-and-route-index-only"},
+    {"id":"WP-SHT-004","name":"비교 후보 선택","excluded":false,"sourceRoutes":["/pick/compare"],"review":"reference-and-route-index-only"},
+    {"id":"WP-SHT-005","name":"최종 결정 확인","excluded":false,"sourceRoutes":["/pick/confirm"],"review":"reference-and-route-index-only"},
+    {"id":"WP-SHT-006","name":"예식일 입력","excluded":false,"sourceRoutes":[],"review":"reference-and-route-index-only"},
+    {"id":"WP-SHT-007","name":"지역 선택","excluded":false,"sourceRoutes":[],"review":"reference-and-route-index-only"},
+    {"id":"WP-SHT-008","name":"예산 입력","excluded":false,"sourceRoutes":[],"review":"reference-and-route-index-only"},
+    {"id":"WP-SHT-009","name":"취향 이미지 선택","excluded":false,"sourceRoutes":[],"review":"reference-and-route-index-only"},
+    {"id":"WP-SHT-010","name":"배우자 초대","excluded":false,"sourceRoutes":[],"review":"reference-and-route-index-only"},
+    {"id":"WP-SHT-011","name":"공유","excluded":false,"sourceRoutes":[],"review":"reference-and-route-index-only"},
+    {"id":"WP-SHT-012","name":"달력에 일정 등록","excluded":false,"sourceRoutes":[],"review":"reference-and-route-index-only"},
+    {"id":"WP-SHT-013","name":"신고","excluded":false,"sourceRoutes":[],"review":"reference-and-route-index-only"},
+    {"id":"WP-SHT-014","name":"데이터 설명","excluded":false,"sourceRoutes":["/search","/search/[vendorId]"],"review":"reference-and-route-index-only"},
+    {"id":"WP-SHT-015","name":"기준금액 설명","excluded":false,"sourceRoutes":["/search/[vendorId]"],"review":"reference-and-route-index-only"},
+    {"id":"WP-SHT-016","name":"권한 요청 설명","excluded":false,"sourceRoutes":["/capture/payment/register"],"review":"reference-and-route-index-only"},
+    {"id":"WP-SHT-017","name":"혜택 안내 시트","excluded":false,"sourceRoutes":["/"],"review":"reference-and-route-index-only"},
+    {"id":"WP-ST-001","name":"세션 만료","excluded":false,"sourceRoutes":[],"review":"reference-and-route-index-only"},
+    {"id":"WP-ST-002","name":"배우자 연결 상태","excluded":false,"sourceRoutes":[],"review":"reference-and-route-index-only"},
+    {"id":"WP-ST-003","name":"픽 상태","excluded":false,"sourceRoutes":[],"review":"reference-and-route-index-only"},
+    {"id":"WP-ST-004","name":"이미지 상태","excluded":false,"sourceRoutes":[],"review":"reference-and-route-index-only"},
+    {"id":"WP-ST-005","name":"데이터 상태","excluded":false,"sourceRoutes":[],"review":"reference-and-route-index-only"},
+    {"id":"WP-ST-006","name":"혜택 상태","excluded":false,"sourceRoutes":[],"review":"reference-and-route-index-only"},
+    {"id":"WP-ST-007","name":"불러오는 중","excluded":false,"sourceRoutes":["/search"],"review":"reference-and-route-index-only"},
+    {"id":"WP-ST-008","name":"콘텐츠 없음","excluded":false,"sourceRoutes":[],"review":"reference-and-route-index-only"},
+    {"id":"WP-ST-009","name":"오류","excluded":false,"sourceRoutes":[],"review":"reference-and-route-index-only"},
+    {"id":"WP-ST-010","name":"네트워크 오류","excluded":false,"sourceRoutes":[],"review":"reference-and-route-index-only"},
+    {"id":"WP-ST-011","name":"권한 거부","excluded":false,"sourceRoutes":[],"review":"reference-and-route-index-only"},
+    {"id":"WP-ST-012","name":"처리 중","excluded":false,"sourceRoutes":["/capture/analysis/[id]"],"review":"reference-and-route-index-only"},
+    {"id":"WP-ST-013","name":"긴 콘텐츠 표시","excluded":false,"sourceRoutes":[],"review":"reference-and-route-index-only"},
+    {"id":"WP-ST-014","name":"점검 · 업데이트 안내","excluded":false,"sourceRoutes":[],"review":"reference-and-route-index-only"},
+    {"id":"WP-ST-015","name":"업종 순회 로딩","excluded":false,"sourceRoutes":["/top3","/","/setup"],"review":"reference-and-route-index-only"},
+    {"id":"WP-ST-016","name":"로더 아이콘 세트 · 12업종","excluded":false,"sourceRoutes":[],"review":"reference-and-route-index-only"},
+    {"id":"WP-LAND-001","name":"랜딩","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 랜딩 v4.dc.html","웨딩픽 랜딩 하위페이지.dc.html","웨딩픽 웹.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-LAND-002","name":"서비스 소개","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 랜딩 v4.dc.html","웨딩픽 랜딩 하위페이지.dc.html","웨딩픽 웹.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-LAND-003","name":"자주 묻는 질문","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 랜딩 v4.dc.html","웨딩픽 랜딩 하위페이지.dc.html","웨딩픽 웹.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-LAND-004","name":"고객지원","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 랜딩 v4.dc.html","웨딩픽 랜딩 하위페이지.dc.html","웨딩픽 웹.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-LAND-005","name":"이용약관","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 랜딩 v4.dc.html","웨딩픽 랜딩 하위페이지.dc.html","웨딩픽 웹.dc.html"],"review":"reference-and-route-index-only"},
+    {"id":"WP-LAND-006","name":"개인정보처리방침","excluded":false,"sourceRoutes":[],"reference":["웨딩픽 랜딩 v4.dc.html","웨딩픽 랜딩 하위페이지.dc.html","웨딩픽 웹.dc.html"],"review":"reference-and-route-index-only"}
+  ]
+}

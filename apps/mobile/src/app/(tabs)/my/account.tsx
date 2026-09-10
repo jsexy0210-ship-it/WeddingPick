@@ -1,6 +1,6 @@
 import type { Settings } from '@weddingpick/api-contract';
 import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Switch } from 'react-native';
 
 import { ErrorView, Layout, Toast, useTheme } from '@weddingpick/ui';
@@ -42,6 +42,8 @@ export default function AccountScreen() {
   const theme = useTheme();
   const { signOut } = useSession();
   const [settings, setSettings] = useState<Settings | null>(null);
+  const savingRef = useRef(false);
+  const [savingSettings, setSavingSettings] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -57,7 +59,9 @@ export default function AccountScreen() {
   useEffect(load, [load]);
 
   async function toggle(key: 'pushEnabled' | 'priceChangeEnabled', value: boolean) {
-    if (!settings) return;
+    if (!settings || savingRef.current) return;
+    savingRef.current = true;
+    setSavingSettings(true);
     /* 먼저 화면을 바꾼다. 서버를 기다리면 스위치가 늦게 따라와 두 번 누르게 된다. */
     setSettings({ ...settings, [key]: value });
     await updateSettings({ [key]: value })
@@ -65,6 +69,10 @@ export default function AccountScreen() {
       .catch(() => {
         setSettings(settings);
         setToast(S.toggleFail);
+      })
+      .finally(() => {
+        savingRef.current = false;
+        setSavingSettings(false);
       });
   }
 
@@ -107,6 +115,7 @@ export default function AccountScreen() {
             meta={S.serviceMeta}
             right={
               <Switch
+                disabled={savingSettings}
                 value={settings.pushEnabled}
                 onValueChange={(next) => void toggle('pushEnabled', next)}
                 accessibilityLabel={S.service}
@@ -119,6 +128,7 @@ export default function AccountScreen() {
             meta={S.priceMeta}
             right={
               <Switch
+                disabled={savingSettings}
                 value={settings.priceChangeEnabled}
                 onValueChange={(next) => void toggle('priceChangeEnabled', next)}
                 accessibilityLabel={S.price}

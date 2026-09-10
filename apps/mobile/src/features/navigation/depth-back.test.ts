@@ -36,10 +36,10 @@ describe('depthBackTarget — 대표 경로', () => {
     ['/my/rebuttals/r-2', '/my/rebuttals', '반론 상세 → 반론 목록'],
     ['/my/vendor-claims/v-7', '/my/vendor-claims', '관계자 인증 상세 → 목록'],
     ['/wedding/w-1', '/wedding', '웨딩일정 홈 → 웨딩일정 탭'],
-    ['/wedding/w-1/expenses', '/wedding/w-1', '지출 → 웨딩일정 홈'],
+    ['/wedding/w-1/expenses', '/wedding', '서버 지출 → 웨딩일정 탭(로컬 문서 상세 제외)'],
     ['/wedding/w-1/expenses/add', '/wedding/w-1/expenses', '지출 추가 → 지출'],
     ['/wedding/w-1/events/ev-3', '/wedding/w-1/events', '일정 상세 → 일정 목록'],
-    ['/wedding/w-1/complete', '/wedding/w-1', 'WP-OUR-013 예식 완료 → 웨딩일정 홈'],
+    ['/wedding/w-1/complete', '/wedding', 'WP-OUR-013 예식 완료 → 웨딩일정 탭'],
     ['/pick/history', '/pick', 'WP-PICK-007 결정 내역 → Pick 탭'],
     ['/pick/studio', '/pick', '업종별 Pick → Pick 탭'],
     ['/feed', '/', '홈 하위 스택(피드) → 홈'],
@@ -60,6 +60,11 @@ describe('depthBackTarget — 대표 경로', () => {
     ['/pick/done', '/pick', 'WP-PICK-006 결정 완료 → Pick(끝난 확인 시트로 돌아가지 않는다)'],
     ['/pick/removed', '/pick/history', '제거된 후보 → 결정 내역'],
     ['/my/referral', '/my/rewards', '초대 현황 → 혜택'],
+
+    ...['candidates', 'changelog', 'conflict', 'decided', 'events', 'map', 'notes', 'quotes', 'tasks', 'timeline', 'visit-notes'].map((part): [string, string, string] => [
+      `/wedding/w-1/${part}`, '/wedding', '서버 weddingId를 로컬 문서 식별자로 취급하지 않는다',
+    ]),
+    ['/wedding/document-1/verify', '/wedding/document-1', '로컬 문서 확인은 문서 상세로 복귀한다'],
 
     // ── 모르는 경로도 홈까지는 간다 ─────────────────────────────────
     ['/nope/deeper/still', '/', '없는 경로 → 홈'],

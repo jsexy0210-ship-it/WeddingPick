@@ -5,8 +5,8 @@ import {
   BUSINESS_NOTICE_LINES,
   formatDateDot,
 } from '@weddingpick/domain';
-import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -31,6 +31,8 @@ import {
 import { useSession } from '@/features/auth/use-session';
 import { participableCount } from '@/features/membership/use-benefit-data';
 import { Avatar, Badge, Row, Rows, SectionTitle } from '@/features/settings/my-kit';
+import { DelayedLoader } from '@/features/loading/delayed-loader';
+import strings from '../../../../../../spec/strings.ko.json';
 import { APP_VERSION } from '@/features/settings/version';
 
 /** 배우자 연결 상태 — CLAUDE.md §8 «커플: 미연결 · 초대 대기 · 연결됨». */
@@ -108,17 +110,24 @@ export default function MyScreen() {
   const theme = useTheme();
   const { state, signOut } = useSession();
   const [data, setData] = useState<MyData>(EMPTY);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const loadVersion = useRef(0);
 
   const isSignedIn = state.status === 'signedIn';
 
   const load = useCallback(() => {
+    const version = ++loadVersion.current;
     if (!isSignedIn) {
-      void Promise.resolve().then(() => setData(EMPTY));
+      void Promise.resolve().then(() => {
+        if (version === loadVersion.current) setData(EMPTY);
+      });
       return;
     }
 
+    setLoadFailed(false);
     void getCurrentUser()
       .then(async (me) => {
+        if (version !== loadVersion.current) return;
         setData((prev) => ({ ...prev, me }));
         const [reports, invite, rewards, draw] = await Promise.allSettled([
           listMyReports(),
@@ -129,11 +138,12 @@ export default function MyScreen() {
           getMyRewards(),
           getMyMonthlyDraw(),
         ]);
-        const couple: CoupleState = me.spouseLinked
+        if (version !== loadVersion.current) return;
+        const couple: CoupleState | null = me.spouseLinked
           ? 'linked'
-          : invite.status === 'fulfilled' && invite.value?.invite
-            ? 'invited'
-            : 'unlinked';
+          : invite.status === 'rejected'
+            ? null
+            : invite.value?.invite ? 'invited' : 'unlinked';
         setData((prev) => ({
           ...prev,
           reports: reports.status === 'fulfilled' ? reports.value : null,
@@ -145,10 +155,13 @@ export default function MyScreen() {
           }),
         }));
       })
-      .catch(() => setData(EMPTY));
+      .catch(() => { if (version === loadVersion.current) setLoadFailed(true); });
   }, [isSignedIn]);
 
-  useEffect(load, [load]);
+  useFocusEffect(useCallback(() => {
+    load();
+    return () => { loadVersion.current += 1; };
+  }, [load]));
 
   /** 세션이 끊긴 채 메뉴를 누르면 로그인으로 보낸다. */
   function guestPush(path: string) {
@@ -193,7 +206,7 @@ export default function MyScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}>
           {/* 프로필 — 아바타 56 · 이름 24/32 · Pick 인증 배지 · chevron 18 */}
-          {isSignedIn ? (
+          {isSignedIn && me ? (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="프로필"
@@ -208,6 +221,12 @@ export default function MyScreen() {
               </View>
               <ProductSymbol name="chevronRight" size={Layout.iconInline} color={theme.textDisabled} />
             </Pressable>
+          ) : isSignedIn ? (
+            <View style={styles.profileRow}>
+              {loadFailed ? (
+                <ActionButton label={strings.common['cta.retry']} hint={strings.journey.loadFailed} onPress={load} />
+              ) : <DelayedLoader size={28} />}
+            </View>
           ) : (
             <View style={styles.loginCta}>
               <ActionButton
@@ -221,6 +240,12 @@ export default function MyScreen() {
               </ThemedText>
             </View>
           )}
+
+          {isSignedIn && me && loadFailed ? (
+            <View style={styles.weddingBoxWrap}>
+              <ActionButton label={strings.common['cta.retry']} hint={strings.journey.loadFailed} onPress={load} />
+            </View>
+          ) : null}
 
           {/* 웨딩 설정 요약 3행 — 누르는 곳이 아니다. 바꾸기는 아래 «내 웨딩 설정»이 한다. */}
           {isSignedIn && hasWeddingSetting && (
