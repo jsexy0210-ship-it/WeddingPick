@@ -24,13 +24,14 @@ export type ActionButtonProps = Omit<PressableProps, 'children' | 'style'> & {
    */
   variant?: 'primary' | 'secondary' | 'ghost' | 'selected' | 'danger';
   /**
-   * SEED 컨트롤 높이 — xlarge 52(Primary CTA) · large 48(Secondary) · medium 40(Small).
+   * SEED 컨트롤 높이 — sheet 56(바텀시트 확정) · xlarge 52(Primary CTA) ·
+   * large 48(Secondary) · medium 40(Small).
    *
    * 기본값 `auto`는 높이를 고정하지 않고 안쪽 여백으로 부푼다 — 목록 안에서 한
    * 줄짜리로 쓰이던 기존 자리들이 그대로 있어 기본값을 바꾸지 않았다. 화면의 주
-   * 행동에는 `xlarge`를 준다.
+   * 행동에는 `xlarge`를, **바텀시트의 확정 단추에는 `sheet`**를 준다(SPEC 13.7).
    */
-  size?: 'auto' | 'medium' | 'large' | 'xlarge';
+  size?: 'auto' | 'medium' | 'large' | 'xlarge' | 'sheet';
   /**
    * `variant`가 정하는 테마 색 대신 고정 색을 쓴다 — 소셜 로그인처럼 제공자
    * 브랜드색이 앱 스킨과 무관하게 고정이어야 하는 자리에만 쓴다(`SocialColors`
@@ -43,6 +44,7 @@ const HEIGHT = {
   medium: Layout.controlMedium,
   large: Layout.controlLarge,
   xlarge: Layout.controlXLarge,
+  sheet: Layout.ctaSheet,
 } as const;
 
 /**
@@ -102,7 +104,7 @@ export function ActionButton({
       <View style={styles.row}>
         {icon}
         <ThemedText
-          type={size === 'xlarge' ? 't5' : 't6'}
+          type={size === 'xlarge' || size === 'sheet' ? 't5' : 't6'}
           numberOfLines={1}
           style={[styles.label, { color: look.text }]}>
           {label}

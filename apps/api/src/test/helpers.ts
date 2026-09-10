@@ -46,6 +46,18 @@ export async function createTestApp(): Promise<TestApp> {
     proofReaderCheapModel: 'claude-haiku-4-5',
     proofReaderStrongModel: 'claude-opus-5',
     naverRedirectUris: [],
+    /*
+     * **관리자 부트스트랩 자격은 환경에서 읽는다.**
+     *
+     * 이 config는 손으로 만든 것이라 `loadConfig`를 지나지 않는다. 그래서 여기 적지
+     * 않은 값은 전부 `undefined`다 — 관리자 로그인이 `process.env`를 직접 읽던
+     * 시절에는 상관없었지만, 지금은 `context.config`에서 읽는다(#173 관리자 등급).
+     *
+     * 잇지 않으면 아이디가 비어 대조가 실패하고 로그인이 **401**로 떨어진다.
+     * 「비밀번호가 틀렸다」와 같은 응답이라, 시험이 깨져도 원인이 안 보인다.
+     */
+    adminLoginId: process.env.ADMIN_LOGIN_ID?.trim() || undefined,
+    adminPasswordHash: process.env.ADMIN_PASSWORD_HASH?.trim() || undefined,
   };
 
   const context: AppContext = {

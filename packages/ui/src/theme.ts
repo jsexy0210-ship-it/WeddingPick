@@ -94,6 +94,16 @@ const palette = {
   /** 어두운 모드 danger — SEED red-400. */
   red400: '#ff7466',
 
+  /* 관리자 콘솔 크롬 — spec/tokens.json color.admin(v3.27 · 22-admin-ops). 사용자 앱에는 쓰지 않는다. */
+  adminSidebarLine: '#26272c',
+  adminSidebarLabel: '#9ca3ad',
+  adminSidebarGroup: '#5f6570',
+  adminBannerWarn: '#fff6e6',
+  adminBannerOkIcon: '#c9f2e8',
+  adminBannerBadIcon: '#ffd0cb',
+  adminDotWarn: '#e5a12c',
+  adminBarFill: '#ffc9c2',
+
   /* 달력 — spec/tokens.json color.calendar(WP-APP-023 · 20-onboarding-v2). 일요일 · 토요일 · 다른 달. */
   calendarSunday: '#e8735f',
   calendarSaturday: '#5b8def',
@@ -267,6 +277,16 @@ export const Colors = {
     accentText: palette.accentText,
     accentBackground: palette.accentSurface,
 
+    /** 관리자 콘솔 크롬 — color.admin. 웹 전용 `/admin` 라우트만 쓴다. */
+    adminSidebarLine: palette.adminSidebarLine,
+    adminSidebarLabel: palette.adminSidebarLabel,
+    adminSidebarGroup: palette.adminSidebarGroup,
+    adminBannerWarn: palette.adminBannerWarn,
+    adminBannerOkIcon: palette.adminBannerOkIcon,
+    adminBannerBadIcon: palette.adminBannerBadIcon,
+    adminDotWarn: palette.adminDotWarn,
+    adminBarFill: palette.adminBarFill,
+
     /** 달력 날짜 색 — 일요일 · 토요일 · 다른 달(gray-300). color.calendar. */
     calendarSunday: palette.calendarSunday,
     calendarSaturday: palette.calendarSaturday,
@@ -350,6 +370,16 @@ export const Colors = {
     accentText: '#57c7ff',
     accentBackground: '#0f2430',
 
+    /* 관리자는 웹 전용이고 항상 라이트다 — 같은 값을 둔다(ThemeColor가 두 벌을 요구한다). */
+    adminSidebarLine: palette.adminSidebarLine,
+    adminSidebarLabel: palette.adminSidebarLabel,
+    adminSidebarGroup: palette.adminSidebarGroup,
+    adminBannerWarn: palette.adminBannerWarn,
+    adminBannerOkIcon: palette.adminBannerOkIcon,
+    adminBannerBadIcon: palette.adminBannerBadIcon,
+    adminDotWarn: palette.adminDotWarn,
+    adminBarFill: palette.adminBarFill,
+
     calendarSunday: palette.calendarSunday,
     calendarSaturday: palette.calendarSaturday,
     calendarMuted: palette.darkGray300,
@@ -409,6 +439,62 @@ export const Spacing = {
   five: 32,
   /** @deprecated 핸드오프 허용 간격이 아니다(최대 28). */
   six: 64,
+} as const;
+
+/**
+ * 관리자 콘솔 전용 간격 · 크기. spec/tokens.json `spacing`의 `admin*` 항목 그대로다.
+ *
+ * 앱의 8배수 사다리(`Spacing`)와 따로 두는 이유 — 관리자 시안(v3.27 `22-admin-ops.dc.html`)은
+ * 3 · 11 · 13 · 14 · 18처럼 사다리에 없는 값을 쓴다. **가까운 값으로 대신하지 않는다.**
+ * 20을 24로 올리면 카드 하나는 표가 나지 않지만, 격자 · 표 · 배너가 다 같이 밀려서
+ * 1920 기준으로 맞춰 둔 열 폭이 어긋난다. 화면은 목업과 1:1이다.
+ */
+export const AdminSpacing = {
+  /** 제목과 그 아래 한 줄 사이. */
+  stackGap: 3,
+  /** 행 상하 패딩 — 메타 줄 없음 · 있음. */
+  rowPaddingY: 11,
+  rowPaddingYMeta: 13,
+  rowMinHeight: 52,
+  /** 상단 상태 배너. */
+  bannerGap: 12,
+  bannerPaddingY: 16,
+  bannerPaddingX: 18,
+  /** 배지 — 상하는 stackGap(3)과 같은 값이다. */
+  badgePaddingX: 9,
+  /** 행·카드 안 작은 단추. */
+  btnPaddingX: 12,
+  btnHeight: 30,
+  /** 상단바 · 배너 · 확인 카드의 단추 높이. */
+  topActionHeight: 36,
+  bannerCtaHeight: 32,
+  confirmCtaHeight: 44,
+  /** 토글 · 원형 표식. */
+  toggleWidth: 44,
+  toggleHeight: 26,
+  bannerIcon: 28,
+  emptyMark: 44,
+  /** 확인 카드 항목 앞 점 — 본문 bulletDot(6)과 다른 값이다. */
+  confirmDot: 5,
+  /** 카드 · 격자. */
+  cardGap: 14,
+  cardPadding: 20,
+  gridGap: 20,
+  /** 본문 · 상단바. */
+  bodyPaddingTop: 24,
+  bodyPaddingX: 32,
+  topbarHeight: 76,
+  /** 표. */
+  tableGap: 16,
+  theadHeight: 40,
+  tbodyHeight: 48,
+  /** 빈 상태 · 확인 카드. */
+  emptyPaddingY: 36,
+  confirmWidth: 520,
+  confirmPadding: 24,
+  /** 사이드바. */
+  navItemHeight: 34,
+  sidebarWidth: 240,
 } as const;
 
 /**
@@ -516,12 +602,27 @@ export const Layout = {
    * 나머지 Primary CTA는 `controlXLarge` 52 그대로다.
    */
   ctaPick: 56,
+  /**
+   * 바텀시트 확정 CTA 높이. size.ctaSheet — SPEC 13.7이 «시트 CTA는 width:100% +
+   * flex:0 0 56px»라고 적는다. 시트는 세로로 쌓이는 통이라 CTA에 flex를 주면
+   * 늘어나므로, 높이를 못박고 폭만 100%로 편다.
+   *
+   * `controlXLarge` 52와 4 차이라 눈에 안 띄어 보이지만, 시안과 나란히 놓으면
+   * 시트 아래가 그만큼 얕아 보인다. 값이 다른 자리는 값이 다르게 적혀 있다.
+   */
+  ctaSheet: 56,
   /** 카드 안 CTA. size.ctaInCard. */
   ctaInCard: 44,
   /** 입력 필드 높이. size.field — Primary CTA와 같은 52다. */
   field: 52,
   /** 입력 필드 좌우 패딩. component.field.padding. */
   fieldPaddingX: 14,
+  /**
+   * 날짜 선택 연 · 월 셀렉트의 좌우 패딩. component.datePicker.selectPaddingX —
+   * 20-onboarding-v2의 `selBox`가 «padding:0 16px»다. 일반 입력 필드(14)와
+   * 값이 다른 자리라 따로 둔다.
+   */
+  datePickerSelectPaddingX: 16,
   /** 여러 줄 입력 최소 높이. size.textarea. */
   textarea: 88,
   /** 체크박스 한 변. size.checkbox. */
@@ -536,7 +637,11 @@ export const Layout = {
   /** 작은 칩(스타일 태그 · 취향 배지). v3.24 «추천 이유 첫 줄 칩 28» · image.textOnImage.tasteCard. */
   chipSmall: 28,
   chipSmallPaddingX: 10,
-  /** 배지. component.badge — 항상 한 줄, height 22 고정. */
+  /**
+   * 배지. component.badge — 항상 한 줄. **22는 최소 높이다.** 핸드오프 배지는 height를
+   * 적지 않고 `padding:4px 9px; line-height:19px`로만 그려서 27이 된다(pick-status-badge
+   * `STATUS_BADGE_STYLE` 주석). 22를 고정 높이로 쓰면 글자가 상자에 닿는다.
+   */
   badgeHeight: 22,
   badgePaddingX: 9,
   badgePaddingY: 4,
@@ -606,6 +711,14 @@ export const Radius = {
   badge: 4,
   /** 버튼 · 입력 필드 · 작은 썸네일. radius.control. */
   control: 6,
+  /**
+   * 날짜 선택의 연 · 월 펼침 칸과 날짜 칸. radius.picker — 20-onboarding-v2의
+   * `optCell` · `dayCell`이 «border-radius:8px»다.
+   *
+   * **선택한 날짜도 원이 아니라 이 값이다.** SPEC 13.7 본문은 「coral 원」이라
+   * 적지만 목업은 사각이고, 목업과 1:1로 맞춘다(2026-09-10 사용자 결정).
+   */
+  picker: 8,
   small: 6,
   input: 6,
   /** 카드 · 이미지 · 안내 박스. radius.card. */
