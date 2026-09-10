@@ -4,17 +4,17 @@
  * 시안 `22-admin-ops.dc.html` 7번. 돌고 있어야 할 작업이 실제로 돌았는지 본다.
  * ADMIN.md — **정상이면 전부 회색**이고, 지연이나 실패가 있을 때만 색이 바뀐다.
  *
- * 서버(`/v1/admin/automation`)는 아직 `{ rules: [], enabled }`만 돌려주는 자리라
- * 목록이 비어 오는 것이 정상이다. 그때는 빈 상태를 그린다 — 빈 목록이 실패가 아니다.
+ * 서버(`/v1/admin/automation`)가 `structured.decisions`를 세어 워크플로별 상태를 준다.
+ * 등록된 워크플로가 없으면 목록이 비어 오고, 그때는 빈 상태를 그린다 — 빈 목록이 실패가 아니다.
  */
 import { useEffect, useState } from 'react';
 
-import { PendingBackendNotice } from '@/features/admin/pending-backend';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import {
   Card,
   CardGrid,
+  ConfirmCard,
   DataTable,
   KpiRow,
   LoadError,
@@ -66,6 +66,8 @@ const COLS: Col[] = [
   { key: 'dlq', label: '처리 못한 건', width: 120, align: 'right' },
   { key: 'recovered', label: '마지막 자동복구', width: 200, grow: true },
   { key: 'status', label: '결과', width: 100 },
+  { key: 'recover', label: '복구', width: 90 },
+  { key: 'drain', label: '처리 못한 건 비우기', width: 150 },
 ];
 
 export default function AutomationScreen() {
@@ -73,6 +75,11 @@ export default function AutomationScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rev, setRev] = useState(0);
+  /** 단추를 눌러 실패한 것. 목록 조회 오류(`error`)와 자리를 나눈다. */
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  /** DLQ를 비우기 전에 확인받는 대상. v3.27 «위험한 조작은 한 번 더 확인». */
+  const [draining, setDraining] = useState<Workflow | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -95,6 +102,24 @@ export default function AutomationScreen() {
 
   const reload = () => setRev((r) => r + 1);
 
+  /*
+   * 실패를 삼키지 않는다. 눌렀는데 아무 일도 없는 것이 성공처럼 보이는 것이
+   * 가장 나쁘다 — 이 화면의 단추가 오래 잠겨 있었던 이유가 그것이다.
+   */
+  async function act(id: string, path: 'recover' | 'drain-dlq') {
+    setBusy(true);
+    try {
+      await apiFetch(`/v1/admin/automation/${id}/${path}`, { method: 'POST' });
+      setActionError(null);
+      reload();
+    } catch (e: unknown) {
+      setActionError(e instanceof Error ? e.message : '요청 실패');
+    } finally {
+      setBusy(false);
+      setDraining(null);
+    }
+  }
+
   const workflows = data?.workflows ?? [];
   const degraded = workflows.filter((w) => w.status === 'degraded').length;
   const down = workflows.filter((w) => w.status === 'down').length;
@@ -115,6 +140,16 @@ export default function AutomationScreen() {
         kind: 'dim',
       },
       { v: STATUS_LABEL[w.status], badge: STATUS_KIND[w.status] },
+      /*
+       * 할 수 있는 일만 누를 것으로 만든다. 처리 못한 건이 없으면 되돌릴 것도
+       * 비울 것도 없어서 글자만 남긴다.
+       */
+      w.dlqSize > 0 && !busy
+        ? { v: '다시 시도', kind: 'brand', onPress: () => void act(w.id, 'recover') }
+        : { v: '—', kind: 'dim' },
+      w.dlqSize > 0 && !busy
+        ? { v: '확인함으로 표시', kind: 'warn', onPress: () => setDraining(w) }
+        : { v: '—', kind: 'dim' },
     ],
   }));
 
@@ -123,7 +158,11 @@ export default function AutomationScreen() {
   return (
     <Page
       title="자동화 상태"
-      sub="주기 작업 · 마지막 실행과 결과"
+      sub={
+        workflows.length > 0
+          ? `주기 작업 ${workflows.length}개 · 마지막 실행과 결과`
+          : '주기 작업 · 마지막 실행과 결과'
+      }
       action={{ label: '새로 고침', onPress: reload }}
     >
       <DelayedLoader active={loading} size={40} />
@@ -132,9 +171,11 @@ export default function AutomationScreen() {
       {!loading && !error && data ? (
         <>
           <StatusBanner
-            tone={down > 0 ? 'bad' : degraded > 0 ? 'warn' : 'ok'}
+            tone={actionError ? 'bad' : down > 0 ? 'bad' : degraded > 0 ? 'warn' : 'ok'}
             title={
-              workflows.length === 0
+              actionError
+                ? '조치하지 못했어요'
+                : workflows.length === 0
                 ? '지켜볼 작업이 아직 없어요'
                 : allWell
                   ? `${workflows.length}개 작업이 모두 정상이에요`
@@ -143,7 +184,9 @@ export default function AutomationScreen() {
                     : `저하된 작업 ${degraded}개가 있어요`
             }
             detail={
-              workflows.length === 0
+              actionError
+                ? actionError
+                : workflows.length === 0
                 ? '주기 작업이 등록되면 여기에서 마지막 실행과 결과를 볼 수 있어요.'
                 : allWell
                   ? '지연이나 실패 없이 돌고 있어요. 개별 작업을 열지 않아도 괜찮아요.'
@@ -151,7 +194,6 @@ export default function AutomationScreen() {
             }
           />
 
-          <PendingBackendNotice actions="복구 실행 · DLQ 재처리" />
 
           <KpiRow
             items={[
@@ -175,6 +217,27 @@ export default function AutomationScreen() {
               />
             </Card>
           </CardGrid>
+
+          {/*
+            무엇이 바뀌는지 항목으로 보인 뒤 진행한다(v3.27). 「비운다」가 지우는
+            것으로 읽히면 안 된다 — 실패 기록은 남고 표시만 붙는다.
+          */}
+          {draining ? (
+            <ConfirmCard
+              title="처리 못한 건을 확인함으로 표시할까요?"
+              body={`${draining.name}의 실패 ${draining.dlqSize}건을 사람이 보고 넘어간 것으로 적어요.`}
+              items={[
+                `«처리 못한 건»에서 ${draining.dlqSize}건이 빠져요`,
+                '실패 기록 자체는 지워지지 않아요 — 감사 기록에 그대로 남아요',
+                '되돌리려면 다시 시도를 눌러 대기 목록에 세워야 해요',
+                '누가 언제 표시했는지 감사 기록에 남아요',
+              ]}
+              cta="확인함으로 표시"
+              danger
+              onConfirm={() => void act(draining.id, 'drain-dlq')}
+              onCancel={() => setDraining(null)}
+            />
+          ) : null}
         </>
       ) : null}
     </Page>

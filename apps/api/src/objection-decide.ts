@@ -18,6 +18,42 @@ import { notify } from './notify';
 
 export class ObjectionRefused extends Error {}
 
+/**
+ * 운영자가 적은 사유를 남긴다.
+ *
+ * **화면과 라우트가 빈 메모를 거절하면서도 정작 그 메모를 버리고 있었다**(0110까지).
+ * `structured.decisions`는 값이 아니라 참조만 담는 표라 글이 들어갈 자리가 없다 —
+ * 그래서 `withdrawal_audit_log`와 같은 모양의 표에 따로 적는다.
+ *
+ * 결정과 같은 트랜잭션 안에서 적는다. 상태만 바뀌고 사유가 빠진 기록이 남으면
+ * 나중에 「왜 내렸느냐」에 답할 수 없고, 그때는 이미 되돌릴 수 없다.
+ */
+async function logObjectionNote(
+  client: Parameters<typeof recordDecision>[0],
+  input: {
+    reviewId: string;
+    by: string;
+    action: ObjectionOutcome;
+    note: string;
+    beforeStatus: string;
+    afterStatus: string;
+  }
+): Promise<void> {
+  await client.query(
+    `INSERT INTO structured.review_objection_log
+       (review_id, operator_id, action, note, before_status, after_status)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [
+      input.reviewId,
+      input.by,
+      input.action,
+      input.note,
+      input.beforeStatus,
+      input.afterStatus,
+    ]
+  );
+}
+
 export type ObjectionOutcome = 'hold' | 'restore' | 'remove';
 
 type ReviewRow = {
@@ -93,6 +129,15 @@ export async function holdReview(
       evidence: [{ kind: 'review', id: input.reviewId }],
     });
 
+    await logObjectionNote(client, {
+      reviewId: input.reviewId,
+      by: input.by,
+      action: 'hold',
+      note: input.note,
+      beforeStatus: review.status,
+      afterStatus: 'under_objection',
+    });
+
     /*
      * 작성자에게 알린다. **내 글이 안 보이는데 이유를 모르는 상태를 만들지 않는다.**
      * 심사 메모는 보내지 않는다 — 운영자가 적은 내부 기록이고, 이의를 낸 쪽의 말을
@@ -149,6 +194,15 @@ export async function resolveObjection(
       decision: status,
       reasonCode: input.to === 'restore' ? 'objection_dismissed' : 'objection_upheld',
       evidence: [{ kind: 'review', id: input.reviewId }],
+    });
+
+    await logObjectionNote(client, {
+      reviewId: input.reviewId,
+      by: input.by,
+      action: input.to,
+      note: input.note,
+      beforeStatus: review.status,
+      afterStatus: status,
     });
 
     if (review.author_user_id) {

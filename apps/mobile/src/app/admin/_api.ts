@@ -55,7 +55,29 @@ export async function apiFetch(path: string, options?: RequestInit): Promise<unk
     throw new AdminUnauthorized(res.status);
   }
 
-  if (!res.ok) throw new Error(`API ${path} → ${res.status}`);
+  /*
+   * 서버가 적어 보낸 이유를 그대로 쓴다.
+   *
+   * 예전에는 `API /v1/... → 409`만 던졌다. 서버는 «이미 병합된 업체입니다» ·
+   * «실패한 건만 다시 처리할 수 있습니다»처럼 사람이 읽을 말을 `{error:{message}}`에
+   * 담아 보내는데(errors.ts `ApiError.toResponse`), 그것을 버리고 숫자만 남긴
+   * 셈이다. 운영자에게는 「409가 떴다」와 「안 된다」가 같은 말이다.
+   *
+   * 본문이 없거나 그 모양이 아니면 예전처럼 경로와 상태로 돌아간다 — 502처럼
+   * 서버가 아니라 앞단이 낸 응답이 그렇다.
+   */
+  if (!res.ok) {
+    const detail = await res
+      .json()
+      .then((b: unknown) =>
+        typeof b === 'object' && b !== null && 'error' in b
+          ? (b as { error?: { message?: string } }).error?.message
+          : undefined
+      )
+      .catch(() => undefined);
+
+    throw new Error(detail ?? `API ${path} → ${res.status}`);
+  }
   // 204에는 본문이 없다. res.json()을 부르면 성공한 PATCH가 호출부에서 실패로 잡힌다.
   if (res.status === 204) return null;
 

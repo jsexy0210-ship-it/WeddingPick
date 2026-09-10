@@ -7,6 +7,8 @@
  */
 import { useEffect, useState } from 'react';
 
+import { withParticle } from '@weddingpick/domain';
+
 import { formatDateTimeDot } from '@/features/common/format-date';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
@@ -110,7 +112,7 @@ export default function KillSwitchScreen() {
 
   /** 확인 카드에 들어갈 항목. 무엇이 멈추는지 · 되돌릴 수 있는지 · 마지막 변경. */
   function confirmItems(item: SwitchItem): string[] {
-    const items = [item.description, '다시 켜면 바로 복구되고, 멈춘 동안 쌓인 건은 확인 필요 목록에 남아요'];
+    const items = [item.description];
     if (item.wired === false) items.push('이 스위치는 아직 배선되지 않았어요 — 꺼도 동작이 바뀌지 않아요');
     else if (item.lastChangedAt) {
       items.push(`마지막 변경 ${formatDateTimeDot(item.lastChangedAt)}${item.lastChangedBy ? ` · ${item.lastChangedBy}` : ''}`);
@@ -161,8 +163,8 @@ export default function KillSwitchScreen() {
 
           {pending ? (
             <ConfirmCard
-              title={`${pending.name}을(를) 끌까요?`}
-              body="끄는 즉시 아래가 멈춰요."
+              title={`${withParticle(pending.name, '을를')} 끌까요?`}
+              body="끄는 즉시 아래가 멈춰요. 다시 켜면 바로 복구되고, 멈춘 동안 쌓인 건은 확인 필요 목록에 남아요."
               items={confirmItems(pending)}
               cta="끄기"
               danger

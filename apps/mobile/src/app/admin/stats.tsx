@@ -95,7 +95,7 @@ export default function StatsScreen() {
   }));
 
   return (
-    <Page title="이상치 · 조작 탐지" sub="자동 차단 후 목록">
+    <Page title="이상치 · 조작 탐지" sub="자동 차단 후 목록 · 최근 7일">
       {loading ? null : error ? <LoadError message={error} onRetry={reload} /> : null}
 
       {!loading && !error && data ? (
@@ -131,7 +131,7 @@ export default function StatsScreen() {
               title="차단된 패턴"
               sub="자동 판단 · 되돌릴 수 있어요"
               full
-              note="되돌리면 해당 제보가 다시 집계에 들어가고 변경 복구 관리(WP-ADM-042)에 기록돼요."
+              note="되돌리면 해당 제보가 다시 집계에 들어가고 변경 복구 관리에 기록돼요."
             >
               <DataTable cols={COLS} rows={rows} empty="차단된 것이 없어요" />
             </Card>

@@ -4,6 +4,8 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { ConfirmDecision } from '@/features/admin/confirm-decision';
+import { verificationDecisionRequest, type VerificationAction } from '@/features/admin/review-decision';
 import { formatDateDot, formatDateTimeDot } from '@/features/common/format-date';
 
 type VerificationStatus = 'received' | 'in_review' | 'needs_supplement' | 'approved' | 'rejected';
@@ -35,6 +37,8 @@ export default function QueueScreen() {
   const [note, setNote] = useState('');
   const [acting, setActing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  /** 확인을 기다리는 결정. 누른 즉시 보내지 않는다 — 되돌릴 수 없다. */
+  const [pending, setPending] = useState<VerificationAction | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -58,15 +62,43 @@ export default function QueueScreen() {
 
   function reload() { setLoading(true); setRev((r) => r + 1); }
 
-  async function act(action: 'approve' | 'reject') {
+  /**
+   * 누른 단추를 바로 보내지 않고 확인 단계로 넘긴다.
+   *
+   * 보내기 전에 사유부터 본다 — 확인 화면까지 갔다가 「사유를 입력해주세요」로
+   * 돌아오면 두 번 눌러야 한다.
+   */
+  function ask(action: VerificationAction) {
     if (!selected) return;
+
+    const request = verificationDecisionRequest(action, note);
+    if (!request.ok) {
+      setActionError(request.message);
+      return;
+    }
+
+    setActionError(null);
+    setPending(action);
+  }
+
+  async function act(action: VerificationAction) {
+    if (!selected) return;
+
+    const request = verificationDecisionRequest(action, note);
+    if (!request.ok) {
+      setActionError(request.message);
+      setPending(null);
+      return;
+    }
+
     setActing(true);
     setActionError(null);
     try {
       await apiFetch(`/v1/admin/verifications/${selected.id}/${action}`, {
         method: 'POST',
-        body: JSON.stringify(action === 'approve' ? { note } : { reason: note }),
+        body: JSON.stringify(request.body),
       });
+      setPending(null);
       setSelected(null);
       setNote('');
       reload();
@@ -106,7 +138,12 @@ export default function QueueScreen() {
                 <Pressable
                   key={item.id}
                   style={[styles.tableRow, selected?.id === item.id && styles.tableRowActive]}
-                  onPress={() => { setSelected(item); setNote(''); setActionError(null); }}
+                  onPress={() => {
+                    setSelected(item);
+                    setNote('');
+                    setActionError(null);
+                    setPending(null);
+                  }}
                 >
                   <Text style={[styles.td, styles.colId, styles.monoText]} numberOfLines={1}>
                     {item.id.slice(0, 8)}…
@@ -172,22 +209,50 @@ export default function QueueScreen() {
 
               {actionError && <Text style={styles.actionErrorText}>{actionError}</Text>}
 
-              <View style={styles.actionRow}>
-                <Pressable
-                  style={[styles.approveBtn, acting && styles.btnDisabled]}
-                  onPress={() => void act('approve')}
-                  disabled={acting}
-                >
-                  <Text style={styles.approveBtnText}>승인</Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.rejectBtn, acting && styles.btnDisabled]}
-                  onPress={() => void act('reject')}
-                  disabled={acting}
-                >
-                  <Text style={styles.rejectBtnText}>반려</Text>
-                </Pressable>
-              </View>
+              {pending === null ? (
+                <View style={styles.actionRow}>
+                  <Pressable
+                    style={[styles.approveBtn, acting && styles.btnDisabled]}
+                    onPress={() => ask('approve')}
+                    disabled={acting}
+                  >
+                    <Text style={styles.approveBtnText}>승인</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.rejectBtn, acting && styles.btnDisabled]}
+                    onPress={() => ask('reject')}
+                    disabled={acting}
+                  >
+                    <Text style={styles.rejectBtnText}>반려</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <ConfirmDecision
+                  question={
+                    pending === 'approve'
+                      ? `${selected.targetLevel} 승인으로 마무리할까요?`
+                      : '반려로 마무리할까요?'
+                  }
+                  changes={
+                    pending === 'approve'
+                      ? [
+                          `문서 등급이 ${selected.targetLevel}이 되고, 가격 비교에 쓰입니다.`,
+                          '신청한 사람에게 확인이 끝났다는 알림이 갑니다.',
+                          '큐에서 빠지고 되돌릴 수 없어요.',
+                        ]
+                      : [
+                          '이 신청은 반려로 끝납니다.',
+                          '적은 사유가 신청한 사람에게 그대로 전달돼요.',
+                          '큐에서 빠지고 되돌릴 수 없어요.',
+                        ]
+                  }
+                  confirmLabel={pending === 'approve' ? '승인' : '반려'}
+                  tone={pending === 'approve' ? 'primary' : 'danger'}
+                  busy={acting}
+                  onConfirm={() => void act(pending)}
+                  onCancel={() => setPending(null)}
+                />
+              )}
             </ScrollView>
           )}
         </View>

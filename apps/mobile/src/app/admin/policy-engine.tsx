@@ -11,10 +11,10 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, TextInput } from 'react-native';
 
+import { withParticle } from '@weddingpick/domain';
 import { Colors, FontSize, LineHeight, Radius, Spacing } from '@weddingpick/ui';
 
 import { formatDateTimeDot } from '@/features/common/format-date';
-import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import {
@@ -41,6 +41,7 @@ type PolicyItem = {
   defaultValue: string;
   lastChangedAt: string | null;
   lastChangedBy: string | null;
+  readOnlyReason: string | null;
 };
 
 type PolicyData = { policies: PolicyItem[] };
@@ -86,6 +87,7 @@ export default function PolicyEngineScreen() {
   const changed = policies.filter((p) => draft[p.key] !== undefined && draft[p.key] !== p.value);
 
   function startEdit(policy: PolicyItem) {
+    if (policy.readOnlyReason) return;
     setEditing(policy);
     setEditValue(draft[policy.key] ?? policy.value);
   }
@@ -124,14 +126,14 @@ export default function PolicyEngineScreen() {
         return {
           key: p.key,
           name: p.label,
-          meta: isChanged
+          meta: p.readOnlyReason ?? (isChanged
             ? `변경됨 ${p.value} → ${next}`
             : p.lastChangedAt
               ? `${p.description} · 마지막 변경 ${formatDateTimeDot(p.lastChangedAt)}`
-              : `${p.description} · 기본값 ${p.defaultValue}`,
+              : `${p.description} · 기본값 ${p.defaultValue}`),
           num: isChanged ? next : p.value,
           numKind: isChanged ? ('bad' as const) : undefined,
-          btn: { label: '수정', onPress: () => startEdit(p) },
+          btn: p.readOnlyReason ? undefined : { label: '수정', onPress: () => startEdit(p) },
         };
       });
   }
@@ -146,8 +148,6 @@ export default function PolicyEngineScreen() {
               label: '변경 사항 저장',
               onPress: () => setConfirming(true),
               kind: 'brand',
-              /* PATCH가 204만 돌려주는 자리라 저장해도 값이 남지 않는다. */
-              disabled: BACKEND_PENDING,
             }
           : undefined
       }
@@ -157,8 +157,6 @@ export default function PolicyEngineScreen() {
 
       {!loading && !error && data ? (
         <>
-          <PendingBackendNotice actions="규칙 저장" />
-
           <StatusBanner
             tone={saveError ? 'bad' : changed.length === 0 ? 'ok' : 'warn'}
             title={
@@ -195,7 +193,7 @@ export default function PolicyEngineScreen() {
 
           {editing ? (
             <ConfirmCard
-              title={`${editing.label}을(를) 얼마로 할까요?`}
+              title={`${withParticle(editing.label, '을를')} 얼마로 할까요?`}
               body={editing.description}
               items={[
                 `지금 값 ${editing.value}`,

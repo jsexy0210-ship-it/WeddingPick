@@ -6,6 +6,11 @@
   "baselineCommit": "e34193ee1644c664f107d529002ae53ef775389a",
   "items": [
     {
+      "id": "pending-admin-deployment-20260911",
+      "status": "local-review-complete-ci-and-deployment-pending",
+      "evidence": "master-status.json#pendingAdminDeployment"
+    },
+    {
       "id": "signup-entry-recovery-20260911",
       "status": "verified-locally",
       "evidence": "master-status.json#signupRecovery"
