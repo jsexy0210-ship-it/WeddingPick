@@ -78,6 +78,16 @@ const palette = {
   warningBorder: '#facc87',
   dangerBox: '#fff3f2',
   dangerBorder: '#fcd2cf',
+  /*
+   * 「돈을 쓰는 것」 배지. spec/tokens.json color.status.costFg — 21-admin.dc.html
+   * `dashCards`의 «비용» 모드가 modeFg #e0404e · modeBg #fff1f2다.
+   *
+   * **반려·오류의 dangerText(#e81607)와 다르다.** 비용 카드는 잘못된 상태가
+   * 아니라 지출을 말한다 — 같은 빨강으로 칠하면 매달 정상으로 나가는 돈이
+   * 고장으로 보인다.
+   */
+  costText: '#e0404e',
+  costSurface: '#fff1f2',
   /**
    * 관리자 콘솔의 어두운 면 — 사이드바 · 로그인 오른쪽 판.
    *
@@ -268,6 +278,12 @@ export const Colors = {
     cautionaryBorder: palette.warningBorder,
     negativeBoxBackground: palette.dangerBox,
     negativeBorder: palette.dangerBorder,
+    /**
+     * 「돈을 쓰는 것」 — 관리자 요약 대시보드의 비용 카드 배지. color.status.costFg.
+     * 반려(`negative`)와 나누어 둔다 — 지출은 고장이 아니다.
+     */
+    cost: palette.costText,
+    costBackground: palette.costSurface,
     /** 관리자 콘솔의 어두운 면(사이드바 · 로그인 오른쪽 판). color.status.adminChrome. */
     adminChrome: palette.adminChrome,
     /** 파괴적 행동 버튼(탈퇴 · 신고 · 빼기). status.dangerAction. */
@@ -365,6 +381,9 @@ export const Colors = {
     negativeBackground: '#2e1614',
     negativeBoxBackground: '#211010',
     negativeBorder: '#4d2422',
+    /* 관리자 콘솔은 라이트 전용이다. 역할 표를 비워두지 않으려고 어두운 벌만 맞춰 둔다. */
+    cost: '#ff8a94',
+    costBackground: '#2b1518',
     negativeAction: palette.dangerAction,
     accent: palette.accentAction,
     accentText: '#57c7ff',
