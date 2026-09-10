@@ -54,4 +54,33 @@ Render의 `weddingpick-web` 정적 서비스가 이 산출물을 배포합니다
 
 ## 법적 문서 시행일
 
-웹 빌드 환경에 `LEGAL_TERMS_EFFECTIVE_ON`, `LEGAL_PRIVACY_EFFECTIVE_ON`을 `YYYY-MM-DD`로 설정한다. API와 같은 확정값을 사용하며 날짜를 코드에 넣지 않는다. Render 또는 production 빌드는 누락·잘못된 날짜를 거부한다. 로컬에서 미설정이면 검토본으로 표시한다. 설정 변경은 정적 웹 재빌드 이후 반영된다. `infra/render-env.yml`이 두 GitHub Secrets를 웹에 전달하지만 API 대시보드에만 있는 값은 복사하지 않는다.
+웹 빌드 환경에 `LEGAL_TERMS_EFFECTIVE_ON`, `LEGAL_PRIVACY_EFFECTIVE_ON`을 `YYYY-MM-DD`로 설정한다. 날짜를 코드에 넣지 않는다. Render 또는 production 빌드는 누락·잘못된 날짜를 거부한다. 로컬에서 미설정이면 검토본으로 표시한다. 설정 변경은 정적 웹 재빌드 이후 반영된다.
+
+**두 값은 비밀이 아니라 `infra/render-env.yml`의 `vars`에 있다.** 약관 페이지에 「시행일 2026년 9월 10일」로 그대로 찍히는 공개 값이라 감출 것이 없고, `secrets`로 두면 GitHub Secrets에 같은 이름을 손으로 넣어야 한다. 넣지 않으면 동기화가 조용히 건너뛰고, 값 없이 빌드에 들어간 웹이 예외로 멈춘다. 저장소에 적어 두면 그 손과 그 사고가 함께 사라진다 — 「값의 원본은 저장소」라는 이 선언의 원칙이기도 하다.
+## 링크 미리보기 이미지
+
+카카오톡·슬랙에 주소를 붙이면 뜨는 카드(OG 카드)의 그림은 `public/assets/weddingpick-og.png`이고, 그 원본은 같은 폴더의 `.svg`다.
+
+**그림 안의 글자를 손으로 고치지 않는다.** 문구는 `spec/strings.ko.json`의 `webLanding.og`, 색은 `spec/tokens.json`에서 온다(`src/og-image.ts`). 손으로 적어 두면 한쪽만 바뀌고, 그림 안의 글자라 아무도 눈치채지 못한다 — 실제로 카드가 사이트 어디에도 없는 「확인하고 비교해서 골라요」를 내보내고 있었다.
+
+카드 문구는 랜딩 히어로와 따로 둔다. 링크를 눌러보게 만드는 한 줄과 페이지를 열었을 때 읽는 한 줄은 하는 일이 다르다.
+
+문구가 바뀌면 두 단계로 다시 만든다.
+
+```sh
+npm run og --workspace @weddingpick/web        # SVG를 다시 만든다
+```
+
+PNG는 브라우저와 한글 폰트가 있어야 굽는다. 크롤러가 SVG를 읽지 않아 실제로 나가는 것은 PNG다.
+
+```sh
+sudo apt-get install -y fonts-nanum && fc-cache -f
+printf '<!doctype html><meta charset="utf-8"><style>html,body{margin:0}svg{display:block}</style>' > /tmp/og.html
+cat apps/web/public/assets/weddingpick-og.svg >> /tmp/og.html
+headless_shell --no-sandbox --hide-scrollbars --force-device-scale-factor=1 \
+  --window-size=1200,630 --screenshot=apps/web/public/assets/weddingpick-og.png file:///tmp/og.html
+```
+
+**`chromium --headless`가 아니라 `headless_shell`이다.** 전자는 `--window-size`를 창 크기로 읽어 화면 영역이 그보다 작아지고, 아래쪽 83px이 잘린 채 찍힌다. 카드 배경이 흰색이던 시절에는 잘린 부분도 흰색이라 아무도 몰랐다. 구운 뒤에는 맨 아랫줄 색이 배경색인지 꼭 확인한다.
+
+`og-image.test.ts`가 저장된 SVG와 지금 문구로 만든 SVG가 같은지, PNG가 1200×630인지 본다. 다시 굽지 않고 문구만 바꾸면 테스트가 막는다.

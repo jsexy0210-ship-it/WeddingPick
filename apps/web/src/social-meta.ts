@@ -1,6 +1,8 @@
 import { SITE_ORIGIN } from '@weddingpick/domain';
 import strings from '../../../spec/strings.ko.json';
 
+import { ogImageAlt } from './og-image';
+
 /** 서비스 주소는 @weddingpick/domain SITE_ORIGIN 한 곳에서 온다(앱 약관 링크와 같은 값). */
 export { SITE_ORIGIN };
 export const SHARE_TITLE = strings.webLanding.metaTitle;
@@ -23,7 +25,7 @@ export function socialMeta(path = '/', title = SHARE_TITLE, description = SHARE_
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:type" content="image/png">
-<meta property="og:image:alt" content="웨딩픽 — 확인하고 비교해서 골라요">
+<meta property="og:image:alt" content="${escapeAttribute(ogImageAlt())}">
 <meta property="og:url" content="${url}">
 <meta property="og:type" content="website">
 <meta property="og:locale" content="ko_KR">
