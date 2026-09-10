@@ -5,6 +5,13 @@
   "scope": "repository-cleanup",
   "baselineCommit": "e34193ee1644c664f107d529002ae53ef775389a",
   "status": "not-complete",
+  "signupRecovery20260911": {
+    "route": "/setup",
+    "screenIds": ["WP-APP-020", "WP-APP-021", "WP-APP-022"],
+    "scope": "가입 미완료 재진입·완료 저장 순서. 레이아웃·문구 변경 없음",
+    "verification": "390×844 실제 웹에서 /my→/setup 복귀, 기존 답 복원, 가입 저장→설정 저장→완료 화면 확인. 원본 전체 픽셀 대조·네이티브 검증은 미완료",
+    "evidence": "master-status.json#signupRecovery"
+  },
   "screenCompletionCount": null,
   "note": "이번 작업은 저장소 정리로 UI를 변경하지 않았다. 전 화면·상태별 시각 검수가 완료된 것으로 처리하지 않는다.",
   "evidence": [
