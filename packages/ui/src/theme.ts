@@ -442,6 +442,62 @@ export const Spacing = {
 } as const;
 
 /**
+ * 관리자 콘솔 전용 간격 · 크기. spec/tokens.json `spacing`의 `admin*` 항목 그대로다.
+ *
+ * 앱의 8배수 사다리(`Spacing`)와 따로 두는 이유 — 관리자 시안(v3.27 `22-admin-ops.dc.html`)은
+ * 3 · 11 · 13 · 14 · 18처럼 사다리에 없는 값을 쓴다. **가까운 값으로 대신하지 않는다.**
+ * 20을 24로 올리면 카드 하나는 표가 나지 않지만, 격자 · 표 · 배너가 다 같이 밀려서
+ * 1920 기준으로 맞춰 둔 열 폭이 어긋난다. 화면은 목업과 1:1이다.
+ */
+export const AdminSpacing = {
+  /** 제목과 그 아래 한 줄 사이. */
+  stackGap: 3,
+  /** 행 상하 패딩 — 메타 줄 없음 · 있음. */
+  rowPaddingY: 11,
+  rowPaddingYMeta: 13,
+  rowMinHeight: 52,
+  /** 상단 상태 배너. */
+  bannerGap: 12,
+  bannerPaddingY: 16,
+  bannerPaddingX: 18,
+  /** 배지 — 상하는 stackGap(3)과 같은 값이다. */
+  badgePaddingX: 9,
+  /** 행·카드 안 작은 단추. */
+  btnPaddingX: 12,
+  btnHeight: 30,
+  /** 상단바 · 배너 · 확인 카드의 단추 높이. */
+  topActionHeight: 36,
+  bannerCtaHeight: 32,
+  confirmCtaHeight: 44,
+  /** 토글 · 원형 표식. */
+  toggleWidth: 44,
+  toggleHeight: 26,
+  bannerIcon: 28,
+  emptyMark: 44,
+  /** 확인 카드 항목 앞 점 — 본문 bulletDot(6)과 다른 값이다. */
+  confirmDot: 5,
+  /** 카드 · 격자. */
+  cardGap: 14,
+  cardPadding: 20,
+  gridGap: 20,
+  /** 본문 · 상단바. */
+  bodyPaddingTop: 24,
+  bodyPaddingX: 32,
+  topbarHeight: 76,
+  /** 표. */
+  tableGap: 16,
+  theadHeight: 40,
+  tbodyHeight: 48,
+  /** 빈 상태 · 확인 카드. */
+  emptyPaddingY: 36,
+  confirmWidth: 520,
+  confirmPadding: 24,
+  /** 사이드바. */
+  navItemHeight: 34,
+  sidebarWidth: 240,
+} as const;
+
+/**
  * 핸드오프가 이름 붙인 치수. 화면이 숫자를 직접 적지 않게 한다. spec/tokens.json
  * `spacing` · `size` · `tabBar` · `component`.
  *

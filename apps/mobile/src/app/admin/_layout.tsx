@@ -2,7 +2,7 @@ import { Link, Redirect, Slot, usePathname } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Colors, FontSize, LineHeight, Radius, Spacing, WeddingMark } from '@weddingpick/ui';
+import { AdminSpacing as A, Colors, FontSize, LineHeight, Radius, Spacing, WeddingMark } from '@weddingpick/ui';
 
 import { clearAdminToken, loadAdminToken } from './_session';
 
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
      * 216에서 240으로 넓혔다. 감사 기록처럼 컬럼이 여덟 개인 표가 1440에서는 가로
      * 스크롤 없이 들어가지 않았던 것이 폭을 올린 이유다.
      */
-    width: 240,
+    width: A.sidebarWidth,
     /*
      * 사이드바 바탕은 시안의 #17181c다. 잠깐 `Colors.light.text`(#212124)로 바뀌어
      * 있었는데, 하드코딩을 없애려다 **다른 색이 됐다** — 토큰으로 바꾸는 것과
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
   navItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 34,
+    height: A.navItemHeight,
     paddingHorizontal: Spacing.two,
     borderRadius: Radius.control,
   },
