@@ -591,9 +591,16 @@ describeWithDb('WP-VEND-002 업체 이미지', () => {
       storageKey?: string | null;
       sourceUrl?: string | null;
       copyrightNote?: string | null;
+      matchConfidence?: number;
     } = {}
   ) {
     const status = overrides.status ?? 'approved';
+    /*
+     * 업체가 직접 준 사진(`vendor_provided`)의 매칭 신뢰도는 1.0이다 — 0050이
+     * 그렇게 적어 두었다. 이 도우미는 기본값 0을 그대로 두고 있어서 스키마가
+     * 말하는 뜻과 어긋났고, 화면 질의가 매칭까지 보게 되자 드러났다.
+     */
+    const matchConfidence = overrides.matchConfidence ?? 1;
     const storageKey = overrides.storageKey ?? null;
     const sourceUrl = overrides.sourceUrl ?? (storageKey ? null : 'https://example.com/photo.jpg');
     const rejectionReason = status !== 'approved' && status !== 'pending' ? '테스트 거부' : null;
@@ -602,8 +609,9 @@ describeWithDb('WP-VEND-002 업체 이미지', () => {
     const { rows } = await test.pool.query<{ id: string }>(
       `INSERT INTO structured.vendor_images
          (vendor_id, storage_key, source_url, copyright_basis, copyright_note,
-          use_contain, status, is_representative, rejection_reason, verified_at)
-       VALUES ($1, $2, $3, 'vendor_provided', $4, $5, $6, $7, $8, $9)
+          use_contain, status, is_representative, rejection_reason, verified_at,
+          match_confidence)
+       VALUES ($1, $2, $3, 'vendor_provided', $4, $5, $6, $7, $8, $9, $10)
        RETURNING id`,
       [
         vendorId,
@@ -615,6 +623,7 @@ describeWithDb('WP-VEND-002 업체 이미지', () => {
         overrides.isRepresentative ?? false,
         rejectionReason,
         verifiedAt,
+        matchConfidence,
       ]
     );
 
@@ -661,6 +670,28 @@ describeWithDb('WP-VEND-002 업체 이미지', () => {
     await createVendorImage(vendorId, { status: 'pending' });
     await createVendorImage(vendorId, { status: 'quality_rejected' });
     await createVendorImage(vendorId, { status: 'approved', sourceUrl: 'https://example.com/ok.jpg' });
+
+    const response = await test.app.inject({
+      method: 'GET',
+      url: `/v1/vendors/${vendorId}/images`,
+    });
+
+    expect(response.json().photos).toHaveLength(1);
+    expect(response.json().photos[0].url).toBe('https://example.com/ok.jpg');
+  });
+
+  it('그 업체 것인지 확인 못 한 사진은 승인돼 있어도 내려가지 않는다', async () => {
+    /*
+     * 운영에 들어 있던 720장이 이런 사진이었다 — 「서울 웨딩홀」 같은 업종 검색
+     * 결과를 업체마다 잘라 붙인 것이라 검색어에 업체 이름이 없었고, 그 사실이
+     * match_confidence 0으로 적혀 있었다. 저작권만 보면 값 하나를 배치로 바꾸는
+     * 순간 그대로 나간다. 남의 사진을 그 업체 사진으로 보여주는 일이라 저작권보다
+     * 먼저 막는다(packages/domain/src/vendor-image.ts).
+     */
+    const vendorId = await createVendor({ name: '매칭미확인홀' });
+    await createVendorImage(vendorId, { matchConfidence: 0 });
+    await createVendorImage(vendorId, { matchConfidence: 0.4 });
+    await createVendorImage(vendorId, { matchConfidence: 0.5, sourceUrl: 'https://example.com/ok.jpg' });
 
     const response = await test.app.inject({
       method: 'GET',
