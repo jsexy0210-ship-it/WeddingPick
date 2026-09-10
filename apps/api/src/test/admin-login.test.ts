@@ -7,6 +7,15 @@ const describeWithDb = process.env.DATABASE_URL ? describe : describe.skip;
 const ID = 'admin-test-id';
 const PASSWORD = '열글자넘는비밀번호1234';
 
+/*
+ * **환경을 모듈 맨 위에서 심는다.** 로그인은 `context.config`에서 부트스트랩 자격을
+ * 읽고, 그 config는 앱을 만들 때 한 번 굳는다(#173 관리자 등급). 훅 안에서 심으면
+ * 이미 늦어서 아이디가 비고, 로그인이 401로 떨어진다 — 「비밀번호가 틀렸다」와 같은
+ * 응답이라 원인이 안 보인다.
+ */
+process.env.ADMIN_LOGIN_ID = ID;
+process.env.ADMIN_PASSWORD_HASH = hashAdminPassword(PASSWORD);
+
 /**
  * 관리자 로그인.
  *
@@ -26,6 +35,12 @@ describeWithDb('관리자 로그인', () => {
   let test: TestApp;
   const saved = { id: process.env.ADMIN_LOGIN_ID, hash: process.env.ADMIN_PASSWORD_HASH };
 
+  /*
+   * **앱을 만들기 전에 환경을 심는다.** 로그인은 이제 `context.config`에서 부트스트랩
+   * 자격을 읽고, 그 config는 앱을 만들 때 한 번 굳는다(#173 관리자 등급). 예전처럼
+   * 매 요청 `process.env`를 읽지 않으므로, `beforeEach`에서 심으면 이미 늦다 —
+   * 아이디가 비어 있어 로그인이 401로 떨어진다.
+   */
   beforeAll(async () => {
     await resetDatabase();
     test = await createTestApp();
@@ -39,8 +54,6 @@ describeWithDb('관리자 로그인', () => {
 
   beforeEach(async () => {
     await resetDatabase();
-    process.env.ADMIN_LOGIN_ID = ID;
-    process.env.ADMIN_PASSWORD_HASH = hashAdminPassword(PASSWORD);
   });
 
   async function login() {
@@ -52,10 +65,23 @@ describeWithDb('관리자 로그인', () => {
   }
 
   it('첫 로그인은 계정을 만들고 활성으로 표시한다', async () => {
-    /* 운영 권한이 없어 403으로 돌아오지만, 계정과 활성 표시는 그 전에 끝난다. */
+    /*
+     * **0102 전에는 여기가 403이었다.** 첫 로그인이 계정만 만들고 돌아왔고, 운영
+     * 권한은 CLI로만 켤 수 있었다. 그러면 **서버 셸에 못 들어가는 사람은 만들어 놓은
+     * 콘솔에 영영 못 들어간다.**
+     *
+     * 이제 `structured.admin_accounts`에 켜져 있는 슈퍼 관리자가 하나도 없는 동안에만
+     * 이 환경변수 계정이 슈퍼 관리자로 보인다(부트스트랩 전용 · 2026-09-10 결정 · #173).
+     * 하나 생기면 곧바로 닫히고(`bootstrapCandidate`), `admin-accounts.test.ts`가
+     * 그것을 본다.
+     *
+     * **이 시험이 지키는 것은 그대로다** — 활성 표시가 남는가. 그것이 없으면 관문이
+     * 「가입이 끝나지 않았다」며 돌려보내 콘솔에 아무도 못 들어간다(#175).
+     */
     const first = await login();
 
-    expect(first.statusCode).toBe(403);
+    expect(first.statusCode).toBe(201);
+    expect(first.json()).toMatchObject({ role: 'super' });
 
     const { rows } = await test.pool.query<{ activated: boolean }>(
       `SELECT (a.id IS NOT NULL) AS activated

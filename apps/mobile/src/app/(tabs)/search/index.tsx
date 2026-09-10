@@ -455,9 +455,10 @@ export default function SearchScreen() {
    * 검색창. 홈에서는 스크롤 콘텐츠 맨 위에, 결과에서는 헤더에 앉는다 — 목업
    * 9a(홈)의 헤더는 제목과 알림 벨뿐이다.
    */
-  function renderSearchBox() {
+  function renderSearchBox({ compact = false }: { compact?: boolean } = {}) {
     return (
-      <View style={[styles.searchBox, { backgroundColor: theme.backgroundSelected }]}>
+      /* 시안 searchBox 52/0 16(홈) vs searchBoxSm 44/0 14(결과 헤더) — 두 크기가 다르다. */
+      <View style={[styles.searchBox, compact && styles.searchBoxCompact, { backgroundColor: theme.backgroundSelected }]}>
         <ProductSymbol name="magnifier" size={Layout.iconTab} color={theme.textAssistive} />
         <TextInput
           style={[styles.searchInput, { color: theme.text }]}
@@ -1029,7 +1030,15 @@ export default function SearchScreen() {
           </ThemedView>
         ) : (
           <ThemedView style={styles.header}>
-            {renderSearchBox()}
+            {/* 시안 navSearch — 검색창 왼쪽에 40 원형 뒤로 버튼이 있다(06-search.dc.html L343·L143). */}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="뒤로"
+              onPress={goHome}
+              style={styles.headerBack}>
+              <ProductSymbol name="chevronLeft" size={Layout.iconTab} color={theme.textStrong} />
+            </Pressable>
+            {renderSearchBox({ compact: true })}
             {/* 지도 보기는 여기 없다(2026-09-08) — 위치는 업체 상세에서만 보인다. */}
           </ThemedView>
         )}
@@ -1126,11 +1135,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  /* 결과 헤더 — 검색창이 헤더에 앉는다. 시안 navSearch 60. */
+  /* 결과 헤더 — 시안 navSearch: `flex:0 0 60px` · gap 10 · `padding:0 24px 0 12px`. */
   header: {
-    paddingHorizontal: Layout.gutter,
-    paddingTop: Spacing.two,
-    paddingBottom: Spacing.two,
+    height: Layout.headerSearch,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Layout.cardGap,
+    paddingLeft: Layout.navPaddingLeft,
+    paddingRight: Layout.gutter,
+  },
+  /* 시안 backBtn — 40 원형. */
+  headerBack: {
+    width: Layout.iconButton,
+    height: Layout.iconButton,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   /* 홈의 검색창 블록. 목업: padding 4 24 24. */
@@ -1139,7 +1159,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Layout.gutter,
     paddingBottom: Spacing.four,
   },
-  // 검색창. 목업: height 52, radius 6, bg gray100, padding 0 16, gap 10
+  // 검색창(홈). 시안 searchBox: height 52, radius 6, bg gray100, padding 0 16, gap 10
   searchBox: {
     height: Layout.field,
     borderRadius: Radius.input,
@@ -1147,6 +1167,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: Spacing.three,
     gap: Layout.cardGap,
+  },
+  /* 검색창(결과 헤더). 시안 searchBoxSm — 44 · 좌우 14 · 헤더에서 남는 폭을 채운다. */
+  searchBoxCompact: {
+    flex: 1,
+    minWidth: 0,
+    height: Layout.touchTarget,
+    paddingHorizontal: Layout.fieldPaddingX,
   },
   searchInput: {
     flex: 1,
