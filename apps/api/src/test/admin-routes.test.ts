@@ -1,3 +1,6 @@
+import { randomUUID } from 'node:crypto';
+
+import { recordDecision } from '../decisions';
 import type { LocalStorage } from '../storage/local';
 import { createTestApp, resetDatabase, signInAs, type TestApp } from './helpers';
 
@@ -708,6 +711,167 @@ describeWithDb('관리자 콘솔 라우트', () => {
         amount: 10,
       });
       expect(badFeature.statusCode).toBe(400);
+    });
+  });
+  /*
+   * 요약 대시보드(WP-ADM-001). 이 화면의 고장은 「틀린 숫자」가 아니라 **언제나
+   * 같은 숫자**였다 — 예전 응답은 `reviewQueue.total`에 0을, 수익에 `₩0`을 박아
+   * 두어서 큐가 쌓인 날에도 홈은 빈 화면이었다. 그래서 여기서 보는 것은 응답
+   * 모양만이 아니라 **실제로 한 건 넣었을 때 그 줄이 오르는가**이다.
+   */
+  describe('요약 대시보드', () => {
+    type Dashboard = {
+      humanTotal: number;
+      humanQueue: { key: string; label: string; why: string; count: number; tone: string }[];
+      dashCards: { key: string; label: string; mode: string; value: string; unit: string; note: string }[];
+      auto: {
+        ratePct: number | null;
+        segments: { key: string; label: string; count: number }[];
+        keepRatePct: number | null;
+        revertedCount: number;
+        medianLatencyMs: number | null;
+        byWorkflow: { workflow: string; concluded: number; failed: number; human: number; reverted: number; autoPct: number }[];
+      };
+      autoLog: { decision: string; subject: string; reasonCode: string; confidence: number | null; tone: string }[];
+    };
+
+    it('볼 일이 없으면 전부 0이고, 카드는 그대로 나온다', async () => {
+      const operator = await operatorHeaders();
+
+      const res = await get('/v1/admin/dashboard', operator.headers);
+      expect(res.statusCode).toBe(200);
+
+      const body = res.json<Dashboard>();
+      expect(body.humanTotal).toBe(0);
+      expect(body.humanQueue.map((q) => q.key)).toEqual([
+        'queue',
+        'rebuttal',
+        'objections',
+        'pii-reviews',
+        'biz-queue',
+      ]);
+      /* 빈 큐가 정상 상태다 — 줄 자체를 지우지 않는다. 화면이 「확인할 것이 없어요」를 그린다. */
+      expect(body.humanQueue.every((q) => q.count === 0)).toBe(true);
+      expect(body.humanQueue.every((q) => q.why.length > 0)).toBe(true);
+
+      /* 카드는 6장 · 3열 두 줄. 순서가 곧 설계다 — 위험 → 비용 → 지표 → 자동. */
+      expect(body.dashCards.map((c) => c.mode)).toEqual(['위험', '비용', '비용', '지표', '지표', '자동']);
+      expect(body.dashCards.every((c) => c.value.length > 0)).toBe(true);
+
+      /*
+       * 판정이 하나도 없으면 자동 처리율은 **null이지 0%가 아니다.** 0%는 「자동이
+       * 하나도 못 끝냈다」는 뜻이고, 그건 들어온 게 없는 것과 완전히 다른 상태다.
+       */
+      expect(body.auto.ratePct).toBeNull();
+      expect(body.auto.segments.map((seg) => seg.count)).toEqual([0, 0, 0]);
+      expect(body.auto.byWorkflow).toEqual([]);
+      expect(body.autoLog).toEqual([]);
+    });
+
+    it('자동 판정이 쌓이면 처리율 · 유지율 · 로그가 실제 기록에서 나온다', async () => {
+      const event = randomUUID();
+      const base = {
+        eventId: event,
+        workflow: 'payment_proof',
+        step: 'verify',
+        subjectKind: 'payment_proof',
+        subjectId: null,
+        evidence: [],
+        latencyMs: 4200,
+      } as const;
+
+      /* 자동으로 끝난 둘 — 그중 하나는 사람이 되돌렸다. */
+      await recordDecision(test.pool, {
+        ...base,
+        decider: { kind: 'model', model: 'test-model', confidence: 0.97 },
+        decision: '승인',
+        reasonCode: 'amount_within_band',
+      });
+      await recordDecision(test.pool, {
+        ...base,
+        decider: { kind: 'model', model: 'test-model', confidence: 0.94 },
+        decision: '반려',
+        reasonCode: 'evidence_missing',
+        execution: 'rolled_back',
+      });
+      /* 사람이 결정한 하나 — 자동 처리율의 분모에는 들어가고 분자에는 들어가지 않는다. */
+      const operator = await operatorHeaders();
+      await recordDecision(test.pool, {
+        ...base,
+        decider: { kind: 'human', userId: operator.userId },
+        decision: '보류',
+        reasonCode: 'needs_human_review',
+      });
+
+      const body = (await get('/v1/admin/dashboard', operator.headers)).json<Dashboard>();
+
+      /* 셋 중 둘이 자동으로 끝났다. 세 칸을 더하면 전체가 되어야 한다. */
+      expect(body.auto.segments.map((seg) => seg.count)).toEqual([2, 0, 1]);
+      expect(body.auto.ratePct).toBe(67);
+      /* 자동 결론 둘 중 하나를 되돌렸다. */
+      expect(body.auto.revertedCount).toBe(1);
+      expect(body.auto.keepRatePct).toBe(50);
+      expect(body.auto.medianLatencyMs).toBe(4200);
+
+      expect(body.auto.byWorkflow).toEqual([
+        { workflow: 'payment_proof', concluded: 2, failed: 0, human: 1, reverted: 1, autoPct: 67 },
+      ]);
+
+      /* 로그는 최신이 위. 판정 · 근거 · 확신을 함께 낸다. */
+      expect(body.autoLog).toHaveLength(3);
+      expect(body.autoLog[0]).toMatchObject({ decision: '보류', reasonCode: 'needs_human_review', tone: 'human' });
+      expect(body.autoLog.find((r) => r.decision === '승인')).toMatchObject({
+        subject: 'payment_proof',
+        confidence: 0.97,
+        tone: 'ok',
+      });
+
+      /* 카드의 자동 판정도 같은 값을 본다 — 한 화면에서 두 번 다르게 세지 않는다. */
+      expect(body.dashCards.find((c) => c.key === 'decisions')).toMatchObject({
+        value: '67%',
+        unit: '자동 처리율',
+        note: '최근 24시간 3건 · 되돌림 1건',
+      });
+    });
+
+    it('업체 관계자 인증이 한 건 들어오면 그 줄과 합계가 함께 오른다', async () => {
+      const vendor = await test.pool.query<{ id: string }>(
+        `INSERT INTO structured.vendors (name, category, region, source, official_domain)
+         VALUES ('가온예식홀', 'hall', '서울', 'public_data', 'gaon.co.kr') RETURNING id`
+      );
+      const claimant = await signInAs(test, 'dashboard-claim-staff');
+      await test.app.inject({
+        method: 'POST',
+        url: '/v1/vendor-claims',
+        headers: claimant.headers,
+        payload: {
+          vendorId: vendor.rows[0]!.id,
+          claimedRole: '예약팀장',
+          evidence: { method: 'official_domain_email', email: 'staff@gaon.co.kr' },
+        },
+      });
+
+      const operator = await operatorHeaders();
+      const body = (await get('/v1/admin/dashboard', operator.headers)).json<Dashboard>();
+
+      const claims = body.humanQueue.find((q) => q.key === 'biz-queue');
+      expect(claims?.count).toBe(1);
+      /* 되돌릴 수 없는 결정이라 급한 쪽으로 센다 — 화면의 상단 배너가 이 값으로 빨강이 된다. */
+      expect(claims?.tone).toBe('danger');
+      expect(body.humanTotal).toBe(1);
+    });
+
+    it('회원 카드는 실제 계정 수를 센다', async () => {
+      await signInAs(test, 'dashboard-member-a');
+      await signInAs(test, 'dashboard-member-b');
+      const operator = await operatorHeaders();
+
+      const body = (await get('/v1/admin/dashboard', operator.headers)).json<Dashboard>();
+      const members = body.dashCards.find((c) => c.key === 'users');
+
+      /* 운영자 계정도 계정이다 — 위에서 만든 둘 + 운영자 하나. */
+      expect(members?.value).toBe('3');
+      expect(members?.unit).toBe('명');
     });
   });
 });

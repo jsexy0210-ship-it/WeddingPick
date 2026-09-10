@@ -12,6 +12,7 @@ import * as aiCostAdmin from '../ai-cost-admin';
 import { currentUserId, requireOperatorUser } from '../auth/plugin';
 import { isKnownSourceKey } from '../public-data/sources';
 import type { AppContext } from '../context';
+import * as dashboardAdmin from '../dashboard-admin';
 import * as decisionsAdmin from '../decisions-admin';
 import { NotAnOperator } from '../decisions';
 import { ApiError, forbidden, notFound } from '../errors';
@@ -828,33 +829,12 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   });
 
   // ─── Dashboard (WP-ADM-001) ───────────────────────────────────────────────
-  app.get('/v1/admin/dashboard', auth, async () => {
-    const [budgetStatus, briefing] = await Promise.all([
-      aiCostAdmin.status(context.pool),
-      decisionsAdmin.briefing(context.pool),
-    ]);
-    const failed = briefing.reduce((acc, b) => acc + b.failed, 0);
-    const total = briefing.reduce((acc, b) => acc + b.decisions + b.failed, 0);
-    const successRate = total === 0 ? 100 : ((total - failed) / total) * 100;
-    const pendingActions = budgetStatus.reduce((acc, s) => acc + s.uncostedCount, 0);
-    const healthy = !budgetStatus.some((s) => s.state === 'over_budget');
-    const totalCost = briefing.reduce((acc, b) => acc + (b.costUsd ?? 0), 0);
-    return {
-      aiStatus: { healthy, successRate, pendingActions },
-      reviewQueue: { total: 0, urgent: 0, oldest: '—' },
-      revenue: { mrr: '₩0', aiCost: `$${totalCost.toFixed(2)}`, contributionMargin: '₩0' },
-      recentActions: briefing.slice(0, 10).map((b) => ({
-        time: new Date().toISOString(),
-        action: b.workflow,
-        result: b.failed === 0 ? '성공' : '실패',
-      })),
-      killSwitches: [
-        { id: 'ai-recommendations', label: 'AI 추천', active: false },
-        { id: 'ai-verification', label: 'AI 검증', active: false },
-        { id: 'ai-matching', label: 'AI 매칭', active: false },
-      ],
-    };
-  });
+  /*
+   * 값은 `dashboard-admin.ts`가 실제 큐에서 센다. 이 자리에 숫자를 박아두지
+   * 않는다 — 그 자리들(`reviewQueue.total: 0` · `revenue.mrr: '₩0'`)이 홈을
+   * 「볼 일이 없는 화면」으로 보이게 만들던 원인이었다.
+   */
+  app.get('/v1/admin/dashboard', auth, async () => dashboardAdmin.dashboard(context.pool));
 
   // ─── Kill Switches ────────────────────────────────────────────────────────
   app.get('/v1/admin/kill-switches', auth, async () => {

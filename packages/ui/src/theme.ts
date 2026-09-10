@@ -78,6 +78,16 @@ const palette = {
   warningBorder: '#facc87',
   dangerBox: '#fff3f2',
   dangerBorder: '#fcd2cf',
+  /*
+   * 「돈을 쓰는 것」 배지. spec/tokens.json color.status.costFg — 21-admin.dc.html
+   * `dashCards`의 «비용» 모드가 modeFg #e0404e · modeBg #fff1f2다.
+   *
+   * **반려·오류의 dangerText(#e81607)와 다르다.** 비용 카드는 잘못된 상태가
+   * 아니라 지출을 말한다 — 같은 빨강으로 칠하면 매달 정상으로 나가는 돈이
+   * 고장으로 보인다.
+   */
+  costText: '#e0404e',
+  costSurface: '#fff1f2',
   /**
    * 관리자 콘솔의 어두운 면 — 사이드바 · 로그인 오른쪽 판.
    *
@@ -258,6 +268,12 @@ export const Colors = {
     cautionaryBorder: palette.warningBorder,
     negativeBoxBackground: palette.dangerBox,
     negativeBorder: palette.dangerBorder,
+    /**
+     * 「돈을 쓰는 것」 — 관리자 요약 대시보드의 비용 카드 배지. color.status.costFg.
+     * 반려(`negative`)와 나누어 둔다 — 지출은 고장이 아니다.
+     */
+    cost: palette.costText,
+    costBackground: palette.costSurface,
     /** 관리자 콘솔의 어두운 면(사이드바 · 로그인 오른쪽 판). color.status.adminChrome. */
     adminChrome: palette.adminChrome,
     /** 파괴적 행동 버튼(탈퇴 · 신고 · 빼기). status.dangerAction. */
@@ -345,6 +361,9 @@ export const Colors = {
     negativeBackground: '#2e1614',
     negativeBoxBackground: '#211010',
     negativeBorder: '#4d2422',
+    /* 관리자 콘솔은 라이트 전용이다. 역할 표를 비워두지 않으려고 어두운 벌만 맞춰 둔다. */
+    cost: '#ff8a94',
+    costBackground: '#2b1518',
     negativeAction: palette.dangerAction,
     accent: palette.accentAction,
     accentText: '#57c7ff',
@@ -421,6 +440,11 @@ export const Spacing = {
 export const Layout = {
   /** 화면 좌우 거터. 바텀시트 내부도 같다. */
   gutter: 24,
+  /**
+   * 관리자 콘솔 상단바. size.adminTopBar — 22-admin-ops.dc.html `topbar`의 «flex:0 0 76px».
+   * 사이드바 240(admin/_layout.tsx)과 짝이다.
+   */
+  adminTopBar: 76,
   /** 섹션을 가르는 gray100 밴드 높이. */
   sectionBand: 16,
   /** 섹션과 섹션 사이 · 섹션 하단. spacing.sectionBottom. */
@@ -554,6 +578,12 @@ export const Layout = {
   /** 배지. component.badge — 항상 한 줄, height 22 고정. */
   badgeHeight: 22,
   badgePaddingX: 9,
+  /**
+   * 관리자 콘솔 배지의 좌우 여백. component.badge.adminPaddingX — 21-admin.dc.html
+   * `.ad-bdg`가 «padding:0 7px»다. 앱 배지(9)보다 좁다 — 한 줄에 배지가 여럿 앉는
+   * 표에서 9로는 글자 사이가 벌어져 보인다.
+   */
+  adminBadgePaddingX: 7,
   badgePaddingY: 4,
   /** 정보 단계 배지(WP-ST-005 · 17-sheets tier) — micro 13/18 · padding 3 8. */
   tierBadgePaddingX: 8,
