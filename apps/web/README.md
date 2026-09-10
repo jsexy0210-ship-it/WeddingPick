@@ -51,3 +51,7 @@ npm run build --workspace @weddingpick/web
 웹 테스트는 출시 상태, 가상 데이터 미노출, 공유 아이콘, 도메인 정보 규칙을 검증합니다. 공개 페이지는 360·390·430·768·1024·1280·1440px에서 가로 넘침, 기능 설명 순서, 내부 링크와 FAQ 키보드 조작을 브라우저로 확인합니다.
 
 Render의 `weddingpick-web` 정적 서비스가 이 산출물을 배포합니다. 배포 요청 성공과 운영 화면 반영은 별도로 확인해야 합니다.
+
+## 법적 문서 시행일
+
+웹 빌드 환경에 `LEGAL_TERMS_EFFECTIVE_ON`, `LEGAL_PRIVACY_EFFECTIVE_ON`을 `YYYY-MM-DD`로 설정한다. API와 같은 확정값을 사용하며 날짜를 코드에 넣지 않는다. Render 또는 production 빌드는 누락·잘못된 날짜를 거부한다. 로컬에서 미설정이면 검토본으로 표시한다. 설정 변경은 정적 웹 재빌드 이후 반영된다. `infra/render-env.yml`이 두 GitHub Secrets를 웹에 전달하지만 API 대시보드에만 있는 값은 복사하지 않는다.

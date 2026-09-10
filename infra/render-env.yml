@@ -32,6 +32,10 @@ services:
       # 없으면 search.html의 "많이 확인된 곳"이 «정보를 모으는 중»으로 나가고
       # 업체 상세(/v/*.html)가 한 장도 만들어지지 않는다.
       WEDDINGPICK_API_URL: https://weddingpickl.onrender.com
+    secrets:
+      # API와 같은 확정 시행일을 정적 웹 빌드에도 전달한다.
+      - LEGAL_TERMS_EFFECTIVE_ON
+      - LEGAL_PRIVACY_EFFECTIVE_ON
 
   # 운영 API
   WeddingPickl:
