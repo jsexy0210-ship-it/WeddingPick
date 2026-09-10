@@ -3,6 +3,19 @@
 대상은 `weddingpick-app-web`(`apps/mobile/src/`)이다. `apps/mobile/src/app/admin/`과
 `apps/web/`은 다른 세션 소관이라 제외했다.
 
+> **2026-09-10 재확인** — `origin/main`(`af698bd`, PR #167)을 이 브랜치에 머지한 뒤
+> 다시 봤다. 그 PR이 손댄 사용자 화면 파일은 둘뿐이다 —
+> `features/auth/providers.ts`(카카오 `age_range` scope 추가)와
+> `features/navigation/depth-back-rules.ts`(관리자 라우트 2개 등록). 색·타이포
+> 토큰화는 `color.status.*`의 `boxBg`·`border`와 `color.adminChrome` 추가로
+> 관리자 전용이었다. **아래 대조 결과는 그대로 유효하다.** `features/verification/levels.ts`의
+> L0~L4 5색도 여전히 `spec/tokens.json`에 없다.
+>
+> 덧붙여 `providers.ts`의 새 주석은 「age_range가 선택 동의로 내려가면 판정이
+> 체크박스 하나로 떨어진다」고 적었는데, 그 체크박스는 핸드오프 v3.24가 삭제한
+> 것이라 §7에서 걷어냈다. 지금 나이 판정은 서버 한 곳뿐이다 — 그 전제를 다시
+> 확인해야 한다.
+
 ## 대조 방법
 
 1. `docs/design-handoff/current/html/*.dc.html`의 **마크업과 `<script type="text/x-dc">`
