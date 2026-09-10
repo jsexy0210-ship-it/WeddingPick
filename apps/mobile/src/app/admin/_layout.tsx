@@ -1,10 +1,10 @@
 import { Link, Redirect, Slot, usePathname } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 
-import { clearAdminToken, loadAdminToken } from './_session';
+import { clearAdminToken, loadAdminToken, readAdminTokenSync, subscribeAdminToken } from './_session';
 
 /**
  * 사이드바.
@@ -152,17 +152,54 @@ function Sidebar({ pathname }: { pathname: string }) {
  * 만료된 토큰을 들고 들어가 모든 화면이 같은 오류를 내게 된다. 서버가 401·403을
  * 주면 `_api`가 토큰을 지우므로, 다음 이동에서 여기로 걸린다.
  */
+/**
+ * 저장된 관리자 토큰. **화면이 바뀔 때마다 다시 읽는다.**
+ *
+ * 예전에는 마운트에서 한 번만 읽었다(의존성이 빈 `useEffect`). 그런데 이 레이아웃은
+ * 로그인 화면까지 감싸고 있어서, 로그인하는 시점에 이미 마운트가 끝나 있다. 방금
+ * 저장한 토큰을 레이아웃은 모른 채 「토큰 없음」으로 굳어 있고 곧바로 로그인으로
+ * 되돌렸다 — **로그인할수록 로그인 화면으로 왔다.**
+ *
+ * 그때는 로그인 쪽을 전체 새로고침으로 바꿔서 막았다. 그것이 지금은 **느림의 원인**
+ * 이다. 웹 번들이 한 덩어리로 3.2MB(gzip 0.8MB)라, 새로고침은 그것을 다시 파싱하고
+ * 실행한다. 캐시가 있어도 파싱은 다시 한다 — 로그인 직후 몇 초가 거기서 나온다
+ * (2026-09-10 대표 「관리자 로딩도 왜 이리 느리냐」).
+ *
+ * 그래서 미뤄뒀던 쪽을 한다. 경로가 바뀔 때마다 다시 읽으면 `router.replace` 한 번으로
+ * 들어가고, 번들을 다시 파싱할 일이 없다.
+ *
+ * **`checked`는 한 번 참이 되면 그대로 둔다.** 다시 읽을 때마다 거짓으로 되돌리면
+ * 화면을 옮길 때마다 빈 화면이 한 번씩 스친다 — 고치려던 것보다 더 자주 깜빡인다.
+ */
 function useAdminToken(): { token: string | null; checked: boolean } {
-  const [token, setToken] = useState<string | null>(null);
+  /*
+   * **`useSyncExternalStore`로 읽는다.**
+   *
+   * 그냥 렌더 안에서 `readAdminTokenSync()`를 부르면 안 된다. React Compiler가 그
+   * 호출을 순수한 것으로 보고 **값을 기억해 버린다** — 로그인해서 토큰이 생겨도
+   * 레이아웃은 계속 `null`을 보고 로그인으로 되돌린다. 실제로 그렇게 막혔다:
+   *
+   *   layout 렌더 /admin/queue  sync=null  raw=["weddingpick.adminToken.v1"]
+   *
+   * 저장소에는 있는데 읽은 값만 `null`이다. `useSyncExternalStore`는 그 자리를 위해
+   * 있는 것이라 컴파일러도 건너뛰지 않고, 값이 바뀌면 다시 그린다.
+   *
+   * 서버에서 그리는 동안(정적 내보내기)에는 `null`이다 — 그때는 브라우저가 없다.
+   */
+  const token = useSyncExternalStore(subscribeAdminToken, readAdminTokenSync, () => null);
+
+  /*
+   * 네이티브에는 `localStorage`가 없어 위가 늘 `null`이다. 관리자 콘솔은 웹 전용이라
+   * 그 자리에 닿지 않지만, 「없다」와 「아직 모른다」를 가르는 것은 남겨 둔다 —
+   * 확인이 끝나기 전에 그리면 로그인한 사람에게도 로그인 화면이 한 번 스친다.
+   */
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
-    void loadAdminToken().then((value) => {
-      if (cancelled) return;
-      setToken(value);
-      setChecked(true);
+    void loadAdminToken().then(() => {
+      if (!cancelled) setChecked(true);
     });
 
     return () => {
@@ -170,7 +207,7 @@ function useAdminToken(): { token: string | null; checked: boolean } {
     };
   }, []);
 
-  return { token, checked };
+  return { token, checked: token !== null || checked };
 }
 
 export default function AdminLayout() {
