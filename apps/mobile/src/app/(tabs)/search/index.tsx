@@ -30,7 +30,7 @@ import {
 import Svg, { Path } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { listVendorRegions, searchVendors } from '@/api/client';
+import { ApiError, listVendorRegions, searchVendors } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { LoginSheet } from '@/features/auth/login-sheet';
 import { InfoDot, InfoSheet, type InfoTopic } from '@/features/common/info-sheet';
@@ -81,8 +81,6 @@ const CATEGORY_ROWS: VendorCategory[][] = CATEGORY_ORDER.reduce<VendorCategory[]
   []
 );
 
-/** 글자를 칠 때마다 서버를 부르지 않는다. */
-const DEBOUNCE_MS = 350;
 /** 자동완성은 결과보다 빨리 따라와야 한다(시안 WP-SRCH-002). */
 const AUTOCOMPLETE_DEBOUNCE_MS = 200;
 /** 자동완성 «업체» 행 수 · «지역» 행 수. 시안은 3줄이다. */
@@ -136,7 +134,7 @@ type ViewState = 'home' | 'results';
  * **검색은 스스로 조건을 걸지 않는다**(SPEC §13.7). 여기 값은 사용자가 그 화면에서
  * 눌러서 넘긴 것뿐이고, 온보딩 값은 어디서도 자동으로 읽어 오지 않는다.
  */
-type EntryParams = { category?: string; region?: string; sort?: string };
+type EntryParams = { q?: string; category?: string; region?: string; sort?: string };
 
 /**
  * 결과 카드 한 장의 금액 아래 줄. 시안: «실 제보 12건 · 강남» / «아직 정보가 적어요 · 3건 · 청담» /
@@ -179,6 +177,7 @@ export default function SearchScreen() {
   const [sponsored, setSponsored] = useState<SponsoredCard[]>([]);
   const [regions, setRegions] = useState<{ name: string; count: number }[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [total, setTotal] = useState(0);
@@ -215,6 +214,7 @@ export default function SearchScreen() {
   }, []);
 
   const requestId = useRef(0);
+  const displayedQuery = useRef<string | null>(null);
   const acRequestId = useRef(0);
 
   const trimmedQ = filters.q.trim();
@@ -240,17 +240,19 @@ export default function SearchScreen() {
    * 파라미터가 바뀐 그 렌더에서 상태를 맞춘다(React «prop이 바뀔 때 state 조정»
    * 패턴) — 이펙트에서 setState를 부르면 한 번 더 그리게 된다.
    */
+  const entryQuery = entry.q?.trim() || null;
   const entryCategory = isVendorCategory(entry.category) ? entry.category : null;
   const entryRegion = entry.region?.trim() ? entry.region.trim() : null;
   const entrySort = isVendorSort(entry.sort) ? entry.sort : null;
-  const entryKey = `${entryCategory ?? ''}|${entryRegion ?? ''}|${entrySort ?? ''}`;
+  const entryKey = `${entryQuery ?? ''}|${entryCategory ?? ''}|${entryRegion ?? ''}|${entrySort ?? ''}`;
   const [appliedEntryKey, setAppliedEntryKey] = useState<string | null>(null);
 
   if (entryKey !== appliedEntryKey) {
     setAppliedEntryKey(entryKey);
-    if (entryCategory || entryRegion || entrySort) {
+    if (entryQuery || entryCategory || entryRegion || entrySort) {
       setFilters((current) => ({
         ...current,
+        q: entryQuery ?? '',
         category: entryCategory,
         region: entryRegion,
         sort: entrySort ?? current.sort,
@@ -271,37 +273,69 @@ export default function SearchScreen() {
       .catch(() => undefined);
   }, []);
 
-  const runSearch = useCallback(() => {
+  const runSearch = useCallback((force = false) => {
     const id = (requestId.current += 1);
-
+    const query = JSON.stringify(filters);
+    let revalidated = false;
+    const apply = (response: Awaited<ReturnType<typeof searchVendors>>) => {
+      if (id !== requestId.current) return;
+      displayedQuery.current = query;
+      setVendors(response.vendors);
+      setSponsored(response.sponsored);
+      setTotal(response.total);
+      setNextCursor(response.nextCursor);
+      setError(null);
+      setLoadingMore(false);
+    };
     searchVendors({
       q: filters.q.trim() || undefined,
       region: filters.region ?? undefined,
       category: filters.category ?? undefined,
       sort: filters.sort,
-    })
-      .then((response) => {
+    }, {
+      force,
+      onValue: (response) => { revalidated = true; apply(response); },
+      onRefreshing: (value) => {
         if (id !== requestId.current) return;
-        setVendors(response.vendors);
-        setSponsored(response.sponsored);
-        setTotal(response.total);
-        setNextCursor(response.nextCursor);
-        setError(null);
-      })
+        setRefreshing(value);
+        if (value && displayedQuery.current !== query) {
+          setVendors(null);
+          setSponsored([]);
+          setTotal(0);
+          setNextCursor(null);
+        }
+      },
+      onError: (caught) => {
+        revalidated = true;
+        if (id !== requestId.current) return;
+        setError(caught.message);
+        if (caught instanceof ApiError && (caught.status === 401 || caught.status === 403)) {
+          setVendors([]);
+          setSponsored([]);
+          setNextCursor(null);
+          setTotal(0);
+        }
+      },
+    })
+      .then((response) => { if (!revalidated) apply(response); })
       .catch((caught: Error) => {
         if (id !== requestId.current) return;
         setVendors([]);
+        setSponsored([]);
+        setNextCursor(null);
+        setTotal(0);
         setError(caught.message);
       });
   }, [filters]);
 
   useEffect(() => {
     if (!isServerConfigured) return;
-    if (viewState !== 'results') return;
+    if (viewState !== 'results' || showAutocomplete) return;
 
-    const timer = setTimeout(runSearch, DEBOUNCE_MS);
-    return () => clearTimeout(timer);
-  }, [filters, viewState, runSearch]);
+    // 입력 중에는 자동완성만 기다린다. 검색 확정·필터 변경은 즉시 요청한다.
+    runSearch();
+    return () => { requestId.current += 1; };
+  }, [viewState, showAutocomplete, runSearch]);
 
   /*
    * 자동완성. 검색어가 있을 때만 서버를 부른다 — 업체명 행은 결과를 건너뛰고 상세로 가고,
@@ -319,7 +353,10 @@ export default function SearchScreen() {
         })
         .catch(() => undefined);
     }, AUTOCOMPLETE_DEBOUNCE_MS);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      acRequestId.current += 1;
+    };
   }, [showAutocomplete, trimmedQ]);
 
   /* 결과가 0건이고 조건이 걸려 있으면, 그 조건 하나를 풀면 몇 곳인지 재본다(WP-SRCH-008). */
@@ -352,7 +389,8 @@ export default function SearchScreen() {
   }, [filters, relaxKey, relaxedKey, vendors, viewState]);
 
   const loadMore = useCallback(async () => {
-    if (!nextCursor || loadingMore) return;
+    if (!nextCursor || loadingMore || refreshing) return;
+    const id = requestId.current;
     setLoadingMore(true);
 
     try {
@@ -363,14 +401,15 @@ export default function SearchScreen() {
         category: filters.category ?? undefined,
         sort: filters.sort,
       });
+      if (id !== requestId.current) return;
       setVendors((current) => [...(current ?? []), ...response.vendors]);
       setNextCursor(response.nextCursor);
     } catch (caught) {
-      setError((caught as Error).message);
+      if (id === requestId.current) setError((caught as Error).message);
     } finally {
-      setLoadingMore(false);
+      if (id === requestId.current) setLoadingMore(false);
     }
-  }, [filters, nextCursor, loadingMore]);
+  }, [filters, nextCursor, loadingMore, refreshing]);
 
   function toggle<K extends 'category' | 'region'>(key: K, value: Filters[K]) {
     setFilters((current) => ({ ...current, [key]: current[key] === value ? null : value }));
@@ -932,6 +971,7 @@ export default function SearchScreen() {
               {filters.category ? `${VENDOR_CATEGORY_LABEL[filters.category]} ` : ''}
               {total}곳
             </ThemedText>
+            <DelayedLoader active={refreshing} size={20} />
             <InfoDot label="실 제보 설명" onPress={() => setInfoTopic('verifiedData')} />
           </View>
           {/* 정렬 — 셀렉트. 누르면 바텀시트(WP-SRCH-006)에서 하나를 고른다. */}
@@ -956,6 +996,9 @@ export default function SearchScreen() {
         ) : (
           <FlatList
             data={vendors}
+            refreshing={refreshing}
+            onRefresh={() => runSearch(true)}
+            accessibilityState={{ busy: refreshing }}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.resultList}
             onEndReached={loadMore}

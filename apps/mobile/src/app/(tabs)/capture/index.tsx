@@ -1,14 +1,16 @@
 import type { MyReportListResponse } from '@weddingpick/api-contract';
 import { TERMS, manwon } from '@weddingpick/domain';
-import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { listMyReports } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { formatMonthDayDot } from '@/features/common/format-date';
-import { Layout, ProductSymbol, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import { ActionButton, Layout, ProductSymbol, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import { Badge, Band, Hero, ListRow, NavBar, Screen, Section, type BadgeTone } from '@/features/wedding/screen-kit';
+import { DelayedLoader } from '@/features/loading/delayed-loader';
+import strings from '../../../../../../spec/strings.ko.json';
 import { useCaptureDraft } from '@/features/capture/capture-draft';
 
 /** `spec/strings.ko.json` `report.*` · 시안 11-report-review #12a. */
@@ -18,8 +20,6 @@ const S = {
   heroSub: '사진 한 장이면 자동으로 정리돼요',
   pickVerify: 'Pick 인증',
   pickVerifyDesc: '낸 금액이 보이는 사진 한 장이면 업체와 금액을 자동으로 읽어요',
-  price: TERMS.priceReport,
-  priceDesc: '증빙 없이 들은 금액만 알려주는 방법이에요',
   vendorInfo: '업체정보 제보',
   vendorInfoDesc: '새 업체 등록 · 정보 정정 · 영업종료 알림',
   quote: '견적서 정리', // pick-language: 받는 서류 이름
@@ -42,31 +42,37 @@ function badgeOf(report: MyReportListResponse['reports'][number]): { label: stri
  *
  *   nav      «제보»
  *   hero     «얼마 냈는지 알려주면 다음 사람이 덜 헤매요» · «사진 한 장이면 자동으로 정리돼요»
- *   카드 3    Pick 인증 · 가격 제보 · 업체정보 제보 — 테두리 1 · radius 10 · padding 20 · 제목 18/24 · 설명 14/19 · chevron
+ *   카드      Pick 인증 · 업체정보 제보 — 테두리 1 · radius 10 · padding 20 · 제목 18/24 · 설명 14/19 · chevron
  *   밴드
  *   내 제보 내역  «전체 보기» · 업체명 18/24 700 · «168만원 · 05.16(토)» · 상태 배지
  *
  * 제보는 루트 탭이 아니다(v3.2 §1) — MY와 업체 상세, 웨딩일정 지출에서 들어온다.
  * **Pick 인증이 앞이고 견적서가 뒤다.** 계약서 원본은 받지 않는다(비밀유지 조항 · 법률 확인 전).
- * 견적서 정리는 네 번째 카드로 남긴다 — 촬영 · 앨범 · PDF 입력이 그 안에서 이어진다.
+ * 견적서 정리는 별도 카드로 남긴다 — 촬영 · 앨범 · PDF 입력이 그 안에서 이어진다.
  */
 export default function CaptureScreen() {
   const theme = useTheme();
   const { pages } = useCaptureDraft();
   const [reports, setReports] = useState<MyReportListResponse | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const loadVersion = useRef(0);
 
   const load = useCallback(() => {
+    const version = ++loadVersion.current;
     if (!isServerConfigured) return;
+    setLoadFailed(false);
     listMyReports()
-      .then(setReports)
-      .catch(() => setReports(null));
+      .then((next) => { if (version === loadVersion.current) setReports(next); })
+      .catch(() => { if (version === loadVersion.current) setLoadFailed(true); });
   }, []);
 
-  useEffect(load, [load]);
+  useFocusEffect(useCallback(() => {
+    load();
+    return () => { loadVersion.current += 1; };
+  }, [load]));
 
   const cards: { title: string; desc: string; onPress: () => void }[] = [
     { title: S.pickVerify, desc: S.pickVerifyDesc, onPress: () => router.push('/capture/payment/consent') },
-    { title: S.price, desc: S.priceDesc, onPress: () => router.push('/search' as never) },
     {
       title: S.vendorInfo,
       desc: S.vendorInfoDesc,
@@ -116,7 +122,10 @@ export default function CaptureScreen() {
           <>
             <Band />
             <Section title={S.logTitle} action={{ label: S.seeAll, onPress: () => router.push('/my/reports' as never) }}>
-              {recent.length === 0 ? (
+              {loadFailed ? <ActionButton label={strings.common['cta.retry']} hint={strings.journey.loadFailed} onPress={load} /> : null}
+              {reports === null ? (
+                loadFailed ? null : <DelayedLoader size={28} />
+              ) : recent.length === 0 ? (
                 <ListRow title={S.logEmpty} titleColor="textAssistive" divider={false} />
               ) : (
                 recent.map((report) => {

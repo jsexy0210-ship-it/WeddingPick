@@ -20,8 +20,8 @@ import { SigningInView } from '@/features/auth/signing-in-view';
 import { CaptureDraftProvider } from '@/features/capture/capture-draft';
 import { DocumentStoreProvider } from '@/features/documents/document-store';
 import { FullScreenError } from '@/features/errors/full-screen-error';
-import { getAppBootstrap, getCurrentUser, getSignupState } from '@/api/client';
-import { loadToken, saveToken } from '@/api/session';
+import { resolveSessionEntry, sessionErrorKind, type SessionEntry } from '@/features/auth/session-recovery';
+import { saveToken } from '@/api/session';
 import { SPLASH_MINIMUM_MS, SplashView } from '@/features/splash/splash-view';
 
 SplashScreen.preventAutoHideAsync();
@@ -48,7 +48,7 @@ SplashScreen.preventAutoHideAsync();
  * 기기 저장소의 «소개를 봤는가» 값으로 갈랐던 것을 없앴다: 카카오톡 인앱
  * 브라우저처럼 저장소가 새로 시작되는 곳에서 매번 소개가 먼저 떴다.
  */
-type Entry = 'login' | 'setup' | 'app';
+type Entry = SessionEntry;
 
 const ENTRY_ROUTE = {
   login: '/login',
@@ -74,6 +74,8 @@ function RootLayoutContent() {
    * v3.24까지 「Pretendard 도입 보류」라 2026-09-09 감사에서 뺐다(packages/ui theme.ts Fonts 참고).
    */
   const [entry, setEntry] = useState<Entry | null>(null);
+  const [entryError, setEntryError] = useState<unknown>(null);
+  const [entryAttempt, setEntryAttempt] = useState(0);
   /**
    * 스플래시를 이만큼은 보여준다. 핸드오프 0번.
    *
@@ -192,58 +194,13 @@ function RootLayoutContent() {
         return;
       }
 
-      /*
-       * 토큰이 없으면 물어볼 것도 없다. 예전에는 여기서도 `/v1/me`를 부르고 그게
-       * 401로 돌아오기를 기다렸다 — 로그인 화면이 그만큼 늦게 떴다.
-       */
-      if (!(await loadToken())) {
-        setEntry('login');
-
-        return;
+      try {
+        setEntry(await resolveSessionEntry());
+      } catch (error) {
+        setEntryError(error);
       }
-
-      /*
-       * 로그인한 사람은 서버가 답한다. **두 가지를 한꺼번에 묻는다**(2026-09-09).
-       *
-       * 첫 화면을 정하는 데는 `/v1/me`만 있으면 되지만, 홈으로 갈 사람은 그
-       * 직후에 홈이 `/v1/app/bootstrap`을 다시 묻는다. 순서대로 두면 스플래시가
-       * 끝난 뒤 빈 홈을 한 번 더 기다리게 된다 — 왕복 두 번이 줄줄이 이어진다.
-       * 같이 보내면 스플래시를 보여주는 동안 둘 다 끝나고, 홈은 읽기 캐시에서
-       * 곧바로 받아 그린다(api/client.ts). 실패는 어느 쪽도 부팅을 막지 않는다.
-       */
-      const [me] = await Promise.all([
-        getCurrentUser().catch(() => null),
-        getAppBootstrap().catch(() => undefined),
-      ]);
-
-      if (me) {
-        setEntry(me.setupComplete ? 'app' : 'setup');
-
-        return;
-      }
-
-      /*
-       * 토큰은 있는데 «나»를 못 물었다. 가입이 안 끝난 계정이면 대기 상태가
-       * 돌아온다.
-       */
-      const signup = await getSignupState().catch(() => null);
-
-      /*
-       * 예전에는 여기서 별도 «가입 마무리» 화면으로 보냈다. 만 14세 확인은
-       * 로그인 화면 체크박스로 옮겼고(v3.13), 동의 기록은 온보딩(`/setup`)이
-       * 마친다 — 여기서 옛 화면으로 계속 보내면 옮긴 게 소용없다.
-       * finish-sign-in.ts의 같은 판단과 다르지 않게 둔다.
-       */
-      if (signup && !signup.activated) {
-        setEntry('setup');
-
-        return;
-      }
-
-      /* 비회원 진입 삭제 — 로그인이 안 된 사람은 무조건 로그인 화면으로. */
-      setEntry('login');
     })();
-  }, [tokenBootstrapped]);
+  }, [tokenBootstrapped, entryAttempt]);
 
   useEffect(() => {
     if (signingIn) return;
@@ -302,6 +259,13 @@ function RootLayoutContent() {
    * 첫 화면을 정할 때까지, 그리고 스플래시를 충분히 보여줄 때까지 덮어둔다.
    * 홈이 잠깐 스쳤다 사라지는 것을 막는다.
    */
+  if (!isAdminPath && entryError) {
+    return <FullScreenError kind={sessionErrorKind(entryError)} onRetry={() => {
+      setEntryError(null);
+      setEntryAttempt((attempt) => attempt + 1);
+    }} />;
+  }
+
   if (!isAdminPath && (entry === null || !minimumShown)) {
     return signingIn ? <SigningInView /> : <SplashView />;
   }

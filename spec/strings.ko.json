@@ -588,7 +588,7 @@
     "mission": "미션 {n}개 완주",
     "missionDesc": "업체 둘러보기 · 준비 관리 · 배우자 연결 · Pick 인증",
     "missionNoteTitle": "준비 순서대로 하나씩 채워져요",
-    "missionNoteBody": "네 개를 다 채우면 Npay로 바로 보내드려요.",
+    "missionNoteBody": "다 채우면 혜택에서 신청해주세요.\n확인 후 Npay로 보내드려요.",
     "invite": "친구 초대",
     "inviteDesc": "친구가 첫 Pick 인증을 하면 받아요 · 최대 100건",
     "promo": "홍보 인증",
@@ -749,18 +749,29 @@
     "permission.allow": "허용하기"
   },
 
+  "journey": {
+    "loadFailed": "정보를 불러오지 못했어요",
+    "readFailed": "읽음 상태를 저장하지 못했어요",
+    "loading": "불러오는 중이에요",
+    "documentEmpty": "아직 올린 문서가 없어요",
+    "uploadDocument": "자료 올리기",
+    "partnerShareTitle": "연결하면 함께 볼 수 있어요",
+    "partnerShareBody": "연결을 끊으면 공유가 멈추고 기존 기록은 각자에게 남아요."
+  },
+
   "error": {
     "network.title": "연결이 불안정해요",
     "network.body": "네트워크를 확인하고 다시 시도해주세요",
     "offline.title": "연결이 불안정해요",
     "offline.body": "마지막으로 확인한 내용을 보여드리고 있어요",
     "maintenance.title": "잠시 점검 중이에요",
-    "maintenance.body": "{from}부터 {to}까지 서비스를 점검하고 있어요. 끝나면 알려드릴게요.",
+    "maintenance.body": "{from}부터 {to}까지 서비스를 점검하고 있어요. 점검이 끝난 뒤 다시 시도해주세요.",
+    "maintenance.bodyNoTime": "잠시 후 다시 시도해주세요",
     "update.title": "새 버전이 필요해요",
-    "update.body": "결제 정보 처리 방식이 바뀌어서 업데이트해야 이용할 수 있어요",
+    "update.body": "정보 처리 방식이 바뀌어서 업데이트해야 이용할 수 있어요",
     "update.cta": "업데이트",
     "general.title": "잠시 문제가 생겼어요",
-    "general.body": "다시 시도해도 안 되면 알려주세요",
+    "general.body": "잠시 후 다시 시도해주세요",
     "permissionDenied.title": "사진 접근이 꺼져 있어요",
     "permissionDenied.body": "설정에서 켜면 사진으로 바로 인증할 수 있어요",
     "processing.title": "확인하고 있어요",

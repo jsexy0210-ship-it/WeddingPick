@@ -1,3 +1,5 @@
+import { FullScreenError } from '@/features/errors/full-screen-error';
+import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import type {
   CurrentUser,
   ExpenseSummaryResponse,
@@ -5,7 +7,7 @@ import type {
   WeddingTaskListResponse,
 } from '@weddingpick/api-contract';
 import { TERMS, isBeforeWedding, lifecycle, manwon } from '@weddingpick/domain';
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -83,7 +85,7 @@ const S = {
  */
 export default function WeddingScreen() {
   const theme = useTheme();
-  const { state } = useSession();
+  const { state, refresh } = useSession();
   const [data, setData] = useState<WeddingData>(EMPTY);
   const [loading, setLoading] = useState(true);
   /** 일정 D-day 계산용 기준 시각. 렌더 중에는 Date.now()를 부르지 않는다 — 마운트 후 한 번 정한다. */
@@ -95,71 +97,58 @@ export default function WeddingScreen() {
 
   const isSignedIn = state.status === 'signedIn';
 
-  /** 일정 · 지출 · 할 일을 한꺼번에. 하나가 실패해도 나머지는 그린다. */
-  const loadLists = useCallback(
-    (weddingId: string) =>
-      Promise.allSettled([
-        listWeddingEvents(weddingId),
-        getExpenses(weddingId),
-        listWeddingTasks(weddingId),
-      ]),
-    [],
-  );
-
   const load = useCallback(() => {
+    let active = true;
+    const stop = () => { active = false; };
     if (!isSignedIn) {
       void Promise.resolve().then(() => {
+        if (!active) return;
         setData(EMPTY);
         setLoading(false);
       });
-      return;
+      return stop;
     }
 
-    /*
-     * **아는 웨딩이 있으면 «나»를 기다리지 않는다**(2026-09-09 사용자 오더 「출력 속도
-     * 최고로」). 예전에는 `getCurrentUser()`가 돌아와야 `weddingId`를 알고, 그제서야
-     * 일정 · 지출 · 할 일을 물었다 — 들어올 때마다 왕복 두 번이었다. 지난번에 받아둔
-     * «나»에 웨딩이 있으면 두 묶음을 **동시에** 띄우고, 돌아온 «나»의 웨딩이 그대로면
-     * 먼저 띄운 답을 그냥 쓴다.
-     */
+    // 회원 확인과 목록 요청은 병렬로 시작하고, 확인된 웨딩의 답만 화면에 반영한다.
+    const lists = (weddingId: string) => ({
+      events: listWeddingEvents(weddingId).catch(() => null),
+      expenses: getExpenses(weddingId).catch(() => null),
+      tasks: listWeddingTasks(weddingId).catch(() => null),
+    });
     const known = readCurrentUserSnapshot();
-    const early = known?.weddingId ? loadLists(known.weddingId) : null;
-
-    // 이미 그릴 것이 있으면 뼈대로 덮지 않는다 — 다시 들어올 때마다 깜빡이던 자리다.
+    const early = known?.weddingId ? lists(known.weddingId) : null;
     void Promise.resolve().then(() => {
+      if (!active) return;
       if (known) setData((prev) => ({ ...prev, me: prev.me ?? known }));
-      setLoading((current) => (known ? current : true));
+      setLoading(true);
     });
 
     void getCurrentUser()
       .then(async (first) => {
-        /* 웨딩이 아직 없으면 만든다 — 혼자서도 전면 개방이라 여기서 막을 이유가 없다. */
+        if (!active) return;
         const me = first.weddingId ? first : await ensureWedding().then(() => getCurrentUser());
-
-        setData((prev) => ({ ...prev, me }));
-
+        if (!active) return;
+        setData((prev) => prev.me?.weddingId === me.weddingId ? { ...prev, me } : { ...EMPTY, me });
         if (!me.weddingId) {
           setLoading(false);
           return;
         }
-
-        const weddingId = me.weddingId;
-        const [events, expenses, tasks] =
-          early && known?.weddingId === weddingId ? await early : await loadLists(weddingId);
-
-        setData((prev) => ({
-          ...prev,
-          events: events.status === 'fulfilled' ? events.value : null,
-          expenses: expenses.status === 'fulfilled' ? expenses.value : null,
-          tasks: tasks.status === 'fulfilled' ? tasks.value : null,
-        }));
-        setLoading(false);
+        const pending = early && known?.weddingId === me.weddingId ? early : lists(me.weddingId);
+        // 가장 느린 지출 응답이 일정과 준비 현황까지 가리지 않도록 각각 반영한다.
+        await Promise.all([
+          pending.events.then((events) => { if (active) setData((prev) => ({ ...prev, events })); }),
+          pending.expenses.then((expenses) => { if (active) setData((prev) => ({ ...prev, expenses })); }),
+          pending.tasks.then((tasks) => { if (active) setData((prev) => ({ ...prev, tasks })); }),
+        ]);
+        if (active) setLoading(false);
       })
       .catch(() => {
+        if (!active) return;
         setData(EMPTY);
         setLoading(false);
       });
-  }, [isSignedIn, loadLists]);
+    return stop;
+  }, [isSignedIn]);
 
   useEffect(load, [load]);
 
@@ -200,6 +189,10 @@ export default function WeddingScreen() {
       ) : null}
     </View>
   );
+
+  if (state.status === 'error') return <FullScreenError kind={state.kind} onRetry={() => void refresh()} />;
+  if (state.status === 'loading') return <DelayedLoadingView />;
+  if (state.status === 'signedOut') return <Redirect href="/login" />;
 
   /* 예식 완료 — WP-OUR-001 «예식 완료» 상태는 WP-OUR-013 본문이다. */
   if (weddingOver && weddingId) {
@@ -259,7 +252,7 @@ export default function WeddingScreen() {
               </Pressable>
             </View>
 
-            {loading && upcomingEvents.length === 0 ? (
+            {loading && !data.events ? (
               <View style={styles.list}>
                 <Skeleton height={Layout.rowMinHeight} />
                 <Skeleton height={Layout.rowMinHeight} />

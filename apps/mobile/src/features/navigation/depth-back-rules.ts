@@ -221,7 +221,7 @@ export const NO_BACK_ROUTES: readonly string[] = [
  * |                                    |                  | 계층 계산과 값이 같지만, 이 화면은 History Back을 쓰면 안 된다는 근거를 남긴다. |
  * | `/pick/removed`                    | `/pick/history`  | 제거된 후보는 WP-PICK-007 결정 내역의 «제거된 후보 보기»에서만 들어간다.      |
  * | `/my/referral`                     | `/my/rewards`    | 초대 현황은 혜택(WP-EVT) 아래다. 폴더가 `my/` 바로 아래라 계층 계산이 틀린다. |
- * | `/wedding/[id]/complete`           | `/wedding/[id]`  | (예외 아님 · 계층 계산이 맞다) WP-OUR-013 예식 완료 → 그 웨딩일정 홈.        |
+ * | `/wedding/[id]/complete`           | `/wedding`       | WP-OUR-013 예식 완료 → 서버 웨딩일정 탭. `[id]` 문서 상세와 식별자가 다르다.        |
  */
 export const DEPTH_BACK_EXCEPTIONS: Readonly<Record<string, string>> = {
   '/capture': '/my',
@@ -231,6 +231,20 @@ export const DEPTH_BACK_EXCEPTIONS: Readonly<Record<string, string>> = {
   '/pick/done': '/pick',
   '/pick/removed': '/pick/history',
   '/my/referral': '/my/rewards',
+  // 이 경로의 id는 서버 weddingId다. /wedding/[id]는 로컬 문서 상세이므로 그곳으로 보내지 않는다.
+  '/wedding/[id]/candidates': '/wedding',
+  '/wedding/[id]/changelog': '/wedding',
+  '/wedding/[id]/complete': '/wedding',
+  '/wedding/[id]/conflict': '/wedding',
+  '/wedding/[id]/decided': '/wedding',
+  '/wedding/[id]/events': '/wedding',
+  '/wedding/[id]/expenses': '/wedding',
+  '/wedding/[id]/map': '/wedding',
+  '/wedding/[id]/notes': '/wedding',
+  '/wedding/[id]/quotes': '/wedding',
+  '/wedding/[id]/tasks': '/wedding',
+  '/wedding/[id]/timeline': '/wedding',
+  '/wedding/[id]/visit-notes': '/wedding',
 };
 
 /** `/a/b/?x=1#y` → `['a','b']`. 쿼리·해시·끝 슬래시를 떨군다. */
