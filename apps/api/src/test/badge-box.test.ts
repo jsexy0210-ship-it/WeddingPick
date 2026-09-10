@@ -53,7 +53,9 @@ function badgeStyleBlocks(): { where: string; name: string; body: string }[] {
     const source = readFileSync(join(ROOT, path), 'utf8');
 
     for (const match of source.matchAll(STYLE_BLOCK)) {
+      /* `noUncheckedIndexedAccess` — 붙잡은 조각은 `string | undefined`다. */
       const [, name, body] = match;
+      if (name === undefined || body === undefined) continue;
       if (!BADGE_NAME.test(name)) continue;
       /* 색·글자만 든 덩어리는 상자가 아니다. */
       if (!/padding|borderRadius|minHeight|[^n]height:/.test(body)) continue;
