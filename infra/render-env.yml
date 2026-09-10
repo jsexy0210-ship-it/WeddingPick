@@ -18,7 +18,10 @@
 
 services:
   # 모바일 웹 export (앱 화면)
-  weddingpick-app-web:
+  #
+  # **이름은 Render 대시보드의 이름과 글자 하나까지 같아야 한다.** 동기화 스크립트가
+  # 이름으로 서비스를 찾고, 못 찾으면 그 서비스만 조용히 건너뛴다(2026-09-10 이름 변경).
+  WeddingPick-웹뷰(앱 테스트):
     vars:
       EXPO_PUBLIC_API_URL: https://weddingpickl.onrender.com
       # 카카오 REST API 키 — 로그인 리다이렉트 URI가 등록된 키다.
@@ -26,7 +29,7 @@ services:
       EXPO_PUBLIC_KAKAO_CLIENT_ID: 8e9a14dd3a0aa1a420bff858460c415c
 
   # 서비스 웹사이트
-  weddingpick-web:
+  WeddingPick-웹사이트:
     vars:
       WEDDINGPICK_CONTACT_EMAIL: help.weddingpick@gmail.com
       # 없으면 search.html의 "많이 확인된 곳"이 «정보를 모으는 중»으로 나가고
@@ -44,7 +47,7 @@ services:
       LEGAL_PRIVACY_EFFECTIVE_ON: '2026-09-10'
 
   # 운영 API
-  WeddingPickl:
+  WeddingPick-운영 API 서버:
     vars:
       # 웹과 **같은 값이어야 한다.** 앱 약관 화면과 웹 약관 페이지가 서로 다른 시행일을
       # 말하면 어느 쪽이 맞는지 알 수 없다. 지금까지는 이 값이 Render 대시보드에만
