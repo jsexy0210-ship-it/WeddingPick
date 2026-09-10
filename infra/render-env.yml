@@ -25,6 +25,22 @@ services:
       # 네이티브 앱 키를 넣으면 /oauth/authorize가 KOE033으로 거부한다.
       EXPO_PUBLIC_KAKAO_CLIENT_ID: 8e9a14dd3a0aa1a420bff858460c415c
 
+  # 관리자 콘솔 — **아직 켜지 않는다.**
+  #
+  # `scripts/render-env-sync.py`는 이름이 정확히 일치하는 서비스를 못 찾으면
+  # 그 항목을 실패로 세고 **워크플로 전체를 exit 1로 끝낸다**(main:188). 서비스가
+  # 생기기 전에 여기를 켜면 main에 푸시할 때마다 빨간 워크플로가 남는다.
+  #
+  # 켜는 시점 — Render 대시보드에 `weddingpick-admin` 서비스를 만든 뒤. 그때
+  # 아래 주석을 풀고, **대시보드의 실제 서비스 이름과 글자 하나까지 맞춘다**
+  # (이 저장소는 슬러그를 쓰지만 운영 API는 `WeddingPickl`처럼 표시 이름과
+  # API 이름이 다른 전례가 있다). 절차는 docs/admin-origin-split.md.
+  #
+  # weddingpick-admin:
+  #   vars:
+  #     EXPO_PUBLIC_API_URL: https://weddingpickl.onrender.com
+  #     EXPO_PUBLIC_KAKAO_CLIENT_ID: 8e9a14dd3a0aa1a420bff858460c415c
+
   # 서비스 웹사이트
   weddingpick-web:
     vars:
@@ -54,14 +70,20 @@ services:
       # 브라우저에서 API를 부르는 출처. 빠진 출처는 preflight에서 막히고,
       # 브라우저에는 CORS 오류로 뜨지만 서버 로그에는 아무것도 남지 않는다.
       #
-      #   app-web        앱 화면과 **관리자 콘솔**이 여기서 뜬다(/admin, 27개 화면)
+      #   app-web        앱 화면. 관리자는 여기서 빠졌다 — admin 출처로 넘긴다
+      #   admin          관리자 콘솔(/admin/*, 화면 31장). 별도 출처다
       #   web            서비스 웹사이트
       #   weddingpick.kr web의 커스텀 도메인. onrender 주소만 있으면 이쪽으로 들어온 사람이 막힌다
       #
-      # 관리자 출처 둘(`weddingpick-admin.onrender.com` · `admin.weddingpick.kr`)은
-      # 2026-09-09 사용자 결정으로 뺐다 — 관리자는 app-web의 `/admin` 하나로 통일했고
-      # 그 서비스와 도메인이 없어졌다. 살아 있지도 않은 출처를 허용 목록에 두지 않는다.
-      CORS_ORIGINS: https://weddingpick-app-web.onrender.com,https://weddingpick-web.onrender.com,https://weddingpick.kr
+      # `weddingpick-admin.onrender.com`은 **2026-09-10 사용자 결정으로 되돌렸다.**
+      # 2026-09-09에 「관리자는 app-web의 `/admin` 하나로 통일한다」며 뺐던 출처인데,
+      # 그 결정을 뒤집고 관리자 콘솔을 다시 별도 출처로 분리했다(docs/admin-origin-split.md).
+      # 관리자 화면이 이 API를 브라우저에서 부르므로 빠지면 preflight에서 전부 막힌다.
+      #
+      # `admin.weddingpick.kr`은 되돌리지 않는다 — 이름 풀이가 안 된다(2026-09-09 실측
+      # `NXDOMAIN`, docs/AI_HANDOFF.md). 등록처에 레코드가 들어가 실제로 열리는 날
+      # 그때 넣는다. 살아 있지도 않은 출처를 허용 목록에 두지 않는다는 원칙은 그대로다.
+      CORS_ORIGINS: https://weddingpick-app-web.onrender.com,https://weddingpick-admin.onrender.com,https://weddingpick-web.onrender.com,https://weddingpick.kr
       # 앱의 EXPO_PUBLIC_KAKAO_CLIENT_ID와 같은 값이어야 토큰 교환과 id_token 검증이 맞는다.
       KAKAO_APP_KEY: 8e9a14dd3a0aa1a420bff858460c415c
       # 원본을 실제로 지운다. **기본값 manual로 두면 아무것도 지워지지 않는다** —
