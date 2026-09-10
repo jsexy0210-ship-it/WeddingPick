@@ -2,73 +2,89 @@ import { Link, Redirect, Slot, usePathname } from 'expo-router';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
+import { AdminSpacing as A, Colors, FontSize, LineHeight, Radius, Spacing, WeddingMark } from '@weddingpick/ui';
 
 import { clearAdminToken, loadAdminToken, readAdminTokenSync, subscribeAdminToken } from './_session';
 
 /**
- * 사이드바.
+ * 관리자 콘솔 좌측 사이드바.
  *
- * **`readOnly`는 「이 화면은 지금 조회만 된다」는 표시다**(2026-09-10 대표 지시 —
+ * 메뉴 이름과 묶음은 `docs/design-handoff/current/ADMIN.md`와 v3.27 시안
+ * `html/22-admin-ops.dc.html`의 NAV를 그대로 따른다 — 여섯 묶음(보고 · 데이터 · 사용자 ·
+ * 성장 · 운영 · 시스템)이고, 이름은 ADMIN.md의 화면 이름이다. 코드가 따로 부르던
+ * 이름(Kill Switch · Policy Engine · Revenue · 롤백 관리)은 md 쪽으로 맞췄다.
+ */
+type NavEntry = { group: string } | { key: string; label: string; href: string; readOnly?: boolean };
+
+/**
+ * **「조회만」은 「이 화면은 지금 조작이 안 된다」는 표시다**(2026-09-10 대표 지시 —
  * 「서버에 없는 동작들 화면에도 목록 디스에이블 처리해」).
  *
- * 화면 안쪽은 이미 잠겨 있다(`BACKEND_PENDING`). 그런데 그것은 **들어가 봐야**
- * 보인다. 메뉴만 보고는 어느 것이 실제로 일을 하는지 알 수 없어서, 운영자는
- * 열세 곳을 하나씩 눌러 보고서야 「조작이 안 되는 곳」을 알게 된다.
+ * 화면 안쪽은 이미 잠겨 있다(`BACKEND_PENDING`). 그런데 그것은 **들어가 봐야** 보인다.
+ * 메뉴만 보고는 어느 것이 실제로 일을 하는지 알 수 없어서, 운영자는 하나씩 눌러
+ * 보고서야 알게 된다.
  *
- * **메뉴를 죽이지는 않는다.** 이 열세 곳도 조회는 전부 된다 — 목록 · 지표 · 상태가
- * 실제 서버 값으로 나온다. 눌리지 않게 막으면 되는 것까지 못 보게 된다. 눌러서
- * 들어가되, 무엇을 기대하면 되는지 목록에서 미리 알려준다.
+ * **메뉴를 죽이지는 않는다.** 이 아홉 곳도 조회는 전부 된다 — 목록 · 지표 · 상태가
+ * 실제 서버 값으로 나온다. 눌리지 않게 막으면 되는 것까지 못 보게 된다.
  *
- * 서버 동작이 붙으면 그 줄의 `readOnly`를 지운다. 화면 안의 `BACKEND_PENDING`과
- * 짝이라, 한쪽만 지우면 말이 어긋난다.
+ * 서버 동작이 붙으면 그 화면의 `BACKEND_PENDING`과 여기 이름을 **함께** 지운다.
+ * 한쪽만 지우면 말이 어긋난다.
  */
-const NAV_GROUPS: {
-  group?: string;
-  key?: string;
-  label?: string;
-  href?: string;
-  readOnly?: boolean;
-}[] = [
-  { group: '대시보드' },
-  { key: 'home', label: '관리자 홈', href: '/admin/home' },
+const READ_ONLY = new Set([
+  'ads',
+  'ads-gate',
+  'biz-queue',
+  'campaigns',
+  'data-pipeline',
+  'objections',
+  'policy-engine',
+  'terms',
+  'vendors',
+]);
+
+/**
+ * ADMIN.md 26화면 목록에 아직 없는 라우트. 지우면 기능이 사라지므로 남기되
+ * 어느 것이 목록 밖인지 한 곳에 적어 둔다 — `docs/admin-screen-audit.md` 참고.
+ */
+const OUTSIDE_ADMIN_MD = new Set(['decisions', 'objections', 'pii-reviews', 'og-card']);
+
+const NAV: NavEntry[] = [
+  { group: '보고' },
+  { key: 'home', label: 'AI 운영현황', href: '/admin/home' },
   { key: 'briefing', label: '일일 브리핑', href: '/admin/briefing' },
   { key: 'decisions', label: '자동 결정 현황', href: '/admin/decisions' },
-  { group: '검토해요' },
-  { key: 'queue', label: '확인 필요 큐', href: '/admin/queue' },
-  { key: 'rebuttal', label: '후기 · 반론', href: '/admin/rebuttal' },
-  { key: 'objections', label: '후기 이의제기', href: '/admin/objections', readOnly: true },
-  { key: 'pii-reviews', label: '개인정보 검토', href: '/admin/pii-reviews' },
   { group: '데이터' },
-  { key: 'data-pipeline', label: '제보 처리 현황', href: '/admin/data-pipeline', readOnly: true },
+  { key: 'data-pipeline', label: '제보 처리 현황', href: '/admin/data-pipeline' },
+  { key: 'queue', label: '확인 필요 목록', href: '/admin/queue' },
   { key: 'price-stats', label: '가격 통계', href: '/admin/price-stats' },
-  { key: 'vendors', label: '업체 관리', href: '/admin/vendors', readOnly: true },
-  { key: 'images', label: '이미지 자동수급', href: '/admin/images', readOnly: true },
-  { key: 'email-matching', label: '이메일 자동매칭', href: '/admin/email-matching', readOnly: true },
-  { group: '지표를 봐요' },
   { key: 'stats', label: '이상치 · 조작 탐지', href: '/admin/stats' },
+  { key: 'vendors', label: '업체 관리', href: '/admin/vendors' },
+  { key: 'images', label: '이미지 자동 수급', href: '/admin/images' },
+  { key: 'email-matching', label: '이메일 회신 자동 매칭', href: '/admin/email-matching' },
   { group: '사용자' },
-  { key: 'users', label: '계정 관리', href: '/admin/users' },
-  { key: 'biz-queue', label: '업체 문의 큐', href: '/admin/biz-queue', readOnly: true },
-  { key: 'report', label: 'VOC', href: '/admin/report' },
-  { group: '성장 · 광고' },
+  { key: 'users', label: '사용자 계정 관리', href: '/admin/users' },
+  { key: 'report', label: '고객 의견 · 문의 관리', href: '/admin/report' },
+  { key: 'rebuttal', label: '후기 · 반론 관리', href: '/admin/rebuttal' },
+  { key: 'biz-queue', label: '업체 문의 처리 목록', href: '/admin/biz-queue' },
+  { key: 'objections', label: '후기 이의제기', href: '/admin/objections' },
+  { key: 'pii-reviews', label: '개인정보 검토', href: '/admin/pii-reviews' },
+  { group: '성장' },
   { key: 'marketing', label: '마케팅 자동화', href: '/admin/marketing' },
-  { key: 'campaigns', label: '캠페인 · 보상', href: '/admin/campaigns', readOnly: true },
-  { key: 'revenue', label: 'Revenue', href: '/admin/revenue' },
-  { key: 'ads', label: '광고 집행 관리', href: '/admin/ads', readOnly: true },
-  { key: 'ads-gate', label: '광고 실운영 게이트', href: '/admin/ads-gate', readOnly: true },
-  { group: '콘텐츠' },
-  { key: 'faq', label: 'FAQ 관리', href: '/admin/faq' },
-  { key: 'terms', label: '약관 · 방침', href: '/admin/terms', readOnly: true },
-  { key: 'og-card', label: '링크 미리보기', href: '/admin/og-card' },
+  { key: 'campaigns', label: '캠페인 · 보상 관리', href: '/admin/campaigns' },
+  { key: 'revenue', label: '수익 현황', href: '/admin/revenue' },
+  { key: 'ads', label: '광고 집행 관리', href: '/admin/ads' },
+  { key: 'ads-gate', label: '광고 실운영 전환 조건 관리', href: '/admin/ads-gate' },
   { group: '운영' },
-  { key: 'automation', label: '자동화 상태', href: '/admin/automation', readOnly: true },
-  { key: 'kill-switch', label: 'Kill Switch', href: '/admin/kill-switch' },
-  { key: 'rollback', label: '롤백 관리', href: '/admin/rollback', readOnly: true },
+  { key: 'automation', label: '자동화 상태', href: '/admin/automation' },
+  { key: 'kill-switch', label: '긴급 중지', href: '/admin/kill-switch' },
+  { key: 'rollback', label: '변경 복구 관리', href: '/admin/rollback' },
   { group: '시스템' },
+  { key: 'faq', label: '자주 묻는 질문 관리', href: '/admin/faq' },
+  { key: 'terms', label: '약관 · 방침 관리', href: '/admin/terms' },
+  { key: 'og-card', label: '링크 미리보기', href: '/admin/og-card' },
   { key: 'ai-usage', label: 'AI 사용량 · 비용', href: '/admin/ai-usage' },
-  { key: 'policy-engine', label: 'Policy Engine', href: '/admin/policy-engine', readOnly: true },
-  { key: 'audit-log', label: '감사 로그', href: '/admin/audit-log' },
+  { key: 'policy-engine', label: '정책 규칙 관리', href: '/admin/policy-engine' },
+  { key: 'audit-log', label: '감사 기록', href: '/admin/audit-log' },
 ];
 
 const LOGIN_PATH = '/admin/login';
@@ -77,18 +93,20 @@ function Sidebar({ pathname }: { pathname: string }) {
   return (
     <View style={styles.sidebar}>
       <View style={styles.sidebarLogo}>
+        {/* Pick Mark. spec/tokens.json symbol — 적용처에 관리자 사이드바가 들어 있다. */}
+        <WeddingMark size={20} color={Colors.light.tint} />
         <Text style={styles.sidebarTitle}>웨딩픽 관리자</Text>
       </View>
       <ScrollView style={styles.sidebarScroll} showsVerticalScrollIndicator={false}>
-        {NAV_GROUPS.map((item, i) => {
-          if (item.group) {
+        {NAV.map((item, i) => {
+          if ('group' in item) {
             return (
-              <Text key={i} style={styles.navGroup}>
+              <Text key={`g-${i}`} style={styles.navGroup}>
                 {item.group}
               </Text>
             );
           }
-          const active = item.href ? pathname.startsWith(item.href) : false;
+          const active = pathname.startsWith(item.href);
           return (
             <Link key={item.key} href={item.href as never} asChild>
               {/*
@@ -103,22 +121,26 @@ function Sidebar({ pathname }: { pathname: string }) {
                 * 이 자리에 닿은 적이 없었다. 로그인을 고치자 바로 드러났다(2026-09-10).
                 * 개발 모드는 같은 것을 말로 알려준다 — 「You are passing an array of styles
                 * to a child of <Slot>」.
+                *
+                * 아래 `Text`의 배열은 그대로 둔다 — 복제되는 것은 `Pressable` 하나뿐이다.
                 */}
               <Pressable style={StyleSheet.flatten([styles.navItem, active && styles.navItemActive])}>
                 <Text
                   style={[
                     styles.navLabel,
+                    OUTSIDE_ADMIN_MD.has(item.key) && styles.navLabelOutside,
+                    READ_ONLY.has(item.key) && !active && styles.navLabelReadOnly,
                     active && styles.navLabelActive,
-                    item.readOnly && !active && styles.navLabelReadOnly,
                   ]}
+                  numberOfLines={1}
                 >
                   {item.label}
                 </Text>
                 {/*
                   * 조회만 되는 곳은 목록에서 미리 말한다. 들어가 봐야 아는 것을
-                  * 열세 곳이나 두면 운영자가 하나씩 눌러 보게 된다.
+                  * 아홉 곳이나 두면 운영자가 하나씩 눌러 보게 된다.
                   */}
-                {item.readOnly && (
+                {READ_ONLY.has(item.key) && (
                   <Text style={[styles.navChip, active && styles.navChipActive]}>조회만</Text>
                 )}
               </Pressable>
@@ -153,39 +175,26 @@ function Sidebar({ pathname }: { pathname: string }) {
  * 주면 `_api`가 토큰을 지우므로, 다음 이동에서 여기로 걸린다.
  */
 /**
- * 저장된 관리자 토큰. **화면이 바뀔 때마다 다시 읽는다.**
+ * 저장된 관리자 토큰. **바뀌면 곧바로 안다.**
  *
- * 예전에는 마운트에서 한 번만 읽었다(의존성이 빈 `useEffect`). 그런데 이 레이아웃은
- * 로그인 화면까지 감싸고 있어서, 로그인하는 시점에 이미 마운트가 끝나 있다. 방금
- * 저장한 토큰을 레이아웃은 모른 채 「토큰 없음」으로 굳어 있고 곧바로 로그인으로
- * 되돌렸다 — **로그인할수록 로그인 화면으로 왔다.**
+ * 예전에는 마운트에서 한 번만 읽었다. 그런데 이 레이아웃은 로그인 화면까지 감싸고
+ * 있어서 로그인하는 시점에 이미 「토큰 없음」으로 굳어 있고, 방금 저장한 토큰을 모른
+ * 채 로그인으로 되돌렸다 — **로그인할수록 로그인 화면으로 왔다.**
  *
- * 그때는 로그인 쪽을 전체 새로고침으로 바꿔서 막았다. 그것이 지금은 **느림의 원인**
- * 이다. 웹 번들이 한 덩어리로 3.2MB(gzip 0.8MB)라, 새로고침은 그것을 다시 파싱하고
- * 실행한다. 캐시가 있어도 파싱은 다시 한다 — 로그인 직후 몇 초가 거기서 나온다
- * (2026-09-10 대표 「관리자 로딩도 왜 이리 느리냐」).
+ * 그때는 로그인 쪽을 전체 새로고침으로 바꿔 덮었다. 그것이 **느림의 원인**이 됐다 —
+ * 웹 번들이 한 덩어리로 3.2MB(gzip 0.8MB)라 새로고침이 그것을 다시 파싱한다. 캐시가
+ * 있어도 파싱은 다시 하고, 로그인 직후 몇 초가 거기서 나왔다(2026-09-10 대표
+ * 「관리자 로딩도 왜 이리 느리냐」).
  *
- * 그래서 미뤄뒀던 쪽을 한다. 경로가 바뀔 때마다 다시 읽으면 `router.replace` 한 번으로
- * 들어가고, 번들을 다시 파싱할 일이 없다.
+ * **`useSyncExternalStore`로 읽는다.** 그냥 렌더 안에서 `localStorage`를 읽으면 안
+ * 된다 — React Compiler가 그 호출을 순수한 것으로 보고 값을 기억해 버린다. 저장소에는
+ * 값이 있는데 읽은 값만 `null`로 얼어붙는다:
  *
- * **`checked`는 한 번 참이 되면 그대로 둔다.** 다시 읽을 때마다 거짓으로 되돌리면
- * 화면을 옮길 때마다 빈 화면이 한 번씩 스친다 — 고치려던 것보다 더 자주 깜빡인다.
+ *   layout 렌더 /admin/queue  sync=null  raw=["weddingpick.adminToken.v1"]
+ *
+ * 걷어낸 뒤 실제 브라우저로 재어 로그인부터 콘솔 진입까지 209ms다.
  */
 function useAdminToken(): { token: string | null; checked: boolean } {
-  /*
-   * **`useSyncExternalStore`로 읽는다.**
-   *
-   * 그냥 렌더 안에서 `readAdminTokenSync()`를 부르면 안 된다. React Compiler가 그
-   * 호출을 순수한 것으로 보고 **값을 기억해 버린다** — 로그인해서 토큰이 생겨도
-   * 레이아웃은 계속 `null`을 보고 로그인으로 되돌린다. 실제로 그렇게 막혔다:
-   *
-   *   layout 렌더 /admin/queue  sync=null  raw=["weddingpick.adminToken.v1"]
-   *
-   * 저장소에는 있는데 읽은 값만 `null`이다. `useSyncExternalStore`는 그 자리를 위해
-   * 있는 것이라 컴파일러도 건너뛰지 않고, 값이 바뀌면 다시 그린다.
-   *
-   * 서버에서 그리는 동안(정적 내보내기)에는 `null`이다 — 그때는 브라우저가 없다.
-   */
   const token = useSyncExternalStore(subscribeAdminToken, readAdminTokenSync, () => null);
 
   /*
@@ -244,11 +253,13 @@ export default function AdminLayout() {
   );
 }
 
+const C = Colors.light;
+
 const styles = StyleSheet.create({
   root: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: Colors.light.backgroundSelected,
+    backgroundColor: C.backgroundSelected,
     minHeight: '100vh' as unknown as number,
   },
   sidebar: {
@@ -257,93 +268,102 @@ const styles = StyleSheet.create({
      * 216에서 240으로 넓혔다. 감사 기록처럼 컬럼이 여덟 개인 표가 1440에서는 가로
      * 스크롤 없이 들어가지 않았던 것이 폭을 올린 이유다.
      */
-    width: 240,
+    width: A.sidebarWidth,
     /*
      * 사이드바 바탕은 시안의 #17181c다. 잠깐 `Colors.light.text`(#212124)로 바뀌어
      * 있었는데, 하드코딩을 없애려다 **다른 색이 됐다** — 토큰으로 바꾸는 것과
-     * 아무 토큰이나 갖다 쓰는 것은 다른 일이다. 시안 값으로 토큰을 새로 만들었다.
+     * 아무 토큰이나 갖다 쓰는 것은 다른 일이다. 시안 값으로 만든 토큰이 이것이다.
      */
-    backgroundColor: Colors.light.adminChrome,
+    backgroundColor: C.adminChrome,
     flexShrink: 0,
     flexDirection: 'column',
   },
   sidebarLogo: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 22,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.four,
+    paddingBottom: Spacing.four,
   },
   sidebarTitle: {
     fontSize: FontSize.t6,
+    lineHeight: LineHeight.t6,
     fontWeight: '700',
-    color: Colors.light.background,
+    color: C.onTint,
   },
   sidebarScroll: {
     flex: 1,
+    paddingHorizontal: Spacing.two,
   },
   signOut: {
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.three,
     borderTopWidth: 1,
-    borderTopColor: '#26272c',
+    borderTopColor: C.adminSidebarLine,
   },
   signOutText: {
-    fontSize: FontSize.t7,
-    color: '#868b94',
+    fontSize: FontSize.micro,
+    lineHeight: LineHeight.micro,
+    color: C.adminSidebarLabel,
   },
   navGroup: {
-    paddingHorizontal: 12,
-    paddingTop: 14,
-    paddingBottom: 5,
-    fontSize: FontSize.tab,
+    paddingHorizontal: Spacing.two,
+    paddingTop: Spacing.three,
+    paddingBottom: Spacing.half,
+    fontSize: FontSize.adminNavGroup,
+    lineHeight: LineHeight.adminNavGroup,
     fontWeight: '700',
-    letterSpacing: 0.6,
-    color: Colors.light.textStrong,
-    textTransform: 'uppercase' as const,
+    color: C.adminSidebarGroup,
   },
   navItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    marginHorizontal: 0,
-    borderRadius: 6,
+    height: A.navItemHeight,
+    paddingHorizontal: Spacing.two,
+    borderRadius: Radius.control,
   },
+  /* 활성 메뉴는 코랄 — 화면당 네 곳 이하로 쓰는 강조색의 첫 자리다(ADMIN.md 공통 규칙). */
   navItemActive: {
-    backgroundColor: 'rgba(255,111,97,0.22)',
+    backgroundColor: C.tint,
   },
   navLabel: {
     flex: 1,
-    fontSize: FontSize.t7,
-    color: Colors.light.textAssistive,
+    fontSize: FontSize.micro,
+    lineHeight: LineHeight.micro,
+    color: C.adminSidebarLabel,
   },
-  navLabelActive: {
-    color: Colors.light.background,
-    fontWeight: '700',
+  /* ADMIN.md 목록 밖의 라우트는 한 단 흐리게 — 지운 것이 아니라 아직 목록에 없는 것이다. */
+  navLabelOutside: {
+    color: C.adminSidebarGroup,
   },
   /*
    * 조회만 되는 곳은 한 단계 흐리게 둔다. 지우지는 않는다 — 조회는 실제로 되고,
    * 못 쓰는 것처럼 보이면 열어보지 않게 된다.
    *
-   * 지금 보고 있는 화면(active)에는 흐림을 걸지 않는다. 선택된 줄은 코랄 위의
-   * 흰 글자라, 거기에 흐림까지 얹으면 어느 화면에 있는지가 안 읽힌다.
+   * 보고 있는 화면(active)에는 흐림을 걸지 않는다. 선택된 줄은 코랄 위의 흰 글자라,
+   * 거기에 흐림까지 얹으면 어느 화면에 있는지가 안 읽힌다.
    */
   navLabelReadOnly: {
     opacity: 0.55,
   },
   navChip: {
     flexShrink: 0,
-    marginLeft: 6,
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 4,
+    marginLeft: Spacing.one,
+    paddingHorizontal: Spacing.one,
+    borderRadius: Radius.small,
     fontSize: FontSize.tab,
     fontWeight: '700',
-    color: Colors.light.cautionary,
-    backgroundColor: Colors.light.cautionaryBackground,
+    color: C.cautionary,
+    backgroundColor: C.cautionaryBackground,
   },
   navChipActive: {
-    color: Colors.light.background,
+    color: C.onTint,
     backgroundColor: 'rgba(255,255,255,0.24)',
+  },
+  navLabelActive: {
+    color: C.onTint,
+    fontWeight: '700',
   },
   main: {
     flex: 1,
@@ -354,11 +374,12 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
+    padding: Spacing.four,
   },
   notWebText: {
     fontSize: FontSize.t6,
-    color: Colors.light.textAssistive,
+    lineHeight: LineHeight.t6,
+    color: C.textAssistive,
   },
   errorRoot: {
     flex: 1,

@@ -307,7 +307,7 @@ export type BadgeTone = 'ok' | 'wait' | 'no' | 'now' | 'none';
 const BADGE_KIND: Record<BadgeTone, BadgeKind> = { ok: 'ok', wait: 'wait', no: 'no', now: 'brand', none: 'none' };
 
 /**
- * 배지 — 공용 `Badge`(tokens.json component.badge · SPEC 12.3: 22 · padding 4 9 · radius 4 · 한 줄).
+ * 배지 — 공용 `Badge`(tokens.json component.badge · SPEC 12.3: 최소 22 · padding 4 9 · radius 4 · 한 줄).
  * ok 초록(결정 · 반영됨 · 공유) · wait 노랑(확인 중) · no 빨강(반려 · 공유 종료) ·
  * now coral(좁히는 중 · 인증) · none 회색(시작 전 · 각자).
  */
