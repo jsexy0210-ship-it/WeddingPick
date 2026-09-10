@@ -114,12 +114,13 @@ export default function TermsScreen() {
     setActionError(null);
     try {
       await apiFetch(`/v1/admin/terms/${activeDoc}/publish`, { method: 'POST' });
-      setAskingPublish(false);
       setRev((r) => r + 1);
     } catch (e) {
       setActionError(e instanceof Error ? e.message : '공개 실패');
     } finally {
       setPublishing(false);
+      // 실패해도 닫는다 — 창이 떠 있으면 오류 문구가 창에 가린다.
+      setAskingPublish(false);
     }
   }
 

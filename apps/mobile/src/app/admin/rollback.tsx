@@ -83,12 +83,16 @@ export default function RollbackScreen() {
     try {
       await apiFetch(`/v1/admin/rollback/${id}/${path}`, { method: 'POST' });
       setActionError(null);
-      setConfirming(null);
       setRev((r) => r + 1);
     } catch (e: unknown) {
       setActionError(e instanceof Error ? e.message : '요청 실패');
     } finally {
       setActing(null);
+      /*
+       * 실패해도 확인창을 닫는다. 오류 문구는 화면 위쪽에 뜨는데, 창이 떠 있으면
+       * 그 자리가 창에 가려 **무엇이 잘못됐는지 볼 수 없다.**
+       */
+      setConfirming(null);
     }
   }
 

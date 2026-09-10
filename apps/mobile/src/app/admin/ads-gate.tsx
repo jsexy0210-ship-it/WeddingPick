@@ -77,13 +77,14 @@ export default function AdsGateScreen() {
     try {
       await apiFetch('/v1/admin/ads-gate/approve', { method: 'POST' });
       setActionError(null);
-      setAsking(false);
       setRev((r) => r + 1);
     } catch (e: unknown) {
       // 삼키지 않는다. 눌렀는데 아무 일도 없는 것처럼 보이는 것이 가장 나쁘다.
       setActionError(e instanceof Error ? e.message : '요청 실패');
     } finally {
       setConfirming(false);
+      // 실패해도 닫는다 — 창이 떠 있으면 오류 문구가 창에 가린다.
+      setAsking(false);
     }
   }
 
