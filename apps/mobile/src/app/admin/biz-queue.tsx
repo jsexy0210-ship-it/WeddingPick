@@ -5,9 +5,10 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 
 type BizStatus = 'pending' | 'auto_approved' | 'approved' | 'rejected' | 'escalated';
 type BizItem = {
@@ -34,11 +35,11 @@ const STATUS_LABEL: Record<BizStatus, string> = {
   escalated: '에스컬레이션',
 };
 const STATUS_COLOR: Record<BizStatus, string> = {
-  pending: '#805217',
-  auto_approved: '#0088cc',
-  approved: '#1aa174',
-  rejected: '#e81607',
-  escalated: '#e81607',
+  pending: Colors.light.cautionary,
+  auto_approved: Colors.light.accent,
+  approved: Colors.light.positive,
+  rejected: Colors.light.negative,
+  escalated: Colors.light.negative,
 };
 
 export default function BizQueueScreen() {
@@ -101,6 +102,7 @@ export default function BizQueueScreen() {
         </Pressable>
       </View>
 
+      <PendingBackendNotice actions="승인 · 반려" />
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
@@ -176,12 +178,12 @@ export default function BizQueueScreen() {
                 </Text>
 
                 <Text style={styles.fieldLabel}>신뢰도</Text>
-                <Text style={[styles.fieldValue, selected.trustScore < 0.5 && { color: '#e81607' }]}>
+                <Text style={[styles.fieldValue, selected.trustScore < 0.5 && { color: Colors.light.negative }]}>
                   {(selected.trustScore * 100).toFixed(0)}%
                 </Text>
 
                 <Text style={styles.fieldLabel}>법적 위험</Text>
-                <Text style={[styles.fieldValue, selected.legalRisk && { color: '#e81607', fontWeight: '700' }]}>
+                <Text style={[styles.fieldValue, selected.legalRisk && { color: Colors.light.negative, fontWeight: '700' }]}>
                   {selected.legalRisk ? '해당됨' : '없음'}
                 </Text>
 
@@ -200,16 +202,16 @@ export default function BizQueueScreen() {
                 {selected.status === 'pending' && (
                   <View style={styles.actionRow}>
                     <Pressable
-                      style={[styles.approveBtn, acting && styles.btnDisabled]}
+                      style={[styles.approveBtn, (BACKEND_PENDING || acting) && styles.btnDisabled]}
                       onPress={() => void decide('approve')}
-                      disabled={acting}
+                      disabled={BACKEND_PENDING || acting}
                     >
                       <Text style={styles.approveBtnText}>{acting ? '처리 중…' : '승인'}</Text>
                     </Pressable>
                     <Pressable
-                      style={[styles.rejectBtn, acting && styles.btnDisabled]}
+                      style={[styles.rejectBtn, (BACKEND_PENDING || acting) && styles.btnDisabled]}
                       onPress={() => void decide('reject')}
-                      disabled={acting}
+                      disabled={BACKEND_PENDING || acting}
                     >
                       <Text style={styles.rejectBtnText}>{acting ? '처리 중…' : '반려'}</Text>
                     </Pressable>
@@ -225,86 +227,86 @@ export default function BizQueueScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f3f6' },
+  root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
-  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: '#17181c' },
-  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: '#f2f3f6' },
-  refreshText: { fontSize: FontSize.t7, color: '#5a5d6a' },
+  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text },
+  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: Colors.light.backgroundSelected },
+  refreshText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
   body: { flex: 1, flexDirection: 'row' },
-  listPanel: { flex: 1, backgroundColor: '#fff', borderRightWidth: 1, borderRightColor: '#e4e5ea' },
-  detailPanel: { width: 400, backgroundColor: '#fff', padding: 20 },
+  listPanel: { flex: 1, backgroundColor: Colors.light.background, borderRightWidth: 1, borderRightColor: Colors.light.border },
+  detailPanel: { width: 400, backgroundColor: Colors.light.background, padding: 20 },
   detailEmpty: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  errorText: { fontSize: FontSize.t6, color: '#e53e3e', marginBottom: 16 },
-  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: '#ff6f61' },
-  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: '#fff' },
+  errorText: { fontSize: FontSize.t6, color: Colors.light.negative, marginBottom: 16 },
+  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: Colors.light.tint },
+  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   groupHeader: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: Colors.light.backgroundElement,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
-  groupTitle: { fontSize: FontSize.tab, fontWeight: '700', color: '#868b94', textTransform: 'uppercase' as const },
+  groupTitle: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.textAssistive, textTransform: 'uppercase' as const },
   tableRow: {
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f1f4',
+    borderBottomColor: Colors.light.backgroundSelected,
   },
-  tableRowZebra: { backgroundColor: '#fafbfc' },
+  tableRowZebra: { backgroundColor: Colors.light.backgroundElement },
   tableRowActive: { backgroundColor: 'rgba(255,111,97,0.08)' },
-  tableRowRisk: { borderLeftWidth: 3, borderLeftColor: '#e81607' },
+  tableRowRisk: { borderLeftWidth: 3, borderLeftColor: Colors.light.negative },
   rowMain: {},
   rowTop: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 3 },
-  companyName: { flex: 1, fontSize: FontSize.t7, fontWeight: '700', color: '#17181c' },
+  companyName: { flex: 1, fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.text },
   legalBadge: {
     fontSize: FontSize.tab,
     fontWeight: '700',
-    color: '#e81607',
-    backgroundColor: '#fff0ee',
+    color: Colors.light.negative,
+    backgroundColor: Colors.light.negativeBoxBackground,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
   },
   statusTag: { fontSize: FontSize.tab, fontWeight: '700' },
-  rowSub: { fontSize: FontSize.tab, color: '#868b94' },
-  emptyText: { fontSize: FontSize.t7, color: '#868b94', padding: 16 },
-  detailTitle: { fontSize: FontSize.t5, fontWeight: '700', color: '#17181c', marginBottom: 4 },
-  detailSub: { fontSize: FontSize.t7, color: '#868b94', marginBottom: 16 },
-  fieldLabel: { fontSize: FontSize.tab, fontWeight: '700', color: '#868b94', marginTop: 12, marginBottom: 3 },
-  fieldValue: { fontSize: FontSize.t7, color: '#17181c' },
+  rowSub: { fontSize: FontSize.tab, color: Colors.light.textAssistive },
+  emptyText: { fontSize: FontSize.t7, color: Colors.light.textAssistive, padding: 16 },
+  detailTitle: { fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text, marginBottom: 4 },
+  detailSub: { fontSize: FontSize.t7, color: Colors.light.textAssistive, marginBottom: 16 },
+  fieldLabel: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.textAssistive, marginTop: 12, marginBottom: 3 },
+  fieldValue: { fontSize: FontSize.t7, color: Colors.light.text },
   noteInput: {
     marginTop: 4,
     borderWidth: 1,
-    borderColor: '#d1d3d8',
+    borderColor: Colors.light.fieldBorder,
     borderRadius: 6,
     padding: 10,
     fontSize: FontSize.t7,
     minHeight: 72,
     textAlignVertical: 'top',
   },
-  actionError: { fontSize: FontSize.t7, color: '#e53e3e', marginTop: 8 },
+  actionError: { fontSize: FontSize.t7, color: Colors.light.negative, marginTop: 8 },
   actionRow: { flexDirection: 'row', gap: 8, marginTop: 16 },
-  approveBtn: { flex: 1, paddingVertical: 10, borderRadius: 6, alignItems: 'center', backgroundColor: '#ff6f61' },
-  approveBtnText: { fontSize: FontSize.t7, fontWeight: '700', color: '#fff' },
+  approveBtn: { flex: 1, paddingVertical: 10, borderRadius: 6, alignItems: 'center', backgroundColor: Colors.light.tint },
+  approveBtnText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   rejectBtn: {
     flex: 1,
     paddingVertical: 10,
     borderRadius: 6,
     alignItems: 'center',
-    backgroundColor: '#f0f1f4',
+    backgroundColor: Colors.light.backgroundSelected,
     borderWidth: 1,
-    borderColor: '#d0d3dc',
+    borderColor: Colors.light.fieldBorder,
   },
-  rejectBtnText: { fontSize: FontSize.t7, fontWeight: '700', color: '#3a3b40' },
+  rejectBtnText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.textStrong },
   btnDisabled: { opacity: 0.5 },
 });

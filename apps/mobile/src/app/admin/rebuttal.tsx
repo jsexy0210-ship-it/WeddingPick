@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
-import { API_URL } from '@/api/config';
-import { loadToken } from '@/api/session';
+import { apiFetch } from './_api';
 import { formatDateDot, formatDateTimeDot } from '@/features/common/format-date';
 
 type PendingRebuttal = {
@@ -14,19 +13,6 @@ type PendingRebuttal = {
   createdAt: string;
 };
 
-async function apiFetch(path: string, options?: RequestInit): Promise<unknown> {
-  const token = await loadToken();
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options?.headers as Record<string, string> | undefined),
-    },
-  });
-  if (!res.ok) throw new Error(`API ${path} → ${res.status}`);
-  return res.json();
-}
 
 export default function RebuttalScreen() {
   const [items, setItems] = useState<PendingRebuttal[]>([]);
@@ -196,88 +182,88 @@ export default function RebuttalScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f3f6' },
+  root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
-  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: '#17181c' },
+  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text },
   refreshBtn: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
-    backgroundColor: '#f2f3f6',
+    backgroundColor: Colors.light.backgroundSelected,
   },
-  refreshText: { fontSize: FontSize.t7, color: '#5a5d6a' },
+  refreshText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
   body: { flex: 1, flexDirection: 'row' },
-  list: { flex: 1, backgroundColor: '#fff', borderRightWidth: 1, borderRightColor: '#e4e5ea' },
-  detail: { width: 428, backgroundColor: '#fff', padding: 24 },
+  list: { flex: 1, backgroundColor: Colors.light.background, borderRightWidth: 1, borderRightColor: Colors.light.border },
+  detail: { width: 428, backgroundColor: Colors.light.background, padding: 24 },
   detailEmpty: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   centered: { marginTop: 40 },
-  emptyText: { color: '#868b94', fontSize: FontSize.t7, padding: 24 },
-  errorText: { color: '#e53e3e', fontSize: FontSize.t7, padding: 24 },
+  emptyText: { color: Colors.light.textAssistive, fontSize: FontSize.t7, padding: 24 },
+  errorText: { color: Colors.light.negative, fontSize: FontSize.t7, padding: 24 },
   tableHead: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: Colors.light.backgroundElement,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
   tableRow: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f1f4',
+    borderBottomColor: Colors.light.backgroundSelected,
   },
   tableRowActive: { backgroundColor: 'rgba(255,111,97,0.08)' },
-  th: { fontSize: FontSize.tab, fontWeight: '700', color: '#868b94', textTransform: 'uppercase' },
-  td: { fontSize: FontSize.t7, color: '#3a3b40' },
+  th: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.textAssistive, textTransform: 'uppercase' },
+  td: { fontSize: FontSize.t7, color: Colors.light.textStrong },
   colId: { width: 96 },
   colVendor: { flex: 1 },
   colRole: { width: 120 },
   colDate: { width: 100 },
-  monoText: { color: '#5a5d6a' },
-  detailSectionTitle: { fontSize: FontSize.badge, fontWeight: '700', color: '#868b94', marginBottom: 12 },
-  detailLabel: { fontSize: FontSize.tab, fontWeight: '600', color: '#868b94', marginBottom: 3, marginTop: 14 },
-  detailValue: { fontSize: FontSize.t7, color: '#17181c' },
-  detailHint: { fontSize: FontSize.badge, color: '#868b94', marginBottom: 8 },
+  monoText: { color: Colors.light.textSecondary },
+  detailSectionTitle: { fontSize: FontSize.badge, fontWeight: '700', color: Colors.light.textAssistive, marginBottom: 12 },
+  detailLabel: { fontSize: FontSize.tab, fontWeight: '600', color: Colors.light.textAssistive, marginBottom: 3, marginTop: 14 },
+  detailValue: { fontSize: FontSize.t7, color: Colors.light.text },
+  detailHint: { fontSize: FontSize.badge, color: Colors.light.textAssistive, marginBottom: 8 },
   noteInput: {
     marginTop: 6,
     borderWidth: 1,
-    borderColor: '#d0d3dc',
+    borderColor: Colors.light.fieldBorder,
     borderRadius: 6,
     padding: 10,
     fontSize: FontSize.t7,
-    color: '#17181c',
+    color: Colors.light.text,
     minHeight: 80,
     textAlignVertical: 'top',
   },
-  actionErrorText: { color: '#e53e3e', fontSize: FontSize.t7, marginTop: 8 },
+  actionErrorText: { color: Colors.light.negative, fontSize: FontSize.t7, marginTop: 8 },
   actionRow: { flexDirection: 'row', gap: 10, marginTop: 20 },
   publishBtn: {
     flex: 1,
     paddingVertical: 10,
     borderRadius: 6,
     alignItems: 'center',
-    backgroundColor: '#ff6f61',
+    backgroundColor: Colors.light.tint,
   },
-  publishBtnText: { fontSize: FontSize.t7, fontWeight: '600', color: '#fff' },
+  publishBtnText: { fontSize: FontSize.t7, fontWeight: '600', color: Colors.light.background },
   rejectBtn: {
     flex: 1,
     paddingVertical: 10,
     borderRadius: 6,
     alignItems: 'center',
-    backgroundColor: '#f0f1f4',
+    backgroundColor: Colors.light.backgroundSelected,
     borderWidth: 1,
-    borderColor: '#d0d3dc',
+    borderColor: Colors.light.fieldBorder,
   },
-  rejectBtnText: { fontSize: FontSize.t7, fontWeight: '600', color: '#3a3b40' },
+  rejectBtnText: { fontSize: FontSize.t7, fontWeight: '600', color: Colors.light.textStrong },
   btnDisabled: { opacity: 0.5 },
 });

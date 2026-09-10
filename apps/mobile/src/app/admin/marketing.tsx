@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 
@@ -31,9 +31,9 @@ const STATUS_LABEL: Record<ContentStatus, string> = {
   failed: '실패',
 };
 const STATUS_COLOR: Record<ContentStatus, string> = {
-  queued: '#868b94',
-  simulated: '#1aa174',
-  failed: '#e81607',
+  queued: Colors.light.textAssistive,
+  simulated: Colors.light.positive,
+  failed: Colors.light.negative,
 };
 
 export default function MarketingScreen() {
@@ -105,15 +105,15 @@ export default function MarketingScreen() {
               <Text style={styles.summaryLabel}>생성</Text>
             </View>
             <View style={styles.summaryCell}>
-              <Text style={[styles.summaryValue, { color: '#1aa174' }]}>{data.summary.simulated}</Text>
+              <Text style={[styles.summaryValue, { color: Colors.light.positive }]}>{data.summary.simulated}</Text>
               <Text style={styles.summaryLabel}>모의 완료</Text>
             </View>
             <View style={styles.summaryCell}>
-              <Text style={[styles.summaryValue, { color: '#e81607' }]}>{data.summary.failed}</Text>
+              <Text style={[styles.summaryValue, { color: Colors.light.negative }]}>{data.summary.failed}</Text>
               <Text style={styles.summaryLabel}>실패</Text>
             </View>
             <View style={styles.summaryCell}>
-              <Text style={[styles.summaryValue, data.summary.failRate > 0.1 && { color: '#e81607' }]}>
+              <Text style={[styles.summaryValue, data.summary.failRate > 0.1 && { color: Colors.light.negative }]}>
                 {(data.summary.failRate * 100).toFixed(1)}%
               </Text>
               <Text style={styles.summaryLabel}>실패율</Text>
@@ -174,42 +174,42 @@ export default function MarketingScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f3f6' },
+  root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
-  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: '#17181c' },
-  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: '#f2f3f6' },
-  refreshText: { fontSize: FontSize.t7, color: '#5a5d6a' },
+  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text },
+  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: Colors.light.backgroundSelected },
+  refreshText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
   body: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  errorText: { fontSize: FontSize.t6, color: '#e53e3e', marginBottom: 16 },
-  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: '#ff6f61' },
-  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: '#fff' },
+  errorText: { fontSize: FontSize.t6, color: Colors.light.negative, marginBottom: 16 },
+  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: Colors.light.tint },
+  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   summaryRow: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
     paddingVertical: 12,
     paddingHorizontal: 24,
   },
   summaryCell: { flex: 1, alignItems: 'center' },
-  summaryValue: { fontSize: FontSize.t4, fontWeight: '700', color: '#17181c', fontVariant: ['tabular-nums'] },
-  summaryLabel: { fontSize: FontSize.tab, color: '#868b94', marginTop: 2 },
+  summaryValue: { fontSize: FontSize.t4, fontWeight: '700', color: Colors.light.text, fontVariant: ['tabular-nums'] },
+  summaryLabel: { fontSize: FontSize.tab, color: Colors.light.textAssistive, marginTop: 2 },
   tableHead: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: Colors.light.backgroundElement,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
     alignItems: 'center',
   },
   tableRow: {
@@ -217,31 +217,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f1f4',
+    borderBottomColor: Colors.light.backgroundSelected,
     alignItems: 'center',
   },
-  tableRowZebra: { backgroundColor: '#fafbfc' },
-  th: { fontSize: FontSize.tab, fontWeight: '700', color: '#868b94', textTransform: 'uppercase' as const },
-  td: { fontSize: FontSize.t7, color: '#3a3b40' },
-  failReason: { fontSize: FontSize.tab, color: '#e81607', marginTop: 2 },
+  tableRowZebra: { backgroundColor: Colors.light.backgroundElement },
+  th: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.textAssistive, textTransform: 'uppercase' as const },
+  td: { fontSize: FontSize.t7, color: Colors.light.textStrong },
+  failReason: { fontSize: FontSize.tab, color: Colors.light.negative, marginTop: 2 },
   colTitle: { flex: 3 },
   colChannel: { width: 72 },
   colStatus: { width: 72 },
-  colSimulatedAt: { width: 76, textAlign: 'right' as const, fontSize: FontSize.tab, color: '#868b94' },
+  colSimulatedAt: { width: 76, textAlign: 'right' as const, fontSize: FontSize.tab, color: Colors.light.textAssistive },
   colAction: { width: 60, alignItems: 'flex-end' },
   inlineBtn: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
-    backgroundColor: '#f2f3f6',
+    backgroundColor: Colors.light.backgroundSelected,
     borderWidth: 1,
-    borderColor: '#d1d3d8',
+    borderColor: Colors.light.fieldBorder,
   },
   inlineBtnPrimary: {
-    backgroundColor: '#0088cc',
-    borderColor: '#0088cc',
+    backgroundColor: Colors.light.accent,
+    borderColor: Colors.light.accent,
   },
-  inlineBtnText: { fontSize: FontSize.tab, color: '#5a5d6a' },
-  inlineBtnTextPrimary: { color: '#fff', fontWeight: '700' },
+  inlineBtnText: { fontSize: FontSize.tab, color: Colors.light.textSecondary },
+  inlineBtnTextPrimary: { color: Colors.light.background, fontWeight: '700' },
   btnDisabled: { opacity: 0.5 },
 });

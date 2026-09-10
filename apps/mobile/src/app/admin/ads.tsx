@@ -5,9 +5,10 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 import { formatMonthDayDot } from '@/features/common/format-date';
 
 type AdStatus = 'active' | 'paused' | 'expired' | 'pending';
@@ -37,15 +38,15 @@ const STATUS_LABEL: Record<AdStatus, string> = {
   pending: '대기',
 };
 const STATUS_COLOR: Record<AdStatus, string> = {
-  active: '#1aa174',
-  paused: '#805217',
-  expired: '#868b94',
-  pending: '#0088cc',
+  active: Colors.light.positive,
+  paused: Colors.light.cautionary,
+  expired: Colors.light.textAssistive,
+  pending: Colors.light.accent,
 };
 const PLAN_COLOR: Record<AdItem['plan'], string> = {
-  LIGHT: '#0088cc',
-  STANDARD: '#805217',
-  PREMIUM: '#e81607',
+  LIGHT: Colors.light.accent,
+  STANDARD: Colors.light.cautionary,
+  PREMIUM: Colors.light.negative,
 };
 
 export default function AdsScreen() {
@@ -96,6 +97,7 @@ export default function AdsScreen() {
         </Pressable>
       </View>
 
+      <PendingBackendNotice actions="정지 · 재개" />
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
@@ -142,9 +144,9 @@ export default function AdsScreen() {
               <View style={styles.colAction}>
                 {(item.status === 'active' || item.status === 'paused') && (
                   <Pressable
-                    style={[styles.inlineBtn, acting === item.id && styles.btnDisabled]}
+                    style={[styles.inlineBtn, (BACKEND_PENDING || acting === item.id) && styles.btnDisabled]}
                     onPress={() => void toggleStatus(item.id, item.status)}
-                    disabled={acting !== null}
+                    disabled={BACKEND_PENDING || acting !== null}
                   >
                     <Text style={styles.inlineBtnText}>
                       {acting === item.id ? '…' : item.status === 'active' ? '정지' : '재개'}
@@ -161,32 +163,32 @@ export default function AdsScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f3f6' },
+  root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
     gap: 12,
   },
-  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: '#17181c' },
-  totalRevenue: { fontSize: FontSize.t7, fontWeight: '700', color: '#1aa174' },
-  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: '#f2f3f6' },
-  refreshText: { fontSize: FontSize.t7, color: '#5a5d6a' },
+  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text },
+  totalRevenue: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.positive },
+  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: Colors.light.backgroundSelected },
+  refreshText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  errorText: { fontSize: FontSize.t6, color: '#e53e3e', marginBottom: 16 },
-  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: '#ff6f61' },
-  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: '#fff' },
+  errorText: { fontSize: FontSize.t6, color: Colors.light.negative, marginBottom: 16 },
+  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: Colors.light.tint },
+  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   tableHead: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: Colors.light.backgroundElement,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
     alignItems: 'center',
   },
   tableRow: {
@@ -194,18 +196,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f1f4',
+    borderBottomColor: Colors.light.backgroundSelected,
     alignItems: 'center',
   },
-  tableRowZebra: { backgroundColor: '#fafbfc' },
-  th: { fontSize: FontSize.tab, fontWeight: '700', color: '#868b94', textTransform: 'uppercase' as const },
-  td: { fontSize: FontSize.t7, color: '#3a3b40' },
+  tableRowZebra: { backgroundColor: Colors.light.backgroundElement },
+  th: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.textAssistive, textTransform: 'uppercase' as const },
+  td: { fontSize: FontSize.t7, color: Colors.light.textStrong },
   colVendor: { flex: 2 },
-  vendorName: { fontSize: FontSize.t7, color: '#17181c', fontWeight: '700' },
+  vendorName: { fontSize: FontSize.t7, color: Colors.light.text, fontWeight: '700' },
   promoBadge: {
     fontSize: FontSize.tab,
-    color: '#ff6f61',
-    backgroundColor: '#fff0ee',
+    color: Colors.light.tint,
+    backgroundColor: Colors.light.negativeBoxBackground,
     paddingHorizontal: 4,
     paddingVertical: 1,
     borderRadius: 3,
@@ -226,10 +228,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
-    backgroundColor: '#f2f3f6',
+    backgroundColor: Colors.light.backgroundSelected,
     borderWidth: 1,
-    borderColor: '#d1d3d8',
+    borderColor: Colors.light.fieldBorder,
   },
-  inlineBtnText: { fontSize: FontSize.tab, color: '#5a5d6a' },
+  inlineBtnText: { fontSize: FontSize.tab, color: Colors.light.textSecondary },
   btnDisabled: { opacity: 0.5 },
 });

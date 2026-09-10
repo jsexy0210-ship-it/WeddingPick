@@ -1,7 +1,10 @@
-import { Link, Slot, usePathname } from 'expo-router';
+import { Link, Redirect, Slot, usePathname } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { Colors, FontSize } from '@weddingpick/ui';
+
+import { clearAdminToken, loadAdminToken } from './_session';
 
 const NAV_GROUPS: { group?: string; key?: string; label?: string; href?: string }[] = [
   { group: '대시보드' },
@@ -34,6 +37,7 @@ const NAV_GROUPS: { group?: string; key?: string; label?: string; href?: string 
   { group: '콘텐츠' },
   { key: 'faq', label: 'FAQ 관리', href: '/admin/faq' },
   { key: 'terms', label: '약관 · 방침', href: '/admin/terms' },
+  { key: 'og-card', label: '링크 미리보기', href: '/admin/og-card' },
   { group: '운영' },
   { key: 'automation', label: '자동화 상태', href: '/admin/automation' },
   { key: 'kill-switch', label: 'Kill Switch', href: '/admin/kill-switch' },
@@ -43,6 +47,8 @@ const NAV_GROUPS: { group?: string; key?: string; label?: string; href?: string 
   { key: 'policy-engine', label: 'Policy Engine', href: '/admin/policy-engine' },
   { key: 'audit-log', label: '감사 로그', href: '/admin/audit-log' },
 ];
+
+const LOGIN_PATH = '/admin/login';
 
 function Sidebar({ pathname }: { pathname: string }) {
   return (
@@ -69,12 +75,56 @@ function Sidebar({ pathname }: { pathname: string }) {
           );
         })}
       </ScrollView>
+      <Pressable
+        style={styles.signOut}
+        onPress={() => {
+          void clearAdminToken().then(() => {
+            /* 화면 상태를 되돌리는 가장 단순한 길. 관리자 콘솔은 웹 전용이다. */
+            window.location.assign(LOGIN_PATH);
+          });
+        }}
+      >
+        <Text style={styles.signOutText}>로그아웃</Text>
+      </Pressable>
     </View>
   );
 }
 
+/**
+ * 관리자 콘솔의 관문.
+ *
+ * 2026-09-10까지 이 자리에 아무것도 없었다. `/admin`을 열면 확인 없이 내부 화면으로
+ * 들어가고, 서버가 403을 주지만 그 뜻을 말해 줄 자리가 없어 화면에는
+ * «잠시 문제가 생겼어요»만 떴다(사용자 보고).
+ *
+ * **토큰이 있는지만 본다.** 그 토큰이 진짜인지는 서버가 판단한다 — 화면이 판단하면
+ * 만료된 토큰을 들고 들어가 모든 화면이 같은 오류를 내게 된다. 서버가 401·403을
+ * 주면 `_api`가 토큰을 지우므로, 다음 이동에서 여기로 걸린다.
+ */
+function useAdminToken(): { token: string | null; checked: boolean } {
+  const [token, setToken] = useState<string | null>(null);
+  const [checked, setChecked] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void loadAdminToken().then((value) => {
+      if (cancelled) return;
+      setToken(value);
+      setChecked(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return { token, checked };
+}
+
 export default function AdminLayout() {
   const pathname = usePathname();
+  const { token, checked } = useAdminToken();
 
   if (Platform.OS !== 'web') {
     return (
@@ -83,6 +133,18 @@ export default function AdminLayout() {
       </View>
     );
   }
+
+  /* 로그인 화면은 사이드바 없이 홀로 선다 — 아직 들어온 것이 아니다. */
+  if (pathname === LOGIN_PATH) return <Slot />;
+
+  /*
+   * 확인이 끝나기 전에는 아무것도 그리지 않는다. 저장소를 읽는 것은 한 번의
+   * 비동기라, 그 사이에 화면을 그리면 로그인한 사람에게도 로그인 화면이 한 번
+   * 스쳤다 사라진다.
+   */
+  if (!checked) return <View style={styles.root} />;
+
+  if (!token) return <Redirect href={LOGIN_PATH as never} />;
 
   return (
     <View style={styles.root}>
@@ -98,7 +160,7 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: '#f2f3f6',
+    backgroundColor: Colors.light.backgroundSelected,
     minHeight: '100vh' as unknown as number,
   },
   sidebar: {
@@ -108,7 +170,12 @@ const styles = StyleSheet.create({
      * 스크롤 없이 들어가지 않았던 것이 폭을 올린 이유다.
      */
     width: 240,
-    backgroundColor: '#17181c',
+    /*
+     * 사이드바 바탕은 시안의 #17181c다. 잠깐 `Colors.light.text`(#212124)로 바뀌어
+     * 있었는데, 하드코딩을 없애려다 **다른 색이 됐다** — 토큰으로 바꾸는 것과
+     * 아무 토큰이나 갖다 쓰는 것은 다른 일이다. 시안 값으로 토큰을 새로 만들었다.
+     */
+    backgroundColor: Colors.light.adminChrome,
     flexShrink: 0,
     flexDirection: 'column',
   },
@@ -120,10 +187,20 @@ const styles = StyleSheet.create({
   sidebarTitle: {
     fontSize: FontSize.t6,
     fontWeight: '700',
-    color: '#fff',
+    color: Colors.light.background,
   },
   sidebarScroll: {
     flex: 1,
+  },
+  signOut: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#26272c',
+  },
+  signOutText: {
+    fontSize: FontSize.t7,
+    color: '#868b94',
   },
   navGroup: {
     paddingHorizontal: 12,
@@ -132,7 +209,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.tab,
     fontWeight: '700',
     letterSpacing: 0.6,
-    color: '#393a40',
+    color: Colors.light.textStrong,
     textTransform: 'uppercase' as const,
   },
   navItem: {
@@ -149,10 +226,10 @@ const styles = StyleSheet.create({
   navLabel: {
     flex: 1,
     fontSize: FontSize.t7,
-    color: '#868b94',
+    color: Colors.light.textAssistive,
   },
   navLabelActive: {
-    color: '#fff',
+    color: Colors.light.background,
     fontWeight: '700',
   },
   main: {
@@ -168,6 +245,6 @@ const styles = StyleSheet.create({
   },
   notWebText: {
     fontSize: FontSize.t6,
-    color: '#868b94',
+    color: Colors.light.textAssistive,
   },
 });
