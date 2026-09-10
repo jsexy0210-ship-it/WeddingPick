@@ -16,6 +16,7 @@ import {
 import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { OpsAlert, OpsEmpty } from '@/features/admin/ops-kit';
 import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 import { formatDateTimeDot } from '@/features/common/format-date';
 
@@ -98,7 +99,7 @@ export default function PolicyEngineScreen() {
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <Text style={styles.title}>Policy Engine</Text>
+        <Text style={styles.title}>정책 규칙 관리</Text>
         <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
           <Text style={styles.refreshText}>새로 고침</Text>
         </Pressable>
@@ -112,6 +113,17 @@ export default function PolicyEngineScreen() {
           <Pressable style={styles.retryBtn} onPress={() => setRev((r) => r + 1)}>
             <Text style={styles.retryText}>다시 시도</Text>
           </Pressable>
+        </View>
+      )}
+
+      {!loading && !error && data && (
+        <View style={styles.opsBannerWrap}>
+          {/* 지금 봐야 할 것이 맨 위. */}
+            <OpsAlert kind="ok" title="확인할 것이 없어요" sub={`규칙 ${data.policies.length}개가 적용 중이에요.`} />
+          {/* 빈 상태가 정상 상태. */}
+          {data.policies.length === 0 ? (
+            <OpsEmpty title="확인할 것이 없어요" sub="등록된 정책 규칙이 없어요." />
+          ) : null}
         </View>
       )}
 
@@ -187,6 +199,7 @@ export default function PolicyEngineScreen() {
 }
 
 const styles = StyleSheet.create({
+  opsBannerWrap: { paddingHorizontal: 24, paddingTop: 16, gap: 12 },
   root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     flexDirection: 'row',

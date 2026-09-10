@@ -8,6 +8,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { OpsAlert, OpsEmpty } from '@/features/admin/ops-kit';
 import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 
 type MatchStatus = 'matched' | 'unmatched' | 'applied' | 'failed';
@@ -85,7 +86,7 @@ export default function EmailMatchingScreen() {
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <Text style={styles.title}>데이터 · 이메일 회신 자동매칭</Text>
+        <Text style={styles.title}>이메일 회신 자동 매칭</Text>
         <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
           <Text style={styles.refreshText}>새로 고침</Text>
         </Pressable>
@@ -99,6 +100,23 @@ export default function EmailMatchingScreen() {
           <Pressable style={styles.retryBtn} onPress={() => setRev((r) => r + 1)}>
             <Text style={styles.retryText}>다시 시도</Text>
           </Pressable>
+        </View>
+      )}
+
+      {!loading && !error && data && (
+        <View style={styles.opsBannerWrap}>
+          {/* 지금 봐야 할 것이 맨 위. */}
+          {data.summary.failed > 0 ? (
+            <OpsAlert kind="bad" title={`반영에 실패한 회신이 ${data.summary.failed}건 있어요`} sub="다시 시도하거나 사람이 직접 넣어야 해요." />
+          ) : data.summary.unmatched > 0 ? (
+            <OpsAlert kind="warn" title={`매칭되지 않은 회신이 ${data.summary.unmatched}건 있어요`} sub="어느 업체의 회신인지 사람이 골라야 해요." />
+          ) : (
+            <OpsAlert kind="ok" title="확인할 것이 없어요" sub="회신이 모두 매칭됐어요." />
+          )}
+          {/* 빈 상태가 정상 상태. */}
+          {data.items.length === 0 ? (
+            <OpsEmpty title="확인할 것이 없어요" sub="들어온 회신이 없어요." />
+          ) : null}
         </View>
       )}
 
@@ -168,6 +186,7 @@ export default function EmailMatchingScreen() {
 }
 
 const styles = StyleSheet.create({
+  opsBannerWrap: { paddingHorizontal: 24, paddingTop: 16, gap: 12 },
   root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     flexDirection: 'row',

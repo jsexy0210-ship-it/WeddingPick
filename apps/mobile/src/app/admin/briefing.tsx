@@ -8,6 +8,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { OpsAlert, OpsEmpty } from '@/features/admin/ops-kit';
 
 type RiskItem = { id: string; category: string; description: string; severity: 'high' | 'medium' | 'low' };
 type Anomaly = { time: string; description: string };
@@ -85,29 +86,33 @@ export default function BriefingScreen() {
 
       {!loading && !error && data && (
         <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
-          {/* 요약 문구 */}
-          {data.summary ? (
-            <View style={styles.summaryBox}>
-              <Text style={styles.summaryText}>{data.summary}</Text>
-            </View>
-          ) : null}
+          {/* 지금 봐야 할 것이 맨 위 — 배너가 오늘 상태를 먼저 말한다. */}
+          {data.unresolvedRisks.length > 0 ? (
+            <OpsAlert
+              kind={data.unresolvedRisks.some((r) => r.severity === 'high') ? 'bad' : 'warn'}
+              title={`미해결 리스크가 ${data.unresolvedRisks.length}건 있어요`}
+              sub={data.summary || undefined}
+            />
+          ) : (
+            <OpsAlert kind="ok" title="확인할 것이 없어요" sub={data.summary || '미해결 리스크가 없어요.'} />
+          )}
 
           {/* 핵심 지표 */}
           <Text style={styles.sectionTitle}>핵심 지표</Text>
           <View style={styles.statsGrid}>
             <View style={styles.statCell}>
-              <Text style={styles.statValue}>{data.autoProcessed.toLocaleString()}</Text>
               <Text style={styles.statLabel}>자동 처리 건</Text>
+              <Text style={styles.statValue}>{data.autoProcessed.toLocaleString()}</Text>
             </View>
             <View style={styles.statCell}>
+              <Text style={styles.statLabel}>성공률</Text>
               <Text style={[styles.statValue, data.successRate < 90 && styles.valueDanger]}>
                 {data.successRate.toFixed(1)}%
               </Text>
-              <Text style={styles.statLabel}>성공률</Text>
             </View>
             <View style={styles.statCell}>
-              <Text style={styles.statValue}>{data.autoRecovered.toLocaleString()}</Text>
               <Text style={styles.statLabel}>자동 복구 건</Text>
+              <Text style={styles.statValue}>{data.autoRecovered.toLocaleString()}</Text>
             </View>
           </View>
 
@@ -115,12 +120,12 @@ export default function BriefingScreen() {
           <Text style={styles.sectionTitle}>비용 · 수익</Text>
           <View style={styles.statsGrid}>
             <View style={styles.statCell}>
-              <Text style={styles.statValue}>{data.aiCostToday}</Text>
               <Text style={styles.statLabel}>오늘 AI 비용</Text>
+              <Text style={styles.statValue}>{data.aiCostToday}</Text>
             </View>
             <View style={styles.statCell}>
-              <Text style={styles.statValue}>{data.revenueToday}</Text>
               <Text style={styles.statLabel}>오늘 수익</Text>
+              <Text style={styles.statValue}>{data.revenueToday}</Text>
             </View>
           </View>
 
@@ -128,7 +133,7 @@ export default function BriefingScreen() {
           <Text style={styles.sectionTitle}>미해결 리스크</Text>
           <View style={styles.card}>
             {data.unresolvedRisks.length === 0 ? (
-              <Text style={styles.emptyText}>미해결 리스크 없음</Text>
+              <OpsEmpty title="확인할 것이 없어요" sub="미해결 리스크가 없어요." />
             ) : (
               data.unresolvedRisks.map((risk, i) => (
                 <View
@@ -153,7 +158,7 @@ export default function BriefingScreen() {
           <Text style={styles.sectionTitle}>특이사항</Text>
           <View style={styles.card}>
             {data.anomalies.length === 0 ? (
-              <Text style={styles.emptyText}>특이사항 없음</Text>
+              <OpsEmpty title="확인할 것이 없어요" sub="오늘 특이사항이 없어요." />
             ) : (
               data.anomalies.map((a, i) => (
                 <View key={i} style={[styles.anomalyRow, i < data.anomalies.length - 1 && styles.riskRowBorder]}>
@@ -217,18 +222,20 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   statsGrid: { flexDirection: 'row', gap: 12 },
+  /* 시안 kpiCard — 왼쪽 정렬 · padding 20 · gap 5. 가운데 정렬은 라벨과 값이 같은 축에 서지 않는다. */
   statCell: {
     flex: 1,
     backgroundColor: Colors.light.background,
     borderRadius: 10,
-    padding: 16,
-    alignItems: 'center',
+    padding: 20,
+    gap: 5,
     borderWidth: 1,
     borderColor: Colors.light.border,
   },
-  statValue: { fontSize: FontSize.t4, fontWeight: '700', color: Colors.light.text, fontVariant: ['tabular-nums'] },
+  /* 시안 kpiVal 30/38 — 8단 스케일 밖이라 t1(32/43)로 앉힌다. */
+  statValue: { fontSize: FontSize.t1, lineHeight: LineHeight.t1, fontWeight: '700', color: Colors.light.text, fontVariant: ['tabular-nums'] },
   valueDanger: { color: Colors.light.negative },
-  statLabel: { fontSize: FontSize.tab, color: Colors.light.textAssistive, marginTop: 4 },
+  statLabel: { fontSize: FontSize.micro, lineHeight: LineHeight.micro, color: Colors.light.textAssistive },
   card: {
     backgroundColor: Colors.light.background,
     borderRadius: 10,

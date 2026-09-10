@@ -8,6 +8,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { OpsAlert, OpsEmpty } from '@/features/admin/ops-kit';
 
 type ContentStatus = 'queued' | 'simulated' | 'failed';
 type MarketingItem = {
@@ -81,7 +82,7 @@ export default function MarketingScreen() {
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <Text style={styles.title}>성장 · 마케팅 자동화</Text>
+        <Text style={styles.title}>마케팅 자동화</Text>
         <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
           <Text style={styles.refreshText}>새로 고침</Text>
         </Pressable>
@@ -94,6 +95,21 @@ export default function MarketingScreen() {
           <Pressable style={styles.retryBtn} onPress={() => setRev((r) => r + 1)}>
             <Text style={styles.retryText}>다시 시도</Text>
           </Pressable>
+        </View>
+      )}
+
+      {!loading && !error && data && (
+        <View style={styles.opsBannerWrap}>
+          {/* 지금 봐야 할 것이 맨 위. */}
+          {data.summary.failed > 0 ? (
+            <OpsAlert kind="warn" title={`만들지 못한 콘텐츠가 ${data.summary.failed}건 있어요`} sub={`실패율 ${data.summary.failRate.toFixed(1)}%`} />
+          ) : (
+            <OpsAlert kind="ok" title="확인할 것이 없어요" sub="실패한 생성이 없어요." />
+          )}
+          {/* 빈 상태가 정상 상태. */}
+          {data.items.length === 0 ? (
+            <OpsEmpty title="확인할 것이 없어요" sub="만든 콘텐츠가 없어요." />
+          ) : null}
         </View>
       )}
 
@@ -174,6 +190,7 @@ export default function MarketingScreen() {
 }
 
 const styles = StyleSheet.create({
+  opsBannerWrap: { paddingHorizontal: 24, paddingTop: 16, gap: 12 },
   root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     flexDirection: 'row',

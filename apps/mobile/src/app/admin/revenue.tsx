@@ -5,9 +5,10 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Colors, FontSize } from '@weddingpick/ui';
+import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { OpsAlert } from '@/features/admin/ops-kit';
 
 type FunnelStep = {
   label: string;
@@ -58,7 +59,7 @@ export default function RevenueScreen() {
     <View style={styles.root}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.title}>성장 · Revenue</Text>
+          <Text style={styles.title}>수익 현황</Text>
           {data && <Text style={styles.subtitle}>{data.period}</Text>}
         </View>
         <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
@@ -78,6 +79,21 @@ export default function RevenueScreen() {
 
       {!loading && !error && data && (
         <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
+          {/* 지금 봐야 할 것이 맨 위 — 공헌이익이 음수면 그것부터 말한다. */}
+          {data.summary.contributionMarginRate < 0 ? (
+            <OpsAlert
+              kind="bad"
+              title="공헌이익이 마이너스예요"
+              sub={`${data.period} · ${data.summary.contributionMargin} (${data.summary.contributionMarginRate.toFixed(1)}%)`}
+            />
+          ) : (
+            <OpsAlert
+              kind="ok"
+              title="확인할 것이 없어요"
+              sub={`${data.period} · 공헌이익 ${data.summary.contributionMargin} (${data.summary.contributionMarginRate.toFixed(1)}%)`}
+            />
+          )}
+
           {/* 핵심 지표 */}
           <Text style={styles.sectionTitle}>핵심 지표</Text>
           <View style={styles.metricsGrid}>
@@ -186,7 +202,8 @@ const styles = StyleSheet.create({
   },
   metricCardWide: { flex: 1 },
   metricLabel: { fontSize: FontSize.t7, color: Colors.light.textAssistive, marginBottom: 4 },
-  metricValue: { fontSize: FontSize.t4, fontWeight: '700', color: Colors.light.text, fontVariant: ['tabular-nums'] },
+  /* 시안 kpiVal 30/38 — 8단 스케일 밖이라 t1(32/43)로 앉힌다. t4(20)로는 지표가 라벨과 구분되지 않는다. */
+  metricValue: { fontSize: FontSize.t1, lineHeight: LineHeight.t1, fontWeight: '700', color: Colors.light.text, fontVariant: ['tabular-nums'] },
   metricSub: { fontSize: FontSize.tab, color: Colors.light.textAssistive, marginTop: 4 },
   card: {
     backgroundColor: Colors.light.background,

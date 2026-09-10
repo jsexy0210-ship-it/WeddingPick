@@ -8,6 +8,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { OpsAlert, OpsEmpty } from '@/features/admin/ops-kit';
 import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 
 type RightsStatus =
@@ -89,7 +90,7 @@ export default function ImagesScreen() {
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <Text style={styles.title}>데이터 · 이미지 자동수급</Text>
+        <Text style={styles.title}>이미지 자동 수급</Text>
         <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
           <Text style={styles.refreshText}>새로 고침</Text>
         </Pressable>
@@ -103,6 +104,23 @@ export default function ImagesScreen() {
           <Pressable style={styles.retryBtn} onPress={() => setRev((r) => r + 1)}>
             <Text style={styles.retryText}>다시 시도</Text>
           </Pressable>
+        </View>
+      )}
+
+      {!loading && !error && data && (
+        <View style={styles.opsBannerWrap}>
+          {/* 지금 봐야 할 것이 맨 위. */}
+          {data.summary.pending > 0 ? (
+            <OpsAlert kind="warn" title={`권리 확인이 ${data.summary.pending}건 밀려 있어요`} sub="확인 전 이미지는 노출되지 않아요." />
+          ) : data.summary.rejected > 0 ? (
+            <OpsAlert kind="warn" title={`반려된 이미지가 ${data.summary.rejected}건 있어요`} sub="반려 사유를 보고 다시 수급할 수 있어요." />
+          ) : (
+            <OpsAlert kind="ok" title="확인할 것이 없어요" sub="권리 확인을 기다리는 이미지가 없어요." />
+          )}
+          {/* 빈 상태가 정상 상태. */}
+          {data.items.length === 0 ? (
+            <OpsEmpty title="확인할 것이 없어요" sub="수급한 이미지가 없어요." />
+          ) : null}
         </View>
       )}
 
@@ -174,6 +192,7 @@ export default function ImagesScreen() {
 }
 
 const styles = StyleSheet.create({
+  opsBannerWrap: { paddingHorizontal: 24, paddingTop: 16, gap: 12 },
   root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     flexDirection: 'row',

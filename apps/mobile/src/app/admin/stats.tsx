@@ -5,6 +5,7 @@ import { VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
 import { Colors, FontSize } from '@weddingpick/ui';
 
 import { apiFetch } from './_api';
+import { OpsAlert, OpsEmpty } from '@/features/admin/ops-kit';
 
 type AnomalyItem = {
   vendorId: string;
@@ -67,9 +68,25 @@ export default function StatsScreen() {
         </View>
       )}
 
+      {/* 지금 봐야 할 것이 맨 위. */}
+      {data && (
+        <View style={styles.bannerWrap}>
+          {data.anomalies.length > 0 ? (
+            <OpsAlert
+              kind="warn"
+              title={`이상치가 ${data.anomalies.length}건 잡혔어요`}
+              sub="집계에 들어가기 전에 사람이 확인해요."
+            />
+          ) : (
+            <OpsAlert kind="ok" title="확인할 것이 없어요" sub="잡힌 이상치가 없어요." />
+          )}
+        </View>
+      )}
+
+      {/* 빈 상태가 정상 상태. */}
       {data && data.anomalies.length === 0 && (
-        <View style={styles.center}>
-          <Text style={styles.hint}>이상치 없음</Text>
+        <View style={styles.bannerWrap}>
+          <OpsEmpty title="확인할 것이 없어요" sub="최근 집계에서 이상치가 잡히지 않았어요." />
         </View>
       )}
 
@@ -109,6 +126,7 @@ export default function StatsScreen() {
 }
 
 const styles = StyleSheet.create({
+  bannerWrap: { paddingHorizontal: 24, paddingTop: 16 },
   root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     paddingHorizontal: 24,

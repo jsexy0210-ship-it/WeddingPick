@@ -8,6 +8,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { OpsAlert, OpsEmpty } from '@/features/admin/ops-kit';
 import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 
 type WorkflowStatus = 'healthy' | 'degraded' | 'down' | 'recovering';
@@ -86,7 +87,7 @@ export default function AutomationScreen() {
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <Text style={styles.title}>운영 · 자동화 상태</Text>
+        <Text style={styles.title}>자동화 상태</Text>
         <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
           <Text style={styles.refreshText}>새로 고침</Text>
         </Pressable>
@@ -100,6 +101,23 @@ export default function AutomationScreen() {
           <Pressable style={styles.retryBtn} onPress={() => setRev((r) => r + 1)}>
             <Text style={styles.retryText}>다시 시도</Text>
           </Pressable>
+        </View>
+      )}
+
+      {!loading && !error && data && (
+        <View style={styles.opsBannerWrap}>
+          {/* 지금 봐야 할 것이 맨 위. */}
+          {data.overall.downCount > 0 ? (
+            <OpsAlert kind="bad" title={`${data.overall.downCount}개 흐름이 멈춰 있어요`} sub="멈춘 동안 처리되지 않은 건이 쌓여요." />
+          ) : data.overall.degradedCount > 0 ? (
+            <OpsAlert kind="warn" title={`${data.overall.degradedCount}개 흐름이 느려졌어요`} sub="아직 돌고 있지만 지연이 쌓이고 있어요." />
+          ) : (
+            <OpsAlert kind="ok" title="확인할 것이 없어요" sub={`${data.overall.healthyCount}개 흐름이 모두 정상이에요.`} />
+          )}
+          {/* 빈 상태가 정상 상태. */}
+          {data.workflows.length === 0 ? (
+            <OpsEmpty title="확인할 것이 없어요" sub="등록된 자동화 흐름이 없어요." />
+          ) : null}
         </View>
       )}
 
@@ -196,6 +214,7 @@ export default function AutomationScreen() {
 }
 
 const styles = StyleSheet.create({
+  opsBannerWrap: { paddingHorizontal: 24, paddingTop: 16, gap: 12 },
   root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     flexDirection: 'row',
