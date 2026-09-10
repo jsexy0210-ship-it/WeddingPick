@@ -7,3 +7,15 @@ apps/web/dist
 *.log
 .env*
 .claude
+.audit-*
+.worktrees
+.tmp-chrome-audit
+.tmp-shots
+.npm-cache
+WeddingPickl
+iOS_액세스 토큰(중요)
+**/*.p8
+**/*.p12
+**/*.jks
+**/*.key
+**/*.mobileprovision

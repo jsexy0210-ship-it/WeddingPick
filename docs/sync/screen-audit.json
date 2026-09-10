@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "recordedDate": "2026-09-10",
+  "timezone": "Asia/Seoul",
+  "scope": "repository-cleanup",
+  "baselineCommit": "e34193ee1644c664f107d529002ae53ef775389a",
+  "status": "not-complete",
+  "screenCompletionCount": null,
+  "note": "이번 작업은 저장소 정리로 UI를 변경하지 않았다. 전 화면·상태별 시각 검수가 완료된 것으로 처리하지 않는다.",
+  "evidence": [
+    "../INFORMATION_AUDIT_2026-09-10.md",
+    "../DESIGN_ZIP_AUDIT_2026-09-10.md"
+  ],
+  "remaining": [
+    "앱 동일 상태 390×844 기준 원본·실제 캡처 대조",
+    "관리자 원본 캔버스 충돌 해소 후 실제 화면 대조",
+    "실기기 RN 카메라·푸시·권한 검수"
+  ]
+}
