@@ -293,9 +293,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    // 시안(20-admin.dc.html)은 #fcd2cf를 쓰는데 tokens.json에 이 테두리 색이 없다. 토큰 추가 뒤 바꾼다.
-    borderColor: '#f0c8c4',
-    backgroundColor: Colors.light.negativeBackground,
+    borderColor: Colors.light.negativeBorder,
+    backgroundColor: Colors.light.negativeBoxBackground,
     borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 10,

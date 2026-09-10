@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
-    backgroundColor: Colors.light.negativeBackground,
+    backgroundColor: Colors.light.negativeBoxBackground,
   },
   rejectBtnText: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.negative },
   btnDisabled: { opacity: 0.5 },

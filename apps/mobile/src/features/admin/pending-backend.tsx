@@ -35,6 +35,8 @@ export function PendingBackendNotice({ actions }: { actions: string }) {
 }
 
 const styles = StyleSheet.create({
+  // 상자 칠(cautionaryBoxBackground)이 아니라 배지 칠을 쓴다 — 이건 목록 안의
+  // 상태 상자가 아니라 화면 전체에 걸리는 알림이라, 눈에 먼저 들어와야 한다.
   box: {
     backgroundColor: Colors.light.cautionaryBackground,
     borderRadius: Radius.medium,

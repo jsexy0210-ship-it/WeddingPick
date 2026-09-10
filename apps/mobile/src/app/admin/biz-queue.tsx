@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.tab,
     fontWeight: '700',
     color: Colors.light.negative,
-    backgroundColor: Colors.light.negativeBackground,
+    backgroundColor: Colors.light.negativeBoxBackground,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,

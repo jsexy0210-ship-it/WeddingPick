@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
   },
   primaryBtnText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   dangerBtn: {
-    backgroundColor: Colors.light.negativeBackground,
+    backgroundColor: Colors.light.negativeBoxBackground,
     borderWidth: 1,
     borderColor: Colors.light.negative,
     borderRadius: 6,

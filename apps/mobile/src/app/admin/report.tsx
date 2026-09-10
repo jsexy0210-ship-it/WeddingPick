@@ -105,7 +105,7 @@ export default function ReportScreen() {
               <View style={styles.cardTop}>
                 <View style={[
                   styles.typeBadge,
-                  { backgroundColor: item.status === 'pending' ? Colors.light.negativeBackground : Colors.light.positiveBackground },
+                  { backgroundColor: item.status === 'pending' ? Colors.light.negativeBoxBackground : Colors.light.positiveBackground },
                 ]}>
                   <Text style={[
                     styles.typeText,

@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
   promoBadge: {
     fontSize: FontSize.tab,
     color: Colors.light.tint,
-    backgroundColor: Colors.light.negativeBackground,
+    backgroundColor: Colors.light.negativeBoxBackground,
     paddingHorizontal: 4,
     paddingVertical: 1,
     borderRadius: 3,

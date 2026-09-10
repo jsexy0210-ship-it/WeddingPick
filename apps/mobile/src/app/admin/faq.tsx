@@ -314,10 +314,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 4,
-    backgroundColor: Colors.light.negativeBackground,
+    backgroundColor: Colors.light.negativeBoxBackground,
     borderWidth: 1,
-    // 시안(20-admin.dc.html)은 #fcd2cf를 쓰는데 tokens.json에 이 테두리 색이 없다. 토큰 추가 뒤 바꾼다.
-    borderColor: '#ffb5ae',
+    borderColor: Colors.light.negativeBorder,
   },
   deleteBtnText: { fontSize: FontSize.tab, color: Colors.light.negative, fontWeight: '700' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
