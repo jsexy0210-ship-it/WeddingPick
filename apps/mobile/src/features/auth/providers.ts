@@ -15,12 +15,20 @@ import {
 } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { DEV_LOGIN_SECRET, devIdToken } from '@/features/auth/dev-login';
-import { UNDER_AGE_SIGN_IN_MESSAGE } from '@/features/auth/sign-in-handoff';
+import {
+  AGE_UNVERIFIED_SIGN_IN_MESSAGE,
+  UNDER_AGE_SIGN_IN_MESSAGE,
+} from '@/features/auth/sign-in-handoff';
 
 /**
- * 인가 코드를 세션으로 바꾼다. 서버가 만 14세 미만으로 판정하면(`under_age`,
- * v3.22 SPEC 3.5) 정해진 문장으로 바꿔 던진다 — 부팅 경로는 실패를 문장 하나로만
- * 넘기므로, 그 경로에서도 WP-AUTH-009으로 갈 수 있어야 한다.
+ * 인가 코드를 세션으로 바꾼다.
+ *
+ * 나이로 갈리는 두 결과를 **정해진 문장**으로 바꿔 던진다 — 웹 부팅 경로는 실패를
+ * 문장 하나로만 나르므로(`setPendingSignInError`), 코드를 잃고도 어느 쪽인지
+ * 알아볼 수 있어야 한다.
+ *
+ *   `under_age`       미달로 확인됐다 → WP-AUTH-009
+ *   `age_unverified`  판정할 근거가 없었다 → 로그인 화면의 확인
  */
 async function exchangeKakaoCode(
   input: Parameters<typeof signInWithAuthorizationCode>[0]
@@ -30,6 +38,9 @@ async function exchangeKakaoCode(
   } catch (caught) {
     if (caught instanceof ApiError && caught.code === 'under_age') {
       throw new Error(UNDER_AGE_SIGN_IN_MESSAGE);
+    }
+    if (caught instanceof ApiError && caught.code === 'age_unverified') {
+      throw new Error(AGE_UNVERIFIED_SIGN_IN_MESSAGE);
     }
     throw caught;
   }
@@ -126,9 +137,12 @@ export function canSignInWith(provider: AuthProvider): boolean {
  * 돌려주고, 사용자가 취소했으면 null이다. 웹은 같은 창으로 떠나므로 돌아오지
  * 않는다 — 돌아온 뒤는 `completeKakaoRedirect`가 잇는다.
  */
-export async function signInWithKakao(provider: AuthProvider): Promise<SessionEntry | null> {
+export async function signInWithKakao(
+  provider: AuthProvider,
+  options: { ageAcknowledged?: boolean } = {}
+): Promise<SessionEntry | null> {
   if (provider.isDevelopmentStandIn) {
-    return await signIn('apple', devIdToken());
+    return await signIn('apple', devIdToken(), undefined, options.ageAcknowledged);
   }
 
   if (!KAKAO_CLIENT_ID) {
@@ -136,7 +150,7 @@ export async function signInWithKakao(provider: AuthProvider): Promise<SessionEn
   }
 
   if (Platform.OS === 'web') {
-    await startKakaoRedirect();
+    await startKakaoRedirect(options.ageAcknowledged);
 
     return null;
   }
@@ -166,6 +180,7 @@ export async function signInWithKakao(provider: AuthProvider): Promise<SessionEn
     state: result.params.state ?? request.state,
     redirectUri,
     codeVerifier: request.codeVerifier,
+    ageAcknowledged: options.ageAcknowledged,
   });
 }
 
@@ -212,9 +227,15 @@ type PendingRedirect = {
   codeVerifier?: string;
   redirectUri: string;
   startedAt: number;
+  /**
+   * 떠나기 전에 «만 14세 이상이에요»를 확인받았는가. 카카오에 갔다 오는 사이
+   * 화면은 사라지므로, 이 값도 verifier·state와 같은 자리에 적어두고 돌아와서
+   * 읽는다 — 안 그러면 확인을 한 사람이 돌아와서 또 확인하게 된다.
+   */
+  ageAcknowledged?: boolean;
 };
 
-async function startKakaoRedirect(): Promise<void> {
+async function startKakaoRedirect(ageAcknowledged?: boolean): Promise<void> {
   const redirectUri = webRedirectUri();
   const request = kakaoRequest(redirectUri);
   const url = await request.makeAuthUrlAsync({ authorizationEndpoint: KAKAO_AUTHORIZE });
@@ -223,6 +244,7 @@ async function startKakaoRedirect(): Promise<void> {
     codeVerifier: request.codeVerifier,
     redirectUri,
     startedAt: Date.now(),
+    ageAcknowledged,
   };
 
   await AsyncStorage.setItem(REDIRECT_KEY, JSON.stringify(pending));
@@ -322,5 +344,6 @@ export async function completeKakaoRedirect(): Promise<SessionEntry | null> {
     state,
     redirectUri: pending.redirectUri,
     codeVerifier: pending.codeVerifier,
+    ageAcknowledged: pending.ageAcknowledged,
   });
 }
