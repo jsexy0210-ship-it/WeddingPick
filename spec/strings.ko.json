@@ -750,7 +750,9 @@
   "journey": {
     "loadFailed": "정보를 불러오지 못했어요",
     "readFailed": "읽음 상태를 저장하지 못했어요",
-    "loading": "불러오는 중이에요"
+    "loading": "불러오는 중이에요",
+    "documentEmpty": "아직 올린 문서가 없어요",
+    "uploadDocument": "자료 올리기"
   },
 
   "error": {
