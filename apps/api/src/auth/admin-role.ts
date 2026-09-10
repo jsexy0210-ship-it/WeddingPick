@@ -39,6 +39,25 @@ export function bootstrapPasswordHash(): string | undefined {
   return process.env.ADMIN_PASSWORD_HASH?.trim() || undefined;
 }
 
+/**
+ * 부트스트랩 **원문** 비밀번호(2026-09-10 대표 지시).
+ *
+ * 해시를 만들어 환경변수로 옮기는 두 단계가 「비밀번호를 바꾸고 바로 들어간다」를
+ * 매번 막았다. `ADMIN_PASSWORD`에 원문을 넣으면 그것으로도 통과한다.
+ *
+ * **부트스트랩 자리에만 둔다.** 콘솔에서 만든 계정(`structured.admin_accounts`)은
+ * 해시만 담고 여기 닿지 않는다 — 원문을 표에 넣으면 표를 읽을 수 있는 모두가
+ * 모두의 비밀번호를 읽는다.
+ *
+ * 원문 쪽이 약하다는 것을 숨기지 않는다. 배포 대시보드를 볼 수 있는 사람은 그대로
+ * 읽고, 해시는 읽어도 되돌릴 수 없다. `ADMIN_PASSWORD`를 지우면 곧바로 해시 방식으로
+ * 돌아간다. **바꿀 때는 둘을 함께 손본다** — 하나만 맞아도 통과하므로 원문만 바꾸고
+ * 옛 해시를 두면 옛 비밀번호가 계속 통한다.
+ */
+export function bootstrapPassword(): string | undefined {
+  return process.env.ADMIN_PASSWORD?.trim() || undefined;
+}
+
 export type ResolvedAdmin = {
   role: AdminRole;
   /**
