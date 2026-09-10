@@ -24,9 +24,18 @@ export const PUBLIC_SOURCES = {
     dateColumn: '',
     checkedOn: '2026-09-04',
   },
-  /** 소상공인진흥공단 OpenAPI — 서울특별시 웨딩업종 전수 (SBIZ_API_KEY 필수) */
+  /**
+   * 소상공인진흥공단 OpenAPI — 서울특별시 웨딩업종 전수 (SBIZ_API_KEY 필수).
+   *
+   * **경로에 `/v2`를 붙이지 않는다.** 운영계정 승인 화면의 상세기능 14번은
+   * `/storeListInUpjong`이고 End Point는 `.../api/open/sdsc2`다. 예전 코드는
+   * `.../storeListInUpjong/v2`를 불렀는데, 같은 키로 버전 접미사가 없는
+   * `largeUpjongList`·`smallUpjongList`는 정상 응답하면서 이 경로만
+   * SERVICE_KEY_IS_NOT_REGISTERED_ERROR(reason 30) 403이 났다 —
+   * 승인 목록에 없는 다른 경로였기 때문이다(2026-09-09 확인).
+   */
   'sbiz-seoul': {
-    url: 'https://apis.data.go.kr/B553077/api/open/sdsc2/storeListInUpjong/v2',
+    url: 'https://apis.data.go.kr/B553077/api/open/sdsc2/storeListInUpjong',
     name: '소상공인시장진흥공단 서울특별시 상권정보',
     format: 'sbiz-api' as const,
     nameColumn: 'bizesNm',
@@ -36,7 +45,7 @@ export const PUBLIC_SOURCES = {
   },
   /** 소상공인진흥공단 OpenAPI — 경기도 웨딩업종 전수 (SBIZ_API_KEY 필수) */
   'sbiz-gyeonggi': {
-    url: 'https://apis.data.go.kr/B553077/api/open/sdsc2/storeListInUpjong/v2',
+    url: 'https://apis.data.go.kr/B553077/api/open/sdsc2/storeListInUpjong',
     name: '소상공인시장진흥공단 경기도 상권정보',
     format: 'sbiz-api' as const,
     nameColumn: 'bizesNm',

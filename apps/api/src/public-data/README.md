@@ -26,7 +26,33 @@ npm run public-data:import --workspace @weddingpick/api -- --source sbiz --file 
 ```
 
 [공식 출처](https://www.data.go.kr/data/15012005/openapi.do).
-전국 API는 활용신청·키가 필요하며 이번 구현에는 인증 API 자동 순회가 포함되지 않는다.
+
+## 운영 OpenAPI (sbiz-seoul · sbiz-gyeonggi)
+
+운영계정 승인 완료 — 신청유형 운영계정, 처리상태 승인, 활용기간 2026-09-08~2028-09-08.
+End Point `https://apis.data.go.kr/B553077/api/open/sdsc2`, 상세기능 19종, 각 일일 트래픽 1,000,000.
+이용허락범위 제한 없음이라 별도 출처표시 의무는 없다 — 화면 문구는 바꾸지 않는다.
+
+키는 `SBIZ_API_KEY`로만 읽는다(GitHub Secrets → `infra/render-env.yml`이 Render로 전달).
+저장소·문서·로그·리포트 JSON 어디에도 키 값을 적지 않는다.
+
+**업종코드는 코드에 박지 않는다.** 조회할 업종은 설정에서 온다:
+
+```sh
+# 1) 코드 조사 — DB 미반영. 대분류 → 중분류 → 소분류 순으로 좁힌다.
+npm run public-data:import --workspace @weddingpick/api -- --lookup-category --level large
+npm run public-data:import --workspace @weddingpick/api -- --lookup-category --level small --parent-large <대분류> --keyword 예식
+
+# 2) 확인한 코드로 한 지역만 소량 수집 (--apply 없이)
+npm run public-data:import --workspace @weddingpick/api -- --source sbiz-seoul \
+  --upjong-div-id indsSclsCd --upjong-codes <코드1>,<코드2> --out ../../.collection
+```
+
+`--upjong-codes`(또는 `SBIZ_UPJONG_CODES`)가 비면 수집을 시작하지 않고 실패한다.
+어떤 코드가 0건을 돌려주면 그것도 실패로 올린다 — 틀린 코드는 오류 대신 빈 목록으로 오기 때문에
+조용한 0건 수집이 예전 `'Q'` 하드코딩에서 실제로 일어났다.
+CI에서는 저장소 Variables `SBIZ_UPJONG_CODES`·`SBIZ_UPJONG_DIV_ID`를 읽고, 비어 있으면 sbiz 출처를 건너뛴다.
+전국 확대는 이 소량 검증이 끝난 뒤 `sources.ts`에 시도를 추가하는 방식으로 넓힌다.
 CSV 어댑터는 업종명·웨딩 관련 상호로 제한적으로 분류한다. 일반 사진관·미용실은 제외하며,
 이 분류도 웨딩 전문성 확정은 아니다. 상가업소번호를 원천 식별키로 쓰고 원본 기준일이
 없으면 null을 유지한다. 64 MiB 이하 파일, DB 반영은 실행당 1,000업체 이내로 제한한다.
