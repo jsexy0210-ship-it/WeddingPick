@@ -2,7 +2,7 @@ import { Link, Redirect, Slot, usePathname } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Colors, FontSize } from '@weddingpick/ui';
+import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 
 import { clearAdminToken, loadAdminToken } from './_session';
 
@@ -68,7 +68,20 @@ function Sidebar({ pathname }: { pathname: string }) {
           const active = item.href ? pathname.startsWith(item.href) : false;
           return (
             <Link key={item.key} href={item.href as never} asChild>
-              <Pressable style={[styles.navItem, active && styles.navItemActive]}>
+              {/*
+                * **스타일을 평탄화해서 넘긴다.** `asChild`는 자식 요소를 복제해 자기 props와
+                * 합치는데, 그 과정을 거친 스타일이 배열이면 평탄화 없이 DOM까지 내려간다.
+                * react-dom은 `for (name in styles) node.style[name] = ...`로 도므로 배열의
+                * 키 `"0"`이 들어가고, 거기서 죽는다.
+                *
+                *   TypeError: Failed to set an indexed property [0] on 'CSSStyleDeclaration'
+                *
+                * 관리자 사이드바는 로그인한 뒤에만 그려져서, 로그인이 막혀 있던 동안에는
+                * 이 자리에 닿은 적이 없었다. 로그인을 고치자 바로 드러났다(2026-09-10).
+                * 개발 모드는 같은 것을 말로 알려준다 — 「You are passing an array of styles
+                * to a child of <Slot>」.
+                */}
+              <Pressable style={StyleSheet.flatten([styles.navItem, active && styles.navItemActive])}>
                 <Text style={[styles.navLabel, active && styles.navLabelActive]}>{item.label}</Text>
               </Pressable>
             </Link>
@@ -247,4 +260,87 @@ const styles = StyleSheet.create({
     fontSize: FontSize.t6,
     color: Colors.light.textAssistive,
   },
+  errorRoot: {
+    flex: 1,
+    padding: 32,
+    gap: 16,
+    backgroundColor: Colors.light.background,
+    minHeight: '100vh' as unknown as number,
+  },
+  errorTitle: {
+    fontSize: FontSize.t3,
+    lineHeight: LineHeight.t3,
+    fontWeight: '700',
+    color: Colors.light.negative,
+  },
+  errorLead: {
+    fontSize: FontSize.t7,
+    lineHeight: LineHeight.t7Loose,
+    color: Colors.light.textSecondary,
+  },
+  errorBox: {
+    flex: 1,
+    padding: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.light.negativeBorder,
+    backgroundColor: Colors.light.negativeBackground,
+  },
+  errorText: {
+    fontSize: FontSize.t7,
+    lineHeight: LineHeight.t7Loose,
+    color: Colors.light.negative,
+  },
+  errorRetry: {
+    height: 52,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.light.tint,
+  },
+  errorRetryText: {
+    fontSize: FontSize.t6,
+    fontWeight: '700',
+    color: Colors.light.background,
+  },
 });
+
+/**
+ * 관리자 콘솔 전용 오류 경계.
+ *
+ * expo-router는 라우트 파일이 `ErrorBoundary`를 내보내면 그 구간의 실패를 여기서
+ * 받는다. 뿌리 경계(`app/_layout.tsx`)는 «잠시 문제가 생겼어요»만 띄우고 내용을
+ * 숨긴다 — 사용자 화면에서는 맞는 판단이다. 스택에는 파일 경로가 들어 있고
+ * 사용자가 그걸로 할 수 있는 일이 없다.
+ *
+ * **관리자에서는 반대다.** 여기서 화면이 죽으면 고칠 사람이 그 화면을 보고 있다.
+ * 내용을 숨기면 진단하려고 개발자 도구를 열어야 하는데, 콘솔은 운영자가 폰으로
+ * 열 수 있는 것이 아니다(2026-09-10 사용자 보고 — 「폰이라 보기 힘들다」).
+ * 그래서 오류 이름 · 메시지 · 스택 앞부분을 화면에 그대로 적는다.
+ *
+ * 콘솔에도 계속 남긴다. 화면은 지나가지만 로그는 남는다.
+ */
+export function ErrorBoundary({ error, retry }: { error: Error; retry: () => Promise<void> }) {
+  console.error('관리자 화면을 그리다 죽었다.', error);
+
+  /* 스택 전체는 화면을 덮는다. 죽은 자리를 찾는 데는 앞부분이면 된다. */
+  const stack = (error.stack ?? '').split('\n').slice(0, 12).join('\n');
+
+  return (
+    <View style={styles.errorRoot}>
+      <Text style={styles.errorTitle}>화면을 그리다 멈췄어요</Text>
+      <Text style={styles.errorLead}>
+        아래 내용을 그대로 전달해주세요. 이 글이 어디가 왜 멈췄는지 말해줘요.
+      </Text>
+      <ScrollView style={styles.errorBox}>
+        <Text style={styles.errorText} selectable>
+          {error.name}: {error.message}
+          {stack ? `\n\n${stack}` : ''}
+        </Text>
+      </ScrollView>
+      <Pressable style={styles.errorRetry} onPress={() => void retry()}>
+        <Text style={styles.errorRetryText}>다시 시도</Text>
+      </Pressable>
+    </View>
+  );
+}
