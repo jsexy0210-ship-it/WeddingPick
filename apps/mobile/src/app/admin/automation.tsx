@@ -8,7 +8,6 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
-import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 
 type WorkflowStatus = 'healthy' | 'degraded' | 'down' | 'recovering';
 type Workflow = {
@@ -47,6 +46,9 @@ export default function AutomationScreen() {
   const [error, setError] = useState<string | null>(null);
   const [rev, setRev] = useState(0);
   const [triggering, setTriggering] = useState<string | null>(null);
+  /* 단추를 눌러 실패한 것. 목록 조회 오류(`error`)와 자리를 나눈다 — 같은 칸을
+     쓰면 버튼 한 번에 표가 통째로 사라진다. */
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,16 +73,23 @@ export default function AutomationScreen() {
     setTriggering(workflowId);
     try {
       await apiFetch(`/v1/admin/automation/${workflowId}/recover`, { method: 'POST' });
+      setActionError(null);
       setRev((r) => r + 1);
-    } catch { /* 무시 */ } finally { setTriggering(null); }
+    } catch (e: unknown) {
+      // 삼키지 않는다. 눌렀는데 아무 일도 없는 것처럼 보이는 것이 가장 나쁘다.
+      setActionError(e instanceof Error ? e.message : '요청 실패');
+    } finally { setTriggering(null); }
   }
 
   async function drainDlq(workflowId: string) {
     setTriggering(workflowId + '_dlq');
     try {
       await apiFetch(`/v1/admin/automation/${workflowId}/drain-dlq`, { method: 'POST' });
+      setActionError(null);
       setRev((r) => r + 1);
-    } catch { /* 무시 */ } finally { setTriggering(null); }
+    } catch (e: unknown) {
+      setActionError(e instanceof Error ? e.message : '요청 실패');
+    } finally { setTriggering(null); }
   }
 
   return (
@@ -92,7 +101,8 @@ export default function AutomationScreen() {
         </Pressable>
       </View>
 
-      <PendingBackendNotice actions="복구 실행 · DLQ 재처리" />
+      {actionError && <Text style={styles.actionError}>{actionError}</Text>}
+
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
@@ -167,18 +177,18 @@ export default function AutomationScreen() {
                 <View style={styles.wfActions}>
                   {wf.status === 'down' && (
                     <Pressable
-                      style={[styles.recoverBtn, (BACKEND_PENDING || triggering === wf.id) && styles.btnDisabled]}
+                      style={[styles.recoverBtn, (triggering === wf.id) && styles.btnDisabled]}
                       onPress={() => void triggerRecovery(wf.id)}
-                      disabled={BACKEND_PENDING || triggering !== null}
+                      disabled={triggering !== null}
                     >
                       <Text style={styles.recoverBtnText}>{triggering === wf.id ? '복구 중…' : '복구 실행'}</Text>
                     </Pressable>
                   )}
                   {wf.dlqSize > 0 && (
                     <Pressable
-                      style={[styles.dlqBtn, (BACKEND_PENDING || triggering === wf.id + '_dlq') && styles.btnDisabled]}
+                      style={[styles.dlqBtn, (triggering === wf.id + '_dlq') && styles.btnDisabled]}
                       onPress={() => void drainDlq(wf.id)}
-                      disabled={BACKEND_PENDING || triggering !== null}
+                      disabled={triggering !== null}
                     >
                       <Text style={styles.dlqBtnText}>
                         {triggering === wf.id + '_dlq' ? '처리 중…' : `DLQ 재처리 (${wf.dlqSize})`}
@@ -197,6 +207,7 @@ export default function AutomationScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
+  actionError: { color: Colors.light.negative, fontSize: FontSize.t7, paddingHorizontal: 24, paddingTop: 8 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -8,6 +8,7 @@ import type { MarketingChannel, MarketingFormat } from '@weddingpick/api-contrac
 import * as marketingContent from '../marketing/content';
 import * as marketingStore from '../marketing/store';
 import * as adAdmin from '../ad-admin';
+import * as adminOps from '../admin-ops';
 import * as aiCostAdmin from '../ai-cost-admin';
 import { currentUserId, requireOperatorUser } from '../auth/plugin';
 import { isKnownSourceKey } from '../public-data/sources';
@@ -151,6 +152,22 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
       throw error;
     }
   }
+
+  /*
+   * 운영 · 시스템 계열 단추가 보내는 본문.
+   *
+   * **사유는 선택이다.** 화면이 아직 사유 칸을 그리지 않는 자리가 있고, 그것을
+   * 이유로 라우트를 막으면 단추가 눌리지 않는 채로 남는다. 대신 서버가 「관리자
+   * 콘솔에서 처리」를 적어 기록이 비지 않게 한다 — 사유 없는 줄을 남기지 않는 것이
+   * 스키마의 약속이다.
+   */
+  const reasonBody = z.object({ reason: z.string().trim().min(1).optional() });
+  const adStatusBody = z.object({
+    status: z.enum(['active', 'paused']),
+    reason: z.string().trim().min(1).optional(),
+  });
+  const policyValueBody = z.object({ value: z.string() });
+  const clauseBody = z.object({ body: z.string() });
 
   // ── 결정 브리핑 ──────────────────────────────────────────────
   app.get('/v1/admin/decisions/briefing', auth, async () => ({
@@ -1177,9 +1194,7 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   });
 
   // ─── Ads ──────────────────────────────────────────────────────────────────
-  app.get('/v1/admin/ads', auth, async () => {
-    return { items: [] as unknown[], total: 0 };
-  });
+  app.get('/v1/admin/ads', auth, async () => adminOps.adPlacements(context.pool));
   app.post('/v1/admin/ads', auth, async () => {
     return { id: randomUUID() };
   });
@@ -1190,12 +1205,44 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
     return reply.status(204).send();
   });
 
+  /*
+   * 집행 정지·재개. 화면(`ads.tsx`)이 PATCH로 `{ status }`를 보낸다 — POST가
+   * 아니다. 서버 편한 모양으로 고치지 않고 부르는 대로 받는다.
+   */
+  app.patch<{ Params: { id: string }; Body: unknown }>(
+    '/v1/admin/ads/:id/status',
+    auth,
+    async (request, reply) => {
+      const body = adStatusBody.parse(request.body ?? {});
+      await run(() =>
+        adminOps.setAdStatus(
+          context.pool,
+          request.params.id,
+          body.status,
+          currentUserId(request),
+          body.reason
+        )
+      );
+      return reply.status(204).send();
+    }
+  );
+
   // ─── Ads Gate ─────────────────────────────────────────────────────────────
-  app.get('/v1/admin/ads-gate', auth, async () => {
-    return { enabled: false, rules: [] as unknown[] };
-  });
+  app.get('/v1/admin/ads-gate', auth, async () => adminOps.adsGate(context.pool));
   app.patch('/v1/admin/ads-gate', auth, async (_req, reply) => {
     return reply.status(204).send();
+  });
+
+  /*
+   * 실운영 전환 승인.
+   *
+   * **승인이 전환은 아니다.** `ads.production_gate.activated`는 기본값이 꺼짐이고
+   * 이 판에 그것을 켜는 길이 없다 — 광고 실운영 전환은 대표 오더 대기 상태다
+   * (`CLAUDE.md` 「진행 상태」). 응답이 그 사실을 그대로 말한다.
+   */
+  app.post<{ Body: unknown }>('/v1/admin/ads-gate/approve', auth, async (request) => {
+    const body = reasonBody.parse(request.body ?? {});
+    return run(() => adminOps.approveAdsGate(context.pool, currentUserId(request), body.reason));
   });
 
   // ─── AI Usage ─────────────────────────────────────────────────────────────
@@ -1210,12 +1257,34 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   });
 
   // ─── Automation ───────────────────────────────────────────────────────────
-  app.get('/v1/admin/automation', auth, async () => {
-    return { rules: [] as unknown[], enabled: true };
-  });
+  app.get('/v1/admin/automation', auth, async () => adminOps.automationStatus(context.pool));
   app.patch('/v1/admin/automation', auth, async (_req, reply) => {
     return reply.status(204).send();
   });
+
+  /** 실패한 줄을 다시 대기 목록에 세운다. 지우지 않는다. */
+  app.post<{ Params: { id: string }; Body: unknown }>(
+    '/v1/admin/automation/:id/recover',
+    auth,
+    async (request) => {
+      const body = reasonBody.parse(request.body ?? {});
+      return run(() =>
+        adminOps.recoverWorkflow(context.pool, request.params.id, currentUserId(request), body.reason)
+      );
+    }
+  );
+
+  /** DLQ를 «확인했다»로 표시한다. 실패 기록 자체는 남는다. */
+  app.post<{ Params: { id: string }; Body: unknown }>(
+    '/v1/admin/automation/:id/drain-dlq',
+    auth,
+    async (request) => {
+      const body = reasonBody.parse(request.body ?? {});
+      return run(() =>
+        adminOps.drainDlq(context.pool, request.params.id, currentUserId(request), body.reason)
+      );
+    }
+  );
 
   // ─── Biz Queue ────────────────────────────────────────────────────────────
   app.get('/v1/admin/biz-queue', auth, async () => {
@@ -1232,12 +1301,44 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   });
 
   // ─── Campaigns ────────────────────────────────────────────────────────────
-  app.get('/v1/admin/campaigns', auth, async () => {
-    return { items: [] as unknown[], total: 0 };
-  });
+  app.get('/v1/admin/campaigns', auth, async () => adminOps.campaignGrants(context.pool));
   app.post('/v1/admin/campaigns', auth, async () => {
     return { id: randomUUID() };
   });
+
+  /*
+   * 지급 · 차단.
+   *
+   * 판단 로직을 새로 쓰지 않는다 — `reward-admin`의 `decide`가 이미 「받는 본인은
+   * 지급할 수 없다」 · 「이미 처리된 건은 다시 처리하지 않는다」 · 감사 기록 ·
+   * 알림까지 한 트랜잭션에서 한다. 여기서는 화면의 말(`pay`/`block`)을 그 함수의
+   * 말로 옮길 뿐이다.
+   */
+  app.post<{ Params: { id: string; action: string }; Body: unknown }>(
+    '/v1/admin/campaigns/:id/:action',
+    auth,
+    async (request, reply) => {
+      const { action } = request.params;
+
+      if (action !== 'pay' && action !== 'block') {
+        throw new ApiError('invalid_request', '지급 또는 차단만 할 수 있습니다.');
+      }
+
+      const body = reasonBody.parse(request.body ?? {});
+
+      await run(() =>
+        rewardAdmin.decide(
+          context.pool,
+          request.params.id,
+          action === 'pay' ? 'paid' : 'blocked',
+          currentUserId(request),
+          body.reason ?? '관리자 콘솔에서 처리'
+        )
+      );
+
+      return reply.status(204).send();
+    }
+  );
 
   // ─── Data / Pipeline ──────────────────────────────────────────────────────
   app.get('/v1/admin/data/pipeline', auth, async () => {
@@ -1451,88 +1552,117 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   });
 
   // ─── Policy Engine ────────────────────────────────────────────────────────
-  app.get('/v1/admin/policy-engine', auth, async () => {
-    return { policies: [] as unknown[], version: 0 };
-  });
+  app.get('/v1/admin/policy-engine', auth, async () => adminOps.policyRules(context.pool));
   app.patch('/v1/admin/policy-engine', auth, async (_req, reply) => {
     return reply.status(204).send();
   });
 
+  /*
+   * 기준값 하나를 고친다. 화면(`policy-engine.tsx`)이 PATCH로 `{ value }`를 보낸다.
+   *
+   * 고칠 때마다 되돌릴 자리를 하나 만든다 — 되돌리는 길이 없으면 고치기 전에
+   * 손이 멈추고, 그러면 이 화면이 있을 이유가 없다.
+   */
+  app.patch<{ Params: { id: string }; Body: unknown }>(
+    '/v1/admin/policy-engine/:id',
+    auth,
+    async (request) =>
+      run(() =>
+        adminOps.setPolicyRule(
+          context.pool,
+          request.params.id,
+          policyValueBody.parse(request.body ?? {}).value,
+          currentUserId(request)
+        )
+      )
+  );
+
   // ─── Rollback ─────────────────────────────────────────────────────────────
-  app.get('/v1/admin/rollback', auth, async () => {
-    return { snapshots: [] as unknown[] };
-  });
+  app.get('/v1/admin/rollback', auth, async () => adminOps.rollbackTargets(context.pool));
+
+  /** 첫 단계. 승인만 한다 — 여기서 되돌아가는 것은 없다. */
+  app.post<{ Params: { id: string }; Body: unknown }>(
+    '/v1/admin/rollback/:id/approve',
+    auth,
+    async (request, reply) => {
+      const body = reasonBody.parse(request.body ?? {});
+      await run(() =>
+        adminOps.approveRollback(context.pool, request.params.id, currentUserId(request), body.reason)
+      );
+      return reply.status(204).send();
+    }
+  );
+
+  /*
+   * 둘째 단계. **승인된 것만 실행한다.**
+   *
+   * 한 번에 도는 길을 만들지 않는다. 여기서 막고, 0130의 `trigger_follows_approval`이
+   * 한 번 더 막는다 — 롤백 실행은 사용자 화면이 바로 바뀌는 조작이다.
+   */
+  app.post<{ Params: { id: string }; Body: unknown }>(
+    '/v1/admin/rollback/:id/trigger',
+    auth,
+    async (request) => {
+      const body = reasonBody.parse(request.body ?? {});
+      return run(() =>
+        adminOps.triggerRollback(context.pool, request.params.id, currentUserId(request), body.reason)
+      );
+    }
+  );
 
   // ─── Terms ────────────────────────────────────────────────────────────────
-  app.get('/v1/admin/terms', auth, async () => {
-    return { items: [] as unknown[] };
-  });
+  app.get('/v1/admin/terms', auth, async () => adminOps.termsDocuments(context.pool));
   app.post('/v1/admin/terms', auth, async () => {
     return { id: randomUUID() };
   });
 
-  // ─── Audit Log ────────────────────────────────────────────────────────────
+  /** 조문 편집. 화면(`terms.tsx`)이 PUT으로 `{ body }`를 보낸다. */
+  app.put<{ Params: { id: string; clauseId: string }; Body: unknown }>(
+    '/v1/admin/terms/:id/clauses/:clauseId',
+    auth,
+    async (request, reply) => {
+      const doc = request.params.id;
+
+      if (!adminOps.isDocType(doc)) throw notFound('문서');
+
+      await run(() =>
+        adminOps.editTermsClause(
+          context.pool,
+          doc,
+          request.params.clauseId,
+          clauseBody.parse(request.body ?? {}).body,
+          currentUserId(request)
+        )
+      );
+
+      return reply.status(204).send();
+    }
+  );
+
+  /** 초안 공개. 공개한 판은 얼어붙고, 이어서 고칠 새 초안이 같이 생긴다. */
+  app.post<{ Params: { id: string }; Body: unknown }>(
+    '/v1/admin/terms/:id/publish',
+    auth,
+    async (request) => {
+      const doc = request.params.id;
+
+      if (!adminOps.isDocType(doc)) throw notFound('문서');
+
+      const body = reasonBody.parse(request.body ?? {});
+      return run(() => adminOps.publishTerms(context.pool, doc, currentUserId(request), body.reason));
+    }
+  );
+
+  /*
+   * ─── Audit Log ────────────────────────────────────────────────────────────
+   *
+   * 화면(`audit-log.tsx`)은 `?q=`로 검색어를 보내고 `{ items, total, hasMore, cursor }`를
+   * 읽는다. 예전 서버는 `?workflow=`·`?cursor=`를 읽고 `nextCursor`를 돌려줬다 —
+   * 주소는 같은데 **어느 쪽도 서로를 만나지 못했다.** 화면 쪽으로 맞춘다.
+   */
   app.get('/v1/admin/audit-log', auth, async (request) => {
     const q = request.query as Record<string, string | undefined>;
-    const cursor = q['cursor'];
-    const workflow = q['workflow'];
-    const limit = 50;
-    const params: unknown[] = [];
-    let idx = 1;
-    const clauses: string[] = [];
-    if (workflow) {
-      clauses.push(`workflow = $${idx}`);
-      params.push(workflow);
-      idx++;
-    }
-    if (cursor) {
-      clauses.push(`created_at < $${idx}`);
-      params.push(cursor);
-      idx++;
-    }
-    const where = clauses.length ? 'WHERE ' + clauses.join(' AND ') : '';
-    params.push(limit + 1);
-    const { rows } = await context.pool.query<{
-      id: string;
-      workflow: string;
-      step: string | null;
-      subject_kind: string;
-      subject_id: string;
-      decider: string;
-      decision: string;
-      reason_code: string | null;
-      execution_status: string;
-      cost_usd: string | null;
-      created_at: Date;
-    }>(
-      `SELECT id, workflow, step, subject_kind, subject_id,
-              decider, decision, reason_code, execution_status,
-              cost_usd::text, created_at
-       FROM structured.decisions
-       ${where}
-       ORDER BY created_at DESC
-       LIMIT $${idx}`,
-      params
-    );
-    const hasMore = rows.length > limit;
-    const items = hasMore ? rows.slice(0, limit) : rows;
-    return {
-      items: items.map((r) => ({
-        id: r.id,
-        workflow: r.workflow,
-        step: r.step ?? null,
-        subjectKind: r.subject_kind,
-        subjectId: r.subject_id,
-        decider: r.decider,
-        decision: r.decision,
-        reasonCode: r.reason_code ?? null,
-        executionStatus: r.execution_status,
-        costUsd: r.cost_usd !== null ? Number(r.cost_usd) : null,
-        createdAt: r.created_at.toISOString(),
-      })),
-      hasMore,
-      nextCursor: hasMore ? items[items.length - 1]!.created_at.toISOString() : null,
-    };
+    return adminOps.auditLog(context.pool, { q: q['q'], cursor: q['cursor'] });
   });
 
   // ─── Data / Price Stats (WP-ADM-PRICE) ────────────────────────────────────
@@ -1561,9 +1691,21 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
        LIMIT 200`
     );
 
+    /*
+     * 공개 단계 기준을 코드에 박지 않고 `structured.policy_rules`에서 읽는다.
+     * 정책 규칙 화면(WP-ADM-051)이 고치는 값이 실제로 여기에 닿는다 — 고쳐도
+     * 아무 일도 안 일어나는 값을 그 화면에 두지 않기 위해서다.
+     */
+    const [stage1, stage2, stage3] = await Promise.all([
+      adminOps.policyNumber(context.pool, 'public_stage.stage1_min', 3),
+      adminOps.policyNumber(context.pool, 'public_stage.stage2_min', 5),
+      adminOps.policyNumber(context.pool, 'public_stage.stage3_min', 10),
+    ]);
+
     const vendors = rows.map((r) => {
       const count = Number(r.data_count);
-      const stage: 0 | 1 | 2 | 3 = count >= 10 ? 3 : count >= 5 ? 2 : count >= 3 ? 1 : 0;
+      const stage: 0 | 1 | 2 | 3 =
+        count >= stage3 ? 3 : count >= stage2 ? 2 : count >= stage1 ? 1 : 0;
       return {
         vendorId: r.vendor_id,
         vendorName: r.vendor_name,

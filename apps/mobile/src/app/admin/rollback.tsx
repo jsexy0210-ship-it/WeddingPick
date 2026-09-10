@@ -8,8 +8,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
-import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 import { formatDateTimeDot } from '@/features/common/format-date';
+import { DangerConfirm } from '@/features/admin/danger-confirm';
 
 type RollbackStatus = 'stable' | 'anomaly_detected' | 'rolling_back' | 'rolled_back' | 'pending_approval';
 type RollbackItem = {
@@ -49,6 +49,11 @@ export default function RollbackScreen() {
   const [error, setError] = useState<string | null>(null);
   const [rev, setRev] = useState(0);
   const [acting, setActing] = useState<string | null>(null);
+  /* 단추를 눌러 실패한 것. 목록 조회 오류와 자리를 나눈다 — 같은 칸을 쓰면
+     버튼 한 번에 표가 통째로 사라져, 무엇에 실패했는지 보려다 보던 것을 잃는다. */
+  const [actionError, setActionError] = useState<string | null>(null);
+  /** 실행을 확인받는 중인 대상. v3.27 «위험한 조작은 한 번 더 확인». */
+  const [confirming, setConfirming] = useState<RollbackItem | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,21 +74,26 @@ export default function RollbackScreen() {
     return () => { cancelled = true; };
   }, [rev]);
 
-  async function approveRollback(id: string) {
-    setActing(id + '_approve');
+  /*
+   * 실패를 삼키지 않는다. 예전에는 빈 `catch`가 404를 먹어 **눌러도 아무 일이
+   * 없는데 성공한 것처럼 보였다.** 무엇이 안 됐는지 관리자가 알아야 다음 판단을 한다.
+   */
+  async function act(id: string, path: 'approve' | 'trigger') {
+    setActing(id + '_' + path);
     try {
-      await apiFetch(`/v1/admin/rollback/${id}/approve`, { method: 'POST' });
+      await apiFetch(`/v1/admin/rollback/${id}/${path}`, { method: 'POST' });
+      setActionError(null);
+      setConfirming(null);
       setRev((r) => r + 1);
-    } catch { /* 무시 */ } finally { setActing(null); }
+    } catch (e: unknown) {
+      setActionError(e instanceof Error ? e.message : '요청 실패');
+    } finally {
+      setActing(null);
+    }
   }
 
-  async function triggerRollback(id: string) {
-    setActing(id + '_trigger');
-    try {
-      await apiFetch(`/v1/admin/rollback/${id}/trigger`, { method: 'POST' });
-      setRev((r) => r + 1);
-    } catch { /* 무시 */ } finally { setActing(null); }
-  }
+  /** 승인은 되돌릴 것이 없다 — 다음 단계를 열 뿐이라 확인창 없이 바로 간다. */
+  const approveRollback = (id: string) => act(id, 'approve');
 
   return (
     <View style={styles.root}>
@@ -94,7 +104,8 @@ export default function RollbackScreen() {
         </Pressable>
       </View>
 
-      <PendingBackendNotice actions="승인 · 실행" />
+      {actionError && <Text style={styles.actionError}>{actionError}</Text>}
+
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
@@ -141,9 +152,9 @@ export default function RollbackScreen() {
               <View style={styles.actions}>
                 {item.status === 'pending_approval' && (
                   <Pressable
-                    style={[styles.approveBtn, (BACKEND_PENDING || acting === item.id + '_approve') && styles.btnDisabled]}
+                    style={[styles.approveBtn, (acting === item.id + '_approve') && styles.btnDisabled]}
                     onPress={() => void approveRollback(item.id)}
-                    disabled={BACKEND_PENDING || acting !== null}
+                    disabled={acting !== null}
                   >
                     <Text style={styles.approveBtnText}>
                       {acting === item.id + '_approve' ? '처리 중…' : '롤백 승인'}
@@ -152,9 +163,9 @@ export default function RollbackScreen() {
                 )}
                 {item.status === 'anomaly_detected' && !item.requiresApproval && (
                   <Pressable
-                    style={[styles.triggerBtn, (BACKEND_PENDING || acting === item.id + '_trigger') && styles.btnDisabled]}
-                    onPress={() => void triggerRollback(item.id)}
-                    disabled={BACKEND_PENDING || acting !== null}
+                    style={[styles.triggerBtn, (acting === item.id + '_trigger') && styles.btnDisabled]}
+                    onPress={() => { setActionError(null); setConfirming(item); }}
+                    disabled={acting !== null}
                   >
                     <Text style={styles.triggerBtnText}>
                       {acting === item.id + '_trigger' ? '처리 중…' : '즉시 롤백'}
@@ -166,12 +177,46 @@ export default function RollbackScreen() {
           ))}
         </ScrollView>
       )}
+
+      {/*
+        무엇이 바뀌는지 항목으로 보인 뒤 한 번 더 확인한다(v3.27). 롤백 실행은
+        사용자 화면이 바로 바뀌는 조작이라 「정말요?」 한 줄로 끝내지 않는다.
+      */}
+      <DangerConfirm
+        visible={confirming !== null}
+        title="롤백을 실행할까요?"
+        description="되돌린 뒤에는 이 화면에서 다시 앞으로 감을 수 없어요."
+        changes={
+          confirming
+            ? [
+                `대상: ${confirming.name}`,
+                confirming.type === 'policy'
+                  ? '정책 값이 변경 직전 값으로 되돌아가요'
+                  : '배포 되돌리기 요청만 기록돼요. 실제 되돌리기는 사람이 이어받아요',
+                confirming.anomalyMetric
+                  ? `근거: ${confirming.anomalyMetric} ${confirming.anomalyValue ?? ''} (기준 ${confirming.threshold ?? ''})`
+                  : '이상 지표 없이 실행해요',
+                '실행 기록이 감사 기록에 남아요',
+              ]
+            : []
+        }
+        confirmLabel="롤백 실행"
+        busy={acting !== null}
+        onConfirm={() => { if (confirming) void act(confirming.id, 'trigger'); }}
+        onCancel={() => setConfirming(null)}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
+  actionError: {
+    color: Colors.light.negative,
+    fontSize: FontSize.t7,
+    paddingHorizontal: 24,
+    paddingTop: 8,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -8,7 +8,6 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
-import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 import { formatMonthDayDot } from '@/features/common/format-date';
 
 type AdStatus = 'active' | 'paused' | 'expired' | 'pending';
@@ -55,6 +54,8 @@ export default function AdsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [rev, setRev] = useState(0);
   const [acting, setActing] = useState<string | null>(null);
+  /* 단추를 눌러 실패한 것. 목록 조회 오류와 자리를 나눈다. */
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -83,8 +84,12 @@ export default function AdsScreen() {
         method: 'PATCH',
         body: JSON.stringify({ status: newStatus }),
       });
+      setActionError(null);
       setRev((r) => r + 1);
-    } catch { /* 무시 */ } finally { setActing(null); }
+    } catch (e: unknown) {
+      // 삼키지 않는다. 정지가 안 됐는데 된 것처럼 보이면 광고가 계속 나간다.
+      setActionError(e instanceof Error ? e.message : '요청 실패');
+    } finally { setActing(null); }
   }
 
   return (
@@ -97,7 +102,8 @@ export default function AdsScreen() {
         </Pressable>
       </View>
 
-      <PendingBackendNotice actions="정지 · 재개" />
+      {actionError && <Text style={styles.actionError}>{actionError}</Text>}
+
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
@@ -144,9 +150,9 @@ export default function AdsScreen() {
               <View style={styles.colAction}>
                 {(item.status === 'active' || item.status === 'paused') && (
                   <Pressable
-                    style={[styles.inlineBtn, (BACKEND_PENDING || acting === item.id) && styles.btnDisabled]}
+                    style={[styles.inlineBtn, (acting === item.id) && styles.btnDisabled]}
                     onPress={() => void toggleStatus(item.id, item.status)}
-                    disabled={BACKEND_PENDING || acting !== null}
+                    disabled={acting !== null}
                   >
                     <Text style={styles.inlineBtnText}>
                       {acting === item.id ? '…' : item.status === 'active' ? '정지' : '재개'}
@@ -164,6 +170,7 @@ export default function AdsScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
+  actionError: { color: Colors.light.negative, fontSize: FontSize.t7, paddingHorizontal: 24, paddingTop: 8 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
