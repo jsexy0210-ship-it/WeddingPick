@@ -1,13 +1,26 @@
 /**
  * WP-ADM-002 일일 브리핑
- * 자동처리 · 성공률 · 자동복구 · 미해결 리스크 · AI비용 · 수익 · 특이사항
+ *
+ * 시안 `22-admin-ops.dc.html` 1번. 하루치 요약이고, 문제가 없으면 「오늘 사람이 볼 것은
+ * 없어요」가 초록 배너로 맨 위에 온다 — 그것이 이 화면의 목적이다. 미해결 리스크가
+ * 있을 때만 상단 색이 바뀐다.
  */
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import {
+  Card,
+  CardGrid,
+  EmptyState,
+  KpiRow,
+  LoadError,
+  Page,
+  Rows,
+  StatusBanner,
+  type RowItem,
+  type Tone,
+} from './_ui';
 
 type RiskItem = { id: string; category: string; description: string; severity: 'high' | 'medium' | 'low' };
 type Anomaly = { time: string; description: string };
@@ -24,10 +37,11 @@ type BriefingData = {
   summary: string;
 };
 
-const SEVERITY_COLOR: Record<RiskItem['severity'], string> = {
-  high: '#e81607',
-  medium: '#805217',
-  low: '#1aa174',
+/** 리스크 심각도 → 행 앞 점. 배너 색도 가장 높은 심각도를 따른다. */
+const SEVERITY_TONE: Record<RiskItem['severity'], Tone> = {
+  high: 'bad',
+  medium: 'warn',
+  low: 'ok',
 };
 
 const SEVERITY_LABEL: Record<RiskItem['severity'], string> = {
@@ -35,6 +49,12 @@ const SEVERITY_LABEL: Record<RiskItem['severity'], string> = {
   medium: '중간',
   low: '낮음',
 };
+
+/** 문제 없으면 초록, 확인할 것이 있으면 주황, 조치가 필요하면 빨강(ADMIN.md 공통 규칙). */
+function bannerTone(risks: RiskItem[]): Tone {
+  if (risks.length === 0) return 'ok';
+  return risks.some((r) => r.severity === 'high') ? 'bad' : 'warn';
+}
 
 export default function BriefingScreen() {
   const [data, setData] = useState<BriefingData | null>(null);
@@ -61,204 +81,98 @@ export default function BriefingScreen() {
     return () => { cancelled = true; };
   }, [rev]);
 
+  const reload = () => setRev((r) => r + 1);
+
+  const riskRows: RowItem[] = (data?.unresolvedRisks ?? []).map((r) => ({
+    key: r.id,
+    dot: SEVERITY_TONE[r.severity],
+    name: r.category,
+    meta: r.description,
+    tail: SEVERITY_LABEL[r.severity],
+    tailKind: SEVERITY_TONE[r.severity],
+  }));
+
+  const anomalyRows: RowItem[] = (data?.anomalies ?? []).map((a, i) => ({
+    key: `${a.time}-${i}`,
+    dot: 'none',
+    name: a.description,
+    meta: a.time,
+  }));
+
+  const tone = bannerTone(data?.unresolvedRisks ?? []);
+
   return (
-    <View style={styles.root}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>일일 브리핑</Text>
-          {data && <Text style={styles.subtitle}>{data.date} 기준</Text>}
-        </View>
-        <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
-          <Text style={styles.refreshText}>새로 고침</Text>
-        </Pressable>
-      </View>
+    <Page
+      title="일일 브리핑"
+      sub={data ? `${data.date} 기준` : undefined}
+      action={{ label: '새로 고침', onPress: reload }}
+    >
+      <DelayedLoader active={loading} size={40} />
+      {!loading && error ? <LoadError message={error} onRetry={reload} /> : null}
 
-      <DelayedLoader active={loading} size={40} style={styles.centered} />
-      {!loading && error && (
-        <View style={styles.centered}>
-          <Text style={styles.errorText}>{error}</Text>
-          <Pressable style={styles.retryBtn} onPress={() => setRev((r) => r + 1)}>
-            <Text style={styles.retryText}>다시 시도</Text>
-          </Pressable>
-        </View>
-      )}
+      {!loading && !error && data ? (
+        <>
+          <StatusBanner
+            tone={tone}
+            title={
+              data.unresolvedRisks.length === 0
+                ? '오늘 사람이 볼 것은 없어요'
+                : `미해결 리스크 ${data.unresolvedRisks.length}건이 있어요`
+            }
+            detail={data.summary || undefined}
+          />
 
-      {!loading && !error && data && (
-        <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
-          {/* 요약 문구 */}
-          {data.summary ? (
-            <View style={styles.summaryBox}>
-              <Text style={styles.summaryText}>{data.summary}</Text>
-            </View>
-          ) : null}
+          <KpiRow
+            items={[
+              { label: '자동처리', value: `${data.autoProcessed.toLocaleString()}건` },
+              {
+                label: '성공률',
+                value: `${data.successRate.toFixed(1)}%`,
+                kind: data.successRate < 90 ? 'bad' : 'ok',
+              },
+              { label: '자동복구', value: `${data.autoRecovered.toLocaleString()}건`, kind: 'ok' },
+              {
+                label: '미해결 리스크',
+                value: `${data.unresolvedRisks.length}건`,
+                note: data.unresolvedRisks.length === 0 ? '확인할 것이 없어요' : '확인 필요',
+                kind: data.unresolvedRisks.length === 0 ? 'ok' : 'bad',
+              },
+              { label: 'AI 비용', value: data.aiCostToday, note: '오늘 사용분' },
+            ]}
+          />
 
-          {/* 핵심 지표 */}
-          <Text style={styles.sectionTitle}>핵심 지표</Text>
-          <View style={styles.statsGrid}>
-            <View style={styles.statCell}>
-              <Text style={styles.statValue}>{data.autoProcessed.toLocaleString()}</Text>
-              <Text style={styles.statLabel}>자동 처리 건</Text>
-            </View>
-            <View style={styles.statCell}>
-              <Text style={[styles.statValue, data.successRate < 90 && styles.valueDanger]}>
-                {data.successRate.toFixed(1)}%
-              </Text>
-              <Text style={styles.statLabel}>성공률</Text>
-            </View>
-            <View style={styles.statCell}>
-              <Text style={styles.statValue}>{data.autoRecovered.toLocaleString()}</Text>
-              <Text style={styles.statLabel}>자동 복구 건</Text>
-            </View>
-          </View>
+          <CardGrid>
+            <Card title="미해결 리스크" sub="사람이 봐야 하는 것">
+              {riskRows.length === 0 ? (
+                <EmptyState title="확인할 것이 없어요" detail="미해결 리스크가 없어요. 개별 큐를 열지 않아도 괜찮아요." />
+              ) : (
+                <Rows items={riskRows} />
+              )}
+            </Card>
 
-          {/* 비용 · 수익 */}
-          <Text style={styles.sectionTitle}>비용 · 수익</Text>
-          <View style={styles.statsGrid}>
-            <View style={styles.statCell}>
-              <Text style={styles.statValue}>{data.aiCostToday}</Text>
-              <Text style={styles.statLabel}>오늘 AI 비용</Text>
-            </View>
-            <View style={styles.statCell}>
-              <Text style={styles.statValue}>{data.revenueToday}</Text>
-              <Text style={styles.statLabel}>오늘 수익</Text>
-            </View>
-          </View>
+            <Card title="특이사항" sub="사람이 알아두면 좋은 것">
+              {anomalyRows.length === 0 ? (
+                <EmptyState title="특이사항이 없어요" />
+              ) : (
+                <Rows items={anomalyRows} />
+              )}
+            </Card>
 
-          {/* 미해결 리스크 */}
-          <Text style={styles.sectionTitle}>미해결 리스크</Text>
-          <View style={styles.card}>
-            {data.unresolvedRisks.length === 0 ? (
-              <Text style={styles.emptyText}>미해결 리스크 없음</Text>
-            ) : (
-              data.unresolvedRisks.map((risk, i) => (
-                <View
-                  key={risk.id}
-                  style={[styles.riskRow, i < data.unresolvedRisks.length - 1 && styles.riskRowBorder]}
-                >
-                  <View style={[styles.severityBadge, { backgroundColor: SEVERITY_COLOR[risk.severity] + '22' }]}>
-                    <Text style={[styles.severityText, { color: SEVERITY_COLOR[risk.severity] }]}>
-                      {SEVERITY_LABEL[risk.severity]}
-                    </Text>
-                  </View>
-                  <View style={styles.riskContent}>
-                    <Text style={styles.riskCategory}>{risk.category}</Text>
-                    <Text style={styles.riskDesc}>{risk.description}</Text>
-                  </View>
-                </View>
-              ))
-            )}
-          </View>
-
-          {/* 특이사항 */}
-          <Text style={styles.sectionTitle}>특이사항</Text>
-          <View style={styles.card}>
-            {data.anomalies.length === 0 ? (
-              <Text style={styles.emptyText}>특이사항 없음</Text>
-            ) : (
-              data.anomalies.map((a, i) => (
-                <View key={i} style={[styles.anomalyRow, i < data.anomalies.length - 1 && styles.riskRowBorder]}>
-                  <Text style={styles.anomalyTime}>{a.time}</Text>
-                  <Text style={styles.anomalyDesc}>{a.description}</Text>
-                </View>
-              ))
-            )}
-          </View>
-        </ScrollView>
-      )}
-    </View>
+            <Card
+              title="수익"
+              sub="오늘"
+              note="월 단위 추이는 수익 현황(WP-ADM-032)에서 볼 수 있어요."
+            >
+              <Rows
+                items={[
+                  { key: 'revenue', name: '수익', meta: '광고 · 제휴', num: data.revenueToday },
+                  { key: 'cost', name: 'AI 비용', meta: '오늘 사용분', num: data.aiCostToday, numKind: 'bad' },
+                ]}
+              />
+            </Card>
+          </CardGrid>
+        </>
+      ) : null}
+    </Page>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f3f6' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
-  },
-  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: '#17181c' },
-  subtitle: { fontSize: FontSize.t7, color: '#868b94', marginTop: 2 },
-  refreshBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    backgroundColor: '#f2f3f6',
-  },
-  refreshText: { fontSize: FontSize.t7, color: '#5a5d6a' },
-  body: { flex: 1 },
-  bodyContent: { padding: 24, gap: 12 },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  errorText: { fontSize: FontSize.t6, color: '#e53e3e', marginBottom: 16 },
-  retryBtn: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 6,
-    backgroundColor: '#ff6f61',
-  },
-  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: '#fff' },
-  summaryBox: {
-    backgroundColor: '#ebf7fa',
-    borderRadius: 10,
-    padding: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: '#0088cc',
-  },
-  summaryText: { fontSize: FontSize.t6, color: '#17181c', lineHeight: LineHeight.t6 },
-  sectionTitle: {
-    fontSize: FontSize.t7,
-    fontWeight: '700',
-    color: '#868b94',
-    textTransform: 'uppercase' as const,
-    letterSpacing: 0.6,
-    marginTop: 8,
-  },
-  statsGrid: { flexDirection: 'row', gap: 12 },
-  statCell: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e4e5ea',
-  },
-  statValue: { fontSize: FontSize.t4, fontWeight: '700', color: '#17181c', fontVariant: ['tabular-nums'] },
-  valueDanger: { color: '#e81607' },
-  statLabel: { fontSize: FontSize.tab, color: '#868b94', marginTop: 4 },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#e4e5ea',
-    overflow: 'hidden',
-  },
-  emptyText: { fontSize: FontSize.t7, color: '#868b94', padding: 16 },
-  riskRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    padding: 14,
-    gap: 12,
-  },
-  riskRowBorder: { borderBottomWidth: 1, borderBottomColor: '#f0f1f4' },
-  severityBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
-  },
-  severityText: { fontSize: FontSize.tab, fontWeight: '700' },
-  riskContent: { flex: 1 },
-  riskCategory: { fontSize: FontSize.t7, fontWeight: '700', color: '#3a3b40', marginBottom: 2 },
-  riskDesc: { fontSize: FontSize.t7, color: '#868b94' },
-  anomalyRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    padding: 14,
-    gap: 12,
-  },
-  anomalyTime: { fontSize: FontSize.t7, color: '#868b94', width: 88 },
-  anomalyDesc: { flex: 1, fontSize: FontSize.t7, color: '#3a3b40' },
-});

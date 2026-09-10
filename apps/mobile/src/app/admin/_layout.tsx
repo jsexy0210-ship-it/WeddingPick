@@ -1,69 +1,81 @@
 import { Link, Slot, usePathname } from 'expo-router';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { Colors, FontSize, LineHeight, Radius, Spacing, WeddingMark } from '@weddingpick/ui';
 
-const NAV_GROUPS: { group?: string; key?: string; label?: string; href?: string }[] = [
-  { group: '대시보드' },
-  { key: 'home', label: '관리자 홈', href: '/admin/home' },
+/**
+ * 관리자 콘솔 좌측 사이드바.
+ *
+ * 메뉴 이름과 묶음은 `docs/design-handoff/current/ADMIN.md`와 v3.27 시안
+ * `html/22-admin-ops.dc.html`의 NAV를 그대로 따른다 — 여섯 묶음(보고 · 데이터 · 사용자 ·
+ * 성장 · 운영 · 시스템)이고, 이름은 ADMIN.md의 화면 이름이다. 코드가 따로 부르던
+ * 이름(Kill Switch · Policy Engine · Revenue · 롤백 관리)은 md 쪽으로 맞췄다.
+ */
+type NavEntry = { group: string } | { key: string; label: string; href: string };
+
+const NAV: NavEntry[] = [
+  { group: '보고' },
+  { key: 'home', label: 'AI 운영현황', href: '/admin/home' },
   { key: 'briefing', label: '일일 브리핑', href: '/admin/briefing' },
+  /* 아래 셋은 ADMIN.md 26화면 목록에 아직 없다 — docs/admin-screen-audit.md 참고. */
   { key: 'decisions', label: '자동 결정 현황', href: '/admin/decisions' },
-  { group: '검토해요' },
-  { key: 'queue', label: '확인 필요 큐', href: '/admin/queue' },
-  { key: 'rebuttal', label: '후기 · 반론', href: '/admin/rebuttal' },
-  { key: 'objections', label: '후기 이의제기', href: '/admin/objections' },
-  { key: 'pii-reviews', label: '개인정보 검토', href: '/admin/pii-reviews' },
   { group: '데이터' },
   { key: 'data-pipeline', label: '제보 처리 현황', href: '/admin/data-pipeline' },
+  { key: 'queue', label: '확인 필요 목록', href: '/admin/queue' },
   { key: 'price-stats', label: '가격 통계', href: '/admin/price-stats' },
-  { key: 'vendors', label: '업체 관리', href: '/admin/vendors' },
-  { key: 'images', label: '이미지 자동수급', href: '/admin/images' },
-  { key: 'email-matching', label: '이메일 자동매칭', href: '/admin/email-matching' },
-  { group: '지표를 봐요' },
   { key: 'stats', label: '이상치 · 조작 탐지', href: '/admin/stats' },
+  { key: 'vendors', label: '업체 관리', href: '/admin/vendors' },
+  { key: 'images', label: '이미지 자동 수급', href: '/admin/images' },
+  { key: 'email-matching', label: '이메일 회신 자동 매칭', href: '/admin/email-matching' },
   { group: '사용자' },
-  { key: 'users', label: '계정 관리', href: '/admin/users' },
-  { key: 'biz-queue', label: '업체 문의 큐', href: '/admin/biz-queue' },
-  { key: 'report', label: 'VOC', href: '/admin/report' },
-  { group: '성장 · 광고' },
+  { key: 'users', label: '사용자 계정 관리', href: '/admin/users' },
+  { key: 'report', label: '고객 의견 · 문의 관리', href: '/admin/report' },
+  { key: 'rebuttal', label: '후기 · 반론 관리', href: '/admin/rebuttal' },
+  { key: 'biz-queue', label: '업체 문의 처리 목록', href: '/admin/biz-queue' },
+  { key: 'objections', label: '후기 이의제기', href: '/admin/objections' },
+  { key: 'pii-reviews', label: '개인정보 검토', href: '/admin/pii-reviews' },
+  { group: '성장' },
   { key: 'marketing', label: '마케팅 자동화', href: '/admin/marketing' },
-  { key: 'campaigns', label: '캠페인 · 보상', href: '/admin/campaigns' },
-  { key: 'revenue', label: 'Revenue', href: '/admin/revenue' },
+  { key: 'campaigns', label: '캠페인 · 보상 관리', href: '/admin/campaigns' },
+  { key: 'revenue', label: '수익 현황', href: '/admin/revenue' },
   { key: 'ads', label: '광고 집행 관리', href: '/admin/ads' },
-  { key: 'ads-gate', label: '광고 실운영 게이트', href: '/admin/ads-gate' },
-  { group: '콘텐츠' },
-  { key: 'faq', label: 'FAQ 관리', href: '/admin/faq' },
-  { key: 'terms', label: '약관 · 방침', href: '/admin/terms' },
+  { key: 'ads-gate', label: '광고 실운영 전환 게이트', href: '/admin/ads-gate' },
   { group: '운영' },
   { key: 'automation', label: '자동화 상태', href: '/admin/automation' },
-  { key: 'kill-switch', label: 'Kill Switch', href: '/admin/kill-switch' },
-  { key: 'rollback', label: '롤백 관리', href: '/admin/rollback' },
+  { key: 'kill-switch', label: '긴급 중지', href: '/admin/kill-switch' },
+  { key: 'rollback', label: '변경 복구 관리', href: '/admin/rollback' },
   { group: '시스템' },
+  { key: 'faq', label: '자주 묻는 질문 관리', href: '/admin/faq' },
+  { key: 'terms', label: '약관 · 방침 관리', href: '/admin/terms' },
   { key: 'ai-usage', label: 'AI 사용량 · 비용', href: '/admin/ai-usage' },
-  { key: 'policy-engine', label: 'Policy Engine', href: '/admin/policy-engine' },
-  { key: 'audit-log', label: '감사 로그', href: '/admin/audit-log' },
+  { key: 'policy-engine', label: '정책 규칙 관리', href: '/admin/policy-engine' },
+  { key: 'audit-log', label: '감사 기록', href: '/admin/audit-log' },
 ];
 
 function Sidebar({ pathname }: { pathname: string }) {
   return (
     <View style={styles.sidebar}>
       <View style={styles.sidebarLogo}>
+        {/* Pick Mark. spec/tokens.json symbol — 적용처에 관리자 사이드바가 들어 있다. */}
+        <WeddingMark size={20} color={Colors.light.tint} />
         <Text style={styles.sidebarTitle}>웨딩픽 관리자</Text>
       </View>
       <ScrollView style={styles.sidebarScroll} showsVerticalScrollIndicator={false}>
-        {NAV_GROUPS.map((item, i) => {
-          if (item.group) {
+        {NAV.map((item, i) => {
+          if ('group' in item) {
             return (
-              <Text key={i} style={styles.navGroup}>
+              <Text key={`g-${i}`} style={styles.navGroup}>
                 {item.group}
               </Text>
             );
           }
-          const active = item.href ? pathname.startsWith(item.href) : false;
+          const active = pathname.startsWith(item.href);
           return (
             <Link key={item.key} href={item.href as never} asChild>
               <Pressable style={[styles.navItem, active && styles.navItemActive]}>
-                <Text style={[styles.navLabel, active && styles.navLabelActive]}>{item.label}</Text>
+                <Text style={[styles.navLabel, active && styles.navLabelActive]} numberOfLines={1}>
+                  {item.label}
+                </Text>
               </Pressable>
             </Link>
           );
@@ -94,11 +106,13 @@ export default function AdminLayout() {
   );
 }
 
+const C = Colors.light;
+
 const styles = StyleSheet.create({
   root: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: '#f2f3f6',
+    backgroundColor: C.backgroundSelected,
     minHeight: '100vh' as unknown as number,
   },
   sidebar: {
@@ -108,51 +122,56 @@ const styles = StyleSheet.create({
      * 스크롤 없이 들어가지 않았던 것이 폭을 올린 이유다.
      */
     width: 240,
-    backgroundColor: '#17181c',
+    backgroundColor: C.adminSidebar,
     flexShrink: 0,
     flexDirection: 'column',
   },
   sidebarLogo: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 22,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.four,
+    paddingBottom: Spacing.four,
   },
   sidebarTitle: {
     fontSize: FontSize.t6,
+    lineHeight: LineHeight.t6,
     fontWeight: '700',
-    color: '#fff',
+    color: C.onTint,
   },
   sidebarScroll: {
     flex: 1,
+    paddingHorizontal: Spacing.two,
   },
   navGroup: {
-    paddingHorizontal: 12,
-    paddingTop: 14,
-    paddingBottom: 5,
-    fontSize: FontSize.tab,
+    paddingHorizontal: Spacing.two,
+    paddingTop: Spacing.three,
+    paddingBottom: Spacing.half,
+    fontSize: FontSize.adminNavGroup,
+    lineHeight: LineHeight.adminNavGroup,
     fontWeight: '700',
-    letterSpacing: 0.6,
-    color: '#393a40',
-    textTransform: 'uppercase' as const,
+    color: C.adminSidebarGroup,
   },
   navItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    marginHorizontal: 0,
-    borderRadius: 6,
+    height: 34,
+    paddingHorizontal: Spacing.two,
+    borderRadius: Radius.control,
   },
+  /* 활성 메뉴는 코랄 — 화면당 네 곳 이하로 쓰는 강조색의 첫 자리다(ADMIN.md 공통 규칙). */
   navItemActive: {
-    backgroundColor: 'rgba(255,111,97,0.22)',
+    backgroundColor: C.tint,
   },
   navLabel: {
     flex: 1,
-    fontSize: FontSize.t7,
-    color: '#868b94',
+    fontSize: FontSize.micro,
+    lineHeight: LineHeight.micro,
+    color: C.adminSidebarLabel,
   },
   navLabelActive: {
-    color: '#fff',
+    color: C.onTint,
     fontWeight: '700',
   },
   main: {
@@ -164,10 +183,11 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
+    padding: Spacing.four,
   },
   notWebText: {
     fontSize: FontSize.t6,
-    color: '#868b94',
+    lineHeight: LineHeight.t6,
+    color: C.textAssistive,
   },
 });

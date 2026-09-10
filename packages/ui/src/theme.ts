@@ -79,6 +79,16 @@ const palette = {
   /** 어두운 모드 danger — SEED red-400. */
   red400: '#ff7466',
 
+  /* 관리자 콘솔 크롬 — spec/tokens.json color.admin(v3.27 · 22-admin-ops). 사용자 앱에는 쓰지 않는다. */
+  adminSidebar: '#17181c',
+  adminSidebarLabel: '#9ca3ad',
+  adminSidebarGroup: '#5f6570',
+  adminBannerWarn: '#fff6e6',
+  adminBannerOkIcon: '#c9f2e8',
+  adminBannerBadIcon: '#ffd0cb',
+  adminDotWarn: '#e5a12c',
+  adminBarFill: '#ffc9c2',
+
   /* 달력 — spec/tokens.json color.calendar(WP-APP-023 · 20-onboarding-v2). 일요일 · 토요일 · 다른 달. */
   calendarSunday: '#e8735f',
   calendarSaturday: '#5b8def',
@@ -239,6 +249,16 @@ export const Colors = {
     accentText: palette.accentText,
     accentBackground: palette.accentSurface,
 
+    /** 관리자 콘솔 크롬 — color.admin. 웹 전용 `/admin` 라우트만 쓴다. */
+    adminSidebar: palette.adminSidebar,
+    adminSidebarLabel: palette.adminSidebarLabel,
+    adminSidebarGroup: palette.adminSidebarGroup,
+    adminBannerWarn: palette.adminBannerWarn,
+    adminBannerOkIcon: palette.adminBannerOkIcon,
+    adminBannerBadIcon: palette.adminBannerBadIcon,
+    adminDotWarn: palette.adminDotWarn,
+    adminBarFill: palette.adminBarFill,
+
     /** 달력 날짜 색 — 일요일 · 토요일 · 다른 달(gray-300). color.calendar. */
     calendarSunday: palette.calendarSunday,
     calendarSaturday: palette.calendarSaturday,
@@ -316,6 +336,16 @@ export const Colors = {
     accent: palette.accentAction,
     accentText: '#57c7ff',
     accentBackground: '#0f2430',
+
+    /* 관리자는 웹 전용이고 항상 라이트다 — 같은 값을 둔다(ThemeColor가 두 벌을 요구한다). */
+    adminSidebar: palette.adminSidebar,
+    adminSidebarLabel: palette.adminSidebarLabel,
+    adminSidebarGroup: palette.adminSidebarGroup,
+    adminBannerWarn: palette.adminBannerWarn,
+    adminBannerOkIcon: palette.adminBannerOkIcon,
+    adminBannerBadIcon: palette.adminBannerBadIcon,
+    adminDotWarn: palette.adminDotWarn,
+    adminBarFill: palette.adminBarFill,
 
     calendarSunday: palette.calendarSunday,
     calendarSaturday: palette.calendarSaturday,

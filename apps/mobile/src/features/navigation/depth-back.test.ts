@@ -163,7 +163,11 @@ describe('ROUTES가 src/app과 같은가', () => {
         continue;
       }
 
-      if (!entry.name.endsWith('.tsx') || entry.name === '_layout.tsx') continue;
+      /*
+       * `_`로 시작하는 파일은 expo-router가 라우트로 잡지 않는다 — `_layout.tsx`뿐 아니라
+       * 화면들이 나눠 쓰는 부품(`_ui.tsx`)도 마찬가지다. 라우터와 같은 규칙으로 거른다.
+       */
+      if (!entry.name.endsWith('.tsx') || entry.name.startsWith('_')) continue;
 
       // `map.web.tsx`는 `map.tsx`와 같은 라우트다.
       const base = entry.name.replace(/\.web\.tsx$/, '').replace(/\.tsx$/, '');

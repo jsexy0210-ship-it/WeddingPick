@@ -1,14 +1,27 @@
 /**
- * WP-ADM-041 운영 · Kill Switch
- * 기능별 중지 · 통계 반영 중지 · 보상 지급 중지 · 자동 게시 중지 · 추천 중지
+ * WP-ADM-041 긴급 중지
+ *
+ * 시안 `22-admin-ops.dc.html` 8번. **위험한 조작이라 스위치를 내리면 확인 카드가 뜨고,
+ * 무엇이 멈추는지 항목으로 보여준 뒤 진행한다**(ADMIN.md 공통 규칙 · WP-ADM-041).
+ * 다시 켜는 것은 되돌리는 일이라 확인 없이 바로 된다.
  */
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
-import { FontSize, LineHeight } from '@weddingpick/ui';
+import { formatDateTimeDot } from '@/features/common/format-date';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
-import { formatDateTimeDot } from '@/features/common/format-date';
+import {
+  Card,
+  CardGrid,
+  ConfirmCard,
+  EmptyState,
+  KpiRow,
+  LoadError,
+  Page,
+  Rows,
+  StatusBanner,
+  type RowItem,
+} from './_ui';
 
 type SwitchItem = {
   id: string;
@@ -32,7 +45,8 @@ export default function KillSwitchScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rev, setRev] = useState(0);
-  const [toggling, setToggling] = useState<string | null>(null);
+  /** 끄기를 기다리는 스위치. 확인 카드가 이것으로 열린다. */
+  const [pending, setPending] = useState<SwitchItem | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -53,130 +67,111 @@ export default function KillSwitchScreen() {
     return () => { cancelled = true; };
   }, [rev]);
 
-  async function toggle(id: string, current: boolean) {
-    setToggling(id);
+  const reload = () => setRev((r) => r + 1);
+
+  async function apply(item: SwitchItem, enabled: boolean) {
     try {
-      await apiFetch(`/v1/admin/kill-switches/${id}`, {
+      await apiFetch(`/v1/admin/kill-switches/${item.id}`, {
         method: 'PATCH',
-        body: JSON.stringify({ enabled: !current }),
+        body: JSON.stringify({ enabled }),
       });
-      setRev((r) => r + 1);
-    } catch { /* 무시 */ } finally { setToggling(null); }
+    } finally {
+      setPending(null);
+      reload();
+    }
   }
 
-  const grouped = data?.switches.reduce<Record<string, SwitchItem[]>>((acc, item) => {
-    const cat = item.category || '기타';
-    if (!acc[cat]) acc[cat] = [];
-    acc[cat].push(item);
-    return acc;
-  }, {}) ?? {};
+  /**
+   * 끄기는 확인을 거치고, 켜기는 바로 한다 — 되돌리는 조작까지 한 번 더 묻으면
+   * 급할 때 복구가 늦어진다.
+   */
+  function onToggle(item: SwitchItem) {
+    if (item.enabled) setPending(item);
+    else void apply(item, true);
+  }
+
+  const switches = data?.switches ?? [];
+  const off = switches.filter((s) => !s.enabled);
+  const unwired = switches.filter((s) => s.wired === false);
+
+  /** 시안은 「자동 판단」·「발송 · 노출」 두 묶음이다. 실제 묶음은 서버가 준 category를 따른다. */
+  const categories = Array.from(new Set(switches.map((s) => s.category)));
+
+  function rowsOf(category: string): RowItem[] {
+    return switches
+      .filter((s) => s.category === category)
+      .map((s) => ({
+        key: s.id,
+        name: s.name,
+        meta: s.wired === false ? `${s.description} · 아직 배선되지 않았어요` : s.description,
+        toggle: { on: s.enabled, onPress: () => onToggle(s) },
+      }));
+  }
+
+  /** 확인 카드에 들어갈 항목. 무엇이 멈추는지 · 되돌릴 수 있는지 · 마지막 변경. */
+  function confirmItems(item: SwitchItem): string[] {
+    const items = [item.description, '다시 켜면 바로 복구되고, 멈춘 동안 쌓인 건은 확인 필요 목록에 남아요'];
+    if (item.wired === false) items.push('이 스위치는 아직 배선되지 않았어요 — 꺼도 동작이 바뀌지 않아요');
+    else if (item.lastChangedAt) {
+      items.push(`마지막 변경 ${formatDateTimeDot(item.lastChangedAt)}${item.lastChangedBy ? ` · ${item.lastChangedBy}` : ''}`);
+    }
+    return items;
+  }
 
   return (
-    <View style={styles.root}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Kill Switch</Text>
-        <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
-          <Text style={styles.refreshText}>새로 고침</Text>
-        </Pressable>
-      </View>
+    <Page title="긴급 중지" sub="기능별 스위치 · 끄면 무엇이 멈추는지 보여요">
+      <DelayedLoader active={loading} size={40} />
+      {!loading && error ? <LoadError message={error} onRetry={reload} /> : null}
 
-      <DelayedLoader active={loading} size={40} style={styles.centered} />
-      {!loading && error && (
-        <View style={styles.centered}>
-          <Text style={styles.errorText}>{error}</Text>
-          <Pressable style={styles.retryBtn} onPress={() => setRev((r) => r + 1)}>
-            <Text style={styles.retryText}>다시 시도</Text>
-          </Pressable>
-        </View>
-      )}
+      {!loading && !error && data ? (
+        <>
+          <StatusBanner
+            tone={off.length === 0 ? 'ok' : 'bad'}
+            title={off.length === 0 ? '모두 켜져 있어요' : `${off.length}개가 꺼져 있어요`}
+            detail={
+              off.length === 0
+                ? '멈춰 있는 기능이 없어요.'
+                : `꺼진 기능: ${off.map((s) => s.name).join(' · ')}`
+            }
+          />
 
-      {!loading && !error && data && (
-        <ScrollView>
-          {Object.entries(grouped).map(([cat, items]) => (
-            <View key={cat}>
-              <View style={styles.categoryHeader}>
-                <Text style={styles.categoryLabel}>{cat}</Text>
-              </View>
-              {items.map((item, i) => (
-                <View key={item.id} style={[styles.switchRow, i % 2 === 1 && styles.switchRowZebra]}>
-                  <View style={styles.switchInfo}>
-                    <Text style={styles.switchName}>{item.name}</Text>
-                    <Text style={styles.switchDesc}>{item.description}</Text>
-                    {item.wired === false && (
-                      <Text style={styles.switchUnwired}>
-                        아직 연결되지 않았습니다 — 꺼도 기능은 그대로 돕니다
-                      </Text>
-                    )}
-                    {item.lastChangedAt && (
-                      <Text style={styles.switchMeta}>
-                        {formatDateTimeDot(item.lastChangedAt)}
-                        {item.lastChangedBy ? ` · ${item.lastChangedBy}` : ''}
-                      </Text>
-                    )}
-                  </View>
-                  <View style={styles.switchRight}>
-                    <Text style={[styles.switchStatus, { color: item.enabled ? '#1aa174' : '#868b94' }]}>
-                      {item.enabled ? '활성' : '비활성'}
-                    </Text>
-                    <Switch
-                      value={item.enabled}
-                      onValueChange={() => void toggle(item.id, item.enabled)}
-                      disabled={toggling !== null}
-                      trackColor={{ true: '#ff6f61', false: '#e4e5ea' }}
-                    />
-                  </View>
-                </View>
+          <KpiRow
+            items={[
+              { label: '켜짐', value: `${switches.length - off.length}개`, note: `전체 ${switches.length}개`, kind: 'ok' },
+              { label: '꺼짐', value: `${off.length}개`, note: off.length === 0 ? '멈춘 것이 없어요' : '동작이 멈춰 있어요', kind: off.length === 0 ? 'ok' : 'bad' },
+              { label: '배선 안 됨', value: `${unwired.length}개`, note: '꺼도 동작이 바뀌지 않아요', kind: unwired.length === 0 ? 'ok' : 'warn' },
+            ]}
+          />
+
+          {switches.length === 0 ? (
+            <CardGrid>
+              <Card title="스위치" full>
+                <EmptyState title="스위치가 없어요" detail="등록된 긴급 중지 스위치가 아직 없어요." />
+              </Card>
+            </CardGrid>
+          ) : (
+            <CardGrid>
+              {categories.map((category) => (
+                <Card key={category} title={category} sub="끄면 무엇이 멈추는지 확인 카드로 보여드려요">
+                  <Rows items={rowsOf(category)} />
+                </Card>
               ))}
-            </View>
-          ))}
-        </ScrollView>
-      )}
-    </View>
+            </CardGrid>
+          )}
+
+          {pending ? (
+            <ConfirmCard
+              title={`${pending.name}을(를) 끌까요?`}
+              body="끄는 즉시 아래가 멈춰요."
+              items={confirmItems(pending)}
+              cta="끄기"
+              danger
+              onConfirm={() => void apply(pending, false)}
+              onCancel={() => setPending(null)}
+            />
+          ) : null}
+        </>
+      ) : null}
+    </Page>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f3f6' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
-  },
-  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: '#17181c' },
-  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: '#f2f3f6' },
-  refreshText: { fontSize: FontSize.t7, color: '#5a5d6a' },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  errorText: { fontSize: FontSize.t6, color: '#e53e3e', marginBottom: 16 },
-  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: '#ff6f61' },
-  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: '#fff' },
-  categoryHeader: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#f8f9fa',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
-  },
-  categoryLabel: { fontSize: FontSize.t7, fontWeight: '700', color: '#4d5159' },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f1f4',
-  },
-  switchRowZebra: { backgroundColor: '#fafbfc' },
-  switchInfo: { flex: 1, marginRight: 12 },
-  switchName: { fontSize: FontSize.t7, fontWeight: '700', color: '#17181c', marginBottom: 2 },
-  switchDesc: { fontSize: FontSize.tab, color: '#868b94', lineHeight: LineHeight.micro },
-  // 끈 줄 알고 손을 놓는 것을 막는 줄이다. 회색으로 묻히면 안 된다.
-  switchUnwired: { fontSize: FontSize.tab, color: '#ff4d4d', lineHeight: LineHeight.micro, marginTop: 2 },
-  switchMeta: { fontSize: FontSize.tab, color: '#adb1ba', marginTop: 4 },
-  switchRight: { alignItems: 'flex-end', gap: 4 },
-  switchStatus: { fontSize: FontSize.tab, fontWeight: '700' },
-});

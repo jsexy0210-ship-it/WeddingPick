@@ -38,6 +38,12 @@ export const FontSize = {
   amount: 32,
   /** 코드·식별자(관리자 · 내부). */
   code: 12,
+  /** 관리자 KPI 숫자 30/38. 웹 전용 `/admin`만 쓴다 — spec typography.scale adminKpi. */
+  adminKpi: 30,
+  /** 관리자 상단 상태 배너 제목 15/21. adminBanner. */
+  adminBanner: 15,
+  /** 관리자 사이드바 그룹 제목 11/15. adminNavGroup. */
+  adminNavGroup: 11,
 } as const;
 
 /**
@@ -66,6 +72,9 @@ export const LineHeight = {
   badge: 19,
   amount: 43,
   link: 19,
+  adminKpi: 38,
+  adminBanner: 21,
+  adminNavGroup: 15,
 } as const;
 
 export type FontSizeToken = keyof typeof FontSize;

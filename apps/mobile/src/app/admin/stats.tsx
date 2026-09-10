@@ -1,10 +1,15 @@
+/**
+ * WP-ADM-013 이상치 · 조작 탐지
+ *
+ * 시안 `22-admin-ops.dc.html` 2번. 자동으로 잡아 이미 차단한 뒤 목록으로 보여준다 —
+ * 사람은 오탐만 풀어주면 된다. 그래서 카드 낱장이 아니라 한눈에 훑는 표다.
+ */
 import { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
 
 import { VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
-import { FontSize } from '@weddingpick/ui';
 
 import { apiFetch } from './_api';
+import { Card, CardGrid, DataTable, KpiRow, LoadError, Page, StatusBanner, type Col, type TableRow } from './_ui';
 
 type AnomalyItem = {
   vendorId: string;
@@ -34,119 +39,105 @@ function formatCat(category: string) {
   return (VENDOR_CATEGORY_LABEL as Record<string, string>)[category] ?? category;
 }
 
+/** 구간 밖 몇 σ인지. 이것이 차단 근거라서 표에서 가장 긴 열이 된다. */
+function sigma(item: AnomalyItem) {
+  if (item.stddev === 0) return '—';
+  return `${Math.abs((item.amount - item.mean) / item.stddev).toFixed(1)}σ`;
+}
+
+/** 시안의 열 폭(1920 기준). 남는 폭은 `근거`가 먹는다. */
+const COLS: Col[] = [
+  { key: 'vendor', label: '대상', width: 200 },
+  { key: 'category', label: '업종', width: 110 },
+  { key: 'detected', label: '감지', width: 130 },
+  { key: 'reason', label: '근거', width: 320, grow: true },
+  { key: 'sigma', label: '편차', width: 80, align: 'right' },
+  { key: 'status', label: '상태', width: 90 },
+];
+
 export default function StatsScreen() {
   const [data, setData] = useState<PriceStatsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [rev, setRev] = useState(0);
 
   useEffect(() => {
+    let cancelled = false;
     apiFetch('/v1/admin/price-stats')
-      .then((res) => setData(res as PriceStatsResponse))
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : '불러오기 실패'))
-      .finally(() => setLoading(false));
-  }, []);
+      .then((res) => {
+        if (cancelled) return;
+        setData(res as PriceStatsResponse);
+        setError(null);
+      })
+      .catch((e: unknown) => {
+        if (cancelled) return;
+        setError(e instanceof Error ? e.message : '불러오기 실패');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [rev]);
+
+  const reload = () => setRev((r) => r + 1);
+  const anomalies = data?.anomalies ?? [];
+
+  const rows: TableRow[] = anomalies.map((item, i) => ({
+    key: `${item.vendorId}-${i}`,
+    cells: [
+      { v: item.vendorName, bold: true, kind: 'none' },
+      { v: formatCat(item.category) },
+      { v: item.detectedAt.slice(0, 10) },
+      { v: `제보 ${fmt(item.amount)} · 기준금액 ${fmt(item.mean)} · 표준편차 ${fmt(item.stddev)}` },
+      { v: sigma(item), bold: true, kind: 'bad' },
+      { v: '차단', badge: 'bad' },
+    ],
+  }));
 
   return (
-    <View style={styles.root}>
-      <View style={styles.header}>
-        <Text style={styles.title}>이상치 · 조작 탐지</Text>
-        {data && (
-          <Text style={styles.subtitle}>이상치 {data.total}건</Text>
-        )}
-      </View>
+    <Page title="이상치 · 조작 탐지" sub="자동 차단 후 목록">
+      {loading ? null : error ? <LoadError message={error} onRetry={reload} /> : null}
 
-      {loading && (
-        <View style={styles.center}>
-          <Text style={styles.hint}>불러오는 중...</Text>
-        </View>
-      )}
+      {!loading && !error && data ? (
+        <>
+          <StatusBanner
+            tone={anomalies.length === 0 ? 'ok' : 'warn'}
+            title={
+              anomalies.length === 0
+                ? '차단된 것이 없어요'
+                : `자동 차단 ${anomalies.length}건`
+            }
+            detail={
+              anomalies.length === 0
+                ? '최근 집계에서 구간 밖 금액이 나오지 않았어요.'
+                : '차단은 이미 반영됐어요. 오탐으로 보이는 것만 풀어주면 돼요.'
+            }
+          />
 
-      {error && (
-        <View style={styles.center}>
-          <Text style={styles.errorText}>{error}</Text>
-        </View>
-      )}
+          <KpiRow
+            items={[
+              { label: '자동 차단', value: `${anomalies.length}건`, note: '집계에서 제외 중', kind: anomalies.length === 0 ? 'ok' : 'bad' },
+              { label: '전체 집계', value: `${data.total}건`, note: '가격 통계 대상' },
+              {
+                label: '대상 업체',
+                value: `${new Set(anomalies.map((a) => a.vendorId)).size}곳`,
+                note: '차단이 걸린 곳',
+              },
+            ]}
+          />
 
-      {data && data.anomalies.length === 0 && (
-        <View style={styles.center}>
-          <Text style={styles.hint}>이상치 없음</Text>
-        </View>
-      )}
-
-      {data && data.anomalies.length > 0 && (
-        <FlatList
-          data={data.anomalies}
-          keyExtractor={(item, i) => `${item.vendorId}-${i}`}
-          contentContainerStyle={styles.list}
-          ItemSeparatorComponent={() => <View style={styles.sep} />}
-          renderItem={({ item }) => (
-            <View style={styles.card}>
-              <View style={styles.cardTop}>
-                <Text style={styles.vendorName} numberOfLines={1}>{item.vendorName}</Text>
-                <View style={styles.catBadge}>
-                  <Text style={styles.catText}>{formatCat(item.category)}</Text>
-                </View>
-              </View>
-              <View style={styles.cardRow}>
-                <Text style={styles.label}>실제 금액</Text>
-                <Text style={styles.valueRed}>{fmt(item.amount)}</Text>
-              </View>
-              <View style={styles.cardRow}>
-                <Text style={styles.label}>기준금액 (평균)</Text>
-                <Text style={styles.value}>{fmt(item.mean)}</Text>
-              </View>
-              <View style={styles.cardRow}>
-                <Text style={styles.label}>표준편차</Text>
-                <Text style={styles.value}>{fmt(item.stddev)}</Text>
-              </View>
-              <Text style={styles.detectedAt}>탐지: {item.detectedAt.slice(0, 10)}</Text>
-            </View>
-          )}
-        />
-      )}
-    </View>
+          <CardGrid>
+            <Card
+              title="차단된 패턴"
+              sub="자동 판단 · 되돌릴 수 있어요"
+              full
+              note="되돌리면 해당 제보가 다시 집계에 들어가고 변경 복구 관리(WP-ADM-042)에 기록돼요."
+            >
+              <DataTable cols={COLS} rows={rows} empty="차단된 것이 없어요" />
+            </Card>
+          </CardGrid>
+        </>
+      ) : null}
+    </Page>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f3f6' },
-  header: {
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  title: { fontSize: FontSize.t5, fontWeight: '700', color: '#17181c' },
-  subtitle: { fontSize: FontSize.t7, color: '#868b94' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  hint: { fontSize: FontSize.t7, color: '#868b94' },
-  errorText: { fontSize: FontSize.t7, color: '#e81607' },
-  list: { padding: 16, gap: 12 },
-  sep: { height: 8 },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 16,
-    gap: 6,
-    borderWidth: 1,
-    borderColor: '#e4e5ea',
-  },
-  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  vendorName: { flex: 1, fontSize: FontSize.t6, fontWeight: '700', color: '#17181c' },
-  catBadge: {
-    backgroundColor: '#f0f1f4',
-    borderRadius: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  catText: { fontSize: FontSize.badge, color: '#4d5159' },
-  cardRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  label: { fontSize: FontSize.t7, color: '#868b94' },
-  value: { fontSize: FontSize.t7, fontWeight: '600', color: '#17181c' },
-  valueRed: { fontSize: FontSize.t7, fontWeight: '700', color: '#e81607' },
-  detectedAt: { fontSize: FontSize.badge, color: '#adb1ba', marginTop: 4 },
-});
