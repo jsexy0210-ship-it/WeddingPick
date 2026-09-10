@@ -76,7 +76,7 @@ export const STEP_TITLE_LINES: Record<QuestionStep, readonly [string, string]> =
   region: ['어느 지역에서', '하나요?'],
   prep: ['준비는 어디까지', '했나요?'],
   budget: ['앞으로 쓸 예산은', '얼마인가요?'],
-  style: ['어떤 분위기로', '준비할까요?'],
+  style: ['어떤 스타일을', '좋아하세요?'],
 };
 
 /**
@@ -95,7 +95,7 @@ export const STEP_DESCRIPTION: Record<QuestionStep, string> = {
   region: '선택한 지역을 기준으로 찾아드릴게요',
   prep: '이미 정한 건 빼고 필요한 것만 챙겨드릴게요',
   budget: '예산에 맞는 선택지를 먼저 보여드릴게요',
-  style: '남은 준비에 취향을 반영할게요',
+  style: '마음에 드는 스타일을 골라주세요',
 };
 
 export const DONE_CTA = '웨딩픽 시작하기';

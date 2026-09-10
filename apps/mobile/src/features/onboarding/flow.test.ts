@@ -27,20 +27,20 @@ const FULL: Answers = {
   style: ['URBAN', 'ROMANTIC'],
 };
 
-describe('히어로 문구 (SPEC §13.6 확정 표)', () => {
+describe('히어로 문구 (핸드오프 v3.26 SPEC §13.6)', () => {
   it('제목과 설명이 표 그대로다', () => {
     expect(STEP_TITLE_LINES.date.join(' ')).toBe('예식일은 언제인가요?');
     expect(STEP_TITLE_LINES.region.join(' ')).toBe('어느 지역에서 하나요?');
     expect(STEP_TITLE_LINES.prep.join(' ')).toBe('준비는 어디까지 했나요?');
     expect(STEP_TITLE_LINES.budget.join(' ')).toBe('앞으로 쓸 예산은 얼마인가요?');
-    expect(STEP_TITLE_LINES.style.join(' ')).toBe('어떤 분위기로 준비할까요?');
+    expect(STEP_TITLE_LINES.style.join(' ')).toBe('어떤 스타일을 좋아하세요?');
 
     expect(STEP_DESCRIPTION).toEqual({
       date: '남은 기간에 맞춰 준비 순서를 잡아드릴게요',
       region: '선택한 지역을 기준으로 찾아드릴게요',
       prep: '이미 정한 건 빼고 필요한 것만 챙겨드릴게요',
       budget: '예산에 맞는 선택지를 먼저 보여드릴게요',
-      style: '남은 준비에 취향을 반영할게요',
+      style: '마음에 드는 스타일을 골라주세요',
     });
   });
 

@@ -14,6 +14,7 @@ import {
   type VendorCategory,
   PREPARATION_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
+  regionLabel,
   withParticle,
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -704,7 +705,7 @@ export default function SearchScreen() {
                 row(
                   item.id,
                   item.name,
-                  `${item.region} · ${VENDOR_CATEGORY_LABEL[item.category]}`,
+                  `${regionLabel(item.region)} · ${VENDOR_CATEGORY_LABEL[item.category]}`,
                   countTail(item),
                   () => openVendorFromAutocomplete(item),
                   `${item.name} 자세히 보기`
@@ -988,7 +989,7 @@ export default function SearchScreen() {
                         </View>
                         <ThemedText type="t4" numberOfLines={1}>{ad.name}</ThemedText>
                         <ThemedText type="t7" themeColor="textAssistive" numberOfLines={1}>
-                          {VENDOR_CATEGORY_LABEL[ad.category]} · {ad.region}
+                          {VENDOR_CATEGORY_LABEL[ad.category]} · {regionLabel(ad.region)}
                         </ThemedText>
                       </Pressable>
                     ))}

@@ -1,4 +1,5 @@
 import type { VendorSummary } from '@weddingpick/api-contract';
+import { regionLabel } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
@@ -134,7 +135,7 @@ export default function BizClaimScreen() {
                     <View style={styles.vendorInfo}>
                       <ThemedText type="t5">{vendor.name}</ThemedText>
                       <ThemedText type="t7" themeColor="textAssistive">
-                        {vendor.region}
+                        {regionLabel(vendor.region)}
                       </ThemedText>
                     </View>
                     <ActionButton

@@ -4,6 +4,7 @@ import {
   DISCLOSURE_THRESHOLDS,
   TERMS,
   VENDOR_CATEGORY_LABEL,
+  regionLabel,
   manwon,
   priceLine,
   withParticle,
@@ -174,7 +175,7 @@ export default function CompareScreen() {
     {
       label: ROW_CATEGORY,
       cells: vendors.map((vendor) => ({
-        value: `${VENDOR_CATEGORY_LABEL[vendor.category]} · ${vendor.region}`,
+        value: `${VENDOR_CATEGORY_LABEL[vendor.category]} · ${regionLabel(vendor.region)}`,
         tone: 'textStrong' as const,
       })),
     },

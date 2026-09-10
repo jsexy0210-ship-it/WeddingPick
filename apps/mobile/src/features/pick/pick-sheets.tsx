@@ -1,5 +1,5 @@
 import type { VendorCandidate } from '@weddingpick/api-contract';
-import { TERMS } from '@weddingpick/domain';
+import { TERMS, regionLabel } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -123,7 +123,7 @@ export function UnpickSheet({
             <View style={styles.vendorBody}>
               <ThemedText type="t5" numberOfLines={1}>{candidate.vendorName}</ThemedText>
               <ThemedText type="t7" themeColor="textAssistive" numberOfLines={1}>
-                {shared ? '둘 다 고른 곳' : candidate.region}
+                {shared ? '둘 다 고른 곳' : regionLabel(candidate.region)}
               </ThemedText>
             </View>
           </View>
