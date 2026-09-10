@@ -516,6 +516,15 @@ export const Layout = {
    * 나머지 Primary CTA는 `controlXLarge` 52 그대로다.
    */
   ctaPick: 56,
+  /**
+   * 바텀시트 확정 CTA 높이. size.ctaSheet — SPEC 13.7이 «시트 CTA는 width:100% +
+   * flex:0 0 56px»라고 적는다. 시트는 세로로 쌓이는 통이라 CTA에 flex를 주면
+   * 늘어나므로, 높이를 못박고 폭만 100%로 편다.
+   *
+   * `controlXLarge` 52와 4 차이라 눈에 안 띄어 보이지만, 시안과 나란히 놓으면
+   * 시트 아래가 그만큼 얕아 보인다. 값이 다른 자리는 값이 다르게 적혀 있다.
+   */
+  ctaSheet: 56,
   /** 카드 안 CTA. size.ctaInCard. */
   ctaInCard: 44,
   /** 입력 필드 높이. size.field — Primary CTA와 같은 52다. */

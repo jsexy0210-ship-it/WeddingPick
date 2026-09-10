@@ -48,7 +48,7 @@ import { ddayLabel } from './flow';
  *
  * 색은 테마 토큰 `calendarSunday · calendarSaturday · calendarMuted`다. 패널(radius 20 ·
  * padding 12/24/28+안전영역 · 그래버)은 공용 `SheetPanel`이 그리고 요소 간격만 시안 16으로 좁힌다.
- * CTA 높이는 토큰 size.ctaPrimary 52(시안 56)이고 `flexGrow 0 · flexShrink 0 · width 100%`
+ * CTA 높이는 토큰 size.ctaSheet 56(SPEC 13.7)이고 `flexGrow 0 · flexShrink 0 · width 100%`
  * 라 세로 컨테이너에서 늘어나지 않는다.
  */
 export function DatePickerSheet({
@@ -164,9 +164,9 @@ function SheetBody({
 
       <View style={styles.cta}>
         {expanded === null ? (
-          <ActionButton variant="primary" size="xlarge" label={CONFIRM_CTA} onPress={() => onConfirm(iso)} />
+          <ActionButton variant="primary" size="sheet" label={CONFIRM_CTA} onPress={() => onConfirm(iso)} />
         ) : (
-          <ActionButton variant="primary" size="xlarge" label={COLLAPSE_CTA} onPress={() => setExpanded(null)} />
+          <ActionButton variant="primary" size="sheet" label={COLLAPSE_CTA} onPress={() => setExpanded(null)} />
         )}
       </View>
     </SheetPanel>
