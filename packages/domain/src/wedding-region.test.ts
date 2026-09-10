@@ -1,4 +1,4 @@
-import { OTHER_REGION, REGION_DISTRICTS, WEDDING_REGIONS, combineRegion, regionFilter, regionLikePattern, regionMatches } from './wedding-region';
+import { OTHER_REGION, REGION_DISTRICTS, WEDDING_REGIONS, combineRegion, regionFilter, regionLikePattern, regionMatches, shortRegionName } from './wedding-region';
 
 describe('온보딩 지역', () => {
   it('시안 #11d의 아홉 칩을 그 순서로 둔다', () => {
@@ -57,5 +57,33 @@ describe('지역 맞추기 — 긴 꼴과 짧은 꼴(v3.24)', () => {
     expect(regionLikePattern('서울특별시 강남구')).toBe('서울% 강남구%');
     expect(regionLikePattern('서울')).toBe('서울%');
     expect(regionLikePattern('경기도 수원시')).toBe('경기% 수원시%');
+  });
+});
+
+describe('시도 이름 짧은 꼴 — 지역 칩이 갈리지 않게', () => {
+  /*
+   * 업체의 region은 출처마다 꼴이 다르다 — 공공데이터는 「경기도 성남시」,
+   * 표본은 「경기 성남시」. 앞 낱말을 그대로 묶으면 필터에 「경기」와 「경기도」가
+   * 다른 칩 두 개로 나온다(2026-09-10 사용자 보고).
+   */
+  it('긴 꼴을 짧은 꼴로 모은다', () => {
+    expect(shortRegionName('경기도')).toBe('경기');
+    expect(shortRegionName('서울특별시')).toBe('서울');
+    expect(shortRegionName('부산광역시')).toBe('부산');
+    expect(shortRegionName('세종특별자치시')).toBe('세종');
+    // 긴 꼬리를 먼저 떼지 않으면 「제주특별자치」가 된다.
+    expect(shortRegionName('제주특별자치도')).toBe('제주');
+    expect(shortRegionName('강원특별자치도')).toBe('강원');
+  });
+
+  it('이미 짧은 꼴은 그대로 둔다', () => {
+    for (const name of ['경기', '서울', '부산', '대구', '대전', '광주', '인천', '울산']) {
+      expect(shortRegionName(name)).toBe(name);
+    }
+  });
+
+  it('두 꼴이 같은 이름으로 모인다', () => {
+    expect(shortRegionName('경기도')).toBe(shortRegionName('경기'));
+    expect(shortRegionName('서울특별시')).toBe(shortRegionName('서울'));
   });
 });

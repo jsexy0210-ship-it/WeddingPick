@@ -8,6 +8,7 @@ import {
   PRICE_REPORT_CAVEAT,
   RECENT_PERIOD_LABEL,
   RECENT_PERIOD_MONTHS,
+  REGION_SUFFIX_PATTERN,
   SPONSORED_LABEL,
   VENDOR_CATEGORY_LABEL,
   coarseRegion,
@@ -346,14 +347,27 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
    *
    * 자료에 실제로 있는 시도만 내려간다. 전국 목록을 박아두면 눌러도 아무것도 나오지 않는
    * 필터가 생긴다.
+   *
+   * **시도 이름을 짧은 꼴로 모은다.** 업체의 `region`은 출처마다 꼴이 다르다 —
+   * 공공데이터는 도로명주소 그대로라 「경기도 성남시」이고 표본은 「경기 성남시」다.
+   * 앞 낱말을 그대로 묶으면 「경기」와 「경기도」가 **다른 칩 두 개**로 나온다
+   * (2026-09-10 사용자 보고). 화면에 같은 지역이 두 번 뜨고, 어느 쪽을 눌러도
+   * 반쪽만 나온다.
+   *
+   * 떼어내는 꼬리는 도메인이 들고 있는 것을 그대로 쓴다(`REGION_SUFFIX_PATTERN`) —
+   * 같은 규칙을 SQL에 따로 적으면 한쪽만 고쳐져 다시 갈린다.
+   *
+   * 짧은 꼴로 걸러도 두 꼴이 다 걸린다 — 필터는 `region LIKE '경기%'`라
+   * 「경기 성남시」와 「경기도 성남시」를 함께 잡는다.
    */
   app.get('/v1/vendors/regions', auth, async () => {
     const { rows } = await context.pool.query<{ name: string; vendor_count: string }>(
-      `SELECT split_part(region, ' ', 1) AS name, count(*) AS vendor_count
+      `SELECT regexp_replace(split_part(region, ' ', 1), $1, '') AS name, count(*) AS vendor_count
        FROM structured.vendors
        WHERE region <> ''
        GROUP BY 1
-       ORDER BY 1`
+       ORDER BY 1`,
+      [REGION_SUFFIX_PATTERN]
     );
 
     return {

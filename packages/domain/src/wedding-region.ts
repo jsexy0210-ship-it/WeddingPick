@@ -44,9 +44,21 @@ export function regionTokens(region: string): string[] {
     .trim()
     .split(/\s+/)
     .filter((token) => token.length > 0)
-    .map((token, index) =>
-      index === 0 ? token.replace(/(특별자치시|특별자치도|특별시|광역시|도)$/, '') : token
-    );
+    .map((token, index) => (index === 0 ? shortRegionName(token) : token));
+}
+
+/**
+ * 시/도 이름에서 떼어낼 꼬리. **SQL도 이 값을 쓴다**(`/v1/vendors/regions`) —
+ * 같은 규칙을 두 곳에 따로 적으면 한쪽만 고쳐져 지역 칩이 갈린다. 실제로
+ * 「경기」와 「경기도」가 필터에 나란히 뜬 적이 있다(2026-09-10 사용자 보고).
+ *
+ * 긴 꼴을 먼저 적는다 — 「제주특별자치도」에서 「도」만 떼면 「제주특별자치」가 된다.
+ */
+export const REGION_SUFFIX_PATTERN = '(특별자치시|특별자치도|특별시|광역시|도)$';
+
+/** 시/도 한 낱말을 짧은 꼴로. «경기도» → «경기» · «서울특별시» → «서울». */
+export function shortRegionName(token: string): string {
+  return token.replace(new RegExp(REGION_SUFFIX_PATTERN), '');
 }
 
 /** 업체 지역이 고른 지역에 드는가. "서울" ↔ "서울특별시 강남구" · "서울 강남구" · "서울특별시 강남구". */
