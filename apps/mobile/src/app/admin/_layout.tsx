@@ -68,7 +68,20 @@ function Sidebar({ pathname }: { pathname: string }) {
           const active = item.href ? pathname.startsWith(item.href) : false;
           return (
             <Link key={item.key} href={item.href as never} asChild>
-              <Pressable style={[styles.navItem, active && styles.navItemActive]}>
+              {/*
+                * **스타일을 평탄화해서 넘긴다.** `asChild`는 자식 요소를 복제해 자기 props와
+                * 합치는데, 그 과정을 거친 스타일이 배열이면 평탄화 없이 DOM까지 내려간다.
+                * react-dom은 `for (name in styles) node.style[name] = ...`로 도므로 배열의
+                * 키 `"0"`이 들어가고, 거기서 죽는다.
+                *
+                *   TypeError: Failed to set an indexed property [0] on 'CSSStyleDeclaration'
+                *
+                * 관리자 사이드바는 로그인한 뒤에만 그려져서, 로그인이 막혀 있던 동안에는
+                * 이 자리에 닿은 적이 없었다. 로그인을 고치자 바로 드러났다(2026-09-10).
+                * 개발 모드는 같은 것을 말로 알려준다 — 「You are passing an array of styles
+                * to a child of <Slot>」.
+                */}
+              <Pressable style={StyleSheet.flatten([styles.navItem, active && styles.navItemActive])}>
                 <Text style={[styles.navLabel, active && styles.navLabelActive]}>{item.label}</Text>
               </Pressable>
             </Link>
