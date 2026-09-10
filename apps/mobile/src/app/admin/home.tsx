@@ -246,16 +246,19 @@ export default function AdminHomeScreen() {
             return (
               <View style={[styles.card, styles.autoCol]}>
                 <View style={styles.cardHead}>
-                  <Text style={styles.cardTitle}>자동 검토 현황</Text>
+                  <Text style={styles.cardTitleTight}>자동 검토 현황</Text>
                   <View style={styles.windowBadge}>
                     <Text style={styles.windowBadgeText}>최근 24시간</Text>
                   </View>
+                  <Text style={styles.cardHeadNote} numberOfLines={1}>
+                    전 메뉴 자동 검토 · 리스크가 큰 건만 사람이 봐요
+                  </Text>
                 </View>
 
                 {all === 0 ? (
                   <View style={styles.emptyBox}>
                     <Text style={styles.emptyTitle}>최근 24시간에 판정이 없어요</Text>
-                    <Text style={styles.emptySub}>들어온 건이 없으면 자동 검토도 돌지 않아요</Text>
+                    <Text style={styles.emptySub}>건이 들어오면 자동 검토가 먼저 돌아요</Text>
                   </View>
                 ) : (
                   <>
@@ -295,7 +298,7 @@ export default function AdminHomeScreen() {
                         <Text style={styles.qualityNote}>되돌림 {auto.revertedCount}건</Text>
                       </View>
                       <View style={styles.qualityBox}>
-                        <Text style={styles.qualityKey}>평균 판정 시간</Text>
+                        <Text style={styles.qualityKey}>판정 시간</Text>
                         <Text style={[styles.qualityValue, { color: Colors.light.accent }]}>
                           {auto.medianLatencyMs === null ? '—' : `${(auto.medianLatencyMs / 1000).toFixed(1)}초`}
                         </Text>
@@ -361,7 +364,7 @@ export default function AdminHomeScreen() {
             {total === 0 ? (
               <View style={styles.emptyBox}>
                 <Text style={styles.emptyTitle}>확인할 것이 없어요</Text>
-                <Text style={styles.emptySub}>사람이 결정해야 하는 건이 남아 있지 않아요</Text>
+                <Text style={styles.emptySub}>사람이 결정해야 하는 건을 모두 끝냈어요</Text>
               </View>
             ) : (
               data.humanQueue
@@ -528,7 +531,9 @@ const styles = StyleSheet.create({
   queueWhy: { fontSize: FontSize.tab, lineHeight: LineHeight.tab, color: Colors.light.textAssistive },
   queueCount: { fontSize: FontSize.t6, lineHeight: LineHeight.t6, fontWeight: '700', fontVariant: ['tabular-nums'] },
 
-  cardHeadNote: { fontSize: FontSize.micro, lineHeight: LineHeight.micro, color: Colors.light.textAssistive },
+  /* 배지가 제목 바로 옆에 붙는 머리. 오른쪽 설명은 `cardHeadNote`가 밀어낸다. */
+  cardTitleTight: { fontSize: FontSize.t6, lineHeight: LineHeight.t6, fontWeight: '700', color: Colors.light.text },
+  cardHeadNote: { marginLeft: 'auto', fontSize: FontSize.micro, lineHeight: LineHeight.micro, color: Colors.light.textAssistive },
   windowBadge: {
     borderRadius: Radius.control,
     backgroundColor: Colors.light.accentBackground,
