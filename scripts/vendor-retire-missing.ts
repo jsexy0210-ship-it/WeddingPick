@@ -193,7 +193,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  // closed_at을 같이 넣지 않으면 vendors_closed_requires_date CHECK에 걸린다(0047).
+  // closed_at을 같이 넣지 않으면 vendors_inactive_requires_reason CHECK에 걸린다(0047 → 0120).
   let stopped = 0;
   for (const r of close) {
     const { rowCount } = await pool.query(

@@ -5,10 +5,9 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Colors, FontSize } from '@weddingpick/ui';
+import { Colors, FontSize, Layout, Spacing } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
-import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 
 type RightsStatus =
   | 'licensed' | 'public_domain' | 'vendor_provided' | 'vendor_homepage' | 'pending' | 'rejected';
@@ -50,6 +49,8 @@ export default function ImagesScreen() {
   const [error, setError] = useState<string | null>(null);
   const [rev, setRev] = useState(0);
   const [acting, setActing] = useState<string | null>(null);
+  // 처리 결과 한 줄. 눌렀는데 아무 말도 없으면 됐는지 안 됐는지 알 수 없다.
+  const [actionNote, setActionNote] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -70,21 +71,22 @@ export default function ImagesScreen() {
     return () => { cancelled = true; };
   }, [rev]);
 
-  async function approve(id: string) {
-    setActing(id);
+  async function decide(id: string, to: 'approve' | 'reject') {
+    setActing(to === 'approve' ? id : id + '_reject');
+    setActionNote(null);
     try {
-      await apiFetch(`/v1/admin/data/images/${id}/approve`, { method: 'POST' });
+      await apiFetch(`/v1/admin/data/images/${id}/${to}`, { method: 'POST' });
       setRev((r) => r + 1);
-    } catch { /* 무시 */ } finally { setActing(null); }
+    } catch (e) {
+      // 삼키지 않는다. 승인이 404로 떨어져도 화면이 조용하던 것이 이 화면의 문제였다.
+      setActionNote(e instanceof Error ? e.message : '처리 실패');
+    } finally {
+      setActing(null);
+    }
   }
 
-  async function reject(id: string) {
-    setActing(id + '_reject');
-    try {
-      await apiFetch(`/v1/admin/data/images/${id}/reject`, { method: 'POST' });
-      setRev((r) => r + 1);
-    } catch { /* 무시 */ } finally { setActing(null); }
-  }
+  const approve = (id: string) => decide(id, 'approve');
+  const reject = (id: string) => decide(id, 'reject');
 
   return (
     <View style={styles.root}>
@@ -95,7 +97,8 @@ export default function ImagesScreen() {
         </Pressable>
       </View>
 
-      <PendingBackendNotice actions="승인 · 반려" />
+      {actionNote && <Text style={styles.actionNote}>{actionNote}</Text>}
+
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
@@ -147,16 +150,16 @@ export default function ImagesScreen() {
                 {item.rightsStatus === 'pending' ? (
                   <View style={[styles.colActions, { flexDirection: 'row', gap: 6 }]}>
                     <Pressable
-                      style={[styles.approveBtn, (BACKEND_PENDING || acting === item.id) && styles.btnDisabled]}
+                      style={[styles.approveBtn, (acting === item.id) && styles.btnDisabled]}
                       onPress={() => void approve(item.id)}
-                      disabled={BACKEND_PENDING || acting !== null}
+                      disabled={acting !== null}
                     >
                       <Text style={styles.approveBtnText}>{acting === item.id ? '…' : '승인'}</Text>
                     </Pressable>
                     <Pressable
-                      style={[styles.rejectBtn, (BACKEND_PENDING || acting === item.id + '_reject') && styles.btnDisabled]}
+                      style={[styles.rejectBtn, (acting === item.id + '_reject') && styles.btnDisabled]}
                       onPress={() => void reject(item.id)}
-                      disabled={BACKEND_PENDING || acting !== null}
+                      disabled={acting !== null}
                     >
                       <Text style={styles.rejectBtnText}>{acting === item.id + '_reject' ? '…' : '반려'}</Text>
                     </Pressable>
@@ -190,6 +193,13 @@ const styles = StyleSheet.create({
   body: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
   errorText: { fontSize: FontSize.t6, color: Colors.light.negative, marginBottom: 16 },
+  actionNote: {
+    fontSize: FontSize.t7,
+    fontWeight: '600',
+    color: Colors.light.negative,
+    marginHorizontal: Layout.gutter,
+    marginTop: Spacing.two,
+  },
   retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: Colors.light.tint },
   retryText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   summaryRow: {

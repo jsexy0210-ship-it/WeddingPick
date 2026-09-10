@@ -24,6 +24,8 @@ import { decideRebuttal } from '../rebuttal-decide';
 import * as rebuttalAdmin from '../rebuttal-admin';
 import * as retentionWorker from '../retention/worker';
 import * as rewardAdmin from '../reward-admin';
+import * as dataPipeline from '../data-pipeline-admin';
+import * as vendorAdmin from '../vendor-admin';
 import * as vendorClaimAdmin from '../vendor-claim-admin';
 import * as verificationAdmin from '../verification-admin';
 import * as withdrawalAdmin from '../withdrawal-admin';
@@ -136,6 +138,9 @@ function mapCopyrightBasis(
   if (basis.startsWith('cc_') || basis.startsWith('kogl_')) return 'licensed';
   return 'pending';
 }
+
+/** 경로 파라미터가 uuid인지. 아니면 질의가 22P02로 터져 500이 된다. */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function registerAdminRoutes(app: FastifyInstance, context: AppContext): void {
   const auth = { preHandler: requireOperatorUser(context) };
@@ -1106,63 +1111,82 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   });
 
   // ─── Vendors ──────────────────────────────────────────────────────────────
-  app.get('/v1/admin/vendors', auth, async (request) => {
-    const q = request.query as Record<string, string | undefined>;
-    const cursor = q['cursor'];
-    const category = q['category'];
-    const limit = 25;
-    const params: unknown[] = [];
-    let idx = 1;
-    const clauses: string[] = [];
-    if (category) {
-      clauses.push(`v.category = $${idx}`);
-      params.push(category);
-      idx++;
+  /*
+   * WP-ADM-014가 읽는 모양으로 돌려준다. 예전에는 커서 페이지네이션에
+   * `{items, hasMore, nextCursor}`를 내보냈는데 화면은 `{vendors, total}`을 읽고
+   * 있었다 — 즉 표가 언제나 비어 있었다. 조회조차 되지 않고 있었던 셈이다.
+   */
+  app.get('/v1/admin/vendors', auth, async () => vendorAdmin.listVendors(context.pool));
+
+  /*
+   * 병합하면 무엇이 몇 건 옮겨 가는지 세어서 돌려준다. 아무것도 바꾸지 않는다.
+   *
+   * 병합은 이 콘솔에서 되돌릴 수 없는 유일한 조작이고 사용자가 쓴 기록에 닿는다.
+   * v3.27 관리자 공통 규칙 — 위험한 조작은 무엇이 바뀌는지 항목으로 보여준 뒤
+   * 한 번 더 확인. 화면은 이 응답을 확인창에 그대로 그린다.
+   */
+  app.get<{ Params: { id: string }; Querystring: { targetId?: string } }>(
+    '/v1/admin/vendors/:id/merge-preview',
+    auth,
+    async (request) => {
+      const targetId = request.query.targetId?.trim();
+      if (!targetId) {
+        throw new ApiError('invalid_request', '병합할 업체 ID를 입력해 주세요.');
+      }
+      return vendorAdmin.mergePreview(context.pool, request.params.id, targetId);
     }
-    if (cursor) {
-      clauses.push(`v.created_at < $${idx}`);
-      params.push(cursor);
-      idx++;
+  );
+
+  app.post<{ Params: { id: string } }>(
+    '/v1/admin/vendors/:id/merge',
+    auth,
+    async (request) => {
+      const body = z
+        .object({ targetId: z.string().min(1), reason: z.string().min(1) })
+        .safeParse(request.body);
+      if (!body.success) {
+        // 사유 없이 병합할 수 없다. 되돌릴 수 없는 조작에서 「왜」가 빠지면
+        // 나중에 잘못을 찾아도 어디서부터 잘못됐는지 짚을 수가 없다.
+        throw new ApiError('invalid_request', '병합할 업체와 사유를 입력해 주세요.');
+      }
+      return vendorAdmin.mergeVendors(
+        context.pool,
+        request.params.id,
+        body.data.targetId.trim(),
+        body.data.reason,
+        currentUserId(request)
+      );
     }
-    const where = clauses.length ? 'WHERE ' + clauses.join(' AND ') : '';
-    params.push(limit + 1);
-    const { rows } = await context.pool.query<{
-      id: string;
-      category: string;
-      name: string;
-      region: string | null;
-      source: string;
-      last_verified_at: Date | null;
-      created_at: Date;
-      proof_count: string;
-    }>(
-      `SELECT v.id, v.category, v.name, v.region, v.source,
-              v.last_verified_at, v.created_at,
-              COUNT(p.id)::text AS proof_count
-       FROM structured.vendors v
-       LEFT JOIN structured.usable_payment_proofs p ON p.vendor_id = v.id
-       ${where}
-       GROUP BY v.id
-       ORDER BY v.created_at DESC
-       LIMIT $${idx}`,
-      params
+  );
+
+  app.patch<{ Params: { id: string } }>('/v1/admin/vendors/:id/name', auth, async (request) => {
+    const body = z.object({ name: z.string() }).safeParse(request.body);
+    if (!body.success) {
+      throw new ApiError('invalid_request', '상호를 입력해 주세요.');
+    }
+    return vendorAdmin.renameVendor(
+      context.pool,
+      request.params.id,
+      body.data.name,
+      currentUserId(request)
     );
-    const hasMore = rows.length > limit;
-    const items = hasMore ? rows.slice(0, limit) : rows;
-    return {
-      items: items.map((r) => ({
-        id: r.id,
-        category: r.category,
-        name: r.name,
-        region: r.region ?? '',
-        source: r.source,
-        lastVerifiedAt: r.last_verified_at?.toISOString() ?? null,
-        createdAt: r.created_at.toISOString(),
-        proofCount: Number(r.proof_count),
-      })),
-      hasMore,
-      nextCursor: hasMore ? items[items.length - 1]!.created_at.toISOString() : null,
-    };
+  });
+
+  app.patch<{ Params: { id: string } }>('/v1/admin/vendors/:id/status', auth, async (request) => {
+    const body = z
+      .object({ status: z.enum(vendorAdmin.SETTABLE_STATUSES) })
+      .safeParse(request.body);
+    if (!body.success) {
+      // 「병합됨」은 병합의 결과이지 고르는 상태가 아니다. 고를 수 있게 두면
+      // 옮겨 간 것 없이 상태만 병합됨인 업체가 생긴다.
+      throw new ApiError('invalid_request', '영업 상태는 영업중 · 폐업 · 정지 중에서 고릅니다.');
+    }
+    return vendorAdmin.setVendorStatus(
+      context.pool,
+      request.params.id,
+      body.data.status,
+      currentUserId(request)
+    );
   });
 
   // ─── Revenue ──────────────────────────────────────────────────────────────
@@ -1240,13 +1264,43 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   });
 
   // ─── Data / Pipeline ──────────────────────────────────────────────────────
-  app.get('/v1/admin/data/pipeline', auth, async () => {
-    return { stages: [] as unknown[], lastRunAt: null as string | null };
-  });
+  /*
+   * 바탕은 `structured.analyses`다. 예전에는 `{stages: [], lastRunAt: null}`이라는
+   * 빈 껍데기를 돌려줬는데, 화면은 `today` · `stages` · `failedQueue` 셋을 읽으므로
+   * `data.today.received`에서 터졌다 — 화면이 아예 뜨지 않았다.
+   */
+  app.get('/v1/admin/data/pipeline', auth, async () => dataPipeline.pipelineData(context.pool));
+
+  app.post<{ Params: { id: string } }>(
+    '/v1/admin/data/pipeline/retry/:id',
+    auth,
+    async (request, reply) => {
+      await dataPipeline.retryAnalysis(context.pool, request.params.id);
+      return reply.status(204).send();
+    }
+  );
+
+  app.post('/v1/admin/data/pipeline/retry-all', auth, async () =>
+    dataPipeline.retryAllFailed(context.pool)
+  );
 
   // ─── Data / Email Matching ────────────────────────────────────────────────
+  /*
+   * **여기에는 아직 아무 상태도 없다.** 업체 회신 메일을 받아 두는 표가 DB에 없고
+   * (0001~0121 어디에도 없다), 파싱도 매칭도 도는 곳이 없다. 그래서 「반영」·「재시도」는
+   * 만들지 않았다 — 서버에 그 상태가 없으면 단추도 두지 않는다. 화면의 잠금은
+   * 그대로 두고, 무엇이 없어서 잠겨 있는지는 PR에 적었다.
+   *
+   * 다만 `summary`는 채워서 내보낸다. 예전에는 `{items, total}`만 줬는데 화면은
+   * `data.summary[s]`를 읽으므로 undefined를 인덱싱하다 화면이 통째로 죽었다 —
+   * 「빈 상태」가 아니라 흰 화면이었다. 0으로 채우면 v3.27의 「빈 상태가 정상 상태」가
+   * 그려진다.
+   */
   app.get('/v1/admin/data/email-matching', auth, async () => {
-    return { items: [] as unknown[], total: 0 };
+    return {
+      summary: { total: 0, matched: 0, unmatched: 0, applied: 0, failed: 0 },
+      items: [] as unknown[],
+    };
   });
 
   // ─── Data / Images ────────────────────────────────────────────────────────
@@ -1305,26 +1359,39 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
     };
   });
 
-  app.patch<{ Params: { id: string } }>(
+  /*
+   * 화면(WP-ADM-015)이 POST로 부른다. 서버는 PATCH로 열려 있었다 — 라우트는 있는데
+   * 메서드가 어긋나 404가 나던 자리다. 이 콘솔 말고 부르는 곳이 없으므로 화면에
+   * 맞춘다.
+   *
+   * 없는 이미지를 승인해도 조용히 204가 나가던 것도 같이 고친다. 운영자에게는
+   * 「승인됐다」로 보이는데 아무 일도 안 일어난 상태였다.
+   */
+  async function setImageStatus(id: string, status: 'approved' | 'quality_rejected') {
+    // uuid가 아닌 것을 넣으면 Postgres가 22P02로 터져 500이 된다. 실제로는 ID가
+    // 잘못된 것이므로 404로 답한다.
+    if (!UUID_RE.test(id)) throw notFound('이미지');
+    const { rowCount } = await context.pool.query(
+      `UPDATE structured.vendor_images SET status = $2 WHERE id = $1`,
+      [id, status]
+    );
+    if (rowCount === 0) throw notFound('이미지');
+  }
+
+  app.post<{ Params: { id: string } }>(
     '/v1/admin/data/images/:id/approve',
     auth,
     async (request, reply) => {
-      await context.pool.query(
-        `UPDATE structured.vendor_images SET status = 'approved' WHERE id = $1`,
-        [request.params.id]
-      );
+      await setImageStatus(request.params.id, 'approved');
       return reply.status(204).send();
     }
   );
 
-  app.patch<{ Params: { id: string } }>(
+  app.post<{ Params: { id: string } }>(
     '/v1/admin/data/images/:id/reject',
     auth,
     async (request, reply) => {
-      await context.pool.query(
-        `UPDATE structured.vendor_images SET status = 'quality_rejected' WHERE id = $1`,
-        [request.params.id]
-      );
+      await setImageStatus(request.params.id, 'quality_rejected');
       return reply.status(204).send();
     }
   );
