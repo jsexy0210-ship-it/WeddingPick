@@ -129,7 +129,7 @@ async function readAdmin(
     throw notActivated();
   }
 
-  const admin = await resolveAdmin(context.pool, user.userId, context.config.adminLoginId);
+  const admin = await resolveAdmin(context.pool, user.userId);
 
   if (!admin) {
     throw forbidden();

@@ -24,6 +24,21 @@ export function atMost(given: AdminRole, mine: AdminRole): boolean {
   return RANK[given] <= RANK[mine];
 }
 
+/**
+ * 부트스트랩 아이디. **읽는 자리는 여기 하나뿐이다.**
+ *
+ * 설정(`Config`)으로 옮겨 두었다가 되돌렸다 — 설정은 서버가 뜰 때 한 번 읽히는데
+ * `admin-login.test.ts`는 시험마다 `process.env`를 갈아끼운다. 값이 두 곳에 있으면
+ * 어느 쪽이 현행인지가 부르는 자리마다 달라진다.
+ */
+export function bootstrapLoginId(): string | undefined {
+  return process.env.ADMIN_LOGIN_ID?.trim() || undefined;
+}
+
+export function bootstrapPasswordHash(): string | undefined {
+  return process.env.ADMIN_PASSWORD_HASH?.trim() || undefined;
+}
+
 export type ResolvedAdmin = {
   role: AdminRole;
   /**
@@ -54,9 +69,10 @@ export type ResolvedAdmin = {
  */
 export async function resolveAdmin(
   db: Pool | PoolClient,
-  userId: string,
-  bootstrapLoginId: string | undefined
+  userId: string
 ): Promise<ResolvedAdmin | null> {
+  const bootstrapId = bootstrapLoginId();
+
   const { rows } = await db.query<{
     role: AdminRole | null;
     disabled: boolean;
@@ -89,7 +105,7 @@ export async function resolveAdmin(
      LEFT JOIN structured.admin_accounts a
        ON a.user_id = u.id AND a.disabled_at IS NULL
      WHERE u.id = $1`,
-    [userId, bootstrapLoginId ?? null]
+    [userId, bootstrapId ?? null]
   );
 
   const row = rows[0];
@@ -123,7 +139,7 @@ export async function resolveAdmin(
    * 이 등급은 부여된 것이 아니라 환경 설정에서 **파생된 것**이고, 진짜 슈퍼 관리자가
    * 하나 생기는 순간 저절로 사라진다.
    */
-  if (bootstrapLoginId && row.bootstrap_subject && Number(row.active_supers) === 0) {
+  if (bootstrapId && row.bootstrap_subject && Number(row.active_supers) === 0) {
     return { role: 'super', stored: false };
   }
 

@@ -25,6 +25,11 @@ export const FontSize = {
   t6: 16,
   /** caption 14/19 — 메타 · 건수 · 섹션 라벨 · 상태 배지. */
   t7: 14,
+  /**
+   * 날짜 선택의 칸 글자. component.datePicker.cellFontSize — 20-onboarding-v2의
+   * `optCell` · `dayCell`이 15다. t 스케일에는 없는 값이고 이 시트에서만 쓴다.
+   */
+  dateCell: 15,
   /** micro 13/18 — 정보 단계 배지 · 스타일 칩(28) · 이미지 위 순위 pill. */
   micro: 13,
   /** Npay 로고 — 원 안의 N 12 · «pay» 14. spec/tokens.json typography npay. 다른 곳에 쓰지 않는다. */
@@ -32,12 +37,18 @@ export const FontSize = {
   npayPay: 14,
   /** 탭 바 라벨. tabBar.labelSize 12/16. */
   tab: 12,
-  /** 상태 배지(Pick 완료 · 인증완료 · 결정 완료). component.badge 14/19/700 · height 22. */
+  /** 상태 배지(Pick 완료 · 인증완료 · 결정 완료). component.badge 14/19/700 · minHeight 22. */
   badge: 14,
   /** 금액 한 덩어리. display와 같다. */
   amount: 32,
   /** 코드·식별자(관리자 · 내부). */
   code: 12,
+  /** 관리자 KPI 숫자 30/38. 웹 전용 `/admin`만 쓴다 — spec typography.scale adminKpi. */
+  adminKpi: 30,
+  /** 관리자 상단 상태 배너 제목 15/21. adminBanner. */
+  adminBanner: 15,
+  /** 관리자 사이드바 그룹 제목 11/15. adminNavGroup. */
+  adminNavGroup: 11,
 } as const;
 
 /**
@@ -66,6 +77,9 @@ export const LineHeight = {
   badge: 19,
   amount: 43,
   link: 19,
+  adminKpi: 38,
+  adminBanner: 21,
+  adminNavGroup: 15,
 } as const;
 
 export type FontSizeToken = keyof typeof FontSize;

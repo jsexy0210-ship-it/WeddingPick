@@ -33,7 +33,7 @@ describe('히어로 문구 (핸드오프 v3.26 SPEC §13.6)', () => {
     expect(STEP_TITLE_LINES.region.join(' ')).toBe('어느 지역에서 하나요?');
     expect(STEP_TITLE_LINES.prep.join(' ')).toBe('준비는 어디까지 했나요?');
     expect(STEP_TITLE_LINES.budget.join(' ')).toBe('앞으로 쓸 예산은 얼마인가요?');
-    expect(STEP_TITLE_LINES.style.join(' ')).toBe('어떤 스타일을 좋아하세요?');
+    expect(STEP_TITLE_LINES.style.join(' ')).toBe('어떤 분위기로 준비할까요?');
 
     expect(STEP_DESCRIPTION).toEqual({
       date: '남은 기간에 맞춰 준비 순서를 잡아드릴게요',
@@ -147,9 +147,9 @@ describe('답 줄과 완료 요약', () => {
     expect(doneRows(FULL)[4]).toEqual({ step: 'style', label: '스타일', value: '도시적인 · 로맨틱한' });
   });
 
-  it('스타일 CTA는 고른 수 그대로 «N개 선택»이다', () => {
-    expect(styleCta(0)).toBe('0개 선택');
-    expect(styleCta(2)).toBe('2개 선택');
+  it('스타일 CTA는 고른 장수 그대로 «N장 선택»이다', () => {
+    expect(styleCta(0)).toBe('0장 선택');
+    expect(styleCta(2)).toBe('2장 선택');
   });
 
   it('시트의 D-day는 «D-250», 당일은 «D-DAY»다', () => {

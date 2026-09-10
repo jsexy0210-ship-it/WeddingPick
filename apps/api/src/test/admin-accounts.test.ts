@@ -5,6 +5,9 @@ let test: TestApp;
 
 const describeWithDb = process.env.DATABASE_URL ? describe : describe.skip;
 
+/* 시험이 끝나면 되돌린다 — 전역을 건드리므로 다음 파일에 새어 나가면 안 된다. */
+const savedEnv = { id: process.env.ADMIN_LOGIN_ID, hash: process.env.ADMIN_PASSWORD_HASH };
+
 /** 12자 이상이어야 한다(라우트 규칙). 시험용 값이고 어디에도 저장되지 않는다. */
 const PASSWORD = 'test-password-1';
 
@@ -25,12 +28,14 @@ describeWithDb('관리자 계정 관리', () => {
 
   afterAll(async () => {
     await test?.close();
+    process.env.ADMIN_LOGIN_ID = savedEnv.id;
+    process.env.ADMIN_PASSWORD_HASH = savedEnv.hash;
   });
 
   beforeEach(async () => {
     await resetDatabase();
-    test.context.config.adminLoginId = undefined;
-    test.context.config.adminPasswordHash = undefined;
+    delete process.env.ADMIN_LOGIN_ID;
+    delete process.env.ADMIN_PASSWORD_HASH;
   });
 
   async function create(
@@ -382,8 +387,8 @@ describeWithDb('관리자 계정 관리', () => {
 
   describe('환경변수 계정은 부트스트랩 전용', () => {
     beforeEach(() => {
-      test.context.config.adminLoginId = 'bootstrap-id';
-      test.context.config.adminPasswordHash = hashAdminPassword(PASSWORD);
+      process.env.ADMIN_LOGIN_ID = 'bootstrap-id';
+      process.env.ADMIN_PASSWORD_HASH = hashAdminPassword(PASSWORD);
     });
 
     async function bootstrapLogin() {
@@ -456,8 +461,8 @@ describeWithDb('관리자 계정 관리', () => {
     });
 
     it('환경변수가 없으면 그 길 자체가 없다', async () => {
-      test.context.config.adminLoginId = undefined;
-      test.context.config.adminPasswordHash = undefined;
+      delete process.env.ADMIN_LOGIN_ID;
+      delete process.env.ADMIN_PASSWORD_HASH;
 
       expect((await bootstrapLogin()).statusCode).toBe(401);
     });

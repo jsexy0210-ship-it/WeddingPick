@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
 import { sameId, verifyAdminPassword } from '../auth/admin-password';
-import { resolveAdmin } from '../auth/admin-role';
+import { bootstrapLoginId, bootstrapPasswordHash, resolveAdmin } from '../auth/admin-role';
 import { signIn } from '../auth/sessions';
 import type { AppContext } from '../context';
 import { ApiError } from '../errors';
@@ -101,7 +101,8 @@ function delayFor(key: string): number {
 async function bootstrapCandidate(
   context: AppContext
 ): Promise<{ id: string; hash: string } | null> {
-  const { adminLoginId, adminPasswordHash } = context.config;
+  const adminLoginId = bootstrapLoginId();
+  const adminPasswordHash = bootstrapPasswordHash();
 
   if (!adminLoginId || !adminPasswordHash) return null;
 
@@ -168,24 +169,39 @@ export function registerAdminLoginRoutes(app: FastifyInstance, context: AppConte
     );
 
     /*
-     * **부트스트랩 계정에는 가입 절차가 없다.**
+     * **관리자 계정을 활성으로 표시한다.**
      *
-     * `signIn`이 처음 만드는 계정은 `activated_at`이 비어 있다 — 사용자 로그인은
-     * 그 다음에 동의 화면을 지나기 때문이다(§N-2). 관리자에게는 그 화면이 없어서,
-     * 이걸 채워 주지 않으면 아이디와 비밀번호가 맞는데도 관문이 「가입이 끝나지
-     * 않았다」며 돌려보낸다. 콘솔에 아무도 못 들어가는 상태가 된다.
+     * `requireOperatorUser`는 권한을 보기 전에 `activated`를 먼저 본다. 그 값은
+     * `structured.active_users` 뷰가 정하고, 뷰는 `activated_at IS NOT NULL`인
+     * 사람만 담는다. 그 시각은 **소비자가 가입 동의를 끝낼 때** 찍힌다
+     * (v3.13 §N-2 — 소셜 로그인 성공만으로 서비스를 쓰게 하지 않는다).
      *
-     * 나이 확인도 함께 적는다 — `activated_only_when_old_enough`가 통과 표시 없는
-     * 활성 계정을 막는다. 계정 관리 라우트가 새 계정에 하는 것과 같은 꼴이다.
+     * 관리자는 그 절차를 거치지 않는다. 그래서 로그인은 되는데 관리자 API가 전부
+     * 403으로 막혔고, 화면은 그 403을 「다시 로그인」으로 읽어 로그인으로 되돌렸다 —
+     * **들어갔다가 튕겨 나온다**(2026-09-10 사용자 보고 · #175).
+     *
+     * §N-2가 막으려는 것은 「소셜 로그인만 한 대기 계정」이다. 이 경로는 그것이
+     * 아니다 — 아이디와 비밀번호를 아는 사람만 여기 닿고, 그 자격은 운영자가 직접
+     * 심는다. 소비자 동의 관문의 대상이 아니다.
+     *
+     * `age_gate`도 함께 채운다 — `activated_only_when_old_enough` 제약이
+     * `activated_at IS NULL OR age_gate = 'passed'`를 요구하고, `age_check_has_time`이
+     * 그 짝으로 `age_checked_at`을 요구한다. 셋을 한 번에 맞추지 않으면 제약에서
+     * 막힌다.
+     *
+     * 이미 활성인 계정은 건드리지 않는다(`COALESCE`) — 다시 로그인할 때마다
+     * 가입 시각이 밀리면 「언제부터 쓴 계정인가」에 답할 수 없게 된다.
      *
      * **이것은 권한이 아니다.** 「이 계정이 쓸 수 있는 상태인가」까지이고, 콘솔에서
-     * 무엇을 할 수 있는지는 아래 `resolveAdmin`이 따로 정한다.
+     * 무엇을 할 수 있는지는 아래 `resolveAdmin`이 따로 정한다(0102).
      */
     await context.pool.query(
       `UPDATE structured.users
-       SET age_gate = 'passed', age_checked_at = now(),
-           age_verified = true, age_verified_at = now(), activated_at = now()
-       WHERE id = $1 AND activated_at IS NULL`,
+          SET age_gate = 'passed',
+              age_checked_at = COALESCE(age_checked_at, now()),
+              activated_at = COALESCE(activated_at, now())
+        WHERE id = $1
+          AND activated_at IS NULL`,
       [session.userId]
     );
 
@@ -195,7 +211,7 @@ export function registerAdminLoginRoutes(app: FastifyInstance, context: AppConte
      *
      * **여기서 등급을 주지 않는다.** 무엇이 부족한지만 말한다.
      */
-    const admin = await resolveAdmin(context.pool, session.userId, context.config.adminLoginId);
+    const admin = await resolveAdmin(context.pool, session.userId);
 
     if (!admin) {
       throw new ApiError('forbidden', '이 계정에는 관리자 권한이 없어요.');
