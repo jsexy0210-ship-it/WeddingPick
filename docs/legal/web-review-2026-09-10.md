@@ -13,7 +13,7 @@
 | 항목 | 근거 | 확인 결과 |
 |---|---|---|
 | 카카오 연령대 | `apps/api/src/auth/identity-provider.ts`, `sessions.ts` | `age_range` 요청 후 판정에 사용. 신규 저장값은 null. 기존 행 업데이트는 COALESCE이므로 과거 값 잔존 여부는 별도 DB 확인 필요 |
-| 프로필 | `apps/api/src/auth/sessions.ts`의 identityValues | 이름·이메일·닉네임·이미지·성별·휴대전화 저장 경로 존재. 실제 활성 제공자의 동의 범위는 콘솔 확인 필요 |
+| 카카오 프로필 | 2026-09-10 운영자 확인 | 실제 수신 항목은 이메일·프로필(닉네임·프로필 사진)·연령대. 공통 소셜 저장 코드에 이름·성별·휴대전화 필드가 있다는 이유로 카카오 수집 항목에 포함하지 않는다. 이메일·프로필의 필수/선택 조건은 별도 확인 필요 |
 | 외부 분석 | `apps/api/src/analysis/claude-analyzer.ts`, `claude-payment-reader.ts` | 이미지 및 PDF를 Anthropic API로 보내는 구현 존재 |
 | 푸시 | `apps/api/src/push/expo.ts` | 운영에서 Expo에 토큰·제목·본문 전송 |
 | 원본 삭제 | `packages/db/migrations/0022_payment_proofs.sql`, `0055_account_deletion.sql` | 결제 증빙은 업로드·분석 완료 중 늦은 시점부터 24시간, 견적서는 검증 종료 후 30일이다. 진행 중 일반 문서 심사는 파기 일정이 보류된다. 운영 DB 적용 상태·실제 삭제 성공은 이번 검토로 입증되지 않음 |
