@@ -5,9 +5,10 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 
 type WorkflowStatus = 'healthy' | 'degraded' | 'down' | 'recovering';
 type Workflow = {
@@ -34,10 +35,10 @@ const STATUS_LABEL: Record<WorkflowStatus, string> = {
   recovering: '복구 중',
 };
 const STATUS_COLOR: Record<WorkflowStatus, string> = {
-  healthy: '#1aa174',
-  degraded: '#805217',
-  down: '#e81607',
-  recovering: '#0088cc',
+  healthy: Colors.light.positive,
+  degraded: Colors.light.cautionary,
+  down: Colors.light.negative,
+  recovering: Colors.light.accent,
 };
 
 export default function AutomationScreen() {
@@ -91,6 +92,7 @@ export default function AutomationScreen() {
         </Pressable>
       </View>
 
+      <PendingBackendNotice actions="복구 실행 · DLQ 재처리" />
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
@@ -104,18 +106,18 @@ export default function AutomationScreen() {
       {!loading && !error && data && (
         <View style={styles.body}>
           <View style={styles.overallRow}>
-            <View style={[styles.overallCell, { borderColor: '#1aa174' }]}>
-              <Text style={[styles.overallValue, { color: '#1aa174' }]}>{data.overall.healthyCount}</Text>
+            <View style={[styles.overallCell, { borderColor: Colors.light.positive }]}>
+              <Text style={[styles.overallValue, { color: Colors.light.positive }]}>{data.overall.healthyCount}</Text>
               <Text style={styles.overallLabel}>정상</Text>
             </View>
-            <View style={[styles.overallCell, { borderColor: data.overall.degradedCount > 0 ? '#805217' : '#e4e5ea' }]}>
-              <Text style={[styles.overallValue, { color: data.overall.degradedCount > 0 ? '#805217' : '#868b94' }]}>
+            <View style={[styles.overallCell, { borderColor: data.overall.degradedCount > 0 ? Colors.light.cautionary : Colors.light.border }]}>
+              <Text style={[styles.overallValue, { color: data.overall.degradedCount > 0 ? Colors.light.cautionary : Colors.light.textAssistive }]}>
                 {data.overall.degradedCount}
               </Text>
               <Text style={styles.overallLabel}>저하</Text>
             </View>
-            <View style={[styles.overallCell, { borderColor: data.overall.downCount > 0 ? '#e81607' : '#e4e5ea' }]}>
-              <Text style={[styles.overallValue, { color: data.overall.downCount > 0 ? '#e81607' : '#868b94' }]}>
+            <View style={[styles.overallCell, { borderColor: data.overall.downCount > 0 ? Colors.light.negative : Colors.light.border }]}>
+              <Text style={[styles.overallValue, { color: data.overall.downCount > 0 ? Colors.light.negative : Colors.light.textAssistive }]}>
                 {data.overall.downCount}
               </Text>
               <Text style={styles.overallLabel}>중단</Text>
@@ -135,7 +137,7 @@ export default function AutomationScreen() {
                 <View style={styles.wfMetrics}>
                   <View style={styles.metricPair}>
                     <Text style={styles.metricLabel}>성공률</Text>
-                    <Text style={[styles.metricValue, wf.successRate < 0.9 && { color: '#e81607' }]}>
+                    <Text style={[styles.metricValue, wf.successRate < 0.9 && { color: Colors.light.negative }]}>
                       {(wf.successRate * 100).toFixed(1)}%
                     </Text>
                   </View>
@@ -145,19 +147,19 @@ export default function AutomationScreen() {
                   </View>
                   <View style={styles.metricPair}>
                     <Text style={styles.metricLabel}>재시도</Text>
-                    <Text style={[styles.metricValue, wf.retryCount > 0 && { color: '#805217' }]}>
+                    <Text style={[styles.metricValue, wf.retryCount > 0 && { color: Colors.light.cautionary }]}>
                       {wf.retryCount}
                     </Text>
                   </View>
                   <View style={styles.metricPair}>
                     <Text style={styles.metricLabel}>DLQ</Text>
-                    <Text style={[styles.metricValue, wf.dlqSize > 0 && { color: '#e81607' }]}>
+                    <Text style={[styles.metricValue, wf.dlqSize > 0 && { color: Colors.light.negative }]}>
                       {wf.dlqSize}
                     </Text>
                   </View>
                   <View style={styles.metricPair}>
                     <Text style={styles.metricLabel}>자기복구</Text>
-                    <Text style={[styles.metricValue, { color: wf.selfHealEnabled ? '#1aa174' : '#868b94' }]}>
+                    <Text style={[styles.metricValue, { color: wf.selfHealEnabled ? Colors.light.positive : Colors.light.textAssistive }]}>
                       {wf.selfHealEnabled ? '켜짐' : '꺼짐'}
                     </Text>
                   </View>
@@ -165,18 +167,18 @@ export default function AutomationScreen() {
                 <View style={styles.wfActions}>
                   {wf.status === 'down' && (
                     <Pressable
-                      style={[styles.recoverBtn, triggering === wf.id && styles.btnDisabled]}
+                      style={[styles.recoverBtn, (BACKEND_PENDING || triggering === wf.id) && styles.btnDisabled]}
                       onPress={() => void triggerRecovery(wf.id)}
-                      disabled={triggering !== null}
+                      disabled={BACKEND_PENDING || triggering !== null}
                     >
                       <Text style={styles.recoverBtnText}>{triggering === wf.id ? '복구 중…' : '복구 실행'}</Text>
                     </Pressable>
                   )}
                   {wf.dlqSize > 0 && (
                     <Pressable
-                      style={[styles.dlqBtn, triggering === wf.id + '_dlq' && styles.btnDisabled]}
+                      style={[styles.dlqBtn, (BACKEND_PENDING || triggering === wf.id + '_dlq') && styles.btnDisabled]}
                       onPress={() => void drainDlq(wf.id)}
-                      disabled={triggering !== null}
+                      disabled={BACKEND_PENDING || triggering !== null}
                     >
                       <Text style={styles.dlqBtnText}>
                         {triggering === wf.id + '_dlq' ? '처리 중…' : `DLQ 재처리 (${wf.dlqSize})`}
@@ -194,29 +196,29 @@ export default function AutomationScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f3f6' },
+  root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
-  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: '#17181c' },
-  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: '#f2f3f6' },
-  refreshText: { fontSize: FontSize.t7, color: '#5a5d6a' },
+  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text },
+  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: Colors.light.backgroundSelected },
+  refreshText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
   body: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  errorText: { fontSize: FontSize.t6, color: '#e53e3e', marginBottom: 16 },
-  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: '#ff6f61' },
-  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: '#fff' },
+  errorText: { fontSize: FontSize.t6, color: Colors.light.negative, marginBottom: 16 },
+  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: Colors.light.tint },
+  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   overallRow: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
     paddingVertical: 14,
     paddingHorizontal: 24,
     gap: 16,
@@ -229,33 +231,33 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   overallValue: { fontSize: FontSize.t2, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  overallLabel: { fontSize: FontSize.tab, color: '#868b94', marginTop: 2 },
-  wfCard: { backgroundColor: '#fff', padding: 16 },
-  wfCardBorder: { borderBottomWidth: 1, borderBottomColor: '#e4e5ea' },
+  overallLabel: { fontSize: FontSize.tab, color: Colors.light.textAssistive, marginTop: 2 },
+  wfCard: { backgroundColor: Colors.light.background, padding: 16 },
+  wfCardBorder: { borderBottomWidth: 1, borderBottomColor: Colors.light.border },
   wfHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
   statusDot: { width: 10, height: 10, borderRadius: 5 },
-  wfName: { flex: 1, fontSize: FontSize.t7, fontWeight: '700', color: '#17181c' },
+  wfName: { flex: 1, fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.text },
   wfStatus: { fontSize: FontSize.t7, fontWeight: '700' },
   wfMetrics: { flexDirection: 'row', gap: 24, marginBottom: 12 },
   metricPair: {},
-  metricLabel: { fontSize: FontSize.tab, color: '#868b94', marginBottom: 2 },
-  metricValue: { fontSize: FontSize.t7, fontWeight: '700', color: '#17181c', fontVariant: ['tabular-nums'] },
+  metricLabel: { fontSize: FontSize.tab, color: Colors.light.textAssistive, marginBottom: 2 },
+  metricValue: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.text, fontVariant: ['tabular-nums'] },
   wfActions: { flexDirection: 'row', gap: 8 },
   recoverBtn: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
-    backgroundColor: '#0088cc',
+    backgroundColor: Colors.light.accent,
   },
-  recoverBtnText: { fontSize: FontSize.tab, fontWeight: '700', color: '#fff' },
+  recoverBtnText: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.background },
   dlqBtn: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
-    backgroundColor: '#fff0ee',
+    backgroundColor: Colors.light.negativeBoxBackground,
     borderWidth: 1,
-    borderColor: '#ff6f61',
+    borderColor: Colors.light.tint,
   },
-  dlqBtnText: { fontSize: FontSize.tab, fontWeight: '700', color: '#ff6f61' },
+  dlqBtnText: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.tint },
   btnDisabled: { opacity: 0.5 },
 });

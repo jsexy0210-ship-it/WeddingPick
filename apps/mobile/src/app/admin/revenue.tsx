@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 
@@ -91,15 +91,15 @@ export default function RevenueScreen() {
             </View>
             <View style={styles.metricCard}>
               <Text style={styles.metricLabel}>AI 비용</Text>
-              <Text style={[styles.metricValue, { color: '#e81607' }]}>{data.summary.aiCost}</Text>
+              <Text style={[styles.metricValue, { color: Colors.light.negative }]}>{data.summary.aiCost}</Text>
             </View>
             <View style={styles.metricCard}>
               <Text style={styles.metricLabel}>보상 비용</Text>
-              <Text style={[styles.metricValue, { color: '#e81607' }]}>{data.summary.rewardCost}</Text>
+              <Text style={[styles.metricValue, { color: Colors.light.negative }]}>{data.summary.rewardCost}</Text>
             </View>
             <View style={[styles.metricCard, styles.metricCardWide]}>
               <Text style={styles.metricLabel}>기여이익</Text>
-              <Text style={[styles.metricValue, { color: '#1aa174' }]}>{data.summary.contributionMargin}</Text>
+              <Text style={[styles.metricValue, { color: Colors.light.positive }]}>{data.summary.contributionMargin}</Text>
               <Text style={styles.metricSub}>
                 마진율 {(data.summary.contributionMarginRate * 100).toFixed(1)}%
               </Text>
@@ -147,30 +147,30 @@ export default function RevenueScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f3f6' },
+  root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
-  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: '#17181c' },
-  subtitle: { fontSize: FontSize.t7, color: '#868b94', marginTop: 2 },
-  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: '#f2f3f6' },
-  refreshText: { fontSize: FontSize.t7, color: '#5a5d6a' },
+  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text },
+  subtitle: { fontSize: FontSize.t7, color: Colors.light.textAssistive, marginTop: 2 },
+  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: Colors.light.backgroundSelected },
+  refreshText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
   body: { flex: 1 },
   bodyContent: { padding: 24, gap: 12 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  errorText: { fontSize: FontSize.t6, color: '#e53e3e', marginBottom: 16 },
-  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: '#ff6f61' },
-  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: '#fff' },
+  errorText: { fontSize: FontSize.t6, color: Colors.light.negative, marginBottom: 16 },
+  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: Colors.light.tint },
+  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   sectionTitle: {
     fontSize: FontSize.t7,
     fontWeight: '700',
-    color: '#868b94',
+    color: Colors.light.textAssistive,
     textTransform: 'uppercase' as const,
     letterSpacing: 0.6,
     marginTop: 8,
@@ -178,21 +178,21 @@ const styles = StyleSheet.create({
   metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   metricCard: {
     width: 160,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderRadius: 10,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e4e5ea',
+    borderColor: Colors.light.border,
   },
   metricCardWide: { flex: 1 },
-  metricLabel: { fontSize: FontSize.t7, color: '#868b94', marginBottom: 4 },
-  metricValue: { fontSize: FontSize.t4, fontWeight: '700', color: '#17181c', fontVariant: ['tabular-nums'] },
-  metricSub: { fontSize: FontSize.tab, color: '#868b94', marginTop: 4 },
+  metricLabel: { fontSize: FontSize.t7, color: Colors.light.textAssistive, marginBottom: 4 },
+  metricValue: { fontSize: FontSize.t4, fontWeight: '700', color: Colors.light.text, fontVariant: ['tabular-nums'] },
+  metricSub: { fontSize: FontSize.tab, color: Colors.light.textAssistive, marginTop: 4 },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e4e5ea',
+    borderColor: Colors.light.border,
     overflow: 'hidden',
   },
   funnelRow: {
@@ -200,23 +200,23 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
   },
-  funnelRowBorder: { borderBottomWidth: 1, borderBottomColor: '#f0f1f4' },
+  funnelRowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.light.backgroundSelected },
   funnelLeft: { marginBottom: 4 },
-  funnelLabel: { fontSize: FontSize.t7, fontWeight: '700', color: '#17181c' },
-  funnelConversion: { fontSize: FontSize.tab, color: '#868b94', marginTop: 2 },
+  funnelLabel: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.text },
+  funnelConversion: { fontSize: FontSize.tab, color: Colors.light.textAssistive, marginTop: 2 },
   funnelRight: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
-  funnelCount: { fontSize: FontSize.t6, fontWeight: '700', color: '#17181c', fontVariant: ['tabular-nums'] },
-  funnelValue: { fontSize: FontSize.t7, color: '#868b94' },
+  funnelCount: { fontSize: FontSize.t6, fontWeight: '700', color: Colors.light.text, fontVariant: ['tabular-nums'] },
+  funnelValue: { fontSize: FontSize.t7, color: Colors.light.textAssistive },
   funnelBarBg: {
     height: 4,
-    backgroundColor: '#eaebee',
+    backgroundColor: Colors.light.border,
     borderRadius: 2,
     marginTop: 8,
     overflow: 'hidden',
   },
   funnelBar: {
     height: 4,
-    backgroundColor: '#ff6f61',
+    backgroundColor: Colors.light.tint,
     borderRadius: 2,
   },
 });

@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 
@@ -32,10 +32,10 @@ const STAGE_LABEL: Record<number, string> = {
 };
 
 const STAGE_COLOR: Record<number, string> = {
-  0: '#adb1ba',
-  1: '#805217',
-  2: '#0088cc',
-  3: '#1aa174',
+  0: Colors.light.textDisabled,
+  1: Colors.light.cautionary,
+  2: Colors.light.accent,
+  3: Colors.light.positive,
 };
 
 export default function PriceStatsScreen() {
@@ -172,69 +172,69 @@ export default function PriceStatsScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f3f6' },
+  root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
-  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: '#17181c' },
+  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text },
   refreshBtn: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
-    backgroundColor: '#f2f3f6',
+    backgroundColor: Colors.light.backgroundSelected,
   },
-  refreshText: { fontSize: FontSize.t7, color: '#5a5d6a' },
+  refreshText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
   body: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  errorText: { fontSize: FontSize.t6, color: '#e53e3e', marginBottom: 16 },
+  errorText: { fontSize: FontSize.t6, color: Colors.light.negative, marginBottom: 16 },
   retryBtn: {
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 6,
-    backgroundColor: '#ff6f61',
+    backgroundColor: Colors.light.tint,
   },
-  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: '#fff' },
+  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   summaryRow: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
     paddingVertical: 12,
     paddingHorizontal: 24,
     gap: 8,
   },
   summaryCell: { flex: 1, alignItems: 'center' },
   summaryValue: { fontSize: FontSize.t4, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  summaryLabel: { fontSize: FontSize.tab, color: '#868b94', marginTop: 2 },
+  summaryLabel: { fontSize: FontSize.tab, color: Colors.light.textAssistive, marginTop: 2 },
   searchBox: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
   searchInput: {
     height: 36,
     borderWidth: 1,
-    borderColor: '#d1d3d8',
+    borderColor: Colors.light.fieldBorder,
     borderRadius: 6,
     paddingHorizontal: 12,
     fontSize: FontSize.t7,
-    backgroundColor: '#f7f8fa',
+    backgroundColor: Colors.light.backgroundElement,
   },
   tableHead: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: Colors.light.backgroundElement,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
     alignItems: 'center',
   },
   tableRow: {
@@ -242,13 +242,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f1f4',
+    borderBottomColor: Colors.light.backgroundSelected,
     alignItems: 'center',
   },
-  tableRowZebra: { backgroundColor: '#fafbfc' },
-  th: { fontSize: FontSize.tab, fontWeight: '700', color: '#868b94', textTransform: 'uppercase' as const },
-  td: { fontSize: FontSize.t7, color: '#3a3b40' },
-  emptyText: { fontSize: FontSize.t7, color: '#868b94', padding: 16 },
+  tableRowZebra: { backgroundColor: Colors.light.backgroundElement },
+  th: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.textAssistive, textTransform: 'uppercase' as const },
+  td: { fontSize: FontSize.t7, color: Colors.light.textStrong },
+  emptyText: { fontSize: FontSize.t7, color: Colors.light.textAssistive, padding: 16 },
   colName: { flex: 2 },
   colStage: { width: 70, alignItems: 'center' },
   colCount: { width: 70, textAlign: 'right' as const },
@@ -263,16 +263,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   stagePillText: { fontSize: FontSize.tab, fontWeight: '700' },
-  valueDanger: { color: '#e81607' },
-  monoText: { color: '#5a5d6a' },
+  valueDanger: { color: Colors.light.negative },
+  monoText: { color: Colors.light.textSecondary },
   inlineBtn: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
-    backgroundColor: '#f2f3f6',
+    backgroundColor: Colors.light.backgroundSelected,
     borderWidth: 1,
-    borderColor: '#d1d3d8',
+    borderColor: Colors.light.fieldBorder,
   },
-  inlineBtnText: { fontSize: FontSize.tab, color: '#5a5d6a' },
+  inlineBtnText: { fontSize: FontSize.tab, color: Colors.light.textSecondary },
   btnDisabled: { opacity: 0.5 },
 });

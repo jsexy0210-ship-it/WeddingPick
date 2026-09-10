@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
-import { FontSize, LineHeight } from '@weddingpick/ui';
+import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { formatDateTimeDot } from '@/features/common/format-date';
@@ -115,14 +115,14 @@ export default function KillSwitchScreen() {
                     )}
                   </View>
                   <View style={styles.switchRight}>
-                    <Text style={[styles.switchStatus, { color: item.enabled ? '#1aa174' : '#868b94' }]}>
+                    <Text style={[styles.switchStatus, { color: item.enabled ? Colors.light.positive : Colors.light.textAssistive }]}>
                       {item.enabled ? '활성' : '비활성'}
                     </Text>
                     <Switch
                       value={item.enabled}
                       onValueChange={() => void toggle(item.id, item.enabled)}
                       disabled={toggling !== null}
-                      trackColor={{ true: '#ff6f61', false: '#e4e5ea' }}
+                      trackColor={{ true: Colors.light.tint, false: Colors.light.border }}
                     />
                   </View>
                 </View>
@@ -136,47 +136,47 @@ export default function KillSwitchScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f3f6' },
+  root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
-  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: '#17181c' },
-  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: '#f2f3f6' },
-  refreshText: { fontSize: FontSize.t7, color: '#5a5d6a' },
+  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text },
+  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: Colors.light.backgroundSelected },
+  refreshText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  errorText: { fontSize: FontSize.t6, color: '#e53e3e', marginBottom: 16 },
-  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: '#ff6f61' },
-  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: '#fff' },
+  errorText: { fontSize: FontSize.t6, color: Colors.light.negative, marginBottom: 16 },
+  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: Colors.light.tint },
+  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   categoryHeader: {
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: Colors.light.backgroundElement,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
-  categoryLabel: { fontSize: FontSize.t7, fontWeight: '700', color: '#4d5159' },
+  categoryLabel: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.textSecondary },
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f1f4',
+    borderBottomColor: Colors.light.backgroundSelected,
   },
-  switchRowZebra: { backgroundColor: '#fafbfc' },
+  switchRowZebra: { backgroundColor: Colors.light.backgroundElement },
   switchInfo: { flex: 1, marginRight: 12 },
-  switchName: { fontSize: FontSize.t7, fontWeight: '700', color: '#17181c', marginBottom: 2 },
-  switchDesc: { fontSize: FontSize.tab, color: '#868b94', lineHeight: LineHeight.micro },
+  switchName: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.text, marginBottom: 2 },
+  switchDesc: { fontSize: FontSize.tab, color: Colors.light.textAssistive, lineHeight: LineHeight.micro },
   // 끈 줄 알고 손을 놓는 것을 막는 줄이다. 회색으로 묻히면 안 된다.
-  switchUnwired: { fontSize: FontSize.tab, color: '#ff4d4d', lineHeight: LineHeight.micro, marginTop: 2 },
-  switchMeta: { fontSize: FontSize.tab, color: '#adb1ba', marginTop: 4 },
+  switchUnwired: { fontSize: FontSize.tab, color: Colors.light.negative, lineHeight: LineHeight.micro, marginTop: 2 },
+  switchMeta: { fontSize: FontSize.tab, color: Colors.light.textDisabled, marginTop: 4 },
   switchRight: { alignItems: 'flex-end', gap: 4 },
   switchStatus: { fontSize: FontSize.tab, fontWeight: '700' },
 });

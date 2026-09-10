@@ -20,6 +20,8 @@ import {
   VENDOR_CATEGORY_LABEL,
   type VendorCategory,
 } from '@weddingpick/domain';
+import { z } from 'zod';
+
 import {
   vendorDetailSchema,
   vendorRegionsResponseSchema,
@@ -35,6 +37,16 @@ const HOME_CARD_COUNT = 3;
 const TIMEOUT_MS = 10_000;
 
 export const API_URL_ENV = 'WEDDINGPICK_API_URL';
+
+/* 카드 문구. 서버가 넷 다 채워 주지만 하나가 비어도 화면은 spec으로 메운다. */
+const siteMetaSchema = z.object({
+  ogTitle: z.string().nullish(),
+  ogDescription: z.string().nullish(),
+  ogImageUrl: z.string().nullish(),
+  ogImageAlt: z.string().nullish(),
+});
+
+type SiteMetaOverride = z.infer<typeof siteMetaSchema>;
 
 /**
  * 우측 집계 기둥에 실을 것.
@@ -202,4 +214,15 @@ export function vendorIdsToBuild(): readonly string[] {
     .split(',')
     .map((id) => id.trim())
     .filter(Boolean);
+}
+
+/**
+ * 관리자가 고쳐 둔 링크 미리보기 문구.
+ *
+ * API가 없거나 응답이 오지 않으면 `null`이고, 그때는 spec의 값이 그대로 나간다 —
+ * 이 화면은 없으면 안 되는 것이 아니라 «고쳐 둔 것이 있으면 그걸 쓴다»이므로,
+ * 못 읽었다고 빌드를 세우지 않는다.
+ */
+export async function loadSiteMeta(): Promise<SiteMetaOverride | null> {
+  return read('/v1/site-meta', (value) => siteMetaSchema.parse(value));
 }

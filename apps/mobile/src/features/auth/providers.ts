@@ -177,8 +177,17 @@ function kakaoRequest(redirectUri: string): AuthRequest {
     clientId: KAKAO_CLIENT_ID!,
     redirectUri,
     responseType: ResponseType.Code,
-    /* profile_nickname — id_token에 nickname 클레임이 실린다. 화면 이름은 닉네임만 쓴다. */
-    scopes: ['openid', 'profile_nickname'],
+    /*
+     * profile_nickname — id_token에 nickname 클레임이 실린다. 화면 이름은 닉네임만 쓴다.
+     *
+     * age_range — 만 14세 판정에 쓴다(2026-09-10 카카오 승인 완료). 필수 동의로
+     * 설정하면 scope를 안 적어도 오지만, **적어 두는 편이 낫다.** 콘솔에서 선택
+     * 동의로 내려가는 날 조용히 안 오게 되고, 그러면 판정이 체크박스 하나로
+     * 떨어지는데 화면에는 아무 변화가 없어 아무도 눈치채지 못한다.
+     *
+     * 받은 값은 서버가 판정만 뽑고 버린다 — 저장하지 않는다(SPEC 3.5).
+     */
+    scopes: ['openid', 'profile_nickname', 'age_range'],
     usePKCE: true,
   });
 }
