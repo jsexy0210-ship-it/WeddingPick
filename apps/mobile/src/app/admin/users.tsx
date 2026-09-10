@@ -19,7 +19,7 @@ import {
   View,
 } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { formatDateDot } from '@/features/common/format-date';
@@ -53,10 +53,10 @@ const WITHDRAWAL_LABEL: Record<WithdrawalStatus, string> = {
   deletion_pending: '삭제 대기',
 };
 const WITHDRAWAL_COLOR: Record<WithdrawalStatus, string> = {
-  hold: '#805217',
-  failed: '#e81607',
-  pending: '#805217',
-  deletion_pending: '#868b94',
+  hold: Colors.light.cautionary,
+  failed: Colors.light.negative,
+  pending: Colors.light.cautionary,
+  deletion_pending: Colors.light.textAssistive,
 };
 const PROVIDER_LABEL: Record<string, string> = {
   kakao: '카카오', apple: '애플', google: '구글', naver: '네이버', email: '이메일',
@@ -66,8 +66,8 @@ function statusOf(u: UserRecord): { label: string; color: string } {
   if (u.withdrawal) {
     return { label: WITHDRAWAL_LABEL[u.withdrawal.status], color: WITHDRAWAL_COLOR[u.withdrawal.status] };
   }
-  if (!u.activatedAt) return { label: '가입 미완료', color: '#868b94' };
-  return { label: '활성', color: '#1aa174' };
+  if (!u.activatedAt) return { label: '가입 미완료', color: Colors.light.textAssistive };
+  return { label: '활성', color: Colors.light.positive };
 }
 
 function loginOf(u: UserRecord): string {
@@ -264,65 +264,65 @@ export default function UsersScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f3f6' },
+  root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
-  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: '#17181c' },
-  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: '#f2f3f6' },
-  refreshText: { fontSize: FontSize.t7, color: '#5a5d6a' },
+  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text },
+  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: Colors.light.backgroundSelected },
+  refreshText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
   body: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  errorText: { fontSize: FontSize.t6, color: '#e53e3e', marginBottom: 16 },
-  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: '#ff6f61' },
-  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: '#fff' },
+  errorText: { fontSize: FontSize.t6, color: Colors.light.negative, marginBottom: 16 },
+  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: Colors.light.tint },
+  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
     gap: 12,
   },
   searchInput: {
     flex: 1,
     height: 36,
     borderWidth: 1,
-    borderColor: '#d1d3d8',
+    borderColor: Colors.light.fieldBorder,
     borderRadius: 6,
     paddingHorizontal: 12,
     fontSize: FontSize.t7,
-    backgroundColor: '#f7f8fa',
+    backgroundColor: Colors.light.backgroundElement,
   },
-  totalText: { fontSize: FontSize.t7, color: '#868b94' },
+  totalText: { fontSize: FontSize.t7, color: Colors.light.textAssistive },
   tableHead: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: Colors.light.backgroundElement,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
   tableRow: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f1f4',
+    borderBottomColor: Colors.light.backgroundSelected,
     alignItems: 'center',
   },
-  tableRowZebra: { backgroundColor: '#fafbfc' },
+  tableRowZebra: { backgroundColor: Colors.light.backgroundElement },
   tableRowActive: { backgroundColor: 'rgba(255,111,97,0.08)' },
-  th: { fontSize: FontSize.tab, fontWeight: '700', color: '#868b94', textTransform: 'uppercase' as const },
-  td: { fontSize: FontSize.t7, color: '#3a3b40' },
+  th: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.textAssistive, textTransform: 'uppercase' as const },
+  td: { fontSize: FontSize.t7, color: Colors.light.textStrong },
   colName: { flex: 2 },
   colEmail: { flex: 3 },
   colStatus: { width: 110 },
@@ -330,28 +330,28 @@ const styles = StyleSheet.create({
   colJoined: { width: 90 },
   colDeleted: { width: 90 },
   filterRow: { flexDirection: 'row', gap: 6 },
-  filterBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: '#d1d3d8' },
-  filterBtnActive: { borderColor: '#ff6f61', backgroundColor: 'rgba(255,111,97,0.08)' },
-  filterText: { fontSize: FontSize.t7, color: '#5a5d6a' },
-  filterTextActive: { color: '#ff6f61', fontWeight: '700' },
-  retryAction: { marginTop: 12, paddingVertical: 10, borderRadius: 6, backgroundColor: '#ff6f61', alignItems: 'center' },
-  retryActionText: { fontSize: FontSize.t7, fontWeight: '700', color: '#fff' },
-  actionNote: { fontSize: FontSize.t7, color: '#1aa174', marginTop: 8 },
+  filterBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: Colors.light.fieldBorder },
+  filterBtnActive: { borderColor: Colors.light.tint, backgroundColor: 'rgba(255,111,97,0.08)' },
+  filterText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
+  filterTextActive: { color: Colors.light.tint, fontWeight: '700' },
+  retryAction: { marginTop: 12, paddingVertical: 10, borderRadius: 6, backgroundColor: Colors.light.tint, alignItems: 'center' },
+  retryActionText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
+  actionNote: { fontSize: FontSize.t7, color: Colors.light.positive, marginTop: 8 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
-  modalBox: { backgroundColor: '#fff', borderRadius: 14, padding: 24, width: 440 },
-  modalTitle: { fontSize: FontSize.t5, fontWeight: '700', color: '#17181c', marginBottom: 4 },
-  modalSub: { fontSize: FontSize.t7, color: '#868b94', marginBottom: 2 },
-  fieldLabel: { fontSize: FontSize.t7, fontWeight: '700', color: '#868b94', marginTop: 18, marginBottom: 8 },
+  modalBox: { backgroundColor: Colors.light.background, borderRadius: 14, padding: 24, width: 440 },
+  modalTitle: { fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text, marginBottom: 4 },
+  modalSub: { fontSize: FontSize.t7, color: Colors.light.textAssistive, marginBottom: 2 },
+  fieldLabel: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.textAssistive, marginTop: 18, marginBottom: 8 },
   statusRow: { flexDirection: 'row', gap: 8 },
   statusBtn: {
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#d1d3d8',
+    borderColor: Colors.light.fieldBorder,
   },
-  statusBtnText: { fontSize: FontSize.t7, color: '#5a5d6a' },
-  actionError: { fontSize: FontSize.t7, color: '#e53e3e', marginTop: 8 },
-  closeBtn: { marginTop: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: '#f2f3f6', alignItems: 'center' },
-  closeBtnText: { fontSize: FontSize.t7, color: '#3a3b40' },
+  statusBtnText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
+  actionError: { fontSize: FontSize.t7, color: Colors.light.negative, marginTop: 8 },
+  closeBtn: { marginTop: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: Colors.light.backgroundSelected, alignItems: 'center' },
+  closeBtnText: { fontSize: FontSize.t7, color: Colors.light.textStrong },
 });

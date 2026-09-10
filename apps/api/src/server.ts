@@ -6,6 +6,7 @@ import { ZodError } from 'zod';
 
 import type { AppContext } from './context';
 import { ApiError } from './errors';
+import { registerAdminLoginRoutes } from './routes/admin-login';
 import { registerAdminRoutes } from './routes/admin';
 import { registerAnalysisRoutes } from './routes/analyses';
 import { registerAppRoutes } from './routes/app';
@@ -52,6 +53,13 @@ export function buildServer(context: AppContext): FastifyInstance {
    * 토큰이 로그로 새지 않게 인증 헤더는 지운다. 값 자체를 남길 이유가 없다.
    */
   const app = Fastify({
+    /*
+     * **Render는 프록시 뒤에 있다.** 이것이 없으면 `request.ip`가 모든 요청에서
+     * 프록시 주소 하나로 같아진다. 관리자 로그인의 밀어보기 방어가 IP로 세는데,
+     * 그러면 남이 다섯 번 틀린 것 때문에 진짜 관리자가 기다리게 된다 — 방어가
+     * 그대로 남을 막는 도구가 된다.
+     */
+    trustProxy: true,
     logger: {
       level: process.env.LOG_LEVEL ?? 'warn',
       redact: ['req.headers.authorization', 'req.headers.cookie', 'headers.authorization', 'headers.cookie'],
@@ -187,6 +195,7 @@ export function buildServer(context: AppContext): FastifyInstance {
   registerMyReportRoutes(app, context);
   registerSettingsRoutes(app, context);
   registerSiteMetaRoutes(app, context);
+  registerAdminLoginRoutes(app, context);
   registerTasteRoutes(app, context);
   registerWithdrawalRoutes(app, context);
   registerSignupRoutes(app, context);

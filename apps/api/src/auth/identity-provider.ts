@@ -2,7 +2,15 @@
  * 로그인 제공자. 이메일·비밀번호 로그인(v3.12)은 2026-09-08에 서버에서도 지웠다 —
  * 남은 것은 카카오와, 이미 가입한 계정을 위한 애플·구글·네이버 검증뿐이다.
  */
-export type IdentityProviderName = 'apple' | 'kakao' | 'google' | 'naver';
+/**
+ * 신원 제공자.
+ *
+ * `admin`은 소셜이 아니다 — 관리자 콘솔의 아이디·비밀번호 로그인이다(0100).
+ * 아래 `IdentityProviders`(소셜 제공자 구현 목록)에는 들어가지 않는다. 검증하는
+ * 곳이 다르기 때문이다: 소셜은 제공자에게 물어보고, 관리자는 서버가 가진 해시와
+ * 대조한다.
+ */
+export type IdentityProviderName = 'apple' | 'kakao' | 'google' | 'naver' | 'admin';
 
 export type VerifiedIdentity = {
   provider: IdentityProviderName;

@@ -18,7 +18,10 @@
 
 services:
   # 모바일 웹 export (앱 화면)
-  weddingpick-app-web:
+  #
+  # **이름은 Render 대시보드의 이름과 글자 하나까지 같아야 한다.** 동기화 스크립트가
+  # 이름으로 서비스를 찾고, 못 찾으면 그 서비스만 조용히 건너뛴다(2026-09-10 이름 변경).
+  WeddingPick-웹뷰(앱 테스트):
     vars:
       EXPO_PUBLIC_API_URL: https://weddingpickl.onrender.com
       # 카카오 REST API 키 — 로그인 리다이렉트 URI가 등록된 키다.
@@ -26,7 +29,7 @@ services:
       EXPO_PUBLIC_KAKAO_CLIENT_ID: 8e9a14dd3a0aa1a420bff858460c415c
 
   # 서비스 웹사이트
-  weddingpick-web:
+  WeddingPick-웹사이트:
     vars:
       WEDDINGPICK_CONTACT_EMAIL: help.weddingpick@gmail.com
       # 없으면 search.html의 "많이 확인된 곳"이 «정보를 모으는 중»으로 나가고
@@ -44,7 +47,7 @@ services:
       LEGAL_PRIVACY_EFFECTIVE_ON: '2026-09-10'
 
   # 운영 API
-  WeddingPickl:
+  WeddingPick-운영 API 서버:
     vars:
       # 웹과 **같은 값이어야 한다.** 앱 약관 화면과 웹 약관 페이지가 서로 다른 시행일을
       # 말하면 어느 쪽이 맞는지 알 수 없다. 지금까지는 이 값이 Render 대시보드에만
@@ -132,5 +135,23 @@ services:
       - LEGAL_ADDRESS
       - LEGAL_SUPPORT_CONTACT
       - LEGAL_PRIVACY_OFFICER
+      # 관리자 「저장 후 반영하기」가 당기는 주소. Render → weddingpick-web →
+      # Settings → Deploy Hook에서 만들어 GitHub Secrets에 같은 이름으로 넣는다.
+      #
+      # **Render API 키를 쓰지 않는다.** API 키는 계정의 모든 서비스를 건드릴 수
+      # 있어서 인터넷에 열린 서버에 두기에는 넓다. 배포 훅은 웹 서비스 하나만
+      # 다시 배포하는 주소라 새어도 할 수 있는 일이 그것뿐이다.
+      #
+      # 없으면 「반영하기」가 무엇이 빠졌는지 화면에 말한다. 저장은 그대로 된다.
+      - RENDER_WEB_DEPLOY_HOOK
+      # 관리자 콘솔 로그인. **원문 비밀번호는 어디에도 없다** — 서버가 아는 것은
+      # 아이디와 해시(소금 + scrypt)뿐이다. 해시는 아래 명령으로 만든다:
+      #
+      #   npx tsx scripts/admin-password-hash.ts
+      #
+      # 원문을 인자로 넘기지 않는다 — 셸 기록과 프로세스 목록에 그대로 남는다.
+      # 둘 다 없으면 로그인은 어떤 비밀번호도 받아들이지 않는다(통과가 아니라 차단).
+      - ADMIN_LOGIN_ID
+      - ADMIN_PASSWORD_HASH
       # 시행일 둘은 위 vars로 옮겼다. 비밀이 아니고 — 약관 페이지에 그대로 찍힌다 —
       # 양쪽에 두면 둘 중 어느 값이 반영되는지가 sync 순서에 달리게 된다.
