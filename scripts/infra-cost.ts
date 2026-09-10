@@ -360,8 +360,14 @@ async function main(): Promise<void> {
   }
 
   if (skipped.length) {
+    /*
+     * **로그 줄로만 남기지 않는다.** 매일 도는 작업이라 아무도 로그를 열지 않고,
+     * 열쇠가 만료되면 그 공급자 요금이 조용히 빠진 채 초록으로 끝난다 — 화면에는
+     * 0으로 보이고 실제로는 「모름」이다. Actions 요약에 경고로 띄워 눈에 걸리게 한다.
+     */
     console.log('\n건너뛴 것 — 이 공급자의 요금은 0이 아니라 «모름»이다');
     for (const reason of skipped) console.log(`  ${reason}`);
+    console.log(`::warning::인프라 요금 ${skipped.length}곳을 못 받았다 — ${skipped.join(' / ')}`);
   }
 
   if (!WRITE) {
