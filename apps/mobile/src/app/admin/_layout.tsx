@@ -6,7 +6,30 @@ import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 
 import { clearAdminToken, loadAdminToken } from './_session';
 
-const NAV_GROUPS: { group?: string; key?: string; label?: string; href?: string }[] = [
+/**
+ * 사이드바.
+ *
+ * **`readOnly`는 「이 화면은 지금 조회만 된다」는 표시다**(2026-09-10 대표 지시 —
+ * 「서버에 없는 동작들 화면에도 목록 디스에이블 처리해」).
+ *
+ * 화면 안쪽은 이미 잠겨 있다(`BACKEND_PENDING`). 그런데 그것은 **들어가 봐야**
+ * 보인다. 메뉴만 보고는 어느 것이 실제로 일을 하는지 알 수 없어서, 운영자는
+ * 열세 곳을 하나씩 눌러 보고서야 「조작이 안 되는 곳」을 알게 된다.
+ *
+ * **메뉴를 죽이지는 않는다.** 이 열세 곳도 조회는 전부 된다 — 목록 · 지표 · 상태가
+ * 실제 서버 값으로 나온다. 눌리지 않게 막으면 되는 것까지 못 보게 된다. 눌러서
+ * 들어가되, 무엇을 기대하면 되는지 목록에서 미리 알려준다.
+ *
+ * 서버 동작이 붙으면 그 줄의 `readOnly`를 지운다. 화면 안의 `BACKEND_PENDING`과
+ * 짝이라, 한쪽만 지우면 말이 어긋난다.
+ */
+const NAV_GROUPS: {
+  group?: string;
+  key?: string;
+  label?: string;
+  href?: string;
+  readOnly?: boolean;
+}[] = [
   { group: '대시보드' },
   { key: 'home', label: '관리자 홈', href: '/admin/home' },
   { key: 'briefing', label: '일일 브리핑', href: '/admin/briefing' },
@@ -14,37 +37,37 @@ const NAV_GROUPS: { group?: string; key?: string; label?: string; href?: string 
   { group: '검토해요' },
   { key: 'queue', label: '확인 필요 큐', href: '/admin/queue' },
   { key: 'rebuttal', label: '후기 · 반론', href: '/admin/rebuttal' },
-  { key: 'objections', label: '후기 이의제기', href: '/admin/objections' },
+  { key: 'objections', label: '후기 이의제기', href: '/admin/objections', readOnly: true },
   { key: 'pii-reviews', label: '개인정보 검토', href: '/admin/pii-reviews' },
   { group: '데이터' },
-  { key: 'data-pipeline', label: '제보 처리 현황', href: '/admin/data-pipeline' },
+  { key: 'data-pipeline', label: '제보 처리 현황', href: '/admin/data-pipeline', readOnly: true },
   { key: 'price-stats', label: '가격 통계', href: '/admin/price-stats' },
-  { key: 'vendors', label: '업체 관리', href: '/admin/vendors' },
-  { key: 'images', label: '이미지 자동수급', href: '/admin/images' },
-  { key: 'email-matching', label: '이메일 자동매칭', href: '/admin/email-matching' },
+  { key: 'vendors', label: '업체 관리', href: '/admin/vendors', readOnly: true },
+  { key: 'images', label: '이미지 자동수급', href: '/admin/images', readOnly: true },
+  { key: 'email-matching', label: '이메일 자동매칭', href: '/admin/email-matching', readOnly: true },
   { group: '지표를 봐요' },
   { key: 'stats', label: '이상치 · 조작 탐지', href: '/admin/stats' },
   { group: '사용자' },
   { key: 'users', label: '계정 관리', href: '/admin/users' },
-  { key: 'biz-queue', label: '업체 문의 큐', href: '/admin/biz-queue' },
+  { key: 'biz-queue', label: '업체 문의 큐', href: '/admin/biz-queue', readOnly: true },
   { key: 'report', label: 'VOC', href: '/admin/report' },
   { group: '성장 · 광고' },
   { key: 'marketing', label: '마케팅 자동화', href: '/admin/marketing' },
-  { key: 'campaigns', label: '캠페인 · 보상', href: '/admin/campaigns' },
+  { key: 'campaigns', label: '캠페인 · 보상', href: '/admin/campaigns', readOnly: true },
   { key: 'revenue', label: 'Revenue', href: '/admin/revenue' },
-  { key: 'ads', label: '광고 집행 관리', href: '/admin/ads' },
-  { key: 'ads-gate', label: '광고 실운영 게이트', href: '/admin/ads-gate' },
+  { key: 'ads', label: '광고 집행 관리', href: '/admin/ads', readOnly: true },
+  { key: 'ads-gate', label: '광고 실운영 게이트', href: '/admin/ads-gate', readOnly: true },
   { group: '콘텐츠' },
   { key: 'faq', label: 'FAQ 관리', href: '/admin/faq' },
-  { key: 'terms', label: '약관 · 방침', href: '/admin/terms' },
+  { key: 'terms', label: '약관 · 방침', href: '/admin/terms', readOnly: true },
   { key: 'og-card', label: '링크 미리보기', href: '/admin/og-card' },
   { group: '운영' },
-  { key: 'automation', label: '자동화 상태', href: '/admin/automation' },
+  { key: 'automation', label: '자동화 상태', href: '/admin/automation', readOnly: true },
   { key: 'kill-switch', label: 'Kill Switch', href: '/admin/kill-switch' },
-  { key: 'rollback', label: '롤백 관리', href: '/admin/rollback' },
+  { key: 'rollback', label: '롤백 관리', href: '/admin/rollback', readOnly: true },
   { group: '시스템' },
   { key: 'ai-usage', label: 'AI 사용량 · 비용', href: '/admin/ai-usage' },
-  { key: 'policy-engine', label: 'Policy Engine', href: '/admin/policy-engine' },
+  { key: 'policy-engine', label: 'Policy Engine', href: '/admin/policy-engine', readOnly: true },
   { key: 'audit-log', label: '감사 로그', href: '/admin/audit-log' },
 ];
 
@@ -82,7 +105,22 @@ function Sidebar({ pathname }: { pathname: string }) {
                 * to a child of <Slot>」.
                 */}
               <Pressable style={StyleSheet.flatten([styles.navItem, active && styles.navItemActive])}>
-                <Text style={[styles.navLabel, active && styles.navLabelActive]}>{item.label}</Text>
+                <Text
+                  style={[
+                    styles.navLabel,
+                    active && styles.navLabelActive,
+                    item.readOnly && !active && styles.navLabelReadOnly,
+                  ]}
+                >
+                  {item.label}
+                </Text>
+                {/*
+                  * 조회만 되는 곳은 목록에서 미리 말한다. 들어가 봐야 아는 것을
+                  * 열세 곳이나 두면 운영자가 하나씩 눌러 보게 된다.
+                  */}
+                {item.readOnly && (
+                  <Text style={[styles.navChip, active && styles.navChipActive]}>조회만</Text>
+                )}
               </Pressable>
             </Link>
           );
@@ -244,6 +282,31 @@ const styles = StyleSheet.create({
   navLabelActive: {
     color: Colors.light.background,
     fontWeight: '700',
+  },
+  /*
+   * 조회만 되는 곳은 한 단계 흐리게 둔다. 지우지는 않는다 — 조회는 실제로 되고,
+   * 못 쓰는 것처럼 보이면 열어보지 않게 된다.
+   *
+   * 지금 보고 있는 화면(active)에는 흐림을 걸지 않는다. 선택된 줄은 코랄 위의
+   * 흰 글자라, 거기에 흐림까지 얹으면 어느 화면에 있는지가 안 읽힌다.
+   */
+  navLabelReadOnly: {
+    opacity: 0.55,
+  },
+  navChip: {
+    flexShrink: 0,
+    marginLeft: 6,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 4,
+    fontSize: FontSize.tab,
+    fontWeight: '700',
+    color: Colors.light.cautionary,
+    backgroundColor: Colors.light.cautionaryBackground,
+  },
+  navChipActive: {
+    color: Colors.light.background,
+    backgroundColor: 'rgba(255,255,255,0.24)',
   },
   main: {
     flex: 1,
