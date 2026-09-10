@@ -16,6 +16,7 @@ import {
   KpiRow,
   LoadError,
   Page,
+  StatusBanner,
   type Col,
   type Kind,
   type TableRow,
@@ -149,6 +150,29 @@ export default function AuditLogScreen() {
 
       {!loading && !error && data ? (
         <>
+          {/*
+            시안 11번에는 배너가 없지만 ADMIN.md 공통 규칙은 「상단 배너가 상태를 먼저
+            말한다」이다. 여기서 상태는 되돌릴 수 없는 기록이 얼마나 쌓였는가다 —
+            일괄 작업이 늘면 사고가 났을 때 되돌릴 손잡이가 그만큼 없다.
+          */}
+          <StatusBanner
+            tone={items.length === 0 ? 'ok' : revertable === items.length ? 'ok' : 'warn'}
+            title={
+              items.length === 0
+                ? '남은 기록이 없어요'
+                : revertable === items.length
+                  ? '모든 기록을 되돌릴 수 있어요'
+                  : `되돌릴 수 없는 기록 ${items.length - revertable}건이 있어요`
+            }
+            detail={
+              items.length === 0
+                ? `기록은 ${RETENTION_DAYS}일 뒤 자동으로 지워져요.`
+                : revertable === items.length
+                  ? '모든 결정에 rollback_target이 채워져 있어요.'
+                  : 'rollback_target이 빈 것은 전체에 영향을 주는 일괄 작업이라 되돌릴 수 없어요.'
+            }
+          />
+
           <KpiRow
             items={[
               { label: '기록', value: `${data.total.toLocaleString()}건`, note: `자동 ${byAi} · 사람 ${byHuman}` },

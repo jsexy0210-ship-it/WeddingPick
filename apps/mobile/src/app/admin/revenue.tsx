@@ -12,10 +12,12 @@ import {
   Bars,
   Card,
   CardGrid,
+  EmptyState,
   KpiRow,
   LoadError,
   Page,
   Rows,
+  StatusBanner,
   type BarItem,
   type RowItem,
 } from './_ui';
@@ -94,6 +96,21 @@ export default function RevenueScreen() {
 
       {!loading && !error && data ? (
         <>
+          {/*
+            시안 6번에는 배너가 없지만 ADMIN.md 공통 규칙은 「상단 배너가 상태를 먼저
+            말한다」이다. 규칙이 시안보다 넓으므로 규칙을 따른다 — 순이 마이너스로
+            돌아선 달을 표에서 읽어내게 두면 늦는다.
+          */}
+          <StatusBanner
+            tone={data.summary.contributionMarginRate < 0 ? 'bad' : 'ok'}
+            title={
+              data.summary.contributionMarginRate < 0
+                ? '이번 기간은 순이 마이너스예요'
+                : '순이 플러스예요'
+            }
+            detail={`수익 ${data.summary.mrr} · AI 비용 ${data.summary.aiCost} · 순 ${data.summary.contributionMargin}`}
+          />
+
           {/* 수익 · AI 비용 · 순이 한 줄에 온다(ADMIN.md WP-ADM-032). */}
           <KpiRow
             items={[
@@ -116,8 +133,14 @@ export default function RevenueScreen() {
               full
               note="막대는 가장 큰 단계를 기준으로 그린 모양이에요. 실제 수는 아래 목록에 있어요."
             >
-              {bars.length === 0 ? null : <Bars items={bars} />}
-              <Rows items={funnelRows} />
+              {funnel.length === 0 ? (
+                <EmptyState title="집계된 퍼널이 없어요" detail="이번 기간에 셀 것이 아직 없어요." />
+              ) : (
+                <>
+                  <Bars items={bars} />
+                  <Rows items={funnelRows} />
+                </>
+              )}
             </Card>
           </CardGrid>
         </>
