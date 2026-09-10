@@ -3,6 +3,9 @@
 # 한 번 치우고 끝나면 다시 쌓인다. 이 워크플로는 **세기만 한다** — 아무것도 지우지
 # 않고, DB에 붙지도 않는다. 넘치면 잡이 빨개져서 알림이 간다.
 #
+# 지우는 것은 `branch-cleanup.yml`(「브랜치 정리」)이 한다. 둘은 하는 일이 다르다 —
+# 저쪽은 사람이 불렀을 때 지우고, 이쪽은 주마다 쌓인 것을 알린다.
+#
 # Actions 탭 → "보존 3건 점검" → Run workflow 로 언제든 손으로도 돌린다.
 name: 보존 3건 점검
 
@@ -83,7 +86,7 @@ jobs:
               cat stale-branches.txt
               echo '```'
               echo
-              echo '지우기 전에 열린 PR의 head인지 본다 — head를 지우면 그 PR이 닫힌다.'
+              echo '지우려면 Actions → 「브랜치 정리」를 dry_run을 끄고 돌린다. 그쪽이 열린 PR의 head와 최근 브랜치를 스스로 걸러낸다.'
             } >> "$GITHUB_STEP_SUMMARY"
           fi
 

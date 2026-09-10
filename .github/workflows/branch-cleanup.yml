@@ -53,6 +53,17 @@ jobs:
         with:
           fetch-depth: 0
 
+      # 얕은 클론에서는 브랜치와 본선에 공통 조상이 없어 아래 git diff가
+      # `no merge base`로 죽는다. 그 빈 출력을 「차이 0」으로 읽으면
+      # **살아 있는 브랜치를 지운다.** 2026-09-10 조사에서 실제로 그랬다 —
+      # 얕은 클론에서 82개, 전체 클론에서 17개가 나왔다.
+      - name: 클론이 얕지 않은지 확인한다
+        run: |
+          if [ "$(git rev-parse --is-shallow-repository)" != "false" ]; then
+            echo '::error::클론이 얕다. checkout의 fetch-depth가 0이어야 차이를 옳게 센다.'
+            exit 1
+          fi
+
       - name: 세고 지운다
         env:
           GH_TOKEN: ${{ github.token }}
@@ -126,7 +137,9 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-          if [ "$DRY_RUN" = "true" ]; then
+          # 명시적으로 false일 때만 지운다. 값이 비어 있는 경우(dispatch가 아닌
+          # 방법으로 불렸을 때)를 「지워도 된다」로 읽지 않는다.
+          if [ "$DRY_RUN" != "false" ]; then
             echo
             echo "시늉만 했다. 실제로 지우려면 dry_run을 끄고 다시 돌린다."
             exit 0
