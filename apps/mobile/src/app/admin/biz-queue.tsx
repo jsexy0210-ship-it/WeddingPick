@@ -8,6 +8,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 
 type BizStatus = 'pending' | 'auto_approved' | 'approved' | 'rejected' | 'escalated';
 type BizItem = {
@@ -101,6 +102,7 @@ export default function BizQueueScreen() {
         </Pressable>
       </View>
 
+      <PendingBackendNotice actions="승인 · 반려" />
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
@@ -200,16 +202,16 @@ export default function BizQueueScreen() {
                 {selected.status === 'pending' && (
                   <View style={styles.actionRow}>
                     <Pressable
-                      style={[styles.approveBtn, acting && styles.btnDisabled]}
+                      style={[styles.approveBtn, (BACKEND_PENDING || acting) && styles.btnDisabled]}
                       onPress={() => void decide('approve')}
-                      disabled={acting}
+                      disabled={BACKEND_PENDING || acting}
                     >
                       <Text style={styles.approveBtnText}>{acting ? '처리 중…' : '승인'}</Text>
                     </Pressable>
                     <Pressable
-                      style={[styles.rejectBtn, acting && styles.btnDisabled]}
+                      style={[styles.rejectBtn, (BACKEND_PENDING || acting) && styles.btnDisabled]}
                       onPress={() => void decide('reject')}
-                      disabled={acting}
+                      disabled={BACKEND_PENDING || acting}
                     >
                       <Text style={styles.rejectBtnText}>{acting ? '처리 중…' : '반려'}</Text>
                     </Pressable>

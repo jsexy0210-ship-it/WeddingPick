@@ -8,6 +8,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 
 type CampaignType = 'mission' | 'referral' | 'promo_cert' | 'grant';
 type PayoutStatus = 'pending' | 'paid' | 'failed' | 'blocked';
@@ -142,6 +143,7 @@ export default function CampaignsScreen() {
         </Pressable>
       </View>
 
+      <PendingBackendNotice actions="지급 · 차단" />
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
@@ -192,18 +194,18 @@ export default function CampaignsScreen() {
                 <View style={[styles.colAction, { flexDirection: 'row', gap: 4 }]}>
                   {item.payoutStatus === 'pending' && !item.abuseFlag && (
                     <Pressable
-                      style={[styles.payBtn, acting === item.id + '_pay' && styles.btnDisabled]}
+                      style={[styles.payBtn, (BACKEND_PENDING || acting === item.id + '_pay') && styles.btnDisabled]}
                       onPress={() => void pay(item.id)}
-                      disabled={acting !== null}
+                      disabled={BACKEND_PENDING || acting !== null}
                     >
                       <Text style={styles.payBtnText}>{acting === item.id + '_pay' ? '…' : '지급'}</Text>
                     </Pressable>
                   )}
                   {item.abuseFlag && item.payoutStatus !== 'blocked' && (
                     <Pressable
-                      style={[styles.blockBtn, acting === item.id && styles.btnDisabled]}
+                      style={[styles.blockBtn, (BACKEND_PENDING || acting === item.id) && styles.btnDisabled]}
                       onPress={() => void block(item.id)}
-                      disabled={acting !== null}
+                      disabled={BACKEND_PENDING || acting !== null}
                     >
                       <Text style={styles.blockBtnText}>{acting === item.id ? '…' : '차단'}</Text>
                     </Pressable>

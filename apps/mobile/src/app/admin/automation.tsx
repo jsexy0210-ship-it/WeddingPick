@@ -8,6 +8,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 
 type WorkflowStatus = 'healthy' | 'degraded' | 'down' | 'recovering';
 type Workflow = {
@@ -91,6 +92,7 @@ export default function AutomationScreen() {
         </Pressable>
       </View>
 
+      <PendingBackendNotice actions="복구 실행 · DLQ 재처리" />
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
@@ -165,18 +167,18 @@ export default function AutomationScreen() {
                 <View style={styles.wfActions}>
                   {wf.status === 'down' && (
                     <Pressable
-                      style={[styles.recoverBtn, triggering === wf.id && styles.btnDisabled]}
+                      style={[styles.recoverBtn, (BACKEND_PENDING || triggering === wf.id) && styles.btnDisabled]}
                       onPress={() => void triggerRecovery(wf.id)}
-                      disabled={triggering !== null}
+                      disabled={BACKEND_PENDING || triggering !== null}
                     >
                       <Text style={styles.recoverBtnText}>{triggering === wf.id ? '복구 중…' : '복구 실행'}</Text>
                     </Pressable>
                   )}
                   {wf.dlqSize > 0 && (
                     <Pressable
-                      style={[styles.dlqBtn, triggering === wf.id + '_dlq' && styles.btnDisabled]}
+                      style={[styles.dlqBtn, (BACKEND_PENDING || triggering === wf.id + '_dlq') && styles.btnDisabled]}
                       onPress={() => void drainDlq(wf.id)}
-                      disabled={triggering !== null}
+                      disabled={BACKEND_PENDING || triggering !== null}
                     >
                       <Text style={styles.dlqBtnText}>
                         {triggering === wf.id + '_dlq' ? '처리 중…' : `DLQ 재처리 (${wf.dlqSize})`}

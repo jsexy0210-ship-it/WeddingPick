@@ -8,6 +8,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 import { formatDateTimeDot } from '@/features/common/format-date';
 
 type RollbackStatus = 'stable' | 'anomaly_detected' | 'rolling_back' | 'rolled_back' | 'pending_approval';
@@ -93,6 +94,7 @@ export default function RollbackScreen() {
         </Pressable>
       </View>
 
+      <PendingBackendNotice actions="승인 · 실행" />
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
@@ -139,9 +141,9 @@ export default function RollbackScreen() {
               <View style={styles.actions}>
                 {item.status === 'pending_approval' && (
                   <Pressable
-                    style={[styles.approveBtn, acting === item.id + '_approve' && styles.btnDisabled]}
+                    style={[styles.approveBtn, (BACKEND_PENDING || acting === item.id + '_approve') && styles.btnDisabled]}
                     onPress={() => void approveRollback(item.id)}
-                    disabled={acting !== null}
+                    disabled={BACKEND_PENDING || acting !== null}
                   >
                     <Text style={styles.approveBtnText}>
                       {acting === item.id + '_approve' ? '처리 중…' : '롤백 승인'}
@@ -150,9 +152,9 @@ export default function RollbackScreen() {
                 )}
                 {item.status === 'anomaly_detected' && !item.requiresApproval && (
                   <Pressable
-                    style={[styles.triggerBtn, acting === item.id + '_trigger' && styles.btnDisabled]}
+                    style={[styles.triggerBtn, (BACKEND_PENDING || acting === item.id + '_trigger') && styles.btnDisabled]}
                     onPress={() => void triggerRollback(item.id)}
-                    disabled={acting !== null}
+                    disabled={BACKEND_PENDING || acting !== null}
                   >
                     <Text style={styles.triggerBtnText}>
                       {acting === item.id + '_trigger' ? '처리 중…' : '즉시 롤백'}

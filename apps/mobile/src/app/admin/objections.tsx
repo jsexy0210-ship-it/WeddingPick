@@ -6,6 +6,7 @@ import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { formatDateTimeDot } from '@/features/common/format-date';
 
 import { apiFetch } from './_api';
+import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 
 /**
  * 후기 이의제기 — 업체가 후기에 이의를 걸면 그 후기를 잠시 내리고 사람이 판단한다.
@@ -107,7 +108,8 @@ export default function ObjectionsScreen() {
 
       <View style={styles.body}>
         <View style={styles.list}>
-          <DelayedLoader active={loading} size={40} style={styles.centered} />
+          <PendingBackendNotice actions="되살리기 · 내리기" />
+      <DelayedLoader active={loading} size={40} style={styles.centered} />
           {!loading && error && <Text style={styles.errorText}>{error}</Text>}
           {!loading && !error && (
             <ScrollView>
@@ -187,14 +189,14 @@ export default function ObjectionsScreen() {
 
               <View style={styles.actionRow}>
                 <Pressable
-                  disabled={acting}
-                  style={[styles.restoreBtn, acting && styles.btnDisabled]}
+                  disabled={BACKEND_PENDING || acting}
+                  style={[styles.restoreBtn, (BACKEND_PENDING || acting) && styles.btnDisabled]}
                   onPress={() => void send('restore', {})}>
                   <Text style={styles.restoreBtnText}>되살리기</Text>
                 </Pressable>
                 <Pressable
-                  disabled={acting}
-                  style={[styles.removeBtn, acting && styles.btnDisabled]}
+                  disabled={BACKEND_PENDING || acting}
+                  style={[styles.removeBtn, (BACKEND_PENDING || acting) && styles.btnDisabled]}
                   onPress={() => void send('remove', {})}>
                   <Text style={styles.removeBtnText}>내리기</Text>
                 </Pressable>

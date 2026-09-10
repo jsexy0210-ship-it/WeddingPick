@@ -8,6 +8,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 
 type MatchStatus = 'matched' | 'unmatched' | 'applied' | 'failed';
 type EmailItem = {
@@ -90,6 +91,7 @@ export default function EmailMatchingScreen() {
         </Pressable>
       </View>
 
+      <PendingBackendNotice actions="반영 · 재시도" />
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
@@ -137,18 +139,18 @@ export default function EmailMatchingScreen() {
                 <View style={styles.colAction}>
                   {item.matchStatus === 'matched' && (
                     <Pressable
-                      style={[styles.inlineBtn, acting === item.id && styles.btnDisabled]}
+                      style={[styles.inlineBtn, (BACKEND_PENDING || acting === item.id) && styles.btnDisabled]}
                       onPress={() => void apply(item.id)}
-                      disabled={acting !== null}
+                      disabled={BACKEND_PENDING || acting !== null}
                     >
                       <Text style={styles.inlineBtnText}>{acting === item.id ? '…' : '반영'}</Text>
                     </Pressable>
                   )}
                   {item.matchStatus === 'failed' && (
                     <Pressable
-                      style={[styles.inlineBtn, acting === item.id + '_retry' && styles.btnDisabled]}
+                      style={[styles.inlineBtn, (BACKEND_PENDING || acting === item.id + '_retry') && styles.btnDisabled]}
                       onPress={() => void retry(item.id)}
-                      disabled={acting !== null}
+                      disabled={BACKEND_PENDING || acting !== null}
                     >
                       <Text style={styles.inlineBtnText}>
                         {acting === item.id + '_retry' ? '…' : '재시도'}

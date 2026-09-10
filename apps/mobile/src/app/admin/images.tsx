@@ -8,6 +8,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 
 type RightsStatus =
   | 'licensed' | 'public_domain' | 'vendor_provided' | 'vendor_homepage' | 'pending' | 'rejected';
@@ -94,6 +95,7 @@ export default function ImagesScreen() {
         </Pressable>
       </View>
 
+      <PendingBackendNotice actions="승인 · 반려" />
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
@@ -145,16 +147,16 @@ export default function ImagesScreen() {
                 {item.rightsStatus === 'pending' ? (
                   <View style={[styles.colActions, { flexDirection: 'row', gap: 6 }]}>
                     <Pressable
-                      style={[styles.approveBtn, acting === item.id && styles.btnDisabled]}
+                      style={[styles.approveBtn, (BACKEND_PENDING || acting === item.id) && styles.btnDisabled]}
                       onPress={() => void approve(item.id)}
-                      disabled={acting !== null}
+                      disabled={BACKEND_PENDING || acting !== null}
                     >
                       <Text style={styles.approveBtnText}>{acting === item.id ? '…' : '승인'}</Text>
                     </Pressable>
                     <Pressable
-                      style={[styles.rejectBtn, acting === item.id + '_reject' && styles.btnDisabled]}
+                      style={[styles.rejectBtn, (BACKEND_PENDING || acting === item.id + '_reject') && styles.btnDisabled]}
                       onPress={() => void reject(item.id)}
-                      disabled={acting !== null}
+                      disabled={BACKEND_PENDING || acting !== null}
                     >
                       <Text style={styles.rejectBtnText}>{acting === item.id + '_reject' ? '…' : '반려'}</Text>
                     </Pressable>

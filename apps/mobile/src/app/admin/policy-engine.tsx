@@ -16,6 +16,7 @@ import {
 import { FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 import { formatDateTimeDot } from '@/features/common/format-date';
 
 type PolicyType = 'number' | 'percentage' | 'boolean' | 'string';
@@ -103,6 +104,7 @@ export default function PolicyEngineScreen() {
         </Pressable>
       </View>
 
+      <PendingBackendNotice actions="규칙 저장" />
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
@@ -170,9 +172,9 @@ export default function PolicyEngineScreen() {
                 <Text style={styles.cancelBtnText}>취소</Text>
               </Pressable>
               <Pressable
-                style={[styles.saveBtn, saving && styles.btnDisabled]}
+                style={[styles.saveBtn, (BACKEND_PENDING || saving) && styles.btnDisabled]}
                 onPress={() => void save()}
-                disabled={saving}
+                disabled={BACKEND_PENDING || saving}
               >
                 <Text style={styles.saveBtnText}>{saving ? '저장 중…' : '저장'}</Text>
               </Pressable>

@@ -16,6 +16,7 @@ import {
 import { FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 
 type VendorStatus = 'active' | 'closed' | 'suspended' | 'merged';
 type HistoryItem = { at: string; action: string; note: string };
@@ -150,6 +151,7 @@ export default function VendorsScreen() {
         </Pressable>
       </View>
 
+      <PendingBackendNotice actions="상호 저장 · 영업 상태 · 병합" />
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
@@ -210,9 +212,9 @@ export default function VendorsScreen() {
               onChangeText={setNameEdit}
             />
             <Pressable
-              style={[styles.primaryBtn, acting && styles.btnDisabled]}
+              style={[styles.primaryBtn, (BACKEND_PENDING || acting) && styles.btnDisabled]}
               onPress={() => void updateName()}
-              disabled={acting}
+              disabled={BACKEND_PENDING || acting}
             >
               <Text style={styles.primaryBtnText}>상호 저장</Text>
             </Pressable>
@@ -224,7 +226,7 @@ export default function VendorsScreen() {
                   key={s}
                   style={[styles.statusBtn, selected?.status === s && { borderColor: STATUS_COLOR[s] }]}
                   onPress={() => void updateStatus(s)}
-                  disabled={acting}
+                  disabled={BACKEND_PENDING || acting}
                 >
                   <Text style={[styles.statusBtnText, selected?.status === s && { color: STATUS_COLOR[s] }]}>
                     {STATUS_LABEL[s]}
@@ -241,9 +243,9 @@ export default function VendorsScreen() {
               placeholder="병합할 대상 업체 ID"
             />
             <Pressable
-              style={[styles.dangerBtn, acting && styles.btnDisabled]}
+              style={[styles.dangerBtn, (BACKEND_PENDING || acting) && styles.btnDisabled]}
               onPress={() => void mergeVendor()}
-              disabled={acting || !mergeTarget.trim()}
+              disabled={BACKEND_PENDING || acting || !mergeTarget.trim()}
             >
               <Text style={styles.dangerBtnText}>이 업체를 대상으로 병합</Text>
             </Pressable>

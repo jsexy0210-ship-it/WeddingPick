@@ -16,6 +16,7 @@ import {
 import { FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 import { formatDateDot } from '@/features/common/format-date';
 
 type DocType = 'terms' | 'privacy' | 'marketing';
@@ -128,6 +129,7 @@ export default function TermsScreen() {
         </Pressable>
       </View>
 
+      <PendingBackendNotice actions="조문 저장 · 초안 공개" />
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
@@ -178,9 +180,9 @@ export default function TermsScreen() {
                 </View>
                 {activeDocData.latestDraftVersion && (
                   <Pressable
-                    style={[styles.publishBtn, publishing && styles.btnDisabled]}
+                    style={[styles.publishBtn, (BACKEND_PENDING || publishing) && styles.btnDisabled]}
                     onPress={() => void publish()}
-                    disabled={publishing}
+                    disabled={BACKEND_PENDING || publishing}
                   >
                     <Text style={styles.publishBtnText}>
                       {publishing ? '공개 중…' : '초안 공개'}
@@ -232,9 +234,9 @@ export default function TermsScreen() {
                 <Text style={styles.cancelBtnText}>취소</Text>
               </Pressable>
               <Pressable
-                style={[styles.saveBtn, saving && styles.btnDisabled]}
+                style={[styles.saveBtn, (BACKEND_PENDING || saving) && styles.btnDisabled]}
                 onPress={() => void saveClause()}
-                disabled={saving}
+                disabled={BACKEND_PENDING || saving}
               >
                 <Text style={styles.saveBtnText}>{saving ? '저장 중…' : '저장'}</Text>
               </Pressable>

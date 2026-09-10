@@ -8,6 +8,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 import { formatDateDot } from '@/features/common/format-date';
 
 type GateStepStatus = 'done' | 'in_progress' | 'pending' | 'blocked';
@@ -85,6 +86,7 @@ export default function AdsGateScreen() {
         </Pressable>
       </View>
 
+      <PendingBackendNotice actions="실운영 전환 확정" />
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
@@ -141,9 +143,9 @@ export default function AdsGateScreen() {
                 실운영 전환을 확정하려면 아래 버튼을 눌러주세요.
               </Text>
               <Pressable
-                style={[styles.approvalBtn, confirming && styles.btnDisabled]}
+                style={[styles.approvalBtn, (BACKEND_PENDING || confirming) && styles.btnDisabled]}
                 onPress={() => void approveProduction()}
-                disabled={confirming}
+                disabled={BACKEND_PENDING || confirming}
               >
                 <Text style={styles.approvalBtnText}>
                   {confirming ? '처리 중…' : '실운영 전환 확정'}

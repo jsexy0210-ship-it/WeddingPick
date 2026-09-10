@@ -8,6 +8,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 import { formatMonthDayDot } from '@/features/common/format-date';
 
 type AdStatus = 'active' | 'paused' | 'expired' | 'pending';
@@ -96,6 +97,7 @@ export default function AdsScreen() {
         </Pressable>
       </View>
 
+      <PendingBackendNotice actions="정지 · 재개" />
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
@@ -142,9 +144,9 @@ export default function AdsScreen() {
               <View style={styles.colAction}>
                 {(item.status === 'active' || item.status === 'paused') && (
                   <Pressable
-                    style={[styles.inlineBtn, acting === item.id && styles.btnDisabled]}
+                    style={[styles.inlineBtn, (BACKEND_PENDING || acting === item.id) && styles.btnDisabled]}
                     onPress={() => void toggleStatus(item.id, item.status)}
-                    disabled={acting !== null}
+                    disabled={BACKEND_PENDING || acting !== null}
                   >
                     <Text style={styles.inlineBtnText}>
                       {acting === item.id ? '…' : item.status === 'active' ? '정지' : '재개'}

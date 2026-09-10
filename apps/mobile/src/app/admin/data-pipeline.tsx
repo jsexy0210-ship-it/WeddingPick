@@ -8,6 +8,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 
 type StageCount = { stage: string; count: number; avgWaitMin: number };
 type FailedItem = { id: string; stage: string; error: string; failedAt: string; retryCount: number };
@@ -77,6 +78,7 @@ export default function DataPipelineScreen() {
         </Pressable>
       </View>
 
+      <PendingBackendNotice actions="재처리 · 전체 재처리" />
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
@@ -140,9 +142,9 @@ export default function DataPipelineScreen() {
             <Text style={styles.sectionTitle}>실패 큐</Text>
             {data.failedQueue.length > 0 && (
               <Pressable
-                style={[styles.retryAllBtn, retrying === 'all' && styles.btnDisabled]}
+                style={[styles.retryAllBtn, (BACKEND_PENDING || retrying === 'all') && styles.btnDisabled]}
                 onPress={() => void retryAll()}
-                disabled={retrying !== null}
+                disabled={BACKEND_PENDING || retrying !== null}
               >
                 <Text style={styles.retryAllText}>
                   {retrying === 'all' ? '처리 중…' : '전체 재처리'}
@@ -172,9 +174,9 @@ export default function DataPipelineScreen() {
                     <Text style={[styles.td, styles.colRetry]}>{item.retryCount}회</Text>
                     <View style={[styles.colAction]}>
                       <Pressable
-                        style={[styles.inlineBtn, retrying === item.id && styles.btnDisabled]}
+                        style={[styles.inlineBtn, (BACKEND_PENDING || retrying === item.id) && styles.btnDisabled]}
                         onPress={() => void retryItem(item.id)}
-                        disabled={retrying !== null}
+                        disabled={BACKEND_PENDING || retrying !== null}
                       >
                         <Text style={styles.inlineBtnText}>
                           {retrying === item.id ? '…' : '재처리'}
