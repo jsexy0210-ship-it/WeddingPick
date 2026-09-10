@@ -16,8 +16,12 @@ import { AGE_REQUIRED_ROUTE, isUnderAgeSignInError } from '@/features/auth/sign-
  * 결과 중 실패만 `reportError`로 넘겨받아 시트로 띄운다.
  *
  * 서버가 만 14세 미만으로 판정한 것(`under_age`, v3.22 SPEC 3.5)은 실패가 아니라
- * 안내다 — 시트 대신 WP-AUTH-009으로 간다. 체크박스는 그대로 둔다: 카카오가
- * 연령대를 안 주는 사람에게는 여전히 그게 확인이다.
+ * 안내다 — 시트 대신 WP-AUTH-009으로 간다.
+ *
+ * **나이를 확인하지 못한 것(`age_unverified`)은 다른 자리다.** 미만이라고 판정한
+ * 것이 아니라 카카오가 연령대를 주지 않아 판정을 못 한 것이고, 그 사람은 서른일
+ * 수도 있다. WP-AUTH-009으로 보내지 않고 실패 시트로 둔다 — 서버 문구가 무엇을
+ * 하면 되는지까지 말하고, 시트에는 「다시 시도」가 있다.
  */
 export function useSignIn() {
   const [error, setError] = useState<string | null>(null);

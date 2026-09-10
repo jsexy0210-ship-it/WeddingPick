@@ -13,8 +13,24 @@ import { createLocalStorage } from '../storage/local';
 export const connectionString = process.env.DATABASE_URL;
 
 /** 제공자를 부르지 않고 신원을 정해준다. 실제 Apple·Kakao 검증은 여기서 확인하지 않는다. */
+/**
+ * 신원을 정해주는 대역.
+ *
+ * **연령대를 함께 넣는다.** 로그인은 나이를 확인하지 못하면 막는다
+ * (`auth.ts` — 2026-09-10). 여기서 만드는 것은 「로그인을 통과한 사람」이므로
+ * 확인을 통과한 값이 있어야 한다. 넣지 않으면 이 대역을 쓰는 모든 시험이
+ * 로그인에서부터 403으로 떨어진다.
+ *
+ * 부르는 쪽이 `profile.ageRange`를 직접 넣었으면 그것을 쓴다 — 미만·없음을
+ * 일부러 만들어야 하는 시험이 있다.
+ */
 export function fakeProvider(identity: VerifiedIdentity): IdentityProvider {
-  return { flow: 'id_token', verify: async () => identity };
+  const withAge: VerifiedIdentity = {
+    ...identity,
+    profile: { ageRange: '30~39', ...identity.profile },
+  };
+
+  return { flow: 'id_token', verify: async () => withAge };
 }
 
 export type TestApp = {

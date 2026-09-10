@@ -1,5 +1,5 @@
 import { createSessionRequestSchema } from '@weddingpick/api-contract';
-import { AGE_BLOCKED_NOTICE } from '@weddingpick/domain';
+import { AGE_BLOCKED_NOTICE, AGE_UNVERIFIED_NOTICE } from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
 
 import { ageVerdictFromRange } from '../auth/age-range';
@@ -75,29 +75,65 @@ export function registerAuthRoutes(app: FastifyInstance, context: AppContext): v
      * 나이 판정. 연령대에서 판정 하나만 꺼내고 문자열은 여기서 버린다 —
      * `signIn`에 넘기기 전에 지워야 identities에도 남지 않는다.
      *
-     *   있음 · 14세 이상 → 체크박스 없이 통과(age_verified)
+     *   있음 · 14세 이상 → 통과(age_verified)
      *   있음 · 미만      → 계정을 만들지 않고 403 under_age(앱은 WP-AUTH-009)
-     *   없음             → 체크박스 그대로
+     *   없음             → 계정을 만들지 않고 403 age_unverified
+     *
+     * **마지막 줄이 예전에는 「체크박스 그대로」였다.** 그때는 로그인 화면
+     * (WP-AUTH-001)에 「만 14세 이상이에요」 체크박스가 있었다. 핸드오프 v3.24가
+     * 그 체크박스를 없앴는데 이 줄은 남았고, 판정할 체크박스가 없으니 연령대를 못
+     * 받은 사람이 **아무 확인 없이 전부 통과**했다 — 만 14세 미만 계정이 실제로
+     * 가입된 것을 사용자가 잡았다(2026-09-10). 확인 못 한 것은 통과가 아니다.
+     *
+     * **막으면 못 들어오는 사람이 생긴다.** 카카오 앱의 동의항목에서 연령대가
+     * 꺼져 있거나 선택 동의인데 거부했으면 여기서 걸린다. 그건 고장이 아니라
+     * 의도다 — 확인되지 않은 채로 열어두는 것보다 낫다. 문구가 무엇을 하면
+     * 되는지까지 말한다(`AGE_UNVERIFIED_NOTICE`).
      */
     const verdict = ageVerdictFromRange(identity.profile?.ageRange);
 
-    if (identity.profile) {
-      const { ageRange: _dropped, ...rest } = identity.profile;
-      identity.profile = rest;
-    }
+    /*
+     * **제공자가 준 객체를 고치지 않는다.** 예전에는 `identity.profile`에 직접
+     * 덮어썼는데, 제공자가 같은 객체를 두 번 돌려주면(시험용 대역이 그렇다) 두
+     * 번째 로그인에는 연령대가 이미 지워져 있어 `unknown`으로 떨어진다. 받은 것을
+     * 고치는 대신 **넘길 것을 새로 만든다.**
+     */
+    const identityToStore: typeof identity = identity.profile
+      ? (() => {
+          const { ageRange: _dropped, ...rest } = identity.profile;
+
+          return { ...identity, profile: rest };
+        })()
+      : identity;
 
     if (verdict === 'under_age') {
       // 아무것도 만들지 않았다. 지울 것도 없다.
       throw new ApiError('under_age', AGE_BLOCKED_NOTICE);
     }
 
+    if (verdict === 'unknown') {
+      /*
+       * 판정 결과만 로그에 남긴다. 연령대 문자열도 계정 식별자도 찍지 않는다 —
+       * 알아야 하는 것은 「연령대를 못 받는 일이 얼마나 잦은가」뿐이고, 그건
+       * 제공자와 판정만으로 답한다. 이 줄이 없으면 동의항목 설정이 어긋났을 때
+       * 가입이 왜 막히는지 서버에서 볼 근거가 없다.
+       */
+      request.log.warn({ provider: body.provider, verdict }, '연령대를 받지 못해 로그인을 막았다');
+
+      throw new ApiError('age_unverified', AGE_UNVERIFIED_NOTICE);
+    }
+
     const session = await signIn(
       context.pool,
-      identity,
+      identityToStore,
       context.config.sessionTtlDays,
       context.config.operatorSessionTtlDays
     );
 
+    /*
+     * 여기 닿았으면 판정은 `verified` 하나뿐이다(위에서 나머지를 던졌다).
+     * 조건을 남겨두는 것은 판정이 늘었을 때 조용히 통과하지 않게 하기 위해서다.
+     */
     if (verdict === 'verified') {
       await markAgeVerified(context.pool, session.userId);
     }

@@ -21,8 +21,14 @@ import { ApiError } from '../errors';
  * 여기만 `requireSignup`을 단다 — 아직 활성화되지 않은 계정이 부를 수 있는 유일한
  * 자리다. 다른 모든 경로는 `requireUser`가 막는다.
  *
- * 만 14세 확인은 로그인 화면의 체크박스 하나다. 생년월일을 받지 않으므로 여기서도
- * 날짜를 세지 않는다 — `body.ageVerified`가 그 확인의 전부다.
+ * 만 14세 확인은 **로그인 때 끝난다** — 카카오 연령대의 아래끝으로 본다
+ * (`auth/age-range.ts`). 생년월일을 받지 않으므로 여기서도 날짜를 세지 않고,
+ * 그때 적어둔 `structured.users.age_verified`가 확인의 전부다.
+ *
+ * **요청 본문의 `ageVerified`는 보지 않는다.** 앱은 그 자리에 늘 `true`를 넣고
+ * (v3.24가 체크박스를 없앤 뒤로 넣을 다른 값이 없다), 이 요청만 직접 부르는
+ * 쪽은 무엇이든 넣을 수 있다. 클라이언트가 말한 것이 아니라 서버가 확인한 것을
+ * 본다.
  */
 export function registerSignupRoutes(app: FastifyInstance, context: AppContext): void {
   const auth = { preHandler: requireSignup(context) };
@@ -81,13 +87,24 @@ export function registerSignupRoutes(app: FastifyInstance, context: AppContext):
       await client.query('BEGIN');
 
       /*
-       * 체크하지 않고 왔으면 계정을 만들지 않는다. 로그인 화면이 이미 막지만
-       * (버튼이 비활성이거나 WP-AUTH-009으로 보낸다), 여기서도 한 번 더
-       * 막는다 — 화면을 거치지 않고 이 요청만 직접 부르는 경로를 남기지 않는다.
+       * 나이 확인이 끝나지 않았으면 계정을 살리지 않는다.
+       *
+       * **보는 것은 서버가 적어둔 값이다.** 예전에는 요청 본문의 `ageVerified`를
+       * 봤는데, 그건 클라이언트가 보내는 값이고 앱은 그 자리에 늘 `true`를
+       * 넣는다(`setup.tsx` — v3.24가 체크박스를 없앤 뒤로 넣을 다른 값이 없다).
+       * 즉 이 관문은 **아무도 막지 못하는 상태**였다. 지금은 로그인 때 카카오
+       * 연령대로 확인하고 `markAgeVerified`가 적어둔 `age_verified`를 본다 —
+       * 클라이언트가 무엇을 보내든 바뀌지 않는다.
+       *
        * `age_gate`·`age_checked_at`(0046)도 함께 채운다 — 그 위의 제약
        * (`activated_only_when_old_enough`)이 여전히 그 컬럼을 본다.
        */
-      if (!body.ageVerified) {
+      const verified = await client.query<{ age_verified: boolean }>(
+        'SELECT age_verified FROM structured.users WHERE id = $1 FOR UPDATE',
+        [userId]
+      );
+
+      if (!verified.rows[0]?.age_verified) {
         await client.query('ROLLBACK');
 
         // 세션도 끊는다. 확인하지 않은 계정이 토큰을 들고 돌아다닐 이유가 없다.
@@ -101,8 +118,8 @@ export function registerSignupRoutes(app: FastifyInstance, context: AppContext):
 
       await client.query(
         `UPDATE structured.users
-         SET age_verified = true, age_verified_at = now(),
-             age_gate = 'passed', age_checked_at = now()
+         SET age_verified_at = COALESCE(age_verified_at, now()),
+             age_gate = 'passed', age_checked_at = COALESCE(age_checked_at, now())
          WHERE id = $1`,
         [userId]
       );

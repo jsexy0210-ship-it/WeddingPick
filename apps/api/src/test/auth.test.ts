@@ -16,8 +16,8 @@ function fakeCodeProvider(identity: VerifiedIdentity): IdentityProvider {
  * 카카오 연령대. 핸드오프 v3.22 SPEC 3.5 «카카오에서 받는 것».
  *
  * ```
- * age_range 있음    14세 이상 → 체크박스 없이 통과 · 미만 → WP-AUTH-009
- * age_range 없음    체크박스 그대로
+ * age_range 있음    14세 이상 → 통과 · 미만 → WP-AUTH-009
+ * age_range 없음    확인 못 했다 → 막는다(age_unverified)
  * ```
  *
  * 그리고 **나이를 저장하지 않는다** — 남는 것은 age_verified · age_verified_at뿐이다.
@@ -113,17 +113,81 @@ describeWithDb('카카오 연령대', () => {
     expect(counts.rows[0]).toEqual({ users: '0', identities: '0', sessions: '0' });
   });
 
-  it('연령대가 없으면 체크박스가 그대로 판정한다', async () => {
+  /*
+   * **이 시험이 예전에 구멍을 못박고 있었다.**
+   *
+   * 이름은 「연령대가 없으면 체크박스가 그대로 판정한다」였고, 201과 계정 생성을
+   * 기대했다. 그 시절에는 맞았다 — 로그인 화면에 「만 14세 이상이에요」 체크박스가
+   * 있었다. 핸드오프 v3.24가 그 체크박스를 없앴는데 이 시험은 남았고, 판정할
+   * 체크박스가 없으니 연령대를 못 받은 사람은 **아무 확인 없이 전부 통과**했다.
+   * 만 14세 미만 계정이 실제로 가입된 것을 사용자가 잡았다(2026-09-10).
+   *
+   * 확인 못 한 것은 통과가 아니다. 이제 계정을 만들지 않고 막는다.
+   */
+  it('연령대를 못 받으면 계정을 만들지 않고 age_unverified로 답한다', async () => {
     kakaoWith(undefined);
 
     const response = await signIn();
-    const body = response.json<{ userId: string; ageVerified: boolean; token: string }>();
 
-    expect(response.statusCode).toBe(201);
-    expect(body.ageVerified).toBe(false);
+    expect(response.statusCode).toBe(403);
+    expect(response.json<{ error: { code: string } }>().error.code).toBe('age_unverified');
+
+    // 미만이라고 말하지 않는다 — 확인이 안 된 것뿐이다.
+    expect(response.json<{ error: { message: string } }>().error.message).not.toContain('만 14세부터');
+
+    const counts = await test.pool.query<{ users: string; identities: string; sessions: string }>(
+      `SELECT (SELECT count(*) FROM structured.users) AS users,
+              (SELECT count(*) FROM identity.identities) AS identities,
+              (SELECT count(*) FROM identity.sessions) AS sessions`
+    );
+
+    expect(counts.rows[0]).toEqual({ users: '0', identities: '0', sessions: '0' });
+  });
+
+  /*
+   * **클라이언트가 «확인했다»고 말해도 서버가 확인한 것만 본다.**
+   *
+   * 앱은 `completeSignup`에 늘 `ageVerified: true`를 넣는다(`setup.tsx` — v3.24가
+   * 체크박스를 없앤 뒤로 넣을 다른 값이 없다). 그 값을 믿으면 가입 관문이 아무도
+   * 막지 못한다. 이 요청만 직접 부르는 쪽도 마찬가지다.
+   *
+   * 여기서는 로그인을 통과한 계정의 확인 표시를 지운 뒤(=서버가 확인하지 못한
+   * 상태를 만든 뒤) `true`를 보내 본다. 막혀야 한다.
+   */
+  it('가입 완료는 요청 본문의 ageVerified를 믿지 않는다', async () => {
+    kakaoWith('20~29');
+
+    const body = (await signIn()).json<{ userId: string; token: string }>();
+
+    await test.pool.query(
+      'UPDATE structured.users SET age_verified = false, age_verified_at = NULL WHERE id = $1',
+      [body.userId]
+    );
+
+    const signup = await test.app.inject({
+      method: 'POST',
+      url: '/v1/me/signup',
+      headers: { authorization: `Bearer ${body.token}` },
+      payload: { ageVerified: true, consents: REQUIRED_CONSENTS },
+    });
+
+    expect(signup.statusCode).toBe(403);
     expect((await userRow(body.userId)).age_verified).toBe(false);
 
-    // 체크박스를 켜고 가입을 마치면 그때 확인된다 — 예전 흐름 그대로.
+    // 확인되지 않은 계정이 토큰을 들고 돌아다니지 않는다.
+    const revoked = await test.pool.query<{ open: string }>(
+      'SELECT count(*) AS open FROM identity.sessions WHERE user_id = $1 AND revoked_at IS NULL',
+      [body.userId]
+    );
+
+    expect(revoked.rows[0]?.open).toBe('0');
+  });
+
+  it('연령대로 확인된 계정은 가입을 마칠 수 있다', async () => {
+    kakaoWith('20~29');
+
+    const body = (await signIn()).json<{ userId: string; token: string }>();
+
     const signup = await test.app.inject({
       method: 'POST',
       url: '/v1/me/signup',
