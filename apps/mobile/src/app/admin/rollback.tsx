@@ -1,15 +1,31 @@
 /**
- * WP-ADM-042 운영 · 롤백
- * 배포·정책 변경 이력 · 지표 이탈 감지 · 자동 롤백 · 사전승인 대상
+ * WP-ADM-042 변경 복구 관리
+ *
+ * 시안 `22-admin-ops.dc.html` 9번. ADMIN.md — **되돌리기 가능/불가를 구분하고, 전체에
+ * 영향을 주는 일괄 작업은 불가이며, 30일 보관**이다. 그 셋이 이 화면의 전부다.
+ *
+ * 되돌리기 자체는 아직 서버에 없다(`/v1/admin/rollback`은 조회 하나뿐). 그래서 누를 것을
+ * 만들지 않는다 — 눌러도 아무 일이 없는 「되돌리기」는 되돌렸다고 착각하게 만든다.
+ * 서버가 생기면 `ConfirmCard`로 무엇이 바뀌는지 보여준 뒤 진행한다.
  */
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { Colors, FontSize } from '@weddingpick/ui';
+import { formatDateTimeDot } from '@/features/common/format-date';
+import { PendingBackendNotice } from '@/features/admin/pending-backend';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
-import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
-import { formatDateTimeDot } from '@/features/common/format-date';
+import {
+  Card,
+  CardGrid,
+  DataTable,
+  KpiRow,
+  LoadError,
+  Page,
+  StatusBanner,
+  type Col,
+  type Kind,
+  type TableRow,
+} from './_ui';
 
 type RollbackStatus = 'stable' | 'anomaly_detected' | 'rolling_back' | 'rolled_back' | 'pending_approval';
 type RollbackItem = {
@@ -26,29 +42,55 @@ type RollbackItem = {
   autoRollbackEnabled: boolean;
 };
 
-type RollbackData = { items: RollbackItem[] };
+/** 서버가 `snapshots`로 돌려주는 자리도 있어 둘 다 받는다. */
+type RollbackData = { items?: RollbackItem[]; snapshots?: RollbackItem[] };
 
 const STATUS_LABEL: Record<RollbackStatus, string> = {
   stable: '안정',
   anomaly_detected: '이상 감지',
-  rolling_back: '롤백 중',
-  rolled_back: '롤백 완료',
+  rolling_back: '복구 중',
+  rolled_back: '복구됨',
   pending_approval: '승인 대기',
 };
-const STATUS_COLOR: Record<RollbackStatus, string> = {
-  stable: Colors.light.positive,
-  anomaly_detected: Colors.light.cautionary,
-  rolling_back: Colors.light.accent,
-  rolled_back: Colors.light.textAssistive,
-  pending_approval: Colors.light.negative,
+
+const STATUS_KIND: Record<RollbackStatus, Kind> = {
+  stable: 'none',
+  anomaly_detected: 'warn',
+  rolling_back: 'brand',
+  rolled_back: 'ok',
+  pending_approval: 'bad',
 };
+
+const TYPE_LABEL: Record<RollbackItem['type'], string> = {
+  deploy: '배포',
+  policy: '정책',
+};
+
+/** ADMIN.md — 30일 뒤 자동 삭제. */
+const RETENTION_DAYS = 30;
+
+const COLS: Col[] = [
+  { key: 'name', label: '변경', width: 220 },
+  { key: 'type', label: '종류', width: 90 },
+  { key: 'deployed', label: '적용', width: 160 },
+  { key: 'impact', label: '영향 범위', width: 260, grow: true },
+  { key: 'revertable', label: '되돌리기', width: 110 },
+  { key: 'status', label: '상태', width: 100 },
+];
+
+/**
+ * 되돌릴 수 있는가. 자동 복구가 걸려 있고 사람 승인을 기다리지 않는 변경만 되돌릴 수 있다 —
+ * 전체에 영향을 주는 일괄 작업은 자동 복구를 걸지 않으므로 여기서 「불가」로 걸러진다.
+ */
+function revertable(item: RollbackItem) {
+  return item.autoRollbackEnabled && !item.requiresApproval;
+}
 
 export default function RollbackScreen() {
   const [data, setData] = useState<RollbackData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rev, setRev] = useState(0);
-  const [acting, setActing] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,165 +111,81 @@ export default function RollbackScreen() {
     return () => { cancelled = true; };
   }, [rev]);
 
-  async function approveRollback(id: string) {
-    setActing(id + '_approve');
-    try {
-      await apiFetch(`/v1/admin/rollback/${id}/approve`, { method: 'POST' });
-      setRev((r) => r + 1);
-    } catch { /* 무시 */ } finally { setActing(null); }
-  }
+  const reload = () => setRev((r) => r + 1);
 
-  async function triggerRollback(id: string) {
-    setActing(id + '_trigger');
-    try {
-      await apiFetch(`/v1/admin/rollback/${id}/trigger`, { method: 'POST' });
-      setRev((r) => r + 1);
-    } catch { /* 무시 */ } finally { setActing(null); }
-  }
+  const items = data?.items ?? data?.snapshots ?? [];
+  const canRevert = items.filter(revertable).length;
+  const needsPerson = items.filter((i) => i.status === 'pending_approval' || i.status === 'anomaly_detected').length;
+  const recovered = items.filter((i) => i.status === 'rolled_back').length;
+
+  const rows: TableRow[] = items.map((item) => ({
+    key: item.id,
+    cells: [
+      { v: item.name, bold: true, kind: 'none' },
+      { v: TYPE_LABEL[item.type] },
+      { v: formatDateTimeDot(item.deployedAt), kind: 'dim' },
+      {
+        v: item.anomalyMetric
+          ? `${item.anomalyMetric} ${item.anomalyValue ?? '—'} · 기준 ${item.threshold ?? '—'}`
+          : `${item.deployedBy} 적용`,
+        kind: item.anomalyMetric ? 'bad' : 'dim',
+      },
+      revertable(item)
+        ? { v: '가능', badge: 'ok' }
+        : { v: '불가', badge: 'none' },
+      { v: STATUS_LABEL[item.status], badge: STATUS_KIND[item.status] },
+    ],
+  }));
 
   return (
-    <View style={styles.root}>
-      <View style={styles.header}>
-        <Text style={styles.title}>롤백 관리</Text>
-        <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
-          <Text style={styles.refreshText}>새로 고침</Text>
-        </Pressable>
-      </View>
+    <Page title="변경 복구 관리" sub={`되돌릴 수 있는 자동 결정 · ${RETENTION_DAYS}일 보관`}>
+      <DelayedLoader active={loading} size={40} />
+      {!loading && error ? <LoadError message={error} onRetry={reload} /> : null}
 
-      <PendingBackendNotice actions="승인 · 실행" />
-      <DelayedLoader active={loading} size={40} style={styles.centered} />
-      {!loading && error && (
-        <View style={styles.centered}>
-          <Text style={styles.errorText}>{error}</Text>
-          <Pressable style={styles.retryBtn} onPress={() => setRev((r) => r + 1)}>
-            <Text style={styles.retryText}>다시 시도</Text>
-          </Pressable>
-        </View>
-      )}
+      {!loading && !error && data ? (
+        <>
+          <StatusBanner
+            tone={needsPerson === 0 ? 'ok' : 'warn'}
+            title={
+              needsPerson === 0
+                ? '사람이 되돌려야 하는 건은 없어요'
+                : `사람이 볼 변경 ${needsPerson}건이 있어요`
+            }
+            detail={
+              needsPerson === 0
+                ? '아래는 원하면 되돌릴 수 있는 목록이에요.'
+                : '이상이 감지됐거나 승인을 기다리는 변경이에요.'
+            }
+          />
 
-      {!loading && !error && data && (
-        <ScrollView>
-          {data.items.map((item, i) => (
-            <View key={item.id} style={[styles.itemCard, i % 2 === 1 && styles.itemCardZebra]}>
-              <View style={styles.itemHeader}>
-                <View style={styles.itemMeta}>
-                  <View style={[styles.typeBadge, item.type === 'deploy' ? styles.typeDeploy : styles.typePolicy]}>
-                    <Text style={styles.typeBadgeText}>{item.type === 'deploy' ? '배포' : '정책'}</Text>
-                  </View>
-                  <Text style={styles.itemName}>{item.name}</Text>
-                </View>
-                <Text style={[styles.statusLabel, { color: STATUS_COLOR[item.status] }]}>
-                  {STATUS_LABEL[item.status]}
-                </Text>
-              </View>
+          <PendingBackendNotice actions="승인 · 실행" />
 
-              <View style={styles.itemInfo}>
-                <Text style={styles.infoText}>
-                  {formatDateTimeDot(item.deployedAt)} · {item.deployedBy}
-                </Text>
-                <Text style={[styles.infoText, { color: item.autoRollbackEnabled ? Colors.light.positive : Colors.light.textAssistive }]}>
-                  자동 롤백: {item.autoRollbackEnabled ? '켜짐' : '꺼짐'}
-                </Text>
-              </View>
+          <KpiRow
+            items={[
+              { label: '되돌릴 수 있는 건', value: `${canRevert}건`, note: `최근 ${RETENTION_DAYS}일` },
+              { label: '복구됨', value: `${recovered}건`, note: '이미 이전 상태로 돌아갔어요', kind: 'ok' },
+              {
+                label: '사람 확인',
+                value: `${needsPerson}건`,
+                note: needsPerson === 0 ? '확인할 것이 없어요' : '이상 감지 · 승인 대기',
+                kind: needsPerson === 0 ? 'ok' : 'bad',
+              },
+              { label: '보관 기한', value: `${RETENTION_DAYS}일`, note: '이후 자동 삭제' },
+            ]}
+          />
 
-              {item.anomalyMetric && (
-                <View style={styles.anomalyBox}>
-                  <Text style={styles.anomalyText}>
-                    이상 지표: {item.anomalyMetric} = {item.anomalyValue} (기준: {item.threshold})
-                  </Text>
-                </View>
-              )}
-
-              <View style={styles.actions}>
-                {item.status === 'pending_approval' && (
-                  <Pressable
-                    style={[styles.approveBtn, (BACKEND_PENDING || acting === item.id + '_approve') && styles.btnDisabled]}
-                    onPress={() => void approveRollback(item.id)}
-                    disabled={BACKEND_PENDING || acting !== null}
-                  >
-                    <Text style={styles.approveBtnText}>
-                      {acting === item.id + '_approve' ? '처리 중…' : '롤백 승인'}
-                    </Text>
-                  </Pressable>
-                )}
-                {item.status === 'anomaly_detected' && !item.requiresApproval && (
-                  <Pressable
-                    style={[styles.triggerBtn, (BACKEND_PENDING || acting === item.id + '_trigger') && styles.btnDisabled]}
-                    onPress={() => void triggerRollback(item.id)}
-                    disabled={BACKEND_PENDING || acting !== null}
-                  >
-                    <Text style={styles.triggerBtnText}>
-                      {acting === item.id + '_trigger' ? '처리 중…' : '즉시 롤백'}
-                    </Text>
-                  </Pressable>
-                )}
-              </View>
-            </View>
-          ))}
-        </ScrollView>
-      )}
-    </View>
+          <CardGrid>
+            <Card
+              title="자동 결정 이력"
+              sub="되돌리면 이전 상태로 돌아가고 감사 기록에 남아요"
+              full
+              note="전체에 영향을 주는 일괄 작업은 되돌릴 수 없어요. 재실행으로만 고칠 수 있어요."
+            >
+              <DataTable cols={COLS} rows={rows} empty="되돌릴 것이 없어요" />
+            </Card>
+          </CardGrid>
+        </>
+      ) : null}
+    </Page>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    backgroundColor: Colors.light.background,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.border,
-  },
-  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text },
-  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: Colors.light.backgroundSelected },
-  refreshText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  errorText: { fontSize: FontSize.t6, color: Colors.light.negative, marginBottom: 16 },
-  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: Colors.light.tint },
-  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
-  itemCard: {
-    backgroundColor: Colors.light.background,
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.backgroundSelected,
-  },
-  itemCardZebra: { backgroundColor: Colors.light.backgroundElement },
-  itemHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  itemMeta: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  typeBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  typeDeploy: { backgroundColor: Colors.light.accentBackground },
-  typePolicy: { backgroundColor: Colors.light.negativeBoxBackground },
-  typeBadgeText: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.text },
-  itemName: { flex: 1, fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.text },
-  statusLabel: { fontSize: FontSize.t7, fontWeight: '700', flexShrink: 0 },
-  itemInfo: { flexDirection: 'row', gap: 16, marginBottom: 8 },
-  infoText: { fontSize: FontSize.tab, color: Colors.light.textAssistive },
-  anomalyBox: {
-    backgroundColor: Colors.light.cautionaryBoxBackground,
-    borderRadius: 6,
-    padding: 10,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: Colors.light.cautionaryBorder,
-  },
-  anomalyText: { fontSize: FontSize.tab, color: Colors.light.cautionary },
-  actions: { flexDirection: 'row', gap: 8 },
-  approveBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    backgroundColor: Colors.light.tint,
-  },
-  approveBtnText: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.background },
-  triggerBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    backgroundColor: Colors.light.negative,
-  },
-  triggerBtnText: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.background },
-  btnDisabled: { opacity: 0.5 },
-});
