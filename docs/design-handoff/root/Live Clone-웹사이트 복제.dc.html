@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-static.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-scale.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-semantic.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/typography.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/dimension.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/motion.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/base.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/core/core.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/buttons/buttons.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/display/display.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/styles.css">
+<script src="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/_ds_bundle.js"></script>
+<style>
+body{margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#ff6f61;text-decoration:none}
+a:hover{color:#e2564a}
+</style>
+</helmet>
+
+<div style="{{ intro }}">
+  <span style="font-size:14px;line-height:19px;font-weight:700;color:#ff6f61">WeddingPick · Live Clone</span>
+  <span style="font-size:40px;line-height:52px;font-weight:700;color:#212124">웹사이트 복제</span>
+  <span style="font-size:18px;line-height:26px;color:#393a40;text-wrap:pretty">weddingpick-web.onrender.com 배포본을 읽어 옮겼습니다. <b>문구 · 섹션 순서 · 메뉴 · FAQ · 사업자 정보는 실제 페이지에서 가져온 값</b>이고, <b>치수와 색은 추정값</b>입니다. 텍스트로는 픽셀을 읽을 수 없어 폭 1280 · 좌우 여백 80 · 버튼 56 등은 프로젝트 규격을 따랐습니다. 실측이 필요하면 스크린샷이나 CSS를 주세요.</span>
+</div>
+
+<section style="{{ page }}">
+
+  <div style="{{ gnb }}">
+    <div style="{{ gnbInner }}">
+      <a href="#" style="{{ brand }}">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ff6f61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z"></path><path d="M9.4 11.9l1.7 1.7 3.4-3.4"></path></svg>
+        <span style="{{ brandName }}">웨딩픽</span>
+      </a>
+      <div style="{{ gnbNav }}">
+        <sc-for list="{{ nav }}" as="n" hint-placeholder-count="3"><a href="#" style="{{ navLink }}">{{ n }}</a></sc-for>
+      </div>
+      <a href="#" style="{{ gnbCta }}">앱 출시 안내</a>
+    </div>
+  </div>
+
+  <div style="{{ hero }}">
+    <div style="{{ heroLeft }}">
+      <span style="{{ eyebrow }}">웨딩홀부터 스드메까지</span>
+      <span style="{{ heroTitle }}">웨딩 준비,<br>하나씩 쉽게 골라봐요</span>
+      <span style="{{ heroSub }}">필요한 정보를 한곳에서 살펴보고<br>마음에 드는 곳은 Pick하세요.</span>
+      <div style="{{ heroBtns }}">
+        <a href="#" style="{{ btnPrimary }}">앱 출시 안내<span style="{{ arrow }}">↗</span></a>
+        <a href="#" style="{{ btnGhost }}">서비스 살펴보기</a>
+      </div>
+      <span style="{{ heroNote }}">웨딩픽 출시 준비 중이에요</span>
+    </div>
+
+    <div style="{{ heroRight }}">
+      <div style="{{ phone }}">
+        <div style="{{ phoneBar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="15" height="10" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="22" height="11" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+        <div style="{{ phoneBody }}">
+          <span style="{{ pCaption }}">마음에 드는 곳을 모아보세요</span>
+          <span style="{{ pLabel }}">웨딩픽 추천</span>
+          <span style="{{ pTitle }}">내 조건에 맞는 곳부터</span>
+          <span style="{{ pMeta }}">지역 · 예산 · 분위기</span>
+          <div style="{{ pCard }}">
+            <div style="{{ pThumb }}">A</div>
+            <div style="{{ pCardBody }}">
+              <span style="{{ pTag }}">웨딩픽 추천</span>
+              <span style="{{ pCardTitle }}">마음에 드는 스튜디오</span>
+              <span style="{{ pCardSub }}">원하는 분위기인지 살펴보세요</span>
+            </div>
+          </div>
+          <div style="{{ pRow }}">
+            <span style="{{ pRowName }}">금액과 포함 항목</span>
+            <span style="{{ pRowSub }}">제보 건수와 기준 기간도 함께 확인해요</span>
+          </div>
+          <div style="{{ pRow }}">
+            <span style="{{ pRowName }}">Pick한 곳</span>
+            <div style="{{ pAvatars }}">
+              <sc-for list="{{ pickAvatars }}" as="a" hint-placeholder-count="3"><span style="{{ a.style }}">{{ a.label }}</span></sc-for>
+            </div>
+          </div>
+          <div style="{{ pCta }}">고민되는 곳만 비교해요<span style="{{ arrowSm }}">↗</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="{{ section }}">
+    <div style="{{ secHead }}">
+      <span style="{{ secTitle }}">준비할 게 많아도<br>하나씩 고르면 돼요</span>
+      <span style="{{ secSub }}">필요한 정보를 살펴보고,<br>마음에 드는 곳부터 모아보세요.</span>
+    </div>
+    <div style="{{ steps }}">
+      <sc-for list="{{ howSteps }}" as="s" hint-placeholder-count="3">
+        <div style="{{ stepCard }}">
+          <span style="{{ stepNo }}">{{ s.no }}</span>
+          <span style="{{ stepTitle }}">{{ s.title }}</span>
+          <span style="{{ stepBody }}">{{ s.body }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="{{ sectionAlt }}">
+    <div style="{{ twoCol }}">
+      <div style="{{ colLeft }}">
+        <span style="{{ eyebrowDark }}">비교</span>
+        <span style="{{ secTitleLeft }}">고민될 땐<br>나란히 비교</span>
+        <span style="{{ secSubLeft }}">Pick한 곳의 중요한 정보를 한눈에 비교해요.</span>
+        <span style="{{ secSubLeft }}">금액과 포함 항목, 계약 조건을 함께 살펴보세요.</span>
+      </div>
+      <div style="{{ colRight }}">
+        <span style="{{ tableCaption }}">한눈에 살펴볼 비교 항목</span>
+        <div style="{{ tableCard }}">
+          <div style="{{ theadRow }}">
+            <sc-for list="{{ cmpCols }}" as="c" hint-placeholder-count="4"><span style="{{ c.style }}">{{ c.label }}</span></sc-for>
+          </div>
+          <sc-for list="{{ cmpRows }}" as="r" hint-placeholder-count="3">
+            <div style="{{ tbodyRow }}">
+              <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="4"><span style="{{ c.style }}">{{ c.v }}</span></sc-for>
+            </div>
+          </sc-for>
+        </div>
+        <span style="{{ tableNote }}">최종 금액과 예약 가능 여부는 업체에 확인해주세요.</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="{{ section }}">
+    <div style="{{ twoCol }}">
+      <div style="{{ colLeft }}">
+        <span style="{{ eyebrowDark }}">Pick · 웨딩일정</span>
+        <span style="{{ secTitleLeft }}">둘이 함께 준비</span>
+        <span style="{{ secSubLeft }}">서로 Pick한 곳을 보고 준비 일정도 함께 정리해요. 혼자서도 이용할 수 있어요.</span>
+        <div style="{{ bullets }}">
+          <sc-for list="{{ coupleBullets }}" as="b" hint-placeholder-count="3">
+            <div style="{{ bulletRow }}"><span style="{{ bulletDot }}"></span><span style="{{ bulletText }}">{{ b }}</span></div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="{{ colRight }}">
+        <span style="{{ tableCaption }}">마음에 드는 곳을 모아보세요</span>
+        <div style="{{ pickCard }}">
+          <span style="{{ pickCardTitle }}">함께 고른 Pick</span>
+          <sc-for list="{{ pickRows }}" as="p" hint-placeholder-count="2">
+            <div style="{{ pickRow }}">
+              <span style="{{ p.avatarStyle }}">{{ p.avatar }}</span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+                <span style="{{ pickName }}">{{ p.name }}</span>
+                <span style="{{ pickMeta }}">{{ p.meta }}</span>
+              </div>
+            </div>
+          </sc-for>
+          <div style="{{ pickDivider }}"></div>
+          <div style="{{ pickSchedule }}">
+            <span style="{{ pickSchedTag }}">웨딩일정</span>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+              <span style="{{ pickName }}">상담 일정 정리</span>
+              <span style="{{ pickMeta }}">날짜와 시간</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="{{ sectionAlt }}">
+    <div style="{{ secHead }}">
+      <span style="{{ eyebrowDark }}">정보의 기준</span>
+      <span style="{{ secTitle }}">더 편하게 고를 수 있도록<br>정보를 정리해요</span>
+      <span style="{{ secSub }}">업체가 안내한 정보와 직접 남긴 정보를 구분해 보여드려요.</span>
+    </div>
+    <div style="{{ trustGrid }}">
+      <sc-for list="{{ trustCards }}" as="t" hint-placeholder-count="2">
+        <div style="{{ trustCard }}">
+          <span style="{{ trustTag }}">{{ t.tag }}</span>
+          <span style="{{ trustTitle }}">{{ t.title }}</span>
+          <span style="{{ trustBody }}">{{ t.body }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <span style="{{ trustNote }}">금액은 제보된 사례를 바탕으로 정리해요. 시기와 포함 항목에 따라 달라질 수 있어요.</span>
+  </div>
+
+  <div style="{{ section }}">
+    <div style="{{ faqHead }}">
+      <span style="{{ secTitle }}">궁금한 점을 먼저 확인해요</span>
+      <a href="#" style="{{ faqMore }}">질문 더 보기</a>
+    </div>
+    <div style="{{ faqList }}">
+      <sc-for list="{{ faqs }}" as="f" hint-placeholder-count="5">
+        <div style="{{ faqItem }}">
+          <span style="{{ faqQ }}">{{ f.q }}</span>
+          <span style="{{ faqA }}">{{ f.a }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="{{ download }}">
+    <span style="{{ dlTitle }}">웨딩픽 출시 준비 중이에요</span>
+    <span style="{{ dlSub }}">앱이 공개되면 이곳에서 다운로드를 안내해드릴게요.</span>
+    <span style="{{ dlSub2 }}">웨딩홀부터 스드메까지 차근차근 준비해요.</span>
+    <a href="#" style="{{ dlCta }}">문의하기<span style="{{ arrow }}">↗</span></a>
+  </div>
+
+  <div style="{{ footer }}">
+    <div style="{{ footerTop }}">
+      <div style="{{ footerBrandCol }}">
+        <a href="#" style="{{ brand }}">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff6f61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z"></path><path d="M9.4 11.9l1.7 1.7 3.4-3.4"></path></svg>
+          <span style="{{ brandName }}">웨딩픽</span>
+        </a>
+        <span style="{{ footerTag }}">찾고, 비교하고, 마음에 들면 Pick.</span>
+      </div>
+      <div style="{{ footerLinks }}">
+        <sc-for list="{{ footerNav }}" as="f" hint-placeholder-count="5"><a href="#" style="{{ footerLink }}">{{ f }}</a></sc-for>
+      </div>
+    </div>
+    <div style="{{ footerBiz }}">
+      <sc-for list="{{ bizLines }}" as="b" hint-placeholder-count="4"><span style="{{ bizLine }}">{{ b }}</span></sc-for>
+    </div>
+    <span style="{{ copyright }}">© 2026 픽랩. All rights reserved.</span>
+  </div>
+
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1408,&quot;height&quot;:1100}}">
+class Component extends DCLogic {
+  renderVals() {
+    const C = '#ff6f61';
+    const W = 1280;
+    const PAD = 'padding-left:80px;padding-right:80px';
+
+    const av = (label, i) => ({ label,
+      style: 'width:34px;height:34px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;box-sizing:border-box;'
+        + (i === 0 ? 'background:#ffe8e4;color:' + C + ';' : 'background:#f2f3f6;color:#868b94;')
+        + (i > 0 ? 'margin-left:-10px;box-shadow:0 0 0 2px #fff;' : '') });
+
+    const colH = (label, w, first) => ({ label,
+      style: 'width:' + w + 'px;flex:0 0 ' + w + 'px;font-size:13px;line-height:18px;font-weight:700;color:'
+        + (first ? '#868b94' : '#212124') });
+    const cell = (v, w, first) => ({ v,
+      style: 'width:' + w + 'px;flex:0 0 ' + w + 'px;font-size:15px;line-height:21px;'
+        + (first ? 'color:#868b94;' : 'font-weight:700;color:#212124;') });
+
+    return {
+      intro: 'display:flex;flex-direction:column;gap:10px;max-width:1000px;padding:64px 64px 20px',
+      page: 'width:' + W + 'px;margin:0 64px 64px;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 15px 60px rgba(0,27,55,.12);display:flex;flex-direction:column',
+
+      gnb: 'height:72px;flex:0 0 72px;box-shadow:inset 0 -1px 0 #eaebee;display:flex;align-items:center;' + PAD,
+      gnbInner: 'width:100%;display:flex;align-items:center;gap:40px',
+      brand: 'display:flex;align-items:center;gap:8px;text-decoration:none',
+      brandName: 'font-size:19px;font-weight:700;color:#212124;letter-spacing:-0.02em',
+      gnbNav: 'flex:1;display:flex;align-items:center;gap:32px',
+      navLink: 'font-size:15px;font-weight:700;color:#4d5159;text-decoration:none;white-space:nowrap',
+      gnbCta: 'height:40px;padding:0 18px;border-radius:6px;background:' + C + ';color:#fff;display:inline-flex;align-items:center;font-size:15px;font-weight:700;text-decoration:none;white-space:nowrap',
+
+      hero: 'display:flex;align-items:center;gap:64px;padding:88px 80px 96px',
+      heroLeft: 'flex:1;min-width:0;display:flex;flex-direction:column',
+      eyebrow: 'font-size:15px;line-height:21px;font-weight:700;color:' + C + ';padding-bottom:16px',
+      heroTitle: 'font-size:52px;line-height:70px;font-weight:700;letter-spacing:-0.03em;color:#212124',
+      heroSub: 'font-size:19px;line-height:31px;color:#4d5159;padding-top:20px',
+      heroBtns: 'display:flex;gap:10px;padding-top:36px',
+      btnPrimary: 'height:56px;padding:0 26px;border-radius:8px;background:' + C + ';color:#fff;display:inline-flex;align-items:center;gap:5px;font-size:17px;font-weight:700;text-decoration:none;white-space:nowrap',
+      btnGhost: 'height:56px;padding:0 26px;border-radius:8px;background:#f2f3f6;color:#393a40;display:inline-flex;align-items:center;font-size:17px;font-weight:700;text-decoration:none;white-space:nowrap',
+      arrow: 'font-size:15px;line-height:1;opacity:.9',
+      arrowSm: 'font-size:12px;line-height:1;opacity:.9',
+      heroNote: 'font-size:14px;line-height:20px;color:#868b94;padding-top:22px',
+
+      heroRight: 'flex:0 0 340px;display:flex;justify-content:center',
+      phone: 'width:320px;border-radius:32px;background:#fff;box-shadow:0 18px 60px rgba(0,27,55,.16);overflow:hidden;display:flex;flex-direction:column',
+      phoneBar: 'height:40px;flex:0 0 40px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:13px;font-weight:700;color:#212124',
+      barIcons: 'display:flex;gap:5px;align-items:center',
+      phoneBody: 'padding:8px 20px 24px;display:flex;flex-direction:column;gap:8px',
+      pCaption: 'font-size:12px;line-height:17px;color:#adb1ba',
+      pLabel: 'font-size:12px;line-height:17px;font-weight:700;color:' + C + ';padding-top:6px',
+      pTitle: 'font-size:20px;line-height:27px;font-weight:700;color:#212124',
+      pMeta: 'font-size:13px;line-height:18px;color:#868b94;padding-bottom:6px',
+      pCard: 'display:flex;gap:12px;padding:14px;border-radius:10px;background:#f7f8fa',
+      pThumb: 'width:52px;height:52px;flex:0 0 52px;border-radius:8px;background:#ffe8e4;color:' + C + ';display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700',
+      pCardBody: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:3px',
+      pTag: 'font-size:11px;line-height:16px;font-weight:700;color:' + C,
+      pCardTitle: 'font-size:15px;line-height:21px;font-weight:700;color:#212124;overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      pCardSub: 'font-size:12px;line-height:17px;color:#868b94;overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      pRow: 'display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;box-shadow:inset 0 -1px 0 #f2f3f6',
+      pRowName: 'font-size:14px;line-height:20px;font-weight:700;color:#212124;white-space:nowrap',
+      pRowSub: 'font-size:12px;line-height:17px;color:#868b94;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      pAvatars: 'display:flex;align-items:center',
+      pCta: 'height:44px;border-radius:8px;background:' + C + ';color:#fff;display:flex;align-items:center;justify-content:center;gap:5px;font-size:14px;font-weight:700;margin-top:6px',
+
+      section: 'padding:96px 80px;display:flex;flex-direction:column;gap:56px',
+      sectionAlt: 'padding:96px 80px;display:flex;flex-direction:column;gap:56px;background:#f7f8fa',
+      secHead: 'display:flex;flex-direction:column;gap:14px;align-items:center;text-align:center',
+      secTitle: 'font-size:40px;line-height:56px;font-weight:700;letter-spacing:-0.03em;color:#212124',
+      secSub: 'font-size:18px;line-height:29px;color:#4d5159',
+      eyebrowDark: 'font-size:15px;line-height:21px;font-weight:700;color:' + C,
+
+      steps: 'display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px',
+      stepCard: 'padding:36px 32px;border-radius:12px;background:#f7f8fa;display:flex;flex-direction:column;gap:12px;min-width:0',
+      stepNo: 'font-size:14px;line-height:20px;font-weight:700;color:' + C + ';font-variant-numeric:tabular-nums',
+      stepTitle: 'font-size:22px;line-height:30px;font-weight:700;color:#212124',
+      stepBody: 'font-size:16px;line-height:26px;color:#4d5159;text-wrap:pretty',
+
+      twoCol: 'display:flex;gap:72px;align-items:flex-start',
+      colLeft: 'flex:0 0 400px;display:flex;flex-direction:column;gap:16px',
+      colRight: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:12px',
+      secTitleLeft: 'font-size:40px;line-height:56px;font-weight:700;letter-spacing:-0.03em;color:#212124',
+      secSubLeft: 'font-size:17px;line-height:28px;color:#4d5159;text-wrap:pretty',
+
+      tableCaption: 'font-size:13px;line-height:18px;color:#adb1ba',
+      tableCard: 'background:#fff;border-radius:12px;padding:8px 24px;display:flex;flex-direction:column;box-shadow:0 2px 12px rgba(0,27,55,.06)',
+      theadRow: 'display:flex;align-items:center;gap:20px;min-height:52px;box-shadow:inset 0 -1px 0 #eaebee',
+      tbodyRow: 'display:flex;align-items:center;gap:20px;min-height:60px;box-shadow:inset 0 -1px 0 #f7f8fa',
+      tableNote: 'font-size:13px;line-height:19px;color:#868b94;padding-top:4px',
+
+      bullets: 'display:flex;flex-direction:column;gap:12px;padding-top:8px',
+      bulletRow: 'display:flex;align-items:flex-start;gap:10px',
+      bulletDot: 'width:6px;height:6px;flex:0 0 6px;margin-top:10px;border-radius:999px;background:' + C,
+      bulletText: 'flex:1;font-size:16px;line-height:26px;color:#393a40;text-wrap:pretty',
+
+      pickCard: 'background:#fff;border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:14px;box-shadow:0 2px 12px rgba(0,27,55,.06)',
+      pickCardTitle: 'font-size:17px;line-height:23px;font-weight:700;color:#212124',
+      pickRow: 'display:flex;align-items:center;gap:14px',
+      pickName: 'font-size:15px;line-height:21px;font-weight:700;color:#212124',
+      pickMeta: 'font-size:13px;line-height:18px;color:#868b94',
+      pickDivider: 'height:1px;background:#eaebee;margin:4px 0',
+      pickSchedule: 'display:flex;flex-direction:column;gap:6px',
+      pickSchedTag: 'font-size:12px;line-height:17px;font-weight:700;color:' + C,
+
+      trustGrid: 'display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px',
+      trustCard: 'background:#fff;border-radius:12px;padding:36px 32px;display:flex;flex-direction:column;gap:12px;min-width:0',
+      trustTag: 'font-size:14px;line-height:20px;font-weight:700;color:' + C,
+      trustTitle: 'font-size:22px;line-height:30px;font-weight:700;color:#212124;text-wrap:pretty',
+      trustBody: 'font-size:16px;line-height:26px;color:#4d5159;text-wrap:pretty',
+      trustNote: 'font-size:14px;line-height:22px;color:#868b94;text-align:center;text-wrap:pretty',
+
+      faqHead: 'display:flex;align-items:baseline;justify-content:space-between;gap:24px',
+      faqMore: 'font-size:15px;font-weight:700;color:' + C + ';text-decoration:none;white-space:nowrap',
+      faqList: 'display:flex;flex-direction:column',
+      faqItem: 'display:flex;flex-direction:column;gap:10px;padding:28px 0;box-shadow:inset 0 -1px 0 #eaebee',
+      faqQ: 'font-size:19px;line-height:26px;font-weight:700;color:#212124',
+      faqA: 'font-size:16px;line-height:27px;color:#4d5159;text-wrap:pretty',
+
+      download: 'padding:96px 80px;background:' + C + ';display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center',
+      dlTitle: 'font-size:40px;line-height:54px;font-weight:700;letter-spacing:-0.03em;color:#fff',
+      dlSub: 'font-size:18px;line-height:29px;color:rgba(255,255,255,.92)',
+      dlSub2: 'font-size:16px;line-height:26px;color:rgba(255,255,255,.76)',
+      dlCta: 'height:56px;padding:0 30px;border-radius:8px;background:#fff;color:' + C + ';display:inline-flex;align-items:center;gap:5px;font-size:17px;font-weight:700;text-decoration:none;margin-top:14px',
+
+      footer: 'padding:56px 80px 48px;background:#fff;box-shadow:inset 0 1px 0 #eaebee;display:flex;flex-direction:column;gap:32px',
+      footerTop: 'display:flex;align-items:flex-start;justify-content:space-between;gap:48px',
+      footerBrandCol: 'display:flex;flex-direction:column;gap:10px',
+      footerTag: 'font-size:15px;line-height:22px;color:#868b94',
+      footerLinks: 'display:flex;flex-wrap:wrap;gap:10px 28px;max-width:560px;justify-content:flex-end',
+      footerLink: 'font-size:14px;font-weight:700;color:#4d5159;text-decoration:none;white-space:nowrap',
+      footerBiz: 'display:flex;flex-direction:column;gap:5px;padding-top:24px;box-shadow:inset 0 1px 0 #f2f3f6',
+      bizLine: 'font-size:13px;line-height:20px;color:#868b94',
+      copyright: 'font-size:13px;line-height:20px;color:#adb1ba',
+
+      nav: ['서비스 소개', '정보 출처', '자주 묻는 질문'],
+      pickAvatars: [av('A', 0), av('B', 1), av('C', 2)],
+
+      howSteps: [
+        { no: '01', title: '조건에 맞게 찾아요', body: '지역과 예산, 원하는 분위기에 맞춰 웨딩홀과 스드메를 찾아보세요.' },
+        { no: '02', title: '다른 점을 비교해요', body: '금액과 포함 항목을 같은 기준으로 살펴보세요.' },
+        { no: '03', title: '마음에 들면 Pick', body: '다시 찾아다니지 않도록 관심 있는 곳만 모아보세요.' }
+      ],
+
+      cmpCols: [colH('항목', 140, true), colH('금액', 150), colH('구성', 150), colH('조건', 150)],
+      cmpRows: [
+        { cells: [cell('살펴볼 내용', 140, true), cell('금액 구간', 150), cell('포함 항목', 150), cell('계약 조건', 150)] },
+        { cells: [cell('함께 볼 정보', 140, true), cell('기준 기간', 150), cell('추가 항목', 150), cell('이용 시기', 150)] },
+        { cells: [cell('비교할 기준', 140, true), cell('예산', 150), cell('필요한 구성', 150), cell('준비 일정', 150)] }
+      ],
+
+      coupleBullets: [
+        '마음에 드는 곳은 Pick에 모아두기',
+        '일정과 준비할 일을 한곳에서 관리하기',
+        '함께 고른 곳부터 의견 맞추기'
+      ],
+      pickRows: [
+        { avatar: 'A', avatarStyle: 'width:40px;height:40px;flex:0 0 40px;border-radius:999px;background:#ffe8e4;color:' + C + ';display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700',
+          name: '함께 마음에 든 곳', meta: '둘 다 고른 곳' },
+        { avatar: 'B', avatarStyle: 'width:40px;height:40px;flex:0 0 40px;border-radius:999px;background:#f2f3f6;color:#868b94;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700',
+          name: '내가 관심 있는 곳', meta: '내가 고른 곳' }
+      ],
+
+      trustCards: [
+        { tag: '업체 공개 정보', title: '필요한 정보만 보기 쉽게', body: '여러 곳을 오가며 찾지 않아도 되도록 업체 소개와 기본 안내를 모아 보여드려요.' },
+        { tag: 'Pick 인증', title: '직접 남긴 경험도 함께', body: '웨딩을 준비한 사람들이 남긴 금액과 조건을 같은 기준으로 정리해요. 제보 건수와 기준 기간도 함께 보여드려요.' }
+      ],
+
+      faqs: [
+        { q: '지금 앱을 받을 수 있나요?', a: '지금은 출시 준비 중이에요. 앱이 공개되면 이곳에서 다운로드를 안내해드릴게요.' },
+        { q: '혼자서도 준비할 수 있나요?', a: '혼자서도 Pick과 웨딩일정으로 준비할 수 있어요. 함께 준비할 때는 배우자를 연결해 서로 고른 곳을 확인할 수 있어요.' },
+        { q: '제보 금액이 지금 판매하는 가격인가요?', a: '아니요. 사용자가 제출한 자료에서 확인한 사례의 금액 구간이에요. 시기와 포함 항목에 따라 달라질 수 있으니 최종 조건은 업체에 확인해주세요.' },
+        { q: '로그인이 필요한가요?', a: '공개된 웹 정보는 로그인 없이 볼 수 있어요. 개인 Pick과 웨딩일정, Pick 인증은 앱에서 로그인 후 이용해요.' },
+        { q: '어떤 준비부터 할 수 있나요?', a: '웨딩홀과 스드메를 찾고 비교해보세요. 관심 있는 곳은 Pick하고 준비 일정도 정리할 수 있어요.' }
+      ],
+
+      footerNav: ['서비스 소개', '고객지원', '업체 문의', '이용약관', '개인정보처리방침'],
+      bizLines: [
+        '상호 픽랩 · 대표 안재호',
+        '사업자등록번호 727-06-03536',
+        '업태 정보통신업 · 종목 응용 소프트웨어 개발 및 공급업',
+        'help.weddingpick@gmail.com'
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>
