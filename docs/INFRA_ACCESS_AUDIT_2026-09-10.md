@@ -4,7 +4,7 @@
 
 GitHub·Render·Neon·네이버 클라우드·Expo/EAS·카카오·App Store Connect·Google Play의 실제 계정/프로젝트 접근을 확인했다. 브라우저 로그인과 서비스 리소스 조회까지 확보한 상태이며, 모든 외부 서비스의 무인 API 인증을 새로 설치한 상태는 아니다.
 
-**사용자 확정: `weddingpick.kr`은 보유한 커스텀 도메인이지만 현재 사용하지 않는다.** DNS 미응답을 장애·연결 차단으로 분류하지 않는다. 도메인 구매·복구·Cloudflare 등록은 진행하지 않았다. 현재 검수 대상은 onrender.com 주소다.
+**이 문단은 2026-09-11 대표 지시로 뒤집혔다 — `weddingpick.kr`은 폐기했다. 아래는 2026-09-10 시점의 기록이다.** 당시 확정: `weddingpick.kr`은 보유한 커스텀 도메인이지만 현재 사용하지 않는다. DNS 미응답을 장애·연결 차단으로 분류하지 않는다. 도메인 구매·복구·Cloudflare 등록은 진행하지 않았다. 현재 검수 대상은 onrender.com 주소다.
 
 기준 소스: `jsexy0210-ship-it/WeddingPick`, main `e34193ee1644c664f107d529002ae53ef775389a`. 이번에도 GitHub main을 조회해 같은 SHA임을 확인했다.
 
