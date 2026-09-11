@@ -36,6 +36,8 @@ import urllib.parse
 
 API = os.environ.get("API", "").rstrip("/")
 SAMPLES = int(os.environ.get("SAMPLES", "12"))
+# 무엇을 잰 것인지 결과에 남긴다. 리전을 비교할 때 어느 쪽 숫자인지 헷갈리지 않게.
+LABEL = os.environ.get("LABEL", "")
 
 # 시험용 계정 토큰. 있으면 로그인 경로도 잰다.
 #
@@ -171,7 +173,7 @@ def first_vendor_id() -> str | None:
 
 
 def main() -> int:
-    print(f"대상: {API}")
+    print(f"대상: {API}" + (f"  [{LABEL}]" if LABEL else ""))
     print(f"표본: 엔드포인트당 {SAMPLES}회\n")
     wake()
 
@@ -191,7 +193,7 @@ def main() -> int:
     else:
         print("\n::warning::업체 id를 못 구해 상세는 재지 않았다.")
 
-    report: dict[str, object] = {"api": API, "samples": SAMPLES, "modes": {}}
+    report: dict[str, object] = {"api": API, "label": LABEL, "samples": SAMPLES, "modes": {}}
 
     for reuse in (False, True):
         mode = "연결 이어 쓰기 (서버가 일한 시간에 가까움)" if reuse else "매번 새 연결 (앱이 처음 열 때)"
