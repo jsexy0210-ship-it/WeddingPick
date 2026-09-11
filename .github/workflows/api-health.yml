@@ -1,0 +1,82 @@
+# 배포된 API가 실제로 무엇을 보고 있는지 읽는다. 아무것도 바꾸지 않는다.
+#
+# **200만으로는 모자란다.** `keep-warm`이 10분마다 `/health`를 두드려 200을
+# 받지만, 그 200은 「프로세스가 살아 있고 DB에 붙었다」까지다. `/health`는
+# 스키마가 코드보다 뒤에 있어도 **일부러** 200을 준다(server.ts) — 503을 주면
+# Render 헬스체크가 인스턴스를 계속 갈아치워서 정작 확인하려던 것을 볼 수 없게
+# 되기 때문이다. 그래서 상태는 본문에만 있고, 본문을 읽는 자리가 없었다.
+#
+# `DB Status`와 다른 것을 본다. 그쪽은 **CI가 시크릿으로 붙는 DB**를 보고,
+# 이쪽은 **배포된 API 프로세스가 실제로 쥔 DB**를 본다. 2026-09-07에 둘이
+# 달랐고(운영 API는 빈 DB, CI는 다른 DB) 인증 API가 전부 500이었다. 그때
+# 아무도 못 본 이유가 이것이다 — 두 쪽을 따로 볼 방법이 없었다.
+#
+# 본문에 비밀은 없다. 적용/기대 개수와 밀린 마이그레이션 **이름**뿐이고
+# 접속 문자열도 호스트명도 들어 있지 않다.
+name: API health 확인 (읽기 전용)
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: /health 본문 읽기
+        env:
+          # free 플랜이라 잠들어 있으면 첫 요청이 30~60초 걸린다.
+          API: https://weddingpickl.onrender.com
+        run: |
+          set -o pipefail
+
+          # 잠들어 있을 수 있다. 깨어날 때까지 세 번 기다린다 —
+          # 여기서 실패로 끝내면 「API가 죽었다」와 「자고 있었다」를 못 가른다.
+          for i in 1 2 3; do
+            code=$(curl -s -o /tmp/health.json -w "%{http_code}" --max-time 90 "$API/health" || echo 000)
+            echo "시도 $i: HTTP $code"
+            [ "$code" = "200" ] && break
+            [ "$i" = "3" ] && { echo "::error::API가 200을 주지 않았다 (마지막 $code)"; cat /tmp/health.json || true; exit 1; }
+            sleep 20
+          done
+
+          echo
+          echo '--- /health 본문'
+          python3 -m json.tool /tmp/health.json || cat /tmp/health.json
+          echo
+
+          # 판정은 사람이 아니라 여기서 한다. 본문만 찍어두면 초록으로 끝나서
+          # 아무도 안 읽는다.
+          python3 - <<'PY'
+          import json, sys
+
+          with open('/tmp/health.json', encoding='utf-8') as f:
+              body = json.load(f)
+
+          schema = body.get('schema') or {}
+          applied, expected = schema.get('applied'), schema.get('expected')
+          pending = schema.get('pending') or []
+          unknown = schema.get('unknown') or []
+
+          print(f"데이터베이스: {body.get('database')}")
+          print(f"적용 {applied} / 기대 {expected}")
+          print('밀린 것 없음' if not pending else '밀린 것 %d개: %s' % (len(pending), ', '.join(pending)))
+
+          # 이름이 바뀐 옛 마이그레이션은 기록에만 남는다. 지우지 않기로 했으므로
+          # 이것으로 실패시키지 않는다 — 다만 몇 개인지는 매번 적는다.
+          if unknown:
+              print('저장소에 없는 것 %d개: %s' % (len(unknown), ', '.join(unknown)))
+
+          if body.get('database') != 'ok':
+              print('::error::배포된 API가 DB를 쓰지 못한다')
+              sys.exit(1)
+
+          if pending:
+              print('::error::배포된 API가 보는 DB의 스키마가 코드보다 뒤에 있다')
+              sys.exit(1)
+
+          print('배포된 API가 보는 DB가 코드와 같은 자리에 있다')
+          PY

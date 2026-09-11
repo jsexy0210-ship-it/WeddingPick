@@ -42,6 +42,32 @@ type RevenueData = {
   };
 };
 
+/**
+ * 서버가 이 화면이 읽는 모양으로 답했는지 본다.
+ *
+ * **`GET /v1/admin/revenue`는 다른 모양을 준다** —
+ * `{ mrr, arr, activeSubscriptions, churnRate, planBreakdown }`이다
+ * (`apps/api/src/routes/admin.ts`). 이 화면은 `summary.contributionMarginRate`와
+ * `funnel`을 읽으므로 `summary`가 없어 첫 줄에서 죽었고, 운영자에게는 스택
+ * 트레이스만 보였다(2026-09-10 검수에서 실제로 재현).
+ *
+ * 없는 값을 0원으로 메우지 않는다 — 집계가 없는 것과 수익이 0인 것은 다른
+ * 사실이고, 「0원」으로 적으면 측정값처럼 읽힌다.
+ */
+function isRevenueData(d: unknown): d is RevenueData {
+  const o = d as Partial<RevenueData> | null;
+  return (
+    typeof o === 'object' &&
+    o !== null &&
+    Array.isArray(o.funnel) &&
+    typeof o.summary === 'object' &&
+    o.summary !== null &&
+    typeof o.summary.contributionMarginRate === 'number'
+  );
+}
+
+const SHAPE_ERROR = '서버가 이 화면이 읽는 모양으로 답하지 않았어요. 서버의 수익 집계를 확인해주세요.';
+
 export default function RevenueScreen() {
   const [data, setData] = useState<RevenueData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -55,7 +81,13 @@ export default function RevenueScreen() {
     apiFetch('/v1/admin/revenue')
       .then((d) => {
         if (cancelled) return;
-        setData(d as RevenueData);
+        if (!isRevenueData(d)) {
+          setData(null);
+          setError(SHAPE_ERROR);
+          setLoading(false);
+          return;
+        }
+        setData(d);
         setError(null);
         setLoading(false);
       })
@@ -101,12 +133,18 @@ export default function RevenueScreen() {
             말한다」이다. 규칙이 시안보다 넓으므로 규칙을 따른다 — 순이 마이너스로
             돌아선 달을 표에서 읽어내게 두면 늦는다.
           */}
+          {/*
+            아직 셀 것이 없는 기간에 「순이 플러스예요」로 말하지 않는다. 0은 플러스가
+            아니고, 집계가 비어 있는 것은 「빈 상태가 정상 상태」(v3.27)로 말해야 한다.
+          */}
           <StatusBanner
             tone={data.summary.contributionMarginRate < 0 ? 'bad' : 'ok'}
             title={
               data.summary.contributionMarginRate < 0
                 ? '이번 기간은 순이 마이너스예요'
-                : '순이 플러스예요'
+                : funnel.length === 0
+                  ? '이번 기간에 집계된 것이 없어요'
+                  : '순이 플러스예요'
             }
             detail={`수익 ${data.summary.mrr} · AI 비용 ${data.summary.aiCost} · 순 ${data.summary.contributionMargin}`}
           />

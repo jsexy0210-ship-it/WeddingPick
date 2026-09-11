@@ -22,6 +22,16 @@ import { PendingBackendNotice } from '@/features/admin/pending-backend';
 
 const BACKEND_PENDING = true;
 
+/**
+ * 잠긴 동안 핸들러가 돌면 적는 말.
+ *
+ * 단추는 이미 비활성이지만 핸들러는 그대로 있다. 그냥 `return`하면 「눌렀는데
+ * 아무 일도 안 일어난다」가 되고, v3.27이 가장 나쁘다고 적은 상태가 된다.
+ * 무엇이 되는지를 함께 말한다.
+ */
+const PENDING_REASON =
+  '지금은 약관 조문과 판 이력을 조회할 수 있어요. 편집·공개는 앱 약관·동의 기록에 연결한 뒤 열려요.';
+
 type DocType = 'terms' | 'privacy' | 'marketing';
 type TermsVersion = {
   version: string;
@@ -88,14 +98,21 @@ export default function TermsScreen() {
   const activeDocData = data?.documents.find((d) => d.type === activeDoc);
 
   function openClause(clause: TermsClause) {
-    if (BACKEND_PENDING) return;
+    if (BACKEND_PENDING) {
+      setActionError(PENDING_REASON);
+      return;
+    }
     setEditingClause(clause);
     setClauseBody(clause.body);
     setActionError(null);
   }
 
   async function saveClause() {
-    if (BACKEND_PENDING || !editingClause) return;
+    if (BACKEND_PENDING) {
+      setActionError(PENDING_REASON);
+      return;
+    }
+    if (!editingClause) return;
     setSaving(true);
     setActionError(null);
     try {
@@ -113,7 +130,11 @@ export default function TermsScreen() {
   }
 
   async function publish() {
-    if (BACKEND_PENDING || !activeDocData?.latestDraftVersion) return;
+    if (BACKEND_PENDING) {
+      setActionError(PENDING_REASON);
+      return;
+    }
+    if (!activeDocData?.latestDraftVersion) return;
     setPublishing(true);
     setActionError(null);
     try {
@@ -256,10 +277,6 @@ export default function TermsScreen() {
       {/*
         공개한 판은 얼어붙는다 — 사용자가 동의한 글이라 나중에 고칠 수 없다.
         무엇이 바뀌는지 항목으로 보인 뒤 한 번 더 확인한다(v3.27).
-      */}
-      {/*
-        공개한 판은 얼어붙는다 — 사용자가 동의한 글이라 나중에 고칠 수 없다.
-        무엇이 바뀌는지 항목으로 보인 뒤 진행한다(v3.27).
       */}
       {askingPublish && activeDocData ? (
         <ConfirmCard

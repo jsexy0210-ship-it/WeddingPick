@@ -5,7 +5,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
 import type { MarketingChannel, MarketingFormat } from '@weddingpick/api-contract';
-import { DISCLOSURE_THRESHOLDS } from '@weddingpick/domain';
+import { disclosureStage, type DisclosureStage } from '@weddingpick/domain';
 import * as marketingContent from '../marketing/content';
 import * as marketingStore from '../marketing/store';
 import * as adAdmin from '../ad-admin';
@@ -1714,8 +1714,15 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
 
   // ─── Terms ────────────────────────────────────────────────────────────────
   app.get('/v1/admin/terms', auth, async () => adminOps.termsDocuments(context.pool));
+  /*
+   * 막힌 자리는 **무엇이 되는지**를 말한다(v3.27). 「~할 수 없어요」로 끝나면
+   * 운영자는 다음에 무엇을 해야 하는지 모른 채 화면을 닫는다.
+   */
   const termsUnavailable = async () => {
-    throw new ApiError('invalid_request', '앱 약관과 동의 기록 연결 전에는 편집·공개할 수 없어요.');
+    throw new ApiError(
+      'invalid_request',
+      '지금은 약관 조문과 판 이력을 조회할 수 있어요. 편집·공개는 앱 약관·동의 기록에 연결한 뒤 열려요.'
+    );
   };
   app.post('/v1/admin/terms', auth, termsUnavailable);
 
@@ -1757,6 +1764,18 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   });
 
   // ─── Data / Price Stats (WP-ADM-PRICE) ────────────────────────────────────
+  /*
+   * 화면이 쓰는 «단계» 숫자와 도메인 단계 이름을 잇는 자리. **사다리를 다시 쓰지
+   * 않는다** — 여기에 `count >= 3 ? … : …`를 한 번 더 적으면 도메인의 3·5·10이
+   * 바뀐 날 관리자 통계만 옛 기준으로 남고, 화면은 그것을 성공이라 말한다.
+   */
+  const STAGE_NUMBER: Record<DisclosureStage, 0 | 1 | 2 | 3> = {
+    collecting: 0,
+    limited: 1,
+    normal: 2,
+    detailed: 3,
+  };
+
   app.get('/v1/admin/data/price-stats', auth, async () => {
     type StatRow = {
       vendor_id: string;
@@ -1782,13 +1801,9 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
        LIMIT 200`
     );
 
-    // 실제 사용자 공개 판정과 같은 기준을 표시한다. 편집 연결 전 DB 값은 사용하지 않는다.
-    const { limited: stage1, normal: stage2, detailed: stage3 } = DISCLOSURE_THRESHOLDS;
-
     const vendors = rows.map((r) => {
       const count = Number(r.data_count);
-      const stage: 0 | 1 | 2 | 3 =
-        count >= stage3 ? 3 : count >= stage2 ? 2 : count >= stage1 ? 1 : 0;
+      const stage = STAGE_NUMBER[disclosureStage(count)];
       return {
         vendorId: r.vendor_id,
         vendorName: r.vendor_name,

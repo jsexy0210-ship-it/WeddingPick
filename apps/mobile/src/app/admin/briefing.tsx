@@ -50,6 +50,31 @@ const SEVERITY_LABEL: Record<RiskItem['severity'], string> = {
   low: '낮음',
 };
 
+/**
+ * 서버가 이 화면이 읽는 모양으로 답했는지 본다.
+ *
+ * **`GET /v1/admin/briefing`은 다른 모양을 준다** — `{ briefing: [...], budgetStatus }`다
+ * (`apps/api/src/routes/admin.ts`). 이 화면은 `autoProcessed` · `successRate` ·
+ * `unresolvedRisks`를 읽으므로 첫 줄에서 `undefined.length`로 죽었고, 운영자에게는
+ * 스택 트레이스만 보였다(2026-09-10 검수에서 실제로 재현).
+ *
+ * 없는 값을 0으로 메우지 않는다 — 「자동처리 0건 · 확인할 것이 없어요」는 사실이
+ * 아니라 지어낸 평온이다. 무엇이 어긋났는지 말하고 다시 시도를 준다.
+ */
+function isBriefingData(d: unknown): d is BriefingData {
+  const o = d as Partial<BriefingData> | null;
+  return (
+    typeof o === 'object' &&
+    o !== null &&
+    typeof o.autoProcessed === 'number' &&
+    typeof o.successRate === 'number' &&
+    Array.isArray(o.unresolvedRisks) &&
+    Array.isArray(o.anomalies)
+  );
+}
+
+const SHAPE_ERROR = '서버가 이 화면이 읽는 모양으로 답하지 않았어요. 서버의 일일 브리핑 집계를 확인해주세요.';
+
 /** 문제 없으면 초록, 확인할 것이 있으면 주황, 조치가 필요하면 빨강(ADMIN.md 공통 규칙). */
 function bannerTone(risks: RiskItem[]): Tone {
   if (risks.length === 0) return 'ok';
@@ -69,7 +94,13 @@ export default function BriefingScreen() {
     apiFetch('/v1/admin/briefing')
       .then((d) => {
         if (cancelled) return;
-        setData(d as BriefingData);
+        if (!isBriefingData(d)) {
+          setData(null);
+          setError(SHAPE_ERROR);
+          setLoading(false);
+          return;
+        }
+        setData(d);
         setError(null);
         setLoading(false);
       })
@@ -126,9 +157,14 @@ export default function BriefingScreen() {
             items={[
               { label: '자동처리', value: `${data.autoProcessed.toLocaleString()}건` },
               {
+                /*
+                 * `successRate`는 0~1 비율이다 — `admin-ops.ts`가
+                 * `succeeded / settled`로 만들고 `automation.tsx`도 ×100으로 그린다.
+                 * 여기만 그대로 찍어서 99.4%가 「1.0%」로 보였다(시안 1번은 99.4%).
+                 */
                 label: '성공률',
-                value: `${data.successRate.toFixed(1)}%`,
-                kind: data.successRate < 90 ? 'bad' : 'ok',
+                value: `${(data.successRate * 100).toFixed(1)}%`,
+                kind: data.successRate < 0.9 ? 'bad' : 'ok',
               },
               { label: '자동복구', value: `${data.autoRecovered.toLocaleString()}건`, kind: 'ok' },
               {

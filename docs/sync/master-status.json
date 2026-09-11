@@ -3,9 +3,12 @@
   "updatedDate": "2026-09-11",
   "pendingAdminDeployment": {
     "dateKst": "2026-09-11",
-    "baselineCommit": "516a4dfa1211c604ea624715e304beabd525f973",
-    "status": "local-review-complete-ci-and-deployment-pending",
-    "sourcePrs": { "189": "b99aef3398df794f2b8926c081ea4890e846472e", "191": "87e6258f8f7e862f7c1d4b6226d2aa69e0e101d3" },
+    "baselineCommit": "d20e898b394ac52fda1dab9df98770b83c218294",
+    "status": "deployed-and-verified",
+    "sourcePrs": {
+      "189": "b99aef3398df794f2b8926c081ea4890e846472e",
+      "191": "87e6258f8f7e862f7c1d4b6226d2aa69e0e101d3"
+    },
     "integration": "PR189의 관리자 기능과 PR191의 화면 변경을 통합했다. _ui.tsx 충돌은 구분선 hr와 rowChevron을 모두 보존했다. 가입 복구 수정과 main 운영 규칙은 유지한다.",
     "reviewFixes": [
       "실제 사용자 공개 판정과 연결되지 않은 공개 기준 DB 편집을 차단한다. domain 공개 상수 3/5/10과 readOnlyReason을 반환하며 관리자 통계도 같은 값을 사용한다.",
@@ -16,7 +19,17 @@
     "deploymentOrder": "최종 PR CI 통과 → 검토 브랜치 DBStatus default 확인 → 신규 0110·0120·0121·0130 migration 적용 → main 병합 → Render API·앱 웹·랜딩 Live와 health 확인. Render main 자동배포가 CI와 독립적이므로 migration을 먼저 적용한다.",
     "databaseBefore": "DBStatus 34500571297 default 성공: 적용 109/기대 106, pending 0. 기존 unknown 3개는 보존한다. 이 기록 시점에는 신규 운영 migration 미실행이다.",
     "otherPendingPrs": "179·180·181·182는189에 포함. 133·164 제품 변경은 main에 이미 포함. 135는 영속 hold와 충돌하는 구판이므로 선택 통합 필요. 142는 알림톡 공급사 연결 미완성. 152는 과거 감사 문서. 170은 보관정책 초안으로 서비스 배포 대상이 아니다.",
-    "limits": "원본 전 화면 픽셀 대조·네이티브 실기기 검수·운영 데이터 쓰기 검증은 완료하지 않았다. 이번 UI 관찰은 전 제품 디자인 완료 선언이 아니다. 사용자가 대기 변경 전체 배포와 인계 대기 해제 후 작업 재개를 명시했다."
+    "limits": "원본 전 화면 픽셀 대조·네이티브 실기기 검수·운영 데이터 쓰기 검증은 완료하지 않았다. 이번 UI 관찰은 전 제품 디자인 완료 선언이 아니다. 사용자가 대기 변경 전체 배포와 인계 대기 해제 후 작업 재개를 명시했다.",
+    "databaseAfter": "DBStatus 34541082193 default 성공(2026-09-11 08:12 KST): 적용 113 / 기대 110, 밀린 것 없음. 신규 0110·0120·0121·0130은 실행 34503454576(01:40 KST)에서 이미 적용돼 있었다 — 인계문의 「미실행」은 그 직전 기록이라 낡았다. 저장소에 없는 3개(0052_mission_draw · 0059_wedding_events · 0060_vendor_geo)는 이름 변경 이력이라 보존한다.",
+    "databaseIdentity": "db-migrate는 secrets.DATABASE_URL을 쓰고, infra/render-env.yml이 운영 API 서버의 DATABASE_URL도 같은 시크릿에서 동기화한다. 따라서 마이그레이션이 들어간 DB와 API가 읽는 DB가 같다. PRODUCTION_DATABASE_URL은 이름과 반대다 — DBStatus target=production은 getaddrinfo EAI_AGAIN으로 죽고(Render 내부 주소), render-env.yml 주석에 따르면 그 DB가 2026-09-07 인증 API 전면 500의 원인이던 빈 DB다. 시크릿 값은 건드리지 않았다.",
+    "deploymentVerified": {
+      "checkedAtKst": "2026-09-11 08:13~08:16",
+      "WeddingPick-운영 API 서버": "live d20e898b · 01:51 KST",
+      "WeddingPick-웹뷰(앱 테스트)": "live d20e898b · 01:51 KST · 관리자 /admin 포함",
+      "WeddingPick-웹사이트": "live d20e898b · 01:50 KST"
+    },
+    "renderServiceRemoval": "WeddingPick-관리자 사이트는 이름과 달리 랜딩(apps/web)을 빌드했고 모든 커밋에서 빌드 실패했다(0792a3cc · ab7ded6c · eccf540f · 516a4dfa · d20e898b). LEGAL_TERMS_EFFECTIVE_ON이 없어서인데, infra/render-env.yml에 이 서비스가 선언돼 있지 않아 환경변수 동기화가 매번 건너뛰었다. 2026-09-11 대표 결정으로 서비스를 대시보드에서 삭제한다(커스텀 도메인 미사용). PR194가 render-deploy-status.yml의 조회 목록에서 뺐다.",
+    "openVerificationGap": "배포된 API 프로세스가 실제로 쥔 DB의 스키마는 아직 직접 못 읽었다. /health는 스키마가 밀려도 일부러 200을 주므로(server.ts) keep-warm의 200으로는 증명되지 않고, 클라우드 세션은 onrender.com으로 나갈 수 없다. PR194의 api-health.yml이 그 자리를 메운다 — 머지 후 실행해야 한다."
   },
   "signupRecovery": {
     "dateKst": "2026-09-11",
@@ -28,7 +41,10 @@
     "serverReview": "서버는 요청마다 활성 계정을 DB 조회한다. 가입 POST는 미활성 계정 접근을 허용하고 트랜잭션 커밋 후 상태를 반환한다. 서버 인증 조건과 운영 DB는 변경하지 않았다.",
     "tests": "모바일 264시험·22스위트, typecheck 통과. lint 오류 0·기존 경고 2. 원본 setup은 신규 회귀 9건 중 8건 실패, 수정본 9건 통과.",
     "uiEvidence": "분리된 로컬 API, 실제 웹 390×844: 미활성 토큰으로 /my 재실행→/setup 마지막 저장 답 복원. 초기 GET signup 2회만 있고 보호 API 호출 없음. 완료 버튼에서 GET signup→POST signup→POST setup(활성 상태)→가입 완료 화면. CUA 화면 관찰이며 저장된 캡처 파일은 없음.",
-    "absorbedAgents": ["signup_server_review", "signup_regression"],
+    "absorbedAgents": [
+      "signup_server_review",
+      "signup_regression"
+    ],
     "limits": "운영 사용자가 겪은 개별 요청의 서버 로그·배포 버전과 실기기 카카오 로그인 재현은 미확인. 전 화면 디자인 완료를 뜻하지 않는다. 재실행 시 활성 확인을 위한 상태 조회가 선행되며 bootstrap은 이후 비동기로 유지한다."
   },
   "masterThreadId": "01a08b64-9e88-7991-a1ed-90f446e3760b",
@@ -218,7 +234,11 @@
     ]
   },
   "followups": [
-    "docs/sync/app-journey-audit.json의서버계약/네이티브/전체시각검수미완료항목을보존",
-    "개별PR CI 및배포완료상태는GitHub/배포서비스의실제상태로확인"
+    "PR194 머지 후 api-health 실행 — 배포된 API가 보는 DB 스키마 확인.",
+    "Render 대시보드에서 WeddingPick-관리자 사이트 서비스 삭제(대표님 직접).",
+    "PRODUCTION_DATABASE_URL 시크릿 정리 — 이름이 사실과 반대라 다음 사람이 엉뚱한 DB를 고른다.",
+    "관리자 11화면 미완료 검수 — marketing·automation·rollback 데이터 로딩 후 화면, 빈/오류 상태 전수, 시안 픽셀 대조, 네이티브 실기기. 전담 세션 진행 중.",
+    "공개 기준 3/5/10과 미연결 약관 차단의 반례 검수 — 일괄 변경 부분 적용, UI 우회. 전담 세션 진행 중.",
+    "이미 가입된 만 14세 미만 계정 처리 방침 — 대표님 판단 대기(A 위험군만 재확인 / B 경로 불명 전체 / C 자연 만료)."
   ]
 }
