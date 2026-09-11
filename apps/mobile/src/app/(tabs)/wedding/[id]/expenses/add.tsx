@@ -114,8 +114,14 @@ export default function AddExpenseScreen() {
   }
 
   /**
-   * 지출 넣고 인증하기 — 저장한 뒤 Pick 인증 등록으로 간다. 적은 값을 그대로 넘겨
-   * 같은 것을 두 번 적지 않게 한다. `replace`라 인증 화면에서 돌아오면 지출이다.
+   * 지출 넣고 인증하기 — 저장한 뒤 Pick 인증으로 간다. `replace`라 인증 화면에서
+   * 돌아오면 지출이다.
+   *
+   * **적은 값을 넘기지 않는다.** 예전에는 업체·금액·날짜를 그대로 넘겨 인증 화면을
+   * 미리 채웠다. 그 값에는 증빙이 없다 — v3.24가 「모든 금액은 사진 한 장에서만」으로
+   * 정한 뒤로 금액 구간에 들어가는 값은 자료에서 읽은 것뿐이고, 적어준 숫자를 미리
+   * 채워두면 사용자는 그것이 인증된 줄로 안다. 여기서 하는 것은 사진을 올릴 자리로
+   * 데려다주는 것까지다.
    */
   async function saveAndVerify() {
     if (!ready || saving) return;
@@ -128,14 +134,8 @@ export default function AddExpenseScreen() {
     setSaving(null);
     if (!ok) return;
 
-    router.replace({
-      pathname: '/capture/payment/register',
-      params: {
-        merchantName: label.trim(),
-        paidAmount: String(amount),
-        paidAt: dayToTimestamp(day) ?? day,
-      },
-    } as never);
+    // 동의 화면이 이미 동의한 사람은 지나쳐 보낸다.
+    router.replace('/capture/payment/consent' as never);
   }
 
   return (

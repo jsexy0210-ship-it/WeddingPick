@@ -131,7 +131,12 @@ describeWithDb('문서와 비교', () => {
       expect(rest.json().confirmedAt).not.toBeNull();
     });
 
-    it('고친 값을 함께 보낼 수 있다', async () => {
+    /*
+     * v3.24: 「모든 금액은 사진 한 장에서만」 · 「재입력 경로는 다시 찍기/올리기뿐」.
+     * 고친 값을 보낼 자리를 계약에서 뺐고, 보내더라도 저장되지 않아야 한다 —
+     * 자료 없는 값이 «확인됨» 표시를 달고 비교에 들어가는 길을 막는 것이 요점이다.
+     */
+    it('고친 값을 보내도 읽은 값이 그대로 남는다', async () => {
       const { headers } = await signInAs(test);
       const weddingId = await createWedding(test, headers);
       const { quoteId } = await seedQuote({ weddingId, requiredFields: ['totalAmount'] });
@@ -146,8 +151,8 @@ describeWithDb('문서와 비교', () => {
       expect(response.json().extractionFields[0]).toMatchObject({
         path: 'totalAmount',
         confirmedByUser: true,
-        correctedValue: '3280000',
       });
+      expect(response.json().extractionFields[0].correctedValue).toBeUndefined();
     });
 
     it('없는 항목을 확인하려 하면 막는다', async () => {

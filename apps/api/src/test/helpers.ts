@@ -11,7 +11,8 @@ import type { Config } from '../config';
 import type { AppContext } from '../context';
 import { buildServer } from '../server';
 import { hashToken } from '../auth/sessions';
-import { createLocalStorage } from '../storage/local';
+import type { ProofReading } from '../analysis/payment-reader';
+import { createLocalStorage, type LocalStorage } from '../storage/local';
 
 export const connectionString = process.env.DATABASE_URL;
 
@@ -279,6 +280,80 @@ export async function unlockPrices(test: TestApp, userId: string): Promise<void>
  * 등록 경로가 동의를 요구하므로(핸드오프 10·19번), 결제내역을 넣는 테스트는
  * 이걸 먼저 불러야 실제와 같아진다 — 실전에서도 동의한 사람만 등록한다.
  */
+/**
+ * 결제인증 하나를 등록한다. **사진 한 장을 올리는 것이 전부다**(핸드오프 v3.24).
+ *
+ * 시험이 값을 직접 보내던 자리를 대신한다 — 계약에 금액·업체·날짜를 보낼 필드가
+ * 없어졌고, 읽는 것은 서버가 한다. 그래서 시험이 정해야 하는 것은 「보낼 값」이
+ * 아니라 「서버가 무엇을 읽었는가」다.
+ *
+ * 실전과 같은 순서를 밟는다: 동의 → 업로드 자리 받기 → 원본 올리기 → 등록. 한
+ * 단계라도 건너뛰면 관문이 빠진 길을 시험하게 된다.
+ */
+export async function registerPaymentProof(
+  test: TestApp,
+  headers: Record<string, string>,
+  reading: Partial<ProofReading> = {},
+  /** 이미 만든 웨딩이 있으면 넘긴다. 없으면 하나 만든다. */
+  existingWeddingId?: string
+) {
+  test.context.proofReader.read = async (_images, model) => ({
+    model,
+    usage: { inputTokens: 10, outputTokens: 10, cachedInputTokens: 0 },
+    reading: {
+      merchantName: '가온예식홀',
+      paidAmount: 3_000_000,
+      paidAt: '2026-05-20T04:00:00.000Z',
+      method: 'card',
+      maskedIdentifiers: [],
+      rejection: null,
+      confidence: 0.95,
+      ...reading,
+    },
+  });
+
+  await consentToPaymentProofs(test, headers);
+
+  /*
+   * 이미 만든 웨딩이 있으면 그것을 쓴다. 부르는 쪽마다 하나씩 더 만들면 지출 뷰가
+   * 한 결제인증을 여러 웨딩에 세우고, 시험이 재려던 것과 다른 것을 재게 된다.
+   */
+  const weddingId = existingWeddingId ?? (await createWedding(test, headers));
+
+  const upload = await test.app.inject({
+    method: 'POST',
+    url: '/v1/documents/uploads',
+    headers,
+    payload: {
+      weddingId,
+      kind: 'payment_proof',
+      pages: [{ mimeType: 'image/jpeg', sizeBytes: 1000 }],
+    },
+  });
+
+  if (upload.statusCode >= 400) {
+    throw new Error(`원본을 올리지 못했다: ${upload.statusCode} ${upload.body}`);
+  }
+
+  const rawDocumentId = upload.json<{ rawDocumentId: string }>().rawDocumentId;
+  const pages = await test.pool.query<{ storage_key: string }>(
+    'SELECT storage_key FROM originals.raw_document_pages WHERE raw_document_id = $1',
+    [rawDocumentId]
+  );
+
+  // 서버가 읽으려면 스토리지에 실제로 무언가 있어야 한다.
+  for (const page of pages.rows) {
+    (test.context.storage as LocalStorage).put(page.storage_key, Buffer.from('receipt'));
+  }
+
+  return await test.app.inject({
+    method: 'POST',
+    url: '/v1/payment-proofs',
+    headers,
+    payload: { rawDocumentId },
+  });
+}
+
 export async function consentToPaymentProofs(
   test: TestApp,
   headers: Record<string, string>

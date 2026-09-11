@@ -1,4 +1,5 @@
 import { withSubject } from './korean';
+import { PAYMENT_PROOF_FIELDS, type PaymentProofField } from './payment-parser';
 import { PRICING_POLICY } from './policy';
 import type { VerificationLevel } from './verification';
 
@@ -109,6 +110,106 @@ export type PaymentProofDraft = {
 };
 
 export type PaymentProofCheck = { ok: true } | { ok: false; reason: string };
+
+/**
+ * 접수 상태. 「접수 안 됨」이 없는 것이 요점이다.
+ *
+ * 디자인 핸드오프 v3.24가 제보를 «사진 찍기 또는 업로드»로 압축했다 — 사용자가
+ * 하는 일은 사진 한 장이 전부이고, 그 사진을 올렸으면 접수는 된 것이다. 갈리는
+ * 것은 그 제보를 지금 쓸 수 있는가뿐이다.
+ *
+ *   accepted        읽기가 끝나 금액 구간·지출·Unlock에 들어간다
+ *   pending_review  접수는 됐고 검수를 기다린다. 어디에도 들어가지 않는다
+ */
+export const PAYMENT_PROOF_REVIEW_STATES = ['accepted', 'pending_review'] as const;
+
+export type PaymentProofReviewState = (typeof PAYMENT_PROOF_REVIEW_STATES)[number];
+
+export type PaymentProofIntake = {
+  /** 읽은 값. 못 읽은 칸은 null이다 — **지어내지 않는다.** */
+  merchantName: string | null;
+  paidAmount: number | null;
+  /** ISO 8601 */
+  paidAt: string | null;
+  /** 확신이 낮아 사람이 봐야 하는 칸. */
+  needsConfirmation: readonly PaymentProofField[];
+  /** 결제 기록이 아니라고 읽혔으면 그 사유(취소 문자 등). 아니면 null. */
+  rejection: string | null;
+};
+
+export type PaymentProofIntakeResult = {
+  state: PaymentProofReviewState;
+  /** 검수를 기다리는 칸. accepted면 빈 배열이다. */
+  pendingFields: PaymentProofField[];
+  /** 왜 보류인지. accepted면 null이다. */
+  reviewNote: string | null;
+};
+
+/** 보류 사유 한 줄. **무엇이 되는지를 말한다** — 「못 읽었어요」로 끝내지 않는다. */
+const PENDING_NOTE = '자료에서 금액과 날짜를 읽는 중이에요. 확인이 끝나면 알려드려요';
+
+/**
+ * 읽은 결과를 접수 상태로 옮긴다.
+ *
+ * **값을 지어내지 않는다.** 못 읽은 칸이 하나라도 있으면 보류다 — 화면이 빈칸을
+ * 채워 보내던 자리가 여기다. 접수는 그대로 성립하고, 보류인 동안에는 어떤 통계에도
+ * 들어가지 않는다(0150의 usable_payment_proofs).
+ *
+ * 취소 문자처럼 결제 기록이 아니라고 읽힌 것도 보류로 둔다. 버리면 사용자는 자기가
+ * 올린 것이 어디 갔는지 알 수 없고, 받아들이면 낸 적 없는 돈이 낸 돈이 된다.
+ */
+export function paymentProofIntake(
+  intake: PaymentProofIntake,
+  now: Date = new Date()
+): PaymentProofIntakeResult {
+  const unread = PAYMENT_PROOF_FIELDS.filter(
+    (field) =>
+      (field === 'merchantName' && (intake.merchantName ?? '').trim().length === 0) ||
+      (field === 'paidAmount' && intake.paidAmount === null) ||
+      (field === 'paidAt' && intake.paidAt === null)
+  );
+
+  /*
+   * 지불 수단은 붙들지 않는다. 카드인지 계좌이체인지 흐릿한 것은 금액이 흐릿한
+   * 것과 다르다 — 값은 그대로 맞고, 표에도 기본값('unknown')이 있다. 이것 하나로
+   * 접수를 보류하면 멀쩡한 제보가 검수 줄에 쌓인다.
+   */
+  const pendingFields = [...new Set([...unread, ...intake.needsConfirmation])].filter(
+    (field) => field !== 'method'
+  );
+
+  if (intake.rejection !== null) {
+    return { state: 'pending_review', pendingFields, reviewNote: intake.rejection };
+  }
+
+  if (pendingFields.length > 0) {
+    return { state: 'pending_review', pendingFields, reviewNote: PENDING_NOTE };
+  }
+
+  /*
+   * 다 읽었어도 값이 말이 되는지는 따로 본다. 읽기가 성공했다고 2027년 결제나
+   * 1원짜리 계약금이 맞는 값이 되지는 않는다 — 그 판단은 예전부터 있던 자리에
+   * 그대로 둔다.
+   */
+  const check = canRegisterPaymentProof(
+    {
+      merchantName: intake.merchantName ?? '',
+      paidAmount: intake.paidAmount ?? 0,
+      paidAt: intake.paidAt ?? '',
+    },
+    now
+  );
+
+  if (!check.ok) {
+    return {
+      state: 'pending_review',
+      pendingFields: PAYMENT_PROOF_FIELDS.filter((field) => field !== 'method'),
+      reviewNote: check.reason,
+    };
+  }
+
+  return { state: 'accepted', pendingFields: [], reviewNote: null };
+}
 
 /** 너무 작거나 큰 값은 읽기 실패다. 가격 제보와 같은 범위를 쓴다. */
 export const MIN_PAYMENT_AMOUNT = 10_000;

@@ -7,7 +7,7 @@ import {
 
 import { settlePayout } from '../reward-admin';
 import {
-  consentToPaymentProofs,
+  registerPaymentProof,
   createTestApp,
   createWedding,
   resetDatabase,
@@ -55,21 +55,9 @@ describeWithDb('이벤트 보상', () => {
       payload: { code },
     });
 
-  async function registerProof(headers: Record<string, string>, merchantName = '가온예식홀') {
-    await consentToPaymentProofs(test, headers);
-
-    return await test.app.inject({
-      method: 'POST',
-      url: '/v1/payment-proofs',
-      headers,
-      payload: {
-        merchantName,
-        paidAmount: 3_000_000,
-        paidAt: '2026-05-20T04:00:00.000Z',
-        method: 'card',
-      },
-    });
-  }
+  /** 사진 한 장을 올려 결제인증 하나(v3.24). 값은 서버가 읽는다. */
+  const registerProof = (headers: Record<string, string>, merchantName = '가온예식홀') =>
+    registerPaymentProof(test, headers, { merchantName });
 
   const rewards = (headers: Record<string, string>) =>
     test.app.inject({ method: 'GET', url: '/v1/me/rewards', headers });
