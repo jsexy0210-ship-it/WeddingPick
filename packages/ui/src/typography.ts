@@ -26,10 +26,21 @@ export const FontSize = {
   /** caption 14/19 — 메타 · 건수 · 섹션 라벨 · 상태 배지. */
   t7: 14,
   /**
-   * 날짜 선택의 칸 글자. component.datePicker.cellFontSize — 20-onboarding-v2의
-   * `optCell` · `dayCell`이 15다. t 스케일에는 없는 값이고 이 시트에서만 쓴다.
+   * 날짜 휠 아래 결과 줄의 D-day. component.dateWheel.pickedDday — 루트 시안
+   * `WP-APP-020` `pickedDday`가 15/22/700이다. t 사다리에 없는 값이고 이 시트에서만 쓴다.
+   *
+   * 예전 이름은 `dateCell`이었다(연월 셀렉트 + 달력 시절의 `optCell` · `dayCell` 15).
+   * 값은 같지만 그 칸들은 휠로 바뀌면서 없어졌고, 없어진 것의 이름을 남겨 두면 다음
+   * 사람이 달력이 아직 있는 줄 안다.
    */
-  dateCell: 15,
+  dateWheelDday: 15,
+  /**
+   * 날짜 휠에서 중앙으로부터 두 칸 떨어진 글자. component.dateWheel.two —
+   * 루트 시안 `WP-APP-020` `wheelItem`이 거리마다 20 · 18 · **17** · 16으로 줄인다.
+   * 17은 t 사다리에 없는 값이고 이 휠에서만 쓴다 — 18이나 16으로 대신하면 네 단계가
+   * 세 단계로 뭉개져 「멀어질수록 흐려진다」가 눈에 덜 든다.
+   */
+  dateWheel: 17,
   /** micro 13/18 — 정보 단계 배지 · 스타일 칩(28) · 이미지 위 순위 pill. */
   micro: 13,
   /** Npay 로고 — 원 안의 N 12 · «pay» 14. spec/tokens.json typography npay. 다른 곳에 쓰지 않는다. */
@@ -73,6 +84,10 @@ export const LineHeight = {
   /** sub 16의 여러 줄 변형(150%) — `ThemedText type="body"`. */
   t6Body: 24,
   t7: 19,
+  /** 날짜 휠 두 칸 밖 글자의 줄 높이. component.dateWheel.two 17/23. */
+  dateWheel: 23,
+  /** 날짜 휠 결과 줄 D-day. component.dateWheel.pickedDday 15/22. */
+  dateWheelDday: 22,
   /** caption 14의 여러 줄 변형 — 안내문 2줄. */
   t7Loose: 21,
   micro: 18,
