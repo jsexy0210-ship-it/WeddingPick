@@ -1,0 +1,247 @@
+# 로딩이 느린 원인을 실제로 잰다. 아무것도 바꾸지 않는다.
+#
+# **왜 워크플로인가.** 작업 컨테이너에서는 `onrender.com`으로 나갈 수 없다(프록시가
+# 막는다). 배포된 API를 실제로 두드려 볼 수 있는 곳이 여기뿐이다.
+#
+# **무엇을 보는가.** `scripts/perf-probe.py`가 `/`(DB 안 봄)와 `/health`(DB 왕복 2회)의
+# 차이로 API에서 DB까지의 거리를 재고, 홈·검색·업체 상세의 p50·p95를 낸다. 서버에
+# 계측 코드를 넣지 않고도 «네트워크가 느린가 · DB가 먼가 · 쿼리가 느린가»를 가른다.
+#
+# **비밀은 찍지 않는다.** 접속 문자열도 호스트명도 출력하지 않는다. Neon은 리전
+# 이름만, Render는 플랜·리전만 뽑아 적는다 — 어느 쪽이 어디 있는지는 판단에 필요하고
+# 그 자체는 비밀이 아니다.
+name: 로딩 성능 측정 (읽기 전용)
+
+on:
+  push:
+    branches:
+      - 'claude/perf-audit**'
+    # 측정 도구를 손댈 때만 돈다. 이 갈래가 없으면 브랜치에 올리는 커밋마다
+    # 운영 API를 수십 번 두드리고 결과 커밋이 하나씩 더 쌓인다.
+    paths:
+      - 'scripts/perf-probe.py'
+      - '.github/workflows/perf-probe.yml'
+  workflow_dispatch:
+    inputs:
+      samples:
+        description: '엔드포인트당 표본 수'
+        default: '12'
+
+# 측정 결과를 브랜치에 적어 둔다. 로그와 아티팩트를 내려받지 못하는 자리가 있어서,
+# 결과가 저장소 안에 남아야 다음 사람이 본다.
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      # 리전 이전(승인 B) 확인용 임시 주소. 이름을 바꿔 끼우고 나면 비워 둔다.
+      # 비우면 오하이오만 재고 비교 단계는 건너뛴다.
+      API_B: https://weddingpickl-sg.onrender.com
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 보고서 자리 마련
+        run: |
+          mkdir -p docs/perf
+          {
+            echo "# 로딩 성능 측정"
+            echo
+            echo "잰 시각: $(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M KST')"
+            echo "잰 커밋: ${GITHUB_SHA:0:8}"
+            echo
+            echo '```'
+          } > docs/perf/measured.md
+
+      # 운영 API가 어느 플랜·어느 리전에 있는지. 콜드 스타트가 아직 원인인지
+      # 아닌지는 여기서 갈린다 — free면 15분 뒤 잠들고, 유료면 안 잠든다.
+      - name: Render 플랜 · 리전
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+        run: |
+          if [ -z "$RENDER_API_KEY" ]; then
+            echo "::warning::RENDER_API_KEY가 없다. 플랜·리전은 확인하지 못했다."
+            exit 0
+          fi
+          python3 - <<'PY' | tee -a docs/perf/measured.md
+          import json, os, urllib.parse, urllib.request
+
+          key = os.environ["RENDER_API_KEY"]
+
+          def call(path):
+              request = urllib.request.Request(
+                  f"https://api.render.com/v1{path}",
+                  headers={"Authorization": f"Bearer {key}", "Accept": "application/json"},
+              )
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  return json.load(response)
+
+          # 대시보드의 표시 이름과 글자 하나까지 같아야 찾는다(2026-09-10 이름 변경).
+          for name in ("WeddingPick-운영 API 서버", "weddingpick-api", "WeddingPick-워커"):
+              try:
+                  found = call(f"/services?name={urllib.parse.quote(name)}&limit=5")
+              except Exception as error:
+                  print(f"{name}: 조회 실패 ({error})")
+                  continue
+
+              for entry in found:
+                  service = entry.get("service", entry)
+                  if service.get("name") != name:
+                      continue
+                  details = service.get("serviceDetails") or {}
+                  # 통째로 찍지 않는다 — 볼 필요가 있는 것만 이름으로 집는다.
+                  print(f"{name}")
+                  print(f"  type={service.get('type')} suspended={service.get('suspended')}")
+                  print(f"  branch={service.get('branch')} autoDeploy={service.get('autoDeploy')}")
+                  print(f"  plan={details.get('plan') or details.get('envSpecificDetails', {}).get('plan')}")
+                  print(f"  region={details.get('region')}")
+                  print(f"  numInstances={details.get('numInstances')}")
+          PY
+
+      # Neon이 어느 리전에 있는지. **리전 이름만** 적는다 — 접속 문자열은 찍지 않는다.
+      - name: DB 위치
+        env:
+          PRODUCTION_DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+          DEFAULT_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          python3 - <<'PY' | tee -a docs/perf/measured.md
+          import os, re, urllib.parse
+
+          raw = os.environ.get("PRODUCTION_DATABASE_URL") or os.environ.get("DEFAULT_DATABASE_URL") or ""
+          if not raw:
+              print("::warning::DATABASE_URL 시크릿이 없다. DB 위치는 확인하지 못했다.")
+              raise SystemExit(0)
+
+          host = urllib.parse.urlparse(raw).hostname or ""
+          labels = host.split(".")
+
+          # **호스트명을 그대로 찍지 않는다.** 어느 업체의 어느 리전인지만 알면 되고,
+          # 그건 뒤쪽 라벨과 리전 꼴 라벨에만 들어 있다. 맨 앞 라벨(엔드포인트·프로젝트
+          # 식별자)은 어떤 경우에도 출력하지 않는다.
+          provider = ".".join(labels[-2:]) if len(labels) >= 2 else "(읽을 수 없음)"
+          regions = [l for l in labels[1:] if re.fullmatch(r"[a-z]{2,4}-[a-z]+-[0-9]", l)]
+          clouds = [l for l in labels[1:] if l in {"aws", "gcp", "azure"}]
+
+          print(f"DB 제공자: {provider}")
+          print(f"DB 리전: {regions[0] if regions else '(호스트명에 없음)'}"
+                + (f" ({clouds[0]})" if clouds else ""))
+          if not regions:
+              print("  리전이 호스트명에 없다. 아래 왕복 시간으로만 거리를 판단한다.")
+          PY
+
+      # 두 리전을 **같은 실행에서 나란히** 잰다. 따로 재서 비교하면 러너가 그날
+      # 얼마나 흔들렸는지가 차이에 섞인다 — 실제로 1회차 262ms와 2회차 199ms가
+      # 그렇게 갈렸다. 같은 러너에서 연달아 재면 그 변동이 양쪽에 똑같이 들어간다.
+      - name: 응답시간 측정 — 오하이오 (지금 운영)
+        env:
+          API: https://weddingpickl.onrender.com
+          LABEL: Ohio (지금 운영)
+          SAMPLES: ${{ github.event.inputs.samples || '12' }}
+          API_TOKEN: ${{ secrets.PERF_PROBE_TOKEN }}
+          OUT: perf-ohio.json
+        run: |
+          set -o pipefail
+          python3 scripts/perf-probe.py | tee -a docs/perf/measured.md
+
+      # free 플랜이라 자고 있을 수 있다. 잠든 첫 응답에는 리전과 무관한 수십 초가
+      # 섞이므로, 재기 전에 깨워 둔다. 이 시간은 측정에 넣지 않는다.
+      - name: 싱가포르 예열
+        if: env.API_B != ''
+        env:
+          API_B: ${{ env.API_B }}
+        run: |
+          for i in 1 2 3 4 5; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 120 "$API_B/health" || echo 000)
+            echo "예열 $i: HTTP $code"
+            [ "$code" = "200" ] && break
+            sleep 15
+          done
+
+      - name: 응답시간 측정 — 싱가포르 (새 서비스)
+        if: env.API_B != ''
+        env:
+          API: ${{ env.API_B }}
+          LABEL: Singapore (새 서비스)
+          SAMPLES: ${{ github.event.inputs.samples || '12' }}
+          API_TOKEN: ${{ secrets.PERF_PROBE_TOKEN }}
+          OUT: perf-sg.json
+        run: |
+          set -o pipefail
+          python3 scripts/perf-probe.py | tee -a docs/perf/measured.md
+
+      - name: 두 리전 나란히
+        if: env.API_B != ''
+        run: |
+          set -o pipefail
+          python3 - <<'PY' | tee -a docs/perf/measured.md
+          import json, pathlib
+
+          def load(name):
+              path = pathlib.Path(name)
+              return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
+
+          a, b = load("perf-ohio.json"), load("perf-sg.json")
+          if not (a and b):
+              print("한쪽을 읽지 못해 비교하지 않는다.")
+              raise SystemExit(0)
+
+          print()
+          print("══ 두 리전 나란히 (같은 러너 · 같은 실행) ══════════════")
+          print()
+          print(f"  {'':34} {'Ohio':>12} {'Singapore':>12}")
+
+          # 본론. 이 값에는 러너 위치가 들어가지 않는다 — 같은 서버가 같은 네트워크로
+          # 처리하는 두 경로의 차이라서다. 리전 이사의 성패는 이 줄 하나로 갈린다.
+          ra, rb = a.get("db_round_trip_ms"), b.get("db_round_trip_ms")
+          if ra is not None and rb is not None:
+              print(f"  {'DB 왕복 1회  ← 판정 기준':34} {ra:>10}ms {rb:>10}ms")
+
+          index_a = {s["label"]: s for s in a["modes"].get("reuse", [])}
+          index_b = {s["label"]: s for s in b["modes"].get("reuse", [])}
+          for label in index_a:
+              if label in index_b:
+                  print(f"  {label:34} {index_a[label]['ttfb_p50']:>10}ms {index_b[label]['ttfb_p50']:>10}ms")
+
+          print()
+          if ra is not None and rb is not None:
+              if rb < ra / 5:
+                  print(f"  DB 왕복이 {ra}ms → {rb}ms. 같은 리전에 붙었다.")
+              else:
+                  print(f"  ::warning::DB 왕복이 {ra}ms → {rb}ms. 기대만큼 줄지 않았다.")
+                  print("  새 서비스가 다른 DB를 쥐었거나 리전이 다를 수 있다.")
+          print()
+          print("  절대 시간은 러너(미국) 기준이라 싱가포르 쪽이 높게 나오는 것이 정상이다.")
+          print("  국내 사용자는 반대 방향으로 움직인다 — 그 값은 여기서 잴 수 없다.")
+          PY
+
+      # pg 풀은 놀고 있는 연결을 10초 뒤 닫는다(pg 기본값 idleTimeoutMillis, `db.ts`가
+      # 안 바꾼다). 그 뒤 첫 요청은 TCP·TLS·인증을 다시 치른다 — DB가 멀면 이 값이 크다.
+      - name: 유휴 뒤 첫 요청 (연결 다시 맺는 값)
+        run: |
+          set -o pipefail
+          {
+            echo
+            echo '── 유휴 뒤 첫 요청 ─────────────────────────────'
+          } | tee -a docs/perf/measured.md
+          for i in 1 2 3; do
+            sleep 25
+            warm=$(curl -sS -o /dev/null -w '%{time_starttransfer}' --max-time 120 https://weddingpickl.onrender.com/health)
+            again=$(curl -sS -o /dev/null -w '%{time_starttransfer}' --max-time 120 https://weddingpickl.onrender.com/health)
+            echo "  25초 쉬고: $(python3 -c "print(round(float('$warm')*1000,1))")ms  →  바로 다시: $(python3 -c "print(round(float('$again')*1000,1))")ms" | tee -a docs/perf/measured.md
+          done
+          echo '  앞이 크게 높으면 풀이 연결을 닫았다가 다시 맺고 있다는 뜻이다.' | tee -a docs/perf/measured.md
+
+      - name: 결과를 브랜치에 남긴다
+        if: always()
+        run: |
+          echo '```' >> docs/perf/measured.md
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/perf/measured.md
+          git diff --cached --quiet && { echo '바뀐 것이 없다.'; exit 0; }
+          # [skip ci] — GITHUB_TOKEN 푸시는 원래 워크플로를 다시 돌리지 않지만, 뜻을 적어 둔다.
+          git commit -q -m '측정 결과를 남긴다 (자동) [skip ci]'
+          git push -q origin HEAD:${GITHUB_REF_NAME}
