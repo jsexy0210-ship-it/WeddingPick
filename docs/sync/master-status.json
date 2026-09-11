@@ -291,6 +291,17 @@
     ],
     "running": [
       {
+        "pr": 205,
+        "title": "대표 지시 5건 — 온보딩 결과 저장 시점 · 써클 로더 · 로그인 표시 · MY 중첩 · Back 자리",
+        "state": "초안 PR. CI 초록 · 충돌 없음. main(fa331d6)을 마스터가 브랜치에 머지했고, 그 머지 뒤 다시 검증했다 — typecheck · 카피 린트 · 모바일 326시험 · 도메인 931시험 통과. PR204가 main에 적은 규칙 넷과 구현이 일치한다.",
+        "result": "1) 5/5 답을 받은 자리에서 서버 왕복 2~3회(getSignupState → completeSignup → completeSetup)를 기다린 뒤에야 결과를 그렸다. 결과는 손에 있는 답으로 그리고 저장은 「완료」가 시작하게 옮겼다 — finish() 안의 순서는 그대로라 가입 복구(PR192)는 유지된다. 2) CircleLoader를 만들고 DelayedLoader의 기본값으로 둬서 화면 파일을 고치지 않고 70곳이 써클로 바뀌었다. 순회는 추천 계산(WP-ST-015)에만 남는다. 3) SigningInBody가 로더와 문구를 함께 세워 문구가 먼저 그려졌다가 700ms 뒤 로더에 밀렸다 — show로 하나만 고른다. 4) wedding-settings의 펼침 편집기가 Section 거터와 자기 거터를 겹쳐 좌우 48에 앉았다. 웨딩지원금은 같은 상태 문구를 두 번 적었다. 5) BackButton의 alignItems가 flex-start라 화살표가 12에, NavBar·SubScreen은 20에 앉아 34대 56으로 갈려 있었다.",
+        "tokens": "size.loaderCircle · spacing.loaderCircle · motion.loaderCircleSpin 신설. 값은 17-sheets-states.dc.html WP-ST-012의 spinner에서 가져왔고 $note에 적었다. 새 hex는 만들지 않았다.",
+        "guardCheck": "둘 다 고침을 도로 빼고 확인했다. goNext의 setStep('done')을 finish()로 되돌리자 signup-recovery 4개가 빨개졌고, back-button의 alignItems를 flex-start로 되돌리자 새 시험이 빨개졌다. 자리·치수를 보는 단언이 저장소에 하나도 없어서 back-button-position.test.tsx를 새로 뒀다 — 기존 depth-back-buttons.test.tsx는 경로 문자열만 보고 BackBar를 문자열로 mock해 스타일이 실행되지 않는다.",
+        "conflictNote": "spec/tokens.json · packages/ui/src/theme.ts가 PR200과 겹쳤다. 머지 결과를 확인했고 양쪽이 다 남아 있다 — main 대비 지워진 줄은 내가 의도적으로 바꾼 주석 3줄뿐이다. search/ 아래와 strings.ko.json의 search.* 키는 한 줄도 건드리지 않았다.",
+        "open": "MY 중첩에서 판단 대기 6건 — settings.tsx가 전용 화면들을 통째로 다시 그리는 것(IA 결정) · contact.tsx의 FAQ 전면 인라인(시안은 3줄 + 전체 보기) · 상단 BackBar와 본문 하단 「돌아가기」가 겹치는 8개 화면(기존 시험이 그 버튼을 잡고 있어 함께 손봐야 한다) · promotion.tsx와 npay.tsx의 상태 문구 중복 2건 · rebuttals/index.tsx는 의도된 것으로 확인. 그리고 30-loading.dc.html의 「원형 스피너를 쓰지 않아요」 규칙 카드가 이제 코드와 어긋난다 — 핸드오프는 읽기 전용이라 손대지 않았고 디자인 쪽 확인이 필요하다.",
+        "notVerified": "기기·시뮬레이터가 없어 화면에서 눈으로 보지는 못했다. 코드와 시안 대조로 원인을 짚은 것이다. 스테이징은 볼 곳이 없다."
+      },
+      {
         "pr": 200,
         "title": "검색 UX 17건",
         "state": "CI 빨강. typecheck · lint · 모바일 281시험은 마스터가 직접 돌려 통과를 확인했다 — 남은 것은 API 시험이다."
