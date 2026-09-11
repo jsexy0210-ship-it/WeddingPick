@@ -765,6 +765,20 @@ export const Layout = {
   loaderLarge: 40,
   loaderBoxPadding: 10,
   /**
+   * 기본 로더 · 써클 — 지름 3크기 · 테두리 두께. size.loaderCircle.
+   *
+   * 값의 출처는 `17-sheets-states.dc.html`(WP-ST-012)의 `spinner`다 —
+   * `width:32px;height:32px;border:3px solid #eaebee;border-top-color:#ff6f61`.
+   * 지름은 순회 로더와 같은 자리 이름(20·28·40)을 쓰고, 두께는 시안의 32:3을
+   * 정수 px로 반올림했다(20→2 · 28→3 · 40→4).
+   */
+  loaderCircleSmall: 20,
+  loaderCircleMedium: 28,
+  loaderCircleLarge: 40,
+  loaderCircleStrokeSmall: 2,
+  loaderCircleStrokeMedium: 3,
+  loaderCircleStrokeLarge: 4,
+  /**
    * 인라인 토스트 좌우 안여백. component.toast.paddingX.
    *
    * `20-onboarding-v2.dc.html`의 `toastBox`가 `padding:0 18px`다(L414). 18은 `Spacing`
@@ -884,8 +898,13 @@ export const Motion = {
   /** Pick 인증 스캔 — 문서 위를 훑는 선. motion.scanSweep. */
   scanSweep: { duration: 1600, easing: 'cubic-bezier(.4,0,.6,1)', bezier: [0.4, 0, 0.6, 1] },
   /*
-   * 로딩 — 핸드오프 v3.20. 반복 애니메이션이 허용되는 유일한 자리(업종 순회 로더·뼈대).
-   * 원형 스피너는 폐기됐다 — spin·orbit·iconSwap 토큰이 없다.
+   * 로딩 — 핸드오프 v3.20. 반복 애니메이션이 허용되는 자리(업종 순회 로더·써클 로더·뼈대).
+   *
+   * v3.20은 «원형 스피너를 쓰지 않아요»였고 `30-loading.dc.html`의 규칙 카드도 그렇게
+   * 적는다. **2026-09-11 대표 지시로 바뀌었다** — 「Depth, 페이지간 이동 시 로딩이
+   * 발생할 경우 기본 로더 · 써클을 사용하도록한다」. 대표 결정이 md보다 앞선다
+   * (CLAUDE.md). 써클의 수치는 지어낸 것이 아니라 `17-sheets-states.dc.html`
+   * WP-ST-012가 실제로 그리고 있던 `spinner`에서 가져왔다.
    */
   /**
    * 업종 순회 로더가 아이콘 하나에 머무는 시간. 작은 로더(20·28) 820 · 전체 화면(40) 620.
@@ -897,6 +916,11 @@ export const Motion = {
    * 띄우지 않는다. motion.loaderThreshold.showAfter — `useDelayedVisible`.
    */
   loaderThreshold: 700,
+  /**
+   * 기본 로더 · 써클이 한 바퀴 도는 시간. motion.loaderCircleSpin —
+   * 시안의 `animation:wpSpin 800ms linear infinite`와 같다.
+   */
+  loaderCircleSpin: 800,
   /** 뼈대 숨쉬기 한 사이클(1 → .45 → 1). motion.skeletonPulse. */
   skeleton: { duration: 1400, minOpacity: 0.45 },
 } as const;

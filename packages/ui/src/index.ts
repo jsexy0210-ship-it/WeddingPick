@@ -34,7 +34,16 @@ export { ProgressBar, type ProgressBarProps } from './progress-bar';
 export { VerificationBadge, type VerificationBadgeProps } from './verification-badge';
 export { LoadingView, SkeletonView, RecommendingView, RecommendingBody, recommendingTitle, ErrorView, EmptyView, NetworkErrorView, PermissionDeniedView, ProcessingView, MaintenanceView } from './status-view';
 export type { LoadingViewProps, SkeletonViewProps, RecommendingViewProps, RecommendingBodyProps, ErrorViewProps, EmptyViewProps, NetworkErrorViewProps, PermissionDeniedViewProps, PermissionKind, ProcessingViewProps, MaintenanceViewProps } from './status-view';
-/** v3.20 유일한 로더. 700ms 규칙은 useDelayedVisible로 감싼다. */
+/**
+ * 로더 둘. 700ms 규칙은 둘 다 `useDelayedVisible`로 감싼다.
+ *
+ * `CircleLoader`   Depth·페이지 이동처럼 **스쳐 지나가는** 기다림 — 기본값
+ * `CategoryCycleLoader`  첫 실행·재시작·추천 계산처럼 **오래 붙잡는** 기다림
+ *
+ * 어느 쪽인지 고르는 규칙은 `apps/mobile/src/features/loading/delayed-loader.tsx`의
+ * `LoaderWait`에 적혀 있다. 화면이 직접 이 둘을 부르지 않고 `DelayedLoader`를 쓴다.
+ */
+export { CircleLoader, buildSpinKeyframes, type CircleLoaderProps, type CircleLoaderSize } from './circle-loader';
 export {
   CategoryCycleLoader,
   resolveCategoryCycle,

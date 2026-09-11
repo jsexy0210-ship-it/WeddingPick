@@ -158,7 +158,16 @@ export default function TermsScreen() {
         </Pressable>
       </View>
 
-      <PendingBackendNotice actions="약관 편집·공개" reason="앱 약관과 동의 기록 연결을 준비하고 있어요. 지금은 저장된 초안과 이력만 확인할 수 있어요." />
+      {/*
+        * **약관 정본은 웹사이트다**(2026-09-11 대표 지시 — `apps/web/src/subpages.ts`).
+        * 여기서 고치게 만들면 같은 문서가 두 벌이 되고, 한 벌이 낡으면 낡은 쪽을
+        * 사용자가 본다. 「관리자에서 직접 조작」을 어디에 둘지는 두 안을 올려 두었고
+        * (`docs/admin-screen-inventory.md`), 정해지기 전까지는 조회만 둔다.
+        */}
+      <PendingBackendNotice
+        actions="약관 편집·공개"
+        reason="약관 정본은 웹사이트에 있어요. 여기서는 저장된 초안과 판 이력을 확인할 수 있어요."
+      />
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
