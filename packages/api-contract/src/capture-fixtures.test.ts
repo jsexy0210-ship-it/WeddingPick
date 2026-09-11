@@ -53,6 +53,17 @@ function bodyOf(key: string): unknown {
 }
 
 describe('캡처용 가짜 응답', () => {
+  it('광고 자리를 비워 두지 않는다', () => {
+    /*
+     * 비워 두면 광고 칸이 없는 화면만 찍히고, 「코드에 자리가 있다」와 「실제로
+     * 그려진다」가 구별되지 않는다 — 2026-09-11에 그 차이로 하루를 썼다.
+     */
+    const search = bodyOf('GET /v1/vendors') as { sponsored: unknown[] };
+
+    expect(search.sponsored.length).toBeGreaterThan(0);
+  });
+
+
   it.each([...CONTRACTS.keys()])('%s 가 계약을 만족한다', (key) => {
     const schema = CONTRACTS.get(key);
 

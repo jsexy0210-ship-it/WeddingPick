@@ -69,6 +69,26 @@ const VENDORS = [
   }),
 ];
 
+/**
+ * 광고 자리. **자연 결과와 섞지 않는다**(계약 E-1) — 화면이 목록 위에 따로 그린다.
+ *
+ * 비워 두지 않는 이유는 **광고가 그려지는지 눈으로 볼 수 없기 때문**이다. 빈 배열로
+ * 찍으면 광고 칸이 없는 화면만 나오고, 「코드에 자리가 있다」와 「실제로 그려진다」가
+ * 구별되지 않는다 — 2026-09-11에 그 차이로 하루를 썼다.
+ *
+ * `label`은 계약이 `SPONSORED_LABEL`(«광고») 하나로 못 박았다. 애매한 말을 쓰지 않는다.
+ */
+const SPONSORED = [
+  {
+    vendorId: '66666666-6666-4666-8666-666666666666',
+    name: '강남 F 웨딩홀',
+    category: 'hall',
+    region: '서울',
+    imageUrl: null,
+    label: '광고',
+  },
+];
+
 const ME = {
   userId: '99999999-9999-4999-8999-999999999999',
   weddingId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
@@ -134,7 +154,7 @@ const routes = {
     const category = url.searchParams.get('category');
     const vendors = category ? VENDORS.filter((v) => v.category === category) : VENDORS;
 
-    return { vendors, sponsored: [], nextCursor: null, total: vendors.length };
+    return { vendors, sponsored: SPONSORED, nextCursor: null, total: vendors.length };
   },
 };
 
@@ -176,4 +196,4 @@ function matchRoute(method, pathname) {
   return null;
 }
 
-module.exports = { routes, matchRoute, VENDORS, ME };
+module.exports = { routes, matchRoute, VENDORS, SPONSORED, ME };
