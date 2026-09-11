@@ -7,7 +7,7 @@ import {
   canSubmitInquiry,
   type InquiryCategory,
 } from '@weddingpick/domain';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { createInquiry, listMyInquiries } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { formatDateDot } from '@/features/common/format-date';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import { BackBar } from '@/components/back-bar';
 import {
   Accordion,
@@ -60,6 +61,8 @@ export default function ContactScreen() {
   const [error, setError] = useState<string | null>(null);
   const [acknowledgement, setAcknowledgement] = useState<string | null>(null);
   const [mine, setMine] = useState<Inquiry[]>([]);
+  // 「돌아가기」는 Depth Back이다 — 알림·링크로 곧장 들어와도 MY로 올라간다.
+  const depthBack = useDepthBack();
 
   const subject =
     params.subjectKind && params.subjectId
@@ -121,7 +124,7 @@ export default function ContactScreen() {
               label="확인"
               onPress={() => setAcknowledgement(null)}
             />
-            <ActionButton label="돌아가기" onPress={() => router.back()} />
+            <ActionButton label="돌아가기" onPress={depthBack} />
           </ThemedView>
         </SafeAreaView>
       </ThemedView>
@@ -254,7 +257,7 @@ export default function ContactScreen() {
               disabled={busy || !ready || !isServerConfigured}
               onPress={submit}
             />
-            <ActionButton label="돌아가기" onPress={() => router.back()} />
+            <ActionButton label="돌아가기" onPress={depthBack} />
           </ThemedView>
 
           {mine.length > 0 ? (

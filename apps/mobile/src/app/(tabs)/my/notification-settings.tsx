@@ -15,6 +15,10 @@ const S = {
   serviceMeta: '일정 · Pick 변화 · 제보 결과',
   price: '가격 변동 알림',
   priceMeta: 'Pick한 곳의 제보 금액이 크게 바뀌면',
+  marketing: '마케팅 알림',
+  marketingMeta: '혜택 · 이벤트',
+  night: '야간 수신',
+  nightMeta: '밤 9시 이후',
   noteTitle: '진행 중인 업종의 알림만 보내요',
   noteBody: '하루에 두 건까지 보내드려요. 배우자가 바꾼 것은 예외예요.',
   fail: '설정을 바꾸지 못했어요',
@@ -23,8 +27,12 @@ const S = {
 /**
  * 알림 설정. 스위치를 누르면 바로 저장한다 — 토글은 상태 변경이지 제출이 아니다.
  *
- * 마케팅(혜택 · 이벤트) · 야간 수신 · 배우자 공유 알림은 Settings 계약에 없어 두지 않는다.
- * 계약이 나오면 행을 더한다. 알림 범위(진행 중 업종 · 하루 2건)는 SPEC §13.12.
+ * 네 줄은 시안 13-my-sub WP-MY-007 «알림 수신»과 00-ia WP-NOTI-003이 정한 것이다.
+ * **배우자 공유는 여기 없다** — 시안에서 그 스위치는 배우자 연결 관리(WP-MY-006)
+ * «각자 보는 것»에 있고, 없는 자리를 여기에 만들지 않는다.
+ *
+ * 야간 수신은 서버가 실제로 거른다(`notify/send.ts`). 알림 범위(진행 중 업종 ·
+ * 하루 2건)는 SPEC §13.12.
  */
 export default function NotificationSettingsScreen() {
   const theme = useTheme();
@@ -45,7 +53,10 @@ export default function NotificationSettingsScreen() {
 
   useEffect(load, [load]);
 
-  async function toggle(key: 'pushEnabled' | 'priceChangeEnabled', value: boolean) {
+  async function toggle(
+    key: 'pushEnabled' | 'priceChangeEnabled' | 'marketingEnabled' | 'nightPushEnabled',
+    value: boolean
+  ) {
     if (!settings || savingRef.current) return;
     savingRef.current = true;
     setSaving(true);
@@ -97,6 +108,32 @@ export default function NotificationSettingsScreen() {
                 value={settings.priceChangeEnabled}
                 onValueChange={(next) => void toggle('priceChangeEnabled', next)}
                 accessibilityLabel={S.price}
+                {...switchProps}
+              />
+            }
+          />
+          <Row
+            name={S.marketing}
+            meta={S.marketingMeta}
+            right={
+              <Switch
+                disabled={saving}
+                value={settings.marketingEnabled}
+                onValueChange={(next) => void toggle('marketingEnabled', next)}
+                accessibilityLabel={S.marketing}
+                {...switchProps}
+              />
+            }
+          />
+          <Row
+            name={S.night}
+            meta={S.nightMeta}
+            right={
+              <Switch
+                disabled={saving}
+                value={settings.nightPushEnabled}
+                onValueChange={(next) => void toggle('nightPushEnabled', next)}
+                accessibilityLabel={S.night}
                 {...switchProps}
               />
             }

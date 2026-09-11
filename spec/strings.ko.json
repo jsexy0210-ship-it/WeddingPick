@@ -754,6 +754,8 @@
     "readFailed": "읽음 상태를 저장하지 못했어요",
     "loading": "불러오는 중이에요",
     "documentEmpty": "아직 올린 문서가 없어요",
+    "documentListTitle": "올린 문서를 읽은 결과",
+    "documentListBody": "앱으로 올린 문서에서 웨딩픽이 금액과 날짜를 읽었어요. 확인을 마친 자료부터 가격 비교에 쓰여요.",
     "uploadDocument": "자료 올리기",
     "partnerShareTitle": "연결하면 함께 볼 수 있어요",
     "partnerShareBody": "연결을 끊으면 공유가 멈추고 기존 기록은 각자에게 남아요."

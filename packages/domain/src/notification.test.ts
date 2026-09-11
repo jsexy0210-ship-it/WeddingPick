@@ -9,8 +9,10 @@ import {
   dependsOnCategoryProgress,
   hasUnread,
   isCappedNotification,
+  isQuietHours,
   notifiesInState,
   reachedDailyCap,
+  seoulHour,
 } from './notification';
 
 describe('알림', () => {
@@ -79,5 +81,47 @@ describe('알림 범위 — SPEC 13.12', () => {
     expect(isCappedNotification({ kind: 'notice', topic: 'benefit' })).toBe(true);
     // 모르는 것을 예외로 두면 예외가 기본이 된다.
     expect(isCappedNotification({ kind: 'notice', topic: 'other' })).toBe(true);
+  });
+});
+
+/**
+ * 야간 수신. AGENTS.md «WP-NOTI-003 야간 수신 끔»(사용자 승인 2026-09-06).
+ *
+ * **경계만 KST로 읽는다.** UTC 순간을 그대로 쥐고 21시·8시라는 경계를 한국
+ * 시계로 읽는다 — 여기서 시간대를 틀리면 아홉 시간 어긋나고, 밤에 조용해야 할
+ * 시간에 울리고 낮에 조용해진다.
+ */
+describe('야간 수신 시간대', () => {
+  /* KST = UTC + 9. 한국은 서머타임을 쓰지 않아 계절과 무관하게 언제나 +9다. */
+  const utc = (iso: string) => new Date(iso);
+
+  it('UTC 순간을 한국 시계로 읽는다', () => {
+    expect(seoulHour(utc('2026-09-11T12:00:00Z'))).toBe(21);
+    expect(seoulHour(utc('2026-09-11T23:00:00Z'))).toBe(8);
+    // 날짜가 넘어가는 자리. UTC로는 아직 11일이고 한국은 12일 0시다.
+    expect(seoulHour(utc('2026-09-11T15:00:00Z'))).toBe(0);
+  });
+
+  it('21:00 이상 ~ 다음 날 08:00 미만이 조용한 시간이다', () => {
+    // 20:59 KST — 아직 아니다.
+    expect(isQuietHours(utc('2026-09-11T11:59:00Z'))).toBe(false);
+    // 21:00:00 KST — 시작은 «이상»이라 포함이다.
+    expect(isQuietHours(utc('2026-09-11T12:00:00Z'))).toBe(true);
+    // 자정을 넘겨도 이어진다.
+    expect(isQuietHours(utc('2026-09-11T18:00:00Z'))).toBe(true);
+    // 07:59 KST — 아직 조용하다.
+    expect(isQuietHours(utc('2026-09-11T22:59:00Z'))).toBe(true);
+    // 08:00:00 KST — 끝은 «미만»이라 이때부터 보낸다.
+    expect(isQuietHours(utc('2026-09-11T23:00:00Z'))).toBe(false);
+  });
+
+  it('낮에는 조용하지 않다', () => {
+    expect(isQuietHours(utc('2026-09-11T03:00:00Z'))).toBe(false);
+  });
+
+  it('여름에도 +9다 — 한국은 서머타임을 쓰지 않는다', () => {
+    // 6월 21:00 KST. 오프셋이 계절을 타면 이 줄이 먼저 깨진다.
+    expect(seoulHour(utc('2026-06-15T12:00:00Z'))).toBe(21);
+    expect(isQuietHours(utc('2026-06-15T12:00:00Z'))).toBe(true);
   });
 });
