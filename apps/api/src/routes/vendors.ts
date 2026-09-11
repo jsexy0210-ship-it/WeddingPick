@@ -3,6 +3,7 @@ import {
   DEEP_DATA_NOTE,
   DEFAULT_PERIOD_LABEL,
   DEFAULT_PERIOD_MONTHS,
+  DISCLOSURE_THRESHOLDS,
   MAX_COMPARED_VENDORS,
   NARROWED_NOT_ENOUGH,
   PRICE_REPORT_CAVEAT,
@@ -10,6 +11,7 @@ import {
   RECENT_PERIOD_MONTHS,
   SPONSORED_LABEL,
   VENDOR_CATEGORY_LABEL,
+  budgetBand,
   coarseRegion,
   comparisonCaveats,
   computePriceStat,
@@ -23,7 +25,7 @@ import {
   type VendorCategory,
   widestDisclosable,
 } from '@weddingpick/domain';
-import { vendorCategorySchema, vendorSortSchema } from '@weddingpick/api-contract';
+import { vendorSearchQuerySchema, vendorSortSchema } from '@weddingpick/api-contract';
 import type { FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
 import { z } from 'zod';
@@ -34,17 +36,11 @@ import { ApiError, notFound } from '../errors';
 import { loadUsageScore } from '../review-view';
 import { vendorSourceNote } from '../vendor-view';
 
-const searchQuerySchema = z.object({
-  q: z.string().trim().max(60).optional(),
-  /** 업종 목록은 계약(`vendorCategorySchema`)이 들고 있다 — 여기서 따로 베끼면 v3.18처럼 업종이 바뀔 때 어긋난다. */
-  category: vendorCategorySchema.optional(),
-  /** "서울"처럼 시도까지만. region은 "서울 마포구" 형태라 앞부분으로 맞춘다. */
-  region: z.string().trim().max(20).optional(),
-  cursor: z.string().max(200).optional(),
-  /** 기본은 데이터 많은 순. `인기 순`은 잴 것이 없어 만들지 않았다. */
-  sort: vendorSortSchema.default('data'),
-  limit: z.coerce.number().int().min(1).max(50).default(20),
-});
+/**
+ * 질의는 계약(`vendorSearchQuerySchema`)이 들고 있다 — 여기서 따로 베끼면 v3.18처럼
+ * 화면이 거는 조건이 늘 때 서버만 옛 칸으로 남는다.
+ */
+const searchQuerySchema = vendorSearchQuerySchema;
 
 const compareQuerySchema = z.object({
   /** 쉼표로 이은 업체 id. */
@@ -492,6 +488,40 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
     const sort = SORTS[query.sort];
 
     /*
+     * 예산 구간 · «실 제보가 있는 곳만»(WP-SRCH-005).
+     *
+     * 무엇을 기준으로 거를지는 **화면이 보여주는 금액과 같아야 한다.** 목록의 금액
+     * 한 줄은 `priceLine`이 정한다 — 실 제보가 공개 기준(3건)에 닿으면 그 금액들,
+     * 아니면 업체 안내 시작 금액이다. 그래서 거르는 값도 같은 순서로 고른다:
+     * 창 안의 실 제보가 기준에 닿으면 그 중앙값, 아니면 `guide_price_from`.
+     *
+     * 공개 기준 수(3)는 SQL에 적지 않고 도메인에서 받아 넘긴다 — 정책이 바뀌면
+     * `DISCLOSURE_THRESHOLDS` 하나만 고치면 되게.
+     *
+     * 둘 다 없는 업체(«수집 중»)는 예산을 걸면 빠진다. 금액을 모르는 곳을 어느
+     * 구간에 넣어도 그건 우리가 지어낸 값이다.
+     */
+    const budget = budgetBand(query.budget);
+    const inWindow = `FROM structured.usable_payment_proofs p
+                       WHERE p.vendor_id = v.id
+                         AND p.paid_at >= now() - ($8 || ' months')::interval`;
+    const proofCount = `(SELECT count(*) ${inWindow})`;
+    /** 화면이 보여주는 금액 — 실 제보가 공개 기준에 닿으면 그 중앙값, 아니면 업체 안내 시작 금액. */
+    const shownAmount = `CASE WHEN ${proofCount} >= $9::int
+                              THEN (SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY p.paid_amount) ${inWindow})
+                              ELSE v.guide_price_from END`;
+    /*
+     * 조건이 꺼져 있으면 그 줄은 통째로 참이 된다($10 · $11 · $12가 NULL). 파라미터를
+     * 늘였다 줄였다 하면 번호가 밀려 조용히 다른 칸을 본다.
+     *
+     * 금액을 모르는 업체(«수집 중»)는 예산을 걸면 저절로 빠진다 — NULL과의 비교가
+     * 참이 되지 않는다. 모르는 곳을 어느 구간에 넣어도 그건 우리가 지어낸 값이다.
+     */
+    const narrow = `AND (NOT $10::boolean OR ${proofCount} >= $9::int)
+                    AND ($11::bigint IS NULL OR (${shownAmount}) >= $11::bigint)
+                    AND ($12::bigint IS NULL OR (${shownAmount}) < $12::bigint)`;
+
+    /*
      * 이어붙이기 조건.
      *
      * 정렬값이 같은 업체가 여럿이라 `(값, 이름, id)`를 한 줄로 견주지 못한다 —
@@ -533,6 +563,7 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
             * 상세와 비교는 계속 열린다: 이미 담아둔 사람이 왜 사라졌는지 봐야 한다.
             */
            AND v.is_active
+           ${narrow}
        )
        SELECT v.id, v.name, v.category, v.region, v.source, to_jsonb(v)->>'source_url' AS source_url, v.last_verified_at, v.lat, v.lng,
               v.style_tags::text[] AS style_tags, v.guide_price_from, v.guide_price_source,
@@ -571,6 +602,10 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
         after?.[2] ?? null,
         query.limit + 1,
         DEFAULT_PERIOD_MONTHS,
+        DISCLOSURE_THRESHOLDS.limited,
+        query.onlyVerified,
+        budget?.fromKrw ?? null,
+        budget?.toKrw ?? null,
       ]
     );
 
