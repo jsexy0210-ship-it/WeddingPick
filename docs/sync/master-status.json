@@ -526,15 +526,19 @@
     "session": "session_01XKpxtPqtPoXe985dafbFwc · 브랜치 claude/region-legal",
     "masterAndOwnerOnly": [
       "Render 대시보드에서 싱가포르 서비스 생성·환경변수 이관·전환 — 세션은 절차서까지만 만든다",
-      "카카오·네이버 개발자 콘솔의 redirect URI 재등록",
+      "카카오 개발자 콘솔의 redirect URI 재등록 — **이번 API 이전에는 필요 없다.** 웹 로그인의 redirect URI는 window.location.origin에서 만들어져(apps/mobile/src/features/auth/providers.ts:80) 앱 웹 호스트를 가리키지 API 호스트가 아니다. 앱 웹까지 옮기면 그때 필요하다. 네이버는 로그인 자체가 폐기돼(v3.12) 해당 없다 (PR #208에서 코드로 확인)",
       "옛 서비스 폐기 시점 결정"
     ],
+    "answeredQuestions": [
+      "Render가 기존 서비스의 리전 변경을 허용하는가 — **허용하지 않는다.** 새 서비스를 만들어야 하고 주소가 바뀐다 (PR #208 · Render Docs Regions · docs/render-region-move.md §3)",
+      "free 플랜이 싱가포르 리전을 지원하는가 — **지원한다.** 승인 C(유료 인프라)는 걸리지 않는다 (PR #208 · 같은 문서)",
+      "Neon 싱가포르의 AWS 리전 — aws-ap-southeast-1. Neon 프로젝트도 리전을 못 바꾸므로 움직이는 쪽은 API다"
+    ],
     "openQuestions": [
-      "Render가 기존 서비스의 리전 변경을 허용하는가 — 불가라면 새 서비스라 주소가 바뀐다 (워크플로로 확인)",
-      "free 플랜이 싱가포르 리전을 지원하는가 — 아니면 승인 C가 걸린다"
+      "Render 싱가포르가 어느 클라우드·AZ인지는 공개돼 있지 않다. 둘 다 싱가포르지만 같은 AZ 보장은 없고, 왕복 시간은 이전 후 실측으로 확인한다"
     ],
     "cheapNow": "앱이 아직 스토어에 없어 설치된 앱이 세상에 없다. 지금은 주소를 바꿔도 깨질 것이 없고, 출시 뒤에는 구버전 앱이 옛 주소를 계속 본다.",
-    "addressing": "onrender 주소 그대로 간다 (2026-09-11 대표 지시로 weddingpick.kr 폐기). 새 서비스라 주소가 바뀌면 저장소 16곳과 OAuth redirect URI를 갈아끼운다."
+    "addressing": "onrender 주소 그대로 간다 (2026-09-11 대표 지시로 weddingpick.kr 폐기). 새 서비스라 주소가 바뀌면 저장소를 갈아끼운다 — 전수는 14개 파일 36곳이고 파일·줄 번호는 docs/render-region-move.md §5에 있다(PR #208 실측, node_modules·dist 제외). OAuth redirect URI는 바뀌지 않는다(위 masterAndOwnerOnly 참조)."
   },
   "legalCanonical20260911": {
     "rule": "약관·개인정보처리방침의 정본은 웹사이트다 (2026-09-11 대표 지시 — 「웹사이트 기준으로 수정하라. 모든 약관은 여기서 컨트롤한다」)",
