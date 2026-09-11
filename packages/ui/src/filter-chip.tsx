@@ -15,8 +15,10 @@ export type FilterChipProps = {
   /**
    * `default` 36 · 글자 14/700 · padding 0 14 — 검색 필터 · 조건 칩(component.chip).
    * `small` 28 · 글자 micro 13/700 · padding 0 10 — 스타일 태그(v3.24 «추천 이유 첫 줄 칩 28»).
+   * `sheet` 38 · 글자 16/700 · padding 0 14 — 필터 바텀시트의 조건 칩(component.chip.sheet ·
+   * 06-search.dc.html `opt`).
    */
-  size?: 'default' | 'small';
+  size?: 'default' | 'small' | 'sheet';
   /**
    * 선택 색. 기본 `ink`(#212124 채움 · 흰 글자 — tokens.json component.chip.activeBg).
    * `tint`는 스킨 코랄 — 홈 코랄 네 곳 규칙(v3.24) 밖에서는 쓰지 않는다. 내가 고른 스타일과 겹치는
@@ -47,6 +49,7 @@ export function FilterChip({
   const theme = useTheme();
   const small = size === 'small';
   const paddingX = small ? Layout.chipSmallPaddingX : Layout.chipPaddingX;
+  const height = small ? Layout.chipSmall : size === 'sheet' ? Layout.chipSheet : Layout.chip;
   const selectedBackground = accent === 'tint' ? theme.tint : theme.text;
 
   return (
@@ -64,7 +67,7 @@ export function FilterChip({
             style={[
               styles.chip,
               {
-                height: small ? Layout.chipSmall : Layout.chip,
+                height,
                 /* 포커스 링은 패딩을 그만큼 줄여 폭이 변하지 않게 한다. */
                 paddingHorizontal: paddingX - ring,
                 borderWidth: ring,
@@ -74,7 +77,7 @@ export function FilterChip({
               },
             ]}>
             <ThemedText
-              type={small ? 'micro' : 't7'}
+              type={small ? 'micro' : size === 'sheet' ? 't6' : 't7'}
               numberOfLines={1}
               style={[styles.label, { color: selected ? theme.onTint : theme.textSecondary }]}>
               {label}
