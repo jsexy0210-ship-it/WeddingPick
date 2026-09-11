@@ -247,6 +247,10 @@ def main() -> int:
         report["db_round_trip_ms"] = per_trip
         print(f"  /health p50 {health['ttfb_p50']}ms − / p50 {root['ttfb_p50']}ms = {round(gap, 1)}ms (DB 왕복 2회)")
         print(f"  DB 왕복 1회 ≈ {per_trip}ms")
+        # 이사(승인 B) 뒤에는 이 값만 본다. 러너가 미국에 있어 절대 시간은 API가
+        # 싱가포르로 가면 오히려 오른다 — 러너가 멀어져서다. 국내 사용자는 반대다.
+        # `/`와 `/health`는 같은 서버가 같은 네트워크로 처리하므로 이 차이에는
+        # 러너 위치가 들어가지 않는다. 자세한 것은 docs/perf/region-move-plan.md.
         if per_trip >= 20:
             print(f"  ::warning::DB 왕복 1회가 {per_trip}ms다. API와 DB가 가까이 있지 않다.")
             print("  쿼리 하나를 줄일 때마다 이만큼이 줄어든다는 뜻이다.")
