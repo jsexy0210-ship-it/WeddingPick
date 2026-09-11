@@ -500,6 +500,35 @@
       }
     ]
   },
+  "publicDataUnify20260911": {
+    "handedOverAtKst": "2026-09-11 13:40",
+    "branch": "claude/public-data-unify",
+    "supersedes": [
+      133,
+      135
+    ],
+    "finding": "#133은 이미 main에 들어가 있었다. main의 collect.ts가 #133의 상위집합이고(truncated · hasEmptyListSlot · assertServiceOk · WEDDING_UPJONG_CODES · SBIZ_MAX_PAGES가 더 있다) 0092a_sbiz_api_import_switches.sql도 같은 내용으로 있다. 충돌 8은 전부 main 쪽을 남겼고 PROJECT_STATUS.md 한 항목만 옮겼다.",
+    "merged": "#135의 F1 폐업·휴업 판정 · v3.22 업종 12종 매핑(resolveSbizCategory) · 도메인 regionTokens 지역 판정(isVendorRegion) · heldBy 사유별 집계 · held_count 칸. F2 스위치 행은 main의 0092a와 0094에 두 번 들어 있어 회귀 시험만 가져왔다. F3는 main의 vendor_import_holds(0101)가 더 넓어 그쪽 사유 이름에 맞춰 얹었다.",
+    "migration": "0210_import_runs_held_count.sql. #135의 0092는 main의 0092_reward_payouts와 번호가 겹쳐 버렸다.",
+    "cron": "public-data.yml 크론을 되살렸다(17 18 * * 6 UTC = 일요일 03:17 KST). 세 조건 — 업종 코드 확정(WEDDING_UPJONG_CODES) · 0건 가드(collect.ts + 워크플로) · 건수 상한(새로 만든 run.ts MAX_APPLY + 워크플로 확인). 이 크론은 DB에 쓰지 않는다 — schedule 이벤트에 inputs가 없어 apply가 항상 거짓이다.",
+    "negativeVerification": "고침을 도로 빼고 가드가 실제로 잡는지 확인했다. F1 폐업 판정 제거 → 해당 시험 실패. F2 스위치 행 제거(0092a·0094 둘 다) → 회귀 시험 실패. 건수 상한 무력화 → 상한 시험 실패. 셋 다 복구 후 초록.",
+    "verification": "typecheck · lint(오류 0) · 카피 린트 · domain 931/60 · db 79/1 · api 전량 통과. PostgreSQL 16 로컬.",
+    "open": [
+      "**정정** — storeListInUpjong 403은 해소됐다. 2026-09-11 13:01 KST run 154에서 sbiz-all · sbiz-gyeonggi가 실제로 수집에 성공했고 둘 다 그 오퍼레이션을 부른다. SBIZ_API_KEY도 등록돼 있다(키 확인 단계 통과). 앞서 「미확인」으로 남긴 항목을 닫는다.",
+      "**정정** — 운영 DB 반영이 이미 한 번 있었다. 2026-09-10 12:12 KST run 153에서 icheon-halls의 apply가 success로 끝났다. 「첫 실제 반영은 아직」이라고 적었던 것은 사실과 다르다. 이 세션이 직접 --apply를 돌리지 않은 것은 그대로다.",
+      "sbiz-seoul이 accepted = 0으로 0건 가드에 걸린다(run 154). 전국·경기는 되는데 서울만이라 지역 필터 의심이지만 미확인. 산출물의 total·rejected를 봐야 갈린다.",
+      "업종별 집계가 리포트에 없다. 대표님이 2026-09-11에 「카테고리별 수집 건수」를 물으셨는데 지금은 어디서도 나오지 않는다. run.ts가 vendors를 들고 있으니 categoryCounts를 세어 리포트와 잡 요약에 더하면 된다 — 어느 PR에 넣을지 대표님 판단 대기.",
+      "PUBLIC_DATA_MAX_APPLY 기본값 50,000은 여전히 추정값이다. run 154가 0건이 아닌 것은 확인했으나 실제 accepted를 못 읽어 실측이 아직 없다."
+    ],
+    "correctedAtKst": "2026-09-11 15:55 — 아래 두 항목은 실행 기록을 직접 확인해 고쳤다. 처음 적을 때는 워크플로 주석의 「아직 한 번도 실제 수집이 성공한 적 없는 파이프라인」을 확인 없이 옮겨 적었다.",
+    "runEvidence": {
+      "source": "GitHub Actions API(api.github.com)로 public-data.yml 실행 메타데이터를 직접 조회했다. 로그와 산출물은 Azure blob으로 리다이렉트되는데 프록시가 그 호스트를 막아(403) 못 읽었다 — 그래서 건수는 확인하지 못했고 성공·실패와 단계 결과만 확인한 것이다.",
+      "run154": "2026-09-11 13:01 KST · main f062a511 · 수동. sbiz-all · sbiz-gyeonggi · icheon-halls · jecheon-halls는 「수집 결과 0건 확인」을 통과했다(accepted > 0). sbiz-seoul만 그 단계에서 실패 — accepted = 0.",
+      "run153": "2026-09-10 12:12 KST · main d1d834ff. icheon-halls의 「Apply to existing database」가 success. 나머지 셋은 cancelled.",
+      "seoulAnomaly": "전국(sbiz-all)과 경기(ctprvnCd=41)는 받아지는데 서울(ctprvnCd=11)만 0건이다. 지역 필터가 응답 필드와 어긋났을 가능성이 있으나 **확인하지 못했다** — 가르려면 리포트의 total·rejected를 봐야 하는데 산출물을 못 읽는다.",
+      "noCategoryBreakdown": "리포트에 업종별 집계 칸이 아예 없다(total · accepted · rejected · duplicates · closed · truncated뿐). 업종은 업체 한 건마다 붙지만 세어 주는 곳이 수집기·워크플로·DB 어디에도 없다. 「업종별 몇 건」은 아직 한 번도 계산된 적이 없는 수다."
+    }
+  },
   "externalCredentialExpiry": {
     "recordedAtKst": "2026-09-11 13:05",
     "note": "만료가 다가오면 알리라는 2026-09-11 대표 지시로 적어 둔다. 루틴은 지울 수 있으므로 저장소에도 남긴다.",
