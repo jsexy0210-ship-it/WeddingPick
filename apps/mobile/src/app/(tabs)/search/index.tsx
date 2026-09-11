@@ -6,6 +6,7 @@ import {
   type VendorSummary,
 } from '@weddingpick/api-contract';
 import {
+  type BudgetBandKey,
   DISCLOSURE_THRESHOLDS,
   MOST_VIEWED,
   NOT_ENOUGH_DATA,
@@ -43,6 +44,7 @@ import {
   loadRecentSearches,
   removeRecentSearch,
 } from '@/features/search/recent-searches';
+import { FilterSheet, type SearchFilterValue } from '@/features/search/filter-sheet';
 import { SORT_LABEL, SortSheet } from '@/features/search/sort-sheet';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import {
@@ -100,6 +102,9 @@ const AC_GROUP_KEYWORD = '이 말로 검색';
 
 /** 결과 없음 카드. spec/strings.ko.json search.empty.* */
 const EMPTY_TITLE = '조건에 맞는 곳이\n없어요';
+/** 조건 하나를 풀면 나오는 곳 — 시안은 세 줄이다(06-search #16f). */
+const EMPTY_SIMILAR_TITLE = '비슷한 곳';
+const SIMILAR_LIMIT = 3;
 const EMPTY_REPORT_TITLE = '찾는 곳이 없나요?';
 const EMPTY_REPORT_BODY = '업체를 알려주시면 등록하고 알려드릴게요.';
 const EMPTY_REPORT_CTA = '업체 제보';
@@ -116,6 +121,10 @@ type Filters = {
   q: string;
   category: VendorCategory | null;
   region: string | null;
+  /** 예산 구간 한 칸(WP-SRCH-005). 고르지 않았으면 null. */
+  budget: BudgetBandKey | null;
+  /** «실 제보가 있는 곳만» — 금액을 볼 수 있는 곳만 남긴다(WP-SRCH-005). */
+  onlyVerified: boolean;
   sort: VendorSort;
 };
 
@@ -161,6 +170,8 @@ export default function SearchScreen() {
     q: '',
     category: null,
     region: null,
+    budget: null,
+    onlyVerified: false,
     sort: 'data',
   });
   const [viewState, setViewState] = useState<ViewState>('home');
@@ -185,12 +196,24 @@ export default function SearchScreen() {
    * 결과 0건일 때 조건 하나를 풀면 몇 곳이 나오는지(WP-SRCH-008). 어느 조건에서 잰 값인지 키를
    * 함께 들고 있어 조건이 바뀌면 옛 값을 읽지 않는다.
    */
-  const [relaxed, setRelaxed] = useState<{ key: string; total: number } | null>(null);
+  const [relaxed, setRelaxed] = useState<{
+    key: string;
+    total: number;
+    /** 그 조건을 풀면 나오는 곳 — 시안의 «비슷한 곳» 세 줄이 이 목록이다. */
+    similar: VendorSummary[];
+  } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   /** 많이 본 곳 — 전체 기준. 지역·업종을 걸지 않는다(SPEC §13.7). null이면 아직 못 읽었다. */
   const [popular, setPopular] = useState<VendorSummary[] | null>(null);
   /** 정렬 시트(WP-SRCH-006)가 떠 있는가. */
   const [sortOpen, setSortOpen] = useState(false);
+  /**
+   * 필터 시트(WP-SRCH-005)가 떠 있는가.
+   *
+   * **화면을 옮기지 않는다.** 시안이 바텀시트라서이기도 하지만, 조건을 바꿀 때마다 결과
+   * 수가 따라 바뀌려면 결과를 들고 있는 이 화면 위에 떠 있어야 한다.
+   */
+  const [filterOpen, setFilterOpen] = useState(false);
   /** 금액 옆 ⓘ가 연 설명 시트(WP-SHT-014). null이면 닫혀 있다. */
   const [infoTopic, setInfoTopic] = useState<InfoTopic | null>(null);
   /** 최근 검색. 자동완성 화면과 같은 저장소(`features/search/recent-searches`)를 본다. */
@@ -216,6 +239,9 @@ export default function SearchScreen() {
   const requestId = useRef(0);
   const displayedQuery = useRef<string | null>(null);
   const acRequestId = useRef(0);
+
+  /** 필터 시트에 넘길 지역 이름만. 시트는 수를 적지 않는다(시안 06-search #16d). */
+  const regionNames = regions.map((region) => region.name);
 
   const trimmedQ = filters.q.trim();
   const showAutocomplete = acOpen && trimmedQ.length > 0;
@@ -291,6 +317,8 @@ export default function SearchScreen() {
       q: filters.q.trim() || undefined,
       region: filters.region ?? undefined,
       category: filters.category ?? undefined,
+      budget: filters.budget ?? undefined,
+      onlyVerified: filters.onlyVerified || undefined,
       sort: filters.sort,
     }, {
       force,
@@ -359,15 +387,24 @@ export default function SearchScreen() {
     };
   }, [showAutocomplete, trimmedQ]);
 
-  /* 결과가 0건이고 조건이 걸려 있으면, 그 조건 하나를 풀면 몇 곳인지 재본다(WP-SRCH-008). */
-  const relaxKey: 'region' | 'category' | null = filters.region
-    ? 'region'
-    : filters.category
-      ? 'category'
-      : null;
+  /*
+   * 결과가 0건이고 조건이 걸려 있으면, 그 조건 하나를 풀면 몇 곳인지 재본다(WP-SRCH-008).
+   * 같은 질의가 «비슷한 곳» 세 줄도 함께 들고 온다 — 조건 하나를 푼 목록이 곧 비슷한 곳이다.
+   *
+   * 푸는 순서는 **예산이 먼저다**(시안 «예산 조건을 풀면 6곳이 나와요»). 예산은 사용자가
+   * 방금 고른 숫자라 되돌리기 쉽고, 지역·업종을 먼저 풀면 찾던 것과 다른 곳이 나온다.
+   */
+  const relaxKey: 'budget' | 'region' | 'category' | null = filters.budget
+    ? 'budget'
+    : filters.region
+      ? 'region'
+      : filters.category
+        ? 'category'
+        : null;
 
-  const relaxedKey = `${filters.q.trim()}|${filters.region ?? ''}|${filters.category ?? ''}|${filters.sort}`;
+  const relaxedKey = `${filters.q.trim()}|${filters.region ?? ''}|${filters.category ?? ''}|${filters.budget ?? ''}|${filters.onlyVerified ? '1' : ''}|${filters.sort}`;
   const relaxedTotal = relaxed?.key === relaxedKey ? relaxed.total : null;
+  const similar = relaxed?.key === relaxedKey ? relaxed.similar : [];
 
   useEffect(() => {
     if (!isServerConfigured || viewState !== 'results') return;
@@ -377,10 +414,18 @@ export default function SearchScreen() {
       q: filters.q.trim() || undefined,
       region: relaxKey === 'region' ? undefined : (filters.region ?? undefined),
       category: relaxKey === 'category' ? undefined : (filters.category ?? undefined),
+      budget: relaxKey === 'budget' ? undefined : (filters.budget ?? undefined),
+      onlyVerified: filters.onlyVerified || undefined,
       sort: filters.sort,
     })
       .then((response) => {
-        if (alive) setRelaxed({ key: relaxedKey, total: response.total });
+        if (alive) {
+          setRelaxed({
+            key: relaxedKey,
+            total: response.total,
+            similar: response.vendors.slice(0, SIMILAR_LIMIT),
+          });
+        }
       })
       .catch(() => undefined);
     return () => {
@@ -399,6 +444,8 @@ export default function SearchScreen() {
         region: filters.region ?? undefined,
         cursor: nextCursor,
         category: filters.category ?? undefined,
+        budget: filters.budget ?? undefined,
+        onlyVerified: filters.onlyVerified || undefined,
         sort: filters.sort,
       });
       if (id !== requestId.current) return;
@@ -451,14 +498,6 @@ export default function SearchScreen() {
     setAcOpen(false);
   }
 
-  /** 필터 시트(WP-SRCH-005)로. 지금 걸린 조건을 그대로 들고 간다. */
-  function openFilter() {
-    const params: Record<string, string> = {};
-    if (filters.region) params.region = filters.region;
-    if (filters.category) params.category = filters.category;
-    if (filters.sort !== 'data') params.sort = filters.sort;
-    router.push({ pathname: '/search/filter', params });
-  }
 
   /**
    * 카드의 Pick 버튼(SPEC §13.1). Pick 전이면 후보에 담고 완료 시트, Pick 후면 해제 시트.
@@ -485,8 +524,12 @@ export default function SearchScreen() {
     if (!ok) setToast('후보를 빼지 못했어요. 잠시 후 다시 시도해주세요.');
   }
 
-  const activeFilterCount = [filters.region, filters.category, filters.sort !== 'data' ? filters.sort : null]
-    .filter(Boolean).length;
+  /** 필터 칩에 적는 수. 시트가 거는 조건만 센다 — 정렬은 따로 고르는 자리다. */
+  const activeFilterCount = [
+    filters.region,
+    filters.budget,
+    filters.onlyVerified ? 'verified' : null,
+  ].filter(Boolean).length;
 
   // ─── 검색창 ───────────────────────────────────────────────────────────────
 
@@ -870,7 +913,14 @@ export default function SearchScreen() {
 
   /** 결과 0건 · WP-SRCH-008. 막다른 길로 두지 않는다 — 조건을 하나 풀어주는 버튼과 업체 제보. */
   function renderEmpty() {
-    const relaxLabel = relaxKey === 'region' ? '지역' : relaxKey === 'category' ? '업종' : null;
+    const relaxLabel =
+      relaxKey === 'budget'
+        ? '예산'
+        : relaxKey === 'region'
+          ? '지역'
+          : relaxKey === 'category'
+            ? '업종'
+            : null;
     const body = !isServerConfigured
       ? '이 빌드는 서버에 붙어 있지 않아요.'
       : error
@@ -895,11 +945,72 @@ export default function SearchScreen() {
               label={`${relaxLabel} 조건 풀기`}
               onPress={() =>
                 setFilters((current) =>
-                  relaxKey === 'region' ? { ...current, region: null } : { ...current, category: null }
+                  relaxKey === 'budget'
+                    ? { ...current, budget: null }
+                    : relaxKey === 'region'
+                      ? { ...current, region: null }
+                      : { ...current, category: null }
                 )
               }
             />
           </View>
+        ) : null}
+        {/*
+          비슷한 곳 — 조건 하나를 푼 목록의 앞 세 곳(시안 06-search #16f). 썸네일 52 ·
+          이름 18 · 금액 16 · 건수 14. 막다른 길에 놓아둔 다음 걸음이라 없으면 그리지 않는다.
+        */}
+        {similar.length > 0 ? (
+          <>
+            <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} />
+            <View style={[styles.section, styles.sectionAfterBand]}>
+              <ThemedText type="t4">{EMPTY_SIMILAR_TITLE}</ThemedText>
+              <View style={styles.trendList}>
+                {similar.map((item) => {
+                  const line = priceLine(item.paidPrice, item.guidePrice);
+                  return (
+                    <View key={item.id}>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`${item.name} 자세히 보기`}
+                        onPress={() =>
+                          router.push({
+                            pathname: '/search/[vendorId]',
+                            params: { vendorId: item.id },
+                          })
+                        }
+                        style={styles.trendRow}>
+                        <VendorImage
+                          source={item.imageUrl ? { uri: item.imageUrl } : undefined}
+                          category={vendorImageCategory(item.category)}
+                          width={Layout.thumbList}
+                          height={Layout.thumbList}
+                          radius={Radius.small}
+                        />
+                        <View style={styles.trendBody}>
+                          <ThemedText type="t5" numberOfLines={1}>
+                            {item.name}
+                          </ThemedText>
+                          <View style={styles.trendMeta}>
+                            <ThemedText
+                              type="t6"
+                              numeric
+                              themeColor={line.dim ? 'textAssistive' : undefined}
+                              style={styles.bold}>
+                              {line.text}
+                            </ThemedText>
+                            <ThemedText type="t7" themeColor="textAssistive" numberOfLines={1}>
+                              {countTail(item)}
+                            </ThemedText>
+                          </View>
+                        </View>
+                      </Pressable>
+                      <View style={[styles.divider, { backgroundColor: theme.border }]} />
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          </>
         ) : null}
         <View style={[styles.emptyNote, { backgroundColor: theme.backgroundElement }]}>
           <ThemedText type="t5">{EMPTY_REPORT_TITLE}</ThemedText>
@@ -941,7 +1052,7 @@ export default function SearchScreen() {
             <FilterChip
               label={activeFilterCount > 0 ? `필터 ${activeFilterCount}` : '필터'}
               selected={activeFilterCount > 0}
-              onPress={openFilter}
+              onPress={() => setFilterOpen(true)}
             />
           </View>
           {/*
@@ -1102,6 +1213,26 @@ export default function SearchScreen() {
             setSortOpen(false);
           }}
           onDismiss={() => setSortOpen(false)}
+        />
+        {/*
+          필터 시트 — WP-SRCH-005. 고르는 즉시 조건이 걸려 결과와 CTA의 수가 함께 바뀐다.
+          «{n}곳 보기»를 누르면 시트만 닫힌다 — 이미 그 조건으로 보고 있다.
+        */}
+        <FilterSheet
+          visible={filterOpen}
+          value={{
+            region: filters.region,
+            budget: filters.budget,
+            onlyVerified: filters.onlyVerified,
+          }}
+          regions={regionNames}
+          count={total}
+          onChange={(next: SearchFilterValue) => {
+            setFilters((current) => ({ ...current, ...next }));
+            setViewState('results');
+          }}
+          onApply={() => setFilterOpen(false)}
+          onDismiss={() => setFilterOpen(false)}
         />
         <PickDoneSheet visible={pickDoneOpen} onDismiss={() => setPickDoneOpen(false)} />
         <UnpickSheet
@@ -1342,10 +1473,11 @@ const styles = StyleSheet.create({
   trendList: {
     gap: Spacing.half,
   },
+  /* 시안 06-search 행 «gap:12» — 섹션 제목 간격(14)이 아니라 행 안 간격(inlineGap)이다. */
   trendRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Layout.sectionHeadGap,
+    gap: Layout.inlineGap,
     minHeight: Layout.rowMinHeight,
     paddingVertical: Layout.rowPaddingY,
   },
@@ -1361,6 +1493,13 @@ const styles = StyleSheet.create({
   },
   trendPrice: {
     flexShrink: 0,
+  },
+  /* 비슷한 곳 — 금액 16 ↔ «실 제보 N건» 14를 한 줄에. 시안 gap 6은 사다리에 없어 가장 가까운 4다. */
+  trendMeta: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: Spacing.one,
+    minWidth: 0,
   },
   divider: {
     height: 1,

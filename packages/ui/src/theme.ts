@@ -678,6 +678,12 @@ export const Layout = {
   /** 칩 높이 · 좌우 패딩. component.chip. */
   chip: 36,
   chipPaddingX: 14,
+  /**
+   * 필터 바텀시트(WP-SRCH-005) 안의 조건 칩. component.chip.sheet — 06-search.dc.html
+   * `opt`가 «height:38px;font-size:16px»다. 결과 필터바의 36/14와 다른 자리라 36으로
+   * 대신하지 않는다.
+   */
+  chipSheet: 38,
   /** 작은 칩(스타일 태그 · 취향 배지). v3.24 «추천 이유 첫 줄 칩 28» · image.textOnImage.tasteCard. */
   chipSmall: 28,
   chipSmallPaddingX: 10,

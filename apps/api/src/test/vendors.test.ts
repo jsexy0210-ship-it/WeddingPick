@@ -461,6 +461,118 @@ describeWithDb('업체 검색', () => {
     });
   });
 
+  /**
+   * 필터 시트가 거는 조건 — WP-SRCH-005.
+   *
+   * 거르는 값은 **목록이 보여주는 금액과 같아야 한다.** 실 제보가 공개 기준(3건)에
+   * 닿으면 그 금액들, 아니면 업체 안내 시작 금액이다. 여기가 어긋나면 «120~180만원»을
+   * 골랐는데 카드에 «210만원»이 적힌 곳이 남는다.
+   */
+  describe('예산 · 실 제보 필터', () => {
+    async function seedProofs(vendorId: string, count: number, amount: number) {
+      for (let index = 0; index < count; index += 1) {
+        const reporter = await test.pool.query<{ id: string }>(
+          'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
+        );
+
+        await test.pool.query(
+          `INSERT INTO structured.payment_proofs
+             (reporter_user_id, vendor_id, merchant_name, paid_amount, paid_at)
+           VALUES ($1, $2, '가맹점', $3, now() - interval '1 month')`,
+          [reporter.rows[0]!.id, vendorId, amount]
+        );
+      }
+    }
+
+    async function setGuidePrice(vendorId: string, fromKrw: number) {
+      await test.pool.query(
+        `UPDATE structured.vendors
+            SET guide_price_from = $2, guide_price_source = '업체 홈페이지'
+          WHERE id = $1`,
+        [vendorId, fromKrw]
+      );
+    }
+
+    const names = (body: { vendors: { name: string }[] }) => body.vendors.map((v) => v.name);
+
+    it('예산 구간은 실 제보 금액으로 거른다', async () => {
+      const { headers } = await signInAs(test);
+      const inBand = await createVendor({ name: '가홀' });
+      const tooDear = await createVendor({ name: '나홀' });
+
+      await seedProofs(inBand, 4, 1_500_000);
+      await seedProofs(tooDear, 4, 2_100_000);
+
+      expect(names(await search(headers, '?budget=120-180'))).toEqual(['가홀']);
+      expect((await search(headers, '?budget=120-180')).total).toBe(1);
+    });
+
+    it('구간의 위끝은 포함하지 않는다 — 다음 칸이 가져간다', async () => {
+      const { headers } = await signInAs(test);
+      const onEdge = await createVendor({ name: '가홀' });
+      await seedProofs(onEdge, 4, 1_800_000);
+
+      expect(names(await search(headers, '?budget=120-180'))).toEqual([]);
+      expect(names(await search(headers, '?budget=180-250'))).toEqual(['가홀']);
+    });
+
+    it('실 제보가 적으면 업체 안내 금액으로 거른다', async () => {
+      /* 목록의 금액 한 줄도 그때는 «업체 안내 …»다. 거르는 값과 보이는 값이 같다. */
+      const { headers } = await signInAs(test);
+      const guided = await createVendor({ name: '가홀' });
+      await seedProofs(guided, 2, 9_000_000);
+      await setGuidePrice(guided, 1_500_000);
+
+      expect(names(await search(headers, '?budget=120-180'))).toEqual(['가홀']);
+    });
+
+    it('금액을 모르는 곳은 어느 구간에도 넣지 않는다', async () => {
+      const { headers } = await signInAs(test);
+      await createVendor({ name: '가홀' });
+
+      expect(names(await search(headers, '?budget=-120'))).toEqual([]);
+      expect(names(await search(headers, '?budget=250-'))).toEqual([]);
+      /* 예산을 걸지 않으면 그대로 나온다 — 없는 곳이 되는 것이 아니다. */
+      expect(names(await search(headers, ''))).toEqual(['가홀']);
+    });
+
+    it('«실 제보가 있는 곳만»은 금액이 뜨는 곳만 남긴다', async () => {
+      const { headers } = await signInAs(test);
+      const enough = await createVendor({ name: '가홀' });
+      const collecting = await createVendor({ name: '나홀' });
+
+      await seedProofs(enough, 3, 1_500_000);
+      await seedProofs(collecting, 2, 1_500_000);
+
+      expect(names(await search(headers, '?onlyVerified=true'))).toEqual(['가홀']);
+      /* 끄면 둘 다 — «false»가 «true»로 읽히지 않는다. */
+      expect(names(await search(headers, '?onlyVerified=false'))).toEqual(['가홀', '나홀']);
+    });
+
+    it('업체 안내 금액만 있는 곳은 «실 제보가 있는 곳만»에서 빠진다', async () => {
+      /* 예산 구간은 통과시키지만 이 토글은 아니다 — 묻는 것이 다르다. */
+      const { headers } = await signInAs(test);
+      const guided = await createVendor({ name: '가홀' });
+      await setGuidePrice(guided, 1_500_000);
+
+      expect(names(await search(headers, '?budget=120-180'))).toEqual(['가홀']);
+      expect(names(await search(headers, '?onlyVerified=true'))).toEqual([]);
+    });
+
+    it('없는 예산 구간은 받지 않는다', async () => {
+      const { headers } = await signInAs(test);
+      await createVendor({ name: '가홀' });
+
+      const response = await test.app.inject({
+        method: 'GET',
+        url: '/v1/vendors?budget=0-9999',
+        headers,
+      });
+
+      expect(response.statusCode).toBe(400);
+    });
+  });
+
   it('망가진 커서는 첫 쪽으로 되돌린다', async () => {
     const { headers } = await signInAs(test);
     await createVendor({ name: '가홀' });

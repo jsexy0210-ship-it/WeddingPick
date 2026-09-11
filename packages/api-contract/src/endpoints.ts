@@ -298,7 +298,7 @@ export const ENDPOINTS = {
     response: verificationRequestSchema,
   },
 
-  /** A-16 업체 검색. 질의는 q·category·region·cursor 쿼리 파라미터로 준다. */
+  /** A-16 업체 검색. 질의는 `vendorSearchQuerySchema`(q · category · region · budget · onlyVerified · sort · cursor · limit)다. */
   searchVendors: {
     method: 'GET',
     path: '/v1/vendors',
