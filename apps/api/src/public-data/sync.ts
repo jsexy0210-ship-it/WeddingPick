@@ -7,12 +7,21 @@ type Existing = {
   source_url: string | null; data_published_at: string | null; admin_locked: boolean;
 };
 
-export function replacementDecision(old: Existing, incoming: CollectedVendor): 'same' | 'update' | 'hold' {
-  if (old.admin_locked) return 'hold';
+/**
+ * 보류 사유를 나눠서 돌려준다. 예전에는 둘 다 'hold' 하나였는데, 그러면 부르는
+ * 쪽이 `old.admin_locked`를 다시 보고 사유를 되짚어야 했다 — 판정을 내린 자리와
+ * 사유를 적는 자리가 갈라져 있으면 한쪽만 고쳐지기 쉽다.
+ *
+ * `locked`는 관리자가 잠근 업체라 수집이 손대지 않는 정상 동작이고,
+ * `stale`은 값이 달라졌는데 더 최신이라는 근거가 없어 안 바꾼 것이다. 둘은
+ * `vendor_import_holds.reason`의 `admin_locked` · `field_conflict`로 각각 남는다.
+ */
+export function replacementDecision(old: Existing, incoming: CollectedVendor): 'same' | 'update' | 'locked' | 'stale' {
+  if (old.admin_locked) return 'locked';
   if (old.name === incoming.name && old.region === incoming.region && old.category === incoming.category) return 'same';
   // A snapshot date is not a comparable field modification timestamp across providers.
   if (old.source_url !== incoming.sourceUrl || old.category !== incoming.category
-    || !old.data_published_at || !incoming.publishedOn || incoming.publishedOn <= old.data_published_at) return 'hold';
+    || !old.data_published_at || !incoming.publishedOn || incoming.publishedOn <= old.data_published_at) return 'stale';
   return 'update';
 }
 
@@ -31,10 +40,18 @@ async function holdRecord(client: PoolClient, v: CollectedVendor, runId: string,
     (import_run_id,source_key,record_key,vendor_id,reason,field_name,old_value,new_value)
     VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,
     [runId, v.sourceKey, recordKey, vendorId ?? null, reason, field?.name ?? null, field?.old ?? null, field?.next ?? null]);
-  return 'held' as const;
+  return `held:${reason}` as const;
 }
 
-async function syncOne(client: PoolClient, v: CollectedVendor, runId: string) {
+/**
+ * syncOne 한 건의 결과. `held:*`는 반영하지 않고 넘긴 건이고, 뒤에 붙은 것이
+ * `vendor_import_holds.reason`과 같은 사유다 — 실행 요약이 사유별로 셀 수 있게
+ * 그대로 흘려보낸다. 표는 7일이 아니라 영구히 남지만, 요약만 보고 「사람이 봐야
+ * 하는 건이 있는가」를 판단할 수 있어야 표를 열어 볼지 정할 수 있다.
+ */
+type SyncOutcome = 'created' | 'updated' | 'unchanged' | `held:${HoldReason}`;
+
+async function syncOne(client: PoolClient, v: CollectedVendor, runId: string): Promise<SyncOutcome> {
   // Global import lock serializes concurrent provider runs; still rely on DB unique constraints.
   await client.query(`SELECT pg_advisory_xact_lock(7140904)`);
   const enabled = await client.query(`SELECT enabled FROM structured.import_switches WHERE source_key=$1`, [v.sourceKey]);
@@ -76,14 +93,13 @@ async function syncOne(client: PoolClient, v: CollectedVendor, runId: string) {
     }
   } else {
     const decision = replacementDecision(old, v);
-    if (decision === 'hold') {
+    if (decision === 'locked') return holdRecord(client, v, runId, recordKey, 'admin_locked', old.id);
+    if (decision === 'stale') {
       // 잠금과 값 충돌은 사람이 할 일이 다르다 — 잠금은 풀지 말지를, 충돌은 어느 쪽이
       // 맞는지를 정해야 한다. 업종 변경이 vendor_change_log에 안 남는 것도 이 자리다.
       const changed = (['category', 'name', 'region'] as const).find((f) => old![f] !== v[f]);
-      return old.admin_locked
-        ? holdRecord(client, v, runId, recordKey, 'admin_locked', old.id)
-        : holdRecord(client, v, runId, recordKey, 'field_conflict', old.id,
-            changed ? { name: changed, old: old[changed], next: v[changed] } : undefined);
+      return holdRecord(client, v, runId, recordKey, 'field_conflict', old.id,
+        changed ? { name: changed, old: old[changed], next: v[changed] } : undefined);
     }
     if (decision === 'update') {
       for (const field of ['name','region'] as const) {
@@ -133,8 +149,16 @@ async function syncOne(client: PoolClient, v: CollectedVendor, runId: string) {
   return action;
 }
 
+/**
+ * 실행 요약. `held`는 합계고 `heldBy`가 사유별 내역이다 — 수동 검토 큐가
+ * 필요한지는 `heldBy.multiple_matches` · `heldBy.ambiguous_name` ·
+ * `heldBy.field_conflict`로 판단한다. `admin_locked`는 설계대로 안 바꾼 것이라
+ * 검토 대상이 아니다.
+ */
 export async function syncCollected(pool: Pool, vendors: CollectedVendor[]) {
-  const counts = { created:0, updated:0, unchanged:0, held:0, errors:0 };
+  const counts = { created:0, updated:0, unchanged:0, held:0, errors:0,
+    /** 사유별 보류 내역. 내역 원본은 structured.vendor_import_holds다. */
+    heldBy: { admin_locked:0, multiple_matches:0, ambiguous_name:0, insert_conflict:0, field_conflict:0 } };
   if (!vendors.length) return counts;
   const source = vendors[0]!;
   if (vendors.some((v) => v.sourceKey !== source.sourceKey)) throw new Error('출처별 실행을 분리하세요.');
@@ -145,7 +169,10 @@ export async function syncCollected(pool: Pool, vendors: CollectedVendor[]) {
     for (const v of vendors) {
       try {
         const action = await withTransaction(pool, (client) => syncOne(client,v,runId));
-        counts[action]++;
+        if (action.startsWith('held:')) {
+          counts.held++;
+          counts.heldBy[action.slice('held:'.length) as HoldReason]++;
+        } else counts[action as 'created'|'updated'|'unchanged']++;
       } catch {
         counts.errors++;
         // Never copy raw DB errors/rows (which may contain personal information) into logs.
@@ -154,9 +181,12 @@ export async function syncCollected(pool: Pool, vendors: CollectedVendor[]) {
       }
     }
   } finally {
+    // skipped_count는 기존 의미(반영 안 한 전체)를 유지하고, 그중 보류만 held_count로
+    // 따로 남긴다 — 산출물 JSON은 7일 뒤 만료되므로 DB가 유일한 영구 기록이다.
     await pool.query(`UPDATE structured.import_runs SET status=$2,created_count=$3,updated_count=$4,
-      skipped_count=$5,error_count=$6,finished_at=now() WHERE id=$1`,
-      [runId,counts.errors ? 'failed':'completed',counts.created,counts.updated,counts.unchanged+counts.held,counts.errors]);
+      skipped_count=$5,held_count=$6,error_count=$7,finished_at=now() WHERE id=$1`,
+      [runId,counts.errors ? 'failed':'completed',counts.created,counts.updated,
+       counts.unchanged+counts.held,counts.held,counts.errors]);
   }
   return counts;
 }

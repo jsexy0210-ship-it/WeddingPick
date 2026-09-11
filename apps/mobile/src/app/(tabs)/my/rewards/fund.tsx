@@ -18,7 +18,16 @@ import {
 /** 시안 15-events WP-EVT-005. */
 const S = {
   title: '웨딩지원금',
-  eyebrow: (status: string) => `이번 회차 · ${status}`,
+  /*
+   * 시안(15-events WP-EVT-005)의 eyebrow는 «이번 회차 · 진행 중»이고, 그 아래 카드
+   * 배지는 «응모 완료»다 — **회차의 상태**와 **내 응모 상태**로 서로 다른 값이다.
+   * 코드는 둘 다 `draw.statusLabel`(내 응모 상태)을 넣어서 같은 말이 위아래로 두 번
+   * 나왔다. 2026-09-11 대표 지시(MY 중첩)에 해당한다.
+   *
+   * 회차 상태는 서버가 주지 않는다 — 없는 값을 「진행 중」으로 지어내지 않는다.
+   * 상태는 카드 배지 한 곳에만 두고 eyebrow에서는 뺀다.
+   */
+  eyebrow: '이번 회차',
   hero: (amount: string, winners: number) => `웨딩지원금\n${amount} · ${winners}커플`,
   thisRound: '이번 회차',
   conditions: '응모 조건',
@@ -43,7 +52,7 @@ export default function FundScreen() {
   return (
     <SubScreen title={S.title}>
       <Hero
-        eyebrow={S.eyebrow(draw.statusLabel)}
+        eyebrow={S.eyebrow}
         lines={S.hero(won(draw.amountKrw), draw.winnersPerMonth).split('\n')}
       />
 

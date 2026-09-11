@@ -71,7 +71,7 @@ export default function DecisionsScreen() {
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <Text style={styles.title}>자동 결정 현황</Text>
+        <Text style={styles.title}>자동 처리 내역</Text>
         <Pressable
           style={styles.refreshBtn}
           onPress={() => {
