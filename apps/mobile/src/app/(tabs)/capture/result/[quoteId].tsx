@@ -18,7 +18,6 @@ export default function ResultScreen() {
   const { quoteId } = useLocalSearchParams<{ quoteId: string }>();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [comparison, setComparison] = useState<ComparisonResponse | null>(null);
-  const [edits, setEdits] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,9 +45,13 @@ export default function ResultScreen() {
     setBusy(true);
 
     try {
+      /*
+       * 읽은 값을 그대로 맞다고 하는 것뿐이다. 고쳐 보낼 자리가 없다 — v3.24가
+       * 「재입력 경로는 다시 찍기/올리기뿐」으로 정했고, 계약에서도 그 자리를 뺐다.
+       */
       const updated = await confirmFields(
         quote.id,
-        paths.map((path) => ({ path, ...(edits[path] && { correctedValue: edits[path] }) }))
+        paths.map((path) => ({ path }))
       );
 
       setQuote(updated);
@@ -76,11 +79,7 @@ export default function ResultScreen() {
         <QuoteResultView
           quote={quote}
           comparison={comparison}
-          confirm={{
-            busy,
-            onEdit: (path, value) => setEdits((current) => ({ ...current, [path]: value })),
-            onConfirm: confirm,
-          }}
+          confirm={{ busy, onConfirm: confirm }}
           footer={
             <ThemedView style={styles.actions}>
               {/*

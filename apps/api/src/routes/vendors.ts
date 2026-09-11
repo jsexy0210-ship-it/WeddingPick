@@ -169,6 +169,42 @@ function mostCommon(values: string[]): string | null {
 }
 
 /**
+ * 판정 전 사진을 화면에 내보내는가.
+ *
+ * **2026-09-11 대표 지시 — 「이미지 720장만 우선 삽입한다」.** 운영에 들어 있는
+ * 720장은 저작권 근거가 `unknown`이고 매칭 신뢰도가 0이라 한 장도 나가지 않았다.
+ * 처음에는 운영자에게만 열었는데, 대표님이 전부 넣으라고 정했으므로 모두에게 연다.
+ *
+ * **값은 여전히 고치지 않는다.** `copyright_basis`를 배치로 바꾸면 판정한 적 없는
+ * 것이 판정된 것으로 남고 되돌릴 근거까지 사라진다. 표에 적힌 사실은 그대로 두고
+ * 내보낼지만 여기서 정한다 — 닫을 때 되돌릴 것이 이 스위치 하나다.
+ *
+ * `VENDOR_IMAGES_SHOW_UNVERIFIED=0`이면 닫힌다. 그때는 예전처럼 운영자에게만
+ * 열리므로, 닫은 뒤에도 무엇이 들어 있는지는 계속 볼 수 있다.
+ */
+export function showsUnverifiedImages(): boolean {
+  return process.env.VENDOR_IMAGES_SHOW_UNVERIFIED !== '0';
+}
+
+async function previewsImages(pool: Pool, viewerId: string | null): Promise<boolean> {
+  if (showsUnverifiedImages()) return true;
+
+  /*
+   * 닫아둔 동안에도 운영자는 본다. 로그인하지 않았으면 질의도 하지 않는다 — 목록
+   * 한 번에 한 번씩 더 묻는 자리라, 대부분인 비로그인 요청에서 아무 일도 일어나지
+   * 않는 편이 맞다.
+   */
+  if (!viewerId) return false;
+
+  const { rows } = await pool.query<{ is_operator: boolean }>(
+    `SELECT is_operator FROM structured.users WHERE id = $1 AND deleted_at IS NULL`,
+    [viewerId]
+  );
+
+  return rows[0]?.is_operator === true;
+}
+
+/**
  * 업체 한 곳의 상세.
  *
  * 상품별 가격은 comparable_quotes에서 그때그때 계산한다. 표본이 기준에 못 미치는
@@ -176,11 +212,13 @@ function mostCommon(values: string[]): string | null {
  * 가격으로 그릴 여지가 생긴다.
  */
 async function loadVendorDetail(pool: Pool, vendorId: string, viewerId: string | null) {
+  const preview = await previewsImages(pool, viewerId);
+
   const { rows } = await pool.query<VendorRow>(
     `SELECT v.id, v.name, v.category, v.region, v.source, to_jsonb(v)->>'source_url' AS source_url, v.last_verified_at, v.lat, v.lng,
               v.style_tags::text[] AS style_tags, v.guide_price_from, v.guide_price_source,
               (SELECT i.source_url FROM structured.vendor_images i
-                 WHERE i.vendor_id = v.id AND ${displayableImageCondition('i')}
+                 WHERE i.vendor_id = v.id AND ${displayableImageCondition('i', { preview })}
                    AND i.source_url IS NOT NULL
                  ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url,
             (SELECT count(*) FROM structured.comparable_quotes c WHERE c.vendor_id = v.id)
@@ -419,6 +457,9 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
   app.get('/v1/vendors', auth, async (request) => {
     const query = searchQuerySchema.parse(request.query);
 
+    /* 판정 전 사진은 운영자에게만 열린다(previewsImages). */
+    const preview = await previewsImages(context.pool, optionalUserId(request));
+
     /*
      * 정규화는 DB의 normalize_vendor_name을 그대로 쓴다. 서버가 따로 흉내내면 색인에
      * 저장된 값과 어긋나 "분명히 있는데 안 나오는" 업체가 생긴다.
@@ -509,7 +550,7 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
        SELECT v.id, v.name, v.category, v.region, v.source, to_jsonb(v)->>'source_url' AS source_url, v.last_verified_at, v.lat, v.lng,
               v.style_tags::text[] AS style_tags, v.guide_price_from, v.guide_price_source,
               (SELECT i.source_url FROM structured.vendor_images i
-                 WHERE i.vendor_id = v.id AND ${displayableImageCondition('i')}
+                 WHERE i.vendor_id = v.id AND ${displayableImageCondition('i', { preview })}
                    AND i.source_url IS NOT NULL
                  ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url,
               (SELECT count(*) FROM structured.comparable_quotes c WHERE c.vendor_id = v.id)
@@ -616,6 +657,11 @@ async function loadSponsored(
      * 자리를 겹쳐 잡아둘 수 있고(기간이 겹치는 두 건), 그러면 같은 업체가 두 줄로
      * 나온다. 렌더해보고 잡았다 — 표에서 막기보다 여기서 묶는 이유는, 겹치는
      * 기간을 표로 막으려면 자리를 나눠 잡는 정상적인 경우까지 걸리기 때문이다.
+     */
+    /*
+     * 광고 자리에는 검수 모드를 걸지 않는다. 여기 실리는 사진은 업체가 돈을 내고
+     * 건 자리에 나가는 것이라, 판정 전 사진이 섞이면 「우리가 고르지 않은 사진이
+     * 우리 광고에 나갔다」가 된다. 운영자가 보고 있어도 마찬가지다.
      */
     `SELECT picked.vendor_id, picked.name, picked.category, picked.region,
             (SELECT i.source_url FROM structured.vendor_images i
@@ -814,6 +860,9 @@ async function loadConditionStats(
 
       if (!vendorCheck.rows[0]) throw notFound('업체');
 
+      /* 판정 전 사진은 운영자에게만 열린다(previewsImages). */
+      const preview = await previewsImages(context.pool, optionalUserId(request));
+
       const { rows } = await context.pool.query<{
         id: string;
         storage_key: string | null;
@@ -826,20 +875,27 @@ async function loadConditionStats(
         `SELECT id, storage_key, source_url, is_representative, use_contain,
                 copyright_note, verified_at
          FROM structured.vendor_images
-         WHERE vendor_id = $1 AND ${displayableImageCondition('vendor_images')}
+         WHERE vendor_id = $1 AND ${displayableImageCondition('vendor_images', { preview })}
          ORDER BY is_representative DESC, created_at ASC`,
         [vendorId]
       );
 
+      /*
+       * 둘 다 없는 줄은 거른다. 가리킬 곳이 없는 사진이라 화면에 빈 칸만 남는데,
+       * 예전에는 `storage_key!`가 그 경우를 「있다」로 단정하고 있었다. 판정 전
+       * 사진까지 열리면서 지나가는 줄이 늘었으므로 여기서 먼저 막는다.
+       */
       const photos = await Promise.all(
-        rows.map(async (row) => ({
-          id: row.id,
-          url: row.source_url ?? (await context.storage.getPublicUrl(row.storage_key!, 3600)),
-          isRepresentative: row.is_representative,
-          useContain: row.use_contain,
-          sourceNote: row.copyright_note,
-          verifiedAt: row.verified_at ? row.verified_at.toISOString() : null,
-        }))
+        rows
+          .filter((row) => row.source_url !== null || row.storage_key !== null)
+          .map(async (row) => ({
+            id: row.id,
+            url: row.source_url ?? (await context.storage.getPublicUrl(row.storage_key!, 3600)),
+            isRepresentative: row.is_representative,
+            useContain: row.use_contain,
+            sourceNote: row.copyright_note,
+            verifiedAt: row.verified_at ? row.verified_at.toISOString() : null,
+          }))
       );
 
       return { photos };

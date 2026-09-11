@@ -29,10 +29,16 @@ const S = {
   logEmpty: '아직 제보한 것이 없어요',
 } as const;
 
-/** 내 제보 내역 요약의 배지 — 쓰이고 있으면 «반영됨», 사유가 있으면 «확인 필요», 아니면 «반영 전». */
+/**
+ * 내 제보 내역 요약의 배지.
+ *
+ * «확인 필요»는 **자료를 아직 읽는 중일 때만**이다(WP-RPT-008 · v3.24). 업체를 못
+ * 찾아 쓰이지 않는 것은 사용자가 할 일이 없으므로 «반영 전»이다 — 할 일이 없는데
+ * «확인 필요»라고 적으면 무엇을 확인하라는 것인지 알 수 없다.
+ */
 function badgeOf(report: MyReportListResponse['reports'][number]): { label: string; tone: BadgeTone } {
   if (report.inUse) return { label: '반영됨', tone: 'ok' };
-  if (report.note) return { label: '확인 필요', tone: 'wait' };
+  if (report.needsCheck) return { label: '확인 필요', tone: 'wait' };
 
   return { label: '반영 전', tone: 'none' };
 }

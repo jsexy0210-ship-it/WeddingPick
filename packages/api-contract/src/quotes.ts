@@ -23,6 +23,12 @@ export const extractionFieldSchema = z.object({
   /** 계약금액·계약일·환불조건은 항상 true다. 서버가 정하고 앱은 따른다. */
   requiresConfirmation: z.boolean(),
   confirmedByUser: z.boolean(),
+  /**
+   * 예전에 사람이 고쳐 넣은 값. **새로 들어오지 않는다.**
+   *
+   * v3.24가 「재입력 경로는 다시 찍기/올리기뿐」으로 정하면서 고치는 칸이 사라졌다.
+   * 이미 고쳐진 줄이 남아 있어 읽기로만 계속 내보낸다.
+   */
   correctedValue: z.string().optional(),
 });
 
@@ -127,7 +133,12 @@ export const quoteSchema = z.object({
 });
 
 /**
- * 사용자 확인. 값을 고쳤으면 correctedValue를 함께 보낸다.
+ * 사용자 확인. **읽은 그대로 맞다고 하는 것뿐이다.**
+ *
+ * 고친 값을 보낼 자리가 없다 — v3.24가 「재입력 경로는 다시 찍기/올리기뿐」으로
+ * 정했다. 손으로 고친 값에는 자료가 없고, 자료 없는 값이 «확인됨» 표시를 달고
+ * 비교에 들어가면 그건 읽기 실패보다 나쁘다. 다르면 다시 올리거나 알려준다.
+ *
  * 확인하지 않은 채 "확인함"으로 보낼 방법은 없다.
  */
 export const confirmFieldsRequestSchema = z.object({
@@ -135,7 +146,6 @@ export const confirmFieldsRequestSchema = z.object({
     .array(
       z.object({
         path: z.string().min(1),
-        correctedValue: z.string().optional(),
       })
     )
     .min(1),

@@ -26,6 +26,7 @@ const S = {
   hero: (total: number, used: number) => [`${total}건 제보했고`, `${used}건이 반영됐어요`],
   heroEmpty: ['아직 제보한 것이', '없어요'],
   inUse: '반영됨',
+  needsCheck: '확인 필요',
   notInUse: '반영 전',
   review: '후기',
   deleteReview: '후기 지우기',
@@ -35,6 +36,18 @@ const S = {
   remove: '지우기',
   removeFail: '지우지 못했어요',
 } as const;
+
+function badgeKind(report: MyReport): 'none' | 'ok' | 'wait' {
+  if (report.kind === 'review') return 'none';
+
+  return report.inUse ? 'ok' : report.needsCheck ? 'wait' : 'none';
+}
+
+function badgeLabel(report: MyReport): string {
+  if (report.kind === 'review') return S.review;
+
+  return report.inUse ? S.inUse : report.needsCheck ? S.needsCheck : S.notInUse;
+}
 
 /**
  * 내 제보 내역 · WP-RPT-009. 카드마다 상태 배지 + 날짜 · 업체명 ↔ 금액 · 사유. 행동 버튼은 할 일이
@@ -107,9 +120,8 @@ export default function MyReportsScreen() {
             {reports.map((report) => (
               <View key={report.id} style={[styles.card, { borderColor: theme.track }]}>
                 <View style={styles.cardHead}>
-                  <Badge kind={report.kind === 'review' ? 'none' : report.inUse ? 'ok' : 'wait'}>
-                    {report.kind === 'review' ? S.review : report.inUse ? S.inUse : S.notInUse}
-                  </Badge>
+                  {/* 확인 필요는 자료를 아직 읽는 중일 때만이다(WP-RPT-008 · v3.24). */}
+                  <Badge kind={badgeKind(report)}>{badgeLabel(report)}</Badge>
                   <ThemedText type="t7" themeColor="textAssistive" numeric>
                     {formatDateDot(report.reportedAt.slice(0, 10))}
                   </ThemedText>

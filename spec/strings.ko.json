@@ -782,6 +782,11 @@
     "processing.body": "10초 안에 끝나요"
   },
 
+  "inAppBrowser": {
+    "open": "브라우저에서 열기",
+    "guide": "오른쪽 위 ···를 눌러 «Safari로 열기»를 선택해주세요"
+  },
+
   "expo": {
     "list.title": "박람회",
     "list.sub": "결혼 준비에 도움 되는 박람회를 모았어요",

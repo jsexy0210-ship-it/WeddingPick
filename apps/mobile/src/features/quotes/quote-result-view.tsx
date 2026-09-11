@@ -4,24 +4,17 @@ import type {
   Quote,
   QuoteDocument,
 } from '@weddingpick/api-contract';
-import {
-  ANALYSIS_DISCLAIMER,
-  PRICE_JUDGEMENT_LABEL,
-  needsAttention,
-  splitPayment,
-} from '@weddingpick/domain';
+import { ANALYSIS_DISCLAIMER, PRICE_JUDGEMENT_LABEL, needsAttention } from '@weddingpick/domain';
 import { formatDateDot } from '@/features/common/format-date';
-import { ScrollView, StyleSheet, TextInput, type ViewStyle } from 'react-native';
+import { ScrollView, StyleSheet, type ViewStyle } from 'react-native';
 
 import {
   ActionButton,
-  FontSize,
   Radius,
   Spacing,
   ThemedText,
   ThemedView,
   VerificationBadge,
-  useTheme,
 } from '@weddingpick/ui';
 
 const FIELD_LABEL: Record<string, string> = {
@@ -100,10 +93,16 @@ function itemAmount(item: { amount: number | null; amountMin: number | null; amo
 type Props = {
   quote: Quote;
   comparison: ComparisonResponse | null;
-  /** 확인 단계를 쓸 수 있을 때만 준다. 샘플 화면에서는 없다. */
+  /**
+   * 확인 단계를 쓸 수 있을 때만 준다. 샘플 화면에서는 없다.
+   *
+   * **고칠 자리가 없다.** v3.24가 「재입력 경로는 다시 찍기/올리기뿐」으로 정했다 —
+   * 읽은 값을 손으로 고쳐 확인하면 그 값에는 자료가 없고, 자료 없는 값이 «확인됨»
+   * 표시를 달고 비교에 들어간다. 여기서 할 수 있는 것은 읽은 그대로 맞다고 하는
+   * 것뿐이고, 다르면 다시 올리거나 «원본과 달라요»로 알린다.
+   */
   confirm?: {
     busy: boolean;
-    onEdit: (path: string, value: string) => void;
     onConfirm: (paths: string[]) => void;
   };
   header?: React.ReactNode;
@@ -124,8 +123,6 @@ export function QuoteResultView({
   footer,
   contentStyle,
 }: Props) {
-  const theme = useTheme();
-
   /*
    * 두 종류를 갈라 둔다. 섞으면 안 되는 이유는 하는 말이 다르기 때문이다.
    *
@@ -140,9 +137,6 @@ export function QuoteResultView({
     (field) =>
       !field.requiresConfirmation && !field.confirmedByUser && needsAttention(field)
   );
-
-  /* 나눠 적힌 금액이 둘 이상이면 합계를 알려준다(WP-RPT-006). 하나뿐이면 null이다. */
-  const split = splitPayment({ deposit: quote.depositAmount, balance: quote.balanceAmount });
 
   return (
     <ScrollView contentContainerStyle={[styles.content, contentStyle]}>
@@ -219,13 +213,8 @@ export function QuoteResultView({
               <ThemedText type="small" themeColor="textSecondary">
                 {FIELD_LABEL[field.path] ?? field.path} · 확인 필요
               </ThemedText>
-              <TextInput
-                style={[styles.input, { color: theme.text, borderColor: theme.border }]}
-                defaultValue={field.correctedValue ?? field.value}
-                editable={Boolean(confirm)}
-                onChangeText={(text) => confirm?.onEdit(field.path, text)}
-                multiline={field.path === 'refundTerms'}
-              />
+              {/* 읽은 그대로 보여준다. 고칠 칸을 두지 않는 것이 v3.24의 요점이다. */}
+              <ThemedText>{field.correctedValue ?? field.value}</ThemedText>
               {confirm ? (
                 <ActionButton
                   label="이 값이 맞아요"
@@ -354,24 +343,6 @@ export function QuoteResultView({
         </ThemedView>
       ) : null}
 
-      {/*
-        분할 결제 연결 · WP-RPT-006. 계약금과 잔금이 따로 읽혔을 때만 나온다(상태 「분할 감지」).
-        하나뿐인 「단건」에는 묶을 것이 없어 카드째 그리지 않는다.
-
-        **원 단위 그대로 적는다.** 시안 문구는 «총 182만원이에요»지만 만원 표기는 반올림한
-        값이라 확인 화면에는 쓰지 않기로 돼 있다(domain/disclosure.ts manwon 주석 — 내
-        지출내역·결제 등록 확인). 바로 위 계약금액도 원 단위라, 여기만 반올림하면 두 숫자가
-        어긋나 보인다.
-      */}
-      {split === null ? null : (
-        <ThemedView type="backgroundElement" style={styles.card}>
-          <ThemedText type="subtitle">같이 묶으면 총 {won(split.total)}이에요</ThemedText>
-          <ThemedText type="small" themeColor="textSecondary">
-            {split.parts.map((part) => `${part.label} ${won(part.amount)}`).join(' + ')}
-          </ThemedText>
-        </ThemedView>
-      )}
-
       {footer}
     </ScrollView>
   );
@@ -422,13 +393,5 @@ const styles = StyleSheet.create({
   },
   rowLabel: {
     flex: 1,
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: Radius.input,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.two,
-    /* 입력 칸 글자도 본문이다. 토큰 밖의 크기를 쓰지 않는다. */
-    fontSize: FontSize.t6,
   },
 });
