@@ -8,6 +8,7 @@ import {
   Layout,
   MaxContentWidth,
   ProductSymbol,
+  Radius,
   Spacing,
   ThemedText,
   ThemedView,
@@ -300,18 +301,27 @@ const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
 
-  /* 13-my-sub navBack 56 · 좌우 거터. 뒤로 자리에 닫기가 온다(시안 close: true). */
+  /*
+   * 13-my-sub navBack — 56 · `padding:0 20px 0 12px` · gap 8. 뒤로 자리에 닫기가
+   * 온다(시안 close: true).
+   *
+   * 좌우를 거터(24)로 두고 상자를 `marginLeft: -8`로 끌어당기고 있었다 — 상자가
+   * 16에서 시작해 아이콘이 24에 앉았다. 다른 화면은 전부 20이다(`NavBar` ·
+   * `SubScreen` · `BackBar`). 2026-09-11 대표 지시로 맞췄다. 값은 이 주석이 원래부터
+   * 가리키던 13-my-sub의 navBack 그대로다 — 코드가 제 출처와 어긋나 있었다.
+   */
   nav: {
     height: Layout.navBar,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Layout.gutter,
-    gap: Spacing.two,
+    paddingLeft: Layout.navPaddingLeft,
+    paddingRight: Layout.navPaddingRight,
+    gap: Layout.navGap,
   },
   navButton: {
     width: Layout.iconButton,
     height: Layout.iconButton,
-    marginLeft: -Spacing.two,
+    borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },
