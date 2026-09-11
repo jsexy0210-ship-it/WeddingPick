@@ -28,6 +28,24 @@ services:
       # 네이티브 앱 키를 넣으면 /oauth/authorize가 KOE033으로 거부한다.
       EXPO_PUBLIC_KAKAO_CLIENT_ID: 8e9a14dd3a0aa1a420bff858460c415c
 
+  # 관리자 콘솔 — **아직 켜지 않는다.**
+  #
+  # `scripts/render-env-sync.py`는 이름이 정확히 일치하는 서비스를 못 찾으면
+  # 그 항목을 실패로 세고 **워크플로 전체를 exit 1로 끝낸다**(main:188). 서비스가
+  # 생기기 전에 여기를 켜면 main에 푸시할 때마다 빨간 워크플로가 남는다.
+  #
+  # 켜는 시점 — Render 대시보드에 관리자 서비스가 살아난 뒤. 그때 아래 주석을 푼다.
+  #
+  # 이름은 **위 서비스들과 같은 규칙**으로 대시보드 표시 이름을 그대로 쓴다
+  # (2026-09-10 이름 변경). 주소의 슬러그(`weddingpick-admin.onrender.com`)와
+  # 다른 값이라는 데 주의한다 — 동기화 스크립트가 보는 것은 표시 이름 쪽이다.
+  # 절차는 docs/admin-origin-split.md.
+  #
+  # WeddingPick-관리자 사이트:
+  #   vars:
+  #     EXPO_PUBLIC_API_URL: https://weddingpickl.onrender.com
+  #     EXPO_PUBLIC_KAKAO_CLIENT_ID: 8e9a14dd3a0aa1a420bff858460c415c
+
   # 서비스 웹사이트
   WeddingPick-웹사이트:
     vars:
@@ -57,15 +75,24 @@ services:
       # 브라우저에서 API를 부르는 출처. 빠진 출처는 preflight에서 막히고,
       # 브라우저에는 CORS 오류로 뜨지만 서버 로그에는 아무것도 남지 않는다.
       #
-      #   app-web        앱 화면과 **관리자 콘솔**이 여기서 뜬다(/admin, 27개 화면)
+      #   app-web        앱 화면. 관리자는 여기서 빠졌다 — admin 출처로 넘긴다
+      #   admin          관리자 콘솔(/admin/*, 화면 32장). 별도 출처다
       #   web            서비스 웹사이트
       # weddingpick.kr은 보유한 커스텀 도메인이지만 현재 미사용이다(2026-09-10 사용자 확인).
       # 다시 사용하기로 결정할 때 DNS·연결·CORS를 함께 검증한다.
       #
-      # 관리자 출처 둘(`weddingpick-admin.onrender.com` · `admin.weddingpick.kr`)은
-      # 2026-09-09 사용자 결정으로 뺐다 — 관리자는 app-web의 `/admin` 하나로 통일했고
-      # 그 서비스와 도메인이 없어졌다. 살아 있지도 않은 출처를 허용 목록에 두지 않는다.
-      CORS_ORIGINS: https://weddingpick-app-web.onrender.com,https://weddingpick-web.onrender.com
+      # **관리자 출처를 되살린다**(2026-09-10 대표 결정 — `docs/admin-origin-split.md`).
+      # 2026-09-09에 「관리자는 app-web의 `/admin` 하나로 통일한다」며 뺐던 출처인데,
+      # 그 결정을 뒤집고 관리자 콘솔을 다시 별도 출처로 분리했다. 관리자 화면이 이
+      # API를 브라우저에서 부르므로 빠지면 preflight에서 전부 막히고, 브라우저에는
+      # CORS 오류로 뜨지만 서버 로그에는 아무것도 남지 않는다.
+      #
+      # **`weddingpick.kr`과 `admin.weddingpick.kr`은 넣지 않는다.** 커스텀 도메인을
+      # 쓰지 않기로 했고(2026-09-11 대표 결정), 뒤쪽은 이름 풀이부터 안 된다
+      # (2026-09-09 실측 `NXDOMAIN`). **살아 있지도 않은 출처를 허용 목록에 두지
+      # 않는다** — 이 원칙은 2026-09-09판과 분리판이 똑같이 적어 둔 것이라 그대로 산다.
+      # 도메인을 실제로 붙이는 날 그때 넣는다.
+      CORS_ORIGINS: https://weddingpick-app-web.onrender.com,https://weddingpick-admin.onrender.com,https://weddingpick-web.onrender.com
       # 앱의 EXPO_PUBLIC_KAKAO_CLIENT_ID와 같은 값이어야 토큰 교환과 id_token 검증이 맞는다.
       KAKAO_APP_KEY: 8e9a14dd3a0aa1a420bff858460c415c
       # 원본을 실제로 지운다. **기본값 manual로 두면 아무것도 지워지지 않는다** —

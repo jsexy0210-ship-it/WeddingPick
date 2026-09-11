@@ -48,7 +48,16 @@ services:
     runtime: static
     staticPublishPath: ./apps/mobile/dist
     autoDeploy: true
-    buildCommand: npm run export:web --workspace @weddingpick/mobile
+    #
+    # **뒤에 붙은 `split-admin-dist.mjs app`은 관리자 화면을 관리자 출처로
+    # 넘기는 단계다**(2026-09-10 사용자 결정으로 관리자를 다시 분리했다).
+    # 이걸 빼면 관리자가 두 곳에 살아 있고, 한쪽을 고치면 다른 쪽이 낡는다.
+    #
+    # **넣는 시점이 중요하다.** 관리자 서비스가 실제로 뜨고 그 출처에서 로그인이
+    # 되는 것을 확인한 뒤에 이 단계를 켠다 — 먼저 켜면 옛 주소가 아직 살아나지
+    # 않은 곳으로 넘어가 관리자 콘솔에 못 들어간다. 로그인 자체는 PR #167로
+    # 들어와 있다. 순서는 docs/admin-origin-split.md의 전환 절차를 따른다.
+    buildCommand: npm run export:web --workspace @weddingpick/mobile && node scripts/split-admin-dist.mjs app
     envVars:
       - key: EXPO_PUBLIC_API_URL
         value: https://weddingpickl.onrender.com
@@ -76,6 +85,68 @@ services:
     # 박혀 있다(예: entry-5d192faf….js) — 내용이 바뀌면 이름도 바뀌므로 오래
     # 캐시해도 낡은 파일을 오래 붙들 위험이 없다. index.html 등 해시 없는 경로는
     # 여기 안 넣는다 — 그건 배포마다 같은 이름으로 새 내용을 담아야 한다.
+    headers:
+      - path: /_expo/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+
+  # 관리자 콘솔 (정적 사이트)
+  #
+  # **같은 소스에서 같은 export를 돌리고 산출물만 다르게 깎는다.** 관리자 화면은
+  # expo-router 트리 하나에 묶여 있어 따로 빌드하려면 react-native-web 파이프라인을
+  # 새로 세워야 한다 — 출처를 가르는 목적은 그것 없이 달성된다(2026-09-10 결정).
+  #
+  # **이 분리로 얻는 것은 출처 분리 하나다.** 관리자 토큰이 사용자 앱과 다른
+  # localStorage에 들어가고 사용자 화면 쪽 XSS가 거기 닿지 못한다. **앞단 인증이나
+  # IP 제한은 얻지 못한다** — Render 정적 사이트에는 그런 기능이 없다. 화면 코드도
+  # 주소를 알면 누구나 받는다. 지켜야 할 것은 화면이 아니라 정보이고, 그건 API의
+  # requireOperatorUser가 토큰으로 막는다. 자세한 범위는 docs/admin-origin-split.md.
+  #
+  # 주소는 `weddingpick-admin.onrender.com/admin/*`이다 — `/admin` 접두어를 뗄 수
+  # 없다. expo-router의 static 출력이 URL 경로로 라우트를 찾아서, 경로를 바꿔
+  # 내보내면 서버가 보낸 HTML과 클라이언트 라우터가 어긋난다.
+  #
+  # **이 선언만으로는 서비스가 생기지 않는다** — Blueprint sync가 깨져 있다(위 머리말).
+  # 사람이 대시보드에서 만들고 Build Command·Publish Directory를 손으로 넣어야 한다.
+  # 절차는 docs/admin-origin-split.md에 있다.
+  #
+  # **이름이 두 벌이라는 데 주의한다.** 아래 `name`은 이 파일의 다른 서비스들과 같은
+  # 규칙인 주소 슬러그(`weddingpick-admin.onrender.com`)다. 대시보드의 표시 이름은
+  # **`WeddingPick-관리자 사이트`**이고, `infra/render-env.yml`은 그쪽을 써야 한다 —
+  # `scripts/render-env-sync.py`가 표시 이름으로 서비스를 찾기 때문이다(2026-09-10
+  # 이름 변경으로 그 파일의 서비스 이름이 전부 표시 이름으로 바뀌었다).
+  - type: web
+    name: weddingpick-admin
+    runtime: static
+    staticPublishPath: ./apps/mobile/dist
+    autoDeploy: true
+    buildCommand: npm run export:web --workspace @weddingpick/mobile && node scripts/split-admin-dist.mjs admin
+    # app-web과 같은 값이어야 한다 — 같은 번들이 같은 API를 부른다. 없으면
+    # isServerConfigured가 false가 되어 로그인 화면이 빈 채로 뜬다.
+    envVars:
+      - key: EXPO_PUBLIC_API_URL
+        value: https://weddingpickl.onrender.com
+      - key: EXPO_PUBLIC_KAKAO_CLIENT_ID
+        value: 8e9a14dd3a0aa1a420bff858460c415c
+      - key: EXPO_PUBLIC_GOOGLE_CLIENT_ID
+        value: 595165026523-dd5s0fqtle78e03mb34m9iaclpdmlb9r.apps.googleusercontent.com
+      - key: EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID
+        value: 595165026523-3mlcq960r5q174h6chun8mommjkpt0qi.apps.googleusercontent.com
+      - key: EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID
+        value: 595165026523-bg8hu37bq5mll2gr879artmgh4h2a9v0.apps.googleusercontent.com
+      - key: EXPO_PUBLIC_NAVER_CLIENT_ID
+        value: tgp4WVYlYO_qd2nyvHug
+      - key: EXPO_PUBLIC_NAVER_REDIRECT_URI
+        value: https://weddingpickl.onrender.com/v1/auth/naver/callback
+    routes:
+      # expo-router 클라이언트 라우팅 — 없는 경로를 index.html로 되돌린다.
+      # index.html은 split-admin-dist.mjs가 /admin/home으로 넘기는 쪽지로 바꿔 둔다.
+      - type: rewrite
+        source: /*
+        destination: /index.html
     headers:
       - path: /_expo/*
         name: Cache-Control
