@@ -9,6 +9,7 @@ import {
   type BudgetBandKey,
   DISCLOSURE_THRESHOLDS,
   NOT_ENOUGH_DATA,
+  PREPARATION_CATEGORIES,
   priceLine,
   TERMS,
   type VendorCategory,
@@ -67,6 +68,12 @@ import { DelayedLoader } from '@/features/loading/delayed-loader';
  * 검색은 자주 쓰는 분류부터 보여준다. 사업계획서 6번의 확장 순서와 같다.
  * «기타»는 격자에 두지 않는다 — 고를 이유를 설명할 수 없는 칸이다.
  */
+
+/**
+ * 업종 칩의 순서. 준비 현황과 같은 차례로 둔다 — 두 화면이 업종을 다른 순서로
+ * 늘어놓으면 같은 목록으로 읽히지 않는다.
+ */
+const CATEGORY_ORDER: readonly VendorCategory[] = PREPARATION_CATEGORIES;
 
 /** 자동완성은 결과보다 빨리 따라와야 한다(시안 WP-SRCH-002). */
 const AUTOCOMPLETE_DEBOUNCE_MS = 200;
@@ -878,9 +885,30 @@ export default function SearchScreen() {
             />
           </View>
           {/*
-            업종 칩은 두지 않는다(2026-09-08) — 업종은 검색 홈의 격자에서 이미
-            골랐고, 결과에서 또 고르게 하면 같은 선택을 두 번 시킨다. 지역만 남긴다.
+            업종 칩 — 루트 시안 `WP-SRCH-검색.dc.html` 16a의 `weddingCats`다.
+            「전체」가 맨 앞이고 그다음이 업종이다.
+
+            2026-09-08에는 두지 않기로 했었다. 근거는 「업종은 검색 홈의 격자에서
+            이미 골랐고, 결과에서 또 고르게 하면 같은 선택을 두 번 시킨다」였다.
+            **그 검색 홈이 없어졌으므로 근거도 없어졌다**(2026-09-11 대표 지시).
+            지금은 여기가 업종을 고르는 유일한 자리다.
           */}
+          <View style={styles.filterChip}>
+            <FilterChip
+              label="전체"
+              selected={filters.category === null}
+              onPress={() => setFilters((current) => ({ ...current, category: null }))}
+            />
+          </View>
+          {CATEGORY_ORDER.map((category) => (
+            <View key={category} style={styles.filterChip}>
+              <FilterChip
+                label={VENDOR_CATEGORY_LABEL[category]}
+                selected={filters.category === category}
+                onPress={() => toggle('category', category)}
+              />
+            </View>
+          ))}
           {regions.map((region) => (
             <View key={region.name} style={styles.filterChip}>
               <FilterChip
@@ -993,14 +1021,19 @@ export default function SearchScreen() {
 
         {/* ── 헤더 ── */}
         {/*
-         * 검색 홈이 없으므로 헤더는 하나다. 검색창은 늘 여기 있고, 왼쪽 자리만
-         * 조건에 따라 바뀐다 — 걸린 조건이 있으면 그것을 비우는 뒤로 버튼이고,
-         * 없으면 탭의 첫 화면이라 갈 곳이 없으므로 알림 벨을 오른쪽에 둔다.
-         * 아무 데도 안 가는 뒤로 버튼을 두는 것이 가장 나쁘다.
+         * 루트 시안 `docs/design-handoff/root/WP-SRCH-검색.dc.html` 16a를 그대로 따른다.
+         * 줄이 둘이다 — 위는 「검색」 제목(head 56), 아래는 검색창(navSearch 60).
+         * 하나로 합치지 않는다. 합치면 탭 이름이 사라져 여기가 어디인지 알 수 없다.
+         *
+         * 검색창 왼쪽의 40 원형은 조건이 걸렸을 때만 선다(시안 16c). 조건이 없으면
+         * 탭의 첫 화면이라 갈 곳이 없다 — 아무 데도 가지 않는 뒤로 가기 단추를
+         * 두는 것이 가장 나쁘다.
          */}
+        <ThemedView style={styles.homeHeader}>
+          <ThemedText type="t4">검색</ThemedText>
+        </ThemedView>
         <ThemedView style={styles.header}>
           {hasCondition ? (
-            /* 시안 navSearch — 검색창 왼쪽에 40 원형(06-search.dc.html L343·L143). */
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="검색 조건 비우기"
@@ -1011,15 +1044,6 @@ export default function SearchScreen() {
           ) : null}
           {renderSearchBox({ compact: true })}
           {/* 지도 보기는 여기 없다(2026-09-08) — 위치는 업체 상세에서만 보인다. */}
-          {hasCondition ? null : (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="알림"
-              onPress={() => router.push('/my/notifications')}
-              style={styles.bellBtn}>
-              <ProductSymbol name="bell" size={Layout.iconTab} color={theme.textStrong} />
-            </Pressable>
-          )}
         </ThemedView>
 
         {/* ── 본문 ── */}
