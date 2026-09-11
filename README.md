@@ -40,4 +40,4 @@ npm run build --workspace @weddingpick/web
 - 웹사이트: [웨딩픽 웹사이트](https://weddingpick-web.onrender.com)
 - API: `https://weddingpickl.onrender.com`
 
-`weddingpick.kr`은 보유한 커스텀 도메인이지만 현재 사용하지 않는다. 폐기·삭제 대상으로 취급하지 않는다.
+`weddingpick.kr`은 **폐기했다**(2026-09-11 대표 지시). 2026-09-10의 「보유하되 미사용」을 뒤집은 결정이다. 다시 붙이자고 제안하지 않는다.
