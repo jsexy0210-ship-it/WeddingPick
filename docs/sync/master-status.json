@@ -523,6 +523,8 @@
     },
     "whyApiNotDb": "API를 옮기면 두 구간이 함께 짧아진다 — API↔DB는 같은 리전이 되고 사용자→API도 태평양을 건너지 않는다. DB를 미국으로 옮기면 API↔DB만 풀리고 사용자 구간은 나빠진다.",
     "ordering": "고지가 이전보다 먼저다 — 개인정보보호법 제28조의8. 방침을 먼저 올리고 그다음 서버를 옮긴다.",
+    "noticeDecision": "2026-09-11 대표 결정 「일단 바꾸고 고지한다」 — 예고 단계를 두지 않는다. 처리방침 5항 Render 행을 곧장 「싱가포르」로 바꾸고(PR #208 완료) 그 개정을 시행일과 함께 알린다. 고지가 앞서므로 미고지 이전 구간은 없다. 대신 시행일부터 실제 이전까지 방침이 사실보다 앞서 있으므로 **시행일까지 API가 싱가포르에 있어야 한다** — 늦어지면 서버를 서두르지 말고 시행일을 미룬다. Anthropic·Expo는 미국 그대로이고 시험이 네 행의 리전을 각각 잠근다(apps/web/src/legal-pages.test.ts).",
+    "effectiveDatePending": "LEGAL_PRIVACY_EFFECTIVE_ON — 대표님이 정한다. infra/render-env.yml의 웹사이트 블록과 운영 API 블록 둘 다 고친다. 지금 값은 두 문서 모두 2026-09-10이다.",
     "session": "session_01XKpxtPqtPoXe985dafbFwc · 브랜치 claude/region-legal",
     "masterAndOwnerOnly": [
       "Render 대시보드에서 싱가포르 서비스 생성·환경변수 이관·전환 — 세션은 절차서까지만 만든다",
