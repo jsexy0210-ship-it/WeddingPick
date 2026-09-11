@@ -151,3 +151,45 @@ export function hasUnread(summary: NotificationSummary): boolean {
 
 /** 알림함이 비었을 때. 빈 화면에도 할 말은 있다. */
 export const NOTIFICATIONS_EMPTY = '아직 받은 알림이 없어요';
+
+/**
+ * 야간 수신을 끈 사람에게 푸시를 생략하는 시간대. AGENTS.md «WP-NOTI-003 야간
+ * 수신 끔»(사용자 승인 2026-09-06) — 한국시간 21:00 이상 ~ 다음 날 08:00 미만.
+ *
+ * 시작은 이상이고 끝은 미만이다. 21:00:00은 조용한 시간이고 08:00:00은 아니다.
+ */
+export const NOTIFICATION_QUIET_FROM_HOUR = 21;
+export const NOTIFICATION_QUIET_UNTIL_HOUR = 8;
+
+/**
+ * 이 순간이 한국에서 몇 시인가.
+ *
+ * **비교는 UTC 순간으로 하되 경계는 KST로 읽는다.** `Date`는 시간대가 없는
+ * 순간이고, 21시·8시라는 경계만 한국 시계로 읽으면 된다 — 저장값을 KST로 바꿔
+ * 담으면 그때부터 아홉 시간이 어긋난다.
+ *
+ * 오프셋을 손으로 더하지 않고 시간대 이름으로 읽는다. +9를 코드에 적으면 그
+ * 숫자가 맞는지를 읽는 사람이 매번 다시 확인해야 한다.
+ */
+export function seoulHour(at: Date): number {
+  const hour = new Intl.DateTimeFormat('en-US', {
+    timeZone: NOTIFICATION_TIMEZONE,
+    hour: 'numeric',
+    hourCycle: 'h23',
+  }).format(at);
+
+  return Number(hour);
+}
+
+/**
+ * 지금이 야간인가. 야간 수신을 끈 사람에게는 이 동안 푸시를 보내지 않는다.
+ *
+ * **알림함은 그대로 남는다.** 야간은 «밀어서 알려줄지»를 정하는 값이지 결과를
+ * 감추는 값이 아니다 — 그리고 아침이 되어도 밤에 생략한 푸시를 모아 다시
+ * 보내지 않는다(AGENTS.md). 아침에 몰아서 울리면 껐다는 말이 무색해진다.
+ */
+export function isQuietHours(at: Date): boolean {
+  const hour = seoulHour(at);
+
+  return hour >= NOTIFICATION_QUIET_FROM_HOUR || hour < NOTIFICATION_QUIET_UNTIL_HOUR;
+}
