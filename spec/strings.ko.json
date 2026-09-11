@@ -319,6 +319,8 @@
     "filter.title": "필터",
     "filter.reset": "초기화",
     "filter.apply": "{n}곳 보기",
+    "filter.group.region": "지역",
+    "filter.group.budget": "예산",
     "filter.onlyVerified": "실 제보가 있는 곳만",
     "filter.onlyVerifiedDesc": "금액을 볼 수 있는 곳만 보기",
     "empty.title": "조건에 맞는 곳이\n없어요",
