@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-static.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-scale.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-semantic.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/typography.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/dimension.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/motion.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/base.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/core/core.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/buttons/buttons.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/forms/forms.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/feedback/feedback.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/overlay/overlay.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/display/display.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/styles.css">
+<script src="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/_ds_bundle.js"></script>
+<script src="./image-slot.js"></script>
+<style>
+body{margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#ff6f61;text-decoration:none}
+a:hover{color:#e2564a}
+.nsb::-webkit-scrollbar{display:none}
+@keyframes wpSheet{0%{transform:translateY(100%)}100%{transform:translateY(0)}}
+image-slot{background:#eaebee}
+image-slot::part(empty){display:none !important}
+</style>
+</helmet>
+
+<section style="{{ rootStyle }}">
+
+<div style="display:flex;flex-direction:column;gap:10px;max-width:1100px;padding-bottom:8px">
+  <span style="{{ eyebrowTop }}">WeddingPick · WP-HOME-001 · v3.20</span>
+  <span style="font-size:40px;line-height:52px;font-weight:700;color:#212124">홈 · 상태 정의 통합</span>
+  <span style="font-size:18px;line-height:26px;color:#393a40;text-wrap:pretty">WP-HOME-001의 유일한 상태 정의입니다. 1층은 진행 상황 3구간이 화면 골격을 정하고, 2층은 정보량이 금액 표기와 CTA만 바꿉니다. 2번과 2b번을 나란히 보면 골격이 같습니다. 기존 «홈 C-1 상태»의 6상태 정의는 폐기합니다.</span>
+</div>
+
+<div style="display:flex;gap:36px;align-items:flex-start">
+  <sc-for list="{{ states }}" as="s" hint-placeholder-count="3">
+    <div style="{{ col }}">
+      <div style="{{ tag }}"><span style="{{ tagId }}">{{ s.no }}</span>{{ s.label }}</div>
+      <span style="{{ tagDesc }}">{{ s.desc }}</span>
+
+      <div style="{{ phone }}">
+        <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+
+        <div style="{{ head }}">
+          <span style="{{ wordmark }}">웨딩픽</span>
+          <span style="{{ headIcons }}">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18.4 15.6V10a6.4 6.4 0 1 0-12.8 0v5.6l-1.6 2.4h16z"></path><path d="M10 20.4h4"></path></svg>
+          </span>
+        </div>
+
+        <div class="nsb" style="{{ scroll }}">
+
+          <div style="{{ heroWrap }}">
+            <div style="{{ coupleRow }}">
+              <span style="{{ avWrap }}"><image-slot id="{{ s.avSlot }}" src="uploads/samples-1788175716407-57s9.jpg" shape="circle" placeholder=""></image-slot></span>
+              <span style="{{ coupleName }}">재또</span>
+              <span style="{{ ddayChip }}">D-142</span>
+            </div>
+            <span style="{{ heroTitle }}">{{ s.h1 }}<br>{{ s.h2 }}</span>
+            <div style="{{ progRow }}">
+              <div style="{{ track }}"><div style="{{ s.progBar }}"></div></div>
+              <span style="{{ progText }}">{{ s.progText }}</span>
+            </div>
+          </div>
+
+          <div style="{{ padSec }}">
+            <div style="{{ secHead }}">
+              <span style="{{ s20 }}">웨딩일정</span>
+              <span style="{{ t14m }}">{{ s.boardMore }}</span>
+            </div>
+            <div style="{{ boardGrid }}">
+              <sc-for list="{{ s.board }}" as="b" hint-placeholder-count="4">
+                <div style="{{ b.box }}">
+                  <span style="{{ b.name }}">{{ b.label }}</span>
+                  <span style="{{ b.valStyle }}">{{ b.val }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <sc-if value="{{ s.boardNote }}">
+              <span style="{{ t14w }}">{{ s.boardNote }}</span>
+            </sc-if>
+          </div>
+
+          <div style="{{ padSec }}">
+            <span style="{{ t14a }}">{{ s.pickLabel }}</span>
+            <div class="nsb" style="{{ condRow }}">
+              <sc-for list="{{ s.conds }}" as="c" hint-placeholder-count="3"><span style="{{ c.style }}">{{ c.label }}</span></sc-for>
+            </div>
+            <div style="{{ heroImg }}"><image-slot id="{{ s.slot }}" src="{{ s.src }}" shape="rect" placeholder=""></image-slot></div>
+            <div style="{{ nameRow }}">
+              <span style="{{ vendName }}">{{ s.vendName }}</span>
+              <span style="{{ s.priceStyle }}">{{ s.vendPrice }}</span>
+            </div>
+            <span style="{{ t16g }}">{{ s.vendWhy }}</span>
+            <span style="{{ t14n }}">{{ s.vendMeta }}</span>
+            <div style="{{ twoCol }}">
+              <sc-for list="{{ s.sub }}" as="v" hint-placeholder-count="2">
+                <div style="{{ subCard }}">
+                  <div style="{{ subImg }}"><image-slot id="{{ v.slot }}" src="{{ v.src }}" shape="rect" placeholder=""></image-slot></div>
+                  <span style="{{ subName }}">{{ v.name }}</span>
+                  <span style="{{ v.priceStyle }}">{{ v.price }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <button style="{{ s.ctaStyle }}">{{ s.cta }}</button>
+          </div>
+
+          <div style="{{ band }}"></div>
+
+          <div style="{{ padSec }}">
+            <span style="{{ s20 }}">{{ s.nextTitle }}</span>
+            <div style="{{ nextRow }}">
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+                <span style="{{ t18b }}">{{ s.nextName }}</span>
+                <span style="{{ t14w }}">{{ s.nextMeta }}</span>
+              </div>
+              <span style="{{ t14n }}">{{ s.nextDday }}</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#adb1ba" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 18px;margin-top:3px"><path d="m9 6 6 6-6 6"></path></svg>
+            </div>
+          </div>
+
+        </div>
+
+        <div style="{{ tabBar }}">
+          <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
+            <button style="{{ t.style }}">
+              <span style="{{ t.wrap }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{ t.stroke }}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.d1 }}"></path><path d="{{ t.d2 }}"></path><path d="{{ t.d3 }}"></path></svg></span>
+              <span>{{ t.label }}</span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-for>
+
+<div style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">S</span>혜택 안내 시트 · WP-SHT-017</div>
+  <span style="{{ tagDesc }}">최초 진입 1회 · 400ms 뒤. 네 가지 혜택 중 금액이 가장 큰 웨딩지원금 하나만 내세웁니다. 미션 5천원을 앞세우면 첫인상이 싸 보입니다. 닫으면 다시 뜨지 않습니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="flex:1;position:relative;overflow:hidden">
+      <div style="position:absolute;inset:0;padding:14px 24px;display:flex;flex-direction:column;gap:14px;filter:blur(1px);opacity:.45">
+        <div style="height:26px;width:60%;border-radius:6px;background:#f2f3f6"></div>
+        <div style="height:70px;border-radius:10px;background:#f2f3f6"></div>
+        <div style="height:80px;border-radius:10px;background:#f2f3f6"></div>
+        <div style="height:180px;border-radius:10px;background:#f2f3f6"></div>
+      </div>
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,.45)"></div>
+      <div style="{{ sheet }}">
+        <span style="{{ grabber }}"></span>
+        <div style="{{ sheetHead }}">
+          <span style="{{ sheetEyebrow }}">웨딩지원금</span>
+          <span style="{{ sheetClose }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#868b94" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></span>
+        </div>
+        <span style="{{ sheetTitle }}">두 가지만 더 하면<br>Npay 5만원에 자동 응모돼요</span>
+        <div style="{{ stepCard }}">
+          <div style="{{ stepAmountRow }}">
+            <span style="{{ stepAmount }}">50,000원</span>
+            <span style="{{ npayPill }}"><span style="{{ npayN }}">N</span><span style="{{ npayText }}">pay</span></span>
+          </div>
+          <div style="{{ stepTrack }}"><div style="{{ stepFill }}"></div></div>
+          <div style="{{ stepList }}">
+            <sc-for list="{{ sheetMissions }}" as="m" hint-placeholder-count="3">
+              <div style="{{ stepItem }}">
+                <span style="{{ m.dot }}">
+                  <sc-if value="{{ m.done }}" hint-placeholder-val="{{ false }}">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg>
+                  </sc-if>
+                </span>
+                <span style="{{ m.text }}">{{ m.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button style="{{ sheetGhost }}">나중에</button>
+          <button style="{{ sheetCta }}">혜택 보기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div style="display:flex;gap:20px;flex-wrap:wrap;max-width:1300px">
+  <sc-for list="{{ rules }}" as="r" hint-placeholder-count="4">
+    <div style="{{ ruleCard }}">
+      <span style="{{ ruleTitle }}">{{ r.title }}</span>
+      <span style="{{ ruleBody }}">{{ r.body }}</span>
+    </div>
+  </sc-for>
+</div>
+
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1400,&quot;height&quot;:1100}}">
+class Component extends DCLogic {
+  static ICONS = {
+    home: ['M3.6 10.4 12 3.8l8.4 6.6V19a1.6 1.6 0 0 1-1.6 1.6H5.2A1.6 1.6 0 0 1 3.6 19z', 'M9.6 20.6v-6.2h4.8v6.2', ''],
+    search: ['M11 4.2a6.9 6.9 0 1 0 0 13.8 6.9 6.9 0 0 0 0-13.8z', 'M16.2 16.2 20.8 20.8', ''],
+    pick: ['M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z', 'M9.4 11.9l1.7 1.7 3.4-3.4', ''],
+    cal: ['M5.2 5.6h13.6a1.8 1.8 0 0 1 1.8 1.8v11.2a1.8 1.8 0 0 1-1.8 1.8H5.2a1.8 1.8 0 0 1-1.8-1.8V7.4a1.8 1.8 0 0 1 1.8-1.8z', 'M3.4 10.4h17.2M8.4 3.4v4M15.6 3.4v4', ''],
+    my: ['M12 11.6a4 4 0 1 0 0-8 4 4 0 0 0 0 8z', 'M4.8 20.6v-.6a6 6 0 0 1 6-6h2.4a6 6 0 0 1 6 6v.6', '']
+  };
+
+  renderVals() {
+    const C = '#ff6f61';
+    const IMG = {
+      couple: 'uploads/samples-1788175716407-57s9.jpg',
+      arch: 'uploads/samples-1788175716396-jydc.jpg',
+      bride: 'uploads/samples-1788175716389-fion.jpg',
+      hall: 'uploads/samples-1788175716419-flvg.jpg',
+      dress: 'uploads/samples-1788175716375-3z0c.jpg'
+    };
+
+    const tab = (label, icon, on) => {
+      const c = on ? '#212124' : '#868b94';
+      const d = Component.ICONS[icon];
+      return { label, d1: d[0], d2: d[1], d3: d[2], stroke: c,
+        style: 'flex:1;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:0;background:transparent;cursor:pointer;padding:0;font-size:12px;line-height:16px;font-family:inherit;font-weight:700;color:' + c,
+        wrap: 'width:24px;height:24px;display:flex;align-items:center;justify-content:center' };
+    };
+
+    const cell = (label, val, kind) => ({
+      label, val,
+      box: 'min-width:0;border-radius:10px;padding:12px 10px;display:flex;flex-direction:column;align-items:center;gap:3px;box-sizing:border-box;'
+        + (kind === 'now' ? 'background:#fff;box-shadow:inset 0 0 0 1.5px ' + C + ';' : 'background:#f7f8fa;'),
+      name: 'font-size:13px;line-height:18px;color:#868b94;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%',
+      valStyle: 'font-size:15px;line-height:20px;font-weight:700;white-space:nowrap;color:'
+        + (kind === 'done' ? '#4d5159' : kind === 'now' ? '#212124' : kind === 'none' ? '#adb1ba' : '#212124')
+    });
+
+    const cond = (label) => ({ label,
+      style: 'flex:0 0 auto;height:30px;display:inline-flex;align-items:center;padding:0 11px;border-radius:999px;font-size:13px;line-height:18px;font-weight:700;white-space:nowrap;background:#f2f3f6;color:#4d5159' });
+
+    const sub = (name, price, slot, src, dim) => ({ name, price, slot, src,
+      priceStyle: 'font-size:13px;line-height:18px;font-variant-numeric:tabular-nums;white-space:nowrap;color:' + (dim ? '#adb1ba' : '#868b94') });
+
+    const st = o => ({
+      no: o.no, label: o.label, desc: o.desc,
+      avSlot: 'hp-av-' + o.no,
+      h1: o.h1, h2: o.h2,
+      progBar: 'width:' + o.pct + ';height:100%;border-radius:999px;background:' + C,
+      progText: o.progText,
+      boardMore: o.boardMore || '',
+      board: o.board, boardNote: o.boardNote || '',
+      pickLabel: o.pickLabel, conds: o.conds,
+      slot: o.slot, src: o.src,
+      vendName: o.vendName, vendPrice: o.vendPrice, vendWhy: o.vendWhy, vendMeta: o.vendMeta,
+      priceStyle: 'font-size:16px;line-height:22px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;color:' + (o.priceDim ? '#868b94' : '#212124'),
+      sub: o.sub, cta: o.cta,
+      ctaStyle: 'height:52px;border-radius:6px;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer;margin-top:2px;'
+        + (o.ctaGhost ? 'border:1px solid #dcdee3;background:#fff;color:#212124;' : 'border:0;background:' + C + ';color:#fff;'),
+      nextTitle: o.nextTitle, nextName: o.nextName, nextMeta: o.nextMeta, nextDday: o.nextDday
+    });
+
+    return {
+      rootStyle: 'display:flex;flex-direction:column;gap:48px;align-items:flex-start;padding:64px;width:max-content',
+      col: 'display:flex;flex-direction:column;gap:10px;width:390px',
+      eyebrowTop: 'font-size:14px;line-height:19px;font-weight:700;color:' + C,
+      tag: 'height:26px;display:flex;align-items:center;gap:8px;font-size:18px;line-height:24px;font-weight:700;color:#212124;white-space:nowrap;overflow:hidden',
+      tagId: 'width:26px;height:26px;flex:0 0 26px;border-radius:6px;background:#212124;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700',
+      tagDesc: 'height:92px;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;line-height:21px;color:#4d5159;text-wrap:pretty',
+      phone: 'width:390px;height:844px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)',
+      bar: 'height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:700;color:#212124',
+      barIcons: 'display:flex;gap:5px;align-items:center',
+      head: 'flex:0 0 56px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:#fff',
+      wordmark: 'font-size:20px;line-height:27px;font-weight:700;color:#212124',
+      headIcons: 'display:flex;gap:14px;align-items:center',
+      scroll: 'flex:1 1 auto;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;scrollbar-width:none',
+      tabBar: 'flex:0 0 72px;display:flex;align-items:flex-start;background:#fff;box-shadow:inset 0 1px 0 #eaebee;padding-top:9px',
+
+      heroWrap: 'flex-shrink:0;padding:14px 24px 24px;display:flex;flex-direction:column;gap:10px',
+      coupleRow: 'display:flex;align-items:center;gap:7px',
+      avWrap: 'width:24px;height:24px;flex:0 0 24px;border-radius:999px;overflow:hidden;position:relative;background:#eaebee',
+      coupleName: 'font-size:14px;line-height:19px;font-weight:700;color:#4d5159',
+      ddayChip: 'margin-left:auto;font-size:15px;line-height:20px;font-weight:700;color:' + C + ';font-variant-numeric:tabular-nums',
+      heroTitle: 'font-size:26px;line-height:35px;letter-spacing:-.02em;font-weight:700;color:#212124',
+      progRow: 'display:flex;align-items:center;gap:10px;padding-top:2px',
+      track: 'flex:1;height:6px;border-radius:999px;background:#eaebee;overflow:hidden',
+      progText: 'font-size:13px;line-height:18px;font-weight:700;color:#868b94;font-variant-numeric:tabular-nums;white-space:nowrap',
+
+      padSec: 'flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:11px',
+      secHead: 'display:flex;align-items:baseline;justify-content:space-between;gap:12px',
+      band: 'flex-shrink:0;height:16px;background:#f2f3f6;margin-bottom:28px',
+      boardGrid: 'display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px',
+      condRow: 'display:flex;gap:6px;overflow-x:auto;scrollbar-width:none',
+      heroImg: 'position:relative;width:100%;height:180px;border-radius:10px;overflow:hidden',
+      nameRow: 'display:flex;align-items:baseline;justify-content:space-between;gap:12px',
+      vendName: 'flex:1;min-width:0;font-size:20px;line-height:27px;font-weight:700;color:#212124;overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      vendPrice: 'font-size:16px;line-height:22px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums;white-space:nowrap',
+      twoCol: 'display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px;padding-top:2px',
+      subCard: 'min-width:0;display:flex;flex-direction:column;gap:6px',
+      subImg: 'position:relative;width:100%;aspect-ratio:16/11;border-radius:8px;overflow:hidden',
+      subName: 'font-size:15px;line-height:20px;font-weight:700;color:#212124;overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      subPrice: 'font-size:13px;line-height:18px;color:#868b94;font-variant-numeric:tabular-nums;white-space:nowrap',
+      nextRow: 'display:flex;align-items:flex-start;gap:12px;min-height:56px;padding:12px 0;cursor:pointer',
+
+      s20: 'font-size:20px;line-height:27px;font-weight:700;color:#212124',
+      t18b: 'font-size:18px;line-height:24px;font-weight:700;color:#212124;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block',
+      t16g: 'font-size:16px;line-height:22px;color:#4d5159;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block',
+      t14a: 'font-size:14px;line-height:19px;font-weight:700;color:' + C,
+      t14m: 'font-size:14px;line-height:19px;font-weight:700;color:#868b94;white-space:nowrap',
+      t14n: 'font-size:14px;line-height:19px;color:#868b94;font-variant-numeric:tabular-nums;white-space:nowrap;margin-top:3px',
+      t14w: 'font-size:14px;line-height:19px;color:#868b94;text-wrap:pretty',
+      cta: 'height:52px;border:0;border-radius:6px;background:' + C + ';color:#fff;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer;margin-top:2px',
+
+      sheet: 'position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;padding:12px 24px 28px;display:flex;flex-direction:column;gap:16px;animation:wpSheet 350ms cubic-bezier(.16,1,.3,1) 400ms both',
+      grabber: 'width:40px;height:4px;border-radius:999px;background:#eaebee;align-self:center',
+      sheetHead: 'display:flex;align-items:center;justify-content:space-between;gap:12px',
+      sheetEyebrow: 'font-size:14px;line-height:19px;font-weight:700;color:#868b94',
+      sheetClose: 'width:32px;height:32px;flex:0 0 32px;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-right:-8px',
+      sheetTitle: 'font-size:24px;line-height:32px;letter-spacing:-.02em;font-weight:700;color:#212124',
+      sheetRows: 'display:flex;flex-direction:column;gap:2px',
+      sheetRow: 'display:flex;align-items:center;gap:12px;min-height:48px',
+      sheetRowText: 'font-size:16px;line-height:22px;color:#212124',
+      sheetNote: 'font-size:14px;line-height:19px;color:#868b94',
+      sheetGhost: 'flex:1;height:52px;border:0;border-radius:6px;background:#f2f3f6;color:#393a40;font-family:inherit;font-size:17px;font-weight:700;cursor:pointer',
+      sheetCta: 'flex:1.4;height:52px;border:0;border-radius:6px;background:' + C + ';color:#fff;font-family:inherit;font-size:17px;font-weight:700;cursor:pointer',
+      stepCard: 'border-radius:12px;background:#f7f8fa;padding:20px;display:flex;flex-direction:column;gap:14px',
+      stepAmountRow: 'display:flex;align-items:center;justify-content:space-between;gap:12px',
+      stepAmount: 'font-size:32px;line-height:40px;letter-spacing:-.02em;font-weight:700;color:#212124;font-variant-numeric:tabular-nums',
+      npayPill: 'height:26px;padding:0 10px 0 3px;border-radius:999px;background:#03c75a;display:inline-flex;align-items:center;gap:4px;box-sizing:border-box',
+      npayN: 'width:20px;height:20px;flex:0 0 20px;border-radius:999px;background:#1e1e1e;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;line-height:20px',
+      npayText: 'display:inline-flex;align-items:center;height:20px;font-size:14px;line-height:14px;font-weight:800;color:#1e1e1e;letter-spacing:-.01em;transform:translateY(-1px)',
+      stepTrack: 'height:4px;border-radius:999px;background:#e5e7eb;overflow:hidden',
+      stepFill: 'width:33.3%;height:100%;border-radius:999px;background:#212124',
+      stepList: 'display:flex;flex-direction:column;gap:10px',
+      stepItem: 'display:flex;align-items:center;gap:10px',
+      sheetMissions: [['예식일과 지역 설정', true], ['Pick 인증 1건', false], ['배우자와 연결', false]].map(([label, done]) => ({
+        label, done,
+        dot: 'width:18px;height:18px;flex:0 0 18px;border-radius:999px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;'
+          + (done ? 'background:#212124;' : 'border:1.5px solid #c9ccd1;'),
+        text: 'flex:1;min-width:0;font-size:15px;line-height:20px;color:' + (done ? '#adb1ba' : '#212124') + (done ? ';text-decoration:line-through' : '')
+      })),
+      ruleCard: 'width:410px;background:#fff;border:1px solid #eaebee;border-radius:10px;padding:24px;display:flex;flex-direction:column;gap:8px',
+      ruleTitle: 'font-size:18px;line-height:24px;font-weight:700;color:#212124',
+      ruleBody: 'font-size:15px;line-height:24px;color:#4d5159;text-wrap:pretty',
+
+      tabs: [tab('홈', 'home', true), tab('검색', 'search', false), tab('Pick', 'pick', false), tab('웨딩일정', 'cal', false), tab('MY', 'my', false)],
+
+      states: [
+        st({
+          no: '1', label: '시작 전 · 0 / 12',
+          desc: '온보딩에서 «아직 시작 전이에요»를 고른 사용자. 첫 결정 하나에만 집중시킵니다. 준비 현황 격자를 펼치면 빈 칸 12개가 보이므로 4칸 요약으로 줄이고, 히어로도 순서를 알려주는 데 씁니다.',
+          h1: '웨딩홀부터', h2: '정해볼까요?', pct: '4%', progText: '0 / 12',
+          board: [cell('웨딩홀', '먼저', 'now'), cell('스튜디오', '시작 전', 'none'), cell('드레스', '시작 전', 'none'), cell('메이크업', '시작 전', 'none')],
+          boardNote: '웨딩홀이 정해지면 날짜와 예산이 잡혀요',
+          pickLabel: '웨딩픽 추천 · 웨딩홀',
+          conds: [cond('강남', true), cond('5월', true), cond('3천만원대', true), cond('도시적인', true), cond('로맨틱한', true)],
+          slot: 'hp-1', src: IMG.hall,
+          vendName: '강남 A 웨딩홀', vendPrice: '1,480~1,820만원',
+          vendWhy: '고른 스타일이랑 가장 비슷해요',
+          vendMeta: '실 제보 21건 · 5월 셋째 주 가능',
+          sub: [sub('서초 B 홀', '1,320~1,610만원', 'hp-1a', IMG.arch), sub('청담 C 홀', '1,650~2,040만원', 'hp-1b', IMG.bride)],
+          cta: '3곳 비교하기',
+          nextTitle: '그다음은', nextName: '스튜디오 정하기', nextMeta: '웨딩홀이 정해지면 알려드려요', nextDday: '대기'
+        }),
+        st({
+          no: '2', label: '진행 중 · 3 / 12',
+          desc: '가장 흔한 경우. 끝낸 것은 회색으로 내리고 지금 좁힐 업종만 코랄 테두리로 지목합니다. 조건 칩에 온보딩에서 받은 지역 · 예산 · 스타일을 그대로 노출해 무엇을 기준으로 골랐는지 알립니다.',
+          h1: '이번 주엔', h2: '메이크업 차례예요', pct: '25%', progText: '3 / 12',
+          boardMore: '전체 보기',
+          board: [cell('웨딩홀', '완료', 'done'), cell('스튜디오', '완료', 'done'), cell('드레스', '완료', 'done'), cell('메이크업', '3곳', 'now')],
+          boardNote: '',
+          pickLabel: '웨딩픽 추천 · 메이크업',
+          conds: [cond('강남', true), cond('3천만원대', true), cond('도시적인', true), cond('로맨틱한', true), cond('5월 12일', false)],
+          slot: 'hp-2', src: IMG.bride,
+          vendName: '청담 D 헤메', vendPrice: '68~92만원',
+          vendWhy: '고른 스튜디오랑 같은 팀이 자주 가요',
+          vendMeta: '실 제보 14건 · 촬영일 예약 가능',
+          sub: [sub('강남 E 헤메', '54~76만원', 'hp-2a', IMG.couple), sub('논현 F 헤메', '72~98만원', 'hp-2b', IMG.dress)],
+          cta: '3곳 비교하기',
+          nextTitle: '다음 준비', nextName: '본식스냅 정하기', nextMeta: '스튜디오와 같은 팀으로 하면 편해요', nextDday: 'D-60'
+        }),
+        st({
+          no: '2b', label: '진행 중 · 정보 부족',
+          desc: '같은 진행 중 상태인데 실 제보가 3건 미만인 경우. 골격은 2번과 완전히 같고 금액 표기만 «수집 중»으로 바뀝니다. 비교 CTA를 내리고 Pick 인증을 권합니다. 정보량은 화면 구조를 바꾸지 않습니다.',
+          h1: '이번 주엔', h2: '메이크업 차례예요', pct: '25%', progText: '3 / 12',
+          boardMore: '전체 보기',
+          board: [cell('웨딩홀', '완료', 'done'), cell('스튜디오', '완료', 'done'), cell('드레스', '완료', 'done'), cell('메이크업', '3곳', 'now')],
+          boardNote: '',
+          pickLabel: '웨딩픽 추천 · 메이크업',
+          conds: [cond('강남', true), cond('3천만원대', true), cond('도시적인', true), cond('로맨틱한', true)],
+          slot: 'hp-2c', src: IMG.bride,
+          vendName: '청담 D 헤메', vendPrice: '수집 중', priceDim: true,
+          vendWhy: '고른 스튜디오랑 같은 팀이 자주 가요',
+          vendMeta: '아직 정보가 적어요 · 2건',
+          sub: [sub('강남 E 헤메', '수집 중', 'hp-2d', IMG.couple, true), sub('논현 F 헤메', '수집 중', 'hp-2e', IMG.dress, true)],
+          cta: 'Pick 인증하기', ctaGhost: true,
+          nextTitle: '다음 준비', nextName: '본식스냅 정하기', nextMeta: '스튜디오와 같은 팀으로 하면 편해요', nextDday: 'D-60'
+        }),
+        st({
+          no: '3', label: '대부분 완료 · 9 / 12',
+          desc: '남은 것이 적으므로 추천보다 마무리를 앞에 둡니다. 준비 현황 격자는 남은 3개만 보여주고, 히어로는 다음 결정이 아니라 남은 개수를 말합니다. Pick 인증과 후기 요청이 이 시점에 들어갑니다.',
+          h1: '세 개만', h2: '더 정하면 끝나요', pct: '75%', progText: '9 / 12',
+          boardMore: '완료 9개 · 전체 보기',
+          board: [cell('청첩장', '2곳', 'now'), cell('예물', '시작 전', 'none'), cell('허니문', '시작 전', 'none'), cell('본식스냅', '완료', 'done')],
+          boardNote: '',
+          pickLabel: '웨딩픽 추천 · 청첩장',
+          conds: [cond('도시적인', true), cond('로맨틱한', true), cond('5월 16일', false)],
+          slot: 'hp-3', src: IMG.arch,
+          vendName: '지류 G 스튜디오', vendPrice: '32~48만원',
+          vendWhy: '고른 스타일이랑 가장 비슷해요',
+          vendMeta: '실 제보 9건 · 제작 2주',
+          sub: [sub('레터 H', '28~41만원', 'hp-3a', IMG.dress), sub('페이퍼 I', '35~52만원', 'hp-3b', IMG.couple)],
+          cta: '2곳 비교하기',
+          nextTitle: '정리하면 좋은 것', nextName: 'Pick 인증 3건 남았어요', nextMeta: '금액이 확인되면 다음 커플에게 도움이 돼요', nextDday: '인증'
+        })
+      ],
+
+      rules: [
+        { title: '상태는 2층으로 정의한다 · 1층 진행 상황', body: '홈 상태를 나열하지 않고 층으로 나눕니다. 1층은 진행 상황 3구간이고 이것이 화면 골격을 정합니다. 0개 · 1~8개 · 9개 이상. 히어로 문구 · 준비 현황 격자 구성 · 다음 준비 자리가 여기서 결정됩니다.' },
+        { title: '2층은 정보량 · 골격을 바꾸지 않는다', body: '실 제보가 3건 미만이면 금액이 «수집 중»이 되고 비교 CTA가 Pick 인증으로 바뀝니다. 그뿐입니다. 섹션 순서나 개수는 그대로입니다. 2번과 2b번을 나란히 보면 같은 화면인 것이 보입니다. 두 축을 같은 층위로 나열하면 3×4=12가지가 되고 아무도 다 만들지 못합니다.' },
+        { title: '비회원 홈은 없다', body: 'v3.12에서 비회원 이용을 폐기했습니다. 로그아웃 상태는 홈을 보여주지 않고 WP-AUTH-001로 보냅니다. WP-HOME-008은 excluded 목록에 있습니다.' },
+        { title: '진행 상황이 홈 전체를 바꾼다', body: '0개 · 1~8개 · 9개 이상 세 구간으로 나눕니다. 아무것도 안 한 사람에게 «이번 주엔 메이크업 차례예요»라고 하면 무슨 말인지 모르고, 아홉 개를 끝낸 사람에게 «웨딩홀부터 정해볼까요»라고 하면 앱을 지웁니다.' },
+        { title: '준비 현황 격자는 항상 4칸', body: '12업종을 다 펼치지 않습니다. 시작 전에는 순서상 첫 4개, 진행 중에는 끝낸 것과 지금 것을 섞어 4개, 대부분 완료면 남은 것 위주로 4개입니다. 네 칸 모두 라벨은 업종명, 값은 상태로 축을 통일하고 카운터를 섞지 않습니다. 완료 개수는 섹션 헤더에 적습니다. 값 자리에 빈 칸이나 «—»를 쓰지 않고 «시작 전»으로 적습니다.' },
+        { title: '코랄은 화면당 다섯 곳', body: 'D-day · 현재 업종 테두리 · 진행바 · 웨딩픽 추천 라벨 · CTA. 조건 칩 · 완료 표시는 무채색입니다. 프로필 사진은 카카오에서 받아오고 이름은 닉네임입니다. 코랄이 다섯 군데 이상 보이면 어디를 봐야 할지 모르고 눈이 피로합니다. 완료도 초록이 아니라 짙은 회색으로 두어 상태색을 아낍니다.' },
+        { title: '조건 칩으로 근거를 보인다', body: '온보딩에서 받은 지역 · 예산 · 스타일을 웨딩픽 추천 위에 회색 칩으로 노출합니다. 사용자가 무엇을 기준으로 골라준 것인지 알 수 있어야 추천을 믿습니다. 칩을 누르면 그 조건을 뺀 결과를 봅니다.' },
+        { title: '마지막 구간에서는 추천을 줄인다', body: '9개 이상 끝낸 사용자에게 새 업체를 계속 들이밀면 피로해집니다. 다음 준비 자리를 Pick 인증과 후기로 바꾸고, 예식이 지나면 WP-OUR-013 정리 화면으로 넘깁니다.' }
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

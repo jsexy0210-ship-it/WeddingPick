@@ -8,12 +8,11 @@ import {
 import {
   type BudgetBandKey,
   DISCLOSURE_THRESHOLDS,
-  MOST_VIEWED,
   NOT_ENOUGH_DATA,
+  PREPARATION_CATEGORIES,
   priceLine,
   TERMS,
   type VendorCategory,
-  PREPARATION_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
   regionLabel,
   withParticle,
@@ -40,9 +39,7 @@ import { PickDoneSheet, UnpickSheet } from '@/features/pick/pick-sheets';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
 import {
   addRecentSearch,
-  clearRecentSearches,
   loadRecentSearches,
-  removeRecentSearch,
 } from '@/features/search/recent-searches';
 import { FilterSheet, type SearchFilterValue } from '@/features/search/filter-sheet';
 import { SORT_LABEL, SortSheet } from '@/features/search/sort-sheet';
@@ -71,29 +68,18 @@ import { DelayedLoader } from '@/features/loading/delayed-loader';
  * 검색은 자주 쓰는 분류부터 보여준다. 사업계획서 6번의 확장 순서와 같다.
  * «기타»는 격자에 두지 않는다 — 고를 이유를 설명할 수 없는 칸이다.
  */
-const CATEGORY_ORDER: readonly VendorCategory[] = PREPARATION_CATEGORIES;
 
-/** 격자는 2열. 행 단위로 그려야 두 칸의 폭과 gap이 정확히 맞는다. */
-const CATEGORY_ROWS: VendorCategory[][] = CATEGORY_ORDER.reduce<VendorCategory[][]>(
-  (rows, category, i) => {
-    if (i % 2 === 0) rows.push([category]);
-    else rows[rows.length - 1]!.push(category);
-    return rows;
-  },
-  []
-);
+/**
+ * 업종 칩의 순서. 준비 현황과 같은 차례로 둔다 — 두 화면이 업종을 다른 순서로
+ * 늘어놓으면 같은 목록으로 읽히지 않는다.
+ */
+const CATEGORY_ORDER: readonly VendorCategory[] = PREPARATION_CATEGORIES;
 
 /** 자동완성은 결과보다 빨리 따라와야 한다(시안 WP-SRCH-002). */
 const AUTOCOMPLETE_DEBOUNCE_MS = 200;
 /** 자동완성 «업체» 행 수 · «지역» 행 수. 시안은 3줄이다. */
 const AUTOCOMPLETE_VENDORS = 3;
 const AUTOCOMPLETE_REGIONS = 3;
-
-/** 검색 홈 «많이 본 곳» 행 수. 전체 기준 실 제보 많은 순의 앞 네 곳이다. */
-const POPULAR_LIMIT = 4;
-
-/** 검색 홈 «많이 본 곳» 섹션 우측 라벨 — 내 지역이 아니라 전체 기준임을 적는다(SPEC §13.7). */
-const POPULAR_SCOPE_LABEL = '전체';
 
 /** 자동완성 그룹 제목. spec/strings.ko.json search.group.* · SPEC §13.7(«업체 · 바로 상세로»). */
 const AC_GROUP_VENDOR = '업체 · 바로 상세로';
@@ -174,7 +160,12 @@ export default function SearchScreen() {
     onlyVerified: false,
     sort: 'data',
   });
-  const [viewState, setViewState] = useState<ViewState>('home');
+  /*
+   * 탭을 열면 곧바로 결과다. 'home'으로 시작하던 것을 2026-09-11 대표 지시로 바꿨다 —
+   * 루트 시안이 «검색 홈 없음, 즉시 결과»다. 상태 자체는 남긴다: 자동완성이
+   * 검색창 자리에 겹쳐 그려질 때 결과와 구분할 자리가 아직 필요하다.
+   */
+  const [viewState, setViewState] = useState<ViewState>('results');
   /**
    * 자동완성이 열려 있는가. 입력 칸에 글자를 치면 열리고, 행을 고르거나 제출·취소하면 닫힌다.
    * blur로는 닫지 않는다 — 웹에서 행을 누르는 순간 blur가 먼저 와서 행이 사라진다.
@@ -203,8 +194,6 @@ export default function SearchScreen() {
     similar: VendorSummary[];
   } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  /** 많이 본 곳 — 전체 기준. 지역·업종을 걸지 않는다(SPEC §13.7). null이면 아직 못 읽었다. */
-  const [popular, setPopular] = useState<VendorSummary[] | null>(null);
   /** 정렬 시트(WP-SRCH-006)가 떠 있는가. */
   const [sortOpen, setSortOpen] = useState(false);
   /**
@@ -245,18 +234,6 @@ export default function SearchScreen() {
 
   const trimmedQ = filters.q.trim();
   const showAutocomplete = acOpen && trimmedQ.length > 0;
-
-  useEffect(() => {
-    if (!isServerConfigured) return;
-
-    /*
-     * 전체 업체를 실 제보 많은 순으로 — 보는 사람의 지역을 넘기지 않는다. 검색에도
-     * 온보딩 값을 걸면 홈과 같은 목록이 되고 검색에 갈 이유가 사라진다(SPEC §13.7).
-     */
-    searchVendors({ sort: 'data' })
-      .then((response) => setPopular(response.vendors.slice(0, POPULAR_LIMIT)))
-      .catch(() => setPopular(null));
-  }, []);
 
   /*
    * 밖에서 걸어 들어온 조건(홈 조건 칩 · Pick 탭 · 필터 시트)을 그대로 적용해 결과로
@@ -475,9 +452,12 @@ export default function SearchScreen() {
     setAcOpen(false);
   }
 
+  /**
+   * 걸린 조건을 비운다. 검색 홈이 없어진 뒤로 «돌아갈 곳»이 아니라 «비우는 자리»다
+   * (2026-09-11 대표 지시). 화면은 결과에 머문 채 조건 없는 목록으로 돌아간다.
+   */
   function goHome() {
-    setViewState('home');
-    setFilters((current) => ({ ...current, q: '' }));
+    setFilters((current) => ({ ...current, q: '', category: null, region: null }));
     setAcOpen(false);
     /* 들어올 때 걸린 조건을 비운다 — 같은 조건으로 다시 들어와도 결과로 열리게. */
     router.setParams({ category: '', region: '', sort: '' });
@@ -537,6 +517,10 @@ export default function SearchScreen() {
    * 검색창. 홈에서는 스크롤 콘텐츠 맨 위에, 결과에서는 헤더에 앉는다 — 목업
    * 9a(홈)의 헤더는 제목과 알림 벨뿐이다.
    */
+  /** 비울 조건이 있는가. 없으면 여기가 탭의 첫 화면이라 뒤로 갈 곳이 없다. */
+  const hasCondition =
+    filters.q.trim() !== '' || filters.category !== null || filters.region !== null;
+
   function renderSearchBox({ compact = false }: { compact?: boolean } = {}) {
     return (
       /* 시안 searchBox 52/0 16(홈) vs searchBoxSm 44/0 14(결과 헤더) — 두 크기가 다르다. */
@@ -574,170 +558,15 @@ export default function SearchScreen() {
 
   // ─── 홈 화면 ──────────────────────────────────────────────────────────────
 
-  /**
-   * 목업 9a. 검색창 → 카테고리 → 밴드 → 최근 검색 → 많이 본 곳.
-   * 검색어를 치는 중에는 카테고리 대신 자동완성(WP-SRCH-002)이 그 자리에 선다.
-   */
-  function renderHome() {
-    const hasRecent = recentSearches.length > 0;
-    const hasTrend = popular !== null && popular.length > 0;
+  // 검색 홈은 없다 — 탭을 열면 곧바로 결과다(2026-09-11 대표 지시).
+  //
+  // 원래는 «검색 홈»(카테고리 격자 · 최근 검색 · 많이 본 곳)을 먼저 세우고 거기서
+  // 결과로 넘어갔다. 그 화면은 저장소에 들어온 handoff 시안(06-search.dc.html의
+  // WP-SRCH-001)에만 있었고, 대표님의 루트 시안은 «검색 홈 없음, 즉시 결과»였다.
+  // 두 자료가 어긋난 것은 2026-09-10에 이미 적혀 있었는데
+  // (docs/DESIGN_ZIP_AUDIT_2026-09-10.md 3-A), 저장소에는 handoff 쪽만 들어와 있어
+  // 세션들이 계속 없어질 화면 위에 쌓았다. 루트 시안 쪽으로 맞춘다.
 
-    return (
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.homeContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}>
-
-        {/* 검색창 — 목업: padding 4 24 24 */}
-        <View style={styles.searchBlock}>
-          {renderSearchBox()}
-        </View>
-
-        {showAutocomplete ? renderAutocomplete() : (
-          <>
-            {/* 카테고리 — 2열 격자, gap 11 */}
-            <View style={styles.section}>
-              <ThemedText type="t4">카테고리</ThemedText>
-              <View style={styles.categoryGrid}>
-                {CATEGORY_ROWS.map((row) => (
-                  <View key={row.join('-')} style={styles.categoryRow}>
-                    {row.map((category) => (
-                      <Pressable
-                        key={category}
-                        accessibilityRole="button"
-                        style={[styles.categoryCell, { backgroundColor: theme.backgroundElement }]}
-                        onPress={() => {
-                          setFilters((current) => ({ ...current, category }));
-                          setViewState('results');
-                        }}>
-                        {/*
-                          업종별 «실 제보 N건»은 아직 서버가 주지 않는다 — 지어내지
-                          않고 이름만 적는다. 엔드포인트가 생기면 t7 textAssistive 한 줄을 붙인다.
-                        */}
-                        <ThemedText type="t5" numberOfLines={1}>
-                          {VENDOR_CATEGORY_LABEL[category]}
-                        </ThemedText>
-                      </Pressable>
-                    ))}
-                    {row.length === 1 ? <View style={styles.categoryCellEmpty} /> : null}
-                  </View>
-                ))}
-              </View>
-            </View>
-
-            {/* 섹션 밴드 — 카테고리와 그 아래를 가른다. 아래에 아무것도 없으면 두지 않는다. */}
-            {hasRecent || hasTrend ? (
-              <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} />
-            ) : null}
-
-            {/* 최근 검색 — 칩 하나마다 X로 그 하나만 지운다 */}
-            {hasRecent ? (
-              <View style={[styles.section, styles.sectionAfterBand]}>
-                <View style={styles.sectionRow}>
-                  <ThemedText type="t4">최근 검색</ThemedText>
-                  <Pressable
-                    accessibilityRole="button"
-                    hitSlop={Spacing.two}
-                    onPress={() => clearRecentSearches().then(() => setRecentSearches([]))}>
-                    <ThemedText type="t7" themeColor="textAssistive" style={styles.bold}>
-                      전체 삭제
-                    </ThemedText>
-                  </Pressable>
-                </View>
-                <View style={styles.chipRow}>
-                  {recentSearches.map((term) => (
-                    <View
-                      key={term}
-                      style={[styles.recentChip, { backgroundColor: theme.backgroundSelected }]}>
-                      <Pressable
-                        accessibilityRole="button"
-                        onPress={() => submitSearch(term)}
-                        style={styles.recentChipLabel}>
-                        <ThemedText type="t6" themeColor="textStrong" style={styles.bold}>
-                          {term}
-                        </ThemedText>
-                      </Pressable>
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={`${term} 지우기`}
-                        hitSlop={CHIP_CLOSE_HIT_SLOP}
-                        onPress={() =>
-                          removeRecentSearch(term, recentSearches).then(setRecentSearches)
-                        }>
-                        <ProductSymbol
-                          name="close"
-                          size={Layout.iconChipClose}
-                          color={theme.textDisabled}
-                        />
-                      </Pressable>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            ) : null}
-
-            {/* 많이 본 곳(v3.17) — 순번 · 이름/건수 · 금액. 전체 기준이라 우측에 «전체». 마지막 행 아래에도 선을 긋는다. */}
-            {hasTrend ? (
-              <View style={[styles.section, styles.sectionAfterBand]}>
-                <View style={styles.sectionRow}>
-                  <ThemedText type="t4">{MOST_VIEWED}</ThemedText>
-                  <ThemedText type="t7" themeColor="textAssistive" style={styles.bold}>
-                    {POPULAR_SCOPE_LABEL}
-                  </ThemedText>
-                </View>
-                <View style={styles.trendList}>
-                  {popular!.map((item, idx) => {
-                    const line = priceLine(item.paidPrice, item.guidePrice);
-                    return (
-                      <View key={item.id}>
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityLabel={`${item.name} 자세히 보기`}
-                          onPress={() =>
-                            router.push({
-                              pathname: '/search/[vendorId]',
-                              params: item.reasons?.length
-                                ? { vendorId: item.id, reasons: item.reasons.join(',') }
-                                : { vendorId: item.id },
-                            })
-                          }>
-                          <View style={styles.trendRow}>
-                            <ThemedText
-                              type="t6"
-                              themeColor="textAssistive"
-                              numeric
-                              style={[styles.rankNo, styles.bold]}>
-                              {idx + 1}
-                            </ThemedText>
-                            <View style={styles.trendBody}>
-                              <ThemedText type="t5" numberOfLines={1}>{item.name}</ThemedText>
-                              <ThemedText type="t7" themeColor="textAssistive" numeric numberOfLines={1}>
-                                {metaLine(item, VENDOR_CATEGORY_LABEL[item.category])}
-                              </ThemedText>
-                            </View>
-                            {/* 0층·1층은 회색(#868B94)으로 낮춘다. 빈 칸이나 «—»는 없다. */}
-                            <ThemedText
-                              type="t6"
-                              numeric
-                              themeColor={line.dim ? 'textAssistive' : undefined}
-                              style={[styles.trendPrice, styles.bold]}>
-                              {line.text}
-                            </ThemedText>
-                          </View>
-                        </Pressable>
-                        <View style={[styles.divider, { backgroundColor: theme.border }]} />
-                      </View>
-                    );
-                  })}
-                </View>
-              </View>
-            ) : null}
-          </>
-        )}
-      </ScrollView>
-    );
-  }
 
   // ─── 자동완성 · WP-SRCH-002 ───────────────────────────────────────────────
 
@@ -1056,9 +885,30 @@ export default function SearchScreen() {
             />
           </View>
           {/*
-            업종 칩은 두지 않는다(2026-09-08) — 업종은 검색 홈의 격자에서 이미
-            골랐고, 결과에서 또 고르게 하면 같은 선택을 두 번 시킨다. 지역만 남긴다.
+            업종 칩 — 루트 시안 `WP-SRCH-검색.dc.html` 16a의 `weddingCats`다.
+            「전체」가 맨 앞이고 그다음이 업종이다.
+
+            2026-09-08에는 두지 않기로 했었다. 근거는 「업종은 검색 홈의 격자에서
+            이미 골랐고, 결과에서 또 고르게 하면 같은 선택을 두 번 시킨다」였다.
+            **그 검색 홈이 없어졌으므로 근거도 없어졌다**(2026-09-11 대표 지시).
+            지금은 여기가 업종을 고르는 유일한 자리다.
           */}
+          <View style={styles.filterChip}>
+            <FilterChip
+              label="전체"
+              selected={filters.category === null}
+              onPress={() => setFilters((current) => ({ ...current, category: null }))}
+            />
+          </View>
+          {CATEGORY_ORDER.map((category) => (
+            <View key={category} style={styles.filterChip}>
+              <FilterChip
+                label={VENDOR_CATEGORY_LABEL[category]}
+                selected={filters.category === category}
+                onPress={() => toggle('category', category)}
+              />
+            </View>
+          ))}
           {regions.map((region) => (
             <View key={region.name} style={styles.filterChip}>
               <FilterChip
@@ -1170,35 +1020,34 @@ export default function SearchScreen() {
       <SafeAreaView style={styles.safeArea}>
 
         {/* ── 헤더 ── */}
-        {viewState === 'home' ? (
-          /* 목업 9a: 56 · 제목 «검색» · 오른쪽 알림 벨(40 원형). 검색창은 본문 맨 위다. */
-          <ThemedView style={styles.homeHeader}>
-            <ThemedText type="t4">검색</ThemedText>
+        {/*
+         * 루트 시안 `docs/design-handoff/root/WP-SRCH-검색.dc.html` 16a를 그대로 따른다.
+         * 줄이 둘이다 — 위는 「검색」 제목(head 56), 아래는 검색창(navSearch 60).
+         * 하나로 합치지 않는다. 합치면 탭 이름이 사라져 여기가 어디인지 알 수 없다.
+         *
+         * 검색창 왼쪽의 40 원형은 조건이 걸렸을 때만 선다(시안 16c). 조건이 없으면
+         * 탭의 첫 화면이라 갈 곳이 없다 — 아무 데도 가지 않는 뒤로 가기 단추를
+         * 두는 것이 가장 나쁘다.
+         */}
+        <ThemedView style={styles.homeHeader}>
+          <ThemedText type="t4">검색</ThemedText>
+        </ThemedView>
+        <ThemedView style={styles.header}>
+          {hasCondition ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="알림"
-              onPress={() => router.push('/my/notifications')}
-              style={styles.bellBtn}>
-              <ProductSymbol name="bell" size={Layout.iconTab} color={theme.textStrong} />
-            </Pressable>
-          </ThemedView>
-        ) : (
-          <ThemedView style={styles.header}>
-            {/* 시안 navSearch — 검색창 왼쪽에 40 원형 뒤로 버튼이 있다(06-search.dc.html L343·L143). */}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="뒤로"
+              accessibilityLabel="검색 조건 비우기"
               onPress={goHome}
               style={styles.headerBack}>
               <ProductSymbol name="chevronLeft" size={Layout.iconTab} color={theme.textStrong} />
             </Pressable>
-            {renderSearchBox({ compact: true })}
-            {/* 지도 보기는 여기 없다(2026-09-08) — 위치는 업체 상세에서만 보인다. */}
-          </ThemedView>
-        )}
+          ) : null}
+          {renderSearchBox({ compact: true })}
+          {/* 지도 보기는 여기 없다(2026-09-08) — 위치는 업체 상세에서만 보인다. */}
+        </ThemedView>
 
         {/* ── 본문 ── */}
-        {viewState === 'home' ? renderHome() : renderResults()}
+        {renderResults()}
 
         <Toast message={toast} onHidden={() => setToast(null)} />
 
@@ -1275,9 +1124,6 @@ function ChevronDownIcon({ color }: { color: string }) {
 
 // 핸드오프: 결과 카드 이미지 높이 168px, 2:1 비율 유지
 const CARD_IMAGE_HEIGHT = 168;
-
-/** 칩의 14px X를 44 터치 영역으로 넓힌다. */
-const CHIP_CLOSE_HIT_SLOP = (Layout.touchTarget - Layout.iconChipClose) / 2;
 
 
 const styles = StyleSheet.create({

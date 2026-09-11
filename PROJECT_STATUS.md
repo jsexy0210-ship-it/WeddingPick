@@ -38,7 +38,7 @@
 | Google Play | 앱 상태 ‘임시’. 앱 설정·비공개 테스트·프로덕션 액세스 절차 미완료 |
 | Cloudflare | 연결 계정 인증 가능, zone 목록 비어 있음. 현재 사용하지 않는 도메인 부재를 장애로 분류하지 않음 |
 
-`weddingpick.kr`은 **보유한 커스텀 도메인이지만 현재 미사용**이다. 폐기·삭제 대상이 아니며, DNS 연결·커스텀 도메인 전환을 현재의 필수 작업으로 두지 않는다. 위 `onrender.com` 주소로 검수한다.
+`weddingpick.kr`은 **폐기했다**(2026-09-11 대표 지시). 2026-09-10의 「보유하되 미사용·폐기 대상 아님」을 뒤집은 결정이다. DNS 연결·커스텀 도메인 전환을 과제로 두지 않고, 다시 붙이자고 제안하지도 않는다. 주소는 `onrender.com`이 정본이다.
 
 Render의 환경변수 선언은 [infra/render-env.yml](infra/render-env.yml), 반영 경로는 [render-env-sync.yml](.github/workflows/render-env-sync.yml)이다. 서비스 표시 이름과 URL 호스트는 다를 수 있으므로 오래된 이름만으로 리소스를 삭제하거나 대체하지 않는다. 남은 별도 DB·관리자 리소스의 사용 여부는 추가 확인 대상이다.
 

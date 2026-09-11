@@ -218,11 +218,11 @@ export default function SetupScreen() {
     setError(null);
 
     if (target === null) {
-      void finish(answers);
+      /* 「바꾸기」를 닫고 돌아갈 곳이 없으면 결과 화면이다. 여기서도 저장하지 않는다. */
+      setStep('done');
     } else {
       enter(target);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- finish는 answers · sending만 읽고 여기서 answers를 직접 넘긴다.
   }, [editing, step, answers, enter]);
 
   /* 안드로이드 물리 뒤로가기 = «이전». 바꾸는 중에는 «다음»과 같고, 완료 화면에서는 아무 데도 가지 않는다. */
@@ -242,6 +242,22 @@ export default function SetupScreen() {
     return () => subscription.remove();
   }, [step, editing, goPrev, finishEdit]);
 
+  /**
+   * 서버에 보낸다. **완료 화면에서 «완료»를 눌렀을 때만 부른다.**
+   *
+   * 2026-09-11 대표 지시 — 「결과는 사용자 입력한 값을 보여주기만 하고 정보를
+   * 저장하지 않는다. 완료 버튼을 눌러야만 저장 단계로 진행한다」.
+   *
+   * 예전에는 5/5의 답을 받은 그 자리에서 이걸 불렀다. 그래서 결과 화면을 그리기
+   * 전에 서버 왕복을 **차례로 두세 번** 기다렸다 — `getSignupState()` → (필요하면)
+   * `completeSignup()` → `completeSetup()`. 답을 다 넣고도 요약이 안 뜨는 시간이
+   * 그 왕복들이었다. 결과는 이미 손에 있는 답으로 그릴 수 있으므로 기다릴 이유가
+   * 없다(`goNext` 참고).
+   *
+   * **안의 순서는 그대로다**(PR #192 · `features/auth/session-recovery` 규칙).
+   * 가입 상태를 캐시 없이 먼저 묻고, 활성 계정일 때만 보호 API를 부르고, 제출
+   * 직전에 토큰을 다시 확인한다. 바꾼 것은 **언제 부르는가**뿐이다.
+   */
   async function finish(source: Answers = answers) {
     if (sending) return;
 
@@ -308,12 +324,13 @@ export default function SetupScreen() {
         await saveWeddingDraft(draft);
       }
 
-      setStep('done');
       /*
-       * 남은 정리는 화면을 막지 않는다. `done`을 그린 뒤에 지워도 결과가 같고,
+       * 남은 정리는 화면을 막지 않는다. 홈으로 옮긴 뒤에 지워도 결과가 같고,
        * 여기서 기다리면 저장이 끝난 뒤에도 로더가 더 떠 있다.
        */
       void clearOnboardingAnswers().catch(() => undefined);
+
+      router.replace('/');
     } catch (caught) {
       // 세션이 끝났으면(401) 이 화면에 머물 이유가 없다 — 로그인으로 보낸다.
       if (caught instanceof ApiError && caught.status === 401) {
@@ -355,7 +372,11 @@ export default function SetupScreen() {
     setError(null);
 
     if (next === null) {
-      void finish();
+      /*
+       * **여기서 저장하지 않는다.** 결과 화면은 방금 받은 답을 그대로 보여줄 뿐이라
+       * 서버를 기다릴 것이 없다 — 저장은 «완료»가 시작한다(`finish` 참고).
+       */
+      setStep('done');
     } else {
       enter(next);
     }
@@ -375,9 +396,13 @@ export default function SetupScreen() {
   }
 
   /*
-   * 5/5에서 «완료»를 누른 뒤. 여기서 가입과 초기 설정 두 번을 서버에 보내는데,
+   * 결과 화면에서 «완료»를 누른 뒤. 여기서 가입과 초기 설정 두 번을 서버에 보내는데,
    * 그동안 화면에는 CTA가 눌리지 않는 것 말고 아무 표시가 없어 멈춘 것처럼 보였다.
    * WP-ST-015 추천 계산 화면을 띄운다 — 700ms 안에 끝나면 이것도 뜨지 않는다.
+   *
+   * **여기는 «오래 붙잡는» 기다림이다**(`features/loading/delayed-loader.tsx`의
+   * `LoaderWait`). 계정을 만들고 설정을 올린 뒤 추천을 받아 홈으로 가는 길이라,
+   * Depth 이동용 써클이 아니라 업종 순회를 그대로 쓴다.
    *
    * 순회에서 뺄 업종은 방금 받은 답에서 가져온다. 서버에 아직 안 들어가 있어
    * «나»의 스냅숏으로는 알 수 없고, 넘기지 않으면 방금 «결정 완료»로 고른 업종이
@@ -394,7 +419,14 @@ export default function SetupScreen() {
         label={DONE_PROGRESS.label}
         stepKey="done"
         nextLabel={DONE_CTA}
-        onNext={() => router.replace('/')}>
+        /*
+         * **저장은 여기서 시작한다**(2026-09-11 대표 지시). 위의 요약은 이미 손에
+         * 있는 답으로 그린 것이라 서버와 무관하고, 이 버튼을 누르기 전까지 아무것도
+         * 보내지 않는다. 실패하면 `error`가 이 화면에 뜨고 답은 그대로 남는다 —
+         * 다시 누르면 된다.
+         */
+        onNext={() => void finish()}
+        error={error}>
         <QuestionHead lines={DONE_TITLE_LINES} />
 
         <View style={styles.section}>
