@@ -20,6 +20,8 @@ import { SigningInView } from '@/features/auth/signing-in-view';
 import { CaptureDraftProvider } from '@/features/capture/capture-draft';
 import { DocumentStoreProvider } from '@/features/documents/document-store';
 import { FullScreenError } from '@/features/errors/full-screen-error';
+import { escapeInAppBrowser } from '@/features/inapp-browser/escape';
+import { InAppBrowserNotice } from '@/features/inapp-browser/in-app-browser-notice';
 import { resolveSessionEntry, sessionErrorKind, type SessionEntry } from '@/features/auth/session-recovery';
 import { saveToken } from '@/api/session';
 import { SPLASH_MINIMUM_MS, SplashView } from '@/features/splash/splash-view';
@@ -100,6 +102,17 @@ function RootLayoutContent() {
     return returning;
   });
   const [minimumShown, setMinimumShown] = useState(() => hasKakaoReturn());
+  /*
+   * 카카오톡·인스타그램 등의 인앱 브라우저로 열렸으면 바깥 브라우저로 넘긴다
+   * (`features/inapp-browser`). 부팅의 첫 순간에 한 번만 한다 — 화면을 그리고
+   * 서버를 묻기 시작한 뒤에 창이 바뀌면 그 일이 전부 헛일이 된다.
+   *
+   * 돌려주는 값은 화면 맨 위에 남길 한 줄이다 — 자동 이동이 막혔을 때 누를
+   * 자리이거나(카카오톡·안드로이드), 넘길 방법이 없어 사람에게 맡기는
+   * 안내다(iOS의 인스타그램·페이스북·라인 — 사파리를 강제로 띄우는 공개 API가
+   * 없다).
+   */
+  const [inAppNotice] = useState(escapeInAppBrowser);
   const redirected = useRef(false);
   /*
    * 지금 열린 것이 관리자 콘솔인가. 관리자는 웹 전용이고(`admin/_layout.tsx`),
@@ -275,6 +288,7 @@ function RootLayoutContent() {
     <ThemeProvider value={navigationTheme}>
       <DocumentStoreProvider>
         <CaptureDraftProvider>
+          <InAppBrowserNotice notice={inAppNotice} />
           <Stack screenOptions={stackScreenOptions}>
             <Stack.Screen name="(tabs)" />
             {/*

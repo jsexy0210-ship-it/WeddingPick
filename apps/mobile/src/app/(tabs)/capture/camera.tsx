@@ -1,5 +1,5 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Alert, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,10 +12,20 @@ import { createPage } from '@/features/capture/pickers';
 const QUALITY_MIN_PIXELS = 480 * 640;
 
 /**
- * A-04의 카메라 입력. 한 건의 견적서가 여러 장인 경우가 많아 연속 촬영을 기본으로 둔다.
+ * 카메라 입력. 두 여정이 같은 화면을 쓰고, 찍은 사진이 가는 곳만 다르다.
+ *
+ *   견적서 정리(기본)  한 건이 여러 장인 경우가 많아 연속 촬영 → `/capture/review`
+ *   Pick 인증(payment) 사진 한 장이 전부다(v3.24) → 한 장 찍고 제보 화면으로 되돌아간다
+ *
+ * **되돌아가는 것이 요점이다.** 예전에는 Pick 인증의 «촬영하기»도 견적서 묶음에
+ * 사진을 넣고 견적서 확인 화면으로 갔다 — 결제 증빙을 찍은 사람이 견적서 정리
+ * 화면에 서 있었고, 찍은 사진은 제보로 이어지지 않았다.
  */
 export default function CameraScreen() {
   const [permission, requestPermission] = useCameraPermissions();
+  const { purpose } = useLocalSearchParams<{ purpose?: string }>();
+  /** Pick 인증은 사진 한 장이다. 연속 촬영도, 견적서 묶음에 넣는 것도 하지 않는다. */
+  const forPayment = purpose === 'payment';
   const { pages, addPages } = useCaptureDraft();
   const cameraRef = useRef<CameraView>(null);
   const [shooting, setShooting] = useState(false);
@@ -59,6 +69,18 @@ export default function CameraScreen() {
       const photo = await cameraRef.current?.takePictureAsync({ quality: 0.9 });
 
       if (photo) {
+        /*
+         * Pick 인증은 찍은 사진을 제보 화면에 돌려주고 끝난다. 견적서 묶음
+         * (`useCaptureDraft`)에 넣지 않는다 — 다른 여정의 묶음이다.
+         */
+        if (forPayment) {
+          router.replace({
+            pathname: '/capture/payment/register',
+            params: { photoUri: photo.uri, photoMime: 'image/jpeg' },
+          } as never);
+          return;
+        }
+
         addPages([createPage('camera', { uri: photo.uri, mimeType: 'image/jpeg' })]);
 
         /*
@@ -90,7 +112,9 @@ export default function CameraScreen() {
             </ThemedText>
           </Pressable>
           <ThemedText type="small" style={styles.overlayText}>
-            {pages.length > 0 ? `${pages.length}장 촬영됨` : '자료를 가이드 안에 맞춰주세요'}
+            {forPayment || pages.length === 0
+              ? '자료를 가이드 안에 맞춰주세요'
+              : `${pages.length}장 촬영됨`}
           </ThemedText>
         </View>
 
@@ -134,7 +158,7 @@ export default function CameraScreen() {
             onPress={takePicture}
             style={({ pressed }) => [styles.shutter, { opacity: pressed || shooting ? 0.6 : 1 }]}
           />
-          {pages.length > 0 ? (
+          {!forPayment && pages.length > 0 ? (
             <Pressable
               accessibilityRole="button"
               onPress={() => router.replace('/capture/review')}
