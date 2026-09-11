@@ -64,7 +64,7 @@ Build Pipeline에서 요금제나 빌드 지출 한도를 올려야 한다.
 | 카카오 동의항목 · 만 14세 | **로그인 화면 체크박스로 되돌렸다**(2026-09-09 사용자 오더 「14세 로그인 바꾸기 이전으로 싹다 롤백」) | `fd111f0` 직전 상태다 — 로그인 화면의 「만 14세 이상이에요」 체크박스로 자기 신고를 받고, 서버는 그 값을 믿는다. 카카오 출생 연도 판정 · 경계 나이 차단 · 수집 항목 안내 블록은 **전부 되돌렸다**. 되돌린 범위는 로그인 · 나이 · 카카오 동의항목 파일뿐이다(사용자가 범위를 그렇게 정했다) — 탈퇴 화면 문구와 온보딩 완료 문구는 그대로 두었다. **주의**: 카카오 콘솔에는 「필수 출생 연도 · 프로필」로 신청한 이력이 남아 있어 코드와 콘솔이 어긋난다. 다시 신청하기 전에 어느 쪽에 맞출지 사용자에게 확인한다 |
 | 후기 표기 | **별점 · 무조건 5.0 만점 환산** | **`SPEC.md` §6.1 「별점을 쓰지 않습니다 · 평점 숫자를 만들지 않습니다」와 용어집의 「별점 → 이용한 사람들의 경험」은 이 결정으로 무효다**(2026-09-09). 명세보다 사용자 결정이 앞선다. **되돌리지 마라** — 시안만 보고 3축 3지선다로 «고치면» 결정을 뒤집는 것이다. 평균은 서버가 이미 준다(`usageScore.average` 1~5). 그리는 곳: 업체 상세 ⑧ · 후기 목록 행. 컴포넌트는 `packages/ui/src/rating-stars.tsx` |
 | 관리자 화면 | **`/admin` 하나로 통일** | 관리자가 둘이었다. `weddingpick-app-web.onrender.com/admin`(expo 콘솔 27화면)만 남기고 `admin.html`·`weddingpick-admin` 서비스·`admin.weddingpick.kr`을 지웠다(2026-09-09 사용자 결정). **`admin.html`에만 있던 화면 넷은 사라졌다** — 개인정보 검토(`pii-reviews`) · 이의제기(`objections`) · 결정 브리핑·열린 결정(`decisions/*`). **넷 다 `/admin`에 새로 만들어 넣었다** — 개인정보 검토 · 후기 이의제기 · 자동 결정 현황(브리핑+열린 결정 한 화면). 없어진 기능은 없다. **2026-09-10에 이 통일 결정을 되돌렸다** — 관리자 콘솔을 다시 별도 출처(`weddingpick-admin.onrender.com/admin/*`)로 분리했다. 화면 코드는 그대로 두고 배포만 갈랐다. 얻는 것은 출처 분리 하나이고 IP 차단은 얻지 못한다 — 범위와 전환 절차는 `docs/admin-origin-split.md` |
-| 커스텀 도메인 | **DNS 미연결 — 사람이 해야 한다** | `weddingpick.kr` · `admin.weddingpick.kr` · `www.weddingpick.kr` **셋 다 이름 풀이가 안 된다**(2026-09-09 실측, `NXDOMAIN`). `main.yml`의 「Custom domains」 스텝은 Render 쪽에 **등록만** 하고, 실제 레코드는 등록처(가비아)에 사람이 넣어야 한다. 그래서 워크플로가 초록이어도 도메인은 죽어 있다. onrender 주소는 정상. **이 주소로 재현한 장애 보고는 전부 무효다** — 열린 적이 없다 |
+| 커스텀 도메인 | **폐기했다**(2026-09-11 대표 지시) | `weddingpick.kr` · `admin.weddingpick.kr` · `www.weddingpick.kr` **셋 다 이름 풀이가 안 된다**(2026-09-09 실측, `NXDOMAIN`). `main.yml`의 「Custom domains」 스텝은 Render 쪽에 **등록만** 하고, 실제 레코드는 등록처(가비아)에 사람이 넣어야 한다. 그래서 워크플로가 초록이어도 도메인은 죽어 있다. onrender 주소는 정상. **이 주소로 재현한 장애 보고는 전부 무효다** — 열린 적이 없다 |
 | 광고 실운영 | **오더 대기** | 스토어 등록정보의 「광고 포함」은 «없음» |
 | 국외 이전 | **고지하고 쓴다 · 인프라를 국내로 옮기지 않는다**(2026-09-09 사용자 결정) | 서비스는 국내용이지만 인프라는 대부분 미국이다 — API·앱웹·웹사이트 Render(미국), DB Neon(미국), 문서 읽기 Anthropic(미국), 푸시 중계 Expo(미국). 국내는 원본 이미지 저장소 NCP 하나뿐이다. **국외 이전 자체가 위법이 아니라 고지 없이 이전하는 것이 위법이다**(개인정보보호법 제28조의8). 처리방침 4항(처리위탁)·5항(국외 이전)에 이전받는 자·국가·항목·시기·방법·보유기간·거부 방법을 적었다. **되묻지 마라** — 「국내 서비스인데 왜 국외 이전이냐」는 사용자가 이미 물었고 답을 듣고 1번(고지)을 골랐다. 옮기는 쪽은 사용자 오더가 있을 때만 시작한다 |
 | 릴리즈 프로덕션 빌드 | **보류 — 사용자가 「완료」라고 말할 때만 올린다**(2026-09-09) | `eas build --profile production` · `eas submit` · Play Console 업로드를 **누구도 먼저 하지 않는다.** 최종 검수는 사용자가 한다. 준비물(서비스 계정 JSON · 스크린샷 · 그래픽 이미지)은 갖춰 두되 올리지 않는다 |
@@ -407,7 +407,7 @@ P0 전체 항목의 완료 기준과 검증 증거가 확정되지 않아 P0 진
 | DB | Neon PostgreSQL | `DATABASE_URL` |
 | 원본 문서 저장소 | NCP Object Storage (S3 호환) — 버킷 `weddingpick-test` | `STORAGE_DRIVER=s3` + `S3_BUCKET` · `S3_REGION` · `S3_ENDPOINT` · `AWS_ACCESS_KEY_ID` · `AWS_SECRET_ACCESS_KEY` |
 | 모바일 빌드·배포 | Expo EAS · Apple Developer · Google Play Console | `release.yml` · `eas-*.yml` · `android-apk.yml` |
-| 도메인 | `weddingpick.kr` | |
+| 도메인 | 없다 — `weddingpick.kr`은 폐기했다(2026-09-11 대표 지시) | |
 | 로그인 | Kakao Developers | `KAKAO_APP_KEY` · `KAKAO_CLIENT_SECRET`. 애플·구글·네이버는 기존 계정 검증용 코드만 남아 있고 새 로그인 버튼은 없다 |
 | 문서 분석(Pick 인증) | Anthropic API | `ANTHROPIC_API_KEY` — `apps/api/src/analysis/*`가 읽는다 |
 | 공공데이터 수집 | 소상공인진흥공단 API(무료) | `SBIZ_API_KEY`, `public-data.yml` |

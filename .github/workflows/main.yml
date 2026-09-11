@@ -8,7 +8,7 @@
 # 필요한 GitHub Secrets:
 #   DATABASE_URL   staging 작업의 DB 연결 문자열
 #   PRODUCTION_DATABASE_URL production 작업의 DB 연결 문자열
-# weddingpick.kr은 현재 미사용이므로 이 워크플로에서 도메인을 연결하지 않는다.
+# weddingpick.kr은 폐기했다(2026-09-11 대표 지시). 도메인 연결 단계를 되살리지 않는다.
 #
 # 배포 자체는 이 파일이 걸지 않는다 — Render의 autoDeploy가 main push를 보고 돈다.
 # 환경변수는 infra/render-env.yml이 원본이고 render-env-sync.yml이 밀어넣는다.
