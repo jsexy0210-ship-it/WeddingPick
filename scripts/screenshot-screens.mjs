@@ -7,6 +7,11 @@
  * 맞췄다」는 보고가 계속 올라왔고, 대표님이 앱을 여실 때까지 아무도 몰랐다.
  * 그 일을 막는 도구다 — PR을 올리기 전에 찍어서 붙인다.
  *
+ * **앱 화면만 찍는다.** 시안 `.dc.html`은 찍지 않는다 — 그 파일들이 부르는
+ * `support.js`·`_ds/` 자산이 용량 때문에 저장소에 들어오지 않는다(2026-09-11 대표님
+ * 확인). 시안과의 대조는 사람이 한다: 찍은 화면을 PR에 붙이면 사람이 시안을 옆에
+ * 놓고 본다. 자세한 것은 `docs/screen-capture.md`.
+ *
  * 쓰는 법은 `docs/screen-capture.md`.
  *
  *   node scripts/screenshot-screens.mjs                        # 검색 화면 한 장
@@ -24,7 +29,7 @@
 import { createRequire } from 'node:module';
 import { execSync } from 'node:child_process';
 import { createServer } from 'node:http';
-import { readFile, mkdir, writeFile } from 'node:fs/promises';
+import { readFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { extname, join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -61,7 +66,6 @@ function parseArgs(argv) {
     build: false,
     full: false,
     wait: 1500,
-    design: null,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -72,7 +76,6 @@ function parseArgs(argv) {
     else if (arg === '--build') opts.build = true;
     else if (arg === '--full') opts.full = true;
     else if (arg === '--wait') opts.wait = Number(argv[++i]);
-    else if (arg === '--design') opts.design = argv[++i];
     else if (arg === '--help' || arg === '-h') opts.help = true;
     else throw new Error(`모르는 인자: ${arg}`);
   }
@@ -241,34 +244,6 @@ async function captureRoute(context, origin, route, opts) {
   return { route, file, missing: [...missing], blocked: [...blocked], errors };
 }
 
-/**
- * 두 장을 가로로 붙여 한 장으로 만든다.
- *
- * 이미지 라이브러리를 새로 들이지 않는다 — 어차피 브라우저가 떠 있으므로 거기서
- * 붙이고 찍는다.
- */
-async function composeSideBySide(context, left, right, outFile) {
-  const [a, b] = await Promise.all([readFile(left.file), readFile(right.file)]);
-  const page = await context.newPage();
-
-  await page.setContent(`<style>
-    body{margin:0;background:#F2F3F6;font:600 13px/1.4 system-ui,sans-serif;color:#191F28}
-    .row{display:flex;gap:16px;padding:16px;align-items:flex-start}
-    figure{margin:0;display:flex;flex-direction:column;gap:8px}
-    img{display:block;border:1px solid #E5E8EB;background:#fff}
-  </style><div class="row">
-    <figure><figcaption>${left.label}</figcaption><img src="data:image/png;base64,${a.toString('base64')}"></figure>
-    <figure><figcaption>${right.label}</figcaption><img src="data:image/png;base64,${b.toString('base64')}"></figure>
-  </div>`);
-
-  const row = await page.locator('.row');
-
-  await row.screenshot({ path: outFile });
-  await page.close();
-
-  return outFile;
-}
-
 const HELP = `화면을 실제로 렌더해 PNG로 찍는다.
 
   node scripts/screenshot-screens.mjs [옵션]
@@ -278,7 +253,6 @@ const HELP = `화면을 실제로 렌더해 PNG로 찍는다.
   --build          dist를 새로 만든 뒤 찍는다.
   --full           화면 전체(스크롤 포함)를 찍는다. 기본은 390x844 한 화면.
   --wait <ms>      렌더를 기다리는 시간. 기본 1500.
-  --design <파일>  시안 .dc.html도 찍어 나란히 붙인다(지금은 열리지 않는다 — docs/screen-capture.md).
 `;
 
 async function main() {
@@ -310,13 +284,9 @@ async function main() {
   const { server, port } = await startStaticServer(DIST);
   const browser = await chromium.launch();
   const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 2, locale: 'ko-KR' });
-  const results = [];
-
   try {
     for (const route of opts.routes) {
       const result = await captureRoute(context, `http://127.0.0.1:${port}`, route, opts);
-
-      results.push(result);
 
       process.stdout.write(`✓ ${route}\n  ${result.file}\n`);
 
@@ -334,66 +304,10 @@ async function main() {
         process.stdout.write(`  콘솔 오류:\n${result.errors.map((e) => `    ${e}\n`).join('')}`);
       }
     }
-
-    if (opts.design) {
-      const shot = await captureDesign(context, opts);
-
-      if (shot) {
-        const out = join(opts.out, `${safeName(results[0].route)}-side-by-side.png`);
-
-        await composeSideBySide(
-          context,
-          { file: shot, label: '시안' },
-          { file: results[0].file, label: '실제' },
-          out
-        );
-        process.stdout.write(`✓ 나란히 놓은 그림\n  ${out}\n`);
-      }
-    }
   } finally {
     await browser.close();
     server.close();
   }
-}
-
-/**
- * 시안 `.dc.html`을 찍는다.
- *
- * **지금은 열리지 않는다.** 그 파일들은 (1) `_ds/…` 디자인 시스템 번들과 (2)
- * unpkg.com의 React·ReactDOM·Babel을 부르는데, 전자는 저장소에 없고 후자는
- * 컨테이너 밖이라 막힌다. 무엇이 비었는지 적고 빈손으로 돌아간다 — 시안 파일을
- * 고쳐서 되살리지 않는다(`docs/design-handoff/`는 읽기 전용이다).
- */
-async function captureDesign(context, opts) {
-  const file = resolve(REPO, opts.design);
-
-  if (!existsSync(file)) throw new Error(`시안 파일이 없다: ${file}`);
-
-  const page = await context.newPage();
-  const failed = new Set();
-
-  page.on('requestfailed', (request) => failed.add(request.url().slice(0, 140)));
-  await page.goto(`file://${file}`, { waitUntil: 'load' });
-  await page.waitForTimeout(opts.wait);
-
-  const rendered = await page.evaluate(() => document.body.innerText.trim().length > 0);
-
-  if (!rendered) {
-    process.stdout.write(
-      `✗ 시안이 열리지 않는다 (${opts.design}). 못 받은 것:\n${[...failed].map((f) => `    ${f}\n`).join('')}` +
-        '  docs/screen-capture.md 「시안 쪽은 왜 안 되는가」를 본다.\n'
-    );
-    await page.close();
-
-    return null;
-  }
-
-  const out = join(opts.out, `design-${safeName(opts.design)}.png`);
-
-  await page.screenshot({ path: out, fullPage: true });
-  await page.close();
-
-  return out;
 }
 
 await main();

@@ -35,7 +35,6 @@ node scripts/screenshot-screens.mjs --build
 | `--build` | dist를 새로 만든 뒤 찍는다 |
 | `--full` | 스크롤 포함 전체. 기본은 한 화면(390×844) |
 | `--wait <ms>` | 렌더를 기다리는 시간. 기본 1500 |
-| `--design <파일>` | 시안도 찍어 나란히 붙인다 — **지금은 열리지 않는다**(아래) |
 
 ## PR에 붙인다
 
@@ -80,36 +79,30 @@ npx jest --config packages/api-contract/jest.config.js --rootDir packages/api-co
 
 어느 칸이 어떻게 틀렸는지 zod가 그대로 말해 준다. `npm test`에도 같이 돈다.
 
-## 시안 쪽은 왜 안 되는가
+## 시안은 찍지 않는다 — 사람이 옆에 놓고 본다
 
-`--design`으로 `.dc.html`을 찍어 `[시안 | 실제]`로 붙이게 해 뒀지만 **지금 이
-컨테이너에서는 열리지 않는다.** 정본인 `docs/design-handoff/root/`도, `current/html/`도
-마찬가지다. 확인한 것은 이렇다.
+`docs/design-handoff/`의 `.dc.html`은 **이 도구가 찍지 않는다.** 자산이 저장소에
+들어오지 않기 때문이다(2026-09-11 대표님 확인 — 용량 때문에 올릴 수 없다).
 
-| 없는 것 | `root/` | `current/html/` |
+| 시안이 부르는 것 | `root/`(정본) | `current/html/` |
 | --- | --- | --- |
-| `support.js` · `image-slot.js` (템플릿을 그리는 실행기) | 없음 | 있음 |
+| `support.js` · `image-slot.js` · `doc-page.js` (템플릿 실행기) | 없음 | 있음 |
 | `_ds/seed-design-system-karrot-…/` (토큰 CSS 8 · 컴포넌트 CSS 6 · `_ds_bundle.js`) | 없음 | 없음 |
 | React · ReactDOM · Babel | unpkg.com | unpkg.com |
 
-앞의 둘은 전달 ZIP에서 빠졌고 저장소 어디에도 없다. 셋째는 `support.js`가 CDN에서
-받아야 하는데 이 컨테이너의 프록시가 unpkg를 막는다(CONNECT 403). SRI가 걸려 있어
-다른 파일로 바꿔치기할 수도 없다.
+그래서 브라우저로 열면 **빈 화면**이 뜬다. 스타일 없는 그림을 찍어 봐야 쓸모가 없다.
+**자산을 구하러 다니지 마라. 시안 파일을 고쳐 열리게 만들지도 마라**(읽기 전용이다).
 
-그래서 시안은 **빈 화면**으로 뜬다. `--design`은 그 사실과 못 받은 파일 목록을 적고
-빈손으로 돌아간다 — **시안 파일을 고쳐 되살리지 않는다. `docs/design-handoff/`는
-읽기 전용이다.**
+**대조는 사람이 한다.** 찍은 화면을 PR에 붙이면 사람이 시안을 옆에 놓고 본다. 오늘
+사달의 원인은 시안을 못 봐서가 아니라 **아무도 앱 화면을 본 적이 없어서**다 — 앱 쪽
+한 장이면 그 고리가 끊긴다.
 
-`docs/design-handoff/current/png/`의 그림도 대신 쓸 수 없다. 이름만 PNG이고 실제로는
-909×525 JPEG 한 장에 캔버스 전체가 들어 있다 — 화면 하나를 떼어 나란히 놓을 해상도가
-아니다.
+**시안 HTML을 텍스트로 읽는 것은 된다.** 렌더는 안 되지만 마크업과 값(칩 목록 · 높이 ·
+색 · 문구)은 그대로 읽힌다. 실제로 이 PR에서 `root/WP-SRCH-검색.dc.html`을 그렇게 읽어
+찍은 화면과 대조했다.
 
-**둘 중 하나가 풀리면 시안 쪽도 된다.** `_ds/` 번들과 `support.js`를 저장소에
-넣거나(대표님께 원본 ZIP의 그 폴더를 다시 받아야 한다), unpkg 대신 쓸 React·Babel을
-저장소에 두거나. 어느 쪽이든 이 문서와 `--design` 안내를 같이 고친다.
-
-그때까지는 **실제 화면만 찍고 시안은 사람이 연다.** 절반이라도 있는 것이 지금보다
-낫다 — 지금은 아무도 화면을 본 적이 없다.
+`docs/design-handoff/current/png/`도 대신 쓸 수 없다. 이름만 PNG이고 실제로는 909×525
+JPEG 한 장에 캔버스 전체가 들어 있다 — 화면 하나를 떼어낼 해상도가 아니다.
 
 ## 아는 한계
 
