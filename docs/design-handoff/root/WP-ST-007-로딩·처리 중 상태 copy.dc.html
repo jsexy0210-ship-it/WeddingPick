@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-static.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-scale.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-semantic.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/typography.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/dimension.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/motion.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/base.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/core/core.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/feedback/feedback.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/styles.css">
+<script src="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/_ds_bundle.js"></script>
+<style>
+body{margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#ff6f61;text-decoration:none}
+a:hover{color:#e2564a}
+@keyframes wpSpin{to{transform:rotate(360deg)}}
+@keyframes wpOrbit{to{transform:rotate(360deg)}}
+@keyframes wpSwap5{0%,14%{opacity:1}20%,100%{opacity:0}}
+@keyframes wpSwap6{0%,11.6%{opacity:1}16.6%,100%{opacity:0}}
+@keyframes wpSwap7{0%,10%{opacity:1}14.2%,100%{opacity:0}}
+@keyframes wpSwap8{0%,8.7%{opacity:1}12.5%,100%{opacity:0}}
+@keyframes wpSwap9{0%,7.7%{opacity:1}11.1%,100%{opacity:0}}
+@keyframes wpSwap10{0%,7%{opacity:1}10%,100%{opacity:0}}
+@keyframes wpSwap11{0%,6.3%{opacity:1}9%,100%{opacity:0}}
+@keyframes wpSwap12{0%,5.8%{opacity:1}8.3%,100%{opacity:0}}
+@keyframes wpSk{0%,100%{opacity:1}50%{opacity:.45}}
+</style>
+</helmet>
+
+<section style="{{ rootStyle }}">
+
+<div style="display:flex;flex-direction:column;gap:12px;max-width:1100px">
+  <span style="{{ eyebrow }}">WeddingPick · WP-ST-007 · WP-ST-012</span>
+  <span style="{{ h40 }}">로딩</span>
+  <span style="{{ lead }}">기다림의 성격에 따라 다르게 씁니다. 목록은 뼈대만 그리고, 사용자를 붙잡아두는 처리에는 지금 무엇을 하는 중인지 보여줍니다. 스피너는 24 · 32 · 40px 세 크기만 씁니다.</span>
+</div>
+
+<div style="display:flex;gap:36px;align-items:flex-start;flex-wrap:wrap">
+
+<div id="30a" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagIdBrand }}">1</span>업종 순회 로딩</div>
+  <span style="{{ tagDesc }}">온보딩에서 «아직»으로 남은 업종만 순회합니다. 이미 결정한 업종(결정사 · 웨딩홀)은 빼고 돕니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ centerWrap }}">
+
+      <div style="{{ orbitWrap }}">
+        <span style="{{ orbitRing }}"></span>
+        <span style="{{ orbitSpin }}"><span style="{{ orbitDot }}"></span></span>
+        <sc-for list="{{ cats }}" as="c" hint-placeholder-count="5">
+          <span style="{{ c.iconWrap }}">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#ff6f61" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="{{ c.d1 }}"></path>
+              <path d="{{ c.d2 }}"></path>
+            </svg>
+          </span>
+        </sc-for>
+      </div>
+
+      <div style="{{ textWrap }}">
+        <span style="{{ h24 }}">지수님에게 맞는 곳을<br>찾고 있어요</span>
+        <span style="{{ subLine }}">10초 안에 끝나요</span>
+      </div>
+
+      <div style="{{ stepList }}">
+        <sc-for list="{{ steps }}" as="s" hint-placeholder-count="5">
+          <span style="{{ s.row }}">
+            <span style="{{ s.dot }}"></span>
+            <span style="{{ s.label }}">{{ s.name }}</span>
+          </span>
+        </sc-for>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div id="30b" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">2</span>업종 아이콘 8종</div>
+  <span style="{{ tagDesc }}">라인 아이콘. stroke 1.7 · round cap. 순회 로딩과 업종 칩에 같은 글리프를 씁니다.</span>
+  <div style="{{ sheetCard }}">
+    <div style="{{ iconGrid }}">
+      <sc-for list="{{ allCats }}" as="c" hint-placeholder-count="12">
+        <div style="{{ iconCell }}">
+          <span style="{{ iconBox }}">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4d5159" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path d="{{ c.d1 }}"></path>
+              <path d="{{ c.d2 }}"></path>
+            </svg>
+          </span>
+          <span style="{{ iconLabel }}">{{ c.name }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="{{ hr }}"></div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <span style="{{ noteTitle }}">순회 순서</span>
+      <span style="{{ noteBody }}">준비 순서와 같게 둡니다. 한 아이콘이 1.4초 머물고 전체 7초에 한 바퀴 돕니다. 순서를 임의로 섞지 않습니다.</span>
+    </div>
+  </div>
+</div>
+
+<div id="30c" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">3</span>기본 로더 · 써클 + 업종 아이콘</div>
+  <span style="{{ tagDesc }}">기본은 원형 써클입니다. 업종을 특정할 수 있을 때만 아이콘 순회로 바꿉니다.</span>
+  <div style="{{ sheetCard }}">
+    <div style="{{ spinRow }}">
+      <sc-for list="{{ circles }}" as="cs" hint-placeholder-count="3">
+        <div style="{{ spinCell }}">
+          <span style="{{ cs.box }}"><span style="{{ cs.ring }}"></span></span>
+          <span style="{{ iconLabel }}">{{ cs.label }}</span>
+          <span style="{{ specLabel }}">{{ cs.spec }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="{{ hr }}"></div>
+    <div style="{{ spinRow }}">
+      <sc-for list="{{ spinners }}" as="sp" hint-placeholder-count="3">
+        <div style="{{ spinCell }}">
+          <span style="{{ sp.box }}">
+            <sc-for list="{{ sp.items }}" as="it" hint-placeholder-count="5">
+              <span style="{{ it.wrap }}">
+                <svg width="{{ it.px }}" height="{{ it.px }}" viewBox="0 0 24 24" fill="none" stroke="#ff6f61" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="{{ it.d1 }}"></path><path d="{{ it.d2 }}"></path>
+                </svg>
+              </span>
+            </sc-for>
+          </span>
+          <span style="{{ iconLabel }}">{{ sp.label }}</span>
+          <span style="{{ specLabel }}">{{ sp.spec }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="{{ hr }}"></div>
+    <div style="{{ arcRow }}">
+      <span style="{{ slowBox }}">700ms</span>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="{{ noteTitle }}">응답이 늦으면 무조건 띄워요</span>
+        <span style="{{ noteBody }}">700ms를 넘으면 화면 성격과 무관하게 이 로더를 띄웁니다. 빈 화면이나 멈춘 화면을 보여주지 않습니다.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="30d" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">4</span>목록 뼈대</div>
+  <span style="{{ tagDesc }}">목록에는 스피너를 쓰지 않습니다. 3줄까지만 뼈대를 그립니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navBack }}">
+      <span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span>
+      <span style="{{ navTitle }}">검색 결과</span>
+    </div>
+    <div style="{{ skWrap }}">
+      <span style="{{ skHero }}"></span>
+      <span style="{{ skWide }}"></span>
+      <span style="{{ skNarrow }}"></span>
+      <div style="{{ hrThin }}"></div>
+      <sc-for list="{{ skRows }}" as="r" hint-placeholder-count="3">
+        <div style="{{ skRow }}">
+          <span style="{{ skThumb }}"></span>
+          <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+            <span style="{{ r.a }}"></span>
+            <span style="{{ r.b }}"></span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+
+<div id="30e" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">5</span>처리 중 · 단계 표시</div>
+  <span style="{{ tagDesc }}">단계가 있는 처리는 무엇이 끝났고 무엇이 남았는지 보여줍니다. 끝난 단계는 체크로 바뀝니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navBack }}">
+      <span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"></path></svg></span>
+    </div>
+    <div style="{{ centerWrap }}">
+      <span style="{{ spinBig }}"></span>
+      <div style="{{ textWrap }}">
+        <span style="{{ h24 }}">올려주신 자료를<br>읽고 있어요</span>
+        <span style="{{ subLine }}">10초 안에 끝나요</span>
+      </div>
+      <div style="{{ stepList }}">
+        <sc-for list="{{ ocrSteps }}" as="s" hint-placeholder-count="3">
+          <span style="{{ s.row }}">
+            <span style="{{ s.dot }}">
+              <sc-if value="{{ s.done }}" hint-placeholder-val="{{ false }}">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg>
+              </sc-if>
+            </span>
+            <span style="{{ s.label }}">{{ s.name }}</span>
+          </span>
+        </sc-for>
+      </div>
+    </div>
+    <div style="{{ dock }}"><button style="{{ ctaGhost }}">취소</button></div>
+  </div>
+</div>
+
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px;max-width:1180px">
+  <span style="{{ h26 }}">어디에 무엇을 쓰나</span>
+  <div style="{{ tableCard }}">
+    <div style="{{ thead }}">
+      <span style="{{ th1 }}">상황</span>
+      <span style="{{ th2 }}">쓰는 것</span>
+      <span style="{{ th3 }}">문구</span>
+    </div>
+    <sc-for list="{{ usage }}" as="u" hint-placeholder-count="7">
+      <div style="{{ tbody }}">
+        <span style="{{ td1 }}">{{ u.when }}</span>
+        <span style="{{ u.whatStyle }}">{{ u.what }}</span>
+        <span style="{{ td3 }}">{{ u.copy }}</span>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display:flex;gap:20px;flex-wrap:wrap">
+    <sc-for list="{{ rules }}" as="r" hint-placeholder-count="4">
+      <div style="{{ ruleCard }}">
+        <span style="{{ noteTitle }}">{{ r.title }}</span>
+        <span style="{{ noteBody }}">{{ r.body }}</span>
+      </div>
+    </sc-for>
+  </div>
+</div>
+
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1400,&quot;height&quot;:1100}}">
+class Component extends DCLogic {
+  renderVals() {
+    const C = '#ff6f61';
+
+    const ICONS = {
+      agency: ['M8.6 9.6a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2zM16.4 9.6a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2z', 'M3.4 19.8v-1.2a4.4 4.4 0 0 1 4.4-4.4h1.6a4.4 4.4 0 0 1 4.4 4.4v1.2M14.8 14.2h1.4a4.4 4.4 0 0 1 4.4 4.4v1.2'],
+      hall: ['M4.8 20.4v-9.6L12 5.2l7.2 5.6v9.6', 'M2.8 20.4h18.4M9.4 20.4v-4.4a2.6 2.6 0 0 1 5.2 0v4.4M12 2.6v2.6'],
+      studio: ['M4.6 8.2h2.6L8.6 5.8h6.8l1.4 2.4h2.6a1.8 1.8 0 0 1 1.8 1.8v7.6a1.8 1.8 0 0 1-1.8 1.8H4.6a1.8 1.8 0 0 1-1.8-1.8V10a1.8 1.8 0 0 1 1.8-1.8z', 'M12 16.6a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z'],
+      dress: ['M10 3.6h4l-.8 3.2 4.6 9.6a1.8 1.8 0 0 1-1 2.5 13.6 13.6 0 0 1-9.6 0 1.8 1.8 0 0 1-1-2.5l4.6-9.6z', 'M10.8 6.8h2.4'],
+      makeup: ['M15.4 3.8a2.2 2.2 0 0 1 3.1 3.1l-1.3 1.3-3.1-3.1z', 'M14.1 5.1 5.2 14a2 2 0 0 0-.5.9l-.9 4.1a.7.7 0 0 0 .9.9l4.1-.9a2 2 0 0 0 .9-.5l8.9-8.9'],
+      snap: ['M8.4 3.6h10a1.8 1.8 0 0 1 1.8 1.8v10a1.8 1.8 0 0 1-1.8 1.8h-10a1.8 1.8 0 0 1-1.8-1.8v-10a1.8 1.8 0 0 1 1.8-1.8z', 'm7 14.4 3.4-3.4 2.4 2.4 2.4-2.4 4.6 4.6M3.4 7v12a1.6 1.6 0 0 0 1.6 1.6h12'],
+      ring: ['M12 20.6a5.6 5.6 0 1 0 0-11.2 5.6 5.6 0 0 0 0 11.2z', 'm9.6 6.4 2.4-2.8 2.4 2.8-2.4 3z'],
+      honeymoon: ['M12 3.6c1.1 0 2 1.5 2 3.4v2.4l6.4 3.8v2.2L14 13.6v3.6l2.4 1.6v1.6L12 19.4l-4.4 1v-1.6L10 17.2v-3.6l-6.4 2.2v-2.2L10 9.4V7c0-1.9.9-3.4 2-3.4z', 'M12 6.8v2.4'],
+      hair: ['M7 6.4a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8zM7 12.8a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8z', 'm9.2 10.4 10.4-5.8M9.2 13.6l10.4 5.8'],
+      bouquet: ['M12 7.6a2.2 2.2 0 1 0 0-4.4 2.2 2.2 0 0 0 0 4.4zM7 10.2a2.2 2.2 0 1 0 0-4.4 2.2 2.2 0 0 0 0 4.4zM17 10.2a2.2 2.2 0 1 0 0-4.4 2.2 2.2 0 0 0 0 4.4z', 'M8.4 9.6 12 20.4M15.6 9.6 12 20.4M12 9.8v10.6M9.4 20.6h5.2'],
+      invite: ['M4.4 5.8h15.2a1.8 1.8 0 0 1 1.8 1.8v9a1.8 1.8 0 0 1-1.8 1.8H4.4a1.8 1.8 0 0 1-1.8-1.8v-9a1.8 1.8 0 0 1 1.8-1.8z', 'm2.9 6.8 9.1 6.2 9.1-6.2'],
+      home: ['M5 11V8.6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2V11', 'M3 12.8a1.8 1.8 0 0 1 3.6 0V16h10.8v-3.2a1.8 1.8 0 0 1 3.6 0V19H3z']
+    };
+
+    // 온보딩 3/5에서 «아직»으로 남은 업종만 순회한다. 이미 결정한 업종은 빼고 돈다.
+    const CATS = [
+      ['결정사', 'agency'], ['웨딩홀', 'hall'],
+      ['스튜디오', 'studio'], ['드레스', 'dress'], ['메이크업', 'makeup'], ['헤어변형', 'hair'],
+      ['본식스냅', 'snap'], ['부케', 'bouquet'], ['청첩장', 'invite'],
+      ['예물', 'ring'], ['혼수', 'home'], ['허니문', 'honeymoon']
+    ];
+    const DONE = ['결정사', '웨딩홀'];
+    const ORDER = CATS.filter(([n]) => !DONE.includes(n));
+    const ALL = CATS;
+    const STEP = 620;
+    const CYCLE = ORDER.length * STEP;
+
+    const cats = ORDER.map(([name, key], i) => ({
+      name,
+      d1: ICONS[key][0], d2: ICONS[key][1],
+      iconWrap: 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:34px;height:34px;display:flex;align-items:center;justify-content:center;'
+        + 'animation:wpSwap' + ORDER.length + ' ' + CYCLE + 'ms linear ' + (i * STEP) + 'ms infinite;opacity:' + (i === 0 ? 1 : 0)
+    }));
+
+    const allCats = ALL.map(([name, key]) => ({ name, d1: ICONS[key][0], d2: ICONS[key][1] }));
+
+    const step = (name, state) => ({
+      name,
+      row: 'display:flex;align-items:center;gap:10px;min-height:30px',
+      dot: state === 'now'
+        ? 'width:18px;height:18px;flex:0 0 18px;border-radius:999px;background:' + C
+        : state === 'done'
+          ? 'width:18px;height:18px;flex:0 0 18px;border-radius:999px;background:' + C + ';display:flex;align-items:center;justify-content:center'
+          : 'width:18px;height:18px;flex:0 0 18px;border-radius:999px;background:#eaebee',
+      label: 'font-size:16px;line-height:22px;color:' + (state === 'todo' ? '#adb1ba' : '#212124')
+        + (state === 'now' ? ';font-weight:700' : ''),
+      done: state === 'done'
+    });
+
+    const FAST = 820;
+    const FCYCLE = ORDER.length * FAST;
+    const spin = (px, label, spec) => ({
+      label, spec,
+      box: 'position:relative;width:' + (px + 20) + 'px;height:' + (px + 20) + 'px;border-radius:'
+        + (px >= 40 ? 14 : px >= 28 ? 12 : 10) + 'px;background:#fff;box-shadow:inset 0 0 0 1px #eaebee;display:flex;align-items:center;justify-content:center',
+      items: ORDER.map(([, key], i) => ({
+        px, d1: ICONS[key][0], d2: ICONS[key][1],
+        wrap: 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;'
+          + 'animation:wpSwap' + ORDER.length + ' ' + FCYCLE + 'ms linear ' + (i * FAST) + 'ms infinite;opacity:' + (i === 0 ? 1 : 0)
+      })),
+      style: 'width:' + px + 'px;height:' + px + 'px'
+        + ';animation:wpSpin 900ms linear infinite'
+    });
+
+    const sk = (a, b) => ({
+      a: 'height:16px;border-radius:4px;background:#eaebee;width:' + a + ';animation:wpSk 1400ms ease-in-out infinite',
+      b: 'height:13px;border-radius:4px;background:#f2f3f6;width:' + b + ';animation:wpSk 1400ms ease-in-out infinite'
+    });
+
+    const use = (when, what, copy, kind) => ({
+      when, what, copy,
+      whatStyle: 'width:200px;flex:0 0 200px;font-size:16px;line-height:24px;font-weight:700;color:'
+        + (kind === 'brand' ? C : kind === 'no' ? '#e81607' : '#212124')
+    });
+
+    return {
+      rootStyle: 'display:flex;flex-direction:column;gap:52px;align-items:flex-start;padding:64px;width:max-content',
+      col: 'display:flex;flex-direction:column;gap:10px;width:390px',
+      eyebrow: 'font-size:14px;line-height:19px;font-weight:700;color:' + C,
+      h40: 'font-size:40px;line-height:52px;letter-spacing:-0.02em;font-weight:700;color:#212124',
+      h26: 'font-size:26px;line-height:35px;letter-spacing:-0.02em;font-weight:700;color:#212124',
+      lead: 'font-size:18px;line-height:26px;color:#393a40;text-wrap:pretty',
+      tag: 'height:26px;display:flex;align-items:center;gap:8px;font-size:18px;line-height:24px;font-weight:700;color:#212124;white-space:nowrap;overflow:hidden',
+      tagId: 'width:26px;height:26px;flex:0 0 26px;border-radius:6px;background:#212124;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700',
+      tagIdBrand: 'width:26px;height:26px;flex:0 0 26px;border-radius:6px;background:' + C + ';color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700',
+      tagDesc: 'height:63px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;line-height:21px;color:#4d5159;text-wrap:pretty',
+      phone: 'width:390px;height:844px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)',
+      bar: 'height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:700;color:#212124',
+      barIcons: 'display:flex;gap:5px;align-items:center',
+      navBack: 'flex:0 0 56px;display:flex;align-items:center;gap:8px;padding:0 20px 0 12px;background:#fff',
+      backBtn: 'width:40px;height:40px;flex:0 0 40px;border-radius:999px;display:flex;align-items:center;justify-content:center',
+      navTitle: 'flex:1;min-width:0;font-size:18px;line-height:24px;font-weight:700;color:#212124',
+      centerWrap: 'flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px;padding:0 24px',
+      dock: 'flex:0 0 92px;background:#fff;box-shadow:inset 0 1px 0 #eaebee;padding:12px 24px;display:flex;box-sizing:border-box',
+      ctaGhost: 'flex:1;height:52px;border:0;border-radius:6px;background:#f2f3f6;color:#393a40;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer',
+
+      orbitWrap: 'position:relative;width:120px;height:120px;flex:0 0 120px',
+      orbitRing: 'position:absolute;inset:0;border-radius:999px;border:2px solid #f2f3f6',
+      orbitSpin: 'position:absolute;inset:0;animation:wpOrbit 2400ms linear infinite',
+      orbitDot: 'position:absolute;top:-5px;left:50%;margin-left:-5px;width:10px;height:10px;border-radius:999px;background:' + C,
+
+      textWrap: 'display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center',
+      h24: 'font-size:24px;line-height:32px;letter-spacing:-0.02em;font-weight:700;color:#212124',
+      subLine: 'font-size:16px;line-height:24px;color:#868b94',
+      stepList: 'display:flex;flex-direction:column;gap:4px;align-self:stretch;padding:0 24px',
+      spinBig: 'width:40px;height:40px;border-radius:999px;border:3px solid #eaebee;border-top-color:' + C + ';animation:wpSpin 900ms linear infinite',
+
+      sheetCard: 'width:390px;background:#fff;border:1px solid #eaebee;border-radius:10px;padding:24px;display:flex;flex-direction:column;gap:20px;box-sizing:border-box',
+      iconGrid: 'display:grid;grid-template-columns:repeat(4,1fr);gap:16px 8px',
+      iconCell: 'display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0',
+      iconBox: 'width:56px;height:56px;border-radius:10px;background:#f7f8fa;display:flex;align-items:center;justify-content:center',
+      iconLabel: 'font-size:14px;line-height:19px;font-weight:700;color:#4d5159;white-space:nowrap',
+      specLabel: 'font-size:13px;line-height:18px;color:#adb1ba;font-variant-numeric:tabular-nums;white-space:nowrap',
+      circles: [
+        { label: '작은 써클', spec: '20 · 두께 2 · 800ms', px: 20, w: 2 },
+        { label: '보통 써클', spec: '28 · 두께 2.5 · 800ms', px: 28, w: 2.5 },
+        { label: '큰 써클', spec: '40 · 두께 3 · 800ms', px: 40, w: 3 }
+      ].map(o => ({ label: o.label, spec: o.spec,
+        box: 'height:48px;display:flex;align-items:center;justify-content:center',
+        ring: 'width:' + o.px + 'px;height:' + o.px + 'px;border-radius:999px;border:' + o.w + 'px solid #eaebee;border-top-color:' + C + ';animation:wpSpin 800ms linear infinite' })),
+      spinRow: 'display:flex;gap:24px;justify-content:center',
+      spinCell: 'flex:1;min-width:0;border-radius:10px;background:#f7f8fa;padding:18px 12px;display:flex;flex-direction:column;align-items:center;gap:10px',
+      arcRow: 'display:flex;align-items:center;gap:16px',
+      arcSpin: 'animation:wpSpin 1400ms linear infinite',
+      slowBox: 'width:64px;height:40px;flex:0 0 64px;border-radius:8px;background:#ffe8e4;color:#c2453a;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums',
+      hr: 'height:1px;background:#eaebee',
+      hrThin: 'height:1px;background:#f2f3f6;margin:4px 0',
+      noteTitle: 'font-size:16px;line-height:22px;font-weight:700;color:#212124',
+      noteBody: 'font-size:15px;line-height:23px;color:#4d5159;text-wrap:pretty',
+
+      skWrap: 'flex:1;padding:12px 24px;display:flex;flex-direction:column;gap:12px',
+      skHero: 'height:168px;border-radius:10px;background:#eaebee;animation:wpSk 1400ms ease-in-out infinite',
+      skWide: 'height:20px;width:62%;border-radius:4px;background:#eaebee;animation:wpSk 1400ms ease-in-out infinite',
+      skNarrow: 'height:15px;width:38%;border-radius:4px;background:#f2f3f6;animation:wpSk 1400ms ease-in-out infinite',
+      skRow: 'display:flex;gap:12px;align-items:center;padding:6px 0',
+      skThumb: 'width:52px;height:52px;flex:0 0 52px;border-radius:6px;background:#eaebee;animation:wpSk 1400ms ease-in-out infinite',
+
+      tableCard: 'width:1180px;background:#fff;border:1px solid #eaebee;border-radius:10px;padding:8px 24px 16px;display:flex;flex-direction:column;box-sizing:border-box',
+      thead: 'display:flex;align-items:center;gap:16px;min-height:48px;box-shadow:inset 0 -1px 0 #dcdee3',
+      tbody: 'display:flex;align-items:flex-start;gap:16px;min-height:56px;padding:14px 0;box-shadow:inset 0 -1px 0 #f2f3f6',
+      th1: 'width:250px;flex:0 0 250px;font-size:14px;line-height:19px;font-weight:700;color:#868b94',
+      th2: 'width:200px;flex:0 0 200px;font-size:14px;line-height:19px;font-weight:700;color:#868b94',
+      th3: 'flex:1;font-size:14px;line-height:19px;font-weight:700;color:#868b94',
+      td1: 'width:250px;flex:0 0 250px;font-size:16px;line-height:24px;font-weight:700;color:#212124;text-wrap:pretty',
+      td3: 'flex:1;font-size:16px;line-height:24px;color:#4d5159;text-wrap:pretty',
+      ruleCard: 'width:380px;background:#fff;border:1px solid #eaebee;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:8px;box-sizing:border-box',
+
+      cats, allCats,
+
+      steps: [
+        step('스튜디오 취향 맞추기', 'done'),
+        step('드레스 금액 비교', 'done'),
+        step('메이크업 일정 확인', 'now'),
+        step('헤어변형 후보 정리', 'wait'),
+        step('본식스냅 · 부케 확인', 'wait'),
+        step('청첩장 · 예물 정리', 'wait'),
+        step('혼수 · 허니문 확인', 'wait')
+      ],
+
+      stepsOld: [
+        step('결정사 후보 훑기', 'done'),
+        step('웨딩홀 금액 비교', 'done'),
+        step('스튜디오 취향 맞추기', 'now'),
+        step('드레스 일정 확인', 'todo'),
+        step('메이크업 후보 정리', 'todo')
+      ],
+
+      ocrSteps: [
+        step('글자 읽기', 'done'),
+        step('금액과 날짜 찾기', 'now'),
+        step('업체 맞춰보기', 'todo')
+      ],
+
+      spinners: [
+        spin(20, '작게', '20 · 버튼 · 행 안'),
+        spin(28, '보통', '28 · 카드 · 시트'),
+        spin(40, '크게', '40 · 화면 전체')
+      ],
+
+      skRows: [sk('72%', '46%'), sk('58%', '38%'), sk('66%', '42%')],
+
+      usage: [
+        use('추천 계산 · 첫 진입', '업종 순회 로딩', '두 분에게 맞는 곳을 찾고 있어요 · 10초 안에 끝나요', 'brand'),
+        use('Pick 인증 자료 분석', '처리 중 · 단계 표시', '올려주신 자료를 읽고 있어요', 'brand'),
+        use('검색 결과 · 목록', '목록 뼈대', '문구 없음', ''),
+        use('업체 상세 첫 로딩', '목록 뼈대', '문구 없음', ''),
+        use('버튼 눌러 저장 · 제출', '아이콘 순회 20', '버튼 안에서 라벨 대신', ''),
+        use('당겨서 새로 고침', '아이콘 순회 20', '문구 없음', ''),
+        use('응답이 700ms 초과', '아이콘 순회 28~40', '화면 성격과 무관하게 무조건', 'brand'),
+        use('진행률을 아는 처리', '로더를 쓰지 않음', '진행바 + 퍼센트', 'no')
+      ],
+
+      rules: [
+        { title: '원형 스피너를 쓰지 않아요', body: '로더는 업종 아이콘이 도는 것 하나뿐입니다. 크기만 20 · 28 · 40으로 바꿉니다. 호가 도는 원형 스피너를 새로 만들지 않습니다.' },
+        { title: '700ms 넘으면 무조건 띄워요', body: '화면 성격과 무관하게 응답이 700ms를 넘으면 로더를 띄웁니다. 빈 화면이나 멈춘 화면을 보여주지 않습니다. 700ms 안에 오면 아무것도 띄우지 않습니다.' },
+        { title: '목록에는 뼈대를 그려요', body: '목록이 들어올 자리에는 로더 대신 뼈대를 3줄까지 그립니다. 4줄 이상 그리면 실제 내용보다 뼈대가 더 오래 기억됩니다.' },
+        { title: '예상 시간을 적어요', body: '사용자를 붙잡아두는 처리에는 «10초 안에 끝나요»처럼 예상 시간을 함께 씁니다. 없으면 얼마나 기다릴지 알 수 없습니다.' },
+        { title: '가짜 진행률을 만들지 않아요', body: '실제 퍼센트를 모르면 아이콘 순회만 씁니다. 임의로 올라가는 진행바를 두지 않습니다.' },
+        { title: '3초 넘으면 무엇을 하는지 말해요', body: '3초 안에 끝나면 로더만. 넘어가면 단계를 보여주고 끝난 단계는 체크로 바꿉니다.' }
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

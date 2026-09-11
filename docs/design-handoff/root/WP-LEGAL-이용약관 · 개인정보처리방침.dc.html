@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-static.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-scale.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-semantic.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/typography.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/dimension.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/motion.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/base.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/core/core.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/buttons/buttons.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/forms/forms.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/feedback/feedback.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/overlay/overlay.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/display/display.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/styles.css">
+<script src="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/_ds_bundle.js"></script>
+<style>
+body{margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#ff6f61;text-decoration:none}
+a:hover{color:#e2564a}
+.nsb::-webkit-scrollbar{display:none}
+</style>
+</helmet>
+
+<section style="{{ rootStyle }}">
+
+<div style="display:flex;flex-direction:column;gap:10px;max-width:1000px;padding-bottom:8px">
+  <span style="font-size:14px;line-height:19px;font-weight:700;color:#ff6f61">WeddingPick · WP-LEGAL</span>
+  <span style="font-size:40px;line-height:52px;font-weight:700;color:#212124">이용약관 · 개인정보처리방침</span>
+  <span style="font-size:18px;line-height:26px;color:#393a40;text-wrap:pretty">사용자는 MY · 서비스 정보에서 읽고, 운영자는 관리자에서 조문 단위로 편집하고 버전을 남깁니다. 확정되지 않은 항목은 «확정 필요» 표시를 유지한 채로 저장할 수 있습니다.</span>
+</div>
+
+<div style="display:flex;gap:36px;align-items:flex-start">
+
+<div id="23a" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">FO 1</span>서비스 정보 · WP-MY-010</div>
+  <span style="{{ tagDesc }}">약관 · 방침 · 데이터 정책 · 버전을 한곳에 모읍니다. 최신 시행일을 함께 보여줍니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navBack }}"><span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span><span style="flex:1;min-width:0;{{ t18b }}">서비스 정보</span></div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:2px">
+        <sc-for list="{{ legalMenu }}" as="m" hint-placeholder-count="6">
+          <div>
+            <div style="display:flex;align-items:center;gap:12px;min-height:56px;padding:14px 0;cursor:pointer">
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                <span style="{{ t18n }}">{{ m.name }}</span>
+                <sc-if value="{{ m.sub }}"><span style="{{ t14n }}">{{ m.sub }}</span></sc-if>
+              </div>
+              <sc-if value="{{ m.tail }}"><span style="{{ t16d }}">{{ m.tail }}</span></sc-if>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#adb1ba" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"></path></svg>
+            </div>
+            <div style="{{ hr }}"></div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 28px">
+        <div style="{{ noteBox }}">
+          <span style="{{ t18b2 }}">개정 시 미리 알려드려요</span>
+          <span style="{{ t16g }}">중요한 변경은 시행 전에 알림으로 안내해요.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="23b" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">FO 2</span>약관 본문 · WP-LEGAL-001</div>
+  <span style="{{ tagDesc }}">조문 번호를 그대로 보여주고 상단에 조 목록을 접어둡니다. 발췌하지 않고 원문 전체를 노출합니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navBack }}"><span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span><span style="flex:1;min-width:0;{{ t18b }}">이용약관</span></div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:12px 24px 20px;display:flex;flex-direction:column;gap:8px">
+        <span style="{{ h26 }}">이용약관</span>
+        <span style="{{ t14n }}">v1.0 · 2026년 9월 1일 시행</span>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 24px">
+        <div style="{{ tocBox }}">
+          <span style="{{ t14m }}">조문 15개</span>
+          <span style="{{ t14w }}">목적 · 서비스 성격 · 계정 · Pick과 추천 · 실 제보와 제보 · 후기 · 배우자 연결 · 콘텐츠 · 광고 제휴 · 금지행위 · 변경 중단 · 회원탈퇴 · 책임 · 약관 변경 · 문의</span>
+        </div>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 28px;display:flex;flex-direction:column;gap:24px">
+        <sc-for list="{{ termArticles }}" as="a" hint-placeholder-count="4">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <span style="{{ artTitle }}">{{ a.title }}</span>
+            <sc-for list="{{ a.items }}" as="i" hint-placeholder-count="3">
+              <div style="display:flex;gap:8px;align-items:flex-start">
+                <span style="{{ artNo }}">{{ i.no }}</span>
+                <span style="flex:1;{{ t16g }}">{{ i.text }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="23c" style="{{ col }}">
+  <div style="{{ tag }}"><span style="{{ tagId }}">FO 3</span>방침 본문 · WP-LEGAL-002</div>
+  <span style="{{ tagDesc }}">처리 목적 · 항목 · 보유기간을 표로 보여줍니다. 맡겨서 처리하는 일도 함께 적습니다.</span>
+  <div style="{{ phone }}">
+    <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+    <div style="{{ navBack }}"><span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 8 12l6.5 7"></path></svg></span><span style="flex:1;min-width:0;{{ t18b }}">개인정보처리방침</span></div>
+    <div class="nsb" style="{{ scroll }}">
+      <div style="flex-shrink:0;padding:12px 24px 20px;display:flex;flex-direction:column;gap:8px">
+        <span style="{{ h26 }}">개인정보처리방침</span>
+        <span style="{{ t14n }}">v1.0 · 2026년 9월 1일 시행</span>
+      </div>
+      <div style="flex-shrink:0;padding:0 24px 24px;display:flex;flex-direction:column;gap:12px">
+        <span style="{{ s20 }}">보유기간</span>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <sc-for list="{{ retention }}" as="r" hint-placeholder-count="7">
+            <div>
+              <div style="display:flex;align-items:flex-start;gap:12px;min-height:56px;padding:12px 0">
+                <span style="flex:1;min-width:0;{{ t16g2 }}">{{ r.k }}</span>
+                <span style="{{ r.style }}">{{ r.v }}</span>
+              </div>
+              <div style="{{ hr }}"></div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="{{ band }}"></div>
+      <div style="flex-shrink:0;padding:0 24px 24px;display:flex;flex-direction:column;gap:12px">
+        <span style="{{ s20 }}">맡겨서 처리하는 일</span>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <sc-for list="{{ pending }}" as="p" hint-placeholder-count="6">
+            <div>
+              <div style="display:flex;align-items:flex-start;gap:12px;min-height:56px;padding:12px 0">
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                  <span style="{{ t16k }}">{{ p.who }}</span>
+                  <span style="{{ t14w }}">{{ p.what }}</span>
+                </div>
+              </div>
+              <div style="{{ hr }}"></div>
+            </div>
+          </sc-for>
+        </div>
+        <span style="{{ t14w }}">맡기는 회사나 맡기는 일이 바뀌면 이 화면에서 알려드려요.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div style="display:flex;flex-direction:column;gap:14px">
+  <div style="{{ tag }}"><span style="{{ tagIdBo }}">BO</span>관리자 · 약관 · 방침 편집 · WP-ADM-036</div>
+  <span style="{{ tagDescWide }}">조문 단위로 편집하고 저장하면 새 버전이 쌓입니다. 공개는 별도 버튼이라 초안을 만들어두고 나중에 시행할 수 있습니다.</span>
+  <div style="{{ editorFrame }}">
+    <div style="{{ editorSide }}">
+      <div style="display:flex;flex-direction:column;gap:4px;padding-bottom:8px">
+        <span style="{{ h20 }}">이용약관</span>
+        <span style="{{ t14n }}">v0.1 초안 · 저장 09-01 14:22</span>
+      </div>
+      <sc-for list="{{ artList }}" as="a" hint-placeholder-count="8">
+        <div style="{{ a.rowStyle }}">
+          <span style="flex:1;min-width:0;{{ a.textStyle }}">{{ a.label }}</span>
+
+        </div>
+      </sc-for>
+      <div style="{{ addArt }}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff6f61" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+        <span style="{{ t15a }}">조문 추가</span>
+      </div>
+    </div>
+
+    <div style="{{ editorMain }}">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="{{ h24 }}">제9조 광고 · 제휴</span>
+        <span style="margin-left:auto;display:flex;gap:8px">
+          <span style="{{ btnGhostSm }}">미리보기</span>
+          <span style="{{ btnGhostSm }}">임시저장</span>
+          <span style="{{ btnPrimarySm }}">새 버전으로 공개</span>
+        </span>
+      </div>
+      <div style="{{ editArea }}">
+        <sc-for list="{{ editItems }}" as="e" hint-placeholder-count="3">
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <span style="{{ artNo }}">{{ e.no }}</span>
+            <span style="flex:1;{{ t16k }}">{{ e.text }}</span>
+            <span style="{{ delMini }}">삭제</span>
+          </div>
+        </sc-for>
+        <div style="display:flex;gap:10px;align-items:center;padding-top:4px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ff6f61" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+          <span style="{{ t15a }}">항목 추가</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:16px">
+        <div style="{{ metaField }}"><span style="{{ t14m }}">시행일</span><div style="{{ inputBox }}">정식 운영 개시일</div></div>
+        <div style="{{ metaField }}"><span style="{{ t14m }}">변경 사유</span><div style="{{ inputBox }}">광고 요금제 3단계 반영</div></div>
+      </div>
+      <div style="{{ warnBox }}">
+        <span style="{{ t16b2 }}">중대한 변경으로 표시할까요?</span>
+        <span style="{{ t16g }}">중대한 변경은 법령이 요구하는 기간만큼 미리 공지하고 사용자에게 알림을 보내요. 표시하면 공개 예약이 함께 잡혀요.</span>
+      </div>
+    </div>
+
+    <div style="{{ editorRight }}">
+      <span style="{{ t14m }}">버전 이력</span>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <sc-for list="{{ versions }}" as="v" hint-placeholder-count="4">
+          <div>
+            <div style="display:flex;align-items:flex-start;gap:10px;min-height:56px;padding:12px 0">
+              <span style="{{ v.dot }}"></span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                <span style="{{ v.titleStyle }}">{{ v.ver }}</span>
+                <span style="{{ t14n }}">{{ v.when }} · {{ v.who }}</span>
+                <span style="{{ t14w }}">{{ v.why }}</span>
+              </div>
+              <span style="{{ v.badge }}">{{ v.state }}</span>
+            </div>
+            <div style="{{ hr }}"></div>
+          </div>
+        </sc-for>
+      </div>
+      <span style="{{ t14w }}">공개된 버전은 수정하지 않고 새 버전으로 올려요. 이전 버전은 사용자도 볼 수 있게 남겨둬요.</span>
+    </div>
+  </div>
+</div>
+
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1650,&quot;height&quot;:1100}}">
+class Component extends DCLogic {
+  renderVals() {
+    const C = '#ff6f61';
+    const ver = (v, when, who, why, state) => ({ ver: v, when, who, why, state,
+      dot: 'width:8px;height:8px;flex:0 0 8px;margin-top:8px;border-radius:999px;background:' + (state === '공개 중' ? '#1aa174' : state === '초안' ? '#f7be68' : '#dcdee3'),
+      titleStyle: 'font-size:16px;font-weight:700;color:' + (state === '지난 버전' ? '#868b94' : '#212124'),
+      badge: 'padding:3px 8px;border-radius:4px;font-size:13px;line-height:18px;font-weight:700;white-space:nowrap;'
+        + (state === '공개 중' ? 'background:#e8faf6;color:#1aa174;' : state === '초안' ? 'background:#ffe3ba;color:#805217;' : 'background:#f2f3f6;color:#868b94;') });
+    const artFn = (label, on, flag) => ({ label, flag,
+      rowStyle: 'display:flex;align-items:center;gap:8px;min-height:44px;padding:8px 12px;border-radius:6px;cursor:pointer;' + (on ? 'background:color-mix(in oklab,' + C + ' 10%,#fff);' : ''),
+      textStyle: 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:15px;font-weight:' + (on ? '700' : '400') + ';color:' + (on ? C : '#4d5159') });
+    const ret = (k, v, pending) => ({ k, v,
+      style: 'max-width:180px;text-align:right;font-size:15px;line-height:21px;font-weight:700;text-wrap:pretty;color:' + (pending ? '#805217' : '#212124') });
+
+    return {
+      rootStyle: 'display:flex;flex-direction:column;gap:48px;align-items:flex-start;padding:64px;width:max-content',
+      col: 'display:flex;flex-direction:column;gap:10px;width:390px',
+      tag: 'height:26px;display:flex;align-items:center;gap:8px;font-size:18px;line-height:24px;font-weight:700;color:#212124;white-space:nowrap;overflow:hidden',
+      tagId: 'padding:0 8px;height:26px;flex:0 0 auto;border-radius:6px;background:#212124;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700',
+      tagIdBo: 'padding:0 8px;height:26px;flex:0 0 auto;border-radius:6px;background:' + C + ';color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700',
+      tagDesc: 'height:71px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;line-height:21px;color:#4d5159;text-wrap:pretty',
+      tagDescWide: 'max-width:900px;font-size:14px;line-height:21px;color:#4d5159;text-wrap:pretty',
+      phone: 'width:390px;height:844px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)',
+      bar: 'height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:700;color:#212124',
+      barIcons: 'display:flex;gap:5px;align-items:center',
+      navBack: 'flex:0 0 56px;display:flex;align-items:center;gap:4px;padding:0 20px 0 12px;background:#fff',
+      backBtn: 'width:40px;height:40px;flex:0 0 40px;border-radius:999px;display:flex;align-items:center;justify-content:center',
+      scroll: 'flex:1 1 auto;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;scrollbar-width:none',
+      hr: 'height:1px;background:#eaebee',
+      band: 'flex-shrink:0;height:16px;background:#f2f3f6;margin-bottom:28px',
+      noteBox: 'border-radius:10px;background:#f7f8fa;padding:20px;display:flex;flex-direction:column;gap:8px',
+      tocBox: 'border-radius:10px;background:#f7f8fa;padding:18px 20px;display:flex;flex-direction:column;gap:6px',
+      badgeGray: 'align-self:flex-start;padding:4px 9px;border-radius:4px;background:#ffe3ba;color:#805217;font-size:14px;line-height:19px;font-weight:700',
+      badgeGraySm: 'padding:3px 8px;border-radius:4px;background:#f2f3f6;color:#868b94;font-size:13px;line-height:18px;font-weight:700;white-space:nowrap',
+      artTitle: 'font-size:18px;line-height:24px;font-weight:700;color:#212124',
+      artNo: 'width:18px;flex:0 0 18px;font-size:15px;line-height:24px;font-weight:700;color:#adb1ba;font-variant-numeric:tabular-nums',
+
+      editorFrame: 'width:1560px;background:#fff;border:1px solid #eaebee;border-radius:10px;display:flex;overflow:hidden',
+      editorSide: 'width:280px;flex:0 0 280px;padding:24px 16px;background:#f7f8fa;display:flex;flex-direction:column;gap:2px',
+      editorMain: 'flex:1;min-width:0;padding:28px;display:flex;flex-direction:column;gap:20px',
+      editorRight: 'width:380px;flex:0 0 380px;padding:28px;box-shadow:inset 1px 0 0 #eaebee;display:flex;flex-direction:column;gap:10px',
+      editArea: 'border:1px solid #d1d3d8;border-radius:8px;padding:20px;display:flex;flex-direction:column;gap:14px;min-height:240px',
+      metaField: 'flex:1;display:flex;flex-direction:column;gap:6px',
+      inputBox: 'height:48px;border-radius:6px;border:1px solid #d1d3d8;padding:0 14px;display:flex;align-items:center;font-size:15px;color:#212124',
+      warnBox: 'border-radius:10px;background:#fff7e6;padding:18px 20px;display:flex;flex-direction:column;gap:6px',
+      addArt: 'margin-top:8px;display:flex;align-items:center;gap:8px;min-height:44px;padding:8px 12px;cursor:pointer',
+      delMini: 'font-size:13px;font-weight:700;color:#e81607;cursor:pointer;white-space:nowrap',
+
+      h26: 'font-size:26px;line-height:35px;font-weight:700;color:#212124',
+      h24: 'font-size:24px;line-height:32px;font-weight:700;color:#212124',
+      h20: 'font-size:20px;line-height:27px;font-weight:700;color:#212124',
+      s20: 'font-size:20px;line-height:27px;font-weight:700;color:#212124',
+      t18b: 'font-size:18px;line-height:24px;font-weight:700;color:#212124;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      t18b2: 'font-size:18px;line-height:24px;font-weight:700;color:#212124;text-wrap:pretty',
+      t18n: 'font-size:18px;line-height:24px;color:#212124;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      t16b2: 'font-size:16px;line-height:22px;font-weight:700;color:#212124',
+      t16g: 'font-size:16px;line-height:25px;color:#4d5159;text-wrap:pretty',
+      t16g2: 'font-size:16px;line-height:22px;color:#4d5159;text-wrap:pretty',
+      t16k: 'font-size:16px;line-height:25px;color:#212124;text-wrap:pretty',
+      t16d: 'font-size:16px;line-height:22px;color:#868b94;white-space:nowrap',
+      t15a: 'font-size:15px;font-weight:700;color:' + C,
+      t14m: 'font-size:14px;line-height:19px;font-weight:700;color:#4d5159',
+      t14n: 'font-size:14px;line-height:19px;color:#868b94;font-variant-numeric:tabular-nums',
+      t14w: 'font-size:14px;line-height:21px;color:#868b94;text-wrap:pretty',
+      btnGhostSm: 'height:40px;padding:0 16px;border-radius:6px;background:#f2f3f6;color:#393a40;display:flex;align-items:center;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap',
+      btnPrimarySm: 'height:40px;padding:0 16px;border-radius:6px;background:' + C + ';color:#fff;display:flex;align-items:center;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap',
+
+      legalMenu: [
+        { name: '이용약관', sub: 'v0.1 · 시행일 미정', tail: '' },
+        { name: '개인정보처리방침', sub: 'v0.1 · 시행일 미정', tail: '' },
+        { name: '위치기반서비스 이용약관', sub: '지도 기능 도입 시 적용', tail: '' },
+        { name: '실 제보 운영 기준', sub: '수집 · 검증 · 공개 단계', tail: '' },
+        { name: '오픈소스 라이선스', sub: '', tail: '' },
+        { name: '버전 정보', sub: '', tail: 'v1.0.0' }
+      ],
+      termArticles: [
+        { title: '제2조 서비스의 성격', items: [
+          { no: '1', text: '웨딩픽은 웨딩 관련 정보를 수집하고 확인해 정리하고, 사용자의 선택과 비교를 돕는 서비스예요.' },
+          { no: '2', text: '웨딩픽은 업체와의 계약 당사자가 아니에요. 상담 · 계약 · 결제 · 이행 · 환불에 관한 책임은 거래 당사자에게 있어요.' },
+          { no: '3', text: '업체 공식정보, 실 제보, 사용자 후기, 웨딩픽 콘텐츠를 성격에 따라 구분해서 보여드려요.' }
+        ] },
+        { title: '제4조 Pick · 비교 및 추천', items: [
+          { no: '1', text: 'Pick은 관심 있는 업체를 저장하고 비교하기 위한 기능이에요.' },
+          { no: '2', text: '웨딩픽 추천은 사용자가 알려준 조건과 이용 과정에서 실 제보를 바탕으로 구성해요.' },
+          { no: '3', text: '판단 근거가 부족하면 개인화 결과를 확정된 사실처럼 표시하지 않아요.' },
+          { no: '4', text: '광고비는 웨딩픽 TOP3, 웨딩픽 추천, 개인화 추천, 자연 검색순위, 실 제보와 후기 순위에 영향을 주지 않아요.' }
+        ] },
+        { title: '제12조 회원탈퇴', items: [
+          { no: '1', text: '계정 · 프로필 · Pick · 취향 · 개인 일정과 체크리스트 · 지출은 법령이나 별도 보존 근거가 없으면 삭제해요.' },
+          { no: '2', text: '후기와 제보에서 만들어진 정보는 작성자를 알아볼 수 없게 분리한 뒤 정보 신뢰성 유지를 위해 보존할 수 있어요.' },
+          { no: '3', text: '법령이나 분쟁 처리를 위해 보관해야 하는 정보는 그 목적과 기간 동안 따로 보관한 뒤 지워요.' }
+        ] }
+      ],
+      retention: [
+        ret('계정 · 개인화 정보', '탈퇴 또는 목적 달성 시'),
+        ret('Pick · 취향 · 일정 · 지출', '탈퇴 또는 직접 삭제 시'),
+        ret('배우자 연결정보', '연결 해제 또는 탈퇴 시'),
+        ret('결제 증빙 원본', '검증 목적 달성 후 삭제'),
+        ret('후기 · 제보 비식별 정보', '식별정보 분리 후 보존'),
+        ret('신고 · 분쟁 기록', '사건 처리와 법적 대응 기간'),
+        ret('계약 · 결제 기록', '5년 · 전자상거래법'),
+        ret('대금 결제 기록', '5년 · 전자상거래법'),
+        ret('소비자 불만 · 분쟁 기록', '3년 · 전자상거래법'),
+        ret('접속 기록', '3개월 · 통신비밀보호법')
+      ],
+      pending: [
+        { who: '서버 · 데이터 보관', what: 'Amazon Web Services Korea' },
+        { who: '소셜 로그인', what: '카카오 · Apple' },
+        { who: '알림 발송', what: 'Firebase Cloud Messaging' },
+        { who: '이메일 발송', what: 'Amazon SES' },
+        { who: '오류 · 사용 분석', what: 'Sentry · Amplitude' },
+        { who: '리워드 지급', what: '네이버파이낸셜' }
+      ],
+      artList: [
+        artFn('제1조 목적', false, false),
+        artFn('제2조 서비스의 성격', false, false),
+        artFn('제3조 회원가입 및 계정', false, false),
+        artFn('제4조 Pick · 비교 및 추천', false, false),
+        artFn('제5조 실 제보 및 제보', false, false),
+        artFn('제9조 광고 · 제휴', true, false),
+        artFn('제12조 회원탈퇴', false, false),
+        artFn('제15조 문의', false, false)
+      ],
+      editItems: [
+        { no: '1', text: '광고 · 스폰서 · 제휴 콘텐츠는 일반 정보 및 자연 추천과 구분해서 표시합니다.' },
+        { no: '2', text: '광고비는 자연 추천과 실 제보의 평가 · 순위에 영향을 주지 않습니다.' },
+        { no: '3', text: '테스트 단계의 광고 상품과 가격은 검증 목적의 운영안이며 실운영 상품은 별도로 확정합니다.' }
+      ],
+      versions: [
+        ver('v0.1 초안', '2026-09-01 14:22', '운영 리드', '광고 요금제 3단계 반영', '초안'),
+        ver('v0.1', '2026-09-01 09:10', '운영 리드', '최초 작성', '공개 중'),
+        ver('—', '2026-08-30 17:40', '운영 리드', '조문 구조 잡기', '지난 버전'),
+        ver('—', '2026-08-28 11:05', '운영 리드', '초기 임시본', '지난 버전')
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

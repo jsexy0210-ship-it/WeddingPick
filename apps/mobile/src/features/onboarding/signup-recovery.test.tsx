@@ -50,10 +50,34 @@ function deferred<T>() {
 let tree: ReactTestRenderer;
 async function mount() {
   await act(async () => { tree = create(<SetupScreen />); });
-  expect(tree.root.findByType('StepFrame' as never).props.stepKey).toBe('style');
+  expect(frame().props.stepKey).toBe('style');
 }
+function frame() {
+  return tree.root.findByType('StepFrame' as never);
+}
+/**
+ * 5/5에서 «다음». 2026-09-11 대표 지시 이후 이 누름은 **결과 화면으로 갈 뿐이고
+ * 서버에 아무것도 보내지 않는다** — 저장은 결과 화면의 «완료»가 시작한다.
+ */
+async function toResult() {
+  /*
+   * 마운트할 때 스타일 복원이 가입 상태를 한 번 읽는다(그 자체는 이 오더와 무관).
+   * 여기서 보는 것은 «다음»이 그 위에 왕복을 **더 얹지 않는가**다.
+   */
+  const before = jest.mocked(getSignupState).mock.calls.length;
+
+  await act(async () => { frame().props.onNext(); });
+
+  expect(frame().props.stepKey).toBe('done');
+  expect(jest.mocked(getSignupState).mock.calls.length).toBe(before);
+  expect(completeSignup).not.toHaveBeenCalled();
+  expect(completeSetup).not.toHaveBeenCalled();
+  expect(saveWeddingDraft).not.toHaveBeenCalled();
+}
+/** 결과 화면의 «완료». 가입 확인 → 가입 → 초기 설정은 여기서 일어난다. */
 async function finish() {
-  await act(async () => { tree.root.findByType('StepFrame' as never).props.onNext(); });
+  await toResult();
+  await act(async () => { frame().props.onNext(); });
 }
 beforeEach(() => {
   jest.mocked(loadToken).mockResolvedValue('session-token');
@@ -80,7 +104,8 @@ it('첫 가입 상태 조회가 늦어도 완료 시 재확인하고 가입 저�
   expect(completeSetup).not.toHaveBeenCalled();
   await act(async () => signup.resolve(activeSignup));
   expect(completeSetup).toHaveBeenCalledTimes(1);
-  expect(tree.root.findByType('StepFrame' as never).props.stepKey).toBe('done');
+  /* 저장이 끝나면 홈으로 간다 — 결과 화면은 그 전에 이미 그려져 있었다. */
+  expect(router.replace).toHaveBeenCalledWith('/');
   await act(async () => first.resolve(pendingSignup));
 });
 
@@ -101,8 +126,9 @@ it('완료 시 가입 상태 조회가 500이면 초기 설정을 보내지 않�
   expect(completeSignup).not.toHaveBeenCalled();
   expect(completeSetup).not.toHaveBeenCalled();
   expect(clearOnboardingAnswers).not.toHaveBeenCalled();
-  expect(tree.root.findByType('StepFrame' as never).props.error).toBe('가입 상태를 확인하지 못했어요');
-  expect(tree.root.findByType('StepFrame' as never).props.stepKey).toBe('style');
+  expect(frame().props.error).toBe('가입 상태를 확인하지 못했어요');
+  /* 답은 그대로 두고 결과 화면에 머문다 — "완료"를 다시 누르면 그 자리에서 재시도한다. */
+  expect(frame().props.stepKey).toBe('done');
 });
 
 it('가입 저장이 실패하면 초기 설정을 보내거나 가입 완료로 표시하지 않는다', async () => {
@@ -111,7 +137,7 @@ it('가입 저장이 실패하면 초기 설정을 보내거나 가입 완료로
   await finish();
   expect(completeSetup).not.toHaveBeenCalled();
   expect(clearOnboardingAnswers).not.toHaveBeenCalled();
-  expect(tree.root.findByType('StepFrame' as never).props.error).toBe('가입을 저장하지 못했어요');
+  expect(frame().props.error).toBe('가입을 저장하지 못했어요');
 });
 
 it('이미 활성화된 계정은 가입 동의를 다시 저장하지 않고 초기 설정만 저장한다', async () => {
@@ -134,8 +160,8 @@ it('가입 저장이 200이어도 활성화되지 않았으면 초기 설정이�
   await finish();
   expect(completeSetup).not.toHaveBeenCalled();
   expect(clearOnboardingAnswers).not.toHaveBeenCalled();
-  expect(tree.root.findByType('StepFrame' as never).props.error).toBeTruthy();
-  expect(tree.root.findByType('StepFrame' as never).props.stepKey).toBe('style');
+  expect(frame().props.error).toBeTruthy();
+  expect(frame().props.stepKey).toBe('done');
 });
 
 it('완료 중 가입 상태를 기다리다 계정이 바뀌면 다른 계정에 동의와 설정을 저장하지 않는다', async () => {
@@ -161,5 +187,5 @@ it('서버가 설정된 앱에서 토큰이 없으면 오프라인 가입 완료
   expect(saveWeddingDraft).not.toHaveBeenCalled();
   expect(clearOnboardingAnswers).not.toHaveBeenCalled();
   expect(router.replace).toHaveBeenCalledWith('/login');
-  expect(tree.root.findByType('StepFrame' as never).props.stepKey).toBe('style');
+  expect(frame().props.stepKey).toBe('done');
 });
