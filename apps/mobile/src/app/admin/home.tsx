@@ -1,5 +1,8 @@
 /**
- * WP-ADM-001 관리자 홈 — 요약 대시보드
+ * WP-ADM-001 관리자 홈 — 대시보드
+ *
+ * **이름이 「AI 운영현황」이었다**(2026-09-11 대표 지시로 「대시보드」가 됐다).
+ * 관리자 화면에서도 AI 용어를 쓰지 않는다 — 그 지시가 이전 규칙을 뒤집었다.
  *
  * 시안 `21-admin.dc.html`의 `dash` 화면. 네 덩어리다.
  *
@@ -19,10 +22,11 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { AdminSpacing as A, Colors, FontSize, LineHeight } from '@weddingpick/ui';
+import { AdminSpacing as A, Colors, FontSize, LineHeight, Radius } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import {
+  Bars,
   Card,
   CardGrid,
   DataTable,
@@ -32,6 +36,7 @@ import {
   Page,
   Rows,
   StatusBanner,
+  type BarItem,
   type Col,
   type Kind,
   type KpiItem,
@@ -39,6 +44,11 @@ import {
   type TableRow,
   type Tone,
 } from './_ui';
+
+/** 회원 추이. `GET /v1/admin/members-trend`가 구간별로 준다. */
+type MemberBucket = 'day' | 'week' | 'month' | 'year';
+type MemberTrendPoint = { at: string; signups: number; total: number };
+type MemberTrend = { bucket: MemberBucket; points: MemberTrendPoint[]; current: number };
 
 type QueueTone = 'danger' | 'caution';
 type DashCardMode = '위험' | '비용' | '지표' | '자동';
@@ -153,12 +163,38 @@ const LOG_COLS: Col[] = [
   { key: 'when', label: '시각', width: 76, align: 'right' },
 ];
 
+/** 구간 단추. 대표 지시의 「일, 주, 월, 년」 그대로다. */
+const BUCKETS: { key: MemberBucket; label: string }[] = [
+  { key: 'day', label: '일' },
+  { key: 'week', label: '주' },
+  { key: 'month', label: '월' },
+  { key: 'year', label: '년' },
+];
+
+/**
+ * 막대 아래 라벨. **KST로 적는다** — 서버가 준 ISO는 UTC 표기이고, 그대로 쓰면
+ * 한국의 하루가 한 칸 밀려 보인다(CLAUDE.md).
+ */
+function bucketLabel(iso: string, bucket: MemberBucket): string {
+  const at = new Date(iso);
+  const parts = (options: Intl.DateTimeFormatOptions) =>
+    at.toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul', ...options });
+
+  if (bucket === 'year') return parts({ year: 'numeric' });
+  if (bucket === 'month') return parts({ month: 'numeric' });
+
+  return parts({ month: 'numeric', day: 'numeric' });
+}
+
 export default function AdminHomeScreen() {
   const router = useRouter();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rev, setRev] = useState(0);
+  const [bucket, setBucket] = useState<MemberBucket>('month');
+  const [trend, setTrend] = useState<MemberTrend | null>(null);
+  const [trendError, setTrendError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -178,6 +214,25 @@ export default function AdminHomeScreen() {
       });
     return () => { cancelled = true; };
   }, [rev]);
+
+  /*
+   * 회원 추이는 따로 받아온다. 구간을 바꿀 때 대시보드 전체를 다시 부르면 큐·로그까지
+   * 다시 세게 되고, 단추를 눌렀을 때 화면이 통째로 비었다 다시 그려진다.
+   */
+  useEffect(() => {
+    let cancelled = false;
+    apiFetch(`/v1/admin/members-trend?bucket=${bucket}`)
+      .then((d) => {
+        if (cancelled) return;
+        setTrend(d as MemberTrend);
+        setTrendError(null);
+      })
+      .catch((e: unknown) => {
+        if (cancelled) return;
+        setTrendError(e instanceof Error ? e.message : '회원 추이를 불러오지 못했어요');
+      });
+    return () => { cancelled = true; };
+  }, [bucket, rev]);
 
   const reload = () => setRev((r) => r + 1);
 
@@ -246,6 +301,20 @@ export default function AdminHomeScreen() {
     ],
   }));
 
+  /*
+   * 막대 높이는 그 구간의 **최대 가입 수**를 100으로 놓고 잡는다. 누적 회원과 같은
+   * 자를 쓰면 가입 수 막대가 전부 바닥에 붙어 아무것도 읽히지 않는다 — 누적은
+   * 숫자로 말하고 막대는 가입 수만 그린다.
+   */
+  const trendMax = Math.max(1, ...(trend?.points ?? []).map((p) => p.signups));
+  const trendBars: BarItem[] = (trend?.points ?? []).map((point) => ({
+    label: bucketLabel(point.at, bucket),
+    pct: (point.signups / trendMax) * 100,
+    kind: 'brand',
+    value: String(point.signups),
+  }));
+  const trendSignups = (trend?.points ?? []).reduce((sum, point) => sum + point.signups, 0);
+
   const logRows: TableRow[] = (data?.autoLog ?? []).map((r) => ({
     key: r.id,
     cells: [
@@ -259,8 +328,8 @@ export default function AdminHomeScreen() {
 
   return (
     <Page
-      title="요약 대시보드"
-      sub="자동 검토가 처리한 것과 남은 것"
+      title="대시보드"
+      sub="지금 봐야 할 것 · 회원 추이 · 처리 현황"
       action={{ label: '새로 고침', onPress: reload }}
     >
       <DelayedLoader active={loading} size={40} />
@@ -318,7 +387,45 @@ export default function AdminHomeScreen() {
           </CardGrid>
 
           {/*
-            3. 3열 × 2줄. 시안의 카드 순서가 곧 설계다 —
+            3. 회원 추이(2026-09-11 대표 지시 — 「회원은 차트를 활용해 시각화 한다」).
+
+            **차트 라이브러리를 들이지 않았다.** 이 저장소에 차트 의존성이 없고, 막대
+            추이를 그리는 `Bars`가 이미 `_ui.tsx`에 있다. 의존성 하나는 관리자 화면만
+            쓰더라도 앱 번들 전체에 실린다.
+          */}
+          <Card
+            title="회원"
+            sub={
+              trend === null
+                ? '불러오는 중'
+                : `지금 ${trend.current.toLocaleString('ko-KR')}명 · 이 구간 가입 ${trendSignups.toLocaleString('ko-KR')}명`
+            }
+            note="누적은 탈퇴한 계정을 뺀 수예요. 가입 수는 그 칸에 실제로 들어온 수라서 나중에 탈퇴해도 줄지 않아요."
+            full
+          >
+            <View style={styles.bucketRow}>
+              {BUCKETS.map((item) => (
+                <Text
+                  key={item.key}
+                  style={[styles.bucketTab, bucket === item.key && styles.bucketTabOn]}
+                  onPress={() => setBucket(item.key)}
+                >
+                  {item.label}
+                </Text>
+              ))}
+            </View>
+            {trendError ? (
+              <EmptyState title="회원 추이를 불러오지 못했어요" detail={trendError} />
+            ) : trendSignups === 0 && (trend?.current ?? 0) === 0 ? (
+              /* 빈 상태가 정상 상태다(ADMIN.md 공통 규칙). 0을 고장으로 보이게 하지 않는다. */
+              <EmptyState title="아직 가입이 없어요" detail="가입이 들어오면 이 자리에 쌓여요." />
+            ) : (
+              <Bars items={trendBars} />
+            )}
+          </Card>
+
+          {/*
+            4. 3열 × 2줄. 시안의 카드 순서가 곧 설계다 —
             내가 돈을 쓰는 것 → 내가 봐야 하는 지표 → 자동으로 도는 것.
           */}
           <KpiRow items={cards.slice(0, 3)} />
@@ -345,6 +452,23 @@ export default function AdminHomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  /* 구간 단추. 22-admin-ops.dc.html의 필터 칩과 같은 모양이다. */
+  bucketRow: { flexDirection: 'row', gap: A.stackGap, marginBottom: A.stackGap },
+  bucketTab: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: Radius.badge,
+    borderWidth: 1,
+    borderColor: Colors.light.border,
+    fontSize: FontSize.tab,
+    lineHeight: LineHeight.adminMeta,
+    color: Colors.light.textAssistive,
+  },
+  bucketTabOn: {
+    borderColor: Colors.light.tint,
+    color: Colors.light.tint,
+    fontWeight: '700',
+  },
   rateRow: { flexDirection: 'row', alignItems: 'flex-end', gap: A.stackGap },
   /* 21-admin.dc.html dash — «font-size:40px;letter-spacing:-1.4px;line-height:1». */
   rateValue: {

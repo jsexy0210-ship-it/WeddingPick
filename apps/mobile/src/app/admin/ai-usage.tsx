@@ -56,7 +56,7 @@ export default function AiUsageScreen() {
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <Text style={styles.title}>AI 사용량 · 비용</Text>
+        <Text style={styles.title}>분석 비용</Text>
         {data && (
           <View style={styles.headerCosts}>
             <Text style={styles.costText}>오늘 {data.totalCostToday}</Text>

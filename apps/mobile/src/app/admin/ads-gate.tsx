@@ -91,7 +91,7 @@ export default function AdsGateScreen() {
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <Text style={styles.title}>성장 · 광고 실운영 전환 게이트</Text>
+        <Text style={styles.title}>광고 전환 승인</Text>
         <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
           <Text style={styles.refreshText}>새로 고침</Text>
         </Pressable>
@@ -149,7 +149,7 @@ export default function AdsGateScreen() {
             <View style={styles.approvalBox}>
               <Text style={styles.approvalTitle}>최종 사용자 결정이 필요해요</Text>
               <Text style={styles.approvalDesc}>
-                AI 두 개가 독립적으로 분석했고, 보고서 2건이 생성됐습니다.
+                서로 다른 두 분석이 각각 돌았고, 보고서 2건이 나왔습니다.
                 실운영 전환을 확정하려면 아래 버튼을 눌러주세요.
               </Text>
               <Pressable

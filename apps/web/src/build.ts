@@ -65,7 +65,9 @@ export async function build(outDir: string): Promise<string> {
   writeFileSync(indexPath, renderLandingV4(), 'utf8');
 
   // Home/search page moved to search.html
-  writeFileSync(join(outDir, 'search.html'), renderHomePage(await loadSiteData()), 'utf8');
+  const siteData = await loadSiteData();
+
+  writeFileSync(join(outDir, 'search.html'), renderHomePage(siteData), 'utf8');
 
   // Sub-pages
   writeFileSync(join(outDir, 'intro.html'), renderIntroPage(), 'utf8');
@@ -76,7 +78,18 @@ export async function build(outDir: string): Promise<string> {
 
   writeFileSync(join(outDir, 'about.html'), renderLandingPage(STYLES), 'utf8');
 
-  const ids = vendorIdsToBuild();
+  /*
+   * **상세를 만들 업체는 검색 화면이 링크한 업체를 포함한다.**
+   *
+   * 검색 화면은 목록에 실린 업체를 전부 `/v/<id>.html`로 건다(`home-page.ts`). 그런데
+   * 상세를 만들 id는 `WEDDINGPICK_WEB_VENDOR_IDS`에서만 왔다 — **링크를 만드는 출처와
+   * 페이지를 만드는 출처가 달랐다.** 환경변수가 비면 카드 전부가 없는 페이지를 가리키고,
+   * 그 주소를 카카오톡에 붙이면 미리보기가 뜰 자리조차 없다. 404에는 og 태그가 없다.
+   *
+   * 그래서 링크한 업체를 기본으로 삼고, 환경변수는 **거기에 더하는 값**으로 둔다 —
+   * 목록에 없지만 상세를 미리 내고 싶은 업체를 배포하는 쪽이 지정하는 길은 남는다.
+   */
+  const ids = [...new Set([...siteData.vendors.map((vendor) => vendor.id), ...vendorIdsToBuild()])];
 
   if (ids.length > 0) {
     const vendorDir = join(outDir, 'v');

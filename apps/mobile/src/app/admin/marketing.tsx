@@ -131,7 +131,7 @@ export default function MarketingScreen() {
 
   return (
     <Page
-      title="마케팅 자동화"
+      title="마케팅 발송"
       sub="자동 생성 소재 · 모의 실행 · 실패"
       action={{ label: '새로 고침', onPress: reload }}
     >

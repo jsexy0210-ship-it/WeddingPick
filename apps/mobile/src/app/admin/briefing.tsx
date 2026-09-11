@@ -173,7 +173,7 @@ export default function BriefingScreen() {
                 note: data.unresolvedRisks.length === 0 ? '확인할 것이 없어요' : '확인 필요',
                 kind: data.unresolvedRisks.length === 0 ? 'ok' : 'bad',
               },
-              { label: 'AI 비용', value: data.aiCostToday, note: '오늘 사용분' },
+              { label: '분석 비용', value: data.aiCostToday, note: '오늘 사용분' },
             ]}
           />
 
@@ -202,7 +202,7 @@ export default function BriefingScreen() {
               <Rows
                 items={[
                   { key: 'revenue', name: '수익', meta: '광고 · 제휴', num: data.revenueToday },
-                  { key: 'cost', name: 'AI 비용', meta: '오늘 사용분', num: data.aiCostToday, numKind: 'bad' },
+                  { key: 'cost', name: '분석 비용', meta: '오늘 사용분', num: data.aiCostToday, numKind: 'bad' },
                 ]}
               />
             </Card>
