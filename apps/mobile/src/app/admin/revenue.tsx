@@ -140,7 +140,7 @@ export default function RevenueScreen() {
           {BACKEND_PENDING ? (
             <PendingBackendNotice
               actions="수익 집계"
-              reason="결제 · 구독을 담는 곳이 아직 없어서 이 화면의 수는 모두 0으로 나와요. 집계가 붙기 전까지는 «측정값»이 아니에요."
+              reason="구독 · 매출을 담는 곳이 아직 없어서 이 화면의 수는 모두 0으로 나와요. 집계가 붙으면 실제 수로 바뀌어요."
             />
           ) : null}
           {/*
