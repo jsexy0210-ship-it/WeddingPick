@@ -44,6 +44,14 @@ const DIST = join(REPO, 'apps/mobile/dist');
 const VIEWPORT = { width: 390, height: 844 };
 
 /**
+ * 관리자 콘솔 기준 해상도(CLAUDE.md v3.27 — 1440×900에서 올렸다).
+ *
+ * 앱 크기로 찍으면 사이드바 240이 본문을 밀어 글자가 세로 한 줄로 선다. 그림은
+ * 나오지만 **화면을 봤다고 할 수 없는 그림**이 된다 — 실제로 한 번 그렇게 찍혔다.
+ */
+const ADMIN_VIEWPORT = { width: 1920, height: 1080 };
+
+/**
  * playwright는 이 저장소의 의존성이 아니다 — 컨테이너에 전역으로 깔려 있다.
  * 있는 자리를 먼저 보고, 없으면 전역에서 찾는다.
  */
@@ -66,6 +74,8 @@ function parseArgs(argv) {
     build: false,
     full: false,
     wait: 1500,
+    /** 비워 두면 경로를 보고 정한다 — `/admin/…`은 1920, 나머지는 390. */
+    viewport: null,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -76,6 +86,11 @@ function parseArgs(argv) {
     else if (arg === '--build') opts.build = true;
     else if (arg === '--full') opts.full = true;
     else if (arg === '--wait') opts.wait = Number(argv[++i]);
+    else if (arg === '--viewport') {
+      const [width, height] = argv[++i].split('x').map(Number);
+
+      opts.viewport = { width, height };
+    }
     else if (arg === '--help' || arg === '-h') opts.help = true;
     else throw new Error(`모르는 인자: ${arg}`);
   }
@@ -231,6 +246,12 @@ async function captureRoute(context, origin, route, opts) {
     } catch {
       /* 저장소를 못 쓰면 어차피 로그인 화면이 찍힌다 — 그것도 사실이다. */
     }
+    try {
+      // 관리자 화면은 토큰 자리가 다르다(admin/_session.ts).
+      window.localStorage.setItem('weddingpick.adminToken.v1', 'capture-token');
+    } catch {
+      /* 위와 같다. */
+    }
   }, 'weddingpick.sessionToken.v1');
 
   await page.goto(`${origin}${route}`, { waitUntil: 'networkidle' });
@@ -253,6 +274,7 @@ const HELP = `화면을 실제로 렌더해 PNG로 찍는다.
   --build          dist를 새로 만든 뒤 찍는다.
   --full           화면 전체(스크롤 포함)를 찍는다. 기본은 390x844 한 화면.
   --wait <ms>      렌더를 기다리는 시간. 기본 1500.
+  --viewport WxH   창 크기. 기본은 경로를 보고 정한다 — /admin은 1920x1080, 나머지 390x844.
 `;
 
 async function main() {
@@ -283,7 +305,18 @@ async function main() {
   const { chromium } = loadPlaywright();
   const { server, port } = await startStaticServer(DIST);
   const browser = await chromium.launch();
-  const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 2, locale: 'ko-KR' });
+  /*
+   * 관리자와 앱은 기준 해상도가 다르다. 섞어 찍으면 한쪽이 반드시 뭉개지므로
+   * 경로를 보고 정한다 — 따로 주고 싶으면 `--viewport 1280x800`.
+   */
+  const adminOnly = opts.routes.every((route) => route.startsWith('/admin'));
+  const viewport = opts.viewport ?? (adminOnly ? ADMIN_VIEWPORT : VIEWPORT);
+  const context = await browser.newContext({
+    viewport,
+    /* 1920을 2배로 찍으면 3840이라 파일만 커진다. 관리자는 등배로 본다. */
+    deviceScaleFactor: viewport.width > 800 ? 1 : 2,
+    locale: 'ko-KR',
+  });
   try {
     for (const route of opts.routes) {
       const result = await captureRoute(context, `http://127.0.0.1:${port}`, route, opts);

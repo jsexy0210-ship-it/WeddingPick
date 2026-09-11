@@ -38,6 +38,13 @@ const CONTRACTS = new Map<string, ZodType>([
 ]);
 
 /**
+ * 계약이 없는 경로. 관리자 콘솔 응답은 `packages/api-contract`가 아니라
+ * `apps/api`의 타입이 정하므로 여기서 검사할 스키마가 없다 — 그래도 **적어는
+ * 둔다.** 빠뜨린 것과 일부러 뺀 것을 구별하려고.
+ */
+const NO_CONTRACT = new Set(['GET /v1/admin/ads-gate', 'GET /v1/admin/ad-tiers']);
+
+/**
  * 함수 fixture는 한 번 불러 본다 — 조건 없이 부른 결과가 기본 응답이다.
  *
  * 질의 문자열은 비워서 넘긴다. 찾는 칸이 없을 때 무엇을 돌려주는지가 여기서 볼 값이다.
@@ -75,6 +82,8 @@ describe('캡처용 가짜 응답', () => {
   });
 
   it('계약을 적어두지 않은 fixture를 남기지 않는다', () => {
-    expect(Object.keys(routes).filter((key) => !CONTRACTS.has(key))).toEqual([]);
+    expect(
+      Object.keys(routes).filter((key) => !CONTRACTS.has(key) && !NO_CONTRACT.has(key))
+    ).toEqual([]);
   });
 });

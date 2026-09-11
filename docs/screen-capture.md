@@ -35,6 +35,7 @@ node scripts/screenshot-screens.mjs --build
 | `--build` | dist를 새로 만든 뒤 찍는다 |
 | `--full` | 스크롤 포함 전체. 기본은 한 화면(390×844) |
 | `--wait <ms>` | 렌더를 기다리는 시간. 기본 1500 |
+| `--viewport WxH` | 창 크기. 기본은 경로를 보고 정한다 — 아래 |
 
 ## PR에 붙인다
 
@@ -43,6 +44,24 @@ node scripts/screenshot-screens.mjs --build
 
 본문에는 **무엇을 찍었는지**도 적는다 — 어느 경로를, 어느 커밋으로 만든 dist에서.
 「찍었다」만 적힌 그림은 다음 사람이 다시 찍어야 한다.
+
+## 관리자 화면은 크기가 다르다
+
+관리자 콘솔의 기준 해상도는 **1920×1080**이고 앱은 390×844다(CLAUDE.md v3.27).
+`--route`가 전부 `/admin/…`이면 자동으로 1920으로 찍고, 아니면 390이다. 섞어 찍으면
+한쪽이 반드시 뭉개지므로 **관리자와 앱은 따로 돌린다.**
+
+```bash
+node scripts/screenshot-screens.mjs --route "/admin/ads-gate"        # 1920x1080
+node scripts/screenshot-screens.mjs --route "/(tabs)/search/"        # 390x844
+node scripts/screenshot-screens.mjs --route "/admin/x" --viewport 1440x900
+```
+
+앱 크기로 관리자를 찍으면 사이드바 240이 본문을 밀어 글자가 세로 한 줄로 선다.
+그림은 나오지만 **화면을 봤다고 할 수 없는 그림**이 된다 — 실제로 한 번 그렇게
+찍혔다(2026-09-11).
+
+관리자는 토큰 자리도 다르다(`weddingpick.adminToken.v1`). 도구가 둘 다 심는다.
 
 ## 무엇이 가짜이고 무엇이 진짜인가
 

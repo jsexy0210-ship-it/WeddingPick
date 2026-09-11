@@ -150,6 +150,56 @@ const routes = {
     progress: { decided: 0, total: 13, label: '0/13 완료' },
     nextCategory: 'hall',
   },
+  /*
+   * 관리자 — 광고 실운영 관문과 상품별 상태(WP-ADM-034).
+   *
+   * 「승인은 끝났고 아직 안 켠」 상태로 둔다. 그 자리가 단추 셋을 한꺼번에
+   * 보여준다 — 켜기 · 상품별 실운영 · 되돌리기.
+   */
+  'GET /v1/admin/ads-gate': {
+    currentPhase: 5,
+    steps: [
+      {
+        id: 'test_open',
+        label: '테스트 전체 오픈',
+        description: '모든 상품 등급을 테스트로 열어 자리를 판매합니다',
+        status: 'done',
+        completedAt: null,
+        detail: '광고 자리 3건',
+        requiresAction: false,
+      },
+      {
+        id: 'decision',
+        label: '최종 결정',
+        description: '사람이 실운영 전환을 확정합니다',
+        status: 'done',
+        completedAt: '2026-09-11T00:00:00.000Z',
+        detail: '승인됨',
+        requiresAction: false,
+      },
+      {
+        id: 'production',
+        label: '실운영 오픈',
+        description: '승인과 별개로 한 번 더 켜야 광고가 나갑니다',
+        status: 'in_progress',
+        completedAt: null,
+        detail: '켜면 광고가 나갑니다',
+        requiresAction: true,
+      },
+    ],
+    readyForProduction: false,
+    activated: false,
+    canActivate: true,
+    /* 막고 있는 것이 없다. 「켜면 나갑니다」는 안내라 여기 넣지 않는다. */
+    blockers: [],
+  },
+  'GET /v1/admin/ad-tiers': {
+    tiers: [
+      { tier: 'light', state: 'live', decidedAt: '2026-09-11T00:00:00.000Z', placements: 2 },
+      { tier: 'standard', state: 'test', decidedAt: null, placements: 1 },
+      { tier: 'premium', state: 'withheld', decidedAt: '2026-09-10T00:00:00.000Z', placements: 0 },
+    ],
+  },
   'GET /v1/vendors': ({ url }) => {
     const category = url.searchParams.get('category');
     const vendors = category ? VENDORS.filter((v) => v.category === category) : VENDORS;
