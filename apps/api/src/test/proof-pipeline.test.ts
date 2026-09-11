@@ -343,10 +343,16 @@ describeWithDb('예산', () => {
       images: IMAGES,
     });
 
-    // 규칙이 읽은 것은 버리지 않고 그대로 온다. 그리고 무엇을 하면 되는지 알려준다.
+    // 규칙이 읽은 것은 버리지 않고 그대로 온다. 그리고 무엇이 되는지 알려준다.
     expect(result.reading.paidAmount).toBe(3_000_000);
     expect(result.reading.paidAt?.slice(0, 10)).toBe('2026-05-20');
-    expect(result.notice).toContain('직접 적어주시면');
+    /*
+     * 예전 안내는 «직접 적어주시면 그대로 올라가요»였다. v3.24가 수동 입력과
+     * 문자 붙여넣기를 폐기한 뒤로는 없는 길을 가리키는 말이라, 접수는 됐다는
+     * 사실로 바꿨다.
+     */
+    expect(result.notice).toContain('접수됐고');
+    expect(result.notice).not.toContain('직접 적어주시면');
     // 화면에 나가는 말에 AI가 없다.
     expect(result.notice).not.toContain('AI');
   });
