@@ -56,7 +56,7 @@ export default function ReportScreen() {
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <Text style={styles.title}>VOC · 신고 접수</Text>
+        <Text style={styles.title}>신고 접수</Text>
       </View>
 
       {/* 필터 탭 */}
