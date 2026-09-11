@@ -17,6 +17,16 @@ name: API health 확인 (읽기 전용)
 
 on:
   workflow_dispatch:
+    inputs:
+      api:
+        # 리전 이사처럼 **아직 주소가 다른 서비스**를 확인할 자리가 필요하다
+        # (2026-09-11). 새로 만든 서비스가 Live로 떠도 그것은 「프로세스가 살아
+        # 있다」까지고, 어느 DB를 쥐었는지는 본문을 읽어야 안다 — 실제로 Live인
+        # 채로 39개 밀린 옛 DB를 보고 있었다.
+        description: '확인할 API 주소'
+        type: string
+        required: false
+        default: https://weddingpickl.onrender.com
 
 permissions: {}
 
@@ -29,7 +39,7 @@ jobs:
       - name: /health 본문 읽기
         env:
           # free 플랜이라 잠들어 있으면 첫 요청이 30~60초 걸린다.
-          API: https://weddingpickl.onrender.com
+          API: ${{ inputs.api || 'https://weddingpickl.onrender.com' }}
         run: |
           set -o pipefail
 
