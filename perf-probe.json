@@ -1,0 +1,143 @@
+{
+  "api": "https://weddingpickl.onrender.com",
+  "samples": 12,
+  "modes": {
+    "fresh": [
+      {
+        "label": "/ (DB 안 봄)",
+        "n": 12,
+        "ttfb_p50": 144.0,
+        "ttfb_p95": 546.9,
+        "ttfb_max": 799.5,
+        "total_p50": 144.0,
+        "total_p95": 547.0,
+        "tls_p50": 25.7,
+        "bytes_p50": 60
+      },
+      {
+        "label": "/health (DB 왕복 2회)",
+        "n": 12,
+        "ttfb_p50": 626.7,
+        "ttfb_p95": 882.5,
+        "ttfb_max": 1005.1,
+        "total_p50": 626.8,
+        "total_p95": 882.6,
+        "tls_p50": 25.6,
+        "bytes_p50": 162
+      },
+      {
+        "label": "홈 · 많이 확인된 곳",
+        "n": 12,
+        "ttfb_p50": 686.0,
+        "ttfb_p95": 989.9,
+        "ttfb_max": 1070.3,
+        "total_p50": 686.0,
+        "total_p95": 989.9,
+        "tls_p50": 25.4,
+        "bytes_p50": 3267
+      },
+      {
+        "label": "홈 전체 (비회원 bootstrap)",
+        "n": 12,
+        "ttfb_p50": 657.3,
+        "ttfb_p95": 947.9,
+        "ttfb_max": 1855.1,
+        "total_p50": 657.3,
+        "total_p95": 948.0,
+        "tls_p50": 25.3,
+        "bytes_p50": 3208
+      },
+      {
+        "label": "검색 (질의 있음)",
+        "n": 12,
+        "ttfb_p50": 558.7,
+        "ttfb_p95": 758.6,
+        "ttfb_max": 1943.5,
+        "total_p50": 558.7,
+        "total_p95": 758.6,
+        "tls_p50": 25.6,
+        "bytes_p50": 14894
+      },
+      {
+        "label": "업체 상세",
+        "n": 12,
+        "ttfb_p50": 1192.5,
+        "ttfb_p95": 1690.3,
+        "ttfb_max": 1772.9,
+        "total_p50": 1192.7,
+        "total_p95": 1690.3,
+        "tls_p50": 25.6,
+        "bytes_p50": 1356
+      }
+    ],
+    "reuse": [
+      {
+        "label": "/ (DB 안 봄)",
+        "n": 12,
+        "ttfb_p50": 89.9,
+        "ttfb_p95": 229.3,
+        "ttfb_max": 522.5,
+        "total_p50": 89.9,
+        "total_p95": 230.3,
+        "tls_p50": 26.2,
+        "bytes_p50": 60
+      },
+      {
+        "label": "/health (DB 왕복 2회)",
+        "n": 12,
+        "ttfb_p50": 614.4,
+        "ttfb_p95": 888.5,
+        "ttfb_max": 1584.6,
+        "total_p50": 614.5,
+        "total_p95": 888.6,
+        "tls_p50": 25.9,
+        "bytes_p50": 162
+      },
+      {
+        "label": "홈 · 많이 확인된 곳",
+        "n": 12,
+        "ttfb_p50": 557.5,
+        "ttfb_p95": 890.2,
+        "ttfb_max": 950.2,
+        "total_p50": 557.5,
+        "total_p95": 890.2,
+        "tls_p50": 25.9,
+        "bytes_p50": 3267
+      },
+      {
+        "label": "홈 전체 (비회원 bootstrap)",
+        "n": 12,
+        "ttfb_p50": 511.6,
+        "ttfb_p95": 1146.5,
+        "ttfb_max": 1701.4,
+        "total_p50": 511.7,
+        "total_p95": 1146.6,
+        "tls_p50": 25.1,
+        "bytes_p50": 3208
+      },
+      {
+        "label": "검색 (질의 있음)",
+        "n": 12,
+        "ttfb_p50": 677.3,
+        "ttfb_p95": 1414.1,
+        "ttfb_max": 6459.7,
+        "total_p50": 677.4,
+        "total_p95": 1414.2,
+        "tls_p50": 25.1,
+        "bytes_p50": 14894
+      },
+      {
+        "label": "업체 상세",
+        "n": 12,
+        "ttfb_p50": 1128.9,
+        "ttfb_p95": 1595.2,
+        "ttfb_max": 2854.3,
+        "total_p50": 1128.9,
+        "total_p95": 1595.3,
+        "tls_p50": 45.3,
+        "bytes_p50": 1356
+      }
+    ]
+  },
+  "db_round_trip_ms": 262.2
+}
