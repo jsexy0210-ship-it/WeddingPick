@@ -80,9 +80,19 @@ import { DelayedLoader } from '@/features/loading/delayed-loader';
  * 다 늘어놓으면 가로
  * 스크롤만 길어져서 시안이 여섯만 뽑았다. 나머지는 필터 시트에서 고른다.
  *
- * 이름은 `VENDOR_CATEGORY_LABEL`을 쓴다. 시안은 `snap`을 «스냅»으로 적었지만
- * 저장소의 이름은 «본식스냅»이고(Pick 탭 · 웨딩일정 · 준비 현황이 같이 쓴다),
- * 한 화면 때문에 공용 이름을 바꾸지 않는다.
+ * 이름은 `VENDOR_CATEGORY_LABEL`을 쓴다. **이 칩 줄의 «본식스냅»을 «스냅»으로
+ * 줄이지 않는다.**
+ *
+ * 이 화면의 시안은 `snap`을 «스냅»으로 적었다. 그것만 보면 바꾸고 싶어지는데,
+ * 루트 시안 36장을 세어 보면 반대다(2026-09-11 실측).
+ *
+ *     본식스냅   14회 · 7개 파일   초기 설정 · 홈 · 웨딩일정 · 웨딩일정 하위 ·
+ *                                  로딩 copy 2벌 · 잔여
+ *     스냅        6회              검색 · 웨딩일정 하위 등
+ *
+ * **시안 자신이 공용 이름으로 «본식스냅»을 쓴다.** 검색 칩에서만 줄여 적은 것은
+ * 칩 폭 때문으로 읽힌다. 한 화면을 위해 `VENDOR_CATEGORY_LABEL`을 바꾸면 Pick 탭 ·
+ * 웨딩일정 · 준비 현황이 한꺼번에 흔들린다(2026-09-11 MASTER 판단 — 그대로 둔다).
  */
 const CHIP_CATEGORIES: readonly VendorCategory[] = [
   'hall',
@@ -1044,8 +1054,15 @@ export default function SearchScreen() {
                             height={CARD_IMAGE_HEIGHT}
                             radius={Radius.medium}
                           />
-                          {/* 시안 adPill: top 10 left 10 · rgba(0,0,0,.5) · 13/18 700 · padding 3 9 · radius 4 */}
-                          <View style={[styles.adPill, { backgroundColor: theme.scrim }]}>
+                          {/*
+                            시안 adPill: top 10 left 10 · rgba(0,0,0,.5) · 13/18 700 · padding 3 9 · radius 4.
+
+                            배경은 `pillOnImage`다 — 이름 그대로 «이미지 위 순위 · 광고 pill»
+                            자리의 값이고 시안과 같은 rgba(0,0,0,.5)다. `scrim`을 쓰면 라이트에서
+                            .45, 다크에서 .72로 갈려 시안보다 옅거나 진해진다(2026-09-11 캡처로
+                            드러났다 — 그래서 pill이 사진 위에서 다른 무게로 보였다).
+                          */}
+                          <View style={[styles.adPill, { backgroundColor: theme.pillOnImage }]}>
                             <ThemedText type="micro" style={{ color: theme.onTint }}>
                               {ad.label}
                             </ThemedText>
