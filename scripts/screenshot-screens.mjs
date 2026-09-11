@@ -76,6 +76,8 @@ function parseArgs(argv) {
     wait: 1500,
     /** 비워 두면 경로를 보고 정한다 — `/admin/…`은 1920, 나머지는 390. */
     viewport: null,
+    /** 찍기 전에 눌러 둘 것들. 시트 · 펼침처럼 **눌러야 나오는 화면**을 찍는다. */
+    taps: [],
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -86,6 +88,7 @@ function parseArgs(argv) {
     else if (arg === '--build') opts.build = true;
     else if (arg === '--full') opts.full = true;
     else if (arg === '--wait') opts.wait = Number(argv[++i]);
+    else if (arg === '--tap') opts.taps.push(argv[++i]);
     else if (arg === '--viewport') {
       const [width, height] = argv[++i].split('x').map(Number);
 
@@ -257,6 +260,19 @@ async function captureRoute(context, origin, route, opts) {
   await page.goto(`${origin}${route}`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(opts.wait);
 
+  /*
+   * 눌러야 나오는 화면 — 바텀시트 · 펼침 · 탭. 순서대로 누르고 매번 기다린다.
+   * 이름은 `accessibilityLabel`을 먼저 보고, 없으면 화면에 적힌 글자로 찾는다.
+   * **없으면 조용히 넘어가지 않는다** — 「눌렀다고 치고」 찍은 그림은 안 찍은 것보다
+   * 나쁘다. 시트가 안 열린 화면을 시트라고 믿게 된다.
+   */
+  for (const label of opts.taps) {
+    const target = page.getByLabel(label).or(page.getByText(label, { exact: true })).first();
+
+    await target.click({ timeout: 5000 });
+    await page.waitForTimeout(opts.wait);
+  }
+
   const file = join(opts.out, `${safeName(route)}.png`);
 
   await page.screenshot({ path: file, fullPage: opts.full });
@@ -274,6 +290,8 @@ const HELP = `화면을 실제로 렌더해 PNG로 찍는다.
   --build          dist를 새로 만든 뒤 찍는다.
   --full           화면 전체(스크롤 포함)를 찍는다. 기본은 390x844 한 화면.
   --wait <ms>      렌더를 기다리는 시간. 기본 1500.
+  --tap <이름>     찍기 전에 누른다. 여러 번 줄 수 있고 준 순서대로 누른다.
+                   눌러야 나오는 화면(바텀시트 · 펼침)을 찍을 때 쓴다. 못 찾으면 멈춘다.
   --viewport WxH   창 크기. 기본은 경로를 보고 정한다 — /admin은 1920x1080, 나머지 390x844.
 `;
 
