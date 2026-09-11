@@ -182,7 +182,7 @@ export async function recommendVendors(
      FROM structured.vendors v
      WHERE v.category = $1::vendor_category
        AND ($2::text IS NULL OR v.region LIKE $2)
-       AND coalesce(v.is_active, true)
+       AND v.is_active
      ORDER BY style_overlap DESC, confirmed_count DESC, (v.guide_price_from IS NOT NULL) DESC,
               recent_count DESC, v.name, v.id
      LIMIT $4`,

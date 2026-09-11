@@ -238,35 +238,86 @@ async function loadVendorDetail(pool: Pool, vendorId: string, viewerId: string |
   }
 
   /*
-   * 조건이 비슷한 사례를 볼 수 있는가.
+   * 여기서부터 다섯 가지를 한꺼번에 띄운다.
    *
-   * **가격을 가리는 값이 아니다.** 최종통합정책 v2.0 K-6이 "결제인증 회원만 실제
-   * 결제 데이터 접근"을 폐기했다 — 구간은 비회원도 본다. 여기서 갈리는 것은
-   * 깊이뿐이고, 무엇을 보여줄지는 사람이 아니라 데이터 수가 정한다.
+   * 열람 이력 · 비교 견적 · 제보 금액 · 결제인증 · 이용 경험 점수는 서로의 답을
+   * 쓰지 않는다. 전부 바로 위에서 받은 업체 행만 있으면 된다. 그런데도 하나씩
+   * 기다리고 있었다 — API에서 DB까지 한 번 다녀오는 데 262ms가 들어서
+   * (`docs/perf/audit-2026-09-11.md`) 그 순서가 그대로 1.1초가 됐다. 묶으면
+   * 왕복 다섯 번이 한 번이 된다. 질의도 조건도 바꾸지 않는다 — 순서만 바꾼다.
+   *
+   * 한자리에서 `Promise.all`로 받는다. 값을 쓰는 곳마다 흩어서 기다리면, 하나가
+   * 먼저 실패했을 때 남은 거절이 갈 곳을 잃는다.
    */
-  const deep = viewerId
-    ? await pool.query('SELECT 1 FROM structured.data_unlocks WHERE user_id = $1', [viewerId])
-    : null;
+  const [deep, samples, reports, paid, usageScore] = await Promise.all([
+    /*
+     * 조건이 비슷한 사례를 볼 수 있는가.
+     *
+     * **가격을 가리는 값이 아니다.** 최종통합정책 v2.0 K-6이 "결제인증 회원만 실제
+     * 결제 데이터 접근"을 폐기했다 — 구간은 비회원도 본다. 여기서 갈리는 것은
+     * 깊이뿐이고, 무엇을 보여줄지는 사람이 아니라 데이터 수가 정한다.
+     */
+    viewerId
+      ? pool.query('SELECT 1 FROM structured.data_unlocks WHERE user_id = $1', [viewerId])
+      : null,
+
+    pool.query<{
+      product_key: string;
+      doc_type: string;
+      product_label: string | null;
+      amount: string;
+      verification_level: PriceSample['verificationLevel'];
+      contract_date: Date;
+    }>(
+      `SELECT c.product_key, c.doc_type,
+              coalesce(q.product_name, q.hall_name) AS product_label,
+              c.total_amount AS amount, c.verification_level, c.contract_date
+       FROM structured.comparable_quotes c
+       JOIN structured.quotes q ON q.id = c.id
+       WHERE c.vendor_id = $1
+       ORDER BY c.product_key, c.doc_type`,
+      [vendor.id]
+    ),
+
+    /*
+     * 제보는 따로 읽어 따로 내려보낸다.
+     *
+     * 위의 comparable_quotes와 UNION하지 않는다 — 서비스정책서 2번은 시장
+     * 대표가격의 근거를 L2 이상으로 못박았고, 제보는 그 근거를 갖지 못한다.
+     * 표를 나눠둔 이유가 여기서 지켜진다.
+     */
+    pool.query<{ total_amount: string; contracted_on: Date }>(
+      `SELECT total_amount, contracted_on
+       FROM structured.usable_price_reports
+       WHERE vendor_id = $1`,
+      [vendor.id]
+    ),
+
+    /*
+     * 결제인증은 또 따로 읽는다. 계약 중앙값과도, 수기 제보와도 UNION하지 않는다.
+     *
+     * 셋의 근거가 다르다 — 사람이 심사한 계약, 기계가 읽은 결제내역, 그냥 적어준
+     * 숫자. 한 번이라도 합치면 그 뒤로는 어느 숫자가 무엇이었는지 아무도 모른다.
+     */
+    /*
+     * 최근 12개월만 본다. v2.0 C-1.
+     *
+     * 라벨이 사실보다 앞서면 안 된다 — 화면이 "최근 12개월"이라고 적는데 3년 전
+     * 결제가 섞여 있으면, 그건 안내가 아니라 틀린 말이다. 오래된 것을 지우지는
+     * 않는다(C-1) — 과거 이력으로 남고, 이 질의에서만 빠진다.
+     */
+    pool.query<{ paid_amount: string }>(
+      `SELECT paid_amount
+       FROM structured.usable_payment_proofs
+       WHERE vendor_id = $1
+         AND paid_at >= now() - ($2 || ' months')::interval`,
+      [vendor.id, DEFAULT_PERIOD_MONTHS]
+    ),
+
+    loadUsageScore(pool, vendor.id, vendor.category as VendorCategory),
+  ]);
 
   const deepData = (deep?.rows.length ?? 0) > 0;
-
-  const samples = await pool.query<{
-    product_key: string;
-    doc_type: string;
-    product_label: string | null;
-    amount: string;
-    verification_level: PriceSample['verificationLevel'];
-    contract_date: Date;
-  }>(
-    `SELECT c.product_key, c.doc_type,
-            coalesce(q.product_name, q.hall_name) AS product_label,
-            c.total_amount AS amount, c.verification_level, c.contract_date
-     FROM structured.comparable_quotes c
-     JOIN structured.quotes q ON q.id = c.id
-     WHERE c.vendor_id = $1
-     ORDER BY c.product_key, c.doc_type`,
-    [vendor.id]
-  );
 
   const groups = new Map<string, { docType: string; labels: string[]; samples: PriceSample[] }>();
 
@@ -303,46 +354,11 @@ async function loadVendorDetail(pool: Pool, vendorId: string, viewerId: string |
 
   products.sort((a, b) => a.productLabel.localeCompare(b.productLabel, 'ko'));
 
-  /*
-   * 제보는 따로 읽어 따로 내려보낸다.
-   *
-   * 위의 comparable_quotes와 UNION하지 않는다 — 서비스정책서 2번은 시장
-   * 대표가격의 근거를 L2 이상으로 못박았고, 제보는 그 근거를 갖지 못한다.
-   * 표를 나눠둔 이유가 여기서 지켜진다.
-   */
-  const reports = await pool.query<{ total_amount: string; contracted_on: Date }>(
-    `SELECT total_amount, contracted_on
-     FROM structured.usable_price_reports
-     WHERE vendor_id = $1`,
-    [vendor.id]
-  );
-
   const reported = summarizeReports(
     reports.rows.map((row) => ({
       totalAmount: Number(row.total_amount),
       contractedOn: row.contracted_on.toISOString().slice(0, 7),
     }))
-  );
-
-  /*
-   * 결제인증은 또 따로 읽는다. 계약 중앙값과도, 수기 제보와도 UNION하지 않는다.
-   *
-   * 셋의 근거가 다르다 — 사람이 심사한 계약, 기계가 읽은 결제내역, 그냥 적어준
-   * 숫자. 한 번이라도 합치면 그 뒤로는 어느 숫자가 무엇이었는지 아무도 모른다.
-   */
-  /*
-   * 최근 12개월만 본다. v2.0 C-1.
-   *
-   * 라벨이 사실보다 앞서면 안 된다 — 화면이 "최근 12개월"이라고 적는데 3년 전
-   * 결제가 섞여 있으면, 그건 안내가 아니라 틀린 말이다. 오래된 것을 지우지는
-   * 않는다(C-1) — 과거 이력으로 남고, 이 질의에서만 빠진다.
-   */
-  const paid = await pool.query<{ paid_amount: string }>(
-    `SELECT paid_amount
-     FROM structured.usable_payment_proofs
-     WHERE vendor_id = $1
-       AND paid_at >= now() - ($2 || ' months')::interval`,
-    [vendor.id, DEFAULT_PERIOD_MONTHS]
   );
 
   /*
@@ -356,7 +372,7 @@ async function loadVendorDetail(pool: Pool, vendorId: string, viewerId: string |
 
   return {
     ...toSummary(vendor),
-    usageScore: await loadUsageScore(pool, vendor.id, vendor.category as VendorCategory),
+    usageScore,
     lastVerifiedAt: vendor.last_verified_at.toISOString(),
     prices: {
       products,
@@ -391,7 +407,7 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
        FROM structured.vendors
        WHERE region <> ''
          -- 폐업으로 넘긴 업체는 세지 않는다. 세면 눌러도 아무것도 안 나오는 필터가 생긴다.
-         AND coalesce(is_active, true)
+         AND is_active
        GROUP BY 1
        ORDER BY 1`
     );
@@ -514,7 +530,7 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
             * 실제로 거르는 곳은 추천 하나뿐이었다 — 검색은 그대로 내보내고 있었다.
             * 상세와 비교는 계속 열린다: 이미 담아둔 사람이 왜 사라졌는지 봐야 한다.
             */
-           AND coalesce(v.is_active, true)
+           AND v.is_active
        )
        SELECT v.id, v.name, v.category, v.region, v.source, to_jsonb(v)->>'source_url' AS source_url, v.last_verified_at, v.lat, v.lng,
               v.style_tags::text[] AS style_tags, v.guide_price_from, v.guide_price_source,
