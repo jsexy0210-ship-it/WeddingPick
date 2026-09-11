@@ -168,7 +168,7 @@ export default function BizQueueScreen() {
                 <Text style={styles.fieldLabel}>문의 유형</Text>
                 <Text style={styles.fieldValue}>{selected.inquiryType}</Text>
 
-                <Text style={styles.fieldLabel}>AI 자동 분류</Text>
+                <Text style={styles.fieldLabel}>자동 분류</Text>
                 <Text style={styles.fieldValue}>{selected.autoClassification}</Text>
 
                 <Text style={styles.fieldLabel}>소속 검증</Text>

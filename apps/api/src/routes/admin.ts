@@ -16,6 +16,7 @@ import { isKnownSourceKey } from '../public-data/sources';
 import type { AppContext } from '../context';
 import * as dashboardAdmin from '../dashboard-admin';
 import * as decisionsAdmin from '../decisions-admin';
+import * as faqAdmin from '../faq-admin';
 import { NotAnOperator } from '../decisions';
 import { ApiError, forbidden, notFound } from '../errors';
 import * as inquiryAdmin from '../inquiry-admin';
@@ -893,6 +894,22 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
    */
   app.get('/v1/admin/dashboard', auth, async () => dashboardAdmin.dashboard(context.pool));
 
+  /*
+   * 회원 추이. 대시보드의 차트가 구간을 바꿀 때마다 여기를 부른다.
+   *
+   * 네 구간을 한 번에 주지 않는다 — 대시보드는 열 때마다 도는 화면이고, 보지도
+   * 않는 세 구간을 매번 세면 그만큼 느려진다.
+   */
+  app.get<{ Querystring: { bucket?: string } }>('/v1/admin/members-trend', auth, async (request) => {
+    const bucket = request.query.bucket ?? 'month';
+
+    if (!dashboardAdmin.isMemberBucket(bucket)) {
+      throw new ApiError('invalid_request', '구간은 일 · 주 · 월 · 년 중 하나예요.');
+    }
+
+    return dashboardAdmin.memberTrend(context.pool, bucket);
+  });
+
   // ─── Kill Switches ────────────────────────────────────────────────────────
   app.get('/v1/admin/kill-switches', auth, async () => {
     /*
@@ -992,19 +1009,41 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   });
 
   // ─── FAQ ──────────────────────────────────────────────────────────────────
-  app.get('/v1/admin/faq', auth, async () => {
-    return { items: [] as { id: string; question: string; answer: string; visible: boolean }[] };
-  });
-  app.post('/v1/admin/faq', auth, async () => {
-    return { id: randomUUID() };
-  });
-  app.patch<{ Params: { id: string } }>('/v1/admin/faq/:id', auth, async (_req, reply) => {
-    return reply.status(204).send();
-  });
-  app.put<{ Params: { id: string } }>('/v1/admin/faq/:id', auth, async (_req, reply) => {
-    return reply.status(204).send();
-  });
-  app.delete<{ Params: { id: string } }>('/v1/admin/faq/:id', auth, async (_req, reply) => {
+  /*
+   * FAQ — 운영자가 직접 등록·수정·삭제한다(2026-09-11 대표 지시).
+   *
+   * **여기 있던 다섯 라우트는 성공만 돌려주고 아무것도 하지 않았다.** GET은 빈
+   * 배열 리터럴, POST는 `randomUUID()`, PATCH · PUT · DELETE는 204. 화면은 멀쩡히
+   * 그려지고 저장 단추도 눌렸는데 남는 것이 없었다 — 「눌러도 아무 일이 없는 것이
+   * 가장 나쁘다」의 실례다. 0230 마이그레이션의 표에 실제로 담는다.
+   *
+   * PATCH는 없앤다. 화면은 전체 항목을 보내므로(PUT) 부분 갱신을 쓰는 쪽이 없고,
+   * 부르는 데 없는 쓰기 라우트를 성공으로 남겨두면 다음 사람이 그것을 믿는다.
+   */
+  app.get('/v1/admin/faq', auth, async () => faqAdmin.list(context.pool));
+
+  app.post<{ Body: unknown }>('/v1/admin/faq', auth, async (request) =>
+    faqAdmin.create(context.pool, faqAdmin.parseFaqInput(request.body), currentUserId(request))
+  );
+
+  app.put<{ Params: { id: string }; Body: unknown }>(
+    '/v1/admin/faq/:id',
+    auth,
+    async (request, reply) => {
+      await faqAdmin.update(
+        context.pool,
+        request.params.id,
+        faqAdmin.parseFaqInput(request.body),
+        currentUserId(request)
+      );
+
+      return reply.status(204).send();
+    }
+  );
+
+  app.delete<{ Params: { id: string } }>('/v1/admin/faq/:id', auth, async (request, reply) => {
+    await faqAdmin.remove(context.pool, request.params.id);
+
     return reply.status(204).send();
   });
 
