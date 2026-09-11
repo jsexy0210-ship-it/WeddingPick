@@ -9,7 +9,6 @@ import {
   type BudgetBandKey,
   DISCLOSURE_THRESHOLDS,
   NOT_ENOUGH_DATA,
-  PREPARATION_CATEGORIES,
   priceLine,
   TERMS,
   type VendorCategory,
@@ -33,7 +32,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ApiError, listVendorRegions, searchVendors } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { LoginSheet } from '@/features/auth/login-sheet';
-import { InfoDot, InfoSheet, type InfoTopic } from '@/features/common/info-sheet';
 import { savePendingAction } from '@/features/auth/pending-action';
 import { PickDoneSheet, UnpickSheet } from '@/features/pick/pick-sheets';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
@@ -46,11 +44,12 @@ import { SORT_LABEL, SortSheet } from '@/features/search/sort-sheet';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import {
   ActionButton,
-  Colors,
+  Border,
   FilterChip,
   FontSize,
   Layout,
   LineHeight,
+  MARK_HEART_PATH,
   MaxContentWidth,
   ProductSymbol,
   Radius,
@@ -73,7 +72,26 @@ import { DelayedLoader } from '@/features/loading/delayed-loader';
  * 업종 칩의 순서. 준비 현황과 같은 차례로 둔다 — 두 화면이 업종을 다른 순서로
  * 늘어놓으면 같은 목록으로 읽히지 않는다.
  */
-const CATEGORY_ORDER: readonly VendorCategory[] = PREPARATION_CATEGORIES;
+/**
+ * 결과 필터바에 세우는 업종 — 루트 시안 `WP-SRCH-검색.dc.html` 16a `weddingCats`.
+ *
+ * «전체»는 칩 목록 밖에서 따로 그린다(조건 없음). 여기는 그다음 여섯이다.
+ * 업종 전체(`@weddingpick/domain`의 `PREPARATION_CATEGORIES`, 열둘)가 아니다 — 칩 줄에
+ * 다 늘어놓으면 가로
+ * 스크롤만 길어져서 시안이 여섯만 뽑았다. 나머지는 필터 시트에서 고른다.
+ *
+ * 이름은 `VENDOR_CATEGORY_LABEL`을 쓴다. 시안은 `snap`을 «스냅»으로 적었지만
+ * 저장소의 이름은 «본식스냅»이고(Pick 탭 · 웨딩일정 · 준비 현황이 같이 쓴다),
+ * 한 화면 때문에 공용 이름을 바꾸지 않는다.
+ */
+const CHIP_CATEGORIES: readonly VendorCategory[] = [
+  'hall',
+  'studio',
+  'dress',
+  'makeup',
+  'snap',
+  'invitation',
+];
 
 /** 자동완성은 결과보다 빨리 따라와야 한다(시안 WP-SRCH-002). */
 const AUTOCOMPLETE_DEBOUNCE_MS = 200;
@@ -204,7 +222,6 @@ export default function SearchScreen() {
    */
   const [filterOpen, setFilterOpen] = useState(false);
   /** 금액 옆 ⓘ가 연 설명 시트(WP-SHT-014). null이면 닫혀 있다. */
-  const [infoTopic, setInfoTopic] = useState<InfoTopic | null>(null);
   /** 최근 검색. 자동완성 화면과 같은 저장소(`features/search/recent-searches`)를 본다. */
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
@@ -525,7 +542,15 @@ export default function SearchScreen() {
     return (
       /* 시안 searchBox 52/0 16(홈) vs searchBoxSm 44/0 14(결과 헤더) — 두 크기가 다르다. */
       <View style={[styles.searchBox, compact && styles.searchBoxCompact, { backgroundColor: theme.backgroundSelected }]}>
-        <ProductSymbol name="magnifier" size={Layout.iconTab} color={theme.textAssistive} />
+        {/*
+          돋보기는 **입력 중에만** 선다. 루트 시안 `WP-SRCH-검색.dc.html`의 16a
+          (`searchBoxSm`)는 안내 문구 하나뿐이고, 아이콘은 16b 자동완성
+          (`searchBoxActive`)에서 처음 나온다 — 빈 칸에 아이콘을 세우면 안내 문구가
+          그만큼 밀려 잘린다.
+        */}
+        {showAutocomplete ? (
+          <ProductSymbol name="magnifier" size={Layout.iconTab} color={theme.textAssistive} />
+        ) : null}
         <TextInput
           style={[styles.searchInput, { color: theme.text }]}
           placeholder="업체나 지역을 검색해보세요"
@@ -541,13 +566,19 @@ export default function SearchScreen() {
           autoCorrect={false}
           accessibilityLabel="업체 이름 검색"
         />
-        {viewState === 'results' || showAutocomplete ? (
+        {/*
+          «취소»는 **되돌릴 것이 있을 때만** 선다 — 자동완성이 열렸거나 조건이 걸렸을
+          때다. 탭의 첫 화면에는 두지 않는다: 루트 시안 16a에는 없고 16b(자동완성)·
+          16c(필터 적용)에만 있다. 아무 조건도 없는데 «취소»를 세우면 무엇을 취소하는
+          것인지가 없다.
+        */}
+        {showAutocomplete || hasCondition ? (
           <Pressable
             accessibilityRole="button"
-            onPress={viewState === 'results' ? goHome : () => {
+            onPress={showAutocomplete ? () => {
               setFilters((current) => ({ ...current, q: '' }));
               setAcOpen(false);
-            }}
+            } : goHome}
             style={styles.cancelBtn}>
             <ThemedText type="t6" themeColor="textSecondary" style={styles.bold}>취소</ThemedText>
           </Pressable>
@@ -691,51 +722,74 @@ export default function SearchScreen() {
           </View>
         </Pressable>
 
-        {/* 업체명 ↔ 금액구간 */}
+        {/*
+          업체명 · 금액 — **세로 두 줄**이고 오른쪽에 화살표가 선다(시안 16a).
+          이름 20/700이 한 줄을 다 쓰고, 금액 16/700이 그 아래 붙는다. 가로로
+          나란히 두면 긴 이름이 금액을 밀어 «강남 A 웨딩…»으로 잘린다.
+        */}
         <Pressable
           accessibilityRole="button"
-          onPress={() => router.push(`/search/${item.id}`)}>
-          <View style={styles.cardNameRow}>
-            <ThemedText type="t4" numberOfLines={1} style={styles.cardName}>
+          accessibilityLabel={`${item.name} 자세히 보기`}
+          onPress={() => router.push(`/search/${item.id}`)}
+          style={styles.cardNameRow}>
+          <View style={styles.cardNameBox}>
+            <ThemedText type="t3" numberOfLines={1} style={styles.bold}>
               {item.name}
             </ThemedText>
             <ThemedText
               type="t6"
               numeric
+              numberOfLines={1}
               themeColor={line.dim ? 'textAssistive' : undefined}
-              style={[styles.cardPrice, styles.bold]}>
+              style={styles.bold}>
               {line.text}
             </ThemedText>
           </View>
+          <ChevronRightIcon color={theme.textDisabled} />
+        </Pressable>
 
+        {/*
+          아래 줄 — Pick pill(왼쪽) ↔ 출처·실 제보·지역(오른쪽). 시안 16a의 카드
+          마지막 줄이다(`btnStyle` 36 · radius 999 · padding 0 12 · 하트 15 · gap 5).
+
+          전폭 «Pick하기»(48 · radius 6)가 아니다. 시안은 이 자리에 하트 + **Pick 수**를
+          적지만 서버가 업체별 Pick 수를 내려주지 않는다(`vendorSummarySchema`) —
+          모양만 시안대로 두고 라벨은 «Pick»으로 간다(2026-09-11 대표 지시). 수가
+          붙으면 라벨 자리만 숫자로 바꾼다.
+        */}
+        <View style={styles.pickRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={chosen ? `${item.name} Pick했어요` : `${item.name} Pick하기`}
+            accessibilityState={{ disabled: busy }}
+            disabled={busy}
+            style={({ pressed }) => [
+              styles.pickPill,
+              chosen
+                ? { backgroundColor: theme.tintSurface, borderColor: theme.tint }
+                : { backgroundColor: theme.background, borderColor: theme.track },
+              pressed ? styles.pressed : null,
+              busy ? styles.busy : null,
+            ]}
+            onPress={() => void onPressPick(item)}>
+            <PickHeartIcon color={chosen ? theme.tint : theme.textAssistive} filled={chosen} />
+            <ThemedText
+              type="t7"
+              style={[styles.bold, chosen ? { color: theme.tint } : null]}
+              themeColor={chosen ? undefined : 'textSecondary'}>
+              Pick
+            </ThemedText>
+          </Pressable>
           {/* 출처 또는 실 제보 · 지역 */}
-          <ThemedText type="t7" themeColor="textAssistive" numeric numberOfLines={1} style={styles.cardMeta}>
+          <ThemedText
+            type="t7"
+            themeColor="textAssistive"
+            numeric
+            numberOfLines={1}
+            style={styles.cardMeta}>
             {metaLine(item, item.region)}
           </ThemedText>
-        </Pressable>
-
-        {/* Pick 버튼 — 48 · radius 6 · 16 700. 전: 흰 바탕 1px 테두리 · 후: coral 채움(SPEC §13.1) */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={chosen ? `${item.name} Pick했어요` : `${item.name} Pick하기`}
-          accessibilityState={{ disabled: busy }}
-          disabled={busy}
-          style={({ pressed }) => [
-            styles.pickBtn,
-            chosen
-              ? { backgroundColor: theme.tint }
-              : { backgroundColor: theme.background, borderWidth: 1, borderColor: theme.track },
-            pressed ? styles.pressed : null,
-            busy ? styles.busy : null,
-          ]}
-          onPress={() => void onPressPick(item)}>
-          <ThemedText
-            type="t6"
-            style={[styles.bold, chosen ? styles.pickBtnTextOn : null]}
-            themeColor={chosen ? undefined : 'text'}>
-            {chosen ? 'Pick했어요' : 'Pick하기'}
-          </ThemedText>
-        </Pressable>
+        </View>
       </View>
     );
   }
@@ -871,7 +925,21 @@ export default function SearchScreen() {
 
     return (
       <>
-        {/* 필터바 — 56 · 가로 스크롤 · 칩 사이 8. 맨 앞은 필터 시트 입구(WP-SRCH-005). */}
+        {/*
+          필터바 — 56 · 가로 스크롤 · 칩 사이 8.
+
+          **업종 칩만 선다.** 루트 시안 `WP-SRCH-검색.dc.html` 16a의 `weddingCats`가
+          «전체 · 웨딩홀 · 스튜디오 · 드레스 · 메이크업 · 스냅 · 청첩장» 일곱이다.
+
+          여기 있던 «필터» 칩은 뺐다 — 시안은 필터 입구를 아래 결과 머리의
+          «추천순 · 필터»에 뒀다. 두 자리에 같은 입구를 세우면 사용자가 둘을 다른
+          것으로 읽는다. 지역 칩도 뺐다: 지역은 필터 시트의 «시/도 · 시/군/구»에서
+          고른다(16d).
+
+          나머지 업종(헤어변형 · 부케 · 예물 · 혼수 · 허니문 · 결정사)도 필터
+          시트에서 고른다 — 칩 줄에 열셋을 늘어놓으면 가로 스크롤만 길어진다
+          (2026-09-11 대표 지시 「시안대로 7개로 줄인다」).
+        */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -879,73 +947,64 @@ export default function SearchScreen() {
           contentContainerStyle={styles.filterBarContent}>
           <View style={styles.filterChip}>
             <FilterChip
-              label={activeFilterCount > 0 ? `필터 ${activeFilterCount}` : '필터'}
-              selected={activeFilterCount > 0}
-              onPress={() => setFilterOpen(true)}
-            />
-          </View>
-          {/*
-            업종 칩 — 루트 시안 `WP-SRCH-검색.dc.html` 16a의 `weddingCats`다.
-            「전체」가 맨 앞이고 그다음이 업종이다.
-
-            2026-09-08에는 두지 않기로 했었다. 근거는 「업종은 검색 홈의 격자에서
-            이미 골랐고, 결과에서 또 고르게 하면 같은 선택을 두 번 시킨다」였다.
-            **그 검색 홈이 없어졌으므로 근거도 없어졌다**(2026-09-11 대표 지시).
-            지금은 여기가 업종을 고르는 유일한 자리다.
-          */}
-          <View style={styles.filterChip}>
-            <FilterChip
               label="전체"
               selected={filters.category === null}
+              off="outline"
               onPress={() => setFilters((current) => ({ ...current, category: null }))}
             />
           </View>
-          {CATEGORY_ORDER.map((category) => (
+          {CHIP_CATEGORIES.map((category) => (
             <View key={category} style={styles.filterChip}>
               <FilterChip
                 label={VENDOR_CATEGORY_LABEL[category]}
                 selected={filters.category === category}
+                off="outline"
                 onPress={() => toggle('category', category)}
-              />
-            </View>
-          ))}
-          {regions.map((region) => (
-            <View key={region.name} style={styles.filterChip}>
-              <FilterChip
-                label={region.name}
-                selected={filters.region === region.name}
-                onPress={() => toggle('region', region.name)}
               />
             </View>
           ))}
         </ScrollView>
 
-        {/* 결과 수 + 정렬 — 40. 시안: 결과 수 t14n · 정렬 t14m */}
+        {/*
+          결과 수 + 정렬·필터 — 40 · 양끝.
+
+          오른쪽은 시안 16a의 `sortLine`이다: 정렬 아이콘 + «추천순 · 필터» 한 줄
+          (14/700 · text.secondary). 두 말이 붙어 있지만 여는 시트는 다르므로
+          «추천순»과 «필터»를 각각 누르게 하고 가운데 « · »는 글자로만 둔다.
+
+          여기 있던 ⓘ(«실 제보가 뭔가요?» · WP-SHT-014)는 뺐다 — 시안 16a에 없다.
+          그 시트로 가는 길은 업체 상세에 그대로 있다(`[vendorId]/index.tsx`).
+        */}
         <View style={[styles.sortRow, { backgroundColor: theme.background }]}>
-          {/*
-            결과 수 옆 ⓘ — WP-SHT-014 «실 제보가 뭔가요?». screens.json은 «금액 옆 ⓘ»라고 적지만,
-            카드마다 붙이면 카드 전체를 누르는 링크 안에 버튼이 하나씩 더 들어간다. 목록의 금액은
-            전부 같은 규칙으로 만든 값이라 목록 머리에 하나만 둔다.
-          */}
           <View style={styles.countWithInfo}>
             <ThemedText type="t7" themeColor="textAssistive" numeric>
               {filters.category ? `${VENDOR_CATEGORY_LABEL[filters.category]} ` : ''}
               {total}곳
             </ThemedText>
             <DelayedLoader active={refreshing} size={20} />
-            <InfoDot label="실 제보 설명" onPress={() => setInfoTopic('verifiedData')} />
           </View>
-          {/* 정렬 — 셀렉트. 누르면 바텀시트(WP-SRCH-006)에서 하나를 고른다. */}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`정렬: ${SORT_LABEL[filters.sort]}`}
-            onPress={() => setSortOpen(true)}
-            style={styles.sortSelect}>
-            <ThemedText type="t7" themeColor="textAssistive" style={styles.bold}>
-              {SORT_LABEL[filters.sort]}
+          <View style={styles.sortLine}>
+            <SortIcon color={theme.textSecondary} />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`정렬: ${SORT_LABEL[filters.sort]}`}
+              onPress={() => setSortOpen(true)}>
+              <ThemedText type="t7" themeColor="textSecondary" style={styles.bold}>
+                {SORT_LABEL[filters.sort]}
+              </ThemedText>
+            </Pressable>
+            <ThemedText type="t7" themeColor="textSecondary" style={styles.bold}>
+              ·
             </ThemedText>
-            <ChevronDownIcon color={theme.textAssistive} />
-          </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={activeFilterCount > 0 ? `필터 ${activeFilterCount}개 적용됨` : '필터'}
+              onPress={() => setFilterOpen(true)}>
+              <ThemedText type="t7" themeColor="textSecondary" style={styles.bold}>
+                {activeFilterCount > 0 ? `필터 ${activeFilterCount}` : '필터'}
+              </ThemedText>
+            </Pressable>
+          </View>
         </View>
 
         {/* 결과 목록 */}
@@ -1052,7 +1111,6 @@ export default function SearchScreen() {
         <Toast message={toast} onHidden={() => setToast(null)} />
 
         {/* 결과 머리 ⓘ가 여는 설명 시트 — WP-SHT-014. */}
-        <InfoSheet topic={infoTopic} onClose={() => setInfoTopic(null)} />
 
         <SortSheet
           visible={sortOpen}
@@ -1111,11 +1169,45 @@ export default function SearchScreen() {
   );
 }
 
-/** 셀렉트의 ▾. */
-function ChevronDownIcon({ color }: { color: string }) {
+/**
+ * 정렬·필터 줄 앞의 아이콘 — 시안 16a `sortLine`의 «M6 8h12M9 14h6»(16 · 획 2).
+ * 위아래 길이가 다른 두 줄이 «좁혀 간다»를 뜻한다.
+ */
+function SortIcon({ color }: { color: string }) {
   return (
     <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-      <Path d="M6 9l6 6 6-6" stroke={color} strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M6 8h12M9 14h6" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+/** 카드 오른쪽의 ›. 시안 16a는 20 · #adb1ba(text.disabled) · 획 2. */
+function ChevronRightIcon({ color }: { color: string }) {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+      <Path d="m9 6 6 6-6 6" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+/**
+ * Pick pill 안의 하트.
+ *
+ * **Pick Mark(하트 + 체크)가 아니다.** 시안 16a의 `btnStyle`은 체크 없는 하트
+ * 하나이고, Pick하면 코랄로 채운다. 경로는 확정본의 하트를 그대로 쓴다
+ * (`MARK_HEART_PATH`) — 좌표를 새로 만들지 않는다.
+ */
+function PickHeartIcon({ color, filled }: { color: string; filled: boolean }) {
+  return (
+    <Svg width={Layout.pickPillIcon} height={Layout.pickPillIcon} viewBox="0 0 24 24" fill="none">
+      <Path
+        d={MARK_HEART_PATH}
+        fill={filled ? color : 'none'}
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </Svg>
   );
 }
@@ -1382,17 +1474,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: Layout.gutter,
     flexShrink: 0,
   },
-  /* 결과 수 + ⓘ. 글자와 같은 줄, 사이 4. */
+  /* 결과 수. 새로고침 표시가 같은 줄에 붙는다, 사이 4. */
   countWithInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.one,
   },
-  /* 정렬 셀렉트. 44 터치 영역, 오른쪽 정렬. */
-  sortSelect: {
+  /* 정렬 · 필터 한 줄. 시안 16a `sortLine` — 아이콘과 글자 사이 5. */
+  sortLine: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.one,
+    gap: Layout.pickPillGap,
     minHeight: Layout.touchTarget,
     paddingLeft: Spacing.two,
   },
@@ -1414,31 +1506,39 @@ const styles = StyleSheet.create({
     borderRadius: Radius.medium,
     overflow: 'hidden',
   },
+  /* 이름 · 금액 ↔ ›. 시안 16a: min-height 44 · 이름과 금액 사이 3 · 사이 8. */
   cardNameRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    minHeight: Layout.touchTarget,
     gap: Layout.rowPaddingY,
   },
-  cardName: {
+  cardNameBox: {
+    flex: 1,
+    minWidth: 0,
+    gap: Layout.cardNameGap,
+  },
+  cardMeta: {
     flex: 1,
     minWidth: 0,
   },
-  cardPrice: {
-    flexShrink: 0,
+  /* Pick pill ↔ meta. 시안 16a 카드 마지막 줄 «gap:10». */
+  pickRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Layout.pickRowGap,
   },
-  cardMeta: {
-    marginTop: Layout.cardGap,
-  },
-  // Pick 버튼. 핸드오프: height 48, radius 6
-  pickBtn: {
-    height: Layout.controlLarge,
-    borderRadius: Radius.input,
+  /* Pick pill — component.pickPill. 36 · radius 999 · padding 0 12 · 1px 테두리. */
+  pickPill: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  pickBtnTextOn: {
-    color: Colors.light.onTint,
+    flexShrink: 0,
+    gap: Layout.pickPillGap,
+    height: Layout.pickPill,
+    paddingHorizontal: Layout.pickPillPaddingX,
+    borderRadius: Radius.pill,
+    borderWidth: Border.hairline,
   },
 
   // 광고 — 이미지 좌상단 라벨
