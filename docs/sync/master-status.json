@@ -536,7 +536,17 @@
       "free 플랜이 싱가포르 리전을 지원하는가 — 아니면 승인 C가 걸린다"
     ],
     "cheapNow": "앱이 아직 스토어에 없어 설치된 앱이 세상에 없다. 지금은 주소를 바꿔도 깨질 것이 없고, 출시 뒤에는 구버전 앱이 옛 주소를 계속 본다.",
-    "addressing": "onrender 주소 그대로 간다 (2026-09-11 대표 지시로 weddingpick.kr 폐기). 새 서비스라 주소가 바뀌면 저장소 16곳과 OAuth redirect URI를 갈아끼운다."
+    "addressing": "onrender 주소 그대로 간다 (2026-09-11 대표 지시로 weddingpick.kr 폐기). 새 서비스라 주소가 바뀌면 저장소 16곳과 OAuth redirect URI를 갈아끼운다.",
+    "singaporeService": {
+      "createdAtKst": "2026-09-11 15:17",
+      "name": "weddingpickl-sg (임시 — 확인 뒤 이름을 바꿔 끼운다)",
+      "region": "Singapore",
+      "plan": "free 0.1 CPU — 운영과 같은 조건이어야 리전 효과만 보인다",
+      "trap": "Live로 떠도 어느 DB를 쥐었는지는 말해주지 않는다. 첫 배포에서 환경변수 그룹의 DATABASE_URL이 weddingpick_staging을 가리켜 적용 73 / 기대 112로 39개 밀린 DB를 보고 있었다. 운영은 같은 시각 적용 115 · 밀린 것 없음이었다. 호스트는 같고 / 뒤의 데이터베이스 이름만 달랐다.",
+      "fix": "서비스 레벨에 DATABASE_URL을 따로 넣어 그룹 값을 덮는다. 그룹 값은 고치지 않는다 — 다른 서비스가 staging을 일부러 볼 수 있다.",
+      "tooling": "api-health.yml이 주소를 입력으로 받게 했다(claude/weddingpick-master-bootstrap-6j1c7o). 이사 중인 서비스를 사람이 로그로 훑지 않고 워크플로로 판정한다.",
+      "open": "환경변수 그룹 「웨딩픽」에 붙은 다른 서비스들이 staging을 보고 있는지 확인 필요 — 이사와 별개로 이미 있던 위험이다."
+    }
   },
   "legalCanonical20260911": {
     "rule": "약관·개인정보처리방침의 정본은 웹사이트다 (2026-09-11 대표 지시 — 「웹사이트 기준으로 수정하라. 모든 약관은 여기서 컨트롤한다」)",
@@ -599,5 +609,81 @@
       "광고 실운영 전환 — 대표님 오더 대기"
     ],
     "openDecision": "약관·방침을 관리자에서 직접 고치게 할지 — 정본은 웹사이트다. 두 벌을 들면 한 벌이 낡는다. 세션이 두 안을 올리면 MASTER가 정한다."
+  },
+  "designCanonical20260911": {
+    "decidedAtKst": "2026-09-11 15:40",
+    "order": "무조건 시안 기준으로 맞춘다 (대표)",
+    "canonical": "docs/design-handoff/root/ — 대표님이 직접 그린 원본 36장. current/(전달 ZIP handoff/)와 어긋나면 루트가 이긴다.",
+    "why": "저장소에 current/만 있던 동안 세션 셋이 없어진 검색 홈 위에 필터·정렬을 계속 쌓았다. 대표님이 앱을 열어 볼 때까지 아무도 몰랐다.",
+    "staleInsideRoot": "한 파일에서 제목·설명과 그려진 화면이 어긋나면 제목·설명이 이긴다. WP-APP-020은 제목이 「연월 셀렉트」인데 그려진 3장이 폐기된 휠 3열이다.",
+    "exceptions": [
+      {
+        "item": "나이 확인",
+        "mockup": "카카오가 넘기는 출생연도",
+        "current": "연령대(age_range)만",
+        "order": "2026-09-10 · 2026-09-11 대표 지시 — 출생연도 폐기",
+        "why": "연도만으로는 생일이 지났는지 몰라 만 나이가 한 살 흔들린다. 연령대의 아래끝에는 그 흔들림이 없다 — 더 적게 받고 더 정확하다."
+      },
+      {
+        "item": "소셜 로그인",
+        "mockup": "카카오 단독(+이메일, 보류)",
+        "current": "카카오 + 애플",
+        "order": "2026-09-11 대표 지시 A안",
+        "why": "애플은 앱스토어 심사 지침 4.8 때문에 남긴다. 네이버 · 구글은 뺀다. 환경변수 키 값은 지우지 않는다."
+      }
+    ],
+    "sixItemAudit": {
+      "method": "루트 시안 36장이 들어온 뒤 DESIGN_ZIP_AUDIT_2026-09-10.md의 미해결 6건을 코드와 1:1로 대조했다.",
+      "results": [
+        {
+          "item": "제보 과정",
+          "verdict": "충돌 — 고쳐야 한다",
+          "detail": "루트 12c가 WP-RPT-004 「인식 실패」를 그린다(사진이 흐려서 읽지 못했어요 / 직접 적어주시면 그대로 접수할게요). 앱에는 없다 — PR #201이 「증빙 없는 수동 입력 폐기」 근거로 철거했다. 대표님이 시안 쪽으로 정하셨다.",
+          "session": "claude/report-flow-root"
+        },
+        {
+          "item": "폐기 화면 ID",
+          "verdict": "부분 오류",
+          "detail": "WP-RPT-005 · 006 · 010은 루트에 없어 폐기가 맞다. 004는 폐기가 아니라 뜻이 바뀐 것 — 옛 자료의 「확인 화면」이 루트에서는 「인식 실패」다. 코드의 capture/result/[quoteId].tsx가 아직 옛 뜻으로 004를 쓴다. 003은 루트가 002 오버레이에 흡수."
+        },
+        {
+          "item": "로그인 방식",
+          "verdict": "대표 결정으로 종결",
+          "detail": "카카오 + 애플. 네이버 · 구글 제거.",
+          "session": "claude/auth-narrow"
+        },
+        {
+          "item": "나이 확인",
+          "verdict": "충돌 아님 — 코드가 맞다",
+          "detail": "연령대만. 시안의 출생연도는 대표 지시로 폐기."
+        },
+        {
+          "item": "날짜 선택",
+          "verdict": "충돌 아님 — 코드가 맞다",
+          "detail": "연월 셀렉트 + 달력. 루트 파일의 제목·설명도 같다. 같은 파일에 그려진 휠 3장이 낡은 판이다."
+        },
+        {
+          "item": "홈 D-day",
+          "verdict": "충돌 아님 — 코드가 맞다",
+          "detail": "코랄. 루트도 「코랄은 화면당 다섯 곳: D-day · 현재 업종 테두리 · 진행바 · 웨딩픽 추천 라벨 · CTA」로 못 박았다.",
+          "open": "시안 15px을 코드가 t7(14)로 썼다. 「토큰에 없으면 목업 값을 더한다」 규칙 위반 — 별건."
+        }
+      ]
+    }
+  },
+  "mailAndAuth20260911": {
+    "decidedAtKst": "2026-09-11 15:35",
+    "orders": [
+      "소셜 로그인은 카카오만 한다 → A안으로 애플은 남긴다",
+      "네이버 로그인 필요없다",
+      "Resend 폐기한다"
+    ],
+    "found": {
+      "resendUnused": "RESEND_API_KEY · MAIL_DRIVER · MAIL_FROM · PASSWORD_RESET_URL을 apps/api/src/config.ts가 읽지 않는다. 저장소 어느 .ts에도 없다 — 메일 발송 코드가 아예 없다. 폐기는 코드 작업이 아니라 계정 해지다.",
+      "domainDependency": "MAIL_FROM이 폐기 결정된 weddingpick.kr을 쓰고 있었다. 메일 경로가 사라지면 그 의존도 함께 사라진다.",
+      "appleKeysUnused": "APPLE_KEY_ID · APPLE_PRIVATE_KEY · APPLE_TEAM_ID를 저장소 어느 .ts도 읽지 않는다. 애플 로그인은 APPLE_CLIENT_ID 하나만 쓴다(index.ts:65). 환경변수는 지우지 않는다 — 나중에 서버 토큰 교환을 붙일 때 필요할 수 있다."
+    },
+    "session": "session_01891HaGXiYSvYQ1QYrrsQ4w · 브랜치 claude/auth-narrow",
+    "open": "계약 enum에서 네이버·구글을 빼면 이미 그 제공자로 가입한 회원의 로그인이 막힌다. 그런 계정이 운영에 있는지는 MASTER가 확인한다 — 세션에는 코드상 무슨 일이 벌어지는지만 읽어 오게 했다."
   }
 }
