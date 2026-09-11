@@ -102,16 +102,13 @@ describe('/my/contact — 문의 완료·목록 하단', () => {
     jest.mocked(listMyInquiries).mockResolvedValue({ inquiries: [] } as never);
   });
 
-  // 이 describe의 첫 시험이라 ContactScreen 모듈 적재 비용을 혼자 치른다. 로컬은 넉넉히
-  // 통과하지만 CI 러너에서 6.2초가 나와 기본 5초를 두 번 넘겼다(2026-09-11 run 743 · 765).
-  // 논리 실패가 아니라 시간 초과라 시험 내용은 그대로 두고 시간만 넓힌다.
   it('정상 진입: 「돌아가기」가 MY로 올라간다', async () => {
     mockPathname = '/my/contact';
     await mount(<ContactScreen />);
     await act(async () => backButtons()[0]!.props.onPress());
     expect(landedOn()).toBe('/my');
     expect(router.dismissTo).toHaveBeenCalledWith('/my');
-  }, 15000);
+  });
 
   it('보낸 뒤 완료 화면에서도 MY로 올라간다', async () => {
     mockPathname = '/my/contact';
