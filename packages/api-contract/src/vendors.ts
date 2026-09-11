@@ -170,6 +170,30 @@ export const vendorRegionsResponseSchema = z.object({
 });
 
 /**
+ * 검색 홈 업종 카드가 적는 수 — WP-SRCH-001 «업종 2×2 + 건수».
+ *
+ * **업체 수가 아니라 실 제보 수다.** `vendorSearchResponseSchema.total`은 「웨딩홀
+ * 340곳」이고 여기 `reportCount`는 「웨딩홀 · 실 제보 412건」이다. 두 숫자를 한 칸에
+ * 섞으면 사용자는 업체 수를 「412명이 실제로 알려줬다」로 읽는다.
+ *
+ * **세는 기준은 화면이 금액을 만들 때 쓰는 것과 같다** — 목록의 금액 한 줄
+ * (`priceLine`)이 보는 실 제보와 같은 자격·같은 기간(최근 12개월)이다. 다른 수를
+ * 세면 「412건이라는데 금액은 수집 중」이 된다.
+ *
+ * 업종은 하나도 빠짐없이 내려간다. 0건인 업종을 빼면 화면이 「없으니 0이겠지」를
+ * 스스로 정해야 하고, 그건 서버가 말해주지 않은 값이다.
+ */
+export const vendorCategoryReportsResponseSchema = z.object({
+  categories: z.array(
+    z.object({
+      category: vendorCategorySchema,
+      /** 그 업종 업체들의 실 제보를 합친 수. 0일 수 있다. */
+      reportCount: z.int().nonnegative(),
+    })
+  ),
+});
+
+/**
  * 업체별 가격 분포 한 줄.
  *
  * 표본이 기준에 못 미치는 상품은 아예 들어오지 않는다 — 중앙값 없이 상품 이름만
@@ -247,6 +271,7 @@ export type VendorComparisonResponse = z.infer<typeof vendorComparisonResponseSc
 export type SponsoredCard = z.infer<typeof sponsoredCardSchema>;
 export type VendorSearchResponse = z.infer<typeof vendorSearchResponseSchema>;
 export type VendorRegionsResponse = z.infer<typeof vendorRegionsResponseSchema>;
+export type VendorCategoryReportsResponse = z.infer<typeof vendorCategoryReportsResponseSchema>;
 export type VendorProductStat = z.infer<typeof vendorProductStatSchema>;
 export type VendorPrices = z.infer<typeof vendorPricesSchema>;
 export type VendorDetail = z.infer<typeof vendorDetailSchema>;

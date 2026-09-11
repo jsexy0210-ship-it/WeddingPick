@@ -97,3 +97,18 @@ export function dataCaption(input: {
 
   return parts.join(' · ');
 }
+
+/**
+ * 검색 홈 업종 카드의 꼬리 한 줄. WP-SRCH-001 «업종 2×2 + 건수».
+ *
+ * 시안 `06-search.dc.html` `cats`가 «웨딩홀 · 실 제보 412건»처럼 업종마다 수를
+ * 적는다. **업체 수가 아니라 그 업종 업체들의 실 제보를 전부 합친 수다** — 「412곳」과
+ * 「412건」은 다른 숫자이고, 사용자는 이 줄을 「412명이 실제로 알려줬다」로 읽는다.
+ *
+ * 0건이면 «실 제보 0건»이라 적지 않는다. 시안에 그 상태가 없고, 0을 굳이 세어
+ * 보여주면 그 업종을 눌러볼 이유부터 지운다. 자료가 모자랄 때 쓰는 말은 v3.24가
+ * 이미 정해 두었다(`NOT_ENOUGH_DATA`) — 금액 한 줄의 1층 캡션과 같은 말이다.
+ */
+export function categoryReportLine(count: number): string {
+  return count > 0 ? `${TERMS.verifiedData} ${count}건` : NOT_ENOUGH_DATA;
+}

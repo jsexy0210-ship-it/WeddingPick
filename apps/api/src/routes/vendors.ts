@@ -10,6 +10,7 @@ import {
   RECENT_PERIOD_LABEL,
   RECENT_PERIOD_MONTHS,
   SPONSORED_LABEL,
+  VENDOR_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
   budgetBand,
   coarseRegion,
@@ -356,6 +357,45 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
 
     return {
       regions: rows.map((row) => ({ name: row.name, vendorCount: Number(row.vendor_count) })),
+    };
+  });
+
+  /**
+   * 검색 홈 업종 카드의 «실 제보 N건» — WP-SRCH-001.
+   *
+   * **업체 수가 아니라 실 제보 수다.** `/v1/vendors`의 `total`은 「웨딩홀 340곳」이고
+   * 여기 `reportCount`는 「웨딩홀 · 실 제보 412건」이다. 업체 수를 이 자리에 넣으면
+   * 사용자는 그것을 「412명이 실제로 알려줬다」로 읽는다.
+   *
+   * **무엇을 세는지는 목록이 금액을 만들 때 보는 것과 같다** — `usable_payment_proofs`를
+   * 최근 `DEFAULT_PERIOD_MONTHS`개월 창에서 센다. 검색 질의가 `paid_amounts`를 모으는
+   * 바로 그 조건이고, 그 배열의 길이가 카드에 뜨는 «실 제보 N건»이다. 다른 창이나 다른
+   * 자격으로 세면 「412건이라는데 금액은 수집 중」이 된다.
+   *
+   * 폐업으로 넘긴 업체는 뺀다 — 검색 결과에서 빠지는 업체의 제보를 세면, 눌러서 들어간
+   * 목록의 건수 합이 카드의 수보다 적다.
+   *
+   * 업종은 하나도 빠짐없이 내려간다. 0건인 업종을 빼면 화면이 「없으니 0이겠지」를
+   * 스스로 정해야 한다.
+   */
+  app.get('/v1/vendors/category-reports', auth, async () => {
+    const { rows } = await context.pool.query<{ category: VendorCategory; report_count: string }>(
+      `SELECT v.category::text AS category, count(*) AS report_count
+       FROM structured.vendors v
+       JOIN structured.usable_payment_proofs p ON p.vendor_id = v.id
+       WHERE coalesce(v.is_active, true)
+         AND p.paid_at >= now() - ($1 || ' months')::interval
+       GROUP BY 1`,
+      [DEFAULT_PERIOD_MONTHS]
+    );
+
+    const counted = new Map(rows.map((row) => [row.category, Number(row.report_count)]));
+
+    return {
+      categories: VENDOR_CATEGORIES.map((category) => ({
+        category,
+        reportCount: counted.get(category) ?? 0,
+      })),
     };
   });
 

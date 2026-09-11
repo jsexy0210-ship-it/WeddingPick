@@ -1,9 +1,15 @@
 import {
+  vendorCategoryReportsResponseSchema,
   vendorDetailSchema,
   vendorPhotosResponseSchema,
   vendorSearchResponseSchema,
 } from '@weddingpick/api-contract';
-import { MAX_COMPARED_VENDORS, PRICING_POLICY, productKey } from '@weddingpick/domain';
+import {
+  MAX_COMPARED_VENDORS,
+  PRICING_POLICY,
+  productKey,
+  VENDOR_CATEGORIES,
+} from '@weddingpick/domain';
 
 import {
   createTestApp,
@@ -598,6 +604,106 @@ describeWithDb('업체 검색', () => {
       { name: '경기', vendorCount: 1 },
       { name: '서울', vendorCount: 2 },
     ]);
+  });
+
+  /**
+   * 검색 홈 업종 카드의 «실 제보 N건» — WP-SRCH-001.
+   *
+   * 세는 것이 **업체 수가 아니라 실 제보 수**이고, 무엇을 실 제보로 세는지가
+   * 목록의 금액 한 줄과 같은 기준(최근 12개월 · `usable_payment_proofs`)이어야 한다.
+   * 여기가 어긋나면 카드는 「412건」인데 들어가 보면 전부 «수집 중»이 된다.
+   */
+  describe('업종별 실 제보 수', () => {
+    async function seedProofs(vendorId: string, count: number, monthsAgo = 1) {
+      for (let index = 0; index < count; index += 1) {
+        const reporter = await test.pool.query<{ id: string }>(
+          'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
+        );
+
+        await test.pool.query(
+          `INSERT INTO structured.payment_proofs
+             (reporter_user_id, vendor_id, merchant_name, paid_amount, paid_at)
+           VALUES ($1, $2, '가맹점', $3, now() - ($4 || ' months')::interval)`,
+          [reporter.rows[0]!.id, vendorId, 1_500_000 + index * 10_000, monthsAgo]
+        );
+      }
+    }
+
+    const counts = async (headers: Record<string, string>) => {
+      const response = await test.app.inject({
+        method: 'GET',
+        url: '/v1/vendors/category-reports',
+        headers,
+      });
+
+      expect(response.statusCode).toBe(200);
+
+      const body = vendorCategoryReportsResponseSchema.parse(response.json());
+
+      return Object.fromEntries(body.categories.map((row) => [row.category, row.reportCount]));
+    };
+
+    it('업체 수가 아니라 실 제보 수를 센다', async () => {
+      const { headers } = await signInAs(test);
+      const one = await createVendor({ name: '가홀', category: 'hall' });
+      const two = await createVendor({ name: '나홀', category: 'hall' });
+      // 업체가 없는 것이 아니라 제보가 없는 곳. 업체 수를 세면 이 곳도 1이 된다.
+      await createVendor({ name: '다홀', category: 'hall' });
+
+      await seedProofs(one, 4);
+      await seedProofs(two, 3);
+
+      // 웨딩홀 「3곳」이 아니라 「7건」이다.
+      expect((await counts(headers)).hall).toBe(7);
+    });
+
+    it('업종마다 따로 센다', async () => {
+      const { headers } = await signInAs(test);
+      await seedProofs(await createVendor({ name: '가홀', category: 'hall' }), 2);
+      await seedProofs(await createVendor({ name: '가스튜디오', category: 'studio' }), 5);
+
+      const body = await counts(headers);
+
+      expect(body.hall).toBe(2);
+      expect(body.studio).toBe(5);
+    });
+
+    it('목록의 금액과 같은 기간을 본다 — 12개월보다 오래된 제보는 세지 않는다', async () => {
+      const { headers } = await signInAs(test);
+      const vendorId = await createVendor({ name: '가홀', category: 'hall' });
+
+      await seedProofs(vendorId, 3, 1);
+      await seedProofs(vendorId, 4, 20);
+
+      // 상세·목록의 «실 제보 N건»이 3건이라고 적는 그 창이다.
+      expect((await counts(headers)).hall).toBe(3);
+    });
+
+    it('폐업으로 넘긴 업체의 제보는 세지 않는다', async () => {
+      const { headers } = await signInAs(test);
+      const closed = await createVendor({ name: '가홀', category: 'hall' });
+
+      await seedProofs(closed, 6);
+      // 이유 없이 내려간 업체는 만들 수 없다(0120 vendors_inactive_requires_reason).
+      await test.pool.query(
+        'UPDATE structured.vendors SET is_active = false, closed_at = now() WHERE id = $1',
+        [closed]
+      );
+
+      // 검색 결과에서 빠지는 업체다. 세면 카드의 수와 목록의 합이 어긋난다.
+      expect((await counts(headers)).hall).toBe(0);
+    });
+
+    it('제보가 없는 업종도 빠짐없이 0으로 내려간다', async () => {
+      const { headers } = await signInAs(test);
+      await seedProofs(await createVendor({ name: '가홀', category: 'hall' }), 1);
+
+      const body = await counts(headers);
+
+      // 빼고 보내면 화면이 「없으니 0이겠지」를 스스로 정해야 한다.
+      expect(Object.keys(body)).toHaveLength(VENDOR_CATEGORIES.length);
+      expect(body.honeymoon).toBe(0);
+    });
   });
 });
 

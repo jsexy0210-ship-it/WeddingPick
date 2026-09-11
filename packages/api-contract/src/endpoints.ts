@@ -99,6 +99,7 @@ import {
   conditionStatsSchema,
   vendorComparisonResponseSchema,
   vendorDetailSchema,
+  vendorCategoryReportsResponseSchema,
   vendorRegionsResponseSchema,
   vendorSearchResponseSchema,
 } from './vendors';
@@ -310,6 +311,13 @@ export const ENDPOINTS = {
     method: 'GET',
     path: '/v1/vendors/regions',
     response: vendorRegionsResponseSchema,
+  },
+
+  /** 검색 홈 업종 카드의 «실 제보 N건». 업체 수가 아니라 실 제보 수다. */
+  listVendorCategoryReports: {
+    method: 'GET',
+    path: '/v1/vendors/category-reports',
+    response: vendorCategoryReportsResponseSchema,
   },
 
   /** A-17 업체 비교. ids 쿼리 파라미터에 쉼표로 잇는다. 최대 세 곳. */

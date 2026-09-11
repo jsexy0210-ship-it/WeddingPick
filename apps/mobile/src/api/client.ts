@@ -39,6 +39,7 @@ import {
   plannerDetailSchema,
   plannerRegionsResponseSchema,
   plannerSearchResponseSchema,
+  vendorCategoryReportsResponseSchema,
   vendorComparisonResponseSchema,
   vendorDetailSchema,
   vendorRegionsResponseSchema,
@@ -112,6 +113,7 @@ import {
   type PlannerRegionsResponse,
   type PlannerSearchResponse,
   type Quote,
+  type VendorCategoryReportsResponse,
   type VendorComparisonResponse,
   type VendorDetail,
   type VendorRegionsResponse,
@@ -773,6 +775,18 @@ export async function getTop3(input: { region?: string; category?: VendorCategor
 
 export async function listVendorRegions(): Promise<VendorRegionsResponse> {
   return request('/v1/vendors/regions', vendorRegionsResponseSchema);
+}
+
+/**
+ * 검색 홈 업종 카드의 «실 제보 N건»(WP-SRCH-001).
+ *
+ * `countVendors`와 다른 수다 — 저쪽은 업체 수(「웨딩홀 340곳」)이고 이쪽은 그 업종
+ * 업체들의 실 제보를 합친 수(「실 제보 412건」)다. 한 칸에 섞지 않는다.
+ */
+export async function listVendorCategoryReports(
+  refresh?: ReadRefresh<VendorCategoryReportsResponse>
+): Promise<VendorCategoryReportsResponse> {
+  return request('/v1/vendors/category-reports', vendorCategoryReportsResponseSchema, {}, refresh);
 }
 
 export async function getVendor(vendorId: string): Promise<VendorDetail> {

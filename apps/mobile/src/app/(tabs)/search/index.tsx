@@ -7,6 +7,7 @@ import {
 } from '@weddingpick/api-contract';
 import {
   type BudgetBandKey,
+  categoryReportLine,
   DISCLOSURE_THRESHOLDS,
   MOST_VIEWED,
   NOT_ENOUGH_DATA,
@@ -31,7 +32,12 @@ import {
 import Svg, { Path } from 'react-native-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ApiError, listVendorRegions, searchVendors } from '@/api/client';
+import {
+  ApiError,
+  listVendorCategoryReports,
+  listVendorRegions,
+  searchVendors,
+} from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { LoginSheet } from '@/features/auth/login-sheet';
 import { InfoDot, InfoSheet, type InfoTopic } from '@/features/common/info-sheet';
@@ -187,6 +193,14 @@ export default function SearchScreen() {
    */
   const [sponsored, setSponsored] = useState<SponsoredCard[]>([]);
   const [regions, setRegions] = useState<{ name: string; count: number }[]>([]);
+  /*
+   * 업종 카드의 «실 제보 N건»(WP-SRCH-001). 서버가 말해주기 전에는 **줄 자체를
+   * 그리지 않는다** — 0으로 시작해두면 자료가 없는 것과 아직 못 받은 것이 같은
+   * 모양이 되고, 화면이 잠깐 「아직 정보가 적어요」를 띄웠다가 숫자로 바뀐다.
+   */
+  const [categoryReports, setCategoryReports] = useState<Partial<
+    Record<VendorCategory, number>
+  > | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -296,6 +310,15 @@ export default function SearchScreen() {
         response.regions.map((region) => ({ name: region.name, count: region.vendorCount }))
       )
       .then(setRegions)
+      .catch(() => undefined);
+
+    listVendorCategoryReports()
+      .then((response) =>
+        Object.fromEntries(
+          response.categories.map((row) => [row.category, row.reportCount])
+        ) as Partial<Record<VendorCategory, number>>
+      )
+      .then(setCategoryReports)
       .catch(() => undefined);
   }, []);
 
@@ -611,13 +634,23 @@ export default function SearchScreen() {
                           setFilters((current) => ({ ...current, category }));
                           setViewState('results');
                         }}>
-                        {/*
-                          업종별 «실 제보 N건»은 아직 서버가 주지 않는다 — 지어내지
-                          않고 이름만 적는다. 엔드포인트가 생기면 t7 textAssistive 한 줄을 붙인다.
-                        */}
                         <ThemedText type="t5" numberOfLines={1}>
                           {VENDOR_CATEGORY_LABEL[category]}
                         </ThemedText>
+                        {/*
+                          시안 «웨딩홀 · 실 제보 412건». 업체 수가 아니라 실 제보 수다.
+                          0건이면 «실 제보 0건»이 아니라 «아직 정보가 적어요»로 적는다
+                          (`categoryReportLine`). 아직 못 받았으면 줄을 두지 않는다.
+                        */}
+                        {categoryReports ? (
+                          <ThemedText
+                            type="t7"
+                            themeColor="textAssistive"
+                            numeric
+                            numberOfLines={1}>
+                            {categoryReportLine(categoryReports[category] ?? 0)}
+                          </ThemedText>
+                        ) : null}
                       </Pressable>
                     ))}
                     {row.length === 1 ? <View style={styles.categoryCellEmpty} /> : null}
