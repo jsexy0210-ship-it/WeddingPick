@@ -1,6 +1,7 @@
 import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { VENDOR_CATEGORIES } from '@weddingpick/domain';
 import { runPublicCollection } from './run';
 
 /**
@@ -28,9 +29,11 @@ async function fixture() {
   return { dir, file };
 }
 
-const saved = { url: process.env.DATABASE_URL, cap: process.env.PUBLIC_DATA_MAX_APPLY };
+const saved = { url: process.env.DATABASE_URL, cap: process.env.PUBLIC_DATA_MAX_APPLY,
+  limit: process.env.PUBLIC_DATA_LIMIT };
 afterEach(() => {
-  for (const [key, value] of Object.entries({ DATABASE_URL: saved.url, PUBLIC_DATA_MAX_APPLY: saved.cap })) {
+  for (const [key, value] of Object.entries({ DATABASE_URL: saved.url, PUBLIC_DATA_MAX_APPLY: saved.cap,
+    PUBLIC_DATA_LIMIT: saved.limit })) {
     if (value === undefined) delete process.env[key];
     else process.env[key] = value;
   }
@@ -64,6 +67,56 @@ test('상한 안이면 반영 단계로 넘어간다', async () => {
   await expect(
     runPublicCollection(['--source', 'icheon-halls', '--file', file, '--apply', '--out', dir])
   ).rejects.toThrow(/^(?!반영 상한 초과)/);
+});
+
+test('리포트에 업종별 집계를 12종 전부 남긴다', async () => {
+  const { dir, file } = await fixture();
+  delete process.env.DATABASE_URL;
+
+  await runPublicCollection(['--source', 'icheon-halls', '--file', file, '--out', dir]);
+
+  const report = JSON.parse(await readFile(join(dir, 'icheon-halls-report.json'), 'utf8'));
+  // 지자체 예식장 명단이라 전부 hall이다.
+  expect(report.categoryCounts.hall).toBe(3);
+  // **0건도 적는다.** 빠진 업종과 0건인 업종은 다른 이야기라, 0으로 적혀 있어야
+  // 「코드를 안 받아와서 0」인지 「받았는데 없어서 0」인지 묻게 된다.
+  expect(Object.keys(report.categoryCounts)).toEqual([...VENDOR_CATEGORIES]);
+  expect(report.categoryCounts.bouquet).toBe(0);
+  expect(Object.values(report.categoryCounts).reduce((a, b) => (a as number) + (b as number), 0))
+    .toBe(report.accepted);
+});
+
+test('--limit은 CSV 경로에서도 지켜지고 리포트에 남는다', async () => {
+  const { dir, file } = await fixture();
+  delete process.env.DATABASE_URL;
+
+  await runPublicCollection(['--source', 'icheon-halls', '--file', file, '--limit', '2', '--out', dir]);
+
+  const report = JSON.parse(await readFile(join(dir, 'icheon-halls-report.json'), 'utf8'));
+  expect(report.accepted).toBe(2);
+  // 상한을 걸고 받았으면 accepted는 「있는 만큼」이 아니다. 그 사실이 남아야 한다.
+  expect(report.limit).toBe(2);
+  expect(report.categoryCounts.hall).toBe(2);
+});
+
+test('--limit이 없으면 리포트의 limit은 null이다', async () => {
+  const { dir, file } = await fixture();
+  delete process.env.DATABASE_URL;
+  delete process.env.PUBLIC_DATA_LIMIT;
+
+  await runPublicCollection(['--source', 'icheon-halls', '--file', file, '--out', dir]);
+
+  const report = JSON.parse(await readFile(join(dir, 'icheon-halls-report.json'), 'utf8'));
+  expect(report).toMatchObject({ accepted: 3, limit: null });
+});
+
+test('--limit에 0이나 글자를 주면 수집을 시작하지 않는다', async () => {
+  const { dir, file } = await fixture();
+  for (const bad of ['0', '-1', 'abc']) {
+    await expect(
+      runPublicCollection(['--source', 'icheon-halls', '--file', file, '--limit', bad, '--out', dir])
+    ).rejects.toThrow('--limit은 1 이상의 수여야 합니다');
+  }
 });
 
 test('--apply가 없으면 상한을 보지 않는다', async () => {

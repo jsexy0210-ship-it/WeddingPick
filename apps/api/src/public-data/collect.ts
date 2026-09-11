@@ -41,11 +41,13 @@ const WEDDING_NAME = /웨딩|브라이덜|bridal|wedding/i;
  * «웨딩 사진»은 전처럼 본식스냅으로 둔다.
  *
  * v3.22 12종(packages/domain vendor.ts)에 맞춰 헤어변형·부케·청첩장·예물·혼수·
- * 허니문을 더했다. **이 여섯의 소분류명은 아직 실측하지 않았다** — README
- * «확인된 업종 소분류 코드»에 적힌 다섯(예식장·결혼상담·사진촬영·미용실·의류대여)만
- * 2026-09-10에 조회로 확인했다. 그래서 업종 이름은 넓게 잡고 상호 조건으로 좁힌다.
- * 기본 수집은 확인된 다섯 코드만 받으므로 나머지는 CSV 출처나 `SBIZ_UPJONG_CODES`로
- * 코드를 넓혔을 때 쓰인다.
+ * 허니문을 더했다. 업종 이름은 넓게 잡고 상호 조건으로 좁힌다 — 여섯 중
+ * 부케(꽃집 G21901)와 혼수(한복 G20904)만 실측 코드가 있고 청첩장·예물·허니문은
+ * 아직 코드를 못 찾았다(README «확인된 업종 소분류 코드»).
+ *
+ * **여기서 null은 «버린다»가 아니다.** 부르는 쪽(resolveSbizCategory)이 «기타»로
+ * 받는다 — 2026-09-11 대표 지시. 이 함수는 «특정 업종으로 확정할 수 있는가»만
+ * 답하고, 확정 못 한 것을 어떻게 할지는 그쪽이 정한다.
  */
 export function classifyWeddingIndustry(industry: string, name: string): VendorCategory | null {
   if (/사진|촬영|스튜디오/.test(industry)) {
@@ -60,7 +62,8 @@ export function classifyWeddingIndustry(industry: string, name: string): VendorC
   if (/화훼|생화|꽃|플라워/.test(industry)) return 'bouquet';
   if (/인쇄|청첩|카드/.test(industry)) return 'invitation';
   if (/귀금속|보석|금은|시계/.test(industry)) return 'goods';
-  if (/가구|침구|주단|포목|혼수/.test(industry)) return 'dowry';
+  // 한복 소매업(G20904)은 실측 코드다. 이름에 «한복»이 들어가 여기서 걸려야 한다.
+  if (/가구|침구|주단|포목|혼수|한복/.test(industry)) return 'dowry';
   if (/여행/.test(industry)) return 'honeymoon';
   return null;
 }
@@ -69,15 +72,37 @@ export function classifyWeddingIndustry(industry: string, name: string): VendorC
  * 상권 자료 한 행의 업종을 정한다. `parsePublicCsv`(CSV)와
  * `downloadSbizApiVendors`(OpenAPI)가 같은 규칙을 쓰도록 한 곳에 둔다.
  *
- * 업종을 못 골랐는데 상호에 웨딩 표시가 있으면 버리지 않고 'etc'로 남긴다 —
- * 실제 웨딩 업체인데 소분류명이 우리 규칙에 없는 경우다. 수집 결과는 전부
- * `needs_verification`이라 사람이 보고 업종을 정한다. 상호 표시도 없으면
- * 웨딩과 무관한 행이므로 버린다(전국 상권 자료 전체를 «기타»로 담지 않는다).
+ * **업종을 확정 못 하면 버리지 않고 «기타»로 받는다**(2026-09-11 대표 지시 —
+ * 「실제 데이터 보고 맞지 않을 경우 기타로 다 집어넣는다」). 전에는 상호에 웨딩
+ * 표시가 없으면 버렸는데, 그러면 「웨딩」을 상호에 안 붙인 실제 거래처가 통째로
+ * 사라진다. 수집 결과는 전부 `needs_verification`이라 사람이 보고 업종을 정한다.
+ *
+ * **다만 그 규칙은 「이미 걸러진 행」에만 쓴다**(`preFiltered`). 두 경로가 다르다.
+ *
+ *   OpenAPI(`sbiz-api`)  받아올 업종을 WEDDING_UPJONG_CODES로 먼저 고른다.
+ *                        거기까지 온 행은 웨딩과 관련 있다고 보고 버리지 않는다.
+ *                        거르는 자리가 분류기에서 **수집 목록으로 옮겨간 것**이다.
+ *   전국 상권 CSV(`sbiz`) 업종코드로 거르는 자리가 **없다** — 모든 업종이 한 파일에
+ *                        들어 있다. 여기서 버리지 않으면 전국 사업자 명부가 통째로
+ *                        «기타»로 들어온다. 그래서 상호 조건을 그대로 둔다.
+ *
+ * 둘을 같은 규칙으로 묶으면 한쪽이 반드시 망가진다. 시험이 그것을 잡는다
+ * («상권 CSV의 일반 미용실·사진관은 자동 등록하지 않는다»).
+ *
+ * 코드를 넓히면 그만큼 «기타»가 는다. 리포트의 업종별 집계(categoryCounts)를 보고
+ * 코드를 조이거나 넓히고, 한 실행이 쓸 수 있는 양은 run.ts의 MAX_APPLY가 막는다.
  */
-export function resolveSbizCategory(industry: string, name: string): VendorCategory | null {
+export function resolveSbizCategory(
+  industry: string,
+  name: string,
+  preFiltered: boolean,
+): VendorCategory | null {
   if (/예식장/.test(industry)) return 'hall';
   if (/결혼.*중개|결혼.*상담|결혼정보/.test(industry)) return 'wedding_info_company';
-  return classifyWeddingIndustry(industry, name) ?? (WEDDING_NAME.test(name) ? 'etc' : null);
+  const picked = classifyWeddingIndustry(industry, name);
+  if (picked) return picked;
+  // 걸러 온 행은 «기타»로 받고, 거르는 자리가 없는 전국 CSV는 상호 표시가 있을 때만 받는다.
+  return preFiltered || WEDDING_NAME.test(name) ? 'etc' : null;
 }
 
 /**
@@ -132,7 +157,8 @@ export function parsePublicCsv(bytes: Buffer, key: SourceKey, at = new Date()) {
     const region = toRegion(row['도로명주소']?.trim() ?? '');
     const category: VendorCategory | null = source.format === 'municipal'
       ? 'hall'
-      : resolveSbizCategory(row['상권업종소분류명']?.trim() ?? '', name);
+      // 전국 상권 CSV는 업종코드로 거르는 자리가 없다 — preFiltered=false.
+      : resolveSbizCategory(row['상권업종소분류명']?.trim() ?? '', name, false);
     const publishedOn = source.dateColumn ? isoDay(row[source.dateColumn] ?? '', at.toISOString().slice(0, 10)) : null;
     if (!name || name.length > 500 || !category || !isVendorRegion(region)
       || (source.dateColumn && !publishedOn)) { rejected++; continue; }
@@ -350,20 +376,33 @@ export type SbizUpjongQuery = { divId: string; codes: string[] };
  *   S21105  결혼 상담 서비스업   → wedding_info_company
  *   M11301  사진촬영업          → studio · snap (상호에 웨딩·본식·스냅이 있어야 받는다)
  *   S20701  미용실              → makeup (상호에 웨딩·브라이덜이 있어야 받는다)
- *   N11004  의류 대여업          → dress (상호에 웨딩·브라이덜이 있어야 받는다)
+ *   N11004  의류 대여업          → dress (상호에 웨딩·브라이덜이 있으면 dress, 없으면 etc)
+ *   G21901  꽃집                → bouquet (2026-09-11 추가)
+ *   G20904  한복 소매업          → dowry   (2026-09-11 추가)
  *
- * 업종 이름만으로 받는 것은 앞의 둘뿐이다. 사진관·미용실·임대업 전체를 웨딩
- * 업체로 들이지 않는다 — 상호를 함께 본다(`classifyWeddingIndustry`).
+ * **2026-09-11 대표 지시로 넓혔다** — 「업종코드 확대한다. 실제 데이터 보고 맞지
+ * 않을 경우 기타로 다 집어넣는다」. 같은 지시로 `resolveSbizCategory`가 더는 행을
+ * 버리지 않고 «기타»로 받는다. 그래서 **이 목록이 유일한 거름망이다** — 여기 넣은
+ * 코드는 상호와 무관하게 전부 들어온다. 코드를 더할 때 그 업종의 전국 업소 수를
+ * 먼저 생각한다.
  *
- * 한복 소매업(G20904) · 뷔페(I20702 · I20801)는 웨딩 전용이 아니고 우리 업종
- * 분류에 해당하는 자리가 없어 넣지 않는다.
+ * 꽃집·한복은 웨딩 전용이 아니다. 상호에 웨딩 표시가 있으면 부케·혼수로 서고,
+ * 없으면 «기타»로 선다 — 버리지 않는 대신 사람이 보고 정한다.
  *
- * 전에는 이 자리에 대분류 `'Q'`가 박혀 있었다 — 활용가이드에 없는 값이라 수집이
- * 조용히 0건이 됐다. 그래서 한동안 「코드는 코드에 박지 않는다」로 두었는데,
- * 이제 실제 코드를 확인했으므로 확인한 값을 적어 둔다. 바꿔야 하면
- * `SBIZ_UPJONG_CODES` · `SBIZ_UPJONG_DIV_ID`가 이긴다.
+ * **아직 코드를 못 찾은 것 셋: 청첩장(인쇄업) · 예물(귀금속) · 허니문(여행사).**
+ * 분류 규칙(`classifyWeddingIndustry`)은 이미 그 셋을 다루지만 받아올 코드가 없어
+ * 영구 0건이다. 추측으로 채우지 않는다 — 전에 대분류 `'Q'`를 박았다가 활용가이드에
+ * 없는 값이라 수집이 조용히 0건이 된 적이 있다. `public-data.yml`을 `lookup_level=small`
+ * 로 돌려 «청첩» «귀금속» «여행»으로 찾은 뒤 여기나 `SBIZ_UPJONG_CODES`에 넣는다.
+ *
+ * 뷔페(I20702 · I20801)는 넣지 않았다. 우리 업종에 자리가 없어 전부 «기타»로만
+ * 쌓이는데 전국 업소 수가 많아 검수가 그만큼 늘어난다.
+ *
+ * 바꿔야 하면 `SBIZ_UPJONG_CODES` · `SBIZ_UPJONG_DIV_ID`가 이긴다.
  */
-export const WEDDING_UPJONG_CODES = ['S21101', 'S21105', 'M11301', 'S20701', 'N11004'] as const;
+export const WEDDING_UPJONG_CODES = [
+  'S21101', 'S21105', 'M11301', 'S20701', 'N11004', 'G21901', 'G20904',
+] as const;
 
 /** 조회할 업종 자리와 코드. 확인된 소분류 코드가 기본이고 환경변수가 이긴다. */
 export function resolveUpjongQuery(override?: SbizUpjongQuery): SbizUpjongQuery {
@@ -392,8 +431,19 @@ export async function downloadSbizApiVendors(
   apiKey: string,
   at = new Date(),
   upjong?: SbizUpjongQuery,
+  /**
+   * 받아들일 업체 수 상한. **소량 확인용이다**(2026-09-11 대표 지시 — 「소량만 우선
+   * 수집해 100건 정도」). 전수를 받기 전에 무엇이 어떤 업종으로 들어오는지 눈으로
+   * 보려는 것이라, 이 수를 채우면 **다음 쪽을 부르지 않고 멈춘다** — 받아 놓고
+   * 자르는 것이 아니라 API를 그만 두드린다.
+   *
+   * 업종코드를 돌아가며 채우지 않고 앞 코드부터 채운다. 100건이면 예식장업만으로
+   * 다 찰 수 있다는 뜻이라, 업종을 고루 보려면 코드를 하나씩 지정해 따로 돌린다
+   * (`--upjong-codes`). 그 사실은 리포트의 `limit`로 남는다.
+   */
+  limit?: number,
 ): Promise<{ vendors: CollectedVendor[]; fetched: number; rejected: number; duplicates: number;
-  truncated: { code: string; got: number; total: number | null; reason: '상한' | '연결 끊김' }[] }> {
+  truncated: { code: string; got: number; total: number | null; reason: '상한' | '연결 끊김' | '소량 상한' }[] }> {
   const source = PUBLIC_SOURCES[key];
   if (source.format !== 'sbiz-api') throw new Error('sbiz-api 형식 출처가 아닙니다.');
   /*
@@ -418,13 +468,18 @@ export async function downloadSbizApiVendors(
   let rejected = 0;
   let duplicates = 0;
   /** 다 못 받은 업종코드. 비어 있어야 「전수」다. */
-  const truncated: { code: string; got: number; total: number | null; reason: '상한' | '연결 끊김' }[] = [];
+  const truncated: { code: string; got: number; total: number | null; reason: '상한' | '연결 끊김' | '소량 상한' }[] = [];
 
   for (const code of query.codes) {
   let seenForCode = 0;
   /** 마지막으로 본 전체 건수. 끊겼을 때 「얼마 중 얼마를 받았나」를 적는 데 쓴다. */
   let lastTotalCount: number | null = null;
   for (let pageNo = 1; pageNo <= MAX_PAGES; pageNo++) {
+    // 소량 상한을 채웠으면 다음 쪽을 부르지 않는다. 「덜 받았다」는 사실을 남긴다.
+    if (limit !== undefined && vendors.length >= limit) {
+      truncated.push({ code, got: seenForCode, total: lastTotalCount, reason: '소량 상한' });
+      break;
+    }
     const url = new URL(source.url);
     url.searchParams.set('serviceKey', normalizeServiceKey(apiKey));
     url.searchParams.set('pageNo', String(pageNo));
@@ -471,7 +526,8 @@ export async function downloadSbizApiVendors(
       const branch = r.brchNm?.trim() ?? '';
       const name = [r.bizesNm?.trim(), branch].filter(Boolean).join(' ');
       const region = toRegion(r.rdnmAdr?.trim() ?? '');
-      const category = resolveSbizCategory(r.indsSclsNm?.trim() ?? '', name);
+      // 받아올 업종을 코드로 이미 골랐다 — preFiltered=true.
+      const category = resolveSbizCategory(r.indsSclsNm?.trim() ?? '', name, true);
 
       // 업종 판정은 resolveSbizCategory 하나로 — CSV 경로와 같은 규칙이다(#135).
       // 거른 건수는 계속 센다(#133 계열) — 0건일 때 원인을 리포트로 가른다.
@@ -482,6 +538,9 @@ export async function downloadSbizApiVendors(
       const identity = `${normalizeName(name)}|${region}`;
       if (seen.has(identity)) { duplicates++; continue; }
       seen.add(identity);
+
+      // 한 쪽은 1,000건이라 상한을 넘겨 담길 수 있다. 정확히 상한에서 멈춘다.
+      if (limit !== undefined && vendors.length >= limit) break;
 
       vendors.push({
         name, region, category,
@@ -504,8 +563,12 @@ export async function downloadSbizApiVendors(
    * 이미 적혔으므로 던지지 않고 넘어간다 — 던지면 다른 코드로 받아 둔 것까지 잃는다.
    */
   if (!seenForCode && !truncated.some((t) => t.code === code)) {
-    throw new Error(`업종코드 ${query.divId}=${code} 응답이 0건입니다. 코드를 확인하세요.`);
+    throw new Error(
+      `업종코드 ${query.divId}=${code} 응답이 0건입니다. 코드를 확인하세요.\n` +
+      '연결이 끊겨 0건이면 이 메시지가 아니라 truncated에 «연결 끊김»으로 남는다 — ' +
+      '그때는 코드가 아니라 apis.data.go.kr 쪽 문제다.');
   }
+  if (limit !== undefined && vendors.length >= limit) break;
   }
 
   return { vendors, fetched, rejected, duplicates, truncated };

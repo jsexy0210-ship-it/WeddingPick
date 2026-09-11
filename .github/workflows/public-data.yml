@@ -31,6 +31,10 @@ on:
         description: '업종 조회 응답 원문 앞부분을 출력(파싱 0건일 때 응답 모양 확인용)'
         type: boolean
         default: false
+      limit:
+        description: '소량 확인 — 이 수만큼만 받고 멈춘다(예: 100). 비우면 전수. 전수 전에 무엇이 어떤 업종으로 들어오는지 볼 때 쓴다'
+        type: string
+        default: ''
       upjong_codes:
         description: '이번 실행에만 쓸 업종코드(쉼표 구분). 비우면 저장소 Variables의 SBIZ_UPJONG_CODES를 쓴다'
         type: string
@@ -112,6 +116,8 @@ jobs:
       # 같은 값을 여기 적어 둔다 — 저장소 Variables에 넣으면 그쪽이 이긴다.
       # 올릴 때는 리포트의 total·accepted를 보고 정한다. 짐작으로 올리지 않는다.
       PUBLIC_DATA_MAX_APPLY: ${{ vars.PUBLIC_DATA_MAX_APPLY || '50000' }}
+      # 소량 확인 상한. 수동 실행에서만 채운다 — 크론은 비어서 전수로 돈다.
+      PUBLIC_DATA_LIMIT: ${{ inputs.limit }}
     strategy:
       fail-fast: false
       matrix:
@@ -176,12 +182,26 @@ jobs:
           node -e "
             const r = require('./$REPORT');
             const t = r.truncated ?? [];
+            // 화면 이름으로 적는다 — 코드를 그대로 보여주면 요약을 읽는 사람이 다시 옮겨야 한다.
+            const LABEL = {
+              wedding_info_company: '결정사', hall: '웨딩홀', studio: '스튜디오', dress: '드레스',
+              makeup: '메이크업', hair: '헤어변형', snap: '본식스냅', bouquet: '부케',
+              invitation: '청첩장', goods: '예물', dowry: '혼수', honeymoon: '허니문', etc: '기타',
+            };
             const line = [
               '### ' + r.source,
               '',
-              '| 받은 원본 | 받아들임 | 거른 것 | 중복 |',
-              '| --- | --- | --- | --- |',
-              '| ' + r.total + ' | ' + r.accepted + ' | ' + r.rejected + ' | ' + r.duplicates + ' |',
+              '| 받은 원본 | 받아들임 | 거른 것 | 중복 | 폐업 |',
+              '| --- | --- | --- | --- | --- |',
+              '| ' + r.total + ' | ' + r.accepted + ' | ' + r.rejected + ' | ' + r.duplicates + ' | ' + (r.closed ?? 0) + ' |',
+              '',
+              r.limit ? '**소량 확인 실행이다 — ' + r.limit + '건에서 멈췄다.** 아래 숫자를 전체로 읽지 않는다.' : '',
+              '',
+              '업종별 — 0건도 적는다. 코드를 안 받아와서 0인 것과 받았는데 없어서 0인 것은 다르다.',
+              '',
+              '| 업종 | 건수 |',
+              '| --- | --- |',
+              ...Object.entries(r.categoryCounts ?? {}).map(([k, v]) => '| ' + (LABEL[k] ?? k) + ' | ' + v + ' |'),
               '',
               t.length ? '전수가 아니다 — ' + JSON.stringify(t) : '전수로 받았다.',
               '',

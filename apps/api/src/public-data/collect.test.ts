@@ -277,6 +277,44 @@ test('해시는 수집 시각에 영향받지 않는다', () => {
   expect(contentHash(incoming)).toBe(contentHash({...incoming,collectedAt:'later'} as CollectedVendor));
 });
 
+/*
+ * 2026-09-11 대표 지시 — 「소량만 우선 수집해 100건 정도」.
+ *
+ * 받아 놓고 자르는 것이 아니라 **API를 그만 두드려야** 소량 수집이다. 전수를 받은
+ * 뒤 100건만 남기면 소량으로 확인하려던 이유(부하·시간)가 사라진다.
+ */
+test('소량 상한을 채우면 다음 쪽을 부르지 않는다', async () => {
+  const page = (rows: number, offset: number) => ({
+    totalCount: 5000,
+    data: Array.from({ length: rows }, (_, i) => ({
+      bizesId: `V${offset + i}`, bizesNm: `업체${offset + i}웨딩홀`, brchNm: '',
+      indsSclsNm: '예식장업', ctprvnCd: '11', rdnmAdr: '서울특별시 강남구 길 1',
+    })),
+  });
+  const origFetch = global.fetch;
+  let calls = 0;
+  global.fetch = jest.fn().mockImplementation(() => {
+    calls += 1;
+    const body = Buffer.from(JSON.stringify(page(1000, calls * 1000)));
+    return Promise.resolve({
+      ok: true,
+      body: { [Symbol.asyncIterator]: async function* () { yield body; } },
+    });
+  });
+  try {
+    const result = await downloadSbizApiVendors(
+      'sbiz-seoul', 'test-key', new Date('2026-09-11T00:00:00Z'),
+      { divId: 'indsSclsCd', codes: ['S21101'] }, 100);
+
+    expect(result.vendors).toHaveLength(100);
+    // 한 쪽(1,000건)만 부르고 멈춘다 — totalCount가 5,000이어도 더 안 부른다.
+    expect(calls).toBe(1);
+    expect(result.truncated).toEqual([
+      { code: 'S21101', got: 1000, total: 5000, reason: '소량 상한' },
+    ]);
+  } finally { global.fetch = origFetch; }
+});
+
 test('한 페이지가 끊겨도 그때까지 모은 것을 버리지 않는다', async () => {
   /*
    * 전국 전수를 돌리다 apis.data.go.kr이 4분 끊기면 이미 받아 둔 수천 건이 통째로
@@ -347,8 +385,8 @@ test('영업상태 열이 없는 명단 파일은 그대로 수집한다', () =>
   expect(parsePublicCsv(iconv.encode(csv, 'utf8'), 'icheon-halls', at).closed).toBe(0);
 });
 
-test('업종 12종으로 매핑하고, 못 고른 웨딩 업체는 버리지 않고 etc로 남긴다', () => {
-  const rows: [string, string, string | null][] = [
+test('업종 12종으로 매핑하고, 확정 못 한 것은 버리지 않고 etc로 받는다', () => {
+  const rows: [string, string, string][] = [
     ['예식장업', '행복예식장', 'hall'],
     ['결혼 상담업', '좋은결혼정보', 'wedding_info_company'],
     ['그외 기타 미용업', '웨딩헤어살롱', 'hair'],
@@ -361,15 +399,35 @@ test('업종 12종으로 매핑하고, 못 고른 웨딩 업체는 버리지 않
     ['의류 대여업', '웨딩드레스샵', 'dress'],
     ['인물 사진 촬영업', '본식스냅하우스', 'snap'],
     ['인물 사진 촬영업', '웨딩스튜디오하우스', 'studio'],
-    // 규칙에 없는 업종인데 상호가 웨딩이면 버리지 않는다 — 사람이 업종을 정한다.
+    ['한복 소매업', '웨딩한복관', 'dowry'],
+    // 규칙에 없는 업종인데 상호가 웨딩이면 사람이 업종을 정한다.
     ['그외 기타 분류 안된 서비스업', '웨딩종합서비스', 'etc'],
-    // 웨딩 표시가 없는 일반 업종은 그대로 버린다.
-    ['그외 기타 미용업', '동네미용실', null],
-    ['화훼 소매업', '골목꽃집', null],
-    ['일반 여행사업', '싼값여행사', null],
   ];
-  for (const [industry, name, expected] of rows) {
-    expect([industry, name, resolveSbizCategory(industry, name)]).toEqual([industry, name, expected]);
+  for (const [industry, name, expected] of rows)
+    for (const preFiltered of [true, false])
+      expect([industry, name, preFiltered, resolveSbizCategory(industry, name, preFiltered)])
+        .toEqual([industry, name, preFiltered, expected]);
+});
+
+/*
+ * 2026-09-11 대표 지시 — 「실제 데이터 보고 맞지 않을 경우 기타로 다 집어넣는다」.
+ * 「웨딩」을 상호에 안 붙인 실제 거래처가 통째로 사라지던 것을 막는다.
+ *
+ * 다만 그 규칙은 **업종코드로 이미 걸러 온 행에만** 쓴다. 전국 상권 CSV는 거르는
+ * 자리가 없어서 그대로 두면 전국 사업자 명부가 통째로 «기타»로 들어온다.
+ */
+test('걸러 온 행은 상호 표시가 없어도 기타로 받는다', () => {
+  const rows: [string, string][] = [
+    ['그외 기타 미용업', '동네미용실'],
+    ['화훼 소매업', '골목꽃집'],
+    ['일반 여행사업', '싼값여행사'],
+    ['한복 소매업', '우리한복'],
+  ];
+  for (const [industry, name] of rows) {
+    // OpenAPI — WEDDING_UPJONG_CODES로 받아올 업종을 이미 골랐다.
+    expect([name, resolveSbizCategory(industry, name, true)]).toEqual([name, 'etc']);
+    // 전국 상권 CSV — 거르는 자리가 없어 상호 표시가 없으면 버린다.
+    expect([name, resolveSbizCategory(industry, name, false)]).toEqual([name, null]);
   }
 });
 
