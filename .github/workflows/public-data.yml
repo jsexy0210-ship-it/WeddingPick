@@ -40,11 +40,26 @@ on:
         type: choice
         options: ['', 'indsLclsCd', 'indsMclsCd', 'indsSclsCd']
         default: ''
-  # 크론을 끈다(2026-09-09 사용자 지시). 무인 실행 금지 — 수집기 검증이 끝나기
-  # 전까지는 사람이 workflow_dispatch로만 돌린다. 업종 코드 확정 · 0건 가드 ·
-  # 건수 상한이 모두 끝나면 아래 두 줄의 주석을 풀어 되살린다.
-  # schedule:
-  #   - cron: '17 18 * * 6'
+  # 크론을 되살린다(2026-09-11 대표 지시 — 「지속 수집한다」). 2026-09-09에 끄면서
+  # 적어 둔 세 조건이 모두 섰다.
+  #
+  #   업종 코드 확정 — collect.ts WEDDING_UPJONG_CODES. 2026-09-10 smallUpjongList를
+  #     실 키로 불러 1,255개 중에서 고른 값이다(추측이 아니다). 설정이 있으면
+  #     SBIZ_UPJONG_CODES가 이긴다.
+  #   0건 가드 — 업종코드가 0건을 돌려주면 collect.ts가 던지고, 지역 필터에서 전부
+  #     빠져 accepted=0이 된 경우는 아래 「수집 결과 0건 확인」이 잡는다. 두 겹인
+  #     것은 수집기가 지역 필터 탈락을 알 수 없기 때문이다.
+  #   건수 상한 — 같은 단계의 PUBLIC_DATA_MAX_APPLY 확인과 run.ts의 MAX_APPLY.
+  #     분류가 어긋나 상권 자료가 통째로 들어오는 것을 0건과 같은 무게로 막는다.
+  #
+  # **이 크론은 DB에 쓰지 않는다.** 아래 「Apply to existing database」가 inputs.apply를
+  # 보는데 schedule 이벤트에는 inputs가 없어 항상 거짓이다 — 크론은 수집·검증까지만
+  # 하고 산출물만 남긴다. 첫 실제 반영은 사람이 workflow_dispatch에서 켤 때 한다.
+  #
+  # 시각은 UTC다(GitHub Actions). '17 18 * * 6' = 토요일 18:17 UTC = 일요일 03:17 KST.
+  # 여기 값은 UTC 그대로 둔다 — KST로 고쳐 적으면 아홉 시간 밀린다.
+  schedule:
+    - cron: '17 18 * * 6'
 
 permissions:
   contents: read
@@ -93,6 +108,10 @@ jobs:
       # 수동 실행 입력이 있으면 그쪽이 이긴다 — 소량 샘플 검증용.
       SBIZ_UPJONG_CODES: ${{ inputs.upjong_codes || vars.SBIZ_UPJONG_CODES }}
       SBIZ_UPJONG_DIV_ID: ${{ inputs.upjong_div_id || vars.SBIZ_UPJONG_DIV_ID }}
+      # 한 실행이 받아들일 수 있는 업체 수의 상한. 수집기의 기본값(run.ts MAX_APPLY)과
+      # 같은 값을 여기 적어 둔다 — 저장소 Variables에 넣으면 그쪽이 이긴다.
+      # 올릴 때는 리포트의 total·accepted를 보고 정한다. 짐작으로 올리지 않는다.
+      PUBLIC_DATA_MAX_APPLY: ${{ vars.PUBLIC_DATA_MAX_APPLY || '50000' }}
     strategy:
       fail-fast: false
       matrix:
@@ -173,6 +192,14 @@ jobs:
           node -e "const t=require('./$REPORT').truncated??[];if(t.length)console.log('::warning::전수가 아니다 — 상한에 걸린 업종코드 '+JSON.stringify(t))"
           if [ "$ACCEPTED" -eq 0 ]; then
             echo "::error::'$SOURCE' 수집 결과가 0건입니다. 초록으로 넘기지 않고 멈춥니다 — 출처 응답 또는 업종 코드를 확인하세요."
+            exit 1
+          fi
+          # 건수 상한. 0건이 아닌 것만으로는 부족하다 — 분류가 어긋나면 상권 자료가
+          # 통째로 들어오고, 그건 0건보다 되돌리기 어렵다. 수집기도 --apply 직전에
+          # 같은 상한으로 거절하지만(run.ts MAX_APPLY), 크론은 --apply 없이 도는
+          # 무인 실행이라 여기서 먼저 드러내야 사람이 본다.
+          if [ "$ACCEPTED" -gt "$PUBLIC_DATA_MAX_APPLY" ]; then
+            echo "::error::'$SOURCE' 수집 결과가 ${ACCEPTED}건으로 상한 ${PUBLIC_DATA_MAX_APPLY}건을 넘습니다. 업종 분류 또는 업종 코드가 어긋났는지 먼저 확인하세요. 이 양이 맞다면 저장소 Variables의 PUBLIC_DATA_MAX_APPLY를 올립니다."
             exit 1
           fi
       # **크론은 DB에 쓰지 않는다.** 전에는 조건에 `github.event_name == 'schedule'`이
