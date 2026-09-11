@@ -248,7 +248,9 @@
     "PR174가 남긴 판단 4건 — 글자 크기 15/17/22 · 웹 랜딩 팔레트 · 없는 화면 8개 · 타일 높이.",
     "PR180 · PR182가 남긴 결정 5건 — 업체 문의 큐 스키마 · 보완 단추 · BACKEND_PENDING 정리 시점 외.",
     "리전 이전 — Render 리전 변경 가능 여부와 free 플랜 싱가포르 지원을 워크플로로 확인한 뒤 절차 확정. 대시보드 작업과 OAuth redirect URI 재등록은 대표님 몫.",
-    "개인정보 방침 시행일(LEGAL_*_EFFECTIVE_ON) 확정 — 국외 이전 고지가 서버 이전보다 앞서야 한다."
+    "개인정보 방침 시행일(LEGAL_*_EFFECTIVE_ON) 확정 — 국외 이전 고지가 서버 이전보다 앞서야 한다.",
+    "관리자 전면 개편 — 1단계 전수 조사표(docs/admin-screen-inventory.md)가 나오면 2·3 묶음 분류를 대표님께 보고한다. 그 분류가 나머지 전부를 정한다.",
+    "공유 링크 미리보기가 실제로 뜨는지 — 웹사이트·업체 상세·앱 각각. 워크플로에서 확인한다."
   ],
   "claudeSessions20260911": {
     "absorbedAtKst": "2026-09-11 11:00",
@@ -553,5 +555,38 @@
       "docs/INFRA_ACCESS_AUDIT_2026-09-10.md"
     ],
     "siteOrigin": "https://weddingpick-web.onrender.com — 정본"
+  },
+  "adminOverhaul20260911": {
+    "order": "2026-09-11 대표 지시 — 관리자 콘솔 전면 개편",
+    "items": [
+      "확인 불가 · 동작 불가 · 안 쓰는 메뉴를 한 묶음으로 최하단에 둔다",
+      "「AI 운영현황」을 「대시보드」로 바꾸고 전체 요약 + 회원 차트(일·주·월·년)",
+      "카테고리 순서 — 1 대시보드 · 2 운영자가 직접 컨트롤하는 메뉴 · 3 조회 화면",
+      "메뉴명·세부 명칭에서 AI식 단어를 걷어내고 한국식·토스식으로",
+      "동작하지 않는 화면 전수 검토",
+      "FAQ · 약관·방침 · 링크 미리보기를 운영자가 직접 조작 가능하게",
+      "링크 미리보기에 이미지 등록 기능 추가",
+      "핵심 — 웹앱·웹사이트 공유 정보가 실제로 동작하는지 검토하고 동작하게 적용"
+    ],
+    "session": "session_01ArfwQTMZ4z16WV4Vd7G8nn · 브랜치 claude/admin-overhaul",
+    "migrationRange": "0230번대 (공공데이터 세션이 0210번대를 쓰는 중)",
+    "masterSurvey": {
+      "sidebar": "apps/mobile/src/app/admin/_layout.tsx:50 NAV — 6묶음 32메뉴",
+      "readOnlySet": "biz-queue · terms 둘뿐. 전수 재판정 필요",
+      "apiUsage": "_layout · _ui · index · login을 뺀 전 화면이 apiFetch를 쓴다. 고장은 화면이 아니라 서버 경로 쪽에 있다",
+      "ogChain": "apps/api/src/site-meta.ts → apps/web/src/site-data.ts:227 → apps/web/src/social-meta.ts → 관리자 og-card.tsx",
+      "ogMissing": "og-card.tsx:45가 ogImageUrl을 글자 주소로만 받는다. 올리기가 없다. 저장소 드라이버(apps/api/src/storage/)를 쓴다",
+      "ogSuspects": [
+        "웹이 정적 빌드라 저장 후 재배포되어야 반영된다 — publishRequestedAt이 실제로 배포를 거는지 확인 필요",
+        "render.yaml의 WEDDINGPICK_WEB_VENDOR_IDS가 비면 /v/*.html이 한 장도 생기지 않는다 — 업체를 공유해도 미리보기가 뜰 자리가 없다"
+      ]
+    },
+    "ruleFlipped": "「관리자 화면은 AI 용어를 써도 된다」(2026-09-04)를 뒤집었다. 화면은 안 쓰고 내부 개발·비용 관리 문서는 그대로 쓴다.",
+    "outOfScope": [
+      "apps/web/src/subpages.ts — claude/region-legal 세션이 만지는 중",
+      "성능 최적화 — claude/perf-audit · PR #206",
+      "광고 실운영 전환 — 대표님 오더 대기"
+    ],
+    "openDecision": "약관·방침을 관리자에서 직접 고치게 할지 — 정본은 웹사이트다. 두 벌을 들면 한 벌이 낡는다. 세션이 두 안을 올리면 MASTER가 정한다."
   }
 }
