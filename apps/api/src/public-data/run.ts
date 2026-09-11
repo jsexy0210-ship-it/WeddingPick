@@ -64,6 +64,16 @@ export async function runPublicCollection(args: string[]) {
   const sbizApiKey = arg('--sbiz-api-key') ?? process.env.SBIZ_API_KEY;
   const upjongCodes = arg('--upjong-codes');
   const upjongDivId = arg('--upjong-div-id');
+  /*
+   * 소량 확인용 상한(2026-09-11 대표 지시 — 「소량만 우선 수집해 100건 정도」).
+   * 전수를 받기 전에 무엇이 어떤 업종으로 들어오는지 눈으로 보려는 것이다.
+   * MAX_APPLY(반영 상한)와 다르다 — 저쪽은 「너무 많으면 안 쓴다」이고
+   * 이것은 「이만큼만 받는다」다. API를 그만 두드린다는 점에서 성격이 다르다.
+   */
+  const limitArg = arg('--limit') ?? process.env.PUBLIC_DATA_LIMIT;
+  const limit = limitArg ? Number(limitArg) : undefined;
+  if (limit !== undefined && (!Number.isFinite(limit) || limit < 1))
+    throw new Error(`--limit은 1 이상의 수여야 합니다: ${limitArg}`);
   const apply = args.includes('--apply');
   if (apply && args.includes('--dry-run')) throw new Error('--apply와 --dry-run은 함께 사용할 수 없습니다.');
   if (apply && !process.env.DATABASE_URL) throw new Error('DATABASE_URL 없음: --apply를 제외하면 수집·검증 가능합니다.');
@@ -82,7 +92,8 @@ export async function runPublicCollection(args: string[]) {
     if (!sbizApiKey) throw new Error('SBIZ_API_KEY 환경변수 또는 --sbiz-api-key 옵션이 필요합니다.');
     // 업종코드는 하드코딩하지 않는다 — CLI 또는 SBIZ_UPJONG_CODES에서 온다.
     const result = await downloadSbizApiVendors(key, sbizApiKey, at,
-      upjongCodes ? { divId: upjongDivId ?? 'indsLclsCd', codes: upjongCodes.split(',') } : undefined);
+      upjongCodes ? { divId: upjongDivId ?? 'indsLclsCd', codes: upjongCodes.split(',') } : undefined,
+      limit);
     vendors = result.vendors;
     // total은 API가 돌려준 원본 건수다. accepted가 0인데 total이 크면 지역·분류
     // 필터가 응답 필드와 어긋난 것이므로 리포트만 보고 구분할 수 있어야 한다.
@@ -101,6 +112,8 @@ export async function runPublicCollection(args: string[]) {
     rejected = result.rejected;
     duplicates = result.duplicates;
     closed = result.closed;
+    // CSV는 파일을 통째로 받은 뒤라 더 안 받을 것이 없다 — 앞에서 자르기만 한다.
+    if (limit !== undefined && vendors.length > limit) vendors = vendors.slice(0, limit);
   }
 
   const output = arg('--out') ?? '.collection';
@@ -141,6 +154,8 @@ export async function runPublicCollection(args: string[]) {
   }
   const report = {source: key, sourceUrl: source.url, collectedAt: at.toISOString(),
     total, accepted: vendors.length, rejected, duplicates, closed,
+    // 상한을 걸고 받았으면 accepted는 「있는 만큼」이 아니다. 그 사실을 남긴다.
+    limit: limit ?? null,
     categoryCounts: countByCategory(vendors), truncated,
     // 요청했으나 상한에 막힌 것과 애초에 요청하지 않은 것은 다르다.
     databaseApplied: apply && !applyRefused, applyRefused, db};
