@@ -17,6 +17,28 @@ export const settingsSchema = z.object({
   /** Pick한 곳의 가격 변동 알림. v2.0 37번 — 서비스 알림과 따로 끈다. */
   priceChangeEnabled: z.boolean(),
 
+  /**
+   * 마케팅 알림(혜택 · 이벤트). 시안 13-my-sub WP-MY-007 «알림 수신».
+   *
+   * **다른 스위치와 저장하는 자리가 다르다.** 이건 법적 동의 항목이라
+   * `notification_settings`의 불리언이 아니라 동의 이력(`user_consents`
+   * `item = 'marketing'`)이 원본이다 — 언제 켰고 언제 껐는지에 답할 수 있어야
+   * 하고, 불리언 한 칸은 마지막 상태만 남기고 그 답을 지운다.
+   */
+  marketingEnabled: z.boolean(),
+  /** 지금 살아 있는 마케팅 동의를 언제 받았는가. 꺼져 있으면 null이다. */
+  marketingConsentAt: timestampSchema.nullable(),
+
+  /**
+   * 야간(한국시간 21:00 이상 ~ 다음 날 08:00 미만) 푸시를 받는가.
+   *
+   * 꺼져 있으면 그 동안 푸시를 생략한다. 알림함은 그대로 남고, 아침에 누적 푸시를
+   * 재발송하지 않는다(AGENTS.md · 사용자 승인 2026-09-06).
+   *
+   * **기본이 꺼짐이다.** 시안이 꺼진 상태로 그렸다(13-my-sub WP-MY-007).
+   */
+  nightPushEnabled: z.boolean(),
+
   /** 결제인증에 동의했는가. 안 했으면 등록 전에 동의 화면을 지난다. */
   paymentConsent: z.boolean(),
   paymentConsentAt: timestampSchema.nullable(),
@@ -47,6 +69,9 @@ export const settingsSchema = z.object({
 export const updateSettingsRequestSchema = z.object({
   pushEnabled: z.boolean().optional(),
   priceChangeEnabled: z.boolean().optional(),
+  /** 켜면 마케팅 동의를 새로 남기고, 끄면 살아 있는 동의를 철회한다. */
+  marketingEnabled: z.boolean().optional(),
+  nightPushEnabled: z.boolean().optional(),
 });
 
 export type Settings = z.infer<typeof settingsSchema>;

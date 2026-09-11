@@ -125,7 +125,7 @@ export async function sendTaskNudges(
     });
   }
 
-  return await deliver(deps, items);
+  return await deliver({ ...deps, now: () => now }, items);
 }
 
 type CandidateRow = {
@@ -253,5 +253,5 @@ export async function sendPriceChangeNudges(
     }
   }
 
-  return await deliver(deps, items);
+  return await deliver({ ...deps, now: () => now }, items);
 }

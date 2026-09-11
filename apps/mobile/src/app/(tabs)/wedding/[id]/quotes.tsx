@@ -67,9 +67,14 @@ function QuoteCard({ quote }: { quote: Quote }) {
 }
 
 /**
- * 내 웨딩에 올린 견적·계약서 목록.
+ * 내 웨딩에 올린 문서를 읽어낸 결과 목록.
  *
- * 서버가 AI로 읽어낸 견적이 여기 모인다. 확인 전·후 무관하게 보인다.
+ * 서버가 AI로 읽어낸 견적·계약서가 여기 모인다. 확인 전·후 무관하게 보인다.
+ *
+ * 화면 상단은 **Pick 인증이 아니다.** `Pick 인증 자료`는 결제를 증명하는 자료
+ * 한 종류(`VERIFICATION_EVIDENCE_RULES.payment_receipt`)의 이름이고, 여기 모이는
+ * 것은 `DOCUMENT_TYPE_LABEL` 여덟 단계 전부를 읽어낸 결과다. 둘을 같은 말로
+ * 적으면 사용자가 무엇을 보고 있는지 알 수 없다(journey-open-03).
  */
 export default function WeddingQuotesScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -126,9 +131,9 @@ export default function WeddingQuotesScreen() {
         <BackBar />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.section}>
-            <ThemedText type="t2">올린 Pick 인증 자료</ThemedText>
+            <ThemedText type="t2">{strings.journey.documentListTitle}</ThemedText>
             <ThemedText type="t7" themeColor="textSecondary">
-              앱으로 올린 문서를 웨딩픽이 읽어낸 결과예요. 확인 전 자료는 가격 비교에 쓰이지 않아요.
+              {strings.journey.documentListBody}
             </ThemedText>
           </ThemedView>
 
