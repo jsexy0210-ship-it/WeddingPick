@@ -41,8 +41,11 @@ const WEDDING_NAME = /웨딩|브라이덜|bridal|wedding/i;
  * «웨딩 사진»은 전처럼 본식스냅으로 둔다.
  *
  * v3.22 12종(packages/domain vendor.ts)에 맞춰 헤어변형·부케·청첩장·예물·혼수·
- * 허니문을 더했다. 업종 이름은 실제 상권 소분류명을 확인하기 전이라(SBIZ_API_KEY
- * 대기 — README «업종 코드 조사» 참고) 넓게 잡되, 상호 조건으로 좁힌다.
+ * 허니문을 더했다. **이 여섯의 소분류명은 아직 실측하지 않았다** — README
+ * «확인된 업종 소분류 코드»에 적힌 다섯(예식장·결혼상담·사진촬영·미용실·의류대여)만
+ * 2026-09-10에 조회로 확인했다. 그래서 업종 이름은 넓게 잡고 상호 조건으로 좁힌다.
+ * 기본 수집은 확인된 다섯 코드만 받으므로 나머지는 CSV 출처나 `SBIZ_UPJONG_CODES`로
+ * 코드를 넓혔을 때 쓰인다.
  */
 export function classifyWeddingIndustry(industry: string, name: string): VendorCategory | null {
   if (/사진|촬영|스튜디오/.test(industry)) {
