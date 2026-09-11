@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-static.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-scale.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-semantic.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/typography.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/dimension.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/motion.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/base.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/core/core.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/buttons/buttons.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/forms/forms.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/feedback/feedback.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/overlay/overlay.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/display/display.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/styles.css">
+<script src="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/_ds_bundle.js"></script>
+<style>
+body{margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#ff6f61;text-decoration:none}
+a:hover{color:#e2564a}
+.nsb::-webkit-scrollbar{display:none}
+@keyframes wpSpin{to{transform:rotate(360deg)}}
+@keyframes wpRise{0%{transform:translateY(10px);opacity:0}100%{transform:translateY(0);opacity:1}}
+</style>
+</helmet>
+
+<section style="{{ root }}">
+
+<div style="{{ head }}">
+  <span style="{{ eyebrow }}">WeddingPick · WP-AUTH-001 / 009 / 011</span>
+  <span style="{{ h1 }}">나이 확인 · 거부 판별</span>
+  <span style="{{ lead }}">카카오가 넘긴 연령대 구간으로 서버가 만 14세 여부를 판정합니다. 사용자는 나이를 입력하지 않고, 통과하면 그대로 진행됩니다. 아래는 통과 · 차단 · 예외 세 갈래의 실제 화면입니다.</span>
+</div>
+
+<div style="{{ grid }}">
+  <sc-for list="{{ screens }}" as="s" hint-placeholder-count="6">
+    <div style="{{ col }}">
+      <div style="{{ tag }}"><span style="{{ s.tagIdStyle }}">{{ s.no }}</span>{{ s.label }}</div>
+      <span style="{{ tagDesc }}">{{ s.desc }}</span>
+      <div style="{{ phone }}">
+        <div style="{{ s.barStyle }}">
+          <span>9:41</span>
+          <span style="{{ barIcons }}">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="{{ s.barInk }}"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="{{ s.barInk }}" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="{{ s.barInk }}"></rect></svg>
+          </span>
+        </div>
+
+        <sc-if value="{{ s.hasNav }}" hint-placeholder-val="{{ false }}">
+          <div style="{{ s.navStyle }}">
+            <sc-if value="{{ s.navBack }}" hint-placeholder-val="{{ true }}">
+              <span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{ s.navInk }}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ s.navIcon }}"></path></svg></span>
+            </sc-if>
+            <span style="{{ s.navTitleStyle }}">{{ s.nav }}</span>
+            <sc-if value="{{ s.navRight }}"><span style="{{ navRightStyle }}">{{ s.navRight }}</span></sc-if>
+          </div>
+        </sc-if>
+
+        <div class="nsb" style="{{ s.scrollStyle }}">
+
+          <sc-if value="{{ s.kakao }}" hint-placeholder-val="{{ false }}">
+            <div style="{{ kkHead }}">
+              <div style="{{ kkAppRow }}">
+                <span style="{{ kkAppIcon }}">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z"></path><path d="M9.4 11.9l1.7 1.7 3.4-3.4"></path></svg>
+                </span>
+                <div style="{{ kkAppText }}">
+                  <span style="{{ kkAppName }}">웨딩픽</span>
+                  <span style="{{ kkAppSub }}">카카오계정으로 로그인</span>
+                </div>
+              </div>
+              <span style="{{ kkTitle }}">웨딩픽에서<br>아래 정보를 요청해요</span>
+            </div>
+            <div style="{{ kkSection }}">
+              <span style="{{ kkSectionLabel }}">필수 동의</span>
+              <div style="{{ rows }}">
+                <sc-for list="{{ kkRequired }}" as="k" hint-placeholder-count="4">
+                  <div>
+                    <div style="{{ kkRow }}">
+                      <span style="{{ kkCheck }}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#191919" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg></span>
+                      <div style="{{ kkRowBody }}">
+                        <span style="{{ k.nameStyle }}">{{ k.name }}</span>
+                        <sc-if value="{{ k.why }}"><span style="{{ kkWhy }}">{{ k.why }}</span></sc-if>
+                      </div>
+                    </div>
+                    <div style="{{ hr }}"></div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="{{ kkNote }}">
+              <span style="{{ kkNoteText }}">필수 항목에 동의하지 않으면 로그인할 수 없어요</span>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s.spinner }}" hint-placeholder-val="{{ false }}">
+            <div style="{{ centerWrap }}">
+              <span style="{{ spinner }}"></span>
+              <span style="{{ centerTitle }}">{{ s.spinnerTitle }}</span>
+              <span style="{{ centerBody }}">{{ s.spinnerBody }}</span>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s.blockIcon }}" hint-placeholder-val="{{ false }}">
+            <div style="{{ blockWrap }}">
+              <span style="{{ s.blockIconStyle }}">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="{{ s.blockIconInk }}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="{{ s.blockIconPath }}"></path><path d="{{ s.blockIconPath2 }}"></path></svg>
+              </span>
+              <span style="{{ blockTitle }}">{{ s.blockTitle }}</span>
+              <sc-if value="{{ s.blockBody }}"><span style="{{ blockBody }}">{{ s.blockBody }}</span></sc-if>
+            </div>
+            <sc-if value="{{ s.blockNote }}">
+              <div style="{{ blockNotePad }}">
+                <div style="{{ noteBox }}">
+                  <span style="{{ noteTitle }}">{{ s.blockNoteTitle }}</span>
+                  <span style="{{ noteBody }}">{{ s.blockNote }}</span>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ s.blockSteps }}" hint-placeholder-val="{{ false }}">
+              <div style="{{ stepPad }}">
+                <span style="{{ stepLabel }}">{{ s.blockStepLabel }}</span>
+                <div style="{{ rows }}">
+                  <sc-for list="{{ s.blockSteps }}" as="b" hint-placeholder-count="3">
+                    <div>
+                      <div style="{{ stepRow }}">
+                        <span style="{{ b.numStyle }}">{{ b.no }}</span>
+                        <span style="{{ stepText }}">{{ b.text }}</span>
+                      </div>
+                      <div style="{{ hr }}"></div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+          </sc-if>
+
+          <sc-if value="{{ s.brand }}" hint-placeholder-val="{{ false }}">
+            <div style="{{ brandWrap }}">
+              <span style="{{ markWrap }}">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ff6f61" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z"></path><path d="M9.4 11.9l1.7 1.7 3.4-3.4"></path></svg>
+              </span>
+              <span style="{{ brandTitle }}">웨딩 준비,<br>진짜 견적부터<br>확인해 보세요</span>
+              <div style="{{ benefitWrap }}">
+                <sc-for list="{{ benefits }}" as="b" hint-placeholder-count="3">
+                  <div style="{{ benefitRow }}"><span style="{{ benefitDot }}"></span><span style="{{ benefitText }}">{{ b }}</span></div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="{{ authWrap }}">
+              <button style="{{ ageCard }}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ff6f61" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"></path></svg>
+                <span>만 14세 이상이에요</span>
+              </button>
+              <button style="{{ ctaKakao }}">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="#191919"><path d="M12 3.6c-4.7 0-8.5 2.9-8.5 6.5 0 2.3 1.6 4.4 4 5.6l-.9 3.3c-.1.3.2.5.5.4l3.9-2.5c.3 0 .7.1 1 .1 4.7 0 8.5-2.9 8.5-6.5S16.7 3.6 12 3.6z"></path></svg>
+                카카오로 시작하기
+              </button>
+              <span style="{{ legalLine }}">시작하면 <span style="{{ legalLink }}">이용약관</span>과 <span style="{{ legalLink }}">개인정보 처리방침</span>에 동의하게 돼요</span>
+            </div>
+          </sc-if>
+
+        </div>
+
+        <sc-if value="{{ s.dock }}" hint-placeholder-val="{{ false }}">
+          <div style="{{ dock }}">
+            <sc-if value="{{ s.dock2 }}"><button style="{{ ctaGhost }}">{{ s.dock2 }}</button></sc-if>
+            <button style="{{ s.dockStyle }}">{{ s.dock }}</button>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-for>
+</div>
+
+<div style="{{ specRow }}">
+  <div style="{{ specCard }}">
+    <span style="{{ h2 }}">판정 규칙</span>
+    <span style="{{ specBody }}">카카오는 나이를 구간으로 줍니다. 계산하지 않고 구간으로 판정합니다.</span>
+    <div style="{{ rows }}">
+      <sc-for list="{{ tiers }}" as="t" hint-placeholder-count="4">
+        <div>
+          <div style="{{ tierRow }}">
+            <span style="{{ tierCode }}">{{ t.code }}</span>
+            <span style="{{ tierName }}">{{ t.name }}</span>
+            <span style="{{ t.tagStyle }}">{{ t.tag }}</span>
+          </div>
+          <div style="{{ hr }}"></div>
+        </div>
+      </sc-for>
+    </div>
+    <span style="{{ specBody }}"><b>10~14 구간은 차단합니다.</b> 14세가 섞여 있지만 10~13세도 함께 들어와 통과시키면 법을 어깁니다. 15~19부터 통과시키는 것이 안전합니다.</span>
+  </div>
+  <div style="{{ specCard }}">
+    <span style="{{ h2 }}">저장</span>
+    <div style="{{ codeBox }}">
+      <span style="{{ codeLine }}">ageVerified    boolean</span>
+      <span style="{{ codeLine }}">ageVerifiedAt  timestamp</span>
+    </div>
+    <span style="{{ specBody }}">연령대 값을 보관하지 않습니다. 확인 절차를 뒀다는 사실만 증명하면 됩니다. 차단된 계정의 정보는 판정 즉시 폐기하고 계정을 만들지 않습니다. 본인인증은 넣지 않습니다.</span>
+  </div>
+  <div style="{{ specCard }}">
+    <span style="{{ h2 }}">쓰지 않는 문구</span>
+    <div style="{{ banGrid }}">
+      <sc-for list="{{ ban }}" as="b" hint-placeholder-count="5">
+        <span style="{{ banChip }}">{{ b }}</span>
+      </sc-for>
+    </div>
+    <span style="{{ specBody }}">미성년자를 잘못한 사람으로 만들지 않고, 확인할 수 없는 재시도 조건을 약속하지 않습니다. 무엇이 안 됐고 무엇이 남았는지만 적습니다.</span>
+  </div>
+</div>
+
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:2620,&quot;height&quot;:1100}}">
+class Component extends DCLogic {
+  renderVals() {
+    const C = '#ff6f61';
+    const BACK = 'M14.5 5 8 12l6.5 7';
+    const CLOSE = 'M6 6l12 12M18 6 6 18';
+
+    const sc = (o) => ({
+      no: o.no, label: o.label, desc: o.desc,
+      tagIdStyle: 'width:26px;height:26px;flex:0 0 26px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;'
+        + (o.kind === 'no' ? 'background:#e81607;color:#fff;'
+          : o.kind === 'warn' ? 'background:#805217;color:#fff;'
+            : 'background:#212124;color:#fff;'),
+      barStyle: 'height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:700;'
+        + (o.kakao ? 'color:#191919;background:#fff;' : 'color:#212124;'),
+      barInk: '#212124',
+      hasNav: o.hasNav !== false,
+      nav: o.nav || '',
+      navBack: o.navBack !== false,
+      navIcon: o.navClose ? CLOSE : BACK,
+      navInk: '#212124',
+      navStyle: 'flex:0 0 56px;display:flex;align-items:center;gap:8px;padding:0 20px 0 12px;background:#fff'
+        + (o.navHair ? ';box-shadow:inset 0 -1px 0 #eaebee' : ''),
+      navTitleStyle: 'flex:1;min-width:0;font-size:18px;line-height:24px;font-weight:700;color:#212124;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'
+        + (o.navBack === false ? ';padding-left:12px' : ''),
+      navRight: o.navRight || '',
+      scrollStyle: 'flex:1 1 auto;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;scrollbar-width:none'
+        + (o.center ? ';justify-content:center' : ''),
+      kakao: !!o.kakao,
+      spinner: !!o.spinner, spinnerTitle: o.spinnerTitle || '', spinnerBody: o.spinnerBody || '',
+      brand: !!o.brand,
+      blockIcon: !!o.blockIcon,
+      blockIconStyle: 'width:64px;height:64px;border-radius:999px;display:flex;align-items:center;justify-content:center;'
+        + (o.blockKind === 'warn' ? 'background:#ffe3ba;' : 'background:#f2f3f6;'),
+      blockIconInk: o.blockKind === 'warn' ? '#805217' : '#868b94',
+      blockIconPath: o.blockIconPath || 'M12 3.8a8.2 8.2 0 1 0 0 16.4 8.2 8.2 0 0 0 0-16.4z',
+      blockIconPath2: o.blockIconPath2 || 'M12 7.8v4.6M12 16.1h.01',
+      blockTitle: o.blockTitle || '', blockBody: o.blockBody || '',
+      blockNoteTitle: o.blockNoteTitle || '', blockNote: o.blockNote || '',
+      blockStepLabel: o.blockStepLabel || '',
+      blockSteps: o.blockSteps || null,
+      dock: o.dock || '', dock2: o.dock2 || '',
+      dockStyle: 'flex:' + (o.dock2 ? '1.3' : '1') + ';height:52px;border:0;border-radius:6px;font-family:inherit;font-size:17px;font-weight:700;cursor:pointer;'
+        + (o.dockKind === 'ghost' ? 'background:#f2f3f6;color:#393a40;' : 'background:' + C + ';color:#fff;')
+    });
+
+    const kk = (name, why, strong) => ({ name, why,
+      nameStyle: 'font-size:16px;line-height:22px;color:#212124;' + (strong ? 'font-weight:700' : '') });
+
+    const step = (no, text) => ({ no, text,
+      numStyle: 'width:22px;height:22px;flex:0 0 22px;margin-top:1px;border-radius:999px;background:#eaebee;color:#4d5159;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700' });
+
+    return {
+      root: 'display:flex;flex-direction:column;gap:44px;align-items:flex-start;padding:64px;width:max-content',
+      head: 'display:flex;flex-direction:column;gap:10px;max-width:1000px',
+      eyebrow: 'font-size:14px;line-height:19px;font-weight:700;color:' + C,
+      h1: 'font-size:40px;line-height:52px;font-weight:700;color:#212124;letter-spacing:-0.02em',
+      lead: 'font-size:18px;line-height:28px;color:#393a40;text-wrap:pretty',
+      grid: 'display:flex;gap:36px;align-items:flex-start',
+      col: 'display:flex;flex-direction:column;gap:10px;width:390px',
+      tag: 'height:26px;display:flex;align-items:center;gap:8px;font-size:18px;line-height:24px;font-weight:700;color:#212124;white-space:nowrap;overflow:hidden',
+      tagDesc: 'height:71px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;line-height:21px;color:#4d5159;text-wrap:pretty',
+      phone: 'width:390px;height:844px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)',
+      barIcons: 'display:flex;gap:5px;align-items:center',
+      backBtn: 'width:40px;height:40px;flex:0 0 40px;border-radius:999px;display:flex;align-items:center;justify-content:center',
+      navRightStyle: 'font-size:16px;line-height:22px;font-weight:700;color:#4d5159;white-space:nowrap',
+      dock: 'flex:0 0 92px;background:#fff;box-shadow:inset 0 1px 0 #eaebee;padding:12px 24px;display:flex;gap:8px;box-sizing:border-box',
+      ctaGhost: 'flex:1;height:52px;border:0;border-radius:6px;background:#f2f3f6;color:#393a40;font-family:inherit;font-size:17px;font-weight:700;cursor:pointer',
+      hr: 'height:1px;background:#f2f3f6',
+      rows: 'display:flex;flex-direction:column;gap:2px',
+
+      kkHead: 'flex-shrink:0;padding:20px 24px 24px;display:flex;flex-direction:column;gap:20px',
+      kkAppRow: 'display:flex;align-items:center;gap:12px',
+      kkAppIcon: 'width:44px;height:44px;flex:0 0 44px;border-radius:12px;background:' + C + ';display:flex;align-items:center;justify-content:center',
+      kkAppText: 'display:flex;flex-direction:column;gap:2px;min-width:0',
+      kkAppName: 'font-size:17px;line-height:23px;font-weight:700;color:#191919',
+      kkAppSub: 'font-size:14px;line-height:19px;color:#868b94',
+      kkTitle: 'font-size:24px;line-height:33px;font-weight:700;color:#191919;letter-spacing:-0.02em',
+      kkSection: 'flex-shrink:0;padding:0 24px 20px;display:flex;flex-direction:column;gap:10px',
+      kkSectionLabel: 'font-size:14px;line-height:19px;font-weight:700;color:#868b94',
+      kkRow: 'display:flex;align-items:flex-start;gap:12px;min-height:56px;padding:13px 0',
+      kkCheck: 'width:22px;height:22px;flex:0 0 22px;margin-top:1px;border-radius:999px;background:#FEE500;display:flex;align-items:center;justify-content:center',
+      kkRowBody: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:3px',
+      kkWhy: 'font-size:14px;line-height:20px;color:#868b94;text-wrap:pretty',
+      kkNote: 'flex-shrink:0;padding:0 24px 24px',
+      kkNoteText: 'font-size:14px;line-height:21px;color:#868b94',
+
+      centerWrap: 'flex-shrink:0;padding:0 24px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center',
+      spinner: 'width:34px;height:34px;border-radius:999px;border:3px solid #eaebee;border-top-color:' + C + ';animation:wpSpin 800ms linear infinite',
+      centerTitle: 'font-size:20px;line-height:27px;font-weight:700;color:#212124;margin-top:4px',
+      centerBody: 'font-size:16px;line-height:24px;color:#868b94;text-wrap:pretty',
+
+      blockWrap: 'flex-shrink:0;padding:56px 24px 28px;display:flex;flex-direction:column;gap:18px;animation:wpRise 420ms cubic-bezier(.16,1,.3,1) both',
+      blockTitle: 'font-size:26px;line-height:36px;font-weight:700;color:#212124;letter-spacing:-0.02em;white-space:pre-line',
+      blockBody: 'font-size:16px;line-height:25px;color:#4d5159;text-wrap:pretty',
+      blockNotePad: 'flex-shrink:0;padding:0 24px 24px',
+      noteBox: 'border-radius:10px;background:#f7f8fa;padding:20px;display:flex;flex-direction:column;gap:6px',
+      noteTitle: 'font-size:16px;line-height:22px;font-weight:700;color:#212124',
+      noteBody: 'font-size:15px;line-height:23px;color:#4d5159;text-wrap:pretty',
+      stepPad: 'flex-shrink:0;padding:0 24px 24px;display:flex;flex-direction:column;gap:10px',
+      stepLabel: 'font-size:14px;line-height:19px;font-weight:700;color:#868b94',
+      stepRow: 'display:flex;align-items:flex-start;gap:10px;min-height:48px;padding:12px 0',
+      stepText: 'flex:1;min-width:0;font-size:16px;line-height:23px;color:#393a40;text-wrap:pretty',
+
+      brandWrap: 'flex:1;display:flex;flex-direction:column;justify-content:center;padding:0 24px;gap:20px',
+      markWrap: 'display:flex',
+      brandTitle: 'font-size:32px;line-height:44px;font-weight:700;color:#212124;letter-spacing:-0.02em',
+      benefitWrap: 'display:flex;flex-direction:column;gap:9px;padding-top:2px',
+      benefitRow: 'display:flex;align-items:center;gap:9px',
+      benefitDot: 'width:5px;height:5px;flex:0 0 5px;border-radius:999px;background:' + C,
+      benefitText: 'font-size:16px;line-height:23px;color:#4d5159',
+      authWrap: 'flex-shrink:0;padding:24px 24px 32px;display:flex;flex-direction:column;gap:10px',
+      ageCard: 'flex:0 0 52px;width:100%;height:52px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 16px;border:1.5px solid ' + C + ';border-radius:6px;background:#fff5f2;color:#212124;font-family:inherit;font-size:17px;font-weight:700;cursor:pointer',
+      ctaKakao: 'flex:0 0 56px;width:100%;height:56px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:6px;background:#FEE500;color:#191919;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer',
+      legalLine: 'font-size:13px;line-height:19px;color:#adb1ba;text-align:center;padding-top:2px',
+      legalLink: 'text-decoration:underline;text-underline-offset:2px;color:#868b94',
+
+      specRow: 'display:flex;gap:20px;align-items:stretch;width:1528px',
+      specCard: 'flex:1;min-width:0;background:#fff;border:1px solid #eaebee;border-radius:12px;padding:28px;display:flex;flex-direction:column;gap:14px;box-sizing:border-box',
+      h2: 'font-size:22px;line-height:30px;font-weight:700;color:#212124',
+      specBody: 'font-size:15px;line-height:25px;color:#4d5159;text-wrap:pretty',
+      codeBox: 'border-radius:8px;background:#f7f8fa;padding:16px 18px;display:flex;flex-direction:column;gap:6px',
+      codeLine: 'font-size:15px;line-height:22px;color:#393a40;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre',
+      banGrid: 'display:flex;flex-wrap:wrap;gap:8px',
+      banChip: 'height:34px;display:flex;align-items:center;padding:0 14px;border-radius:999px;background:#ffe5e3;color:#e81607;font-size:14px;font-weight:700;white-space:nowrap;text-decoration:line-through',
+
+      tierRow: 'display:flex;align-items:center;gap:12px;min-height:48px;padding:9px 0',
+      tierCode: 'flex:0 0 92px;font-size:14px;line-height:20px;color:#868b94;font-family:ui-monospace,SFMono-Regular,Menlo,monospace',
+      tierName: 'flex:1;min-width:0;font-size:15px;line-height:21px;color:#212124',
+      tiers: [
+        { code: '1~9', name: '9세 이하', tag: '차단', tagStyle: 'flex:0 0 auto;padding:4px 10px;border-radius:4px;background:#ffe5e3;color:#e81607;font-size:13px;line-height:18px;font-weight:700;white-space:nowrap' },
+        { code: '10~14', name: '10~14세', tag: '차단', tagStyle: 'flex:0 0 auto;padding:4px 10px;border-radius:4px;background:#ffe5e3;color:#e81607;font-size:13px;line-height:18px;font-weight:700;white-space:nowrap' },
+        { code: '15~19', name: '15~19세', tag: '통과', tagStyle: 'flex:0 0 auto;padding:4px 10px;border-radius:4px;background:#e8faf6;color:#1aa174;font-size:13px;line-height:18px;font-weight:700;white-space:nowrap' },
+        { code: '20~', name: '20세 이상', tag: '통과', tagStyle: 'flex:0 0 auto;padding:4px 10px;border-radius:4px;background:#e8faf6;color:#1aa174;font-size:13px;line-height:18px;font-weight:700;white-space:nowrap' },
+        { code: 'null', name: '연령대 없음', tag: '안내', tagStyle: 'flex:0 0 auto;padding:4px 10px;border-radius:4px;background:#ffe3ba;color:#805217;font-size:13px;line-height:18px;font-weight:700;white-space:nowrap' }
+      ],
+      benefits: [
+        '실제 견적 금액을 비교해요',
+        '마음에 드는 곳을 함께 Pick해요',
+        '일정과 지출도 한곳에서 관리해요'
+      ],
+
+      kkRequired: [
+        kk('닉네임', '', false),
+        kk('프로필 사진', '', false),
+        kk('카카오계정(이메일)', '', false),
+        kk('연령대', '만 14세 이상만 가입할 수 있어 확인에 써요', true)
+      ],
+
+      ban: [
+        '가입이 거부되었습니다',
+        '이용할 수 없는 사용자입니다',
+        '죄송합니다',
+        '보호자 동의가 필요합니다',
+        '나중에 다시 시도해주세요'
+      ],
+
+      screens: [
+        sc({
+          no: '1', label: '로그인 · WP-AUTH-001',
+          desc: '카카오 버튼 하나. 연령대는 카카오 동의 화면에서 받으므로 앱에서 나이를 묻지 않습니다.',
+          brand: true, hasNav: false
+        }),
+        sc({
+          no: '2', label: '카카오 동의',
+          desc: '카카오가 띄우는 화면입니다. 연령대를 필수로 넣고 왜 받는지 한 줄을 답니다. 이유가 없으면 심사에서 반려됩니다.',
+          kakao: true, nav: '', navBack: false,
+          dock: '동의하고 계속하기', dock2: '취소'
+        }),
+        sc({
+          no: '3', label: '판정 중',
+          desc: '서버가 연령대 구간으로 가입 가능 여부를 판정합니다. 보통 1초 안에 끝나므로 별도 화면 없이 스피너만 돕니다.',
+          hasNav: false, center: true, spinner: true,
+          spinnerTitle: '로그인하고 있어요', spinnerBody: '잠시만 기다려주세요'
+        }),
+        sc({
+          no: '4', label: '차단 · WP-AUTH-009', kind: 'no',
+          desc: '연령대가 14세 이하 구간입니다. 계정을 만들지 않고 받은 정보를 즉시 지웁니다. 사과하지 않고 무엇이 남았는지만 적습니다.',
+          nav: '', navBack: true, navClose: false,
+          blockIcon: true, blockKind: 'gray',
+          blockIconPath: 'M12 3.8a8.2 8.2 0 1 0 0 16.4 8.2 8.2 0 0 0 0-16.4z',
+          blockIconPath2: 'M8.4 12h7.2',
+          blockTitle: '만 14세가 되면 웨딩픽\n이용이 가능해요',
+          blockNoteTitle: '계정은 만들지 않았어요',
+          blockNote: '연령대 정보는 삭제했어요.',
+          dock: '돌아가기', dockKind: 'ghost'
+        }),
+        sc({
+          no: '5', label: '연령대 없음', kind: 'warn',
+          desc: '카카오 계정에 생일이 없어 연령대를 받지 못한 경우입니다. 차단이 아니라 안내이므로 다음 행동을 알려줍니다.',
+          nav: '', navBack: true,
+          blockIcon: true, blockKind: 'warn',
+          blockIconPath: 'M12 3.8a8.2 8.2 0 1 0 0 16.4 8.2 8.2 0 0 0 0-16.4z',
+          blockIconPath2: 'M12 7.8v4.6M12 16.1h.01',
+          blockTitle: '카카오 계정에\n생일 정보가 없어요',
+          blockStepLabel: '이렇게 하면 돼요',
+          blockSteps: [
+            step('1', '카카오톡 · 더보기 · 설정으로 이동'),
+            step('2', '카카오계정 · 내 정보 관리에서 생일 등록'),
+            step('3', '웨딩픽으로 돌아와 다시 로그인')
+          ],
+          dock: '카카오톡 열기', dock2: '나중에'
+        }),
+        sc({
+          no: '6', label: '조회 실패', kind: 'warn',
+          desc: '네트워크 오류입니다. 나이 문제가 아니므로 연령을 언급하지 않고 재시도만 권합니다.',
+          nav: '', navBack: true,
+          center: true,
+          blockIcon: true, blockKind: 'gray',
+          blockIconPath: 'M4.4 12a7.6 7.6 0 0 1 12.9-5.5l2.3 2.2',
+          blockIconPath2: 'M19.6 12a7.6 7.6 0 0 1-12.9 5.5l-2.3-2.2M19.6 4.4v4.3h-4.3M4.4 19.6v-4.3h4.3',
+          blockTitle: '연결이\n잠시 끊겼어요',
+          blockBody: '다시 시도해도 안 되면 알려주세요',
+          dock: '다시 시도'
+        })
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

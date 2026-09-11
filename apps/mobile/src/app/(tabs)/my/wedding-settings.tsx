@@ -289,7 +289,22 @@ function onlyPrepared(categories: readonly VendorCategory[]): PreparedCategory[]
 
 const styles = StyleSheet.create({
   /* 펼친 편집기 — 행 아래 · 아래 여백만 준다. 부품이 제 여백을 갖고 있다. */
+  /*
+   * 펼쳐지는 편집기(`RegionPicker` · `BudgetGrid` · `PrepStatus`)는 **온보딩에서 그대로
+   * 가져다 쓴다.** 그 셋은 시안 `padSec`(`0 24 24`)를 **자기가** 그리는 부품이라
+   * `paddingHorizontal: Layout.gutter`를 안에 들고 있다. 그런데 여기서는 그것을
+   * `Section` 안에 넣는데, `Section`도 같은 거터를 준다 — 좌우가 **24 + 24 = 48**이
+   * 되어, 바로 위의 행들보다 한 칸 더 안으로 들어간 채 그려졌다. 대표님이 「중첩」이라
+   * 부른 모양이 이것이다(2026-09-11).
+   *
+   * `Section`의 거터를 여기서 되돌린다. 그러면 안쪽 부품이 제 `padSec`를 그대로
+   * 그려 행과 같은 24에 앉는다. 아래 여백도 부품이 이미 24를 들고 있어 여기서
+   * 더하지 않는다.
+   *
+   * 부품 쪽을 고치지 않는 이유 — 온보딩(`app/setup.tsx`)은 거터를 주지 않는
+   * `StepFrame` 안에서 같은 부품을 쓴다. 거기서 거터를 빼면 온보딩이 벽에 붙는다.
+   */
   editor: {
-    paddingBottom: Layout.rowPaddingY,
+    marginHorizontal: -Layout.gutter,
   },
 });

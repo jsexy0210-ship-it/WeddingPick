@@ -169,14 +169,22 @@ export default function LoginScreen() {
                */
               <ThemedView style={styles.busy}>
                 {/*
+                  **로더와 문구 중 하나만 나온다**(2026-09-11 대표 지시). 어느 쪽인지는
+                  두 가지가 정한다.
+
+                    문구   지금 로그인을 진행 중이고(`busy`), 그 말을 이 화면이 맡았을 때
+                    로더   그 밖 — 제공자·기억된 계정을 읽어오는 중이거나, 문구는
+                           부팅 화면(`SigningInView`)이 맡았을 때
+
                   문장은 `SigningInBody` 한 곳에만 있고, **누가 말하는지**는
-                  `bootOwnsSigningInMessage()`가 정한다. 카카오에서 돌아온 부팅이면
-                  그 말은 부팅 화면(`SigningInView`)이 맡으므로 여기서는 로더만 남긴다.
-                  URL의 `code`를 보고 판단하던 예전 가드는 듣지 않았다 —
-                  `completeKakaoRedirect()`가 그 `code`를 먼저 지워서, 지운 뒤에 뜬
-                  로그인 화면이 같은 말을 다시 했다(2026-09-09 보고).
+                  `bootOwnsSigningInMessage()`가 정한다. URL의 `code`를 보고 판단하던
+                  예전 가드는 듣지 않았다 — `completeKakaoRedirect()`가 그 `code`를 먼저
+                  지워서, 지운 뒤에 뜬 로그인 화면이 같은 말을 다시 했다(2026-09-09 보고).
                 */}
-                <SigningInBody size={28} message={busy && !bootOwnsSigningInMessage()} />
+                <SigningInBody
+                  size={28}
+                  show={busy && !bootOwnsSigningInMessage() ? 'message' : 'loader'}
+                />
               </ThemedView>
             ) : (
               <ThemedView style={styles.section}>
