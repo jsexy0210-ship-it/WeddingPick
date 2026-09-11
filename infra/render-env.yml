@@ -78,8 +78,7 @@ services:
       #   app-web        앱 화면. 관리자는 여기서 빠졌다 — admin 출처로 넘긴다
       #   admin          관리자 콘솔(/admin/*, 화면 32장). 별도 출처다
       #   web            서비스 웹사이트
-      # weddingpick.kr은 보유한 커스텀 도메인이지만 현재 미사용이다(2026-09-10 사용자 확인).
-      # 다시 사용하기로 결정할 때 DNS·연결·CORS를 함께 검증한다.
+      # weddingpick.kr은 폐기했다(2026-09-11 대표 지시). 허용 목록에 넣지 않는다.
       #
       # **관리자 출처를 되살린다**(2026-09-10 대표 결정 — `docs/admin-origin-split.md`).
       # 2026-09-09에 「관리자는 app-web의 `/admin` 하나로 통일한다」며 뺐던 출처인데,
@@ -87,11 +86,10 @@ services:
       # API를 브라우저에서 부르므로 빠지면 preflight에서 전부 막히고, 브라우저에는
       # CORS 오류로 뜨지만 서버 로그에는 아무것도 남지 않는다.
       #
-      # **`weddingpick.kr`과 `admin.weddingpick.kr`은 넣지 않는다.** 커스텀 도메인을
-      # 쓰지 않기로 했고(2026-09-11 대표 결정), 뒤쪽은 이름 풀이부터 안 된다
-      # (2026-09-09 실측 `NXDOMAIN`). **살아 있지도 않은 출처를 허용 목록에 두지
-      # 않는다** — 이 원칙은 2026-09-09판과 분리판이 똑같이 적어 둔 것이라 그대로 산다.
-      # 도메인을 실제로 붙이는 날 그때 넣는다.
+      # **`weddingpick.kr`과 `admin.weddingpick.kr`은 넣지 않는다.** 그 도메인은
+      # 폐기했고(2026-09-11 대표 지시), 뒤쪽은 이름 풀이부터 안 된다(2026-09-09 실측
+      # `NXDOMAIN`). **살아 있지도 않은 출처를 허용 목록에 두지 않는다** — 이 원칙은
+      # 2026-09-09판과 분리판이 똑같이 적어 둔 것이라 그대로 산다.
       CORS_ORIGINS: https://weddingpick-app-web.onrender.com,https://weddingpick-admin.onrender.com,https://weddingpick-web.onrender.com
       # 앱의 EXPO_PUBLIC_KAKAO_CLIENT_ID와 같은 값이어야 토큰 교환과 id_token 검증이 맞는다.
       KAKAO_APP_KEY: 8e9a14dd3a0aa1a420bff858460c415c
