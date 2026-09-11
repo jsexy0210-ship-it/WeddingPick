@@ -176,12 +176,24 @@ jobs:
           node -e "
             const r = require('./$REPORT');
             const t = r.truncated ?? [];
+            // 화면 이름으로 적는다 — 코드를 그대로 보여주면 요약을 읽는 사람이 다시 옮겨야 한다.
+            const LABEL = {
+              wedding_info_company: '결정사', hall: '웨딩홀', studio: '스튜디오', dress: '드레스',
+              makeup: '메이크업', hair: '헤어변형', snap: '본식스냅', bouquet: '부케',
+              invitation: '청첩장', goods: '예물', dowry: '혼수', honeymoon: '허니문', etc: '기타',
+            };
             const line = [
               '### ' + r.source,
               '',
-              '| 받은 원본 | 받아들임 | 거른 것 | 중복 |',
-              '| --- | --- | --- | --- |',
-              '| ' + r.total + ' | ' + r.accepted + ' | ' + r.rejected + ' | ' + r.duplicates + ' |',
+              '| 받은 원본 | 받아들임 | 거른 것 | 중복 | 폐업 |',
+              '| --- | --- | --- | --- | --- |',
+              '| ' + r.total + ' | ' + r.accepted + ' | ' + r.rejected + ' | ' + r.duplicates + ' | ' + (r.closed ?? 0) + ' |',
+              '',
+              '업종별 — 0건도 적는다. 코드를 안 받아와서 0인 것과 받았는데 없어서 0인 것은 다르다.',
+              '',
+              '| 업종 | 건수 |',
+              '| --- | --- |',
+              ...Object.entries(r.categoryCounts ?? {}).map(([k, v]) => '| ' + (LABEL[k] ?? k) + ' | ' + v + ' |'),
               '',
               t.length ? '전수가 아니다 — ' + JSON.stringify(t) : '전수로 받았다.',
               '',

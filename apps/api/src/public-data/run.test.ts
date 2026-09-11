@@ -1,6 +1,7 @@
 import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { VENDOR_CATEGORIES } from '@weddingpick/domain';
 import { runPublicCollection } from './run';
 
 /**
@@ -64,6 +65,23 @@ test('상한 안이면 반영 단계로 넘어간다', async () => {
   await expect(
     runPublicCollection(['--source', 'icheon-halls', '--file', file, '--apply', '--out', dir])
   ).rejects.toThrow(/^(?!반영 상한 초과)/);
+});
+
+test('리포트에 업종별 집계를 12종 전부 남긴다', async () => {
+  const { dir, file } = await fixture();
+  delete process.env.DATABASE_URL;
+
+  await runPublicCollection(['--source', 'icheon-halls', '--file', file, '--out', dir]);
+
+  const report = JSON.parse(await readFile(join(dir, 'icheon-halls-report.json'), 'utf8'));
+  // 지자체 예식장 명단이라 전부 hall이다.
+  expect(report.categoryCounts.hall).toBe(3);
+  // **0건도 적는다.** 빠진 업종과 0건인 업종은 다른 이야기라, 0으로 적혀 있어야
+  // 「코드를 안 받아와서 0」인지 「받았는데 없어서 0」인지 묻게 된다.
+  expect(Object.keys(report.categoryCounts)).toEqual([...VENDOR_CATEGORIES]);
+  expect(report.categoryCounts.bouquet).toBe(0);
+  expect(Object.values(report.categoryCounts).reduce((a, b) => (a as number) + (b as number), 0))
+    .toBe(report.accepted);
 });
 
 test('--apply가 없으면 상한을 보지 않는다', async () => {

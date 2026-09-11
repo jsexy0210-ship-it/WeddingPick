@@ -347,8 +347,8 @@ test('영업상태 열이 없는 명단 파일은 그대로 수집한다', () =>
   expect(parsePublicCsv(iconv.encode(csv, 'utf8'), 'icheon-halls', at).closed).toBe(0);
 });
 
-test('업종 12종으로 매핑하고, 못 고른 웨딩 업체는 버리지 않고 etc로 남긴다', () => {
-  const rows: [string, string, string | null][] = [
+test('업종 12종으로 매핑하고, 확정 못 한 것은 버리지 않고 etc로 받는다', () => {
+  const rows: [string, string, string][] = [
     ['예식장업', '행복예식장', 'hall'],
     ['결혼 상담업', '좋은결혼정보', 'wedding_info_company'],
     ['그외 기타 미용업', '웨딩헤어살롱', 'hair'],
@@ -361,15 +361,35 @@ test('업종 12종으로 매핑하고, 못 고른 웨딩 업체는 버리지 않
     ['의류 대여업', '웨딩드레스샵', 'dress'],
     ['인물 사진 촬영업', '본식스냅하우스', 'snap'],
     ['인물 사진 촬영업', '웨딩스튜디오하우스', 'studio'],
-    // 규칙에 없는 업종인데 상호가 웨딩이면 버리지 않는다 — 사람이 업종을 정한다.
+    ['한복 소매업', '웨딩한복관', 'dowry'],
+    // 규칙에 없는 업종인데 상호가 웨딩이면 사람이 업종을 정한다.
     ['그외 기타 분류 안된 서비스업', '웨딩종합서비스', 'etc'],
-    // 웨딩 표시가 없는 일반 업종은 그대로 버린다.
-    ['그외 기타 미용업', '동네미용실', null],
-    ['화훼 소매업', '골목꽃집', null],
-    ['일반 여행사업', '싼값여행사', null],
   ];
-  for (const [industry, name, expected] of rows) {
-    expect([industry, name, resolveSbizCategory(industry, name)]).toEqual([industry, name, expected]);
+  for (const [industry, name, expected] of rows)
+    for (const preFiltered of [true, false])
+      expect([industry, name, preFiltered, resolveSbizCategory(industry, name, preFiltered)])
+        .toEqual([industry, name, preFiltered, expected]);
+});
+
+/*
+ * 2026-09-11 대표 지시 — 「실제 데이터 보고 맞지 않을 경우 기타로 다 집어넣는다」.
+ * 「웨딩」을 상호에 안 붙인 실제 거래처가 통째로 사라지던 것을 막는다.
+ *
+ * 다만 그 규칙은 **업종코드로 이미 걸러 온 행에만** 쓴다. 전국 상권 CSV는 거르는
+ * 자리가 없어서 그대로 두면 전국 사업자 명부가 통째로 «기타»로 들어온다.
+ */
+test('걸러 온 행은 상호 표시가 없어도 기타로 받는다', () => {
+  const rows: [string, string][] = [
+    ['그외 기타 미용업', '동네미용실'],
+    ['화훼 소매업', '골목꽃집'],
+    ['일반 여행사업', '싼값여행사'],
+    ['한복 소매업', '우리한복'],
+  ];
+  for (const [industry, name] of rows) {
+    // OpenAPI — WEDDING_UPJONG_CODES로 받아올 업종을 이미 골랐다.
+    expect([name, resolveSbizCategory(industry, name, true)]).toEqual([name, 'etc']);
+    // 전국 상권 CSV — 거르는 자리가 없어 상호 표시가 없으면 버린다.
+    expect([name, resolveSbizCategory(industry, name, false)]).toEqual([name, null]);
   }
 });
 

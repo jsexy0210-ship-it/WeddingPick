@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { createPool } from '../db';
 import { downloadPublicCsv, downloadSbizApiVendors, parsePublicCsv } from './collect';
 import { PUBLIC_SOURCES, sourceKey } from './sources';
+import { VENDOR_CATEGORIES, type VendorCategory } from '@weddingpick/domain';
 import { syncCollected } from './sync';
 
 /**
@@ -37,6 +38,23 @@ const APPLY_CHUNK = 2000;
  * 처음 봤다」는 뜻이므로, 리포트를 보고 `PUBLIC_DATA_MAX_APPLY`로 올린다.
  */
 const MAX_APPLY = () => Number(process.env.PUBLIC_DATA_MAX_APPLY ?? 50_000);
+
+/**
+ * 받아들인 업체를 업종별로 센다.
+ *
+ * 리포트에는 합계(accepted)만 있었다. 그런데 화면은 업종 12종으로 나뉘어 있어서
+ * 「부케가 몇 건인가」를 물으면 아무 데서도 답이 안 나왔다 — 실제로 2026-09-11에
+ * 그 질문을 받고서야 드러났다. 업종은 업체마다 붙어 있는데 세어 주는 곳이 없었다.
+ *
+ * 12종을 **0이어도 전부** 적는다. 빠진 업종과 0건인 업종은 다른 이야기이고,
+ * 0으로 적혀 있어야 「코드를 안 받아와서 0」인지 「받았는데 없어서 0」인지 묻게 된다.
+ * 순서는 VENDOR_CATEGORIES(준비 순서) 그대로라 화면과 같은 차례로 읽힌다.
+ */
+function countByCategory(vendors: { category: VendorCategory }[]): Record<VendorCategory, number> {
+  const counts = Object.fromEntries(VENDOR_CATEGORIES.map((c) => [c, 0])) as Record<VendorCategory, number>;
+  for (const v of vendors) counts[v.category] += 1;
+  return counts;
+}
 
 /** Invoked through the existing public-data:import CLI. --apply is an explicit DB write. */
 export async function runPublicCollection(args: string[]) {
@@ -122,7 +140,8 @@ export async function runPublicCollection(args: string[]) {
     } finally { await pool.end(); }
   }
   const report = {source: key, sourceUrl: source.url, collectedAt: at.toISOString(),
-    total, accepted: vendors.length, rejected, duplicates, closed, truncated,
+    total, accepted: vendors.length, rejected, duplicates, closed,
+    categoryCounts: countByCategory(vendors), truncated,
     // 요청했으나 상한에 막힌 것과 애초에 요청하지 않은 것은 다르다.
     databaseApplied: apply && !applyRefused, applyRefused, db};
   await writeFile(join(output, `${key}-report.json`), JSON.stringify(report, null, 2) + '\n', 'utf8');
