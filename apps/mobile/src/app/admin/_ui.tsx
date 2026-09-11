@@ -501,14 +501,24 @@ function colWidth(c: Col) {
 
 /* ── 막대 ─────────────────────────────────────────────────── */
 
-export type BarItem = { label: string; pct: number; kind?: 'brand' | 'dim' | 'plain' };
+export type BarItem = {
+  label: string;
+  pct: number;
+  kind?: 'brand' | 'dim' | 'plain';
+  /**
+   * 막대 위에 적을 값. 옆에 표가 없는 자리에서 쓴다 — 모양만 있는 막대는
+   * 「지난 칸보다 높다」까지만 말하고, 몇인지는 말해주지 못한다.
+   */
+  value?: string;
+};
 
-/** 추이 막대. 값 자체는 표가 말하고 이것은 모양만 말한다. */
+/** 추이 막대. 값 자체는 표가 말하고 이것은 모양만 말한다(`value`를 주면 함께 적는다). */
 export function Bars({ items }: { items: BarItem[] }) {
   return (
     <View style={styles.bars}>
       {items.map((b) => (
         <View key={b.label} style={styles.barCol}>
+          {b.value === undefined ? null : <Text style={styles.barValue}>{b.value}</Text>}
           <View
             style={[
               styles.bar,
@@ -803,6 +813,12 @@ const styles = StyleSheet.create({
   },
   barCol: { alignItems: 'center', justifyContent: 'flex-end', gap: Spacing.two },
   bar: { width: 30, borderTopLeftRadius: Radius.badge, borderTopRightRadius: Radius.badge },
+  barValue: {
+    fontSize: FontSize.tab,
+    lineHeight: LineHeight.adminMeta,
+    color: C.textAssistive,
+    fontVariant: ['tabular-nums'],
+  },
   barLabel: {
     fontSize: FontSize.tab,
     lineHeight: LineHeight.adminMeta,

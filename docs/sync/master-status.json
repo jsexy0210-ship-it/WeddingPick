@@ -296,6 +296,17 @@
     ],
     "running": [
       {
+        "pr": 205,
+        "title": "대표 지시 5건 — 온보딩 결과 저장 시점 · 써클 로더 · 로그인 표시 · MY 중첩 · Back 자리",
+        "state": "초안 PR. CI 초록 · 충돌 없음. main(fa331d6)을 마스터가 브랜치에 머지했고, 그 머지 뒤 다시 검증했다 — typecheck · 카피 린트 · 모바일 326시험 · 도메인 931시험 통과. PR204가 main에 적은 규칙 넷과 구현이 일치한다.",
+        "result": "1) 5/5 답을 받은 자리에서 서버 왕복 2~3회(getSignupState → completeSignup → completeSetup)를 기다린 뒤에야 결과를 그렸다. 결과는 손에 있는 답으로 그리고 저장은 「완료」가 시작하게 옮겼다 — finish() 안의 순서는 그대로라 가입 복구(PR192)는 유지된다. 2) CircleLoader를 만들고 DelayedLoader의 기본값으로 둬서 화면 파일을 고치지 않고 70곳이 써클로 바뀌었다. 순회는 추천 계산(WP-ST-015)에만 남는다. 3) SigningInBody가 로더와 문구를 함께 세워 문구가 먼저 그려졌다가 700ms 뒤 로더에 밀렸다 — show로 하나만 고른다. 4) wedding-settings의 펼침 편집기가 Section 거터와 자기 거터를 겹쳐 좌우 48에 앉았다. 웨딩지원금은 같은 상태 문구를 두 번 적었다. 5) BackButton의 alignItems가 flex-start라 화살표가 12에, NavBar·SubScreen은 20에 앉아 34대 56으로 갈려 있었다.",
+        "tokens": "size.loaderCircle · spacing.loaderCircle · motion.loaderCircleSpin 신설. 값은 17-sheets-states.dc.html WP-ST-012의 spinner에서 가져왔고 $note에 적었다. 새 hex는 만들지 않았다.",
+        "guardCheck": "둘 다 고침을 도로 빼고 확인했다. goNext의 setStep('done')을 finish()로 되돌리자 signup-recovery 4개가 빨개졌고, back-button의 alignItems를 flex-start로 되돌리자 새 시험이 빨개졌다. 자리·치수를 보는 단언이 저장소에 하나도 없어서 back-button-position.test.tsx를 새로 뒀다 — 기존 depth-back-buttons.test.tsx는 경로 문자열만 보고 BackBar를 문자열로 mock해 스타일이 실행되지 않는다.",
+        "conflictNote": "spec/tokens.json · packages/ui/src/theme.ts가 PR200과 겹쳤다. 머지 결과를 확인했고 양쪽이 다 남아 있다 — main 대비 지워진 줄은 내가 의도적으로 바꾼 주석 3줄뿐이다. search/ 아래와 strings.ko.json의 search.* 키는 한 줄도 건드리지 않았다.",
+        "open": "MY 중첩에서 판단 대기 6건 — settings.tsx가 전용 화면들을 통째로 다시 그리는 것(IA 결정) · contact.tsx의 FAQ 전면 인라인(시안은 3줄 + 전체 보기) · 상단 BackBar와 본문 하단 「돌아가기」가 겹치는 8개 화면(기존 시험이 그 버튼을 잡고 있어 함께 손봐야 한다) · promotion.tsx와 npay.tsx의 상태 문구 중복 2건 · rebuttals/index.tsx는 의도된 것으로 확인. 그리고 30-loading.dc.html의 「원형 스피너를 쓰지 않아요」 규칙 카드가 이제 코드와 어긋난다 — 핸드오프는 읽기 전용이라 손대지 않았고 디자인 쪽 확인이 필요하다.",
+        "notVerified": "기기·시뮬레이터가 없어 화면에서 눈으로 보지는 못했다. 코드와 시안 대조로 원인을 짚은 것이다. 스테이징은 볼 곳이 없다."
+      },
+      {
         "pr": 200,
         "title": "검색 UX 17건",
         "state": "CI 빨강. typecheck · lint · 모바일 281시험은 마스터가 직접 돌려 통과를 확인했다 — 남은 것은 API 시험이다."
@@ -557,36 +568,29 @@
     "siteOrigin": "https://weddingpick-web.onrender.com — 정본"
   },
   "adminOverhaul20260911": {
-    "order": "2026-09-11 대표 지시 — 관리자 콘솔 전면 개편",
-    "items": [
-      "확인 불가 · 동작 불가 · 안 쓰는 메뉴를 한 묶음으로 최하단에 둔다",
-      "「AI 운영현황」을 「대시보드」로 바꾸고 전체 요약 + 회원 차트(일·주·월·년)",
-      "카테고리 순서 — 1 대시보드 · 2 운영자가 직접 컨트롤하는 메뉴 · 3 조회 화면",
-      "메뉴명·세부 명칭에서 AI식 단어를 걷어내고 한국식·토스식으로",
-      "동작하지 않는 화면 전수 검토",
-      "FAQ · 약관·방침 · 링크 미리보기를 운영자가 직접 조작 가능하게",
-      "링크 미리보기에 이미지 등록 기능 추가",
-      "핵심 — 웹앱·웹사이트 공유 정보가 실제로 동작하는지 검토하고 동작하게 적용"
+    "branch": "claude/admin-overhaul",
+    "pr": 211,
+    "baselineCommit": "aa735411bd9634f2a3948fece925394b0b8f9c28",
+    "order": "2026-09-11 대표 지시 — 관리자 콘솔 전면 개편. 「핵심요소」는 공유 정보가 실제로 동작하는지였다.",
+    "inventory": "docs/admin-screen-inventory.md — 31화면을 부르는 경로 · 서버 존재 · DB를 실제로 건드리는지로 갈랐다. 대시보드 1 · 조작 20 · 조회 6 · 서버 연결 전 4.",
+    "deadScreensFound": "다섯이었다. 기존 READ_ONLY에는 둘만 있었다. faq(라우트 다섯이 전부 가짜 — GET 빈 배열 · POST randomUUID · 나머지 204) · biz-queue · terms · email-matching(회신 표가 DB에 없다) · revenue(구독 표가 없어 0 고정). price-stats의 재계산은 202만 돌려줬다.",
+    "shareDefectFixed": "검색 화면은 목록의 모든 업체를 /v/<id>.html로 걸었는데 상세는 WEDDINGPICK_WEB_VENDOR_IDS에 적힌 id만 만들어졌다 — 링크와 페이지의 출처가 달랐다. 이제 검색 화면이 링크한 업체를 기본으로 삼고 환경변수는 더하는 값이다. 404에는 og 태그가 없다.",
+    "migrations": "0230_admin_faq · 0231_site_meta_og_image_key. 머지와 마이그레이션은 한 묶음이다 — db-migrate를 걸고 api-health로 확인한다.",
+    "validation": "typecheck 7워크스페이스 · 카피 린트 · mobile lint(오류 0 · 기존 경고 3) · mobile 27스위트 323시험 · domain 60스위트 931시험 · web 9스위트 71시험 · db 1스위트 79시험 · api 74스위트 956시험 전부 통과. 첫 api 전체 실행에서 1건이 깨졌고 실제 문제였다(pick-language가 「결제」를 잡았다) — 문구를 고쳤다.",
+    "guardCheck": "고침을 도로 빼고 넷을 확인했다 — FAQ 빈 값 검사 · 카드 그림 열쇠 형식 검사 · FAQ 조회를 옛 가짜로 · build.ts의 id 합집합. 넷 다 시험이 실패했고 되돌린 뒤 통과했다.",
+    "termsDecision": "판단 필요로 올리려다 접었다. 최신 main(PR #207 · CLAUDE.md)이 이미 정했다 — 정본은 웹사이트 하나이고 관리자는 사본을 들지 않는다. admin/terms는 조회로 남기고 안내를 「약관 정본은 웹사이트에 있어요」로 고쳤다. subpages.ts는 claude/region-legal 세션 작업 중이라 건드리지 않았다.",
+    "open": [
+      "앱 짝 초대가 weddingpick:// 커스텀 스킴이라 카카오톡에서 미리보기가 뜰 수 없고 앱 없는 사람에게는 열리지 않는다. https 대체 링크가 없다 — 사용자 화면과 도메인이 함께 걸려 범위 밖으로 두었다.",
+      "RENDER_WEB_DEPLOY_HOOK이 Render 대시보드에 들어 있는지 확인 필요. render.yaml에 선언만 넣었다(sync:false) — 없으면 「반영하기」는 언제 눌러도 실패한다.",
+      "WEDDINGPICK_WEB_VENDOR_IDS의 현재 값은 sync:false라 확인 필요. 위 수정으로 값과 무관해졌다.",
+      "revenue · email-matching의 집계는 담을 표가 없다. 만드는 것은 제품 결정이다.",
+      "price-stats 재계산 함수가 저장소에 없다. 단추만 잠갔다.",
+      "report(신고 접수)는 조회만이다. 서버에 POST /v1/admin/inquiries/:id/answer가 있는데 이 화면은 GET /v1/admin/reports만 부른다 — 다른 계열일 수 있어 확인 필요.",
+      "lint-copy.js는 관리자 경로를 건너뛰는데 pick-language.test.ts의 예외 목록에는 그 경로가 없다. 두 게이트의 범위가 다르다 — 게이트를 넓히는 것은 정책 결정이라 고치지 않았다.",
+      "화면이 부르지 않는 가짜 라우트 일곱(POST /ads · PATCH /ads/:id · PATCH /ads-gate · PATCH /automation · POST /campaigns 등)이 성공만 돌려준다. 지금 피해는 없고 조사표에 적었다.",
+      "사이드바 「운영」 묶음의 순서는 자주 여는 순으로 둔 내 판단이다. 사용 기록으로 확인한 것이 아니다.",
+      "FAQ에 등록한 항목이 아직 사용자에게 나가지 않는다. 앱 FAQ 화면과 웹 FAQ 페이지가 코드의 FAQ_ITEMS를 직접 들고 있고 둘 다 범위 밖이다. 공개 조회 라우트도 만들지 않았다 — 부르는 데가 없다."
     ],
-    "session": "session_01ArfwQTMZ4z16WV4Vd7G8nn · 브랜치 claude/admin-overhaul",
-    "migrationRange": "0230번대 (공공데이터 세션이 0210번대를 쓰는 중)",
-    "masterSurvey": {
-      "sidebar": "apps/mobile/src/app/admin/_layout.tsx:50 NAV — 6묶음 32메뉴",
-      "readOnlySet": "biz-queue · terms 둘뿐. 전수 재판정 필요",
-      "apiUsage": "_layout · _ui · index · login을 뺀 전 화면이 apiFetch를 쓴다. 고장은 화면이 아니라 서버 경로 쪽에 있다",
-      "ogChain": "apps/api/src/site-meta.ts → apps/web/src/site-data.ts:227 → apps/web/src/social-meta.ts → 관리자 og-card.tsx",
-      "ogMissing": "og-card.tsx:45가 ogImageUrl을 글자 주소로만 받는다. 올리기가 없다. 저장소 드라이버(apps/api/src/storage/)를 쓴다",
-      "ogSuspects": [
-        "웹이 정적 빌드라 저장 후 재배포되어야 반영된다 — publishRequestedAt이 실제로 배포를 거는지 확인 필요",
-        "render.yaml의 WEDDINGPICK_WEB_VENDOR_IDS가 비면 /v/*.html이 한 장도 생기지 않는다 — 업체를 공유해도 미리보기가 뜰 자리가 없다"
-      ]
-    },
-    "ruleFlipped": "「관리자 화면은 AI 용어를 써도 된다」(2026-09-04)를 뒤집었다. 화면은 안 쓰고 내부 개발·비용 관리 문서는 그대로 쓴다.",
-    "outOfScope": [
-      "apps/web/src/subpages.ts — claude/region-legal 세션이 만지는 중",
-      "성능 최적화 — claude/perf-audit · PR #206",
-      "광고 실운영 전환 — 대표님 오더 대기"
-    ],
-    "openDecision": "약관·방침을 관리자에서 직접 고치게 할지 — 정본은 웹사이트다. 두 벌을 들면 한 벌이 낡는다. 세션이 두 안을 올리면 MASTER가 정한다."
+    "notVerified": "배포된 운영에서 미리보기가 뜨는 것을 직접 보지 못했다 — 컨테이너 프록시가 403이다. 공개 주소에서 카드 태그를 꺼내 보는 워크플로를 넣었다(og-probe). 머지 후 배포된 뒤에 돌려야 뜻이 있다. 스테이징에서 봤다고 적지 않는다 — 볼 곳이 없다."
   }
 }

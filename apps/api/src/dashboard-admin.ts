@@ -392,3 +392,90 @@ export async function dashboard(pool: Pool): Promise<Dashboard> {
 
   return { humanQueue, humanTotal, dashCards, auto, autoLog };
 }
+
+/**
+ * 회원 추이 — 일 · 주 · 월 · 년.
+ *
+ * 2026-09-11 대표 지시 — 「주요 정보 특히 회원은 차트를 활용해 시각화 한다」.
+ *
+ * **가입 수와 누적 회원을 함께 준다.** 가입 수만 그리면 「지난주보다 적다」는 것은
+ * 보이지만 지금 회원이 몇인지는 알 수 없고, 누적만 그리면 언제 늘었는지가 보이지
+ * 않는다. 차트 하나로 둘을 읽게 한다.
+ *
+ * **탈퇴한 계정은 누적에서 뺀다.** 지운 계정을 계속 세면 누적은 영원히 우상향하고,
+ * 그 선은 아무것도 말해주지 않는다. 가입 수는 그때 실제로 들어온 수이므로 그대로
+ * 센다 — 나중에 탈퇴했다고 그날의 가입이 없던 일이 되지는 않는다.
+ *
+ * 시각은 **KST 기준으로 자른다.** UTC로 자르면 한국의 하루가 두 칸에 걸쳐 나뉘고,
+ * 아침 9시 전의 가입이 전날 칸에 들어간다.
+ */
+export type MemberBucket = 'day' | 'week' | 'month' | 'year';
+
+export type MemberTrendPoint = {
+  /** 칸의 시작 시각(ISO). 화면이 라벨을 만든다 — 서버가 말로 적으면 서식이 두 곳에 생긴다. */
+  at: string;
+  /** 그 칸에 새로 들어온 계정 수. */
+  signups: number;
+  /** 그 칸이 끝난 시점의 살아 있는 계정 수. */
+  total: number;
+};
+
+export type MemberTrend = {
+  bucket: MemberBucket;
+  points: MemberTrendPoint[];
+  /** 지금 살아 있는 계정 수. 마지막 칸의 `total`과 같다. */
+  current: number;
+};
+
+const BUCKET_SPAN: Record<MemberBucket, { unit: string; count: number }> = {
+  day: { unit: 'day', count: 14 },
+  week: { unit: 'week', count: 12 },
+  month: { unit: 'month', count: 12 },
+  year: { unit: 'year', count: 5 },
+};
+
+export function isMemberBucket(value: string): value is MemberBucket {
+  return value === 'day' || value === 'week' || value === 'month' || value === 'year';
+}
+
+export async function memberTrend(pool: Pool, bucket: MemberBucket): Promise<MemberTrend> {
+  const { unit, count } = BUCKET_SPAN[bucket];
+
+  /*
+   * 칸을 `generate_series`로 먼저 만든다. 가입이 0인 날을 빼면 차트에서 그 칸이
+   * 사라져 이틀이 붙어 보이고, 「조용한 날」이 없던 날이 된다.
+   *
+   * 누적은 각 칸의 끝까지 살아 있는 계정을 센다. 창 밖(첫 칸보다 이른) 가입도
+   * 들어가야 하므로 가입 수를 더해 올라가는 방식으로는 구하지 않는다.
+   */
+  const { rows } = await pool.query<{ at: Date; signups: string; total: string }>(
+    `WITH spans AS (
+       SELECT generate_series(
+                date_trunc($1, now() AT TIME ZONE 'Asia/Seoul') - ($2::int - 1) * $3::interval,
+                date_trunc($1, now() AT TIME ZONE 'Asia/Seoul'),
+                $3::interval
+              ) AS bucket_start
+     )
+     SELECT (s.bucket_start AT TIME ZONE 'Asia/Seoul') AS at,
+            (SELECT count(*) FROM structured.users u
+              WHERE u.created_at AT TIME ZONE 'Asia/Seoul' >= s.bucket_start
+                AND u.created_at AT TIME ZONE 'Asia/Seoul' < s.bucket_start + $3::interval
+            ) AS signups,
+            (SELECT count(*) FROM structured.users u
+              WHERE u.created_at AT TIME ZONE 'Asia/Seoul' < s.bucket_start + $3::interval
+                AND (u.deleted_at IS NULL
+                     OR u.deleted_at AT TIME ZONE 'Asia/Seoul' >= s.bucket_start + $3::interval)
+            ) AS total
+       FROM spans s
+      ORDER BY s.bucket_start`,
+    [unit, count, `1 ${unit}`]
+  );
+
+  const points = rows.map((row) => ({
+    at: row.at.toISOString(),
+    signups: Number(row.signups),
+    total: Number(row.total),
+  }));
+
+  return { bucket, points, current: points.at(-1)?.total ?? 0 };
+}

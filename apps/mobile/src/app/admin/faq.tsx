@@ -25,6 +25,16 @@ type FaqItem = {
   answer: string;
   order: number;
   published: boolean;
+  /**
+   * 고칠 수 있는 항목인지. 코드에 든 FAQ(`packages/domain/src/faq.ts`)는 `false`로
+   * 와서 수정·삭제 단추 대신 그 사실을 적는다.
+   *
+   * **코드 항목을 표로 옮겨 적지 않은 이유**가 그 답에 있다 — 공개 기준 건수를
+   * 계산해 문장에 넣으므로, 글자로 복사하면 기준이 바뀌는 날 사본이 옛 수를 말한다.
+   * 그래도 여기 함께 보여준다: 운영자가 「사용자가 지금 보는 것」을 한 자리에서
+   * 확인하지 못하면 같은 질문을 두 번 등록한다.
+   */
+  editable?: boolean;
 };
 
 type FaqData = { items: FaqItem[]; categories: string[] };
@@ -162,16 +172,22 @@ export default function FaqScreen() {
                     <Text style={styles.faqA} numberOfLines={2}>{item.answer}</Text>
                   </View>
                   <View style={styles.faqActions}>
-                    <Pressable style={styles.editBtn} onPress={() => openEdit(item)}>
-                      <Text style={styles.editBtnText}>수정</Text>
-                    </Pressable>
-                    <Pressable
-                      style={[styles.deleteBtn, deleting === item.id && styles.btnDisabled]}
-                      onPress={() => void deleteFaq(item.id)}
-                      disabled={deleting !== null}
-                    >
-                      <Text style={styles.deleteBtnText}>{deleting === item.id ? '…' : '삭제'}</Text>
-                    </Pressable>
+                    {item.editable === false ? (
+                      <Text style={styles.faqLocked}>코드에 있는 항목</Text>
+                    ) : (
+                      <>
+                        <Pressable style={styles.editBtn} onPress={() => openEdit(item)}>
+                          <Text style={styles.editBtnText}>수정</Text>
+                        </Pressable>
+                        <Pressable
+                          style={[styles.deleteBtn, deleting === item.id && styles.btnDisabled]}
+                          onPress={() => void deleteFaq(item.id)}
+                          disabled={deleting !== null}
+                        >
+                          <Text style={styles.deleteBtnText}>{deleting === item.id ? '…' : '삭제'}</Text>
+                        </Pressable>
+                      </>
+                    )}
                   </View>
                 </View>
               ))}
@@ -301,6 +317,7 @@ const styles = StyleSheet.create({
   faqOrder: { fontSize: FontSize.tab, color: Colors.light.textAssistive },
   faqA: { fontSize: FontSize.tab, color: Colors.light.textAssistive, lineHeight: LineHeight.micro },
   faqActions: { flexDirection: 'row', gap: 6 },
+  faqLocked: { fontSize: FontSize.tab, color: Colors.light.textAssistive },
   editBtn: {
     paddingHorizontal: 10,
     paddingVertical: 6,

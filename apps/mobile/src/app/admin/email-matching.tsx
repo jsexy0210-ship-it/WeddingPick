@@ -10,7 +10,7 @@
  */
 import { useEffect, useState } from 'react';
 
-import { PendingBackendNotice } from '@/features/admin/pending-backend';
+import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import {
@@ -147,10 +147,16 @@ export default function EmailMatchingScreen() {
             }
           />
 
-          <PendingBackendNotice
-            actions="반영 · 재시도"
-            reason="업체 회신을 받아 두는 곳이 아직 없어요. 회신이 쌓이면 반영 · 재시도를 열어요."
-          />
+          {/*
+            * 사이드바의 「조회만」과 짝이다(`_layout.tsx`의 `READ_ONLY`). 서버 동작이
+            * 붙으면 둘을 함께 지운다 — 한쪽만 지우면 말이 어긋난다.
+            */}
+          {BACKEND_PENDING ? (
+            <PendingBackendNotice
+              actions="반영 · 재시도"
+              reason="업체 회신을 받아 두는 곳이 아직 없어요. 지금은 수신함이 비어 있는 것으로 보여요. 회신이 쌓이면 반영 · 재시도를 열어요."
+            />
+          ) : null}
 
           <KpiRow
             items={[

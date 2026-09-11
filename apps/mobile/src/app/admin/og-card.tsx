@@ -8,8 +8,18 @@
  * 실제로 읽어와 보여준다 — 저장 시각과 배포 시각을 비교해 「반영됨」이라고 말하면
  * 실패한 배포까지 반영된 것으로 보인다.
  */
+import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
 import { FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
@@ -29,6 +39,8 @@ type AdminView = {
   updatedAt: string | null;
   publishRequestedAt: string | null;
   liveOgTitle: string | null;
+  /** 지금 카드 그림의 출처. 올린 그림 · 적어 둔 주소 · 기본 그림. */
+  ogImageSource: 'upload' | 'url' | 'default';
 };
 
 type Field = { key: keyof Meta; label: string; hint: string; multiline?: boolean };
@@ -44,7 +56,7 @@ const FIELDS: Field[] = [
   {
     key: 'ogImageUrl',
     label: '그림 주소',
-    hint: '비워두면 저장소에 든 기본 그림을 써요. https로 시작하는 주소여야 해요.',
+    hint: '다른 곳에 올려 둔 그림을 쓸 때만 적어요. 적으면 올린 그림 대신 이 주소를 써요.',
   },
   { key: 'ogImageAlt', label: '그림 설명', hint: '그림을 못 보는 사람에게 읽히는 글이에요.' },
 ];
@@ -65,6 +77,7 @@ export default function OgCardScreen() {
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [rev, setRev] = useState(0);
 
   useEffect(() => {
@@ -115,6 +128,80 @@ export default function OgCardScreen() {
     return saved;
   }
 
+  /**
+   * 그림을 골라 올린다.
+   *
+   * **파일 본체는 API를 지나지 않는다.** 서버에서 올릴 자리를 받아 저장소에 바로
+   * 올리고, 그다음에 「그 열쇠를 쓰겠다」고 알린다 — 견적서 원본과 같은 길이다
+   * (`features/capture/upload.ts`).
+   *
+   * 그림은 저장과 따로 즉시 반영된다. 제목·설명처럼 초안으로 들고 있다가 함께
+   * 저장하게 만들면, 올리기는 이미 끝났는데 화면만 「아직 저장 안 됨」으로 보인다.
+   * 사이트에 나가는 것은 여전히 「반영하기」를 눌러야 한다.
+   */
+  async function uploadImage(): Promise<void> {
+    setNotice(null);
+
+    const picked = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: false,
+      quality: 1,
+    });
+
+    if (picked.canceled || !picked.assets[0]) return;
+
+    const asset = picked.assets[0];
+    const mimeType = asset.mimeType ?? 'image/png';
+
+    setUploading(true);
+    try {
+      const blob = await fetch(asset.uri).then((response) => response.blob());
+
+      const target = (await apiFetch('/v1/admin/site-meta/og-image/upload-target', {
+        method: 'POST',
+        body: JSON.stringify({ mimeType }),
+      })) as { storageKey: string; uploadUrl: string };
+
+      const put = await fetch(target.uploadUrl, {
+        method: 'PUT',
+        headers: { 'content-type': mimeType },
+        body: blob,
+      });
+
+      if (!put.ok) throw new Error(`그림을 올리지 못했어요 (${put.status})`);
+
+      const saved = (await apiFetch('/v1/admin/site-meta/og-image', {
+        method: 'PUT',
+        body: JSON.stringify({ storageKey: target.storageKey }),
+      })) as AdminView;
+
+      setData(saved);
+      setDraft((prev) => ({ ...prev, ogImageUrl: '' }));
+      setNotice('그림을 올렸어요. 사이트에 내보내려면 「저장 후 반영하기」를 눌러주세요.');
+    } catch (e: unknown) {
+      setNotice(e instanceof Error ? e.message : '그림을 올리지 못했어요.');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function removeImage(): Promise<void> {
+    setNotice(null);
+    setUploading(true);
+    try {
+      const saved = (await apiFetch('/v1/admin/site-meta/og-image', {
+        method: 'DELETE',
+      })) as AdminView;
+
+      setData(saved);
+      setNotice('올린 그림을 치웠어요. 기본 그림으로 돌아가요.');
+    } catch (e: unknown) {
+      setNotice(e instanceof Error ? e.message : '그림을 치우지 못했어요.');
+    } finally {
+      setUploading(false);
+    }
+  }
+
   async function save(): Promise<void> {
     setSaving(true);
     setNotice(null);
@@ -162,6 +249,11 @@ export default function OgCardScreen() {
 
   const live = data.liveOgTitle;
   const matched = live !== null && live === shown('ogTitle');
+  /*
+   * 미리보기가 실제로 받아 그리는 주소. 초안에 적어 둔 주소가 있으면 그것을 먼저
+   * 보여준다 — 저장 전에도 맞는 그림인지 눈으로 확인할 수 있게.
+   */
+  const imageUrl = draft['ogImageUrl']?.trim() || data.effective.ogImageUrl;
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
@@ -174,11 +266,18 @@ export default function OgCardScreen() {
         <View style={styles.card}>
           <Text style={styles.cardLabel}>미리보기</Text>
           <View style={styles.preview}>
-            <View style={styles.previewImage}>
-              <Text style={styles.previewImageText}>
-                {shown('ogImageUrl') ? '올린 그림' : '기본 그림'}
-              </Text>
-            </View>
+            {/*
+              * **그림을 글자로 대신하지 않는다.** 예전에는 「올린 그림」이라고만 적혀
+              * 있어서, 주소를 잘못 넣었거나 파일이 덜 올라간 것을 여기서는 알 수
+              * 없었다 — 카카오톡에 붙여 보고서야 알았다.
+              */}
+            {imageUrl ? (
+              <Image source={{ uri: imageUrl }} style={styles.previewImage} resizeMode="cover" />
+            ) : (
+              <View style={styles.previewImage}>
+                <Text style={styles.previewImageText}>기본 그림</Text>
+              </View>
+            )}
             <View style={styles.previewBody}>
               <Text style={styles.previewTitle} numberOfLines={2}>
                 {shown('ogTitle')}
@@ -213,6 +312,38 @@ export default function OgCardScreen() {
             <Text style={styles.metaText}>마지막 반영 요청 {formatWhen(data.publishRequestedAt)}</Text>
           </View>
         </View>
+      </View>
+
+      <View style={styles.field}>
+        <Text style={styles.fieldLabel}>카드 그림</Text>
+        <View style={styles.imageActions}>
+          <Pressable
+            style={[styles.button, styles.buttonPrimary]}
+            onPress={() => void uploadImage()}
+            disabled={uploading}
+          >
+            {uploading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonPrimaryText}>그림 올리기</Text>
+            )}
+          </Pressable>
+          {data.ogImageSource === 'upload' ? (
+            <Pressable style={styles.button} onPress={() => void removeImage()} disabled={uploading}>
+              <Text style={styles.buttonText}>올린 그림 치우기</Text>
+            </Pressable>
+          ) : null}
+          <Text style={styles.fieldHint}>
+            {data.ogImageSource === 'upload'
+              ? '올린 그림을 쓰고 있어요.'
+              : data.ogImageSource === 'url'
+                ? '아래 「그림 주소」에 적어 둔 그림을 쓰고 있어요.'
+                : '저장소에 든 기본 그림을 쓰고 있어요.'}
+          </Text>
+        </View>
+        <Text style={styles.fieldHint}>
+          PNG · JPG · WebP. 카드에서 잘리지 않는 크기는 1200×630이에요.
+        </Text>
       </View>
 
       {FIELDS.map((field) => (
@@ -252,6 +383,7 @@ const styles = StyleSheet.create({
   h1: { fontSize: FontSize.t3, fontWeight: '700', color: '#212124' },
   lead: { fontSize: FontSize.t7, lineHeight: LineHeight.t7, color: '#4d5159' },
   row: { flexDirection: 'row', gap: 16, flexWrap: 'wrap' },
+  imageActions: { flexDirection: 'row', gap: 12, alignItems: 'center', flexWrap: 'wrap' },
   card: {
     flex: 1,
     minWidth: 380,
