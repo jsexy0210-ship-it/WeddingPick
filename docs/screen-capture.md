@@ -35,7 +35,24 @@ node scripts/screenshot-screens.mjs --build
 | `--build` | dist를 새로 만든 뒤 찍는다 |
 | `--full` | 스크롤 포함 전체. 기본은 한 화면(390×844) |
 | `--wait <ms>` | 렌더를 기다리는 시간. 기본 1500 |
+| `--tap <이름>` | 찍기 전에 누른다. 여러 번 줄 수 있고 준 순서대로 누른다 — 아래 |
 | `--viewport WxH` | 창 크기. 기본은 경로를 보고 정한다 — 아래 |
+
+## 눌러야 나오는 화면
+
+바텀시트 · 펼침처럼 **경로만으로는 닿지 않는 화면**이 있다. `--tap`이 찍기 전에 눌러 준다.
+이름은 `accessibilityLabel`을 먼저 보고, 없으면 화면에 그대로 적힌 글자로 찾는다.
+
+```bash
+node scripts/screenshot-screens.mjs --route "/(tabs)/my/wedding-settings" --tap "예식일"
+```
+
+**못 찾으면 멈춘다.** 조용히 넘어가지 않는 쪽으로 만들었다 — 「눌렀다고 치고」 찍은 그림은
+안 찍은 것보다 나쁘다. 시트가 안 열린 화면을 시트라고 믿게 된다.
+
+같은 화면이 여러 경로에 걸려 있으면 **닿는 쪽**으로 찍는다. 날짜 시트가 그 예다 —
+`/setup`은 온보딩을 이미 마친 fixture 사용자라 홈으로 튕기고, `/(tabs)/my/wedding-settings`로
+들어가면 같은 시트가 열린다.
 
 ## PR에 붙인다
 

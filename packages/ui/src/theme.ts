@@ -45,6 +45,16 @@ const palette = {
   gray100: '#f2f3f6',
   gray50: '#f7f8fa',
   gray00: '#ffffff',
+
+  /*
+   * 날짜 휠 바깥 두 칸의 글자색. spec/tokens.json `component.dateWheel.two` · `.far` —
+   * 루트 시안 `WP-APP-020` `wheelItem`이 중앙에서 멀어질수록 #212124 → #868b94 →
+   * **#c4c8ce → #e2e5e9**로 옅어진다. 뒤 둘은 SEED gray 램프에 없다(#d1d3d8과
+   * #adb1ba 사이 · #dcdee3과 #eaebee 사이). **가까운 램프 값으로 대신하지 않는다** —
+   * 네 단계가 세 단계로 뭉개지면 「멀어질수록 흐려진다」가 눈에 덜 든다.
+   */
+  dateWheelTwo: '#c4c8ce',
+  dateWheelFar: '#e2e5e9',
   /** surface.inverse — 토스트 · 어두운 안내 블록. */
   inverse: '#0e0f10',
 
@@ -337,6 +347,12 @@ export const Colors = {
     scrimLight: palette.scrimLight,
     /** 이미지 위 순위 · 광고 pill 배경. overlay.pillOnImage. */
     pillOnImage: palette.pillOnImage,
+    /**
+     * 날짜 휠 바깥 두 칸. 중앙(`text`) → 한 칸(`textAssistive`) → **두 칸** → **세 칸 밖**의
+     * 네 단계 중 뒤 둘이다. 이 휠 말고 다른 데 쓰지 않는다 — 본문에 쓰면 대비가 모자란다.
+     */
+    dateWheelTwo: palette.dateWheelTwo,
+    dateWheelFar: palette.dateWheelFar,
     onTint: palette.gray00,
     /** 본문 속 링크(약관 · 처리방침). 코랄은 CTA·Pick·선택에만 쓴다(CLAUDE.md §5). */
     link: palette.accentAction,
@@ -425,6 +441,9 @@ export const Colors = {
     scrim: 'rgba(0,0,0,.72)',
     scrimLight: 'rgba(0,0,0,.40)',
     pillOnImage: palette.pillOnImage,
+    /* 어두운 벌은 램프를 내려간다 — 라이트가 배경(흰색)으로 다가가듯 여기서는 배경(먹)으로 다가간다. */
+    dateWheelTwo: palette.darkGray500,
+    dateWheelFar: palette.darkGray400,
     onTint: '#ffffff',
     link: palette.accentAction,
   },
@@ -661,12 +680,6 @@ export const Layout = {
   field: 52,
   /** 입력 필드 좌우 패딩. component.field.padding. */
   fieldPaddingX: 14,
-  /**
-   * 날짜 선택 연 · 월 셀렉트의 좌우 패딩. component.datePicker.selectPaddingX —
-   * 20-onboarding-v2의 `selBox`가 «padding:0 16px»다. 일반 입력 필드(14)와
-   * 값이 다른 자리라 따로 둔다.
-   */
-  datePickerSelectPaddingX: 16,
   /** 여러 줄 입력 최소 높이. size.textarea. */
   textarea: 88,
   /** 체크박스 한 변. size.checkbox. */
@@ -756,6 +769,12 @@ export const Layout = {
   sheetPaddingBottom: 28,
   sheetGap: 20,
   sheetHeadGap: 6,
+  /**
+   * 시트 머리의 닫기 단추. component.sheet.close — 루트 시안 `WP-APP-020`의
+   * `sheetClose`가 32×32이고 머리 줄의 `min-height`도 같은 32다. 안의 ✕는 20이라
+   * 단추가 더 크다 — 작은 글리프를 손가락으로 누를 수 있게 둘레를 남긴 것이다.
+   */
+  sheetClose: 32,
   /** 시트 그래버 40×4. component.sheet.grabber. */
   grabberWidth: 40,
   grabberHeight: 4,

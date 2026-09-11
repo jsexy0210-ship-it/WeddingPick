@@ -1,13 +1,9 @@
 import {
-  CALENDAR_CELLS,
   chunk,
   clampDay,
   dayOptions,
   daysInMonth,
   firstSelectable,
-  isDaySelectable,
-  isMonthSelectable,
-  monthCells,
   monthOptions,
   normalizeDate,
   splitIso,
@@ -15,7 +11,7 @@ import {
   yearOptions,
 } from './calendar';
 
-describe('연월 셀렉트 + 달력 계산 (WP-APP-023)', () => {
+describe('날짜 휠 3열 계산 (WP-APP-023)', () => {
   it('달의 날 수 — 윤년 2월은 29일', () => {
     expect(daysInMonth(2027, 5)).toBe(31);
     expect(daysInMonth(2027, 2)).toBe(28);
@@ -38,14 +34,9 @@ describe('연월 셀렉트 + 달력 계산 (WP-APP-023)', () => {
     expect(first).toEqual({ year: 2026, month: 9, day: 9 });
     expect(monthOptions(2026, first)).toEqual([9, 10, 11, 12]);
     expect(monthOptions(2027, first)).toHaveLength(12);
-    expect(isMonthSelectable(2026, 8, first)).toBe(false);
-    expect(isMonthSelectable(2026, 9, first)).toBe(true);
     expect(dayOptions(2026, 9, first)[0]).toBe(9);
     expect(dayOptions(2026, 9, first)).toHaveLength(22);
     expect(dayOptions(2026, 10, first)[0]).toBe(1);
-    expect(isDaySelectable({ year: 2026, month: 9, day: 8 }, first)).toBe(false);
-    expect(isDaySelectable({ year: 2026, month: 9, day: 9 }, first)).toBe(true);
-    expect(isDaySelectable({ year: 2027, month: 1, day: 1 }, first)).toBe(true);
     /* 12월 31일의 «내일»은 다음 해다. */
     expect(firstSelectable(new Date(2026, 11, 31))).toEqual({ year: 2027, month: 1, day: 1 });
   });
@@ -64,27 +55,14 @@ describe('연월 셀렉트 + 달력 계산 (WP-APP-023)', () => {
     expect(yearOptions(new Date(2026, 8, 8))).toEqual([2026, 2027, 2028, 2029, 2030, 2031]);
   });
 
-  it('달력은 항상 42칸이고 앞뒤 달의 날로 채운다 — 시안 2027년 5월', () => {
-    const cells = monthCells(2027, 5);
-
-    expect(cells).toHaveLength(CALENDAR_CELLS);
-    /* 2027-05-01은 토요일 — 첫 주는 4월 25일부터. */
-    expect(cells[0]).toMatchObject({ year: 2027, month: 4, day: 25, inMonth: false, weekday: 0 });
-    expect(cells[6]).toMatchObject({ month: 5, day: 1, inMonth: true, weekday: 6 });
-    expect(cells[21]).toMatchObject({ iso: '2027-05-16', inMonth: true, weekday: 0 });
-    expect(cells[36]).toMatchObject({ month: 5, day: 31, inMonth: true });
-    expect(cells[37]).toMatchObject({ month: 6, day: 1, inMonth: false });
-    expect(cells.filter((cell) => cell.inMonth)).toHaveLength(31);
+  it('격자 줄 나누기', () => {
+    expect(chunk([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]]);
+    expect(chunk([], 4)).toEqual([]);
   });
 
   it('iso 왕복', () => {
     expect(toIso(2027, 5, 6)).toBe('2027-05-06');
     expect(splitIso('2027-05-16')).toEqual({ year: 2027, month: 5, day: 16 });
     expect(splitIso('2027.05.16')).toBeNull();
-  });
-
-  it('격자 줄 나누기', () => {
-    expect(chunk([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]]);
-    expect(chunk([], 4)).toEqual([]);
   });
 });
