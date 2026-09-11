@@ -173,24 +173,31 @@ function mostCommon(values: string[]): string | null {
 }
 
 /**
- * 업체 한 곳의 상세.
+ * 판정 전 사진을 화면에 내보내는가.
  *
- * 상품별 가격은 comparable_quotes에서 그때그때 계산한다. 표본이 기준에 못 미치는
- * 상품은 아예 내려보내지 않는다 — 중앙값 없는 상품 이름만 늘어놓으면 화면이 그것을
- * 가격으로 그릴 여지가 생긴다.
+ * **2026-09-11 대표 지시 — 「이미지 720장만 우선 삽입한다」.** 운영에 들어 있는
+ * 720장은 저작권 근거가 `unknown`이고 매칭 신뢰도가 0이라 한 장도 나가지 않았다.
+ * 처음에는 운영자에게만 열었는데, 대표님이 전부 넣으라고 정했으므로 모두에게 연다.
+ *
+ * **값은 여전히 고치지 않는다.** `copyright_basis`를 배치로 바꾸면 판정한 적 없는
+ * 것이 판정된 것으로 남고 되돌릴 근거까지 사라진다. 표에 적힌 사실은 그대로 두고
+ * 내보낼지만 여기서 정한다 — 닫을 때 되돌릴 것이 이 스위치 하나다.
+ *
+ * `VENDOR_IMAGES_SHOW_UNVERIFIED=0`이면 닫힌다. 그때는 예전처럼 운영자에게만
+ * 열리므로, 닫은 뒤에도 무엇이 들어 있는지는 계속 볼 수 있다.
  */
-/**
- * 이 사람에게 **판정 전 사진**을 보여도 되는가.
- *
- * 2026-09-11 대표 지시 「일단 이미지 넣어 보고 판단한다」. 운영에 들어 있는 720장은
- * 저작권 근거가 `unknown`이고 매칭 신뢰도가 0이라 한 장도 화면에 안 나간다. 값을
- * 배치로 고쳐 열면 판정한 적 없는 것이 판정된 것으로 남으므로, **값은 그대로 두고
- * 보는 사람으로 가른다** — 운영자로 로그인했을 때만 열린다.
- *
- * 로그인하지 않았으면 질의도 하지 않는다. 목록 한 번에 한 번씩 더 묻는 자리라,
- * 대부분인 비로그인 요청에서 아무 일도 일어나지 않는 편이 맞다.
- */
+export function showsUnverifiedImages(): boolean {
+  return process.env.VENDOR_IMAGES_SHOW_UNVERIFIED !== '0';
+}
+
 async function previewsImages(pool: Pool, viewerId: string | null): Promise<boolean> {
+  if (showsUnverifiedImages()) return true;
+
+  /*
+   * 닫아둔 동안에도 운영자는 본다. 로그인하지 않았으면 질의도 하지 않는다 — 목록
+   * 한 번에 한 번씩 더 묻는 자리라, 대부분인 비로그인 요청에서 아무 일도 일어나지
+   * 않는 편이 맞다.
+   */
   if (!viewerId) return false;
 
   const { rows } = await pool.query<{ is_operator: boolean }>(
@@ -201,6 +208,13 @@ async function previewsImages(pool: Pool, viewerId: string | null): Promise<bool
   return rows[0]?.is_operator === true;
 }
 
+/**
+ * 업체 한 곳의 상세.
+ *
+ * 상품별 가격은 comparable_quotes에서 그때그때 계산한다. 표본이 기준에 못 미치는
+ * 상품은 아예 내려보내지 않는다 — 중앙값 없는 상품 이름만 늘어놓으면 화면이 그것을
+ * 가격으로 그릴 여지가 생긴다.
+ */
 async function loadVendorDetail(pool: Pool, vendorId: string, viewerId: string | null) {
   const preview = await previewsImages(pool, viewerId);
 
@@ -831,15 +845,22 @@ async function loadConditionStats(
         [vendorId]
       );
 
+      /*
+       * 둘 다 없는 줄은 거른다. 가리킬 곳이 없는 사진이라 화면에 빈 칸만 남는데,
+       * 예전에는 `storage_key!`가 그 경우를 「있다」로 단정하고 있었다. 판정 전
+       * 사진까지 열리면서 지나가는 줄이 늘었으므로 여기서 먼저 막는다.
+       */
       const photos = await Promise.all(
-        rows.map(async (row) => ({
-          id: row.id,
-          url: row.source_url ?? (await context.storage.getPublicUrl(row.storage_key!, 3600)),
-          isRepresentative: row.is_representative,
-          useContain: row.use_contain,
-          sourceNote: row.copyright_note,
-          verifiedAt: row.verified_at ? row.verified_at.toISOString() : null,
-        }))
+        rows
+          .filter((row) => row.source_url !== null || row.storage_key !== null)
+          .map(async (row) => ({
+            id: row.id,
+            url: row.source_url ?? (await context.storage.getPublicUrl(row.storage_key!, 3600)),
+            isRepresentative: row.is_representative,
+            useContain: row.use_contain,
+            sourceNote: row.copyright_note,
+            verifiedAt: row.verified_at ? row.verified_at.toISOString() : null,
+          }))
       );
 
       return { photos };

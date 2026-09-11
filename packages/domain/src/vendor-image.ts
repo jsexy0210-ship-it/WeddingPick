@@ -37,9 +37,15 @@ export const MIN_IMAGE_MATCH_CONFIDENCE = 0.5;
  * 두고 **누가 보느냐로** 가른다 — 운영자로 로그인한 사람에게만 열리고, 로그인하지
  * 않은 사람과 일반 회원에게는 지금과 똑같이 한 장도 안 나간다.
  *
- * `rejected`는 검수 모드에서도 막는다. 폐기로 넘긴 것은 이미 사람이 보고 내린
- * 판정이라, 다시 꺼내 보는 것이 이 모드의 목적이 아니다.
+ * **폐기로 넘긴 것은 검수 모드에서도 막는다.** 사람이 이미 보고 내린 판정이라,
+ * 다시 꺼내 보는 것이 이 모드의 목적이 아니다.
+ *
+ * 막을 것을 세지 않고 **낼 것을 센다.** `image_status`의 폐기 상태는 하나가 아니라
+ * 넷이고(`rights_rejected` · `match_rejected` · `quality_rejected` · `crop_failed`,
+ * 0050), 앞으로 더 늘 수 있다. 「폐기가 아닌 것」으로 적으면 새 폐기 상태가 생기는
+ * 날 그것이 조용히 화면으로 샌다 — 아무도 이 파일을 고칠 생각을 못 한 채로.
  */
+export const PREVIEWABLE_IMAGE_STATUSES = ['pending', 'approved'] as const;
 export type ImageConditionOptions = {
   /** 참이면 저작권·매칭 판정을 미룬 채 본다. 운영자 조회에서만 참이 된다. */
   preview?: boolean;
@@ -51,7 +57,9 @@ export function displayableImageCondition(
   options: ImageConditionOptions = {}
 ): string {
   if (options.preview) {
-    return `${alias}.status <> 'rejected'`;
+    const allowed = PREVIEWABLE_IMAGE_STATUSES.map((status) => `'${status}'`).join(', ');
+
+    return `${alias}.status IN (${allowed})`;
   }
 
   return `${alias}.status = 'approved'
@@ -69,7 +77,7 @@ export function isDisplayableImage(
   options: ImageConditionOptions = {}
 ): boolean {
   if (options.preview) {
-    return image.status !== 'rejected';
+    return (PREVIEWABLE_IMAGE_STATUSES as readonly string[]).includes(image.status);
   }
 
   return (

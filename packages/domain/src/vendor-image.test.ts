@@ -14,7 +14,10 @@ import {
  */
 const 판정전 = { status: 'approved', copyrightBasis: 'unknown', matchConfidence: 0 };
 const 판정끝 = { status: 'approved', copyrightBasis: 'vendor_provided', matchConfidence: 1 };
-const 폐기 = { status: 'rejected', copyrightBasis: 'vendor_provided', matchConfidence: 1 };
+/** 폐기 상태는 넷이다(0050). 하나만 시험하면 나머지 셋이 새는 것을 못 본다. */
+const 폐기들 = ['rights_rejected', 'match_rejected', 'quality_rejected', 'crop_failed'].map(
+  (status) => ({ status, copyrightBasis: 'vendor_provided', matchConfidence: 1 })
+);
 
 describe('판정 전 사진은 운영자에게만 보인다', () => {
   it('기본값은 지금까지와 같다 — 판정 전은 안 나간다', () => {
@@ -26,9 +29,18 @@ describe('판정 전 사진은 운영자에게만 보인다', () => {
     expect(isDisplayableImage(판정전, { preview: true })).toBe(true);
   });
 
-  it('폐기로 넘긴 것은 검수 모드에서도 안 나간다 — 사람이 이미 내린 판정이다', () => {
-    expect(isDisplayableImage(폐기, { preview: true })).toBe(false);
-    expect(isDisplayableImage(폐기)).toBe(false);
+  it('폐기로 넘긴 것은 검수 모드에서도 안 나간다 — 넷 전부', () => {
+    for (const 폐기 of 폐기들) {
+      expect(isDisplayableImage(폐기, { preview: true })).toBe(false);
+      expect(isDisplayableImage(폐기)).toBe(false);
+    }
+  });
+
+  it('검증 전(pending)은 검수 모드에서만 나간다', () => {
+    const 검증전 = { status: 'pending', copyrightBasis: 'vendor_provided', matchConfidence: 1 };
+
+    expect(isDisplayableImage(검증전, { preview: true })).toBe(true);
+    expect(isDisplayableImage(검증전)).toBe(false);
   });
 
   it('매칭 신뢰도만 낮아도 기본값에서는 막힌다', () => {
@@ -54,7 +66,7 @@ describe('SQL 조건도 같은 것을 말한다', () => {
   it('검수 모드는 폐기만 거른다', () => {
     const sql = displayableImageCondition('i', { preview: true });
 
-    expect(sql).toContain("i.status <> 'rejected'");
+    expect(sql).toContain("i.status IN ('pending', 'approved')");
     expect(sql).not.toContain('copyright_basis');
     expect(sql).not.toContain('match_confidence');
   });
