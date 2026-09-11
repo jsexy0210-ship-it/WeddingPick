@@ -29,7 +29,6 @@ import {
   notificationListResponseSchema,
   notificationSummaryResponseSchema,
   rebuttalListResponseSchema,
-  parsePaymentTextResponseSchema,
   registerPaymentProofResponseSchema,
   createReviewReportResponseSchema,
   createReviewResponseSchema,
@@ -95,7 +94,6 @@ import {
   type CreateInquiryRequest,
   type RegisterDeviceRequest,
   type RegisterDeviceResponse,
-  type ParsePaymentTextResponse,
   type RegisterPaymentProofRequest,
   type RegisterPaymentProofResponse,
   type OriginalKind,
@@ -657,7 +655,7 @@ export async function getQuote(quoteId: string): Promise<Quote> {
 
 export async function confirmFields(
   quoteId: string,
-  fields: { path: string; correctedValue?: string }[]
+  fields: { path: string }[]
 ): Promise<Quote> {
   return request(`/v1/quotes/${quoteId}/confirmations`, quoteSchema, {
     method: 'POST',
@@ -1001,28 +999,12 @@ export async function removeWeddingNote(weddingId: string, noteId: string): Prom
 }
 
 /**
- * 결제문자에서 값을 읽는다./**
- * 결제문자에서 값을 읽는다. AI를 부르지 않는다 — 서버의 규칙 엔진이 읽는다.
+ * 결제인증 등록 — **사진 한 장.**
  *
- * 읽기만 하고 저장하지 않는다. 사람이 확인한 뒤에 등록이 따로 간다.
- */
-export async function parsePaymentText(input: {
-  text?: string;
-  rawDocumentId?: string;
-}): Promise<ParsePaymentTextResponse> {
-  return request('/v1/payment-proofs/parse', parsePaymentTextResponseSchema, {
-    method: 'POST',
-    body: JSON.stringify(input),
-  });
-}
-
-/**
- * 결제인증 등록.
+ * 올린 원본 하나만 보낸다(v3.24). 금액·업체·날짜를 보낼 자리가 요청 타입에 없어
+ * 화면이 지어낸 값을 넣을 수 없고, 못 읽은 제보는 접수는 되되 검수를 기다린다.
  *
- * 심사가 아니라 등록이다 — 사람이 보지 않고 문서 등급도 오르지 않는다. 하는 일은
- * 결제인증 표시와 실제가격 열기 둘이다.
- *
- * 카드번호를 보낼 자리가 요청 타입에 없다. 앱이 실수로도 보낼 수 없다.
+ * 심사가 아니라 등록이다 — 사람이 등급을 올리지 않는다. 카드번호를 보낼 자리도 없다.
  */
 export async function registerPaymentProof(
   body: RegisterPaymentProofRequest

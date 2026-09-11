@@ -1,3 +1,4 @@
+import type { LocalStorage } from '../storage/local';
 import { createTestApp, createWedding, resetDatabase, signInAs, type TestApp } from './helpers';
 
 let test: TestApp;
@@ -292,18 +293,60 @@ describeWithDb('결제인증 동의', () => {
   const revoke = (headers: Record<string, string>) =>
     test.app.inject({ method: 'DELETE', url: '/v1/me/payment-consent', headers });
 
-  const register = (headers: Record<string, string>) =>
-    test.app.inject({
-      method: 'POST',
-      url: '/v1/payment-proofs',
-      headers,
-      payload: {
+  /**
+   * 사진 한 장을 올려 등록한다(v3.24). 금액을 보낼 자리가 없어 읽기가 먼저 돈다.
+   *
+   * **동의 관문을 두 번 지난다** — 올릴 때 한 번(`/v1/documents/uploads`), 등록할
+   * 때 한 번. 철회한 사람에게는 올리는 쪽이 먼저 막히므로, 여기서 보는 것은
+   * 「등록까지 갔는가」가 아니라 「어디서든 막혔는가」다.
+   */
+  async function register(headers: Record<string, string>) {
+    test.context.proofReader.read = async (_images, model) => ({
+      model,
+      usage: { inputTokens: 10, outputTokens: 10, cachedInputTokens: 0 },
+      reading: {
         merchantName: '가온예식홀',
         paidAmount: 3_000_000,
         paidAt: '2026-05-20T04:00:00.000Z',
-        method: 'card',
+        method: 'card' as const,
+        maskedIdentifiers: [],
+        rejection: null,
+        confidence: 0.95,
       },
     });
+
+    const weddingId = await createWedding(test, headers);
+    const upload = await test.app.inject({
+      method: 'POST',
+      url: '/v1/documents/uploads',
+      headers,
+      payload: {
+        weddingId,
+        kind: 'payment_proof',
+        pages: [{ mimeType: 'image/jpeg', sizeBytes: 1000 }],
+      },
+    });
+
+    // 동의가 없으면 올리는 쪽에서 이미 막힌다. 그 상태를 그대로 돌려준다.
+    if (upload.statusCode >= 400) return upload;
+
+    const rawDocumentId = upload.json<{ rawDocumentId: string }>().rawDocumentId;
+    const pages = await test.pool.query<{ storage_key: string }>(
+      'SELECT storage_key FROM originals.raw_document_pages WHERE raw_document_id = $1',
+      [rawDocumentId]
+    );
+
+    for (const page of pages.rows) {
+      (test.context.storage as LocalStorage).put(page.storage_key, Buffer.from('receipt'));
+    }
+
+    return test.app.inject({
+      method: 'POST',
+      url: '/v1/payment-proofs',
+      headers,
+      payload: { rawDocumentId },
+    });
+  }
 
   it('동의 없이는 등록할 수 없다', async () => {
     /*

@@ -75,7 +75,7 @@ describe('예산', () => {
 
   it('바닥나도 서비스가 멈춘다고 말하지 않는다', () => {
     // 스펙 7.3 마지막 줄 — AI가 죽어도 핵심 서비스는 정상 동작해야 한다.
-    expect(BUDGET_EXHAUSTED_NOTICE).toContain('직접 적어주시면');
+    expect(BUDGET_EXHAUSTED_NOTICE).toContain('접수됐고');
     // 그리고 화면 문구에 AI가 없다.
     expect(BUDGET_EXHAUSTED_NOTICE).not.toContain('AI');
   });

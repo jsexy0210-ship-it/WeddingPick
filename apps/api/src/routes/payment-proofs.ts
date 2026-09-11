@@ -1,11 +1,8 @@
-import {
-  parsePaymentTextRequestSchema,
-  registerPaymentProofRequestSchema,
-} from '@weddingpick/api-contract';
+import { registerPaymentProofRequestSchema } from '@weddingpick/api-contract';
 import {
   PAYMENT_PROOF_RETENTION_HOURS,
-  canRegisterPaymentProof,
   hasDeepData,
+  paymentProofIntake,
 } from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
@@ -76,86 +73,24 @@ export function registerPaymentProofRoutes(app: FastifyInstance, context: AppCon
   const auth = { preHandler: requireUser(context) };
 
   /**
-   * 결제문자 읽기. **AI를 부르지 않는다.**
+   * 결제인증 등록 — **사진 한 장.**
    *
-   * 스펙 7.3의 처리 순서를 그대로 따른다 — 규칙으로 읽어보고, 못 읽은 것만 다음
-   * 단계로 간다. 결제문자는 카드사가 기계로 찍어 보내는 글이라 형태가 고정돼 있어
-   * 대부분 여기서 읽힌다. 이걸 AI에 보내는 것은 곱셈을 시키려고 사람을 부르는 것과
-   * 같다.
+   * 핸드오프 v3.24가 제보를 «사진 찍기 또는 업로드»로 압축했다. 사용자가 하는 일은
+   * 사진 한 장이고, 금액·업체·날짜를 **받지 않는다** — 받을 자리가 없으니 화면이
+   * 지어낸 값을 보낼 수 없다.
    *
-   * **읽기만 하고 저장하지 않는다.** 사람이 확인한 뒤에 등록이 따로 온다 — 잘못
-   * 읽은 값이 확인 없이 분포에 들어가면, 그건 읽기 실패보다 나쁘다.
-   */
-  app.post('/v1/payment-proofs/parse', auth, async (request) => {
-    const userId = currentUserId(request);
-    const body = parsePaymentTextRequestSchema.parse(request.body);
-
-    if (!body.text && !body.rawDocumentId) {
-      throw new ApiError('invalid_request', '읽을 글이나 사진이 필요합니다.');
-    }
-
-    /*
-     * 사진은 규칙이 못 읽었을 때만 쓰인다(proof-pipeline이 판단한다). 여기서는
-     * 넘겨줄 준비만 한다 — 남의 업로드를 읽지 못하게 주인부터 본다.
-     */
-    const images = body.rawDocumentId
-      ? await loadProofImages(context, userId, body.rawDocumentId)
-      : [];
-
-    const result = await readPaymentProof({
-      pool: context.pool,
-      reader: context.proofReader,
-      models: {
-        cheap: context.config.proofReaderCheapModel,
-        strong: context.config.proofReaderStrongModel,
-      },
-      text: body.text,
-      images,
-    });
-
-    const { reading } = result;
-    // 파서와 모델이 같은 모양을 내보내므로 여기서 갈라질 것이 없다.
-    const field = <T>(value: T | null) =>
-      value === null ? null : { value, confidence: reading.confidence };
-
-    return {
-      rejection: reading.rejection,
-      merchantName: field(reading.merchantName),
-      paidAmount: field(reading.paidAmount),
-      paidAt: field(reading.paidAt),
-      method: field(reading.method),
-      maskedIdentifiers: reading.maskedIdentifiers,
-      missing: (['merchantName', 'paidAmount', 'paidAt', 'method'] as const).filter(
-        (key) => reading[key] === null
-      ),
-      needsConfirmation: result.needsConfirmation,
-      readingId: result.usageId,
-      notice: result.notice,
-    };
-  });
-
-  /**
-   * 결제인증 등록.
+   * 못 읽었으면 접수는 성립하되 `pending_review`로 남는다. 「못 읽었다」가 정상
+   * 상태다 — 보류인 동안에는 어떤 통계·Unlock·지출에도 들어가지 않는다(0150의
+   * `usable_payment_proofs` · `wedding_expenses`).
    *
    * **심사가 아니다.** 인증 신청(`/v1/quotes/{id}/verification-requests`)과 다른
-   * 경로다 — 사람이 보지 않고, 문서 등급을 올리지 않으며, 시장 대표가격에도
-   * 들어가지 않는다. 하는 일은 둘이다: 결제인증 표시와 실제 결제 분포 열기.
+   * 경로다 — 사람이 등급을 올리지 않고, 시장 대표가격에도 들어가지 않는다.
    *
    * 카드번호를 받을 필드가 계약에 없다. 앱이 보내려 해도 보낼 곳이 없다.
    */
   app.post('/v1/payment-proofs', auth, async (request, reply) => {
     const userId = currentUserId(request);
     const body = registerPaymentProofRequestSchema.parse(request.body);
-
-    const check = canRegisterPaymentProof({
-      merchantName: body.merchantName,
-      paidAmount: body.paidAmount,
-      paidAt: body.paidAt,
-    });
-
-    if (!check.ok) {
-      throw new ApiError('invalid_request', check.reason);
-    }
 
     /*
      * 동의 없이는 받지 않는다. 핸드오프 10번 · 19번.
@@ -184,19 +119,46 @@ export function registerPaymentProofRoutes(app: FastifyInstance, context: AppCon
     }
 
     // 원본은 자기 것만 쓸 수 있다. 남의 업로드에 내 제보를 붙일 수 없게.
-    if (body.rawDocumentId) {
-      const owned = await context.pool.query(
-        `SELECT 1 FROM originals.raw_documents
-         WHERE id = $1 AND owner_user_id = $2 AND deleted_at IS NULL`,
-        [body.rawDocumentId, userId]
-      );
+    const images = await loadProofImages(context, userId, body.rawDocumentId);
 
-      if (owned.rows.length === 0) {
-        throw notFound('촬영한 원본');
-      }
-    }
+    /*
+     * 읽기는 서버가 한다. 예전에는 앱이 `/parse`를 부르고 그 값을 확인 화면에
+     * 채워 되보냈다 — 그 확인 화면이 폐기되면서 되보낼 사람이 없어졌다.
+     */
+    const read = await readPaymentProof({
+      pool: context.pool,
+      reader: context.proofReader,
+      models: {
+        cheap: context.config.proofReaderCheapModel,
+        strong: context.config.proofReaderStrongModel,
+      },
+      images,
+    });
 
-    const vendorId = body.vendorId ?? (await matchVendor(context.pool, body.merchantName));
+    const intake = paymentProofIntake({
+      merchantName: read.reading.merchantName,
+      paidAmount: read.reading.paidAmount,
+      paidAt: read.reading.paidAt,
+      needsConfirmation: read.needsConfirmation,
+      rejection: read.reading.rejection,
+    });
+
+    /*
+     * 보류 사유는 한 번만 정하고 표와 응답에 같은 것을 쓴다. 예산이 바닥나
+     * 읽지 못한 것은 「못 읽었다」보다 구체적이라 그쪽을 앞세운다.
+     */
+    const reviewNote = read.notice ?? intake.reviewNote;
+
+    /*
+     * 업체는 읽어낸 가맹점 이름으로만 찾는다. 보류 줄은 이름을 못 읽었을 수
+     * 있고, 그때는 찾지 않는다 — 없는 이름으로 아무 업체나 걸면 남의 분포에
+     * 내 결제가 들어간다.
+     */
+    const vendorId =
+      body.vendorId ??
+      (intake.state === 'accepted' && read.reading.merchantName
+        ? await matchVendor(context.pool, read.reading.merchantName)
+        : null);
 
     let proofId: string;
 
@@ -205,19 +167,24 @@ export function registerPaymentProofRoutes(app: FastifyInstance, context: AppCon
         const created = await client.query<{ id: string }>(
           `INSERT INTO structured.payment_proofs
              (reporter_user_id, vendor_id, merchant_name, paid_amount, paid_at, method,
-              masked_identifiers, raw_document_id, analyzed_at)
+              masked_identifiers, raw_document_id, analyzed_at,
+              review_state, pending_fields, review_note)
            VALUES ($1, $2, $3, $4, $5, $6::payment_method,
-                   $7::masked_identifier_kind[], $8, now())
+                   $7::masked_identifier_kind[], $8, now(),
+                   $9::payment_proof_review_state, $10::payment_proof_field[], $11)
            RETURNING id`,
           [
             userId,
             vendorId,
-            body.merchantName.trim(),
-            body.paidAmount,
-            body.paidAt,
-            body.method,
-            body.maskedIdentifiers,
-            body.rawDocumentId ?? null,
+            read.reading.merchantName?.trim() || null,
+            read.reading.paidAmount,
+            read.reading.paidAt,
+            read.reading.method ?? 'unknown',
+            read.reading.maskedIdentifiers,
+            body.rawDocumentId,
+            intake.state,
+            intake.pendingFields,
+            reviewNote,
           ]
         );
 
@@ -226,19 +193,22 @@ export function registerPaymentProofRoutes(app: FastifyInstance, context: AppCon
          * 것을 뒤늦게 등록하는 길이 있어 여기서도 맞춰둔다. 24시간 시계가 이 값에
          * 걸려 있으므로 어긋나면 안 된다.
          */
-        if (body.rawDocumentId) {
-          await client.query(
-            `UPDATE originals.raw_documents SET kind = 'payment_proof' WHERE id = $1`,
-            [body.rawDocumentId]
-          );
-        }
+        await client.query(
+          `UPDATE originals.raw_documents SET kind = 'payment_proof' WHERE id = $1`,
+          [body.rawDocumentId]
+        );
 
         /*
          * 초대받고 들어온 사람의 첫 결제인증이면 초대한 사람의 보상 조건이
          * 찬다(I-1 · K-7). **같은 트랜잭션에 둔다** — 결제인증은 됐는데 원장에만
          * 안 남으면 그 사람은 영영 못 받고 우리는 그 사실도 모른다.
+         *
+         * 보류 줄로는 차지 않는다. 보상 조건은 `usable_payment_proofs`를 보므로
+         * 여기서 불러도 세어지지 않지만, 부르지 않는 편이 뜻이 분명하다.
          */
-        await qualifyReferral(client, userId);
+        if (intake.state === 'accepted') {
+          await qualifyReferral(client, userId);
+        }
 
         return created.rows[0]!.id;
       });
@@ -254,13 +224,14 @@ export function registerPaymentProofRoutes(app: FastifyInstance, context: AppCon
     /*
      * 읽어준 값을 사람이 고쳤는지 남긴다. 스펙 7.3의 user_correction_rate.
      *
-     * 이 값이 높으면 읽기가 나쁜 것이고, 그러면 모델을 바꾸거나 규칙을 손봐야 한다.
-     * 재지 않으면 나쁜지도 모른다.
+     * **이제 고칠 화면이 없다**(v3.24가 확인 화면을 폐기했다). 대신 보류로 남았는지를
+     * 같은 자리에 적는다 — 재려던 것은 「읽기가 얼마나 나빴나」이고, 사람이 고친
+     * 횟수든 검수로 넘어간 횟수든 그 답을 준다.
      */
-    if (body.readingId !== undefined && body.readingCorrected !== undefined) {
+    if (read.usageId !== null) {
       await context.pool.query(
         'UPDATE structured.ai_usage SET user_corrected = $2 WHERE id = $1',
-        [body.readingId, body.readingCorrected]
+        [read.usageId, intake.state === 'pending_review']
       );
     }
 
@@ -269,23 +240,30 @@ export function registerPaymentProofRoutes(app: FastifyInstance, context: AppCon
       [userId]
     );
 
-    const deletedBy = body.rawDocumentId
-      ? await context.pool.query<{ retention_until: Date | null }>(
-          'SELECT retention_until FROM originals.document_retention_schedule WHERE id = $1',
-          [body.rawDocumentId]
-        )
-      : null;
+    const deletedBy = await context.pool.query<{ retention_until: Date | null }>(
+      'SELECT retention_until FROM originals.document_retention_schedule WHERE id = $1',
+      [body.rawDocumentId]
+    );
 
     return reply.status(201).send({
       paymentProofId: proofId,
+      status: intake.state,
+      pendingFields: intake.pendingFields,
+      reviewNote,
+      merchantName: read.reading.merchantName,
+      paidAmount: read.reading.paidAmount,
+      paidAt: read.reading.paidAt,
+      method: read.reading.method ?? 'unknown',
+      maskedIdentifiers: read.reading.maskedIdentifiers,
       matchedVendorId: vendorId,
-      unmatchedNote: vendorId
-        ? null
-        : '영수증의 가맹점 이름으로 업체를 찾지 못했습니다. 어디인지 알려주시면 이어붙이겠습니다.',
+      unmatchedNote:
+        vendorId || intake.state === 'pending_review'
+          ? null
+          : '영수증의 가맹점 이름으로 업체를 찾지 못했습니다. 어디인지 알려주시면 이어붙이겠습니다.',
       deepData: hasDeepData({
         usablePaymentProofCount: Number(unlock.rows[0]?.proof_count ?? 0),
       }),
-      originalDeletedBy: deletedBy?.rows[0]?.retention_until?.toISOString() ?? null,
+      originalDeletedBy: deletedBy.rows[0]?.retention_until?.toISOString() ?? null,
     });
   });
 
