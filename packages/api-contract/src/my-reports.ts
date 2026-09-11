@@ -28,6 +28,14 @@ export const myReportSchema = z.object({
    * 않는 것이 있다. 목록에 세워두고 쓰인다고 말하면 그건 거짓이다.
    */
   inUse: z.boolean(),
+  /**
+   * 아직 읽는 중이라 확인이 필요한가. WP-RPT-008의 «확인 필요».
+   *
+   * `inUse`가 거짓인 까닭은 둘이고, 사용자가 할 일이 다르다 — 업체를 못 찾은 것은
+   * 우리가 이어붙이면 되고(할 일 없음), 자료를 못 읽은 것은 다시 올리면 된다.
+   * 둘을 «반영 전» 하나로 적으면 어느 쪽인지 알 수 없다.
+   */
+  needsCheck: z.boolean(),
   note: z.string().nullable(),
 });
 

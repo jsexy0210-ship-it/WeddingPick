@@ -1,7 +1,7 @@
 import { TASK_PRESETS } from '@weddingpick/domain';
 
 import {
-  consentToPaymentProofs,
+  registerPaymentProof,
   createTestApp,
   createWedding,
   resetDatabase,
@@ -182,18 +182,7 @@ describeWithDb('우리웨딩', () => {
          VALUES ('가온예식홀', 'hall', '서울', 'public_data')`
       );
 
-      await consentToPaymentProofs(test, headers);
-
-      const registered = await test.app.inject({
-        method: 'POST',
-        url: '/v1/payment-proofs',
-        headers,
-        payload: {
-          merchantName: '가온예식홀',
-          paidAmount: 3_000_000,
-          paidAt: '2026-05-20T04:00:00.000Z',
-        },
-      });
+      const registered = await registerPaymentProof(test, headers, {}, weddingId);
 
       expect(registered.statusCode).toBe(201);
 
@@ -308,18 +297,7 @@ describeWithDb('우리웨딩', () => {
          VALUES ('가온예식홀', 'hall', '서울', 'public_data')`
       );
 
-      await consentToPaymentProofs(test, headers);
-
-      const registered = await test.app.inject({
-        method: 'POST',
-        url: '/v1/payment-proofs',
-        headers,
-        payload: {
-          merchantName: '가온예식홀',
-          paidAmount: 3_000_000,
-          paidAt: '2026-05-20T04:00:00.000Z',
-        },
-      });
+      const registered = await registerPaymentProof(test, headers, {}, weddingId);
 
       const proofId = registered.json<{ paymentProofId: string }>().paymentProofId;
 
@@ -413,18 +391,7 @@ describeWithDb('우리웨딩', () => {
          VALUES ('가온예식홀', 'hall', '서울', 'public_data')`
       );
 
-      await consentToPaymentProofs(test, headers);
-
-      const registered = await test.app.inject({
-        method: 'POST',
-        url: '/v1/payment-proofs',
-        headers,
-        payload: {
-          merchantName: '가온예식홀',
-          paidAmount: 3_000_000,
-          paidAt: '2026-05-20T04:00:00.000Z',
-        },
-      });
+      const registered = await registerPaymentProof(test, headers, {}, weddingId);
 
       const proofId = registered.json<{ paymentProofId: string }>().paymentProofId;
 

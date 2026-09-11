@@ -592,6 +592,7 @@ describeWithDb('WP-VEND-002 업체 이미지', () => {
       sourceUrl?: string | null;
       copyrightNote?: string | null;
       matchConfidence?: number;
+      copyrightBasis?: string;
     } = {}
   ) {
     const status = overrides.status ?? 'approved';
@@ -611,7 +612,7 @@ describeWithDb('WP-VEND-002 업체 이미지', () => {
          (vendor_id, storage_key, source_url, copyright_basis, copyright_note,
           use_contain, status, is_representative, rejection_reason, verified_at,
           match_confidence)
-       VALUES ($1, $2, $3, 'vendor_provided', $4, $5, $6, $7, $8, $9, $10)
+       VALUES ($1, $2, $3, $11, $4, $5, $6, $7, $8, $9, $10)
        RETURNING id`,
       [
         vendorId,
@@ -624,6 +625,7 @@ describeWithDb('WP-VEND-002 업체 이미지', () => {
         rejectionReason,
         verifiedAt,
         matchConfidence,
+        overrides.copyrightBasis ?? 'vendor_provided',
       ]
     );
 
@@ -665,41 +667,95 @@ describeWithDb('WP-VEND-002 업체 이미지', () => {
     expect(response.json().photos).toHaveLength(1);
   });
 
-  it('승인 전·거부된 이미지는 내려가지 않는다', async () => {
-    const vendorId = await createVendor({ name: '검증중홀' });
-    await createVendorImage(vendorId, { status: 'pending' });
-    await createVendorImage(vendorId, { status: 'quality_rejected' });
-    await createVendorImage(vendorId, { status: 'approved', sourceUrl: 'https://example.com/ok.jpg' });
+  /*
+   * **2026-09-11 대표 지시 — 「이미지 720장만 우선 삽입한다」.**
+   *
+   * 아래 두 시험은 원래 「안 나간다」를 붙들고 있었다. 그 판정 자체는 그대로
+   * 맞는데 지금은 스위치가 열려 있어서, 닫았을 때의 동작으로 옮겨 적는다.
+   * 시험을 지우지 않는 이유는 **닫을 때 되돌아갈 자리가 여기이기 때문**이다 —
+   * 지워두면 다시 닫을 때 무엇이 막혀야 하는지를 아무도 모른다.
+   */
+  describe('판정 전 사진 — 스위치가 닫혀 있을 때', () => {
+    const before = process.env.VENDOR_IMAGES_SHOW_UNVERIFIED;
 
-    const response = await test.app.inject({
-      method: 'GET',
-      url: `/v1/vendors/${vendorId}/images`,
+    beforeEach(() => {
+      process.env.VENDOR_IMAGES_SHOW_UNVERIFIED = '0';
     });
 
-    expect(response.json().photos).toHaveLength(1);
-    expect(response.json().photos[0].url).toBe('https://example.com/ok.jpg');
+    afterEach(() => {
+      if (before === undefined) delete process.env.VENDOR_IMAGES_SHOW_UNVERIFIED;
+      else process.env.VENDOR_IMAGES_SHOW_UNVERIFIED = before;
+    });
+
+    it('승인 전·거부된 이미지는 내려가지 않는다', async () => {
+      const vendorId = await createVendor({ name: '검증중홀' });
+      await createVendorImage(vendorId, { status: 'pending' });
+      await createVendorImage(vendorId, { status: 'quality_rejected' });
+      await createVendorImage(vendorId, { status: 'approved', sourceUrl: 'https://example.com/ok.jpg' });
+
+      const response = await test.app.inject({
+        method: 'GET',
+        url: `/v1/vendors/${vendorId}/images`,
+      });
+
+      expect(response.json().photos).toHaveLength(1);
+      expect(response.json().photos[0].url).toBe('https://example.com/ok.jpg');
+    });
+
+    it('그 업체 것인지 확인 못 한 사진은 승인돼 있어도 내려가지 않는다', async () => {
+      /*
+       * 운영에 들어 있던 720장이 이런 사진이다 — 「서울 웨딩홀」 같은 업종 검색
+       * 결과를 업체마다 잘라 붙인 것이라 검색어에 업체 이름이 없었고, 그 사실이
+       * match_confidence 0으로 적혀 있다. 저작권만 보면 값 하나를 배치로 바꾸는
+       * 순간 그대로 나간다(packages/domain/src/vendor-image.ts).
+       */
+      const vendorId = await createVendor({ name: '매칭미확인홀' });
+      await createVendorImage(vendorId, { matchConfidence: 0 });
+      await createVendorImage(vendorId, { matchConfidence: 0.4 });
+      await createVendorImage(vendorId, { matchConfidence: 0.5, sourceUrl: 'https://example.com/ok.jpg' });
+
+      const response = await test.app.inject({
+        method: 'GET',
+        url: `/v1/vendors/${vendorId}/images`,
+      });
+
+      expect(response.json().photos).toHaveLength(1);
+      expect(response.json().photos[0].url).toBe('https://example.com/ok.jpg');
+    });
   });
 
-  it('그 업체 것인지 확인 못 한 사진은 승인돼 있어도 내려가지 않는다', async () => {
-    /*
-     * 운영에 들어 있던 720장이 이런 사진이었다 — 「서울 웨딩홀」 같은 업종 검색
-     * 결과를 업체마다 잘라 붙인 것이라 검색어에 업체 이름이 없었고, 그 사실이
-     * match_confidence 0으로 적혀 있었다. 저작권만 보면 값 하나를 배치로 바꾸는
-     * 순간 그대로 나간다. 남의 사진을 그 업체 사진으로 보여주는 일이라 저작권보다
-     * 먼저 막는다(packages/domain/src/vendor-image.ts).
-     */
-    const vendorId = await createVendor({ name: '매칭미확인홀' });
-    await createVendorImage(vendorId, { matchConfidence: 0 });
-    await createVendorImage(vendorId, { matchConfidence: 0.4 });
-    await createVendorImage(vendorId, { matchConfidence: 0.5, sourceUrl: 'https://example.com/ok.jpg' });
+  describe('판정 전 사진 — 지금 기준(열림)', () => {
+    it('저작권 근거도 매칭도 없는 사진이 내려간다 — 720장이 여기 걸려 있었다', async () => {
+      const vendorId = await createVendor({ name: '수급홀' });
+      await createVendorImage(vendorId, {
+        matchConfidence: 0,
+        copyrightBasis: 'unknown',
+        sourceUrl: 'https://example.com/unverified.jpg',
+      });
 
-    const response = await test.app.inject({
-      method: 'GET',
-      url: `/v1/vendors/${vendorId}/images`,
+      const response = await test.app.inject({
+        method: 'GET',
+        url: `/v1/vendors/${vendorId}/images`,
+      });
+
+      expect(response.json().photos).toHaveLength(1);
+      expect(response.json().photos[0].url).toBe('https://example.com/unverified.jpg');
     });
 
-    expect(response.json().photos).toHaveLength(1);
-    expect(response.json().photos[0].url).toBe('https://example.com/ok.jpg');
+    it('폐기로 넘긴 것은 열려 있어도 안 나간다 — 사람이 이미 내린 판정이다', async () => {
+      const vendorId = await createVendor({ name: '폐기홀' });
+      await createVendorImage(vendorId, {
+        status: 'quality_rejected',
+        sourceUrl: 'https://example.com/rejected.jpg',
+      });
+
+      const response = await test.app.inject({
+        method: 'GET',
+        url: `/v1/vendors/${vendorId}/images`,
+      });
+
+      expect(response.json().photos).toEqual([]);
+    });
   });
 
   it('대표 이미지가 맨 앞에 온다', async () => {

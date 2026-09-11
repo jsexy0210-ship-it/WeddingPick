@@ -1,23 +1,19 @@
 import {
-  MASKED_IDENTIFIER_KINDS,
-  MASKED_IDENTIFIER_LABEL,
-  PAYMENT_METHODS,
-  PAYMENT_METHOD_LABEL,
   PAYMENT_PROOF_RETENTION_HOURS,
-  TERMS,
-  canRegisterPaymentProof,
+  PAYMENT_PROOF_FIELD_LABEL,
   manwon,
-  type MaskedIdentifierKind,
-  type PaymentMethod,
+  withObject,
   type PaymentProofField,
 } from '@weddingpick/domain';
+import type { RegisterPaymentProofResponse } from '@weddingpick/api-contract';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
-import { parsePaymentText, registerPaymentProof } from '@/api/client';
+import { registerPaymentProof } from '@/api/client';
 import {
   PermissionDeniedError,
+  createPage,
   photoPermissionState,
   pickFromLibrary,
   type PhotoPermissionState,
@@ -25,10 +21,7 @@ import {
 import { PermissionSheet } from '@/features/permissions/permission-sheet';
 import type { CapturedPage } from '@/features/capture/types';
 import { uploadPaymentProof } from '@/features/capture/upload';
-import { formatDateDot } from '@/features/common/format-date';
-import { dayToTimestamp, isDay, paramToDay } from '@/features/wedding/expense-day';
 import {
-  FilterChip,
   Layout,
   ProductSymbol,
   Radius,
@@ -36,11 +29,11 @@ import {
   ThemedText,
   useTheme,
 } from '@weddingpick/ui';
+import strings from '../../../../../../../spec/strings.ko.json';
 import {
   CheckBox,
   Dock,
   DockButton,
-  Field,
   Hero,
   InfoCard,
   ListRow,
@@ -49,26 +42,27 @@ import {
   Section,
 } from '@/features/wedding/screen-kit';
 
-/** `spec/strings.ko.json` `report.*` · 시안 11-report-review #12a · #12b · #12c. */
+/**
+ * 문구는 `spec/strings.ko.json` `report.*`에서 온다 — 시안 11-report-review #12a · #12c.
+ *
+ * 줄바꿈(`\n`)은 시안이 정한 자리라 그대로 둔다. 완료 화면 문구는 아직 키가 없어
+ * 여기 적고, 키가 생기면 이 자리도 옮긴다.
+ */
+const R = strings.report;
+
 const S = {
-  nav: 'Pick 인증',
-  pickTitle: '낸 금액이 보이는 화면을 올려주세요',
-  pickSub: '영수증 · 문자 · 앱 화면 캡처 모두 돼요',
-  shoot: '촬영하기',
-  album: '앨범에서 고르기',
-  paste: '문자 붙여넣기',
-  hint1: '금액 · 날짜 · 업체명이 보이면 충분해요',
-  hint2: '카드번호와 이름은 자동으로 가려요',
-  hint3: `확인이 끝난 원본은 ${PAYMENT_PROOF_RETENTION_HOURS}시간 안에 지워요`,
-  readTitleAll: '그대로 제보할까요?',
-  readSubAll: '올려주신 자료에서 그대로 읽었어요',
-  readSubSome: '나머지는 올려주신 자료에서 그대로 읽었어요',
-  manualTitle: '직접 적어주세요',
-  manualSub: '적어주시면 그대로 접수할게요',
-  readTag: '읽었어요',
-  checkTag: '확인 필요',
-  submit: '이대로 제보하기',
-  submitManual: TERMS.reportCta,
+  nav: R.title,
+  pickTitle: R['upload.hero'],
+  pickSub: R['upload.sub'],
+  shoot: R['upload.camera'],
+  album: R['upload.gallery'],
+  remove: '고른 사진 빼기',
+  hint1: R['upload.note1'],
+  hint2: R['upload.note2'],
+  hint3: R['upload.note3'],
+  /** 사진 한 장이 전부다(v3.24). 시안의 «{n}장으로 계속하기»에서 n은 늘 1이다. */
+  submit: R['upload.cta'].replace('{n}', '1'),
+  sending: '보내는 중…',
   doneTitle: '제보 접수됐어요',
   doneSub: '확인이 끝나면 알려드려요',
   doneNext: '다음',
@@ -76,202 +70,99 @@ const S = {
   doneSpend: '내 지출',
   doneOriginal: '원본',
   doneOriginalValue: `올려주신 자료는 ${PAYMENT_PROOF_RETENTION_HOURS}시간 뒤 삭제돼요`,
+  doneChecking: R['state.checking'],
   doneCta: '확인',
 } as const;
-
-/** 사용자 화면의 필드 라벨 — SPEC 5.2(amount 낸 금액 · paidAt 낸 날짜 · vendor 업체). `결제금액` `결제일`을 쓰지 않는다. */
-const FIELD_LABEL: Record<PaymentProofField, string> = {
-  merchantName: '업체',
-  paidAmount: '낸 금액',
-  paidAt: '낸 날짜',
-  method: '지불 수단',
-};
-
-/** 확인이 필요한 항목에 왜 필요한지 한 줄(SPEC 5.1). */
-const HINT: Record<PaymentProofField, string> = {
-  merchantName: '여러 상호로 읽혀 하나를 골랐어요. 맞는지 봐주세요',
-  paidAmount: '금액이 여러 개 있어 하나를 골랐어요',
-  paidAt: '연도가 없어 짐작한 값이에요. 연도가 맞는지 봐주세요',
-  method: '어떤 수단으로 냈는지 골라주세요',
-};
 
 /** 2열 격자 타일 — (390−48−11)/2 = 165.5 → 시안 166. */
 const TILE_GAP = Layout.gap2col;
 
+/** 검수를 기다리는 칸을 한 줄로. 값을 지어내지 않고 무엇을 보고 있는지만 말한다. */
+function checkingValue(fields: PaymentProofField[]): string {
+  if (fields.length === 0) return '올려주신 자료를 확인하고 있어요';
+
+  // 조사는 앞 글자 받침으로 갈린다. «금액을» · «낸 날를»이 되지 않게 도메인이 고른다.
+  const names = fields.map((field) => PAYMENT_PROOF_FIELD_LABEL[field]).join(' · ');
+
+  return `${withObject(names)} 확인하고 있어요`;
+}
+
 /**
- * Pick 인증 — 자료 선택(WP-RPT-002) → 자동 입력 결과 확인(WP-RPT-004) → 제출 완료(WP-RPT-007).
- * 핸드오프 11-report-review #12a · #12b · #12c · SPEC 5.
+ * Pick 인증 — 자료 선택(WP-RPT-002) → 제출 완료(WP-RPT-007).
+ * 핸드오프 11-report-review #12a · #12c · CHANGELOG v3.24.
  *
- *   선택   hero · 2열 격자(촬영하기 · 앨범에서 고르기 · 고른 사진) · 안내 3줄 체크 · 문자 붙여넣기
- *   확인   hero «두 가지만 확인해주세요» · 필드 카드 — 읽은 것 recessed «읽었어요» / 확인 필요 coral 1px «확인 필요» + 힌트
- *   완료   체크 원 72 · «제보 접수됐어요» · 카드 3(다음 · 내 지출 · 원본) · dock «확인»
+ *   선택   hero · 2열 격자(촬영하기 · 앨범에서 고르기 · 고른 사진) · 안내 3줄 체크 · dock «1장으로 계속하기»
+ *   완료   체크 원 72 · «제보 접수됐어요» · 카드(다음 · 내 지출 또는 확인 중 · 원본) · dock «확인»
  *
- * **읽어낸 항목은 조용히, 확인 필요만 강조한다.** 카드사가 기계로 찍어 보내는 문자는 규칙으로
- * 읽힌다 — 붙여넣기는 이미지가 서버에 올라가지 않아 새지도 파기할 일도 없다. 사진은 글로
- * 옮길 수 없는 것(종이 영수증)에 쓴다. 카드번호를 적을 칸이 없다 — 있었는지만 고른다.
- * 지출 추가(WP-OUR-014)에서 «지출 넣고 인증하기»로 오면 적은 값이 미리 채워진다.
+ * **사용자 행동은 사진 한 장, 끝이다**(v3.24). 확인 화면(WP-RPT-004) · 업체 확인
+ * (WP-RPT-005) · 분할 묶기(WP-RPT-006) · 증빙 없는 수동 입력(WP-RPT-010)이 전부
+ * 폐기됐다. 금액·업체·날짜를 적을 칸이 이 화면에 없고, 보낼 자리도 계약에 없다 —
+ * 읽는 것은 서버가 하고, 못 읽으면 접수는 성립하되 검수를 기다린다.
+ *
+ * **재입력 경로는 다시 찍기/올리기뿐이다.** 읽지 못한 값을 사용자가 고쳐 넣는 길을
+ * 두면 그 값에는 증빙이 없고, 증빙 없는 금액은 금액 구간에 들어갈 수 없다.
  */
 export default function RegisterPaymentProofScreen() {
   const theme = useTheme();
-  const prefill = useLocalSearchParams<{ merchantName?: string; paidAmount?: string; paidAt?: string }>();
+  /** 촬영 화면이 찍은 사진을 이 파라미터로 되돌려준다(`/capture/camera?purpose=payment`). */
+  const shot = useLocalSearchParams<{ photoUri?: string; photoMime?: string }>();
 
-  const [merchantName, setMerchantName] = useState(prefill.merchantName ?? '');
-  const [amount, setAmount] = useState(() =>
-    (prefill.paidAmount ?? '').replace(/[^0-9]/g, '').slice(0, 12).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  const [picture, setPicture] = useState<CapturedPage | null>(() =>
+    shot.photoUri ? createPage('camera', { uri: shot.photoUri, mimeType: shot.photoMime ?? 'image/jpeg' }) : null
   );
-  const [day, setDay] = useState(() => paramToDay(prefill.paidAt) ?? '');
-  const [method, setMethod] = useState<PaymentMethod>('card');
-  const [identifiers, setIdentifiers] = useState<MaskedIdentifierKind[]>([]);
-
-  /** 자료를 골랐거나 붙여넣어 읽기를 시도했으면 확인 단계로 넘어간다. 미리 채워져 왔으면 바로 확인 단계. */
-  const [step, setStep] = useState<'pick' | 'review'>(prefill.merchantName || prefill.paidAmount ? 'review' : 'pick');
-  const [pasting, setPasting] = useState(false);
-  const [pasted, setPasted] = useState('');
-  const [picture, setPicture] = useState<CapturedPage | null>(null);
-  const [reading, setReading] = useState(false);
   /** 사진 권한 설명 시트(WP-SHT-016). null이면 닫혀 있다. */
   const [permission, setPermission] = useState<Exclude<PhotoPermissionState, 'granted'> | null>(null);
-  const [readingId, setReadingId] = useState<string | null>(null);
-  const [rawDocumentId, setRawDocumentId] = useState<string | null>(null);
-  const [asRead, setAsRead] = useState<Record<string, string> | null>(null);
-  const [readNote, setReadNote] = useState<string | null>(null);
-  /** 서버가 «확신이 낮다»고 짚은 항목 + 못 읽은 항목. 카드를 coral로 켠다. */
-  const [uncertain, setUncertain] = useState<PaymentProofField[]>([]);
-  const [readOk, setReadOk] = useState<PaymentProofField[]>([]);
-
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState<{ matched: boolean; note: string | null; amount: number } | null>(null);
-
-  const paidAt = isDay(day) ? dayToTimestamp(day) : null;
-  const paidAmount = Number(amount.replace(/[^\d]/g, ''));
-  const check =
-    paidAt === null
-      ? { ok: false as const, reason: '낸 날짜를 2027-05-16 형태로 적어주세요' }
-      : canRegisterPaymentProof({ merchantName, paidAmount, paidAt });
-
-  async function runParse(input: { text?: string; rawDocumentId?: string }) {
-    const parsed = await parsePaymentText(input);
-
-    if (parsed.rejection) {
-      // 취소 문자를 결제로 등록하면 낸 적 없는 돈이 낸 돈이 된다.
-      setReadNote(parsed.rejection);
-      setUncertain([]);
-      setReadOk([]);
-      setReadingId(null);
-      return;
-    }
-
-    if (parsed.merchantName) setMerchantName(parsed.merchantName.value);
-    if (parsed.paidAmount) setAmount(String(parsed.paidAmount.value).replace(/\B(?=(\d{3})+(?!\d))/g, ','));
-    if (parsed.paidAt) setDay(parsed.paidAt.value.slice(0, 10));
-    if (parsed.method) setMethod(parsed.method.value);
-    setIdentifiers(parsed.maskedIdentifiers);
-
-    const unread = parsed.missing;
-    const needs = [...new Set([...parsed.needsConfirmation, ...unread])];
-    const ok = (['merchantName', 'paidAmount', 'paidAt', 'method'] as PaymentProofField[]).filter(
-      (field) => !needs.includes(field)
-    );
-
-    setUncertain(needs);
-    setReadOk(ok);
-    setReadingId(parsed.readingId);
-    setAsRead({
-      merchantName: parsed.merchantName?.value ?? '',
-      amount: parsed.paidAmount ? String(parsed.paidAmount.value) : '',
-      day: parsed.paidAt?.value.slice(0, 10) ?? '',
-    });
-    setReadNote(
-      parsed.notice ??
-        (unread.length > 0 ? `${unread.map((field) => FIELD_LABEL[field]).join(' · ')}은(는) 읽지 못했어요` : null)
-    );
-  }
+  const [done, setDone] = useState<RegisterPaymentProofResponse | null>(null);
 
   /*
    * 앨범을 열기 전에 왜 사진이 필요한지 먼저 말한다(WP-SHT-016). 이미 허용돼 있으면
    * 설명 없이 바로 연다 — 허락한 사람에게 같은 설명을 다시 읽히지 않는다.
    */
   async function openAlbum() {
-    if (reading) return;
+    if (sending) return;
 
     const state = await photoPermissionState().catch<PhotoPermissionState>(() => 'ask');
 
-    if (state === 'granted') void readFromImages(pickFromLibrary);
+    if (state === 'granted') void chooseFromLibrary();
     else setPermission(state);
   }
 
-  async function readFromImages(pick: () => Promise<CapturedPage[]>) {
-    if (reading) return;
-    setReading(true);
-    setReadNote(null);
+  async function chooseFromLibrary() {
+    if (sending) return;
     setError(null);
 
     try {
-      const pages = await pick();
+      const pages = await pickFromLibrary();
 
-      if (pages.length === 0) return;
-
-      setPicture(pages[0] ?? null);
-      const uploaded = await uploadPaymentProof(pages.slice(0, 1));
-
-      setRawDocumentId(uploaded);
-      await runParse({ rawDocumentId: uploaded });
-      setStep('review');
+      if (pages.length > 0) setPicture(pages[0] ?? null);
     } catch (caught) {
-      setReadNote(
-        caught instanceof PermissionDeniedError
+      setError(
+        caught instanceof PermissionDeniedError || caught instanceof Error
           ? caught.message
-          : caught instanceof Error
-            ? caught.message
-            : '읽지 못했어요. 직접 적어주세요.'
+          : '사진을 불러오지 못했어요. 다시 골라주세요.'
       );
-      setStep('review');
-    } finally {
-      setReading(false);
     }
   }
 
-  async function readPasted() {
-    if (pasted.trim().length === 0 || reading) return;
-    setReading(true);
-    setReadNote(null);
-
-    try {
-      await runParse({ text: pasted });
-    } catch (caught) {
-      setReadNote(caught instanceof Error ? caught.message : '읽지 못했어요. 직접 적어주세요.');
-    } finally {
-      setReading(false);
-      setStep('review');
-    }
-  }
-
+  /**
+   * 사진 한 장을 올리고 그대로 접수한다.
+   *
+   * 올리기와 접수를 한 번에 묶는다. 갈라두면 올라간 원본만 남고 제보는 없는 상태가
+   * 생기고, 그 원본은 무엇에 쓰려던 것인지 아무도 모른 채 24시간을 기다린다.
+   */
   async function submit() {
-    if (!paidAt || !check.ok || sending) return;
+    if (!picture || sending) return;
     setSending(true);
     setError(null);
 
     try {
-      const created = await registerPaymentProof({
-        merchantName: merchantName.trim(),
-        paidAmount,
-        paidAt,
-        method,
-        maskedIdentifiers: identifiers,
-        ...(rawDocumentId ? { rawDocumentId } : {}),
-        ...(readingId && asRead
-          ? {
-              readingId,
-              readingCorrected:
-                asRead.merchantName !== merchantName.trim() || asRead.amount !== String(paidAmount) || asRead.day !== day,
-            }
-          : {}),
-      });
+      const rawDocumentId = await uploadPaymentProof([picture]);
 
-      setDone({ matched: created.matchedVendorId !== null, note: created.unmatchedNote, amount: paidAmount });
+      setDone(await registerPaymentProof({ rawDocumentId }));
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : '등록하지 못했어요.');
+      setError(caught instanceof Error ? caught.message : '보내지 못했어요. 다시 시도해주세요.');
     } finally {
       setSending(false);
     }
@@ -279,6 +170,8 @@ export default function RegisterPaymentProofScreen() {
 
   /* ---------------------------------------------------------- 제출 완료 · WP-RPT-007 */
   if (done) {
+    const held = done.status === 'pending_review';
+
     return (
       <Screen>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -289,14 +182,22 @@ export default function RegisterPaymentProofScreen() {
             <View style={styles.doneText}>
               <ThemedText type="t2">{S.doneTitle}</ThemedText>
               <ThemedText type="body" themeColor="textSecondary">
-                {done.matched ? S.doneSub : (done.note ?? S.doneSub)}
+                {done.reviewNote ?? done.unmatchedNote ?? S.doneSub}
               </ThemedText>
             </View>
           </View>
           <View style={styles.cards}>
             <InfoCard label={S.doneNext} value={S.doneNextValue} />
-            <InfoCard label={S.doneSpend} value={`${TERMS.ourWedding} 지출에 ${manwon(done.amount)}이 더해졌어요`} />
-            {rawDocumentId ? <InfoCard label={S.doneOriginal} value={S.doneOriginalValue} /> : null}
+            {/*
+              읽은 금액이 있을 때만 지출에 더해졌다고 말한다. 검수를 기다리는 제보는
+              아직 어느 지출에도 들어가지 않았고(0150), 「더해졌어요」는 거짓이 된다.
+            */}
+            {held || done.paidAmount === null ? (
+              <InfoCard label={S.doneChecking} value={checkingValue(done.pendingFields)} />
+            ) : (
+              <InfoCard label={S.doneSpend} value={`준비 현황 지출에 ${manwon(done.paidAmount)}이 더해졌어요`} />
+            )}
+            <InfoCard label={S.doneOriginal} value={S.doneOriginalValue} />
           </View>
         </ScrollView>
         <Dock>
@@ -307,180 +208,37 @@ export default function RegisterPaymentProofScreen() {
   }
 
   /* ---------------------------------------------------------- 자료 선택 · WP-RPT-002 */
-  if (step === 'pick') {
-    return (
-      <Screen>
-        <NavBar title={S.nav} />
-
-        <ScrollView
-          contentContainerStyle={styles.content}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}>
-          <Hero title={S.pickTitle} sub={S.pickSub} />
-
-          {/* 2열 격자 — 촬영 · 앨범 · 문자. 시안의 «선택된 사진» 자리는 고르면 확인 단계로 넘어가므로 붙여넣기가 앉는다. */}
-          <View style={styles.grid}>
-            <Tile label={S.shoot} disabled={reading} onPress={() => router.push('/capture/camera')} />
-            <Tile label={S.album} disabled={reading} onPress={() => void openAlbum()} />
-            <Tile label={S.paste} disabled={reading} selected={pasting} onPress={() => setPasting((current) => !current)} />
-          </View>
-
-          {pasting ? (
-            <View style={styles.pasteWrap}>
-              <Field
-                label={S.paste}
-                value={pasted}
-                onChangeText={setPasted}
-                multiline
-                placeholder={'[Web발신]\n신한카드 승인\n3,000,000원 일시불\n05/20 14:23\n업체명'}
-                hint="붙여넣은 글은 서버에 이미지로 남지 않아요"
-              />
-            </View>
-          ) : null}
-
-          <Section>
-            {[S.hint1, S.hint2, S.hint3].map((line) => (
-              <ListRow key={line} left={<CheckBox checked />} title={line} titleLines={2} divider={false} />
-            ))}
-          </Section>
-
-          {readNote ? (
-            <ThemedText type="t7" themeColor="negative" style={styles.error}>
-              {readNote}
-            </ThemedText>
-          ) : null}
-        </ScrollView>
-
-        <Dock>
-          {pasting ? (
-            <DockButton
-              variant="primary"
-              label={reading ? '읽는 중…' : '1장으로 계속하기'}
-              disabled={reading || pasted.trim().length === 0}
-              onPress={() => void readPasted()}
-            />
-          ) : (
-            <DockButton label="사진 없이 직접 적기" onPress={() => setStep('review')} />
-          )}
-        </Dock>
-
-        {/* 권한 요청 설명 · WP-SHT-016. 기기 창을 띄우기 전에 왜 필요한지 먼저 말한다. */}
-        <PermissionSheet
-          visible={permission !== null}
-          purpose="photo"
-          blocked={permission === 'blocked'}
-          onAllow={() => {
-            setPermission(null);
-            void readFromImages(pickFromLibrary);
-          }}
-          onLater={() => setPermission(null)}
-        />
-      </Screen>
-    );
-  }
-
-  /* ---------------------------------------------------------- 자동 입력 결과 확인 · WP-RPT-004 */
-  const hasReading = readingId !== null;
-  const needsCount = uncertain.length;
-  const heroTitle = hasReading
-    ? needsCount === 0
-      ? S.readTitleAll
-      : `${['한', '두', '세', '네'][needsCount - 1] ?? needsCount} 가지만 확인해주세요`
-    : S.manualTitle;
-  const heroSub = hasReading ? (needsCount === 0 ? S.readSubAll : S.readSubSome) : (readNote ?? S.manualSub);
-
-  const tone = (field: PaymentProofField): 'read' | 'check' | 'plain' =>
-    !hasReading ? 'plain' : uncertain.includes(field) ? 'check' : readOk.includes(field) ? 'read' : 'plain';
-
   return (
     <Screen>
-      <NavBar title={S.nav} onBack={() => (hasReading || picture ? setStep('pick') : router.back())} />
+      <NavBar title={S.nav} />
 
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <Hero title={heroTitle} sub={heroSub} />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <Hero title={S.pickTitle} sub={S.pickSub} />
 
-        <View style={styles.fieldCards}>
-          <FieldCard label={FIELD_LABEL.paidAmount} tone={tone('paidAmount')} hint={HINT.paidAmount}>
-            <Field
-              label=""
-              value={amount}
-              onChangeText={(text) => setAmount(text.replace(/[^0-9]/g, '').slice(0, 12).replace(/\B(?=(\d{3})+(?!\d))/g, ','))}
-              keyboardType="number-pad"
-              maxLength={15}
-              placeholder="예: 1,520,000"
-              hint={paidAmount > 0 ? manwon(paidAmount) : null}
-              accessibilityLabel={FIELD_LABEL.paidAmount}
-            />
-          </FieldCard>
-
-          <FieldCard label={FIELD_LABEL.paidAt} tone={tone('paidAt')} hint={HINT.paidAt}>
-            <Field
-              label=""
-              value={day}
-              onChangeText={setDay}
-              placeholder="2027-05-16"
-              keyboardType="numbers-and-punctuation"
-              maxLength={10}
-              hint={isDay(day) && paidAt ? formatDateDot(day) : null}
-              accessibilityLabel={FIELD_LABEL.paidAt}
-            />
-          </FieldCard>
-
-          <FieldCard label={FIELD_LABEL.merchantName} tone={tone('merchantName')} hint={HINT.merchantName}>
-            <Field
-              label=""
-              value={merchantName}
-              onChangeText={setMerchantName}
-              placeholder="자료에 적힌 상호 그대로"
-              maxLength={80}
-              accessibilityLabel={FIELD_LABEL.merchantName}
-            />
-          </FieldCard>
-
-          <FieldCard label={FIELD_LABEL.method} tone={tone('method')} hint={HINT.method}>
-            <View style={styles.chips}>
-              {PAYMENT_METHODS.map((value) => (
-                <FilterChip
-                  key={value}
-                  label={PAYMENT_METHOD_LABEL[value]}
-                  selected={method === value}
-                  role="radio"
-                  onPress={() => setMethod(value)}
-                />
-              ))}
-            </View>
-          </FieldCard>
-
-          {/* 값이 아니라 종류만 고른다. 카드번호를 적을 칸이 없는 것이 요점이다. */}
-          <FieldCard label="자료에 함께 찍힌 것" tone="plain" hint="">
-            <View style={styles.chips}>
-              {MASKED_IDENTIFIER_KINDS.map((kind) => (
-                <FilterChip
-                  key={kind}
-                  label={MASKED_IDENTIFIER_LABEL[kind]}
-                  selected={identifiers.includes(kind)}
-                  onPress={() =>
-                    setIdentifiers((current) =>
-                      current.includes(kind) ? current.filter((value) => value !== kind) : [...current, kind]
-                    )
-                  }
-                />
-              ))}
-            </View>
-            <ThemedText type="t7" themeColor="textAssistive">
-              번호 자체는 적지 않아도 되고, 저장하지 않아요
-            </ThemedText>
-          </FieldCard>
+        {/* 2열 격자 — 촬영 · 앨범 · 고른 사진. 시안 11-report-review #12a. */}
+        <View style={styles.grid}>
+          <Tile label={S.shoot} disabled={sending} onPress={() => router.push('/capture/camera?purpose=payment')} />
+          <Tile label={S.album} disabled={sending} onPress={() => void openAlbum()} />
+          {picture ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={S.remove}
+              disabled={sending}
+              onPress={() => setPicture(null)}
+              style={({ pressed }) => [styles.pickedTile, (pressed || sending) && styles.pressed]}>
+              <Image source={{ uri: picture.uri }} style={styles.picked} accessibilityLabel="고른 자료" />
+              <View style={[styles.removeDot, { backgroundColor: theme.text }]}>
+                <ProductSymbol name="close" size={12} color={theme.onTint} />
+              </View>
+            </Pressable>
+          ) : null}
         </View>
 
-        {picture ? (
-          <View style={styles.pictureWrap}>
-            <Image source={{ uri: picture.uri }} style={styles.picture} accessibilityLabel="올린 자료" />
-            <ThemedText type="t7" themeColor="textAssistive">
-              {S.hint3}
-            </ThemedText>
-          </View>
-        ) : null}
+        <Section>
+          {[S.hint1, S.hint2, S.hint3].map((line) => (
+            <ListRow key={line} left={<CheckBox checked />} title={line} titleLines={2} divider={false} />
+          ))}
+        </Section>
 
         {error ? (
           <ThemedText type="t7" themeColor="negative" style={styles.error}>
@@ -489,42 +247,44 @@ export default function RegisterPaymentProofScreen() {
         ) : null}
       </ScrollView>
 
-      <Dock note={!check.ok && (merchantName.length > 0 || amount.length > 0 || day.length > 0) ? check.reason : null}>
+      <Dock>
         <DockButton
           variant="primary"
-          label={sending ? '보내는 중…' : hasReading && needsCount === 0 ? S.submit : S.submitManual}
-          disabled={!check.ok || sending}
+          label={sending ? S.sending : S.submit}
+          disabled={picture === null || sending}
           onPress={() => void submit()}
         />
       </Dock>
+
+      {/* 권한 요청 설명 · WP-SHT-016. 기기 창을 띄우기 전에 왜 필요한지 먼저 말한다. */}
+      <PermissionSheet
+        visible={permission !== null}
+        purpose="photo"
+        blocked={permission === 'blocked'}
+        onAllow={() => {
+          setPermission(null);
+          void chooseFromLibrary();
+        }}
+        onLater={() => setPermission(null)}
+      />
     </Screen>
   );
 }
 
 /** 2열 격자 타일 166 — 테두리 1 · radius 10 · 라벨 14/19 700. */
-function Tile({
-  label,
-  onPress,
-  disabled,
-  selected = false,
-}: {
-  label: string;
-  onPress: () => void;
-  disabled?: boolean;
-  selected?: boolean;
-}) {
+function Tile({ label, onPress, disabled }: { label: string; onPress: () => void; disabled?: boolean }) {
   const theme = useTheme();
 
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityState={{ selected, disabled: disabled === true }}
+      accessibilityState={{ disabled: disabled === true }}
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
         styles.tile,
-        { borderColor: selected ? theme.text : theme.track, backgroundColor: theme.background },
+        { borderColor: theme.track, backgroundColor: theme.background },
         (pressed || disabled) && styles.pressed,
       ]}>
       <ThemedText type="t7" themeColor="textSecondary" style={styles.bold}>
@@ -534,65 +294,14 @@ function Tile({
   );
 }
 
-/**
- * 필드 카드 — SPEC 5.1. 읽은 것: recessed · 태그 «읽었어요» 회색. 확인 필요: 흰 배경 · coral 테두리 ·
- * 태그 «확인 필요» coral 채움 · 힌트 한 줄. 직접 입력: 테두리만.
- */
-function FieldCard({
-  label,
-  tone,
-  hint,
-  children,
-}: {
-  label: string;
-  tone: 'read' | 'check' | 'plain';
-  hint: string;
-  children: React.ReactNode;
-}) {
-  const theme = useTheme();
-  const surface =
-    tone === 'read'
-      ? { backgroundColor: theme.backgroundElement, borderColor: theme.backgroundElement }
-      : tone === 'check'
-        ? { backgroundColor: theme.background, borderColor: theme.tint }
-        : { backgroundColor: theme.background, borderColor: theme.track };
-
-  return (
-    <View style={[styles.fieldCard, surface]}>
-      <View style={styles.fieldHead}>
-        <ThemedText type="t7" themeColor="textAssistive">
-          {label}
-        </ThemedText>
-        {tone === 'read' ? (
-          <View style={[styles.tag, { backgroundColor: theme.border }]}>
-            <ThemedText type="micro" themeColor="textAssistive">
-              {S.readTag}
-            </ThemedText>
-          </View>
-        ) : tone === 'check' ? (
-          <View style={[styles.tag, { backgroundColor: theme.tint }]}>
-            <ThemedText type="micro" themeColor="onTint">
-              {S.checkTag}
-            </ThemedText>
-          </View>
-        ) : null}
-      </View>
-      {children}
-      {tone === 'check' && hint ? (
-        <ThemedText type="t7" themeColor="textSecondary">
-          {hint}
-        </ThemedText>
-      ) : null}
-    </View>
-  );
-}
+const TILE_SIDE = (390 - Layout.gutter * 2 - TILE_GAP) / 2;
 
 const styles = StyleSheet.create({
   content: { paddingBottom: Spacing.four },
   /* 2열 격자 — padding 0 24 · gap 11 · 타일 166. */
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: TILE_GAP, paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four },
   tile: {
-    width: (390 - Layout.gutter * 2 - TILE_GAP) / 2,
+    width: TILE_SIDE,
     aspectRatio: 1,
     borderRadius: Radius.medium,
     borderWidth: 1,
@@ -600,22 +309,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: Spacing.two,
   },
-  pasteWrap: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four },
-  fieldCards: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four, gap: Layout.rowPaddingY },
-  /* 필드 카드 — radius 10 · padding 18 20 · gap 6 · 테두리 1. */
-  fieldCard: {
-    borderRadius: Radius.medium,
-    borderWidth: 1,
-    paddingVertical: Layout.cardPadding - Spacing.half,
-    paddingHorizontal: Layout.cardPadding,
-    gap: Spacing.one + Spacing.half,
+  /* 고른 사진 타일 — 시안의 «선택된 사진» 자리. 오른쪽 위 × 24로 뺀다. */
+  pickedTile: { width: TILE_SIDE, aspectRatio: 1, borderRadius: Radius.medium, overflow: 'hidden' },
+  picked: { width: '100%', height: '100%' },
+  removeDot: {
+    position: 'absolute',
+    top: Spacing.two,
+    right: Spacing.two,
+    width: Layout.iconInline + Spacing.one + Spacing.half,
+    height: Layout.iconInline + Spacing.one + Spacing.half,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  fieldHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  /* 태그 — padding 2 7 · radius 4 · micro 13/18 700(시안 «읽었어요» · «확인 필요»). */
-  tag: { paddingHorizontal: 7, paddingVertical: Spacing.half, borderRadius: Radius.badge },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  pictureWrap: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four, gap: Spacing.two },
-  picture: { width: 120, height: 156, borderRadius: Radius.medium },
   error: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.three },
   /* 제출 완료 — component.doneHero «padding:64px 24px 40px · gap 24 · 원 72»(11-report-review). */
   doneHero: {
