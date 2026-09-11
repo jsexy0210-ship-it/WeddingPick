@@ -149,6 +149,57 @@ describeWithDb('업체 검색', () => {
     expect(parsed.success).toBe(true);
   });
 
+  /*
+   * 목록의 사진도 판정 전 스위치를 지난다(#202).
+   *
+   * 이 자리는 시험이 비어 있었다 — 검색 질의의
+   * `displayableImageCondition('i', { preview })`에서 `{ preview }`를 빼도
+   * 깨지는 것이 하나도 없었다(2026-09-11 실측). 사진 목록 쪽에만 시험이
+   * 붙어 있어서, 목록은 눈으로 보는 수밖에 없었다.
+   *
+   * 이 브랜치가 main을 머지하면서 바로 그 줄이 예산 필터와 같은 질의에서
+   * 만났다. 글자가 안 겹쳐 조용히 붙었고 조용히 떨어질 수도 있었다. 그래서
+   * 눈으로 본 것을 시험으로 옮겨 적는다.
+   */
+  describe('목록의 판정 전 사진', () => {
+    const before = process.env.VENDOR_IMAGES_SHOW_UNVERIFIED;
+
+    afterEach(() => {
+      if (before === undefined) delete process.env.VENDOR_IMAGES_SHOW_UNVERIFIED;
+      else process.env.VENDOR_IMAGES_SHOW_UNVERIFIED = before;
+    });
+
+    /** 720장이 걸려 있던 모양 그대로 — 저작권 근거도 매칭도 없다. */
+    async function createUnverifiedImage(vendorId: string) {
+      await test.pool.query(
+        `INSERT INTO structured.vendor_images
+           (vendor_id, source_url, copyright_basis, status, match_confidence)
+         VALUES ($1, 'https://example.com/unverified.jpg', 'unknown', 'pending', 0)`,
+        [vendorId]
+      );
+    }
+
+    it('스위치가 열려 있으면 목록에도 판정 전 사진이 실린다', async () => {
+      delete process.env.VENDOR_IMAGES_SHOW_UNVERIFIED;
+      const vendorId = await createVendor({ name: '수급홀' });
+      await createUnverifiedImage(vendorId);
+
+      const body = await search({});
+
+      expect(body.vendors[0].imageUrl).toBe('https://example.com/unverified.jpg');
+    });
+
+    it('닫으면 목록에서도 빠진다 — 비로그인에게는 한 장도 안 나간다', async () => {
+      process.env.VENDOR_IMAGES_SHOW_UNVERIFIED = '0';
+      const vendorId = await createVendor({ name: '수급홀' });
+      await createUnverifiedImage(vendorId);
+
+      const body = await search({});
+
+      expect(body.vendors[0].imageUrl).toBeNull();
+    });
+  });
+
   it('결제인증을 낸 사람에게는 깊이가 열린다', async () => {
     // 구간이 아니라 깊이다 — 조건이 비슷한 사례와 상세 분석(D-1).
     const vendorId = await createVendor({ name: '열린홀' });
