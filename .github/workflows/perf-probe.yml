@@ -1,0 +1,117 @@
+# 로딩이 느린 원인을 실제로 잰다. 아무것도 바꾸지 않는다.
+#
+# **왜 워크플로인가.** 작업 컨테이너에서는 `onrender.com`으로 나갈 수 없다(프록시가
+# 막는다). 배포된 API를 실제로 두드려 볼 수 있는 곳이 여기뿐이다.
+#
+# **무엇을 보는가.** `scripts/perf-probe.py`가 `/`(DB 안 봄)와 `/health`(DB 왕복 2회)의
+# 차이로 API에서 DB까지의 거리를 재고, 홈·검색·업체 상세의 p50·p95를 낸다. 서버에
+# 계측 코드를 넣지 않고도 «네트워크가 느린가 · DB가 먼가 · 쿼리가 느린가»를 가른다.
+#
+# **비밀은 찍지 않는다.** 접속 문자열도 호스트명도 출력하지 않는다. Neon은 리전
+# 이름만, Render는 플랜·리전만 뽑아 적는다 — 어느 쪽이 어디 있는지는 판단에 필요하고
+# 그 자체는 비밀이 아니다.
+name: 로딩 성능 측정 (읽기 전용)
+
+on:
+  push:
+    branches:
+      - 'claude/perf-audit**'
+  workflow_dispatch:
+    inputs:
+      samples:
+        description: '엔드포인트당 표본 수'
+        default: '12'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # 운영 API가 어느 플랜·어느 리전에 있는지. 콜드 스타트가 아직 원인인지
+      # 아닌지는 여기서 갈린다 — free면 15분 뒤 잠들고, 유료면 안 잠든다.
+      - name: Render 플랜 · 리전
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+        run: |
+          if [ -z "$RENDER_API_KEY" ]; then
+            echo "::warning::RENDER_API_KEY가 없다. 플랜·리전은 확인하지 못했다."
+            exit 0
+          fi
+          python3 - <<'PY'
+          import json, os, urllib.parse, urllib.request
+
+          key = os.environ["RENDER_API_KEY"]
+
+          def call(path):
+              request = urllib.request.Request(
+                  f"https://api.render.com/v1{path}",
+                  headers={"Authorization": f"Bearer {key}", "Accept": "application/json"},
+              )
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  return json.load(response)
+
+          # 대시보드의 표시 이름과 글자 하나까지 같아야 찾는다(2026-09-10 이름 변경).
+          for name in ("WeddingPick-운영 API 서버", "weddingpick-api", "WeddingPick-워커"):
+              try:
+                  found = call(f"/services?name={urllib.parse.quote(name)}&limit=5")
+              except Exception as error:
+                  print(f"{name}: 조회 실패 ({error})")
+                  continue
+
+              for entry in found:
+                  service = entry.get("service", entry)
+                  if service.get("name") != name:
+                      continue
+                  details = service.get("serviceDetails") or {}
+                  # 통째로 찍지 않는다 — 볼 필요가 있는 것만 이름으로 집는다.
+                  print(f"{name}")
+                  print(f"  type={service.get('type')} suspended={service.get('suspended')}")
+                  print(f"  branch={service.get('branch')} autoDeploy={service.get('autoDeploy')}")
+                  print(f"  plan={details.get('plan') or details.get('envSpecificDetails', {}).get('plan')}")
+                  print(f"  region={details.get('region')}")
+                  print(f"  numInstances={details.get('numInstances')}")
+          PY
+
+      # Neon이 어느 리전에 있는지. **리전 이름만** 적는다 — 접속 문자열은 찍지 않는다.
+      - name: Neon 리전
+        env:
+          PRODUCTION_DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+          DEFAULT_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          python3 - <<'PY'
+          import os, urllib.parse
+
+          raw = os.environ.get("PRODUCTION_DATABASE_URL") or os.environ.get("DEFAULT_DATABASE_URL") or ""
+          if not raw:
+              print("::warning::DATABASE_URL 시크릿이 없다. Neon 리전은 확인하지 못했다.")
+              raise SystemExit(0)
+
+          host = urllib.parse.urlparse(raw).hostname or ""
+          parts = host.split(".")
+          # Neon 호스트는 `ep-<엔드포인트>.<리전>.<클라우드>.neon.tech` 꼴이다.
+          # 엔드포인트 id는 찍지 않는다 — 가운데 리전·클라우드만 집는다.
+          if "neon.tech" in host and len(parts) >= 5:
+              print(f"Neon 리전: {parts[-4]} ({parts[-3]})")
+          elif host:
+              print(f"DB가 Neon 호스트 꼴이 아니다. 리전을 이름에서 읽을 수 없다.")
+          PY
+
+      - name: 응답시간 측정
+        env:
+          API: https://weddingpickl.onrender.com
+          SAMPLES: ${{ github.event.inputs.samples || '12' }}
+          OUT: perf-probe.json
+        run: python3 scripts/perf-probe.py
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: perf-probe
+          path: perf-probe.json
+          if-no-files-found: warn
