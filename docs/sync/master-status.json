@@ -246,7 +246,10 @@
     "관리자 11화면 미완료 검수 — marketing·automation·rollback 데이터 로딩 후 화면, 빈/오류 상태 전수, 시안 픽셀 대조, 네이티브 실기기.",
     "PR201이 남긴 판단 4건 — 견적서 확인 단계 폐기 여부 · WP-RPT-003 화면 · 보류 검수 화면화 · strings.ko.json 죽은 키.",
     "PR174가 남긴 판단 4건 — 글자 크기 15/17/22 · 웹 랜딩 팔레트 · 없는 화면 8개 · 타일 높이.",
-    "PR180 · PR182가 남긴 결정 5건 — 업체 문의 큐 스키마 · 보완 단추 · BACKEND_PENDING 정리 시점 외."
+    "PR180 · PR182가 남긴 결정 5건 — 업체 문의 큐 스키마 · 보완 단추 · BACKEND_PENDING 정리 시점 외.",
+    "리전 이전 — Render 리전 변경 가능 여부와 free 플랜 싱가포르 지원을 워크플로로 확인한 뒤 절차 확정. 대시보드 작업과 OAuth redirect URI 재등록은 대표님 몫.",
+    "커스텀 도메인 weddingpick.kr을 리전 전환에 붙일지 — 대표님 결정. 붙이면 주소가 고정되어 이후 이전에 앱이 깨지지 않는다.",
+    "개인정보 방침 시행일(LEGAL_*_EFFECTIVE_ON) 확정 — 국외 이전 고지가 서버 이전보다 앞서야 한다."
   ],
   "claudeSessions20260911": {
     "absorbedAtKst": "2026-09-11 11:00",
@@ -491,6 +494,48 @@
         "reminders": "만료 30일 전(2028-08-09)과 7일 전(2028-09-01)에 새 세션이 떠서 대표님께 푸시·이메일로 알린다. 그 세션에는 커넥터가 붙지 않으므로 GitHub 확인은 사람이 하거나 MASTER가 이어받아야 한다.",
         "onRenewal": "연장 뒤 키가 바뀌면 `SBIZ_API_KEY`를 바꾸고, `public-data` 워크플로를 `apply=false`로 돌려 수집 건수로 확인한 뒤, 새 만료일로 알림을 다시 건다."
       }
+    ]
+  },
+  "regionMove20260911": {
+    "decision": "API를 싱가포르로 옮긴다 (2026-09-11 대표 승인 · 승인 B 리전 이전)",
+    "measuredCause": {
+      "apiWorkMs": 37,
+      "dbRoundTripMs": 199,
+      "vendorDetailMs": 1049,
+      "vendorDetailBreakdown": "API 37ms(3%) + DB 왕복 5회 995ms(95%)",
+      "method": "GET / (DB 안 봄) 과 GET /health (DB 질의 2회) 의 차이 ÷ 2. 표본 12회 · 연결 이어 쓰기 · GitHub Actions 러너 측정",
+      "source": "docs/perf/measured.md · 커밋 250b3c99"
+    },
+    "layout": "사용자(한국) → API(Render ohio, 미 동부) → DB(Neon 싱가포르). 태평양을 두 번 건넌다.",
+    "regionSources": {
+      "api": "Render API 조회값 — docs/perf/measured.md",
+      "db": "docs/INFRA_ACCESS_AUDIT_2026-09-10.md:69 (AWS Singapore). 접속 문자열을 열지 않고 문서로 확인했다."
+    },
+    "whyApiNotDb": "API를 옮기면 두 구간이 함께 짧아진다 — API↔DB는 같은 리전이 되고 사용자→API도 태평양을 건너지 않는다. DB를 미국으로 옮기면 API↔DB만 풀리고 사용자 구간은 나빠진다.",
+    "ordering": "고지가 이전보다 먼저다 — 개인정보보호법 제28조의8. 방침을 먼저 올리고 그다음 서버를 옮긴다.",
+    "session": "session_01XKpxtPqtPoXe985dafbFwc · 브랜치 claude/region-legal",
+    "masterAndOwnerOnly": [
+      "Render 대시보드에서 싱가포르 서비스 생성·환경변수 이관·전환 — 세션은 절차서까지만 만든다",
+      "카카오·네이버 개발자 콘솔의 redirect URI 재등록",
+      "옛 서비스 폐기 시점 결정"
+    ],
+    "openQuestions": [
+      "Render가 기존 서비스의 리전 변경을 허용하는가 — 불가라면 새 서비스라 주소가 바뀐다 (워크플로로 확인)",
+      "free 플랜이 싱가포르 리전을 지원하는가 — 아니면 승인 C가 걸린다",
+      "커스텀 도메인 weddingpick.kr을 이번 전환에 붙일지 — 붙이면 주소가 영구 고정되어 다음 이전에 앱이 깨지지 않는다. 대표님 결정"
+    ],
+    "cheapNow": "앱이 아직 스토어에 없어 설치된 앱이 세상에 없다. 지금은 주소를 바꿔도 깨질 것이 없고, 출시 뒤에는 구버전 앱이 옛 주소를 계속 본다."
+  },
+  "legalCanonical20260911": {
+    "rule": "약관·개인정보처리방침의 정본은 웹사이트다 (2026-09-11 대표 지시 — 「웹사이트 기준으로 수정하라. 모든 약관은 여기서 컨트롤한다」)",
+    "canonicalFile": "apps/web/src/subpages.ts",
+    "appScreen": "apps/mobile/src/app/(tabs)/my/privacy.tsx — 요약 셋 + 전문 링크. 이미 올바른 모양이라 유지한다.",
+    "knownDefect": "4항·5항 표가 수탁자를 전부 「미국」으로 적었다. Neon은 이미 AWS Singapore라 리전 이전과 무관하게 지금 사실과 다르다. docs/privacy-policy-findings.md:66~69가 먼저 지적해뒀다.",
+    "effectiveDate": "LEGAL_PRIVACY_EFFECTIVE_ON · LEGAL_TERMS_EFFECTIVE_ON — 날짜는 대표님이 정한다. 세션이 값을 넣지 않는다.",
+    "rulesPropagated": [
+      "CLAUDE.md",
+      "docs/session-prompt.md",
+      "docs/codex-handoff.md"
     ]
   }
 }
