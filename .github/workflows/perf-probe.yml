@@ -22,8 +22,10 @@ on:
         description: '엔드포인트당 표본 수'
         default: '12'
 
+# 측정 결과를 브랜치에 적어 둔다. 로그와 아티팩트를 내려받지 못하는 자리가 있어서,
+# 결과가 저장소 안에 남아야 다음 사람이 본다.
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   probe:
@@ -32,6 +34,18 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: 보고서 자리 마련
+        run: |
+          mkdir -p docs/perf
+          {
+            echo "# 로딩 성능 측정"
+            echo
+            echo "잰 시각: $(TZ=Asia/Seoul date '+%Y-%m-%d %H:%M KST')"
+            echo "잰 커밋: ${GITHUB_SHA:0:8}"
+            echo
+            echo '```'
+          } > docs/perf/measured.md
 
       # 운영 API가 어느 플랜·어느 리전에 있는지. 콜드 스타트가 아직 원인인지
       # 아닌지는 여기서 갈린다 — free면 15분 뒤 잠들고, 유료면 안 잠든다.
@@ -43,7 +57,7 @@ jobs:
             echo "::warning::RENDER_API_KEY가 없다. 플랜·리전은 확인하지 못했다."
             exit 0
           fi
-          python3 - <<'PY'
+          python3 - <<'PY' | tee -a docs/perf/measured.md
           import json, os, urllib.parse, urllib.request
 
           key = os.environ["RENDER_API_KEY"]
@@ -84,7 +98,7 @@ jobs:
           PRODUCTION_DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
           DEFAULT_DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
-          python3 - <<'PY'
+          python3 - <<'PY' | tee -a docs/perf/measured.md
           import os, urllib.parse
 
           raw = os.environ.get("PRODUCTION_DATABASE_URL") or os.environ.get("DEFAULT_DATABASE_URL") or ""
@@ -107,11 +121,18 @@ jobs:
           API: https://weddingpickl.onrender.com
           SAMPLES: ${{ github.event.inputs.samples || '12' }}
           OUT: perf-probe.json
-        run: python3 scripts/perf-probe.py
+        run: |
+          set -o pipefail
+          python3 scripts/perf-probe.py | tee -a docs/perf/measured.md
 
-      - uses: actions/upload-artifact@v4
+      - name: 결과를 브랜치에 남긴다
         if: always()
-        with:
-          name: perf-probe
-          path: perf-probe.json
-          if-no-files-found: warn
+        run: |
+          echo '```' >> docs/perf/measured.md
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/perf/measured.md perf-probe.json 2>/dev/null || git add docs/perf/measured.md
+          git diff --cached --quiet && { echo '바뀐 것이 없다.'; exit 0; }
+          # [skip ci] — GITHUB_TOKEN 푸시는 원래 워크플로를 다시 돌리지 않지만, 뜻을 적어 둔다.
+          git commit -q -m '측정 결과를 남긴다 (자동) [skip ci]'
+          git push -q origin HEAD:${GITHUB_REF_NAME}

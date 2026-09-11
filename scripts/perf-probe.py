@@ -64,9 +64,11 @@ def run_curl(urls: list[str], reuse: bool) -> list[dict[str, float]]:
     batches = [urls] if reuse else [[u] for u in urls]
 
     for batch in batches:
-        command = ["curl", "-sS", "-o", "/dev/null", "--max-time", "120", "-w", WRITE_OUT]
+        command = ["curl", "-sS", "--max-time", "120", "-w", WRITE_OUT]
         for url in batch:
-            command.append(url)
+            # `-o`는 URL마다 하나씩 있어야 한다. 하나만 주면 첫 응답만 버려지고
+            # 나머지 본문이 stdout으로 나와 측정값과 섞인다.
+            command += ["-o", "/dev/null", url]
 
         try:
             out = subprocess.run(command, capture_output=True, text=True, timeout=180).stdout
