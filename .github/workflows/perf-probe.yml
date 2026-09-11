@@ -16,6 +16,11 @@ on:
   push:
     branches:
       - 'claude/perf-audit**'
+    # 측정 도구를 손댈 때만 돈다. 이 갈래가 없으면 브랜치에 올리는 커밋마다
+    # 운영 API를 수십 번 두드리고 결과 커밋이 하나씩 더 쌓인다.
+    paths:
+      - 'scripts/perf-probe.py'
+      - '.github/workflows/perf-probe.yml'
   workflow_dispatch:
     inputs:
       samples:
@@ -127,7 +132,8 @@ jobs:
         env:
           API: https://weddingpickl.onrender.com
           SAMPLES: ${{ github.event.inputs.samples || '12' }}
-          OUT: perf-probe.json
+          # 저장소에 남기지 않는다 — 읽는 것은 measured.md 쪽이다.
+          OUT: ${{ runner.temp }}/perf-probe.json
         run: |
           set -o pipefail
           python3 scripts/perf-probe.py | tee -a docs/perf/measured.md
@@ -155,7 +161,7 @@ jobs:
           echo '```' >> docs/perf/measured.md
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add docs/perf/measured.md perf-probe.json 2>/dev/null || git add docs/perf/measured.md
+          git add docs/perf/measured.md
           git diff --cached --quiet && { echo '바뀐 것이 없다.'; exit 0; }
           # [skip ci] — GITHUB_TOKEN 푸시는 원래 워크플로를 다시 돌리지 않지만, 뜻을 적어 둔다.
           git commit -q -m '측정 결과를 남긴다 (자동) [skip ci]'
