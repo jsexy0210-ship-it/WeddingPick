@@ -93,27 +93,34 @@ jobs:
           PY
 
       # Neon이 어느 리전에 있는지. **리전 이름만** 적는다 — 접속 문자열은 찍지 않는다.
-      - name: Neon 리전
+      - name: DB 위치
         env:
           PRODUCTION_DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
           DEFAULT_DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           python3 - <<'PY' | tee -a docs/perf/measured.md
-          import os, urllib.parse
+          import os, re, urllib.parse
 
           raw = os.environ.get("PRODUCTION_DATABASE_URL") or os.environ.get("DEFAULT_DATABASE_URL") or ""
           if not raw:
-              print("::warning::DATABASE_URL 시크릿이 없다. Neon 리전은 확인하지 못했다.")
+              print("::warning::DATABASE_URL 시크릿이 없다. DB 위치는 확인하지 못했다.")
               raise SystemExit(0)
 
           host = urllib.parse.urlparse(raw).hostname or ""
-          parts = host.split(".")
-          # Neon 호스트는 `ep-<엔드포인트>.<리전>.<클라우드>.neon.tech` 꼴이다.
-          # 엔드포인트 id는 찍지 않는다 — 가운데 리전·클라우드만 집는다.
-          if "neon.tech" in host and len(parts) >= 5:
-              print(f"Neon 리전: {parts[-4]} ({parts[-3]})")
-          elif host:
-              print(f"DB가 Neon 호스트 꼴이 아니다. 리전을 이름에서 읽을 수 없다.")
+          labels = host.split(".")
+
+          # **호스트명을 그대로 찍지 않는다.** 어느 업체의 어느 리전인지만 알면 되고,
+          # 그건 뒤쪽 라벨과 리전 꼴 라벨에만 들어 있다. 맨 앞 라벨(엔드포인트·프로젝트
+          # 식별자)은 어떤 경우에도 출력하지 않는다.
+          provider = ".".join(labels[-2:]) if len(labels) >= 2 else "(읽을 수 없음)"
+          regions = [l for l in labels[1:] if re.fullmatch(r"[a-z]{2,4}-[a-z]+-[0-9]", l)]
+          clouds = [l for l in labels[1:] if l in {"aws", "gcp", "azure"}]
+
+          print(f"DB 제공자: {provider}")
+          print(f"DB 리전: {regions[0] if regions else '(호스트명에 없음)'}"
+                + (f" ({clouds[0]})" if clouds else ""))
+          if not regions:
+              print("  리전이 호스트명에 없다. 아래 왕복 시간으로만 거리를 판단한다.")
           PY
 
       - name: 응답시간 측정
@@ -124,6 +131,23 @@ jobs:
         run: |
           set -o pipefail
           python3 scripts/perf-probe.py | tee -a docs/perf/measured.md
+
+      # pg 풀은 놀고 있는 연결을 10초 뒤 닫는다(pg 기본값 idleTimeoutMillis, `db.ts`가
+      # 안 바꾼다). 그 뒤 첫 요청은 TCP·TLS·인증을 다시 치른다 — DB가 멀면 이 값이 크다.
+      - name: 유휴 뒤 첫 요청 (연결 다시 맺는 값)
+        run: |
+          set -o pipefail
+          {
+            echo
+            echo '── 유휴 뒤 첫 요청 ─────────────────────────────'
+          } | tee -a docs/perf/measured.md
+          for i in 1 2 3; do
+            sleep 25
+            warm=$(curl -sS -o /dev/null -w '%{time_starttransfer}' --max-time 120 https://weddingpickl.onrender.com/health)
+            again=$(curl -sS -o /dev/null -w '%{time_starttransfer}' --max-time 120 https://weddingpickl.onrender.com/health)
+            echo "  25초 쉬고: $(python3 -c "print(round(float('$warm')*1000,1))")ms  →  바로 다시: $(python3 -c "print(round(float('$again')*1000,1))")ms" | tee -a docs/perf/measured.md
+          done
+          echo '  앞이 크게 높으면 풀이 연결을 닫았다가 다시 맺고 있다는 뜻이다.' | tee -a docs/perf/measured.md
 
       - name: 결과를 브랜치에 남긴다
         if: always()
