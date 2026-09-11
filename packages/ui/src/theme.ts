@@ -701,6 +701,24 @@ export const Layout = {
   chipSmall: 28,
   chipSmallPaddingX: 10,
   /**
+   * 검색 결과 카드 아래 줄의 Pick pill. component.pickPill — 루트 시안
+   * `WP-SRCH-검색.dc.html` `res()` `btnStyle`이 «height:36;padding:0 12;radius:999;
+   * font 14/700;gap:5»에 하트 15다. 칩(36 · padding 14)과 높이는 같지만 좌우 패딩과
+   * 아이콘이 달라 chipPaddingX로 대신하지 않는다.
+   */
+  pickPill: 36,
+  pickPillPaddingX: 12,
+  pickPillGap: 5,
+  pickPillIcon: 15,
+  /** Pick pill ↔ meta 사이. 같은 시안의 카드 아래 줄 «gap:10». */
+  pickRowGap: 10,
+  /**
+   * 결과 카드에서 업체명과 금액 사이. 루트 시안 `WP-SRCH-검색.dc.html` 16a의
+   * 이름·금액 상자가 «gap:3»이다. `Spacing` 사다리(2 · 4 …)에 없는 값이라 여기
+   * 이름을 붙여 둔다 — 2로 줄이면 두 줄이 붙고 4로 늘리면 카드 높이가 밀린다.
+   */
+  cardNameGap: 3,
+  /**
    * 배지. component.badge — 항상 한 줄. **22는 최소 높이다.** 핸드오프 배지는 height를
    * 적지 않고 `padding:4px 9px; line-height:19px`로만 그려서 27이 된다(pick-status-badge
    * `STATUS_BADGE_STYLE` 주석). 22를 고정 높이로 쓰면 글자가 상자에 닿는다.
