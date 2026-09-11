@@ -8,6 +8,7 @@ import { STEP_TITLE_LINES } from '@/features/onboarding/flow';
 import { InlineToast, useInlineToast } from '@/features/onboarding/inline-toast';
 import { StyleGrid } from '@/features/onboarding/style-grid';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import { Hero, NavAction, NoteBox, Section, SubScreen } from '@/features/settings/my-kit';
 import { ErrorView } from '@weddingpick/ui';
 
@@ -44,6 +45,8 @@ export default function StyleScreen() {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // 저장 완료·불러오기 실패에서 나가는 길은 Depth Back이다 — 딥링크로 들어와도 MY로 간다.
+  const depthBack = useDepthBack();
   const limitToast = useInlineToast();
 
   useEffect(() => {
@@ -62,7 +65,7 @@ export default function StyleScreen() {
         region: loaded.region,
         styleTags: [...loaded.chosen],
       });
-      confirmAlert(S.savedTitle, S.savedBody, [{ text: S.ok, onPress: () => router.back() }]);
+      confirmAlert(S.savedTitle, S.savedBody, [{ text: S.ok, onPress: depthBack }]);
     } catch (caught) {
       if (caught instanceof ApiError && caught.status === 401) {
         router.replace('/login');
@@ -75,7 +78,7 @@ export default function StyleScreen() {
   }
 
   if (!loaded) {
-    return error ? <ErrorView message={error} onBack={() => router.back()} /> : <DelayedLoadingView />;
+    return error ? <ErrorView message={error} onBack={depthBack} /> : <DelayedLoadingView />;
   }
 
   const count = loaded.chosen.length;
