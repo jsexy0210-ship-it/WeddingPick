@@ -220,6 +220,13 @@ services:
         sync: false
       - key: AWS_SECRET_ACCESS_KEY
         sync: false
+      # 관리자 「링크 미리보기」의 «저장 후 반영하기»가 당기는 주소다. 웹은 정적
+      # HTML이라 저장만으로는 문구가 나가지 않고 다시 빌드해야 한다. 값이 없으면
+      # 그 단추는 언제 눌러도 실패한다(routes/site-meta.ts) — 선언이 없어서 실패하는
+      # 이유조차 대시보드에서 보이지 않았다. Render의 weddingpick-web 배포 훅 주소를
+      # 넣는다. API 키를 쓰지 않는 이유는 같은 파일 주석에 적혀 있다.
+      - key: RENDER_WEB_DEPLOY_HOOK
+        sync: false
 
   # ── 주기 작업 워커 ────────────────────────────────────────────────────
   #

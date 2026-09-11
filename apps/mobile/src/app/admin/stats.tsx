@@ -95,7 +95,7 @@ export default function StatsScreen() {
   }));
 
   return (
-    <Page title="이상치 · 조작 탐지" sub="자동 차단 후 목록 · 최근 7일">
+    <Page title="이상 거래" sub="자동 차단 후 목록 · 최근 7일">
       {loading ? null : error ? <LoadError message={error} onRetry={reload} /> : null}
 
       {!loading && !error && data ? (

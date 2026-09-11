@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Colors, FontSize } from '@weddingpick/ui';
+import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 
@@ -84,11 +85,19 @@ export default function PriceStatsScreen() {
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <Text style={styles.title}>데이터 · 가격통계</Text>
+        <Text style={styles.title}>가격 통계</Text>
         <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
           <Text style={styles.refreshText}>새로 고침</Text>
         </Pressable>
       </View>
+
+      {/* 사이드바의 「조회만」과 짝이다(`_layout.tsx`의 `READ_ONLY`). */}
+      {BACKEND_PENDING ? (
+        <PendingBackendNotice
+          actions="재계산"
+          reason="통계를 다시 계산하는 곳이 아직 없어요. 목록의 수와 공개 단계는 실제 값이에요."
+        />
+      ) : null}
 
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
@@ -154,10 +163,19 @@ export default function PriceStatsScreen() {
                 </Text>
                 <Text style={[styles.td, styles.colVersion, styles.monoText]}>{v.statsVersion}</Text>
                 <View style={[styles.colAction]}>
+                  {/*
+                    * **「재계산」은 잠겨 있다.** 서버가 `202 { queued: true }`만 돌려주고
+                    * 큐에 넣는 줄이 없다 — 통계를 다시 계산하는 함수가 저장소 어디에도
+                    * 없다. 눌리는 대로 두면 「눌렀는데 통계 버전이 그대로」가 되고,
+                    * 운영자는 계산이 늦는 것으로 읽는다.
+                    */}
                   <Pressable
-                    style={[styles.inlineBtn, recalcId === v.vendorId && styles.btnDisabled]}
+                    style={[
+                      styles.inlineBtn,
+                      (BACKEND_PENDING || recalcId === v.vendorId) && styles.btnDisabled,
+                    ]}
                     onPress={() => void recalc(v.vendorId)}
-                    disabled={recalcId !== null}
+                    disabled={BACKEND_PENDING || recalcId !== null}
                   >
                     <Text style={styles.inlineBtnText}>{recalcId === v.vendorId ? '…' : '재계산'}</Text>
                   </Pressable>

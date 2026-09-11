@@ -6,6 +6,7 @@
  */
 import { useEffect, useState } from 'react';
 
+import { BACKEND_PENDING, PendingBackendNotice } from '@/features/admin/pending-backend';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import {
@@ -129,6 +130,20 @@ export default function RevenueScreen() {
       {!loading && !error && data ? (
         <>
           {/*
+            * **지금 이 화면의 숫자는 집계에서 온 것이 아니다.** 서버가 0을 고정으로
+            * 돌려준다(`routes/admin.ts`) — 구독·결제를 담는 표가 DB에 없다. 0을 그냥
+            * 그리면 「이번 달 수익이 0」으로 읽히고, 그것은 거짓이 아니라 **모르는
+            * 것을 아는 것처럼** 말하는 쪽이라 더 나쁘다.
+            *
+            * 사이드바의 「조회만」과 짝이다(`_layout.tsx`의 `READ_ONLY`).
+            */}
+          {BACKEND_PENDING ? (
+            <PendingBackendNotice
+              actions="수익 집계"
+              reason="결제 · 구독을 담는 곳이 아직 없어서 이 화면의 수는 모두 0으로 나와요. 집계가 붙기 전까지는 «측정값»이 아니에요."
+            />
+          ) : null}
+          {/*
             시안 6번에는 배너가 없지만 ADMIN.md 공통 규칙은 「상단 배너가 상태를 먼저
             말한다」이다. 규칙이 시안보다 넓으므로 규칙을 따른다 — 순이 마이너스로
             돌아선 달을 표에서 읽어내게 두면 늦는다.
@@ -146,14 +161,14 @@ export default function RevenueScreen() {
                   ? '이번 기간에 집계된 것이 없어요'
                   : '순이 플러스예요'
             }
-            detail={`수익 ${data.summary.mrr} · AI 비용 ${data.summary.aiCost} · 순 ${data.summary.contributionMargin}`}
+            detail={`수익 ${data.summary.mrr} · 분석 비용 ${data.summary.aiCost} · 순 ${data.summary.contributionMargin}`}
           />
 
-          {/* 수익 · AI 비용 · 순이 한 줄에 온다(ADMIN.md WP-ADM-032). */}
+          {/* 수익 · 분석 비용 · 순이 한 줄에 온다(ADMIN.md WP-ADM-032). */}
           <KpiRow
             items={[
               { label: '수익', value: data.summary.mrr, note: `연 환산 ${data.summary.arr}` },
-              { label: 'AI 비용', value: data.summary.aiCost, note: '이번 기간 사용분', kind: 'bad' },
+              { label: '분석 비용', value: data.summary.aiCost, note: '이번 기간 사용분', kind: 'bad' },
               { label: '보상 비용', value: data.summary.rewardCost, note: 'Npay 지급분', kind: 'bad' },
               {
                 label: '순',
