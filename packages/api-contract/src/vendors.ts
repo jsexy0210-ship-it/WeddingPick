@@ -4,7 +4,7 @@ import { paidPriceSchema } from './payment-proofs';
 import { reportedPriceSchema } from './price-reports';
 import { usageScoreSchema } from './reviews';
 
-import { MAX_COMPARED_VENDORS, SPONSORED_LABEL, WEDDING_STYLES } from '@weddingpick/domain';
+import { BUDGET_BAND_KEYS, MAX_COMPARED_VENDORS, SPONSORED_LABEL, WEDDING_STYLES } from '@weddingpick/domain';
 
 import { coordinateSchema, documentTypeSchema, idSchema, vendorCategorySchema } from './common';
 import { priceStatSchema } from './comparison';
@@ -110,6 +110,41 @@ export const sponsoredCardSchema = z.object({
   /** 유료 노출임을 밝히는 말. 애매한 말을 쓰지 않는다. */
   label: z.literal(SPONSORED_LABEL),
 });
+
+/**
+ * A-16 검색 질의.
+ *
+ * **화면이 거는 조건 그대로다.** 필터 시트(WP-SRCH-005)가 그리는 것은 지역 · 예산 ·
+ * «실 제보가 있는 곳만» 셋이고, 세 칸이 여기 그대로 있다. 서버가 먼저 정해둔 칸에
+ * 화면을 맞추지 않는다.
+ *
+ * 시안의 「촬영일」 · 「조건」 두 묶음은 여기 없다 — 업체의 촬영 가능일도, 상품
+ * 구성(원본 전체 · 야외 포함 …)도 아직 어디에도 모아둔 것이 없다. 고를 수는 있는데
+ * 아무것도 걸리지 않는 칩을 두지 않는다.
+ */
+export const vendorSearchQuerySchema = z.object({
+  q: z.string().trim().max(60).optional(),
+  /** 업종 목록은 `vendorCategorySchema`가 들고 있다. */
+  category: vendorCategorySchema.optional(),
+  /** "서울"처럼 시도까지만. region은 "서울 마포구" 형태라 앞부분으로 맞춘다. */
+  region: z.string().trim().max(20).optional(),
+  /** 예산 구간 한 칸. 키는 `BUDGET_BANDS`(packages/domain)가 정한다. */
+  budget: z.enum(BUDGET_BAND_KEYS).optional(),
+  /**
+   * 금액을 볼 수 있는 곳만 — 실 제보가 공개 기준(`DISCLOSURE_THRESHOLDS.limited`)에
+   * 닿은 업체만 남긴다. 쿼리스트링이라 «true»/«false» 글자로 온다.
+   */
+  onlyVerified: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((value) => value === 'true'),
+  cursor: z.string().max(200).optional(),
+  /** 기본은 데이터 많은 순. `인기 순`은 잴 것이 없어 만들지 않았다. */
+  sort: vendorSortSchema.default('data'),
+  limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+
+export type VendorSearchQuery = z.infer<typeof vendorSearchQuerySchema>;
 
 export const vendorSearchResponseSchema = z.object({
   vendors: z.array(vendorSummarySchema),

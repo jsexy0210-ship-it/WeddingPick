@@ -149,7 +149,7 @@ import {
 } from '@weddingpick/api-contract';
 import { z, type ZodType } from 'zod';
 
-import type { VendorCategory } from '@weddingpick/domain';
+import type { BudgetBandKey, VendorCategory } from '@weddingpick/domain';
 
 import { API_URL } from '@/api/config';
 import { clearToken, loadToken, saveToken } from '@/api/session';
@@ -720,6 +720,10 @@ export async function searchVendors(input: {
   region?: string;
   cursor?: string;
   sort?: VendorSort;
+  /** 예산 구간(WP-SRCH-005). 키는 `BUDGET_BANDS`가 정한다. */
+  budget?: BudgetBandKey;
+  /** 금액을 볼 수 있는 곳만(WP-SRCH-005 «실 제보가 있는 곳만»). 꺼져 있으면 안 보낸다. */
+  onlyVerified?: boolean;
   /** 몇 곳까지 받을 것인가. 안 넘기면 서버 기본값(20). 수만 필요하면 1로 줄인다. */
   limit?: number;
 }, refresh?: ReadRefresh<VendorSearchResponse>): Promise<VendorSearchResponse> {
