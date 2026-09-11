@@ -179,12 +179,36 @@ function mostCommon(values: string[]): string | null {
  * 상품은 아예 내려보내지 않는다 — 중앙값 없는 상품 이름만 늘어놓으면 화면이 그것을
  * 가격으로 그릴 여지가 생긴다.
  */
+/**
+ * 이 사람에게 **판정 전 사진**을 보여도 되는가.
+ *
+ * 2026-09-11 대표 지시 「일단 이미지 넣어 보고 판단한다」. 운영에 들어 있는 720장은
+ * 저작권 근거가 `unknown`이고 매칭 신뢰도가 0이라 한 장도 화면에 안 나간다. 값을
+ * 배치로 고쳐 열면 판정한 적 없는 것이 판정된 것으로 남으므로, **값은 그대로 두고
+ * 보는 사람으로 가른다** — 운영자로 로그인했을 때만 열린다.
+ *
+ * 로그인하지 않았으면 질의도 하지 않는다. 목록 한 번에 한 번씩 더 묻는 자리라,
+ * 대부분인 비로그인 요청에서 아무 일도 일어나지 않는 편이 맞다.
+ */
+async function previewsImages(pool: Pool, viewerId: string | null): Promise<boolean> {
+  if (!viewerId) return false;
+
+  const { rows } = await pool.query<{ is_operator: boolean }>(
+    `SELECT is_operator FROM structured.users WHERE id = $1 AND deleted_at IS NULL`,
+    [viewerId]
+  );
+
+  return rows[0]?.is_operator === true;
+}
+
 async function loadVendorDetail(pool: Pool, vendorId: string, viewerId: string | null) {
+  const preview = await previewsImages(pool, viewerId);
+
   const { rows } = await pool.query<VendorRow>(
     `SELECT v.id, v.name, v.category, v.region, v.source, to_jsonb(v)->>'source_url' AS source_url, v.last_verified_at, v.lat, v.lng,
               v.style_tags::text[] AS style_tags, v.guide_price_from, v.guide_price_source,
               (SELECT i.source_url FROM structured.vendor_images i
-                 WHERE i.vendor_id = v.id AND ${displayableImageCondition('i')}
+                 WHERE i.vendor_id = v.id AND ${displayableImageCondition('i', { preview })}
                    AND i.source_url IS NOT NULL
                  ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url,
             (SELECT count(*) FROM structured.comparable_quotes c WHERE c.vendor_id = v.id)
@@ -423,6 +447,9 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
   app.get('/v1/vendors', auth, async (request) => {
     const query = searchQuerySchema.parse(request.query);
 
+    /* 판정 전 사진은 운영자에게만 열린다(previewsImages). */
+    const preview = await previewsImages(context.pool, optionalUserId(request));
+
     /*
      * 정규화는 DB의 normalize_vendor_name을 그대로 쓴다. 서버가 따로 흉내내면 색인에
      * 저장된 값과 어긋나 "분명히 있는데 안 나오는" 업체가 생긴다.
@@ -478,7 +505,7 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
        SELECT v.id, v.name, v.category, v.region, v.source, to_jsonb(v)->>'source_url' AS source_url, v.last_verified_at, v.lat, v.lng,
               v.style_tags::text[] AS style_tags, v.guide_price_from, v.guide_price_source,
               (SELECT i.source_url FROM structured.vendor_images i
-                 WHERE i.vendor_id = v.id AND ${displayableImageCondition('i')}
+                 WHERE i.vendor_id = v.id AND ${displayableImageCondition('i', { preview })}
                    AND i.source_url IS NOT NULL
                  ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url,
               (SELECT count(*) FROM structured.comparable_quotes c WHERE c.vendor_id = v.id)
@@ -581,6 +608,11 @@ async function loadSponsored(
      * 자리를 겹쳐 잡아둘 수 있고(기간이 겹치는 두 건), 그러면 같은 업체가 두 줄로
      * 나온다. 렌더해보고 잡았다 — 표에서 막기보다 여기서 묶는 이유는, 겹치는
      * 기간을 표로 막으려면 자리를 나눠 잡는 정상적인 경우까지 걸리기 때문이다.
+     */
+    /*
+     * 광고 자리에는 검수 모드를 걸지 않는다. 여기 실리는 사진은 업체가 돈을 내고
+     * 건 자리에 나가는 것이라, 판정 전 사진이 섞이면 「우리가 고르지 않은 사진이
+     * 우리 광고에 나갔다」가 된다. 운영자가 보고 있어도 마찬가지다.
      */
     `SELECT picked.vendor_id, picked.name, picked.category, picked.region,
             (SELECT i.source_url FROM structured.vendor_images i
@@ -779,6 +811,9 @@ async function loadConditionStats(
 
       if (!vendorCheck.rows[0]) throw notFound('업체');
 
+      /* 판정 전 사진은 운영자에게만 열린다(previewsImages). */
+      const preview = await previewsImages(context.pool, optionalUserId(request));
+
       const { rows } = await context.pool.query<{
         id: string;
         storage_key: string | null;
@@ -791,7 +826,7 @@ async function loadConditionStats(
         `SELECT id, storage_key, source_url, is_representative, use_contain,
                 copyright_note, verified_at
          FROM structured.vendor_images
-         WHERE vendor_id = $1 AND ${displayableImageCondition('vendor_images')}
+         WHERE vendor_id = $1 AND ${displayableImageCondition('vendor_images', { preview })}
          ORDER BY is_representative DESC, created_at ASC`,
         [vendorId]
       );
