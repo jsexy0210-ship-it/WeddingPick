@@ -694,6 +694,32 @@ describeWithDb('업체 검색', () => {
       expect((await counts(headers)).hall).toBe(0);
     });
 
+    it('검수를 기다리는 제보는 세지 않는다', async () => {
+      const { headers } = await signInAs(test);
+      const vendorId = await createVendor({ name: '가홀', category: 'hall' });
+
+      await seedProofs(vendorId, 2);
+
+      const reporter = await test.pool.query<{ id: string }>(
+        'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
+      );
+
+      await test.pool.query(
+        `INSERT INTO structured.payment_proofs
+           (reporter_user_id, vendor_id, merchant_name, paid_amount, paid_at,
+            review_state, pending_fields)
+         VALUES ($1, $2, '가맹점', 1_500_000, now(), 'pending_review', ARRAY['paidAmount']::payment_proof_field[])`,
+        [reporter.rows[0]!.id, vendorId]
+      );
+
+      /*
+       * 0150이 «보류는 어떤 통계에도 들어가지 않는다»를 관문(usable_payment_proofs)에
+       * 걸었다. 카드도 그 관문을 지나므로 따로 적지 않아도 같이 빠진다 — 여기가
+       * 어긋나면 카드는 「3건」인데 금액은 두 건으로 만들어진다.
+       */
+      expect((await counts(headers)).hall).toBe(2);
+    });
+
     it('제보가 없는 업종도 빠짐없이 0으로 내려간다', async () => {
       const { headers } = await signInAs(test);
       await seedProofs(await createVendor({ name: '가홀', category: 'hall' }), 1);
