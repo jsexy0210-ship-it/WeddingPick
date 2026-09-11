@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BackBar } from '@/components/back-bar';
+import { useDepthBack } from '@/features/navigation/depth-back';
 
 import {
   getCurrentUser,
@@ -44,6 +45,8 @@ export default function PickCategoryScreen() {
   const [group, setGroup] = useState<CandidateListResponse['groups'][number] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // 오류·목록 하단의 나가는 길은 Depth Back이다 — 딥링크로 들어와도 Pick 탭으로 간다.
+  const depthBack = useDepthBack();
 
   const load = useCallback(() => {
     setLoading(true);
@@ -85,7 +88,7 @@ export default function PickCategoryScreen() {
   }
 
   if (error) {
-    return <ErrorView message={error} onBack={() => router.back()} onRetry={load} />;
+    return <ErrorView message={error} onBack={depthBack} onRetry={load} />;
   }
 
   const categoryLabel = VENDOR_CATEGORY_LABEL[cat] ?? cat;
@@ -170,7 +173,7 @@ export default function PickCategoryScreen() {
             })
           )}
 
-          <ActionButton label="돌아가기" onPress={() => router.back()} />
+          <ActionButton label="돌아가기" onPress={depthBack} />
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
