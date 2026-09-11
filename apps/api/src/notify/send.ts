@@ -3,6 +3,7 @@ import {
   NOTIFICATION_TIMEZONE,
   NOTIFICATION_TOPICS_ALWAYS,
   isCappedNotification,
+  isQuietHours,
   reachedDailyCap,
   type NotificationKind,
   type NotificationTopic,
@@ -58,9 +59,20 @@ export type DeliveryResult = {
   skipped: number;
   /** 오늘 한도(2건)가 차서 보내지 않은 것. 내일 다시 볼 일이 있으면 그때 간다. */
   capped: number;
+  /**
+   * 야간이라 푸시를 생략한 것. 알림함에는 남아 있다.
+   *
+   * **아침에 다시 보내지 않는다.** 세어 두는 것은 보고용이지 재발송 대기열이
+   * 아니다 — 모아뒀다 아침에 쏘면 «밤에 안 받겠다»가 «아침에 몰아 받겠다»가 된다.
+   */
+  quieted: number;
 };
 
-type Settings = { push_enabled: boolean; price_change_enabled: boolean };
+type Settings = {
+  push_enabled: boolean;
+  price_change_enabled: boolean;
+  night_push_enabled: boolean;
+};
 
 /**
  * 오늘 이 사람에게 간 한도 대상 알림 수.
@@ -85,10 +97,16 @@ export async function sentTodayCount(pool: Pool, userId: string): Promise<number
 }
 
 export async function deliver(
-  deps: { pool: Pool; push: Push },
+  deps: {
+    pool: Pool;
+    push: Push;
+    /** 지금. 시험에서 밤 9시를 만들기 위한 자리이고, 비우면 진짜 지금이다. */
+    now?: () => Date;
+  },
   items: readonly Deliverable[]
 ): Promise<DeliveryResult> {
-  const result: DeliveryResult = { stored: 0, pushed: 0, skipped: 0, capped: 0 };
+  const result: DeliveryResult = { stored: 0, pushed: 0, skipped: 0, capped: 0, quieted: 0 };
+  const quiet = isQuietHours(deps.now?.() ?? new Date());
 
   for (const item of items) {
     const topic = item.topic ?? 'other';
@@ -151,7 +169,8 @@ export async function deliver(
 
     const settings = await deps.pool.query<Settings>(
       `SELECT coalesce(s.push_enabled, true) AS push_enabled,
-              coalesce(s.price_change_enabled, true) AS price_change_enabled
+              coalesce(s.price_change_enabled, true) AS price_change_enabled,
+              coalesce(s.night_push_enabled, false) AS night_push_enabled
        FROM structured.users u
        LEFT JOIN structured.notification_settings s ON s.user_id = u.id
        WHERE u.id = $1`,
@@ -163,6 +182,21 @@ export async function deliver(
     const priceEnabled = found?.price_change_enabled ?? true;
 
     if (!pushEnabled || (item.priceChange && !priceEnabled)) continue;
+
+    /*
+     * 야간 수신을 껐으면 한국시간 21:00 이상 ~ 다음 날 08:00 미만에는 푸시를
+     * 생략한다(AGENTS.md · 사용자 승인 2026-09-06).
+     *
+     * **알림함에 남긴 뒤에 본다.** 위에서 이미 저장했으므로 밤에 생긴 일도 아침에
+     * 열어보면 다 있다 — 이 조건이 저장보다 앞에 오면 밤에 온 알림이 사라진다.
+     *
+     * 생략한 것을 어디에도 쌓지 않는다. 쌓아두면 아침에 보내야 할 것처럼 보이고,
+     * 그 순간 «밤에 안 받겠다»가 «아침에 몰아 받겠다»가 된다.
+     */
+    if (quiet && !(found?.night_push_enabled ?? false)) {
+      result.quieted += 1;
+      continue;
+    }
 
     const { rows: tokens } = await deps.pool.query<{ token: string }>(
       `SELECT token FROM structured.device_tokens

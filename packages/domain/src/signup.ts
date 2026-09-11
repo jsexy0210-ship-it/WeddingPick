@@ -102,6 +102,24 @@ export const OPTIONAL_CONSENTS: ConsentItem[] = CONSENT_ITEMS.filter(
   (item) => !item.required
 ).map((item) => item.key);
 
+/**
+ * 마케팅 수신 동의 항목.
+ *
+ * 알림 설정(WP-NOTI-003)의 «마케팅 알림» 스위치가 켜고 끄는 것이 이 동의다.
+ * 이름을 상수로 두는 이유는 가입 화면과 알림 설정이 **같은 줄**을 봐야 해서다 —
+ * 각자 `'marketing'`이라고 적으면 한쪽만 고쳐도 티가 나지 않는다.
+ */
+export const MARKETING_CONSENT_ITEM: ConsentItem = 'marketing';
+
+/** 이 항목이 필수 동의인가. 동의를 받던 그때의 성격을 행에 함께 적기 위해 쓴다. */
+export function isRequiredConsent(item: ConsentItem): boolean {
+  const found = CONSENT_ITEMS.find((candidate) => candidate.key === item);
+
+  if (!found) throw new Error(`알 수 없는 동의 항목: ${item}`);
+
+  return found.required;
+}
+
 export function consentVersion(item: ConsentItem): string {
   const found = CONSENT_ITEMS.find((candidate) => candidate.key === item);
 
