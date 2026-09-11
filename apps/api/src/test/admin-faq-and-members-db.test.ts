@@ -1,4 +1,5 @@
 import { createTestApp, resetDatabase, signInAs, type TestApp } from './helpers';
+import type { LocalStorage } from '../storage/local';
 
 let test: TestApp;
 
@@ -154,6 +155,64 @@ describeWithDb('관리자 — FAQ · 회원 추이', () => {
     expect(today.total).toBe(1);
     expect(data.current).toBe(1);
     expect(rows[0]!.id).not.toBe(userId);
+  });
+
+  /**
+   * 카드 그림 — 올리기부터 공개 조회까지.
+   *
+   * **여기까지 와야 「나온다」고 말할 수 있다.** 열쇠를 저장하는 것으로 끝내면,
+   * 파일이 반쪽만 올라갔거나 공개 조회가 막혀 있어도 화면에는 「저장됨」이라고
+   * 적힌다. 크롤러는 그 카드를 조용히 버린다.
+   */
+  it('올린 그림이 공개 주소로 그대로 나온다', async () => {
+    const { headers } = await operator();
+
+    const target = await test.app.inject({
+      method: 'POST',
+      url: '/v1/admin/site-meta/og-image/upload-target',
+      headers,
+      payload: { mimeType: 'image/png' },
+    });
+
+    expect(target.statusCode).toBe(200);
+
+    const { storageKey } = target.json() as { storageKey: string };
+
+    /* 화면은 서명 주소로 저장소에 바로 올린다. 시험에서는 드라이버에 직접 넣는다. */
+    const bytes = Buffer.from('89504e470d0a1a0a', 'hex');
+
+    (test.context.storage as LocalStorage).put(storageKey, bytes);
+
+    const committed = await test.app.inject({
+      method: 'PUT',
+      url: '/v1/admin/site-meta/og-image',
+      headers,
+      payload: { storageKey },
+    });
+
+    expect(committed.statusCode).toBe(200);
+    expect(committed.json()).toMatchObject({ ogImageSource: 'upload' });
+
+    /* 카드에 실리는 주소에 `?v=`가 붙어야 새 그림이 새 주소로 나간다. */
+    const view = committed.json() as { effective: { ogImageUrl: string } };
+
+    expect(view.effective.ogImageUrl).toMatch(/\/v1\/site-meta\/og-image\?v=\d+$/);
+
+    /* 공개 조회는 로그인 없이 그림을 그대로 내보낸다 — 크롤러는 로그인하지 못한다. */
+    const served = await test.app.inject({ method: 'GET', url: '/v1/site-meta/og-image' });
+
+    expect(served.statusCode).toBe(200);
+    expect(served.headers['content-type']).toContain('image/png');
+    expect(served.rawPayload).toEqual(bytes);
+
+    const cleared = await test.app.inject({
+      method: 'DELETE',
+      url: '/v1/admin/site-meta/og-image',
+      headers,
+    });
+
+    expect(cleared.statusCode).toBe(200);
+    expect(cleared.json()).toMatchObject({ ogImageSource: 'default' });
   });
 
   it('구간 이름이 아니면 거부한다', async () => {
