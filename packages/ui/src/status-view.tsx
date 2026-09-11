@@ -4,6 +4,7 @@ import { error as errorCopy } from '../../../spec/strings.ko.json';
 
 import { ActionButton } from './action-button';
 import { CategoryCycleLoader } from './category-cycle-loader';
+import { CircleLoader } from './circle-loader';
 import type { CategoryIconKind } from './category-icon';
 import { ListSkeleton } from './list-skeleton';
 import { StepList, type Step } from './step-list';
@@ -74,22 +75,39 @@ export type LoadingViewProps = {
   title?: string;
   /** @deprecated `title`. */
   label?: string;
-  /** 온보딩 결정 완료 업종 — 순회에서 뺀다. */
+  /** 온보딩 결정 완료 업종 — 순회에서 뺀다. `loader="cycle"`일 때만 쓴다. */
   exclude?: readonly CategoryIconKind[];
+  /**
+   * 어느 로더를 돌릴 것인가. 기본은 써클이다.
+   *
+   * `circle`  Depth·페이지 이동 — 폼·상세 하나를 읽어오는 보통의 자리
+   * `cycle`   첫 실행·재시작·추천 계산처럼 오래 붙잡는 자리
+   *
+   * 가르는 기준은 `apps/mobile/src/features/loading/delayed-loader.tsx`의 `LoaderWait`에
+   * 적혀 있다 — 화면은 그쪽 `DelayedLoadingView`를 쓰고 이 prop을 직접 만지지 않는다.
+   */
+  loader?: 'circle' | 'cycle';
 };
 
 /**
- * 짧은 처리(3초 이하)의 화면 전체 로딩 — 업종 순회 로더 40. 폼·상세 하나를 읽어오는
+ * 짧은 처리(3초 이하)의 화면 전체 로딩 — 로더 40. 폼·상세 하나를 읽어오는
  * 자리. **목록에는 쓰지 않는다** — 목록은 `SkeletonView`다(핸드오프 규칙 «목록에는
  * 로더를 쓰지 않아요»). 700ms 규칙은 호출하는 화면이 `useDelayedVisible`로 지킨다.
+ *
+ * 2026-09-11 대표 지시로 **기본이 써클**이다. 업종 순회는 `loader="cycle"`을 넘긴
+ * 자리에만 남는다.
  */
-export function LoadingView({ title, label, exclude }: LoadingViewProps) {
+export function LoadingView({ title, label, exclude, loader = 'circle' }: LoadingViewProps) {
   const text = title ?? label;
 
   return (
     <StatusFrame>
       <View style={styles.centerRow}>
-        <CategoryCycleLoader size={40} exclude={exclude} />
+        {loader === 'cycle' ? (
+          <CategoryCycleLoader size={40} exclude={exclude} />
+        ) : (
+          <CircleLoader size={40} />
+        )}
       </View>
       {text ? (
         <ThemedText type="t6" themeColor="textSecondary" style={styles.centered}>
