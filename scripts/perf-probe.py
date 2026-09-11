@@ -37,6 +37,15 @@ import urllib.parse
 API = os.environ.get("API", "").rstrip("/")
 SAMPLES = int(os.environ.get("SAMPLES", "12"))
 
+# 시험용 계정 토큰. 있으면 로그인 경로도 잰다.
+#
+# **없이 재면 홈을 잰 것이 아니다.** 토큰이 없으면 `routes/app.ts`의 bootstrap이
+# `member`를 null로 두고 첫 묶음 하나로 끝낸다 — 담아둔 후보도, 웨딩픽 추천도,
+# 반복되는 세션 조회도 아예 타지 않는다. 무거운 쪽은 로그인한 사람이 받는 경로다.
+#
+# 값은 어디에도 찍지 않는다. curl 인자로만 넘기고 출력에 담지 않는다.
+TOKEN = os.environ.get("API_TOKEN", "").strip()
+
 if not API:
     print("::error::API 환경변수가 비어 있다.", file=sys.stderr)
     sys.exit(1)
@@ -54,7 +63,7 @@ FIELDS = [
 WRITE_OUT = "".join(f"%{{{name}}}\t" for name in FIELDS) + "\n"
 
 
-def run_curl(urls: list[str], reuse: bool) -> list[dict[str, float]]:
+def run_curl(urls: list[str], reuse: bool, token: str = "") -> list[dict[str, float]]:
     """curl을 한 번 돌려 URL마다 한 줄씩 받는다.
 
     `reuse=True`면 URL을 한 프로세스에 몰아 줘 연결을 이어 쓴다. `False`면
@@ -65,6 +74,9 @@ def run_curl(urls: list[str], reuse: bool) -> list[dict[str, float]]:
 
     for batch in batches:
         command = ["curl", "-sS", "--max-time", "120", "-w", WRITE_OUT]
+        if token:
+            # 인자로만 넘긴다 — 출력에도 로그에도 담기지 않는다.
+            command += ["-H", f"Authorization: Bearer {token}"]
         for url in batch:
             # `-o`는 URL마다 하나씩 있어야 한다. 하나만 주면 첫 응답만 버려지고
             # 나머지 본문이 stdout으로 나와 측정값과 섞인다.
@@ -191,6 +203,37 @@ def main() -> int:
             if summary:
                 collected.append(summary)
         report["modes"]["reuse" if reuse else "fresh"] = collected
+
+    # 로그인 경로. bootstrap의 무거운 쪽은 여기서만 열린다.
+    print("\n── 로그인 사용자 ─────────────────────────────")
+    if TOKEN:
+        authed = [
+            ("홈 전체 (로그인 bootstrap)", "/v1/app/bootstrap"),
+            ("회원 정보 /v1/me", "/v1/me"),
+        ]
+        collected = []
+        for label, path in authed:
+            rows = run_curl([f"{API}{path}"] * SAMPLES, reuse=True, token=TOKEN)
+            summary = summarize(label, rows)
+            if summary:
+                collected.append(summary)
+        report["modes"]["authed"] = collected
+
+        boot = next((s for s in collected if s["label"].startswith("홈 전체")), None)
+        anon = next(
+            (s for s in report["modes"].get("reuse", []) if s["label"].startswith("홈 전체")), None
+        )
+        if boot and anon:
+            print(
+                f"  비회원 {anon['ttfb_p50']}ms → 로그인 {boot['ttfb_p50']}ms "
+                f"(차이 {round(float(boot['ttfb_p50']) - float(anon['ttfb_p50']), 1)}ms)"
+            )
+            print("  비회원 경로는 첫 묶음에서 끝난다. 차이가 담아둔 후보·추천·반복 세션 조회의 값이다.")
+    else:
+        report["modes"]["authed"] = None
+        print("  ::warning::API_TOKEN이 없어 로그인 경로를 재지 못했다.")
+        print("  토큰 없이 부른 bootstrap은 member가 null이라 첫 묶음에서 끝난다 —")
+        print("  위 «비회원 bootstrap» 값을 홈의 값으로 읽으면 안 된다.")
 
     # 본론 — API에서 DB까지 얼마나 먼가.
     warm = {s["label"]: s for s in report["modes"].get("reuse", [])}

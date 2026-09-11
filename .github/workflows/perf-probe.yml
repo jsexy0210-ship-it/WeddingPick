@@ -132,6 +132,10 @@ jobs:
         env:
           API: https://weddingpickl.onrender.com
           SAMPLES: ${{ github.event.inputs.samples || '12' }}
+          # 시험용 계정 토큰. 없으면 로그인 경로를 건너뛰고 그렇다고 적는다.
+          # 없이 잰 bootstrap은 member가 null이라 첫 묶음에서 끝나 — 홈의 무거운
+          # 쪽(담아둔 후보 · 추천 · 반복 세션 조회)이 아예 빠진다.
+          API_TOKEN: ${{ secrets.PERF_PROBE_TOKEN }}
           # 저장소에 남기지 않는다 — 읽는 것은 measured.md 쪽이다.
           OUT: ${{ runner.temp }}/perf-probe.json
         run: |
