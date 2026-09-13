@@ -399,7 +399,7 @@ export const DesignTokens = {
     "focus": 2
   },
   "shadow": {
-    "note": "그림자를 거의 쓰지 않는다. 구분은 inset 선과 배경 톤으로 한다.",
+    "note": "그림자를 최소화한다. 구분은 inset 선과 배경 톤으로 한다.",
     "tabBarTop": "inset 0 1px 0 #EAEBEE",
     "dockTop": "inset 0 1px 0 #EAEBEE",
     "rowDivider": "inset 0 -1px 0 #EAEBEE",
