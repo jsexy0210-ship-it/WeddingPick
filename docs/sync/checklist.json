@@ -1,10 +1,15 @@
 {
   "schemaVersion": 1,
-  "recordedDate": "2026-09-10",
+  "recordedDate": "2026-09-13",
   "timezone": "Asia/Seoul",
   "scope": "repository-cleanup",
   "baselineCommit": "e34193ee1644c664f107d529002ae53ef775389a",
   "items": [
+    {
+      "id": "web-api-release-20260913",
+      "status": "local-review-complete-ci-and-deployment-pending",
+      "evidence": "master-status.json#webApiRelease20260913"
+    },
     {
       "id": "pending-admin-deployment-20260911",
       "status": "local-review-complete-ci-and-deployment-pending",
@@ -36,5 +41,5 @@
       "evidence": "repository-cleanup-status.json"
     }
   ],
-  "note": "이번 저장소 정리 범위의 체크리스트다. 제품 전체 구현·화면 완료 목록이 아니다."
+  "note": "저장소 정리와 이후 배포 검증 기록이다. 제품 전체 구현·화면 완료 목록이 아니다."
 }

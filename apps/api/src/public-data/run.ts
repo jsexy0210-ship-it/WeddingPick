@@ -1,5 +1,6 @@
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { VENDOR_CATEGORIES, type VendorCategory } from '@weddingpick/domain';
 import { createPool } from '../db';
 import { downloadPublicCsv, downloadSbizApiVendors, parsePublicCsv } from './collect';
 import { PUBLIC_SOURCES, sourceKey } from './sources';
@@ -121,8 +122,11 @@ export async function runPublicCollection(args: string[]) {
       }
     } finally { await pool.end(); }
   }
+  // 정제·중복 제거를 통과한 업체만 센다. 없는 업종도 0으로 남겨 누락과 구분한다.
+  const categoryCounts = Object.fromEntries(VENDOR_CATEGORIES.map((category) => [category, 0])) as Record<VendorCategory, number>;
+  for (const vendor of vendors) categoryCounts[vendor.category]++;
   const report = {source: key, sourceUrl: source.url, collectedAt: at.toISOString(),
-    total, accepted: vendors.length, rejected, duplicates, closed, truncated,
+    total, accepted: vendors.length, categoryCounts, rejected, duplicates, closed, truncated,
     // 요청했으나 상한에 막힌 것과 애초에 요청하지 않은 것은 다르다.
     databaseApplied: apply && !applyRefused, applyRefused, db};
   await writeFile(join(output, `${key}-report.json`), JSON.stringify(report, null, 2) + '\n', 'utf8');

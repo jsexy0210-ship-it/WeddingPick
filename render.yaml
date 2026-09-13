@@ -14,7 +14,7 @@ services:
     name: weddingpick-web
     runtime: static
     staticPublishPath: ./apps/web/dist
-    autoDeploy: true
+    autoDeploy: false
     buildCommand: npm run build --workspace @weddingpick/web
     envVars:
       - key: WEDDINGPICK_CONTACT_EMAIL
@@ -24,7 +24,7 @@ services:
       # 업체 상세(/v/*.html)는 한 장도 만들어지지 않는다 — 실제로 그 상태로 배포돼 있었다.
       # 랜딩(index.html)은 이 값과 무관하다 — 고정 업체 정보를 쓴다(landing-v4.ts).
       - key: WEDDINGPICK_API_URL
-        value: https://weddingpickl.onrender.com
+        value: https://weddingpickl-sg.onrender.com
       # 상세를 미리 만들 업체 id를 쉼표로 준다. 비워두면 상세 페이지가 생기지 않는다 —
       # 어느 업체를 정적으로 낼지는 웹이 고르지 않고 배포하는 쪽이 정한다.
       - key: WEDDINGPICK_WEB_VENDOR_IDS
@@ -47,7 +47,7 @@ services:
     name: weddingpick-app-web
     runtime: static
     staticPublishPath: ./apps/mobile/dist
-    autoDeploy: true
+    autoDeploy: false
     #
     # **뒤에 붙은 `split-admin-dist.mjs app`은 관리자 화면을 관리자 출처로
     # 넘기는 단계다**(2026-09-10 사용자 결정으로 관리자를 다시 분리했다).
@@ -60,7 +60,7 @@ services:
     buildCommand: npm run export:web --workspace @weddingpick/mobile && node scripts/split-admin-dist.mjs app
     envVars:
       - key: EXPO_PUBLIC_API_URL
-        value: https://weddingpickl.onrender.com
+        value: https://weddingpickl-sg.onrender.com
       # 카카오 REST API 키 — "로그인 리다이렉트 URI"가 등록된 키. 네이티브 앱 키
       # (73d13d81…)를 넣으면 REST /oauth/authorize가 KOE033으로 거부한다.
       # 운영 API의 KAKAO_APP_KEY도 같은 값이어야 토큰 교환·id_token aud가 맞는다.
@@ -75,7 +75,7 @@ services:
       - key: EXPO_PUBLIC_NAVER_CLIENT_ID
         value: tgp4WVYlYO_qd2nyvHug
       - key: EXPO_PUBLIC_NAVER_REDIRECT_URI
-        value: https://weddingpickl.onrender.com/v1/auth/naver/callback
+        value: https://weddingpickl-sg.onrender.com/v1/auth/naver/callback
     routes:
       # expo-router 클라이언트 라우팅 — 없는 경로를 index.html로 되돌린다.
       - type: rewrite
@@ -122,13 +122,13 @@ services:
     name: weddingpick-admin
     runtime: static
     staticPublishPath: ./apps/mobile/dist
-    autoDeploy: true
+    autoDeploy: false
     buildCommand: npm run export:web --workspace @weddingpick/mobile && node scripts/split-admin-dist.mjs admin
     # app-web과 같은 값이어야 한다 — 같은 번들이 같은 API를 부른다. 없으면
     # isServerConfigured가 false가 되어 로그인 화면이 빈 채로 뜬다.
     envVars:
       - key: EXPO_PUBLIC_API_URL
-        value: https://weddingpickl.onrender.com
+        value: https://weddingpickl-sg.onrender.com
       - key: EXPO_PUBLIC_KAKAO_CLIENT_ID
         value: 8e9a14dd3a0aa1a420bff858460c415c
       - key: EXPO_PUBLIC_GOOGLE_CLIENT_ID
@@ -140,7 +140,7 @@ services:
       - key: EXPO_PUBLIC_NAVER_CLIENT_ID
         value: tgp4WVYlYO_qd2nyvHug
       - key: EXPO_PUBLIC_NAVER_REDIRECT_URI
-        value: https://weddingpickl.onrender.com/v1/auth/naver/callback
+        value: https://weddingpickl-sg.onrender.com/v1/auth/naver/callback
     routes:
       # expo-router 클라이언트 라우팅 — 없는 경로를 index.html로 되돌린다.
       # index.html은 split-admin-dist.mjs가 /admin/home으로 넘기는 쪽지로 바꿔 둔다.
@@ -162,7 +162,7 @@ services:
   # 강제한다 — 스테이징은 로컬 스토리지로 충분하다.
   #
   # **autoDeploy를 끈다(2026-09-09 사용자 결정).** 이 서비스를 부르는 코드가 없다 —
-  # 앱도 웹도 `weddingpickl.onrender.com`을 본다(eas.json · infra/render-env.yml).
+  # 앱도 웹도 `weddingpickl-sg.onrender.com`을 본다(eas.json · infra/render-env.yml).
   # 아무도 안 보는 것이 main push마다 빌드되면 빌드 시간만 먹는다. 스테이징으로
   # 쓸 날에는 대시보드에서 손으로 배포한다.
   - type: web

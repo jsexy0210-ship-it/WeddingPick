@@ -49,7 +49,7 @@ test('상한을 넘으면 한 건도 쓰지 않고 거절한다', async () => {
   // 수집 자체는 끝나 있어야 한다. 상한은 반영만 막는다 — 무엇이 얼마나 들어올
   // 뻔했는지 리포트로 봐야 상한을 올릴지 분류를 고칠지 정할 수 있다.
   const report = JSON.parse(await readFile(join(dir, 'icheon-halls-report.json'), 'utf8'));
-  expect(report).toMatchObject({ accepted: 3, databaseApplied: false, db: null });
+  expect(report).toMatchObject({ accepted: 3, categoryCounts: { hall: 3 }, databaseApplied: false, db: null });
   expect(report.applyRefused).toContain('반영 상한 초과');
 });
 
@@ -75,4 +75,37 @@ test('--apply가 없으면 상한을 보지 않는다', async () => {
 
   const report = JSON.parse(await readFile(join(dir, 'icheon-halls-report.json'), 'utf8'));
   expect(report).toMatchObject({ accepted: 3, databaseApplied: false, db: null });
+});
+
+test('업종별 집계는 정제와 중복 제거를 통과한 업체만 포함한다', async () => {
+  const { dir, file } = await fixture();
+  await writeFile(file, [
+    '상호명,도로명주소,상가업소번호,상권업종소분류명,영업상태명',
+    '가나웨딩홀,서울특별시 강남구 길 1,1,예식장업,영업',
+    '가나웨딩홀,서울특별시 강남구 길 2,2,예식장업,영업',
+    '나비웨딩스튜디오,서울특별시 강남구 길 3,3,사진촬영업,영업',
+    '일반사진관,서울특별시 강남구 길 4,4,사진촬영업,영업',
+    '폐업웨딩홀,서울특별시 강남구 길 5,5,예식장업,폐업',
+    '새봄웨딩,서울특별시 강남구 길 6,6,기타 서비스업,영업',
+  ].join('\n'), 'utf8');
+  delete process.env.DATABASE_URL;
+
+  await runPublicCollection(['--source', 'sbiz', '--file', file, '--out', dir]);
+
+  const report = JSON.parse(await readFile(join(dir, 'sbiz-report.json'), 'utf8'));
+  expect(report).toMatchObject({ total: 6, accepted: 3, rejected: 1, duplicates: 1, closed: 1,
+    categoryCounts: { hall: 1, studio: 1, etc: 1, dress: 0 }, databaseApplied: false });
+  expect(Object.values<number>(report.categoryCounts).reduce((sum, count) => sum + count, 0)).toBe(report.accepted);
+});
+
+test('수집 결과가 비면 업종별 건수도 모두 0이다', async () => {
+  const { dir, file } = await fixture();
+  await writeFile(file, '상호명,도로명주소,상가업소번호,상권업종소분류명\n일반사진관,서울특별시 강남구 길 1,1,사진촬영업', 'utf8');
+
+  await runPublicCollection(['--source', 'sbiz', '--file', file, '--out', dir]);
+
+  const report = JSON.parse(await readFile(join(dir, 'sbiz-report.json'), 'utf8'));
+  expect(report.accepted).toBe(0);
+  expect(Object.keys(report.categoryCounts)).toHaveLength(13);
+  expect(Object.values(report.categoryCounts).every((count) => count === 0)).toBe(true);
 });

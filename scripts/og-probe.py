@@ -22,7 +22,7 @@ import urllib.error
 import urllib.request
 
 WEB = "https://weddingpick-web.onrender.com"
-API = "https://weddingpickl.onrender.com"
+API = "https://weddingpickl-sg.onrender.com"
 
 # 카드가 뜨려면 넷이 다 있어야 한다. 하나라도 없으면 크롤러는 카드를 접는다.
 REQUIRED = ("og:title", "og:description", "og:image", "og:url")

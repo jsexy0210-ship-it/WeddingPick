@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """infra/render-env.yml을 Render 서비스에 반영한다.
 
-`.github/workflows/render-env-sync.yml`이 부른다. 사람이 대시보드를 여는 일을
+승인된 `.github/workflows/main.yml` 배포 작업이 부른다. 사람이 대시보드를 여는 일을
 없애려고 만들었다 — 값의 원본은 저장소이고, 비밀만 GitHub Secrets에서 온다.
 
 **키 하나씩 upsert만 한다.** 선언에 없는 키는 손대지 않는다. 통째로 바꾸는 API를
@@ -12,7 +12,10 @@
 
 import json
 import os
+import re
+import subprocess
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -52,7 +55,7 @@ def service_id(name: str) -> str | None:
     """이름으로 서비스를 찾는다. Render는 이름 접두 검색이라 정확히 일치하는 것만 고른다."""
     status, body = call('GET', f'/services?name={urllib.parse.quote(name)}&limit=20')
     if status != 200:
-        print(f'  !! 서비스 조회 실패 (HTTP {status}) {body}')
+        print(f'  !! 서비스 조회 실패 (HTTP {status})')
         return None
 
     try:
@@ -98,7 +101,12 @@ def parse_simple(text: str) -> dict:
                 services[current]['secrets'].append(body[2:].strip())
             elif section == 'vars' and ':' in body:
                 key, _, value = body.partition(':')
-                services[current]['vars'][key.strip()] = value.strip()
+                value = value.strip()
+                if len(value) >= 2 and value.startswith("'") and value.endswith("'"):
+                    value = value[1:-1].replace("''", "'")
+                elif len(value) >= 2 and value.startswith('"') and value.endswith('"'):
+                    value = json.loads(value)
+                services[current]['vars'][key.strip()] = value
 
     return services
 
@@ -156,11 +164,68 @@ def check() -> int:
             right = (fallback.get(name) or {}).get('vars') or {}
             for key in sorted(set(left) | set(right)):
                 if left.get(key) != right.get(key):
-                    print(f'   {name}.{key}: yaml={left.get(key)!r} / 폴백={right.get(key)!r}')
+                    print(f'   {name}.{key}: 파서별 값 불일치')
         return 1
 
     print('두 파서의 결과가 같다.')
     return 0
+
+
+def deploys(identifier: str) -> list[dict] | None:
+    status, body = call('GET', f'/services/{identifier}/deploys?limit=20')
+    if status != 200:
+        print(f'  !! 배포 조회 실패 (HTTP {status})')
+        return None
+    try:
+        items = json.loads(body)
+        if not isinstance(items, list):
+            return None
+        return [item.get('deploy', item) for item in items if isinstance(item, dict)]
+    except (ValueError, TypeError):
+        print('  !! 배포 조회 응답을 읽지 못했다')
+        return None
+
+
+def wait_for_live(identifier: str, requested_id: str, commit: str) -> bool:
+    """요청한 배포만 기다린다. 다른 배포의 live는 성공 근거가 아니다."""
+    deadline = time.monotonic() + 1200
+    failed = {'build_failed', 'update_failed', 'pre_deploy_failed', 'canceled', 'deactivated'}
+    while time.monotonic() < deadline:
+        items = deploys(identifier)
+        if items is None:
+            return False
+        current = next((item for item in items if item.get('id') == requested_id), None)
+        if current:
+            state = current.get('status')
+            actual_commit = (current.get('commit') or {}).get('id')
+            if actual_commit and actual_commit != commit:
+                print('  !! 요청한 커밋과 실제 배포 커밋이 다르다')
+                return False
+            if state in failed:
+                print(f'  !! 배포 실패: {state}')
+                return False
+            if state == 'live':
+                if actual_commit != commit:
+                    print('  !! live 배포의 커밋을 확인할 수 없다')
+                    return False
+                print('  요청한 커밋의 live를 확인했다')
+                return True
+        time.sleep(10)
+    print('  !! 배포가 20분 안에 live가 되지 않았다')
+    return False
+
+
+def check_api_health(base_url: str) -> bool:
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    try:
+        result = subprocess.run([
+            'node', os.path.join(root, 'scripts', 'check-api-health.mjs'),
+            '--api', base_url, '--migrations-dir', os.path.join(root, 'packages', 'db', 'migrations'),
+        ], cwd=root, timeout=360, check=False)
+        return result.returncode == 0
+    except (OSError, subprocess.TimeoutExpired):
+        print('  !! API health 검사를 완료하지 못했다')
+        return False
 
 
 def main() -> int:
@@ -173,23 +238,51 @@ def main() -> int:
 
     dry_run = flag('DRY_RUN')
     redeploy = flag('REDEPLOY', default=True)
+    wait = flag('WAIT_FOR_LIVE')
+    commit = os.environ.get('DEPLOY_COMMIT', '').strip()
+    api_name = os.environ.get('API_SERVICE', 'weddingpickl-sg')
+    api_base = os.environ.get('API_BASE_URL', 'https://weddingpickl-sg.onrender.com')
+    selected = os.environ.get('SERVICE', '').strip()
+    if commit and not re.fullmatch(r'[0-9a-fA-F]{40}', commit):
+        print('DEPLOY_COMMIT은 전체 Git SHA여야 한다.')
+        return 1
+    if wait and not dry_run and (not commit or not redeploy):
+        print('live 검증에는 DEPLOY_COMMIT과 REDEPLOY=true가 필요하다.')
+        return 1
     try:
         available_secrets = json.loads(os.environ.get('ALL_SECRETS') or '{}')
     except json.JSONDecodeError:
         available_secrets = {}
 
     services = load_manifest()
-    if not services:
-        print('선언에 서비스가 없다.')
+    if api_name not in services:
+        print('선언에 지정한 API 서비스가 없다 — 아무것도 바꾸지 않는다.')
         return 1
+    if selected and selected not in services:
+        print('SERVICE가 선언의 서비스 이름과 일치하지 않는다.')
+        return 1
+    api_id = service_id(api_name)
+    if not api_id:
+        return 1
+    ordered = [api_name] + [name for name in services if name != api_name]
+    if selected:
+        ordered = [selected]
+    # 정적 서비스만 복구할 때에도 API가 같은 커밋으로 살아 있어야 한다.
+    if wait and not dry_run and selected and selected != api_name:
+        items = deploys(api_id)
+        if items is None or not any(item.get('status') == 'live'
+                                   and (item.get('commit') or {}).get('id') == commit for item in items):
+            print('API에 요청한 커밋의 live 배포가 없다 — 정적 서비스를 바꾸지 않는다.')
+            return 1
+        if not check_api_health(api_base):
+            return 1
 
-    failures: list[str] = []
-    for name, spec in services.items():
+    for name in ordered:
+        spec = services[name]
         print(f'\n== {name}')
-        identifier = service_id(name)
+        identifier = api_id if name == api_name else service_id(name)
         if not identifier:
-            failures.append(f'{name}: 서비스를 찾지 못함')
-            continue
+            return 1
 
         wanted: dict[str, str] = dict(spec.get('vars') or {})
         for key in spec.get('secrets') or []:
@@ -210,22 +303,31 @@ def main() -> int:
                 print(f'  ok {key}')
                 changed = True
             else:
-                print(f'  !! {key} 실패 (HTTP {status}) {body}')
-                failures.append(f'{name}.{key}: HTTP {status}')
+                print(f'  !! {key} 실패 (HTTP {status})')
+                return 1
 
-        if changed and redeploy and not dry_run:
-            status, body = call('POST', f'/services/{identifier}/deploys', {})
-            print(f'  재배포 요청 → HTTP {status}' if 200 <= status < 300 else f'  !! 재배포 실패 (HTTP {status}) {body}')
+        if redeploy and not dry_run and (changed or wait):
+            status, body = call('POST', f'/services/{identifier}/deploys', {'commitId': commit} if commit else {})
+            print(f'  재배포 요청 → HTTP {status}')
             if not 200 <= status < 300:
-                failures.append(f'{name}: 재배포 HTTP {status}')
+                return 1
+            if wait:
+                try:
+                    requested = json.loads(body)
+                    requested_id = requested.get('deploy', requested).get('id')
+                except (ValueError, AttributeError):
+                    requested_id = None
+                if not requested_id:
+                    print('  !! 요청한 배포 ID를 확인하지 못했다')
+                    return 1
+                if not wait_for_live(identifier, requested_id, commit):
+                    return 1
+                if name == api_name and not check_api_health(api_base):
+                    return 1
 
-    if failures:
-        print('\n반영하지 못한 항목:')
-        for item in failures:
-            print(f'  - {item}')
-        return 1
-
-    print('\n모두 반영했다.')
+    print('\n선언 확인을 마쳤다.' if dry_run else
+          '\n모든 요청 배포의 live를 확인했다.' if wait else
+          '\n환경변수 반영과 배포 요청을 마쳤다. live는 미확인이다.')
     return 0
 
 
