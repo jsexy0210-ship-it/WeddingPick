@@ -13,13 +13,13 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://weddingpickl.onrender.com",
+        "EXPO_PUBLIC_API_URL": "https://weddingpickl-sg.onrender.com",
         "EXPO_PUBLIC_KAKAO_CLIENT_ID": "8e9a14dd3a0aa1a420bff858460c415c",
         "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "595165026523-dd5s0fqtle78e03mb34m9iaclpdmlb9r.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "595165026523-3mlcq960r5q174h6chun8mommjkpt0qi.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "595165026523-bg8hu37bq5mll2gr879artmgh4h2a9v0.apps.googleusercontent.com",
         "EXPO_PUBLIC_NAVER_CLIENT_ID": "tgp4WVYlYO_qd2nyvHug",
-        "EXPO_PUBLIC_NAVER_REDIRECT_URI": "https://weddingpickl.onrender.com/v1/auth/naver/callback"
+        "EXPO_PUBLIC_NAVER_REDIRECT_URI": "https://weddingpickl-sg.onrender.com/v1/auth/naver/callback"
       },
       "android": {
         "buildType": "apk"
@@ -30,13 +30,13 @@
     },
     "production": {
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://weddingpickl.onrender.com",
+        "EXPO_PUBLIC_API_URL": "https://weddingpickl-sg.onrender.com",
         "EXPO_PUBLIC_KAKAO_CLIENT_ID": "8e9a14dd3a0aa1a420bff858460c415c",
         "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "595165026523-dd5s0fqtle78e03mb34m9iaclpdmlb9r.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "595165026523-3mlcq960r5q174h6chun8mommjkpt0qi.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "595165026523-bg8hu37bq5mll2gr879artmgh4h2a9v0.apps.googleusercontent.com",
         "EXPO_PUBLIC_NAVER_CLIENT_ID": "tgp4WVYlYO_qd2nyvHug",
-        "EXPO_PUBLIC_NAVER_REDIRECT_URI": "https://weddingpickl.onrender.com/v1/auth/naver/callback"
+        "EXPO_PUBLIC_NAVER_REDIRECT_URI": "https://weddingpickl-sg.onrender.com/v1/auth/naver/callback"
       },
       "android": {
         "buildType": "app-bundle",

@@ -88,7 +88,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck --workspace @weddingpick/api
-      - run: npm test --workspace @weddingpick/api -- --runTestsByPath src/public-data/collect.test.ts src/public-data/sync.test.ts
+      - run: npm test --workspace @weddingpick/api -- --runTestsByPath src/public-data/collect.test.ts src/public-data/sync.test.ts src/public-data/run.test.ts
         env:
           DATABASE_URL: postgres://weddingpick:weddingpick_test@localhost:5432/weddingpick_test
 
@@ -183,13 +183,17 @@ jobs:
               '| --- | --- | --- | --- |',
               '| ' + r.total + ' | ' + r.accepted + ' | ' + r.rejected + ' | ' + r.duplicates + ' |',
               '',
+              '| 업종 코드 | 받아들인 업체 |',
+              '| --- | --- |',
+              ...Object.entries(r.categoryCounts).map(([category, count]) => '| ' + category + ' | ' + count + ' |'),
+              '',
               t.length ? '전수가 아니다 — ' + JSON.stringify(t) : '전수로 받았다.',
               '',
             ].join('\n');
             require('fs').appendFileSync(process.env.GITHUB_STEP_SUMMARY, line);
           "
-          # 상한에 걸려 다 못 받았으면 전수가 아니다. 초록으로 넘기되 눈에 띄게 남긴다.
-          node -e "const t=require('./$REPORT').truncated??[];if(t.length)console.log('::warning::전수가 아니다 — 상한에 걸린 업종코드 '+JSON.stringify(t))"
+          # 연결 끊김과 페이지 상한 모두 미완료다. 리포트의 실제 사유를 함께 남긴다.
+          node -e "const t=require('./$REPORT').truncated??[];if(t.length)console.log('::warning::일부 업종 수집 미완료 — '+JSON.stringify(t))"
           if [ "$ACCEPTED" -eq 0 ]; then
             echo "::error::'$SOURCE' 수집 결과가 0건입니다. 초록으로 넘기지 않고 멈춥니다 — 출처 응답 또는 업종 코드를 확인하세요."
             exit 1

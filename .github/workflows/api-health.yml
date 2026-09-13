@@ -26,67 +26,24 @@ on:
         description: '확인할 API 주소'
         type: string
         required: false
-        default: https://weddingpickl.onrender.com
+        default: https://weddingpickl-sg.onrender.com
 
-permissions: {}
+permissions:
+  contents: read
 
 jobs:
   health:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 6
 
     steps:
-      - name: /health 본문 읽기
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: HTTP·DB·스키마와 현재 코드의 기대 개수 확인
         env:
-          # free 플랜이라 잠들어 있으면 첫 요청이 30~60초 걸린다.
-          API: ${{ inputs.api || 'https://weddingpickl.onrender.com' }}
-        run: |
-          set -o pipefail
-
-          # 잠들어 있을 수 있다. 깨어날 때까지 세 번 기다린다 —
-          # 여기서 실패로 끝내면 「API가 죽었다」와 「자고 있었다」를 못 가른다.
-          for i in 1 2 3; do
-            code=$(curl -s -o /tmp/health.json -w "%{http_code}" --max-time 90 "$API/health" || echo 000)
-            echo "시도 $i: HTTP $code"
-            [ "$code" = "200" ] && break
-            [ "$i" = "3" ] && { echo "::error::API가 200을 주지 않았다 (마지막 $code)"; cat /tmp/health.json || true; exit 1; }
-            sleep 20
-          done
-
-          echo
-          echo '--- /health 본문'
-          python3 -m json.tool /tmp/health.json || cat /tmp/health.json
-          echo
-
-          # 판정은 사람이 아니라 여기서 한다. 본문만 찍어두면 초록으로 끝나서
-          # 아무도 안 읽는다.
-          python3 - <<'PY'
-          import json, sys
-
-          with open('/tmp/health.json', encoding='utf-8') as f:
-              body = json.load(f)
-
-          schema = body.get('schema') or {}
-          applied, expected = schema.get('applied'), schema.get('expected')
-          pending = schema.get('pending') or []
-          unknown = schema.get('unknown') or []
-
-          print(f"데이터베이스: {body.get('database')}")
-          print(f"적용 {applied} / 기대 {expected}")
-          print('밀린 것 없음' if not pending else '밀린 것 %d개: %s' % (len(pending), ', '.join(pending)))
-
-          # 이름이 바뀐 옛 마이그레이션은 기록에만 남는다. 지우지 않기로 했으므로
-          # 이것으로 실패시키지 않는다 — 다만 몇 개인지는 매번 적는다.
-          if unknown:
-              print('저장소에 없는 것 %d개: %s' % (len(unknown), ', '.join(unknown)))
-
-          if body.get('database') != 'ok':
-              print('::error::배포된 API가 DB를 쓰지 못한다')
-              sys.exit(1)
-
-          if pending:
-              print('::error::배포된 API가 보는 DB의 스키마가 코드보다 뒤에 있다')
-              sys.exit(1)
-
-          print('배포된 API가 보는 DB가 코드와 같은 자리에 있다')
-          PY
+          API: ${{ inputs.api || 'https://weddingpickl-sg.onrender.com' }}
+        # 최대 90초씩 세 번 요청하고 사이에 20초 기다려 Free 기동 지연을 허용한다.
+        run: node scripts/check-api-health.mjs --migrations-dir packages/db/migrations

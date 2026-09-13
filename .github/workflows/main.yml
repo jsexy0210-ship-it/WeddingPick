@@ -1,7 +1,7 @@
 # 웨딩픽 통합 파이프라인
 #
-# push(main)  → CI → 승인된 DB 마이그레이션 → health check (staging)
-# Render 자동 배포는 위 순서와 독립적으로 main push를 보고 실행된다.
+# push(main)  → CI → 승인된 DB 마이그레이션 → API 배포·검증 → 정적 사이트 배포
+# 운영 Render 서비스의 자동 배포는 끄고 아래 작업이 같은 커밋을 순서대로 배포한다.
 # PR          → CI만 (배포 없음)
 # workflow_dispatch → staging 또는 production 수동 배포
 #
@@ -10,8 +10,8 @@
 #   PRODUCTION_DATABASE_URL production 작업의 DB 연결 문자열
 # weddingpick.kr은 폐기했다(2026-09-11 대표 지시). 도메인 연결 단계를 되살리지 않는다.
 #
-# 배포 자체는 이 파일이 걸지 않는다 — Render의 autoDeploy가 main push를 보고 돈다.
-# 환경변수는 infra/render-env.yml이 원본이고 render-env-sync.yml이 밀어넣는다.
+# 환경변수 원본은 infra/render-env.yml이며 이 파이프라인이 단일 키 단위로 반영한다.
+# render-env-sync.yml은 수동 dry-run 검사만 수행한다.
 name: CI / Deploy
 
 on:
@@ -78,6 +78,12 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: API health validator test
+        run: node --test scripts/check-api-health.test.mjs
+
+      - name: Render deploy orchestration test
+        run: python3 -B scripts/test-render-env-sync.py
+
       - name: Marketing preview
         run: npm run marketing --workspace @weddingpick/api -- demo "$GITHUB_WORKSPACE/$MARKETING_PREVIEW_DIR"
 
@@ -99,7 +105,7 @@ jobs:
         run: npm run build --workspace @weddingpick/web
 
   # 이름은 staging/production이지만 지금은 같은 대상을 본다 — 두 잡 모두
-  # `secrets.DATABASE_URL`로 마이그레이션하고 `weddingpickl.onrender.com`을
+  # `secrets.DATABASE_URL`로 마이그레이션하고 `weddingpickl-sg.onrender.com`을
   # 헬스체크한다. 사용자 결정(2026-09-09) 「우선 현재 DB 그대로 사용한다. 차후에 분리」에
   # 따라 지금은 이대로 둔다. 나누는 날 `docs/release-env-split.md` 3절대로 고친다.
   deploy-staging:
@@ -114,6 +120,9 @@ jobs:
     # (Settings → Environments → production → Required reviewers).
     # 없어도 워크플로는 돌지만, 그때는 승인 없이 지나간다(Release Audit 1차 P0-6).
     environment: production
+    concurrency:
+      group: weddingpick-render-production
+      cancel-in-progress: false
 
     steps:
       - uses: actions/checkout@v4
@@ -124,6 +133,16 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      - name: 자동 배포 커밋 최신 여부
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          current_main=$(git ls-remote origin refs/heads/main | cut -f1)
+          if [ "$current_main" != "$GITHUB_SHA" ]; then
+            echo 'main이 변경돼 오래된 자동 배포를 중단한다.'
+            exit 1
+          fi
 
       # 무엇이 적용될지 먼저 보여준다. 승인하는 사람이 목록을 보고 정한다.
       - name: DB 상태 (적용 전)
@@ -145,20 +164,21 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
+      - name: Render 배포 (API 검증 후 정적 사이트)
+        timeout-minutes: 90
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          ALL_SECRETS: ${{ toJSON(secrets) }}
+          DEPLOY_COMMIT: ${{ github.sha }}
+          WAIT_FOR_LIVE: 'true'
+          REDEPLOY: 'true'
+          API_SERVICE: weddingpickl-sg
+          API_BASE_URL: https://weddingpickl-sg.onrender.com
+        run: python3 scripts/render-env-sync.py
+
       - name: Health check
-        run: |
-          echo "Waiting for Render staging deployment to settle..."
-          for i in $(seq 1 60); do
-            sleep 15
-            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://weddingpickl.onrender.com/health 2>/dev/null || echo "000")
-            if [ "$STATUS" = "200" ]; then
-              echo "✓ /health 200 OK"
-              exit 0
-            fi
-            echo "Attempt $i/60: HTTP $STATUS"
-          done
-          echo "✗ Staging health check failed after 900 s"
-          exit 1
+        timeout-minutes: 20
+        run: node scripts/check-api-health.mjs --migrations-dir packages/db/migrations --attempts 60 --timeout-ms 90000 --delay-ms 15000
 
   # 위 deploy-staging과 같은 대상을 본다(같은 시크릿 · 같은 헬스체크 주소).
   # 서버가 한 벌이라 지금은 결과가 같다. 나누는 날 3절대로 고친다.
@@ -169,6 +189,9 @@ jobs:
     runs-on: ubuntu-latest
     # deploy-staging과 같은 DB를 본다. 승인 게이트도 같아야 한다.
     environment: production
+    concurrency:
+      group: weddingpick-render-production
+      cancel-in-progress: false
 
     steps:
       - uses: actions/checkout@v4
@@ -195,17 +218,18 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
+      - name: Render 배포 (API 검증 후 정적 사이트)
+        timeout-minutes: 90
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          ALL_SECRETS: ${{ toJSON(secrets) }}
+          DEPLOY_COMMIT: ${{ github.sha }}
+          WAIT_FOR_LIVE: 'true'
+          REDEPLOY: 'true'
+          API_SERVICE: weddingpickl-sg
+          API_BASE_URL: https://weddingpickl-sg.onrender.com
+        run: python3 scripts/render-env-sync.py
+
       - name: Health check
-        run: |
-          echo "Waiting for Render production deployment..."
-          for i in $(seq 1 60); do
-            sleep 15
-            STATUS=$(curl -sf -o /dev/null -w "%{http_code}" https://weddingpickl.onrender.com/health 2>/dev/null || echo "000")
-            if [ "$STATUS" = "200" ]; then
-              echo "✓ /health 200 OK"
-              exit 0
-            fi
-            echo "Attempt $i/60: HTTP $STATUS"
-          done
-          echo "✗ Production health check failed after 900 s"
-          exit 1
+        timeout-minutes: 20
+        run: node scripts/check-api-health.mjs --migrations-dir packages/db/migrations --attempts 60 --timeout-ms 90000 --delay-ms 15000

@@ -62,6 +62,6 @@ jobs:
       - name: 운영 API가 보는 스키마 (공개 /health)
         run: |
           echo "운영 API /health:"
-          curl -s --max-time 90 https://weddingpickl.onrender.com/health \
+          curl -s --max-time 90 https://weddingpickl-sg.onrender.com/health \
             | python3 -c 'import json,sys; d=json.load(sys.stdin); print("  database=", d.get("database"), " schema=", json.dumps(d.get("schema"), ensure_ascii=False))' \
             || echo "  운영 API에 닿지 못했다"
