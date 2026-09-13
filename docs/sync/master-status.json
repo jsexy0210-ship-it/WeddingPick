@@ -844,6 +844,6 @@
       "광고 실운영 활성화와 알림톡 공급사 연결은 별도 조건 충족 필요"
     ],
     "rollback": "기존 Ohio API와 DB 이력을 보존한다. 운영 데이터 삭제와 DB 롤백은 자동 실행하지 않는다.",
-    "validation": "웹72·모바일330·도메인931·DB79·health7·배포동기화16시험, 전체 typecheck, lint 오류0(기존 경고3), copy lint, Expo 웹 export239경로 및 실제 공개 API를 이용한 웹 빌드 통과. 광고·수집 관련시험 통과. Windows KST에서 실패한 vendors·worker·nudges는 운영과 같은 UTC에서 모두 통과. API75스위트 전체 재검증 및 최종 CI 진행 전."
+    "validation": "API979·웹72·모바일330·도메인931·DB79·health7·배포동기화16시험 통과(총2414, 중복 재시험 제외). API75스위트는 운영과 같은 UTC 및 분리된 폐기DB에서 검증했다. Windows 셸의 git 작은따옴표 처리로 검사대상 목록이 비던 권한시험은 execFileSync 인자배열로 수정 후6건 재시험 통과. 전체 typecheck, lint 오류0(기존 경고3), copy lint, Expo 웹 export239경로 및 실제 공개 API 웹 빌드 통과. GitHub 최종 CI는 별도 진행 중."
   }
 }
