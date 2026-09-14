@@ -333,7 +333,18 @@ async function main() {
 
   const { chromium } = loadPlaywright();
   const { server, port } = await startStaticServer(DIST);
-  const browser = await chromium.launch();
+  /*
+   * **설치된 브라우저를 직접 가리킬 수 있게 둔다.**
+   *
+   * Playwright는 자기 버전에 맞는 브라우저만 찾는다. 컨테이너에 이미 깔려 있어도
+   * 번호가 다르면 「없다」고 하고 `npx playwright install`을 하라고 한다 — 그
+   * 한 줄 때문에 **캡처를 한 번도 못 돌린 채 「환경에서 안 된다」로 넘어갔다.**
+   * 실제로 2026-09-15에 그랬다.
+   *
+   * `CHROMIUM_PATH`를 주면 그것을 쓴다. 없으면 지금까지처럼 알아서 찾는다.
+   */
+  const executablePath = process.env.CHROMIUM_PATH || undefined;
+  const browser = await chromium.launch(executablePath ? { executablePath } : {});
   /*
    * 관리자와 앱은 기준 해상도가 다르다. 섞어 찍으면 한쪽이 반드시 뭉개지므로
    * 경로를 보고 정한다 — 따로 주고 싶으면 `--viewport 1280x800`.

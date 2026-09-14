@@ -214,6 +214,77 @@ const routes = {
   'GET /v1/auth/providers': {
     providers: [{ provider: 'kakao', isDevelopmentStandIn: false }],
   },
+  /*
+   * 상담기록. **저장 전(확인 필요) 한 장과 저장 후 한 장**을 함께 둔다 — 화면이
+   * 갈리는 자리라 한쪽만 두면 나머지 절반을 못 본다.
+   *
+   * 금액의 `evidence`는 40자 이내다. 그 한도가 화면에서도 지켜지는지 보인다.
+   */
+  'GET /v1/weddings/:weddingId/consultations': {
+    records: [
+      {
+        id: '11111111-1111-4111-8111-111111111111',
+        weddingId: '22222222-2222-4222-8222-222222222222',
+        vendorId: null,
+        vendorLabel: '강남 A 웨딩홀',
+        status: 'SUPPORTED_WEDDING_CONSULTATION',
+        category: 'hall',
+        confidence: 0.94,
+        common: {
+          vendorName: '강남 A 웨딩홀',
+          finalAmount: {
+            value: 16_800_000,
+            confidence: 0.97,
+            evidence: '최종 1680만원으로 해드릴게요',
+          },
+          included: ['기본 꽃장식', '주차 2시간', '신부대기실'],
+        },
+        categoryData: {
+          mealPrice: { value: 78_000, confidence: 0.97, evidence: '식대는 인당 7만 8천원입니다' },
+          guaranteedGuests: 250,
+        },
+        after: {
+          summary: '토요일 12시 홀로 보고 왔고, 보증인원 250명 기준으로 안내받았어요.',
+          additionalCosts: ['생화 장식 업그레이드 80만원', '주차 3시간부터 대당 2천원'],
+          benefits: ['당일 계약 시 대관료 20% 할인'],
+          warnings: ['할인 적용 기한이 대화에서 확인되지 않았어요'],
+          missingInformation: [
+            '주류 비용은 확인되지 않았어요',
+            '보증인원을 마지막으로 바꿀 수 있는 날을 확인해보세요',
+          ],
+        },
+        confirmedAt: null,
+        audioDeletedAt: null,
+        createdAt: '2026-09-14T02:10:00.000Z',
+      },
+      {
+        id: '33333333-3333-4333-8333-333333333333',
+        weddingId: '22222222-2222-4222-8222-222222222222',
+        vendorId: null,
+        vendorLabel: '청담 B 스튜디오',
+        status: 'SUPPORTED_WEDDING_CONSULTATION',
+        category: 'studio',
+        confidence: 0.88,
+        common: {
+          vendorName: '청담 B 스튜디오',
+          finalAmount: { value: 1_680_000, confidence: 0.91, evidence: '168만원에 원본 포함이에요' },
+          included: ['원본 전체', '보정본 30장', '의상 3벌'],
+        },
+        categoryData: { retouchedCount: 30, originalsIncluded: true },
+        after: {
+          summary: '원본 포함이고 야외촬영은 별도라고 들었어요.',
+          additionalCosts: ['야외촬영 장소비 30만원'],
+          benefits: [],
+          warnings: [],
+          missingInformation: ['사진 고르는 일정을 확인해보세요'],
+        },
+        confirmedAt: '2026-09-13T08:00:00.000Z',
+        audioDeletedAt: '2026-09-13T08:00:01.000Z',
+        createdAt: '2026-09-13T07:40:00.000Z',
+      },
+    ],
+  },
+
   'GET /v1/weddings/:weddingId/candidates': {
     /* 웨딩홀 두 곳 — 배우자도 같이 담아 «둘 다 고른 곳» 비교 배너를 찍을 수 있게 한다. */
     groups: [

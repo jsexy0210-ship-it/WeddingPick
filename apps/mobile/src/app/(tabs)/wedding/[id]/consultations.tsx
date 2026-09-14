@@ -24,9 +24,8 @@ import {
   SkeletonView,
   Spacing,
   ThemedText,
-  ThemedView,
 } from '@weddingpick/ui';
-import { Badge, Hero, NavBar, NoteCard, Screen, Section } from '@/features/wedding/screen-kit';
+import { Badge, Band, Hero, NavBar, NoteCard, Screen } from '@/features/wedding/screen-kit';
 
 /**
  * 상담기록 — 올린 녹음에서 뽑은 것을 보고 고치고 저장한다.
@@ -189,13 +188,21 @@ export default function ConsultationsScreen() {
         <ScrollView contentContainerStyle={styles.body}>
           <Hero title={`상담 ${records.length}건을 정리했어요`} />
 
-          {records.map((record) => (
-            <Record
-              key={record.id}
-              record={record}
-              saving={saving === record.id}
-              onSave={() => void save(record.id)}
-            />
+          {/*
+            * **기록 사이를 띠로 나눈다.** 카드로 감싸면 화면 바탕 위에 상자가 또
+            * 놓여 이중 컨테이너가 된다 — 이 저장소가 전수로 걷어낸 그 모양이다.
+            * 찍어 보니 바탕색 없는 카드는 경계가 아예 안 보여서 두 기록이 한
+            * 덩어리로 읽혔다.
+            */}
+          {records.map((record, index) => (
+            <View key={record.id}>
+              {index > 0 ? <Band /> : null}
+              <Record
+                record={record}
+                saving={saving === record.id}
+                onSave={() => void save(record.id)}
+              />
+            </View>
           ))}
         </ScrollView>
       )}
@@ -239,7 +246,7 @@ function Record({
   const summary = typeof record.after.summary === 'string' ? record.after.summary : null;
 
   return (
-    <ThemedView style={styles.card}>
+    <View style={styles.record}>
       <View style={styles.head}>
         <ThemedText type="t4">{record.vendorLabel ?? '업체 미확인'}</ThemedText>
         {record.confirmedAt ? null : <Badge label={PENDING} tone="wait" />}
@@ -248,7 +255,7 @@ function Record({
       {/* 1. 총 제시금액이 맨 위다. 사람이 제일 먼저 보는 값이다. */}
       {final?.value === null || final === null ? null : (
         <View>
-          <ThemedText type="amount">{manwon(final.value)}</ThemedText>
+          <ThemedText type="t2">{manwon(final.value)}</ThemedText>
           {final.evidence ? (
             <ThemedText type="small" style={styles.evidence}>
               들은 말: {final.evidence}
@@ -279,28 +286,48 @@ function Record({
           <ActionButton label={CONFIRM} onPress={onSave} disabled={saving} />
         </View>
       )}
-    </ThemedView>
+    </View>
   );
 }
 
-/** 빈 목록은 아예 안 그린다 — 「없음」을 줄줄이 세우면 있는 것이 묻힌다. */
+/**
+ * 빈 목록은 아예 안 그린다 — 「없음」을 줄줄이 세우면 있는 것이 묻힌다.
+ *
+ * **`Section`을 쓰지 않는다.** 그것은 화면 바탕에 놓는 것이라 좌우 gutter를
+ * 제 안에 갖고 있고, 카드 안에 넣으면 패딩이 두 번 먹어 **제목과 항목의 왼쪽
+ * 선이 어긋난다.** 찍어 보고 알았다 — 코드로는 안 보인다.
+ */
 function Lines({ label, items }: { label: string; items: string[] }) {
   if (items.length === 0) return null;
 
   return (
-    <Section label={label}>
+    <View style={styles.group}>
+      <ThemedText type="t7" themeColor="textAssistive">
+        {label}
+      </ThemedText>
       {items.map((item) => (
         <ThemedText key={item} type="body">
           · {item}
         </ThemedText>
       ))}
-    </Section>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  body: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.five, gap: Spacing.three },
-  card: { borderRadius: 12, padding: Spacing.three, gap: Spacing.two },
+  /*
+   * 아래 여백은 **탭바 높이 위에** 얹는다. 화면 자체는 탭 안에 있어서, 그냥
+   * `Spacing.five`만 두면 마지막 줄이 탭바에 잘린다 — 찍어 보고 알았다.
+   */
+  body: {
+    paddingHorizontal: Layout.gutter,
+    paddingBottom: Layout.tabBar + Spacing.five,
+    gap: Spacing.three,
+  },
+  /** 기록 한 건. 상자로 감싸지 않는다 — 띠가 경계를 맡는다. */
+  record: { gap: Spacing.two },
+  /** 카드 안의 한 묶음. 라벨과 항목이 같은 왼쪽 선에 선다. */
+  group: { gap: Spacing.half },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   evidence: { marginTop: 2 },
   gone: { marginTop: Spacing.one },
