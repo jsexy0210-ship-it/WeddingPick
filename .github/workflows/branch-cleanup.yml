@@ -31,10 +31,18 @@ on:
         description: '이 일수보다 새 브랜치는 건드리지 않는다'
         type: string
         default: '3'
+      include_unmerged:
+        description: '내용이 main에 없는 브랜치도 지운다 (2026-09-14 대표 지시로 한 번 씀)'
+        type: boolean
+        default: false
       protect:
-        description: '추가로 지키고 싶은 브랜치 (쉼표로 구분)'
+        description: '지킬 브랜치 (쉼표로 구분). 기본값은 살아 있는 전담 브랜치다'
         type: string
-        default: ''
+        # 살아 있는 전담 브랜치와 아직 흡수되지 않은 것. 비워 두면 본선만 지켜지고,
+        # 「마지막 커밋이 오래됐다」 조건에 걸리는 순간 돌고 있는 세션의 브랜치가
+        # 지워진다 — 나이로 걸러지는 것은 우연이지 보호가 아니다.
+        # 세션이 끝나면 여기서 뺀다. 그때 비로소 정리 대상이 된다.
+        default: 'claude/weddingpick-master-bootstrap-6j1c7o,claude/admin-console,claude/webview-design,claude/inapp-browser,claude/admin-accounts,claude/admin-split,claude/badge-clipping,claude/retention-3,release/public-data-sbiz-key-guard'
 
 permissions:
   contents: write
@@ -53,12 +61,24 @@ jobs:
         with:
           fetch-depth: 0
 
+      # 얕은 클론에서는 브랜치와 본선에 공통 조상이 없어 아래 git diff가
+      # `no merge base`로 죽는다. 그 빈 출력을 「차이 0」으로 읽으면
+      # **살아 있는 브랜치를 지운다.** 2026-09-10 조사에서 실제로 그랬다 —
+      # 얕은 클론에서 82개, 전체 클론에서 17개가 나왔다.
+      - name: 클론이 얕지 않은지 확인한다
+        run: |
+          if [ "$(git rev-parse --is-shallow-repository)" != "false" ]; then
+            echo '::error::클론이 얕다. checkout의 fetch-depth가 0이어야 차이를 옳게 센다.'
+            exit 1
+          fi
+
       - name: 세고 지운다
         env:
           GH_TOKEN: ${{ github.token }}
           DRY_RUN: ${{ github.event.inputs.dry_run }}
           MIN_AGE_DAYS: ${{ github.event.inputs.min_age_days }}
           EXTRA_PROTECT: ${{ github.event.inputs.protect }}
+          INCLUDE_UNMERGED: ${{ github.event.inputs.include_unmerged }}
         run: |
           set -euo pipefail
 
@@ -81,6 +101,7 @@ jobs:
 
           : > /tmp/delete.txt
           : > /tmp/keep.txt
+          : > /tmp/unmerged.txt
 
           for ref in $(git for-each-ref --format='%(refname:short)' refs/remotes/origin \
                        | grep -v '^origin/HEAD$' | sed 's|^origin/||'); do
@@ -97,9 +118,17 @@ jobs:
             fi
 
             # 파일 차이가 0이어야 한다. --merged를 쓰지 않는 이유는 위 주석에 있다.
+            #
+            # `include_unmerged`를 켜면 이 조건만 건너뛴다. 보호 목록 · 열린 PR ·
+            # 나이 셋은 그대로 걸린다 — 이 조건 하나가 「안 들어간 내용이 있다」를
+            # 보는 유일한 자리이고, 끄면 **아직 살아 있는 작업도 지운다.**
+            # 아래 SHA 기록이 유일한 복구 수단이므로 요약을 반드시 남긴다.
             changed=$(git diff --name-only "origin/$DEFAULT_BRANCH...origin/$ref" | wc -l)
             if [ "$changed" -ne 0 ]; then
-              echo "지킴(차이 ${changed}파일) $ref" >> /tmp/keep.txt; continue
+              if [ "${INCLUDE_UNMERGED:-false}" != "true" ]; then
+                echo "지킴(차이 ${changed}파일) $ref" >> /tmp/keep.txt; continue
+              fi
+              echo "지움(차이 ${changed}파일 · include_unmerged) $ref" >> /tmp/unmerged.txt
             fi
 
             printf '%s %s\n' "$(git rev-parse "origin/$ref")" "$ref" >> /tmp/delete.txt
@@ -124,9 +153,21 @@ jobs:
             echo '```'
             cat /tmp/delete.txt || true
             echo '```'
+            if [ -s /tmp/unmerged.txt ]; then
+              echo
+              echo "### 내용이 main에 없는데 지운 것 **$(wc -l < /tmp/unmerged.txt)개**"
+              echo
+              echo '위 SHA 목록이 유일한 복구 수단이다. 이 요약을 지우지 않는다.'
+              echo
+              echo '```'
+              cat /tmp/unmerged.txt
+              echo '```'
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-          if [ "$DRY_RUN" = "true" ]; then
+          # 명시적으로 false일 때만 지운다. 값이 비어 있는 경우(dispatch가 아닌
+          # 방법으로 불렸을 때)를 「지워도 된다」로 읽지 않는다.
+          if [ "$DRY_RUN" != "false" ]; then
             echo
             echo "시늉만 했다. 실제로 지우려면 dry_run을 끄고 다시 돌린다."
             exit 0
