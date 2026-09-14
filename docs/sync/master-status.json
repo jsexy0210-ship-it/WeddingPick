@@ -912,7 +912,27 @@
       "run157Blocked": "2026-09-14 21:24 KST · f1640edc(꽃집 포함 6코드) · limit=100. **출처 장애가 계속돼 숫자를 못 얻었다.** icheon-halls가 `ConnectTimeoutError: Connect Timeout Error (attempted address: www.data.go.kr:443, timeout: 10000ms)`로 8회 재시도 끝에 실패했다. CSV 출처(www.data.go.kr)와 OpenAPI 출처(apis.data.go.kr)가 함께 안 되므로 data.go.kr 전반의 장애다.",
       "outageWindow": "2026-09-14 21:02 KST 무렵 시작. 21:02 이전에 끝난 잡(run 156의 seoul·경기·이천·제천)은 성공했고 그 뒤로 붙는 잡이 전부 걸린다.",
       "whatIsStillMissing": "**업종별 건수(categoryCounts)는 아직 한 번도 실행으로 나온 적이 없다.** run 155는 그 칸이 리포트에 없던 시점이고, run 156·157은 소량 실행은 됐으나 sbiz 쪽이 장애에 걸렸다. 출처가 돌아오면 `--limit 100`으로 다시 돌려 읽으면 된다 — 코드는 준비돼 있다(리포트 · 잡 요약 양쪽에 12종+기타를 0건도 전부 찍는다). 이것만 남았다.",
-      "csvFailureIsLegible": "CSV 경로가 던질 때는 「0건 확인」 단계가 아예 건너뛰어져 새 원인 메시지가 안 찍힌다. 다만 수집기가 「공공데이터 연결 실패 N/8」과 ConnectTimeoutError 원인을 그대로 남기므로 원인은 보인다. 뒤이어 뜨는 「No files were found ... No artifacts will be uploaded」는 리포트가 없어서 나는 2차 오류다 — 진짜 원인이 아니다."
+      "csvFailureIsLegible": "CSV 경로가 던질 때는 「0건 확인」 단계가 아예 건너뛰어져 새 원인 메시지가 안 찍힌다. 다만 수집기가 「공공데이터 연결 실패 N/8」과 ConnectTimeoutError 원인을 그대로 남기므로 원인은 보인다. 뒤이어 뜨는 「No files were found ... No artifacts will be uploaded」는 리포트가 없어서 나는 2차 오류다 — 진짜 원인이 아니다.",
+      "run158Recovered": "2026-09-14 23:31 KST · 0215ee01(6코드) · limit=100 + lookup_level=small. **출처가 돌아왔다.** lookup-category가 2초에 성공했고 sbiz-seoul이 4초에 accepted=100으로 끝났다. 리포트 — total 724 · accepted 100 · rejected 386 · duplicates 0 · truncated [] · limit 100.",
+      "categoryCountsFirstEverReading": "**업종별 집계가 처음으로 실행에서 나왔다.** sbiz-seoul: 웨딩홀 100 · 나머지 12종 전부 0. **다만 이 숫자로 「업종별 분포」를 읽으면 안 된다** — `--limit`은 업종코드를 돌아가며 채우지 않고 앞 코드부터 채우므로 S21101(예식장업) 하나로 100을 채우고 멈춘 것이다. README가 미리 적어 둔 성질 그대로다. 소량 실행은 **파이프라인이 돌고 표가 찍히는 것**을 증명하지, 업종별 분포에는 답하지 못한다. 분포를 보려면 코드를 하나씩 지정해 따로 돌리거나(`--upjong-codes`) `--limit` 없이 전수로 돌려야 한다."
+    },
+    "upjongLookup20260914": {
+      "whenKst": "2026-09-14 23:32",
+      "how": "public-data.yml을 lookup_level=small · lookup_keyword=청첩,인쇄,카드,귀금속,보석,금은,시계,여행,관광으로 돌렸다. `--keyword`는 쉼표로 여러 낱말을 받아 이름 부분일치 OR로 거른다(public-data-import.ts). lookup-category 잡은 collect와 병렬이고 API를 한 번만 불러 2초에 끝나므로 **출처 생존 확인을 겸한다** — 앞으로 장애 확인은 이것으로 한다.",
+      "result": "받은 항목 1,255개 · 일치 24개.",
+      "candidates": {
+        "예물": "**G21701 시계/귀금속 소매업** — 유력. 소매업이고 classifyWeddingIndustry의 `/귀금속|보석|금은|시계/`에 걸려 goods로 선다.",
+        "허니문": "**N10501 여행사** — 유력. `/여행/`에 걸려 honeymoon으로 선다. 2순위는 N10599 기타 여행 보조/예약 서비스업.",
+        "청첩장": "**맞는 코드가 없다.** 「인쇄」로 걸린 것이 전부 제조업·출판업이다 — C12901 스크린 인쇄업 · C12902 오프셋 인쇄업 · C12903 기타 인쇄업 · C12999 기타 인쇄관련 산업 · J10199 기타 인쇄물 출판업 · G10720 서적·잡지 및 기타 인쇄물 도매업. C15404~6은 인쇄회로기판이라 무관하다. 청첩장 가게는 상권정보에서 문구·팬시·광고물 제작 쪽에 있을 가능성이 크다 — 낱말을 바꿔 다시 찾아야 한다."
+      },
+      "excluded": "G10727(도매) · S20603/S20604(수리) · C18001/C18002/C16201(제조)는 예물 소매가 아니다. K10303 신용카드 및 할부 금융업 · O10202 문화 및 관광 행정은 낱말만 걸린 무관한 항목이다.",
+      "notAdded": "**후보를 코드에 넣지 않았다.** 대표님 판단 사항이다 — 한복 제외·꽃집 유지가 그렇게 정해졌고, 추측으로 대분류 'Q'를 박았다가 조용한 0건이 된 전례가 있다. 넣기 전에 각 코드가 실제로 웨딩 업체를 담는지도 봐야 한다: 인쇄소·금은방·일반 여행사가 대부분일 수 있다(상호 조건이 걸려 양은 묶이지만 업종 판정은 갈린다)."
+    },
+    "sourceIsIntermittent20260914": {
+      "observed": "출처가 **간헐적이다.** 23:02 KST 장애 시작 → 23:31~23:33 복구(조회 2초 · seoul 수집 4초) → 23:40~23:45 다시 끊김. 한 시간 안에 두 번 뒤집혔다.",
+      "run159Inconclusive": "꽃집(G21901) 단독 `--limit 100` 실행(run 159)은 **판정하지 못했다.** sbiz-gyeonggi가 0건으로 끝났지만 원인은 「연결 끊김」이었다 — 리포트 truncated에 `{code:G21901, got:0, total:null, reason:연결 끊김}`. icheon-halls도 ConnectTimeoutError로 실패했다.",
+      "messageEarnedItsKeepAgain": "**새 원인 메시지가 세 번째로 값을 했다.** 이 메시지가 없었다면 「G21901이 0건이니 꽃집 코드가 틀렸다」로 잘못 결론지을 자리였다. 실제로는 코드를 확인할 기회조차 없었다. 「업종 코드 문제가 아닙니다」한 줄이 오판을 막았다.",
+      "nextStep": "출처가 안정되면 다시 확인할 것 둘 — ① 꽃집 단독 `--upjong-codes G21901 --limit 100`으로 부케가 실제로 채워지는지 ② 청첩장 코드를 문구·팬시·주얼리·광고 같은 낱말로 다시 조사. 확인은 lookup-category(2초)로 먼저 생존을 보고 나서 한다."
     }
   }
 }
