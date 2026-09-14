@@ -1,3 +1,4 @@
+import { OPERATOR_CANNOT_WITHDRAW } from '@weddingpick/domain';
 import type { Pool, PoolClient } from 'pg';
 
 import { loadConfig } from './config';
@@ -7,7 +8,12 @@ import { sweepExpiredDocuments } from './retention/worker';
 import { createLocalStorage } from './storage/local';
 import { createS3Storage } from './storage/s3';
 import type { Storage } from './storage/port';
-import { attemptDeleteAccount, type WithdrawalDeps } from './withdrawal';
+import {
+  WithdrawalRefused,
+  attemptDeleteAccount,
+  withdraw,
+  type WithdrawalDeps,
+} from './withdrawal';
 
 /**
  * 회원탈퇴에 대한 운영자 개입. 05번 명세 14·35번.
@@ -228,6 +234,70 @@ export async function resume(pool: Pool, userId: string, by: string, reason: str
  * "재시도"라고 부르면, 원본 파기 진행 중인 계정마다 운영자가 계속 눌러보게
  * 된다. 그건 이 명령이 할 일이 아니라 시간이 할 일이다.
  */
+/**
+ * 운영자가 **대신** 탈퇴를 시작한다.
+ *
+ * 「내가 탈퇴도 시키고 해야하는데」(2026-09-10 대표). 지금까지 이 파일이 하던 셋은
+ * 전부 **사용자가 이미 낸 탈퇴**에 개입하는 것이었다 — 보류 · 재개 · 재시도. 시작을
+ * 대신 눌러 줄 자리가 없었고, 그래서 운영자는 지워야 할 계정을 보고도 손이 없었다.
+ *
+ * **본인이 누른 것과 같은 길로 간다.** `withdraw()`를 그대로 부른다. 여기서 계정을
+ * 직접 지우는 짧은 길을 따로 내면 원본 파기 순서(접수 → 파기 대상 → 파일 파기 →
+ * 계정 삭제)를 건너뛰게 되고, 그러면 지울 열쇠를 잃은 파일이 스토리지에 남는다.
+ * 없애려던 결과가 그것이다.
+ *
+ * **되돌릴 수 없다.** 그래서 두 가지를 요구한다 — 사유를 반드시 적고, 그 사유가
+ * 감사 기록에 남는다. 남이 대신 지운 계정은 본인이 지운 계정과 결과가 같아서,
+ * 기록이 없으면 나중에 둘을 가릴 방법이 없다.
+ *
+ * **운영자 계정은 막는다.** `withdraw()` 안쪽도 막지만 여기서 먼저 막는다 —
+ * 안쪽에서 걸리면 이미 접수가 시작된 뒤라 되돌릴 것이 생긴다.
+ */
+export async function forceWithdraw(
+  deps: WithdrawalDeps,
+  userId: string,
+  by: string,
+  reason: string
+): Promise<{ completed: boolean; note: string }> {
+  await requireOperator(deps.pool, by);
+
+  const trimmedReason = reason.trim();
+
+  if (trimmedReason === '') throw new WithdrawalRefused('탈퇴 사유가 필요하다.');
+
+  const { rows } = await deps.pool.query<{ is_operator: boolean; deleted_at: Date | null }>(
+    'SELECT is_operator, deleted_at FROM structured.users WHERE id = $1',
+    [userId]
+  );
+  const target = rows[0];
+
+  if (!target) throw new WithdrawalRefused('그런 계정이 없다.');
+  if (target.is_operator) throw new WithdrawalRefused(OPERATOR_CANNOT_WITHDRAW);
+  if (target.deleted_at) throw new WithdrawalRefused('이미 탈퇴가 접수된 계정이다.');
+
+  const before = await currentStatus(deps.pool, userId);
+  const result = await withdraw(deps, userId);
+  const after = result.completed ? 'deleted' : await currentStatus(deps.pool, userId);
+
+  const note = result.completed
+    ? '지웠다.'
+    : '접수했다. 원본 파기가 끝나면 파기 워커가 계정을 지운다.';
+
+  /*
+   * **기록은 지운 뒤에 쓴다.** 계정이 사라져도 이 행은 남는다 — `account_id`가
+   * 외래키가 아니라서다(0058). 먼저 쓰고 탈퇴가 실패하면 「지웠다」는 기록만
+   * 남으므로 순서를 바꾸지 않는다.
+   */
+  await deps.pool.query(
+    `INSERT INTO structured.withdrawal_audit_log
+       (operator_id, account_id, action, reason, before_status, after_status)
+     VALUES ($1, $2, 'force', $3, $4, $5)`,
+    [by, userId, trimmedReason, before, after]
+  );
+
+  return { completed: result.completed, note };
+}
+
 export async function retry(
   deps: WithdrawalDeps,
   userId: string,

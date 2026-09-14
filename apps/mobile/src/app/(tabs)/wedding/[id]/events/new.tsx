@@ -1,212 +1,163 @@
+import type { CurrentUser } from '@weddingpick/api-contract';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
-import { ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useEffect, useState } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
-import { addWeddingEvent } from '@/api/client';
+import { addWeddingEvent, getCurrentUser } from '@/api/client';
+import { Layout, Spacing, ThemedText } from '@weddingpick/ui';
+import { useDepthBack } from '@/features/navigation/depth-back';
+import { DateTimeField, combineDayTime } from '@/features/wedding/event-form';
 import {
-  ActionButton,
-  Layout,
-  MaxContentWidth,
-  Radius,
-  Spacing,
-  ThemedText,
-  ThemedView,
-  WeddingCalendar,
-  useTheme,
-} from '@weddingpick/ui';
-
-const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
+  Badge,
+  CheckBox,
+  Dock,
+  DockButton,
+  Field,
+  Hero,
+  ListRow,
+  NavBar,
+  Screen,
+  Section,
+} from '@/features/wedding/screen-kit';
 
 /**
- * 일정 추가. 핸드오프 WP-OUR-006.
+ * 일정 추가. WP-OUR-006 · 핸드오프 08-schedule-sub #3.
  *
- * "배우자 공유"는 별도 토글을 두지 않는다 — 웨딩일정은 이미 배우자와 함께 보는
- * 공간이라(웨딩 스케줄·방문노트와 같은 이유), 일정만 따로 비공개로 둘 수 있게
- * 하면 실제로 하지 않는 일을 하는 것처럼 보이는 컨트롤이 된다. 대신 안내
- * 문구로 그 사실을 알린다.
+ *   close nav «일정 추가»
+ *   hero      «어떤 일정을 넣을까요?»
+ *   필드 4     제목 · 일시 · 장소 · 관련 업체 (필수: 제목 · 일시)
+ *   알림       «하루 전에 알려주기» 체크 · 배우자가 있으면 «{이름}님에게도 알려주기»
+ *   dock      «일정 넣기» 52 coral
+ *
+ * 배우자 공유는 켜고 끄는 것이 아니다 — 일정은 한 명이 넣으면 둘 다 알림을 받는다
+ * (SPEC 4.1). 그래서 그 줄은 늘 켜져 있고 누를 수 없다. 끌 수 있는 것처럼 보이는 컨트롤을
+ * 두지 않는다.
  */
 export default function AddWeddingEventScreen() {
+  const depthBack = useDepthBack();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const theme = useTheme();
 
+  const [me, setMe] = useState<CurrentUser | null>(null);
   const [title, setTitle] = useState('');
-  const [date, setDate] = useState<string | null>(null);
+  const [day, setDay] = useState<string | null>(null);
   const [time, setTime] = useState('14:00');
   const [location, setLocation] = useState('');
   const [vendorLabel, setVendorLabel] = useState('');
-  const [memo, setMemo] = useState('');
   const [notifyEnabled, setNotifyEnabled] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const ready = title.trim().length > 0 && date !== null && TIME_PATTERN.test(time);
+  useEffect(() => {
+    getCurrentUser()
+      .then(setMe)
+      .catch(() => undefined);
+  }, []);
+
+  const startsAt = combineDayTime(day, time);
+  const reason =
+    title.trim().length === 0 ? '제목을 적어주세요' : startsAt === null ? '일시를 골라주세요' : null;
+  const ready = reason === null;
 
   async function save() {
-    if (!ready || date === null) return;
+    if (!ready || startsAt === null || saving) return;
 
     setSaving(true);
     setError(null);
 
     try {
-      const startsAt = new Date(`${date}T${time}:00`).toISOString();
-
       await addWeddingEvent(id, {
         title: title.trim(),
         startsAt,
         ...(location.trim() ? { location: location.trim() } : {}),
         ...(vendorLabel.trim() ? { vendorLabel: vendorLabel.trim() } : {}),
-        ...(memo.trim() ? { memo: memo.trim() } : {}),
         notifyEnabled,
       });
 
-      router.back();
+      /* 링크로 곧장 들어와 되돌아갈 곳이 없으면 Depth Back이 한 단계 위(일정 목록)로 보낸다. */
+      if (router.canGoBack()) router.back();
+      else depthBack();
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : '더하지 못했어요.');
+      setError(caught instanceof Error ? caught.message : '넣지 못했어요. 다시 시도해주세요.');
     } finally {
       setSaving(false);
     }
   }
 
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.content}>
-          <ThemedText type="t2">일정 더하기</ThemedText>
+  const partner = me?.spouseLinked ? (me.partnerDisplayName ?? '배우자') : null;
 
-          <ThemedText type="t7" themeColor="textSecondary">
-            제목
-          </ThemedText>
-          <TextInput
-            style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundSelected }]}
+  return (
+    <Screen>
+      <NavBar title="일정 추가" variant="close" />
+
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}>
+        <Hero title="어떤 일정을 넣을까요?" />
+
+        <View style={styles.fields}>
+          <Field
+            label="제목"
             value={title}
             onChangeText={setTitle}
-            placeholder="예: 상견례"
-            placeholderTextColor={theme.textAssistive}
-            accessibilityLabel="제목"
+            placeholder="예: 드레스 투어 2차"
+            maxLength={60}
+            returnKeyType="next"
           />
-
-          <ThemedText type="t7" themeColor="textSecondary">
-            날짜
-          </ThemedText>
-          <WeddingCalendar value={date} onChange={setDate} today={new Date(1970, 0, 1)} />
-
-          <ThemedText type="t7" themeColor="textSecondary">
-            시각 (HH:MM)
-          </ThemedText>
-          <TextInput
-            style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundSelected }]}
-            value={time}
-            onChangeText={setTime}
-            placeholder="14:00"
-            placeholderTextColor={theme.textAssistive}
-            keyboardType="numbers-and-punctuation"
-            accessibilityLabel="시각"
-          />
-
-          <ThemedText type="t7" themeColor="textSecondary">
-            장소
-          </ThemedText>
-          <TextInput
-            style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundSelected }]}
+          <DateTimeField day={day} time={time} onChangeDay={setDay} onChangeTime={setTime} />
+          <Field
+            label="장소"
             value={location}
             onChangeText={setLocation}
-            placeholder="예: 더 라움"
-            placeholderTextColor={theme.textAssistive}
-            accessibilityLabel="장소"
+            placeholder="어디에서 만나요?"
+            maxLength={120}
           />
-
-          <ThemedText type="t7" themeColor="textSecondary">
-            관련 업체
-          </ThemedText>
-          <TextInput
-            style={[styles.input, { color: theme.text, backgroundColor: theme.backgroundSelected }]}
+          <Field
+            label="관련 업체"
             value={vendorLabel}
             onChangeText={setVendorLabel}
-            placeholder="예: 스튜디오 이로"
-            placeholderTextColor={theme.textAssistive}
-            accessibilityLabel="관련 업체"
+            placeholder="업체 이름"
+            maxLength={60}
           />
+        </View>
 
-          <ThemedText type="t7" themeColor="textSecondary">
-            메모
-          </ThemedText>
-          <TextInput
-            style={[
-              styles.input,
-              styles.memo,
-              { color: theme.text, backgroundColor: theme.backgroundSelected },
-            ]}
-            value={memo}
-            onChangeText={setMemo}
-            multiline
-            placeholder="준비물이나 확인할 것을 적어주세요"
-            placeholderTextColor={theme.textAssistive}
-            accessibilityLabel="메모"
+        <Section label="알림">
+          <ListRow
+            left={<CheckBox checked={notifyEnabled} />}
+            title="하루 전에 알려주기"
+            accessibilityLabel={`하루 전에 알려주기 ${notifyEnabled ? '켬' : '끔'}`}
+            onPress={() => setNotifyEnabled((current) => !current)}
           />
-
-          <View style={styles.switchRow}>
-            <View style={styles.switchText}>
-              <ThemedText type="t6">알림</ThemedText>
-              <ThemedText type="t7" themeColor="textSecondary">
-                일정 전에 알려드려요
-              </ThemedText>
-            </View>
-            <Switch
-              value={notifyEnabled}
-              onValueChange={setNotifyEnabled}
-              accessibilityLabel="알림"
-              trackColor={{ true: theme.tint, false: theme.track }}
+          {partner ? (
+            <ListRow
+              left={<CheckBox checked />}
+              title={`${partner}님에게도 알려주기`}
+              right={<Badge label="함께" tone="ok" />}
             />
-          </View>
-
-          <ThemedText type="t7" themeColor="textAssistive">
-            모든 일정은 배우자와 자동으로 공유돼요.
-          </ThemedText>
-
-          {error ? (
-            <ThemedText type="t7" themeColor="negative">
-              {error}
-            </ThemedText>
           ) : null}
+        </Section>
 
-          <ThemedView style={styles.actions}>
-            <ActionButton label="취소" onPress={() => router.back()} />
-            <ActionButton
-              variant="primary"
-              label="더하기"
-              disabled={!ready || saving}
-              onPress={() => void save()}
-            />
-          </ThemedView>
-        </ScrollView>
-      </SafeAreaView>
-    </ThemedView>
+        {error ? (
+          <ThemedText type="t7" themeColor="negative" style={styles.error}>
+            {error}
+          </ThemedText>
+        ) : null}
+      </ScrollView>
+
+      <Dock note={!ready && (title.length > 0 || day !== null) ? reason : null}>
+        <DockButton
+          variant="primary"
+          label={saving ? '넣는 중…' : '일정 넣기'}
+          disabled={!ready || saving}
+          onPress={() => void save()}
+        />
+      </Dock>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
-  safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
-  content: {
-    paddingHorizontal: Layout.gutter,
-    paddingTop: Spacing.five,
-    paddingBottom: Spacing.four,
-    gap: Spacing.two,
-  },
-  input: {
-    height: Layout.rowMinHeight,
-    borderRadius: Radius.input,
-    paddingHorizontal: Spacing.three,
-  },
-  memo: { minHeight: 100, textAlignVertical: 'top', paddingTop: Spacing.three },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.three,
-    marginTop: Spacing.two,
-  },
-  switchText: { flex: 1, gap: Spacing.half },
-  actions: { flexDirection: 'row', gap: Spacing.two, marginTop: Spacing.two },
+  content: { paddingBottom: Spacing.four },
+  fields: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four, gap: Spacing.three },
+  error: { paddingHorizontal: Layout.gutter },
 });

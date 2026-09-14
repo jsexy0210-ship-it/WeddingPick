@@ -79,7 +79,15 @@ export const STEP_TITLE_LINES: Record<QuestionStep, readonly [string, string]> =
   style: ['어떤 분위기로', '준비할까요?'],
 };
 
-export const DONE_TITLE_LINES = ['이제 필요한 것만', '보여드릴게요'] as const;
+/**
+ * 완료 화면 제목.
+ *
+ * **가입이 끝났다는 사실을 먼저 말한다**(2026-09-09 사용자 결정). 예전 제목은
+ * 「이제 필요한 것만 보여드릴게요」로 개인화 이야기만 해서, 이 화면이 회원가입의
+ * 마지막 단계라는 것이 드러나지 않았다 — 카카오 개인정보 동의항목 심사가 가입
+ * 절차를 확인할 수 없다고 반려한 것과 같은 문제다.
+ */
+export const DONE_TITLE_LINES = ['가입이', '완료됐어요'] as const;
 
 /** 질문 아래 한 줄 — 서비스가 무엇을 해주는지(SPEC §13.6 첫 표 «설명»). */
 export const STEP_DESCRIPTION: Record<QuestionStep, string> = {
@@ -87,16 +95,24 @@ export const STEP_DESCRIPTION: Record<QuestionStep, string> = {
   region: '선택한 지역을 기준으로 찾아드릴게요',
   prep: '이미 정한 건 빼고 필요한 것만 챙겨드릴게요',
   budget: '예산에 맞는 선택지를 먼저 보여드릴게요',
-  style: '남은 준비에 취향을 반영할게요',
+  style: '마음에 드는 스타일을 골라주세요',
 };
 
 export const DONE_CTA = '웨딩픽 시작하기';
 export const NEXT_CTA = '다음';
 export const PREV_CTA = '이전';
 
-/** 스타일 CTA — 고른 수 그대로 «N개 선택». 완료 화면이 뒤에 있으므로 «시작하기»를 붙이지 않는다. 0개면 비활성. */
+/**
+ * 스타일 CTA — 고른 **장수** 그대로 «N장 선택». 완료 화면이 뒤에 있으므로
+ * «시작하기»를 붙이지 않는다. 0장이면 비활성.
+ *
+ * 세는 것이 이미지 장수라 단위는 «장»이다 — `spec/strings.ko.json`
+ * `onboarding.taste.cta` · SPEC.md §「CTA는 «N장 선택»」 · 시안
+ * `20-onboarding-v2.dc.html` «3장 선택». CHANGELOG v3.19가 한 번 «곳»으로
+ * 적었지만 «곳»은 업체를 세는 말이고, 그 뒤의 SPEC과 시안이 «장»으로 돌아왔다.
+ */
 export function styleCta(count: number): string {
-  return `${count}개 선택`;
+  return `${count}장 선택`;
 }
 
 /** 이 답 상태에서 묻는 Step. 다섯 개 전부 — 건너뛰는 질문이 없다. */

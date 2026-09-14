@@ -1,13 +1,14 @@
 # 공용 컴포넌트 대조표 — Figma 신규 ↔ `packages/ui`
 
-Figma 신규 디자인이 요구하는 공용 컴포넌트와 이 저장소가 지금 가진 것을 1:1로 맞춘 표다.
-**토큰이 오기 전에 쓴 조사 문서**이고, `claude/rn-tokens`가 들어오면 「해야 할 일」 칸을 실제 구현으로 옮긴다.
+Figma 신규 디자인이 요구하는 공용 컴포넌트와 저장소가 가진 것을 1:1로 맞춘 표다.
 
+- 기준은 **최신 `main`**이다(CLAUDE.md 「모든 규칙은 최신 main을 기준으로 한다」).
 - 담당 범위: `packages/ui/src/**` — 공용 부품만.
-- 건드리지 않는 것: `spec/tokens.json` · `packages/ui/src/theme.ts`(토큰 세션) · 화면 파일 · 관리자 콘솔.
-- 값은 토큰에서만 가져온다. 색 하드코딩 현재 0건이고 그 상태를 깬다.
+- 건드리지 않는 것: `spec/tokens.json` · `packages/ui/src/theme.ts` · `design-tokens.ts`(토큰 세션) ·
+  화면 파일 · 관리자 콘솔.
+- 값은 토큰에서만 가져온다. 하드코딩 금지.
 
-## 자료 신뢰도
+## 자료 신뢰도 — Figma 저장소
 
 | 등급 | 위치 | 쓰는 법 |
 | --- | --- | --- |
@@ -16,142 +17,83 @@ Figma 신규 디자인이 요구하는 공용 컴포넌트와 이 저장소가 �
 | C 무시 | 라우팅 안 되는 8개(Budget · Checklist · Community · Honeymoon · More · Proposal · Schedule · Studio) | 보지 않는다 |
 
 `src/imports/`의 `#EF5DA8` · `#F09A59` · `#371B34`은 **다른 세대 색이라 쓰지 않는다.**
-
-## 지금 `packages/ui`에 있는 것 (36개 파일)
-
-부품 24 · 토큰/훅 12.
-
-```
-부품   ThemedText · ThemedView · ActionButton · FilterChip · RatingPicker · WeddingCalendar
-       WeddingMark · ProductSymbol · NpayLogo · SocialLogo · CategoryIcon · VendorImage
-       Skeleton · ListSkeleton · Toast · DonutChart · Fab · Accordion · ProgressBar · StepList
-       TruncatedText · CategoryCycleLoader · status-view 9종 · 배지 3종
-배지   VerificationBadge · PickStatusBadge · DataTierBadge
-상태   LoadingView · SkeletonView · RecommendingView · RecommendingBody · ErrorView
-       EmptyView · NetworkErrorView · PermissionDeniedView · ProcessingView · MaintenanceView
-토큰   Colors · Fonts · Spacing · Layout · Motion · Radius · FontSize · LineHeight
-훅     useTheme · useColorScheme · useDelayedVisible
-```
+저장소의 정본 시안은 `docs/design-handoff/root/` 36장이고, Figma 자료는 그 아래다.
 
 ## 대조표
 
-판정: **재사용**(그대로) · **확장**(있는 것에 변형 추가) · **신규**(없어서 만든다) · **앱에 있음**(앱 쪽 공용 파일. 승격 보류)
+판정: **재사용**(이미 있다) · **신규**(없어서 만들었다) · **앱에 있음**(앱 쪽 공용 파일. 승격 보류)
 
-| # | Figma 신규가 쓰는 것 | 저장소 현재 | 판정 | 해야 할 일 |
-| --- | --- | --- | --- | --- |
-| 1 | **Button** | `ActionButton` — `variant` primary/secondary/ghost, `size` auto/medium/large/xlarge, `tone`, `icon`, `hint` | 재사용 | 새로 만들지 않는다. 더스티 로즈를 primary에 물리는 것은 토큰 교체로 끝난다. 화면당 Primary 1개 규칙은 화면 세션 몫 |
-| 2 | **IconButton** | 없음. `Layout.iconButton`(40) 토큰만 있고 화면 7곳이 직접 그린다 | 신규 | 40 원형 · 터치 44 보장 · `accessibilityLabel` 필수. 헤더(검색 · 알림 · 더보기)와 카드 우상단 Pick 하트가 쓴다 |
-| 3 | **Card** | 없음. `Radius.card`(14) · `Layout.cardPadding`(20)만 있고 화면 10곳이 직접 그린다 | 신규 | 얇은 면(surface) 하나. 배경 · 둥글기 · 패딩 · 눌림만 안다. 내용은 모른다 |
-| 4 | **VendorCard** | 없음. 재료는 다 있다 — `VendorImage` · `VerificationBadge` · `DataTierBadge` · `TruncatedText` · `priceLine()`(domain) | 신규 | 위 재료를 조립만 한다. 금액 한 줄은 반드시 `priceLine(paidPrice, guidePrice)`. 검색 결과 · 홈 추천 · 비교가 같은 것을 쓴다 |
-| 5 | **PickCard** | 없음. `PickStatusBadge`만 있다 | 신규 | **VendorCard와 합치지 않는다.** Pick 화면 카드는 업종별 후보 묶음 · 결정 상태 · 공유 여부를 보여주는 다른 물건이다(현재 `pick/index.tsx`의 `CategoryRow` · `StarterCard` · `SharedVendorRow`가 그 자리) |
-| 6 | **Chip** | `FilterChip` — `label` · `selected` · `onPress` · `role` checkbox/radio | 확장 | 누르는 칩은 그대로 쓴다. Figma가 쓰는 **안 눌리는 태그 칩**(스타일 · 지역 표시)만 `interactive: false` 한 갈래로 붙인다. 두 번째 칩 컴포넌트를 만들지 않는다 |
-| 7 | **Badge** | 뜻이 정해진 3종(`VerificationBadge` · `PickStatusBadge` · `DataTierBadge`) | 신규 | 뜻 없는 **일반 Badge** 하나가 없다(Figma의 「인기」 「신규」 자리). 기존 3종은 **그대로 둔다** — 뜻을 가진 배지라 일반 Badge로 갈아끼우면 의미가 사라진다. 전수 검수한 **글자 잘림 금지**를 새 Badge에도 건다 |
-| 8 | **Input** | 없음. 화면 20곳이 `TextInput`을 직접 쓴다. `Layout.field`(52) · `Radius.input` · `fieldBorder` 토큰은 있다 | 신규 | 라벨 · 상태(기본/포커스/오류/비활성) · 도움말 · 오류문구. 오류는 색만으로 알리지 않는다 |
-| 9 | **SearchBar** | 없음. `search/index.tsx`의 `renderSearchBox()`가 화면 안에 있다 | 신규 | Input 위에 얹는 한 겹(돋보기 · 지우기 · 제출). 자동완성 화면과 검색 홈이 같은 것을 쓴다 |
-| 10 | **SectionHeader** | 없음. `Layout.sectionGap`(28) · `sectionHeadGap`(14)만 있고 화면 36곳이 직접 맞춘다 | 신규 | **제목 1줄 · 서브카피 없음**(CLAUDE.md). 오른쪽 「더보기」는 선택 |
-| 11 | **Tab** (세그먼트) | 없음 | 신규 | Figma 웨딩노트의 3칸 세그먼트(채운 트랙 안에 뜬 알약). 하단 탭바와 다른 물건이다 |
-| 12 | **BottomNavigation** | `apps/mobile/src/features/navigation/tab-bar.tsx` — 05-root 시안 1:1, `Layout.tabBar` 계열 토큰 사용 | 앱에 있음 | **옮기지 않는다.** expo-router `BottomTabBarProps`에 묶여 있어 `packages/ui`로 올리면 화면 세션들의 import가 전부 흔들린다. 대표님 판단 대기 |
-| 13 | **Modal** (가운데 대화상자) | `showAlert`(네이티브 Alert)가 알림·확인을 덮는다. RN `Modal`을 직접 쓰는 곳은 이미지 뷰어 1곳뿐 | 재사용 | **새 Modal을 만들지 않는다.** 지금 필요한 자리는 `showAlert`와 BottomSheet가 이미 덮는다. 시안에 가운데 대화상자가 새로 필요해지면 그때 만든다 |
-| 14 | **BottomSheet** | `apps/mobile/src/features/common/bottom-sheet.tsx` — 화면 12곳이 쓴다. 스크림/패널 분리 애니메이션이 이미 잡혀 있다 | 앱에 있음 | **옮기지 않는다.** 12곳이 물려 있어 이동은 화면 세션들과 충돌한다. 대표님 판단 대기 |
-| 15 | **Loading** | `CategoryCycleLoader` · `useDelayedVisible`(700ms) · `LoadingView` · `SkeletonView` · `Skeleton` · `ListSkeleton` | 재사용 | 700ms 임계값 유지. **원형 로더 신설은 보류 — 아래 «판단 필요» 참조** |
-| 16 | **EmptyState** | `EmptyView` — 제목 · 설명 · 행동 1개 | 재사용 | 새로 만들지 않는다. 문구만 신규 카피 규칙에 맞춘다 |
-| 17 | **ErrorState** | `ErrorView` · `NetworkErrorView` · `PermissionDeniedView` · `MaintenanceView` | 재사용 | 새로 만들지 않는다. 네 갈래가 이미 원인별로 갈라져 있고, 하나로 합치면 원인별 안내가 사라진다 |
+| # | Figma 신규가 쓰는 것 | 저장소 현재 | 판정 |
+| --- | --- | --- | --- |
+| 1 | **Button** | `ActionButton` — variant 3 · size 4 · tone | 재사용 |
+| 2 | **IconButton** | 없었다 → `icon-button.tsx` | **신규** |
+| 3 | **Card** | 없었다 → `card.tsx` | **신규** |
+| 4 | **VendorCard** | 없었다 → `vendor-card.tsx` | **신규** |
+| 5 | **PickCard** | 없었다 → `pick-card.tsx` | **신규** |
+| 6 | **Chip** | `FilterChip` — size `default·small·sheet` · accent `ink·tint` · off `fill·outline` | 재사용 |
+| 7 | **Badge** | `Badge` — kind `ok·wait·no·brand·none·info` | 재사용 |
+| 8 | **Input** | `TextField` — label · error · hint · trailing (+ `leading` 추가) | 재사용 |
+| 9 | **SearchBar** | 없었다 → `search-bar.tsx`(`TextField` 위 한 겹) | **신규** |
+| 10 | **SectionHeader** | 없었다 → `section-header.tsx` | **신규** |
+| 11 | **Tab**(세그먼트) | 없었다 → `segmented-tabs.tsx` | **신규** |
+| 12 | **BottomNavigation** | `apps/mobile/src/features/navigation/tab-bar.tsx` | 앱에 있음 |
+| 13 | **Modal**(가운데 대화상자) | `showAlert` + 앱 `BottomSheet`가 덮는다. 새로 만들지 않았다 | 재사용 |
+| 14 | **BottomSheet** | `apps/mobile/src/features/common/bottom-sheet.tsx` — 화면 12곳 사용 | 앱에 있음 |
+| 15 | **Loading** | `CircleLoader`(기본) · `CategoryCycleLoader`(오래 기다리는 자리) · `useDelayedVisible`(700ms) · `Skeleton` · `ListSkeleton` | 재사용 |
+| 16 | **EmptyState** | `EmptyView` | 재사용 |
+| 17 | **ErrorState** | `ErrorView` · `NetworkErrorView` · `PermissionDeniedView` · `MaintenanceView` | 재사용 |
 
-정리: **신규 8** · **확장 1** · **재사용 6** · **앱에 있음(보류) 2**.
+**신규 6 · 재사용 9 · 앱에 있음 2.**
 
-## 새로 만들 때 지키는 것
+## 새로 만든 것
 
-- **Pick Mark 심볼은 절대 변경 금지** — `WeddingMark`의 두 path를 건드리지 않는다.
-- **배지가 글자를 자르지 않게** 한다. 전수 검수한 항목이다.
-- **로그인 진행 표시는 한 가지만** — 문구만이거나 로더만이다. 둘을 같이 세우지 않는다.
-- **뒤로 가기 단추 자리는 상세 화면끼리 같다**(Depth Back). `apps/mobile/src/components/back-button.tsx`가 그 자리다.
-- 사용자 화면 문구에 `AI` · `데이터` · `탐색` · `관심업체` 금지. `확인된 제보` → `실 제보`.
-- 값은 `Colors` · `Spacing` · `Layout` · `Radius` · `FontSize`에서만. 하드코딩 금지.
-- 이미 있는 것을 새로 만들지 않는다. 모양이 비슷하다고 억지로 합치지도 않는다.
+| 파일 | 무엇 |
+| --- | --- |
+| `icon-button.tsx` | 아이콘만 있는 단추. 보이는 40(`Layout.iconButton`) · 터치 44(`hitSlop`) · `accessibilityLabel` 필수 |
+| `card.tsx` | 면 하나. `Radius.medium`(10) · 그림자 없음(`elevation.$rule`) · `plain`/`filled` · `flush` |
+| `vendor-card.tsx` | 업체 카드. 사진 위 · 세로. 검색 결과 · 홈 추천 · 비교가 같은 것을 쓴다 |
+| `pick-card.tsx` | Pick 목록 카드. 썸네일 옆 · 가로 · `Radius.pickCard`(14). 업종과 결정 여부가 먼저 읽힌다 |
+| `search-bar.tsx` | 검색 칸. `TextField` 위에 돋보기·지우기를 얹은 한 겹 |
+| `section-header.tsx` | 섹션 제목 줄. **제목 1줄, 서브카피 prop을 두지 않는다**(CLAUDE.md) |
+| `segmented-tabs.tsx` | 화면 안에서 내용만 바꾸는 줄. 하단 탭 바와 다른 물건 |
 
-## 구현 현황 (토큰 전 1차)
+**`VendorCard`와 `PickCard`를 합치지 않았다.** Figma에서 전자는 사진이 위에 깔리고 아직 고르지
+않은 업체를 훑는 카드고, 후자는 썸네일이 옆에 붙고 업종 · 결정 여부 · 빼기가 먼저 읽히는
+카드다. 같은 정보라도 순서가 달라서, 한 벌로 합치면 두 화면 중 하나는 맞지 않는다.
 
-토큰 세션을 기다리는 동안 **지금 있는 토큰 API**(`Colors` · `Layout` · `Radius` · `Spacing` ·
-`FontSize`) 위에 올려 만들었다. 토큰 세션이 바꾸는 것은 값이라, `claude/rn-tokens`가 들어오면
-이 부품들은 값만 따라 움직인다.
-
-| 컴포넌트 | 파일 | 상태 |
-| --- | --- | --- |
-| Badge | `packages/ui/src/badge.tsx` | 새로 만듦. `neutral · ink · positive · cautionary` |
-| Card | `packages/ui/src/card.tsx` | 새로 만듦. 그림자 없음 |
-| IconButton | `packages/ui/src/icon-button.tsx` | 새로 만듦. 보이는 40 · 터치 44 |
-| SectionHeader | `packages/ui/src/section-header.tsx` | 새로 만듦. 서브카피 prop 없음 |
-| Input | `packages/ui/src/input.tsx` | 새로 만듦. 오류는 색 + 문구 |
-| SearchBar | `packages/ui/src/search-bar.tsx` | 새로 만듦. `Input` 위 한 겹 |
-| SegmentedTabs | `packages/ui/src/segmented-tabs.tsx` | 새로 만듦. 하단 탭바와 다른 물건 |
-| VendorCard | `packages/ui/src/vendor-card.tsx` | 새로 만듦. 사진 위 · 세로 |
-| PickCard | `packages/ui/src/pick-card.tsx` | 새로 만듦. 썸네일 옆 · 가로. VendorCard와 합치지 않음 |
-| Chip | `packages/ui/src/filter-chip.tsx` | `interactive={false}` 한 갈래 추가. 두 번째 칩 컴포넌트 없음 |
-
-금액은 어느 카드든 `priceLine(paidPrice, guidePrice)`의 결과만 받는다 — `packages/ui`는
+금액은 두 카드 모두 `priceLine(paidPrice, guidePrice)`의 **결과만** 받는다 — `packages/ui`는
 `packages/domain`을 import하지 않는 표시 전용이라 금액 규칙을 두 벌 두지 않는다.
 
-### 새 토큰에 맞춘 것 (`claude/rn-tokens` 머지 후)
+## 기존 파일에 손댄 것 — 한 곳
 
-키 컬러가 코랄 `#ff6f61`에서 더스티 로즈 `#e7898d`로 바뀌었다. 새 색은 **글자로 쓰면
-흰 바탕에서 2.5:1**이라 읽히지 않는다 — 토큰 세션이 그래서 `tintDark`를 같이 넣었다.
-`tint`를 글자색으로 쓰던 자리를 `tintDark`로 옮겼다.
+`text-field.tsx`에 `leading` 한 자리를 더했다. `trailing`만 있어서 검색 칸의 돋보기를 넣을
+자리가 없었다. **입력 칸을 두 벌 만들지 않으려고** 기존 것을 늘렸다. 기존 호출부는 그대로다.
 
-| 파일 | 바꾼 것 |
-| --- | --- |
-| `pick-status-badge.tsx` | 옅은 면 위 «Pick» 글자 `tint` → `tintDark` |
-| `wedding-calendar.tsx` | 토요일 요일 라벨과 날짜 글자 `tint` → `tintDark` |
-| `badge.tsx` | `accent` 갈래 추가 — 옅은 면 + `tintDark` 글자. **검증·신뢰에만** |
+## 안 만든 것과 그 이유
 
-`tint`를 **면**으로 쓰는 자리(버튼 · 선택된 칩 · FAB · 선택된 날짜)는 그대로 뒀다.
-아래 «판단 필요» 2번을 봐 주세요.
-
-### 토큰 세션에 넘기는 것
-
-`spec/tokens.json`에는 있는데 `packages/ui/src/theme.ts`의 `Layout`에 아직 안 올라온 값이 있다.
-`theme.ts`는 토큰 세션 담당이라 손대지 않았고, 그동안 쓰는 쪽에서 기본값으로 들고 있다.
-
-| 토큰 | 값 | 지금 어디 있나 |
-| --- | --- | --- |
-| `size.thumbList` | 52 | `pick/index.tsx` 주석이 같은 것을 적어 뒀다 |
-| `size.thumbCard` | 72 | `PickCard`의 `DEFAULT_THUMB` |
-| 카드 대표 사진 높이 | 168 | `VendorCard`의 `DEFAULT_IMAGE_HEIGHT`(검색 카드가 쓰던 값). 토큰에도 없다 |
+- **원형 로더** — `circle-loader.tsx`가 이미 `main`에 있다. 2026-09-11 대표 지시(페이지 사이
+  이동은 기본 원형 로더 · `CategoryCycleLoader`는 오래 기다리는 자리만 · 700ms 유지)가 이미
+  코드에 들어와 있고 `LoadingView`가 그렇게 갈라 쓴다. 새로 만들 것이 없다.
+- **Badge · Input · Chip** — `Badge` · `TextField` · `FilterChip`이 이미 있다. 시안에서 직접 뽑은
+  값과 갈래를 갖고 있어 내가 만든 것보다 정확하다.
+- **Modal** — 지금 필요한 자리를 `showAlert`와 `BottomSheet`가 덮는다. 시안에 가운데 대화상자가
+  새로 필요해지면 그때 만든다.
 
 ## 판단 필요
 
-**1. 원형 로더 — 지시와 저장소 핸드오프가 정면으로 어긋난다.**
+**1. `BottomSheet` · `BottomNavigation`을 `packages/ui`로 올릴지.**
+지금은 앱 쪽 공용 파일이다. 시트는 화면 12곳이 쓰고, 탭 바는 expo-router `BottomTabBarProps`에
+묶여 있다. 옮기면 화면 세션들의 import가 한꺼번에 흔들린다. 화면 작업이 끝난 뒤 따로 옮기는
+것을 권한다.
 
-- 이번 오더: 「페이지 사이 이동은 기본 원형 로더다. `CategoryCycleLoader`는 첫 실행·재시작처럼 오래 기다리는 자리에만.」
-- 저장소 핸드오프 v3.20 (`docs/design-handoff/current/CHANGELOG.md`, «로더 통일 · 원형 스피너 폐기»):
-  「로더를 업종 아이콘 순회 하나로 통일했습니다. **원형 스피너를 새로 만들지 않습니다.** `tokens.json`의 `motion.spinner`를 삭제하고 `motion.loaderIconCycle`로 교체했습니다.」
+**2. `claude/rn-tokens`는 낡은 `main` 위에서 갈라졌다 — 리베이스가 필요하다.**
+그 브랜치는 키 컬러를 코랄 `#ff6f61` → 더스티 로즈 `#e7898d`로 바꾸고 서체를 Pretendard 단일로
+돌렸는데, 그 뒤 `main`이 `theme.ts`를 크게 고쳤고 `design-tokens.ts` · `circle-loader.tsx` ·
+`text-field.tsx` · `rating-stars.tsx`가 새로 들어왔다. 현재 `main`의 `CLAUDE.md`는 아직
+**코랄 #FF6F61 기본 · 「폰트는 시스템 서체 유지(Pretendard 미적용)」**라고 적는다.
 
-`CLAUDE.md`는 충돌 시 최신 핸드오프 md를 따르라고 한다. 그래서 **원형 로더를 만들지 않고 대기한다.**
-700ms 임계값은 양쪽이 같으므로 그대로 지킨다. 어느 쪽으로 갈지 정해주시면 그때 반영한다.
-
-**2. 흰 글자를 더스티 로즈 면에 얹는 자리 — 대비 2.5:1.**
-
-새 키 컬러 `#e7898d` 위의 흰 글자는 **2.51:1**이다. WCAG AA는 본문 4.5:1, 큰 글자도 3:1이라
-큰 글자 기준도 넘지 못한다. 지금 그 조합을 쓰는 곳은 Primary 버튼(`ActionButton`) · 선택된
-칩(`FilterChip`) · `Fab` · 선택된 날짜(`WeddingCalendar`) · `StepList`다.
-
-Figma 신규가 `--primary: #E7898D` · `--primary-foreground: #ffffff`로 직접 정한 짝이라
-**임의로 바꾸지 않았다.** 앱의 모든 CTA 색이 한꺼번에 달라지는 결정이다. 셋 중 하나를 골라주세요.
-
-- 그대로 간다(시안대로, 대비 미달을 감수)
-- 면을 `tintDark`(#c63f45 · 흰 글자 5.0:1)로 어둡게
-- 글자를 어둡게(잉크 위 로즈 면)
-
-**3. `packages/ui` 밖에서 깨진 것 — 토큰 세션 몫.**
-
-`claude/rn-tokens`의 `coral500` → `rose500` 이름 변경으로 `apps/web`의 테스트가 깨져 있다.
-
-```
-apps/web/src/site.test.ts › 색을 theme.ts와 같이 쓴다
-  coral500 → undefined
-```
-
-웹은 내 담당이 아니라 손대지 않았다. 토큰 세션이 같이 고쳐야 한다.
-
-**4. `BottomSheet` · `BottomNavigation`을 `packages/ui`로 올릴지.**
-지금은 앱 쪽 공용 파일이고 화면 12곳 · 탭 전체가 물려 있다. 옮기면 화면 세션 셋과 동시에 부딪힌다.
-지금은 두고, 화면 작업이 끝난 뒤 따로 옮기는 것을 권한다.
+이 브랜치는 `main`을 머지하면서 `theme.ts`와 `spec/tokens.json`을 **`main` 쪽으로 받았다.**
+토큰 세션 파일이라 내가 해결할 자리가 아니고, 낡은 판을 끌고 들어가면 `main`의 토큰 개편이
+지워진다. **토큰 세션이 최신 `main` 위로 리베이스한 뒤 다시 머지하겠다.**
+같이 정해야 할 것 둘 — 키 컬러를 로즈로 갈지, 서체를 Pretendard로 갈지. 둘 다 `CLAUDE.md`
+본문과 어긋나므로 규칙 문서도 함께 고쳐야 한다.

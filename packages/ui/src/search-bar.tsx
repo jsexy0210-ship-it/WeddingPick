@@ -1,8 +1,8 @@
 import { Pressable } from 'react-native';
 
-import { Input } from './input';
 import { Layout } from './theme';
 import { ProductSymbol } from './product-symbol';
+import { TextField } from './text-field';
 import { useTheme } from './use-theme';
 
 export type SearchBarProps = {
@@ -21,10 +21,11 @@ export type SearchBarProps = {
 };
 
 /**
- * 검색 칸. `Input` 위에 돋보기와 지우기를 얹은 한 겹이다.
+ * 검색 칸. `TextField` 위에 돋보기와 지우기를 얹은 한 겹이다.
  *
- * 검색 홈 · 자동완성 · 결과가 같은 것을 쓴다. 칸의 높이 · 테두리 · 포커스는
- * `Input`이 정하고, 여기는 안에 무엇이 붙는지만 안다.
+ * 검색 홈 · 자동완성 · 결과가 같은 것을 쓴다. 칸의 높이 · 테두리 · 포커스 색은
+ * `TextField`(tokens.json `component.field`)가 정하고, 여기는 안에 무엇이 붙는지만
+ * 안다 — 입력 칸을 두 벌 만들지 않는다.
  */
 export function SearchBar({
   value,
@@ -38,7 +39,7 @@ export function SearchBar({
   const theme = useTheme();
 
   const field = (
-    <Input
+    <TextField
       value={value}
       onChangeText={onChangeText}
       onSubmitEditing={(event) => onSubmit?.(event.nativeEvent.text)}
@@ -63,11 +64,7 @@ export function SearchBar({
             accessibilityLabel="검색어 지우기"
             onPress={() => onChangeText('')}
             hitSlop={HIT_SLOP}>
-            <ProductSymbol
-              name="close"
-              size={Layout.iconInline}
-              color={theme.textAssistive}
-            />
+            <ProductSymbol name="close" size={Layout.iconInline} color={theme.textAssistive} />
           </Pressable>
         ) : null
       }

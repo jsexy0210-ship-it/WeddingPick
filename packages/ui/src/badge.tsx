@@ -1,77 +1,58 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { Radius, Spacing } from './theme';
+import { STATUS_BADGE_STYLE } from './pick-status-badge';
 import { ThemedText } from './themed-text';
 import { useTheme } from './use-theme';
 
 /**
- * 뜻이 정해지지 않은 일반 배지.
+ * 상태 배지 색 — 02-design-system «Chip · Badge» · tokens.json color.status. 스킨과 무관하게 고정.
  *
- * 「인기」 「신규」처럼 **자리마다 문구가 달라지는** 표시에만 쓴다. 뜻이 정해진
- * 배지는 따로 있다 — 인증 등급은 `VerificationBadge`, Pick 상태는 `PickStatusBadge`,
- * 실 제보 건수는 `DataTierBadge`다. 그 셋을 이것으로 갈아끼우면 배지가 무엇을
- * 뜻하는지가 호출하는 화면마다 흩어진다.
- *
- * **글자를 자르지 않는다.** 높이를 고정하지 않고 안쪽 여백으로만 부푼다. 이름과
- * 한 줄에 놓여도 배지가 먼저 줄지 않게 `flexShrink: 0`으로 버틴다 — 전수 검수에서
- * 걸렸던 자리가 전부 이 두 가지였다. 두 줄이 될 만큼 긴 문구는 배지로 쓰지 않는다.
+ *   ok     인증완료 · 결정 완료 · 반영됨      #E8FAF6 / #1AA174
+ *   wait   확인 중 · 보완 필요 · 검수 중       #FFE3BA / #805217
+ *   no     반려 · 오류 · 환불                 #FFE5E3 / #E81607
+ *   brand  Pick 완료 · 후보 Pick 중           #FFE8E4 / coral   (color-mix(pick 12~14%, #fff)의 고정값 · SPEC §14)
+ *   none   준비 전 · 기본                     #F2F3F6 / #4D5159
+ *   info   정보 · 링크성 배지(관리자)          #EBF7FA / #0077B2
  */
-export type BadgeTone = 'neutral' | 'accent' | 'ink' | 'positive' | 'cautionary';
+export type BadgeKind = 'ok' | 'wait' | 'no' | 'brand' | 'none' | 'info';
 
 export type BadgeProps = {
-  label: string;
-  /**
-   * `accent`는 **검증·신뢰**에만 쓴다 — 신규 디자인 원칙에서 강조가 맡은 자리다.
-   * 키 컬러로 면을 채우지 않고 옅은 면(`tintSubtle`)에 `tintDark` 글자를 얹는다:
-   * 채운 면은 사용자의 다음 행동이 쓰는 모양이라 배지가 가져가면 행동이 어디인지
-   * 흐려지고, `tint`를 글자에 쓰면 2.27:1로 읽히지 않는다.
-   *
-   * `ink`는 사진 위에 얹는 자리다. 옅은 면은 사진 위에서 읽히지 않는다.
-   */
-  tone?: BadgeTone;
+  kind?: BadgeKind;
+  children: string;
+  style?: StyleProp<ViewStyle>;
 };
 
-export function Badge({ label, tone = 'neutral' }: BadgeProps) {
+/**
+ * 배지 — tokens.json component.badge · SPEC §12.3.
+ *
+ *   minHeight 22 · 한 줄 · nowrap · padding 4 9 · radius 4 · 14/19/700 — 실제 높이 27
+ *
+ * 배지를 아래로 내리지 않는다 — 공간이 부족하면 옆 텍스트를 말줄임한다.
+ */
+export function Badge({ kind = 'none', children, style }: BadgeProps) {
   const theme = useTheme();
-
-  const background =
-    tone === 'accent'
-      ? theme.tintSubtle
-      : tone === 'ink'
-        ? theme.backgroundInk
-        : tone === 'positive'
-          ? theme.positiveBackground
-          : tone === 'cautionary'
-            ? theme.cautionaryBackground
-            : theme.backgroundSelected;
-
-  const color =
-    tone === 'accent'
-      ? theme.tintDark
-      : tone === 'ink'
-        ? theme.background
-        : tone === 'positive'
-          ? theme.positive
-          : tone === 'cautionary'
-            ? theme.cautionary
-            : theme.textSecondary;
+  const { background, text } = BADGE_LOOK[kind](theme);
 
   return (
-    <View style={[styles.badge, { backgroundColor: background }]}>
-      <ThemedText type="badge" style={{ color }}>
-        {label}
+    <View style={[styles.badge, { backgroundColor: background }, style]}>
+      <ThemedText type="badge" numberOfLines={1} style={{ color: text }}>
+        {children}
       </ThemedText>
     </View>
   );
 }
 
+type Theme = ReturnType<typeof useTheme>;
+
+const BADGE_LOOK: Record<BadgeKind, (theme: Theme) => { background: string; text: string }> = {
+  ok: (theme) => ({ background: theme.positiveBackground, text: theme.positive }),
+  wait: (theme) => ({ background: theme.cautionaryBackground, text: theme.cautionary }),
+  no: (theme) => ({ background: theme.negativeBackground, text: theme.negative }),
+  brand: (theme) => ({ background: theme.tintSubtle, text: theme.tint }),
+  none: (theme) => ({ background: theme.backgroundSelected, text: theme.textSecondary }),
+  info: (theme) => ({ background: theme.accentBackground, text: theme.accentText }),
+};
+
 const styles = StyleSheet.create({
-  badge: {
-    alignSelf: 'flex-start',
-    /** 한 줄에 다른 것과 놓여도 배지가 먼저 줄지 않는다. */
-    flexShrink: 0,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: 3,
-    borderRadius: Radius.small,
-  },
+  badge: STATUS_BADGE_STYLE,
 });

@@ -13,18 +13,23 @@ export { ThemedText, type ThemedTextProps } from './themed-text';
 export { ThemedView, type ThemedViewProps } from './themed-view';
 export { ActionButton, type ActionButtonProps } from './action-button';
 export { FilterChip, type FilterChipProps } from './filter-chip';
-export { Badge, type BadgeProps, type BadgeTone } from './badge';
+export { TextField, type TextFieldProps } from './text-field';
 export { Card, type CardProps } from './card';
 export { IconButton, type IconButtonProps } from './icon-button';
 export { SectionHeader, type SectionHeaderProps } from './section-header';
-export { Input, type InputProps } from './input';
 export { SearchBar, type SearchBarProps } from './search-bar';
 export { SegmentedTabs, type SegmentedTabsProps, type SegmentedTabItem } from './segmented-tabs';
 export { VendorCard, type VendorCardProps, type VendorCardPrice } from './vendor-card';
 export { PickCard, type PickCardProps } from './pick-card';
 export { RatingPicker, type RatingPickerProps } from './rating-picker';
+export { RatingStars, type RatingStarsProps } from './rating-stars';
 export { WeddingCalendar, type WeddingCalendarProps } from './wedding-calendar';
-export { WeddingMark, type WeddingMarkProps } from './wedding-mark';
+export {
+  WeddingMark,
+  /* 하트 윤곽만. Pick Mark(하트 + 체크)가 아니라 하트 하나로 그리는 자리가 쓴다 — 검색 결과 카드의 Pick pill. */
+  MARK_HEART_PATH,
+  type WeddingMarkProps,
+} from './wedding-mark';
 export { ProductSymbol, type ProductSymbolName } from './product-symbol';
 export { NpayLogo } from './npay-logo';
 export { Skeleton, type SkeletonProps } from './skeleton';
@@ -36,7 +41,16 @@ export { ProgressBar, type ProgressBarProps } from './progress-bar';
 export { VerificationBadge, type VerificationBadgeProps } from './verification-badge';
 export { LoadingView, SkeletonView, RecommendingView, RecommendingBody, recommendingTitle, ErrorView, EmptyView, NetworkErrorView, PermissionDeniedView, ProcessingView, MaintenanceView } from './status-view';
 export type { LoadingViewProps, SkeletonViewProps, RecommendingViewProps, RecommendingBodyProps, ErrorViewProps, EmptyViewProps, NetworkErrorViewProps, PermissionDeniedViewProps, PermissionKind, ProcessingViewProps, MaintenanceViewProps } from './status-view';
-/** v3.20 유일한 로더. 700ms 규칙은 useDelayedVisible로 감싼다. */
+/**
+ * 로더 둘. 700ms 규칙은 둘 다 `useDelayedVisible`로 감싼다.
+ *
+ * `CircleLoader`   Depth·페이지 이동처럼 **스쳐 지나가는** 기다림 — 기본값
+ * `CategoryCycleLoader`  첫 실행·재시작·추천 계산처럼 **오래 붙잡는** 기다림
+ *
+ * 어느 쪽인지 고르는 규칙은 `apps/mobile/src/features/loading/delayed-loader.tsx`의
+ * `LoaderWait`에 적혀 있다. 화면이 직접 이 둘을 부르지 않고 `DelayedLoader`를 쓴다.
+ */
+export { CircleLoader, buildSpinKeyframes, type CircleLoaderProps, type CircleLoaderSize } from './circle-loader';
 export {
   CategoryCycleLoader,
   resolveCategoryCycle,
@@ -49,7 +63,8 @@ export { CategoryIcon, CATEGORY_CYCLE_ORDER, CATEGORY_ICON_LABEL, type CategoryI
 export { StepList, type Step, type StepState } from './step-list';
 export { showAlert, type ShowAlertButton } from './show-alert';
 export { ListSkeleton, type ListSkeletonProps } from './list-skeleton';
-export { PickStatusBadge, type PickStatusBadgeProps, type PickStatus } from './pick-status-badge';
+export { PickStatusBadge, STATUS_BADGE_STYLE, type PickStatusBadgeProps, type PickStatus } from './pick-status-badge';
+export { Badge, type BadgeProps, type BadgeKind } from './badge';
 export { VendorImage, type VendorImageProps, type VendorCategory } from './vendor-image';
 export { DataTierBadge, getDataTier, type DataTierBadgeProps, type DataTier } from './data-tier-badge';
 export { TruncatedText, type TruncatedTextProps } from './truncated-text';
@@ -59,14 +74,21 @@ export {
   Colors,
   Fonts,
   Spacing,
+  AdminSpacing,
   Layout,
   Motion,
   Radius,
+  Border,
+  Elevation,
+  Skins,
+  DEFAULT_SKIN,
+  pickTintFor,
   BottomTabInset,
   MaxContentWidth,
   SocialColors,
   NpayColors,
   type ThemeColor,
+  type SkinId,
 } from './theme';
 export { FontSize, LineHeight, type FontSizeToken } from './typography';
 export { useTheme } from './use-theme';

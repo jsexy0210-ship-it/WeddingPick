@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
 
-import { Layout, Radius } from './theme';
+import { Border, Layout, Radius } from './theme';
 import { useTheme } from './use-theme';
 import { readWebInteractionState } from './web-interaction';
 
@@ -61,7 +61,7 @@ export function IconButton({
           styles.button,
           {
             backgroundColor: filled || hovered ? theme.backgroundSelected : 'transparent',
-            borderWidth: focused ? 1 : 0,
+            borderWidth: focused ? Border.focus : 0,
             borderColor: theme.tint,
             opacity: disabled === true ? 0.4 : pressed ? 0.8 : 1,
           },

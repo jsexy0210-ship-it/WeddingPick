@@ -29,7 +29,6 @@ import {
   notificationListResponseSchema,
   notificationSummaryResponseSchema,
   rebuttalListResponseSchema,
-  parsePaymentTextResponseSchema,
   registerPaymentProofResponseSchema,
   createReviewReportResponseSchema,
   createReviewResponseSchema,
@@ -95,7 +94,6 @@ import {
   type CreateInquiryRequest,
   type RegisterDeviceRequest,
   type RegisterDeviceResponse,
-  type ParsePaymentTextResponse,
   type RegisterPaymentProofRequest,
   type RegisterPaymentProofResponse,
   type OriginalKind,
@@ -142,10 +140,16 @@ import {
   type CompleteSetupRequest,
   appBootstrapResponseSchema,
   type AppBootstrapResponse,
+  type CurrentUser,
+  myRewardPayoutResponseSchema,
+  rewardPayoutSchema,
+  type MyRewardPayoutResponse,
+  type RequestRewardPayoutRequest,
+  type RewardPayout,
 } from '@weddingpick/api-contract';
 import { z, type ZodType } from 'zod';
 
-import type { VendorCategory } from '@weddingpick/domain';
+import type { BudgetBandKey, VendorCategory } from '@weddingpick/domain';
 
 import { API_URL } from '@/api/config';
 import { clearToken, loadToken, saveToken } from '@/api/session';
@@ -178,19 +182,117 @@ function requireBaseUrl(): string {
 }
 
 /**
+ * 한 요청을 얼마나 기다리는가.
+ *
+ * Render 무료 요금제는 잠들었다 깨는 데 30초 넘게 걸린다 — 그보다 짧게 잡으면
+ * 첫 요청이 늘 실패한다. 그보다 훨씬 길면 사용자는 화면이 멈춘 줄 안다.
+ */
+const REQUEST_TIMEOUT_MS = 45_000;
+
+const READ_FRESH_MS = 3_000;
+const READ_TTL_MS = 30_000;
+// 최신 응답을 현재 화면에 반영하는 업체 검색에서만 재방문 대기를 줄인다.
+const OBSERVED_READ_TTL_MS = 120_000;
+// 거래 상태가 아닌 선택지는 5분 동안 재사용한다.
+const REFERENCE_TTL_MS = 5 * 60_000;
+const REFERENCE_PATHS = new Set(['/v1/vendors/regions', '/v1/planners/regions', '/v1/review-report-reasons']);
+
+/**
+ * 캐시하지 않는 주소.
+ *
+ * 분석 진행 상황(`/v1/analyses/:id`)은 2초마다 다시 물어 «끝났는가»를 본다
+ * (capture/analysis/[id].tsx). 캐시가 끼면 끝난 줄 모르고 계속 돈다. 서류 · 견적 ·
+ * 확인 요청도 같은 흐름 위에 있어 함께 뺀다 — 이 화면들은 값이 바뀌기를 기다리는
+ * 자리라 «방금 받은 답»이 오히려 틀린 답이다.
+ */
+const NEVER_CACHED = ['/v1/me/signup', '/v1/analyses/', '/v1/documents/', '/v1/quotes/', '/v1/verification-requests/'];
+
+type ReadRefresh<T> = {
+  force?: boolean;
+  onValue: (value: T) => void;
+  onError: (error: Error) => void;
+  onRefreshing: (refreshing: boolean) => void;
+};
+
+type ReadEntry = { at: number; value: unknown };
+
+/** 주소 → 마지막으로 받은 답. 앱이 살아 있는 동안만이고 기기에 남기지 않는다. */
+const readCache = new Map<string, ReadEntry>();
+/** 지금 서버에 가 있는 읽기. 같은 주소를 동시에 두 번 묻지 않게 하나로 합친다. */
+const inFlightReads = new Map<string, Promise<unknown>>();
+
+/**
+ * 몇 번째 캐시인가. 버릴 때마다 하나 오른다.
+ *
+ * 버리는 순간 이미 서버에 가 있던 읽기가 있다. 그것이 돌아와 캐시에 적으면,
+ * 방금 버린 이유(내가 무언가를 바꿨다)보다 **먼저 떠난 답**이 새 캐시로 앉는다 —
+ * 바꾸기 전 목록이 다시 붙는 것이다. 떠날 때의 번호를 들고 갔다가 돌아와서
+ * 달라졌으면 적지 않는다.
+ */
+let cacheGeneration = 0;
+const pathGenerations = new Map<string, number>();
+const matchesPrefix = (path: string, prefix: string) =>
+  path === prefix || path.startsWith(`${prefix}/`) || path.startsWith(`${prefix}?`);
+function readGeneration(path: string): string {
+  let version = 0;
+  for (const [prefix, value] of pathGenerations) if (matchesPrefix(path, prefix)) version += value;
+  return `${cacheGeneration}:${version}`;
+}
+let cacheToken: string | null | undefined;
+
+/** 계정이 바뀌거나 영향 범위를 모르는 쓰기는 전체 캐시를 버린다. */
+export function clearReadCache(): void {
+  cacheGeneration += 1;
+  pathGenerations.clear();
+  readCache.clear();
+  inFlightReads.clear();
+  rememberCurrentUser(null);
+}
+
+/** 영향이 명확한 쓰기만 좁게 지운다. 새 API는 기본적으로 전체 무효화한다. */
+function invalidateAfterWrite(path: string): void {
+  const affected = path === '/v1/me/display-name'
+    ? ['/v1/me', '/v1/app/bootstrap']
+    : path.startsWith('/v1/me/notifications/')
+      ? ['/v1/me/notifications', '/v1/app/bootstrap']
+      : path === '/v1/devices' ? [] : null;
+  if (affected === null) {
+    clearReadCache();
+    return;
+  }
+  for (const prefix of affected) pathGenerations.set(prefix, (pathGenerations.get(prefix) ?? 0) + 1);
+  const matches = (key: string) => affected.some((prefix) => matchesPrefix(key, prefix));
+  for (const key of readCache.keys()) if (matches(key)) readCache.delete(key);
+  for (const key of inFlightReads.keys()) if (matches(key)) inFlightReads.delete(key);
+  if (affected.includes('/v1/me')) rememberCurrentUser(null);
+}
+
+/** 이미 받아둔 답을 캐시에 넣어둔다. 같은 것을 다시 묻지 않게. */
+function seedReadCache(path: string, value: unknown): void {
+  readCache.set(path, { at: Date.now(), value });
+}
+
+function isCacheableRead(path: string, method: string): boolean {
+  if (method !== 'GET') return false;
+
+  return !NEVER_CACHED.some((prefix) => path.startsWith(prefix));
+}
+
+/**
  * 서버 응답을 계약 스키마로 검사한 뒤에 쓴다.
  *
  * 서버가 계약을 어기면 화면이 이상한 값을 그리기 전에 여기서 걸린다. 특히 가격은
  * 실 제보 건수·기준 기간과 한 덩어리로만 오게 돼 있어(사업계획서 9번), 중앙값만 담긴 응답은
  * 통과하지 못한다.
  */
-async function request<T>(
+async function send<T>(
   path: string,
   schema: ZodType<T>,
   init: RequestInit & { auth?: boolean } = {}
 ): Promise<T> {
   const { auth = true, headers, ...rest } = init;
   const token = auth ? await loadToken() : null;
+  const generation = readGeneration(path);
 
   /*
    * 서버에 닿지 못한 것과 서버가 거절한 것은 다르다. fetch가 던지는 것을 그대로
@@ -202,6 +304,19 @@ async function request<T>(
   try {
     response = await fetch(`${requireBaseUrl()}${path}`, {
       ...rest,
+      /*
+       * 답이 오지 않는 요청을 영원히 기다리지 않는다.
+       *
+       * **타임아웃이 없었다**(Release Audit 1차 P1-4). `AbortController`도
+       * `AbortSignal`도 저장소 전체에 0건이라, 응답이 끊긴 요청은 무한 로딩으로
+       * 남았고 사용자가 할 수 있는 일은 앱을 껐다 켜는 것뿐이었다.
+       *
+       * 끊긴 요청은 «닿지 못한 것»으로 다룬다 — 아래 catch가 status를 null로
+       * 남기고, 전면 오류 화면이 「연결이 불안정해요」로 읽는다.
+       *
+       * 호출하는 쪽이 `signal`을 주면 그쪽이 이긴다(업로드 취소 등).
+       */
+      signal: rest.signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       headers: {
         // 본문이 없는데 JSON이라고 말하면 서버가 빈 본문을 파싱하려다 막힌다.
         ...(rest.body !== undefined && { 'content-type': 'application/json' }),
@@ -213,14 +328,26 @@ async function request<T>(
     throw new ApiError('internal', '서버와 연결하지 못했습니다.', null);
   }
 
+  // 이전 계정의 응답은 새 토큰이나 화면을 건드리지 않는다.
+  if (auth && token !== await loadToken()) {
+    throw new ApiError('internal', '계정이 변경되어 요청을 다시 확인해야 합니다.', 401);
+  }
+
   if (!response.ok) {
     const body = errorResponseSchema.safeParse(await response.json().catch(() => null));
 
+    if (auth && token !== await loadToken()) {
+      throw new ApiError('internal', '계정이 변경되어 요청을 다시 확인해야 합니다.', 401);
+    }
+    if (response.status === 403) {
+      readCache.delete(path);
+      inFlightReads.delete(path);
+    }
+    if (auth && (response.status === 401 || (body.success && body.data.error.code === 'unauthenticated'))) {
+      await clearToken();
+      clearReadCache();
+    }
     if (body.success) {
-      if (body.data.error.code === 'unauthenticated') {
-        await clearToken();
-      }
-
       throw new ApiError(body.data.error.code, body.data.error.message, response.status);
     }
 
@@ -230,11 +357,125 @@ async function request<T>(
   // 204는 본문이 없다. json()을 부르면 거기서 터진다.
   const parsed = schema.safeParse(response.status === 204 ? null : await response.json());
 
+  if (auth && token !== await loadToken()) {
+    throw new ApiError('internal', '계정이 변경되어 요청을 다시 확인해야 합니다.', 401);
+  }
+
   if (!parsed.success) {
     throw new ApiError('internal', '서버 응답을 이해하지 못했습니다.');
   }
 
+  if (generation === readGeneration(path)) {
+    if (path === '/v1/me') rememberCurrentUser(parsed.data as CurrentUser);
+    if (path === '/v1/app/bootstrap') {
+      const boot = parsed.data as AppBootstrapResponse;
+      if (boot.member) {
+        rememberCurrentUser(boot.member);
+        seedReadCache('/v1/me', boot.member);
+      }
+    }
+  }
   return parsed.data;
+}
+
+/** 서버에 한 번만 가고, 받은 답을 캐시에 적어둔다. 같은 주소가 겹치면 하나로 합친다. */
+function startRead<T>(
+  path: string,
+  schema: ZodType<T>,
+  init: RequestInit & { auth?: boolean }
+): Promise<T> {
+  const existing = inFlightReads.get(path);
+
+  if (existing) return existing as Promise<T>;
+
+  const generation = readGeneration(path);
+  const pending = send(path, schema, init).then((value) => {
+    // 떠난 뒤에 캐시를 버린 일이 있으면 적지 않는다 — 옛 답이 새 캐시가 된다.
+    if (generation === readGeneration(path) && inFlightReads.get(path) === pending) {
+      readCache.set(path, { at: Date.now(), value });
+    }
+
+    return value;
+  });
+
+  inFlightReads.set(path, pending);
+  // 실패도 «가 있는 중»에서 지운다. 붙잡아두면 다음 화면이 같은 실패를 물려받는다.
+  void pending
+    .catch(() => undefined)
+    .finally(() => {
+      // 그새 다시 떠난 요청이 있으면 그쪽 것을 지우지 않는다.
+      if (inFlightReads.get(path) === pending) inFlightReads.delete(path);
+    });
+
+  return pending;
+}
+
+/**
+ * 서버에 묻는다. 읽기는 캐시를 거치고, 쓰기는 거치지 않는다.
+ *
+ * **화면을 다시 열 때 처음부터 다시 받지 않는다.** 탭을 옮길 때마다 같은 주소를
+ * 새로 물어서 화면이 비었다가 채워지던 것을(2026-09-09 감사: `/v1/me`만 한 번의
+ * 둘러보기에서 62번) 캐시가 있는 동안에는 바로 그린다. 오래된 값을 그대로 두지는
+ * 않는다 — `READ_FRESH_MS`를 넘긴 값은 화면에 즉시 주면서 뒤에서 다시 받아 고친다.
+ *
+ * **무언가를 바꾼 뒤에는 영향받는 캐시를 버린다.** 쓰기가 성공하든
+ * 실패하든 지운다 — 실패한 줄 알았는데 서버에는 남는 경우가 있고, 그때 옛 목록을
+ * 계속 보여주면 사람이 같은 일을 두 번 한다.
+ */
+async function request<T>(
+  path: string,
+  schema: ZodType<T>,
+  init: RequestInit & { auth?: boolean } = {},
+  refresh?: ReadRefresh<T>
+): Promise<T> {
+  const token = await loadToken();
+  refresh?.onRefreshing(false);
+  if (token !== cacheToken) {
+    clearReadCache();
+    cacheToken = token;
+  }
+  const method = (init.method ?? 'GET').toUpperCase();
+
+  if (!isCacheableRead(path, method)) {
+    try {
+      return await send(path, schema, init);
+    } finally {
+      if (method !== 'GET') invalidateAfterWrite(path);
+    }
+  }
+
+  const hit = readCache.get(path);
+  const age = hit ? Date.now() - hit.at : Number.POSITIVE_INFINITY;
+
+  const reference = REFERENCE_PATHS.has(path);
+  const ttl = reference ? REFERENCE_TTL_MS : refresh ? OBSERVED_READ_TTL_MS : READ_TTL_MS;
+  if (hit && age < ttl && !refresh?.force) {
+    // 조금 지난 값은 화면에 바로 주고, 다음 화면이 새 값을 받도록 뒤에서 고쳐둔다.
+    if (!reference && age >= READ_FRESH_MS) {
+      const generation = readGeneration(path);
+      refresh?.onRefreshing(true);
+      void startRead(path, schema, init)
+        .then((value) => { if (generation === readGeneration(path)) refresh?.onValue(value); })
+        .catch(async (error: Error) => {
+          const currentToken = await loadToken();
+          const revoked = currentToken === null && error instanceof ApiError && error.status === 401;
+          if ((currentToken === token && generation === readGeneration(path)) || revoked) refresh?.onError(error);
+        })
+        .finally(async () => {
+          const currentToken = await loadToken();
+          if (currentToken === token || currentToken === null) refresh?.onRefreshing(false);
+        });
+    }
+
+    return hit.value as T;
+  }
+
+  refresh?.onRefreshing(true);
+  try {
+    return await startRead(path, schema, init);
+  } finally {
+    refresh?.onRefreshing(false);
+  }
 }
 
 /** 서버가 켜둔 로그인 방법. 앱이 짐작하지 않는다. */
@@ -251,15 +492,22 @@ export type SessionEntry = { activated: boolean; setupComplete: boolean };
 export async function signIn(
   provider: 'apple' | 'google',
   idToken: string,
-  profileName?: string
+  profileName?: string,
+  ageAcknowledged?: boolean
 ): Promise<SessionEntry> {
   const session = await request(
     '/v1/auth/sessions',
     createSessionResponseSchema,
-    { method: 'POST', body: JSON.stringify({ provider, idToken, profileName }), auth: false }
+    {
+      method: 'POST',
+      body: JSON.stringify({ provider, idToken, profileName, ageAcknowledged }),
+      auth: false,
+    }
   );
 
   await saveToken(session.token);
+  // 로그인 전에 비로그인으로 받아둔 답은 이 사람의 것이 아니다.
+  clearReadCache();
 
   return { activated: session.activated, setupComplete: session.setupComplete };
 }
@@ -271,6 +519,12 @@ export async function signInWithAuthorizationCode(input: {
   state: string;
   redirectUri: string;
   codeVerifier?: string;
+  /**
+   * 로그인 화면의 «만 14세 이상이에요» 확인. 서버는 **제공자가 연령대를 주지
+   * 않았을 때만** 이 값을 본다 — 제공자가 미달로 판정한 사람을 이 값이 뒤집지
+   * 못한다. 보내지 않으면 확인받지 못한 것으로 본다.
+   */
+  ageAcknowledged?: boolean;
 }): Promise<SessionEntry> {
   const session = await request('/v1/auth/sessions', createSessionResponseSchema, {
     method: 'POST',
@@ -279,6 +533,7 @@ export async function signInWithAuthorizationCode(input: {
   });
 
   await saveToken(session.token);
+  clearReadCache();
 
   return { activated: session.activated, setupComplete: session.setupComplete };
 }
@@ -290,6 +545,7 @@ export async function signOut(): Promise<void> {
   } finally {
     // 서버를 못 불러도 기기의 토큰은 버린다. 남겨두면 로그아웃한 척만 한 것이 된다.
     await clearToken();
+    clearReadCache();
     rememberCurrentUser(null);
   }
 }
@@ -322,21 +578,12 @@ export async function setDisplayName(displayName: string | null) {
 }
 
 export async function getCurrentUser() {
-  const me = await request('/v1/me', currentUserSchema);
-  // 로더가 닉네임·결정 완료 업종을 읽는다 — 그 때문에 다시 부르지 않도록 적어둔다.
-  rememberCurrentUser(me);
-  return me;
+  return request('/v1/me', currentUserSchema);
 }
 
-/**
- * 홈이 필요로 하는 다섯 가지(회원 · 알림 · 많이 확인된 곳 · 담아둔 후보 · 오늘의
- * Pick)를 한 번에 받는다. 서버가 안에서 병렬로 모은 것이다 — 기기가 인터넷을
- * 다섯 번 왕복하던 것을 한 번으로 줄인다. 비회원도 부를 수 있다.
- */
+/** 홈 데이터를 미리 받으면 인증 확인과 병렬로 준비할 수 있다. */
 export async function getAppBootstrap(): Promise<AppBootstrapResponse> {
-  const boot = await request('/v1/app/bootstrap', appBootstrapResponseSchema);
-  if (boot.member) rememberCurrentUser(boot.member);
-  return boot;
+  return request('/v1/app/bootstrap', appBootstrapResponseSchema);
 }
 
 /**
@@ -350,11 +597,13 @@ export async function getSignupState() {
 }
 
 /**
- * 만 14세 확인과 필수 동의로 가입을 마무리한다. 통합정책 v3.13 §3.5 —
- * `ageVerified`는 로그인 화면(WP-AUTH-001)의 체크박스 값이다. 생년월일은
- * 받지 않는다.
+ * 필수 동의로 가입을 마무리한다. 통합정책 v3.13 §3.5.
+ *
+ * **나이는 보내지 않는다**(2026-09-10). 만 14세 확인은 로그인이 이미 했고 결과는
+ * 서버에 있다 — 예전에는 이 자리에 `ageVerified: true`를 늘 넣어 보냈고, 서버가
+ * 그것으로 관문을 지켰다. 앱이 채우는 값은 관문이 될 수 없다.
  */
-export async function completeSignup(input: { ageVerified: boolean; consents: string[] }) {
+export async function completeSignup(input: { consents: string[] }) {
   return request('/v1/me/signup', signupStateSchema, {
     method: 'POST',
     body: JSON.stringify(input),
@@ -406,7 +655,7 @@ export async function getQuote(quoteId: string): Promise<Quote> {
 
 export async function confirmFields(
   quoteId: string,
-  fields: { path: string; correctedValue?: string }[]
+  fields: { path: string }[]
 ): Promise<Quote> {
   return request(`/v1/quotes/${quoteId}/confirmations`, quoteSchema, {
     method: 'POST',
@@ -471,18 +720,36 @@ export async function searchVendors(input: {
   region?: string;
   cursor?: string;
   sort?: VendorSort;
-}): Promise<VendorSearchResponse> {
+  /** 예산 구간(WP-SRCH-005). 키는 `BUDGET_BANDS`가 정한다. */
+  budget?: BudgetBandKey;
+  /** 금액을 볼 수 있는 곳만(WP-SRCH-005 «실 제보가 있는 곳만»). 꺼져 있으면 안 보낸다. */
+  onlyVerified?: boolean;
+  /** 몇 곳까지 받을 것인가. 안 넘기면 서버 기본값(20). 수만 필요하면 1로 줄인다. */
+  limit?: number;
+}, refresh?: ReadRefresh<VendorSearchResponse>): Promise<VendorSearchResponse> {
   const query = new URLSearchParams();
 
   for (const [key, value] of Object.entries(input)) {
     if (value) {
-      query.set(key, value);
+      query.set(key, String(value));
     }
   }
 
   const suffix = query.size > 0 ? `?${query.toString()}` : '';
 
-  return request(`/v1/vendors${suffix}`, vendorSearchResponseSchema);
+  return request(`/v1/vendors${suffix}`, vendorSearchResponseSchema, {}, refresh);
+}
+
+/**
+ * 그 업종에 업체가 몇 곳인가. 목록은 안 쓴다.
+ *
+ * Pick 화면의 업종 줄이 꼬리에 수를 적으려고 업종마다 검색을 부르는데, 그동안은
+ * 스무 곳을 전부 받아 `total` 하나만 쓰고 버렸다(2026-09-09 감사: 화면 한 번에
+ * 열한 번). 한 곳만 달라고 하면 서버도 한 곳 몫만 셈한다 — `total`은 조건에
+ * 맞는 전체 수라 줄여도 값이 달라지지 않는다.
+ */
+export async function countVendors(category: VendorCategory): Promise<number> {
+  return (await searchVendors({ category, limit: 1 })).total;
 }
 
 /**
@@ -736,28 +1003,12 @@ export async function removeWeddingNote(weddingId: string, noteId: string): Prom
 }
 
 /**
- * 결제문자에서 값을 읽는다./**
- * 결제문자에서 값을 읽는다. AI를 부르지 않는다 — 서버의 규칙 엔진이 읽는다.
+ * 결제인증 등록 — **사진 한 장.**
  *
- * 읽기만 하고 저장하지 않는다. 사람이 확인한 뒤에 등록이 따로 간다.
- */
-export async function parsePaymentText(input: {
-  text?: string;
-  rawDocumentId?: string;
-}): Promise<ParsePaymentTextResponse> {
-  return request('/v1/payment-proofs/parse', parsePaymentTextResponseSchema, {
-    method: 'POST',
-    body: JSON.stringify(input),
-  });
-}
-
-/**
- * 결제인증 등록.
+ * 올린 원본 하나만 보낸다(v3.24). 금액·업체·날짜를 보낼 자리가 요청 타입에 없어
+ * 화면이 지어낸 값을 넣을 수 없고, 못 읽은 제보는 접수는 되되 검수를 기다린다.
  *
- * 심사가 아니라 등록이다 — 사람이 보지 않고 문서 등급도 오르지 않는다. 하는 일은
- * 결제인증 표시와 실제가격 열기 둘이다.
- *
- * 카드번호를 보낼 자리가 요청 타입에 없다. 앱이 실수로도 보낼 수 없다.
+ * 심사가 아니라 등록이다 — 사람이 등급을 올리지 않는다. 카드번호를 보낼 자리도 없다.
  */
 export async function registerPaymentProof(
   body: RegisterPaymentProofRequest
@@ -1093,6 +1344,19 @@ export async function getMyMonthlyDraw(): Promise<MyMonthlyDrawResponse> {
   return request('/v1/me/monthly-draw', myMonthlyDrawResponseSchema);
 }
 
+/** Npay 리워드 수령 현황(WP-EVT-006). 번호는 가린 꼴만 온다. */
+export async function getMyRewardPayout(): Promise<MyRewardPayoutResponse> {
+  return request('/v1/me/rewards/payout', myRewardPayoutResponseSchema);
+}
+
+/** 수령 요청 — 그 순간 지급 대기인 보상 전부가 한 요청으로 묶인다. */
+export async function requestRewardPayout(body: RequestRewardPayoutRequest): Promise<RewardPayout> {
+  return request('/v1/me/rewards/payout', rewardPayoutSchema, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
 /**
  * 초대 코드 넣기.
  *
@@ -1276,6 +1540,15 @@ export async function grantPaymentConsent(): Promise<Settings> {
 
 export async function revokePaymentConsent(): Promise<Settings> {
   return request('/v1/me/payment-consent', settingsSchema, { method: 'DELETE' });
+}
+
+/** 견적서 업로드 동의. 결제인증과 따로 받는다 — 읽어가는 것도 쓰는 곳도 다르다. */
+export async function grantDocumentConsent(): Promise<Settings> {
+  return request('/v1/me/document-consent', settingsSchema, { method: 'POST' });
+}
+
+export async function revokeDocumentConsent(): Promise<Settings> {
+  return request('/v1/me/document-consent', settingsSchema, { method: 'DELETE' });
 }
 
 // ──────────────────────────────────────────────────────────────────────────────

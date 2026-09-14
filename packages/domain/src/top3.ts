@@ -1,4 +1,4 @@
-import { budgetOverlaps, type WeddingBudgetBracket } from './budget-bracket';
+import { budgetAffordable, budgetOverlaps, type WeddingBudgetBracket } from './budget-bracket';
 import { DISCLOSURE_THRESHOLDS } from './disclosure';
 import { RECENT_PERIOD_LABEL } from './reidentification';
 
@@ -109,7 +109,11 @@ function budgetComparable(facts: Top3Facts): facts is Top3Facts & {
  * 모르는 것으로 거르지 않는다.
  */
 export function budgetExcludes(facts: Top3Facts): boolean {
-  return budgetComparable(facts) && !budgetOverlaps(facts.budgetBracket, facts.priceMin, facts.priceMax);
+  /*
+   * 빼는 기준은 «예산으로 못 사는 곳»(하한이 구간 상한을 넘음)뿐이다. 겹치지 않아도
+   * 더 싼 곳은 예산 안이라 빼지 않는다 — 작은 업종(메이크업 · 부케)이 전부 비는 것을 막는다.
+   */
+  return budgetComparable(facts) && !budgetAffordable(facts.budgetBracket, facts.priceMin, facts.priceMax);
 }
 
 /** 실 제보가 이만큼 넘으면 `많다`고 말한다. 공개 사다리의 `general`이다. */

@@ -3,7 +3,6 @@ import { StyleSheet, View, type ImageSourcePropType } from 'react-native';
 
 import { Badge } from './badge';
 import { Card } from './card';
-import { FilterChip } from './filter-chip';
 import { Layout, Radius, Spacing } from './theme';
 import { ThemedText } from './themed-text';
 import { VendorImage, type VendorCategory } from './vendor-image';
@@ -87,7 +86,7 @@ export function VendorCard({
           />
           {badge ? (
             <View style={styles.badge}>
-              <Badge label={badge} tone="ink" />
+              <Badge kind="brand">{badge}</Badge>
             </View>
           ) : null}
         </View>
@@ -118,7 +117,7 @@ export function VendorCard({
           {tags && tags.length > 0 ? (
             <View style={styles.tags}>
               {tags.map((tag) => (
-                <FilterChip key={tag} label={tag} interactive={false} />
+                <Badge key={tag}>{tag}</Badge>
               ))}
             </View>
           ) : null}

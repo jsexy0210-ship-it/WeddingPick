@@ -1,143 +1,118 @@
+import type { CurrentUser } from '@weddingpick/api-contract';
+import { TERMS } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ScrollView, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useEffect, useState } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
-import {
-  ActionButton,
-  Layout,
-  MaxContentWidth,
-  Radius,
-  Spacing,
-  ThemedText,
-  ThemedView,
-  useTheme,
-} from '@weddingpick/ui';
+import { getCurrentUser } from '@/api/client';
+import { Layout, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import { Badge, Dock, DockButton, Hero, NavBar, NoteCard, Screen } from '@/features/wedding/screen-kit';
 
 const KIND_LABEL: Record<string, string> = {
   task: '준비 항목',
   event: '일정',
-  expense: '지출내역',
-  candidate: '담아둔 업체',
+  expense: '지출',
+  candidate: 'Pick한 곳',
   memo: '메모',
 };
 
 /**
- * WP-CPL-005: 공동 편집 충돌 화면.
+ * 공동 편집 충돌. WP-CPL-004 · 핸드오프 14-couple #4 · SPEC 4.2.
  *
- * 두 파트너가 같은 항목을 동시에 수정하면 서버가 `conflict` 오류를 돌려준다.
- * 부르는 화면이 오류를 받아 이 화면으로 보낸다. 여기서 결론을 내리고 돌아간다.
+ *   nav     항목 이름
+ *   hero    «{배우자}님이 먼저 바꿨어요» · «같은 일정을 동시에 고쳤어요»
+ *   카드 2   상대 변경 — coral 1.5px 테두리 + brand 배경 / 내 변경 — 회색 1px + 흰 배경
+ *   note    «어느 쪽으로 둘까요?» · 나중에 다시 바꿀 수 있어요
+ *   dock    «그만두기» + «저장된 내용 보기»
  *
- * 이 화면 자체는 API를 부르지 않는다. 해결은 "돌아가서 새로고침"이고,
- * 부모 화면은 `useFocusEffect`로 다시 로드한다.
+ * **자동 병합하지 않는다.** 두 버전을 나란히 보여준다. 서버가 아직 «내 것으로 덮어쓰기»를
+ * 받지 않아 오른쪽 버튼은 저장된 내용으로 돌아간다 — 부모 화면이 `useFocusEffect`로 다시
+ * 읽는다. 되는 일만 버튼에 적는다.
  */
 export default function ConflictScreen() {
   const {
     kind = '',
     label = '',
     conflictMessage = '',
-  } = useLocalSearchParams<{
-    id: string;
-    kind?: string;
-    label?: string;
-    conflictMessage?: string;
-  }>();
-
+  } = useLocalSearchParams<{ id: string; kind?: string; label?: string; conflictMessage?: string }>();
   const theme = useTheme();
+  const [me, setMe] = useState<CurrentUser | null>(null);
+
+  useEffect(() => {
+    getCurrentUser()
+      .then(setMe)
+      .catch(() => undefined);
+  }, []);
+
   const kindLabel = KIND_LABEL[kind] ?? '항목';
+  const partner = me?.spouseLinked ? (me.partnerDisplayName ?? TERMS.spouse) : TERMS.spouse;
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.content}>
-          <ThemedView
-            style={[styles.iconBox, { backgroundColor: theme.cautionaryBackground }]}
-          >
-            <ThemedText type="t4" themeColor="cautionary">
-              ⚠
-            </ThemedText>
-          </ThemedView>
+    <Screen>
+      <NavBar title={label || kindLabel} />
 
-          <ThemedView style={styles.section}>
-            <ThemedText type="t2">편집이 겹쳤어요</ThemedText>
-            <ThemedText type="t6" themeColor="textSecondary">
-              배우자가 같은 {kindLabel}을(를) 동시에 수정해서 변경 내용이 충돌했어요.
-            </ThemedText>
-          </ThemedView>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <Hero title={`${partner}님이 먼저 바꿨어요`} sub={`같은 ${kindLabel}을 동시에 고쳤어요`} />
 
-          {label ? (
-            <ThemedView type="backgroundElement" style={styles.card}>
+        <View style={styles.cards}>
+          {/* 상대 변경 — coral 테두리 + brand 배경. */}
+          <View style={[styles.card, { backgroundColor: theme.tintSurface, borderColor: theme.tintBorder }]}>
+            <View style={styles.cardHead}>
+              <Badge label={`${partner}님 변경`} tone="now" />
               <ThemedText type="t7" themeColor="textAssistive">
-                충돌한 {kindLabel}
+                저장됨
               </ThemedText>
-              <ThemedText type="t5">{label}</ThemedText>
-            </ThemedView>
-          ) : null}
-
-          {conflictMessage ? (
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="t7" themeColor="textAssistive">
-                서버 안내
-              </ThemedText>
-              <ThemedText type="t6" themeColor="textSecondary">
-                {conflictMessage}
-              </ThemedText>
-            </ThemedView>
-          ) : null}
-
-          <ThemedView type="backgroundElement" style={styles.card}>
-            <ThemedText type="t6">
-              새로고침하면 현재 저장된 내용을 볼 수 있어요. 다시 수정하고 싶으시면
-              새로고침 후 편집을 눌러주세요.
+            </View>
+            <ThemedText type="t5">지금 저장된 내용</ThemedText>
+            <ThemedText type="body" themeColor="textSecondary">
+              {conflictMessage || `${partner}님이 먼저 고친 내용이 저장돼 있어요`}
             </ThemedText>
-          </ThemedView>
+          </View>
 
-          <ThemedView style={styles.actions}>
-            <ActionButton
-              variant="primary"
-              label="새로고침해서 볼게요"
-              hint="현재 저장된 내용으로 돌아가요"
-              onPress={() => router.back()}
-            />
-            <ActionButton label="그만두기" onPress={() => router.back()} />
-          </ThemedView>
-        </ScrollView>
-      </SafeAreaView>
-    </ThemedView>
+          {/* 내 변경 — 회색 테두리 + 흰 배경. */}
+          <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.track }]}>
+            <View style={styles.cardHead}>
+              <Badge label="내 변경" tone="none" />
+              <ThemedText type="t7" themeColor="textAssistive">
+                방금
+              </ThemedText>
+            </View>
+            <ThemedText type="t5" numberOfLines={2}>
+              {label || `내가 고친 ${kindLabel}`}
+            </ThemedText>
+            <ThemedText type="body" themeColor="textSecondary">
+              내가 지금 입력한 내용이에요
+            </ThemedText>
+          </View>
+        </View>
+
+        <View style={styles.noteWrap}>
+          <NoteCard
+            title="어느 쪽으로 둘까요?"
+            body="저장된 내용을 먼저 보고 고치면 둘 모두에게 반영돼요. 나중에 다시 바꿀 수 있어요."
+          />
+        </View>
+      </ScrollView>
+
+      <Dock>
+        <DockButton label="그만두기" onPress={() => router.back()} />
+        <DockButton variant="primary" label="저장된 내용 보기" onPress={() => router.back()} />
+      </Dock>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-  },
-  content: {
-    paddingHorizontal: Layout.gutter,
-    paddingTop: Spacing.five,
-    paddingBottom: Spacing.six,
-    gap: Spacing.three,
-  },
-  iconBox: {
-    width: 56,
-    height: 56,
-    borderRadius: Radius.medium,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  section: {
-    gap: Spacing.two,
-  },
+  content: { paddingBottom: Spacing.four },
+  cards: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four, gap: Layout.cardGap },
+  /* 버전 카드 — radius 10 · padding 18 20 · gap 8 · 테두리 1. */
   card: {
     borderRadius: Radius.medium,
-    padding: Spacing.three,
-    gap: Spacing.one,
-  },
-  actions: {
+    borderWidth: 1,
+    paddingVertical: Layout.cardPadding - Spacing.half,
+    paddingHorizontal: Layout.cardPadding,
     gap: Spacing.two,
   },
+  cardHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  noteWrap: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionGap },
 });

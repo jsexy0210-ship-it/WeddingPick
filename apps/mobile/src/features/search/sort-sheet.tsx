@@ -1,5 +1,4 @@
 import { VENDOR_SORT_LABEL, type VendorSort } from '@weddingpick/api-contract';
-import { TERMS } from '@weddingpick/domain';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -17,13 +16,16 @@ import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
 export const SELECTABLE_SORTS: readonly VendorSort[] = ['data', 'price_low', 'price_high'];
 
 /**
- * 사용자 화면의 정렬 라벨. 계약의 `VENDOR_SORT_LABEL`은 내부 이름(«데이터 많은 순»)이라
- * 화면에 그대로 내보내지 않는다 — 사용자 화면에서는 «실 제보 많은 순»이다(CLAUDE.md 용어).
- * 검색 결과의 정렬 셀렉트 · 정렬 시트 · 필터 시트가 같은 표를 본다.
+ * 사용자 화면의 정렬 라벨. 계약의 `VENDOR_SORT_LABEL`은 내부 이름이라 화면에 그대로
+ * 내보내지 않는다. 검색 결과의 정렬 셀렉트와 정렬 시트가 같은 표를 본다.
+ *
+ * 기본값(`data`)은 **«추천순»**이다 — 시안 06-search #16c의 결과 머리와
+ * `spec/strings.ko.json` `search.sort.recommended`가 그렇게 적는다. 무엇으로 재는지는
+ * 그대로 실 제보 수지만, 사용자가 고르는 자리에서는 「무엇을 먼저 보여주는가」가 이름이다.
  */
 export const SORT_LABEL: Record<VendorSort, string> = {
   ...VENDOR_SORT_LABEL,
-  data: `${TERMS.verifiedData} 많은 순`,
+  data: '추천순',
 };
 
 export function SortSheet({

@@ -1,6 +1,6 @@
 import {
-  consentToPaymentProofs,
   createTestApp,
+  registerPaymentProof,
   resetDatabase,
   signInAs,
   type TestApp,
@@ -19,6 +19,7 @@ type Report = {
   subject: string;
   amount: number | null;
   inUse: boolean;
+  needsCheck: boolean;
   note: string | null;
 };
 
@@ -63,18 +64,7 @@ describeWithDb('내 제보 내역', () => {
     const { headers, userId } = await signInAs(test);
     const vendorId = await createVendor();
 
-    await consentToPaymentProofs(test, headers);
-    await test.app.inject({
-      method: 'POST',
-      url: '/v1/payment-proofs',
-      headers,
-      payload: {
-        merchantName: '가온예식홀',
-        paidAmount: 3_000_000,
-        paidAt: '2026-05-20T04:00:00.000Z',
-        method: 'card',
-      },
-    });
+    await registerPaymentProof(test, headers);
 
     await test.pool.query(
       `INSERT INTO structured.price_reports
@@ -113,25 +103,35 @@ describeWithDb('내 제보 내역', () => {
      */
     const { headers } = await signInAs(test);
 
-    await consentToPaymentProofs(test, headers);
-    await test.app.inject({
-      method: 'POST',
-      url: '/v1/payment-proofs',
-      headers,
-      payload: {
-        merchantName: '어디인지모를곳',
-        paidAmount: 3_000_000,
-        paidAt: '2026-05-20T04:00:00.000Z',
-        method: 'card',
-      },
-    });
+    await registerPaymentProof(test, headers, { merchantName: '어디인지모를곳' });
 
     const report = (await list(headers)).json<{ reports: Report[] }>().reports[0]!;
 
     expect(report.inUse).toBe(false);
+    // 할 일이 없는 쪽이다. 다시 올리라는 «확인 필요»가 아니다(WP-RPT-008).
+    expect(report.needsCheck).toBe(false);
     expect(report.note).toContain('찾지 못해');
     // 업체를 못 찾았어도 가맹점 이름은 남는다. 빈 줄로 두면 무엇을 낸 건지 알 수 없다.
     expect(report.subject).toBe('어디인지모를곳');
+  });
+
+  it('아직 읽는 중인 결제인증은 확인 필요로 선다', async () => {
+    /*
+     * 「쓰이지 않는다」의 까닭이 둘이고 사용자가 할 일이 다르다 — 업체를 못 찾은
+     * 것은 우리가 잇고, 자료를 못 읽은 것은 다시 올린다(WP-RPT-008 · v3.24).
+     */
+    const { headers } = await signInAs(test);
+    await createVendor();
+
+    await registerPaymentProof(test, headers, { paidAmount: null });
+
+    const report = (await list(headers)).json<{ reports: Report[] }>().reports[0]!;
+
+    expect(report.inUse).toBe(false);
+    expect(report.needsCheck).toBe(true);
+    expect(report.note).toBeTruthy();
+    // 금액을 못 읽었으면 없다고 말한다. 0원으로 지어내지 않는다.
+    expect(report.amount).toBeNull();
   });
 
   it('허위로 판단해 뺀 가격제보도 남되 쓰이지 않는다고 말한다', async () => {
@@ -160,18 +160,7 @@ describeWithDb('내 제보 내역', () => {
     const { headers } = await signInAs(test);
     await createVendor();
 
-    await consentToPaymentProofs(test, headers);
-    await test.app.inject({
-      method: 'POST',
-      url: '/v1/payment-proofs',
-      headers,
-      payload: {
-        merchantName: '가온예식홀',
-        paidAmount: 3_000_000,
-        paidAt: '2026-05-20T04:00:00.000Z',
-        method: 'card',
-      },
-    });
+    await registerPaymentProof(test, headers);
 
     expect((await list(headers)).json<{ reports: Report[] }>().reports[0]!.amount).toBe(3_000_000);
   });

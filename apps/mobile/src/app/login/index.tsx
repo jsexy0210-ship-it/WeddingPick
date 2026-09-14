@@ -1,16 +1,29 @@
 import { POLICY_DOCUMENTS, dDay } from '@weddingpick/domain';
-import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
 
-import { ActionButton, Colors, Layout, MaxContentWidth, Radius, SocialLogo, Spacing, ThemedText, ThemedView, WeddingMark, useTheme } from '@weddingpick/ui';
-import { DelayedLoader } from '@/features/loading/delayed-loader';
+import {
+  ActionButton,
+  Colors,
+  Layout,
+  MaxContentWidth,
+  Radius,
+  SocialColors,
+  SocialLogo,
+  Spacing,
+  ThemedText,
+  ThemedView,
+  WeddingMark,
+  useTheme,
+} from '@weddingpick/ui';
 import { LoginFailureSheet } from '@/features/auth/login-failure-sheet';
+import { maskEmail } from '@/features/auth/mask-email';
 import { canSignInWith, providerTone, useAuthProviders } from '@/features/auth/providers';
 import { loadRememberedAccount, type RememberedAccount } from '@/features/auth/remembered-account';
-import { takePendingSignInError } from '@/features/auth/sign-in-handoff';
+import { bootOwnsSigningInMessage, takePendingSignInError } from '@/features/auth/sign-in-handoff';
+import { CheckDot } from '@/features/settings/my-kit';
+import { SigningInBody } from '@/features/auth/signing-in-view';
 import { useSignIn } from '@/features/auth/use-sign-in';
 import { openExternal } from '@/features/open-external';
 
@@ -25,6 +38,17 @@ const REASONS = [
   '일정과 지출도 한곳에서 관리해요',
 ];
 
+/**
+ * 카카오가 연령대를 주지 않았을 때만 뜨는 확인 — strings.ko.json
+ * `onboarding.auth.login.ageConfirm` · `.ageConfirmNotice`.
+ */
+const AGE_CONFIRM_LABEL = '만 14세 이상이에요';
+const AGE_CONFIRM_NOTICE = '만 14세 이상인지 확인하면 시작할 수 있어요';
+
+/** WP-AUTH-008 마지막 계정 카드의 배지 — strings.ko.json `onboarding.auth.remember.recentLabel`. */
+const RECENT_LOGIN_BADGE = '최근 로그인';
+/** 카드 첫 줄 — 로그인 방법 이름. 초기 버전은 카카오만이다. */
+const KAKAO_PROVIDER_NAME = '카카오';
 
 /**
  * WP-AUTH-001/008 로그인. 디자인 핸드오프 v3.13(2026-09-07)부터 **초기
@@ -32,21 +56,34 @@ const REASONS = [
  * 라우트·메일 발송까지 2026-09-08에 전부 지웠다. 네이버·구글·애플은 화면에서만
  * 폐기했다(이미 그 방법으로 가입한 계정의 서버 쪽 검증 코드는 그대로 둔다).
  *
+ * 레이아웃은 시안 `01a-login.dc.html` #27a · #27h 그대로다(SPEC §13.5) —
+ *
+ *   BrandBlock  flex 1 · 세로 중앙 · 마크 64 (아래 24) · 제목 32/43 · 혜택 3줄(위 28)
+ *   AuthBlock   flex 0 0 auto · 위 24 · 아래 32 · 사이 10 · 카카오 · 약관 13px
+ *
  * 2026-09-04 정책 변경 — 비회원 진입 삭제. 스플래시(온보딩 소개) 다음은
  * 이 화면이고, 로그인해야만 앱으로 넘어간다.
  *
- * **만 14세 확인은 여기서 체크박스 하나로 끝낸다**(§3.5). 별도 화면을 두지
- * 않는다. 체크하지 않고 카카오를 누르면 로그인을 시작하지도 않고
- * `login/age-required`(WP-AUTH-010)로 보낸다 — 버튼을 진짜로 비활성화하면
- * 왜 안 눌리는지 말할 자리가 없다. 체크박스는 첫 진입(WP-AUTH-001)에만
- * 있다 — 이미 확인을 마친 WP-AUTH-008(로그인 유지)에는 없다.
+ * **만 14세 확인은 평소에 묻지 않는다.** 카카오가 연령대를 필수 동의로 넘기므로
+ * 나이는 서버가 판정한다. 미달이면 인가 코드 교환이 `under_age`로 떨어지고
+ * `use-sign-in.ts`가 `login/age-required`(WP-AUTH-009)로 보낸다 — 화면이 미리
+ * 막지 않는다. 카카오 앱 설정이 14세 미만을 동의 화면 전에 되돌려 보내는 경우도
+ * 같은 경로다(`providers.ts` `isUnderAgeDenial`).
+ *
+ * **묻는 경우가 하나 있다**(2026-09-10 사용자 지시). 서버가 연령대를 받지 못하면
+ * (`age_unverified`) 판정할 근거가 없다 — 그때만 «만 14세 이상이에요» 확인이
+ * 뜨고, 체크하기 전에는 카카오 버튼이 눌리지 않는다.
+ *
+ * 그 값은 **사람이 실제로 누른 것일 때만** 서버로 간다. 화면이 미리 켜두거나
+ * 훅이 대신 채우지 않는다 — v3.24가 체크박스를 지운 뒤에도 앱은 가입 요청에
+ * `ageVerified: true`를 늘 넣어 보냈고, 서버가 그것을 믿어 만 14세 미만 계정이
+ * 실제로 들어왔다(2026-09-10). 서버도 이 값을 연령대가 없을 때만 본다.
  *
  * **두 상태를 한 컴포넌트에서 가른다**(WP-AUTH-001 첫 진입 / WP-AUTH-008
- * 로그인 유지). 기억된 계정이 있으면 인사 + «카카오로 계속하기» 하나만
- * 보여주고, 없으면 만 14세 확인과 카카오 버튼을 보여준다. «다른 계정으로
- * 시작하기»·«카카오 · 최근 로그인» 계정 행은 없앴다(2026-09-08) — 로그인
- * 방법이 카카오 하나뿐이라 고를 것도 알려줄 것도 없고, 계정을 바꾸는 일은
- * 카카오 동의 화면이 맡는다.
+ * 로그인 유지). 기억된 계정이 있으면 인사 · D-day · 마지막 계정 카드(카카오
+ * 아바타 40 · 마스킹 이메일 · «최근 로그인» 배지) + «카카오로 계속하기» 하나만
+ * 보여주고, 없으면 카카오 버튼 하나만 보여준다. 계정 전환 버튼은
+ * 두지 않는다(SPEC §3.4 — 초기 버전은 카카오만이라 고를 것이 없다).
  *
  * 카카오 로그인 실패는 화면에 문구를 깔지 않고 시트로 뜬다
  * (`login-failure-sheet.tsx`).
@@ -54,11 +91,11 @@ const REASONS = [
 export default function LoginScreen() {
   const theme = useTheme();
   const { providers, error: loadError } = useAuthProviders();
-  const { signIn, busy, error, retry, dismissError, reportError } = useSignIn();
+  const { signIn, busy, error, retry, dismissError, reportError, needsAgeConfirm } = useSignIn();
+  /** «만 14세 이상이에요»를 사람이 눌렀는가. 기본값은 꺼짐 — 미리 켜두지 않는다. */
+  const [ageChecked, setAgeChecked] = useState(false);
   /** undefined = 아직 안 읽음, null = 기억된 계정 없음(WP-AUTH-001). */
   const [remembered, setRemembered] = useState<RememberedAccount | null | undefined>(undefined);
-  /** 만 14세 이상이에요 체크박스. 기본 해제(§3.5 "화면 규칙"). */
-  const [ageChecked, setAgeChecked] = useState(false);
 
   useEffect(() => {
     loadRememberedAccount().then(setRemembered);
@@ -82,49 +119,47 @@ export default function LoginScreen() {
         <View style={styles.content}>
           {/* BrandBlock — flex:1. 심볼·카피·혜택. 화면 안에서 남는 세로 공간을 전부 가져간다. */}
           <View style={styles.brandBlock}>
-            {/* 배경 박스 없이 마크만 — 색은 스킨과 무관한 고정 코랄(§2 "시작 화면"). */}
-            <WeddingMark size={64} color={Colors.light.tint} />
+            {/* 배경 박스 없이 마크만 — 색은 스킨과 무관한 고정 코랄(§2 "시작 화면"). 시안 markPlain — 아래 24. */}
+            <View style={styles.mark}>
+              <WeddingMark size={MARK_SIZE} color={Colors.light.tint} />
+            </View>
 
             {showRemembered && remembered ? (
-              <ThemedView style={styles.section}>
+              <>
                 <ThemedText type="t1">
                   {remembered.displayName ? `${remembered.displayName}님,\n` : ''}다시 오셨네요
                 </ThemedText>
                 {remembered.weddingDate ? (
-                  <ThemedText type="t6" themeColor="textSecondary">
-                    {dDay(remembered.weddingDate).text}
+                  <ThemedText type="body" themeColor="textSecondary" style={styles.heroSub}>
+                    {remainingLine(remembered.weddingDate)}
                   </ThemedText>
                 ) : null}
-                {/*
-                  «카카오 · 최근 로그인» 계정 행은 없앴다 — 로그인 방법이 카카오
-                  하나뿐이라 어느 계정인지 알려줄 것이 없다. 계정을 바꾸는 일은
-                  카카오 동의 화면이 맡는다.
-                */}
-              </ThemedView>
+
+                <RememberedAccountCard account={remembered} />
+              </>
             ) : (
               <>
-                <ThemedView style={styles.section}>
-                  <ThemedText type="t1">
-                    웨딩 준비,{'\n'}진짜 견적부터{'\n'}확인해 보세요{/* pick-language: 업체에서 실제로 받은 금액을 가리키는 말 — 서류를 고르라는 자리가 아니다 */}
-                  </ThemedText>
-                </ThemedView>
+                <ThemedText type="t1">
+                  웨딩 준비,{'\n'}진짜 견적부터{'\n'}확인해 보세요{/* pick-language: 업체에서 실제로 받은 금액을 가리키는 말 — 서류를 고르라는 자리가 아니다 */}
+                </ThemedText>
 
-                <ThemedView style={styles.benefitList}>
+                {/* 시안 benefitWrap — 위 28 · 줄 사이 2. 줄은 최소 44 · 상하 9 · 점과 글자 사이 10. */}
+                <View style={styles.benefitList}>
                   {REASONS.map((reason) => (
                     <View key={reason} style={styles.benefitRow}>
                       <View style={[styles.dot, { backgroundColor: theme.tint }]} />
-                      <ThemedText type="t6" themeColor="textSecondary" style={styles.benefitText}>
+                      <ThemedText type="body" themeColor="textStrong" style={styles.benefitText}>
                         {reason}
                       </ThemedText>
                     </View>
                   ))}
-                </ThemedView>
+                </View>
               </>
             )}
           </View>
 
           {/* AuthBlock — flex: 0 0 auto. 로그인 버튼·약관·오류. 항상 화면
-              하단에 자기 높이만큼만 차지한다. */}
+              하단에 자기 높이만큼만 차지한다. 시안 authWrap — 위 24 · 아래 32 · 사이 10. */}
           <View style={styles.authBlock}>
             {providers === null || remembered === undefined || busy ? (
               /*
@@ -133,62 +168,79 @@ export default function LoginScreen() {
                * 로그인 폼이 떠 있으면 «다시 로그인하라는 건가» 하고 읽힌다.
                */
               <ThemedView style={styles.busy}>
-                <DelayedLoader size={28} />
-                {busy ? (
-                  <ThemedText type="small" themeColor="textAssistive">
-                    카카오로 로그인하는 중이에요
-                  </ThemedText>
-                ) : null}
+                {/*
+                  **로더와 문구 중 하나만 나온다**(2026-09-11 대표 지시). 어느 쪽인지는
+                  두 가지가 정한다.
+
+                    문구   지금 로그인을 진행 중이고(`busy`), 그 말을 이 화면이 맡았을 때
+                    로더   그 밖 — 제공자·기억된 계정을 읽어오는 중이거나, 문구는
+                           부팅 화면(`SigningInView`)이 맡았을 때
+
+                  문장은 `SigningInBody` 한 곳에만 있고, **누가 말하는지**는
+                  `bootOwnsSigningInMessage()`가 정한다. URL의 `code`를 보고 판단하던
+                  예전 가드는 듣지 않았다 — `completeKakaoRedirect()`가 그 `code`를 먼저
+                  지워서, 지운 뒤에 뜬 로그인 화면이 같은 말을 다시 했다(2026-09-09 보고).
+                */}
+                <SigningInBody
+                  size={28}
+                  show={busy && !bootOwnsSigningInMessage() ? 'message' : 'loader'}
+                />
               </ThemedView>
             ) : (
               <ThemedView style={styles.section}>
                 {showRemembered && remembered ? (
                   <>
                     {/*
-                      이메일 로그인은 화면에서 연결을 끊었다(v3.13) — 기억된 계정이
-                      이메일이었어도 다시 그 경로로 보내지 않는다. 이미 최소 한 번
-                      확인을 마친 계정이라 여기엔 만 14세 체크박스도 없다.
+                      시안 #27h — «카카오로 계속하기»는 ctaPrimary(코랄 · 로고 없음)다.
+                      첫 진입의 카카오 노란 버튼과 다르다. 이미 최소 한 번 확인을 마친
+                      계정이다.
                     */}
+                    <AgeConfirmRow
+                      visible={needsAgeConfirm}
+                      checked={ageChecked}
+                      onToggle={() => setAgeChecked((was) => !was)}
+                    />
+
                     {kakao ? (
                       <ActionButton
                         variant="primary"
                         size="xlarge"
-                        tone={providerTone(kakao)}
-                        icon={kakao.isDevelopmentStandIn ? undefined : <SocialLogo provider="kakao" />}
                         label={kakao.isDevelopmentStandIn ? '개발용 로그인' : '카카오로 계속하기'}
-                        disabled={busy || !canSignInWith(kakao)}
-                        onPress={() => signIn(kakao)}
+                        disabled={busy || !canSignInWith(kakao) || (needsAgeConfirm && !ageChecked)}
+                        onPress={() => signIn(kakao, { ageAcknowledged: ageChecked })}
                       />
                     ) : null}
 
-                    <ThemedText type="small" themeColor="textAssistive" style={styles.terms}>
+                    <ThemedText type="micro" themeColor="textAssistive" style={styles.terms}>
                       이 기기에서 로그인을 유지하고 있어요
                     </ThemedText>
                   </>
                 ) : (
                   <>
-                    <AgeConsentCheckbox checked={ageChecked} onToggle={() => setAgeChecked((v) => !v)} />
+                    <AgeConfirmRow
+                      visible={needsAgeConfirm}
+                      checked={ageChecked}
+                      onToggle={() => setAgeChecked((was) => !was)}
+                    />
 
                     {kakao ? (
-                      <View style={{ opacity: ageChecked ? 1 : 0.4 }}>
-                        <ActionButton
-                          variant="primary"
-                          size="xlarge"
-                          tone={providerTone(kakao)}
-                          icon={kakao.isDevelopmentStandIn ? undefined : <SocialLogo provider="kakao" />}
-                          label={kakao.isDevelopmentStandIn ? '개발용 로그인' : '카카오로 시작하기'}
-                          hint={
-                            kakao.isDevelopmentStandIn
-                              ? '실제 카카오 로그인이 아니에요. 개발 중인 서버에만 있어요'
-                              : undefined
-                          }
-                          disabled={busy || !canSignInWith(kakao)}
-                          onPress={() => (ageChecked ? signIn(kakao) : router.push('/login/age-required'))}
-                        />
-                      </View>
+                      <ActionButton
+                        variant="primary"
+                        size="xlarge"
+                        tone={providerTone(kakao)}
+                        icon={kakao.isDevelopmentStandIn ? undefined : <SocialLogo provider="kakao" size={KAKAO_LOGO} />}
+                        label={kakao.isDevelopmentStandIn ? '개발용 로그인' : '카카오로 시작하기'}
+                        hint={
+                          kakao.isDevelopmentStandIn
+                            ? '실제 카카오 로그인이 아니에요. 개발 중인 서버에만 있어요'
+                            : undefined
+                        }
+                        disabled={busy || !canSignInWith(kakao) || (needsAgeConfirm && !ageChecked)}
+                        onPress={() => signIn(kakao, { ageAcknowledged: ageChecked })}
+                      />
                     ) : null}
 
-                    <ThemedText type="small" themeColor="textAssistive" style={styles.terms}>
+                    <ThemedText type="micro" themeColor="textAssistive" style={styles.terms}>
                       시작하면 <PolicyLink id="terms" />과 <PolicyLink id="privacy" />에 동의하게 돼요
                     </ThemedText>
                   </>
@@ -213,8 +265,100 @@ export default function LoginScreen() {
 }
 
 /**
- * 동의 안내 문장 속 약관 링크. 밑줄 + 링크색(accent)으로, 누르면 웹의 전문을 새 창에 연다.
- * 주소는 @weddingpick/domain POLICY_DOCUMENTS 한 곳에서 온다 — 웹 푸터와 같은 곳이다.
+ * WP-AUTH-008 히어로 서브 — 시안 «예식까지 140일 남았어요». 도메인 `dDay().text`는
+ * 조사를 붙인 «140일이 남았어요»라 시안과 다르다 — 남은 일수만 받아 시안 문장으로 적는다.
+ * 오늘이거나 지났으면 도메인 문장을 그대로 쓴다.
+ */
+function remainingLine(weddingDate: string): string {
+  const remaining = dDay(weddingDate);
+
+  return remaining.kind === 'upcoming' ? `예식까지 ${remaining.days}일 남았어요` : remaining.text;
+}
+
+/**
+ * «만 14세 이상이에요» 확인 행. **서버가 연령대를 못 받았을 때만 뜬다** —
+ * 평소에는 아무것도 그리지 않는다(시안 WP-AUTH-001 «별도 동의 체크박스를 두지
+ * 않습니다»는 그 평소를 말한 것이다).
+ *
+ * 체크 원은 탈퇴 화면과 같은 `CheckDot`을 쓴다 — 되돌릴 수 없는 행동 앞에서 한 번
+ * 멈추게 하는 자리라 생김새도 같아야 한다.
+ *
+ * 왜 떴는지 한 줄로 먼저 말한다. 체크박스만 덩그러니 나오면, 방금까지 없던 것이
+ * 왜 생겼는지 알 수 없다.
+ */
+function AgeConfirmRow({
+  visible,
+  checked,
+  onToggle,
+}: {
+  visible: boolean;
+  checked: boolean;
+  onToggle: () => void;
+}) {
+  if (!visible) return null;
+
+  return (
+    <View style={styles.ageConfirm}>
+      <ThemedText type="micro" themeColor="textSecondary">
+        {AGE_CONFIRM_NOTICE}
+      </ThemedText>
+
+      <Pressable
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked }}
+        accessibilityLabel={AGE_CONFIRM_LABEL}
+        onPress={onToggle}
+        style={styles.ageConfirmRow}>
+        <CheckDot on={checked} />
+        <ThemedText type="body" themeColor="textStrong" style={styles.grow}>
+          {AGE_CONFIRM_LABEL}
+        </ThemedText>
+      </Pressable>
+    </View>
+  );
+}
+
+/**
+ * 마지막 계정 카드(시안 #27h lastAccount) — gray50 · radius 10 · 안쪽 16/18 · 사이 12.
+ * 카카오 아바타 40(#FEE500 원 + 로고 18) · «카카오» 16/700 · 마스킹 이메일 14 ·
+ * «최근 로그인» 배지(옅은 코랄 · 코랄 14/700). 이메일을 모르면(카카오는 닉네임만
+ * 받는다) 둘째 줄을 비우고 첫 줄만 남긴다 — 빈 값을 «—»로 채우지 않는다.
+ */
+function RememberedAccountCard({ account }: { account: RememberedAccount }) {
+  const theme = useTheme();
+
+  return (
+    <View style={styles.accountWrap}>
+      <View style={[styles.account, { backgroundColor: theme.backgroundElement }]}>
+        <View style={[styles.avatar, { backgroundColor: SocialColors.kakao.background }]}>
+          <SocialLogo provider="kakao" size={AVATAR_LOGO} />
+        </View>
+
+        <View style={styles.accountText}>
+          <ThemedText type="t6" numberOfLines={1} style={styles.bold}>
+            {KAKAO_PROVIDER_NAME}
+          </ThemedText>
+          {account.email ? (
+            <ThemedText type="t7" themeColor="textAssistive" numberOfLines={1}>
+              {maskEmail(account.email)}
+            </ThemedText>
+          ) : null}
+        </View>
+
+        <View style={[styles.badge, { backgroundColor: theme.tintSubtle }]}>
+          <ThemedText type="t7" themeColor="tint" style={styles.bold}>
+            {RECENT_LOGIN_BADGE}
+          </ThemedText>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+/**
+ * 동의 안내 문장 속 약관 링크. 시안 legalLink — #4D5159 · 700 · 밑줄(코랄이나 accent가
+ * 아니다). 누르면 웹의 전문을 새 창에 연다. 주소는 @weddingpick/domain POLICY_DOCUMENTS
+ * 한 곳에서 온다 — 웹 푸터와 같은 곳이다.
  */
 function PolicyLink({ id }: { id: 'terms' | 'privacy' }) {
   const theme = useTheme();
@@ -226,9 +370,10 @@ function PolicyLink({ id }: { id: 'terms' | 'privacy' }) {
 
   return (
     <ThemedText
-      type="small"
+      type="micro"
+      themeColor="textSecondary"
       accessibilityRole="link"
-      style={[styles.policyLink, { color: theme.link, textDecorationColor: theme.link }]}
+      style={[styles.policyLink, { textDecorationColor: theme.textSecondary }]}
       onPress={() => {
         void openExternal(url);
       }}>
@@ -237,48 +382,14 @@ function PolicyLink({ id }: { id: 'terms' | 'privacy' }) {
   );
 }
 
-/**
- * «만 14세 이상이에요» 체크박스. §3.5 "화면 규칙" — 카카오 위 · 배경 없는
- * 텍스트 · 터치 영역 44 · coral은 체크 원에만 쓰고 라벨은 밑줄로만 표시한다.
- * 카드나 버튼으로 만들면 카카오와 경쟁하게 되어 낮춘 형태다.
- */
-function AgeConsentCheckbox({ checked, onToggle }: { checked: boolean; onToggle: () => void }) {
-  const theme = useTheme();
-
-  return (
-    <Pressable
-      accessibilityRole="checkbox"
-      accessibilityState={{ checked }}
-      accessibilityLabel="만 14세 이상이에요"
-      onPress={onToggle}
-      style={styles.ageCard}
-      hitSlop={4}>
-      <View
-        style={[
-          styles.ageCheck,
-          checked ? { backgroundColor: theme.tint } : { borderWidth: 1.5, borderColor: theme.track },
-        ]}>
-        {checked ? (
-          <Svg width={12} height={12} viewBox="0 0 24 24" fill="none">
-            <Path
-              d="m5 12.5 4.5 4.5L19 7.5"
-              stroke={theme.onTint}
-              strokeWidth={3.6}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </Svg>
-        ) : null}
-      </View>
-      <ThemedText
-        type="small"
-        themeColor="textSecondary"
-        style={[styles.bold, styles.ageUnderline, { textDecorationColor: theme.track }]}>
-        만 14세 이상이에요
-      </ThemedText>
-    </Pressable>
-  );
-}
+/* 시안 고정값 — 마크 64 · 카카오 로고 20 · 아바타 40(로고 18) · 배지 좌우 9 · 카드 안쪽 16/18. */
+/* 시안 고정값 — 마크 64 · 카카오 로고 20 · 아바타 40(로고 18) · 배지 좌우 9 · 카드 안쪽 16/18. */
+const MARK_SIZE = 64;
+const KAKAO_LOGO = 20;
+const AVATAR_LOGO = 18;
+const BADGE_PADDING_X = 9;
+const ACCOUNT_PADDING_Y = 16;
+const ACCOUNT_PADDING_X = 18;
 
 const styles = StyleSheet.create({
   container: {
@@ -290,43 +401,63 @@ const styles = StyleSheet.create({
     flex: 1,
     maxWidth: MaxContentWidth,
   },
+  /* 시안 — 좌우 24. 위는 statusBar(안전 영역)만, 아래는 authWrap의 32. */
   content: {
     flex: 1,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.five,
-    paddingBottom: Spacing.four,
+    paddingHorizontal: Layout.gutter,
+    paddingBottom: Spacing.five,
   },
-  /** BrandBlock — flex:1. 남는 세로 공간을 전부 가져가 심볼·카피·혜택을 화면 중앙쪽에 둔다. */
+  /** BrandBlock — flex:1 · 세로 중앙. 시안 brandBlock gap 0 — 간격은 요소가 각자 가진다. */
   brandBlock: {
     flex: 1,
     justifyContent: 'center',
-    gap: Spacing.four,
   },
-  /** AuthBlock — flex: 0 0 auto(RN: flexGrow/flexShrink 0). 로그인 버튼 영역은 항상 자기 높이만 차지한다. */
+  /** AuthBlock — flex: 0 0 auto(RN: flexGrow/flexShrink 0). 시안 authWrap — 위 24 · 사이 10. */
   authBlock: {
     flexGrow: 0,
     flexShrink: 0,
-    gap: Spacing.four,
+    paddingTop: Spacing.four,
+    gap: Layout.cardGap,
   },
   section: {
-    gap: Spacing.two,
+    gap: Layout.cardGap,
   },
+  /* 확인 행 — 안내 한 줄 위, 체크 행 아래. 사이는 authWrap과 같은 10. */
+  ageConfirm: {
+    gap: Layout.cardGap,
+  },
+  /* 시안 21a 동의 행과 같은 규칙 — gap 12 · 위 정렬. */
+  ageConfirmRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Layout.rowPaddingY,
+  },
+  grow: { flex: 1 },
   card: {
-    borderRadius: Spacing.three,
+    borderRadius: Radius.medium,
     padding: Spacing.three,
     gap: Spacing.one,
   },
+  mark: { marginBottom: Spacing.four },
+  /* 시안 heroSub — 제목 아래 10. */
+  heroSub: { marginTop: Layout.cardGap },
+  /* 시안 legalLine — 13px 400 · 위 6 · 가운데. micro 토큰은 700이라 두께만 되돌린다(링크만 700). */
   terms: {
     textAlign: 'center',
+    paddingTop: Spacing.two - Spacing.half,
+    fontWeight: 400,
   },
+  /* 시안 benefitWrap — 위 28(섹션 사이) · 줄 사이 2. */
   benefitList: {
+    paddingTop: Layout.sectionGap,
     gap: Spacing.half,
   },
   benefitRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: Spacing.two,
-    paddingVertical: Spacing.one,
+    gap: Layout.cardGap,
+    minHeight: Layout.touchTarget,
+    paddingVertical: Layout.summaryRowPaddingY,
   },
   benefitText: {
     flex: 1,
@@ -338,18 +469,30 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
   },
   busy: { alignItems: 'center', gap: Spacing.two, paddingVertical: Spacing.three },
-  /* §3.5 — 카드가 아니라 44 터치 영역 안의 텍스트 한 줄이다. 좌측 정렬. */
-  ageCard: {
+  /* 시안 lastWrap — 위 28. */
+  accountWrap: { paddingTop: Layout.sectionGap },
+  account: {
+    borderRadius: Radius.medium,
+    paddingVertical: ACCOUNT_PADDING_Y,
+    paddingHorizontal: ACCOUNT_PADDING_X,
     flexDirection: 'row',
-    alignSelf: 'flex-start',
     alignItems: 'center',
-    gap: Spacing.two,
-    minHeight: Layout.touchTarget,
-    paddingHorizontal: Spacing.one,
+    gap: Layout.rowPaddingY,
   },
-  /* 시안 고정 18 — 8단계 타이포와 무관한 아이콘 크기라 토큰이 아닌 값이다. */
-  ageCheck: { width: 18, height: 18, borderRadius: Radius.pill, alignItems: 'center', justifyContent: 'center' },
-  ageUnderline: { textDecorationLine: 'underline', textDecorationStyle: 'solid' },
-  policyLink: { textDecorationLine: 'underline', textDecorationStyle: 'solid' },
+  avatar: {
+    width: Layout.iconButton,
+    height: Layout.iconButton,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  accountText: { flex: 1, minWidth: 0, gap: Spacing.half },
+  /* 시안 badgeOk — 상하 4 · 좌우 9 · radius 4. */
+  badge: {
+    paddingVertical: Spacing.one,
+    paddingHorizontal: BADGE_PADDING_X,
+    borderRadius: Radius.badge,
+  },
+  policyLink: { fontWeight: 700, textDecorationLine: 'underline', textDecorationStyle: 'solid' },
   bold: { fontWeight: 700 },
 });

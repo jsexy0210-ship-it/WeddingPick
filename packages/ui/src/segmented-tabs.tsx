@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Layout, Radius, Spacing } from './theme';
+import { Border, Layout, Radius, Spacing } from './theme';
 import { ThemedText } from './themed-text';
 import { useTheme } from './use-theme';
 import { readWebInteractionState } from './web-interaction';
@@ -51,7 +51,7 @@ export function SegmentedTabs({ items, value, onChange, accessibilityLabel }: Se
                 styles.item,
                 {
                   backgroundColor: selected ? theme.background : 'transparent',
-                  borderWidth: focused ? 1 : 0,
+                  borderWidth: focused ? Border.focus : 0,
                   borderColor: theme.tint,
                   opacity: pressed ? 0.8 : hovered && !selected ? 0.9 : 1,
                 },
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   item: {
     flex: 1,
     height: Layout.touchTarget,
-    borderRadius: Radius.small,
+    borderRadius: Radius.control,
     alignItems: 'center',
     justifyContent: 'center',
   },

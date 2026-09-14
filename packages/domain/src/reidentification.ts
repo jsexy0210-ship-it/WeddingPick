@@ -78,7 +78,7 @@ export function widestDisclosable(counts: readonly number[]): number | null {
  * **"개인정보 때문"이라고 말하지 않는다.** 사용자가 무엇을 잘못한 것처럼 들리고,
  * 실제로는 자료가 덜 모인 것이 맞다.
  */
-export const NARROWED_NOT_ENOUGH = '이 조건은 아직 데이터가 모이는 중이에요';
+export const NARROWED_NOT_ENOUGH = '이 조건은 아직 정보가 적어요';
 
 /**
  * 시기를 얼마나 잘게 보여줄 것인가.

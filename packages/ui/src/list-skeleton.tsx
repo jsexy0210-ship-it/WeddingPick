@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
-import { Radius, Spacing } from './theme';
+import { Layout, Radius, Spacing } from './theme';
 import { Skeleton } from './skeleton';
 import { useTheme } from './use-theme';
 
@@ -11,8 +11,8 @@ export type ListSkeletonProps = {
   hero?: boolean;
 };
 
-/** 시안 고정 — 썸네일 52 · 바 16/13 · 히어로 168 · 제목 20 · 메타 15. */
-const THUMB = 52;
+/** 30-loading 30d — 썸네일 52(thumbList) · 바 16/13 · 히어로 168 · 제목 20 · 메타 15. */
+const THUMB = Layout.thumbList;
 const HERO = 168;
 
 /**
@@ -33,7 +33,7 @@ export function ListSkeleton({ rows = 3, hero = false }: ListSkeletonProps) {
         <>
           <Skeleton height={HERO} radius={Radius.medium} />
           <Skeleton width="62%" height={20} />
-          <Skeleton width="38%" height={15} style={{ backgroundColor: theme.backgroundElement }} />
+          <Skeleton width="38%" height={15} style={{ backgroundColor: theme.backgroundSelected }} />
           <View style={[styles.divider, { backgroundColor: theme.backgroundSelected }]} />
         </>
       ) : null}
@@ -42,10 +42,10 @@ export function ListSkeleton({ rows = 3, hero = false }: ListSkeletonProps) {
 
         return (
           <View key={i} style={styles.row}>
-            <Skeleton width={THUMB} height={THUMB} radius={Radius.small} />
+            <Skeleton width={THUMB} height={THUMB} radius={Radius.control} />
             <View style={styles.lines}>
               <Skeleton width={w1} height={16} />
-              <Skeleton width={w2} height={13} style={{ backgroundColor: theme.backgroundElement }} />
+              <Skeleton width={w2} height={13} style={{ backgroundColor: theme.backgroundSelected }} />
             </View>
           </View>
         );
@@ -54,9 +54,12 @@ export function ListSkeleton({ rows = 3, hero = false }: ListSkeletonProps) {
   );
 }
 
+/* 30-loading skWrap gap 12 · skRow gap 12 · padding 6 0 · 바 사이 8 · hrThin margin 4. */
+const ROW_PADDING_Y = 6;
+
 const styles = StyleSheet.create({
-  container: { gap: Spacing.three },
+  container: { gap: Layout.inlineGap },
   divider: { height: 1, marginVertical: Spacing.one },
-  row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, paddingVertical: 6 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: Layout.inlineGap, paddingVertical: ROW_PADDING_Y },
   lines: { flex: 1, gap: Spacing.two },
 });

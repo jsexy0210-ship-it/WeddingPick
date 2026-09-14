@@ -6,7 +6,7 @@ import { CheckCircle } from './check-circle';
 
 /**
  * 답을 마친 질문 한 줄. 시안 20-onboarding-v2 `answeredRow` — 체크 20 · 라벨 ·
- * 값(말줄임 · 오른쪽 정렬) · «바꾸기» 버튼(30 · gray100 · radius 6). 최소 높이 40,
+ * 값(말줄임 · 오른쪽 정렬) · «바꾸기» 버튼(30 · gray100 · radius 6 · 글자 micro 13/700). 최소 높이 40,
  * 상하 6. 상단 구분선은 없다(v3.21 «답 줄 구분선 · 상단 border 삭제»).
  *
  * «바꾸기»를 누르면 그 질문만 다시 위로 올라와 열리고 뒤의 답은 그대로다 —
@@ -42,7 +42,7 @@ export function AnsweredRow({
         onPress={onEdit}
         hitSlop={Spacing.two}
         style={[styles.edit, { backgroundColor: theme.backgroundSelected }]}>
-        <ThemedText type="t7" themeColor="textSecondary" style={styles.editLabel}>
+        <ThemedText type="micro" themeColor="textSecondary">
           바꾸기
         </ThemedText>
       </Pressable>
@@ -73,5 +73,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  editLabel: { fontWeight: 700 },
 });

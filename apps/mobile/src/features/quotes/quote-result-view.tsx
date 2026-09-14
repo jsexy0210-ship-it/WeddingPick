@@ -6,16 +6,15 @@ import type {
 } from '@weddingpick/api-contract';
 import { ANALYSIS_DISCLAIMER, PRICE_JUDGEMENT_LABEL, needsAttention } from '@weddingpick/domain';
 import { formatDateDot } from '@/features/common/format-date';
-import { ScrollView, StyleSheet, TextInput, type ViewStyle } from 'react-native';
+import { ScrollView, StyleSheet, type ViewStyle } from 'react-native';
 
 import {
   ActionButton,
-  FontSize,
+  Radius,
   Spacing,
   ThemedText,
   ThemedView,
   VerificationBadge,
-  useTheme,
 } from '@weddingpick/ui';
 
 const FIELD_LABEL: Record<string, string> = {
@@ -94,10 +93,16 @@ function itemAmount(item: { amount: number | null; amountMin: number | null; amo
 type Props = {
   quote: Quote;
   comparison: ComparisonResponse | null;
-  /** 확인 단계를 쓸 수 있을 때만 준다. 샘플 화면에서는 없다. */
+  /**
+   * 확인 단계를 쓸 수 있을 때만 준다. 샘플 화면에서는 없다.
+   *
+   * **고칠 자리가 없다.** v3.24가 「재입력 경로는 다시 찍기/올리기뿐」으로 정했다 —
+   * 읽은 값을 손으로 고쳐 확인하면 그 값에는 자료가 없고, 자료 없는 값이 «확인됨»
+   * 표시를 달고 비교에 들어간다. 여기서 할 수 있는 것은 읽은 그대로 맞다고 하는
+   * 것뿐이고, 다르면 다시 올리거나 «원본과 달라요»로 알린다.
+   */
   confirm?: {
     busy: boolean;
-    onEdit: (path: string, value: string) => void;
     onConfirm: (paths: string[]) => void;
   };
   header?: React.ReactNode;
@@ -118,8 +123,6 @@ export function QuoteResultView({
   footer,
   contentStyle,
 }: Props) {
-  const theme = useTheme();
-
   /*
    * 두 종류를 갈라 둔다. 섞으면 안 되는 이유는 하는 말이 다르기 때문이다.
    *
@@ -210,13 +213,8 @@ export function QuoteResultView({
               <ThemedText type="small" themeColor="textSecondary">
                 {FIELD_LABEL[field.path] ?? field.path} · 확인 필요
               </ThemedText>
-              <TextInput
-                style={[styles.input, { color: theme.text, borderColor: theme.border }]}
-                defaultValue={field.correctedValue ?? field.value}
-                editable={Boolean(confirm)}
-                onChangeText={(text) => confirm?.onEdit(field.path, text)}
-                multiline={field.path === 'refundTerms'}
-              />
+              {/* 읽은 그대로 보여준다. 고칠 칸을 두지 않는 것이 v3.24의 요점이다. */}
+              <ThemedText>{field.correctedValue ?? field.value}</ThemedText>
               {confirm ? (
                 <ActionButton
                   label="이 값이 맞아요"
@@ -368,7 +366,7 @@ export function AnalysisNotice() {
 
 const styles = StyleSheet.create({
   notice: {
-    borderRadius: Spacing.two,
+    borderRadius: Radius.medium,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
   },
@@ -381,7 +379,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   card: {
-    borderRadius: Spacing.three,
+    borderRadius: Radius.medium,
     padding: Spacing.three,
     gap: Spacing.one,
   },
@@ -389,19 +387,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderRadius: Spacing.three,
+    borderRadius: Radius.medium,
     padding: Spacing.three,
     gap: Spacing.three,
   },
   rowLabel: {
     flex: 1,
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: Spacing.two,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.two,
-    /* 입력 칸 글자도 본문이다. 토큰 밖의 크기를 쓰지 않는다. */
-    fontSize: FontSize.t6,
   },
 });

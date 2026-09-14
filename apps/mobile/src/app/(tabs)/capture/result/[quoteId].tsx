@@ -1,20 +1,23 @@
 import type { ComparisonResponse, Quote } from '@weddingpick/api-contract';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, View } from 'react-native';
 
 import { confirmFields, getComparison, getQuote } from '@/api/client';
-import { ActionButton, ErrorView, MaxContentWidth, Spacing, ThemedView } from '@weddingpick/ui';
+import { ActionButton, ErrorView, Layout, MaxContentWidth, Spacing, ThemedView } from '@weddingpick/ui';
+import { NavBar, Screen } from '@/features/wedding/screen-kit';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { AnalysisNotice, QuoteResultView } from '@/features/quotes/quote-result-view';
 
-/** A-08 분석 결과 + A-07 확인 단계 + A-09 가격 비교. */
+/**
+ * A-08 분석 결과 + A-07 확인 단계 + A-09 가격 비교 · WP-RPT-004.
+ * 시안 11-report-review 12b — navBack «확인». 뒤로는 제보 홈으로 내려간다
+ * (`/capture/result`는 폴더일 뿐 화면이 아니라 Depth Back이 한 칸 더 올라간다).
+ */
 export default function ResultScreen() {
   const { quoteId } = useLocalSearchParams<{ quoteId: string }>();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [comparison, setComparison] = useState<ComparisonResponse | null>(null);
-  const [edits, setEdits] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,9 +45,13 @@ export default function ResultScreen() {
     setBusy(true);
 
     try {
+      /*
+       * 읽은 값을 그대로 맞다고 하는 것뿐이다. 고쳐 보낼 자리가 없다 — v3.24가
+       * 「재입력 경로는 다시 찍기/올리기뿐」으로 정했고, 계약에서도 그 자리를 뺐다.
+       */
       const updated = await confirmFields(
         quote.id,
-        paths.map((path) => ({ path, ...(edits[path] && { correctedValue: edits[path] }) }))
+        paths.map((path) => ({ path }))
       );
 
       setQuote(updated);
@@ -65,17 +72,14 @@ export default function ResultScreen() {
   }
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+    <Screen>
+      <NavBar title="확인" />
+      <View style={styles.safeArea}>
         <AnalysisNotice />
         <QuoteResultView
           quote={quote}
           comparison={comparison}
-          confirm={{
-            busy,
-            onEdit: (path, value) => setEdits((current) => ({ ...current, [path]: value })),
-            onConfirm: confirm,
-          }}
+          confirm={{ busy, onConfirm: confirm }}
           footer={
             <ThemedView style={styles.actions}>
               {/*
@@ -112,21 +116,16 @@ export default function ResultScreen() {
             </ThemedView>
           }
         />
-      </SafeAreaView>
-    </ThemedView>
+      </View>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
   safeArea: {
     flex: 1,
     maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.four,
     gap: Spacing.two,
   },

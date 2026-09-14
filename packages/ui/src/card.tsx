@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { Layout, Radius } from './theme';
+import { Border, Layout, Radius } from './theme';
 import { useTheme } from './use-theme';
 import { readWebInteractionState } from './web-interaction';
 
@@ -46,7 +46,7 @@ export function Card({
 
   const surface: ViewStyle = {
     backgroundColor: isFilled ? theme.backgroundElement : theme.background,
-    borderWidth: isFilled ? 0 : 1,
+    borderWidth: isFilled ? 0 : Border.hairline,
     borderColor: theme.border,
   };
 
@@ -70,7 +70,7 @@ export function Card({
           styles.card,
           flush ? styles.flush : null,
           surface,
-          focused ? { borderWidth: 1, borderColor: theme.tint } : null,
+          focused ? { borderWidth: Border.focus, borderColor: theme.tint } : null,
           { opacity: pressed ? 0.9 : hovered ? 0.96 : 1 },
           style,
         ];
@@ -82,7 +82,8 @@ export function Card({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: Radius.card,
+    /** 일반 카드는 radius.card(10) — `Radius.pickCard`(14)는 Pick 카드 전용이다. */
+    borderRadius: Radius.medium,
     padding: Layout.cardPadding,
     overflow: 'hidden',
   },

@@ -3,7 +3,6 @@ import { Pressable, StyleSheet, View, type ImageSourcePropType } from 'react-nat
 
 import { Badge } from './badge';
 import { Card } from './card';
-import { FilterChip } from './filter-chip';
 import { Layout, Radius, Spacing } from './theme';
 import { ProductSymbol } from './product-symbol';
 import { ThemedText } from './themed-text';
@@ -70,7 +69,8 @@ export function PickCard({
     <Card
       flush
       testID={testID}
-      style={decided ? { borderColor: theme.tint } : undefined}>
+      /* Pick 카드만 radius.pick(14)이다 — 일반 카드(10)와 다른 값을 시안이 준다. */
+      style={[{ borderRadius: Radius.pickCard }, decided ? { borderColor: theme.tint } : null]}>
       <Card
         flush
         onPress={onPress}
@@ -89,7 +89,7 @@ export function PickCard({
             />
             {badge ? (
               <View style={styles.badge}>
-                <Badge label={badge} tone="ink" />
+                <Badge kind="brand">{badge}</Badge>
               </View>
             ) : null}
             {decided ? (
@@ -144,7 +144,7 @@ export function PickCard({
             {tags && tags.length > 0 ? (
               <View style={styles.tags}>
                 {tags.map((tag) => (
-                  <FilterChip key={tag} label={tag} interactive={false} />
+                  <Badge key={tag}>{tag}</Badge>
                 ))}
               </View>
             ) : null}

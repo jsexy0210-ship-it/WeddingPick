@@ -56,7 +56,7 @@ export const SITE_STYLES = `
   --surface-1: #f7f8fa;
   --surface-2: #f2f3f6;
   --tint: #ff6f61;
-  --tint-strong: #e2564a;
+  --tint-strong: #ee6255;
   --positive: #1aa174;
   --positive-bg: #e8faf6;
 
