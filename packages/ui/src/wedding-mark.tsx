@@ -35,7 +35,7 @@ export type WeddingMarkProps = {
   color?: ColorValue;
 };
 
-export function WeddingMark({ size = 64, color = '#ff6f61' }: WeddingMarkProps) {
+export function WeddingMark({ size = 64, color = '#e7898d' }: WeddingMarkProps) {
   return (
     <Svg
       width={size}
