@@ -27,7 +27,7 @@ const FULL: Answers = {
   style: ['URBAN', 'ROMANTIC'],
 };
 
-describe('히어로 문구 (SPEC §13.6 확정 표)', () => {
+describe('히어로 문구 (핸드오프 v3.26 SPEC §13.6)', () => {
   it('제목과 설명이 표 그대로다', () => {
     expect(STEP_TITLE_LINES.date.join(' ')).toBe('예식일은 언제인가요?');
     expect(STEP_TITLE_LINES.region.join(' ')).toBe('어느 지역에서 하나요?');
@@ -40,7 +40,7 @@ describe('히어로 문구 (SPEC §13.6 확정 표)', () => {
       region: '선택한 지역을 기준으로 찾아드릴게요',
       prep: '이미 정한 건 빼고 필요한 것만 챙겨드릴게요',
       budget: '예산에 맞는 선택지를 먼저 보여드릴게요',
-      style: '남은 준비에 취향을 반영할게요',
+      style: '마음에 드는 스타일을 골라주세요',
     });
   });
 
@@ -147,9 +147,9 @@ describe('답 줄과 완료 요약', () => {
     expect(doneRows(FULL)[4]).toEqual({ step: 'style', label: '스타일', value: '도시적인 · 로맨틱한' });
   });
 
-  it('스타일 CTA는 고른 수 그대로 «N개 선택»이다', () => {
-    expect(styleCta(0)).toBe('0개 선택');
-    expect(styleCta(2)).toBe('2개 선택');
+  it('스타일 CTA는 고른 장수 그대로 «N장 선택»이다', () => {
+    expect(styleCta(0)).toBe('0장 선택');
+    expect(styleCta(2)).toBe('2장 선택');
   });
 
   it('시트의 D-day는 «D-250», 당일은 «D-DAY»다', () => {

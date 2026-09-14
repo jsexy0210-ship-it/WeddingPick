@@ -1,5 +1,7 @@
 import {
   STYLE_PICK_LIMIT_TOAST,
+  preparationSkippedToast,
+  skippedPreparationCategories,
   combineRegion,
   dDay,
   formatDateDot,
@@ -13,8 +15,11 @@ import { BackHandler, Pressable, StyleSheet, View } from 'react-native';
 import { ApiError, completeSetup, completeSignup, getCurrentUser, getSignupState } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { loadToken } from '@/api/session';
+import { error as errorCopy } from '../../../../spec/strings.ko.json';
 import { Layout, Radius, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
 
+import { DelayedRecommendingView } from '@/features/loading/delayed-loader';
+import { categoryKindsFor } from '@/features/loading/exclude';
 import { BudgetGrid } from '@/features/onboarding/budget-grid';
 import { DatePickerSheet } from '@/features/onboarding/date-picker-sheet';
 import {
@@ -84,11 +89,12 @@ import {
  * **스크롤은 화면 전체 하나다**(SPEC §13.5.5). 준비 현황이 뷰포트를 넘치면 화면이
  * 스크롤한다 — 목록 전용 스크롤을 두지 않는다. 5/5는 200 × 2행이라 스크롤이 없다.
  *
- * **만 14세 확인은 여기 없다.** 로그인 화면(WP-AUTH-001)의 체크박스 하나로 끝난다 —
- * 이 화면에 닿았다는 것 자체가 확인을 마쳤다는 뜻이라 `completeSignup`에
- * `ageVerified: true`를 그대로 보낸다. 2026-09-04 정책(비회원 진입 삭제)으로 이
- * 화면은 로그인 뒤에 온다. 그래도 토큰이 없으면 기기에 적어두고 다음 로그인에
- * 올린다(`after-sign-in`).
+ * **만 14세 확인은 여기 없다.** 로그인(`POST /v1/auth/sessions`)이 판정하고 서버에
+ * 기록한다 — 이 화면은 동의만 보낸다. 예전에는 여기서 `ageVerified: true`를 함께
+ * 보냈는데, 그것은 확인이 아니라 **늘 같은 값을 넣는 자리**였고 서버가 그것으로
+ * 관문을 지켰다(2026-09-10에 만 14세 미만 계정이 실제로 들어온 원인 중 하나다).
+ * 2026-09-04 정책(비회원 진입 삭제)으로 이 화면은 로그인 뒤에 온다. 그래도 토큰이
+ * 없으면 기기에 적어두고 다음 로그인에 올린다(`after-sign-in`).
  *
  * 답하는 중인 값은 기기에 적어둔다 — 앱을 닫았다 열어도 답한 데까지 이어서 묻는다.
  * 서버에 올리고 나면 지운다.
@@ -106,8 +112,6 @@ export default function SetupScreen() {
   const [step, setStep] = useState<QuestionStep | 'done'>('date');
   /** 기기에 적어둔 답을 읽기 전에는 첫 질문을 그리지 않는다 — 잠깐 스쳤다 바뀌면 안 된다. */
   const [restored, setRestored] = useState(false);
-  /** 가입이 아직 안 끝난 계정인가 — 그러면 답을 다 받은 뒤 가입부터 마친다. */
-  const [needsSignup, setNeedsSignup] = useState(false);
   const [editing, setEditing] = useState<Editing | null>(null);
   /** 서버에 이미 있는 스타일 — 5/5에 닿았을 때 아직 안 골랐으면 이걸로 복원한다. */
   const [seedStyle, setSeedStyle] = useState<readonly WeddingStyle[] | null>(null);
@@ -115,6 +119,8 @@ export default function SetupScreen() {
   const stepRef = useRef<QuestionStep | 'done'>('date');
   const [sheetOpen, setSheetOpen] = useState(false);
   const limitToast = useInlineToast();
+  /** 준비 현황에서 «앞 단계 비움» 토스트를 이미 보여준 상태(비운 업종 목록). 같은 상태로 다시 누르면 넘어간다. */
+  const prepWarnedRef = useRef<string | null>(null);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -133,17 +139,22 @@ export default function SetupScreen() {
   useEffect(() => {
     if (!isServerConfigured) return;
 
-    void getSignupState()
-      .then((state) => setNeedsSignup(!state.activated))
-      .catch(() => undefined);
     /*
      * 이미 고른 스타일이 있으면 복원한다(SPEC §13.6 «진입 — 기존 선택값을 초기화하지 않고
      * 복원»). 5/5에 들어설 때 `enter`가 채우고, 응답이 늦어 이미 5/5에 있으면 여기서 채운다.
      * 못 읽으면 없는 것 — 4/5 이전에는 채우지 않는다(채우면 5/5를 건너뛰게 된다).
      */
-    void getCurrentUser()
+    let active = true;
+    void (async () => {
+      const token = await loadToken();
+      if (!token) return null;
+      const state = await getSignupState();
+      if (!active || !state.activated || await loadToken() !== token) return null;
+      const me = await getCurrentUser();
+      return await loadToken() === token ? me : null;
+    })()
       .then((me) => {
-        if (me.styleTags.length === 0) return;
+        if (!active || !me || me.styleTags.length === 0) return;
 
         setSeedStyle(me.styleTags);
         if (stepRef.current === 'style') {
@@ -151,6 +162,7 @@ export default function SetupScreen() {
         }
       })
       .catch(() => undefined);
+    return () => { active = false; };
   }, []);
 
   useEffect(() => {
@@ -206,11 +218,11 @@ export default function SetupScreen() {
     setError(null);
 
     if (target === null) {
-      void finish(answers);
+      /* 「바꾸기」를 닫고 돌아갈 곳이 없으면 결과 화면이다. 여기서도 저장하지 않는다. */
+      setStep('done');
     } else {
       enter(target);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- finish는 answers · sending만 읽고 여기서 answers를 직접 넘긴다.
   }, [editing, step, answers, enter]);
 
   /* 안드로이드 물리 뒤로가기 = «이전». 바꾸는 중에는 «다음»과 같고, 완료 화면에서는 아무 데도 가지 않는다. */
@@ -230,6 +242,22 @@ export default function SetupScreen() {
     return () => subscription.remove();
   }, [step, editing, goPrev, finishEdit]);
 
+  /**
+   * 서버에 보낸다. **완료 화면에서 «완료»를 눌렀을 때만 부른다.**
+   *
+   * 2026-09-11 대표 지시 — 「결과는 사용자 입력한 값을 보여주기만 하고 정보를
+   * 저장하지 않는다. 완료 버튼을 눌러야만 저장 단계로 진행한다」.
+   *
+   * 예전에는 5/5의 답을 받은 그 자리에서 이걸 불렀다. 그래서 결과 화면을 그리기
+   * 전에 서버 왕복을 **차례로 두세 번** 기다렸다 — `getSignupState()` → (필요하면)
+   * `completeSignup()` → `completeSetup()`. 답을 다 넣고도 요약이 안 뜨는 시간이
+   * 그 왕복들이었다. 결과는 이미 손에 있는 답으로 그릴 수 있으므로 기다릴 이유가
+   * 없다(`goNext` 참고).
+   *
+   * **안의 순서는 그대로다**(PR #192 · `features/auth/session-recovery` 규칙).
+   * 가입 상태를 캐시 없이 먼저 묻고, 활성 계정일 때만 보호 API를 부르고, 제출
+   * 직전에 토큰을 다시 확인한다. 바꾼 것은 **언제 부르는가**뿐이다.
+   */
   async function finish(source: Answers = answers) {
     if (sending) return;
 
@@ -247,14 +275,31 @@ export default function SetupScreen() {
     };
 
     try {
-      if (isServerConfigured && (await loadToken())) {
+      if (isServerConfigured) {
+        const token = await loadToken();
+        if (!token) {
+          router.replace('/login');
+          return;
+        }
         /*
          * 가입을 먼저 끝낸다. 서버는 살아 있지 않은 계정의 다른 경로를 전부 막으므로
-         * 순서를 바꾸면 예식일 저장이 거절된다. 만 14세 확인은 로그인 화면에서 이미
-         * 끝났고 필수 동의도 로그인 CTA의 안내로 이미 받았다 — 여기서 서버에 기록한다.
+         * 순서를 바꾸면 예식일 저장이 거절된다. 필수 동의는 로그인 CTA의 안내로 이미
+         * 받았다 — 여기서 서버에 기록한다. 나이는 보내지 않는다(로그인이 판정했다).
          */
-        if (needsSignup) {
-          await completeSignup({ ageVerified: true, consents: ['terms', 'privacy'] });
+        // 화면 진입 시 조회가 늦거나 실패해도 가입 완료로 간주하지 않는다.
+        const signup = await getSignupState();
+        if (await loadToken() !== token) {
+          router.replace('/login');
+          return;
+        }
+        if (!signup.activated) {
+          const completed = await completeSignup({ consents: ['terms', 'privacy'] });
+          if (!completed.activated) throw new Error(errorCopy['general.body']);
+        }
+
+        if (await loadToken() !== token) {
+          router.replace('/login');
+          return;
         }
 
         await completeSetup({
@@ -269,13 +314,23 @@ export default function SetupScreen() {
           ...(styleTags.length > 0 ? { styleTags } : {}),
         });
 
-        await clearWeddingDraft();
+        if (await loadToken() !== token) {
+          router.replace('/login');
+          return;
+        }
+
+        void clearWeddingDraft().catch(() => undefined);
       } else {
         await saveWeddingDraft(draft);
       }
 
-      await clearOnboardingAnswers();
-      setStep('done');
+      /*
+       * 남은 정리는 화면을 막지 않는다. 홈으로 옮긴 뒤에 지워도 결과가 같고,
+       * 여기서 기다리면 저장이 끝난 뒤에도 로더가 더 떠 있다.
+       */
+      void clearOnboardingAnswers().catch(() => undefined);
+
+      router.replace('/');
     } catch (caught) {
       // 세션이 끝났으면(401) 이 화면에 머물 이유가 없다 — 로그인으로 보낸다.
       if (caught instanceof ApiError && caught.status === 401) {
@@ -291,6 +346,22 @@ export default function SetupScreen() {
   function goNext() {
     if (step === 'done') return;
 
+    /*
+     * 준비 현황(3/5) — 앞 그룹을 비워두고 뒤 그룹만 고른 채 «다음»이면 한 번 알리고 머문다
+     * (v3.23 «앞 단계도 확인해주세요 · 결정사 · 웨딩홀»). 막지는 않는다 — 같은 상태로 다시
+     * 누르면 그대로 넘어간다. 진행 중이 아니라 이미 지난 업종을 빠뜨렸는지 짚어 주는 것뿐이다.
+     */
+    if (step === 'prep') {
+      const skipped = skippedPreparationCategories(answers.prep?.categories ?? []);
+      const signature = skipped.join(',');
+
+      if (skipped.length > 0 && prepWarnedRef.current !== signature) {
+        prepWarnedRef.current = signature;
+        limitToast.show(preparationSkippedToast(skipped));
+        return;
+      }
+    }
+
     if (editing !== null) {
       finishEdit();
       return;
@@ -301,7 +372,11 @@ export default function SetupScreen() {
     setError(null);
 
     if (next === null) {
-      void finish();
+      /*
+       * **여기서 저장하지 않는다.** 결과 화면은 방금 받은 답을 그대로 보여줄 뿐이라
+       * 서버를 기다릴 것이 없다 — 저장은 «완료»가 시작한다(`finish` 참고).
+       */
+      setStep('done');
     } else {
       enter(next);
     }
@@ -320,6 +395,23 @@ export default function SetupScreen() {
     return <ThemedView style={styles.blank} />;
   }
 
+  /*
+   * 결과 화면에서 «완료»를 누른 뒤. 여기서 가입과 초기 설정 두 번을 서버에 보내는데,
+   * 그동안 화면에는 CTA가 눌리지 않는 것 말고 아무 표시가 없어 멈춘 것처럼 보였다.
+   * WP-ST-015 추천 계산 화면을 띄운다 — 700ms 안에 끝나면 이것도 뜨지 않는다.
+   *
+   * **여기는 «오래 붙잡는» 기다림이다**(`features/loading/delayed-loader.tsx`의
+   * `LoaderWait`). 계정을 만들고 설정을 올린 뒤 추천을 받아 홈으로 가는 길이라,
+   * Depth 이동용 써클이 아니라 업종 순회를 그대로 쓴다.
+   *
+   * 순회에서 뺄 업종은 방금 받은 답에서 가져온다. 서버에 아직 안 들어가 있어
+   * «나»의 스냅숏으로는 알 수 없고, 넘기지 않으면 방금 «결정 완료»로 고른 업종이
+   * 로더에서 계속 돈다.
+   */
+  if (sending) {
+    return <DelayedRecommendingView exclude={categoryKindsFor(answers.prep?.categories ?? [])} />;
+  }
+
   if (step === 'done') {
     return (
       <StepFrame
@@ -327,7 +419,14 @@ export default function SetupScreen() {
         label={DONE_PROGRESS.label}
         stepKey="done"
         nextLabel={DONE_CTA}
-        onNext={() => router.replace('/')}>
+        /*
+         * **저장은 여기서 시작한다**(2026-09-11 대표 지시). 위의 요약은 이미 손에
+         * 있는 답으로 그린 것이라 서버와 무관하고, 이 버튼을 누르기 전까지 아무것도
+         * 보내지 않는다. 실패하면 `error`가 이 화면에 뜨고 답은 그대로 남는다 —
+         * 다시 누르면 된다.
+         */
+        onNext={() => void finish()}
+        error={error}>
         <QuestionHead lines={DONE_TITLE_LINES} />
 
         <View style={styles.section}>
@@ -474,7 +573,7 @@ const styles = StyleSheet.create({
     height: Layout.field,
     borderRadius: Radius.input,
     borderWidth: 1.5,
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Layout.fieldPaddingX,
     justifyContent: 'center',
   },
   /* «예식일까지 250일 남았어요» — 숫자만 코랄. baseline 정렬 · 사이 8 · 좌우 2. */

@@ -1,10 +1,11 @@
 import { ANALYSIS_FACTS, FAQ_ITEMS, formatAttribution, listDataSources } from '@weddingpick/domain';
 import { router } from 'expo-router';
-import { ScrollView, StyleSheet } from 'react-native';
+import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Accordion, ActionButton, Layout, MaxContentWidth, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
+import { ActionButton, Layout, MaxContentWidth, Radius, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
 import { APP_VERSION } from '@/features/settings/version';
+import { BackBar } from '@/components/back-bar';
 
 const SHOOTING_TIPS = [
   '문서가 화면에 꽉 차게, 네 귀퉁이가 모두 보이게 찍어주세요.',
@@ -18,10 +19,25 @@ export default function GuideScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.section}>
             <ThemedText type="subtitle">자주 묻는 것</ThemedText>
-            <Accordion items={FAQ_ITEMS.map((f) => ({ key: f.key, title: f.question, body: f.answer }))} />
+            {/*
+              아코디언이 아니라 상세로 보낸다(WP-FAQ-003). 접었다 펴는 것만으로는
+              답을 읽은 뒤에 할 수 있는 일이 없다 — 상세에는 관련 질문과
+              「해결되지 않았어요」가 있고, 그것이 문의로 이어지는 유일한 길이다.
+            */}
+            {FAQ_ITEMS.map((faq) => (
+              <Pressable
+                key={faq.key}
+                accessibilityRole="button"
+                onPress={() => router.push(`/my/faq/${faq.key}` as never)}>
+                <ThemedView type="backgroundElement" style={styles.card}>
+                  <ThemedText type="smallBold">{faq.question}</ThemedText>
+                </ThemedView>
+              </Pressable>
+            ))}
           </ThemedView>
 
           <ThemedView style={styles.section}>
@@ -117,7 +133,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   card: {
-    borderRadius: Spacing.three,
+    borderRadius: Radius.medium,
     padding: Spacing.three,
     gap: Spacing.one,
   },

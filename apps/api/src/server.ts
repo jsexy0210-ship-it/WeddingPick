@@ -1,10 +1,13 @@
 import cors from '@fastify/cors';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { schemaState } from '@weddingpick/db';
+import { FeatureDisabledError } from './kill-switches';
 import { ZodError } from 'zod';
 
 import type { AppContext } from './context';
 import { ApiError } from './errors';
+import { registerAdminAccountRoutes } from './routes/admin-accounts';
+import { registerAdminLoginRoutes } from './routes/admin-login';
 import { registerAdminRoutes } from './routes/admin';
 import { registerAnalysisRoutes } from './routes/analyses';
 import { registerAppRoutes } from './routes/app';
@@ -22,6 +25,7 @@ import { registerRebuttalRoutes } from './routes/rebuttals';
 import { registerRewardRoutes } from './routes/rewards';
 import { registerVendorClaimRoutes } from './routes/vendor-claims';
 import { registerSettingsRoutes } from './routes/settings';
+import { registerSiteMetaRoutes } from './routes/site-meta';
 import { registerTasteRoutes } from './routes/taste';
 import { registerWithdrawalRoutes } from './routes/withdrawal';
 import { registerSignupRoutes } from './routes/signup';
@@ -50,6 +54,13 @@ export function buildServer(context: AppContext): FastifyInstance {
    * 토큰이 로그로 새지 않게 인증 헤더는 지운다. 값 자체를 남길 이유가 없다.
    */
   const app = Fastify({
+    /*
+     * **Render는 프록시 뒤에 있다.** 이것이 없으면 `request.ip`가 모든 요청에서
+     * 프록시 주소 하나로 같아진다. 관리자 로그인의 밀어보기 방어가 IP로 세는데,
+     * 그러면 남이 다섯 번 틀린 것 때문에 진짜 관리자가 기다리게 된다 — 방어가
+     * 그대로 남을 막는 도구가 된다.
+     */
+    trustProxy: true,
     logger: {
       level: process.env.LOG_LEVEL ?? 'warn',
       redact: ['req.headers.authorization', 'req.headers.cookie', 'headers.authorization', 'headers.cookie'],
@@ -60,13 +71,28 @@ export function buildServer(context: AppContext): FastifyInstance {
   if (context.config.corsOrigins.length > 0) {
     app.register(cors, {
       origin: context.config.corsOrigins,
-      methods: ['GET', 'HEAD', 'POST', 'PUT', 'DELETE'],
+      // 관리자 화면은 PATCH로 바꾼다(kill-switch·users·vendors·ads·policy-engine).
+      // 빠져 있으면 preflight에서 전부 막혀 화면에서 아무것도 끌 수 없다.
+      methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'],
     });
   }
 
   app.setErrorHandler((error, request, reply) => {
     if (error instanceof ApiError) {
       return reply.status(error.status).send(error.toResponse());
+    }
+
+    /*
+     * 관리자가 끈 기능이다. 고장이 아니라 지금 일부러 멈춰 둔 것이므로 500이 아니다 —
+     * 500으로 내려주면 화면이 "다시 시도해주세요"라고 말하고, 다시 시도해도 같다.
+     * 무엇을 껐는지는 로그에만 남긴다.
+     */
+    if (error instanceof FeatureDisabledError) {
+      request.log.warn({ switchId: error.switchId }, '중지된 기능이 호출됐다');
+
+      return reply
+        .status(503)
+        .send({ error: { code: 'feature_disabled', message: '지금은 사용할 수 없는 기능입니다.' } });
     }
 
     if (error instanceof ZodError) {
@@ -169,11 +195,14 @@ export function buildServer(context: AppContext): FastifyInstance {
   registerRewardRoutes(app, context);
   registerMyReportRoutes(app, context);
   registerSettingsRoutes(app, context);
+  registerSiteMetaRoutes(app, context);
+  registerAdminLoginRoutes(app, context);
   registerTasteRoutes(app, context);
   registerWithdrawalRoutes(app, context);
   registerSignupRoutes(app, context);
   registerDevStorageRoutes(app, context);
   registerAdminRoutes(app, context);
+  registerAdminAccountRoutes(app, context);
 
   // 정적 파일 서빙 (웹앱) - API는 이미 위에 등록되어 있으므로 마지막에 캐치올 추가
   app.get('/*', async (_request, reply) => {

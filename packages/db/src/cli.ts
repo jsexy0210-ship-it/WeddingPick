@@ -28,6 +28,12 @@ async function main() {
       console.log(state.pending.length ? `밀린 것 ${state.pending.length}개:` : '밀린 것 없음');
       for (const version of state.pending) console.log(`  - ${version}`);
 
+      /* 저장소에 파일이 없는데 DB에는 적혀 있는 것. 있으면 그 자리가 어긋난 자리다. */
+      if (state.unknown.length) {
+        console.log(`저장소에 없는 것 ${state.unknown.length}개:`);
+        for (const version of state.unknown) console.log(`  - ${version}`);
+      }
+
       // 밀렸다고 실패로 끝내지 않는다. 이 명령의 목적은 판정이 아니라 관측이다.
       return;
     }

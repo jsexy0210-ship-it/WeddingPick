@@ -1,34 +1,26 @@
 import type { Notification } from '@weddingpick/api-contract';
 import { NOTIFICATIONS_EMPTY, hasUnread } from '@weddingpick/domain';
 import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import {
-  ActionButton,
-  ErrorView,
-  Layout,
-  MaxContentWidth,
-  readWebInteractionState,
-  Spacing,
-  ThemedText,
-  ThemedView,
-  useTheme,
-  SkeletonView,
-} from '@weddingpick/ui';
+import { ErrorView, Layout, Radius, Spacing, ThemedText, Toast, readWebInteractionState, useTheme } from '@weddingpick/ui';
 import { listNotifications, readAllNotifications, readNotification } from '@/api/client';
 import { formatDateDot } from '@/features/common/format-date';
+import { DelayedLoadingView } from '@/features/loading/delayed-loader';
+import strings from '../../../../../../spec/strings.ko.json';
+import { EmptyBox, NavAction, Section, SubScreen } from '@/features/settings/my-kit';
 
+const S = {
+  title: '알림',
+  readAll: '모두 읽음',
+  fresh: 'New',
+} as const;
 
 /**
- * 알림을 눌렀을 때 어디로 가는가. 디자인 핸드오프 20번.
- *
- * **경로는 여기서 정한다.** 서버는 종류와 대상만 준다 — 화면 경로를 서버가 정해
- * 내려보내면 화면 이름을 바꿀 때 이미 보낸 알림이 전부 막다른 길이 된다.
- *
- * 갈 곳이 없는 종류(안내)는 아무 데도 가지 않는다. 억지로 홈으로 보내면 사용자는
- * 자기가 뭘 잘못 눌렀다고 생각한다.
+ * 알림을 눌렀을 때 어디로 가는가. **경로는 여기서 정한다.** 서버는 종류와 대상만 준다 — 화면 경로를
+ * 서버가 정해 내려보내면 화면 이름을 바꿀 때 이미 보낸 알림이 전부 막다른 길이 된다.
+ * 갈 곳이 없는 종류(안내)는 아무 데도 가지 않는다.
  */
 function go(notification: Notification): void {
   switch (notification.kind) {
@@ -48,11 +40,16 @@ function go(notification: Notification): void {
   }
 }
 
+/** 알림 목록. 행 min 56 · 상하 12 · 아래 선 1. 읽으면 제목·본문이 회색이 된다. */
 export default function NotificationsScreen() {
   const theme = useTheme();
   const [notifications, setNotifications] = useState<Notification[] | null>(null);
   const [unread, setUnread] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const reading = useRef(new Set<string>());
+  const readingAll = useRef(false);
+  const [readBusy, setReadBusy] = useState(false);
 
   const load = useCallback(() => {
     void listNotifications()
@@ -61,154 +58,127 @@ export default function NotificationsScreen() {
         setNotifications(response.notifications);
         setUnread(response.unread);
       })
-      .catch((caught: Error) =>
-        setLoadError(caught.message ?? '알림을 불러오지 못했어요.')
-      );
+      .catch((caught: Error) => setLoadError(caught.message ?? '알림을 불러오지 못했어요'));
   }, []);
 
   useEffect(load, [load]);
 
-  async function open(notification: Notification) {
-    if (!notification.readAt) {
-      /*
-       * 먼저 화면에서 읽음으로 바꾼다. 서버 답을 기다리면 눌렀는데 아무 일도
-       * 일어나지 않는 순간이 생긴다.
-       */
-      setNotifications(
-        (current) =>
-          current?.map((row) =>
-            row.id === notification.id ? { ...row, readAt: new Date().toISOString() } : row
-          ) ?? null
-      );
-
-      // 실패하면 다음에 열 때 다시 안 읽은 것으로 보인다. 그게 반대보다 낫다.
-      await readNotification(notification.id)
-        .then((summary) => setUnread(summary.unread))
-        .catch(() => undefined);
-    }
-
+  function open(notification: Notification) {
+    // 읽음 저장이 느리거나 실패해도 사용자가 누른 내용은 바로 연다.
     go(notification);
-  }
-
-  async function readAll() {
-    const before = notifications;
-
-    setNotifications(
-      (current) =>
-        current?.map((row) => ({ ...row, readAt: row.readAt ?? new Date().toISOString() })) ?? null
-    );
-    setUnread(0);
-
-    await readAllNotifications()
-      .then((summary) => setUnread(summary.unread))
+    if (notification.readAt || reading.current.has(notification.id) || readingAll.current) return;
+    reading.current.add(notification.id);
+    setReadBusy(true);
+    setNotifications((current) => current?.map((row) =>
+      row.id === notification.id ? { ...row, readAt: new Date().toISOString() } : row
+    ) ?? null);
+    setUnread((current) => Math.max(0, current - 1));
+    void readNotification(notification.id)
       .catch(() => {
-        // 못 바꿨으면 되돌린다. 읽지 않은 것을 읽었다고 두는 편이 더 나쁘다.
-        setNotifications(before);
-        setUnread(before?.filter((row) => !row.readAt).length ?? 0);
+        setNotifications((current) => current?.map((row) =>
+          row.id === notification.id ? { ...row, readAt: notification.readAt } : row
+        ) ?? null);
+        setUnread((current) => current + 1);
+        setToast(strings.journey.readFailed);
+      })
+      .finally(() => {
+        reading.current.delete(notification.id);
+        setReadBusy(reading.current.size > 0);
       });
   }
 
-  if (loadError) {
-    return <ErrorView message={loadError} onBack={load} />;
+  async function readAll() {
+    if (readingAll.current || reading.current.size > 0) return;
+    const before = notifications;
+    const beforeUnread = unread;
+    readingAll.current = true;
+    setReadBusy(true);
+    setNotifications((current) => current?.map((row) =>
+      ({ ...row, readAt: row.readAt ?? new Date().toISOString() })
+    ) ?? null);
+    setUnread(0);
+    await readAllNotifications()
+      .then((summary) => setUnread(summary.unread))
+      .catch(() => {
+        setNotifications(before);
+        // 목록 바깥의 오래된 미확인 알림도 있으므로 서버에서 받은 개수를 보존한다.
+        setUnread(beforeUnread);
+        setToast(strings.journey.readFailed);
+      })
+      .finally(() => {
+        readingAll.current = false;
+        setReadBusy(false);
+      });
   }
 
-  if (notifications === null) {
-    return <SkeletonView />;
-  }
+  if (loadError) return <ErrorView message={loadError} onRetry={load} />;
+  if (notifications === null) return <DelayedLoadingView />;
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.content}>
-          <ThemedView style={styles.head}>
-            <ThemedText type="t2">알림</ThemedText>
-            {hasUnread({ unread, total: notifications?.length ?? 0 }) ? (
-              <ActionButton label="모두 읽음" onPress={readAll} />
-            ) : null}
-          </ThemedView>
-
-          {notifications.length === 0 ? (
-            <ThemedText type="t6" themeColor="textSecondary">
-              {NOTIFICATIONS_EMPTY}
-            </ThemedText>
-          ) : null}
-
-          {notifications.map((notification) => {
-            const read = notification.readAt !== null;
-
-            return (
-              <Pressable
-                key={notification.id}
-                accessibilityRole="button"
-                onPress={() => open(notification)}
-                style={(state) => {
-                  const { hovered } = readWebInteractionState(state);
-                  return [
-                    styles.row,
-                    { borderBottomColor: theme.line },
-                    hovered ? { backgroundColor: theme.backgroundSelected } : null,
-                  ];
-                }}>
-                <ThemedView style={styles.rowHead}>
-                  <ThemedText type="t7" themeColor={read ? 'textAssistive' : 'tint'}>
-                    {notification.kindLabel}
-                  </ThemedText>
-                  {/* 읽으면 제목·본문이 회색이 된다. 핸드오프가 정한 표시다. */}
-                  {read ? null : (
-                    <ThemedText type="badge" themeColor="tint">
-                      New
+    <SubScreen
+      title={S.title}
+      contentStyle={{ paddingTop: Layout.rowPaddingY }}
+      right={
+        hasUnread({ unread, total: notifications.length }) ? (
+          <NavAction label={S.readAll} disabled={readBusy} onPress={() => void readAll()} />
+        ) : undefined
+      }>
+      <Section>
+        {notifications.length === 0 ? (
+          <EmptyBox>{NOTIFICATIONS_EMPTY}</EmptyBox>
+        ) : (
+          <View style={styles.rows}>
+            {notifications.map((notification) => {
+              const read = notification.readAt !== null;
+              return (
+                <View key={notification.id}>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => void open(notification)}
+                    style={(state) => {
+                      const { hovered, pressed } = readWebInteractionState(state);
+                      return [styles.row, hovered || pressed ? { backgroundColor: theme.backgroundElement } : null];
+                    }}>
+                    <View style={styles.rowHead}>
+                      {/* 시안 dot — 8×8 · 위 8 · 안 읽음만 코랄, 읽음은 같은 자리를 비운다(12-closing.dc.html L366). */}
+                      <View style={[styles.dot, read ? null : { backgroundColor: theme.tint }]} />
+                      <ThemedText type="t7" themeColor={read ? 'textAssistive' : 'tint'} style={styles.bold}>
+                        {notification.kindLabel}
+                      </ThemedText>
+                    </View>
+                    <ThemedText type="t5" themeColor={read ? 'textAssistive' : 'text'}>
+                      {notification.title}
                     </ThemedText>
-                  )}
-                </ThemedView>
-                <ThemedText type="t5" themeColor={read ? 'textAssistive' : 'text'}>
-                  {notification.title}
-                </ThemedText>
-                <ThemedText type="t6" themeColor={read ? 'textAssistive' : 'textSecondary'}>
-                  {notification.body}
-                </ThemedText>
-                <ThemedText type="t7" themeColor="textAssistive">
-                  {formatDateDot(notification.createdAt)}
-                </ThemedText>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-      </SafeAreaView>
-    </ThemedView>
+                    {/* 시안 t14w — 알림 본문은 14/21이다(L427). 16/24는 제목과 무게가 비슷해져 줄이 구분되지 않는다. */}
+                    <ThemedText type="note" themeColor="textAssistive">
+                      {notification.body}
+                    </ThemedText>
+                    <ThemedText type="t7" themeColor="textAssistive" numeric>
+                      {formatDateDot(notification.createdAt)}
+                    </ThemedText>
+                  </Pressable>
+                  <View style={[styles.hr, { backgroundColor: theme.border }]} />
+                </View>
+              );
+            })}
+          </View>
+        )}
+      </Section>
+      <Toast message={toast} onHidden={() => setToast(null)} />
+    </SubScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-  },
-  content: {
-    paddingHorizontal: Layout.gutter,
-    paddingTop: Spacing.five,
-    paddingBottom: Spacing.six,
-    gap: Spacing.three,
-  },
-  head: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
+  rows: { gap: Spacing.half },
   row: {
     gap: Spacing.one,
-    paddingVertical: Spacing.three,
     minHeight: Layout.rowMinHeight,
-    // 줄 사이가 비면 어디까지가 한 알림인지 흐려진다.
-    borderBottomWidth: 1,
+    /* 시안 noti 행 — padding:14px 0(L63). */
+    paddingVertical: Layout.rowPaddingYWithMeta,
   },
-  rowHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-  },
+  rowHead: { flexDirection: 'row', alignItems: 'center', gap: Layout.iconTextGap },
+  dot: { width: 8, height: 8, borderRadius: Radius.pill, backgroundColor: 'transparent' },
+  bold: { fontWeight: '700' },
+  hr: { height: 1 },
 });

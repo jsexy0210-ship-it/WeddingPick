@@ -10,12 +10,11 @@
 
 import {
   MANY_CONFIRMED,
-  NOT_ENOUGH_DATA,
   STILL_COLLECTING,
   PREPARATION_CATEGORIES,
   TERMS,
   VENDOR_CATEGORY_LABEL,
-  rangeLabel,
+  priceLine,
 } from '@weddingpick/domain';
 import type { VendorSummary } from '@weddingpick/api-contract';
 
@@ -112,13 +111,17 @@ function stats(data: SiteData): string {
  * **구간이 없는 단계에서는 숫자를 그리지 않는다.** `paidPrice`가 판별 유니온인
  * 이유가 여기다 — `collecting`에는 `low`·`high`가 아예 없어서 0원이나 빈 구간을
  * 그릴 수가 없다.
+ *
+ * 어느 층을 그릴지는 이 파일이 정하지 않는다. 도메인의 `priceLine`이 정한다
+ * (v3.24 — 금액 한 줄은 어느 화면이든 이 함수로만 만든다). 실 제보 3건 미만이면
+ * 업체 안내 금액이 대신 서고, 그때는 회색에 출처 캡션이 붙어 **실 제보로 집계한
+ * 값과 눈으로 갈린다.** 웹만 따로 계산하면 앱과 다른 금액이 보인다.
  */
-function price(paid: VendorSummary['paidPrice']): string {
-  if (paid.stage === 'collecting') {
-    return `<span class="price none">${escapeHtml(NOT_ENOUGH_DATA)}</span>`;
-  }
+function price(vendor: VendorSummary): string {
+  const line = priceLine(vendor.paidPrice, vendor.guidePrice);
 
-  return `<span class="price">${escapeHtml(rangeLabel(paid.low, paid.high))}</span>`;
+  return `<span class="price${line.dim ? ' none' : ''}">${escapeHtml(line.text)}</span>
+        <span class="meta">${escapeHtml(line.caption)}</span>`;
 }
 
 /**
@@ -141,8 +144,7 @@ function vendorCards(vendors: readonly VendorSummary[]): string {
         -->
         <div class="shot shot-wide">업체 제공 이미지가 아직 없어요</div>
         <a class="name" href="/v/${escapeHtml(vendor.id)}.html">${escapeHtml(vendor.name)}</a>
-        ${price(vendor.paidPrice)}
-        <span class="meta">${escapeHtml(vendor.paidPrice.caption)}</span>
+        ${price(vendor)}
       </li>`
     )
     .join('');

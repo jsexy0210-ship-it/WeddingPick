@@ -1,0 +1,54 @@
+# 운영자를 뺀 **모든 계정**을 탈퇴시킨다. 출시 전 한 번 쓰는 도구다.
+#
+# 2026-09-11 대표 지시 — 「지금 가입자들 다 탈퇴시켜」, 범위는 「운영자 빼고 전부」.
+#
+# `db-delete-test-user`와 다르다. 그쪽은 일부러 한 명만 지운다 — 「여러 명이 걸리면
+# 지우지 않는다」가 그 도구의 안전장치다. 여기서 필요한 것은 정확히 그 반대라서,
+# 그 장치를 풀어 쓰는 대신 의도가 이름에 드러나는 도구를 따로 둔다.
+#
+# **되돌릴 수 없다.** 계정만이 아니라 그 사람이 올린 원본 파일까지 파기한다.
+# 그래서 기본은 확인(dry-run)이고, 확인 문구를 정확히 적어야 실제로 지운다.
+name: DB 전체 탈퇴 (운영자 제외)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: '실제로 지우려면 「탈퇴시킨다」를 그대로 입력한다. 비우면 대상만 센다.'
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: 실행
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          # **로컬 드라이버로 돌리지 않는다.** 탈퇴는 `deps.storage`로 원본을 파기한
+          # 뒤에야 계정 행을 지운다(withdrawal.ts). 드라이버가 운영과 다르면 계정만
+          # 사라지고 파일은 S3에 남는다 — 「지웠다」고 말하면서 남기는 것이 가장 나쁜
+          # 결과라, 스크립트가 s3가 아니면 시작하지 않는다.
+          STORAGE_DRIVER: s3
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+          S3_REGION: ${{ secrets.S3_REGION }}
+          S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          CONFIRM: ${{ github.event.inputs.confirm }}
+        run: |
+          npx tsx apps/api/src/scripts/withdraw-all-users.ts --confirm="${CONFIRM}"

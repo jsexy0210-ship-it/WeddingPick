@@ -7,7 +7,7 @@ import {
   canSubmitInquiry,
   type InquiryCategory,
 } from '@weddingpick/domain';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,12 +15,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { createInquiry, listMyInquiries } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { formatDateDot } from '@/features/common/format-date';
+import { useDepthBack } from '@/features/navigation/depth-back';
+import { BackBar } from '@/components/back-bar';
 import {
   Accordion,
   ActionButton,
   FilterChip,
   FontSize,
+  Layout,
   MaxContentWidth,
+  Radius,
   Spacing,
   ThemedText,
   ThemedView,
@@ -57,6 +61,8 @@ export default function ContactScreen() {
   const [error, setError] = useState<string | null>(null);
   const [acknowledgement, setAcknowledgement] = useState<string | null>(null);
   const [mine, setMine] = useState<Inquiry[]>([]);
+  // 「돌아가기」는 Depth Back이다 — 알림·링크로 곧장 들어와도 MY로 올라간다.
+  const depthBack = useDepthBack();
 
   const subject =
     params.subjectKind && params.subjectId
@@ -107,6 +113,7 @@ export default function ContactScreen() {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
+          <BackBar />
           <ThemedView style={styles.content}>
             <ThemedText type="subtitle">보냈어요</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
@@ -117,7 +124,7 @@ export default function ContactScreen() {
               label="확인"
               onPress={() => setAcknowledgement(null)}
             />
-            <ActionButton label="돌아가기" onPress={() => router.back()} />
+            <ActionButton label="돌아가기" onPress={depthBack} />
           </ThemedView>
         </SafeAreaView>
       </ThemedView>
@@ -127,11 +134,12 @@ export default function ContactScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.section}>
             <ThemedText type="subtitle">문의하기</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              사람이 직접 읽고 답해요. 이름이나 주소는 묻지 않아요.
+              사람이 직접 읽고 답해요. 이름이나 주소 없이 보낼 수 있어요.
             </ThemedText>
           </ThemedView>
 
@@ -249,7 +257,7 @@ export default function ContactScreen() {
               disabled={busy || !ready || !isServerConfigured}
               onPress={submit}
             />
-            <ActionButton label="돌아가기" onPress={() => router.back()} />
+            <ActionButton label="돌아가기" onPress={depthBack} />
           </ThemedView>
 
           {mine.length > 0 ? (
@@ -291,7 +299,7 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
   },
   content: {
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.five,
     paddingBottom: Spacing.four,
     gap: Spacing.four,
@@ -305,14 +313,14 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   card: {
-    borderRadius: Spacing.three,
+    borderRadius: Radius.medium,
     padding: Spacing.three,
     gap: Spacing.one,
   },
   input: {
     borderWidth: 1,
-    borderRadius: Spacing.three,
-    paddingHorizontal: Spacing.three,
+    borderRadius: Radius.input,
+    paddingHorizontal: Layout.fieldPaddingX,
     paddingVertical: Spacing.two,
     /* 입력 칸 글자도 본문이다. 토큰 밖의 크기를 쓰지 않는다. */
     fontSize: FontSize.t6,

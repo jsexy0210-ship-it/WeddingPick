@@ -17,8 +17,10 @@ import {
   VENDOR_DETAIL_SECTIONS,
   formatDateDot,
   manwon,
-  rangeLabel,
+  priceLine,
+  regionLabel,
 } from '@weddingpick/domain';
+import type { PriceLine } from '@weddingpick/domain';
 import type { VendorDetail } from '@weddingpick/api-contract';
 
 import { escapeHtml } from './page';
@@ -71,7 +73,7 @@ function pending(label: string, note: string | undefined): string {
 
 /** 업체명 자리. 이름과 함께 업종·지역까지가 «무엇을 보고 있는지»다. */
 function nameBlock(vendor: VendorDetail): string {
-  const where = [VENDOR_CATEGORY_LABEL[vendor.category], vendor.region]
+  const where = [VENDOR_CATEGORY_LABEL[vendor.category], regionLabel(vendor.region)]
     .filter(Boolean)
     .join(' · ');
 
@@ -179,24 +181,33 @@ function mainSection(key: SectionKey, label: string, note: string | undefined, v
 }
 
 /**
+ * 이 업체의 금액 한 줄.
+ *
+ * 이 파일에서 금액을 읽는 곳은 **여기 하나뿐이다.** 카드와 링크 미리보기가 각자
+ * `prices.paidPrice`를 들여다보면 언젠가 갈린다 — 실제로 갈려 있었다.
+ */
+function vendorPriceLine(vendor: VendorDetail): PriceLine {
+  return priceLine(vendor.prices.paidPrice, vendor.guidePrice);
+}
+
+/**
  * 우측 기둥의 실 제보 카드.
  *
  * 금액 옆에는 **늘 캡션이 함께 간다** — 몇 건이고 어느 기간인지. 숫자만 떼어놓으면
  * 그것이 어디서 왔는지 모르는 채로 읽히고, 그때부터 우리가 정한 값처럼 보인다.
- * 캡션은 도메인이 만들어 API가 내려준 것을 그대로 쓴다.
+ *
+ * 금액과 캡션을 짝지어 만드는 것은 도메인의 `priceLine`이다(v3.24 — 금액 한 줄은
+ * 어느 화면이든 이 함수로만 만든다). 실 제보 3건 미만이면 업체 안내 금액이 대신
+ * 서고 캡션이 «출처 · …»로 바뀐다 — 회색까지 함께 가야 **실 제보로 집계한 값과
+ * 섞이지 않는다.** 홈 카드와 같은 함수를 쓰므로 두 화면의 금액이 갈릴 수 없다.
  */
 function verifiedCard(vendor: VendorDetail): string {
-  const paid = vendor.prices.paidPrice;
-
-  const amount =
-    paid.stage === 'collecting'
-      ? `<b class="amount none">${escapeHtml(NOT_ENOUGH_DATA)}</b>`
-      : `<b class="amount">${escapeHtml(rangeLabel(paid.low, paid.high))}</b>`;
+  const line = vendorPriceLine(vendor);
 
   return `<div class="card-outline">
       <h2>${escapeHtml(TERMS.verifiedData)}</h2>
-      ${amount}
-      <p class="caption">${escapeHtml(paid.caption)}</p>
+      <b class="amount${line.dim ? ' none' : ''}">${escapeHtml(line.text)}</b>
+      <p class="caption">${escapeHtml(line.caption)}</p>
       <div class="rule"></div>
       <!--
         화면당 Primary CTA 하나. Pick이 가장 중요한 행동이고 비교는 보조다.
@@ -219,7 +230,7 @@ function verifiedCard(vendor: VendorDetail): string {
 function officialCard(vendor: VendorDetail): string {
   const facts = [
     { label: '업종', value: VENDOR_CATEGORY_LABEL[vendor.category] },
-    { label: '지역', value: vendor.region },
+    { label: '지역', value: regionLabel(vendor.region) },
     {
       label: '마지막 확인',
       value: formatDateDot(vendor.lastVerifiedAt),
@@ -259,12 +270,22 @@ export function renderVendorPage(vendor: VendorDetail): string {
       </div>
     </section>`;
 
-  const where = [VENDOR_CATEGORY_LABEL[vendor.category], vendor.region].join(' · ');
+  const where = [VENDOR_CATEGORY_LABEL[vendor.category], regionLabel(vendor.region)].join(' · ');
+
+  /*
+   * 링크 미리보기도 화면과 같은 한 줄을 쓴다.
+   *
+   * `paidPrice.caption`을 직접 읽으면 실 제보 3건 미만인 업체에서 화면은 «업체 안내
+   * 150만원~ / 출처 · 업체 홈페이지»를 보여주는데 카카오톡에 붙는 미리보기는 «실 제보
+   * 0건»이라고 말한다. **한 링크가 두 말을 하는 것이고**, 없는 실 제보를 미리보기가
+   * 먼저 꺼내는 쪽이라 더 나쁘다.
+   */
+  const line = vendorPriceLine(vendor);
 
   return siteDocument({
     path: `/v/${encodeURIComponent(vendor.id)}.html`,
     title: `${vendor.name} — ${SITE.name}`,
-    description: `${vendor.name} · ${where}. ${vendor.prices.paidPrice.caption}`,
+    description: `${vendor.name} · ${where}. ${line.caption}`,
     current: null,
     body,
   });

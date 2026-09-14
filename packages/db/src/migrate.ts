@@ -63,7 +63,14 @@ export async function migrate(client: Client, dir = MIGRATIONS_DIR): Promise<str
 export async function schemaState(
   query: (sql: string) => Promise<{ rows: Array<{ version: string }> }>,
   dir = MIGRATIONS_DIR
-): Promise<{ applied: number; expected: number; pending: string[]; ok: boolean; error?: string }> {
+): Promise<{
+  applied: number;
+  expected: number;
+  pending: string[];
+  unknown: string[];
+  ok: boolean;
+  error?: string;
+}> {
   const files = (await readdir(dir)).filter((file) => file.endsWith('.sql')).sort();
   const expected = files.map((file) => file.replace(/\.sql$/, ''));
 
@@ -71,14 +78,29 @@ export async function schemaState(
     const { rows } = await query('SELECT version FROM public.schema_migrations');
     const applied = new Set(rows.map((row) => row.version));
     const pending = expected.filter((version) => !applied.has(version));
+    /*
+     * DB에는 적혀 있는데 저장소에는 파일이 없는 것. 적용 수가 기대 수보다 많은 DB를
+     * 만났을 때(2026-09-09 · 95 대 92) 어느 것이 남았는지 알 길이 없어 추가한다.
+     * 병합되지 않은 브랜치에서 적용했거나, 파일 이름이 바뀌었거나, 지워진 흔적이다.
+     * 판정하지 않고 이름만 돌려준다 — 지우는 것은 사람이 정한다.
+     */
+    const known = new Set(expected);
+    const unknown = [...applied].filter((version) => !known.has(version)).sort();
 
-    return { applied: applied.size, expected: expected.length, pending, ok: pending.length === 0 };
+    return {
+      applied: applied.size,
+      expected: expected.length,
+      pending,
+      unknown,
+      ok: pending.length === 0,
+    };
   } catch (error) {
     // schema_migrations 자체가 없으면 한 번도 적용되지 않은 DB다.
     return {
       applied: 0,
       expected: expected.length,
       pending: expected,
+      unknown: [],
       ok: false,
       error: (error as Error).message.slice(0, 200),
     };

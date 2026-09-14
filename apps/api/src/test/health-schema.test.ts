@@ -17,6 +17,18 @@ describe('스키마 상태 보고', () => {
     expect(state.pending.length).toBe(state.expected - 1);
   });
 
+  it('저장소에 파일이 없는데 DB에 적힌 것을 unknown으로 알린다', async () => {
+    /*
+     * 운영 DB가 «적용 95 / 기대 92»로 나온 적이 있다(2026-09-09). 개수만으로는
+     * 어느 것이 남았는지 알 수 없어 이름을 돌려준다.
+     */
+    const state = await schemaState(async () => ({
+      rows: [{ version: '0001_init' }, { version: '9999_없는_마이그레이션' }],
+    }));
+
+    expect(state.unknown).toEqual(['9999_없는_마이그레이션']);
+  });
+
   it('schema_migrations가 없어도 던지지 않고 상태로 돌려준다', async () => {
     const state = await schemaState(async () => {
       throw new Error('relation "public.schema_migrations" does not exist');

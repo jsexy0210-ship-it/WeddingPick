@@ -35,12 +35,16 @@ export type ThemedTextProps = TextProps & {
     | 't6'
     /** SEED subtitle2. 캡션·라벨·출처. */
     | 't7'
+    /** micro 13/18/700. 정보 단계 배지 · 스타일 칩(28) · 이미지 위 순위 pill. */
+    | 'micro'
     | 'tab'
+    /** 상태 배지 14/19/700 — component.badge. */
     | 'badge'
     /** 홈 지출 총액 전용. 이 자리만 따로 크게 간다. */
     | 'amount'
     /** 본문 중 여러 줄로 읽히는 것. 행간이 150%다. */
     | 'body'
+    | 'note'
     | 'link'
     | 'code'
     /** 아래는 옛 이름. 위 스케일로 잇는다. */
@@ -67,7 +71,8 @@ export function ThemedText({
     <Text
       style={[
         { color: theme[themeColor ?? 'text'] },
-        { fontFamily: Fonts.sans },
+        /* 시스템 서체 — 네이티브는 fontFamily를 주지 않는다(undefined). 웹만 시스템 스택을 넘긴다. */
+        Fonts.sans ? { fontFamily: Fonts.sans } : null,
         styles[STYLE_FOR[type]],
         androidLetterSpacing(STYLE_FOR[type]),
         numeric && styles.numeric,
@@ -94,10 +99,12 @@ const STYLE_FOR: Record<TextType, keyof typeof styles> = {
   t5: 't5',
   t6: 't6',
   t7: 't7',
+  micro: 'micro',
   tab: 'tab',
   badge: 'badge',
   amount: 'amount',
   body: 'body',
+  note: 'note',
   link: 'link',
   code: 'code',
 
@@ -126,6 +133,9 @@ const ANDROID_LETTER_SPACING_EM: Record<keyof typeof styles, number> = {
   body: -0.02,
   link: -0.02,
   t7: -0.04,
+  /* caption 14와 같은 단계다 — 줄 높이만 다르다. */
+  note: -0.04,
+  micro: -0.04,
   tab: -0.04,
   badge: -0.04,
   code: 0,
@@ -162,8 +172,18 @@ const styles = StyleSheet.create({
   t6: { fontSize: FontSize.t6, lineHeight: LineHeight.t6, fontWeight: 400 },
   /** SEED subtitle2. 캡션, 라벨, 출처. */
   t7: { fontSize: FontSize.t7, lineHeight: LineHeight.t7, fontWeight: 400 },
-  /** SEED body-l1. 두 줄 이상 이어 읽는 안내문. */
-  body: { fontSize: FontSize.t6, lineHeight: FontSize.t6 * 1.5, fontWeight: 400 },
+  /** SEED body-l1. 두 줄 이상 이어 읽는 안내문 — sub 16의 150% 변형. */
+  body: { fontSize: FontSize.t6, lineHeight: LineHeight.t6Body, fontWeight: 400 },
+  /**
+   * caption 14의 여러 줄 변형 — 14/21. `LineHeight.t7Loose`.
+   *
+   * 알림 본문 · 안내 두 줄처럼 `t7`(14/19)보다 숨이 필요한 자리다. 목업 여럿이 이 짝을
+   * 쓰는데(12-closing `t14w` · 11-report `카드 사유`) 쓸 타입이 없어 `body`(16/24)로
+   * 올라가 있었다 — 제목과 무게가 비슷해져 줄이 구분되지 않았다.
+   */
+  note: { fontSize: FontSize.t7, lineHeight: LineHeight.t7Loose, fontWeight: 400 },
+  /** micro 13/18. 정보 단계 배지 · 스타일 칩 · 순위 pill. */
+  micro: { fontSize: FontSize.micro, lineHeight: LineHeight.micro, fontWeight: 700 },
   tab: { fontSize: FontSize.tab, lineHeight: LineHeight.tab, fontWeight: 700 },
   badge: { fontSize: FontSize.badge, lineHeight: LineHeight.badge, fontWeight: 700 },
   amount: { fontSize: FontSize.amount, lineHeight: LineHeight.amount, fontWeight: 700 },

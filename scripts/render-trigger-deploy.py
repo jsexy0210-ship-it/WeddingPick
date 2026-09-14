@@ -11,6 +11,11 @@ import urllib.request
 
 API_KEY = os.environ["RENDER_API_KEY"]
 SERVICE = os.environ["SERVICE"]
+# 빌드 캐시를 지우고 배포할지. 캐시 tar가 CRC 오류로 반쯤 풀려 node_modules가
+# 망가지면 `npm install`이 「up to date」라고 답해 스스로 못 고친다(2026-09-09,
+# app-web 4연속 실패). scripts/ensure-modules.mjs가 빌드 안에서 그 상태를 잡아
+# 다시 깔지만, 캐시 자체를 버리고 싶을 때 이 값을 쓴다.
+CLEAR_CACHE = os.environ.get("CLEAR_CACHE", "").lower() in {"1", "true", "yes"}
 
 
 def call(path: str, method: str = "GET", body=None):
@@ -52,8 +57,10 @@ if branch and branch != "main":
     new_branch = fixed.get("branch") or (fixed.get("serviceDetails") or {}).get("branch")
     print(f"branch를 '{new_branch}'로 바꿨다.")
 
-# 바로잡힌(또는 이미 맞던) 브랜치의 최신 커밋으로 배포한다. clearCache 없이.
-result = call(f"/services/{svc['id']}/deploys", method="POST", body={})
+# 바로잡힌(또는 이미 맞던) 브랜치의 최신 커밋으로 배포한다.
+body = {"clearCache": "clear"} if CLEAR_CACHE else {}
+print(f"빌드 캐시: {'지우고 배포' if CLEAR_CACHE else '그대로 사용'}")
+result = call(f"/services/{svc['id']}/deploys", method="POST", body=body)
 deploy = result.get("deploy", result)
 commit = (deploy.get("commit") or {}).get("id", "?")[:8]
 print(f"배포 요청됨: id={deploy.get('id')} status={deploy.get('status')} commit={commit}")

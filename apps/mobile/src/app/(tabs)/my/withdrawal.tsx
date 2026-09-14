@@ -19,33 +19,42 @@ import {
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import {
-  ActionButton,
-  Layout,
-  MaxContentWidth,
-  Radius,
-  Spacing,
-  ThemedText,
-  ThemedView,
-  Toast,
-  useTheme,
-} from '@weddingpick/ui';
+import { Layout, ProductSymbol, Spacing, ThemedText, Toast, useTheme } from '@weddingpick/ui';
 import { getWithdrawalNotice, withdraw } from '@/api/client';
-import { confirmAlert } from '@/components/confirm-alert';
 import { wipeDevice } from '@/api/session';
+import { ConfirmSheet } from '@/features/common/confirm-sheet';
+import {
+  CheckDot,
+  Dock,
+  EmptyBox,
+  Hero,
+  KeyValueRow,
+  NoteBox,
+  Row,
+  Rows,
+  Section,
+  SubScreen,
+} from '@/features/settings/my-kit';
+
+/** `spec/strings.ko.json` `withdraw.*` · 시안 13b-withdrawal. */
+const S = {
+  title: '회원탈퇴',
+  sheetCancel: '취소',
+  done: '확인',
+  supportTitle: '문의가 필요하면',
+  supportBody: '웨딩픽 웹사이트 고객지원으로 연락해주세요. 처리 내역을 확인해드려요.',
+  loadFail: '탈퇴 안내를 불러오지 못했어요',
+  fail: '탈퇴하지 못했어요. 잠시 뒤에 다시 시도해주세요',
+} as const;
 
 /**
- * 회원탈퇴. 디자인 핸드오프 WP-MY-008.
+ * 회원탈퇴 · WP-MY-008. **지워지는 것과 분리되는 것을 나눠 적는다.** 탈퇴는 개인정보 삭제이지
+ * 서비스 정보 삭제가 아니고, 그 차이를 누르기 전에 말하지 않으면 동의가 아니라 오해다.
  *
- * **지워지는 것과 분리되는 것을 나눠 적는다.** 탈퇴는 개인정보 삭제이지 서비스
- * 정보 삭제가 아니고, 그 차이를 누르기 전에 말하지 않으면 동의를 받은 것이 아니라
- * 오해를 받은 것이 된다.
- *
- * **개수를 화면이 짐작하지 않는다.** 줄은 서버가 세어 보낸다 — 문구가 이용약관
- * 제12조·개인정보처리방침과 같은 말을 해야 하는데, 화면마다 조립하면 갈라진다.
+ * **개수를 화면이 짐작하지 않는다.** 줄은 서버가 세어 보낸다 — 이용약관 제12조 · 개인정보처리방침과
+ * 같은 말을 해야 하는데 화면마다 조립하면 갈라진다. 통합 보존기간(30일 등) 숫자는 쓰지 않는다.
  *
  * 완료 화면에 성공 모션을 넣지 않는다. 축하할 일이 아니다.
  */
@@ -53,6 +62,7 @@ export default function WithdrawalScreen() {
   const theme = useTheme();
   const [notice, setNotice] = useState<WithdrawalNotice | null>(null);
   const [agreed, setAgreed] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const [done, setDone] = useState<string[] | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
@@ -60,197 +70,153 @@ export default function WithdrawalScreen() {
   const load = useCallback(() => {
     void getWithdrawalNotice()
       .then(setNotice)
-      .catch(() => setToast('탈퇴 안내를 불러오지 못했어요'));
+      .catch(() => setToast(S.loadFail));
   }, []);
 
   useEffect(load, [load]);
 
-  function confirm() {
-    // 되돌릴 수 없는 행동이라 한 번 더 묻는다. 버튼 위계를 뒤집지 않는다.
-    confirmAlert(WITHDRAWAL_SHEET_TITLE, WITHDRAWAL_SHEET_BODY, [
-      { text: '취소', style: 'cancel' },
-      { text: WITHDRAWAL_SUBMIT, style: 'destructive', onPress: () => void submit() },
-    ]);
-  }
-
   async function submit() {
     setSending(true);
-
     await withdraw()
       .then(async (result) => {
-        /*
-         * 서버가 계정·세션을 지운 **그 자리에서** 기기도 비운다 — 「확인」을
-         * 기다리지 않는다. 완료 화면에서 앱을 닫아도 토큰·기억된 계정·초안이
-         * 남지 않는다. 다음에 열면 로그인부터 다시, 즉 다시 가입이다.
-         */
+        /* 서버가 계정·세션을 지운 그 자리에서 기기도 비운다 — 다음에 열면 로그인부터 다시다. */
         await wipeDevice();
+        setConfirming(false);
         setDone(result.done);
       })
-      .catch(() => setToast('탈퇴하지 못했어요. 잠시 뒤에 다시 시도해주세요'))
+      .catch(() => setToast(S.fail))
       .finally(() => setSending(false));
   }
 
   if (done) {
     return (
-      <ThemedView style={styles.container}>
-        <SafeAreaView style={styles.safeArea}>
-          <ScrollView contentContainerStyle={styles.content}>
-            <ThemedText type="t2">{WITHDRAWAL_DONE_TITLE}</ThemedText>
-            <ThemedText type="t6" themeColor="textSecondary">
-              {WITHDRAWAL_DONE_BODY}
-            </ThemedText>
-
-            <View style={[styles.card, { borderColor: theme.border }]}>
-              <ThemedText type="t5">{WITHDRAWAL_DONE_GROUP}</ThemedText>
-              {done.map((line) => (
-                <ThemedText key={line} type="t6">
-                  {line}
-                </ThemedText>
-              ))}
-            </View>
-
-            <View style={[styles.card, { borderColor: theme.border }]}>
-              <ThemedText type="t5">문의가 필요하면</ThemedText>
-              <ThemedText type="t6" themeColor="textSecondary">
-                웨딩픽 웹사이트 고객지원으로 연락해주세요. 처리 내역을 확인해드려요.
-              </ThemedText>
-            </View>
-
-            <ActionButton
-              label="확인"
-              onPress={() => {
-                // 서버 세션도 기기도 이미 비었다. 로그인 화면으로 — 다시 가입해야 쓴다.
-                router.replace('/login');
-              }}
-            />
-          </ScrollView>
-        </SafeAreaView>
-      </ThemedView>
+      <SubScreen
+        title={S.title}
+        onBack={() => router.replace('/login')}
+        dock={<Dock primary={{ label: S.done, onPress: () => router.replace('/login') }} />}>
+        {/* 시안 21d — 위 64 띄우고 제목 · 본문. */}
+        <View style={styles.doneHero}>
+          <Hero lines={[WITHDRAWAL_DONE_TITLE]} sub={WITHDRAWAL_DONE_BODY} />
+        </View>
+        <Section title={WITHDRAWAL_DONE_GROUP}>
+          <Rows>
+            {done.map((line) => (
+              <View key={line}>
+                <View style={styles.doneRow}>
+                  <ProductSymbol name="check" size={Layout.iconInline} color={theme.textAssistive} />
+                  <ThemedText type="body" themeColor="textSecondary" style={styles.grow}>
+                    {line}
+                  </ThemedText>
+                </View>
+                <View style={[styles.hr, { backgroundColor: theme.border }]} />
+              </View>
+            ))}
+          </Rows>
+        </Section>
+        <Section>
+          <NoteBox title={S.supportTitle} body={S.supportBody} />
+        </Section>
+      </SubScreen>
     );
   }
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.content}>
-          <ThemedText type="t2">{WITHDRAWAL_HEADLINE}</ThemedText>
-          {notice ? (
-            <ThemedText type="t6" themeColor="textSecondary">
-              {notice.lead}
-            </ThemedText>
-          ) : null}
+    <SubScreen
+      title={S.title}
+      dock={
+        <Dock
+          secondary={{ label: WITHDRAWAL_CANCEL, onPress: () => router.back() }}
+          primary={{
+            label: WITHDRAWAL_SUBMIT,
+            danger: true,
+            disabled: !agreed || !notice || sending,
+            onPress: () => setConfirming(true),
+          }}
+        />
+      }>
+      <Hero lines={[WITHDRAWAL_HEADLINE]} sub={notice?.lead} />
 
-          <View style={[styles.card, { borderColor: theme.border }]}>
-            <ThemedText type="t5">{WITHDRAWAL_DELETED_GROUP}</ThemedText>
-            {notice?.deleted.map((row) => (
-              <View key={row.label} style={styles.row}>
-                <ThemedText type="t6">{row.label}</ThemedText>
-                <ThemedText type="t6" themeColor={row.empty ? 'textAssistive' : 'text'}>
-                  {row.value}
-                </ThemedText>
-              </View>
-            ))}
-          </View>
+      <Section title={WITHDRAWAL_DELETED_GROUP}>
+        <Rows>
+          {notice?.deleted.map((row) => (
+            <KeyValueRow key={row.label} label={row.label} value={row.value} dim={row.empty} />
+          ))}
+        </Rows>
+      </Section>
 
-          <View style={[styles.card, { borderColor: theme.border }]}>
-            <ThemedText type="t5">{WITHDRAWAL_SEPARATED_GROUP}</ThemedText>
-            <ThemedText type="t7" themeColor="textSecondary">
+      <Section title={WITHDRAWAL_SEPARATED_GROUP}>
+        {notice && notice.separated.length === 0 ? (
+          <EmptyBox>{WITHDRAWAL_SEPARATED_EMPTY}</EmptyBox>
+        ) : (
+          <>
+            <ThemedText type="t7" themeColor="textAssistive">
               {WITHDRAWAL_SEPARATED_NOTE}
             </ThemedText>
+            <Rows>
+              {notice?.separated.map((row) => (
+                <Row
+                  key={row.label}
+                  name={row.label}
+                  meta={row.note}
+                  tail={row.anonymous ? WITHDRAWAL_ANONYMOUS_BADGE : undefined}
+                  tailBadge="none"
+                />
+              ))}
+            </Rows>
+          </>
+        )}
+      </Section>
 
-            {notice && notice.separated.length === 0 ? (
-              <ThemedText type="t6" themeColor="textSecondary">
-                {WITHDRAWAL_SEPARATED_EMPTY}
-              </ThemedText>
-            ) : null}
+      <Section>
+        <NoteBox title={WITHDRAWAL_TITLE} body={WITHDRAWAL_IRREVERSIBLE} />
+      </Section>
 
-            {notice?.separated.map((row) => (
-              <View key={row.label} style={styles.keptRow}>
-                <View style={styles.keptText}>
-                  <ThemedText type="t6">{row.label}</ThemedText>
-                  <ThemedText type="t7" themeColor="textSecondary">
-                    {row.note}
-                  </ThemedText>
-                </View>
-                {row.anonymous ? (
-                  <View style={[styles.badge, { borderColor: theme.border }]}>
-                    <ThemedText type="t7" themeColor="textSecondary">
-                      {WITHDRAWAL_ANONYMOUS_BADGE}
-                    </ThemedText>
-                  </View>
-                ) : null}
-              </View>
-            ))}
-          </View>
+      {/* 동의 없이는 누를 수 없다. 되돌릴 수 없는 행동에서 한 번 더 멈추게 하는 자리다. */}
+      <Pressable
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: agreed }}
+        onPress={() => setAgreed((was) => !was)}
+        style={styles.consent}>
+        <CheckDot on={agreed} />
+        <ThemedText type="body" themeColor="textSecondary" style={styles.grow}>
+          {WITHDRAWAL_CONSENT}
+        </ThemedText>
+      </Pressable>
 
-          <View style={styles.notice}>
-            <ThemedText type="t6">{WITHDRAWAL_TITLE}</ThemedText>
-            <ThemedText type="t7" themeColor="textSecondary">
-              {WITHDRAWAL_IRREVERSIBLE}
-            </ThemedText>
-          </View>
-
-          {/*
-            동의 없이는 누를 수 없다. 되돌릴 수 없는 행동에서 한 번 더 멈추게 하는
-            자리이고, 그 문장을 읽었다는 표시이기도 하다.
-          */}
-          <Pressable
-            accessibilityRole="checkbox"
-            accessibilityState={{ checked: agreed }}
-            onPress={() => setAgreed((was) => !was)}
-            style={styles.consent}
-          >
-            <View
-              style={[
-                styles.checkbox,
-                { borderColor: agreed ? theme.tint : theme.border },
-                agreed && { backgroundColor: theme.tint },
-              ]}
-            />
-            <ThemedText type="t6">{WITHDRAWAL_CONSENT}</ThemedText>
-          </Pressable>
-
-          <ActionButton label={WITHDRAWAL_CANCEL} onPress={() => router.back()} />
-          <ActionButton
-            label={WITHDRAWAL_SUBMIT}
-            variant="secondary"
-            disabled={!agreed || !notice || sending}
-            onPress={confirm}
-          />
-        </ScrollView>
-      </SafeAreaView>
+      <ConfirmSheet
+        visible={confirming}
+        title={WITHDRAWAL_SHEET_TITLE}
+        message={WITHDRAWAL_SHEET_BODY}
+        confirmLabel={WITHDRAWAL_SUBMIT}
+        cancelLabel={S.sheetCancel}
+        busy={sending}
+        onConfirm={() => void submit()}
+        onCancel={() => setConfirming(false)}
+      />
 
       <Toast message={toast} onHidden={() => setToast(null)} />
-    </ThemedView>
+    </SubScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  safeArea: { flex: 1 },
-  content: {
-    gap: Spacing.three,
-    padding: Layout.gutter,
-    maxWidth: MaxContentWidth,
-    width: '100%',
-    alignSelf: 'center',
+  /* 시안 21a: 동의 행 0 24 28 · gap 12 · 위 정렬 */
+  consent: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Layout.rowPaddingY,
+    paddingHorizontal: Layout.gutter,
+    paddingBottom: Layout.sectionGap,
   },
-  card: {
-    gap: Spacing.two,
-    padding: Spacing.three,
-    borderWidth: 1,
-    borderRadius: Radius.medium,
+  grow: { flex: 1 },
+  /* 시안 21d: 완료 제목은 위 64에서 시작 — Hero의 12에 52를 더한다. */
+  doneHero: { paddingTop: Layout.controlXLarge },
+  doneRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Layout.cardGap,
+    minHeight: Layout.controlXLarge,
+    paddingVertical: Layout.rowPaddingY,
   },
-  row: { flexDirection: 'row', justifyContent: 'space-between', gap: Spacing.two },
-  keptRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  keptText: { flex: 1, gap: 2 },
-  badge: {
-    borderWidth: 1,
-    borderRadius: Radius.small,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: 2,
-  },
-  notice: { gap: 4 },
-  consent: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  checkbox: { width: 20, height: 20, borderWidth: 2, borderRadius: Radius.small },
+  hr: { height: 1, marginTop: Spacing.half },
 });

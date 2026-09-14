@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-static.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-scale.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-semantic.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/typography.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/dimension.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/motion.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/base.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/core/core.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/buttons/buttons.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/forms/forms.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/feedback/feedback.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/overlay/overlay.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/display/display.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/styles.css">
+<script src="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/_ds_bundle.js"></script>
+<script src="./image-slot.js"></script>
+<style>
+body{margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#ff6f61;text-decoration:none}
+a:hover{color:#e2564a}
+.nsb::-webkit-scrollbar{display:none}
+image-slot{background:#eaebee}
+image-slot::part(empty){display:none !important}
+</style>
+</helmet>
+
+<section style="{{ rootStyle }}">
+
+<div style="display:flex;flex-direction:column;gap:10px;max-width:1000px;padding-bottom:8px">
+  <span style="font-size:14px;line-height:19px;font-weight:700;color:#ff6f61">WeddingPick · WP-OUR</span>
+  <span style="font-size:40px;line-height:52px;font-weight:700;color:#212124">웨딩일정 하위</span>
+  <span style="font-size:18px;line-height:26px;color:#393a40;text-wrap:pretty">결정한 뒤 관리하는 화면들입니다. 추천을 넣지 않고 기록과 숫자만 담백하게 둡니다. 자동으로 생긴 항목과 직접 넣은 항목은 항상 구분합니다.</span>
+</div>
+
+<div style="display:flex;gap:36px;align-items:flex-start">
+  <sc-for list="{{ screens }}" as="s" hint-placeholder-count="7">
+    <div style="{{ col }}">
+      <div style="{{ tag }}"><span style="{{ tagId }}">{{ s.no }}</span>{{ s.label }}</div>
+      <span style="{{ tagDesc }}">{{ s.desc }}</span>
+      <div style="{{ phone }}">
+        <div style="{{ bar }}"><span>9:41</span><span style="{{ barIcons }}"><svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg></span></div>
+        <div style="{{ navBack }}">
+          <span style="{{ backBtn }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#212124" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ s.navIcon }}"></path></svg></span>
+          <span style="flex:1;min-width:0;{{ t18b }}">{{ s.nav }}</span>
+          <sc-if value="{{ s.navRight }}"><span style="{{ s.navRightStyle }}">{{ s.navRight }}</span></sc-if>
+        </div>
+        <div class="nsb" style="{{ scroll }}">
+
+          <sc-if value="{{ s.line1 }}">
+            <div style="{{ padHero }}">
+              <sc-if value="{{ s.eyebrow }}"><span style="{{ eyebrow }}">{{ s.eyebrow }}</span></sc-if>
+              <span style="{{ h26 }}">{{ s.line1 }}<br>{{ s.line2 }}</span>
+              <sc-if value="{{ s.sub }}"><span style="{{ t16n }}">{{ s.sub }}</span></sc-if>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s.chips }}" hint-placeholder-val="{{ false }}">
+            <div style="flex-shrink:0;padding:0 24px 20px;display:flex;gap:8px">
+              <sc-for list="{{ s.chips }}" as="c" hint-placeholder-count="3"><span style="{{ c.style }}">{{ c.label }}</span></sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s.stat }}" hint-placeholder-val="{{ false }}">
+            <div style="flex-shrink:0;padding:0 24px 24px">
+              <div style="{{ statBox }}">
+                <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px">
+                  <span style="{{ h32n }}">{{ s.stat }}</span>
+                  <span style="{{ t14w }}">{{ s.statRight }}</span>
+                </div>
+                <sc-if value="{{ s.statBar }}"><div style="{{ track }}"><div style="{{ s.statBar }}"></div></div></sc-if>
+                <sc-if value="{{ s.statNote }}"><span style="{{ t14w }}">{{ s.statNote }}</span></sc-if>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s.donut }}" hint-placeholder-val="{{ false }}">
+            <div style="flex-shrink:0;padding:0 24px 24px;display:flex;flex-direction:column;gap:14px">
+              <div style="{{ barStack }}">
+                <sc-for list="{{ s.donut }}" as="d" hint-placeholder-count="4"><span style="{{ d.seg }}"></span></sc-for>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:10px 16px">
+                <sc-for list="{{ s.donut }}" as="d" hint-placeholder-count="4">
+                  <span style="display:flex;align-items:center;gap:6px">
+                    <span style="{{ d.dot }}"></span>
+                    <span style="{{ t14g2 }}">{{ d.name }}</span>
+                    <span style="{{ t14b }}">{{ d.pct }}</span>
+                  </span>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-for list="{{ s.groups }}" as="g" hint-placeholder-count="2">
+            <div style="{{ padSec }}">
+              <sc-if value="{{ g.title }}">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+                  <span style="{{ g.titleStyle }}">{{ g.title }}</span>
+                  <sc-if value="{{ g.more }}"><span style="{{ t14m }}">{{ g.more }}</span></sc-if>
+                </div>
+              </sc-if>
+              <div style="display:flex;flex-direction:column;gap:2px">
+                <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="4">
+                  <div>
+                    <div style="{{ r.rowStyle }}">
+                      <sc-if value="{{ r.lead }}"><span style="{{ r.leadStyle }}">{{ r.lead }}</span></sc-if>
+                      <sc-if value="{{ r.day }}">
+                        <span style="{{ dayCol }}"><span style="{{ t13g }}">{{ r.mon }}</span><span style="{{ dayNum }}">{{ r.day }}</span></span>
+                      </sc-if>
+                      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                        <span style="{{ r.nameStyle }}">{{ r.name }}</span>
+                        <sc-if value="{{ r.meta }}"><span style="{{ t14w }}">{{ r.meta }}</span></sc-if>
+                      </div>
+                      <sc-if value="{{ r.tail }}"><span style="{{ r.tailStyle }}">{{ r.tail }}</span></sc-if>
+                      <sc-if value="{{ r.chevron }}" hint-placeholder-val="{{ false }}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#adb1ba" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 18px;margin-top:3px"><path d="m9 6 6 6-6 6"></path></svg>
+                      </sc-if>
+                    </div>
+                    <div style="{{ hr }}"></div>
+                  </div>
+                </sc-for>
+              </div>
+              <sc-if value="{{ g.add }}">
+                <div style="{{ addRow }}">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff6f61" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+                  <span style="{{ t16a }}">{{ g.add }}</span>
+                </div>
+              </sc-if>
+              <sc-if value="{{ g.empty }}">
+                <div style="{{ emptyBox }}"><span style="{{ t16g }}">{{ g.empty }}</span></div>
+              </sc-if>
+            </div>
+          </sc-for>
+
+          <sc-if value="{{ s.fields }}" hint-placeholder-val="{{ false }}">
+            <div style="flex-shrink:0;padding:0 24px 24px;display:flex;flex-direction:column;gap:16px">
+              <sc-for list="{{ s.fields }}" as="f" hint-placeholder-count="4">
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <span style="{{ t14g2 }}">{{ f.label }}</span>
+                  <div style="{{ f.style }}">{{ f.value }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s.note }}">
+            <div style="flex-shrink:0;padding:0 24px 28px">
+              <div style="{{ noteBox }}">
+                <span style="{{ t18b2 }}">{{ s.noteTitle }}</span>
+                <span style="{{ t16g }}">{{ s.note }}</span>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+        <sc-if value="{{ s.cta }}">
+          <div style="{{ dock }}">
+            <sc-if value="{{ s.cta2 }}"><button style="{{ ctaGhost }}">{{ s.cta2 }}</button></sc-if>
+            <button style="{{ s.ctaStyle }}">{{ s.cta }}</button>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-for>
+</div>
+
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:3060,&quot;height&quot;:1100}}">
+class Component extends DCLogic {
+  renderVals() {
+    const C = '#ff6f61';
+    const BACK = 'M14.5 5 8 12l6.5 7';
+    const CLOSE = 'M6 6l12 12M18 6 6 18';
+
+    const badge = k => 'padding:4px 9px;border-radius:4px;font-size:14px;line-height:19px;font-weight:700;white-space:nowrap;margin-top:2px;'
+      + (k === 'ok' ? 'background:#e8faf6;color:#1aa174;'
+        : k === 'wait' ? 'background:#ffe3ba;color:#805217;'
+          : k === 'no' ? 'background:#ffe5e3;color:#e81607;'
+            : k === 'brand' ? 'background:#ffe8e4;color:' + C + ';'
+              : 'background:#f2f3f6;color:#4d5159;');
+    const check = on => on
+      ? 'width:24px;height:24px;flex:0 0 24px;margin-top:1px;border-radius:4px;background:' + C + ';background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'3.4\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpath d=\'m5 12.5 4.5 4.5L19 7.5\'/%3E%3C/svg%3E");background-size:16px;background-position:center;background-repeat:no-repeat'
+      : 'width:24px;height:24px;flex:0 0 24px;margin-top:1px;border-radius:4px;border:1.5px solid #dcdee3;box-sizing:border-box';
+    const chip = on => 'flex:0 0 auto;height:36px;display:flex;align-items:center;padding:0 14px;border-radius:999px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;'
+      + (on ? 'background:#212124;color:#fff;' : 'background:#f2f3f6;color:#4d5159;');
+    const row = o => ({
+      lead: o.lead || '', leadStyle: o.leadStyle || '',
+      mon: o.mon || '', day: o.day || '',
+      name: o.name, meta: o.meta || '', tail: o.tail || '',
+      rowStyle: 'display:flex;align-items:' + (o.meta ? 'flex-start' : 'center') + ';gap:12px;min-height:56px;padding:' + (o.meta ? '14px' : '12px') + ' 0',
+      nameStyle: o.off
+        ? 'font-size:18px;line-height:24px;color:#adb1ba;text-decoration:' + (o.strike ? 'line-through' : 'none')
+        : 'font-size:18px;line-height:24px;' + (o.bold ? 'font-weight:700;' : '') + 'color:#212124;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      tailStyle: o.tailKind ? badge(o.tailKind)
+        : 'font-size:16px;line-height:22px;' + (o.tailDim ? 'color:#868b94;' : 'font-weight:700;color:#212124;')
+          + 'font-variant-numeric:tabular-nums;white-space:nowrap;margin-top:' + (o.meta ? '2px' : '0'),
+      chevron: !!o.chevron
+    });
+    const grp = o => ({
+      title: o.title || '', more: o.more || '', add: o.add || '', empty: o.empty || '',
+      titleStyle: o.small ? 'font-size:14px;line-height:19px;font-weight:700;color:#868b94' : 'font-size:20px;line-height:27px;font-weight:700;color:#212124',
+      rows: o.rows || []
+    });
+    const fld = (label, value, ph) => ({ label, value,
+      style: 'min-height:52px;border-radius:6px;border:1px solid #d1d3d8;padding:14px;display:flex;align-items:center;font-size:16px;line-height:22px;color:' + (ph ? '#adb1ba' : '#212124') });
+    const seg = (name, pct, color) => ({ name, pct,
+      seg: 'width:' + pct + ';height:100%;background:' + color,
+      dot: 'width:10px;height:10px;border-radius:3px;background:' + color });
+    const sc = o => ({
+      no: o.no, label: o.label, desc: o.desc, nav: o.nav,
+      navIcon: o.close ? CLOSE : BACK,
+      navRight: o.navRight || '',
+      navRightStyle: 'font-size:16px;line-height:22px;font-weight:700;white-space:nowrap;color:' + (o.navRightBrand ? C : '#4d5159'),
+      eyebrow: o.eyebrow || '',
+      line1: o.hero ? String(o.hero).split('\n')[0] : '',
+      line2: o.hero ? (String(o.hero).split('\n')[1] || '') : '',
+      sub: o.sub || '',
+      chips: o.chips || null,
+      stat: o.stat || '', statRight: o.statRight || '', statNote: o.statNote || '',
+      statBar: o.statPct ? 'width:' + o.statPct + ';height:100%;border-radius:999px;background:' + C : '',
+      donut: o.donut || null,
+      groups: o.groups || [],
+      fields: o.fields || null,
+      noteTitle: o.noteTitle || '', note: o.note || '',
+      cta: o.cta || '', cta2: o.cta2 || '',
+      ctaStyle: 'flex:' + (o.cta2 ? '1.4' : '1') + ';height:52px;border:0;border-radius:6px;background:' + C + ';color:#fff;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer'
+    });
+
+    return {
+      rootStyle: 'display:flex;flex-direction:column;gap:48px;align-items:flex-start;padding:64px;width:max-content',
+      col: 'display:flex;flex-direction:column;gap:10px;width:390px',
+      tag: 'height:26px;display:flex;align-items:center;gap:8px;font-size:18px;line-height:24px;font-weight:700;color:#212124;white-space:nowrap;overflow:hidden',
+      tagId: 'width:26px;height:26px;flex:0 0 26px;border-radius:6px;background:#212124;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700',
+      tagDesc: 'height:71px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;line-height:21px;color:#4d5159;text-wrap:pretty',
+      phone: 'width:390px;height:844px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)',
+      bar: 'height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:700;color:#212124',
+      barIcons: 'display:flex;gap:5px;align-items:center',
+      navBack: 'flex:0 0 56px;display:flex;align-items:center;gap:8px;padding:0 20px 0 12px;background:#fff',
+      backBtn: 'width:40px;height:40px;flex:0 0 40px;border-radius:999px;display:flex;align-items:center;justify-content:center',
+      scroll: 'flex:1 1 auto;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;scrollbar-width:none',
+      dock: 'flex:0 0 92px;background:#fff;box-shadow:inset 0 1px 0 #eaebee;padding:12px 24px;display:flex;gap:8px;box-sizing:border-box',
+      padHero: 'flex-shrink:0;padding:12px 24px 24px;display:flex;flex-direction:column;gap:8px',
+      padSec: 'flex-shrink:0;padding:0 24px 24px;display:flex;flex-direction:column;gap:10px',
+      hr: 'height:1px;background:#eaebee',
+      track: 'height:6px;border-radius:999px;background:#eaebee;overflow:hidden',
+      barStack: 'height:10px;border-radius:999px;background:#eaebee;overflow:hidden;display:flex',
+      statBox: 'border-radius:10px;background:#f7f8fa;padding:20px;display:flex;flex-direction:column;gap:12px',
+      noteBox: 'border-radius:10px;background:#f7f8fa;padding:20px;display:flex;flex-direction:column;gap:8px',
+      emptyBox: 'border-radius:10px;background:#f7f8fa;padding:20px;display:flex',
+      addRow: 'display:flex;align-items:center;gap:10px;min-height:56px;padding:10px 0;cursor:pointer',
+      dayCol: 'width:52px;flex:0 0 52px;display:flex;flex-direction:column;align-items:center',
+      dayNum: 'font-size:22px;line-height:28px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums',
+      eyebrow: 'font-size:14px;line-height:19px;font-weight:700;color:' + C,
+
+      h32n: 'font-size:32px;line-height:43px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums',
+      h26: 'font-size:26px;line-height:35px;font-weight:700;color:#212124;text-wrap:pretty',
+      t18b: 'font-size:18px;line-height:24px;font-weight:700;color:#212124;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      t18b2: 'font-size:18px;line-height:24px;font-weight:700;color:#212124;text-wrap:pretty',
+      t16g: 'font-size:16px;line-height:24px;color:#4d5159;text-wrap:pretty',
+      t16n: 'display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:16px;line-height:24px;color:#4d5159',
+      t16a: 'font-size:16px;line-height:22px;font-weight:700;color:' + C,
+      t14g2: 'font-size:14px;line-height:19px;color:#4d5159',
+      t14b: 'font-size:14px;line-height:19px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums',
+      t14m: 'font-size:14px;line-height:19px;font-weight:700;color:#868b94;white-space:nowrap',
+      t14w: 'font-size:14px;line-height:19px;color:#868b94;font-variant-numeric:tabular-nums;text-wrap:pretty',
+      t13g: 'font-size:13px;line-height:18px;color:#868b94',
+      ctaGhost: 'flex:1;height:52px;border:0;border-radius:6px;background:#f2f3f6;color:#393a40;font-family:inherit;font-size:18px;font-weight:700;cursor:pointer',
+
+      screens: [
+        sc({
+          no: '1', label: '일정 목록 · WP-OUR-004', nav: '일정', navRight: '추가', navRightBrand: true,
+          desc: '다가오는 일정과 지난 일정을 나눕니다. 자동으로 생긴 일정에는 표시를 달아 직접 넣은 것과 구분합니다.',
+          hero: '이번 달에\n세 곳을 다녀와요',
+          groups: [
+            grp({ title: '다가오는 일정', rows: [
+              row({ mon: '3월', day: '14', name: '드레스 투어 1차', meta: '오후 2시 · 라비드레스', tail: 'D-11', tailDim: true, chevron: true }),
+              row({ mon: '3월', day: '22', name: '웨딩홀 상담', meta: '오전 11시 · 더채플 강남', tail: 'D-19', tailDim: true, chevron: true }),
+              row({ mon: '3월', day: '30', name: '스튜디오 촬영', meta: '자동 추가 · 강남 A 스튜디오', tail: 'D-27', tailDim: true, chevron: true })
+            ] }),
+            grp({ title: '지난 일정', small: true, rows: [
+              row({ mon: '2월', day: '18', name: '예물 상담', meta: '완료', off: true }),
+              row({ mon: '2월', day: '02', name: '메이크업 시연', meta: '완료', off: true })
+            ] })
+          ]
+        }),
+        sc({
+          no: '2', label: '일정 상세 · WP-OUR-005', nav: '드레스 투어 1차', navRight: '수정',
+          desc: '알림과 캘린더 등록을 한 화면에서 켭니다. 관련 업체와 지출로 바로 넘어갈 수 있게 둡니다.',
+          eyebrow: 'D-11 · 3월 14일 금요일', hero: '오후 2시\n라비드레스',
+          groups: [
+            grp({ small: true, title: '일정', rows: [
+              row({ name: '일시', tail: '3월 14일 오후 2시', tailDim: true, chevron: true }),
+              row({ name: '장소', tail: '강남구 신사동', tailDim: true, chevron: true }),
+              row({ name: '관련 업체', tail: '라비드레스', tailDim: true, chevron: true }),
+              row({ name: '등록', tail: '지수 · 2월 28일', tailDim: true })
+            ] }),
+            grp({ small: true, title: '알림', rows: [
+              row({ lead: ' ', leadStyle: check(true), name: '하루 전에 알려주기', tail: '켬', tailKind: 'ok' }),
+              row({ lead: ' ', leadStyle: check(true), name: '두 시간 전에 알려주기', tail: '켬', tailKind: 'ok' }),
+              row({ lead: ' ', leadStyle: check(false), name: '휴대폰 캘린더에 넣기', tail: '넣기', tailDim: true })
+            ] }),
+            grp({ small: true, title: '메모', rows: [
+              row({ name: '준호님 메모', meta: '3벌은 꼭 입어보고 싶어요', chevron: true })
+            ] })
+          ],
+          noteTitle: '준호님에게도 보여요', note: '일정을 바꾸면 둘 다 알림을 받아요.'
+        }),
+        sc({
+          no: '3', label: '일정 추가 · WP-OUR-006', nav: '일정 추가', close: true,
+          desc: '제목과 일시만 필수입니다. 업체를 연결하면 지출과 준비현황에 자동으로 이어집니다.',
+          hero: '어떤 일정을\n넣을까요?',
+          fields: [
+            fld('제목', '드레스 투어 2차'),
+            fld('일시', '3월 21일 오후 3시'),
+            fld('장소', '어디에서 만나요?', true),
+            fld('관련 업체', '메종 브라이드')
+          ],
+          groups: [
+            grp({ small: true, title: '알림', rows: [
+              row({ lead: ' ', leadStyle: check(true), name: '하루 전에 알려주기' }),
+              row({ lead: ' ', leadStyle: check(false), name: '두 시간 전에 알려주기' }),
+              row({ lead: ' ', leadStyle: check(true), name: '준호님에게도 알려주기' })
+            ] })
+          ],
+          cta: '일정 넣기'
+        }),
+        sc({
+          no: '4', label: '지출 요약 · WP-OUR-008', nav: '지출', navRight: '내역',
+          desc: '총액과 남은 예산을 먼저 보여주고 업종별 비중을 막대 하나로 담습니다. 남은 업종은 예상 금액을 함께 적습니다.',
+          stat: '2,140만원', statRight: '예산 3,800만원', statPct: '56%', statNote: '1,660만원 남았어요',
+          donut: [seg('웨딩홀', '58%', C), seg('드레스', '16%', '#ffb3ab'), seg('스냅', '9%', '#ffd6d1'), seg('남은 예산', '17%', '#eaebee')],
+          groups: [
+            grp({ small: true, title: '업종별', rows: [
+              row({ name: '웨딩홀', meta: '58% · 실 제보 연결', tail: '1,620만원' }),
+              row({ name: '드레스', meta: '16% · 직접 입력', tail: '340만원' }),
+              row({ name: '스냅', meta: '9% · 실 제보 연결', tail: '180만원' }),
+              row({ name: '아직 안 정한 업종', meta: '메이크업 · 청첩장 · 예물', tail: '남음', tailDim: true })
+            ] }),
+            grp({ small: true, title: '남은 업종 예상', rows: [
+              row({ name: '메이크업', tail: '80~130만원', tailDim: true }),
+              row({ name: '청첩장', tail: '30~60만원', tailDim: true }),
+              row({ name: '예물', tail: '200~400만원', tailDim: true })
+            ] })
+          ],
+          noteTitle: '예상 금액은 실 제보로 계산해요', note: '두 분 지역과 예산대의 제보를 모아 만든 구간이에요.'
+        }),
+        sc({
+          no: '5', label: '메모 · WP-OUR-011', nav: '메모', navRight: '추가', navRightBrand: true,
+          desc: '업체별 메모와 자유 메모를 나눕니다. 누가 썼는지와 언제 고쳤는지를 항상 남깁니다.',
+          hero: '준호님과\n메모 6개를 썼어요',
+          chips: [{ label: '전체', style: chip(true) }, { label: '업체별', style: chip(false) }, { label: '자유 메모', style: chip(false) }],
+          groups: [
+            grp({ small: true, title: '업체별', rows: [
+              row({ lead: '지', leadStyle: 'width:32px;height:32px;flex:0 0 32px;margin-top:1px;border-radius:999px;background:#ffe8e4;color:' + C + ';display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700', name: '강남 A 스튜디오', meta: '원본 전부 준다니까 여기가 좋을듯', tail: '3일 전', tailDim: true, chevron: true }),
+              row({ lead: '준', leadStyle: 'width:32px;height:32px;flex:0 0 32px;margin-top:1px;border-radius:999px;background:#f2f3f6;color:#4d5159;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700', name: '서촌 B 스튜디오', meta: '여기 사진 느낌이 제일 좋은듯?', tail: '4일 전', tailDim: true, chevron: true }),
+              row({ lead: '지', leadStyle: 'width:32px;height:32px;flex:0 0 32px;margin-top:1px;border-radius:999px;background:#ffe8e4;color:' + C + ';display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700', name: '라비드레스', meta: '3벌 입어보기 · 수정됨', tail: '6일 전', tailDim: true, chevron: true })
+            ] }),
+            grp({ small: true, title: '자유 메모', add: '메모 추가', rows: [
+              row({ lead: '준', leadStyle: 'width:32px;height:32px;flex:0 0 32px;margin-top:1px;border-radius:999px;background:#f2f3f6;color:#4d5159;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700', name: '부모님 상견례 준비', meta: '4월 첫째 주가 좋을 것 같아요', tail: '1주 전', tailDim: true, chevron: true }),
+              row({ lead: '지', leadStyle: 'width:32px;height:32px;flex:0 0 32px;margin-top:1px;border-radius:999px;background:#ffe8e4;color:' + C + ';display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700', name: '축가 부탁드릴 분', meta: '민지 · 현우', tail: '2주 전', tailDim: true, chevron: true })
+            ] })
+          ]
+        }),
+        sc({
+          no: '6', label: '예식 완료 · WP-OUR-013', nav: '웨딩일정',
+          desc: '예식일이 지나면 준비 알림을 멈추고 정리 화면으로 바뀝니다. 남은 Pick 인증과 후기를 부탁합니다.',
+          eyebrow: '2027년 5월 16일 · 예식 완료', hero: '결혼 준비가\n끝났어요',
+          stat: '3,640만원', statRight: '예산 3,800만원', statPct: '96%', statNote: '예산 안에서 마쳤어요',
+          groups: [
+            grp({ small: true, title: '정리하면 좋은 것', rows: [
+              row({ lead: ' ', leadStyle: check(false), name: 'Pick 인증 2건 남았어요', meta: '메이크업 · 청첩장', tail: '인증', tailKind: 'brand', chevron: false }),
+              row({ lead: ' ', leadStyle: check(false), name: '후기 3곳 남았어요', meta: '다음 커플에게 도움이 돼요', tail: '쓰기', tailKind: 'brand' }),
+              row({ lead: ' ', leadStyle: check(true), name: '지출 정리', meta: '9곳 · 3,640만원', off: true })
+            ] }),
+            grp({ small: true, title: '우리가 정한 곳', rows: [
+              row({ name: '웨딩홀', tail: '더채플 강남', tailDim: true, chevron: true }),
+              row({ name: '스튜디오', tail: '강남 A 스튜디오', tailDim: true, chevron: true }),
+              row({ name: '드레스', tail: '라비드레스', tailDim: true, chevron: true }),
+              row({ name: '메이크업', tail: '청담 헤메', tailDim: true, chevron: true })
+            ] })
+          ],
+          noteTitle: '준비 알림을 멈췄어요', note: '기록은 그대로 남아 있어요. 언제든 다시 볼 수 있어요.'
+        }),
+        sc({
+          no: '7', label: '지출 추가 · WP-OUR-014', nav: '지출 추가', close: true,
+          desc: '지출 입력과 Pick 인증을 합쳤습니다. 돈을 낸 직후는 사용자가 앱을 여는 몇 안 되는 순간인데, 지금까지는 지출 등록과 제보가 따로 있어 같은 일을 두 번 해야 했습니다.',
+          hero: '얼마를\n내셨어요?',
+          fields: [
+            fld('업체', '청담 D 헤메'),
+            fld('금액', '760,000원'),
+            fld('낸 날짜', '2026년 4월 2일'),
+            fld('항목', '메이크업 · 본식 헤어메이크업')
+          ],
+          groups: [
+            grp({ small: true, title: '자료를 올리면 실 제보가 돼요', rows: [
+              row({ lead: ' ', leadStyle: check(true), name: '영수증 · 문자 · 앱 화면', meta: '금액과 날짜를 자동으로 읽어요', tail: '1장', tailKind: 'brand' }),
+              row({ lead: ' ', leadStyle: check(true), name: '금액 구간에 반영', meta: '다음 커플이 이 업체 금액을 볼 수 있어요' }),
+              row({ lead: ' ', leadStyle: check(true), name: 'Pick 인증 회원이 돼요', meta: '조건이 비슷한 제보를 볼 수 있어요' })
+            ] })
+          ],
+          noteTitle: '올린 자료는 24시간 안에 지워요', note: '금액과 업체만 읽고 원본은 남기지 않아요. 자료 없이 금액만 적어도 내 지출에는 들어가요.',
+          cta: '지출 넣고 인증하기', cta2: '지출만 넣기'
+        }),
+        sc({
+          no: '8', label: '준비 현황 전체 · WP-HOME-009', nav: '준비 현황',
+          desc: '홈 준비 현황 4칸의 «전체 보기» 대상입니다. 웨딩일정 메뉴에는 두지 않습니다. 같은 내용을 두 탭에서 각각 보여주면 사용자가 어디서 봐야 할지 헷갈립니다.',
+          hero: '12개 중\n3개를 끝냈어요', sub: '예식까지 142일 남았어요',
+          statPct: '',
+          groups: [
+            grp({ small: true, title: '결정 완료', rows: [
+              row({ name: '웨딩홀', meta: '강남 A 웨딩홀 · 2월 12일', tail: '완료', tailKind: 'ok', chevron: true }),
+              row({ name: '스튜디오', meta: '강남 A 스튜디오 · 3월 1일', tail: '완료', tailKind: 'ok', chevron: true }),
+              row({ name: '드레스', meta: '라비드레스 · 3월 20일', tail: '완료', tailKind: 'ok', chevron: true })
+            ] }),
+            grp({ small: true, title: '진행 중', rows: [
+              row({ name: '메이크업', meta: '후보 3곳 · 시연 4월 2일', tail: '좁히는 중', tailKind: 'brand', bold: true, chevron: true }),
+              row({ name: '본식스냅', meta: '후보 2곳', tail: '모으는 중', tailKind: 'none', chevron: true })
+            ] }),
+            grp({ small: true, title: '아직 시작 전', rows: [
+              row({ name: '헤어변형', tail: '시작 전', tailKind: 'none', chevron: true }),
+              row({ name: '부케', tail: '시작 전', tailKind: 'none', chevron: true }),
+              row({ name: '청첩장', tail: '시작 전', tailKind: 'none', chevron: true }),
+              row({ name: '예물', tail: '시작 전', tailKind: 'none', chevron: true }),
+              row({ name: '혼수', tail: '시작 전', tailKind: 'none', chevron: true }),
+              row({ name: '허니문', tail: '시작 전', tailKind: 'none', chevron: true }),
+              row({ name: '결정사', tail: '시작 전', tailKind: 'none', chevron: true })
+            ] })
+          ]
+        })
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

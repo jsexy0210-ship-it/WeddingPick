@@ -4,7 +4,7 @@ import {
   TOP3_REASON_LABEL,
   PREPARATION_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
-  manwon,
+  priceLine,
   type VendorCategory,
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
@@ -29,6 +29,7 @@ import {
   VendorImage,
 } from '@weddingpick/ui';
 import { DelayedRecommendingBody } from '@/features/loading/delayed-loader';
+import { BackBar } from '@/components/back-bar';
 
 /**
  * TOP3 전체보기. WP-HOME-004.
@@ -61,6 +62,7 @@ export default function Top3Screen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.pageHeader}>
             <ThemedText type="t4">TOP 3</ThemedText>
@@ -84,7 +86,7 @@ export default function Top3Screen() {
           </ScrollView>
 
           {error ? (
-            <ErrorView message={error} onBack={() => router.back()} />
+            <ErrorView message={error} onBack={() => router.back()} onRetry={load} />
           ) : !data ? (
             /* 추천 계산 — 업종 순회 로딩(WP-ST-015). */
             <View style={styles.recommending}>
@@ -128,6 +130,7 @@ const CARD_IMAGE_HEIGHT = 168;
 
 function Top3Card({ rank, item }: { rank: number; item: Top3Item }) {
   const theme = useTheme();
+  const price = priceLine(item.paidPrice, item.guidePrice);
 
   return (
     <ThemedView type="backgroundElement" style={styles.card}>
@@ -169,20 +172,17 @@ function Top3Card({ rank, item }: { rank: number; item: Top3Item }) {
         <ThemedText type="t7" themeColor="textSecondary">
           Pick 가격대
         </ThemedText>
-        {item.paidPrice.stage === 'collecting' ? (
-          <ThemedText type="t7" themeColor="textAssistive">
-            {item.paidPrice.caption}
-          </ThemedText>
-        ) : (
-          <>
-            <ThemedText type="t6" numeric>
-              {manwon(item.paidPrice.low)}~{manwon(item.paidPrice.high)}
-            </ThemedText>
-            <ThemedText type="t7" themeColor="textAssistive">
-              {item.paidPrice.caption}
-            </ThemedText>
-          </>
-        )}
+        {/*
+          금액 한 줄은 어느 화면이든 `priceLine`이 만든다(CLAUDE.md v3.24 구현 원칙).
+          손으로 low~high를 이어 붙이면 정보 0층 — 실 제보 3건 미만이고 업체 안내가
+          있는 곳 — 이 «업체 안내 150만원~»이 아니라 빈 자리로 떨어진다.
+        */}
+        <ThemedText type="t6" numeric themeColor={price.dim ? 'textAssistive' : 'text'}>
+          {price.text}
+        </ThemedText>
+        <ThemedText type="t7" themeColor="textAssistive">
+          {price.caption}
+        </ThemedText>
       </View>
 
       <ThemedText type="t7" themeColor="textAssistive">

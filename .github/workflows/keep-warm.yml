@@ -21,7 +21,7 @@ jobs:
       - name: /health
         run: |
           for i in 1 2 3; do
-            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 https://weddingpickl.onrender.com/health || echo 000)
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 https://weddingpickl-sg.onrender.com/health || echo 000)
             echo "attempt $i: $code"
             [ "$code" = "200" ] && exit 0
             sleep 20

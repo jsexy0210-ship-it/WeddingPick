@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-static.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-scale.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-semantic.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/typography.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/dimension.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/motion.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/base.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/core/core.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/buttons/buttons.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/display/display.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/styles.css">
+<script src="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/_ds_bundle.js"></script>
+<style>
+body{margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#ff6f61;text-decoration:none}
+a:hover{color:#e2564a}
+.nsb::-webkit-scrollbar{display:none}
+</style>
+</helmet>
+
+<section style="display:flex;flex-direction:column;gap:56px;align-items:flex-start;padding:64px;width:max-content">
+
+<div style="display:flex;flex-direction:column;gap:10px;max-width:1060px;padding-bottom:8px">
+  <span style="font-size:14px;line-height:19px;font-weight:700;color:#ff6f61">WeddingPick · Device</span>
+  <span style="font-size:40px;line-height:52px;font-weight:700;color:#212124">기기별 하단 여백</span>
+  <span style="font-size:18px;line-height:26px;color:#393a40;text-wrap:pretty">화면을 따로 그리지 않습니다. 같은 화면에 <b style="color:#212124">하단 안전 여백만 기기별로 다르게</b> 넣습니다. 시안의 844px는 iPhone 노치 기준값이고, 실기기에서는 아래 규칙으로 계산합니다.</span>
+</div>
+
+<div style="display:flex;gap:32px;align-items:flex-start">
+  <sc-for list="{{ devices }}" as="d" hint-placeholder-count="4">
+    <div style="display:flex;flex-direction:column;gap:12px;width:{{ d.w }}px">
+      <div style="{{ tag }}"><span style="{{ d.badge }}">{{ d.os }}</span>{{ d.name }}</div>
+      <span style="{{ tagDesc }}">{{ d.desc }}</span>
+
+      <div style="{{ d.frame }}">
+        <div style="{{ statusBar }}">
+          <span>9:41</span>
+          <span style="{{ barIcons }}">
+            <svg width="17" height="11" viewBox="0 0 17 11" fill="#212124"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x="0.5" y="0.5" width="21" height="11" rx="3" stroke="#212124" stroke-opacity=".35"></rect><rect x="2" y="2" width="17" height="8" rx="1.8" fill="#212124"></rect></svg>
+          </span>
+        </div>
+
+        <div style="{{ header }}">
+          <span style="{{ wordmark }}">웨딩픽</span>
+        </div>
+
+        <div class="nsb" style="{{ scroll }}">
+          <div style="{{ heroPad }}">
+            <span style="{{ t16g }}">지수 · 준호</span>
+            <span style="{{ h26 }}">두근두근<br>142일 남았어요</span>
+          </div>
+          <div style="{{ cardPad }}">
+            <div style="{{ recessed }}"><span style="{{ t14w }}">오늘의 Pick</span><span style="{{ t18b }}">강남 A 스튜디오</span></div>
+            <div style="{{ recessed }}"><span style="{{ t14w }}">다음 준비</span><span style="{{ t18b }}">드레스 · D-90</span></div>
+          </div>
+        </div>
+
+        <div style="{{ tabBar }}">
+          <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
+            <span style="{{ t.style }}">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="{{ t.stroke }}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ t.d1 }}"></path><path d="{{ t.d2 }}"></path></svg>
+              <span>{{ t.label }}</span>
+            </span>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ d.safeH }}">
+          <div style="{{ d.safeStyle }}">
+            <sc-if value="{{ d.handle }}"><span style="{{ handle }}"></span></sc-if>
+            <sc-if value="{{ d.navButtons }}">
+              <span style="{{ navBtns }}">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#868b94" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg>
+                <span style="{{ navHome }}"></span>
+                <span style="{{ navRecent }}"></span>
+              </span>
+            </sc-if>
+            <sc-if value="{{ d.gestureBar }}"><span style="{{ gestureBar }}"></span></sc-if>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="{{ specBox }}">
+        <sc-for list="{{ d.specs }}" as="s" hint-placeholder-count="4">
+          <div style="{{ specRow }}">
+            <span style="{{ specK }}">{{ s.k }}</span>
+            <span style="{{ s.vStyle }}">{{ s.v }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-for>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px;max-width:1180px">
+  <span style="font-size:26px;line-height:35px;font-weight:700;color:#212124">계산 규칙</span>
+
+  <div style="{{ codeCard }}">
+    <span style="{{ codeLabel }}">하단 고정 요소 높이</span>
+    <div style="{{ codeBlock }}">
+      <sc-for list="{{ formulas }}" as="f" hint-placeholder-count="3">
+        <div style="{{ codeRow }}">
+          <span style="{{ codeK }}">{{ f.k }}</span>
+          <span style="{{ codeV }}">{{ f.v }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <span style="{{ codeNote }}">safeBottom은 iOS에서 34px, 제스처 안드로이드에서 16~24px, 3버튼 안드로이드에서 0입니다. 3버튼은 시스템 바가 앱 영역 밖에 있어 inset이 0으로 옵니다.</span>
+  </div>
+
+  <div style="display:flex;gap:20px;flex-wrap:wrap">
+    <sc-for list="{{ rules }}" as="r" hint-placeholder-count="6">
+      <div style="{{ ruleCard }}">
+        <span style="{{ ruleTitle }}">{{ r.title }}</span>
+        <span style="{{ ruleBody }}">{{ r.body }}</span>
+      </div>
+    </sc-for>
+  </div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px;max-width:1180px">
+  <span style="font-size:26px;line-height:35px;font-weight:700;color:#212124">뒤로가기 처리</span>
+  <span style="{{ sectionSub }}">안드로이드 물리 버튼과 제스처를 화면마다 처리합니다. 처리하지 않으면 시트만 닫혀야 할 때 화면 전체가 뒤로 갑니다.</span>
+
+  <div style="{{ tableCard }}">
+    <div style="{{ theadRow }}">
+      <span style="{{ th1 }}">상황</span>
+      <span style="{{ th2 }}">뒤로가기를 누르면</span>
+      <span style="{{ th3 }}">처리</span>
+    </div>
+    <sc-for list="{{ backRules }}" as="b" hint-placeholder-count="8">
+      <div style="{{ tbodyRow }}">
+        <span style="{{ td1 }}">{{ b.when }}</span>
+        <span style="{{ td2 }}">{{ b.action }}</span>
+        <span style="{{ b.tagStyle }}">{{ b.tag }}</span>
+      </div>
+    </sc-for>
+  </div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:16px;max-width:1180px">
+  <span style="font-size:26px;line-height:35px;font-weight:700;color:#212124">플랫폼별로 갈리는 것</span>
+
+  <div style="{{ tableCard }}">
+    <div style="{{ theadRow3 }}">
+      <span style="{{ th1 }}">항목</span>
+      <span style="{{ thHalf }}">iOS</span>
+      <span style="{{ thHalf }}">Android</span>
+    </div>
+    <sc-for list="{{ platformDiff }}" as="p" hint-placeholder-count="9">
+      <div style="{{ tbodyRow3 }}">
+        <span style="{{ td1 }}">{{ p.k }}</span>
+        <span style="{{ tdHalf }}">{{ p.ios }}</span>
+        <span style="{{ p.andStyle }}">{{ p.and }}</span>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="{{ codeCard }}">
+    <span style="{{ codeLabel }}">자간 · SEED 토큰</span>
+    <div style="{{ codeBlock }}">
+      <sc-for list="{{ letterSpacing }}" as="l" hint-placeholder-count="4">
+        <div style="{{ codeRow }}">
+          <span style="{{ codeK }}">{{ l.k }}</span>
+          <span style="{{ codeV }}">{{ l.v }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <span style="{{ codeNote }}">안드로이드에서 자간을 넣지 않으면 글자가 벌어져 2줄 제목이 3줄로 터집니다. 「이번 주엔 스튜디오를 정할 차례예요」가 대표적입니다.</span>
+  </div>
+</div>
+
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1740,&quot;height&quot;:1100}}">
+class Component extends DCLogic {
+  static ICONS = {
+    home: ['M3.6 10.4 12 3.8l8.4 6.6V19a1.6 1.6 0 0 1-1.6 1.6H5.2A1.6 1.6 0 0 1 3.6 19z', 'M9.6 20.6v-6.2h4.8v6.2'],
+    search: ['M11 4.2a6.9 6.9 0 1 0 0 13.8 6.9 6.9 0 0 0 0-13.8z', 'M16.2 16.2 20.8 20.8'],
+    pick: ['M12 20.5S3.5 15.2 3.5 9.9A4.4 4.4 0 0 1 12 8.1a4.4 4.4 0 0 1 8.5 1.8c0 5.3-8.5 10.6-8.5 10.6Z', 'M9.4 11.9l1.7 1.7 3.4-3.4'],
+    couple: ['M8.6 11.2a3.3 3.3 0 1 0 0-6.6 3.3 3.3 0 0 0 0 6.6z', 'M2.6 20.4v-.8a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v.8'],
+    my: ['M12 11.6a4 4 0 1 0 0-8 4 4 0 0 0 0 8z', 'M4.8 20.6v-.6a6 6 0 0 1 6-6h2.4a6 6 0 0 1 6 6v.6']
+  };
+
+  renderVals() {
+    const C = '#ff6f61';
+    const tab = (label, icon, on) => {
+      const c = on ? '#212124' : '#868b94';
+      const d = Component.ICONS[icon];
+      return { label, d1: d[0], d2: d[1], stroke: c,
+        style: 'flex:1;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:12px;line-height:16px;font-weight:700;color:' + c };
+    };
+    const tagStyle = kind => 'width:120px;flex:0 0 120px;text-align:right;font-size:14px;line-height:24px;font-weight:700;white-space:nowrap;color:'
+      + (kind === 'warn' ? '#e81607' : '#868b94');
+    const sp = (k, v, kind) => ({ k, v,
+      vStyle: 'font-size:15px;line-height:21px;font-weight:700;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;color:'
+        + (kind === 'warn' ? '#e81607' : kind === 'ok' ? '#1aa174' : '#212124') });
+
+    const dev = (o) => ({
+      os: o.os, name: o.name, desc: o.desc, w: 390,
+      badge: 'padding:3px 9px;border-radius:4px;font-size:13px;line-height:18px;font-weight:700;white-space:nowrap;'
+        + (o.os === 'iOS' ? 'background:#f2f3f6;color:#212124;' : 'background:#e8faf6;color:#1aa174;'),
+      frame: 'width:390px;height:' + o.h + 'px;border-radius:' + o.radius + 'px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)',
+      safeH: o.safe,
+      safeStyle: 'flex:0 0 ' + o.safe + 'px;background:' + (o.safeBg || '#fff') + ';display:flex;align-items:center;justify-content:center;box-sizing:border-box',
+      handle: !!o.handle, navButtons: !!o.navButtons, gestureBar: !!o.gestureBar,
+      specs: o.specs
+    });
+
+    const B = (o) => ({ when: o.when, action: o.action, tag: o.tag, tagStyle: tagStyle(o.kind) });
+    const P = (o) => ({ k: o.k, ios: o.ios, and: o.and,
+      andStyle: 'flex:1;font-size:16px;line-height:24px;text-wrap:pretty;color:' + (o.warn ? '#e81607' : '#4d5159') + (o.warn ? ';font-weight:700' : '') });
+
+    return {
+      tag: 'height:26px;display:flex;align-items:center;gap:8px;font-size:18px;line-height:24px;font-weight:700;color:#212124;white-space:nowrap;overflow:hidden',
+      tagDesc: 'height:63px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;line-height:21px;color:#4d5159;text-wrap:pretty',
+      statusBar: 'height:44px;flex:0 0 44px;display:flex;align-items:center;justify-content:space-between;padding:0 26px;font-size:14px;font-weight:700;color:#212124',
+      barIcons: 'display:flex;gap:5px;align-items:center',
+      header: 'flex:0 0 56px;display:flex;align-items:center;padding:0 24px;background:#fff',
+      wordmark: 'font-size:20px;line-height:27px;font-weight:700;color:#212124',
+      scroll: 'flex:1 1 auto;overflow-y:auto;display:flex;flex-direction:column;scrollbar-width:none',
+      heroPad: 'flex-shrink:0;padding:16px 24px 24px;display:flex;flex-direction:column;gap:8px',
+      cardPad: 'flex-shrink:0;padding:0 24px;display:flex;flex-direction:column;gap:10px',
+      recessed: 'border-radius:10px;background:#f7f8fa;padding:16px 18px;display:flex;flex-direction:column;gap:3px',
+      tabBar: 'flex:0 0 72px;display:flex;align-items:flex-start;padding-top:9px;background:#fff;box-shadow:inset 0 1px 0 #eaebee',
+      handle: 'width:134px;height:5px;border-radius:999px;background:#212124',
+      gestureBar: 'width:108px;height:4px;border-radius:999px;background:#adb1ba',
+      navBtns: 'display:flex;align-items:center;gap:56px',
+      navHome: 'width:15px;height:15px;border:1.8px solid #868b94;border-radius:3px',
+      navRecent: 'width:15px;height:2px;background:#868b94',
+
+      h26: 'font-size:26px;line-height:35px;font-weight:700;color:#212124',
+      t18b: 'font-size:18px;line-height:24px;font-weight:700;color:#212124',
+      t16g: 'font-size:16px;line-height:22px;color:#4d5159',
+      t14w: 'font-size:14px;line-height:19px;color:#868b94',
+
+      specBox: 'background:#fff;border:1px solid #eaebee;border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:2px',
+      specRow: 'display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:36px;box-shadow:inset 0 -1px 0 #f2f3f6',
+      specK: 'font-size:15px;line-height:21px;color:#4d5159;white-space:nowrap',
+
+      codeCard: 'background:#fff;border:1px solid #eaebee;border-radius:10px;padding:24px;display:flex;flex-direction:column;gap:14px;width:1180px;box-sizing:border-box',
+      codeLabel: 'font-size:14px;line-height:19px;font-weight:700;color:#868b94',
+      codeBlock: 'border-radius:6px;background:#f7f8fa;padding:18px 20px;display:flex;flex-direction:column;gap:8px',
+      codeRow: 'display:flex;align-items:baseline;gap:16px',
+      codeK: 'width:180px;flex:0 0 180px;font-size:16px;line-height:24px;font-weight:700;color:#212124',
+      codeV: 'flex:1;font-size:16px;line-height:24px;color:#4d5159;font-variant-numeric:tabular-nums',
+      codeNote: 'font-size:15px;line-height:23px;color:#4d5159;text-wrap:pretty',
+
+      ruleCard: 'width:376px;background:#fff;border:1px solid #eaebee;border-radius:10px;padding:22px;display:flex;flex-direction:column;gap:9px;box-sizing:border-box',
+      ruleTitle: 'font-size:18px;line-height:24px;font-weight:700;color:#212124;text-wrap:pretty',
+      ruleBody: 'font-size:16px;line-height:24px;color:#4d5159;text-wrap:pretty',
+
+      tabs: [tab('홈', 'home', true), tab('검색', 'search', false), tab('Pick', 'pick', false), tab('우리웨딩', 'couple', false), tab('MY', 'my', false)],
+
+      devices: [
+        dev({
+          os: 'iOS', name: '노치 · 다이나믹 아일랜드', h: 878, radius: 40, safe: 34, handle: true,
+          desc: '홈 버튼이 없는 모든 아이폰. 하단 34px가 홈 인디케이터 영역입니다.',
+          specs: [sp('화면 높이', '844'), sp('safeBottom', '34', 'ok'), sp('탭바 총높이', '72 + 34 = 106'), sp('시안 기준', '이 값으로 그림')]
+        }),
+        dev({
+          os: 'iOS', name: '홈 버튼 · SE', h: 844, radius: 20, safe: 0,
+          desc: '물리 홈 버튼이 있는 기기. 하단 여백이 0이고 상태바도 20px로 낮습니다.',
+          specs: [sp('화면 높이', '667'), sp('safeBottom', '0'), sp('탭바 총높이', '72 + 0 = 72'), sp('상태바', '20 · 시안은 44')]
+        }),
+        dev({
+          os: 'Android', name: '제스처 내비게이션', h: 862, radius: 32, safe: 18, gestureBar: true, safeBg: '#fff',
+          desc: '안드로이드 10 이상 기본값. 하단 제스처 바가 앱 영역을 16~24px 침범합니다.',
+          specs: [sp('화면 높이', '가변'), sp('safeBottom', '16~24', 'ok'), sp('탭바 총높이', '72 + inset'), sp('권장', 'inset 그대로 사용')]
+        }),
+        dev({
+          os: 'Android', name: '3버튼 내비게이션', h: 894, radius: 32, safe: 48, navButtons: true, safeBg: '#f7f8fa',
+          desc: '시스템 바가 앱 밖에 있어 inset이 0으로 옵니다. 여기서 하단이 잘리는 사고가 납니다.',
+          specs: [sp('화면 높이', '가변'), sp('safeBottom', '0 ← 주의', 'warn'), sp('시스템 바', '48 · 앱 밖'), sp('필수', 'edge-to-edge 끄기')]
+        })
+      ],
+
+      sectionSub: 'font-size:17px;line-height:26px;color:#4d5159;text-wrap:pretty',
+      tableCard: 'width:1180px;background:#fff;border:1px solid #eaebee;border-radius:10px;padding:8px 24px 16px;display:flex;flex-direction:column;box-sizing:border-box',
+      theadRow: 'display:flex;align-items:center;gap:16px;min-height:48px;box-shadow:inset 0 -1px 0 #dcdee3',
+      theadRow3: 'display:flex;align-items:center;gap:16px;min-height:48px;box-shadow:inset 0 -1px 0 #dcdee3',
+      tbodyRow: 'display:flex;align-items:flex-start;gap:16px;min-height:56px;padding:14px 0;box-shadow:inset 0 -1px 0 #f2f3f6',
+      tbodyRow3: 'display:flex;align-items:flex-start;gap:16px;min-height:56px;padding:14px 0;box-shadow:inset 0 -1px 0 #f2f3f6',
+      th1: 'width:230px;flex:0 0 230px;font-size:14px;line-height:19px;font-weight:700;color:#868b94',
+      th2: 'flex:1;font-size:14px;line-height:19px;font-weight:700;color:#868b94',
+      th3: 'width:120px;flex:0 0 120px;font-size:14px;line-height:19px;font-weight:700;color:#868b94;text-align:right',
+      thHalf: 'flex:1;font-size:14px;line-height:19px;font-weight:700;color:#868b94',
+      td1: 'width:230px;flex:0 0 230px;font-size:16px;line-height:24px;font-weight:700;color:#212124;text-wrap:pretty',
+      td2: 'flex:1;font-size:16px;line-height:24px;color:#4d5159;text-wrap:pretty',
+      tdHalf: 'flex:1;font-size:16px;line-height:24px;color:#4d5159;text-wrap:pretty',
+
+      backRules: [
+        B({ when: '홈 · 검색 · Pick · 우리웨딩 · MY', action: '앱을 닫아요. 홈 탭이 아니면 홈 탭으로 먼저 갑니다', tag: '탭 이동' }),
+        B({ when: '바텀시트가 열려 있음', action: '시트만 닫아요. 화면은 그대로 둡니다', tag: '필수', kind: 'warn' }),
+        B({ when: '초기 설정 4단계 중', action: '이전 단계로 갑니다. 첫 단계에서는 로그인으로', tag: '필수', kind: 'warn' }),
+        B({ when: 'Pick 인증 진행 중', action: '나가면 올린 자료가 사라진다고 묻습니다', tag: '확인' }),
+        B({ when: '후기 작성 중 · 내용 있음', action: '임시 저장할지 묻습니다', tag: '확인' }),
+        B({ when: '검색 결과 · 업체 상세', action: '이전 화면으로 갑니다', tag: '기본' }),
+        B({ when: '이미지 전체보기', action: '상세로 돌아갑니다', tag: '기본' }),
+        B({ when: '결정 완료 · 연결 완료', action: '뒤로 못 갑니다. 다음 화면으로만', tag: '차단', kind: 'warn' })
+      ],
+
+      platformDiff: [
+        P({ k: '뒤로가기', ios: '좌상단 화살표 + 좌측 스와이프', and: '물리 버튼 · 제스처 — 화면마다 처리 필요', warn: true }),
+        P({ k: '화면 전환', ios: '오른쪽에서 밀려 들어옴', and: '아래에서 올라오며 페이드' }),
+        P({ k: '바텀시트 닫기', ios: '드래그 · 배경 탭', and: '드래그 · 배경 탭 · 뒤로가기', warn: true }),
+        P({ k: '폰트', ios: 'Apple SD Gothic Neo', and: 'Roboto · Noto Sans KR' }),
+        P({ k: '자간', ios: '0em', and: '−0.02 ~ −0.04em', warn: true }),
+        P({ k: '권한 재요청', ios: '한 번 거부하면 설정으로만', and: '두 번 거부하면 영구 차단', warn: true }),
+        P({ k: '공유', ios: 'UIActivityViewController', and: 'Intent Chooser' }),
+        P({ k: '햅틱', ios: 'Pick 성공 시 medium', and: '기기별 지원 확인 후 적용' }),
+        P({ k: '상태바 아이콘', ios: '자동 반전', and: 'light · dark 직접 지정' })
+      ],
+
+      letterSpacing: [
+        { k: 'display · 32px', v: 'iOS 0em · Android −0.04em' },
+        { k: 'title · 26px', v: 'iOS 0em · Android −0.03em' },
+        { k: 'body · 16~18px', v: 'iOS 0em · Android −0.02em' },
+        { k: 'caption · 13~14px', v: 'iOS 0em · Android −0.04em' }
+      ],
+
+      formulas: [
+        { k: 'tabBar', v: '72 + max(safeBottom, 0)' },
+        { k: 'dock', v: '92 + max(safeBottom, 0)' },
+        { k: 'sheet 하단 패딩', v: '28 + max(safeBottom, 0)' },
+        { k: 'statusBar', v: 'safeTop — 시안 44는 노치 기준값' }
+      ],
+
+      rules: [
+        { title: '화면을 두 벌 그리지 않아요', body: '같은 화면에 하단 여백만 다르게 넣습니다. iOS용 · Android용 시안을 따로 만들면 두 배로 관리해야 하고 곧 어긋납니다.' },
+        { title: '3버튼 안드로이드가 문제예요', body: 'edge-to-edge를 켜면 시스템 바가 앱 위로 올라와 탭바를 덮습니다. 3버튼 기기에서는 edge-to-edge를 끄거나 WindowInsets를 직접 읽어 padding을 넣습니다.' },
+        { title: '하단 고정 요소에만 inset을 더해요', body: '탭바 · dock · 바텀시트 세 곳입니다. 스크롤 내용에는 넣지 않습니다. 넣으면 스크롤 끝에 빈 공간이 두 번 생깁니다.' },
+        { title: 'inset은 하드코딩하지 않아요', body: '34 · 18 · 48 같은 숫자를 상수로 박으면 새 기기에서 어긋납니다. useSafeAreaInsets()의 값을 그대로 씁니다.' },
+        { title: '상단도 같은 규칙이에요', body: '시안의 상태바 44px은 노치 기준입니다. 홈 버튼 아이폰은 20px, 안드로이드는 24~40px로 제각각입니다. safeTop을 씁니다.' },
+        { title: '가로 inset도 확인해요', body: '폴더블과 태블릿에서 좌우 inset이 0이 아닐 수 있습니다. Gutter 24px에 safeLeft · safeRight를 더합니다.' }
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

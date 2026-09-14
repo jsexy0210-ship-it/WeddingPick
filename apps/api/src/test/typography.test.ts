@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const ROOT = join(__dirname, '..', '..', '..', '..');
@@ -28,7 +28,9 @@ function sourceFiles(): string[] {
     .map((line) => line.trim())
     .filter(Boolean)
     /* 토큰 표 자신은 숫자를 들고 있어야 한다. */
-    .filter((path) => !path.endsWith('packages/ui/src/typography.ts'));
+    .filter((path) => !path.endsWith('packages/ui/src/typography.ts'))
+    /* 추적 중이지만 작업 트리에서 지워진 파일(아직 커밋 전) — 읽을 것이 없다. */
+    .filter((path) => existsSync(join(ROOT, path)));
 }
 
 function offenders(pattern: RegExp): string[] {

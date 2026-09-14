@@ -1,3 +1,5 @@
+import { randomBytes } from 'node:crypto';
+
 import type { Extraction } from '../analysis/schema';
 import { resetSchema } from '@weddingpick/db';
 import { REQUIRED_CONSENTS } from '@weddingpick/domain';
@@ -8,13 +10,36 @@ import type { IdentityProvider, VerifiedIdentity } from '../auth/identity-provid
 import type { Config } from '../config';
 import type { AppContext } from '../context';
 import { buildServer } from '../server';
-import { createLocalStorage } from '../storage/local';
+import { hashToken } from '../auth/sessions';
+import type { ProofReading } from '../analysis/payment-reader';
+import { createLocalStorage, type LocalStorage } from '../storage/local';
 
 export const connectionString = process.env.DATABASE_URL;
 
-/** 제공자를 부르지 않고 신원을 정해준다. 실제 Apple·Kakao 검증은 여기서 확인하지 않는다. */
+/**
+ * 시험용 기본 연령대. 만 14세 이상이면 어떤 값이든 되고, 판정에 쓰이는 것은
+ * 아래끝뿐이다(`auth/age-range.ts`).
+ */
+const TEST_AGE_RANGE = '20~29';
+
+/**
+ * 제공자를 부르지 않고 신원을 정해준다. 실제 Apple·Kakao 검증은 여기서 확인하지 않는다.
+ *
+ * **연령대를 기본으로 넣는다.** 로그인은 나이를 확인하지 못한 사람에게 계정을
+ * 만들어주지 않으므로(`age_unverified`), 연령대가 없는 신원으로는 「로그인을
+ * 통과한 사람」이라는 픽스처 자체가 성립하지 않는다. 예전에는 성립했고 그것이
+ * 곧 구멍이었다 — 시험이 그 구멍 위에 서 있었다.
+ *
+ * 신원이 연령대를 직접 정하면 그쪽이 이긴다. 관문을 시험하는 쪽(`auth.test.ts`)은
+ * 이 헬퍼를 쓰지 않고 제공자를 직접 만든다.
+ */
 export function fakeProvider(identity: VerifiedIdentity): IdentityProvider {
-  return { flow: 'id_token', verify: async () => identity };
+  const withAgeRange: VerifiedIdentity = {
+    ...identity,
+    profile: { ageRange: TEST_AGE_RANGE, ...identity.profile },
+  };
+
+  return { flow: 'id_token', verify: async () => withAgeRange };
 }
 
 export type TestApp = {
@@ -43,6 +68,16 @@ export async function createTestApp(): Promise<TestApp> {
     proofReaderCheapModel: 'claude-haiku-4-5',
     proofReaderStrongModel: 'claude-opus-5',
     naverRedirectUris: [],
+    /*
+     * **관리자 부트스트랩 자격은 환경에서 읽는다.**
+     *
+     * 이 config는 손으로 만든 것이라 `loadConfig`를 지나지 않는다. 그래서 여기 적지
+     * 않은 값은 전부 `undefined`다 — 관리자 로그인이 `process.env`를 직접 읽던
+     * 시절에는 상관없었지만, 지금은 `context.config`에서 읽는다(#173 관리자 등급).
+     *
+     * 잇지 않으면 아이디가 비어 대조가 실패하고 로그인이 **401**로 떨어진다.
+     * 「비밀번호가 틀렸다」와 같은 응답이라, 시험이 깨져도 원인이 안 보인다.
+     */
   };
 
   const context: AppContext = {
@@ -102,7 +137,7 @@ export async function resetDatabase(): Promise<void> {
 export async function signInAs(
   test: TestApp,
   subject = 'apple-user-1',
-  options: { completeSignup?: boolean } = {}
+  options: { completeSignup?: boolean; grantUploadConsent?: boolean } = {}
 ): Promise<{ token: string; userId: string; headers: Record<string, string> }> {
   test.context.providers.apple = fakeProvider({ provider: 'apple', subject });
 
@@ -120,8 +155,27 @@ export async function signInAs(
       method: 'POST',
       url: '/v1/me/signup',
       headers,
-      payload: { ageVerified: true, consents: REQUIRED_CONSENTS },
+      payload: { consents: REQUIRED_CONSENTS },
     });
+
+    /*
+     * 자료 업로드 동의도 함께 남긴다.
+     *
+     * `/v1/documents/uploads`가 동의 없이는 서명 URL을 내주지 않는다 — 견적서는
+     * `active_document_consents`, 결제 증빙은 `active_payment_consents`를 본다
+     * (Release Audit 1차 P0-5). 실전에서는 앱이 동의 화면을 먼저 지나므로,
+     * 「가입을 끝낸 사람」을 만드는 이 헬퍼가 그 상태까지 만들어준다.
+     *
+     * **결제 증빙 동의는 여기서 하지 않는다.** 그쪽은 이미 `consentToPaymentProofs`로
+     * 각 시험이 필요할 때 부르고 있고, 「동의 없이는 등록할 수 없다」처럼 동의하지
+     * **않은** 사람을 만들어야 하는 시험이 있다.
+     *
+     * **관문 자체는 따로 검증한다** — `signInAs(test, subject, { grantUploadConsent: false })`로
+     * 동의 없는 사람을 만들어 403을 확인하는 테스트가 `api.test.ts`에 있다.
+     */
+    if (options.grantUploadConsent !== false) {
+      await grantUploadConsent(test, headers, 'document');
+    }
   }
 
   return { token: body.token, userId: body.userId, headers };
@@ -137,6 +191,30 @@ export async function createWedding(test: TestApp, headers: Record<string, strin
   });
 
   return response.json<{ id: string }>().id;
+}
+
+/**
+ * 자료 업로드 동의를 남긴다.
+ *
+ * `/v1/documents/uploads`가 동의 없이는 서명 URL을 내주지 않는다 — 견적서는
+ * `active_document_consents`, 결제 증빙은 `active_payment_consents`를 본다
+ * (Release Audit 1차 P0-5로 견적서 쪽 관문이 생겼다). 실전에서는 앱이 동의
+ * 화면을 먼저 지나므로, 테스트도 그 순서를 그대로 밟아야 실제와 같아진다.
+ */
+export async function grantUploadConsent(
+  test: TestApp,
+  headers: Record<string, string>,
+  kind: 'document' | 'payment_proof' = 'document'
+): Promise<void> {
+  const response = await test.app.inject({
+    method: 'POST',
+    url: kind === 'payment_proof' ? '/v1/me/payment-consent' : '/v1/me/document-consent',
+    headers,
+  });
+
+  if (response.statusCode >= 400) {
+    throw new Error(`동의를 남기지 못했다: ${response.statusCode} ${response.body}`);
+  }
 }
 
 /**
@@ -202,6 +280,80 @@ export async function unlockPrices(test: TestApp, userId: string): Promise<void>
  * 등록 경로가 동의를 요구하므로(핸드오프 10·19번), 결제내역을 넣는 테스트는
  * 이걸 먼저 불러야 실제와 같아진다 — 실전에서도 동의한 사람만 등록한다.
  */
+/**
+ * 결제인증 하나를 등록한다. **사진 한 장을 올리는 것이 전부다**(핸드오프 v3.24).
+ *
+ * 시험이 값을 직접 보내던 자리를 대신한다 — 계약에 금액·업체·날짜를 보낼 필드가
+ * 없어졌고, 읽는 것은 서버가 한다. 그래서 시험이 정해야 하는 것은 「보낼 값」이
+ * 아니라 「서버가 무엇을 읽었는가」다.
+ *
+ * 실전과 같은 순서를 밟는다: 동의 → 업로드 자리 받기 → 원본 올리기 → 등록. 한
+ * 단계라도 건너뛰면 관문이 빠진 길을 시험하게 된다.
+ */
+export async function registerPaymentProof(
+  test: TestApp,
+  headers: Record<string, string>,
+  reading: Partial<ProofReading> = {},
+  /** 이미 만든 웨딩이 있으면 넘긴다. 없으면 하나 만든다. */
+  existingWeddingId?: string
+) {
+  test.context.proofReader.read = async (_images, model) => ({
+    model,
+    usage: { inputTokens: 10, outputTokens: 10, cachedInputTokens: 0 },
+    reading: {
+      merchantName: '가온예식홀',
+      paidAmount: 3_000_000,
+      paidAt: '2026-05-20T04:00:00.000Z',
+      method: 'card',
+      maskedIdentifiers: [],
+      rejection: null,
+      confidence: 0.95,
+      ...reading,
+    },
+  });
+
+  await consentToPaymentProofs(test, headers);
+
+  /*
+   * 이미 만든 웨딩이 있으면 그것을 쓴다. 부르는 쪽마다 하나씩 더 만들면 지출 뷰가
+   * 한 결제인증을 여러 웨딩에 세우고, 시험이 재려던 것과 다른 것을 재게 된다.
+   */
+  const weddingId = existingWeddingId ?? (await createWedding(test, headers));
+
+  const upload = await test.app.inject({
+    method: 'POST',
+    url: '/v1/documents/uploads',
+    headers,
+    payload: {
+      weddingId,
+      kind: 'payment_proof',
+      pages: [{ mimeType: 'image/jpeg', sizeBytes: 1000 }],
+    },
+  });
+
+  if (upload.statusCode >= 400) {
+    throw new Error(`원본을 올리지 못했다: ${upload.statusCode} ${upload.body}`);
+  }
+
+  const rawDocumentId = upload.json<{ rawDocumentId: string }>().rawDocumentId;
+  const pages = await test.pool.query<{ storage_key: string }>(
+    'SELECT storage_key FROM originals.raw_document_pages WHERE raw_document_id = $1',
+    [rawDocumentId]
+  );
+
+  // 서버가 읽으려면 스토리지에 실제로 무언가 있어야 한다.
+  for (const page of pages.rows) {
+    (test.context.storage as LocalStorage).put(page.storage_key, Buffer.from('receipt'));
+  }
+
+  return await test.app.inject({
+    method: 'POST',
+    url: '/v1/payment-proofs',
+    headers,
+    payload: { rawDocumentId },
+  });
+}
+
 export async function consentToPaymentProofs(
   test: TestApp,
   headers: Record<string, string>
@@ -265,4 +417,50 @@ export function extractionFixture(overrides: Partial<Extraction> = {}): Extracti
     personalInfoKinds: ['name', 'phone'],
     ...overrides,
   };
+}
+
+/**
+ * 관리자 등급을 가진 세션을 만든다.
+ *
+ * **로그인 라우트를 거치지 않는다.** 등급별로 계정을 만들려면 비밀번호를 정하고
+ * 밀어보기 지연을 기다려야 하는데, 여기서 보려는 것은 관문이지 로그인이 아니다.
+ * 로그인 자체는 `admin-accounts.test.ts`가 따로 본다.
+ *
+ * `role`이 `null`이면 관리자가 아닌 평범한 계정이다 — 막히는 쪽을 보는 시험에 쓴다.
+ */
+export async function adminSession(
+  test: TestApp,
+  role: 'super' | 'operator' | 'viewer' | null,
+  loginId = `admin-${role ?? 'none'}`
+): Promise<{ token: string; userId: string; headers: Record<string, string> }> {
+  const { rows } = await test.pool.query<{ id: string }>(
+    `INSERT INTO structured.users
+       (age_gate, age_checked_at, age_verified, age_verified_at, activated_at)
+     VALUES ('passed', now(), true, now(), now()) RETURNING id`
+  );
+  const userId = rows[0]!.id;
+
+  if (role) {
+    await test.pool.query(
+      `INSERT INTO identity.identities (user_id, provider, subject) VALUES ($1, 'admin', $2)`,
+      [userId, loginId]
+    );
+
+    /* 해시 자리에는 꼴만 맞는 값을 넣는다 — 이 세션은 비밀번호로 열지 않는다. */
+    await test.pool.query(
+      `INSERT INTO structured.admin_accounts (user_id, login_id, password_hash, role)
+       VALUES ($1, $2, 'scrypt$dGVzdA==$dGVzdA==', $3::admin_role)`,
+      [userId, loginId, role]
+    );
+  }
+
+  const token = randomBytes(32).toString('base64url');
+
+  await test.pool.query(
+    `INSERT INTO identity.sessions (user_id, token_hash, expires_at)
+     VALUES ($1, $2, now() + interval '1 day')`,
+    [userId, hashToken(token)]
+  );
+
+  return { token, userId, headers: { authorization: `Bearer ${token}` } };
 }

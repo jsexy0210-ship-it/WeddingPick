@@ -1,4 +1,5 @@
 import { withSubject } from './korean';
+import { PAYMENT_PROOF_FIELDS, type PaymentProofField } from './payment-parser';
 import { PRICING_POLICY } from './policy';
 import type { VerificationLevel } from './verification';
 
@@ -71,12 +72,21 @@ export const PAYMENT_PROOF_RETENTION_NOTICE =
  *
  * 스펙 8.1 — 포괄 동의("결제 정보를 수집합니다")는 동의가 아니다. 무엇을 가져가고
  * 무엇을 버리는지 적지 않으면, 동의한 사람도 자기가 무엇에 동의했는지 모른다.
+ *
+ * **2026-09-09 — 「외부 서비스가 맡아요」 한 줄을 더했다.** 읽어내는 일을 우리가 직접
+ * 하지 않고 바깥 사업자에게 이미지를 보낸다. 무엇을 읽고 · 무엇을 버리고 · 얼마나
+ * 들고 있는지는 적혀 있었는데 **어디로 보내는지가 없었다.** 읽는 사람은 이 다섯 줄을
+ * 「웨딩픽이 내 영수증을 본다」로 읽는데 실제로는 다른 곳으로 나간다 — 다른 이야기다.
+ *
+ * 구글 데이터 안전의 「제3자와 공유」 신고와 이 화면이 어긋나면 심사에서 걸린다.
+ * 문구 수위는 사용자 결정이고(2026-09-09 「최소」), 사실 한 줄만 적는다.
  */
 export const PAYMENT_PROOF_CONSENT_POINTS = [
   '읽어가는 것: 가맹점 이름, 금액, 낸 날짜와 시각, 지불 수단',
   '이미지에 카드번호 일부나 승인번호가 함께 찍힐 수 있어요',
   '그 번호들은 있었다는 것만 남기고 값은 저장하지 않아요',
-  '쓰는 곳: Pick 인증 표시와 Pick 가격대 (가격대는 여럿을 묶은 중앙값으로만 보여요)',
+  '사진을 읽어내는 일은 외부 서비스가 맡아요',
+  '쓰는 곳: Pick 인증 표시와 Pick 가격대 (가격대는 여럿을 묶은 중앙값으로만 보여요)', // lint-copy: 무엇을 계산했는지 정확히 말해야 하는 동의문
   PAYMENT_PROOF_RETENTION_NOTICE,
 ] as const;
 
@@ -86,7 +96,7 @@ export const PAYMENT_PROOF_CONSENT_POINTS = [
  * **문구가 바뀌면 이 값도 올린다.** 안내가 바뀌면 이전 동의는 다른 것에 대한
  * 동의이고, 판을 남기지 않으면 "이 사람이 무엇에 동의했는지"에 답할 수 없다.
  */
-export const PAYMENT_CONSENT_VERSION = '2026-08-29';
+export const PAYMENT_CONSENT_VERSION = '2026-09-09';
 
 /** 철회하면 하는 말. 이미 낸 자료가 어떻게 되는지 함께 말한다. */
 export const PAYMENT_CONSENT_REVOKED_NOTICE =
@@ -100,6 +110,106 @@ export type PaymentProofDraft = {
 };
 
 export type PaymentProofCheck = { ok: true } | { ok: false; reason: string };
+
+/**
+ * 접수 상태. 「접수 안 됨」이 없는 것이 요점이다.
+ *
+ * 디자인 핸드오프 v3.24가 제보를 «사진 찍기 또는 업로드»로 압축했다 — 사용자가
+ * 하는 일은 사진 한 장이 전부이고, 그 사진을 올렸으면 접수는 된 것이다. 갈리는
+ * 것은 그 제보를 지금 쓸 수 있는가뿐이다.
+ *
+ *   accepted        읽기가 끝나 금액 구간·지출·Unlock에 들어간다
+ *   pending_review  접수는 됐고 검수를 기다린다. 어디에도 들어가지 않는다
+ */
+export const PAYMENT_PROOF_REVIEW_STATES = ['accepted', 'pending_review'] as const;
+
+export type PaymentProofReviewState = (typeof PAYMENT_PROOF_REVIEW_STATES)[number];
+
+export type PaymentProofIntake = {
+  /** 읽은 값. 못 읽은 칸은 null이다 — **지어내지 않는다.** */
+  merchantName: string | null;
+  paidAmount: number | null;
+  /** ISO 8601 */
+  paidAt: string | null;
+  /** 확신이 낮아 사람이 봐야 하는 칸. */
+  needsConfirmation: readonly PaymentProofField[];
+  /** 결제 기록이 아니라고 읽혔으면 그 사유(취소 문자 등). 아니면 null. */
+  rejection: string | null;
+};
+
+export type PaymentProofIntakeResult = {
+  state: PaymentProofReviewState;
+  /** 검수를 기다리는 칸. accepted면 빈 배열이다. */
+  pendingFields: PaymentProofField[];
+  /** 왜 보류인지. accepted면 null이다. */
+  reviewNote: string | null;
+};
+
+/** 보류 사유 한 줄. **무엇이 되는지를 말한다** — 「못 읽었어요」로 끝내지 않는다. */
+const PENDING_NOTE = '자료에서 금액과 날짜를 읽는 중이에요. 확인이 끝나면 알려드려요';
+
+/**
+ * 읽은 결과를 접수 상태로 옮긴다.
+ *
+ * **값을 지어내지 않는다.** 못 읽은 칸이 하나라도 있으면 보류다 — 화면이 빈칸을
+ * 채워 보내던 자리가 여기다. 접수는 그대로 성립하고, 보류인 동안에는 어떤 통계에도
+ * 들어가지 않는다(0150의 usable_payment_proofs).
+ *
+ * 취소 문자처럼 결제 기록이 아니라고 읽힌 것도 보류로 둔다. 버리면 사용자는 자기가
+ * 올린 것이 어디 갔는지 알 수 없고, 받아들이면 낸 적 없는 돈이 낸 돈이 된다.
+ */
+export function paymentProofIntake(
+  intake: PaymentProofIntake,
+  now: Date = new Date()
+): PaymentProofIntakeResult {
+  const unread = PAYMENT_PROOF_FIELDS.filter(
+    (field) =>
+      (field === 'merchantName' && (intake.merchantName ?? '').trim().length === 0) ||
+      (field === 'paidAmount' && intake.paidAmount === null) ||
+      (field === 'paidAt' && intake.paidAt === null)
+  );
+
+  /*
+   * 지불 수단은 붙들지 않는다. 카드인지 계좌이체인지 흐릿한 것은 금액이 흐릿한
+   * 것과 다르다 — 값은 그대로 맞고, 표에도 기본값('unknown')이 있다. 이것 하나로
+   * 접수를 보류하면 멀쩡한 제보가 검수 줄에 쌓인다.
+   */
+  const pendingFields = [...new Set([...unread, ...intake.needsConfirmation])].filter(
+    (field) => field !== 'method'
+  );
+
+  if (intake.rejection !== null) {
+    return { state: 'pending_review', pendingFields, reviewNote: intake.rejection };
+  }
+
+  if (pendingFields.length > 0) {
+    return { state: 'pending_review', pendingFields, reviewNote: PENDING_NOTE };
+  }
+
+  /*
+   * 다 읽었어도 값이 말이 되는지는 따로 본다. 읽기가 성공했다고 2027년 결제나
+   * 1원짜리 계약금이 맞는 값이 되지는 않는다 — 그 판단은 예전부터 있던 자리에
+   * 그대로 둔다.
+   */
+  const check = canRegisterPaymentProof(
+    {
+      merchantName: intake.merchantName ?? '',
+      paidAmount: intake.paidAmount ?? 0,
+      paidAt: intake.paidAt ?? '',
+    },
+    now
+  );
+
+  if (!check.ok) {
+    return {
+      state: 'pending_review',
+      pendingFields: PAYMENT_PROOF_FIELDS.filter((field) => field !== 'method'),
+      reviewNote: check.reason,
+    };
+  }
+
+  return { state: 'accepted', pendingFields: [], reviewNote: null };
+}
 
 /** 너무 작거나 큰 값은 읽기 실패다. 가격 제보와 같은 범위를 쓴다. */
 export const MIN_PAYMENT_AMOUNT = 10_000;
@@ -159,7 +269,7 @@ export function canMergeWithMarketPrice(): false {
 
 /** 실 제보 분포에 늘 붙는 말. 내부에서는 결제인증이라 부르는 그것이다. */
 export const PAYMENT_PROOF_CAVEAT =
-  'Pick 가격은 이용자가 올린 자료에서 읽은 금액이에요. 계약 전체 금액이 아니라 그때 낸 금액이며, 사람이 확인한 계약 중앙값과는 다른 값이에요.';
+  'Pick 가격은 이용자가 올린 자료에서 읽은 금액이에요. 계약 전체 금액이 아니라 그때 낸 금액이며, 사람이 확인한 계약 중앙값과는 다른 값이에요.'; // lint-copy: 무엇과 다른 값인지 정확히 말해야 하는 자리
 
 /**
  * 결제인증만으로 후기를 어디까지 확인해 줄 수 있는가.

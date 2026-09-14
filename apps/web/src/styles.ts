@@ -12,7 +12,7 @@ export const STYLES = `
 
   /* 브랜드 */
   --coral: #e7898d;
-  --coral-dark: #d87d80;
+  --coral-dark: #c63f45;
 
   /* 텍스트 */
   --text-p: #212124;
@@ -58,7 +58,7 @@ export const STYLES = `
   --text-t5: 18px;
   --text-t6: 16px;
   --text-t7: 14px;
-  --text-badge: 12px;
+  --text-badge: 14px;
   --text-amount: 32px;
 }
 
@@ -73,8 +73,8 @@ export const STYLES = `
     --bg-input: #23282b;
     --border: #2c3134;
     --border-card: #2c3134;
-    --coral: #eb9ca0;
-    --coral-dark: #e7898d;
+    --coral: #eb9c9f;
+    --coral-dark: #f1bcbe;
   }
 }
 

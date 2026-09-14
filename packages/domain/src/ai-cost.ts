@@ -132,4 +132,4 @@ export function fallbackFor(state: BudgetState): BudgetFallback {
 
 /** 예산이 바닥났을 때 화면이 그대로 보여줄 말. AI를 입에 올리지 않는다. */
 export const BUDGET_EXHAUSTED_NOTICE =
-  '지금은 사진에서 자동으로 읽어드리지 못해요. 안내 문자를 붙여넣거나 직접 적어주시면 그대로 올라가요.';
+  '지금은 사진에서 바로 읽어드리지 못해요. 올려주신 자료는 접수됐고, 확인이 끝나면 알려드려요.'; // lint-copy: 무엇이 되는지를 말하는 자리

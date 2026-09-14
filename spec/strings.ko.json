@@ -137,7 +137,7 @@
       },
       {
         "label": "Pick 인증",
-        "title": "직접 남긴 경험도 함께",
+        "title": "직접 남긴 후기도 함께",
         "body": "웨딩을 준비한 사람들이 남긴 금액과 조건을 같은 기준으로 정리해요. 제보 건수와 기준 기간도 함께 보여드려요."
       }
     ],
@@ -177,6 +177,10 @@
         "href": "/support.html"
       },
       {
+        "label": "업체 문의",
+        "href": "/support.html#vendor"
+      },
+      {
         "label": "이용약관",
         "href": "/terms.html"
       },
@@ -195,10 +199,17 @@
     "supportFallback": "문의 채널을 준비하고 있어요. 자주 묻는 질문을 먼저 확인해주세요.",
     "supportPrivacy": "문의에는 비밀번호, 카드번호, 계좌번호 등 민감한 정보를 적지 마세요.",
     "supportFaq": "문의 전에 확인해보세요",
+    "supportVendorTitle": "업체 문의",
+    "supportVendorBody": "정보 오류·오매칭·후기 이의는 여기로 접수하세요. 앱과 같은 창구로 들어갑니다.",
+    "supportVendorNote": "로그인 없이 접수할 수 있고, 접수한 뒤에 업체 소속을 확인합니다.",
     "introTitle": "찾고 비교하고,\n마음에 들면 Pick",
     "introBody": "웨딩픽은 내 조건에 맞는 곳을 찾고 비교해 Pick하는 웨딩 준비 앱이에요.",
     "introLink": "서비스 살펴보기",
-    "faqSupport": "해결되지 않았다면 고객지원으로 알려주세요."
+    "faqSupport": "해결되지 않았다면 고객지원으로 알려주세요.",
+    "og": {
+      "hero": "진짜 견적부터\n확인해 보세요",
+      "sub": "실 제보 · 웨딩픽 추천 · Pick"
+    }
   },
 
   "common": {
@@ -297,7 +308,7 @@
     "section.category": "카테고리",
     "section.recent": "최근 검색",
     "section.trending": "많이 본 곳",
-    "group.vendor": "업체",
+    "group.vendor": "업체 · 바로 상세로",
     "group.region": "지역",
     "group.keyword": "이 말로 검색",
     "result.count": "{n}곳",
@@ -308,6 +319,8 @@
     "filter.title": "필터",
     "filter.reset": "초기화",
     "filter.apply": "{n}곳 보기",
+    "filter.group.region": "지역",
+    "filter.group.budget": "예산",
     "filter.onlyVerified": "실 제보가 있는 곳만",
     "filter.onlyVerifiedDesc": "금액을 볼 수 있는 곳만 보기",
     "empty.title": "조건에 맞는 곳이\n없어요",
@@ -577,7 +590,7 @@
     "mission": "미션 {n}개 완주",
     "missionDesc": "업체 둘러보기 · 준비 관리 · 배우자 연결 · Pick 인증",
     "missionNoteTitle": "준비 순서대로 하나씩 채워져요",
-    "missionNoteBody": "네 개를 다 채우면 Npay로 바로 보내드려요.",
+    "missionNoteBody": "다 채우면 혜택에서 신청해주세요.\n확인 후 Npay로 보내드려요.",
     "invite": "친구 초대",
     "inviteDesc": "친구가 첫 Pick 인증을 하면 받아요 · 최대 100건",
     "promo": "홍보 인증",
@@ -666,8 +679,8 @@
     "budget.sub": "예산에 맞는 선택지를 먼저 보여드릴게요",
     "budget.unknown": "아직 모르겠어요",
     "taste.title": "어떤 분위기로 준비할까요?",
-    "taste.sub": "남은 준비에 취향을 반영할게요",
-    "taste.cta": "{n}곳 선택",
+    "taste.sub": "마음에 드는 스타일을 골라주세요",
+    "taste.cta": "{n}장 선택",
     "complete.title": "준비 끝났어요\n{name}님 웨딩을 시작해요",
     "complete.sub": "아까 고른 {vendor}가 Pick에 담겼어요",
     "complete.cta": "웨딩픽 시작하기",
@@ -687,6 +700,8 @@
     "auth.login.terms": "시작하면 {terms}과 {privacy}에 동의하게 돼요",
     "auth.login.termsLabel": "이용약관",
     "auth.login.privacyLabel": "개인정보처리방침",
+    "auth.login.ageConfirm": "만 14세 이상이에요",
+    "auth.login.ageConfirmNotice": "만 14세 이상인지 확인하면 시작할 수 있어요",
     "auth.email.title": "이메일을\n알려주세요",
     "auth.email.label": "이메일",
     "auth.email.invalid": "이메일 주소를 다시 확인해주세요",
@@ -736,22 +751,40 @@
     "permission.allow": "허용하기"
   },
 
+  "journey": {
+    "loadFailed": "정보를 불러오지 못했어요",
+    "readFailed": "읽음 상태를 저장하지 못했어요",
+    "loading": "불러오는 중이에요",
+    "documentEmpty": "아직 올린 문서가 없어요",
+    "documentListTitle": "올린 문서를 읽은 결과",
+    "documentListBody": "앱으로 올린 문서에서 웨딩픽이 금액과 날짜를 읽었어요. 확인을 마친 자료부터 가격 비교에 쓰여요.",
+    "uploadDocument": "자료 올리기",
+    "partnerShareTitle": "연결하면 함께 볼 수 있어요",
+    "partnerShareBody": "연결을 끊으면 공유가 멈추고 기존 기록은 각자에게 남아요."
+  },
+
   "error": {
     "network.title": "연결이 불안정해요",
     "network.body": "네트워크를 확인하고 다시 시도해주세요",
     "offline.title": "연결이 불안정해요",
     "offline.body": "마지막으로 확인한 내용을 보여드리고 있어요",
     "maintenance.title": "잠시 점검 중이에요",
-    "maintenance.body": "{from}부터 {to}까지 서비스를 점검하고 있어요. 끝나면 알려드릴게요.",
+    "maintenance.body": "{from}부터 {to}까지 서비스를 점검하고 있어요. 점검이 끝난 뒤 다시 시도해주세요.",
+    "maintenance.bodyNoTime": "잠시 후 다시 시도해주세요",
     "update.title": "새 버전이 필요해요",
-    "update.body": "결제 정보 처리 방식이 바뀌어서 업데이트해야 이용할 수 있어요",
+    "update.body": "정보 처리 방식이 바뀌어서 업데이트해야 이용할 수 있어요",
     "update.cta": "업데이트",
     "general.title": "잠시 문제가 생겼어요",
-    "general.body": "다시 시도해도 안 되면 알려주세요",
+    "general.body": "잠시 후 다시 시도해주세요",
     "permissionDenied.title": "사진 접근이 꺼져 있어요",
     "permissionDenied.body": "설정에서 켜면 사진으로 바로 인증할 수 있어요",
     "processing.title": "확인하고 있어요",
     "processing.body": "10초 안에 끝나요"
+  },
+
+  "inAppBrowser": {
+    "open": "브라우저에서 열기",
+    "guide": "오른쪽 위 ···를 눌러 «Safari로 열기»를 선택해주세요"
   },
 
   "expo": {
@@ -841,7 +874,7 @@
     "addedAt": "{date} 추가",
     "cta.addCandidate": "다시 후보 추가",
     "section.decided": "결정한 곳",
-    "section.candidates": "후보",
+    "section.candidates": "아직 안 정한 것",
     "empty.title": "아직 Pick한 곳이 없어요",
     "empty.body": "업체를 찾아 Pick에 담아보세요",
     "empty.cta": "업체 검색"

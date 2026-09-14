@@ -248,7 +248,7 @@ export function registerWeddingInviteRoutes(app: FastifyInstance, context: AppCo
         userId: invite.invited_by,
         kind: 'partner',
         title: '배우자가 연결됐어요',
-        body: '이제 관심업체와 지출내역을 함께 보실 수 있어요',
+        body: '이제 Pick한 곳과 지출내역을 함께 보실 수 있어요',
         targetId: invite.wedding_id,
       });
 

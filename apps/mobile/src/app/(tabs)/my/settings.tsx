@@ -7,7 +7,7 @@ import {
   formatWeddingDate,
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -23,6 +23,7 @@ import {
   Toast,
   useTheme,
 } from '@weddingpick/ui';
+import { NavBar } from '@/features/wedding/screen-kit';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { getSettings, revokePaymentConsent, setDisplayName, updateSettings } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
@@ -41,6 +42,8 @@ export default function SettingsScreen() {
   const theme = useTheme();
   const { signOut } = useSession();
   const [settings, setSettings] = useState<Settings | null>(null);
+  const savingRef = useRef(false);
+  const [savingSettings, setSavingSettings] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   /** 이름 고치는 시트. 화면을 옮기지 않는다 — 한 칸 고치러 다른 화면까지 가지 않는다. */
   const [nameOpen, setNameOpen] = useState(false);
@@ -83,7 +86,9 @@ export default function SettingsScreen() {
   useEffect(load, [load]);
 
   async function toggle(key: 'pushEnabled' | 'priceChangeEnabled', value: boolean) {
-    if (!settings) return;
+    if (!settings || savingRef.current) return;
+    savingRef.current = true;
+    setSavingSettings(true);
 
     // 먼저 화면을 바꾼다. 서버를 기다리면 스위치가 늦게 따라와 두 번 누르게 된다.
     setSettings({ ...settings, [key]: value });
@@ -93,6 +98,10 @@ export default function SettingsScreen() {
       .catch(() => {
         setSettings(settings);
         setToast('설정을 바꾸지 못했어요');
+      })
+      .finally(() => {
+        savingRef.current = false;
+        setSavingSettings(false);
       });
   }
 
@@ -120,7 +129,7 @@ export default function SettingsScreen() {
 
   function confirmSignOut() {
     // 파괴적 동작은 컨펌을 거친다. 핸드오프 인터랙션 규칙.
-    confirmAlert('로그아웃할까요', '기기에 저장된 문서는 지워지지 않아요', [
+    confirmAlert('로그아웃할까요', '기기에 저장된 문서는 그대로 남아요', [
       { text: '그만두기', style: 'cancel' },
       {
         text: '로그아웃',
@@ -133,7 +142,7 @@ export default function SettingsScreen() {
   }
 
   if (loadError) {
-    return <ErrorView message={loadError} onBack={load} />;
+    return <ErrorView message={loadError} onRetry={load} />;
   }
 
   if (!settings) {
@@ -143,6 +152,11 @@ export default function SettingsScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        {/*
+          시안 layoutStack «header 56». 뒤로는 Depth Back — MY로 내려간다.
+          제목은 화면이 아래 Hero로 들고 있어 nav에 다시 적지 않는다.
+        */}
+        <NavBar />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedText type="t2">설정</ThemedText>
 
@@ -301,6 +315,7 @@ export default function SettingsScreen() {
           </ThemedText>
         </View>
         <Switch
+          disabled={savingSettings}
           value={value}
           onValueChange={onChange}
           accessibilityLabel={label}
@@ -331,7 +346,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.five,
-    paddingBottom: Spacing.six,
+    paddingBottom: Spacing.four,
     gap: Spacing.four,
   },
   section: {
@@ -346,13 +361,13 @@ const styles = StyleSheet.create({
   input: {
     height: Layout.rowMinHeight,
     borderRadius: Radius.input,
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Layout.fieldPaddingX,
   },
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.three,
-    borderRadius: Spacing.three,
+    borderRadius: Radius.medium,
     padding: Spacing.three,
     minHeight: Layout.rowMinHeight,
   },

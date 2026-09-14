@@ -1,6 +1,8 @@
-import { createPool } from './db';
+import { canRegisterPaymentProof, type PaymentProofField } from '@weddingpick/domain';
+
+import { createPool, withTransaction } from './db';
 import { loadConfig } from './config';
-import { requireOperator } from './decisions';
+import { newEventId, recordDecision, requireOperator } from './decisions';
 
 /**
  * 가맹점 이름이 여러 업체에 걸린 결제인증을 잇는다. 05번 명세 20번.
@@ -18,6 +20,11 @@ import { requireOperator } from './decisions';
  * 가리킬 수 있다 — 이번 건이 A업체였다고 다음 건도 A업체라는 뜻은 아니다.
  * 매번 다시 본다.
  *
+ * **검수 대기와는 다른 목록이다.** 이 목록은 읽기가 끝났는데 업체만 못 고른 것이고,
+ * 검수 대기(`--pending`)는 사진에서 금액·날짜를 읽지 못한 것이다. 둘을 한 목록에
+ * 세우면 "업체를 고르면 되는 것"과 "값이 아예 없는 것"이 섞여, 고를 수 없는 줄을
+ * 붙들고 있게 된다.
+ *
  *   npm run payment-proofs --workspace @weddingpick/api -- --list
  *   npm run payment-proofs --workspace @weddingpick/api -- --show <id>
  *   npm run payment-proofs --workspace @weddingpick/api -- --link <id> --vendor <vendor-id> --by <user-id>
@@ -25,22 +32,34 @@ import { requireOperator } from './decisions';
 
 type Options = {
   list: boolean;
+  pending: boolean;
   show?: string;
   link?: string;
   vendor?: string;
+  resolve?: string;
+  merchant?: string;
+  amount?: string;
+  paidAt?: string;
+  reason?: string;
   by?: string;
 };
 
 function parseArgs(argv: string[]): Options {
-  const options: Options = { list: false };
+  const options: Options = { list: false, pending: false };
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
 
     if (arg === '--list') options.list = true;
+    else if (arg === '--pending') options.pending = true;
     else if (arg === '--show') options.show = argv[++i];
     else if (arg === '--link') options.link = argv[++i];
     else if (arg === '--vendor') options.vendor = argv[++i];
+    else if (arg === '--resolve') options.resolve = argv[++i];
+    else if (arg === '--merchant') options.merchant = argv[++i];
+    else if (arg === '--amount') options.amount = argv[++i];
+    else if (arg === '--paid-at') options.paidAt = argv[++i];
+    else if (arg === '--reason') options.reason = argv[++i];
     else if (arg === '--by') options.by = argv[++i];
   }
 
@@ -73,6 +92,7 @@ export async function list(pool: ReturnType<typeof createPool>): Promise<Unmatch
          WHERE v.normalized_name = structured.normalize_vendor_name(p.merchant_name)) AS candidates
      FROM structured.payment_proofs p
      WHERE p.vendor_id IS NULL
+       AND p.review_state = 'accepted'
      ORDER BY p.created_at DESC`
   );
 
@@ -88,23 +108,26 @@ export async function list(pool: ReturnType<typeof createPool>): Promise<Unmatch
 }
 
 export type ProofDetail = {
-  merchantName: string;
-  paidAmount: string;
-  paidAt: Date;
+  /** 검수를 기다리는 줄은 못 읽은 칸이 비어 있다. 지어내지 않는다. */
+  merchantName: string | null;
+  paidAmount: string | null;
+  paidAt: Date | null;
   method: string;
   vendorId: string | null;
+  reviewState: string;
   candidates: { id: string; name: string; category: string; region: string }[];
 };
 
 export async function show(pool: ReturnType<typeof createPool>, id: string): Promise<ProofDetail | null> {
   const proof = await pool.query<{
-    merchant_name: string;
-    paid_amount: string;
-    paid_at: Date;
+    merchant_name: string | null;
+    paid_amount: string | null;
+    paid_at: Date | null;
     method: string;
     vendor_id: string | null;
+    review_state: string;
   }>(
-    `SELECT merchant_name, paid_amount, paid_at, method, vendor_id
+    `SELECT merchant_name, paid_amount, paid_at, method, vendor_id, review_state
      FROM structured.payment_proofs WHERE id = $1`,
     [id]
   );
@@ -123,7 +146,8 @@ export async function show(pool: ReturnType<typeof createPool>, id: string): Pro
                AND a.normalized_alias = structured.normalize_vendor_name($1)
            )
      ORDER BY v.name`,
-    [found.merchant_name]
+    // 이름을 못 읽었으면 견줄 것이 없다. 빈 문자열은 어느 업체와도 맞지 않는다.
+    [found.merchant_name ?? '']
   );
 
   return {
@@ -132,6 +156,7 @@ export async function show(pool: ReturnType<typeof createPool>, id: string): Pro
     paidAt: found.paid_at,
     method: found.method,
     vendorId: found.vendor_id,
+    reviewState: found.review_state,
     candidates: candidates.rows,
   };
 }
@@ -162,6 +187,142 @@ export async function link(
   console.log('이었다. 이제 이 업체의 결제 구간에 반영된다.');
 }
 
+/**
+ * 검수를 기다리는 결제인증. 0150의 `pending_review`.
+ *
+ * 사진에서 금액·날짜·가맹점명을 읽지 못했거나 확신이 낮아 보류된 줄이다. **접수는
+ * 성립했다** — 사용자는 올렸고, 우리가 아직 못 읽었을 뿐이다. 그 사이 이 줄은 어떤
+ * 통계·Unlock·지출에도 들어가지 않는다.
+ *
+ * 원본은 24시간 뒤에 지워진다(스펙 8.3). 그 시간 안에 보지 못한 것은 사용자에게
+ * 다시 올려달라고 하는 수밖에 없다 — 카드번호가 찍힌 이미지를 검수 편의 때문에
+ * 더 들고 있지 않는다.
+ */
+export type PendingProof = {
+  id: string;
+  merchantName: string | null;
+  paidAmount: string | null;
+  paidAt: Date | null;
+  pendingFields: PaymentProofField[];
+  reviewNote: string | null;
+  createdAt: Date;
+  /** 원본이 아직 남아 있는가. 없으면 사람이 볼 것이 없다. */
+  hasOriginal: boolean;
+};
+
+export async function pending(pool: ReturnType<typeof createPool>): Promise<PendingProof[]> {
+  const { rows } = await pool.query<{
+    id: string;
+    merchant_name: string | null;
+    paid_amount: string | null;
+    paid_at: Date | null;
+    pending_fields: PaymentProofField[];
+    review_note: string | null;
+    created_at: Date;
+    has_original: boolean;
+  }>(
+    `SELECT p.id, p.merchant_name, p.paid_amount, p.paid_at,
+            p.pending_fields, p.review_note, p.created_at,
+            EXISTS (
+              SELECT 1 FROM originals.raw_documents d
+              WHERE d.id = p.raw_document_id AND d.deleted_at IS NULL
+            ) AS has_original
+     FROM structured.payment_proofs p
+     WHERE p.review_state = 'pending_review'
+     ORDER BY p.created_at`
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    merchantName: row.merchant_name,
+    paidAmount: row.paid_amount,
+    paidAt: row.paid_at,
+    pendingFields: row.pending_fields,
+    reviewNote: row.review_note,
+    createdAt: row.created_at,
+    hasOriginal: row.has_original,
+  }));
+}
+
+export type ResolveInput = {
+  merchantName: string;
+  paidAmount: number;
+  /** ISO 8601 */
+  paidAt: string;
+  /** 왜 이 값으로 정했는가. 세는 코드다 — 사람이 읽는 문장이 아니다. */
+  reasonCode: string;
+};
+
+/**
+ * 보류를 풀어 쓸 수 있게 만든다.
+ *
+ * **되돌릴 수 없는 조작이라 사유를 받고 기록을 남긴다.** 이 한 번으로 그 금액이
+ * 업체의 금액 구간과 그 사람의 지출에 들어간다 — 되돌리려면 지우는 수밖에 없고,
+ * 지운 뒤에는 무엇이 왜 들어갔었는지 아무도 모른다.
+ *
+ * 값은 **사람이 원본을 보고 적는다.** 서버가 다시 읽어 채우지 않는다 — 한 번 못 읽은
+ * 것을 같은 방법으로 다시 읽으면 같은 답이 나오고, 다르게 나오면 그건 더 나쁘다.
+ */
+export async function resolve(
+  pool: ReturnType<typeof createPool>,
+  proofId: string,
+  input: ResolveInput,
+  by: string
+): Promise<void> {
+  await requireOperator(pool, by);
+
+  const check = canRegisterPaymentProof({
+    merchantName: input.merchantName,
+    paidAmount: input.paidAmount,
+    paidAt: input.paidAt,
+  });
+
+  if (!check.ok) {
+    throw new Error(check.reason);
+  }
+
+  await withTransaction(pool, async (client) => {
+    const { rowCount } = await client.query(
+      `UPDATE structured.payment_proofs
+          SET merchant_name = $2,
+              paid_amount = $3,
+              paid_at = $4,
+              review_state = 'accepted',
+              pending_fields = '{}',
+              review_note = NULL,
+              reviewed_at = now(),
+              reviewed_by = $5
+        WHERE id = $1 AND review_state = 'pending_review'`,
+      [proofId, input.merchantName.trim(), input.paidAmount, input.paidAt, by]
+    );
+
+    if (rowCount === 0) {
+      throw new Error('없는 결제인증이거나 이미 검수가 끝났다.');
+    }
+
+    /*
+     * 기록은 같은 트랜잭션에 둔다. 따로 남기면 값은 들어갔는데 누가 왜 넣었는지가
+     * 빠진 줄이 생기고, 그건 기록이 없는 것보다 나쁘다.
+     *
+     * **값을 적지 않는다.** 근거는 가리키기만 한다(0033의 evidence_refs 제약) —
+     * 가맹점명도 금액도 이 로그에 복사되지 않는다.
+     */
+    await recordDecision(client, {
+      eventId: newEventId(),
+      workflow: 'payment_proof_review',
+      step: 'resolve',
+      subjectKind: 'payment_proof',
+      subjectId: proofId,
+      decider: { kind: 'human', userId: by },
+      decision: 'accepted',
+      reasonCode: input.reasonCode,
+      evidence: [{ kind: 'payment_proof', id: proofId }],
+    });
+  });
+
+  console.log('검수를 마쳤다. 이제 이 업체의 금액 구간과 그 사람의 지출에 들어간다.');
+}
+
 export async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
   const pool = createPool(loadConfig().databaseUrl);
@@ -189,6 +350,57 @@ export async function main(): Promise<void> {
       return;
     }
 
+    if (options.pending) {
+      const rows = await pending(pool);
+
+      if (rows.length === 0) {
+        console.log('검수를 기다리는 결제인증이 없다.');
+        return;
+      }
+
+      console.log(`검수를 기다리는 결제인증 ${rows.length}건:`);
+      for (const row of rows) {
+        const fields = row.pendingFields.length > 0 ? row.pendingFields.join(',') : '-';
+        const original = row.hasOriginal ? '원본 있음' : '원본 지워짐';
+        console.log(
+          `  ${row.id}  접수 ${when(row.createdAt)}  못 읽은 칸: ${fields}  (${original})`
+        );
+        if (row.reviewNote) console.log(`      ${row.reviewNote}`);
+      }
+      return;
+    }
+
+    if (options.resolve) {
+      const missing = (
+        [
+          ['--merchant <가맹점명>', options.merchant],
+          ['--amount <원>', options.amount],
+          ['--paid-at <ISO 8601>', options.paidAt],
+          ['--reason <사유 코드>', options.reason],
+          ['--by <user-id>', options.by],
+        ] as const
+      ).filter(([, value]) => !value);
+
+      if (missing.length > 0) {
+        console.error(`검수에는 ${missing.map(([flag]) => flag).join(' · ')}가 필요하다.`);
+        process.exitCode = 1;
+        return;
+      }
+
+      await resolve(
+        pool,
+        options.resolve,
+        {
+          merchantName: options.merchant!,
+          paidAmount: Number(options.amount),
+          paidAt: options.paidAt!,
+          reasonCode: options.reason!,
+        },
+        options.by!
+      );
+      return;
+    }
+
     if (options.show) {
       const found = await show(pool, options.show);
 
@@ -197,9 +409,13 @@ export async function main(): Promise<void> {
         return;
       }
 
-      console.log(`가맹점명: ${found.merchantName}`);
-      console.log(`금액: ${won(found.paidAmount)}  일시: ${when(found.paidAt)}  수단: ${found.method}`);
-      console.log(`연결된 업체: ${found.vendorId ?? '없음'}`);
+      console.log(`가맹점명: ${found.merchantName ?? '못 읽음'}`);
+      console.log(
+        `금액: ${found.paidAmount === null ? '못 읽음' : won(found.paidAmount)}` +
+          `  일시: ${found.paidAt === null ? '못 읽음' : when(found.paidAt)}` +
+          `  수단: ${found.method}`
+      );
+      console.log(`연결된 업체: ${found.vendorId ?? '없음'}  접수 상태: ${found.reviewState}`);
 
       if (found.candidates.length === 0) {
         console.log('이름이 겹치는 업체가 없다. 업체가 아직 등록되지 않았을 수 있다.');
