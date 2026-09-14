@@ -29,27 +29,30 @@ const palette = {
   /*
    * 키 컬러. Pick·핵심 CTA·활성/선택에만 제한적으로 쓴다.
    *
-   * 값의 원본은 `spec/tokens.json` `color.brand`다. rose500/rose300만 Figma
+   * 값의 원본은 `spec/tokens.json` `color.brand`다. coral500/coral300만 Figma
    * 직접값이고 나머지는 그 파일의 `$derivation` 규칙으로 계산한 파생색이다 —
    * **여기서 손으로 고치지 않는다.** 고칠 일이 생기면 tokens.json을 고치고 옮긴다.
    *
-   * 이름을 coral*에서 rose*로 바꿨다. 새 키 컬러는 코랄이 아니고, 이름만 남으면
-   * 화면에서 «코랄»을 찾다가 스킨의 코랄(#ff6f61, 그대로 살아 있다)과 섞인다.
+   * **이름은 coral* 그대로 둔다.** 새 키 컬러는 코랄이 아니지만
+   * `apps/web/src/site.test.ts`가 이 이름으로 값을 찾아 웹 스타일시트와 맞춰
+   * 본다 — 이름을 바꾸면 토큰과 무관한 자리가 같이 깨진다. 이름 빚은 남겨 두고
+   * 컴포넌트 작업에서 웹 쪽과 함께 정리한다. 스킨의 코랄(#ff6f61)은 그대로 살아
+   * 있으니 «코랄»을 찾을 때 이 팔레트와 헷갈리지 않게 한다.
    */
   /** tokens.json color.brand.primary ← Figma theme.css:16 --primary. */
-  rose500: '#e7898d',
+  coral500: '#e7898d',
   /** tokens.json color.brand.primaryPressed. 눌림. */
-  rose600: '#d87d80',
-  /** tokens.json color.brand.primaryDark. 옅은 면 위 텍스트 — rose50 위 4.52:1. */
-  rose700: '#c63f45',
+  coral600: '#d87d80',
+  /** tokens.json color.brand.primaryDark. 옅은 면 위 텍스트 — coral50 위 4.52:1. */
+  coral700: '#c63f45',
   /** tokens.json color.brand.primaryTint ← Figma theme.css:34 --chart-2. */
-  rose300: '#f4bfc1',
-  /** tokens.json color.brand.primaryBorder. rose50 면의 1px 테두리. */
-  rose100: '#f6d5d6',
+  coral300: '#f4bfc1',
+  /** tokens.json color.brand.primaryBorder. coral50 면의 1px 테두리. */
+  coral100: '#f6d5d6',
   /** tokens.json color.brand.primarySurface. 옅은 강조 면. */
-  rose50: '#fcf1f1',
+  coral50: '#fcf1f1',
   /** tokens.json color.brand.accent ← Figma theme.css:22 --accent. 보조 강조. */
-  roseAccent: '#eca0a3',
+  coralAccent: '#eca0a3',
 
   /* SEED gray 램프 (light). */
   gray900: '#212124',
@@ -174,21 +177,21 @@ export const Colors = {
     /** 입력 필드 기본 테두리. spec/tokens.json line.fieldBorder. */
     fieldBorder: palette.gray400,
 
-    tint: palette.rose500,
-    tintStrong: palette.rose600,
+    tint: palette.coral500,
+    tintStrong: palette.coral600,
     /**
      * 옅은 면 위에 얹는 글자. tintSubtle 위 4.52:1로 WCAG AA를 넘긴다 —
      * tint(#e7898d)를 글자에 쓰면 2.27:1이라 읽히지 않는다.
      */
-    tintDark: palette.rose700,
+    tintDark: palette.coral700,
     /** 배지·차트 보조·선택된 옅은 면. 위에 흰 글자를 얹지 않는다(1.61:1). */
-    tintMuted: palette.rose300,
+    tintMuted: palette.coral300,
     /** tintSubtle 면의 1px 테두리. */
-    tintBorder: palette.rose100,
+    tintBorder: palette.coral100,
     /** 배지·안내 배너·아바타의 옅은 면. tokens.json color.brand.primarySurface. */
-    tintSubtle: palette.rose50,
+    tintSubtle: palette.coral50,
     /** 보조 강조. tokens.json color.brand.accent. */
-    tintAccent: palette.roseAccent,
+    tintAccent: palette.coralAccent,
     tintInactive: palette.gray500,
 
     positive: palette.green500,
