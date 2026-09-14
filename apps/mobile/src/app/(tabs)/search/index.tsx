@@ -1055,8 +1055,18 @@ export default function SearchScreen() {
                             .45, 다크에서 .72로 갈려 시안보다 옅거나 진해진다(2026-09-11 캡처로
                             드러났다 — 그래서 pill이 사진 위에서 다른 무게로 보였다).
                           */}
+                          {/*
+                            글자는 `onInk`(흰색)다. `onTint`가 아니다 — 2026-09-14 새 팔레트에서
+                            `onTint`가 흰색에서 **플럼 #371B34**로 바뀌었다(키 컬러 면 위 흰 글자가
+                            2.51:1이라 어둡게 간 값이다). 그 값을 이 자리에 그대로 두면 검은
+                            반투명 위에 검은 글자가 된다.
+
+                            저장소 여러 곳의 「흰 글자 금지」는 **키 컬러 면 위** 이야기이고
+                            여기는 다른 자리다 — 새하얀 사진 위에서도 rgba(0,0,0,.5)를 깔면
+                            흰 글자가 3.95:1로 읽힌다.
+                          */}
                           <View style={[styles.adPill, { backgroundColor: theme.pillOnImage }]}>
-                            <ThemedText type="micro" style={{ color: theme.onTint }}>
+                            <ThemedText type="micro" style={{ color: theme.onInk }}>
                               {ad.label}
                             </ThemedText>
                           </View>
