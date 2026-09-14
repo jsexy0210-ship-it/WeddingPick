@@ -854,7 +854,8 @@
       "스킨": "피그마 2색으로 간다. 6종 체계 정리는 차후 진행",
       "서체": "Pretendard 단일. Playfair Display·Noto Sans KR·DM Mono 전부 제외",
       "중간상태": "개편 중 사용자가 중간 상태를 보는 것은 무관",
-      "날짜선택": "휠 3열 유지. 온보딩에 사용 예정"
+      "날짜선택": "휠 3열 유지. 온보딩에 사용 예정",
+      "onPrimary": "#371B34 — #E7898D 위 글자·아이콘. 흰색(2.51:1 미달)에서 바꿨고 6.11:1로 통과. 바탕 #E7898D는 key 컬러이므로 절대 바꾸지 않는다"
     },
     "근거문서": "Figma Make 내부 pasted_text/figma-structure-refactor.md (대표님 작성) + guidelines/Guidelines.md. GitHub 클론에는 없고 Figma MCP로만 읽힘 (fileKey oEZxIL2yurHqrBJoZO6ffL, nodeId 0:1)",
     "전환비용근거": "apps/mobile+packages/ui 색 하드코딩 0건 · 색 경로는 packages/ui/src/theme.ts <- spec/tokens.json 단일 진입점 · 토큰 읽는 파일 43개 · 새 디자인도 SEED 기반 → 토큰 한 파일 교체로 화면 145개 전파",
@@ -885,11 +886,24 @@
       "프리뷰 Sonnet5": "session_0168KdYVh8htKusJwoTQaFF2"
     },
     "미해결": [
-      "테라코타(검증·신뢰 강조색) 헥사값 없음 — Guidelines에 이름만 있고 theme.css에 값 없음. 2색으로 가면 그 역할 자리가 빈다",
       "스킨 6종 체계와 새 2색 체계의 관계 — 대표님이 차후 진행으로 미룸",
       "Pretendard 폰트 파일 미확보 — 필요 시 대표님이 업로드",
-      "Figma 원본은 Make 파일이라 get_screenshot·get_metadata 미지원. 21화면 중 픽셀 근거는 홈·검색 2개뿐"
-    ]
+      "Figma 원본은 Make 파일이라 get_screenshot·get_metadata 미지원. 21화면 중 픽셀 근거는 홈·검색 2개뿐",
+      "앱 아이콘·스플래시 색 — CLAUDE.md는 「스킨과 무관하게 Coral #FF6F61 고정, 마크는 White」다. apps/mobile/app.json 2건이 여기 걸린다. 새 색으로 바꿀지 대표님 판단 대기",
+      "웹사이트 브랜드 색 3건(apps/web) — 앱만 먼저 갈지 함께 갈지 대표님 판단 대기",
+      "테라코타(검증·신뢰 강조색) 헥사값 없음 — 스킨 2색 체계에서 그 역할 자리가 빈다. 스킨 정리는 차후 진행",
+      "claimed_* + 검토 게이트를 WP-RPT-004에 넣을지 — MASTER 의견은 넣지 말자(폐기된 WP-RPT-010을 다른 이름으로 되살리는 셈). 대표님 답 대기",
+      "한복 업종코드 G20904 — main은 명시 배제, PR #216은 대표 지시 근거로 추가. 대표님 답 대기",
+      "PR #170(보존 3건) 머지 여부 — CI 초록·충돌 없음. 머지돼야 브랜치 22개를 안전하게 지울 수 있다"
+    ],
+    "폐기된제안": "#C63F45(주색을 어둡게 하는 보정안)는 MASTER의 잘못된 제안이었고 대표님이 물리셨다. 주색을 어둡게 하는 방향은 전부 폐기다",
+    "정정": {
+      "틀린전제": "MASTER가 「apps/mobile+packages/ui에 #FF6F61 하드코딩 0건」이라고 세션 아홉에 브리핑했으나 사실이 아니다. 낡은 작업 트리에서 센 값이었다",
+      "실제": "origin/main 기준 10건 — packages/ui/src/design-tokens.ts 5(:11 primary :59 series1 :68 coral :563 background :680 fill) · apps/mobile/app.json 2(:22 :45) · apps/web/public/assets/site.webmanifest 1 · apps/web/public/assets/weddingpick-og.svg 1 · apps/web/src/subpages.ts 1",
+      "조치": "design-tokens.ts와 app.json을 토큰 세션 담당에 추가했다. apps/web 3건은 웹사이트가 즉시 바뀌므로 손대지 않고 대표님 판단 대기",
+      "잡아낸곳": "MASTER 감시 세션(session_01AiXrTyoZ3krMCuwuHkTPkG) 1주기 보고"
+    },
+    "우선순위규칙": "대표님이 직접 정한 것 > 루트 시안 > CHANGELOG 상단·최신 핸드오프 md > 옛 md. 「최신 md가 이긴다」는 md끼리 부딪칠 때의 규칙이지 대표 지시를 이기는 규칙이 아니다. rn-components가 원형 로더를 이 규칙을 거꾸로 적용해 보류했다가 정정받았다(원형 로더는 2026-09-11 대표 지시)"
   },
   "sessionAbsorption20260914": {
     "기준시각": "2026-09-14 20:45 KST",
