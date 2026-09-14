@@ -417,7 +417,12 @@ export default function SetupScreen() {
                 <ThemedText type="body" themeColor="textSecondary">
                   {ddayParts(remaining.days).prefix}
                 </ThemedText>
-                <ThemedText type="t5" numeric themeColor="tint">
+                {/*
+                  D-day 숫자는 `tintDark`다. 새 키 컬러(#e7898d)는 흰 바탕에서
+                  2.27:1이라 글자로 읽히지 않는다 — 옅은 면 위 글자용으로 나눠 둔
+                  쪽을 쓴다(packages/ui theme.ts `tintDark`).
+                 */}
+                <ThemedText type="t5" numeric themeColor="tintDark">
                   {ddayParts(remaining.days).number}
                 </ThemedText>
                 <ThemedText type="body" themeColor="textSecondary">

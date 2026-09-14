@@ -181,7 +181,8 @@ function SheetBody({
         <ThemedText type="t5" numeric>
           {formatDateDot(iso)}
         </ThemedText>
-        <ThemedText type="t6" numeric themeColor="tint" style={styles.bold}>
+        {/* 글자라서 `tint`가 아니라 `tintDark`다 — 새 키 컬러는 흰 바탕에서 2.27:1이다. */}
+        <ThemedText type="t6" numeric themeColor="tintDark" style={styles.bold}>
           {ddayLabel(remaining.kind === 'upcoming' ? remaining.days : 0)}
         </ThemedText>
       </View>
