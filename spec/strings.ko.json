@@ -583,6 +583,19 @@
     "disconnectDesc": "지금까지 쌓인 기록은 각자 남아요"
   },
 
+  "community": {
+    "title": "라운지",
+    "tab.review": "리얼후기",
+    "tab.feed": "웨딩피드",
+    "tab.expo": "박람회",
+    "review.empty.title": "아직 후기가 없어요",
+    "review.empty.body": "실 제보가 쌓이면 여기 보여드려요",
+    "feed.empty.title": "아직 올라온 글이 없어요",
+    "feed.empty.body": "준비 이야기가 쌓이면 여기 보여드려요",
+    "expo.cta": "박람회 보기",
+    "detail.notFound": "게시물을 찾을 수 없어요"
+  },
+
   "benefit": {
     "title": "혜택",
     "hero": "{n}개를 더 하면\n{amount}을 받아요",
