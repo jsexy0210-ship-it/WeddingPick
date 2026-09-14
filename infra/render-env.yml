@@ -135,6 +135,22 @@ services:
       # 활용기간 2026-09-08~2028-09-08. 값은 GitHub Secrets의 같은 이름에서 읽는다 —
       # 저장소·문서·로그에 값을 적지 않는다. public-data.yml도 같은 시크릿을 쓴다.
       - SBIZ_API_KEY
+      # Gemini — Pick 인증 읽기(영수증 이미지)와 상담기록 정리(녹음 파일).
+      #
+      # **이 서비스에만 둔다.** 위의 `WeddingPick-웹뷰(앱 테스트)`와 `WeddingPick-관리자
+      # 사이트`는 정적 사이트이고, 거기 넣은 값은 번들에 박혀 앱을 받은 사람 누구나
+      # 꺼낼 수 있다. Gemini는 **API 서버 안에서만 부른다** — 앱이 직접 부르지 않는다.
+      #
+      # 같은 이유로 이름에 `EXPO_PUBLIC_` 접두사를 붙이지 않는다. 그 접두사가 붙은
+      # 값은 Expo가 번들에 그대로 넣는다(`apps/mobile/README.md`).
+      #
+      # 값은 GitHub Secrets의 같은 이름에서 읽는다. 저장소·문서·로그에 값을 적지
+      # 않는다 — `SBIZ_API_KEY`와 같은 규칙이다.
+      #
+      # **모델 이름은 여기 두지 않는다.** 비밀이 아니고 갈아끼울 일이 잦다
+      # (2026-09-14 확인: Gemini 2.5 Flash-Lite가 10월 16일에 없어진다). 모델은
+      # 위 `vars`에 두어 배포만으로 바꿀 수 있게 한다.
+      - GEMINI_API_KEY
       # 파일 저장소(NCP Object Storage). 다섯 개 모두 GitHub Secrets에 이미 있다 —
       # 여기 이름을 적어야 Render로 흘러간다. `storage-test.yml`이 같은 이름을 쓴다.
       # 결제 증빙이 들어가는 버킷이므로 **공개 읽기로 두지 않는다.**
