@@ -106,7 +106,7 @@ export function WeddingCalendar({ value, onChange, today = new Date(), allowPast
             key={label}
             type="t7"
             style={styles.cell}
-            themeColor={index === 0 ? 'negative' : index === 6 ? 'tint' : 'textAssistive'}>
+            themeColor={index === 0 ? 'negative' : index === 6 ? 'tintDark' : 'textAssistive'}>
             {label}
           </ThemedText>
         ))}
@@ -154,7 +154,7 @@ export function WeddingCalendar({ value, onChange, today = new Date(), allowPast
                         : weekday === 0
                           ? 'negative'
                           : weekday === 6
-                            ? 'tint'
+                            ? 'tintDark'
                             : 'text'
                   }>
                   {day}

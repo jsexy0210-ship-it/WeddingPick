@@ -27,9 +27,10 @@ export function PickStatusBadge({ status }: PickStatusBadgeProps) {
         ? theme.positiveBackground
         : theme.backgroundSelected;
 
+  /* 옅은 면(tintSubtle) 위 글자는 tintDark다 — 새 키 컬러(#e7898d)를 글자에 쓰면 2.27:1로 읽히지 않는다. */
   const textColor =
     status === 'picked'
-      ? theme.tint
+      ? theme.tintDark
       : status === 'decided'
         ? theme.positive
         : theme.textSecondary;

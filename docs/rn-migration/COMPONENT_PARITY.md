@@ -91,6 +91,21 @@ Figma 신규 디자인이 요구하는 공용 컴포넌트와 이 저장소가 �
 금액은 어느 카드든 `priceLine(paidPrice, guidePrice)`의 결과만 받는다 — `packages/ui`는
 `packages/domain`을 import하지 않는 표시 전용이라 금액 규칙을 두 벌 두지 않는다.
 
+### 새 토큰에 맞춘 것 (`claude/rn-tokens` 머지 후)
+
+키 컬러가 코랄 `#ff6f61`에서 더스티 로즈 `#e7898d`로 바뀌었다. 새 색은 **글자로 쓰면
+흰 바탕에서 2.5:1**이라 읽히지 않는다 — 토큰 세션이 그래서 `tintDark`를 같이 넣었다.
+`tint`를 글자색으로 쓰던 자리를 `tintDark`로 옮겼다.
+
+| 파일 | 바꾼 것 |
+| --- | --- |
+| `pick-status-badge.tsx` | 옅은 면 위 «Pick» 글자 `tint` → `tintDark` |
+| `wedding-calendar.tsx` | 토요일 요일 라벨과 날짜 글자 `tint` → `tintDark` |
+| `badge.tsx` | `accent` 갈래 추가 — 옅은 면 + `tintDark` 글자. **검증·신뢰에만** |
+
+`tint`를 **면**으로 쓰는 자리(버튼 · 선택된 칩 · FAB · 선택된 날짜)는 그대로 뒀다.
+아래 «판단 필요» 2번을 봐 주세요.
+
 ### 토큰 세션에 넘기는 것
 
 `spec/tokens.json`에는 있는데 `packages/ui/src/theme.ts`의 `Layout`에 아직 안 올라온 값이 있다.
@@ -113,6 +128,30 @@ Figma 신규 디자인이 요구하는 공용 컴포넌트와 이 저장소가 �
 `CLAUDE.md`는 충돌 시 최신 핸드오프 md를 따르라고 한다. 그래서 **원형 로더를 만들지 않고 대기한다.**
 700ms 임계값은 양쪽이 같으므로 그대로 지킨다. 어느 쪽으로 갈지 정해주시면 그때 반영한다.
 
-**2. `BottomSheet` · `BottomNavigation`을 `packages/ui`로 올릴지.**
+**2. 흰 글자를 더스티 로즈 면에 얹는 자리 — 대비 2.5:1.**
+
+새 키 컬러 `#e7898d` 위의 흰 글자는 **2.51:1**이다. WCAG AA는 본문 4.5:1, 큰 글자도 3:1이라
+큰 글자 기준도 넘지 못한다. 지금 그 조합을 쓰는 곳은 Primary 버튼(`ActionButton`) · 선택된
+칩(`FilterChip`) · `Fab` · 선택된 날짜(`WeddingCalendar`) · `StepList`다.
+
+Figma 신규가 `--primary: #E7898D` · `--primary-foreground: #ffffff`로 직접 정한 짝이라
+**임의로 바꾸지 않았다.** 앱의 모든 CTA 색이 한꺼번에 달라지는 결정이다. 셋 중 하나를 골라주세요.
+
+- 그대로 간다(시안대로, 대비 미달을 감수)
+- 면을 `tintDark`(#c63f45 · 흰 글자 5.0:1)로 어둡게
+- 글자를 어둡게(잉크 위 로즈 면)
+
+**3. `packages/ui` 밖에서 깨진 것 — 토큰 세션 몫.**
+
+`claude/rn-tokens`의 `coral500` → `rose500` 이름 변경으로 `apps/web`의 테스트가 깨져 있다.
+
+```
+apps/web/src/site.test.ts › 색을 theme.ts와 같이 쓴다
+  coral500 → undefined
+```
+
+웹은 내 담당이 아니라 손대지 않았다. 토큰 세션이 같이 고쳐야 한다.
+
+**4. `BottomSheet` · `BottomNavigation`을 `packages/ui`로 올릴지.**
 지금은 앱 쪽 공용 파일이고 화면 12곳 · 탭 전체가 물려 있다. 옮기면 화면 세션 셋과 동시에 부딪힌다.
 지금은 두고, 화면 작업이 끝난 뒤 따로 옮기는 것을 권한다.
