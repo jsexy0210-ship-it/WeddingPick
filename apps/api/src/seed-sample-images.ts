@@ -2,6 +2,7 @@ import { VENDOR_CATEGORY_LABEL, type VendorCategory } from '@weddingpick/domain'
 
 import { loadConfig } from './config';
 import { createPool } from './db';
+import { isDisplayableImageUrl } from './image-hotlink';
 
 /**
  * 샘플 업체의 사진을 카카오(다음) 이미지 검색 결과로 바꾼다 — 검수용, 출시 전
@@ -15,6 +16,14 @@ import { createPool } from './db';
  * 저작권 근거는 `unknown`으로 적고 메모에 출처를 남긴다 — 이 상태는 정식 운영에서
  * 노출하지 않기로 한 값이다(0050). 검수용 스테이징에서만 쓰고, 출시 전에
  * `seed:samples --remove`로 업체째 걷어낸다.
+ *
+ * 검색 결과에는 핫링킹을 막는 CDN 주소가 섞여 온다 — 다음 이미지 검색은 웹에
+ * 있는 것을 그대로 물어다 주고, 그 안에 네이버 블로그 이미지가 들어 있다. 그런
+ * 주소는 저장하지 않는다. 담아둘 만한 것을 버리는 것이 아니라, **어차피 못 뜰
+ * 행**을 안 만드는 것이다 — 우리가 원본을 받아둔 적이 없어 storage_key가 없고,
+ * 그러면 그 행은 source_url 하나뿐이라 영영 빈칸이다. 감사 추적으로서도 남길
+ * 것이 없다. 우리가 그 이미지로 한 일이 없기 때문이다(0050의 `source_url`은
+ * «우리 저장소로 옮긴 원본이 어디서 왔는지»를 적는 칸이다).
  */
 
 const SOURCE_KEY = 'sample';
@@ -105,18 +114,33 @@ async function main(): Promise<void> {
 
       position[query] = page + 1;
 
-      let images: KakaoImage[] = [];
+      let found: KakaoImage[] = [];
 
       try {
-        images = await searchImages(appKey, query, page, PER_VENDOR);
+        found = await searchImages(appKey, query, page, PER_VENDOR);
       } catch (error) {
         console.error(`${vendor.record_key}: ${error instanceof Error ? error.message : String(error)}`);
         continue;
       }
 
-      if (images.length === 0) {
+      if (found.length === 0) {
         console.log(`${vendor.record_key}: 검색 결과 없음(${query}) — 그대로 둔다.`);
         continue;
+      }
+
+      /* 못 뜰 주소는 여기서 버린다 — 담으면 화면이 요청을 보내고 403을 받는다. */
+      const images = found.filter((image) => isDisplayableImageUrl(image.image_url));
+      const dropped = found.length - images.length;
+
+      if (images.length === 0) {
+        console.log(
+          `${vendor.record_key}: 검색 결과 ${found.length}장이 전부 핫링킹 차단 호스트다(${query}) — 그대로 둔다.`
+        );
+        continue;
+      }
+
+      if (dropped > 0) {
+        console.log(`${vendor.record_key}: 핫링킹 차단 호스트 ${dropped}장을 뺐다.`);
       }
 
       await pool.query('DELETE FROM structured.vendor_images WHERE vendor_id = $1', [vendor.id]);
