@@ -19,7 +19,7 @@ import { Platform } from 'react-native';
  *
  * gray 램프와 의미색은 SEED scale 토큰을 그대로 옮겼다. **키 컬러만 SEED와
  * 다르다** — SEED의 carrot(#ff6f0f)은 당근의 브랜드색이고, 우리 키 컬러는
- * 통합정책 v3.1 §5가 정한 코랄 `#ff6f61`이다.
+ * Figma 신규 디자인이 정한 `#e7898d`다.
  *
  * `orange`/`orangeBg`(경고)는 `design_handoff_weddingpick/웨딩픽 컴포넌트
  * 시트.dc.html`에서 직접 읽은 값이다 — gray 램프와 이름 체계가 달라 보여도
@@ -29,12 +29,27 @@ const palette = {
   /*
    * 키 컬러. Pick·핵심 CTA·활성/선택에만 제한적으로 쓴다.
    *
-   * strong/weak은 정책이 값을 정해주지 않아 우리가 뽑았다. weak은 정책이 적은
-   * `#FFF0EE`를 그대로 쓴다.
+   * 값의 원본은 `spec/tokens.json` `color.brand`다. rose500/rose300만 Figma
+   * 직접값이고 나머지는 그 파일의 `$derivation` 규칙으로 계산한 파생색이다 —
+   * **여기서 손으로 고치지 않는다.** 고칠 일이 생기면 tokens.json을 고치고 옮긴다.
+   *
+   * 이름을 coral*에서 rose*로 바꿨다. 새 키 컬러는 코랄이 아니고, 이름만 남으면
+   * 화면에서 «코랄»을 찾다가 스킨의 코랄(#ff6f61, 그대로 살아 있다)과 섞인다.
    */
-  coral500: '#ff6f61',
-  coral600: '#e2564a',
-  coral50: '#fff0ee',
+  /** tokens.json color.brand.primary ← Figma theme.css:16 --primary. */
+  rose500: '#e7898d',
+  /** tokens.json color.brand.primaryPressed. 눌림. */
+  rose600: '#d87d80',
+  /** tokens.json color.brand.primaryDark. 옅은 면 위 텍스트 — rose50 위 4.52:1. */
+  rose700: '#c63f45',
+  /** tokens.json color.brand.primaryTint ← Figma theme.css:34 --chart-2. */
+  rose300: '#f4bfc1',
+  /** tokens.json color.brand.primaryBorder. rose50 면의 1px 테두리. */
+  rose100: '#f6d5d6',
+  /** tokens.json color.brand.primarySurface. 옅은 강조 면. */
+  rose50: '#fcf1f1',
+  /** tokens.json color.brand.accent ← Figma theme.css:22 --accent. 보조 강조. */
+  roseAccent: '#eca0a3',
 
   /* SEED gray 램프 (light). */
   gray900: '#212124',
@@ -159,10 +174,21 @@ export const Colors = {
     /** 입력 필드 기본 테두리. spec/tokens.json line.fieldBorder. */
     fieldBorder: palette.gray400,
 
-    tint: palette.coral500,
-    tintStrong: palette.coral600,
-    /** 배지·안내 배너·아바타의 옅은 코랄. 정책 v3.1의 Coral Weak. */
-    tintSubtle: palette.coral50,
+    tint: palette.rose500,
+    tintStrong: palette.rose600,
+    /**
+     * 옅은 면 위에 얹는 글자. tintSubtle 위 4.52:1로 WCAG AA를 넘긴다 —
+     * tint(#e7898d)를 글자에 쓰면 2.27:1이라 읽히지 않는다.
+     */
+    tintDark: palette.rose700,
+    /** 배지·차트 보조·선택된 옅은 면. 위에 흰 글자를 얹지 않는다(1.61:1). */
+    tintMuted: palette.rose300,
+    /** tintSubtle 면의 1px 테두리. */
+    tintBorder: palette.rose100,
+    /** 배지·안내 배너·아바타의 옅은 면. tokens.json color.brand.primarySurface. */
+    tintSubtle: palette.rose50,
+    /** 보조 강조. tokens.json color.brand.accent. */
+    tintAccent: palette.roseAccent,
     tintInactive: palette.gray500,
 
     positive: palette.green500,
@@ -214,9 +240,17 @@ export const Colors = {
     track: palette.darkGray300,
     fieldBorder: palette.darkGray400,
 
-    tint: '#ff8478',
-    tintStrong: '#ffa79e',
-    tintSubtle: '#3a2320',
+    tint: '#eb9ca0',
+    tintStrong: '#f1bcbe',
+    /**
+     * 어두운 면에서는 «대비 확보용»이 어두운 쪽이 아니라 밝은 쪽이다 —
+     * tintSubtle(#3f2b2c) 위 7.96:1. 그래서 tintStrong과 같은 값을 가리킨다.
+     */
+    tintDark: '#f1bcbe',
+    tintMuted: '#674648',
+    tintBorder: '#4f3637',
+    tintSubtle: '#3f2b2c',
+    tintAccent: '#f1bcbe',
     tintInactive: palette.darkGray500,
 
     positive: '#3ecf8e',
@@ -250,10 +284,14 @@ export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
  * 우리는 이미 Pretendard를 번들에 싣고 있고, Pretendard는 상업적으로 쓸 수 있다.
  * 즉 **핸드오프가 피하려던 문제가 여기에는 없다.** 시스템 서체까지 내려가면 한글이
  * 눈에 띄게 나빠지므로 Pretendard를 앞에 두고 뒤는 SEED 순서를 그대로 따른다.
- * **핸드오프에서 벗어난 유일한 값이고, 벗어난 이유가 이것이다.**
+ *
+ * **2026-09-14에 핸드오프 쪽이 이리로 넘어왔다.** `spec/tokens.json`
+ * `typography.$fontFamily`가 «시스템 서체를 쓴다 · Pretendard 미적용»에서
+ * «Pretendard 단일»로 뒤집혔고, 이제 이 스택이 그 원본과 같은 말을 한다.
+ * 'Noto Sans KR'은 뺐다 — Figma 신규 디자인이 뺀 서체다.
  */
 const SANS_STACK =
-  "'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif";
+  "'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif";
 
 export const Fonts = Platform.select({
   ios: { sans: 'Pretendard', serif: 'ui-serif', rounded: 'Pretendard', mono: 'ui-monospace' },
