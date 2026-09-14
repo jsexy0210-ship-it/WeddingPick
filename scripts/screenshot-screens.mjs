@@ -319,8 +319,15 @@ async function main() {
        * 주소는 형식만 맞으면 된다 — 나가는 요청은 브라우저가 전부 가로챈다.
        * 그래도 비워 두지는 않는다: 비면 `isServerConfigured`가 false가 되어
        * 서버를 아예 안 부르는 다른 화면이 찍힌다(api/config.ts).
+       *
+       * 포트 1은 Chromium이 ERR_UNSAFE_PORT로 접속 자체를 막는다(tcpmux) —
+       * page.route가 가로채기도 전에 브라우저가 거부한다. 39999는 안전 목록 밖의
+       * 높은 포트다. 경로에 `/capture`를 덧붙이면 안 된다 — `installFixtures`가
+       * `/v1/`로 **시작하는** pathname만 가로채는데, base가 `/capture`로 끝나면
+       * 실제 요청 경로가 `/capture/v1/...`가 되어 매칭에서 빠지고 실제 네트워크로
+       * 나가 ERR_CONNECTION_REFUSED가 난다.
        */
-      env: { ...process.env, EXPO_PUBLIC_API_URL: 'http://127.0.0.1:1/capture' },
+      env: { ...process.env, EXPO_PUBLIC_API_URL: 'http://127.0.0.1:39999' },
     });
   }
 

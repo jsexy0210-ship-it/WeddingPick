@@ -68,7 +68,7 @@ export function Toast({ message, onHidden }: ToastProps) {
   return (
     <Animated.Text
       accessibilityRole="alert"
-      style={[styles.toast, { backgroundColor: theme.backgroundInk, color: theme.onInk, opacity }]}>
+      style={[styles.toast, { backgroundColor: theme.backgroundInk, color: theme.onTint, opacity }]}>
       {shown}
     </Animated.Text>
   );

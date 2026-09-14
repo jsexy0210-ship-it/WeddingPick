@@ -381,7 +381,7 @@
     "bothPicked": "둘 다 고른 곳",
     "onlyMine": "나만 고른 곳",
     "bothPickedSection": "둘 다 고른 곳",
-    "bothPickedHint": "먼저 비교해보면 좋아요",
+    "bothPickedHint": "먼저 비교해보세요",
     "categoryHero": "{n}곳 중 {m}곳은\n{partner}님도 골랐어요",
     "categoryHint": "둘 다 고른 곳부터 비교해보세요",
     "decideTitle": "{category}는 {vendor}로 결정할까요?",
