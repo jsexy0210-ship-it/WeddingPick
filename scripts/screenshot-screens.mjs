@@ -297,7 +297,7 @@ const HELP = `화면을 실제로 렌더해 PNG로 찍는다.
   --full           화면 전체(스크롤 포함)를 찍는다. 기본은 390x844 한 화면.
   --wait <ms>      렌더를 기다리는 시간. 기본 1500.
   --tap <이름>     찍기 전에 누른다. 여러 번 줄 수 있고 준 순서대로 누른다.
-                   눌러야 나오는 화면(바텀시트 · 펼침)을 찍을 때 쓴다. 못 찾으면 멈춘다.
+                   눌러야 나오는 화면(바텀시트 · 펼침)을 찍을 때 쓴다. 못 찾으면 멈추다.
   --viewport WxH   창 크기. 기본은 경로를 보고 정한다 — /admin은 1920x1080, 나머지 390x844.
 `;
 
@@ -327,16 +327,7 @@ async function main() {
        * 실제 요청 경로가 `/capture/v1/...`가 되어 매칭에서 빠지고 실제 네트워크로
        * 나가 ERR_CONNECTION_REFUSED가 난다.
        */
-      env: {
-        ...process.env,
-        EXPO_PUBLIC_API_URL: 'http://127.0.0.1:39999',
-        /*
-         * export:web이 빌드 뒤 build-preview.mjs(대표님 프리뷰용 배너·가짜 로그인)를
-         * 부른다. 여기서 끈다 — 그 배너가 찍히면 「실제 화면을 있는 그대로 찍는다」가
-         * 깨진다. 토큰은 이 파일이 이미 addInitScript로 심는다(위 installFixtures 옆).
-         */
-        WEDDINGPICK_SKIP_PREVIEW_SHIM: '1',
-      },
+      env: { ...process.env, EXPO_PUBLIC_API_URL: 'http://127.0.0.1:39999' },
     });
   }
 

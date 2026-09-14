@@ -12,12 +12,14 @@
  * **`/login`·`/setup`은 건드리지 않는다.** 그 경로로 직접 들어오면 토큰을 안 심는다 —
  * 대표님이 로그인·가입 화면 디자인도 그대로 보셔야 한다(MASTER 지시).
  *
- * **`apps/mobile/package.json`의 `export:web`에서 빌드 뒤 자동으로 불린다** — Render의
- * 배포 buildCommand가 이미 `npm run export:web --workspace @weddingpick/mobile`이라
- * `render.yaml`을 건드리지 않고도 프리뷰 빌드에 얹힌다. **캡처 도구는 빠진다** —
- * `screenshot-screens.mjs`가 `WEDDINGPICK_SKIP_PREVIEW_SHIM=1`을 주고 빌드하므로
- * 이 파일이 그 값을 보고 조용히 아무 것도 안 한다. 이 배너·가짜 로그인이 기존
- * Before/After 캡처에 섞이면 안 된다 — 그건 실제 화면을 있는 그대로 찍는 도구다.
+ * **`export:web`에는 안 걸려 있다 — 따로 `npm run preview:web`으로만 부른다.**
+ * `render.yaml`의 `weddingpick-app-web`·`weddingpick-admin` buildCommand가 둘 다
+ * `npm run export:web --workspace @weddingpick/mobile`을 부르므로, 이 스크립트를
+ * `export:web` 안에 넣으면 이 브랜치가 어떤 경로로든 main에 닿는 순간 로그인 우회가
+ * 운영 배포(웹·관리자)에 그대로 실려 나간다 — 처음에 그렇게 짠다가 MASTER가 잡았다.
+ * `preview:web`(`export:web && build-preview.mjs`)을 따로 두고 대표님 프리뷰를 만들
+ * 때만 그것을 부른다 — 캡처 도구(`screenshot-screens.mjs`)도 `export:web`만 쓰므로
+ * 이 배너·가짜 로그인이 Before/After 캡처에 섮일 일이 없다(별도 스킵 처리 불필요).
  *
  * 이 스크립트가 만드는 파일(`preview-fixtures.js`·`preview-shim.js`)은 `dist/` 안에만
  * 있다 — `dist/`는 `.gitignore`로 저장소에 안 들어간다. `claude/rn-preview` 전용이고
@@ -160,12 +162,6 @@ async function injectInto(file) {
 }
 
 async function main() {
-  if (process.env.WEDDINGPICK_SKIP_PREVIEW_SHIM) {
-    process.stderr.write('· WEDDINGPICK_SKIP_PREVIEW_SHIM — 프리뷰 얹기를 건너뛴다(캡처 빌드)\n');
-
-    return;
-  }
-
   if (!existsSync(DIST)) {
     process.stderr.write('· dist가 없다 — export:web을 먼저 돌린다\n');
 
