@@ -32,9 +32,13 @@ describe('공개 법적 문서', () => {
    * 서비스 정보는 AWS 싱가포르에 있다(`docs/INFRA_ACCESS_AUDIT_2026-09-10.md`). 법이 묻는
    * 것은 회사가 어디에 있느냐가 아니라 정보가 어디로 가느냐다.
    *
-   * Render 운영 API의 싱가포르 이전은 시행일까지 확인할 대상이다. 2026-09-13 콘솔 확인에서
-   * 기존 API는 Ohio, 백그라운드 워커는 Oregon, 정적 웹은 Global이므로 전체를 싱가포르로
-   * 단정하지 않는다. 회사 소재지와 실제 처리 리전을 구분한다.
+   * Render의 **미국 리전 서버 둘(운영 API · DB)은 2026-09-14에 삭제됐다**(대표님 확인).
+   * 운영 API는 그전에 싱가포르(`weddingpickl-sg`)로 옮겨져 있었다. 주기 작업은 별도
+   * 프로세스가 아니라 그 API 프로세스 안에서 돈다 — `apps/api/src/index.ts`가
+   * `RUN_WORKER_IN_API !== 'false'`일 때 `startWorkerLoops`를 띄우고, 저장소 어디에도
+   * 그 값을 `false`로 넣은 곳이 없다. `render.yaml`의 `weddingpick-worker`는
+   * `autoDeploy: false`로 선언만 돼 있고 배포된 적이 없다. 그래서 미국에 남은 처리가
+   * 없다. 정적 웹만 전 세계 전송망이다. 회사 소재지와 실제 처리 리전은 계속 구분한다.
    *
    * 리전을 다시 옮길 때에는 이 값과 방침과 `docs/render-region-move.md`를 함께 고친다.
    */
@@ -49,13 +53,21 @@ describe('공개 법적 문서', () => {
       expect(row(vendor)).toContain('싱가포르');
       expect(row(vendor)).not.toContain('미국 ·');
     }
-    expect(row('privacy@render.com')).toContain('미국(기존 API 및 백그라운드 처리)');
+    expect(row('privacy@render.com')).toContain('싱가포르(운영 API 및 주기 작업)');
     expect(row('privacy@render.com')).toContain('전 세계(정적 웹 전송망');
-    // 자료 분석과 푸시 중계는 그대로 미국이다. 넷 다 싱가포르로 뭉뚱그리지 않는다.
-    expect(row('privacy@anthropic.com')).toContain('미국 ·');
+    // 푸시 중계는 그대로 미국이다. 싱가포르로 뭉뚱그리지 않는다.
     expect(row('650 Industries')).toContain('미국 ·');
+    /*
+     * 자료 분석·상담 녹음 정리의 수탁자를 Anthropic에서 Google로 바꿨다(2026-09-14 대표 결정).
+     * **처리 국가를 아직 적지 못했다.** 이 저장소에서 구글이 공개한 정책 원문에 닿지 못해
+     * 리전·보유기간·법인명을 확인하지 못했고, 확인하지 못한 것을 지어내는 대신 「확인 필요」로
+     * 두었다. 확인되면 이 시험도 실제 국가를 잠그도록 함께 고친다.
+     */
+    expect(row('Gemini API')).toContain('확인 필요');
+    expect(row('Gemini API')).not.toContain('싱가포르');
 
     expect(html).toContain('이전받는 자의 사업자 소재지와 다를 수 있습니다');
     expect(html).toContain('이 처리방침 시행일부터 Render의 운영 API와 Neon의 정보 저장소는 싱가포르 리전을 사용합니다');
+    expect(html).toContain('Render의 미국 리전 서버는 사용하지 않습니다');
   });
 });
