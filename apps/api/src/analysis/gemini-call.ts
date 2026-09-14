@@ -79,7 +79,10 @@ export function toGeminiSchema(schema: z.ZodType): unknown {
 
 export type GeminiPart =
   | { text: string }
-  | { inlineData: { mimeType: string; data: string } };
+  /** 요청 본문에 실어 보낸다. 작은 것만 — 음성 기준 총 요청 20MB가 한도다. */
+  | { inlineData: { mimeType: string; data: string } }
+  /** Files API로 올린 것을 가리킨다. 큰 녹음은 이쪽이다. */
+  | { fileData: { mimeType: string; fileUri: string } };
 
 export type GeminiUsage = {
   inputTokens: number;
@@ -204,4 +207,9 @@ export async function callGemini<T extends z.ZodType>(input: {
 /** 음성·이미지 한 조각을 요청에 담는 꼴로. */
 export function inlinePart(input: { mimeType: string; bytes: Buffer }): GeminiPart {
   return { inlineData: { mimeType: input.mimeType, data: input.bytes.toString('base64') } };
+}
+
+/** 올려둔 파일을 가리키는 꼴로. */
+export function filePart(input: { mimeType: string; fileUri: string }): GeminiPart {
+  return { fileData: { mimeType: input.mimeType, fileUri: input.fileUri } };
 }

@@ -5,7 +5,13 @@ import {
 } from '@weddingpick/domain';
 
 import { type AudioClip, clipForClassification, type ClipPlan } from './audio-clip';
-import { callGemini, inlinePart } from './gemini-call';
+import { callGemini, filePart, inlinePart } from './gemini-call';
+import {
+  deleteGeminiFile,
+  needsFilesApi,
+  uploadGeminiFile,
+  waitUntilActive,
+} from './gemini-files';
 import {
   CLASSIFY_PROMPT,
   type Classification,
@@ -81,7 +87,12 @@ export type ConsultationReader = {
 };
 
 export function createGeminiConsultationReader(
-  env: NodeJS.ProcessEnv = process.env
+  env: NodeJS.ProcessEnv = process.env,
+  /**
+   * 올린 녹음을 못 지웠을 때 부른다. **삼키지 않는다** — 「지웠다」가 사실이 아닌
+   * 채로 기록되면 그 뒤에 아무도 확인하지 않는다. 재시도 큐가 이 자리에 붙는다.
+   */
+  onDeleteFailed?: (name: string) => void
 ): ConsultationReader {
   const apiKey = env.GEMINI_API_KEY;
 
@@ -111,15 +122,57 @@ export function createGeminiConsultationReader(
     },
 
     async extract(audio, category, model) {
-      const { value, usage } = await callGemini({
-        apiKey,
-        model,
-        systemPrompt: EXTRACT_PROMPT,
-        schema: readingSchemaFor(category),
-        parts: [inlinePart(audio), { text: '이 상담 녹음에서 정해진 칸을 채워라.' }],
-      });
+      /*
+       * 2차는 **전체**를 보낸다. 요청 본문에 실을 수 있는 크기를 넘으면 올린 뒤
+       * 참조를 넘긴다 — 대표님이 정한 상한 100MB는 본문으로 못 들어간다.
+       */
+      const uploaded = needsFilesApi(audio.bytes.length)
+        ? await uploadGeminiFile({
+            apiKey,
+            bytes: audio.bytes,
+            mimeType: audio.mimeType,
+            // 파일 이름에 사용자·업체를 적지 않는다. 저쪽 목록에 남는 값이다.
+            displayName: '상담 녹음',
+          })
+        : null;
 
-      return { reading: value, usage };
+      try {
+        if (uploaded) {
+          /*
+           * 올린 직후는 아직 못 읽는 상태다. 그대로 부르면 거절당하는데 —
+           * **거절당한 호출도 과금된다.** 음성은 비싸서 그 한 번이 아깝다.
+           */
+          await waitUntilActive({ apiKey, name: uploaded.name });
+        }
+
+        const { value, usage } = await callGemini({
+          apiKey,
+          model,
+          systemPrompt: EXTRACT_PROMPT,
+          schema: readingSchemaFor(category),
+          parts: [
+            uploaded
+              ? filePart({ mimeType: audio.mimeType, fileUri: uploaded.uri })
+              : inlinePart(audio),
+            { text: '이 상담 녹음에서 정해진 칸을 채워라.' },
+          ],
+        });
+
+        return { reading: value, usage };
+      } finally {
+        /*
+         * **읽었든 실패했든 지운다.** 저쪽은 48시간 뒤에 지우지만 그것을 기다리지
+         * 않는다 — 처리방침에 「읽어내기가 끝나는 즉시 삭제」라고 적었고, 우리
+         * 저장소만 비우고 남의 저장소에 이틀 두는 것은 그 약속과 다르다.
+         *
+         * 실패는 조용히 넘기지 않고 부르는 쪽이 알 수 있게 남긴다.
+         */
+        if (uploaded) {
+          const gone = await deleteGeminiFile({ apiKey, name: uploaded.name });
+
+          if (!gone) onDeleteFailed?.(uploaded.name);
+        }
+      }
     },
   };
 }
