@@ -67,6 +67,7 @@ export const ROUTES: readonly string[] = [
   '/admin/terms',
   '/admin/users',
   '/admin/vendors',
+  '/community',
   '/capture',
   '/capture/analysis/[id]',
   '/capture/camera',
@@ -169,7 +170,12 @@ export const ROUTES: readonly string[] = [
 ];
 
 /** Root 5탭(SPEC §12.2 · 05-root). 여기에는 뒤로가기를 두지 않는다 — 위가 없다. */
-export const TAB_ROOTS: readonly string[] = ['/', '/search', '/pick', '/wedding', '/my'];
+/*
+ * Root 5탭(2026-09-14 대표 확정 · `features/navigation/root-tabs.ts`와 같은 다섯).
+ * 검색이 내려가고 라운지가 올라왔다 — 검색은 이제 위가 있는 화면이라 뒤로가기를
+ * 둔다(홈 상단 검색바에서 들어오므로 올라가는 곳도 홈이다).
+ */
+export const TAB_ROOTS: readonly string[] = ['/', '/wedding', '/pick', '/community', '/my'];
 
 /**
  * 뒤로가기 버튼을 두지 않는 화면.

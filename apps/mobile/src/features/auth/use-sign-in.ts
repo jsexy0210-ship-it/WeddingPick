@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 
 import { finishSignIn } from '@/features/auth/finish-sign-in';
-import { signInWithKakao } from '@/features/auth/providers';
+import { startSignIn } from '@/features/auth/providers';
 import {
   AGE_REQUIRED_ROUTE,
   isAgeUnverifiedSignInError,
@@ -11,7 +11,8 @@ import {
 } from '@/features/auth/sign-in-handoff';
 
 /**
- * `/login`의 카카오 버튼(WP-AUTH-001/008)이 쓴다. 로그인 실패는 시트로 뜬다
+ * `/login`의 로그인 버튼(카카오 · 애플, WP-AUTH-001/008)이 쓴다. 어느 제공자든
+ * `startSignIn` 하나로 들어간다. 로그인 실패는 시트로 뜬다
  * (`login-failure-sheet.tsx`).
  *
  * 세션이 열리면 응답이 알려준 값(`SessionEntry`)으로 **바로** 화면을 옮긴다 —
@@ -32,7 +33,11 @@ import {
 export function useSignIn() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  /** 로그인 실패 시트의 "다시 시도"가 같은 제공자로 다시 부를 수 있게 마지막 시도를 기억한다. */
+  /**
+   * 로그인 실패 시트의 "다시 시도"가 같은 제공자로 다시 부를 수 있게 마지막 시도를
+   * 기억한다. 진행 중 문구(«카카오로 로그인하는 중이에요» / «Apple로 …»)도 이 값을
+   * 본다 — 제공자가 둘이 되면서 어느 쪽을 눌렀는지 화면이 알아야 한다.
+   */
   const [lastProvider, setLastProvider] = useState<AuthProvider | null>(null);
 
   /**
@@ -48,7 +53,7 @@ export function useSignIn() {
     setLastProvider(provider);
 
     try {
-      const entry = await signInWithKakao(provider, options);
+      const entry = await startSignIn(provider, options);
 
       /* null은 취소(또는 웹에서 이미 떠난 뒤)다 — 아무 데도 가지 않는다. */
       if (entry) await finishSignIn({ provider: provider.provider, email: null }, entry);
@@ -98,5 +103,5 @@ export function useSignIn() {
     fail(new Error(message));
   }
 
-  return { signIn, busy, error, retry, dismissError, reportError, needsAgeConfirm };
+  return { signIn, busy, busyProvider: lastProvider, error, retry, dismissError, reportError, needsAgeConfirm };
 }

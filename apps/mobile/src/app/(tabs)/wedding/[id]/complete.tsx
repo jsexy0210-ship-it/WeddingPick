@@ -12,7 +12,7 @@ export default function WeddingCompleteScreen() {
 
   return (
     <Screen>
-      <NavBar title="웨딩일정" />
+      <NavBar title="웨딩노트" />
       <WeddingCompleteView weddingId={id} />
     </Screen>
   );
