@@ -86,14 +86,22 @@ Figma 신규 디자인이 요구하는 공용 컴포넌트와 저장소가 가�
 묶여 있다. 옮기면 화면 세션들의 import가 한꺼번에 흔들린다. 화면 작업이 끝난 뒤 따로 옮기는
 것을 권한다.
 
-**2. `claude/rn-tokens`는 낡은 `main` 위에서 갈라졌다 — 리베이스가 필요하다.**
-그 브랜치는 키 컬러를 코랄 `#ff6f61` → 더스티 로즈 `#e7898d`로 바꾸고 서체를 Pretendard 단일로
-돌렸는데, 그 뒤 `main`이 `theme.ts`를 크게 고쳤고 `design-tokens.ts` · `circle-loader.tsx` ·
-`text-field.tsx` · `rating-stars.tsx`가 새로 들어왔다. 현재 `main`의 `CLAUDE.md`는 아직
-**코랄 #FF6F61 기본 · 「폰트는 시스템 서체 유지(Pretendard 미적용)」**라고 적는다.
+**2. 사진 위 배지의 대비.**
+`VendorCard` · `PickCard`가 대표 사진 왼쪽 위에 `<Badge kind="brand">`를 얹는다. `main`의 `Badge`에서
+`brand`는 `tintSubtle`(#fbebec) 면에 `tint`(#e7898d) 글자다. 2026-09-14 새 팔레트(#225)에서 그 조합은
+**연분홍 면에 더스티 로즈 글자**라 사진 위에서 거의 안 읽힌다.
 
-이 브랜치는 `main`을 머지하면서 `theme.ts`와 `spec/tokens.json`을 **`main` 쪽으로 받았다.**
-토큰 세션 파일이라 내가 해결할 자리가 아니고, 낡은 판을 끌고 들어가면 `main`의 토큰 개편이
-지워진다. **토큰 세션이 최신 `main` 위로 리베이스한 뒤 다시 머지하겠다.**
-같이 정해야 할 것 둘 — 키 컬러를 로즈로 갈지, 서체를 Pretendard로 갈지. 둘 다 `CLAUDE.md`
-본문과 어긋나므로 규칙 문서도 함께 고쳐야 한다.
+저장소에 이 자리를 위한 토큰이 이미 있다 — `theme.pillOnImage`(rgba(0,0,0,.5), 「이미지 위 순위 ·
+광고 pill 배경」). 검색 화면의 광고 pill이 그것을 쓴다. 어느 쪽으로 갈지 정해주면 반영한다.
+
+**3. Claude GitHub App이 이 저장소에 설치돼 있지 않다.**
+PR 웹훅이 오지 않아 CI 상태를 직접 조회로 확인하고 있다.
+
+---
+
+해소된 항목은 지운다 — 남겨두면 다음 사람이 또 확인한다.
+
+- ~~원형 로더를 만들지 말고 대기~~ → `circle-loader.tsx`가 이미 `main`에 있다(2026-09-11 대표 지시가
+  커밋 `dcbd19f9`로 반영됨). 「대표 지시 > 최신 md」가 맞고 앞선 판단이 틀렸다.
+- ~~`claude/rn-tokens`가 낡은 base 위에 있다~~ → `8a259608`(#225)이 새 팔레트와 Pretendard를
+  `CLAUDE.md`까지 함께 고쳐 `main`에 넣었다.
