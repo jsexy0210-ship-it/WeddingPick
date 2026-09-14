@@ -122,7 +122,7 @@ export default function WeddingCompleteScreen() {
             </ThemedText>
           </ThemedView>
 
-          <ActionButton label="웨딩플랜으로" onPress={() => router.push('/wedding')} />
+          <ActionButton label="웨딩노트으로" onPress={() => router.push('/wedding')} />
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
