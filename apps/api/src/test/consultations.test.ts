@@ -281,6 +281,66 @@ describeWithDb('상담기록', () => {
     ).toBe(404);
   });
 
+  it('올리기를 알리면 24시간 시계가 다시 잡힌다', async () => {
+    /*
+     * 서명 URL을 받은 시각이 아니라 파일이 실제로 온 시각부터 센다. URL만 받고
+     * 안 올린 줄이 24시간 뒤에 「파기 대상」으로 잡히면 지울 파일이 없는 것을
+     * 지우려 든다.
+     */
+    const { headers, weddingId } = await setUp();
+    const id = (await upload(headers, weddingId)).json().consultationId;
+
+    await test.context.pool.query(
+      `UPDATE structured.consultation_records SET audio_delete_by = now() - interval '1 hour'
+        WHERE id = $1`,
+      [id]
+    );
+
+    const response = await test.app.inject({
+      method: 'POST',
+      url: `/v1/consultations/${id}/complete`,
+      headers,
+    });
+
+    expect(response.statusCode).toBe(200);
+
+    const { rows } = await test.context.pool.query<{ due: Date }>(
+      'SELECT audio_delete_by AS due FROM structured.consultation_records WHERE id = $1',
+      [id]
+    );
+
+    expect(rows[0]!.due.getTime()).toBeGreaterThan(Date.now());
+  });
+
+  it('이미 지운 기록에는 알릴 것이 없다', async () => {
+    const { headers, weddingId } = await setUp();
+    const id = (await upload(headers, weddingId)).json().consultationId;
+
+    await test.app.inject({ method: 'POST', url: `/v1/consultations/${id}/confirm`, headers });
+
+    const response = await test.app.inject({
+      method: 'POST',
+      url: `/v1/consultations/${id}/complete`,
+      headers,
+    });
+
+    expect(response.statusCode).toBe(400);
+  });
+
+  it('남의 것은 올리기 완료도 못 알린다', async () => {
+    const { headers, weddingId } = await setUp();
+    const id = (await upload(headers, weddingId)).json().consultationId;
+    const other = await signInAs(test, 'consult-other');
+
+    const response = await test.app.inject({
+      method: 'POST',
+      url: `/v1/consultations/${id}/complete`,
+      headers: other.headers,
+    });
+
+    expect(response.statusCode).toBe(404);
+  });
+
   it('녹취록을 담을 칸이 응답에 없다', async () => {
     // 담을 곳이 없으면 오갈 수도 없다.
     const { headers, weddingId } = await setUp();

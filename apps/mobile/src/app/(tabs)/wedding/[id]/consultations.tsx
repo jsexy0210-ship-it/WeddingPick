@@ -1,10 +1,20 @@
 import type { ConsultationRecord } from '@weddingpick/api-contract';
-import { VISIT_NOTE_AUDIO_CONSENT_POINTS, manwon } from '@weddingpick/domain';
+import {
+  VISIT_NOTE_AUDIO_CONSENT_VERSION,
+  VISIT_NOTE_AUDIO_CONSENT_POINTS,
+  manwon,
+} from '@weddingpick/domain';
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
-import { confirmConsultation, listConsultations } from '@/api/client';
+import {
+  completeConsultationUpload,
+  confirmConsultation,
+  createConsultationUpload,
+  listConsultations,
+} from '@/api/client';
+import { pickConsultationAudio } from '@/features/capture/pickers';
 import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
 import { formatDateDot } from '@/features/common/format-date';
 import {
@@ -51,19 +61,16 @@ const CONFIRM = '확인했어요. 저장할게요';
 const AUDIO_GONE = '녹음 파일은 지웠어요';
 
 /**
- * 파일 고르기가 아직 없다 — 올리는 길은 다음 작업이다.
+ * 파일이 너무 크면 고르는 자리에서 막는다.
  *
- * **서버는 이미 있다.** 업로드 자리를 주는 라우트도, 읽는 파이프라인도, 저장과
- * 파기도 돈다. 없는 것은 앱에서 파일을 고르는 부분뿐이라, 그것이 붙으면 이 값
- * 하나만 지운다.
+ * **길이는 앱이 재지 않는다.** 기기에서 음성 길이를 읽으려면 재생기가 필요한데,
+ * 재 봐야 서버가 믿지 않는다 — 보내는 쪽이 정하는 값이라 두 시간짜리를 60초라고
+ * 적어 보낼 수 있다. 길이는 파일이 도착한 뒤 서버가 `ffprobe`로 잰다.
  *
- * 관리자 화면의 `READ_ONLY`와는 다른 자리다 — 그쪽은 메뉴에 「조회만」을 함께
- * 적어야 하는 짝이 있고, 여기는 단추 하나가 전부다.
- *
- * **그때까지 눌리지 않게 막는다.** 눌리는데 아무 일도 안 일어나면 사용자는
- * 고장으로 읽는다.
+ * 크기는 다르다. 고르는 순간 알 수 있고, 미리 막으면 100MB를 다 올리고 나서
+ * 거절당하는 일이 없다.
  */
-const BACKEND_PENDING = true;
+const MAX_BYTES = 100 * 1024 * 1024;
 
 type Money = { value: number | null; confidence: number; evidence: string | null };
 
@@ -92,6 +99,7 @@ export default function ConsultationsScreen() {
   const [consentOpen, setConsentOpen] = useState(false);
   /* 두 번 눌러도 한 번만 보낸다. */
   const [saving, setSaving] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const load = useCallback(() => {
     listConsultations(id)
@@ -100,6 +108,54 @@ export default function ConsultationsScreen() {
   }, [id]);
 
   useEffect(load, [load]);
+
+  /**
+   * 고르기 → 올리기 → 판정 시작.
+   *
+   * **파일 본체는 API 서버를 지나가지 않는다.** 서명 URL을 받아 스토리지로 바로
+   * 올린다 — 100MB짜리가 API를 거칠 이유가 없다.
+   */
+  async function upload() {
+    setConsentOpen(false);
+
+    const picked = await pickConsultationAudio();
+
+    if (!picked) return;
+
+    if (picked.sizeBytes !== undefined && picked.sizeBytes > MAX_BYTES) {
+      setError(`파일이 너무 커요. ${Math.floor(MAX_BYTES / 1024 / 1024)}MB까지 올릴 수 있어요.`);
+      return;
+    }
+
+    setUploading(true);
+
+    try {
+      const file = await fetch(picked.uri).then((response) => response.blob());
+
+      const target = await createConsultationUpload({
+        weddingId: id,
+        mimeType: picked.mimeType as never,
+        byteSize: file.size,
+        consentVersion: VISIT_NOTE_AUDIO_CONSENT_VERSION,
+      });
+
+      const put = await fetch(target.uploadUrl, {
+        method: 'PUT',
+        headers: { 'content-type': picked.mimeType },
+        body: file,
+      });
+
+      if (!put.ok) throw new Error(`올리지 못했어요 (${put.status})`);
+
+      /* 올리기가 끝났음을 알려야 판정이 시작된다. 여기까지 와야 한 건이다. */
+      await completeConsultationUpload(target.consultationId);
+      load();
+    } catch (caught) {
+      setError((caught as Error).message);
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function save(recordId: string) {
     setSaving(recordId);
@@ -120,7 +176,7 @@ export default function ConsultationsScreen() {
     <Screen>
       <NavBar
         title={TITLE}
-        right={{ label: ADD, onPress: () => setConsentOpen(true), disabled: BACKEND_PENDING }}
+        right={{ label: ADD, onPress: () => setConsentOpen(true), disabled: uploading }}
       />
 
       {records === null ? (
@@ -158,11 +214,7 @@ export default function ConsultationsScreen() {
             </ThemedText>
           ))}
 
-          <ActionButton
-            label={CONSENT_AGREE}
-            onPress={() => setConsentOpen(false)}
-            disabled={BACKEND_PENDING}
-          />
+          <ActionButton label={CONSENT_AGREE} onPress={() => void upload()} disabled={uploading} />
         </View>
       </BottomSheet>
     </Screen>

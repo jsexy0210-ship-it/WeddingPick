@@ -1591,6 +1591,19 @@ export async function createConsultationUpload(
   });
 }
 
+/**
+ * 올리기가 끝났음을 알린다. **여기부터 판정이 시작된다.**
+ *
+ * 서명 URL로 올린 것만으로는 서버가 파일이 다 왔는지 모른다 — 알려줘야 읽는다.
+ */
+export async function completeConsultationUpload(
+  consultationId: string
+): Promise<ConsultationRecord> {
+  return request(`/v1/consultations/${consultationId}/complete`, consultationRecordSchema, {
+    method: 'POST',
+  });
+}
+
 export async function updateConsultation(
   consultationId: string,
   body: UpdateConsultationRequest

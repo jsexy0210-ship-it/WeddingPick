@@ -29,7 +29,16 @@ export const consultationStatusSchema = z.enum(CONSULTATION_STATUSES);
 export const createConsultationUploadRequestSchema = z.object({
   weddingId: idSchema,
   mimeType: z.enum(VISIT_NOTE_AUDIO_TYPES),
-  seconds: z.number().int().positive(),
+  /**
+   * 앱이 아는 길이(초). **힌트다.**
+   *
+   * 보내면 서버가 올리기 전에 한 번 걸러 준다 — 두 시간짜리를 올리고 나서
+   * 거절당하는 것보다 낫다. 다만 **이 값을 비용 기준으로 믿지 않는다.**
+   * 보내는 쪽이 정하는 값이라 2시간짜리를 60초라고 적을 수 있다.
+   *
+   * 진짜 검사는 파일이 도착한 뒤 `ffprobe`가 잰 값으로 한다.
+   */
+  seconds: z.number().int().positive().optional(),
   byteSize: z.number().int().positive(),
   /** 사용자가 업체를 먼저 고른다. 못 고르면 1차 판정이 정한다. */
   vendorId: idSchema.optional(),

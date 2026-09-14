@@ -82,3 +82,41 @@ describe('Gemini 키는 서버에만 있다', () => {
     expect(source).toMatch(/^GEMINI_API_KEY=\s*$/m);
   });
 });
+
+/** 저장소 파일 하나를 읽는다. */
+function read(path: string): string {
+  return readFileSync(join(ROOT, path), 'utf8');
+}
+
+describe('모델 이름은 환경변수다', () => {
+  it('코드의 기본값과 배포 값이 같다', () => {
+    /*
+     * 같은 값이 두 곳에 있다 — `config.ts`의 기본값과 `infra/render-env.yml`의
+     * `vars`. **둘 중 하나만 고치면 환경변수를 안 넣은 배포에서 없어진 모델을
+     * 부른다**(`gemini-2.5-flash-lite`는 2026-10-16에 사라진다).
+     *
+     * 값을 한 곳으로 합칠 수 없다 — yml은 Render가 읽고 기본값은 그 yml이 닿지
+     * 않은 환경을 위한 것이다. 그래서 갈라지는 것을 여기서 잡는다.
+     */
+    const config = read('apps/api/src/config.ts');
+    const infra = read('infra/render-env.yml');
+    const example = read('apps/api/.env.example');
+
+    const fallback = config.match(/geminiModel: z\.string\(\)\.default\('([^']+)'\)/)?.[1];
+
+    expect(fallback).toBeTruthy();
+    expect(infra).toContain(`GEMINI_MODEL: ${fallback}`);
+    expect(example).toContain(`GEMINI_MODEL=${fallback}`);
+  });
+
+  it('모델 이름을 부르는 자리에 박아두지 않는다', () => {
+    /* 박아두면 바꾸는 일이 배포가 아니라 수정·검토·머지가 된다. */
+    for (const file of [
+      'apps/api/src/analysis/gemini-payment-reader.ts',
+      'apps/api/src/analysis/gemini-visit-note-reader.ts',
+      'apps/api/src/analysis/consultation-reader.ts',
+    ]) {
+      expect(read(file)).not.toMatch(/'gemini-[\d.]+-flash/);
+    }
+  });
+});

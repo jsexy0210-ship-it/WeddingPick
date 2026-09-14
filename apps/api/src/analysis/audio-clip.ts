@@ -4,6 +4,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
 
+import { checkVisitNoteAudio } from '@weddingpick/domain';
+
 const run = promisify(execFile);
 
 /**
@@ -122,6 +124,26 @@ export async function clipForClassification(input: {
     await writeFile(source, input.bytes);
 
     const seconds = await probeSeconds(source);
+
+    /*
+     * **여기가 길이를 믿을 수 있는 유일한 자리다.**
+     *
+     * 올릴 때 앱이 보내는 길이는 힌트일 뿐이다 — 2시간짜리를 60초라고 적어 보내면
+     * 그대로 통과한다. 비용을 정하는 값을 보내는 쪽이 정하게 두지 않는다.
+     *
+     * 파일이 실제로 도착한 뒤 `ffprobe`가 잰 값으로 다시 본다. 여기서 막으면
+     * Gemini를 한 번도 부르지 않는다.
+     */
+    const rejection = checkVisitNoteAudio({ mimeType: input.mimeType, seconds });
+
+    if (rejection) {
+      throw new Error(
+        rejection.kind === 'tooLong'
+          ? `녹음이 ${Math.round(seconds / 60)}분이다. ${Math.floor(rejection.maxSeconds / 3600)}시간까지만 읽는다.`
+          : `읽을 수 없는 녹음이다: ${rejection.kind}`
+      );
+    }
+
     const plan = clipPlan(seconds);
 
     if (plan.kind === 'whole') {

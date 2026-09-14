@@ -135,7 +135,17 @@ export function registerConsultationRoutes(app: FastifyInstance, context: AppCon
       throw new ApiError('invalid_request', '이 형식의 녹음은 읽을 수 없어요.');
     }
 
-    const rejection = checkVisitNoteAudio({ mimeType: body.mimeType, seconds: body.seconds });
+    /*
+     * **앱이 길이를 알면 여기서 먼저 걸러준다.** 두 시간짜리를 다 올리고 나서
+     * 거절당하는 것보다 낫다.
+     *
+     * 다만 이 값은 힌트다 — 보내는 쪽이 정하는 값이라 믿지 않는다. 진짜 검사는
+     * 파일이 도착한 뒤 `ffprobe`가 잰 값으로 한다(`clipForClassification`).
+     */
+    const rejection =
+      body.seconds === undefined
+        ? null
+        : checkVisitNoteAudio({ mimeType: body.mimeType, seconds: body.seconds });
 
     if (rejection) {
       /*
@@ -198,7 +208,7 @@ export function registerConsultationRoutes(app: FastifyInstance, context: AppCon
           body.vendorId ?? null,
           body.vendorLabel ?? null,
           target.storageKey,
-          Math.ceil(body.seconds),
+          body.seconds === undefined ? null : Math.ceil(body.seconds),
           String(AUDIO_MAX_RETENTION_HOURS),
           body.consentVersion,
         ]
@@ -212,6 +222,40 @@ export function registerConsultationRoutes(app: FastifyInstance, context: AppCon
       expiresAt: target.expiresAt.toISOString(),
     };
   });
+
+  /**
+   * 올리기가 끝났음을 알린다.
+   *
+   * **24시간 시계를 여기서 다시 잡는다.** 서명 URL을 받은 시각이 아니라 파일이
+   * 실제로 온 시각부터 센다 — URL만 받고 안 올린 줄이 24시간 뒤에 「파기 대상」으로
+   * 잡히면 지울 파일이 없는 것을 지우려 든다.
+   *
+   * **읽기는 아직 시작하지 않는다.** 개인정보처리방침에 Google LLC가 수탁자·국외
+   * 이전 받는 자로 올라가고 시행일이 지나기 전에는 첫 호출을 내보내지 않는다
+   * (개인정보보호법 제28조의8 — 고지가 이전보다 먼저다).
+   */
+  app.post<{ Params: { consultationId: string } }>(
+    '/v1/consultations/:consultationId/complete',
+    auth,
+    async (request) => {
+      const userId = currentUserId(request);
+      const row = await mine(userId, request.params.consultationId);
+
+      if (!row.audio_key) {
+        throw new ApiError('invalid_request', '이미 정리가 끝난 기록이에요.');
+      }
+
+      const { rows } = await context.pool.query<Row>(
+        `UPDATE structured.consultation_records
+            SET audio_delete_by = now() + ($2 || ' hours')::interval
+          WHERE id = $1
+        RETURNING ${RETURNING}`,
+        [row.id, String(AUDIO_MAX_RETENTION_HOURS)]
+      );
+
+      return toRecord(rows[0]!);
+    }
+  );
 
   app.get<{ Params: { weddingId: string } }>(
     '/v1/weddings/:weddingId/consultations',
