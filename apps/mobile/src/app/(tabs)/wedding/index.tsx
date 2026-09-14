@@ -170,7 +170,7 @@ export default function WeddingScreen() {
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         {/* 헤더 — 목업: 56 · 좌우 24 · 제목 20/27 · 오른쪽 아바타(혼자 1 · 함께 2 겹침) · 테두리 없음. */}
         <View style={styles.header}>
-          <ThemedText type="t4">웨딩일정</ThemedText>
+          <ThemedText type="t4">웨딩플랜</ThemedText>
           {data.me ? (
             <View style={styles.avatarRow}>
               <View style={[styles.avatar, { backgroundColor: theme.tintSubtle }]}>

@@ -74,7 +74,7 @@ const S = {
   'setting.prepared': PREPARED_CATEGORIES_LABEL,
   logout: '로그아웃',
   loginCta: '로그인 · 가입하기',
-  loginHint: '웨딩일정과 Pick 인증에 필요해요',
+  loginHint: '웨딩플랜과 Pick 인증에 필요해요',
 } as const;
 
 const COUPLE_LABEL: Record<CoupleState, string> = {
