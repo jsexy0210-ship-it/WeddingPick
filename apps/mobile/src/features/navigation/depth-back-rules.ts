@@ -68,6 +68,7 @@ export const ROUTES: readonly string[] = [
   '/admin/users',
   '/admin/vendors',
   '/community',
+  '/community/feed/[id]',
   '/capture',
   '/capture/analysis/[id]',
   '/capture/camera',
