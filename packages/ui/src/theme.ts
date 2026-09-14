@@ -146,10 +146,10 @@ const palette = {
   calendarSunday: '#e8735f',
   calendarSaturday: '#5b8def',
 
-  /* 차트 계열 — spec/tokens.json color.chart. 코랄 계열 셋 + 나머지 회색. 스킨과 무관하게 고정. */
-  chartSeries1: '#ff6f61',
-  chartSeries2: '#ffb3ab',
-  chartSeries3: '#ffd6d1',
+  /* 차트 계열 — spec/tokens.json color.chart. 키 컬러 계열 셋 + 나머지 회색. 스킨과 무관하게 고정. */
+  chartSeries1: '#e7898d',
+  chartSeries2: '#f4bfc1',
+  chartSeries3: '#f8ddde',
   chartSeriesRest: '#eaebee',
 
   /*
@@ -281,7 +281,7 @@ export const Colors = {
     tintDark: palette.coralDark,
     /** @deprecated primaryDark의 옛 이름. `tintDark`를 쓴다. */
     tintStrong: palette.coralDark,
-    /** 옅은 코랄 배지·아바타. brand.primaryTint(#FFE8E4). */
+    /** 옅은 배지·아바타. brand.primaryTint(#FBEBEC · 구 #FFE8E4). */
     tintSubtle: palette.coralTint,
     /** 코랄 카드 · Pick 완료 버튼 배경. brand.primarySurface. */
     tintSurface: palette.coralSurface,
@@ -807,7 +807,8 @@ export const Layout = {
    * 기본 로더 · 써클 — 지름 3크기 · 테두리 두께. size.loaderCircle.
    *
    * 값의 출처는 `17-sheets-states.dc.html`(WP-ST-012)의 `spinner`다 —
-   * `width:32px;height:32px;border:3px solid #eaebee;border-top-color:#ff6f61`.
+   * `width:32px;height:32px;border:3px solid #eaebee;border-top-color:#ff6f61`
+   * (시안이 적은 값이다 — 실제로 그리는 색은 `tint`라 지금은 `#e7898d`다).
    * 지름은 순회 로더와 같은 자리 이름(20·28·40)을 쓰고, 두께는 시안의 32:3을
    * 정수 px로 반올림했다(20→2 · 28→3 · 40→4).
    */
