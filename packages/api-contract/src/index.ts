@@ -1,5 +1,6 @@
 export * from './analyses';
 export * from './app';
+export * from './consultations';
 export * from './expos';
 export * from './wedding-info';
 export * from './auth';
