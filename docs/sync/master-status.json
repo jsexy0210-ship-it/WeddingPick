@@ -904,6 +904,15 @@
       "sbizSeoulFetchesWholeNation": "sbiz-seoul과 sbiz-all의 total이 **둘 다 145,985로 같다.** 서울 지역코드(ctprvnCd=11)가 API 쪽에서 안 걸리고 우리 지역 판정에서만 걸리는 것으로 보인다 — 세 sbiz 잡이 각각 전국을 통째로 받아 온다는 뜻이다. 수집 결과는 맞지만 출처를 세 배로 두드린다. **확인만 했고 고치지 않았다** — 이번 지시 범위 밖이다."
     },
     "verification": "typecheck(저장소 전체) · lint(오류 0 · 경고 3은 apps/mobile 기존 건) · 카피 린트 통과 · api jest 23 suite 193건 통과. DB가 필요한 52 suite는 로컬에 서버가 없어 건너뛰었다(CI가 돈다). public-data만 따로: 4 suite 44건 통과.",
-    "notDone": "--limit 100 실행은 푸시 뒤 workflow_dispatch로 돌린다. 업종별 숫자는 그 실행에서 처음 나온다."
+    "notDone": "**업종별 숫자를 아직 못 읽었다.** 아래 smallRun20260914 참조 — 코드 문제가 아니라 출처 장애로 막혔다.",
+    "smallRun20260914": {
+      "run156": "2026-09-14 21:00 KST · a961bd7c(5코드) · limit=100. sbiz-seoul `accepted=100`을 **5초**에 끝냈다 — 전수 때 5분 걸리던 자리다. `--limit`이 받아 놓고 자르는 것이 아니라 API를 그만 두드린다는 것이 실행으로 확인됐다. sbiz-gyeonggi · icheon-halls · jecheon-halls도 성공. **sbiz-all만 실패.**",
+      "messageProvenInOutage": "**계획한 시험이 아니라 진짜 장애에서 새 메시지가 검증됐다.** run 156 sbiz-all 로그 원문 — 「'sbiz-all' 수집 결과가 0건입니다. 초록으로 넘기지 않고 멈춥니다 — 출처 연결이 끊겼습니다(apis.data.go.kr). 업종 코드 문제가 아닙니다 — 다시 실행하세요. 끊긴 업종: [S21101 · S21105 · M11301 · S20701 · N11004 전부 «연결 끊김»]」. 고치기 전이라면 「출처 응답 또는 **업종 코드를 확인하세요**」로 나왔을 자리다. 같은 실행에서 다른 넷은 성공했으므로, 이 메시지가 없었다면 멀쩡한 코드 다섯을 뒤지게 될 상황이었다.",
+      "retryBudgetMeasured": "sbiz-all 잡은 12:02:18→12:24:29 UTC, **22분**이 걸렸다. 코드당 약 4.4분으로 fetchWithRetry의 설계값(「대기를 60초에서 멈추고 시도를 8회로 늘려 총 4분쯤 버틴다」)과 맞는다. 잡 타임아웃(60분)에 걸린 것이 아니라 예산을 다 쓰고 정상 종료한 것이다. **이 값은 손대지 않았다** — 줄이면 원래 의도를 되돌리는 것이라 판단이 필요하다.",
+      "run157Blocked": "2026-09-14 21:24 KST · f1640edc(꽃집 포함 6코드) · limit=100. **출처 장애가 계속돼 숫자를 못 얻었다.** icheon-halls가 `ConnectTimeoutError: Connect Timeout Error (attempted address: www.data.go.kr:443, timeout: 10000ms)`로 8회 재시도 끝에 실패했다. CSV 출처(www.data.go.kr)와 OpenAPI 출처(apis.data.go.kr)가 함께 안 되므로 data.go.kr 전반의 장애다.",
+      "outageWindow": "2026-09-14 21:02 KST 무렵 시작. 21:02 이전에 끝난 잡(run 156의 seoul·경기·이천·제천)은 성공했고 그 뒤로 붙는 잡이 전부 걸린다.",
+      "whatIsStillMissing": "**업종별 건수(categoryCounts)는 아직 한 번도 실행으로 나온 적이 없다.** run 155는 그 칸이 리포트에 없던 시점이고, run 156·157은 소량 실행은 됐으나 sbiz 쪽이 장애에 걸렸다. 출처가 돌아오면 `--limit 100`으로 다시 돌려 읽으면 된다 — 코드는 준비돼 있다(리포트 · 잡 요약 양쪽에 12종+기타를 0건도 전부 찍는다). 이것만 남았다.",
+      "csvFailureIsLegible": "CSV 경로가 던질 때는 「0건 확인」 단계가 아예 건너뛰어져 새 원인 메시지가 안 찍힌다. 다만 수집기가 「공공데이터 연결 실패 N/8」과 ConnectTimeoutError 원인을 그대로 남기므로 원인은 보인다. 뒤이어 뜨는 「No files were found ... No artifacts will be uploaded」는 리포트가 없어서 나는 2차 오류다 — 진짜 원인이 아니다."
+    }
   }
 }
