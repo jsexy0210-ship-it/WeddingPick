@@ -29,7 +29,10 @@ const HEART = constant('MARK_HEART_PATH');
 const CHECK = constant('MARK_CHECK_PATH');
 const STROKE = constant('MARK_STROKE');
 const VIEWBOX = constant('MARK_VIEWBOX');
-const CORAL = '#ff6f61';
+/* 브랜드 키 컬러. spec/tokens.json color.brand.primary. */
+const BRAND = '#e7898d';
+/* 키 컬러 면 위의 마크. spec/tokens.json color.brand.onPrimary. 흰색이 아니다 — appIcon 주석 참고. */
+const ON_BRAND = '#371b34';
 
 /**
  * `ratio`는 캔버스 한 변 대비 심볼 격자(64)가 차지할 비율이다.
@@ -55,12 +58,12 @@ function markup({ size, color, background, ratio }) {
  * 모노크롬은 테마 아이콘용이고, 안드로이드가 알파만 읽으므로 검정으로 그린다.
  */
 const TARGETS = [
-  { file: 'icon.png', size: 1024, color: '#ffffff', background: CORAL, ratio: 0.72 },
-  { file: 'android-icon-background.png', size: 512, color: CORAL, background: CORAL, ratio: 0 },
-  { file: 'android-icon-foreground.png', size: 512, color: '#ffffff', background: null, ratio: 0.62 },
+  { file: 'icon.png', size: 1024, color: ON_BRAND, background: BRAND, ratio: 0.72 },
+  { file: 'android-icon-background.png', size: 512, color: BRAND, background: BRAND, ratio: 0 },
+  { file: 'android-icon-foreground.png', size: 512, color: ON_BRAND, background: null, ratio: 0.62 },
   { file: 'android-icon-monochrome.png', size: 432, color: '#000000', background: null, ratio: 0.62 },
-  { file: 'favicon.png', size: 48, color: CORAL, background: null, ratio: 0.96 },
-  { file: 'splash-icon.png', size: 512, color: '#ffffff', background: null, ratio: 0.96 },
+  { file: 'favicon.png', size: 48, color: BRAND, background: null, ratio: 0.96 },
+  { file: 'splash-icon.png', size: 512, color: ON_BRAND, background: null, ratio: 0.96 },
 ];
 
 const { chromium } = await import('playwright');

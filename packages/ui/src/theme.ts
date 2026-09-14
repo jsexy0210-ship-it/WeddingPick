@@ -14,24 +14,36 @@ import { Platform } from 'react-native';
  * 팔레트 원본. 역할 이름 아래에서만 쓰고 화면이 직접 집지 않는다.
  *
  * gray 램프와 의미색은 SEED scale 토큰을 그대로 옮겼다. **키 컬러만 SEED와 다르다** —
- * SEED의 carrot(#ff6f0f)은 당근의 브랜드색이고, 우리 키 컬러는 코랄 `#ff6f61`이다.
- * 코랄 파생색(눌림 · 짙은 · 옅은 · 면 · 테두리)은 핸드오프 tokens.json `color.brand` 값이다.
+ * SEED의 carrot(#ff6f0f)은 당근의 브랜드색이고, 우리 키 컬러는 `#e7898d`다.
+ * 파생색(눌림 · 짙은 · 옅은 · 면 · 테두리)은 spec/tokens.json `color.brand` 값이다.
+ *
+ * **2026-09-14에 키 컬러가 코랄 `#ff6f61`에서 지금 값으로 바뀌었다**(대표님 확정 · Figma 신규
+ * 디자인). 파생색은 이 파일이 원래 쓰던 color-mix 혼합비를 그대로 새 키 컬러에 적용한 것이라
+ * 자리와 뜻은 하나도 달라지지 않았다. **이름이 coral*인 것은 웹이 그 이름으로 값을 맞춰
+ * 보기 때문이고**(`apps/web/src/site.test.ts`) 이름 빚은 컴포넌트 작업에서 웹과 함께 정리한다.
+ * 스킨의 코랄(`Skins.coral`)은 따로 살아 있으니 헷갈리지 않게 한다.
  */
 const palette = {
   /* 키 컬러 — spec/tokens.json color.brand. */
-  coral500: '#ff6f61',
+  coral500: '#e7898d',
   /** primaryPressed — Primary 버튼 눌림. */
-  coralPressed: '#ee6255',
+  coralPressed: '#d87d80',
   /** `coralPressed`의 옛 이름 — 웹(site-styles `--tint-strong`)이 이 이름으로 값을 맞춘다. 같은 값. */
-  coral600: '#ee6255',
-  /** primaryDark — 옅은 코랄 배경 위 텍스트(대비 확보). */
-  coralDark: '#c2453a',
-  /** primaryTint — 옅은 코랄 배지 · 아바타. color-mix(pick 12%, #fff)의 고정값. */
-  coralTint: '#ffe8e4',
-  /** primarySurface — 코랄 카드 · Pick 완료 버튼 배경. color-mix(pick 7%, #fff)의 고정값. */
-  coralSurface: '#fff5f2',
-  /** primaryBorder — 코랄 카드 테두리. */
-  coralBorder: '#ffd9d4',
+  coral600: '#d87d80',
+  /** primaryDark — 옅은 키 컬러 배경 위 텍스트(대비 확보). coralSurface 위 4.69:1. */
+  coralDark: '#c63f45',
+  /** primaryTint — 옅은 배지 · 아바타. color-mix(pick 12%, #fff)의 고정값. */
+  coralTint: '#fbebec',
+  /** primarySurface — 브랜드 카드 · Pick 완료 버튼 배경. color-mix(pick 7%, #fff)의 고정값. */
+  coralSurface: '#fdf6f6',
+  /** primaryBorder — 브랜드 카드 테두리. */
+  coralBorder: '#f9dfe0',
+  /**
+   * onPrimary — 키 컬러 면 위의 글자·아이콘. **흰색이 아니다.** `#e7898d` 위에서 흰 글자는
+   * 2.51:1로 WCAG AA에 못 미쳐 2026-09-14에 이 플럼으로 확정됐다(6.11:1).
+   * 값은 Figma 픽셀 export(src/imports/Home/index.tsx)에 이미 있던 색이다.
+   */
+  plum: '#371b34',
 
   /* SEED gray 램프 (light). */
   gray900: '#212124',
@@ -134,10 +146,10 @@ const palette = {
   calendarSunday: '#e8735f',
   calendarSaturday: '#5b8def',
 
-  /* 차트 계열 — spec/tokens.json color.chart. 코랄 계열 셋 + 나머지 회색. 스킨과 무관하게 고정. */
-  chartSeries1: '#ff6f61',
-  chartSeries2: '#ffb3ab',
-  chartSeries3: '#ffd6d1',
+  /* 차트 계열 — spec/tokens.json color.chart. 키 컬러 계열 셋 + 나머지 회색. 스킨과 무관하게 고정. */
+  chartSeries1: '#e7898d',
+  chartSeries2: '#f4bfc1',
+  chartSeries3: '#f8ddde',
   chartSeriesRest: '#eaebee',
 
   /*
@@ -269,7 +281,7 @@ export const Colors = {
     tintDark: palette.coralDark,
     /** @deprecated primaryDark의 옛 이름. `tintDark`를 쓴다. */
     tintStrong: palette.coralDark,
-    /** 옅은 코랄 배지·아바타. brand.primaryTint(#FFE8E4). */
+    /** 옅은 배지·아바타. brand.primaryTint(#FBEBEC · 구 #FFE8E4). */
     tintSubtle: palette.coralTint,
     /** 코랄 카드 · Pick 완료 버튼 배경. brand.primarySurface. */
     tintSurface: palette.coralSurface,
@@ -353,8 +365,13 @@ export const Colors = {
      */
     dateWheelTwo: palette.dateWheelTwo,
     dateWheelFar: palette.dateWheelFar,
-    onTint: palette.gray00,
-    /** 본문 속 링크(약관 · 처리방침). 코랄은 CTA·Pick·선택에만 쓴다(CLAUDE.md §5). */
+    onTint: palette.plum,
+    /**
+     * backgroundInk(어두운 면) 위의 글자·아이콘. `onTint`와 갈라 둔다 — 플럼을 잉크 위에
+     * 얹으면 1.05:1로 아예 보이지 않는다. `toast.tsx`가 이 자리를 쓴다.
+     */
+    onInk: palette.gray00,
+    /** 본문 속 링크(약관 · 처리방침). 키 컬러는 CTA·Pick·선택에만 쓴다(CLAUDE.md §5). */
     link: palette.accentAction,
   },
 
@@ -384,13 +401,13 @@ export const Colors = {
     fieldBorder: palette.darkGray400,
     fieldBorderFocus: palette.darkGray900,
 
-    tint: '#ff8478',
-    tintPressed: '#ff9a90',
-    tintDark: '#ffa79e',
-    tintStrong: '#ffa79e',
-    tintSubtle: '#3a2320',
-    tintSurface: '#2b1c1a',
-    tintBorder: '#4a2c28',
+    tint: '#eb9c9f',
+    tintPressed: '#efb0b3',
+    tintDark: '#f1bcbe',
+    tintStrong: '#f1bcbe',
+    tintSubtle: '#3f2b2c',
+    tintSurface: '#312424',
+    tintBorder: '#4e3435',
     tintInactive: palette.darkGray500,
 
     positive: '#3ecf8e',
@@ -444,7 +461,9 @@ export const Colors = {
     /* 어두운 벌은 램프를 내려간다 — 라이트가 배경(흰색)으로 다가가듯 여기서는 배경(먹)으로 다가간다. */
     dateWheelTwo: palette.darkGray500,
     dateWheelFar: palette.darkGray400,
-    onTint: '#ffffff',
+    /** 라이트와 같다 — 토큰이 「다크 테마에서도 반전하지 않는다」고 못박았다. */
+    onTint: palette.plum,
+    onInk: '#ffffff',
     link: palette.accentAction,
   },
 } as const;
@@ -452,23 +471,24 @@ export const Colors = {
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
 /**
- * 글꼴 — **시스템 서체.** spec/tokens.json `typography.$fontFamily` · CLAUDE.md 「폰트는 시스템 서체
- * 유지(Pretendard 미적용)」 · 핸드오프 tokens.json `typography.webfont: null`.
+ * 글꼴 — **Pretendard 단일.** spec/tokens.json `typography.$fontFamily`.
  *
- * SEED는 웹폰트를 배포하지 않고 시스템 서체로 떨어뜨리는 것이 기본이다. 한때 Pretendard를
- * 번들에 실어 앞에 두었는데(라이선스 문제는 없었다), 핸드오프 v3.24까지 「Pretendard 도입 보류」가
- * 유지되어 2026-09-09 감사에서 시스템 서체로 되돌렸다. 네이티브는 fontFamily를 주지 않으면
- * iOS Apple SD Gothic Neo · Android Roboto/Noto Sans KR로 떨어진다 — 핸드오프 `platform.font` 그대로다.
+ * **2026-09-14에 방향이 뒤집혔다.** 2026-09-09 감사는 핸드오프의 「Pretendard 도입 보류」를 따라
+ * 시스템 서체로 되돌렸지만, 대표님이 그 보류를 푸셨다. 이제 세 플랫폼 모두 Pretendard를 맨 앞에
+ * 두고 뒤는 폴백일 뿐이다. 'Noto Sans KR'은 뺐다 — Figma 신규 디자인이 뺀 서체다.
+ *
+ * 네이티브는 번들에 실린 Pretendard를 이름으로 집는다. 없으면 iOS Apple SD Gothic Neo ·
+ * Android Roboto로 떨어진다.
  */
 const WEB_SANS_STACK =
-  "-apple-system, BlinkMacSystemFont, system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, 'Noto Sans KR', 'Helvetica Neue', Arial, sans-serif";
+  "'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
 
 export const Fonts: { sans: string | undefined; serif: string; rounded: string | undefined; mono: string } =
   Platform.select({
-    ios: { sans: undefined, serif: 'ui-serif', rounded: undefined, mono: 'ui-monospace' },
+    ios: { sans: 'Pretendard', serif: 'ui-serif', rounded: 'Pretendard', mono: 'ui-monospace' },
     web: { sans: WEB_SANS_STACK, serif: 'serif', rounded: WEB_SANS_STACK, mono: 'ui-monospace, monospace' },
-    default: { sans: undefined, serif: 'serif', rounded: undefined, mono: 'monospace' },
-  }) ?? { sans: undefined, serif: 'serif', rounded: undefined, mono: 'monospace' };
+    default: { sans: 'Pretendard', serif: 'serif', rounded: 'Pretendard', mono: 'monospace' },
+  }) ?? { sans: 'Pretendard', serif: 'serif', rounded: 'Pretendard', mono: 'monospace' };
 
 /**
  * 간격 — 8배수 사다리. 핸드오프 허용 간격 토큰은 2 · 4 · 6 · 8 · 10 · 12 · 14 · 16 · 20 · 24 · 28이고,
@@ -787,7 +807,8 @@ export const Layout = {
    * 기본 로더 · 써클 — 지름 3크기 · 테두리 두께. size.loaderCircle.
    *
    * 값의 출처는 `17-sheets-states.dc.html`(WP-ST-012)의 `spinner`다 —
-   * `width:32px;height:32px;border:3px solid #eaebee;border-top-color:#ff6f61`.
+   * `width:32px;height:32px;border:3px solid #eaebee;border-top-color:#ff6f61`
+   * (시안이 적은 값이다 — 실제로 그리는 색은 `tint`라 지금은 `#e7898d`다).
    * 지름은 순회 로더와 같은 자리 이름(20·28·40)을 쓰고, 두께는 시안의 32:3을
    * 정수 px로 반올림했다(20→2 · 28→3 · 40→4).
    */

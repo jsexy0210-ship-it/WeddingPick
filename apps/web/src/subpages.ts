@@ -16,7 +16,7 @@ import { BUSINESS, BUSINESS_NOTICE_LINES } from '@weddingpick/domain';
 import { CONTACT_EMAIL } from './content';
 import { faviconTags } from './landing-v4';
 
-const C = '#FF6F61';
+const C = '#E7898D';
 const INK = '#212124';
 const SEC = '#4D5159';
 const TER = '#868B94';
