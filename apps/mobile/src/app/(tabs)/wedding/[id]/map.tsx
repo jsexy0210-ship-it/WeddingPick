@@ -17,6 +17,7 @@ import {
 } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { getMapVendors } from '@/api/client';
+import { BackBar } from '@/components/back-bar';
 
 /**
  * 웨딩 준비 업체 지도. 핸드오프 wedding/[id].
@@ -83,6 +84,7 @@ export default function WeddingMapScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <BackBar />
         <ScrollView contentContainerStyle={styles.scroll}>
           <ThemedView style={styles.header}>
             <ThemedText type="t5">Pick한 업체 위치</ThemedText>
@@ -177,11 +179,11 @@ const styles = StyleSheet.create({
   },
   header: { gap: Spacing.one, marginBottom: Spacing.one },
   emptyCard: {
-    borderRadius: Radius.card,
+    borderRadius: Radius.medium,
     padding: Spacing.three,
   },
   vendorCard: {
-    borderRadius: Radius.card,
+    borderRadius: Radius.medium,
     padding: Spacing.three,
     gap: Spacing.two,
   },

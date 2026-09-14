@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet } from 'react-native';
 
-import { Layout, Radius } from './theme';
+import { Elevation, Layout, Radius } from './theme';
 import { ThemedText } from './themed-text';
 import { useTheme } from './use-theme';
 
@@ -22,8 +22,8 @@ const BOTTOM = 120;
  * **글자가 없으므로 `label`이 유일한 이름이다.** 아이콘만 있는 단추는 스크린
  * 리더에게 "버튼"으로만 읽힌다 — 무엇을 더하는 단추인지 말해줘야 한다.
  *
- * 그림자는 핸드오프가 정한 값이다(`0 6px 16px rgba(49,130,246,.34)`). 떠 있는
- * 요소에만 그림자를 준다는 규칙에 맞는 자리다.
+ * 그림자는 핸드오프 `elevation.floatingCard`(0 2px 6px rgba(0,0,0,.16))다 — 그림자를 거의
+ * 쓰지 않는 SEED 규칙에서 떠 있는 요소만 예외다.
  */
 export function Fab({ label, glyph = '+', onPress }: FabProps) {
   const theme = useTheme();
@@ -38,7 +38,6 @@ export function Fab({ label, glyph = '+', onPress }: FabProps) {
         {
           backgroundColor: theme.tint,
           opacity: pressed ? 0.86 : 1,
-          shadowColor: theme.tint,
         },
       ]}>
       <ThemedText type="t2" style={[styles.glyph, { color: theme.onTint }]}>
@@ -61,10 +60,7 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowOpacity: 0.34,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
+    ...Elevation.floatingCard,
   },
   glyph: {
     /*

@@ -78,8 +78,17 @@ const SYSTEM_PROMPT = `너는 한국의 결제내역(카드 승인 문자, 카�
 7. 확신이 없으면 confidence를 낮게 준다. 낮은 확신은 사람이 확인하게 되므로,
    틀린 값을 높은 확신으로 주는 것보다 낫다.`;
 
+/**
+ * Anthropic 클라이언트의 한도.
+ *
+ * **인자 없이 만들고 있었다**(Release Audit 1차 P1-9). SDK 기본값은 10분
+ * 타임아웃에 재시도가 붙어 요청 하나가 워커를 최대 30분 붙잡을 수 있다.
+ * 그동안 뒤의 문서는 전부 대기다.
+ */
+const CLIENT_LIMITS = { timeout: 120_000, maxRetries: 2 };
+
 export function createClaudePaymentReader(): PaymentProofReader {
-  const client = new Anthropic();
+  const client = new Anthropic(CLIENT_LIMITS);
 
   return {
     async read(images: ProofImage[], model: string): Promise<ProofReadOutcome> {

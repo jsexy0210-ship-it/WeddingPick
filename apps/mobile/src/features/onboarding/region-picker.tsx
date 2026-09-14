@@ -11,8 +11,9 @@ import { OptionChip } from './option-chip';
  * 지역(2/5). 시/도 칩 아홉 개 + «아직 정하지 않았어요», 시/도를 고르면 그 아래
  * 구·군 목록이 같은 화면에 열린다 — 시/도 → 구는 내부 선택이지 Step이 아니다.
  *
- * 구·군 행은 52 · 상하 14 · 글자 16 · 체크 22(v3.21 «구 선택 행 높이»). 다시 누르면
- * 풀린다 — 구까지는 참고일 뿐 필수가 아니다.
+ * 구·군 행은 52 · 상하 14 · 글자 16 · 체크 22(v3.21 «구 선택 행 높이»). **시/도 칩도 구 행도
+ * 단일 선택 라디오다(v3.23)** — 시/도 하나, 시/군/구 하나. 다른 것을 누르면 바뀌고, 고른 것을
+ * 다시 눌러도 풀리지 않는다. 지역을 비우는 길은 «아직 정하지 않았어요» 하나다.
  *
  * 목록은 화면 스크롤 안에서 같이 늘어난다. 서울 25개 구가 길어도 여기에 스크롤을
  * 따로 두지 않는다(SPEC §13.5.5).
@@ -36,7 +37,7 @@ export function RegionPicker({
   function pickDistrict(district: string) {
     if (region === null) return;
 
-    onChange({ region, district: value?.district === district ? null : district });
+    onChange({ region, district });
   }
 
   return (
@@ -60,8 +61,8 @@ export function RegionPicker({
             return (
               <Pressable
                 key={district}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: selected }}
+                accessibilityRole="radio"
+                accessibilityState={{ selected }}
                 accessibilityLabel={district}
                 onPress={() => pickDistrict(district)}>
                 <View style={styles.row}>

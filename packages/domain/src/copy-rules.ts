@@ -7,81 +7,54 @@
  *
  * 규칙을 코드에 두는 이유는 문서에만 적어두면 지켜지지 않기 때문이다. 실제로
  * "찍으면, 진짜 가격이 보인다"가 네 곳에 박혀 있었다.
+ *
+ * **낱말 목록은 코드가 갖지 않는다.** `spec/glossary.json`이 원본이고 이 파일은 그것을
+ * 읽어 검사만 한다(CLAUDE.md — 문구는 spec에서만 가져온다).
  */
 
-export const BANNED_PHRASES = [
-  /*
-   * 최종통합정책 v2.0 J장: 사용자 노출 문구에서 `표본`을 쓰지 않는다.
-   *
-   * 통계 용어로는 정확한 말이지만, 화면에서 읽는 사람에게는 그렇지 않다 —
-   * "표본이 모자랍니다"는 우리가 무엇을 못 하는지가 아니라 우리가 무슨 말을
-   * 하는지를 모르게 만든다. 주석과 변수명은 검사 대상이 아니라 그대로 둔다.
-   */
-  '표본',
+import glossary from '../../../spec/glossary.json';
 
-  /*
-   * v3.3이 사용자 화면에서 «데이터»를 걷어냈다. 대신 쓰는 말은 `실 제보`다.
-   *
-   * **v3.1이 정반대를 말했었다** — `표본` 대신 `데이터`를 쓰라고. 그래서 이 낱말이
-   * 한동안 «대신 쓰는 말» 목록에 있었고, 규칙이 뒤집힌 뒤에도 목록이 따라오지
-   * 않아 화면 여섯 곳에 그대로 남아 있었다. 검색 화면은 같은 자리에서 `실 제보`와
-   * `데이터 많은 순`을 함께 적고 있었다.
-   *
-   * 안에서는 여전히 데이터다 — 정책·DB·API·관리자 도구는 그대로 쓴다. 검사 대상은
-   * 앱·웹·UI 소스의 화면 문구뿐이다.
-   */
-  '데이터',
-  '진짜 가격',
-  '적정가',
-  '적정 가격',
-  '적정한 가격',
-  '정확한 가격',
-  '바가지',
-  '비싼 편',
-  '싼 편',
+/**
+ * 금지어 하나.
+ *
+ * `allow`는 그 낱말을 품고도 그대로 두는 **문구**다. 낱말 단위가 아니라 문장 단위여야
+ * 한다 — 「중앙값」을 통째로 풀어주면 「중앙값 168만원」까지 통과하지만, 「실 제보의
+ * 중앙값이에요」만 풀어주면 그 한 문장만 지나간다. 이미 승인된 카피만 들어간다.
+ *
+ * `pending`은 아직 강제하지 않는 항목과 그 이유다. 조용히 빠지는 것을 막으려고
+ * 이름을 붙여 둔다 — 테스트가 이 목록을 그대로 확인한다.
+ */
+type GlossaryEntry = {
+  term: string;
+  kind?: string;
+  allow?: readonly string[];
+  pending?: string;
+};
 
-  /*
-   * 통합정책 v3.1 §11이 더한 것들.
-   *
-   * 앞의 넷은 **우리가 계산하지 않는 값의 이름**이다. 기준금액은 중앙값이지
-   * 평균이 아니고, 대표가격은 우리가 정한 값처럼 들린다. 이름을 잘못 붙이면
-   * 읽는 사람은 그 이름이 뜻하는 계산을 했다고 믿는다.
-   *
-   * `저렴`·`비쌈`은 판정이다 — 우리는 데이터 차이를 설명하고 계약의 좋고
-   * 나쁨은 판정하지 않는다(정책 보강 13).
-   */
-  '평균가',
-  '대표가격',
-  '최저가',
-  '저렴',
-  '비쌈',
+const BANNED_ENTRIES: readonly GlossaryEntry[] = glossary.banned;
 
-  /*
-   * 디자인 핸드오프(2026-09-01)가 회원탈퇴 화면에 더한 것.
-   *
-   * 탈퇴하고도 유지되는 자료를 `남는 것`이라고 부르면 "내 것이 그대로 있다"로
-   * 읽힌다. 실제로 유지되는 것은 나와 끊어진 자료이고, 이름이 사실과 다르면
-   * 그 화면은 동의를 받은 것이 아니라 오해를 받은 것이 된다.
-   * 대신 쓰는 말은 `작성자 정보와 분리되는 정보`다.
-   */
-  '남는 것',
+/** 얼버무림 금지 표시. 판정 금지와 다른 규칙이라 glossary가 항목마다 갈라 둔다. */
+const VAGUE = 'vague';
 
-  /*
-   * 값매김. 웨딩픽은 데이터를 보여주고 **사용자가 판단한다.**
-   *
-   * `예산을 아끼고 싶을 때 맞아요` 같은 말은 데이터가 아니라 우리의 권유다.
-   * 같은 자리에 적을 수 있는 사실이 있다 — `제보 금액 범위가 세 후보 중 가장
-   * 낮아요`. 앞은 우리가 대신 골라준 것이고 뒤는 사용자가 고를 재료다.
-   *
-   * `낮은 편`·`높은 편`은 남긴다. 그건 값매김이 아니라 분포에서의 자리다.
-   */
-  '아끼고 싶을 때',
-  '가성비',
-  '합리적인 가격',
-  '추천드려요',
-  '추천합니다',
-  '이 업체를 고르세요',
-] as const;
+/** 아직 강제하지 않는 항목. 이유는 glossary의 `pending`에 있다. */
+export const PENDING_PHRASES: readonly string[] = BANNED_ENTRIES.filter(
+  (entry) => entry.pending !== undefined
+).map((entry) => entry.term);
+
+/**
+ * 화면에 쓰지 않는 말.
+ *
+ * **목록은 `spec/glossary.json`에 있다.** 여기 옮겨 적지 않는다 — 두 곳에 적으면
+ * 한 곳만 고치는 날이 오고, 실제로 그랬다. v3.18과 v3.22가 정한 금지어(`확인된 제보` ·
+ * `오늘의 Pick` · `네이버페이 포인트` …)가 이 배열에 한 번도 들어오지 않아, 규칙은
+ * 문서에 있는데 게이트는 통과시키고 있었다.
+ *
+ * `pending`이 달린 항목은 아직 강제하지 않는다. 이유는 그 항목에 적혀 있다.
+ * `kind: 'vague'`는 아래 `VAGUE_PHRASES`가 가져간다 — 다른 규칙이라 따로 센다.
+ */
+export const BANNED_PHRASES: readonly string[] = BANNED_ENTRIES.filter(
+  (entry) => entry.pending === undefined && entry.kind !== VAGUE
+).map((entry) => entry.term);
 
 /** 그 자리에 대신 쓰는 말. */
 export const PREFERRED_PHRASES = [
@@ -108,8 +81,30 @@ export type CopyViolation = { phrase: string; index: number };
  * `공공데이터`는 우리가 고른 낱말이 아니라 **출처의 이름이다**(공공누리·공공데이터포털).
  * `공공정보`로 바꿔 적으면 어느 자료를 쓴 것인지 잘못 적는 셈이고, 출처 표시는
  * 정확해야 하는 자리다(8번). 규칙은 우리가 쓰는 말에만 건다.
+ *
+ * 이제 이 목록도 glossary가 갖는다 — 각 항목의 `allow`다. `공공데이터`는 `데이터`의,
+ * `공정거래위원회`는 `거래`의 allow로 옮겼다.
  */
-export const EXEMPT_PHRASES = ['공공데이터'] as const;
+export const EXEMPT_PHRASES: readonly string[] = BANNED_ENTRIES.flatMap(
+  (entry) => entry.allow ?? []
+);
+
+/**
+ * 라틴 낱말은 낱말 경계까지 봐야 한다.
+ *
+ * `AI`를 그냥 찾으면 `FAILURE_MESSAGE` · `CLAIM_METHODS` 같은 식별자가 전부 걸린다.
+ * 실제로 43건이 걸렸고 그중 화면 문구는 **0건**이었다. 한글 금지어는 이 문제가 없어
+ * 라틴 문자·숫자로만 된 낱말에만 경계를 건다.
+ */
+function isLatinWord(phrase: string): boolean {
+  return /^[A-Za-z0-9]+$/.test(phrase);
+}
+
+function indexOfPhrase(text: string, phrase: string): number {
+  if (!isLatinWord(phrase)) return text.indexOf(phrase);
+
+  return text.search(new RegExp(`(?<![A-Za-z0-9_])${phrase}(?![A-Za-z0-9_])`));
+}
 
 /** 예외를 같은 길이의 자리표시자로 덮는다. 덮으면 위치(index)가 흐트러지지 않는다. */
 function maskExempt(text: string): string {
@@ -129,7 +124,7 @@ export function findBannedPhrases(text: string): CopyViolation[] {
   const scanned = maskExempt(text);
 
   return BANNED_PHRASES.flatMap((phrase) => {
-    const index = scanned.indexOf(phrase);
+    const index = indexOfPhrase(scanned, phrase);
 
     return index >= 0 ? [{ phrase, index }] : [];
   });
@@ -157,16 +152,9 @@ export function hasExclamationOrEmoji(text: string): boolean {
  *
  * UI·정책서·기획서·관리자·AI 생성 콘텐츠에 모두 적용한다.
  */
-export const VAGUE_PHRASES = [
-  '거의',
-  '아마도',
-  '아마',
-  '대략',
-  '어느 정도',
-  '가능성이 높',
-  '것으로 보임',
-  '것으로 보인다',
-] as const;
+export const VAGUE_PHRASES: readonly string[] = BANNED_ENTRIES.filter(
+  (entry) => entry.pending === undefined && entry.kind === VAGUE
+).map((entry) => entry.term);
 
 /**
  * 그 자리에 대신 쓰는 말.

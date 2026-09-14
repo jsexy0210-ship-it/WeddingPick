@@ -18,6 +18,60 @@
 
 ---
 
+## 배포가 멈춰 있다 — 2026-09-09 05:24 실측
+
+**Render 워크스페이스의 빌드 시간이 소진됐다. 코드 문제가 아니다.**
+
+```
+==> Build canceled: your workspace has run out of build pipeline minutes
+    for the current billing period.
+```
+
+서비스 이벤트 이름이 `pipeline_minutes_exhausted`다. **빌드가 시작조차 못 하고 취소된다.**
+2026-09-09에 main에 들어간 커밋이 전부 이 벽에 부딪혔다 — 04:50 · 04:56 · 05:02 · 05:03 · 05:14
+다섯 회차 전부 `deploy_ended · failed`. Render 서비스 4개가 모두 「Failed deploy」다(DB는 정상).
+
+### 여기서 배운 것 — 「배포 성공」을 GitHub만 보고 말하지 마라
+
+`main.yml`의 Deploy 잡은 **Render에 배포를 요청하는 데까지만** 초록이다. 그 뒤 Render가
+자기 인프라에서 빌드하다 실패해도 GitHub은 초록으로 끝난다. 오늘 여러 세션이 「배포까지
+성공」이라고 보고했고 전부 틀렸다. **배포 확인은 `render-deploy-status.yml`을 돌려
+`deploy_ended`의 `deployStatus`를 봐야 한다.**
+
+### 풀리기 전까지
+
+머지는 해도 된다(코드는 main에 쌓인다). 다만 **화면에는 아무것도 반영되지 않는다.**
+「배포 확인」을 완료로 적지 마라. 사람이 Render 대시보드 → Workspace Settings →
+Build Pipeline에서 요금제나 빌드 지출 한도를 올려야 한다.
+
+### 곁가지
+
+`weddingpick-api`(Oregon)가 `render.yaml`에 없는 서비스인데 워크스페이스에 떠 있다.
+정리 대상인지 확인이 필요하다 — 쓰지 않는다면 빌드 시간을 갉아먹고 있을 수 있다.
+
+---
+
+## 사용자 결정 — 2026-09-09
+
+새 세션이 이 항목을 다시 파지 않도록 여기 적는다. **아래는 사람이 내린 결정이다.**
+
+| 항목 | 결정 | 따라 나오는 것 |
+|---|---|---|
+| 지도 보기 | **보류 · 차후 검토** | 지금 지도 화면을 만들지 않는다. `apps/mobile/src/app/(tabs)/wedding/[id]/map.web.tsx`는 그대로 두되 확장하지 않는다. 검색 화면의 목록/지도 토글은 이미 없다(`search/index.tsx:1032`). 안드로이드 위치 권한 두 개(`ACCESS_COARSE_LOCATION` · `ACCESS_FINE_LOCATION`)는 지금 지워도 된다 — 실제로 지도를 넣는 날 다시 선언한다 |
+| 카카오 알림톡 | **보류 · 최종 릴리즈 때 추가** | PR #142는 열어둔 채 두고 진행하지 않는다 |
+| DB 분리 | **지금은 한 벌 · 차후 분리** | `docs/release-env-split.md`의 0 · 0b · 1단계는 나누는 날 시작 |
+| 공공데이터 계정 | **운영계정 하나로 통일** | `SBIZ_API_KEY` 시크릿에는 **운영계정 키**만 넣는다. 개발계정 키는 하루 1,000건이고 오퍼레이션마다 승인 범위가 달라 같은 코드가 어떤 날은 되고 어떤 날은 403이다. 포털 활용신청을 운영계정으로 올려 승인받은 뒤 시크릿을 교체한다. 코드는 `collect.ts`의 `assertServiceOk`가 resultCode를 읽어 무엇을 해야 하는지 말해준다 |
+| 카카오 동의항목 · 만 14세 | **로그인 화면 체크박스로 되돌렸다**(2026-09-09 사용자 오더 「14세 로그인 바꾸기 이전으로 싹다 롤백」) | `fd111f0` 직전 상태다 — 로그인 화면의 「만 14세 이상이에요」 체크박스로 자기 신고를 받고, 서버는 그 값을 믿는다. 카카오 출생 연도 판정 · 경계 나이 차단 · 수집 항목 안내 블록은 **전부 되돌렸다**. 되돌린 범위는 로그인 · 나이 · 카카오 동의항목 파일뿐이다(사용자가 범위를 그렇게 정했다) — 탈퇴 화면 문구와 온보딩 완료 문구는 그대로 두었다. **주의**: 카카오 콘솔에는 「필수 출생 연도 · 프로필」로 신청한 이력이 남아 있어 코드와 콘솔이 어긋난다. 다시 신청하기 전에 어느 쪽에 맞출지 사용자에게 확인한다 |
+| 후기 표기 | **별점 · 무조건 5.0 만점 환산** | **`SPEC.md` §6.1 「별점을 쓰지 않습니다 · 평점 숫자를 만들지 않습니다」와 용어집의 「별점 → 이용한 사람들의 경험」은 이 결정으로 무효다**(2026-09-09). 명세보다 사용자 결정이 앞선다. **되돌리지 마라** — 시안만 보고 3축 3지선다로 «고치면» 결정을 뒤집는 것이다. 평균은 서버가 이미 준다(`usageScore.average` 1~5). 그리는 곳: 업체 상세 ⑧ · 후기 목록 행. 컴포넌트는 `packages/ui/src/rating-stars.tsx` |
+| 관리자 화면 | **`/admin` 하나로 통일** | 관리자가 둘이었다. `weddingpick-app-web.onrender.com/admin`(expo 콘솔 27화면)만 남기고 `admin.html`·`weddingpick-admin` 서비스·`admin.weddingpick.kr`을 지웠다(2026-09-09 사용자 결정). **`admin.html`에만 있던 화면 넷은 사라졌다** — 개인정보 검토(`pii-reviews`) · 이의제기(`objections`) · 결정 브리핑·열린 결정(`decisions/*`). **넷 다 `/admin`에 새로 만들어 넣었다** — 개인정보 검토 · 후기 이의제기 · 자동 결정 현황(브리핑+열린 결정 한 화면). 없어진 기능은 없다. **2026-09-10에 이 통일 결정을 되돌렸다** — 관리자 콘솔을 다시 별도 출처(`weddingpick-admin.onrender.com/admin/*`)로 분리했다. 화면 코드는 그대로 두고 배포만 갈랐다. 얻는 것은 출처 분리 하나이고 IP 차단은 얻지 못한다 — 범위와 전환 절차는 `docs/admin-origin-split.md` |
+| 커스텀 도메인 | **폐기했다**(2026-09-11 대표 지시) | `weddingpick.kr` · `admin.weddingpick.kr` · `www.weddingpick.kr` **셋 다 이름 풀이가 안 된다**(2026-09-09 실측, `NXDOMAIN`). `main.yml`의 「Custom domains」 스텝은 Render 쪽에 **등록만** 하고, 실제 레코드는 등록처(가비아)에 사람이 넣어야 한다. 그래서 워크플로가 초록이어도 도메인은 죽어 있다. onrender 주소는 정상. **이 주소로 재현한 장애 보고는 전부 무효다** — 열린 적이 없다 |
+| 광고 실운영 | **오더 대기** | 스토어 등록정보의 「광고 포함」은 «없음» |
+| 국외 이전 | **고지하고 쓴다 · 인프라를 국내로 옮기지 않는다**(2026-09-09 사용자 결정) | 서비스는 국내용이지만 인프라는 대부분 미국이다 — API·앱웹·웹사이트 Render(미국), DB Neon(**싱가포르** — 회사는 미국 사업자지만 서버 리전은 AWS 싱가포르다, `docs/INFRA_ACCESS_AUDIT_2026-09-10.md`), 문서 읽기 Anthropic(미국), 푸시 중계 Expo(미국). 국내는 원본 이미지 저장소 NCP 하나뿐이다. **국외 이전 자체가 위법이 아니라 고지 없이 이전하는 것이 위법이다**(개인정보보호법 제28조의8). 처리방침 4항(처리위탁)·5항(국외 이전)에 이전받는 자·국가·항목·시기·방법·보유기간·거부 방법을 적었다. **되묻지 마라** — 「국내 서비스인데 왜 국외 이전이냐」는 사용자가 이미 물었고 답을 듣고 1번(고지)을 골랐다. 옮기는 쪽은 사용자 오더가 있을 때만 시작한다. **2026-09-11 대표 승인(승인 B)으로 API를 싱가포르로 옮긴다 — 절차는 `docs/render-region-move.md`, 고지(처리방침 개정)가 이전보다 먼저다** |
+| 릴리즈 프로덕션 빌드 | **보류 — 사용자가 「완료」라고 말할 때만 올린다**(2026-09-09) | `eas build --profile production` · `eas submit` · Play Console 업로드를 **누구도 먼저 하지 않는다.** 최종 검수는 사용자가 한다. 준비물(서비스 계정 JSON · 스크린샷 · 그래픽 이미지)은 갖춰 두되 올리지 않는다 |
+| 카카오 동의항목 콘솔 | **코드는 롤백됐고 콘솔 신청 이력은 남아 있다**(2026-09-09) | 1차 신청은 **필수** 출생 연도 · 프로필(닉네임·사진), 나머지 「사용 안 함」이었고 **반려**됐다(회원가입 절차 불명확 · 수집 항목 미기재 · 탈퇴 경로 누락). 그 대응으로 넣었던 코드는 사용자 오더로 롤백했다 — 지금 `scopes`와 `/v2/user/me`는 `fd111f0` 직전 값이다. 다시 심사에 넣으려면 코드와 콘솔을 어느 쪽으로 맞출지부터 정해야 한다 |
+
+---
+
 ## 저장소 정리 — 2026-09-07
 
 `main`을 유일한 기준으로 만들기 위해 브랜치·PR·문서·워크플로를 전수 점검했다.
@@ -145,58 +199,124 @@ Closed PR이지만 main에 없는 고유 코드가 남아 있다. 되살릴지 �
 
 ---
 
-## 🔴 미해결 결함 (2026-09-07 감사·재검증 기준)
+## 🔴 미해결 결함 (2026-09-07 감사 · 2026-09-09 갱신)
 
 PR #99의 조사 보고서와 그 독립 재검증 결과에서 **코드로 확인된** 항목만 남긴 것이다.
 오탐으로 판정된 항목은 없었다. 원문은 Git history(브랜치 `codex/github-audit-handoff-20260907`,
 `claude/audit-review-2026-09-07`의 커밋)에서 볼 수 있다.
 
+2026-09-09에 해소된 것은 아래 «해소» 절로 옮겼다. N01과 G05는 같은 날 실측으로
+근거가 바뀌어 본문을 고쳤다 — 옛 근거를 그대로 두면 다음 사람이 이미 죽은 가설을
+쫓는다.
+
 ### 출시 차단
 
 | # | 항목 | 위치 · 근거 |
 |---|---|---|
-| N01 | **운영 카카오 로그인이 500으로 실패** | `POST /v1/auth/sessions → 500`. `errors.ts`가 `unauthenticated → 401`로 매핑하므로 카카오 검증 실패가 아니다. `routes/auth.ts`의 `signIn()` DB 작업에서 처리되지 않은 예외. **#100 병합으로 이제 로그가 남는다 — 재현해서 스택을 잡는 것이 다음 한 걸음** |
-| G04 | **CORS 출처·메서드 누락** | `infra/render-env.yml`의 `CORS_ORIGINS`에 admin 출처·커스텀 도메인 없음. `server.ts`의 `methods`에 **PATCH 없음** — 관리자 화면이 실제로 PATCH를 보내므로(`admin/kill-switch.tsx`·`policy-engine.tsx`·`users.tsx`·`vendors.tsx`·`ads.tsx`·`home.tsx`) preflight에서 전부 막힌다. 도메인은 이미 활성이라 미래 위험이 아니라 현재 차단 |
+| N01 | **운영 카카오 로그인이 500으로 실패** | `POST /v1/auth/sessions → 500`. **스키마 가설은 2026-09-09 죽었다**(아래 DB-1). 같은 날 코드로 범위를 좁혔다 — 아래 «N01 좁힌 범위». 남은 것은 **검증 성공 이후의 DB 경로 세 곳**뿐이고, 다음 한 걸음은 재현 시 Render 로그의 스택·SQL 원문이다 |
+| G04 | **CORS 출처 누락** (메서드는 해소) | `infra/render-env.yml`의 `CORS_ORIGINS`에 admin 출처·커스텀 도메인이 없다. 도메인은 이미 활성이라 미래 위험이 아니라 현재 차단. **`server.ts`의 `methods`에 PATCH가 없던 절반은 #134로 해소됐다** |
 | G02 | **main 보호 규칙에 필수 PR·CI·리뷰 없음** | `rules/branches/main`이 `deletion`·`non_fast_forward` 2개만 반환. 실패한 변경의 병합을 막는 장치가 없다 |
 
 ### 높음
 
 | # | 항목 | 위치 · 근거 |
 |---|---|---|
-| 잔존-A | 관리자 kill switch가 아무것도 끄지 않는다 | `routes/admin.ts`의 `killSwitches` Map을 `admin.ts` 밖에서 조회하는 코드가 0건. 껐다고 표시돼도 기능은 계속 돌고, 재시작하면 상태도 사라진다 |
-| G05 | staging 이름의 job이 운영 대상을 검사 | `main.yml`의 Staging·Production 두 job이 같은 `DATABASE_URL`과 같은 health URL(`weddingpickl.onrender.com`)을 쓴다. `db-migrate-staging.yml`만 `STAGING_DATABASE_URL`을 쓴다 |
+| 잔존-A′ | kill switch 6종(AI 3 · 통계 · 보상 · 자동게시)이 여전히 인메모리다 | `routes/admin.ts`의 `killSwitches` Map은 그대로다 — 껐다고 표시돼도 기능은 돌고 재시작하면 상태가 사라진다. **수집 출처 스위치만 #134로 DB(`import_switches`)에 연결됐다.** 나머지 6종은 각각 읽는 쪽을 만들어야 한다 |
+| G05 | staging 이름의 job이 운영 대상을 검사 | `main.yml`의 Staging·Production 두 job이 같은 `DATABASE_URL`과 같은 health URL(`weddingpickl.onrender.com`)을 쓴다. `db-migrate-staging.yml`만 `STAGING_DATABASE_URL`을 쓴다. **처리 방침은 `docs/release-env-split.md`가 정본이다** — 사용자 결정(2026-09-09) 「우선 현재 DB 그대로, 차후에 분리」로 §3의 0·0b·1·2는 나누는 날로 미뤄졌다. `PRODUCTION_DATABASE_URL`에 Render 내부망 주소가 들어 있어(`getaddrinfo EAI_AGAIN`) 이름부터 옮기면 어떤 워크플로도 운영 DB에 닿지 못한다 |
+| DB-2 | 스테이징 DB가 19개 밀려 있다 | 적용 73 / 기대 92(0074~0091a 미적용, 2026-09-09 실측). 「스테이징에서 먼저 검수한다」가 지금 성립하지 않는다. `db-migrate-staging.yml` 실행은 사용자 승인 대기. **N01 재현용으로서의 값은 없다** — 스키마 가설이 죽어 그 실험이 가르는 것이 없다 |
 
 ### 출시 전 처리
 
 | # | 항목 |
 |---|---|
 | G10 | 마케팅 preview artifact가 업로드되지 않는다 — CLI는 `apps/api/.marketing-preview`에 쓰는데 `main.yml`은 루트를 본다. `.`으로 시작해 `include-hidden-files: true`도 필요 |
-| G13 | 랜딩 목업이 실데이터 표기 형식으로 금액을 보여준다 — `landing-v4.ts`에 시연 표기 0건. CLAUDE.md §3의 «금액 표기(고정)»과 충돌 |
+| ~~G13~~ | **2026-09-09 PR #136에서 해소 — 실제 위반 지점은 `home-page.ts` · `vendor-page.ts`였다.** 원문 근거(`landing-v4.ts`에 시연 표기 0건)는 사실이 아니다: 그 파일은 2줄짜리 re-export 껍데기고 랜딩 카피는 전부 `spec/strings.ko.json`에서 오며 구체 금액이 한 건도 없다 — **다시 열어보지 않아도 된다.** 진짜 위반은 두 웹 화면이 `guidePrice`를 읽지 않고 금액을 직접 그린 것이었다(v3.24 «금액 한 줄은 어느 화면이든 `priceLine`으로만»). 그 탓에 실 제보 3건 미만 업체는 업체 안내 금액이 있어도 「아직 정보가 적어요」로만 나왔고, 출시 첫날 실 제보 0건이면 웹 전체가 빈 화면이 된다 |
 | G12 | 마케팅 대시보드가 DB 오류를 «0건 성공»으로 숨긴다 — `routes/admin.ts`의 catch에 `NODE_ENV` 검사가 없다 |
 | G11 | 소재를 수정해도 `reviewed`·`reviewed_at`이 갱신되지 않아 과거 승인 상태가 남는다 (`marketing/store.ts`) |
-| 잔존-B | 관리자 클라이언트가 204에도 `res.json()`을 호출한다 (`app/admin/_api.ts`) |
 | 잔존-C | AI 호출 한도가 원자적이지 않다 — `callsToday()`의 SELECT와 `recordUsage()`의 INSERT가 별도 트랜잭션 (`analysis/pipeline.ts`) |
 | 잔존-D | 죽은 워커의 `running` 작업을 회수하는 reaper가 없다 (`analysis/worker.ts`의 `claim()`이 `pending`만 집는다) |
 | 잔존-E | `routes/documents.ts`의 `MAX_FILE_SIZE`가 죽은 상수다. S3 드라이버는 presigned POST 정책이 강제하므로 실질 노출은 local 드라이버 한정 |
 | 잔존-F | `packages/db/src/reset.ts`의 `DROP SCHEMA ... CASCADE`에 테스트 DB 가드가 없다 |
-| sbiz | `collect.ts`의 업종 대분류 `'Q'`가 활용가이드에 없는 값이다. `SBIZ_API_KEY` 등록 후 `public-data.yml`의 `lookup_keyword`로 실제 코드를 찾아 교체해야 `sbiz-seoul`·`sbiz-gyeonggi`가 동작한다 |
+| sbiz | 운영계정 승인 완료(2026-09-08, 활용기간 2028-09-08까지). 업종코드는 `collect.ts`에서 제거해 설정값(`SBIZ_UPJONG_CODES`)으로 옮겼다 — 코드가 비면 수집이 즉시 실패한다. `SBIZ_API_KEY` 등록 후 `public-data.yml`의 `lookup_level`로 실제 코드를 찾아 저장소 Variables에 넣어야 `sbiz-seoul`·`sbiz-gyeonggi`가 동작한다 |
+
+### DB-1 — 운영에만 있는 마이그레이션 3개: 확인 끝났다. 스키마는 정상이다
+
+**다시 파지 마라.** 2026-09-09 `db-status.yml` target=default(실행 34309171711)로 이름까지 확인했다.
+
+```
+적용 96 / 기대 93 · 밀린 것 없음
+저장소에 없는 것: 0052_mission_draw · 0059_wedding_events · 0060_vendor_geo
+```
+
+셋 다 **번호를 다시 매긴 흔적**이고 사고가 아니다. 저장소에서 대조했다.
+
+| 운영 DB에 적힌 것 | 지금 저장소 | 무엇이 달라졌나 |
+|---|---|---|
+| `0052_mission_draw` | `0053_reward_kind_monthly_draw`가 이어받음 | `ALTER TYPE ... ADD VALUE`로 더한 값은 같은 트랜잭션에서 쓸 수 없어 다음 마이그레이션으로 미뤘다(파일 첫 줄에 그 이유가 있다) |
+| `0059_wedding_events` | `0061_wedding_events` | `CREATE TABLE`·`CREATE INDEX` → `IF NOT EXISTS` |
+| `0060_vendor_geo` | `0062_vendor_geo` | `ADD COLUMN` → `IF NOT EXISTS`, 제약은 `DO $$ ... EXCEPTION WHEN duplicate_object THEN NULL` |
+
+즉 **이미 옛 번호로 적용된 DB 위에 새 번호가 다시 돌아도 안전하도록** 멱등 가드를 넣은 것이다. 재적용은 무해한 no-op이었고 그래서 「밀린 것 없음」이다.
+
+**그래서 운영 스키마는 저장소가 기대하는 모양과 같다.** 다음 셋이 모두 성립하지 않는다.
+
+- 「`structured.users`에 기본값 없는 NOT NULL이 붙었다」 — 셋 중 users에 컬럼을 더하는 것이 없다. `0061`이 users를 보는 곳은 `added_by uuid REFERENCES structured.users (id)` 외래키 한 줄뿐이다(37행).
+- 「`identity.identities`에 모르는 제약이 붙었다」 — 셋 중 identities를 건드리는 것이 없다.
+- 「같은 번호로 내용만 바뀌어 옛 정의가 남았다」 — 번호가 **다르게** 바뀌었고 방향은 「더 안전하게」였다.
+
+`schema_migrations`의 그 세 행은 **지우지 않는다.** 지울 이유가 없고, 지우면 이 기록 자체가 사라진다.
+
+### N01 좁힌 범위 (2026-09-09 · 코드)
+
+500이 날 수 있는 자리를 `routes/auth.ts`의 `POST /v1/auth/sessions`에서 하나씩 지웠다.
+
+- **카카오 검증 실패가 아니다.** `try/catch`가 `provider.verify()`만 감싸고 잡은 것을 전부 `ApiError('unauthenticated')`로 바꾼다(`routes/auth.ts:66~71`). `errors.ts`가 그것을 401로 매핑한다. 토큰 교환 실패·`id_token` 없음·JWKS 검증 실패는 **어느 것도 500이 될 수 없다.**
+  - 그래서 `KAKAO_CLIENT_SECRET` · 리다이렉트 URI · 앱 키가 어긋난 경우도 배제된다. 그건 `identity-provider.ts:247`이 던지고 **401로 나온다.**
+  - 동의항목(scope)도 배제된다. 두 겹이다 — `apps/mobile/src/features/auth/providers.ts:171`이 이미 `scopes: ['openid', 'profile_nickname']`이고, 설령 `openid`가 빠져도 「카카오 id_token이 없다」 throw(`identity-provider.ts:251`)는 같은 `try/catch` 안이라 401이 된다.
+- **요청 형식 문제가 아니다.** `createSessionRequestSchema.parse`의 `ZodError`는 `server.ts:74`가 400으로 바꾼다.
+- **Fastify가 붙인 4xx도 아니다.** `server.ts:91~94`가 그대로 통과시킨다.
+
+남은 것은 `try/catch` **바깥**, 즉 검증이 성공한 뒤의 DB 경로 셋뿐이다.
+
+| 자리 | 무엇을 하는가 |
+|---|---|
+| `signIn()` (`auth/sessions.ts:26~113`) | identities 조회·갱신 또는 users INSERT + identities INSERT, `display_name` 갱신, `is_operator` 조회, sessions INSERT — 한 트랜잭션 |
+| `markAgeVerified()` (같은 파일 166행) | `age_verified` · `age_gate` 갱신. `age_verdict === 'verified'`일 때만 |
+| `sessionEntry()` (같은 파일 135행) | `activated_at` · `weddings` 존재 여부 · `age_verified` 조회 |
+
+스키마가 정상인데 이 셋이 터진다면 데이터에 딸린 것이다(제약 위반·유일키 충돌 등). **다음 한 걸음은 재현 시 Render 로그의 스택·SQL 원문 하나다** — #100으로 로그는 살아 있다. 그것이 오면 위 셋 중 어디인지 즉시 갈린다.
+
+한 가지 더 확인할 것: **500이 정말 500인지.** 브라우저에서 시작하는 흐름이면 CORS preflight 차단(G04)이 500처럼 보일 수 있다. 응답 본문과 상태 코드를 함께 봐야 한다.
+
+### 해소 (2026-09-09)
+
+| # | 무엇이었나 | 어떻게 해소됐나 |
+|---|---|---|
+| 잔존-A(수집분) | 수집 출처를 화면에서 끌 수단이 0건이었다 | #134 — `GET/PATCH /v1/admin/kill-switches`가 `structured.import_switches`를 읽고 쓴다(`import:<source_key>` · 카테고리 `수집`). 나머지 6종은 위 잔존-A′로 남았다 |
+| 잔존-B | 관리자 클라이언트가 204에 `res.json()`을 불러 성공한 PATCH가 실패로 잡혔다 | #134 — `apps/mobile/src/app/admin/_api.ts`가 204에 `null`을 돌려준다 |
+| G04(메서드분) | CORS `methods`에 PATCH가 없어 관리자 화면의 PATCH가 preflight에서 전부 막혔다 | #134 — `server.ts`에 `PATCH` 추가. 출처 누락은 위 G04로 남았다 |
+| 시드 워크플로 | `db-seed-samples.yml`이 「스테이징」이라 적고 운영 시크릿을 썼다. `remove`는 업체·이미지·결제인증·계정을 지운다 | #134 — 대상 선택(기본 staging)으로 바꿨다. 운영 전용 고정은 DB를 나누는 날로 미뤄졌다 |
+| 수집 크론 | `public-data.yml`의 `--apply`가 토요일 크론으로 **사람 없이 운영 DB에 썼다** | DATA 세션 소관(PR #133 계열)으로 넘겼다 — 이 목록에서는 그쪽 진행을 따른다 |
 
 ### 외부 확인 필요 (저장소 안에서 확인 불가)
 
-- 운영 Render `WeddingPickl`의 `DATABASE_URL`이 GitHub `DATABASE_URL`과 같은 DB인가 — **N01과 직결**
-- 운영 DB의 `schema_migrations` 목록과 `identity.identities` 실제 컬럼
+- **카카오 로그인 재현 시 Render 로그의 스택·SQL 오류 원문** — N01의 다음 한 걸음. 위 «N01 좁힌 범위»의 셋 중 어디인지 즉시 갈린다
+- 그때의 **응답 상태 코드와 본문** — 500이 진짜 500인지, CORS preflight 차단(G04)이 그렇게 보이는 것인지
+- 운영 Render `WeddingPickl`의 `DATABASE_URL`이 GitHub `DATABASE_URL`과 같은 DB인가
 - 분석 워커 서비스가 Render에 실제로 있는가 (저장소에 선언 없음)
 - TestFlight / Play 제출·심사 상태
 - legacy branch protection API(`branches/main/protection`) 설정
 
 ### 권장 순서
 
-1. N01 재현 → Render 로그의 SQL 오류로 원인 확정 → 수정
-2. G04 CORS 수정 (admin 출처·커스텀 도메인 + PATCH). 각 출처에서 PATCH preflight 통과 확인
-3. G02 main 보호 규칙 — 필수 PR + head CI 성공
-4. 잔존-A kill switch 연결 (G08 이메일 경로는 2026-09-08 이메일 로그인 삭제로 해소)
-5. G05 환경별 secret·health URL 1:1 분리
-6. 나머지 항목에 각각 단위 테스트를 붙이며 정리
+1. N01 — 재현 시 Render 로그의 스택·SQL 원문을 잡는다 → «N01 좁힌 범위»의 셋 중 하나로 확정 → 수정.
+   스키마 갈래는 닫혔다(DB-1)
+2. G04 — `CORS_ORIGINS`에 admin 출처·커스텀 도메인 추가. 각 출처에서 preflight 통과 확인
+3. G02 — main 보호 규칙에 필수 PR + head CI 성공
+4. 잔존-A′ — kill switch 6종을 읽는 쪽 만들기. 수집 스위치(#134)와 같은 방식으로 DB에 둔다
+5. DB-2 — 사용자 승인 후 스테이징을 92까지. 그래야 「스테이징에서 먼저」가 성립한다(N01 재현용은 아니다)
+6. G05 — `docs/release-env-split.md` §3의 0 → 0b → 1 → 2 순서. 0은 사용자만 할 수 있다
+7. 나머지 항목에 각각 단위 테스트를 붙이며 정리
 
 ---
 
@@ -227,21 +347,34 @@ RN 화면의 웹 렌더링 품질이 이제 "부가 기능"이 아니라 **실�
 
 ### 정책 1 — 비회원 진입 삭제
 로그인 없이 들어갈 수 있는 화면(게스트 홈 등)을 폐지한다. 로그인 완료 후에만 앱 진입이
-가능하도록 진입 흐름(`apps/mobile/src/app/_layout.tsx` 등)을 바꿔야 한다.
-**아직 구현되지 않았다** — 다음 작업.
+가능하도록 진입 흐름을 바꾼다.
+**구현 완료** — `apps/mobile/src/app/_layout.tsx:188` 「비회원 진입 삭제 — 로그인이
+안 된 사람은 무조건 로그인 화면으로」 뒤 `setEntry('login')`. 같은 파일 33번째 줄에
+정책 근거 주석이 있다.
 
 ### 정책 2 — 홈 헤더 검색버튼 삭제
-홈 탭(`apps/mobile/src/app/(tabs)/index.tsx`, 헤더의 `router.push('/search')` 버튼,
-341번째 줄 부근)의 검색 버튼을 없앤다. 알림 아이콘만 남긴다. 검색 자체는 하단 탭의
+홈 탭 헤더의 검색 버튼을 없애고 알림 아이콘만 남긴다. 검색 자체는 하단 탭의
 검색 탭(`(tabs)/search`)으로 계속 접근 가능하니 기능 손실은 아니다.
-**아직 구현되지 않았다** — 다음 작업.
+**구현 완료** — `apps/mobile/src/app/(tabs)/index.tsx`에 `router.push('/search')`가
+0건이다. 헤더는 177번째 줄 `<Header unread={…} onPressBell={…} />` 하나만 남았다.
 
-### 다음 작업 (미착수)
-1. `react-native-webview` 설치 + 네이티브 래퍼 셸 구현
-2. 웹 빌드 호스팅 방식 결정(`expo export -p web` 결과물을 어디에 올릴지)
-3. 정책 1·2 실제 코드 반영
-4. `docs/design-handoff/hybrid-web-qa-checklist.md` 기준으로 홈·진입/내비게이션·공통
-   화면군부터 웹 렌더링 QA
+### 다음 작업
+
+완료 — 근거는 코드로 확인했다(2026-09-09 · FE).
+
+1. `react-native-webview` 설치 + 네이티브 래퍼 셸 — `apps/mobile/package.json:41`에
+   `react-native-webview@14.0.1`, 셸은 `apps/mobile/src/features/webshell/WebShellView.tsx`.
+2. 정책 1·2 실제 코드 반영 — 바로 위 두 절의 근거 줄.
+3. v3.22 · v3.24 금지어 정리 — `확인된 제보` · `확인된 정보` · `오늘의 Pick` ·
+   `우리 준비` · `네이버페이 포인트`가 `apps/` · `packages/` · `spec/`에 0건이다.
+   금지어 목록 자체인 `spec/glossary.json`의 `term` 항목만 남아 있고 이것이 정상이다.
+
+미착수 — 선행조건이 있다.
+
+4. 웹 빌드 호스팅 방식 결정(`expo export -p web` 결과물을 어디에 올릴지).
+   스테이징 서버 분리가 먼저다 — 순서는 `docs/release-env-split.md`.
+5. `docs/design-handoff/hybrid-web-qa-checklist.md` 기준으로 홈·진입/내비게이션·공통
+   화면군부터 웹 렌더링 QA. 4번이 끝나야 돌릴 수 있다.
 
 ---
 
@@ -270,11 +403,11 @@ P0 전체 항목의 완료 기준과 검증 증거가 확정되지 않아 P0 진
 | API | Render `weddingpickl` — `https://weddingpickl.onrender.com` | Node/Fastify, Docker. 환경변수 원본은 `infra/render-env.yml` |
 | 앱 웹 export | Render `weddingpick-app-web` — `https://weddingpick-app-web.onrender.com` | `apps/mobile` react-native-web 정적 빌드 |
 | 서비스 웹사이트 | Render `weddingpick-web` — `https://weddingpick-web.onrender.com` | `apps/web` 정적 빌드 |
-| 관리자 | Render `weddingpick-admin` | 같은 `apps/web` 빌드의 `admin.html` |
+| 관리자 | Render `weddingpick-admin` — `https://weddingpick-admin.onrender.com/admin/*` | `apps/mobile` 같은 export를 `scripts/split-admin-dist.mjs admin`으로 깎은 것. `admin.html`은 2026-09-09에 없어졌다 |
 | DB | Neon PostgreSQL | `DATABASE_URL` |
 | 원본 문서 저장소 | NCP Object Storage (S3 호환) — 버킷 `weddingpick-test` | `STORAGE_DRIVER=s3` + `S3_BUCKET` · `S3_REGION` · `S3_ENDPOINT` · `AWS_ACCESS_KEY_ID` · `AWS_SECRET_ACCESS_KEY` |
 | 모바일 빌드·배포 | Expo EAS · Apple Developer · Google Play Console | `release.yml` · `eas-*.yml` · `android-apk.yml` |
-| 도메인 | `weddingpick.kr` | |
+| 도메인 | 없다 — `weddingpick.kr`은 폐기했다(2026-09-11 대표 지시) | |
 | 로그인 | Kakao Developers | `KAKAO_APP_KEY` · `KAKAO_CLIENT_SECRET`. 애플·구글·네이버는 기존 계정 검증용 코드만 남아 있고 새 로그인 버튼은 없다 |
 | 문서 분석(Pick 인증) | Anthropic API | `ANTHROPIC_API_KEY` — `apps/api/src/analysis/*`가 읽는다 |
 | 공공데이터 수집 | 소상공인진흥공단 API(무료) | `SBIZ_API_KEY`, `public-data.yml` |
@@ -489,17 +622,24 @@ DATABASE_URL=<neon-connection-string> KAKAO_REST_API_KEY=<발급받은 키> \
 과거 세션 44개 중 활성 20개를 정리해 아래 5개만 남기고 나머지는 종료(아카이브)했다.
 종료한 세션의 작업물은 전부 main 또는 원격 브랜치에 있다 — 대화는 복원하지 않는다.
 
-### 활성 세션 5개
+### 활성 세션 7개
 
 | 세션 | ID | 담당 |
 |---|---|---|
 | WeddingPick MASTER | `session_01RHos8CRUgW7VXAnxs2BwjD` | 전체 조율 · 정책 · 우선순위 · 진행 상태 · 작업 분배. 직접 구현은 최소화 |
 | WeddingPick FE | `session_01MZiSWesap8CuxobSyGWodh` | 모바일/웹 UI · UX · 온보딩 · 화면 구현 · 프론트 QA/PR |
 | WeddingPick BE | `session_0168q4Vv8AeFiTN4AfFtDkP9` | API · DB · 인증 · 배치 · 마이그레이션 · 서버 |
-| WeddingPick DATA | `session_01Nd4sgG6xYjyadUahtrEtMd` | 업체·공공데이터 수집 · 크롤링 · 자동화 · 데이터 정제 |
+| WeddingPick DATA | `session_01MXSCVKR29GAZWPTr9FsLM2` | 업체·공공 정보 수집 · 크롤링 · 자동화 · 정제 |
 | WeddingPick RELEASE | `session_01116ZtAK5g2tZT9RToadrfv` | CI/CD · EAS · Android/iOS · 스토어 · 배포/인프라 |
+| WeddingPick 알림톡 | `session_016TtFWvSqNa24ck593iAoKp` | 알림 채널 중앙화 · 카카오 알림톡 정책과 구현 |
+| WeddingPick 홍보 자동화 | `session_014Vxuyp3FYqihn7D5iPFm9Y` | 마케팅 문구 · 캠페인 화면 · 홍보 파이프라인 |
 
-세션 태그는 `weddingpick` + `wp-master` / `wp-fe` / `wp-be` / `wp-data` / `wp-release`.
+세션 태그는 `weddingpick` + `wp-master` / `wp-fe` / `wp-be` / `wp-data` / `wp-release` /
+`wp-alimtalk` / `wp-promo`.
+
+**DATA 세션이 한때 둘이었다(2026-09-09).** `session_01Nd4sgG6xYjyadUahtrEtMd`는 같은 역할의
+중복이라 인계 후 보관 처리했다. 그 세션의 작업물은 PR #135(브랜치 `claude/data-collect-refine-d1d3`)에
+남아 있고 위 DATA 세션이 이어받는다. 이 표의 ID를 그 세션으로 고쳤다.
 
 ### 운영 규칙
 
@@ -512,12 +652,51 @@ DATABASE_URL=<neon-connection-string> KAKAO_REST_API_KEY=<발급받은 키> \
 - 남기는 정보는 **확정 결정사항 · 미완료 · 블로커** 셋뿐이다. 이미 코드 · 커밋 ·
   정책서에 있는 내용은 여기 다시 적지 않는다.
 
+### 보고 경로 — 사용자에게 직접 올리지 않는다 (2026-09-09 사용자 오더)
+
+막힌 것 · 실패 · 위험 · **사용자가 골라야 하는 것**은 사용자에게 직접 올리지 않고
+MASTER(`session_01RHos8CRUgW7VXAnxs2BwjD`)를 거친다. 스스로 판단해 진행할 수 있는 것은
+그냥 진행한다 — 이 규칙은 사용자 눈에 닿아야 하는 것만 모으라는 뜻이지 사소한 것까지
+올리라는 뜻이 아니다. 급하지 않은 진행 상황은 모아서 한 번에 보내고, 같은 내용을
+반복해 보내지 않는다. CI 실패는 담당 세션이 먼저 고치고, 두 번 고쳐도 안 되면 올린다.
+
+올릴 때 반드시 담을 것 넷:
+
+1. 무슨 일인지 한 줄
+2. 지금 무엇이 안 되는지 — 영향 범위
+3. 사용자가 골라야 하는 것이면 **선택지와 권고안**
+4. 근거 파일·줄, 또는 워크플로 실행 링크
+
+보내는 법 — `create_trigger`로 MASTER 세션에 1회만 쏜다. 새 세션은 이 문단만 읽고
+그대로 따라 할 수 있어야 한다.
+
+```
+mcp__Claude_Code_Remote__create_trigger
+  name                   보고 제목 한 줄
+  persistent_session_id  session_01RHos8CRUgW7VXAnxs2BwjD   (MASTER · 위 표의 ID)
+  initiation             own_followup
+  run_once_at            지금부터 1~2분 뒤 (RFC3339 · 예 2026-09-09T03:11:00Z)
+  prompt                 위 네 가지를 담은 보고 본문
+```
+
+`cron_expression`은 쓰지 않는다 — 보고는 일회성이고, 반복 루틴을 만들면 같은 보고가
+계속 쌓인다. MASTER 세션 ID가 바뀌면 위 표와 이 문단의 ID를 함께 갱신한다.
+
+세 가지가 더 있다. 이것 때문에 이 규칙이 생겼다.
+
+- **사람만 할 수 있는 것**(시크릿 값 · 외부 계정 · 계약 · 권한)은 세션이 스스로 못 푼다.
+  MASTER가 그런 것만 모아 사용자 조치 목록으로 한 번에 올린다.
+- **돈이 드는 선택과 되돌리기 어려운 선택은 MASTER도 정하지 않는다.** 선택지와 권고안을
+  붙여 사용자에게 올린다. 발송사 계약 · 운영 DB 변경 · 스토어 정책이 그런 자리다.
+- **값은 보고에도 적지 않는다.** 접속 문자열 · API 키 · 휴대폰 번호는 이름과 증상만 적는다.
+  보고는 저장되고 다시 읽힌다.
+
 ### 루틴 (Routines)
 
 | 루틴 | 주기 | 목적 |
 |---|---|---|
 | 공정률 브리핑 | 매일 09:00 KST | main 기준 공정률 계산·보고. 공정률 정의의 단일 출처. 저장소에 쓰지 않는다 |
-| #131 CI 확인 · 머지 · 배포 | 일회성(MASTER) | PR #131 오더 6건 완료 → 머지 → 배포 확인까지. 끝나면 삭제한다 |
+| 토요일 크론 차단 확인 | 일회성(MASTER · 2026-09-11) | `public-data.yml`의 무인 운영 DB 쓰기 차단이 main에 들어갔는지. 크론은 2026-09-13 03:17 KST |
 
 - 특정 PR·일회성 지시용 루틴은 만들지 않는다. 필요하면 MASTER 세션에 직접 지시한다.
   부득이하게 만들면 목적 달성 즉시 삭제한다.
@@ -529,8 +708,12 @@ DATABASE_URL=<neon-connection-string> KAKAO_REST_API_KEY=<발급받은 키> \
 
 ### 정리 시점의 미완료 · 블로커 (세션 종료로 주인이 없어진 것)
 
-- **PR #131** — MASTER가 들고 있다. 사용자 오더 6건(카카오 문구 중첩 · 홈 D-day 코랄 ·
-  패딩 전면 재검토 · Depth Back · 이동 잔상과 로딩 속도 · 시안 미매핑 화면)이 다 들어간 뒤에 머지한다.
+- **PR #131 — 머지 완료**(main `59e8838`). 사용자 오더 6건(카카오 문구 중첩 · 홈 D-day 코랄 ·
+  패딩 전면 재검토 · Depth Back · 이동 잔상과 로딩 속도 · 시안 미매핑 화면 1차)이 전부 들어갔다.
+- **PR #134 — 머지 완료**(main `451c36c`). 수집 중단 스위치 실연결 · 시드 워크플로의 운영 DB 경로 차단.
+- **토요일 크론이 무인으로 운영 DB에 쓴다** — `public-data.yml`의 `17 18 * * 6`이 2026-09-13
+  03:17 KST에 뜬다. 막는 변경(대상 선택 · 기본 staging)은 만들어져 있고 PR #133에 얹는 중이다.
+  그날 전에 머지되어야 한다. 가장 급한 미완료다.
 - **PR #103** — 2026-09-07부터 열린 채로 방치. 루트 `HANDOFF.md`가 저장소에 없는
   `docs/CLAUDE_AUDIT_REVIEW_2026-09-07.md`를 가리키는 것을 고치는 문서 한 줄짜리 PR이다.
   #131 머지 후 main과 맞춰 처리한다. 머지되면 그 브랜치를 포함해 삭제 대상 브랜치가 늘어난다.

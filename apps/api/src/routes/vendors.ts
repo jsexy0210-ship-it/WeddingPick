@@ -1,28 +1,32 @@
 import {
   CONDITION_NARROWING,
-  SPONSORED_LABEL,
   DEEP_DATA_NOTE,
   DEFAULT_PERIOD_LABEL,
   DEFAULT_PERIOD_MONTHS,
+  DISCLOSURE_THRESHOLDS,
   MAX_COMPARED_VENDORS,
   NARROWED_NOT_ENOUGH,
   PRICE_REPORT_CAVEAT,
   RECENT_PERIOD_LABEL,
   RECENT_PERIOD_MONTHS,
+  SPONSORED_LABEL,
   VENDOR_CATEGORY_LABEL,
+  budgetBand,
   coarseRegion,
   comparisonCaveats,
   computePriceStat,
   discloseAmounts,
+  displayableImageCondition,
+  displayableImageUrlCondition,
   hasDeepData,
+  isWeddingStyle,
   narrowedLabel,
   summarizeReports,
-  widestDisclosable,
   type PriceSample,
   type VendorCategory,
-  isWeddingStyle,
+  widestDisclosable,
 } from '@weddingpick/domain';
-import { vendorCategorySchema, vendorSortSchema } from '@weddingpick/api-contract';
+import { vendorSearchQuerySchema, vendorSortSchema } from '@weddingpick/api-contract';
 import type { FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
 import { z } from 'zod';
@@ -30,21 +34,14 @@ import { z } from 'zod';
 import { optionalUser, optionalUserId } from '../auth/plugin';
 import type { AppContext } from '../context';
 import { ApiError, notFound } from '../errors';
-import { displayableImageUrlSql } from '../image-hotlink';
 import { loadUsageScore } from '../review-view';
 import { vendorSourceNote } from '../vendor-view';
 
-const searchQuerySchema = z.object({
-  q: z.string().trim().max(60).optional(),
-  /** 업종 목록은 계약(`vendorCategorySchema`)이 들고 있다 — 여기서 따로 베끼면 v3.18처럼 업종이 바뀔 때 어긋난다. */
-  category: vendorCategorySchema.optional(),
-  /** "서울"처럼 시도까지만. region은 "서울 마포구" 형태라 앞부분으로 맞춘다. */
-  region: z.string().trim().max(20).optional(),
-  cursor: z.string().max(200).optional(),
-  /** 기본은 데이터 많은 순. `인기 순`은 잴 것이 없어 만들지 않았다. */
-  sort: vendorSortSchema.default('data'),
-  limit: z.coerce.number().int().min(1).max(50).default(20),
-});
+/**
+ * 질의는 계약(`vendorSearchQuerySchema`)이 들고 있다 — 여기서 따로 베끼면 v3.18처럼
+ * 화면이 거는 조건이 늘 때 서버만 옛 칸으로 남는다.
+ */
+const searchQuerySchema = vendorSearchQuerySchema;
 
 const compareQuerySchema = z.object({
   /** 쉼표로 이은 업체 id. */
@@ -173,6 +170,42 @@ function mostCommon(values: string[]): string | null {
 }
 
 /**
+ * 판정 전 사진을 화면에 내보내는가.
+ *
+ * **2026-09-11 대표 지시 — 「이미지 720장만 우선 삽입한다」.** 운영에 들어 있는
+ * 720장은 저작권 근거가 `unknown`이고 매칭 신뢰도가 0이라 한 장도 나가지 않았다.
+ * 처음에는 운영자에게만 열었는데, 대표님이 전부 넣으라고 정했으므로 모두에게 연다.
+ *
+ * **값은 여전히 고치지 않는다.** `copyright_basis`를 배치로 바꾸면 판정한 적 없는
+ * 것이 판정된 것으로 남고 되돌릴 근거까지 사라진다. 표에 적힌 사실은 그대로 두고
+ * 내보낼지만 여기서 정한다 — 닫을 때 되돌릴 것이 이 스위치 하나다.
+ *
+ * `VENDOR_IMAGES_SHOW_UNVERIFIED=0`이면 닫힌다. 그때는 예전처럼 운영자에게만
+ * 열리므로, 닫은 뒤에도 무엇이 들어 있는지는 계속 볼 수 있다.
+ */
+export function showsUnverifiedImages(): boolean {
+  return process.env.VENDOR_IMAGES_SHOW_UNVERIFIED !== '0';
+}
+
+async function previewsImages(pool: Pool, viewerId: string | null): Promise<boolean> {
+  if (showsUnverifiedImages()) return true;
+
+  /*
+   * 닫아둔 동안에도 운영자는 본다. 로그인하지 않았으면 질의도 하지 않는다 — 목록
+   * 한 번에 한 번씩 더 묻는 자리라, 대부분인 비로그인 요청에서 아무 일도 일어나지
+   * 않는 편이 맞다.
+   */
+  if (!viewerId) return false;
+
+  const { rows } = await pool.query<{ is_operator: boolean }>(
+    `SELECT is_operator FROM structured.users WHERE id = $1 AND deleted_at IS NULL`,
+    [viewerId]
+  );
+
+  return rows[0]?.is_operator === true;
+}
+
+/**
  * 업체 한 곳의 상세.
  *
  * 상품별 가격은 comparable_quotes에서 그때그때 계산한다. 표본이 기준에 못 미치는
@@ -180,12 +213,14 @@ function mostCommon(values: string[]): string | null {
  * 가격으로 그릴 여지가 생긴다.
  */
 async function loadVendorDetail(pool: Pool, vendorId: string, viewerId: string | null) {
+  const preview = await previewsImages(pool, viewerId);
+
   const { rows } = await pool.query<VendorRow>(
     `SELECT v.id, v.name, v.category, v.region, v.source, to_jsonb(v)->>'source_url' AS source_url, v.last_verified_at, v.lat, v.lng,
               v.style_tags::text[] AS style_tags, v.guide_price_from, v.guide_price_source,
-              /* 뜨지 않을 주소는 고르지 않는다 — 핫링킹 차단 호스트는 우리 화면에서 403이다. */
               (SELECT i.source_url FROM structured.vendor_images i
-                 WHERE i.vendor_id = v.id AND i.status = 'approved' AND ${displayableImageUrlSql('i.source_url')}
+                 WHERE i.vendor_id = v.id AND ${displayableImageCondition('i', { preview })}
+                   AND ${displayableImageUrlCondition('i.source_url')}
                  ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url,
             (SELECT count(*) FROM structured.comparable_quotes c WHERE c.vendor_id = v.id)
               AS comparable_quote_count
@@ -352,6 +387,8 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
       `SELECT split_part(region, ' ', 1) AS name, count(*) AS vendor_count
        FROM structured.vendors
        WHERE region <> ''
+         -- 폐업으로 넘긴 업체는 세지 않는다. 세면 눌러도 아무것도 안 나오는 필터가 생긴다.
+         AND coalesce(is_active, true)
        GROUP BY 1
        ORDER BY 1`
     );
@@ -421,6 +458,9 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
   app.get('/v1/vendors', auth, async (request) => {
     const query = searchQuerySchema.parse(request.query);
 
+    /* 판정 전 사진은 운영자에게만 열린다(previewsImages). */
+    const preview = await previewsImages(context.pool, optionalUserId(request));
+
     /*
      * 정규화는 DB의 normalize_vendor_name을 그대로 쓴다. 서버가 따로 흉내내면 색인에
      * 저장된 값과 어긋나 "분명히 있는데 안 나오는" 업체가 생긴다.
@@ -429,6 +469,40 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
      * 여기서 다시 쓰지 않는다.
      */
     const sort = SORTS[query.sort];
+
+    /*
+     * 예산 구간 · «실 제보가 있는 곳만»(WP-SRCH-005).
+     *
+     * 무엇을 기준으로 거를지는 **화면이 보여주는 금액과 같아야 한다.** 목록의 금액
+     * 한 줄은 `priceLine`이 정한다 — 실 제보가 공개 기준(3건)에 닿으면 그 금액들,
+     * 아니면 업체 안내 시작 금액이다. 그래서 거르는 값도 같은 순서로 고른다:
+     * 창 안의 실 제보가 기준에 닿으면 그 중앙값, 아니면 `guide_price_from`.
+     *
+     * 공개 기준 수(3)는 SQL에 적지 않고 도메인에서 받아 넘긴다 — 정책이 바뀌면
+     * `DISCLOSURE_THRESHOLDS` 하나만 고치면 되게.
+     *
+     * 둘 다 없는 업체(«수집 중»)는 예산을 걸면 빠진다. 금액을 모르는 곳을 어느
+     * 구간에 넣어도 그건 우리가 지어낸 값이다.
+     */
+    const budget = budgetBand(query.budget);
+    const inWindow = `FROM structured.usable_payment_proofs p
+                       WHERE p.vendor_id = v.id
+                         AND p.paid_at >= now() - ($8 || ' months')::interval`;
+    const proofCount = `(SELECT count(*) ${inWindow})`;
+    /** 화면이 보여주는 금액 — 실 제보가 공개 기준에 닿으면 그 중앙값, 아니면 업체 안내 시작 금액. */
+    const shownAmount = `CASE WHEN ${proofCount} >= $9::int
+                              THEN (SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY p.paid_amount) ${inWindow})
+                              ELSE v.guide_price_from END`;
+    /*
+     * 조건이 꺼져 있으면 그 줄은 통째로 참이 된다($10 · $11 · $12가 NULL). 파라미터를
+     * 늘였다 줄였다 하면 번호가 밀려 조용히 다른 칸을 본다.
+     *
+     * 금액을 모르는 업체(«수집 중»)는 예산을 걸면 저절로 빠진다 — NULL과의 비교가
+     * 참이 되지 않는다. 모르는 곳을 어느 구간에 넣어도 그건 우리가 지어낸 값이다.
+     */
+    const narrow = `AND (NOT $10::boolean OR ${proofCount} >= $9::int)
+                    AND ($11::bigint IS NULL OR (${shownAmount}) >= $11::bigint)
+                    AND ($12::bigint IS NULL OR (${shownAmount}) < $12::bigint)`;
 
     /*
      * 이어붙이기 조건.
@@ -465,11 +539,20 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
                              AND a.normalized_alias LIKE '%' || n.value || '%'))
            AND ($2::vendor_category IS NULL OR v.category = $2)
            AND ($3::text IS NULL OR v.region LIKE $3 || '%')
+           /*
+            * 폐업으로 넘긴 업체는 검색에 내보내지 않는다(0047 is_active).
+            * 그 컬럼은 0047부터 「검색·비교에서 폐업 업체를 뺀다」고 적어두고 있었는데
+            * 실제로 거르는 곳은 추천 하나뿐이었다 — 검색은 그대로 내보내고 있었다.
+            * 상세와 비교는 계속 열린다: 이미 담아둔 사람이 왜 사라졌는지 봐야 한다.
+            */
+           AND coalesce(v.is_active, true)
+           ${narrow}
        )
        SELECT v.id, v.name, v.category, v.region, v.source, to_jsonb(v)->>'source_url' AS source_url, v.last_verified_at, v.lat, v.lng,
               v.style_tags::text[] AS style_tags, v.guide_price_from, v.guide_price_source,
               (SELECT i.source_url FROM structured.vendor_images i
-                 WHERE i.vendor_id = v.id AND i.status = 'approved' AND ${displayableImageUrlSql('i.source_url')}
+                 WHERE i.vendor_id = v.id AND ${displayableImageCondition('i', { preview })}
+                   AND ${displayableImageUrlCondition('i.source_url')}
                  ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url,
               (SELECT count(*) FROM structured.comparable_quotes c WHERE c.vendor_id = v.id)
                 AS comparable_quote_count,
@@ -502,6 +585,10 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
         after?.[2] ?? null,
         query.limit + 1,
         DEFAULT_PERIOD_MONTHS,
+        DISCLOSURE_THRESHOLDS.limited,
+        query.onlyVerified,
+        budget?.fromKrw ?? null,
+        budget?.toKrw ?? null,
       ]
     );
 
@@ -572,9 +659,15 @@ async function loadSponsored(
      * 나온다. 렌더해보고 잡았다 — 표에서 막기보다 여기서 묶는 이유는, 겹치는
      * 기간을 표로 막으려면 자리를 나눠 잡는 정상적인 경우까지 걸리기 때문이다.
      */
+    /*
+     * 광고 자리에는 검수 모드를 걸지 않는다. 여기 실리는 사진은 업체가 돈을 내고
+     * 건 자리에 나가는 것이라, 판정 전 사진이 섞이면 「우리가 고르지 않은 사진이
+     * 우리 광고에 나갔다」가 된다. 운영자가 보고 있어도 마찬가지다.
+     */
     `SELECT picked.vendor_id, picked.name, picked.category, picked.region,
             (SELECT i.source_url FROM structured.vendor_images i
-             WHERE i.vendor_id = picked.vendor_id AND i.status = 'approved' AND ${displayableImageUrlSql('i.source_url')}
+             WHERE i.vendor_id = picked.vendor_id AND ${displayableImageCondition('i')}
+               AND ${displayableImageUrlCondition('i.source_url')}
              ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url
      FROM (
        SELECT DISTINCT ON (p.vendor_id)
@@ -587,6 +680,7 @@ async function loadSponsored(
         */
        JOIN ads.tier_state t ON t.tier = p.tier AND t.state = 'live'
        WHERE p.surface = 'search'
+         AND EXISTS (SELECT 1 FROM ads.production_gate g WHERE g.id = true AND g.activated)
          AND (p.category IS NULL OR $1::text IS NULL OR p.category::text = $1::text)
          AND (p.region IS NULL OR $2::text IS NULL OR p.region = $2::text)
        ORDER BY p.vendor_id
@@ -750,14 +844,14 @@ async function loadConditionStats(
    * 못 미친 것이라 사용자에게 보이면 안 된다. 대표 이미지가 맨 앞에 오도록
    * `is_representative DESC`로 정렬하고, 그다음은 수집 순서(created_at ASC)다.
    *
-   * URL은 storage_key가 먼저다 — 우리 저장소에 있는 것이면 스토리지에 서명된
+   * URL은 storage_key가 먼저다 — 우리 저장소에 받아둔 것이면 스토리지에 서명된
    * 조회 URL을 그때그때 발급한다. 영구 URL을 내려주면 만료 시각을 관리할 방법이
-   * 없다. storage_key가 없을 때만 source_url을 그대로 쓴다.
+   * 없다. storage_key가 없을 때만 외부 출처를 그대로 보여준다.
    *
-   * 그 source_url도 «떠야» 내려간다. 핫링킹을 막는 호스트는 우리 화면에서
+   * 그 외부 주소도 「떠야」 내려간다. 핫링킹을 막는 호스트는 우리 화면에서
    * 403이라, 담아 보내면 브라우저가 요청을 보내고 실패한다 — 화면의 onError는
-   * 그 요청이 나간 **뒤에** 도는 것이라 콘솔의 403을 못 막는다. 걸러내는 자리는
-   * 여기다(`image-hotlink.ts`).
+   * 그 요청이 나간 **뒤에** 도는 것이라 콘솔의 403을 못 막는다. 거르는 자리는
+   * 도메인이다(`displayableImageUrlCondition`).
    */
   app.get<{ Params: { vendorId: string } }>(
     '/v1/vendors/:vendorId/images',
@@ -772,6 +866,9 @@ async function loadConditionStats(
 
       if (!vendorCheck.rows[0]) throw notFound('업체');
 
+      /* 판정 전 사진은 운영자에게만 열린다(previewsImages). */
+      const preview = await previewsImages(context.pool, optionalUserId(request));
+
       const { rows } = await context.pool.query<{
         id: string;
         storage_key: string | null;
@@ -784,12 +881,24 @@ async function loadConditionStats(
         `SELECT id, storage_key, source_url, is_representative, use_contain,
                 copyright_note, verified_at
          FROM structured.vendor_images
-         WHERE vendor_id = $1 AND status = 'approved'
-           AND (storage_key IS NOT NULL OR (${displayableImageUrlSql('source_url')}))
+         WHERE vendor_id = $1 AND ${displayableImageCondition('vendor_images', { preview })}
+           /*
+            * 가리킬 곳이 있어야 한다. 우리 저장소에 받아둔 것(storage_key)이거나,
+            * 그것이 없다면 실제로 뜨는 외부 주소여야 한다 — 핫링킹 차단 호스트는
+            * 우리 화면에서 403이라 담아 보내면 깨진 그림만 남는다.
+            */
+           AND (vendor_images.storage_key IS NOT NULL
+                OR (${displayableImageUrlCondition('vendor_images.source_url')}))
          ORDER BY is_representative DESC, created_at ASC`,
         [vendorId]
       );
 
+      /*
+       * 가리킬 곳이 없는 줄은 질의가 이미 걸렀다. 그래서 여기서는 둘 중 무엇으로
+       * 가리킬지만 고른다 — `storage_key`가 먼저다. 우리 저장소에 받아둔 것이면
+       * 원본 주소가 뜨든 말든 우리 주소로 잘 뜨기 때문이다. 그것이 없을 때만
+       * 외부 주소를 쓰고, 그 외부 주소는 뜨는 것임이 질의에서 보장된다.
+       */
       const photos = await Promise.all(
         rows.map(async (row) => ({
           id: row.id,

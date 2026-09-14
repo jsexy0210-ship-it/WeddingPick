@@ -58,7 +58,7 @@ describe('createKakaoProvider', () => {
   });
 });
 
-describe('createKakaoProvider — 연령대(SPEC 3.5)', () => {
+describe('createKakaoProvider — 연령대', () => {
   const kakaoIdentity = { provider: 'kakao' as const, subject: 'kakao-user', profile: { nickname: '웨픽' } };
   const credential = { authorizationCode: 'code', state: 'state', redirectUri: 'https://example.test/setup' };
 

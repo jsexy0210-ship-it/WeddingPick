@@ -36,7 +36,8 @@ describeWithDb('가입 연령과 약관 동의', () => {
       expect(response.statusCode).toBe(200);
       expect(response.json()).toMatchObject({
         activated: false,
-        ageVerified: false,
+        // 나이는 로그인이 이미 확인했다. 남은 것은 동의뿐이다.
+        ageVerified: true,
         minimumAge: MINIMUM_AGE,
         missingRequired: REQUIRED_CONSENTS,
       });
@@ -81,31 +82,78 @@ describeWithDb('가입 연령과 약관 동의', () => {
   });
 
   describe('만 14세 확인', () => {
-    it('체크하지 않으면 가입할 수 없다', async () => {
-      // 로그인 화면의 «만 14세 이상이에요» 체크박스를 안 넣고 온 경우다.
+    /**
+     * **관문은 DB의 `age_verified`다.** 요청 본문이 아니다.
+     *
+     * 예전에는 본문의 `ageVerified`를 봤는데 앱은 그 자리에 늘 `true`를 넣었다 —
+     * 관문이 아니라 통과 버튼이었고, 만 14세 미만 계정이 실제로 그리로 들어왔다
+     * (2026-09-10). 지금은 로그인이 확인하고 여기서는 그 결과를 읽기만 한다.
+     */
+
+    /** 관문이 생기기 전에 만들어진 계정을 흉내 낸다 — 확인 없이 존재하는 계정. */
+    async function unverify(userId: string) {
+      await test.pool.query(
+        `UPDATE structured.users
+         SET age_verified = false, age_verified_at = NULL, age_verified_via = NULL
+         WHERE id = $1`,
+        [userId]
+      );
+    }
+
+    it('서버가 확인하지 않은 계정은 가입을 마치지 못한다', async () => {
       const session = await pending();
+
+      await unverify(session.userId);
 
       const response = await test.app.inject({
         method: 'POST',
         url: '/v1/me/signup',
         headers: session.headers,
-        payload: { ageVerified: false, consents: REQUIRED_CONSENTS },
+        payload: { consents: REQUIRED_CONSENTS },
       });
 
       expect(response.statusCode).toBe(403);
-      expect(response.json<{ error: { message: string } }>().error.message).toContain(
-        `만 ${MINIMUM_AGE}세`
+      expect(response.json<{ error: { code: string } }>().error.code).toBe('age_unverified');
+    });
+
+    it('본문이 확인했다고 말해도 관문은 열리지 않는다', async () => {
+      /*
+       * 이 시험이 이 파일의 요점이다. 앱이 보내는 어떤 값도 서버가 확인하지 않은
+       * 계정을 통과시키지 못한다 — 계약이 그 필드를 아예 받지 않고, 받더라도
+       * 관문이 보는 것은 DB다.
+       */
+      const session = await pending();
+
+      await unverify(session.userId);
+
+      const response = await test.app.inject({
+        method: 'POST',
+        url: '/v1/me/signup',
+        headers: session.headers,
+        payload: { ageVerified: true, consents: REQUIRED_CONSENTS },
+      });
+
+      expect(response.statusCode).toBe(403);
+      expect(response.json<{ error: { code: string } }>().error.code).toBe('age_unverified');
+
+      const { rows } = await test.pool.query<{ activated_at: Date | null }>(
+        'SELECT activated_at FROM structured.users WHERE id = $1',
+        [session.userId]
       );
+
+      expect(rows[0]?.activated_at).toBeNull();
     });
 
     it('막힌 계정은 세션까지 끊긴다', async () => {
       const session = await pending();
 
+      await unverify(session.userId);
+
       await test.app.inject({
         method: 'POST',
         url: '/v1/me/signup',
         headers: session.headers,
-        payload: { ageVerified: false, consents: REQUIRED_CONSENTS },
+        payload: { consents: REQUIRED_CONSENTS },
       });
 
       const after = await test.app.inject({
@@ -117,17 +165,12 @@ describeWithDb('가입 연령과 약관 동의', () => {
       expect(after.statusCode).toBe(401);
     });
 
-    it('체크하고 다시 로그인하면 통과한다', async () => {
-      // 생년월일과 달리 «다시 시도해서 통과할 때까지 우겨보는 문»이 아니다 —
-      // 정말로 체크했으면 그냥 통과한다.
+    it('다시 로그인하면 로그인이 판정해서 통과한다', async () => {
+      // 「우겨보는 문」이 아니다 — 다시 로그인하면 제공자가 준 연령대로 서버가
+      // 판정하고, 14세 이상이면 그때 확인이 남는다.
       const session = await pending();
 
-      await test.app.inject({
-        method: 'POST',
-        url: '/v1/me/signup',
-        headers: session.headers,
-        payload: { ageVerified: false, consents: REQUIRED_CONSENTS },
-      });
+      await unverify(session.userId);
 
       const retry = await signInAs(test, 'apple-pending', { completeSignup: false });
 
@@ -135,31 +178,29 @@ describeWithDb('가입 연령과 약관 동의', () => {
         method: 'POST',
         url: '/v1/me/signup',
         headers: retry.headers,
-        payload: { ageVerified: true, consents: REQUIRED_CONSENTS },
+        payload: { consents: REQUIRED_CONSENTS },
       });
 
       expect(response.statusCode).toBe(200);
     });
 
-    it('확인 시점을 남긴다', async () => {
+    it('확인 시점과 경로를 남긴다', async () => {
       const session = await pending();
-
-      await test.app.inject({
-        method: 'POST',
-        url: '/v1/me/signup',
-        headers: session.headers,
-        payload: { ageVerified: true, consents: REQUIRED_CONSENTS },
-      });
 
       const { rows } = await test.pool.query<{
         age_verified: boolean;
         age_verified_at: Date | null;
-      }>('SELECT age_verified, age_verified_at FROM structured.users WHERE id = $1', [
-        session.userId,
-      ]);
+        age_verified_via: string | null;
+      }>(
+        `SELECT age_verified, age_verified_at, age_verified_via
+         FROM structured.users WHERE id = $1`,
+        [session.userId]
+      );
 
       expect(rows[0]?.age_verified).toBe(true);
       expect(rows[0]?.age_verified_at).toBeInstanceOf(Date);
+      // 제공자가 준 연령대로 판정했다. 화면이 확인한 것과 구분되어 남는다.
+      expect(rows[0]?.age_verified_via).toBe('provider');
     });
   });
 
@@ -171,7 +212,7 @@ describeWithDb('가입 연령과 약관 동의', () => {
         method: 'POST',
         url: '/v1/me/signup',
         headers: session.headers,
-        payload: { ageVerified: true, consents: [REQUIRED_CONSENTS[0]] },
+        payload: { consents: [REQUIRED_CONSENTS[0]] },
       });
 
       expect(partial.statusCode).toBe(400);
@@ -188,7 +229,7 @@ describeWithDb('가입 연령과 약관 동의', () => {
         method: 'POST',
         url: '/v1/me/signup',
         headers: session.headers,
-        payload: { ageVerified: true, consents: REQUIRED_CONSENTS },
+        payload: { consents: REQUIRED_CONSENTS },
       });
 
       expect(response.statusCode).toBe(200);
@@ -206,7 +247,7 @@ describeWithDb('가입 연령과 약관 동의', () => {
         method: 'POST',
         url: '/v1/me/signup',
         headers: session.headers,
-        payload: { ageVerified: true, consents: REQUIRED_CONSENTS },
+        payload: { consents: REQUIRED_CONSENTS },
       });
 
       const { rows } = await test.pool.query<{ item: string }>(
@@ -225,7 +266,7 @@ describeWithDb('가입 연령과 약관 동의', () => {
         method: 'POST',
         url: '/v1/me/signup',
         headers: session.headers,
-        payload: { ageVerified: true, consents: REQUIRED_CONSENTS },
+        payload: { consents: REQUIRED_CONSENTS },
       });
 
       const { rows } = await test.pool.query<{
@@ -250,8 +291,8 @@ describeWithDb('가입 연령과 약관 동의', () => {
 
     it('생년월일을 받지도 저장하지도 않는다', async () => {
       /*
-       * v3.13 §3.5. 로그인 화면의 체크박스 하나가 확인의 전부다 — 생년월일
-       * 필드 자체가 없다.
+       * v3.13 §3.5. 확인은 제공자의 연령대 또는 화면의 확인 하나로 끝난다 —
+       * 생년월일 필드 자체가 없다.
        */
       const session = await pending();
 
@@ -259,7 +300,7 @@ describeWithDb('가입 연령과 약관 동의', () => {
         method: 'POST',
         url: '/v1/me/signup',
         headers: session.headers,
-        payload: { ageVerified: true, consents: REQUIRED_CONSENTS },
+        payload: { consents: REQUIRED_CONSENTS },
       });
 
       const { rows } = await test.pool.query<{ column_name: string }>(
@@ -273,11 +314,12 @@ describeWithDb('가입 연령과 약관 동의', () => {
       expect(columns).not.toContain('birthday');
       expect(columns).toContain('age_verified');
       expect(columns).toContain('age_verified_at');
+      expect(columns).toContain('age_verified_via');
     });
 
     it('두 번 보내도 동의가 겹치지 않는다', async () => {
       const session = await pending();
-      const payload = { ageVerified: true, consents: REQUIRED_CONSENTS };
+      const payload = { consents: REQUIRED_CONSENTS };
 
       await test.app.inject({
         method: 'POST',

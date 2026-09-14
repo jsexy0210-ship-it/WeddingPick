@@ -1,8 +1,11 @@
-import { VENDOR_CATEGORY_LABEL, type VendorCategory } from '@weddingpick/domain';
+import {
+  VENDOR_CATEGORY_LABEL,
+  isDisplayableImageUrl,
+  type VendorCategory,
+} from '@weddingpick/domain';
 
 import { loadConfig } from './config';
 import { createPool } from './db';
-import { isDisplayableImageUrl } from './image-hotlink';
 
 /**
  * 샘플 업체의 사진을 카카오(다음) 이미지 검색 결과로 바꾼다 — 검수용, 출시 전

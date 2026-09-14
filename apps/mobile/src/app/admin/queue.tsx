@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
-import { API_URL } from '@/api/config';
-import { loadToken } from '@/api/session';
+import { apiFetch } from './_api';
+import { ConfirmDecision } from '@/features/admin/confirm-decision';
+import { verificationDecisionRequest, type VerificationAction } from '@/features/admin/review-decision';
 import { formatDateDot, formatDateTimeDot } from '@/features/common/format-date';
 
 type VerificationStatus = 'received' | 'in_review' | 'needs_supplement' | 'approved' | 'rejected';
@@ -26,19 +27,6 @@ const STATUS_LABEL: Record<VerificationStatus, string> = {
   rejected: '반려',
 };
 
-async function apiFetch(path: string, options?: RequestInit): Promise<unknown> {
-  const token = await loadToken();
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options?.headers as Record<string, string> | undefined),
-    },
-  });
-  if (!res.ok) throw new Error(`API ${path} → ${res.status}`);
-  return res.json();
-}
 
 export default function QueueScreen() {
   const [items, setItems] = useState<PendingVerification[]>([]);
@@ -49,6 +37,8 @@ export default function QueueScreen() {
   const [note, setNote] = useState('');
   const [acting, setActing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  /** 확인을 기다리는 결정. 누른 즉시 보내지 않는다 — 되돌릴 수 없다. */
+  const [pending, setPending] = useState<VerificationAction | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -72,15 +62,43 @@ export default function QueueScreen() {
 
   function reload() { setLoading(true); setRev((r) => r + 1); }
 
-  async function act(action: 'approve' | 'reject') {
+  /**
+   * 누른 단추를 바로 보내지 않고 확인 단계로 넘긴다.
+   *
+   * 보내기 전에 사유부터 본다 — 확인 화면까지 갔다가 「사유를 입력해주세요」로
+   * 돌아오면 두 번 눌러야 한다.
+   */
+  function ask(action: VerificationAction) {
     if (!selected) return;
+
+    const request = verificationDecisionRequest(action, note);
+    if (!request.ok) {
+      setActionError(request.message);
+      return;
+    }
+
+    setActionError(null);
+    setPending(action);
+  }
+
+  async function act(action: VerificationAction) {
+    if (!selected) return;
+
+    const request = verificationDecisionRequest(action, note);
+    if (!request.ok) {
+      setActionError(request.message);
+      setPending(null);
+      return;
+    }
+
     setActing(true);
     setActionError(null);
     try {
       await apiFetch(`/v1/admin/verifications/${selected.id}/${action}`, {
         method: 'POST',
-        body: JSON.stringify(action === 'approve' ? { note } : { reason: note }),
+        body: JSON.stringify(request.body),
       });
+      setPending(null);
       setSelected(null);
       setNote('');
       reload();
@@ -120,7 +138,12 @@ export default function QueueScreen() {
                 <Pressable
                   key={item.id}
                   style={[styles.tableRow, selected?.id === item.id && styles.tableRowActive]}
-                  onPress={() => { setSelected(item); setNote(''); setActionError(null); }}
+                  onPress={() => {
+                    setSelected(item);
+                    setNote('');
+                    setActionError(null);
+                    setPending(null);
+                  }}
                 >
                   <Text style={[styles.td, styles.colId, styles.monoText]} numberOfLines={1}>
                     {item.id.slice(0, 8)}…
@@ -186,22 +209,50 @@ export default function QueueScreen() {
 
               {actionError && <Text style={styles.actionErrorText}>{actionError}</Text>}
 
-              <View style={styles.actionRow}>
-                <Pressable
-                  style={[styles.approveBtn, acting && styles.btnDisabled]}
-                  onPress={() => void act('approve')}
-                  disabled={acting}
-                >
-                  <Text style={styles.approveBtnText}>승인</Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.rejectBtn, acting && styles.btnDisabled]}
-                  onPress={() => void act('reject')}
-                  disabled={acting}
-                >
-                  <Text style={styles.rejectBtnText}>반려</Text>
-                </Pressable>
-              </View>
+              {pending === null ? (
+                <View style={styles.actionRow}>
+                  <Pressable
+                    style={[styles.approveBtn, acting && styles.btnDisabled]}
+                    onPress={() => ask('approve')}
+                    disabled={acting}
+                  >
+                    <Text style={styles.approveBtnText}>승인</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[styles.rejectBtn, acting && styles.btnDisabled]}
+                    onPress={() => ask('reject')}
+                    disabled={acting}
+                  >
+                    <Text style={styles.rejectBtnText}>반려</Text>
+                  </Pressable>
+                </View>
+              ) : (
+                <ConfirmDecision
+                  question={
+                    pending === 'approve'
+                      ? `${selected.targetLevel} 승인으로 마무리할까요?`
+                      : '반려로 마무리할까요?'
+                  }
+                  changes={
+                    pending === 'approve'
+                      ? [
+                          `문서 등급이 ${selected.targetLevel}이 되고, 가격 비교에 쓰입니다.`,
+                          '신청한 사람에게 확인이 끝났다는 알림이 갑니다.',
+                          '큐에서 빠지고 되돌릴 수 없어요.',
+                        ]
+                      : [
+                          '이 신청은 반려로 끝납니다.',
+                          '적은 사유가 신청한 사람에게 그대로 전달돼요.',
+                          '큐에서 빠지고 되돌릴 수 없어요.',
+                        ]
+                  }
+                  confirmLabel={pending === 'approve' ? '승인' : '반려'}
+                  tone={pending === 'approve' ? 'primary' : 'danger'}
+                  busy={acting}
+                  onConfirm={() => void act(pending)}
+                  onCancel={() => setPending(null)}
+                />
+              )}
             </ScrollView>
           )}
         </View>
@@ -211,88 +262,88 @@ export default function QueueScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f3f6' },
+  root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
-  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: '#17181c' },
+  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text },
   refreshBtn: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
-    backgroundColor: '#f2f3f6',
+    backgroundColor: Colors.light.backgroundSelected,
   },
-  refreshText: { fontSize: FontSize.t7, color: '#5a5d6a' },
+  refreshText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
   body: { flex: 1, flexDirection: 'row' },
-  list: { flex: 1, backgroundColor: '#fff', borderRightWidth: 1, borderRightColor: '#e4e5ea' },
-  detail: { width: 428, backgroundColor: '#fff', padding: 24 },
+  list: { flex: 1, backgroundColor: Colors.light.background, borderRightWidth: 1, borderRightColor: Colors.light.border },
+  detail: { width: 428, backgroundColor: Colors.light.background, padding: 24 },
   detailEmpty: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   centered: { marginTop: 40 },
-  emptyText: { color: '#868b94', fontSize: FontSize.t7, padding: 24 },
-  errorText: { color: '#e53e3e', fontSize: FontSize.t7, padding: 24 },
+  emptyText: { color: Colors.light.textAssistive, fontSize: FontSize.t7, padding: 24 },
+  errorText: { color: Colors.light.negative, fontSize: FontSize.t7, padding: 24 },
   tableHead: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: Colors.light.backgroundElement,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
   tableRow: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f1f4',
+    borderBottomColor: Colors.light.backgroundSelected,
   },
   tableRowActive: { backgroundColor: 'rgba(255,111,97,0.08)' },
-  th: { fontSize: FontSize.tab, fontWeight: '700', color: '#868b94', textTransform: 'uppercase' },
-  td: { fontSize: FontSize.t7, color: '#3a3b40' },
+  th: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.textAssistive, textTransform: 'uppercase' },
+  td: { fontSize: FontSize.t7, color: Colors.light.textStrong },
   colId: { width: 96 },
   colLevel: { width: 80 },
   colStatus: { width: 72 },
   colAmount: { flex: 1 },
   colDate: { width: 100 },
-  monoText: { color: '#5a5d6a' },
-  detailSectionTitle: { fontSize: FontSize.badge, fontWeight: '700', color: '#868b94', marginBottom: 12 },
-  detailLabel: { fontSize: FontSize.tab, fontWeight: '600', color: '#868b94', marginBottom: 3, marginTop: 14 },
-  detailValue: { fontSize: FontSize.t7, color: '#17181c' },
+  monoText: { color: Colors.light.textSecondary },
+  detailSectionTitle: { fontSize: FontSize.badge, fontWeight: '700', color: Colors.light.textAssistive, marginBottom: 12 },
+  detailLabel: { fontSize: FontSize.tab, fontWeight: '600', color: Colors.light.textAssistive, marginBottom: 3, marginTop: 14 },
+  detailValue: { fontSize: FontSize.t7, color: Colors.light.text },
   noteInput: {
     marginTop: 6,
     borderWidth: 1,
-    borderColor: '#d0d3dc',
+    borderColor: Colors.light.fieldBorder,
     borderRadius: 6,
     padding: 10,
     fontSize: FontSize.t7,
-    color: '#17181c',
+    color: Colors.light.text,
     minHeight: 80,
     textAlignVertical: 'top',
   },
-  actionErrorText: { color: '#e53e3e', fontSize: FontSize.t7, marginTop: 8 },
+  actionErrorText: { color: Colors.light.negative, fontSize: FontSize.t7, marginTop: 8 },
   actionRow: { flexDirection: 'row', gap: 10, marginTop: 20 },
   approveBtn: {
     flex: 1,
     paddingVertical: 10,
     borderRadius: 6,
     alignItems: 'center',
-    backgroundColor: '#ff6f61',
+    backgroundColor: Colors.light.tint,
   },
-  approveBtnText: { fontSize: FontSize.t7, fontWeight: '600', color: '#fff' },
+  approveBtnText: { fontSize: FontSize.t7, fontWeight: '600', color: Colors.light.background },
   rejectBtn: {
     flex: 1,
     paddingVertical: 10,
     borderRadius: 6,
     alignItems: 'center',
-    backgroundColor: '#f0f1f4',
+    backgroundColor: Colors.light.backgroundSelected,
     borderWidth: 1,
-    borderColor: '#d0d3dc',
+    borderColor: Colors.light.fieldBorder,
   },
-  rejectBtnText: { fontSize: FontSize.t7, fontWeight: '600', color: '#3a3b40' },
+  rejectBtnText: { fontSize: FontSize.t7, fontWeight: '600', color: Colors.light.textStrong },
   btnDisabled: { opacity: 0.5 },
 });

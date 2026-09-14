@@ -1,0 +1,98 @@
+{
+  "sourceCommit": "e34193ee1644c664f107d529002ae53ef775389a",
+  "method": "Extract literal GET responses with TypeScript AST and replay existing client field access, without mounting React or logging in. Automation and rollback removed after latest fixes.",
+  "results": [
+    {
+      "screen": "revenue",
+      "endpoint": "/v1/admin/revenue",
+      "serverLine": 1169,
+      "clientLine": 111,
+      "response": {
+        "mrr": 0,
+        "arr": 0,
+        "activeSubscriptions": 0,
+        "churnRate": 0,
+        "planBreakdown": []
+      },
+      "result": "Cannot read properties of undefined (reading 'mrr')"
+    },
+    {
+      "screen": "data-pipeline",
+      "endpoint": "/v1/admin/data/pipeline",
+      "serverLine": 1243,
+      "clientLine": 98,
+      "response": {
+        "stages": [],
+        "lastRunAt": null
+      },
+      "result": "Cannot read properties of undefined (reading 'received')"
+    },
+    {
+      "screen": "terms",
+      "endpoint": "/v1/admin/terms",
+      "serverLine": 1467,
+      "clientLine": 83,
+      "response": {
+        "items": []
+      },
+      "result": "Cannot read properties of undefined (reading 'find')"
+    },
+    {
+      "screen": "ads-gate",
+      "endpoint": "/v1/admin/ads-gate",
+      "serverLine": 1194,
+      "clientLine": 107,
+      "response": {
+        "enabled": false,
+        "rules": []
+      },
+      "result": "Cannot read properties of undefined (reading 'length')"
+    },
+    {
+      "screen": "email-matching",
+      "endpoint": "/v1/admin/data/email-matching",
+      "serverLine": 1248,
+      "clientLine": 154,
+      "response": {
+        "items": [],
+        "total": 0
+      },
+      "result": "Cannot read properties of undefined (reading 'total')"
+    }
+  ],
+  "pending": [
+    {
+      "file": "ads-gate.tsx",
+      "disabledControls": 1
+    },
+    {
+      "file": "ads.tsx",
+      "disabledControls": 1
+    },
+    {
+      "file": "biz-queue.tsx",
+      "disabledControls": 2
+    },
+    {
+      "file": "campaigns.tsx",
+      "disabledControls": 2
+    },
+    {
+      "file": "data-pipeline.tsx",
+      "disabledControls": 2
+    },
+    {
+      "file": "objections.tsx",
+      "disabledControls": 2
+    },
+    {
+      "file": "terms.tsx",
+      "disabledControls": 2
+    },
+    {
+      "file": "vendors.tsx",
+      "disabledControls": 3
+    }
+  ],
+  "disabledControls": 15
+}

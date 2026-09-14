@@ -13,10 +13,24 @@ import {
   View,
 } from 'react-native';
 
-import { FontSize, LineHeight } from '@weddingpick/ui';
+import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { formatDateDot } from '@/features/common/format-date';
+import { ConfirmCard } from './_ui';
+import { PendingBackendNotice } from '@/features/admin/pending-backend';
+
+const BACKEND_PENDING = true;
+
+/**
+ * 잠긴 동안 핸들러가 돌면 적는 말.
+ *
+ * 단추는 이미 비활성이지만 핸들러는 그대로 있다. 그냥 `return`하면 「눌렀는데
+ * 아무 일도 안 일어난다」가 되고, v3.27이 가장 나쁘다고 적은 상태가 된다.
+ * 무엇이 되는지를 함께 말한다.
+ */
+const PENDING_REASON =
+  '지금은 약관 조문과 판 이력을 조회할 수 있어요. 편집·공개는 앱 약관·동의 기록에 연결한 뒤 열려요.';
 
 type DocType = 'terms' | 'privacy' | 'marketing';
 type TermsVersion = {
@@ -58,6 +72,8 @@ export default function TermsScreen() {
   const [clauseBody, setClauseBody] = useState('');
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  /** 공개를 확인받는 중. 공개한 판은 다시 고칠 수 없어 한 번 더 묻는다(v3.27). */
+  const [askingPublish, setAskingPublish] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -82,12 +98,20 @@ export default function TermsScreen() {
   const activeDocData = data?.documents.find((d) => d.type === activeDoc);
 
   function openClause(clause: TermsClause) {
+    if (BACKEND_PENDING) {
+      setActionError(PENDING_REASON);
+      return;
+    }
     setEditingClause(clause);
     setClauseBody(clause.body);
     setActionError(null);
   }
 
   async function saveClause() {
+    if (BACKEND_PENDING) {
+      setActionError(PENDING_REASON);
+      return;
+    }
     if (!editingClause) return;
     setSaving(true);
     setActionError(null);
@@ -106,6 +130,10 @@ export default function TermsScreen() {
   }
 
   async function publish() {
+    if (BACKEND_PENDING) {
+      setActionError(PENDING_REASON);
+      return;
+    }
     if (!activeDocData?.latestDraftVersion) return;
     setPublishing(true);
     setActionError(null);
@@ -116,6 +144,8 @@ export default function TermsScreen() {
       setActionError(e instanceof Error ? e.message : '공개 실패');
     } finally {
       setPublishing(false);
+      // 실패해도 닫는다 — 창이 떠 있으면 오류 문구가 창에 가린다.
+      setAskingPublish(false);
     }
   }
 
@@ -128,6 +158,16 @@ export default function TermsScreen() {
         </Pressable>
       </View>
 
+      {/*
+        * **약관 정본은 웹사이트다**(2026-09-11 대표 지시 — `apps/web/src/subpages.ts`).
+        * 여기서 고치게 만들면 같은 문서가 두 벌이 되고, 한 벌이 낡으면 낡은 쪽을
+        * 사용자가 본다. 「관리자에서 직접 조작」을 어디에 둘지는 두 안을 올려 두었고
+        * (`docs/admin-screen-inventory.md`), 정해지기 전까지는 조회만 둔다.
+        */}
+      <PendingBackendNotice
+        actions="약관 편집·공개"
+        reason="약관 정본은 웹사이트에 있어요. 여기서는 저장된 초안과 판 이력을 확인할 수 있어요."
+      />
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
         <View style={styles.centered}>
@@ -178,9 +218,9 @@ export default function TermsScreen() {
                 </View>
                 {activeDocData.latestDraftVersion && (
                   <Pressable
-                    style={[styles.publishBtn, publishing && styles.btnDisabled]}
-                    onPress={() => void publish()}
-                    disabled={publishing}
+                    style={[styles.publishBtn, (BACKEND_PENDING || publishing) && styles.btnDisabled]}
+                    onPress={() => { setActionError(null); setAskingPublish(true); }}
+                    disabled={BACKEND_PENDING || publishing}
                   >
                     <Text style={styles.publishBtnText}>
                       {publishing ? '공개 중…' : '초안 공개'}
@@ -200,7 +240,7 @@ export default function TermsScreen() {
                       <Text style={styles.clauseArticle}>{clause.articleNumber}. {clause.title}</Text>
                       <Text style={styles.clauseBody} numberOfLines={3}>{clause.body}</Text>
                     </View>
-                    <Pressable style={styles.editBtn} onPress={() => openClause(clause)}>
+                    <Pressable style={[styles.editBtn, BACKEND_PENDING && styles.btnDisabled]} disabled={BACKEND_PENDING} onPress={() => openClause(clause)}>
                       <Text style={styles.editBtnText}>수정</Text>
                     </Pressable>
                   </View>
@@ -242,34 +282,56 @@ export default function TermsScreen() {
           </View>
         </View>
       </Modal>
+
+      {/*
+        공개한 판은 얼어붙는다 — 사용자가 동의한 글이라 나중에 고칠 수 없다.
+        무엇이 바뀌는지 항목으로 보인 뒤 한 번 더 확인한다(v3.27).
+      */}
+      {askingPublish && activeDocData ? (
+        <ConfirmCard
+          title="초안을 공개할까요?"
+          body="공개한 판의 조문은 다시 고칠 수 없어요."
+          items={[
+            `${activeDocData.label} ${activeDocData.latestDraftVersion ?? ''} 판이 공개돼요`,
+            '공개된 조문은 잠기고, 이어서 고칠 새 초안이 만들어져요',
+            '사용자에게 이 판이 현행으로 보여요',
+            '공개한 사람과 시각이 감사 기록에 남아요',
+          ]}
+          cta="초안 공개"
+          danger
+          onConfirm={() => void publish()}
+          onCancel={() => setAskingPublish(false)}
+        />
+      ) : null}
+
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f3f6' },
+  root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
-  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: '#17181c' },
-  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: '#f2f3f6' },
-  refreshText: { fontSize: FontSize.t7, color: '#5a5d6a' },
+  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text },
+  refreshBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: Colors.light.backgroundSelected },
+  refreshText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
   body: { flex: 1 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  errorText: { fontSize: FontSize.t6, color: '#e53e3e', marginBottom: 16 },
-  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: '#ff6f61' },
-  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: '#fff' },
+  errorText: { fontSize: FontSize.t6, color: Colors.light.negative, marginBottom: 16 },
+  retryBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 6, backgroundColor: Colors.light.tint },
+  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   docTabs: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
     paddingHorizontal: 16,
   },
   docTab: {
@@ -282,72 +344,72 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
     gap: 6,
   },
-  docTabActive: { borderBottomColor: '#ff6f61' },
-  docTabText: { fontSize: FontSize.t7, color: '#868b94' },
-  docTabTextActive: { color: '#ff6f61', fontWeight: '700' },
-  draftDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#805217' },
+  docTabActive: { borderBottomColor: Colors.light.tint },
+  docTabText: { fontSize: FontSize.t7, color: Colors.light.textAssistive },
+  docTabTextActive: { color: Colors.light.tint, fontWeight: '700' },
+  draftDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.light.cautionary },
   docBody: { flex: 1 },
   docMeta: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: Colors.light.backgroundElement,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
-  versionText: { fontSize: FontSize.t7, fontWeight: '700', color: '#17181c' },
-  dateText: { fontSize: FontSize.tab, color: '#868b94', marginTop: 2 },
-  draftText: { fontSize: FontSize.tab, color: '#805217', marginTop: 2 },
+  versionText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.text },
+  dateText: { fontSize: FontSize.tab, color: Colors.light.textAssistive, marginTop: 2 },
+  draftText: { fontSize: FontSize.tab, color: Colors.light.cautionary, marginTop: 2 },
   publishBtn: {
     marginLeft: 'auto',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 6,
-    backgroundColor: '#ff6f61',
+    backgroundColor: Colors.light.tint,
   },
-  publishBtnText: { fontSize: FontSize.t7, fontWeight: '700', color: '#fff' },
-  actionError: { fontSize: FontSize.t7, color: '#e53e3e', padding: 12 },
+  publishBtnText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
+  actionError: { fontSize: FontSize.t7, color: Colors.light.negative, padding: 12 },
   clauseRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f1f4',
+    borderBottomColor: Colors.light.backgroundSelected,
   },
-  clauseRowZebra: { backgroundColor: '#fafbfc' },
+  clauseRowZebra: { backgroundColor: Colors.light.backgroundElement },
   clauseMain: { flex: 1, marginRight: 12 },
-  clauseArticle: { fontSize: FontSize.t7, fontWeight: '700', color: '#17181c', marginBottom: 4 },
-  clauseBody: { fontSize: FontSize.t7, color: '#5a5d6a', lineHeight: LineHeight.t7 },
+  clauseArticle: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.text, marginBottom: 4 },
+  clauseBody: { fontSize: FontSize.t7, color: Colors.light.textSecondary, lineHeight: LineHeight.t7 },
   editBtn: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 4,
-    backgroundColor: '#f2f3f6',
+    backgroundColor: Colors.light.backgroundSelected,
     borderWidth: 1,
-    borderColor: '#d1d3d8',
+    borderColor: Colors.light.fieldBorder,
     flexShrink: 0,
   },
-  editBtnText: { fontSize: FontSize.tab, color: '#3a3b40' },
+  editBtnText: { fontSize: FontSize.tab, color: Colors.light.textStrong },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
-  modalBox: { backgroundColor: '#fff', borderRadius: 14, padding: 24, width: 600, maxHeight: '85%' },
-  modalTitle: { fontSize: FontSize.t6, fontWeight: '700', color: '#17181c', marginBottom: 4 },
-  modalSub: { fontSize: FontSize.t7, color: '#868b94', marginBottom: 12 },
+  modalBox: { backgroundColor: Colors.light.background, borderRadius: 14, padding: 24, width: 600, maxHeight: '85%' },
+  modalTitle: { fontSize: FontSize.t6, fontWeight: '700', color: Colors.light.text, marginBottom: 4 },
+  modalSub: { fontSize: FontSize.t7, color: Colors.light.textAssistive, marginBottom: 12 },
   clauseInput: {
     borderWidth: 1,
-    borderColor: '#d1d3d8',
+    borderColor: Colors.light.fieldBorder,
     borderRadius: 6,
     padding: 12,
     fontSize: FontSize.t7,
     minHeight: 240,
     lineHeight: LineHeight.t6,
   },
-  saveError: { fontSize: FontSize.t7, color: '#e53e3e', marginTop: 8 },
+  saveError: { fontSize: FontSize.t7, color: Colors.light.negative, marginTop: 8 },
   modalActions: { flexDirection: 'row', gap: 10, marginTop: 16 },
-  cancelBtn: { flex: 1, paddingVertical: 10, borderRadius: 6, alignItems: 'center', backgroundColor: '#f2f3f6' },
-  cancelBtnText: { fontSize: FontSize.t7, color: '#3a3b40' },
-  saveBtn: { flex: 1, paddingVertical: 10, borderRadius: 6, alignItems: 'center', backgroundColor: '#ff6f61' },
-  saveBtnText: { fontSize: FontSize.t7, fontWeight: '700', color: '#fff' },
+  cancelBtn: { flex: 1, paddingVertical: 10, borderRadius: 6, alignItems: 'center', backgroundColor: Colors.light.backgroundSelected },
+  cancelBtnText: { fontSize: FontSize.t7, color: Colors.light.textStrong },
+  saveBtn: { flex: 1, paddingVertical: 10, borderRadius: 6, alignItems: 'center', backgroundColor: Colors.light.tint },
+  saveBtnText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   btnDisabled: { opacity: 0.5 },
 });

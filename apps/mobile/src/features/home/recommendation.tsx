@@ -91,12 +91,15 @@ export function Recommendation({
         </View>
       )}
 
-      <ActionButton
-        label={cta.label}
-        variant={cta.kind === 'compare' ? 'primary' : 'ghost'}
-        size="xlarge"
-        onPress={onPressCta}
-      />
+      {/* 시안 ctaStyle: margin-top 2. */}
+      <View style={styles.ctaWrap}>
+        <ActionButton
+          label={cta.label}
+          variant={cta.kind === 'compare' ? 'primary' : 'ghost'}
+          size="xlarge"
+          onPress={onPressCta}
+        />
+      </View>
     </ThemedView>
   );
 }
@@ -116,10 +119,9 @@ function Chip({ chip, onPress }: { chip: ConditionChip; onPress: () => void }) {
         pressed && styles.pressed,
       ]}>
       <ThemedText
-        type="t7"
+        type="micro"
         numberOfLines={1}
-        themeColor={chip.dim ? 'textDisabled' : 'textSecondary'}
-        style={styles.chipLabel}>
+        themeColor={chip.dim ? 'textDisabled' : 'textSecondary'}>
         {chip.label}
       </ThemedText>
     </Pressable>
@@ -156,7 +158,12 @@ function MainCard({ vendor, onPress }: { vendor: VendorSummary; onPress: () => v
           {reason}
         </ThemedText>
       )}
-      <ThemedText type="t7" numeric themeColor="textAssistive" numberOfLines={1}>
+      <ThemedText
+        type="t7"
+        numeric
+        themeColor="textAssistive"
+        numberOfLines={1}
+        style={styles.meta}>
         {price.caption}
       </ThemedText>
     </Pressable>
@@ -177,11 +184,13 @@ function SubCard({ vendor, onPress }: { vendor: VendorSummary; onPress: () => vo
       <ThemedText type="t6" numberOfLines={1} style={styles.subName}>
         {vendor.name}
       </ThemedText>
+      {/* 시안 subPrice 13/18 400 — micro는 700이라 굵기만 내린다. */}
       <ThemedText
-        type="t7"
+        type="micro"
         numeric
         numberOfLines={1}
-        themeColor={price.dim ? 'textDisabled' : 'textAssistive'}>
+        themeColor={price.dim ? 'textDisabled' : 'textAssistive'}
+        style={styles.subPrice}>
         {price.text}
       </ThemedText>
     </Pressable>
@@ -202,9 +211,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  chipLabel: { fontWeight: 700 },
-  main: { gap: Spacing.two - 2 },
+  /* 시안: 이미지 · 이름 줄 · 이유 · 건수가 padSec의 자식이라 사이가 11, 건수 줄만 위 3. */
+  main: { gap: Layout.gap2col },
   mainImage: { width: '100%', height: 180, borderRadius: Radius.medium, overflow: 'hidden' },
+  meta: { marginTop: 3 },
   nameRow: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.three - 4 },
   grow: { flex: 1, minWidth: 0 },
   /** 금액은 줄지 않는다. 좁아지면 옆의 이름부터 줄인다. */
@@ -212,8 +222,12 @@ const styles = StyleSheet.create({
   /* 시안 twoCol: gap 9 · 위 2. */
   twoCol: { flexDirection: 'row', gap: 9, paddingTop: Spacing.half },
   sub: { flex: 1, minWidth: 0, gap: 6 },
-  subImage: { width: '100%', aspectRatio: 16 / 11, borderRadius: Radius.small, overflow: 'hidden' },
+  /* 시안 subImg radius 8 — spec/tokens.json radius에 8이 없다. 이미지는 card 10이다. */
+  subImage: { width: '100%', aspectRatio: 16 / 11, borderRadius: Radius.medium, overflow: 'hidden' },
+  /* 시안 15/20 — 토큰 사다리에 15가 없어 16(t6). */
   subName: { fontWeight: 700 },
+  subPrice: { fontWeight: 400 },
+  ctaWrap: { paddingTop: Spacing.half },
   empty: {
     borderRadius: Radius.medium,
     paddingHorizontal: Layout.cardPadding,

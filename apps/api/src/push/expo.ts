@@ -24,6 +24,26 @@ export function createExpoPush(fetchImpl: typeof fetch = fetch): Push {
     async send(messages) {
       const outcomes: PushOutcome[] = [];
 
+      /*
+       * 운영이 아니면 보내지 않는다.
+       *
+       * **막는 장치가 없었다**(Release Audit 1차 P1-6). 스테이징 DB에 실사용자
+       * 기기 토큰이 남아 있으면 시험 발송이 그 사람 폰으로 그대로 나간다.
+       * 토큰은 어느 DB에서 왔는지 스스로 말해주지 않으므로 여기서 막는다.
+       *
+       * 보낸 척하지 않는다 — 무엇을 보내려 했는지 로그에 남기고, 결과는
+       * 「닿지 않음」으로 돌려준다. 성공으로 돌려주면 발송 통계가 거짓이 된다.
+       */
+      if (process.env.NODE_ENV !== 'production') {
+        console.log(`푸시 ${messages.length}건 — NODE_ENV가 production이 아니라 보내지 않는다.`);
+
+        return messages.map((message) => ({
+          token: message.token,
+          delivered: false,
+          error: 'not_production',
+        }));
+      }
+
       for (let start = 0; start < messages.length; start += BATCH_SIZE) {
         const batch = messages.slice(start, start + BATCH_SIZE);
 

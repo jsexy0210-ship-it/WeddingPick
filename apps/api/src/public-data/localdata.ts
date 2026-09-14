@@ -77,6 +77,29 @@ function isOperating(row: Record<string, string>, columns: Record<string, string
   return !/폐업|휴업|취소|말소|직권/.test(status);
 }
 
+/**
+ * 인허가 자료의 영업상태 열로 폐업·휴업을 가려낸다. `parsePublicCsv`가 쓴다 —
+ * 컬럼 이름 후보(COLUMN_ALIASES)를 두 벌 두지 않으려고 여기 둔다.
+ *
+ * 상태 열이 아예 없는 파일(이천·제천 예식장 «현황»처럼 명단만 있는 자료)은
+ * 폐업 신호가 없는 것이지 영업 중이 확인된 것도 아니다. 그래서 'unknown'으로
+ * 돌려주고, 버릴지 남길지는 부르는 쪽이 정한다.
+ */
+export function operatingState(
+  row: Record<string, string>,
+  headers: string[]
+): 'operating' | 'closed' | 'unknown' {
+  const columns = {
+    status: findColumn(headers, 'status', false),
+    detailStatus: findColumn(headers, 'detailStatus', false),
+    closedAt: findColumn(headers, 'closedAt', false),
+  };
+
+  if (!columns.status && !columns.detailStatus && !columns.closedAt) return 'unknown';
+
+  return isOperating(row, columns) ? 'operating' : 'closed';
+}
+
 /** "서울특별시 강남구 도산대로 123" → "서울특별시 강남구" */
 export function toRegion(address: string): string {
   const parts = address.trim().split(/\s+/);

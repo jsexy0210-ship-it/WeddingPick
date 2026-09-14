@@ -72,7 +72,7 @@ export function registerQuoteRoutes(app: FastifyInstance, context: AppContext): 
   );
 
   /**
-   * A-07 확인 단계.
+   * A-07 확인 단계. **읽은 그대로 맞다고 하는 것뿐이다**(v3.24).
    *
    * 핵심 필드가 모두 확인되면 confirmed_at을 채운다. 남아 있으면 채우지 않는다 —
    * DB 트리거도 같은 것을 막지만, 여기서 미리 판단해 오류 대신 진행 상태를 돌려준다.
@@ -89,11 +89,15 @@ export function registerQuoteRoutes(app: FastifyInstance, context: AppContext): 
 
       await withTransaction(context.pool, async (client) => {
         for (const field of body.fields) {
+          /*
+           * 확인 표시만 켠다. `corrected_value`는 건드리지 않는다 — 고쳐 보낼
+           * 자리를 계약에서 뺐고(v3.24), 이미 고쳐진 옛 값은 그대로 남는다.
+           */
           const { rowCount } = await client.query(
             `UPDATE structured.extraction_fields
-             SET confirmed_by_user = true, corrected_value = COALESCE($3, corrected_value)
+             SET confirmed_by_user = true
              WHERE quote_id = $1 AND field_path = $2`,
-            [quoteId, field.path, field.correctedValue ?? null]
+            [quoteId, field.path]
           );
 
           if (rowCount === 0) {

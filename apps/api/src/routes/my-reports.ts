@@ -16,6 +16,7 @@ type ReportRow = {
   amount: string | null;
   reported_at: Date;
   in_use: boolean;
+  needs_check: boolean;
   note: string | null;
 };
 
@@ -35,14 +36,26 @@ export function registerMyReportRoutes(app: FastifyInstance, context: AppContext
     const { rows } = await context.pool.query<ReportRow>(
       `SELECT p.id,
               'payment_proof'::text AS kind,
-              coalesce(v.name, p.merchant_name) AS subject,
+              -- 가맹점명도 못 읽었으면 접수했다는 사실만 남는다. 지어내지 않는다.
+              coalesce(v.name, p.merchant_name, '확인 중인 자료') AS subject,
               p.vendor_id,
               p.paid_amount::text AS amount,
               p.created_at AS reported_at,
-              -- 업체를 못 찾은 제보는 남아 있지만 어디에도 쓰이지 않는다.
-              (p.vendor_id IS NOT NULL) AS in_use,
-              CASE WHEN p.vendor_id IS NULL
-                   THEN '어느 업체인지 찾지 못해 아직 쓰이지 않아요'
+              /*
+               * 업체를 못 찾았거나 아직 읽는 중인 제보는 남아 있지만 어디에도
+               * 쓰이지 않는다. usable_payment_proofs가 보는 조건과 같다.
+               */
+              (p.vendor_id IS NOT NULL AND p.review_state = 'accepted') AS in_use,
+              (p.review_state = 'pending_review') AS needs_check,
+              CASE
+                /*
+                 * 보류 사유를 그대로 보여준다. 「못 읽었어요」로 끝내지 않고
+                 * 무엇이 되는지를 말한다 — 화면의 «확인 필요»가 이 줄이다.
+                 */
+                WHEN p.review_state = 'pending_review'
+                  THEN coalesce(p.review_note, '올려주신 자료를 확인하고 있어요')
+                WHEN p.vendor_id IS NULL
+                  THEN '어느 업체인지 찾지 못해 아직 쓰이지 않아요'
               END AS note
        FROM structured.payment_proofs p
        LEFT JOIN structured.vendors v ON v.id = p.vendor_id
@@ -57,6 +70,7 @@ export function registerMyReportRoutes(app: FastifyInstance, context: AppContext
               r.total_amount::text,
               r.created_at,
               (r.rejected_at IS NULL),
+              false,
               CASE WHEN r.rejected_at IS NOT NULL
                    THEN '확인 결과 쓰지 않기로 했어요'
               END
@@ -73,6 +87,7 @@ export function registerMyReportRoutes(app: FastifyInstance, context: AppContext
               NULL,
               w.created_at,
               (vis.effective_status = 'published'),
+              false,
               CASE WHEN vis.effective_status <> 'published'
                    THEN '이의 확인 중이라 지금은 보이지 않아요'
               END
@@ -102,6 +117,7 @@ export function registerMyReportRoutes(app: FastifyInstance, context: AppContext
         amount: row.amount === null ? null : Number(row.amount),
         reportedAt: row.reported_at.toISOString(),
         inUse: row.in_use,
+        needsCheck: row.needs_check,
         note: row.note,
       })),
     };

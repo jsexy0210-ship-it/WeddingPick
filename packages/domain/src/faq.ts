@@ -1,3 +1,5 @@
+import type { InquiryCategory } from './inquiry';
+
 import { DISCLOSURE_THRESHOLDS } from './disclosure';
 
 /**
@@ -74,3 +76,46 @@ export const FAQ_ITEMS: readonly FaqItem[] = [
       '연결하면 지출내역, 웨딩 스케줄, Pick한 곳을 함께 보실 수 있어요. 연결을 끊으면 그때부터 서로 보이지 않아요.',
   },
 ] as const;
+
+
+/* ── 질문 하나를 열었을 때 (WP-FAQ-003) ────────────────────────────────── */
+
+/**
+ * 「해결되지 않았어요」를 누르면 어느 문의 유형으로 보낼 것인가.
+ *
+ * 시안 WP-FAQ-003의 규칙이다 — 답이 도움이 안 됐으면 그 질문이 무엇에 관한
+ * 것이었는지 우리가 이미 안다. 유형을 다시 고르게 하는 것은 같은 말을 두 번
+ * 시키는 일이다.
+ *
+ * 짝이 없으면 `other`로 간다. 억지로 유형을 붙이면 엉뚱한 곳으로 접수된다.
+ */
+export const FAQ_UNRESOLVED_CATEGORY: Record<string, InquiryCategory> = {
+  'price-source': 'data_correction',
+  'why-locked': 'other',
+  'original-image': 'privacy',
+  'who-sees': 'privacy',
+  'review-hidden': 'other',
+  'vendor-rebuttal': 'vendor_objection',
+  spouse: 'other',
+};
+
+/**
+ * 이 질문과 같이 볼 만한 질문들. 시안 WP-FAQ-003의 「관련 질문」.
+ *
+ * 자동으로 고르지 않는다 — 제목이 비슷하다고 관련된 것이 아니고, 엉뚱한 질문을
+ * 붙이면 답을 찾던 사람이 한 번 더 헤맨다. 사람이 짝지어 둔다.
+ */
+export const FAQ_RELATED: Record<string, readonly string[]> = {
+  'price-source': ['who-sees', 'why-locked'],
+  'why-locked': ['price-source', 'original-image'],
+  'original-image': ['who-sees', 'why-locked'],
+  'who-sees': ['original-image', 'price-source'],
+  'review-hidden': ['vendor-rebuttal'],
+  'vendor-rebuttal': ['review-hidden'],
+  spouse: [],
+};
+
+/** 키로 질문 하나를 찾는다. 없으면 undefined — 화면이 「찾지 못했어요」로 답한다. */
+export function faqItem(key: string | undefined): FaqItem | undefined {
+  return FAQ_ITEMS.find((item) => item.key === key);
+}
