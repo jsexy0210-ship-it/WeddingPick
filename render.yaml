@@ -111,42 +111,6 @@ services:
         name: Cache-Control
         value: public, max-age=31536000, immutable
 
-  # 개편(RN 토큰·컴포넌트·네비 통합) 미리보기 전용 — 대표님이 폰 브라우저로 진행
-  # 상태를 보는 자리다. weddingpick-app-web(운영, autoDeploy 켜짐)과 완전히
-  # 독립이다 — branch가 다르고, 이 서비스만 건드려도 운영에는 닿지 않는다.
-  #
-  # **이 선언만으로는 서비스가 생기지 않는다** — Blueprint sync가 깨져 있다(위
-  # 머리말). 사람이 대시보드에서 아래 값 그대로 새 Static Site를 만들어야 한다.
-  #
-  # 네이버·구글 로그인 값은 넣지 않는다 — 폐기 중이다(CLAUDE.md 소셜 로그인
-  # 예외 표: 카카오 + 애플만 현행). 카카오만 있으면 로그인 화면은 빈 채로 뜨지
-  # 않는다(isServerConfigured는 API_URL만 본다).
-  - type: web
-    name: weddingpick-preview
-    runtime: static
-    branch: claude/rn-preview
-    staticPublishPath: ./apps/mobile/dist
-    autoDeploy: true
-    buildCommand: npm run export:web --workspace @weddingpick/mobile
-    envVars:
-      - key: EXPO_PUBLIC_API_URL
-        value: https://weddingpickl-sg.onrender.com
-      - key: EXPO_PUBLIC_KAKAO_CLIENT_ID
-        value: 8e9a14dd3a0aa1a420bff858460c415c
-    routes:
-      # expo-router 클라이언트 라우팅 — 없는 경로를 index.html로 되돌린다.
-      # 없으면 깊은 주소(예: /search/그-업체-id)를 새로고침하거나 바로 열 때 404난다.
-      - type: rewrite
-        source: /*
-        destination: /index.html
-    headers:
-      - path: /_expo/*
-        name: Cache-Control
-        value: public, max-age=31536000, immutable
-      - path: /assets/*
-        name: Cache-Control
-        value: public, max-age=31536000, immutable
-
   # 관리자 콘솔 (정적 사이트)
   #
   # **같은 소스에서 같은 export를 돌리고 산출물만 다르게 깎는다.** 관리자 화면은

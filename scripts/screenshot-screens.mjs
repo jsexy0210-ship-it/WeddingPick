@@ -163,10 +163,16 @@ async function installFixtures(page, missing, blocked) {
     const request = route.request();
     const url = new URL(request.url());
 
-    if (url.pathname.startsWith('/v1/')) {
+    // EXPO_PUBLIC_API_URL이 '/capture' 접미사를 붙이므로 실제 pathname은
+    // '/capture/v1/...'다. startsWith('/v1/')는 이걸 못 잡아 모든 v1 요청이
+    // 진짜 네트워크로 새나갔다(→ port 1은 Chromium이 막아 전부 실패).
+    const v1At = url.pathname.indexOf('/v1/');
+
+    if (v1At !== -1) {
+      const v1Path = url.pathname.slice(v1At);
       const method = request.method();
-      const key = `${method} ${url.pathname}`;
-      const matched = matchRoute(method, url.pathname);
+      const key = `${method} ${v1Path}`;
+      const matched = matchRoute(method, v1Path);
 
       if (matched === null) {
         missing.add(key);
