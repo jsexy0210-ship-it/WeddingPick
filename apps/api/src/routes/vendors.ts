@@ -30,6 +30,7 @@ import { z } from 'zod';
 import { optionalUser, optionalUserId } from '../auth/plugin';
 import type { AppContext } from '../context';
 import { ApiError, notFound } from '../errors';
+import { displayableImageUrlSql } from '../image-hotlink';
 import { loadUsageScore } from '../review-view';
 import { vendorSourceNote } from '../vendor-view';
 
@@ -182,8 +183,9 @@ async function loadVendorDetail(pool: Pool, vendorId: string, viewerId: string |
   const { rows } = await pool.query<VendorRow>(
     `SELECT v.id, v.name, v.category, v.region, v.source, to_jsonb(v)->>'source_url' AS source_url, v.last_verified_at, v.lat, v.lng,
               v.style_tags::text[] AS style_tags, v.guide_price_from, v.guide_price_source,
+              /* 뜨지 않을 주소는 고르지 않는다 — 핫링킹 차단 호스트는 우리 화면에서 403이다. */
               (SELECT i.source_url FROM structured.vendor_images i
-                 WHERE i.vendor_id = v.id AND i.status = 'approved' AND i.source_url IS NOT NULL
+                 WHERE i.vendor_id = v.id AND i.status = 'approved' AND ${displayableImageUrlSql('i.source_url')}
                  ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url,
             (SELECT count(*) FROM structured.comparable_quotes c WHERE c.vendor_id = v.id)
               AS comparable_quote_count
@@ -467,7 +469,7 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
        SELECT v.id, v.name, v.category, v.region, v.source, to_jsonb(v)->>'source_url' AS source_url, v.last_verified_at, v.lat, v.lng,
               v.style_tags::text[] AS style_tags, v.guide_price_from, v.guide_price_source,
               (SELECT i.source_url FROM structured.vendor_images i
-                 WHERE i.vendor_id = v.id AND i.status = 'approved' AND i.source_url IS NOT NULL
+                 WHERE i.vendor_id = v.id AND i.status = 'approved' AND ${displayableImageUrlSql('i.source_url')}
                  ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url,
               (SELECT count(*) FROM structured.comparable_quotes c WHERE c.vendor_id = v.id)
                 AS comparable_quote_count,
@@ -572,7 +574,7 @@ async function loadSponsored(
      */
     `SELECT picked.vendor_id, picked.name, picked.category, picked.region,
             (SELECT i.source_url FROM structured.vendor_images i
-             WHERE i.vendor_id = picked.vendor_id AND i.status = 'approved' AND i.source_url IS NOT NULL
+             WHERE i.vendor_id = picked.vendor_id AND i.status = 'approved' AND ${displayableImageUrlSql('i.source_url')}
              ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url
      FROM (
        SELECT DISTINCT ON (p.vendor_id)
@@ -748,10 +750,14 @@ async function loadConditionStats(
    * 못 미친 것이라 사용자에게 보이면 안 된다. 대표 이미지가 맨 앞에 오도록
    * `is_representative DESC`로 정렬하고, 그다음은 수집 순서(created_at ASC)다.
    *
-   * URL은 source_url이 있으면 그대로 쓴다 — 외부 출처를 우리 저장소를 거치지
-   * 않고 직접 보여줄 수 있는 경우다. storage_key만 있으면 스토리지에 서명된
-   * 조회 URL을 그때그때 발급한다 — 영구 URL을 내려주면 만료 시각을 관리할
-   * 방법이 없다.
+   * URL은 storage_key가 먼저다 — 우리 저장소에 있는 것이면 스토리지에 서명된
+   * 조회 URL을 그때그때 발급한다. 영구 URL을 내려주면 만료 시각을 관리할 방법이
+   * 없다. storage_key가 없을 때만 source_url을 그대로 쓴다.
+   *
+   * 그 source_url도 «떠야» 내려간다. 핫링킹을 막는 호스트는 우리 화면에서
+   * 403이라, 담아 보내면 브라우저가 요청을 보내고 실패한다 — 화면의 onError는
+   * 그 요청이 나간 **뒤에** 도는 것이라 콘솔의 403을 못 막는다. 걸러내는 자리는
+   * 여기다(`image-hotlink.ts`).
    */
   app.get<{ Params: { vendorId: string } }>(
     '/v1/vendors/:vendorId/images',
@@ -779,6 +785,7 @@ async function loadConditionStats(
                 copyright_note, verified_at
          FROM structured.vendor_images
          WHERE vendor_id = $1 AND status = 'approved'
+           AND (storage_key IS NOT NULL OR (${displayableImageUrlSql('source_url')}))
          ORDER BY is_representative DESC, created_at ASC`,
         [vendorId]
       );
@@ -786,7 +793,9 @@ async function loadConditionStats(
       const photos = await Promise.all(
         rows.map(async (row) => ({
           id: row.id,
-          url: row.source_url ?? (await context.storage.getPublicUrl(row.storage_key!, 3600)),
+          url: row.storage_key
+            ? await context.storage.getPublicUrl(row.storage_key, 3600)
+            : row.source_url!,
           isRepresentative: row.is_representative,
           useContain: row.use_contain,
           sourceNote: row.copyright_note,

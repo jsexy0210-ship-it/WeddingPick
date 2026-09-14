@@ -734,6 +734,88 @@ describeWithDb('WP-VEND-002 업체 이미지', () => {
     expect(notes).toContain(null);
   });
 
+  it('핫링킹을 막는 호스트의 이미지는 아예 내려가지 않는다', async () => {
+    /*
+     * 내려보내면 화면이 <img src>로 걸고, 브라우저가 요청을 보내고, 403이 콘솔에
+     * 쌓인다. 화면의 onError는 요청이 나간 **뒤에** 도는 것이라 그것을 못 막는다.
+     */
+    const vendorId = await createVendor({ name: '네이버사진홀' });
+    await createVendorImage(vendorId, {
+      sourceUrl: 'https://postfiles.pstatic.net/MjAy/abc.jpg',
+    });
+
+    const response = await test.app.inject({
+      method: 'GET',
+      url: `/v1/vendors/${vendorId}/images`,
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().photos).toEqual([]);
+  });
+
+  it('차단된 이미지가 대표여도 남은 이미지는 그대로 보인다', async () => {
+    // 하나가 막혔다고 그 업체 사진이 통째로 사라지면 안 된다.
+    const vendorId = await createVendor({ name: '섞인홀' });
+    await createVendorImage(vendorId, {
+      sourceUrl: 'https://postfiles.pstatic.net/MjAy/rep.jpg',
+      isRepresentative: true,
+    });
+    await createVendorImage(vendorId, { sourceUrl: 'https://example.com/ok.jpg' });
+
+    const response = await test.app.inject({
+      method: 'GET',
+      url: `/v1/vendors/${vendorId}/images`,
+    });
+
+    const photos = response.json().photos;
+    expect(photos).toHaveLength(1);
+    expect(photos[0].url).toBe('https://example.com/ok.jpg');
+  });
+
+  it('차단 호스트가 원본이어도 우리 저장소에 있으면 우리 주소로 내려간다', async () => {
+    // source_url은 감사 추적용으로 남긴다. 화면에 쓰는 주소는 storage_key다.
+    const vendorId = await createVendor({ name: '옮겨온홀' });
+    await createVendorImage(vendorId, {
+      storageKey: 'vendor-images/moved.jpg',
+      sourceUrl: 'https://postfiles.pstatic.net/MjAy/origin.jpg',
+    });
+
+    const response = await test.app.inject({
+      method: 'GET',
+      url: `/v1/vendors/${vendorId}/images`,
+    });
+
+    const photos = response.json().photos;
+    expect(photos).toHaveLength(1);
+    expect(photos[0].url).not.toContain('pstatic.net');
+    expect(photos[0].url).toContain(encodeURIComponent('vendor-images/moved.jpg'));
+  });
+
+  it('업체 상세의 대표 이미지도 차단 호스트면 빈 값이다', async () => {
+    /*
+     * 목록·상세·추천·후보가 같은 규칙을 쓴다. 한 화면만 고치면 다른 화면에서
+     * 같은 403이 그대로 난다.
+     */
+    const blockedOnly = await createVendor({ name: '상세네이버홀' });
+    await createVendorImage(blockedOnly, {
+      sourceUrl: 'https://postfiles.pstatic.net/MjAy/detail.jpg',
+      isRepresentative: true,
+    });
+
+    const mixed = await createVendor({ name: '상세섞인홀' });
+    await createVendorImage(mixed, {
+      sourceUrl: 'https://postfiles.pstatic.net/MjAy/detail2.jpg',
+      isRepresentative: true,
+    });
+    await createVendorImage(mixed, { sourceUrl: 'https://example.com/detail-ok.jpg' });
+
+    const blocked = await test.app.inject({ method: 'GET', url: `/v1/vendors/${blockedOnly}` });
+    const kept = await test.app.inject({ method: 'GET', url: `/v1/vendors/${mixed}` });
+
+    expect(blocked.json().imageUrl).toBeNull();
+    expect(kept.json().imageUrl).toBe('https://example.com/detail-ok.jpg');
+  });
+
   it('응답이 계약과 어긋나지 않는다', async () => {
     const vendorId = await createVendor({ name: '계약이미지홀' });
     await createVendorImage(vendorId, { isRepresentative: true, copyrightNote: '공공누리 제1유형' });
