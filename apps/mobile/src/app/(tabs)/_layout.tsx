@@ -5,9 +5,13 @@ import { RootTabBar } from '@/features/navigation/tab-bar';
 import { useTabScreenOptions } from '@/features/navigation/screen-options';
 
 /**
- * Bottom Navigation — 05-root 시안 1:1(`RootTabBar`). 탭 목록은 이 파일이 아니라
- * `features/navigation/root-tabs.ts` 하나가 정한다. 여기는 그 목록을 라우터에
- * 옮겨 놓기만 한다 — 탭을 더하거나 빼는 일은 그 파일 한 줄이다.
+ * Bottom Navigation. 탭 목록은 이 파일이 아니라 `features/navigation/root-tabs.ts`
+ * 하나가 정한다 — 여기는 그 목록을 라우터에 옮겨 놓기만 하고, 탭을 더하거나 빼는
+ * 일은 그 파일 한 줄이다.
+ *
+ * 근거는 **2026-09-14 대표 확정**과 피그마 `weddingpick_figma`
+ * `src/app/components/Root.tsx:26-32` `NAV_ITEMS`다. 예전 주석이 근거로 적던
+ * 「통합정책 v3.2 §1 — 홈/검색/Pick/웨딩일정/MY」는 이 결정이 대체했다.
  *
  * ```
  * 홈 · 웨딩노트 · Pick · 라운지 · MY      (2026-09-14 대표 확정)

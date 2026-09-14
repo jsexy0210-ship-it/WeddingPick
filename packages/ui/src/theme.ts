@@ -675,6 +675,15 @@ export const Layout = {
   tabPickDot: 7,
   tabPickDotBorder: 1.5,
   tabPickDotOffset: -1,
+  /**
+   * 가운데 Pick 탭의 원형 강조. spec/tokens.json `tabBar.emphasized`
+   * (← weddingpick_figma `src/app/components/Root.tsx:66-84`).
+   *
+   * 원 안의 아이콘만 20이고 나머지 넷은 `iconTab`(24) 그대로다 — 그 사유도
+   * 토큰의 `$only`에 적혀 있다.
+   */
+  tabEmphasized: 48,
+  tabEmphasizedIcon: 20,
   /** SEED 컨트롤 높이. 화면당 Primary CTA는 xlarge(52)다. size.cta. */
   controlMedium: 40,
   controlLarge: 48,

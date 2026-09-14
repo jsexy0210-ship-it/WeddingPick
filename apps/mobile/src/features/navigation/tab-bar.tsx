@@ -19,10 +19,14 @@ import { isRootTab, rootTab, type RootTabSpec } from './root-tabs';
  * tabBar.items[pick].icon = pickMark)다. 05-root 시안 파일의 ICONS.pick(P + 체크)은 옛 글리프이고
  * 02-design-system · 21-device · tokens.json이 하트 마크를 가리킨다.
  *
- * **Pick은 가운데에서 원형으로 선다**(2026-09-14 대표 확정 · Figma `Root.tsx` `isPick`).
- * 켜지면 원이 주색으로 차고 마크가 `onTint`로 뒤집힌다 — 나머지 넷과 다른 모양이라야
- * «Pick이 이 앱의 중심»이라는 말이 화면에서도 같은 무게로 읽힌다. 그림자는
- * `tokens.json` `tabBar.$rule`의 «과도한 그림자 금지»를 지켜 얕게 둔다.
+ * **Pick은 가운데에서 원형으로 선다**(2026-09-14 대표 확정 · weddingpick_figma
+ * `src/app/components/Root.tsx:66-84` `isPick`). 규격은 전부 `spec/tokens.json`
+ * `tabBar.emphasized`에서 온다 — 여기에 숫자를 적지 않는다.
+ *
+ * **꺼져 있어도 원은 남는다.** 켜지면 주색으로 차고 마크가 `onTint`로 뒤집히고,
+ * 꺼지면 옅은 면(`backgroundSelected`)에 회색 마크다 — 원이 아예 사라지면 다섯 탭
+ * 중 가운데만 자리가 들썩인다. 그림자는 `tabBar.$rule`의 «과도한 그림자 금지»를
+ * 지켜 얕게 둔다.
  *
  * Pick 오른쪽 위의 점은 시안이 고정으로 둔 배지다(`spec/tokens.json` `tabBar.pickDot`
  * — 7 · 1.5 · −1). 원이 차 있을 때는 그리지 않는다 — 주색 면 위의 주색 점은 보이지 않는다.
@@ -100,12 +104,14 @@ function TabIcon({ spec, active }: { spec: RootTabSpec; active: boolean }) {
   const theme = useTheme();
   const filled = Boolean(spec.emphasized) && active;
   const color = filled ? theme.onTint : active ? theme.text : theme.textAssistive;
+  /* 원 안은 20, 나머지 넷은 24. 토큰 `tabBar.emphasized.$only` 참고. */
+  const size = spec.emphasized ? Layout.tabEmphasizedIcon : Layout.iconTab;
 
   const mark =
     spec.icon === 'pick' ? (
-      <WeddingMark size={Layout.iconTab} color={color} />
+      <WeddingMark size={size} color={color} />
     ) : (
-      <ProductSymbol name={spec.icon} size={Layout.iconTab} color={color} />
+      <ProductSymbol name={spec.icon} size={size} color={color} />
     );
 
   if (!spec.emphasized) return <View style={styles.iconWrap}>{mark}</View>;
@@ -114,26 +120,24 @@ function TabIcon({ spec, active }: { spec: RootTabSpec; active: boolean }) {
     <View
       style={[
         styles.emphasizedWrap,
-        filled ? [styles.emphasizedOn, { backgroundColor: theme.tint, shadowColor: theme.tint }] : null,
+        filled
+          ? [styles.emphasizedOn, { backgroundColor: theme.tint, shadowColor: theme.tint }]
+          : { backgroundColor: theme.backgroundSelected },
       ]}>
       {/* 점은 아이콘 모서리에 붙는다 — 원을 기준으로 두면 한참 떨어져 뜬다. */}
-      <View style={styles.iconWrap}>
+      <View style={styles.emphasizedIcon}>
         {mark}
         {/* 원이 차 있으면 그리지 않는다 — 주색 면 위의 주색 점은 보이지 않는다. */}
         {filled ? null : (
-          <View style={[styles.dot, { backgroundColor: theme.tint, borderColor: theme.background }]} />
+          <View style={[styles.dot, { backgroundColor: theme.tint, borderColor: theme.backgroundSelected }]} />
         )}
       </View>
     </View>
   );
 }
 
-/*
- * 강조 탭의 원. Figma `Root.tsx`의 `w-12 h-12 rounded-full`(48)이고 8단계 간격
- * 토큰에 없는 값이라 여기 이름 붙여 둔다 — 토큰에 `tabBar.emphasized`가 생기면
- * 여기만 바꾼다. 아이콘 24가 48 안에 서므로 주위 여백은 12씩이다.
- */
-const EMPHASIZED_SIZE = 48;
+/* 강조 탭의 원 지름. spec/tokens.json `tabBar.emphasized.size`. */
+const EMPHASIZED_SIZE = Layout.tabEmphasized;
 /*
  * 원 48 + 간격 3 + 라벨 16 = 67은 탭 바가 내주는 63(72 − 위 패딩 9)보다 크다.
  * 넘치는 만큼만 끌어올려 원이 바 위쪽으로 살짝 솟게 한다 — 아래로 넘쳐 잘리는
@@ -166,7 +170,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  /* 꺼져 있어도 자리는 원 크기다 — 켜고 끌 때 라벨이 위아래로 들썩이지 않는다. */
+  /* 원 안의 아이콘 자리. 점 배지가 이 사각의 모서리에 붙는다. */
+  emphasizedIcon: {
+    width: Layout.tabEmphasizedIcon,
+    height: Layout.tabEmphasizedIcon,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  /* 켜고 끌 때 원은 그대로 있고 면 색만 바뀐다 — 자리가 들썩이지 않는다. */
   emphasizedWrap: {
     width: EMPHASIZED_SIZE,
     height: EMPHASIZED_SIZE,
