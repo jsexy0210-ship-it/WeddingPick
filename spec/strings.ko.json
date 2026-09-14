@@ -403,6 +403,52 @@
     "empty.body": "열리면 알려드릴게요"
   },
 
+  "consultation": {
+    "title": "상담기록",
+    "empty.title": "아직 올린 상담이 없어요",
+    "empty.body": "업체와 상담한 녹음을 올리면 금액과 조건을 정리해드려요.",
+    "add": "녹음 올리기",
+    "hero": "상담 {n}건을 정리했어요",
+    "pending": "확인 필요",
+
+    "consent.title": "올리기 전에 확인해주세요",
+    "consent.point1": "본인이 참여한 대화만 올려주세요",
+    "consent.point2": "업체명 · 방문일 · 제안 금액 · 메모만 뽑아요",
+    "consent.point3": "뽑고 나면 녹음 파일은 바로 지워요",
+    "consent.point4": "녹취록은 만들지도, 남기지도 않아요",
+    "consent.point5": "읽어내는 일은 외부 서비스가 맡아요",
+    "consent.agree": "확인했어요",
+
+    "reading": "상담 내용을 정리하고 있어요",
+    "readingNote": "길이에 따라 몇 분 걸릴 수 있어요",
+
+    "review.title": "정리한 내용을 확인해주세요",
+    "review.body": "금액과 계약 조건은 저장하기 전에 확인해주세요.",
+    "review.confirm": "확인했어요. 저장할게요",
+    "review.amount": "제시 금액",
+    "review.included": "기본 포함",
+    "review.extra": "추가 비용",
+    "review.benefit": "혜택",
+    "review.warning": "주의할 점",
+    "review.missing": "다시 확인할 것",
+    "review.detail": "상담 내용",
+    "review.evidence": "들은 말: {quote}",
+
+    "saved.title": "저장했어요",
+    "saved.audioGone": "녹음 파일은 지웠어요",
+
+    "stop.notWedding": "웨딩 상담 내용이 확인되지 않았어요. 웨딩홀, 스드메, 촬영, 예복 등 웨딩업체와 상담한 녹음을 올려주세요.",
+    "stop.unsupported": "웨딩 상담은 맞지만 지금은 지원하지 않는 업종이에요.",
+    "ask.title": "이 녹음이 웨딩업체와 상담한 것이 맞나요?",
+    "ask.body": "웨딩 상담으로 보이지만 확실하지 않아요.",
+    "ask.yes": "맞아요. 계속할게요",
+    "ask.no": "아니에요",
+
+    "error.tooLong": "녹음이 너무 길어요. 2시간까지 올릴 수 있어요.",
+    "error.tooBig": "파일이 너무 커요. 100MB까지 올릴 수 있어요.",
+    "error.format": "이 형식의 녹음은 읽을 수 없어요."
+  },
+
   "ourWedding": {
     "title": "웨딩노트",
     "heroTogether": "{partner}님과 함께\n{n}가지를 끝냈어요",
