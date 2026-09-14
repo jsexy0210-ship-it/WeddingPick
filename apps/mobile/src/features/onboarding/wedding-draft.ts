@@ -112,11 +112,14 @@ export async function loadOnboardingAnswers(): Promise<Answers | null> {
 
     const value = parsed as Partial<Record<keyof Answers, unknown>>;
 
+    /*
+     * 3단계로 줄기 전에 적어 둔 초안에는 `prep` · `budget`이 남아 있다. 읽지 않고
+     * 버린다 — 없는 칸을 지어내지 않는 것과 같은 이유로, 더 이상 묻지 않는 칸도
+     * 되살리지 않는다.
+     */
     return {
       date: readDateAnswer(value.date),
       region: readRegionAnswer(value.region),
-      prep: readPrepAnswer(value.prep),
-      budget: readBracket(value.budget),
       style: readStyleTags(value.style) ?? null,
     };
   } catch {
@@ -178,10 +181,3 @@ function readRegionAnswer(value: unknown): Answers['region'] {
   return { region: region as WeddingRegion, district: typeof district === 'string' ? district : null };
 }
 
-function readPrepAnswer(value: unknown): Answers['prep'] {
-  if (value === null || typeof value !== 'object') return null;
-
-  const categories = readCategories((value as { categories?: unknown }).categories);
-
-  return categories === undefined ? null : { categories };
-}
