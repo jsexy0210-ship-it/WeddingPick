@@ -704,9 +704,11 @@ export default function SearchScreen() {
   // ─── 결과 화면 ────────────────────────────────────────────────────────────
 
   /**
-   * 결과 카드 한 장. WP-SRCH-004 스펙 — 이미지 168 / 업체명 20 ↔ 금액 16 700 /
-   * 건수 14 / Pick 48. 카드에 배경 상자를 두지 않는다 — 이미지와 글이 곧
-   * 카드다(이중 컨테이너 금지, 2026-09-08).
+   * 결과 카드 한 장. 2026-09-14 대표 지시로 **가로형**으로 바꿨다(피그마
+   * `Search.tsx` 구조 채택, B등급이라 색·수치는 옮기지 않는다 — 이미지 폭·높이는
+   * 이 화면 전용 로컬 값이다, `CARD_IMAGE_HEIGHT`가 예전에 그랬던 것과 같다).
+   * 카드에 배경 상자를 두지 않는다 — 이미지와 글이 곧 카드다(이중 컨테이너 금지,
+   * 2026-09-08). 해시태그 · 별점 · 저장수는 서버에 없어(`VendorSummary`) 넣지 않는다.
    */
   function renderVendorCard(item: VendorSummary) {
     const chosen = candidates.candidateFor(item.id) !== null;
@@ -725,25 +727,20 @@ export default function SearchScreen() {
             <VendorImage
               source={item.imageUrl ? { uri: item.imageUrl } : undefined}
               category={vendorImageCategory(item.category)}
-              width={undefined}
-              height={CARD_IMAGE_HEIGHT}
+              width={CARD_IMAGE_W}
+              height={CARD_IMAGE_H}
               radius={Radius.medium}
             />
           </View>
         </Pressable>
 
-        {/*
-          업체명 · 금액 — **세로 두 줄**이고 오른쪽에 화살표가 선다(시안 16a).
-          이름 20/700이 한 줄을 다 쓰고, 금액 16/700이 그 아래 붙는다. 가로로
-          나란히 두면 긴 이름이 금액을 밀어 «강남 A 웨딩…»으로 잘린다.
-        */}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`${item.name} 자세히 보기`}
           onPress={() => router.push(`/search/${item.id}`)}
-          style={styles.cardNameRow}>
-          <View style={styles.cardNameBox}>
-            <ThemedText type="t3" numberOfLines={1} style={styles.bold}>
+          style={styles.cardInfo}>
+          <View>
+            <ThemedText type="t5" numberOfLines={1} style={styles.bold}>
               {item.name}
             </ThemedText>
             <ThemedText
@@ -751,55 +748,51 @@ export default function SearchScreen() {
               numeric
               numberOfLines={1}
               themeColor={line.dim ? 'textAssistive' : undefined}
-              style={styles.bold}>
+              style={[styles.bold, styles.cardPrice]}>
               {line.text}
             </ThemedText>
-          </View>
-          <ChevronRightIcon color={theme.textDisabled} />
-        </Pressable>
-
-        {/*
-          아래 줄 — Pick pill(왼쪽) ↔ 출처·실 제보·지역(오른쪽). 시안 16a의 카드
-          마지막 줄이다(`btnStyle` 36 · radius 999 · padding 0 12 · 하트 15 · gap 5).
-
-          전폭 «Pick하기»(48 · radius 6)가 아니다. 시안은 이 자리에 하트 + **Pick 수**를
-          적지만 서버가 업체별 Pick 수를 내려주지 않는다(`vendorSummarySchema`) —
-          모양만 시안대로 두고 라벨은 «Pick»으로 간다(2026-09-11 대표 지시). 수가
-          붙으면 라벨 자리만 숫자로 바꾼다.
-        */}
-        <View style={styles.pickRow}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={chosen ? `${item.name} Pick했어요` : `${item.name} Pick하기`}
-            accessibilityState={{ disabled: busy }}
-            disabled={busy}
-            style={({ pressed }) => [
-              styles.pickPill,
-              chosen
-                ? { backgroundColor: theme.tintSurface, borderColor: theme.tint }
-                : { backgroundColor: theme.background, borderColor: theme.track },
-              pressed ? styles.pressed : null,
-              busy ? styles.busy : null,
-            ]}
-            onPress={() => void onPressPick(item)}>
-            <PickHeartIcon color={chosen ? theme.tint : theme.textAssistive} filled={chosen} />
+            {/* 출처 또는 실 제보 · 지역 */}
             <ThemedText
               type="t7"
-              style={[styles.bold, chosen ? { color: theme.tint } : null]}
-              themeColor={chosen ? undefined : 'textSecondary'}>
-              Pick
+              themeColor="textAssistive"
+              numeric
+              numberOfLines={1}
+              style={styles.cardMeta}>
+              {metaLine(item, item.region)}
             </ThemedText>
-          </Pressable>
-          {/* 출처 또는 실 제보 · 지역 */}
-          <ThemedText
-            type="t7"
-            themeColor="textAssistive"
-            numeric
-            numberOfLines={1}
-            style={styles.cardMeta}>
-            {metaLine(item, item.region)}
-          </ThemedText>
-        </View>
+          </View>
+
+          {/*
+            Pick pill — 하트 + 라벨. 시안은 이 자리에 하트 + **Pick 수**를 적지만
+            서버가 업체별 Pick 수를 내려주지 않는다(`vendorSummarySchema`) — 모양만
+            시안대로 두고 라벨은 «Pick»으로 간다(2026-09-11 대표 지시). 수가 붙으면
+            라벨 자리만 숫자로 바꾼다.
+          */}
+          <View style={styles.pickRow}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={chosen ? `${item.name} Pick했어요` : `${item.name} Pick하기`}
+              accessibilityState={{ disabled: busy }}
+              disabled={busy}
+              style={({ pressed }) => [
+                styles.pickPill,
+                chosen
+                  ? { backgroundColor: theme.tintSurface, borderColor: theme.tint }
+                  : { backgroundColor: theme.background, borderColor: theme.track },
+                pressed ? styles.pressed : null,
+                busy ? styles.busy : null,
+              ]}
+              onPress={() => void onPressPick(item)}>
+              <PickHeartIcon color={chosen ? theme.tint : theme.textAssistive} filled={chosen} />
+              <ThemedText
+                type="t7"
+                style={[styles.bold, chosen ? { color: theme.tint } : null]}
+                themeColor={chosen ? undefined : 'textSecondary'}>
+                Pick
+              </ThemedText>
+            </Pressable>
+          </View>
+        </Pressable>
       </View>
     );
   }
@@ -1050,8 +1043,8 @@ export default function SearchScreen() {
                           <VendorImage
                             source={ad.imageUrl ? { uri: ad.imageUrl } : undefined}
                             category={vendorImageCategory(ad.category)}
-                            width={undefined}
-                            height={CARD_IMAGE_HEIGHT}
+                            width={CARD_IMAGE_W}
+                            height={CARD_IMAGE_H}
                             radius={Radius.medium}
                           />
                           {/*
@@ -1068,10 +1061,14 @@ export default function SearchScreen() {
                             </ThemedText>
                           </View>
                         </View>
-                        <ThemedText type="t4" numberOfLines={1}>{ad.name}</ThemedText>
-                        <ThemedText type="t7" themeColor="textAssistive" numberOfLines={1}>
-                          {VENDOR_CATEGORY_LABEL[ad.category]} · {regionLabel(ad.region)}
-                        </ThemedText>
+                        <View style={styles.cardInfo}>
+                          <View>
+                            <ThemedText type="t5" numberOfLines={1} style={styles.bold}>{ad.name}</ThemedText>
+                            <ThemedText type="t7" themeColor="textAssistive" numberOfLines={1} style={styles.cardMeta}>
+                              {VENDOR_CATEGORY_LABEL[ad.category]} · {regionLabel(ad.region)}
+                            </ThemedText>
+                          </View>
+                        </View>
                       </Pressable>
                     ))}
                   </View>
@@ -1119,6 +1116,22 @@ export default function SearchScreen() {
             </Pressable>
           ) : null}
           {renderSearchBox({ compact: true })}
+          {/*
+            필터 버튼 — 2026-09-14 대표 지시(피그마 채택). 결과 머리의 «추천순 · 필터»
+            텍스트 링크는 그대로 두고(정렬과 한 줄에 있어 손에 먼저 잡힌다), 검색바
+            옆에도 누를 자리를 하나 더 둔다 — 시안이 「텍스트보다 누를 자리가
+            분명하다」고 판단한 것과 같다.
+          */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={activeFilterCount > 0 ? `필터 ${activeFilterCount}개 적용됨` : '필터'}
+            onPress={() => setFilterOpen(true)}
+            style={styles.headerFilterBtn}>
+            <FilterIcon color={theme.textStrong} />
+            {activeFilterCount > 0 ? (
+              <View style={[styles.headerFilterDot, { backgroundColor: theme.tint }]} />
+            ) : null}
+          </Pressable>
           {/* 지도 보기는 여기 없다(2026-09-08) — 위치는 업체 상세에서만 보인다. */}
         </ThemedView>
 
@@ -1198,14 +1211,20 @@ function SortIcon({ color }: { color: string }) {
   );
 }
 
-/** 카드 오른쪽의 ›. 시안 16a는 20 · #adb1ba(text.disabled) · 획 2. */
-function ChevronRightIcon({ color }: { color: string }) {
+/**
+ * 검색바 옆 필터 버튼 아이콘 — 2026-09-14 대표 지시(피그마 채택). 길이가 줄어드는
+ * 가로줄 셋으로 "거르기"를 뜻하는 통상적인 필터 기호다. `ProductSymbol`에 없는
+ * 아이콘이라(packages/ui는 손대지 않는다) 이 화면의 `SortIcon`·`ChevronDownIcon`과
+ * 같은 자리에 로컬로 둔다.
+ */
+function FilterIcon({ color }: { color: string }) {
   return (
-    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-      <Path d="m9 6 6 6-6 6" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+      <Path d="M4 7h16M7 12h10M10 17h4" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 }
+
 
 /**
  * Pick pill 안의 하트.
@@ -1231,8 +1250,15 @@ function PickHeartIcon({ color, filled }: { color: string; filled: boolean }) {
 
 // ─── 레이아웃 상수 ──────────────────────────────────────────────────────────
 
-// 핸드오프: 결과 카드 이미지 높이 168px, 2:1 비율 유지
-const CARD_IMAGE_HEIGHT = 168;
+/*
+ * 결과 카드 이미지 — 2026-09-14 가로형 개편으로 폭·높이를 새로 잡았다. 토큰
+ * 사다리에 없는 이 화면 전용 로컬 값이다(피그마 `Search.tsx`의 120×116을 그대로
+ * 옮기지 않는다 — B등급 LLM 근사치라 수치는 정본이 아니다). 카드 세로폭을
+ * 좁혀 한 화면에 더 많은 결과가 보이게 하는 목적만 지키면 되므로 4:3에 가까운
+ * 자체 비율로 정했다.
+ */
+const CARD_IMAGE_W = 112;
+const CARD_IMAGE_H = 100;
 
 
 const styles = StyleSheet.create({
@@ -1280,6 +1306,21 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  headerFilterBtn: {
+    width: Layout.iconButton,
+    height: Layout.iconButton,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerFilterDot: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 6,
+    height: 6,
+    borderRadius: Radius.pill,
   },
 
   /* 홈의 검색창 블록. 목업: padding 4 24 24. */
@@ -1513,37 +1554,34 @@ const styles = StyleSheet.create({
     gap: Layout.listGap,
   },
 
-  // 결과 카드. 핸드오프: 이미지(full-width × 168) + 이름↔금액 + 건수 + Pick 버튼, 사이 10
+  // 결과 카드 — 가로형. 이미지(좌, 고정폭) + 정보(우, flex).
   resultCard: {
+    flexDirection: 'row',
     gap: Layout.cardGap,
   },
   cardImageWrap: {
-    width: '100%',
-    height: CARD_IMAGE_HEIGHT,
+    width: CARD_IMAGE_W,
+    height: CARD_IMAGE_H,
+    flexShrink: 0,
     borderRadius: Radius.medium,
     overflow: 'hidden',
   },
-  /* 이름 · 금액 ↔ ›. 시안 16a: min-height 44 · 이름과 금액 사이 3 · 사이 8. */
-  cardNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: Layout.touchTarget,
-    gap: Layout.rowPaddingY,
-  },
-  cardNameBox: {
+  /* 우측 정보 열 — 위(이름·금액·메타)와 아래(Pick pill) 사이를 벌린다. */
+  cardInfo: {
     flex: 1,
     minWidth: 0,
-    gap: Layout.cardNameGap,
+    justifyContent: 'space-between',
+  },
+  cardPrice: {
+    marginTop: Spacing.half,
   },
   cardMeta: {
-    flex: 1,
-    minWidth: 0,
+    marginTop: Spacing.half,
   },
-  /* Pick pill ↔ meta. 시안 16a 카드 마지막 줄 «gap:10». */
+  /* Pick pill 자리. */
   pickRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Layout.pickRowGap,
   },
   /* Pick pill — component.pickPill. 36 · radius 999 · padding 0 12 · 1px 테두리. */
   pickPill: {

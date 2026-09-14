@@ -100,8 +100,9 @@ const ME = {
   budgetAmount: null,
   setupComplete: true,
   styleTags: ['URBAN'],
-  spouseLinked: false,
-  partnerDisplayName: null,
+  /* Pick 화면 캡처(배지·배너·가격 제보 링크)가 배우자 연결 상태를 필요로 한다. */
+  spouseLinked: true,
+  partnerDisplayName: '준호',
   hasPaymentProof: false,
   hasPick: false,
   hasCompared: false,
@@ -144,11 +145,45 @@ const routes = {
     providers: [{ provider: 'kakao', isDevelopmentStandIn: false }],
   },
   'GET /v1/weddings/:weddingId/candidates': {
-    groups: [],
-    total: 0,
+    /* 웨딩홀 두 곳 — 배우자도 같이 담아 «둘 다 고른 곳» 비교 배너를 찍을 수 있게 한다. */
+    groups: [
+      {
+        category: 'hall',
+        categoryLabel: '웨딩홀',
+        candidates: [
+          {
+            id: 'c1111111-1111-4111-8111-111111111111',
+            vendorId: '11111111-1111-4111-8111-111111111111',
+            vendorName: '강남 A 웨딩홀',
+            category: 'hall',
+            region: '서울',
+            imageUrl: null,
+            note: null,
+            addedAt: '2026-08-01T00:00:00.000Z',
+            addedByPartner: true,
+          },
+          {
+            id: 'c2222222-2222-4222-8222-222222222222',
+            vendorId: '22222222-2222-4222-8222-222222222222',
+            vendorName: '강남 B 웨딩홀',
+            category: 'hall',
+            region: '서울',
+            imageUrl: null,
+            note: null,
+            addedAt: '2026-08-02T00:00:00.000Z',
+            addedByPartner: true,
+          },
+        ],
+        comparable: true,
+        state: 'picking',
+        stateLabel: '후보 Pick 중',
+        decidedVendorId: null,
+      },
+    ],
+    total: 2,
     limit: 5,
     progress: { decided: 0, total: 13, label: '0/13 완료' },
-    nextCategory: 'hall',
+    nextCategory: 'makeup',
   },
   /*
    * 관리자 — 광고 실운영 관문과 상품별 상태(WP-ADM-034).
@@ -205,6 +240,32 @@ const routes = {
     const vendors = category ? VENDORS.filter((v) => v.category === category) : VENDORS;
 
     return { vendors, sponsored: SPONSORED, nextCursor: null, total: vendors.length };
+  },
+  /*
+   * A-17 업체 비교 — search/compare.tsx 캡처용. VENDORS 목록을 vendorDetail 꼴로 늘린다.
+   * `ids`가 없으면(계약 시험의 기본 호출처럼) 웨딩홀 두 곳으로 대신한다 — 계약은
+   * `vendors`가 최소 둘이라, 빈 배열을 기본값으로 두면 시험이 항상 빨개진다.
+   */
+  'GET /v1/vendors/compare': ({ url }) => {
+    const requested = (url.searchParams.get('ids') ?? '').split(',').filter(Boolean);
+    const ids = requested.length > 0 ? requested : [VENDORS[0].id, VENDORS[1].id];
+    const vendors = ids
+      .map((id) => VENDORS.find((v) => v.id === id))
+      .filter(Boolean)
+      .map(({ paidPrice, ...summary }) => ({
+        ...summary,
+        lastVerifiedAt: '2026-09-01T00:00:00.000Z',
+        prices: {
+          products: [],
+          paidPrice,
+          reportedPrice: { available: false, reason: '아직 제보가 모자라요', count: 0 },
+          deepData: false,
+          deepDataNote: '결제내역을 한 건 등록하면 열려요',
+        },
+        usageScore: { available: false, reason: '아직 후기가 모자라요', count: 0 },
+      }));
+
+    return { vendors, caveats: ['같은 조건이 아니라면 금액만으로 견주지 마세요'] };
   },
 };
 

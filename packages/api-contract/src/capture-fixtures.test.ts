@@ -14,7 +14,11 @@ import { appBootstrapResponseSchema } from './app';
 import { authProvidersResponseSchema } from './auth';
 import { candidateListResponseSchema } from './candidates';
 import { signupStateSchema } from './signup';
-import { vendorRegionsResponseSchema, vendorSearchResponseSchema } from './vendors';
+import {
+  vendorComparisonResponseSchema,
+  vendorRegionsResponseSchema,
+  vendorSearchResponseSchema,
+} from './vendors';
 import { currentUserSchema } from './weddings';
 
 /*
@@ -35,6 +39,7 @@ const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/weddings/:weddingId/candidates', candidateListResponseSchema],
   ['GET /v1/vendors/regions', vendorRegionsResponseSchema],
   ['GET /v1/vendors', vendorSearchResponseSchema],
+  ['GET /v1/vendors/compare', vendorComparisonResponseSchema],
 ]);
 
 /**
