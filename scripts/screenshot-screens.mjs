@@ -313,8 +313,16 @@ async function main() {
        * 주소는 형식만 맞으면 된다 — 나가는 요청은 브라우저가 전부 가로챈다.
        * 그래도 비워 두지는 않는다: 비면 `isServerConfigured`가 false가 되어
        * 서버를 아예 안 부르는 다른 화면이 찍힌다(api/config.ts).
+       *
+       * **경로 없이 origin만 둔다.** `client.ts`의 `send()`가 `${baseUrl}${path}`를
+       * 단순 문자열 접합으로 만든다(URL 재해석이 아니다) — base에 `/capture` 같은
+       * 경로가 붙어 있으면 실제 요청 pathname이 `/capture/v1/...`가 되어
+       * `installFixtures`의 `pathname.startsWith('/v1/')` 검사를 벗어난다. 그러면
+       * 가로채지 못한 요청이 포트 1(unsafe port)로 그대로 나가 `ERR_UNSAFE_PORT`로
+       * 막히고, 업체 상세처럼 fetch가 필요한 화면은 전부 «연결이 불안정해요»만
+       * 찍힌다 — fixture를 아무리 채워도 닿지 않는다.
        */
-      env: { ...process.env, EXPO_PUBLIC_API_URL: 'http://127.0.0.1:1/capture' },
+      env: { ...process.env, EXPO_PUBLIC_API_URL: 'http://127.0.0.1:1' },
     });
   }
 

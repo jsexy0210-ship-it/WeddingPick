@@ -70,6 +70,76 @@ const VENDORS = [
 ];
 
 /**
+ * WP-VEND-001 업체 상세용 fixture. `VENDORS[0]`(강남 A 웨딩홀)의 id를 그대로 쓴다 —
+ * 검색 결과 카드와 상세가 같은 업체를 가리키게 두는 편이 캡처를 볼 때 헷갈리지 않는다.
+ *
+ * `vendorDetailSchema`는 목록 스키마에서 `paidPrice`를 덜어내고 `prices`·`usageScore`를
+ * 더한 모양이다 — `VENDORS[0]`를 그대로 펼치지 않고 새로 짠다(스칠 정도로 다르다).
+ */
+const VENDOR_DETAIL = {
+  id: VENDORS[0].id,
+  name: VENDORS[0].name,
+  category: VENDORS[0].category,
+  region: VENDORS[0].region,
+  coordinates: null,
+  sourceNote: null,
+  imageUrl: null,
+  comparableQuoteCount: 12,
+  styleTags: ['URBAN'],
+  guidePrice: null,
+  lastVerifiedAt: '2026-08-12',
+  prices: {
+    products: [
+      {
+        productLabel: '스탠다드 패키지',
+        docType: 'contract',
+        stat: {
+          sampleCount: 12,
+          periodStart: '2026-01-01',
+          periodEnd: '2026-08-01',
+          median: 1_680_000,
+          p25: 1_580_000,
+          p75: 1_780_000,
+          p90: 1_840_000,
+          minVerificationLevel: 'L2',
+        },
+      },
+    ],
+    paidPrice: disclosed(12, 1_520_000, 1_840_000, 1_680_000),
+    reportedPrice: { available: false, reason: '아직 문서 없이 적어준 금액이 없어요', count: 0 },
+    deepData: true,
+    deepDataNote: null,
+  },
+  usageScore: {
+    available: true,
+    average: 4.6,
+    count: 18,
+    aspects: [{ key: 'kindness', label: '친절도', average: 4.7 }],
+    checklist: [],
+    caption: null,
+  },
+};
+
+const VENDOR_REVIEWS = [
+  {
+    id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    role: 'contractor',
+    roleLabel: '계약자',
+    overall: 5,
+    title: '만족스러웠어요',
+    body: '상담부터 진행까지 설명이 꼼꼼했어요.',
+    pros: '응대가 빨라요',
+    cons: null,
+    verification: 'contract',
+    verificationLabel: '계약 확인',
+    aspects: [],
+    createdAt: '2026-07-01T00:00:00.000Z',
+    mine: false,
+    rebuttal: null,
+  },
+];
+
+/**
  * 광고 자리. **자연 결과와 섞지 않는다**(계약 E-1) — 화면이 목록 위에 따로 그린다.
  *
  * 비워 두지 않는 이유는 **광고가 그려지는지 눈으로 볼 수 없기 때문**이다. 빈 배열로
@@ -205,6 +275,19 @@ const routes = {
     const vendors = category ? VENDORS.filter((v) => v.category === category) : VENDORS;
 
     return { vendors, sponsored: SPONSORED, nextCursor: null, total: vendors.length };
+  },
+  /* WP-VEND-001 업체 상세 및 하위 화면(이미지·조건별 사례·후기). id는 무엇이 와도 같은 fixture를 낸다 — 캡처는 실제 DB를 보지 않는다. */
+  'GET /v1/vendors/:vendorId': VENDOR_DETAIL,
+  'GET /v1/vendors/:vendorId/images': { photos: [] },
+  'GET /v1/vendors/:vendorId/conditions': {
+    available: false,
+    note: '조건이 비슷한 사례를 더 모으고 있어요',
+  },
+  'GET /v1/vendors/:vendorId/reviews': {
+    reviews: VENDOR_REVIEWS,
+    nextCursor: null,
+    usageScore: VENDOR_DETAIL.usageScore,
+    caveat: '한 사람의 경험이에요. 업체를 고르는 유일한 기준으로 삼지 마세요.',
   },
 };
 

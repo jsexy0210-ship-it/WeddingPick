@@ -13,8 +13,15 @@ import type { ZodType } from 'zod';
 import { appBootstrapResponseSchema } from './app';
 import { authProvidersResponseSchema } from './auth';
 import { candidateListResponseSchema } from './candidates';
+import { reviewListResponseSchema } from './reviews';
 import { signupStateSchema } from './signup';
-import { vendorRegionsResponseSchema, vendorSearchResponseSchema } from './vendors';
+import {
+  conditionStatsSchema,
+  vendorDetailSchema,
+  vendorPhotosResponseSchema,
+  vendorRegionsResponseSchema,
+  vendorSearchResponseSchema,
+} from './vendors';
 import { currentUserSchema } from './weddings';
 
 /*
@@ -35,6 +42,10 @@ const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/weddings/:weddingId/candidates', candidateListResponseSchema],
   ['GET /v1/vendors/regions', vendorRegionsResponseSchema],
   ['GET /v1/vendors', vendorSearchResponseSchema],
+  ['GET /v1/vendors/:vendorId', vendorDetailSchema],
+  ['GET /v1/vendors/:vendorId/images', vendorPhotosResponseSchema],
+  ['GET /v1/vendors/:vendorId/conditions', conditionStatsSchema],
+  ['GET /v1/vendors/:vendorId/reviews', reviewListResponseSchema],
 ]);
 
 /**
