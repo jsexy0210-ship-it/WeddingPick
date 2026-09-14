@@ -51,9 +51,16 @@ describe('공개 법적 문서', () => {
     }
     expect(row('privacy@render.com')).toContain('미국(기존 API 및 백그라운드 처리)');
     expect(row('privacy@render.com')).toContain('전 세계(정적 웹 전송망');
-    // 자료 분석과 푸시 중계는 그대로 미국이다. 넷 다 싱가포르로 뭉뚱그리지 않는다.
-    expect(row('privacy@anthropic.com')).toContain('미국 ·');
+    // 푸시 중계는 그대로 미국이다. 싱가포르로 뭉뚱그리지 않는다.
     expect(row('650 Industries')).toContain('미국 ·');
+    /*
+     * 자료 분석·상담 녹음 정리의 수탁자를 Anthropic에서 Google로 바꿨다(2026-09-14 대표 결정).
+     * **처리 국가를 아직 적지 못했다.** 이 저장소에서 구글이 공개한 정책 원문에 닿지 못해
+     * 리전·보유기간·법인명을 확인하지 못했고, 확인하지 못한 것을 지어내는 대신 「확인 필요」로
+     * 두었다. 확인되면 이 시험도 실제 국가를 잠그도록 함께 고친다.
+     */
+    expect(row('Gemini API')).toContain('확인 필요');
+    expect(row('Gemini API')).not.toContain('싱가포르');
 
     expect(html).toContain('이전받는 자의 사업자 소재지와 다를 수 있습니다');
     expect(html).toContain('이 처리방침 시행일부터 Render의 운영 API와 Neon의 정보 저장소는 싱가포르 리전을 사용합니다');

@@ -16,6 +16,7 @@ export * from './candidate';
 export * from './copy-rules';
 export * from './payment-parser';
 export * from './payment-proof';
+export * from './visit-note-audio';
 export * from './vendor-image';
 export * from './review';
 export * from './review-checklist';
