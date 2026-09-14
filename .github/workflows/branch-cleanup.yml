@@ -31,6 +31,10 @@ on:
         description: '이 일수보다 새 브랜치는 건드리지 않는다'
         type: string
         default: '3'
+      include_unmerged:
+        description: '내용이 main에 없는 브랜치도 지운다 (2026-09-14 대표 지시로 한 번 씀)'
+        type: boolean
+        default: false
       protect:
         description: '지킬 브랜치 (쉼표로 구분). 기본값은 살아 있는 전담 브랜치다'
         type: string
@@ -74,6 +78,7 @@ jobs:
           DRY_RUN: ${{ github.event.inputs.dry_run }}
           MIN_AGE_DAYS: ${{ github.event.inputs.min_age_days }}
           EXTRA_PROTECT: ${{ github.event.inputs.protect }}
+          INCLUDE_UNMERGED: ${{ github.event.inputs.include_unmerged }}
         run: |
           set -euo pipefail
 
@@ -96,6 +101,7 @@ jobs:
 
           : > /tmp/delete.txt
           : > /tmp/keep.txt
+          : > /tmp/unmerged.txt
 
           for ref in $(git for-each-ref --format='%(refname:short)' refs/remotes/origin \
                        | grep -v '^origin/HEAD$' | sed 's|^origin/||'); do
@@ -112,9 +118,17 @@ jobs:
             fi
 
             # 파일 차이가 0이어야 한다. --merged를 쓰지 않는 이유는 위 주석에 있다.
+            #
+            # `include_unmerged`를 켜면 이 조건만 건너뛴다. 보호 목록 · 열린 PR ·
+            # 나이 셋은 그대로 걸린다 — 이 조건 하나가 「안 들어간 내용이 있다」를
+            # 보는 유일한 자리이고, 끄면 **아직 살아 있는 작업도 지운다.**
+            # 아래 SHA 기록이 유일한 복구 수단이므로 요약을 반드시 남긴다.
             changed=$(git diff --name-only "origin/$DEFAULT_BRANCH...origin/$ref" | wc -l)
             if [ "$changed" -ne 0 ]; then
-              echo "지킴(차이 ${changed}파일) $ref" >> /tmp/keep.txt; continue
+              if [ "${INCLUDE_UNMERGED:-false}" != "true" ]; then
+                echo "지킴(차이 ${changed}파일) $ref" >> /tmp/keep.txt; continue
+              fi
+              echo "지움(차이 ${changed}파일 · include_unmerged) $ref" >> /tmp/unmerged.txt
             fi
 
             printf '%s %s\n' "$(git rev-parse "origin/$ref")" "$ref" >> /tmp/delete.txt
@@ -139,6 +153,16 @@ jobs:
             echo '```'
             cat /tmp/delete.txt || true
             echo '```'
+            if [ -s /tmp/unmerged.txt ]; then
+              echo
+              echo "### 내용이 main에 없는데 지운 것 **$(wc -l < /tmp/unmerged.txt)개**"
+              echo
+              echo '위 SHA 목록이 유일한 복구 수단이다. 이 요약을 지우지 않는다.'
+              echo
+              echo '```'
+              cat /tmp/unmerged.txt
+              echo '```'
+            fi
           } >> "$GITHUB_STEP_SUMMARY"
 
           # 명시적으로 false일 때만 지운다. 값이 비어 있는 경우(dispatch가 아닌

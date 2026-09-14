@@ -30,6 +30,27 @@ function inDays(days: number): string {
 }
 
 /**
+ * 오늘 낮. **푸시가 실제로 나갔는지**를 보는 시험은 이 시각을 넘겨야 한다.
+ *
+ * 야간(한국시간 21:00~08:00)에는 야간 수신을 켜지 않은 사람에게 푸시를 생략한다
+ * (`deliver`의 `isQuietHours`). 진짜 시계를 쓰면 **하루 중 열한 시간 동안 이
+ * 시험이 빨개진다** — 2026-09-14에 실제로 그랬다. 21:29 KST에 돌아 `sent`가
+ * 0이었고, 그 앞 성공은 14:44 KST였다. 그 사이에 바뀐 코드는 없었다.
+ *
+ * 03:00 UTC = 12:00 KST다. `inDays`가 UTC 날짜를 내므로 같은 날 정오로 맞춘다 —
+ * 하루 경계를 사이에 두면 `daysUntil`이 하루 어긋난다.
+ *
+ * 야간 동작 자체를 보는 시험은 반대로 밤 시각을 넣어야 한다. 여기서는 낮만 쓴다.
+ */
+function daytime(): Date {
+  const now = new Date();
+
+  return new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 3, 0, 0)
+  );
+}
+
+/**
  * 준비 알림과 가격 변동 알림. 최종통합정책 v2.0 36·37번.
  *
  * **설정 스위치를 실제로 읽는지**가 여기서 걸린다 — 끌 수 있게 만들어놓고 보내는
@@ -199,7 +220,7 @@ describeWithDb('사용자 알림', () => {
       });
 
       const { push, sent } = fakePush();
-      const result = await sendTaskNudges({ pool: test.pool, push });
+      const result = await sendTaskNudges({ pool: test.pool, push }, daytime());
 
       expect(result.stored).toBe(1);
       expect(sent).toHaveLength(0);
@@ -215,7 +236,7 @@ describeWithDb('사용자 알림', () => {
 
       const { push, sent } = fakePush();
 
-      await sendTaskNudges({ pool: test.pool, push });
+      await sendTaskNudges({ pool: test.pool, push }, daytime());
 
       expect(sent).toHaveLength(1);
     });
@@ -460,12 +481,14 @@ describeWithDb('사용자 알림', () => {
 
       const { push, sent } = fakePush();
 
-      await sendPriceChangeNudges({ pool: test.pool, push });
+      await sendPriceChangeNudges({ pool: test.pool, push }, daytime());
       await seedProofs(vendorId, 5, 3_000_000);
 
-      const result = await sendPriceChangeNudges({ pool: test.pool, push });
+      const result = await sendPriceChangeNudges({ pool: test.pool, push }, daytime());
 
       // 알림함에는 남되 푸시는 안 나간다.
+      // 낮으로 고정한다 — 밤에 돌리면 야간 생략 때문에 0이 나와서, 스위치를
+      // 껐기 때문인지 시각 때문인지 구별되지 않는다. 통과해도 의미가 없다.
       expect(result.stored).toBe(1);
       expect(sent).toHaveLength(0);
     });
