@@ -327,7 +327,16 @@ async function main() {
        * 실제 요청 경로가 `/capture/v1/...`가 되어 매칭에서 빠지고 실제 네트워크로
        * 나가 ERR_CONNECTION_REFUSED가 난다.
        */
-      env: { ...process.env, EXPO_PUBLIC_API_URL: 'http://127.0.0.1:39999' },
+      env: {
+        ...process.env,
+        EXPO_PUBLIC_API_URL: 'http://127.0.0.1:39999',
+        /*
+         * export:web이 빌드 뒤 build-preview.mjs(대표님 프리뷰용 배너·가짜 로그인)를
+         * 부른다. 여기서 끈다 — 그 배너가 찍히면 「실제 화면을 있는 그대로 찍는다」가
+         * 깨진다. 토큰은 이 파일이 이미 addInitScript로 심는다(위 installFixtures 옆).
+         */
+        WEDDINGPICK_SKIP_PREVIEW_SHIM: '1',
+      },
     });
   }
 
