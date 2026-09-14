@@ -219,7 +219,9 @@ Pick Mark는 하트 안에 체크. 아래 두 path가 확정본이며 어떤 이
 ## 디자인
 - SEED Design System(Karrot) 기반. 좌우 Gutter 24px.
 - 스킨 6종: Coral #FF6F61(기본) · Red #FF4D4D · Yellow #FFC041 · Green #34C759 · Blue #3182F6 · Dark Gray #191F28.
-- 폰트는 시스템 서체 유지(Pretendard 미적용).
+- 폰트는 Pretendard 단일(2026-09-14 대표님이 「Pretendard 미적용」을 뒤집으셨다). ios·android·web 스택
+  모두 Pretendard가 맨 앞이고 뒤는 폴백일 뿐이다. Playfair Display · Noto Sans KR · DM Mono는 쓰지 않는다.
+  값의 원본은 `spec/tokens.json` `typography.$fontFamily`다.
 - 섹션 제목 1줄, 서브카피 사용하지 않음. 안내 최대 2줄, CTA 1줄.
 - 화면당 Primary CTA 1개. Pick이 가장 중요한 행동, 비교는 보조.
 
