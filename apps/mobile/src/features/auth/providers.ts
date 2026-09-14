@@ -36,15 +36,40 @@ async function exchangeKakaoCode(
 }
 
 /**
- * 로그인 버튼 색. 카카오 브랜드색은 앱 스킨과 무관하게 고정이다(`SocialColors`
- * 참고) — `ActionButton`의 `tone`으로 그대로 넘긴다. 개발용 대체는 실제
- * 브랜드가 아니라서 여기 없다 — 그 경우 화면이 `tone`을 생략해 기존
- * 테마색(secondary)으로 남는다.
+ * 로그인 버튼 색. 카카오·애플 브랜드색은 앱 스킨과 무관하게 고정이다
+ * (`SocialColors` 참고) — `ActionButton`의 `tone`으로 그대로 넘긴다. 개발용
+ * 대체는 실제 브랜드가 아니라서 여기 없다 — 그 경우 화면이 `tone`을 생략해
+ * 기존 테마색(secondary)으로 남는다.
  */
 export function providerTone(provider: AuthProvider): (typeof SocialColors)[keyof typeof SocialColors] | undefined {
   if (provider.isDevelopmentStandIn) return undefined;
+  if (provider.provider === 'apple') return SocialColors.apple;
 
   return SocialColors.kakao;
+}
+
+/**
+ * 로그인 버튼 글자. 두 화면(로그인 · 로그인 시트)이 같은 말을 쓰게 한 곳에 둔다 —
+ * 제공자가 둘이 되면서 «카카오로 시작하기»를 화면마다 적어두면 애플 버튼에도
+ * 카카오라고 적히는 일이 생긴다.
+ *
+ * 애플 문구는 «Apple로 계속하기» 하나만 쓴다 — 애플이 심사에서 허용한 표기이고,
+ * 첫 로그인인지 아닌지에 따라 바꾸지 않는다.
+ */
+export function providerLabel(provider: AuthProvider, mode: 'start' | 'continue'): string {
+  if (provider.isDevelopmentStandIn) return '개발용 로그인';
+  if (provider.provider === 'apple') return 'Apple로 계속하기';
+
+  return mode === 'start' ? '카카오로 시작하기' : '카카오로 계속하기';
+}
+
+/** 로그인이 진행 중일 때 보여줄 한 줄. 제공자마다 다르다. */
+export function signingInNotice(provider: AuthProvider | null): string {
+  if (provider?.provider === 'apple' && !provider.isDevelopmentStandIn) {
+    return 'Apple로 로그인하는 중이에요';
+  }
+
+  return '카카오로 로그인하는 중이에요';
 }
 
 const KAKAO_CLIENT_ID = process.env.EXPO_PUBLIC_KAKAO_CLIENT_ID;
@@ -71,12 +96,20 @@ function webRedirectUri(): string {
 }
 
 /**
- * 쓸 수 있는 로그인 방법 — 카카오뿐이다(v3.12, 네이버·구글·애플 폐기).
+ * 쓸 수 있는 로그인 방법 — **카카오와 애플 둘뿐이다.** 네이버·구글은 화면에
+ * 두지 않는다(이미 그 방법으로 가입한 계정의 서버 쪽 검증 코드는 그대로 둔다).
+ *
+ * **애플은 빼면 안 된다.** 앱스토어 심사지침 4.8은 다른 소셜 로그인을 제공하는
+ * 앱에 «Apple로 로그인»을 함께 제공하라고 요구한다 — 카카오만 두면 iOS 심사에서
+ * 막힌다. 대신 애플이 실제로 되는 곳은 iOS뿐이라(`expo-apple-authentication`),
+ * 안드로이드·웹에서는 목록에서 뺀다 — 눌러도 아무 일이 없는 버튼을 두지 않는다.
+ * 순서는 카카오 · 애플이다.
  *
  * 개발용 대체(`isDevelopmentStandIn`)는 실제 카카오가 아니라서 항상 남겨둔다 —
  * `KAKAO_APP_KEY`가 아직 없는 개발 환경에서도 로그인 흐름을 시험할 수 있어야
- * 한다. 이메일은 여기 없다 — OAuth 앱 등록 여부에 좌우되지 않고 항상 켜져
- * 있어서, 화면의 "이메일로 시작하기"는 이 목록이 아니라 고정 버튼이다.
+ * 한다. 서버가 그 대체를 `apple` 자리에 얹어 내려보내므로(api `index.ts`)
+ * 플랫폼으로 거르기 전에 먼저 가려낸다 — 안드로이드 개발 빌드에서 로그인이
+ * 통째로 사라지는 것을 막는다.
  *
  * `null`은 아직 모르는 상태고 `[]`는 없는 상태다. 둘을 같게 다루면 서버가
  * 늦게 답하는 동안 "로그인할 수 없습니다"라고 잘못 말하게 된다.
@@ -94,9 +127,7 @@ export function useAuthProviders(): { providers: AuthProvider[] | null; error: s
     }
 
     listAuthProviders()
-      .then((response) =>
-        setProviders(response.providers.filter((p) => p.provider === 'kakao' || p.isDevelopmentStandIn))
-      )
+      .then((response) => setProviders(usableProviders(response.providers)))
       .catch((caught: Error) => {
         setProviders([]);
         setError(caught.message);
@@ -106,11 +137,117 @@ export function useAuthProviders(): { providers: AuthProvider[] | null; error: s
   return { providers, error };
 }
 
+/**
+ * 서버가 내려준 목록에서 이 앱이 실제로 보여줄 것만 고른다. 정렬도 여기서 한다 —
+ * 화면 두 곳(로그인 · 로그인 시트)이 같은 순서를 보게.
+ */
+export function usableProviders(providers: readonly AuthProvider[]): AuthProvider[] {
+  const usable = providers.filter((provider) => {
+    if (provider.isDevelopmentStandIn) return true;
+    if (provider.provider === 'kakao') return true;
+    /* 애플은 iOS에서만 실제로 연다 — 심사지침 4.8이 요구하는 곳도 거기다. */
+    if (provider.provider === 'apple') return Platform.OS === 'ios';
+
+    return false;
+  });
+
+  return usable.sort((a, b) => providerOrder(a) - providerOrder(b));
+}
+
+function providerOrder(provider: AuthProvider): number {
+  if (provider.isDevelopmentStandIn) return 2;
+
+  return provider.provider === 'kakao' ? 0 : 1;
+}
+
 /** 이 방법으로 지금 로그인할 수 있는가. 개발용은 비밀값이 있어야 눌린다. */
 export function canSignInWith(provider: AuthProvider): boolean {
   if (provider.isDevelopmentStandIn) return Boolean(DEV_LOGIN_SECRET);
+  /* 애플은 앱 번들 ID가 곧 client_id다 — 앱이 따로 들고 있을 키가 없다. */
+  if (provider.provider === 'apple') return Platform.OS === 'ios';
 
   return Boolean(KAKAO_CLIENT_ID);
+}
+
+/**
+ * 로그인 한 번. 제공자를 보고 갈 길을 고른다 — 화면은 어느 제공자든 이 함수
+ * 하나만 부른다.
+ *
+ * 개발용 대체는 서버가 `apple` 자리에 얹어 내려보내지만 실제 애플 로그인이
+ * 아니다 — 제공자 이름보다 그 표시를 먼저 본다.
+ */
+export async function startSignIn(provider: AuthProvider): Promise<SessionEntry | null> {
+  if (provider.isDevelopmentStandIn) {
+    return await signIn('apple', devIdToken());
+  }
+
+  if (provider.provider === 'apple') {
+    return await signInWithApple();
+  }
+
+  return await signInWithKakao(provider);
+}
+
+/**
+ * 애플 로그인 한 번(iOS). 애플이 기기에서 바로 id_token을 주므로 카카오처럼
+ * 인가 코드를 교환할 일이 없다 — 서버는 그 토큰을 애플 공개키로 확인만 한다.
+ *
+ * **이름은 최초 1회만 온다.** 애플은 처음 동의한 그 순간에만 `fullName`을 주고
+ * 두 번째부터는 비운다 — 받은 자리에서 바로 서버에 넘긴다(`profileName`).
+ * 나중에 다시 물어볼 방법이 없다.
+ *
+ * 사용자가 시트를 닫은 것(`ERR_REQUEST_CANCELED`)은 실패가 아니다. null로
+ * 돌려주면 화면이 아무 데도 가지 않고 그대로 남는다 — 카카오 취소와 같다.
+ */
+export async function signInWithApple(): Promise<SessionEntry | null> {
+  /* 웹·안드로이드 번들에 네이티브 모듈을 끌어들이지 않는다. */
+  const AppleAuthentication = await import('expo-apple-authentication');
+
+  let credential: Awaited<ReturnType<typeof AppleAuthentication.signInAsync>>;
+
+  try {
+    credential = await AppleAuthentication.signInAsync({
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+      ],
+    });
+  } catch (caught) {
+    if (isAppleCancel(caught)) return null;
+
+    throw new Error(APPLE_FAILED);
+  }
+
+  if (!credential.identityToken) {
+    throw new Error(APPLE_FAILED);
+  }
+
+  return await signIn('apple', credential.identityToken, appleProfileName(credential.fullName));
+}
+
+const APPLE_FAILED = 'Apple 로그인에 실패했습니다. 다시 시도해 주세요.';
+
+/** 애플이 취소를 알리는 코드. 던지는 값의 꼴이 플랫폼마다 달라 넓게 본다. */
+function isAppleCancel(caught: unknown): boolean {
+  return (
+    typeof caught === 'object' &&
+    caught !== null &&
+    'code' in caught &&
+    (caught as { code?: unknown }).code === 'ERR_REQUEST_CANCELED'
+  );
+}
+
+/**
+ * 애플이 준 이름 조각을 한 줄로. 한국어 이름은 성이 앞이라 `familyName`을
+ * 먼저 놓는다. 둘 다 없으면 보내지 않는다 — 빈 문자열을 이름으로 저장하면
+ * 화면에 «님,»만 남는다.
+ */
+function appleProfileName(
+  fullName: { givenName?: string | null; familyName?: string | null } | null
+): string | undefined {
+  const joined = [fullName?.familyName, fullName?.givenName].filter(Boolean).join('').trim();
+
+  return joined.length > 0 ? joined : undefined;
 }
 
 /**

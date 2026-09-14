@@ -20,6 +20,10 @@ import {
  *
  * Pick 탭 오른쪽 위의 점은 시안이 고정으로 둔 배지다. 크기·테두리·위치가
  * `spec/tokens.json` `tabBar.pickDot`이다.
+ *
+ * 라벨은 `spec/strings.ko.json` `common.nav.*`와 같은 말을 쓴다. 4번 탭은 «웨딩플랜»이고
+ * 라우트 이름(`wedding`)은 바꾸지 않는다 — 보이는 이름과 주소를 같이 바꾸면 저장된
+ * 링크가 깨진다(설계문서 9절).
  */
 type TabSpec = { icon: ProductSymbolName | 'pick'; label: string };
 
@@ -27,7 +31,7 @@ const TABS: Record<string, TabSpec> = {
   index: { icon: 'house', label: '홈' },
   search: { icon: 'magnifier', label: '검색' },
   pick: { icon: 'pick', label: 'Pick' },
-  wedding: { icon: 'calendar', label: '웨딩일정' },
+  wedding: { icon: 'calendar', label: '웨딩플랜' },
   my: { icon: 'person', label: 'MY' },
 };
 

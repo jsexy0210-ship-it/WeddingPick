@@ -8,7 +8,13 @@ import Svg, { Path } from 'react-native-svg';
 import { ActionButton, Colors, Layout, MaxContentWidth, Radius, SocialLogo, Spacing, ThemedText, ThemedView, WeddingMark, useTheme } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { LoginFailureSheet } from '@/features/auth/login-failure-sheet';
-import { canSignInWith, providerTone, useAuthProviders } from '@/features/auth/providers';
+import {
+  canSignInWith,
+  providerLabel,
+  providerTone,
+  signingInNotice,
+  useAuthProviders,
+} from '@/features/auth/providers';
 import { loadRememberedAccount, type RememberedAccount } from '@/features/auth/remembered-account';
 import { takePendingSignInError } from '@/features/auth/sign-in-handoff';
 import { useSignIn } from '@/features/auth/use-sign-in';
@@ -27,10 +33,19 @@ const REASONS = [
 
 
 /**
- * WP-AUTH-001/008 로그인. 디자인 핸드오프 v3.13(2026-09-07)부터 **초기
- * 버전은 카카오만** 쓴다 — 이메일 로그인(v3.12, WP-AUTH-002~007)은 화면·서버
- * 라우트·메일 발송까지 2026-09-08에 전부 지웠다. 네이버·구글·애플은 화면에서만
- * 폐기했다(이미 그 방법으로 가입한 계정의 서버 쪽 검증 코드는 그대로 둔다).
+ * WP-AUTH-001/008 로그인. **소셜 로그인은 카카오와 애플 둘이다.** 이메일
+ * 로그인(v3.12, WP-AUTH-002~007)은 화면·서버 라우트·메일 발송까지 2026-09-08에
+ * 전부 지웠고, 네이버·구글은 화면에 두지 않는다(이미 그 방법으로 가입한 계정의
+ * 서버 쪽 검증 코드는 그대로 둔다).
+ *
+ * **애플 버튼은 iOS에서 빠지지 않는다.** 앱스토어 심사지침 4.8이 다른 소셜
+ * 로그인을 두는 앱에 «Apple로 로그인»을 함께 요구한다 — 시안이 카카오 하나만
+ * 그려져 있어도 여기서는 뺄 수 없다. 어느 제공자를 보일지는 서버 목록과
+ * 플랫폼이 정하고(`usableProviders`), 화면은 받은 목록을 그대로 그린다.
+ *
+ * **진행 표시는 한 가지만 세운다.** 로더와 문구를 같이 세우면 두 겹으로 읽혀
+ * 무언가 두 번 일어나는 것처럼 보인다(2026-09-08 사고) — 제공자 목록을 기다리는
+ * 동안은 로더만, 로그인이 도는 동안은 문구만이다.
  *
  * 2026-09-04 정책 변경 — 비회원 진입 삭제. 스플래시(온보딩 소개) 다음은
  * 이 화면이고, 로그인해야만 앱으로 넘어간다.
@@ -42,19 +57,18 @@ const REASONS = [
  * 있다 — 이미 확인을 마친 WP-AUTH-008(로그인 유지)에는 없다.
  *
  * **두 상태를 한 컴포넌트에서 가른다**(WP-AUTH-001 첫 진입 / WP-AUTH-008
- * 로그인 유지). 기억된 계정이 있으면 인사 + «카카오로 계속하기» 하나만
- * 보여주고, 없으면 만 14세 확인과 카카오 버튼을 보여준다. «다른 계정으로
- * 시작하기»·«카카오 · 최근 로그인» 계정 행은 없앴다(2026-09-08) — 로그인
- * 방법이 카카오 하나뿐이라 고를 것도 알려줄 것도 없고, 계정을 바꾸는 일은
- * 카카오 동의 화면이 맡는다.
+ * 로그인 유지). 기억된 계정이 있으면 인사 + «계속하기» 버튼만 보여주고, 없으면
+ * 만 14세 확인과 로그인 버튼을 보여준다. «다른 계정으로
+ * 시작하기»·«카카오 · 최근 로그인» 계정 행은 없앴다(2026-09-08) — 계정을 바꾸는
+ * 일은 제공자의 동의 화면이 맡는다.
  *
- * 카카오 로그인 실패는 화면에 문구를 깔지 않고 시트로 뜬다
+ * 로그인 실패는 화면에 문구를 깔지 않고 시트로 뜬다
  * (`login-failure-sheet.tsx`).
  */
 export default function LoginScreen() {
   const theme = useTheme();
   const { providers, error: loadError } = useAuthProviders();
-  const { signIn, busy, error, retry, dismissError, reportError } = useSignIn();
+  const { signIn, busy, busyProvider, error, retry, dismissError, reportError } = useSignIn();
   /** undefined = 아직 안 읽음, null = 기억된 계정 없음(WP-AUTH-001). */
   const [remembered, setRemembered] = useState<RememberedAccount | null | undefined>(undefined);
   /** 만 14세 이상이에요 체크박스. 기본 해제(§3.5 "화면 규칙"). */
@@ -73,8 +87,9 @@ export default function LoginScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- 마운트 때 한 번만
   }, []);
 
-  const kakao = providers?.[0] ?? null;
   const showRemembered = Boolean(remembered);
+  /* 서버 목록 그대로 — 순서(카카오 · 애플 · 개발용)와 거르기는 `usableProviders`가 정한다. */
+  const options = providers ?? [];
 
   return (
     <ThemedView style={styles.container}>
@@ -96,9 +111,8 @@ export default function LoginScreen() {
                   </ThemedText>
                 ) : null}
                 {/*
-                  «카카오 · 최근 로그인» 계정 행은 없앴다 — 로그인 방법이 카카오
-                  하나뿐이라 어느 계정인지 알려줄 것이 없다. 계정을 바꾸는 일은
-                  카카오 동의 화면이 맡는다.
+                  «카카오 · 최근 로그인» 계정 행은 없앴다 — 어느 계정인지는 제공자
+                  동의 화면이 알려주고, 계정을 바꾸는 일도 거기서 한다.
                 */}
               </ThemedView>
             ) : (
@@ -128,17 +142,20 @@ export default function LoginScreen() {
           <View style={styles.authBlock}>
             {providers === null || remembered === undefined || busy ? (
               /*
-               * 로그인 진행 중에는 버튼 대신 이것만 보인다. 카카오에서 돌아온 뒤
+               * 로그인 진행 중에는 버튼 대신 이것만 보인다. 제공자에서 돌아온 뒤
                * 세션 교환 한 번(왕복 1회)이 유일한 기다림이다 — 그동안 멀쩡한
                * 로그인 폼이 떠 있으면 «다시 로그인하라는 건가» 하고 읽힌다.
                */
               <ThemedView style={styles.busy}>
-                <DelayedLoader size={28} />
                 {busy ? (
+                  /* 로그인이 도는 동안은 문구 하나만. 로더를 같이 두지 않는다. */
                   <ThemedText type="small" themeColor="textAssistive">
-                    카카오로 로그인하는 중이에요
+                    {signingInNotice(busyProvider)}
                   </ThemedText>
-                ) : null}
+                ) : (
+                  /* 아직 무엇을 기다리는지 말할 것이 없는 동안은 로더 하나만. */
+                  <DelayedLoader size={28} />
+                )}
               </ThemedView>
             ) : (
               <ThemedView style={styles.section}>
@@ -149,17 +166,22 @@ export default function LoginScreen() {
                       이메일이었어도 다시 그 경로로 보내지 않는다. 이미 최소 한 번
                       확인을 마친 계정이라 여기엔 만 14세 체크박스도 없다.
                     */}
-                    {kakao ? (
+                    {options.map((provider) => (
                       <ActionButton
+                        key={provider.provider}
                         variant="primary"
                         size="xlarge"
-                        tone={providerTone(kakao)}
-                        icon={kakao.isDevelopmentStandIn ? undefined : <SocialLogo provider="kakao" />}
-                        label={kakao.isDevelopmentStandIn ? '개발용 로그인' : '카카오로 계속하기'}
-                        disabled={busy || !canSignInWith(kakao)}
-                        onPress={() => signIn(kakao)}
+                        tone={providerTone(provider)}
+                        icon={
+                          provider.isDevelopmentStandIn ? undefined : (
+                            <SocialLogo provider={provider.provider} />
+                          )
+                        }
+                        label={providerLabel(provider, 'continue')}
+                        disabled={busy || !canSignInWith(provider)}
+                        onPress={() => signIn(provider)}
                       />
-                    ) : null}
+                    ))}
 
                     <ThemedText type="small" themeColor="textAssistive" style={styles.terms}>
                       이 기기에서 로그인을 유지하고 있어요
@@ -169,24 +191,35 @@ export default function LoginScreen() {
                   <>
                     <AgeConsentCheckbox checked={ageChecked} onToggle={() => setAgeChecked((v) => !v)} />
 
-                    {kakao ? (
-                      <View style={{ opacity: ageChecked ? 1 : 0.4 }}>
+                    {/*
+                      만 14세 확인은 제공자와 무관하다 — 어느 버튼을 누르든 체크를
+                      안 했으면 로그인을 시작하지 않고 WP-AUTH-010으로 보낸다.
+                     */}
+                    <View style={[styles.options, { opacity: ageChecked ? 1 : 0.4 }]}>
+                      {options.map((provider) => (
                         <ActionButton
+                          key={provider.provider}
                           variant="primary"
                           size="xlarge"
-                          tone={providerTone(kakao)}
-                          icon={kakao.isDevelopmentStandIn ? undefined : <SocialLogo provider="kakao" />}
-                          label={kakao.isDevelopmentStandIn ? '개발용 로그인' : '카카오로 시작하기'}
+                          tone={providerTone(provider)}
+                          icon={
+                            provider.isDevelopmentStandIn ? undefined : (
+                              <SocialLogo provider={provider.provider} />
+                            )
+                          }
+                          label={providerLabel(provider, 'start')}
                           hint={
-                            kakao.isDevelopmentStandIn
+                            provider.isDevelopmentStandIn
                               ? '실제 카카오 로그인이 아니에요. 개발 중인 서버에만 있어요'
                               : undefined
                           }
-                          disabled={busy || !canSignInWith(kakao)}
-                          onPress={() => (ageChecked ? signIn(kakao) : router.push('/login/age-required'))}
+                          disabled={busy || !canSignInWith(provider)}
+                          onPress={() =>
+                            ageChecked ? signIn(provider) : router.push('/login/age-required')
+                          }
                         />
-                      </View>
-                    ) : null}
+                      ))}
+                    </View>
 
                     <ThemedText type="small" themeColor="textAssistive" style={styles.terms}>
                       시작하면 <PolicyLink id="terms" />과 <PolicyLink id="privacy" />에 동의하게 돼요
@@ -338,6 +371,8 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
   },
   busy: { alignItems: 'center', gap: Spacing.two, paddingVertical: Spacing.three },
+  /* 로그인 버튼이 둘 이상일 때의 사이. 체크 전 흐리게 덮는 자리도 여기다. */
+  options: { gap: Spacing.two },
   /* §3.5 — 카드가 아니라 44 터치 영역 안의 텍스트 한 줄이다. 좌측 정렬. */
   ageCard: {
     flexDirection: 'row',

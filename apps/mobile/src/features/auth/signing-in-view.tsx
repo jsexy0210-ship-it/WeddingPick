@@ -1,7 +1,6 @@
 import { StyleSheet } from 'react-native';
 
 import { Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
-import { DelayedLoader } from '@/features/loading/delayed-loader';
 
 /**
  * 카카오에서 같은 창으로 돌아온 직후, 코드를 세션으로 바꾸는 동안 보이는 화면.
@@ -10,12 +9,14 @@ import { DelayedLoader } from '@/features/loading/delayed-loader';
  * 사람이 그걸 다시 보면 «처음부터 다시 시작하나» 하고 읽는다(2026-09-08 보고).
  * 로그인 화면의 진행 표시(«카카오로 로그인하는 중이에요»)와 같은 모양으로,
  * 이어지는 한 단계라는 것만 보인다. 끝나면 온보딩/홈으로 곧장 간다.
+ *
+ * **진행 표시는 문구 하나뿐이다.** 로더를 같이 세우면 같은 기다림이 두 겹으로
+ * 읽힌다 — 로그인 화면과 같은 규칙이다.
  */
 export function SigningInView() {
 
   return (
     <ThemedView style={styles.container}>
-      <DelayedLoader size={40} />
       <ThemedText type="small" themeColor="textAssistive">
         카카오로 로그인하는 중이에요
       </ThemedText>

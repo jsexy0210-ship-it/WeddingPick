@@ -224,7 +224,14 @@
     "cta.keep": "그대로 둘게요",
     "cta.openSettings": "설정 열기",
     "cta.getNotified": "알림 받기",
-    "cta.startIn3s": "3초 만에 시작하기"
+    "cta.startIn3s": "3초 만에 시작하기",
+
+    "nav.home": "홈",
+    "nav.search": "검색",
+    "nav.pick": "Pick",
+    "nav.weddingPlan": "웨딩플랜",
+    "nav.my": "MY",
+    "nav.lounge": "라운지"
   },
 
   "data": {
@@ -378,7 +385,7 @@
   },
 
   "ourWedding": {
-    "title": "웨딩일정",
+    "title": "웨딩플랜",
     "heroTogether": "{partner}님과 함께\n{n}가지를 끝냈어요",
     "progress": "{done}/{total} 완료",
     "section.nextSchedule": "다음 일정",
