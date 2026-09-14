@@ -7,7 +7,14 @@ import { ACTIVITY_MAX_AXES, ACTIVITY_MIN_SUBJECTS, foldSearchText, weekStart } f
 import { activityOverview, buildRollup } from '../activity-admin';
 import { flushActivity, recordActivity } from '../activity-ledger';
 import { withdraw } from '../withdrawal';
-import { adminSession, createTestApp, resetDatabase, signInAs, type TestApp } from './helpers';
+import {
+  adminSession,
+  createTestApp,
+  createWedding,
+  resetDatabase,
+  signInAs,
+  type TestApp,
+} from './helpers';
 
 let test: TestApp;
 
@@ -227,6 +234,45 @@ describeWithDb('회원 활동 원장', () => {
 
       expect(result.rowsWritten).toBeGreaterThan(0);
       expect(result.kThreshold).toBe(ACTIVITY_MIN_SUBJECTS);
+    });
+
+    it('지역·예산으로 가른 묶음이 실제로 나온다 — 접는 규칙이 도는지', async () => {
+      /*
+       * 축 없는 묶음만 나오는 것으로는 「접는 규칙이 돈다」를 확인할 수 없다.
+       * 회원마다 웨딩을 만들어 지역과 예산을 붙이고, 그 축으로 갈린 행이 실제로
+       * 나오는지 본다.
+       */
+      const members = await manyMembers('ledger-axes', ACTIVITY_MIN_SUBJECTS);
+
+      for (const member of members) {
+        const weddingId = await createWedding(test, member.headers);
+
+        await test.pool.query(
+          `UPDATE structured.weddings
+           SET region = '서울특별시 강남구', budget_bracket = '20m_30m'
+           WHERE id = $1`,
+          [weddingId]
+        );
+
+        await recordOne(member.userId);
+      }
+
+      const period = weekStart(new Date()).toISOString().slice(0, 10);
+
+      await buildRollup(test.pool, { periodStart: period, periodDays: 7 });
+
+      const { rows } = await test.pool.query<{
+        region: string | null;
+        budget_bracket: string | null;
+      }>('SELECT region, budget_bracket FROM structured.activity_rollups');
+
+      // 긴 꼴(«서울특별시»)이 짧은 꼴로 접혔다.
+      expect(rows.some((row) => row.region === '서울')).toBe(true);
+      expect(rows.some((row) => row.budget_bracket === '20m_30m')).toBe(true);
+      // 지역과 예산을 함께 가른 묶음도 있다 — 축 둘까지는 허용이다.
+      expect(rows.some((row) => row.region === '서울' && row.budget_bracket === '20m_30m')).toBe(true);
+      // 축 없는 전체 묶음도 그대로 있다.
+      expect(rows.some((row) => row.region === null && row.budget_bracket === null)).toBe(true);
     });
 
     it('두 번 뽑아도 행이 늘지 않는다', async () => {
