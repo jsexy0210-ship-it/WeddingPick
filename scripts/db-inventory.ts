@@ -180,6 +180,45 @@ async function main(): Promise<void> {
     `SELECT count(*) AS 건수 FROM structured.vendor_source_records WHERE source_key = 'sample'`,
   );
 
+  /*
+   * 보존 3건 규칙(docs/retention-policy.md)이 겨누는 표들이다. 운영 데이터가 아니라
+   * **수집·사용량 이력**이고, 오래된 것을 지우는 계획이 여기 숫자를 근거로 선다.
+   *
+   * DB에서 행을 지우는 것은 되돌릴 수 없다. 그래서 지우기 전에 여기서 먼저 세고,
+   * 계획서의 숫자와 맞는지 확인한 뒤 사용자 승인을 받는다. **이 스크립트는 세기만 한다.**
+   *
+   * 가장 오래된 것과 가장 새것의 시각을 함께 찍는 것은, 건수만으로는 「90일 보존」 같은
+   * 기준이 몇 건을 지우게 되는지 알 수 없기 때문이다. 시각은 UTC로 담기고 UTC로 찍는다 —
+   * 사람에게 말할 때만 KST로 바꾼다.
+   */
+  console.log('\n보존 대상 이력 — 지우지 않는다, 세기만 한다');
+  await count(
+    '수집 실행(import_runs)',
+    `SELECT count(*) AS 건수, min(started_at) AS 가장오래됨, max(started_at) AS 가장최근
+       FROM structured.import_runs`,
+  );
+  await count(
+    '수집 실행 · 출처별',
+    `SELECT source_key AS 출처, count(*) AS 건수
+       FROM structured.import_runs GROUP BY source_key ORDER BY count(*) DESC`,
+  );
+  await count('수집 오류(import_errors)', 'SELECT count(*) AS 건수 FROM structured.import_errors');
+  await count(
+    '출처 원본 행(vendor_source_records)',
+    'SELECT count(*) AS 건수, count(DISTINCT vendor_id) AS 업체수 FROM structured.vendor_source_records',
+  );
+  await count(
+    '모델 사용량(ai_usage)',
+    `SELECT count(*) AS 건수, min(requested_at) AS 가장오래됨, max(requested_at) AS 가장최근
+       FROM structured.ai_usage`,
+  );
+  await count('요금 스냅샷(infra_costs)', 'SELECT count(*) AS 건수 FROM structured.infra_costs');
+  await count('광고 개시 보고서(ads.launch_reports)', 'SELECT count(*) AS 건수 FROM ads.launch_reports');
+  await count(
+    '업체 변경 이력(vendor_change_log)',
+    'SELECT count(*) AS 건수 FROM structured.vendor_change_log',
+  );
+
   await pool.end();
 }
 

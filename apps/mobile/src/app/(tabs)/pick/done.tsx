@@ -149,7 +149,7 @@ export default function PickDoneScreen() {
   const reflected = [
     {
       key: 'wedding',
-      label: '웨딩일정',
+      label: '웨딩노트',
       text: `준비 현황에 ${categoryLabel} 결정 완료로 반영됐어요`,
       onPress: () => router.replace('/wedding'),
     },
