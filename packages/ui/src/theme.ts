@@ -53,6 +53,12 @@ const palette = {
   coral50: '#fcf1f1',
   /** tokens.json color.brand.accent ← Figma theme.css:22 --accent. 보조 강조. */
   coralAccent: '#eca0a3',
+  /**
+   * tokens.json color.brand.onPrimary. 키 컬러 면 위의 글자·아이콘.
+   * ← Figma 픽셀 export(src/imports/Home/index.tsx)에서 읽은 플럼. 흰 글자가
+   * #e7898d 위에서 2.51:1이라 AA에 못 미쳐 2026-09-14에 이 색으로 정해졌다(6.11:1).
+   */
+  plum: '#371b34',
 
   /* SEED gray 램프 (light). */
   gray900: '#212124',
@@ -210,7 +216,17 @@ export const Colors = {
 
     /** 모달·바텀시트 뒤를 덮는 색. */
     scrim: palette.scrim,
-    onTint: palette.gray00,
+    /**
+     * tint 면 위의 글자·아이콘. spec/tokens.json color.brand.onPrimary.
+     * **흰색이 아니다.** #e7898d 위에서 흰 글자는 2.51:1로 WCAG AA에 못 미쳐
+     * 2026-09-14에 이 플럼으로 정해졌다(6.11:1). Figma 픽셀 export에 이미 있던 색이다.
+     */
+    onTint: palette.plum,
+    /**
+     * backgroundInk(어두운 면) 위의 글자·아이콘. onTint와 갈라 둔다 —
+     * 플럼을 잉크 위에 얹으면 1.05:1로 아예 안 보인다.
+     */
+    onInk: palette.gray00,
     /** 본문 속 링크(약관 · 처리방침). 코랄은 CTA·Pick·선택에만 쓴다(CLAUDE.md §5). */
     link: palette.accent,
   },
@@ -270,7 +286,9 @@ export const Colors = {
     chartMutedText: palette.darkGray700,
 
     scrim: 'rgba(0,0,0,.72)',
-    onTint: '#ffffff',
+    /** 라이트와 같은 값이다 — 토큰이 «다크 테마에서도 반전하지 않는다»고 못박았다. */
+    onTint: palette.plum,
+    onInk: '#ffffff',
     link: palette.accent,
   },
 } as const;
