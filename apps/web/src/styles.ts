@@ -11,8 +11,8 @@ export const STYLES = `
   color-scheme: light dark;
 
   /* 브랜드 */
-  --coral: #ff6f61;
-  --coral-dark: #e2564a;
+  --coral: #e7898d;
+  --coral-dark: #d87d80;
 
   /* 텍스트 */
   --text-p: #212124;
@@ -73,8 +73,8 @@ export const STYLES = `
     --bg-input: #23282b;
     --border: #2c3134;
     --border-card: #2c3134;
-    --coral: #ff8478;
-    --coral-dark: #ff6f61;
+    --coral: #eb9ca0;
+    --coral-dark: #e7898d;
   }
 }
 
@@ -254,7 +254,7 @@ button:focus-visible {
   padding: 0 18px;
   border-radius: 6px;
   background: var(--coral);
-  color: #fff;
+  color: #371b34;
   font-size: var(--t16);
   font-weight: 700;
   text-decoration: none;
@@ -584,7 +584,7 @@ button:focus-visible {
   height: 32px;
   border-radius: 999px;
   background: var(--coral);
-  color: #fff;
+  color: #371b34;
   font-size: var(--t15);
   font-weight: 700;
 }

@@ -11,12 +11,12 @@ const path = require('path');
 const OUT_DIR = path.join(__dirname, '../apps/mobile/assets/images');
 
 const ICONS = [
-  { file: 'icon.png',                    size: 1024, scale: 0.60, bg: '#FF6F61', fg: '#FFFFFF', transparent: false },
-  { file: 'splash-icon.png',             size: 512,  scale: 0.60, bg: '#FF6F61', fg: '#FFFFFF', transparent: false },
-  { file: 'android-icon-foreground.png', size: 1024, scale: 0.55, bg: 'transparent', fg: '#FFFFFF', transparent: true },
-  { file: 'android-icon-background.png', size: 1024, scale: 1,    bg: '#FF6F61', fg: '#FF6F61', transparent: false },
+  { file: 'icon.png',                    size: 1024, scale: 0.60, bg: '#E7898D', fg: '#371B34', transparent: false },
+  { file: 'splash-icon.png',             size: 512,  scale: 0.60, bg: '#E7898D', fg: '#371B34', transparent: false },
+  { file: 'android-icon-foreground.png', size: 1024, scale: 0.55, bg: 'transparent', fg: '#371B34', transparent: true },
+  { file: 'android-icon-background.png', size: 1024, scale: 1,    bg: '#E7898D', fg: '#E7898D', transparent: false },
   { file: 'android-icon-monochrome.png', size: 432,  scale: 0.55, bg: '#FFFFFF', fg: '#000000', transparent: false },
-  { file: 'favicon.png',                 size: 48,   scale: 0.60, bg: '#FF6F61', fg: '#FFFFFF', transparent: false },
+  { file: 'favicon.png',                 size: 48,   scale: 0.60, bg: '#E7898D', fg: '#371B34', transparent: false },
 ];
 
 function makeHTML(size, scale, bg, fg, transparent) {
