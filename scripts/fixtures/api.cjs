@@ -150,6 +150,44 @@ const routes = {
     progress: { decided: 0, total: 13, label: '0/13 완료' },
     nextCategory: 'hall',
   },
+  /** 웨딩플랜 홈의 「다음 일정」 — 빈 목록도 계약을 만족한다. */
+  'GET /v1/weddings/:weddingId/events': { events: [] },
+  /** 웨딩플랜 홈의 준비 목록. */
+  'GET /v1/weddings/:weddingId/tasks': { tasks: [], progress: { done: 0, total: 13 } },
+  /**
+   * 지출 요약 — 예산현황 탭 · 계약 인증(Pick 인증) 진입에 쓴다. 빈 상태로는
+   * 「지출」 카드 자체가 안 그려져서(apps/mobile/src/app/(tabs)/wedding/index.tsx)
+   * 화면을 볼 수 없다 — 값을 채운다.
+   */
+  'GET /v1/weddings/:weddingId/expenses': {
+    paidTotal: 3_200_000,
+    scheduledTotal: 500_000,
+    scheduledNote: '예정된 결제가 있어요',
+    buckets: [
+      { bucket: 'hall', label: '웨딩홀', amount: 2_000_000, ratio: 0.625 },
+      { bucket: 'agency', label: '웨딩플래너', amount: 800_000, ratio: 0.25 },
+      { bucket: 'sdm', label: '스드메', amount: 400_000, ratio: 0.125 },
+      { bucket: 'etc', label: '기타', amount: 0, ratio: 0 },
+    ],
+    budget: { set: true, budget: 4_000_000, spent: 3_200_000, remaining: 800_000, over: false },
+    budgetBracket: null,
+    expenses: [
+      {
+        id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+        label: '웨딩홀 계약금',
+        amount: 2_000_000,
+        category: 'hall',
+        bucket: 'hall',
+        status: 'paid',
+        statusLabel: '결제완료',
+        spentOn: '2026-03-02',
+        source: 'payment_proof',
+        sourceLabel: 'Pick 인증',
+        refundStatus: 'normal',
+        refundStatusLabel: '정상',
+      },
+    ],
+  },
   /*
    * 관리자 — 광고 실운영 관문과 상품별 상태(WP-ADM-034).
    *
