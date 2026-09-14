@@ -277,6 +277,44 @@ test('해시는 수집 시각에 영향받지 않는다', () => {
   expect(contentHash(incoming)).toBe(contentHash({...incoming,collectedAt:'later'} as CollectedVendor));
 });
 
+/*
+ * 2026-09-11 대표 지시 — 「소량만 우선 수집해 100건 정도」.
+ *
+ * 받아 놓고 자르는 것이 아니라 **API를 그만 두드려야** 소량 수집이다. 전수를 받은
+ * 뒤 100건만 남기면 소량으로 확인하려던 이유(부하·시간)가 사라진다.
+ */
+test('소량 상한을 채우면 다음 쪽을 부르지 않는다', async () => {
+  const page = (rows: number, offset: number) => ({
+    totalCount: 5000,
+    data: Array.from({ length: rows }, (_, i) => ({
+      bizesId: `V${offset + i}`, bizesNm: `업체${offset + i}웨딩홀`, brchNm: '',
+      indsSclsNm: '예식장업', ctprvnCd: '11', rdnmAdr: '서울특별시 강남구 길 1',
+    })),
+  });
+  const origFetch = global.fetch;
+  let calls = 0;
+  global.fetch = jest.fn().mockImplementation(() => {
+    calls += 1;
+    const body = Buffer.from(JSON.stringify(page(1000, calls * 1000)));
+    return Promise.resolve({
+      ok: true,
+      body: { [Symbol.asyncIterator]: async function* () { yield body; } },
+    });
+  });
+  try {
+    const result = await downloadSbizApiVendors(
+      'sbiz-seoul', 'test-key', new Date('2026-09-11T00:00:00Z'),
+      { divId: 'indsSclsCd', codes: ['S21101'] }, 100);
+
+    expect(result.vendors).toHaveLength(100);
+    // 한 쪽(1,000건)만 부르고 멈춘다 — totalCount가 5,000이어도 더 안 부른다.
+    expect(calls).toBe(1);
+    expect(result.truncated).toEqual([
+      { code: 'S21101', got: 1000, total: 5000, reason: '소량 상한' },
+    ]);
+  } finally { global.fetch = origFetch; }
+});
+
 test('한 페이지가 끊겨도 그때까지 모은 것을 버리지 않는다', async () => {
   /*
    * 전국 전수를 돌리다 apis.data.go.kr이 4분 끊기면 이미 받아 둔 수천 건이 통째로

@@ -358,6 +358,15 @@ export type SbizUpjongQuery = { divId: string; codes: string[] };
  * 한복 소매업(G20904) · 뷔페(I20702 · I20801)는 웨딩 전용이 아니고 우리 업종
  * 분류에 해당하는 자리가 없어 넣지 않는다.
  *
+ * **이 목록은 판단 대기 중이다(2026-09-14).** PR #216이 2026-09-11 대표 지시
+ * 「업종코드 확대한다」를 근거로 G21901(꽃집) · G20904(한복 소매업)를 더하고,
+ * 같은 지시로 `resolveSbizCategory`가 걸러 온 행을 버리지 않고 «기타»로 받게
+ * 바꿨다. 그러면 이 목록이 유일한 거름망이 되어 S20701 미용실 전국 업소가
+ * 상호와 무관하게 전부 들어온다 — 양을 아직 재지 않았다. 위 배제 서술과 정면으로
+ * 어긋나므로 **대표님 판단 전까지 위 다섯 코드와 상호 조건을 그대로 둔다.**
+ * 셋(코드 둘 · «기타» 규칙)은 한 지시·한 커밋이라 함께 들어가고 함께 빠진다.
+ * 재는 방법은 아래 「소량 확인」이다 — `--limit 100`으로 돌려 업종별 숫자를 본다.
+ *
  * 전에는 이 자리에 대분류 `'Q'`가 박혀 있었다 — 활용가이드에 없는 값이라 수집이
  * 조용히 0건이 됐다. 그래서 한동안 「코드는 코드에 박지 않는다」로 두었는데,
  * 이제 실제 코드를 확인했으므로 확인한 값을 적어 둔다. 바꿔야 하면
@@ -392,8 +401,19 @@ export async function downloadSbizApiVendors(
   apiKey: string,
   at = new Date(),
   upjong?: SbizUpjongQuery,
+  /**
+   * 받아들일 업체 수 상한. **소량 확인용이다**(2026-09-11 대표 지시 — 「소량만 우선
+   * 수집해 100건 정도」). 전수를 받기 전에 무엇이 어떤 업종으로 들어오는지 눈으로
+   * 보려는 것이라, 이 수를 채우면 **다음 쪽을 부르지 않고 멈춘다** — 받아 놓고
+   * 자르는 것이 아니라 API를 그만 두드린다.
+   *
+   * 업종코드를 돌아가며 채우지 않고 앞 코드부터 채운다. 100건이면 예식장업만으로
+   * 다 찰 수 있다는 뜻이라, 업종을 고루 보려면 코드를 하나씩 지정해 따로 돌린다
+   * (`--upjong-codes`). 그 사실은 리포트의 `limit`로 남는다.
+   */
+  limit?: number,
 ): Promise<{ vendors: CollectedVendor[]; fetched: number; rejected: number; duplicates: number;
-  truncated: { code: string; got: number; total: number | null; reason: '상한' | '연결 끊김' }[] }> {
+  truncated: { code: string; got: number; total: number | null; reason: '상한' | '연결 끊김' | '소량 상한' }[] }> {
   const source = PUBLIC_SOURCES[key];
   if (source.format !== 'sbiz-api') throw new Error('sbiz-api 형식 출처가 아닙니다.');
   /*
@@ -418,13 +438,18 @@ export async function downloadSbizApiVendors(
   let rejected = 0;
   let duplicates = 0;
   /** 다 못 받은 업종코드. 비어 있어야 「전수」다. */
-  const truncated: { code: string; got: number; total: number | null; reason: '상한' | '연결 끊김' }[] = [];
+  const truncated: { code: string; got: number; total: number | null; reason: '상한' | '연결 끊김' | '소량 상한' }[] = [];
 
   for (const code of query.codes) {
   let seenForCode = 0;
   /** 마지막으로 본 전체 건수. 끊겼을 때 「얼마 중 얼마를 받았나」를 적는 데 쓴다. */
   let lastTotalCount: number | null = null;
   for (let pageNo = 1; pageNo <= MAX_PAGES; pageNo++) {
+    // 소량 상한을 채웠으면 다음 쪽을 부르지 않는다. 「덜 받았다」는 사실을 남긴다.
+    if (limit !== undefined && vendors.length >= limit) {
+      truncated.push({ code, got: seenForCode, total: lastTotalCount, reason: '소량 상한' });
+      break;
+    }
     const url = new URL(source.url);
     url.searchParams.set('serviceKey', normalizeServiceKey(apiKey));
     url.searchParams.set('pageNo', String(pageNo));
@@ -483,6 +508,9 @@ export async function downloadSbizApiVendors(
       if (seen.has(identity)) { duplicates++; continue; }
       seen.add(identity);
 
+      // 한 쪽은 1,000건이라 상한을 넘겨 담길 수 있다. 정확히 상한에서 멈춘다.
+      if (limit !== undefined && vendors.length >= limit) break;
+
       vendors.push({
         name, region, category,
         sourceKey: key,
@@ -504,8 +532,13 @@ export async function downloadSbizApiVendors(
    * 이미 적혔으므로 던지지 않고 넘어간다 — 던지면 다른 코드로 받아 둔 것까지 잃는다.
    */
   if (!seenForCode && !truncated.some((t) => t.code === code)) {
-    throw new Error(`업종코드 ${query.divId}=${code} 응답이 0건입니다. 코드를 확인하세요.`);
+    throw new Error(
+      `업종코드 ${query.divId}=${code} 응답이 0건입니다. 코드를 확인하세요.\n` +
+      '연결이 끊겨 0건이면 이 메시지가 아니라 truncated에 «연결 끊김»으로 남는다 — ' +
+      '그때는 코드가 아니라 apis.data.go.kr 쪽 문제다.');
   }
+  // 상한을 채웠으면 남은 업종코드도 부르지 않는다.
+  if (limit !== undefined && vendors.length >= limit) break;
   }
 
   return { vendors, fetched, rejected, duplicates, truncated };

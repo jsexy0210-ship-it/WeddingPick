@@ -527,6 +527,16 @@
       "run153": "2026-09-10 12:12 KST · main d1d834ff. icheon-halls의 「Apply to existing database」가 success. 나머지 셋은 cancelled.",
       "seoulAnomaly": "전국(sbiz-all)과 경기(ctprvnCd=41)는 받아지는데 서울(ctprvnCd=11)만 0건이다. 지역 필터가 응답 필드와 어긋났을 가능성이 있으나 **확인하지 못했다** — 가르려면 리포트의 total·rejected를 봐야 하는데 산출물을 못 읽는다.",
       "noCategoryBreakdown": "리포트에 업종별 집계 칸이 아예 없다(total · accepted · rejected · duplicates · closed · truncated뿐). 업종은 업체 한 건마다 붙지만 세어 주는 곳이 수집기·워크플로·DB 어디에도 없다. 「업종별 몇 건」은 아직 한 번도 계산된 적이 없는 수다."
+    },
+    "categoryWidening20260911": {
+      "order": "2026-09-11 대표 지시 — 「업종코드 확대한다. 실제 데이터 보고 맞지 않을 경우 기타로 다 집어넣는다」 · 「한번에 처리해」(#209에 함께 넣음).",
+      "before": "화면 업종 12종 중 7종만 채워졌다. 분류기는 12종을 다 다루는데 받아오는 소분류 코드가 다섯뿐이라 부케·청첩장·예물·혼수·허니문이 구조적 0건이었다.",
+      "codesAdded": "G21901 꽃집 → 부케 · G20904 한복 소매업 → 혼수. 둘 다 2026-09-10 smallUpjongList 조회로 확인된 실측 코드다(README에 「웨딩 전용이 아니라 뺐다」고 적혀 있던 것). 도달 업종이 7/12 → 9/12.",
+      "stillZero": "청첩장(인쇄업) · 예물(귀금속) · 허니문(여행사)은 코드를 못 찾아 여전히 0건이다. 추측으로 채우지 않았다 — 대분류 'Q'를 박았다가 조용한 0건이 된 전례가 있다. public-data.yml을 lookup_level=small · lookup_keyword=청첩/귀금속/여행으로 돌려 찾은 뒤 WEDDING_UPJONG_CODES에 넣는다.",
+      "etcRule": "resolveSbizCategory가 확정 못 한 행을 버리지 않고 etc로 받는다. **단 preFiltered=true인 경로에만** — OpenAPI는 업종코드로 이미 걸러 왔지만 전국 상권 CSV(format:'sbiz')는 거르는 자리가 아예 없어서, 같은 규칙을 쓰면 전국 사업자 명부가 통째로 「기타」로 들어온다. 기존 시험(「상권 CSV의 일반 미용실·사진관은 자동 등록하지 않는다」)이 그것을 잡아 줘서 발견했다.",
+      "categoryCounts": "리포트에 categoryCounts를 더했다 — 업종 12종 + 기타, 0건도 전부 적는다. 워크플로 잡 요약에도 같은 표를 화면 이름으로 찍으므로 산출물을 못 내려받아도 업종별 숫자를 볼 수 있다. 대표님이 「카테고리별 몇 개냐」고 물었을 때 아무 데서도 답이 안 나오던 것이 이 변경의 계기다.",
+      "negativeVerification": "고침을 도로 빼고 확인했다. preFiltered 구분 제거 → 「상권 CSV의 일반 미용실·사진관은 자동 등록하지 않는다」와 「걸러 온 행은 상호 표시가 없어도 기타로 받는다」 둘 다 실패. categoryCounts 제거 → 「리포트에 업종별 집계를 12종 전부 남긴다」 실패. 복구 후 초록.",
+      "volumeWarning": "**거르는 자리가 분류기에서 수집 목록으로 옮겨갔다.** 상호 조건이 더는 버리지 않으므로, 목록에 넣은 코드의 전국 업소가 전부 들어온다 — 특히 S20701 미용실은 전에는 상호에 웨딩이 없으면 버려지던 것이 이제 전부 「기타」로 들어온다. 실제 건수는 아직 모른다(측정 전). MAX_APPLY 50,000을 넘으면 run.ts가 한 건도 쓰지 않고 거절하고 워크플로도 같은 값으로 실패시키므로 운영 DB는 보호되지만, **크론이 빨갛게 끝날 수 있다.** 머지 전에 수동 실행 한 번으로 categoryCounts를 보고 상한을 올릴지 코드를 조일지 정하는 것을 권한다."
     }
   },
   "externalCredentialExpiry": {
@@ -845,5 +855,41 @@
     ],
     "rollback": "기존 Ohio API와 DB 이력을 보존한다. 운영 데이터 삭제와 DB 롤백은 자동 실행하지 않는다.",
     "validation": "API979·웹72·모바일330·도메인931·DB79·health7·배포동기화16시험 통과(총2414, 중복 재시험 제외). API75스위트는 운영과 같은 UTC 및 분리된 폐기DB에서 검증했다. Windows 셸의 git 작은따옴표 처리로 검사대상 목록이 비던 권한시험은 execFileSync 인자배열로 수정 후6건 재시험 통과. 전체 typecheck, lint 오류0(기존 경고3), copy lint, Expo 웹 export239경로 및 실제 공개 API 웹 빌드 통과. GitHub 최종 CI는 별도 진행 중."
+  },
+  "publicDataResume20260914": {
+    "resumedAtKst": "2026-09-14 20:58",
+    "branch": "claude/public-data-resume",
+    "base": "main 24ba645f에서 갈라 claude/public-data-unify(PR #216)를 머지했다. 처음부터 다시 만들지 않았다.",
+    "mergeDecision": {
+      "alive": "--limit(소량 확인 수집)과 0건 원인 메시지 구분은 main에 없다. 그대로 가져왔다.",
+      "duplicate": "categoryCounts는 codex/release-data-20260913이 먼저 main에 넣었다. **main 것을 쓰고 PR #216 쪽(countByCategory 함수)을 뺐다** — 계산이 같고(VENDOR_CATEGORIES 13종을 0으로 깔고 센다) main 쪽에는 이미 시험이 셋 붙어 있다. 중복 import와 리포트 칸 중복, 잡 요약의 같은 표 두 번 찍히던 것을 정리했다. PR #216에만 있던 것 둘은 살려 옮겼다 — 잡 요약 표를 코드 대신 화면 이름(결정사·본식스냅…)으로 찍는 것, 그리고 「집계 순서가 VENDOR_CATEGORIES 그대로」를 main 시험의 toHaveLength(13)에서 toEqual([...VENDOR_CATEGORIES])로 올린 것.",
+      "held": "업종코드 확대(G21901 꽃집 · G20904 한복 소매업)와 그것과 한 몸인 resolveSbizCategory의 preFiltered=«기타로 받는다» 규칙은 **넣지 않았다.** main의 다섯 코드와 상호 조건을 그대로 뒀다. 대표님 판단 사항이다."
+    },
+    "hanbokConflict": {
+      "question": "G20904(한복 소매업) · G21901(꽃집)을 수집 업종코드에 넣을 것인가. 그리고 그와 한 몸인 「확정 못 한 행을 버리지 않고 기타로 받는다」 규칙을 켤 것인가.",
+      "mainSide": "main collect.ts 주석과 README가 「한복 소매업(G20904)·뷔페는 웨딩 전용이 아니고 우리 업종 분류에 자리가 없어 넣지 않았다. 꽃집(G21901)도 웨딩 전용이 아니라 뺐다」로 명시 배제한다.",
+      "prSide": "PR #216은 2026-09-11 대표 지시 「업종코드 확대한다. 실제 데이터 보고 맞지 않을 경우 기타로 다 집어넣는다」를 근거로 둘을 더하고, 같은 지시로 상호 조건을 버리는 조건이 아니라 업종을 확정하는 조건으로 바꿨다(안 맞으면 기타).",
+      "coupling": "셋은 한 지시·한 커밋(7deb49b4)이라 갈라 넣으면 어느 쪽도 아닌 상태가 된다. 특히 코드를 안 넓히고 「기타」 규칙만 켜도 main의 기존 S20701 미용실·M11301 사진촬영업·N11004 의류대여업 전국 업소가 상호와 무관하게 전부 들어온다.",
+      "measured": "**추정이 아니라 실측이다.** 2026-09-13 05:35 KST 크론(run 155 · main bcd87714)에서 sbiz-all은 원본 145,985건을 받아 3,346건만 남기고 142,606건을 걸렀다(중복 33). 거른 비율 97.7%가 전부 상호 조건이다. 「기타로 다 집어넣는다」를 켜면 그 142,606건이 기타로 들어와 accepted가 약 145,950건이 된다 — **MAX_APPLY 50,000의 2.9배다.** 크론의 건수 상한 확인이 빨갛게 끝나고, --apply를 켜면 run.ts가 한 건도 쓰지 않고 거절한다. 코드 둘(꽃집·한복)을 더하면 그보다 더 는다.",
+      "optionsForOwner": "① 배제 유지(현재 상태, 크론 계속 초록) ② 코드 둘만 더하고 「기타」 규칙은 끈 채로 둔다 — 꽃집·한복 중 상호에 웨딩 표시가 있는 것만 부케·혼수로 들어온다. 양이 조금 늘고 상한 안에 머문다 ③ 지시 그대로 셋 다 켠다 — 그러려면 MAX_APPLY를 15만 이상으로 올리거나 검수 부담을 받아들여야 한다.",
+      "status": "대표님 답 대기. 그 전까지 main 쪽(배제)으로 돈다."
+    },
+    "cron": {
+      "alive": "**돈다.** run 155가 schedule 이벤트로 2026-09-13 05:35 KST에 실행돼 다섯 출처 전부 success로 끝났다. 크론은 '17 18 * * 6'(토 18:17 UTC = 일 03:17 KST)인데 실제 시작은 20:35 UTC였다 — GitHub가 예약 실행을 지연시킨 것으로, 실패가 아니다.",
+      "seoulAnomalyClosed": "**정정** — publicDataUnify20260911의 「sbiz-seoul이 0건 가드에 걸린다」는 해소됐다. run 155에서 sbiz-seoul은 accepted 834건으로 「수집 결과 0건 확인」을 통과했다.",
+      "noDbWrite": "크론은 여전히 DB에 쓰지 않는다. run 155의 「Apply to existing database」는 다섯 잡 전부 skipped였다."
+    },
+    "run155Measured": {
+      "how": "산출물(.zip)은 Azure blob으로 리다이렉트돼 프록시가 막지만(403), **잡 로그는 GitHub MCP로 읽힌다.** run.ts가 리포트 전문을 console.log로 찍으므로 로그에서 숫자를 그대로 읽었다. 앞 세션이 「건수를 확인하지 못했다」고 적은 것은 이 경로를 안 써 본 것이다.",
+      "sbiz-all": "total 145,985 · accepted 3,346 · rejected 142,606 · duplicates 33 · closed 0 · truncated [] (전수)",
+      "sbiz-seoul": "total 145,985 · accepted 834 · rejected 145,144 · duplicates 7 · closed 0 · truncated [] (전수)",
+      "noCategoryCountsYet": "run 155 리포트에는 categoryCounts 칸이 **없다.** 그 시점 main(bcd87714)에 아직 안 들어가 있었다 — codex/release-data-20260913이 그 뒤에 넣었다. 그래서 업종별 숫자는 아직 한 번도 실행으로 나온 적이 없다.",
+      "maxApplyNoLongerGuess": "PUBLIC_DATA_MAX_APPLY 50,000은 더는 추정만은 아니다. 현재 코드로는 전국 3,346건이라 상한의 6.7%다. 상한을 낮추지 않았다."
+    },
+    "openQuestion": {
+      "sbizSeoulFetchesWholeNation": "sbiz-seoul과 sbiz-all의 total이 **둘 다 145,985로 같다.** 서울 지역코드(ctprvnCd=11)가 API 쪽에서 안 걸리고 우리 지역 판정에서만 걸리는 것으로 보인다 — 세 sbiz 잡이 각각 전국을 통째로 받아 온다는 뜻이다. 수집 결과는 맞지만 출처를 세 배로 두드린다. **확인만 했고 고치지 않았다** — 이번 지시 범위 밖이다."
+    },
+    "verification": "typecheck(저장소 전체) · lint(오류 0 · 경고 3은 apps/mobile 기존 건) · 카피 린트 통과 · api jest 23 suite 193건 통과. DB가 필요한 52 suite는 로컬에 서버가 없어 건너뛰었다(CI가 돈다). public-data만 따로: 4 suite 44건 통과.",
+    "notDone": "--limit 100 실행은 푸시 뒤 workflow_dispatch로 돌린다. 업종별 숫자는 그 실행에서 처음 나온다."
   }
 }
