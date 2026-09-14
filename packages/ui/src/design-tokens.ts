@@ -23,7 +23,8 @@ export const DesignTokens = {
       "primarySurface": "#FDF6F6",
       "primaryBorder": "#F9DFE0",
       "onPrimary": "#371B34",
-      "accent": "#ECA0A3"
+      "accent": "#ECA0A3",
+      "onAccent": "#371B34"
     },
     "text": {
       "primary": "#212124",
@@ -31,7 +32,7 @@ export const DesignTokens = {
       "tertiary": "#4D5159",
       "quaternary": "#868B94",
       "disabled": "#ADB1BA",
-      "onPrimary": "#FFFFFF"
+      "onPrimary": "#371B34"
     },
     "surface": {
       "paper": "#FFFFFF",
