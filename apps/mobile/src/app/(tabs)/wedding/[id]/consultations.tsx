@@ -153,7 +153,7 @@ export default function ConsultationsScreen() {
             * 화면과 처리방침이 다른 말을 하면 어느 쪽이 맞는지 알 수 없어진다.
             */}
           {VISIT_NOTE_AUDIO_CONSENT_POINTS.map((point) => (
-            <ThemedText key={point} type="body" style={styles.point}>
+            <ThemedText key={point} type="body">
               · {point}
             </ThemedText>
           ))}
@@ -238,7 +238,7 @@ function Lines({ label, items }: { label: string; items: string[] }) {
   return (
     <Section label={label}>
       {items.map((item) => (
-        <ThemedText key={item} type="body" style={styles.line}>
+        <ThemedText key={item} type="body">
           · {item}
         </ThemedText>
       ))}
@@ -250,8 +250,6 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.five, gap: Spacing.three },
   card: { borderRadius: 12, padding: Spacing.three, gap: Spacing.two },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  line: { lineHeight: 22 },
-  point: { lineHeight: 22 },
   evidence: { marginTop: 2 },
   gone: { marginTop: Spacing.one },
   reviewNote: { marginBottom: Spacing.one },
