@@ -6,6 +6,8 @@ import { ZodError } from 'zod';
 
 import type { AppContext } from './context';
 import { ApiError } from './errors';
+import { registerActivityHook } from './activity-hook';
+import { registerActivityRoutes } from './routes/activity';
 import { registerAdminAccountRoutes } from './routes/admin-accounts';
 import { registerAdminLoginRoutes } from './routes/admin-login';
 import { registerAdminRoutes } from './routes/admin';
@@ -168,6 +170,14 @@ export function buildServer(context: AppContext): FastifyInstance {
     version: 'v1',
   }));
 
+  /*
+   * 활동 원장. **라우트보다 먼저 단다** — `onResponse`는 등록 순서대로 도는데,
+   * 이 훅이 하는 일은 큐에 넣는 것뿐이라 뒤에 걸든 앞에 걸든 사용자가 기다리는
+   * 시간은 그대로다. 앞에 두는 것은 이 파일을 읽는 사람이 «모든 응답을 지나간다»를
+   * 먼저 보게 하기 위해서다.
+   */
+  registerActivityHook(app, context);
+
   registerAuthRoutes(app, context);
   registerWeddingRoutes(app, context);
   registerAppRoutes(app, context);
@@ -201,6 +211,7 @@ export function buildServer(context: AppContext): FastifyInstance {
   registerWithdrawalRoutes(app, context);
   registerSignupRoutes(app, context);
   registerDevStorageRoutes(app, context);
+  registerActivityRoutes(app, context);
   registerAdminRoutes(app, context);
   registerAdminAccountRoutes(app, context);
 

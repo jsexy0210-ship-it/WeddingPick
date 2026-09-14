@@ -163,10 +163,20 @@ async function installFixtures(page, missing, blocked) {
     const request = route.request();
     const url = new URL(request.url());
 
-    if (url.pathname.startsWith('/v1/')) {
+    /*
+     * **주소 앞에 붙은 것을 떼고 본다.** 빌드에 넣는 `EXPO_PUBLIC_API_URL`이
+     * `http://127.0.0.1:1/capture`라서 나가는 주소가 `/capture/v1/…`이 된다 —
+     * `startsWith('/v1/')`로 보면 하나도 걸리지 않고, 전부 「바깥 주소」로 넘어가
+     * 브라우저가 1번 포트를 거절한다(ERR_UNSAFE_PORT). 관리자 화면이 전부
+     * «Failed to fetch»로 찍히던 이유다.
+     */
+    const apiAt = url.pathname.indexOf('/v1/');
+
+    if (apiAt >= 0) {
+      const apiPath = url.pathname.slice(apiAt);
       const method = request.method();
-      const key = `${method} ${url.pathname}`;
-      const matched = matchRoute(method, url.pathname);
+      const key = `${method} ${apiPath}`;
+      const matched = matchRoute(method, apiPath);
 
       if (matched === null) {
         missing.add(key);

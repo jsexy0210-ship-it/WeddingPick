@@ -5,10 +5,12 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
 import type { MarketingChannel, MarketingFormat } from '@weddingpick/api-contract';
-import { disclosureStage, type DisclosureStage } from '@weddingpick/domain';
+import { disclosureStage, weekStart, type DisclosureStage } from '@weddingpick/domain';
 import * as marketingContent from '../marketing/content';
 import * as marketingStore from '../marketing/store';
 import * as adAdmin from '../ad-admin';
+import * as activityAdmin from '../activity-admin';
+import { droppedActivityCount, flushActivity } from '../activity-ledger';
 import * as adminOps from '../admin-ops';
 import * as aiCostAdmin from '../ai-cost-admin';
 import { currentUserId, requireOperatorUser } from '../auth/plugin';
@@ -1928,5 +1930,68 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
 
   app.post<{ Params: { vendorId: string } }>('/v1/admin/data/price-stats/:vendorId/recalc', auth, async (_req, reply) => {
     return reply.status(202).send({ queued: true });
+  });
+
+  /*
+   * ─── 회원 활동 ────────────────────────────────────────────────────────────
+   *
+   * 1층(원장)과 2층(집계)을 한 화면이 함께 읽는다. **두 층을 한 화면에 두는 것은
+   * 대표님이 「무엇이 밖으로 나가는가」를 원장 옆에서 바로 보실 수 있게 하기
+   * 위해서다** — 나가는 표를 따로 열어야 하면 아무도 열지 않는다.
+   *
+   * `?userId=`를 주면 그 회원의 줄만 본다.
+   */
+  app.get('/v1/admin/activity', auth, async (request) => {
+    const query = request.query as Record<string, string | undefined>;
+    const userId = query['userId'];
+
+    return activityAdmin.activityOverview(context.pool, {
+      ...(userId ? { userId } : {}),
+      droppedInProcess: droppedActivityCount(),
+    });
+  });
+
+  /**
+   * 2층을 다시 뽑는다. 쓰기라 운영자 이상만 지난다(`requireOperatorUser`).
+   *
+   * **1층은 건드리지 않는다.** 다시 뽑아 덮이는 것은 집계뿐이다.
+   */
+  app.post('/v1/admin/activity/rollup', auth, async (request) => {
+    const body = (request.body ?? {}) as { periodStart?: unknown; periodDays?: unknown };
+    const parsed = z
+      .object({
+        /** 비면 지난 주 월요일. */
+        periodStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        periodDays: z.union([z.literal(7), z.literal(28)]).default(7),
+      })
+      .parse(body);
+
+    const periodStart =
+      parsed.periodStart ??
+      weekStart(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).toISOString().slice(0, 10);
+
+    /* 큐에 남은 줄까지 세고 뽑는다. 안 그러면 방금 일어난 일이 집계에서 빠진다. */
+    await flushActivity(context.pool);
+
+    return activityAdmin.buildRollup(context.pool, {
+      periodStart,
+      periodDays: parsed.periodDays,
+    });
+  });
+
+  /**
+   * 내보낼 값을 그대로 돌려준다. **2층뿐이다.**
+   *
+   * 파일로 떨구는 것은 CLI가 한다(`npm run activity:export --workspace @weddingpick/api`).
+   * 여기는 화면이 「무엇이 나가는지」를 미리 보는 자리라 같은 값을 JSON으로 준다.
+   * **밖으로 자동 전송하는 길은 없다**(2026-09-14 지시).
+   */
+  app.get('/v1/admin/activity/export', auth, async (request) => {
+    const query = request.query as Record<string, string | undefined>;
+
+    return activityAdmin.exportRollups(context.pool, {
+      ...(query['from'] ? { from: query['from'] } : {}),
+      ...(query['to'] ? { to: query['to'] } : {}),
+    });
   });
 }

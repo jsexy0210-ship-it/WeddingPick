@@ -113,6 +113,11 @@ const NAV: NavEntry[] = [
   { key: 'price-stats', label: '가격 통계', href: '/admin/price-stats' },
   { key: 'ai-usage', label: '분석 비용', href: '/admin/ai-usage' },
   { key: 'audit-log', label: '감사 기록', href: '/admin/audit-log' },
+  /*
+   * 회원 활동(0280). 조회 묶음에 둔다 — 표를 다시 묶는 단추가 하나 있지만 그것은
+   * 집계를 새로 계산하는 것이고, 원장은 이 화면에서 손댈 수 없다.
+   */
+  { key: 'activity', label: '회원 활동', href: '/admin/activity' },
 
   /*
    * 확인 불가 · 동작 불가 · 안 쓰는 메뉴. **왜 여기 있는지는 화면마다 다르다** —

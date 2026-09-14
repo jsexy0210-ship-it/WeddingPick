@@ -200,6 +200,51 @@ const routes = {
       { tier: 'premium', state: 'withheld', decidedAt: '2026-09-10T00:00:00.000Z', placements: 0 },
     ],
   },
+  /*
+   * 관리자 — 회원 활동 원장과 집계(0280).
+   *
+   * 두 층이 한 화면에 있다는 것이 요점이라 양쪽에 값을 넣는다. 집계 쪽 «사람»
+   * 칸은 전부 최소 인원(10) 이상이다 — 미달인 묶음은 애초에 그 표에 없다.
+   */
+  'GET /v1/admin/activity': {
+    ledger: {
+      rows: [
+        { id: 'a1', userId: '7f3c9a21-0000-4000-8000-000000000001', eventName: 'search_submitted', surface: 'search', occurredAt: '2026-09-14T02:11:00.000Z', target: null, category: 'studio', region: '서울', searchText: '강남 스튜디오', itemCount: null, step: null, corrected: false },
+        { id: 'a2', userId: '7f3c9a21-0000-4000-8000-000000000001', eventName: 'vendor_viewed', surface: 'vendor', occurredAt: '2026-09-14T02:10:20.000Z', target: 'vendor#3d1f', category: 'studio', region: null, searchText: null, itemCount: null, step: null, corrected: false },
+        { id: 'a3', userId: '2b80cc14-0000-4000-8000-000000000002', eventName: 'compare_started', surface: 'pick', occurredAt: '2026-09-14T01:58:00.000Z', target: null, category: null, region: null, searchText: null, itemCount: 3, step: null, corrected: false },
+        { id: 'a4', userId: '2b80cc14-0000-4000-8000-000000000002', eventName: 'pick_added', surface: 'pick', occurredAt: '2026-09-14T01:57:10.000Z', target: 'vendor#9c72', category: null, region: null, searchText: null, itemCount: null, step: null, corrected: false },
+        { id: 'a5', userId: '91d4e7b8-0000-4000-8000-000000000003', eventName: 'screen_view', surface: 'wedding_note', occurredAt: '2026-09-14T01:40:05.000Z', target: null, category: null, region: null, searchText: null, itemCount: null, step: null, corrected: true },
+        { id: 'a6', userId: '91d4e7b8-0000-4000-8000-000000000003', eventName: 'onboarding_step', surface: 'onboarding', occurredAt: '2026-09-13T23:02:00.000Z', target: null, category: null, region: '경기', searchText: null, itemCount: null, step: 4, corrected: false },
+        { id: 'a7', userId: '55ab02fe-0000-4000-8000-000000000004', eventName: 'report_submitted', surface: 'report', occurredAt: '2026-09-13T22:31:00.000Z', target: 'report#1a4e', category: 'hall', region: null, searchText: null, itemCount: null, step: null, corrected: false },
+        { id: 'a8', userId: '55ab02fe-0000-4000-8000-000000000004', eventName: 'visit_note_written', surface: 'wedding_note', occurredAt: '2026-09-13T22:04:00.000Z', target: 'visit_note#77c1', category: 'dress', region: null, searchText: null, itemCount: null, step: null, corrected: false },
+      ],
+      total: 48213,
+      subjects: 1204,
+      firstAt: '2026-09-01T00:12:00.000Z',
+      lastAt: '2026-09-14T02:11:00.000Z',
+      droppedInProcess: 0,
+    },
+    rollup: {
+      rows: [
+        { periodStart: '2026-09-08', periodDays: 7, eventName: 'vendor_viewed', surface: 'vendor', region: null, category: null, budgetBracket: null, subjectCount: 902, eventCount: 7411 },
+        { periodStart: '2026-09-08', periodDays: 7, eventName: 'vendor_viewed', surface: 'vendor', region: '서울', category: 'studio', budgetBracket: null, subjectCount: 214, eventCount: 1580 },
+        { periodStart: '2026-09-08', periodDays: 7, eventName: 'search_submitted', surface: 'search', region: '경기', category: null, budgetBracket: null, subjectCount: 137, eventCount: 690 },
+        { periodStart: '2026-09-08', periodDays: 7, eventName: 'compare_started', surface: 'pick', region: null, category: 'hall', budgetBracket: '20m_30m', subjectCount: 41, eventCount: 96 },
+        { periodStart: '2026-09-01', periodDays: 7, eventName: 'pick_added', surface: 'pick', region: '부산', category: null, budgetBracket: null, subjectCount: 22, eventCount: 58 },
+        { periodStart: '2026-09-01', periodDays: 7, eventName: 'report_submitted', surface: 'report', region: null, category: null, budgetBracket: 'unknown', subjectCount: 13, eventCount: 15 },
+      ],
+      total: 312,
+      lastRun: {
+        periodStart: '2026-09-08',
+        builtAt: '2026-09-14T00:05:00.000Z',
+        rowsWritten: 312,
+        rowsSuppressed: 148,
+        kThreshold: 10,
+        foldRule: 'fold/v1',
+      },
+    },
+    policy: { minSubjects: 10, maxAxes: 2, foldRule: 'fold/v1' },
+  },
   'GET /v1/vendors': ({ url }) => {
     const category = url.searchParams.get('category');
     const vendors = category ? VENDORS.filter((v) => v.category === category) : VENDORS;

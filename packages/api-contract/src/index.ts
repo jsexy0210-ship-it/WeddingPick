@@ -1,3 +1,4 @@
+export * from './activity';
 export * from './analyses';
 export * from './app';
 export * from './expos';
