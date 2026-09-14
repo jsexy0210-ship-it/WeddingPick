@@ -16,7 +16,7 @@ import { loadToken } from '@/api/session';
 import { Layout, Radius, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
 
 import { BudgetGrid } from '@/features/onboarding/budget-grid';
-import { DatePickerSheet } from '@/features/onboarding/date-picker-sheet';
+import { DateWheelSheet } from '@/features/onboarding/date-wheel-sheet';
 import {
   DONE_CTA,
   DONE_PROGRESS,
@@ -83,6 +83,14 @@ import {
  *
  * **스크롤은 화면 전체 하나다**(SPEC §13.5.5). 준비 현황이 뷰포트를 넘치면 화면이
  * 스크롤한다 — 목록 전용 스크롤을 두지 않는다. 5/5는 200 × 2행이라 스크롤이 없다.
+ *
+ * **예식일은 휠 3열로 고른다**(`date-wheel-sheet.tsx` · 대표 지시 2026-09-11 ·
+ * 2026-09-14 재확인). 연 · 월 · 일을 한 화면에서 굴리고, 굴리는 즉시 아래 D-day가
+ * 갱신된다.
+ *
+ * **5/5 다음은 결과 화면이고 거기서는 저장하지 않는다.** 답을 그대로 보여주기만
+ * 하고, 서버에 올리는 일은 «웨딩픽 시작하기»를 누른 뒤 `finish()`가 시작한다 —
+ * 먼저 올려 두면 결과를 보고 고치려는 사람의 옛 값이 이미 서버에 가 있다.
  *
  * **만 14세 확인은 여기 없다.** 로그인 화면(WP-AUTH-001)의 체크박스 하나로 끝난다 —
  * 이 화면에 닿았다는 것 자체가 확인을 마쳤다는 뜻이라 `completeSignup`에
@@ -206,11 +214,10 @@ export default function SetupScreen() {
     setError(null);
 
     if (target === null) {
-      void finish(answers);
+      setStep('done');
     } else {
       enter(target);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- finish는 answers · sending만 읽고 여기서 answers를 직접 넘긴다.
   }, [editing, step, answers, enter]);
 
   /* 안드로이드 물리 뒤로가기 = «이전». 바꾸는 중에는 «다음»과 같고, 완료 화면에서는 아무 데도 가지 않는다. */
@@ -230,6 +237,12 @@ export default function SetupScreen() {
     return () => subscription.remove();
   }, [step, editing, goPrev, finishEdit]);
 
+  /**
+   * 답을 서버에 올리고 홈으로 간다. **결과 화면(`done`)을 지나 «웨딩픽 시작하기»를
+   * 누른 뒤에만 부른다** — 5/5 «다음»에서 바로 올리던 것을 옮겼다. 사용자가 결과
+   * 화면에서 «바꾸기»를 누를 수 있어야 하는데, 먼저 저장해 버리면 고치기 전 값이
+   * 이미 서버에 가 있다. 결과 화면은 보여주기만 하고 저장은 여기서 시작한다.
+   */
   async function finish(source: Answers = answers) {
     if (sending) return;
 
@@ -275,7 +288,7 @@ export default function SetupScreen() {
       }
 
       await clearOnboardingAnswers();
-      setStep('done');
+      router.replace('/');
     } catch (caught) {
       // 세션이 끝났으면(401) 이 화면에 머물 이유가 없다 — 로그인으로 보낸다.
       if (caught instanceof ApiError && caught.status === 401) {
@@ -301,7 +314,8 @@ export default function SetupScreen() {
     setError(null);
 
     if (next === null) {
-      void finish();
+      /* 5/5 다음은 결과 화면이다. 저장은 그 화면의 «웨딩픽 시작하기»가 시작한다. */
+      setStep('done');
     } else {
       enter(next);
     }
@@ -327,7 +341,9 @@ export default function SetupScreen() {
         label={DONE_PROGRESS.label}
         stepKey="done"
         nextLabel={DONE_CTA}
-        onNext={() => router.replace('/')}>
+        nextDisabled={sending}
+        onNext={() => void finish()}
+        error={error}>
         <QuestionHead lines={DONE_TITLE_LINES} />
 
         <View style={styles.section}>
@@ -448,7 +464,7 @@ export default function SetupScreen() {
 
       <InlineToast toast={limitToast.toast} onHidden={limitToast.hide} />
 
-      <DatePickerSheet
+      <DateWheelSheet
         visible={sheetOpen}
         value={date}
         onConfirm={(iso) => {
