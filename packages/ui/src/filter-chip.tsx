@@ -25,6 +25,15 @@ export type FilterChipProps = {
    * 태그(coral + 체크)처럼 시안이 코랄로 그린 자리에만.
    */
   accent?: 'ink' | 'tint';
+  /**
+   * 꺼진 칩의 표현.
+   *
+   * `fill`(기본) 회색 채움 #F2F3F6 — component.chip.inactiveBg.
+   * `outline` 흰 바탕 + 1px #DCDEE3 테두리 — component.chip.outline. 검색 결과
+   * 필터바(WP-SRCH-001)가 이쪽이다. 루트 시안 `WP-SRCH-검색.dc.html` `chip(false)`가
+   * «background:#fff;box-shadow:inset 0 0 0 1px #dcdee3»로 그린다. 켠 칩은 둘이 같다.
+   */
+  off?: 'fill' | 'outline';
   disabled?: boolean;
 };
 
@@ -44,6 +53,7 @@ export function FilterChip({
   role = 'checkbox',
   size = 'default',
   accent = 'ink',
+  off = 'fill',
   disabled = false,
 }: FilterChipProps) {
   const theme = useTheme();
@@ -51,6 +61,8 @@ export function FilterChip({
   const paddingX = small ? Layout.chipSmallPaddingX : Layout.chipPaddingX;
   const height = small ? Layout.chipSmall : size === 'sheet' ? Layout.chipSheet : Layout.chip;
   const selectedBackground = accent === 'tint' ? theme.tint : theme.text;
+  /* 꺼진 칩의 테두리. 켠 칩과 포커스 링은 자기 색이 있어 여기 끼지 않는다. */
+  const outlined = off === 'outline' && !selected;
 
   return (
     <Pressable
@@ -61,7 +73,7 @@ export function FilterChip({
       onPress={onPress}>
       {(state) => {
         const { focused } = readWebInteractionState(state);
-        const ring = focused ? Border.focus : 0;
+        const ring = focused ? Border.focus : outlined ? Border.hairline : 0;
         return (
           <ThemedView
             style={[
@@ -71,8 +83,12 @@ export function FilterChip({
                 /* 포커스 링은 패딩을 그만큼 줄여 폭이 변하지 않게 한다. */
                 paddingHorizontal: paddingX - ring,
                 borderWidth: ring,
-                borderColor: theme.tint,
-                backgroundColor: selected ? selectedBackground : theme.backgroundSelected,
+                borderColor: focused ? theme.tint : theme.track,
+                backgroundColor: selected
+                  ? selectedBackground
+                  : outlined
+                    ? theme.background
+                    : theme.backgroundSelected,
                 opacity: disabled ? 0.5 : 1,
               },
             ]}>

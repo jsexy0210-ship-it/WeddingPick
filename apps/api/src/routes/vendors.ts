@@ -679,6 +679,7 @@ async function loadSponsored(
         */
        JOIN ads.tier_state t ON t.tier = p.tier AND t.state = 'live'
        WHERE p.surface = 'search'
+         AND EXISTS (SELECT 1 FROM ads.production_gate g WHERE g.id = true AND g.activated)
          AND (p.category IS NULL OR $1::text IS NULL OR p.category::text = $1::text)
          AND (p.region IS NULL OR $2::text IS NULL OR p.region = $2::text)
        ORDER BY p.vendor_id

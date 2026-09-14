@@ -17,7 +17,12 @@ export { TextField, type TextFieldProps } from './text-field';
 export { RatingPicker, type RatingPickerProps } from './rating-picker';
 export { RatingStars, type RatingStarsProps } from './rating-stars';
 export { WeddingCalendar, type WeddingCalendarProps } from './wedding-calendar';
-export { WeddingMark, type WeddingMarkProps } from './wedding-mark';
+export {
+  WeddingMark,
+  /* 하트 윤곽만. Pick Mark(하트 + 체크)가 아니라 하트 하나로 그리는 자리가 쓴다 — 검색 결과 카드의 Pick pill. */
+  MARK_HEART_PATH,
+  type WeddingMarkProps,
+} from './wedding-mark';
 export { ProductSymbol, type ProductSymbolName } from './product-symbol';
 export { NpayLogo } from './npay-logo';
 export { Skeleton, type SkeletonProps } from './skeleton';

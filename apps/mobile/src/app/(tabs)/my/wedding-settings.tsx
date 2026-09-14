@@ -65,7 +65,7 @@ type Editing = 'region' | 'budget' | 'prepared' | null;
  * 않기 때문이다 — 예식일만 바꾸고 나가도 남길 것이 없다. 요청은 `queue`로 줄을 세워
  * 연달아 누른 순서대로 나간다.
  *
- * **예식일은 WP-APP-023 시트(연월 셀렉트 + 달력)를 그대로 쓴다.** 지역 · 예산 · 준비 현황은
+ * **예식일은 WP-APP-023 시트(휠 3열)를 그대로 쓴다.** 지역 · 예산 · 준비 현황은
  * 온보딩 2/5 · 4/5 · 3/5와 같은 부품을 행 아래에 펼친다 — 같은 질문을 다른 모양으로 두 번
  * 만들지 않는다.
  *
@@ -246,7 +246,7 @@ export default function WeddingSettingsScreen() {
         <NoteBox title={S.noteTitle} body={S.noteBody} />
       </Section>
 
-      {/* 예식일 — WP-APP-023 연월 셀렉트 + 달력. 온보딩 1/5와 같은 시트다. */}
+      {/* 예식일 — WP-APP-023 휠 3열. 온보딩 1/5와 같은 시트다. */}
       <DatePickerSheet
         visible={dateOpen}
         value={current.weddingDate}

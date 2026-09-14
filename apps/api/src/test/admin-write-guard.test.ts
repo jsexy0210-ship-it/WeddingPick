@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -29,7 +29,7 @@ const describeWithDb = process.env.DATABASE_URL ? describe : describe.skip;
  * 새 관리자 라우트가 생기면 이 시험이 저절로 그것도 두드린다.
  */
 function adminRoutes(): { method: string; url: string }[] {
-  const files = execSync("git ls-files 'apps/api/src/**/*.ts'", { cwd: ROOT, encoding: 'utf8' })
+  const files = execFileSync('git', ['ls-files', 'apps/api/src/**/*.ts'], { cwd: ROOT, encoding: 'utf8' })
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean);

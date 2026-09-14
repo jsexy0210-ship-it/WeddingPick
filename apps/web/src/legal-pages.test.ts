@@ -24,4 +24,38 @@ describe('공개 법적 문서', () => {
     expect(html).not.toContain('기관명·연락처는 시행 시점');
     expect(html).toContain('href="https://privacy.kisa.or.kr"');
   });
+
+  /**
+   * 국외 이전 표의 「국가」는 **서버 리전**이다.
+   *
+   * 2026-09-11까지 이 표는 Neon을 「미국」으로 적고 있었다. Neon, Inc.는 미국 사업자지만
+   * 서비스 정보는 AWS 싱가포르에 있다(`docs/INFRA_ACCESS_AUDIT_2026-09-10.md`). 법이 묻는
+   * 것은 회사가 어디에 있느냐가 아니라 정보가 어디로 가느냐다.
+   *
+   * Render 운영 API의 싱가포르 이전은 시행일까지 확인할 대상이다. 2026-09-13 콘솔 확인에서
+   * 기존 API는 Ohio, 백그라운드 워커는 Oregon, 정적 웹은 Global이므로 전체를 싱가포르로
+   * 단정하지 않는다. 회사 소재지와 실제 처리 리전을 구분한다.
+   *
+   * 리전을 다시 옮길 때에는 이 값과 방침과 `docs/render-region-move.md`를 함께 고친다.
+   */
+  it('국외 이전 표에 수탁자별 서버 리전을 적는다', () => {
+    const html = renderPrivacyPage();
+    const table = html.match(/<table class="sp-policy-table" aria-label="5\. 개인정보의 국외 이전">[\s\S]*?<\/table>/)?.[0];
+    expect(table).toBeDefined();
+    const row = (needle: string) =>
+      table!.split('</tr>').find(part => part.includes(needle)) ?? '';
+
+    for (const vendor of ['neon.tech', 'privacy@render.com']) {
+      expect(row(vendor)).toContain('싱가포르');
+      expect(row(vendor)).not.toContain('미국 ·');
+    }
+    expect(row('privacy@render.com')).toContain('미국(기존 API 및 백그라운드 처리)');
+    expect(row('privacy@render.com')).toContain('전 세계(정적 웹 전송망');
+    // 자료 분석과 푸시 중계는 그대로 미국이다. 넷 다 싱가포르로 뭉뚱그리지 않는다.
+    expect(row('privacy@anthropic.com')).toContain('미국 ·');
+    expect(row('650 Industries')).toContain('미국 ·');
+
+    expect(html).toContain('이전받는 자의 사업자 소재지와 다를 수 있습니다');
+    expect(html).toContain('이 처리방침 시행일부터 Render의 운영 API와 Neon의 정보 저장소는 싱가포르 리전을 사용합니다');
+  });
 });

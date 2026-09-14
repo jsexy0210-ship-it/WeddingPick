@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedDate": "2026-09-11",
+  "updatedDate": "2026-09-13",
   "pendingAdminDeployment": {
     "dateKst": "2026-09-11",
     "baselineCommit": "d20e898b394ac52fda1dab9df98770b83c218294",
@@ -320,6 +320,15 @@
         "pr": null,
         "title": "작업 현황 감시 — 브랜치·PR·누락·병목",
         "state": "막혔다. 저장소가 읽기 전용으로 붙어 CI·Render·PR 추적을 못 한다. add_repo 쓰기 권한이 필요하다."
+      },
+      {
+        "pr": 208,
+        "title": "국외 이전 리전 정정 · API 싱가포르 이전 절차서",
+        "state": "초안 PR. 처리방침 5항이 Neon을 「미국」으로 적고 있던 것을 「싱가포르(사업자 소재지: 미국)」로 고쳤다 — 회사 소재지가 아니라 서버 리전이 기준이다. Render 행에 리전(미국 오하이오)을 함께 적고, lead에 「국가=서버 리전」 구분을 넣었다. AI_HANDOFF의 「DB Neon(미국)」도 같은 오류라 고쳤다.",
+        "guardCheck": "legal-pages 시험이 5항 표를 행 단위로 갈라 리전을 고정한다. 고침을 도로 빼면 실패하고 되돌리면 통과하는 것을 확인했다.",
+        "verification": "apps/web jest 71/8 통과 · typecheck 통과 · 카피 린트 통과. 대시보드·운영 DB·접속 문자열은 건드리지 않았고 마이그레이션은 없다.",
+        "procedure": "docs/render-region-move.md. Render는 만든 뒤 리전을 못 바꿔 새 서비스를 만들어야 하고 주소가 바뀐다(저장소 14파일 36곳). free 플랜이 싱가포르를 지원해 승인 C는 걸리지 않는다. 카카오 콘솔 redirect URI는 앱 웹 호스트라 이번 이전으로 바뀌지 않는다. 실행은 MASTER·대표님 몫이다.",
+        "open": "① 5항 Render 행을 이전 예정으로 미리 알릴지(A) 시행일에 한 번에 바꿀지(B) — PR 본문에 두 안을 적었다. ② 개정 시행일(LEGAL_PRIVACY_EFFECTIVE_ON) 날짜. ③ docs/legal의 방침·약관 docx가 웹 정본과 어긋나는 항목 목록 — 법무 원본일 수 있어 지우지 않고 PR에 적었다. 셋 다 대표님 판단 대기."
       }
     ],
     "imagePreview": "2026-09-11 대표 지시 「일단 이미지 넣어 보고 판단한다」. 720장이 한 장도 안 나가던 이유는 저작권 근거 unknown과 매칭 신뢰도 0.000이 둘 다 걸려서다. 값을 배치로 고치지 않고 운영자 조회에서만 여는 검수 모드를 만들었다(PR202). 720장은 240곳에만 붙어 있어 켜도 1,240곳은 빈칸이다. 720장을 어떻게 할지는 대표님 판단 대기.",
@@ -491,6 +500,35 @@
       }
     ]
   },
+  "publicDataUnify20260911": {
+    "handedOverAtKst": "2026-09-11 13:40",
+    "branch": "claude/public-data-unify",
+    "supersedes": [
+      133,
+      135
+    ],
+    "finding": "#133은 이미 main에 들어가 있었다. main의 collect.ts가 #133의 상위집합이고(truncated · hasEmptyListSlot · assertServiceOk · WEDDING_UPJONG_CODES · SBIZ_MAX_PAGES가 더 있다) 0092a_sbiz_api_import_switches.sql도 같은 내용으로 있다. 충돌 8은 전부 main 쪽을 남겼고 PROJECT_STATUS.md 한 항목만 옮겼다.",
+    "merged": "#135의 F1 폐업·휴업 판정 · v3.22 업종 12종 매핑(resolveSbizCategory) · 도메인 regionTokens 지역 판정(isVendorRegion) · heldBy 사유별 집계 · held_count 칸. F2 스위치 행은 main의 0092a와 0094에 두 번 들어 있어 회귀 시험만 가져왔다. F3는 main의 vendor_import_holds(0101)가 더 넓어 그쪽 사유 이름에 맞춰 얹었다.",
+    "migration": "0210_import_runs_held_count.sql. #135의 0092는 main의 0092_reward_payouts와 번호가 겹쳐 버렸다.",
+    "cron": "public-data.yml 크론을 되살렸다(17 18 * * 6 UTC = 일요일 03:17 KST). 세 조건 — 업종 코드 확정(WEDDING_UPJONG_CODES) · 0건 가드(collect.ts + 워크플로) · 건수 상한(새로 만든 run.ts MAX_APPLY + 워크플로 확인). 이 크론은 DB에 쓰지 않는다 — schedule 이벤트에 inputs가 없어 apply가 항상 거짓이다.",
+    "negativeVerification": "고침을 도로 빼고 가드가 실제로 잡는지 확인했다. F1 폐업 판정 제거 → 해당 시험 실패. F2 스위치 행 제거(0092a·0094 둘 다) → 회귀 시험 실패. 건수 상한 무력화 → 상한 시험 실패. 셋 다 복구 후 초록.",
+    "verification": "typecheck · lint(오류 0) · 카피 린트 · domain 931/60 · db 79/1 · api 전량 통과. PostgreSQL 16 로컬.",
+    "open": [
+      "**정정** — storeListInUpjong 403은 해소됐다. 2026-09-11 13:01 KST run 154에서 sbiz-all · sbiz-gyeonggi가 실제로 수집에 성공했고 둘 다 그 오퍼레이션을 부른다. SBIZ_API_KEY도 등록돼 있다(키 확인 단계 통과). 앞서 「미확인」으로 남긴 항목을 닫는다.",
+      "**정정** — 운영 DB 반영이 이미 한 번 있었다. 2026-09-10 12:12 KST run 153에서 icheon-halls의 apply가 success로 끝났다. 「첫 실제 반영은 아직」이라고 적었던 것은 사실과 다르다. 이 세션이 직접 --apply를 돌리지 않은 것은 그대로다.",
+      "sbiz-seoul이 accepted = 0으로 0건 가드에 걸린다(run 154). 전국·경기는 되는데 서울만이라 지역 필터 의심이지만 미확인. 산출물의 total·rejected를 봐야 갈린다.",
+      "업종별 집계가 리포트에 없다. 대표님이 2026-09-11에 「카테고리별 수집 건수」를 물으셨는데 지금은 어디서도 나오지 않는다. run.ts가 vendors를 들고 있으니 categoryCounts를 세어 리포트와 잡 요약에 더하면 된다 — 어느 PR에 넣을지 대표님 판단 대기.",
+      "PUBLIC_DATA_MAX_APPLY 기본값 50,000은 여전히 추정값이다. run 154가 0건이 아닌 것은 확인했으나 실제 accepted를 못 읽어 실측이 아직 없다."
+    ],
+    "correctedAtKst": "2026-09-11 15:55 — 아래 두 항목은 실행 기록을 직접 확인해 고쳤다. 처음 적을 때는 워크플로 주석의 「아직 한 번도 실제 수집이 성공한 적 없는 파이프라인」을 확인 없이 옮겨 적었다.",
+    "runEvidence": {
+      "source": "GitHub Actions API(api.github.com)로 public-data.yml 실행 메타데이터를 직접 조회했다. 로그와 산출물은 Azure blob으로 리다이렉트되는데 프록시가 그 호스트를 막아(403) 못 읽었다 — 그래서 건수는 확인하지 못했고 성공·실패와 단계 결과만 확인한 것이다.",
+      "run154": "2026-09-11 13:01 KST · main f062a511 · 수동. sbiz-all · sbiz-gyeonggi · icheon-halls · jecheon-halls는 「수집 결과 0건 확인」을 통과했다(accepted > 0). sbiz-seoul만 그 단계에서 실패 — accepted = 0.",
+      "run153": "2026-09-10 12:12 KST · main d1d834ff. icheon-halls의 「Apply to existing database」가 success. 나머지 셋은 cancelled.",
+      "seoulAnomaly": "전국(sbiz-all)과 경기(ctprvnCd=41)는 받아지는데 서울(ctprvnCd=11)만 0건이다. 지역 필터가 응답 필드와 어긋났을 가능성이 있으나 **확인하지 못했다** — 가르려면 리포트의 total·rejected를 봐야 하는데 산출물을 못 읽는다.",
+      "noCategoryBreakdown": "리포트에 업종별 집계 칸이 아예 없다(total · accepted · rejected · duplicates · closed · truncated뿐). 업종은 업체 한 건마다 붙지만 세어 주는 곳이 수집기·워크플로·DB 어디에도 없다. 「업종별 몇 건」은 아직 한 번도 계산된 적이 없는 수다."
+    }
+  },
   "externalCredentialExpiry": {
     "recordedAtKst": "2026-09-11 13:05",
     "note": "만료가 다가오면 알리라는 2026-09-11 대표 지시로 적어 둔다. 루틴은 지울 수 있으므로 저장소에도 남긴다.",
@@ -525,18 +563,26 @@
     },
     "whyApiNotDb": "API를 옮기면 두 구간이 함께 짧아진다 — API↔DB는 같은 리전이 되고 사용자→API도 태평양을 건너지 않는다. DB를 미국으로 옮기면 API↔DB만 풀리고 사용자 구간은 나빠진다.",
     "ordering": "고지가 이전보다 먼저다 — 개인정보보호법 제28조의8. 방침을 먼저 올리고 그다음 서버를 옮긴다.",
+    "noticeDecision": "2026-09-11 대표 결정 「일단 바꾸고 고지한다」 — 예고 단계를 두지 않는다. 처리방침 5항 Render 행을 곧장 「싱가포르」로 바꾸고(PR #208 완료) 그 개정을 시행일과 함께 알린다. 고지가 앞서므로 미고지 이전 구간은 없다. 대신 시행일부터 실제 이전까지 방침이 사실보다 앞서 있으므로 **시행일까지 API가 싱가포르에 있어야 한다** — 늦어지면 서버를 서두르지 말고 시행일을 미룬다. Anthropic·Expo는 미국 그대로이고 시험이 네 행의 리전을 각각 잠근다(apps/web/src/legal-pages.test.ts).",
+    "effectiveDate": "LEGAL_PRIVACY_EFFECTIVE_ON을 2026-09-18로 옮겼다(두 블록 모두). 대표님이 2026-09-11에 「그냥해 결과보고 판단한다」로 판단을 넘겨 세션이 정했다 — 「시행일은 세션이 정하지 않는다」는 기존 규칙의 명시적 예외다. 2026-09-10을 두면 09-11에 바꾼 방침이 어제 시행된 것으로 소급되므로 그대로 둘 수는 없었다. 09-18인 이유는 이 날짜가 곧 이전 마감이기 때문이다 — 그날까지 API가 싱가포르에 있어야 방침과 사실이 맞는다. 약관(LEGAL_TERMS_EFFECTIVE_ON)은 본문이 안 바뀌어 2026-09-10 그대로다. **대표님이 다른 날짜를 원하면 두 블록을 함께 고친다.**",
+    "addressQuestion": "PR #206은 「이름을 바꿔 끼우면 주소가 그대로」라 하고 이 세션은 「새 서비스라 주소가 바뀐다」로 본다. 정면으로 어긋난다. 절차서 §5 맨 위에 판정 관문을 두어 어느 쪽이든 맞게 고쳤다 — 대시보드에서 이름 한 번 바꿔 보면 5분에 끝나고, 「된다」면 저장소 36곳 교체가 통째로 필요 없어진다. 지금까지 모은 근거는 「안 된다」 쪽이다(infra/render-env.yml:40이 표시 이름과 주소 슬러그가 다른 값이라고 이미 적어 뒀다). 공식 문서로 확정하지 못했으므로 확인 필요다.",
     "session": "session_01XKpxtPqtPoXe985dafbFwc · 브랜치 claude/region-legal",
     "masterAndOwnerOnly": [
       "Render 대시보드에서 싱가포르 서비스 생성·환경변수 이관·전환 — 세션은 절차서까지만 만든다",
-      "카카오·네이버 개발자 콘솔의 redirect URI 재등록",
+      "카카오 개발자 콘솔의 redirect URI 재등록 — **이번 API 이전에는 필요 없다.** 웹 로그인의 redirect URI는 window.location.origin에서 만들어져(apps/mobile/src/features/auth/providers.ts:80) 앱 웹 호스트를 가리키지 API 호스트가 아니다. 앱 웹까지 옮기면 그때 필요하다. 네이버는 로그인 자체가 폐기돼(v3.12) 해당 없다 (PR #208에서 코드로 확인)",
       "옛 서비스 폐기 시점 결정"
     ],
+    "answeredQuestions": [
+      "Render가 기존 서비스의 리전 변경을 허용하는가 — **허용하지 않는다.** 새 서비스를 만들어야 하고 주소가 바뀐다 (PR #208 · Render Docs Regions · docs/render-region-move.md §3)",
+      "free 플랜이 싱가포르 리전을 지원하는가 — **지원한다.** 승인 C(유료 인프라)는 걸리지 않는다 (PR #208 · 같은 문서)",
+      "Neon 싱가포르의 AWS 리전 — aws-ap-southeast-1. Neon 프로젝트도 리전을 못 바꾸므로 움직이는 쪽은 API다"
+    ],
     "openQuestions": [
-      "Render가 기존 서비스의 리전 변경을 허용하는가 — 불가라면 새 서비스라 주소가 바뀐다 (워크플로로 확인)",
-      "free 플랜이 싱가포르 리전을 지원하는가 — 아니면 승인 C가 걸린다"
+      "Render 싱가포르가 어느 클라우드·AZ인지는 공개돼 있지 않다. 둘 다 싱가포르지만 같은 AZ 보장은 없고, 왕복 시간은 이전 후 실측으로 확인한다"
     ],
     "cheapNow": "앱이 아직 스토어에 없어 설치된 앱이 세상에 없다. 지금은 주소를 바꿔도 깨질 것이 없고, 출시 뒤에는 구버전 앱이 옛 주소를 계속 본다.",
-    "addressing": "onrender 주소 그대로 간다 (2026-09-11 대표 지시로 weddingpick.kr 폐기). 새 서비스라 주소가 바뀌면 저장소 16곳과 OAuth redirect URI를 갈아끼운다.",
+    "addressing": "onrender 주소 그대로 간다 (2026-09-11 대표 지시로 weddingpick.kr 폐기). 새 서비스라 주소가 바뀌면 저장소를 갈아끼운다 — 전수는 14개 파일 36곳이고 파일·줄 번호는 docs/render-region-move.md §5에 있다(PR #208 실측, node_modules·dist 제외). OAuth redirect URI는 바뀌지 않는다 — 웹 로그인의 redirect URI는 window.location.origin에서 만들어져(apps/mobile/src/features/auth/providers.ts:80) 앱 웹 호스트를 가리키지 API 호스트가 아니다. 앱 웹까지 옮기면 그때 필요하다.",
+    "renameAssumption": "singaporeService가 「확인 뒤 이름을 바꿔 끼운다」로 잡혀 있다. 그 계획은 ① 이름을 바꾸면 주소도 따라 바뀐다 ② 옛 서비스를 지우면 그 주소를 다시 쓸 수 있다가 동시에 참이어야 한다. 확인 필요다 — 이 저장소의 infra/render-env.yml:40이 「표시 이름과 주소의 슬러그는 다른 값」이라고 이미 적어 뒀고, Render 커뮤니티에도 지운 서비스의 주소를 재사용하려다 거부당한 사례가 있다. 이름을 한 번 바꿔 보면 5분에 판정된다. 「안 된다」면 저장소 36곳 교체가 필요하고 「된다」면 한 줄도 안 고쳐도 된다. docs/render-region-move.md §5 맨 위에 이 판정 관문을 뒀다.",
     "singaporeService": {
       "createdAtKst": "2026-09-11 15:17",
       "name": "weddingpickl-sg (임시 — 확인 뒤 이름을 바꿔 끼운다)",
@@ -769,5 +815,146 @@
         "why": "대조표 작성 중. 판단 2건 대기."
       }
     ]
+  },
+  "webApiRelease20260913": {
+    "dateKst": "2026-09-13",
+    "baselineCommit": "bcd8771484baa906aa24a0f4a0f88e27185359e9",
+    "status": "local-review-complete-ci-and-deployment-pending",
+    "authorization": "사용자가 앱 출시를 제외한 나머지 작업 진행과 배포를 승인했다.",
+    "scope": [
+      "싱가포르 API 전환",
+      "웹사이트 개인정보 처리방침 리전과 시행일",
+      "관리자 별도 서비스 빌드 복구",
+      "광고 등급 전환 및 전체 운영 관문 연동",
+      "공공데이터 수집 결과와 연결 실패 구분",
+      "CI와 DB 승인 후 동일 커밋 순차 배포"
+    ],
+    "sources": [
+      "PR208 및 후속 검토 수정",
+      "PR218",
+      "PR219 및 감사기록 보완"
+    ],
+    "database": "main CI 34589996186의 production 승인 후 0210_import_runs_held_count 적용. 운영 health 적용118/기대115/미적용0. 기존 이력3개 보존. 테스트 데이터 입력 없음.",
+    "renderConfiguration": "싱가포르 API와 앱 웹·관리자·웹사이트의 Auto-Deploy Off. 관리자 Build Command를 Expo export + split-admin-dist admin, publish를 apps/mobile/dist로 수정했고 baseline bcd8771 Live와 /admin/login 확인.",
+    "releaseGate": "CI → 기존 production 승인 → DB migration → 요청 SHA의 싱가포르 API Live·strict health → 정적 서비스별 같은 SHA Live. 별도 env-sync는 수동 dry-run. 동일 배포대상 동시 실행 방지.",
+    "limits": [
+      "최종 통합 커밋 CI 및 Render 배포는 아직 미확인",
+      "별도 관리자 실제 계정 로그인은 미검증이므로 앱 웹 관리자 경로는 복구 경로로 유지",
+      "앱 스토어 출시·EAS 빌드·실기기 검수 제외",
+      "광고 실운영 활성화와 알림톡 공급사 연결은 별도 조건 충족 필요"
+    ],
+    "rollback": "기존 Ohio API와 DB 이력을 보존한다. 운영 데이터 삭제와 DB 롤백은 자동 실행하지 않는다.",
+    "validation": "API979·웹72·모바일330·도메인931·DB79·health7·배포동기화16시험 통과(총2414, 중복 재시험 제외). API75스위트는 운영과 같은 UTC 및 분리된 폐기DB에서 검증했다. Windows 셸의 git 작은따옴표 처리로 검사대상 목록이 비던 권한시험은 execFileSync 인자배열로 수정 후6건 재시험 통과. 전체 typecheck, lint 오류0(기존 경고3), copy lint, Expo 웹 export239경로 및 실제 공개 API 웹 빌드 통과. GitHub 최종 CI는 별도 진행 중."
+  },
+  "rnMigration20260914": {
+    "요약": "피그마 신규 디자인으로 전면 개편 착수. 두 저장소는 병합하지 않고 층으로 정본을 가른다 — 보이는 것은 Figma, 지켜야 하는 것은 기존 정본.",
+    "대표결정": {
+      "primary": "#E7898D",
+      "accent": "#ECA0A3",
+      "스킨": "피그마 2색으로 간다. 6종 체계 정리는 차후 진행",
+      "서체": "Pretendard 단일. Playfair Display·Noto Sans KR·DM Mono 전부 제외",
+      "중간상태": "개편 중 사용자가 중간 상태를 보는 것은 무관",
+      "날짜선택": "휠 3열 유지. 온보딩에 사용 예정"
+    },
+    "근거문서": "Figma Make 내부 pasted_text/figma-structure-refactor.md (대표님 작성) + guidelines/Guidelines.md. GitHub 클론에는 없고 Figma MCP로만 읽힘 (fileKey oEZxIL2yurHqrBJoZO6ffL, nodeId 0:1)",
+    "전환비용근거": "apps/mobile+packages/ui 색 하드코딩 0건 · 색 경로는 packages/ui/src/theme.ts <- spec/tokens.json 단일 진입점 · 토큰 읽는 파일 43개 · 새 디자인도 SEED 기반 → 토큰 한 파일 교체로 화면 145개 전파",
+    "전제정정": "웹→RN 전환이 아니다. apps/mobile은 이미 Expo/RN(화면 145개·expo-router), WebView는 WebShellView 1곳뿐. 실제 과제는 이미 RN인 앱의 UI 층 개편",
+    "범위": "화면 21개 = Figma가 그린 16 + 법·심사상 필수 5(회원탈퇴·연령확인·애플로그인·약관진입·배우자연결). 나머지 173개는 토큰 교체로 따라옴",
+    "피그마신뢰도": "A 픽셀정확: src/imports 3개(Home·Search·LargeCalendar) / B 낮음: src/app/components 16개는 LLM 근사치 / C 무시: 라우팅 안 되는 죽은 파일 8개",
+    "팔레트경고": "Figma 내부가 어긋남. theme.css는 #E7898D/#ECA0A3, src/imports는 #EF5DA8·#F09A59·#371B34로 다른 세대. theme.css 쪽만 쓴다",
+    "브랜치소유권": {
+      "claude/rn-tokens": "spec/tokens.json · packages/ui/src/theme.ts",
+      "claude/rn-components": "packages/ui/src/components/**",
+      "claude/rn-nav-auth": "_layout.tsx · features/navigation/** · features/auth/** · 인증계열 화면 7",
+      "claude/rn-screens-core": "홈·검색·Pick·Pick비교",
+      "claude/rn-screens-plan": "웨딩플랜·MY·라운지·라운지상세",
+      "claude/rn-screens-vendor": "업체상세·상담·후기·계약인증",
+      "claude/rn-migration-plan": "docs/rn-migration/ 문서 4종",
+      "claude/rn-preview": "docs/rn-migration/preview/ PNG만"
+    },
+    "세션": {
+      "설계 Opus5": "session_01SeUuBsD7aZMx3EHjetmQWi",
+      "토큰 Opus5": "session_01KVQ1sSpgR6Svx3hRcwAQ4L",
+      "컴포넌트 Opus5": "session_019ZzbedbsKTfYivedpbiDj3",
+      "네비인증 Opus5": "session_01Y1DnD4PbJkW8tCTfht7ofy",
+      "화면core Sonnet5": "session_01SgXXeUHaL7QvNdTgHSRWdJ",
+      "화면plan Sonnet5": "session_016fqroyrv9vZDzNM5EUPJ1r",
+      "화면vendor Sonnet5": "session_01S3sFLm2wV48DhJh8aPjJyB",
+      "PR감시 Sonnet5": "session_01XPDEQUhjZuoKp63xidrdLD",
+      "MASTER감시 Opus5": "session_01AiXrTyoZ3krMCuwuHkTPkG",
+      "프리뷰 Sonnet5": "session_0168KdYVh8htKusJwoTQaFF2"
+    },
+    "미해결": [
+      "테라코타(검증·신뢰 강조색) 헥사값 없음 — Guidelines에 이름만 있고 theme.css에 값 없음. 2색으로 가면 그 역할 자리가 빈다",
+      "스킨 6종 체계와 새 2색 체계의 관계 — 대표님이 차후 진행으로 미룸",
+      "Pretendard 폰트 파일 미확보 — 필요 시 대표님이 업로드",
+      "Figma 원본은 Make 파일이라 get_screenshot·get_metadata 미지원. 21화면 중 픽셀 근거는 홈·검색 2개뿐"
+    ]
+  },
+  "sessionAbsorption20260914": {
+    "기준시각": "2026-09-14 20:45 KST",
+    "흡수": "IDLE 7개를 흡수하고 보관. 산출물과 미해결을 아래에 인수한다",
+    "항목": [
+      {
+        "세션": "session_01BwKDA45pmSLCgtDDuYgCot",
+        "제목": "화면 캡처 수단",
+        "브랜치": "claude/screen-capture",
+        "결과": "PR #212로 main 병합 완료. PR #217이 --tap 추가",
+        "상태": "완료·main반영",
+        "인계": "캡처 도구는 claude/rn-preview 세션이 그대로 사용한다"
+      },
+      {
+        "세션": "session_01XKpxtPqtPoXe985dafbFwc",
+        "제목": "API 싱가포르 이전 + 약관 정본화",
+        "브랜치": "claude/region-legal",
+        "결과": "codex/release-web-api-20260913가 이어받아 완주, 내용은 main 반영됨",
+        "상태": "완료·main반영",
+        "인계": "region-legal 브랜치는 구버전이므로 되살리지 않는다"
+      },
+      {
+        "세션": "session_01NMJrenDiKBuS24S2yq6BUU",
+        "제목": "제보 과정 루트 시안 정합 (WP-RPT-004)",
+        "브랜치": "없음 — 푸시된 산출물 0",
+        "결과": "판단 대기로 서 있다가 아무것도 만들지 못하고 종료",
+        "상태": "미완·산출물없음",
+        "인계": "결정은 이미 났다: WP-RPT-010을 되살리지 않고 WP-RPT-004 인식 실패 하나로 간다. 이 일은 claude/rn-screens-vendor 세션(계약 인증 담당)이 이어받는다"
+      },
+      {
+        "세션": "session_01891HaGXiYSvYQ1QYrrsQ4w",
+        "제목": "로그인 카카오+애플로 좁히기 · Resend 폐기",
+        "브랜치": "없음 — 푸시된 산출물 0",
+        "결과": "판단 대기로 서 있다가 아무것도 만들지 못하고 종료",
+        "상태": "미완·산출물없음",
+        "인계": "결정은 이미 났다: 코드·빌드 설정에서 네이버·구글을 지우되 Render 환경변수는 남긴다. 이 일은 claude/rn-nav-auth 세션이 이어받는다(애플 로그인 포함)"
+      },
+      {
+        "세션": "session_01PDq7xUkRBbWDxh7g8WHnVV",
+        "제목": "공공데이터 수집 통합",
+        "브랜치": "claude/public-data-unify",
+        "PR": "#216 draft 열림",
+        "결과": "--limit·0건 원인 메시지 구분은 main에 없음(살아있음). categoryCounts는 codex/release-data-20260913가 먼저 main에 넣어 중복",
+        "상태": "미해결·판단필요",
+        "인계": "한복 업종코드 G20904 포함 여부가 main과 정면 충돌한다. main collect.ts 주석은 '웨딩 전용이 아니라 뺀다'로 명시 배제, PR #216은 2026-09-11 대표 지시 근거로 추가. 대표님 확인 필요"
+      },
+      {
+        "세션": "session_01Qa12UmmKgMiiif9LYkAPPd",
+        "제목": "로딩 성능 전면 진단",
+        "브랜치": "claude/perf-audit",
+        "PR": "#206 draft 열림",
+        "결과": "DB 왕복 1회 199ms 실측. 원인은 API(Render Ohio)와 DB(Neon Singapore)가 태평양을 두 번 건너는 구조",
+        "상태": "승인대기",
+        "인계": "API를 싱가포르로 옮기는 것이 코드로 얻는 전부보다 크다. 리전 이전은 대표님 승인 사항. After 재측정은 배포 후에만 가능"
+      },
+      {
+        "세션": "session_01QKHXPoVovwGvQ8P5mPk1tL",
+        "제목": "보존 3건 정리",
+        "브랜치": "claude/retention-3",
+        "PR": "#170 draft 열림",
+        "결과": "docs/retention-policy.md·retention-check.yml이 main에 없음(살아있음). branch-cleanup.yml에 안전장치 3종(얕은클론 차단·dry_run 기본·보호목록) 추가",
+        "상태": "미머지",
+        "인계": "브랜치 151개 중 22개가 main 병합 완료로 삭제 가능. 삭제는 이 PR의 안전장치가 main에 들어간 뒤에 한다. DB 이력 정리는 되돌릴 수 없어 승인 전 실행 금지"
+      }
+    ],
+    "PR중단": "2026-09-14 대표님 지시로 모든 PR 전면 중단. 이후 draft PR 자동 생성만 승인(A안). 머지는 여전히 중단"
   }
 }

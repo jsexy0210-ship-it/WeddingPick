@@ -1,55 +1,75 @@
 import { dDay, formatDateDot } from '@weddingpick/domain';
-import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-import { ActionButton, Border, FontSize, Layout, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import {
+  ActionButton,
+  FontSize,
+  Layout,
+  LineHeight,
+  Radius,
+  Spacing,
+  ThemedText,
+  useTheme,
+} from '@weddingpick/ui';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 
 import {
-  MONTHS,
-  WEEKDAYS,
-  chunk,
+  dayOptions,
   firstSelectable,
-  isDaySelectable,
-  isMonthSelectable,
-  monthCells,
+  monthOptions,
   normalizeDate,
   splitIso,
   toIso,
   yearOptions,
-  type CalendarCell,
   type PickedDate,
 } from './calendar';
 import { ddayLabel } from './flow';
 
 /**
- * 날짜 선택 시트(WP-APP-023). SPEC §13.7 «날짜 선택 · 연월 셀렉트».
+ * 날짜 선택 시트(WP-APP-023) — **휠 3열**.
  *
- *   ━━                              그래버 40×4(공용 SheetPanel) — 제목·닫기 버튼 없음(시안 sheet)
- *   [2027년 ▾]  [5월 ▾]             셀렉트 2개 · 52 · 닫힘 gray50 · 열림 흰 바탕 + 코랄 1.5
- *    일 월 화 수 목 금 토             요일 헤더 28
- *    25 26 27 28 29 30  1            날짜 셀 40 · 타월은 옅게
- *    …  16  …                        선택일 코랄 원 · 흰 700
- *   2027.05.16(토)              D-250
- *   [       이 날짜로 정하기       ]  width 100% · flex 0 0
+ *   ━━                                  그래버 40×4(공용 SheetPanel)
+ *   예식일 선택                    ✕     시안 sheetHead — 제목 20/27 · 닫기 32
+ *   ┌─────┬─────┬─────┐
+ *   │2026년│ 4월 │15일 │  ← 흐림      열 높이 240 · 항목 48 · 위아래 패딩 96
+ *   │2027년│ 5월 │16일 │  ← 밴드      가운데 48이 밴드(radius 10 · gray50)
+ *   │2028년│ 6월 │17일 │  ← 흐림      멀어질수록 작아지고 옅어진다
+ *   └─────┴─────┴─────┘
+ *   2027.05.16(토)                D-250
+ *   [            확인            ]
  *
- * **연 · 월은 셀렉트로 바로 고르고 일만 달력에서 찍는다.** 좌우 화살표로 달을 넘기지
- * 않는다 — 웨딩은 1~2년 뒤를 고르는 경우가 많아 화살표로는 탭이 12~24번 필요하다.
- * 연도를 누르면 올해부터 5년 뒤까지 4열 격자, 월을 누르면 4열 12칸이 달력 자리에
- * 펼쳐진다. **두 번 탭으로 어느 달이든 간다.**
+ * **2026-09-11 대표 지시로 달력에서 휠로 돌아왔다.** 그 전까지 이 자리는 연월
+ * 셀렉트 + 달력이었다(v3.21 WP-APP-023). 루트 시안 `WP-APP-020`은 제목 · 설명이
+ * 「연월 셀렉트」인데 그려진 3장은 휠이라 **한 파일 안에서 어긋나 있었다.** 그때
+ * 제목 · 설명을 골랐는데 대표님이 고른 것은 그림 쪽이었다 — 「3중 휠 UX로 바꿨는데
+ * 아직 배포가 안 된 거니?」. 루트 안에서 어긋나면 골라서 밀지 않고 대표님께 묻는다.
  *
- * 연 · 월을 바꿔 없는 날짜가 되면 그 달 마지막 날로 당긴다(`normalizeDate`). 오늘
- * 포함 과거와 첫 날 앞의 달은 비활성이다 — 목록에서 빼지 않고 옅게 그린다.
+ * 머리(제목 + 닫기)도 루트 시안 쪽이다. 옛 판(`current/20-onboarding-v2`)은 머리
+ * 없이 그래버만 두었고, 둘이 다를 때는 루트가 이긴다(CLAUDE.md 2026-09-11).
  *
- * 격자가 펼쳐진 동안(시안 B · C)은 결과 줄을 숨기고 CTA가 «확인»이 된다 — 누르면
- * 격자를 접고 달력으로 돌아온다. 칸을 고르면 바로 접히므로 «확인»은 값을 바꾸지
- * 않고 나올 때만 쓴다.
+ * **날짜 규칙은 새로 쓰지 않는다.** `calendar.ts`가 이미 전부 갖고 있고 휠은 그것을
+ * 그대로 지난다 — 연은 `yearOptions`, 월은 `monthOptions`, 일은 `dayOptions`,
+ * 그리고 굴린 뒤 `normalizeDate`가 나머지를 목록 안으로 맞춘다. 그래서 시안 C의
+ * 「월을 바꾸면 없는 날짜는 그 달 마지막 날로 당긴다」가 저절로 지켜진다(1월 31일
+ * → 2월이면 28일, 윤년이면 29일). **과거는 목록에 아예 오르지 않는다** — 비활성으로
+ * 그려 놓고 막는 것이 아니라 `first`(내일) 앞의 해 · 달 · 날을 빼고 만든다. 밴드에
+ * 걸릴 수 없는 값은 고를 수도 없다.
  *
- * 색은 테마 토큰 `calendarSunday · calendarSaturday · calendarMuted`다. 패널(radius 20 ·
- * padding 12/24/28+안전영역 · 그래버)은 공용 `SheetPanel`이 그리고 요소 간격만 시안 16으로 좁힌다.
- * CTA 높이는 토큰 size.ctaSheet 56(SPEC 13.7)이고 `flexGrow 0 · flexShrink 0 · width 100%`
- * 라 세로 컨테이너에서 늘어나지 않는다.
+ * 굴리는 중에도 중앙 값이 곧바로 아래 결과 줄에 반영된다(시안 B). 그래서 스크롤이
+ * 멈추기를 기다리지 않고 `onScroll`이 값을 올린다 — 멈춘 뒤에 바꾸면 손을 떼기
+ * 전까지 무엇을 고르는 중인지 알 수 없다.
+ *
+ * 값은 전부 `spec/tokens.json` `component.dateWheel`이다(루트 시안 `wheelCol` ·
+ * `wheelItem` · `wheelBand` · `wheelFadeTop` · `pickedRow` 실측).
  */
 export function DatePickerSheet({
   visible,
@@ -59,7 +79,7 @@ export function DatePickerSheet({
   today = new Date(),
 }: {
   visible: boolean;
-  /** 이미 고른 날. 시트는 그 달을 펼치고 그 날을 켠 채 연다. */
+  /** 이미 고른 날. 휠은 그 값에 맞춰 굴려진 채로 열린다. */
   value: string | null;
   onConfirm: (iso: string) => void;
   onDismiss: () => void;
@@ -67,24 +87,25 @@ export function DatePickerSheet({
   today?: Date;
 }) {
   return (
-    /* BottomSheet는 닫히면 children을 통째로 내린다 — 열 때마다 새로 마운트되어 지난번 펼쳐 놓고 닫은 격자가 남지 않는다. */
+    /* BottomSheet는 닫히면 children을 통째로 내린다 — 열 때마다 새로 마운트되어 지난번 굴려 둔 자리가 남지 않는다. */
     <BottomSheet visible={visible} onRequestClose={onDismiss}>
-      <SheetBody value={value} today={today} onConfirm={onConfirm} />
+      <SheetBody value={value} today={today} onConfirm={onConfirm} onDismiss={onDismiss} />
     </BottomSheet>
   );
 }
-
-type Expanded = 'year' | 'month' | null;
 
 function SheetBody({
   value,
   today,
   onConfirm,
+  onDismiss,
 }: {
   value: string | null;
   today: Date;
   onConfirm: (iso: string) => void;
+  onDismiss: () => void;
 }) {
+  const theme = useTheme();
   const first = firstSelectable(today);
 
   const [picked, setPicked] = useState<PickedDate>(() => {
@@ -93,292 +114,271 @@ function SheetBody({
     /* 고른 날이 없으면 고를 수 있는 첫 날(내일)에서 시작한다 — 짐작으로 날을 정하지 않는다. */
     return normalizeDate(from ?? first, first);
   });
-  const [expanded, setExpanded] = useState<Expanded>(null);
 
-  const years = yearOptions(today).filter((year) => year >= first.year);
+  /*
+   * 세 휠의 목록. **과거는 여기서 이미 빠져 있다.** 목록에 없으면 밴드에 걸릴 수
+   * 없고, 걸릴 수 없으면 고를 수도 없다 — 비활성으로 그려 놓고 누르면 막는 것보다
+   * 확실하다.
+   */
+  const years = useMemo(
+    () => yearOptions(today).filter((year) => year >= first.year),
+    [today, first.year]
+  );
+  const months = useMemo(() => monthOptions(picked.year, first), [picked.year, first]);
+  const days = useMemo(
+    () => dayOptions(picked.year, picked.month, first),
+    [picked.year, picked.month, first]
+  );
+
   const iso = toIso(picked.year, picked.month, picked.day);
   const remaining = dDay(iso, today);
 
-  function pickYear(year: number) {
-    setPicked((current) => normalizeDate({ ...current, year }, first));
-    setExpanded(null);
-  }
-
-  function pickMonth(month: number) {
-    setPicked((current) => normalizeDate({ ...current, month }, first));
-    setExpanded(null);
-  }
-
-  function pickDay(cell: CalendarCell) {
-    setPicked({ year: cell.year, month: cell.month, day: cell.day });
+  /*
+   * 굴린 값을 반영한다. **바로 `setPicked`하지 않고 `normalizeDate`를 지난다** —
+   * 1월 31일에서 월을 2월로 굴리면 31일이 없다. 시안 C가 그 자리이고, 규칙은
+   * `calendar.ts`가 이미 들고 있다.
+   */
+  function change(part: Partial<PickedDate>) {
+    setPicked((current) => normalizeDate({ ...current, ...part }, first));
   }
 
   return (
     <SheetPanel style={styles.sheet}>
-
-      <View style={styles.selects}>
-        <Select
-          label={`${picked.year}년`}
-          accessibilityLabel="연도 선택"
-          open={expanded === 'year'}
-          onPress={() => setExpanded((current) => (current === 'year' ? null : 'year'))}
-        />
-        <Select
-          label={`${picked.month}월`}
-          accessibilityLabel="월 선택"
-          open={expanded === 'month'}
-          onPress={() => setExpanded((current) => (current === 'month' ? null : 'month'))}
-        />
+      <View style={styles.head}>
+        <ThemedText type="t4" style={styles.bold}>
+          {S.title}
+        </ThemedText>
+        <Pressable accessibilityRole="button" accessibilityLabel={S.close} onPress={onDismiss} style={styles.close}>
+          <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={theme.textAssistive} strokeWidth={2} strokeLinecap="round">
+            <Path d="M6 6l12 12M18 6 6 18" />
+          </Svg>
+        </Pressable>
       </View>
 
-      {expanded === 'year' ? (
-        <OptionGrid
-          options={years.map((year) => ({ key: year, label: `${year}년`, disabled: false }))}
-          selected={picked.year}
-          onPick={pickYear}
-        />
-      ) : expanded === 'month' ? (
-        <OptionGrid
-          options={MONTHS.map((month) => ({
-            key: month,
-            label: `${month}월`,
-            disabled: !isMonthSelectable(picked.year, month, first),
-          }))}
-          selected={picked.month}
-          onPick={pickMonth}
-        />
-      ) : (
-        <Calendar picked={picked} first={first} onPick={pickDay} />
-      )}
+      <View style={styles.wheels}>
+        {/* 밴드가 열보다 뒤에 깔린다 — 형제 순서가 곧 z 순서다(밴드 → 열 → 페이드). 시안 wheelBand. */}
+        <View style={[styles.band, { backgroundColor: theme.backgroundElement }]} />
 
-      {expanded === null ? (
-        <View style={styles.picked}>
-          <ThemedText type="t5" numeric>
-            {formatDateDot(iso)}
-          </ThemedText>
-          <ThemedText type="t6" numeric themeColor="tint" style={styles.bold}>
-            {ddayLabel(remaining.kind === 'upcoming' ? remaining.days : 0)}
-          </ThemedText>
-        </View>
-      ) : null}
+        <Wheel
+          accessibilityLabel={S.year}
+          flex={FLEX_YEAR}
+          items={years}
+          format={(year) => `${year}년`}
+          value={picked.year}
+          onChange={(year) => change({ year })}
+        />
+        <Wheel
+          accessibilityLabel={S.month}
+          flex={FLEX_MONTH}
+          items={months}
+          format={(month) => `${month}월`}
+          value={picked.month}
+          onChange={(month) => change({ month })}
+        />
+        <Wheel
+          accessibilityLabel={S.day}
+          flex={FLEX_DAY}
+          items={days}
+          format={(day) => `${day}일`}
+          value={picked.day}
+          onChange={(day) => change({ day })}
+        />
+
+        {/* 위아래로 흐려지는 덮개. 눌리지 않게 둔다 — 휠은 그 아래에서 굴러간다. */}
+        <Fade edge="top" />
+        <Fade edge="bottom" />
+      </View>
+
+      <View style={styles.picked}>
+        <ThemedText type="t5" numeric style={styles.bold}>
+          {formatDateDot(iso)}
+        </ThemedText>
+        <ThemedText numeric themeColor="tint" style={[styles.bold, styles.dday]}>
+          {ddayLabel(remaining.kind === 'upcoming' ? remaining.days : 0)}
+        </ThemedText>
+      </View>
 
       <View style={styles.cta}>
-        {expanded === null ? (
-          <ActionButton variant="primary" size="sheet" label={CONFIRM_CTA} onPress={() => onConfirm(iso)} />
-        ) : (
-          <ActionButton variant="primary" size="sheet" label={COLLAPSE_CTA} onPress={() => setExpanded(null)} />
-        )}
+        <ActionButton variant="primary" size="sheet" label={S.confirm} onPress={() => onConfirm(iso)} />
       </View>
     </SheetPanel>
   );
 }
 
-/** 연 · 월 셀렉트(시안 selBox) — 높이 52 · radius 10 · 닫힘 gray50 + 투명 테두리 · 열림 흰 바탕 + 코랄 1.5px. 화살표는 늘 #4D5159. */
-function Select({
-  label,
+/**
+ * 휠 한 열.
+ *
+ * 스크롤 위치를 값으로 읽는다 — `snapToInterval`이 한 칸(48)마다 멈추므로 중앙에
+ * 걸린 것은 `offset / 48`번째다. 위아래 패딩 96이 첫 항목을 밴드 자리로 내려 준다.
+ *
+ * `value`가 밖에서 바뀌면(월을 굴려 일이 당겨졌을 때) 그 자리로 되돌린다. **사람이
+ * 굴리는 중에는 건드리지 않는다** — 손 밑에서 목록이 움직이면 고르던 것을 놓친다.
+ */
+function Wheel<T extends number>({
   accessibilityLabel,
-  open,
-  onPress,
+  flex,
+  items,
+  format,
+  value,
+  onChange,
 }: {
-  label: string;
   accessibilityLabel: string;
-  open: boolean;
-  onPress: () => void;
+  flex: number;
+  items: readonly T[];
+  format: (item: T) => string;
+  value: T;
+  onChange: (item: T) => void;
 }) {
-  const theme = useTheme();
+  const ref = useRef<ScrollView>(null);
+  const dragging = useRef(false);
+  /* 첫 배치를 했는가. 안드로이드는 `contentOffset`을 무시하므로 한 번은 직접 굴려 준다. */
+  const placed = useRef(false);
+  const index = Math.max(items.indexOf(value), 0);
+  const [centered, setCentered] = useState(index);
+
+  useEffect(() => {
+    if (placed.current && (dragging.current || centered === index)) return;
+
+    placed.current = true;
+    setCentered(index);
+    ref.current?.scrollTo({ y: index * ITEM, animated: false });
+  }, [index, centered]);
+
+  function onScroll(event: NativeSyntheticEvent<NativeScrollEvent>) {
+    const next = Math.min(Math.max(Math.round(event.nativeEvent.contentOffset.y / ITEM), 0), items.length - 1);
+    const item = items[next];
+
+    if (item === undefined || next === centered) return;
+
+    setCentered(next);
+    /* 멈추기를 기다리지 않는다 — 굴리는 중에도 아래 결과가 따라 움직인다(시안 B). */
+    if (item !== value) onChange(item);
+  }
 
   return (
-    <Pressable
-      accessibilityRole="button"
+    <ScrollView
+      ref={ref}
       accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ expanded: open }}
-      onPress={onPress}
-      style={[
-        styles.select,
-        open
-          ? { backgroundColor: theme.background, borderColor: theme.tint }
-          : { backgroundColor: theme.backgroundElement, borderColor: 'transparent' },
-      ]}>
-      <ThemedText type="t6" numeric style={styles.bold}>
+      style={[styles.wheel, { flex }]}
+      contentContainerStyle={styles.wheelContent}
+      contentOffset={{ x: 0, y: index * ITEM }}
+      showsVerticalScrollIndicator={false}
+      snapToInterval={ITEM}
+      decelerationRate="fast"
+      scrollEventThrottle={16}
+      onScroll={onScroll}
+      onScrollBeginDrag={() => {
+        dragging.current = true;
+      }}
+      onScrollEndDrag={() => {
+        dragging.current = false;
+      }}
+      onMomentumScrollEnd={() => {
+        dragging.current = false;
+      }}>
+      {items.map((item, at) => (
+        <WheelItem key={item} label={format(item)} distance={Math.abs(at - centered)} />
+      ))}
+    </ScrollView>
+  );
+}
+
+/** 항목 하나. 중앙에서 멀어질수록 작아지고 옅어진다 — 시안 `wheelItem`의 네 단계. */
+function WheelItem({ label, distance }: { label: string; distance: number }) {
+  const theme = useTheme();
+  const step = Math.min(distance, STEP_COLOR.length - 1);
+
+  return (
+    <View style={styles.item}>
+      <ThemedText numeric style={[STEP_TEXT[step] ?? styles.far, { color: theme[STEP_COLOR[step] ?? 'text'] }]}>
         {label}
       </ThemedText>
-      <Svg width={Layout.iconInline} height={Layout.iconInline} viewBox="0 0 24 24" fill="none">
-        <Path
-          d="m6 9.5 6 6 6-6"
-          stroke={theme.textSecondary}
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </Svg>
-    </Pressable>
+    </View>
   );
 }
 
-type GridOption = { key: number; label: string; disabled: boolean };
-
-/** 연도 · 월 펼침(시안 optCell) — 4열 · 셀 44 · 고른 칸 코랄 바탕 + 흰 700 · 나머지 gray50 + #4D5159. 마지막 줄이 모자라면 빈 칸으로 채워 폭을 맞춘다. */
-function OptionGrid({
-  options,
-  selected,
-  onPick,
-}: {
-  options: readonly GridOption[];
-  selected: number;
-  onPick: (key: number) => void;
-}) {
+/**
+ * 위아래 덮개 — 시안 `wheelFadeTop` «#fff 30% → 투명» · `wheelFadeBottom` «투명 → #fff 70%».
+ *
+ * **React Native에는 그라데이션이 없다.** 이 한 자리를 위해 `expo-linear-gradient`를
+ * 새로 들이는 대신 96을 네 칸(24)으로 끊어 흉내 낸다. 칸마다의 불투명도는 원래
+ * 기울기를 그 칸 가운데에서 읽은 값이다 — 끊긴 자리가 보이지 않을 만큼은 촘촘하고,
+ * 라이브러리 하나를 더 싣지는 않는다.
+ */
+function Fade({ edge }: { edge: 'top' | 'bottom' }) {
   const theme = useTheme();
+  const steps = edge === 'top' ? FADE_STEPS : [...FADE_STEPS].reverse();
 
   return (
-    <View style={styles.grid}>
-      {chunk(options, GRID_COLUMNS).map((row) => (
-        <View key={row.map((option) => option.key).join('-')} style={styles.gridRow}>
-          {row.map((option) => {
-            const active = option.key === selected;
-
-            return (
-              <Pressable
-                key={option.key}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: active, disabled: option.disabled }}
-                accessibilityLabel={option.label}
-                disabled={option.disabled}
-                onPress={() => onPick(option.key)}
-                style={[styles.gridCell, { backgroundColor: active ? theme.tint : theme.backgroundElement }]}>
-                <ThemedText
-                  type="t6"
-                  numeric
-                  themeColor={active ? 'onTint' : 'textSecondary'}
-                  style={[styles.cellText, active && styles.bold, option.disabled && { color: theme.calendarMuted }]}>
-                  {option.label}
-                </ThemedText>
-              </Pressable>
-            );
-          })}
-          {Array.from({ length: GRID_COLUMNS - row.length }, (_, index) => (
-            <View key={`pad-${index}`} style={styles.gridCell} />
-          ))}
-        </View>
+    <View pointerEvents="none" style={[styles.fade, edge === 'top' ? styles.fadeTop : styles.fadeBottom]}>
+      {steps.map((opacity, at) => (
+        <View key={at} style={[styles.fadeStep, { backgroundColor: theme.background, opacity }]} />
       ))}
     </View>
   );
 }
 
-/** 요일 헤더 28 + 날짜 셀 40 × 6주. 일요일 · 토요일 색, 타월과 과거는 옅게 비활성. */
-function Calendar({
-  picked,
-  first,
-  onPick,
-}: {
-  picked: PickedDate;
-  first: PickedDate;
-  onPick: (cell: CalendarCell) => void;
-}) {
-  const theme = useTheme();
-  const selectedIso = toIso(picked.year, picked.month, picked.day);
-  const cells = monthCells(picked.year, picked.month);
+const S = {
+  title: '예식일 선택',
+  close: '닫기',
+  year: '연도',
+  month: '월',
+  day: '일',
+  confirm: '확인',
+} as const;
 
-  return (
-    <View style={styles.calendar}>
-      <View style={styles.week}>
-        {WEEKDAYS.map((weekday, index) => (
-          <View key={weekday} style={styles.weekdayCell}>
-            <ThemedText
-              type="t7"
-              themeColor="textAssistive"
-              style={[styles.bold, index === 0 && { color: theme.calendarSunday }, index === 6 && { color: theme.calendarSaturday }]}>
-              {weekday}
-            </ThemedText>
-          </View>
-        ))}
-      </View>
+/*
+ * 시안 `wheelCol` · `wheelItem` · `wheelBand` · `wheelFadeTop` 실측 —
+ * spec/tokens.json `component.dateWheel`. 이 시트 밖에서 쓰지 않아 여기 둔다.
+ */
+/** 휠 한 칸. 밴드 높이와 같다. */
+const ITEM = 48;
+/** 열 높이. 위아래 패딩 96을 빼면 가운데 48이 남고 그것이 밴드다(240 - 96*2 = 48). */
+const HEIGHT = 240;
+const PAD = (HEIGHT - ITEM) / 2;
+/** 연 열이 조금 넓다 — 「2027년」이 「5월」 · 「16일」보다 길다. */
+const FLEX_YEAR = 1.1;
+const FLEX_MONTH = 1;
+const FLEX_DAY = 1;
+/** 덮개 한 겹의 불투명도. 위는 이 순서, 아래는 뒤집어 쓴다. */
+const FADE_STEPS = [1, 0.89, 0.54, 0.18] as const;
 
-      {chunk(cells, WEEKDAYS.length).map((row) => (
-        <View key={row[0]!.iso} style={styles.week}>
-          {row.map((cell) => {
-            const selectable = cell.inMonth && isDaySelectable(cell, first);
-            const active = cell.iso === selectedIso;
-            const color = !selectable
-              ? theme.calendarMuted
-              : cell.weekday === 0
-                ? theme.calendarSunday
-                : cell.weekday === 6
-                  ? theme.calendarSaturday
-                  : theme.text;
-
-            return (
-              <Pressable
-                key={cell.iso}
-                accessibilityRole="button"
-                accessibilityLabel={formatDateDot(cell.iso)}
-                accessibilityState={{ selected: active, disabled: !selectable }}
-                disabled={!selectable}
-                onPress={() => onPick(cell)}
-                style={styles.dayCell}>
-                <View style={[styles.day, active && { backgroundColor: theme.tint }]}>
-                  <ThemedText
-                    type="t6"
-                    numeric
-                    style={[styles.cellText, { color }, active && [styles.bold, { color: theme.onTint }]]}>
-                    {cell.day}
-                  </ThemedText>
-                </View>
-              </Pressable>
-            );
-          })}
-        </View>
-      ))}
-    </View>
-  );
-}
-
-const CONFIRM_CTA = '이 날짜로 정하기';
-/** 연도 · 월 격자가 펼쳐진 동안의 CTA(시안 B · C) — 격자를 접는다. */
-const COLLAPSE_CTA = '확인';
-/* WP-APP-023 고정값 — 연 · 월 펼침 4열 · 셀 44(Layout.touchTarget) · 요일 헤더 28 · 날짜 셀 40. */
-const GRID_COLUMNS = 4;
-const WEEKDAY_HEADER = 28;
-const DAY_CELL = 40;
+/** 중앙에서 0 · 1 · 2 · 3칸 밖. 크기와 색이 네 단계로 줄어든다. */
+const STEP_COLOR = ['text', 'textAssistive', 'dateWheelTwo', 'dateWheelFar'] as const;
 
 const styles = StyleSheet.create({
   /* 시안 sheet — 패딩 · 둥글기 · 그래버는 SheetPanel. 요소 사이만 16(공용 20보다 좁다). */
   sheet: { gap: Spacing.three },
-  selects: { flexDirection: 'row', gap: Spacing.two },
-  /* 셀렉트 — 시안 selBox: 높이 52 · radius 10 · 테두리 1.5 · 좌우 16. */
-  select: {
-    flex: 1,
-    minWidth: 0,
-    height: Layout.field,
-    borderRadius: Radius.medium,
-    borderWidth: Border.selected,
-    paddingHorizontal: Layout.datePickerSelectPaddingX,
+  /* 시안 sheetHead — 제목과 닫기를 양끝으로. */
+  head: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: Spacing.two,
+    gap: Layout.rowPaddingY,
+    minHeight: Layout.sheetClose,
   },
-  /* 연도 · 월 펼침 — 시안 optCell: 4열 · 셀 44 · 사이 8 · radius 8. */
-  grid: { gap: Spacing.two },
-  gridRow: { flexDirection: 'row', gap: Spacing.two },
-  gridCell: {
-    flex: 1,
-    flexBasis: 0,
-    minWidth: 0,
-    height: Layout.touchTarget,
-    borderRadius: Radius.picker,
+  close: {
+    width: Layout.sheetClose,
+    height: Layout.sheetClose,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  /* 시안 dowRow · calGrid — 칸 사이 2. */
-  calendar: { gap: Spacing.half },
-  week: { flexDirection: 'row', gap: Spacing.half },
-  weekdayCell: { flex: 1, flexBasis: 0, minWidth: 0, height: WEEKDAY_HEADER, alignItems: 'center', justifyContent: 'center' },
-  dayCell: { flex: 1, flexBasis: 0, minWidth: 0, height: DAY_CELL, alignItems: 'center', justifyContent: 'center' },
-  /*
-   * 선택일 — 시안 dayCell이 «border-radius:8px»라 원이 아니라 둥근 사각이다.
-   * SPEC 13.7 본문은 「coral 원」이라 적지만 목업과 1:1로 맞춘다(2026-09-10 사용자 결정).
-   */
-  day: { width: DAY_CELL, height: DAY_CELL, borderRadius: Radius.picker, alignItems: 'center', justifyContent: 'center' },
+  /* 시안 wheelWrap — 세 열이 나란히 굴러가고 밖으로 나간 항목은 잘린다. */
+  wheels: { flexDirection: 'row', height: HEIGHT, overflow: 'hidden' },
+  /* 시안 wheelBand — 가운데 한 칸. 열보다 뒤에 깔린다. */
+  band: { position: 'absolute', left: 0, right: 0, top: PAD, height: ITEM, borderRadius: Radius.medium },
+  wheel: { minWidth: 0, height: HEIGHT },
+  /* 위아래 패딩이 첫 · 끝 항목을 밴드 자리까지 데려온다. */
+  wheelContent: { paddingVertical: PAD },
+  item: { height: ITEM, alignItems: 'center', justifyContent: 'center' },
+  near: { fontSize: FontSize.t4, lineHeight: LineHeight.t4, fontWeight: 700 },
+  one: { fontSize: FontSize.t5, lineHeight: LineHeight.t5 },
+  two: { fontSize: FontSize.dateWheel, lineHeight: LineHeight.dateWheel },
+  far: { fontSize: FontSize.t6, lineHeight: LineHeight.t6 },
+  fade: { position: 'absolute', left: 0, right: 0, height: PAD },
+  fadeTop: { top: 0 },
+  fadeBottom: { bottom: 0 },
+  fadeStep: { flex: 1 },
   /* 시안 pickedRow — 결과 줄 · baseline 정렬 · 좌우 2. */
   picked: {
     flexDirection: 'row',
@@ -387,9 +387,11 @@ const styles = StyleSheet.create({
     gap: Layout.rowPaddingY,
     paddingHorizontal: Spacing.half,
   },
+  /* 시안 pickedDday 15/22/700 — t 사다리에 없는 값이라 이 시트에서만 쓴다. */
+  dday: { fontSize: FontSize.dateWheelDday, lineHeight: LineHeight.dateWheelDday },
   /* width 100% · flex 0 0 — 세로 컨테이너에서 늘어나지 않는다(SPEC §13.7). */
   cta: { width: '100%', flexGrow: 0, flexShrink: 0 },
-  /* 시안 optCell · dayCell 글자 15. t 스케일에 없는 값이라 이 시트에서만 쓴다. */
-  cellText: { fontSize: FontSize.dateCell },
   bold: { fontWeight: 700 },
 });
+
+const STEP_TEXT = [styles.near, styles.one, styles.two, styles.far] as const;

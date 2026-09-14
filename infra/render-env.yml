@@ -1,6 +1,6 @@
 # Render 서비스 환경변수 선언
 #
-# 이 파일이 원본이다. 여기서 고치면 `.github/workflows/render-env-sync.yml`이
+# 이 파일이 원본이다. 여기서 고치면 승인된 `.github/workflows/main.yml` 배포 작업이
 # Render API로 밀어넣는다 — 대시보드를 열어 손으로 넣지 않는다.
 #
 # **왜 render.yaml이 아니라 이 파일인가.** render.yaml은 Render의 Blueprint가
@@ -17,34 +17,28 @@
 # `secrets` — 비밀 값. **이름만** 적고 값은 GitHub Secrets에서 같은 이름으로 읽는다.
 
 services:
-  # 모바일 웹 export (앱 화면)
-  #
-  # **이름은 Render 대시보드의 이름과 글자 하나까지 같아야 한다.** 동기화 스크립트가
-  # 이름으로 서비스를 찾고, 못 찾으면 그 서비스만 조용히 건너뛴다(2026-09-10 이름 변경).
-  WeddingPick-웹뷰(앱 테스트):
-    vars:
-      EXPO_PUBLIC_API_URL: https://weddingpickl.onrender.com
-      # 카카오 REST API 키 — 로그인 리다이렉트 URI가 등록된 키다.
-      # 네이티브 앱 키를 넣으면 /oauth/authorize가 KOE033으로 거부한다.
-      EXPO_PUBLIC_KAKAO_CLIENT_ID: 8e9a14dd3a0aa1a420bff858460c415c
-
-  # 관리자 콘솔 — **아직 켜지 않는다.**
-  #
-  # `scripts/render-env-sync.py`는 이름이 정확히 일치하는 서비스를 못 찾으면
-  # 그 항목을 실패로 세고 **워크플로 전체를 exit 1로 끝낸다**(main:188). 서비스가
-  # 생기기 전에 여기를 켜면 main에 푸시할 때마다 빨간 워크플로가 남는다.
-  #
-  # 켜는 시점 — Render 대시보드에 관리자 서비스가 살아난 뒤. 그때 아래 주석을 푼다.
+  # 관리자 콘솔 — 2026-09-13 실제 서비스의 앱 export와 publish 경로를 복구했다.
   #
   # 이름은 **위 서비스들과 같은 규칙**으로 대시보드 표시 이름을 그대로 쓴다
   # (2026-09-10 이름 변경). 주소의 슬러그(`weddingpick-admin.onrender.com`)와
   # 다른 값이라는 데 주의한다 — 동기화 스크립트가 보는 것은 표시 이름 쪽이다.
   # 절차는 docs/admin-origin-split.md.
   #
-  # WeddingPick-관리자 사이트:
-  #   vars:
-  #     EXPO_PUBLIC_API_URL: https://weddingpickl.onrender.com
-  #     EXPO_PUBLIC_KAKAO_CLIENT_ID: 8e9a14dd3a0aa1a420bff858460c415c
+  WeddingPick-관리자 사이트:
+    vars:
+      EXPO_PUBLIC_API_URL: https://weddingpickl-sg.onrender.com
+      EXPO_PUBLIC_KAKAO_CLIENT_ID: 8e9a14dd3a0aa1a420bff858460c415c
+
+  # 모바일 웹 export (앱 화면)
+  #
+  # **이름은 Render 대시보드의 이름과 글자 하나까지 같아야 한다.** 동기화 스크립트가
+  # 이름으로 서비스를 찾고, 못 찾으면 배포를 실패 처리한다(2026-09-10 이름 변경).
+  WeddingPick-웹뷰(앱 테스트):
+    vars:
+      EXPO_PUBLIC_API_URL: https://weddingpickl-sg.onrender.com
+      # 카카오 REST API 키 — 로그인 리다이렉트 URI가 등록된 키다.
+      # 네이티브 앱 키를 넣으면 /oauth/authorize가 KOE033으로 거부한다.
+      EXPO_PUBLIC_KAKAO_CLIENT_ID: 8e9a14dd3a0aa1a420bff858460c415c
 
   # 서비스 웹사이트
   WeddingPick-웹사이트:
@@ -52,26 +46,33 @@ services:
       WEDDINGPICK_CONTACT_EMAIL: help.weddingpick@gmail.com
       # 없으면 search.html의 "많이 확인된 곳"이 «정보를 모으는 중»으로 나가고
       # 업체 상세(/v/*.html)가 한 장도 만들어지지 않는다.
-      WEDDINGPICK_API_URL: https://weddingpickl.onrender.com
+      WEDDINGPICK_API_URL: https://weddingpickl-sg.onrender.com
       # 법적 문서 시행일. **비밀이 아니다** — 약관 페이지에 「시행일 2026년 9월 10일」로
       # 그대로 찍히는 공개 값이다. secrets로 두면 GitHub Secrets에 같은 이름을 손으로
       # 넣어야 하고, 넣지 않으면 동기화가 조용히 건너뛴 뒤 값 없이 빌드에 들어간 웹이
       # 예외로 멈춘다(apps/web/src/legal-config.ts). 저장소에 적어 두면 둘 다 사라진다.
       #
-      # 두 문서 모두 2026-09-10(2026-09-10 사용자 결정). 개인정보처리방침은 그동안
-      # 시행일 자체가 없었고, 약관은 화면에 2026-09-01로 박혀 있던 것을 이번 개정일로
-      # 맞춘다 — 이번에 두 문서의 본문이 함께 바뀌었다.
+      # 약관은 2026-09-10 그대로다(2026-09-10 사용자 결정). 본문이 그 뒤로 바뀌지 않았다.
+      #
+      # **개인정보처리방침만 2026-09-18로 옮긴다.** 5항 국외 이전 표의 Render·Neon을
+      # 싱가포르로 고쳤으므로(2026-09-11 대표 결정 「일단 바꾸고 고지한다」) 그 개정의
+      # 시행일이 필요하다. 2026-09-10을 그대로 두면 2026-09-11에 바꾼 내용이 어제
+      # 시행된 것으로 소급된다.
+      #
+      # **이 날짜는 마감이다** — 그날까지 API가 싱가포르에 있어야 방침과 사실이 맞는다
+      # (`docs/render-region-move.md` §7). 이전이 늦어질 것 같으면 서버를 서두르지 말고
+      # 이 값을 미룬다. 두 블록을 **함께** 고친다.
       LEGAL_TERMS_EFFECTIVE_ON: '2026-09-10'
-      LEGAL_PRIVACY_EFFECTIVE_ON: '2026-09-10'
+      LEGAL_PRIVACY_EFFECTIVE_ON: '2026-09-18'
 
-  # 운영 API
-  WeddingPick-운영 API 서버:
+  # 싱가포르 운영 API. 기존 Ohio 서비스는 복구용으로 보존하며 자동 변경하지 않는다.
+  weddingpickl-sg:
     vars:
       # 웹과 **같은 값이어야 한다.** 앱 약관 화면과 웹 약관 페이지가 서로 다른 시행일을
       # 말하면 어느 쪽이 맞는지 알 수 없다. 지금까지는 이 값이 Render 대시보드에만
       # 있어서 웹이 볼 수 없었다.
       LEGAL_TERMS_EFFECTIVE_ON: '2026-09-10'
-      LEGAL_PRIVACY_EFFECTIVE_ON: '2026-09-10'
+      LEGAL_PRIVACY_EFFECTIVE_ON: '2026-09-18'
       # 브라우저에서 API를 부르는 출처. 빠진 출처는 preflight에서 막히고,
       # 브라우저에는 CORS 오류로 뜨지만 서버 로그에는 아무것도 남지 않는다.
       #

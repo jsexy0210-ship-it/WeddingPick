@@ -11,6 +11,7 @@ on:
         options:
           - WeddingPick-웹뷰(앱 테스트)
           - WeddingPick-웹사이트
+          - weddingpickl-sg
           - WeddingPick-운영 API 서버
           # 관리자 콘솔을 별도 출처로 옮기는 자리다(2026-09-10 대표 결정 ·
           # docs/admin-origin-split.md). 2026-09-11에 「쓰지 않는 서비스」로 읽고

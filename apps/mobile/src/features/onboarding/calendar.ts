@@ -1,22 +1,19 @@
 /**
- * 날짜 선택 시트(WP-APP-023)의 계산. SPEC §13.7 «날짜 선택 · 연월 셀렉트».
+ * 날짜 선택 시트(WP-APP-023)의 계산.
  *
- * 연 · 월은 셀렉트로 바로 고르고 일만 달력에서 찍는다 — 좌우 화살표로 달을 넘기지
- * 않는다. 화면은 여기서 만든 목록과 42칸만 그린다 — 「없는 날짜면 그 달 마지막 날로
- * 당긴다」 「과거는 고를 수 없다」 같은 규칙이 화면 코드에 섞이면 시험할 수 없다.
+ * 화면은 여기서 만든 세 목록(연 · 월 · 일)만 휠에 걸고, 굴린 뒤 `normalizeDate`를
+ * 지난다 — 「없는 날짜면 그 달 마지막 날로 당긴다」 「과거는 고를 수 없다」 같은
+ * 규칙이 화면 코드에 섞이면 시험할 수 없다.
+ *
+ * **과거는 목록에서 빼서 막는다.** 비활성으로 그려 놓고 누르면 되돌리는 것이
+ * 아니라 `first`(내일) 앞의 해 · 달 · 날을 애초에 만들지 않는다 — 휠에서는 밴드에
+ * 걸릴 수 없는 값이 곧 고를 수 없는 값이다.
  */
 
 /** 연도 셀렉트에 펼치는 수 — 올해부터 5년 뒤까지(SPEC §13.7 «올해부터 5년 뒤»). */
 export const YEAR_SPAN = 6;
 
-export const MONTHS = Array.from({ length: 12 }, (_, index) => index + 1);
-
-/** 요일 헤더. 일요일이 첫 칸이다(시안 «일 월 화 수 목 금 토»). */
-export const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
-
-/** 달력은 항상 6행 × 7칸 — 달마다 높이가 달라지면 시트가 들썩인다. */
-export const CALENDAR_ROWS = 6;
-export const CALENDAR_CELLS = CALENDAR_ROWS * WEEKDAYS.length;
+const MONTHS = Array.from({ length: 12 }, (_, index) => index + 1);
 
 const pad = (value: number) => String(value).padStart(2, '0');
 
@@ -68,21 +65,11 @@ export function monthOptions(year: number, first: PickedDate): number[] {
   return year === first.year ? MONTHS.filter((month) => month >= first.month) : MONTHS;
 }
 
-/** 이 달을 셀렉트에서 고를 수 있는가 — 첫 날이 속한 달 이후. */
-export function isMonthSelectable(year: number, month: number, first: PickedDate): boolean {
-  return monthOptions(year, first).includes(month);
-}
-
 /** 그 달에 고를 수 있는 날. 첫 달은 첫 날부터, 그 밖에는 1일 … 마지막 날. */
 export function dayOptions(year: number, month: number, first?: PickedDate): number[] {
   const from = first && year === first.year && month === first.month ? first.day : 1;
 
   return Array.from({ length: daysInMonth(year, month) - from + 1 }, (_, index) => from + index);
-}
-
-/** 이 날을 고를 수 있는가 — 첫 날(내일) 이후. */
-export function isDaySelectable(value: PickedDate, first: PickedDate): boolean {
-  return toIso(value.year, value.month, value.day) >= toIso(first.year, first.month, first.day);
 }
 
 /**
@@ -99,36 +86,13 @@ export function normalizeDate(value: PickedDate, first: PickedDate): PickedDate 
   return { year, month, day };
 }
 
-export type CalendarCell = PickedDate & {
-  iso: string;
-  /** 이 달의 날인가. 아니면 앞뒤 달의 «타월»이라 옅게 그리고 누를 수 없다. */
-  inMonth: boolean;
-  /** 0 = 일요일 … 6 = 토요일. */
-  weekday: number;
-};
-
 /**
- * 달력 42칸 — 그 달 1일이 속한 주의 일요일부터 6주. 앞뒤 달의 날도 숫자를 채운다
- * (시안 «25 26 27 28 29 30 1 …»). 빈 칸을 두지 않는다.
+ * 고정 크기 격자에 넣기 위해 n개씩 자른다.
+ *
+ * 날짜와 상관없는 도구인데 여기 있다. 달력 42칸을 6줄로 자르려고 만든 자리고,
+ * 지금은 예산 · 준비 현황 · 스타일 격자 셋이 쓴다 — 달력이 휠로 바뀌어 마지막
+ * 날짜 쪽 사용처가 없어졌지만 셋이 부르고 있어 옮기지 않았다.
  */
-export function monthCells(year: number, month: number): CalendarCell[] {
-  const firstWeekday = new Date(year, month - 1, 1).getDay();
-
-  return Array.from({ length: CALENDAR_CELLS }, (_, index) => {
-    const date = new Date(year, month - 1, 1 - firstWeekday + index);
-
-    return {
-      year: date.getFullYear(),
-      month: date.getMonth() + 1,
-      day: date.getDate(),
-      iso: toIso(date.getFullYear(), date.getMonth() + 1, date.getDate()),
-      inMonth: date.getMonth() + 1 === month && date.getFullYear() === year,
-      weekday: date.getDay(),
-    };
-  });
-}
-
-/** 고정 크기 격자에 넣기 위해 n개씩 자른다. */
 export function chunk<T>(items: readonly T[], size: number): T[][] {
   const rows: T[][] = [];
 
