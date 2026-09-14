@@ -69,6 +69,39 @@ Figma 신규 디자인이 요구하는 공용 컴포넌트와 이 저장소가 �
 - 값은 `Colors` · `Spacing` · `Layout` · `Radius` · `FontSize`에서만. 하드코딩 금지.
 - 이미 있는 것을 새로 만들지 않는다. 모양이 비슷하다고 억지로 합치지도 않는다.
 
+## 구현 현황 (토큰 전 1차)
+
+토큰 세션을 기다리는 동안 **지금 있는 토큰 API**(`Colors` · `Layout` · `Radius` · `Spacing` ·
+`FontSize`) 위에 올려 만들었다. 토큰 세션이 바꾸는 것은 값이라, `claude/rn-tokens`가 들어오면
+이 부품들은 값만 따라 움직인다.
+
+| 컴포넌트 | 파일 | 상태 |
+| --- | --- | --- |
+| Badge | `packages/ui/src/badge.tsx` | 새로 만듦. `neutral · ink · positive · cautionary` |
+| Card | `packages/ui/src/card.tsx` | 새로 만듦. 그림자 없음 |
+| IconButton | `packages/ui/src/icon-button.tsx` | 새로 만듦. 보이는 40 · 터치 44 |
+| SectionHeader | `packages/ui/src/section-header.tsx` | 새로 만듦. 서브카피 prop 없음 |
+| Input | `packages/ui/src/input.tsx` | 새로 만듦. 오류는 색 + 문구 |
+| SearchBar | `packages/ui/src/search-bar.tsx` | 새로 만듦. `Input` 위 한 겹 |
+| SegmentedTabs | `packages/ui/src/segmented-tabs.tsx` | 새로 만듦. 하단 탭바와 다른 물건 |
+| VendorCard | `packages/ui/src/vendor-card.tsx` | 새로 만듦. 사진 위 · 세로 |
+| PickCard | `packages/ui/src/pick-card.tsx` | 새로 만듦. 썸네일 옆 · 가로. VendorCard와 합치지 않음 |
+| Chip | `packages/ui/src/filter-chip.tsx` | `interactive={false}` 한 갈래 추가. 두 번째 칩 컴포넌트 없음 |
+
+금액은 어느 카드든 `priceLine(paidPrice, guidePrice)`의 결과만 받는다 — `packages/ui`는
+`packages/domain`을 import하지 않는 표시 전용이라 금액 규칙을 두 벌 두지 않는다.
+
+### 토큰 세션에 넘기는 것
+
+`spec/tokens.json`에는 있는데 `packages/ui/src/theme.ts`의 `Layout`에 아직 안 올라온 값이 있다.
+`theme.ts`는 토큰 세션 담당이라 손대지 않았고, 그동안 쓰는 쪽에서 기본값으로 들고 있다.
+
+| 토큰 | 값 | 지금 어디 있나 |
+| --- | --- | --- |
+| `size.thumbList` | 52 | `pick/index.tsx` 주석이 같은 것을 적어 뒀다 |
+| `size.thumbCard` | 72 | `PickCard`의 `DEFAULT_THUMB` |
+| 카드 대표 사진 높이 | 168 | `VendorCard`의 `DEFAULT_IMAGE_HEIGHT`(검색 카드가 쓰던 값). 토큰에도 없다 |
+
 ## 판단 필요
 
 **1. 원형 로더 — 지시와 저장소 핸드오프가 정면으로 어긋난다.**
