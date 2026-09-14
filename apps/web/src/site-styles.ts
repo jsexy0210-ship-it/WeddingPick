@@ -61,7 +61,7 @@ export const SITE_STYLES = `
   --positive-bg: #e8faf6;
 
   /* 키 컬러 위의 글자. **어두운 모드에서도 뒤집지 않는다** — SEED on-primary 규칙. */
-  --on-tint: #ffffff;
+  --on-tint: #371b34;
 
   /* 좌우 여백. 디자인의 56px. 좁은 화면에서는 아래 미디어 쿼리가 줄인다. */
   --gutter: 56px;
