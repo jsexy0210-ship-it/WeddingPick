@@ -26,6 +26,11 @@ import { isRootTab, rootTab, type RootTabSpec } from './root-tabs';
  * 다른 모양이라야 «Pick이 이 앱의 중심»이라는 말이 화면에서도 같은 무게로 읽힌다.
  * 그림자는 `tokens.json` `tabBar.$rule`의 «과도한 그림자 금지»를 지켜 얕게 둔다.
  *
+ * **원 위의 흰 마크는 대비가 모자란다** — `tokens.json` `color.brand.onPrimary`의
+ * `$contrast`가 «#E7898D 위 2.51:1 · WCAG AA 미달 · MASTER 판단 대기»라고 적어 둔
+ * 그 자리다. 토큰이 정해 주는 값을 여기서 몰래 바꾸지 않는다. 보정하기로 결정되면
+ * 토큰이 먼저 바뀌고 이 코드는 그대로 따라간다.
+ *
  * Pick 오른쪽 위의 점은 시안이 고정으로 둔 배지다(`tokens.json` `tabBar.pickDot`).
  * 원이 차 있을 때는 그리지 않는다 — 주색 면 위의 주색 점은 보이지 않는다.
  */
