@@ -1,6 +1,7 @@
 import {
   REPORT_KIND_LABEL,
   REPORT_KIND_USE,
+  type PaymentProofField,
   type ReportKind,
 } from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
@@ -18,6 +19,7 @@ type ReportRow = {
   in_use: boolean;
   needs_check: boolean;
   note: string | null;
+  pending_fields: PaymentProofField[];
 };
 
 /**
@@ -56,7 +58,23 @@ export function registerMyReportRoutes(app: FastifyInstance, context: AppContext
                   THEN coalesce(p.review_note, '올려주신 자료를 확인하고 있어요')
                 WHEN p.vendor_id IS NULL
                   THEN '어느 업체인지 찾지 못해 아직 쓰이지 않아요'
-              END AS note
+              END AS note,
+              /*
+               * 사람이 채울 수 있는 칸. **키만 보낸다** — 값도 사유 문장도 담지
+               * 않는다(2026-09-14 지시). 화면은 이 키로 「직접 입력」(WP-RPT-004)을
+               * 열고, 문구는 spec/strings.ko.json이 만든다.
+               *
+               * ::text[]로 꺼내는 이유는 node-pg가 우리가 만든 enum의 배열을
+               * 풀어주지 못해 '{a,b}' 문자열 그대로 돌려주기 때문이다.
+               *
+               * 이미 사람이 적어둔 줄(claimed_fields가 찬 줄)은 다시 묻지 않는다 —
+               * 적을 것이 남아 있지 않고, 기다리는 것은 검수다.
+               */
+              CASE
+                WHEN p.review_state = 'pending_review' AND cardinality(p.claimed_fields) = 0
+                  THEN p.pending_fields::text[]
+                ELSE '{}'::text[]
+              END AS pending_fields
        FROM structured.payment_proofs p
        LEFT JOIN structured.vendors v ON v.id = p.vendor_id
        WHERE p.reporter_user_id = $1
@@ -73,7 +91,9 @@ export function registerMyReportRoutes(app: FastifyInstance, context: AppContext
               false,
               CASE WHEN r.rejected_at IS NOT NULL
                    THEN '확인 결과 쓰지 않기로 했어요'
-              END
+              END,
+              -- 가격 제보에는 기계가 읽는 자리가 없다. 채울 칸도 없다.
+              '{}'::text[]
        FROM structured.price_reports r
        JOIN structured.vendors v ON v.id = r.vendor_id
        WHERE r.reporter_user_id = $1
@@ -90,7 +110,8 @@ export function registerMyReportRoutes(app: FastifyInstance, context: AppContext
               false,
               CASE WHEN vis.effective_status <> 'published'
                    THEN '이의 확인 중이라 지금은 보이지 않아요'
-              END
+              END,
+              '{}'::text[]
        FROM structured.reviews w
        JOIN structured.vendors v ON v.id = w.vendor_id
        /*
@@ -119,6 +140,7 @@ export function registerMyReportRoutes(app: FastifyInstance, context: AppContext
         inUse: row.in_use,
         needsCheck: row.needs_check,
         note: row.note,
+        pendingFields: row.pending_fields,
       })),
     };
   });

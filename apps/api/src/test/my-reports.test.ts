@@ -13,6 +13,7 @@ const describeWithDb = process.env.DATABASE_URL ? describe : describe.skip;
 const BODY = '음식이 따뜻하게 나왔고 직원분들이 동선을 잘 안내해 주셨습니다. 주차는 조금 붐비는 편이었습니다.';
 
 type Report = {
+  id: string;
   kind: string;
   kindLabel: string;
   use: string;
@@ -21,6 +22,7 @@ type Report = {
   inUse: boolean;
   needsCheck: boolean;
   note: string | null;
+  pendingFields: string[];
 };
 
 /**
@@ -132,6 +134,60 @@ describeWithDb('내 제보 내역', () => {
     expect(report.note).toBeTruthy();
     // 금액을 못 읽었으면 없다고 말한다. 0원으로 지어내지 않는다.
     expect(report.amount).toBeNull();
+  });
+
+  /**
+   * 못 읽은 칸의 **이름만** 온다 — WP-RPT-004로 가는 길. 2026-09-14 지시.
+   *
+   * 값도, 사람 이름도, 보류 사유 문장도 이 배열에 없다. 화면은 키만 받아
+   * `spec/strings.ko.json`으로 문구를 만든다.
+   */
+  it('못 읽은 칸의 이름이 와서 직접 적을 길이 열린다', async () => {
+    const { headers } = await signInAs(test);
+    await createVendor();
+
+    await registerPaymentProof(test, headers, { paidAmount: null });
+
+    const report = (await list(headers)).json<{ reports: Report[] }>().reports[0]!;
+
+    expect(report.pendingFields).toContain('paidAmount');
+    /* 키뿐이다. 금액도 가맹점명도 이 배열에 실리지 않는다. */
+    for (const field of report.pendingFields) {
+      expect(['merchantName', 'paidAmount', 'paidAt', 'method']).toContain(field);
+    }
+  });
+
+  it('다 읽은 결제인증에는 적을 칸이 없다', async () => {
+    const { headers } = await signInAs(test);
+    await createVendor();
+
+    await registerPaymentProof(test, headers);
+
+    const report = (await list(headers)).json<{ reports: Report[] }>().reports[0]!;
+
+    expect(report.pendingFields).toEqual([]);
+  });
+
+  /* 이미 적어둔 줄은 다시 묻지 않는다 — 기다리는 것은 검수이지 사용자가 아니다. */
+  it('이미 사람이 적어둔 줄에는 적을 칸이 없다', async () => {
+    const { headers } = await signInAs(test);
+    await createVendor();
+
+    await registerPaymentProof(test, headers, { paidAmount: null });
+
+    const before = (await list(headers)).json<{ reports: Report[] }>().reports[0]!;
+
+    await test.app.inject({
+      method: 'POST',
+      url: `/v1/payment-proofs/${before.id}/claimed-fields`,
+      headers,
+      payload: { paidAmount: 3_000_000 },
+    });
+
+    const after = (await list(headers)).json<{ reports: Report[] }>().reports[0]!;
+
+    expect(after.pendingFields).toEqual([]);
+    expect(after.needsCheck).toBe(true);
   });
 
   it('허위로 판단해 뺀 가격제보도 남되 쓰이지 않는다고 말한다', async () => {

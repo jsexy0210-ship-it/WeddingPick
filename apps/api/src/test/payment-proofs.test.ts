@@ -474,7 +474,11 @@ describeWithDb('결제인증', () => {
       return created.json<{ paymentProofId: string }>().paymentProofId;
     }
 
-    const claim = (headers: Record<string, string>, id: string, payload: unknown) =>
+    const claim = (
+      headers: Record<string, string>,
+      id: string,
+      payload: Record<string, unknown>
+    ) =>
       test.app.inject({
         method: 'POST',
         url: `/v1/payment-proofs/${id}/claimed-fields`,
