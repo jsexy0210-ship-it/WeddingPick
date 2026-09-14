@@ -163,10 +163,16 @@ async function installFixtures(page, missing, blocked) {
     const request = route.request();
     const url = new URL(request.url());
 
-    if (url.pathname.startsWith('/v1/')) {
+    // EXPO_PUBLIC_API_URL이 '/capture' 접미사를 붙이므로 실제 pathname은
+    // '/capture/v1/...'다. startsWith('/v1/')는 이걸 못 잡아 모든 v1 요청이
+    // 진짜 네트워크로 새나갔다(→ port 1은 Chromium이 막아 전부 실패).
+    const v1At = url.pathname.indexOf('/v1/');
+
+    if (v1At !== -1) {
+      const v1Path = url.pathname.slice(v1At);
       const method = request.method();
-      const key = `${method} ${url.pathname}`;
-      const matched = matchRoute(method, url.pathname);
+      const key = `${method} ${v1Path}`;
+      const matched = matchRoute(method, v1Path);
 
       if (matched === null) {
         missing.add(key);
@@ -291,7 +297,7 @@ const HELP = `화면을 실제로 렌더해 PNG로 찍는다.
   --full           화면 전체(스크롤 포함)를 찍는다. 기본은 390x844 한 화면.
   --wait <ms>      렌더를 기다리는 시간. 기본 1500.
   --tap <이름>     찍기 전에 누른다. 여러 번 줄 수 있고 준 순서대로 누른다.
-                   눌러야 나오는 화면(바텀시트 · 펼침)을 찍을 때 쓴다. 못 찾으면 멈춘다.
+                   눌러야 나오는 화면(바텀시트 · 펼침)을 찍을 때 쓴다. 못 찾으면 멈추다.
   --viewport WxH   창 크기. 기본은 경로를 보고 정한다 — /admin은 1920x1080, 나머지 390x844.
 `;
 
@@ -313,8 +319,15 @@ async function main() {
        * 주소는 형식만 맞으면 된다 — 나가는 요청은 브라우저가 전부 가로챈다.
        * 그래도 비워 두지는 않는다: 비면 `isServerConfigured`가 false가 되어
        * 서버를 아예 안 부르는 다른 화면이 찍힌다(api/config.ts).
+       *
+       * 포트 1은 Chromium이 ERR_UNSAFE_PORT로 접속 자체를 막는다(tcpmux) —
+       * page.route가 가로채기도 전에 브라우저가 거부한다. 39999는 안전 목록 밖의
+       * 높은 포트다. 경로에 `/capture`를 덧붙이면 안 된다 — `installFixtures`가
+       * `/v1/`로 **시작하는** pathname만 가로채는데, base가 `/capture`로 끝나면
+       * 실제 요청 경로가 `/capture/v1/...`가 되어 매칭에서 빠지고 실제 네트워크로
+       * 나가 ERR_CONNECTION_REFUSED가 난다.
        */
-      env: { ...process.env, EXPO_PUBLIC_API_URL: 'http://127.0.0.1:1/capture' },
+      env: { ...process.env, EXPO_PUBLIC_API_URL: 'http://127.0.0.1:39999' },
     });
   }
 

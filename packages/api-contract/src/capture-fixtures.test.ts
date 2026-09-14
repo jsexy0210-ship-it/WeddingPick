@@ -15,6 +15,8 @@ import { authProvidersResponseSchema } from './auth';
 import { candidateListResponseSchema } from './candidates';
 import { signupStateSchema } from './signup';
 import { vendorRegionsResponseSchema, vendorSearchResponseSchema } from './vendors';
+import { weddingEventListResponseSchema } from './wedding-events';
+import { expenseSummaryResponseSchema, weddingTaskListResponseSchema } from './wedding-plan';
 import { currentUserSchema } from './weddings';
 
 /*
@@ -35,6 +37,9 @@ const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/weddings/:weddingId/candidates', candidateListResponseSchema],
   ['GET /v1/vendors/regions', vendorRegionsResponseSchema],
   ['GET /v1/vendors', vendorSearchResponseSchema],
+  ['GET /v1/weddings/:weddingId/events', weddingEventListResponseSchema],
+  ['GET /v1/weddings/:weddingId/tasks', weddingTaskListResponseSchema],
+  ['GET /v1/weddings/:weddingId/expenses', expenseSummaryResponseSchema],
 ]);
 
 /**

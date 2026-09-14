@@ -53,8 +53,8 @@ import { WebShellView } from '@/features/webshell/WebShellView';
  * 히어로는 늘 맨 위 고정이고, 그 아래는 홈 편집(WP-HOME-007)이 정한 순서를 따른다 —
  * 상태(2층)는 여전히 순서와 개수를 바꾸지 않는다. 바꾸는 것은 사람뿐이다.
  *
- * **코랄은 네 곳뿐이다**(SPEC §13.13). 준비 현황 현재 업종 테두리 · 진행바 ·
- * 웨딩픽 추천 라벨 · CTA · D-day. 조건 칩 · 완료 표시 · 아바타는 무채색이다.
+ * **코랄은 다섯 곳뿐이다**(CLAUDE.md v3.24 · 2026-09-09 사용자 오더). 준비 현황 현재
+ * 업종 테두리 · 진행바 · 웨딩픽 추천 라벨 · CTA · D-day. 조건 칩 · 완료 표시 · 아바타는 무채색이다.
  *
  * 화면이 무엇을 보여주는지는 전부 `features/home/state.ts`가 정한다. 여기는 그린다.
  */
@@ -219,6 +219,7 @@ export default function HomeScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <Header unread={data.unread} onPressBell={() => router.push('/my/notifications')} />
+        <HomeSearchBar />
 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Hero me={data.me} view={view} daysLeft={daysLeft} />
@@ -500,6 +501,39 @@ function Header({ unread, onPressBell }: { unread: number; onPressBell: () => vo
   );
 }
 
+/**
+ * 검색 진입점(2026-09-14 대표님 IA 확정). 검색은 당분간 탭에서 내려가 있어
+ * 홈 상단 검색바가 유일한 입구다 — 누르면 `/search`로 간다(입력창이 아니다).
+ *
+ * Figma A등급 자료(`src/imports/Home/index.tsx`)에는 검색바가 없다 — 그 파일은
+ * 웨딩픽과 무관한 다른 제품 템플릿이라 치수를 캘 수 없었다. 대신 검색 화면
+ * 자신의 검색창(`search/index.tsx` `searchBox`: height 52 · radius 6 ·
+ * backgroundSelected · gap 10)과 값을 맞춘다 — 같은 부품이 두 화면에 있는
+ * 것처럼 보여야 눌렀을 때 이어진다.
+ */
+function HomeSearchBar() {
+  const theme = useTheme();
+
+  return (
+    <View style={styles.searchBarWrap}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="검색"
+        onPress={() => router.push('/search')}
+        style={({ pressed }) => [
+          styles.searchBar,
+          { backgroundColor: theme.backgroundSelected },
+          pressed && styles.pressed,
+        ]}>
+        <ProductSymbol name="magnifier" size={Layout.iconTab} color={theme.textAssistive} />
+        <ThemedText type="t6" themeColor="textAssistive" numberOfLines={1}>
+          업체나 지역을 검색해보세요
+        </ThemedText>
+      </Pressable>
+    </View>
+  );
+}
+
 /** 다음 준비 한 줄 — 제목 + 메타 + 오른쪽 표시 + chevron. */
 function NextRow({
   name,
@@ -594,6 +628,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   bellDot: { position: 'absolute', top: 6, right: 6, width: 8, height: 8, borderRadius: Radius.pill },
+
+  /* 검색 진입 바 — search/index.tsx의 검색창과 규격을 맞춘다(위 주석 참조). */
+  searchBarWrap: {
+    paddingHorizontal: Layout.gutter,
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.one,
+  },
+  searchBar: {
+    height: Layout.field,
+    borderRadius: Radius.input,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.three,
+    gap: Layout.cardGap,
+  },
 
   /*
    * 가로 여백을 여기 두지 않는다. 회색 밴드가 화면 끝까지 닿아야 해서, 거터는

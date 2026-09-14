@@ -235,7 +235,14 @@
     "cta.keep": "그대로 둘게요",
     "cta.openSettings": "설정 열기",
     "cta.getNotified": "알림 받기",
-    "cta.startIn3s": "3초 만에 시작하기"
+    "cta.startIn3s": "3초 만에 시작하기",
+
+    "nav.home": "홈",
+    "nav.weddingNote": "웨딩노트",
+    "nav.pick": "Pick",
+    "nav.lounge": "라운지",
+    "nav.my": "MY",
+    "nav.search": "검색"
   },
 
   "data": {
@@ -374,7 +381,7 @@
     "bothPicked": "둘 다 고른 곳",
     "onlyMine": "나만 고른 곳",
     "bothPickedSection": "둘 다 고른 곳",
-    "bothPickedHint": "먼저 비교해보면 좋아요",
+    "bothPickedHint": "먼저 비교해보세요",
     "categoryHero": "{n}곳 중 {m}곳은\n{partner}님도 골랐어요",
     "categoryHint": "둘 다 고른 곳부터 비교해보세요",
     "decideTitle": "{category}는 {vendor}로 결정할까요?",
@@ -390,8 +397,14 @@
     "empty.cta": "{category} 둘러보기"
   },
 
+  "lounge": {
+    "title": "라운지",
+    "empty.title": "이야기를 모으고 있어요",
+    "empty.body": "열리면 알려드릴게요"
+  },
+
   "ourWedding": {
-    "title": "웨딩일정",
+    "title": "웨딩노트",
     "heroTogether": "{partner}님과 함께\n{n}가지를 끝냈어요",
     "progress": "{done}/{total} 완료",
     "section.nextSchedule": "다음 일정",

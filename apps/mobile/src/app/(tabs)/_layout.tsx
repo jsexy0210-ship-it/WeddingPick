@@ -1,11 +1,26 @@
 import { Tabs, useSegments } from 'expo-router';
 
+import { OFF_TAB_ROUTES, ROOT_TABS } from '@/features/navigation/root-tabs';
 import { RootTabBar } from '@/features/navigation/tab-bar';
 import { useTabScreenOptions } from '@/features/navigation/screen-options';
 
 /**
- * Bottom Navigation: 홈 | 검색 | Pick | 웨딩일정 | MY — 05-root 시안 1:1(`RootTabBar`).
- * 사업계획서 31번 App IA. 4번 탭은 «웨딩일정»(v3.16) — 혼자서도 전면 개방, 배우자 초대는 보조 기능.
+ * Bottom Navigation — 05-root 시안 1:1(`RootTabBar`). 탭 목록은 이 파일이 아니라
+ * `features/navigation/root-tabs.ts` 하나가 정한다. 여기는 그 목록을 라우터에
+ * 옮겨 놓기만 한다 — 탭을 더하거나 빼는 일은 그 파일 한 줄이다.
+ *
+ * ```
+ * 홈 · 웨딩노트 · Pick · 라운지 · MY      (2026-09-14 대표 확정)
+ * ```
+ *
+ * **검색은 탭에서 내렸지만 화면은 그대로 있다**(`OFF_TAB_ROUTES` 주석 참고) —
+ * 초기 이미지가 없어서 임시로 숨긴 것이라 되돌리기 쉽게 두었다. 진입은 홈 상단
+ * 검색바가 맡는다.
+ *
+ * **탭은 최상위 목적지에만 있다.** 상세 · 검색 · 로그인 · 온보딩에서는 탭 바가
+ * 통째로 숨고 상단 뒤로가기만 남는다(`components/back-button.tsx` — `router.back()`
+ * 이라 검색→상세→검색으로 돌아올 때 직전 맥락이 그대로 남는다). 로그인과 온보딩은
+ * 애초에 `(tabs)` 밖이라 여기에 없다.
  */
 export default function TabLayout() {
   /*
@@ -27,28 +42,16 @@ export default function TabLayout() {
     <Tabs
       tabBar={(props) => (onCamera ? null : <RootTabBar {...props} />)}
       screenOptions={screenOptions}>
-      <Tabs.Screen name="index" options={{ title: '홈' }} />
-      <Tabs.Screen name="search" options={{ title: '검색' }} />
+      {ROOT_TABS.map((tab) => (
+        <Tabs.Screen key={tab.name} name={tab.name} options={{ title: tab.label }} />
+      ))}
       {/*
-        Pick. 통합정책 v3.2 §1이 루트를 홈/검색/Pick/웨딩일정/MY로 정했다.
-        아이콘은 웨딩픽 심볼(하트 안에 체크)을 그대로 쓴다 — 앱 아이콘·스플래시와
-        같은 마크라야 "Pick이 이 앱의 중심"이라는 말이 화면에서도 같은 모양으로
-        읽힌다. 아이콘·라벨·배지는 `RootTabBar`가 그린다.
+        탭에서 내린 화면들(검색 · 제보 · (home) 하위 스택). 화면은 그대로 살아 있고
+        다른 화면에서 밀어 넣어 연다 — `href: null`이 없으면 라우터가 없는 탭을 만든다.
        */}
-      <Tabs.Screen name="pick" options={{ title: 'Pick' }} />
-      {/*
-        제보는 루트에서 뺀다(v3.2 §1). 화면은 남아 있고 MY와 업체 상세, 건수가
-        모자란 자리에서 들어간다 — 맥락 없이 탭으로 세워두면 무엇을 제보하라는
-        것인지 알 수 없다.
-       */}
-      <Tabs.Screen name="capture" options={{ href: null }} />
-      {/*
-        (home)은 홈에서 파고드는 하위 스택(피드 · TOP3)이다. 탭이 아니다 — 숨기지
-        않으면 라우터가 "(home)"이라는 여섯 번째 탭을 만든다.
-       */}
-      <Tabs.Screen name="(home)" options={{ href: null }} />
-      <Tabs.Screen name="wedding" options={{ title: '웨딩일정' }} />
-      <Tabs.Screen name="my" options={{ title: 'MY' }} />
+      {OFF_TAB_ROUTES.map((name) => (
+        <Tabs.Screen key={name} name={name} options={{ href: null }} />
+      ))}
     </Tabs>
   );
 }
