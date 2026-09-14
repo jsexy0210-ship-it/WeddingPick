@@ -30,6 +30,7 @@ import {
   notificationSummaryResponseSchema,
   rebuttalListResponseSchema,
   registerPaymentProofResponseSchema,
+  claimPaymentProofFieldsResponseSchema,
   createReviewReportResponseSchema,
   createReviewResponseSchema,
   reportReasonListResponseSchema,
@@ -95,6 +96,8 @@ import {
   type RegisterDeviceRequest,
   type RegisterDeviceResponse,
   type RegisterPaymentProofRequest,
+  type ClaimPaymentProofFieldsRequest,
+  type ClaimPaymentProofFieldsResponse,
   type RegisterPaymentProofResponse,
   type OriginalKind,
   type CreateReviewReportRequest,
@@ -1017,6 +1020,25 @@ export async function registerPaymentProof(
     method: 'POST',
     body: JSON.stringify(body),
   });
+}
+
+/**
+ * 못 읽은 칸을 직접 적는다 — WP-RPT-004 「직접 입력」.
+ *
+ * **사진을 낸 뒤에만 쓰인다.** 대상은 이미 접수돼 검수를 기다리는 내 제보이고,
+ * 그런 줄은 사진을 올렸기 때문에 존재한다.
+ *
+ * 성공해도 상태는 `pending_review` 그대로다 — 적는 것과 반영되는 것은 다른 일이다.
+ */
+export async function claimPaymentProofFields(
+  paymentProofId: string,
+  body: ClaimPaymentProofFieldsRequest
+): Promise<ClaimPaymentProofFieldsResponse> {
+  return request(
+    `/v1/payment-proofs/${encodeURIComponent(paymentProofId)}/claimed-fields`,
+    claimPaymentProofFieldsResponseSchema,
+    { method: 'POST', body: JSON.stringify(body) }
+  );
 }
 
 /**

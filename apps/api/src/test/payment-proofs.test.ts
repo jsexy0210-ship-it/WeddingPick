@@ -452,4 +452,132 @@ describeWithDb('결제인증', () => {
 
     expect(response.statusCode).toBe(401);
   });
+
+  /* ------------------------------------------------------------------------ */
+  /* 못 읽은 칸을 직접 적는다 — WP-RPT-004. 2026-09-14 대표 지시. 0240.         */
+  /* ------------------------------------------------------------------------ */
+
+  /**
+   * 되살린 화면이지 폐기된 화면이 아니다. **사진을 낸 줄에만 열리고**, **못 읽은
+   * 칸만 받고**, **적었다고 반영되지 않는다.** 셋이 무너지면 증빙 없는 금액이
+   * 실 제보의 중앙값으로 들어간다.
+   */
+  describe('직접 입력', () => {
+    /** 금액을 못 읽어 보류된 내 제보 하나. 실전과 같은 길로 만든다. */
+    async function aPendingProof(headers: Record<string, string>): Promise<string> {
+      readsAs({ paidAmount: null });
+
+      const created = await register(headers);
+
+      expect(created.json<{ status: string }>().status).toBe('pending_review');
+
+      return created.json<{ paymentProofId: string }>().paymentProofId;
+    }
+
+    const claim = (headers: Record<string, string>, id: string, payload: unknown) =>
+      test.app.inject({
+        method: 'POST',
+        url: `/v1/payment-proofs/${id}/claimed-fields`,
+        headers,
+        payload,
+      });
+
+    it('못 읽은 칸을 적으면 그 칸이 사람 손으로 남는다', async () => {
+      const { headers } = await signInAs(test);
+      await createVendor();
+
+      const proofId = await aPendingProof(headers);
+      const response = await claim(headers, proofId, { paidAmount: 3_000_000 });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json<{ claimedFields: string[] }>().claimedFields).toEqual(['paidAmount']);
+      expect(response.json<{ claimedSource: string }>().claimedSource).toBe('user');
+
+      const { rows } = await test.pool.query<{
+        paid_amount: string;
+        claimed_fields: string[];
+        claimed_source: string;
+        claimed_by: string | null;
+      }>(
+        `SELECT paid_amount::text, claimed_fields::text[], claimed_source, claimed_by
+         FROM structured.payment_proofs WHERE id = $1`,
+        [proofId]
+      );
+
+      expect(rows[0]!.paid_amount).toBe('3000000');
+      expect(rows[0]!.claimed_fields).toEqual(['paidAmount']);
+      expect(rows[0]!.claimed_source).toBe('user');
+      expect(rows[0]!.claimed_by).not.toBeNull();
+    });
+
+    /**
+     * **여기가 이 기능의 핵심이다.** 적는 것과 반영되는 것은 다른 일이다 —
+     * 기준금액은 실 제보의 중앙값이라, 확인 안 된 값이 그 계산에 들어가면
+     * 「실 제보」라는 말 자체가 거짓이 된다.
+     */
+    it('적었다고 반영되지 않는다 — 검수를 기다린다', async () => {
+      const { headers } = await signInAs(test);
+      await createVendor();
+
+      const proofId = await aPendingProof(headers);
+      const response = await claim(headers, proofId, { paidAmount: 3_000_000 });
+
+      expect(response.json<{ status: string }>().status).toBe('pending_review');
+
+      const usable = await test.pool.query(
+        'SELECT 1 FROM structured.usable_payment_proofs WHERE id = $1',
+        [proofId]
+      );
+
+      expect(usable.rowCount).toBe(0);
+    });
+
+    it('읽어낸 칸은 고칠 수 없다', async () => {
+      const { headers } = await signInAs(test);
+      await createVendor();
+
+      const proofId = await aPendingProof(headers);
+      /* 가맹점 이름은 자료에서 읽혔다 — 보류된 칸이 아니다. */
+      const response = await claim(headers, proofId, {
+        paidAmount: 3_000_000,
+        merchantName: '다른 곳',
+      });
+
+      expect(response.statusCode).toBe(400);
+    });
+
+    it('남의 제보에는 적을 수 없다', async () => {
+      const mine = await signInAs(test);
+      await createVendor();
+
+      const proofId = await aPendingProof(mine.headers);
+      // subject가 같으면 같은 사람으로 들어온다. 남이려면 다른 subject여야 한다.
+      const stranger = await signInAs(test, 'apple-user-2');
+
+      const response = await claim(stranger.headers, proofId, { paidAmount: 3_000_000 });
+
+      expect(response.statusCode).toBe(404);
+    });
+
+    it('로그인해야 적을 수 있다', async () => {
+      const response = await test.app.inject({
+        method: 'POST',
+        url: '/v1/payment-proofs/00000000-0000-0000-0000-000000000000/claimed-fields',
+        payload: { paidAmount: 3_000_000 },
+      });
+
+      expect(response.statusCode).toBe(401);
+    });
+
+    /* 말이 안 되는 값은 사람이 적어도 받지 않는다. 읽은 값과 같은 자를 댄다. */
+    it('말이 안 되는 값은 적어도 받지 않는다', async () => {
+      const { headers } = await signInAs(test);
+      await createVendor();
+
+      const proofId = await aPendingProof(headers);
+      const response = await claim(headers, proofId, { paidAmount: 1_000 });
+
+      expect(response.statusCode).toBe(400);
+    });
+  });
 });

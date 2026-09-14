@@ -72,6 +72,7 @@ const S = {
   doneOriginalValue: `올려주신 자료는 ${PAYMENT_PROOF_RETENTION_HOURS}시간 뒤 삭제돼요`,
   doneChecking: R['state.checking'],
   doneCta: '확인',
+  doneWriteIn: R['manual.title'],
 } as const;
 
 /** 2열 격자 타일 — (390−48−11)/2 = 165.5 → 시안 166. */
@@ -94,13 +95,15 @@ function checkingValue(fields: PaymentProofField[]): string {
  *   선택   hero · 2열 격자(촬영하기 · 앨범에서 고르기 · 고른 사진) · 안내 3줄 체크 · dock «1장으로 계속하기»
  *   완료   체크 원 72 · «제보 접수됐어요» · 카드(다음 · 내 지출 또는 확인 중 · 원본) · dock «확인»
  *
- * **사용자 행동은 사진 한 장, 끝이다**(v3.24). 확인 화면(WP-RPT-004) · 업체 확인
- * (WP-RPT-005) · 분할 묶기(WP-RPT-006) · 증빙 없는 수동 입력(WP-RPT-010)이 전부
- * 폐기됐다. 금액·업체·날짜를 적을 칸이 이 화면에 없고, 보낼 자리도 계약에 없다 —
- * 읽는 것은 서버가 하고, 못 읽으면 접수는 성립하되 검수를 기다린다.
+ * **이 화면에서 사용자 행동은 사진 한 장, 끝이다**(v3.24). 업체 확인(WP-RPT-005) ·
+ * 분할 묶기(WP-RPT-006) · 증빙 없는 수동 입력(WP-RPT-010)은 폐기된 그대로다. 금액·
+ * 업체·날짜를 적을 칸이 여기 없고, 보낼 자리도 등록 계약에 없다 — 읽는 것은 서버가
+ * 하고, 못 읽으면 접수는 성립하되 검수를 기다린다.
  *
- * **재입력 경로는 다시 찍기/올리기뿐이다.** 읽지 못한 값을 사용자가 고쳐 넣는 길을
- * 두면 그 값에는 증빙이 없고, 증빙 없는 금액은 금액 구간에 들어갈 수 없다.
+ * **못 읽었을 때만 직접 입력(WP-RPT-004)이 열린다**(2026-09-14 대표 지시 — 「실패하면
+ * 사람이 직접 등록한다」). 완료 화면의 dock에서 그리로 간다. 폐기된 WP-RPT-010과
+ * 다른 것은 **사진을 이미 냈다는 점**이다 — 증빙 없이 금액만 받는 화면은 되살리지
+ * 않았고, 되살릴 자리도 없다(0240의 CHECK).
  */
 export default function RegisterPaymentProofScreen() {
   const theme = useTheme();
@@ -171,6 +174,12 @@ export default function RegisterPaymentProofScreen() {
   /* ---------------------------------------------------------- 제출 완료 · WP-RPT-007 */
   if (done) {
     const held = done.status === 'pending_review';
+    /*
+     * 사람이 적을 수 있는 줄인가. 보류이면서 못 읽은 칸이 적혀 있을 때만이다 —
+     * 취소 문자처럼 「결제가 아니다」로 보류된 줄은 `pendingFields`가 비어 있고,
+     * 그런 줄에 금액을 적어 넣게 하면 낸 적 없는 돈이 낸 돈이 된다.
+     */
+    const canWriteIn = held && done.pendingFields.length > 0;
 
     return (
       <Screen>
@@ -201,7 +210,33 @@ export default function RegisterPaymentProofScreen() {
           </View>
         </ScrollView>
         <Dock>
-          <DockButton variant="primary" label={S.doneCta} onPress={() => router.replace('/wedding' as never)} />
+          {/*
+            못 읽은 칸이 있으면 그 자리에서 적을 수 있게 한다 — WP-RPT-004 「직접 입력」
+            (2026-09-14 대표 지시). 이 길이 없던 동안 재입력 경로는 「다시 찍기」뿐이라,
+            두 번 찍어도 못 읽는 사람에게는 길이 없었다.
+
+            무엇을 물을지는 서버가 준 `pendingFields`를 그대로 넘긴다. 화면이 스스로
+            고르면 서버가 받는 칸과 갈린다.
+          */}
+          {canWriteIn ? (
+            <DockButton
+              variant="secondary"
+              label={S.doneCta}
+              onPress={() => router.replace('/wedding' as never)}
+            />
+          ) : null}
+          <DockButton
+            variant="primary"
+            label={canWriteIn ? S.doneWriteIn : S.doneCta}
+            onPress={() =>
+              canWriteIn
+                ? router.push(
+                    `/capture/payment/manual?paymentProofId=${encodeURIComponent(done.paymentProofId)}` +
+                      `&fields=${encodeURIComponent(done.pendingFields.join(','))}` as never
+                  )
+                : router.replace('/wedding' as never)
+            }
+          />
         </Dock>
       </Screen>
     );

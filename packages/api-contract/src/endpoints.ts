@@ -65,6 +65,8 @@ import {
   updateRebuttalRequestSchema,
 } from './rebuttals';
 import {
+  claimPaymentProofFieldsRequestSchema,
+  claimPaymentProofFieldsResponseSchema,
   registerPaymentProofRequestSchema,
   registerPaymentProofResponseSchema,
 } from './payment-proofs';
@@ -913,6 +915,23 @@ export const ENDPOINTS = {
     path: '/v1/payment-proofs',
     body: registerPaymentProofRequestSchema,
     response: registerPaymentProofResponseSchema,
+  },
+
+  /**
+   * 못 읽은 칸을 직접 적는다 — WP-RPT-004 「직접 입력」. 2026-09-14 대표 지시.
+   *
+   * `registerPaymentProof`는 그대로 사진 한 장이다. 이것은 그 뒤에 오는 자리이고,
+   * **기계가 못 읽어 `pending_review`로 남은 내 제보에만 열린다.** 증빙 없이 금액만
+   * 받던 화면(폐기된 WP-RPT-010)과 갈리는 자리가 여기다 — 보낼 대상 자체가 사진을
+   * 낸 줄뿐이다.
+   *
+   * 성공해도 상태는 `pending_review` 그대로다. 적는 것과 반영되는 것은 다른 일이다.
+   */
+  claimPaymentProofFields: {
+    method: 'POST',
+    path: '/v1/payment-proofs/{paymentProofId}/claimed-fields',
+    body: claimPaymentProofFieldsRequestSchema,
+    response: claimPaymentProofFieldsResponseSchema,
   },
 
   /** 내 실제가격 열람 자격. 몇 건 더 내면 열리는지 화면이 말할 수 있어야 한다. */
