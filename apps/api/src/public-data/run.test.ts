@@ -1,7 +1,7 @@
 import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { VENDOR_CATEGORIES } from '@weddingpick/domain';
+import { VENDOR_CATEGORIES, VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
 import { runPublicCollection } from './run';
 
 /**
@@ -67,6 +67,24 @@ test('상한 안이면 반영 단계로 넘어간다', async () => {
   await expect(
     runPublicCollection(['--source', 'icheon-halls', '--file', file, '--apply', '--out', dir])
   ).rejects.toThrow(/^(?!반영 상한 초과)/);
+});
+
+/*
+ * 잡 요약은 `node -e`로 도는 셸 단계라 도메인(TS)을 못 읽는다. 이름표를 거기에
+ * 따로 적으면 도메인에서 업종 이름을 고쳐도 요약은 옛 이름을 계속 찍는다 —
+ * 「같은 것을 두 이름으로 부르지 않는다」(2026-09-11 대표 지시)를 어기는 자리다.
+ * 그래서 리포트가 도메인 이름을 실어 나르고, 이 시험이 그 연결을 지킨다.
+ */
+test('리포트가 도메인 업종 이름을 그대로 실어 나른다', async () => {
+  const { dir, file } = await fixture();
+  delete process.env.DATABASE_URL;
+
+  await runPublicCollection(['--source', 'icheon-halls', '--file', file, '--out', dir]);
+
+  const report = JSON.parse(await readFile(join(dir, 'icheon-halls-report.json'), 'utf8'));
+  expect(report.categoryLabels).toEqual(VENDOR_CATEGORY_LABEL);
+  // 세는 칸과 이름 칸이 같은 업종을 덮는다 — 한쪽에만 있는 업종이 없어야 한다.
+  expect(Object.keys(report.categoryLabels)).toEqual(Object.keys(report.categoryCounts));
 });
 
 test('--limit은 CSV 경로에서도 지켜지고 리포트에 남는다', async () => {

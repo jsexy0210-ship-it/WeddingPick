@@ -1,6 +1,6 @@
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { VENDOR_CATEGORIES, type VendorCategory } from '@weddingpick/domain';
+import { VENDOR_CATEGORIES, VENDOR_CATEGORY_LABEL, type VendorCategory } from '@weddingpick/domain';
 import { createPool } from '../db';
 import { downloadPublicCsv, downloadSbizApiVendors, parsePublicCsv } from './collect';
 import { PUBLIC_SOURCES, sourceKey } from './sources';
@@ -139,7 +139,19 @@ export async function runPublicCollection(args: string[]) {
   const categoryCounts = Object.fromEntries(VENDOR_CATEGORIES.map((category) => [category, 0])) as Record<VendorCategory, number>;
   for (const vendor of vendors) categoryCounts[vendor.category]++;
   const report = {source: key, sourceUrl: source.url, collectedAt: at.toISOString(),
-    total, accepted: vendors.length, categoryCounts, rejected, duplicates, closed, truncated,
+    total, accepted: vendors.length, categoryCounts,
+    /*
+     * 업종 이름을 리포트가 함께 나른다 — 워크플로 잡 요약이 화면 이름으로 찍되
+     * 이름을 두 번 적지 않게 하려는 것이다.
+     *
+     * 요약은 `node -e`로 도는 셸 단계라 도메인(TS)을 못 읽는다. 그래서 한동안
+     * 같은 이름표를 워크플로에 따로 박아 뒀는데, 그러면 도메인에서 이름을 고쳐도
+     * 요약은 옛 이름을 계속 찍는다 — 「같은 것을 두 이름으로 부르지 않는다」
+     * (2026-09-11 대표 지시)를 어기는 자리였다. 원본은 VENDOR_CATEGORY_LABEL
+     * 하나이고 여기서는 그것을 실어 나르기만 한다.
+     */
+    categoryLabels: VENDOR_CATEGORY_LABEL,
+    rejected, duplicates, closed, truncated,
     // 상한을 걸고 받았으면 accepted는 「있는 만큼」이 아니다. 그 사실을 남긴다.
     limit: limit ?? null,
     // 요청했으나 상한에 막힌 것과 애초에 요청하지 않은 것은 다르다.
