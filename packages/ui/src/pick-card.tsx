@@ -89,7 +89,7 @@ export function PickCard({
             />
             {badge ? (
               <View style={styles.badge}>
-                <Badge kind="brand">{badge}</Badge>
+                <Badge kind="onImage">{badge}</Badge>
               </View>
             ) : null}
             {decided ? (
