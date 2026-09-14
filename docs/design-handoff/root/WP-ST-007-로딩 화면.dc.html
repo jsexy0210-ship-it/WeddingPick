@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-static.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-scale.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-semantic.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/typography.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/dimension.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/motion.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/base.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/core/core.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/feedback/feedback.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/styles.css">
+<script src="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/_ds_bundle.js"></script>
+<style>
+body{margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#ff6f61;text-decoration:none}
+a:hover{color:#e2564a}
+@keyframes wpSpin{to{transform:rotate(360deg)}}
+</style>
+</helmet>
+
+<section style="{{ root }}">
+
+  <div style="{{ intro }}">
+    <span style="{{ eyebrow }}">WeddingPick · WP-ST-007</span>
+    <span style="{{ h40 }}">기본 로더</span>
+    <span style="{{ lead }}">원형 써클 하나. 업종을 특정할 수 있을 때만 업종 아이콘 순회로 바꿉니다. 그 외에는 크기만 바꿔 씁니다.</span>
+  </div>
+
+  <div style="{{ card }}">
+    <span style="{{ cardTitle }}">크기 3종</span>
+    <div style="{{ row }}">
+      <sc-for list="{{ sizes }}" as="s" hint-placeholder-count="3">
+        <div style="{{ cell }}">
+          <span style="{{ box }}"><span style="{{ s.ring }}"></span></span>
+          <span style="{{ label }}">{{ s.label }}</span>
+          <span style="{{ spec }}">{{ s.spec }}</span>
+          <span style="{{ use }}">{{ s.use }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="{{ card }}">
+    <span style="{{ cardTitle }}">배치</span>
+    <div style="{{ row }}">
+      <div style="{{ cell }}">
+        <div style="{{ inlineBox }}">
+          <span style="{{ inlineRing }}"></span>
+          <span style="{{ inlineText }}">불러오는 중</span>
+        </div>
+        <span style="{{ label }}">인라인</span>
+        <span style="{{ spec }}">20 · 텍스트 좌측 gap 8</span>
+        <span style="{{ use }}">버튼 안 · 행 안</span>
+      </div>
+      <div style="{{ cell }}">
+        <div style="{{ centerBox }}">
+          <span style="{{ ringMd }}"></span>
+        </div>
+        <span style="{{ label }}">영역 중앙</span>
+        <span style="{{ spec }}">28 · 최소 높이 120</span>
+        <span style="{{ use }}">카드 · 섹션 갱신</span>
+      </div>
+      <div style="{{ cell }}">
+        <div style="{{ fullBox }}">
+          <span style="{{ ringLg }}"></span>
+          <span style="{{ fullText }}">잠시만요</span>
+        </div>
+        <span style="{{ label }}">전체 화면</span>
+        <span style="{{ spec }}">40 · 문구 16px</span>
+        <span style="{{ use }}">화면 전환 · 제출</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="{{ specCard }}">
+    <span style="{{ cardTitle }}">규격</span>
+    <div style="{{ rows }}">
+      <sc-for list="{{ table }}" as="t" hint-placeholder-count="7">
+        <div>
+          <div style="{{ kvRow }}"><span style="{{ k }}">{{ t.k }}</span><span style="{{ v }}">{{ t.v }}</span></div>
+          <div style="{{ hr }}"></div>
+        </div>
+      </sc-for>
+    </div>
+    <span style="{{ note }}">응답이 700ms를 넘으면 띄웁니다. 목록 자리는 뼈대 3줄, 진행률을 아는 처리는 진행바를 씁니다.</span>
+  </div>
+
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:900,&quot;height&quot;:1100}}">
+class Component extends DCLogic {
+  renderVals() {
+    const C = '#ff6f61';
+    const ring = (px, w) => 'width:' + px + 'px;height:' + px + 'px;flex:0 0 ' + px + 'px;border-radius:999px;border:' + w + 'px solid #eaebee;border-top-color:' + C + ';animation:wpSpin 800ms linear infinite';
+
+    return {
+      root: 'display:flex;flex-direction:column;gap:28px;align-items:flex-start;padding:64px;width:max-content',
+      intro: 'display:flex;flex-direction:column;gap:10px;max-width:760px;padding-bottom:4px',
+      eyebrow: 'font-size:14px;line-height:19px;font-weight:700;color:' + C,
+      h40: 'font-size:40px;line-height:52px;font-weight:700;color:#212124',
+      lead: 'font-size:18px;line-height:26px;color:#393a40;text-wrap:pretty',
+
+      card: 'width:760px;background:#fff;border-radius:12px;padding:28px;display:flex;flex-direction:column;gap:20px;box-sizing:border-box',
+      specCard: 'width:760px;background:#fff;border-radius:12px;padding:28px;display:flex;flex-direction:column;gap:16px;box-sizing:border-box',
+      cardTitle: 'font-size:18px;line-height:24px;font-weight:700;color:#212124',
+      row: 'display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px',
+      cell: 'display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0',
+      box: 'height:56px;display:flex;align-items:center;justify-content:center',
+      label: 'font-size:15px;line-height:21px;font-weight:700;color:#212124;white-space:nowrap',
+      spec: 'font-size:13px;line-height:18px;color:#868b94;font-variant-numeric:tabular-nums;white-space:nowrap',
+      use: 'font-size:13px;line-height:18px;color:#adb1ba;white-space:nowrap',
+
+      inlineBox: 'height:56px;display:flex;align-items:center;justify-content:center;gap:8px',
+      inlineRing: ring(20, 2),
+      inlineText: 'font-size:15px;line-height:21px;font-weight:700;color:#4d5159;white-space:nowrap',
+      centerBox: 'height:56px;display:flex;align-items:center;justify-content:center',
+      ringMd: ring(28, 2.5),
+      fullBox: 'height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px',
+      ringLg: ring(32, 3),
+      fullText: 'font-size:13px;line-height:18px;color:#868b94;white-space:nowrap',
+
+      sizes: [
+        { label: '작은 써클', spec: '20 · 두께 2', use: '버튼 · 행 안', ring: ring(20, 2) },
+        { label: '보통 써클', spec: '28 · 두께 2.5', use: '카드 · 섹션', ring: ring(28, 2.5) },
+        { label: '큰 써클', spec: '40 · 두께 3', use: '전체 화면', ring: ring(40, 3) }
+      ],
+
+      rows: 'display:flex;flex-direction:column;gap:2px',
+      kvRow: 'display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:48px;padding:10px 0',
+      k: 'font-size:15px;line-height:21px;color:#4d5159;white-space:nowrap',
+      v: 'font-size:15px;line-height:21px;font-weight:700;color:#212124;font-variant-numeric:tabular-nums;text-align:right',
+      hr: 'height:1px;background:#eaebee',
+      note: 'font-size:14px;line-height:21px;color:#868b94;text-wrap:pretty',
+
+      table: [
+        { k: '트랙', v: '#EAEBEE' },
+        { k: '진행', v: '#FF6F61 · border-top-color' },
+        { k: '두께', v: '20 → 2 · 28 → 2.5 · 40 → 3' },
+        { k: '회전', v: '800ms linear infinite' },
+        { k: '노출 임계', v: '700ms 초과' },
+        { k: '인라인 gap', v: '8px' },
+        { k: '영역 최소 높이', v: '120px' }
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

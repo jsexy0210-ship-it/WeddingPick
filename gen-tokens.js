@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 /**
- * spec/tokens.json → 플랫폼별 토큰 파일 생성
+ * LEGACY: spec/tokens.json → 플랫폼별 토큰 파일 생성
+ * 2026-09-10: 현재 스키마에서 undefined 출력이 확인돼 실사용·신규 프로젝트 복제를 보류한다.
+ * 토큰 구조와 출력 검증을 보완한 뒤에만 재사용한다. 현행 npm/CI에서는 호출하지 않는다.
  *
  *   node gen-tokens.js ios      > WPTokens.swift
  *   node gen-tokens.js android  > WPTokens.kt

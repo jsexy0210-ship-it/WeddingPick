@@ -1,148 +1,64 @@
 import { router } from 'expo-router';
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
-import {
-  ActionButton,
-  Layout,
-  MaxContentWidth,
-  Radius,
-  Spacing,
-  ThemedText,
-  ThemedView,
-} from '@weddingpick/ui';
+import { Hero, NoteBox, Row, Rows, Section, SubScreen } from '@/features/settings/my-kit';
 
-type BizItem = {
-  title: string;
-  description: string;
-  route: string;
-};
+/** 시안 18-biz · 08c WP-BIZ-001. */
+const S = {
+  title: '업체 · 플래너 문의',
+  hero: '업체 관계자시면\n여기서 접수해요',
+  sub: '소속 확인이 끝나면 처리 결과를 알려드려요',
+  kinds: '문의 유형',
+  adRules: '광고 독립성',
+  noEffect: '영향 없음',
+  noteTitle: '광고와 추천은 따로 운영해요',
+  noteBody: 'TOP3 · 웨딩픽 추천 · 검색 순위 · 후기 · 실 제보는 광고와 완전히 분리돼 있어요.',
+} as const;
 
-const IDENTITY_ITEMS: BizItem[] = [
-  {
-    title: '소속 확인 요청',
-    description: '업체 관계자임을 인증하고 후기 반론 권한을 얻어요.',
-    route: '/my/biz/claim',
-  },
-  {
-    title: '내 인증 내역',
-    description: '제출한 소속 확인 요청과 처리 상태를 확인해요.',
-    route: '/my/vendor-claims',
-  },
+type BizItem = { name: string; meta: string; route: string };
+
+/*
+ * 시안은 «광고 · 제휴 문의»까지 5행이지만, 광고 제휴 접수는 2026-09-05 정책으로 삭제됐다(CLAUDE.md) —
+ * 여기서도 뺀다. 소속 확인은 반론의 전제라 맨 위에 둔다.
+ */
+const KINDS: readonly BizItem[] = [
+  { name: '소속 확인 요청', meta: '사업자등록번호 · 업체 도메인 메일로 확인해요', route: '/my/biz/claim' },
+  { name: '내 인증 내역', meta: '소속 확인 요청과 처리 상태', route: '/my/vendor-claims' },
+  { name: '정보 수정 · 자료 제공', meta: '주소 · 연락처 · 영업상태 · 대표 이미지 · 공식 소개자료', route: '/my/biz/data' },
+  { name: '혜택 · 이벤트 등록', meta: '기간과 조건을 함께 알려주세요', route: '/my/biz/benefit' },
+  { name: '후기 · 정보 반론', meta: '올라온 후기나 내용에 대한 업체 입장', route: '/my/rebuttals' },
 ];
 
-const DATA_ITEMS: BizItem[] = [
-  {
-    title: '자료 제공',
-    description: '업체 정보를 추가하거나 잘못된 내용을 알려주세요.',
-    route: '/my/biz/data',
-  },
-];
-
-const PROMO_ITEMS: BizItem[] = [
-  {
-    title: '혜택 등록',
-    description: '웨딩픽 사용자를 위한 할인·혜택을 등록해요.',
-    route: '/my/biz/benefit',
-  },
-];
-
-const REBUTTAL_ITEMS: BizItem[] = [
-  {
-    title: '후기 반론',
-    description: '업체 관계자로 확인된 경우 후기에 반론을 낼 수 있어요.',
-    route: '/my/rebuttals',
-  },
-];
-
-function Section({ title, items }: { title: string; items: BizItem[] }) {
-  return (
-    <ThemedView style={styles.section}>
-      <ThemedText type="t7" themeColor="textAssistive">
-        {title}
-      </ThemedText>
-      {items.map((item) => (
-        <ThemedView
-          key={item.route}
-          type="backgroundElement"
-          style={styles.card}
-        >
-          <View style={styles.cardBody}>
-            <ThemedText type="t5">{item.title}</ThemedText>
-            <ThemedText type="t7" themeColor="textSecondary">
-              {item.description}
-            </ThemedText>
-          </View>
-          <ActionButton
-            variant="ghost"
-            label="이동"
-            onPress={() => router.push(item.route as never)}
-          />
-        </ThemedView>
-      ))}
-    </ThemedView>
-  );
-}
+/** 광고가 손대지 못하는 것. 08c adRules. */
+const AD_RULES = ['TOP3 추천', '웨딩픽 추천', '검색 순위', '후기 · 실 제보'] as const;
 
 /**
- * WP-BIZ-001: 업체 관계자 허브.
- *
- * 업체 관계자가 쓸 수 있는 기능을 한곳에 모아 보여준다 — 소속 확인,
- * 자료 제공, 혜택 등록, 후기 반론.
+ * 업체 · 플래너 문의 · WP-BIZ-001. 유형을 고르고 들어간다. 광고 독립성 표를 첫 화면에 둔다 —
+ * 광고로 추천 결과를 바꿀 수 있다고 기대하고 오는 문의를 여기서 거른다(SPEC §7.1).
  */
 export default function BizHomeScreen() {
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.content}>
-          <ThemedView style={styles.header}>
-            <ThemedText type="t2">업체 관계자</ThemedText>
-            <ThemedText type="t6" themeColor="textSecondary">
-              업체 관계자를 위한 기능이에요. 소속 확인 후 더 많은 기능을 쓸 수
-              있어요.
-            </ThemedText>
-          </ThemedView>
+    <SubScreen title={S.title}>
+      <Hero lines={S.hero.split('\n')} sub={S.sub} />
 
-          <Section title="소속 확인" items={IDENTITY_ITEMS} />
-          <Section title="자료" items={DATA_ITEMS} />
-          <Section title="혜택" items={PROMO_ITEMS} />
-          <Section title="반론" items={REBUTTAL_ITEMS} />
+      <Section title={S.kinds}>
+        <Rows>
+          {KINDS.map((item) => (
+            <Row key={item.route} name={item.name} meta={item.meta} chevron onPress={() => router.push(item.route as never)} />
+          ))}
+        </Rows>
+      </Section>
 
-          <ActionButton label="돌아가기" onPress={() => router.back()} />
-        </ScrollView>
-      </SafeAreaView>
-    </ThemedView>
+      <Section title={S.adRules}>
+        <Rows>
+          {AD_RULES.map((name) => (
+            <Row key={name} name={name} tail={S.noEffect} tailBadge="none" />
+          ))}
+        </Rows>
+      </Section>
+
+      <Section>
+        <NoteBox title={S.noteTitle} body={S.noteBody} />
+      </Section>
+    </SubScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
-  safeArea: {
-    flex: 1,
-    maxWidth: MaxContentWidth,
-  },
-  content: {
-    paddingHorizontal: Layout.gutter,
-    paddingTop: Spacing.five,
-    paddingBottom: Spacing.six,
-    gap: Spacing.four,
-  },
-  header: {
-    gap: Spacing.two,
-  },
-  section: {
-    gap: Spacing.two,
-  },
-  card: {
-    borderRadius: Radius.medium,
-    padding: Spacing.three,
-    gap: Spacing.two,
-  },
-  cardBody: {
-    gap: Spacing.one,
-  },
-});

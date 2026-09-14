@@ -1,16 +1,19 @@
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 
-import { getCurrentUser, signOut as apiSignOut } from '@/api/client';
+import { ApiError, getCurrentUser, signOut as apiSignOut } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { loadToken } from '@/api/session';
 import { registerForPushNotifications } from '@/features/notifications/register-device';
+import { isAuthenticationFailure, sessionErrorKind } from './session-recovery';
+import type { ErrorKind } from '@/features/errors/kind';
 
 export type SessionState =
   | { status: 'loading' }
   /** 서버 주소가 없는 빌드. 촬영과 기기 저장까지만 된다. */
   | { status: 'offline' }
   | { status: 'signedOut' }
+  | { status: 'error'; kind: ErrorKind }
   | { status: 'signedIn'; userId: string };
 
 /**
@@ -26,20 +29,35 @@ export function useSession() {
    * 일을 계속 하게 되므로, 사람이 바뀌었을 때만 한 번 한다.
    */
   const registeredFor = useRef<string | null>(null);
+  const verifiedToken = useRef<string | null>(null);
+  const requestVersion = useRef(0);
 
   const refresh = useCallback(async () => {
+    const version = ++requestVersion.current;
     if (!isServerConfigured) {
       setState({ status: 'offline' });
       return;
     }
 
-    if (!(await loadToken())) {
-      setState({ status: 'signedOut' });
-      return;
-    }
-
+    let token: string | null = null;
+    setState((previous) => previous.status === 'error' ? { status: 'loading' } : previous);
     try {
+      token = await loadToken();
+      if (version !== requestVersion.current) return;
+      if (!token) {
+        verifiedToken.current = null;
+        setState({ status: 'signedOut' });
+        return;
+      }
       const me = await getCurrentUser();
+      const currentToken = await loadToken();
+      if (version !== requestVersion.current) return;
+      if (currentToken !== token) {
+        verifiedToken.current = null;
+        setState(currentToken ? { status: 'error', kind: 'general' } : { status: 'signedOut' });
+        return;
+      }
+      verifiedToken.current = token;
       setState({ status: 'signedIn', userId: me.userId });
 
       if (registeredFor.current !== me.userId) {
@@ -48,9 +66,17 @@ export function useSession() {
         // 되는 것처럼 보인다.
         void registerForPushNotifications();
       }
-    } catch {
-      // 토큰이 만료됐으면 client가 이미 지웠다.
-      setState({ status: 'signedOut' });
+    } catch (error) {
+      const currentToken = await loadToken().catch(() => undefined);
+      if (version !== requestVersion.current) return;
+      if (currentToken === null || (currentToken === token && isAuthenticationFailure(error))) {
+        verifiedToken.current = null;
+        setState({ status: 'signedOut' });
+        return;
+      }
+      const temporary = error instanceof ApiError && (error.status === null || error.status >= 500);
+      setState((previous) => temporary && currentToken === token && verifiedToken.current === token
+        && previous.status === 'signedIn' ? previous : { status: 'error', kind: sessionErrorKind(error) });
     }
   }, []);
 
@@ -58,11 +84,14 @@ export function useSession() {
   useFocusEffect(
     useCallback(() => {
       void refresh();
+      return () => { requestVersion.current += 1; };
     }, [refresh])
   );
 
   const signOut = useCallback(async () => {
     await apiSignOut();
+    requestVersion.current += 1;
+    verifiedToken.current = null;
     // 다른 사람으로 다시 로그인하면 이 기기는 그 사람 것이 된다.
     registeredFor.current = null;
     setState({ status: 'signedOut' });

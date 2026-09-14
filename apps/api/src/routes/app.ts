@@ -39,11 +39,17 @@ export function registerAppRoutes(app: FastifyInstance, context: AppContext): vo
       return response.statusCode === 200 ? (response.json() as T) : null;
     }
 
-    const [popularVendors, member] = await Promise.all([
+    /*
+     * 첫 묶음에는 «앞의 답을 기다릴 이유가 없는 것»을 전부 넣는다. 알림 요약은
+     * 회원의 웨딩이 아니라 userId만 있으면 세므로, 예전처럼 `/v1/me`가 돌아온
+     * 뒤에 부르면 그만큼 늦어질 뿐이었다(2026-09-09).
+     */
+    const [popularVendors, member, notifications] = await Promise.all([
       injectJson<{ vendors: unknown[] }>(`/v1/vendors?sort=data&limit=${POPULAR_COUNT}`).then(
         (body) => body?.vendors ?? []
       ),
       userId ? injectJson<{ weddingId: string | null }>('/v1/me') : Promise.resolve(null),
+      userId ? notificationSummary(context.pool, userId) : Promise.resolve(null),
     ]);
 
     if (!member) {
@@ -56,14 +62,11 @@ export function registerAppRoutes(app: FastifyInstance, context: AppContext): vo
       };
     }
 
-    const [notifications, candidates] = await Promise.all([
-      notificationSummary(context.pool, userId!),
-      member.weddingId
-        ? injectJson<{ nextCategory: string | null; groups: { candidates: unknown[] }[] }>(
-            `/v1/weddings/${member.weddingId}/candidates`
-          )
-        : Promise.resolve(null),
-    ]);
+    const candidates = member.weddingId
+      ? await injectJson<{ nextCategory: string | null; groups: { candidates: unknown[] }[] }>(
+          `/v1/weddings/${member.weddingId}/candidates`
+        )
+      : null;
 
     /*
      * 웨딩픽 추천 — TOP3와 같은 함수(지역 + 스타일 + 업체 안내 가격 · 실 제보가 붙는

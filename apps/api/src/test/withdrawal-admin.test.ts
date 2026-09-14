@@ -1,5 +1,5 @@
 import { completeWithdrawals } from '../withdrawal';
-import { hold, list, resume, retry } from '../withdrawal-admin';
+import { forceWithdraw, hold, list, resume, retry } from '../withdrawal-admin';
 import { createTestApp, resetDatabase, type TestApp } from './helpers';
 
 let test: TestApp;
@@ -273,6 +273,80 @@ describeWithDb('회원탈퇴 운영자 개입', () => {
       account_id: userId,
       reason: '확인 완료',
       before_status: 'hold',
+    });
+  });
+
+  /**
+   * 운영자가 대신 탈퇴시킨다(2026-09-10 대표 지시).
+   *
+   * 되돌릴 수 없는 조작이라 **열어 준 만큼 닫아둔 자리**를 같이 못박는다 —
+   * 사유 없이는 안 되고, 운영자 계정은 대상이 아니고, 기록이 반드시 남는다.
+   */
+  describe('운영자가 대신 탈퇴시킨다', () => {
+    const deps = () => ({ pool: test.pool, storage: test.context.storage });
+
+    /** 아직 탈퇴하지 않은 보통 계정. */
+    async function anActiveUser(): Promise<string> {
+      const { rows } = await test.pool.query<{ id: string }>(
+        'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
+      );
+
+      return rows[0]!.id;
+    }
+
+    it('탈퇴를 접수하고 기록을 남긴다', async () => {
+      const userId = await anActiveUser();
+      const operator = await anOperator();
+
+      const result = await forceWithdraw(deps(), userId, operator, '본인 요청 · 전화 접수');
+
+      expect(result.completed).toBe(true);
+
+      const { rows } = await test.pool.query<{ action: string; reason: string; operator_id: string }>(
+        'SELECT action, reason, operator_id FROM structured.withdrawal_audit_log WHERE account_id = $1',
+        [userId]
+      );
+
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({
+        action: 'force',
+        reason: '본인 요청 · 전화 접수',
+        operator_id: operator,
+      });
+    });
+
+    it('사유 없이는 아무것도 하지 않는다', async () => {
+      const userId = await anActiveUser();
+      const operator = await anOperator();
+
+      await expect(forceWithdraw(deps(), userId, operator, '   ')).rejects.toThrow();
+
+      expect(await userExists(userId)).toBe(true);
+    });
+
+    it('운영자 계정은 대상이 아니다', async () => {
+      const target = await anOperator();
+      const operator = await anOperator();
+
+      await expect(forceWithdraw(deps(), target, operator, '정리')).rejects.toThrow();
+
+      expect(await userExists(target)).toBe(true);
+    });
+
+    it('이미 접수된 계정은 다시 접수하지 않는다', async () => {
+      const userId = await aWithdrawnUser();
+      const operator = await anOperator();
+
+      await expect(forceWithdraw(deps(), userId, operator, '중복')).rejects.toThrow();
+    });
+
+    it('운영 권한이 없으면 막는다', async () => {
+      const userId = await anActiveUser();
+      const notOperator = await anActiveUser();
+
+      await expect(forceWithdraw(deps(), userId, notOperator, '권한 없음')).rejects.toThrow();
+
+      expect(await userExists(userId)).toBe(true);
     });
   });
 

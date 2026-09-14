@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
+import { BackBar } from '@/components/back-bar';
 
 import {
   ActionButton,
@@ -12,6 +13,7 @@ import {
 export default function WeddingMapWebScreen() {
   return (
     <ThemedView style={styles.container}>
+      <BackBar />
       <View style={styles.content}>
         <ThemedText type="t5" style={styles.title}>
           지도 보기

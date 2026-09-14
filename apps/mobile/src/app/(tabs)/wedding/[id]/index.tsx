@@ -3,12 +3,13 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ActionButton, ErrorView, MaxContentWidth, showAlert, Spacing, ThemedText, ThemedView, VerificationBadge } from '@weddingpick/ui';
+import { ActionButton, ErrorView, Layout, MaxContentWidth, Radius, showAlert, Spacing, ThemedText, ThemedView, VerificationBadge } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { PageThumbnail } from '@/components/page-thumbnail';
 import { isServerConfigured } from '@/api/config';
 import { formatDateDot } from '@/features/common/format-date';
 import { useDocumentStore } from '@/features/documents/document-store';
+import { BackBar } from '@/components/back-bar';
 
 
 /** A-12 견적 상세. 저장된 묶음을 다시 열어보고, 인증 신청과 삭제로 이어진다. */
@@ -46,6 +47,7 @@ export default function DocumentSetScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.header}>
             <ThemedText type="subtitle">{set.label}</ThemedText>
@@ -136,7 +138,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     maxWidth: MaxContentWidth,
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Layout.gutter,
     gap: Spacing.three,
   },
   content: {
@@ -151,7 +153,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   card: {
-    borderRadius: Spacing.three,
+    borderRadius: Radius.medium,
     padding: Spacing.three,
   },
   list: {
@@ -161,7 +163,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.three,
-    borderRadius: Spacing.three,
+    borderRadius: Radius.medium,
     padding: Spacing.two,
   },
   rowText: {

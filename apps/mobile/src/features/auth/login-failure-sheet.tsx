@@ -1,8 +1,7 @@
 import { StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { ActionButton, Layout, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
-import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
+import { ActionButton, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
+import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 
 export type LoginFailureSheetProps = {
   visible: boolean;
@@ -26,11 +25,9 @@ export type LoginFailureSheetProps = {
  * 값으로 반환하도록 먼저 바꿔야 한다.
  */
 export function LoginFailureSheet({ visible, onRetry, onDismiss }: LoginFailureSheetProps) {
-  const insets = useSafeAreaInsets();
-
   return (
     <BottomSheet visible={visible} onRequestClose={onDismiss}>
-        <ThemedView style={[SHEET_PANEL, styles.sheet, { paddingBottom: SHEET_BOTTOM_PADDING + Math.max(insets.bottom, 0) }]}>
+        <SheetPanel>
           <ThemedView style={styles.headline}>
             <ThemedText type="t4">잠시 후 다시 해볼까요?</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
@@ -41,19 +38,12 @@ export function LoginFailureSheet({ visible, onRetry, onDismiss }: LoginFailureS
           <ThemedView style={styles.actions}>
             <ActionButton variant="primary" size="xlarge" label="다시 시도" onPress={onRetry} />
           </ThemedView>
-        </ThemedView>
+        </SheetPanel>
     </BottomSheet>
   );
 }
 
-/** spec/tokens.json safeArea.formula.sheetBottomPadding의 고정항. */
-const SHEET_BOTTOM_PADDING = 28;
-
 const styles = StyleSheet.create({
-  sheet: {
-    padding: Layout.gutter,
-    gap: Spacing.four,
-  },
   headline: { gap: Spacing.one },
   actions: { gap: Spacing.two },
 });

@@ -1,22 +1,25 @@
 import type { ReviewListResponse } from '@weddingpick/api-contract';
 import { TERMS, type ReportReason } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listReportReasons, listVendorReviews, reportReview } from '@/api/client';
 import { formatDateDot } from '@/features/common/format-date';
+import { BackBar } from '@/components/back-bar';
 import {
   ActionButton,
   FilterChip,
+  Layout,
+  ListSkeleton,
   MaxContentWidth,
   Radius,
+  RatingStars,
   Spacing,
   ThemedText,
   ThemedView,
   useTheme,
-  ListSkeleton,
 } from '@weddingpick/ui';
 
 /**
@@ -28,6 +31,8 @@ import {
 export default function VendorReviewsScreen() {
   const { vendorId } = useLocalSearchParams<{ vendorId: string }>();
   const theme = useTheme();
+  /** 지금 이어받는 중인 커서. 같은 것을 두 번 붙이지 않으려고 든다. */
+  const loadingCursor = useRef<string | null>(null);
   const [page, setPage] = useState<ReviewListResponse | null>(null);
   const [more, setMore] = useState<ReviewListResponse['reviews']>([]);
   const [error, setError] = useState<string | null>(null);
@@ -89,7 +94,17 @@ export default function VendorReviewsScreen() {
     }
   }
 
+  /*
+   * **같은 커서를 두 번 이어붙이지 않는다.** 「더 보기」를 연달아 누르면 같은 요청이
+   * 두 번 나가고, 돌아온 두 답이 그대로 뒤에 붙어 **같은 후기가 두 번 보였다**
+   * (2026-09-09 사용자 보고 「정보 두 번씩 출력」). 진행 중 커서를 들고 있다가
+   * 같은 것이면 되돌린다.
+   */
   async function loadMore(cursor: string) {
+    if (loadingCursor.current === cursor) return;
+
+    loadingCursor.current = cursor;
+
     try {
       const next = await listVendorReviews(vendorId, cursor);
 
@@ -97,12 +112,15 @@ export default function VendorReviewsScreen() {
       setPage((current) => (current ? { ...current, nextCursor: next.nextCursor } : current));
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '더 불러오지 못했어요.');
+    } finally {
+      loadingCursor.current = null;
     }
   }
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.section}>
             <ThemedText type="subtitle">{TERMS.experience}</ThemedText>
@@ -111,8 +129,14 @@ export default function VendorReviewsScreen() {
               {page.usageScore.available ? (
                 <>
                   <ThemedText type="subtitle">{page.usageScore.average.toFixed(1)}</ThemedText>
+                  {/*
+                    v3.18 용어 — «확인된 ~»은 쓰지 않는다(CLAUDE.md «확인된 제보» ·
+                    «확인된 정보» 폐기). 이 자리는 몇 명이 답했는지를 말하는 자리라
+                    업체 상세(`index.tsx` EXPERIENCE_COUNT)와 같은 말을 쓴다 —
+                    screens.json WP-REV-006 «N명이 답했어요».
+                  */}
                   <ThemedText type="small" themeColor="textSecondary">
-                    확인된 후기 {page.usageScore.count}건
+                    {page.usageScore.count}명이 답했어요
                   </ThemedText>
                   {page.usageScore.aspects.map((aspect) => (
                     <ThemedText key={aspect.key} type="small" themeColor="textSecondary">
@@ -181,10 +205,17 @@ export default function VendorReviewsScreen() {
               reviews.map((review) => (
                 <ThemedView key={review.id} type="backgroundElement" style={styles.card}>
                   <ThemedText type="smallBold">{review.title}</ThemedText>
-                  <ThemedText type="small" numeric themeColor="textSecondary">
-                    {review.overall.toFixed(1)} · {review.roleLabel} · {review.verificationLabel}
+                  {/*
+                    별점을 그린다(2026-09-09 사용자 결정 · 5.0 만점). 예전에는 «4.0»처럼
+                    숫자만 적었는데, 그 숫자가 5점 만점인지 10점 만점인지 화면이 말하지
+                    않았다. 별 다섯 칸이 만점을 보여주고 숫자가 정확한 값을 말한다.
+                  */}
+                  <RatingStars value={review.overall} />
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {review.roleLabel} · {review.verificationLabel}
                   </ThemedText>
-                  <ThemedText type="small">{review.body}</ThemedText>
+                  {/* 시안 L415 — 후기 본문 16/24 #393a40. 14/19는 메타 크기라 본문이 메타처럼 읽힌다. */}
+                  <ThemedText type="body" themeColor="textStrong">{review.body}</ThemedText>
 
                   {review.pros ? (
                     <ThemedText type="small" themeColor="textSecondary">
@@ -212,11 +243,11 @@ export default function VendorReviewsScreen() {
                     * 대신 옆에 말을 더한다. 읽는 사람이 양쪽을 다 본다.
                     */}
                   {review.rebuttal ? (
-                    <View style={[styles.rebuttal, { borderLeftColor: theme.tint }]}>
-                      <ThemedText type="t7" themeColor="tint">
+                    <View style={[styles.rebuttal, { backgroundColor: theme.backgroundElement }]}>
+                      <ThemedText type="t7" themeColor="textSecondary" style={styles.bold}>
                         업체 반론 · {review.rebuttal.claimedRole}
                       </ThemedText>
-                      <ThemedText type="small">{review.rebuttal.body}</ThemedText>
+                      <ThemedText type="body" themeColor="textStrong">{review.rebuttal.body}</ThemedText>
                     </View>
                   ) : null}
 
@@ -287,6 +318,7 @@ function Frame({ children }: { children: React.ReactNode }) {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ThemedView style={styles.content}>{children}</ThemedView>
       </SafeAreaView>
     </ThemedView>
@@ -294,12 +326,19 @@ function Frame({ children }: { children: React.ReactNode }) {
 }
 
 const styles = StyleSheet.create({
-  /** 후기 아래 세로선 블록. 핸드오프가 정한 모양이다. */
+  /**
+   * 후기 아래 업체 반론 상자. 시안 11-report-review.dc.html L417 —
+   * `border-radius:10px;background:#f7f8fa;padding:16px;gap:6px`.
+   *
+   * 왼쪽 코랄 세로선이었는데, 시안은 상자다. 선은 인용으로 읽히고 상자는 나란한
+   * 다른 목소리로 읽힌다 — 후기를 가리지 않고 옆에 말을 더하는 쪽이 뒤다.
+   */
   rebuttal: {
-    borderLeftWidth: 2,
-    paddingLeft: Spacing.three,
-    gap: Spacing.one,
+    borderRadius: Radius.medium,
+    padding: Spacing.three,
+    gap: Layout.menuGroupGap,
   },
+  bold: { fontWeight: '700' },
   container: {
     flex: 1,
     flexDirection: 'row',
@@ -310,7 +349,7 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
   },
   content: {
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.five,
     paddingBottom: Spacing.four,
     gap: Spacing.four,

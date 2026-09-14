@@ -12,6 +12,7 @@ const STATUS_BY_CODE: Record<ErrorCode, number> = {
   analysis_pending: 409,
   rate_limited: 429,
   under_age: 403,
+  age_unverified: 403,
   internal: 500,
 };
 

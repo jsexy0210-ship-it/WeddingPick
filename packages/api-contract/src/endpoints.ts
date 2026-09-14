@@ -65,8 +65,6 @@ import {
   updateRebuttalRequestSchema,
 } from './rebuttals';
 import {
-  parsePaymentTextRequestSchema,
-  parsePaymentTextResponseSchema,
   registerPaymentProofRequestSchema,
   registerPaymentProofResponseSchema,
 } from './payment-proofs';
@@ -91,6 +89,9 @@ import {
   myRewardsResponseSchema,
   redeemReferralRequestSchema,
   submitPromotionRequestSchema,
+  myRewardPayoutResponseSchema,
+  requestRewardPayoutRequestSchema,
+  rewardPayoutSchema,
 } from './rewards';
 import {
   conditionStatsSchema,
@@ -295,7 +296,7 @@ export const ENDPOINTS = {
     response: verificationRequestSchema,
   },
 
-  /** A-16 업체 검색. 질의는 q·category·region·cursor 쿼리 파라미터로 준다. */
+  /** A-16 업체 검색. 질의는 `vendorSearchQuerySchema`(q · category · region · budget · onlyVerified · sort · cursor · limit)다. */
   searchVendors: {
     method: 'GET',
     path: '/v1/vendors',
@@ -695,6 +696,22 @@ export const ENDPOINTS = {
     response: z.null(),
   },
 
+  /**
+   * Npay 리워드 수령(WP-EVT-006). 지급 대기 보상을 한 요청으로 묶어 «받는 분 · 휴대폰
+   * 번호 · 동의»를 받는다. 돈은 사람이 보내고, 보낸 뒤 번호는 지워진다.
+   */
+  getMyRewardPayout: {
+    method: 'GET',
+    path: '/v1/me/rewards/payout',
+    response: myRewardPayoutResponseSchema,
+  },
+  requestRewardPayout: {
+    method: 'POST',
+    path: '/v1/me/rewards/payout',
+    body: requestRewardPayoutRequestSchema,
+    response: rewardPayoutSchema,
+  },
+
   /** 홍보인증. 사람이 글을 확인한 뒤에 지급 대상이 된다(I-2). */
   submitPromotion: {
     method: 'POST',
@@ -881,23 +898,10 @@ export const ENDPOINTS = {
   },
 
   /**
-   * 결제문자에서 값을 읽는다. **AI를 부르지 않는다.**
+   * 결제인증 등록 — **사진 한 장.** 사업계획서 v3 6번 · 핸드오프 v3.24.
    *
-   * 스펙 7.3의 처리 순서 — 규칙 엔진이 먼저다. 결제문자는 카드사가 기계로 찍어
-   * 보내는 글이라 형태가 고정돼 있어, 여기서 대부분 읽힌다.
-   *
-   * 읽기만 하고 저장하지 않는다. 등록은 `registerPaymentProof`가 따로 받는다 —
-   * 읽은 값을 사람이 확인한 뒤에 저장돼야 하기 때문이다.
-   */
-  parsePaymentText: {
-    method: 'POST',
-    path: '/v1/payment-proofs/parse',
-    body: parsePaymentTextRequestSchema,
-    response: parsePaymentTextResponseSchema,
-  },
-
-  /**
-   * 결제인증 등록. 사업계획서 v3 6번.
+   * 금액·업체·날짜를 받지 않는다. 읽는 것은 서버가 하고, 못 읽으면 접수는 성립하되
+   * `pending_review`로 남는다 — 값을 지어내는 대신 「못 읽었다」를 그대로 둔다.
    *
    * **심사가 아니라 등록이다.** `createVerificationRequest`와 다른 경로다 — 사람이
    * 보지 않고, 문서 등급을 올리지 않으며, 시장 대표가격에도 들어가지 않는다.

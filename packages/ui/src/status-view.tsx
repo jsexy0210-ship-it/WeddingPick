@@ -1,14 +1,17 @@
 import { Linking, Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { error as errorCopy } from '../../../spec/strings.ko.json';
 
 import { ActionButton } from './action-button';
 import { CategoryCycleLoader } from './category-cycle-loader';
+import { CircleLoader } from './circle-loader';
 import type { CategoryIconKind } from './category-icon';
 import { ListSkeleton } from './list-skeleton';
 import { StepList, type Step } from './step-list';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 import { Layout, MaxContentWidth, Spacing } from './theme';
+import type { ActionButtonProps } from './action-button';
 import { useTheme } from './use-theme';
 
 /**
@@ -26,6 +29,10 @@ type StatusFrameProps = {
   children: React.ReactNode;
 };
 
+/**
+ * 17-sheets-states stFrameCenter — 가운데 정렬 · 제목 18/24 700 · 본문 16/24 #4D5159 · 간격 8 ·
+ * 행동 버튼 하나(48). 삽화는 없다.
+ */
 function StatusFrame({ children }: StatusFrameProps) {
   return (
     <ThemedView style={styles.container}>
@@ -36,6 +43,31 @@ function StatusFrame({ children }: StatusFrameProps) {
   );
 }
 
+function StatusTitle({ children }: { children: string }) {
+  return (
+    <ThemedText type="t5" style={styles.centered}>
+      {children}
+    </ThemedText>
+  );
+}
+
+function StatusBody({ children }: { children: string }) {
+  return (
+    <ThemedText type="body" themeColor="textSecondary" style={styles.centered}>
+      {children}
+    </ThemedText>
+  );
+}
+
+/** 상태 화면의 행동 버튼 — Secondary 48. 빈 상태에는 다음 행동 버튼을 하나만 둔다. */
+function StatusAction(props: Omit<ActionButtonProps, 'size'>) {
+  return (
+    <View style={styles.actions}>
+      <ActionButton size="large" {...props} />
+    </View>
+  );
+}
+
 // ─── WP-ST-007 로딩 ───────────────────────────────────────────────────────────
 
 export type LoadingViewProps = {
@@ -43,22 +75,39 @@ export type LoadingViewProps = {
   title?: string;
   /** @deprecated `title`. */
   label?: string;
-  /** 온보딩 결정 완료 업종 — 순회에서 뺀다. */
+  /** 온보딩 결정 완료 업종 — 순회에서 뺀다. `loader="cycle"`일 때만 쓴다. */
   exclude?: readonly CategoryIconKind[];
+  /**
+   * 어느 로더를 돌릴 것인가. 기본은 써클이다.
+   *
+   * `circle`  Depth·페이지 이동 — 폼·상세 하나를 읽어오는 보통의 자리
+   * `cycle`   첫 실행·재시작·추천 계산처럼 오래 붙잡는 자리
+   *
+   * 가르는 기준은 `apps/mobile/src/features/loading/delayed-loader.tsx`의 `LoaderWait`에
+   * 적혀 있다 — 화면은 그쪽 `DelayedLoadingView`를 쓰고 이 prop을 직접 만지지 않는다.
+   */
+  loader?: 'circle' | 'cycle';
 };
 
 /**
- * 짧은 처리(3초 이하)의 화면 전체 로딩 — 업종 순회 로더 40. 폼·상세 하나를 읽어오는
+ * 짧은 처리(3초 이하)의 화면 전체 로딩 — 로더 40. 폼·상세 하나를 읽어오는
  * 자리. **목록에는 쓰지 않는다** — 목록은 `SkeletonView`다(핸드오프 규칙 «목록에는
  * 로더를 쓰지 않아요»). 700ms 규칙은 호출하는 화면이 `useDelayedVisible`로 지킨다.
+ *
+ * 2026-09-11 대표 지시로 **기본이 써클**이다. 업종 순회는 `loader="cycle"`을 넘긴
+ * 자리에만 남는다.
  */
-export function LoadingView({ title, label, exclude }: LoadingViewProps) {
+export function LoadingView({ title, label, exclude, loader = 'circle' }: LoadingViewProps) {
   const text = title ?? label;
 
   return (
     <StatusFrame>
       <View style={styles.centerRow}>
-        <CategoryCycleLoader size={40} exclude={exclude} />
+        {loader === 'cycle' ? (
+          <CategoryCycleLoader size={40} exclude={exclude} />
+        ) : (
+          <CircleLoader size={40} />
+        )}
       </View>
       {text ? (
         <ThemedText type="t6" themeColor="textSecondary" style={styles.centered}>
@@ -167,14 +216,10 @@ export type EmptyViewProps = {
 export function EmptyView({ title, description, actionLabel, onAction }: EmptyViewProps) {
   return (
     <StatusFrame>
-      <ThemedText type="t4">{title}</ThemedText>
-      {description ? (
-        <ThemedText type="t7" themeColor="textSecondary">
-          {description}
-        </ThemedText>
-      ) : null}
+      <StatusTitle>{title}</StatusTitle>
+      {description ? <StatusBody>{description}</StatusBody> : null}
       {actionLabel && onAction ? (
-        <ActionButton variant="primary" label={actionLabel} onPress={onAction} />
+        <StatusAction variant="primary" label={actionLabel} onPress={onAction} />
       ) : null}
     </StatusFrame>
   );
@@ -197,8 +242,8 @@ export type ErrorViewProps = {
 };
 
 export function ErrorView({
-  title = '잠시 문제가 생겼어요',
-  message = '다시 시도해도 안 되면 알려주세요',
+  title = errorCopy['general.title'],
+  message = errorCopy['general.body'],
   onRetry,
   retryLabel = '다시 시도',
   onBack,
@@ -206,14 +251,10 @@ export function ErrorView({
 }: ErrorViewProps) {
   return (
     <StatusFrame>
-      <ThemedText type="t4">{title}</ThemedText>
-      {message ? (
-        <ThemedText type="t7" themeColor="textSecondary">
-          {message}
-        </ThemedText>
-      ) : null}
-      {onRetry ? <ActionButton variant="primary" label={retryLabel} onPress={onRetry} /> : null}
-      {onBack ? <ActionButton label={backLabel} onPress={onBack} /> : null}
+      <StatusTitle>{title}</StatusTitle>
+      {message ? <StatusBody>{message}</StatusBody> : null}
+      {onRetry ? <StatusAction variant="primary" label={retryLabel} onPress={onRetry} /> : null}
+      {onBack ? <StatusAction variant="ghost" label={backLabel} onPress={onBack} /> : null}
     </StatusFrame>
   );
 }
@@ -233,11 +274,9 @@ export function NetworkErrorView({ cachedAt, onRetry }: NetworkErrorViewProps) {
 
   return (
     <StatusFrame>
-      <ThemedText type="t4">연결이 불안정해요</ThemedText>
-      <ThemedText type="t7" themeColor="textSecondary">
-        {cachedLabel}
-      </ThemedText>
-      {onRetry ? <ActionButton variant="primary" label="다시 시도" onPress={onRetry} /> : null}
+      <StatusTitle>연결이 불안정해요</StatusTitle>
+      <StatusBody>{cachedLabel}</StatusBody>
+      {onRetry ? <StatusAction variant="primary" label="다시 시도" onPress={onRetry} /> : null}
     </StatusFrame>
   );
 }
@@ -274,21 +313,19 @@ export function PermissionDeniedView({
 }: PermissionDeniedViewProps) {
   return (
     <StatusFrame>
-      <ThemedText type="t4">{PERMISSION_TITLE[kind]}</ThemedText>
-      <ThemedText type="t7" themeColor="textSecondary">
-        {PERMISSION_DESC[kind]}
-      </ThemedText>
+      <StatusTitle>{PERMISSION_TITLE[kind]}</StatusTitle>
+      <StatusBody>{PERMISSION_DESC[kind]}</StatusBody>
       {/* 브라우저에는 앱 설정 화면이 없다 — react-native-web에 openSettings가 없어
           누르면 아무 반응이 없거나 에러가 난다. 네이티브에서만 보여준다. */}
       {Platform.OS !== 'web' ? (
-        <ActionButton
+        <StatusAction
           variant="primary"
           label="설정 열기"
           onPress={() => Linking.openSettings()}
         />
       ) : null}
       {onAlternative && alternativeLabel ? (
-        <ActionButton label={alternativeLabel} onPress={onAlternative} />
+        <StatusAction variant="ghost" label={alternativeLabel} onPress={onAlternative} />
       ) : null}
     </StatusFrame>
   );
@@ -349,13 +386,9 @@ export function MaintenanceView({ endsAt, onNotify }: MaintenanceViewProps) {
 
   return (
     <StatusFrame>
-      <ThemedText type="t4">잠시 점검 중이에요</ThemedText>
-      <ThemedText type="t7" themeColor="textSecondary">
-        {`${timeLabel}까지예요. 끝나면 알려드릴게요.`}
-      </ThemedText>
-      {onNotify ? (
-        <ActionButton variant="primary" label="알림 받기" onPress={onNotify} />
-      ) : null}
+      <StatusTitle>잠시 점검 중이에요</StatusTitle>
+      <StatusBody>{`${timeLabel}까지예요. 끝나면 알려드릴게요.`}</StatusBody>
+      {onNotify ? <StatusAction variant="primary" label="알림 받기" onPress={onNotify} /> : null}
     </StatusFrame>
   );
 }
@@ -366,9 +399,12 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: Layout.gutter,
     gap: Spacing.two,
   },
+  /** 버튼은 글보다 조금 떨어져(8 + 4) 서고, 글 폭에 맞춰 늘어나지 않는다. */
+  actions: { alignSelf: 'stretch', paddingTop: Spacing.one },
   centered: { textAlign: 'center' },
   centerRow: { alignItems: 'center' },
   skeletonContent: {

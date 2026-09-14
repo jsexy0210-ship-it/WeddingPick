@@ -1,4 +1,3 @@
-import { withSubject } from './korean';
 
 /**
  * 부를 이름과 예식일.
@@ -101,7 +100,7 @@ export function dDay(weddingDate: string, now: Date = new Date()): DDay {
   const days = daysUntil(weddingDate, now);
 
   if (days > 0) {
-    return { kind: 'upcoming', days, text: `예식까지 ${withSubject(`${days}일`)} 남았어요` };
+    return { kind: 'upcoming', days, text: `예식까지 ${days}일 남았어요` };
   }
 
   if (days === 0) {

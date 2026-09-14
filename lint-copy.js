@@ -21,6 +21,45 @@ const EXT = /\.(swift|kt|kts|dart|tsx?|jsx?|json|webmanifest|xml|strings|html)$/
 const SKIP_DIR = /(^|\/)(node_modules|build|dist|\.git|Pods|\.gradle|__snapshots__)(\/|$)/;
 const SKIP_FILE = /(admin|Admin|관리자|internal|test|Test|spec\/|\.d\.ts$|glossary\.json$)/;
 
+/**
+ * 검사하지 않는 자리. **`pick-language.test.ts`의 `EXEMPT`와 같은 목록이다** —
+ * 두 게이트가 다른 범위를 보면 한쪽만 통과하는 문구가 생긴다.
+ *
+ * 약관·방침·FAQ는 사실관계를 정확히 적어야 하는 자리이고, 서버·DB·웹·비용표는
+ * 사용자가 보지 않는 내부다. 금지어 목록 자신도 뺀다 — 무엇을 막는지 적으려면
+ * 그 말을 적어야 한다.
+ */
+const EXEMPT_PATHS = [
+  'packages/domain/src/faq.ts',
+  'packages/domain/src/policies.ts',
+  'packages/domain/src/consumer-standards.ts',
+  'packages/domain/src/withdrawal.ts',
+  'packages/domain/src/pick-verification.ts',
+  'packages/domain/src/copy-rules.ts',
+  'packages/domain/src/ai-cost.ts',
+  /* 관리자·운영 화면 문구. 정책 문서와 같은 말을 써야 눈으로 맞춰볼 수 있다. */
+  'packages/domain/src/advertising.ts',
+  'packages/domain/src/pii-review.ts',
+  'apps/api/',
+  'packages/db/',
+  'apps/web/',
+];
+
+/**
+ * 줄에 이 표시가 있으면 뺀다.
+ *
+ * `pick-language:`는 `pick-language.test.ts`와 같은 표시다 — 실제 서류 이름을
+ * 골라야 하는 자리. `lint-copy:`는 이 게이트만의 예외이고, 둘 다 **이유를 함께
+ * 적게 한다** — 표시만 남으면 다음 사람이 복사해 붙인다.
+ */
+const LINE_EXEMPTIONS = ['pick-language:', 'lint-copy:'];
+
+function isExemptPath(file) {
+  const rel = path.relative(process.cwd(), file).replaceAll('\\', '/');
+
+  return EXEMPT_PATHS.some((prefix) => rel.startsWith(prefix));
+}
+
 // 사용자에게 보이지 않는 줄은 건너뛴다
 const IGNORE_LINE = [
   /^\s*(\/\/|\/\*|\*|#)/,                    // 주석
@@ -47,6 +86,7 @@ function scanFile(file) {
       return;
     }
     if (IGNORE_LINE.some((re) => re.test(line))) return;
+    if (LINE_EXEMPTIONS.some((mark) => line.includes(mark))) return;
 
     for (const b of g.banned) {
       // 한글 단어 경계가 없으므로 단순 포함 검사 + 예외 처리
@@ -83,7 +123,7 @@ function walk(target) {
   if (stat.isDirectory()) {
     if (SKIP_DIR.test(target.replaceAll('\\', '/'))) return;
     for (const name of fs.readdirSync(target)) walk(path.join(target, name));
-  } else if (EXT.test(target) && !SKIP_FILE.test(target)) {
+  } else if (EXT.test(target) && !SKIP_FILE.test(target) && !isExemptPath(target)) {
     scanFile(target);
   }
 }

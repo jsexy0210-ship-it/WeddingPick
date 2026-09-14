@@ -1,13 +1,14 @@
-import { cpSync, mkdirSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { renderAdminPage } from './admin-page';
 import { renderHomePage } from './home-page';
 import { renderLandingV4 } from './landing-v4';
 import { renderLandingPage } from './page';
-import { apiBase, loadSiteData, loadVendor, vendorIdsToBuild } from './site-data';
+import { apiBase, loadSiteData, loadSiteMeta, loadVendor, vendorIdsToBuild } from './site-data';
+import { applySiteMeta } from './social-meta';
 import { renderFaqPage, renderIntroPage, renderPrivacyPage, renderSupportPage, renderTermsPage } from './subpages';
 import { STYLES } from './styles';
+import { validateLegalDates } from './legal-config';
 import { renderVendorPage } from './vendor-page';
 
 /**
@@ -28,7 +29,6 @@ import { renderVendorPage } from './vendor-page';
  * | `privacy.html` | 개인정보처리방침 |
  * | `v/<업체 id>.html` | WP-WEB-003 업체 상세 |
  * | `about.html` | 서비스 소개 한 장. 약관·출처·분석 안내가 여기 있다 |
- * | `admin.html` | 관리자 |
  *
  * **소개 한 장을 지우지 않고 `about.html`로 남긴다.** `POLICY_DOCUMENTS`의 분석
  * 안내가 그 문서 안(`#analysis-notice`)을 가리키고, 앱 정책 화면도 같은 것을
@@ -39,7 +39,22 @@ import { renderVendorPage } from './vendor-page';
  * 내보내는 것보다 낫다.
  */
 export async function build(outDir: string): Promise<string> {
+  // 잘못된 시행일이면 기존 산출물을 지우기 전에 중단한다.
+  validateLegalDates();
+  /*
+   * 먼저 비운다. 안 비우면 **지운 페이지가 계속 서빙된다** — 이 함수는 쓰기만 하고
+   * 지우지 않아서, 예전 빌드가 남긴 파일이 그대로 남는다. 2026-09-09에 `admin.html`을
+   * 없앴는데 `dist/admin.html`이 남아 테스트가 그것을 집어 든 것이 그 증상이다.
+   * 빌드 산출물 전용 디렉터리라 통째로 지워도 잃을 것이 없다.
+   */
+  rmSync(outDir, { recursive: true, force: true });
   mkdirSync(outDir, { recursive: true });
+
+  /*
+   * 카드 문구는 **모든 페이지를 그리기 전에** 한 번 읽어 넣는다. 중간에 넣으면
+   * 먼저 그려진 페이지만 옛 문구를 들고 나간다.
+   */
+  applySiteMeta(await loadSiteMeta());
 
   // Copy public assets (favicons, manifest, etc.)
   const publicDir = join(__dirname, '..', 'public');
@@ -50,7 +65,9 @@ export async function build(outDir: string): Promise<string> {
   writeFileSync(indexPath, renderLandingV4(), 'utf8');
 
   // Home/search page moved to search.html
-  writeFileSync(join(outDir, 'search.html'), renderHomePage(await loadSiteData()), 'utf8');
+  const siteData = await loadSiteData();
+
+  writeFileSync(join(outDir, 'search.html'), renderHomePage(siteData), 'utf8');
 
   // Sub-pages
   writeFileSync(join(outDir, 'intro.html'), renderIntroPage(), 'utf8');
@@ -60,9 +77,19 @@ export async function build(outDir: string): Promise<string> {
   writeFileSync(join(outDir, 'privacy.html'), renderPrivacyPage(), 'utf8');
 
   writeFileSync(join(outDir, 'about.html'), renderLandingPage(STYLES), 'utf8');
-  writeFileSync(join(outDir, 'admin.html'), renderAdminPage(), 'utf8');
 
-  const ids = vendorIdsToBuild();
+  /*
+   * **상세를 만들 업체는 검색 화면이 링크한 업체를 포함한다.**
+   *
+   * 검색 화면은 목록에 실린 업체를 전부 `/v/<id>.html`로 건다(`home-page.ts`). 그런데
+   * 상세를 만들 id는 `WEDDINGPICK_WEB_VENDOR_IDS`에서만 왔다 — **링크를 만드는 출처와
+   * 페이지를 만드는 출처가 달랐다.** 환경변수가 비면 카드 전부가 없는 페이지를 가리키고,
+   * 그 주소를 카카오톡에 붙이면 미리보기가 뜰 자리조차 없다. 404에는 og 태그가 없다.
+   *
+   * 그래서 링크한 업체를 기본으로 삼고, 환경변수는 **거기에 더하는 값**으로 둔다 —
+   * 목록에 없지만 상세를 미리 내고 싶은 업체를 배포하는 쪽이 지정하는 길은 남는다.
+   */
+  const ids = [...new Set([...siteData.vendors.map((vendor) => vendor.id), ...vendorIdsToBuild()])];
 
   if (ids.length > 0) {
     const vendorDir = join(outDir, 'v');

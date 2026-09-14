@@ -178,6 +178,31 @@ describeWithDb('API', () => {
       expect(response.json().error.code).toBe('invalid_request');
     });
 
+    /*
+     * 동의 없이는 서명 URL 자체를 받지 못한다.
+     *
+     * **관문이 `complete`가 아니라 `uploads`인 것이 요점이다** — `complete`에서
+     * 막으면 원본은 이미 저장소에 올라가 있다. 견적서 경로에는 이 관문이 아예
+     * 없었다(Release Audit 1차 P0-5).
+     */
+    it('동의하지 않으면 서명 URL을 받지 못한다', async () => {
+      const { headers } = await signInAs(test, 'apple-no-consent', { grantUploadConsent: false });
+      const weddingId = await createWedding(test, headers);
+
+      const response = await test.app.inject({
+        method: 'POST',
+        url: '/v1/documents/uploads',
+        headers,
+        payload: { weddingId, pages: [{ mimeType: 'image/jpeg', sizeBytes: 1000 }] },
+      });
+
+      expect(response.statusCode).toBe(403);
+
+      // 막았으면 아무것도 남지 않아야 한다. 행만 만들고 막으면 그건 막은 것이 아니다.
+      const stored = await test.pool.query('SELECT 1 FROM originals.raw_documents');
+      expect(stored.rows).toHaveLength(0);
+    });
+
     it('같은 문서로 완료를 두 번 눌러도 분석은 하나만 만든다', async () => {
       const { headers } = await signInAs(test);
       const weddingId = await createWedding(test, headers);

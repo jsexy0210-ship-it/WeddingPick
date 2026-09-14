@@ -1,4 +1,5 @@
 import type { VendorSummary } from '@weddingpick/api-contract';
+import { regionLabel } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
@@ -17,6 +18,7 @@ import {
 } from '@weddingpick/ui';
 import { searchVendors } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
+import { BackBar } from '@/components/back-bar';
 
 /**
  * WP-BIZ-002: 소속 확인 요청 진입.
@@ -69,6 +71,7 @@ export default function BizClaimScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <ThemedView style={styles.header}>
             <ThemedText type="t2">{`소속 업체를\n찾아주세요`}</ThemedText>
@@ -79,8 +82,8 @@ export default function BizClaimScreen() {
 
           <ThemedView type="backgroundElement" style={styles.notice}>
             <ThemedText type="t6" themeColor="tint">
-              담당자가 알려주신 정보로 연락해 확인해요. 확인 전에는 관계자로 표시되지
-              않아요.
+              담당자가 알려주신 정보로 연락해 확인해요. 확인이 끝나면 관계자로
+              표시돼요.
             </ThemedText>
           </ThemedView>
 
@@ -132,7 +135,7 @@ export default function BizClaimScreen() {
                     <View style={styles.vendorInfo}>
                       <ThemedText type="t5">{vendor.name}</ThemedText>
                       <ThemedText type="t7" themeColor="textAssistive">
-                        {vendor.region}
+                        {regionLabel(vendor.region)}
                       </ThemedText>
                     </View>
                     <ActionButton
@@ -172,7 +175,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.five,
-    paddingBottom: Spacing.six,
+    paddingBottom: Spacing.four,
     gap: Spacing.three,
   },
   header: {
@@ -186,7 +189,7 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
   },
   input: {
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Layout.fieldPaddingX,
     paddingVertical: Spacing.three,
     fontSize: FontSize.t6,
     minHeight: Layout.rowMinHeight,

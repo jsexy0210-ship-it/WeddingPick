@@ -9,6 +9,7 @@ import { buildServer } from './server';
 import { createLocalStorage } from './storage/local';
 import { createS3Storage } from './storage/s3';
 import { completeWithdrawals } from './withdrawal';
+import { startWorkerLoops } from './worker-loops';
 
 /**
  * 개발용 로그인은 프로덕션이 아니고, 비밀값이 충분히 길 때만 켠다.
@@ -86,9 +87,8 @@ async function main() {
   /*
    * 탈퇴를 접수했는데 계정 행이 남은 사람을 뜰 때 한 번 지운다.
    *
-   * 원래 이 일은 worker(`worker.ts`)가 10분마다 하지만, 지금 배포에는 worker
-   * 서비스가 없다(render.yaml). 그동안 Pick 이력 트리거 버그(0080)로 못 지운
-   * 계정이 쌓여 있었다 — 서버가 다시 뜨는 배포 때마다 여기서 정리한다.
+   * 아래 워커 루프가 10분마다 같은 일을 하지만, 그건 첫 주기가 와야 돈다.
+   * Pick 이력 트리거 버그(0080)로 못 지운 계정이 쌓여 있어 뜨자마자 한 번 본다.
    * 실패해도 서버는 뜬다 — 다음 배포에 다시 시도한다.
    */
   try {
@@ -97,6 +97,40 @@ async function main() {
     if (deleted > 0) console.log(`탈퇴 접수 계정 ${deleted}건을 지웠다.`);
   } catch (error) {
     console.error('탈퇴 접수 계정 정리에 실패했다.', error);
+  }
+
+  /*
+   * 주기 작업(파기 정리 · 알림 · 문서 분석)을 **이 프로세스 안에서** 돌린다.
+   *
+   * 원래 이 일은 워커 프로세스(`worker.ts`)의 몫인데, 그 프로세스는 한 번도
+   * 배포된 적이 없다 — `render.yaml`에 `type: worker` 서비스가 없었다. 그래서
+   * 처리방침이 약속한 24시간 자동파기가 실행되지 않았고, 올린 견적서는 집어갈
+   * 프로세스가 없어 «분석 중»에서 나오지 못했다(Release Audit 1차 P0-2 · P0-3).
+   *
+   * 워커 서비스를 따로 띄우게 되면 `RUN_WORKER_IN_API=false`로 여기만 끈다.
+   * 둘 다 켜져 있어도 같은 문서를 두 번 분석하지는 않는다 — 잡는 질의가
+   * `FOR UPDATE SKIP LOCKED`다(`analysis/worker.ts`).
+   *
+   * **await하지 않는다.** 이 약속은 서버가 살아 있는 동안 끝나지 않는다.
+   * 여기서 기다리면 `main()`이 반환하지 않고, 루프가 죽어도 HTTP는 계속
+   * 받아야 하므로 실패는 로그로만 남긴다.
+   */
+  if (process.env.RUN_WORKER_IN_API !== 'false') {
+    const controller = new AbortController();
+
+    process.on('SIGTERM', () => controller.abort());
+    process.on('SIGINT', () => controller.abort());
+
+    void startWorkerLoops({
+      pool: context.pool,
+      storage: context.storage,
+      config,
+      signal: controller.signal,
+    }).catch((error: unknown) => {
+      console.error('주기 작업이 멈췄다. HTTP는 계속 받는다.', error);
+    });
+  } else {
+    console.log('RUN_WORKER_IN_API=false — 주기 작업은 별도 워커가 맡는다.');
   }
 }
 

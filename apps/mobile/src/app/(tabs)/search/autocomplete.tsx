@@ -1,5 +1,5 @@
 import type { VendorSummary } from '@weddingpick/api-contract';
-import { TERMS, VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
+import { TERMS, VENDOR_CATEGORY_LABEL, regionLabel } from '@weddingpick/domain';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -17,6 +17,7 @@ import {
   ThemedView,
 } from '@weddingpick/ui';
 import { searchVendors, listVendorRegions } from '@/api/client';
+import { BackBar } from '@/components/back-bar';
 
 /**
  * 자동완성 패널. 핸드오프 WP-SRCH-002.
@@ -26,6 +27,13 @@ import { searchVendors, listVendorRegions } from '@/api/client';
 
 const RECENT_STORAGE_KEY = 'weddingpick.recent_searches';
 const MAX_RECENT = 8;
+/**
+ * 업체 그룹 제목 — `spec/strings.ko.json` `search.group.vendor`. 이 행만 결과를
+ * 건너뛰고 상세로 가므로 제목에 그 사실을 적는다(SPEC §13.7 «자동완성에서 업체명
+ * 행은 그룹 제목을 「업체 · 바로 상세로」로 적어 사용자가 어디로 가는지 미리 알게
+ * 합니다»).
+ */
+const VENDOR_GROUP_LABEL = '업체 · 바로 상세로';
 
 async function loadRecent(): Promise<string[]> {
   try {
@@ -101,7 +109,7 @@ export default function AutocompleteScreen() {
     setError(null);
 
     Promise.all([
-      searchVendors({ q: query }).catch(() => ({ vendors: [] as VendorSummary[] })),
+      searchVendors({ q: query }),
       listVendorRegions().catch(() => ({ regions: [] as { name: string }[] })),
     ])
       .then(([vendorRes, regionRes]) => {
@@ -136,6 +144,21 @@ export default function AutocompleteScreen() {
     router.push({ pathname: '/(tabs)/search', params: { q: query } });
   }
 
+  /**
+   * 업체명 행은 **결과를 건너뛰고 상세로 바로 간다**(SPEC §13.7 · 시안
+   * 06-search.dc.html «업체명 행은 결과를 건너뛰고 상세로 바로 갑니다. 지역 ·
+   * 검색어 행만 결과로 갑니다»). 고른 이름은 결과 한 줄짜리라 한 번 더 누르게
+   * 할 이유가 없다. 그래서 그룹 제목도 «업체 · 바로 상세로»로 어디로 가는지
+   * 미리 적는다.
+   *
+   * 최근 검색에는 그대로 남긴다 — 다시 찾을 때 같은 이름을 또 치지 않게.
+   */
+  async function selectVendor(id: string, name: string) {
+    const updated = await saveRecent(name, recent);
+    setRecent(updated);
+    router.push(`/search/${id}`);
+  }
+
   async function deleteRecent(query: string) {
     const updated = recent.filter((r) => r !== query);
     try {
@@ -168,6 +191,7 @@ export default function AutocompleteScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
@@ -179,13 +203,13 @@ export default function AutocompleteScreen() {
           {!loading && hasQuery && vendorSuggestions.length > 0 && (
             <ThemedView style={styles.section}>
               <ThemedText type="t7" themeColor="textAssistive" style={styles.sectionLabel}>
-                업체
+                {VENDOR_GROUP_LABEL}
               </ThemedText>
               {vendorSuggestions.map((vendor) => (
                 <Pressable
                   key={vendor.id}
                   accessibilityRole="button"
-                  onPress={() => void selectQuery(vendor.name)}
+                  onPress={() => void selectVendor(vendor.id, vendor.name)}
                 >
                   <ThemedView style={styles.row}>
                     <ThemedView style={styles.rowMain}>
@@ -193,7 +217,7 @@ export default function AutocompleteScreen() {
                         {vendor.name}
                       </ThemedText>
                       <ThemedText type="t7" themeColor="textAssistive">
-                        {VENDOR_CATEGORY_LABEL[vendor.category]} · {vendor.region}
+                        {VENDOR_CATEGORY_LABEL[vendor.category]} · {regionLabel(vendor.region)}
                       </ThemedText>
                     </ThemedView>
                     <ThemedText type="t7" themeColor="textAssistive">

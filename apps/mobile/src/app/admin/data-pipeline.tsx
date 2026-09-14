@@ -5,7 +5,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { FontSize } from '@weddingpick/ui';
+import { Colors, FontSize, Layout, Spacing } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 
@@ -24,6 +24,8 @@ export default function DataPipelineScreen() {
   const [error, setError] = useState<string | null>(null);
   const [rev, setRev] = useState(0);
   const [retrying, setRetrying] = useState<string | null>(null);
+  // 재처리 결과 한 줄. 눌렀는데 아무 말도 없으면 됐는지 안 됐는지 알 수 없다.
+  const [actionNote, setActionNote] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -46,11 +48,14 @@ export default function DataPipelineScreen() {
 
   async function retryItem(id: string) {
     setRetrying(id);
+    setActionNote(null);
     try {
       await apiFetch(`/v1/admin/data/pipeline/retry/${id}`, { method: 'POST' });
+      setActionNote('다시 처리하도록 되돌렸어요.');
       setRev((r) => r + 1);
-    } catch {
-      // 실패 무시
+    } catch (e) {
+      // 삼키지 않는다. 눌렀는데 조용한 것이 이 화면의 원래 문제였다.
+      setActionNote(e instanceof Error ? e.message : '처리 실패');
     } finally {
       setRetrying(null);
     }
@@ -58,11 +63,21 @@ export default function DataPipelineScreen() {
 
   async function retryAll() {
     setRetrying('all');
+    setActionNote(null);
     try {
-      await apiFetch('/v1/admin/data/pipeline/retry-all', { method: 'POST' });
-      setRev((r) => r + 1);
-    } catch {
-      // 실패 무시
+      const r = (await apiFetch('/v1/admin/data/pipeline/retry-all', { method: 'POST' })) as {
+        retried: number;
+        skipped: number;
+      };
+      // 건너뛴 건수를 감추지 않는다. 계속 실패하는 건은 사람이 개별로 봐야 한다.
+      setActionNote(
+        r.skipped > 0
+          ? `${r.retried}건을 다시 처리해요. ${r.skipped}건은 여러 번 실패해 건너뛰었어요.`
+          : `${r.retried}건을 다시 처리해요.`
+      );
+      setRev((v) => v + 1);
+    } catch (e) {
+      setActionNote(e instanceof Error ? e.message : '처리 실패');
     } finally {
       setRetrying(null);
     }
@@ -76,6 +91,9 @@ export default function DataPipelineScreen() {
           <Text style={styles.refreshText}>새로 고침</Text>
         </Pressable>
       </View>
+
+      {/* 재처리 결과. 「지금 봐야 할 것이 맨 위」 — v3.27 관리자 공통 규칙. */}
+      {actionNote && <Text style={styles.actionNote}>{actionNote}</Text>}
 
       <DelayedLoader active={loading} size={40} style={styles.centered} />
       {!loading && error && (
@@ -140,7 +158,7 @@ export default function DataPipelineScreen() {
             <Text style={styles.sectionTitle}>실패 큐</Text>
             {data.failedQueue.length > 0 && (
               <Pressable
-                style={[styles.retryAllBtn, retrying === 'all' && styles.btnDisabled]}
+                style={[styles.retryAllBtn, (retrying === 'all') && styles.btnDisabled]}
                 onPress={() => void retryAll()}
                 disabled={retrying !== null}
               >
@@ -172,7 +190,7 @@ export default function DataPipelineScreen() {
                     <Text style={[styles.td, styles.colRetry]}>{item.retryCount}회</Text>
                     <View style={[styles.colAction]}>
                       <Pressable
-                        style={[styles.inlineBtn, retrying === item.id && styles.btnDisabled]}
+                        style={[styles.inlineBtn, (retrying === item.id) && styles.btnDisabled]}
                         onPress={() => void retryItem(item.id)}
                         disabled={retrying !== null}
                       >
@@ -193,39 +211,46 @@ export default function DataPipelineScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#f2f3f6' },
+  root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
-  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: '#17181c' },
+  title: { flex: 1, fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text },
   refreshBtn: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
-    backgroundColor: '#f2f3f6',
+    backgroundColor: Colors.light.backgroundSelected,
   },
-  refreshText: { fontSize: FontSize.t7, color: '#5a5d6a' },
+  refreshText: { fontSize: FontSize.t7, color: Colors.light.textSecondary },
   body: { flex: 1 },
   bodyContent: { padding: 24, gap: 12 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  errorText: { fontSize: FontSize.t6, color: '#e53e3e', marginBottom: 16 },
+  errorText: { fontSize: FontSize.t6, color: Colors.light.negative, marginBottom: 16 },
+  actionNote: {
+    fontSize: FontSize.t7,
+    fontWeight: '600',
+    color: Colors.light.accent,
+    marginHorizontal: Layout.gutter,
+    marginTop: Spacing.two,
+  },
   retryBtn: {
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 6,
-    backgroundColor: '#ff6f61',
+    backgroundColor: Colors.light.tint,
   },
-  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: '#fff' },
+  retryText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   sectionTitle: {
     fontSize: FontSize.t7,
     fontWeight: '700',
-    color: '#868b94',
+    color: Colors.light.textAssistive,
     textTransform: 'uppercase' as const,
     letterSpacing: 0.6,
     marginTop: 8,
@@ -233,33 +258,33 @@ const styles = StyleSheet.create({
   statsGrid: { flexDirection: 'row', gap: 10 },
   statCell: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderRadius: 10,
     padding: 14,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e4e5ea',
+    borderColor: Colors.light.border,
   },
-  statValue: { fontSize: FontSize.t4, fontWeight: '700', color: '#17181c', fontVariant: ['tabular-nums'] },
-  valueOk: { color: '#1aa174' },
-  valueWarn: { color: '#805217' },
-  valueDanger: { color: '#e81607' },
-  statLabel: { fontSize: FontSize.tab, color: '#868b94', marginTop: 4 },
+  statValue: { fontSize: FontSize.t4, fontWeight: '700', color: Colors.light.text, fontVariant: ['tabular-nums'] },
+  valueOk: { color: Colors.light.positive },
+  valueWarn: { color: Colors.light.cautionary },
+  valueDanger: { color: Colors.light.negative },
+  statLabel: { fontSize: FontSize.tab, color: Colors.light.textAssistive, marginTop: 4 },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.light.background,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e4e5ea',
+    borderColor: Colors.light.border,
     overflow: 'hidden',
   },
-  emptyText: { fontSize: FontSize.t7, color: '#868b94', padding: 16 },
+  emptyText: { fontSize: FontSize.t7, color: Colors.light.textAssistive, padding: 16 },
   tableHead: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: Colors.light.backgroundElement,
     borderBottomWidth: 1,
-    borderBottomColor: '#e4e5ea',
+    borderBottomColor: Colors.light.border,
   },
   tableRow: {
     flexDirection: 'row',
@@ -267,12 +292,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f1f4',
+    borderBottomColor: Colors.light.backgroundSelected,
   },
-  tableRowZebra: { backgroundColor: '#fafbfc' },
-  th: { fontSize: FontSize.tab, fontWeight: '700', color: '#868b94', textTransform: 'uppercase' as const },
-  td: { fontSize: FontSize.t7, color: '#3a3b40' },
-  monoText: { color: '#5a5d6a' },
+  tableRowZebra: { backgroundColor: Colors.light.backgroundElement },
+  th: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.textAssistive, textTransform: 'uppercase' as const },
+  td: { fontSize: FontSize.t7, color: Colors.light.textStrong },
+  monoText: { color: Colors.light.textSecondary },
   colStage: { flex: 2 },
   colCount: { width: 80, textAlign: 'right' as const },
   colWait: { width: 80, textAlign: 'right' as const },
@@ -286,17 +311,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
-    backgroundColor: '#ff6f61',
+    backgroundColor: Colors.light.tint,
   },
-  retryAllText: { fontSize: FontSize.tab, fontWeight: '700', color: '#fff' },
+  retryAllText: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.background },
   inlineBtn: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
-    backgroundColor: '#f2f3f6',
+    backgroundColor: Colors.light.backgroundSelected,
     borderWidth: 1,
-    borderColor: '#d1d3d8',
+    borderColor: Colors.light.fieldBorder,
   },
-  inlineBtnText: { fontSize: FontSize.tab, color: '#5a5d6a' },
+  inlineBtnText: { fontSize: FontSize.tab, color: Colors.light.textSecondary },
   btnDisabled: { opacity: 0.5 },
 });

@@ -15,6 +15,7 @@ import {
   ActionButton,
   ErrorView,
   FilterChip,
+  Layout,
   MaxContentWidth,
   Radius,
   RatingPicker,
@@ -24,6 +25,7 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
+import { BackBar } from '@/components/back-bar';
 
 /**
  * 후기 쓰기.
@@ -168,6 +170,7 @@ export default function WriteReviewScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.section}>
             <ThemedText type="subtitle">{form.vendorName}</ThemedText>
@@ -351,6 +354,7 @@ function Frame({ children }: { children: React.ReactNode }) {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ThemedView style={styles.content}>{children}</ThemedView>
       </SafeAreaView>
     </ThemedView>
@@ -368,7 +372,7 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
   },
   content: {
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.five,
     paddingBottom: Spacing.four,
     gap: Spacing.four,

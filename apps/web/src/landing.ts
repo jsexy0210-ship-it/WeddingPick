@@ -2,7 +2,7 @@ import strings from '../../../spec/strings.ko.json';
 import tokens from '../../../spec/tokens.json';
 import { BUSINESS, BUSINESS_NOTICE_LINES } from '@weddingpick/domain';
 import { CONTACT_EMAIL } from './content';
-import { socialMeta } from './social-meta';
+import { homeDescription, homeTitle, socialMeta } from './social-meta';
 
 const S = strings.webLanding;
 const T = tokens.webLanding;
@@ -99,7 +99,7 @@ ${MARKETING_CHROME}
 `;
 
 export function renderLandingV4(): string {
-  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(S.metaTitle)}</title><meta name="description" content="${esc(S.metaDescription)}">${socialMeta('/',S.metaTitle,S.metaDescription)}${faviconTags()}<style>${STYLE}</style></head><body>
+  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(homeTitle())}</title><meta name="description" content="${esc(homeDescription())}">${socialMeta('/',homeTitle(),homeDescription())}${faviconTags()}<style>${STYLE}</style></head><body>
   <a href="#main" class="wp-skip">${esc(S.skip)}</a>${marketingHeader()}<main id="main">
     <section class="wp-shell wp-hero"><div><span class="wp-eyebrow">${esc(S.eyebrow)}</span><h1>${lines(S.hero)}</h1><p class="wp-lead">${lines(S.lead)}</p><div class="wp-actions"><a class="wp-primary" href="#download">${esc(S.launchLink)}<span aria-hidden="true">↗</span></a><a class="wp-secondary" href="#how">${esc(S.howLink)}</a></div><p class="wp-hero-status">${esc(S.launch)}</p></div>${preview()}</section>
     <section id="how" class="wp-shell wp-section wp-how"><div class="wp-section-intro"><h2 class="wp-heading">${lines(S.stepsTitle)}</h2><p>${lines(S.stepsBody)}</p></div><div class="wp-steps">${S.steps.map(s => `<article class="wp-step"><span class="wp-step-number">${s.n}</span><h3>${esc(s.title)}</h3><p>${esc(s.body)}</p></article>`).join('')}</div></section>

@@ -17,6 +17,7 @@ import {
   ThemedView,
   useTheme,
 } from '@weddingpick/ui';
+import { NavBar } from '@/features/wedding/screen-kit';
 
 type SortKey = 'date' | 'region';
 
@@ -106,6 +107,11 @@ export default function ExpoListScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        {/*
+          시안 layoutStack «header 56». 뒤로는 Depth Back — 검색으로 내려간다(WP-EXPO-001 entry «검색 · 소식»).
+          제목은 화면이 아래 Hero로 들고 있어 nav에 다시 적지 않는다.
+        */}
+        <NavBar />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.header}>
             <ThemedText type="t2">박람회</ThemedText>

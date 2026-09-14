@@ -27,7 +27,7 @@ export type DataSource = {
 export const DATA_SOURCES = {
   localdata: {
     id: 'localdata',
-    name: '지방행정 인허가 데이터',
+    name: '지방행정 인허가 데이터', // lint-copy: 공공데이터포털에 등록된 자료의 정식 이름
     authority: '행정안전부',
     usedFor: '업체 이름·지역·영업 여부',
     // 2026년 4월 localdata.go.kr 서비스 종료, 이후 공공데이터포털(data.go.kr)로 통합
