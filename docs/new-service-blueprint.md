@@ -101,7 +101,7 @@ PR 체크리스트:
 새 저장소를 시작할 때 최소한 아래를 먼저 커밋한다.
 
 1. `README.md`, `CLAUDE.md`, `spec/` 4종
-2. `gen-tokens.js`, `lint-copy.js`
+2. `lint-copy.js`와 현재 토큰 스키마에 맞는 생성기. 기존 `gen-tokens.js`는 구형이며 현재 스키마에서 `undefined`가 출력되므로 그대로 복사하지 않는다.
 3. 정책 초안과 미확정값 목록
 4. OAuth·환경변수 매트릭스
 5. CI의 typecheck/lint/test/build/health 단계

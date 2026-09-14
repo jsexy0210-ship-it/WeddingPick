@@ -12,7 +12,7 @@ export const STYLES = `
 
   /* 브랜드 */
   --coral: #ff6f61;
-  --coral-dark: #e2564a;
+  --coral-dark: #c2453a;
 
   /* 텍스트 */
   --text-p: #212124;
@@ -58,7 +58,7 @@ export const STYLES = `
   --text-t5: 18px;
   --text-t6: 16px;
   --text-t7: 14px;
-  --text-badge: 12px;
+  --text-badge: 14px;
   --text-amount: 32px;
 }
 

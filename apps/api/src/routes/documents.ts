@@ -29,6 +29,29 @@ export function registerDocumentRoutes(app: FastifyInstance, context: AppContext
 
     await assertWeddingAccess(context.pool, body.weddingId, userId);
 
+    /*
+     * 동의하지 않았으면 서명 URL을 내주지 않는다. **관문이 여기인 이유**는
+     * 바이트가 기기를 떠나기 전에 막아야 하기 때문이다 — `complete`에서 막으면
+     * 원본은 이미 저장소에 올라가 있다.
+     *
+     * 결제 증빙(`payment-proofs.ts`)은 이미 이렇게 막고 있었는데 견적서 쪽에는
+     * 관문이 없었다(Release Audit 1차 P0-5). 뷰 하나만 본다 — 화면이 동의
+     * 화면을 건너뛰든 앱을 거치지 않고 부르든 여기서 걸린다.
+     */
+    const consentView =
+      body.kind === 'payment_proof'
+        ? 'structured.active_payment_consents'
+        : 'structured.active_document_consents';
+
+    const consent = await context.pool.query(
+      `SELECT 1 FROM ${consentView} WHERE user_id = $1`,
+      [userId]
+    );
+
+    if (consent.rowCount === 0) {
+      throw new ApiError('forbidden', '자료를 올리기 전에 동의가 필요합니다.');
+    }
+
     // 파일 크기 검증: 각 페이지별로 최대 크기 확인
     if (!body.pages || body.pages.length === 0) {
       throw new ApiError('invalid_request', '최소 1개의 파일이 필요합니다.');

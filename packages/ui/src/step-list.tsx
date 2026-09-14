@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-import { Radius, Spacing } from './theme';
+import { Layout, Radius, Spacing } from './theme';
 import { ThemedText } from './themed-text';
 import { useTheme } from './use-theme';
 
@@ -13,7 +13,7 @@ export type Step = { label: string; state: StepState };
  * 처리 단계 목록 — WP-ST-012 · WP-ST-015 공용.
  *
  * 끝난 단계는 코랄 원 + 체크, 진행 중은 코랄 원 + 700, 남은 단계는 회색 원 +
- * 회색 글자. 점 18 · 라벨 16 · 행 30.
+ * 회색 글자. 점 18 · 라벨 16/22 · 행 30 · 간격 10(30-loading step).
  */
 export function StepList({ steps }: { steps: readonly Step[] }) {
   const theme = useTheme();
@@ -40,7 +40,8 @@ export function StepList({ steps }: { steps: readonly Step[] }) {
             ) : null}
           </View>
           <ThemedText
-            type={step.state === 'now' ? 't5' : 't6'}
+            type="t6"
+            style={step.state === 'now' ? styles.now : undefined}
             themeColor={step.state === 'todo' ? 'textDisabled' : 'text'}>
             {step.label}
           </ThemedText>
@@ -53,14 +54,16 @@ export function StepList({ steps }: { steps: readonly Step[] }) {
 const STATE_LABEL: Record<StepState, string> = { done: '끝남', now: '진행 중', todo: '남음' };
 
 const styles = StyleSheet.create({
-  list: { alignSelf: 'stretch', gap: Spacing.one },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 30 },
-  /* 시안 고정 18 — 8단계 타이포와 무관한 점 지름이라 토큰이 아닌 값이다. */
+  /* 시안 stepList — 좌우 24(30-loading.dc.html L347). 거터 없이 두면 글이 화면 끝에 붙는다. */
+  list: { alignSelf: 'stretch', gap: Spacing.one, paddingHorizontal: Layout.gutter },
+  row: { flexDirection: 'row', alignItems: 'center', gap: Layout.iconTextGap, minHeight: Layout.stepRow },
+  /** 30-loading step — 점 18 · 라벨 16/22 · 진행 중만 700. */
   dot: {
-    width: 18,
-    height: 18,
+    width: Layout.stepDot,
+    height: Layout.stepDot,
     borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  now: { fontWeight: 700 },
 });

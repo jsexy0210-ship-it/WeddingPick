@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 
+import type { AgeVerifiedVia } from '@weddingpick/domain';
 import type { Pool } from 'pg';
 
 import type { VerifiedIdentity } from './identity-provider';
@@ -154,21 +155,30 @@ export async function sessionEntry(
 }
 
 /**
- * 제공자가 준 연령대로 만 14세 확인이 끝났다고 적는다. v3.22 SPEC 3.5.
+ * 만 14세 확인이 끝났다고 적는다. v3.22 SPEC 3.5 · 2026-09-10 사용자 지시.
  *
- * 남기는 것은 둘뿐이다 — `age_verified` · `age_verified_at`. 연령대는 여기까지
- * 오지 않는다(라우트가 판정만 넘긴다). `age_gate` · `age_checked_at`(0046)도 함께
- * 채운다 — `activated_only_when_old_enough` 제약이 여전히 그 컬럼을 본다.
+ * 남기는 것은 셋뿐이다 — `age_verified` · `age_verified_at` · `age_verified_via`
+ * (0102). 연령대 문자열은 여기까지 오지 않는다: 라우트가 판정과 경로만 넘긴다.
+ * `age_gate` · `age_checked_at`(0046)도 함께 채운다 —
+ * `activated_only_when_old_enough` 제약이 여전히 그 컬럼을 본다.
+ *
+ * `via`를 **인자로 받는다**. 기본값을 두지 않는 것이 요점이다 — 부르는 자리가
+ * 무엇으로 확인했는지 매번 말하게 해야, 새로 생긴 경로가 조용히 남의 이름을
+ * 달고 기록되지 않는다.
  *
  * 이미 확인된 계정은 건드리지 않는다. 확인 시점은 처음 확인한 때여야 한다.
  */
-export async function markAgeVerified(pool: Pool, userId: string): Promise<void> {
+export async function markAgeVerified(
+  pool: Pool,
+  userId: string,
+  via: AgeVerifiedVia
+): Promise<void> {
   await pool.query(
     `UPDATE structured.users
-     SET age_verified = true, age_verified_at = now(),
+     SET age_verified = true, age_verified_at = now(), age_verified_via = $2,
          age_gate = 'passed', age_checked_at = coalesce(age_checked_at, now())
      WHERE id = $1 AND age_verified = false`,
-    [userId]
+    [userId, via]
   );
 }
 

@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import { useState } from 'react';
 import { StyleSheet, View, type ImageStyle } from 'react-native';
 
 import { useTheme } from '@weddingpick/ui';
@@ -12,6 +13,10 @@ import { useTheme } from '@weddingpick/ui';
  *
  * 채우는 순서는 업체 제공 → 사용 허가 → 공식 → 카테고리 기본이다. 지금 우리에게
  * 있는 것은 마지막 하나뿐이고, 그마저 파일이 없어 면으로 대신한다.
+ *
+ * **사진을 못 받아오면 같은 면으로 되돌아간다**(2026-09-09). 예전에는 `uri`가 있으면
+ * 무조건 사진을 그려서, 그 요청이 실패하면 180 높이의 흰 상자가 남고 홈 추천이
+ * 텅 빈 것처럼 보였다. `packages/ui`의 `VendorImage`가 이미 쓰는 방식과 같게 맞춘다.
  *
  * TODO: 카테고리별 기본 이미지가 확보되면 `fallback`을 그 파일로 바꾼다. 화면은
  * 이 컴포넌트만 알고 있어서 부르는 쪽은 그대로다.
@@ -39,8 +44,10 @@ export type CategoryImageProps = {
 
 export function CategoryImage({ uri, style, label }: CategoryImageProps) {
   const theme = useTheme();
+  /* 이 주소로 못 받아왔다. 같은 자리를 면으로 채운다 — 흰 상자를 남기지 않는다. */
+  const [failed, setFailed] = useState(false);
 
-  if (uri) {
+  if (uri && !failed) {
     return (
       <Image
         source={{ uri }}
@@ -52,6 +59,7 @@ export function CategoryImage({ uri, style, label }: CategoryImageProps) {
          * 하지만, 그 판단은 사진을 고르는 쪽 일이라 여기서는 하지 않는다.
          */
         transition={0}
+        onError={() => setFailed(true)}
       />
     );
   }

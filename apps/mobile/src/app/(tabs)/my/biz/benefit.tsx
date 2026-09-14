@@ -17,6 +17,7 @@ import {
 import { createInquiry } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { formatDateDot } from '@/features/common/format-date';
+import { BackBar } from '@/components/back-bar';
 
 /**
  * WP-BIZ-004: 업체 혜택 등록 화면.
@@ -78,6 +79,7 @@ export default function BizBenefitScreen() {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
+          <BackBar />
           <ThemedView style={styles.content}>
             <ThemedText type="t2">접수했어요</ThemedText>
             <ThemedText type="t6" themeColor="textSecondary">
@@ -96,6 +98,7 @@ export default function BizBenefitScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView contentContainerStyle={styles.content}>
           <ThemedView style={styles.header}>
             <ThemedText type="t2">혜택 등록</ThemedText>
@@ -107,7 +110,7 @@ export default function BizBenefitScreen() {
 
           <ThemedView type="backgroundElement" style={styles.notice}>
             <ThemedText type="t6">
-              접수 즉시 노출되지 않아요. 담당자 확인 후 게재 여부를 연락드려요.
+              담당자가 확인한 뒤 게재 여부를 연락드려요.
             </ThemedText>
           </ThemedView>
 
@@ -227,7 +230,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.five,
-    paddingBottom: Spacing.six,
+    paddingBottom: Spacing.four,
     gap: Spacing.three,
   },
   header: {
@@ -241,7 +244,7 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
   },
   input: {
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Layout.fieldPaddingX,
     paddingVertical: Spacing.three,
     fontSize: FontSize.t6,
     minHeight: Layout.rowMinHeight,

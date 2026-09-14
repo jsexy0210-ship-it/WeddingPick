@@ -2,6 +2,7 @@ import { Tabs, useSegments } from 'expo-router';
 
 import { OFF_TAB_ROUTES, ROOT_TABS } from '@/features/navigation/root-tabs';
 import { RootTabBar } from '@/features/navigation/tab-bar';
+import { useTabScreenOptions } from '@/features/navigation/screen-options';
 
 /**
  * Bottom Navigation — 05-root 시안 1:1(`RootTabBar`). 탭 목록은 이 파일이 아니라
@@ -31,15 +32,23 @@ export default function TabLayout() {
    */
   const segments: readonly string[] = useSegments();
   const onCamera = segments.includes('camera');
+  /*
+   * 탭 한 칸의 바탕. 이걸 비워두면 옮겨간 탭 아래로 지나온 탭이 비친다 —
+   * 웹에서는 안 보이는 탭이 떼어지지도 않았다(features/navigation/screen-options).
+   */
+  const screenOptions = useTabScreenOptions();
 
   return (
     <Tabs
       tabBar={(props) => (onCamera ? null : <RootTabBar {...props} />)}
-      screenOptions={{ headerShown: false }}>
+      screenOptions={screenOptions}>
       {ROOT_TABS.map((tab) => (
         <Tabs.Screen key={tab.name} name={tab.name} options={{ title: tab.label }} />
       ))}
-      {/* 탭에서 내린 화면들. `href: null`이 없으면 라우터가 없는 탭을 만든다. */}
+      {/*
+        탭에서 내린 화면들(검색 · 제보 · (home) 하위 스택). 화면은 그대로 살아 있고
+        다른 화면에서 밀어 넣어 연다 — `href: null`이 없으면 라우터가 없는 탭을 만든다.
+       */}
       {OFF_TAB_ROUTES.map((name) => (
         <Tabs.Screen key={name} name={name} options={{ href: null }} />
       ))}

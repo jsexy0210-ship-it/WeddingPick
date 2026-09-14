@@ -1,5 +1,6 @@
 import {
   redeemReferralRequestSchema,
+  requestRewardPayoutRequestSchema,
   submitPromotionRequestSchema,
 } from '@weddingpick/api-contract';
 import {
@@ -19,6 +20,7 @@ import {
   checkRedeem,
   drawMonthOf,
   isReferralCode,
+  normalizeMobilePhone,
   type MonthlyDrawCondition,
   type MonthlyDrawStatus,
   type RewardKind,
@@ -33,6 +35,7 @@ import { withTransaction } from '../db';
 import { ApiError, notFound } from '../errors';
 import { notify } from '../notify';
 import { ensureMissionGrant, newReferralCode } from '../rewards';
+import { PAYOUT_COLUMNS, receivableGrants, toPayoutDto, type PayoutRow } from '../reward-payout';
 
 type GrantRow = {
   id: string;
@@ -386,6 +389,93 @@ export function registerRewardRoutes(app: FastifyInstance, context: AppContext):
     );
 
     return reply.status(204).send();
+  });
+
+  /**
+   * Npay 리워드 수령 현황(WP-EVT-006).
+   *
+   * 받을 수 있는 금액은 «지급 대기(earned)이면서 아직 어떤 요청에도 안 묶인 보상»의 합이다.
+   * 열린 요청이 있으면 화면은 폼 대신 «확인 중»을 보여준다. 번호는 가린 꼴만 나간다.
+   */
+  app.get('/v1/me/rewards/payout', auth, async (request) => {
+    const userId = currentUserId(request);
+
+    await settleMissions(request, userId);
+
+    const [grants, payouts, me] = await Promise.all([
+      receivableGrants(context.pool, userId),
+      context.pool.query<PayoutRow>(
+        `SELECT ${PAYOUT_COLUMNS} FROM structured.reward_payouts
+         WHERE user_id = $1 ORDER BY requested_at DESC`,
+        [userId]
+      ),
+      context.pool.query<{ display_name: string | null }>(
+        `SELECT display_name FROM structured.users WHERE id = $1`,
+        [userId]
+      ),
+    ]);
+
+    const open = payouts.rows.find((row) => row.status === 'requested') ?? null;
+
+    return {
+      receivableKrw: grants.reduce((sum, grant) => sum + grant.amount_krw, 0),
+      receivableGrantIds: grants.map((grant) => grant.id),
+      recipientNameDefault: me.rows[0]?.display_name ?? null,
+      open: open ? toPayoutDto(open) : null,
+      history: payouts.rows.filter((row) => row.status !== 'requested').map(toPayoutDto),
+    };
+  });
+
+  /**
+   * 수령 요청. 그 순간 지급 대기인 보상 전부를 한 요청으로 묶는다.
+   *
+   * 번호는 010-XXXX-XXXX로 정리해 두고, 보낸 뒤(또는 실패 뒤) 지운다 — 화면의 약속
+   * («보내드린 뒤 지워요»)을 표의 CHECK가 지킨다. 열린 요청이 이미 있으면 409.
+   */
+  app.post('/v1/me/rewards/payout', auth, async (request, reply) => {
+    const userId = currentUserId(request);
+    const body = requestRewardPayoutRequestSchema.parse(request.body);
+    const phone = normalizeMobilePhone(body.phone);
+
+    if (phone === null) {
+      throw new ApiError('invalid_request', '휴대폰 번호를 확인해주세요', { phone: '010으로 시작하는 11자리' });
+    }
+
+    await settleMissions(request, userId);
+
+    const created = await withTransaction(context.pool, async (client) => {
+      const { rows: openRows } = await client.query<{ id: string }>(
+        `SELECT id FROM structured.reward_payouts WHERE user_id = $1 AND status = 'requested' FOR UPDATE`,
+        [userId]
+      );
+      if (openRows.length > 0) {
+        throw new ApiError('conflict', '이미 요청한 리워드를 확인하고 있어요. 보내면 알림으로 알려드려요');
+      }
+
+      const grants = await receivableGrants(client, userId, true);
+      if (grants.length === 0) {
+        throw new ApiError('conflict', '지금 받을 수 있는 리워드가 없어요');
+      }
+
+      const amount = grants.reduce((sum, grant) => sum + grant.amount_krw, 0);
+      const { rows } = await client.query<PayoutRow>(
+        `INSERT INTO structured.reward_payouts (user_id, amount_krw, recipient_name, recipient_phone, consent_at)
+         VALUES ($1, $2, $3, $4, now())
+         RETURNING ${PAYOUT_COLUMNS}`,
+        [userId, amount, body.recipientName.trim(), phone]
+      );
+      const payout = rows[0]!;
+
+      await client.query(
+        `UPDATE structured.reward_grants SET payout_id = $2::uuid, updated_at = now()
+         WHERE id = ANY($1::uuid[])`,
+        [grants.map((grant) => grant.id), payout.id]
+      );
+
+      return payout;
+    });
+
+    return reply.code(201).send(toPayoutDto(created));
   });
 
   /**

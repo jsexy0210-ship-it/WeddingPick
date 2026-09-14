@@ -4,8 +4,10 @@ import { ScrollView, StyleSheet, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { updateReview } from '@/api/client';
+import { BackBar } from '@/components/back-bar';
 import {
   ActionButton,
+  Layout,
   MaxContentWidth,
   Radius,
   RatingPicker,
@@ -72,6 +74,7 @@ export default function EditReviewScreen() {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
+          <BackBar />
           <ThemedView style={styles.content}>
             <ThemedText type="subtitle">후기를 고쳤어요</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
@@ -89,6 +92,7 @@ export default function EditReviewScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
+        <BackBar />
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <ThemedText type="subtitle">내 후기 고치기</ThemedText>
 
@@ -168,7 +172,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth },
   content: {
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Layout.gutter,
     paddingTop: Spacing.five,
     paddingBottom: Spacing.four,
     gap: Spacing.four,

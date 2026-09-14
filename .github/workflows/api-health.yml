@@ -1,0 +1,49 @@
+# 배포된 API가 실제로 무엇을 보고 있는지 읽는다. 아무것도 바꾸지 않는다.
+#
+# **200만으로는 모자란다.** `keep-warm`이 10분마다 `/health`를 두드려 200을
+# 받지만, 그 200은 「프로세스가 살아 있고 DB에 붙었다」까지다. `/health`는
+# 스키마가 코드보다 뒤에 있어도 **일부러** 200을 준다(server.ts) — 503을 주면
+# Render 헬스체크가 인스턴스를 계속 갈아치워서 정작 확인하려던 것을 볼 수 없게
+# 되기 때문이다. 그래서 상태는 본문에만 있고, 본문을 읽는 자리가 없었다.
+#
+# `DB Status`와 다른 것을 본다. 그쪽은 **CI가 시크릿으로 붙는 DB**를 보고,
+# 이쪽은 **배포된 API 프로세스가 실제로 쥔 DB**를 본다. 2026-09-07에 둘이
+# 달랐고(운영 API는 빈 DB, CI는 다른 DB) 인증 API가 전부 500이었다. 그때
+# 아무도 못 본 이유가 이것이다 — 두 쪽을 따로 볼 방법이 없었다.
+#
+# 본문에 비밀은 없다. 적용/기대 개수와 밀린 마이그레이션 **이름**뿐이고
+# 접속 문자열도 호스트명도 들어 있지 않다.
+name: API health 확인 (읽기 전용)
+
+on:
+  workflow_dispatch:
+    inputs:
+      api:
+        # 리전 이사처럼 **아직 주소가 다른 서비스**를 확인할 자리가 필요하다
+        # (2026-09-11). 새로 만든 서비스가 Live로 떠도 그것은 「프로세스가 살아
+        # 있다」까지고, 어느 DB를 쥐었는지는 본문을 읽어야 안다 — 실제로 Live인
+        # 채로 39개 밀린 옛 DB를 보고 있었다.
+        description: '확인할 API 주소'
+        type: string
+        required: false
+        default: https://weddingpickl-sg.onrender.com
+
+permissions:
+  contents: read
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: HTTP·DB·스키마와 현재 코드의 기대 개수 확인
+        env:
+          API: ${{ inputs.api || 'https://weddingpickl-sg.onrender.com' }}
+        # 최대 90초씩 세 번 요청하고 사이에 20초 기다려 Free 기동 지연을 허용한다.
+        run: node scripts/check-api-health.mjs --migrations-dir packages/db/migrations

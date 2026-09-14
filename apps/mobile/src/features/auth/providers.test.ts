@@ -1,7 +1,8 @@
 import type { AuthProvider } from '@weddingpick/api-contract';
 import { Platform } from 'react-native';
 
-import { providerLabel, signingInNotice, usableProviders } from './providers';
+import { providerLabel, usableProviders } from './providers';
+import { signingInMessage } from './signing-in-view';
 
 /**
  * 로그인 제공자 고르기. 카카오 하나이던 목록에 애플이 붙으면서 «어느 버튼이 어디에
@@ -85,14 +86,14 @@ describe('providerLabel', () => {
   });
 });
 
-describe('signingInNotice', () => {
+describe('signingInMessage', () => {
   it('제공자마다 다른 한 줄 — 애플을 눌렀는데 카카오라고 적지 않는다', () => {
-    expect(signingInNotice(APPLE)).toBe('Apple로 로그인하는 중이에요');
-    expect(signingInNotice(KAKAO)).toBe('카카오로 로그인하는 중이에요');
+    expect(signingInMessage(APPLE)).toBe('Apple로 로그인하는 중이에요');
+    expect(signingInMessage(KAKAO)).toBe('카카오로 로그인하는 중이에요');
   });
 
   it('개발용 대체와 아직 모르는 상태는 카카오 문구로 둔다', () => {
-    expect(signingInNotice(STAND_IN)).toBe('카카오로 로그인하는 중이에요');
-    expect(signingInNotice(null)).toBe('카카오로 로그인하는 중이에요');
+    expect(signingInMessage(STAND_IN)).toBe('카카오로 로그인하는 중이에요');
+    expect(signingInMessage(null)).toBe('카카오로 로그인하는 중이에요');
   });
 });

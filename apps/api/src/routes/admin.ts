@@ -5,13 +5,18 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
 import type { MarketingChannel, MarketingFormat } from '@weddingpick/api-contract';
+import { disclosureStage, type DisclosureStage } from '@weddingpick/domain';
 import * as marketingContent from '../marketing/content';
 import * as marketingStore from '../marketing/store';
 import * as adAdmin from '../ad-admin';
+import * as adminOps from '../admin-ops';
 import * as aiCostAdmin from '../ai-cost-admin';
 import { currentUserId, requireOperatorUser } from '../auth/plugin';
+import { isKnownSourceKey } from '../public-data/sources';
 import type { AppContext } from '../context';
+import * as dashboardAdmin from '../dashboard-admin';
 import * as decisionsAdmin from '../decisions-admin';
+import * as faqAdmin from '../faq-admin';
 import { NotAnOperator } from '../decisions';
 import { ApiError, forbidden, notFound } from '../errors';
 import * as inquiryAdmin from '../inquiry-admin';
@@ -23,6 +28,8 @@ import { decideRebuttal } from '../rebuttal-decide';
 import * as rebuttalAdmin from '../rebuttal-admin';
 import * as retentionWorker from '../retention/worker';
 import * as rewardAdmin from '../reward-admin';
+import * as dataPipeline from '../data-pipeline-admin';
+import * as vendorAdmin from '../vendor-admin';
 import * as vendorClaimAdmin from '../vendor-claim-admin';
 import * as verificationAdmin from '../verification-admin';
 import * as withdrawalAdmin from '../withdrawal-admin';
@@ -53,28 +60,91 @@ type KillSwitch = {
   description: string;
   enabled: boolean;
   category: string;
+  /**
+   * 이 스위치를 읽는 코드가 실제로 있는가. false면 껐다 켜도 동작이 바뀌지 않는다.
+   * 화면이 그 사실을 그대로 보여줘야 한다 — 끈 줄 알고 손을 놓는 것이 가장 나쁘다.
+   */
+  wired: boolean;
   lastChangedAt: string | null;
   lastChangedBy: string | null;
 };
 
-const killSwitches = new Map<string, KillSwitch>([
-  ['ai-recommendations', { id: 'ai-recommendations', name: 'AI 추천', description: 'AI 기반 업체 추천 기능을 중지합니다', enabled: true, category: 'AI', lastChangedAt: null, lastChangedBy: null }],
-  ['ai-verification', { id: 'ai-verification', name: 'AI 검증', description: '문서 AI 자동 검증을 중지합니다', enabled: true, category: 'AI', lastChangedAt: null, lastChangedBy: null }],
-  ['ai-matching', { id: 'ai-matching', name: 'AI 매칭', description: '이메일 자동 매칭을 중지합니다', enabled: true, category: 'AI', lastChangedAt: null, lastChangedBy: null }],
-  ['stats-update', { id: 'stats-update', name: '통계 반영', description: '가격 통계 자동 갱신을 중지합니다', enabled: true, category: '운영', lastChangedAt: null, lastChangedBy: null }],
-  ['reward-payout', { id: 'reward-payout', name: '보상 지급', description: '친구 초대·홍보 보상 자동 지급을 중지합니다', enabled: true, category: '운영', lastChangedAt: null, lastChangedBy: null }],
-  ['auto-publish', { id: 'auto-publish', name: '자동 게시', description: '후기·반론 자동 게시를 중지합니다', enabled: true, category: '운영', lastChangedAt: null, lastChangedBy: null }],
-]);
+/*
+ * 기능 스위치는 DB(`structured.kill_switches`, 0095)에 있다. 예전에는 이 파일 안의
+ * 인메모리 Map이었고 **읽는 쪽이 한 곳도 없었다** — 껐다고 표시돼도 기능은 계속 돌고
+ * 재시작하면 껐다는 사실조차 사라졌다.
+ */
+type KillSwitchRow = {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  enabled: boolean;
+  wired: boolean;
+  updated_at: Date | string | null;
+  updated_by: string | null;
+};
+
+function toIso(value: Date | string | null): string | null {
+  return value instanceof Date ? value.toISOString() : value;
+}
+
+function toFeatureKillSwitch(row: KillSwitchRow): KillSwitch {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    enabled: row.enabled,
+    category: row.category,
+    wired: row.wired,
+    lastChangedAt: toIso(row.updated_at),
+    lastChangedBy: row.updated_by,
+  };
+}
+
+/*
+ * 수집 중단 스위치는 위 Map과 달리 DB(`structured.import_switches`)에 있다.
+ * `public-data/sync.ts`가 임포트 직전에 이 값을 읽어 `SOURCE_DISABLED`로 거부하므로,
+ * 여기서 끄면 배포 없이 그 출처의 수집이 실제로 멈춘다. 프로세스 메모리에 두면
+ * 재시작에 사라지고, 별도 프로세스로 도는 임포트에는 보이지도 않는다.
+ */
+const IMPORT_SWITCH_PREFIX = 'import:';
+
+type ImportSwitchRow = {
+  source_key: string;
+  enabled: boolean;
+  reason: string | null;
+  updated_at: Date | string | null;
+};
+
+function toImportKillSwitch(row: ImportSwitchRow): KillSwitch {
+  return {
+    id: `${IMPORT_SWITCH_PREFIX}${row.source_key}`,
+    name: `수집 — ${row.source_key}`,
+    description: row.reason ?? '이 출처의 공개 데이터 수집을 중지합니다',
+    enabled: row.enabled,
+    category: '수집',
+    // sync.ts가 임포트 직전에 읽는다. 수집 스위치는 전부 배선돼 있다.
+    wired: true,
+    lastChangedAt: toIso(row.updated_at),
+    lastChangedBy: null,
+  };
+}
 
 function mapCopyrightBasis(
   basis: string
-): 'licensed' | 'public_domain' | 'vendor_provided' | 'pending' | 'rejected' {
+): 'licensed' | 'public_domain' | 'vendor_provided' | 'vendor_homepage' | 'pending' | 'rejected' {
   if (basis === 'vendor_provided') return 'vendor_provided';
+  // 업체가 자기 홈페이지에 대표 이미지로 올려 둔 것. 직접 받은 것과 구분해서 보인다.
+  if (basis === 'vendor_homepage') return 'vendor_homepage';
   if (basis === 'public_domain') return 'public_domain';
   if (basis === 'unknown') return 'pending';
   if (basis.startsWith('cc_') || basis.startsWith('kogl_')) return 'licensed';
   return 'pending';
 }
+
+/** 경로 파라미터가 uuid인지. 아니면 질의가 22P02로 터져 500이 된다. */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function registerAdminRoutes(app: FastifyInstance, context: AppContext): void {
   const auth = { preHandler: requireOperatorUser(context) };
@@ -90,6 +160,25 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
       throw error;
     }
   }
+
+  /*
+   * 운영 · 시스템 계열 단추가 보내는 본문.
+   *
+   * **사유는 선택이다.** 화면이 아직 사유 칸을 그리지 않는 자리가 있고, 그것을
+   * 이유로 라우트를 막으면 단추가 눌리지 않는 채로 남는다. 대신 서버가 「관리자
+   * 콘솔에서 처리」를 적어 기록이 비지 않게 한다 — 사유 없는 줄을 남기지 않는 것이
+   * 스키마의 약속이다.
+   */
+  const reasonBody = z.object({ reason: z.string().trim().min(1).optional() });
+  const adStatusBody = z.object({
+    status: z.enum(['active', 'paused']),
+    reason: z.string().trim().min(1).optional(),
+  });
+  const policyChangesBody = z.object({
+    changes: z
+      .array(z.object({ key: z.string().trim().min(1), value: z.string() }))
+      .min(1),
+  });
 
   // ── 결정 브리핑 ──────────────────────────────────────────────
   app.get('/v1/admin/decisions/briefing', auth, async () => ({
@@ -503,6 +592,37 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
     }
   );
 
+  /*
+   * **운영자가 대신 탈퇴시킨다**(2026-09-10 대표 지시).
+   *
+   * 위의 셋(hold · resume · retry)은 전부 사용자가 이미 낸 탈퇴에 개입하는 것이다.
+   * 시작을 대신 누르는 자리가 없어서, 운영자는 지워야 할 계정을 보고도 손이 없었다.
+   *
+   * 사유를 반드시 받는다. 되돌릴 수 없는 조작이고, 남이 대신 지운 계정은 본인이
+   * 지운 계정과 결과가 같아서 기록이 없으면 나중에 둘을 가릴 방법이 없다.
+   *
+   * 주소를 `/withdrawals/` 아래가 아니라 `/users/` 아래에 둔다 — 앞의 셋은 이미
+   * 탈퇴한 계정을 다루고, 이것은 **아직 탈퇴하지 않은 계정**에 대고 누른다.
+   */
+  const forceWithdrawBodySchema = z.object({ reason: z.string().trim().min(1) });
+
+  app.post<{ Params: { userId: string } }>(
+    '/v1/admin/users/:userId/withdraw',
+    auth,
+    async (request) => {
+      const body = forceWithdrawBodySchema.parse(request.body);
+
+      return await run(() =>
+        withdrawalAdmin.forceWithdraw(
+          { pool: context.pool, storage: context.storage },
+          request.params.userId,
+          currentUserId(request),
+          body.reason
+        )
+      );
+    }
+  );
+
   const resumeWithdrawalBodySchema = z.object({ reason: z.string().trim().min(1) });
 
   app.post<{ Params: { userId: string } }>(
@@ -767,63 +887,163 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   });
 
   // ─── Dashboard (WP-ADM-001) ───────────────────────────────────────────────
-  app.get('/v1/admin/dashboard', auth, async () => {
-    const [budgetStatus, briefing] = await Promise.all([
-      aiCostAdmin.status(context.pool),
-      decisionsAdmin.briefing(context.pool),
-    ]);
-    const failed = briefing.reduce((acc, b) => acc + b.failed, 0);
-    const total = briefing.reduce((acc, b) => acc + b.decisions + b.failed, 0);
-    const successRate = total === 0 ? 100 : ((total - failed) / total) * 100;
-    const pendingActions = budgetStatus.reduce((acc, s) => acc + s.uncostedCount, 0);
-    const healthy = !budgetStatus.some((s) => s.state === 'over_budget');
-    const totalCost = briefing.reduce((acc, b) => acc + (b.costUsd ?? 0), 0);
-    return {
-      aiStatus: { healthy, successRate, pendingActions },
-      reviewQueue: { total: 0, urgent: 0, oldest: '—' },
-      revenue: { mrr: '₩0', aiCost: `$${totalCost.toFixed(2)}`, contributionMargin: '₩0' },
-      recentActions: briefing.slice(0, 10).map((b) => ({
-        time: new Date().toISOString(),
-        action: b.workflow,
-        result: b.failed === 0 ? '성공' : '실패',
-      })),
-      killSwitches: [
-        { id: 'ai-recommendations', label: 'AI 추천', active: false },
-        { id: 'ai-verification', label: 'AI 검증', active: false },
-        { id: 'ai-matching', label: 'AI 매칭', active: false },
-      ],
-    };
+  /*
+   * 값은 `dashboard-admin.ts`가 실제 큐에서 센다. 이 자리에 숫자를 박아두지
+   * 않는다 — 그 자리들(`reviewQueue.total: 0` · `revenue.mrr: '₩0'`)이 홈을
+   * 「볼 일이 없는 화면」으로 보이게 만들던 원인이었다.
+   */
+  app.get('/v1/admin/dashboard', auth, async () => dashboardAdmin.dashboard(context.pool));
+
+  /*
+   * 회원 추이. 대시보드의 차트가 구간을 바꿀 때마다 여기를 부른다.
+   *
+   * 네 구간을 한 번에 주지 않는다 — 대시보드는 열 때마다 도는 화면이고, 보지도
+   * 않는 세 구간을 매번 세면 그만큼 느려진다.
+   */
+  app.get<{ Querystring: { bucket?: string } }>('/v1/admin/members-trend', auth, async (request) => {
+    const bucket = request.query.bucket ?? 'month';
+
+    if (!dashboardAdmin.isMemberBucket(bucket)) {
+      throw new ApiError('invalid_request', '구간은 일 · 주 · 월 · 년 중 하나예요.');
+    }
+
+    return dashboardAdmin.memberTrend(context.pool, bucket);
   });
 
   // ─── Kill Switches ────────────────────────────────────────────────────────
   app.get('/v1/admin/kill-switches', auth, async () => {
-    return { switches: [...killSwitches.values()] };
+    /*
+     * 수집 스위치 조회가 실패해도 나머지는 보여준다 — 운영 DB에 0049가 아직 없을 수
+     * 있고, 그때 화면 전체가 죽으면 끌 수단까지 같이 사라진다.
+     */
+    let importSwitches: KillSwitch[] = [];
+    try {
+      const { rows } = await context.pool.query<ImportSwitchRow>(
+        `SELECT source_key, enabled, reason, updated_at
+           FROM structured.import_switches
+          ORDER BY source_key`
+      );
+      importSwitches = rows.map(toImportKillSwitch);
+    } catch (error) {
+      app.log.warn({ err: error }, 'import_switches 조회 실패 — 수집 스위치를 표시하지 못한다');
+    }
+
+    let featureSwitches: KillSwitch[] = [];
+    try {
+      const { rows } = await context.pool.query<KillSwitchRow>(
+        `SELECT id, name, description, category, enabled, wired, updated_at, updated_by
+           FROM structured.kill_switches
+          ORDER BY category, id`
+      );
+      featureSwitches = rows.map(toFeatureKillSwitch);
+    } catch (error) {
+      app.log.warn({ err: error }, 'kill_switches 조회 실패 — 기능 스위치를 표시하지 못한다');
+    }
+
+    return { switches: [...featureSwitches, ...importSwitches] };
   });
 
   app.patch<{ Params: { id: string }; Body: { enabled?: boolean } }>('/v1/admin/kill-switches/:id', auth, async (req, reply) => {
-    const sw = killSwitches.get(req.params.id);
-    if (!sw) return reply.status(404).send({ error: 'not_found' });
     const operatorId = currentUserId(req);
-    sw.enabled = req.body.enabled ?? sw.enabled;
-    sw.lastChangedAt = new Date().toISOString();
-    sw.lastChangedBy = operatorId ?? 'operator';
+
+    if (req.params.id.startsWith(IMPORT_SWITCH_PREFIX)) {
+      const enabled = req.body.enabled;
+      if (typeof enabled !== 'boolean') {
+        return reply.status(400).send({ error: 'enabled_required' });
+      }
+
+      const key = req.params.id.slice(IMPORT_SWITCH_PREFIX.length);
+      /* 누가 언제 바꿨는지 남길 자리는 이 테이블의 reason·updated_at뿐이다. */
+      const reason = `${enabled ? '재개' : '중단'} — 관리자 ${operatorId ?? 'operator'}`;
+
+      /*
+       * **행이 없는 출처도 켜고 끌 수 있어야 한다**(Release Audit 1차 P1-12).
+       * UPDATE만 하던 때는 `sbiz-seoul` · `sbiz-gyeonggi`가 행이 없어 404였고,
+       * 그동안 `sync.ts`는 「행이 없으면 막는다」로 매주 수집을 통째로 거부했다.
+       * 행이 없다는 것과 사람이 껐다는 것은 다른 상태여야 한다.
+       *
+       * **아무 문자열이나 만들지는 않는다.** 오타 하나가 스위치 목록에 쓰레기
+       * 행을 남긴다. 만드는 것은 임포터가 아는 출처(`PUBLIC_SOURCES`)뿐이고,
+       * 이미 행이 있는 옛 출처(`localdata` 등)는 UPDATE로 그대로 바뀐다.
+       */
+      const updated = await context.pool.query(
+        `UPDATE structured.import_switches
+            SET enabled = $1, reason = $2, updated_at = now()
+          WHERE source_key = $3`,
+        [enabled, reason, key]
+      );
+
+      if (updated.rowCount === 0) {
+        if (!isKnownSourceKey(key)) return reply.status(404).send({ error: 'not_found' });
+
+        await context.pool.query(
+          `INSERT INTO structured.import_switches (source_key, enabled, reason)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (source_key) DO UPDATE
+              SET enabled = EXCLUDED.enabled, reason = EXCLUDED.reason, updated_at = now()`,
+          [key, enabled, reason]
+        );
+      }
+
+      return reply.status(204).send();
+    }
+
+    const enabled = req.body.enabled;
+    if (typeof enabled !== 'boolean') {
+      return reply.status(400).send({ error: 'enabled_required' });
+    }
+
+    const { rowCount } = await context.pool.query(
+      `UPDATE structured.kill_switches
+          SET enabled = $1, reason = $2, updated_at = now(), updated_by = $3
+        WHERE id = $4`,
+      [
+        enabled,
+        `${enabled ? '재개' : '중단'} — 관리자 ${operatorId ?? 'operator'}`,
+        operatorId ?? 'operator',
+        req.params.id,
+      ]
+    );
+    if (!rowCount) return reply.status(404).send({ error: 'not_found' });
     return reply.status(204).send();
   });
 
   // ─── FAQ ──────────────────────────────────────────────────────────────────
-  app.get('/v1/admin/faq', auth, async () => {
-    return { items: [] as { id: string; question: string; answer: string; visible: boolean }[] };
-  });
-  app.post('/v1/admin/faq', auth, async () => {
-    return { id: randomUUID() };
-  });
-  app.patch<{ Params: { id: string } }>('/v1/admin/faq/:id', auth, async (_req, reply) => {
-    return reply.status(204).send();
-  });
-  app.put<{ Params: { id: string } }>('/v1/admin/faq/:id', auth, async (_req, reply) => {
-    return reply.status(204).send();
-  });
-  app.delete<{ Params: { id: string } }>('/v1/admin/faq/:id', auth, async (_req, reply) => {
+  /*
+   * FAQ — 운영자가 직접 등록·수정·삭제한다(2026-09-11 대표 지시).
+   *
+   * **여기 있던 다섯 라우트는 성공만 돌려주고 아무것도 하지 않았다.** GET은 빈
+   * 배열 리터럴, POST는 `randomUUID()`, PATCH · PUT · DELETE는 204. 화면은 멀쩡히
+   * 그려지고 저장 단추도 눌렸는데 남는 것이 없었다 — 「눌러도 아무 일이 없는 것이
+   * 가장 나쁘다」의 실례다. 0230 마이그레이션의 표에 실제로 담는다.
+   *
+   * PATCH는 없앤다. 화면은 전체 항목을 보내므로(PUT) 부분 갱신을 쓰는 쪽이 없고,
+   * 부르는 데 없는 쓰기 라우트를 성공으로 남겨두면 다음 사람이 그것을 믿는다.
+   */
+  app.get('/v1/admin/faq', auth, async () => faqAdmin.list(context.pool));
+
+  app.post<{ Body: unknown }>('/v1/admin/faq', auth, async (request) =>
+    faqAdmin.create(context.pool, faqAdmin.parseFaqInput(request.body), currentUserId(request))
+  );
+
+  app.put<{ Params: { id: string }; Body: unknown }>(
+    '/v1/admin/faq/:id',
+    auth,
+    async (request, reply) => {
+      await faqAdmin.update(
+        context.pool,
+        request.params.id,
+        faqAdmin.parseFaqInput(request.body),
+        currentUserId(request)
+      );
+
+      return reply.status(204).send();
+    }
+  );
+
+  app.delete<{ Params: { id: string } }>('/v1/admin/faq/:id', auth, async (request, reply) => {
+    await faqAdmin.remove(context.pool, request.params.id);
+
     return reply.status(204).send();
   });
 
@@ -962,63 +1182,82 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   });
 
   // ─── Vendors ──────────────────────────────────────────────────────────────
-  app.get('/v1/admin/vendors', auth, async (request) => {
-    const q = request.query as Record<string, string | undefined>;
-    const cursor = q['cursor'];
-    const category = q['category'];
-    const limit = 25;
-    const params: unknown[] = [];
-    let idx = 1;
-    const clauses: string[] = [];
-    if (category) {
-      clauses.push(`v.category = $${idx}`);
-      params.push(category);
-      idx++;
+  /*
+   * WP-ADM-014가 읽는 모양으로 돌려준다. 예전에는 커서 페이지네이션에
+   * `{items, hasMore, nextCursor}`를 내보냈는데 화면은 `{vendors, total}`을 읽고
+   * 있었다 — 즉 표가 언제나 비어 있었다. 조회조차 되지 않고 있었던 셈이다.
+   */
+  app.get('/v1/admin/vendors', auth, async () => vendorAdmin.listVendors(context.pool));
+
+  /*
+   * 병합하면 무엇이 몇 건 옮겨 가는지 세어서 돌려준다. 아무것도 바꾸지 않는다.
+   *
+   * 병합은 이 콘솔에서 되돌릴 수 없는 유일한 조작이고 사용자가 쓴 기록에 닿는다.
+   * v3.27 관리자 공통 규칙 — 위험한 조작은 무엇이 바뀌는지 항목으로 보여준 뒤
+   * 한 번 더 확인. 화면은 이 응답을 확인창에 그대로 그린다.
+   */
+  app.get<{ Params: { id: string }; Querystring: { targetId?: string } }>(
+    '/v1/admin/vendors/:id/merge-preview',
+    auth,
+    async (request) => {
+      const targetId = request.query.targetId?.trim();
+      if (!targetId) {
+        throw new ApiError('invalid_request', '병합할 업체 ID를 입력해 주세요.');
+      }
+      return vendorAdmin.mergePreview(context.pool, request.params.id, targetId);
     }
-    if (cursor) {
-      clauses.push(`v.created_at < $${idx}`);
-      params.push(cursor);
-      idx++;
+  );
+
+  app.post<{ Params: { id: string } }>(
+    '/v1/admin/vendors/:id/merge',
+    auth,
+    async (request) => {
+      const body = z
+        .object({ targetId: z.string().min(1), reason: z.string().min(1) })
+        .safeParse(request.body);
+      if (!body.success) {
+        // 사유 없이 병합할 수 없다. 되돌릴 수 없는 조작에서 「왜」가 빠지면
+        // 나중에 잘못을 찾아도 어디서부터 잘못됐는지 짚을 수가 없다.
+        throw new ApiError('invalid_request', '병합할 업체와 사유를 입력해 주세요.');
+      }
+      return vendorAdmin.mergeVendors(
+        context.pool,
+        request.params.id,
+        body.data.targetId.trim(),
+        body.data.reason,
+        currentUserId(request)
+      );
     }
-    const where = clauses.length ? 'WHERE ' + clauses.join(' AND ') : '';
-    params.push(limit + 1);
-    const { rows } = await context.pool.query<{
-      id: string;
-      category: string;
-      name: string;
-      region: string | null;
-      source: string;
-      last_verified_at: Date | null;
-      created_at: Date;
-      proof_count: string;
-    }>(
-      `SELECT v.id, v.category, v.name, v.region, v.source,
-              v.last_verified_at, v.created_at,
-              COUNT(p.id)::text AS proof_count
-       FROM structured.vendors v
-       LEFT JOIN structured.usable_payment_proofs p ON p.vendor_id = v.id
-       ${where}
-       GROUP BY v.id
-       ORDER BY v.created_at DESC
-       LIMIT $${idx}`,
-      params
+  );
+
+  app.patch<{ Params: { id: string } }>('/v1/admin/vendors/:id/name', auth, async (request) => {
+    const body = z.object({ name: z.string() }).safeParse(request.body);
+    if (!body.success) {
+      throw new ApiError('invalid_request', '상호를 입력해 주세요.');
+    }
+    return vendorAdmin.renameVendor(
+      context.pool,
+      request.params.id,
+      body.data.name,
+      currentUserId(request)
     );
-    const hasMore = rows.length > limit;
-    const items = hasMore ? rows.slice(0, limit) : rows;
-    return {
-      items: items.map((r) => ({
-        id: r.id,
-        category: r.category,
-        name: r.name,
-        region: r.region ?? '',
-        source: r.source,
-        lastVerifiedAt: r.last_verified_at?.toISOString() ?? null,
-        createdAt: r.created_at.toISOString(),
-        proofCount: Number(r.proof_count),
-      })),
-      hasMore,
-      nextCursor: hasMore ? items[items.length - 1]!.created_at.toISOString() : null,
-    };
+  });
+
+  app.patch<{ Params: { id: string } }>('/v1/admin/vendors/:id/status', auth, async (request) => {
+    const body = z
+      .object({ status: z.enum(vendorAdmin.SETTABLE_STATUSES) })
+      .safeParse(request.body);
+    if (!body.success) {
+      // 「병합됨」은 병합의 결과이지 고르는 상태가 아니다. 고를 수 있게 두면
+      // 옮겨 간 것 없이 상태만 병합됨인 업체가 생긴다.
+      throw new ApiError('invalid_request', '영업 상태는 영업중 · 폐업 · 정지 중에서 고릅니다.');
+    }
+    return vendorAdmin.setVendorStatus(
+      context.pool,
+      request.params.id,
+      body.data.status,
+      currentUserId(request)
+    );
   });
 
   // ─── Revenue ──────────────────────────────────────────────────────────────
@@ -1033,9 +1272,7 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   });
 
   // ─── Ads ──────────────────────────────────────────────────────────────────
-  app.get('/v1/admin/ads', auth, async () => {
-    return { items: [] as unknown[], total: 0 };
-  });
+  app.get('/v1/admin/ads', auth, async () => adminOps.adPlacements(context.pool));
   app.post('/v1/admin/ads', auth, async () => {
     return { id: randomUUID() };
   });
@@ -1046,13 +1283,106 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
     return reply.status(204).send();
   });
 
+  /*
+   * 집행 정지·재개. 화면(`ads.tsx`)이 PATCH로 `{ status }`를 보낸다 — POST가
+   * 아니다. 서버 편한 모양으로 고치지 않고 부르는 대로 받는다.
+   */
+  app.patch<{ Params: { id: string }; Body: unknown }>(
+    '/v1/admin/ads/:id/status',
+    auth,
+    async (request, reply) => {
+      const body = adStatusBody.parse(request.body ?? {});
+      await run(() =>
+        adminOps.setAdStatus(
+          context.pool,
+          request.params.id,
+          body.status,
+          currentUserId(request),
+          body.reason
+        )
+      );
+      return reply.status(204).send();
+    }
+  );
+
   // ─── Ads Gate ─────────────────────────────────────────────────────────────
-  app.get('/v1/admin/ads-gate', auth, async () => {
-    return { enabled: false, rules: [] as unknown[] };
-  });
+  app.get('/v1/admin/ads-gate', auth, async () => adminOps.adsGate(context.pool));
   app.patch('/v1/admin/ads-gate', auth, async (_req, reply) => {
     return reply.status(204).send();
   });
+
+  /*
+   * 실운영 전환 승인.
+   *
+   * **승인이 전환은 아니다.** `ads.production_gate.activated`는 기본값이 꺼짐이고
+   * 이 판에 그것을 켜는 길이 없다 — 광고 실운영 전환은 대표 오더 대기 상태다
+   * (`CLAUDE.md` 「진행 상태」). 응답이 그 사실을 그대로 말한다.
+   */
+  app.post<{ Body: unknown }>('/v1/admin/ads-gate/approve', auth, async (request) => {
+    const body = reasonBody.parse(request.body ?? {});
+    return run(() => adminOps.approveAdsGate(context.pool, currentUserId(request), body.reason));
+  });
+
+  /*
+   * 실운영 전환을 켜고 끈다 — 2026-09-11 대표 지시(「광고도 진행해. 단, 관리자에서
+   * 내가 컨트롤할 수 있어야 한다」).
+   *
+   * **입구가 여기 하나뿐이다.** 관리자 로그인을 지난 사람만 부를 수 있고
+   * (`auth`), 표의 `decided_by`·`activation_follows_approval`이 그 뒤를 받친다.
+   * 자동화·배치·스케줄러가 이 경로를 부르는 자리를 만들지 않는다.
+   */
+  app.post<{ Body: unknown }>('/v1/admin/ads-gate/activate', auth, async (request) => {
+    const body = reasonBody.parse(request.body ?? {});
+    return run(() => adminOps.activateAdsGate(context.pool, currentUserId(request), body.reason));
+  });
+
+  app.post<{ Body: unknown }>('/v1/admin/ads-gate/deactivate', auth, async (request) => {
+    const body = reasonBody.parse(request.body ?? {});
+    return run(() => adminOps.deactivateAdsGate(context.pool, currentUserId(request), body.reason));
+  });
+
+  // ─── 광고 상품(등급)별 실운영 상태 ────────────────────────────────────────
+  /*
+   * 검색 화면이 실제로 보는 스위치다. 전체 관문이 열려 있어도 등급이 test면 그
+   * 등급의 광고는 안 나간다(`ads.tier_state`).
+   */
+  app.get('/v1/admin/ad-tiers', auth, async () => ({
+    tiers: await adminOps.adTierStates(context.pool),
+  }));
+
+  const adTierBody = z.object({
+    /** test는 받지 않는다 — 시작 상태이지 결정이 아니다. 되돌리려면 DELETE. */
+    state: z.enum(['live', 'withheld', 'retired']),
+    note: z.string().trim().min(1).optional(),
+  });
+
+  app.put<{ Params: { tier: string }; Body: unknown }>(
+    '/v1/admin/ad-tiers/:tier',
+    auth,
+    async (request) => {
+      const body = adTierBody.parse(request.body ?? {});
+
+      return {
+        tiers: await run(() =>
+          adminOps.decideAdTier(
+            context.pool,
+            { tier: request.params.tier, state: body.state, note: body.note },
+            currentUserId(request)
+          )
+        ),
+      };
+    }
+  );
+
+  app.delete<{ Params: { tier: string } }>(
+    '/v1/admin/ad-tiers/:tier',
+    auth,
+    async (request) => ({
+      tiers: await run(() =>
+        adminOps.clearAdTierDecision(context.pool, request.params.tier, currentUserId(request))
+      ),
+    })
+  );
 
   // ─── AI Usage ─────────────────────────────────────────────────────────────
   app.get('/v1/admin/ai-usage', auth, async (request) => {
@@ -1066,12 +1396,34 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   });
 
   // ─── Automation ───────────────────────────────────────────────────────────
-  app.get('/v1/admin/automation', auth, async () => {
-    return { rules: [] as unknown[], enabled: true };
-  });
+  app.get('/v1/admin/automation', auth, async () => adminOps.automationStatus(context.pool));
   app.patch('/v1/admin/automation', auth, async (_req, reply) => {
     return reply.status(204).send();
   });
+
+  /** 실패한 줄을 다시 대기 목록에 세운다. 지우지 않는다. */
+  app.post<{ Params: { id: string }; Body: unknown }>(
+    '/v1/admin/automation/:id/recover',
+    auth,
+    async (request) => {
+      const body = reasonBody.parse(request.body ?? {});
+      return run(() =>
+        adminOps.recoverWorkflow(context.pool, request.params.id, currentUserId(request), body.reason)
+      );
+    }
+  );
+
+  /** DLQ를 «확인했다»로 표시한다. 실패 기록 자체는 남는다. */
+  app.post<{ Params: { id: string }; Body: unknown }>(
+    '/v1/admin/automation/:id/drain-dlq',
+    auth,
+    async (request) => {
+      const body = reasonBody.parse(request.body ?? {});
+      return run(() =>
+        adminOps.drainDlq(context.pool, request.params.id, currentUserId(request), body.reason)
+      );
+    }
+  );
 
   // ─── Biz Queue ────────────────────────────────────────────────────────────
   app.get('/v1/admin/biz-queue', auth, async () => {
@@ -1088,99 +1440,200 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   });
 
   // ─── Campaigns ────────────────────────────────────────────────────────────
-  app.get('/v1/admin/campaigns', auth, async () => {
-    return { items: [] as unknown[], total: 0 };
-  });
+  app.get('/v1/admin/campaigns', auth, async () => adminOps.campaignGrants(context.pool));
   app.post('/v1/admin/campaigns', auth, async () => {
     return { id: randomUUID() };
   });
 
+  /*
+   * 지급 · 차단.
+   *
+   * 판단 로직을 새로 쓰지 않는다 — `reward-admin`의 `decide`가 이미 「받는 본인은
+   * 지급할 수 없다」 · 「이미 처리된 건은 다시 처리하지 않는다」 · 감사 기록 ·
+   * 알림까지 한 트랜잭션에서 한다. 여기서는 화면의 말(`pay`/`block`)을 그 함수의
+   * 말로 옮길 뿐이다.
+   */
+  app.post<{ Params: { id: string; action: string }; Body: unknown }>(
+    '/v1/admin/campaigns/:id/:action',
+    auth,
+    async (request, reply) => {
+      const { action } = request.params;
+
+      if (action !== 'pay' && action !== 'block') {
+        throw new ApiError('invalid_request', '지급 또는 차단만 할 수 있습니다.');
+      }
+
+      const body = reasonBody.parse(request.body ?? {});
+
+      await run(() =>
+        rewardAdmin.decide(
+          context.pool,
+          request.params.id,
+          action === 'pay' ? 'paid' : 'blocked',
+          currentUserId(request),
+          body.reason ?? '관리자 콘솔에서 처리'
+        )
+      );
+
+      return reply.status(204).send();
+    }
+  );
+
   // ─── Data / Pipeline ──────────────────────────────────────────────────────
-  app.get('/v1/admin/data/pipeline', auth, async () => {
-    return { stages: [] as unknown[], lastRunAt: null as string | null };
-  });
+  /*
+   * 바탕은 `structured.analyses`다. 예전에는 `{stages: [], lastRunAt: null}`이라는
+   * 빈 껍데기를 돌려줬는데, 화면은 `today` · `stages` · `failedQueue` 셋을 읽으므로
+   * `data.today.received`에서 터졌다 — 화면이 아예 뜨지 않았다.
+   */
+  app.get('/v1/admin/data/pipeline', auth, async () => dataPipeline.pipelineData(context.pool));
+
+  app.post<{ Params: { id: string } }>(
+    '/v1/admin/data/pipeline/retry/:id',
+    auth,
+    async (request, reply) => {
+      await dataPipeline.retryAnalysis(context.pool, request.params.id);
+      return reply.status(204).send();
+    }
+  );
+
+  app.post('/v1/admin/data/pipeline/retry-all', auth, async () =>
+    dataPipeline.retryAllFailed(context.pool)
+  );
 
   // ─── Data / Email Matching ────────────────────────────────────────────────
+  /*
+   * **여기에는 아직 아무 상태도 없다.** 업체 회신 메일을 받아 두는 표가 DB에 없고
+   * (0001~0121 어디에도 없다), 파싱도 매칭도 도는 곳이 없다. 그래서 「반영」·「재시도」는
+   * 만들지 않았다 — 서버에 그 상태가 없으면 단추도 두지 않는다. 화면의 잠금은
+   * 그대로 두고, 무엇이 없어서 잠겨 있는지는 PR에 적었다.
+   *
+   * 다만 `summary`는 채워서 내보낸다. 예전에는 `{items, total}`만 줬는데 화면은
+   * `data.summary[s]`를 읽으므로 undefined를 인덱싱하다 화면이 통째로 죽었다 —
+   * 「빈 상태」가 아니라 흰 화면이었다. 0으로 채우면 v3.27의 「빈 상태가 정상 상태」가
+   * 그려진다.
+   */
   app.get('/v1/admin/data/email-matching', auth, async () => {
-    return { items: [] as unknown[], total: 0 };
+    return {
+      summary: { total: 0, matched: 0, unmatched: 0, applied: 0, failed: 0 },
+      items: [] as unknown[],
+    };
   });
 
   // ─── Data / Images ────────────────────────────────────────────────────────
-  app.get('/v1/admin/data/images', auth, async (request) => {
-    const q = request.query as Record<string, string | undefined>;
-    const status = q['status'] ?? 'pending';
-    const cursor = q['cursor'];
-    const limit = 20;
-    const params: unknown[] = [status];
-    let idx = 2;
-    let cursorClause = '';
-    if (cursor) {
-      cursorClause = ` AND vi.created_at < $${idx}`;
-      params.push(cursor);
-      idx++;
-    }
-    params.push(limit + 1);
+  /*
+   * WP-ADM-015가 읽는 모양으로 돌려준다.
+   *
+   * 예전에는 `{items, hasMore, nextCursor}`에 `copyrightBasis` · `status`를 따로
+   * 담아 내보냈다. 화면은 `data.summary.total`과 `item.rightsStatus`를 읽으므로
+   * summary에서 곧바로 죽었다. **권리와 처리 상태를 한 값으로 합친다** — 화면이
+   * 보는 것은 「이 사진을 내보낼 수 있나」 하나이고, 폐기됐으면 권리가 무엇이든
+   * 못 내보낸다.
+   */
+  app.get('/v1/admin/data/images', auth, async () => {
     const { rows } = await context.pool.query<{
       id: string;
-      vendor_id: string;
       vendor_name: string;
-      storage_key: string;
       source_url: string | null;
       copyright_basis: string;
       match_confidence: string | null;
       status: string;
       created_at: Date;
     }>(
-      `SELECT vi.id, vi.vendor_id, v.name AS vendor_name,
-              vi.storage_key, vi.source_url,
+      `SELECT vi.id, v.name AS vendor_name, vi.source_url,
               vi.copyright_basis, vi.match_confidence::text,
               vi.status, vi.created_at
-       FROM structured.vendor_images vi
-       JOIN structured.vendors v ON v.id = vi.vendor_id
-       WHERE vi.status = $1${cursorClause}
-       ORDER BY vi.created_at DESC
-       LIMIT $${idx}`,
-      params
+         FROM structured.vendor_images vi
+         JOIN structured.vendors v ON v.id = vi.vendor_id
+        ORDER BY vi.created_at DESC
+        LIMIT 200`
     );
-    const hasMore = rows.length > limit;
-    const items = hasMore ? rows.slice(0, limit) : rows;
+
+    const items = rows.map((r) => ({
+      id: r.id,
+      vendorName: r.vendor_name,
+      // 출처는 사람이 눈으로 확인하는 자리라 도메인만으로 줄이지 않는다.
+      source: r.source_url ?? '출처 없음',
+      // 거부 상태 넷은 화면에서 전부 「폐기됨」 하나로 보인다 — 왜 뺐는지는
+      // 운영 기록의 몫이고, 이 표가 답하는 질문은 「내보낼 수 있나」다.
+      rightsStatus: r.status.endsWith('_rejected') || r.status === 'crop_failed'
+        ? ('rejected' as const)
+        : mapCopyrightBasis(r.copyright_basis),
+      matchConfidence: r.match_confidence !== null ? Number(r.match_confidence) : 0,
+      createdAt: r.created_at.toISOString(),
+      url: r.source_url ?? null,
+    }));
+
     return {
-      items: items.map((r) => ({
-        id: r.id,
-        vendorId: r.vendor_id,
-        vendorName: r.vendor_name,
-        storageKey: r.storage_key,
-        sourceUrl: r.source_url ?? null,
-        copyrightBasis: mapCopyrightBasis(r.copyright_basis),
-        matchConfidence: r.match_confidence !== null ? Number(r.match_confidence) : null,
-        status: r.status,
-        createdAt: r.created_at.toISOString(),
-      })),
-      hasMore,
-      nextCursor: hasMore ? items[items.length - 1]!.created_at.toISOString() : null,
+      summary: {
+        total: items.length,
+        licensed: items.filter(
+          (i) => i.rightsStatus !== 'pending' && i.rightsStatus !== 'rejected'
+        ).length,
+        pending: items.filter((i) => i.rightsStatus === 'pending').length,
+        rejected: items.filter((i) => i.rightsStatus === 'rejected').length,
+      },
+      items,
     };
   });
 
-  app.patch<{ Params: { id: string } }>(
+  /*
+   * 화면(WP-ADM-015)이 POST로 부른다. 서버는 PATCH로 열려 있었다 — 라우트는 있는데
+   * 메서드가 어긋나 404가 나던 자리다. 이 콘솔 말고 부르는 곳이 없으므로 화면에
+   * 맞춘다.
+   *
+   * 없는 이미지를 승인해도 조용히 204가 나가던 것도 같이 고친다. 운영자에게는
+   * 「승인됐다」로 보이는데 아무 일도 안 일어난 상태였다.
+   */
+  /**
+   * 승인 · 폐기.
+   *
+   * 폐기에는 **이유를 반드시 적는다** — 0050의 `image_rejection_has_reason`이
+   * 거부 상태에 이유 없이 들어가는 것을 막는다. 예전 라우트는 이유 없이
+   * `quality_rejected`를 넣어서, 폐기를 누를 때마다 CHECK에 걸려 500이 났다.
+   *
+   * 상태도 `rights_rejected`로 바로잡는다. 화면(WP-ADM-015)이 폐기 단추를 내놓는
+   * 것은 **권리가 확인되지 않은** 사진이지 화질이 나쁜 사진이 아니다.
+   */
+  async function setImageStatus(id: string, decision: 'approve' | 'reject') {
+    // uuid가 아닌 것을 넣으면 Postgres가 22P02로 터져 500이 된다. 실제로는 ID가
+    // 잘못된 것이므로 404로 답한다.
+    if (!UUID_RE.test(id)) throw notFound('이미지');
+
+    const { rowCount } =
+      decision === 'approve'
+        ? await context.pool.query(
+            `UPDATE structured.vendor_images
+                SET status = 'approved', rejection_reason = NULL, verified_at = now()
+              WHERE id = $1`,
+            [id]
+          )
+        : await context.pool.query(
+            `UPDATE structured.vendor_images
+                SET status = 'rights_rejected',
+                    rejection_reason = '운영자 폐기 — 권리 미확인',
+                    is_representative = false,
+                    verified_at = now()
+              WHERE id = $1`,
+            [id]
+          );
+
+    if (rowCount === 0) throw notFound('이미지');
+  }
+
+  app.post<{ Params: { id: string } }>(
     '/v1/admin/data/images/:id/approve',
     auth,
     async (request, reply) => {
-      await context.pool.query(
-        `UPDATE structured.vendor_images SET status = 'approved' WHERE id = $1`,
-        [request.params.id]
-      );
+      await setImageStatus(request.params.id, 'approve');
       return reply.status(204).send();
     }
   );
 
-  app.patch<{ Params: { id: string } }>(
+  app.post<{ Params: { id: string } }>(
     '/v1/admin/data/images/:id/reject',
     auth,
     async (request, reply) => {
-      await context.pool.query(
-        `UPDATE structured.vendor_images SET status = 'quality_rejected' WHERE id = $1`,
-        [request.params.id]
-      );
+      await setImageStatus(request.params.id, 'reject');
       return reply.status(204).send();
     }
   );
@@ -1307,91 +1760,122 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   });
 
   // ─── Policy Engine ────────────────────────────────────────────────────────
-  app.get('/v1/admin/policy-engine', auth, async () => {
-    return { policies: [] as unknown[], version: 0 };
-  });
-  app.patch('/v1/admin/policy-engine', auth, async (_req, reply) => {
+  app.get('/v1/admin/policy-engine', auth, async () => adminOps.policyRules(context.pool));
+
+  /*
+   * 기준값을 고친다. 화면(`policy-engine.tsx`)이 고친 줄을 모아 **한 번에** 보낸다 —
+   * `PATCH /v1/admin/policy-engine` 에 `{ changes: [{ key, value }, …] }`.
+   *
+   * 줄마다 부르지 않는 이유가 화면 쪽에 있다: 여러 값을 같이 보고 고친 뒤 «변경 사항
+   * 저장» 하나로 끝낸다. 서버도 한 트랜잭션으로 받아야 중간에 하나가 실패했을 때
+   * 앞의 것만 남는 상태가 생기지 않는다.
+   *
+   * 고칠 때마다 되돌릴 자리를 하나 만든다 — 되돌리는 길이 없으면 고치기 전에
+   * 손이 멈추고, 그러면 이 화면이 있을 이유가 없다.
+   */
+  app.patch<{ Body: unknown }>('/v1/admin/policy-engine', auth, async (request, reply) => {
+    const body = policyChangesBody.parse(request.body ?? {});
+    await run(() => adminOps.setPolicyRules(context.pool, body.changes, currentUserId(request)));
     return reply.status(204).send();
   });
 
   // ─── Rollback ─────────────────────────────────────────────────────────────
-  app.get('/v1/admin/rollback', auth, async () => {
-    return { snapshots: [] as unknown[] };
-  });
+  app.get('/v1/admin/rollback', auth, async () => adminOps.rollbackTargets(context.pool));
+
+  /** 첫 단계. 승인만 한다 — 여기서 되돌아가는 것은 없다. */
+  app.post<{ Params: { id: string }; Body: unknown }>(
+    '/v1/admin/rollback/:id/approve',
+    auth,
+    async (request, reply) => {
+      const body = reasonBody.parse(request.body ?? {});
+      await run(() =>
+        adminOps.approveRollback(context.pool, request.params.id, currentUserId(request), body.reason)
+      );
+      return reply.status(204).send();
+    }
+  );
+
+  /*
+   * 둘째 단계. **승인된 것만 실행한다.**
+   *
+   * 한 번에 도는 길을 만들지 않는다. 여기서 막고, 0130의 `trigger_follows_approval`이
+   * 한 번 더 막는다 — 롤백 실행은 사용자 화면이 바로 바뀌는 조작이다.
+   */
+  app.post<{ Params: { id: string }; Body: unknown }>(
+    '/v1/admin/rollback/:id/trigger',
+    auth,
+    async (request) => {
+      const body = reasonBody.parse(request.body ?? {});
+      return run(() =>
+        adminOps.triggerRollback(context.pool, request.params.id, currentUserId(request), body.reason)
+      );
+    }
+  );
 
   // ─── Terms ────────────────────────────────────────────────────────────────
-  app.get('/v1/admin/terms', auth, async () => {
-    return { items: [] as unknown[] };
-  });
-  app.post('/v1/admin/terms', auth, async () => {
-    return { id: randomUUID() };
-  });
+  app.get('/v1/admin/terms', auth, async () => adminOps.termsDocuments(context.pool));
+  /*
+   * 막힌 자리는 **무엇이 되는지**를 말한다(v3.27). 「~할 수 없어요」로 끝나면
+   * 운영자는 다음에 무엇을 해야 하는지 모른 채 화면을 닫는다.
+   */
+  const termsUnavailable = async () => {
+    throw new ApiError(
+      'invalid_request',
+      '지금은 약관 조문과 판 이력을 조회할 수 있어요. 편집·공개는 앱 약관·동의 기록에 연결한 뒤 열려요.'
+    );
+  };
+  app.post('/v1/admin/terms', auth, termsUnavailable);
 
-  // ─── Audit Log ────────────────────────────────────────────────────────────
+  /** 조문 편집. 화면(`terms.tsx`)이 PUT으로 `{ body }`를 보낸다. */
+  app.put<{ Params: { id: string; clauseId: string }; Body: unknown }>(
+    '/v1/admin/terms/:id/clauses/:clauseId',
+    auth,
+    async (request) => {
+      const doc = request.params.id;
+
+      if (!adminOps.isDocType(doc)) throw notFound('문서');
+      return termsUnavailable();
+    }
+  );
+
+  /** 초안 공개. 공개한 판은 얼어붙고, 이어서 고칠 새 초안이 같이 생긴다. */
+  app.post<{ Params: { id: string }; Body: unknown }>(
+    '/v1/admin/terms/:id/publish',
+    auth,
+    async (request) => {
+      const doc = request.params.id;
+
+      if (!adminOps.isDocType(doc)) throw notFound('문서');
+
+      return termsUnavailable();
+    }
+  );
+
+  /*
+   * ─── Audit Log ────────────────────────────────────────────────────────────
+   *
+   * 화면(`audit-log.tsx`)은 `?q=`로 검색어를 보내고 `{ items, total, hasMore, cursor }`를
+   * 읽는다. 예전 서버는 `?workflow=`·`?cursor=`를 읽고 `nextCursor`를 돌려줬다 —
+   * 주소는 같은데 **어느 쪽도 서로를 만나지 못했다.** 화면 쪽으로 맞춘다.
+   */
   app.get('/v1/admin/audit-log', auth, async (request) => {
     const q = request.query as Record<string, string | undefined>;
-    const cursor = q['cursor'];
-    const workflow = q['workflow'];
-    const limit = 50;
-    const params: unknown[] = [];
-    let idx = 1;
-    const clauses: string[] = [];
-    if (workflow) {
-      clauses.push(`workflow = $${idx}`);
-      params.push(workflow);
-      idx++;
-    }
-    if (cursor) {
-      clauses.push(`created_at < $${idx}`);
-      params.push(cursor);
-      idx++;
-    }
-    const where = clauses.length ? 'WHERE ' + clauses.join(' AND ') : '';
-    params.push(limit + 1);
-    const { rows } = await context.pool.query<{
-      id: string;
-      workflow: string;
-      step: string | null;
-      subject_kind: string;
-      subject_id: string;
-      decider: string;
-      decision: string;
-      reason_code: string | null;
-      execution_status: string;
-      cost_usd: string | null;
-      created_at: Date;
-    }>(
-      `SELECT id, workflow, step, subject_kind, subject_id,
-              decider, decision, reason_code, execution_status,
-              cost_usd::text, created_at
-       FROM structured.decisions
-       ${where}
-       ORDER BY created_at DESC
-       LIMIT $${idx}`,
-      params
-    );
-    const hasMore = rows.length > limit;
-    const items = hasMore ? rows.slice(0, limit) : rows;
-    return {
-      items: items.map((r) => ({
-        id: r.id,
-        workflow: r.workflow,
-        step: r.step ?? null,
-        subjectKind: r.subject_kind,
-        subjectId: r.subject_id,
-        decider: r.decider,
-        decision: r.decision,
-        reasonCode: r.reason_code ?? null,
-        executionStatus: r.execution_status,
-        costUsd: r.cost_usd !== null ? Number(r.cost_usd) : null,
-        createdAt: r.created_at.toISOString(),
-      })),
-      hasMore,
-      nextCursor: hasMore ? items[items.length - 1]!.created_at.toISOString() : null,
-    };
+    return adminOps.auditLog(context.pool, { q: q['q'], cursor: q['cursor'] });
   });
 
   // ─── Data / Price Stats (WP-ADM-PRICE) ────────────────────────────────────
+  /*
+   * 화면이 쓰는 «단계» 숫자와 도메인 단계 이름을 잇는 자리. **사다리를 다시 쓰지
+   * 않는다** — 여기에 `count >= 3 ? … : …`를 한 번 더 적으면 도메인의 3·5·10이
+   * 바뀐 날 관리자 통계만 옛 기준으로 남고, 화면은 그것을 성공이라 말한다.
+   */
+  const STAGE_NUMBER: Record<DisclosureStage, 0 | 1 | 2 | 3> = {
+    collecting: 0,
+    limited: 1,
+    normal: 2,
+    detailed: 3,
+  };
+
   app.get('/v1/admin/data/price-stats', auth, async () => {
     type StatRow = {
       vendor_id: string;
@@ -1419,7 +1903,7 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
 
     const vendors = rows.map((r) => {
       const count = Number(r.data_count);
-      const stage: 0 | 1 | 2 | 3 = count >= 10 ? 3 : count >= 5 ? 2 : count >= 3 ? 1 : 0;
+      const stage = STAGE_NUMBER[disclosureStage(count)];
       return {
         vendorId: r.vendor_id,
         vendorName: r.vendor_name,

@@ -35,7 +35,7 @@ export const STYLE_PICK_MIN = 1;
 export const STYLE_PICK_MAX = 2;
 
 /** 3번째를 고르려 할 때의 토스트. */
-export const STYLE_PICK_LIMIT_TOAST = `${STYLE_PICK_MAX}개까지 고를 수 있어요`;
+export const STYLE_PICK_LIMIT_TOAST = `스타일은 ${STYLE_PICK_MAX}개까지 고를 수 있어요`;
 
 export function isWeddingStyle(value: unknown): value is WeddingStyle {
   return typeof value === 'string' && (WEDDING_STYLES as readonly string[]).includes(value);

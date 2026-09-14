@@ -96,6 +96,29 @@ export const PREPARATION_GROUPS: readonly PreparationGroup[] = [
   { key: 'goods', title: '예물 · 신혼', categories: ['goods', 'dowry', 'honeymoon'] },
 ];
 
+/**
+ * 준비 현황(3/5)에서 «앞 단계를 비워둔» 업종. v3.23 «이전 카테고리를 비워두고 다음을
+ * 누르면 토스트로 안내» — 고른 것이 있는 마지막 그룹보다 앞선 그룹 가운데 하나도 안 고른
+ * 그룹의 업종을 준비 순서대로 돌려준다. 앞 그룹까지 다 골랐거나 아무것도 안 골랐으면 빈 배열.
+ */
+export function skippedPreparationCategories(selected: readonly VendorCategory[]): VendorCategory[] {
+  const picked = (group: PreparationGroup) => group.categories.some((category) => selected.includes(category));
+  const lastPicked = PREPARATION_GROUPS.map(picked).lastIndexOf(true);
+
+  if (lastPicked <= 0) return [];
+
+  return PREPARATION_GROUPS.slice(0, lastPicked)
+    .filter((group) => !picked(group))
+    .flatMap((group) => [...group.categories]);
+}
+
+/** 토스트 «앞 단계도 확인해주세요 · 결정사 · 웨딩홀» — 비운 앞 그룹의 업종을 이어 적는다. */
+export const PREPARATION_SKIPPED_TOAST_PREFIX = '앞 단계도 확인해주세요';
+
+export function preparationSkippedToast(skipped: readonly VendorCategory[]): string {
+  return [PREPARATION_SKIPPED_TOAST_PREFIX, ...skipped.map((category) => VENDOR_CATEGORY_LABEL[category])].join(' · ');
+}
+
 /** 준비 현황의 다섯째 그룹 «기타 상태»의 유일한 항목. 고르면 업종 선택이 전부 풀린다. */
 export const PREPARATION_NOT_STARTED_LABEL = '아직 시작 전이에요';
 

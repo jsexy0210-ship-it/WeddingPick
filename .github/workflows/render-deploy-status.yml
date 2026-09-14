@@ -6,12 +6,18 @@ on:
       service:
         description: '확인할 서비스'
         type: choice
-        default: weddingpick-app-web
+        # Render 대시보드의 이름과 글자 하나까지 같아야 한다(2026-09-10 이름 변경).
+        default: WeddingPick-웹뷰(앱 테스트)
         options:
-          - weddingpick-app-web
-          - weddingpick-web
-          - weddingpick-admin
-          - WeddingPickl
+          - WeddingPick-웹뷰(앱 테스트)
+          - WeddingPick-웹사이트
+          - weddingpickl-sg
+          - WeddingPick-운영 API 서버
+          # 관리자 콘솔을 별도 출처로 옮기는 자리다(2026-09-10 대표 결정 ·
+          # docs/admin-origin-split.md). 2026-09-11에 「쓰지 않는 서비스」로 읽고
+          # 목록에서 뺐다가 되돌렸다 — 빌드가 계속 실패하는 것은 버려진 서비스라서가
+          # 아니라 Build Command가 아직 대시보드에 안 들어가서다.
+          - WeddingPick-관리자 사이트
 
 permissions:
   contents: read

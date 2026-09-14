@@ -45,6 +45,13 @@ describeWithDb('광고 지면', () => {
        ON CONFLICT (tier) DO NOTHING`,
       [tier, person.rows[0]!.id]
     );
+    await test.pool.query(
+      `UPDATE ads.production_gate
+       SET approved_at = now(), approved_by = $1, approval_reason = '분리된 DB 검증',
+           activated = true, activated_at = now()
+       WHERE id = true`,
+      [person.rows[0]!.id]
+    );
   }
 
   async function place(

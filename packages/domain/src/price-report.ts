@@ -105,7 +105,7 @@ export function summarizeReports(
  * 늘 붙어야 한다.
  */
 export const PRICE_REPORT_CAVEAT =
-  '제보는 이용자가 직접 적어주신 금액이며 문서로 확인하지 않았어요. 실제 계약 중앙값과는 다른 값이에요.';
+  '제보는 이용자가 직접 적어주신 금액이며 문서로 확인하지 않았어요. 실제 계약 중앙값과는 다른 값이에요.'; // lint-copy: 무엇과 다른 값인지 정확히 말해야 하는 자리
 
 /** 제보와 계약 중앙값을 한 화면에 놓을 때 붙이는 구분 설명. */
 export const PRICE_SOURCE_LABEL = {

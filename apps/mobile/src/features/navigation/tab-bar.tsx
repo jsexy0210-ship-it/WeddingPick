@@ -1,45 +1,45 @@
 import type { BottomTabBarProps } from 'expo-router/build/layouts/Tabs';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
-import {
-  FontSize,
-  Layout,
-  LineHeight,
-  ProductSymbol,
-  WeddingMark,
-  useTheme,
-} from '@weddingpick/ui';
+import { Layout, LineHeight, ProductSymbol, ThemedText, WeddingMark, useTheme } from '@weddingpick/ui';
 
 import { isRootTab, rootTab, type RootTabSpec } from './root-tabs';
 
 /**
- * Root 탭 바 — 05-root 시안 1:1.
+ * Root 탭 바 — 05-root 시안 1:1 · spec/tokens.json `tabBar`.
  *
  * 기본 탭 바를 쓰지 않는다. react-navigation의 바는 높이·패딩·라벨 굵기·아이콘
- * 자리를 제 방식으로 정해서 시안(72 + safeBottom · 위 패딩 9 · 항목 52 · 아이콘과
- * 라벨 사이 3 · 라벨 12/16)과 어긋난다. 값은 전부 `Layout`·`FontSize`에서 온다.
+ * 자리를 제 방식으로 정해서 시안(72 + safeBottom · 위 패딩 9 · 항목 52 · 아이콘 24/stroke 1.8 ·
+ * 아이콘과 라벨 사이 3 · 라벨 12/16 · 활성 #212124 700 · 비활성 #868B94 600 · 위 선 1px #EAEBEE)과
+ * 어긋난다. 값은 전부 `Layout`·`ThemedText type="tab"`에서 온다.
  *
  * 탭 목록·라벨·아이콘은 `root-tabs.ts`가 정한다. 이 파일은 그리기만 한다.
  *
- * **Pick은 가운데에서 원형으로 선다**(2026-09-14 대표 확정 · Figma `Root.tsx`
- * `isPick`). 켜지면 원이 주색으로 차고 마크가 흰색으로 뒤집힌다 — 나머지 넷과
- * 다른 모양이라야 «Pick이 이 앱의 중심»이라는 말이 화면에서도 같은 무게로 읽힌다.
- * 그림자는 `tokens.json` `tabBar.$rule`의 «과도한 그림자 금지»를 지켜 얕게 둔다.
+ * Pick 탭 아이콘은 **Pick Mark**(하트 안에 체크 · 획 1.9 · 절대 변경 금지 — CLAUDE.md · tokens.json
+ * tabBar.items[pick].icon = pickMark)다. 05-root 시안 파일의 ICONS.pick(P + 체크)은 옛 글리프이고
+ * 02-design-system · 21-device · tokens.json이 하트 마크를 가리킨다.
  *
- * **원 위의 흰 마크는 대비가 모자란다** — `tokens.json` `color.brand.onPrimary`의
- * `$contrast`가 «#E7898D 위 2.51:1 · WCAG AA 미달 · MASTER 판단 대기»라고 적어 둔
- * 그 자리다. 토큰이 정해 주는 값을 여기서 몰래 바꾸지 않는다. 보정하기로 결정되면
- * 토큰이 먼저 바뀌고 이 코드는 그대로 따라간다.
+ * **Pick은 가운데에서 원형으로 선다**(2026-09-14 대표 확정 · Figma `Root.tsx` `isPick`).
+ * 켜지면 원이 주색으로 차고 마크가 `onTint`로 뒤집힌다 — 나머지 넷과 다른 모양이라야
+ * «Pick이 이 앱의 중심»이라는 말이 화면에서도 같은 무게로 읽힌다. 그림자는
+ * `tokens.json` `tabBar.$rule`의 «과도한 그림자 금지»를 지켜 얕게 둔다.
  *
- * Pick 오른쪽 위의 점은 시안이 고정으로 둔 배지다(`tokens.json` `tabBar.pickDot`).
- * 원이 차 있을 때는 그리지 않는다 — 주색 면 위의 주색 점은 보이지 않는다.
+ * Pick 오른쪽 위의 점은 시안이 고정으로 둔 배지다(`spec/tokens.json` `tabBar.pickDot`
+ * — 7 · 1.5 · −1). 원이 차 있을 때는 그리지 않는다 — 주색 면 위의 주색 점은 보이지 않는다.
  */
 export function RootTabBar({ state, descriptors, navigation, insets }: BottomTabBarProps) {
   const theme = useTheme();
   const bottom = Math.max(insets.bottom, 0);
-  // Root 5탭에만 탭 바가 있다(SPEC §12.2). 탭에서 내린 화면(검색 · 제보 · 상세 ·
-  // 홈 하위 스택)에서는 dock이나 CTA가 아래를 맡고 상단 뒤로가기만 남는다.
-  if (!isRootTab(state.routes[state.index]?.name)) return null;
+  // Root 5탭에만 탭 바가 있다(SPEC §12.2). 탭에서 내린 화면(검색 · 제보 · (home) 하위
+  // 스택)에서는 dock이나 CTA가 아래를 맡고 상단 뒤로가기만 남는다.
+  const focused = state.routes[state.index];
+  if (!isRootTab(focused?.name)) return null;
+  /*
+   * 탭 안의 하위 스택(업체 상세 · 일정 · 지출 · 후보 목록 …)에서도 그리지 않는다 — 시안
+   * (06 · 07 · 08 하위)은 전부 nav 56 + dock이고 탭 바가 없다. 첫 화면(index 0)만 Root다.
+   */
+  const nested = focused?.state as { index?: number } | undefined;
+  if (nested && typeof nested.index === 'number' && nested.index > 0) return null;
 
   return (
     <View
@@ -55,9 +55,10 @@ export function RootTabBar({ state, descriptors, navigation, insets }: BottomTab
       {state.routes.map((route, index) => {
         const spec = rootTab(route.name);
         const { options } = descriptors[route.key];
-        // 다섯 탭 밖의 라우트(검색 · 제보 · (home) — href: null)는 자리를 차지하지 않는다.
+        // 다섯 탭 밖의 라우트(검색 · 제보 · (home) 하위 스택 — href: null)는 자리를 차지하지 않는다.
         if (!spec) return null;
         const active = state.index === index;
+        const color = active ? theme.text : theme.textAssistive;
 
         const onPress = () => {
           const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
@@ -74,13 +75,9 @@ export function RootTabBar({ state, descriptors, navigation, insets }: BottomTab
             onLongPress={() => navigation.emit({ type: 'tabLongPress', target: route.key })}
             style={styles.item}>
             <TabIcon spec={spec} active={active} />
-            <Text
-              style={[
-                styles.label,
-                { color: active ? theme.text : theme.textAssistive, fontWeight: active ? '700' : '600' },
-              ]}>
+            <ThemedText type="tab" style={[styles.label, { color, fontWeight: active ? 700 : 600 }]}>
               {spec.label}
-            </Text>
+            </ThemedText>
           </Pressable>
         );
       })}
@@ -92,8 +89,12 @@ export function RootTabBar({ state, descriptors, navigation, insets }: BottomTab
  * 탭 아이콘 한 자리.
  *
  * 강조 탭(Pick)은 아이콘 자리가 원이다. 켜져 있으면 원이 주색으로 차고 마크가
- * 흰색, 꺼져 있으면 원 없이 나머지 탭과 같은 모양이다 — 꺼진 원까지 그리면
+ * `onTint`, 꺼져 있으면 원 없이 나머지 탭과 같은 모양이다 — 꺼진 원까지 그리면
  * 다섯 탭이 두 종류로 갈려 보인다.
+ *
+ * 마크 색을 여기서 정하지 않고 `theme.onTint`(= tokens.json `color.brand.onPrimary`)를
+ * 그대로 쓴다. 그 값이 주색 위 대비를 책임진다 — 대비가 모자라면 토큰을 고치지
+ * 이 파일을 고치지 않는다.
  */
 function TabIcon({ spec, active }: { spec: RootTabSpec; active: boolean }) {
   const theme = useTheme();
@@ -149,7 +150,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     paddingTop: Layout.tabBarPaddingTop,
-    // 시안: box-shadow inset 0 1px 0 #eaebee — 위쪽 1px 선.
+    // tokens.json elevation.tabBarTop: inset 0 1px 0 #EAEBEE — RN에서는 borderTop 1(SPEC §14).
     borderTopWidth: 1,
   },
   item: {
@@ -189,8 +190,5 @@ const styles = StyleSheet.create({
     borderRadius: Layout.tabPickDot / 2,
     borderWidth: Layout.tabPickDotBorder,
   },
-  label: {
-    fontSize: FontSize.tab,
-    lineHeight: LineHeight.tab,
-  },
+  label: { textAlign: 'center' },
 });

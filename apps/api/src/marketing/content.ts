@@ -33,7 +33,7 @@ const TITLE_TEMPLATE: Record<MarketingFormat, (facts: string[]) => string> = {
   product:   () => '웨딩픽 — 웨딩업체 비교, 먼저 골라드려요',
   feature:   (facts) => facts.length > 1 ? `웨딩픽 ${facts.length}가지 기능 소개` : '웨딩픽 주요 기능',
   checklist: () => '결혼 준비, 웨딩픽으로 체크리스트 시작하기',
-  data:      () => '확인된 결제 정보로 업체 비교하는 법',
+  data:      () => '실 제보로 업체 비교하는 법',
 };
 
 /** 포맷별 본문 템플릿 */
@@ -57,7 +57,7 @@ function buildBody(
       body = sentences.map((s) => `□ ${s}`).join('\n');
       break;
     case 'data':
-      body = `📊 웨딩픽 데이터 기반 안내\n\n${sentences.join('\n')}`;
+      body = `웨딩픽 실 제보 안내\n\n${sentences.join('\n')}`;
       break;
   }
 

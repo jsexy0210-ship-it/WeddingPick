@@ -1,3 +1,6 @@
+import { randomUUID } from 'node:crypto';
+
+import { recordDecision } from '../decisions';
 import type { LocalStorage } from '../storage/local';
 import { createTestApp, resetDatabase, signInAs, type TestApp } from './helpers';
 
@@ -35,8 +38,104 @@ describeWithDb('관리자 콘솔 라우트', () => {
     test.app.inject({ method: 'GET', url, headers });
   const post = (url: string, headers: Record<string, string>, payload?: Record<string, unknown>) =>
     test.app.inject({ method: 'POST', url, headers, payload });
+  const patch = (url: string, headers: Record<string, string>, payload?: Record<string, unknown>) =>
+    test.app.inject({ method: 'PATCH', url, headers, payload });
   const del = (url: string, headers: Record<string, string>) =>
     test.app.inject({ method: 'DELETE', url, headers });
+
+  /*
+   * 수집을 늘리기 전에 멈출 수단이 먼저 있어야 한다. 화면의 스위치가 실제로
+   * `structured.import_switches`를 바꾸는지를 본다 — 이 값을 `public-data/sync.ts`가
+   * 임포트 직전에 읽어 `SOURCE_DISABLED`로 거부한다.
+   */
+  describe('수집 중단 스위치', () => {
+    it('목록에 출처가 나오고, 끄면 import_switches가 바뀐다', async () => {
+      const operator = await operatorHeaders();
+
+      const listed = (await get('/v1/admin/kill-switches', operator.headers)).json() as {
+        switches: { id: string; category: string; enabled: boolean }[];
+      };
+      expect(listed.switches.find((s) => s.id === 'import:localdata')).toMatchObject({
+        category: '수집',
+        enabled: true,
+      });
+
+      const off = await patch('/v1/admin/kill-switches/import:localdata', operator.headers, {
+        enabled: false,
+      });
+      expect(off.statusCode).toBe(204);
+
+      const { rows } = await test.pool.query<{ enabled: boolean; reason: string | null }>(
+        `SELECT enabled, reason FROM structured.import_switches WHERE source_key = 'localdata'`
+      );
+      expect(rows[0]?.enabled).toBe(false);
+      expect(rows[0]?.reason).toContain('중단');
+    });
+
+    it('없는 출처는 404다', async () => {
+      const operator = await operatorHeaders();
+      const response = await patch('/v1/admin/kill-switches/import:no-such-source', operator.headers, {
+        enabled: false,
+      });
+      expect(response.statusCode).toBe(404);
+    });
+  });
+
+  /*
+   * 기능 스위치가 **실제로 기능을 끄는가.** 예전에는 인메모리 Map을 껐다 켤 뿐
+   * 읽는 쪽이 한 곳도 없어서, 껐다고 표시돼도 기능은 계속 돌았다.
+   */
+  describe('기능 중지 스위치', () => {
+    it('목록에 6종이 나오고 배선 여부가 함께 온다', async () => {
+      const operator = await operatorHeaders();
+
+      const listed = (await get('/v1/admin/kill-switches', operator.headers)).json() as {
+        switches: { id: string; enabled: boolean; wired: boolean }[];
+      };
+
+      // 읽는 쪽을 만든 셋은 wired=true, 아직 못 만든 셋은 false다. 화면이
+      // 「꺼도 아무 일이 안 일어난다」를 보여줄 수 있어야 한다.
+      expect(listed.switches.find((s) => s.id === 'ai-recommendations')).toMatchObject({
+        enabled: true,
+        wired: true,
+      });
+      expect(listed.switches.find((s) => s.id === 'stats-update')).toMatchObject({ wired: false });
+    });
+
+    it('끄면 DB에 남고, 다시 조회하면 꺼져 있다', async () => {
+      const operator = await operatorHeaders();
+
+      const off = await patch('/v1/admin/kill-switches/ai-recommendations', operator.headers, {
+        enabled: false,
+      });
+      expect(off.statusCode).toBe(204);
+
+      const { rows } = await test.pool.query<{ enabled: boolean; updated_by: string | null }>(
+        `SELECT enabled, updated_by FROM structured.kill_switches WHERE id = 'ai-recommendations'`
+      );
+      expect(rows[0]?.enabled).toBe(false);
+      expect(rows[0]?.updated_by).toBe(operator.userId);
+    });
+
+    it('끈 기능을 부르면 503이다 — 빈 결과로 조용히 성공하지 않는다', async () => {
+      const operator = await operatorHeaders();
+      await patch('/v1/admin/kill-switches/ai-recommendations', operator.headers, {
+        enabled: false,
+      });
+
+      const response = await get('/v1/recommendations/top3?category=hall', operator.headers);
+      expect(response.statusCode).toBe(503);
+      expect(response.json()).toMatchObject({ error: { code: 'feature_disabled' } });
+    });
+
+    it('없는 스위치는 404다', async () => {
+      const operator = await operatorHeaders();
+      const response = await patch('/v1/admin/kill-switches/no-such-switch', operator.headers, {
+        enabled: false,
+      });
+      expect(response.statusCode).toBe(404);
+    });
+  });
 
   describe('관문', () => {
     it('토큰이 없으면 401이다', async () => {
@@ -246,6 +345,72 @@ describeWithDb('관리자 콘솔 라우트', () => {
 
       expect((await get('/v1/admin/objections', operator.headers)).json<{ objections: unknown[] }>().objections).toHaveLength(0);
     });
+
+    /*
+     * 내리기는 되돌릴 수 없다. 화면의 「내리기」 단추가 실제로 후기를 내리는지와,
+     * 운영자가 적은 사유가 남는지를 함께 본다 — 사유를 받아놓고 버리면 나중에
+     * 「왜 내렸느냐」에 답할 수 없다(0110).
+     */
+    it('내리면 후기가 사라지고 적은 사유가 남는다', async () => {
+      const reviewId = await aPublishedReview();
+      const operator = await operatorHeaders();
+
+      await post(`/v1/admin/objections/${reviewId}/hold`, operator.headers, {
+        note: '업체가 계약한 적이 없다고 이의 제기',
+      });
+
+      const remove = await post(`/v1/admin/objections/${reviewId}/remove`, operator.headers, {
+        note: '계약 사실이 확인되지 않음',
+      });
+      expect(remove.statusCode).toBe(204);
+
+      const review = await test.pool.query<{ status: string }>(
+        'SELECT status FROM structured.reviews WHERE id = $1',
+        [reviewId]
+      );
+      expect(review.rows[0]?.status).toBe('removed');
+
+      expect(
+        (await get('/v1/admin/objections', operator.headers)).json<{ objections: unknown[] }>()
+          .objections
+      ).toHaveLength(0);
+
+      const logged = await test.pool.query<{
+        action: string;
+        note: string;
+        before_status: string;
+        after_status: string;
+      }>(
+        `SELECT action, note, before_status, after_status
+         FROM structured.review_objection_log
+         WHERE review_id = $1 ORDER BY created_at`,
+        [reviewId]
+      );
+      expect(logged.rows.map((row) => row.action)).toEqual(['hold', 'remove']);
+      expect(logged.rows[1]).toMatchObject({
+        note: '계약 사실이 확인되지 않음',
+        before_status: 'under_objection',
+        after_status: 'removed',
+      });
+    });
+
+    it('사유 없이는 내리지 못한다', async () => {
+      const reviewId = await aPublishedReview();
+      const operator = await operatorHeaders();
+
+      await post(`/v1/admin/objections/${reviewId}/hold`, operator.headers, { note: '확인 중' });
+
+      const blank = await post(`/v1/admin/objections/${reviewId}/remove`, operator.headers, {
+        note: '   ',
+      });
+      expect(blank.statusCode).toBe(400);
+
+      const review = await test.pool.query<{ status: string }>(
+        'SELECT status FROM structured.reviews WHERE id = $1',
+        [reviewId]
+      );
+      expect(review.rows[0]?.status).toBe('under_objection');
+    });
   });
 
   describe('인증 심사', () => {
@@ -294,6 +459,50 @@ describeWithDb('관리자 콘솔 라우트', () => {
 
       const approve = await post(`/v1/admin/verifications/${requestId}/approve`, operator.headers, {
         note: '계약서 3면 도장 확인',
+      });
+      expect(approve.statusCode).toBe(204);
+
+      const show = await get(`/v1/admin/verifications/${requestId}`, operator.headers);
+      expect(show.json<{ status: string }>().status).toBe('approved');
+    });
+
+    /*
+     * 화면이 「반려」를 누르면 사유가 신청한 사람에게 그대로 간다. 사유 없이
+     * 반려되면 신청한 쪽은 무엇을 고쳐야 할지 알 수 없으므로 라우트가 먼저 막는다.
+     */
+    it('반려는 사유를 요구하고, 적은 사유가 신청에 남는다', async () => {
+      const requester = await signInAs(test, 'verification-requester-2');
+      const requestId = await aVerificationRequest(requester.headers, requester.userId);
+      const operator = await operatorHeaders();
+
+      const blank = await post(`/v1/admin/verifications/${requestId}/reject`, operator.headers, {
+        reason: '  ',
+      });
+      expect(blank.statusCode).toBe(400);
+
+      const rejected = await post(`/v1/admin/verifications/${requestId}/reject`, operator.headers, {
+        reason: '올린 문서가 계약서가 아니라 견적서다',
+      });
+      expect(rejected.statusCode).toBe(204);
+
+      const { rows } = await test.pool.query<{ status: string; rejection_reason: string | null }>(
+        'SELECT status, rejection_reason FROM structured.verification_requests WHERE id = $1',
+        [requestId]
+      );
+      expect(rows[0]).toMatchObject({
+        status: 'rejected',
+        rejection_reason: '올린 문서가 계약서가 아니라 견적서다',
+      });
+    });
+
+    /* 승인 메모는 선택이다. 화면이 빈 칸을 `null`로 보내는 것과 짝이다. */
+    it('승인 메모 없이도 승인된다', async () => {
+      const requester = await signInAs(test, 'verification-requester-3');
+      const requestId = await aVerificationRequest(requester.headers, requester.userId);
+      const operator = await operatorHeaders();
+
+      const approve = await post(`/v1/admin/verifications/${requestId}/approve`, operator.headers, {
+        note: null,
       });
       expect(approve.statusCode).toBe(204);
 
@@ -612,6 +821,167 @@ describeWithDb('관리자 콘솔 라우트', () => {
         amount: 10,
       });
       expect(badFeature.statusCode).toBe(400);
+    });
+  });
+  /*
+   * 요약 대시보드(WP-ADM-001). 이 화면의 고장은 「틀린 숫자」가 아니라 **언제나
+   * 같은 숫자**였다 — 예전 응답은 `reviewQueue.total`에 0을, 수익에 `₩0`을 박아
+   * 두어서 큐가 쌓인 날에도 홈은 빈 화면이었다. 그래서 여기서 보는 것은 응답
+   * 모양만이 아니라 **실제로 한 건 넣었을 때 그 줄이 오르는가**이다.
+   */
+  describe('요약 대시보드', () => {
+    type Dashboard = {
+      humanTotal: number;
+      humanQueue: { key: string; label: string; why: string; count: number; tone: string }[];
+      dashCards: { key: string; label: string; mode: string; value: string; unit: string; note: string }[];
+      auto: {
+        ratePct: number | null;
+        segments: { key: string; label: string; count: number }[];
+        keepRatePct: number | null;
+        revertedCount: number;
+        medianLatencyMs: number | null;
+        byWorkflow: { workflow: string; concluded: number; failed: number; human: number; reverted: number; autoPct: number }[];
+      };
+      autoLog: { decision: string; subject: string; reasonCode: string; confidence: number | null; tone: string }[];
+    };
+
+    it('볼 일이 없으면 전부 0이고, 카드는 그대로 나온다', async () => {
+      const operator = await operatorHeaders();
+
+      const res = await get('/v1/admin/dashboard', operator.headers);
+      expect(res.statusCode).toBe(200);
+
+      const body = res.json<Dashboard>();
+      expect(body.humanTotal).toBe(0);
+      expect(body.humanQueue.map((q) => q.key)).toEqual([
+        'queue',
+        'rebuttal',
+        'objections',
+        'pii-reviews',
+        'biz-queue',
+      ]);
+      /* 빈 큐가 정상 상태다 — 줄 자체를 지우지 않는다. 화면이 「확인할 것이 없어요」를 그린다. */
+      expect(body.humanQueue.every((q) => q.count === 0)).toBe(true);
+      expect(body.humanQueue.every((q) => q.why.length > 0)).toBe(true);
+
+      /* 카드는 6장 · 3열 두 줄. 순서가 곧 설계다 — 위험 → 비용 → 지표 → 자동. */
+      expect(body.dashCards.map((c) => c.mode)).toEqual(['위험', '비용', '비용', '지표', '지표', '자동']);
+      expect(body.dashCards.every((c) => c.value.length > 0)).toBe(true);
+
+      /*
+       * 판정이 하나도 없으면 자동 처리율은 **null이지 0%가 아니다.** 0%는 「자동이
+       * 하나도 못 끝냈다」는 뜻이고, 그건 들어온 게 없는 것과 완전히 다른 상태다.
+       */
+      expect(body.auto.ratePct).toBeNull();
+      expect(body.auto.segments.map((seg) => seg.count)).toEqual([0, 0, 0]);
+      expect(body.auto.byWorkflow).toEqual([]);
+      expect(body.autoLog).toEqual([]);
+    });
+
+    it('자동 판정이 쌓이면 처리율 · 유지율 · 로그가 실제 기록에서 나온다', async () => {
+      const event = randomUUID();
+      const base = {
+        eventId: event,
+        workflow: 'payment_proof',
+        step: 'verify',
+        subjectKind: 'payment_proof',
+        subjectId: null,
+        evidence: [],
+        latencyMs: 4200,
+      } as const;
+
+      /* 자동으로 끝난 둘 — 그중 하나는 사람이 되돌렸다. */
+      await recordDecision(test.pool, {
+        ...base,
+        decider: { kind: 'model', model: 'test-model', confidence: 0.97 },
+        decision: '승인',
+        reasonCode: 'amount_within_band',
+      });
+      await recordDecision(test.pool, {
+        ...base,
+        decider: { kind: 'model', model: 'test-model', confidence: 0.94 },
+        decision: '반려',
+        reasonCode: 'evidence_missing',
+        execution: 'rolled_back',
+      });
+      /* 사람이 결정한 하나 — 자동 처리율의 분모에는 들어가고 분자에는 들어가지 않는다. */
+      const operator = await operatorHeaders();
+      await recordDecision(test.pool, {
+        ...base,
+        decider: { kind: 'human', userId: operator.userId },
+        decision: '보류',
+        reasonCode: 'needs_human_review',
+      });
+
+      const body = (await get('/v1/admin/dashboard', operator.headers)).json<Dashboard>();
+
+      /* 셋 중 둘이 자동으로 끝났다. 세 칸을 더하면 전체가 되어야 한다. */
+      expect(body.auto.segments.map((seg) => seg.count)).toEqual([2, 0, 1]);
+      expect(body.auto.ratePct).toBe(67);
+      /* 자동 결론 둘 중 하나를 되돌렸다. */
+      expect(body.auto.revertedCount).toBe(1);
+      expect(body.auto.keepRatePct).toBe(50);
+      expect(body.auto.medianLatencyMs).toBe(4200);
+
+      expect(body.auto.byWorkflow).toEqual([
+        { workflow: 'payment_proof', concluded: 2, failed: 0, human: 1, reverted: 1, autoPct: 67 },
+      ]);
+
+      /* 로그는 최신이 위. 판정 · 근거 · 확신을 함께 낸다. */
+      expect(body.autoLog).toHaveLength(3);
+      expect(body.autoLog[0]).toMatchObject({ decision: '보류', reasonCode: 'needs_human_review', tone: 'human' });
+      expect(body.autoLog.find((r) => r.decision === '승인')).toMatchObject({
+        subject: 'payment_proof',
+        confidence: 0.97,
+        tone: 'ok',
+      });
+
+      /* 카드의 자동 판정도 같은 값을 본다 — 한 화면에서 두 번 다르게 세지 않는다. */
+      expect(body.dashCards.find((c) => c.key === 'decisions')).toMatchObject({
+        value: '67%',
+        unit: '자동 처리율',
+        note: '최근 24시간 3건 · 되돌림 1건',
+      });
+    });
+
+    it('업체 관계자 인증이 한 건 들어오면 그 줄과 합계가 함께 오른다', async () => {
+      const vendor = await test.pool.query<{ id: string }>(
+        `INSERT INTO structured.vendors (name, category, region, source, official_domain)
+         VALUES ('가온예식홀', 'hall', '서울', 'public_data', 'gaon.co.kr') RETURNING id`
+      );
+      const claimant = await signInAs(test, 'dashboard-claim-staff');
+      await test.app.inject({
+        method: 'POST',
+        url: '/v1/vendor-claims',
+        headers: claimant.headers,
+        payload: {
+          vendorId: vendor.rows[0]!.id,
+          claimedRole: '예약팀장',
+          evidence: { method: 'official_domain_email', email: 'staff@gaon.co.kr' },
+        },
+      });
+
+      const operator = await operatorHeaders();
+      const body = (await get('/v1/admin/dashboard', operator.headers)).json<Dashboard>();
+
+      const claims = body.humanQueue.find((q) => q.key === 'biz-queue');
+      expect(claims?.count).toBe(1);
+      /* 되돌릴 수 없는 결정이라 급한 쪽으로 센다 — 화면의 상단 배너가 이 값으로 빨강이 된다. */
+      expect(claims?.tone).toBe('danger');
+      expect(body.humanTotal).toBe(1);
+    });
+
+    it('회원 카드는 실제 계정 수를 센다', async () => {
+      await signInAs(test, 'dashboard-member-a');
+      await signInAs(test, 'dashboard-member-b');
+      const operator = await operatorHeaders();
+
+      const body = (await get('/v1/admin/dashboard', operator.headers)).json<Dashboard>();
+      const members = body.dashCards.find((c) => c.key === 'users');
+
+      /* 운영자 계정도 계정이다 — 위에서 만든 둘 + 운영자 하나. */
+      expect(members?.value).toBe('3');
+      expect(members?.unit).toBe('명');
     });
   });
 });
