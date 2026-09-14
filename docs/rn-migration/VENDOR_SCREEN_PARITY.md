@@ -21,6 +21,29 @@ Figma 신규 디자인 저장소(`weddingpick_figma`)의 `src/app/components/Ven
 `WP-VEND-업체 상세 하위.dc.html`·`WP-RPT-제보·후기.dc.html`(대표님 직접 원본, 2026-09-11)이고,
 Figma는 그 아래 참고 자료다.
 
+## 교차검증 — `claude/rn-migration-plan`(PR #227)
+
+1단계 설계 세션의 `docs/rn-migration/FIGMA_SCREEN_INVENTORY.md`·`FIGMA_DESIGN_SYSTEM.md`(같은 날
+실측)와 줄 번호·별칭 관계를 대조했다. 일치:
+
+- F13 업체 상세 = `VendorDetailPage`(169행) · F14 상담 신청 = `ConsultPage`(533행,
+  `/vendor/:id/booking`은 671행 `export { ConsultPage as BookingPage }` 별칭 — 두 화면 아님) ·
+  F15 후기 상세 = `ReviewDetailPage`(689행). 전부 이 표의 줄 번호와 같다.
+- F18 계약 인증 = `FlowScreens.tsx`의 `ContractVerify`(124행) — `VendorFlows.tsx` 밖이라 이 표
+  9번 행처럼 범위 밖으로 남긴다(`claude/rn-nav-auth`).
+- 「Figma 시안에는 로딩·빈·오류 상태가 사실상 없다 — 프로토타입 성격일 뿐 없어도 된다는 뜻이
+  아니다. 상태 정본은 `spec/screens.json`의 `stateSets`이고 기존 구현을 그대로 쓴다」(§4) — 이
+  표의 화면들이 이미 가진 스켈레톤·에러뷰(`ErrorView`·`SkeletonView`·`ListSkeleton` 등)를 걷어내지
+  않는 이유가 이것이다.
+- 색·서체 결정 출처는 `FIGMA_DESIGN_SYSTEM.md` §0·§1·§2가 정리한 대로 `theme.css`(대표 확정
+  `#E7898D`/`#ECA0A3`)와 「Pretendard 단일」 결정이지, `VendorFlows.tsx`의 B등급 px·색 수치가
+  아니다. 담당 화면 7개는 그 px·색을 애초에 참조하지 않으므로(하드코딩 0건) 영향 없음.
+
+**F13/F14/F15가 "Figma가 그린 화면 16개" 목록에 있다는 것과, 이 표의 "만들지 않음" 판정은
+모순이 아니다.** #227은 Figma가 무엇을 그렸는지의 **인벤토리**이고, 무엇을 실제로 만들지는
+root 정본·서버 스키마·MASTER 결정이 따로 정한다 — 아래 7·8행의 판정 근거는 Figma 유무가 아니라
+root 시안(36장)·`spec/screens.json`(23개)·API 계약에 그 화면이 없다는 것이다.
+
 ## 대조표
 
 판정: **그대로 둔다**(이미 정본·구조 일치) · **확인 필요**(B등급 수치라 토큰화 보류) ·
