@@ -13,20 +13,31 @@ import { z, type ZodType } from 'zod';
 import { analysisSchema } from './analyses';
 import { appBootstrapResponseSchema } from './app';
 import { authProvidersResponseSchema } from './auth';
-import { candidateListResponseSchema } from './candidates';
+import { candidateListResponseSchema, decisionListResponseSchema } from './candidates';
 import { comparisonResponseSchema } from './comparison';
 import { consultationListResponseSchema } from './consultations';
 import { expoDetailSchema, expoListResponseSchema } from './expos';
-import { quoteSchema } from './quotes';
+import { inquiryListResponseSchema } from './inquiries';
+import { myReportListResponseSchema } from './my-reports';
+import { notificationListResponseSchema } from './notifications';
+import { quoteListResponseSchema, quoteSchema } from './quotes';
 import { rebuttalListResponseSchema } from './rebuttals';
+import { top3ResponseSchema } from './recommendations';
 import { reportReasonListResponseSchema, reviewFormSchema, reviewListResponseSchema } from './reviews';
 import { myMonthlyDrawResponseSchema, myRewardPayoutResponseSchema, myRewardsResponseSchema } from './rewards';
 import { settingsSchema } from './settings';
 import { signupStateSchema } from './signup';
+import { vendorClaimListResponseSchema } from './vendor-claims';
 import { verificationRequestSchema } from './verification';
 import { weddingEventListResponseSchema } from './wedding-events';
 import { weddingInfoDetailSchema, weddingInfoListResponseSchema } from './wedding-info';
-import { expenseDetailSchema, expenseSummaryResponseSchema } from './wedding-plan';
+import {
+  expenseDetailSchema,
+  expenseSummaryResponseSchema,
+  visitNoteListResponseSchema,
+  weddingNoteListResponseSchema,
+  weddingTaskListResponseSchema,
+} from './wedding-plan';
 import {
   vendorComparisonResponseSchema,
   conditionStatsSchema,
@@ -35,7 +46,7 @@ import {
   vendorRegionsResponseSchema,
   vendorSearchResponseSchema,
 } from './vendors';
-import { currentUserSchema } from './weddings';
+import { currentUserSchema, weddingDetailSchema, weddingInviteListResponseSchema } from './weddings';
 
 /**
  * `GET /v1/weddings/:weddingId/candidates/removed`(제거된 후보 · pick/removed)는
@@ -97,6 +108,18 @@ const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/review-report-reasons', reportReasonListResponseSchema],
   ['GET /v1/weddings/:weddingId/candidates/removed', removedCandidatesResponseSchema],
   ['GET /v1/weddings/:weddingId/expenses/:expenseId', expenseDetailSchema],
+  ['GET /v1/me/reports', myReportListResponseSchema],
+  ['GET /v1/inquiries', inquiryListResponseSchema],
+  ['GET /v1/me/notifications', notificationListResponseSchema],
+  ['GET /v1/me/vendor-claims', vendorClaimListResponseSchema],
+  ['GET /v1/weddings/:weddingId/decisions', decisionListResponseSchema],
+  ['GET /v1/weddings/:weddingId', weddingDetailSchema],
+  ['GET /v1/weddings/:weddingId/notes', weddingNoteListResponseSchema],
+  ['GET /v1/weddings/:weddingId/quotes', quoteListResponseSchema],
+  ['GET /v1/weddings/:weddingId/tasks', weddingTaskListResponseSchema],
+  ['GET /v1/weddings/:weddingId/visit-notes', visitNoteListResponseSchema],
+  ['GET /v1/weddings/:weddingId/invites', weddingInviteListResponseSchema],
+  ['GET /v1/recommendations/top3', top3ResponseSchema],
 ]);
 
 /**

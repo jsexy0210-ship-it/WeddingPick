@@ -929,6 +929,237 @@ const routes = {
       },
     ],
   },
+
+  /*
+   * ── C조(2026-09-15) — 뎁스=2 사용자 화면 49개 캡처용 ──────────────────────
+   */
+
+  /* WP-RPT-008 내가 낸 자료(MY 홈·프로필·내 반론·내 후기가 함께 부른다). */
+  'GET /v1/me/reports': {
+    reports: [
+      {
+        id: 'ee111111-1111-4111-8111-111111111111',
+        kind: 'payment_proof',
+        kindLabel: '결제인증',
+        use: '가격 비교에 쓰이고 있어요',
+        subject: VENDORS[0].name,
+        vendorId: VENDORS[0].id,
+        amount: 16_800_000,
+        reportedAt: '2026-08-01T02:00:00.000Z',
+        inUse: true,
+        needsCheck: false,
+        note: null,
+      },
+      {
+        id: 'ee222222-2222-4222-8222-222222222222',
+        kind: 'price_report',
+        kindLabel: '가격 제보',
+        use: '아직 업체를 못 찾았어요',
+        subject: '강남 어느 스튜디오',
+        vendorId: null,
+        amount: 1_200_000,
+        reportedAt: '2026-08-20T05:00:00.000Z',
+        inUse: false,
+        needsCheck: true,
+        note: null,
+      },
+    ],
+  },
+
+  /* WP-CS-002 문의 내역(고객지원·업체 관계자 문의가 함께 부른다). */
+  'GET /v1/inquiries': {
+    inquiries: [
+      {
+        id: 'ee333333-3333-4333-8333-333333333333',
+        category: 'data_correction',
+        body: '실 제보는 어디서 온 금액인가요?',
+        status: 'answered',
+        subject: null,
+        receivedAt: '2026-09-01T02:00:00.000Z',
+        decidedAt: '2026-09-02T02:00:00.000Z',
+        resolution: '실제 결제한 사용자가 낸 금액이에요.',
+      },
+    ],
+  },
+
+  /* 알림함(WP-NOTI 계열) — 읽음/안읽음 섞어서 배지·정렬을 함께 볼 수 있게 한다. */
+  'GET /v1/me/notifications': {
+    notifications: [
+      {
+        id: 'ee444444-4444-4444-8444-444444444444',
+        kind: 'verification',
+        kindLabel: '자료 확인',
+        title: '자료 확인이 끝났어요',
+        body: '올려주신 결제인증이 반영됐어요.',
+        targetId: null,
+        createdAt: '2026-09-14T02:00:00.000Z',
+        readAt: null,
+      },
+      {
+        id: 'ee555555-5555-4555-8555-555555555555',
+        kind: 'partner',
+        kindLabel: '배우자 연결',
+        title: '배우자가 연결됐어요',
+        body: '이제 함께 준비할 수 있어요.',
+        targetId: null,
+        createdAt: '2026-09-10T02:00:00.000Z',
+        readAt: '2026-09-10T03:00:00.000Z',
+      },
+    ],
+    unread: 1,
+    total: 2,
+  },
+
+  /* 내가 낸 업체 관계자 인증 신청(WP-BIZ 계열). */
+  'GET /v1/me/vendor-claims': {
+    claims: [
+      {
+        id: 'ee666666-6666-4666-8666-666666666666',
+        vendorId: VENDORS[0].id,
+        vendorName: VENDORS[0].name,
+        claimedRole: '매니저',
+        method: 'listed_email',
+        methodLabel: '공개된 이메일',
+        status: 'pending',
+        statusLabel: '확인 중',
+        statusNote: '담당자가 확인하고 있어요',
+        decisionNote: null,
+        createdAt: '2026-09-11T02:00:00.000Z',
+      },
+    ],
+  },
+
+  /* 최종 결정 목록(웨딩노트 결정 완료). 웨딩홀 한 곳만 정한 상태로 둔다. */
+  'GET /v1/weddings/:weddingId/decisions': {
+    decisions: [
+      {
+        category: 'hall',
+        categoryLabel: '웨딩홀',
+        vendor: { id: VENDORS[0].id, name: VENDORS[0].name, region: VENDORS[0].region },
+        decidedAt: '2026-08-15T02:00:00.000Z',
+        decidedByPartner: false,
+        events: [
+          {
+            id: 'ee777777-7777-4777-8777-777777777777',
+            title: '웨딩홀 계약',
+            startsAt: '2026-08-15T05:00:00.000Z',
+            location: null,
+          },
+        ],
+        expenses: {
+          bucket: 'hall',
+          bucketLabel: '웨딩홀',
+          paidTotal: 10_000_000,
+          paidCount: 1,
+          scheduledTotal: 0,
+          scheduledCount: 0,
+        },
+      },
+    ],
+  },
+
+  /* 웨딩 단건(내 웨딩 진입 화면). */
+  'GET /v1/weddings/:weddingId': {
+    id: ME_WEDDING_ID,
+    weddingDate: ME.weddingDate,
+    partnerLinked: true,
+    preparedCategories: ['hall'],
+    createdAt: '2026-06-01T02:00:00.000Z',
+    members: [
+      { role: 'owner', joinedAt: '2026-06-01T02:00:00.000Z', isMe: true },
+      { role: 'partner', joinedAt: '2026-06-02T02:00:00.000Z', isMe: false },
+    ],
+  },
+
+  /* 웨딩노트 메모. */
+  'GET /v1/weddings/:weddingId/notes': {
+    notes: [
+      {
+        id: 'ee888888-8888-4888-8888-888888888888',
+        vendorId: VENDORS[0].id,
+        vendorLabel: VENDORS[0].name,
+        body: '보증인원 250명 기준으로 안내받았어요.',
+        authoredByPartner: false,
+        edited: false,
+        editedByPartner: null,
+        createdAt: '2026-08-10T02:00:00.000Z',
+        updatedAt: '2026-08-10T02:00:00.000Z',
+        version: 1,
+      },
+    ],
+  },
+
+  /* 견적서 목록(웨딩노트 견적). */
+  'GET /v1/weddings/:weddingId/quotes': {
+    quotes: [QUOTE],
+    nextCursor: null,
+  },
+
+  /* 준비 체크리스트(웨딩노트 할 일). */
+  'GET /v1/weddings/:weddingId/tasks': {
+    tasks: [
+      {
+        id: 'ee999999-9999-4999-8999-999999999999',
+        label: '청첩장 인쇄',
+        dueDate: '2026-09-20',
+        vendorId: null,
+        vendorLabel: null,
+        state: 'done',
+        stateLabel: '완료',
+        manualState: false,
+      },
+      {
+        id: 'eeaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+        label: '드레스 피팅',
+        dueDate: '2026-10-01',
+        vendorId: null,
+        vendorLabel: '청담 B 스튜디오',
+        state: 'upcoming',
+        stateLabel: '예정',
+        manualState: false,
+      },
+    ],
+    progress: { done: 1, total: 2 },
+  },
+
+  /* 방문노트. */
+  'GET /v1/weddings/:weddingId/visit-notes': {
+    notes: [
+      {
+        id: 'eebbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+        vendorId: VENDORS[0].id,
+        vendorLabel: VENDORS[0].name,
+        visitedOn: '2026-08-05',
+        quotedAmount: 16_500_000,
+        memo: '토요일 12시 홀로 보고 왔어요.',
+      },
+    ],
+    caveat: '그 자리에서 들은 금액이라 실제 계약가와 다를 수 있어요.',
+  },
+
+  /* 배우자 초대 현황(초대 링크 화면). 살아 있는 초대가 없는 상태로 둔다. */
+  'GET /v1/weddings/:weddingId/invites': { invite: null },
+
+  /* TOP3 추천. */
+  'GET /v1/recommendations/top3': {
+    region: '서울',
+    category: 'hall',
+    items: [
+      {
+        vendorId: VENDORS[0].id,
+        name: VENDORS[0].name,
+        category: 'hall',
+        region: VENDORS[0].region,
+        imageUrl: null,
+        reasons: ['many_confirmed'],
+        confirmedCount: 12,
+        paidPrice: VENDORS[0].paidPrice,
+        styleTags: VENDORS[0].styleTags,
+        guidePrice: null,
+      },
+    ],
+    note: null,
+  },
 };
 
 /**
