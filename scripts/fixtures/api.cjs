@@ -519,6 +519,40 @@ const routes = {
     /* 막고 있는 것이 없다. 「켜면 나갑니다」는 안내라 여기 넣지 않는다. */
     blockers: [],
   },
+  /*
+   * 관리자 계정. 뷰어가 표에 저장된 진짜 슈퍼(`viewerAccountId`가 자기 자신)인
+   * 상태로 찍는다 — 「나머지 전체를 뷰어로」 단추가 보이는 화면이 이 상태다.
+   */
+  'GET /v1/admin/accounts': {
+    accounts: [
+      {
+        id: 'aaaaaaaa-0000-4000-8000-000000000001',
+        loginId: 'jsexy0210',
+        role: 'super',
+        disabled: false,
+        createdBy: null,
+        createdAt: '2026-09-10T00:00:00.000Z',
+      },
+      {
+        id: 'aaaaaaaa-0000-4000-8000-000000000002',
+        loginId: 'ops-team',
+        role: 'operator',
+        disabled: false,
+        createdBy: 'jsexy0210',
+        createdAt: '2026-09-12T00:00:00.000Z',
+      },
+      {
+        id: 'aaaaaaaa-0000-4000-8000-000000000003',
+        loginId: 'qa-checker',
+        role: 'viewer',
+        disabled: false,
+        createdBy: 'jsexy0210',
+        createdAt: '2026-09-13T00:00:00.000Z',
+      },
+    ],
+    viewerIsStored: true,
+    viewerAccountId: 'aaaaaaaa-0000-4000-8000-000000000001',
+  },
   'GET /v1/admin/ad-tiers': {
     tiers: [
       { tier: 'light', state: 'live', decidedAt: '2026-09-11T00:00:00.000Z', placements: 2 },
