@@ -85,6 +85,7 @@ const CONTRACTS = new Map<string, ZodType>([
 const NO_CONTRACT = new Set([
   'GET /v1/admin/ads-gate',
   'GET /v1/admin/ad-tiers',
+  'GET /v1/admin/accounts',
   'GET /v1/admin/wedding-feed',
   /* 박람회 관리(0410) — 관리자 전용이라 사용자 계약이 없다. 위 admin 넷과 같은 자리다. */
   'GET /v1/admin/expos',
