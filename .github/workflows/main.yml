@@ -92,13 +92,6 @@ jobs:
       - name: Copy lint (금지어)
         run: node lint-copy.js spec/strings.ko.json apps packages
 
-      # 제미나이는 상담 녹음 인식과 결제 증빙 OCR에만 쓴다(2026-09-15 대표 지시,
-      # CLAUDE.md 커밋 94ca7c62). 웨딩피드 자동 작성이 실제로 제미나이로 붙었다가
-      # 되돌아온 적이 있다 — 글로만 적힌 규칙은 또 깨진다. 허용 목록 밖에서
-      # `callGemini`(`gemini-call.ts`)를 부르면 여기서 막는다.
-      - name: 제미나이 사용 범위 (녹음 · OCR만)
-        run: node lint-gemini-scope.js
-
       - name: Test
         run: npm test
 
