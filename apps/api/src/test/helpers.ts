@@ -66,6 +66,7 @@ export async function createTestApp(): Promise<TestApp> {
     corsOrigins: [],
     retentionMode: 'manual',
     retentionReminderHours: 24,
+    expoAutoDeleteEnabled: false,
     proofReaderCheapModel: 'claude-haiku-4-5',
     proofReaderStrongModel: 'claude-opus-5',
     naverRedirectUris: [],

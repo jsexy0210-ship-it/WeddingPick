@@ -1,10 +1,12 @@
 import type { VendorCategory } from '@weddingpick/domain';
+import { WEDDING_FEED_TARGET_PUBLISHED } from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
 
 import { optionalUser, optionalUserId } from '../auth/plugin';
 import { recommendVendors } from './recommendations';
 import type { AppContext } from '../context';
 import { notificationSummary } from '../notify';
+import * as weddingFeed from '../wedding-feed';
 
 /**
  * 홈 부팅 한 번에.
@@ -101,5 +103,19 @@ export function registerAppRoutes(app: FastifyInstance, context: AppContext): vo
     }
 
     return { member, notifications, popularVendors, candidates, recommendations };
+  });
+
+  /*
+   * 웨딩피드 — 홈 아래쪽 읽을거리. 공개된 글만 나간다. 로그인 여부와 무관해서
+   * 홈은 이 자리를 `/v1/app/bootstrap`과 나란히, 기다리지 않고 부른다.
+   */
+  app.get<{ Querystring: { limit?: string } }>('/v1/wedding-feed', async (request) => {
+    const limit = Number(request.query.limit ?? WEDDING_FEED_TARGET_PUBLISHED);
+
+    return weddingFeed.listPublished(
+      context.pool,
+      context.storage,
+      Number.isFinite(limit) && limit > 0 ? limit : WEDDING_FEED_TARGET_PUBLISHED
+    );
   });
 }

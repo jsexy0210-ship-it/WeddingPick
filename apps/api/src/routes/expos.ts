@@ -29,6 +29,8 @@ type ExpoDetailRow = ExpoRow & {
   address: string;
   benefits: unknown;
   description: string;
+  reservation_url: string | null;
+  official_website_url: string | null;
 };
 
 /** 박람회 상태 계산. DB에는 저장하지 않고 날짜로 매번 계산한다. */
@@ -132,7 +134,8 @@ export function registerExpoRoutes(app: FastifyInstance, context: AppContext): v
 
     const { rows } = await context.pool.query<ExpoDetailRow>(
       `SELECT id, title, organizer, starts_at, ends_at, venue, address, region,
-              registration_deadline, benefits, description, source_note, last_verified_at
+              registration_deadline, benefits, description, source_note, last_verified_at,
+              reservation_url, official_website_url
        FROM structured.expos
        WHERE id = $1`,
       [expoId]
@@ -172,6 +175,10 @@ export function registerExpoRoutes(app: FastifyInstance, context: AppContext): v
       notifyEnabled,
       sourceNote: expo.source_note,
       lastVerifiedAt: expo.last_verified_at.toISOString().slice(0, 10),
+      // 공식 신청 링크가 있으면 그쪽, 없으면 공식 홈페이지 — 둘 다 앱을 떠나지 않는
+      // In-App Browser로 연다(대표 정정, expo-agent-spec.md).
+      applyUrl: expo.reservation_url ?? expo.official_website_url ?? null,
+      officialWebsiteUrl: expo.official_website_url,
     };
   });
 

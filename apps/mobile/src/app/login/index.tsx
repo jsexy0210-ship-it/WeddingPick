@@ -28,7 +28,7 @@ import {
 import { loadRememberedAccount, type RememberedAccount } from '@/features/auth/remembered-account';
 import { bootOwnsSigningInMessage, takePendingSignInError } from '@/features/auth/sign-in-handoff';
 import { CheckDot } from '@/features/settings/my-kit';
-import { SigningInBody, signingInMessage } from '@/features/auth/signing-in-view';
+import { SigningInBody } from '@/features/auth/signing-in-view';
 import { useSignIn } from '@/features/auth/use-sign-in';
 import { openExternal } from '@/features/open-external';
 
@@ -36,7 +36,7 @@ import { openExternal } from '@/features/open-external';
  * 로그인 — 규격서 docs/figma-spec/login.txt(2026-09-15 대표 지시 「규격서의 수를 그대로」).
  *
  *   div 430×932  pad 64 24 32 24
- *     p "WEDDING, LESS OVERWHELMING" · 10/400 primary · lh 15 · ls 2.4px
+ *     p "WEDDING, LESS OVERWHELMING" · 10/400 primary · lh 15 · ls 2.4px   ← **넣지 않는다**(아래)
  *     h1 "결정은 가볍게, 준비는 단단하게." · 42/700 #1A1C20 · lh 45 · ls -1.05px · mar 20 0 0 0
  *     p "흩어진 웨딩 정보를 …" · 15/400 #868B94 · lh 28 · mar 20 0 0 0 · (max-w 300)
  *     div 382×82  pad 20 · mar 48 0 0 0 · bg #EE8888 6% · r28 · border 1 #E4868D 15%
@@ -49,6 +49,12 @@ import { openExternal } from '@/features/open-external';
  *       p "시작하면 웨딩픽 이용약관과 개인정보 처리방침에 동의하게 됩니다." · 11/400 #868B94 · lh 20 · mar 16 0 0 0
  *
  * **규격서와 다르게 둔 것과 근거.**
+ * - **영문 eyebrow(`WEDDING, LESS OVERWHELMING`)는 넣지 않는다 — 되살리지 마라.**
+ *   2026-09-15 대표 지시 「위와 같이 온보딩, 전체 메뉴에 이런 형식에 맞지 않는 화면 있으면
+ *   싹다 찾아서 삭제해」다. 한국어로 옮기는 것도 아니고 **줄째 없앤다.** 제목은 규격서와
+ *   같은 자리에 둔다 — eyebrow가 차지하던 높이를 위 여백으로 돌렸다
+ *   (`Layout.headTopLogin` = 64 + lh 15 + mar 20 = 99). `extract-figma-spec.mjs`를 다시
+ *   돌리면 규격서에는 영문이 되살아나므로, 「규격서에 있는데 왜 없냐」며 되돌리지 않는다.
  * - 안내 카드 면 `#EE8888 6%` · 테두리 `#E4868D 15%`는 토큰에 없다 — 색은 MASTER 몫이라 `tintSurface` ·
  *   `tintBorder`로 두고 PR에 보고했다.
  * - 카카오 단추 안의 «k» 글자 배지는 카카오 공식 심볼(`SocialLogo`)로 그린다 — 카카오 로그인 버튼 디자인
@@ -74,8 +80,12 @@ const KAKAO_PROVIDER_NAME = '카카오';
 export default function LoginScreen() {
   const theme = useTheme();
   const { providers, error: loadError } = useAuthProviders();
-  const { signIn, busy, busyProvider, error, retry, dismissError, reportError, needsAgeConfirm } =
-    useSignIn();
+  /*
+   * `busyProvider`를 더 이상 꺼내지 않는다 — 진행 문구가 제공자에 따라 갈리지 않게
+   * 되면서(2026-09-15 대표 지시, 「로그인 중이에요」 하나) 쓸 자리가 없어졌다.
+   * `useSignIn`은 그대로 돌려준다.
+   */
+  const { signIn, busy, error, retry, dismissError, reportError, needsAgeConfirm } = useSignIn();
   /** «만 14세 이상이에요»를 사람이 눌렀는가. 기본값은 꺼짐 — 미리 켜두지 않는다. */
   const [ageChecked, setAgeChecked] = useState(false);
   /** undefined = 아직 안 읽음, null = 기억된 계정 없음(WP-AUTH-001). */
@@ -143,15 +153,15 @@ export default function LoginScreen() {
             {providers === null || remembered === undefined || busy ? (
               <ThemedView style={styles.busy}>
                 {/*
-                  문구   지금 로그인을 진행 중이고(`busy`), 그 말을 이 화면이 맡았을 때
-                  로더   그 밖 — 제공자·기억된 계정을 읽어오는 중이거나, 문구는 부팅 화면이 맡았을 때
-                  문장은 `SigningInBody` 한 곳에만 있고, 누가 말하는지는 `bootOwnsSigningInMessage()`가 정한다.
+                  로더 위 · 문구 아래가 한 덩어리로 나온다(2026-09-15 대표 지시).
+                  «하나만 보인다»는 폐기됐고, 어느 쪽을 보일지 고르던 `show`도 같이 없앴다.
+                  문장은 `SigningInBody` 한 곳에만 있다 — 제공자에 따라 갈리지 않는다.
+
+                  **부팅 화면이 말하는 중이면 여기서는 그리지 않는다.** 둘이 한 프레임에
+                  겹치면 같은 덩어리가 두 번 보인다(2026-09-09 보고). 제공자를 읽어오는
+                  중(`busy`가 아닐 때)은 부팅이 말하지 않으므로 여기서 그린다.
                 */}
-                <SigningInBody
-                  size={28}
-                  show={busy && !bootOwnsSigningInMessage() ? 'message' : 'loader'}
-                  message={signingInMessage(busyProvider)}
-                />
+                <SigningInBody size={28} active={!(busy && bootOwnsSigningInMessage())} />
               </ThemedView>
             ) : (
               <View style={styles.section}>
@@ -365,13 +375,13 @@ const styles = StyleSheet.create({
   /* «pad 64 24 32 24». */
   content: {
     flexGrow: 1,
-    paddingTop: Spacing.five + Spacing.five,
+    paddingTop: Layout.headTopLogin,
     paddingHorizontal: Layout.gutter,
     paddingBottom: Spacing.five,
   },
   /* «10/400 · ls 2.4px». */
-  /* «42/700 · lh 45 · ls -1.05px · mar 20 0 0 0». */
-  title: { fontWeight: 700, letterSpacing: LetterSpacing.n105, marginTop: Layout.listGap },
+  /* «42/700 · lh 45 · ls -1.05px» — «mar 20»은 위 여백에 합쳐졌다(eyebrow 삭제). */
+  title: { fontWeight: 700, letterSpacing: LetterSpacing.n105 },
   /* «15/400 · lh 28 · mar 20 0 0 0 · max-w 300». */
   sub: { lineHeight: LineHeight.lh28, marginTop: Layout.listGap, maxWidth: SUB_MAX_WIDTH },
   /* «pad 20 · mar 48 0 0 0 · r28 · border 1 · gap 12». */

@@ -169,9 +169,10 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: Spacing.two },
   /* minmax(0,1fr). */
   cell: { flex: 1, flexBasis: 0, minWidth: 0 },
+  /* 곡률은 피그마 카드 규칙 16이다(radius.cardLarge) — 2026-09-15 대표 지시로 10에서 올렸다. */
   card: {
     height: Layout.controlLarge,
-    borderRadius: Radius.medium,
+    borderRadius: Radius.cardLarge,
     borderWidth: CARD_BORDER,
     paddingHorizontal: CARD_PADDING_X,
     flexDirection: 'row',
