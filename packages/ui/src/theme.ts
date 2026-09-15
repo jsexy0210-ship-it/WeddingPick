@@ -1119,3 +1119,14 @@ export const Motion = {
  */
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;
+
+/**
+ * `Animated.timing/spring`에 넘기는 `useNativeDriver`. 네이티브(iOS·안드로이드)는
+ * 항상 `true`가 맞다 — 네이티브 드라이버가 없는 쪽은 웹 하나뿐이라
+ * `Platform.OS !== 'web'`로 가른다. 웹에서 `true`를 그대로 넘기면 애니메이션마다
+ * `Animated: 'useNativeDriver' is not supported...` 경고가 콘솔에 반복해서 쌓인다
+ * (네이티브 드라이버가 없어 JS 애니메이션으로 떨어질 뿐 움직임 자체는 그대로 돈다).
+ * 이 상수 하나로 값을 정하고 모든 `Animated` 호출이 이것을 읽는다 — 자리마다
+ * `Platform.OS !== 'web'`을 따로 적으면 다음 자리에서 또 경고가 돌아온다.
+ */
+export const USE_NATIVE_DRIVER = Platform.OS !== 'web';

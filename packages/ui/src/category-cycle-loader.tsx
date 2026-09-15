@@ -16,7 +16,7 @@ import {
   CategoryIcon,
   type CategoryIconKind,
 } from './category-icon';
-import { Motion } from './theme';
+import { Motion, USE_NATIVE_DRIVER } from './theme';
 import { useTheme } from './use-theme';
 
 /**
@@ -215,7 +215,7 @@ function NativeCycle({ order, size, perIcon, color }: CycleProps) {
         toValue: n,
         duration: n * perIcon,
         easing: Easing.linear,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       })
     );
     loop.start();

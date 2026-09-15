@@ -10,7 +10,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { Layout, Motion } from './theme';
+import { Layout, Motion, USE_NATIVE_DRIVER } from './theme';
 import { useTheme } from './use-theme';
 
 /**
@@ -139,7 +139,7 @@ function NativeSpin({ ring }: SpinProps) {
         toValue: 1,
         duration: Motion.loaderCircleSpin,
         easing: Easing.linear,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       })
     );
     loop.start();

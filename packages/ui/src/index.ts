@@ -97,6 +97,7 @@ export {
   pickTintFor,
   BottomTabInset,
   MaxContentWidth,
+  USE_NATIVE_DRIVER,
   SocialColors,
   NpayColors,
   type ThemeColor,

@@ -124,14 +124,18 @@ const MIME = {
 /**
  * dist를 그대로 내주는 정적 서버.
  *
- * expo export는 경로마다 html을 따로 낸다(`/(tabs)/search/index.html`). 디렉터리로
- * 들어오면 `index.html`을, 그것도 없으면 `<경로>.html`을 찾는다.
+ * expo export web.output "single"(app.json — React #419 대응, 2026-09-15)은 경로마다
+ * html을 내지 않는다 — 전체가 `index.html` 하나다. 파일이 실제로 있으면 그것을 내고,
+ * 없으면(모든 화면 경로가 여기 해당한다) `render.yaml`의 배포 rewrite(`/* → /index.html`)와
+ * 같게 루트 `index.html`로 떨어뜨린다 — expo-router가 그 안에서 client-side로 경로를
+ * 읽는다. 이 폴백이 없으면 `/(tabs)/search/` 같은 화면 경로가 전부 404만 찍는다
+ * (`output: "static"` 시절엔 경로마다 파일이 있어 몰랐던 문제).
  */
 function startStaticServer(root) {
   const server = createServer(async (req, res) => {
     const pathname = decodeURIComponent(new URL(req.url, 'http://127.0.0.1').pathname);
     const base = join(root, pathname);
-    const candidates = [base, join(base, 'index.html'), `${base.replace(/\/$/, '')}.html`];
+    const candidates = [base, join(base, 'index.html'), `${base.replace(/\/$/, '')}.html`, join(root, 'index.html')];
 
     for (const file of candidates) {
       if (!file.startsWith(root) || !existsSync(file) || file.endsWith('/')) continue;
@@ -208,13 +212,15 @@ async function installFixtures(page, missing, blocked) {
 }
 
 /**
- * 늘 나오지만 화면과 상관없는 콘솔 오류.
+ * 화면과 상관없는 콘솔 오류를 걸러낼 자리.
  *
- * React #419는 「서버가 이 Suspense 경계를 끝내지 못했다」 — 정적 export를 띄우면
- * 언제나 나온다. 여기 적어 두지 않으면 매 캡처마다 같은 줄이 붙고, 사람은
- * 곧 콘솔 오류를 통째로 안 읽게 된다.
+ * **한때 React #419를 여기서 걸렀다.** `web.output: "static"`은 화면마다 prerender된
+ * HTML과 client hydration이 어긋나 이 오류가 캡처마다 항상 붙었다 — 그래서
+ * 「늘 나오는 잡음」으로 적어 두고 넘겼다. `output: "single"`로 바꾼 뒤(2026-09-15,
+ * React #419 대응)로는 hydration 자체가 없어 이 오류가 나지 않는다 — 다시 나오면
+ * 그때는 진짜다. 걸러내지 않는다.
  */
-const BENIGN_CONSOLE = [/Minified React error #419/];
+const BENIGN_CONSOLE = [];
 
 function safeName(route) {
   return route.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '') || 'root';
@@ -226,13 +232,21 @@ async function captureRoute(context, origin, route, opts) {
   const errors = [];
   const page = await context.newPage();
 
+  const cdp = await context.newCDPSession(page);
+  await cdp.send('Log.enable');
+  cdp.on('Log.entryAdded', (e) => {
+    const text = `[cdp:${e.entry.level}/${e.entry.source}] ${e.entry.text}`;
+    if (BENIGN_CONSOLE.some((pattern) => pattern.test(text))) return;
+    errors.push(text.slice(0, 400));
+  });
+
   page.on('console', (message) => {
     const text = message.text();
 
-    if (message.type() !== 'error') return;
+    if (message.type() !== 'error' && message.type() !== 'warning') return;
     if (BENIGN_CONSOLE.some((pattern) => pattern.test(text))) return;
 
-    errors.push(text.slice(0, 400));
+    errors.push(`[${message.type()}] ${text.slice(0, 400)}`);
   });
   page.on('pageerror', (error) => {
     const text = String(error);
@@ -274,7 +288,17 @@ async function captureRoute(context, origin, route, opts) {
   for (const label of opts.taps) {
     const target = page.getByLabel(label).or(page.getByText(label, { exact: true })).first();
 
-    await target.click({ timeout: 5000 });
+    /*
+     * `locator.click()`은 다른 요소가 겹치면 재시도만 하다 타임아웃으로 죽는다 —
+     * 이 앱은 부팅 직후 뜨는 알림 배너(`InAppBrowserNotice`)가 자주 단추 위에
+     * 걸친다. `el.focus(); el.click()`은 실제 DOM 클릭 이벤트를 그대로 내서
+     * react-native-web의 Pressable이 받게 하면서도, 겹친 요소 때문에 죽지 않는다.
+     */
+    await target.waitFor({ state: 'attached', timeout: 8000 });
+    await target.evaluate((el) => {
+      el.focus();
+      el.click();
+    });
     await page.waitForTimeout(opts.wait);
   }
 
