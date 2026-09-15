@@ -106,7 +106,7 @@ export function FilterChip({
               },
             ]}>
             <ThemedText
-              type={small ? 'micro' : size === 'sheet' ? 't6' : 't7'}
+              type={small ? 'f12' : size === 'sheet' ? 't6' : 'f14'}
               numberOfLines={1}
               style={[styles.label, { color: selected ? selectedLabel : theme.textSecondary }]}>
               {label}
@@ -125,6 +125,13 @@ const styles = StyleSheet.create({
     borderRadius: Radius.pill,
     alignSelf: 'flex-start',
   },
-  /** 칩 글자는 700 — caption(14)의 400 기본값을 덮는다. */
-  label: { fontWeight: 700 },
+  /**
+   * 칩 글자는 600이다 — 규격서가 **켠 칸 · 꺼진 칸 모두 600**으로 적는다
+   * (`search.txt` «14/600», `community.txt` «12/600» 켠 것도 «12/600 #FFFFFF»).
+   *
+   * **2026-09-15까지 700이었다.** SEED도 여기를 500(꺼짐) → 700(켬)으로 가르는데,
+   * 우리는 500을 싣지 않고 피그마가 600이라고 재어 두었으므로 **600 하나로 간다**
+   * (2026-09-15 MASTER 확정).
+   */
+  label: { fontWeight: 600 },
 });
