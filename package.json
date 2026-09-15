@@ -19,6 +19,7 @@
   "devDependencies": {
     "@seed-design/css": "2.8.1",
     "@seed-design/icon": "0.6.2",
+    "@seed-design/rootage-artifacts": "2.9.0",
     "zod": "^4.4.3"
   }
 }
