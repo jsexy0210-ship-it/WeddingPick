@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedDate": "2026-09-13",
+  "updatedDate": "2026-09-15",
   "pendingAdminDeployment": {
     "dateKst": "2026-09-11",
     "baselineCommit": "d20e898b394ac52fda1dab9df98770b83c218294",
@@ -1016,5 +1016,46 @@
       }
     ],
     "비용": "흡수한 7개 세션 누적 약 $573 (캡처 157 · 보존 170 · 공공데이터 96 · 약관리전 86 · 성능 58 · 제보 3 · 로그인 2)"
+  },
+  "designPolicyAudit20260915": {
+    "세션": "claude/design-policy-audit — 최상위 정책 규칙 상시 감독",
+    "근거": "2026-09-15 대표 지시 다섯 줄. CLAUDE.md 맨 위 「최상위 정책 규칙」",
+    "장부": "docs/sync/design-policy-audit.md",
+    "pr": "#236 (draft)",
+    "prBase": "claude/figma-integration — 규칙 원문과 감사 도구가 #232에만 있고 main에는 없다. base를 main으로 두면 diff에 #232의 100k 줄이 섞여 이 PR 머지가 #232를 검수 없이 머지하는 일이 된다. 이 PR 자체는 커밋 1개 · 파일 11개다. #232가 머지되면 base는 main으로 자동 재조준된다",
+    "만든것": "scripts/check-design-policy.mjs — R1(생 hex) · R2(금지 서체) · R5(색만 교체)를 센다. npm test 맨 앞과 CI(main.yml)에 붙였고 남은 빚은 scripts/design-policy-baseline.json에 수로 고정했다(늘어나면 깨진다)",
+    "왜주석을걷어내나": "단순 grep은 hex를 457건으로 세는데 실제 위반은 20건이었다. 나머지는 「시안의 #eaebee와 같은 값」 같은 근거 주석과 남의 브랜드 마크(구글·카카오·네이버)다. circle-loader.tsx가 그 예 — grep은 3건으로 잡지만 셋 다 주석이고 코드는 theme만 쓴다(룰 5 준수)",
+    "잰결과": {
+      "R1": "생 hex 20 → 17건 (3건 고침)",
+      "R2": "금지 서체 2 → 0건",
+      "R3": "조용한 삭제 없음. 사라진 2건은 정당한 리팩터 — my/rewards.tsx→디렉터리, search/filter.tsx→filter-sheet. 라우트 124→149로 늘었다",
+      "R4": "신규분 위반 없음",
+      "R5": "0건",
+      "금지어": "lint-copy 통과. 피그마의 「아직 탐색 전」이 우리 코드에 유입되지 않았다(grep 0건)",
+      "토큰출처": "sync-seed-tokens.mjs --check 초록 (@seed-design/css@2.8.1)"
+    },
+    "고친것": "tokens.css(--font-sans에 Pretendard가 아예 없고 Noto Sans KR 있음) · web styles.ts(Pretendard가 스택 4번째) · design-tokens.ts(font.android) · _layout.tsx 주석 · guest-gate-sheet 그래버 '#eaebee'(다른 시트는 전부 theme.border) · wedding-mark 기본색 '#e7898d'→Colors.light.tint. Pick Mark 두 path는 손대지 않았다",
+    "판단필요": [
+      {
+        "id": "R2-5",
+        "제목": "Pretendard가 이름만 있고 서체 파일이 없다 — 대표님께 올릴 사안",
+        "잰것": "find -iname \"*pretendard*\" 0건 · expo-font 의존성 없음 · @font-face 없음 · 웹폰트 link 없음",
+        "뜻": "theme.ts Fonts는 세 플랫폼 모두 Pretendard를 맨 앞에 두지만 번들에도 웹에도 서체가 없다. 지금 앱과 웹은 Pretendard로 그려지지 않는다 — iOS는 Apple SD Gothic Neo, Android는 Roboto로 떨어진다. 규칙 2번이 「Pretendard만」인데 한 번도 쓰인 적이 없다",
+        "왜안고쳤나": "되싣는 것이 맞지만 2026-09-09에 뺀 이유가 첫 화면 지연이다. 그 값을 다시 치를지는 제품 결정이라 골라서 밀지 않았다",
+        "상태": "미해결 1회차"
+      },
+      {
+        "id": "R1-1",
+        "제목": "등급 색 5개가 토큰 밖에 있고 두 벌로 중복",
+        "값": "#8B8D98 · #208AEF · #2A9D5C · #12786A · #7A4DD1",
+        "어디": "packages/ui/src/verification-levels.ts · apps/mobile/src/features/verification/levels.ts — 주석 한 줄만 다르고 나머지가 같다",
+        "뜻": "남은 17건 중 10건이 이것이다. spec/tokens.json·seed-tokens.json 어디에도 없다",
+        "왜안고쳤나": "규칙대로면 토큰에 더해야 하는데 감독 세션은 spec/tokens.json color 블록을 건드리지 않는다(MASTER가 SEED에서 뽑아 넣었고 시험이 지킨다). 두 벌인 것도 같이 정리해야 한다",
+        "상태": "미해결 1회차"
+      }
+    ],
+    "픽셀전담에넘김": "claude/figma-pixel-parity — 430 나란히 찍은 홈의 구성 차이(홈 검색칸 · 준비현황 2×2 카드 vs 1×4 칩 · 카테고리 6칸 · D-day 카드 구성)와 남은 R1 7건(camera 3 · sample 2 · display 1 · style-grid 1). 「웨딩픽 추천」은 피그마가 찬 상태를 그리고 앱이 정보 0층이라 상태가 달라 비교 불가로 두었고 위반으로 적지 않았다 — 빈 화면과 찬 화면을 나란히 놓고 「다르다」고 적으면 2026-09-14가 반대 방향으로 되풀이된다",
+    "검증": "typecheck 통과 · lint 오류 0(경고 3은 감독 세션이 손대지 않은 파일의 기존 것) · npm test 전부 통과(domain 948 · ui 348 · api 258 · web 73 · contract 32) · lint-copy 통과 · sync-seed-tokens --check 초록",
+    "주의": "Claude GitHub App이 이 저장소에 설치돼 있지 않아 PR 이벤트가 감독 세션으로 오지 않는다. 설치처: https://github.com/apps/claude/installations/select_target"
   }
 }
