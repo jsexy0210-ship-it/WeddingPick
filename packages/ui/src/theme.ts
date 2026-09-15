@@ -829,6 +829,9 @@ export const Layout = {
   pickCircle: 28,
   thumbSearchWidth: 104,
   thumbSearchHeight: 116,
+  /** Pick 빈 상태의 원 64와 그 안 하트 32 — size.emptyMark · iconEmpty(피그마 `Pick.tsx` `h-16 w-16` · `h-8 w-8`). */
+  emptyMark: 64,
+  iconEmpty: 32,
   /** 행 안 아이콘. size.iconRow. */
   iconRow: 20,
   /** 행 끝 chevron 한 변. size.iconInline. */
@@ -862,6 +865,8 @@ export const Layout = {
   stepRow: 30,
   /** 목록 앞 점 지름. spacing.bulletDot — 시안 «width:6px;height:6px;border-radius:999px». */
   bulletDot: 6,
+  /** Pick 빈 상태의 위아래 80 — spacing.pickEmptyPaddingY(피그마 `Pick.tsx` `py-20`). */
+  pickEmptyPaddingY: 80,
   /** 바텀시트 패널 — padding 12 24 28(+ safeBottom) · 요소 간격 20 · 제목과 본문 사이 6. component.sheet. */
   sheetPaddingTop: 12,
   sheetPaddingBottom: 28,

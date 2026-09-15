@@ -8,7 +8,7 @@ import { Colors } from './theme';
  * 한때 `pickMark`가 여기 사본으로 있었는데 획 두께가 1.8로 확정본(1.9)과 달라
  * 탭 바만 다른 마크를 쓰고 있었다.
  */
-export type ProductSymbolName = 'house' | 'magnifier' | 'twoPeople' | 'calendar' | 'person' | 'hall' | 'sdm' | 'snap' | 'planner' | 'warning' | 'bell' | 'gear' | 'more' | 'chevronRight' | 'chevronLeft' | 'chevronDown' | 'arrowLeft' | 'pin' | 'close' | 'check';
+export type ProductSymbolName = 'house' | 'magnifier' | 'twoPeople' | 'calendar' | 'person' | 'hall' | 'sdm' | 'snap' | 'planner' | 'warning' | 'bell' | 'gear' | 'more' | 'chevronRight' | 'chevronLeft' | 'chevronDown' | 'arrowLeft' | 'pin' | 'link' | 'chart' | 'checkCircle' | 'close' | 'check';
 
 /**
  * 획 두께. 헤더·탭 아이콘(24)은 1.8, chevron(18)은 2, 닫기(14)는 2.4 — 05-root ·
@@ -44,6 +44,10 @@ export function ProductSymbol({ name, size = 24, color = Colors.light.text }: { 
       {name === 'chevronDown' && <Path {...common} d="m6 9 6 6 6-6" />}
       {/* 왼쪽 화살표 ← — 피그마(2026-09-14 정본)의 뒤로 가기(`Search.tsx` · `VendorFlows.tsx` · `FlowScreens.tsx` lucide ArrowLeft). 꺾쇠가 아니라 화살이다. */}
       {name === 'arrowLeft' && <Path {...common} d="M19 12H5M12 19l-7-7 7-7" />}
+      {/* Pick 헤더의 «가격 제보» 앞 고리 · 비교 배너의 막대 · 결정한 카드 위 체크 원 — 피그마 `Pick.tsx` lucide Link2 · BarChart2 · CheckCircle2 자리. */}
+      {name === 'link' && <><Path {...common} d="M9 17H7A5 5 0 0 1 7 7h2" /><Path {...common} d="M15 7h2a5 5 0 1 1 0 10h-2" /><Path {...common} d="M8 12h8" /></>}
+      {name === 'chart' && <Path {...common} d="M18 20V10M12 20V4M6 20v-6" />}
+      {name === 'checkCircle' && <><Circle {...common} cx="12" cy="12" r="9.5" /><Path {...common} d="m8.5 12 2.4 2.4L15.5 9.6" /></>}
       {/* 위치 핀 — 검색 결과 카드의 지역 앞(피그마 `Search.tsx` lucide MapPin). */}
       {name === 'pin' && <><Path {...common} d="M12 21.4s-6.4-5.6-6.4-10.6a6.4 6.4 0 0 1 12.8 0c0 5-6.4 10.6-6.4 10.6z" /><Circle {...common} cx="12" cy="10.8" r="2.4" /></>}
       {name === 'close' && <Path {...common} d="M6 6l12 12M18 6 6 18" />}
