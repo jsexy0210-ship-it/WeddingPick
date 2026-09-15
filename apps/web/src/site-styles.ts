@@ -55,13 +55,13 @@ export const SITE_STYLES = `
   --surface: #ffffff;
   --surface-1: #f7f8f9;
   --surface-2: #f3f4f5;
-  --tint: #e7898d;
-  --tint-strong: #d87d80;
+  --tint: #ff6f61;
+  --tint-strong: #ee6255;
   --positive: #1aa174;
   --positive-bg: #e8faf6;
 
   /* 코랄 위의 글자. **어두운 모드에서도 뒤집지 않는다** — SEED on-primary 규칙. */
-  --on-tint: #371b34;
+  --on-tint: #ffffff;
 
   /* 좌우 여백. 디자인의 56px. 좁은 화면에서는 아래 미디어 쿼리가 줄인다. */
   --gutter: 56px;
@@ -83,8 +83,8 @@ ${TYPE_SCALE}
     --surface: #000000;
     --surface-1: #16171b;
     --surface-2: #1d2025;
-    --tint: #eb9c9f;
-    --tint-strong: #f1bcbe;
+    --tint: #ff8478;
+    --tint-strong: #ffa79e;
     --positive: #3ecf8e;
     --positive-bg: #12281d;
   }

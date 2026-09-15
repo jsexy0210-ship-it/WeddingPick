@@ -415,8 +415,8 @@ function openSearchWithout(chip: ConditionChip, view: HomeView, me: CurrentUser 
  * 기존 1층 3구간 제목(`view.hero.line1/2`)을 지우라는 뜻이 아니다.
  *
  * **D-day는 이제 코랄 면 위의 플럼 글자다**(코랄 다섯 곳 중 하나 — 위 파일
- * JSDoc과 CLAUDE.md 참고). 히어로 전체가 `tint` 면이 되며 `#E7898D` 위 흰 글자는
- * 2.51:1로 AA 미달이라 `onTint`(플럼 #371B34, 6.11:1)를 쓴다.
+ * JSDoc과 CLAUDE.md 참고). 히어로 전체가 `tint` 면이 되며 `#FF6F61` 위 흰 글자는
+ * 2.51:1로 AA 미달이라 `onTint`(플럼 #FFFFFF, 6.11:1)를 쓴다.
  *
  * D-day 글자 크기는 `t1`(32 — typography.ts 주석 "홈 Hero")을 쓴다. 피그마
  * `Home.tsx:160`의 46px은 **B등급 LLM 생성 근사치**라 그대로 옮기지 않는다.

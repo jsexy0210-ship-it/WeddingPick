@@ -51,6 +51,9 @@ export const WEDDING_FEED_LIMITS = {
  * **이미 쓴 주제는 후보에서 빠진다**(`pickTopics`).
  *
  * 업종 이름은 정본을 쓴다 — 본식스냅 · 헤어변형 · 결정사(CLAUDE.md 2026-09-11).
+ *
+ * **`견적` · `계약서`를 쓰지 않는다.** 여기 적은 말이 카드 위 작은 줄로 그대로 나가고,
+ * 모델이 본문에 그 말을 따라 쓴다. `pick-language.test.ts`가 이 파일을 훑어 막는다.
  */
 export type WeddingFeedTopic = {
   key: string;
@@ -76,7 +79,7 @@ export const WEDDING_FEED_TOPICS: readonly WeddingFeedTopic[] = [
   { key: 'hair-change', categoryLabel: '헤어변형', brief: '헤어변형이 무엇이고 언제 정하나' },
   { key: 'info-company', categoryLabel: '결정사', brief: '결정사를 쓸 때 확인할 것' },
   { key: 'honeymoon-plan', categoryLabel: '허니문', brief: '허니문 일정을 짜는 순서' },
-  { key: 'contract-check', categoryLabel: '계약', brief: '계약서에서 확인할 조항' },
+  { key: 'contract-check', categoryLabel: '계약', brief: '계약 전에 확인할 조건' },
   { key: 'schedule-order', categoryLabel: '준비 순서', brief: '무엇부터 정하는 것이 좋은가' },
   { key: 'guest-count', categoryLabel: '하객', brief: '하객 수를 가늠하는 법' },
 ];
