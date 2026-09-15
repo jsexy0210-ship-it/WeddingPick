@@ -191,8 +191,11 @@ export const LetterSpacing = {
   p17: 1.7,
   p18: 1.8,
   p12: 1.2,
-  p22: 2.2,
-  p24: 2.4,
+  /*
+   * 2.2 · 2.4는 영문 eyebrow(`JUST FOR YOU` · `WEDDING, LESS OVERWHELMING`) 전용이었다.
+   * 2026-09-15 대표 지시로 그 줄들을 지우면서 쓰는 곳이 없어졌다 — 같이 뺀다.
+   * 다시 필요해지면 규격서(`docs/figma-spec/login.txt` · `onboarding.txt`)에서 재서 넣는다.
+   */
 } as const;
 
 export type FontSizeToken = keyof typeof FontSize;

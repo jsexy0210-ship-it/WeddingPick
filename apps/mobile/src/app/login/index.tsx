@@ -36,7 +36,7 @@ import { openExternal } from '@/features/open-external';
  * 로그인 — 규격서 docs/figma-spec/login.txt(2026-09-15 대표 지시 「규격서의 수를 그대로」).
  *
  *   div 430×932  pad 64 24 32 24
- *     p "WEDDING, LESS OVERWHELMING" · 10/400 primary · lh 15 · ls 2.4px
+ *     p "WEDDING, LESS OVERWHELMING" · 10/400 primary · lh 15 · ls 2.4px   ← **넣지 않는다**(아래)
  *     h1 "결정은 가볍게, 준비는 단단하게." · 42/700 #1A1C20 · lh 45 · ls -1.05px · mar 20 0 0 0
  *     p "흩어진 웨딩 정보를 …" · 15/400 #868B94 · lh 28 · mar 20 0 0 0 · (max-w 300)
  *     div 382×82  pad 20 · mar 48 0 0 0 · bg #EE8888 6% · r28 · border 1 #E4868D 15%
@@ -49,6 +49,12 @@ import { openExternal } from '@/features/open-external';
  *       p "시작하면 웨딩픽 이용약관과 개인정보 처리방침에 동의하게 됩니다." · 11/400 #868B94 · lh 20 · mar 16 0 0 0
  *
  * **규격서와 다르게 둔 것과 근거.**
+ * - **영문 eyebrow(`WEDDING, LESS OVERWHELMING`)는 넣지 않는다 — 되살리지 마라.**
+ *   2026-09-15 대표 지시 「위와 같이 온보딩, 전체 메뉴에 이런 형식에 맞지 않는 화면 있으면
+ *   싹다 찾아서 삭제해」다. 한국어로 옮기는 것도 아니고 **줄째 없앤다.** 제목은 규격서와
+ *   같은 자리에 둔다 — eyebrow가 차지하던 높이를 위 여백으로 돌렸다
+ *   (`Layout.headTopLogin` = 64 + lh 15 + mar 20 = 99). `extract-figma-spec.mjs`를 다시
+ *   돌리면 규격서에는 영문이 되살아나므로, 「규격서에 있는데 왜 없냐」며 되돌리지 않는다.
  * - 안내 카드 면 `#EE8888 6%` · 테두리 `#E4868D 15%`는 토큰에 없다 — 색은 MASTER 몫이라 `tintSurface` ·
  *   `tintBorder`로 두고 PR에 보고했다.
  * - 카카오 단추 안의 «k» 글자 배지는 카카오 공식 심볼(`SocialLogo`)로 그린다 — 카카오 로그인 버튼 디자인
@@ -57,7 +63,6 @@ import { openExternal } from '@/features/open-external';
  *   그대로 둔다(CLAUDE.md 3번). 카카오 단추 규격(56 · r16 · 15/700)을 같이 쓴다.
  */
 
-const EYEBROW = 'WEDDING, LESS OVERWHELMING';
 const HERO_TITLE = '결정은 가볍게,\n준비는 단단하게.';
 const HERO_SUB = '흩어진 웨딩 정보를 한곳에 모아, 우리에게 맞는 선택만 남겨드릴게요.';
 const CALLOUT_MARK = '✦';
@@ -102,9 +107,6 @@ export default function LoginScreen() {
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           {showRemembered && remembered ? (
             <>
-              <ThemedText type="f10" themeColor="tint" style={styles.eyebrow}>
-                {EYEBROW}
-              </ThemedText>
               <ThemedText type="f42" style={styles.title}>
                 {remembered.displayName ? `${remembered.displayName}님,\n` : ''}다시 오셨네요
               </ThemedText>
@@ -118,9 +120,6 @@ export default function LoginScreen() {
             </>
           ) : (
             <>
-              <ThemedText type="f10" themeColor="tint" style={styles.eyebrow}>
-                {EYEBROW}
-              </ThemedText>
               <ThemedText type="f42" style={styles.title}>
                 {HERO_TITLE}
               </ThemedText>
@@ -372,14 +371,13 @@ const styles = StyleSheet.create({
   /* «pad 64 24 32 24». */
   content: {
     flexGrow: 1,
-    paddingTop: Spacing.five + Spacing.five,
+    paddingTop: Layout.headTopLogin,
     paddingHorizontal: Layout.gutter,
     paddingBottom: Spacing.five,
   },
   /* «10/400 · ls 2.4px». */
-  eyebrow: { letterSpacing: LetterSpacing.p24 },
-  /* «42/700 · lh 45 · ls -1.05px · mar 20 0 0 0». */
-  title: { fontWeight: 700, letterSpacing: LetterSpacing.n105, marginTop: Layout.listGap },
+  /* «42/700 · lh 45 · ls -1.05px» — «mar 20»은 위 여백에 합쳐졌다(eyebrow 삭제). */
+  title: { fontWeight: 700, letterSpacing: LetterSpacing.n105 },
   /* «15/400 · lh 28 · mar 20 0 0 0 · max-w 300». */
   sub: { lineHeight: LineHeight.lh28, marginTop: Layout.listGap, maxWidth: SUB_MAX_WIDTH },
   /* «pad 20 · mar 48 0 0 0 · r28 · border 1 · gap 12». */

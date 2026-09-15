@@ -558,6 +558,7 @@ export default function VendorDetailScreen() {
 
               {/*
                 실 제보 카드 — 피그마 «VERIFIED PRICE RANGE» 어두운 카드(잉크 면 · radius 16 · 안쪽 20).
+                **그 영문 제목 줄은 넣지 않는다**(2026-09-15 대표 지시 — 영문 eyebrow 삭제). 카드만 쓴다.
                 영문 eyebrow는 걷어낸다(C-9). 금액 24/700 흰 글자 · 오른쪽 «실 제보 N건» · 아래 한 줄.
                 자세한 것은 「가격」 탭에 그대로 있다.
               */}
