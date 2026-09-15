@@ -1,35 +1,41 @@
 import type { BottomTabBarProps } from 'expo-router/build/layouts/Tabs';
 import { Platform, Pressable, StyleSheet, View } from 'react-native';
 
-import { Layout, LineHeight, ProductSymbol, ThemedText, WeddingMark, useTheme } from '@weddingpick/ui';
+import {
+  Border,
+  Layout,
+  LetterSpacing,
+  Radius,
+  SeedIcon,
+  Spacing,
+  ThemedText,
+  WeddingMark,
+  useTheme,
+} from '@weddingpick/ui';
 
 import { isRootTab, rootTab, type RootTabSpec } from './root-tabs';
 
 /**
- * Root 탭 바 — 05-root 시안 1:1 · spec/tokens.json `tabBar`.
+ * Root 탭 바 — 규격서 docs/figma-spec/home.txt 맨 아래 `nav`(2026-09-15 대표 지시 「규격서의 수를 그대로」).
  *
- * 기본 탭 바를 쓰지 않는다. react-navigation의 바는 높이·패딩·라벨 굵기·아이콘
- * 자리를 제 방식으로 정해서 시안(72 + safeBottom · 위 패딩 9 · 항목 52 · 아이콘 24/stroke 1.8 ·
- * 아이콘과 라벨 사이 3 · 라벨 12/16 · 활성 #212124 700 · 비활성 #868B94 600 · 위 선 1px #EAEBEE)과
- * 어긋난다. 값은 전부 `Layout`·`ThemedText type="tab"`에서 온다.
+ *   nav 430×72  flex · align center · pad 0 8 0 8 · bg #FFFFFF · border 1 #000000 6%
+ *     a 83×55   flex/column · gap 4 · justify center · align center · pad 8 0 8 0
+ *       svg 20×20
+ *       span "홈" · 10/600 #1A1C20 · lh 15          (꺼진 탭은 10/500 #868B94)
+ *     a 83×67   flex/column · gap 4 · justify center · align center        ← Pick
+ *       div 48×48  flex · justify center · align center · bg #F7F8F9 · r9999   (켜지면 primary + shadow)
+ *         svg 20×20
+ *       span "Pick" · 10/600 #868B94 · lh 15 · ls 0.25px  (켜지면 #1A1C20)
  *
- * 탭 목록·라벨·아이콘은 `root-tabs.ts`가 정한다. 이 파일은 그리기만 한다.
+ * 기본 탭 바를 쓰지 않는다 — react-navigation의 바는 높이 · 패딩 · 라벨 굵기를 제 방식으로 정한다.
+ * 탭 목록 · 라벨 · 아이콘은 `root-tabs.ts`가 정한다. 이 파일은 그리기만 한다.
  *
- * Pick 탭 아이콘은 **Pick Mark**(하트 안에 체크 · 획 1.9 · 절대 변경 금지 — CLAUDE.md · tokens.json
- * tabBar.items[pick].icon = pickMark)다. 05-root 시안 파일의 ICONS.pick(P + 체크)은 옛 글리프이고
- * 02-design-system · 21-device · tokens.json이 하트 마크를 가리킨다.
+ * 아이콘 넷은 SEED(`SeedIcon` · 피그마 `Root.tsx` `IconHomeRegular/Fill` …)다. **Pick 자리만 보류다**
+ * (2026-09-15 MASTER) — 피그마는 `IconHeart`지만 대표님이 하트라고 하기 전까지 우리 Pick Mark
+ * (하트 안에 체크 · 두 path 절대 변경 금지)를 그대로 둔다.
  *
- * **Pick은 가운데에서 원형으로 선다**(2026-09-14 대표 확정 · weddingpick_figma
- * `src/app/components/Root.tsx:66-84` `isPick`). 규격은 전부 `spec/tokens.json`
- * `tabBar.emphasized`에서 온다 — 여기에 숫자를 적지 않는다.
- *
- * **꺼져 있어도 원은 남는다.** 켜지면 주색으로 차고 마크가 `onTint`로 뒤집히고,
- * 꺼지면 옅은 면(`backgroundSelected`)에 회색 마크다 — 원이 아예 사라지면 다섯 탭
- * 중 가운데만 자리가 들썩인다. 그림자는 `tabBar.$rule`의 «과도한 그림자 금지»를
- * 지켜 얕게 둔다.
- *
- * Pick 오른쪽 위의 점은 시안이 고정으로 둔 배지다(`spec/tokens.json` `tabBar.pickDot`
- * — 7 · 1.5 · −1). 원이 차 있을 때는 그리지 않는다 — 주색 면 위의 주색 점은 보이지 않는다.
+ * 옛 규격(72 + 위 패딩 9 · 항목 52 · 아이콘 24 · 라벨 12/16)은 `spec/tokens.json` `tabBar.$rule`에
+ * 남아 있지만 규격서가 이긴다. `Layout.tabBarPaddingTop` · `tabItemMinHeight`는 이제 여기서 안 쓴다.
  */
 export function RootTabBar({ state, descriptors, navigation, insets }: BottomTabBarProps) {
   const theme = useTheme();
@@ -62,7 +68,9 @@ export function RootTabBar({ state, descriptors, navigation, insets }: BottomTab
         // 다섯 탭 밖의 라우트(검색 · 제보 · (home) 하위 스택 — href: null)는 자리를 차지하지 않는다.
         if (!spec) return null;
         const active = state.index === index;
+        /* 라벨 — 켜짐 «10/600 #1A1C20», 꺼짐 «10/500 #868B94». Pick은 꺼져도 600. */
         const color = active ? theme.text : theme.textAssistive;
+        const weight = active || spec.emphasized ? 600 : 500;
 
         const onPress = () => {
           const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
@@ -77,9 +85,11 @@ export function RootTabBar({ state, descriptors, navigation, insets }: BottomTab
             accessibilityLabel={options.tabBarAccessibilityLabel ?? spec.label}
             onPress={onPress}
             onLongPress={() => navigation.emit({ type: 'tabLongPress', target: route.key })}
-            style={styles.item}>
+            style={spec.emphasized ? styles.itemPick : styles.item}>
             <TabIcon spec={spec} active={active} />
-            <ThemedText type="tab" style={[styles.label, { color, fontWeight: active ? 700 : 600 }]}>
+            <ThemedText
+              type="f10"
+              style={[styles.label, spec.emphasized && styles.labelPick, { color, fontWeight: weight }]}>
               {spec.label}
             </ThemedText>
           </Pressable>
@@ -90,116 +100,78 @@ export function RootTabBar({ state, descriptors, navigation, insets }: BottomTab
 }
 
 /**
- * 탭 아이콘 한 자리.
+ * 탭 아이콘 한 자리. 켜짐 · 꺼짐이 SEED 한 쌍(Regular · Fill)이다.
  *
- * 강조 탭(Pick)은 아이콘 자리가 원이다. 켜져 있으면 원이 주색으로 차고 마크가
- * `onTint`, 꺼져 있으면 원 없이 나머지 탭과 같은 모양이다 — 꺼진 원까지 그리면
- * 다섯 탭이 두 종류로 갈려 보인다.
- *
- * 마크 색을 여기서 정하지 않고 `theme.onTint`(= tokens.json `color.brand.onPrimary`)를
- * 그대로 쓴다. 그 값이 주색 위 대비를 책임진다 — 대비가 모자라면 토큰을 고치지
- * 이 파일을 고치지 않는다.
+ * 강조 탭(Pick)은 원 48 안에 20이다. **꺼져 있어도 원은 남는다** — 면만 `backgroundElement`
+ * (#F7F8F9)로 바뀐다. 켜지면 주색 면 + 그림자(피그마 `shadow-lg shadow-primary/30`)에 흰 마크다.
  */
 function TabIcon({ spec, active }: { spec: RootTabSpec; active: boolean }) {
   const theme = useTheme();
-  const filled = Boolean(spec.emphasized) && active;
-  const color = filled ? theme.onTint : active ? theme.text : theme.textAssistive;
-  /* 원 안은 20, 나머지 넷은 24. 토큰 `tabBar.emphasized.$only` 참고. */
-  const size = spec.emphasized ? Layout.tabEmphasizedIcon : Layout.iconTab;
 
-  const mark =
-    spec.icon === 'pick' ? (
-      <WeddingMark size={size} color={color} />
-    ) : (
-      <ProductSymbol name={spec.icon} size={size} color={color} />
+  if (spec.icon === 'pick') {
+    const filled = active;
+
+    return (
+      <View
+        style={[
+          styles.pickCircle,
+          filled
+            ? [styles.pickCircleOn, { backgroundColor: theme.tint, shadowColor: theme.tint }]
+            : { backgroundColor: theme.backgroundElement },
+        ]}>
+        <WeddingMark size={Layout.iconRow} color={filled ? theme.onTint : theme.textAssistive} />
+      </View>
     );
-
-  if (!spec.emphasized) return <View style={styles.iconWrap}>{mark}</View>;
+  }
 
   return (
-    <View
-      style={[
-        styles.emphasizedWrap,
-        filled
-          ? [styles.emphasizedOn, { backgroundColor: theme.tint, shadowColor: theme.tint }]
-          : { backgroundColor: theme.backgroundSelected },
-      ]}>
-      {/* 점은 아이콘 모서리에 붙는다 — 원을 기준으로 두면 한참 떨어져 뜬다. */}
-      <View style={styles.emphasizedIcon}>
-        {mark}
-        {/* 원이 차 있으면 그리지 않는다 — 주색 면 위의 주색 점은 보이지 않는다. */}
-        {filled ? null : (
-          <View style={[styles.dot, { backgroundColor: theme.tint, borderColor: theme.backgroundSelected }]} />
-        )}
-      </View>
-    </View>
+    <SeedIcon
+      name={active ? spec.icon.on : spec.icon.off}
+      size={Layout.iconRow}
+      color={active ? theme.text : theme.textAssistive}
+    />
   );
 }
 
-/* 강조 탭의 원 지름. spec/tokens.json `tabBar.emphasized.size`. */
-const EMPHASIZED_SIZE = Layout.tabEmphasized;
-/*
- * 원 48 + 간격 3 + 라벨 16 = 67은 탭 바가 내주는 63(72 − 위 패딩 9)보다 크다.
- * 넘치는 만큼만 끌어올려 원이 바 위쪽으로 살짝 솟게 한다 — 아래로 넘쳐 잘리는
- * 것을 막고, 강조 탭이 한 단 올라선 모양도 같이 얻는다. 토큰이 바뀌면 이 값도
- * 따라 바뀌게 계산해 둔다(바가 넉넉해지면 0이 되어 솟지 않는다).
- */
-const EMPHASIZED_LIFT = Math.max(
-  0,
-  EMPHASIZED_SIZE + Layout.tabItemGap + LineHeight.tab - (Layout.tabBar - Layout.tabBarPaddingTop)
-);
-
 const styles = StyleSheet.create({
+  /* «flex · align center · pad 0 8 0 8 · border 1». */
   bar: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingTop: Layout.tabBarPaddingTop,
-    // tokens.json elevation.tabBarTop: inset 0 1px 0 #EAEBEE — RN에서는 borderTop 1(SPEC §14).
-    borderTopWidth: 1,
+    alignItems: 'center',
+    paddingHorizontal: Layout.tabBarPaddingX,
+    borderTopWidth: Border.hairline,
   },
+  /* «flex/column · gap 4 · justify center · align center · pad 8 0 8 0». */
   item: {
     flex: 1,
-    minHeight: Layout.tabItemMinHeight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Layout.tabItemGap,
+    paddingVertical: Spacing.two,
+  },
+  /* Pick 항목은 위아래 패딩이 없다(«a 83×67» — 원 48 + 4 + 15). */
+  itemPick: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     gap: Layout.tabItemGap,
   },
-  iconWrap: {
-    width: Layout.iconTab,
-    height: Layout.iconTab,
+  /* «div 48×48 · r9999». */
+  pickCircle: {
+    width: Layout.tabEmphasized,
+    height: Layout.tabEmphasized,
+    borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  /* 원 안의 아이콘 자리. 점 배지가 이 사각의 모서리에 붙는다. */
-  emphasizedIcon: {
-    width: Layout.tabEmphasizedIcon,
-    height: Layout.tabEmphasizedIcon,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  /* 켜고 끌 때 원은 그대로 있고 면 색만 바뀐다 — 자리가 들썩이지 않는다. */
-  emphasizedWrap: {
-    width: EMPHASIZED_SIZE,
-    height: EMPHASIZED_SIZE,
-    borderRadius: EMPHASIZED_SIZE / 2,
-    marginTop: -EMPHASIZED_LIFT,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emphasizedOn: {
+  /* 켜진 원의 그림자 — 피그마 `shadow-lg shadow-primary/30`. 얕은 카드 그림자와 다른 값이다. */
+  pickCircleOn: {
     shadowOpacity: 0.3,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
   },
-  dot: {
-    position: 'absolute',
-    top: Layout.tabPickDotOffset,
-    right: Layout.tabPickDotOffset,
-    width: Layout.tabPickDot,
-    height: Layout.tabPickDot,
-    borderRadius: Layout.tabPickDot / 2,
-    borderWidth: Layout.tabPickDotBorder,
-  },
   label: { textAlign: 'center' },
+  /* «"Pick" … ls 0.25px». */
+  labelPick: { letterSpacing: LetterSpacing.p025 },
 });

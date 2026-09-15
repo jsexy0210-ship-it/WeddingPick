@@ -724,7 +724,7 @@ export const Layout = {
   /** 탭 항목 최소 높이. tabBar.itemMinHeight. */
   tabItemMinHeight: 52,
   /** 탭 아이콘과 라벨 사이. tabBar.itemGap. */
-  tabItemGap: 3,
+  tabItemGap: 4,
   /** Pick 탭 점 배지 지름·테두리·위치. tabBar.pickDot. */
   tabPickDot: 7,
   tabPickDotBorder: 1.5,
@@ -836,6 +836,21 @@ export const Layout = {
   /** 업체 상세 대표 이미지 288 · 포트폴리오 띠 정사각 144 — size.heroVendor · thumbPortfolio(피그마 `VendorFlows.tsx` `h-72` · `h-36 w-36`). */
   heroVendor: 288,
   thumbPortfolio: 144,
+  /*
+   * 홈 규격서 docs/figma-spec/home.txt(2026-09-15). 히어로 장식 원 «div 144×144 … r9999» ·
+   * «div 112×112 … border 14» · 더보기 «button 24×24» · 아바타 «span 16×16 "지" 7/700» · 추천 카드
+   * «div 208×262» «img 206×144» · 하트 «button 32×32» · 웨딩피드 «img 80×80 r18» · 탭 바 «pad 0 8».
+   */
+  heroDecorLarge: 144,
+  heroDecorSmall: 112,
+  heroDecorBorder: 14,
+  heroMore: 24,
+  avatarMini: 16,
+  cardRecommendWidth: 208,
+  imageRecommendHeight: 144,
+  pickBubble: 32,
+  thumbFeed: 80,
+  tabBarPaddingX: 8,
   /** 행 안 아이콘. size.iconRow. */
   iconRow: 20,
   /** 행 끝 chevron 한 변. size.iconInline. */

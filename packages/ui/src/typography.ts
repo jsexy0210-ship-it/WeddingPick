@@ -72,6 +72,8 @@ export const FontSize = {
    * LineHeight.lh19로 옮긴다. 8단계 스케일(t1~t7)과 겹치는 값도 따로 두는 이유는 줄높이가
    * 다르기 때문이다(피그마는 Tailwind 기본 줄높이). 출처는 spec/tokens.json `typography.figma`.
    */
+  f7: 7,
+  f9: 9,
   f10: 10,
   f11: 11,
   f12: 12,
@@ -143,6 +145,8 @@ export const LineHeight = {
   /** 18px 확인 카드 제목(`18/25`). */
   adminConfirmTitle: 25,
   /* 피그마 규격서의 줄높이. 이름이 곧 값이다 — 규격서 «lh 19»는 lh19. */
+  lh11: 11,
+  lh14: 14,
   lh15: 15,
   lh16: 16,
   lh17: 17,

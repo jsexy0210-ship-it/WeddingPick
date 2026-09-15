@@ -54,6 +54,8 @@ export type ThemedTextProps = TextProps & {
     | 'small'
     | 'smallBold'
     /* 피그마 규격서 크기 — 이름이 곧 값. 굵기는 style로, 줄높이가 다르면 LineHeight.lhNN으로 덮는다. */
+    | 'f7'
+    | 'f9'
     | 'f10'
     | 'f11'
     | 'f12'
@@ -133,6 +135,8 @@ const STYLE_FOR: Record<TextType, keyof typeof styles> = {
   // 목록 항목명·강조 값. smallBold가 실제로 쓰이던 자리가 t5다.
   smallBold: 't5',
 
+  f7: 'f7',
+  f9: 'f9',
   f10: 'f10',
   f11: 'f11',
   f12: 'f12',
@@ -177,6 +181,8 @@ const ANDROID_LETTER_SPACING_EM: Record<keyof typeof styles, number> = {
   code: 0,
   numeric: 0,
   /* 피그마 규격서 크기는 자간을 줄마다 따로 적는다(«ls -0.4px») — 기본 0, 자리에서 style로 준다. */
+  f7: 0,
+  f9: 0,
   f10: 0,
   f11: 0,
   f12: 0,
@@ -248,6 +254,9 @@ const styles = StyleSheet.create({
    * 피그마 규격서 크기. 줄높이는 Tailwind 기본(규격서에 가장 많이 적힌 값)이고, 자리마다
    * 다르면 LineHeight.lhNN으로 덮는다. 굵기는 기본 400 — 규격서의 500 · 600 · 700을 style로 준다.
    */
+  /* 7 · 9는 홈 히어로에만 있다(home.txt 아바타 «7/700 · lh 11» · «두근두근» «9/400 · lh 14»). */
+  f7: { fontSize: FontSize.f7, lineHeight: LineHeight.lh11, fontWeight: 400 },
+  f9: { fontSize: FontSize.f9, lineHeight: LineHeight.lh14, fontWeight: 400 },
   f10: { fontSize: FontSize.f10, lineHeight: LineHeight.lh15, fontWeight: 400 },
   f11: { fontSize: FontSize.f11, lineHeight: LineHeight.lh17, fontWeight: 400 },
   f12: { fontSize: FontSize.f12, lineHeight: LineHeight.lh16, fontWeight: 400 },

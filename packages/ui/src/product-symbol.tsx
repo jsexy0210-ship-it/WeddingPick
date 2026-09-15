@@ -8,7 +8,7 @@ import { Colors } from './theme';
  * 한때 `pickMark`가 여기 사본으로 있었는데 획 두께가 1.8로 확정본(1.9)과 달라
  * 탭 바만 다른 마크를 쓰고 있었다.
  */
-export type ProductSymbolName = 'house' | 'magnifier' | 'twoPeople' | 'calendar' | 'person' | 'hall' | 'sdm' | 'snap' | 'planner' | 'warning' | 'bell' | 'gear' | 'more' | 'chevronRight' | 'chevronLeft' | 'chevronDown' | 'arrowLeft' | 'pin' | 'link' | 'chart' | 'checkCircle' | 'edit' | 'trash' | 'mic' | 'file' | 'lock' | 'info' | 'headset' | 'signout' | 'gift' | 'close' | 'check';
+export type ProductSymbolName = 'house' | 'magnifier' | 'twoPeople' | 'calendar' | 'person' | 'hall' | 'sdm' | 'snap' | 'planner' | 'warning' | 'bell' | 'gear' | 'more' | 'chevronRight' | 'chevronLeft' | 'chevronDown' | 'arrowLeft' | 'pin' | 'link' | 'chart' | 'checkCircle' | 'edit' | 'trash' | 'mic' | 'file' | 'lock' | 'info' | 'headset' | 'signout' | 'gift' | 'clock' | 'close' | 'check';
 
 /**
  * 획 두께. 헤더·탭 아이콘(24)은 1.8, chevron(18)은 2, 닫기(14)는 2.4 — 05-root ·
@@ -58,7 +58,9 @@ export function ProductSymbol({ name, size = 24, color = Colors.light.text }: { 
       {name === 'info' && <><Circle {...common} cx="12" cy="12" r="9" /><Path {...common} d="M12 11v5.5M12 7.8v.2" /></>}
       {name === 'headset' && <><Path {...common} d="M4.5 14v-2.5a7.5 7.5 0 0 1 15 0V14" /><Rect {...common} x="3.5" y="13" width="4" height="6" rx="1.5" /><Rect {...common} x="16.5" y="13" width="4" height="6" rx="1.5" /><Path {...common} d="M18.5 19a3 3 0 0 1-3 3H12" /></>}
       {name === 'signout' && <><Path {...common} d="M10 4H5.5A1.5 1.5 0 0 0 4 5.5v13A1.5 1.5 0 0 0 5.5 20H10" /><Path {...common} d="M15 8l4.5 4-4.5 4M19.5 12H9" /></>}
-      {name === 'gift' && <><Rect {...common} x="3.5" y="9" width="17" height="4" rx="1" /><Path {...common} d="M5 13v7h14v-7M12 9v11M12 9c-2-4-6-4-6-1.5S10 9 12 9c2-4 6-4 6-1.5S14 9 12 9" /></>}
+      {/* 홈 준비 현황의 «후보 저장됨» 시계 — 피그마 `Home.tsx` SEED IconClockRegular 자리. */}
+      {name === 'clock' && <><Circle {...common} cx="12" cy="12" r="9" /><Path {...common} d="M12 7v5l3.2 2" /></>}
+      {name === 'gift' &&<><Rect {...common} x="3.5" y="9" width="17" height="4" rx="1" /><Path {...common} d="M5 13v7h14v-7M12 9v11M12 9c-2-4-6-4-6-1.5S10 9 12 9c2-4 6-4 6-1.5S14 9 12 9" /></>}
       {/* 위치 핀 — 검색 결과 카드의 지역 앞(피그마 `Search.tsx` lucide MapPin). */}
       {name === 'pin' && <><Path {...common} d="M12 21.4s-6.4-5.6-6.4-10.6a6.4 6.4 0 0 1 12.8 0c0 5-6.4 10.6-6.4 10.6z" /><Circle {...common} cx="12" cy="10.8" r="2.4" /></>}
       {name === 'close' && <Path {...common} d="M6 6l12 12M18 6 6 18" />}

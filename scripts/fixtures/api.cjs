@@ -202,7 +202,7 @@ const routes = {
     notifications: null,
     popularVendors: VENDORS.slice(0, 2),
     candidates: null,
-    recommendations: [],
+    recommendations: VENDORS.slice(0, 3),
   },
   'GET /v1/vendors/regions': {
     regions: [
