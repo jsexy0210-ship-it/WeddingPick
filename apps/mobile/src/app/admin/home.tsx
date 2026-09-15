@@ -17,8 +17,14 @@
  * 뼈대와 규칙은 `_ui.tsx`가 든다(배너 · 빈 상태 · tabular-nums · 카드 안 표 스크롤).
  * 숫자는 전부 `GET /v1/admin/dashboard`가 실제 큐에서 세어 보내고, 서버는 `tone` ·
  * `mode` 같은 뜻만 보낸다 — 색은 여기서 토큰으로 고른다.
+ *
+ * **2026-09-15 대표 확정 — 「대시보드」 화면의 탭 둘 중 하나(요약)다.** 「일일
+ * 브리핑」(옛 `/admin/briefing`)과 묶였다 — 처음엔 위아래로 붙였는데, 대표님이
+ * 「비슷한 유형끼리 탭으로 묶어도 된다」고 넓히시면서 다른 묶음과 같은 탭 모양으로
+ * 맞췄다. 이 파일 맨 아래 `HomeShell`이 그 껍데기고, 여기 있던 본문은
+ * `HomePanel`로 이름만 바꿨다.
  */
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -26,7 +32,9 @@ import { AdminSpacing as A, Colors, FontSize, LineHeight, Radius } from '@weddin
 import { formatCount } from '@weddingpick/domain';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { BriefingPanel } from './briefing';
 import {
+  AdminTabShell,
   Bars,
   Card,
   CardGrid,
@@ -37,6 +45,7 @@ import {
   Page,
   Rows,
   StatusBanner,
+  type AdminTabDef,
   type BarItem,
   type Col,
   type Kind,
@@ -187,7 +196,7 @@ function bucketLabel(iso: string, bucket: MemberBucket): string {
   return parts({ month: 'numeric', day: 'numeric' });
 }
 
-export default function AdminHomeScreen() {
+function HomePanel() {
   const router = useRouter();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -348,7 +357,8 @@ export default function AdminHomeScreen() {
 
   return (
     <Page
-      title="대시보드"
+      embedded
+      title="요약"
       sub="회원 추이 · 지금 봐야 할 것 · 처리 현황"
       action={{ label: '새로 고침', onPress: reload }}
     >
@@ -471,6 +481,24 @@ export default function AdminHomeScreen() {
         </>
       ) : null}
     </Page>
+  );
+}
+
+const TABS: AdminTabDef[] = [
+  { key: 'home', label: '요약' },
+  { key: 'briefing', label: '일일 브리핑' },
+];
+
+/** 「대시보드」 — 요약과 일일 브리핑을 탭 둘로 묶는다(2026-09-15 대표 확정, 탭 재편). */
+export default function HomeShell() {
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
+  const initial = TABS.some((t) => t.key === tab) ? (tab as string) : 'home';
+  const [active, setActive] = useState(initial);
+
+  return (
+    <AdminTabShell tabs={TABS} active={active} onChange={setActive}>
+      {active === 'home' ? <HomePanel /> : <BriefingPanel />}
+    </AdminTabShell>
   );
 }
 

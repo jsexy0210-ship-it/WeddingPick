@@ -3,7 +3,7 @@ import '@weddingpick/ui/tokens.css';
 // 브라우저가 입력칸에 얹는 자기 규칙(자동완성 배경 등) 보정. 네이티브에서는 무시된다.
 import '@/global.css';
 
-import { DefaultTheme, Stack, ThemeProvider, router } from 'expo-router';
+import { DefaultTheme, Stack, ThemeProvider, router, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Platform } from 'react-native';
@@ -168,6 +168,31 @@ function RootLayoutContent() {
     }),
     [theme]
   );
+  const pathname = usePathname();
+
+  useEffect(() => {
+    /*
+     * 화면을 넘길 때마다(push · replace) 방금 있던 화면의 `View`가
+     * `aria-hidden="true"`로 감춰진다 — expo-router가 포크해 쓰는 Stack의
+     * `CardA11yWrapper`가 `focused`가 아닌 카드에 무조건 그렇게 건다
+     * (`node_modules/expo-router/build/react-navigation/stack/views/Stack/CardA11yWrapper.js`).
+     * 그런데 화면을 넘긴 단추(Pressable)는 그 순간까지도 DOM 포커스를 쥐고 있다 —
+     * `aria-hidden`이 걸린 조상 안에 포커스가 그대로 남은 상태가 되고, Chrome이
+     * 「Blocked aria-hidden on an element because its descendant retained focus」를
+     * 찍는다. `/pick` · `/pick/done` · `/search` · `/wedding/<id>/events/new` ·
+     * `/my/reports` 등 여러 화면에서 났던 이유가 이것이다 — 화면 하나의 문제가
+     * 아니라 모든 push·replace가 지나는 Stack 자체의 문제다.
+     *
+     * 화면마다 누르는 단추에서 따로 blur하지 않는다 — 어느 화면이 다음에 이걸
+     * 겪을지 알 수 없고, 화면마다 고치면 빠진 화면에서 또 난다. 경로가 바뀔 때마다
+     * (모든 내비게이션이 지나는 단 하나의 자리) 여기서 포커스를 놓는다.
+     */
+    if (Platform.OS !== 'web') return;
+
+    const active = document.activeElement;
+
+    if (active instanceof HTMLElement && active !== document.body) active.blur();
+  }, [pathname]);
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;

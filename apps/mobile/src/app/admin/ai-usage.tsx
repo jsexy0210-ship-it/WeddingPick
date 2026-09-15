@@ -1,3 +1,4 @@
+import { Redirect } from 'expo-router';
 /**
  * WP-ADM-050 시스템 · AI 사용량 · 비용
  * 모델별 호출 · 단가 · 성공률 · 상위 모델 전환율 · 사용자 수정률 · 처리시간
@@ -29,7 +30,7 @@ type AiUsageData = {
   models: ModelStat[];
 };
 
-export default function AiUsageScreen() {
+export function AiUsagePanel() {
   const [data, setData] = useState<AiUsageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -166,3 +167,11 @@ const styles = StyleSheet.create({
   colCost: { width: 72, textAlign: 'right' as const },
   colUnit: { width: 64, textAlign: 'right' as const },
 });
+
+/**
+ * 옛 주소는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제 화면은 `/admin/stats`(통계·수익)의 분석 비용 탭에 있다 —
+ * `AiUsagePanel`이 이 파일의 본체다.
+ */
+export default function AiUsageRedirect() {
+  return <Redirect href="/admin/stats?tab=ai-usage" />;
+}

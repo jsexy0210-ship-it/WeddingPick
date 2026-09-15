@@ -1,3 +1,4 @@
+import { Redirect } from 'expo-router';
 /**
  * WP-ADM-042 변경 복구 관리
  *
@@ -91,7 +92,7 @@ function revertable(item: RollbackItem) {
   return item.autoRollbackEnabled && !item.requiresApproval;
 }
 
-export default function RollbackScreen() {
+export function RollbackPanel() {
   const [data, setData] = useState<RollbackData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -174,7 +175,7 @@ export default function RollbackScreen() {
   }));
 
   return (
-    <Page title="변경 복구 관리" sub={`되돌릴 수 있는 자동 결정 · ${RETENTION_DAYS}일 보관`}>
+    <Page embedded title="변경 복구 관리" sub={`되돌릴 수 있는 자동 결정 · ${RETENTION_DAYS}일 보관`}>
       <DelayedLoader active={loading} size={40} />
       {!loading && error ? <LoadError message={error} onRetry={reload} /> : null}
 
@@ -249,4 +250,12 @@ export default function RollbackScreen() {
       ) : null}
     </Page>
   );
+}
+
+/**
+ * 옛 주소는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제 화면은 `/admin/automation`(자동화)의 변경 복구 탭에 있다 —
+ * `RollbackPanel`이 이 파일의 본체다.
+ */
+export default function RollbackRedirect() {
+  return <Redirect href="/admin/automation?tab=rollback" />;
 }

@@ -5,7 +5,15 @@
  * 관리자 공통 규칙). 삭제는 되돌릴 수 없어 `ConfirmCard`로 무엇이 바뀌는지 보여준 뒤
  * 진행한다. 자동 수집은 아직 붙지 않았다(PR 본문 참고) — 지금은 수동 등록 + 검수
  * 경로다.
+ *
+ * **2026-09-15 MASTER 지시 — 「업체·행사」 화면의 탭 하나(박람회 관리)로 자리를
+ * 정했다.** 업체·행사가 이미 업체 · 시설을 다루던 묶음이고, 박람회도 결국 업체가
+ * 참가하는 행사라 성격이 같은 묶음이다 — 새 사이드바 묶음을 신설하는 것은 32개를
+ * 9개로 줄이는 방향과 반대다. `vendors.tsx`의 `TABS` 끝에 추가했다. 이 파일 맨
+ * 아래 `ExposRedirect`가 옛 주소(`/admin/expos`)를 `/admin/vendors?tab=expos`로
+ * 보내고, 본문은 `ExposPanel`로 이름만 바꿨다.
  */
+import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -203,7 +211,7 @@ function toBody(f: FormState) {
   };
 }
 
-export default function ExposScreen() {
+export function ExposPanel() {
   const [expos, setExpos] = useState<ExpoAdmin[] | null>(null);
   const [preview, setPreview] = useState<ExpoDue[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -348,6 +356,7 @@ export default function ExposScreen() {
 
   return (
     <Page
+      embedded
       title="박람회 관리"
       sub="수집 · 검수 · 종료 자동 삭제"
       action={{ label: '박람회 등록', onPress: openCreate, kind: 'brand' }}
@@ -514,6 +523,11 @@ export default function ExposScreen() {
       </Modal>
     </Page>
   );
+}
+
+/** 옛 주소 — 「업체·행사」의 박람회 관리 탭으로 보낸다. */
+export default function ExposRedirect() {
+  return <Redirect href="/admin/vendors?tab=expos" />;
 }
 
 function Field({

@@ -1,3 +1,4 @@
+import { Redirect } from 'expo-router';
 /**
  * WP-ADM-036 약관 · 방침 관리
  * 조문 단위 편집, 저장하면 새 버전. 공개는 별도 단추
@@ -62,7 +63,7 @@ const DOC_LABEL: Record<DocType, string> = {
   marketing: '마케팅 정보 수신 동의',
 };
 
-export default function TermsScreen() {
+export function TermsPanel() {
   const [data, setData] = useState<TermsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -413,3 +414,11 @@ const styles = StyleSheet.create({
   saveBtnText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   btnDisabled: { opacity: 0.5 },
 });
+
+/**
+ * 옛 주소는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제 화면은 `/admin/faq`(사이트·기록)의 약관·방침 탭에 있다 —
+ * `TermsPanel`이 이 파일의 본체다.
+ */
+export default function TermsRedirect() {
+  return <Redirect href="/admin/faq?tab=terms" />;
+}

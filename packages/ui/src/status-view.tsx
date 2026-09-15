@@ -3,9 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { error as errorCopy } from '../../../spec/strings.ko.json';
 
 import { ActionButton } from './action-button';
-import { CategoryCycleLoader } from './category-cycle-loader';
 import { CircleLoader } from './circle-loader';
-import type { CategoryIconKind } from './category-icon';
 import { ListSkeleton } from './list-skeleton';
 import { StepList, type Step } from './step-list';
 import { ThemedText } from './themed-text';
@@ -75,18 +73,11 @@ export type LoadingViewProps = {
   title?: string;
   /** @deprecated `title`. */
   label?: string;
-  /** 온보딩 결정 완료 업종 — 순회에서 뺀다. `loader="cycle"`일 때만 쓴다. */
-  exclude?: readonly CategoryIconKind[];
-  /**
-   * 어느 로더를 돌릴 것인가. 기본은 써클이다.
-   *
-   * `circle`  Depth·페이지 이동 — 폼·상세 하나를 읽어오는 보통의 자리
-   * `cycle`   첫 실행·재시작·추천 계산처럼 오래 붙잡는 자리
-   *
-   * 가르는 기준은 `apps/mobile/src/features/loading/delayed-loader.tsx`의 `LoaderWait`에
-   * 적혀 있다 — 화면은 그쪽 `DelayedLoadingView`를 쓰고 이 prop을 직접 만지지 않는다.
+  /*
+   * **`exclude`와 `loader`를 없앴다**(2026-09-15 대표 지시 — 「기본로더만 사용할것」).
+   * 둘 다 업종 순회 로더 전용이었다 — 로더가 하나가 되면서 고를 것도, 순회에서
+   * 뺄 업종도 없어졌다.
    */
-  loader?: 'circle' | 'cycle';
 };
 
 /**
@@ -94,20 +85,17 @@ export type LoadingViewProps = {
  * 자리. **목록에는 쓰지 않는다** — 목록은 `SkeletonView`다(핸드오프 규칙 «목록에는
  * 로더를 쓰지 않아요»). 700ms 규칙은 호출하는 화면이 `useDelayedVisible`로 지킨다.
  *
- * 2026-09-11 대표 지시로 **기본이 써클**이다. 업종 순회는 `loader="cycle"`을 넘긴
- * 자리에만 남는다.
+ * **로더는 원형 하나뿐이다**(2026-09-15 대표 지시 — 「모든 화면 로딩 발생 시
+ * 기본로더로 돌려라. **기존 정책 파기** 기본로더만 사용할것」). 2026-09-11의
+ * 「기본은 써클, 순회는 `loader="cycle"`」에서 예외가 없어졌다.
  */
-export function LoadingView({ title, label, exclude, loader = 'circle' }: LoadingViewProps) {
+export function LoadingView({ title, label }: LoadingViewProps) {
   const text = title ?? label;
 
   return (
     <StatusFrame>
       <View style={styles.centerRow}>
-        {loader === 'cycle' ? (
-          <CategoryCycleLoader size={40} exclude={exclude} />
-        ) : (
-          <CircleLoader size={40} />
-        )}
+        <CircleLoader size={40} />
       </View>
       {text ? (
         <ThemedText type="t6" themeColor="textSecondary" style={styles.centered}>
@@ -147,8 +135,6 @@ export type RecommendingBodyProps = {
   title?: string;
   /** 예상 소요 시간. 반드시 적는다. */
   estimatedLabel?: string;
-  /** 온보딩 3/5에서 결정 완료로 고른 업종. 순회에서 뺀다 — 이미 정한 곳을 다시 찾는 척하지 않는다. */
-  exclude?: readonly CategoryIconKind[];
   /**
    * 단계 목록. 끝난 단계는 체크, 진행 중은 코랄, 남은 단계는 회색. **실제 진행
    * 상태를 넘긴다** — 타이머로 굴리는 가짜 진행률을 만들지 않는다.
@@ -171,12 +157,11 @@ export function RecommendingBody({
   nickname,
   title,
   estimatedLabel = '10초 안에 끝나요',
-  exclude,
   steps,
 }: RecommendingBodyProps) {
   return (
     <View style={styles.processing} accessibilityLabel={estimatedLabel}>
-      <CategoryCycleLoader size={40} exclude={exclude} />
+      <CircleLoader size={40} />
       <View style={styles.processingText}>
         <ThemedText type="t3" style={styles.centered}>
           {title ?? recommendingTitle(nickname)}
@@ -191,7 +176,10 @@ export function RecommendingBody({
 }
 
 /**
- * WP-ST-015 업종 순회 로딩 — 화면 전체. 추천 계산 · 첫 진입에만 쓴다.
+ * WP-ST-015 추천 계산 로딩 — 화면 전체. 추천 계산 · 첫 진입에만 쓴다.
+ *
+ * 로더는 원형이다(2026-09-15 대표 지시). 이 화면이 «오래 걸린다»를 말하는 것은
+ * 로더 모양이 아니라 제목과 「10초 안에 끝나요」가 맡는다.
  */
 export function RecommendingView(props: RecommendingViewProps) {
   return (
@@ -354,7 +342,7 @@ export function ProcessingView({
   return (
     <StatusFrame>
       <View style={styles.processing}>
-        <CategoryCycleLoader size={40} />
+        <CircleLoader size={40} />
         <View style={styles.processingText}>
           <ThemedText type="t3" style={styles.centered}>
             {title}

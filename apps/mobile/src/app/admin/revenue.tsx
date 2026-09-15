@@ -1,3 +1,4 @@
+import { Redirect } from 'expo-router';
 /**
  * WP-ADM-032 수익 현황
  *
@@ -69,7 +70,7 @@ function isRevenueData(d: unknown): d is RevenueData {
 
 const SHAPE_ERROR = '서버가 이 화면이 읽는 모양으로 답하지 않았어요. 서버의 수익 집계를 확인해주세요.';
 
-export default function RevenueScreen() {
+export function RevenuePanel() {
   const [data, setData] = useState<RevenueData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -120,6 +121,7 @@ export default function RevenueScreen() {
 
   return (
     <Page
+      embedded
       title="수익 현황"
       sub={data?.period}
       action={{ label: '새로 고침', onPress: reload }}
@@ -200,4 +202,12 @@ export default function RevenueScreen() {
       ) : null}
     </Page>
   );
+}
+
+/**
+ * 옛 주소는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제 화면은 `/admin/stats`(통계·수익)의 수익 현황 탭에 있다 —
+ * `RevenuePanel`이 이 파일의 본체다.
+ */
+export default function RevenueRedirect() {
+  return <Redirect href="/admin/stats?tab=revenue" />;
 }
