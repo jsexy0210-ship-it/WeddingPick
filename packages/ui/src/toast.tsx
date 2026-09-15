@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Animated, Easing, StyleSheet } from 'react-native';
 
-import { Layout, Radius, Spacing } from './theme';
+import { Layout, Radius, Spacing, USE_NATIVE_DRIVER } from './theme';
 import { FontSize, LineHeight } from './typography';
 import { useTheme } from './use-theme';
 
@@ -41,14 +41,14 @@ export function Toast({ message, onHidden }: ToastProps) {
         toValue: 1,
         duration: 175,
         easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.delay(TOAST_MS),
       Animated.timing(opacity, {
         toValue: 0,
         duration: 175,
         easing: Easing.in(Easing.quad),
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ]);
 
