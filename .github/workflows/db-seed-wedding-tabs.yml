@@ -1,0 +1,69 @@
+# 웨딩노트(캘린더 · 상담기록 · 예산현황) · Pick · 박람회 **검수용 샘플**을 넣거나 걷어낸다.
+# 2026-09-15 대표 지시 「웨딩노트 3개탭 / 라운지 3개탭 / Pick / 샘플 데이터 넣어놔라」 ·
+# 「샘플 데이터 넣는다」.
+#
+# 이 시드가 안전한 이유를 적어 둔다(apps/api/src/seed-wedding-tabs.ts 머리말과 같다).
+#
+#   * **이미 있는 웨딩에만 채운다** — 새 계정 · 새 웨딩을 만들지 않는다.
+#   * **이미 있는 업체에서만 Pick 후보를 고른다** — 업체를 지어내지 않는다.
+#   * **제목에 `[샘플] `을 붙인다** — 사람이 화면에서 보고 안다.
+#   * **되돌릴 수 있다** — `mode: remove`가 그 표시만 따라 지운다.
+#   * **두 번 돌려도 늘어나지 않는다** — 이미 채운 웨딩은 건너뛴다.
+#
+# 그래서 `db-seed-samples.yml`의 「운영 DB에는 remove만」 금지가 여기엔 걸리지 않는다.
+# 저쪽이 막는 것은 **지어낸 업체를 운영에 넣는 것**이고, 여기는 업체를 만들지 않는다.
+name: DB 웨딩노트·Pick 샘플
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'seed = 넣는다 / remove = 걷어낸다'
+        type: choice
+        default: seed
+        options: [seed, remove]
+      target:
+        description: '어느 DB에서'
+        type: choice
+        default: default
+        options: [default, staging]
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: 샘플 시드
+        env:
+          DEFAULT_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          STORAGE_DRIVER: local
+          MODE: ${{ github.event.inputs.mode }}
+          TARGET: ${{ github.event.inputs.target }}
+        run: |
+          case "${TARGET:-default}" in
+            staging) export DATABASE_URL="$STAGING_DATABASE_URL" ;;
+            *)       export DATABASE_URL="$DEFAULT_DATABASE_URL" ;;
+          esac
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::${TARGET:-default} 대상의 접속 정보가 GitHub Secrets에 없다."
+            exit 1
+          fi
+          echo "대상: ${TARGET:-default} · 모드: ${MODE:-seed}"
+          if [ "$MODE" = "remove" ]; then
+            npm run seed:wedding-tabs --workspace @weddingpick/api -- --remove --yes
+          else
+            npm run seed:wedding-tabs --workspace @weddingpick/api -- --yes
+          fi

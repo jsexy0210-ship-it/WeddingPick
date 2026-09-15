@@ -383,7 +383,11 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
    */
   app.get('/v1/vendors/regions', auth, async () => {
     const { rows } = await context.pool.query<{ name: string; vendor_count: string }>(
-      `SELECT split_part(region, ' ', 1) AS name, count(*) AS vendor_count
+      // regexp_replace의 꼬리 패턴은 packages/domain/src/wedding-region.ts의
+      // REGION_SUFFIX_PATTERN과 같은 값이다 — 한쪽만 고치면 「경기」와 「경기도」가
+      // 필터에 나란히 뜬다(2026-09-10 사용자 보고).
+      `SELECT regexp_replace(split_part(region, ' ', 1), '(특별자치시|특별자치도|특별시|광역시|도)$', '') AS name,
+              count(*) AS vendor_count
        FROM structured.vendors
        WHERE region <> ''
          -- 폐업으로 넘긴 업체는 세지 않는다. 세면 눌러도 아무것도 안 나오는 필터가 생긴다.

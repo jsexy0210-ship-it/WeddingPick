@@ -16,7 +16,7 @@ import {
 import { Colors, FontSize, Spacing } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
-import { comma } from '@weddingpick/domain';
+import { formatCount } from '@weddingpick/domain';
 
 type VendorStatus = 'active' | 'closed' | 'suspended' | 'merged';
 type HistoryItem = { at: string; action: string; note: string };
@@ -216,7 +216,7 @@ export default function VendorsScreen() {
               value={search}
               onChangeText={setSearch}
             />
-            <Text style={styles.totalText}>총 {comma(data.total)}개</Text>
+            <Text style={styles.totalText}>총 {formatCount(data.total)}개</Text>
           </View>
           <ScrollView>
             <View style={styles.tableHead}>
@@ -341,10 +341,10 @@ export default function VendorsScreen() {
             {mergePreview?.counts.map((c) => (
               <View key={c.label} style={styles.mergeRow}>
                 <Text style={styles.mergeRowLabel}>{c.label}</Text>
-                <Text style={styles.mergeRowValue}>{c.moves}건</Text>
+                <Text style={styles.mergeRowValue}>{formatCount(c.moves)}건</Text>
                 {c.blocked > 0 && (
                   // 겹쳐서 옮기지 못하는 것도 적는다. 감추면 「전부 옮겨 갔다」로 읽힌다.
-                  <Text style={styles.mergeRowBlocked}>겹침 {c.blocked}건</Text>
+                  <Text style={styles.mergeRowBlocked}>겹침 {formatCount(c.blocked)}건</Text>
                 )}
               </View>
             ))}

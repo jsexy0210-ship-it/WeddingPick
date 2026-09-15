@@ -9,7 +9,7 @@ import { Colors, FontSize, Layout, Spacing } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { formatMonthDayDot } from '@/features/common/format-date';
-import { comma } from '@weddingpick/domain';
+import { formatCount } from '@weddingpick/domain';
 
 type AdStatus = 'active' | 'paused' | 'expired' | 'pending';
 type AdItem = {
@@ -144,7 +144,7 @@ export default function AdsScreen() {
               <Text style={[styles.td, styles.colStatus, { color: STATUS_COLOR[item.status] }]}>
                 {STATUS_LABEL[item.status]}
               </Text>
-              <Text style={[styles.td, styles.colImp]}>{comma(item.impressions)}</Text>
+              <Text style={[styles.td, styles.colImp]}>{formatCount(item.impressions)}</Text>
               <Text style={[styles.td, styles.colCtr]}>{(item.ctr * 100).toFixed(2)}%</Text>
               <Text style={[styles.td, styles.colConv]}>{(item.conversionRate * 100).toFixed(1)}%</Text>
               <Text style={[styles.td, styles.colFee]}>{item.monthlyFee}</Text>

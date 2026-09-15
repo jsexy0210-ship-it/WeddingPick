@@ -24,7 +24,7 @@ import {
   type Kind,
   type TableRow,
 } from './_ui';
-import { comma } from '@weddingpick/domain';
+import { formatCount } from '@weddingpick/domain';
 
 type WorkflowStatus = 'healthy' | 'degraded' | 'down' | 'recovering';
 type Workflow = {
@@ -130,10 +130,10 @@ export default function AutomationScreen() {
     key: w.id,
     cells: [
       { v: w.name, bold: true, kind: 'none' },
-      { v: `${comma(w.execToday)}회` },
+      { v: `${formatCount(w.execToday)}회` },
       { v: `${(w.successRate * 100).toFixed(1)}%`, kind: w.successRate < 0.9 ? 'bad' : 'none' },
-      { v: `${w.retryCount}회`, kind: w.retryCount > 0 ? 'warn' : 'dim' },
-      { v: `${w.dlqSize}건`, kind: w.dlqSize > 0 ? 'bad' : 'dim' },
+      { v: `${formatCount(w.retryCount)}회`, kind: w.retryCount > 0 ? 'warn' : 'dim' },
+      { v: `${formatCount(w.dlqSize)}건`, kind: w.dlqSize > 0 ? 'bad' : 'dim' },
       {
         v: w.lastRecoveredAt
           ? `${w.lastRecoveredAt.slice(0, 10)}${w.selfHealEnabled ? ' · 자동복구 켜짐' : ' · 자동복구 꺼짐'}`
@@ -161,7 +161,7 @@ export default function AutomationScreen() {
       title="처리 상태"
       sub={
         workflows.length > 0
-          ? `주기 작업 ${workflows.length}개 · 마지막 실행과 결과`
+          ? `주기 작업 ${formatCount(workflows.length)}개 · 마지막 실행과 결과`
           : '주기 작업 · 마지막 실행과 결과'
       }
       action={{ label: '새로 고침', onPress: reload }}
@@ -179,7 +179,7 @@ export default function AutomationScreen() {
                 : workflows.length === 0
                 ? '지켜볼 작업이 아직 없어요'
                 : allWell
-                  ? `${workflows.length}개 작업이 모두 정상이에요`
+                  ? `${formatCount(workflows.length)}개 작업이 모두 정상이에요`
                   : down > 0
                     ? `중단된 작업 ${down}개가 있어요`
                     : `저하된 작업 ${degraded}개가 있어요`
@@ -198,12 +198,12 @@ export default function AutomationScreen() {
 
           <KpiRow
             items={[
-              { label: '정상', value: `${healthy}개`, note: `전체 ${workflows.length}개`, kind: 'ok' },
-              { label: '저하', value: `${degraded}개`, note: degraded === 0 ? '기준 초과 없음' : '확인 필요', kind: degraded === 0 ? 'ok' : 'warn' },
-              { label: '중단', value: `${down}개`, note: down === 0 ? '멈춘 것이 없어요' : '조치 필요', kind: down === 0 ? 'ok' : 'bad' },
+              { label: '정상', value: `${formatCount(healthy)}개`, note: `전체 ${formatCount(workflows.length)}개`, kind: 'ok' },
+              { label: '저하', value: `${formatCount(degraded)}개`, note: degraded === 0 ? '기준 초과 없음' : '확인 필요', kind: degraded === 0 ? 'ok' : 'warn' },
+              { label: '중단', value: `${formatCount(down)}개`, note: down === 0 ? '멈춘 것이 없어요' : '조치 필요', kind: down === 0 ? 'ok' : 'bad' },
               {
                 label: '처리 못한 건',
-                value: `${workflows.reduce((sum, w) => sum + w.dlqSize, 0)}건`,
+                value: `${formatCount(workflows.reduce((sum, w) => sum + w.dlqSize, 0))}건`,
                 note: '재시도까지 실패한 것',
               },
             ]}

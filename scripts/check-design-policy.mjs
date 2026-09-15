@@ -6,13 +6,14 @@
  * 세션 여럿이 「시안대로 맞췄다」고 보고했고 아무도 거짓말을 하지 않았다 — 두 화면을
  * 나란히 놓고 본 적이 없었을 뿐이다. 사람이 매번 세는 것은 언젠가 빠진다. 그래서 센다.
  *
- * 재는 것은 다섯이다.
+ * 재는 것은 여섯이다.
  *
  *   R1      화면 코드에 hex를 직접 적지 않는다. 값은 SEED → spec/tokens.json → theme으로 온다.
  *   R1-아이콘 우리가 만든 선 아이콘(`CategoryIcon`)을 화면에 그리지 않는다. 피그마에 없다.
  *   R2      Pretendard만 쓴다. Noto Sans KR · Playfair Display · DM Mono는 코드에 없어야 한다.
  *   R5      로더 · 토스트 · 얼럿 · 컨펌은 색만 바꾼다 — 그 파일들에 생색이 있으면 안 된다.
- *   숫자    천단위 쉼표. `toLocaleString()`을 로케일 없이 부르지 않는다 — `comma()`를 거친다.
+ *   숫자    천단위 쉼표. `toLocaleString()`을 로케일 없이 부르지 않는다 — `formatCount()`를 거친다.
+ *   로더    원형 하나뿐이다. 폐기된 `CategoryCycleLoader`가 새 자리에 붙는 것을 막는다.
  *
  * **주석은 세지 않는다.** 이것이 이 스크립트의 핵심이다. 단순 grep은 `circle-loader.tsx`를
  * 위반 3건으로 잡는데, 그 셋은 전부 「시안의 #eaebee와 같은 값」이라고 적어 둔 주석이고
@@ -82,6 +83,22 @@ const LINE_ICON_ALLOWED = 'packages/ui/src/category-cycle-loader.tsx';
 const LINE_ICON_RENDER = /<CategoryIcon\b/g;
 
 /**
+ * 로더 — **원형 하나뿐이다.**
+ *
+ * 2026-09-15 대표 지시: 「모든 화면 로딩 발생 시 기본로더로 돌려라. **기존 정책 파기**
+ * 기본로더만 사용할것」. 2026-09-11의 「오래 기다리는 자리에만 업종 아이콘 순회를 쓴다」가
+ * 이 지시로 없어졌다 — **`CategoryCycleLoader`는 폐기다.**
+ *
+ * 로더가 두 종류면 어느 자리가 어느 것인지를 매번 판단해야 하고, 그 판단이 화면마다
+ * 갈렸다. 그래서 하나로 줄인 것이다.
+ *
+ * **지금 남아 있는 것은 baseline으로 얼려 둔다.** 걷어내는 일은 화면을 건드리므로
+ * 감독 세션이 혼자 밀지 않고 MASTER에 넘긴다(장부 7차). 다만 **늘어나면 깨진다** —
+ * 폐기된 것이 새 자리에 또 붙는 것은 막는다.
+ */
+const CYCLE_LOADER_RENDER = /<CategoryCycleLoader\b/g;
+
+/**
  * 숫자 — 천단위 쉼표. 로케일을 빼고 부르면 걸린다.
  *
  * 2026-09-15 대표 지시 「항상 모든 숫자는 천단위 [,] 처리한다」. `toLocaleString()`을
@@ -89,7 +106,7 @@ const LINE_ICON_RENDER = /<CategoryIcon\b/g;
  * 천을 나타내는 쉼표가 소수점으로 읽힌다. 우리 기기에서는 재현되지 않고 오류도 나지
  * 않아서, 사람이 보는 것으로는 절대 안 잡힌다. 그래서 센다.
  *
- * 고치는 법은 `comma()`(`@weddingpick/domain` `korean.ts`)를 거치는 것이다.
+ * 고치는 법은 `formatCount()`(`@weddingpick/domain` `format-number.ts`)를 거치는 것이다.
  */
 const LOCALELESS_NUMBER = /\.toLocaleString\(\s*\)/g;
 
@@ -210,7 +227,7 @@ function lineOf(source, index) {
 }
 
 function collect() {
-  const findings = { r1: [], r2: [], r5: [], icon: [], number: [] };
+  const findings = { r1: [], r2: [], r5: [], icon: [], number: [], cycle: [] };
 
   for (const root of SCREEN_ROOTS) {
     for (const file of walk(join(ROOT, root))) {
@@ -239,6 +256,11 @@ function collect() {
         for (const m of code.matchAll(HEX)) {
           findings.r5.push({ file: rel, line: lineOf(code, m.index), value: m[0] });
         }
+      }
+
+      // 로더 — 폐기된 순회 로더를 그리는가
+      for (const m of code.matchAll(CYCLE_LOADER_RENDER)) {
+        findings.cycle.push({ file: rel, line: lineOf(code, m.index), value: '<CategoryCycleLoader>' });
       }
 
       // R1-아이콘 — 화면이 우리 선 아이콘을 그리는가
@@ -298,6 +320,7 @@ const counts = {
   r5_raw_color_in_guarded: findings.r5.length,
   icon_line_icon_in_screens: findings.icon.length,
   number_localeless_tolocalestring: findings.number.length,
+  loader_deprecated_cycle_loader: findings.cycle.length,
 };
 
 if (process.argv.includes('--update')) {
@@ -328,7 +351,7 @@ try {
 }
 
 let failed = false;
-const show = { r1: findings.r1, r2: findings.r2, r5: findings.r5, icon: findings.icon, number: findings.number };
+const show = { r1: findings.r1, r2: findings.r2, r5: findings.r5, icon: findings.icon, number: findings.number, cycle: findings.cycle };
 
 for (const [key, count] of Object.entries(counts)) {
   const allowed = baseline[key] ?? 0;
@@ -354,4 +377,4 @@ if (failed) {
   process.exit(1);
 }
 
-console.log('\n최상위 정책 규칙 — 자동으로 재는 다섯은 baseline 아래다.');
+console.log('\n최상위 정책 규칙 — 자동으로 재는 여섯은 baseline 아래다.');

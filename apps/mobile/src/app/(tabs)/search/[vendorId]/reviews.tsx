@@ -1,5 +1,5 @@
 import type { ReviewListResponse } from '@weddingpick/api-contract';
-import { TERMS, type ReportReason } from '@weddingpick/domain';
+import { formatCount, TERMS, type ReportReason } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -156,7 +156,7 @@ export default function VendorReviewsScreen() {
                       type="small"
                       themeColor={item.needsAttention ? 'cautionary' : 'textSecondary'}>
                       {item.label}{' '}
-                      {item.collecting ? '수집 중' : `${item.percent}% · ${item.answered}명 답함`}
+                      {item.collecting ? '수집 중' : `${item.percent}% · ${formatCount(item.answered)}명 답함`}
                     </ThemedText>
                   ))}
                   {page.usageScore.caption ? (

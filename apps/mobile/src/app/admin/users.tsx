@@ -20,10 +20,10 @@ import {
 } from 'react-native';
 
 import { Colors, FontSize } from '@weddingpick/ui';
+import { formatCount } from '@weddingpick/domain';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { formatDateDot } from '@/features/common/format-date';
-import { comma } from '@weddingpick/domain';
 
 type WithdrawalStatus = 'hold' | 'failed' | 'pending' | 'deletion_pending';
 type UserRecord = {
@@ -224,7 +224,7 @@ export default function UsersScreen() {
                 </Pressable>
               ))}
             </View>
-            <Text style={styles.totalText}>총 {comma(data.total)}명</Text>
+            <Text style={styles.totalText}>총 {formatCount(data.total)}명</Text>
           </View>
           <ScrollView>
             <View style={styles.tableHead}>
@@ -285,7 +285,7 @@ export default function UsersScreen() {
             {selected?.withdrawal?.failure && (
               <>
                 <Text style={styles.fieldLabel}>
-                  삭제 실패 {selected.withdrawal.failure.attemptCount}회
+                  삭제 실패 {formatCount(selected.withdrawal.failure.attemptCount)}회
                 </Text>
                 <Text style={styles.modalSub}>{selected.withdrawal.failure.message}</Text>
                 <Pressable style={styles.retryAction} onPress={() => void retryDeletion()} disabled={acting}>

@@ -21,7 +21,7 @@ import {
   type RowItem,
   type Tone,
 } from './_ui';
-import { comma } from '@weddingpick/domain';
+import { formatCount } from '@weddingpick/domain';
 
 type RiskItem = { id: string; category: string; description: string; severity: 'high' | 'medium' | 'low' };
 type Anomaly = { time: string; description: string };
@@ -149,14 +149,14 @@ export default function BriefingScreen() {
             title={
               data.unresolvedRisks.length === 0
                 ? '오늘 사람이 볼 것은 없어요'
-                : `미해결 리스크 ${data.unresolvedRisks.length}건이 있어요`
+                : `미해결 리스크 ${formatCount(data.unresolvedRisks.length)}건이 있어요`
             }
             detail={data.summary || undefined}
           />
 
           <KpiRow
             items={[
-              { label: '자동처리', value: `${comma(data.autoProcessed)}건` },
+              { label: '자동처리', value: `${formatCount(data.autoProcessed)}건` },
               {
                 /*
                  * `successRate`는 0~1 비율이다 — `admin-ops.ts`가
@@ -167,10 +167,10 @@ export default function BriefingScreen() {
                 value: `${(data.successRate * 100).toFixed(1)}%`,
                 kind: data.successRate < 0.9 ? 'bad' : 'ok',
               },
-              { label: '자동복구', value: `${comma(data.autoRecovered)}건`, kind: 'ok' },
+              { label: '자동복구', value: `${formatCount(data.autoRecovered)}건`, kind: 'ok' },
               {
                 label: '미해결 리스크',
-                value: `${data.unresolvedRisks.length}건`,
+                value: `${formatCount(data.unresolvedRisks.length)}건`,
                 note: data.unresolvedRisks.length === 0 ? '확인할 것이 없어요' : '확인 필요',
                 kind: data.unresolvedRisks.length === 0 ? 'ok' : 'bad',
               },

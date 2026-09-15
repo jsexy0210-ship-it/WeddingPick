@@ -57,7 +57,6 @@ import { openExternal } from '@/features/open-external';
  *   그대로 둔다(CLAUDE.md 3번). 카카오 단추 규격(56 · r16 · 15/700)을 같이 쓴다.
  */
 
-const EYEBROW = 'WEDDING, LESS OVERWHELMING';
 const HERO_TITLE = '결정은 가볍게,\n준비는 단단하게.';
 const HERO_SUB = '흩어진 웨딩 정보를 한곳에 모아, 우리에게 맞는 선택만 남겨드릴게요.';
 const CALLOUT_MARK = '✦';
@@ -102,9 +101,6 @@ export default function LoginScreen() {
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           {showRemembered && remembered ? (
             <>
-              <ThemedText type="f10" themeColor="tint" style={styles.eyebrow}>
-                {EYEBROW}
-              </ThemedText>
               <ThemedText type="f42" style={styles.title}>
                 {remembered.displayName ? `${remembered.displayName}님,\n` : ''}다시 오셨네요
               </ThemedText>
@@ -118,9 +114,6 @@ export default function LoginScreen() {
             </>
           ) : (
             <>
-              <ThemedText type="f10" themeColor="tint" style={styles.eyebrow}>
-                {EYEBROW}
-              </ThemedText>
               <ThemedText type="f42" style={styles.title}>
                 {HERO_TITLE}
               </ThemedText>
@@ -377,7 +370,6 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.five,
   },
   /* «10/400 · ls 2.4px». */
-  eyebrow: { letterSpacing: LetterSpacing.p24 },
   /* «42/700 · lh 45 · ls -1.05px · mar 20 0 0 0». */
   title: { fontWeight: 700, letterSpacing: LetterSpacing.n105, marginTop: Layout.listGap },
   /* «15/400 · lh 28 · mar 20 0 0 0 · max-w 300». */

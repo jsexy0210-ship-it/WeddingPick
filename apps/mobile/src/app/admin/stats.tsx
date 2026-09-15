@@ -6,7 +6,7 @@
  */
 import { useEffect, useState } from 'react';
 
-import { VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
+import { formatCount, VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
 
 import { apiFetch } from './_api';
 import { Card, CardGrid, DataTable, KpiRow, LoadError, Page, StatusBanner, type Col, type TableRow } from './_ui';
@@ -105,7 +105,7 @@ export default function StatsScreen() {
             title={
               anomalies.length === 0
                 ? '차단된 것이 없어요'
-                : `자동 차단 ${anomalies.length}건`
+                : `자동 차단 ${formatCount(anomalies.length)}건`
             }
             detail={
               anomalies.length === 0
@@ -116,11 +116,11 @@ export default function StatsScreen() {
 
           <KpiRow
             items={[
-              { label: '자동 차단', value: `${anomalies.length}건`, note: '집계에서 제외 중', kind: anomalies.length === 0 ? 'ok' : 'bad' },
-              { label: '전체 집계', value: `${data.total}건`, note: '가격 통계 대상' },
+              { label: '자동 차단', value: `${formatCount(anomalies.length)}건`, note: '집계에서 제외 중', kind: anomalies.length === 0 ? 'ok' : 'bad' },
+              { label: '전체 집계', value: `${formatCount(data.total)}건`, note: '가격 통계 대상' },
               {
                 label: '대상 업체',
-                value: `${new Set(anomalies.map((a) => a.vendorId)).size}곳`,
+                value: `${formatCount(new Set(anomalies.map((a) => a.vendorId)).size)}곳`,
                 note: '차단이 걸린 곳',
               },
             ]}
