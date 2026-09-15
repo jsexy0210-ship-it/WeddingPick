@@ -301,6 +301,14 @@ Pick Mark는 하트 안에 체크. 아래 두 path가 확정본이며 어떤 이
 - 폰트는 Pretendard 단일(2026-09-14 대표님이 「Pretendard 미적용」을 뒤집으셨다). ios·android·web 스택
   모두 Pretendard가 맨 앞이고 뒤는 폴백일 뿐이다. Playfair Display · Noto Sans KR · DM Mono는 쓰지 않는다.
   값의 원본은 `spec/tokens.json` `typography.$fontFamily`다.
+
+  **2026-09-15에 실제로 싣기 전까지 그 스택은 거짓이었다.** 저장소 어디에도 폰트 파일이 없었고
+  `@font-face`도 없어서, 브라우저와 OS는 못 찾은 첫 이름을 조용히 건너뛰고 시스템 서체로
+  떨어졌다 — **아무 오류도 나지 않는다.** 대표님이 원본을 올리신 뒤 붙였고, 붙인 것을
+  브라우저로 찍어 확인했다(`document.fonts.check` · 화면 캡처). 자리와 굵기 넷의 근거는
+  `apps/mobile/assets/fonts/README.md`에 있다.
+
+  **이름만 적는 것으로 서체가 바뀌지 않는다.** 폰트를 손대면 찍어서 확인한다.
 - 섹션 제목 1줄, 서브카피 사용하지 않음. 안내 최대 2줄, CTA 1줄.
 - 화면당 Primary CTA 1개. Pick이 가장 중요한 행동, 비교는 보조.
 
@@ -396,7 +404,31 @@ Mark다** — 앱 아이콘·스플래시와 같은 마크여야 하고 그 두 
 (개인정보보호법 제28조의8). **회사 소재지와 서버 리전을 구분해 적는다** — Neon은 미국 회사지만
 데이터는 싱가포르에 있고, 법이 묻는 것은 데이터가 어디로 가느냐다.
 
-**지정된 브랜치 밖으로 푸시하지 않는다.**
+**`main`에만 올린다. 하위 브랜치를 쓰지 않는다**(2026-09-15 대표 지시 — 「하위 브랜치는
+쓰지 않는다. 무조건 Main에만 올린다」 · 「모든건 너가 최종적으로 main에 올린다」).
+
+**올리는 사람은 MASTER 하나다.** 전담 세션은 지금까지대로 브랜치에서 일하고 PR을 걸되,
+`main`에 얹는 것은 MASTER가 한다. 그래서 브랜치는 **넘기는 통로**일 뿐이고 코드가 사는
+자리가 아니다 — 며칠 묵은 브랜치가 생기면 그것이 어긋남의 시작이다.
+
+**한 사람만 올리면 빠뜨려도 잡아줄 사람이 없다.** 그 자리를 감시 세션이 맡는다
+(`docs/sync/main-integrity-audit.md` · 2026-09-15 대표 지시 「main 업로드 시 누락이 있는지에
+대해 너를 감시하는 세션 또 만들어라」).
+
+**`main` 푸시 뒤에 일어나는 일을 정확히 적어 둔다.** 2026-09-15에 실제로 돌려 보고 적는다.
+
+    main 푸시  →  CI (typecheck · lint · 카피 린트 · jest 전체)
+               →  Deploy → Staging  잡이 **대표님 승인을 기다리며 멈춘다**
+               →  승인하면  DB Migrate(운영 DB) → Render 재배포 → 헬스체크
+
+**승인 하나가 DB와 배포를 같이 연다.** `deploy-staging` 잡에 `environment: production`이
+걸려 있고 그 환경에 required reviewer가 설정돼 있어서, 승인 전에는 아무것도 일어나지 않는다.
+승인한 뒤에는 마이그레이션과 Render 배포가 **한 번에** 간다 — 「DB만 올리고 배포는 나중에」는
+지금 구조에 없는 선택지다.
+
+**그래서 `main` 푸시 자체는 운영을 바꾸지 않는다.** 바꾸는 것은 승인이다. 다만 승인하는
+사람에게는 목록만 보이므로, **올리기 전에 다 돌려 보고 올린다** — typecheck · lint ·
+카피 린트 · jest 전체(로컬 PostgreSQL 포함). 초록이 아니면 올리지 않는다.
 
 **릴리즈 프로덕션 빌드(앱스토어)는 보류다.** 대표님이 「완료」라고 말할 때만 올린다.
 
@@ -418,11 +450,24 @@ Mark다** — 앱 아이콘·스플래시와 같은 마크여야 하고 그 두 
 **스테이징을 지금 나누지 않는다. 나누는 시점은 대표님이 정한다**(2026-09-11 재확인 — 이전에도
 말했던 지침인데 어느 md에도 적혀 있지 않았다).
 
-지금 구조는 이렇다. **`main`에 머지하면 곧바로 운영이다.**
+지금 구조는 이렇다. **`main` 푸시는 승인 앞에서 멈추고, 승인 하나가 DB와 배포를 같이 연다.**
 
-    Render 세 서비스   전부 branch=main · autoDeploy=yes
-    Deploy → Staging   main 푸시마다 도는 조건인데 실제로는 매번 skipped
-    스테이징 DB        따로 없다 — main.yml:170 「deploy-staging과 같은 DB를 본다」
+    Render 다섯 서비스  전부 branch=main · autoDeploy=false — Render가 스스로 배포하지 않는다
+    Deploy → Staging   main 푸시마다 도는데 environment: production의 승인 앞에서 멈춘다
+                       승인하면 DB Migrate(운영 DB) → Render 재배포 → 헬스체크가 한 번에 간다
+    Deploy → Production  workflow_dispatch로만 돈다 — 푸시에서는 늘 skipped
+    스테이징 DB        따로 없다 — main.yml 「deploy-staging과 같은 DB를 본다」
+
+**이 표는 2026-09-15에 두 번 고쳤다.** 원래는 「Render 세 서비스 전부 `autoDeploy=yes` ·
+`Deploy → Staging`은 매번 skipped」라고 적혀 있었고 **둘 다 거짓이었다.**
+`render.yaml`은 다섯 서비스 전부 `autoDeploy: false`이고, 매번 skipped인 것은
+`Deploy → Staging`이 아니라 `Deploy → Production`이다. 그리고 첫 정정에서 나는
+「`autoDeploy: false`니까 main에 올려도 배포가 안 된다」고 적었는데 **그것도 틀렸다** —
+`deploy-staging` 잡이 `scripts/render-env-sync.py`를 `REDEPLOY=true`로 부른다. Render가
+스스로 안 하는 것이지, 배포가 없는 것이 아니다.
+
+**`autoDeploy` 한 줄만 보고 「배포가 없다」고 읽지 않는다.** 워크플로가 API로 직접
+배포를 건다. 두 파일을 같이 읽는다.
 
 그래서 **CI가 초록인 것과 운영에서 확인한 것은 다르다.** 머지 전에 실제 환경에서 미리 볼
 자리가 없다는 뜻이고, 그것을 알고 머지한다. 「스테이징에서 봤다」고 적지 않는다 — 볼 곳이 없다.
