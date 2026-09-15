@@ -415,7 +415,7 @@ function homeSectionBlocks({
               </ThemedText>
               <Pressable
                 accessibilityRole="button"
-                onPress={() => router.push('/community')}
+                onPress={() => router.push('/(tabs)/community')}
                 style={({ pressed }) => pressed && styles.pressed}>
                 <ThemedText type="f12" style={styles.semibold}>
                   더보기
