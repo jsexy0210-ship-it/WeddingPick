@@ -158,7 +158,7 @@ const CARD_BORDER = 1.5;
 const styles = StyleSheet.create({
   /* 시안 padSec — 좌우 24 · 아래 24 · 그룹 사이 12. */
   section: {
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.shellGutter,
     paddingBottom: Layout.gutter,
     gap: Layout.rowPaddingY,
   },

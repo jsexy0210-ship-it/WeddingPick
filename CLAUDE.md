@@ -323,10 +323,20 @@ Pick Mark는 하트 안에 체크. 아래 두 path가 확정본이며 어떤 이
   2개 「두 가지만 더 하면」 · 1개 「하나만 더 하면」 · 0개면 시트 대신 응모 완료 알림. Npay 로고는 CSS로 그린다.
 
 ## 디자인
-- SEED Design System(Karrot) 기반. **좌우 여백은 20px다** — 피그마 12 화면을 전부 재서 나온 값이고
-  (`docs/figma-spec/*.txt`의 `pad … 20 … 20`), `spec/tokens.json` `spacing.gutter`가 원본이다.
+- SEED Design System(Karrot) 기반. **좌우 여백은 20px다** — 피그마 12 화면 중 **10 화면**을
+  재서 나온 값이고(`docs/figma-spec/*.txt`의 `pad … 20 … 20`), `spec/tokens.json`
+  `spacing.gutter`가 원본이다.
   **2026-09-15까지 이 줄은 24라고 적고 있었다** — 그때 코드는 이미 20이었다. 규칙이 코드보다
   낡으면 다음 사람이 규칙을 보고 되돌린다.
+- **로그인 · 온보딩은 24다** — `spec/tokens.json` `spacing.shellGutter`. 스크롤이 없는 한 장짜리
+  화면이라 바깥 셸이 좌우 여백을 직접 든다(`docs/figma-spec/login.txt` 「div 430×932 pad 64 24 32 24」 ·
+  `onboarding.txt` 「pad 32 24 32 24」). 두 화면 다 안쪽 블록이 382 폭이고 430 − 24 − 24 = 382다.
+  나머지 10 화면은 셸의 좌우가 0이고 안쪽 섹션이 20을 든다.
+
+  **이 줄이 없어서 회귀가 났다.** 위 세 자리(이 줄 · `spacing.gutter.$note` · `theme.ts`의 Layout
+  주석)가 전부 「12 화면 전부가 20」이라고 적고 있었고, 스크롤 화면의 안쪽 섹션만 보고 열둘로
+  일반화한 것이었다. 그 거짓 근거로 거터를 일괄 적용하면서 두 화면이 양쪽 4px씩 좁아졌다.
+  **재지 않고 일반화하면 이렇게 된다.**
 - 스킨 6종: Coral #FF6F61(기본) · Red #FF4D4D · Yellow #FFC041 · Green #34C759 · Blue #3182F6 · Dark Gray #191F28.
 - 폰트는 Pretendard 단일(2026-09-14 대표님이 「Pretendard 미적용」을 뒤집으셨다). ios·android·web 스택
   모두 Pretendard가 맨 앞이고 뒤는 폴백일 뿐이다. Playfair Display · Noto Sans KR · DM Mono는 쓰지 않는다.

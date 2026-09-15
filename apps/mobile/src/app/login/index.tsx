@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     paddingTop: Spacing.five + Spacing.five,
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.shellGutter,
     paddingBottom: Spacing.five,
   },
   /* «10/400 · ls 2.4px». */

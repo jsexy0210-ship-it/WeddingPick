@@ -111,7 +111,7 @@ const CARD_GAP = 6;
 
 const styles = StyleSheet.create({
   section: {
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.shellGutter,
     paddingBottom: Layout.gutter,
     gap: Spacing.two,
   },

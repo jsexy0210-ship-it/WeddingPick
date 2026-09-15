@@ -103,17 +103,17 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
-  skipRow: { alignItems: 'flex-end', paddingHorizontal: Layout.gutter, paddingTop: Spacing.two },
+  skipRow: { alignItems: 'flex-end', paddingHorizontal: Layout.shellGutter, paddingTop: Spacing.two },
   dots: {
     flexDirection: 'row',
     gap: Spacing.one,
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.shellGutter,
     paddingVertical: Spacing.three,
   },
   dot: { height: 6, borderRadius: Radius.pill },
-  content: { paddingHorizontal: Layout.gutter, gap: Spacing.three, paddingBottom: Spacing.four },
+  content: { paddingHorizontal: Layout.shellGutter, gap: Spacing.three, paddingBottom: Spacing.four },
   headline: { gap: 0 },
   card: { borderRadius: Radius.medium, padding: Layout.gutter, gap: Spacing.two },
   cardRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  footer: { paddingHorizontal: Layout.gutter, paddingBottom: Spacing.four, gap: Spacing.two },
+  footer: { paddingHorizontal: Layout.shellGutter, paddingBottom: Spacing.four, gap: Spacing.two },
 });

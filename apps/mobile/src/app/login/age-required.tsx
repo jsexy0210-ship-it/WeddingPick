@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     paddingTop: Spacing.two,
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.shellGutter,
     gap: Layout.listGap,
   },
   iconBox: {
@@ -117,6 +117,6 @@ const styles = StyleSheet.create({
   dock: {
     borderTopWidth: 1,
     paddingTop: Layout.rowPaddingY,
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.shellGutter,
   },
 });
