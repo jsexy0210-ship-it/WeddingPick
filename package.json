@@ -17,6 +17,8 @@
     "node": ">=22"
   },
   "devDependencies": {
+    "@seed-design/css": "2.8.1",
+    "@seed-design/icon": "0.6.2",
     "zod": "^4.4.3"
   }
 }

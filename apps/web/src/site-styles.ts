@@ -46,15 +46,15 @@ export const SITE_STYLES = `
    * 역할 이름으로만 쓴다 — 본문에서 hex를 집으면 어두운 모드에서 그 자리만
    * 밝은 색으로 남는다.
    */
-  --ink: #212124;
-  --ink-2: #393a40;
-  --text-2: #4d5159;
+  --ink: #1a1c20;
+  --ink-2: #2a3038;
+  --text-2: #555d6d;
   --text-3: #868b94;
-  --line: #eaebee;
+  --line: #eeeff1;
   --border: #dcdee3;
   --surface: #ffffff;
-  --surface-1: #f7f8fa;
-  --surface-2: #f2f3f6;
+  --surface-1: #f7f8f9;
+  --surface-2: #f3f4f5;
   --tint: #e7898d;
   --tint-strong: #d87d80;
   --positive: #1aa174;
@@ -74,15 +74,15 @@ ${TYPE_SCALE}
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --ink: #eaebee;
-    --ink-2: #ced3de;
-    --text-2: #adb1ba;
-    --text-3: #868b94;
-    --line: #34373d;
-    --border: #43474f;
-    --surface: #17171a;
-    --surface-1: #212124;
-    --surface-2: #2b2e33;
+    --ink: #f3f4f5;
+    --ink-2: #e9eaec;
+    --text-2: #dcdee3;
+    --text-3: #b0b3ba;
+    --line: #2b2e35;
+    --border: #393d46;
+    --surface: #000000;
+    --surface-1: #16171b;
+    --surface-2: #1d2025;
     --tint: #eb9c9f;
     --tint-strong: #f1bcbe;
     --positive: #3ecf8e;
