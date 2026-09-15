@@ -17,7 +17,7 @@ import { completeOnboarding } from '@/features/onboarding/onboarding-state';
 import { ONBOARDING_STEPS, ctaLabel } from '@/features/onboarding/steps';
 
 /**
- * 온보딩 5장. 디자인 핸드오프 1번.
+ * 온보딩 4장. 디자인 핸드오프 1번.
  *
  * 건너뛰기와 마지막 CTA가 **같은 곳으로 간다** — 로그인이다. 2026-09-04
  * 정책 변경(비회원 진입 삭제)으로 예식일 등록(`/setup`)은 로그인 뒤로
