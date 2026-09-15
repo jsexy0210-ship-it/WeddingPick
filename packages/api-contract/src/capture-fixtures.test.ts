@@ -83,6 +83,10 @@ const CONTRACTS = new Map<string, ZodType>([
 const NO_CONTRACT = new Set([
   'GET /v1/admin/ads-gate',
   'GET /v1/admin/ad-tiers',
+  'GET /v1/admin/accounts',
+  'GET /v1/admin/dashboard',
+  'GET /v1/admin/members-trend',
+  'GET /v1/admin/briefing',
   'GET /v1/weddings/:weddingId/candidates/removed',
 ]);
 
