@@ -15,6 +15,7 @@ import {
   TERMS,
   VENDOR_CATEGORY_LABEL,
   VENDOR_DETAIL_SECTIONS,
+  formatCount,
   formatDateDot,
   manwon,
   priceLine,
@@ -109,7 +110,7 @@ function experienceBlock(vendor: VendorDetail): string {
   return `<div class="block">
       <h3>${escapeHtml(TERMS.experience)}</h3>
       <b class="amount">${score.average.toFixed(1)}</b>
-      <p class="caption">${escapeHtml(`${TERMS.review} ${score.count}건`)}</p>
+      <p class="caption">${escapeHtml(`${TERMS.review} ${formatCount(score.count)}건`)}</p>
       ${aspects ? `<dl class="rows">${aspects}</dl>` : ''}
     </div>`;
 }

@@ -1,5 +1,10 @@
 import type { MyReport } from '@weddingpick/api-contract';
-import { MY_REPORTS_EMPTY, MY_REPORTS_EMPTY_CTA, formatDateDot } from '@weddingpick/domain';
+import {
+  MY_REPORTS_EMPTY,
+  MY_REPORTS_EMPTY_CTA,
+  formatCount,
+  formatDateDot,
+} from '@weddingpick/domain';
 import strings from '../../../../../../spec/strings.ko.json';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
@@ -24,7 +29,7 @@ import { Badge, Dock, EmptyBox, Hero, Section, SubScreen } from '@/features/sett
 /** 시안 11-report-review 12c WP-RPT-009. */
 const S = {
   title: '내 제보 내역',
-  hero: (total: number, used: number) => [`${total}건 제보했고`, `${used}건이 반영됐어요`],
+  hero: (total: number, used: number) => [`${formatCount(total)}건 제보했고`, `${formatCount(used)}건이 반영됐어요`],
   heroEmpty: ['아직 제보한 것이', '없어요'],
   inUse: '반영됨',
   needsCheck: '확인 필요',

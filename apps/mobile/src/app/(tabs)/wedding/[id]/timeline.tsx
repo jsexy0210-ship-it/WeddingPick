@@ -1,4 +1,5 @@
 import type { WeddingTask, WeddingTaskListResponse } from '@weddingpick/api-contract';
+import { formatCount } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -56,7 +57,7 @@ export default function TimelineScreen() {
         <Hero
           title={
             page.progress.total > 0
-              ? `준비 ${page.progress.total}개 중 ${page.progress.done}개를 끝냈어요`
+              ? `준비 ${formatCount(page.progress.total)}개 중 ${formatCount(page.progress.done)}개를 끝냈어요`
               : '아직 기록이 없어요'
           }
           sub={page.progress.total > 0 ? null : '결정하고 일정을 넣으면 여기 시간순으로 쌓여요'}

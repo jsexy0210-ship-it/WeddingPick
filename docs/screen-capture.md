@@ -115,7 +115,34 @@ npx jest --config packages/api-contract/jest.config.js --rootDir packages/api-co
 
 어느 칸이 어떻게 틀렸는지 zod가 그대로 말해 준다. `npm test`에도 같이 돈다.
 
-## 시안은 찍지 않는다 — 사람이 옆에 놓고 본다
+## 피그마 시안은 찍는다 — `scripts/screenshot-figma.mjs`
+
+**2026-09-14에 뒤집혔다.** 대표님이 앱을 열어 보시고 「피그마랑 아예 다르다」고 하셨고,
+그때까지 우리는 「시안은 못 찍는다」를 전제로 사람 눈에 대조를 맡기고 있었다. 그 전제가
+`docs/design-handoff/`의 `.dc.html`에 대해서는 맞지만(아래) **피그마 저장소에는 틀리다** —
+`weddingpick_figma`는 그냥 도는 Vite 앱이라 빌드해서 찍힌다. 못 찍는 줄 알고 넘기는 동안
+홈 · 검색 · Pick이 통째로 어긋나 있었다.
+
+처음 한 번 받아서 빌드한다.
+
+```
+git clone --depth 1 https://github.com/jsexy0210-ship-it/weddingpick_figma \
+  /home/user/jsexy0210-ship-it/weddingpick_figma
+cd /home/user/jsexy0210-ship-it/weddingpick_figma && npm install && npx vite build
+```
+
+그다음부터는 한 줄이다.
+
+```
+node scripts/screenshot-figma.mjs --out /tmp/figma
+node scripts/screenshot-figma.mjs --route /search
+```
+
+**앱과 시안을 같은 폭으로 찍어 나란히 놓는다.** 피그마 셸이 `max-w-[430px]`이라 시안 쪽
+기본이 430이다. 390으로 찍은 앱 화면과 나란히 놓으면 폭이 달라 **없는 차이가 보이고 있는
+차이가 묻힌다.** 앱 쪽도 `--viewport 430x932`로 맞춰 찍는다.
+
+## 핸드오프 `.dc.html`은 여전히 찍지 않는다
 
 `docs/design-handoff/`의 `.dc.html`은 **이 도구가 찍지 않는다.** 자산이 저장소에
 들어오지 않기 때문이다(2026-09-11 대표님 확인 — 용량 때문에 올릴 수 없다).

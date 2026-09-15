@@ -6,9 +6,11 @@ import { useDepthBack } from '@/features/navigation/depth-back';
 /**
  * 좌상단 뒤로가기. 핸드오프 토큰 `size.backButton`(40) 터치 영역.
  *
- * **Depth Back이다** — 방문 기록을 되짚지 않고 화면 계층에서 한 단계 위로 간다.
- * 규칙은 `features/navigation/depth-back-rules.ts` 한 곳에 있다. 화면마다 `fallback`을
- * 따로 적던 구조를 없앴다 — 서로 어긋나서 MY 하위에서 검색으로 튀는 일이 났다.
+ * **History 우선, 없으면 Depth Back이다**(`features/navigation/depth-back.ts`
+ * `useDepthBack`) — 방문 기록이 있으면 실제 직전 화면으로, 없으면(딥링크 등)
+ * `features/navigation/depth-back-rules.ts`의 계층 fallback 표로 간다. 화면마다
+ * `fallback`을 따로 적던 구조를 없앴다 — 서로 어긋나서 MY 하위에서 검색으로 튀는
+ * 일이 났다.
  *
  * **웹(데스크톱)에서도 보인다.** 모바일은 스와이프·물리 버튼이 있지만 데스크톱
  * 브라우저는 화면 안의 버튼이 유일한 길이다(2026-09-08). 안드로이드 하드웨어 버튼과
@@ -50,9 +52,14 @@ export function BackButton({
         따로 그렸는데(`M15 5.5 8 12l7 6.5` · 획 1.9) 다른 화면의 `chevronLeft`
         (`M14.5 5 8 12l6.5 7`)와 모양도 두께도 달랐다.
       */}
+      {/*
+        뒤로는 ← 화살(피그마 2026-09-14 정본 — `Search.tsx` · `VendorFlows.tsx` · `FlowScreens.tsx`
+        전부 lucide ArrowLeft `h-5 w-5` = 20). 꺾쇠였던 것을 바꿨고, 상세 화면끼리 같은 단추를
+        쓰므로 여기 한 곳만 바꾸면 전부 따라온다.
+      */}
       <ProductSymbol
-        name={variant === 'close' ? 'close' : 'chevronLeft'}
-        size={Layout.iconTab}
+        name={variant === 'close' ? 'close' : 'arrowLeft'}
+        size={variant === 'close' ? Layout.iconTab : Layout.iconRow}
         color={theme.text}
       />
     </Pressable>

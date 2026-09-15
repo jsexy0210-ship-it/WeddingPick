@@ -46,6 +46,6 @@ describe('업체 비교 단서', () => {
   });
 
   it('한 번에 견주는 수에 한계를 둔다', () => {
-    expect(MAX_COMPARED_VENDORS).toBe(3);
+    expect(MAX_COMPARED_VENDORS).toBe(5);
   });
 });

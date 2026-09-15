@@ -73,11 +73,14 @@ function parseArgs(argv) {
     out: join(tmpdir(), 'weddingpick-screens'),
     build: false,
     full: false,
+    edges: false,
     wait: 1500,
     /** 비워 두면 경로를 보고 정한다 — `/admin/…`은 1920, 나머지는 390. */
     viewport: null,
     /** 찍기 전에 눌러 둘 것들. 시트 · 펼침처럼 **눌러야 나오는 화면**을 찍는다. */
     taps: [],
+    /** 토큰을 심지 않는다 — 로그인 화면(`/login`)처럼 로그인 전 화면을 찍을 때. */
+    guest: false,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -89,6 +92,8 @@ function parseArgs(argv) {
     else if (arg === '--full') opts.full = true;
     else if (arg === '--wait') opts.wait = Number(argv[++i]);
     else if (arg === '--tap') opts.taps.push(argv[++i]);
+    else if (arg === '--edges') opts.edges = true;
+    else if (arg === '--guest') opts.guest = true;
     else if (arg === '--viewport') {
       const [width, height] = argv[++i].split('x').map(Number);
 
@@ -243,7 +248,7 @@ async function captureRoute(context, origin, route, opts) {
    * 토큰을 먼저 심는다. 로그인 가드(`_layout.tsx`)는 그대로 둔다 — 제품 코드에
    * 「캡처일 때는 통과」를 넣으면 그 구멍이 운영에 나간다.
    */
-  await page.addInitScript((key) => {
+  if (!opts.guest) await page.addInitScript((key) => {
     try {
       window.localStorage.setItem(key, 'capture-token');
     } catch {
@@ -276,9 +281,69 @@ async function captureRoute(context, origin, route, opts) {
   const file = join(opts.out, `${safeName(route)}.png`);
 
   await page.screenshot({ path: file, fullPage: opts.full });
+
+  /*
+   * 좌우 끝선. **찍은 그림과 같은 순간에 잰다** — 따로 띄워서 재면 fixture도 토큰도
+   * 없는 화면을 재게 되고, 전 화면이 시작 화면으로 떨어진 것을 모른 채 「전부 맞다」는
+   * 숫자가 나온다. 실제로 그렇게 한 번 속았다.
+   */
+  const edges = opts.edges ? await measureEdges(page) : null;
+
   await page.close();
 
-  return { route, file, missing: [...missing], blocked: [...blocked], errors };
+  return { route, file, missing: [...missing], blocked: [...blocked], errors, edges };
+}
+
+
+/**
+ * 한 화면 안에서 콘텐츠의 **좌우 끝선이 몇 종류인지** 센다.
+ *
+ * 기준선이 맞는다는 것은 제목 · 본문 · 카드 · 목록 · 버튼의 `left`가 한 값이고
+ * `right`도 한 값이라는 뜻이다. 여러 값이 나오면 그 화면은 어긋나 있고, 몇 px
+ * 어긋났는지가 그대로 나온다 — 2026-09-15 대표 지시 「모든 콘텐츠의 좌우 끝선을
+ * 동일한 마진 기준으로 정렬」.
+ *
+ * 세지 않는 것: 화면을 꽉 채우는 틀(그것은 끝선이 아니라 바탕이다) · 너무 작은 것 ·
+ * 안 보이는 것 · 여백이 80을 넘는 것(가운데 정렬된 안내 문구는 기준선이 아니다).
+ */
+async function measureEdges(page) {
+  return page.evaluate(() => {
+    const shell = document.documentElement.clientWidth;
+    const tally = new Map();
+
+    for (const el of document.querySelectorAll('body *')) {
+      const rect = el.getBoundingClientRect();
+
+      if (rect.width < 40 || rect.height < 8) continue;
+      if (rect.width >= shell - 1) continue;
+
+      const css = getComputedStyle(el);
+
+      if (css.visibility === 'hidden' || css.display === 'none' || css.opacity === '0') continue;
+
+      const left = Math.round(rect.left);
+      const right = Math.round(shell - rect.right);
+
+      if (left < 0 || right < 0 || left > 80 || right > 80) continue;
+
+      const key = `${left}|${right}`;
+      const seen = tally.get(key) ?? { n: 0, what: [] };
+
+      seen.n += 1;
+      if (seen.what.length < 2) {
+        seen.what.push((el.textContent ?? '').trim().slice(0, 18) || `<${el.tagName.toLowerCase()}>`);
+      }
+      tally.set(key, seen);
+    }
+
+    return [...tally.entries()]
+      .map(([key, seen]) => {
+        const [left, right] = key.split('|').map(Number);
+
+        return { left, right, count: seen.n, what: seen.what };
+      })
+      .sort((a, b) => b.count - a.count);
+  });
 }
 
 const HELP = `화면을 실제로 렌더해 PNG로 찍는다.
@@ -291,8 +356,11 @@ const HELP = `화면을 실제로 렌더해 PNG로 찍는다.
   --full           화면 전체(스크롤 포함)를 찍는다. 기본은 390x844 한 화면.
   --wait <ms>      렌더를 기다리는 시간. 기본 1500.
   --tap <이름>     찍기 전에 누른다. 여러 번 줄 수 있고 준 순서대로 누른다.
+  --guest          토큰을 심지 않는다 — 로그인 전 화면(/login)을 찍을 때.
                    눌러야 나오는 화면(바텀시트 · 펼침)을 찍을 때 쓴다. 못 찾으면 멈춘다.
   --viewport WxH   창 크기. 기본은 경로를 보고 정한다 — /admin은 1920x1080, 나머지 390x844.
+  --edges          좌우 끝선을 재서 같이 적는다. 한 화면 안에서 제목 · 본문 · 카드 ·
+                   버튼의 시작선과 끝선이 갈라지는 자리를 숫자로 잡는다.
 `;
 
 async function main() {
@@ -313,8 +381,19 @@ async function main() {
        * 주소는 형식만 맞으면 된다 — 나가는 요청은 브라우저가 전부 가로챈다.
        * 그래도 비워 두지는 않는다: 비면 `isServerConfigured`가 false가 되어
        * 서버를 아예 안 부르는 다른 화면이 찍힌다(api/config.ts).
+       *
+       * 포트 1은 Chromium이 ERR_UNSAFE_PORT로 접속 자체를 막는다(tcpmux) —
+       * page.route가 가로채기도 전에 브라우저가 거부한다. 39999는 안전 목록 밖의
+       * 높은 포트다.
+       *
+       * **경로 없이 origin만 둔다.** `client.ts`의 `send()`가 `${baseUrl}${path}`를
+       * 단순 문자열 접합으로 만든다(URL 재해석이 아니다) — base가 `/capture`로
+       * 끝나면 실제 요청 pathname이 `/capture/v1/...`가 되어 `installFixtures`의
+       * `pathname.startsWith('/v1/')` 검사를 벗어난다. 그러면 가로채지 못한 요청이
+       * 실제 네트워크로 나가고, 업체 상세처럼 fetch가 필요한 화면은 전부
+       * «연결이 불안정해요»만 찍힌다 — fixture를 아무리 채워도 닿지 않는다.
        */
-      env: { ...process.env, EXPO_PUBLIC_API_URL: 'http://127.0.0.1:1/capture' },
+      env: { ...process.env, EXPO_PUBLIC_API_URL: 'http://127.0.0.1:39999' },
     });
   }
 
@@ -322,7 +401,18 @@ async function main() {
 
   const { chromium } = loadPlaywright();
   const { server, port } = await startStaticServer(DIST);
-  const browser = await chromium.launch();
+  /*
+   * **설치된 브라우저를 직접 가리킬 수 있게 둔다.**
+   *
+   * Playwright는 자기 버전에 맞는 브라우저만 찾는다. 컨테이너에 이미 깔려 있어도
+   * 번호가 다르면 「없다」고 하고 `npx playwright install`을 하라고 한다 — 그
+   * 한 줄 때문에 **캡처를 한 번도 못 돌린 채 「환경에서 안 된다」로 넘어갔다.**
+   * 실제로 2026-09-15에 그랬다.
+   *
+   * `CHROMIUM_PATH`를 주면 그것을 쓴다. 없으면 지금까지처럼 알아서 찾는다.
+   */
+  const executablePath = process.env.CHROMIUM_PATH || undefined;
+  const browser = await chromium.launch(executablePath ? { executablePath } : {});
   /*
    * 관리자와 앱은 기준 해상도가 다르다. 섞어 찍으면 한쪽이 반드시 뭉개지므로
    * 경로를 보고 정한다 — 따로 주고 싶으면 `--viewport 1280x800`.
@@ -353,6 +443,19 @@ async function main() {
 
       if (result.errors.length) {
         process.stdout.write(`  콘솔 오류:\n${result.errors.map((e) => `    ${e}\n`).join('')}`);
+      }
+
+      if (result.edges) {
+        const lines = result.edges
+          .slice(0, 6)
+          .map(
+            (e) =>
+              `    좌 ${String(e.left).padStart(3)}  우 ${String(e.right).padStart(3)}  ${String(e.count).padStart(2)}개` +
+              `${e.left === e.right ? '  ' : '  ← 비대칭'}  ${e.what.join(' · ')}\n`
+          )
+          .join('');
+
+        process.stdout.write(`  좌우 끝선:\n${lines}`);
       }
     }
   } finally {

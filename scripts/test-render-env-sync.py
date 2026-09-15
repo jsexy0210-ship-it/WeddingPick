@@ -172,6 +172,37 @@ class DeployTest(unittest.TestCase):
             self.assertTrue(sync.wait_for_live('api', 'api-request', SHA))
             sleep.assert_called_once_with(10)
 
+    def test_renamed_service_does_not_block_the_others_and_still_fails(self):
+        """
+        이름이 바뀐 서비스 하나가 **나머지 배포를 막지 않는다.** 그래도 실패는 실패다.
+
+        2026-09-15에 `WeddingPick-웹뷰(앱 테스트)`가 Render에서 이름이 바뀌었는데,
+        그 자리에서 곧바로 끝내 버려 **그 뒤 서비스는 시도조차 못 했다.** API와
+        관리자는 이미 새 커밋으로 올라간 뒤였다 — 반만 배포된 상태가 제일 나쁘다.
+        """
+        manifest = {
+            'weddingpickl-sg': {'vars': {'MODE': 'production'}},
+            'gone': {'vars': {'A': '1'}},
+            'static': {'vars': {'API_URL': 'https://example.invalid'}},
+        }
+
+        def call(method, path, body=None):
+            if path.startswith('/services?') and 'gone' in path:
+                self.events.append((method, path, body))
+                return 200, json.dumps([])
+            return self.call(method, path, body)
+
+        result, output = self.run_main(call=call, manifest=manifest)
+
+        # 실패는 그대로다.
+        self.assertEqual(result, 1)
+        # 없어진 이름이 보고에 남는다.
+        self.assertIn('gone', output)
+        # **그 뒤 서비스도 실제로 배포됐다** — 여기가 이 시험의 전부다.
+        self.assertTrue(any(event[0] == 'PUT' and '/static/' in event[1] for event in self.events))
+        self.assertTrue(any(event[0] == 'POST' and event[1] == '/services/static/deploys'
+                            for event in self.events))
+
     def test_fallback_parser_does_not_send_yaml_quotes_as_env_values(self):
         result = sync.parse_simple('services:\n  api:\n    vars:\n      DAY: \'2026-09-10\'\n      MODE: "production"\n')
         self.assertEqual(result['api']['vars'], {'DAY': '2026-09-10', 'MODE': 'production'})

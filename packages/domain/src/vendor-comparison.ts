@@ -9,8 +9,18 @@ import { VENDOR_CATEGORY_LABEL, type VendorCategory } from './vendor';
  * 부추기게 된다.
  */
 
-/** 한 번에 견줄 수 있는 업체 수. 넘으면 표가 읽히지 않는다. */
-export const MAX_COMPARED_VENDORS = 3;
+/**
+ * 한 번에 견줄 수 있는 업체 수. **여기 하나가 원본이다.**
+ *
+ * 2026-09-14에 셋에서 다섯으로 올렸다. 화면에 따로 적어둔 숫자가 있으면 여기와
+ * 어긋난 채로 남는다 — 실제로 앱 두 화면이 자기 `MAX_COMPARE = 3`을 들고 있었고,
+ * 서버는 이 값으로 막고 있었다. 서버가 다섯을 받는데 화면은 넷째부터 체크가
+ * 눌리지 않는 상태였다. 두 화면도 이 값을 읽도록 고쳤다.
+ *
+ * 다섯을 넘기지 않는 이유는 표다. 열이 늘수록 한 화면에 들어가지 않고, 가로로
+ * 밀어서 보는 표는 나란히 놓고 보는 일을 못 한다.
+ */
+export const MAX_COMPARED_VENDORS = 5;
 
 export type ComparisonInput = {
   category: VendorCategory;

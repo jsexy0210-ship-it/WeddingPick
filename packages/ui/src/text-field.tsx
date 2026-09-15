@@ -13,6 +13,8 @@ export type TextFieldProps = Omit<TextInputProps, 'style'> & {
   error?: string;
   /** 아래 안내 한 줄. `error`가 있으면 그 자리를 오류가 대신 쓴다. */
   hint?: string;
+  /** 왼쪽 끝 요소 — 검색 칸의 돋보기 등. */
+  leading?: React.ReactNode;
   /** 오른쪽 끝 요소 — 지우기 X · 단위 «만원» 등. */
   trailing?: React.ReactNode;
 };
@@ -28,7 +30,7 @@ export type TextFieldProps = Omit<TextInputProps, 'style'> & {
  * `<input>`에 얹는 색이 상자 밖으로 번지지 않게(apps/mobile global.css 참고).
  */
 export const TextField = forwardRef<TextInput, TextFieldProps>(function TextField(
-  { label, error, hint, trailing, multiline, onFocus, onBlur, editable = true, ...rest },
+  { label, error, hint, leading, trailing, multiline, onFocus, onBlur, editable = true, ...rest },
   ref
 ) {
   const theme = useTheme();
@@ -49,6 +51,7 @@ export const TextField = forwardRef<TextInput, TextFieldProps>(function TextFiel
           multiline ? styles.boxMultiline : styles.boxSingle,
           { borderColor, backgroundColor: theme.background, opacity: editable ? 1 : 0.4 },
         ]}>
+        {leading}
         <TextInput
           ref={ref}
           multiline={multiline}

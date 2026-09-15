@@ -1,4 +1,5 @@
 import type { WeddingEvent, WeddingEventListResponse } from '@weddingpick/api-contract';
+import { formatCount } from '@weddingpick/domain';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -96,7 +97,7 @@ export default function WeddingEventsScreen() {
     thisMonth > 0
       ? `이번 달에 ${thisMonth}곳을 다녀와요`
       : upcoming.length > 0
-        ? `다가오는 일정이 ${upcoming.length}개 있어요`
+        ? `다가오는 일정이 ${formatCount(upcoming.length)}개 있어요`
         : '아직 일정이 없어요';
   const heroSub =
     upcoming.length === 0 && done.length === 0

@@ -1,3 +1,5 @@
+import { FONT_FACE, FONT_STACK } from './fonts';
+
 /**
  * 서비스 웹(WP-WEB)의 스타일. 한 파일에 담아 인라인으로 넣는다.
  *
@@ -37,6 +39,7 @@ const TYPE_SCALE = `
 `;
 
 export const SITE_STYLES = `
+${FONT_FACE}
 :root {
   color-scheme: light dark;
 
@@ -46,22 +49,22 @@ export const SITE_STYLES = `
    * 역할 이름으로만 쓴다 — 본문에서 hex를 집으면 어두운 모드에서 그 자리만
    * 밝은 색으로 남는다.
    */
-  --ink: #212124;
-  --ink-2: #393a40;
-  --text-2: #4d5159;
+  --ink: #1a1c20;
+  --ink-2: #2a3038;
+  --text-2: #555d6d;
   --text-3: #868b94;
-  --line: #eaebee;
+  --line: #eeeff1;
   --border: #dcdee3;
   --surface: #ffffff;
-  --surface-1: #f7f8fa;
-  --surface-2: #f2f3f6;
-  --tint: #e7898d;
-  --tint-strong: #d87d80;
+  --surface-1: #f7f8f9;
+  --surface-2: #f3f4f5;
+  --tint: #ff6f61;
+  --tint-strong: #ee6255;
   --positive: #1aa174;
   --positive-bg: #e8faf6;
 
   /* 코랄 위의 글자. **어두운 모드에서도 뒤집지 않는다** — SEED on-primary 규칙. */
-  --on-tint: #371b34;
+  --on-tint: #ffffff;
 
   /* 좌우 여백. 디자인의 56px. 좁은 화면에서는 아래 미디어 쿼리가 줄인다. */
   --gutter: 56px;
@@ -74,17 +77,17 @@ ${TYPE_SCALE}
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --ink: #eaebee;
-    --ink-2: #ced3de;
-    --text-2: #adb1ba;
-    --text-3: #868b94;
-    --line: #34373d;
-    --border: #43474f;
-    --surface: #17171a;
-    --surface-1: #212124;
-    --surface-2: #2b2e33;
-    --tint: #eb9c9f;
-    --tint-strong: #f1bcbe;
+    --ink: #f3f4f5;
+    --ink-2: #e9eaec;
+    --text-2: #dcdee3;
+    --text-3: #b0b3ba;
+    --line: #2b2e35;
+    --border: #393d46;
+    --surface: #000000;
+    --surface-1: #16171b;
+    --surface-2: #1d2025;
+    --tint: #ff8478;
+    --tint-strong: #ffa79e;
     --positive: #3ecf8e;
     --positive-bg: #12281d;
   }
@@ -97,12 +100,13 @@ body {
   background: var(--surface);
   color: var(--ink);
   /*
-   * Pretendard를 싣지 않는다. 이 문서는 자기 혼자 서야 하고, 웹폰트 한 벌은
-   * 검색으로 들어온 사람이 첫 화면을 보기까지를 늘린다. 핸드오프도 웹은 시스템
-   * 서체로 두라고 적었다.
+   * Pretendard를 싣는다(fonts.ts). 2026-09-14에 대표님이 「웹폰트는 싣지 않는다」를
+   * 뒤집으셨고, 2026-09-15에 원본 파일을 올리셨다. 스택은 tokens에서 가져온다.
+   *
+   * 첫 화면이 늦어지는 걱정은 font-display: swap 과 preload가 받는다 — 글자는
+   * 시스템 서체로 먼저 읽히고, 2.0MB가 도착하면 바뀐다.
    */
-  font-family: -apple-system, BlinkMacSystemFont, system-ui, 'Apple SD Gothic Neo',
-    'Malgun Gothic', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: ${FONT_STACK};
   -webkit-font-smoothing: antialiased;
   font-size: var(--fs-body);
   line-height: var(--lh-body);

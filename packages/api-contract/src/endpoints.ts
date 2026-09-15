@@ -2,6 +2,13 @@ import { z, type ZodType } from 'zod';
 
 import { analysisSchema } from './analyses';
 import {
+  consultationListResponseSchema,
+  consultationRecordSchema,
+  createConsultationUploadRequestSchema,
+  createConsultationUploadResponseSchema,
+  updateConsultationRequestSchema,
+} from './consultations';
+import {
   candidateListResponseSchema,
   createCandidateRequestSchema,
   decideCategoryRequestSchema,
@@ -228,6 +235,65 @@ export const ENDPOINTS = {
     method: 'GET',
     path: '/v1/weddings/{weddingId}',
     response: weddingDetailSchema,
+  },
+
+  /**
+   * 상담기록 — 녹음을 올릴 자리를 받는다.
+   *
+   * 형식과 길이를 **미리** 보낸다. 거절당한 호출도 과금되므로 서버가 Gemini를
+   * 부르기 전에 막는다.
+   */
+  createConsultationUpload: {
+    method: 'POST',
+    path: '/v1/consultations/uploads',
+    body: createConsultationUploadRequestSchema,
+    response: createConsultationUploadResponseSchema,
+  },
+
+  /** 올리기가 끝났음을 알리면 1차 판정이 시작된다. */
+  completeConsultationUpload: {
+    method: 'POST',
+    path: '/v1/consultations/{consultationId}/complete',
+    response: consultationRecordSchema,
+  },
+
+  /** 이 웨딩의 상담기록. */
+  listConsultations: {
+    method: 'GET',
+    path: '/v1/weddings/{weddingId}/consultations',
+    response: consultationListResponseSchema,
+  },
+
+  getConsultation: {
+    method: 'GET',
+    path: '/v1/consultations/{consultationId}',
+    response: consultationRecordSchema,
+  },
+
+  /** 사용자가 고친다. **모델이 뽑은 값은 확정이 아니다.** */
+  updateConsultation: {
+    method: 'PATCH',
+    path: '/v1/consultations/{consultationId}',
+    body: updateConsultationRequestSchema,
+    response: consultationRecordSchema,
+  },
+
+  /**
+   * 확인을 마치고 저장한다. **여기서 원본을 지운다.**
+   *
+   * 확인 전에 지우지 않는 이유는 다시 읽어야 할 수 있기 때문이고, 확인을 안 해도
+   * 24시간 뒤에는 지운다 — 그 상한이 `audio_delete_by`다.
+   */
+  confirmConsultation: {
+    method: 'POST',
+    path: '/v1/consultations/{consultationId}/confirm',
+    response: consultationRecordSchema,
+  },
+
+  deleteConsultation: {
+    method: 'DELETE',
+    path: '/v1/consultations/{consultationId}',
+    response: z.object({ deleted: z.literal(true) }),
   },
 
   /** A-04 촬영. 서명된 URL을 받아 파일은 스토리지로 바로 올린다. */

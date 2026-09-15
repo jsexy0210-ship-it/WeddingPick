@@ -13,6 +13,8 @@
  * 다시 덮어쓴 자리가 있다(옛 «확인된 ~» 표기 → `실 제보`). 뒤에 온 쪽을 쓴다.
  */
 
+import { formatCount } from './format-number';
+
 export const TERMS = {
   /** 업체 찾기. `탐색`을 쓰지 않는다. */
   search: '검색',
@@ -44,8 +46,11 @@ export const TERMS = {
   myReports: '내 제보내역',
   priceReport: '가격 제보',
   directInput: '직접입력',
-  /** 커플 공동 공간. */
-  ourWedding: '웨딩일정',
+  /**
+   * 커플 공동 공간. 라우트는 `/wedding` 그대로다 — 이 자리는 «우리웨딩 →
+   * 웨딩일정 → 웨딩노트»로 보이는 이름만 바뀌었다(2026-09-14 대표 확정).
+   */
+  ourWedding: '웨딩노트',
   spouse: '배우자',
   /** 프로모션. v3.3이 `현재 혜택·이벤트`를 사용자 화면에서 이 말로 바꿨다. */
   benefits: '받을 수 있는 혜택',
@@ -91,7 +96,7 @@ export function dataCaption(input: {
   period?: string;
   baseAmount?: string;
 }): string {
-  const parts = [`${TERMS.verifiedData} ${input.count}건`, input.period ?? TERMS.period];
+  const parts = [`${TERMS.verifiedData} ${formatCount(input.count)}건`, input.period ?? TERMS.period];
 
   if (input.baseAmount) parts.push(`${TERMS.baseAmount} ${input.baseAmount}`);
 

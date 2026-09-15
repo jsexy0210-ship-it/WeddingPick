@@ -4,6 +4,7 @@ import {
   DISCLOSURE_THRESHOLDS,
   TERMS,
   VENDOR_CATEGORY_LABEL,
+  formatCount,
   regionLabel,
   manwon,
   priceLine,
@@ -20,9 +21,11 @@ import { LoginSheet } from '@/features/auth/login-sheet';
 import { savePendingAction } from '@/features/auth/pending-action';
 import { PickDoneSheet } from '@/features/pick/pick-sheets';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
+import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import {
   ErrorView,
   Layout,
+  LineHeight,
   MaxContentWidth,
   Radius,
   Spacing,
@@ -31,25 +34,28 @@ import {
   Toast,
   useTheme,
   SkeletonView,
+  VendorImage,
 } from '@weddingpick/ui';
 
 /**
- * 비교 결과 · WP-CMP-002. 시안 09-core-loop.dc.html #10b.
+ * 비교 결과 · WP-CMP-002. 2026-09-14 대표 지시로 **표 형태**로 바꿨다
+ * (피그마 `Pick.tsx` `CompareScreen`, 98행 — B등급이라 색·문구는 옮기지 않고
+ * 구조만 가져온다). 이전 판단("좁은 화면에 표는 아무것도 안 읽힌다")은 지웠다.
  *
- *   nav 56     뒤로 · «스튜디오 3곳 비교» 18
- *   hero       26 «가장 크게 갈리는 건 … 예요» + 후보 칩 3(A #212124 / B #393a40 / C #868b94 · 36 · pill)
- *   속성 블록   라벨 18 700 → 행 48(키 칩 22 · 이름 16 · 값 16 700 우측 기준선) — 제보 금액 · 기준금액 · 실 제보 · 업종 · 출처
- *   밴드 → «웨딩픽 요약» 20 + 단서
- *   dock 92    후보별 Pick 버튼 3 · 52(tokens size.ctaPrimary)
+ * 좁은 화면에서 표가 읽히는 이유 — **라벨열을 고정하고 업체열만 가로로 민다.**
+ * 세로로 길어지면 헤더(업체 사진·이름)가 위로 사라지므로, 라벨열은 왼쪽에
+ * 고정된 채 화면 전체가 세로로 함께 스크롤되고 업체열만 별도로 가로 스크롤된다
+ * — RN에서 두 방향 sticky는 안정적이지 않아, 고정열(왼쪽) + 가로 스크롤열(오른쪽)을
+ * 나란히 둔 뒤 그 둘을 하나의 세로 ScrollView로 감싸는 방식을 쓴다.
  *
- * 좁은 화면에 세 칸짜리 표를 그리면 아무것도 읽히지 않는다. 항목을 위에서 아래로 두고,
- * 각 항목 안에서 A·B·C를 행으로 놓는다. 단서(caveats)는 서버가 결과와 함께 내려준다 — 표만
- * 그리고 «금액만으로는 비교할 수 없다»는 말을 빠뜨리면 우리가 만든 표가 오해를 부추긴다.
+ * 단서(caveats)는 서버가 결과와 함께 내려준다 — 표만 그리고 «금액만으로는
+ * 비교할 수 없다»는 말을 빠뜨리면 우리가 만든 표가 오해를 부추긴다.
  *
  * 값은 우세한 쪽만 #212124(text), 나머지는 #393a40(textStrong)이다. 금액이 없는 쪽(0층·1층)은 회색.
  * 웨딩픽은 비싸다 싸다를 판정하지 않는다 — 우세는 «정보가 더 있다»(실 제보 건수)로만 가른다.
+ * BEST 배지는 그 우세(tone==='text') 칸에만 붙는다.
  */
-const KEYS = ['A', 'B', 'C'] as const;
+const KEY_LETTERS = 'ABCDE';
 
 /** 건수 차이가 이만큼(공개 사다리 한 단 · DISCLOSURE_THRESHOLDS.limited) 이상이면 «갈린다»고 말한다. */
 const COUNT_GAP_NOTABLE = DISCLOSURE_THRESHOLDS.limited;
@@ -144,7 +150,13 @@ export default function CompareScreen() {
       ? `가장 크게 갈리는 건\n${TERMS.verifiedData} 건수예요`
       : `${TERMS.verifiedData} 건수는\n비슷해요`;
 
-  const keyTones = [theme.backgroundInk, theme.textStrong, theme.textAssistive] as const;
+  const keyTones = [
+    theme.backgroundInk,
+    theme.textStrong,
+    theme.textAssistive,
+    theme.tint,
+    theme.textDisabled,
+  ] as const;
 
   /** 속성 블록 한 줄의 값. tone: 우세(text) · 보통(textStrong) · 없음(textAssistive). */
   type Cell = { value: string; tone: 'text' | 'textStrong' | 'textAssistive' };
@@ -168,7 +180,7 @@ export default function CompareScreen() {
     {
       label: ROW_COUNT,
       cells: counts.map((count) => ({
-        value: `${count}건`,
+        value: `${formatCount(count)}건`,
         tone: count === maxCount && count > 0 ? 'text' : count === 0 ? 'textAssistive' : 'textStrong',
       })),
     },
@@ -207,42 +219,85 @@ export default function CompareScreen() {
               {vendors.map((vendor, i) => (
                 <View key={vendor.id} style={[styles.chip, { backgroundColor: keyTones[i] }]}>
                   <ThemedText type="t7" numberOfLines={1} style={[styles.bold, { color: theme.onTint }]}>
-                    {KEYS[i]} {vendor.name}
+                    {KEY_LETTERS[i]} {vendor.name}
                   </ThemedText>
                 </View>
               ))}
             </View>
           </View>
 
-          {/* 속성 블록 · padding 0 24 24 · 라벨→행 10 · 행 48 · 키 칩 22 */}
-          {blocks.map((block) => (
-            <View key={block.label} style={styles.block}>
-              <ThemedText type="t5">{block.label}</ThemedText>
-              <View style={styles.rows}>
-                {block.cells.map((cell, i) => (
-                  <View key={vendors[i]!.id}>
-                    <View style={styles.row}>
-                      <View style={[styles.keyChip, { backgroundColor: keyTones[i] }]}>
-                        <ThemedText type="t7" style={[styles.bold, { color: theme.onTint }]}>{KEYS[i]}</ThemedText>
+          {/*
+            표 — 라벨열(왼쪽, 고정) + 업체열(오른쪽, 가로 스크롤). 둘 다 이 화면의 세로
+            ScrollView 한 장 안에 있어 위아래로는 함께 움직이고, 좌우로는 업체열만 민다.
+          */}
+          <View style={styles.tableWrap}>
+            <View style={styles.tableLabelCol}>
+              {/* 업체 사진 헤더 행 자리를 라벨열에도 비워 둔다 — 안 비우면 첫 데이터 행이 사진과 나란해진다. */}
+              <View style={styles.tableHeaderSpacer} />
+              {blocks.map((block) => (
+                <View key={block.label} style={[styles.tableRow, { borderBottomColor: theme.border }]}>
+                  <ThemedText type="t7" themeColor="textSecondary" numberOfLines={3} style={styles.bold}>
+                    {block.label}
+                  </ThemedText>
+                </View>
+              ))}
+            </View>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View>
+                {/* 업체 사진 · 키 · 이름 헤더 행 */}
+                <View style={styles.tableHeaderRow}>
+                  {vendors.map((vendor, i) => (
+                    <View key={vendor.id} style={styles.tableCol}>
+                      <View style={styles.tableThumbWrap}>
+                        <VendorImage
+                          source={vendor.imageUrl ? { uri: vendor.imageUrl } : undefined}
+                          category={vendorImageCategory(vendor.category)}
+                          width={COL_W}
+                          height={COL_THUMB_H}
+                          radius={Radius.medium}
+                        />
+                        <View style={[styles.keyChip, styles.tableThumbKey, { backgroundColor: keyTones[i] }]}>
+                          <ThemedText type="t7" style={[styles.bold, { color: theme.onTint }]}>
+                            {KEY_LETTERS[i]}
+                          </ThemedText>
+                        </View>
                       </View>
-                      <ThemedText type="t6" themeColor="textSecondary" numberOfLines={1} style={styles.rowName}>
-                        {vendors[i]!.name}
-                      </ThemedText>
-                      <ThemedText
-                        type="t6"
-                        numeric
-                        numberOfLines={2}
-                        themeColor={cell.tone}
-                        style={[styles.bold, styles.rowValue]}>
-                        {cell.value}
+                      <ThemedText type="t7" numberOfLines={1} style={styles.bold}>
+                        {vendor.name}
                       </ThemedText>
                     </View>
-                    <View style={[styles.divider, { backgroundColor: theme.border }]} />
+                  ))}
+                </View>
+
+                {/* 데이터 행 — 항목마다 업체 수만큼 열 */}
+                {blocks.map((block) => (
+                  <View key={block.label} style={[styles.tableRow, { borderBottomColor: theme.border }]}>
+                    {block.cells.map((cell, i) => (
+                      <View key={vendors[i]!.id} style={styles.tableCol}>
+                        <ThemedText
+                          type="t6"
+                          numeric
+                          numberOfLines={3}
+                          themeColor={cell.tone}
+                          style={[styles.bold, styles.tableCellText]}>
+                          {cell.value}
+                        </ThemedText>
+                        {/* BEST — 정보가 더 있다(실 제보 건수)는 뜻이지 값을 평가하지 않는다. */}
+                        {cell.tone === 'text' ? (
+                          <View style={[styles.bestBadge, { backgroundColor: theme.tintSurface }]}>
+                            <ThemedText type="micro" themeColor="tint" style={styles.bold}>
+                              BEST
+                            </ThemedText>
+                          </View>
+                        ) : null}
+                      </View>
+                    ))}
                   </View>
                 ))}
               </View>
-            </View>
-          ))}
+            </ScrollView>
+          </View>
 
           {/* 밴드 → 웨딩픽 요약 — 단서는 서버가 준다 */}
           <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} />
@@ -282,7 +337,7 @@ export default function CompareScreen() {
                   busy ? styles.busy : null,
                 ]}>
                 <ThemedText type="t6" numberOfLines={1} themeColor={picked ? 'onTint' : 'text'} style={styles.bold}>
-                  {busy ? '담는 중…' : picked ? `${KEYS[i]} ${TERMS.pick}했어요` : `${KEYS[i]} ${TERMS.pick}`}
+                  {busy ? '담는 중…' : picked ? `${KEY_LETTERS[i]} ${TERMS.pick}했어요` : `${KEY_LETTERS[i]} ${TERMS.pick}`}
                 </ThemedText>
               </Pressable>
             );
@@ -323,6 +378,17 @@ const CAND_CHIP_HEIGHT = Layout.chip;
 const KEY_CHIP = Layout.badgeHeight;
 const ROW_HEIGHT = Layout.rowMinHeightCompact;
 const BULLET = Layout.bulletDot;
+
+/*
+ * 표 칸 치수 — 토큰 사다리에 없는 이 화면 전용 로컬 값이다(디자인 정본 아님,
+ * search/index.tsx의 CARD_IMAGE_HEIGHT와 같은 성격). 라벨열은 "제보 금액" 같은
+ * 네 글자가 한 줄로, "업체 정보 출처"가 두 줄로 들어가는 폭이고, 업체열은 사진 +
+ * 이름 한 줄 + 값 두 줄이 들어가는 폭이다.
+ */
+const LABEL_W = 88;
+const COL_W = 118;
+const COL_THUMB_H = 82;
+const HEADER_ROW_H = COL_THUMB_H + Spacing.half + LineHeight.t7 + Spacing.two * 2;
 
 const styles = StyleSheet.create({
   container: {
@@ -370,19 +436,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: Layout.rowPaddingY,
   },
 
-  /* 속성 블록 · padding 0 24 24 · gap 10 */
-  block: {
-    paddingHorizontal: Layout.gutter,
-    paddingBottom: Layout.gutter,
-    gap: Layout.cardGap,
-  },
-  rows: { gap: Spacing.half },
-  row: {
+  /* 표 — 라벨열(고정) + 업체열(가로 스크롤). 둘 다 padding 0 24. */
+  tableWrap: { flexDirection: 'row', paddingLeft: Layout.gutter },
+  tableLabelCol: { width: LABEL_W, flexShrink: 0 },
+  tableHeaderSpacer: { height: HEADER_ROW_H },
+  tableHeaderRow: { flexDirection: 'row', paddingVertical: Spacing.two, paddingRight: Layout.gutter },
+  tableRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Layout.rowPaddingY,
     minHeight: ROW_HEIGHT,
     paddingVertical: Spacing.two,
+    paddingRight: Layout.gutter,
+    borderBottomWidth: 1,
+  },
+  tableCol: { width: COL_W, paddingRight: Spacing.two, justifyContent: 'center' },
+  tableThumbWrap: { position: 'relative', marginBottom: Spacing.half },
+  tableThumbKey: { position: 'absolute', top: 6, left: 6 },
+  tableCellText: {},
+  bestBadge: {
+    marginTop: 3,
+    alignSelf: 'flex-start',
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.one,
+    paddingVertical: 2,
   },
   keyChip: {
     width: KEY_CHIP,
@@ -391,8 +467,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  rowName: { flex: 1, minWidth: 0 },
-  rowValue: { flexShrink: 1, maxWidth: '55%', textAlign: 'right' },
   divider: { height: 1 },
 
   /* 밴드 16 · margin 4 0 28 */

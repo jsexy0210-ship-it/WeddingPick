@@ -87,7 +87,7 @@ function makeScreenHTML(w, h, screen) {
     margin-top: ${topPad}px;
     font-size: ${brandSize}px;
     font-weight: 700;
-    color: #E7898D;
+    color: #FF6F61;
     letter-spacing: -0.01em;
   }
   .headline {

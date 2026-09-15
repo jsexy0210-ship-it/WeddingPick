@@ -393,7 +393,12 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   repBadgeText: {
-    color: Colors.light.onTint,
+    /*
+     * `scrim`(어두운 반투명) 위에 얹히므로 `onInk`(흰색)다. `onTint`가 아니다 —
+     * 2026-09-14 새 팔레트에서 `onTint`가 흰색에서 플럼 #FFFFFF로 바뀌었고, 그대로
+     * 두면 어두운 면에 어두운 글자가 된다.
+     */
+    color: Colors.light.onInk,
   },
 
   // ── 전체화면 뷰어. 스킨·시스템 모드와 무관하게 고정 다크. ──

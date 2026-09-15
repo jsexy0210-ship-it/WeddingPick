@@ -1,18 +1,28 @@
 /**
- * Depth Back — 화면 계층에서 **한 단계 위**로 가는 규칙. 앱 전체가 이 파일 하나만 쓴다.
+ * Depth Back — 화면 계층에서 **한 단계 위**로 가는 fallback 규칙. 앱 전체가 이 파일
+ * 하나만 쓴다.
  *
- * ## History Back과 무엇이 다른가
+ * ## 지금은 언제 이 표를 보는가 (2026-09-15 대표 지시로 정책 변경)
+ *
+ * 좌상단 뒤로가기 버튼은 이제 **History 우선**이다(`depth-back.ts` `useDepthBack` ·
+ * `goDepthBack`) — 현재 화면 스택에 방문 기록이 있으면(`router.canGoBack()`) 실제
+ * 직전 화면으로 돌아간다. **이 표는 기록이 없을 때만**(딥링크·알림 등 직접 진입) 쓰는
+ * fallback이다.
  *
  *   History Back  방문 순서를 되짚는다. 안드로이드 하드웨어 버튼 · 웹 브라우저 뒤로 ·
- *                 iOS 가장자리 스와이프가 그것이고, **그대로 둔다**(막지 않는다).
- *   Depth Back    화면 계층에서 한 단계 위로 간다. 링크로 곧장 들어와 방문 기록이
- *                 없어도 언제나 부모로 간다. **좌상단 뒤로가기 버튼이 이것이다.**
+ *                 iOS 가장자리 스와이프가 그것이고, **그대로 둔다**(막지 않는다). 탭은
+ *                 각자 독립된 스택이라 탭 전환은 여기 잡히지 않는다 — Back 히스토리가
+ *                 아니다.
+ *   Depth Back    History가 없을 때의 fallback. 화면 계층에서 한 단계 위로 간다.
  *
- * 예전에는 버튼이 `canGoBack() ? back() : replace(fallback)`이었다. 기록이 있으면
- * 방문 순서를 따라가므로, MY에서 검색 결과로 들어갔다가 뒤로 누르면 MY가 아니라
- * 직전에 있던 다른 탭으로 튀었다. 화면마다 `fallback`을 따로 적어둔 것도 서로 어긋났다
- * (`BackButton` `/search` · `SubScreen` `/my` · `NavBar` `/wedding`). 셋을 없애고
- * **현재 경로에서 부모를 계산**한다.
+ * **예전(2026-09-15 이전)에는 버튼이 늘 이 표만 보고 History를 아예 안 봤다.** 그전에는
+ * `canGoBack() ? back() : replace(fallback)`이었는데, 그때는 기록이 있으면 무조건 따라가
+ * MY에서 검색 결과로 들어갔다가 뒤로 누르면 MY가 아니라 직전에 있던 다른 탭으로 튀었다
+ * (탭마다 독립 스택이 아니었던 시절 얘기다 — 지금은 `app/(tabs)/_layout.tsx` 아래
+ * 탭마다 자기 `<Stack>`이 있어 탭 넘나든 이동이 애초에 그 탭 스택의 기록에 안 잡힌다).
+ * 화면마다 `fallback`을 따로 적어둔 것도 서로 어긋났다(`BackButton` `/search` · `SubScreen`
+ * `/my` · `NavBar` `/wedding`). 셋을 없애고 **현재 경로에서 부모를 계산**하는 표 하나로
+ * 모은 것이 지금 이 파일이고, 그 계산은 그대로 fallback으로 남았다.
  *
  * ## 계산 방법
  *
@@ -67,6 +77,8 @@ export const ROUTES: readonly string[] = [
   '/admin/terms',
   '/admin/users',
   '/admin/vendors',
+  '/community',
+  '/community/feed/[id]',
   '/capture',
   '/capture/analysis/[id]',
   '/capture/camera',
@@ -129,10 +141,13 @@ export const ROUTES: readonly string[] = [
   '/progress',
   '/search',
   '/search/[vendorId]',
+  '/search/[vendorId]/booking',
+  '/search/[vendorId]/consult',
   '/search/[vendorId]/edit-review',
   '/search/[vendorId]/fix-report',
   '/search/[vendorId]/images',
   '/search/[vendorId]/price-report',
+  '/search/[vendorId]/review/[reviewId]',
   '/search/[vendorId]/reviews',
   '/search/[vendorId]/write-review',
   '/search/autocomplete',
@@ -164,13 +179,19 @@ export const ROUTES: readonly string[] = [
   '/wedding/[id]/tasks',
   '/wedding/[id]/timeline',
   '/wedding/[id]/verify',
+  '/wedding/[id]/consultations',
   '/wedding/[id]/visit-notes',
   '/wedding/join',
   '/wedding/partner',
 ];
 
 /** Root 5탭(SPEC §12.2 · 05-root). 여기에는 뒤로가기를 두지 않는다 — 위가 없다. */
-export const TAB_ROOTS: readonly string[] = ['/', '/search', '/pick', '/wedding', '/my'];
+/*
+ * Root 5탭(2026-09-14 대표 확정 · `features/navigation/root-tabs.ts`와 같은 다섯).
+ * 검색이 내려가고 라운지가 올라왔다 — 검색은 이제 위가 있는 화면이라 뒤로가기를
+ * 둔다(홈 상단 검색바에서 들어오므로 올라가는 곳도 홈이다).
+ */
+export const TAB_ROOTS: readonly string[] = ['/', '/wedding', '/pick', '/community', '/my'];
 
 /**
  * 뒤로가기 버튼을 두지 않는 화면.
@@ -244,6 +265,7 @@ export const DEPTH_BACK_EXCEPTIONS: Readonly<Record<string, string>> = {
   '/wedding/[id]/quotes': '/wedding',
   '/wedding/[id]/tasks': '/wedding',
   '/wedding/[id]/timeline': '/wedding',
+  '/wedding/[id]/consultations': '/wedding',
   '/wedding/[id]/visit-notes': '/wedding',
 };
 

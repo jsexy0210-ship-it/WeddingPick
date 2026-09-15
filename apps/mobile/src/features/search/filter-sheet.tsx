@@ -1,4 +1,10 @@
-import { BUDGET_BANDS, type BudgetBandKey } from '@weddingpick/domain';
+import {
+  BUDGET_BANDS,
+  type BudgetBandKey,
+  VENDOR_CATEGORIES,
+  VENDOR_CATEGORY_LABEL,
+  type VendorCategory,
+} from '@weddingpick/domain';
 import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 
 import {
@@ -34,6 +40,8 @@ const S = {
   reset: '초기화',
   /** «{n}곳 보기». */
   apply: (count: number) => `${count}곳 보기`,
+  groupCategory: '카테고리',
+  allCategories: '전체',
   groupRegion: '지역',
   groupBudget: '예산',
   onlyVerified: '실 제보가 있는 곳만',
@@ -41,6 +49,8 @@ const S = {
 };
 
 export type SearchFilterValue = {
+  /** 업종 한 칸. 피그마 `Search.tsx` 필터 시트의 첫 그룹(2026-09-14 정본). 고르지 않았으면 null = 전체. */
+  category: VendorCategory | null;
   region: string | null;
   budget: BudgetBandKey | null;
   onlyVerified: boolean;
@@ -88,7 +98,7 @@ export function FilterSheet({
             accessibilityRole="button"
             accessibilityLabel={S.reset}
             hitSlop={Spacing.three}
-            onPress={() => onChange({ region: null, budget: null, onlyVerified: false })}>
+            onPress={() => onChange({ category: null, region: null, budget: null, onlyVerified: false })}>
             {/* 시안 «초기화» 16/700 #4D5159 — 코랄이 아니다. 되돌리기는 강조할 행동이 아니다. */}
             <ThemedText type="t6" themeColor="textSecondary" style={styles.bold}>
               {S.reset}
@@ -100,6 +110,38 @@ export function FilterSheet({
           style={styles.body}
           contentContainerStyle={styles.bodyContent}
           showsVerticalScrollIndicator={false}>
+          {/*
+            카테고리 — 피그마 `Search.tsx` 필터 시트의 첫 그룹(«전체 · 웨딩홀 · 스튜디오 …»).
+            결과 위 «카테고리 ▾» 칩이 이 시트를 연다. 업종은 열셋 전부 두고 이름은
+            VENDOR_CATEGORY_LABEL 하나만 본다(본식스냅 · 헤어변형 · 결정사 — CLAUDE.md).
+          */}
+          <View style={styles.group}>
+            <ThemedText type="t6" style={styles.bold}>
+              {S.groupCategory}
+            </ThemedText>
+            <View style={styles.chips}>
+              <FilterChip
+                label={S.allCategories}
+                size="sheet"
+                accent="tint"
+                role="radio"
+                selected={value.category === null}
+                onPress={() => set({ category: null })}
+              />
+              {VENDOR_CATEGORIES.map((category) => (
+                <FilterChip
+                  key={category}
+                  label={VENDOR_CATEGORY_LABEL[category]}
+                  size="sheet"
+                  accent="tint"
+                  role="radio"
+                  selected={value.category === category}
+                  onPress={() => set({ category: value.category === category ? null : category })}
+                />
+              ))}
+            </View>
+          </View>
+
           {/* 지역 */}
           <View style={styles.group}>
             <ThemedText type="t6" style={styles.bold}>
