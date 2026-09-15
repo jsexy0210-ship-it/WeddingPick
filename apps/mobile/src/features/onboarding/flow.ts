@@ -6,6 +6,8 @@ import {
   type WeddingStyle,
 } from '@weddingpick/domain';
 
+import { common } from '../../../../../spec/strings.ko.json';
+
 /**
  * 초기 설정 **3개 질문**의 순서와 규칙(2026-09-14 대표 확정 — 피그마
  * `weddingpick_figma` `src/app/components/FlowScreens.tsx` `steps` 3단계 기준).
@@ -100,21 +102,19 @@ export const STEP_DESCRIPTION: Record<QuestionStep, string> = {
 };
 
 export const DONE_CTA = '웨딩픽 시작하기';
-export const NEXT_CTA = '다음';
-export const PREV_CTA = '이전';
 
 /**
- * 스타일 CTA — 고른 **장수** 그대로 «N장 선택». 완료 화면이 뒤에 있으므로
- * «시작하기»를 붙이지 않는다. 0장이면 비활성.
+ * 「다음」 — 세 질문이 전부 같은 CTA를 쓴다.
  *
- * 세는 것이 이미지 장수라 단위는 «장»이다 — `spec/strings.ko.json`
- * `onboarding.taste.cta` · SPEC.md §「CTA는 «N장 선택»」 · 시안
- * `20-onboarding-v2.dc.html` «3장 선택». CHANGELOG v3.19가 한 번 «곳»으로
- * 적었지만 «곳»은 업체를 세는 말이고, 그 뒤의 SPEC과 시안이 «장»으로 돌아왔다.
+ * **스타일 3/3도 이것이다.** 2026-09-15까지 `styleCta(n)`이 «N장 선택»을 만들었는데
+ * «장»은 사진·종이를 세는 말이라 사진 타일을 지운 지금은 셀 것이 없다(대표 지시
+ * 「타일로 하지마 버튼으로 통일한다」). 규격서 `docs/figma-spec/onboarding.txt`의
+ * CTA는 «다음»이다 — `button 382×56 "다음" · 14/700 #FFFFFF · bg #1A1C20 · r16`.
+ * 근거를 옛 SPEC.md에서 피그마로 옮긴 것이고, 문구는 `spec/strings.ko.json`
+ * `common.cta.next`에서 온다.
  */
-export function styleCta(count: number): string {
-  return `${count}장 선택`;
-}
+export const NEXT_CTA = common['cta.next'];
+export const PREV_CTA = '이전';
 
 /** 이 답 상태에서 묻는 Step. 셋 전부 — 건너뛰는 질문이 없다. */
 export function stepsFor(_answers: Answers): readonly QuestionStep[] {

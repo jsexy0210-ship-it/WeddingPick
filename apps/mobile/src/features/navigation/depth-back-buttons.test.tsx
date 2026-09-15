@@ -55,7 +55,7 @@ jest.mock('@/features/onboarding/inline-toast', () => ({
   InlineToast: 'InlineToast',
   useInlineToast: () => ({ toast: null, show: jest.fn(), hide: jest.fn() }),
 }));
-jest.mock('@/features/onboarding/style-grid', () => ({ StyleGrid: 'StyleGrid' }));
+jest.mock('@/features/onboarding/option-row', () => ({ OptionRow: 'OptionRow' }));
 jest.mock('@/features/settings/my-kit', () => ({
   Hero: 'Hero', NavAction: 'NavAction', NoteBox: 'NoteBox', Section: 'Section', SubScreen: 'SubScreen',
 }));

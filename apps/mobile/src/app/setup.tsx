@@ -38,7 +38,6 @@ import {
   stepDescription,
   stepProgress,
   stepsFor,
-  styleCta,
   type Answers,
   type QuestionStep,
 } from '@/features/onboarding/flow';
@@ -456,7 +455,7 @@ export default function SetupScreen() {
         onEdit={beginEdit}
         prevLabel={previous === null ? undefined : PREV_CTA}
         onPrev={previous === null ? undefined : goPrev}
-        nextLabel={step === 'style' ? styleCta(chosenStyles.length) : NEXT_CTA}
+        nextLabel={NEXT_CTA}
         nextDisabled={!canAdvance(step, answers) || sending}
         onNext={goNext}
         error={error}>

@@ -1,16 +1,24 @@
-import { STYLE_PICK_LIMIT_TOAST, STYLE_PICK_MIN, type WeddingStyle } from '@weddingpick/domain';
+import {
+  STYLE_PICK_LIMIT_TOAST,
+  STYLE_PICK_MIN,
+  WEDDING_STYLES,
+  WEDDING_STYLE_LABEL,
+  toggleStyle,
+  type WeddingStyle,
+} from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
 import { ApiError, completeSetup, getCurrentUser } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
 import { STEP_TITLE_LINES } from '@/features/onboarding/flow';
 import { InlineToast, useInlineToast } from '@/features/onboarding/inline-toast';
-import { StyleGrid } from '@/features/onboarding/style-grid';
+import { OptionRow } from '@/features/onboarding/option-row';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { useDepthBack } from '@/features/navigation/depth-back';
 import { Hero, NavAction, NoteBox, Section, SubScreen } from '@/features/settings/my-kit';
-import { ErrorView } from '@weddingpick/ui';
+import { ErrorView, Layout } from '@weddingpick/ui';
 
 /** `spec/strings.ko.json` `my.item.taste` · `my.setting.note*` · 시안 13-my-sub WP-MY-004. */
 const S = {
@@ -35,7 +43,15 @@ type Loaded = {
 
 /**
  * 스타일 다시 고르기 · WP-MY-004. 지금 고른 것을 먼저 보여주고 바꾸게 한다. 저장은 헤더 오른쪽
- * «저장»이다(시안 navRight). 규칙은 온보딩 5/5와 같다 — 최소 1 · 최대 2 · 3번째는 토스트.
+ * «저장»이다(시안 navRight). 규칙은 온보딩 3/3과 같다 — 최소 1 · 최대 2 · 3번째는 토스트.
+ *
+ * **보기는 온보딩 3/3과 같은 `OptionRow` 넷이다**(2026-09-15 대표 지시 「타일로 하지마
+ * 버튼으로 통일한다」). 사진 2×2 타일을 쓰던 자리다 — 피그마 규격서에 타일이 없고,
+ * 같은 선택이 온보딩과 MY에서 다르게 보이던 자리다.
+ *
+ * **`features/onboarding/style-grid.tsx`와 `assets/images/style/*.png` 4장은 이제
+ * 아무도 쓰지 않는다.** 같이 지우라는 지시였는데 이 세션의 실행 환경이 파일 삭제를
+ * 막아 손대지 못했다 — 지우는 것은 MASTER 몫으로 남긴다(PR 본문에 적었다).
  *
  * «중요하게 보는 것» 순위 4행은 계약이 없어 두지 않는다.
  * 저장은 `completeSetup` — 예식일 · 지역은 읽어 둔 값을 그대로 돌려보내고(지우지 않는다),
@@ -96,11 +112,22 @@ export default function StyleScreen() {
       }>
       <Hero lines={STEP_TITLE_LINES.style} sub={S.sub(count)} />
 
-      <StyleGrid
-        chosen={loaded.chosen}
-        onChange={(next) => setLoaded({ ...loaded, chosen: next })}
-        onLimited={() => limitToast.show(STYLE_PICK_LIMIT_TOAST)}
-      />
+      <View style={styles.options}>
+        {WEDDING_STYLES.map((style) => (
+          <OptionRow
+            key={style}
+            role="checkbox"
+            label={WEDDING_STYLE_LABEL[style]}
+            selected={loaded.chosen.includes(style)}
+            onPress={() => {
+              const { next, limited } = toggleStyle(loaded.chosen, style);
+
+              if (limited) limitToast.show(STYLE_PICK_LIMIT_TOAST);
+              else setLoaded({ ...loaded, chosen: next });
+            }}
+          />
+        ))}
+      </View>
 
       {error ? (
         <Section>
@@ -116,3 +143,12 @@ export default function StyleScreen() {
     </SubScreen>
   );
 }
+
+const styles = StyleSheet.create({
+  /* 온보딩 3/3의 `options`와 같은 자리 — 규격서 «줄 사이 mar 0 0 12 0». 좌우는 화면 여백. */
+  options: {
+    paddingHorizontal: Layout.gutter,
+    paddingBottom: Layout.gutter,
+    gap: Layout.inlineGap,
+  },
+});

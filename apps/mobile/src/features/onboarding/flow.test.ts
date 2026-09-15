@@ -14,7 +14,6 @@ import {
   returnStep,
   stepProgress,
   stepsFor,
-  styleCta,
   summarizeStyles,
   type Answers,
 } from './flow';
@@ -130,11 +129,6 @@ describe('답 줄과 완료 요약', () => {
     expect(rows.every((row) => row.value !== '' && row.value !== '—')).toBe(true);
 
     expect(doneRows(FULL)[2]).toEqual({ step: 'style', label: '스타일', value: '도시적인 · 로맨틱한' });
-  });
-
-  it('스타일 CTA는 고른 장수 그대로 «N장 선택»이다', () => {
-    expect(styleCta(0)).toBe('0장 선택');
-    expect(styleCta(2)).toBe('2장 선택');
   });
 
   it('시트의 D-day는 «D-250», 당일은 «D-DAY»다', () => {
