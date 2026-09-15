@@ -740,6 +740,171 @@ const routes = {
       },
     ],
   },
+  /*
+   * ── B조(2026-09-15) — /search/* · /wedding/* · /pick/* 3Depth+ 캡처용 ──────
+   */
+
+  /* WP-SRCH 웨딩박람회 목록·상세·캘린더(search/expo · expo/[expoId] · expo/[expoId]/calendar). */
+  'GET /v1/expos': {
+    items: [
+      {
+        id: 'ea111111-1111-4111-8111-111111111111',
+        title: '2026 가을 강남 웨딩박람회',
+        organizer: '웨딩픽',
+        startsAt: '2026-10-10T02:00:00.000Z',
+        endsAt: '2026-10-10T08:00:00.000Z',
+        venue: '코엑스 3층 그랜드볼룸',
+        region: '서울',
+        status: 'upcoming',
+        isDeadlineSoon: true,
+        sourceNote: '주최사 안내',
+        lastVerifiedAt: '2026-09-10',
+      },
+      {
+        id: 'ea222222-2222-4222-8222-222222222222',
+        title: '분당 결혼준비 박람회',
+        organizer: '웨딩픽',
+        startsAt: '2026-09-20T01:00:00.000Z',
+        endsAt: '2026-09-20T07:00:00.000Z',
+        venue: '분당 컨벤션센터',
+        region: '경기',
+        status: 'ongoing',
+        isDeadlineSoon: false,
+        sourceNote: '주최사 안내',
+        lastVerifiedAt: '2026-09-14',
+      },
+    ],
+    nextCursor: null,
+  },
+  'GET /v1/expos/:expoId': {
+    id: 'ea111111-1111-4111-8111-111111111111',
+    title: '2026 가을 강남 웨딩박람회',
+    organizer: '웨딩픽',
+    startsAt: '2026-10-10T02:00:00.000Z',
+    endsAt: '2026-10-10T08:00:00.000Z',
+    venue: '코엑스 3층 그랜드볼룸',
+    region: '서울',
+    status: 'upcoming',
+    isDeadlineSoon: true,
+    sourceNote: '주최사 안내',
+    lastVerifiedAt: '2026-09-10',
+    address: '서울 강남구 영동대로 513',
+    registrationDeadline: '2026-10-08',
+    benefits: ['방문 예약 시 스타벅스 기프티콘', '현장 계약 시 대관료 5% 할인'],
+    description: '스드메·웨딩홀 30개 업체가 한자리에 모입니다. 사전 예약하면 입장 대기 없이 들어갈 수 있어요.',
+    notifyEnabled: false,
+  },
+
+  /* WP-SRCH 웨딩정보(search/wedding-info · wedding-info/[infoId]). */
+  'GET /v1/wedding-info': {
+    items: [
+      {
+        id: 'eb111111-1111-4111-8111-111111111111',
+        title: '결정사 상담 전 확인할 다섯 가지',
+        summary: '계약서에 꼭 넣어야 하는 문구를 정리했어요',
+        stage: 'early',
+        category: 'planning',
+        publishedAt: '2026-09-01T00:00:00.000Z',
+        thumbnailUrl: null,
+      },
+      {
+        id: 'eb222222-2222-4222-8222-222222222222',
+        title: '웨딩홀 계약 전 체크리스트',
+        summary: '보증인원과 식대 인상 조항을 먼저 확인하세요',
+        stage: 'mid',
+        category: 'venue',
+        publishedAt: '2026-08-20T00:00:00.000Z',
+        thumbnailUrl: null,
+      },
+    ],
+    nextCursor: null,
+  },
+  'GET /v1/wedding-info/:infoId': {
+    id: 'eb111111-1111-4111-8111-111111111111',
+    title: '결정사 상담 전 확인할 다섯 가지',
+    summary: '계약서에 꼭 넣어야 하는 문구를 정리했어요',
+    stage: 'early',
+    category: 'planning',
+    publishedAt: '2026-09-01T00:00:00.000Z',
+    thumbnailUrl: null,
+    body: '결정사와 상담할 때는 견적서에 포함 항목과 별도 비용을 분리해서 받아야 해요. 특히 헤어변형·본식스냅 추가 비용은 계약서에 명시된 것만 인정돼요.',
+    checklist: [
+      { id: 'c1', label: '포함 항목과 별도 비용을 나눠 받았나요', done: false },
+      { id: 'c2', label: '환불 규정을 확인했나요', done: false },
+    ],
+    relatedVendors: [{ id: VENDORS[0].id, name: VENDORS[0].name, category: VENDORS[0].category }],
+  },
+
+  /* WP-VEND 후기 쓰기 폼(write-review) · 신고 사유(reviews). */
+  'GET /v1/vendors/:vendorId/review-form': {
+    vendorId: VENDORS[0].id,
+    vendorName: VENDORS[0].name,
+    evaluationMode: 'rating',
+    checklist: [],
+    roles: [
+      {
+        value: 'contractor',
+        label: '계약자',
+        aspects: [
+          { key: 'kindness', label: '친절도' },
+          { key: 'value', label: '가격 대비 만족도' },
+        ],
+      },
+      { value: 'couple', label: '신랑신부', aspects: [{ key: 'kindness', label: '친절도' }] },
+      { value: 'guest', label: '하객', aspects: [] },
+    ],
+    verification: { value: 'reported', label: '작성형', note: '결제·계약 인증 없이 쓴 후기예요' },
+    alreadyWritten: false,
+    minimumBodyLength: 50,
+    packageSiblings: [],
+  },
+  'GET /v1/review-report-reasons': {
+    reasons: [
+      { value: 'false_content', label: '허위·거짓 내용' },
+      { value: 'abusive', label: '욕설·비방' },
+      { value: 'spam', label: '광고·스팸' },
+      { value: 'personal_info', label: '개인정보 노출' },
+      { value: 'other', label: '기타' },
+    ],
+  },
+
+  /* WP-PICK-007 제거된 후보(pick/removed). */
+  'GET /v1/weddings/:weddingId/candidates/removed': {
+    groups: [
+      {
+        category: 'hall',
+        categoryLabel: '웨딩홀',
+        items: [
+          {
+            id: 'ec111111-1111-4111-8111-111111111111',
+            vendorName: '송파 D 웨딩홀',
+            removedAt: '2026-08-20T00:00:00.000Z',
+          },
+        ],
+      },
+    ],
+  },
+
+  /* WP-OUR-010 지출 상세(wedding/[id]/expenses/[expenseId]). */
+  'GET /v1/weddings/:weddingId/expenses/:expenseId': {
+    id: 'ed111111-1111-4111-8111-111111111111',
+    label: '웨딩홀 계약금',
+    amount: 3_000_000,
+    category: 'hall',
+    bucket: 'hall',
+    status: 'paid',
+    statusLabel: '결제 완료',
+    spentOn: '2026-08-01',
+    source: 'payment_proof',
+    sourceLabel: 'Pick 인증',
+    refundStatus: 'normal',
+    refundStatusLabel: '정상',
+    bucketLabel: '웨딩홀',
+    registeredByPartner: false,
+    registeredAt: '2026-08-01T02:00:00.000Z',
+    splitPayments: [],
+  },
+
   /* 업체 반론(디자인 핸드오프 20번) — 이미 낸 반론이 있는 상태로 캡처한다(고치기 폼). */
   'GET /v1/me/rebuttals': {
     rebuttals: [

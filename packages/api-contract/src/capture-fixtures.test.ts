@@ -8,7 +8,7 @@
  *
  * 계약이 바뀌면 여기가 먼저 빨개진다. 그때 `scripts/fixtures/api.cjs`를 고친다.
  */
-import type { ZodType } from 'zod';
+import { z, type ZodType } from 'zod';
 
 import { analysisSchema } from './analyses';
 import { appBootstrapResponseSchema } from './app';
@@ -16,15 +16,17 @@ import { authProvidersResponseSchema } from './auth';
 import { candidateListResponseSchema } from './candidates';
 import { comparisonResponseSchema } from './comparison';
 import { consultationListResponseSchema } from './consultations';
+import { expoDetailSchema, expoListResponseSchema } from './expos';
 import { quoteSchema } from './quotes';
 import { rebuttalListResponseSchema } from './rebuttals';
-import { reviewListResponseSchema } from './reviews';
+import { reportReasonListResponseSchema, reviewFormSchema, reviewListResponseSchema } from './reviews';
 import { myMonthlyDrawResponseSchema, myRewardPayoutResponseSchema, myRewardsResponseSchema } from './rewards';
 import { settingsSchema } from './settings';
 import { signupStateSchema } from './signup';
 import { verificationRequestSchema } from './verification';
 import { weddingEventListResponseSchema } from './wedding-events';
-import { expenseSummaryResponseSchema } from './wedding-plan';
+import { weddingInfoDetailSchema, weddingInfoListResponseSchema } from './wedding-info';
+import { expenseDetailSchema, expenseSummaryResponseSchema } from './wedding-plan';
 import {
   vendorComparisonResponseSchema,
   conditionStatsSchema,
@@ -34,6 +36,23 @@ import {
   vendorSearchResponseSchema,
 } from './vendors';
 import { currentUserSchema } from './weddings';
+
+/**
+ * `GET /v1/weddings/:weddingId/candidates/removed`(제거된 후보 · pick/removed)는
+ * `packages/api-contract`에 정본 스키마가 없다 — `apps/mobile/src/api/client.ts`
+ * `getRemovedCandidates`가 인라인 zod로 직접 받는다. 제품 코드(`client.ts`)는 이
+ * 감사 작업의 수정 대상이 아니라서 옮기지 않고, 그 인라인 모양을 여기 그대로
+ * 옮겨 적는다 — 계약이 바뀌면 `client.ts`와 함께 고친다.
+ */
+const removedCandidatesResponseSchema = z.object({
+  groups: z.array(
+    z.object({
+      category: z.string(),
+      categoryLabel: z.string(),
+      items: z.array(z.object({ id: z.string(), vendorName: z.string(), removedAt: z.string() })),
+    })
+  ),
+});
 
 /*
  * fixture는 캡처 도구(ESM)와 이 시험(ts-jest·CJS)이 같이 읽어야 해서 `.cjs`다.
@@ -70,6 +89,14 @@ const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/me/rewards/payout', myRewardPayoutResponseSchema],
   ['GET /v1/me/rebuttals', rebuttalListResponseSchema],
   ['GET /v1/me/settings', settingsSchema],
+  ['GET /v1/expos', expoListResponseSchema],
+  ['GET /v1/expos/:expoId', expoDetailSchema],
+  ['GET /v1/wedding-info', weddingInfoListResponseSchema],
+  ['GET /v1/wedding-info/:infoId', weddingInfoDetailSchema],
+  ['GET /v1/vendors/:vendorId/review-form', reviewFormSchema],
+  ['GET /v1/review-report-reasons', reportReasonListResponseSchema],
+  ['GET /v1/weddings/:weddingId/candidates/removed', removedCandidatesResponseSchema],
+  ['GET /v1/weddings/:weddingId/expenses/:expenseId', expenseDetailSchema],
 ]);
 
 /**
