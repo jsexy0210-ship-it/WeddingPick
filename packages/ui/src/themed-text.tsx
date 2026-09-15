@@ -68,6 +68,7 @@ export type ThemedTextProps = TextProps & {
     | 'f24'
     | 'f26'
     | 'f28'
+    | 'f30'
     | 'f32'
     | 'f38'
     | 'f42'
@@ -149,6 +150,7 @@ const STYLE_FOR: Record<TextType, keyof typeof styles> = {
   f24: 'f24',
   f26: 'f26',
   f28: 'f28',
+  f30: 'f30',
   f32: 'f32',
   f38: 'f38',
   f42: 'f42',
@@ -195,6 +197,7 @@ const ANDROID_LETTER_SPACING_EM: Record<keyof typeof styles, number> = {
   f24: 0,
   f26: 0,
   f28: 0,
+  f30: 0,
   f32: 0,
   f38: 0,
   f42: 0,
@@ -269,6 +272,8 @@ const styles = StyleSheet.create({
   f24: { fontSize: FontSize.f24, lineHeight: LineHeight.lh32, fontWeight: 400 },
   f26: { fontSize: FontSize.f26, lineHeight: LineHeight.lh39, fontWeight: 400 },
   f28: { fontSize: FontSize.f28, lineHeight: LineHeight.lh42, fontWeight: 400 },
+  /* 30은 상담 예약 제목뿐이다(vendor-1-consult.txt «30/700 · lh 38»). */
+  f30: { fontSize: FontSize.f30, lineHeight: LineHeight.lh38, fontWeight: 400 },
   f32: { fontSize: FontSize.f32, lineHeight: LineHeight.lh40, fontWeight: 400 },
   f38: { fontSize: FontSize.f38, lineHeight: LineHeight.lh45, fontWeight: 400 },
   f42: { fontSize: FontSize.f42, lineHeight: LineHeight.lh45, fontWeight: 400 },

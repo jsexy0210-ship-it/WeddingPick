@@ -2,7 +2,7 @@ import type { ReviewListResponse } from '@weddingpick/api-contract';
 import { TERMS, type ReportReason } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listReportReasons, listVendorReviews, reportReview } from '@/api/client';
@@ -205,7 +205,13 @@ export default function VendorReviewsScreen() {
             ) : (
               reviews.map((review) => (
                 <ThemedView key={review.id} type="backgroundElement" style={styles.card}>
-                  <ThemedText type="smallBold">{review.title}</ThemedText>
+                  {/* 제목을 누르면 후기 상세(피그마 `ReviewDetailPage`)로 간다 — 2026-09-15 「고지가 먼저」 파기. */}
+                  <Pressable
+                    accessibilityRole="link"
+                    accessibilityLabel={`${review.title} 후기 자세히 보기`}
+                    onPress={() => router.push(`/search/${vendorId}/review/${review.id}`)}>
+                    <ThemedText type="smallBold">{review.title}</ThemedText>
+                  </Pressable>
                   {/*
                     별점을 그린다(2026-09-09 사용자 결정 · 5.0 만점). 예전에는 «4.0»처럼
                     숫자만 적었는데, 그 숫자가 5점 만점인지 10점 만점인지 화면이 말하지
