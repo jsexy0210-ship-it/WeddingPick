@@ -292,7 +292,7 @@ Primary는 키 컬러) · 탭 바 아이콘 24/라벨 12(피그마 20/10 — 기
 | --- | --- | --- |
 | 검색 · Pick · 웨딩노트 · 업체 상세 · MY · 라운지 수 옮김 | `cb32313` | search · pick · our-wedding · vendor-1 · my · community |
 | 홈 + 탭 바 | `16be46c` | home.txt — 헤더 · 히어로 · 준비현황(이모지) · 추천 가로 카드 · 카테고리 · 웨딩피드 · nav |
-| 로그인 · 온보딩 | `3f4c1d0`대 | login.txt · onboarding.txt — 보기 65 줄 · 잉크 「다음」 · 머리 줄 + 막대 |
+| 로그인 · 온보딩 | `e95bad8` | login.txt · onboarding.txt — 보기 65 줄 · 잉크 「다음」 · 머리 줄 + 막대 |
 | 상담 예약 · 예약 · 후기 상세 · 업체 CTA | `d98cc95` | vendor-1-consult.txt · vendor-1-booking.txt · (후기 상세는 피그마 소스) |
 
 캡처 도구: `--guest`(토큰 없이 — `/login`) · `FIXTURE_SETUP_COMPLETE=false`(`/setup`) · bootstrap fixture에 추천 3곳.
