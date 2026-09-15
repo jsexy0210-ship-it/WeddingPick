@@ -285,6 +285,49 @@ const routes = {
     ],
   },
 
+  /*
+   * 웨딩노트 캘린더 · 예산현황. 일정은 **오늘** 둘(하나는 지난 시각 = done)과 열흘 뒤 하나 —
+   * 오늘이 기본 선택일이라 오늘에 일정이 없으면 목록 자리가 빈 상태로만 찍힌다.
+   */
+  'GET /v1/weddings/:weddingId/events': (() => {
+    const today = new Date();
+    const at = (dayOffset, hour) => {
+      const value = new Date(today.getFullYear(), today.getMonth(), today.getDate() + dayOffset, hour, 0, 0);
+      return value.toISOString();
+    };
+    const event = (id, title, startsAt, status, extra = {}) => ({
+      id,
+      title,
+      startsAt,
+      location: null,
+      vendorId: null,
+      vendorLabel: null,
+      memo: null,
+      notifyEnabled: true,
+      source: 'manual',
+      status,
+      ...extra,
+    });
+    return {
+      events: [
+        event('31111111-1111-4111-8111-111111111111', '청첩장 인쇄', at(0, 9), 'done'),
+        event('32222222-2222-4222-8222-222222222222', '드레스 피팅', at(0, 14), 'upcoming', { location: '청담' }),
+        event('33333333-3333-4333-8333-333333333333', '스튜디오 상담', at(10, 11), 'upcoming'),
+      ],
+    };
+  })(),
+  'GET /v1/weddings/:weddingId/expenses': {
+    paidTotal: 12000000,
+    scheduledTotal: 0,
+    scheduledNote: '예정된 지출이 없어요',
+    buckets: [
+      { bucket: 'hall', label: '웨딩홀', amount: 10000000, ratio: 0.83 },
+      { bucket: 'sdm', label: '스드메', amount: 2000000, ratio: 0.17 },
+    ],
+    budget: { set: true, budget: 30000000, spent: 12000000, remaining: 18000000, over: false },
+    budgetBracket: null,
+    expenses: [],
+  },
   'GET /v1/weddings/:weddingId/candidates': {
     /* 웨딩홀 두 곳 — 배우자도 같이 담아 «둘 다 고른 곳» 비교 배너를 찍을 수 있게 한다. */
     groups: [

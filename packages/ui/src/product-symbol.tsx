@@ -8,7 +8,7 @@ import { Colors } from './theme';
  * 한때 `pickMark`가 여기 사본으로 있었는데 획 두께가 1.8로 확정본(1.9)과 달라
  * 탭 바만 다른 마크를 쓰고 있었다.
  */
-export type ProductSymbolName = 'house' | 'magnifier' | 'twoPeople' | 'calendar' | 'person' | 'hall' | 'sdm' | 'snap' | 'planner' | 'warning' | 'bell' | 'gear' | 'more' | 'chevronRight' | 'chevronLeft' | 'chevronDown' | 'arrowLeft' | 'pin' | 'link' | 'chart' | 'checkCircle' | 'close' | 'check';
+export type ProductSymbolName = 'house' | 'magnifier' | 'twoPeople' | 'calendar' | 'person' | 'hall' | 'sdm' | 'snap' | 'planner' | 'warning' | 'bell' | 'gear' | 'more' | 'chevronRight' | 'chevronLeft' | 'chevronDown' | 'arrowLeft' | 'pin' | 'link' | 'chart' | 'checkCircle' | 'edit' | 'trash' | 'mic' | 'close' | 'check';
 
 /**
  * 획 두께. 헤더·탭 아이콘(24)은 1.8, chevron(18)은 2, 닫기(14)는 2.4 — 05-root ·
@@ -48,6 +48,10 @@ export function ProductSymbol({ name, size = 24, color = Colors.light.text }: { 
       {name === 'link' && <><Path {...common} d="M9 17H7A5 5 0 0 1 7 7h2" /><Path {...common} d="M15 7h2a5 5 0 1 1 0 10h-2" /><Path {...common} d="M8 12h8" /></>}
       {name === 'chart' && <Path {...common} d="M18 20V10M12 20V4M6 20v-6" />}
       {name === 'checkCircle' && <><Circle {...common} cx="12" cy="12" r="9.5" /><Path {...common} d="m8.5 12 2.4 2.4L15.5 9.6" /></>}
+      {/* 웨딩노트 일정 행의 수정 연필 · 삭제 휴지통, 상담기록 빈 상태의 마이크 — 피그마 `OurWedding.tsx` SEED IconEditRegular · IconTrashRegular · IconMicRegular 자리. */}
+      {name === 'edit' && <><Path {...common} d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3z" /><Path {...common} d="m13.5 6.5 3 3" /></>}
+      {name === 'trash' && <><Path {...common} d="M4 7h16M10 11v6M14 11v6" /><Path {...common} d="M6 7l1 13h10l1-13M9 7V4h6v3" /></>}
+      {name === 'mic' && <><Rect {...common} x="9" y="3" width="6" height="11" rx="3" /><Path {...common} d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M9 21h6" /></>}
       {/* 위치 핀 — 검색 결과 카드의 지역 앞(피그마 `Search.tsx` lucide MapPin). */}
       {name === 'pin' && <><Path {...common} d="M12 21.4s-6.4-5.6-6.4-10.6a6.4 6.4 0 0 1 12.8 0c0 5-6.4 10.6-6.4 10.6z" /><Circle {...common} cx="12" cy="10.8" r="2.4" /></>}
       {name === 'close' && <Path {...common} d="M6 6l12 12M18 6 6 18" />}
