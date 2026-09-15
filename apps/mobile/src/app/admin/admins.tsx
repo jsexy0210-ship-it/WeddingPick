@@ -1,3 +1,4 @@
+import { Redirect } from 'expo-router';
 /**
  * 관리자 계정
  *
@@ -172,7 +173,7 @@ function confirmItems(pending: Pending): string[] {
       ];
 }
 
-export default function AdminAccountsScreen() {
+export function AdminsPanel() {
   const [data, setData] = useState<ListData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -260,7 +261,7 @@ export default function AdminAccountsScreen() {
 
   if (loading) {
     return (
-      <Page title="관리자 계정">
+      <Page embedded title="관리자 계정">
         <DelayedLoader active size={40} style={styles.centered} />
       </Page>
     );
@@ -268,7 +269,7 @@ export default function AdminAccountsScreen() {
 
   if (error || !data) {
     return (
-      <Page title="관리자 계정">
+      <Page embedded title="관리자 계정">
         <LoadError message={error ?? '불러오기 실패'} onRetry={() => setRev((r) => r + 1)} />
       </Page>
     );
@@ -327,6 +328,7 @@ export default function AdminAccountsScreen() {
 
   return (
     <Page
+      embedded
       title="관리자 계정"
       sub="콘솔에 들어올 수 있는 사람과 등급"
       action={{ label: '관리자 추가', onPress: () => setCreating(true), kind: 'brand' }}
@@ -491,3 +493,11 @@ const styles = StyleSheet.create({
   roleBtnTextActive: { color: Colors.light.tint, fontWeight: '700' },
   error: { fontSize: FontSize.t7, color: Colors.light.negative, marginBottom: 8 },
 });
+
+/**
+ * 옛 주소는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제 화면은 `/admin/users`(계정·권한)의 관리자 계정 탭에 있다 —
+ * `AdminsPanel`이 이 파일의 본체다.
+ */
+export default function AdminsRedirect() {
+  return <Redirect href="/admin/users?tab=admins" />;
+}

@@ -534,6 +534,70 @@ const routes = {
     viewerIsStored: true,
     viewerAccountId: 'aaaaaaaa-0000-4000-8000-000000000001',
   },
+  /*
+   * 대시보드 + 일일 브리핑(2026-09-15 대표 확정으로 한 화면). 브리핑은 대시보드
+   * 아래 절반이라 이 파일에서는 셋을 나란히 둔다 — 화면을 찍으면 위아래가 한 번에 보인다.
+   */
+  'GET /v1/admin/dashboard': {
+    humanQueue: [
+      { key: 'queue', label: '확인 필요', why: '실 제보 인증 대기', count: 3, tone: 'caution' },
+      { key: 'rebuttal', label: '후기 · 반론', why: '관계자 인증 확인 필요', count: 1, tone: 'danger' },
+    ],
+    humanTotal: 4,
+    dashCards: [
+      { key: 'ai-usage', label: '분석 비용', mode: '비용', value: '12,400', unit: '원', note: '오늘 사용분' },
+      { key: 'price-stats', label: '가격 통계', mode: '지표', value: '128', unit: '건', note: '이번 주 신규' },
+      { key: 'campaigns', label: '캠페인 참여', mode: '지표', value: '56', unit: '명', note: '이번 회차' },
+      { key: 'automation1', label: '자동 처리', mode: '자동', value: '312', unit: '건', note: '최근 24시간' },
+      { key: 'automation2', label: '자동 성공률', mode: '자동', value: '98.2', unit: '%', note: '최근 24시간' },
+      { key: 'automation3', label: '자동 복구', mode: '자동', value: '2', unit: '건', note: '최근 24시간' },
+    ],
+    auto: {
+      ratePct: 92,
+      segments: [
+        { key: 'concluded', label: '자동 종결', count: 288 },
+        { key: 'failed', label: '실패', count: 6 },
+        { key: 'human', label: '사람에게 넘김', count: 18 },
+      ],
+      keepRatePct: 96,
+      revertedCount: 2,
+      medianLatencyMs: 4200,
+      byWorkflow: [
+        { workflow: 'verification-review', concluded: 210, failed: 4, human: 12, reverted: 1, autoPct: 93 },
+      ],
+    },
+    autoLog: [
+      {
+        id: '11111111-1111-4111-8111-111111111111',
+        decision: '승인',
+        subject: '강남 A 웨딩홀',
+        reasonCode: 'auto_verified',
+        confidence: 0.94,
+        decidedAt: '2026-09-15T02:00:00.000Z',
+        tone: 'ok',
+      },
+    ],
+  },
+  'GET /v1/admin/members-trend': {
+    bucket: 'month',
+    points: [
+      { at: '2026-07-01T00:00:00.000Z', signups: 120, total: 1200 },
+      { at: '2026-08-01T00:00:00.000Z', signups: 150, total: 1350 },
+      { at: '2026-09-01T00:00:00.000Z', signups: 90, total: 1440 },
+    ],
+    current: 1440,
+  },
+  'GET /v1/admin/briefing': {
+    date: '2026-09-15',
+    autoProcessed: 312,
+    successRate: 0.982,
+    autoRecovered: 2,
+    unresolvedRisks: [],
+    aiCostToday: '12,400원',
+    revenueToday: '0원',
+    anomalies: [],
+    summary: '오늘 처리한 312건 중 사람이 볼 것은 없어요.',
+  },
   'GET /v1/admin/ad-tiers': {
     tiers: [
       { tier: 'light', state: 'live', decidedAt: '2026-09-11T00:00:00.000Z', placements: 2 },

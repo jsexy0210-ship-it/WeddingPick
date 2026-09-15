@@ -1,7 +1,12 @@
 /**
- * WP-ADM-035 FAQ 관리
+ * WP-ADM-035 FAQ 관리 — 이제 「사이트·기록」 화면의 탭 하나(FAQ 관리 자신)다.
  * 운영자가 직접 등록·수정·삭제. 카테고리·노출 순서·공개 여부
+ *
+ * **2026-09-15 대표 확정 — 약관·방침 · 링크 미리보기 · 감사 기록과 탭으로 묶였다**
+ * (넷 다 사용자에게 노출되는 문구·카드 또는 그 기록). 이 파일 맨 아래
+ * `SiteContentShell`이 그 껍데기고, 여기 있던 본문은 `FaqPanel`로 이름만 바꿨다.
  */
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   Modal,
@@ -17,6 +22,10 @@ import {
 import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { AdminTabShell, type AdminTabDef } from './_ui';
+import { TermsPanel } from './terms';
+import { OgCardPanel } from './og-card';
+import { AuditLogPanel } from './audit-log';
 
 type FaqItem = {
   id: string;
@@ -47,7 +56,7 @@ const BLANK_FAQ: Omit<FaqItem, 'id'> = {
   published: false,
 };
 
-export default function FaqScreen() {
+function FaqPanel() {
   const [data, setData] = useState<FaqData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -268,6 +277,33 @@ export default function FaqScreen() {
         </View>
       </Modal>
     </View>
+  );
+}
+
+const TABS: AdminTabDef[] = [
+  { key: 'faq', label: 'FAQ 관리' },
+  { key: 'terms', label: '약관 · 방침', readOnly: true },
+  { key: 'og-card', label: '링크 미리보기' },
+  { key: 'audit-log', label: '감사 기록' },
+];
+
+/**
+ * 「사이트·기록」 — FAQ 관리 · 약관·방침 · 링크 미리보기 · 감사 기록을 탭 넷으로
+ * 묶는다. **약관·방침은 「조회만」 딱지가 붙는다** — 정본이 웹사이트라 관리자는
+ * 조회만 한다(다섯 화면 중 하나. CLAUDE.md 「약관·방침의 직접 조작」).
+ */
+export default function SiteContentShell() {
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
+  const initial = TABS.some((t) => t.key === tab) ? (tab as string) : 'faq';
+  const [active, setActive] = useState(initial);
+
+  return (
+    <AdminTabShell tabs={TABS} active={active} onChange={setActive}>
+      {active === 'faq' && <FaqPanel />}
+      {active === 'terms' && <TermsPanel />}
+      {active === 'og-card' && <OgCardPanel />}
+      {active === 'audit-log' && <AuditLogPanel />}
+    </AdminTabShell>
   );
 }
 

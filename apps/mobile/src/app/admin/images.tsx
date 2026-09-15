@@ -1,3 +1,4 @@
+import { Redirect } from 'expo-router';
 /**
  * WP-ADM-015 이미지 자동 수급
  *
@@ -79,7 +80,7 @@ const COLS: Col[] = [
   { key: 'action', label: '', width: 110, align: 'right' },
 ];
 
-export default function ImagesScreen() {
+export function ImagesPanel() {
   const [data, setData] = useState<ImagesData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -160,6 +161,7 @@ export default function ImagesScreen() {
 
   return (
     <Page
+      embedded
       title="이미지 자동 수급"
       sub="권리 확인이 필수 관문 · 미확인은 노출되지 않아요"
       action={{ label: '새로 고침', onPress: reload }}
@@ -227,4 +229,12 @@ export default function ImagesScreen() {
       ) : null}
     </Page>
   );
+}
+
+/**
+ * 옛 주소는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제 화면은 `/admin/vendors`(업체·행사)의 이미지 관리 탭에 있다 —
+ * `ImagesPanel`이 이 파일의 본체다.
+ */
+export default function ImagesRedirect() {
+  return <Redirect href="/admin/vendors?tab=images" />;
 }

@@ -1,7 +1,16 @@
 /**
  * WP-ADM-014 데이터 · 업체 관리
  * 업체 병합·분리 · 상호 변경 · 영업상태 · 재귀속 이력
+ *
+ * **2026-09-15 대표 확정 — 「업체·행사」 화면의 탭 하나(업체 관리 자신)다**(업체
+ * 관리 · 이미지 관리 · 업체 문의 · 이메일 회신 — 넷 다 업체 관련 운영). 이 파일
+ * 맨 아래 `VendorsShell`이 그 껍데기고, 여기 있던 본문은 `VendorsPanel`로 이름만
+ * 바꿨다.
+ *
+ * **박람회 탭은 아직 없다.** 다른 세션(`session_01X9VA1VeAwEajpxUwTCHmFh`)이 그
+ * 화면을 만드는 중이다 — 라우트가 생기면 `TABS` 배열 끝에 추가한다.
  */
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   Modal,
@@ -16,6 +25,10 @@ import {
 import { Colors, FontSize, Spacing } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { AdminTabShell, type AdminTabDef } from './_ui';
+import { ImagesPanel } from './images';
+import { BizQueuePanel } from './biz-queue';
+import { EmailMatchingPanel } from './email-matching';
 import { formatCount } from '@weddingpick/domain';
 
 type VendorStatus = 'active' | 'closed' | 'suspended' | 'merged';
@@ -64,7 +77,7 @@ const STATUS_COLOR: Record<VendorStatus, string> = {
   merged: Colors.light.accent,
 };
 
-export default function VendorsScreen() {
+function VendorsPanel() {
   const [data, setData] = useState<VendorListData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -374,6 +387,36 @@ export default function VendorsScreen() {
         </View>
       </Modal>
     </View>
+  );
+}
+
+const TABS: AdminTabDef[] = [
+  { key: 'vendors', label: '업체 관리' },
+  { key: 'images', label: '이미지 관리' },
+  { key: 'biz-queue', label: '업체 문의', readOnly: true },
+  { key: 'email-matching', label: '이메일 회신', readOnly: true },
+  /* 박람회 — 다른 세션이 만드는 중. 화면이 생기면 여기 탭을 추가한다. */
+];
+
+/**
+ * 「업체·행사」 — 업체 관리 · 이미지 관리 · 업체 문의 · 이메일 회신을 탭으로 묶는다.
+ * **업체 문의 · 이메일 회신은 「조회만」 딱지가 붙는다** — 읽기는 되지만 쓰기 단추가
+ * 화면 안에서 잠겨 있다(다섯 화면 중 둘. `test/admin-read-only-pairing.test.ts`가
+ * 이 딱지와 화면 안쪽 잠금이 짝인지 확인한다). 되는 화면 둘 사이에서 안 되는
+ * 화면이 묻히지 않게 탭에도 표시를 남긴다.
+ */
+export default function VendorsShell() {
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
+  const initial = TABS.some((t) => t.key === tab) ? (tab as string) : 'vendors';
+  const [active, setActive] = useState(initial);
+
+  return (
+    <AdminTabShell tabs={TABS} active={active} onChange={setActive}>
+      {active === 'vendors' && <VendorsPanel />}
+      {active === 'images' && <ImagesPanel />}
+      {active === 'biz-queue' && <BizQueuePanel />}
+      {active === 'email-matching' && <EmailMatchingPanel />}
+    </AdminTabShell>
   );
 }
 
