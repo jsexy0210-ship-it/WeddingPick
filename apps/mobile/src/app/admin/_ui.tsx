@@ -510,24 +510,62 @@ export type BarItem = {
    * 「지난 칸보다 높다」까지만 말하고, 몇인지는 말해주지 못한다.
    */
   value?: string;
+  /**
+   * 같은 칸에 나란히 세우는 둘째 막대(2026-09-15 대표 지시 — 회원 차트에 탈퇴를
+   * 같이 그린다).
+   *
+   * **같은 자를 쓴다.** `pct`를 부르는 쪽에서 «한 자로» 계산해 넘겨야 두 막대의
+   * 높이가 서로 비교된다 — 각자 제 최대값을 100으로 잡으면 탈퇴 1건이 가입
+   * 100건과 같은 높이로 서고, 그 그림은 거짓말이 된다.
+   */
+  secondary?: { pct: number; value?: string; kind?: BarKind };
 };
 
-/** 추이 막대. 값 자체는 표가 말하고 이것은 모양만 말한다(`value`를 주면 함께 적는다). */
+/** 막대 색. `danger`는 탈퇴처럼 「줄어드는 것」에 쓴다. */
+export type BarKind = 'brand' | 'dim' | 'plain' | 'danger';
+
+function barColor(kind: BarKind | undefined): string {
+  if (kind === 'brand') return C.tint;
+  if (kind === 'dim') return C.border;
+  if (kind === 'danger') return C.negative;
+
+  return C.adminBarFill;
+}
+
+/**
+ * 추이 막대. 값 자체는 표가 말하고 이것은 모양만 말한다(`value`를 주면 함께 적는다).
+ *
+ * `secondary`를 주면 한 칸에 막대 둘이 나란히 선다.
+ */
 export function Bars({ items }: { items: BarItem[] }) {
   return (
     <View style={styles.bars}>
       {items.map((b) => (
         <View key={b.label} style={styles.barCol}>
-          {b.value === undefined ? null : <Text style={styles.barValue}>{b.value}</Text>}
-          <View
-            style={[
-              styles.bar,
-              {
-                height: Math.max(4, Math.round(b.pct * 1.3)),
-                backgroundColor: b.kind === 'brand' ? C.tint : b.kind === 'dim' ? C.border : C.adminBarFill,
-              },
-            ]}
-          />
+          {b.value === undefined && b.secondary?.value === undefined ? null : (
+            <Text style={styles.barValue}>
+              {[b.value, b.secondary?.value].filter((part) => part !== undefined).join(' · ')}
+            </Text>
+          )}
+          <View style={styles.barPair}>
+            <View
+              style={[
+                styles.bar,
+                { height: Math.max(4, Math.round(b.pct * 1.3)), backgroundColor: barColor(b.kind) },
+              ]}
+            />
+            {b.secondary ? (
+              <View
+                style={[
+                  styles.bar,
+                  {
+                    height: Math.max(4, Math.round(b.secondary.pct * 1.3)),
+                    backgroundColor: barColor(b.secondary.kind),
+                  },
+                ]}
+              />
+            ) : null}
+          </View>
           <Text style={styles.barLabel}>{b.label}</Text>
         </View>
       ))}
@@ -812,6 +850,8 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.two,
   },
   barCol: { alignItems: 'center', justifyContent: 'flex-end', gap: Spacing.two },
+  /* 두 막대를 한 칸 안에 세운다. 바닥을 맞춰야 높이가 서로 비교된다. */
+  barPair: { flexDirection: 'row', alignItems: 'flex-end', gap: Spacing.two },
   bar: { width: 30, borderTopLeftRadius: Radius.badge, borderTopRightRadius: Radius.badge },
   barValue: {
     fontSize: FontSize.tab,
