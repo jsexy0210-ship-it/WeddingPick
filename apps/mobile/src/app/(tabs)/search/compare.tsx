@@ -4,6 +4,7 @@ import {
   DISCLOSURE_THRESHOLDS,
   TERMS,
   VENDOR_CATEGORY_LABEL,
+  formatCount,
   regionLabel,
   manwon,
   priceLine,
@@ -179,7 +180,7 @@ export default function CompareScreen() {
     {
       label: ROW_COUNT,
       cells: counts.map((count) => ({
-        value: `${count}건`,
+        value: `${formatCount(count)}건`,
         tone: count === maxCount && count > 0 ? 'text' : count === 0 ? 'textAssistive' : 'textStrong',
       })),
     },

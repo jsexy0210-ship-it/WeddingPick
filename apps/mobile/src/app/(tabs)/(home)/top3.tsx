@@ -4,6 +4,7 @@ import {
   TOP3_REASON_LABEL,
   PREPARATION_CATEGORIES,
   VENDOR_CATEGORY_LABEL,
+  formatCount,
   priceLine,
   type VendorCategory,
 } from '@weddingpick/domain';
@@ -186,7 +187,7 @@ function Top3Card({ rank, item }: { rank: number; item: Top3Item }) {
       </View>
 
       <ThemedText type="t7" themeColor="textAssistive">
-        {TERMS.verifiedData} {item.confirmedCount}건
+        {TERMS.verifiedData} {formatCount(item.confirmedCount)}건
       </ThemedText>
     </ThemedView>
   );

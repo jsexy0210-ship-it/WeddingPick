@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
+import { formatCount } from '@weddingpick/domain';
 
 import { apiFetch } from './_api';
 
@@ -118,7 +119,7 @@ export default function ReportScreen() {
                 <Text style={styles.dateText}>{item.reportedAt.slice(0, 10)}</Text>
               </View>
               <Text style={styles.summary} numberOfLines={2}>{item.summary || '(내용 없음)'}</Text>
-              <Text style={styles.reporterCount}>신고자 {item.reporterCount}명</Text>
+              <Text style={styles.reporterCount}>신고자 {formatCount(item.reporterCount)}명</Text>
             </View>
           )}
         />

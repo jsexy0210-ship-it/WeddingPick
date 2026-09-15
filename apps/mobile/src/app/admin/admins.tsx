@@ -34,6 +34,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Colors, FontSize } from '@weddingpick/ui';
+import { formatCount } from '@weddingpick/domain';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { formatDateDot } from '@/features/common/format-date';
@@ -333,7 +334,7 @@ export default function AdminAccountsScreen() {
       <StatusBanner {...banner} />
 
       <Card
-        title={`관리자 ${accounts.length}개`}
+        title={`관리자 ${formatCount(accounts.length)}개`}
         full
         note="끈 계정은 로그인이 막히고 등급은 그대로 남아요."
         action={

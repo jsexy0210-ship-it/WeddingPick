@@ -7,7 +7,7 @@
  */
 import { useEffect, useState } from 'react';
 
-import { withParticle } from '@weddingpick/domain';
+import { formatCount, withParticle } from '@weddingpick/domain';
 
 import { formatDateTimeDot } from '@/features/common/format-date';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
@@ -139,9 +139,9 @@ export default function KillSwitchScreen() {
 
           <KpiRow
             items={[
-              { label: '켜짐', value: `${switches.length - off.length}개`, note: `전체 ${switches.length}개`, kind: 'ok' },
-              { label: '꺼짐', value: `${off.length}개`, note: off.length === 0 ? '멈춘 것이 없어요' : '동작이 멈춰 있어요', kind: off.length === 0 ? 'ok' : 'bad' },
-              { label: '배선 안 됨', value: `${unwired.length}개`, note: '꺼도 동작이 바뀌지 않아요', kind: unwired.length === 0 ? 'ok' : 'warn' },
+              { label: '켜짐', value: `${formatCount(switches.length - off.length)}개`, note: `전체 ${formatCount(switches.length)}개`, kind: 'ok' },
+              { label: '꺼짐', value: `${formatCount(off.length)}개`, note: off.length === 0 ? '멈춘 것이 없어요' : '동작이 멈춰 있어요', kind: off.length === 0 ? 'ok' : 'bad' },
+              { label: '배선 안 됨', value: `${formatCount(unwired.length)}개`, note: '꺼도 동작이 바뀌지 않아요', kind: unwired.length === 0 ? 'ok' : 'warn' },
             ]}
           />
 

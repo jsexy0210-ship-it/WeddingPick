@@ -1,4 +1,4 @@
-import { FAQ_ITEMS, POLICY_DOCUMENTS } from '@weddingpick/domain';
+import { FAQ_ITEMS, formatCount, POLICY_DOCUMENTS } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 
@@ -14,12 +14,12 @@ const S = {
   hero: '무엇을\n도와드릴까요?',
   faq: '많이 찾는 질문',
   faqAll: '전체 보기',
-  faqCount: (n: number) => `${n}개`,
+  faqCount: (n: number) => `${formatCount(n)}개`,
   inquiry: '문의',
   inquire: '문의하기',
   inquireMeta: '평일 오전 10시부터 오후 6시까지 답변드려요',
   myInquiries: '내 문의 내역',
-  count: (n: number) => `${n}건`,
+  count: (n: number) => `${formatCount(n)}건`,
   none: '없어요',
   terms: '이용약관',
   privacy: '개인정보처리방침',

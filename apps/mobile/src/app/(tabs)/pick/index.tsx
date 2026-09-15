@@ -24,6 +24,7 @@ import {
   MAX_COMPARED_VENDORS,
   TERMS,
   VENDOR_CATEGORY_LABEL,
+  formatCount,
   type VendorCategory,
 } from '@weddingpick/domain';
 import { router, useFocusEffect } from 'expo-router';
@@ -230,7 +231,7 @@ export default function PickScreen() {
                 <View style={[styles.compareBanner, { backgroundColor: theme.backgroundInk }]}>
                   <View style={styles.compareText}>
                     <ThemedText type="t7" style={[styles.bold, { color: theme.onInk }]}>
-                      {`${compare.size}개 선택됨`}
+                      {`${formatCount(compare.size)}개 선택됨`}
                     </ThemedText>
                     <View style={styles.compareHint}>
                       <ThemedText type="micro" style={[styles.regular, { color: theme.onInk }]}>
@@ -327,7 +328,7 @@ function Header({ me, partner, total }: { me: CurrentUser; partner: string | nul
         </ThemedText>
         <View style={[styles.countBadge, { backgroundColor: theme.text }]}>
           <ThemedText type="f12" style={[styles.bold, { color: theme.onInk }]}>
-            {`${total}개 저장`}
+            {`${formatCount(total)}개 저장`}
           </ThemedText>
         </View>
       </View>

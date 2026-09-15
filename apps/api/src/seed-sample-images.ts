@@ -13,12 +13,26 @@ import { createPool } from './db';
  * 그대로 쓴다 — 별도 등록도 검수도 없다. 하루 30,000회, 우리는 업체 수만큼.
  *
  * 저작권 근거는 `unknown`으로 적고 메모에 출처를 남긴다 — 이 상태는 정식 운영에서
- * 노출하지 않기로 한 값이다(0050). 검수용 스테이징에서만 쓰고, 출시 전에
- * `seed:samples --remove`로 업체째 걷어낸다.
+ * 노출하지 않기로 한 값이다(0050). 검수용 스테이징에서만 쓰고, 출시 전에 아래
+ * `--remove`로 사진만 걷어낸다.
+ *
+ * **`--remove`는 `seed:samples --remove`와 다르다.** 저쪽은 업체(vendors)째
+ * 지운다 — 업체 목록 자체가 검수 대상이면 쓸 수 없다. 여기 `--remove`는
+ * `vendor_images` 중 이 스크립트가 넣은 줄(`copyright_basis='unknown'` +
+ * `copyright_note`가 「카카오(다음) 이미지 검색」으로 시작하는 것)만 지운다 —
+ * 업체는 남고 사진만 빠져 기본 이미지로 떨어진다(`packages/ui/src/default-image.tsx`).
+ *
+ *   npm run seed:sample-images --workspace @weddingpick/api -- --remove --dry-run
+ *   npm run seed:sample-images --workspace @weddingpick/api -- --remove --yes
+ *
+ * 되돌릴 수 없는 삭제라 `--dry-run`으로 몇 건 · 몇 업체인지 먼저 세어 본 뒤에만
+ * `--yes`를 붙인다.
  */
 
 const SOURCE_KEY = 'sample';
 const PER_VENDOR = 3;
+/** `--remove`가 지울 줄을 고르는 조건 — 이 스크립트가 넣은 줄만 잡는다. */
+const REMOVE_NOTE_PREFIX = '카카오(다음) 이미지 검색';
 
 function argv(name: string): boolean {
   return process.argv.includes(`--${name}`);
@@ -62,7 +76,57 @@ async function searchImages(appKey: string, query: string, page: number, size: n
   return body.documents ?? [];
 }
 
+/** `--remove` 대상 건수 · 업체 수를 센다. 지우기 전에도, `--dry-run`에서도 같은 카운트를 쓴다. */
+async function countRemovable(pool: ReturnType<typeof createPool>): Promise<{ rows: number; vendors: number }> {
+  const { rows } = await pool.query<{ rows: string; vendors: string }>(
+    `SELECT count(*)::text AS rows, count(DISTINCT vendor_id)::text AS vendors
+     FROM structured.vendor_images
+     WHERE copyright_basis = 'unknown' AND copyright_note LIKE $1`,
+    [`${REMOVE_NOTE_PREFIX}%`]
+  );
+
+  return { rows: Number(rows[0]?.rows ?? 0), vendors: Number(rows[0]?.vendors ?? 0) };
+}
+
+async function removeKakaoImages(): Promise<void> {
+  const dryRun = argv('dry-run');
+
+  if (!dryRun && !argv('yes')) {
+    console.error(
+      '카카오 검색으로 넣은 업체 사진을 지운다 — 되돌릴 수 없다.\n' +
+        '  먼저 세어 본다: npm run seed:sample-images --workspace @weddingpick/api -- --remove --dry-run\n' +
+        '  정말 지우려면: npm run seed:sample-images --workspace @weddingpick/api -- --remove --yes'
+    );
+    process.exitCode = 1;
+    return;
+  }
+
+  const pool = createPool(loadConfig().databaseUrl);
+
+  try {
+    const before = await countRemovable(pool);
+
+    if (dryRun) {
+      console.log(`[dry-run] 카카오 검색 사진 ${before.rows}건 · 업체 ${before.vendors}곳이 지워질 것이다. 지우지 않았다.`);
+      return;
+    }
+
+    await pool.query(`DELETE FROM structured.vendor_images WHERE copyright_basis = 'unknown' AND copyright_note LIKE $1`, [
+      `${REMOVE_NOTE_PREFIX}%`,
+    ]);
+
+    console.log(`카카오 검색 사진 ${before.rows}건 · 업체 ${before.vendors}곳의 사진을 지웠다. 업체 자체는 남아 있다.`);
+  } finally {
+    await pool.end();
+  }
+}
+
 async function main(): Promise<void> {
+  if (argv('remove')) {
+    await removeKakaoImages();
+    return;
+  }
+
   if (!argv('yes')) {
     console.error('샘플 업체 사진을 카카오 이미지 검색 결과로 바꾼다. 정말이면 --yes를 붙일 것.');
     process.exitCode = 1;
