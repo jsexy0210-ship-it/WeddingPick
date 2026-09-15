@@ -29,7 +29,14 @@
  * 이 화면은 슈퍼 관리자만 연다. 그것을 정하는 곳은 **서버**이고(`requireSuperAdmin`),
  * 여기서는 403을 받아 그렇게 말해 줄 뿐이다. 화면이 막는 것으로 쳤다면 뷰어가
  * `PATCH`를 직접 부르는 순간 그대로 통했을 것이다.
+ *
+ * **2026-09-15 대표 확정 — 「계정·권한」 화면의 탭 하나(관리자 계정)다**(앱 회원 ·
+ * 관리자 계정 둘, 표는 절대 하나로 합치지 않는다 — 위 「다른 화면이다」 항목 그대로).
+ * 이 파일의 새 기본 내보내기는 옛 주소(`/admin/admins`)를 `/admin/users?tab=admins`로
+ * 보내는 `Redirect`이고, 본문은 `AdminsPanel`로 이름만 바꿨다. 탭은 껍데기라 본문은
+ * 손대지 않았다.
  */
+import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -60,7 +67,7 @@ type AdminAccount = {
   createdAt: string;
 };
 
-type ListData = { accounts: AdminAccount[]; viewerIsStored: boolean };
+type ListData = { accounts: AdminAccount[]; viewerIsStored: boolean; viewerAccountId: string | null };
 
 const ROLE_LABEL: Record<Role, string> = {
   super: '슈퍼 관리자',
@@ -109,11 +116,13 @@ const COLS = [
 type Pending =
   | { kind: 'create'; loginId: string; password: string; role: Role }
   | { kind: 'role'; account: AdminAccount; role: Role }
-  | { kind: 'disabled'; account: AdminAccount; disabled: boolean };
+  | { kind: 'disabled'; account: AdminAccount; disabled: boolean }
+  | { kind: 'demote-others'; targets: AdminAccount[] };
 
 function confirmTitle(pending: Pending): string {
   if (pending.kind === 'create') return '관리자를 만들어요';
   if (pending.kind === 'role') return '등급을 바꿔요';
+  if (pending.kind === 'demote-others') return '나머지를 전부 뷰어로 내려요';
 
   return pending.disabled ? '계정을 꺼요' : '계정을 다시 켜요';
 }
@@ -144,6 +153,13 @@ function confirmItems(pending: Pending): string[] {
     ];
   }
 
+  if (pending.kind === 'demote-others') {
+    return [
+      ...pending.targets.map((a) => `${a.loginId} — ${ROLE_LABEL[a.role]} → 뷰어`),
+      '관리자 쓰기 · 계정 관리는 지금 이 계정에만 남아요',
+    ];
+  }
+
   const power = ROLE_POWER[pending.account.role];
 
   return pending.disabled
@@ -163,7 +179,7 @@ function confirmItems(pending: Pending): string[] {
       ];
 }
 
-export default function AdminAccountsScreen() {
+export function AdminsPanel() {
   const [data, setData] = useState<ListData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -230,6 +246,8 @@ export default function AdminAccountsScreen() {
           body: JSON.stringify({ role: pending.role }),
         });
         setSelected(null);
+      } else if (pending.kind === 'demote-others') {
+        await apiFetch('/v1/admin/accounts/demote-others', { method: 'POST' });
       } else {
         await apiFetch(`/v1/admin/accounts/${pending.account.id}/disabled`, {
           method: 'PATCH',
@@ -249,7 +267,7 @@ export default function AdminAccountsScreen() {
 
   if (loading) {
     return (
-      <Page title="관리자 계정">
+      <Page embedded title="관리자 계정">
         <DelayedLoader active size={40} style={styles.centered} />
       </Page>
     );
@@ -257,7 +275,7 @@ export default function AdminAccountsScreen() {
 
   if (error || !data) {
     return (
-      <Page title="관리자 계정">
+      <Page embedded title="관리자 계정">
         <LoadError message={error ?? '불러오기 실패'} onRetry={() => setRev((r) => r + 1)} />
       </Page>
     );
@@ -275,7 +293,8 @@ export default function AdminAccountsScreen() {
     ? {
         tone: 'warn' as const,
         title: '환경변수 계정으로 들어와 있어요',
-        detail: '슈퍼 관리자를 하나 만들면 이 계정으로는 더 이상 들어올 수 없어요.',
+        detail: '표에 저장된 계정이 아니에요. 슈퍼 관리자를 하나 만들면 이 화면으로는 더 이상 들어올 수 없어요.',
+        cta: { label: '관리자 추가', onPress: () => setCreating(true) },
       }
     : supers.length === 1
       ? {
@@ -284,6 +303,15 @@ export default function AdminAccountsScreen() {
           detail: '이 계정을 잃으면 계정 관리에 아무도 들어올 수 없어요.',
         }
       : { tone: 'ok' as const, title: '확인할 것이 없어요' };
+
+  /*
+   * 「나머지 계정은 싹다 뷰어로」(2026-09-15 대표 지시)의 대상. 이미 뷰어이거나
+   * 꺼진 계정은 바꿀 것이 없고, 지금 보고 있는 자기 계정은 절대 빼지 않는다 —
+   * 자기 등급까지 뷰어로 떨어지면 그 즉시 이 화면에서 튕겨 나간다.
+   */
+  const demotable = accounts.filter(
+    (a) => !a.disabled && a.role !== 'viewer' && a.id !== data.viewerAccountId
+  );
 
   const rows: TableRow[] = accounts.map((account) => ({
     key: account.id,
@@ -306,13 +334,26 @@ export default function AdminAccountsScreen() {
 
   return (
     <Page
+      embedded
       title="관리자 계정"
       sub="콘솔에 들어올 수 있는 사람과 등급"
       action={{ label: '관리자 추가', onPress: () => setCreating(true), kind: 'brand' }}
     >
       <StatusBanner {...banner} />
 
-      <Card title={`관리자 ${formatCount(accounts.length)}개`} full note="끈 계정은 로그인이 막히고 등급은 그대로 남아요.">
+      <Card
+        title={`관리자 ${formatCount(accounts.length)}개`}
+        full
+        note="끈 계정은 로그인이 막히고 등급은 그대로 남아요."
+        action={
+          demotable.length > 0
+            ? {
+                label: '나머지 전체를 뷰어로',
+                onPress: () => setPending({ kind: 'demote-others', targets: demotable }),
+              }
+            : undefined
+        }
+      >
         <DataTable
           cols={COLS}
           rows={rows}
@@ -418,7 +459,7 @@ export default function AdminAccountsScreen() {
           body={acting ? '바꾸는 중이에요…' : '이렇게 바뀌어요.'}
           items={confirmItems(pending)}
           cta={acting ? '바꾸는 중…' : '진행'}
-          danger={pending.kind === 'disabled' && pending.disabled}
+          danger={(pending.kind === 'disabled' && pending.disabled) || pending.kind === 'demote-others'}
           onCancel={() => {
             setPending(null);
             setActionError(null);
@@ -430,6 +471,11 @@ export default function AdminAccountsScreen() {
       )}
     </Page>
   );
+}
+
+/** 옛 주소 — 「계정·권한」의 관리자 계정 탭으로 보낸다. */
+export default function AdminsRedirect() {
+  return <Redirect href="/admin/users?tab=admins" />;
 }
 
 const styles = StyleSheet.create({

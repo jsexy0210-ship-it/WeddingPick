@@ -1,3 +1,4 @@
+import { Redirect } from 'expo-router';
 /**
  * WP-ADM-030 마케팅 자동화
  *
@@ -66,7 +67,7 @@ const COLS: Col[] = [
   { key: 'action', label: '', width: 100, align: 'right' },
 ];
 
-export default function MarketingScreen() {
+export function MarketingPanel() {
   const [data, setData] = useState<MarketingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -133,6 +134,7 @@ export default function MarketingScreen() {
 
   return (
     <Page
+      embedded
       title="마케팅 발송"
       sub="자동 생성 소재 · 모의 실행 · 실패"
       action={{ label: '새로 고침', onPress: reload }}
@@ -184,4 +186,12 @@ export default function MarketingScreen() {
       ) : null}
     </Page>
   );
+}
+
+/**
+ * 옛 주소는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제 화면은 `/admin/ads`(광고·마케팅)의 마케팅 발송 탭에 있다 —
+ * `MarketingPanel`이 이 파일의 본체다.
+ */
+export default function MarketingRedirect() {
+  return <Redirect href="/admin/ads?tab=marketing" />;
 }

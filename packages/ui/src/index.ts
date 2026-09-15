@@ -53,22 +53,18 @@ export { VerificationBadge, type VerificationBadgeProps } from './verification-b
 export { LoadingView, SkeletonView, RecommendingView, RecommendingBody, recommendingTitle, ErrorView, EmptyView, NetworkErrorView, PermissionDeniedView, ProcessingView, MaintenanceView } from './status-view';
 export type { LoadingViewProps, SkeletonViewProps, RecommendingViewProps, RecommendingBodyProps, ErrorViewProps, EmptyViewProps, NetworkErrorViewProps, PermissionDeniedViewProps, PermissionKind, ProcessingViewProps, MaintenanceViewProps } from './status-view';
 /**
- * 로더 둘. 700ms 규칙은 둘 다 `useDelayedVisible`로 감싼다.
+ * 로더는 원형 하나다(2026-09-15 대표 지시 — 「모든 화면 로딩 발생 시 기본로더로
+ * 돌려라. **기존 정책 파기** 기본로더만 사용할것」). 700ms 규칙은 `useDelayedVisible`로
+ * 감싼다.
  *
- * `CircleLoader`   Depth·페이지 이동처럼 **스쳐 지나가는** 기다림 — 기본값
- * `CategoryCycleLoader`  첫 실행·재시작·추천 계산처럼 **오래 붙잡는** 기다림
+ * **`CategoryCycleLoader`(업종 아이콘 순회)는 지웠다.** 규칙은 폐기였는데 코드가
+ * 따라오지 않아 화면 다섯에서 계속 돌고 있었다 — 홈 첫 진입 · 온보딩 완료 · TOP3 ·
+ * 분석 중 · 확인 중. 로더가 둘이면 어느 자리가 어느 것인지를 매번 판단해야 하고,
+ * 그 판단이 화면마다 갈렸다.
  *
- * 어느 쪽인지 고르는 규칙은 `apps/mobile/src/features/loading/delayed-loader.tsx`의
- * `LoaderWait`에 적혀 있다. 화면이 직접 이 둘을 부르지 않고 `DelayedLoader`를 쓴다.
+ * 화면이 직접 부르지 않고 `DelayedLoader`를 쓴다.
  */
 export { CircleLoader, buildSpinKeyframes, type CircleLoaderProps, type CircleLoaderSize } from './circle-loader';
-export {
-  CategoryCycleLoader,
-  resolveCategoryCycle,
-  categoryCyclePerIconMs,
-  type CategoryCycleLoaderProps,
-  type CategoryCycleLoaderSize,
-} from './category-cycle-loader';
 export { useDelayedVisible } from './use-delayed-visible';
 export { CategoryIcon, CATEGORY_CYCLE_ORDER, CATEGORY_ICON_LABEL, type CategoryIconKind } from './category-icon';
 export { StepList, type Step, type StepState } from './step-list';
