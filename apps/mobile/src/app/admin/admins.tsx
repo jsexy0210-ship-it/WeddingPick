@@ -59,7 +59,7 @@ type AdminAccount = {
   createdAt: string;
 };
 
-type ListData = { accounts: AdminAccount[]; viewerIsStored: boolean };
+type ListData = { accounts: AdminAccount[]; viewerIsStored: boolean; viewerAccountId: string | null };
 
 const ROLE_LABEL: Record<Role, string> = {
   super: '슈퍼 관리자',
@@ -108,11 +108,13 @@ const COLS = [
 type Pending =
   | { kind: 'create'; loginId: string; password: string; role: Role }
   | { kind: 'role'; account: AdminAccount; role: Role }
-  | { kind: 'disabled'; account: AdminAccount; disabled: boolean };
+  | { kind: 'disabled'; account: AdminAccount; disabled: boolean }
+  | { kind: 'demote-others'; targets: AdminAccount[] };
 
 function confirmTitle(pending: Pending): string {
   if (pending.kind === 'create') return '관리자를 만들어요';
   if (pending.kind === 'role') return '등급을 바꿔요';
+  if (pending.kind === 'demote-others') return '나머지를 전부 뷰어로 내려요';
 
   return pending.disabled ? '계정을 꺼요' : '계정을 다시 켜요';
 }
@@ -140,6 +142,13 @@ function confirmItems(pending: Pending): string[] {
       `등급 ${ROLE_LABEL[pending.account.role]} → ${ROLE_LABEL[pending.role]}`,
       `관리자 쓰기 ${before.write} → ${after.write}`,
       `계정 관리 ${before.accounts} → ${after.accounts}`,
+    ];
+  }
+
+  if (pending.kind === 'demote-others') {
+    return [
+      ...pending.targets.map((a) => `${a.loginId} — ${ROLE_LABEL[a.role]} → 뷰어`),
+      '관리자 쓰기 · 계정 관리는 지금 이 계정에만 남아요',
     ];
   }
 
@@ -229,6 +238,8 @@ export default function AdminAccountsScreen() {
           body: JSON.stringify({ role: pending.role }),
         });
         setSelected(null);
+      } else if (pending.kind === 'demote-others') {
+        await apiFetch('/v1/admin/accounts/demote-others', { method: 'POST' });
       } else {
         await apiFetch(`/v1/admin/accounts/${pending.account.id}/disabled`, {
           method: 'PATCH',
@@ -274,7 +285,8 @@ export default function AdminAccountsScreen() {
     ? {
         tone: 'warn' as const,
         title: '환경변수 계정으로 들어와 있어요',
-        detail: '슈퍼 관리자를 하나 만들면 이 계정으로는 더 이상 들어올 수 없어요.',
+        detail: '표에 저장된 계정이 아니에요. 슈퍼 관리자를 하나 만들면 이 화면으로는 더 이상 들어올 수 없어요.',
+        cta: { label: '관리자 추가', onPress: () => setCreating(true) },
       }
     : supers.length === 1
       ? {
@@ -283,6 +295,15 @@ export default function AdminAccountsScreen() {
           detail: '이 계정을 잃으면 계정 관리에 아무도 들어올 수 없어요.',
         }
       : { tone: 'ok' as const, title: '확인할 것이 없어요' };
+
+  /*
+   * 「나머지 계정은 싹다 뷰어로」(2026-09-15 대표 지시)의 대상. 이미 뷰어이거나
+   * 꺼진 계정은 바꿀 것이 없고, 지금 보고 있는 자기 계정은 절대 빼지 않는다 —
+   * 자기 등급까지 뷰어로 떨어지면 그 즉시 이 화면에서 튕겨 나간다.
+   */
+  const demotable = accounts.filter(
+    (a) => !a.disabled && a.role !== 'viewer' && a.id !== data.viewerAccountId
+  );
 
   const rows: TableRow[] = accounts.map((account) => ({
     key: account.id,
@@ -311,7 +332,19 @@ export default function AdminAccountsScreen() {
     >
       <StatusBanner {...banner} />
 
-      <Card title={`관리자 ${accounts.length}개`} full note="끈 계정은 로그인이 막히고 등급은 그대로 남아요.">
+      <Card
+        title={`관리자 ${accounts.length}개`}
+        full
+        note="끈 계정은 로그인이 막히고 등급은 그대로 남아요."
+        action={
+          demotable.length > 0
+            ? {
+                label: '나머지 전체를 뷰어로',
+                onPress: () => setPending({ kind: 'demote-others', targets: demotable }),
+              }
+            : undefined
+        }
+      >
         <DataTable
           cols={COLS}
           rows={rows}
@@ -417,7 +450,7 @@ export default function AdminAccountsScreen() {
           body={acting ? '바꾸는 중이에요…' : '이렇게 바뀌어요.'}
           items={confirmItems(pending)}
           cta={acting ? '바꾸는 중…' : '진행'}
-          danger={pending.kind === 'disabled' && pending.disabled}
+          danger={(pending.kind === 'disabled' && pending.disabled) || pending.kind === 'demote-others'}
           onCancel={() => {
             setPending(null);
             setActionError(null);
