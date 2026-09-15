@@ -51,7 +51,8 @@ const HEX = /^#[0-9a-f]{6}$/i;
  * 아니라 **더 엄한 검사로 옮기는 것**이다. 여기 남은 색(브랜드 · 소셜 · 의미색)은
  * 계속 핸드오프를 본다.
  *
- * 수치 · 문구는 그대로 핸드오프가 정본이다. 피그마가 정하는 것은 보이는 색이다.
+ * 문구는 그대로 핸드오프가 정본이다. 수치는 거의 전부 그렇고, 예외는 아래
+ * `SUPERSEDED_NUMBERS`에 **경로별로** 하나씩 적는다.
  */
 const SUPERSEDED_BY_SEED = new Set(
   [
@@ -65,6 +66,27 @@ const SUPERSEDED_BY_SEED = new Set(
     '#eef1f4',
   ].map((hex) => hex.toLowerCase()),
 );
+
+/*
+ * 핸드오프의 수치 중 **SEED를 따르기로 한 것**. 경로 → 핸드오프가 적은 값이다.
+ *
+ * 맨 숫자로 면제하지 않는다 — 43을 통째로 풀어주면 다른 자리의 43도 같이 새어 나간다.
+ * 경로를 적으면 그 한 칸만 열린다.
+ *
+ * 값이 SEED와 맞는지는 `seed-components.test.ts`가 `spec/seed-components.json`과 견주어
+ * 지킨다. **검사를 끄는 것이 아니라 더 엄한 검사로 옮기는 것**이다 — 위 색과 같다.
+ */
+const SUPERSEDED_NUMBERS: Record<string, number> = {
+  /*
+   * display 32의 줄높이. 핸드오프 43 · SEED `$line-height.t12` 42.
+   *
+   * 타이포 사다리 여덟 칸 중 일곱(t2~t7 · micro · badge)은 SEED와 값이 그대로 같은데
+   * 이 하나만 1px 어긋나 있었다(2026-09-15 실측). 피그마에 32px 글자는 `vendor-1.txt`
+   * 업체명 하나뿐이고 그쪽은 lh 40이면서 **역할이 다르다**(히어로 제목 · `f32` 사다리).
+   * 이 자리를 받치는 피그마 실측값이 없어 SEED로 맞췄다(2026-09-15 MASTER 확정).
+   */
+  'typography.scale.display.lineHeight': 43,
+};
 
 describe('디자인 토큰 — 핸드오프 ↔ spec/tokens.json', () => {
   it('핸드오프의 색은 전부 spec에 있다', () => {
@@ -91,6 +113,7 @@ describe('디자인 토큰 — 핸드오프 ↔ spec/tokens.json', () => {
 
     const missing = leaves(handoff)
       .filter(([, v]) => typeof v === 'number' && !specNumbers.has(v))
+      .filter(([k, v]) => SUPERSEDED_NUMBERS[k] !== v)
       .map(([k, v]) => `${k} = ${String(v)}`);
 
     expect(missing).toEqual([]);

@@ -402,6 +402,12 @@ const routes = {
     history: [],
   },
   'GET /v1/me/reports': { reports: [] },
+  /*
+   * 문의 목록(WP-MY 문의하기). **빈 목록으로 둔다** — 이 화면에서 찍어 볼 것은
+   * FAQ 아코디언과 분류 칩이고, 둘 다 문의 이력 없이 그려진다. 가짜 문의를
+   * 지어내면 그 문구까지 시안과 맞는지를 다시 따져야 한다.
+   */
+  'GET /v1/inquiries': { inquiries: [] },
   'GET /v1/me/rewards': {
     referralCode: 'ABC123',
     invitedCount: 0,

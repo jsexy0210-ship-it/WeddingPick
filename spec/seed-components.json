@@ -1,0 +1,1942 @@
+{
+  "$note": "생성된 파일이다. 손으로 고치지 마라 — `node scripts/sync-seed-components.mjs`가 `@seed-design/rootage-artifacts`에서 뽑아 쓴다. 어긋나면 `--check`가 빨개진다.",
+  "$why": "SEED가 무엇이라고 하는지만 적는다. 우리가 그 값을 쓸지는 별개다 — 피그마에 실측값이 있으면 그쪽이 이기고(CLAUDE.md 최상위 1번 · 2026-09-15 MASTER 확정), 여기 값은 피그마가 말하지 않은 자리를 채울 때 쓴다. 어느 자리가 그런지는 docs/sync/seed-component-parity.md가 적는다.",
+  "$units": "글자 크기 · 줄높이의 rem은 16px로 환산했다. 색은 여기 없다 — spec/seed-tokens.json이 담는다. 그림자 · 그라디언트만 예외로 기하값과 함께 그 자체의 색을 적는다(면 · 글자 팔레트가 아니다). 테마가 갈리는 값은 밝은 쪽이다.",
+  "$source": "@seed-design/rootage-artifacts@2.9.0",
+  "components": {
+    "accordion": {
+      "$ours": "accordion",
+      "variants": {
+        "variant": {
+          "values": {
+            "separated": {
+              "description": "각 Accordion Item이 개별 카드 형태로 분리되어 표현됩니다. 항목 간 시각적 독립성이 필요하거나, 각 섹션의 중요도가 동등할 때 사용합니다."
+            },
+            "inline": {
+              "description": "Accordion Item들이 하나의 연속된 목록처럼 표현됩니다. 밀접하게 관련된 항목들을 컴팩트하게 나열할 때 사용합니다."
+            }
+          },
+          "defaultValue": "separated"
+        },
+        "size": {
+          "values": {
+            "medium": {},
+            "large": {}
+          },
+          "defaultValue": "medium"
+        }
+      },
+      "values": {
+        "variant=separated,size=medium": {
+          "enabled": {
+            "root.gap": "12px"
+          }
+        },
+        "variant=separated,size=large": {
+          "enabled": {
+            "root.gap": "16px"
+          }
+        }
+      }
+    },
+    "accordion-item": {
+      "$ours": "accordion",
+      "variants": {
+        "size": {
+          "values": {
+            "medium": {},
+            "large": {}
+          },
+          "defaultValue": "medium"
+        },
+        "variant": {
+          "values": {
+            "inline": {
+              "description": "Accordion Item들이 하나의 연속된 목록처럼 표현됩니다. 밀접하게 관련된 항목들을 컴팩트하게 나열할 때 사용합니다."
+            },
+            "separated": {
+              "description": "각 Accordion Item이 개별 카드 형태로 분리되어 표현됩니다. 항목 간 시각적 독립성이 필요하거나, 각 섹션의 중요도가 동등할 때 사용합니다."
+            }
+          },
+          "defaultValue": "inline"
+        }
+      },
+      "values": {
+        "$base": {
+          "enabled": {
+            "root.colorDuration": "150ms",
+            "root.colorTimingFunction": "cubic-bezier(0.35,0,0.35,1)",
+            "trigger.paddingX": "16px",
+            "body.gap": "2px",
+            "title.fontWeight": 500,
+            "description.fontWeight": 500,
+            "suffixIcon.rotateDuration": "300ms",
+            "suffixIcon.rotateTimingFunction": "cubic-bezier(0.35,0,0.35,1)",
+            "content.expandHeightDuration": "300ms",
+            "content.expandHeightTimingFunction": "cubic-bezier(0.35,0,0.35,1)",
+            "content.collapseHeightDuration": "300ms",
+            "content.collapseHeightTimingFunction": "cubic-bezier(0.35,0,0.35,1)"
+          },
+          "pressed": {
+            "trigger.marginX": "6px",
+            "trigger.cornerRadius": "10px",
+            "trigger.scaleScope": "content"
+          }
+        },
+        "size=medium": {
+          "enabled": {
+            "trigger.paddingY": "16px",
+            "prefix.paddingRight": "12px",
+            "prefixIcon.size": "22px",
+            "title.fontSize": "16px",
+            "title.lineHeight": "22px",
+            "description.fontSize": "13px",
+            "description.lineHeight": "18px",
+            "suffixIcon.size": "20px",
+            "suffixIcon.paddingLeft": "12px"
+          }
+        },
+        "size=large": {
+          "enabled": {
+            "trigger.paddingY": "20px",
+            "prefix.paddingRight": "12px",
+            "prefixIcon.size": "22px",
+            "title.fontSize": "20px",
+            "title.lineHeight": "27px",
+            "description.fontSize": "16px",
+            "description.lineHeight": "22px",
+            "suffixIcon.size": "24px",
+            "suffixIcon.paddingLeft": "12px"
+          }
+        },
+        "variant=inline": {
+          "enabled": {
+            "root.dividerPaddingX": "12px"
+          }
+        },
+        "variant=separated": {
+          "enabled": {
+            "root.strokeWidth": "1px",
+            "root.cornerRadius": "12px"
+          }
+        }
+      }
+    },
+    "action-button": {
+      "$ours": "action-button",
+      "variants": {
+        "variant": {
+          "values": {
+            "brandSolid": {
+              "description": "브랜드의 핵심 가치를 전달하며, 사용자 간 연결이 일어나는 서비스의 주요 기능에 사용합니다. 한 화면에 하나만 사용하는 것을 권장합니다."
+            },
+            "neutralSolid": {
+              "description": "대부분의 화면에서 CTA로 사용합니다. 한 화면에 하나만 사용하는 것을 권장합니다."
+            },
+            "neutralWeak": {
+              "description": "CTA를 제외한 대부분의 액션에 사용됩니다."
+            },
+            "criticalSolid": {
+              "description": "삭제나 초기화처럼 되돌릴 수 없는 중요한 작업에 사용합니다."
+            },
+            "neutralOutline": {
+              "description": "variant=brandSolid, neutralSolid, criticalSolid와 함께 사용할 수 없으며, variant=brandOutline과 조합하여 사용하는 것을 권장합니다."
+            },
+            "brandOutline": {
+              "description": "variant=brandSolid, neutralSolid, criticalSolid와 함께 사용할 수 없으며, variant=neutralOutline과 조합하여 사용하는 것을 권장합니다."
+            },
+            "ghost": {
+              "description": "배경 없이 텍스트와 아이콘만 표시됩니다. 모두 동일한 색상을 사용하는 조건에서 icon, prefix icon, suffix icon, label에 정의된 color를 변경할 수 있으며, label의 fontWeight를 `$font-weight.regular` 또는 `$font-weight.medium`으로 변경하여 주목도를 조절할 수 있습니다."
+            }
+          },
+          "defaultValue": "brandSolid"
+        },
+        "size": {
+          "values": {
+            "xsmall": {
+              "description": "작은 공간에서 효율적으로 사용할 수 있는 Pill 형태로 제공됩니다."
+            },
+            "small": {
+              "description": "화면 중앙에서 범용적으로 사용됩니다."
+            },
+            "medium": {
+              "description": "화면 중앙에서 범용적으로 사용됩니다."
+            },
+            "large": {
+              "description": "주로 CTA 역할로 사용됩니다."
+            }
+          },
+          "defaultValue": "xsmall"
+        },
+        "layout": {
+          "values": {
+            "withText": {
+              "description": "텍스트와 함께 아이콘을 표시할 수 있습니다."
+            },
+            "iconOnly": {
+              "description": "아이콘만으로 의미를 전달하기 때문에 접근성이 떨어집니다. 꼭 필요한 경우에만 접근성 레이블과 함께 사용하는 것을 권장합니다."
+            }
+          },
+          "defaultValue": "withText"
+        }
+      },
+      "values": {
+        "$base": {
+          "enabled": {
+            "root.colorDuration": "150ms",
+            "root.colorTimingFunction": "cubic-bezier(0.35,0,0.35,1)",
+            "label.fontWeight": 700
+          },
+          "pressed": {
+            "root.scaleScope": "self"
+          }
+        },
+        "variant=neutralOutline": {
+          "enabled": {
+            "root.strokeWidth": "1px"
+          }
+        },
+        "variant=brandOutline": {
+          "enabled": {
+            "root.strokeWidth": "1px"
+          }
+        },
+        "size=xsmall": {
+          "enabled": {
+            "root.minHeight": "32px",
+            "root.cornerRadius": "9999px",
+            "progressCircle.size": "14px",
+            "progressCircle.thickness": "2px"
+          }
+        },
+        "size=xsmall,layout=withText": {
+          "enabled": {
+            "root.gap": "4px",
+            "root.paddingX": "14px",
+            "root.paddingY": "6px",
+            "prefixIcon.size": "14px",
+            "suffixIcon.size": "14px",
+            "label.fontSize": "13px",
+            "label.lineHeight": "18px"
+          }
+        },
+        "size=xsmall,layout=iconOnly": {
+          "enabled": {
+            "root.minWidth": "32px",
+            "root.paddingX": "6px",
+            "root.paddingY": "6px",
+            "icon.size": "14px"
+          }
+        },
+        "size=small": {
+          "enabled": {
+            "root.minHeight": "36px",
+            "root.cornerRadius": "8px",
+            "progressCircle.size": "14px",
+            "progressCircle.thickness": "2px"
+          }
+        },
+        "size=small,layout=withText": {
+          "enabled": {
+            "root.gap": "4px",
+            "root.paddingX": "14px",
+            "root.paddingY": "8px",
+            "prefixIcon.size": "14px",
+            "suffixIcon.size": "14px",
+            "label.fontSize": "14px",
+            "label.lineHeight": "19px"
+          }
+        },
+        "size=small,layout=iconOnly": {
+          "enabled": {
+            "root.minWidth": "36px",
+            "root.paddingX": "8px",
+            "root.paddingY": "8px",
+            "icon.size": "16px"
+          }
+        },
+        "size=medium": {
+          "enabled": {
+            "root.minHeight": "40px",
+            "root.cornerRadius": "8px",
+            "progressCircle.size": "16px",
+            "progressCircle.thickness": "2px"
+          }
+        },
+        "size=medium,layout=withText": {
+          "enabled": {
+            "root.gap": "6px",
+            "root.paddingX": "16px",
+            "root.paddingY": "10px",
+            "prefixIcon.size": "16px",
+            "suffixIcon.size": "16px",
+            "label.fontSize": "14px",
+            "label.lineHeight": "19px"
+          }
+        },
+        "size=medium,layout=iconOnly": {
+          "enabled": {
+            "root.minWidth": "40px",
+            "root.paddingX": "10px",
+            "root.paddingY": "10px",
+            "icon.size": "18px"
+          }
+        },
+        "size=large": {
+          "enabled": {
+            "root.minHeight": "52px",
+            "root.cornerRadius": "12px",
+            "progressCircle.size": "18px",
+            "progressCircle.thickness": "2px"
+          }
+        },
+        "size=large,layout=withText": {
+          "enabled": {
+            "root.gap": "8px",
+            "root.paddingX": "20px",
+            "root.paddingY": "14px",
+            "prefixIcon.size": "22px",
+            "suffixIcon.size": "22px",
+            "label.fontSize": "18px",
+            "label.lineHeight": "24px"
+          }
+        },
+        "size=large,layout=iconOnly": {
+          "enabled": {
+            "root.minWidth": "52px",
+            "root.paddingX": "14px",
+            "root.paddingY": "14px",
+            "icon.size": "22px"
+          }
+        }
+      }
+    },
+    "badge": {
+      "$ours": "badge · verification-badge · data-tier-badge · pick-status-badge",
+      "variants": {
+        "size": {
+          "values": {
+            "large": {},
+            "medium": {}
+          },
+          "defaultValue": "large"
+        },
+        "variant": {
+          "values": {
+            "weak": {
+              "description": "반복적인 구조를 가진 환경에서 사용합니다. 배경색이 있는 경우에는 권장하지 않습니다."
+            },
+            "solid": {
+              "description": "배경이 복잡하거나 이미지 위에 Badge가 겹치는 경우 사용합니다."
+            },
+            "outline": {
+              "description": "중간 정도의 주목도가 필요한 본문 또는 상세 화면에서 사용합니다."
+            }
+          },
+          "defaultValue": "weak"
+        },
+        "tone": {
+          "values": {
+            "neutral": {
+              "description": "상태가 특별히 없거나, 상태값이 명확하지 않은 초기 상태"
+            },
+            "brand": {},
+            "informative": {
+              "description": "베타 기능 안내, 사용자 권한 제한, 정보 기반 메시지"
+            },
+            "positive": {
+              "description": "완료, 적용됨, 승인됨, 발행됨, 저장 성공, 검토 통과"
+            },
+            "warning": {
+              "description": "만료 임박, 제출 누락, 필수 정보 부족 등 잠재적 문제 상태"
+            },
+            "critical": {
+              "description": "검수 거절, 제재 상태, 편집 불가, 유효성 검증 실패"
+            }
+          },
+          "defaultValue": "neutral"
+        }
+      },
+      "values": {
+        "size=large": {
+          "enabled": {
+            "root.maxWidth": "108px",
+            "root.minHeight": "24px",
+            "root.paddingX": "8px",
+            "root.paddingY": "4px",
+            "root.cornerRadius": "6px",
+            "label.fontSize": "12px",
+            "label.lineHeight": "16px"
+          }
+        },
+        "size=medium": {
+          "enabled": {
+            "root.maxWidth": "120px",
+            "root.minHeight": "20px",
+            "root.paddingX": "6px",
+            "root.paddingY": "2px",
+            "root.cornerRadius": "4px",
+            "label.fontSize": "11px",
+            "label.lineHeight": "15px"
+          }
+        },
+        "variant=weak": {
+          "enabled": {
+            "label.fontWeight": 500
+          }
+        },
+        "variant=solid": {
+          "enabled": {
+            "label.fontWeight": 700
+          }
+        },
+        "variant=outline": {
+          "enabled": {
+            "root.strokeWidth": "1px",
+            "label.fontWeight": 700
+          }
+        }
+      }
+    },
+    "chip": {
+      "$ours": "filter-chip",
+      "variants": {
+        "variant": {
+          "values": {
+            "solid": {
+              "description": "기본 스타일입니다."
+            },
+            "outlineStrong": {
+              "description": "명확한 구분이 필요한 경우 사용합니다."
+            },
+            "outlineWeak": {
+              "description": "Selection 사용 시 주목도가 낮은 스타일로 권장됩니다."
+            }
+          },
+          "defaultValue": "solid"
+        },
+        "size": {
+          "values": {
+            "small": {},
+            "medium": {},
+            "large": {}
+          },
+          "defaultValue": "small"
+        },
+        "layout": {
+          "values": {
+            "withText": {},
+            "iconOnly": {}
+          },
+          "defaultValue": "withText"
+        }
+      },
+      "values": {
+        "$base": {
+          "enabled": {
+            "root.colorDuration": "150ms",
+            "root.colorTimingFunction": "cubic-bezier(0.35,0,0.35,1)",
+            "root.cornerRadius": "9999px",
+            "prefixIcon.paddingLeft": "6px",
+            "prefixAvatar.size": "24px",
+            "suffixIcon.paddingRight": "6px",
+            "label.fontWeight": 500,
+            "label.paddingX": "6px"
+          },
+          "pressed": {
+            "root.scaleScope": "self"
+          }
+        },
+        "variant=solid": {
+          "disabled": {
+            "root.opacity": 0.5
+          },
+          "selected| disabled": {
+            "root.opacity": 0.5
+          }
+        },
+        "variant=outlineStrong": {
+          "enabled": {
+            "root.strokeWidth": "1px"
+          },
+          "disabled": {
+            "root.opacity": 0.5
+          },
+          "selected| disabled": {
+            "root.opacity": 0.5
+          }
+        },
+        "variant=outlineWeak": {
+          "enabled": {
+            "root.strokeWidth": "1px"
+          },
+          "disabled": {
+            "root.opacity": 0.5
+          },
+          "selected| disabled": {
+            "root.opacity": 0.5
+          }
+        },
+        "size=small": {
+          "enabled": {
+            "root.height": "32px",
+            "root.paddingX": "6px",
+            "label.fontSize": "14px",
+            "label.lineHeight": "19px",
+            "prefixIcon.size": "14px",
+            "suffixIcon.size": "14px",
+            "prefixAvatar.size": "20px",
+            "icon.size": "14px"
+          }
+        },
+        "size=medium": {
+          "enabled": {
+            "root.height": "36px",
+            "root.paddingX": "8px",
+            "label.fontSize": "14px",
+            "label.lineHeight": "19px",
+            "prefixIcon.size": "16px",
+            "suffixIcon.size": "14px",
+            "prefixAvatar.size": "24px",
+            "icon.size": "16px"
+          }
+        },
+        "size=large": {
+          "enabled": {
+            "root.height": "40px",
+            "root.paddingX": "10px",
+            "label.fontSize": "14px",
+            "label.lineHeight": "19px",
+            "prefixIcon.size": "16px",
+            "prefixIcon.paddingLeft": "6px",
+            "suffixIcon.size": "16px",
+            "prefixAvatar.size": "28px",
+            "icon.size": "16px"
+          }
+        },
+        "size=small,layout=withText": {
+          "enabled": {
+            "root.minWidth": "44px"
+          }
+        },
+        "size=medium,layout=withText": {
+          "enabled": {
+            "root.minWidth": "48px"
+          }
+        },
+        "size=large,layout=withText": {
+          "enabled": {
+            "root.minWidth": "52px"
+          }
+        },
+        "size=small,layout=iconOnly": {
+          "enabled": {
+            "root.minWidth": "32px"
+          }
+        },
+        "size=medium,layout=iconOnly": {
+          "enabled": {
+            "root.minWidth": "36px"
+          }
+        },
+        "size=large,layout=iconOnly": {
+          "enabled": {
+            "root.minWidth": "40px"
+          }
+        }
+      }
+    },
+    "control-chip": {
+      "$ours": "filter-chip(선택형)",
+      "variants": {
+        "size": {
+          "values": {
+            "small": {},
+            "medium": {}
+          },
+          "defaultValue": "small"
+        },
+        "layout": {
+          "values": {
+            "withText": {},
+            "iconOnly": {}
+          },
+          "defaultValue": "withText"
+        }
+      },
+      "values": {
+        "$base": {
+          "enabled": {
+            "root.strokeWidth": "1px",
+            "root.cornerRadius": "9999px",
+            "label.fontWeight": 500,
+            "count.fontWeight": 500
+          },
+          "selected": {
+            "root.strokeWidth": "0px",
+            "label.fontWeight": 700
+          }
+        },
+        "size=small": {
+          "enabled": {
+            "root.minHeight": "32px",
+            "root.paddingY": "6px",
+            "root.gap": "4px",
+            "label.fontSize": "14px",
+            "label.lineHeight": "19px",
+            "prefixIcon.size": "16px",
+            "suffixIcon.size": "14px",
+            "count.fontSize": "14px"
+          }
+        },
+        "size=medium": {
+          "enabled": {
+            "root.minHeight": "36px",
+            "root.paddingY": "8px",
+            "root.gap": "4px",
+            "label.fontSize": "14px",
+            "label.lineHeight": "19px",
+            "prefixIcon.size": "16px",
+            "suffixIcon.size": "14px",
+            "count.fontSize": "14px"
+          }
+        },
+        "size=small,layout=withText": {
+          "enabled": {
+            "root.paddingX": "12px"
+          }
+        },
+        "size=small,layout=iconOnly": {
+          "enabled": {
+            "root.minWidth": "32px",
+            "icon.size": "16px"
+          }
+        },
+        "size=medium,layout=withText": {
+          "enabled": {
+            "root.paddingX": "14px"
+          }
+        },
+        "size=medium,layout=iconOnly": {
+          "enabled": {
+            "root.minWidth": "36px",
+            "icon.size": "16px"
+          }
+        }
+      }
+    },
+    "floating-action-button": {
+      "$ours": "fab",
+      "variants": {
+        "extended": {
+          "values": {
+            "true": {
+              "description": "라벨이 포함된 확장 형태로, 버튼의 역할을 명확히 전달합니다."
+            },
+            "false": {
+              "description": "아이콘만 표시되는 기본 형태입니다."
+            }
+          },
+          "defaultValue": "true"
+        }
+      },
+      "values": {
+        "$base": {
+          "enabled": {
+            "root.cornerRadius": "9999px",
+            "root.shadow": "0px 4px 16px 0px #0000001f",
+            "root.colorDuration": "150ms",
+            "root.colorTimingFunction": "cubic-bezier(0.35,0,0.35,1)",
+            "root.layoutDuration": "200ms",
+            "root.layoutTimingFunction": "cubic-bezier(0.35,0,0.35,1)",
+            "icon.sizeDuration": "200ms",
+            "icon.sizeTimingFunction": "cubic-bezier(0.35,0,0.35,1)"
+          },
+          "pressed": {
+            "root.scaleScope": "self"
+          }
+        },
+        "extended=true": {
+          "enabled": {
+            "root.gap": "4px",
+            "root.paddingX": "18px",
+            "root.paddingY": "12px",
+            "root.minHeight": "48px",
+            "icon.size": "16px",
+            "label.fontSize": "16px",
+            "label.lineHeight": "22px",
+            "label.fontWeight": 700
+          }
+        },
+        "extended=false": {
+          "enabled": {
+            "root.size": "56px",
+            "icon.size": "24px"
+          }
+        }
+      }
+    },
+    "list-header": {
+      "$ours": "section-header",
+      "variants": {
+        "variant": {
+          "values": {
+            "mediumWeak": {},
+            "boldSolid": {}
+          },
+          "defaultValue": "mediumWeak"
+        }
+      },
+      "values": {
+        "$base": {
+          "enabled": {
+            "root.paddingX": "16px",
+            "root.paddingY": "8px",
+            "root.gap": "10px",
+            "root.fontSize": "14px",
+            "root.lineHeight": "19px"
+          }
+        },
+        "variant=mediumWeak": {
+          "enabled": {
+            "root.fontWeight": 500
+          }
+        },
+        "variant=boldSolid": {
+          "enabled": {
+            "root.fontWeight": 700
+          }
+        }
+      }
+    },
+    "progress-circle": {
+      "$ours": "circle-loader",
+      "variants": {
+        "size": {
+          "values": {
+            "24": {
+              "description": "특정 요소 안에서 사용하는 경우 사용합니다."
+            },
+            "40": {
+              "description": "주로 전체 페이지 로딩에 사용합니다."
+            }
+          },
+          "defaultValue": "40"
+        },
+        "indeterminate": {
+          "values": {
+            "false": {
+              "description": "대기 시간이 얼마나 남은지 아는 상황일 때 사용합니다. 진행 상황에 맞춰서 원을 채웁니다."
+            },
+            "true": {
+              "description": "대기 시간이 얼마나 남은지 모르는 상황일 때 사용합니다. 계속해서 회전하는 동작을 합니다."
+            }
+          },
+          "defaultValue": "false"
+        },
+        "tone": {
+          "values": {
+            "neutral": {
+              "description": "가장 보편적으로 사용되며 스타일보다는 로딩 상태의 인식이 더 중요한 경우 사용합니다."
+            },
+            "brand": {
+              "description": "사용자 경험의 초기 단계에서 브랜드 컬러를 통해 주요 전환점을 강조할 때 사용합니다."
+            },
+            "staticWhite": {
+              "description": "화면 전체를 어둡게 덮는 오버레이(Overlay) 위에 로딩 상태를 표시할 때 사용합니다."
+            }
+          },
+          "defaultValue": "neutral"
+        }
+      },
+      "values": {
+        "size=40": {
+          "enabled": {
+            "root.size": "40px",
+            "root.thickness": "5px"
+          }
+        },
+        "size=24": {
+          "enabled": {
+            "root.size": "24px",
+            "root.thickness": "3px"
+          }
+        },
+        "indeterminate=false": {
+          "enabled": {
+            "range.lengthDuration": "300ms",
+            "range.lengthTimingFunction": "cubic-bezier(0,0,0.15,1)"
+          }
+        },
+        "indeterminate=true": {
+          "enabled": {
+            "range.lengthDuration": "1.2s",
+            "range.rotateDuration": "1.2s",
+            "range.headTimingFunction": "cubic-bezier(0.35,0,0.65,1)",
+            "range.tailTimingFunction": "cubic-bezier(0.35,0,0.65,0.6)",
+            "range.rotateTimingFunction": "cubic-bezier(0.35,0.25,0.65,0.75)"
+          }
+        }
+      }
+    },
+    "segmented-control": {
+      "$ours": "segmented-tabs",
+      "variants": {},
+      "values": {
+        "$base": {
+          "enabled": {
+            "root.padding": "4px",
+            "root.cornerRadius": "9999px"
+          }
+        }
+      }
+    },
+    "segmented-control-item": {
+      "$ours": "segmented-tabs",
+      "variants": {},
+      "values": {
+        "$base": {
+          "enabled": {
+            "root.minWidth": "86px",
+            "root.minHeight": "34px",
+            "root.paddingX": "24px",
+            "root.paddingY": "6px",
+            "root.cornerRadius": "9999px",
+            "root.gap": "6px",
+            "root.colorDuration": "150ms",
+            "root.colorTimingFunction": "cubic-bezier(0.35,0,0.35,1)",
+            "label.fontSize": "16px",
+            "label.lineHeight": "22px",
+            "label.fontWeight": 700,
+            "label.colorDuration": "150ms",
+            "label.colorTimingFunction": "cubic-bezier(0.35,0,0.35,1)"
+          },
+          "pressed": {
+            "root.strokeWidth": "1px",
+            "root.scaleScope": "content"
+          }
+        }
+      }
+    },
+    "skeleton": {
+      "$ours": "skeleton · list-skeleton",
+      "variants": {
+        "radius": {
+          "values": {
+            "0": {
+              "description": "기본값입니다."
+            },
+            "8": {
+              "description": "텍스트 콘텐츠에 사용합니다."
+            },
+            "16": {
+              "description": "카드 및 썸네일에 사용합니다."
+            },
+            "full": {
+              "description": "Avatar(원형) 콘텐츠에 사용합니다."
+            }
+          },
+          "defaultValue": "0"
+        },
+        "tone": {
+          "values": {
+            "neutral": {
+              "description": "데이터를 불러오는 일반적인 로딩 경험에 사용합니다."
+            },
+            "magic": {
+              "description": "AI 기능이 활성화되었을 때 사용합니다."
+            }
+          },
+          "defaultValue": "neutral"
+        }
+      },
+      "values": {
+        "$base": {
+          "enabled": {
+            "shimmer.duration": "1.5s",
+            "shimmer.timingFunction": "cubic-bezier(0.35,0,0.35,1)"
+          }
+        },
+        "radius=0": {
+          "enabled": {
+            "root.cornerRadius": "0px"
+          }
+        },
+        "radius=8": {
+          "enabled": {
+            "root.cornerRadius": "8px"
+          }
+        },
+        "radius=16": {
+          "enabled": {
+            "root.cornerRadius": "16px"
+          }
+        },
+        "radius=full": {
+          "enabled": {
+            "root.cornerRadius": "9999px"
+          }
+        },
+        "tone=neutral": {
+          "enabled": {
+            "shimmer.gradient": "#ffffff00 0%, #ffffffab 46%, #ffffffab 54%, #ffffff00 100%"
+          }
+        },
+        "tone=magic": {
+          "enabled": {
+            "shimmer.gradient": "#fff9f500 0%, #fff9f5cc 46%, #fff9f5cc 54%, #fff9f500 100%"
+          }
+        }
+      }
+    },
+    "snackbar": {
+      "$ours": "toast",
+      "variants": {
+        "variant": {
+          "values": {
+            "default": {},
+            "positive": {},
+            "critical": {}
+          },
+          "defaultValue": "default"
+        }
+      },
+      "values": {
+        "$base": {
+          "enabled": {
+            "region.paddingX": "8px",
+            "region.paddingY": "8px",
+            "region.offsetDuration": "200ms",
+            "region.offsetTimingFunction": "cubic-bezier(0.35,0,0.35,1)",
+            "root.cornerRadius": "8px",
+            "root.minHeight": "44px",
+            "root.maxWidth": "464px",
+            "root.paddingX": "10px",
+            "root.paddingY": "10px",
+            "root.enterOpacity": 0,
+            "root.enterScale": 0.8,
+            "root.enterDuration": "150ms",
+            "root.enterTimingFunction": "cubic-bezier(0,0,0.15,1)",
+            "root.exitOpacity": 0,
+            "root.exitScale": 0.8,
+            "root.exitDuration": "100ms",
+            "root.exitTimingFunction": "cubic-bezier(0.35,0,1,1)",
+            "content.paddingX": "6px",
+            "content.gap": "10px",
+            "message.fontSize": "14px",
+            "message.lineHeight": "19px",
+            "message.fontWeight": 400,
+            "prefixIcon.size": "24px",
+            "prefixIcon.paddingRight": "2px",
+            "actionButton.targetPaddingX": "8px",
+            "actionButton.targetMinHeight": "44px",
+            "actionButton.fontSize": "14px",
+            "actionButton.lineHeight": "19px",
+            "actionButton.fontWeight": 700
+          },
+          "pressed": {
+            "actionButton.scaleScope": "self"
+          }
+        }
+      }
+    },
+    "text-input": {
+      "$ours": "text-field · search-bar",
+      "variants": {
+        "variant": {
+          "values": {
+            "outline": {
+              "description": "기본 스타일입니다."
+            },
+            "underline": {
+              "description": "화면에 하나의 Input만 있는 경우 사용을 권장합니다."
+            }
+          },
+          "defaultValue": "outline"
+        },
+        "size": {
+          "values": {
+            "large": {
+              "description": "뷰포트 너비와 관계없이 사용할 수 있습니다."
+            },
+            "medium": {
+              "description": "Breakpoint `lg` 이상(데스크톱)에서만 사용하고, 모바일에서는 사용하지 않습니다. 정밀한 선택이 가능한 마우스 입력 환경에서 사이즈를 더 작게 만들고자 할 때 사용합니다."
+            }
+          },
+          "defaultValue": "large"
+        },
+        "type": {
+          "values": {
+            "singleline": {},
+            "multiline": {}
+          },
+          "defaultValue": "singleline"
+        }
+      },
+      "values": {
+        "$base": {
+          "enabled": {
+            "root.strokeDuration": "0.1s",
+            "root.strokeTimingFunction": "cubic-bezier(0.35,0,0.35,1)",
+            "value.fontWeight": 400,
+            "placeholder.fontWeight": 400,
+            "prefixText.fontWeight": 400,
+            "suffixText.fontWeight": 400
+          }
+        },
+        "variant=outline": {
+          "enabled": {
+            "root.strokeWidth": "1px"
+          },
+          "focused": {
+            "root.strokeWidth": "2px"
+          },
+          "invalid": {
+            "root.strokeWidth": "2px"
+          }
+        },
+        "variant=outline,size=large": {
+          "enabled": {
+            "root.gap": "10px",
+            "root.minHeight": "52px",
+            "root.cornerRadius": "12px",
+            "root.paddingX": "16px",
+            "value.fontSize": "16px",
+            "value.lineHeight": "22px",
+            "placeholder.fontSize": "16px",
+            "placeholder.lineHeight": "22px",
+            "prefixText.fontSize": "16px",
+            "prefixText.lineHeight": "22px",
+            "prefixIcon.size": "20px",
+            "suffixText.fontSize": "16px",
+            "suffixText.lineHeight": "22px",
+            "suffixIcon.size": "20px"
+          }
+        },
+        "variant=outline,size=medium": {
+          "enabled": {
+            "root.gap": "8px",
+            "root.minHeight": "40px",
+            "root.cornerRadius": "8px",
+            "root.paddingX": "14px",
+            "value.fontSize": "14px",
+            "value.lineHeight": "19px",
+            "placeholder.fontSize": "14px",
+            "placeholder.lineHeight": "19px",
+            "prefixText.fontSize": "14px",
+            "prefixText.lineHeight": "19px",
+            "prefixIcon.size": "16px",
+            "suffixText.fontSize": "14px",
+            "suffixText.lineHeight": "19px",
+            "suffixIcon.size": "16px"
+          }
+        },
+        "variant=underline": {
+          "enabled": {
+            "root.strokeBottomWidth": "1px"
+          },
+          "focused": {
+            "root.strokeBottomWidth": "2px"
+          },
+          "invalid": {
+            "root.strokeBottomWidth": "2px"
+          }
+        },
+        "variant=underline,size=large": {
+          "enabled": {
+            "root.gap": "10px",
+            "root.minHeight": "40px",
+            "root.paddingY": "8px",
+            "value.fontSize": "18px",
+            "value.lineHeight": "24px",
+            "placeholder.fontSize": "18px",
+            "placeholder.lineHeight": "24px",
+            "prefixText.fontSize": "18px",
+            "prefixText.lineHeight": "24px",
+            "prefixIcon.size": "24px",
+            "suffixText.fontSize": "18px",
+            "suffixText.lineHeight": "24px",
+            "suffixIcon.size": "24px"
+          }
+        },
+        "variant=underline,size=medium": {
+          "enabled": {
+            "root.gap": "8px",
+            "root.minHeight": "34px",
+            "root.paddingY": "6px",
+            "value.fontSize": "16px",
+            "value.lineHeight": "22px",
+            "placeholder.fontSize": "16px",
+            "placeholder.lineHeight": "22px",
+            "prefixText.fontSize": "16px",
+            "prefixText.lineHeight": "22px",
+            "prefixIcon.size": "20px",
+            "suffixText.fontSize": "16px",
+            "suffixText.lineHeight": "22px",
+            "suffixIcon.size": "20px"
+          }
+        },
+        "type=multiline,size=large": {
+          "enabled": {
+            "root.minHeight": "94px",
+            "root.paddingY": "14px"
+          }
+        },
+        "type=multiline,size=medium": {
+          "enabled": {
+            "root.minHeight": "82px",
+            "root.paddingY": "12px"
+          }
+        }
+      }
+    },
+    "top-navigation-icon-button": {
+      "$ours": "icon-button",
+      "variants": {
+        "tone": {
+          "values": {
+            "layer": {},
+            "transparent": {}
+          },
+          "defaultValue": "layer"
+        }
+      },
+      "values": {
+        "$base": {
+          "enabled": {
+            "root.size": "44px",
+            "root.cornerRadius": "8px",
+            "root.colorDuration": "150ms",
+            "root.colorTimingFunction": "cubic-bezier(0.35,0,0.35,1)",
+            "icon.size": "24px"
+          },
+          "pressed": {
+            "root.scaleScope": "self"
+          }
+        }
+      }
+    },
+    "typography": {
+      "$ours": "themed-text",
+      "variants": {
+        "textStyle": {
+          "values": {
+            "screenTitle": {
+              "description": "화면에 크게 표시되는 주요 제목이나 타이틀에 사용합니다."
+            },
+            "articleBody": {
+              "description": "게시물이나 콘텐츠 중심 섹션의 본문 텍스트에 사용합니다."
+            },
+            "articleNote": {
+              "description": "주석, 참고 사항 및 상세 리스트 등 부가 정보에 사용하며, 일반 본문 텍스트에는 사용하지 않습니다."
+            },
+            "t1Regular": {},
+            "t1Medium": {},
+            "t1Bold": {},
+            "t2Regular": {},
+            "t2Medium": {},
+            "t2Bold": {},
+            "t3Regular": {},
+            "t3Medium": {},
+            "t3Bold": {},
+            "t4Regular": {},
+            "t4Medium": {},
+            "t4Bold": {},
+            "t5Regular": {},
+            "t5Medium": {},
+            "t5Bold": {},
+            "t6Regular": {},
+            "t6Medium": {},
+            "t6Bold": {},
+            "t7Regular": {},
+            "t7Medium": {},
+            "t7Bold": {},
+            "t8Regular": {},
+            "t8Medium": {},
+            "t8Bold": {},
+            "t9Regular": {},
+            "t9Medium": {},
+            "t9Bold": {},
+            "t10Regular": {},
+            "t10Medium": {},
+            "t10Bold": {},
+            "t11Regular": {
+              "description": "`sm` breakpoint 이상에서만 사용하는 것을 권장합니다."
+            },
+            "t11Medium": {
+              "description": "`sm` breakpoint 이상에서만 사용하는 것을 권장합니다."
+            },
+            "t11Bold": {
+              "description": "`sm` breakpoint 이상에서만 사용하는 것을 권장합니다."
+            },
+            "t12Regular": {
+              "description": "`sm` breakpoint 이상에서만 사용하는 것을 권장합니다."
+            },
+            "t12Medium": {
+              "description": "`sm` breakpoint 이상에서만 사용하는 것을 권장합니다."
+            },
+            "t12Bold": {
+              "description": "`sm` breakpoint 이상에서만 사용하는 것을 권장합니다."
+            },
+            "t13Regular": {
+              "description": "`sm` breakpoint 이상에서만 사용하는 것을 권장합니다."
+            },
+            "t13Medium": {
+              "description": "`sm` breakpoint 이상에서만 사용하는 것을 권장합니다."
+            },
+            "t13Bold": {
+              "description": "`sm` breakpoint 이상에서만 사용하는 것을 권장합니다."
+            },
+            "t14Regular": {
+              "description": "`sm` breakpoint 이상에서만 사용하는 것을 권장합니다."
+            },
+            "t14Medium": {
+              "description": "`sm` breakpoint 이상에서만 사용하는 것을 권장합니다."
+            },
+            "t14Bold": {
+              "description": "`sm` breakpoint 이상에서만 사용하는 것을 권장합니다."
+            },
+            "t1StaticRegular": {
+              "description": "폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t1StaticMedium": {
+              "description": "폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t1StaticBold": {
+              "description": "폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t2StaticRegular": {
+              "description": "폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t2StaticMedium": {
+              "description": "폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t2StaticBold": {
+              "description": "폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t3StaticRegular": {
+              "description": "폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t3StaticMedium": {
+              "description": "폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t3StaticBold": {
+              "description": "폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t4StaticRegular": {
+              "description": "폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t4StaticMedium": {
+              "description": "폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t4StaticBold": {
+              "description": "폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t5StaticRegular": {
+              "description": "폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t5StaticMedium": {
+              "description": "폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t5StaticBold": {
+              "description": "폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t6StaticRegular": {
+              "description": "폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t6StaticMedium": {
+              "description": "폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t6StaticBold": {
+              "description": "폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t7StaticRegular": {
+              "description": "폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t7StaticMedium": {
+              "description": "폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t7StaticBold": {
+              "description": "폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t8StaticRegular": {
+              "description": "폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t8StaticMedium": {
+              "description": "폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t8StaticBold": {
+              "description": "폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t9StaticRegular": {
+              "description": "폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t9StaticMedium": {
+              "description": "폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t9StaticBold": {
+              "description": "폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t10StaticRegular": {
+              "description": "폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t10StaticMedium": {
+              "description": "폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t10StaticBold": {
+              "description": "폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t11StaticRegular": {
+              "description": "`sm` breakpoint 이상에서만 사용하는 것을 권장합니다. 폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t11StaticMedium": {
+              "description": "`sm` breakpoint 이상에서만 사용하는 것을 권장합니다. 폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t11StaticBold": {
+              "description": "`sm` breakpoint 이상에서만 사용하는 것을 권장합니다. 폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t12StaticRegular": {
+              "description": "`sm` breakpoint 이상에서만 사용하는 것을 권장합니다. 폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t12StaticMedium": {
+              "description": "`sm` breakpoint 이상에서만 사용하는 것을 권장합니다. 폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t12StaticBold": {
+              "description": "`sm` breakpoint 이상에서만 사용하는 것을 권장합니다. 폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t13StaticRegular": {
+              "description": "`sm` breakpoint 이상에서만 사용하는 것을 권장합니다. 폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t13StaticMedium": {
+              "description": "`sm` breakpoint 이상에서만 사용하는 것을 권장합니다. 폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t13StaticBold": {
+              "description": "`sm` breakpoint 이상에서만 사용하는 것을 권장합니다. 폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t14StaticRegular": {
+              "description": "`sm` breakpoint 이상에서만 사용하는 것을 권장합니다. 폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t14StaticMedium": {
+              "description": "`sm` breakpoint 이상에서만 사용하는 것을 권장합니다. 폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            },
+            "t14StaticBold": {
+              "description": "`sm` breakpoint 이상에서만 사용하는 것을 권장합니다. 폰트 스케일링에 반응하지 않도록 static text size와 static line height 토큰을 사용합니다."
+            }
+          },
+          "defaultValue": "screenTitle"
+        }
+      },
+      "values": {
+        "textStyle=screenTitle": {
+          "enabled": {
+            "root.fontSize": "26px",
+            "root.lineHeight": "35px",
+            "root.fontWeight": 700
+          }
+        },
+        "textStyle=articleBody": {
+          "enabled": {
+            "root.fontSize": "16px",
+            "root.lineHeight": "24px",
+            "root.fontWeight": 400
+          }
+        },
+        "textStyle=articleNote": {
+          "enabled": {
+            "root.fontSize": "14px",
+            "root.lineHeight": "22px",
+            "root.fontWeight": 400
+          }
+        },
+        "textStyle=t1Regular": {
+          "enabled": {
+            "root.fontSize": "11px",
+            "root.lineHeight": "15px",
+            "root.fontWeight": 400
+          }
+        },
+        "textStyle=t1Medium": {
+          "enabled": {
+            "root.fontSize": "11px",
+            "root.lineHeight": "15px",
+            "root.fontWeight": 500
+          }
+        },
+        "textStyle=t1Bold": {
+          "enabled": {
+            "root.fontSize": "11px",
+            "root.lineHeight": "15px",
+            "root.fontWeight": 700
+          }
+        },
+        "textStyle=t2Regular": {
+          "enabled": {
+            "root.fontSize": "12px",
+            "root.lineHeight": "16px",
+            "root.fontWeight": 400
+          }
+        },
+        "textStyle=t2Medium": {
+          "enabled": {
+            "root.fontSize": "12px",
+            "root.lineHeight": "16px",
+            "root.fontWeight": 500
+          }
+        },
+        "textStyle=t2Bold": {
+          "enabled": {
+            "root.fontSize": "12px",
+            "root.lineHeight": "16px",
+            "root.fontWeight": 700
+          }
+        },
+        "textStyle=t3Regular": {
+          "enabled": {
+            "root.fontSize": "13px",
+            "root.lineHeight": "18px",
+            "root.fontWeight": 400
+          }
+        },
+        "textStyle=t3Medium": {
+          "enabled": {
+            "root.fontSize": "13px",
+            "root.lineHeight": "18px",
+            "root.fontWeight": 500
+          }
+        },
+        "textStyle=t3Bold": {
+          "enabled": {
+            "root.fontSize": "13px",
+            "root.lineHeight": "18px",
+            "root.fontWeight": 700
+          }
+        },
+        "textStyle=t4Regular": {
+          "enabled": {
+            "root.fontSize": "14px",
+            "root.lineHeight": "19px",
+            "root.fontWeight": 400
+          }
+        },
+        "textStyle=t4Medium": {
+          "enabled": {
+            "root.fontSize": "14px",
+            "root.lineHeight": "19px",
+            "root.fontWeight": 500
+          }
+        },
+        "textStyle=t4Bold": {
+          "enabled": {
+            "root.fontSize": "14px",
+            "root.lineHeight": "19px",
+            "root.fontWeight": 700
+          }
+        },
+        "textStyle=t5Regular": {
+          "enabled": {
+            "root.fontSize": "16px",
+            "root.lineHeight": "22px",
+            "root.fontWeight": 400
+          }
+        },
+        "textStyle=t5Medium": {
+          "enabled": {
+            "root.fontSize": "16px",
+            "root.lineHeight": "22px",
+            "root.fontWeight": 500
+          }
+        },
+        "textStyle=t5Bold": {
+          "enabled": {
+            "root.fontSize": "16px",
+            "root.lineHeight": "22px",
+            "root.fontWeight": 700
+          }
+        },
+        "textStyle=t6Regular": {
+          "enabled": {
+            "root.fontSize": "18px",
+            "root.lineHeight": "24px",
+            "root.fontWeight": 400
+          }
+        },
+        "textStyle=t6Medium": {
+          "enabled": {
+            "root.fontSize": "18px",
+            "root.lineHeight": "24px",
+            "root.fontWeight": 500
+          }
+        },
+        "textStyle=t6Bold": {
+          "enabled": {
+            "root.fontSize": "18px",
+            "root.lineHeight": "24px",
+            "root.fontWeight": 700
+          }
+        },
+        "textStyle=t7Regular": {
+          "enabled": {
+            "root.fontSize": "20px",
+            "root.lineHeight": "27px",
+            "root.fontWeight": 400
+          }
+        },
+        "textStyle=t7Medium": {
+          "enabled": {
+            "root.fontSize": "20px",
+            "root.lineHeight": "27px",
+            "root.fontWeight": 500
+          }
+        },
+        "textStyle=t7Bold": {
+          "enabled": {
+            "root.fontSize": "20px",
+            "root.lineHeight": "27px",
+            "root.fontWeight": 700
+          }
+        },
+        "textStyle=t8Regular": {
+          "enabled": {
+            "root.fontSize": "22px",
+            "root.lineHeight": "30px",
+            "root.fontWeight": 400
+          }
+        },
+        "textStyle=t8Medium": {
+          "enabled": {
+            "root.fontSize": "22px",
+            "root.lineHeight": "30px",
+            "root.fontWeight": 500
+          }
+        },
+        "textStyle=t8Bold": {
+          "enabled": {
+            "root.fontSize": "22px",
+            "root.lineHeight": "30px",
+            "root.fontWeight": 700
+          }
+        },
+        "textStyle=t9Regular": {
+          "enabled": {
+            "root.fontSize": "24px",
+            "root.lineHeight": "32px",
+            "root.fontWeight": 400
+          }
+        },
+        "textStyle=t9Medium": {
+          "enabled": {
+            "root.fontSize": "24px",
+            "root.lineHeight": "32px",
+            "root.fontWeight": 500
+          }
+        },
+        "textStyle=t9Bold": {
+          "enabled": {
+            "root.fontSize": "24px",
+            "root.lineHeight": "32px",
+            "root.fontWeight": 700
+          }
+        },
+        "textStyle=t10Regular": {
+          "enabled": {
+            "root.fontSize": "26px",
+            "root.lineHeight": "35px",
+            "root.fontWeight": 400
+          }
+        },
+        "textStyle=t10Medium": {
+          "enabled": {
+            "root.fontSize": "26px",
+            "root.lineHeight": "35px",
+            "root.fontWeight": 500
+          }
+        },
+        "textStyle=t10Bold": {
+          "enabled": {
+            "root.fontSize": "26px",
+            "root.lineHeight": "35px",
+            "root.fontWeight": 700
+          }
+        },
+        "textStyle=t11Regular": {
+          "enabled": {
+            "root.fontSize": "28px",
+            "root.lineHeight": "38px",
+            "root.fontWeight": 400
+          }
+        },
+        "textStyle=t11Medium": {
+          "enabled": {
+            "root.fontSize": "28px",
+            "root.lineHeight": "38px",
+            "root.fontWeight": 500
+          }
+        },
+        "textStyle=t11Bold": {
+          "enabled": {
+            "root.fontSize": "28px",
+            "root.lineHeight": "38px",
+            "root.fontWeight": 700
+          }
+        },
+        "textStyle=t12Regular": {
+          "enabled": {
+            "root.fontSize": "32px",
+            "root.lineHeight": "42px",
+            "root.fontWeight": 400
+          }
+        },
+        "textStyle=t12Medium": {
+          "enabled": {
+            "root.fontSize": "32px",
+            "root.lineHeight": "42px",
+            "root.fontWeight": 500
+          }
+        },
+        "textStyle=t12Bold": {
+          "enabled": {
+            "root.fontSize": "32px",
+            "root.lineHeight": "42px",
+            "root.fontWeight": 700
+          }
+        },
+        "textStyle=t13Regular": {
+          "enabled": {
+            "root.fontSize": "40px",
+            "root.lineHeight": "52px",
+            "root.fontWeight": 400
+          }
+        },
+        "textStyle=t13Medium": {
+          "enabled": {
+            "root.fontSize": "40px",
+            "root.lineHeight": "52px",
+            "root.fontWeight": 500
+          }
+        },
+        "textStyle=t13Bold": {
+          "enabled": {
+            "root.fontSize": "40px",
+            "root.lineHeight": "52px",
+            "root.fontWeight": 700
+          }
+        },
+        "textStyle=t14Regular": {
+          "enabled": {
+            "root.fontSize": "48px",
+            "root.lineHeight": "60px",
+            "root.fontWeight": 400
+          }
+        },
+        "textStyle=t14Medium": {
+          "enabled": {
+            "root.fontSize": "48px",
+            "root.lineHeight": "60px",
+            "root.fontWeight": 500
+          }
+        },
+        "textStyle=t14Bold": {
+          "enabled": {
+            "root.fontSize": "48px",
+            "root.lineHeight": "60px",
+            "root.fontWeight": 700
+          }
+        },
+        "textStyle=t1StaticRegular": {
+          "enabled": {
+            "root.fontSize": "11px",
+            "root.lineHeight": "15px",
+            "root.fontWeight": 400
+          }
+        },
+        "textStyle=t1StaticMedium": {
+          "enabled": {
+            "root.fontSize": "11px",
+            "root.lineHeight": "15px",
+            "root.fontWeight": 500
+          }
+        },
+        "textStyle=t1StaticBold": {
+          "enabled": {
+            "root.fontSize": "11px",
+            "root.lineHeight": "15px",
+            "root.fontWeight": 700
+          }
+        },
+        "textStyle=t2StaticRegular": {
+          "enabled": {
+            "root.fontSize": "12px",
+            "root.lineHeight": "16px",
+            "root.fontWeight": 400
+          }
+        },
+        "textStyle=t2StaticMedium": {
+          "enabled": {
+            "root.fontSize": "12px",
+            "root.lineHeight": "16px",
+            "root.fontWeight": 500
+          }
+        },
+        "textStyle=t2StaticBold": {
+          "enabled": {
+            "root.fontSize": "12px",
+            "root.lineHeight": "16px",
+            "root.fontWeight": 700
+          }
+        },
+        "textStyle=t3StaticRegular": {
+          "enabled": {
+            "root.fontSize": "13px",
+            "root.lineHeight": "18px",
+            "root.fontWeight": 400
+          }
+        },
+        "textStyle=t3StaticMedium": {
+          "enabled": {
+            "root.fontSize": "13px",
+            "root.lineHeight": "18px",
+            "root.fontWeight": 500
+          }
+        },
+        "textStyle=t3StaticBold": {
+          "enabled": {
+            "root.fontSize": "13px",
+            "root.lineHeight": "18px",
+            "root.fontWeight": 700
+          }
+        },
+        "textStyle=t4StaticRegular": {
+          "enabled": {
+            "root.fontSize": "14px",
+            "root.lineHeight": "19px",
+            "root.fontWeight": 400
+          }
+        },
+        "textStyle=t4StaticMedium": {
+          "enabled": {
+            "root.fontSize": "14px",
+            "root.lineHeight": "19px",
+            "root.fontWeight": 500
+          }
+        },
+        "textStyle=t4StaticBold": {
+          "enabled": {
+            "root.fontSize": "14px",
+            "root.lineHeight": "19px",
+            "root.fontWeight": 700
+          }
+        },
+        "textStyle=t5StaticRegular": {
+          "enabled": {
+            "root.fontSize": "16px",
+            "root.lineHeight": "22px",
+            "root.fontWeight": 400
+          }
+        },
+        "textStyle=t5StaticMedium": {
+          "enabled": {
+            "root.fontSize": "16px",
+            "root.lineHeight": "22px",
+            "root.fontWeight": 500
+          }
+        },
+        "textStyle=t5StaticBold": {
+          "enabled": {
+            "root.fontSize": "16px",
+            "root.lineHeight": "22px",
+            "root.fontWeight": 700
+          }
+        },
+        "textStyle=t6StaticRegular": {
+          "enabled": {
+            "root.fontSize": "18px",
+            "root.lineHeight": "24px",
+            "root.fontWeight": 400
+          }
+        },
+        "textStyle=t6StaticMedium": {
+          "enabled": {
+            "root.fontSize": "18px",
+            "root.lineHeight": "24px",
+            "root.fontWeight": 500
+          }
+        },
+        "textStyle=t6StaticBold": {
+          "enabled": {
+            "root.fontSize": "18px",
+            "root.lineHeight": "24px",
+            "root.fontWeight": 700
+          }
+        },
+        "textStyle=t7StaticRegular": {
+          "enabled": {
+            "root.fontSize": "20px",
+            "root.lineHeight": "27px",
+            "root.fontWeight": 400
+          }
+        },
+        "textStyle=t7StaticMedium": {
+          "enabled": {
+            "root.fontSize": "20px",
+            "root.lineHeight": "27px",
+            "root.fontWeight": 500
+          }
+        },
+        "textStyle=t7StaticBold": {
+          "enabled": {
+            "root.fontSize": "20px",
+            "root.lineHeight": "27px",
+            "root.fontWeight": 700
+          }
+        },
+        "textStyle=t8StaticRegular": {
+          "enabled": {
+            "root.fontSize": "22px",
+            "root.lineHeight": "30px",
+            "root.fontWeight": 400
+          }
+        },
+        "textStyle=t8StaticMedium": {
+          "enabled": {
+            "root.fontSize": "22px",
+            "root.lineHeight": "30px",
+            "root.fontWeight": 500
+          }
+        },
+        "textStyle=t8StaticBold": {
+          "enabled": {
+            "root.fontSize": "22px",
+            "root.lineHeight": "30px",
+            "root.fontWeight": 700
+          }
+        },
+        "textStyle=t9StaticRegular": {
+          "enabled": {
+            "root.fontSize": "24px",
+            "root.lineHeight": "32px",
+            "root.fontWeight": 400
+          }
+        },
+        "textStyle=t9StaticMedium": {
+          "enabled": {
+            "root.fontSize": "24px",
+            "root.lineHeight": "32px",
+            "root.fontWeight": 500
+          }
+        },
+        "textStyle=t9StaticBold": {
+          "enabled": {
+            "root.fontSize": "24px",
+            "root.lineHeight": "32px",
+            "root.fontWeight": 700
+          }
+        },
+        "textStyle=t10StaticRegular": {
+          "enabled": {
+            "root.fontSize": "26px",
+            "root.lineHeight": "35px",
+            "root.fontWeight": 400
+          }
+        },
+        "textStyle=t10StaticMedium": {
+          "enabled": {
+            "root.fontSize": "26px",
+            "root.lineHeight": "35px",
+            "root.fontWeight": 500
+          }
+        },
+        "textStyle=t10StaticBold": {
+          "enabled": {
+            "root.fontSize": "26px",
+            "root.lineHeight": "35px",
+            "root.fontWeight": 700
+          }
+        },
+        "textStyle=t11StaticRegular": {
+          "enabled": {
+            "root.fontSize": "28px",
+            "root.lineHeight": "38px",
+            "root.fontWeight": 400
+          }
+        },
+        "textStyle=t11StaticMedium": {
+          "enabled": {
+            "root.fontSize": "28px",
+            "root.lineHeight": "38px",
+            "root.fontWeight": 500
+          }
+        },
+        "textStyle=t11StaticBold": {
+          "enabled": {
+            "root.fontSize": "28px",
+            "root.lineHeight": "38px",
+            "root.fontWeight": 700
+          }
+        },
+        "textStyle=t12StaticRegular": {
+          "enabled": {
+            "root.fontSize": "32px",
+            "root.lineHeight": "42px",
+            "root.fontWeight": 400
+          }
+        },
+        "textStyle=t12StaticMedium": {
+          "enabled": {
+            "root.fontSize": "32px",
+            "root.lineHeight": "42px",
+            "root.fontWeight": 500
+          }
+        },
+        "textStyle=t12StaticBold": {
+          "enabled": {
+            "root.fontSize": "32px",
+            "root.lineHeight": "42px",
+            "root.fontWeight": 700
+          }
+        },
+        "textStyle=t13StaticRegular": {
+          "enabled": {
+            "root.fontSize": "40px",
+            "root.lineHeight": "52px",
+            "root.fontWeight": 400
+          }
+        },
+        "textStyle=t13StaticMedium": {
+          "enabled": {
+            "root.fontSize": "40px",
+            "root.lineHeight": "52px",
+            "root.fontWeight": 500
+          }
+        },
+        "textStyle=t13StaticBold": {
+          "enabled": {
+            "root.fontSize": "40px",
+            "root.lineHeight": "52px",
+            "root.fontWeight": 700
+          }
+        },
+        "textStyle=t14StaticRegular": {
+          "enabled": {
+            "root.fontSize": "48px",
+            "root.lineHeight": "60px",
+            "root.fontWeight": 400
+          }
+        },
+        "textStyle=t14StaticMedium": {
+          "enabled": {
+            "root.fontSize": "48px",
+            "root.lineHeight": "60px",
+            "root.fontWeight": 500
+          }
+        },
+        "textStyle=t14StaticBold": {
+          "enabled": {
+            "root.fontSize": "48px",
+            "root.lineHeight": "60px",
+            "root.fontWeight": 700
+          }
+        }
+      }
+    }
+  }
+}

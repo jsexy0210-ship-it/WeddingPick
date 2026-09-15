@@ -76,7 +76,13 @@ export function SegmentedTabs({ items, value, onChange, accessibilityLabel }: Se
 /*
  * 피그마 세 칸 탭(2026-09-14 정본 · `CommunityFeed` `grid-cols-3 rounded-2xl bg-secondary p-1`,
  * 칸 `h-10 rounded-xl text-xs font-bold`): 겉 radius 16 · 안쪽 4 · 칸 40 · radius 22 · 글자 700.
- * 켠 칸은 흰 면(그림자는 없다 — elevation.$rule).
+ * 켠 칸은 흰 면 + 그림자다 — 규격서 `community.txt`가 그 칸에만 «shadow»를 적는다
+ * (`Elevation.figmaCard`). **이 줄은 2026-09-15까지 「그림자는 없다」고 적고 있었고
+ * 코드는 이미 그림자를 얹고 있었다** — 규칙이 코드보다 낡으면 다음 사람이 규칙을 보고
+ * 되돌린다.
+ *
+ * **SEED `segmented-control`을 따르지 않는다.** SEED는 칸 34 · radius full · 글자 16/22 ·
+ * 최소폭 86인데, 이 자리는 피그마에 실측값이 있어 그쪽이 이긴다(2026-09-15 MASTER 확정).
  */
 const styles = StyleSheet.create({
   track: {
