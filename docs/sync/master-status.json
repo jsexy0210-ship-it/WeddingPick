@@ -1022,7 +1022,7 @@
     "근거": "2026-09-15 대표 지시 다섯 줄. CLAUDE.md 맨 위 「최상위 정책 규칙」",
     "장부": "docs/sync/design-policy-audit.md",
     "pr": "#236 (draft)",
-    "prBase": "claude/figma-integration — 규칙 원문과 감사 도구가 #232에만 있고 main에는 없다. base를 main으로 두면 diff에 #232의 100k 줄이 섞여 이 PR 머지가 #232를 검수 없이 머지하는 일이 된다. 이 PR 자체는 커밋 1개 · 파일 11개다. #232가 머지되면 base는 main으로 자동 재조준된다",
+    "prBase": "main. 처음에 claude/figma-integration으로 걸었다가 되돌렸다 — main.yml의 트리거가 pull_request: branches: [main]이라 base가 다른 PR에는 CI가 영영 돌지 않는다. 저장소 규칙이 「초록으로 만든 뒤에 올린다」인데 CI가 안 도는 PR은 초록을 만들 자리조차 없다. 대신 diff에 #232의 100k 줄이 같이 보인다 — 이 PR 고유의 변경은 커밋 2개 · 파일 12개이고, #232가 머지되면 diff가 그만큼으로 줄어든다. **draft로 둔다 — 이 PR을 머지하면 #232가 검수 없이 함께 들어간다.** 머지 순서는 #232가 먼저다.",
     "만든것": "scripts/check-design-policy.mjs — R1(생 hex) · R2(금지 서체) · R5(색만 교체)를 센다. npm test 맨 앞과 CI(main.yml)에 붙였고 남은 빚은 scripts/design-policy-baseline.json에 수로 고정했다(늘어나면 깨진다)",
     "왜주석을걷어내나": "단순 grep은 hex를 457건으로 세는데 실제 위반은 20건이었다. 나머지는 「시안의 #eaebee와 같은 값」 같은 근거 주석과 남의 브랜드 마크(구글·카카오·네이버)다. circle-loader.tsx가 그 예 — grep은 3건으로 잡지만 셋 다 주석이고 코드는 theme만 쓴다(룰 5 준수)",
     "잰결과": {
@@ -1056,6 +1056,7 @@
     ],
     "픽셀전담에넘김": "claude/figma-pixel-parity — 430 나란히 찍은 홈의 구성 차이(홈 검색칸 · 준비현황 2×2 카드 vs 1×4 칩 · 카테고리 6칸 · D-day 카드 구성)와 남은 R1 7건(camera 3 · sample 2 · display 1 · style-grid 1). 「웨딩픽 추천」은 피그마가 찬 상태를 그리고 앱이 정보 0층이라 상태가 달라 비교 불가로 두었고 위반으로 적지 않았다 — 빈 화면과 찬 화면을 나란히 놓고 「다르다」고 적으면 2026-09-14가 반대 방향으로 되풀이된다",
     "검증": "typecheck 통과 · lint 오류 0(경고 3은 감독 세션이 손대지 않은 파일의 기존 것) · npm test 전부 통과(domain 948 · ui 348 · api 258 · web 73 · contract 32) · lint-copy 통과 · sync-seed-tokens --check 초록",
-    "주의": "Claude GitHub App이 이 저장소에 설치돼 있지 않아 PR 이벤트가 감독 세션으로 오지 않는다. 설치처: https://github.com/apps/claude/installations/select_target"
+    "주의": "Claude GitHub App이 이 저장소에 설치돼 있지 않아 PR 이벤트가 감독 세션으로 오지 않는다. 설치처: https://github.com/apps/claude/installations/select_target",
+    "감사기준": "서체 위반은 main에도 있다 — apps/web/src/styles.ts는 main에서도 Pretendard가 스택 4번째이고 Noto Sans KR이 뒤에 있다. packages/ui/src/tokens.css는 main에서는 Pretendard가 맨 앞이지만 Noto Sans KR이 남아 있다. 즉 이 감사 결과는 #232에 기댄 것이 아니다."
   }
 }
