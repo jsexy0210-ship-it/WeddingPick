@@ -55,6 +55,15 @@ export type PickRecommendProps = {
   onPressVendor: (vendorId: string) => void;
   onPressPick: (vendor: VendorSummary) => void;
   onPressCompare: (category: VendorCategory) => void;
+  /**
+   * 업종 하나를 검색에서 더 찾아본다(§13). **주면 그 업종 아래에 「더 찾아보기」가 선다.**
+   *
+   * 이름이 홈의 「더보기」와 다른 것이 규칙이다(§13 「홈의 더보기와 혼동되지 않게 명칭을
+   * 구분한다」) — 홈의 더보기는 추천 전체 페이지로 가고, 이것은 검색으로 간다.
+   * 홈은 이 값을 주지 않는다: 같은 화면에 이름이 비슷한 이동이 둘 있으면 어느 쪽이
+   * 어디로 가는지 눌러봐야 안다.
+   */
+  onPressSearchMore?: (category: VendorCategory) => void;
   /** 「다음 준비도 이어서 볼까요?」의 더보기 — 웨딩노트가 아니라 웨딩픽 추천 전체다(§9). */
   onPressMore: () => void;
   /**
@@ -76,6 +85,7 @@ export function PickRecommend({
   onPressVendor,
   onPressPick,
   onPressCompare,
+  onPressSearchMore,
   onPressMore,
   heading = true,
 }: PickRecommendProps) {
@@ -115,6 +125,9 @@ export function PickRecommend({
             onPressVendor={onPressVendor}
             onPressPick={onPressPick}
             onPressCompare={() => onPressCompare(group.category)}
+            onPressSearchMore={
+              onPressSearchMore === undefined ? undefined : () => onPressSearchMore(group.category)
+            }
           />
         ))
       )}
@@ -156,6 +169,7 @@ function CategoryRow({
   onPressVendor,
   onPressPick,
   onPressCompare,
+  onPressSearchMore,
 }: {
   group: CategoryRecommendation;
   expanded: boolean;
@@ -164,6 +178,7 @@ function CategoryRow({
   onPressVendor: (vendorId: string) => void;
   onPressPick: (vendor: VendorSummary) => void;
   onPressCompare: () => void;
+  onPressSearchMore?: () => void;
 }) {
   const theme = useTheme();
   const action = CATEGORY_ACTION_LABEL[group.state];
@@ -223,22 +238,42 @@ function CategoryRow({
             <View style={styles.tail} />
           </ScrollView>
 
-          {/* 견줄 곳이 둘 이상일 때만(§7 COMPARING). 업종 화면이 담은 곳을 다 보여준다. */}
-          {group.state !== 'COMPARING' ? null : (
-            <View style={styles.gutter}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`${group.categoryLabel} 한눈에 비교`}
-                onPress={onPressCompare}
-                style={({ pressed }) => [
-                  styles.compare,
-                  { borderColor: theme.tint },
-                  pressed && styles.pressed,
-                ]}>
-                <ThemedText type="f12" themeColor="tint" style={styles.semibold}>
-                  한눈에 비교
-                </ThemedText>
-              </Pressable>
+          {/*
+           * 아래 단추 줄. 「한눈에 비교」는 견줄 곳이 둘 이상일 때만(§7 COMPARING),
+           * 「더 찾아보기」는 그것을 넘겨준 화면에서만 선다(§13 — 전체 페이지).
+           */}
+          {group.state !== 'COMPARING' && onPressSearchMore === undefined ? null : (
+            <View style={[styles.actions, styles.gutter]}>
+              {onPressSearchMore === undefined ? null : (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${group.categoryLabel} 더 찾아보기`}
+                  onPress={onPressSearchMore}
+                  style={({ pressed }) => [
+                    styles.pill,
+                    { borderColor: theme.border },
+                    pressed && styles.pressed,
+                  ]}>
+                  <ThemedText type="f12" themeColor="textAssistive" style={styles.semibold}>
+                    더 찾아보기
+                  </ThemedText>
+                </Pressable>
+              )}
+              {group.state !== 'COMPARING' ? null : (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${group.categoryLabel} 한눈에 비교`}
+                  onPress={onPressCompare}
+                  style={({ pressed }) => [
+                    styles.pill,
+                    { borderColor: theme.tint },
+                    pressed && styles.pressed,
+                  ]}>
+                  <ThemedText type="f12" themeColor="tint" style={styles.semibold}>
+                    한눈에 비교
+                  </ThemedText>
+                </Pressable>
+              )}
             </View>
           )}
         </>
@@ -279,9 +314,13 @@ const styles = StyleSheet.create({
   },
   tail: { width: Spacing.three },
 
-  compare: {
-    alignSelf: 'flex-end',
+  actions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: Spacing.two,
     marginTop: Spacing.two,
+  },
+  pill: {
     paddingVertical: Spacing.two,
     paddingHorizontal: Layout.fieldPaddingX,
     borderRadius: Radius.pill,

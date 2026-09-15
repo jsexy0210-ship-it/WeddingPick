@@ -38,9 +38,9 @@ import { useMyCandidates } from '@/features/pick/use-my-candidates';
  * 열어둔 자리다). 미결정 업종이 열둘까지 가고, 각 업종이 카드 줄을 하나씩 펼치면 홈보다
  * 네 배 긴 화면이 된다 — 무엇이 있는지 훑는 것이 먼저다.
  *
- * **홈의 「더보기」와 이름이 겹치지 않게 한다**(§13). 여기서 더 볼 것은 검색이므로 업종 줄의
- * 「한눈에 비교」와 별개로, 카드 줄 바깥의 이동은 두지 않는다 — 카드를 누르면 업체 상세로
- * 가고, 그 업종을 더 찾는 길은 상세와 검색이 맡는다.
+ * **홈의 「더보기」와 이름이 겹치지 않게 한다**(§13). 업종마다 「더 찾아보기」가 서고 그것은
+ * 검색으로 간다 — 홈의 「더보기」는 이 화면으로 오는 단추라 같은 이름을 쓰면 어느 쪽이
+ * 어디로 가는지 눌러봐야 안다. 이 단추는 홈에 두지 않는다.
  */
 /** 아직 못 받았을 때 훅에 넘길 빈 목록. 렌더마다 새 배열을 만들지 않는다. */
 const NO_GROUPS: readonly CategoryRecommendation[] = [];
@@ -130,6 +130,8 @@ export default function RecommendationsScreen() {
               onPressVendor={(vendorId) => router.push(`/search/${vendorId}`)}
               onPressPick={(vendor) => void onPressPick(vendor)}
               onPressCompare={(category) => router.push(`/pick/${category}`)}
+              /* 홈의 「더보기」와 이름을 구분한다(§13) — 이쪽은 검색으로 간다. */
+              onPressSearchMore={(category) => router.push(`/search?category=${category}`)}
               onPressMore={() => undefined}
               /* 화면 제목이 이미 「웨딩픽 추천」이다 — 섹션 제목을 한 번 더 두지 않는다. */
               heading={false}
