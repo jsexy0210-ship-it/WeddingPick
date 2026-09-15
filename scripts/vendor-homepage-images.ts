@@ -25,7 +25,7 @@
  */
 import { Pool } from 'pg';
 
-import { SITE_ORIGIN } from '@weddingpick/domain';
+import { SITE_ORIGIN, isDisplayableImageUrl } from '@weddingpick/domain';
 
 const url = process.env.DATABASE_URL;
 const APPLY = process.argv.includes('--yes');
@@ -210,6 +210,7 @@ type Vendor = { id: string; name: string; region: string };
  *   페이지 못 읽음      막혔거나 죽은 주소다
  *   이름 확인 실패      찾긴 했는데 그 업체 페이지가 아니다
  *   대표 이미지 없음    맞는 페이지인데 og:image가 없다
+ *   핫링크 차단 이미지  og:image가 핫링킹을 막는 호스트다 — 담아둬도 우리 화면에서 403이다
  *   모음 사이트        한 호스트가 여러 업체에 걸렸다 — 업체 홈페이지가 아니다
  */
 type Outcome =
@@ -219,6 +220,7 @@ type Outcome =
   | '페이지 못 읽음'
   | '이름 확인 실패'
   | '대표 이미지 없음'
+  | '핫링크 차단 이미지'
   | '모음 사이트';
 
 type Found = {
@@ -262,6 +264,15 @@ async function forVendor(vendor: Vendor): Promise<Found> {
     const image = representativeImage(page);
 
     if (!image) return { outcome: '대표 이미지 없음', homepage: page.finalUrl };
+
+    /*
+     * 못 뜰 주소는 붙이지 않는다. 네이버로 만든 홈페이지는 og:image가 네이버
+     * 이미지 CDN을 가리키는데, 그것은 Referer를 보고 403을 준다 — 담아두면
+     * 화면이 요청을 보내고 콘솔에 403만 쌓인다.
+     */
+    if (!isDisplayableImageUrl(image)) {
+      return { outcome: '핫링크 차단 이미지', homepage: page.finalUrl };
+    }
 
     /*
      * **여기서 붙이지 않는다.** 한 호스트가 여러 업체에 걸리는지는 이 업체 하나만

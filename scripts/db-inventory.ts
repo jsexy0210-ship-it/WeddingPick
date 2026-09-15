@@ -10,6 +10,8 @@
  */
 import { Pool } from 'pg';
 
+import { displayableImageUrlCondition, hotlinkBlockedUrlCondition } from '@weddingpick/domain';
+
 const url = process.env.DATABASE_URL;
 
 if (!url) {
@@ -104,6 +106,26 @@ async function main(): Promise<void> {
     '업체 매칭 신뢰도',
     `SELECT match_confidence AS 신뢰도, count(*) AS 건수
        FROM structured.vendor_images GROUP BY match_confidence ORDER BY match_confidence`,
+  );
+  /*
+   * **핫링킹을 막는 호스트는 우리 화면에서 영영 안 뜬다**(packages/domain/src/vendor-image.ts).
+   * 지울지 표시만 할지는 숫자를 보고 정한다 — 그래서 먼저 센다. 저장소에 원본을
+   * 받아둔 것(storage_key)은 원본 주소가 막혀 있어도 우리 주소로 잘 뜨므로 따로
+   * 가른다. 손댈 것은 「저장본 없음」 쪽뿐이다.
+   */
+  await count(
+    '핫링킹 차단 호스트',
+    `SELECT count(*) AS 건수,
+            count(*) FILTER (WHERE storage_key IS NULL) AS 저장본없음
+       FROM structured.vendor_images
+      WHERE ${hotlinkBlockedUrlCondition('source_url')}`,
+  );
+  await count(
+    '못 뜨는 주소 전체',
+    `SELECT count(*) AS 건수,
+            count(*) FILTER (WHERE storage_key IS NULL) AS 저장본없음
+       FROM structured.vendor_images
+      WHERE source_url IS NOT NULL AND NOT (${displayableImageUrlCondition('source_url')})`,
   );
   await count(
     '출처 메모(앞 40자)별',
