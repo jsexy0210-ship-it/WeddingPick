@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Colors, FontSize, LineHeight, Spacing } from '@weddingpick/ui';
+import { formatCount } from '@weddingpick/domain';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { formatDateDot } from '@/features/common/format-date';
@@ -299,7 +300,7 @@ export default function AdsGateScreen() {
                       {TIER_STATE_LABEL[tier.state]}
                     </Text>
                     <Text style={styles.tierMeta}>
-                      {tier.placements > 0 ? `오늘 자리 ${tier.placements}건` : '오늘 자리 없음'}
+                      {tier.placements > 0 ? `오늘 자리 ${formatCount(tier.placements)}건` : '오늘 자리 없음'}
                       {tier.decidedAt ? ` · 정한 날 ${formatDateDot(tier.decidedAt)}` : ''}
                     </Text>
                   </View>

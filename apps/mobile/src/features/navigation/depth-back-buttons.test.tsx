@@ -131,6 +131,16 @@ describe('/my/contact — 문의 완료·목록 하단', () => {
     expect(landedOn()).toBe('/my');
     expect(router.replace).toHaveBeenCalledWith('/my');
   });
+
+  it('기록이 있으면 History Back이다 — 계층표(dismissTo/replace)를 보지 않는다', async () => {
+    mockPathname = '/my/contact';
+    jest.mocked(router.canGoBack).mockReturnValueOnce(true);
+    await mount(<ContactScreen />);
+    await act(async () => backButtons()[0]!.props.onPress());
+    expect(router.back).toHaveBeenCalledTimes(1);
+    expect(router.dismissTo).not.toHaveBeenCalled();
+    expect(router.replace).not.toHaveBeenCalled();
+  });
 });
 
 describe('/my/taste — 저장 완료·불러오기 실패', () => {

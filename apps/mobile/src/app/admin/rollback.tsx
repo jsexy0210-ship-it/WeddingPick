@@ -12,6 +12,8 @@
  */
 import { useEffect, useState } from 'react';
 
+import { formatCount } from '@weddingpick/domain';
+
 import { formatDateTimeDot } from '@/features/common/format-date';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
@@ -199,11 +201,11 @@ export default function RollbackScreen() {
 
           <KpiRow
             items={[
-              { label: '되돌릴 수 있는 건', value: `${canRevert}건`, note: `최근 ${RETENTION_DAYS}일` },
-              { label: '복구됨', value: `${recovered}건`, note: '이미 이전 상태로 돌아갔어요', kind: 'ok' },
+              { label: '되돌릴 수 있는 건', value: `${formatCount(canRevert)}건`, note: `최근 ${RETENTION_DAYS}일` },
+              { label: '복구됨', value: `${formatCount(recovered)}건`, note: '이미 이전 상태로 돌아갔어요', kind: 'ok' },
               {
                 label: '사람 확인',
-                value: `${needsPerson}건`,
+                value: `${formatCount(needsPerson)}건`,
                 note: needsPerson === 0 ? '확인할 것이 없어요' : '이상 감지 · 승인 대기',
                 kind: needsPerson === 0 ? 'ok' : 'bad',
               },

@@ -352,6 +352,7 @@
     "status.open": "영업중",
     "status.needCheck": "정보 확인 필요",
     "status.closed": "영업종료",
+    "badge.sourceVerified": "인증",
     "section.reason": "추천 이유",
     "section.verified": "실 제보",
     "section.guide": "업체 안내",

@@ -8,6 +8,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Colors, FontSize, Layout, Spacing } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { formatCount } from '@weddingpick/domain';
 
 type StageCount = { stage: string; count: number; avgWaitMin: number };
 type FailedItem = { id: string; stage: string; error: string; failedAt: string; retryCount: number };
@@ -111,22 +112,22 @@ export default function DataPipelineScreen() {
           <Text style={styles.sectionTitle}>오늘 처리 현황</Text>
           <View style={styles.statsGrid}>
             <View style={styles.statCell}>
-              <Text style={styles.statValue}>{data.today.received.toLocaleString()}</Text>
+              <Text style={styles.statValue}>{formatCount(data.today.received)}</Text>
               <Text style={styles.statLabel}>접수</Text>
             </View>
             <View style={styles.statCell}>
-              <Text style={[styles.statValue, styles.valueOk]}>{data.today.autoProcessed.toLocaleString()}</Text>
+              <Text style={[styles.statValue, styles.valueOk]}>{formatCount(data.today.autoProcessed)}</Text>
               <Text style={styles.statLabel}>자동 처리</Text>
             </View>
             <View style={styles.statCell}>
               <Text style={[styles.statValue, data.today.manualRequired > 0 && styles.valueWarn]}>
-                {data.today.manualRequired.toLocaleString()}
+                {formatCount(data.today.manualRequired)}
               </Text>
               <Text style={styles.statLabel}>수동 필요</Text>
             </View>
             <View style={styles.statCell}>
               <Text style={[styles.statValue, data.today.failed > 0 && styles.valueDanger]}>
-                {data.today.failed.toLocaleString()}
+                {formatCount(data.today.failed)}
               </Text>
               <Text style={styles.statLabel}>실패</Text>
             </View>
@@ -144,7 +145,7 @@ export default function DataPipelineScreen() {
               <View key={s.stage} style={[styles.tableRow, i % 2 === 1 && styles.tableRowZebra]}>
                 <Text style={[styles.td, styles.colStage]}>{s.stage}</Text>
                 <Text style={[styles.td, styles.colCount, s.count > 100 && styles.valueDanger]}>
-                  {s.count.toLocaleString()}
+                  {formatCount(s.count)}
                 </Text>
                 <Text style={[styles.td, styles.colWait]}>
                   {s.avgWaitMin < 60 ? `${s.avgWaitMin}분` : `${(s.avgWaitMin / 60).toFixed(1)}시간`}
@@ -187,7 +188,7 @@ export default function DataPipelineScreen() {
                     </Text>
                     <Text style={[styles.td, styles.colFailStage]}>{item.stage}</Text>
                     <Text style={[styles.td, styles.colError]} numberOfLines={1}>{item.error}</Text>
-                    <Text style={[styles.td, styles.colRetry]}>{item.retryCount}회</Text>
+                    <Text style={[styles.td, styles.colRetry]}>{formatCount(item.retryCount)}회</Text>
                     <View style={[styles.colAction]}>
                       <Pressable
                         style={[styles.inlineBtn, (retrying === item.id) && styles.btnDisabled]}

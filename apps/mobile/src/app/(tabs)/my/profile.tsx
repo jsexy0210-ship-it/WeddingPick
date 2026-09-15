@@ -1,5 +1,5 @@
 import type { CurrentUser } from '@weddingpick/api-contract';
-import { DISPLAY_NAME_HINT, MAX_DISPLAY_NAME_LENGTH, checkDisplayName } from '@weddingpick/domain';
+import { DISPLAY_NAME_HINT, MAX_DISPLAY_NAME_LENGTH, checkDisplayName, formatCount } from '@weddingpick/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
@@ -31,7 +31,7 @@ const S = {
   connected: '연결됨',
   verify: '인증',
   pick: 'Pick 인증',
-  pickMeta: (n: number) => `실 제보 ${n}건`,
+  pickMeta: (n: number) => `실 제보 ${formatCount(n)}건`,
   verified: '인증됨',
   notYet: '인증 전',
   noteTitle: '이름은 배우자와 후기에만 보여요',

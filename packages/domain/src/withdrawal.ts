@@ -13,6 +13,8 @@
  * 어긋나고, 어긋나면 읽는 사람은 어느 쪽이 맞는지 알 수 없다.
  */
 
+import { formatCount } from './format-number';
+
 /**
  * 탈퇴 확인 화면의 제목.
  *
@@ -120,8 +122,8 @@ export function deletedOnWithdrawal(counts: WithdrawalCounts): WithdrawalRow[] {
   if (!counts.hasPartner) {
     return [
       { label: '계정 · 프로필', value: '즉시 삭제' },
-      { label: 'Pick한 곳', value: `${counts.candidates}곳` },
-      { label: '일정 · 체크리스트', value: `${counts.tasks}개` },
+      { label: 'Pick한 곳', value: `${formatCount(counts.candidates)}곳` },
+      { label: '일정 · 체크리스트', value: `${formatCount(counts.tasks)}개` },
       spend,
       { label: '취향 · 개인화', value: '즉시 삭제' },
     ];
@@ -130,8 +132,8 @@ export function deletedOnWithdrawal(counts: WithdrawalCounts): WithdrawalRow[] {
   return [
     { label: '계정 · 프로필', value: '즉시 삭제' },
     { label: '배우자 연결', value: '즉시 해제' },
-    { label: 'Pick한 곳', value: `${counts.candidates}곳` },
-    { label: '일정 · 체크리스트', value: `${counts.tasks}개` },
+    { label: 'Pick한 곳', value: `${formatCount(counts.candidates)}곳` },
+    { label: '일정 · 체크리스트', value: `${formatCount(counts.tasks)}개` },
     spend,
     // 며칠 뒤가 아니라 목적이 끝나면 지운다. 날짜를 약속하지 않는다.
     { label: 'Pick 인증 자료', value: '목적 달성 시 삭제' },
@@ -154,7 +156,7 @@ export function separatedOnWithdrawal(counts: WithdrawalCounts): WithdrawalKeptR
 
   if (counts.reviews > 0) {
     rows.push({
-      label: `작성한 후기 ${counts.reviews}건`,
+      label: `작성한 후기 ${formatCount(counts.reviews)}건`,
       note: '나를 알아볼 수 없도록 분리해 유지될 수 있어요',
       anonymous: true,
     });
@@ -162,7 +164,7 @@ export function separatedOnWithdrawal(counts: WithdrawalCounts): WithdrawalKeptR
 
   if (counts.confirmedReports > 0) {
     rows.push({
-      label: `Pick 인증한 정보 ${counts.confirmedReports}건`,
+      label: `Pick 인증한 정보 ${formatCount(counts.confirmedReports)}건`,
       note: '업체별 금액 구간에만 반영돼요',
       anonymous: true,
     });
