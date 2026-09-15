@@ -1055,8 +1055,10 @@
       }
     ],
     "픽셀전담에넘김": "claude/figma-pixel-parity — 430 나란히 찍은 홈의 구성 차이(홈 검색칸 · 준비현황 2×2 카드 vs 1×4 칩 · 카테고리 6칸 · D-day 카드 구성)와 남은 R1 7건(camera 3 · sample 2 · display 1 · style-grid 1). 「웨딩픽 추천」은 피그마가 찬 상태를 그리고 앱이 정보 0층이라 상태가 달라 비교 불가로 두었고 위반으로 적지 않았다 — 빈 화면과 찬 화면을 나란히 놓고 「다르다」고 적으면 2026-09-14가 반대 방향으로 되풀이된다",
-    "검증": "typecheck 통과 · lint 오류 0(경고 3은 감독 세션이 손대지 않은 파일의 기존 것) · npm test 전부 통과(domain 948 · ui 348 · api 258 · web 73 · contract 32) · lint-copy 통과 · sync-seed-tokens --check 초록",
+    "검증": "typecheck 오류 0 · lint 오류 0(경고 3은 감독 세션이 손대지 않은 파일의 기존 것) · npm test 전부 통과(domain 948 · ui 348 · api 258 · web 73 · contract 32) · lint-copy 통과 · sync-seed-tokens --check 초록.",
     "주의": "Claude GitHub App이 이 저장소에 설치돼 있지 않아 PR 이벤트가 감독 세션으로 오지 않는다. 설치처: https://github.com/apps/claude/installations/select_target",
-    "감사기준": "서체 위반은 main에도 있다 — apps/web/src/styles.ts는 main에서도 Pretendard가 스택 4번째이고 Noto Sans KR이 뒤에 있다. packages/ui/src/tokens.css는 main에서는 Pretendard가 맨 앞이지만 Noto Sans KR이 남아 있다. 즉 이 감사 결과는 #232에 기댄 것이 아니다."
+    "감사기준": "서체 위반은 main에도 있다 — apps/web/src/styles.ts는 main에서도 Pretendard가 스택 4번째이고 Noto Sans KR이 뒤에 있다. packages/ui/src/tokens.css는 main에서는 Pretendard가 맨 앞이지만 Noto Sans KR이 남아 있다. 즉 이 감사 결과는 #232에 기댄 것이 아니다.",
+    "CI": "PR #236의 워크플로 실행은 conclusion=action_required다. 이 저장소의 PR 실행은 사람이 승인해야 시작한다 — #232 · #235도 같다. 감독 세션이 풀 수 있는 것이 아니므로 MASTER가 Actions에서 승인해 주셔야 실제 CI 결과를 볼 수 있다.",
+    "가져온고침": "apps/api/src/test/seed-parity.test.ts의 TS2538. base(claude/figma-integration)를 따로 워크트리에 꺼내 확인한 결과 감독 세션 변경 없이도 같은 오류가 난다 — base 쪽 오류다. claude/figma-pixel-parity(#235)의 afa1f7e가 이미 고쳐 두어 새로 짜지 않고 그대로 가져왔다. #235가 먼저 머지되면 no-op이 된다. 시험을 약하게 만들지 않았다."
   }
 }
