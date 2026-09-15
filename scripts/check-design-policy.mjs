@@ -59,10 +59,17 @@ const ALLOWLIST = new Map([
 /** R2 — 이 서체들이 코드에 있으면 걸린다. 피그마 fonts.css가 불러도 따라가지 않는다. */
 const FORBIDDEN_FONTS = ['Noto Sans KR', 'Playfair Display', 'DM Mono'];
 
-/** R5 — 색만 바꾸는 컴포넌트. 생색이 있으면 색이 토큰 밖에서 온 것이다. */
+/**
+ * R5 — 색만 바꾸는 컴포넌트. 생색이 있으면 색이 토큰 밖에서 온 것이다.
+ *
+ * **없어진 파일은 0건이 아니라 «문제»로 센다.** 지키는 파일이 사라지면 그 자리의 R5는
+ * 조용히 0이 되고, 검사는 초록인 채로 아무것도 지키지 않는다. 2026-09-16에
+ * `category-cycle-loader.tsx`가 실제로 지워졌고(로더 일원화) 그때 이 목록이 낡았다 —
+ * 그때는 지워지는 것이 맞아서 목록에서 뺐지만, **다음에 `toast.tsx`가 사라지면 그것은
+ * 사고다.** 둘을 구별할 수 있어야 해서 없는 파일을 알린다.
+ */
 const GUARDED = [
   'packages/ui/src/circle-loader.tsx',
-  'packages/ui/src/category-cycle-loader.tsx',
   'packages/ui/src/toast.tsx',
   'packages/ui/src/show-alert.ts',
 ];
@@ -76,11 +83,11 @@ const GUARDED = [
  *
  * 앞 세션이 실제로 이것을 선 아이콘으로 바꿨다가 되돌렸다. 되돌린 것이 또 뒤집히지 않게 센다.
  *
- * **`CategoryCycleLoader`만 예외다.** 업종 아이콘이 도는 로더 자체가 피그마에 없는
- * 우리 것이고, R5가 「기존 정본을 그대로 쓰되 색만 바꾼다」로 이미 지키는 자리다 —
- * 여기서 아이콘을 바꾸는 것은 R5 위반이 된다. 규칙 둘이 반대로 당기므로 자리를 적어 둔다.
+ * **예외가 없어졌다.** 전에는 `category-cycle-loader.tsx` 한 곳만 봐줬다 — 업종 아이콘이
+ * 도는 로더 자체가 우리 것이라 거기서 아이콘을 바꾸면 R5(색만 바꾼다)와 부딪혔기
+ * 때문이다. 2026-09-16에 **그 파일이 지워지면서**(로더 일원화) 규칙 둘이 당기던 자리도
+ * 같이 사라졌다. 이제 **어느 화면에서 그리든 걸린다.**
  */
-const LINE_ICON_ALLOWED = 'packages/ui/src/category-cycle-loader.tsx';
 const LINE_ICON_RENDER = /<CategoryIcon\b/g;
 
 /**
@@ -93,9 +100,12 @@ const LINE_ICON_RENDER = /<CategoryIcon\b/g;
  * 로더가 두 종류면 어느 자리가 어느 것인지를 매번 판단해야 하고, 그 판단이 화면마다
  * 갈렸다. 그래서 하나로 줄인 것이다.
  *
- * **지금 남아 있는 것은 baseline으로 얼려 둔다.** 걷어내는 일은 화면을 건드리므로
- * 감독 세션이 혼자 밀지 않고 MASTER에 넘긴다(장부 7차). 다만 **늘어나면 깨진다** —
- * 폐기된 것이 새 자리에 또 붙는 것은 막는다.
+ * **2026-09-16에 실제로 걷혔다.** 감독이 4곳을 얼려 두고 MASTER에 넘긴 것을 다른 세션이
+ * 화면 다섯에서 걷어내고 `category-cycle-loader.tsx`째 지웠다(main `106e298`). baseline을
+ * 4에서 **0으로 조였다** — 이제 한 곳이라도 다시 붙으면 깨진다.
+ *
+ * **컴포넌트가 없어졌는데도 계속 세는 이유**는 되돌아오는 것을 막기 위해서다. 파일을
+ * 지우는 것과 「쓰지 않는다」가 지켜지는 것은 다른 일이고, 누군가 되살릴 수 있다.
  */
 const CYCLE_LOADER_RENDER = /<CategoryCycleLoader\b/g;
 
@@ -248,6 +258,7 @@ function lineOf(source, index) {
 
 function collect() {
   const findings = { r1: [], r2: [], r5: [], icon: [], number: [], cycle: [], newtab: [] };
+  const seenGuarded = new Set();
 
   for (const root of SCREEN_ROOTS) {
     for (const file of walk(join(ROOT, root))) {
@@ -273,6 +284,7 @@ function collect() {
 
       // R5 — 색만 바꾸는 컴포넌트에 생색
       if (GUARDED.includes(rel)) {
+        seenGuarded.add(rel);
         for (const m of code.matchAll(HEX)) {
           findings.r5.push({ file: rel, line: lineOf(code, m.index), value: m[0] });
         }
@@ -289,10 +301,8 @@ function collect() {
       }
 
       // R1-아이콘 — 화면이 우리 선 아이콘을 그리는가
-      if (rel !== LINE_ICON_ALLOWED) {
-        for (const m of code.matchAll(LINE_ICON_RENDER)) {
-          findings.icon.push({ file: rel, line: lineOf(code, m.index), value: '<CategoryIcon>' });
-        }
+      for (const m of code.matchAll(LINE_ICON_RENDER)) {
+        findings.icon.push({ file: rel, line: lineOf(code, m.index), value: '<CategoryIcon>' });
       }
     }
   }
@@ -310,6 +320,14 @@ function collect() {
       }
     }
   }
+
+  /*
+   * R5가 지키는 파일이 사라졌으면 0건이 아니라 «문제»다. 없어진 파일은 훑히지 않아
+   * 조용히 0으로 통과한다 — 그러면 검사는 초록인데 아무것도 지키지 않는다.
+   */
+  findings.guardMissing = GUARDED.filter((g) => !seenGuarded.has(g)).map(
+    (g) => `R5가 지키는 ${g}가 없다 — 지워졌다면 GUARDED에서 빼고, 아니면 사고다`,
+  );
 
   return findings;
 }
@@ -342,7 +360,7 @@ const stackProblems = checkFontStacks();
 const counts = {
   r1_hex_in_screen_code: findings.r1.length,
   r2_forbidden_fonts: findings.r2.length + stackProblems.length,
-  r5_raw_color_in_guarded: findings.r5.length,
+  r5_raw_color_in_guarded: findings.r5.length + findings.guardMissing.length,
   icon_line_icon_in_screens: findings.icon.length,
   number_localeless_tolocalestring: findings.number.length,
   loader_deprecated_cycle_loader: findings.cycle.length,
@@ -389,6 +407,11 @@ for (const [key, count] of Object.entries(counts)) {
 if (stackProblems.length) {
   console.log('\n서체 스택:');
   for (const p of stackProblems) console.log(`  - ${p}`);
+}
+
+if (findings.guardMissing.length) {
+  console.log('\nR5가 지키는 파일:');
+  for (const p of findings.guardMissing) console.log(`  - ${p}`);
 }
 
 if (failed) {
