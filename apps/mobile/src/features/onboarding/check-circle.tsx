@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-import { Motion, Radius, useTheme } from '@weddingpick/ui';
+import { Motion, Radius, USE_NATIVE_DRIVER, useTheme } from '@weddingpick/ui';
 
 /**
  * 선택 표시 원. 온보딩 전체가 같은 모양을 쓴다 — 답 줄 20 · 준비 현황 카드 20 ·
@@ -35,7 +35,7 @@ export function CheckCircle({
       toValue: 1,
       duration: Motion.checkPop.duration,
       easing: Easing.bezier(...Motion.checkPop.bezier),
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }).start();
   }, [checked, scale]);
 

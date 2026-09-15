@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Animated, Easing, StyleSheet, type ViewStyle } from 'react-native';
 
-import { Motion, Radius } from './theme';
+import { Motion, Radius, USE_NATIVE_DRIVER } from './theme';
 import { useTheme } from './use-theme';
 
 export type SkeletonProps = {
@@ -43,13 +43,13 @@ export function Skeleton({ width = '100%', height = 16, radius, style }: Skeleto
           toValue: 1,
           duration: Motion.skeleton.duration / 2,
           easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
         Animated.timing(pulse, {
           toValue: 0,
           duration: Motion.skeleton.duration / 2,
           easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
       ])
     );

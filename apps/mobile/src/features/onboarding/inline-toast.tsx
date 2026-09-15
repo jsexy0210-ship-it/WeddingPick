@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Animated, Easing, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Layout, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
+import { Layout, Radius, Spacing, ThemedText, USE_NATIVE_DRIVER, useTheme } from '@weddingpick/ui';
 
 /**
  * 온보딩 안의 작은 토스트 — 스타일(5/5)에서 3번째를 고르려 할 때 «2개까지 고를 수
@@ -39,9 +39,9 @@ export function InlineToast({ toast, onHidden }: { toast: InlineToastState | nul
     opacity.setValue(0);
 
     const animation = Animated.sequence([
-      Animated.timing(opacity, { toValue: 1, duration: FADE_MS, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 1, duration: FADE_MS, easing: Easing.out(Easing.quad), useNativeDriver: USE_NATIVE_DRIVER }),
       Animated.delay(TOAST_MS),
-      Animated.timing(opacity, { toValue: 0, duration: FADE_MS, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 0, duration: FADE_MS, easing: Easing.in(Easing.quad), useNativeDriver: USE_NATIVE_DRIVER }),
     ]);
 
     animation.start(({ finished }) => {
