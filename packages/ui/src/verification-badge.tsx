@@ -1,7 +1,7 @@
 import { VERIFICATION_LEVEL_RULES, type VerificationLevel } from '@weddingpick/domain';
 import { StyleSheet, View } from 'react-native';
 
-import { STATUS_BADGE_STYLE } from './pick-status-badge';
+import { BADGE_LABEL, STATUS_BADGE_STYLE } from './pick-status-badge';
 import { ThemedText } from './themed-text';
 import { VERIFICATION_LEVEL_ACCENT } from './verification-levels';
 
@@ -12,15 +12,15 @@ export type VerificationBadgeProps = {
 };
 
 /**
- * 상자는 상태 배지와 같다 — minHeight 22 · padding 4 9 · radius 4 · 14/19/700 · 한 줄
- * (tokens.json component.badge). 등급별 색은 `VERIFICATION_LEVEL_ACCENT`(고정).
+ * 상자는 상태 배지와 같다 — minHeight 19 · padding 2 8 · 알약 · 10/15/600 · 한 줄
+ * (피그마 실측 2026-09-15 · `STATUS_BADGE_STYLE`). 등급별 색은 `VERIFICATION_LEVEL_ACCENT`(고정).
  */
 export function VerificationBadge({ level }: VerificationBadgeProps) {
   const accent = VERIFICATION_LEVEL_ACCENT[level];
 
   return (
     <View style={[styles.badge, { backgroundColor: `${accent}1F` }]}>
-      <ThemedText type="badge" numberOfLines={1} style={{ color: accent }}>
+      <ThemedText type="f10" numberOfLines={1} style={[BADGE_LABEL, { color: accent }]}>
         {VERIFICATION_LEVEL_RULES[level].label}
       </ThemedText>
     </View>

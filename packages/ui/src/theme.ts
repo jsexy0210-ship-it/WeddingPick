@@ -810,9 +810,22 @@ export const Layout = {
    * 적지 않고 `padding:4px 9px; line-height:19px`로만 그려서 27이 된다(pick-status-badge
    * `STATUS_BADGE_STYLE` 주석). 22를 고정 높이로 쓰면 글자가 상자에 닿는다.
    */
-  badgeHeight: 22,
-  badgePaddingX: 9,
-  badgePaddingY: 4,
+  /*
+   * 배지 상자 — 피그마 실측(2026-09-15). 규격서에서 배지꼴 34개를 세었더니
+   * **28개가 한 가지다**: «h19 · 10/15 · pad 2 8 2 8 · r9999».
+   *
+   *     18개  10/500 #868B94 · bg #F7F8F9   (분류 라벨 · 태그)
+   *      8개  10/700 #FFFFFF · bg #1A1C20   (사진 위 「인기」 · 「신규」)
+   *      2개  10/600 #868B94 · bg #F7F8F9
+   *
+   * **2026-09-15까지 22 · 9 · 4 · r4 · 14/19였다** — 핸드오프 SPEC §12.3에서 온 값이고
+   * 피그마와 전부 달랐다. SEED도 두 크기(24 · 20)를 주는데 우리 22는 그 사이라 어느
+   * 쪽도 근거가 아니었다. 피그마에 실측이 있으므로 피그마가 이긴다(최상위 규칙 1번 ·
+   * 2026-09-15 MASTER 확정).
+   */
+  badgeHeight: 19,
+  badgePaddingX: 8,
+  badgePaddingY: 2,
   /** 정보 단계 배지(WP-ST-005 · 17-sheets tier) — micro 13/18 · padding 3 8. */
   tierBadgePaddingX: 8,
   tierBadgePaddingY: 3,

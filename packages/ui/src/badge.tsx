@@ -1,6 +1,6 @@
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { STATUS_BADGE_STYLE } from './pick-status-badge';
+import { BADGE_LABEL, STATUS_BADGE_STYLE } from './pick-status-badge';
 import { ThemedText } from './themed-text';
 import { useTheme } from './use-theme';
 
@@ -24,9 +24,13 @@ export type BadgeProps = {
 };
 
 /**
- * 배지 — tokens.json component.badge · SPEC §12.3.
+ * 배지 — **피그마 실측(2026-09-15)**.
  *
- *   minHeight 22 · 한 줄 · nowrap · padding 4 9 · radius 4 · 14/19/700 — 실제 높이 27
+ *   minHeight 19 · 한 줄 · nowrap · padding 2 8 · 알약(r9999) · 10/15
+ *
+ * 규격서에서 배지꼴 34개를 세었더니 28개가 이 한 가지였다. 굵기만 갈린다 —
+ * 옅은 배지는 **600**, 사진 위 먹색 배지는 **700**(«10/700 #FFFFFF · bg #1A1C20»).
+ * 자세한 근거는 `Layout.badgeHeight`와 `BADGE_LABEL` 주석에 있다.
  *
  * 배지를 아래로 내리지 않는다 — 공간이 부족하면 옆 텍스트를 말줄임한다.
  */
@@ -36,7 +40,10 @@ export function Badge({ kind = 'none', children, style }: BadgeProps) {
 
   return (
     <View style={[styles.badge, { backgroundColor: background }, style]}>
-      <ThemedText type="badge" numberOfLines={1} style={{ color: text }}>
+      <ThemedText
+        type="f10"
+        numberOfLines={1}
+        style={[kind === 'onImage' ? styles.onImageLabel : BADGE_LABEL, { color: text }]}>
         {children}
       </ThemedText>
     </View>
@@ -74,4 +81,6 @@ const BADGE_LOOK: Record<BadgeKind, (theme: Theme) => { background: string; text
 
 const styles = StyleSheet.create({
   badge: STATUS_BADGE_STYLE,
+  /** 사진 위 배지만 700 — 규격서 «10/700 #FFFFFF · bg #1A1C20» 여덟 곳. */
+  onImageLabel: { fontWeight: 700 },
 });

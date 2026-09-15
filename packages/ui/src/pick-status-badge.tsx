@@ -44,7 +44,7 @@ export function PickStatusBadge({ status }: PickStatusBadgeProps) {
 
   return (
     <View style={[styles.base, { backgroundColor: bgColor }]}>
-      <ThemedText type="badge" numberOfLines={1} style={{ color: textColor }}>
+      <ThemedText type="f10" numberOfLines={1} style={[BADGE_LABEL, { color: textColor }]}>
         {LABEL[status]}
       </ThemedText>
     </View>
@@ -61,12 +61,23 @@ export function PickStatusBadge({ status }: PickStatusBadgeProps) {
  * 글자가 상자 테두리에 닿는다 — 「배지가 잘린다」로 보이던 자리다.
  * `component.badge.height` 22는 그래서 최소 높이로만 든다.
  */
+/**
+ * 배지 글자 — 피그마 «10/…/lh 15». 굵기는 **600**이다.
+ *
+ * 규격서의 옅은 배지는 500(18곳) 또는 600(2곳)인데 **우리는 500을 싣지 않는다**
+ * (Pretendard Regular 400 · SemiBold 600 · Bold 700 · ExtraBold 800 넷뿐 —
+ * `apps/mobile/assets/fonts/README.md`). 가장 가까우면서 실제로 실려 있는 600으로
+ * 간다(2026-09-15 MASTER 확정). 사진 위 배지만 700이고 그쪽은 `Badge`가 덮는다.
+ */
+export const BADGE_LABEL = { fontWeight: 600 } as const;
+
 export const STATUS_BADGE_STYLE = {
   alignSelf: 'flex-start',
   minHeight: Layout.badgeHeight,
   paddingHorizontal: Layout.badgePaddingX,
   paddingVertical: Layout.badgePaddingY,
-  borderRadius: Radius.badge,
+  /* 피그마 배지는 알약이다 — 28곳 전부 «r9999». `Radius.badge` 4는 뼈대 · 관리자 몫이라 안 건드린다. */
+  borderRadius: Radius.pill,
   justifyContent: 'center',
 } as const;
 

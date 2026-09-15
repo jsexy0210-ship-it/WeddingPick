@@ -50,12 +50,31 @@ const HEIGHT = {
 /**
  * 버튼. 02-design-system · tokens.json size.cta.
  *
- * - 라벨은 Primary CTA(52)만 body 18, 나머지는 sub 16 — 둘 다 700(«본문 · 금액 · 버튼» = sub).
+ * - **라벨은 크기와 무관하게 `14/700 · lh 20`이다**(`f14`). 아래 「라벨은 왜 14인가」 참고.
  * - 누르면 `scale(.98)` 100ms, **색은 바꾸지 않는다**(motion.pressButton).
  * - Disabled는 회색 채움 — #F2F3F6 위 #ADB1BA(20-onboarding-v2 ctaDisabled · CHANGELOG v3.19 «값이 없으면
  *   회색 비활성»). 02-design-system의 «투명도 0.4»보다 뒤에 나온 규칙이라 이쪽을 따른다.
- * - 아이콘과 라벨 사이 8(01a-login ctaKakao).
- * - 모서리 6(radius.control).
+ * - 아이콘과 라벨 사이 8 — 피그마 CTA의 «gap 8»과 같다.
+ * - 모서리 16(`radius.control`) — 피그마 풀폭 CTA의 «r16»과 같다.
+ *
+ * ## 라벨은 왜 14인가 — 2026-09-15 실측
+ *
+ * **이 줄은 2026-09-15까지 「Primary CTA(52)만 body 18, 나머지는 sub 16」이라고 적고
+ * 있었다.** 그 값의 근거가 피그마가 아니었다 — 어디서 왔는지 아무도 적어 두지 않았다.
+ *
+ * 피그마 규격서를 세어 보니 **단추 라벨이 스무 자리에서 한 가지다.**
+ *
+ *     h48 단추 12개      전부 14/700 · lh 20
+ *     h56 풀폭 CTA 8개   전부 14/700 · lh 20 (카카오만 15/700 · lh 23)
+ *
+ * 최상위 규칙 1번대로 **피그마가 이긴다**(2026-09-15 MASTER 확정: 「피그마에 실측값이
+ * 있으면 그것이 이긴다」). 핸드오프 `typography.scale`의 sub(16)가 「버튼 라벨」이라고
+ * 적지만 그것도 피그마보다 앞서지 않는다.
+ *
+ * **높이는 셋이 이미 피그마와 같았다** — `medium` 40(h40 51개) · `large` 48(h48 17개) ·
+ * `sheet` 56(h56 8개). **`xlarge` 52만 피그마에 없다**(52짜리 단추가 한 개도 없다).
+ * 52는 핸드오프 `size.ctaPrimary`에서 온 값이라 그대로 두었다 — 피그마로 올릴지는
+ * 대표 판단 대기다(`docs/sync/seed-component-parity.md` ⓗ).
  */
 export function ActionButton({
   label,
@@ -104,7 +123,7 @@ export function ActionButton({
       <View style={styles.row}>
         {icon}
         <ThemedText
-          type={size === 'xlarge' || size === 'sheet' ? 't5' : 't6'}
+          type="f14"
           numberOfLines={1}
           style={[styles.label, { color: look.text }]}>
           {label}
@@ -168,6 +187,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.two,
   },
-  /** 버튼 라벨은 크기와 무관하게 700 — sub(16)의 400 기본값을 덮는다. */
+  /** 버튼 라벨은 크기와 무관하게 700 — `f14`의 400 기본값을 덮는다. 피그마 실측과 같다. */
   label: { fontWeight: 700 },
 });
