@@ -2,7 +2,7 @@
   "$note": "최상위 정책 규칙의 남은 빚. scripts/check-design-policy.mjs가 읽는다. 늘어나면 깨진다 — 줄었으면 --update로 다시 적어 조인다.",
   "updated": "2026-09-15",
   "counts": {
-    "r1_hex_in_screen_code": 17,
+    "r1_hex_in_screen_code": 12,
     "r2_forbidden_fonts": 0,
     "r5_raw_color_in_guarded": 0,
     "icon_line_icon_in_screens": 0
