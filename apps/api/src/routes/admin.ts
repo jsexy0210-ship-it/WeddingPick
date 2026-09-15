@@ -17,6 +17,8 @@ import type { AppContext } from '../context';
 import * as dashboardAdmin from '../dashboard-admin';
 import * as decisionsAdmin from '../decisions-admin';
 import * as faqAdmin from '../faq-admin';
+import * as weddingFeed from '../wedding-feed';
+import { createGeminiFeedWriter } from '../analysis/wedding-feed-writer';
 import { NotAnOperator } from '../decisions';
 import { ApiError, forbidden, notFound } from '../errors';
 import * as inquiryAdmin from '../inquiry-admin';
@@ -1045,6 +1047,76 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
     await faqAdmin.remove(context.pool, request.params.id);
 
     return reply.status(204).send();
+  });
+
+  // ─── 웨딩피드 ──────────────────────────────────────────────────────────────
+  /*
+   * 웨딩픽 콘텐츠. 대표 지시(2026-09-15) — 「관리자에 웨딩피드 콘텐츠 메뉴 만들어.
+   * 목록 · 등록 · 삭제 · 수정 다 가능해야 하고 LLM으로 지속 콘텐츠 작성한다」.
+   *
+   * **FAQ와 같은 모양이다**(PUT으로 전체를 보내고 PATCH는 두지 않는다). 부르는 데
+   * 없는 쓰기 라우트를 성공으로 남겨두면 다음 사람이 그것을 믿는다.
+   *
+   * 목록에 `counts`를 같이 실어 보낸다 — 화면 위 배너가 「지금 봐야 할 것」을 먼저
+   * 말해야 하는데(v3.27), 공개 몇 건 · 초안 몇 건을 따로 부르면 두 번 왕복한다.
+   */
+  app.get('/v1/admin/wedding-feed', auth, async () => ({
+    posts: await weddingFeed.listForAdmin(context.pool, context.storage),
+    counts: await weddingFeed.counts(context.pool),
+  }));
+
+  app.post<{ Body: unknown }>('/v1/admin/wedding-feed', auth, async (request) =>
+    weddingFeed.create(
+      context.pool,
+      weddingFeed.parseFeedInput(request.body),
+      currentUserId(request)
+    )
+  );
+
+  app.put<{ Params: { id: string }; Body: unknown }>(
+    '/v1/admin/wedding-feed/:id',
+    auth,
+    async (request, reply) => {
+      await weddingFeed.update(
+        context.pool,
+        request.params.id,
+        weddingFeed.parseFeedInput(request.body)
+      );
+
+      return reply.status(204).send();
+    }
+  );
+
+  app.delete<{ Params: { id: string } }>(
+    '/v1/admin/wedding-feed/:id',
+    auth,
+    async (request, reply) => {
+      await weddingFeed.remove(context.pool, request.params.id);
+
+      return reply.status(204).send();
+    }
+  );
+
+  /*
+   * 지금 한 번 쓰게 한다. 평소에는 워커가 스스로 돌지만, 운영자가 「지금 필요하다」고
+   * 판단하는 자리가 있다.
+   *
+   * **키가 없으면 여기서 멈춘다.** `createGeminiFeedWriter`가 던지고 그대로 올라간다 —
+   * 키 없이 「0건 만들었다」로 끝나면 운영자는 자동 작성이 도는 줄 안다.
+   */
+  app.post('/v1/admin/wedding-feed/generate', auth, async () => {
+    const model = process.env.GEMINI_MODEL;
+
+    if (!model) {
+      throw new ApiError('invalid_request', '모델 이름이 설정에 없어요. GEMINI_MODEL을 넣어야 해요.');
+    }
+
+    return weddingFeed.runGeneration({
+      pool: context.pool,
+      writer: createGeminiFeedWriter(),
+      model,
+      trigger: 'manual',
+    });
   });
 
   // ─── Users ────────────────────────────────────────────────────────────────
