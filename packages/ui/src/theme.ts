@@ -14,7 +14,7 @@ import { Platform } from 'react-native';
  * 팔레트 원본. 역할 이름 아래에서만 쓰고 화면이 직접 집지 않는다.
  *
  * gray 램프와 의미색은 SEED scale 토큰을 그대로 옮겼다. **키 컬러만 SEED와 다르다** —
- * SEED의 carrot(#ff6f0f)은 당근의 브랜드색이고, 우리 키 컬러는 `#e7898d`다.
+ * SEED의 carrot(#ff6f0f)은 당근의 브랜드색이고, 우리 키 컬러는 `#ff6f61`다.
  * 파생색(눌림 · 짙은 · 옅은 · 면 · 테두리)은 spec/tokens.json `color.brand` 값이다.
  *
  * **2026-09-14에 키 컬러가 코랄 `#ff6f61`에서 지금 값으로 바뀌었다**(대표님 확정 · Figma 신규
@@ -25,33 +25,30 @@ import { Platform } from 'react-native';
  */
 const palette = {
   /* 키 컬러 — spec/tokens.json color.brand. */
-  coral500: '#e7898d',
+  coral500: '#ff6f61',
   /** primaryPressed — Primary 버튼 눌림. */
-  coralPressed: '#d87d80',
+  coralPressed: '#ee6255',
   /** `coralPressed`의 옛 이름 — 웹(site-styles `--tint-strong`)이 이 이름으로 값을 맞춘다. 같은 값. */
-  coral600: '#d87d80',
+  coral600: '#ee6255',
   /** primaryDark — 옅은 키 컬러 배경 위 텍스트(대비 확보). coralSurface 위 4.69:1. */
-  coralDark: '#c63f45',
+  coralDark: '#c2453a',
   /** primaryTint — 옅은 배지 · 아바타. color-mix(pick 12%, #fff)의 고정값. */
-  coralTint: '#fbebec',
+  coralTint: '#ffe8e4',
   /** primarySurface — 브랜드 카드 · Pick 완료 버튼 배경. color-mix(pick 7%, #fff)의 고정값. */
-  coralSurface: '#fdf6f6',
+  coralSurface: '#fff5f2',
   /** primaryBorder — 브랜드 카드 테두리. */
-  coralBorder: '#f9dfe0',
+  coralBorder: '#ffd9d4',
   /**
-   * 앱 아이콘 · 스플래시의 마크 색. `#e7898d` 위에 얹는다(6.11:1).
+   * 키 컬러 면 위의 글자 · 아이콘. 앱 아이콘 · 스플래시의 마크도 같다.
    *
-   * **화면의 글자에는 쓰지 않는다.** 2026-09-14에 「키 컬러 면 위의 글자」로 잡혀 있었고
-   * 근거가 「Figma 픽셀 export(`src/imports/Home/index.tsx`)에 있던 색」이었는데,
-   * **그 파일은 웨딩픽이 아니다** — 「Peer Group Meetup」 · 「Meditation」 · Alegreya 서체가
-   * 든 다른 앱의 템플릿이고 피그마 라우터(`routes.ts`)가 부르지도 않는다. 값을 엉뚱한
-   * 데서 집어 온 것이다. 실제 웨딩픽 화면은 코랄 면 위에 **흰 글자**를 쓴다(재서 확인:
-   * 히어로 `D-127` · 「비교하기」 · 배지가 전부 #ffffff).
+   * **2026-09-15 대표 지시로 코랄 정본으로 되돌렸다** — 「기존 정본색상으로 싹다 다시
+   * 바꿔. 코랄색으로」. 하루 동안 키 컬러가 `#e7898d`였고 그 위 글자는 플럼
+   * `#371b34`였는데, 값은 전부 코랄판(`8a259608~1`)에서 그대로 읽어 왔다. 지어낸 값이
+   * 하나도 없다.
    *
-   * 아이콘 쪽은 그대로 둔다 — `spec/tokens.json` `symbol.appIcon`이 정한 자리이고,
-   * 거기서는 가는 stroke가 뭉개지지 않게 대비가 필요하다.
-   */
-  plum: '#371b34',
+   * **흰 글자는 `#ff6f61` 위에서 3.03:1이다.** WCAG AA 본문 4.5:1에는 못 미치고 큰 글자
+   * 3.0:1은 넘는다. 코랄판이 원래 그랬고 대표님이 그 판으로 돌아가라고 하셨다.
+  onKey: '#ffffff',
 
   /*
    * SEED gray 램프 (light). **값은 `spec/seed-tokens.json`에서 온다** —
@@ -179,7 +176,7 @@ const palette = {
   calendarSaturday: '#5b8def',
 
   /* 차트 계열 — spec/tokens.json color.chart. 키 컬러 계열 셋 + 나머지 회색. 스킨과 무관하게 고정. */
-  chartSeries1: '#e7898d',
+  chartSeries1: '#ff6f61',
   chartSeries2: '#f4bfc1',
   chartSeries3: '#f8ddde',
   chartSeriesRest: '#eaebee',
@@ -326,7 +323,7 @@ export const Colors = {
     tintDark: palette.coralDark,
     /** @deprecated primaryDark의 옛 이름. `tintDark`를 쓴다. */
     tintStrong: palette.coralDark,
-    /** 옅은 배지·아바타. brand.primaryTint(#FBEBEC · 구 #FFE8E4). */
+    /** 옅은 배지·아바타. brand.primaryTint(#FFE8E4 · 구 #FFE8E4). */
     tintSubtle: palette.coralTint,
     /** 코랄 카드 · Pick 완료 버튼 배경. brand.primarySurface. */
     tintSurface: palette.coralSurface,
@@ -414,7 +411,7 @@ export const Colors = {
      * 키 컬러 면 위의 글자·아이콘. **피그마에서 재서 가져온 값이다** — 코랄 히어로의
      * `D-127` · 「비교하기」 · 배지가 전부 흰색이다(2026-09-15 대표 지시 「텍스트 색상도
      * 피그마 기준」). 「흰색이 아니다」로 잡혀 있던 플럼은 웨딩픽이 아닌 템플릿 파일에서
-     * 온 값이었다 — `palette.plum` 주석에 그 경위가 있다.
+     * 온 값이었다 — `palette.onKey` 주석에 그 경위가 있다.
      *
      * **대비는 2.51:1이다.** WCAG AA(4.5:1)에 못 미친다는 사실 자체는 그대로다.
      * 피그마가 그렇게 그렸고 대표님이 그 기준으로 맞추라고 하셨다.
@@ -456,13 +453,13 @@ export const Colors = {
     fieldBorder: palette.darkGray400,
     fieldBorderFocus: palette.darkGray900,
 
-    tint: '#eb9c9f',
-    tintPressed: '#efb0b3',
-    tintDark: '#f1bcbe',
-    tintStrong: '#f1bcbe',
-    tintSubtle: '#3f2b2c',
-    tintSurface: '#312424',
-    tintBorder: '#4e3435',
+    tint: '#ff8478',
+    tintPressed: '#ff9a90',
+    tintDark: '#ffa79e',
+    tintStrong: '#ffa79e',
+    tintSubtle: '#3a2320',
+    tintSurface: '#2b1c1a',
+    tintBorder: '#4a2c28',
     tintInactive: palette.darkGray500,
 
     positive: '#3ecf8e',
@@ -894,7 +891,7 @@ export const Layout = {
    *
    * 값의 출처는 `17-sheets-states.dc.html`(WP-ST-012)의 `spinner`다 —
    * `width:32px;height:32px;border:3px solid #eaebee;border-top-color:#ff6f61`
-   * (시안이 적은 값이다 — 실제로 그리는 색은 `tint`라 지금은 `#e7898d`다).
+   * (시안이 적은 값이다 — 실제로 그리는 색은 `tint`라 지금은 `#ff6f61`다).
    * 지름은 순회 로더와 같은 자리 이름(20·28·40)을 쓰고, 두께는 시안의 32:3을
    * 정수 px로 반올림했다(20→2 · 28→3 · 40→4).
    */

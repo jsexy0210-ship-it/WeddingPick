@@ -1,0 +1,810 @@
+[
+  {
+    "tag": "body",
+    "depth": 0,
+    "w": 430,
+    "h": 932,
+    "background": "#FFFFFF"
+  },
+  {
+    "tag": "div",
+    "depth": 1,
+    "w": 430,
+    "h": 932
+  },
+  {
+    "tag": "div",
+    "depth": 2,
+    "w": 430,
+    "h": 1057,
+    "layout": "flex",
+    "justify": "center",
+    "align": "flex-start",
+    "background": "#F7F8F9"
+  },
+  {
+    "tag": "div",
+    "depth": 3,
+    "w": 430,
+    "h": 1057,
+    "layout": "flex",
+    "direction": "column",
+    "background": "#FFFFFF",
+    "shadow": "rgba(0, 0, 0, 0.25) 0px 25px 50px -12px",
+    "position": "relative"
+  },
+  {
+    "tag": "section",
+    "depth": 4,
+    "w": 430,
+    "h": 0
+  },
+  {
+    "tag": "main",
+    "depth": 4,
+    "w": 430,
+    "h": 1057
+  },
+  {
+    "tag": "div",
+    "depth": 5,
+    "w": 430,
+    "h": 1057,
+    "padding": "0 0 112 0",
+    "background": "#FFFFFF"
+  },
+  {
+    "tag": "header",
+    "depth": 6,
+    "w": 430,
+    "h": 56,
+    "layout": "flex",
+    "align": "center",
+    "padding": "0 16 0 16",
+    "background": "#FFFFFF 95%",
+    "position": "sticky"
+  },
+  {
+    "tag": "button",
+    "depth": 7,
+    "w": 40,
+    "h": 40,
+    "layout": "grid",
+    "align": "center",
+    "columns": "40px",
+    "radius": 9999
+  },
+  {
+    "tag": "svg",
+    "depth": 8,
+    "w": 20,
+    "h": 20,
+    "icon": true
+  },
+  {
+    "tag": "p",
+    "depth": 7,
+    "w": 358,
+    "h": 20,
+    "text": "상담 예약",
+    "font": "14/700",
+    "color": "#1A1C20",
+    "lineHeight": 20,
+    "textAlign": "center",
+    "padding": "0 40 0 0"
+  },
+  {
+    "tag": "main",
+    "depth": 6,
+    "w": 430,
+    "h": 889,
+    "padding": "28 20 0 20"
+  },
+  {
+    "tag": "p",
+    "depth": 7,
+    "w": 390,
+    "h": 15,
+    "text": "BLOOMING STUDIO",
+    "font": "10/400",
+    "color": "#868B94",
+    "lineHeight": 15,
+    "letterSpacing": "1.7px"
+  },
+  {
+    "tag": "h1",
+    "depth": 7,
+    "w": 390,
+    "h": 75,
+    "text": "우리에게 편한 시간으로 상담을 예약해요.",
+    "font": "30/700",
+    "color": "#1A1C20",
+    "lineHeight": 38,
+    "letterSpacing": "-0.6px",
+    "margin": "8 0 0 0"
+  },
+  {
+    "tag": "br",
+    "depth": 8,
+    "w": 0,
+    "h": 33
+  },
+  {
+    "tag": "div",
+    "depth": 7,
+    "w": 390,
+    "h": 113,
+    "layout": "flex",
+    "gap": 16,
+    "padding": "16 16 16 16",
+    "margin": "28 0 0 0",
+    "background": "#FFFFFF",
+    "radius": 16,
+    "border": "1 #000000 6%"
+  },
+  {
+    "tag": "img",
+    "depth": 8,
+    "w": 64,
+    "h": 64,
+    "background": "#F7F8F9",
+    "radius": 18,
+    "src": "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=80&h=80&fit=crop&auto=format"
+  },
+  {
+    "tag": "div",
+    "depth": 8,
+    "w": 183,
+    "h": 79
+  },
+  {
+    "tag": "p",
+    "depth": 9,
+    "w": 183,
+    "h": 15,
+    "text": "YOUR CONSULTANT",
+    "font": "10/400",
+    "color": "#868B94",
+    "lineHeight": 15,
+    "letterSpacing": "1.2px"
+  },
+  {
+    "tag": "p",
+    "depth": 9,
+    "w": 183,
+    "h": 20,
+    "text": "김소연 작가",
+    "font": "14/700",
+    "color": "#1A1C20",
+    "lineHeight": 20,
+    "margin": "4 0 0 0"
+  },
+  {
+    "tag": "div",
+    "depth": 9,
+    "w": 183,
+    "h": 15,
+    "layout": "flex",
+    "gap": 6,
+    "align": "center",
+    "margin": "4 0 0 0"
+  },
+  {
+    "tag": "span",
+    "depth": 10,
+    "w": 68,
+    "h": 12,
+    "layout": "flex",
+    "gap": 2,
+    "align": "center"
+  },
+  {
+    "tag": "svg",
+    "depth": 11,
+    "w": 12,
+    "h": 12,
+    "icon": true
+  },
+  {
+    "tag": "svg",
+    "depth": 11,
+    "w": 12,
+    "h": 12,
+    "icon": true
+  },
+  {
+    "tag": "svg",
+    "depth": 11,
+    "w": 12,
+    "h": 12,
+    "icon": true
+  },
+  {
+    "tag": "svg",
+    "depth": 11,
+    "w": 12,
+    "h": 12,
+    "icon": true
+  },
+  {
+    "tag": "svg",
+    "depth": 11,
+    "w": 12,
+    "h": 12,
+    "icon": true
+  },
+  {
+    "tag": "span",
+    "depth": 10,
+    "w": 109,
+    "h": 15,
+    "text": "10년 경력 · 자연광 전문",
+    "font": "10/400",
+    "color": "#868B94",
+    "lineHeight": 15
+  },
+  {
+    "tag": "p",
+    "depth": 9,
+    "w": 183,
+    "h": 17,
+    "text": "평균 응답 30분 이내",
+    "font": "11/400",
+    "color": "#868B94",
+    "lineHeight": 17,
+    "margin": "4 0 0 0"
+  },
+  {
+    "tag": "section",
+    "depth": 7,
+    "w": 390,
+    "h": 105,
+    "margin": "32 0 0 0"
+  },
+  {
+    "tag": "div",
+    "depth": 8,
+    "w": 390,
+    "h": 20,
+    "layout": "flex",
+    "justify": "space-between",
+    "align": "center",
+    "margin": "0 0 12 0"
+  },
+  {
+    "tag": "div",
+    "depth": 9,
+    "w": 85,
+    "h": 20,
+    "layout": "flex",
+    "gap": 8,
+    "align": "center"
+  },
+  {
+    "tag": "svg",
+    "depth": 10,
+    "w": 16,
+    "h": 16,
+    "icon": true
+  },
+  {
+    "tag": "h2",
+    "depth": 10,
+    "w": 61,
+    "h": 20,
+    "text": "날짜 선택",
+    "font": "14/700",
+    "color": "#1A1C20",
+    "lineHeight": 20
+  },
+  {
+    "tag": "span",
+    "depth": 9,
+    "w": 56,
+    "h": 15,
+    "text": "2026년 9월",
+    "font": "10/400",
+    "color": "#868B94",
+    "lineHeight": 15
+  },
+  {
+    "tag": "div",
+    "depth": 8,
+    "w": 390,
+    "h": 73,
+    "layout": "flex",
+    "gap": 8,
+    "padding": "0 0 4 0"
+  },
+  {
+    "tag": "button",
+    "depth": 9,
+    "w": 80,
+    "h": 69,
+    "layout": "flex",
+    "direction": "column",
+    "gap": 4,
+    "align": "center",
+    "padding": "12 20 12 20",
+    "background": "#FFFFFF",
+    "radius": 16,
+    "border": "1 #000000 6%"
+  },
+  {
+    "tag": "span",
+    "depth": 10,
+    "w": 10,
+    "h": 15,
+    "text": "금",
+    "font": "10/500",
+    "color": "#868B94",
+    "lineHeight": 15,
+    "textAlign": "center"
+  },
+  {
+    "tag": "span",
+    "depth": 10,
+    "w": 38,
+    "h": 24,
+    "text": "18 일",
+    "font": "16/700",
+    "color": "#1A1C20",
+    "lineHeight": 24,
+    "textAlign": "center"
+  },
+  {
+    "tag": "button",
+    "depth": 9,
+    "w": 80,
+    "h": 69,
+    "layout": "flex",
+    "direction": "column",
+    "gap": 4,
+    "align": "center",
+    "padding": "12 20 12 20",
+    "background": "#FFFFFF",
+    "radius": 16,
+    "border": "1 #000000 6%"
+  },
+  {
+    "tag": "span",
+    "depth": 10,
+    "w": 10,
+    "h": 15,
+    "text": "토",
+    "font": "10/500",
+    "color": "#868B94",
+    "lineHeight": 15,
+    "textAlign": "center"
+  },
+  {
+    "tag": "span",
+    "depth": 10,
+    "w": 38,
+    "h": 24,
+    "text": "19 일",
+    "font": "16/700",
+    "color": "#1A1C20",
+    "lineHeight": 24,
+    "textAlign": "center"
+  },
+  {
+    "tag": "button",
+    "depth": 9,
+    "w": 80,
+    "h": 69,
+    "layout": "flex",
+    "direction": "column",
+    "gap": 4,
+    "align": "center",
+    "padding": "12 20 12 20",
+    "background": "#FFFFFF",
+    "radius": 16,
+    "border": "1 #000000 6%"
+  },
+  {
+    "tag": "span",
+    "depth": 10,
+    "w": 10,
+    "h": 15,
+    "text": "일",
+    "font": "10/500",
+    "color": "#868B94",
+    "lineHeight": 15,
+    "textAlign": "center"
+  },
+  {
+    "tag": "span",
+    "depth": 10,
+    "w": 38,
+    "h": 24,
+    "text": "20 일",
+    "font": "16/700",
+    "color": "#1A1C20",
+    "lineHeight": 24,
+    "textAlign": "center"
+  },
+  {
+    "tag": "button",
+    "depth": 9,
+    "w": 80,
+    "h": 69,
+    "layout": "flex",
+    "direction": "column",
+    "gap": 4,
+    "align": "center",
+    "padding": "12 20 12 20",
+    "background": "#FFFFFF",
+    "radius": 16,
+    "border": "1 #000000 6%"
+  },
+  {
+    "tag": "span",
+    "depth": 10,
+    "w": 10,
+    "h": 15,
+    "text": "화",
+    "font": "10/500",
+    "color": "#868B94",
+    "lineHeight": 15,
+    "textAlign": "center"
+  },
+  {
+    "tag": "span",
+    "depth": 10,
+    "w": 38,
+    "h": 24,
+    "text": "22 일",
+    "font": "16/700",
+    "color": "#1A1C20",
+    "lineHeight": 24,
+    "textAlign": "center"
+  },
+  {
+    "tag": "button",
+    "depth": 9,
+    "w": 80,
+    "h": 69,
+    "layout": "flex",
+    "direction": "column",
+    "gap": 4,
+    "align": "center",
+    "padding": "12 20 12 20",
+    "background": "#FFFFFF",
+    "radius": 16,
+    "border": "1 #000000 6%"
+  },
+  {
+    "tag": "span",
+    "depth": 10,
+    "w": 10,
+    "h": 15,
+    "text": "수",
+    "font": "10/500",
+    "color": "#868B94",
+    "lineHeight": 15,
+    "textAlign": "center"
+  },
+  {
+    "tag": "span",
+    "depth": 10,
+    "w": 38,
+    "h": 24,
+    "text": "23 일",
+    "font": "16/700",
+    "color": "#1A1C20",
+    "lineHeight": 24,
+    "textAlign": "center"
+  },
+  {
+    "tag": "button",
+    "depth": 9,
+    "w": 80,
+    "h": 69,
+    "layout": "flex",
+    "direction": "column",
+    "gap": 4,
+    "align": "center",
+    "padding": "12 20 12 20",
+    "background": "#FFFFFF",
+    "radius": 16,
+    "border": "1 #000000 6%"
+  },
+  {
+    "tag": "span",
+    "depth": 10,
+    "w": 10,
+    "h": 15,
+    "text": "금",
+    "font": "10/500",
+    "color": "#868B94",
+    "lineHeight": 15,
+    "textAlign": "center"
+  },
+  {
+    "tag": "span",
+    "depth": 10,
+    "w": 38,
+    "h": 24,
+    "text": "25 일",
+    "font": "16/700",
+    "color": "#1A1C20",
+    "lineHeight": 24,
+    "textAlign": "center"
+  },
+  {
+    "tag": "button",
+    "depth": 9,
+    "w": 80,
+    "h": 69,
+    "layout": "flex",
+    "direction": "column",
+    "gap": 4,
+    "align": "center",
+    "padding": "12 20 12 20",
+    "background": "#FFFFFF",
+    "radius": 16,
+    "border": "1 #000000 6%"
+  },
+  {
+    "tag": "span",
+    "depth": 10,
+    "w": 10,
+    "h": 15,
+    "text": "토",
+    "font": "10/500",
+    "color": "#868B94",
+    "lineHeight": 15,
+    "textAlign": "center"
+  },
+  {
+    "tag": "span",
+    "depth": 10,
+    "w": 38,
+    "h": 24,
+    "text": "26 일",
+    "font": "16/700",
+    "color": "#1A1C20",
+    "lineHeight": 24,
+    "textAlign": "center"
+  },
+  {
+    "tag": "section",
+    "depth": 7,
+    "w": 390,
+    "h": 161,
+    "padding": "24 0 0 0",
+    "margin": "32 0 0 0",
+    "border": "1 #000000 6%"
+  },
+  {
+    "tag": "div",
+    "depth": 8,
+    "w": 390,
+    "h": 20,
+    "layout": "flex",
+    "gap": 8,
+    "align": "center",
+    "margin": "0 0 12 0"
+  },
+  {
+    "tag": "svg",
+    "depth": 9,
+    "w": 16,
+    "h": 16,
+    "icon": true
+  },
+  {
+    "tag": "h2",
+    "depth": 9,
+    "w": 61,
+    "h": 20,
+    "text": "시간 선택",
+    "font": "14/700",
+    "color": "#1A1C20",
+    "lineHeight": 20
+  },
+  {
+    "tag": "div",
+    "depth": 8,
+    "w": 390,
+    "h": 104,
+    "layout": "grid",
+    "gap": 8,
+    "columns": "124.656px 124.672px 124.656px"
+  },
+  {
+    "tag": "button",
+    "depth": 9,
+    "w": 125,
+    "h": 48,
+    "text": "오전 10:00",
+    "font": "14/700",
+    "color": "#1A1C20",
+    "lineHeight": 20,
+    "textAlign": "center",
+    "background": "#FFFFFF",
+    "radius": 22,
+    "border": "1 #000000 6%"
+  },
+  {
+    "tag": "button",
+    "depth": 9,
+    "w": 125,
+    "h": 48,
+    "text": "오전 11:30",
+    "font": "14/700",
+    "color": "#1A1C20",
+    "lineHeight": 20,
+    "textAlign": "center",
+    "background": "#FFFFFF",
+    "radius": 22,
+    "border": "1 #000000 6%"
+  },
+  {
+    "tag": "button",
+    "depth": 9,
+    "w": 125,
+    "h": 48,
+    "text": "오후 1:00",
+    "font": "14/700",
+    "color": "#1A1C20",
+    "lineHeight": 20,
+    "textAlign": "center",
+    "background": "#FFFFFF",
+    "radius": 22,
+    "border": "1 #000000 6%"
+  },
+  {
+    "tag": "button",
+    "depth": 9,
+    "w": 125,
+    "h": 48,
+    "text": "오후 2:00",
+    "font": "14/700",
+    "color": "#1A1C20",
+    "lineHeight": 20,
+    "textAlign": "center",
+    "background": "#FFFFFF",
+    "radius": 22,
+    "border": "1 #000000 6%"
+  },
+  {
+    "tag": "button",
+    "depth": 9,
+    "w": 125,
+    "h": 48,
+    "text": "오후 3:30",
+    "font": "14/700",
+    "color": "#1A1C20",
+    "lineHeight": 20,
+    "textAlign": "center",
+    "background": "#FFFFFF",
+    "radius": 22,
+    "border": "1 #000000 6%"
+  },
+  {
+    "tag": "button",
+    "depth": 9,
+    "w": 125,
+    "h": 48,
+    "text": "오후 5:00",
+    "font": "14/700",
+    "color": "#1A1C20",
+    "lineHeight": 20,
+    "textAlign": "center",
+    "background": "#FFFFFF",
+    "radius": 22,
+    "border": "1 #000000 6%"
+  },
+  {
+    "tag": "section",
+    "depth": 7,
+    "w": 390,
+    "h": 160,
+    "padding": "24 0 0 0",
+    "margin": "32 0 0 0",
+    "border": "1 #000000 6%"
+  },
+  {
+    "tag": "h2",
+    "depth": 8,
+    "w": 390,
+    "h": 20,
+    "text": "남기고 싶은 말",
+    "font": "14/700",
+    "color": "#1A1C20",
+    "lineHeight": 20,
+    "margin": "0 0 12 0"
+  },
+  {
+    "tag": "span",
+    "depth": 9,
+    "w": 39,
+    "h": 16,
+    "text": "(선택)",
+    "font": "14/400",
+    "color": "#868B94",
+    "lineHeight": 20
+  },
+  {
+    "tag": "textarea",
+    "depth": 8,
+    "w": 390,
+    "h": 96,
+    "padding": "14 16 14 16",
+    "background": "#FFFFFF",
+    "radius": 16,
+    "border": "1 #000000 6%"
+  },
+  {
+    "tag": "section",
+    "depth": 7,
+    "w": 390,
+    "h": 80,
+    "padding": "16 16 16 16",
+    "margin": "20 0 0 0",
+    "background": "#F7F8F9",
+    "radius": 16
+  },
+  {
+    "tag": "div",
+    "depth": 8,
+    "w": 358,
+    "h": 20,
+    "layout": "flex",
+    "gap": 8,
+    "align": "center"
+  },
+  {
+    "tag": "svg",
+    "depth": 9,
+    "w": 16,
+    "h": 16,
+    "icon": true
+  },
+  {
+    "tag": "p",
+    "depth": 9,
+    "w": 211,
+    "h": 20,
+    "text": "커플 캘린더에 자동으로 공유돼요",
+    "font": "14/700",
+    "color": "#1A1C20",
+    "lineHeight": 20
+  },
+  {
+    "tag": "p",
+    "depth": 8,
+    "w": 358,
+    "h": 20,
+    "text": "지윤 · 준혁 두 분의 우리웨딩 캘린더에 상담 일정이 공유됩니다.",
+    "font": "12/400",
+    "color": "#868B94",
+    "lineHeight": 20,
+    "margin": "8 0 0 0"
+  },
+  {
+    "tag": "div",
+    "depth": 6,
+    "w": 430,
+    "h": 89,
+    "padding": "16 16 16 16",
+    "background": "#FFFFFF 95%",
+    "border": "1 #000000 6%",
+    "position": "fixed"
+  },
+  {
+    "tag": "button",
+    "depth": 7,
+    "w": 398,
+    "h": 56,
+    "text": "날짜와 시간을 선택해주세요",
+    "font": "14/700",
+    "color": "#868B94",
+    "lineHeight": 20,
+    "textAlign": "center",
+    "background": "#F7F8F9",
+    "radius": 16
+  }
+]
