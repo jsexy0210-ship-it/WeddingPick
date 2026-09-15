@@ -11,6 +11,7 @@ import {
   Spacing,
   ThemedText,
   ThemedView,
+  USE_NATIVE_DRIVER,
   useTheme,
 } from '@weddingpick/ui';
 
@@ -107,7 +108,7 @@ function Rise({ children }: { children: ReactNode }) {
       toValue: 1,
       duration: Motion.rise.duration,
       easing: Easing.bezier(...ENTER_BEZIER),
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }).start();
   }, [progress]);
 

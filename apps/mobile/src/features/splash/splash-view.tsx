@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 
-import { Colors, FontSize, LineHeight, Spacing, WeddingMark } from '@weddingpick/ui';
+import { Colors, FontSize, LineHeight, Spacing, USE_NATIVE_DRIVER, WeddingMark } from '@weddingpick/ui';
 
 /**
  * 스플래시(WP-APP-002). 시안 `01-onboarding.dc.html` #11a —
@@ -52,14 +52,14 @@ export function SplashView() {
         toValue: 1,
         duration: SYMBOL_MS,
         easing: ENTER,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(title, {
         toValue: 1,
         delay: TEXT_DELAY_MS,
         duration: TEXT_MS,
         easing: ENTER,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ]).start();
   }, [symbol, title]);
