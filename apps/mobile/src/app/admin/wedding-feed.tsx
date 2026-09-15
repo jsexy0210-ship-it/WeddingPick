@@ -2,17 +2,17 @@
  * 웨딩피드 관리
  *
  * 2026-09-15 대표 지시 — 「관리자에 웨딩피드 콘텐츠 메뉴 만들어. 목록 등록 삭제 수정
- * 다 가능해야 하고 지속 콘텐츠 작성한다」. 운영자가 직접 쓰고 고치고 지운다.
+ * 다 가능해야 하고 지속 콘텐츠 작성한다」. 운영자가 직접 쓰고 고치고 지우는 위에,
+ * 자동 작성(`worker-loops.ts`)이 공개 글이 목표(8건)보다 적을 때 스스로 채운다.
  *
- * **자동 작성은 화면에서 뺐다**(2026-09-15 대표 지시 — 「내가 직접 작성할게 자동
- * 작성은 빼」). 대표님이 「지금 자동 작성」을 누르셨을 때 실패했고, 그 원인을 캐다가
- * 나온 사실이 결정을 바꿨다 — **운영 서버의 Anthropic API 호출은 Max 구독 밖이라
- * 종량 과금이다.** 제미나이에서 클로드로 옮긴 것이 돈을 아낀 것이 아니었다.
+ * **자동 작성을 한 번 뺐다가 되살렸다**(2026-09-15). 대표님이 「지금 자동 작성」을
+ * 누르셨을 때 실패했고, 원인을 캐다 나온 사실이 결정을 두 번 뒤집었다 — 운영 서버의
+ * 클로드 API 호출은 Max 구독 밖이라 종량 과금이다. 그래서 「내가 직접 작성할게 자동
+ * 작성은 빼」로 뺐고, 제미나이면 값이 다르다는 것을 확인한 뒤 「제미나이로 되돌린다」로
+ * 되살렸다. 지금 작성기는 `createGeminiFeedWriter`다.
  *
- * 서버 쪽 경로(`POST /v1/admin/wedding-feed/generate` · `worker-loops.ts`)는
- * 지우지 않고 남긴다 — 대표님이 다시 켜자고 하시면 화면에 단추를 되돌리면 된다.
- * 다만 **키가 배포에 없어 지금 부르면 실패한다.** 안 되는 단추를 화면에 두면
- * 운영자는 그것을 「고장」으로 읽는다(CLAUDE.md — 빈 껍데기는 메뉴에서 뺀다).
+ * **자동 루프는 꺼져 있다.** `WEDDING_FEED_AUTOWRITE`를 배포에 넣지 않았다 — 이
+ * 단추로 한 편 써 보고 품질을 확인한 뒤에 켜는 것이 순서다.
  *
  * 규칙과 한도는 `packages/domain/src/wedding-feed.ts` 한 곳에서만 온다 — 여기서
  * 값을 다시 적으면 화면과 서버가 다른 길이를 막게 된다.
@@ -162,11 +162,13 @@ export default function WeddingFeedScreen() {
   const [deleteBusy, setDeleteBusy] = useState(false);
   /*
    * 지우기가 실패했을 때 배너에 적는 말. 전에는 자동 작성의 `generateMsg`를 빌려
-   * 쓰고 있었다 — 자동 작성을 화면에서 빼면서 드러났다. 빌린 상태는 그 주인이
-   * 사라질 때까지 아무도 모른다.
+   * 쓰고 있었다 — 자동 작성을 화면에서 뺐다 되살리는 동안 드러났다. 빌린 상태는
+   * 그 주인이 사라질 때까지 아무도 모른다.
    */
   const [actionMsg, setActionMsg] = useState<string | null>(null);
 
+  const [generating, setGenerating] = useState(false);
+  const [generateMsg, setGenerateMsg] = useState<string | null>(null);
 
   const posts = data?.posts ?? [];
   const publishedCount = posts.filter((p) => p.status === 'published').length;
@@ -230,6 +232,23 @@ export default function WeddingFeedScreen() {
     }
   }
 
+  async function generateNow() {
+    setGenerating(true);
+    setGenerateMsg(null);
+    try {
+      const res = (await apiFetch('/v1/admin/wedding-feed/generate', { method: 'POST' })) as {
+        created: number;
+        skipped: string | null;
+      };
+      setGenerateMsg(res.skipped ?? `새 초안 ${res.created}건을 썼어요.`);
+      reload();
+    } catch (e) {
+      setGenerateMsg(e instanceof Error ? e.message : '자동 작성 실패');
+    } finally {
+      setGenerating(false);
+    }
+  }
+
   const rows: TableRow[] = posts.map((post) => ({
     key: post.id,
     cells: [
@@ -252,26 +271,49 @@ export default function WeddingFeedScreen() {
       : `공개 글 ${publishedCount}건이 돌고 있어요`;
   const bannerDetail = error
     ? error
-    : `공개 ${publishedCount}건 · 초안 ${draftCount}건 · 목표 ${WEDDING_FEED_TARGET_PUBLISHED}건`;
+    : `공개 ${publishedCount}건 · 초안 ${draftCount}건 · 목표 ${WEDDING_FEED_TARGET_PUBLISHED}건` +
+      (data ? ` · 자동 작성이 쓸 수 있는 주제 ${data.remainingTopics}개 남음` : '');
 
   return (
     <Page
       title="웨딩피드 관리"
-      sub="홈 아래쪽에 깔리는 읽을거리 — 대표님이 직접 쓴다"
-      action={{ label: '새로 고침', onPress: reload }}
+      sub="홈 아래쪽에 깔리는 읽을거리 — 직접 쓰거나 자동 작성이 채운다"
+      action={{
+        label: generating ? '쓰는 중…' : '지금 자동 작성',
+        onPress: () => void generateNow(),
+        kind: 'brand',
+        disabled: generating,
+      }}
     >
       <DelayedLoader active={loading} size={40} />
       {!loading && error ? <LoadError message={error} onRetry={reload} /> : null}
 
       {!loading && !error && data ? (
         <>
-          <StatusBanner tone={actionMsg ? 'bad' : bannerTone} title={bannerTitle} detail={actionMsg ?? bannerDetail} />
+          <StatusBanner tone={bannerTone} title={bannerTitle} detail={actionMsg ?? generateMsg ?? bannerDetail} />
 
           <CardGrid>
             <Card title="글 목록" sub="등록 · 수정 · 삭제는 직접 한다" action={{ label: '+ 새 글', onPress: openNew, kind: 'brand' }} full>
               <DataTable cols={COLS} rows={rows} empty="등록된 글이 없어요" />
             </Card>
 
+            <Card title="자동 작성 기록" sub="최근 것부터. 아무것도 안 나온 바퀴도 남는다" full>
+              {data.runs.length === 0 ? (
+                <Text style={styles.emptyRuns}>아직 돈 적이 없어요.</Text>
+              ) : (
+                <Rows
+                  items={data.runs.map((run) => ({
+                    key: run.id,
+                    dot: run.error ? 'bad' : run.createdCount > 0 ? 'ok' : 'none',
+                    name: `${formatDateTimeDot(run.startedAt)} · ${run.trigger === 'manual' ? '지금 실행' : '자동'}`,
+                    meta:
+                      (run.model ? `모델 ${run.model} · ` : '') +
+                      `만든 글 ${run.createdCount}건` +
+                      (run.error ? ` · ${run.error}` : ''),
+                  }))}
+                />
+              )}
+            </Card>
           </CardGrid>
 
           {editing ? (
