@@ -1,5 +1,6 @@
+import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Colors, FontSize } from '@weddingpick/ui';
 import { formatCount } from '@weddingpick/domain';
@@ -16,6 +17,12 @@ import { apiFetch } from './_api';
  * 그 12건이 무엇인지 안 여는 것이 흔한 실수다. 위아래로 붙여 둔다.
  *
  * 읽기 전용이다. 여기서 결정을 바꾸지 않는다 — 되돌리는 것은 롤백 화면의 일이다.
+ *
+ * **2026-09-15 대표 확정 — 「처리 상태」와 한 화면으로 묶여 「자동화」가 됐다**(위아래,
+ * 탭이 아니다). 이 파일의 본체는 `DecisionsPanel`로 옮기고 `automation.tsx`가
+ * 그 안에서 이어 그린다 — 처리 상태가 「지금 돌고 있는 것」이면 이 패널은 「그 결과가
+ * 쌓인 기록」이라 같은 화면에서 위아래로 붙여야 읽는 순서가 자연스럽다. 이 주소
+ * (`/admin/decisions`)는 저장된 링크가 깨지지 않게 `/admin/automation`으로 넘긴다.
  */
 type BriefingRow = {
   workflow: string;
@@ -38,7 +45,8 @@ type OpenDecision = {
 
 const money = (usd: number | null): string => (usd === null ? '—' : `$${usd.toFixed(2)}`);
 
-export default function DecisionsScreen() {
+/** `/admin/automation`(자동화)이 처리 상태 아래에 이어 그리는 패널. */
+export function DecisionsPanel() {
   const [briefing, setBriefing] = useState<BriefingRow[]>([]);
   const [open, setOpen] = useState<OpenDecision[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,7 +78,7 @@ export default function DecisionsScreen() {
   const totalFailed = briefing.reduce((sum, row) => sum + row.failed, 0);
 
   return (
-    <View style={styles.root}>
+    <View style={styles.panelRoot}>
       <View style={styles.header}>
         <Text style={styles.title}>자동 처리 내역</Text>
         <Pressable
@@ -87,7 +95,7 @@ export default function DecisionsScreen() {
       {!loading && error && <Text style={styles.errorText}>{error}</Text>}
 
       {!loading && !error && (
-        <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.content}>
           <View style={styles.card}>
             <View style={styles.cardHead}>
               <Text style={styles.cardTitle}>흐름별 집계</Text>
@@ -163,14 +171,22 @@ export default function DecisionsScreen() {
               </View>
             ))}
           </View>
-        </ScrollView>
+        </View>
       )}
     </View>
   );
 }
 
+/**
+ * 옛 주소(`/admin/decisions`)는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제 화면은
+ * `/admin/automation`(자동화)에 있다 — 그 안의 `DecisionsPanel`이 이 파일의 본체다.
+ */
+export default function DecisionsRedirect() {
+  return <Redirect href="/admin/automation?tab=decisions" />;
+}
+
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
+  panelRoot: { backgroundColor: Colors.light.backgroundSelected },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

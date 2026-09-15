@@ -1,3 +1,4 @@
+import { Redirect } from 'expo-router';
 /**
  * WP-ADM-052 감사 기록
  *
@@ -83,7 +84,7 @@ function rollbackTarget(e: AuditEvent) {
   return `${e.targetType}#${e.targetId}`;
 }
 
-export default function AuditLogScreen() {
+export function AuditLogPanel() {
   const [data, setData] = useState<AuditLogData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -143,6 +144,7 @@ export default function AuditLogScreen() {
 
   return (
     <Page
+      embedded
       title="감사 기록"
       sub={`모든 자동 결정의 근거 · ${RETENTION_DAYS}일 보관`}
       action={{ label: '새로 고침', onPress: reload }}
@@ -202,4 +204,12 @@ export default function AuditLogScreen() {
       ) : null}
     </Page>
   );
+}
+
+/**
+ * 옛 주소는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제 화면은 `/admin/faq`(사이트·기록)의 감사 기록 탭에 있다 —
+ * `AuditLogPanel`이 이 파일의 본체다.
+ */
+export default function AuditLogRedirect() {
+  return <Redirect href="/admin/faq?tab=audit-log" />;
 }

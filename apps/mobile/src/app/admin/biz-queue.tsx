@@ -1,3 +1,4 @@
+import { Redirect } from 'expo-router';
 /**
  * WP-ADM-023 사용자 · 업체 문의 큐
  * WP-BIZ 접수 건 · 자동 분류 · 소속 검증 결과 · 승인 반려
@@ -42,7 +43,7 @@ const STATUS_COLOR: Record<BizStatus, string> = {
   escalated: Colors.light.negative,
 };
 
-export default function BizQueueScreen() {
+export function BizQueuePanel() {
   const [data, setData] = useState<BizData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -310,3 +311,11 @@ const styles = StyleSheet.create({
   rejectBtnText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.textStrong },
   btnDisabled: { opacity: 0.5 },
 });
+
+/**
+ * 옛 주소는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제 화면은 `/admin/vendors`(업체·행사)의 업체 문의 탭에 있다 —
+ * `BizQueuePanel`이 이 파일의 본체다.
+ */
+export default function BizQueueRedirect() {
+  return <Redirect href="/admin/vendors?tab=biz-queue" />;
+}

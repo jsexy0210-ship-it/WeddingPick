@@ -29,7 +29,14 @@
  * 이 화면은 슈퍼 관리자만 연다. 그것을 정하는 곳은 **서버**이고(`requireSuperAdmin`),
  * 여기서는 403을 받아 그렇게 말해 줄 뿐이다. 화면이 막는 것으로 쳤다면 뷰어가
  * `PATCH`를 직접 부르는 순간 그대로 통했을 것이다.
+ *
+ * **2026-09-15 대표 확정 — 「계정·권한」 화면의 탭 하나(관리자 계정)다**(앱 회원 ·
+ * 관리자 계정 둘, 표는 절대 하나로 합치지 않는다 — 위 「다른 화면이다」 항목 그대로).
+ * 이 파일의 새 기본 내보내기는 옛 주소(`/admin/admins`)를 `/admin/users?tab=admins`로
+ * 보내는 `Redirect`이고, 본문은 `AdminsPanel`로 이름만 바꿨다. 탭은 껍데기라 본문은
+ * 손대지 않았다.
  */
+import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -163,7 +170,7 @@ function confirmItems(pending: Pending): string[] {
       ];
 }
 
-export default function AdminAccountsScreen() {
+export function AdminsPanel() {
   const [data, setData] = useState<ListData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -249,7 +256,7 @@ export default function AdminAccountsScreen() {
 
   if (loading) {
     return (
-      <Page title="관리자 계정">
+      <Page embedded title="관리자 계정">
         <DelayedLoader active size={40} style={styles.centered} />
       </Page>
     );
@@ -257,7 +264,7 @@ export default function AdminAccountsScreen() {
 
   if (error || !data) {
     return (
-      <Page title="관리자 계정">
+      <Page embedded title="관리자 계정">
         <LoadError message={error ?? '불러오기 실패'} onRetry={() => setRev((r) => r + 1)} />
       </Page>
     );
@@ -306,6 +313,7 @@ export default function AdminAccountsScreen() {
 
   return (
     <Page
+      embedded
       title="관리자 계정"
       sub="콘솔에 들어올 수 있는 사람과 등급"
       action={{ label: '관리자 추가', onPress: () => setCreating(true), kind: 'brand' }}
@@ -430,6 +438,11 @@ export default function AdminAccountsScreen() {
       )}
     </Page>
   );
+}
+
+/** 옛 주소 — 「계정·권한」의 관리자 계정 탭으로 보낸다. */
+export default function AdminsRedirect() {
+  return <Redirect href="/admin/users?tab=admins" />;
 }
 
 const styles = StyleSheet.create({
