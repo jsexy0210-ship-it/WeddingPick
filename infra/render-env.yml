@@ -43,6 +43,11 @@ services:
       # 카카오 REST API 키 — 로그인 리다이렉트 URI가 등록된 키다.
       # 네이티브 앱 키를 넣으면 /oauth/authorize가 KOE033으로 거부한다.
       EXPO_PUBLIC_KAKAO_CLIENT_ID: 8e9a14dd3a0aa1a420bff858460c415c
+      # 이 export 자신의 배포 주소. 하이브리드 웹뷰 쉘이 이미 같은 값을 쓰고
+      # (`apps/mobile/src/features/webshell/config.ts`), 링크 공유 카드의
+      # `og:url`도 같은 값을 쓴다(`apps/mobile/src/features/social-meta.ts`) —
+      # 비밀이 아니다. 없으면 두 곳 다 하드코딩한 운영 주소로 대신한다.
+      EXPO_PUBLIC_WEB_URL: https://weddingpick-app-web.onrender.com
 
   # 서비스 웹사이트
   WeddingPick-웹사이트:
