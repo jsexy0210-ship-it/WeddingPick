@@ -1,13 +1,16 @@
 import { StyleSheet, View } from 'react-native';
 
-import { Layout, ThemedText } from '@weddingpick/ui';
+import { Layout, LetterSpacing, Spacing, ThemedText } from '@weddingpick/ui';
 
 /**
- * 질문 제목 두 줄 + 설명 한 줄. 시안 20-onboarding-v2 `qWrap` — 상하 12 · 좌우 24 ·
- * 사이 8. 제목은 t2(26/35)이고 줄바꿈은 손으로 나눈 자리 그대로다.
+ * 질문 머리 — 규격서 docs/figma-spec/onboarding.txt(2026-09-15 대표 지시 「규격서의 수를 그대로」).
  *
- * 자간은 ThemedText가 플랫폼별로 붙인다(안드로이드만 −0.03/−0.02em). 설명은
- * «서비스가 해주는 일» 한 줄이다(v3.19) — 제목 각 줄 1줄 · 설명 최대 2줄로 고정한다.
+ *   div 382×445  pad 80 0 0 0
+ *     p "JUST FOR YOU" · 10/400 primary · lh 15 · ls 2.2px
+ *     h1 "결혼 예정일이 있나요?" · 38/700 #1A1C20 · lh 45 · ls -0.95px · mar 16 0 0 0
+ *     p "아직 정하지 않았어도 괜찮아요." · 14/400 #868B94 · lh 20 · mar 12 0 0 0
+ *
+ * 제목은 우리 두 줄(`STEP_TITLE_LINES`)을 한 문장으로 잇는다 — 피그마 제목은 한 줄이고 폭에 따라 접힌다.
  */
 export function QuestionHead({
   lines,
@@ -16,22 +19,16 @@ export function QuestionHead({
   lines: readonly [string, string];
   description?: string;
 }) {
-  /*
-   * 피그마 `Onboarding`(2026-09-14 정본): 진행 줄 아래 80 비우고 제목(38/700 — 스케일에 없어
-   * t1 32) · 12 아래 부제(14 · muted). 영문 eyebrow(«JUST FOR YOU»)는 걷어낸다(C-9).
-   */
   return (
     <View style={styles.wrap}>
-      <View>
-        <ThemedText type="t1" numberOfLines={1}>
-          {lines[0]}
-        </ThemedText>
-        <ThemedText type="t1" numberOfLines={1}>
-          {lines[1]}
-        </ThemedText>
-      </View>
+      <ThemedText type="f10" themeColor="tint" style={styles.eyebrow}>
+        JUST FOR YOU
+      </ThemedText>
+      <ThemedText type="f38" style={styles.title}>
+        {lines.join(' ')}
+      </ThemedText>
       {description ? (
-        <ThemedText type="t7" themeColor="textAssistive" numberOfLines={2}>
+        <ThemedText type="f14" themeColor="textAssistive" style={styles.description}>
           {description}
         </ThemedText>
       ) : null}
@@ -40,12 +37,15 @@ export function QuestionHead({
 }
 
 const styles = StyleSheet.create({
+  /* «pad 80 0 0 0» — 같은 값의 pickEmptyPaddingY. 좌우는 화면 «pad … 24». */
   wrap: {
-    /* `pt-20` = 80 — 같은 값의 pickEmptyPaddingY. 아래 40(`mt-10`)은 보기 목록이 잡는다. */
     paddingTop: Layout.pickEmptyPaddingY,
-    paddingBottom: Layout.rowPaddingY,
     paddingHorizontal: Layout.gutter,
-    /* 제목 ↔ 부제 `mt-3` = 12. */
-    gap: Layout.inlineGap,
   },
+  /* «10/400 · ls 2.2px». */
+  eyebrow: { letterSpacing: LetterSpacing.p22 },
+  /* «38/700 · lh 45 · ls -0.95px · mar 16 0 0 0». */
+  title: { fontWeight: 700, letterSpacing: LetterSpacing.n095, marginTop: Spacing.three },
+  /* «14/400 · mar 12 0 0 0». */
+  description: { marginTop: Layout.inlineGap },
 });
