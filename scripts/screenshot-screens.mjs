@@ -124,18 +124,14 @@ const MIME = {
 /**
  * dist를 그대로 내주는 정적 서버.
  *
- * expo export web.output "single"(app.json — React #419 대응, 2026-09-15)은 경로마다
- * html을 내지 않는다 — 전체가 `index.html` 하나다. 파일이 실제로 있으면 그것을 내고,
- * 없으면(모든 화면 경로가 여기 해당한다) `render.yaml`의 배포 rewrite(`/* → /index.html`)와
- * 같게 루트 `index.html`로 떨어뜨린다 — expo-router가 그 안에서 client-side로 경로를
- * 읽는다. 이 폴백이 없으면 `/(tabs)/search/` 같은 화면 경로가 전부 404만 찍는다
- * (`output: "static"` 시절엔 경로마다 파일이 있어 몰랐던 문제).
+ * expo export는 경로마다 html을 따로 낸다(`/(tabs)/search/index.html`). 디렉터리로
+ * 들어오면 `index.html`을, 그것도 없으면 `<경로>.html`을 찾는다.
  */
 function startStaticServer(root) {
   const server = createServer(async (req, res) => {
     const pathname = decodeURIComponent(new URL(req.url, 'http://127.0.0.1').pathname);
     const base = join(root, pathname);
-    const candidates = [base, join(base, 'index.html'), `${base.replace(/\/$/, '')}.html`, join(root, 'index.html')];
+    const candidates = [base, join(base, 'index.html'), `${base.replace(/\/$/, '')}.html`];
 
     for (const file of candidates) {
       if (!file.startsWith(root) || !existsSync(file) || file.endsWith('/')) continue;
@@ -212,15 +208,19 @@ async function installFixtures(page, missing, blocked) {
 }
 
 /**
- * 화면과 상관없는 콘솔 오류를 걸러낼 자리.
+ * 늘 나오지만 화면과 상관없는 콘솔 오류.
  *
- * **한때 React #419를 여기서 걸렀다.** `web.output: "static"`은 화면마다 prerender된
- * HTML과 client hydration이 어긋나 이 오류가 캡처마다 항상 붙었다 — 그래서
- * 「늘 나오는 잡음」으로 적어 두고 넘겼다. `output: "single"`로 바꾼 뒤(2026-09-15,
- * React #419 대응)로는 hydration 자체가 없어 이 오류가 나지 않는다 — 다시 나오면
- * 그때는 진짜다. 걸러내지 않는다.
+ * React #419는 아직 미해결이다(2026-09-15). `_layout.tsx`의 인증 게이트 타이밍이
+ * 원인이라고 처음 짚었던 것은 **틀렸다** — 그 갱신을 hydration 뒤로 미뤄도(0ms ·
+ * 3000ms 둘 다 시험) 사라지지 않았고, 인증 게이트 자체가 없는 `/admin/expos`와
+ * 아직 아무 화면도 못 그린 `/login`에서도 똑같이 난다. `web.output: "single"`로
+ * 바꾸면 사라지는 것은 확인했지만, 그러면 라우트별 정적 파일이 없어져
+ * `scripts/split-admin-dist.mjs`가 실패하고 `render.yaml`의 배포 빌드가 통째로
+ * 죽는다(관리자 출처 분리 — CLAUDE.md) — 그래서 `static`을 유지한 채로는 아직
+ * 고치는 방법을 못 찾았다. 여기 적어 두지 않으면 매 캡처마다 같은 줄이 붙고,
+ * 사람은 곧 콘솔 오류를 통째로 안 읽게 된다.
  */
-const BENIGN_CONSOLE = [];
+const BENIGN_CONSOLE = [/Minified React error #419/];
 
 function safeName(route) {
   return route.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '') || 'root';
