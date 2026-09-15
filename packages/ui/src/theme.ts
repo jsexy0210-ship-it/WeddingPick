@@ -817,12 +817,26 @@ export const Layout = {
   iconTab: 24,
   /** 헤더 오른쪽 아이콘 버튼 한 변(40, 원형) · 뒤로가기. size.iconButton · size.backButton. */
   iconButton: 40,
+  /**
+   * 검색 화면(피그마 `Search.tsx` · 2026-09-14 정본) 전용 크기. size.iconField ·
+   * iconMicro · searchField · headerBack · pickCircle · thumbSearch — 근거는
+   * spec/tokens.json `size.$figmaNote`.
+   */
+  iconField: 16,
+  iconMicro: 12,
+  searchField: 48,
+  headerBack: 36,
+  pickCircle: 28,
+  thumbSearchWidth: 104,
+  thumbSearchHeight: 116,
   /** 행 안 아이콘. size.iconRow. */
   iconRow: 20,
   /** 행 끝 chevron 한 변. size.iconInline. */
   iconInline: 18,
   /** 칩 삭제 X 한 변. size.iconChipClose · size.iconSmall. */
   iconChipClose: 14,
+  /** 작은 아이콘 14 — size.iconSmall. 칩 안의 꺾쇠 · 카드 Pick 원 안의 하트(피그마 `w-3.5 h-3.5`). */
+  iconSmall: 14,
   /** 썸네일. size.thumbList · thumbCandidate · thumbGallery. */
   thumbList: 52,
   thumbCandidate: 44,
@@ -927,6 +941,17 @@ export const Radius = {
   /** 폰 프레임(시안 전용). radius.device. */
   device: 40,
   pill: 999,
+  /**
+   * 피그마(2026-09-14 정본)의 곡률 셋. radius.cardLarge · thumb · hero — 근거는
+   * spec/tokens.json `radius.$figmaNote`.
+   *
+   * cardLarge 16은 `rounded-2xl`의 **실효값**이다 — 피그마 theme.css가 `--radius-2xl`을
+   * 정의하지 않아 Tailwind 기본 1rem으로 떨어진 값이고, 그래서 xl(22)보다 작다. 화면에
+   * 그려진 대로 옮겼고 18 기준 채택 여부는 대표 판단 대기다(FIGMA_DESIGN_SYSTEM.md §6-5).
+   */
+  cardLarge: 16,
+  thumb: 18,
+  hero: 22,
 } as const;
 
 /**

@@ -8,13 +8,13 @@ import { Colors } from './theme';
  * 한때 `pickMark`가 여기 사본으로 있었는데 획 두께가 1.8로 확정본(1.9)과 달라
  * 탭 바만 다른 마크를 쓰고 있었다.
  */
-export type ProductSymbolName = 'house' | 'magnifier' | 'twoPeople' | 'calendar' | 'person' | 'hall' | 'sdm' | 'snap' | 'planner' | 'warning' | 'bell' | 'gear' | 'more' | 'chevronRight' | 'chevronLeft' | 'close' | 'check';
+export type ProductSymbolName = 'house' | 'magnifier' | 'twoPeople' | 'calendar' | 'person' | 'hall' | 'sdm' | 'snap' | 'planner' | 'warning' | 'bell' | 'gear' | 'more' | 'chevronRight' | 'chevronLeft' | 'chevronDown' | 'arrowLeft' | 'pin' | 'close' | 'check';
 
 /**
  * 획 두께. 헤더·탭 아이콘(24)은 1.8, chevron(18)은 2, 닫기(14)는 2.4 — 05-root ·
  * 08c 핸드오프 값 그대로다. 작은 아이콘일수록 굵어야 같은 무게로 보인다.
  */
-const STROKE: Partial<Record<ProductSymbolName, number>> = { chevronRight: 2, chevronLeft: 2, close: 2.4, check: 3.6 };
+const STROKE: Partial<Record<ProductSymbolName, number>> = { chevronRight: 2, chevronLeft: 2, chevronDown: 2, arrowLeft: 2, close: 2.4, check: 3.6 };
 
 export function ProductSymbol({ name, size = 24, color = Colors.light.text }: { name: ProductSymbolName; size?: number; color?: ColorValue }) {
   const common = { stroke: color, strokeWidth: STROKE[name] ?? 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, fill: 'none' };
@@ -40,6 +40,12 @@ export function ProductSymbol({ name, size = 24, color = Colors.light.text }: { 
       {/* 행 끝 chevron(18 · #ADB1BA) · 뒤로가기(24) · 칩 삭제 X(14). */}
       {name === 'chevronRight' && <Path {...common} d="m9 6 6 6-6 6" />}
       {name === 'chevronLeft' && <Path {...common} d="M14.5 5 8 12l6.5 7" />}
+      {/* 아래 꺾쇠 — chevronRight를 90° 돌린 좌표. 검색 필터 칩의 ▾(피그마 `Search.tsx` lucide ChevronDown). */}
+      {name === 'chevronDown' && <Path {...common} d="m6 9 6 6 6-6" />}
+      {/* 왼쪽 화살표 ← — 피그마(2026-09-14 정본)의 뒤로 가기(`Search.tsx` · `VendorFlows.tsx` · `FlowScreens.tsx` lucide ArrowLeft). 꺾쇠가 아니라 화살이다. */}
+      {name === 'arrowLeft' && <Path {...common} d="M19 12H5M12 19l-7-7 7-7" />}
+      {/* 위치 핀 — 검색 결과 카드의 지역 앞(피그마 `Search.tsx` lucide MapPin). */}
+      {name === 'pin' && <><Path {...common} d="M12 21.4s-6.4-5.6-6.4-10.6a6.4 6.4 0 0 1 12.8 0c0 5-6.4 10.6-6.4 10.6z" /><Circle {...common} cx="12" cy="10.8" r="2.4" /></>}
       {name === 'close' && <Path {...common} d="M6 6l12 12M18 6 6 18" />}
       {/* 완료 체크(11 · 획 3.6) — 혜택 안내 시트 조건 행. 시안 path 그대로. */}
       {name === 'check' && <Path {...common} d="m5 12.5 4.5 4.5L19 7.5" />}
