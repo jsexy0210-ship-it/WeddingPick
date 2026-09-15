@@ -53,7 +53,10 @@ export function Accordion({ items }: AccordionProps) {
         const expanded = open === item.key;
 
         return (
-          <ThemedView key={item.key} type="backgroundElement" style={styles.item}>
+          <ThemedView
+            key={item.key}
+            type="backgroundElement"
+            style={[styles.item, expanded ? styles.itemOpen : null]}>
             <Pressable
               accessibilityRole="button"
               // 읽는 기계에 펼침 상태를 알린다. 화살표만으로는 전해지지 않는다.
@@ -121,7 +124,16 @@ const styles = StyleSheet.create({
   item: {
     borderRadius: Radius.cardLarge,
     paddingHorizontal: Spacing.three,
-    paddingBottom: Spacing.two,
+  },
+  /**
+   * 아래 여백은 **펼쳤을 때만** 붙인다.
+   *
+   * 접힌 항목에도 붙이면 제목이 칸 가운데가 아니라 위쪽에 앉는다 — 여는 단추가
+   * 위아래 16을 이미 갖고 있어서 그 아래에 여백이 한 번 더 쌓이기 때문이다.
+   * 찍어 보고 알았다(2026-09-15).
+   */
+  itemOpen: {
+    paddingBottom: Spacing.three,
     gap: Spacing.two,
   },
   /**
