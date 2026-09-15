@@ -1,3 +1,4 @@
+import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -31,7 +32,7 @@ const TYPE_LABEL: Record<string, string> = {
   review: '후기 신고',
 };
 
-export default function ReportScreen() {
+export function ReportPanel() {
   const [items, setItems] = useState<ReportItem[]>([]);
   const [filter, setFilter] = useState<'pending' | 'resolved'>('pending');
   const [loading, setLoading] = useState(true);
@@ -184,3 +185,11 @@ const styles = StyleSheet.create({
   summary: { fontSize: FontSize.t7, color: Colors.light.textStrong, lineHeight: LineHeight.t7 },
   reporterCount: { fontSize: FontSize.badge, color: Colors.light.textAssistive },
 });
+
+/**
+ * 옛 주소는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제 화면은 `/admin/rebuttal`(후기·신고)의 신고 접수 탭에 있다 —
+ * `ReportPanel`이 이 파일의 본체다.
+ */
+export default function ReportRedirect() {
+  return <Redirect href="/admin/rebuttal?tab=report" />;
+}

@@ -1,9 +1,13 @@
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { AdminTabShell, type AdminTabDef } from './_ui';
+import { ObjectionsPanel } from './objections';
+import { ReportPanel } from './report';
 import { ConfirmDecision } from '@/features/admin/confirm-decision';
 import { formatDateDot, formatDateTimeDot } from '@/features/common/format-date';
 
@@ -36,8 +40,7 @@ type RebuttalDetail = {
   verifiedRole: string | null;
 };
 
-
-export default function RebuttalScreen() {
+function RebuttalPanel() {
   const [items, setItems] = useState<PendingRebuttal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -360,6 +363,38 @@ export default function RebuttalScreen() {
         </View>
       </View>
     </View>
+  );
+}
+
+const TABS: AdminTabDef[] = [
+  { key: 'rebuttal', label: '반론' },
+  { key: 'objections', label: '이의제기' },
+  { key: 'report', label: '신고 접수' },
+];
+
+/**
+ * 「후기·신고」 — 후기·반론 · 이의제기 · 신고 접수를 탭 셋으로 묶는다.
+ *
+ * 셋 다 후기 하나를 두고 다른 방향에서 들어온다 — 관계자 반론 · 업체 이의제기 ·
+ * 이용자 신고. **탭이지 표를 합친 것이 아니다** — 판단 갈래가 달라서 한 표에
+ * 섞으면 어느 결정이 어느 흐름의 것인지 헷갈린다. 각 패널은 원래 화면
+ * (`RebuttalPanel` · `ObjectionsPanel` · `ReportPanel`) 그대로 두고, `AdminTabShell`
+ * 하나만 위에 얹는다.
+ *
+ * 옛 주소 `/admin/objections` · `/admin/report`는 `?tab=`으로 이 화면에 들어온다
+ * (대체용 `Redirect`, 각 파일 참고) — 그래서 시작 탭을 그 쿼리에서 읽는다.
+ */
+export default function ReviewHandlingScreen() {
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
+  const initial = TABS.some((t) => t.key === tab) ? (tab as string) : 'rebuttal';
+  const [active, setActive] = useState(initial);
+
+  return (
+    <AdminTabShell tabs={TABS} active={active} onChange={setActive}>
+      {active === 'rebuttal' && <RebuttalPanel />}
+      {active === 'objections' && <ObjectionsPanel />}
+      {active === 'report' && <ReportPanel />}
+    </AdminTabShell>
   );
 }
 
