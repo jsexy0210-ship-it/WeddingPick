@@ -123,9 +123,10 @@ const styles = StyleSheet.create({
    * 아니라 6이다 — 글자가 시안 15가 아니라 토큰 16이어서 390 폭에서 «3,000만원 이상»이
    * 8이면 글자 중간에서 꺾인다(2026-09-09 확인).
    */
+  /* 곡률은 피그마 카드 규칙 16이다(radius.cardLarge) — 2026-09-15 대표 지시로 10에서 올렸다. */
   card: {
     minHeight: CARD_MIN_HEIGHT,
-    borderRadius: Radius.medium,
+    borderRadius: Radius.cardLarge,
     borderWidth: 1.5,
     paddingVertical: Layout.rowPaddingY,
     paddingHorizontal: CARD_PADDING_X,

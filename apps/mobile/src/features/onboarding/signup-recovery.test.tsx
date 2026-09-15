@@ -27,7 +27,7 @@ jest.mock('./date-picker-sheet', () => ({ DatePickerSheet: 'DatePickerSheet' }))
 jest.mock('./inline-toast', () => ({ InlineToast: 'InlineToast', useInlineToast: () => ({ toast: null, show: jest.fn(), hide: jest.fn() }) }));
 jest.mock('./option-row', () => ({ OptionRow: 'OptionRow' }));
 jest.mock('./question-head', () => ({ QuestionHead: 'QuestionHead' }));
-jest.mock('./region-picker', () => ({ RegionPicker: 'RegionPicker' }));
+jest.mock('./region-picker-sheet', () => ({ RegionPickerSheet: 'RegionPickerSheet' }));
 jest.mock('./step-frame', () => ({ StepFrame: 'StepFrame' }));
 jest.mock('@weddingpick/ui', () => ({
   Layout: {}, Radius: {}, Spacing: {}, ThemedText: 'ThemedText', ThemedView: 'ThemedView', useTheme: () => ({}),

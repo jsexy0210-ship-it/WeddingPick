@@ -128,7 +128,6 @@ export const ROUTES: readonly string[] = [
   '/my/vendor-claims/[vendorId]',
   '/my/wedding-settings',
   '/my/withdrawal',
-  '/onboarding',
   '/pick',
   '/pick/[category]',
   '/pick/category',
@@ -196,7 +195,7 @@ export const TAB_ROOTS: readonly string[] = ['/', '/wedding', '/pick', '/communi
  * 뒤로가기 버튼을 두지 않는 화면.
  *
  *   Root 5탭            위가 없다. 05-root.
- *   `/onboarding` `/setup`  WP-APP-020 · WP-APP-022 layout «nav 56 — Back 없음».
+ *   `/setup`            WP-APP-022 layout «nav 56 — Back 없음».
  *                          `_layout.tsx`가 `gestureEnabled: false`로 스와이프도 막아둔다 —
  *                          그 정책은 그대로 둔다.
  *   `/login`            WP-AUTH-001. 앞이 스플래시라 돌아갈 곳이 없다.
@@ -208,7 +207,6 @@ export const TAB_ROOTS: readonly string[] = ['/', '/wedding', '/pick', '/communi
  */
 export const NO_BACK_ROUTES: readonly string[] = [
   ...TAB_ROOTS,
-  '/onboarding',
   '/setup',
   '/login',
   '/login/age-required',

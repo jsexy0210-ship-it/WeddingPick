@@ -105,8 +105,7 @@ CHANGELOG가 폐기했다고 적은 화면은 아트보드에 그림이 남아 �
 | WP-APP-020 5/5 | 질문 제목 | 「남은 준비는 / 어떤 분위기가 좋으세요?」 (20-onboarding-v2.dc.html:460) | `['어떤 스타일을', '좋아하세요?']` — `features/onboarding/flow.ts:79` |
 | WP-APP-020 5/5 | CTA 단위 | **«N장 선택»** (SPEC.md:948 · 20-onboarding-v2.dc.html:469) | `${count}개 선택` — `features/onboarding/flow.ts:107` |
 | WP-APP-022 | 완료 화면 제목 | 「이제 필요한 것만 / 보여드릴게요」 (20-onboarding-v2.dc.html:472 · SPEC.md:986) | `['가입이', '완료됐어요']` — `flow.ts:90` |
-| WP-APP-003 | 장수 | 3장 (01-onboarding.dc.html:90) | 5장 — `features/onboarding/steps.ts:23-72` |
-| WP-APP-003 | 1장 제목·본문 | 「실제로 얼마 냈는지 / 먼저 보세요」 (01-onboarding.dc.html:91-92) | 「같은 업체도 / 금액은 달라요」 — `steps.ts:25-26` |
+| WP-APP-003 | — | 3장 (01-onboarding.dc.html:90) | **화면 자체가 없어졌다** — 2026-09-15 대표 지시 「인트로 전면 폐기한다. 온보딩만 유지한다」로 `onboarding.tsx`·`steps.ts`를 지웠다. 아래 장수·문구 비교는 더 볼 자리가 없다 |
 
 ### 1.4 업체 상세 · Pick · 비교
 
