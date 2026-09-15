@@ -1,0 +1,210 @@
+[
+  {
+    "tag": "body",
+    "depth": 0,
+    "w": 430,
+    "h": 932,
+    "background": "#FFFFFF"
+  },
+  {
+    "tag": "div",
+    "depth": 1,
+    "w": 430,
+    "h": 932
+  },
+  {
+    "tag": "div",
+    "depth": 2,
+    "w": 430,
+    "h": 932,
+    "layout": "flex",
+    "justify": "center",
+    "align": "flex-start",
+    "background": "#F7F8F9"
+  },
+  {
+    "tag": "div",
+    "depth": 3,
+    "w": 430,
+    "h": 932,
+    "layout": "flex",
+    "direction": "column",
+    "background": "#FFFFFF",
+    "shadow": "rgba(0, 0, 0, 0.25) 0px 25px 50px -12px",
+    "position": "relative"
+  },
+  {
+    "tag": "section",
+    "depth": 4,
+    "w": 430,
+    "h": 0
+  },
+  {
+    "tag": "main",
+    "depth": 4,
+    "w": 430,
+    "h": 932
+  },
+  {
+    "tag": "div",
+    "depth": 5,
+    "w": 430,
+    "h": 932,
+    "padding": "64 24 32 24",
+    "background": "#FFFFFF"
+  },
+  {
+    "tag": "p",
+    "depth": 6,
+    "w": 382,
+    "h": 15,
+    "text": "WEDDING, LESS OVERWHELMING",
+    "font": "10/400",
+    "color": "#E7898D",
+    "lineHeight": 15,
+    "letterSpacing": "2.4px"
+  },
+  {
+    "tag": "h1",
+    "depth": 6,
+    "w": 382,
+    "h": 89,
+    "text": "결정은 가볍게, 준비는 단단하게.",
+    "font": "42/700",
+    "color": "#1A1C20",
+    "lineHeight": 45,
+    "letterSpacing": "-1.05px",
+    "margin": "20 0 0 0"
+  },
+  {
+    "tag": "br",
+    "depth": 7,
+    "w": 0,
+    "h": 46
+  },
+  {
+    "tag": "p",
+    "depth": 6,
+    "w": 300,
+    "h": 56,
+    "text": "흩어진 웨딩 정보를 한곳에 모아, 우리에게 맞는 선택만 남겨드릴게요.",
+    "font": "15/400",
+    "color": "#868B94",
+    "lineHeight": 28,
+    "margin": "20 0 0 0"
+  },
+  {
+    "tag": "div",
+    "depth": 6,
+    "w": 382,
+    "h": 82,
+    "padding": "20 20 20 20",
+    "margin": "48 0 0 0",
+    "background": "#EE8888 6%",
+    "radius": 28,
+    "border": "1 #E4868D 15%"
+  },
+  {
+    "tag": "div",
+    "depth": 7,
+    "w": 340,
+    "h": 40,
+    "layout": "flex",
+    "gap": 12,
+    "align": "center"
+  },
+  {
+    "tag": "span",
+    "depth": 8,
+    "w": 40,
+    "h": 40,
+    "text": "✦",
+    "font": "18/400",
+    "color": "#FFFFFF",
+    "lineHeight": 28,
+    "layout": "grid",
+    "align": "center",
+    "columns": "40px",
+    "background": "#E7898D",
+    "radius": 9999
+  },
+  {
+    "tag": "div",
+    "depth": 8,
+    "w": 203,
+    "h": 38
+  },
+  {
+    "tag": "p",
+    "depth": 9,
+    "w": 203,
+    "h": 20,
+    "text": "나에게 맞는 순서부터",
+    "font": "14/700",
+    "color": "#1A1C20",
+    "lineHeight": 20
+  },
+  {
+    "tag": "p",
+    "depth": 9,
+    "w": 203,
+    "h": 16,
+    "text": "예산, 지역, 날짜를 기준으로 시작해요",
+    "font": "12/400",
+    "color": "#868B94",
+    "lineHeight": 16,
+    "margin": "2 0 0 0"
+  },
+  {
+    "tag": "div",
+    "depth": 6,
+    "w": 382,
+    "h": 132,
+    "padding": "40 0 0 0"
+  },
+  {
+    "tag": "button",
+    "depth": 7,
+    "w": 382,
+    "h": 56,
+    "text": "카카오로 3초 만에 시작하기",
+    "font": "15/700",
+    "color": "#191600",
+    "lineHeight": 23,
+    "textAlign": "center",
+    "layout": "flex",
+    "gap": 8,
+    "justify": "center",
+    "align": "center",
+    "background": "#FEE500",
+    "radius": 16
+  },
+  {
+    "tag": "span",
+    "depth": 8,
+    "w": 20,
+    "h": 20,
+    "text": "k",
+    "font": "10/900",
+    "color": "#FEE500",
+    "lineHeight": 15,
+    "textAlign": "center",
+    "layout": "grid",
+    "align": "center",
+    "columns": "20px",
+    "background": "#191600",
+    "radius": 16
+  },
+  {
+    "tag": "p",
+    "depth": 7,
+    "w": 382,
+    "h": 20,
+    "text": "시작하면 웨딩픽 이용약관과 개인정보 처리방침에 동의하게 됩니다.",
+    "font": "11/400",
+    "color": "#868B94",
+    "lineHeight": 20,
+    "textAlign": "center",
+    "margin": "16 0 0 0"
+  }
+]

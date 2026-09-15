@@ -1,0 +1,1710 @@
+[
+  {
+    "tag": "body",
+    "depth": 0,
+    "w": 430,
+    "h": 932,
+    "background": "#FFFFFF"
+  },
+  {
+    "tag": "div",
+    "depth": 1,
+    "w": 430,
+    "h": 932
+  },
+  {
+    "tag": "div",
+    "depth": 2,
+    "w": 430,
+    "h": 1386,
+    "layout": "flex",
+    "justify": "center",
+    "align": "flex-start",
+    "background": "#F7F8F9"
+  },
+  {
+    "tag": "div",
+    "depth": 3,
+    "w": 430,
+    "h": 1386,
+    "layout": "flex",
+    "direction": "column",
+    "background": "#FFFFFF",
+    "shadow": "rgba(0, 0, 0, 0.25) 0px 25px 50px -12px",
+    "position": "relative"
+  },
+  {
+    "tag": "section",
+    "depth": 4,
+    "w": 430,
+    "h": 0
+  },
+  {
+    "tag": "main",
+    "depth": 4,
+    "w": 430,
+    "h": 1386
+  },
+  {
+    "tag": "div",
+    "depth": 5,
+    "w": 430,
+    "h": 1386,
+    "padding": "0 0 16 0"
+  },
+  {
+    "tag": "header",
+    "depth": 6,
+    "w": 430,
+    "h": 80,
+    "layout": "flex",
+    "justify": "space-between",
+    "align": "center",
+    "padding": "24 20 16 20"
+  },
+  {
+    "tag": "h1",
+    "depth": 7,
+    "w": 76,
+    "h": 39,
+    "text": "웨딩픽",
+    "font": "26/700",
+    "color": "#1A1C20",
+    "lineHeight": 39,
+    "letterSpacing": "-0.52px"
+  },
+  {
+    "tag": "div",
+    "depth": 7,
+    "w": 84,
+    "h": 40,
+    "layout": "flex",
+    "gap": 4,
+    "align": "center"
+  },
+  {
+    "tag": "button",
+    "depth": 8,
+    "w": 40,
+    "h": 40,
+    "layout": "grid",
+    "align": "center",
+    "columns": "40px",
+    "radius": 9999
+  },
+  {
+    "tag": "svg",
+    "depth": 9,
+    "w": 20,
+    "h": 20,
+    "icon": true
+  },
+  {
+    "tag": "button",
+    "depth": 8,
+    "w": 40,
+    "h": 40,
+    "layout": "grid",
+    "align": "center",
+    "columns": "40px",
+    "radius": 9999
+  },
+  {
+    "tag": "svg",
+    "depth": 9,
+    "w": 20,
+    "h": 20,
+    "icon": true
+  },
+  {
+    "tag": "div",
+    "depth": 6,
+    "w": 390,
+    "h": 158,
+    "padding": "16 16 16 16",
+    "margin": "0 20 24 20",
+    "background": "#E7898D",
+    "radius": 22,
+    "position": "relative"
+  },
+  {
+    "tag": "div",
+    "depth": 7,
+    "w": 144,
+    "h": 144,
+    "background": "#FFFFFF 10%",
+    "radius": 9999,
+    "position": "absolute"
+  },
+  {
+    "tag": "div",
+    "depth": 7,
+    "w": 112,
+    "h": 112,
+    "radius": 9999,
+    "border": "14 #FFFFFF 7%",
+    "position": "absolute"
+  },
+  {
+    "tag": "div",
+    "depth": 7,
+    "w": 358,
+    "h": 126,
+    "position": "relative"
+  },
+  {
+    "tag": "div",
+    "depth": 8,
+    "w": 358,
+    "h": 24,
+    "layout": "flex",
+    "justify": "space-between",
+    "align": "center",
+    "margin": "0 0 8 0"
+  },
+  {
+    "tag": "p",
+    "depth": 9,
+    "w": 43,
+    "h": 14,
+    "text": "두근두근",
+    "font": "9/400",
+    "color": "#FFFFFF 55%",
+    "lineHeight": 14,
+    "letterSpacing": "1.8px"
+  },
+  {
+    "tag": "div",
+    "depth": 9,
+    "w": 24,
+    "h": 24,
+    "position": "relative"
+  },
+  {
+    "tag": "button",
+    "depth": 10,
+    "w": 24,
+    "h": 24,
+    "layout": "grid",
+    "align": "center",
+    "columns": "24px",
+    "background": "#FFFFFF 15%",
+    "radius": 9999
+  },
+  {
+    "tag": "svg",
+    "depth": 11,
+    "w": 14,
+    "h": 14,
+    "icon": true
+  },
+  {
+    "tag": "div",
+    "depth": 8,
+    "w": 358,
+    "h": 66,
+    "layout": "flex",
+    "justify": "space-between",
+    "align": "flex-end"
+  },
+  {
+    "tag": "div",
+    "depth": 9,
+    "w": 237,
+    "h": 66
+  },
+  {
+    "tag": "span",
+    "depth": 10,
+    "w": 237,
+    "h": 46,
+    "text": "D-127",
+    "font": "46/700",
+    "color": "#FFFFFF",
+    "lineHeight": 46,
+    "letterSpacing": "-1.38px"
+  },
+  {
+    "tag": "p",
+    "depth": 10,
+    "w": 237,
+    "h": 16,
+    "text": "2027년 1월 15일 (금) · 서울 그랜드 워커힐",
+    "font": "12/400",
+    "color": "#FFFFFF 70%",
+    "lineHeight": 16,
+    "margin": "4 0 0 0"
+  },
+  {
+    "tag": "div",
+    "depth": 8,
+    "w": 358,
+    "h": 16,
+    "layout": "flex",
+    "gap": 6,
+    "align": "center",
+    "margin": "12 0 0 0"
+  },
+  {
+    "tag": "div",
+    "depth": 9,
+    "w": 28,
+    "h": 16,
+    "layout": "flex"
+  },
+  {
+    "tag": "span",
+    "depth": 10,
+    "w": 16,
+    "h": 16,
+    "text": "지",
+    "font": "7/700",
+    "color": "#513B37",
+    "lineHeight": 11,
+    "layout": "grid",
+    "align": "center",
+    "columns": "14px",
+    "margin": "0 -4 0 0",
+    "background": "#F7D2C4",
+    "radius": 9999,
+    "border": "1 #FFFFFF 50%"
+  },
+  {
+    "tag": "span",
+    "depth": 10,
+    "w": 16,
+    "h": 16,
+    "text": "준",
+    "font": "7/700",
+    "color": "#31475D",
+    "lineHeight": 11,
+    "layout": "grid",
+    "align": "center",
+    "columns": "14px",
+    "background": "#C9DAEC",
+    "radius": 9999,
+    "border": "1 #FFFFFF 50%"
+  },
+  {
+    "tag": "span",
+    "depth": 9,
+    "w": 115,
+    "h": 15,
+    "text": "지윤 · 준혁 · 함께 준비 중",
+    "font": "10/400",
+    "color": "#FFFFFF 55%",
+    "lineHeight": 15
+  },
+  {
+    "tag": "div",
+    "depth": 6,
+    "w": 430,
+    "h": 248,
+    "padding": "0 20 0 20",
+    "margin": "0 0 24 0"
+  },
+  {
+    "tag": "div",
+    "depth": 7,
+    "w": 390,
+    "h": 20,
+    "layout": "flex",
+    "justify": "space-between",
+    "align": "center",
+    "margin": "0 0 12 0"
+  },
+  {
+    "tag": "h3",
+    "depth": 8,
+    "w": 56,
+    "h": 20,
+    "text": "준비현황",
+    "font": "14/600",
+    "color": "#1A1C20",
+    "lineHeight": 20
+  },
+  {
+    "tag": "span",
+    "depth": 8,
+    "w": 89,
+    "h": 16,
+    "text": "4개 중 1개 완료",
+    "font": "12/600",
+    "color": "#868B94",
+    "lineHeight": 16
+  },
+  {
+    "tag": "div",
+    "depth": 7,
+    "w": 390,
+    "h": 216,
+    "layout": "grid",
+    "gap": 8,
+    "columns": "191px 191px"
+  },
+  {
+    "tag": "div",
+    "depth": 8,
+    "w": 191,
+    "h": 104,
+    "padding": "14 14 14 14",
+    "background": "#F7F8F9",
+    "radius": 16,
+    "border": "1 #000000 6%"
+  },
+  {
+    "tag": "div",
+    "depth": 9,
+    "w": 161,
+    "h": 28,
+    "layout": "flex",
+    "justify": "space-between",
+    "align": "flex-start",
+    "margin": "0 0 8 0"
+  },
+  {
+    "tag": "span",
+    "depth": 10,
+    "w": 25,
+    "h": 28,
+    "text": "🏛️",
+    "font": "20/400",
+    "color": "#1A1C20",
+    "lineHeight": 28
+  },
+  {
+    "tag": "svg",
+    "depth": 10,
+    "w": 16,
+    "h": 16,
+    "icon": true
+  },
+  {
+    "tag": "p",
+    "depth": 9,
+    "w": 161,
+    "h": 20,
+    "text": "웨딩홀",
+    "font": "14/600",
+    "color": "#1A1C20",
+    "lineHeight": 20
+  },
+  {
+    "tag": "p",
+    "depth": 9,
+    "w": 161,
+    "h": 16,
+    "text": "서울 그랜드 워커힐",
+    "font": "12/500",
+    "color": "#1A1C20",
+    "lineHeight": 16,
+    "margin": "2 0 0 0"
+  },
+  {
+    "tag": "div",
+    "depth": 8,
+    "w": 191,
+    "h": 104,
+    "padding": "14 14 14 14",
+    "background": "#F0F9FF",
+    "radius": 16,
+    "border": "1 #B8E6FE 80%"
+  },
+  {
+    "tag": "div",
+    "depth": 9,
+    "w": 161,
+    "h": 28,
+    "layout": "flex",
+    "justify": "space-between",
+    "align": "flex-start",
+    "margin": "0 0 8 0"
+  },
+  {
+    "tag": "span",
+    "depth": 10,
+    "w": 25,
+    "h": 28,
+    "text": "📷",
+    "font": "20/400",
+    "color": "#1A1C20",
+    "lineHeight": 28
+  },
+  {
+    "tag": "svg",
+    "depth": 10,
+    "w": 16,
+    "h": 16,
+    "icon": true
+  },
+  {
+    "tag": "p",
+    "depth": 9,
+    "w": 161,
+    "h": 20,
+    "text": "스튜디오",
+    "font": "14/600",
+    "color": "#1A1C20",
+    "lineHeight": 20
+  },
+  {
+    "tag": "p",
+    "depth": 9,
+    "w": 161,
+    "h": 16,
+    "text": "후보 3개 저장됨",
+    "font": "12/500",
+    "color": "#0084D1",
+    "lineHeight": 16,
+    "margin": "2 0 0 0"
+  },
+  {
+    "tag": "div",
+    "depth": 8,
+    "w": 191,
+    "h": 104,
+    "padding": "14 14 14 14",
+    "background": "#F7F8F9",
+    "radius": 16,
+    "border": "1 #000000 6%"
+  },
+  {
+    "tag": "div",
+    "depth": 9,
+    "w": 161,
+    "h": 28,
+    "layout": "flex",
+    "justify": "space-between",
+    "align": "flex-start",
+    "margin": "0 0 8 0"
+  },
+  {
+    "tag": "span",
+    "depth": 10,
+    "w": 25,
+    "h": 28,
+    "text": "👗",
+    "font": "20/400",
+    "color": "#1A1C20",
+    "lineHeight": 28
+  },
+  {
+    "tag": "span",
+    "depth": 10,
+    "w": 16,
+    "h": 16,
+    "radius": 9999,
+    "border": "1 #848B95 30%"
+  },
+  {
+    "tag": "p",
+    "depth": 9,
+    "w": 161,
+    "h": 20,
+    "text": "드레스",
+    "font": "14/600",
+    "color": "#1A1C20",
+    "lineHeight": 20
+  },
+  {
+    "tag": "p",
+    "depth": 9,
+    "w": 161,
+    "h": 16,
+    "text": "아직 탐색 전",
+    "font": "12/500",
+    "color": "#868B94",
+    "lineHeight": 16,
+    "margin": "2 0 0 0"
+  },
+  {
+    "tag": "div",
+    "depth": 8,
+    "w": 191,
+    "h": 104,
+    "padding": "14 14 14 14",
+    "background": "#F7F8F9",
+    "radius": 16,
+    "border": "1 #000000 6%"
+  },
+  {
+    "tag": "div",
+    "depth": 9,
+    "w": 161,
+    "h": 28,
+    "layout": "flex",
+    "justify": "space-between",
+    "align": "flex-start",
+    "margin": "0 0 8 0"
+  },
+  {
+    "tag": "span",
+    "depth": 10,
+    "w": 25,
+    "h": 28,
+    "text": "💄",
+    "font": "20/400",
+    "color": "#1A1C20",
+    "lineHeight": 28
+  },
+  {
+    "tag": "span",
+    "depth": 10,
+    "w": 16,
+    "h": 16,
+    "radius": 9999,
+    "border": "1 #848B95 30%"
+  },
+  {
+    "tag": "p",
+    "depth": 9,
+    "w": 161,
+    "h": 20,
+    "text": "메이크업",
+    "font": "14/600",
+    "color": "#1A1C20",
+    "lineHeight": 20
+  },
+  {
+    "tag": "p",
+    "depth": 9,
+    "w": 161,
+    "h": 16,
+    "text": "아직 탐색 전",
+    "font": "12/500",
+    "color": "#868B94",
+    "lineHeight": 16,
+    "margin": "2 0 0 0"
+  },
+  {
+    "tag": "div",
+    "depth": 6,
+    "w": 430,
+    "h": 316,
+    "margin": "0 0 24 0"
+  },
+  {
+    "tag": "div",
+    "depth": 7,
+    "w": 430,
+    "h": 38,
+    "layout": "flex",
+    "justify": "space-between",
+    "align": "center",
+    "padding": "0 20 0 20",
+    "margin": "0 0 12 0"
+  },
+  {
+    "tag": "div",
+    "depth": 8,
+    "w": 183,
+    "h": 38
+  },
+  {
+    "tag": "h3",
+    "depth": 9,
+    "w": 183,
+    "h": 20,
+    "text": "웨딩픽 추천",
+    "font": "14/600",
+    "color": "#1A1C20",
+    "lineHeight": 20
+  },
+  {
+    "tag": "p",
+    "depth": 9,
+    "w": 183,
+    "h": 16,
+    "text": "저장한 업체를 한 번에 비교해봐요",
+    "font": "12/400",
+    "color": "#868B94",
+    "lineHeight": 16,
+    "margin": "2 0 0 0"
+  },
+  {
+    "tag": "button",
+    "depth": 8,
+    "w": 76,
+    "h": 32,
+    "text": "비교하기",
+    "font": "12/700",
+    "color": "#FFFFFF",
+    "lineHeight": 16,
+    "textAlign": "center",
+    "padding": "8 14 8 14",
+    "background": "#E7898D",
+    "radius": 9999,
+    "shadow": "rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.1) 0px 1px 2px -1px"
+  },
+  {
+    "tag": "div",
+    "depth": 7,
+    "w": 430,
+    "h": 266,
+    "layout": "flex",
+    "gap": 12,
+    "padding": "0 0 4 20"
+  },
+  {
+    "tag": "div",
+    "depth": 8,
+    "w": 208,
+    "h": 262,
+    "background": "#FFFFFF",
+    "radius": 16,
+    "border": "1 #000000 6%",
+    "shadow": "rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.1) 0px 1px 2px -1px"
+  },
+  {
+    "tag": "div",
+    "depth": 9,
+    "w": 206,
+    "h": 144,
+    "position": "relative"
+  },
+  {
+    "tag": "img",
+    "depth": 10,
+    "w": 206,
+    "h": 144,
+    "src": "https://images.unsplash.com/photo-1606216794074-735e91aa2c92?w=400&h=280&fit=crop&auto=format"
+  },
+  {
+    "tag": "button",
+    "depth": 10,
+    "w": 32,
+    "h": 32,
+    "layout": "flex",
+    "justify": "center",
+    "align": "center",
+    "background": "#FFFFFF 80%",
+    "radius": 9999,
+    "position": "absolute"
+  },
+  {
+    "tag": "svg",
+    "depth": 11,
+    "w": 16,
+    "h": 16,
+    "icon": true
+  },
+  {
+    "tag": "span",
+    "depth": 10,
+    "w": 36,
+    "h": 19,
+    "text": "인기",
+    "font": "10/700",
+    "color": "#FFFFFF",
+    "lineHeight": 15,
+    "padding": "2 8 2 8",
+    "background": "#1A1C20",
+    "radius": 9999,
+    "position": "absolute"
+  },
+  {
+    "tag": "div",
+    "depth": 9,
+    "w": 206,
+    "h": 116,
+    "padding": "12 12 12 12"
+  },
+  {
+    "tag": "span",
+    "depth": 10,
+    "w": 42,
+    "h": 11,
+    "text": "스튜디오",
+    "font": "10/600",
+    "color": "#868B94",
+    "lineHeight": 15,
+    "letterSpacing": "0.5px"
+  },
+  {
+    "tag": "p",
+    "depth": 10,
+    "w": 182,
+    "h": 20,
+    "text": "블루밍 스튜디오",
+    "font": "14/600",
+    "color": "#1A1C20",
+    "lineHeight": 20,
+    "margin": "2 0 0 0"
+  },
+  {
+    "tag": "div",
+    "depth": 10,
+    "w": 182,
+    "h": 16,
+    "layout": "flex",
+    "gap": 4,
+    "align": "center",
+    "margin": "4 0 0 0"
+  },
+  {
+    "tag": "svg",
+    "depth": 11,
+    "w": 12,
+    "h": 12,
+    "icon": true
+  },
+  {
+    "tag": "span",
+    "depth": 11,
+    "w": 36,
+    "h": 16,
+    "text": "강남구",
+    "font": "12/400",
+    "color": "#868B94",
+    "lineHeight": 16
+  },
+  {
+    "tag": "div",
+    "depth": 10,
+    "w": 182,
+    "h": 16,
+    "layout": "flex",
+    "justify": "space-between",
+    "align": "center",
+    "margin": "10 0 0 0"
+  },
+  {
+    "tag": "span",
+    "depth": 11,
+    "w": 67,
+    "h": 16,
+    "text": "80–150만원",
+    "font": "12/500",
+    "color": "#1A1C20",
+    "lineHeight": 16
+  },
+  {
+    "tag": "div",
+    "depth": 11,
+    "w": 35,
+    "h": 16,
+    "layout": "flex",
+    "gap": 4,
+    "align": "center"
+  },
+  {
+    "tag": "svg",
+    "depth": 12,
+    "w": 12,
+    "h": 12,
+    "icon": true
+  },
+  {
+    "tag": "span",
+    "depth": 12,
+    "w": 19,
+    "h": 16,
+    "text": "4.9",
+    "font": "12/500",
+    "color": "#868B94",
+    "lineHeight": 16
+  },
+  {
+    "tag": "div",
+    "depth": 8,
+    "w": 208,
+    "h": 262,
+    "background": "#FFFFFF",
+    "radius": 16,
+    "border": "1 #000000 6%",
+    "shadow": "rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.1) 0px 1px 2px -1px"
+  },
+  {
+    "tag": "div",
+    "depth": 9,
+    "w": 206,
+    "h": 144,
+    "position": "relative"
+  },
+  {
+    "tag": "img",
+    "depth": 10,
+    "w": 206,
+    "h": 144,
+    "src": "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=400&h=280&fit=crop&auto=format"
+  },
+  {
+    "tag": "button",
+    "depth": 10,
+    "w": 32,
+    "h": 32,
+    "layout": "flex",
+    "justify": "center",
+    "align": "center",
+    "background": "#FFFFFF 80%",
+    "radius": 9999,
+    "position": "absolute"
+  },
+  {
+    "tag": "svg",
+    "depth": 11,
+    "w": 16,
+    "h": 16,
+    "icon": true
+  },
+  {
+    "tag": "div",
+    "depth": 9,
+    "w": 206,
+    "h": 116,
+    "padding": "12 12 12 12"
+  },
+  {
+    "tag": "span",
+    "depth": 10,
+    "w": 42,
+    "h": 11,
+    "text": "메이크업",
+    "font": "10/600",
+    "color": "#868B94",
+    "lineHeight": 15,
+    "letterSpacing": "0.5px"
+  },
+  {
+    "tag": "p",
+    "depth": 10,
+    "w": 182,
+    "h": 20,
+    "text": "오드 메이크업",
+    "font": "14/600",
+    "color": "#1A1C20",
+    "lineHeight": 20,
+    "margin": "2 0 0 0"
+  },
+  {
+    "tag": "div",
+    "depth": 10,
+    "w": 182,
+    "h": 16,
+    "layout": "flex",
+    "gap": 4,
+    "align": "center",
+    "margin": "4 0 0 0"
+  },
+  {
+    "tag": "svg",
+    "depth": 11,
+    "w": 12,
+    "h": 12,
+    "icon": true
+  },
+  {
+    "tag": "span",
+    "depth": 11,
+    "w": 36,
+    "h": 16,
+    "text": "청담동",
+    "font": "12/400",
+    "color": "#868B94",
+    "lineHeight": 16
+  },
+  {
+    "tag": "div",
+    "depth": 10,
+    "w": 182,
+    "h": 16,
+    "layout": "flex",
+    "justify": "space-between",
+    "align": "center",
+    "margin": "10 0 0 0"
+  },
+  {
+    "tag": "span",
+    "depth": 11,
+    "w": 60,
+    "h": 16,
+    "text": "45–80만원",
+    "font": "12/500",
+    "color": "#1A1C20",
+    "lineHeight": 16
+  },
+  {
+    "tag": "div",
+    "depth": 11,
+    "w": 35,
+    "h": 16,
+    "layout": "flex",
+    "gap": 4,
+    "align": "center"
+  },
+  {
+    "tag": "svg",
+    "depth": 12,
+    "w": 12,
+    "h": 12,
+    "icon": true
+  },
+  {
+    "tag": "span",
+    "depth": 12,
+    "w": 19,
+    "h": 16,
+    "text": "4.8",
+    "font": "12/500",
+    "color": "#868B94",
+    "lineHeight": 16
+  },
+  {
+    "tag": "div",
+    "depth": 8,
+    "w": 208,
+    "h": 262,
+    "background": "#FFFFFF",
+    "radius": 16,
+    "border": "1 #000000 6%",
+    "shadow": "rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.1) 0px 1px 2px -1px"
+  },
+  {
+    "tag": "div",
+    "depth": 9,
+    "w": 206,
+    "h": 144,
+    "position": "relative"
+  },
+  {
+    "tag": "img",
+    "depth": 10,
+    "w": 206,
+    "h": 144,
+    "src": "https://images.unsplash.com/photo-1594552072238-b8a33785b6cd?w=400&h=280&fit=crop&auto=format"
+  },
+  {
+    "tag": "button",
+    "depth": 10,
+    "w": 32,
+    "h": 32,
+    "layout": "flex",
+    "justify": "center",
+    "align": "center",
+    "background": "#FFFFFF 80%",
+    "radius": 9999,
+    "position": "absolute"
+  },
+  {
+    "tag": "svg",
+    "depth": 11,
+    "w": 16,
+    "h": 16,
+    "icon": true
+  },
+  {
+    "tag": "span",
+    "depth": 10,
+    "w": 36,
+    "h": 19,
+    "text": "신규",
+    "font": "10/700",
+    "color": "#FFFFFF",
+    "lineHeight": 15,
+    "padding": "2 8 2 8",
+    "background": "#1A1C20",
+    "radius": 9999,
+    "position": "absolute"
+  },
+  {
+    "tag": "div",
+    "depth": 9,
+    "w": 206,
+    "h": 116,
+    "padding": "12 12 12 12"
+  },
+  {
+    "tag": "span",
+    "depth": 10,
+    "w": 32,
+    "h": 11,
+    "text": "드레스",
+    "font": "10/600",
+    "color": "#868B94",
+    "lineHeight": 15,
+    "letterSpacing": "0.5px"
+  },
+  {
+    "tag": "p",
+    "depth": 10,
+    "w": 182,
+    "h": 20,
+    "text": "그레이스 드레스",
+    "font": "14/600",
+    "color": "#1A1C20",
+    "lineHeight": 20,
+    "margin": "2 0 0 0"
+  },
+  {
+    "tag": "div",
+    "depth": 10,
+    "w": 182,
+    "h": 16,
+    "layout": "flex",
+    "gap": 4,
+    "align": "center",
+    "margin": "4 0 0 0"
+  },
+  {
+    "tag": "svg",
+    "depth": 11,
+    "w": 12,
+    "h": 12,
+    "icon": true
+  },
+  {
+    "tag": "span",
+    "depth": 11,
+    "w": 48,
+    "h": 16,
+    "text": "압구정동",
+    "font": "12/400",
+    "color": "#868B94",
+    "lineHeight": 16
+  },
+  {
+    "tag": "div",
+    "depth": 10,
+    "w": 182,
+    "h": 16,
+    "layout": "flex",
+    "justify": "space-between",
+    "align": "center",
+    "margin": "10 0 0 0"
+  },
+  {
+    "tag": "span",
+    "depth": 11,
+    "w": 74,
+    "h": 16,
+    "text": "150–380만원",
+    "font": "12/500",
+    "color": "#1A1C20",
+    "lineHeight": 16
+  },
+  {
+    "tag": "div",
+    "depth": 11,
+    "w": 35,
+    "h": 16,
+    "layout": "flex",
+    "gap": 4,
+    "align": "center"
+  },
+  {
+    "tag": "svg",
+    "depth": 12,
+    "w": 12,
+    "h": 12,
+    "icon": true
+  },
+  {
+    "tag": "span",
+    "depth": 12,
+    "w": 19,
+    "h": 16,
+    "text": "4.7",
+    "font": "12/500",
+    "color": "#868B94",
+    "lineHeight": 16
+  },
+  {
+    "tag": "div",
+    "depth": 8,
+    "w": 16,
+    "h": 262
+  },
+  {
+    "tag": "div",
+    "depth": 6,
+    "w": 430,
+    "h": 216,
+    "padding": "0 20 0 20",
+    "margin": "0 0 24 0"
+  },
+  {
+    "tag": "h3",
+    "depth": 7,
+    "w": 390,
+    "h": 20,
+    "text": "카테고리",
+    "font": "14/600",
+    "color": "#1A1C20",
+    "lineHeight": 20,
+    "margin": "0 0 12 0"
+  },
+  {
+    "tag": "div",
+    "depth": 7,
+    "w": 390,
+    "h": 184,
+    "layout": "grid",
+    "gap": 8,
+    "columns": "124.656px 124.672px 124.656px"
+  },
+  {
+    "tag": "button",
+    "depth": 8,
+    "w": 125,
+    "h": 88,
+    "layout": "flex",
+    "direction": "column",
+    "gap": 8,
+    "align": "center",
+    "padding": "16 16 16 16",
+    "background": "#F7F8F9",
+    "radius": 16
+  },
+  {
+    "tag": "span",
+    "depth": 9,
+    "w": 30,
+    "h": 32,
+    "text": "🏛️",
+    "font": "24/500",
+    "color": "#1A1C20",
+    "lineHeight": 32,
+    "textAlign": "center"
+  },
+  {
+    "tag": "span",
+    "depth": 9,
+    "w": 36,
+    "h": 16,
+    "text": "웨딩홀",
+    "font": "12/600",
+    "color": "#1A1C20",
+    "lineHeight": 16,
+    "textAlign": "center"
+  },
+  {
+    "tag": "button",
+    "depth": 8,
+    "w": 125,
+    "h": 88,
+    "layout": "flex",
+    "direction": "column",
+    "gap": 8,
+    "align": "center",
+    "padding": "16 16 16 16",
+    "background": "#F7F8F9",
+    "radius": 16
+  },
+  {
+    "tag": "span",
+    "depth": 9,
+    "w": 30,
+    "h": 32,
+    "text": "📷",
+    "font": "24/500",
+    "color": "#1A1C20",
+    "lineHeight": 32,
+    "textAlign": "center"
+  },
+  {
+    "tag": "span",
+    "depth": 9,
+    "w": 48,
+    "h": 16,
+    "text": "스튜디오",
+    "font": "12/600",
+    "color": "#1A1C20",
+    "lineHeight": 16,
+    "textAlign": "center"
+  },
+  {
+    "tag": "button",
+    "depth": 8,
+    "w": 125,
+    "h": 88,
+    "layout": "flex",
+    "direction": "column",
+    "gap": 8,
+    "align": "center",
+    "padding": "16 16 16 16",
+    "background": "#F7F8F9",
+    "radius": 16
+  },
+  {
+    "tag": "span",
+    "depth": 9,
+    "w": 30,
+    "h": 32,
+    "text": "👗",
+    "font": "24/500",
+    "color": "#1A1C20",
+    "lineHeight": 32,
+    "textAlign": "center"
+  },
+  {
+    "tag": "span",
+    "depth": 9,
+    "w": 36,
+    "h": 16,
+    "text": "드레스",
+    "font": "12/600",
+    "color": "#1A1C20",
+    "lineHeight": 16,
+    "textAlign": "center"
+  },
+  {
+    "tag": "button",
+    "depth": 8,
+    "w": 125,
+    "h": 88,
+    "layout": "flex",
+    "direction": "column",
+    "gap": 8,
+    "align": "center",
+    "padding": "16 16 16 16",
+    "background": "#F7F8F9",
+    "radius": 16
+  },
+  {
+    "tag": "span",
+    "depth": 9,
+    "w": 30,
+    "h": 32,
+    "text": "💄",
+    "font": "24/500",
+    "color": "#1A1C20",
+    "lineHeight": 32,
+    "textAlign": "center"
+  },
+  {
+    "tag": "span",
+    "depth": 9,
+    "w": 48,
+    "h": 16,
+    "text": "메이크업",
+    "font": "12/600",
+    "color": "#1A1C20",
+    "lineHeight": 16,
+    "textAlign": "center"
+  },
+  {
+    "tag": "button",
+    "depth": 8,
+    "w": 125,
+    "h": 88,
+    "layout": "flex",
+    "direction": "column",
+    "gap": 8,
+    "align": "center",
+    "padding": "16 16 16 16",
+    "background": "#F7F8F9",
+    "radius": 16
+  },
+  {
+    "tag": "span",
+    "depth": 9,
+    "w": 30,
+    "h": 32,
+    "text": "📸",
+    "font": "24/500",
+    "color": "#1A1C20",
+    "lineHeight": 32,
+    "textAlign": "center"
+  },
+  {
+    "tag": "span",
+    "depth": 9,
+    "w": 24,
+    "h": 16,
+    "text": "스냅",
+    "font": "12/600",
+    "color": "#1A1C20",
+    "lineHeight": 16,
+    "textAlign": "center"
+  },
+  {
+    "tag": "button",
+    "depth": 8,
+    "w": 125,
+    "h": 88,
+    "layout": "flex",
+    "direction": "column",
+    "gap": 8,
+    "align": "center",
+    "padding": "16 16 16 16",
+    "background": "#F7F8F9",
+    "radius": 16
+  },
+  {
+    "tag": "span",
+    "depth": 9,
+    "w": 30,
+    "h": 32,
+    "text": "✈️",
+    "font": "24/500",
+    "color": "#1A1C20",
+    "lineHeight": 32,
+    "textAlign": "center"
+  },
+  {
+    "tag": "span",
+    "depth": 9,
+    "w": 36,
+    "h": 16,
+    "text": "허니문",
+    "font": "12/600",
+    "color": "#1A1C20",
+    "lineHeight": 16,
+    "textAlign": "center"
+  },
+  {
+    "tag": "div",
+    "depth": 6,
+    "w": 430,
+    "h": 256,
+    "padding": "0 20 0 20"
+  },
+  {
+    "tag": "div",
+    "depth": 7,
+    "w": 390,
+    "h": 20,
+    "layout": "flex",
+    "justify": "space-between",
+    "align": "center",
+    "margin": "0 0 12 0"
+  },
+  {
+    "tag": "h3",
+    "depth": 8,
+    "w": 56,
+    "h": 20,
+    "text": "웨딩피드",
+    "font": "14/600",
+    "color": "#1A1C20",
+    "lineHeight": 20
+  },
+  {
+    "tag": "button",
+    "depth": 8,
+    "w": 36,
+    "h": 16,
+    "text": "더보기",
+    "font": "12/600",
+    "color": "#1A1C20",
+    "lineHeight": 16,
+    "textAlign": "center"
+  },
+  {
+    "tag": "div",
+    "depth": 7,
+    "w": 390,
+    "h": 224
+  },
+  {
+    "tag": "article",
+    "depth": 8,
+    "w": 390,
+    "h": 106,
+    "layout": "flex",
+    "gap": 12,
+    "padding": "12 12 12 12",
+    "margin": "0 0 12 0",
+    "background": "#FFFFFF",
+    "radius": 16,
+    "border": "1 #000000 6%"
+  },
+  {
+    "tag": "img",
+    "depth": 9,
+    "w": 80,
+    "h": 80,
+    "background": "#F7F8F9",
+    "radius": 18,
+    "src": "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=240&h=180&fit=crop&auto=format"
+  },
+  {
+    "tag": "div",
+    "depth": 9,
+    "w": 244,
+    "h": 80,
+    "layout": "flex",
+    "direction": "column",
+    "justify": "center"
+  },
+  {
+    "tag": "p",
+    "depth": 10,
+    "w": 244,
+    "h": 15,
+    "text": "예산",
+    "font": "10/700",
+    "color": "#868B94",
+    "lineHeight": 15,
+    "letterSpacing": "0.25px"
+  },
+  {
+    "tag": "p",
+    "depth": 10,
+    "w": 244,
+    "h": 40,
+    "text": "예산을 넘기지 않는 스드메 조합 3가지",
+    "font": "14/600",
+    "color": "#1A1C20",
+    "lineHeight": 20,
+    "margin": "4 0 0 0"
+  },
+  {
+    "tag": "p",
+    "depth": 10,
+    "w": 244,
+    "h": 17,
+    "text": "웨딩픽 에디터 · 5분",
+    "font": "11/400",
+    "color": "#868B94",
+    "lineHeight": 17,
+    "margin": "4 0 0 0"
+  },
+  {
+    "tag": "svg",
+    "depth": 9,
+    "w": 16,
+    "h": 16,
+    "margin": "32 0 32 0",
+    "icon": true
+  },
+  {
+    "tag": "article",
+    "depth": 8,
+    "w": 390,
+    "h": 106,
+    "layout": "flex",
+    "gap": 12,
+    "padding": "12 12 12 12",
+    "background": "#FFFFFF",
+    "radius": 16,
+    "border": "1 #000000 6%"
+  },
+  {
+    "tag": "img",
+    "depth": 9,
+    "w": 80,
+    "h": 80,
+    "background": "#F7F8F9",
+    "radius": 18,
+    "src": "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=240&h=180&fit=crop&auto=format"
+  },
+  {
+    "tag": "div",
+    "depth": 9,
+    "w": 244,
+    "h": 80,
+    "layout": "flex",
+    "direction": "column",
+    "justify": "center"
+  },
+  {
+    "tag": "p",
+    "depth": 10,
+    "w": 244,
+    "h": 15,
+    "text": "체크리스트",
+    "font": "10/700",
+    "color": "#868B94",
+    "lineHeight": 15,
+    "letterSpacing": "0.25px"
+  },
+  {
+    "tag": "p",
+    "depth": 10,
+    "w": 244,
+    "h": 20,
+    "text": "본식 4개월 전, 지금 정리할 7가지",
+    "font": "14/600",
+    "color": "#1A1C20",
+    "lineHeight": 20,
+    "margin": "4 0 0 0"
+  },
+  {
+    "tag": "p",
+    "depth": 10,
+    "w": 244,
+    "h": 17,
+    "text": "준비 가이드 · 4분",
+    "font": "11/400",
+    "color": "#868B94",
+    "lineHeight": 17,
+    "margin": "4 0 0 0"
+  },
+  {
+    "tag": "svg",
+    "depth": 9,
+    "w": 16,
+    "h": 16,
+    "margin": "32 0 32 0",
+    "icon": true
+  },
+  {
+    "tag": "nav",
+    "depth": 4,
+    "w": 430,
+    "h": 72,
+    "layout": "flex",
+    "align": "center",
+    "padding": "0 8 0 8",
+    "background": "#FFFFFF",
+    "border": "1 #000000 6%",
+    "position": "fixed"
+  },
+  {
+    "tag": "a",
+    "depth": 5,
+    "w": 83,
+    "h": 55,
+    "layout": "flex",
+    "direction": "column",
+    "gap": 4,
+    "justify": "center",
+    "align": "center",
+    "padding": "8 0 8 0"
+  },
+  {
+    "tag": "svg",
+    "depth": 6,
+    "w": 20,
+    "h": 20,
+    "icon": true
+  },
+  {
+    "tag": "span",
+    "depth": 6,
+    "w": 10,
+    "h": 15,
+    "text": "홈",
+    "font": "10/600",
+    "color": "#1A1C20",
+    "lineHeight": 15
+  },
+  {
+    "tag": "a",
+    "depth": 5,
+    "w": 83,
+    "h": 55,
+    "layout": "flex",
+    "direction": "column",
+    "gap": 4,
+    "justify": "center",
+    "align": "center",
+    "padding": "8 0 8 0"
+  },
+  {
+    "tag": "svg",
+    "depth": 6,
+    "w": 20,
+    "h": 20,
+    "icon": true
+  },
+  {
+    "tag": "span",
+    "depth": 6,
+    "w": 40,
+    "h": 15,
+    "text": "웨딩노트",
+    "font": "10/500",
+    "color": "#868B94",
+    "lineHeight": 15
+  },
+  {
+    "tag": "a",
+    "depth": 5,
+    "w": 83,
+    "h": 67,
+    "layout": "flex",
+    "direction": "column",
+    "gap": 4,
+    "justify": "center",
+    "align": "center"
+  },
+  {
+    "tag": "div",
+    "depth": 6,
+    "w": 48,
+    "h": 48,
+    "layout": "flex",
+    "justify": "center",
+    "align": "center",
+    "background": "#F7F8F9",
+    "radius": 9999
+  },
+  {
+    "tag": "svg",
+    "depth": 7,
+    "w": 20,
+    "h": 20,
+    "icon": true
+  },
+  {
+    "tag": "span",
+    "depth": 6,
+    "w": 24,
+    "h": 15,
+    "text": "Pick",
+    "font": "10/600",
+    "color": "#868B94",
+    "lineHeight": 15,
+    "letterSpacing": "0.25px"
+  },
+  {
+    "tag": "a",
+    "depth": 5,
+    "w": 83,
+    "h": 55,
+    "layout": "flex",
+    "direction": "column",
+    "gap": 4,
+    "justify": "center",
+    "align": "center",
+    "padding": "8 0 8 0"
+  },
+  {
+    "tag": "svg",
+    "depth": 6,
+    "w": 20,
+    "h": 20,
+    "icon": true
+  },
+  {
+    "tag": "span",
+    "depth": 6,
+    "w": 30,
+    "h": 15,
+    "text": "라운지",
+    "font": "10/500",
+    "color": "#868B94",
+    "lineHeight": 15
+  },
+  {
+    "tag": "a",
+    "depth": 5,
+    "w": 83,
+    "h": 55,
+    "layout": "flex",
+    "direction": "column",
+    "gap": 4,
+    "justify": "center",
+    "align": "center",
+    "padding": "8 0 8 0"
+  },
+  {
+    "tag": "svg",
+    "depth": 6,
+    "w": 20,
+    "h": 20,
+    "icon": true
+  },
+  {
+    "tag": "span",
+    "depth": 6,
+    "w": 15,
+    "h": 15,
+    "text": "MY",
+    "font": "10/500",
+    "color": "#868B94",
+    "lineHeight": 15
+  }
+]

@@ -1,0 +1,32 @@
+# /onboarding
+
+노드 28개 · 폭 430
+
+body 430×932  bg #FFFFFF
+  div 430×932  
+    div 430×932  flex · justify center · align flex-start · bg #F7F8F9
+      div 430×932  flex/column · bg #FFFFFF · shadow
+        section 430×0  
+        main 430×932  
+          div 430×932  pad 32 24 32 24 · bg #FFFFFF
+            div 382×20  flex · justify space-between · align center
+              button 42×20  "나중에" · 14/500 #868B94 · lh 20
+              span 50×16  "01 / 03" · 12/400 #868B94 · lh 16
+            div 382×4  flex · gap 6 · mar 20 0 0 0
+              span 123×4  bg #E7898D · r9999
+              span 123×4  bg #F7F8F9 · r9999
+              span 123×4  bg #F7F8F9 · r9999
+            div 382×445  pad 80 0 0 0
+              p 382×15  "JUST FOR YOU" · 10/400 #E7898D · lh 15 · ls 2.2px
+              h1 382×45  "결혼 예정일이 있나요?" · 38/700 #1A1C20 · lh 45 · ls -0.95px · mar 16 0 0 0
+              p 382×20  "아직 정하지 않았어도 괜찮아요." · 14/400 #868B94 · lh 20 · mar 12 0 0 0
+              div 382×218  mar 40 0 0 0
+                button 382×65  flex · justify space-between · align center · pad 20 20 20 20 · mar 0 0 12 0 · bg #E38E8E 7% · r16 · border 1 #E7898D
+                  span 129×23  "2027년 1월 15일" · 15/700 #E7898D · lh 23
+                  svg 20×20  svg
+                button 382×65  flex · justify space-between · align center · pad 20 20 20 20 · mar 0 0 12 0 · bg #FFFFFF · r16 · border 1 #000000 6%
+                  span 107×23  "2027년 상반기" · 15/700 #1A1C20 · lh 23
+                button 382×65  flex · justify space-between · align center · pad 20 20 20 20 · bg #FFFFFF · r16 · border 1 #000000 6%
+                  span 65×23  "아직 미정" · 15/700 #1A1C20 · lh 23
+            button 382×56  "다음" · 14/700 #FFFFFF · lh 20 · flex · gap 8 · justify center · align center · mar 40 0 0 0 · bg #1A1C20 · r16
+              svg 16×16  svg
