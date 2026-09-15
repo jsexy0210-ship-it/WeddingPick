@@ -13,9 +13,12 @@
 **본 것:** `apps/web/src/subpages.ts` 네 표(제1항 수집 항목 · 제4항 수탁자 · 제5항 국외 이전 ·
 보유기간) · `packages/db/migrations/` · `apps/api/src/auth/` · `apps/api/src/analysis/` ·
 `apps/api/src/retention/` · `render.yaml` · `infra/render-env.yml` · `apps/web/src/legal-pages.test.ts` ·
-`apps/mobile/src/app/(tabs)/my/privacy.tsx`
+`apps/mobile/src/app/(tabs)/my/privacy.tsx` · `apps/api/src/push/expo.ts` ·
+`apps/api/src/storage/s3.ts`
 
 **기준 커밋:** `ecd114a` (main)
+
+**결과:** 다르다 셋 · 같다 다섯 · 못 봤다 다섯.
 
 ---
 
@@ -89,6 +92,40 @@ Render 콘솔을 보지 않았다. `docs/render-region-move.md:7-9`(2026-09-13 �
 
 ---
 
+### 다르다 ③ — Google Files API 사본의 삭제를 검증할 수단이 없다
+
+**방침 문장** (`apps/web/src/subpages.ts:427`, 제10항 안전성 확보조치)
+
+> 「상담 녹음 원본의 접근 제한과 **읽어내기 직후 삭제 검증**」
+
+**코드 사실**
+
+- 큰 녹음은 Google Files API에 올려서 참조로 넘긴다
+  (`apps/api/src/analysis/consultation-reader.ts:129-137` · `needsFilesApi`). 작은 녹음은
+  본문에 실어 보내므로 저쪽에 사본이 남지 않는다.
+- 지우는 자리는 있다. `:161-174` `finally`가 읽었든 실패했든 `deleteGeminiFile()`을 부른다.
+  주석도 「저쪽은 48시간 뒤에 지우지만 그것을 기다리지 않는다」고 적었다.
+- **실패를 받는 사람이 없다.** `:173`이 `if (!gone) onDeleteFailed?.(uploaded.name)`으로
+  알리는데, `onDeleteFailed`가 저장소 전체에서 나오는 자리는 **선언(`:95`)과 이 호출(`:173`)
+  둘뿐이다.** 부르는 쪽이 콜백을 넘기지 않아 `?.`가 아무 일도 하지 않는다.
+- 다시 지우러 가는 경로도 없다. 파기 워커는 `audio_key`(우리 저장소)만 보고 돈다
+  (`retention/consultation-audio.ts:38-44`) — 남의 저장소에 남은 사본은 조회 대상이 아니다.
+
+**판정: 다르다.** 삭제를 **시도**하는 코드는 있고 그 부분은 방침대로다. 그러나 제10항이
+적은 것은 「삭제 **검증**」이고, 실패가 아무 데도 남지 않으므로 검증할 수단이 없다.
+주석이 「실패는 조용히 넘기지 않고 부르는 쪽이 알 수 있게 남긴다」고 적었는데 **부르는 쪽이
+받지 않는다.**
+
+**우리 저장소 쪽은 검증 수단이 있다** — `countOverdueConsultationAudio()`
+(`retention/consultation-audio.ts:74-79`)가 밀린 건수를 세고 운영 화면이 그 숫자를 본다.
+「0이 정상이다」라고 적혀 있다. 남의 저장소 쪽에만 그 눈이 없다.
+
+**보존기간 자체는 어긋나지 않는다.** 방침 제5항 Google LLC 행은 「보존기준은 사업자가
+공개한 정책을 따르며, 회사 저장소의 원본 삭제 일정과는 별도입니다」라고 적었다. 삭제가
+실패해 저쪽 기본값(48시간)까지 남더라도 그 문장 안이다. 어긋나는 것은 제10항의 「검증」이다.
+
+---
+
 ### 마감이 사흘 뒤다 — 시행일 2026-09-18
 
 `infra/render-env.yml:66` · `:88` `LEGAL_PRIVACY_EFFECTIVE_ON: '2026-09-18'`.
@@ -104,7 +141,7 @@ Render 콘솔을 보지 않았다. `docs/render-region-move.md:7-9`(2026-09-13 �
 
 ---
 
-### 같다 ③ — 담을 칸이 없다
+### 같다 ① — 담을 칸이 없다
 
 **방침 문장** (`apps/web/src/subpages.ts:374`, 제2항)
 
@@ -138,7 +175,7 @@ Npay 수령(`packages/db/migrations/0092_reward_payouts.sql:22-38`)은 `recipien
 
 ---
 
-### 같다 ④ — 원본 파기의 순서와 모드
+### 같다 ② — 원본 파기의 순서와 모드
 
 **방침 문장** (`apps/web/src/subpages.ts:374`, 제2항)
 
@@ -159,15 +196,9 @@ Npay 수령(`packages/db/migrations/0092_reward_payouts.sql:22-38`)은 `recipien
 
 **판정: 같다.**
 
-**Google Files API 쪽은 못 봤다.** `apps/api/src/analysis/consultation-reader.ts:162-171`이
-`finally` 안에서 `deleteGeminiFile()`을 부른다. **부르는 자리는 있다.** 다만 그 호출이
-실패했을 때(`deleteGeminiFile`이 `false`를 돌려줄 때) 남은 사본을 다시 지우러 가는 경로가
-있는지는 따라가 보지 않았다. 우리 저장소 쪽 파기 워커는 `audio_key`만 보고 돌므로, 남의
-저장소에 남은 사본은 그 워커가 잡지 않는다. **다음 주기에 본다.**
-
 ---
 
-### 같다 ⑤ — 사본이 다시 생기지 않았다
+### 같다 ③ — 사본이 다시 생기지 않았다
 
 - 앱의 방침 화면 `apps/mobile/src/app/(tabs)/my/privacy.tsx`(166줄)는 요약 셋만 두고 전문을
   들지 않는다. 수탁자 이름 · 국외 이전 표 · 조문 번호가 없다.
@@ -185,7 +216,22 @@ Npay 수령(`packages/db/migrations/0092_reward_payouts.sql:22-38`)은 `recipien
 
 ---
 
-### 같다 ⑥ — 시크릿
+### 같다 ④ — 네이버클라우드와 Expo
+
+**네이버클라우드** — 방침 제4항은 「클라우드·객체 저장 / 서비스 정보 및 업로드 원본의
+시한부 저장 / 네이버클라우드 주식회사」로 적고, **제5항 국외 이전 표에는 넣지 않았다.**
+`render.yaml:285-288`이 `S3_REGION: kr-standard` · `S3_ENDPOINT: https://kr.object.ncloudstorage.com`
+로 국내를 가리킨다. 국내 저장이므로 국외 이전 표에 없는 것이 맞다. 앱 요약
+(`apps/mobile/src/app/(tabs)/my/privacy.tsx:52-53`)도 「원본 이미지는 국내 저장소에 둬요」로
+같이 적는다. **같다.**
+
+**Expo** — 방침 제5항 Expo 행은 「기기 푸시 토큰과 알림 제목·본문」 셋이다.
+`apps/api/src/push/expo.ts:54-58`이 `https://exp.host/--/api/v2/push/send`로 보내는 본문은
+`to`(토큰) · `title` · `body` 셋이다. **더도 덜도 없다. 같다.**
+
+---
+
+### 같다 ⑤ — 시크릿
 
 `sk-ant-` · `AIza` · `ghp_` · `xox[baprs]-` · 자격이 박힌 `postgres://` 주소를 저장소 전체에서
 찾았다. 걸린 일곱 자리는 전부 `localhost` · `127.0.0.1` 자리표시이거나 문서의 예시다 —
@@ -204,5 +250,6 @@ Npay 수령(`packages/db/migrations/0092_reward_payouts.sql:22-38`)은 `recipien
 3. 카카오 동의항목에서 **성별 · 휴대전화번호가 실제로 넘어오는지.** 카카오 콘솔을 보지 않았다.
    (실명은 넘어온 적이 있다 — `sessions.ts:73-76`이 증거다.)
 4. `deleteGeminiFile()` **실패 경로**. 남은 사본을 다시 지우러 가는 자리가 있는지.
-5. 제4항 수탁자 여섯 중 **네이버클라우드 · Expo**가 실제로 부르는 것과 맞는지.
-   이번에는 Render · Neon · Anthropic · Google만 맞대어 봤다.
+5. 제4항 수탁자 여섯 중 **Anthropic PBC**가 부르는 자리. `apps/api/src/index.ts:59`가
+   `createClaudePaymentReader()`를 쓰는 것까지는 봤고, 보내는 항목이 제5항 문안과 맞는지는
+   따라가지 않았다.
