@@ -13,6 +13,8 @@
  * 다시 덮어쓴 자리가 있다(옛 «확인된 ~» 표기 → `실 제보`). 뒤에 온 쪽을 쓴다.
  */
 
+import { formatCount } from './format-number';
+
 export const TERMS = {
   /** 업체 찾기. `탐색`을 쓰지 않는다. */
   search: '검색',
@@ -94,7 +96,7 @@ export function dataCaption(input: {
   period?: string;
   baseAmount?: string;
 }): string {
-  const parts = [`${TERMS.verifiedData} ${input.count}건`, input.period ?? TERMS.period];
+  const parts = [`${TERMS.verifiedData} ${formatCount(input.count)}건`, input.period ?? TERMS.period];
 
   if (input.baseAmount) parts.push(`${TERMS.baseAmount} ${input.baseAmount}`);
 

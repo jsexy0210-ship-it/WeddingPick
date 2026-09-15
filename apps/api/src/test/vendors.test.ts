@@ -650,6 +650,26 @@ describeWithDb('업체 검색', () => {
       { name: '서울', vendorCount: 2 },
     ]);
   });
+
+  it('긴 꼴과 짧은 꼴이 같은 지역 칩으로 모인다', async () => {
+    // 공공데이터는 「경기도 이천시」로 들어오고, 손으로 넣은 표본은 「경기 성남시」다.
+    // 앞 낱말을 그대로 묶으면 「경기」와 「경기도」가 필터에 나란히 뜬다(2026-09-10 사용자 보고).
+    const { headers } = await signInAs(test);
+    await createVendor({ name: '가홀', region: '경기도 이천시' });
+    await createVendor({ name: '나홀', region: '경기 성남시' });
+    await createVendor({ name: '다홀', region: '서울특별시 강남구' });
+
+    const response = await test.app.inject({
+      method: 'GET',
+      url: '/v1/vendors/regions',
+      headers,
+    });
+
+    expect(response.json().regions).toEqual([
+      { name: '경기', vendorCount: 2 },
+      { name: '서울', vendorCount: 1 },
+    ]);
+  });
 });
 
 describeWithDb('업체 상세', () => {

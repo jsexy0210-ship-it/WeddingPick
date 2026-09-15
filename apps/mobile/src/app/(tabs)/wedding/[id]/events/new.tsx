@@ -1,5 +1,5 @@
 import type { CurrentUser } from '@weddingpick/api-contract';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
@@ -73,9 +73,9 @@ export default function AddWeddingEventScreen() {
         notifyEnabled,
       });
 
-      /* 링크로 곧장 들어와 되돌아갈 곳이 없으면 Depth Back이 한 단계 위(일정 목록)로 보낸다. */
-      if (router.canGoBack()) router.back();
-      else depthBack();
+      /* 링크로 곧장 들어와 되돌아갈 곳이 없으면 Depth Back이 한 단계 위(일정 목록)로
+         보낸다 — `depthBack`이 이미 History 우선 순서다. */
+      depthBack();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : '넣지 못했어요. 다시 시도해주세요.');
     } finally {

@@ -96,6 +96,11 @@ services:
         value: tgp4WVYlYO_qd2nyvHug
       - key: EXPO_PUBLIC_NAVER_REDIRECT_URI
         value: https://weddingpickl-sg.onrender.com/v1/auth/naver/callback
+      # 이 export 자신의 배포 주소. 하이브리드 웹뷰 쉘과 링크 공유 카드(og:url)가
+      # 함께 쓴다(apps/mobile/src/features/webshell/config.ts ·
+      # apps/mobile/src/features/social-meta.ts). 비밀이 아니다.
+      - key: EXPO_PUBLIC_WEB_URL
+        value: https://weddingpick-app-web.onrender.com
     routes:
       # expo-router 클라이언트 라우팅 — 없는 경로를 index.html로 되돌린다.
       - type: rewrite

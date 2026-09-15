@@ -5,8 +5,8 @@ import type {
   VendorCandidate,
   VendorSummary,
 } from '@weddingpick/api-contract';
-import { daysUntil, hasUnread } from '@weddingpick/domain';
-import { router } from 'expo-router';
+import { daysUntil, formatCount, hasUnread } from '@weddingpick/domain';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -315,7 +315,7 @@ function homeSectionBlocks({
               준비현황
             </ThemedText>
             <ThemedText type="f12" numeric themeColor="textAssistive" style={styles.semibold}>
-              {view.cells.length}개 중 {done}개 완료
+              {formatCount(view.cells.length)}개 중 {formatCount(done)}개 완료
             </ThemedText>
           </View>
           <Board
@@ -541,7 +541,7 @@ function Header({ unread, onPressBell }: { unread: number; onPressBell: () => vo
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={hasUnread({ unread, total: unread }) ? `알림 ${unread}건` : '알림'}
+          accessibilityLabel={hasUnread({ unread, total: unread }) ? `알림 ${formatCount(unread)}건` : '알림'}
           onPress={onPressBell}
           style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
           <SeedIcon name="notificationRegular" size={Layout.iconRow} color={theme.text} />
