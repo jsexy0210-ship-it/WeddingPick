@@ -31,6 +31,11 @@ const handoff = JSON.parse(
   readFileSync(join(ROOT, 'docs/design-handoff/current/tokens.json'), 'utf8')
 ) as Json;
 const specText = readFileSync(join(ROOT, 'spec/tokens.json'), 'utf8');
+const seedLight = (
+  JSON.parse(readFileSync(join(ROOT, 'spec/seed-tokens.json'), 'utf8')) as {
+    light: Record<string, string>;
+  }
+).light;
 const spec = JSON.parse(specText) as Json;
 
 const HEX = /^#[0-9a-f]{6}$/i;
@@ -97,6 +102,18 @@ describe('디자인 토큰 — 핸드오프 ↔ spec/tokens.json', () => {
     const known = new Set(
       Array.from(specLower.matchAll(/#[0-9a-f]{6}\b/g)).map((m) => m[0])
     );
+
+    /*
+     * **SEED에서 뽑은 값도 「아는 색」이다.** 2026-09-15에 색의 출처가 SEED로 옮겨가면서
+     * `theme.ts`의 gray 램프는 SEED 램프 열한 단계를 전부 들고 있는데, spec은 그중 쓰는
+     * 것만 적는다 — 피그마가 글자에 두 색만 써서 `#555d6d`(SEED gray-800)가 spec에서
+     * 빠지자 이 시험이 그것을 「모르는 색」으로 잡았다.
+     *
+     * 램프에서 그 단계를 빼면 `seed-parity.test.ts`가 빨개진다(SEED 램프 그대로여야 한다).
+     * 검사를 무르는 것이 아니라 **출처를 하나 더 인정하는 것**이다 — SEED에 있는 값은
+     * 근거 있는 값이고, 근거 없이 만든 값은 여전히 여기서 걸린다.
+     */
+    for (const value of Object.values(seedLight)) known.add(value.toLowerCase());
     /*
      * 어두운 모드 값은 SEED gray 램프의 어두운 벌이고 spec은 라이트만 적는다 — 앱은 항상 라이트라
      * 그 벌은 검사 밖이다(use-color-scheme.ts). `dark: {` 블록 앞까지만 본다.

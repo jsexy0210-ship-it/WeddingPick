@@ -1,11 +1,14 @@
 import type { VendorSummary } from '@weddingpick/api-contract';
-import { NOT_ENOUGH_DATA, priceLine, TERMS } from '@weddingpick/domain';
+import { NOT_ENOUGH_DATA, priceLine, TERMS, VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import {
-  ActionButton,
+  Border,
+  Elevation,
   Layout,
+  LetterSpacing,
   Radius,
+  SeedIcon,
   Spacing,
   ThemedText,
   ThemedView,
@@ -13,258 +16,280 @@ import {
 } from '@weddingpick/ui';
 
 import { CategoryImage } from './category-image';
-import type { ConditionChip, HomeCta } from './state';
+import type { HomeCta } from './state';
 
 /**
- * 웨딩픽 추천 — 홈의 추천 블록. SPEC §13.8 · `03-home-states.dc.html`.
+ * 웨딩픽 추천 — 규격서 docs/figma-spec/home.txt(2026-09-15 대표 지시 「규격서의 수를 그대로」).
  *
- *   라벨 14 코랄     웨딩픽 추천 · 메이크업
- *   조건 칩 30       강남 · 3,000만원 이상 · 도시적인 · 로맨틱한 · (5월 12일)
- *   이미지 180 r10
- *   업체명 20 ↔ 금액 16
- *   이유 16 · 건수 14
- *   2열 서브 16:11
- *   CTA 52
+ *   div 430×316  mar 0 0 24 0
+ *     div 430×38  flex · justify space-between · align center · pad 0 20 0 20 · mar 0 0 12 0
+ *       div 183×38
+ *         h3 "웨딩픽 추천" · 14/600 #1A1C20 · lh 20
+ *         p "저장한 업체를 한 번에 비교해봐요" · 12/400 #868B94 · lh 16 · mar 2 0 0 0
+ *       button "비교하기" · 12/700 #FFFFFF · lh 16 · pad 8 14 8 14 · bg primary · r9999 · shadow
+ *     div 430×266  flex · gap 12 · pad 0 0 4 20
+ *       div 208×262  bg #FFFFFF · r16 · border 1 #000000 6% · shadow
+ *         div 206×144
+ *           img 206×144
+ *           button 32×32  flex · justify center · align center · bg #FFFFFF 80% · r9999   (top-2.5 right-2.5)
+ *             svg 16×16   IconHeartRegular / IconHeartFill
+ *           span "인기" · 10/700 #FFFFFF · lh 15 · pad 2 8 2 8 · bg #1A1C20 · r9999   (top-2.5 left-2.5)
+ *         div 206×116  pad 12 12 12 12
+ *           span "스튜디오" · 10/600 #868B94 · lh 15 · ls 0.5px
+ *           p "블루밍 스튜디오" · 14/600 #1A1C20 · lh 20 · mar 2 0 0 0
+ *           div flex · gap 4 · align center · mar 4 0 0 0
+ *             svg 12×12  IconLocationRegular       span "강남구" · 12/400 #868B94 · lh 16
+ *           div flex · justify space-between · align center · mar 10 0 0 0
+ *             span "80–150만원" · 12/500 #1A1C20 · lh 16
+ *             div flex · gap 4 · align center     svg 12×12 IconReviewStarFill   span "4.9" · 12/500 #868B94
+ *       div 16×262   ← 마지막 카드 뒤 여백
  *
- * 홈 코랄 네 곳 중 둘(라벨 · CTA)이 여기다. 칩은 무채색이다.
+ * **규격서와 다르게 둔 것.** 「인기 · 신규」 배지와 별점 「4.9」는 우리 계약(`VendorSummary`)에 그 값이
+ * 없어 그리지 않는다 — 없는 값을 지어내지 않는다. 자료가 오면 그 자리(위 표)에 그대로 넣는다.
+ * 금액 한 줄은 어느 화면이든 `priceLine`이 정한다(CLAUDE.md v3.24) — 피그마의 «80–150만원» 꼴이
+ * 아니라 우리 구간 · 안내가 · 수집 중 표기가 들어간다. 하트는 후보에 담는 Pick이다(SPEC §13.1).
  *
- * **정보량은 골격을 바꾸지 않는다.** 실 제보가 모자라면 금액 글자가 회색이 되고
- * CTA가 «Pick 인증하기» 아웃라인으로 바뀐다. 그뿐이다. 금액은 어디서나
- * `priceLine`이 정한다 — 0층 «업체 안내 150만원~», 1층 «수집 중», 그 위는 구간.
+ * 옛 홈의 조건 칩 · 대표 카드 + 2열 · «Pick 인증하기» CTA는 규격서에 없어 뺐다.
  */
 
 export type RecommendationProps = {
-  /** «웨딩픽 추천 · {업종}». 업종을 모르면 라벨만. */
-  categoryLabel: string | null;
-  chips: readonly ConditionChip[];
   vendors: readonly VendorSummary[];
   cta: HomeCta;
-  onPressChip: (chip: ConditionChip) => void;
+  /** 이 업체가 후보에 담겨 있는가 — 하트 채움. */
+  isPicked: (vendorId: string) => boolean;
   onPressVendor: (vendorId: string) => void;
-  onPressCta: () => void;
+  onPressPick: (vendor: VendorSummary) => void;
+  onPressCompare: () => void;
 };
 
 export function Recommendation({
-  categoryLabel,
-  chips,
   vendors,
   cta,
-  onPressChip,
+  isPicked,
   onPressVendor,
-  onPressCta,
+  onPressPick,
+  onPressCompare,
 }: RecommendationProps) {
   const theme = useTheme();
-  const [main, ...subs] = vendors;
 
   return (
-    <ThemedView style={styles.section}>
-      <View style={styles.sectionHead}>
-        <ThemedText type="t7" themeColor="tint" style={[styles.label, styles.grow]} numberOfLines={1}>
-          {categoryLabel === null ? TERMS.todaysPick : `${TERMS.todaysPick} · ${categoryLabel}`}
-        </ThemedText>
-        {/*
-          "비교하기" pill — 2026-09-14 대표 지시(피그마 기준). 비교가 표로 가면서
-          진입점이 하나 더 필요해졌다. `ids`가 있을 때만(=비교할 것이 있을 때만) 보인다 —
-          `cta.kind === 'proof'`이면 아직 비교할 것이 없다.
-        */}
-        {cta.kind === 'compare' ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="추천 업체 비교하기"
-            onPress={onPressCta}
-            style={({ pressed }) => [
-              styles.comparePill,
-              { backgroundColor: theme.tint },
-              pressed && styles.pressed,
-            ]}>
-            <ThemedText type="micro" themeColor="onTint" style={styles.bold}>
-              비교하기
-            </ThemedText>
-          </Pressable>
-        ) : null}
+    <View style={styles.section}>
+      <View style={styles.head}>
+        <View style={styles.headText}>
+          <ThemedText type="f14" style={styles.semibold}>
+            {TERMS.todaysPick}
+          </ThemedText>
+          <ThemedText type="f12" themeColor="textAssistive" style={styles.sub}>
+            저장한 업체를 한 번에 비교해봐요
+          </ThemedText>
+        </View>
+        {/* 비교할 것이 둘 이상일 때만 누를 수 있다(`cta.kind === 'compare'`). 자리는 늘 있다. */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="추천 업체 비교하기"
+          disabled={cta.kind !== 'compare'}
+          onPress={onPressCompare}
+          style={({ pressed }) => [
+            styles.comparePill,
+            { backgroundColor: theme.tint, shadowColor: theme.tint },
+            cta.kind !== 'compare' && styles.disabled,
+            pressed && styles.pressed,
+          ]}>
+          <ThemedText type="f12" themeColor="onTint" style={styles.bold}>
+            비교하기
+          </ThemedText>
+        </Pressable>
       </View>
 
-      {chips.length === 0 ? null : (
+      {vendors.length === 0 ? (
+        /* 추천할 곳이 아직 없다. 자리를 비우지 않고 까닭을 한 줄로 적는다(규격서에 없는 상태). */
+        <View style={styles.emptyWrap}>
+          <ThemedView
+            type="backgroundElement"
+            style={[styles.empty, { borderColor: theme.border }]}>
+            <ThemedText type="f12" themeColor="textAssistive">
+              {NOT_ENOUGH_DATA}
+            </ThemedText>
+          </ThemedView>
+        </View>
+      ) : (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chipRow}>
-          {chips.map((chip) => (
-            <Chip key={`${chip.kind}-${chip.label}`} chip={chip} onPress={() => onPressChip(chip)} />
+          style={styles.scroll}
+          contentContainerStyle={styles.row}>
+          {vendors.map((vendor) => (
+            <Card
+              key={vendor.id}
+              vendor={vendor}
+              picked={isPicked(vendor.id)}
+              onPress={() => onPressVendor(vendor.id)}
+              onPressPick={() => onPressPick(vendor)}
+            />
           ))}
+          {/* «div 16×262» — 마지막 카드 뒤 여백. */}
+          <View style={styles.tail} />
         </ScrollView>
       )}
-
-      {main === undefined ? (
-        /* 추천할 곳이 아직 없다. 자리를 비우지 않고 까닭을 한 줄로 적는다. */
-        <ThemedView type="backgroundElement" style={styles.empty}>
-          <ThemedText type="t6" themeColor="textSecondary">
-            {NOT_ENOUGH_DATA}
-          </ThemedText>
-        </ThemedView>
-      ) : (
-        <MainCard vendor={main} onPress={() => onPressVendor(main.id)} />
-      )}
-
-      {subs.length === 0 ? null : (
-        <View style={styles.twoCol}>
-          {subs.slice(0, 2).map((vendor) => (
-            <SubCard key={vendor.id} vendor={vendor} onPress={() => onPressVendor(vendor.id)} />
-          ))}
-        </View>
-      )}
-
-      {/* 시안 ctaStyle: margin-top 2. */}
-      <View style={styles.ctaWrap}>
-        <ActionButton
-          label={cta.label}
-          variant={cta.kind === 'compare' ? 'primary' : 'ghost'}
-          size="xlarge"
-          onPress={onPressCta}
-        />
-      </View>
-    </ThemedView>
+    </View>
   );
 }
 
-/** 조건 칩. 30 · radius 999 · 회색. 누르면 그 조건을 뺀 결과로 간다. */
-function Chip({ chip, onPress }: { chip: ConditionChip; onPress: () => void }) {
+function Card({
+  vendor,
+  picked,
+  onPress,
+  onPressPick,
+}: {
+  vendor: VendorSummary;
+  picked: boolean;
+  onPress: () => void;
+  onPressPick: () => void;
+}) {
   const theme = useTheme();
+  const price = priceLine(vendor.paidPrice, vendor.guidePrice);
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${chip.label} 조건 빼고 보기`}
       onPress={onPress}
       style={({ pressed }) => [
-        styles.chip,
-        { backgroundColor: theme.backgroundSelected },
+        styles.card,
+        { backgroundColor: theme.background, borderColor: theme.border },
         pressed && styles.pressed,
       ]}>
-      <ThemedText
-        type="micro"
-        numberOfLines={1}
-        themeColor={chip.dim ? 'textDisabled' : 'textSecondary'}>
-        {chip.label}
-      </ThemedText>
-    </Pressable>
-  );
-}
-
-function MainCard({ vendor, onPress }: { vendor: VendorSummary; onPress: () => void }) {
-  const price = priceLine(vendor.paidPrice, vendor.guidePrice);
-  const reason = vendor.reasons?.[0] ?? null;
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [styles.main, pressed && styles.pressed]}>
-      <View style={styles.mainImage}>
-        <CategoryImage uri={vendor.imageUrl} label={vendor.name} />
+      <View style={styles.image}>
+        <CategoryImage uri={vendor.imageUrl} label={vendor.name} category={vendor.category} />
+        {/* «button 32×32 · bg #FFFFFF 80% · r9999» — 담기면 잉크 면에 흰 하트(피그마 `bg-foreground`). */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={picked ? `${vendor.name} Pick 해제` : `${vendor.name} Pick`}
+          accessibilityState={{ selected: picked }}
+          onPress={onPressPick}
+          hitSlop={Spacing.two}
+          style={({ pressed }) => [styles.heart, pressed && styles.pressed]}>
+          <View
+            style={[
+              styles.heartFill,
+              picked ? { backgroundColor: theme.text } : { backgroundColor: theme.background, opacity: 0.8 },
+            ]}
+          />
+          {/* 웹에서 absolute 면이 뒤 형제 위에 그려진다 — 아이콘을 View로 감싸 위에 둔다. */}
+          <View>
+            <SeedIcon
+              name={picked ? 'heartFill' : 'heartRegular'}
+              size={Layout.iconField}
+              color={picked ? theme.onTint : theme.text}
+            />
+          </View>
+        </Pressable>
       </View>
-      <View style={styles.nameRow}>
-        <ThemedText type="t4" numberOfLines={1} style={styles.grow}>
+
+      <View style={styles.info}>
+        <ThemedText type="f10" themeColor="textAssistive" style={styles.category} numberOfLines={1}>
+          {VENDOR_CATEGORY_LABEL[vendor.category]}
+        </ThemedText>
+        <ThemedText type="f14" style={styles.name} numberOfLines={1}>
           {vendor.name}
         </ThemedText>
-        <ThemedText
-          type="t6"
-          numeric
-          numberOfLines={1}
-          themeColor={price.dim ? 'textAssistive' : 'text'}
-          style={styles.price}>
-          {price.text}
-        </ThemedText>
+        <View style={styles.place}>
+          <SeedIcon name="locationRegular" size={Layout.iconMicro} color={theme.textAssistive} />
+          <ThemedText type="f12" themeColor="textAssistive" numberOfLines={1} style={styles.shrink}>
+            {vendor.region}
+          </ThemedText>
+        </View>
+        <View style={styles.priceRow}>
+          <ThemedText
+            type="f12"
+            numeric
+            numberOfLines={1}
+            themeColor={price.dim ? 'textAssistive' : 'text'}
+            style={styles.price}>
+            {price.text}
+          </ThemedText>
+        </View>
       </View>
-      {reason === null ? null : (
-        <ThemedText type="t6" themeColor="textSecondary" numberOfLines={1}>
-          {reason}
-        </ThemedText>
-      )}
-      <ThemedText
-        type="t7"
-        numeric
-        themeColor="textAssistive"
-        numberOfLines={1}
-        style={styles.meta}>
-        {price.caption}
-      </ThemedText>
-    </Pressable>
-  );
-}
-
-function SubCard({ vendor, onPress }: { vendor: VendorSummary; onPress: () => void }) {
-  const price = priceLine(vendor.paidPrice, vendor.guidePrice);
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [styles.sub, pressed && styles.pressed]}>
-      <View style={styles.subImage}>
-        <CategoryImage uri={vendor.imageUrl} label={vendor.name} />
-      </View>
-      <ThemedText type="t6" numberOfLines={1} style={styles.subName}>
-        {vendor.name}
-      </ThemedText>
-      {/* 시안 subPrice 13/18 400 — micro는 700이라 굵기만 내린다. */}
-      <ThemedText
-        type="micro"
-        numeric
-        numberOfLines={1}
-        themeColor={price.dim ? 'textDisabled' : 'textAssistive'}
-        style={styles.subPrice}>
-        {price.text}
-      </ThemedText>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  /* 시안 padSec: gap 11. */
-  section: { gap: Layout.gap2col },
-  sectionHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  label: { fontWeight: 700 },
+  /* «mar 0 0 24 0». */
+  section: { marginBottom: Spacing.four },
+  /* «pad 0 20 · mar 0 0 12 0 · space-between · center». */
+  head: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Layout.pageX,
+    marginBottom: Layout.sectionHeadGapCompact,
+    gap: Spacing.two,
+  },
+  headText: { flex: 1, minWidth: 0 },
+  semibold: { fontWeight: 600 },
+  bold: { fontWeight: 700 },
+  /* 부제 «mar 2 0 0 0». */
+  sub: { marginTop: Spacing.half },
+  /* «pad 8 14 8 14 · r9999 · shadow»(피그마 `shadow-sm shadow-primary/20`). */
   comparePill: {
     flexShrink: 0,
-    height: 30,
-    paddingHorizontal: 14,
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Layout.fieldPaddingX,
+    borderRadius: Radius.pill,
+    ...Elevation.figmaCard,
+  },
+  disabled: { opacity: 0.4 },
+  /* 세로 ScrollView 안의 가로 ScrollView — 남은 높이를 먹지 않게 잠근다. */
+  scroll: { flexGrow: 0, flexShrink: 0 },
+  /* «flex · gap 12 · pad 0 0 4 20». */
+  row: { flexDirection: 'row', gap: Layout.inlineGap, paddingLeft: Layout.pageX, paddingBottom: Spacing.one },
+  tail: { width: Spacing.three },
+  /* «div 208×262 · r16 · border 1 · shadow». */
+  card: {
+    width: Layout.cardRecommendWidth,
+    borderRadius: Radius.cardLarge,
+    borderWidth: Border.hairline,
+    overflow: 'hidden',
+    ...Elevation.figmaCard,
+  },
+  /* «img 206×144». */
+  image: { height: Layout.imageRecommendHeight, position: 'relative' },
+  /* 피그마 `absolute top-2.5 right-2.5` = 10. */
+  heart: {
+    position: 'absolute',
+    top: Layout.cardGap,
+    right: Layout.cardGap,
+    width: Layout.pickBubble,
+    height: Layout.pickBubble,
     borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
-  bold: { fontWeight: 700 },
-  /* 시안 condRow: gap 6 · 가로 스크롤. 칩마다 flex:0 0 auto — 안 붙이면 마지막 칩이 잘린다. */
-  chipRow: { flexDirection: 'row', gap: 6 },
-  chip: {
-    flexShrink: 0,
-    height: 30,
-    paddingHorizontal: 11,
-    borderRadius: Radius.pill,
+  heartFill: { ...StyleSheet.absoluteFill },
+  /* «pad 12 12 12 12». */
+  info: { padding: Layout.inlineGap },
+  /* «10/600 · ls 0.5px». */
+  category: { fontWeight: 600, letterSpacing: LetterSpacing.p05 },
+  /* «14/600 · mar 2 0 0 0». */
+  name: { fontWeight: 600, marginTop: Spacing.half },
+  /* «flex · gap 4 · align center · mar 4 0 0 0». */
+  place: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one, marginTop: Spacing.one },
+  shrink: { flexShrink: 1 },
+  /* «space-between · mar 10 0 0 0». 별점 자리는 비어 있다(위 JSDoc). */
+  priceRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
+    marginTop: Layout.cardGap,
   },
-  /* 시안: 이미지 · 이름 줄 · 이유 · 건수가 padSec의 자식이라 사이가 11, 건수 줄만 위 3. */
-  main: { gap: Layout.gap2col },
-  mainImage: { width: '100%', height: 180, borderRadius: Radius.medium, overflow: 'hidden' },
-  meta: { marginTop: 3 },
-  nameRow: { flexDirection: 'row', alignItems: 'baseline', gap: Spacing.three - 4 },
-  grow: { flex: 1, minWidth: 0 },
-  /** 금액은 줄지 않는다. 좁아지면 옆의 이름부터 줄인다. */
-  price: { flexShrink: 0, fontWeight: 700 },
-  /* 시안 twoCol: gap 9 · 위 2. */
-  twoCol: { flexDirection: 'row', gap: 9, paddingTop: Spacing.half },
-  sub: { flex: 1, minWidth: 0, gap: 6 },
-  /* 시안 subImg radius 8 — spec/tokens.json radius에 8이 없다. 이미지는 card 10이다. */
-  subImage: { width: '100%', aspectRatio: 16 / 11, borderRadius: Radius.medium, overflow: 'hidden' },
-  /* 시안 15/20 — 토큰 사다리에 15가 없어 16(t6). */
-  subName: { fontWeight: 700 },
-  subPrice: { fontWeight: 400 },
-  ctaWrap: { paddingTop: Spacing.half },
+  /* «12/500». */
+  price: { fontWeight: 500 },
+  emptyWrap: { paddingHorizontal: Layout.pageX },
   empty: {
-    borderRadius: Radius.medium,
-    paddingHorizontal: Layout.cardPadding,
-    paddingVertical: 18,
+    borderRadius: Radius.cardLarge,
+    borderWidth: Border.hairline,
+    padding: Layout.inlineGap,
   },
   pressed: { opacity: 0.8 },
 });

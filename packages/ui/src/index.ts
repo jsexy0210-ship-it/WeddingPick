@@ -31,6 +31,7 @@ export {
   type WeddingMarkProps,
 } from './wedding-mark';
 export { ProductSymbol, type ProductSymbolName } from './product-symbol';
+export { SeedIcon, type SeedIconName } from './seed-icon';
 export { NpayLogo } from './npay-logo';
 export { Skeleton, type SkeletonProps } from './skeleton';
 export { Toast, TOAST_MS, type ToastProps } from './toast';
@@ -66,6 +67,7 @@ export { ListSkeleton, type ListSkeletonProps } from './list-skeleton';
 export { PickStatusBadge, STATUS_BADGE_STYLE, type PickStatusBadgeProps, type PickStatus } from './pick-status-badge';
 export { Badge, type BadgeProps, type BadgeKind } from './badge';
 export { VendorImage, type VendorImageProps, type VendorCategory } from './vendor-image';
+export { DefaultImage, type DefaultImageProps, type DefaultImageCategory } from './default-image';
 export { DataTierBadge, getDataTier, type DataTierBadgeProps, type DataTier } from './data-tier-badge';
 export { TruncatedText, type TruncatedTextProps } from './truncated-text';
 export { SocialLogo } from './social-logo';
@@ -90,7 +92,7 @@ export {
   type ThemeColor,
   type SkinId,
 } from './theme';
-export { FontSize, LineHeight, type FontSizeToken } from './typography';
+export { FontSize, LetterSpacing, LineHeight, type FontSizeToken } from './typography';
 export { useTheme } from './use-theme';
 export { readWebInteractionState, type WebInteractionState } from './web-interaction';
 export { VERIFICATION_LEVEL_ACCENT } from './verification-levels';

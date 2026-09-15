@@ -6,9 +6,9 @@ import {
   type VendorSummary,
 } from '@weddingpick/api-contract';
 import {
+  BUDGET_BANDS,
   type BudgetBandKey,
   DISCLOSURE_THRESHOLDS,
-  NOT_ENOUGH_DATA,
   priceLine,
   TERMS,
   type VendorCategory,
@@ -45,8 +45,9 @@ import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import {
   ActionButton,
   Border,
-  FilterChip,
+  Elevation,
   FontSize,
+  LetterSpacing,
   Layout,
   LineHeight,
   MARK_HEART_PATH,
@@ -94,14 +95,15 @@ import { DelayedLoader } from '@/features/loading/delayed-loader';
  * 칩 폭 때문으로 읽힌다. 한 화면을 위해 `VENDOR_CATEGORY_LABEL`을 바꾸면 Pick 탭 ·
  * 웨딩일정 · 준비 현황이 한꺼번에 흔들린다(2026-09-11 MASTER 판단 — 그대로 둔다).
  */
-const CHIP_CATEGORIES: readonly VendorCategory[] = [
-  'hall',
-  'studio',
-  'dress',
-  'makeup',
-  'snap',
-  'invitation',
-];
+/* 헤더 · 칩 문구 — spec/strings.ko.json `search`. 피그마 `Search.tsx`(2026-09-14 정본)에서 왔다. */
+const TITLE = '업체 검색';
+const SUBTITLE = '우리 조건에 맞는 선택만 모았어요';
+const PLACEHOLDER = '업체 이름, 지역, 카테고리 검색';
+const BACK_LABEL = '홈으로 돌아가기';
+const CLEAR_LABEL = '검색어 지우기';
+const CHIP_CATEGORY = '카테고리';
+const CHIP_REGION = '지역';
+const CHIP_PRICE = '가격';
 
 /** 자동완성은 결과보다 빨리 따라와야 한다(시안 WP-SRCH-002). */
 const AUTOCOMPLETE_DEBOUNCE_MS = 200;
@@ -159,19 +161,7 @@ type ViewState = 'home' | 'results';
  */
 type EntryParams = { q?: string; category?: string; region?: string; sort?: string };
 
-/**
- * 결과 카드 한 장의 금액 아래 줄. 시안: «실 제보 12건 · 강남» / «아직 정보가 적어요 · 3건 · 청담» /
- * 0층은 출처. 검색 홈 «많이 본 곳»도 같은 줄을 쓴다(꼬리만 지역 대신 업종).
- */
-function metaLine(item: VendorSummary, tail: string): string {
-  const paidPrice = item.paidPrice;
-  const line = priceLine(paidPrice, item.guidePrice);
-  if (line.dim) return `${line.caption} · ${tail}`;
-  if (paidPrice.stage === 'limited') return `${NOT_ENOUGH_DATA} · ${paidPrice.count}건 · ${tail}`;
-  return `${TERMS.verifiedData} ${paidPrice.count}건 · ${tail}`;
-}
-
-/** 자동완성 «업체» 행의 오른쪽 꼬리. 시안: «실 제보 12건» · 적으면 «3건». */
+/** 자동완성 «업체» 행과 결과 카드 아래 줄의 오른쪽 꼬리. 시안: «실 제보 12건» · 적으면 «3건». */
 function countTail(item: VendorSummary): string {
   const count = item.paidPrice.count;
   return count >= DISCLOSURE_THRESHOLDS.limited ? `${TERMS.verifiedData} ${count}건` : `${count}건`;
@@ -462,10 +452,6 @@ export default function SearchScreen() {
     }
   }, [filters, nextCursor, loadingMore, refreshing]);
 
-  function toggle<K extends 'category' | 'region'>(key: K, value: Filters[K]) {
-    setFilters((current) => ({ ...current, [key]: current[key] === value ? null : value }));
-  }
-
   /**
    * 검색 제출. 홈 → 결과 전환.
    */
@@ -483,11 +469,10 @@ export default function SearchScreen() {
    * 걸린 조건을 비운다. 검색 홈이 없어진 뒤로 «돌아갈 곳»이 아니라 «비우는 자리»다
    * (2026-09-11 대표 지시). 화면은 결과에 머문 채 조건 없는 목록으로 돌아간다.
    */
-  function goHome() {
-    setFilters((current) => ({ ...current, q: '', category: null, region: null }));
-    setAcOpen(false);
-    /* 들어올 때 걸린 조건을 비운다 — 같은 조건으로 다시 들어와도 결과로 열리게. */
-    router.setParams({ category: '', region: '', sort: '' });
+  /** 헤더 ← — 온 곳으로 돌아간다(피그마 `navigate("/")`). 이력이 없으면(딥링크) 홈. */
+  function goBack() {
+    if (router.canGoBack()) router.back();
+    else router.replace('/');
   }
 
   /** 자동완성 «업체» 행 — 결과를 건너뛰고 상세로(SPEC §13.7). 검색어는 최근 검색에 남긴다. */
@@ -540,30 +525,18 @@ export default function SearchScreen() {
 
   // ─── 검색창 ───────────────────────────────────────────────────────────────
 
-  /**
-   * 검색창. 홈에서는 스크롤 콘텐츠 맨 위에, 결과에서는 헤더에 앉는다 — 목업
-   * 9a(홈)의 헤더는 제목과 알림 벨뿐이다.
-   */
-  /** 비울 조건이 있는가. 없으면 여기가 탭의 첫 화면이라 뒤로 갈 곳이 없다. */
-  const hasCondition =
-    filters.q.trim() !== '' || filters.category !== null || filters.region !== null;
-
-  function renderSearchBox({ compact = false }: { compact?: boolean } = {}) {
+  function renderSearchBox() {
     return (
-      /* 시안 searchBox 52/0 16(홈) vs searchBoxSm 44/0 14(결과 헤더) — 두 크기가 다르다. */
-      <View style={[styles.searchBox, compact && styles.searchBoxCompact, { backgroundColor: theme.backgroundSelected }]}>
-        {/*
-          돋보기는 **입력 중에만** 선다. 루트 시안 `WP-SRCH-검색.dc.html`의 16a
-          (`searchBoxSm`)는 안내 문구 하나뿐이고, 아이콘은 16b 자동완성
-          (`searchBoxActive`)에서 처음 나온다 — 빈 칸에 아이콘을 세우면 안내 문구가
-          그만큼 밀려 잘린다.
-        */}
-        {showAutocomplete ? (
-          <ProductSymbol name="magnifier" size={Layout.iconTab} color={theme.textAssistive} />
-        ) : null}
+      /*
+        피그마 `Search.tsx` 검색창(2026-09-14 정본): 48 · radius 16 · 회색 면(secondary =
+        SEED bg-layer-fill = backgroundElement) · 좌우 16 · 사이 8 · 돋보기 16은 **언제나**
+        선다 · 글자 14. 입력이 있으면 오른쪽에 ✕(16)이 서서 지운다.
+      */
+      <View style={[styles.searchBox, { backgroundColor: theme.backgroundElement }]}>
+        <ProductSymbol name="magnifier" size={Layout.iconField} color={theme.textAssistive} />
         <TextInput
           style={[styles.searchInput, { color: theme.text }]}
-          placeholder="업체나 지역을 검색해보세요"
+          placeholder={PLACEHOLDER}
           placeholderTextColor={theme.textAssistive}
           value={filters.q}
           onChangeText={(text) => {
@@ -576,21 +549,17 @@ export default function SearchScreen() {
           autoCorrect={false}
           accessibilityLabel="업체 이름 검색"
         />
-        {/*
-          «취소»는 **되돌릴 것이 있을 때만** 선다 — 자동완성이 열렸거나 조건이 걸렸을
-          때다. 탭의 첫 화면에는 두지 않는다: 루트 시안 16a에는 없고 16b(자동완성)·
-          16c(필터 적용)에만 있다. 아무 조건도 없는데 «취소»를 세우면 무엇을 취소하는
-          것인지가 없다.
-        */}
-        {showAutocomplete || hasCondition ? (
+        {/* ✕ — 입력이 있을 때만(피그마 `{query && <X/>}`). «취소» 글자 단추는 피그마에 없다. */}
+        {filters.q !== '' ? (
           <Pressable
             accessibilityRole="button"
-            onPress={showAutocomplete ? () => {
+            accessibilityLabel={CLEAR_LABEL}
+            hitSlop={Spacing.two}
+            onPress={() => {
               setFilters((current) => ({ ...current, q: '' }));
               setAcOpen(false);
-            } : goHome}
-            style={styles.cancelBtn}>
-            <ThemedText type="t6" themeColor="textSecondary" style={styles.bold}>취소</ThemedText>
+            }}>
+            <ProductSymbol name="close" size={Layout.iconField} color={theme.textAssistive} />
           </Pressable>
         ) : null}
       </View>
@@ -716,84 +685,23 @@ export default function SearchScreen() {
     /* 금액 한 줄 — 0층 «업체 안내 150만원~» · 1층 «수집 중» · 3건+ 구간. 검색·상세·비교가 같은 규칙. */
     const line = priceLine(item.paidPrice, item.guidePrice);
 
+    /*
+     * 아래 줄 오른쪽 꼬리 — 피그마의 별점 · 저장 수 자리에 우리 값(실 제보 N건)을 둔다.
+     * 0층(dim)은 금액 줄이 이미 출처를 말하므로 꼬리를 비운다 — 같은 말을 두 번 적지 않는다.
+     */
+    const tail = line.dim ? undefined : countTail(item);
+
     return (
-      <View style={styles.resultCard}>
-        {/* 대표 이미지 — 승인된 대표 사진이 없으면 카테고리 기본(CLAUDE.md §8) */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`${item.name} 자세히 보기`}
-          onPress={() => router.push(`/search/${item.id}`)}>
-          <View style={styles.cardImageWrap}>
-            <VendorImage
-              source={item.imageUrl ? { uri: item.imageUrl } : undefined}
-              category={vendorImageCategory(item.category)}
-              width={CARD_IMAGE_W}
-              height={CARD_IMAGE_H}
-              radius={Radius.medium}
-            />
-          </View>
-        </Pressable>
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`${item.name} 자세히 보기`}
-          onPress={() => router.push(`/search/${item.id}`)}
-          style={styles.cardInfo}>
-          <View>
-            <ThemedText type="t5" numberOfLines={1} style={styles.bold}>
-              {item.name}
-            </ThemedText>
-            <ThemedText
-              type="t6"
-              numeric
-              numberOfLines={1}
-              themeColor={line.dim ? 'textAssistive' : undefined}
-              style={[styles.bold, styles.cardPrice]}>
-              {line.text}
-            </ThemedText>
-            {/* 출처 또는 실 제보 · 지역 */}
-            <ThemedText
-              type="t7"
-              themeColor="textAssistive"
-              numeric
-              numberOfLines={1}
-              style={styles.cardMeta}>
-              {metaLine(item, item.region)}
-            </ThemedText>
-          </View>
-
-          {/*
-            Pick pill — 하트 + 라벨. 시안은 이 자리에 하트 + **Pick 수**를 적지만
-            서버가 업체별 Pick 수를 내려주지 않는다(`vendorSummarySchema`) — 모양만
-            시안대로 두고 라벨은 «Pick»으로 간다(2026-09-11 대표 지시). 수가 붙으면
-            라벨 자리만 숫자로 바꾼다.
-          */}
-          <View style={styles.pickRow}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={chosen ? `${item.name} Pick했어요` : `${item.name} Pick하기`}
-              accessibilityState={{ disabled: busy }}
-              disabled={busy}
-              style={({ pressed }) => [
-                styles.pickPill,
-                chosen
-                  ? { backgroundColor: theme.tintSurface, borderColor: theme.tint }
-                  : { backgroundColor: theme.background, borderColor: theme.track },
-                pressed ? styles.pressed : null,
-                busy ? styles.busy : null,
-              ]}
-              onPress={() => void onPressPick(item)}>
-              <PickHeartIcon color={chosen ? theme.tint : theme.textAssistive} filled={chosen} />
-              <ThemedText
-                type="t7"
-                style={[styles.bold, chosen ? { color: theme.tint } : null]}
-                themeColor={chosen ? undefined : 'textSecondary'}>
-                Pick
-              </ThemedText>
-            </Pressable>
-          </View>
-        </Pressable>
-      </View>
+      <ResultCard
+        name={item.name}
+        category={item.category}
+        region={item.region}
+        imageUrl={item.imageUrl}
+        price={{ text: line.text, dim: line.dim }}
+        tail={tail}
+        pick={{ chosen, busy, onPress: () => void onPressPick(item) }}
+        onPress={() => router.push(`/search/${item.id}`)}
+      />
     );
   }
 
@@ -926,88 +834,56 @@ export default function SearchScreen() {
       );
     }
 
+    const budgetLabel = BUDGET_BANDS.find((band) => band.key === filters.budget)?.label ?? null;
+
     return (
       <>
         {/*
-          필터바 — 56 · 가로 스크롤 · 칩 사이 8.
+          칩 줄 — 피그마 `Search.tsx`(2026-09-14 정본 · 최상위 규칙 1). «카테고리 ▾ ·
+          지역 ▾ · 가격 ▾» 셋은 필터 시트를 열고, 오른쪽 끝의 «추천순 ▾»은 정렬 시트를
+          연다. 위 24 · 아래 8 · 칩 사이 8. 조건이 걸린 칩은 그 값을 라벨로 적고
+          잉크로 채운다(«메이크업» · «경기» · «100~200만원»).
 
-          **업종 칩만 선다.** 루트 시안 `WP-SRCH-검색.dc.html` 16a의 `weddingCats`가
-          «전체 · 웨딩홀 · 스튜디오 · 드레스 · 메이크업 · 스냅 · 청첩장» 일곱이다.
+          피그마의 지역 칩 기본 라벨은 «서울»인데 그것은 시안의 가짜 기본값(«서울 전체»)
+          이다 — 우리는 기본 지역이 없으므로 «지역»으로 적는다. 카테고리 칩의 업종 이름은
+          VENDOR_CATEGORY_LABEL 하나만 본다(본식스냅 · 헤어변형 · 결정사).
 
-          여기 있던 «필터» 칩은 뺐다 — 시안은 필터 입구를 아래 결과 머리의
-          «추천순 · 필터»에 뒀다. 두 자리에 같은 입구를 세우면 사용자가 둘을 다른
-          것으로 읽는다. 지역 칩도 뺐다: 지역은 필터 시트의 «시/도 · 시/군/구»에서
-          고른다(16d).
-
-          나머지 업종(헤어변형 · 부케 · 예물 · 혼수 · 허니문 · 결정사)도 필터
-          시트에서 고른다 — 칩 줄에 열셋을 늘어놓으면 가로 스크롤만 길어진다
-          (2026-09-11 대표 지시 「시안대로 7개로 줄인다」).
+          업종 칩 일곱(전체 · 웨딩홀 · …)이 여기 서 있었다(루트 시안 16a). 피그마가
+          그 자리를 드롭다운 칩으로 바꿨고 업종은 필터 시트의 첫 그룹으로 갔다.
         */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={[styles.filterBar, { backgroundColor: theme.background }]}
-          contentContainerStyle={styles.filterBarContent}>
-          <View style={styles.filterChip}>
-            <FilterChip
-              label="전체"
-              selected={filters.category === null}
-              off="outline"
-              onPress={() => setFilters((current) => ({ ...current, category: null }))}
+        <View style={[styles.filterRow, { backgroundColor: theme.background }]}>
+          <DropdownChip
+            label={filters.category ? VENDOR_CATEGORY_LABEL[filters.category] : CHIP_CATEGORY}
+            active={filters.category !== null}
+            onPress={() => setFilterOpen(true)}
+          />
+          <DropdownChip
+            label={filters.region ?? CHIP_REGION}
+            active={filters.region !== null}
+            onPress={() => setFilterOpen(true)}
+          />
+          <DropdownChip
+            label={budgetLabel ?? CHIP_PRICE}
+            active={filters.budget !== null}
+            onPress={() => setFilterOpen(true)}
+          />
+          <View style={styles.sortChip}>
+            <DropdownChip
+              label={SORT_LABEL[filters.sort]}
+              active={false}
+              accessibilityLabel={`정렬: ${SORT_LABEL[filters.sort]}`}
+              onPress={() => setSortOpen(true)}
             />
           </View>
-          {CHIP_CATEGORIES.map((category) => (
-            <View key={category} style={styles.filterChip}>
-              <FilterChip
-                label={VENDOR_CATEGORY_LABEL[category]}
-                selected={filters.category === category}
-                off="outline"
-                onPress={() => toggle('category', category)}
-              />
-            </View>
-          ))}
-        </ScrollView>
+        </View>
 
-        {/*
-          결과 수 + 정렬·필터 — 40 · 양끝.
-
-          오른쪽은 시안 16a의 `sortLine`이다: 정렬 아이콘 + «추천순 · 필터» 한 줄
-          (14/700 · text.secondary). 두 말이 붙어 있지만 여는 시트는 다르므로
-          «추천순»과 «필터»를 각각 누르게 하고 가운데 « · »는 글자로만 둔다.
-
-          여기 있던 ⓘ(«실 제보가 뭔가요?» · WP-SHT-014)는 뺐다 — 시안 16a에 없다.
-          그 시트로 가는 길은 업체 상세에 그대로 있다(`[vendorId]/index.tsx`).
-        */}
-        <View style={[styles.sortRow, { backgroundColor: theme.background }]}>
-          <View style={styles.countWithInfo}>
-            <ThemedText type="t7" themeColor="textAssistive" numeric>
-              {filters.category ? `${VENDOR_CATEGORY_LABEL[filters.category]} ` : ''}
-              {total}곳
-            </ThemedText>
-            <DelayedLoader active={refreshing} size={20} />
-          </View>
-          <View style={styles.sortLine}>
-            <SortIcon color={theme.textSecondary} />
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`정렬: ${SORT_LABEL[filters.sort]}`}
-              onPress={() => setSortOpen(true)}>
-              <ThemedText type="t7" themeColor="textSecondary" style={styles.bold}>
-                {SORT_LABEL[filters.sort]}
-              </ThemedText>
-            </Pressable>
-            <ThemedText type="t7" themeColor="textSecondary" style={styles.bold}>
-              ·
-            </ThemedText>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={activeFilterCount > 0 ? `필터 ${activeFilterCount}개 적용됨` : '필터'}
-              onPress={() => setFilterOpen(true)}>
-              <ThemedText type="t7" themeColor="textSecondary" style={styles.bold}>
-                {activeFilterCount > 0 ? `필터 ${activeFilterCount}` : '필터'}
-              </ThemedText>
-            </Pressable>
-          </View>
+        {/* 결과 수 — 피그마 «7개 업체»(12 · muted). 아래 12. 새로고침 표시가 같은 줄에 붙는다. */}
+        <View style={[styles.countRow, { backgroundColor: theme.background }]}>
+          {/* 규격서: «12/500 #868B94 · lh 16». */}
+          <ThemedText type="f12" themeColor="textAssistive" numeric style={styles.medium}>
+            {total}개 업체
+          </ThemedText>
+          <DelayedLoader active={refreshing} size={20} />
         </View>
 
         {/* 결과 목록 */}
@@ -1033,53 +909,16 @@ export default function SearchScreen() {
                 {sponsored.length > 0 ? (
                   <View style={styles.sponsoredBlock}>
                     {sponsored.map((ad) => (
-                      <Pressable
+                      /* 광고는 자연 결과와 같은 카드 틀이고, 이미지 좌상단 배지(피그마 `badge` 자리)의 «광고»로만 가른다. */
+                      <ResultCard
                         key={ad.vendorId}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${ad.label} ${ad.name} 자세히 보기`}
+                        name={ad.name}
+                        category={ad.category}
+                        region={regionLabel(ad.region)}
+                        imageUrl={ad.imageUrl}
+                        badge={ad.label}
                         onPress={() => router.push(`/search/${ad.vendorId}`)}
-                        style={styles.resultCard}>
-                        <View style={styles.cardImageWrap}>
-                          <VendorImage
-                            source={ad.imageUrl ? { uri: ad.imageUrl } : undefined}
-                            category={vendorImageCategory(ad.category)}
-                            width={CARD_IMAGE_W}
-                            height={CARD_IMAGE_H}
-                            radius={Radius.medium}
-                          />
-                          {/*
-                            시안 adPill: top 10 left 10 · rgba(0,0,0,.5) · 13/18 700 · padding 3 9 · radius 4.
-
-                            배경은 `pillOnImage`다 — 이름 그대로 «이미지 위 순위 · 광고 pill»
-                            자리의 값이고 시안과 같은 rgba(0,0,0,.5)다. `scrim`을 쓰면 라이트에서
-                            .45, 다크에서 .72로 갈려 시안보다 옅거나 진해진다(2026-09-11 캡처로
-                            드러났다 — 그래서 pill이 사진 위에서 다른 무게로 보였다).
-                          */}
-                          {/*
-                            글자는 `onInk`(흰색)다. `onTint`가 아니다 — 2026-09-14 새 팔레트에서
-                            `onTint`가 흰색에서 **플럼 #371B34**로 바뀌었다(키 컬러 면 위 흰 글자가
-                            2.51:1이라 어둡게 간 값이다). 그 값을 이 자리에 그대로 두면 검은
-                            반투명 위에 검은 글자가 된다.
-
-                            저장소 여러 곳의 「흰 글자 금지」는 **키 컬러 면 위** 이야기이고
-                            여기는 다른 자리다 — 새하얀 사진 위에서도 rgba(0,0,0,.5)를 깔면
-                            흰 글자가 3.95:1로 읽힌다.
-                          */}
-                          <View style={[styles.adPill, { backgroundColor: theme.pillOnImage }]}>
-                            <ThemedText type="micro" style={{ color: theme.onInk }}>
-                              {ad.label}
-                            </ThemedText>
-                          </View>
-                        </View>
-                        <View style={styles.cardInfo}>
-                          <View>
-                            <ThemedText type="t5" numberOfLines={1} style={styles.bold}>{ad.name}</ThemedText>
-                            <ThemedText type="t7" themeColor="textAssistive" numberOfLines={1} style={styles.cardMeta}>
-                              {VENDOR_CATEGORY_LABEL[ad.category]} · {regionLabel(ad.region)}
-                            </ThemedText>
-                          </View>
-                        </View>
-                      </Pressable>
+                      />
                     ))}
                   </View>
                 ) : null}
@@ -1104,44 +943,44 @@ export default function SearchScreen() {
 
         {/* ── 헤더 ── */}
         {/*
-         * 루트 시안 `docs/design-handoff/root/WP-SRCH-검색.dc.html` 16a를 그대로 따른다.
-         * 줄이 둘이다 — 위는 「검색」 제목(head 56), 아래는 검색창(navSearch 60).
-         * 하나로 합치지 않는다. 합치면 탭 이름이 사라져 여기가 어디인지 알 수 없다.
-         *
-         * 검색창 왼쪽의 40 원형은 조건이 걸렸을 때만 선다(시안 16c). 조건이 없으면
-         * 탭의 첫 화면이라 갈 곳이 없다 — 아무 데도 가지 않는 뒤로 가기 단추를
-         * 두는 것이 가장 나쁘다.
-         */}
-        <ThemedView style={styles.homeHeader}>
-          <ThemedText type="t4">검색</ThemedText>
-        </ThemedView>
-        <ThemedView style={styles.header}>
-          {hasCondition ? (
+          피그마 `Search.tsx` 헤더(2026-09-14 정본 · 최상위 규칙 1). 루트 시안 16a의
+          두 줄(«검색» 제목 56 + 검색창 60)은 이 앞에 있었고, 피그마가 그 자리를 이긴다.
+          한 덩어리다: 위 12 · 아래 16 · 아래 선 1. 첫 줄은 ← 36 원 + 제목(20/700)과
+          부제(13 · muted), 12 아래에 검색창(48 · radius 16 · 회색 면)과 필터 단추(48 정사각).
+
+          제목은 피그마의 «업체 탐색»이 아니라 «업체 검색»이다 — «탐색»은 금지어(CLAUDE.md 용어).
+          ←는 언제나 선다: 검색은 탭에서 내려왔고(2026-09-14) 홈의 검색바로 들어오므로 돌아갈
+          곳이 있다. 뒤로 갈 이력이 없으면(딥링크) 홈으로 간다.
+        */}
+        <ThemedView style={[styles.header, { borderBottomColor: theme.border }]}>
+          <View style={styles.headerTitleRow}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="검색 조건 비우기"
-              onPress={goHome}
+              accessibilityLabel={BACK_LABEL}
+              onPress={goBack}
               style={styles.headerBack}>
-              <ProductSymbol name="chevronLeft" size={Layout.iconTab} color={theme.textStrong} />
+              <ProductSymbol name="arrowLeft" size={Layout.iconRow} color={theme.text} />
             </Pressable>
-          ) : null}
-          {renderSearchBox({ compact: true })}
-          {/*
-            필터 버튼 — 2026-09-14 대표 지시(피그마 채택). 결과 머리의 «추천순 · 필터»
-            텍스트 링크는 그대로 두고(정렬과 한 줄에 있어 손에 먼저 잡힌다), 검색바
-            옆에도 누를 자리를 하나 더 둔다 — 시안이 「텍스트보다 누를 자리가
-            분명하다」고 판단한 것과 같다.
-          */}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={activeFilterCount > 0 ? `필터 ${activeFilterCount}개 적용됨` : '필터'}
-            onPress={() => setFilterOpen(true)}
-            style={styles.headerFilterBtn}>
-            <FilterIcon color={theme.textStrong} />
-            {activeFilterCount > 0 ? (
-              <View style={[styles.headerFilterDot, { backgroundColor: theme.tint }]} />
-            ) : null}
-          </Pressable>
+            <View style={styles.headerTitleText}>
+              {/* 규격서: 제목 «20/700 · lh 28 · ls -0.4px» · 부제 «11/400 #868B94 · lh 17». */}
+              <ThemedText type="f20" style={[styles.bold, styles.title]}>
+                {TITLE}
+              </ThemedText>
+              <ThemedText type="f11" themeColor="textAssistive">
+                {SUBTITLE}
+              </ThemedText>
+            </View>
+          </View>
+          <View style={styles.headerSearchRow}>
+            {renderSearchBox()}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={activeFilterCount > 0 ? `필터 ${activeFilterCount}개 적용됨` : '필터'}
+              onPress={() => setFilterOpen(true)}
+              style={[styles.headerFilterBtn, { backgroundColor: theme.backgroundElement }]}>
+              <FilterIcon color={theme.text} />
+            </Pressable>
+          </View>
           {/* 지도 보기는 여기 없다(2026-09-08) — 위치는 업체 상세에서만 보인다. */}
         </ThemedView>
 
@@ -1168,6 +1007,7 @@ export default function SearchScreen() {
         <FilterSheet
           visible={filterOpen}
           value={{
+            category: filters.category,
             region: filters.region,
             budget: filters.budget,
             onlyVerified: filters.onlyVerified,
@@ -1210,26 +1050,13 @@ export default function SearchScreen() {
 }
 
 /**
- * 정렬·필터 줄 앞의 아이콘 — 시안 16a `sortLine`의 «M6 8h12M9 14h6»(16 · 획 2).
- * 위아래 길이가 다른 두 줄이 «좁혀 간다»를 뜻한다.
- */
-function SortIcon({ color }: { color: string }) {
-  return (
-    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-      <Path d="M6 8h12M9 14h6" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-    </Svg>
-  );
-}
-
-/**
  * 검색바 옆 필터 버튼 아이콘 — 2026-09-14 대표 지시(피그마 채택). 길이가 줄어드는
  * 가로줄 셋으로 "거르기"를 뜻하는 통상적인 필터 기호다. `ProductSymbol`에 없는
- * 아이콘이라(packages/ui는 손대지 않는다) 이 화면의 `SortIcon`·`ChevronDownIcon`과
- * 같은 자리에 로컬로 둔다.
+ * 아이콘이라 이 화면에 로컬로 둔다. 크기는 피그마 `SlidersHorizontal w-4 h-4` = 16.
  */
 function FilterIcon({ color }: { color: string }) {
   return (
-    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+    <Svg width={Layout.iconField} height={Layout.iconField} viewBox="0 0 24 24" fill="none">
       <Path d="M4 7h16M7 12h10M10 17h4" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
@@ -1244,8 +1071,9 @@ function FilterIcon({ color }: { color: string }) {
  * (`MARK_HEART_PATH`) — 좌표를 새로 만들지 않는다.
  */
 function PickHeartIcon({ color, filled }: { color: string; filled: boolean }) {
+  /* 피그마 `Search.tsx` 카드 Pick 원 안의 하트 `w-3.5 h-3.5` = 14 — size.iconSmall과 같은 값. */
   return (
-    <Svg width={Layout.pickPillIcon} height={Layout.pickPillIcon} viewBox="0 0 24 24" fill="none">
+    <Svg width={Layout.iconSmall} height={Layout.iconSmall} viewBox="0 0 24 24" fill="none">
       <Path
         d={MARK_HEART_PATH}
         fill={filled ? color : 'none'}
@@ -1258,17 +1086,172 @@ function PickHeartIcon({ color, filled }: { color: string; filled: boolean }) {
   );
 }
 
-// ─── 레이아웃 상수 ──────────────────────────────────────────────────────────
-
-/*
- * 결과 카드 이미지 — 2026-09-14 가로형 개편으로 폭·높이를 새로 잡았다. 토큰
- * 사다리에 없는 이 화면 전용 로컬 값이다(피그마 `Search.tsx`의 120×116을 그대로
- * 옮기지 않는다 — B등급 LLM 근사치라 수치는 정본이 아니다). 카드 세로폭을
- * 좁혀 한 화면에 더 많은 결과가 보이게 하는 목적만 지키면 되므로 4:3에 가까운
- * 자체 비율로 정했다.
+/**
+ * 결과 카드 한 장 — 피그마 `Search.tsx` 업체 목록의 카드(2026-09-14 정본 · 최상위
+ * 규칙 1). 테두리 1 · radius 16(`rounded-2xl`) · 왼쪽 열 120(썸네일 104×116 ·
+ * radius 18 · 안쪽 8) · 오른쪽 정보 안쪽 14(`p-3.5`). 위 줄은 업종 라벨 + 이름(14/700)과
+ * 오른쪽 Pick 원 28, 다음 줄은 핀 12 + 지역, 아래 줄은 금액(왼쪽)과 꼬리(오른쪽).
+ *
+ * **피그마의 해시태그 · 별점 · 저장 수는 그리지 않는다** — 서버가 주지 않는다
+ * (`vendorSummarySchema`에 그 칸이 없다). 만들어 넣지 않는다. 그 자리는 우리 값으로
+ * 채운다: 아래 줄 오른쪽이 «실 제보 N건»이다. 그림자(`shadow-sm`)는 `elevation.$rule`
+ * (그림자를 거의 쓰지 않는다)에 따라 없다.
+ *
+ * 광고 카드도 같은 틀이다 — 이미지 좌상단 배지(피그마 `badge` 자리)에 «광고»가 선다.
  */
-const CARD_IMAGE_W = 112;
-const CARD_IMAGE_H = 100;
+function ResultCard({
+  name,
+  category,
+  region,
+  imageUrl,
+  badge,
+  price,
+  tail,
+  pick,
+  onPress,
+}: {
+  name: string;
+  category: VendorCategory;
+  region: string;
+  imageUrl: string | null;
+  badge?: string;
+  price?: { text: string; dim: boolean };
+  tail?: string;
+  pick?: { chosen: boolean; busy: boolean; onPress: () => void };
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${name} 자세히 보기`}
+      onPress={onPress}
+      style={[styles.resultCard, { backgroundColor: theme.background, borderColor: theme.border }]}>
+      <View style={styles.cardImageCol}>
+        <VendorImage
+          source={imageUrl ? { uri: imageUrl } : undefined}
+          category={vendorImageCategory(category)}
+          width={Layout.thumbSearchWidth}
+          height={Layout.thumbSearchHeight}
+          radius={Radius.thumb}
+        />
+        {badge ? (
+          /* 피그마 badge: 열 기준 left/top 14 · pill · 잉크 채움 · 흰 글자 · padding 8/2. */
+          <View style={[styles.cardBadge, { backgroundColor: theme.text }]}>
+            <ThemedText type="micro" style={[styles.bold, { color: theme.onInk }]}>
+              {badge}
+            </ThemedText>
+          </View>
+        ) : null}
+      </View>
+      <View style={styles.cardInfo}>
+        <View>
+          <View style={styles.cardHeadRow}>
+            <View style={styles.cardHeadText}>
+              {/* 규격서 search.txt: 업종 «10/700 #868B94 · lh 15 · ls 0.5px» · 이름 «14/700 · lh 19 · mar 2 0 0 0». */}
+              <ThemedText type="f10" themeColor="textAssistive" style={[styles.bold, styles.tracked]}>
+                {VENDOR_CATEGORY_LABEL[category]}
+              </ThemedText>
+              <ThemedText type="f14" numberOfLines={1} style={[styles.bold, styles.cardName]}>
+                {name}
+              </ThemedText>
+            </View>
+            {pick ? (
+              /* Pick 원 — 켜지면 키 컬러 채움 + 흰 하트, 꺼지면 회색 면 + 보조색 하트(피그마 `bg-primary` / `bg-secondary`). */
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={pick.chosen ? `${name} Pick했어요` : `${name} Pick하기`}
+                accessibilityState={{ disabled: pick.busy }}
+                disabled={pick.busy}
+                hitSlop={Spacing.two}
+                onPress={pick.onPress}
+                style={({ pressed }) => [
+                  styles.pickCircle,
+                  { backgroundColor: pick.chosen ? theme.tint : theme.backgroundElement },
+                  pressed ? styles.pressed : null,
+                  pick.busy ? styles.busy : null,
+                ]}>
+                <PickHeartIcon color={pick.chosen ? theme.onTint : theme.textAssistive} filled={pick.chosen} />
+              </Pressable>
+            ) : null}
+          </View>
+          <View style={styles.cardLocation}>
+            <ProductSymbol name="pin" size={Layout.iconMicro} color={theme.textAssistive} />
+            {/* 규격서: 지역 «12/400 #868B94 · lh 16». */}
+            <ThemedText type="f12" themeColor="textAssistive" numberOfLines={1}>
+              {region}
+            </ThemedText>
+          </View>
+        </View>
+        {price || tail ? (
+          <View style={styles.cardFoot}>
+            {/* 규격서: 금액 «12/600 #1A1C20 · lh 16» · 꼬리(«저장 2341» 자리) «10/400 #868B94 · lh 15». */}
+            {price ? (
+              <ThemedText
+                type="f12"
+                numeric
+                numberOfLines={1}
+                themeColor={price.dim ? 'textAssistive' : undefined}
+                style={styles.semibold}>
+                {price.text}
+              </ThemedText>
+            ) : (
+              <View />
+            )}
+            {tail ? (
+              <ThemedText type="f10" themeColor="textAssistive" numeric numberOfLines={1}>
+                {tail}
+              </ThemedText>
+            ) : null}
+          </View>
+        ) : null}
+      </View>
+    </Pressable>
+  );
+}
+
+/**
+ * 결과 위 칩 «라벨 ▾» — 피그마 `Search.tsx` 칩 줄(2026-09-14 정본). 36 · 좌우 14 ·
+ * radius 999 · 테두리 1 · 14/700 · 꺾쇠 14(반투명 .5). 조건이 걸리면 잉크 채움 · 흰 글자.
+ * 누르면 시트가 열린다 — 피그마의 인라인 드롭다운 대신 우리 정렬 시트(최상위 규칙 5:
+ * 바텀시트는 기존 정본 그대로).
+ */
+function DropdownChip({
+  label,
+  active,
+  onPress,
+  accessibilityLabel,
+}: {
+  label: string;
+  active: boolean;
+  onPress: () => void;
+  accessibilityLabel?: string;
+}) {
+  const theme = useTheme();
+  const color = active ? theme.onInk : theme.text;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.dropChip,
+        {
+          backgroundColor: active ? theme.text : theme.background,
+          borderColor: active ? theme.text : theme.border,
+        },
+        pressed ? styles.pressed : null,
+      ]}>
+      {/* 규격서: 칩 «14/600 · lh 20». */}
+      <ThemedText type="f14" numberOfLines={1} style={[styles.semibold, { color }]}>
+        {label}
+      </ThemedText>
+      <View style={styles.dropChevron}>
+        <ProductSymbol name="chevronDown" size={Layout.iconSmall} color={color} />
+      </View>
+    </Pressable>
+  );
+}
 
 
 const styles = StyleSheet.create({
@@ -1282,89 +1265,65 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
   },
 
-  // ── 헤더 ──
-  /* 홈 헤더. 목업: height 56 · padding 0 20 0 24 · 제목 좌 · 벨 우. 테두리 없음. */
-  homeHeader: {
-    height: Layout.navBar,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingLeft: Layout.gutter,
-    /* 오른쪽 20 — 06-search head «padding:0 20px 0 24px». component.navBack.paddingRight와 같은 값이다. */
-    paddingRight: Layout.navPaddingRight,
-  },
-  bellBtn: {
-    width: Layout.iconButton,
-    height: Layout.iconButton,
-    borderRadius: Radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  /* 결과 헤더 — 시안 navSearch: `flex:0 0 60px` · gap 10 · `padding:0 24px 0 12px`. */
+  // ── 헤더 — 피그마 `Search.tsx`(2026-09-14 정본) ──
+  /* 규격서 search.txt 「div 430×134 pad 12 20 16 20」 — 위 12 · 좌우 20(pageX) · 아래 16 · 아래 선 1. */
   header: {
-    height: Layout.headerSearch,
+    paddingTop: Layout.inlineGap,
+    paddingBottom: Spacing.three,
+    paddingHorizontal: Layout.pageX,
+    borderBottomWidth: Border.hairline,
+  },
+  /* `mb-3 flex items-center gap-2` — ← 와 제목 사이 8, 아래 12. */
+  headerTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Layout.cardGap,
-    paddingLeft: Layout.navPaddingLeft,
-    paddingRight: Layout.gutter,
+    gap: Spacing.two,
+    marginBottom: Layout.inlineGap,
   },
-  /* 시안 backBtn — 40 원형. */
+  headerTitleText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  /* ← `h-9 w-9 rounded-full` — 36 원. */
   headerBack: {
-    width: Layout.iconButton,
-    height: Layout.iconButton,
+    width: Layout.headerBack,
+    height: Layout.headerBack,
     borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  /* 검색창과 필터 단추 `flex gap-2`. */
+  headerSearchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  /* 필터 단추 `h-12 w-12 rounded-2xl bg-secondary` — 48 정사각 · radius 16. */
   headerFilterBtn: {
-    width: Layout.iconButton,
-    height: Layout.iconButton,
-    borderRadius: Radius.pill,
+    width: Layout.searchField,
+    height: Layout.searchField,
+    borderRadius: Radius.cardLarge,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  headerFilterDot: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 6,
-    height: 6,
-    borderRadius: Radius.pill,
   },
 
-  /* 홈의 검색창 블록. 목업: padding 4 24 24. */
-  searchBlock: {
-    paddingTop: Spacing.one,
-    paddingHorizontal: Layout.gutter,
-    paddingBottom: Spacing.four,
-  },
-  // 검색창(홈). 시안 searchBox: height 52, radius 6, bg gray100, padding 0 16, gap 10
+  /* 검색창 `flex-1 rounded-2xl bg-secondary px-4 h-12 gap-2` — 48 · radius 16 · 좌우 16 · 사이 8. */
   searchBox: {
-    height: Layout.field,
-    borderRadius: Radius.input,
+    flex: 1,
+    minWidth: 0,
+    height: Layout.searchField,
+    borderRadius: Radius.cardLarge,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: Spacing.three,
-    gap: Layout.cardGap,
+    gap: Spacing.two,
   },
-  /* 검색창(결과 헤더). 시안 searchBoxSm — 44 · 좌우 14 · 헤더에서 남는 폭을 채운다. */
-  searchBoxCompact: {
-    flex: 1,
-    minWidth: 0,
-    height: Layout.touchTarget,
-    paddingHorizontal: Layout.fieldPaddingX,
-  },
+  /* 규격서: 입력 «input 278×20» — 글자 14 · 줄높이 20. */
   searchInput: {
     flex: 1,
-    fontSize: FontSize.t6,
-    lineHeight: LineHeight.t6,
+    fontSize: FontSize.f14,
+    lineHeight: LineHeight.lh20,
     paddingVertical: 0,
-  },
-  cancelBtn: {
-    paddingLeft: Spacing.two,
-    minHeight: Layout.touchTarget,
-    justifyContent: 'center',
   },
 
   // 자동완성 · 시안 #16b: 그룹 padding 0 24 20 · 제목→목록 8 · 행 56 · padding 12 0 · 행 사이 2
@@ -1423,6 +1382,26 @@ const styles = StyleSheet.create({
   },
   bold: {
     fontWeight: 700,
+  },
+  /* 규격서의 굵기 600 · 500 — spec/tokens.json typography.$weights의 피그마 예외. */
+  semibold: {
+    fontWeight: 600,
+  },
+  medium: {
+    fontWeight: 500,
+  },
+  /* 규격서 «ls 0.5px» — 업종 라벨. */
+  tracked: {
+    letterSpacing: LetterSpacing.p05,
+  },
+  /* 규격서 제목 «lh 28 · ls -0.4px». */
+  title: {
+    lineHeight: LineHeight.lh28,
+    letterSpacing: LetterSpacing.n04,
+  },
+  /* `micro`는 기본이 700이다. 피그마에서 regular인 작은 글자(부제 · 지역 · 결과 수 · 꼬리)는 400으로 되돌린다. */
+  regular: {
+    fontWeight: 400,
   },
   pressed: {
     transform: [{ scale: 0.97 }],
@@ -1516,108 +1495,126 @@ const styles = StyleSheet.create({
     marginTop: Layout.sectionGap,
   },
 
-  // ── 결과 ──
-  // 필터바. 핸드오프: height 56, 가로 스크롤. 칩은 flex 0 0 auto(SPEC §12.4).
-  filterBar: {
-    height: Layout.navBar,
-    flexGrow: 0,
-    flexShrink: 0,
-  },
-  filterBarContent: {
+  // ── 결과 — 피그마 `Search.tsx`(2026-09-14 정본) ──
+  /* 칩 줄 `flex items-center gap-2 px-5 pt-3 pb-2` — 위 12 · 아래 8 · 칩 사이 8. 넘치면 줄을 바꾼다. */
+  filterRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
-    paddingHorizontal: Layout.gutter,
     gap: Spacing.two,
+    paddingHorizontal: Layout.pageX,
+    paddingTop: Layout.inlineGap,
+    paddingBottom: Spacing.two,
   },
-  filterChip: {
-    flexGrow: 0,
-    flexShrink: 0,
+  /* 정렬 칩 `ml-auto` — 오른쪽 끝에 붙는다. */
+  sortChip: {
+    marginLeft: 'auto',
   },
-
-  // 정렬 행. 핸드오프: height 40, count 좌 · 정렬 우
-  sortRow: {
-    height: Layout.controlMedium,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Layout.gutter,
-    flexShrink: 0,
-  },
-  /* 결과 수. 새로고침 표시가 같은 줄에 붙는다, 사이 4. */
-  countWithInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
-  },
-  /* 정렬 · 필터 한 줄. 시안 16a `sortLine` — 아이콘과 글자 사이 5. */
-  sortLine: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Layout.pickPillGap,
-    minHeight: Layout.touchTarget,
-    paddingLeft: Spacing.two,
-  },
-  /* 목업: padding 4 24 28 · 카드 사이 20. */
-  resultList: {
-    paddingHorizontal: Layout.gutter,
-    paddingTop: Spacing.one,
-    paddingBottom: Layout.sectionGap,
-    gap: Layout.listGap,
-  },
-
-  // 결과 카드 — 가로형. 이미지(좌, 고정폭) + 정보(우, flex).
-  resultCard: {
-    flexDirection: 'row',
-    gap: Layout.cardGap,
-  },
-  cardImageWrap: {
-    width: CARD_IMAGE_W,
-    height: CARD_IMAGE_H,
-    flexShrink: 0,
-    borderRadius: Radius.medium,
-    overflow: 'hidden',
-  },
-  /* 우측 정보 열 — 위(이름·금액·메타)와 아래(Pick pill) 사이를 벌린다. */
-  cardInfo: {
-    flex: 1,
-    minWidth: 0,
-    justifyContent: 'space-between',
-  },
-  cardPrice: {
-    marginTop: Spacing.half,
-  },
-  cardMeta: {
-    marginTop: Spacing.half,
-  },
-  /* Pick pill 자리. */
-  pickRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  /* Pick pill — component.pickPill. 36 · radius 999 · padding 0 12 · 1px 테두리. */
-  pickPill: {
+  /* 칩 `h-9 px-3.5 rounded-full border gap-1` — 36 · 좌우 14 · 라벨↔꺾쇠 4. */
+  dropChip: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    flexShrink: 0,
-    gap: Layout.pickPillGap,
-    height: Layout.pickPill,
-    paddingHorizontal: Layout.pickPillPaddingX,
+    height: Layout.chip,
+    paddingHorizontal: Layout.chipPaddingX,
+    gap: Spacing.one,
     borderRadius: Radius.pill,
     borderWidth: Border.hairline,
   },
-
-  // 광고 — 이미지 좌상단 라벨
-  adPill: {
-    position: 'absolute',
-    top: Layout.cardGap,
-    left: Layout.cardGap,
-    borderRadius: Radius.badge,
-    paddingHorizontal: Layout.badgePaddingX,
-    paddingVertical: Spacing.half + 1,
+  /* 꺾쇠 `opacity-50`. */
+  dropChevron: {
+    opacity: 0.5,
   },
+  /* 결과 수 `mb-3 px-5` — 아래 12. 새로고침 표시가 같은 줄에 붙는다, 사이 4. */
+  countRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+    paddingHorizontal: Layout.pageX,
+    marginBottom: Layout.inlineGap,
+  },
+  /* 목록 `px-5 space-y-3` + 바깥 `pb-4` — 카드 사이 12 · 아래 16. */
+  resultList: {
+    paddingHorizontal: Layout.pageX,
+    paddingBottom: Spacing.three,
+    gap: Layout.inlineGap,
+  },
+
+  /* 규격서 「div 390×137 … bg #FFFFFF · r16 · border 1 #000000 6% · shadow」 — radius 16 · 테두리 1 · shadow-sm. */
+  resultCard: {
+    flexDirection: 'row',
+    borderRadius: Radius.cardLarge,
+    borderWidth: Border.hairline,
+    ...Elevation.figmaCard,
+  },
+  /* 왼쪽 열 `p-2` 안에 썸네일 104×116 — 열 폭 120. */
+  cardImageCol: {
+    padding: Spacing.two,
+    flexShrink: 0,
+  },
+  /* 배지 `absolute left-3.5 top-3.5 rounded-full px-2 py-0.5` — 열 기준 14 · 안쪽 8/2. 14는 같은 값의 chipPaddingX. */
+  cardBadge: {
+    position: 'absolute',
+    top: Layout.chipPaddingX,
+    left: Layout.chipPaddingX,
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.half,
+  },
+  /* 오른쪽 정보 `flex-1 p-3.5 flex-col justify-between` — 안쪽 14(같은 값의 fieldPaddingX). */
+  cardInfo: {
+    flex: 1,
+    minWidth: 0,
+    padding: Layout.fieldPaddingX,
+    justifyContent: 'space-between',
+  },
+  /* 업종·이름 ↔ Pick 원 `flex items-start justify-between gap-1`. */
+  cardHeadRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: Spacing.one,
+  },
+  cardHeadText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  /* 이름 `mt-0.5` — 업종 라벨 아래 2. */
+  /* 규격서: 이름 «lh 19 · mar 2 0 0 0». */
+  cardName: {
+    marginTop: Spacing.half,
+    lineHeight: LineHeight.lh19,
+  },
+  /* Pick 원 `w-7 h-7 rounded-full mt-0.5` — 28. */
+  pickCircle: {
+    width: Layout.pickCircle,
+    height: Layout.pickCircle,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+    marginTop: Spacing.half,
+  },
+  /* 핀 + 지역 `flex items-center gap-1 mt-1` — 사이 4 · 위 4. */
+  cardLocation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+    marginTop: Spacing.one,
+  },
+  /* 아래 줄 `flex items-center justify-between mt-2` — 금액 왼쪽 · 꼬리 오른쪽 · 위 8. */
+  cardFoot: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.two,
+    marginTop: Spacing.two,
+  },
+
+  /* 광고 묶음 — 자연 결과와 같은 간격(12). */
   sponsoredBlock: {
-    gap: Layout.listGap,
-    marginBottom: Layout.listGap,
+    gap: Layout.inlineGap,
+    marginBottom: Layout.inlineGap,
   },
 
   // 결과 없음 · 시안 #16f: hero padding 36 24 28 · gap 10 → CTA → 제보 카드(bg gray50 · radius 10 · padding 20 · gap 8)

@@ -1,0 +1,129 @@
+# /community
+
+노드 125개 · 폭 430
+
+body 430×932  bg #FFFFFF
+  div 430×932  
+    div 430×1206  flex · justify center · align flex-start · bg #F7F8F9
+      div 430×1206  flex/column · bg #FFFFFF · shadow
+        section 430×0  
+        main 430×1206  
+          div 430×1206  pad 0 0 20 0
+            header 430×56  flex · align center · pad 0 20 0 20 · bg #FFFFFF 95%
+              p 93×32  "커뮤니티" · 24/700 #1A1C20 · lh 32 · ls -0.72px
+            main 430×1114  
+              nav 390×48  grid · cols 127.328px 127.328px 127.344px · pad 4 4 4 4 · mar 16 20 0 20 · bg #F7F8F9 · r16
+                button 127×40  "리얼후기" · 12/700 #1A1C20 · lh 16 · bg #FFFFFF · r22 · shadow
+                button 127×40  "웨딩피드" · 12/700 #868B94 · lh 16 · r22
+                button 127×40  "박람회" · 12/700 #868B94 · lh 16 · r22
+              section 430×67  pad 16 20 16 20
+                div 390×34  flex · gap 8 · pad 0 0 4 0
+                  button 54×30  "전체" · 12/600 #FFFFFF · lh 16 · pad 6 14 6 14 · bg #1A1C20 · r9999 · border 1 #1A1C20
+                  button 66×30  "웨딩홀" · 12/600 #1A1C20 · lh 16 · pad 6 14 6 14 · bg #FFFFFF · r9999 · border 1 #000000 6%
+                  button 66×30  "드레스" · 12/600 #1A1C20 · lh 16 · pad 6 14 6 14 · bg #FFFFFF · r9999 · border 1 #000000 6%
+                  button 54×30  "예산" · 12/600 #1A1C20 · lh 16 · pad 6 14 6 14 · bg #FFFFFF · r9999 · border 1 #000000 6%
+                  button 78×30  "신혼여행" · 12/600 #1A1C20 · lh 16 · pad 6 14 6 14 · bg #FFFFFF · r9999 · border 1 #000000 6%
+                  button 78×30  "스튜디오" · 12/600 #1A1C20 · lh 16 · pad 6 14 6 14 · bg #FFFFFF · r9999 · border 1 #000000 6%
+                  button 78×30  "메이크업" · 12/600 #1A1C20 · lh 16 · pad 6 14 6 14 · bg #FFFFFF · r9999 · border 1 #000000 6%
+              div 320×365  flex/column · gap 12 · align flex-end
+                div 307×285  bg #FFFFFF · r22 · border 1 #000000 5% · shadow
+                  div 305×61  flex · justify space-between · align center · pad 12 16 12 16 · bg #F8F8FA 55%
+                    div 112×37  
+                      p 112×19  "내가 쓴 글" · 14/700 #1A1C20 · lh 20
+                      p 112×16  "후기와 커뮤니티 글 2개" · 11/400 #868B94 · lh 17 · mar 2 0 0 0
+                    span 55×14  "MY NOTES" · 10/400 #868B94 · lh 15 · ls 1.2px
+                  button 305×65  flex · gap 12 · align center · pad 14 16 14 16
+                    span 35×35  grid · cols 36px · align center · bg #E7898D · r22 · shadow
+                      svg 15×15  svg
+                    span 158×37  
+                      span 158×19  "후기 쓰기" · 14/700 #1A1C20 · lh 20
+                      span 158×16  "나만의 준비 이야기를 남겨보세요" · 11/500 #868B94 · lh 17 · mar 2 0 0 0
+                    svg 15×15  mar 0 0 0 46 · svg
+                  div 305×157  pad 6 0 6 0
+                    button 305×73  flex · gap 12 · align center · pad 12 16 12 16
+                      span 35×35  "D" · 11/700 #1A1C20 · lh 17 · grid · cols 36px · align center · bg #F7F8F9 · r9999
+                      span 176×50  
+                        span 176×14  "드레스 피팅" · 10/700 #868B94 · lh 15
+                        span 176×15  "첫 피팅 전 챙긴 것들을 정리했어요" · 12/700 #1A1C20 · lh 16 · mar 2 0 0 0
+                        span 176×14  "좋아요 18 · 댓글 4" · 10/500 #868B94 · lh 15 · mar 4 0 0 0
+                      span 41×16  "9월 08일" · 10/500 #868B94 · lh 15 · pad 2 0 0 0
+                    button 305×73  flex · gap 12 · align center · pad 12 16 12 16
+                      span 35×35  "H" · 11/700 #1A1C20 · lh 17 · grid · cols 36px · align center · bg #F7F8F9 · r9999
+                      span 176×50  
+                        span 176×14  "웨딩홀" · 10/700 #868B94 · lh 15
+                        span 176×15  "계약 전, 주차와 식대는 꼭 확인하세요" · 12/700 #1A1C20 · lh 16 · mar 2 0 0 0
+                        span 176×14  "좋아요 32 · 댓글 7" · 10/500 #868B94 · lh 15 · mar 4 0 0 0
+                      span 41×16  "8월 29일" · 10/500 #868B94 · lh 15 · pad 2 0 0 0
+                button 56×56  grid · cols 56px · align center · bg #E7898D · r9999 · shadow
+                  span 20×20  
+                    svg 20×20  svg
+              div 430×999  
+                article 430×500  bg #FFFFFF
+                  div 430×72  flex · gap 12 · align center · pad 16 20 16 20
+                    span 40×40  "수" · 14/700 #1A1C20 · lh 20 · grid · cols 40px · align center · bg #F7F8F9 · r9999
+                    div 338×39  
+                      div 338×20  flex · gap 6 · align center · wrap
+                        p 75×20  "수아와 도윤" · 14/700 #1A1C20 · lh 20
+                        span 71×19  "가격 제보" · 10/700 #1A1C20 · lh 15 · flex · gap 2 · align center · pad 2 8 2 8 · bg #1A1A26 8% · r9999
+                          svg 10×10  svg
+                        span 56×19  "스튜디오" · 10/600 #868B94 · lh 15 · pad 2 8 2 8 · bg #F7F8F9 · r9999
+                      div 338×15  flex · gap 8 · align center · mar 4 0 0 0
+                        span 68×12  flex · gap 2 · align center
+                          svg 12×12  svg
+                          svg 12×12  svg
+                          svg 12×12  svg
+                          svg 12×12  svg
+                          svg 12×12  svg
+                        span 122×15  "블루밍 스튜디오 · 2시간 전" · 10/400 #868B94 · lh 15
+                  img 430×288  img https://images.unsplash.com/photo-160621
+                  div 430×139  pad 16 20 16 20
+                    div 390×20  flex · gap 16 · align center · mar 0 0 12 0
+                      button 45×20  "42" · 14/700 #1A1C20 · lh 20 · flex · gap 6 · align center
+                        svg 20×20  svg
+                      span 36×20  "8" · 14/700 #1A1C20 · lh 20 · flex · gap 6 · align center
+                        svg 20×20  svg
+                    p 390×48  "세 곳을 비교하고 최종 결정했어요. 최종 견적도 웨딩픽에서 본 범위 안이었습니다." · 14/400 #1A1C20 · lh 24
+                      span 75×16  "수아와 도윤" · 14/700 #1A1C20 · lh 24 · mar 0 4 0 0
+                    button 103×16  "댓글 8 개 모두 보기" · 12/500 #868B94 · lh 16 · mar 8 0 0 0
+                article 430×499  bg #FFFFFF
+                  div 430×72  flex · gap 12 · align center · pad 16 20 16 20
+                    span 40×40  "하" · 14/700 #1A1C20 · lh 20 · grid · cols 40px · align center · bg #F7F8F9 · r9999
+                    div 338×39  
+                      div 338×20  flex · gap 6 · align center · wrap
+                        p 75×20  "하린과 우진" · 14/700 #1A1C20 · lh 20
+                        span 46×19  "드레스" · 10/600 #868B94 · lh 15 · pad 2 8 2 8 · bg #F7F8F9 · r9999
+                      div 338×15  flex · gap 8 · align center · mar 4 0 0 0
+                        span 68×12  flex · gap 2 · align center
+                          svg 12×12  svg
+                          svg 12×12  svg
+                          svg 12×12  svg
+                          svg 12×12  svg
+                          svg 12×12  svg
+                        span 112×15  "그레이스 드레스 · 1일 전" · 10/400 #868B94 · lh 15
+                  img 430×288  img https://images.unsplash.com/photo-159455
+                  div 430×139  pad 16 20 16 20
+                    div 390×20  flex · gap 16 · align center · mar 0 0 12 0
+                      button 45×20  "29" · 14/700 #1A1C20 · lh 20 · flex · gap 6 · align center
+                        svg 20×20  svg
+                      span 36×20  "4" · 14/700 #1A1C20 · lh 20 · flex · gap 6 · align center
+                        svg 20×20  svg
+                    p 390×48  "피팅 전에는 원하는 실루엣 세 장만 정해 갔어요. 아이디어가 명확할수록 작업이 빨랐어요." · 14/400 #1A1C20 · lh 24
+                      span 75×16  "하린과 우진" · 14/700 #1A1C20 · lh 24 · mar 0 4 0 0
+                    button 103×16  "댓글 4 개 모두 보기" · 12/500 #868B94 · lh 16 · mar 8 0 0 0
+        nav 430×72  flex · align center · pad 0 8 0 8 · bg #FFFFFF · border 1 #000000 6%
+          a 83×55  flex/column · gap 4 · justify center · align center · pad 8 0 8 0
+            svg 20×20  svg
+            span 10×15  "홈" · 10/500 #868B94 · lh 15
+          a 83×55  flex/column · gap 4 · justify center · align center · pad 8 0 8 0
+            svg 20×20  svg
+            span 40×15  "웨딩노트" · 10/500 #868B94 · lh 15
+          a 83×67  flex/column · gap 4 · justify center · align center
+            div 48×48  flex · justify center · align center · bg #F7F8F9 · r9999
+              svg 20×20  svg
+            span 24×15  "Pick" · 10/600 #868B94 · lh 15 · ls 0.25px
+          a 83×55  flex/column · gap 4 · justify center · align center · pad 8 0 8 0
+            svg 20×20  svg
+            span 30×15  "라운지" · 10/600 #1A1C20 · lh 15
+          a 83×55  flex/column · gap 4 · justify center · align center · pad 8 0 8 0
+            svg 20×20  svg
+            span 15×15  "MY" · 10/500 #868B94 · lh 15

@@ -12,7 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  */
 
 /** 히어로 밑에 오는, 자리를 옮길 수 있는 섹션들. 히어로는 여기 없다 — 늘 맨 위 고정이다. */
-export type HomeSectionKey = 'board' | 'recommendation' | 'next' | 'content';
+export type HomeSectionKey = 'board' | 'recommendation' | 'category' | 'next' | 'content';
 
 /**
  * 시안 WP-HOME-007의 「순서 바꾸기」 목록.
@@ -21,11 +21,19 @@ export type HomeSectionKey = 'board' | 'recommendation' | 'next' | 'content';
  * 그 목록은 홈이 «TOP3 전체보기 · 우리가 쓴 돈 · 개인화 웨딩피드 · 혜택 한 줄»이던
  * 시절(00-ia WP-HOME-001)의 것이다. v3.22가 홈을 히어로 → 준비 현황 → 웨딩픽 추천 →
  * 다음 준비 → 웨딩 정보로 정리하면서 «혜택»은 홈에서 빠지고 «웨딩 소식»은 «웨딩 정보»가
- * 됐다(03-home-states · SPEC §13.8). 최신 쪽을 따라 네 행으로 둔다.
+ * 됐다(03-home-states · SPEC §13.8). 최신 쪽을 따른다.
+ *
+ * 2026-09-15에 「카테고리」가 붙어 다섯 행이다 — 아래 주석 참조.
  */
 export const HOME_SECTIONS: readonly { key: HomeSectionKey; label: string }[] = [
   { key: 'board', label: '준비 현황' },
   { key: 'recommendation', label: '웨딩픽 추천' },
+  /*
+   * 카테고리(2026-09-15). 피그마 시안에는 있는데 앱에 아예 없던 섹션이라 여기 더한다.
+   * 이미 저장해 둔 순서에는 이 키가 없지만 `normalizeHomeLayout`이 처음 보는 키를
+   * 기본 순서 자리에 이어 붙이므로, 쓰던 사람도 다음에 홈을 열면 보인다.
+   */
+  { key: 'category', label: '카테고리' },
   { key: 'next', label: '다음 준비' },
   { key: 'content', label: '웨딩 정보' },
 ] as const;

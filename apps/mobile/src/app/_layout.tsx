@@ -70,14 +70,17 @@ export default function RootLayout() {
 
 function RootLayoutContent() {
   /*
-   * **글꼴 파일을 아직 싣지 않는다.** `theme.ts`의 `Fonts`는 세 플랫폼 모두 Pretendard를 맨
-   * 앞에 두지만(최상위 정책 규칙 2번), 번들에 Pretendard가 없어 네이티브는 폴백인 iOS
-   * Apple SD Gothic Neo · Android Roboto로 떨어진다. **이름만 있고 서체는 아직 없다.**
+   * **글꼴은 여기서 부르지 않는다. 빌드가 싣는다.**
    *
-   * 한때 Pretendard TTF를 useFonts로 받아 첫 화면을 그만큼 늦췄고, 핸드오프 v3.24의
-   * 「Pretendard 도입 보류」를 따라 2026-09-09 감사에서 뺐다. 그 보류를 2026-09-14 대표님이
-   * 푸셨으므로 되싣는 것이 맞는데, 첫 화면이 늦어지는 값을 다시 치르는 일이라 MASTER
-   * 판단을 기다린다(docs/sync/design-policy-audit.md 2026-09-15 R2-5).
+   * `app.json`의 `expo-font` 플러그인이 `assets/fonts/`의 Pretendard 네 벌(400 · 600 ·
+   * 700 · 800)을 네이티브 번들에 박아 넣는다. 그래서 `theme.ts`의 `Fonts`가 집는
+   * 이름 `'Pretendard'`가 실제로 잡힌다 — `useFonts`로 **받지** 않으므로 2026-09-09에
+   * 뺐던 첫 화면 지연이 다시 생기지 않는다. 웹은 `apps/web/src/fonts.ts`의 `@font-face`가
+   * 가변 폰트 한 벌을 싣는다.
+   *
+   * 2026-09-15까지는 세 플랫폼 스택이 전부 Pretendard를 맨 앞에 두면서 **정작 파일이
+   * 없어** 폴백으로 떨어지고 있었다(감독 1·2차 R2-5). 대표님이 원본을 올리시고 그것을
+   * 실으면서 풀렸다.
    */
   const [entry, setEntry] = useState<Entry | null>(null);
   const [entryError, setEntryError] = useState<unknown>(null);

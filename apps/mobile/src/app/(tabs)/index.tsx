@@ -2,6 +2,7 @@ import type {
   CandidateListResponse,
   CurrentUser,
   MyMonthlyDrawResponse,
+  VendorCandidate,
   VendorSummary,
 } from '@weddingpick/api-contract';
 import { daysUntil, hasUnread } from '@weddingpick/domain';
@@ -13,14 +14,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { getAppBootstrap, getMyMonthlyDraw } from '@/api/client';
 import {
   Layout,
+  LetterSpacing,
   MaxContentWidth,
   Motion,
-  ProductSymbol,
-  ProgressBar,
   Radius,
+  SeedIcon,
   Spacing,
   ThemedText,
   ThemedView,
+  Toast,
   useTheme,
 } from '@weddingpick/ui';
 import { DelayedLoader, DelayedRecommendingView } from '@/features/loading/delayed-loader';
@@ -28,6 +30,7 @@ import { takeFullScreenLoading } from '@/features/loading/first-run';
 import { BenefitSheet } from '@/features/home/benefit-sheet';
 import { hasSeenBenefitSheet, markBenefitSheetSeen } from '@/features/home/benefit-sheet-seen';
 import { Board } from '@/features/home/board';
+import { CategoryGrid } from '@/features/home/category-grid';
 import { listWeddingContent, type WeddingContentItem } from '@/features/home/content';
 import {
   DEFAULT_HOME_LAYOUT,
@@ -37,26 +40,31 @@ import {
   type HomeSectionKey,
 } from '@/features/home/layout';
 import { Recommendation } from '@/features/home/recommendation';
-import { homeView, type ConditionChip, type HomeView } from '@/features/home/state';
+import { homeView, type HomeView } from '@/features/home/state';
 import { WeddingContent } from '@/features/home/wedding-content';
+import { PickDoneSheet, UnpickSheet } from '@/features/pick/pick-sheets';
+import { useMyCandidates } from '@/features/pick/use-my-candidates';
 import { isWebShellScreen } from '@/features/webshell/config';
 import { WebShellView } from '@/features/webshell/WebShellView';
 
 /**
- * 홈. WP-HOME-001 · 핸드오프 v3.22 `03-home-states.dc.html`.
+ * 홈 — 규격서 docs/figma-spec/home.txt(2026-09-15 대표 지시 「규격서의 수를 그대로」).
  *
- * 상태는 **2층**이다(SPEC §13.8). 1층 진행 상황(0개 · 1~8개 · 9개 이상)이 히어로 ·
- * 준비 현황 4칸 · 다음 준비 자리를 정하고, 2층 정보량(실 제보 3건 이상 · 미만)은
- * 금액 글자색과 CTA만 바꾼다. 어느 층도 섹션 순서와 개수를 바꾸지 않는다.
+ * 위에서부터 header → 히어로 → 준비현황 → 웨딩픽 추천 → 카테고리 → 웨딩피드. 규격서의 수는
+ * 각 조각의 주석에 그대로 적었다(`Header` · `Hero` · 아래 `styles`). 히어로는 늘 맨 위 고정이고,
+ * 그 아래는 홈 편집(WP-HOME-007)이 정한 순서를 따른다.
  *
- * 기본 순서는 히어로 → 준비 현황 → 웨딩픽 추천 → 밴드 → 다음 준비 → 웨딩 콘텐츠다.
- * 히어로는 늘 맨 위 고정이고, 그 아래는 홈 편집(WP-HOME-007)이 정한 순서를 따른다 —
- * 상태(2층)는 여전히 순서와 개수를 바꾸지 않는다. 바꾸는 것은 사람뿐이다.
- *
- * **코랄은 다섯 곳뿐이다**(CLAUDE.md v3.24 · 2026-09-09 사용자 오더 · 2026-09-14 히어로
- * 개편으로 다섯째 자리를 다시 셈). 준비 현황 현재 업종 테두리 · 진행바 · 웨딩픽 추천
- * 라벨 · CTA · **히어로 카드 면**(D-day는 이제 그 면 위의 플럼 글자이지 코랄 글자가
- * 아니다). 조건 칩 · 완료 표시 · 아바타는 무채색이다.
+ * **규격서와 다르게 둔 것과 근거.**
+ * - 옛 홈의 회색 밴드 · 조건 칩 · «다음 준비» 줄 · 준비 현황 «더 보기» 링크 · 히어로의 두 줄 제목과
+ *   진행바는 규격서에 없어 뺐다. 홈 편집의 «다음 준비» 항목은 켜도 아무것도 그리지 않는다(판단 필요 —
+ *   PR 본문).
+ * - 홈 편집 진입 줄은 규격서에 없지만 남긴다 — 온보딩이 «홈 맨 아래 홈 편집에서 바꿀 수 있어요»라고
+ *   약속한 주소다(보이는 것이 아니라 부르는 주소).
+ * - 히어로 «서울 그랜드 워커힐»(예식장)은 우리 계약(`CurrentUser`)에 없어 지역으로 대신한다.
+ * - 아바타 면 `#F7D2C4` · `#C9DAEC`, 준비현황 하늘색 `#F0F9FF` · `#B8E6FE` · `#0084D1`은 토큰에 없다 —
+ *   색은 MASTER 몫이라 만들지 않고 있는 토큰으로 두고 PR에 보고했다.
+ * - 히어로 «더보기» 24 단추는 피그마에서 히어로 색 팔레트를 연다. 팔레트는 넣지 않기로 했던
+ *   자리(2026-09-14)라 단추만 그리고 잠가 둔다(판단 필요 — PR 본문).
  *
  * 화면이 무엇을 보여주는지는 전부 `features/home/state.ts`가 정한다. 여기는 그린다.
  */
@@ -64,7 +72,7 @@ import { WebShellView } from '@/features/webshell/WebShellView';
 type HomeData = {
   me: CurrentUser | null;
   candidates: CandidateListResponse | null;
-  /** 웨딩픽 추천 자리에 올릴 세 곳. 첫째가 대표, 둘째·셋째가 서브 카드. */
+  /** 웨딩픽 추천 자리에 올릴 곳들 — 가로 카드. */
   recommended: readonly VendorSummary[];
   content: readonly WeddingContentItem[];
   /** 안 읽은 알림 수. 벨의 점이 이 값을 본다. */
@@ -100,6 +108,14 @@ export default function HomeScreen() {
    * 첫 렌더가 예산을 쓰고 두 번째 렌더가 못 받아 로더가 도중에 바뀐다.
    */
   const [fullScreen] = useState(takeFullScreenLoading);
+  /*
+   * 추천 카드의 하트 — 검색 카드와 같은 Pick이다(SPEC §13.1). 담으면 완료 시트, 빼는 것은
+   * 해제 시트로 한 번 더 묻는다.
+   */
+  const candidates = useMyCandidates();
+  const [pickDoneOpen, setPickDoneOpen] = useState(false);
+  const [unpickTarget, setUnpickTarget] = useState<VendorCandidate | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   const load = useCallback(() => {
     // 웹뷰 쉘로 대체할 때는 이 밑 자료를 안 쓴다 — 훅 순서를 지키려고 호출
@@ -185,6 +201,26 @@ export default function HomeScreen() {
     router.push('/my/rewards');
   }, []);
 
+  /** 추천 카드의 하트. Pick 전이면 후보에 담고 완료 시트, Pick 후면 해제 시트. 로그인 전이면 로그인으로. */
+  async function onPressPick(vendor: VendorSummary) {
+    const existing = candidates.candidateFor(vendor.id);
+    if (existing) {
+      setUnpickTarget(existing);
+      return;
+    }
+    const result = await candidates.pick(vendor.id);
+    if (result === 'picked') setPickDoneOpen(true);
+    else if (result === 'login') router.push('/login');
+    else setToast('Pick하지 못했어요. 잠시 후 다시 시도해주세요.');
+  }
+
+  async function confirmUnpick() {
+    if (!unpickTarget) return;
+    const ok = await candidates.unpick(unpickTarget);
+    setUnpickTarget(null);
+    if (!ok) setToast('후보를 빼지 못했어요. 잠시 후 다시 시도해주세요.');
+  }
+
   // 하이브리드 웹뷰 쉘 POC. `EXPO_PUBLIC_WEBSHELL_SCREENS`에 "home"이 없으면
   // (기본값) 이 분기는 타지 않고 기존 네이티브 화면 그대로다.
   if (isWebShellScreen('home')) {
@@ -215,27 +251,24 @@ export default function HomeScreen() {
     recommended: data.recommended,
     daysLeft,
   });
-  const sections = homeSectionBlocks({ view, data, layout });
+  const sections = homeSectionBlocks({
+    view,
+    data,
+    layout,
+    isPicked: (vendorId) => candidates.candidateFor(vendorId) !== null,
+    onPressPick: (vendor) => void onPressPick(vendor),
+  });
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <Header unread={data.unread} onPressBell={() => router.push('/my/notifications')} />
-        <HomeSearchBar />
-
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <Hero me={data.me} view={view} daysLeft={daysLeft} />
+          <Header unread={data.unread} onPressBell={() => router.push('/my/notifications')} />
+          <Hero me={data.me} daysLeft={daysLeft} />
 
-          {/*
-            히어로 밑은 홈 편집(WP-HOME-007)이 정한 순서대로 그린다. 회색 밴드는 섹션
-            사이를 가르는 것이라 섹션을 따라 움직이고, 둘이 붙으면 하나만 남긴다.
-          */}
-          {sections.map((section, position) => (
-            <ThemedView key={section.key}>
-              {section.bandBefore && sections[position - 1]?.bandAfter !== true ? <Band /> : null}
-              {section.node}
-              {section.bandAfter && position < sections.length - 1 ? <Band /> : null}
-            </ThemedView>
+          {/* 히어로 밑은 홈 편집(WP-HOME-007)이 정한 순서대로 그린다. */}
+          {sections.map((section) => (
+            <View key={section.key}>{section.node}</View>
           ))}
 
           {/* 홈 편집 — 온보딩이 «홈 맨 아래 홈 편집에서 바꿀 수 있어요»라고 약속한 자리다. */}
@@ -243,7 +276,7 @@ export default function HomeScreen() {
             accessibilityRole="button"
             onPress={() => router.push('/home-edit')}
             style={({ pressed }) => [styles.editEntry, pressed && styles.pressed]}>
-            <ThemedText type="t7" themeColor="textAssistive">
+            <ThemedText type="f12" themeColor="textAssistive" style={styles.semibold}>
               홈 편집
             </ThemedText>
           </Pressable>
@@ -258,129 +291,139 @@ export default function HomeScreen() {
           onOpenBenefit={openBenefit}
         />
       ) : null}
+
+      <PickDoneSheet visible={pickDoneOpen} onDismiss={() => setPickDoneOpen(false)} />
+      <UnpickSheet
+        candidate={unpickTarget}
+        partnerName={candidates.partnerName}
+        busy={candidates.busyVendorId !== null}
+        onConfirm={() => void confirmUnpick()}
+        onDismiss={() => setUnpickTarget(null)}
+      />
+      <Toast message={toast} onHidden={() => setToast(null)} />
     </ThemedView>
   );
 }
 
-/** 히어로 밑 섹션 하나 — 무엇을 그리는지, 회색 밴드를 어느 쪽에 두는지. */
+/** 히어로 밑 섹션 하나. */
 type HomeSectionBlock = {
   key: HomeSectionKey;
   node: ReactNode;
-  bandBefore?: boolean;
-  bandAfter?: boolean;
 };
 
 /**
  * 홈 편집이 정한 순서대로, 보여줄 섹션만.
  *
- * 그릴 것이 없는 섹션은 자리도 차지하지 않는다(SPEC §2) — 안 그러면 회색 밴드만
- * 둘 남아 빈 칸처럼 보인다.
+ * 그릴 것이 없는 섹션은 자리도 차지하지 않는다(SPEC §2).
  */
 function homeSectionBlocks({
   view,
   data,
   layout,
+  isPicked,
+  onPressPick,
 }: {
   view: HomeView;
   data: HomeData;
   layout: HomeLayout;
+  isPicked: (vendorId: string) => boolean;
+  onPressPick: (vendor: VendorSummary) => void;
 }): readonly HomeSectionBlock[] {
+  const done = view.cells.filter((cell) => cell.tone === 'done').length;
+
   const blocks: Record<HomeSectionKey, HomeSectionBlock> = {
-    /* 준비 현황 — 항상 4칸. 완료 개수는 격자가 아니라 헤더 링크에 적는다. */
+    /*
+     * 준비현황 — 규격서 «div 430×248 · pad 0 20 0 20 · mar 0 0 24 0»
+     *   div 390×20  flex · space-between · center · mar 0 0 12 0
+     *     h3 "준비현황" · 14/600 · lh 20        span "4개 중 1개 완료" · 12/600 #868B94 · lh 16
+     *   div 390×216  grid ← Board
+     */
     board: {
       key: 'board',
       node: (
-        <ThemedView style={styles.block}>
-          <ThemedView style={styles.section}>
-            <View style={styles.sectionHead}>
-              <ThemedText type="t4">준비 현황</ThemedText>
-              {/* 시작 전 구간에는 링크가 없다(시안 1) — 펼쳐도 빈 칸 12개다. */}
-              {view.boardMore === null ? null : (
-                <Pressable
-                  accessibilityRole="link"
-                  onPress={() => router.push('/progress')}
-                  style={({ pressed }) => pressed && styles.pressed}>
-                  <ThemedText type="t7" themeColor="textAssistive" style={styles.more}>
-                    {view.boardMore}
-                  </ThemedText>
-                </Pressable>
-              )}
-            </View>
-            <Board
-              cells={view.cells}
-              onPressCategory={(category) => router.push(`/pick?category=${category}`)}
-            />
-            {view.boardNote === null ? null : (
-              <ThemedText type="t7" themeColor="textAssistive">
-                {view.boardNote}
-              </ThemedText>
-            )}
-          </ThemedView>
-        </ThemedView>
+        <View style={styles.block}>
+          <View style={styles.sectionHead}>
+            <ThemedText type="f14" style={styles.semibold}>
+              준비현황
+            </ThemedText>
+            <ThemedText type="f12" numeric themeColor="textAssistive" style={styles.semibold}>
+              {view.cells.length}개 중 {done}개 완료
+            </ThemedText>
+          </View>
+          <Board
+            cells={view.cells}
+            onPressCategory={(category) => router.push(`/pick?category=${category}`)}
+          />
+        </View>
       ),
     },
 
-    /* 웨딩픽 추천 — 근거(조건 칩 · 금액 줄)와 행동(CTA)이 이 안에 함께 있다. */
+    /* 웨딩픽 추천 — 가로 카드. 여백은 Recommendation 안에 있다(카드 줄이 오른쪽 끝까지 닿는다). */
     recommendation: {
       key: 'recommendation',
-      bandAfter: true,
       node: (
-        <ThemedView style={styles.block}>
-          <Recommendation
-            categoryLabel={view.currentLabel}
-            chips={view.chips}
-            vendors={data.recommended}
-            cta={view.cta}
-            onPressChip={(chip) => openSearchWithout(chip, view, data.me)}
-            onPressVendor={openVendor}
-            onPressCta={() => {
-              if (view.cta.kind === 'compare') {
-                /* 홈 추천 CTA — 추천 세 곳이 그대로 A·B·C(SPEC §13.11). */
-                router.push({
-                  pathname: '/search/compare',
-                  params: { ids: view.cta.ids.join(',') },
-                });
-              } else {
-                router.push('/capture');
-              }
-            }}
-          />
-        </ThemedView>
+        <Recommendation
+          vendors={data.recommended}
+          cta={view.cta}
+          isPicked={isPicked}
+          onPressVendor={openVendor}
+          onPressPick={onPressPick}
+          onPressCompare={() => {
+            if (view.cta.kind !== 'compare') return;
+            /* 홈 추천 CTA — 추천 세 곳이 그대로 A·B·C(SPEC §13.11). */
+            router.push({ pathname: '/search/compare', params: { ids: view.cta.ids.join(',') } });
+          }}
+        />
       ),
     },
 
-    next: {
-      key: 'next',
-      node:
-        view.next === null ? null : (
-          <ThemedView style={styles.block}>
-            <ThemedView style={styles.section}>
-              <ThemedText type="t4">{view.next.title}</ThemedText>
-              <NextRow
-                name={view.next.name}
-                meta={view.next.meta}
-                aside={view.next.aside}
-                onPress={() => {
-                  const target = view.next!.target;
-
-                  if (target.kind === 'capture') router.push('/capture');
-                  else router.push(`/pick?category=${target.category}`);
-                }}
-              />
-            </ThemedView>
-          </ThemedView>
-        ),
+    /*
+     * 카테고리 — 규격서 «div 430×216 · pad 0 20 0 20 · mar 0 0 24 0»
+     *   h3 "카테고리" · 14/600 · lh 20 · mar 0 0 12 0
+     *   div 390×184  grid ← CategoryGrid
+     */
+    category: {
+      key: 'category',
+      node: (
+        <View style={styles.block}>
+          <ThemedText type="f14" style={[styles.semibold, styles.sectionTitle]}>
+            카테고리
+          </ThemedText>
+          <CategoryGrid onPressCategory={(category) => router.push(`/search?category=${category}`)} />
+        </View>
+      ),
     },
 
+    /* 규격서에 없는 섹션 — 그리지 않는다(위 파일 JSDoc). */
+    next: { key: 'next', node: null },
+
+    /*
+     * 웨딩피드 — 규격서 «div 430×256 · pad 0 20 0 20»
+     *   div 390×20  flex · space-between · center · mar 0 0 12 0
+     *     h3 "웨딩피드" · 14/600 · lh 20        button "더보기" · 12/600 #1A1C20 · lh 16
+     *   div 390×224 ← WeddingContent
+     * 콘텐츠가 없으면 섹션째 접는다 — 빈 자리를 제목으로 알리지 않는다.
+     */
     content: {
       key: 'content',
-      bandBefore: true,
       node:
         data.content.length === 0 ? null : (
-          <ContentSection
-            title={data.me?.spouseLinked === true ? '두 분을 위한 웨딩 정보' : '웨딩 정보'}
-            items={data.content}
-          />
+          <View style={styles.block}>
+            <View style={styles.sectionHead}>
+              <ThemedText type="f14" style={styles.semibold}>
+                웨딩피드
+              </ThemedText>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push('/(tabs)/community')}
+                style={({ pressed }) => pressed && styles.pressed}>
+                <ThemedText type="f12" style={styles.semibold}>
+                  더보기
+                </ThemedText>
+              </Pressable>
+            </View>
+            <WeddingContent items={data.content} onPressItem={(id) => router.push(`/search?content=${id}`)} />
+          </View>
         ),
     },
   };
@@ -390,226 +433,161 @@ function homeSectionBlocks({
     .filter((block) => block.node !== null);
 }
 
-/**
- * 조건 칩을 누르면 **그 조건을 뺀** 검색 결과로 간다(SPEC §13.8).
- *
- * 검색이 실제로 거르는 축은 업종과 지역뿐이다 — 예산·스타일·날짜 칩은 업종과
- * 지역만 들고 간다. 지역 칩을 누르면 지역을 뺀다.
- */
-function openSearchWithout(chip: ConditionChip, view: HomeView, me: CurrentUser | null) {
-  const params: Record<string, string> = {};
-
-  if (view.current !== null) params.category = view.current;
-  if (chip.kind !== 'region' && me?.region != null) params.region = me.region;
-
-  router.push({ pathname: '/search', params });
-}
-
 /* ------------------------------------------------------------------ 히어로 */
 
 /**
- * 히어로. 2026-09-14 대표 지시 — 피그마 신규 디자인 기준으로 카드형 히어로로
- * 바꾼다(면 색 `primary` 고정 · 5색 테마 피커는 넣지 않는다, 스킨 정리는 차후).
- * 아바타 + 닉네임, 큰 D-day, 두 줄 제목, 진행바 + N / 12 순서는 그대로 둔다 —
- * 피그마 B등급(`Home.tsx`)이 지시한 것은 "면 색 카드 · D-day를 크게"라는 구조이지
- * 기존 1층 3구간 제목(`view.hero.line1/2`)을 지우라는 뜻이 아니다.
+ * 히어로 — 규격서
  *
- * **D-day는 이제 코랄 면 위의 플럼 글자다**(코랄 다섯 곳 중 하나 — 위 파일
- * JSDoc과 CLAUDE.md 참고). 히어로 전체가 `tint` 면이 되며 `#E7898D` 위 흰 글자는
- * 2.51:1로 AA 미달이라 `onTint`(플럼 #371B34, 6.11:1)를 쓴다.
+ *   div 390×158  pad 16 16 16 16 · mar 0 20 24 20 · bg primary · r22
+ *     div 144×144  bg #FFFFFF 10% · r9999                       (absolute -right-8 -top-8 = −32)
+ *     div 112×112  r9999 · border 14 #FFFFFF 7%                 (absolute -bottom-8 -left-6 = −32 · −24)
+ *     div 358×126
+ *       div 358×24  flex · space-between · center · mar 0 0 8 0
+ *         p "두근두근" · 9/400 #FFFFFF 55% · lh 14 · ls 1.8px
+ *         button 24×24  bg #FFFFFF 15% · r9999   svg 14×14 IconMoreHorizRegular
+ *       div 358×66  flex · space-between · align flex-end
+ *         span "D-127" · 46/700 #FFFFFF · lh 46 · ls -1.38px
+ *         p "2027년 1월 15일 (금) · 서울 그랜드 워커힐" · 12/400 #FFFFFF 70% · lh 16 · mar 4 0 0 0
+ *       div 358×16  flex · gap 6 · center · mar 12 0 0 0
+ *         span 16×16 "지" · 7/700 · lh 11 · mar 0 -4 0 0 · r9999 · border 1 #FFFFFF 50%   ×2
+ *         span "지윤 · 준혁 · 함께 준비 중" · 10/400 #FFFFFF 55% · lh 15
  *
- * D-day 글자 크기는 `t1`(32 — typography.ts 주석 "홈 Hero")을 쓴다. 피그마
- * `Home.tsx:160`의 46px은 **B등급 LLM 생성 근사치**라 그대로 옮기지 않는다.
+ * 흰색의 55% · 70% · 10% · 7% · 15% · 50%는 `onTint`(흰)에 `opacity`를 준 것이다 — 색을 새로
+ * 만들지 않는다. 아바타 면 색(#F7D2C4 · #C9DAEC)은 토큰에 없어 `backgroundElement`로 두고 보고했다.
  */
-function Hero({ me, view, daysLeft }: { me: CurrentUser | null; view: HomeView; daysLeft: number | null }) {
+function Hero({ me, daysLeft }: { me: CurrentUser | null; daysLeft: number | null }) {
   const theme = useTheme();
+  const names = heroNames(me);
 
   return (
     <View style={[styles.hero, { backgroundColor: theme.tint }]}>
-      <View style={styles.who}>
-        <Avatar name={me?.displayName ?? null} />
-        <ThemedText type="t7" themeColor="onTint" numberOfLines={1} style={styles.whoName}>
-          {identityLine(me)}
+      <View style={[styles.decorLarge, { backgroundColor: theme.onTint }]} />
+      <View style={[styles.decorSmall, { borderColor: theme.onTint }]} />
+
+      <View style={styles.heroTop}>
+        <ThemedText type="f9" themeColor="onTint" style={styles.mood}>
+          두근두근
         </ThemedText>
+        {/* 피그마는 히어로 색 팔레트를 연다 — 팔레트는 넣지 않는 자리라 잠가 둔다(위 JSDoc). */}
+        <Pressable accessibilityRole="button" accessibilityLabel="히어로 색상 더보기" disabled style={styles.more}>
+          <View style={[styles.moreFill, { backgroundColor: theme.onTint }]} />
+          <View>
+            <SeedIcon name="moreHorizRegular" size={Layout.iconSmall} color={theme.onTint} />
+          </View>
+        </Pressable>
       </View>
 
-      <ThemedText type="t1" numeric themeColor="onTint" style={styles.ddayBig}>
-        {daysLeft === null ? '예식일 미정' : `D-${daysLeft}`}
-      </ThemedText>
-
-      <ThemedText type="t2" themeColor="onTint">
-        {view.hero.line1}
-        {'\n'}
-        {view.hero.line2}
-      </ThemedText>
-
-      <View style={styles.progressRow}>
-        {/* 면이 코랄이라 채움을 onTint(플럼)로 올려 대비를 지킨다. 트랙은 기존 border. */}
-        <View style={styles.progressTrack}>
-          <ProgressBar value={view.progress} color="onTint" />
+      <View style={styles.heroMain}>
+        <View style={styles.shrink}>
+          <ThemedText type="f46" numeric themeColor="onTint" style={styles.dday}>
+            {daysLeft === null ? '예식일 미정' : `D-${daysLeft}`}
+          </ThemedText>
+          <ThemedText type="f12" themeColor="onTint" numberOfLines={1} style={styles.heroDate}>
+            {heroDateLine(me)}
+          </ThemedText>
         </View>
-        <ThemedText type="micro" numeric themeColor="onTint">
-          {view.progressText}
+      </View>
+
+      <View style={styles.couple}>
+        <View style={styles.avatars}>
+          {names.map((name, index) => (
+            <View
+              key={`${name}-${index}`}
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+              style={[
+                styles.avatar,
+                { backgroundColor: theme.backgroundElement, borderColor: theme.onTint },
+                index < names.length - 1 && styles.avatarOverlap,
+              ]}>
+              <ThemedText type="f7" themeColor="textSecondary" style={styles.bold}>
+                {name.slice(0, 1)}
+              </ThemedText>
+            </View>
+          ))}
+        </View>
+        <ThemedText type="f10" themeColor="onTint" numberOfLines={1} style={styles.coupleText}>
+          {names.join(' · ')} · 함께 준비 중
         </ThemedText>
       </View>
     </View>
   );
 }
 
-/**
- * 히어로의 이름 줄. 배우자가 연결돼 있고 이름을 정했으면 «지수 · 준호».
- *
- * 이름이 없는 사람에게 없는 이름을 지어내 부르지 않는다 — 그때는 «우리»다.
- */
-function identityLine(me: CurrentUser | null): string {
+/** 히어로의 이름들. 배우자가 연결돼 있고 이름을 정했으면 둘, 아니면 하나. 없는 이름은 «우리». */
+function heroNames(me: CurrentUser | null): readonly string[] {
   const name = me?.displayName ?? '우리';
 
-  if (me?.spouseLinked === true && me.partnerDisplayName !== null) {
-    return `${name} · ${me.partnerDisplayName}`;
+  if (me?.spouseLinked === true && me.partnerDisplayName !== null && me.partnerDisplayName !== undefined) {
+    return [name, me.partnerDisplayName];
   }
 
-  return name;
+  return [name];
 }
 
-/** 아바타 24 원형. 무채색 — 사진이 오기 전까지 첫 글자다. */
-function Avatar({ name }: { name: string | null }) {
-  const theme = useTheme();
+const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
 
-  return (
-    <View
-      accessibilityElementsHidden
-      importantForAccessibility="no-hide-descendants"
-      style={[styles.avatar, { backgroundColor: theme.backgroundSelected }]}>
-      <ThemedText type="t7" themeColor="textSecondary" style={styles.avatarLabel}>
-        {(name ?? '우').slice(0, 1)}
-      </ThemedText>
-    </View>
-  );
+/**
+ * «2027년 1월 15일 (금) · 서울» — 규격서의 «· 서울 그랜드 워커힐»(예식장) 자리는 우리 계약에
+ * 예식장이 없어 지역이 선다. 둘 다 없으면 빈 줄 대신 안내 한 마디.
+ */
+function heroDateLine(me: CurrentUser | null): string {
+  const parts: string[] = [];
+
+  if (me?.weddingDate) {
+    const [year, month, day] = me.weddingDate.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    parts.push(`${year}년 ${month}월 ${day}일 (${WEEKDAYS[date.getDay()]})`);
+  }
+  if (me?.region) parts.push(me.region);
+
+  return parts.length === 0 ? '예식일과 지역을 정하면 여기에 보여요' : parts.join(' · ');
 }
 
 /* ---------------------------------------------------------------- 공통 조각 */
 
+/**
+ * 헤더 — 규격서
+ *
+ *   header 430×80  flex · space-between · center · pad 24 20 16 20
+ *     h1 "웨딩픽" · 26/700 #1A1C20 · lh 39 · ls -0.52px
+ *     div 84×40  flex · gap 4 · center
+ *       button 40×40 · r9999   svg 20×20 IconSearchRegular      → /search
+ *       button 40×40 · r9999   svg 20×20 IconNotificationRegular
+ *
+ * 검색 단추가 검색의 유일한 입구다(2026-09-14 대표 지시 — 검색은 탭에서 내렸다).
+ */
 function Header({ unread, onPressBell }: { unread: number; onPressBell: () => void }) {
   const theme = useTheme();
 
   return (
-    <ThemedView style={styles.header}>
-      <ThemedText type="t4">웨딩픽</ThemedText>
+    <View style={styles.header}>
+      <ThemedText type="f26" style={styles.brand}>
+        웨딩픽
+      </ThemedText>
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={hasUnread({ unread, total: unread }) ? `알림 ${unread}건` : '알림'}
-        onPress={onPressBell}
-        style={({ pressed }) => [styles.bell, pressed && styles.pressed]}>
-        {/* 시안 head 아이콘 stroke #212124. */}
-        <ProductSymbol name="bell" size={Layout.iconTab} color={theme.text} />
-        {/* 개수를 적지 않는다. 세는 것이 목적이 아니다. */}
-        {hasUnread({ unread, total: unread }) ? (
-          <View style={[styles.bellDot, { backgroundColor: theme.negative }]} />
-        ) : null}
-      </Pressable>
-    </ThemedView>
-  );
-}
-
-/**
- * 검색 진입점(2026-09-14 대표님 IA 확정). 검색은 당분간 탭에서 내려가 있어
- * 홈 상단 검색바가 유일한 입구다 — 누르면 `/search`로 간다(입력창이 아니다).
- *
- * Figma A등급 자료(`src/imports/Home/index.tsx`)에는 검색바가 없다 — 그 파일은
- * 웨딩픽과 무관한 다른 제품 템플릿이라 치수를 캘 수 없었다. 대신 검색 화면
- * 자신의 검색창(`search/index.tsx` `searchBox`: height 52 · radius 6 ·
- * backgroundSelected · gap 10)과 값을 맞춘다 — 같은 부품이 두 화면에 있는
- * 것처럼 보여야 눌렀을 때 이어진다.
- */
-function HomeSearchBar() {
-  const theme = useTheme();
-
-  return (
-    <View style={styles.searchBarWrap}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="검색"
-        onPress={() => router.push('/search')}
-        style={({ pressed }) => [
-          styles.searchBar,
-          { backgroundColor: theme.backgroundSelected },
-          pressed && styles.pressed,
-        ]}>
-        <ProductSymbol name="magnifier" size={Layout.iconTab} color={theme.textAssistive} />
-        <ThemedText type="t6" themeColor="textAssistive" numberOfLines={1}>
-          업체나 지역을 검색해보세요
-        </ThemedText>
-      </Pressable>
+      <View style={styles.headerButtons}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="업체 검색"
+          onPress={() => router.push('/search')}
+          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
+          <SeedIcon name="searchRegular" size={Layout.iconRow} color={theme.text} />
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={hasUnread({ unread, total: unread }) ? `알림 ${unread}건` : '알림'}
+          onPress={onPressBell}
+          style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
+          <SeedIcon name="notificationRegular" size={Layout.iconRow} color={theme.text} />
+          {/* 개수를 적지 않는다. 세는 것이 목적이 아니다. */}
+          {hasUnread({ unread, total: unread }) ? (
+            <View style={[styles.bellDot, { backgroundColor: theme.negative }]} />
+          ) : null}
+        </Pressable>
+      </View>
     </View>
   );
-}
-
-/** 다음 준비 한 줄 — 제목 + 메타 + 오른쪽 표시 + chevron. */
-function NextRow({
-  name,
-  meta,
-  aside,
-  onPress,
-}: {
-  name: string;
-  meta: string;
-  aside: string;
-  onPress: () => void;
-}) {
-  const theme = useTheme();
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={({ pressed }) => [styles.nextRow, pressed && styles.pressed]}>
-      <View style={styles.nextBody}>
-        <ThemedText type="t5" numberOfLines={1}>
-          {name}
-        </ThemedText>
-        <ThemedText type="t7" themeColor="textAssistive" numberOfLines={2}>
-          {meta}
-        </ThemedText>
-      </View>
-      <ThemedText type="t7" numeric themeColor="textAssistive" style={styles.nextAside}>
-        {aside}
-      </ThemedText>
-      <View style={styles.nextChevron}>
-        <ProductSymbol name="chevronRight" size={Layout.iconInline} color={theme.textDisabled} />
-      </View>
-    </Pressable>
-  );
-}
-
-/**
- * 콘텐츠가 없으면 섹션째 접는다 — 빈 자리를 제목으로 알리지 않는다.
- *
- * 앞의 밴드도 함께 접는다. 섹션이 없는데 밴드만 남으면 화면 끝에 회색 띠 하나가
- * 이유 없이 놓인다.
- */
-function ContentSection({
-  title,
-  items,
-}: {
-  title: string;
-  items: readonly WeddingContentItem[];
-}) {
-  return (
-    <ThemedView style={styles.block}>
-      <ThemedView style={styles.section}>
-        <ThemedText type="t4">{title}</ThemedText>
-        <WeddingContent items={items} onPressItem={(id) => router.push(`/search?content=${id}`)} />
-      </ThemedView>
-    </ThemedView>
-  );
-}
-
-/** 섹션을 가르는 회색 밴드. 그림자 대신 이것으로 구획한다. */
-function Band() {
-  const theme = useTheme();
-
-  return <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} />;
 }
 
 function openVendor(vendorId: string) {
@@ -620,18 +598,21 @@ const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
 
-  /*
-   * 시안 head: 56 · padding 0 24. 03-home(오른쪽 20)과 03-home-states(오른쪽 24)가 갈려
-   * 최신인 03-home-states를 따른다(2026-09-09 패딩 감사).
-   */
+  /* «header 430×80 · pad 24 20 16 20». */
   header: {
-    height: Layout.navBar,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Layout.gutter,
+    paddingTop: Spacing.four,
+    paddingHorizontal: Layout.pageX,
+    paddingBottom: Spacing.three,
   },
-  bell: {
+  /* «26/700 · lh 39 · ls -0.52px». */
+  brand: { fontWeight: 700, letterSpacing: LetterSpacing.n052 },
+  /* «div 84×40 · gap 4». */
+  headerButtons: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  /* «button 40×40 · r9999». */
+  iconButton: {
     width: Layout.iconButton,
     height: Layout.iconButton,
     borderRadius: Radius.pill,
@@ -640,88 +621,104 @@ const styles = StyleSheet.create({
   },
   bellDot: { position: 'absolute', top: 6, right: 6, width: 8, height: 8, borderRadius: Radius.pill },
 
-  /* 검색 진입 바 — search/index.tsx의 검색창과 규격을 맞춘다(위 주석 참조). */
-  searchBarWrap: {
-    paddingHorizontal: Layout.gutter,
-    paddingTop: Spacing.two,
-    paddingBottom: Spacing.one,
-  },
-  searchBar: {
-    height: Layout.field,
-    borderRadius: Radius.input,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.three,
-    gap: Layout.cardGap,
-  },
-
-  /*
-   * 가로 여백을 여기 두지 않는다. 회색 밴드가 화면 끝까지 닿아야 해서, 거터는
-   * 섹션마다 준다.
-   */
-  content: { paddingBottom: Spacing.two },
+  /* 「div 430×1386 · pad 0 0 16 0」. */
+  content: { paddingBottom: Spacing.three },
 
   /* 두 번째부터의 로딩 — 아이콘 로더 하나만 가운데 둔다. */
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 
-  /* 홈 편집 — 맨 아래 한 줄. 눈에 띄지 않게 두되 누를 수 있는 높이는 준다. */
+  /* 홈 편집 — 맨 아래 한 줄. 규격서에 없는 자리라 크기만 웨딩피드 «더보기»(12/600)와 같다. */
   editEntry: {
     minHeight: Layout.rowMinHeight,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.pageX,
   },
 
-  /*
-   * 히어로 카드 — 2026-09-14 피그마 기준 개편. 면이 `tint`라 화면 가장자리에
-   * 붙이지 않고 카드로 띄운다(Radius.sheet는 기존 큰 카드 반경 재사용).
-   */
+  /* «pad 16 · mar 0 20 24 20 · r22». 장식 원이 밖으로 나가므로 overflow hidden. */
   hero: {
-    marginHorizontal: Layout.gutter,
-    marginTop: Spacing.two,
-    marginBottom: Layout.sectionGap,
-    borderRadius: Radius.sheet,
-    padding: Layout.cardPadding,
-    gap: Layout.cardGap,
+    marginHorizontal: Layout.pageX,
+    marginBottom: Spacing.four,
+    borderRadius: Radius.hero,
+    padding: Spacing.three,
+    overflow: 'hidden',
   },
-  who: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  whoName: { flexShrink: 1, fontWeight: 700 },
-  ddayBig: { fontWeight: 700 },
-  avatar: {
-    width: Layout.iconTab,
-    height: Layout.iconTab,
+  /* «div 144×144 · bg #FFFFFF 10%» — `-right-8 -top-8`(−32). */
+  decorLarge: {
+    position: 'absolute',
+    top: -Spacing.five,
+    right: -Spacing.five,
+    width: Layout.heroDecorLarge,
+    height: Layout.heroDecorLarge,
+    borderRadius: Radius.pill,
+    opacity: 0.1,
+  },
+  /* «div 112×112 · border 14 #FFFFFF 7%» — `-bottom-8 -left-6`(−32 · −24). */
+  decorSmall: {
+    position: 'absolute',
+    bottom: -Spacing.five,
+    left: -Spacing.four,
+    width: Layout.heroDecorSmall,
+    height: Layout.heroDecorSmall,
+    borderRadius: Radius.pill,
+    borderWidth: Layout.heroDecorBorder,
+    opacity: 0.07,
+  },
+  /* «div 358×24 · space-between · center · mar 0 0 8 0». */
+  heroTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.two,
+  },
+  /* «9/400 · 55% · ls 1.8px». */
+  mood: { opacity: 0.55, letterSpacing: LetterSpacing.p18 },
+  /* «button 24×24 · bg #FFFFFF 15% · r9999». */
+  more: {
+    width: Layout.heroMore,
+    height: Layout.heroMore,
     borderRadius: Radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
-  avatarLabel: { fontWeight: 700 },
-  /* 시안 progRow: gap 10 · padding-top 2 · track 6 r999 · progText 13/18 700. */
-  progressRow: { flexDirection: 'row', alignItems: 'center', gap: Layout.cardGap, paddingTop: Spacing.half },
-  progressTrack: { flex: 1 },
+  moreFill: { ...StyleSheet.absoluteFill, opacity: 0.15 },
+  /* «div 358×66 · space-between · align flex-end». */
+  heroMain: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+  shrink: { flexShrink: 1, minWidth: 0 },
+  /* «46/700 · lh 46 · ls -1.38px». */
+  dday: { fontWeight: 700, letterSpacing: LetterSpacing.n138 },
+  /* «12/400 · 70% · mar 4 0 0 0». */
+  heroDate: { opacity: 0.7, marginTop: Spacing.one },
+  /* «div 358×16 · gap 6 · center · mar 12 0 0 0». */
+  couple: { flexDirection: 'row', alignItems: 'center', gap: Layout.menuGroupGap, marginTop: Layout.inlineGap },
+  avatars: { flexDirection: 'row' },
+  /* «span 16×16 · r9999 · border 1 #FFFFFF 50%». 테두리의 50%는 못 준다(테두리만 옅게 할 길이 없다). */
+  avatar: {
+    width: Layout.avatarMini,
+    height: Layout.avatarMini,
+    borderRadius: Radius.pill,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  /* «mar 0 -4 0 0» — 둘이 4 겹친다. */
+  avatarOverlap: { marginRight: -Spacing.one },
+  /* «10/400 · 55%». */
+  coupleText: { opacity: 0.55, flexShrink: 1 },
 
-  block: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionGap },
-  /* 시안 padSec: gap 11. */
-  section: { gap: Layout.gap2col },
+  /* 섹션 공통 «pad 0 20 0 20 · mar 0 0 24 0». */
+  block: { paddingHorizontal: Layout.pageX, marginBottom: Spacing.four },
+  /* 섹션 머리 «space-between · center · mar 0 0 12 0». */
   sectionHead: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    gap: Spacing.three - 4,
+    marginBottom: Layout.sectionHeadGapCompact,
   },
-  more: { fontWeight: 700 },
-  band: { height: Layout.sectionBand, marginBottom: Layout.sectionGap },
+  sectionTitle: { marginBottom: Layout.sectionHeadGapCompact },
+  semibold: { fontWeight: 600 },
+  bold: { fontWeight: 700 },
 
   pressed: { opacity: 0.8 },
-
-  /* 시안 nextRow: gap 12 · min-height 56 · padding 12 0. */
-  nextRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.three - 4,
-    minHeight: Layout.rowMinHeight,
-    paddingVertical: Layout.rowPaddingY,
-  },
-  nextBody: { flex: 1, minWidth: 0, gap: 3 },
-  nextAside: { paddingTop: 3 },
-  nextChevron: { paddingTop: 3 },
 });

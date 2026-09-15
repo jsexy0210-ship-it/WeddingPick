@@ -1,7 +1,7 @@
 // 원래 scripts/sync-design-tokens.mjs가 docs/design-handoff/current/tokens.json에서 뽑던 스냅샷이다.
 // **그 생성기는 지금 이 저장소에 없다.** 그리고 이 파일을 import 하는 곳도 없다(git grep DesignTokens).
 //
-// 2026-09-14 대표님이 키 컬러를 코랄 #FF6F61에서 #E7898D로 바꾸셨고, 핸드오프 tokens.json은 아직
+// 2026-09-14 대표님이 키 컬러를 코랄 #FF6F61에서 #FF6F61로 바꾸셨고, 핸드오프 tokens.json은 아직
 // v3.10(2026-09-04)이라 옛 코랄을 담고 있다. 그래서 아래 brand · chart · skin 밖 파생색 · appIcon ·
 // component 값은 **핸드오프가 아니라 spec/tokens.json을 따른다** — 그쪽이 코드가 읽는 원본이다
 // (CLAUDE.md: 값은 spec/tokens.json에서만 가져온다).
@@ -16,15 +16,13 @@ export const DesignTokens = {
   "note": "SEED Design System (Karrot) 기반. Primary만 웨딩픽 코랄로 교체. 값은 모두 확정값이며 임의로 바꾸지 않는다.",
   "color": {
     "brand": {
-      "primary": "#E7898D",
-      "primaryPressed": "#D87D80",
-      "primaryDark": "#C63F45",
-      "primaryTint": "#FBEBEC",
-      "primarySurface": "#FDF6F6",
-      "primaryBorder": "#F9DFE0",
-      "onPrimary": "#371B34",
-      "accent": "#ECA0A3",
-      "onAccent": "#371B34"
+      "primary": "#FF6F61",
+      "primaryPressed": "#EE6255",
+      "primaryDark": "#C2453A",
+      "primaryTint": "#FFE8E4",
+      "primarySurface": "#FFF5F2",
+      "primaryBorder": "#FFD9D4",
+      "onPrimary": "#FFFFFF"
     },
     "text": {
       "primary": "#212124",
@@ -32,7 +30,7 @@ export const DesignTokens = {
       "tertiary": "#4D5159",
       "quaternary": "#868B94",
       "disabled": "#ADB1BA",
-      "onPrimary": "#371B34"
+      "onPrimary": "#FFFFFF"
     },
     "surface": {
       "paper": "#FFFFFF",
@@ -67,7 +65,7 @@ export const DesignTokens = {
       "pillOnImage": "rgba(0,0,0,.5)"
     },
     "chart": {
-      "series1": "#E7898D",
+      "series1": "#FF6F61",
       "series2": "#F4BFC1",
       "series3": "#F8DDDE",
       "seriesRest": "#EAEBEE"
@@ -571,8 +569,8 @@ export const DesignTokens = {
       "관리자 사이드바"
     ],
     "appIcon": {
-      "background": "#E7898D",
-      "mark": "#371B34",
+      "background": "#FF6F61",
+      "mark": "#FFFFFF",
       "note": "스킨과 무관하게 고정. 마크가 흰색이 아닌 이유는 spec/tokens.json symbol.appIcon 참고"
     }
   },
@@ -660,8 +658,8 @@ export const DesignTokens = {
       "defaultBorder": "1px solid #DCDEE3",
       "recessedBg": "#F7F8FA",
       "recessedBorder": "none",
-      "brandBg": "#FDF6F6",
-      "brandBorder": "1px solid #F9DFE0"
+      "brandBg": "#FFF5F2",
+      "brandBorder": "1px solid #FFD9D4"
     },
     "sheet": {
       "radius": "20px 20px 0 0",
@@ -688,7 +686,7 @@ export const DesignTokens = {
       "height": 6,
       "radius": 999,
       "bg": "#EAEBEE",
-      "fill": "#E7898D"
+      "fill": "#FF6F61"
     },
     "stackedBar": {
       "height": 10,

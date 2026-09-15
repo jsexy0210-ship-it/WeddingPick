@@ -20,6 +20,8 @@ describe('홈 구성 정리', () => {
       'next',
       'recommendation',
       'board',
+      /* 저장에 없던 새 섹션은 뒤에 붙는다 — 바로 아래 시험이 그 규칙을 따로 본다. */
+      'category',
     ]);
   });
 
@@ -31,7 +33,7 @@ describe('홈 구성 정리', () => {
     const stored = { order: ['recommendation', 'board'] as HomeSectionKey[] };
     const layout = normalizeHomeLayout(stored);
 
-    expect(layout.order).toEqual(['recommendation', 'board', 'next', 'content']);
+    expect(layout.order).toEqual(['recommendation', 'board', 'category', 'next', 'content']);
     expect(layout.order).toHaveLength(HOME_SECTIONS.length);
     expect(visibleHomeSections(layout)).toHaveLength(HOME_SECTIONS.length);
   });
@@ -58,9 +60,9 @@ describe('숨김', () => {
   it('숨긴 섹션은 그리지 않지만 순서에는 남는다', () => {
     const layout = normalizeHomeLayout({ hidden: ['recommendation'] });
 
-    expect(visibleHomeSections(layout)).toEqual(['board', 'next', 'content']);
+    expect(visibleHomeSections(layout)).toEqual(['board', 'category', 'next', 'content']);
     // 다시 켰을 때 있던 자리로 돌아와야 한다.
-    expect(layout.order).toEqual(['board', 'recommendation', 'next', 'content']);
+    expect(layout.order).toEqual(['board', 'recommendation', 'category', 'next', 'content']);
   });
 });
 
