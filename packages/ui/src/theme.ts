@@ -832,6 +832,9 @@ export const Layout = {
   /** Pick 빈 상태의 원 64와 그 안 하트 32 — size.emptyMark · iconEmpty(피그마 `Pick.tsx` `h-16 w-16` · `h-8 w-8`). */
   emptyMark: 64,
   iconEmpty: 32,
+  /** 업체 상세 대표 이미지 288 · 포트폴리오 띠 정사각 144 — size.heroVendor · thumbPortfolio(피그마 `VendorFlows.tsx` `h-72` · `h-36 w-36`). */
+  heroVendor: 288,
+  thumbPortfolio: 144,
   /** 행 안 아이콘. size.iconRow. */
   iconRow: 20,
   /** 행 끝 chevron 한 변. size.iconInline. */
