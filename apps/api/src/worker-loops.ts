@@ -186,34 +186,50 @@ export function startWorkerLoops({ pool, storage, config, signal }: WorkerDeps):
    * 참고). 모델은 `claude-analyzer.ts`와 같은 설정(`config.analysisModel`)에서
    * 온다 — 새 설정 칸을 만들지 않는다.
    *
+   * **기본은 꺼짐이다.** `WEDDING_FEED_AUTOWRITE=true`를 넣어야 이 루프가
+   * 돈다 — 사람이 안 보는 동안에도 계속 글을 쓰는 자리라, 켜고 끄는 것은
+   * 대표님 판단이다. 관리자 화면의 「지금 한 번 쓰기」(`POST
+   * /v1/admin/wedding-feed/generate`)는 이 스위치와 무관하게 항상 된다 —
+   * 사람이 누를 때만 도는 것이라 켜져 있을 필요가 없다.
+   *
    * 이 루프 하나만 try/catch로 감싼다 — 한 바퀴가 실패해도 파기 정리 · 알림까지
    * 멈추면 안 된다.
    */
-  const feedGeneration = setInterval(() => {
-    void (async () => {
-      try {
-        const model = config.analysisModel;
+  const feedAutowrite = process.env.WEDDING_FEED_AUTOWRITE === 'true';
 
-        const result = await runWeddingFeedGeneration({
-          pool,
-          writer: createClaudeFeedWriter({ model }),
-          model,
-          trigger: 'schedule',
-        });
+  console.log(
+    feedAutowrite
+      ? '웨딩피드 자동 작성 켜짐 (한 시간 간격)'
+      : '웨딩피드 자동 작성 꺼짐 — 켜려면 WEDDING_FEED_AUTOWRITE=true'
+  );
 
-        if (result.created > 0) {
-          console.log(`웨딩피드 자동 작성 ${result.created}건`);
-        }
-      } catch (error) {
-        console.error('웨딩피드 자동 작성 실패:', error);
-      }
-    })();
-  }, WEDDING_FEED_MS);
+  const feedGeneration = feedAutowrite
+    ? setInterval(() => {
+        void (async () => {
+          try {
+            const model = config.analysisModel;
+
+            const result = await runWeddingFeedGeneration({
+              pool,
+              writer: createClaudeFeedWriter({ model }),
+              model,
+              trigger: 'schedule',
+            });
+
+            if (result.created > 0) {
+              console.log(`웨딩피드 자동 작성 ${result.created}건`);
+            }
+          } catch (error) {
+            console.error('웨딩피드 자동 작성 실패:', error);
+          }
+        })();
+      }, WEDDING_FEED_MS)
+    : null;
 
   controller.signal.addEventListener('abort', () => {
     clearInterval(sweep);
     clearInterval(nudges);
-    clearInterval(feedGeneration);
+    if (feedGeneration) clearInterval(feedGeneration);
   });
 
   console.log('분석 워커 시작');
