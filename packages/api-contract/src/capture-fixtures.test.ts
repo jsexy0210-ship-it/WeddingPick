@@ -10,12 +10,18 @@
  */
 import type { ZodType } from 'zod';
 
+import { analysisSchema } from './analyses';
 import { appBootstrapResponseSchema } from './app';
 import { authProvidersResponseSchema } from './auth';
 import { candidateListResponseSchema } from './candidates';
+import { comparisonResponseSchema } from './comparison';
 import { consultationListResponseSchema } from './consultations';
+import { quoteSchema } from './quotes';
+import { rebuttalListResponseSchema } from './rebuttals';
 import { reviewListResponseSchema } from './reviews';
+import { myMonthlyDrawResponseSchema, myRewardPayoutResponseSchema, myRewardsResponseSchema } from './rewards';
 import { signupStateSchema } from './signup';
+import { verificationRequestSchema } from './verification';
 import { weddingEventListResponseSchema } from './wedding-events';
 import { expenseSummaryResponseSchema } from './wedding-plan';
 import {
@@ -54,6 +60,14 @@ const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/vendors/:vendorId/images', vendorPhotosResponseSchema],
   ['GET /v1/vendors/:vendorId/conditions', conditionStatsSchema],
   ['GET /v1/vendors/:vendorId/reviews', reviewListResponseSchema],
+  ['GET /v1/analyses/:analysisId', analysisSchema],
+  ['GET /v1/quotes/:quoteId', quoteSchema],
+  ['GET /v1/quotes/:quoteId/comparison', comparisonResponseSchema],
+  ['GET /v1/verification-requests/:requestId', verificationRequestSchema],
+  ['GET /v1/me/rewards', myRewardsResponseSchema],
+  ['GET /v1/me/monthly-draw', myMonthlyDrawResponseSchema],
+  ['GET /v1/me/rewards/payout', myRewardPayoutResponseSchema],
+  ['GET /v1/me/rebuttals', rebuttalListResponseSchema],
 ]);
 
 /**

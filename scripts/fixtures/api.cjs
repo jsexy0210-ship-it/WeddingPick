@@ -159,9 +159,125 @@ const SPONSORED = [
   },
 ];
 
+/*
+ * 캡처 대상 20개(A조 — /capture/* · /my/*, 2026-09-15)를 위한 고정 id.
+ * 기존 관례(VENDOR_DETAIL·weddingId 등)를 따라 새 UUID를 정해 여기 등록한다.
+ */
+const CAPTURE_ANALYSIS_ID = '77777777-7777-4777-8777-777777777777';
+const CAPTURE_QUOTE_ID = '88888888-8888-4888-8888-888888888888';
+const CAPTURE_VERIFY_REQUEST_ID = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+const MY_REVIEW_ID = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+/** `ME.weddingId`와 같은 값 — 아래에서 `ME`보다 먼저 쓰여 여기 따로 둔다. */
+const ME_WEDDING_ID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+
+/** A-08 분석 결과 + A-07 확인 + A-09 가격 비교 캡처용 — 확인까지 마친 상태로 둔다. */
+const QUOTE = {
+  id: CAPTURE_QUOTE_ID,
+  weddingId: ME_WEDDING_ID,
+  docType: 'quote',
+  vendor: { id: VENDORS[0].id, name: VENDORS[0].name, sourceNote: null },
+  planner: { id: 'f1111111-1111-4111-8111-111111111111', name: '이수진' },
+  productName: '프리미엄 패키지',
+  totalAmount: 18_500_000,
+  discountAmount: 500_000,
+  contractDate: '2026-08-01',
+  weddingDate: '2027-04-17',
+  depositAmount: 2_000_000,
+  balanceAmount: 16_500_000,
+  hallName: '그랜드홀',
+  guaranteedGuests: 220,
+  mealPricePerPerson: 65_000,
+  subVendors: [],
+  verificationLevel: 'L0',
+  source: 'ai_extraction',
+  lineItems: [
+    {
+      id: 'f2222222-2222-4222-8222-222222222222',
+      kind: 'included',
+      label: '대관료',
+      amount: 8_000_000,
+      amountMin: null,
+      amountMax: null,
+      standardNote: null,
+    },
+    {
+      id: 'f3333333-3333-4333-8333-333333333333',
+      kind: 'included',
+      label: '식대 (65,000원 × 220명)',
+      amount: 14_300_000,
+      amountMin: null,
+      amountMax: null,
+      standardNote: null,
+    },
+    {
+      id: 'f4444444-4444-4444-8444-444444444444',
+      kind: 'excluded',
+      label: '본식 스냅 및 영상',
+      amount: null,
+      amountMin: 1_500_000,
+      amountMax: null,
+      note: '1,500,000원부터',
+      standardNote: null,
+    },
+    {
+      id: 'f5555555-5555-4555-8555-555555555555',
+      kind: 'additional_candidate',
+      label: '보증인원 초과분',
+      amount: null,
+      amountMin: null,
+      amountMax: null,
+      note: '1인당 65,000원',
+      standardNote: null,
+    },
+  ],
+  terms: [
+    {
+      id: 'f6666666-6666-4666-8666-666666666667',
+      category: 'refund',
+      body: '계약금은 어떠한 경우에도 환불되지 않습니다.',
+      flagged: true,
+      daysBeforeWedding: null,
+      penaltyRate: null,
+      standardNote: null,
+    },
+    {
+      id: 'f7777777-7777-4777-8777-777777777778',
+      category: 'schedule',
+      body: '예식일 변경은 1회에 한하여 가능합니다.',
+      flagged: false,
+      daysBeforeWedding: null,
+      penaltyRate: null,
+      standardNote: null,
+    },
+  ],
+  extractionFields: [
+    { path: 'totalAmount', value: '18500000', confidence: 0.96, requiresConfirmation: true, confirmedByUser: true },
+    { path: 'contractDate', value: '2026-08-01', confidence: 0.92, requiresConfirmation: true, confirmedByUser: true },
+    {
+      path: 'refundTerms',
+      value: '계약금은 어떠한 경우에도 환불되지 않습니다.',
+      confidence: 1,
+      requiresConfirmation: true,
+      confirmedByUser: true,
+    },
+  ],
+  documents: [
+    {
+      rawDocumentId: 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+      pageCount: 2,
+      uploadedAt: '2026-09-01T02:00:00.000Z',
+      retentionUntil: null,
+      awaitingVerification: true,
+      deletedAt: null,
+    },
+  ],
+  createdAt: '2026-09-01T02:00:00.000Z',
+  confirmedAt: '2026-09-01T02:05:00.000Z',
+};
+
 const ME = {
   userId: '99999999-9999-4999-8999-999999999999',
-  weddingId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+  weddingId: ME_WEDDING_ID,
   displayName: null,
   weddingDate: '2027-04-17',
   region: '서울',
@@ -465,6 +581,167 @@ const routes = {
     nextCursor: null,
     usageScore: VENDOR_DETAIL.usageScore,
     caveat: '한 사람의 경험이에요. 업체를 고르는 유일한 기준으로 삼지 마세요.',
+  },
+
+  /*
+   * ── A조(2026-09-15) — /capture/* · /my/* 3Depth+ 캡처용 ──────────────────
+   */
+
+  /* A-06 분석 중(WP-RPT-003) — «읽는 중» 단계에 세워둔다. 성공/실패는 다른 상태라 여기 안 둔다. */
+  'GET /v1/analyses/:analysisId': {
+    id: CAPTURE_ANALYSIS_ID,
+    status: 'running',
+    startedAt: '2026-09-15T01:00:00.000Z',
+  },
+  /* A-08 분석 결과 + A-07 확인 + A-13 자료 확인 신청(WP-RPT-004 · verify) 공용. */
+  'GET /v1/quotes/:quoteId': QUOTE,
+  'GET /v1/quotes/:quoteId/comparison': {
+    available: true,
+    docType: 'quote',
+    myAmount: QUOTE.totalAmount,
+    stat: {
+      sampleCount: 9,
+      periodStart: '2026-01-01',
+      periodEnd: '2026-08-01',
+      median: 17_800_000,
+      p25: 16_900_000,
+      p75: 18_900_000,
+      p90: 19_800_000,
+      minVerificationLevel: 'L2',
+    },
+    judgement: 'similar',
+  },
+  /* WP-RPT-008 인증 결과 — approved로 둔다: 처리 단계 4행 + 「반영된 곳」 + 삭제 안내까지 한 화면에서 본다. */
+  'GET /v1/verification-requests/:requestId': {
+    requestId: CAPTURE_VERIFY_REQUEST_ID,
+    quoteId: QUOTE.id,
+    targetLevel: 'L2',
+    status: 'approved',
+    receivedAt: '2026-09-10T01:00:00.000Z',
+    decidedAt: '2026-09-12T05:00:00.000Z',
+  },
+
+  /* WP-EVT-003 친구 초대 · WP-EVT-002 미션 · WP-EVT-005 웨딩지원금 · WP-EVT-006 Npay 수령 공용. */
+  'GET /v1/me/rewards': {
+    referralCode: 'ABC234',
+    invitedCount: 3,
+    qualifiedCount: 2,
+    grants: [
+      {
+        id: 'f8888888-8888-4888-8888-888888888889',
+        kind: 'mission',
+        kindLabel: '미션 완주',
+        amountKrw: 5_000,
+        status: 'paid',
+        statusLabel: '지급 완료',
+        statusNote: '2026-09-01에 보내드렸어요',
+        decisionNote: null,
+        createdAt: '2026-09-01T00:00:00.000Z',
+      },
+      {
+        id: 'f9999999-9999-4999-8999-999999999998',
+        kind: 'referral',
+        kindLabel: '친구초대',
+        amountKrw: 3_000,
+        status: 'held',
+        statusLabel: '확인 중',
+        statusNote: '지급을 준비하고 있어요',
+        decisionNote: null,
+        createdAt: '2026-09-10T00:00:00.000Z',
+      },
+      {
+        id: 'fa111111-1111-4111-8111-111111111112',
+        kind: 'referral',
+        kindLabel: '친구초대',
+        amountKrw: 3_000,
+        status: 'earned',
+        statusLabel: '조건 충족',
+        statusNote: '곧 지급 대상이 돼요',
+        decisionNote: null,
+        createdAt: '2026-09-12T00:00:00.000Z',
+      },
+      {
+        id: 'fb222222-2222-4222-8222-222222222223',
+        kind: 'promotion',
+        kindLabel: '홍보인증',
+        amountKrw: 2_000,
+        status: 'blocked',
+        statusLabel: '반영 안 됨',
+        statusNote: '조건에 맞지 않아요',
+        decisionNote: '게시물이 비공개로 확인됐어요',
+        createdAt: '2026-09-05T00:00:00.000Z',
+      },
+    ],
+  },
+  'GET /v1/me/monthly-draw': {
+    drawMonth: '2026-09',
+    status: 'entered',
+    statusLabel: '응모 완료',
+    statusNote: '발표 전이에요. 결과가 나오면 알려드려요.',
+    amountKrw: 50_000,
+    winnersPerMonth: 1,
+    conditions: [
+      { key: 'wedding_set', label: '예식일 · 지역 등록', done: true },
+      { key: 'payment_proof', label: 'Pick 인증 1건', done: false },
+      { key: 'partner', label: '배우자 연결', done: true },
+    ],
+    remaining: 1,
+  },
+  'GET /v1/me/rewards/payout': {
+    receivableKrw: 5_000,
+    receivableGrantIds: ['fa111111-1111-4111-8111-111111111112'],
+    recipientNameDefault: '김웨딩',
+    open: null,
+    history: [
+      {
+        id: 'fc333333-3333-4333-8333-333333333334',
+        amountKrw: 3_000,
+        recipientName: '김웨딩',
+        phoneMasked: '010-****-5678',
+        status: 'sent',
+        statusLabel: '지급 완료',
+        statusNote: 'Npay로 보내드렸어요',
+        failureReason: null,
+        requestedAt: '2026-09-02T00:00:00.000Z',
+        settledAt: '2026-09-03T00:00:00.000Z',
+      },
+      {
+        id: 'fd444444-4444-4444-8444-444444444445',
+        amountKrw: 2_000,
+        recipientName: '김웨딩',
+        phoneMasked: '010-****-5678',
+        status: 'failed',
+        statusLabel: '지급 실패',
+        statusNote: '받는 분 번호를 다시 확인해주세요',
+        failureReason: '수신 번호 오류',
+        requestedAt: '2026-08-20T00:00:00.000Z',
+        settledAt: null,
+      },
+    ],
+  },
+  /* 업체 반론(디자인 핸드오프 20번) — 이미 낸 반론이 있는 상태로 캡처한다(고치기 폼). */
+  'GET /v1/me/rebuttals': {
+    rebuttals: [
+      {
+        id: 'fe555555-5555-4555-8555-555555555556',
+        status: 'pending',
+        statusLabel: '확인 중',
+        statusNote: '담당자가 확인하고 있어요',
+        claimedRole: '매니저',
+        body: '문의 주신 금액은 안내드린 견적과 같습니다. 확인 부탁드려요.',
+        decisionNote: null,
+        createdAt: '2026-09-11T00:00:00.000Z',
+        review: {
+          id: MY_REVIEW_ID,
+          vendorId: VENDORS[0].id,
+          vendorName: VENDORS[0].name,
+          title: '친절했지만 안내와 달랐어요',
+          body: '상담은 친절했는데 실제 견적이 안내와 조금 달랐어요.',
+          overall: 3,
+          createdAt: '2026-09-08T00:00:00.000Z',
+        },
+      },
+    ],
   },
 };
 
