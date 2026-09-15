@@ -1,4 +1,4 @@
-import { REPORT_KINDS } from '@weddingpick/domain';
+import { PAYMENT_PROOF_FIELDS, REPORT_KINDS } from '@weddingpick/domain';
 import { z } from 'zod';
 
 import { amountSchema, idSchema, timestampSchema } from './common';
@@ -37,6 +37,20 @@ export const myReportSchema = z.object({
    */
   needsCheck: z.boolean(),
   note: z.string().nullable(),
+  /**
+   * 사람이 채울 수 있는 칸. WP-RPT-004 「직접 입력」으로 가는 길이 여기서 열린다.
+   *
+   * **칸 이름만 담는다**(2026-09-14 지시). 값도, 사람 이름도, 보류 사유 문장도 이
+   * 배열에 들어가지 않는다 — 응답에 값을 실으면 그것은 목록이 아니라 유출이다.
+   *
+   * **문구는 서버가 만들지 않는다.** 「무엇을 더 적어야 하는지」를 서버가 문장으로
+   * 내려보내면 카피 린트를 지나지 않은 말이 화면에 뜬다. 키만 주고 문장은
+   * `spec/strings.ko.json`이 만든다.
+   *
+   * 결제인증이 아닌 줄과, 채울 것이 없는 줄은 빈 배열이다 — null을 두지 않는다.
+   * 화면이 `?.length`로 물어보게 두면 어느 화면인가는 그것을 빠뜨린다.
+   */
+  pendingFields: z.array(z.enum(PAYMENT_PROOF_FIELDS)),
 });
 
 export const myReportListResponseSchema = z.object({

@@ -1,5 +1,9 @@
-import { withSubject } from './korean';
-import { PAYMENT_PROOF_FIELDS, type PaymentProofField } from './payment-parser';
+import { withSubject, withTopic } from './korean';
+import {
+  PAYMENT_PROOF_FIELDS,
+  PAYMENT_PROOF_FIELD_LABEL,
+  type PaymentProofField,
+} from './payment-parser';
 import { PRICING_POLICY } from './policy';
 import type { VerificationLevel } from './verification';
 
@@ -209,6 +213,154 @@ export function paymentProofIntake(
   }
 
   return { state: 'accepted', pendingFields: [], reviewNote: null };
+}
+
+/* -------------------------------------------------------------------------- */
+/* 못 읽은 칸을 사람이 채운다 — WP-RPT-004                                     */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * 사람이 적고 난 뒤의 보류 사유 한 줄.
+ *
+ * **걸리는 시간을 적지 않는다**(2026-09-14 지시). 「하루 안에」라고 적어두면 하루가
+ * 지난 뒤부터 그 줄은 사용자에게 거짓말이 되고, 우리는 그것을 모른다. 말할 수 있는
+ * 것은 순서뿐이다 — 확인이 먼저고 반영이 나중이다.
+ */
+export const PAYMENT_PROOF_CLAIMED_NOTE = '적어주신 내용을 확인 후 반영해요';
+
+/**
+ * 못 읽은 칸을 누가 적었는가. 0240의 `payment_proof_claim_source`와 같은 목록이다.
+ *
+ * 둘을 한 값으로 합치지 않는 이유는 **믿는 근거가 다르기** 때문이다. 사용자는 자기
+ * 영수증을 보고 적고, 운영자는 올라온 원본을 보고 적는다. 검수하는 사람이 목록에서
+ * 둘을 구분하지 못하면 무엇을 다시 봐야 하는지 알 수 없다.
+ */
+export const PAYMENT_PROOF_CLAIM_SOURCES = ['user', 'operator'] as const;
+
+export type PaymentProofClaimSource = (typeof PAYMENT_PROOF_CLAIM_SOURCES)[number];
+
+/**
+ * 사람이 적어 보낸 값. 안 적은 칸은 없는 채로 온다 — 빈 문자열로 채우지 않는다.
+ *
+ * 지불 수단이 없는 것은 빠뜨린 것이 아니다. 물을 수 있는 칸이 `pending_fields`뿐이고
+ * 지불 수단은 거기 오지 않는다(`claimablePaymentProofFields`).
+ */
+export type PaymentProofClaim = {
+  merchantName?: string;
+  paidAmount?: number;
+  paidAt?: string;
+};
+
+/** 검수를 기다리는 줄에 지금 들어 있는 값. 기계가 읽은 것이다. */
+export type PaymentProofClaimTarget = {
+  reviewState: PaymentProofReviewState;
+  pendingFields: readonly PaymentProofField[];
+  merchantName: string | null;
+  paidAmount: number | null;
+  paidAt: string | null;
+  method: PaymentMethod;
+  /** 올린 원본이 달려 있는가. 없으면 증빙 없는 입력이 된다. */
+  hasOriginal: boolean;
+};
+
+export type PaymentProofClaimResult =
+  | {
+      ok: true;
+      /** 사람이 적은 칸. 0240의 `claimed_fields`로 그대로 간다. */
+      fields: PaymentProofField[];
+      /** 적용한 뒤의 값. 나머지 칸은 읽은 값 그대로다. */
+      merchantName: string;
+      paidAmount: number;
+      paidAt: string;
+    }
+  | { ok: false; reason: string };
+
+/**
+ * 어느 칸을 사람이 채울 수 있는가. **`pending_fields`가 그대로 답이다.**
+ *
+ * 못 읽은 칸만이다. 기계가 읽어낸 칸은 묻지 않고, 보내와도 받지 않는다 — 읽은 값을
+ * 사람이 덮어쓰는 길을 열면 「기계가 읽은 값」이라는 말이 그때부터 거짓이 된다.
+ *
+ * **지불 수단은 여기 오지 않는다.** 0150이 `pending_fields`에서 뺐기 때문이다 —
+ * 카드인지 계좌이체인지 흐릿한 것은 금액이 흐릿한 것과 다르고, 표에 기본값이 있다.
+ * 「무엇을 못 읽었는가」에 답하는 목록을 둘로 만들지 않는다. 하나가 낡으면 화면이
+ * 묻는 칸과 서버가 받는 칸이 갈린다.
+ *
+ * 함수로 두는 이유는 이 질문이 화면·서버 두 곳에서 나오기 때문이다. 순서도 여기서
+ * 정한다(`PAYMENT_PROOF_FIELDS`) — 화면마다 칸 순서가 달라지지 않게.
+ */
+export function claimablePaymentProofFields(
+  target: Pick<PaymentProofClaimTarget, 'pendingFields'>
+): PaymentProofField[] {
+  const asked = new Set<PaymentProofField>(target.pendingFields);
+
+  return PAYMENT_PROOF_FIELDS.filter((field) => asked.has(field));
+}
+
+/**
+ * 사람이 적은 값을 받아도 되는지 보고, 받는다면 어느 칸이 사람 손인지 돌려준다.
+ *
+ * **받는 것과 반영하는 것은 다른 일이다.** 이 함수가 ok를 주어도 그 줄은
+ * `pending_review`에 그대로 머무른다 — 운영자가 확인해야 `accepted`가 된다(0240).
+ * 기준금액은 실 제보의 중앙값이라, 확인 안 된 값이 그 계산에 들어가면 「실 제보」라는
+ * 말 자체가 거짓이 된다.
+ *
+ * 값 자체가 말이 되는지는 `canRegisterPaymentProof`가 본다 — 사람이 적었다고 2027년
+ * 결제나 1원짜리 계약금이 맞는 값이 되지는 않는다. 읽은 값과 같은 자를 댄다.
+ */
+export function claimPaymentProofFields(
+  target: PaymentProofClaimTarget,
+  claim: PaymentProofClaim,
+  now: Date = new Date()
+): PaymentProofClaimResult {
+  if (target.reviewState !== 'pending_review') {
+    return { ok: false, reason: '이미 확인이 끝난 제보예요.' };
+  }
+
+  /*
+   * 증빙이 먼저다. 사진 없이 금액만 받는 화면(폐기된 WP-RPT-010)을 되살리지
+   * 않는다. 0240의 CHECK와 같은 규칙이고, 여기서 먼저 걸러 사람이 읽을 수 있는
+   * 말로 돌려준다.
+   */
+  if (!target.hasOriginal) {
+    return { ok: false, reason: '올려주신 자료가 없어 직접 적을 수 없어요. 사진을 다시 올려주세요.' };
+  }
+
+  const askable = claimablePaymentProofFields(target);
+  /*
+   * 지불 수단은 보내올 자리가 없다(`PaymentProofClaim`). 그래도 목록은
+   * `PAYMENT_PROOF_FIELDS`로 돌아 순서를 한 곳에서만 정한다.
+   */
+  const given = PAYMENT_PROOF_FIELDS.filter(
+    (field) => field !== 'method' && claim[field] !== undefined
+  );
+
+  const uninvited = given.filter((field) => !askable.includes(field));
+
+  if (uninvited.length > 0) {
+    const names = uninvited.map((field) => PAYMENT_PROOF_FIELD_LABEL[field]).join(' · ');
+
+    return { ok: false, reason: `${withTopic(names)} 자료에서 읽은 값이라 고칠 수 없어요.` };
+  }
+
+  const unanswered = target.pendingFields.filter((field) => !given.includes(field));
+
+  if (unanswered.length > 0) {
+    const names = unanswered.map((field) => PAYMENT_PROOF_FIELD_LABEL[field]).join(' · ');
+
+    return { ok: false, reason: `${withSubject(names)} 아직 비어 있어요.` };
+  }
+
+  const merchantName = (claim.merchantName ?? target.merchantName ?? '').trim();
+  const paidAmount = claim.paidAmount ?? target.paidAmount ?? 0;
+  const paidAt = claim.paidAt ?? target.paidAt ?? '';
+  const check = canRegisterPaymentProof({ merchantName, paidAmount, paidAt }, now);
+
+  if (!check.ok) {
+    return { ok: false, reason: check.reason };
+  }
+
+  return { ok: true, fields: given, merchantName, paidAmount, paidAt };
 }
 
 /** 너무 작거나 큰 값은 읽기 실패다. 가격 제보와 같은 범위를 쓴다. */

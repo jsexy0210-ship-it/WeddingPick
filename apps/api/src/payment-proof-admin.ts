@@ -1,4 +1,9 @@
-import { canRegisterPaymentProof, type PaymentProofField } from '@weddingpick/domain';
+import {
+  PAYMENT_PROOF_FIELD_LABEL,
+  canRegisterPaymentProof,
+  type PaymentProofClaimSource,
+  type PaymentProofField,
+} from '@weddingpick/domain';
 
 import { createPool, withTransaction } from './db';
 import { loadConfig } from './config';
@@ -115,6 +120,9 @@ export type ProofDetail = {
   method: string;
   vendorId: string | null;
   reviewState: string;
+  /** 사람이 적은 칸(0240). 나머지는 자료에서 읽은 값이다. */
+  claimedFields: PaymentProofField[];
+  claimedSource: PaymentProofClaimSource | null;
   candidates: { id: string; name: string; category: string; region: string }[];
 };
 
@@ -126,8 +134,12 @@ export async function show(pool: ReturnType<typeof createPool>, id: string): Pro
     method: string;
     vendor_id: string | null;
     review_state: string;
+    claimed_fields: PaymentProofField[];
+    claimed_source: PaymentProofClaimSource | null;
   }>(
-    `SELECT merchant_name, paid_amount, paid_at, method, vendor_id, review_state
+    // enum 배열은 `::text[]`로. node-pg가 풀어주는 타입이라야 배열로 온다.
+    `SELECT merchant_name, paid_amount, paid_at, method, vendor_id, review_state,
+            claimed_fields::text[], claimed_source
      FROM structured.payment_proofs WHERE id = $1`,
     [id]
   );
@@ -157,6 +169,8 @@ export async function show(pool: ReturnType<typeof createPool>, id: string): Pro
     method: found.method,
     vendorId: found.vendor_id,
     reviewState: found.review_state,
+    claimedFields: found.claimed_fields,
+    claimedSource: found.claimed_source,
     candidates: candidates.rows,
   };
 }
@@ -208,6 +222,15 @@ export type PendingProof = {
   createdAt: Date;
   /** 원본이 아직 남아 있는가. 없으면 사람이 볼 것이 없다. */
   hasOriginal: boolean;
+  /**
+   * 사람이 적은 칸(0240). 나머지 칸은 자료에서 읽은 값이다.
+   *
+   * **목록에서 이것을 구분해 보여준다**(2026-09-14 지시). 읽어낸 값과 사람이 적은
+   * 값이 섞여 보이면 검수하는 사람이 무엇을 믿을지 모른다 — 읽어낸 값은 원본과
+   * 맞춰보면 되고, 사람이 적은 값은 원본에 그 값이 없어서 적힌 것이다.
+   */
+  claimedFields: PaymentProofField[];
+  claimedSource: PaymentProofClaimSource | null;
 };
 
 export async function pending(pool: ReturnType<typeof createPool>): Promise<PendingProof[]> {
@@ -220,9 +243,18 @@ export async function pending(pool: ReturnType<typeof createPool>): Promise<Pend
     review_note: string | null;
     created_at: Date;
     has_original: boolean;
+    claimed_fields: PaymentProofField[];
+    claimed_source: PaymentProofClaimSource | null;
   }>(
+    /*
+     * **enum 배열은 `::text[]`로 꺼낸다.** node-pg는 OID를 아는 타입만 풀어주고,
+     * 우리가 만든 enum의 배열은 OID가 낯설어 `'{a,b}'` 문자열 그대로 돌려준다.
+     * 타입에는 배열이라고 적혀 있어 그대로 쓰면 `.join`이 터지거나, 더 나쁘게는
+     * 펼쳐서 `{` 한 글자가 값이 된다 — 실제로 그 꼴을 봤다.
+     */
     `SELECT p.id, p.merchant_name, p.paid_amount, p.paid_at,
-            p.pending_fields, p.review_note, p.created_at,
+            p.pending_fields::text[], p.review_note, p.created_at,
+            p.claimed_fields::text[], p.claimed_source,
             EXISTS (
               SELECT 1 FROM originals.raw_documents d
               WHERE d.id = p.raw_document_id AND d.deleted_at IS NULL
@@ -241,6 +273,8 @@ export async function pending(pool: ReturnType<typeof createPool>): Promise<Pend
     reviewNote: row.review_note,
     createdAt: row.created_at,
     hasOriginal: row.has_original,
+    claimedFields: row.claimed_fields,
+    claimedSource: row.claimed_source,
   }));
 }
 
@@ -282,6 +316,53 @@ export async function resolve(
   }
 
   await withTransaction(pool, async (client) => {
+    /*
+     * 어느 칸이 사람 손인지 먼저 읽는다(0240).
+     *
+     * `pending_fields`는 곧 비워지므로 **비우기 전에 옮겨야 한다.** 예전에는 이 줄이
+     * 그냥 사라졌다 — `reviewed_by`로 「사람이 손댔다」는 줄 단위로 남았지만, 넷 중
+     * 어느 칸이 기계가 읽은 값이고 어느 칸이 사람이 적은 값인지는 알 수 없었다.
+     * 그 구분이 없으면 근거가 다른 값이 한 줄에서 섞인다.
+     *
+     * FOR UPDATE로 잡는다. 같은 줄에 사용자가 직접 입력을 보내는 길이 생겼으므로
+     * (`POST /v1/payment-proofs/{id}/claimed-fields`), 읽고 쓰는 사이에 값이 바뀔 수 있다.
+     */
+    const before = await client.query<{
+      merchant_name: string | null;
+      paid_amount: string | null;
+      paid_at: Date | null;
+      claimed_fields: PaymentProofField[];
+    }>(
+      // enum 배열은 `::text[]`로. 문자열로 받아 펼치면 `{` 한 글자가 칸 이름이 된다.
+      `SELECT merchant_name, paid_amount::text, paid_at, claimed_fields::text[]
+         FROM structured.payment_proofs
+        WHERE id = $1 AND review_state = 'pending_review'
+          FOR UPDATE`,
+      [proofId]
+    );
+
+    const current = before.rows[0];
+
+    if (!current) {
+      throw new Error('없는 결제인증이거나 이미 검수가 끝났다.');
+    }
+
+    /*
+     * **바꾼 칸만 사람 손으로 센다.** 검수자는 셋을 늘 다 적어 보내지만, 기계가 옳게
+     * 읽은 값을 그대로 옮겨 적은 것은 사람이 지어낸 값이 아니다. 값이 비어 있었거나
+     * 달라진 칸만이 사람이 새로 적은 칸이다.
+     *
+     * 사용자가 먼저 적어둔 칸(claimed_fields)은 그대로 사람 손이다 — 검수자가 그
+     * 값에 동의했다고 기계가 읽은 값이 되지는 않는다.
+     */
+    const changed: PaymentProofField[] = [];
+
+    if (current.merchant_name !== input.merchantName.trim()) changed.push('merchantName');
+    if (Number(current.paid_amount ?? NaN) !== input.paidAmount) changed.push('paidAmount');
+    if (current.paid_at?.getTime() !== new Date(input.paidAt).getTime()) changed.push('paidAt');
+
+    const claimedFields = [...new Set([...current.claimed_fields, ...changed])];
+
     const { rowCount } = await client.query(
       `UPDATE structured.payment_proofs
           SET merchant_name = $2,
@@ -291,9 +372,19 @@ export async function resolve(
               pending_fields = '{}',
               review_note = NULL,
               reviewed_at = now(),
-              reviewed_by = $5
+              reviewed_by = $5,
+              claimed_fields = $6::payment_proof_field[],
+              /*
+               * 사용자가 적어둔 줄을 검수자가 확인한 경우에도 출처는 operator가
+               * 된다 — 지금 이 값에 책임지는 사람이 검수자이기 때문이다. 누가 처음
+               * 적었는지는 decisions 기록이 답한다.
+               */
+              claimed_source = CASE WHEN cardinality($6::payment_proof_field[]) > 0
+                                    THEN 'operator'::payment_proof_claim_source END,
+              claimed_by = CASE WHEN cardinality($6::payment_proof_field[]) > 0 THEN $5::uuid END,
+              claimed_at = CASE WHEN cardinality($6::payment_proof_field[]) > 0 THEN now() END
         WHERE id = $1 AND review_state = 'pending_review'`,
-      [proofId, input.merchantName.trim(), input.paidAmount, input.paidAt, by]
+      [proofId, input.merchantName.trim(), input.paidAmount, input.paidAt, by, claimedFields]
     );
 
     if (rowCount === 0) {
@@ -366,6 +457,19 @@ export async function main(): Promise<void> {
           `  ${row.id}  접수 ${when(row.createdAt)}  못 읽은 칸: ${fields}  (${original})`
         );
         if (row.reviewNote) console.log(`      ${row.reviewNote}`);
+        /*
+         * **어디서 온 값인지 반드시 갈라 적는다**(2026-09-14 지시). 읽어낸 값은
+         * 원본과 맞춰보면 되고, 사람이 적은 값은 원본에 그 값이 없어서 적힌 것이다 —
+         * 섞여 보이면 검수하는 사람이 무엇을 믿을지 모른다.
+         */
+        if (row.claimedFields.length > 0) {
+          const who = row.claimedSource === 'user' ? '제보한 분이' : '운영자가';
+          const names = row.claimedFields
+            .map((field) => PAYMENT_PROOF_FIELD_LABEL[field])
+            .join(' · ');
+
+          console.log(`      ${who} 직접 적은 칸: ${names}`);
+        }
       }
       return;
     }
@@ -416,6 +520,20 @@ export async function main(): Promise<void> {
           `  수단: ${found.method}`
       );
       console.log(`연결된 업체: ${found.vendorId ?? '없음'}  접수 상태: ${found.reviewState}`);
+
+      /*
+       * 위에 찍은 값 중 어느 것이 사람 손인지 바로 밑에 적는다. 값과 출처가 떨어져
+       * 있으면 검수자가 값만 보고 원본과 맞춰보려 들고, 원본에 없는 값을 찾느라
+       * 시간을 쓴다.
+       */
+      if (found.claimedFields.length > 0) {
+        const who = found.claimedSource === 'user' ? '제보한 분이' : '운영자가';
+        const names = found.claimedFields
+          .map((field) => PAYMENT_PROOF_FIELD_LABEL[field])
+          .join(' · ');
+
+        console.log(`${who} 직접 적은 칸: ${names} (나머지는 자료에서 읽은 값)`);
+      }
 
       if (found.candidates.length === 0) {
         console.log('이름이 겹치는 업체가 없다. 업체가 아직 등록되지 않았을 수 있다.');

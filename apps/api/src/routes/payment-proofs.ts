@@ -1,8 +1,16 @@
-import { registerPaymentProofRequestSchema } from '@weddingpick/api-contract';
 import {
+  claimPaymentProofFieldsRequestSchema,
+  registerPaymentProofRequestSchema,
+} from '@weddingpick/api-contract';
+import {
+  PAYMENT_PROOF_CLAIMED_NOTE,
   PAYMENT_PROOF_RETENTION_HOURS,
+  claimPaymentProofFields,
   hasDeepData,
   paymentProofIntake,
+  type PaymentMethod,
+  type PaymentProofField,
+  type PaymentProofReviewState,
 } from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
@@ -265,6 +273,118 @@ export function registerPaymentProofRoutes(app: FastifyInstance, context: AppCon
       }),
       originalDeletedBy: deletedBy.rows[0]?.retention_until?.toISOString() ?? null,
     });
+  });
+
+  /**
+   * 못 읽은 칸을 사용자가 직접 적는다 — WP-RPT-004 「직접 입력」. 2026-09-14 대표 지시.
+   *
+   * **사진을 낸 줄에만 열린다.** 대상은 내 제보 중 `pending_review`인 줄이고, 그런
+   * 줄은 사진을 올렸기 때문에 존재한다. 증빙 없이 금액만 받던 화면(폐기된
+   * WP-RPT-010)과 갈리는 자리가 여기다 — 보낼 대상 자체가 없다.
+   *
+   * **못 읽은 칸만 받는다.** 기계가 읽어낸 칸을 보내오면 거절한다. 읽은 값을 사람이
+   * 덮어쓰는 길을 열면 「기계가 읽은 값」이라는 말이 그때부터 거짓이 된다.
+   *
+   * **적었다고 반영되지 않는다.** 줄은 `pending_review`에 그대로 머무르고, 사람이
+   * 적었다는 사실이 칸 단위로 남는다(0240의 `claimed_fields`). 운영자가 확인해야
+   * `accepted`가 되고, 그때서야 금액 구간·지출·Unlock에 들어간다.
+   */
+  app.post('/v1/payment-proofs/:paymentProofId/claimed-fields', auth, async (request) => {
+    const userId = currentUserId(request);
+    const { paymentProofId } = request.params as { paymentProofId: string };
+    const claim = claimPaymentProofFieldsRequestSchema.parse(request.body);
+
+    /*
+     * 남의 제보에 값을 적을 수 없다. 주인을 조건에 넣어 「없는 것」과 「남의 것」을
+     * 같은 답으로 돌려준다 — 어느 id가 있는지를 밖에서 세어볼 수 없게 한다.
+     */
+    const { rows } = await context.pool.query<{
+      review_state: PaymentProofReviewState;
+      pending_fields: PaymentProofField[];
+      merchant_name: string | null;
+      paid_amount: string | null;
+      paid_at: Date | null;
+      method: PaymentMethod;
+      has_original: boolean;
+    }>(
+      /*
+       * `pending_fields`를 `::text[]`로 꺼낸다. node-pg는 우리가 만든 enum의 배열을
+       * 풀어주지 못해 `'{a,b}'` 문자열 그대로 돌려주고, 그것을 배열로 알고 쓰면
+       * 못 읽은 칸 목록이 한 글자씩 쪼개진다.
+       */
+      `SELECT p.review_state, p.pending_fields::text[], p.merchant_name, p.paid_amount::text,
+              p.paid_at, p.method, (p.raw_document_id IS NOT NULL) AS has_original
+       FROM structured.payment_proofs p
+       WHERE p.id = $1 AND p.reporter_user_id = $2`,
+      [paymentProofId, userId]
+    );
+
+    const found = rows[0];
+
+    if (!found) {
+      throw notFound('제보');
+    }
+
+    const decided = claimPaymentProofFields(
+      {
+        reviewState: found.review_state,
+        pendingFields: found.pending_fields,
+        merchantName: found.merchant_name,
+        // bigint는 pg가 문자열로 준다. 큰 수가 조용히 부정확해지지 않게 한 번만 바꾼다.
+        paidAmount: found.paid_amount === null ? null : Number(found.paid_amount),
+        paidAt: found.paid_at?.toISOString() ?? null,
+        method: found.method,
+        hasOriginal: found.has_original,
+      },
+      claim
+    );
+
+    if (!decided.ok) {
+      throw new ApiError('invalid_request', decided.reason);
+    }
+
+    /*
+     * `review_state`와 `pending_fields`를 건드리지 않는다. 사람이 적었어도 그 칸은
+     * 여전히 **검수를 기다리는 칸**이고, 비우면 운영자 목록에서 왜 걸린 줄인지가
+     * 사라진다(0150의 `payment_proofs_pending_has_reason`이 지키는 것도 그것이다).
+     *
+     * 업체도 여기서 잇지 않는다. 잇는 판단은 검수하는 사람이 한다 — 사람이 적은
+     * 가맹점 이름으로 자동으로 이으면, 확인 전 값이 남의 업체 분포로 들어간다.
+     */
+    const updated = await context.pool.query(
+      `UPDATE structured.payment_proofs
+          SET merchant_name = $2,
+              paid_amount = $3,
+              paid_at = $4,
+              claimed_fields = $5::payment_proof_field[],
+              claimed_source = 'user',
+              claimed_by = $6,
+              claimed_at = now(),
+              review_note = $7
+        WHERE id = $1 AND review_state = 'pending_review'`,
+      [
+        paymentProofId,
+        decided.merchantName,
+        decided.paidAmount,
+        decided.paidAt,
+        decided.fields,
+        userId,
+        PAYMENT_PROOF_CLAIMED_NOTE,
+      ]
+    );
+
+    // 그 사이 운영자가 먼저 검수를 끝냈다. 사람이 확인한 값을 덮어쓰지 않는다.
+    if (updated.rowCount === 0) {
+      throw new ApiError('conflict', '이미 확인이 끝난 제보예요.');
+    }
+
+    return {
+      paymentProofId,
+      status: 'pending_review' as const,
+      claimedFields: decided.fields,
+      claimedSource: 'user' as const,
+      reviewNote: PAYMENT_PROOF_CLAIMED_NOTE,
+    };
   });
 
   /**

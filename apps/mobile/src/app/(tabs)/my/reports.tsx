@@ -1,5 +1,11 @@
 import type { MyReport } from '@weddingpick/api-contract';
-import { MY_REPORTS_EMPTY, MY_REPORTS_EMPTY_CTA, formatCount, formatDateDot } from '@weddingpick/domain';
+import {
+  MY_REPORTS_EMPTY,
+  MY_REPORTS_EMPTY_CTA,
+  formatCount,
+  formatDateDot,
+} from '@weddingpick/domain';
+import strings from '../../../../../../spec/strings.ko.json';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -35,6 +41,12 @@ const S = {
   keep: '그대로 둘게요',
   remove: '지우기',
   removeFail: '지우지 못했어요',
+  /*
+   * 「직접 입력」으로 가는 버튼. **문구는 여기서 만든다** — 서버는 어느 칸이
+   * 비었는지 키만 준다(2026-09-14 지시). 서버가 문장을 내려보내면 카피 린트를
+   * 지나지 않은 말이 화면에 뜬다.
+   */
+  writeIn: strings.report['manual.title'],
 } as const;
 
 function badgeKind(report: MyReport): 'none' | 'ok' | 'wait' {
@@ -147,6 +159,26 @@ export default function MyReportsScreen() {
                       size="medium"
                       label={S.deleteReview}
                       onPress={() => confirmDelete(report.id, report.subject)}
+                    />
+                  </View>
+                ) : null}
+                {/*
+                  못 읽은 칸이 남은 제보에만 선다 — WP-RPT-008의 «보완 필요에만 행동
+                  버튼». 이 길이 없으면 접수 직후 화면을 한 번 닫은 사람은 다시
+                  들어올 수 없고, 그 줄은 영영 보류로 남는다.
+                */}
+                {report.pendingFields.length > 0 ? (
+                  <View style={styles.action}>
+                    <ActionButton
+                      variant="ghost"
+                      size="medium"
+                      label={S.writeIn}
+                      onPress={() =>
+                        router.push(
+                          `/capture/payment/manual?paymentProofId=${encodeURIComponent(report.id)}` +
+                            `&fields=${encodeURIComponent(report.pendingFields.join(','))}` as never
+                        )
+                      }
                     />
                   </View>
                 ) : null}

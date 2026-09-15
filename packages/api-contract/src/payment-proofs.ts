@@ -1,6 +1,7 @@
 import {
   MASKED_IDENTIFIER_KINDS,
   PAYMENT_METHODS,
+  PAYMENT_PROOF_CLAIM_SOURCES,
   PAYMENT_PROOF_FIELDS,
   PAYMENT_PROOF_REVIEW_STATES,
 } from '@weddingpick/domain';
@@ -12,6 +13,7 @@ export const paymentMethodSchema = z.enum(PAYMENT_METHODS);
 export const maskedIdentifierKindSchema = z.enum(MASKED_IDENTIFIER_KINDS);
 export const paymentProofFieldSchema = z.enum(PAYMENT_PROOF_FIELDS);
 export const paymentProofReviewStateSchema = z.enum(PAYMENT_PROOF_REVIEW_STATES);
+export const paymentProofClaimSourceSchema = z.enum(PAYMENT_PROOF_CLAIM_SOURCES);
 
 /**
  * 결제인증 등록 — **사진 한 장.**
@@ -72,6 +74,46 @@ export const registerPaymentProofResponseSchema = z.object({
 });
 
 /**
+ * 검수를 기다리는 내 제보에서 **못 읽은 칸만** 직접 적는다. WP-RPT-004 「직접 입력」.
+ *
+ * 등록(`registerPaymentProofRequestSchema`)은 그대로 **사진 한 장**이다. 이 계약은
+ * 그 뒤에 오는 자리다 — 사진은 이미 냈고, 기계가 못 읽은 줄에만 열린다. 폐기된
+ * WP-RPT-010(증빙 없는 가격 입력)과 갈리는 자리가 여기다: **증빙 없이는 이 요청을
+ * 보낼 대상 자체가 없다.**
+ *
+ * **모든 칸이 optional인 것이 요점이다.** 무엇을 물을지는 서버가 정한다
+ * (`pendingFields`). 앱이 읽어낸 칸까지 보내오면 서버가 거절한다 — 기계가 읽은 값을
+ * 사람이 덮어쓰는 길을 열면 「기계가 읽은 값」이라는 말이 그때부터 거짓이 된다.
+ *
+ * **지불 수단을 받을 자리가 없다.** `pending_fields`에 오지 않는 칸이라(0150) 물을
+ * 일이 없고, 받을 곳을 만들어두면 언젠가 채워 보내는 화면이 생긴다.
+ *
+ * **적었다고 반영되지 않는다.** 이 요청이 성공해도 줄은 `pending_review`에 그대로
+ * 머무르고, 운영자가 확인해야 쓰인다. 기준금액은 실 제보의 중앙값이라, 확인 안 된
+ * 값이 그 계산에 들어가면 「실 제보」라는 말 자체가 거짓이 된다.
+ */
+export const claimPaymentProofFieldsRequestSchema = z.object({
+  merchantName: z.string().trim().min(1).max(120).optional(),
+  paidAmount: amountSchema.optional(),
+  paidAt: timestampSchema.optional(),
+});
+
+export const claimPaymentProofFieldsResponseSchema = z.object({
+  paymentProofId: idSchema,
+  /**
+   * 여전히 `pending_review`다. **여기에 `accepted`가 올 수 없다** — 사람이 적은 값은
+   * 운영자 확인을 거쳐야 하고, 그 확인은 이 요청 안에서 일어나지 않는다.
+   */
+  status: z.literal('pending_review'),
+  /** 이번에 사람이 적은 칸. 나머지는 자료에서 읽은 값 그대로다. */
+  claimedFields: z.array(paymentProofFieldSchema),
+  /** 누가 적었는가. 이 경로에서는 늘 제보한 본인이다. */
+  claimedSource: paymentProofClaimSourceSchema,
+  /** 다음에 무엇이 일어나는지. 화면이 그대로 보여준다. */
+  reviewNote: z.string(),
+});
+
+/**
  * 업체의 결제인증 분포. **최종통합정책 v2.0 C장·D-1의 4단계 사다리.**
  *
  * 잠금은 없다. v2.0 K-6이 "결제인증 회원만 실제 결제 데이터 접근"을 폐기했고,
@@ -108,3 +150,5 @@ export type RegisterPaymentProofRequest = z.infer<typeof registerPaymentProofReq
 export type RegisterPaymentProofResponse = z.infer<typeof registerPaymentProofResponseSchema>;
 export type PaidPrice = z.infer<typeof paidPriceSchema>;
 export type PaymentProofReviewState = z.infer<typeof paymentProofReviewStateSchema>;
+export type ClaimPaymentProofFieldsRequest = z.infer<typeof claimPaymentProofFieldsRequestSchema>;
+export type ClaimPaymentProofFieldsResponse = z.infer<typeof claimPaymentProofFieldsResponseSchema>;

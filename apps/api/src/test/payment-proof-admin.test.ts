@@ -176,21 +176,34 @@ describeWithDb('결제인증 검수', () => {
     return rows[0]!.id;
   }
 
-  /** 금액을 못 읽어 보류된 제보 하나. 업체는 이미 알고 있다. */
+  /**
+   * 금액을 못 읽어 보류된 제보 하나. 업체는 이미 알고 있다.
+   *
+   * **올린 원본을 함께 만든다.** 등록은 사진 한 장으로만 되므로(v3.24의 계약에
+   * `rawDocumentId`가 필수다) 원본 없는 보류 줄은 운영에 존재할 수 없다. 그리고
+   * 0240이 「사람이 적은 값은 원본이 있는 줄에만 붙는다」를 CHECK로 못박았다 —
+   * 원본 없는 줄로 검수를 시험하면 있을 수 없는 상황을 시험하게 된다.
+   */
   async function aPendingProof(vendorId: string): Promise<string> {
     const reporter = await test.pool.query<{ id: string }>(
       'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
     );
 
+    const document = await test.pool.query<{ id: string }>(
+      `INSERT INTO originals.raw_documents (owner_user_id, page_count, kind)
+       VALUES ($1, 1, 'payment_proof') RETURNING id`,
+      [reporter.rows[0]!.id]
+    );
+
     const { rows } = await test.pool.query<{ id: string }>(
       `INSERT INTO structured.payment_proofs
          (reporter_user_id, vendor_id, merchant_name, paid_amount, paid_at,
-          review_state, pending_fields, review_note)
-       VALUES ($1, $2, NULL, NULL, NULL,
+          raw_document_id, review_state, pending_fields, review_note)
+       VALUES ($1, $2, NULL, NULL, NULL, $3,
                'pending_review', ARRAY['merchantName','paidAmount','paidAt']::payment_proof_field[],
                '올려주신 자료를 확인하고 있어요')
        RETURNING id`,
-      [reporter.rows[0]!.id, vendorId]
+      [reporter.rows[0]!.id, vendorId, document.rows[0]!.id]
     );
 
     return rows[0]!.id;
@@ -278,6 +291,81 @@ describeWithDb('결제인증 검수', () => {
     expect(rows[0]!.reason_code).toBe('read_by_operator');
     // 근거는 가리키기만 한다. 금액도 가맹점명도 로그에 복사되지 않는다.
     expect(rows[0]!.evidence_refs).toEqual([{ kind: 'payment_proof', id: proofId }]);
+  });
+
+  /**
+   * 운영자가 적은 값도 칸 단위로 남는다 — 0240. 2026-09-14 지시.
+   *
+   * 예전에는 `pending_fields`가 비워지면서 이 정보가 그냥 사라졌다. `reviewed_by`로
+   * 「사람이 손댔다」는 줄 단위로 남았지만, 넷 중 어느 칸이 기계가 읽은 값이고 어느
+   * 칸이 사람이 적은 값인지는 알 수 없었다.
+   */
+  it('운영자가 적은 값이 칸 단위로 남는다', async () => {
+    const proofId = await aPendingProof(await aVendor());
+
+    await resolve(
+      test.pool,
+      proofId,
+      {
+        merchantName: '가온예식홀',
+        paidAmount: 3_000_000,
+        paidAt: '2026-05-20T04:00:00.000Z',
+        reasonCode: 'read_by_operator',
+      },
+      await anOperator()
+    );
+
+    const { rows } = await test.pool.query<{
+      claimed_fields: string[];
+      claimed_source: string | null;
+      claimed_by: string | null;
+    }>(
+      `SELECT claimed_fields::text[], claimed_source, claimed_by
+       FROM structured.payment_proofs WHERE id = $1`,
+      [proofId]
+    );
+
+    /* 셋 다 비어 있던 줄이라 셋 다 사람 손이다. */
+    expect(rows[0]!.claimed_fields.sort()).toEqual(['merchantName', 'paidAmount', 'paidAt']);
+    expect(rows[0]!.claimed_source).toBe('operator');
+    expect(rows[0]!.claimed_by).not.toBeNull();
+  });
+
+  /**
+   * **기계가 옳게 읽은 값을 검수자가 그대로 옮겨 적은 것은 사람 손이 아니다.**
+   * 검수자는 셋을 늘 다 보내오지만, 값이 달라지지 않은 칸까지 「사람이 적었다」고
+   * 세면 그 표시가 아무것도 가리지 못한다.
+   */
+  it('바꾸지 않은 칸은 사람 손으로 세지 않는다', async () => {
+    const proofId = await aPendingProof(await aVendor());
+
+    /* 가맹점 이름만 기계가 읽어둔 줄로 만든다. */
+    await test.pool.query(
+      `UPDATE structured.payment_proofs
+          SET merchant_name = '가온예식홀',
+              pending_fields = ARRAY['paidAmount','paidAt']::payment_proof_field[]
+        WHERE id = $1`,
+      [proofId]
+    );
+
+    await resolve(
+      test.pool,
+      proofId,
+      {
+        merchantName: '가온예식홀',
+        paidAmount: 3_000_000,
+        paidAt: '2026-05-20T04:00:00.000Z',
+        reasonCode: 'read_by_operator',
+      },
+      await anOperator()
+    );
+
+    const { rows } = await test.pool.query<{ claimed_fields: string[] }>(
+      'SELECT claimed_fields::text[] FROM structured.payment_proofs WHERE id = $1',
+      [proofId]
+    );
+
+    expect(rows[0]!.claimed_fields.sort()).toEqual(['paidAmount', 'paidAt']);
   });
 
   it('운영자가 아니면 검수할 수 없다', async () => {
