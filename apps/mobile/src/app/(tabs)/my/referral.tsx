@@ -1,4 +1,4 @@
-import { REFERRAL_CODE_LENGTH } from '@weddingpick/domain';
+import { formatCount, REFERRAL_CODE_LENGTH } from '@weddingpick/domain';
 import { useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 
@@ -42,11 +42,11 @@ const S = {
   title: '친구 초대',
   hero: `친구가 시작하면\n${REFERRAL_REWARD}을 받아요`,
   sub: '친구의 첫 Pick 인증이 확인되면 지급돼요',
-  statNote: (n: number) => (n > 0 ? `${n}명 받음` : '아직 받은 리워드가 없어요'),
+  statNote: (n: number) => (n > 0 ? `${formatCount(n)}명 받음` : '아직 받은 리워드가 없어요'),
   statsSection: '초대 현황',
   qualified: 'Pick 인증을 마친 친구',
   waiting: 'Pick 인증 전인 친구',
-  unit: (n: number) => `${n}명`,
+  unit: (n: number) => `${formatCount(n)}명`,
   paidBadge: '지급 대상',
   waitBadge: '대기',
   'empty.title': '아직 초대한 친구가 없어요',

@@ -198,7 +198,7 @@ export default function AutomationScreen() {
 
           <KpiRow
             items={[
-              { label: '정상', value: `${formatCount(healthy)}개`, note: `전체 ${workflows.length}개`, kind: 'ok' },
+              { label: '정상', value: `${formatCount(healthy)}개`, note: `전체 ${formatCount(workflows.length)}개`, kind: 'ok' },
               { label: '저하', value: `${formatCount(degraded)}개`, note: degraded === 0 ? '기준 초과 없음' : '확인 필요', kind: degraded === 0 ? 'ok' : 'warn' },
               { label: '중단', value: `${formatCount(down)}개`, note: down === 0 ? '멈춘 것이 없어요' : '조치 필요', kind: down === 0 ? 'ok' : 'bad' },
               {

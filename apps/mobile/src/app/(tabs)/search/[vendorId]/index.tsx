@@ -32,6 +32,7 @@ import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
+import strings from '../../../../../../../spec/strings.ko.json';
 import {
   getCurrentUser,
   getVendor,
@@ -400,12 +401,12 @@ export default function VendorDetailScreen() {
             <View style={styles.heroText} pointerEvents="none">
               <View style={styles.heroBadgeRow}>
                 {vendor.sourceNote ? (
-                  /* 피그마 «인증» pill — 키 컬러 · 흰 글자 · 체크 10. 우리 뜻은 «공공기관 확인»이다. */
+                  /* 피그마 «인증» pill — 키 컬러 · 흰 글자 · 체크 10. 2026-09-15 대표 지시로 피그마 문구 그대로 맞춘다. */
                   <View style={[styles.heroBadge, { backgroundColor: theme.tint }]}>
                     {/* 규격서: pill «10/700 · lh 15 · pad 2 8 · gap 4» · 체크 10. */}
                     <ProductSymbol name="checkCircle" size={Layout.iconTiny} color={theme.onTint} />
                     <ThemedText type="f10" style={[styles.bold, { color: theme.onTint }]}>
-                      공공기관 확인
+                      {strings.vendor['badge.sourceVerified']}
                     </ThemedText>
                   </View>
                 ) : null}

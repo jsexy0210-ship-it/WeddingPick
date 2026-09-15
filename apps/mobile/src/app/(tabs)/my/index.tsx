@@ -14,7 +14,7 @@
  */
 import { FullScreenError } from '@/features/errors/full-screen-error';
 import type { CurrentUser, MyReportListResponse } from '@weddingpick/api-contract';
-import { BUSINESS_NOTICE_LINES, TERMS } from '@weddingpick/domain';
+import { BUSINESS_NOTICE_LINES, formatCount, TERMS } from '@weddingpick/domain';
 import { Redirect, router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -84,8 +84,8 @@ const S = {
   'item.terms': '이용약관',
   'item.privacy': '개인정보처리방침',
   appVersion: '앱 버전',
-  count: (n: number) => `${n}건`,
-  benefitCount: (n: number) => `${n}개 참여 가능`,
+  count: (n: number) => `${formatCount(n)}건`,
+  benefitCount: (n: number) => `${formatCount(n)}개 참여 가능`,
   logout: '로그아웃',
   tagline: '웨딩픽 · 결혼 준비의 시작',
   loginCta: '로그인 · 가입하기',

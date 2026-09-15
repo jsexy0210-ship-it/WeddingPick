@@ -149,7 +149,7 @@ export default function BriefingScreen() {
             title={
               data.unresolvedRisks.length === 0
                 ? '오늘 사람이 볼 것은 없어요'
-                : `미해결 리스크 ${data.unresolvedRisks.length}건이 있어요`
+                : `미해결 리스크 ${formatCount(data.unresolvedRisks.length)}건이 있어요`
             }
             detail={data.summary || undefined}
           />
