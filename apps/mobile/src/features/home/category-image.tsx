@@ -1,8 +1,8 @@
 import { Image } from 'expo-image';
 import { useState } from 'react';
-import { StyleSheet, View, type ImageStyle } from 'react-native';
+import { StyleSheet, type ImageStyle } from 'react-native';
 
-import { useTheme } from '@weddingpick/ui';
+import { DefaultImage, type DefaultImageCategory } from '@weddingpick/ui';
 
 /**
  * 사진 자리.
@@ -40,10 +40,11 @@ export type CategoryImageProps = {
   style?: BoxStyle;
   /** 화면 낭독기가 읽을 말. 사진이 정보를 나르지 않으면 비워 둔다. */
   label?: string;
+  /** 사진이 없을 때 그릴 업종. 없으면 업체 기본으로 그린다. */
+  category?: DefaultImageCategory;
 };
 
-export function CategoryImage({ uri, style, label }: CategoryImageProps) {
-  const theme = useTheme();
+export function CategoryImage({ uri, style, label, category }: CategoryImageProps) {
   /* 이 주소로 못 받아왔다. 같은 자리를 면으로 채운다 — 흰 상자를 남기지 않는다. */
   const [failed, setFailed] = useState(false);
 
@@ -64,13 +65,15 @@ export function CategoryImage({ uri, style, label }: CategoryImageProps) {
     );
   }
 
-  return (
-    <View
-      accessibilityElementsHidden
-      importantForAccessibility="no-hide-descendants"
-      style={[styles.fill, { backgroundColor: theme.backgroundSelected }, style]}
-    />
-  );
+  /*
+   * **기본 이미지로 채운다**(2026-09-15 대표 지시 — 「이미지 없는 건 싹다 디폴트
+   * 이미지 만들어서 넣어. 오류 띄우지 말고」). 예전에는 색만 깔린 빈 면이었고,
+   * 홈 캐러셀에 회색 칸이 나란히 떠서 무언가 깨진 것처럼 보였다.
+   *
+   * 그리는 것은 `packages/ui`의 `DefaultImage` 하나다 — 업체 카드와 홈이 다른
+   * 빈 자리를 그리면 같은 «사진 없음»이 화면마다 달라 보인다.
+   */
+  return <DefaultImage category={category} style={[styles.fill, style]} />;
 }
 
 const styles = StyleSheet.create({

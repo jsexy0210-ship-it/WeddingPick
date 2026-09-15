@@ -159,7 +159,7 @@ function Card({
         pressed && styles.pressed,
       ]}>
       <View style={styles.image}>
-        <CategoryImage uri={vendor.imageUrl} label={vendor.name} />
+        <CategoryImage uri={vendor.imageUrl} label={vendor.name} category={vendor.category} />
         {/* «button 32×32 · bg #FFFFFF 80% · r9999» — 담기면 잉크 면에 흰 하트(피그마 `bg-foreground`). */}
         <Pressable
           accessibilityRole="button"
