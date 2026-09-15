@@ -3,7 +3,7 @@ import type { Pool } from 'pg';
 
 import { createClaudeAnalyzer } from './analysis/claude-analyzer';
 import { runForever } from './analysis/worker';
-import { createGeminiFeedWriter } from './analysis/wedding-feed-writer';
+import { createClaudeFeedWriter } from './analysis/wedding-feed-writer';
 import type { Config } from './config';
 import { createExpoPush } from './push/expo';
 import { sendPriceChangeNudges, sendTaskNudges } from './notify/nudges';
@@ -182,20 +182,21 @@ export function startWorkerLoops({ pool, storage, config, signal }: WorkerDeps):
   }, RETENTION_SWEEP_MS);
 
   /*
-   * **키가 없으면 이 루프만 쉰다.** `createGeminiFeedWriter`가 던지는 것은
-   * `GEMINI_API_KEY` · `GEMINI_MODEL` 미설정인데, 그것 때문에 파기 정리 ·
-   * 알림까지 멈추면 안 된다 — 그래서 이 루프 하나만 try/catch로 감싼다.
+   * 클로드로 쓴다(2026-09-15 대표 지시 — 제미나이는 녹음·OCR에만, `CLAUDE.md`
+   * 참고). 모델은 `claude-analyzer.ts`와 같은 설정(`config.analysisModel`)에서
+   * 온다 — 새 설정 칸을 만들지 않는다.
+   *
+   * 이 루프 하나만 try/catch로 감싼다 — 한 바퀴가 실패해도 파기 정리 · 알림까지
+   * 멈추면 안 된다.
    */
   const feedGeneration = setInterval(() => {
     void (async () => {
       try {
-        const model = process.env.GEMINI_MODEL;
-
-        if (!model) return;
+        const model = config.analysisModel;
 
         const result = await runWeddingFeedGeneration({
           pool,
-          writer: createGeminiFeedWriter(),
+          writer: createClaudeFeedWriter({ model }),
           model,
           trigger: 'schedule',
         });

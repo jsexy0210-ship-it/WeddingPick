@@ -1,7 +1,7 @@
+import Anthropic from '@anthropic-ai/sdk';
+import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import { WEDDING_FEED_LIMITS, type WeddingFeedTopic } from '@weddingpick/domain';
 import { z } from 'zod';
-
-import { callGemini } from './gemini-call';
 
 /**
  * 웨딩피드 글을 쓴다.
@@ -70,40 +70,69 @@ export type FeedWriter = {
 };
 
 /**
- * Gemini로 쓴다.
+ * Anthropic 클라이언트의 한도. `claude-analyzer.ts`와 같은 값이다.
  *
- * 부르는 방법(키를 헤더로 · 오류 본문을 안 붙이기 · 재시도 한도)은 전부
- * `gemini-call.ts`에 있다. 여기 남은 것은 「무엇을 보내는가」뿐이다.
- *
- * 모델 이름은 환경변수에서 온다 — 코드 여러 군데에 적지 않는다.
+ * 인자 없이 만들면 SDK 기본값(10분 타임아웃 + 재시도)이 요청 하나를 오래
+ * 붙잡을 수 있다(Release Audit 1차 P1-9) — 워커 루프 하나가 이 글쓰기 한
+ * 건 때문에 다음 바퀴까지 밀리면 안 된다.
  */
-export function createGeminiFeedWriter(env: NodeJS.ProcessEnv = process.env): FeedWriter {
-  const apiKey = env.GEMINI_API_KEY;
-  const model = env.GEMINI_MODEL;
+const CLIENT_LIMITS = { timeout: 120_000, maxRetries: 2 };
 
-  if (!apiKey) throw new Error('GEMINI_API_KEY가 없다. 자동 작성을 하려면 키가 있어야 한다.');
-  if (!model) throw new Error('GEMINI_MODEL이 없다. 모델 이름은 환경변수에서 온다.');
+/**
+ * 클로드로 쓴다(2026-09-15 대표 지시 — 「제미나이는 녹음파일 인식, OCR 확인 외
+ * 절대 사용금지다」, `CLAUDE.md` 커밋 `94ca7c62`). 글쓰기는 제미나이가 할 일이
+ * 아니다 — 예전에는 `callGemini`로 썼고, 붙기 전이라 구글 쪽 요금은 나간 적이
+ * 없다.
+ *
+ * `claude-analyzer.ts` · `claude-payment-reader.ts`가 이미 쓰는 경로 그대로다 —
+ * `Anthropic` SDK를 직접 부르고 `zodOutputFormat`으로 스키마를 강제한다. 새
+ * 호출 경로를 만들지 않는다.
+ *
+ * 모델은 호출하는 쪽이 정해서 넘긴다(`config.analysisModel`) — `runGeneration`에
+ * 넘기는 `model`과 실제로 부르는 모델이 같아야 `wedding_feed_runs`에 적히는
+ * 이름이 사실과 맞는다. 새 설정 칸을 만들지 않는다 — `claude-analyzer.ts`가
+ * 같은 칸을 쓰고, 모델을 바꿀 자리를 하나로 묶어 둔다.
+ */
+export function createClaudeFeedWriter(options: { model: string }): FeedWriter {
+  const client = new Anthropic(CLIENT_LIMITS);
 
   return {
     async write(topic) {
-      const { value, usage } = await callGemini({
-        apiKey,
-        model,
-        systemPrompt: SYSTEM_PROMPT,
-        schema: feedDraftSchema,
-        parts: [
+      const response = await client.messages.parse({
+        model: options.model,
+        max_tokens: 4000,
+        system: [
           {
-            text:
-              `주제: ${topic.brief}\n` +
-              `묶음: ${topic.categoryLabel}\n\n` +
-              '이 주제로 한 편을 쓰고 스키마대로 채워라.',
+            type: 'text',
+            text: SYSTEM_PROMPT,
+            // 지시문은 매번 그대로다. 캐시가 먹도록 앞에 두고 주제를 뒤에 붙인다.
+            cache_control: { type: 'ephemeral' },
           },
         ],
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text:
+                  `주제: ${topic.brief}\n` +
+                  `묶음: ${topic.categoryLabel}\n\n` +
+                  '이 주제로 한 편을 쓰고 스키마대로 채워라.',
+              },
+            ],
+          },
+        ],
+        output_config: { format: zodOutputFormat(feedDraftSchema) },
       });
 
+      if (!response.parsed_output) {
+        throw new Error('구조화 출력을 읽지 못했다.');
+      }
+
       return {
-        draft: value,
-        usage: { inputTokens: usage.inputTokens, outputTokens: usage.outputTokens },
+        draft: response.parsed_output,
+        usage: { inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens },
       };
     },
   };

@@ -18,7 +18,7 @@ import * as dashboardAdmin from '../dashboard-admin';
 import * as decisionsAdmin from '../decisions-admin';
 import * as faqAdmin from '../faq-admin';
 import * as weddingFeed from '../wedding-feed';
-import { createGeminiFeedWriter } from '../analysis/wedding-feed-writer';
+import { createClaudeFeedWriter } from '../analysis/wedding-feed-writer';
 import { NotAnOperator } from '../decisions';
 import { ApiError, forbidden, notFound } from '../errors';
 import * as inquiryAdmin from '../inquiry-admin';
@@ -1106,19 +1106,15 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
    * 지금 한 번 쓰게 한다. 평소에는 워커가 스스로 돌지만, 운영자가 「지금 필요하다」고
    * 판단하는 자리가 있다.
    *
-   * **키가 없으면 여기서 멈춘다.** `createGeminiFeedWriter`가 던지고 그대로 올라간다 —
-   * 키 없이 「0건 만들었다」로 끝나면 운영자는 자동 작성이 도는 줄 안다.
+   * 클로드로 쓴다(2026-09-15 대표 지시 — 제미나이는 녹음·OCR에만, `CLAUDE.md` 참고).
+   * 모델은 `claude-analyzer.ts`와 같은 설정(`config.analysisModel`)에서 온다.
    */
   app.post('/v1/admin/wedding-feed/generate', auth, async () => {
-    const model = process.env.GEMINI_MODEL;
-
-    if (!model) {
-      throw new ApiError('invalid_request', '모델 이름이 설정에 없어요. GEMINI_MODEL을 넣어야 해요.');
-    }
+    const model = context.config.analysisModel;
 
     return weddingFeed.runGeneration({
       pool: context.pool,
-      writer: createGeminiFeedWriter(),
+      writer: createClaudeFeedWriter({ model }),
       model,
       trigger: 'manual',
     });
