@@ -5,12 +5,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   ActionButton,
+  Border,
   Layout,
+  LetterSpacing,
   MaxContentWidth,
   SegmentedTabs,
   Spacing,
   ThemedText,
   ThemedView,
+  useTheme,
 } from '@weddingpick/ui';
 import { useSession } from '@/features/auth/use-session';
 import { FullScreenError } from '@/features/errors/full-screen-error';
@@ -36,6 +39,7 @@ const TABS: { value: Tab; label: string }[] = [
  * `/search/expo`)로 보낸다 — 같은 것을 두 번 만들지 않는다.
  */
 export default function CommunityScreen() {
+  const theme = useTheme();
   const { state, refresh } = useSession();
   const [tab, setTab] = useState<Tab>('review');
 
@@ -46,8 +50,17 @@ export default function CommunityScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <View style={styles.header}>
-          <ThemedText type="t4">{S.title}</ThemedText>
+        {/*
+          피그마 `CommunityFeed`(2026-09-14 정본) 헤더: 56 · 제목 24/700 · 아래 선. 제목은 시안의
+          「커뮤니티」가 아니라 탭 이름과 같은 「라운지」다(CLAUDE.md 탭 다섯 — 이름을 두 개로
+          부르지 않는다). 그 아래 세 칸 탭은 `mx-5 mt-4`. 후기 · 피드 본문은 서버 계약이 없어
+          빈 상태 그대로다(인수인계 §3-3).
+        */}
+        {/* 규격서 community.txt 「header 430×56 pad 0 20 0 20」 · 제목 «24/700 · lh 32 · ls -0.72px». */}
+        <View style={[styles.header, { borderBottomColor: theme.border }]}>
+          <ThemedText type="f24" style={[styles.bold, styles.title]}>
+            {S.title}
+          </ThemedText>
         </View>
 
         <View style={styles.tabsWrap}>
@@ -87,12 +100,17 @@ function Empty({ title, body }: { title: string; body: string }) {
 const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
+  /* 피그마 `h-14 px-5 border-b` — 56 · 좌우 24 · 아래 선. */
   header: {
     height: Layout.navBar,
     justifyContent: 'center',
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.pageX,
+    borderBottomWidth: Border.hairline,
   },
-  tabsWrap: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.rowPaddingY },
+  bold: { fontWeight: 700 },
+  title: { letterSpacing: LetterSpacing.n072 },
+  /* 규격서 「nav 390×48 … mar 16 20 0 20」 — 위 16 · 좌우 20. */
+  tabsWrap: { paddingHorizontal: Layout.pageX, paddingTop: Spacing.three, paddingBottom: Layout.rowPaddingY },
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: Layout.sectionGap },
   center: { textAlign: 'center' },

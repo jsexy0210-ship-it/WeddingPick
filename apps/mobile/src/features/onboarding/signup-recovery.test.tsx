@@ -25,11 +25,10 @@ jest.mock('./wedding-draft', () => ({
 jest.mock('@/features/loading/delayed-loader', () => ({ DelayedRecommendingView: 'Loading' }));
 jest.mock('./date-picker-sheet', () => ({ DatePickerSheet: 'DatePickerSheet' }));
 jest.mock('./inline-toast', () => ({ InlineToast: 'InlineToast', useInlineToast: () => ({ toast: null, show: jest.fn(), hide: jest.fn() }) }));
-jest.mock('./option-chip', () => ({ OptionChip: 'OptionChip' }));
+jest.mock('./option-row', () => ({ OptionRow: 'OptionRow' }));
 jest.mock('./question-head', () => ({ QuestionHead: 'QuestionHead' }));
 jest.mock('./region-picker', () => ({ RegionPicker: 'RegionPicker' }));
 jest.mock('./step-frame', () => ({ StepFrame: 'StepFrame' }));
-jest.mock('./style-grid', () => ({ StyleGrid: 'StyleGrid' }));
 jest.mock('@weddingpick/ui', () => ({
   Layout: {}, Radius: {}, Spacing: {}, ThemedText: 'ThemedText', ThemedView: 'ThemedView', useTheme: () => ({}),
 }));

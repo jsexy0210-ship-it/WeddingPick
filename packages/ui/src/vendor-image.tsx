@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { Image, StyleSheet, View, type ImageSourcePropType } from 'react-native';
+import { Image, StyleSheet, type ImageSourcePropType } from 'react-native';
 
+import { DefaultImage } from './default-image';
 import { Radius } from './theme';
-import { ThemedText } from './themed-text';
-import { useTheme } from './use-theme';
 
 /**
  * 폴백 이미지 업종. `packages/domain` VENDOR_CATEGORIES(핸드오프 v3.18 §1.3)와 값을
@@ -22,20 +21,6 @@ export type VendorCategory =
   | 'honeymoon'
   | 'invitation'
   | 'etc';
-
-const CATEGORY_LABEL: Record<VendorCategory, string> = {
-  wedding_info_company: '결정사 기본',
-  hall: '웨딩홀 기본',
-  studio: '스튜디오 기본',
-  dress: '드레스 기본',
-  makeup: '메이크업 기본',
-  snap: '본식스냅 기본',
-  goods: '예물 기본',
-  dowry: '혼수 기본',
-  honeymoon: '허니문 기본',
-  invitation: '청첩장 기본',
-  etc: '업체 기본',
-};
 
 export type VendorImageProps = {
   source?: ImageSourcePropType | null;
@@ -58,7 +43,6 @@ export function VendorImage({
   height = 96,
   radius = Radius.small,
 }: VendorImageProps) {
-  const theme = useTheme();
   const [failed, setFailed] = useState(false);
 
   if (source && !failed) {
@@ -72,21 +56,17 @@ export function VendorImage({
     );
   }
 
-  return (
-    <View
-      style={[
-        styles.fallback,
-        { width, height, borderRadius: radius, backgroundColor: theme.backgroundSelected },
-      ]}>
-      <ThemedText type="t7" themeColor="textDisabled" style={styles.label}>
-        {CATEGORY_LABEL[category]}
-      </ThemedText>
-    </View>
-  );
+  /*
+   * 사진이 없거나 못 받아왔다. **기본 이미지로 채운다.**
+   *
+   * 2026-09-15까지 이 자리는 회색 면에 「웨딩홀 기본」이라고 적고 있었다 —
+   * 검색 목록 다섯 칸에 그 글씨가 나란히 떴다. 사용자에게는 그것이 사진이
+   * 아니라 **우리가 사진을 못 구했다는 고백**으로 읽힌다(대표님 지시
+   * 「이미지 없는 건 싹다 디폴트 이미지 넣어. 오류 띄우지 말고」).
+   */
+  return <DefaultImage category={category} style={{ width, height, borderRadius: radius }} />;
 }
 
 const styles = StyleSheet.create({
   image: { overflow: 'hidden' },
-  fallback: { alignItems: 'center', justifyContent: 'center' },
-  label: { textAlign: 'center' },
 });

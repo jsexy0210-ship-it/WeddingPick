@@ -66,6 +66,32 @@ export const FontSize = {
   adminBanner: 15,
   /** 관리자 사이드바 그룹 제목 11/15. adminNavGroup. */
   adminNavGroup: 11,
+  /*
+   * 피그마 규격서(`docs/figma-spec/*.txt` · 2026-09-15 대표 지시 「규격서의 수를 그대로」)의
+   * 글자 크기. 이름이 곧 값이다 — 규격서 줄의 «14/700 · lh 19»를 f14 + fontWeight 700 +
+   * LineHeight.lh19로 옮긴다. 8단계 스케일(t1~t7)과 겹치는 값도 따로 두는 이유는 줄높이가
+   * 다르기 때문이다(피그마는 Tailwind 기본 줄높이). 출처는 spec/tokens.json `typography.figma`.
+   */
+  f7: 7,
+  f9: 9,
+  f10: 10,
+  f11: 11,
+  f12: 12,
+  f13: 13,
+  f14: 14,
+  f15: 15,
+  f16: 16,
+  f18: 18,
+  f20: 20,
+  f24: 24,
+  f26: 26,
+  f28: 28,
+  f30: 30,
+  f32: 32,
+  f38: 38,
+  f42: 42,
+  f46: 46,
+  f52: 52,
 } as const;
 
 /**
@@ -119,6 +145,54 @@ export const LineHeight = {
   adminRow: 20,
   /** 18px 확인 카드 제목(`18/25`). */
   adminConfirmTitle: 25,
+  /* 피그마 규격서의 줄높이. 이름이 곧 값이다 — 규격서 «lh 19»는 lh19. */
+  lh11: 11,
+  lh14: 14,
+  lh15: 15,
+  lh16: 16,
+  lh17: 17,
+  lh19: 19,
+  lh20: 20,
+  lh22: 22,
+  lh23: 23,
+  lh24: 24,
+  lh28: 28,
+  lh32: 32,
+  lh36: 36,
+  lh38: 38,
+  lh39: 39,
+  lh40: 40,
+  lh42: 42,
+  lh45: 45,
+  lh46: 46,
+  lh52: 52,
+} as const;
+
+/**
+ * 피그마 규격서의 자간(px). 이름은 값이다 — «ls -0.4px»는 n04, «ls 0.5px»는 p05.
+ * 출처 spec/tokens.json `typography.figma.letterSpacings`.
+ */
+export const LetterSpacing = {
+  n138: -1.38,
+  n105: -1.05,
+  n095: -0.95,
+  n072: -0.72,
+  n065: -0.65,
+  n064: -0.64,
+  n06: -0.6,
+  n052: -0.52,
+  n04: -0.4,
+  p025: 0.25,
+  p03: 0.3,
+  p05: 0.5,
+  p11: 1.1,
+  p15: 1.5,
+  p16: 1.6,
+  p17: 1.7,
+  p18: 1.8,
+  p12: 1.2,
+  p22: 2.2,
+  p24: 2.4,
 } as const;
 
 export type FontSizeToken = keyof typeof FontSize;
