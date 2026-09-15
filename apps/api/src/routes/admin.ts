@@ -1057,13 +1057,18 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
    * **FAQ와 같은 모양이다**(PUT으로 전체를 보내고 PATCH는 두지 않는다). 부르는 데
    * 없는 쓰기 라우트를 성공으로 남겨두면 다음 사람이 그것을 믿는다.
    *
-   * 목록에 `counts`를 같이 실어 보낸다 — 화면 위 배너가 「지금 봐야 할 것」을 먼저
-   * 말해야 하는데(v3.27), 공개 몇 건 · 초안 몇 건을 따로 부르면 두 번 왕복한다.
+   * `listForAdmin`을 그대로 돌려준다 — `{ posts, runs, remainingTopics }`
+   * (계약은 `adminWeddingFeedResponseSchema`). 화면 위 배너가 필요한 공개·초안
+   * 건수는 `posts`의 `status`만 세면 나오므로 따로 왕복하지 않는다.
+   *
+   * **전에는 여기서 `{ posts: listForAdmin(...), counts: ... }`로 한 번 더 감쌌다.**
+   * `listForAdmin`이 이미 `{ posts, runs, remainingTopics }`를 돌려주는데 그것을
+   * `posts` 키 하나에 다시 넣어, 실제 글 배열이 `posts.posts`에 있었다 — 부르는
+   * 데가 없어서 아무도 겪지 않았을 뿐인 버그다.
    */
-  app.get('/v1/admin/wedding-feed', auth, async () => ({
-    posts: await weddingFeed.listForAdmin(context.pool, context.storage),
-    counts: await weddingFeed.counts(context.pool),
-  }));
+  app.get('/v1/admin/wedding-feed', auth, async () =>
+    weddingFeed.listForAdmin(context.pool, context.storage)
+  );
 
   app.post<{ Body: unknown }>('/v1/admin/wedding-feed', auth, async (request) =>
     weddingFeed.create(

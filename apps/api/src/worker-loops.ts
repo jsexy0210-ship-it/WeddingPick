@@ -3,6 +3,7 @@ import type { Pool } from 'pg';
 
 import { createClaudeAnalyzer } from './analysis/claude-analyzer';
 import { runForever } from './analysis/worker';
+import { createGeminiFeedWriter } from './analysis/wedding-feed-writer';
 import type { Config } from './config';
 import { createExpoPush } from './push/expo';
 import { sendPriceChangeNudges, sendTaskNudges } from './notify/nudges';
@@ -11,6 +12,7 @@ import { sweepExpiredConsultationAudio } from './retention/consultation-audio';
 import { listRetentionAttention, sweepExpiredDocuments } from './retention/worker';
 import type { Storage } from './storage/port';
 import { completeWithdrawals } from './withdrawal';
+import { runGeneration as runWeddingFeedGeneration } from './wedding-feed';
 
 const RETENTION_SWEEP_MS = 10 * 60 * 1000;
 
@@ -20,6 +22,13 @@ const RETENTION_SWEEP_MS = 10 * 60 * 1000;
  * 하게 된다.
  */
 const NUDGE_MS = 60 * 60 * 1000;
+
+/*
+ * 웨딩피드 자동 작성도 급하지 않다 — 목표(공개 8건)를 채우는 것이 목적이지 실시간
+ * 발행이 아니다. 알림과 같은 한 시간 간격을 쓴다. `shouldGenerate`가 매번 다시
+ * 봐서, 이미 목표를 채웠거나 초안이 쌓여 있으면 아무것도 쓰지 않고 지나간다.
+ */
+const WEDDING_FEED_MS = 60 * 60 * 1000;
 
 export type WorkerDeps = {
   pool: Pool;
@@ -172,9 +181,38 @@ export function startWorkerLoops({ pool, storage, config, signal }: WorkerDeps):
     })();
   }, RETENTION_SWEEP_MS);
 
+  /*
+   * **키가 없으면 이 루프만 쉰다.** `createGeminiFeedWriter`가 던지는 것은
+   * `GEMINI_API_KEY` · `GEMINI_MODEL` 미설정인데, 그것 때문에 파기 정리 ·
+   * 알림까지 멈추면 안 된다 — 그래서 이 루프 하나만 try/catch로 감싼다.
+   */
+  const feedGeneration = setInterval(() => {
+    void (async () => {
+      try {
+        const model = process.env.GEMINI_MODEL;
+
+        if (!model) return;
+
+        const result = await runWeddingFeedGeneration({
+          pool,
+          writer: createGeminiFeedWriter(),
+          model,
+          trigger: 'schedule',
+        });
+
+        if (result.created > 0) {
+          console.log(`웨딩피드 자동 작성 ${result.created}건`);
+        }
+      } catch (error) {
+        console.error('웨딩피드 자동 작성 실패:', error);
+      }
+    })();
+  }, WEDDING_FEED_MS);
+
   controller.signal.addEventListener('abort', () => {
     clearInterval(sweep);
     clearInterval(nudges);
+    clearInterval(feedGeneration);
   });
 
   console.log('분석 워커 시작');
