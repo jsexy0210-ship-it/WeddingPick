@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet } from 'react-native';
 
-import { Layout, Radius, Spacing } from './theme';
+import { Layout, Radius, Spacing, USE_NATIVE_DRIVER } from './theme';
 import { ProductSymbol } from './product-symbol';
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
@@ -95,7 +95,8 @@ function Chevron({ expanded, color }: { expanded: boolean; color: string }) {
       toValue: expanded ? 1 : 0,
       duration: CHEVRON_SPIN_MS,
       easing: Easing.bezier(0.35, 0, 0.35, 1),
-      useNativeDriver: true,
+      /* 웹에는 네이티브 드라이버가 없다 — true를 그대로 넘기면 콘솔 경고가 쌓인다. */
+      useNativeDriver: USE_NATIVE_DRIVER,
     });
 
     animation.start();
