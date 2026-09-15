@@ -5,6 +5,10 @@
  * **2026-09-15 대표 확정 — 약관·방침 · 링크 미리보기 · 감사 기록과 탭으로 묶였다**
  * (넷 다 사용자에게 노출되는 문구·카드 또는 그 기록). 이 파일 맨 아래
  * `SiteContentShell`이 그 껍데기고, 여기 있던 본문은 `FaqPanel`로 이름만 바꿨다.
+ *
+ * **웨딩피드 관리는 2026-09-15에 다섯 번째 탭으로 붙었다.** `main`이 그 화면을
+ * FAQ·링크 미리보기와 같은 「문구 · 카드」 묶음에 두고 있었고, 운영자가 직접 쓰고
+ * 고치는 노출 콘텐츠라는 성격도 같아 이 탭 묶음에 넣었다.
  */
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -26,6 +30,7 @@ import { AdminTabShell, type AdminTabDef } from './_ui';
 import { TermsPanel } from './terms';
 import { OgCardPanel } from './og-card';
 import { AuditLogPanel } from './audit-log';
+import { WeddingFeedPanel } from './wedding-feed';
 
 type FaqItem = {
   id: string;
@@ -285,12 +290,14 @@ const TABS: AdminTabDef[] = [
   { key: 'terms', label: '약관 · 방침', readOnly: true },
   { key: 'og-card', label: '링크 미리보기' },
   { key: 'audit-log', label: '감사 기록' },
+  { key: 'wedding-feed', label: '웨딩피드 관리' },
 ];
 
 /**
- * 「사이트·기록」 — FAQ 관리 · 약관·방침 · 링크 미리보기 · 감사 기록을 탭 넷으로
- * 묶는다. **약관·방침은 「조회만」 딱지가 붙는다** — 정본이 웹사이트라 관리자는
- * 조회만 한다(다섯 화면 중 하나. CLAUDE.md 「약관·방침의 직접 조작」).
+ * 「사이트·기록」 — FAQ 관리 · 약관·방침 · 링크 미리보기 · 감사 기록 · 웨딩피드
+ * 관리를 탭 다섯으로 묶는다. **약관·방침은 「조회만」 딱지가 붙는다** — 정본이
+ * 웹사이트라 관리자는 조회만 한다(다섯 화면 중 하나. CLAUDE.md 「약관·방침의
+ * 직접 조작」).
  */
 export default function SiteContentShell() {
   const { tab } = useLocalSearchParams<{ tab?: string }>();
@@ -303,6 +310,7 @@ export default function SiteContentShell() {
       {active === 'terms' && <TermsPanel />}
       {active === 'og-card' && <OgCardPanel />}
       {active === 'audit-log' && <AuditLogPanel />}
+      {active === 'wedding-feed' && <WeddingFeedPanel />}
     </AdminTabShell>
   );
 }

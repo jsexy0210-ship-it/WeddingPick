@@ -36,6 +36,15 @@ const configSchema = z.object({
   retentionReminderHours: z.coerce.number().int().positive().default(24),
 
   /**
+   * 종료 박람회 자동 삭제(`docs/expo-agent-spec.md` 15절)를 워커에서 매일 돌릴지.
+   *
+   * **기본값이 꺼짐이다.** 되돌릴 수 없는 삭제라 운영에서 처음 켜는 것은 대표님
+   * 판단이다 — 세션이 스스로 켜지 않는다. 꺼져 있어도 `npm run expo-cleanup --
+   * --dry-run`으로 언제든 미리 셀 수 있다.
+   */
+  expoAutoDeleteEnabled: z.boolean().default(false),
+
+  /**
    * 브라우저에서 API를 부를 수 있는 출처. 비워두면 CORS 헤더를 내보내지 않는다.
    * 네이티브 앱은 CORS와 무관하다 — 웹에서 붙여볼 때만 필요하다.
    */
@@ -136,6 +145,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     storage,
     retentionMode: env.RETENTION_MODE,
     retentionReminderHours: env.RETENTION_REMINDER_HOURS,
+    expoAutoDeleteEnabled: env.EXPO_AUTO_DELETE_ENABLED === 'true',
     proofReaderCheapModel: env.PROOF_READER_CHEAP_MODEL,
     proofReaderStrongModel: env.PROOF_READER_STRONG_MODEL,
     aiDailyCallLimit: env.AI_DAILY_CALL_LIMIT,

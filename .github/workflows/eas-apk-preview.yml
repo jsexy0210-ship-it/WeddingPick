@@ -7,7 +7,7 @@
 # Actions 탭 → "EAS Android APK (preview)" → Run workflow.
 # 완료되면 실행 화면 하단 Artifacts에 .apk가 붙는다.
 #
-# 필요한 GitHub Secret: EXPO_TOKEN (release.yml, eas-init.yml과 동일)
+# 필요한 GitHub Secret: EXPO_TOKEN (release.yml과 동일)
 name: EAS Android APK (preview)
 
 on:

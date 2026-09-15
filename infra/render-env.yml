@@ -174,7 +174,7 @@ services:
       # 위 `vars`에 두어 배포만으로 바꿀 수 있게 한다.
       - GEMINI_API_KEY
       # 파일 저장소(NCP Object Storage). 다섯 개 모두 GitHub Secrets에 이미 있다 —
-      # 여기 이름을 적어야 Render로 흘러간다. `storage-test.yml`이 같은 이름을 쓴다.
+      # 여기 이름을 적어야 Render로 흘러간다.
       # 결제 증빙이 들어가는 버킷이므로 **공개 읽기로 두지 않는다.**
       - S3_BUCKET
       - S3_REGION

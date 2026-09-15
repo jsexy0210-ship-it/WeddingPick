@@ -21,9 +21,8 @@ import {
 /**
  * 개인화 웨딩피드. WP-HOME-006.
  *
- * 홈 탭에서 진입. 서버에 콘텐츠 API가 없어 지금은 listWeddingContent()가
- * 빈 배열을 반환한다 — 그때는 안내 문구를 보여준다.
- * 콘텐츠 API가 생기면 features/home/content.ts에서 호출하면 된다.
+ * 홈 탭에서 진입. `listWeddingContent()`가 공개된 글을 전부 받아온다 — 목록이
+ * 비면 안내 문구를 보여준다.
  */
 export default function FeedScreen() {
   const [items, setItems] = useState<readonly WeddingContentItem[] | null>(null);

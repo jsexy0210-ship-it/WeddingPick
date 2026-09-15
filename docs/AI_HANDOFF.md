@@ -222,8 +222,8 @@ PR #99의 조사 보고서와 그 독립 재검증 결과에서 **코드로 확�
 | # | 항목 | 위치 · 근거 |
 |---|---|---|
 | 잔존-A′ | kill switch 6종(AI 3 · 통계 · 보상 · 자동게시)이 여전히 인메모리다 | `routes/admin.ts`의 `killSwitches` Map은 그대로다 — 껐다고 표시돼도 기능은 돌고 재시작하면 상태가 사라진다. **수집 출처 스위치만 #134로 DB(`import_switches`)에 연결됐다.** 나머지 6종은 각각 읽는 쪽을 만들어야 한다 |
-| G05 | staging 이름의 job이 운영 대상을 검사 | `main.yml`의 Staging·Production 두 job이 같은 `DATABASE_URL`과 같은 health URL(`weddingpickl.onrender.com`)을 쓴다. `db-migrate-staging.yml`만 `STAGING_DATABASE_URL`을 쓴다. **처리 방침은 `docs/release-env-split.md`가 정본이다** — 사용자 결정(2026-09-09) 「우선 현재 DB 그대로, 차후에 분리」로 §3의 0·0b·1·2는 나누는 날로 미뤄졌다. `PRODUCTION_DATABASE_URL`에 Render 내부망 주소가 들어 있어(`getaddrinfo EAI_AGAIN`) 이름부터 옮기면 어떤 워크플로도 운영 DB에 닿지 못한다 |
-| DB-2 | 스테이징 DB가 19개 밀려 있다 | 적용 73 / 기대 92(0074~0091a 미적용, 2026-09-09 실측). 「스테이징에서 먼저 검수한다」가 지금 성립하지 않는다. `db-migrate-staging.yml` 실행은 사용자 승인 대기. **N01 재현용으로서의 값은 없다** — 스키마 가설이 죽어 그 실험이 가르는 것이 없다 |
+| G05 | staging 이름의 job이 운영 대상을 검사 | `main.yml`의 Staging·Production 두 job이 같은 `DATABASE_URL`과 같은 health URL(`weddingpickl.onrender.com`)을 쓴다. `db-migrate-staging.yml`이 `STAGING_DATABASE_URL`을 쓰던 유일한 자리였고 **2026-09-15에 지웠다**(스테이징 DB가 따로 없어 쓸 일이 없었다). **처리 방침은 `docs/release-env-split.md`가 정본이다** — 사용자 결정(2026-09-09) 「우선 현재 DB 그대로, 차후에 분리」로 §3의 0·0b·1·2는 나누는 날로 미뤄졌다. `PRODUCTION_DATABASE_URL`에 Render 내부망 주소가 들어 있어(`getaddrinfo EAI_AGAIN`) 이름부터 옮기면 어떤 워크플로도 운영 DB에 닿지 못한다 |
+| DB-2 | 스테이징 DB가 19개 밀려 있다 | 적용 73 / 기대 92(0074~0091a 미적용, 2026-09-09 실측). 「스테이징에서 먼저 검수한다」가 지금 성립하지 않는다. **적용할 워크플로를 2026-09-15에 지웠다** — 나누는 날 다시 만든다. **N01 재현용으로서의 값은 없다** — 스키마 가설이 죽어 그 실험이 가르는 것이 없다 |
 
 ### 출시 전 처리
 
@@ -418,20 +418,18 @@ P0 전체 항목의 완료 기준과 검증 증거가 확정되지 않아 P0 진
 ### GitHub Actions 워크플로
 | 파일 | 역할 |
 |---|---|
-| `main.yml` | PR CI; main push 시 CI → DB 마이그레이션 → Render 배포·헬스체크 |
+| `main.yml` | main push 시 CI → DB 마이그레이션 → Render 배포·헬스체크. **PR CI는 2026-09-15에 껐다**(대표 지시 「CI가 너무 많다」) |
 | `keep-warm.yml` | Render 무료 플랜 API가 잠들지 않게 주기적으로 `/health` 호출 |
 | `db-migrate.yml` | Neon 운영 DB 마이그레이션 적용 |
-| `db-migrate-staging.yml` | 스테이징 DB(`STAGING_DATABASE_URL`) 마이그레이션 적용 |
 | `db-status.yml` | DB 마이그레이션 적용 상태 조회 |
 | `db-seed-samples.yml` | 샘플 업체·이미지 시드 |
 | `db-delete-test-user.yml` | 테스트 계정 삭제(`apps/api/src/scripts/delete-test-user.ts`) |
 | `render-env-sync.yml` | `infra/render-env.yml`을 Render 서비스 환경변수로 upsert |
 | `render-trigger-deploy.yml` | Render 배포 수동 트리거 |
 | `render-deploy-status.yml` | Render 배포 상태 조회 |
-| `storage-test.yml` | NCP Object Storage(S3 호환) 업로드·다운로드·삭제 연결 테스트 |
 | `public-data.yml` | 공공데이터(소상공인진흥공단) 수집 |
 | `android-apk.yml` | Android APK 빌드 |
-| `eas-init.yml` · `eas-apk-preview.yml` | EAS 프로젝트 초기화 · preview APK |
+| `eas-apk-preview.yml` | EAS preview APK |
 | `release.yml` | iOS EAS 빌드 배포 |
 
 ---

@@ -1,7 +1,8 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as WebBrowser from 'expo-web-browser';
 
 import { getExpo, toggleExpoNotify, type ExpoDetail, type ExpoStatus } from '@/api/client';
 import { BackBar } from '@/components/back-bar';
@@ -218,6 +219,18 @@ export default function ExpoDetailScreen() {
             출처 {expo.sourceNote} · 마지막 확인 {expo.lastVerifiedAt}
           </ThemedText>
 
+          {/*
+            공식 홈페이지. 신청 링크와 별도로 있으면 함께 보여준다 — 둘 다 앱을
+            떠나지 않는 In-App Browser로 연다(대표 정정, expo-agent-spec.md).
+          */}
+          {expo.officialWebsiteUrl ? (
+            <Pressable onPress={() => void WebBrowser.openBrowserAsync(expo.officialWebsiteUrl!)}>
+              <ThemedText type="t7" themeColor="tint">
+                공식 홈페이지
+              </ThemedText>
+            </Pressable>
+          ) : null}
+
           {/* 종료 안내 */}
           {isClosed ? (
             <ThemedView type="backgroundElement" style={styles.card}>
@@ -234,8 +247,11 @@ export default function ExpoDetailScreen() {
                   variant="primary"
                   size="xlarge"
                   label="사전등록"
+                  disabled={!expo.applyUrl}
                   onPress={() => {
-                    // 사전등록 링크 — 서버에 별도 필드 추가 시 연동
+                    // 공식 신청 링크 — 앱을 떠나지 않는 In-App Browser로 연다
+                    // (대표 정정, expo-agent-spec.md).
+                    if (expo.applyUrl) void WebBrowser.openBrowserAsync(expo.applyUrl);
                   }}
                 />
               ) : (

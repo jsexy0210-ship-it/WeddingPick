@@ -4,17 +4,14 @@ import {
   STEP_DESCRIPTION,
   STEP_TITLE_LINES,
   answerSummary,
-  answeredRows,
   canAdvance,
   ddayLabel,
   doneRows,
   nextStep,
   prevStep,
   resumeStep,
-  returnStep,
   stepProgress,
   stepsFor,
-  styleCta,
   summarizeStyles,
   type Answers,
 } from './flow';
@@ -70,8 +67,8 @@ describe('세 질문의 순서 (2026-09-14 대표 확정 · 피그마 3단계)',
     expect(resumeStep(FULL)).toBeNull();
   });
 
-  it('바꾸기로 되돌아가 고친 뒤 다음은 이미 답한 질문을 건너뛴다', () => {
-    /* 지역만 다시 열었다 — 스타일은 그대로라 곧장 완료다. */
+  it('이미 답한 질문은 «다음»이 건너뛴다', () => {
+    /* 지역에서 «다음» — 스타일이 이미 차 있어 곧장 완료다. */
     expect(nextStep('region', FULL)).toBeNull();
     expect(resumeStep({ ...EMPTY_ANSWERS, date: { value: null } })).toBe('region');
   });
@@ -84,21 +81,7 @@ describe('세 질문의 순서 (2026-09-14 대표 확정 · 피그마 3단계)',
   });
 });
 
-describe('「바꾸기」 동작', () => {
-  it('고친 뒤 «다음»은 원래 있던 Step으로 바로 돌아간다', () => {
-    expect(returnStep('date', 'style', FULL)).toBe('style');
-    expect(returnStep('region', 'style', FULL)).toBe('style');
-    expect(returnStep('date', 'region', FULL)).toBe('region');
-  });
-
-  it('바꾸는 동안 답 줄은 그 질문 앞의 것만 보인다', () => {
-    expect(answeredRows('region', FULL, true).map((row) => row.step)).toEqual(['date']);
-    expect(answeredRows('date', FULL, true)).toEqual([]);
-    expect(answeredRows('style', FULL, true).map((row) => row.step)).toEqual(['date', 'region']);
-  });
-});
-
-describe('답 줄과 완료 요약', () => {
+describe('완료 요약', () => {
   it('미정은 «미정»으로, 스타일은 «·»로 잇는다', () => {
     const undecided: Answers = {
       date: { value: null },
@@ -116,12 +99,6 @@ describe('답 줄과 완료 요약', () => {
     expect(summarizeStyles(['GLAMOROUS'])).toBe('화려한');
   });
 
-  it('답 줄은 Step 순서대로 쌓이고 열린 질문은 빠진다', () => {
-    expect(answeredRows('region', FULL).map((row) => row.step)).toEqual(['date', 'style']);
-    expect(answeredRows('style', FULL).map((row) => row.step)).toEqual(['date', 'region']);
-    expect(answeredRows('date', EMPTY_ANSWERS)).toEqual([]);
-  });
-
   it('완료 요약은 항상 세 줄이고 빈칸 대신 «미정»이다', () => {
     const rows = doneRows({ ...FULL, style: null });
 
@@ -130,11 +107,6 @@ describe('답 줄과 완료 요약', () => {
     expect(rows.every((row) => row.value !== '' && row.value !== '—')).toBe(true);
 
     expect(doneRows(FULL)[2]).toEqual({ step: 'style', label: '스타일', value: '도시적인 · 로맨틱한' });
-  });
-
-  it('스타일 CTA는 고른 장수 그대로 «N장 선택»이다', () => {
-    expect(styleCta(0)).toBe('0장 선택');
-    expect(styleCta(2)).toBe('2장 선택');
   });
 
   it('시트의 D-day는 «D-250», 당일은 «D-DAY»다', () => {

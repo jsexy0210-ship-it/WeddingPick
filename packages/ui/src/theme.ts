@@ -890,6 +890,12 @@ export const Layout = {
   bulletDot: 6,
   /** Pick 빈 상태의 위아래 80 — spacing.pickEmptyPaddingY(피그마 `Pick.tsx` `py-20`). */
   pickEmptyPaddingY: 80,
+  /**
+   * 제목의 위 여백 — 영문 eyebrow를 지운 뒤에도 제목을 규격서와 같은 자리에 둔다.
+   * spacing.headTopLogin(64+15+20) · spacing.headTopOnboarding(80+15+16).
+   */
+  headTopLogin: 99,
+  headTopOnboarding: 111,
   /** 바텀시트 패널 — padding 12 24 28(+ safeBottom) · 요소 간격 20 · 제목과 본문 사이 6. component.sheet. */
   sheetPaddingTop: 12,
   sheetPaddingBottom: 28,

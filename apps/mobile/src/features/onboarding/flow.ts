@@ -6,6 +6,8 @@ import {
   type WeddingStyle,
 } from '@weddingpick/domain';
 
+import { common } from '../../../../../spec/strings.ko.json';
+
 /**
  * 초기 설정 **3개 질문**의 순서와 규칙(2026-09-14 대표 확정 — 피그마
  * `weddingpick_figma` `src/app/components/FlowScreens.tsx` `steps` 3단계 기준).
@@ -100,21 +102,19 @@ export const STEP_DESCRIPTION: Record<QuestionStep, string> = {
 };
 
 export const DONE_CTA = '웨딩픽 시작하기';
-export const NEXT_CTA = '다음';
-export const PREV_CTA = '이전';
 
 /**
- * 스타일 CTA — 고른 **장수** 그대로 «N장 선택». 완료 화면이 뒤에 있으므로
- * «시작하기»를 붙이지 않는다. 0장이면 비활성.
+ * 「다음」 — 세 질문이 전부 같은 CTA를 쓴다.
  *
- * 세는 것이 이미지 장수라 단위는 «장»이다 — `spec/strings.ko.json`
- * `onboarding.taste.cta` · SPEC.md §「CTA는 «N장 선택»」 · 시안
- * `20-onboarding-v2.dc.html` «3장 선택». CHANGELOG v3.19가 한 번 «곳»으로
- * 적었지만 «곳»은 업체를 세는 말이고, 그 뒤의 SPEC과 시안이 «장»으로 돌아왔다.
+ * **스타일 3/3도 이것이다.** 2026-09-15까지 `styleCta(n)`이 «N장 선택»을 만들었는데
+ * «장»은 사진·종이를 세는 말이라 사진 타일을 지운 지금은 셀 것이 없다(대표 지시
+ * 「타일로 하지마 버튼으로 통일한다」). 규격서 `docs/figma-spec/onboarding.txt`의
+ * CTA는 «다음»이다 — `button 382×56 "다음" · 14/700 #FFFFFF · bg #1A1C20 · r16`.
+ * 근거를 옛 SPEC.md에서 피그마로 옮긴 것이고, 문구는 `spec/strings.ko.json`
+ * `common.cta.next`에서 온다.
  */
-export function styleCta(count: number): string {
-  return `${count}장 선택`;
-}
+export const NEXT_CTA = common['cta.next'];
+export const PREV_CTA = '이전';
 
 /** 이 답 상태에서 묻는 Step. 셋 전부 — 건너뛰는 질문이 없다. */
 export function stepsFor(_answers: Answers): readonly QuestionStep[] {
@@ -200,45 +200,17 @@ export function answerSummary(step: QuestionStep, answers: Answers): string | nu
   }
 }
 
-export type AnsweredRowModel = { step: QuestionStep; label: string; value: string };
-
 /**
- * 화면 아래에 쌓이는 답 줄. Step 순서 그대로 위에서 아래로 — 최근 답을 위로
- * 올리지 않는다. 지금 열린 질문은 빠진다.
- *
- * «바꾸기»로 다시 연 동안(`editing`)은 그 질문 **앞**의 답만 보인다 — 뒤에 답한
- * 값은 그대로 두되 화면에서 잠시 숨긴다(SPEC §13.6 «「바꾸기」 동작 정의 · 아래 줄»).
+ * 완료 요약 한 줄. **«바꾸기» 단추는 없다** — 2026-09-15 대표 지시로 답 줄과 함께
+ * 걷어냈다. 라벨과 값만 읽는다.
  */
-export function answeredRows(active: QuestionStep, answers: Answers, editing = false): AnsweredRowModel[] {
-  const rows: AnsweredRowModel[] = [];
-  const activeIndex = QUESTION_STEPS.indexOf(active);
-
-  for (const step of QUESTION_STEPS) {
-    if (step === active) continue;
-    if (editing && QUESTION_STEPS.indexOf(step) > activeIndex) continue;
-
-    const value = answerSummary(step, answers);
-
-    if (value !== null) rows.push({ step, label: STEP_LABEL[step], value });
-  }
-
-  return rows;
-}
-
-/**
- * «바꾸기»로 고친 뒤 «다음»이 돌아갈 곳. 원래 있던 Step으로 바로 복귀한다 —
- * 1/3을 고쳤다고 2/3을 다시 묻지 않는다. 연쇄 초기화가 없으므로 돌아갈 Step은
- * 항상 남아 있다.
- */
-export function returnStep(edited: QuestionStep, cameFrom: QuestionStep, answers: Answers): QuestionStep | null {
-  return stepsFor(answers).includes(cameFrom) ? cameFrom : nextStep(edited, answers);
-}
+export type SummaryRow = { step: QuestionStep; label: string; value: string };
 
 /**
  * 완료 요약 3행. 항상 세 줄이다 — 미정은 «미정»으로 적는다. 빈칸이나 «—»는
  * 쓰지 않는다.
  */
-export function doneRows(answers: Answers): AnsweredRowModel[] {
+export function doneRows(answers: Answers): SummaryRow[] {
   return QUESTION_STEPS.map((step) => ({
     step,
     label: STEP_LABEL[step],
