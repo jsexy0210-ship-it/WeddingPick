@@ -370,6 +370,93 @@ const routes = {
     progress: { decided: 0, total: 13, label: '0/13 완료' },
     nextCategory: 'makeup',
   },
+  'GET /v1/weddings/:weddingId/candidates/removed': {
+    groups: [],
+  },
+  /* 응답 본문이 없다(z.null()) — Pick 비교 로그. */
+  'POST /v1/weddings/:weddingId/comparisons': null,
+  'GET /v1/me/rewards/payout': {
+    receivableKrw: 300000,
+    receivableGrantIds: ['a1111111-1111-4111-8111-111111111111'],
+    recipientNameDefault: '우리',
+    open: null,
+    history: [],
+  },
+  'GET /v1/me/reports': { reports: [] },
+  'GET /v1/me/rewards': {
+    referralCode: 'ABC123',
+    invitedCount: 0,
+    qualifiedCount: 0,
+    grants: [],
+  },
+  'GET /v1/me/settings': {
+    userId: 'u1111111-1111-4111-8111-111111111111',
+    pushEnabled: true,
+    priceChangeEnabled: true,
+    marketingEnabled: false,
+    marketingConsentAt: null,
+    nightPushEnabled: false,
+    paymentConsent: true,
+    paymentConsentAt: '2026-08-01T00:00:00.000Z',
+    documentConsent: false,
+    documentConsentAt: null,
+    weddingDate: '2027-04-17',
+    region: '서울',
+    spouseLinked: true,
+    displayName: '우리',
+  },
+  'GET /v1/me/withdrawal': {
+    lead: '배우자와 함께 만든 기록도 함께 사라져요',
+    hasPartner: true,
+    deleted: [
+      { label: '계정 정보', value: '이메일 · 로그인 정보' },
+      { label: 'Pick 목록', value: '2건' },
+    ],
+    separated: [{ label: '작성한 후기', note: '작성자 정보만 지워지고 후기는 남아요', anonymous: true }],
+    done: ['계정이 삭제됐어요', '로그인 정보가 지워졌어요'],
+  },
+  'GET /v1/weddings/:weddingId/invites': { invite: null },
+  'GET /v1/expos': {
+    items: [
+      {
+        id: 'e1111111-1111-4111-8111-111111111111',
+        title: '2026 가을 웨딩 박람회',
+        organizer: '웨딩픽',
+        startsAt: '2026-09-26T01:00:00.000Z',
+        endsAt: '2026-09-27T09:00:00.000Z',
+        venue: '서울 코엑스',
+        region: '서울',
+        status: 'upcoming',
+        isDeadlineSoon: true,
+        sourceNote: '주최사 공지 기준',
+        lastVerifiedAt: '2026-09-10T00:00:00.000Z',
+      },
+    ],
+    nextCursor: null,
+  },
+  'GET /v1/review-report-reasons': {
+    reasons: [
+      { value: 'false_content', label: '사실과 달라요' },
+      { value: 'abusive', label: '욕설·비방이에요' },
+      { value: 'spam', label: '광고·스팸이에요' },
+      { value: 'personal_info', label: '개인정보가 담겼어요' },
+      { value: 'other', label: '기타' },
+    ],
+  },
+  'GET /v1/me/monthly-draw': {
+    drawMonth: '2026-09',
+    status: 'not_entered',
+    statusLabel: '응모 전',
+    statusNote: '두 가지만 더 하면 이번 달 응모가 완료돼요',
+    amountKrw: 300000,
+    winnersPerMonth: 5,
+    conditions: [
+      { key: 'wedding_set', label: '예식일과 지역 설정', done: true },
+      { key: 'payment_proof', label: 'Pick 인증 1건 이상', done: false },
+      { key: 'partner', label: '배우자와 연결', done: false },
+    ],
+    remaining: 2,
+  },
   /*
    * 관리자 — 광고 실운영 관문과 상품별 상태(WP-ADM-034).
    *
