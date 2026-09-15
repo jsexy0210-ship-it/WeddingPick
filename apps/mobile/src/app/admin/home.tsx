@@ -17,8 +17,14 @@
  * 뼈대와 규칙은 `_ui.tsx`가 든다(배너 · 빈 상태 · tabular-nums · 카드 안 표 스크롤).
  * 숫자는 전부 `GET /v1/admin/dashboard`가 실제 큐에서 세어 보내고, 서버는 `tone` ·
  * `mode` 같은 뜻만 보낸다 — 색은 여기서 토큰으로 고른다.
+ *
+ * **2026-09-15 대표 확정 — 「대시보드」 화면의 탭 둘 중 하나(요약)다.** 「일일
+ * 브리핑」(옛 `/admin/briefing`)과 묶였다 — 처음엔 위아래로 붙였는데, 대표님이
+ * 「비슷한 유형끼리 탭으로 묶어도 된다」고 넓히시면서 다른 묶음과 같은 탭 모양으로
+ * 맞췄다. 이 파일 맨 아래 `HomeShell`이 그 껍데기고, 여기 있던 본문은
+ * `HomePanel`로 이름만 바꿨다.
  */
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -26,7 +32,9 @@ import { AdminSpacing as A, Colors, FontSize, LineHeight, Radius } from '@weddin
 import { formatCount } from '@weddingpick/domain';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { BriefingPanel } from './briefing';
 import {
+  AdminTabShell,
   Bars,
   Card,
   CardGrid,
@@ -37,6 +45,7 @@ import {
   Page,
   Rows,
   StatusBanner,
+  type AdminTabDef,
   type BarItem,
   type Col,
   type Kind,
@@ -48,7 +57,7 @@ import {
 
 /** 회원 추이. `GET /v1/admin/members-trend`가 구간별로 준다. */
 type MemberBucket = 'day' | 'week' | 'month' | 'year';
-type MemberTrendPoint = { at: string; signups: number; total: number };
+type MemberTrendPoint = { at: string; signups: number; withdrawals: number; total: number };
 type MemberTrend = { bucket: MemberBucket; points: MemberTrendPoint[]; current: number };
 
 type QueueTone = 'danger' | 'caution';
@@ -187,13 +196,18 @@ function bucketLabel(iso: string, bucket: MemberBucket): string {
   return parts({ month: 'numeric', day: 'numeric' });
 }
 
-export default function AdminHomeScreen() {
+function HomePanel() {
   const router = useRouter();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rev, setRev] = useState(0);
-  const [bucket, setBucket] = useState<MemberBucket>('month');
+  /*
+   * 2026-09-15 대표 지시 — 「일 통계가 디폴트로 보여진다」. 전에는 'month'였다.
+   * 대표님이 매일 보시는 것은 어제와 오늘의 차이라, 월이 먼저 뜨면 그 차이가
+   * 한 칸 안에 뭉개진다.
+   */
+  const [bucket, setBucket] = useState<MemberBucket>('day');
   const [trend, setTrend] = useState<MemberTrend | null>(null);
   const [trendError, setTrendError] = useState<string | null>(null);
 
@@ -306,15 +320,29 @@ export default function AdminHomeScreen() {
    * 막대 높이는 그 구간의 **최대 가입 수**를 100으로 놓고 잡는다. 누적 회원과 같은
    * 자를 쓰면 가입 수 막대가 전부 바닥에 붙어 아무것도 읽히지 않는다 — 누적은
    * 숫자로 말하고 막대는 가입 수만 그린다.
+   *
+   * **탈퇴도 같은 자를 쓴다**(2026-09-15 대표 지시 — 「탈퇴 여부도 같이 차트에
+   * 보여줘」). 탈퇴에 제 최대값을 따로 주면 탈퇴 1건이 가입 100건과 같은 높이로
+   * 서고, 나란히 놓인 두 막대가 「가입만큼 나갔다」로 읽힌다. 자가 하나여야
+   * 둘을 비교한 것이 된다.
    */
-  const trendMax = Math.max(1, ...(trend?.points ?? []).map((p) => p.signups));
+  const trendMax = Math.max(
+    1,
+    ...(trend?.points ?? []).map((p) => Math.max(p.signups, p.withdrawals))
+  );
   const trendBars: BarItem[] = (trend?.points ?? []).map((point) => ({
     label: bucketLabel(point.at, bucket),
     pct: (point.signups / trendMax) * 100,
     kind: 'brand',
-    value: String(point.signups),
+    value: formatCount(point.signups),
+    secondary: {
+      pct: (point.withdrawals / trendMax) * 100,
+      value: formatCount(point.withdrawals),
+      kind: 'danger',
+    },
   }));
   const trendSignups = (trend?.points ?? []).reduce((sum, point) => sum + point.signups, 0);
+  const trendWithdrawals = (trend?.points ?? []).reduce((sum, point) => sum + point.withdrawals, 0);
 
   const logRows: TableRow[] = (data?.autoLog ?? []).map((r) => ({
     key: r.id,
@@ -329,8 +357,9 @@ export default function AdminHomeScreen() {
 
   return (
     <Page
-      title="대시보드"
-      sub="지금 봐야 할 것 · 회원 추이 · 처리 현황"
+      embedded
+      title="요약"
+      sub="회원 추이 · 지금 봐야 할 것 · 처리 현황"
       action={{ label: '새로 고침', onPress: reload }}
     >
       <DelayedLoader active={loading} size={40} />
@@ -348,8 +377,49 @@ export default function AdminHomeScreen() {
             }
           />
 
+          {/*
+            1. 회원 추이(2026-09-11 대표 지시 — 「회원은 차트를 활용해 시각화 한다」).
+
+            **맨 위다**(2026-09-15 대표 지시 — 「회원가입 통계가 제일 상단에
+            오도록」). 전에는 큐·자동 검토 아래 셋째였다.
+
+            **차트 라이브러리를 들이지 않았다.** 이 저장소에 차트 의존성이 없고, 막대
+            추이를 그리는 `Bars`가 이미 `_ui.tsx`에 있다. 의존성 하나는 관리자 화면만
+            쓰더라도 앱 번들 전체에 실린다.
+          */}
+          <Card
+            title="회원"
+            sub={
+              trend === null
+                ? '불러오는 중'
+                : `지금 ${formatCount(trend.current)}명 · 이 구간 가입 ${formatCount(trendSignups)}명 · 탈퇴 ${formatCount(trendWithdrawals)}명`
+            }
+            note="막대는 왼쪽이 가입 · 오른쪽이 탈퇴예요. 누적은 탈퇴한 계정을 뺀 수이고, 가입 수는 그 칸에 실제로 들어온 수라서 나중에 탈퇴해도 줄지 않아요."
+            full
+          >
+            <View style={styles.bucketRow}>
+              {BUCKETS.map((item) => (
+                <Text
+                  key={item.key}
+                  style={[styles.bucketTab, bucket === item.key && styles.bucketTabOn]}
+                  onPress={() => setBucket(item.key)}
+                >
+                  {item.label}
+                </Text>
+              ))}
+            </View>
+            {trendError ? (
+              <EmptyState title="회원 추이를 불러오지 못했어요" detail={trendError} />
+            ) : trendSignups === 0 && (trend?.current ?? 0) === 0 ? (
+              /* 빈 상태가 정상 상태다(ADMIN.md 공통 규칙). 0을 고장으로 보이게 하지 않는다. */
+              <EmptyState title="아직 가입이 없어요" detail="가입이 들어오면 이 자리에 쌓여요." />
+            ) : (
+              <Bars items={trendBars} />
+            )}
+          </Card>
+
           <CardGrid>
-            {/* 1. 사람이 결정해야만 진행되는 것. 한 줄을 누르면 그 화면으로 간다. */}
+            {/* 2. 사람이 결정해야만 진행되는 것. 한 줄을 누르면 그 화면으로 간다. */}
             <Card title="안대표가 볼 일" sub={`모두 ${formatCount(total)}건`}>
               {total === 0 ? (
                 /* 빈 큐는 실패가 아니라 목표다(ADMIN.md 공통 규칙). */
@@ -362,7 +432,7 @@ export default function AdminHomeScreen() {
               )}
             </Card>
 
-            {/* 2. 자동이 끝낸 것과 사람에게 남은 것. */}
+            {/* 3. 자동이 끝낸 것과 사람에게 남은 것. */}
             <Card
               title="자동 검토 현황"
               sub="최근 24시간 · 리스크가 큰 건만 사람이 봐요"
@@ -388,44 +458,6 @@ export default function AdminHomeScreen() {
           </CardGrid>
 
           {/*
-            3. 회원 추이(2026-09-11 대표 지시 — 「회원은 차트를 활용해 시각화 한다」).
-
-            **차트 라이브러리를 들이지 않았다.** 이 저장소에 차트 의존성이 없고, 막대
-            추이를 그리는 `Bars`가 이미 `_ui.tsx`에 있다. 의존성 하나는 관리자 화면만
-            쓰더라도 앱 번들 전체에 실린다.
-          */}
-          <Card
-            title="회원"
-            sub={
-              trend === null
-                ? '불러오는 중'
-                : `지금 ${trend.current.toLocaleString('ko-KR')}명 · 이 구간 가입 ${trendSignups.toLocaleString('ko-KR')}명`
-            }
-            note="누적은 탈퇴한 계정을 뺀 수예요. 가입 수는 그 칸에 실제로 들어온 수라서 나중에 탈퇴해도 줄지 않아요."
-            full
-          >
-            <View style={styles.bucketRow}>
-              {BUCKETS.map((item) => (
-                <Text
-                  key={item.key}
-                  style={[styles.bucketTab, bucket === item.key && styles.bucketTabOn]}
-                  onPress={() => setBucket(item.key)}
-                >
-                  {item.label}
-                </Text>
-              ))}
-            </View>
-            {trendError ? (
-              <EmptyState title="회원 추이를 불러오지 못했어요" detail={trendError} />
-            ) : trendSignups === 0 && (trend?.current ?? 0) === 0 ? (
-              /* 빈 상태가 정상 상태다(ADMIN.md 공통 규칙). 0을 고장으로 보이게 하지 않는다. */
-              <EmptyState title="아직 가입이 없어요" detail="가입이 들어오면 이 자리에 쌓여요." />
-            ) : (
-              <Bars items={trendBars} />
-            )}
-          </Card>
-
-          {/*
             4. 3열 × 2줄. 시안의 카드 순서가 곧 설계다 —
             내가 돈을 쓰는 것 → 내가 봐야 하는 지표 → 자동으로 도는 것.
           */}
@@ -449,6 +481,24 @@ export default function AdminHomeScreen() {
         </>
       ) : null}
     </Page>
+  );
+}
+
+const TABS: AdminTabDef[] = [
+  { key: 'home', label: '요약' },
+  { key: 'briefing', label: '일일 브리핑' },
+];
+
+/** 「대시보드」 — 요약과 일일 브리핑을 탭 둘로 묶는다(2026-09-15 대표 확정, 탭 재편). */
+export default function HomeShell() {
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
+  const initial = TABS.some((t) => t.key === tab) ? (tab as string) : 'home';
+  const [active, setActive] = useState(initial);
+
+  return (
+    <AdminTabShell tabs={TABS} active={active} onChange={setActive}>
+      {active === 'home' ? <HomePanel /> : <BriefingPanel />}
+    </AdminTabShell>
   );
 }
 

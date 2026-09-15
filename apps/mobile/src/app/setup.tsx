@@ -363,12 +363,11 @@ export default function SetupScreen() {
    * `LoaderWait`). 계정을 만들고 설정을 올린 뒤 추천을 받아 홈으로 가는 길이라,
    * Depth 이동용 써클이 아니라 업종 순회를 그대로 쓴다.
    *
-   * 3단계로 줄면서 준비 현황을 여기서 묻지 않으므로 뺄 업종이 없다 — 순회는
-   * 열두 업종을 그대로 돈다. MY의 웨딩 설정에서 채운 값은 서버에 있고, 그쪽은
-   * «나»의 스냅숏(`useCurrentUserSnapshot`)이 읽는다.
+   * **`exclude`가 없어졌다**(2026-09-15 대표 지시 — 「기본로더만 사용할것」).
+   * 순회에서 뺄 업종을 고르던 값인데, 로더가 원형 하나가 되면서 돌 것이 없어졌다.
    */
   if (sending) {
-    return <DelayedRecommendingView exclude={[]} />;
+    return <DelayedRecommendingView />;
   }
 
   if (step === 'done') {
