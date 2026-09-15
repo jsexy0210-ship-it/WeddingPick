@@ -471,7 +471,7 @@ export default function SetupScreen() {
           </View>
         ) : null}
 
-        {/* 스타일 3/3 — 넷 중 1~2개(v3.24). 사진 타일(style-grid.tsx)은 규격서에 없어 65 줄로 바꿨다. */}
+        {/* 스타일 3/3 — 넷 중 1~2개(v3.24). 사진 타일은 규격서에 없어 65 줄로 바꿨고 파일은 지웠다. */}
         {step === 'style' ? (
           <View style={styles.options}>
             {WEDDING_STYLES.map((style) => (
