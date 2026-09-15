@@ -16,6 +16,8 @@ import { isKnownSourceKey } from '../public-data/sources';
 import type { AppContext } from '../context';
 import * as dashboardAdmin from '../dashboard-admin';
 import * as decisionsAdmin from '../decisions-admin';
+import * as expoAdmin from '../expo-admin';
+import { listExposEndingToday } from '../retention/expo-sweep';
 import * as faqAdmin from '../faq-admin';
 import { NotAnOperator } from '../decisions';
 import { ApiError, forbidden, notFound } from '../errors';
@@ -1928,5 +1930,70 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
 
   app.post<{ Params: { vendorId: string } }>('/v1/admin/data/price-stats/:vendorId/recalc', auth, async (_req, reply) => {
     return reply.status(202).send({ queued: true });
+  });
+
+  // ── 박람회 ──────────────────────────────────────────────────
+  // `docs/expo-agent-spec.md`. 검수 대기가 맨 위(listExpos)이고, 위험한 조작(삭제)은
+  // 화면이 ConfirmCard로 확인받은 뒤에야 이 라우트를 부른다.
+  const expoInputBody = z.object({
+    title: z.string().trim().min(1),
+    organizer: z.string().trim().min(1),
+    host: z.string().trim().optional().nullable(),
+    startsAt: z.string().min(1),
+    endsAt: z.string().min(1),
+    venue: z.string().trim().min(1),
+    address: z.string().trim().optional(),
+    region: z.string().trim().min(1),
+    city: z.string().trim().optional().nullable(),
+    district: z.string().trim().optional().nullable(),
+    registrationDeadline: z.string().optional().nullable(),
+    reservationUrl: z.string().trim().optional().nullable(),
+    officialWebsiteUrl: z.string().trim().optional().nullable(),
+    benefits: z.array(z.string()).optional(),
+    description: z.string().trim().optional(),
+    eventCategories: z.array(z.string()).optional(),
+    confidence: z
+      .enum(['OFFICIAL_CONFIRMED', 'CROSS_CONFIRMED', 'SOCIAL_ONLY', 'CONFLICT'])
+      .optional()
+      .nullable(),
+    confidenceScore: z.coerce.number().int().min(0).max(100).optional().nullable(),
+    sourceNote: z.string().trim().optional(),
+    adminReviewRequired: z.boolean().optional(),
+    reviewReason: z.array(z.string()).optional(),
+  });
+
+  app.get('/v1/admin/expos', auth, async () => ({ expos: await expoAdmin.listExpos(context.pool) }));
+
+  app.get('/v1/admin/expos/review-queue', auth, async () => ({
+    expos: await expoAdmin.reviewQueue(context.pool),
+  }));
+
+  /** 「내일 지워질 박람회」 미리보기 — 오늘이 종료일인 것들. */
+  app.get('/v1/admin/expos/deletion-preview', auth, async () => ({
+    expos: await listExposEndingToday(context.pool),
+  }));
+
+  app.get<{ Params: { id: string } }>('/v1/admin/expos/:id', auth, async (request) =>
+    expoAdmin.getExpo(context.pool, request.params.id)
+  );
+
+  app.post('/v1/admin/expos', auth, async (request, reply) => {
+    const body = expoInputBody.parse(request.body);
+    const created = await expoAdmin.createExpo(context.pool, body);
+    return reply.status(201).send(created);
+  });
+
+  app.patch<{ Params: { id: string } }>('/v1/admin/expos/:id', auth, async (request) => {
+    const body = expoInputBody.partial().parse(request.body);
+    return expoAdmin.updateExpo(context.pool, request.params.id, body);
+  });
+
+  app.post<{ Params: { id: string } }>('/v1/admin/expos/:id/approve', auth, async (request) =>
+    expoAdmin.approveExpo(context.pool, request.params.id)
+  );
+
+  app.delete<{ Params: { id: string } }>('/v1/admin/expos/:id', auth, async (request, reply) => {
+    await expoAdmin.removeExpo(context.pool, request.params.id);
+    return reply.status(204).send();
   });
 }

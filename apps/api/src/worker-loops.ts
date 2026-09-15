@@ -8,11 +8,15 @@ import { createExpoPush } from './push/expo';
 import { sendPriceChangeNudges, sendTaskNudges } from './notify/nudges';
 import { alertOperators } from './retention/alert';
 import { sweepExpiredConsultationAudio } from './retention/consultation-audio';
+import { sweepEndedExpos } from './retention/expo-sweep';
 import { listRetentionAttention, sweepExpiredDocuments } from './retention/worker';
 import type { Storage } from './storage/port';
 import { completeWithdrawals } from './withdrawal';
 
 const RETENTION_SWEEP_MS = 10 * 60 * 1000;
+
+/** 종료 박람회 정리는 하루 1회면 충분하다(`docs/expo-agent-spec.md` 21절 권장 주기). */
+const EXPO_SWEEP_MS = 24 * 60 * 60 * 1000;
 
 /*
  * 사용자 알림은 자주 볼 필요가 없다. 일정 알림은 하루 단위이고, 가격 변동은
@@ -64,6 +68,35 @@ export function startWorkerLoops({ pool, storage, config, signal }: WorkerDeps):
    * 시끄러운 편이 낫다.
    */
   const push = createExpoPush();
+
+  console.log(
+    config.expoAutoDeleteEnabled
+      ? '박람회 종료 자동 삭제: 켜짐 — 하루 1회 종료된 박람회를 지운다.'
+      : '박람회 종료 자동 삭제: 꺼짐(기본값) — EXPO_AUTO_DELETE_ENABLED=true로 켠다. ' +
+          '몇 건이 지워질지는 `npm run expo-cleanup -- --dry-run`으로 미리 볼 수 있다.'
+  );
+
+  /*
+   * 종료 박람회 자동 삭제(사양 15절). **되돌릴 수 없어 기본값이 꺼짐이다** —
+   * 운영에서 처음 켜는 것은 대표님 판단이고, 이 워커가 스스로 켜지 않는다.
+   *
+   * 신규 수집 루프보다 먼저 돌아야 한다(사양 21절 "종료 행사 정리를 신규 수집보다
+   * 먼저 실행한다") — 아직 자동 수집 루프가 없어 순서를 다툴 상대가 없지만, 나중에
+   * 수집 루프를 붙일 때 이 정리를 그 앞에 둔다.
+   */
+  const expoSweep = config.expoAutoDeleteEnabled
+    ? setInterval(() => {
+        void sweepEndedExpos(pool)
+          .then((result) => {
+            if (result.deleted > 0) {
+              console.log(`종료된 박람회 ${result.deleted}건을 지웠다.`);
+            }
+          })
+          .catch((error) => {
+            console.error('박람회 종료 정리 실패:', error);
+          });
+      }, EXPO_SWEEP_MS)
+    : null;
 
   /*
    * 준비 알림과 가격 변동 알림. v2.0 36·37번.
@@ -175,6 +208,7 @@ export function startWorkerLoops({ pool, storage, config, signal }: WorkerDeps):
   controller.signal.addEventListener('abort', () => {
     clearInterval(sweep);
     clearInterval(nudges);
+    if (expoSweep) clearInterval(expoSweep);
   });
 
   console.log('분석 워커 시작');
