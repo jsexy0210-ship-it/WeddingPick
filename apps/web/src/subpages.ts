@@ -15,6 +15,7 @@ import { BUSINESS, BUSINESS_NOTICE_LINES } from '@weddingpick/domain';
 
 import { CONTACT_EMAIL } from './content';
 import { faviconTags } from './landing-v4';
+import { FONT_FACE, FONT_STACK, fontPreloadTag } from './fonts';
 
 const C = '#FF6F61';
 const INK = '#212124';
@@ -99,10 +100,8 @@ function subFooter(): string {
   </footer>`;
 }
 
-const FONT_STACK =
-  "-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif";
-
 const BASE_STYLE = `
+${FONT_FACE}
 *,::before,::after{box-sizing:border-box}
 html{font-family:${FONT_STACK};font-size:16px;-webkit-text-size-adjust:100%}
 body{margin:0;background:#f7f8fa;color:${INK}}
@@ -225,6 +224,7 @@ function subDocument(opts: {
 <meta name="description" content="${esc(opts.description)}">
 ${socialMeta(opts.path, opts.title + " — 웨딩픽", opts.description)}
 ${faviconTags()}
+${fontPreloadTag()}
 <style>${BASE_STYLE}
 .sp-titleband,.sp-body,.sp-legal{width:min(1120px,calc(100% - 48px));margin-inline:auto;padding-inline:0}
 .sp-titleband{padding-block:64px 40px}.sp-titleband h1{word-break:keep-all;overflow-wrap:anywhere}.sp-editorial{width:min(760px,calc(100% - 48px));margin:0 auto;padding:48px 0 72px;color:${INK}}

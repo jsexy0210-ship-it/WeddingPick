@@ -3,6 +3,7 @@ import tokens from '../../../spec/tokens.json';
 import { BUSINESS, BUSINESS_NOTICE_LINES } from '@weddingpick/domain';
 import { CONTACT_EMAIL } from './content';
 import { homeDescription, homeTitle, socialMeta } from './social-meta';
+import { FONT_FACE, fontPreloadTag } from './fonts';
 
 const S = strings.webLanding;
 const T = tokens.webLanding;
@@ -75,6 +76,7 @@ function together(): string {
 }
 
 const STYLE = `
+${FONT_FACE}
 *,*::before,*::after{box-sizing:border-box}html{font-family:${tokens.typography.$fontFamily.web};-webkit-text-size-adjust:100%;scroll-behavior:smooth}body{margin:0;color:${C.text.ink.value};background:${C.surface.paper.value};font-size:${T.bodySize}px;line-height:1.65}a{color:inherit}p,h1,h2,h3,figure{margin:0}h1,h2,h3{font-weight:700;word-break:keep-all;overflow-wrap:anywhere}p{word-break:keep-all;overflow-wrap:anywhere}svg{display:block}section[id]{scroll-margin-top:32px}
 ${MARKETING_CHROME}
 .wp-skip{position:absolute;top:-100px;left:24px;background:white;padding:12px;z-index:10}.wp-skip:focus{top:12px}
@@ -99,7 +101,7 @@ ${MARKETING_CHROME}
 `;
 
 export function renderLandingV4(): string {
-  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(homeTitle())}</title><meta name="description" content="${esc(homeDescription())}">${socialMeta('/',homeTitle(),homeDescription())}${faviconTags()}<style>${STYLE}</style></head><body>
+  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(homeTitle())}</title><meta name="description" content="${esc(homeDescription())}">${socialMeta('/',homeTitle(),homeDescription())}${faviconTags()}${fontPreloadTag()}<style>${STYLE}</style></head><body>
   <a href="#main" class="wp-skip">${esc(S.skip)}</a>${marketingHeader()}<main id="main">
     <section class="wp-shell wp-hero"><div><span class="wp-eyebrow">${esc(S.eyebrow)}</span><h1>${lines(S.hero)}</h1><p class="wp-lead">${lines(S.lead)}</p><div class="wp-actions"><a class="wp-primary" href="#download">${esc(S.launchLink)}<span aria-hidden="true">↗</span></a><a class="wp-secondary" href="#how">${esc(S.howLink)}</a></div><p class="wp-hero-status">${esc(S.launch)}</p></div>${preview()}</section>
     <section id="how" class="wp-shell wp-section wp-how"><div class="wp-section-intro"><h2 class="wp-heading">${lines(S.stepsTitle)}</h2><p>${lines(S.stepsBody)}</p></div><div class="wp-steps">${S.steps.map(s => `<article class="wp-step"><span class="wp-step-number">${s.n}</span><h3>${esc(s.title)}</h3><p>${esc(s.body)}</p></article>`).join('')}</div></section>
