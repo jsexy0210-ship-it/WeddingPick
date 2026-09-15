@@ -16,6 +16,7 @@ import { candidateListResponseSchema } from './candidates';
 import { expoListResponseSchema } from './expos';
 import { consultationListResponseSchema } from './consultations';
 import { myReportListResponseSchema } from './my-reports';
+import { categoryRecommendationsResponseSchema } from './recommendations';
 import { myMonthlyDrawResponseSchema, myRewardPayoutResponseSchema, myRewardsResponseSchema } from './rewards';
 import { reportReasonListResponseSchema, reviewListResponseSchema } from './reviews';
 import { settingsSchema } from './settings';
@@ -48,6 +49,7 @@ const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/me/signup', signupStateSchema],
   ['GET /v1/me', currentUserSchema],
   ['GET /v1/app/bootstrap', appBootstrapResponseSchema],
+  ['GET /v1/me/recommendations', categoryRecommendationsResponseSchema],
   ['GET /v1/auth/providers', authProvidersResponseSchema],
   ['GET /v1/weddings/:weddingId/candidates', candidateListResponseSchema],
   ['GET /v1/me/monthly-draw', myMonthlyDrawResponseSchema],
