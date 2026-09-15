@@ -1,5 +1,5 @@
 /**
- * WP-ADM-020 사용자 · 계정
+ * WP-ADM-020 사용자 · 계정 — 이제 「계정·권한」 화면의 탭 하나(앱 회원)다.
  *
  * 가입 · 로그인 수단 · Pick 인증 · 탈퇴 상태. **탈퇴를 접수한 계정도 보인다** —
  * 이 화면의 첫 번째 쓰임이 «탈퇴했는데 회원정보가 남았는가»를 확인하는 것이다.
@@ -7,7 +7,13 @@
  *
  * 정지·차단 같은 상태 변경은 없다 — 서버에 그런 상태가 없다. 없는 버튼을 두면
  * 눌러도 아무 일이 없고, 그게 «되는 줄» 알게 만든다.
+ *
+ * **관리자 계정(`admins.tsx`)과는 탭으로만 나란히 둔다, 표는 절대 합치지 않는다**
+ * (대표 지시 — 「계정관리 → 앱 회원과 관리자 계정 화면 탭으로 나누던가 분리해」).
+ * 여기는 서비스 이용자의 개인정보, 저기는 관리자 권한이다. 이 파일 맨 아래
+ * `UsersShell`이 그 탭 껍데기고, 여기 있던 본문은 `UsersPanel`로 이름만 바꿨다.
  */
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   Modal,
@@ -20,6 +26,8 @@ import {
 } from 'react-native';
 
 import { Colors, FontSize } from '@weddingpick/ui';
+import { AdminTabShell, type AdminTabDef } from './_ui';
+import { AdminsPanel } from './admins';
 import { formatCount } from '@weddingpick/domain';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
@@ -79,7 +87,7 @@ function loginOf(u: UserRecord): string {
 
 const when = (iso: string | null) => (iso ? formatDateDot(iso) : '—');
 
-export default function UsersScreen() {
+function UsersPanel() {
   const [data, setData] = useState<UserListData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -355,6 +363,27 @@ export default function UsersScreen() {
         </View>
       </Modal>
     </View>
+  );
+}
+
+const TABS: AdminTabDef[] = [
+  { key: 'users', label: '앱 회원' },
+  { key: 'admins', label: '관리자 계정' },
+];
+
+/**
+ * 「계정·권한」 — 앱 회원과 관리자 계정을 탭 둘로 나눈다. **표는 절대 하나로
+ * 합치지 않는다**(대표 지시) — 여기는 개인정보, 저기는 권한이다.
+ */
+export default function UsersShell() {
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
+  const initial = TABS.some((t) => t.key === tab) ? (tab as string) : 'users';
+  const [active, setActive] = useState(initial);
+
+  return (
+    <AdminTabShell tabs={TABS} active={active} onChange={setActive}>
+      {active === 'users' ? <UsersPanel /> : <AdminsPanel />}
+    </AdminTabShell>
   );
 }
 

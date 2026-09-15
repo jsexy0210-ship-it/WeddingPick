@@ -2,7 +2,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 
 import type { DocumentPage } from './analysis/analyzer';
-import { createClaudeAnalyzer } from './analysis/claude-analyzer';
+import { createGeminiAnalyzer } from './analysis/gemini-analyzer';
 import {
   checkNoPersonalInfoLeak,
   scoreCase,
@@ -12,8 +12,8 @@ import {
 /**
  * 실제 견적서로 추출 정확도를 잰다.
  *
- *   ANTHROPIC_API_KEY=... npm run analysis:eval --workspace @weddingpick/api
- *   ANTHROPIC_API_KEY=... npm run analysis:eval --workspace @weddingpick/api -- ./내견적서들
+ *   GEMINI_API_KEY=... npm run analysis:eval --workspace @weddingpick/api
+ *   GEMINI_API_KEY=... npm run analysis:eval --workspace @weddingpick/api -- ./내견적서들
  *
  * 케이스 하나 = 문서 파일(.png/.jpg/.pdf) + 같은 이름의 `.expected.json`.
  * 기대값 파일이 없으면 채점하지 않고 추출 결과만 보여준다 — 실제 견적서를 처음 넣어볼 때
@@ -59,7 +59,10 @@ async function loadCases(dir: string) {
 
 async function main() {
   const dir = process.argv[2] ?? path.join(__dirname, '..', 'eval', 'cases');
-  const analyzer = createClaudeAnalyzer({ model: process.env.ANALYSIS_MODEL });
+  const analyzer = createGeminiAnalyzer({
+    apiKey: process.env.GEMINI_API_KEY ?? '',
+    model: process.env.GEMINI_MODEL ?? 'gemini-2.5-flash-lite',
+  });
   const cases = await loadCases(dir);
 
   if (cases.length === 0) {
@@ -114,8 +117,8 @@ async function main() {
 main().catch((error: Error) => {
   if (/authentication/i.test(error.message)) {
     console.error(
-      'Anthropic 자격증명이 없다. ANTHROPIC_API_KEY를 설정하고 다시 실행할 것.\n' +
-        '  ANTHROPIC_API_KEY=... npm run analysis:eval --workspace @weddingpick/api'
+      'Gemini 자격증명이 없다. GEMINI_API_KEY를 설정하고 다시 실행할 것.\n' +
+        '  GEMINI_API_KEY=... npm run analysis:eval --workspace @weddingpick/api'
     );
   } else {
     console.error(error.message);

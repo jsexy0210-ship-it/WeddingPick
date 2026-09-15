@@ -1,3 +1,4 @@
+import { Redirect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -14,6 +15,9 @@ import { apiFetch } from './_api';
  * 통일하면서). 옮기며 하나 고쳤다 — 예전에는 지울 항목의 «필드명»과 «종류»를 사람이
  * 손으로 타이핑했다. 서버가 `hints`로 그 둘을 이미 알려주므로 **누르기만 하면 되게** 했다.
  * 손으로 적으면 오타 하나에 엉뚱한 자리가 지워지거나 아무 일도 안 일어난다.
+ *
+ * **2026-09-15 대표 확정 — 「확인 필요」 화면의 탭 하나로 묶였다**(탭 셋). 이 파일의
+ * 본체는 `PiiReviewsPanel`로 옮기고 `queue.tsx`가 탭으로 골라 그린다.
  */
 type PendingReview = {
   id: string;
@@ -33,7 +37,7 @@ type ReviewDetail = {
   reviewStatus: string;
 };
 
-export default function PiiReviewsScreen() {
+export function PiiReviewsPanel() {
   const [items, setItems] = useState<PendingReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -317,3 +321,12 @@ const styles = StyleSheet.create({
   cleanBtnText: { color: Colors.light.background, fontSize: FontSize.t7, fontWeight: '700' },
   btnDisabled: { opacity: 0.5 },
 });
+
+/**
+ * 옛 주소(`/admin/pii-reviews`)는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제
+ * 화면은 `/admin/queue`(확인 필요)의 개인정보 검토 탭에 있다 — `PiiReviewsPanel`이
+ * 이 파일의 본체다.
+ */
+export default function PiiReviewsRedirect() {
+  return <Redirect href="/admin/queue?tab=pii-reviews" />;
+}

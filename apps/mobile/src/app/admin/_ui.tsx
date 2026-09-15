@@ -24,7 +24,12 @@ import { Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type Vie
 
 import { AdminSpacing as A, Colors, FontSize, LineHeight, Radius, Spacing } from '@weddingpick/ui';
 
+import { clearAdminToken } from './_session';
+
 const C = Colors.light;
+
+/** 로그인 화면 자체를 뺀 모든 관리자 라우트가 로그아웃하면 여기로 돌아간다. */
+const LOGIN_PATH = '/admin/login';
 
 /** 상태 세 가지. ADMIN.md — 문제 없으면 초록, 확인할 것이 있으면 주황, 조치가 필요하면 빨강. */
 export type Tone = 'ok' | 'warn' | 'bad';
@@ -97,11 +102,37 @@ export type PageProps = {
    * 그 단추가 원래 무엇을 하는 자리인지가 사라진다.
    */
   action?: { label: string; onPress: () => void; kind?: 'brand' | 'danger' | 'plain'; disabled?: boolean };
+  /**
+   * 이 화면이 `AdminTabShell`의 탭 하나로 들어가 있을 때 켠다(2026-09-15 탭 재편).
+   * 바깥 셸이 이미 로그아웃을 그리므로, 여기서 또 그리면 한 화면에 로그아웃이
+   * 두 개가 된다 — `title` · `sub` · `action`은 그대로 둔다(어느 탭 안에서
+   * 「새로 고침」이 어디 것인지는 여전히 필요하다).
+   */
+  embedded?: boolean;
   children: ReactNode;
 };
 
-/** 상단 바(76) + 본문. 사이드바는 `_layout.tsx`가 그린다. */
-export function Page({ title, sub, action, children }: PageProps) {
+/**
+ * 상단 바(76) + 본문. 사이드바는 `_layout.tsx`가 그린다.
+ *
+ * **로그아웃이 2026-09-15에 사이드바 맨 아래에서 여기로 옮겨왔다**(대표 지시 —
+ * 「로그아웃 버튼은 우측 상단 새로고침 고정 영역으로 이동한다」). `Page`가 관리자
+ * 전 화면의 뼈대라 여기 한 곳만 고치면 서른두 화면 전부에 적용된다.
+ *
+ * **화면 동작(`action`)과 나란히 두되 붙이지 않는다.** 새로고침은 자주 누르고
+ * 로그아웃은 되돌릴 수 없다(다시 로그인 · 필터 소실) — 둘을 붙이면 반드시
+ * 잘못 누른다. 그래서 셋을 지킨다.
+ *
+ *   1. 로그아웃은 맨 오른쪽 끝, `action`과 사이를 띄운다(`topbarGap`)
+ *   2. 모양을 다르게 한다 — `action`과 같은 채운 pill이 아니라 테두리만 있는 단추다
+ *   3. 항상 있다 — `action`이 없는 화면(표만 있는 화면)에서도 자리가 밀리지 않는다
+ *
+ * **확인 창은 넣지 않는다.** 로그아웃은 데이터를 바꾸지 않는다 — 관리자 공통 규칙의
+ * 「위험한 조작은 한 번 더 확인」은 되돌릴 수 없는 **데이터** 변경을 겨눈 것이라
+ * 여기 해당하지 않는다고 본다. 위 1 · 2번(띄우고 모양을 다르게)이 실수를 막는
+ * 몫을 이미 한다 — 그래도 잘못 눌리는 사례가 나오면 그때 확인 단계를 더한다.
+ */
+export function Page({ title, sub, action, embedded, children }: PageProps) {
   return (
     <View style={styles.page}>
       <View style={styles.topbar}>
@@ -131,10 +162,104 @@ export function Page({ title, sub, action, children }: PageProps) {
             </Text>
           </Pressable>
         ) : null}
+        {embedded ? null : <SignOutButton />}
       </View>
       <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
         {children}
       </ScrollView>
+    </View>
+  );
+}
+
+/** `Page`와 `AdminTabShell`이 함께 쓴다 — 동작은 한 곳에서만 정의한다. */
+function SignOutButton() {
+  return (
+    <Pressable
+      style={styles.signOut}
+      onPress={() => {
+        void clearAdminToken().then(() => {
+          /* 화면 상태를 되돌리는 가장 단순한 길. 관리자 콘솔은 웹 전용이다. */
+          window.location.assign(LOGIN_PATH);
+        });
+      }}
+    >
+      <Text style={styles.signOutText}>로그아웃</Text>
+    </Pressable>
+  );
+}
+
+/* ── 탭 화면 뼈대 ──────────────────────────────────────────── */
+
+export type AdminTabDef = {
+  key: string;
+  label: string;
+  /** 위험한 조작 탭 — 긴급 중지 · 변경 복구(2026-09-15 대표 지시). 늘 다른 색이다,
+   * 눌러야 아는 것이 아니라 옆 탭을 스치기 전에 먼저 보여야 한다. */
+  danger?: boolean;
+  /** 「조회만」 딱지. 사이드바에 그 표시가 없어졌으므로(그룹이 화면 하나가 됐다)
+   * 탭에서 대신 보여준다 — `_layout.tsx`의 `readOnly`와 같은 다섯 화면이 대상이다. */
+  readOnly?: boolean;
+};
+
+export type AdminTabShellProps = {
+  tabs: AdminTabDef[];
+  active: string;
+  onChange: (key: string) => void;
+  children: ReactNode;
+};
+
+/**
+ * 사이드바 그룹 하나 = 화면 하나 + 탭(2026-09-15 대표 확정, 「비슷한 유형끼리 탭
+ * 메뉴로 구성」). **탭은 껍데기다** — 안에 넣는 화면 컴포넌트는 그대로 두고 이
+ * 뼈대만 위에 얹는다. `ads-gate`(550줄) · `vendors`(538줄) 같은 큰 화면을 한
+ * 파일로 합치면 못 읽는 파일이 되므로, 탭마다 다른 파일의 컴포넌트를 그대로
+ * 불러 그린다(각 화면의 `XxxPanel` export 참고).
+ *
+ * **로그아웃이 여기도 있다.** `Page`를 안 쓰는 화면(대부분의 관리자 화면이 원래
+ * 자기 헤더를 그렸다)이 탭 셋으로 묶이면 그 헤더들이 안쪽 패널로 들어가므로,
+ * 상단 로그아웃이 사라지지 않게 이 셸이 직접 든다 — `Page`와 같은 `SignOutButton`.
+ *
+ * `packages/ui`의 `SegmentedTabs`를 먼저 검토했다 — **쓰지 않았다.** 그 컴포넌트는
+ * 자기 문서에 「넷을 넘으면 글자가 눌리니 칩을 쓴다」고 적혀 있는데 자동화 ·
+ * 업체·행사 묶음이 다섯 탭이라 바로 어긋난다. `useTheme()`(시스템 다크모드 추종)도
+ * 관리자 콘솔이 전부 `Colors.light`로 고정해 둔 것과 맞지 않는다 — 콘솔만
+ * 브라우저 설정에 따라 밤 화면이 될 위험을 만들지 않는다.
+ */
+export function AdminTabShell({ tabs, active, onChange, children }: AdminTabShellProps) {
+  return (
+    <View style={styles.tabShellRoot}>
+      <View style={styles.tabShellBar}>
+        <View style={styles.tabShellTabs}>
+          {tabs.map((t) => {
+            const selected = t.key === active;
+            return (
+              <Pressable
+                key={t.key}
+                onPress={() => onChange(t.key)}
+                style={[
+                  styles.tabShellBtn,
+                  selected && styles.tabShellBtnActive,
+                  selected && t.danger && styles.tabShellBtnActiveDanger,
+                ]}
+              >
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    styles.tabShellBtnText,
+                    t.danger && styles.tabShellBtnTextDanger,
+                    selected && styles.tabShellBtnTextActive,
+                  ]}
+                >
+                  {t.label}
+                </Text>
+                {t.readOnly && <Text style={styles.navChip}>조회만</Text>}
+              </Pressable>
+            );
+          })}
+        </View>
+        <SignOutButton />
+      </View>
+      <View style={styles.tabShellBody}>{children}</View>
     </View>
   );
 }
@@ -510,24 +635,62 @@ export type BarItem = {
    * 「지난 칸보다 높다」까지만 말하고, 몇인지는 말해주지 못한다.
    */
   value?: string;
+  /**
+   * 같은 칸에 나란히 세우는 둘째 막대(2026-09-15 대표 지시 — 회원 차트에 탈퇴를
+   * 같이 그린다).
+   *
+   * **같은 자를 쓴다.** `pct`를 부르는 쪽에서 «한 자로» 계산해 넘겨야 두 막대의
+   * 높이가 서로 비교된다 — 각자 제 최대값을 100으로 잡으면 탈퇴 1건이 가입
+   * 100건과 같은 높이로 서고, 그 그림은 거짓말이 된다.
+   */
+  secondary?: { pct: number; value?: string; kind?: BarKind };
 };
 
-/** 추이 막대. 값 자체는 표가 말하고 이것은 모양만 말한다(`value`를 주면 함께 적는다). */
+/** 막대 색. `danger`는 탈퇴처럼 「줄어드는 것」에 쓴다. */
+export type BarKind = 'brand' | 'dim' | 'plain' | 'danger';
+
+function barColor(kind: BarKind | undefined): string {
+  if (kind === 'brand') return C.tint;
+  if (kind === 'dim') return C.border;
+  if (kind === 'danger') return C.negative;
+
+  return C.adminBarFill;
+}
+
+/**
+ * 추이 막대. 값 자체는 표가 말하고 이것은 모양만 말한다(`value`를 주면 함께 적는다).
+ *
+ * `secondary`를 주면 한 칸에 막대 둘이 나란히 선다.
+ */
 export function Bars({ items }: { items: BarItem[] }) {
   return (
     <View style={styles.bars}>
       {items.map((b) => (
         <View key={b.label} style={styles.barCol}>
-          {b.value === undefined ? null : <Text style={styles.barValue}>{b.value}</Text>}
-          <View
-            style={[
-              styles.bar,
-              {
-                height: Math.max(4, Math.round(b.pct * 1.3)),
-                backgroundColor: b.kind === 'brand' ? C.tint : b.kind === 'dim' ? C.border : C.adminBarFill,
-              },
-            ]}
-          />
+          {b.value === undefined && b.secondary?.value === undefined ? null : (
+            <Text style={styles.barValue}>
+              {[b.value, b.secondary?.value].filter((part) => part !== undefined).join(' · ')}
+            </Text>
+          )}
+          <View style={styles.barPair}>
+            <View
+              style={[
+                styles.bar,
+                { height: Math.max(4, Math.round(b.pct * 1.3)), backgroundColor: barColor(b.kind) },
+              ]}
+            />
+            {b.secondary ? (
+              <View
+                style={[
+                  styles.bar,
+                  {
+                    height: Math.max(4, Math.round(b.secondary.pct * 1.3)),
+                    backgroundColor: barColor(b.secondary.kind),
+                  },
+                ]}
+              />
+            ) : null}
+          </View>
           <Text style={styles.barLabel}>{b.label}</Text>
         </View>
       ))}
@@ -625,6 +788,56 @@ const styles = StyleSheet.create({
   topActionLabel: { fontSize: FontSize.micro, fontWeight: '700', color: C.textSecondary },
   onTintLabel: { color: C.onTint },
   dangerLabel: { color: C.negative },
+  /*
+   * `action`과 다른 모양 — 채운 pill이 아니라 테두리만. 왼쪽 여백을 `action`과의
+   * 기본 간격(`tableGap`)보다 크게 둬서(`cardGap`) 눈으로도 한 덩어리로 안 보이게 한다.
+   */
+  signOut: {
+    height: A.topActionHeight,
+    marginLeft: A.cardGap,
+    paddingHorizontal: A.tableGap,
+    borderRadius: Radius.control,
+    borderWidth: 1,
+    borderColor: C.fieldBorder,
+    justifyContent: 'center',
+  },
+  signOutText: { fontSize: FontSize.micro, fontWeight: '700', color: C.textSecondary },
+
+  tabShellRoot: { flex: 1, backgroundColor: C.backgroundSelected },
+  tabShellBar: {
+    height: A.topbarHeight,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: A.bodyPaddingX,
+    backgroundColor: C.background,
+    borderBottomWidth: 1,
+    borderBottomColor: C.line,
+  },
+  tabShellTabs: { flex: 1, flexDirection: 'row', gap: A.stackGap, minWidth: 0 },
+  tabShellBtn: {
+    height: A.topActionHeight,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: A.tableGap,
+    borderRadius: Radius.control,
+  },
+  tabShellBtnActive: { backgroundColor: C.backgroundSelected },
+  tabShellBtnActiveDanger: { backgroundColor: C.negativeBackground },
+  tabShellBtnText: { fontSize: FontSize.micro, fontWeight: '700', color: C.textAssistive },
+  tabShellBtnTextActive: { color: C.text },
+  tabShellBtnTextDanger: { color: C.negative },
+  tabShellBody: { flex: 1 },
+  navChip: {
+    flexShrink: 0,
+    marginLeft: Spacing.one,
+    paddingHorizontal: Spacing.one,
+    borderRadius: Radius.small,
+    fontSize: FontSize.tab,
+    fontWeight: '700',
+    color: C.cautionary,
+    backgroundColor: C.cautionaryBackground,
+  },
 
   body: { flex: 1 },
   bodyContent: {
@@ -812,6 +1025,8 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.two,
   },
   barCol: { alignItems: 'center', justifyContent: 'flex-end', gap: Spacing.two },
+  /* 두 막대를 한 칸 안에 세운다. 바닥을 맞춰야 높이가 서로 비교된다. */
+  barPair: { flexDirection: 'row', alignItems: 'flex-end', gap: Spacing.two },
   bar: { width: 30, borderTopLeftRadius: Radius.badge, borderTopRightRadius: Radius.badge },
   barValue: {
     fontSize: FontSize.tab,

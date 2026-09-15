@@ -1,3 +1,4 @@
+import { Redirect } from 'expo-router';
 /**
  * WP-ADM-031 성장 · 캠페인 · 보상
  * 미션 · 친구초대 · 홍보인증 · 지원금 · 예산 · 지급 상태 · 어뷰징
@@ -80,7 +81,7 @@ const PAYOUT_COLOR: Record<PayoutStatus, string> = {
   blocked: Colors.light.negative,
 };
 
-export default function CampaignsScreen() {
+export function CampaignsPanel() {
   const [data, setData] = useState<CampaignData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -293,3 +294,11 @@ const styles = StyleSheet.create({
   blockBtnText: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.negative },
   btnDisabled: { opacity: 0.5 },
 });
+
+/**
+ * 옛 주소는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제 화면은 `/admin/ads`(광고·마케팅)의 캠페인·보상 탭에 있다 —
+ * `CampaignsPanel`이 이 파일의 본체다.
+ */
+export default function CampaignsRedirect() {
+  return <Redirect href="/admin/ads?tab=campaigns" />;
+}

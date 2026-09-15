@@ -1,3 +1,4 @@
+import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -20,6 +21,11 @@ import { ConfirmDecision } from '@/features/admin/confirm-decision';
  * 되살리기 · 내리기는 서버가 없다고 잠가 뒀었는데(2026-09-09), 서버에는
  * `POST /v1/admin/objections/:reviewId/restore` · `/remove`가 있다. 잠금을 걷고
  * 대신 결론 두 갈래에 확인 단계를 뒀다 — 둘 다 큐에서 항목을 빼고 되돌릴 수 없다.
+ *
+ * **2026-09-15 대표 확정 — 「후기 · 반론」과 한 화면 「후기 처리」로 묶였다**(탭 둘).
+ * 이 파일의 본체는 `ObjectionsPanel`로 옮기고 `rebuttal.tsx`가 탭으로 골라 그린다 —
+ * 이 주소(`/admin/objections`)는 저장된 링크가 깨지지 않게 `/admin/rebuttal`의
+ * 이의제기 탭으로 넘긴다.
  */
 type ObjectedReview = {
   id: string;
@@ -29,7 +35,7 @@ type ObjectedReview = {
   expired: boolean;
 };
 
-export default function ObjectionsScreen() {
+export function ObjectionsPanel() {
   const [items, setItems] = useState<ObjectedReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -278,6 +284,14 @@ export default function ObjectionsScreen() {
       </View>
     </View>
   );
+}
+
+/**
+ * 옛 주소(`/admin/objections`)는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제 화면은
+ * `/admin/rebuttal`(후기 처리)의 이의제기 탭에 있다 — `ObjectionsPanel`이 이 파일의 본체다.
+ */
+export default function ObjectionsRedirect() {
+  return <Redirect href="/admin/rebuttal?tab=objections" />;
 }
 
 const styles = StyleSheet.create({
