@@ -54,8 +54,10 @@ import { WebShellView } from '@/features/webshell/WebShellView';
  * 히어로는 늘 맨 위 고정이고, 그 아래는 홈 편집(WP-HOME-007)이 정한 순서를 따른다 —
  * 상태(2층)는 여전히 순서와 개수를 바꾸지 않는다. 바꾸는 것은 사람뿐이다.
  *
- * **코랄은 네 곳뿐이다**(SPEC §13.13). 준비 현황 현재 업종 테두리 · 진행바 ·
- * 웨딩픽 추천 라벨 · CTA · D-day. 조건 칩 · 완료 표시 · 아바타는 무채색이다.
+ * **코랄은 다섯 곳뿐이다**(CLAUDE.md v3.24 · 2026-09-09 사용자 오더 · 2026-09-14 히어로
+ * 개편으로 다섯째 자리를 다시 셈). 준비 현황 현재 업종 테두리 · 진행바 · 웨딩픽 추천
+ * 라벨 · CTA · **히어로 카드 면**(D-day는 이제 그 면 위의 플럼 글자이지 코랄 글자가
+ * 아니다). 조건 칩 · 완료 표시 · 아바타는 무채색이다.
  *
  * 화면이 무엇을 보여주는지는 전부 `features/home/state.ts`가 정한다. 여기는 그린다.
  */
@@ -220,6 +222,7 @@ export default function HomeScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <Header unread={data.unread} onPressBell={() => router.push('/my/notifications')} />
+        <HomeSearchBar />
 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <Hero me={data.me} view={view} daysLeft={daysLeft} />
@@ -425,42 +428,51 @@ function openSearchWithout(chip: ConditionChip, view: HomeView, me: CurrentUser 
 /* ------------------------------------------------------------------ 히어로 */
 
 /**
- * 히어로. 아바타 + 닉네임 ↔ D-day, 26px 두 줄 제목, 진행바 + N / 12.
+ * 히어로. 2026-09-14 대표 지시 — 피그마 신규 디자인 기준으로 카드형 히어로로
+ * 바꾼다(면 색 `primary` 고정 · 5색 테마 피커는 넣지 않는다, 스킨 정리는 차후).
+ * 아바타 + 닉네임, 큰 D-day, 두 줄 제목, 진행바 + N / 12 순서는 그대로 둔다 —
+ * 피그마 B등급(`Home.tsx`)이 지시한 것은 "면 색 카드 · D-day를 크게"라는 구조이지
+ * 기존 1층 3구간 제목(`view.hero.line1/2`)을 지우라는 뜻이 아니다.
  *
- * **D-day는 코랄이다**(2026-09-09 사용자 오더 · screens.json WP-HOME-001 «D-day 15 coral»).
- * v3.21이 홈 코랄을 네 곳으로 줄이며 D-day를 무채색으로 바꿨는데, 그러면 예식일이
- * 화면에서 사라진다 — 홈에서 가장 먼저 찾는 값이라 다섯째 코랄로 되돌린다.
- * 시안의 D-day 15px은 토큰 사다리에 없어 14(t7).
+ * **D-day는 이제 코랄 면 위의 플럼 글자다**(코랄 다섯 곳 중 하나 — 위 파일
+ * JSDoc과 CLAUDE.md 참고). 히어로 전체가 `tint` 면이 되며 `#E7898D` 위 흰 글자는
+ * 2.51:1로 AA 미달이라 `onTint`(플럼 #371B34, 6.11:1)를 쓴다.
+ *
+ * D-day 글자 크기는 `t1`(32 — typography.ts 주석 "홈 Hero")을 쓴다. 피그마
+ * `Home.tsx:160`의 46px은 **B등급 LLM 생성 근사치**라 그대로 옮기지 않는다.
  */
 function Hero({ me, view, daysLeft }: { me: CurrentUser | null; view: HomeView; daysLeft: number | null }) {
+  const theme = useTheme();
+
   return (
-    <ThemedView style={styles.hero}>
+    <View style={[styles.hero, { backgroundColor: theme.tint }]}>
       <View style={styles.who}>
         <Avatar name={me?.displayName ?? null} />
-        <ThemedText type="t7" themeColor="textSecondary" numberOfLines={1} style={styles.whoName}>
+        <ThemedText type="t7" themeColor="onTint" numberOfLines={1} style={styles.whoName}>
           {identityLine(me)}
-        </ThemedText>
-        <ThemedText type="t7" numeric themeColor="tint" style={styles.dday}>
-          {daysLeft === null ? '예식일 미정' : `D-${daysLeft}`}
         </ThemedText>
       </View>
 
-      <ThemedText type="t2">
+      <ThemedText type="t1" numeric themeColor="onTint" style={styles.ddayBig}>
+        {daysLeft === null ? '예식일 미정' : `D-${daysLeft}`}
+      </ThemedText>
+
+      <ThemedText type="t2" themeColor="onTint">
         {view.hero.line1}
         {'\n'}
         {view.hero.line2}
       </ThemedText>
 
       <View style={styles.progressRow}>
-        {/* 시안 track: 6 · #EAEBEE(border) · 채움 coral. ProgressBar 기본값이 그대로다. */}
+        {/* 면이 코랄이라 채움을 onTint(플럼)로 올려 대비를 지킨다. 트랙은 기존 border. */}
         <View style={styles.progressTrack}>
-          <ProgressBar value={view.progress} />
+          <ProgressBar value={view.progress} color="onTint" />
         </View>
-        <ThemedText type="micro" numeric themeColor="textAssistive">
+        <ThemedText type="micro" numeric themeColor="onTint">
           {view.progressText}
         </ThemedText>
       </View>
-    </ThemedView>
+    </View>
   );
 }
 
@@ -517,6 +529,39 @@ function Header({ unread, onPressBell }: { unread: number; onPressBell: () => vo
         ) : null}
       </Pressable>
     </ThemedView>
+  );
+}
+
+/**
+ * 검색 진입점(2026-09-14 대표님 IA 확정). 검색은 당분간 탭에서 내려가 있어
+ * 홈 상단 검색바가 유일한 입구다 — 누르면 `/search`로 간다(입력창이 아니다).
+ *
+ * Figma A등급 자료(`src/imports/Home/index.tsx`)에는 검색바가 없다 — 그 파일은
+ * 웨딩픽과 무관한 다른 제품 템플릿이라 치수를 캘 수 없었다. 대신 검색 화면
+ * 자신의 검색창(`search/index.tsx` `searchBox`: height 52 · radius 6 ·
+ * backgroundSelected · gap 10)과 값을 맞춘다 — 같은 부품이 두 화면에 있는
+ * 것처럼 보여야 눌렀을 때 이어진다.
+ */
+function HomeSearchBar() {
+  const theme = useTheme();
+
+  return (
+    <View style={styles.searchBarWrap}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="검색"
+        onPress={() => router.push('/search')}
+        style={({ pressed }) => [
+          styles.searchBar,
+          { backgroundColor: theme.backgroundSelected },
+          pressed && styles.pressed,
+        ]}>
+        <ProductSymbol name="magnifier" size={Layout.iconTab} color={theme.textAssistive} />
+        <ThemedText type="t6" themeColor="textAssistive" numberOfLines={1}>
+          업체나 지역을 검색해보세요
+        </ThemedText>
+      </Pressable>
+    </View>
   );
 }
 
@@ -615,6 +660,21 @@ const styles = StyleSheet.create({
   },
   bellDot: { position: 'absolute', top: 6, right: 6, width: 8, height: 8, borderRadius: Radius.pill },
 
+  /* 검색 진입 바 — search/index.tsx의 검색창과 규격을 맞춘다(위 주석 참조). */
+  searchBarWrap: {
+    paddingHorizontal: Layout.gutter,
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.one,
+  },
+  searchBar: {
+    height: Layout.field,
+    borderRadius: Radius.input,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.three,
+    gap: Layout.cardGap,
+  },
+
   /*
    * 가로 여백을 여기 두지 않는다. 회색 밴드가 화면 끝까지 닿아야 해서, 거터는
    * 섹션마다 준다.
@@ -632,16 +692,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: Layout.gutter,
   },
 
-  /* 시안 heroWrap: padding 14 24 24 · gap 10. */
+  /*
+   * 히어로 카드 — 2026-09-14 피그마 기준 개편. 면이 `tint`라 화면 가장자리에
+   * 붙이지 않고 카드로 띄운다(Radius.sheet는 기존 큰 카드 반경 재사용).
+   */
   hero: {
-    paddingHorizontal: Layout.gutter,
-    paddingTop: 14,
-    paddingBottom: Layout.gutter,
+    marginHorizontal: Layout.gutter,
+    marginTop: Spacing.two,
+    marginBottom: Layout.sectionGap,
+    borderRadius: Radius.sheet,
+    padding: Layout.cardPadding,
     gap: Layout.cardGap,
   },
   who: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   whoName: { flexShrink: 1, fontWeight: 700 },
-  dday: { marginLeft: 'auto', fontWeight: 700 },
+  ddayBig: { fontWeight: 700 },
   avatar: {
     width: Layout.iconTab,
     height: Layout.iconTab,

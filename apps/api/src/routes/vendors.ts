@@ -25,7 +25,11 @@ import {
   type VendorCategory,
   widestDisclosable,
 } from '@weddingpick/domain';
-import { vendorSearchQuerySchema, vendorSortSchema } from '@weddingpick/api-contract';
+import {
+  vendorCompareQuerySchema,
+  vendorSearchQuerySchema,
+  vendorSortSchema,
+} from '@weddingpick/api-contract';
 import type { FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
 import { z } from 'zod';
@@ -42,10 +46,6 @@ import { vendorSourceNote } from '../vendor-view';
  */
 const searchQuerySchema = vendorSearchQuerySchema;
 
-const compareQuerySchema = z.object({
-  /** 쉼표로 이은 업체 id. */
-  ids: z.string().min(1).max(200),
-});
 
 type VendorRow = {
   id: string;
@@ -405,7 +405,7 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
    * "비교의 어려움"을 우리가 만든 표가 되레 가리게 된다.
    */
   app.get('/v1/vendors/compare', auth, async (request) => {
-    const { ids } = compareQuerySchema.parse(request.query);
+    const { ids } = vendorCompareQuerySchema.parse(request.query);
 
     // 같은 업체를 두 번 골라 "두 곳"을 만들 수 없게 한다.
     const unique = [

@@ -1,11 +1,8 @@
 import {
   STYLE_PICK_LIMIT_TOAST,
-  preparationSkippedToast,
-  skippedPreparationCategories,
   combineRegion,
   dDay,
   formatDateDot,
-  type VendorCategory,
   type WeddingStyle,
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
@@ -19,8 +16,6 @@ import { error as errorCopy } from '../../../../spec/strings.ko.json';
 import { Layout, Radius, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
 
 import { DelayedRecommendingView } from '@/features/loading/delayed-loader';
-import { categoryKindsFor } from '@/features/loading/exclude';
-import { BudgetGrid } from '@/features/onboarding/budget-grid';
 import { DatePickerSheet } from '@/features/onboarding/date-picker-sheet';
 import {
   DONE_CTA,
@@ -48,7 +43,6 @@ import {
 } from '@/features/onboarding/flow';
 import { InlineToast, useInlineToast } from '@/features/onboarding/inline-toast';
 import { OptionChip } from '@/features/onboarding/option-chip';
-import { PrepStatus } from '@/features/onboarding/prep-status';
 import { QuestionHead } from '@/features/onboarding/question-head';
 import { RegionPicker } from '@/features/onboarding/region-picker';
 import { StepFrame } from '@/features/onboarding/step-frame';
@@ -65,7 +59,12 @@ import {
  * 초기 설정. 디자인 핸드오프 v3.22 20-onboarding-v2.dc.html · SPEC §13.6 · §13.7
  * (WP-APP-020 ~ 023).
  *
- *   예식일 1/5 → 지역 2/5 → 준비 현황 3/5 → 예산 4/5 → 스타일 5/5 → 완료
+ *   예식일 1/3 → 지역 2/3 → 스타일 3/3 → 완료
+ *
+ * **다섯에서 셋으로 줄였다**(2026-09-14 대표 확정 · 피그마 `FlowScreens.tsx` 3단계).
+ * 준비 현황과 예산은 첫 진입에서 묻지 않는다 — 없어진 값이 아니라 MY의 웨딩 설정
+ * (`app/(tabs)/my/wedding-settings.tsx`)에서 계속 고칠 수 있다. 순서와 개수는
+ * `features/onboarding/flow.ts`가 정한다.
  *
  * **큰 질문 하나 = Step 하나.** 순서·건너뛰기·요약은 전부 `features/onboarding/flow.ts`
  * 가 정하고 이 화면은 그 답을 그린다. 답하면 그 질문은 화면 아래로 가라앉아 «라벨 ·
@@ -76,18 +75,18 @@ import {
  *
  * **«바꾸기»**(SPEC §13.6 «「바꾸기」 동작 정의»)는 그 질문만 다시 연다 — 진행바는
  * 그 Step으로 돌아가고 하단은 «다음» 하나뿐이며, 뒤에 답한 값은 그대로 두되 답 줄에서
- * 잠시 숨긴다. 고치고 «다음»을 누르면 원래 있던 Step으로 바로 복귀한다 — 3/5 · 4/5를
+ * 잠시 숨긴다. 고치고 «다음»을 누르면 원래 있던 Step으로 바로 복귀한다 — 2/3을
  * 다시 묻지 않는다. 연쇄 초기화는 없다 — 스타일은 업종과 무관한 축이라 준비 현황을
  * 바꿔도 지우지 않는다(v3.19 «범용 스타일»).
  *
  * **미정을 억지로 받지 않는다.** 예식일 · 지역 «아직 정하지 않았어요», 준비 현황
  * «아직 시작 전이에요», 예산 «아직 모르겠어요». 스타일만 최소 1개 필수다 — 추천의
  * 근거라 없으면 첫 화면에 보여줄 것이 없다. 최대 2개, 3번째는 추가하지 않고 토스트
- * «2개까지 고를 수 있어요»(SPEC §13.6 «선택 정책»). 5/5는 건너뛰지 않는다. 이미 고른
+ * «2개까지 고를 수 있어요»(SPEC §13.6 «선택 정책»). 3/3은 건너뛰지 않는다. 이미 고른
  * 스타일이 서버에 있으면(다시 들어온 계정) 초기화하지 않고 복원해서 보여준다.
  *
  * **스크롤은 화면 전체 하나다**(SPEC §13.5.5). 준비 현황이 뷰포트를 넘치면 화면이
- * 스크롤한다 — 목록 전용 스크롤을 두지 않는다. 5/5는 200 × 2행이라 스크롤이 없다.
+ * 스크롤한다 — 목록 전용 스크롤을 두지 않는다. 3/3은 200 × 2행이라 스크롤이 없다.
  *
  * **만 14세 확인은 여기 없다.** 로그인(`POST /v1/auth/sessions`)이 판정하고 서버에
  * 기록한다 — 이 화면은 동의만 보낸다. 예전에는 여기서 `ageVerified: true`를 함께
@@ -113,14 +112,12 @@ export default function SetupScreen() {
   /** 기기에 적어둔 답을 읽기 전에는 첫 질문을 그리지 않는다 — 잠깐 스쳤다 바뀌면 안 된다. */
   const [restored, setRestored] = useState(false);
   const [editing, setEditing] = useState<Editing | null>(null);
-  /** 서버에 이미 있는 스타일 — 5/5에 닿았을 때 아직 안 골랐으면 이걸로 복원한다. */
+  /** 서버에 이미 있는 스타일 — 3/3에 닿았을 때 아직 안 골랐으면 이걸로 복원한다. */
   const [seedStyle, setSeedStyle] = useState<readonly WeddingStyle[] | null>(null);
-  /** 서버 응답이 올 때 이미 5/5에 있는지 보려고 지금 Step을 적어 둔다. */
+  /** 서버 응답이 올 때 이미 3/3에 있는지 보려고 지금 Step을 적어 둔다. */
   const stepRef = useRef<QuestionStep | 'done'>('date');
   const [sheetOpen, setSheetOpen] = useState(false);
   const limitToast = useInlineToast();
-  /** 준비 현황에서 «앞 단계 비움» 토스트를 이미 보여준 상태(비운 업종 목록). 같은 상태로 다시 누르면 넘어간다. */
-  const prepWarnedRef = useRef<string | null>(null);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -141,8 +138,8 @@ export default function SetupScreen() {
 
     /*
      * 이미 고른 스타일이 있으면 복원한다(SPEC §13.6 «진입 — 기존 선택값을 초기화하지 않고
-     * 복원»). 5/5에 들어설 때 `enter`가 채우고, 응답이 늦어 이미 5/5에 있으면 여기서 채운다.
-     * 못 읽으면 없는 것 — 4/5 이전에는 채우지 않는다(채우면 5/5를 건너뛰게 된다).
+     * 복원»). 3/3에 들어설 때 `enter`가 채우고, 응답이 늦어 이미 3/3에 있으면 여기서 채운다.
+     * 못 읽으면 없는 것 — 그 앞에서는 채우지 않는다(채우면 3/3을 건너뛰게 된다).
      */
     let active = true;
     void (async () => {
@@ -180,7 +177,7 @@ export default function SetupScreen() {
     setAnswers((current) => ({ ...current, ...patch }));
   }
 
-  /** Step을 연다. 5/5에 처음 닿았고 서버에 고른 스타일이 있으면 그걸로 채운다. */
+  /** Step을 연다. 3/3에 처음 닿았고 서버에 고른 스타일이 있으면 그걸로 채운다. */
   const enter = useCallback(
     (target: QuestionStep) => {
       if (target === 'style' && answers.style === null && seedStyle !== null) {
@@ -248,7 +245,7 @@ export default function SetupScreen() {
    * 2026-09-11 대표 지시 — 「결과는 사용자 입력한 값을 보여주기만 하고 정보를
    * 저장하지 않는다. 완료 버튼을 눌러야만 저장 단계로 진행한다」.
    *
-   * 예전에는 5/5의 답을 받은 그 자리에서 이걸 불렀다. 그래서 결과 화면을 그리기
+   * 예전에는 마지막 답을 받은 그 자리에서 이걸 불렀다. 그래서 결과 화면을 그리기
    * 전에 서버 왕복을 **차례로 두세 번** 기다렸다 — `getSignupState()` → (필요하면)
    * `completeSignup()` → `completeSetup()`. 답을 다 넣고도 요약이 안 뜨는 시간이
    * 그 왕복들이었다. 결과는 이미 손에 있는 답으로 그릴 수 있으므로 기다릴 이유가
@@ -266,11 +263,14 @@ export default function SetupScreen() {
 
     const region = source.region?.region ?? null;
     const styleTags = [...(source.style ?? [])];
+    /*
+     * 준비 현황·예산은 3단계로 줄이면서 여기서 묻지 않는다(2026-09-14 대표 확정).
+     * 초안의 칸은 그대로 두고 비워 보낸다 — 두 값은 MY의 웨딩 설정에서 채운다.
+     */
     const draft = {
       weddingDate: source.date?.value ?? null,
       region: region === null ? null : combineRegion(region, source.region?.district ?? null),
-      preparedCategories: source.prep?.categories ?? [],
-      budgetBracket: source.budget,
+      budgetBracket: null,
       styleTags,
     };
 
@@ -302,15 +302,15 @@ export default function SetupScreen() {
           return;
         }
 
+        /*
+         * 준비 현황·예산은 키를 아예 보내지 않는다. 계약은 둘 다 선택 항목이라
+         * (`completeSetupRequestSchema`) 빼도 되고, null을 보내면 MY에서 이미
+         * 채워 둔 값을 지우게 된다.
+         */
         await completeSetup({
           weddingDate: draft.weddingDate,
           region: draft.region,
-          /* «기타»는 준비 단계가 아니라 계약이 받지 않는다 — 화면에도 없는 값이지만 형을 좁힌다. */
-          preparedCategories: draft.preparedCategories.filter(
-            (category): category is Exclude<VendorCategory, 'etc'> => category !== 'etc'
-          ),
-          budgetBracket: draft.budgetBracket,
-          /* 계약은 최소 1개를 받는다 — 5/5는 건너뛰지 않으므로 늘 있지만, 없으면 키를 아예 보내지 않는다. */
+          /* 계약은 최소 1개를 받는다 — 3/3은 건너뛰지 않으므로 늘 있지만, 없으면 키를 아예 보내지 않는다. */
           ...(styleTags.length > 0 ? { styleTags } : {}),
         });
 
@@ -345,22 +345,6 @@ export default function SetupScreen() {
 
   function goNext() {
     if (step === 'done') return;
-
-    /*
-     * 준비 현황(3/5) — 앞 그룹을 비워두고 뒤 그룹만 고른 채 «다음»이면 한 번 알리고 머문다
-     * (v3.23 «앞 단계도 확인해주세요 · 결정사 · 웨딩홀»). 막지는 않는다 — 같은 상태로 다시
-     * 누르면 그대로 넘어간다. 진행 중이 아니라 이미 지난 업종을 빠뜨렸는지 짚어 주는 것뿐이다.
-     */
-    if (step === 'prep') {
-      const skipped = skippedPreparationCategories(answers.prep?.categories ?? []);
-      const signature = skipped.join(',');
-
-      if (skipped.length > 0 && prepWarnedRef.current !== signature) {
-        prepWarnedRef.current = signature;
-        limitToast.show(preparationSkippedToast(skipped));
-        return;
-      }
-    }
 
     if (editing !== null) {
       finishEdit();
@@ -404,12 +388,12 @@ export default function SetupScreen() {
    * `LoaderWait`). 계정을 만들고 설정을 올린 뒤 추천을 받아 홈으로 가는 길이라,
    * Depth 이동용 써클이 아니라 업종 순회를 그대로 쓴다.
    *
-   * 순회에서 뺄 업종은 방금 받은 답에서 가져온다. 서버에 아직 안 들어가 있어
-   * «나»의 스냅숏으로는 알 수 없고, 넘기지 않으면 방금 «결정 완료»로 고른 업종이
-   * 로더에서 계속 돈다.
+   * 3단계로 줄면서 준비 현황을 여기서 묻지 않으므로 뺄 업종이 없다 — 순회는
+   * 열두 업종을 그대로 돈다. MY의 웨딩 설정에서 채운 값은 서버에 있고, 그쪽은
+   * «나»의 스냅숏(`useCurrentUserSnapshot`)이 읽는다.
    */
   if (sending) {
-    return <DelayedRecommendingView exclude={categoryKindsFor(answers.prep?.categories ?? [])} />;
+    return <DelayedRecommendingView exclude={[]} />;
   }
 
   if (step === 'done') {
@@ -521,19 +505,6 @@ export default function SetupScreen() {
 
         {step === 'region' ? (
           <RegionPicker value={answers.region} onChange={(next) => update({ region: next })} />
-        ) : null}
-
-        {step === 'prep' ? (
-          <PrepStatus
-            selected={answers.prep?.categories ?? []}
-            notStarted={answers.prep !== null && answers.prep.categories.length === 0}
-            onChange={(categories: VendorCategory[]) => update({ prep: { categories } })}
-            onNotStarted={() => update({ prep: { categories: [] } })}
-          />
-        ) : null}
-
-        {step === 'budget' ? (
-          <BudgetGrid value={answers.budget} onChange={(next) => update({ budget: next })} />
         ) : null}
 
         {step === 'style' ? (

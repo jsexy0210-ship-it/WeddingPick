@@ -45,17 +45,30 @@ const palette = {
    */
   plum: '#371b34',
 
-  /* SEED gray 램프 (light). */
-  gray900: '#212124',
-  gray800: '#393a40',
-  gray700: '#4d5159',
+  /*
+   * SEED gray 램프 (light). **값은 `spec/seed-tokens.json`에서 온다** —
+   * `node scripts/sync-seed-tokens.mjs`가 `@seed-design/css`의 base.css에서 뽑고,
+   * `spec/seed-parity.test.ts`가 어긋나면 빨개진다. 손으로 고치지 않는다.
+   *
+   * 2026-09-15 전까지 이 자리는 **SEED를 손으로 베낀 옛 세대**였다. 베낀 뒤 SEED가
+   * 움직이는 동안 우리만 그대로여서 본문 먹색이 `#212124`(우리)와 `#1a1c20`(SEED)로
+   * 갈라져 있었고, 모든 화면에 걸리는 차이인데 아무도 몰랐다.
+   *
+   * **우리 이름은 SEED보다 한 칸씩 작다.** `gray900`이 SEED `gray-1000`이고
+   * `gray50`이 SEED `gray-100`이다 — 우리 램프에 `gray1000`이 없어서 생긴 어긋남이다.
+   * 이름을 바꾸면 쓰는 자리를 전부 손봐야 해서 값만 맞췄다. 어느 이름이 SEED의
+   * 무엇인지는 `spec/seed-map.json`에 적혀 있다.
+   */
+  gray900: '#1a1c20',
+  gray800: '#2a3038',
+  gray700: '#555d6d',
   gray600: '#868b94',
-  gray500: '#adb1ba',
+  gray500: '#b0b3ba',
   gray400: '#d1d3d8',
   gray300: '#dcdee3',
-  gray200: '#eaebee',
-  gray100: '#f2f3f6',
-  gray50: '#f7f8fa',
+  gray200: '#eeeff1',
+  gray100: '#f3f4f5',
+  gray50: '#f7f8f9',
   gray00: '#ffffff',
 
   /*
@@ -70,18 +83,29 @@ const palette = {
   /** surface.inverse — 토스트 · 어두운 안내 블록. */
   inverse: '#0e0f10',
 
-  /* SEED gray 램프 (dark). SEED가 어두운 모드 값을 직접 정해준다. */
-  darkGray900: '#eaebee',
-  darkGray800: '#ced3de',
-  darkGray700: '#adb1ba',
-  darkGray600: '#868b94',
-  darkGray500: '#6d717a',
-  darkGray400: '#50545c',
-  darkGray300: '#43474f',
-  darkGray200: '#34373d',
-  darkGray100: '#2b2e33',
-  darkGray50: '#212124',
-  darkGray00: '#17171a',
+  /*
+   * SEED gray 램프 (dark). 위와 같은 자리에서 뽑는다 — `spec/seed-tokens.json`의 `dark`.
+   * SEED는 어두운 벌을 **뒤집은 값으로 직접 정해준다**(gray-1000이 #f3f4f5다).
+   *
+   * `darkGray00`이 순검정인 것은 베낀 실수가 아니라 SEED 그대로다 — 어두운 테마에서
+   * `bg-layer-basement`가 #000000이고 그 위에 올라앉는 `bg-layer-default`가
+   * #16171b(= `darkGray50`)다. 바탕이 가장 어둡고 카드가 한 겹 밝은 구조다.
+   *
+   * **앱은 항상 라이트다**(`use-color-scheme.ts`). 이 벌이 실제로 보이는 곳은 서비스
+   * 웹뿐이고, `apps/web/src/site-styles.ts`가 같은 값을 옮겨 적는다
+   * (`apps/web/src/site.test.ts`가 지킨다).
+   */
+  darkGray900: '#f3f4f5',
+  darkGray800: '#e9eaec',
+  darkGray700: '#dcdee3',
+  darkGray600: '#b0b3ba',
+  darkGray500: '#868b94',
+  darkGray400: '#5b606a',
+  darkGray300: '#393d46',
+  darkGray200: '#2b2e35',
+  darkGray100: '#1d2025',
+  darkGray50: '#16171b',
+  darkGray00: '#000000',
 
   /* 의미색 — spec/tokens.json color.status. 스킨과 무관하게 고정. */
   successText: '#1aa174',
@@ -675,6 +699,15 @@ export const Layout = {
   tabPickDot: 7,
   tabPickDotBorder: 1.5,
   tabPickDotOffset: -1,
+  /**
+   * 가운데 Pick 탭의 원형 강조. spec/tokens.json `tabBar.emphasized`
+   * (← weddingpick_figma `src/app/components/Root.tsx:66-84`).
+   *
+   * 원 안의 아이콘만 20이고 나머지 넷은 `iconTab`(24) 그대로다 — 그 사유도
+   * 토큰의 `$only`에 적혀 있다.
+   */
+  tabEmphasized: 48,
+  tabEmphasizedIcon: 20,
   /** SEED 컨트롤 높이. 화면당 Primary CTA는 xlarge(52)다. size.cta. */
   controlMedium: 40,
   controlLarge: 48,

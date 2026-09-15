@@ -23,11 +23,9 @@ jest.mock('./wedding-draft', () => ({
   saveOnboardingAnswers: jest.fn(), saveWeddingDraft: jest.fn(),
 }));
 jest.mock('@/features/loading/delayed-loader', () => ({ DelayedRecommendingView: 'Loading' }));
-jest.mock('./budget-grid', () => ({ BudgetGrid: 'BudgetGrid' }));
 jest.mock('./date-picker-sheet', () => ({ DatePickerSheet: 'DatePickerSheet' }));
 jest.mock('./inline-toast', () => ({ InlineToast: 'InlineToast', useInlineToast: () => ({ toast: null, show: jest.fn(), hide: jest.fn() }) }));
 jest.mock('./option-chip', () => ({ OptionChip: 'OptionChip' }));
-jest.mock('./prep-status', () => ({ PrepStatus: 'PrepStatus' }));
 jest.mock('./question-head', () => ({ QuestionHead: 'QuestionHead' }));
 jest.mock('./region-picker', () => ({ RegionPicker: 'RegionPicker' }));
 jest.mock('./step-frame', () => ({ StepFrame: 'StepFrame' }));
@@ -37,8 +35,7 @@ jest.mock('@weddingpick/ui', () => ({
 }));
 
 const answers: Answers = {
-  date: { value: null }, region: { region: null, district: null }, prep: { categories: [] },
-  budget: 'unknown', style: ['URBAN'],
+  date: { value: null }, region: { region: null, district: null }, style: ['URBAN'],
 };
 const pendingSignup = { activated: false } as Awaited<ReturnType<typeof getSignupState>>;
 const activeSignup = { activated: true } as Awaited<ReturnType<typeof getSignupState>>;
@@ -56,7 +53,7 @@ function frame() {
   return tree.root.findByType('StepFrame' as never);
 }
 /**
- * 5/5에서 «다음». 2026-09-11 대표 지시 이후 이 누름은 **결과 화면으로 갈 뿐이고
+ * 3/3에서 «다음». 2026-09-11 대표 지시 이후 이 누름은 **결과 화면으로 갈 뿐이고
  * 서버에 아무것도 보내지 않는다** — 저장은 결과 화면의 «완료»가 시작한다.
  */
 async function toResult() {

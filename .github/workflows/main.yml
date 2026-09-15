@@ -69,6 +69,13 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # SEED와 우리 색이 갈라지지 않게 지킨다. `spec/seed-tokens.json`은 생성물이라
+      # `npm install`로 SEED가 올라간 뒤 다시 뽑지 않으면 조용히 낡는다 —
+      # 2026-09-15 전까지 손으로 베낀 옛 세대를 쓰고 있었고 본문 먹색이
+      # #212124(우리)와 #1A1C20(SEED)로 갈라져 있었다.
+      - name: SEED 토큰 (뽑은 값이 현행인지)
+        run: node scripts/sync-seed-tokens.mjs --check
+
       # 금지어 게이트. `spec/glossary.json`을 읽는 것은 이 스크립트뿐인데
       # **어느 워크플로에도 연결돼 있지 않았다** — 48개 금지어 중 37개가
       # 검사되지 않고 있었다(Release Audit 1차 P1-10).

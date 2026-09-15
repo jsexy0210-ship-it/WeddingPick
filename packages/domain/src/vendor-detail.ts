@@ -45,8 +45,6 @@ export const VENDOR_DETAIL_SECTIONS = [
      */
     note: '실 제보와 확인된 계약 두 덩어리다',
   },
-  /* 핸드오프 WP-VEND-001 rule — Pick 버튼은 근거를 다 읽은 자리(제보 금액 다음)에 둔다. */
-  { key: 'pick', label: `${TERMS.pick} · 비교`, ready: true },
   {
     key: 'vendor_notice',
     label: TERMS.vendorNotice,
@@ -72,6 +70,21 @@ export const VENDOR_DETAIL_SECTIONS = [
   },
   { key: 'official_source', label: '공식정보', ready: true },
   { key: 'report_error', label: '정보 오류 제보', ready: true },
+  /*
+   * Pick은 **맨 아래가 아니라 어느 탭에서도 보이는 자리**다.
+   *
+   * 핸드오프 WP-VEND-001은 「근거를 다 읽은 자리(제보 금액 다음)」라고 정했고, 화면이
+   * 위에서 아래로 한 번에 흐르던 때는 그 자리가 곧 그 뜻이었다. 2026-09-14 대표 지시로
+   * 상세가 **탭 넷**(소개 · 가격 · 후기 · 정보)이 되면서 그 자리가 사라졌다 — 한 탭 안에
+   * 넣으면 다른 세 탭에서는 Pick을 못 누른다.
+   *
+   * 그래서 탭 바깥 **하단 고정**으로 옮겼다. 원래 의도(근거를 읽고 누른다)는 「가격」 탭을
+   * 열면 바로 위에 실 제보가 있는 것으로 지킨다. 이 목록에서 마지막인 것은 「제일 덜
+   * 중요하다」가 아니라 **어느 자리에도 속하지 않는다**는 뜻이다.
+   *
+   * Primary CTA는 여전히 Pick 하나뿐이다(CLAUDE.md 「화면당 Primary CTA 1개」).
+   */
+  { key: 'pick', label: `${TERMS.pick} · 비교`, ready: true },
 ] as const satisfies readonly {
   key: string;
   label: string;

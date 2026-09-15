@@ -1037,12 +1037,17 @@ describeWithDb('업체 비교', () => {
     expect(response.statusCode).toBe(400);
   });
 
-  it('세 곳을 넘기면 막는다', async () => {
+  it('한도를 넘기면 막는다', async () => {
+    /*
+     * **숫자를 적지 않는다.** 전에는 네 곳을 보내고 400을 기대했는데, 한도가
+     * 다섯으로 오르자 그 시험이 「막혀야 한다」를 「통과해야 한다」로 뒤집힌 채
+     * 빨개졌다. 한도에서 한 곳을 더한 만큼 만들어 보낸다.
+     */
     const { headers } = await signInUnlocked(test);
     const ids = [];
 
-    for (const name of ['가홀', '나홀', '다홀', '라홀']) {
-      ids.push(await createVendor({ name }));
+    for (let i = 0; i <= MAX_COMPARED_VENDORS; i += 1) {
+      ids.push(await createVendor({ name: `${i}번홀` }));
     }
 
     const response = await compare(headers, ids);

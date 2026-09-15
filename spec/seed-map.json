@@ -1,0 +1,26 @@
+{
+  "$note": "우리 색 토큰이 SEED의 어느 값에서 오는지 적는 표다. `spec/seed-parity.test.ts`가 이것을 읽어 `spec/tokens.json`과 `spec/seed-tokens.json`을 견준다. 값을 고치려면 여기 오른쪽(SEED 이름)을 고치고 `node scripts/sync-seed-tokens.mjs`로 뽑은 값을 tokens.json에 옮긴다 — 왼쪽 값을 손으로 바꾸면 시험이 빨개진다.",
+  "$why": "2026-09-15에 재어 보니 본문 글자색이 우리 #212124, SEED 현행 #1A1C20으로 갈라져 있었다. 손으로 베낀 뒤 SEED가 움직이는 동안 우리만 그대로였던 것이다. 표를 두는 이유는 다시 갈라지면 시험이 잡게 하려는 것이다.",
+  "map": {
+    "text.ink": "color-fg-neutral",
+    "text.ink2": "color-palette-gray-900",
+    "text.secondary": "color-fg-neutral-muted",
+    "text.tertiary": "color-fg-neutral-subtle",
+    "text.disabled": "color-fg-placeholder",
+    "line.border": "color-stroke-neutral-weak",
+    "line.divider": "color-palette-gray-300",
+    "line.fieldBorder": "color-palette-gray-500",
+    "line.fieldFocus": "color-fg-neutral",
+    "surface.paper": "color-bg-layer-default",
+    "surface.recessed": "color-bg-layer-fill",
+    "surface.band": "color-bg-layer-basement",
+    "surface.imageBg": "color-palette-gray-300",
+    "surface.canvas": "color-palette-gray-300"
+  },
+  "$unmapped": {
+    "surface.inverse": "SEED에 밝은 테마용 반전 면이 따로 없다. 어두운 테마의 bg-layer-default(#16171B)를 쓸지 지금 값을 둘지는 판단이 필요하다 — 토스트와 어두운 안내 블록에만 쓰인다.",
+    "brand.*": "브랜드색은 SEED가 아니라 대표님이 정한 값이다(#E7898D · #ECA0A3 · 2026-09-14). 피그마도 SEED 위에 이 둘만 덮어쓴다(theme.css --primary · --accent). 건드리지 않는다.",
+    "social.*": "카카오 · 애플 · 네이버 브랜드 규정 색이다. SEED와 무관하다.",
+    "status.*": "SEED에 positive · critical · warning · informative가 있지만 우리 쪽은 배경 · 테두리까지 한 벌로 묶여 있어 옮기려면 화면을 같이 봐야 한다. 별도 작업으로 남긴다."
+  }
+}

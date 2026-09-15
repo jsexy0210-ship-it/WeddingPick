@@ -19,11 +19,16 @@ import {
 } from '@weddingpick/ui';
 import { LoginFailureSheet } from '@/features/auth/login-failure-sheet';
 import { maskEmail } from '@/features/auth/mask-email';
-import { canSignInWith, providerTone, useAuthProviders } from '@/features/auth/providers';
+import {
+  canSignInWith,
+  providerLabel,
+  providerTone,
+  useAuthProviders,
+} from '@/features/auth/providers';
 import { loadRememberedAccount, type RememberedAccount } from '@/features/auth/remembered-account';
 import { bootOwnsSigningInMessage, takePendingSignInError } from '@/features/auth/sign-in-handoff';
 import { CheckDot } from '@/features/settings/my-kit';
-import { SigningInBody } from '@/features/auth/signing-in-view';
+import { SigningInBody, signingInMessage } from '@/features/auth/signing-in-view';
 import { useSignIn } from '@/features/auth/use-sign-in';
 import { openExternal } from '@/features/open-external';
 
@@ -51,10 +56,19 @@ const RECENT_LOGIN_BADGE = '최근 로그인';
 const KAKAO_PROVIDER_NAME = '카카오';
 
 /**
- * WP-AUTH-001/008 로그인. 디자인 핸드오프 v3.13(2026-09-07)부터 **초기
- * 버전은 카카오만** 쓴다 — 이메일 로그인(v3.12, WP-AUTH-002~007)은 화면·서버
- * 라우트·메일 발송까지 2026-09-08에 전부 지웠다. 네이버·구글·애플은 화면에서만
- * 폐기했다(이미 그 방법으로 가입한 계정의 서버 쪽 검증 코드는 그대로 둔다).
+ * WP-AUTH-001/008 로그인. **소셜 로그인은 카카오와 애플 둘이다**(2026-09-11 ·
+ * 2026-09-14 대표 확정). 이메일 로그인(v3.12, WP-AUTH-002~007)은 화면·서버
+ * 라우트·메일 발송까지 2026-09-08에 전부 지웠고, 네이버·구글은 화면에 두지
+ * 않는다(이미 그 방법으로 가입한 계정의 서버 쪽 검증 코드는 그대로 둔다).
+ *
+ * **애플 버튼은 iOS에서 빠지지 않는다.** 앱스토어 심사지침 4.8이 다른 소셜
+ * 로그인을 두는 앱에 «Apple로 로그인»을 함께 요구한다 — 시안이 카카오 하나만
+ * 그려져 있어도 여기서는 뺄 수 없다. 어느 제공자를 보일지는 서버 목록과
+ * 플랫폼이 정하고(`usableProviders`), 화면은 받은 목록을 그대로 그린다.
+ *
+ * **애플은 나이를 주지 않는다.** 카카오의 연령대 같은 값이 없어 서버가 판정할
+ * 근거가 없고, 그래서 애플로 들어오는 사람은 아래 «만 14세 이상이에요» 확인을
+ * 반드시 거친다. 확인을 안 눌렀으면 어느 제공자 버튼도 눌리지 않는다(`ageBlocked`).
  *
  * 레이아웃은 시안 `01a-login.dc.html` #27a · #27h 그대로다(SPEC §13.5) —
  *
@@ -82,16 +96,17 @@ const KAKAO_PROVIDER_NAME = '카카오';
  * **두 상태를 한 컴포넌트에서 가른다**(WP-AUTH-001 첫 진입 / WP-AUTH-008
  * 로그인 유지). 기억된 계정이 있으면 인사 · D-day · 마지막 계정 카드(카카오
  * 아바타 40 · 마스킹 이메일 · «최근 로그인» 배지) + «카카오로 계속하기» 하나만
- * 보여주고, 없으면 카카오 버튼 하나만 보여준다. 계정 전환 버튼은
- * 두지 않는다(SPEC §3.4 — 초기 버전은 카카오만이라 고를 것이 없다).
+ * 보여주고, 없으면 로그인 버튼만 보여준다. 계정 전환 버튼은 두지 않는다 —
+ * 계정을 바꾸는 일은 제공자의 동의 화면이 맡는다.
  *
- * 카카오 로그인 실패는 화면에 문구를 깔지 않고 시트로 뜬다
+ * 로그인 실패는 화면에 문구를 깔지 않고 시트로 뜬다
  * (`login-failure-sheet.tsx`).
  */
 export default function LoginScreen() {
   const theme = useTheme();
   const { providers, error: loadError } = useAuthProviders();
-  const { signIn, busy, error, retry, dismissError, reportError, needsAgeConfirm } = useSignIn();
+  const { signIn, busy, busyProvider, error, retry, dismissError, reportError, needsAgeConfirm } =
+    useSignIn();
   /** «만 14세 이상이에요»를 사람이 눌렀는가. 기본값은 꺼짐 — 미리 켜두지 않는다. */
   const [ageChecked, setAgeChecked] = useState(false);
   /** undefined = 아직 안 읽음, null = 기억된 계정 없음(WP-AUTH-001). */
@@ -110,8 +125,11 @@ export default function LoginScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- 마운트 때 한 번만
   }, []);
 
-  const kakao = providers?.[0] ?? null;
   const showRemembered = Boolean(remembered);
+  /* 서버 목록 그대로 — 순서(카카오 · 애플 · 개발용)와 거르기는 `usableProviders`가 정한다. */
+  const options = providers ?? [];
+  /* 만 14세 확인이 필요한데 아직 안 눌렀으면 어느 제공자든 시작하지 않는다. */
+  const ageBlocked = needsAgeConfirm && !ageChecked;
 
   return (
     <ThemedView style={styles.container}>
@@ -184,6 +202,7 @@ export default function LoginScreen() {
                 <SigningInBody
                   size={28}
                   show={busy && !bootOwnsSigningInMessage() ? 'message' : 'loader'}
+                  message={signingInMessage(busyProvider)}
                 />
               </ThemedView>
             ) : (
@@ -201,15 +220,26 @@ export default function LoginScreen() {
                       onToggle={() => setAgeChecked((was) => !was)}
                     />
 
-                    {kakao ? (
+                    {options.map((provider) => (
                       <ActionButton
+                        key={provider.provider}
                         variant="primary"
                         size="xlarge"
-                        label={kakao.isDevelopmentStandIn ? '개발용 로그인' : '카카오로 계속하기'}
-                        disabled={busy || !canSignInWith(kakao) || (needsAgeConfirm && !ageChecked)}
-                        onPress={() => signIn(kakao, { ageAcknowledged: ageChecked })}
+                        /*
+                          시안 #27h — 카카오 «계속하기»는 로고 없는 ctaPrimary다.
+                          애플은 다르다: 심사지침이 애플 마크를 지운 버튼을 받지 않는다.
+                         */
+                        tone={provider.provider === 'apple' ? providerTone(provider) : undefined}
+                        icon={
+                          provider.provider === 'apple' ? (
+                            <SocialLogo provider="apple" size={KAKAO_LOGO} />
+                          ) : undefined
+                        }
+                        label={providerLabel(provider, 'continue')}
+                        disabled={busy || !canSignInWith(provider) || ageBlocked}
+                        onPress={() => signIn(provider, { ageAcknowledged: ageChecked })}
                       />
-                    ) : null}
+                    ))}
 
                     <ThemedText type="micro" themeColor="textAssistive" style={styles.terms}>
                       이 기기에서 로그인을 유지하고 있어요
@@ -223,22 +253,27 @@ export default function LoginScreen() {
                       onToggle={() => setAgeChecked((was) => !was)}
                     />
 
-                    {kakao ? (
+                    {options.map((provider) => (
                       <ActionButton
+                        key={provider.provider}
                         variant="primary"
                         size="xlarge"
-                        tone={providerTone(kakao)}
-                        icon={kakao.isDevelopmentStandIn ? undefined : <SocialLogo provider="kakao" size={KAKAO_LOGO} />}
-                        label={kakao.isDevelopmentStandIn ? '개발용 로그인' : '카카오로 시작하기'}
+                        tone={providerTone(provider)}
+                        icon={
+                          provider.isDevelopmentStandIn ? undefined : (
+                            <SocialLogo provider={provider.provider} size={KAKAO_LOGO} />
+                          )
+                        }
+                        label={providerLabel(provider, 'start')}
                         hint={
-                          kakao.isDevelopmentStandIn
+                          provider.isDevelopmentStandIn
                             ? '실제 카카오 로그인이 아니에요. 개발 중인 서버에만 있어요'
                             : undefined
                         }
-                        disabled={busy || !canSignInWith(kakao) || (needsAgeConfirm && !ageChecked)}
-                        onPress={() => signIn(kakao, { ageAcknowledged: ageChecked })}
+                        disabled={busy || !canSignInWith(provider) || ageBlocked}
+                        onPress={() => signIn(provider, { ageAcknowledged: ageChecked })}
                       />
-                    ) : null}
+                    ))}
 
                     <ThemedText type="micro" themeColor="textAssistive" style={styles.terms}>
                       시작하면 <PolicyLink id="terms" />과 <PolicyLink id="privacy" />에 동의하게 돼요

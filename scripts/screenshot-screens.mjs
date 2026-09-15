@@ -44,24 +44,6 @@ const DIST = join(REPO, 'apps/mobile/dist');
 const VIEWPORT = { width: 390, height: 844 };
 
 /**
- * 캡처용 정적 서버가 앉는 자리. **고정이라야 한다**(2026-09-15).
- *
- * 예전에는 `listen(0)`으로 아무 포트나 잡고 `EXPO_PUBLIC_API_URL`은 따로
- * `http://127.0.0.1:1`을 구웠다. 그러면 화면(임의 포트)과 API(포트 1)의 오리진이
- * 달라져 브라우저가 **CORS 프리플라이트(OPTIONS)** 를 먼저 보내는데, playwright의
- * `page.route`는 프리플라이트를 가로채지 못한다. 그래서 fixtures가 답할 기회를
- * 못 얻고 **모든 캡처가 「연결이 불안정해요」 오류 화면으로 찍혔다** — 파일은
- * 나오니 실패로 보이지도 않았다. 2026-09-14에 홈·검색이 시안과 전혀 다른 채로
- * 있던 것을 아무도 못 본 까닭이 여기 있다.
- *
- * 화면과 API를 **같은 오리진**에 두면 프리플라이트가 아예 없다. 그러려면 빌드
- * 시점에 포트를 알아야 하므로 고정한다. 크로뮴이 막는 well-known 포트 목록에
- * 없고(1 · 7 · … · 6000 · 10080) 흔한 개발 포트(3000 · 5173 · 8081)와도 겹치지 않는다.
- */
-const CAPTURE_PORT = 4317;
-const CAPTURE_ORIGIN = `http://127.0.0.1:${CAPTURE_PORT}`;
-
-/**
  * 관리자 콘솔 기준 해상도(CLAUDE.md v3.27 — 1440×900에서 올렸다).
  *
  * 앱 크기로 찍으면 사이드바 240이 본문을 밀어 글자가 세로 한 줄로 선다. 그림은
@@ -165,17 +147,8 @@ function startStaticServer(root) {
     res.end('not found');
   });
 
-  return new Promise((done, fail) => {
-    server.once('error', (error) =>
-      fail(
-        new Error(
-          `캡처 포트 ${CAPTURE_PORT}을 못 잡았다(${error.code}). 다른 캡처가 돌고 있는지 본다.`,
-        ),
-      ),
-    );
-    server.listen(CAPTURE_PORT, '127.0.0.1', () =>
-      done({ server, port: server.address().port }),
-    );
+  return new Promise((done) => {
+    server.listen(0, '127.0.0.1', () => done({ server, port: server.address().port }));
   });
 }
 
@@ -333,19 +306,26 @@ async function main() {
 
   if (opts.build || !existsSync(DIST)) {
     process.stderr.write('· dist를 만든다 (몇 분 걸린다)\n');
-    execSync('npm run export:web --workspace @weddingpick/mobile -- --clear', {
+    execSync('npm run export:web --workspace @weddingpick/mobile', {
       cwd: REPO,
       stdio: 'inherit',
       /*
-       * **화면과 같은 오리진**을 굽는다(CAPTURE_PORT 주석 참조). 비워 두지는
-       * 않는다: 비면 `isServerConfigured`가 false가 되어 서버를 아예 안 부르는
-       * 다른 화면이 찍힌다(api/config.ts).
+       * 주소는 형식만 맞으면 된다 — 나가는 요청은 브라우저가 전부 가로챈다.
+       * 그래도 비워 두지는 않는다: 비면 `isServerConfigured`가 false가 되어
+       * 서버를 아예 안 부르는 다른 화면이 찍힌다(api/config.ts).
        *
-       * `--clear`가 붙어 있다. 메트로는 인라인된 `EXPO_PUBLIC_*` 값을 캐시 키에
-       * 넣지 않아서, 이 값을 고쳐도 지난 번들을 그대로 다시 내놓는다 — 고친 줄을
-       * 보고 「고쳤다」고 적었는데 dist에는 옛 주소가 남아 있는 일이 실제로 있었다.
+       * 포트 1은 Chromium이 ERR_UNSAFE_PORT로 접속 자체를 막는다(tcpmux) —
+       * page.route가 가로채기도 전에 브라우저가 거부한다. 39999는 안전 목록 밖의
+       * 높은 포트다.
+       *
+       * **경로 없이 origin만 둔다.** `client.ts`의 `send()`가 `${baseUrl}${path}`를
+       * 단순 문자열 접합으로 만든다(URL 재해석이 아니다) — base가 `/capture`로
+       * 끝나면 실제 요청 pathname이 `/capture/v1/...`가 되어 `installFixtures`의
+       * `pathname.startsWith('/v1/')` 검사를 벗어난다. 그러면 가로채지 못한 요청이
+       * 실제 네트워크로 나가고, 업체 상세처럼 fetch가 필요한 화면은 전부
+       * «연결이 불안정해요»만 찍힌다 — fixture를 아무리 채워도 닿지 않는다.
        */
-      env: { ...process.env, EXPO_PUBLIC_API_URL: CAPTURE_ORIGIN },
+      env: { ...process.env, EXPO_PUBLIC_API_URL: 'http://127.0.0.1:39999' },
     });
   }
 
@@ -353,7 +333,18 @@ async function main() {
 
   const { chromium } = loadPlaywright();
   const { server, port } = await startStaticServer(DIST);
-  const browser = await chromium.launch();
+  /*
+   * **설치된 브라우저를 직접 가리킬 수 있게 둔다.**
+   *
+   * Playwright는 자기 버전에 맞는 브라우저만 찾는다. 컨테이너에 이미 깔려 있어도
+   * 번호가 다르면 「없다」고 하고 `npx playwright install`을 하라고 한다 — 그
+   * 한 줄 때문에 **캡처를 한 번도 못 돌린 채 「환경에서 안 된다」로 넘어갔다.**
+   * 실제로 2026-09-15에 그랬다.
+   *
+   * `CHROMIUM_PATH`를 주면 그것을 쓴다. 없으면 지금까지처럼 알아서 찾는다.
+   */
+  const executablePath = process.env.CHROMIUM_PATH || undefined;
+  const browser = await chromium.launch(executablePath ? { executablePath } : {});
   /*
    * 관리자와 앱은 기준 해상도가 다르다. 섞어 찍으면 한쪽이 반드시 뭉개지므로
    * 경로를 보고 정한다 — 따로 주고 싶으면 `--viewport 1280x800`.

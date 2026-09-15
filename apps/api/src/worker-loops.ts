@@ -7,6 +7,7 @@ import type { Config } from './config';
 import { createExpoPush } from './push/expo';
 import { sendPriceChangeNudges, sendTaskNudges } from './notify/nudges';
 import { alertOperators } from './retention/alert';
+import { sweepExpiredConsultationAudio } from './retention/consultation-audio';
 import { listRetentionAttention, sweepExpiredDocuments } from './retention/worker';
 import type { Storage } from './storage/port';
 import { completeWithdrawals } from './withdrawal';
@@ -99,6 +100,19 @@ export function startWorkerLoops({ pool, storage, config, signal }: WorkerDeps):
         if (config.retentionMode === 'automatic') {
           await sweepExpiredDocuments({ pool, storage });
         }
+
+        /*
+         * 상담 녹음은 **두 모드 모두에서 지운다.**
+         *
+         * `manual` 모드가 있는 이유는 문서에 **사람이 보는 과정**이 붙어 있기
+         * 때문이다 — 인증 심사가 끝나야 기한이 정해진다. 상담 녹음에는 그 과정이
+         * 없고, 처리방침 제2항이 「업로드 시점부터 24시간을 넘겨 보관하지
+         * 않습니다」라고 조건 없이 적었다.
+         *
+         * 모드를 따르면 운영자가 스위치를 만지는 동안 약속한 기한이 지나고,
+         * 그 사실은 아무 화면에도 뜨지 않는다.
+         */
+        await sweepExpiredConsultationAudio({ pool, storage });
 
         /*
          * 탈퇴하고 원본이 다 지워진 계정을 지운다. **두 모드 모두에서 돈다** —

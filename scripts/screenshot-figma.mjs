@@ -1,100 +1,54 @@
 #!/usr/bin/env node
 /**
- * 피그마 시안(`weddingpick_figma`)을 실제로 렌더해 PNG로 찍는다.
+ * **시안을 찍는다.** 피그마 저장소(`weddingpick_figma`)를 빌드해 화면을 PNG로 낸다.
  *
- * **왜 있는가.** `screenshot-screens.mjs`의 머리말은 「시안은 찍지 않는다」고 적었다.
- * 그 말은 `docs/design-handoff/`의 `.dc.html`에 맞다 — `support.js`·`_ds/` 자산이
- * 용량 때문에 저장소에 들어오지 않아 찍어도 빈 화면이 나온다. 그러나 **피그마
- * 저장소에는 틀리다.** 그쪽은 그냥 도는 Vite + React 앱이라 빌드하면 찍힌다.
- *
- * 그 전제를 그대로 둔 채 2026-09-14까지 왔고, 대표님이 앱을 열어 보시고
- * 「피그마랑 아예 다르잖아」라고 하실 때까지 아무도 두 장을 나란히 놓지 못했다.
- * 이 도구가 그 자리를 메운다 — 앱은 `screenshot-screens.mjs`, 시안은 이 파일.
- *
- * 준비(처음 한 번):
- *
- *   git clone --depth 1 https://github.com/jsexy0210-ship-it/weddingpick_figma \
- *     /home/user/jsexy0210-ship-it/weddingpick_figma
- *   cd /home/user/jsexy0210-ship-it/weddingpick_figma && npm install && npx vite build
+ * **왜 생겼는가.** 2026-09-14에 대표님이 앱을 열어 보시고 「피그마랑 아예 다르다」고
+ * 하셨다. 그때까지 규칙은 「시안은 찍지 않는다 — 대조는 사람이 한다」였다. 그 규칙은
+ * `docs/design-handoff/`의 `.dc.html`이 자산(`_ds/`·`support.js`) 없이는 렌더되지 않아서
+ * 생긴 것인데, **피그마 저장소는 사정이 다르다** — 그냥 도는 Vite 앱이라 빌드해서 찍힌다.
+ * 못 찍는 줄 알고 사람 눈에 맡긴 동안 홈·검색·Pick이 통째로 어긋나 있었다.
  *
  * 쓰는 법:
  *
- *   node scripts/screenshot-figma.mjs                       # 홈 한 장
- *   node scripts/screenshot-figma.mjs --route /search --route /pick
- *   node scripts/screenshot-figma.mjs --repo <경로> --out <폴더>
+ *   node scripts/screenshot-figma.mjs                 # 12개 화면 전부
+ *   node scripts/screenshot-figma.mjs --route /search
+ *   node scripts/screenshot-figma.mjs --out /tmp/ref
  *
- * | 옵션 | 하는 일 |
- * | --- | --- |
- * | `--route <경로>` | 찍을 시안 라우트(`/` `/search` `/pick` …). 여러 번 줄 수 있다. 기본값 `/` |
- * | `--repo <경로>` | 피그마 저장소 자리. 기본값 `/home/user/jsexy0210-ship-it/weddingpick_figma` |
- * | `--out <폴더>` | 저장 자리. 기본값은 저장소 **밖**이다 |
- * | `--viewport WxH` | 창 크기. 기본 430×932 — **앱 캡처와 같은 폭으로 맞춘다** |
- * | `--wait <ms>` | 렌더를 기다리는 시간. 기본 1500 |
- * | `--no-full` | 스크롤 제외, 한 화면만 |
+ * 처음 한 번은 저장소를 받아 빌드해야 한다(`--repo`로 받은 자리를 알려준다):
  *
- * 규칙 둘:
- * 1. **바깥으로 나가는 요청을 막는다.** 시안은 unsplash 이미지를 부른다 — 그림 자리는
- *    회색으로 비우고 이름을 적는다. 자산을 구하러 다니지 않는다(2026-09-11 대표님 확인).
- * 2. **찍은 PNG를 저장소에 커밋하지 않는다.** 기본 저장 자리는 저장소 밖이다.
+ *   git clone --depth 1 https://github.com/jsexy0210-ship-it/weddingpick_figma <자리>
+ *   cd <자리> && npm install && npx vite build
+ *
+ * 앱 쪽은 `scripts/screenshot-screens.mjs`로 찍는다. **크기를 맞춰 찍는다** —
+ * 피그마 셸이 `max-w-[430px]`이라 여기 기본도 430이다. 390으로 찍은 앱 화면과
+ * 나란히 놓으면 폭이 달라 없는 차이가 보인다.
  */
-import { createRequire } from 'node:module';
-import { execSync } from 'node:child_process';
 import { createServer } from 'node:http';
-import { readFile, mkdir } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
-import { extname, join, resolve } from 'node:path';
+import { readFile } from 'node:fs/promises';
+import { existsSync, mkdirSync } from 'node:fs';
+import { execSync } from 'node:child_process';
+import { extname, join } from 'node:path';
+import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 
-/** 앱 캡처와 같은 폭. 여기서 어긋나면 나란히 놓은 그림이 거짓말을 한다. */
+/** 피그마 라우터(`src/app/routes.ts`)에 있는 화면 전부. 늘어나면 여기에 더한다. */
+const ROUTES = [
+  '/',
+  '/search',
+  '/pick',
+  '/our-wedding',
+  '/my',
+  '/community',
+  '/vendor/1',
+  '/vendor/1/booking',
+  '/vendor/1/consult',
+  '/onboarding',
+  '/login',
+  '/contract-verify',
+];
+
+/** 피그마 셸의 폭. `Root.tsx`의 `max-w-[430px]`에서 온다. */
 const VIEWPORT = { width: 430, height: 932 };
-
-const DEFAULT_REPO = '/home/user/jsexy0210-ship-it/weddingpick_figma';
-
-/**
- * playwright는 이 저장소의 의존성이 아니다 — 컨테이너에 전역으로 깔려 있다.
- * `screenshot-screens.mjs`와 같은 방식으로 찾는다.
- */
-function loadPlaywright() {
-  const req = createRequire(import.meta.url);
-
-  try {
-    return req('playwright');
-  } catch {
-    const root = execSync('npm root -g').toString().trim();
-
-    return req(join(root, 'playwright'));
-  }
-}
-
-function parseArgs(argv) {
-  const opts = {
-    routes: [],
-    repo: DEFAULT_REPO,
-    out: join(tmpdir(), 'weddingpick-figma'),
-    viewport: VIEWPORT,
-    wait: 1500,
-    full: true,
-  };
-
-  for (let i = 0; i < argv.length; i += 1) {
-    const arg = argv[i];
-
-    if (arg === '--route') opts.routes.push(argv[++i]);
-    else if (arg === '--repo') opts.repo = resolve(argv[++i]);
-    else if (arg === '--out') opts.out = resolve(argv[++i]);
-    else if (arg === '--wait') opts.wait = Number(argv[++i]);
-    else if (arg === '--no-full') opts.full = false;
-    else if (arg === '--viewport') {
-      const [width, height] = argv[++i].split('x').map(Number);
-
-      opts.viewport = { width, height };
-    } else throw new Error(`모르는 인자: ${arg}`);
-  }
-
-  if (opts.routes.length === 0) opts.routes.push('/');
-
-  return opts;
-}
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -104,50 +58,71 @@ const MIME = {
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
   '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon',
-  '.woff': 'font/woff',
   '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.ico': 'image/x-icon',
 };
 
+function parseArgs(argv) {
+  const opts = {
+    routes: [],
+    out: join(tmpdir(), 'weddingpick-figma'),
+    repo: '/home/user/jsexy0210-ship-it/weddingpick_figma',
+    wait: 2500,
+  };
+
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
+
+    if (arg === '--route') opts.routes.push(argv[++i]);
+    else if (arg === '--out') opts.out = argv[++i];
+    else if (arg === '--repo') opts.repo = argv[++i];
+    else if (arg === '--wait') opts.wait = Number(argv[++i]);
+    else throw new Error(`모르는 인자: ${arg}`);
+  }
+
+  if (opts.routes.length === 0) opts.routes.push(...ROUTES);
+
+  return opts;
+}
+
 /**
- * dist를 내주는 정적 서버. 파일이 없으면 `index.html`로 떨어뜨린다 —
- * 시안은 `createBrowserRouter`라 `/search`가 실제 파일이 아니다.
+ * playwright는 이 저장소의 의존성이 아니다 — 컨테이너에 전역으로 깔려 있다.
+ * `scripts/screenshot-screens.mjs`와 같은 방식으로 찾는다.
  */
-function serve(dist) {
+function loadPlaywright() {
+  const req = createRequire(import.meta.url);
+
+  try {
+    return req('playwright');
+  } catch {
+    return req(join(execSync('npm root -g').toString().trim(), 'playwright'));
+  }
+}
+
+/**
+ * dist를 내주되 **없는 경로는 index.html로 돌린다.**
+ * 피그마는 `createBrowserRouter`를 써서 `/search` 같은 주소에 파일이 없다.
+ */
+function startStaticServer(root) {
   const server = createServer(async (req, res) => {
-    const path = decodeURIComponent(new URL(req.url, 'http://x').pathname);
-    const file = join(dist, path);
+    const pathname = decodeURIComponent(new URL(req.url, 'http://127.0.0.1').pathname);
+    const direct = join(root, pathname);
+    const file = direct.startsWith(root) && extname(direct) && existsSync(direct)
+      ? direct
+      : join(root, 'index.html');
 
-    try {
-      if (existsSync(file) && extname(file) !== '') {
-        const body = await readFile(file);
-
-        res.writeHead(200, { 'content-type': MIME[extname(file)] ?? 'application/octet-stream' });
-        res.end(body);
-
-        return;
-      }
-
-      const body = await readFile(join(dist, 'index.html'));
-
-      res.writeHead(200, { 'content-type': MIME['.html'] });
-      res.end(body);
-    } catch {
-      res.writeHead(404);
-      res.end('not found');
-    }
+    res.writeHead(200, { 'content-type': MIME[extname(file)] ?? 'application/octet-stream' });
+    res.end(await readFile(file));
   });
 
-  return new Promise((done) => {
-    server.listen(0, '127.0.0.1', () => done({ server, port: server.address().port }));
+  return new Promise((resolve) => {
+    server.listen(0, '127.0.0.1', () => resolve({ server, port: server.address().port }));
   });
 }
 
-/** `/` → `home`, `/community/feed/2` → `community-feed-2`. */
-function nameOf(route) {
-  const trimmed = route.replace(/^\/+|\/+$/g, '');
-
-  return trimmed === '' ? 'home' : trimmed.replace(/[^\w가-힣]+/g, '-');
+function fileNameFor(route) {
+  return route === '/' ? 'home' : route.replace(/^\//, '').replace(/\//g, '-');
 }
 
 async function main() {
@@ -156,70 +131,36 @@ async function main() {
 
   if (!existsSync(dist)) {
     throw new Error(
-      `시안 빌드가 없다: ${dist}\n` +
-        `먼저 만든다 — cd ${opts.repo} && npm install && npx vite build`,
+      `빌드된 시안이 없다: ${dist}\n` +
+        `먼저 받아서 빌드한다:\n` +
+        `  git clone --depth 1 https://github.com/jsexy0210-ship-it/weddingpick_figma ${opts.repo}\n` +
+        `  cd ${opts.repo} && npm install && npx vite build`,
     );
   }
 
-  await mkdir(opts.out, { recursive: true });
+  mkdirSync(opts.out, { recursive: true });
 
   const { chromium } = loadPlaywright();
-  const { server, port } = await serve(dist);
-  const browser = await chromium.launch();
-  const context = await browser.newContext({
-    viewport: opts.viewport,
-    deviceScaleFactor: 2,
-  });
-
-  /*
-   * 바깥으로 나가는 요청을 막는다. 시안 카드의 unsplash 사진이 그 대상이다 —
-   * 자리는 그대로 두고 회색으로 비운다. 레이아웃은 `w-full h-36` 같은 클래스가
-   * 정하므로 그림이 없어도 크기와 간격은 그대로 찍힌다.
-   */
-  const blocked = new Set();
-
-  await context.route('**/*', async (route) => {
-    const url = route.request().url();
-
-    if (url.startsWith(`http://127.0.0.1:${port}`) || url.startsWith('data:')) {
-      await route.continue();
-
-      return;
-    }
-
-    blocked.add(new URL(url).host);
-
-    if (route.request().resourceType() === 'image') {
-      await route.fulfill({
-        status: 200,
-        contentType: 'image/svg+xml',
-        body: '<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="#d9d9d9"/></svg>',
-      });
-
-      return;
-    }
-
-    await route.abort();
-  });
-
+  const { server, port } = await startStaticServer(dist);
+  /** 컨테이너의 chromium 판이 playwright가 찾는 것과 다를 때 직접 가리킨다. */
+  const executablePath = process.env.CHROMIUM_PATH || undefined;
+  const browser = await chromium.launch(executablePath ? { executablePath } : {});
+  const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 2 });
   const page = await context.newPage();
-  const saved = [];
 
-  for (const route of opts.routes) {
-    await page.goto(`http://127.0.0.1:${port}${route}`, { waitUntil: 'networkidle' });
-    await page.waitForTimeout(opts.wait);
+  try {
+    for (const route of opts.routes) {
+      const name = fileNameFor(route);
 
-    const file = join(opts.out, `${nameOf(route)}.png`);
-
-    await page.screenshot({ path: file, fullPage: opts.full });
-    saved.push(file);
+      await page.goto(`http://127.0.0.1:${port}${route}`, { waitUntil: 'networkidle' }).catch(() => {});
+      await page.waitForTimeout(opts.wait);
+      await page.screenshot({ path: join(opts.out, `${name}.png`), fullPage: true });
+      console.log(`${route} → ${join(opts.out, `${name}.png`)}`);
+    }
+  } finally {
+    await browser.close();
+    server.close();
   }
-
-  await browser.close();
-  server.close();
-
-  for (const file of saved) console.log(file);
-  if (blocked.size > 0) console.log(`· 바깥 요청을 막았다: ${[...blocked].join(' · ')}`);
 }
 
 main().catch((error) => {

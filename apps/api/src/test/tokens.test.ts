@@ -35,11 +35,38 @@ const spec = JSON.parse(specText) as Json;
 
 const HEX = /^#[0-9a-f]{6}$/i;
 
+/*
+ * 2026-09-14 대표 지시로 **색의 정본이 핸드오프에서 SEED · 피그마로 옮겨갔다**
+ * (「색 관련된 거 싹 다 피그마 기준」). 핸드오프 tokens.json은 SEED를 손으로 베낀
+ * 옛 세대라 회색 램프가 SEED 현행과 어긋난다 — 본문 먹색이 `#212124`(핸드오프)와
+ * `#1a1c20`(SEED)로 갈라져 있었다.
+ *
+ * 그래서 아래 색들은 **핸드오프가 아니라 SEED를 따른다.** 값이 맞는지는
+ * `seed-parity.test.ts`가 `spec/seed-tokens.json`과 견주어 지킨다 — 검사를 끄는 것이
+ * 아니라 **더 엄한 검사로 옮기는 것**이다. 여기 남은 색(브랜드 · 소셜 · 의미색)은
+ * 계속 핸드오프를 본다.
+ *
+ * 수치 · 문구는 그대로 핸드오프가 정본이다. 피그마가 정하는 것은 보이는 색이다.
+ */
+const SUPERSEDED_BY_SEED = new Set(
+  [
+    '#212124',
+    '#393a40',
+    '#4d5159',
+    '#adb1ba',
+    '#eaebee',
+    '#f7f8fa',
+    '#f2f3f6',
+    '#eef1f4',
+  ].map((hex) => hex.toLowerCase()),
+);
+
 describe('디자인 토큰 — 핸드오프 ↔ spec/tokens.json', () => {
   it('핸드오프의 색은 전부 spec에 있다', () => {
     const specLower = specText.toLowerCase();
     const missing = leaves(handoff)
       .filter(([, v]) => typeof v === 'string' && (HEX.test(v) || v.startsWith('rgba')))
+      .filter(([, v]) => !SUPERSEDED_BY_SEED.has((v as string).toLowerCase()))
       .filter(([, v]) => !specLower.includes((v as string).toLowerCase()))
       .map(([k, v]) => `${k} = ${String(v)}`);
 
