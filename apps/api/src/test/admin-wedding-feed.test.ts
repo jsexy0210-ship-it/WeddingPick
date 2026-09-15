@@ -4,6 +4,8 @@ import type { Pool } from 'pg';
 import type { AppContext } from '../context';
 import { ApiError } from '../errors';
 import { registerAdminRoutes } from '../routes/admin';
+import * as weddingFeed from '../wedding-feed';
+import * as weddingFeedWriter from '../analysis/wedding-feed-writer';
 
 /**
  * 웨딩피드 관리자 라우트.
@@ -136,17 +138,34 @@ describe('웨딩피드 관리자 라우트', () => {
     expect(response.statusCode).toBe(404);
   });
 
-  it('GEMINI_MODEL이 없으면 지금 쓰기가 막힌다', async () => {
-    const original = process.env.GEMINI_MODEL;
-    delete process.env.GEMINI_MODEL;
+  /*
+   * 2026-09-15 대표 지시로 클로드 작성기로 바뀌면서 `GEMINI_MODEL` 검사는
+   * 없어졌다 — 모델은 `context.config.analysisModel`에서 온다. `runGeneration`
+   * 자체(실제 DB 흐름)는 `wedding-feed.test.ts`가 아니라 여기서는 라우트가
+   * 그 값을 그대로 넘기는지만 본다 — 실제 클로드를 부르지 않는다.
+   */
+  it('지금 쓰기는 config.analysisModel로 클로드 작성기를 부른다', async () => {
+    const runGeneration = jest
+      .spyOn(weddingFeed, 'runGeneration')
+      .mockResolvedValue({ created: 1, skipped: null });
+    /*
+     * 진짜 `Anthropic` 클라이언트를 만들지 않는다 — 생성만 해도 SDK가 자격
+     * 증명을 찾느라 비동기로 파일시스템을 뒤지고, 그 작업이 시험이 끝난
+     * 뒤까지 남아 「Jest 환경이 정리된 뒤 require」 경고를 남긴다.
+     * `runGeneration` 자체를 위에서 이미 가짜로 바꿨으니 `writer`는 아무
+     * 것도 하지 않아도 된다.
+     */
+    jest.spyOn(weddingFeedWriter, 'createClaudeFeedWriter').mockReturnValue({
+      write: jest.fn(),
+    });
 
-    try {
-      const response = await app().inject({ method: 'POST', url: '/v1/admin/wedding-feed/generate' });
+    const response = await app({ config: { analysisModel: '시험용-모델' } } as Partial<AppContext>).inject({
+      method: 'POST',
+      url: '/v1/admin/wedding-feed/generate',
+    });
 
-      expect(response.statusCode).toBe(400);
-      expect(pool.query).not.toHaveBeenCalled();
-    } finally {
-      if (original) process.env.GEMINI_MODEL = original;
-    }
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ created: 1, skipped: null });
+    expect(runGeneration.mock.calls[0]?.[0]).toMatchObject({ model: '시험용-모델', trigger: 'manual' });
   });
 });
