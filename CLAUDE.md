@@ -291,12 +291,21 @@ Pick Mark는 하트 안에 체크. 아래 두 path가 확정본이며 어떤 이
 **사용자 화면에 영문을 쓰지 않는다**(2026-09-15 대표 지시 — 「이딴 영문 싹다 없애」).
 남는 것은 **대표님이 따로 정하신 이름 둘뿐**이다 — `Pick` · `Npay`.
 
-**피그마가 영문으로 그린 자리도 한국어로 바꾼다.** 피그마가 못 이기는 것이 「말」이라는
-기존 규칙의 적용이다 — **말만 바꾸고 자리 · 크기 · 색 · 자간은 피그마 그대로 둔다.**
-온보딩 eyebrow `JUST FOR YOU`(`question-head.tsx:25` · 규격서 10/400 코랄 ls 2.2px)가
-그 자리다.
+**피그마의 영문 eyebrow는 한국어로 바꾸는 것이 아니라 «지운다»**(2026-09-15 대표 지시 —
+「위와 같이 온보딩, 전체 메뉴에 이런 형식에 맞지 않는 화면 있으면 싹다 찾아서 삭제해」).
+제목 위에 영문 소문자 간격을 넓혀 얹은 **장식 줄**이고, 한국어로 옮기면 그 장식이
+어색해진다. **줄째 없앤다.**
 
-값은 `spec/strings.ko.json`에서 가져온다. 화면에 글자를 직접 적지 않는다.
+피그마가 그렇게 그린 자리 열셋이 `docs/rn-migration/FIGMA_DESIGN_SYSTEM.md:87`에 있다:
+
+    WEDDING, LESS OVERWHELMING · JUST FOR YOU · VERIFY THE FACTS · MY NOTES ·
+    TODAY'S PICK · UPCOMING FAIR · RELATED · OUR CALENDAR · BUDGET OVERVIEW ·
+    CONSULTATION · YOUR CONSULTANT · BLOOMING STUDIO · VERIFIED PRICE RANGE
+
+**아직 안 만든 화면을 만들 때도 이 줄을 넣지 않는다.** 규격서에 있어도 넣지 않는다.
+
+eyebrow가 아닌 영문(버튼 · 라벨 · 안내문)은 **한국어로 바꾼다.** 값은
+`spec/strings.ko.json`에서 가져오고 화면에 글자를 직접 적지 않는다.
 
 **날짜 표기 `D-127`은 이 규칙의 대상이 아니다** — 영문 단어가 아니라 한국에서 쓰는
 날짜 세는 꼴이다. 대표님이 따로 말씀하시면 그때 바꾼다.
