@@ -1,13 +1,15 @@
 import {
   STYLE_PICK_LIMIT_TOAST,
+  WEDDING_STYLES,
+  WEDDING_STYLE_LABEL,
   combineRegion,
-  dDay,
   formatDateDot,
+  toggleStyle,
   type WeddingStyle,
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BackHandler, Pressable, StyleSheet, View } from 'react-native';
+import { BackHandler, StyleSheet, View } from 'react-native';
 
 import { ApiError, completeSetup, completeSignup, getCurrentUser, getSignupState } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
@@ -28,7 +30,6 @@ import {
   UNDECIDED_LABEL,
   answeredRows,
   canAdvance,
-  ddayParts,
   doneRows,
   nextStep,
   prevStep,
@@ -42,11 +43,10 @@ import {
   type QuestionStep,
 } from '@/features/onboarding/flow';
 import { InlineToast, useInlineToast } from '@/features/onboarding/inline-toast';
-import { OptionChip } from '@/features/onboarding/option-chip';
+import { OptionRow } from '@/features/onboarding/option-row';
 import { QuestionHead } from '@/features/onboarding/question-head';
 import { RegionPicker } from '@/features/onboarding/region-picker';
 import { StepFrame } from '@/features/onboarding/step-frame';
-import { StyleGrid } from '@/features/onboarding/style-grid';
 import {
   clearOnboardingAnswers,
   clearWeddingDraft,
@@ -101,6 +101,9 @@ import {
  * 시안과 다른 값은 토큰이 이기는 곳뿐이다: CTA·입력칸 높이 52(size.ctaPrimary ·
  * size.field, 시안 56) · 15px 글자는 t6(16) · 13px은 t7(14).
  */
+/** 예식일 첫 줄 — 아직 안 골랐을 때. 고르면 그 날짜가 이 자리에 선다. */
+const DATE_PICK_LABEL = '날짜 고르기';
+
 /** «바꾸기»로 다시 연 질문. `from`은 돌아갈 Step. */
 type Editing = { step: QuestionStep; from: QuestionStep };
 
@@ -399,7 +402,6 @@ export default function SetupScreen() {
   if (step === 'done') {
     return (
       <StepFrame
-        progress={DONE_PROGRESS.percent}
         label={DONE_PROGRESS.label}
         stepKey="done"
         nextLabel={DONE_CTA}
@@ -444,12 +446,10 @@ export default function SetupScreen() {
   const chosenStyles = answers.style ?? [];
   const date = answers.date?.value ?? null;
   const dateUndecided = answers.date !== null && date === null;
-  const remaining = date ? dDay(date) : null;
 
   return (
     <>
       <StepFrame
-        progress={progress.percent}
         label={progress.label}
         stepKey={step}
         answered={answeredRows(step, answers, editing !== null)}
@@ -462,44 +462,23 @@ export default function SetupScreen() {
         error={error}>
         <QuestionHead lines={STEP_TITLE_LINES[step]} description={stepDescription(step)} />
 
+        {/*
+          예식일 1/3 — 보기는 규격서의 65 줄(`OptionRow`). 피그마의 «2027년 1월 15일 · 2027년 상반기 ·
+          아직 미정»은 시안용 가짜 값이라, 첫 줄이 날짜 선택(휠 시트 — 고르면 그 날짜가 줄에 선다)이고
+          둘째 줄이 «아직 정하지 않았어요»다.
+        */}
         {step === 'date' ? (
-          <View style={styles.section}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="예식일 선택"
+          <View style={styles.options}>
+            <OptionRow
+              label={date ? formatDateDot(date) : DATE_PICK_LABEL}
+              selected={date !== null}
               onPress={() => setSheetOpen(true)}
-              style={[
-                styles.field,
-                date
-                  ? { backgroundColor: theme.background, borderColor: theme.tint }
-                  : { backgroundColor: theme.backgroundElement, borderColor: 'transparent' },
-              ]}>
-              <ThemedText type="t5" numeric themeColor={date ? 'text' : 'textDisabled'}>
-                {date ? formatDateDot(date) : '예식일을 선택해주세요'}
-              </ThemedText>
-            </Pressable>
-
-            {remaining?.kind === 'upcoming' ? (
-              <View style={styles.dday}>
-                <ThemedText type="body" themeColor="textSecondary">
-                  {ddayParts(remaining.days).prefix}
-                </ThemedText>
-                <ThemedText type="t5" numeric themeColor="tint">
-                  {ddayParts(remaining.days).number}
-                </ThemedText>
-                <ThemedText type="body" themeColor="textSecondary">
-                  {ddayParts(remaining.days).suffix}
-                </ThemedText>
-              </View>
-            ) : null}
-
-            <View style={styles.chips}>
-              <OptionChip
-                label={UNDECIDED_LABEL}
-                selected={dateUndecided}
-                onPress={() => update({ date: { value: null } })}
-              />
-            </View>
+            />
+            <OptionRow
+              label={UNDECIDED_LABEL}
+              selected={dateUndecided}
+              onPress={() => update({ date: { value: null } })}
+            />
           </View>
         ) : null}
 
@@ -507,12 +486,24 @@ export default function SetupScreen() {
           <RegionPicker value={answers.region} onChange={(next) => update({ region: next })} />
         ) : null}
 
+        {/* 스타일 3/3 — 넷 중 1~2개(v3.24). 사진 타일(style-grid.tsx)은 규격서에 없어 65 줄로 바꿨다. */}
         {step === 'style' ? (
-          <StyleGrid
-            chosen={chosenStyles}
-            onChange={(next) => update({ style: next })}
-            onLimited={() => limitToast.show(STYLE_PICK_LIMIT_TOAST)}
-          />
+          <View style={styles.options}>
+            {WEDDING_STYLES.map((style) => (
+              <OptionRow
+                key={style}
+                role="checkbox"
+                label={WEDDING_STYLE_LABEL[style]}
+                selected={chosenStyles.includes(style)}
+                onPress={() => {
+                  const { next, limited } = toggleStyle(chosenStyles, style);
+
+                  if (limited) limitToast.show(STYLE_PICK_LIMIT_TOAST);
+                  else update({ style: next });
+                }}
+              />
+            ))}
+          </View>
         ) : null}
       </StepFrame>
 
@@ -539,22 +530,12 @@ const styles = StyleSheet.create({
     paddingBottom: Layout.gutter,
     gap: Layout.rowPaddingY,
   },
-  /* 예식일 필드. 토큰 size.field 52(시안 56) · radius.control 6 · 좌우 16 · 테두리 1.5. */
-  field: {
-    height: Layout.field,
-    borderRadius: Radius.input,
-    borderWidth: 1.5,
-    paddingHorizontal: Layout.fieldPaddingX,
-    justifyContent: 'center',
+  /* 보기 묶음 — 규격서 «div 382×218 · mar 40 0 0 0», 줄 사이 «mar 0 0 12 0». 좌우는 화면 24. */
+  options: {
+    marginTop: Spacing.five + Spacing.two,
+    paddingHorizontal: Layout.gutter,
+    gap: Layout.inlineGap,
   },
-  /* «예식일까지 250일 남았어요» — 숫자만 코랄. baseline 정렬 · 사이 8 · 좌우 2. */
-  dday: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: Spacing.two,
-    paddingHorizontal: Spacing.half,
-  },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
   /* 완료 요약 — gray50 · radius 10 · 안쪽 20 · 행 상하 9. 안쪽 상자 없음. */
   summary: {
     borderRadius: Radius.medium,

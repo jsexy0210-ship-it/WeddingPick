@@ -78,6 +78,8 @@ function parseArgs(argv) {
     viewport: null,
     /** 찍기 전에 눌러 둘 것들. 시트 · 펼침처럼 **눌러야 나오는 화면**을 찍는다. */
     taps: [],
+    /** 토큰을 심지 않는다 — 로그인 화면(`/login`)처럼 로그인 전 화면을 찍을 때. */
+    guest: false,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -89,6 +91,7 @@ function parseArgs(argv) {
     else if (arg === '--full') opts.full = true;
     else if (arg === '--wait') opts.wait = Number(argv[++i]);
     else if (arg === '--tap') opts.taps.push(argv[++i]);
+    else if (arg === '--guest') opts.guest = true;
     else if (arg === '--viewport') {
       const [width, height] = argv[++i].split('x').map(Number);
 
@@ -243,7 +246,7 @@ async function captureRoute(context, origin, route, opts) {
    * 토큰을 먼저 심는다. 로그인 가드(`_layout.tsx`)는 그대로 둔다 — 제품 코드에
    * 「캡처일 때는 통과」를 넣으면 그 구멍이 운영에 나간다.
    */
-  await page.addInitScript((key) => {
+  if (!opts.guest) await page.addInitScript((key) => {
     try {
       window.localStorage.setItem(key, 'capture-token');
     } catch {
@@ -291,6 +294,7 @@ const HELP = `화면을 실제로 렌더해 PNG로 찍는다.
   --full           화면 전체(스크롤 포함)를 찍는다. 기본은 390x844 한 화면.
   --wait <ms>      렌더를 기다리는 시간. 기본 1500.
   --tap <이름>     찍기 전에 누른다. 여러 번 줄 수 있고 준 순서대로 누른다.
+  --guest          토큰을 심지 않는다 — 로그인 전 화면(/login)을 찍을 때.
                    눌러야 나오는 화면(바텀시트 · 펼침)을 찍을 때 쓴다. 못 찾으면 멈춘다.
   --viewport WxH   창 크기. 기본은 경로를 보고 정한다 — /admin은 1920x1080, 나머지 390x844.
 `;
