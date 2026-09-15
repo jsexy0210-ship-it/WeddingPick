@@ -587,6 +587,27 @@ const routes = {
    * ── A조(2026-09-15) — /capture/* · /my/* 3Depth+ 캡처용 ──────────────────
    */
 
+  /*
+   * 결제인증 · 견적서 정리 동의 화면(WP-RPT-002 앞단)이 진입 시 부른다. 실패해도
+   * 화면을 막지 않지만(캡처가 「fixture 없음」만 적고 화면은 그대로 뜬다), 없는 채로
+   * 두면 캡처마다 404 콘솔 오류가 남는다 — 이미 동의하지 않은 상태로 채운다.
+   */
+  'GET /v1/me/settings': {
+    userId: ME.userId,
+    pushEnabled: true,
+    priceChangeEnabled: true,
+    marketingEnabled: false,
+    marketingConsentAt: null,
+    nightPushEnabled: false,
+    paymentConsent: false,
+    paymentConsentAt: null,
+    documentConsent: false,
+    documentConsentAt: null,
+    weddingDate: ME.weddingDate,
+    region: ME.region,
+    spouseLinked: ME.spouseLinked,
+    displayName: ME.displayName,
+  },
   /* A-06 분석 중(WP-RPT-003) — «읽는 중» 단계에 세워둔다. 성공/실패는 다른 상태라 여기 안 둔다. */
   'GET /v1/analyses/:analysisId': {
     id: CAPTURE_ANALYSIS_ID,

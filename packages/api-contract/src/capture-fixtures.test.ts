@@ -20,6 +20,7 @@ import { quoteSchema } from './quotes';
 import { rebuttalListResponseSchema } from './rebuttals';
 import { reviewListResponseSchema } from './reviews';
 import { myMonthlyDrawResponseSchema, myRewardPayoutResponseSchema, myRewardsResponseSchema } from './rewards';
+import { settingsSchema } from './settings';
 import { signupStateSchema } from './signup';
 import { verificationRequestSchema } from './verification';
 import { weddingEventListResponseSchema } from './wedding-events';
@@ -68,6 +69,7 @@ const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/me/monthly-draw', myMonthlyDrawResponseSchema],
   ['GET /v1/me/rewards/payout', myRewardPayoutResponseSchema],
   ['GET /v1/me/rebuttals', rebuttalListResponseSchema],
+  ['GET /v1/me/settings', settingsSchema],
 ]);
 
 /**
