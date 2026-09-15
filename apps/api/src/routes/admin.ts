@@ -20,7 +20,7 @@ import * as expoAdmin from '../expo-admin';
 import { listExposEndingToday } from '../retention/expo-sweep';
 import * as faqAdmin from '../faq-admin';
 import * as weddingFeed from '../wedding-feed';
-import { createClaudeFeedWriter } from '../analysis/wedding-feed-writer';
+import { createGeminiFeedWriter } from '../analysis/wedding-feed-writer';
 import { NotAnOperator } from '../decisions';
 import { ApiError, forbidden, notFound } from '../errors';
 import * as inquiryAdmin from '../inquiry-admin';
@@ -1109,14 +1109,14 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
    * 판단하는 자리가 있다.
    *
    * 클로드로 쓴다(2026-09-15 대표 지시 — 제미나이는 녹음·OCR에만, `CLAUDE.md` 참고).
-   * 모델은 `claude-analyzer.ts`와 같은 설정(`config.analysisModel`)에서 온다.
+   * 모델은 분석 워커와 같은 설정(`config.geminiModel`)에서 온다.
    */
   app.post('/v1/admin/wedding-feed/generate', auth, async () => {
-    const model = context.config.analysisModel;
+    const model = context.config.geminiModel;
 
     return weddingFeed.runGeneration({
       pool: context.pool,
-      writer: createClaudeFeedWriter({ model }),
+      writer: createGeminiFeedWriter({ apiKey: process.env.GEMINI_API_KEY ?? '', model }),
       model,
       trigger: 'manual',
     });

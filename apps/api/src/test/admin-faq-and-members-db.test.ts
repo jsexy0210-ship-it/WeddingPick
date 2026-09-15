@@ -126,7 +126,7 @@ describeWithDb('관리자 — FAQ · 회원 추이', () => {
     expect(response.statusCode).toBe(400);
   });
 
-  it('회원 추이는 가입을 그 칸에 세고 탈퇴는 누적에서 뺀다', async () => {
+  it('회원 추이는 가입과 탈퇴를 그 칸에 세고, 누적에서는 탈퇴를 뺀다', async () => {
     const { headers, userId } = await operator();
 
     /* 오늘 가입한 계정 하나를 탈퇴 처리한다 — 가입 수는 남고 누적에서는 빠져야 한다. */
@@ -143,7 +143,7 @@ describeWithDb('관리자 — FAQ · 회원 추이', () => {
     expect(response.statusCode).toBe(200);
 
     const data = response.json() as {
-      points: { at: string; signups: number; total: number }[];
+      points: { at: string; signups: number; withdrawals: number; total: number }[];
       current: number;
     };
     const today = data.points.at(-1)!;
@@ -154,6 +154,12 @@ describeWithDb('관리자 — FAQ · 회원 추이', () => {
     /* 살아 있는 것은 운영자 하나뿐이다. */
     expect(today.total).toBe(1);
     expect(data.current).toBe(1);
+    /*
+     * 탈퇴도 그 칸에 센다(2026-09-15 대표 지시로 차트에 같이 그린다). 누적에서
+     * 빠지는 것과는 다른 값이다 — 저쪽은 「몇 명이 남았나」이고 이쪽은 「그 칸에
+     * 몇 명이 나갔나」다. 방금 만든 계정 하나가 오늘 나갔다.
+     */
+    expect(today.withdrawals).toBe(1);
     expect(rows[0]!.id).not.toBe(userId);
   });
 
