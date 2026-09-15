@@ -6,6 +6,7 @@ import {
   WEDDING_REGIONS,
   WEDDING_STYLE_LABEL,
   combineRegion,
+  formatCount,
   formatDateDot,
   regionTokens,
   type VendorCategory,
@@ -43,7 +44,7 @@ const S = {
   /** 예식일이 지난 상태(screens.json states «경과»). */
   passed: '지났어요',
   none: '아직 안 골랐어요',
-  preparedCount: (n: number) => `${n}개 정함`,
+  preparedCount: (n: number) => `${formatCount(n)}개 정함`,
   saved: '바꿨어요',
   noteTitle: '바꾸면 추천이 다시 계산돼요',
   noteBody: 'Pick한 곳과 지출 기록은 그대로 남아요.',

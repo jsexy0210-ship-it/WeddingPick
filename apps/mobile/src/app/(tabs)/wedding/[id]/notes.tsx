@@ -1,5 +1,5 @@
 import type { CurrentUser, WeddingNote, WeddingNoteListResponse } from '@weddingpick/api-contract';
-import { TERMS } from '@weddingpick/domain';
+import { formatCount, TERMS } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -127,7 +127,7 @@ export default function WeddingNotesScreen() {
   const partnerInitial = (partner ?? TERMS.spouse).slice(0, 1);
   const total = page.notes.length;
   const heroTitle =
-    total === 0 ? S.emptyTitle : partner ? `${partner}님과 메모 ${total}개를 썼어요` : `메모 ${total}개를 썼어요`;
+    total === 0 ? S.emptyTitle : partner ? `${partner}님과 메모 ${formatCount(total)}개를 썼어요` : `메모 ${formatCount(total)}개를 썼어요`;
 
   function closeSheet() {
     setSheetOpen(false);

@@ -28,6 +28,7 @@
     "seed:demo": "tsx src/seed-demo.ts",
     "seed:samples": "tsx src/seed-samples.ts",
     "seed:sample-images": "tsx src/seed-sample-images.ts",
+    "seed:wedding-tabs": "tsx src/seed-wedding-tabs.ts",
     "analyze": "tsx src/analyze-file.ts",
     "marketing": "tsx src/marketing/cli.ts"
   },

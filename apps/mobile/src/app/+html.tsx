@@ -1,6 +1,14 @@
 import { ScrollViewStyleReset } from 'expo-router/html';
 import type { PropsWithChildren } from 'react';
 
+import {
+  APP_WEB_ORIGIN,
+  SHARE_DESCRIPTION,
+  SHARE_IMAGE,
+  SHARE_IMAGE_ALT,
+  SHARE_TITLE,
+} from '../features/social-meta';
+
 /*
  * 웹으로 내보낸 앱(그리고 관리자 콘솔)의 HTML 껍데기.
  *
@@ -15,6 +23,13 @@ import type { PropsWithChildren } from 'react';
  * 나머지 태그(charset · viewport · ScrollViewStyleReset)는 Expo Router의 기본
  * 껍데기에 있던 것을 그대로 옮긴 것이다. 이 파일을 두면 기본 껍데기를 쓰지 않으므로
  * **빠뜨리면 그대로 사라진다.** 지울 때는 무엇이 같이 사라지는지 보고 지운다.
+ *
+ * **공유 카드(OG) 태그가 2026-09-15까지 한 줄도 없었다.** 링크를 공유해도 카드가
+ * 뜨지 않았다는 뜻이다. 값은 `../features/social-meta`에서 온다 — 문구는
+ * `apps/web`과 같은 `spec/strings.ko.json`, 그림은 `apps/web`이 굽는 코랄 카드를
+ * 그대로 가리킨다. **이 껍데기는 관리자 콘솔도 함께 쓴다**(아래 admin 분리 참고) —
+ * 관리자 화면에도 같은 카드가 실리는데, 그 정리는 이 파일이 아니라
+ * `scripts/split-admin-dist.mjs`가 나눌 때의 몫으로 남겨 둔다.
  */
 
 /**
@@ -35,6 +50,21 @@ export default function Root({ children }: PropsWithChildren) {
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <title>{SHARE_TITLE}</title>
+        <meta name="description" content={SHARE_DESCRIPTION} />
+        <meta property="og:title" content={SHARE_TITLE} />
+        <meta property="og:description" content={SHARE_DESCRIPTION} />
+        <meta property="og:image" content={SHARE_IMAGE} />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content={SHARE_IMAGE_ALT} />
+        <meta property="og:url" content={APP_WEB_ORIGIN} />
+        <meta property="og:type" content="website" />
+        <meta property="og:locale" content="ko_KR" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={SHARE_TITLE} />
+        <meta name="twitter:description" content={SHARE_DESCRIPTION} />
+        <meta name="twitter:image" content={SHARE_IMAGE} />
         {/*
          * 미리 받기. 스타일시트 속 `@font-face`는 그 서체를 쓰는 글자가 나타나야 받기
          * 시작한다. **`crossOrigin`이 빠지면 두 번 받는다** — 폰트는 익명 CORS로 받게
