@@ -49,9 +49,8 @@ type Loaded = {
  * 버튼으로 통일한다」). 사진 2×2 타일을 쓰던 자리다 — 피그마 규격서에 타일이 없고,
  * 같은 선택이 온보딩과 MY에서 다르게 보이던 자리다.
  *
- * **`features/onboarding/style-grid.tsx`와 `assets/images/style/*.png` 4장은 이제
- * 아무도 쓰지 않는다.** 같이 지우라는 지시였는데 이 세션의 실행 환경이 파일 삭제를
- * 막아 손대지 못했다 — 지우는 것은 MASTER 몫으로 남긴다(PR 본문에 적었다).
+ * **`features/onboarding/style-grid.tsx`와 `assets/images/style/*.png` 4장은 지웠다**
+ * (2026-09-15 · MASTER). 사진 타일을 버리면서 아무도 쓰지 않게 된 파일들이다.
  *
  * «중요하게 보는 것» 순위 4행은 계약이 없어 두지 않는다.
  * 저장은 `completeSetup` — 예식일 · 지역은 읽어 둔 값을 그대로 돌려보내고(지우지 않는다),

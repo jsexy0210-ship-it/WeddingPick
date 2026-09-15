@@ -17,8 +17,8 @@ export { TextField, type TextFieldProps } from './text-field';
 /*
  * `Card`도 내보내지 않는다 — 부르는 화면이 0이다. 검색 · Pick · 홈 · 관리자가 전부
  * 자기 카드를 따로 그린다(관리자는 `app/admin/_ui`). 유일한 사용처였던
- * `vendor-card` · `pick-card`를 위에서 내리면서 완전히 고아가 됐다.
- * **파일 삭제는 MASTER 몫** — `packages/ui/src/card.tsx`.
+ * `vendor-card` · `pick-card`를 위에서 내리면서 완전히 고아가 됐고, **파일도 지웠다**
+ * (2026-09-15 · MASTER). 다시 필요하면 지운 커밋에서 꺼내 온다.
  */
 export { IconButton, type IconButtonProps } from './icon-button';
 export { SectionHeader, type SectionHeaderProps } from './section-header';
@@ -28,7 +28,7 @@ export { SegmentedTabs, type SegmentedTabsProps, type SegmentedTabItem } from '.
  * `VendorCard` · `PickCard`는 내보내지 않는다 — 2026-09-15 대표 지시 「안 쓰는 건 싹다 삭제해」.
  * 둘 다 화면에서 부르는 곳이 0이었고(검색 · Pick · 홈은 각자 피그마대로 다시 짰다),
  * 값이 피그마와 달라서(곡률 10 · 14 · 썸네일 72 정사각 · 사진 위 배치) 다음 사람이
- * 집어 쓰면 그 화면이 어긋난다. **파일 삭제는 이 세션에서 막혀 MASTER 몫으로 남겼다** —
+ * 집어 쓰면 그 화면이 어긋난다. **파일도 지웠다**(2026-09-15 · MASTER) —
  * `packages/ui/src/vendor-card.tsx` · `pick-card.tsx`.
  */
 export { RatingPicker, type RatingPickerProps } from './rating-picker';
