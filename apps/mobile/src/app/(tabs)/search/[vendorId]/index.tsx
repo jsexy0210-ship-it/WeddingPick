@@ -282,18 +282,6 @@ export default function VendorDetailScreen() {
     if (!ok) setToast('후보를 빼지 못했어요. 잠시 후 다시 시도해주세요.');
   }
 
-  /**
-   * 비교(SPEC §13.11). 비교 화면은 WP-CMP-002 하나고 진입에 따라 후보 초기값만
-   * 다르다 — 업체 상세에서는 **현재 업체를 A로 고정**하고 B·C는 같은 업종 후보 또는
-   * 웨딩픽 추천으로 채운다. 후보를 바꾸는 건 그 화면의 시트에서만 한다.
-   */
-  function addToCompare() {
-    router.push({
-      pathname: '/pick/compare',
-      params: { category: vendor!.category, fixed: vendor!.id, fixedName: vendor!.name },
-    });
-  }
-
   const paidPrice = vendor.prices.paidPrice;
   const isLimited = paidPrice.stage === 'limited';
   const isDetailed = paidPrice.stage === 'detailed';
@@ -957,47 +945,49 @@ export default function VendorDetailScreen() {
           지킨다. Primary는 Pick 하나뿐 — 화면당 Primary CTA 1개(CLAUDE.md).
         */}
         {/*
-          피그마 fixed CTA(2026-09-14 정본): 안쪽 16 · 위 선 · 사이 8 · 단추 56 · radius 16.
-          시안은 [♡ 56 정사각][상담 일정 잡기 Primary]인데 상담은 이용약관 제3조로 고지 후
-          구현 대기라 Primary 자리를 못 준다. 「Pick이 가장 중요한 행동, 비교는 보조」(CLAUDE.md)
-          대로 Primary는 Pick(하트 + 라벨), 정사각은 비교다 — 판단 필요로 PR에 적었다.
+          규격서 vendor-1.txt 고정 CTA: 안쪽 16 · 위 선 · 사이 8 · 단추 56 · radius 16.
+          [♡ 56 정사각 = Pick][상담 일정 잡기 Primary] — 2026-09-15 「고지가 먼저」 파기로 규격서 그대로다.
         */}
         <View style={[styles.footer, { borderTopColor: theme.border, backgroundColor: theme.background }]}>
           <View style={styles.actionRow}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="비교"
-              style={({ pressed }) => [
-                styles.compareBtn,
-                { borderColor: theme.border, backgroundColor: pressed ? theme.backgroundElement : theme.background },
-              ]}
-              onPress={addToCompare}>
-              <ProductSymbol name="chart" size={Layout.iconRow} color={theme.text} />
-            </Pressable>
+            {/*
+              규격서 vendor-1.txt 맨 아래(2026-09-15 「고지가 먼저」 파기 — 상담 예약을 만든다):
+                button 56×56  bg #FFFFFF · r16 · border 1     svg 20×20  ← Pick(하트 · 담기면 잉크 면 + 흰 하트)
+                button 334×56 "상담 일정 잡기" · 14/700 #FFFFFF · gap 8 · bg primary · r16   svg 16×16
+              비교 진입은 여기서 뺐다 — 규격서에 없다. 비교는 Pick 탭 · 홈 «비교하기»에서 간다(판단 필요 — PR 본문).
+            */}
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={picked ? `${vendor.name} Pick했어요` : `${vendor.name} Pick하기`}
-              accessibilityState={{ disabled: pickBusy }}
+              accessibilityState={{ disabled: pickBusy, selected: picked }}
               disabled={pickBusy}
               style={({ pressed }) => [
-                styles.pickBtn,
-                { backgroundColor: theme.tint },
-                pressed ? styles.pressed : null,
+                styles.compareBtn,
+                picked
+                  ? { backgroundColor: theme.text, borderColor: theme.text }
+                  : { borderColor: theme.border, backgroundColor: pressed ? theme.backgroundElement : theme.background },
                 pickBusy ? styles.busy : null,
               ]}
               onPress={() => void pick()}>
-              <Svg width={Layout.iconField} height={Layout.iconField} viewBox="0 0 24 24" fill="none">
+              <Svg width={Layout.iconRow} height={Layout.iconRow} viewBox="0 0 24 24" fill="none">
                 <Path
                   d={MARK_HEART_PATH}
                   fill={picked ? theme.onTint : 'none'}
-                  stroke={theme.onTint}
+                  stroke={picked ? theme.onTint : theme.text}
                   strokeWidth={2}
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
               </Svg>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="상담 일정 잡기"
+              style={({ pressed }) => [styles.pickBtn, { backgroundColor: theme.tint }, pressed ? styles.pressed : null]}
+              onPress={() => router.push(`/search/${vendor.id}/consult`)}>
+              <ProductSymbol name="calendar" size={Layout.iconField} color={theme.onTint} />
               <ThemedText type="f14" themeColor="onTint" style={styles.bold}>
-                {pickBusy ? 'Pick하는 중…' : picked ? 'Pick했어요' : 'Pick하기'}
+                상담 일정 잡기
               </ThemedText>
             </Pressable>
           </View>
