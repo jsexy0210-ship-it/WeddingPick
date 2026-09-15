@@ -5,18 +5,14 @@ import { Layout, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 
 import { CheckCircle } from './check-circle';
 import { UNDECIDED_LABEL, type Answers } from './flow';
-import { OptionChip } from './option-chip';
+import { OptionRow } from './option-row';
 
 /**
- * 지역(2/5). 시/도 칩 아홉 개 + «아직 정하지 않았어요», 시/도를 고르면 그 아래
- * 구·군 목록이 같은 화면에 열린다 — 시/도 → 구는 내부 선택이지 Step이 아니다.
+ * 지역 2/3 — 보기는 규격서 docs/figma-spec/onboarding.txt의 65 줄(`OptionRow`)이다. 피그마의 보기 세 개
+ * («서울 · 경기·인천 · 다른 지역»)는 시안용 가짜 값이고, **지역은 짧은 꼴 아홉**(`WEDDING_REGIONS` ·
+ * 용어 규칙)이라 아홉 + «아직 정하지 않았어요»를 같은 줄 모양으로 세운다.
  *
- * 구·군 행은 52 · 상하 14 · 글자 16 · 체크 22(v3.21 «구 선택 행 높이»). **시/도 칩도 구 행도
- * 단일 선택 라디오다(v3.23)** — 시/도 하나, 시/군/구 하나. 다른 것을 누르면 바뀌고, 고른 것을
- * 다시 눌러도 풀리지 않는다. 지역을 비우는 길은 «아직 정하지 않았어요» 하나다.
- *
- * 목록은 화면 스크롤 안에서 같이 늘어난다. 서울 25개 구가 길어도 여기에 스크롤을
- * 따로 두지 않는다(SPEC §13.5.5).
+ * 구 세부(區) 목록은 규격서에 없는 자리다 — 기존 정본(행 52 · 체크 22)을 그대로 둔다(CLAUDE.md 3번).
  */
 export function RegionPicker({
   value,
@@ -42,11 +38,11 @@ export function RegionPicker({
 
   return (
     <View style={styles.section}>
-      <View style={styles.chips}>
+      <View style={styles.rowsGap}>
         {WEDDING_REGIONS.map((item) => (
-          <OptionChip key={item} label={item} selected={region === item} onPress={() => pickRegion(item)} />
+          <OptionRow key={item} label={item} selected={region === item} onPress={() => pickRegion(item)} />
         ))}
-        <OptionChip
+        <OptionRow
           label={UNDECIDED_LABEL}
           selected={undecided}
           onPress={() => onChange({ region: null, district: null })}
@@ -84,18 +80,20 @@ export function RegionPicker({
   );
 }
 
-/* 시안 고정값 — 행 52 · 상하 14 · 체크 22. */
+/* 구 목록 — 기존 정본 고정값: 행 52 · 상하 14 · 체크 22. */
 const ROW_MIN_HEIGHT = 52;
 const ROW_PADDING_Y = 14;
 const CHECK = 22;
 
 const styles = StyleSheet.create({
+  /* 보기 «mar 40 0 0 0» — 질문 아래 40. 좌우는 화면 24. */
   section: {
+    marginTop: Spacing.five + Spacing.two,
     paddingHorizontal: Layout.gutter,
-    paddingBottom: Layout.gutter,
     gap: Layout.rowPaddingY,
   },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  /* 줄 사이 «mar 0 0 12 0». */
+  rowsGap: { gap: Layout.inlineGap },
   rows: { gap: Spacing.half },
   row: {
     flexDirection: 'row',

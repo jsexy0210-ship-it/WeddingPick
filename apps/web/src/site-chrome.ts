@@ -11,6 +11,7 @@ import { POLICY_DOCUMENTS, TERMS } from '@weddingpick/domain';
 import { escapeHtml } from './page';
 import { FOOTER_BOTTOM, GNB_MENU, SITE } from './site-content';
 import { SITE_STYLES } from './site-styles';
+import { fontPreloadTag } from './fonts';
 
 /**
  * 웨딩픽 심볼 — **하트 윤곽선 안에 체크.** 확정된 마크다.
@@ -166,6 +167,7 @@ export function siteDocument(input: {
 <title>${escapeHtml(input.title)}</title>
 <meta name="description" content="${escapeHtml(input.description)}">
 ${socialMeta(input.path, input.title, input.description)}
+${fontPreloadTag()}
 <style>${SITE_STYLES}</style>
 </head>
 <body>

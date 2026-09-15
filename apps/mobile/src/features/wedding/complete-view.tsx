@@ -1,5 +1,5 @@
 import type { DecisionListResponse, ExpenseSummaryResponse, WeddingDetail } from '@weddingpick/api-contract';
-import { manwon } from '@weddingpick/domain';
+import { formatCount, manwon } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -112,7 +112,7 @@ export function WeddingCompleteView({ weddingId }: { weddingId: string }) {
         ) : unverified.length > 0 ? (
           <ListRow
             left={<CheckBox checked={false} />}
-            title={`Pick 인증 ${unverified.length}건 남았어요`}
+            title={`Pick 인증 ${formatCount(unverified.length)}건 남았어요`}
             sub={unverified.map((row) => row.label).join(' · ')}
             subLines={1}
             right={<Badge label="인증" tone="now" />}
@@ -123,7 +123,7 @@ export function WeddingCompleteView({ weddingId }: { weddingId: string }) {
             left={<CheckBox checked />}
             title="Pick 인증을 마쳤어요"
             titleColor="textDisabled"
-            sub={`${verifiedCount}건 모두 실 제보가 됐어요`}
+            sub={`${formatCount(verifiedCount)}건 모두 실 제보가 됐어요`}
             subLines={1}
           />
         )}
@@ -131,7 +131,7 @@ export function WeddingCompleteView({ weddingId }: { weddingId: string }) {
           left={<CheckBox checked={paid.length > 0} />}
           title="지출 정리"
           titleColor={paid.length > 0 ? 'textDisabled' : 'text'}
-          sub={paid.length > 0 ? `${paid.length}건 · ${manwon(expenses.paidTotal)}` : '낸 금액을 넣어두면 여기 모여요'}
+          sub={paid.length > 0 ? `${formatCount(paid.length)}건 · ${manwon(expenses.paidTotal)}` : '낸 금액을 넣어두면 여기 모여요'}
           subLines={1}
           onPress={() => router.push(`/wedding/${weddingId}/expenses` as never)}
         />

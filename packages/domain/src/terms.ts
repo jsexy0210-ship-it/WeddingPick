@@ -44,8 +44,11 @@ export const TERMS = {
   myReports: '내 제보내역',
   priceReport: '가격 제보',
   directInput: '직접입력',
-  /** 커플 공동 공간. */
-  ourWedding: '웨딩일정',
+  /**
+   * 커플 공동 공간. 라우트는 `/wedding` 그대로다 — 이 자리는 «우리웨딩 →
+   * 웨딩일정 → 웨딩노트»로 보이는 이름만 바뀌었다(2026-09-14 대표 확정).
+   */
+  ourWedding: '웨딩노트',
   spouse: '배우자',
   /** 프로모션. v3.3이 `현재 혜택·이벤트`를 사용자 화면에서 이 말로 바꿨다. */
   benefits: '받을 수 있는 혜택',
@@ -78,22 +81,3 @@ export const MANY_CONFIRMED = '많이 확인된 곳';
 /** 검색 홈 섹션 제목(v3.17). 홈의 «많이 확인된 곳»과 다른 자리다. */
 export const MOST_VIEWED = '많이 본 곳';
 
-/**
- * 금액 옆에 늘 함께 적는 줄. v3.1 §11.
- *
- *   `실 제보 12건 · 최근 12개월 · 기준금액 168만원`
- *
- * 숫자만 떼어놓으면 그것이 어디서 왔는지 모르는 채로 읽히고, 그때부터 그 숫자는
- * 우리가 정한 값처럼 보인다.
- */
-export function dataCaption(input: {
-  count: number;
-  period?: string;
-  baseAmount?: string;
-}): string {
-  const parts = [`${TERMS.verifiedData} ${input.count}건`, input.period ?? TERMS.period];
-
-  if (input.baseAmount) parts.push(`${TERMS.baseAmount} ${input.baseAmount}`);
-
-  return parts.join(' · ');
-}

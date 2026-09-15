@@ -1,3 +1,5 @@
+import { FONT_FACE, FONT_STACK } from './fonts';
+
 /**
  * 디자인 시안(웨딩픽 웹.dc.html)과 동기화된 스타일.
  * 값은 시안 renderVals()에서 추출했다.
@@ -7,6 +9,7 @@
  * apps/api/src/test/typography.test.ts가 두 곳이 갈라지지 않았는지 지킨다.
  */
 export const STYLES = `
+${FONT_FACE}
 :root {
   color-scheme: light dark;
 
@@ -74,7 +77,7 @@ export const STYLES = `
     --border: #2c3134;
     --border-card: #2c3134;
     --coral: #ff8478;
-    --coral-dark: #ff6f61;
+    --coral-dark: #ffa79e;
   }
 }
 
@@ -87,8 +90,8 @@ body {
   padding: 0;
   background: var(--bg);
   color: var(--text-p);
-  font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Pretendard',
-    'Noto Sans KR', 'Malgun Gothic', system-ui, sans-serif;
+  /* Pretendard가 맨 앞이다. 값은 tokens에서 온다(fonts.ts). */
+  font-family: ${FONT_STACK};
   font-size: var(--t16);
   line-height: 1.6;
   word-break: keep-all;
@@ -254,7 +257,7 @@ button:focus-visible {
   padding: 0 18px;
   border-radius: 6px;
   background: var(--coral);
-  color: #fff;
+  color: #ffffff;
   font-size: var(--t16);
   font-weight: 700;
   text-decoration: none;
@@ -584,7 +587,7 @@ button:focus-visible {
   height: 32px;
   border-radius: 999px;
   background: var(--coral);
-  color: #fff;
+  color: #ffffff;
   font-size: var(--t15);
   font-weight: 700;
 }

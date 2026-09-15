@@ -26,7 +26,11 @@ import {
   type VendorCategory,
   widestDisclosable,
 } from '@weddingpick/domain';
-import { vendorSearchQuerySchema, vendorSortSchema } from '@weddingpick/api-contract';
+import {
+  vendorCompareQuerySchema,
+  vendorSearchQuerySchema,
+  vendorSortSchema,
+} from '@weddingpick/api-contract';
 import type { FastifyInstance } from 'fastify';
 import type { Pool } from 'pg';
 import { z } from 'zod';
@@ -43,10 +47,6 @@ import { vendorSourceNote } from '../vendor-view';
  */
 const searchQuerySchema = vendorSearchQuerySchema;
 
-const compareQuerySchema = z.object({
-  /** 쉼표로 이은 업체 id. */
-  ids: z.string().min(1).max(200),
-});
 
 type VendorRow = {
   id: string;
@@ -384,7 +384,11 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
    */
   app.get('/v1/vendors/regions', auth, async () => {
     const { rows } = await context.pool.query<{ name: string; vendor_count: string }>(
-      `SELECT split_part(region, ' ', 1) AS name, count(*) AS vendor_count
+      // regexp_replace의 꼬리 패턴은 packages/domain/src/wedding-region.ts의
+      // REGION_SUFFIX_PATTERN과 같은 값이다 — 한쪽만 고치면 「경기」와 「경기도」가
+      // 필터에 나란히 뜬다(2026-09-10 사용자 보고).
+      `SELECT regexp_replace(split_part(region, ' ', 1), '(특별자치시|특별자치도|특별시|광역시|도)$', '') AS name,
+              count(*) AS vendor_count
        FROM structured.vendors
        WHERE region <> ''
          -- 폐업으로 넘긴 업체는 세지 않는다. 세면 눌러도 아무것도 안 나오는 필터가 생긴다.
@@ -406,7 +410,7 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
    * "비교의 어려움"을 우리가 만든 표가 되레 가리게 된다.
    */
   app.get('/v1/vendors/compare', auth, async (request) => {
-    const { ids } = compareQuerySchema.parse(request.query);
+    const { ids } = vendorCompareQuerySchema.parse(request.query);
 
     // 같은 업체를 두 번 골라 "두 곳"을 만들 수 없게 한다.
     const unique = [

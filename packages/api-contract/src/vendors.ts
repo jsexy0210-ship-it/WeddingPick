@@ -230,7 +230,27 @@ export const vendorDetailSchema = vendorSummarySchema
   });
 
 /**
- * A-17 업체 비교. 최대 세 곳.
+ * 비교 질의. **서버가 따로 베끼지 않는다.**
+ *
+ * 바로 아래 응답 스키마와 한 쌍이다. 전에는 이것만 라우트 파일에 `max(200)`으로
+ * 박혀 있었고, 한도를 셋에서 다섯으로 올리자 **여섯 곳 요청(221자)이 길이에서 먼저
+ * 튕겼다.** 그러면 「한 번에 5곳까지 견줄 수 있습니다」가 한 번도 안 나가고,
+ * 사용자는 몇 곳까지 되는지 모른 채 「요청 형식이 올바르지 않습니다」만 본다.
+ *
+ * 길이는 **한도보다 한 곳 더 들어갈 만큼**이다. 딱 맞게 끊으면 한 곳 넘긴 요청이
+ * 안내를 못 받고, 넉넉히 열어두면 상한이 상한 노릇을 못 한다.
+ */
+const UUID_LENGTH = 36;
+
+export const COMPARE_IDS_MAX_LENGTH = (UUID_LENGTH + 1) * (MAX_COMPARED_VENDORS + 1);
+
+export const vendorCompareQuerySchema = z.object({
+  /** 쉼표로 이은 업체 id. */
+  ids: z.string().min(1).max(COMPARE_IDS_MAX_LENGTH),
+});
+
+/**
+ * A-17 업체 비교.
  *
  * 단서(caveats)는 결과와 한 객체로 나간다. 떼어놓을 수 있게 두면 화면이 표만 그리고
  * "금액만으로는 비교할 수 없다"는 말을 빠뜨릴 수 있다 — 사업계획서 2번이 꼽은

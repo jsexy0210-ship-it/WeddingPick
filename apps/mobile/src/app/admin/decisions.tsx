@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Colors, FontSize } from '@weddingpick/ui';
+import { formatCount } from '@weddingpick/domain';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { formatDateTimeDot } from '@/features/common/format-date';
 
@@ -90,7 +91,7 @@ export default function DecisionsScreen() {
           <View style={styles.card}>
             <View style={styles.cardHead}>
               <Text style={styles.cardTitle}>흐름별 집계</Text>
-              {totalFailed > 0 && <Text style={styles.failBadge}>실패 {totalFailed}건</Text>}
+              {totalFailed > 0 && <Text style={styles.failBadge}>실패 {formatCount(totalFailed)}건</Text>}
             </View>
 
             <View style={styles.tableHead}>
@@ -123,7 +124,7 @@ export default function DecisionsScreen() {
           <View style={styles.card}>
             <View style={styles.cardHead}>
               <Text style={styles.cardTitle}>아직 안 끝난 결정</Text>
-              {open.length > 0 && <Text style={styles.openBadge}>{open.length}건</Text>}
+              {open.length > 0 && <Text style={styles.openBadge}>{formatCount(open.length)}건</Text>}
             </View>
             <Text style={styles.cardHint}>
               규칙이 판단은 했는데 실행이 끝나지 않은 것들입니다. 오래 남아 있으면 막힌 자리예요.

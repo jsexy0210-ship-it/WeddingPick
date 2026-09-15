@@ -13,8 +13,9 @@ import { useTheme } from './use-theme';
  *   brand  Pick 완료 · 후보 Pick 중           #FFE8E4 / coral   (color-mix(pick 12~14%, #fff)의 고정값 · SPEC §14)
  *   none   준비 전 · 기본                     #F2F3F6 / #4D5159
  *   info   정보 · 링크성 배지(관리자)          #EBF7FA / #0077B2
+ *   onImage 사진 위에 얹는 표시                rgba(0,0,0,.5) / #FFFFFF
  */
-export type BadgeKind = 'ok' | 'wait' | 'no' | 'brand' | 'none' | 'info';
+export type BadgeKind = 'ok' | 'wait' | 'no' | 'brand' | 'none' | 'info' | 'onImage';
 
 export type BadgeProps = {
   kind?: BadgeKind;
@@ -51,6 +52,24 @@ const BADGE_LOOK: Record<BadgeKind, (theme: Theme) => { background: string; text
   brand: (theme) => ({ background: theme.tintSubtle, text: theme.tint }),
   none: (theme) => ({ background: theme.backgroundSelected, text: theme.textSecondary }),
   info: (theme) => ({ background: theme.accentBackground, text: theme.accentText }),
+  /*
+   * 사진 위 — 업체 카드의 대표 사진에 얹는 「인기」 「신규」 자리다(2026-09-14 대표 지시).
+   *
+   * **여기만 흰 글자다.** 이 저장소가 여러 곳에 적어 둔 「흰 글자를 쓰지 않는다」는
+   * 키 컬러(#FF6F61) 면 위의 이야기다 — 거기서는 2.51:1이라 못 읽는다. 검은 반투명은
+   * 다른 자리다: `pillOnImage`가 사진을 어둡게 깔아주고 그 위에서 흰 글자가 가장 밝다.
+   * 가장 나쁜 경우(새하얀 사진)에도 3.95:1이고, 보통의 사진에서는 훨씬 높다.
+   *
+   * `brand`를 이 자리에 쓰면 안 된다 — 옅은 면(#FFE8E4)에 키 컬러 글자라 2.27:1이고,
+   * 사진의 밝기와 무관하게 안 읽힌다. 그렇다고 `brand` 자체를 고치지도 않는다:
+   * 흰 바탕에서 쓰는 자리는 지금 조합이 옳다.
+   *
+   * 배경은 `pillOnImage`(overlay.pillOnImage · rgba(0,0,0,.5))다. `scrim`은 라이트 .45 ·
+   * 다크 .72로 갈려 사진 위에서 무게가 달라진다(2026-09-11 캡처로 드러난 자리다).
+   * 글자는 `onInk` — 어두운 면 위의 글자색이고 두 모드 모두 흰색이다. `onTint`는
+   * 플럼(#FFFFFF)이라 여기 쓰면 검은 면에 검은 글자가 된다.
+   */
+  onImage: (theme) => ({ background: theme.pillOnImage, text: theme.onInk }),
 };
 
 const styles = StyleSheet.create({

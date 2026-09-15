@@ -1,4 +1,5 @@
 import { manwon, rangeLabel, type PriceDisclosure } from './disclosure';
+import { formatCount } from './format-number';
 import { COLLECTING_LABEL, NOT_ENOUGH_DATA, TERMS } from './terms';
 
 /**
@@ -60,7 +61,7 @@ export function priceLine(paidPrice: PriceDisclosure, guidePrice: GuidePrice | n
   return {
     text: COLLECTING_LABEL,
     dim: true,
-    caption: `${NOT_ENOUGH_DATA} · ${paidPrice.count}건`,
+    caption: `${NOT_ENOUGH_DATA} · ${formatCount(paidPrice.count)}건`,
     guide: false,
   };
 }

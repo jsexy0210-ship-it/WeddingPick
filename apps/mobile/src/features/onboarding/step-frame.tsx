@@ -1,44 +1,40 @@
 import { useEffect, useMemo, type ReactNode } from 'react';
-import { Animated, Easing, ScrollView, StyleSheet, View } from 'react-native';
+import { Animated, Easing, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
-  ActionButton,
   Layout,
   MaxContentWidth,
   Motion,
+  Radius,
+  SeedIcon,
   Spacing,
   ThemedText,
   ThemedView,
   useTheme,
 } from '@weddingpick/ui';
 
-import { AnsweredRow } from './answered-row';
-import type { AnsweredRowModel, QuestionStep } from './flow';
 import { OnboardingProgress } from './progress';
 
 /**
- * 초기 설정 한 화면의 틀(WP-APP-020 · 022). 시안 20-onboarding-v2 `phone` —
+ * 온보딩 질문 한 장의 틀 — 규격서 docs/figma-spec/onboarding.txt(2026-09-15 대표 지시 「규격서의 수를 그대로」).
  *
- *   nav 56           진행바 + «N/5»
- *   scroll (flex 1)  질문 블록 · … · 답 줄(margin-top:auto) · 여백 16
- *   dock 92          [이전] [다음]
+ *   div 430×932  pad 32 24 32 24 · bg #FFFFFF
+ *     (머리 줄 + 막대 ← OnboardingProgress)
+ *     (질문 ← QuestionHead · 보기 ← children «mar 40 0 0 0»)
+ *     button 382×56  "다음" · 14/700 #FFFFFF · lh 20 · flex · gap 8 · center · mar 40 0 0 0 · bg #1A1C20 · r16
+ *       svg 16×16  ChevronRight
  *
- * **스크롤 컨테이너는 이 ScrollView 하나다**(SPEC §13.5.5 이중 스크롤 금지). 질문
- * 안의 목록·격자는 전부 이 안에서 같이 늘어난다 — 준비 현황(3/5)이 뷰포트를 넘치면
- * 화면 전체가 스크롤한다. 답 줄은 `marginTop: 'auto'`로 바닥에 붙어 2·3·4 스텝의
- * 하단 정렬이 같다.
+ * «이전»은 머리 줄 왼쪽 글자 단추다(피그마 `step ? "이전" : "나중에"`). 하단 dock은 규격서에 없어 뺐다 —
+ * 「다음」은 보기 아래 40에 붙어 흐른다.
  *
- * dock은 안전 영역 아래 여백을 더한다 — spec/tokens.json safeArea.formula.dock
- * «92 + max(safeBottom, 0)».
+ * **답 줄(«라벨 · 값 · 바꾸기»)은 없다** — 2026-09-15 대표 지시 「온보딩에 바꾸기 정보 삭제해.
+ * 버튼 CTA는 하단에 유지한다」로 걷어냈다. 규격서에도 없던 자리다.
  */
 export function StepFrame({
-  progress,
   label,
   stepKey,
   children,
-  answered = [],
-  onEdit,
   prevLabel,
   onPrev,
   nextLabel,
@@ -46,14 +42,12 @@ export function StepFrame({
   nextDisabled = false,
   error,
 }: {
-  progress: number;
+  /** `stepProgress().label` — «1/3» 꼴. */
   label: string;
   /** 바뀌면 질문 블록이 «요소 상승»으로 나타난다. */
   stepKey: string;
   children: ReactNode;
-  answered?: readonly AnsweredRowModel[];
-  onEdit?: (step: QuestionStep) => void;
-  /** 없으면 «이전» 버튼이 없다 — 첫 질문과 완료 화면. */
+  /** 없으면 «이전»이 없다 — 첫 질문과 완료 화면. */
   prevLabel?: string;
   onPrev?: () => void;
   nextLabel: string;
@@ -67,69 +61,44 @@ export function StepFrame({
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
-        <OnboardingProgress progress={progress} label={label} />
+        <OnboardingProgress label={label} leftLabel={prevLabel} onLeft={onPrev} />
 
         <ScrollView
           style={styles.scroll}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, { paddingBottom: Spacing.five + Math.max(insets.bottom, 0) }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           <Rise key={stepKey}>{children}</Rise>
 
-          {answered.length > 0 ? (
-            <View style={styles.answered}>
-              {answered.map((row) => (
-                <AnsweredRow
-                  key={row.step}
-                  label={row.label}
-                  value={row.value}
-                  onEdit={() => onEdit?.(row.step)}
-                />
-              ))}
-            </View>
-          ) : null}
-
-          <View style={styles.tail} />
-        </ScrollView>
-
-        <ThemedView
-          style={[
-            styles.dock,
-            { borderTopColor: theme.border, paddingBottom: DOCK_BOTTOM + Math.max(insets.bottom, 0) },
-          ]}>
-          {error ? (
-            <ThemedText type="t7" themeColor="negative" style={styles.error}>
-              {error}
-            </ThemedText>
-          ) : null}
-
-          <View style={styles.buttons}>
-            {prevLabel && onPrev ? (
-              <View style={styles.prev}>
-                <ActionButton size="xlarge" label={prevLabel} onPress={onPrev} />
-              </View>
+          <View style={styles.ctaWrap}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ disabled: nextDisabled }}
+              disabled={nextDisabled}
+              onPress={onNext}
+              style={({ pressed }) => [
+                styles.next,
+                { backgroundColor: theme.text },
+                nextDisabled && styles.disabled,
+                pressed && styles.pressed,
+              ]}>
+              <ThemedText type="f14" themeColor="onTint" style={styles.nextLabel}>
+                {nextLabel}
+              </ThemedText>
+              <SeedIcon name="chevronRightRegular" size={Layout.iconField} color={theme.onTint} />
+            </Pressable>
+            {error ? (
+              <ThemedText type="f12" themeColor="negative" style={styles.error}>
+                {error}
+              </ThemedText>
             ) : null}
-            <View style={styles.next}>
-              <ActionButton
-                variant="primary"
-                size="xlarge"
-                label={nextLabel}
-                disabled={nextDisabled}
-                onPress={onNext}
-              />
-            </View>
           </View>
-        </ThemedView>
+        </ScrollView>
       </SafeAreaView>
     </ThemedView>
   );
 }
 
-/**
- * 질문 블록이 제자리에서 살짝 올라오며 나타난다 — 토큰 «요소 상승»(translateY 10 → 0 ·
- * opacity 0 → 1 · 420ms). 시안의 wpDrop(위에서 −14 내려옴)은 화면이 위에서 떨어지는
- * 것처럼 보여 사용자 요청으로 바꿨다(2026-09-08).
- */
 function Rise({ children }: { children: ReactNode }) {
   const progress = useMemo(() => new Animated.Value(0), []);
 
@@ -155,33 +124,27 @@ function Rise({ children }: { children: ReactNode }) {
 
 /** spec/tokens.json motion.sheetEnter easing — Motion.enter는 문자열이라 여기 숫자로 둔다. */
 const ENTER_BEZIER = [0.16, 1, 0.3, 1] as const;
-/** spec/tokens.json safeArea.formula.sheetBottomPadding의 고정항 — dock도 같은 28이다. */
-const DOCK_BOTTOM = 28;
 
 const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
   safeArea: { flex: 1, maxWidth: MaxContentWidth, width: '100%' },
   scroll: { flex: 1 },
-  /* 내용이 짧아도 답 줄이 바닥에 붙도록 늘린다. */
+  /* 화면 «pad 32 24 32 24»의 아래 32는 위에서 insets와 합친다. */
   content: { flexGrow: 1 },
-  /* 시안 answeredWrap — margin auto 24 0 · 상하 6 · 줄 사이 2. */
-  answered: {
-    marginTop: 'auto',
-    marginHorizontal: Layout.gutter,
-    paddingVertical: Spacing.two - Spacing.half,
-    gap: Spacing.half,
-  },
-  tail: { height: Spacing.three },
-  /* 시안 dock 92 = 상 12 + CTA + 하 28. inset 0 1px 0 #EAEBEE는 위 1px 선. */
-  dock: {
-    borderTopWidth: 1,
-    paddingHorizontal: Layout.gutter,
-    paddingTop: Layout.rowPaddingY,
+  /* «mar 40 0 0 0» — 보기 아래 40. 좌우는 화면 24. */
+  ctaWrap: { marginTop: Spacing.five + Spacing.two, paddingHorizontal: Layout.gutter, gap: Spacing.two },
+  /* «382×56 · gap 8 · r16 · bg #1A1C20». */
+  next: {
+    height: Layout.ctaSheet,
+    borderRadius: Radius.cardLarge,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: Spacing.two,
   },
+  /* «14/700». */
+  nextLabel: { fontWeight: 700 },
+  disabled: { opacity: 0.4 },
+  pressed: { opacity: 0.8 },
   error: { textAlign: 'center' },
-  buttons: { flexDirection: 'row', gap: Spacing.two },
-  prev: { flex: 1 },
-  /* 시안 ctaStyle flex:1.4 — «다음»이 «이전»보다 넓다. */
-  next: { flex: 1.4 },
 });

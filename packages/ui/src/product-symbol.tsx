@@ -8,13 +8,13 @@ import { Colors } from './theme';
  * 한때 `pickMark`가 여기 사본으로 있었는데 획 두께가 1.8로 확정본(1.9)과 달라
  * 탭 바만 다른 마크를 쓰고 있었다.
  */
-export type ProductSymbolName = 'house' | 'magnifier' | 'twoPeople' | 'calendar' | 'person' | 'hall' | 'sdm' | 'snap' | 'planner' | 'warning' | 'bell' | 'gear' | 'more' | 'chevronRight' | 'chevronLeft' | 'close' | 'check';
+export type ProductSymbolName = 'house' | 'magnifier' | 'twoPeople' | 'calendar' | 'person' | 'hall' | 'sdm' | 'snap' | 'planner' | 'warning' | 'bell' | 'gear' | 'more' | 'chevronRight' | 'chevronLeft' | 'chevronDown' | 'arrowLeft' | 'pin' | 'link' | 'chart' | 'checkCircle' | 'edit' | 'trash' | 'mic' | 'file' | 'lock' | 'info' | 'headset' | 'signout' | 'gift' | 'clock' | 'close' | 'check';
 
 /**
  * 획 두께. 헤더·탭 아이콘(24)은 1.8, chevron(18)은 2, 닫기(14)는 2.4 — 05-root ·
  * 08c 핸드오프 값 그대로다. 작은 아이콘일수록 굵어야 같은 무게로 보인다.
  */
-const STROKE: Partial<Record<ProductSymbolName, number>> = { chevronRight: 2, chevronLeft: 2, close: 2.4, check: 3.6 };
+const STROKE: Partial<Record<ProductSymbolName, number>> = { chevronRight: 2, chevronLeft: 2, chevronDown: 2, arrowLeft: 2, close: 2.4, check: 3.6 };
 
 export function ProductSymbol({ name, size = 24, color = Colors.light.text }: { name: ProductSymbolName; size?: number; color?: ColorValue }) {
   const common = { stroke: color, strokeWidth: STROKE[name] ?? 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, fill: 'none' };
@@ -40,6 +40,29 @@ export function ProductSymbol({ name, size = 24, color = Colors.light.text }: { 
       {/* 행 끝 chevron(18 · #ADB1BA) · 뒤로가기(24) · 칩 삭제 X(14). */}
       {name === 'chevronRight' && <Path {...common} d="m9 6 6 6-6 6" />}
       {name === 'chevronLeft' && <Path {...common} d="M14.5 5 8 12l6.5 7" />}
+      {/* 아래 꺾쇠 — chevronRight를 90° 돌린 좌표. 검색 필터 칩의 ▾(피그마 `Search.tsx` lucide ChevronDown). */}
+      {name === 'chevronDown' && <Path {...common} d="m6 9 6 6 6-6" />}
+      {/* 왼쪽 화살표 ← — 피그마(2026-09-14 정본)의 뒤로 가기(`Search.tsx` · `VendorFlows.tsx` · `FlowScreens.tsx` lucide ArrowLeft). 꺾쇠가 아니라 화살이다. */}
+      {name === 'arrowLeft' && <Path {...common} d="M19 12H5M12 19l-7-7 7-7" />}
+      {/* Pick 헤더의 «가격 제보» 앞 고리 · 비교 배너의 막대 · 결정한 카드 위 체크 원 — 피그마 `Pick.tsx` lucide Link2 · BarChart2 · CheckCircle2 자리. */}
+      {name === 'link' && <><Path {...common} d="M9 17H7A5 5 0 0 1 7 7h2" /><Path {...common} d="M15 7h2a5 5 0 1 1 0 10h-2" /><Path {...common} d="M8 12h8" /></>}
+      {name === 'chart' && <Path {...common} d="M18 20V10M12 20V4M6 20v-6" />}
+      {name === 'checkCircle' && <><Circle {...common} cx="12" cy="12" r="9.5" /><Path {...common} d="m8.5 12 2.4 2.4L15.5 9.6" /></>}
+      {/* 웨딩노트 일정 행의 수정 연필 · 삭제 휴지통, 상담기록 빈 상태의 마이크 — 피그마 `OurWedding.tsx` SEED IconEditRegular · IconTrashRegular · IconMicRegular 자리. */}
+      {name === 'edit' && <><Path {...common} d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17v3z" /><Path {...common} d="m13.5 6.5 3 3" /></>}
+      {name === 'trash' && <><Path {...common} d="M4 7h16M10 11v6M14 11v6" /><Path {...common} d="M6 7l1 13h10l1-13M9 7V4h6v3" /></>}
+      {name === 'mic' && <><Rect {...common} x="9" y="3" width="6" height="11" rx="3" /><Path {...common} d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M9 21h6" /></>}
+      {/* MY 메뉴 행의 아이콘 — 피그마 `My.tsx` SEED IconFile · IconLock · IconInfo · IconHelpcenter · IconSignout · (혜택) 자리. */}
+      {name === 'file' && <><Path {...common} d="M7 3h7l5 5v13H7z" /><Path {...common} d="M14 3v5h5M10 13h5M10 17h5" /></>}
+      {name === 'lock' && <><Rect {...common} x="5" y="10.5" width="14" height="10" rx="2" /><Path {...common} d="M8 10.5V7.5a4 4 0 0 1 8 0v3M12 14.5v2.5" /></>}
+      {name === 'info' && <><Circle {...common} cx="12" cy="12" r="9" /><Path {...common} d="M12 11v5.5M12 7.8v.2" /></>}
+      {name === 'headset' && <><Path {...common} d="M4.5 14v-2.5a7.5 7.5 0 0 1 15 0V14" /><Rect {...common} x="3.5" y="13" width="4" height="6" rx="1.5" /><Rect {...common} x="16.5" y="13" width="4" height="6" rx="1.5" /><Path {...common} d="M18.5 19a3 3 0 0 1-3 3H12" /></>}
+      {name === 'signout' && <><Path {...common} d="M10 4H5.5A1.5 1.5 0 0 0 4 5.5v13A1.5 1.5 0 0 0 5.5 20H10" /><Path {...common} d="M15 8l4.5 4-4.5 4M19.5 12H9" /></>}
+      {/* 홈 준비 현황의 «후보 저장됨» 시계 — 피그마 `Home.tsx` SEED IconClockRegular 자리. */}
+      {name === 'clock' && <><Circle {...common} cx="12" cy="12" r="9" /><Path {...common} d="M12 7v5l3.2 2" /></>}
+      {name === 'gift' &&<><Rect {...common} x="3.5" y="9" width="17" height="4" rx="1" /><Path {...common} d="M5 13v7h14v-7M12 9v11M12 9c-2-4-6-4-6-1.5S10 9 12 9c2-4 6-4 6-1.5S14 9 12 9" /></>}
+      {/* 위치 핀 — 검색 결과 카드의 지역 앞(피그마 `Search.tsx` lucide MapPin). */}
+      {name === 'pin' && <><Path {...common} d="M12 21.4s-6.4-5.6-6.4-10.6a6.4 6.4 0 0 1 12.8 0c0 5-6.4 10.6-6.4 10.6z" /><Circle {...common} cx="12" cy="10.8" r="2.4" /></>}
       {name === 'close' && <Path {...common} d="M6 6l12 12M18 6 6 18" />}
       {/* 완료 체크(11 · 획 3.6) — 혜택 안내 시트 조건 행. 시안 path 그대로. */}
       {name === 'check' && <Path {...common} d="m5 12.5 4.5 4.5L19 7.5" />}

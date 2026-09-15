@@ -19,6 +19,58 @@ describe('비용 추정', () => {
     ).toBe(5);
   });
 
+  it('음성은 글자보다 비싸게 센다', () => {
+    /*
+     * gemini-2.5-flash-lite: 글자 $0.10/1M · 음성 $0.30/1M — 세 배다.
+     *
+     * 같은 100만 토큰이라도 음성으로 들어온 것이 더 비싸다. 이 차이를 안 세면
+     * 상담기록 정리 비용이 실제의 3분의 1로 잡힌다.
+     */
+    expect(
+      estimateCostUsd({ model: 'gemini-2.5-flash-lite', inputTokens: 1_000_000, outputTokens: 0 })
+    ).toBe(0.1);
+    expect(
+      estimateCostUsd({
+        model: 'gemini-2.5-flash-lite',
+        inputTokens: 0,
+        outputTokens: 0,
+        audioTokens: 1_000_000,
+      })
+    ).toBe(0.3);
+  });
+
+  it('음성 토큰을 입력 토큰에 섞어 넣지 않는다', () => {
+    /*
+     * 합쳐 넘기면 비싼 음성이 싼 글자 단가로 계산된다. 따로 준 것과 합쳐 준 것의
+     * 값이 달라야 한다 — 같다면 음성 단가가 안 먹고 있다는 뜻이다.
+     */
+    const 따로 = estimateCostUsd({
+      model: 'gemini-2.5-flash-lite',
+      inputTokens: 0,
+      outputTokens: 0,
+      audioTokens: 1_000_000,
+    });
+    const 합쳐서 = estimateCostUsd({
+      model: 'gemini-2.5-flash-lite',
+      inputTokens: 1_000_000,
+      outputTokens: 0,
+    });
+
+    expect(따로).not.toBe(합쳐서);
+  });
+
+  it('음성 단가가 따로 없는 모델은 글자와 같은 값으로 센다', () => {
+    /* 모르는 값을 0으로 두지 않는다 — 0은 「공짜였다」로 읽힌다. */
+    expect(
+      estimateCostUsd({
+        model: 'claude-haiku-4-5',
+        inputTokens: 0,
+        outputTokens: 0,
+        audioTokens: 1_000_000,
+      })
+    ).toBe(1);
+  });
+
   it('모르는 모델은 0이 아니라 null이다', () => {
     /*
      * 0으로 두면 "공짜였다"로 읽히고 합계에 조용히 섞인다. 그러면 예산이 실제보다

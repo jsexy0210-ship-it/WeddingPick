@@ -7,6 +7,8 @@
  */
 import { useEffect, useState } from 'react';
 
+import { formatCount } from '@weddingpick/domain';
+
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import {
@@ -156,9 +158,9 @@ export default function MarketingScreen() {
 
           <KpiRow
             items={[
-              { label: '생성', value: `${data.summary.generated}건`, note: '자동 생성 소재' },
-              { label: '모의 완료', value: `${data.summary.simulated}건`, note: '보낼 준비가 된 것', kind: 'ok' },
-              { label: '실패', value: `${failed}건`, note: failed === 0 ? '확인할 것이 없어요' : '사유 확인 필요', kind: failed === 0 ? 'ok' : 'bad' },
+              { label: '생성', value: `${formatCount(data.summary.generated)}건`, note: '자동 생성 소재' },
+              { label: '모의 완료', value: `${formatCount(data.summary.simulated)}건`, note: '보낼 준비가 된 것', kind: 'ok' },
+              { label: '실패', value: `${formatCount(failed)}건`, note: failed === 0 ? '확인할 것이 없어요' : '사유 확인 필요', kind: failed === 0 ? 'ok' : 'bad' },
               {
                 label: '실패율',
                 value: `${(failRate * 100).toFixed(1)}%`,

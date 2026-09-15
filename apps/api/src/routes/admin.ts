@@ -16,7 +16,11 @@ import { isKnownSourceKey } from '../public-data/sources';
 import type { AppContext } from '../context';
 import * as dashboardAdmin from '../dashboard-admin';
 import * as decisionsAdmin from '../decisions-admin';
+import * as expoAdmin from '../expo-admin';
+import { listExposEndingToday } from '../retention/expo-sweep';
 import * as faqAdmin from '../faq-admin';
+import * as weddingFeed from '../wedding-feed';
+import { createClaudeFeedWriter } from '../analysis/wedding-feed-writer';
 import { NotAnOperator } from '../decisions';
 import { ApiError, forbidden, notFound } from '../errors';
 import * as inquiryAdmin from '../inquiry-admin';
@@ -1047,6 +1051,77 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
     return reply.status(204).send();
   });
 
+  // ─── 웨딩피드 ──────────────────────────────────────────────────────────────
+  /*
+   * 웨딩픽 콘텐츠. 대표 지시(2026-09-15) — 「관리자에 웨딩피드 콘텐츠 메뉴 만들어.
+   * 목록 · 등록 · 삭제 · 수정 다 가능해야 하고 LLM으로 지속 콘텐츠 작성한다」.
+   *
+   * **FAQ와 같은 모양이다**(PUT으로 전체를 보내고 PATCH는 두지 않는다). 부르는 데
+   * 없는 쓰기 라우트를 성공으로 남겨두면 다음 사람이 그것을 믿는다.
+   *
+   * `listForAdmin`을 그대로 돌려준다 — `{ posts, runs, remainingTopics }`
+   * (계약은 `adminWeddingFeedResponseSchema`). 화면 위 배너가 필요한 공개·초안
+   * 건수는 `posts`의 `status`만 세면 나오므로 따로 왕복하지 않는다.
+   *
+   * **전에는 여기서 `{ posts: listForAdmin(...), counts: ... }`로 한 번 더 감쌌다.**
+   * `listForAdmin`이 이미 `{ posts, runs, remainingTopics }`를 돌려주는데 그것을
+   * `posts` 키 하나에 다시 넣어, 실제 글 배열이 `posts.posts`에 있었다 — 부르는
+   * 데가 없어서 아무도 겪지 않았을 뿐인 버그다.
+   */
+  app.get('/v1/admin/wedding-feed', auth, async () =>
+    weddingFeed.listForAdmin(context.pool, context.storage)
+  );
+
+  app.post<{ Body: unknown }>('/v1/admin/wedding-feed', auth, async (request) =>
+    weddingFeed.create(
+      context.pool,
+      weddingFeed.parseFeedInput(request.body),
+      currentUserId(request)
+    )
+  );
+
+  app.put<{ Params: { id: string }; Body: unknown }>(
+    '/v1/admin/wedding-feed/:id',
+    auth,
+    async (request, reply) => {
+      await weddingFeed.update(
+        context.pool,
+        request.params.id,
+        weddingFeed.parseFeedInput(request.body)
+      );
+
+      return reply.status(204).send();
+    }
+  );
+
+  app.delete<{ Params: { id: string } }>(
+    '/v1/admin/wedding-feed/:id',
+    auth,
+    async (request, reply) => {
+      await weddingFeed.remove(context.pool, request.params.id);
+
+      return reply.status(204).send();
+    }
+  );
+
+  /*
+   * 지금 한 번 쓰게 한다. 평소에는 워커가 스스로 돌지만, 운영자가 「지금 필요하다」고
+   * 판단하는 자리가 있다.
+   *
+   * 클로드로 쓴다(2026-09-15 대표 지시 — 제미나이는 녹음·OCR에만, `CLAUDE.md` 참고).
+   * 모델은 `claude-analyzer.ts`와 같은 설정(`config.analysisModel`)에서 온다.
+   */
+  app.post('/v1/admin/wedding-feed/generate', auth, async () => {
+    const model = context.config.analysisModel;
+
+    return weddingFeed.runGeneration({
+      pool: context.pool,
+      writer: createClaudeFeedWriter({ model }),
+      model,
+      trigger: 'manual',
+    });
+  });
+
   // ─── Users ────────────────────────────────────────────────────────────────
   /*
    * 계정 목록. **탈퇴를 접수한 계정도 보인다** — 이 화면의 첫 번째 쓰임이
@@ -1928,5 +2003,70 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
 
   app.post<{ Params: { vendorId: string } }>('/v1/admin/data/price-stats/:vendorId/recalc', auth, async (_req, reply) => {
     return reply.status(202).send({ queued: true });
+  });
+
+  // ── 박람회 ──────────────────────────────────────────────────
+  // `docs/expo-agent-spec.md`. 검수 대기가 맨 위(listExpos)이고, 위험한 조작(삭제)은
+  // 화면이 ConfirmCard로 확인받은 뒤에야 이 라우트를 부른다.
+  const expoInputBody = z.object({
+    title: z.string().trim().min(1),
+    organizer: z.string().trim().min(1),
+    host: z.string().trim().optional().nullable(),
+    startsAt: z.string().min(1),
+    endsAt: z.string().min(1),
+    venue: z.string().trim().min(1),
+    address: z.string().trim().optional(),
+    region: z.string().trim().min(1),
+    city: z.string().trim().optional().nullable(),
+    district: z.string().trim().optional().nullable(),
+    registrationDeadline: z.string().optional().nullable(),
+    reservationUrl: z.string().trim().optional().nullable(),
+    officialWebsiteUrl: z.string().trim().optional().nullable(),
+    benefits: z.array(z.string()).optional(),
+    description: z.string().trim().optional(),
+    eventCategories: z.array(z.string()).optional(),
+    confidence: z
+      .enum(['OFFICIAL_CONFIRMED', 'CROSS_CONFIRMED', 'SOCIAL_ONLY', 'CONFLICT'])
+      .optional()
+      .nullable(),
+    confidenceScore: z.coerce.number().int().min(0).max(100).optional().nullable(),
+    sourceNote: z.string().trim().optional(),
+    adminReviewRequired: z.boolean().optional(),
+    reviewReason: z.array(z.string()).optional(),
+  });
+
+  app.get('/v1/admin/expos', auth, async () => ({ expos: await expoAdmin.listExpos(context.pool) }));
+
+  app.get('/v1/admin/expos/review-queue', auth, async () => ({
+    expos: await expoAdmin.reviewQueue(context.pool),
+  }));
+
+  /** 「내일 지워질 박람회」 미리보기 — 오늘이 종료일인 것들. */
+  app.get('/v1/admin/expos/deletion-preview', auth, async () => ({
+    expos: await listExposEndingToday(context.pool),
+  }));
+
+  app.get<{ Params: { id: string } }>('/v1/admin/expos/:id', auth, async (request) =>
+    expoAdmin.getExpo(context.pool, request.params.id)
+  );
+
+  app.post('/v1/admin/expos', auth, async (request, reply) => {
+    const body = expoInputBody.parse(request.body);
+    const created = await expoAdmin.createExpo(context.pool, body);
+    return reply.status(201).send(created);
+  });
+
+  app.patch<{ Params: { id: string } }>('/v1/admin/expos/:id', auth, async (request) => {
+    const body = expoInputBody.partial().parse(request.body);
+    return expoAdmin.updateExpo(context.pool, request.params.id, body);
+  });
+
+  app.post<{ Params: { id: string } }>('/v1/admin/expos/:id/approve', auth, async (request) =>
+    expoAdmin.approveExpo(context.pool, request.params.id)
+  );
+
+  app.delete<{ Params: { id: string } }>('/v1/admin/expos/:id', auth, async (request, reply) => {
+    await expoAdmin.removeExpo(context.pool, request.params.id);
+    return reply.status(204).send();
   });
 }

@@ -1,33 +1,44 @@
 import {
-  BUDGET_BRACKET_FIELD_LABEL,
-  BUDGET_BRACKET_LABEL,
-  PREPARED_CATEGORIES_LABEL,
   STYLE_PICK_MIN,
   WEDDING_STYLE_LABEL,
   formatDateDot,
-  summarizePreparedCategories,
-  type VendorCategory,
-  type WeddingBudgetBracket,
   type WeddingRegion,
   type WeddingStyle,
 } from '@weddingpick/domain';
 
+import { common } from '../../../../../spec/strings.ko.json';
+
 /**
- * 초기 설정 5개 질문의 순서와 규칙. 디자인 핸드오프 v3.22 SPEC §13.6 (WP-APP-020).
+ * 초기 설정 **3개 질문**의 순서와 규칙(2026-09-14 대표 확정 — 피그마
+ * `weddingpick_figma` `src/app/components/FlowScreens.tsx` `steps` 3단계 기준).
  *
- *   예식일 1/5 → 지역 2/5 → 준비 현황 3/5 → 예산 4/5 → 스타일 5/5 → 완료
+ *   예식일 1/3 → 지역 2/3 → 스타일 3/3 → 완료
  *
- * **큰 질문 하나 = Step 하나.** 지역 안의 시/도 → 구, 준비 현황의 다중 선택은
- * 화면 안에서 끝나고 Step으로 세지 않는다. 진행바와 «N/5»는 이 다섯 개로만 움직인다.
+ * **다섯에서 셋으로 줄였다.** 준비 현황과 예산을 첫 진입에서 묻지 않는다 — 두 값은
+ * 없어진 것이 아니라 MY의 웨딩 설정(`app/(tabs)/my/wedding-settings.tsx`)에서 계속
+ * 고칠 수 있고, 서버 계약(`completeSetup`)도 둘을 선택 항목으로 그대로 받는다.
+ * 처음 들어온 사람에게 다섯 번 묻던 것을 세 번으로 줄인 것뿐이다.
+ *
+ * **3/3이 스타일인 이유.** 피그마의 3번째 질문은 「무엇이 가장 중요해요?」(예산 안에서 ·
+ * 취향이 뚜렷하게 · 정보가 충분하게)인데 그 답을 담을 칸이 서버에 없고 API 계약은
+ * 바꾸지 않는다. 스타일은 이미 있는 칸이면서 같은 일을 한다 — 추천의 근거고(v3.24)
+ * 피그마의 3번째 질문처럼 하나는 반드시 고르게 돼 있다.
+ *
+ * 예식일은 휠 3열, 지역은 짧은 꼴 아홉 그대로다 — 피그마가 그 자리에 그려 둔 보기
+ * 세 개(「2027년 1월 15일」 · 「경기·인천」)는 시안용 가짜 값이고, 둘 다 대표님이
+ * 따로 정해 둔 규칙이 있다(CLAUDE.md).
+ *
+ * **큰 질문 하나 = Step 하나.** 지역 안의 시/도 → 구는 화면 안에서 끝나고 Step으로
+ * 세지 않는다. 진행바와 «N/3»은 이 셋으로만 움직인다.
  *
  * 화면(`app/setup.tsx`)은 여기 있는 함수로만 다음·이전·재개·요약을 정한다 —
  * 순서 규칙이 화면 코드 사이에 흩어지면 «바꾸기»로 되돌아간 뒤 어디로 가야 하는지
  * 화면마다 다르게 답하게 된다.
  *
- * 5/5는 건너뛰지 않는다 — 스타일 4종은 업종과 무관한 축이라(v3.19 «범용 스타일»)
- * 준비 현황과 연동하지 않고, 준비 현황을 바꿔도 스타일을 지우지 않는다.
+ * 3/3은 건너뛰지 않는다 — 스타일 4종은 업종과 무관한 축이고(v3.19 «범용 스타일»)
+ * 최소 1개가 있어야 첫 화면에 보여줄 것이 생긴다.
  */
-export const QUESTION_STEPS = ['date', 'region', 'prep', 'budget', 'style'] as const;
+export const QUESTION_STEPS = ['date', 'region', 'style'] as const;
 
 export type QuestionStep = (typeof QUESTION_STEPS)[number];
 
@@ -40,13 +51,11 @@ export type QuestionStep = (typeof QUESTION_STEPS)[number];
 export type Answers = {
   date: { value: string | null } | null;
   region: { region: WeddingRegion | null; district: string | null } | null;
-  prep: { categories: VendorCategory[] } | null;
-  budget: WeddingBudgetBracket | null;
   /** 고른 순서 그대로. 빈 배열은 «아직 답하지 않음»과 같다. */
   style: readonly WeddingStyle[] | null;
 };
 
-export const EMPTY_ANSWERS: Answers = { date: null, region: null, prep: null, budget: null, style: null };
+export const EMPTY_ANSWERS: Answers = { date: null, region: null, style: null };
 
 /** 예식일 · 지역의 미정 문구 — 둘 다 같은 말로 통일(v3.19). */
 export const UNDECIDED_LABEL = '아직 정하지 않았어요';
@@ -58,8 +67,6 @@ export const UNDECIDED_VALUE = '미정';
 export const STEP_LABEL: Record<QuestionStep, string> = {
   date: '예식일',
   region: '지역',
-  prep: PREPARED_CATEGORIES_LABEL,
-  budget: BUDGET_BRACKET_FIELD_LABEL,
   style: '스타일',
 };
 
@@ -74,8 +81,6 @@ export const STEP_LABEL: Record<QuestionStep, string> = {
 export const STEP_TITLE_LINES: Record<QuestionStep, readonly [string, string]> = {
   date: ['예식일은', '언제인가요?'],
   region: ['어느 지역에서', '하나요?'],
-  prep: ['준비는 어디까지', '했나요?'],
-  budget: ['앞으로 쓸 예산은', '얼마인가요?'],
   style: ['어떤 분위기로', '준비할까요?'],
 };
 
@@ -93,29 +98,25 @@ export const DONE_TITLE_LINES = ['가입이', '완료됐어요'] as const;
 export const STEP_DESCRIPTION: Record<QuestionStep, string> = {
   date: '남은 기간에 맞춰 준비 순서를 잡아드릴게요',
   region: '선택한 지역을 기준으로 찾아드릴게요',
-  prep: '이미 정한 건 빼고 필요한 것만 챙겨드릴게요',
-  budget: '예산에 맞는 선택지를 먼저 보여드릴게요',
   style: '마음에 드는 스타일을 골라주세요',
 };
 
 export const DONE_CTA = '웨딩픽 시작하기';
-export const NEXT_CTA = '다음';
-export const PREV_CTA = '이전';
 
 /**
- * 스타일 CTA — 고른 **장수** 그대로 «N장 선택». 완료 화면이 뒤에 있으므로
- * «시작하기»를 붙이지 않는다. 0장이면 비활성.
+ * 「다음」 — 세 질문이 전부 같은 CTA를 쓴다.
  *
- * 세는 것이 이미지 장수라 단위는 «장»이다 — `spec/strings.ko.json`
- * `onboarding.taste.cta` · SPEC.md §「CTA는 «N장 선택»」 · 시안
- * `20-onboarding-v2.dc.html` «3장 선택». CHANGELOG v3.19가 한 번 «곳»으로
- * 적었지만 «곳»은 업체를 세는 말이고, 그 뒤의 SPEC과 시안이 «장»으로 돌아왔다.
+ * **스타일 3/3도 이것이다.** 2026-09-15까지 `styleCta(n)`이 «N장 선택»을 만들었는데
+ * «장»은 사진·종이를 세는 말이라 사진 타일을 지운 지금은 셀 것이 없다(대표 지시
+ * 「타일로 하지마 버튼으로 통일한다」). 규격서 `docs/figma-spec/onboarding.txt`의
+ * CTA는 «다음»이다 — `button 382×56 "다음" · 14/700 #FFFFFF · bg #1A1C20 · r16`.
+ * 근거를 옛 SPEC.md에서 피그마로 옮긴 것이고, 문구는 `spec/strings.ko.json`
+ * `common.cta.next`에서 온다.
  */
-export function styleCta(count: number): string {
-  return `${count}장 선택`;
-}
+export const NEXT_CTA = common['cta.next'];
+export const PREV_CTA = '이전';
 
-/** 이 답 상태에서 묻는 Step. 다섯 개 전부 — 건너뛰는 질문이 없다. */
+/** 이 답 상태에서 묻는 Step. 셋 전부 — 건너뛰는 질문이 없다. */
 export function stepsFor(_answers: Answers): readonly QuestionStep[] {
   return QUESTION_STEPS;
 }
@@ -127,10 +128,6 @@ export function isAnswered(step: QuestionStep, answers: Answers): boolean {
       return answers.date !== null;
     case 'region':
       return answers.region !== null;
-    case 'prep':
-      return answers.prep !== null;
-    case 'budget':
-      return answers.budget !== null;
     case 'style':
       return answers.style !== null && answers.style.length >= STYLE_PICK_MIN;
   }
@@ -161,7 +158,7 @@ export function resumeStep(answers: Answers): QuestionStep | null {
   return stepsFor(answers).find((step) => !isAnswered(step, answers)) ?? null;
 }
 
-/** 진행바 20 → 40 → 60 → 80 → 100%와 «N/5». 다섯 질문 기준으로만 움직인다. */
+/** 진행바 33 → 67 → 100%와 «N/3». 세 질문 기준으로만 움직인다. */
 export function stepProgress(step: QuestionStep): { percent: number; label: string } {
   const index = QUESTION_STEPS.indexOf(step);
 
@@ -180,9 +177,8 @@ export function summarizeStyles(styles: readonly WeddingStyle[]): string {
 }
 
 /**
- * 답 줄과 완료 요약에 적는 값. 답하지 않았으면 null. 미정은 «미정», 준비 현황은
- * «아직 시작 전이에요»(도메인 요약이 그렇게 적는다), 다중 선택은 «첫 항목 외 N»,
- * 스타일은 최대 2개라 «도시적인 · 로맨틱한»으로 다 적는다.
+ * 답 줄과 완료 요약에 적는 값. 답하지 않았으면 null. 미정은 «미정»이고, 스타일은
+ * 최대 2개라 «도시적인 · 로맨틱한»으로 다 적는다.
  */
 export function answerSummary(step: QuestionStep, answers: Answers): string | null {
   switch (step) {
@@ -197,14 +193,6 @@ export function answerSummary(step: QuestionStep, answers: Answers): string | nu
       return answers.region.district
         ? `${answers.region.region} ${answers.region.district}`
         : answers.region.region;
-    case 'prep':
-      if (answers.prep === null) return null;
-
-      return summarizePreparedCategories(answers.prep.categories);
-    case 'budget':
-      if (answers.budget === null) return null;
-
-      return answers.budget === 'unknown' ? UNDECIDED_VALUE : BUDGET_BRACKET_LABEL[answers.budget];
     case 'style':
       if (!isAnswered('style', answers) || answers.style === null) return null;
 
@@ -212,45 +200,17 @@ export function answerSummary(step: QuestionStep, answers: Answers): string | nu
   }
 }
 
-export type AnsweredRowModel = { step: QuestionStep; label: string; value: string };
-
 /**
- * 화면 아래에 쌓이는 답 줄. Step 순서 그대로 위에서 아래로 — 최근 답을 위로
- * 올리지 않는다. 지금 열린 질문은 빠진다.
- *
- * «바꾸기»로 다시 연 동안(`editing`)은 그 질문 **앞**의 답만 보인다 — 뒤에 답한
- * 값은 그대로 두되 화면에서 잠시 숨긴다(SPEC §13.6 «「바꾸기」 동작 정의 · 아래 줄»).
+ * 완료 요약 한 줄. **«바꾸기» 단추는 없다** — 2026-09-15 대표 지시로 답 줄과 함께
+ * 걷어냈다. 라벨과 값만 읽는다.
  */
-export function answeredRows(active: QuestionStep, answers: Answers, editing = false): AnsweredRowModel[] {
-  const rows: AnsweredRowModel[] = [];
-  const activeIndex = QUESTION_STEPS.indexOf(active);
-
-  for (const step of QUESTION_STEPS) {
-    if (step === active) continue;
-    if (editing && QUESTION_STEPS.indexOf(step) > activeIndex) continue;
-
-    const value = answerSummary(step, answers);
-
-    if (value !== null) rows.push({ step, label: STEP_LABEL[step], value });
-  }
-
-  return rows;
-}
+export type SummaryRow = { step: QuestionStep; label: string; value: string };
 
 /**
- * «바꾸기»로 고친 뒤 «다음»이 돌아갈 곳. 원래 있던 Step으로 바로 복귀한다 —
- * 2/5를 고쳤다고 3/5 · 4/5를 다시 묻지 않는다(SPEC §13.6). 연쇄 초기화가 없으므로
- * 돌아갈 Step은 항상 남아 있다.
- */
-export function returnStep(edited: QuestionStep, cameFrom: QuestionStep, answers: Answers): QuestionStep | null {
-  return stepsFor(answers).includes(cameFrom) ? cameFrom : nextStep(edited, answers);
-}
-
-/**
- * 완료 요약 5행. 항상 다섯 줄이다 — 미정은 «미정»으로 적는다. 빈칸이나 «—»는
+ * 완료 요약 3행. 항상 세 줄이다 — 미정은 «미정»으로 적는다. 빈칸이나 «—»는
  * 쓰지 않는다.
  */
-export function doneRows(answers: Answers): AnsweredRowModel[] {
+export function doneRows(answers: Answers): SummaryRow[] {
   return QUESTION_STEPS.map((step) => ({
     step,
     label: STEP_LABEL[step],

@@ -79,6 +79,14 @@ import {
   type UpdateExpenseRequest,
   type UpdateWeddingNoteRequest,
   type UpdateWeddingTaskRequest,
+  consultationListResponseSchema,
+  consultationRecordSchema,
+  createConsultationUploadResponseSchema,
+  type ConsultationListResponse,
+  type ConsultationRecord,
+  type CreateConsultationUploadRequest,
+  type CreateConsultationUploadResponse,
+  type UpdateConsultationRequest,
   type VisitNoteListResponse,
   type WeddingNoteListResponse,
   type WeddingTaskListResponse,
@@ -146,6 +154,8 @@ import {
   type MyRewardPayoutResponse,
   type RequestRewardPayoutRequest,
   type RewardPayout,
+  weddingFeedListResponseSchema,
+  type WeddingFeedListResponse,
 } from '@weddingpick/api-contract';
 import { z, type ZodType } from 'zod';
 
@@ -584,6 +594,14 @@ export async function getCurrentUser() {
 /** 홈 데이터를 미리 받으면 인증 확인과 병렬로 준비할 수 있다. */
 export async function getAppBootstrap(): Promise<AppBootstrapResponse> {
   return request('/v1/app/bootstrap', appBootstrapResponseSchema);
+}
+
+/** 웨딩피드 — 공개된 글만. 로그인 여부와 무관해 bootstrap과 따로 부른다. */
+export async function getWeddingFeed(limit?: number): Promise<WeddingFeedListResponse> {
+  return request(
+    `/v1/wedding-feed${limit ? `?limit=${limit}` : ''}`,
+    weddingFeedListResponseSchema
+  );
 }
 
 /**
@@ -1558,3 +1576,63 @@ export type { ExpoItem, ExpoStatus, ExpoDetail } from '@weddingpick/api-contract
 export type { WeddingInfoListResponse, WeddingInfoDetail } from '@weddingpick/api-contract';
 export type { BudgetBracket } from '@weddingpick/api-contract';
 
+/* ── 상담기록 ─────────────────────────────────────────────────────────── */
+
+export async function listConsultations(weddingId: string): Promise<ConsultationListResponse> {
+  return request(`/v1/weddings/${weddingId}/consultations`, consultationListResponseSchema);
+}
+
+export async function getConsultation(consultationId: string): Promise<ConsultationRecord> {
+  return request(`/v1/consultations/${consultationId}`, consultationRecordSchema);
+}
+
+/**
+ * 올릴 자리를 받는다.
+ *
+ * **파일 본체는 이 요청에 싣지 않는다.** 서명 URL을 받아 스토리지로 바로 올린다 —
+ * 100MB짜리가 API 서버를 지나갈 이유가 없다.
+ */
+export async function createConsultationUpload(
+  body: CreateConsultationUploadRequest
+): Promise<CreateConsultationUploadResponse> {
+  return request('/v1/consultations/uploads', createConsultationUploadResponseSchema, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+/**
+ * 올리기가 끝났음을 알린다. **여기부터 판정이 시작된다.**
+ *
+ * 서명 URL로 올린 것만으로는 서버가 파일이 다 왔는지 모른다 — 알려줘야 읽는다.
+ */
+export async function completeConsultationUpload(
+  consultationId: string
+): Promise<ConsultationRecord> {
+  return request(`/v1/consultations/${consultationId}/complete`, consultationRecordSchema, {
+    method: 'POST',
+  });
+}
+
+export async function updateConsultation(
+  consultationId: string,
+  body: UpdateConsultationRequest
+): Promise<ConsultationRecord> {
+  return request(`/v1/consultations/${consultationId}`, consultationRecordSchema, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  });
+}
+
+/** 확인을 마치고 저장한다. **서버가 여기서 원본을 지운다.** */
+export async function confirmConsultation(consultationId: string): Promise<ConsultationRecord> {
+  return request(`/v1/consultations/${consultationId}/confirm`, consultationRecordSchema, {
+    method: 'POST',
+  });
+}
+
+export async function removeConsultation(consultationId: string): Promise<void> {
+  await request(`/v1/consultations/${consultationId}`, z.object({ deleted: z.literal(true) }), {
+    method: 'DELETE',
+  });
+}

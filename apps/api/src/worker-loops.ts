@@ -3,15 +3,22 @@ import type { Pool } from 'pg';
 
 import { createClaudeAnalyzer } from './analysis/claude-analyzer';
 import { runForever } from './analysis/worker';
+import { createClaudeFeedWriter } from './analysis/wedding-feed-writer';
 import type { Config } from './config';
 import { createExpoPush } from './push/expo';
 import { sendPriceChangeNudges, sendTaskNudges } from './notify/nudges';
 import { alertOperators } from './retention/alert';
+import { sweepExpiredConsultationAudio } from './retention/consultation-audio';
+import { sweepEndedExpos } from './retention/expo-sweep';
 import { listRetentionAttention, sweepExpiredDocuments } from './retention/worker';
 import type { Storage } from './storage/port';
 import { completeWithdrawals } from './withdrawal';
+import { runGeneration as runWeddingFeedGeneration } from './wedding-feed';
 
 const RETENTION_SWEEP_MS = 10 * 60 * 1000;
+
+/** 종료 박람회 정리는 하루 1회면 충분하다(`docs/expo-agent-spec.md` 21절 권장 주기). */
+const EXPO_SWEEP_MS = 24 * 60 * 60 * 1000;
 
 /*
  * 사용자 알림은 자주 볼 필요가 없다. 일정 알림은 하루 단위이고, 가격 변동은
@@ -19,6 +26,13 @@ const RETENTION_SWEEP_MS = 10 * 60 * 1000;
  * 하게 된다.
  */
 const NUDGE_MS = 60 * 60 * 1000;
+
+/*
+ * 웨딩피드 자동 작성도 급하지 않다 — 목표(공개 8건)를 채우는 것이 목적이지 실시간
+ * 발행이 아니다. 알림과 같은 한 시간 간격을 쓴다. `shouldGenerate`가 매번 다시
+ * 봐서, 이미 목표를 채웠거나 초안이 쌓여 있으면 아무것도 쓰지 않고 지나간다.
+ */
+const WEDDING_FEED_MS = 60 * 60 * 1000;
 
 export type WorkerDeps = {
   pool: Pool;
@@ -64,6 +78,35 @@ export function startWorkerLoops({ pool, storage, config, signal }: WorkerDeps):
    */
   const push = createExpoPush();
 
+  console.log(
+    config.expoAutoDeleteEnabled
+      ? '박람회 종료 자동 삭제: 켜짐 — 하루 1회 종료된 박람회를 지운다.'
+      : '박람회 종료 자동 삭제: 꺼짐(기본값) — EXPO_AUTO_DELETE_ENABLED=true로 켠다. ' +
+          '몇 건이 지워질지는 `npm run expo-cleanup -- --dry-run`으로 미리 볼 수 있다.'
+  );
+
+  /*
+   * 종료 박람회 자동 삭제(사양 15절). **되돌릴 수 없어 기본값이 꺼짐이다** —
+   * 운영에서 처음 켜는 것은 대표님 판단이고, 이 워커가 스스로 켜지 않는다.
+   *
+   * 신규 수집 루프보다 먼저 돌아야 한다(사양 21절 "종료 행사 정리를 신규 수집보다
+   * 먼저 실행한다") — 아직 자동 수집 루프가 없어 순서를 다툴 상대가 없지만, 나중에
+   * 수집 루프를 붙일 때 이 정리를 그 앞에 둔다.
+   */
+  const expoSweep = config.expoAutoDeleteEnabled
+    ? setInterval(() => {
+        void sweepEndedExpos(pool)
+          .then((result) => {
+            if (result.deleted > 0) {
+              console.log(`종료된 박람회 ${result.deleted}건을 지웠다.`);
+            }
+          })
+          .catch((error) => {
+            console.error('박람회 종료 정리 실패:', error);
+          });
+      }, EXPO_SWEEP_MS)
+    : null;
+
   /*
    * 준비 알림과 가격 변동 알림. v2.0 36·37번.
    *
@@ -99,6 +142,19 @@ export function startWorkerLoops({ pool, storage, config, signal }: WorkerDeps):
         if (config.retentionMode === 'automatic') {
           await sweepExpiredDocuments({ pool, storage });
         }
+
+        /*
+         * 상담 녹음은 **두 모드 모두에서 지운다.**
+         *
+         * `manual` 모드가 있는 이유는 문서에 **사람이 보는 과정**이 붙어 있기
+         * 때문이다 — 인증 심사가 끝나야 기한이 정해진다. 상담 녹음에는 그 과정이
+         * 없고, 처리방침 제2항이 「업로드 시점부터 24시간을 넘겨 보관하지
+         * 않습니다」라고 조건 없이 적었다.
+         *
+         * 모드를 따르면 운영자가 스위치를 만지는 동안 약속한 기한이 지나고,
+         * 그 사실은 아무 화면에도 뜨지 않는다.
+         */
+        await sweepExpiredConsultationAudio({ pool, storage });
 
         /*
          * 탈퇴하고 원본이 다 지워진 계정을 지운다. **두 모드 모두에서 돈다** —
@@ -158,9 +214,56 @@ export function startWorkerLoops({ pool, storage, config, signal }: WorkerDeps):
     })();
   }, RETENTION_SWEEP_MS);
 
+  /*
+   * 클로드로 쓴다(2026-09-15 대표 지시 — 제미나이는 녹음·OCR에만, `CLAUDE.md`
+   * 참고). 모델은 `claude-analyzer.ts`와 같은 설정(`config.analysisModel`)에서
+   * 온다 — 새 설정 칸을 만들지 않는다.
+   *
+   * **기본은 꺼짐이다.** `WEDDING_FEED_AUTOWRITE=true`를 넣어야 이 루프가
+   * 돈다 — 사람이 안 보는 동안에도 계속 글을 쓰는 자리라, 켜고 끄는 것은
+   * 대표님 판단이다. 관리자 화면의 「지금 한 번 쓰기」(`POST
+   * /v1/admin/wedding-feed/generate`)는 이 스위치와 무관하게 항상 된다 —
+   * 사람이 누를 때만 도는 것이라 켜져 있을 필요가 없다.
+   *
+   * 이 루프 하나만 try/catch로 감싼다 — 한 바퀴가 실패해도 파기 정리 · 알림까지
+   * 멈추면 안 된다.
+   */
+  const feedAutowrite = process.env.WEDDING_FEED_AUTOWRITE === 'true';
+
+  console.log(
+    feedAutowrite
+      ? '웨딩피드 자동 작성 켜짐 (한 시간 간격)'
+      : '웨딩피드 자동 작성 꺼짐 — 켜려면 WEDDING_FEED_AUTOWRITE=true'
+  );
+
+  const feedGeneration = feedAutowrite
+    ? setInterval(() => {
+        void (async () => {
+          try {
+            const model = config.analysisModel;
+
+            const result = await runWeddingFeedGeneration({
+              pool,
+              writer: createClaudeFeedWriter({ model }),
+              model,
+              trigger: 'schedule',
+            });
+
+            if (result.created > 0) {
+              console.log(`웨딩피드 자동 작성 ${result.created}건`);
+            }
+          } catch (error) {
+            console.error('웨딩피드 자동 작성 실패:', error);
+          }
+        })();
+      }, WEDDING_FEED_MS)
+    : null;
+
   controller.signal.addEventListener('abort', () => {
     clearInterval(sweep);
     clearInterval(nudges);
+    if (feedGeneration) clearInterval(feedGeneration);
+    if (expoSweep) clearInterval(expoSweep);
   });
 
   console.log('분석 워커 시작');

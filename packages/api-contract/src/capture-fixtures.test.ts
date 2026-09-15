@@ -8,14 +8,31 @@
  *
  * 계약이 바뀌면 여기가 먼저 빨개진다. 그때 `scripts/fixtures/api.cjs`를 고친다.
  */
-import type { ZodType } from 'zod';
+import { z, type ZodType } from 'zod';
 
 import { appBootstrapResponseSchema } from './app';
 import { authProvidersResponseSchema } from './auth';
 import { candidateListResponseSchema } from './candidates';
+import { expoListResponseSchema } from './expos';
+import { consultationListResponseSchema } from './consultations';
+import { myReportListResponseSchema } from './my-reports';
+import { myMonthlyDrawResponseSchema, myRewardPayoutResponseSchema, myRewardsResponseSchema } from './rewards';
+import { reportReasonListResponseSchema, reviewListResponseSchema } from './reviews';
+import { settingsSchema } from './settings';
 import { signupStateSchema } from './signup';
-import { vendorRegionsResponseSchema, vendorSearchResponseSchema } from './vendors';
-import { currentUserSchema } from './weddings';
+import { weddingFeedListResponseSchema } from './wedding-feed';
+import { weddingEventListResponseSchema } from './wedding-events';
+import { expenseSummaryResponseSchema } from './wedding-plan';
+import {
+  vendorComparisonResponseSchema,
+  conditionStatsSchema,
+  vendorDetailSchema,
+  vendorPhotosResponseSchema,
+  vendorRegionsResponseSchema,
+  vendorSearchResponseSchema,
+} from './vendors';
+import { currentUserSchema, weddingInviteListResponseSchema } from './weddings';
+import { withdrawalNoticeSchema } from './withdrawal';
 
 /*
  * fixture는 캡처 도구(ESM)와 이 시험(ts-jest·CJS)이 같이 읽어야 해서 `.cjs`다.
@@ -33,16 +50,47 @@ const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/app/bootstrap', appBootstrapResponseSchema],
   ['GET /v1/auth/providers', authProvidersResponseSchema],
   ['GET /v1/weddings/:weddingId/candidates', candidateListResponseSchema],
+  ['GET /v1/me/monthly-draw', myMonthlyDrawResponseSchema],
+  ['POST /v1/weddings/:weddingId/comparisons', z.null()],
+  ['GET /v1/review-report-reasons', reportReasonListResponseSchema],
+  ['GET /v1/expos', expoListResponseSchema],
+  ['GET /v1/me/reports', myReportListResponseSchema],
+  ['GET /v1/me/rewards', myRewardsResponseSchema],
+  ['GET /v1/me/rewards/payout', myRewardPayoutResponseSchema],
+  ['GET /v1/me/settings', settingsSchema],
+  ['GET /v1/me/withdrawal', withdrawalNoticeSchema],
+  ['GET /v1/weddings/:weddingId/invites', weddingInviteListResponseSchema],
+  ['GET /v1/weddings/:weddingId/consultations', consultationListResponseSchema],
+  ['GET /v1/weddings/:weddingId/events', weddingEventListResponseSchema],
+  ['GET /v1/weddings/:weddingId/expenses', expenseSummaryResponseSchema],
   ['GET /v1/vendors/regions', vendorRegionsResponseSchema],
   ['GET /v1/vendors', vendorSearchResponseSchema],
+  ['GET /v1/vendors/compare', vendorComparisonResponseSchema],
+  ['GET /v1/vendors/:vendorId', vendorDetailSchema],
+  ['GET /v1/vendors/:vendorId/images', vendorPhotosResponseSchema],
+  ['GET /v1/vendors/:vendorId/conditions', conditionStatsSchema],
+  ['GET /v1/vendors/:vendorId/reviews', reviewListResponseSchema],
+  ['GET /v1/wedding-feed', weddingFeedListResponseSchema],
 ]);
 
 /**
  * 계약이 없는 경로. 관리자 콘솔 응답은 `packages/api-contract`가 아니라
  * `apps/api`의 타입이 정하므로 여기서 검사할 스키마가 없다 — 그래도 **적어는
  * 둔다.** 빠뜨린 것과 일부러 뺀 것을 구별하려고.
+ *
+ * `candidates/removed`는 응답 스키마가 `apps/mobile/src/api/client.ts`에
+ * 인라인으로만 있고 `api-contract`가 내보내지 않는다 — 이 패키지가 앱 쪽
+ * 타입을 끌어오면 반대 방향 의존이 생긴다.
  */
-const NO_CONTRACT = new Set(['GET /v1/admin/ads-gate', 'GET /v1/admin/ad-tiers']);
+const NO_CONTRACT = new Set([
+  'GET /v1/admin/ads-gate',
+  'GET /v1/admin/ad-tiers',
+  'GET /v1/admin/wedding-feed',
+  /* 박람회 관리(0410) — 관리자 전용이라 사용자 계약이 없다. 위 admin 넷과 같은 자리다. */
+  'GET /v1/admin/expos',
+  'GET /v1/admin/expos/deletion-preview',
+  'GET /v1/weddings/:weddingId/candidates/removed',
+]);
 
 /**
  * 함수 fixture는 한 번 불러 본다 — 조건 없이 부른 결과가 기본 응답이다.

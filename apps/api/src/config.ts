@@ -36,6 +36,15 @@ const configSchema = z.object({
   retentionReminderHours: z.coerce.number().int().positive().default(24),
 
   /**
+   * 종료 박람회 자동 삭제(`docs/expo-agent-spec.md` 15절)를 워커에서 매일 돌릴지.
+   *
+   * **기본값이 꺼짐이다.** 되돌릴 수 없는 삭제라 운영에서 처음 켜는 것은 대표님
+   * 판단이다 — 세션이 스스로 켜지 않는다. 꺼져 있어도 `npm run expo-cleanup --
+   * --dry-run`으로 언제든 미리 셀 수 있다.
+   */
+  expoAutoDeleteEnabled: z.boolean().default(false),
+
+  /**
    * 브라우저에서 API를 부를 수 있는 출처. 비워두면 CORS 헤더를 내보내지 않는다.
    * 네이티브 앱은 CORS와 무관하다 — 웹에서 붙여볼 때만 필요하다.
    */
@@ -71,6 +80,17 @@ const configSchema = z.object({
    * 않는다). 여기 있어야 `ai_usage`에 적는 이름과 실제로 부른 이름이 갈라지지 않는다.
    */
   analysisModel: z.string().default('claude-opus-5'),
+
+  /**
+   * 상담기록·Pick 인증을 Gemini로 읽을 때 쓰는 모델.
+   *
+   * **기본값을 둔다.** 값이 빠진 채 배포돼도 서버는 뜨고, 이름 없이 호출해 400을
+   * 받는 일이 없다. 다만 `gemini-2.5-flash-lite`는 **2026년 10월 16일에 없어진다** —
+   * 그날 전에 `infra/render-env.yml`의 `GEMINI_MODEL`을 갈아끼운다. 여기 적힌
+   * 기본값도 그때 함께 고친다(둘 중 하나만 고치면 환경변수를 안 넣은 배포에서
+   * 없어진 모델을 부른다).
+   */
+  geminiModel: z.string().default('gemini-2.5-flash-lite'),
 
   /** 제공자별 설정이 없으면 그 제공자 로그인만 막힌다. 서비스 전체가 멈추지는 않는다. */
   appleClientId: z.string().optional(),
@@ -125,10 +145,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     storage,
     retentionMode: env.RETENTION_MODE,
     retentionReminderHours: env.RETENTION_REMINDER_HOURS,
+    expoAutoDeleteEnabled: env.EXPO_AUTO_DELETE_ENABLED === 'true',
     proofReaderCheapModel: env.PROOF_READER_CHEAP_MODEL,
     proofReaderStrongModel: env.PROOF_READER_STRONG_MODEL,
     aiDailyCallLimit: env.AI_DAILY_CALL_LIMIT,
     analysisModel: env.ANALYSIS_MODEL,
+    geminiModel: env.GEMINI_MODEL,
     corsOrigins: (env.CORS_ORIGINS ?? '')
       .split(',')
       .map((origin) => origin.trim())
