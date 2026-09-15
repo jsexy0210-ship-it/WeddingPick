@@ -161,15 +161,21 @@ docs/rn-migration/FIGMA_DESIGN_SYSTEM.md:87에 있다. 안 만든 화면을 만�
 
 eyebrow가 아닌 영문은 한국어로 바꾼다. 문구는 spec/strings.ko.json에서 가져온다.
 
-제미나이는 녹음파일 인식과 OCR에만 쓴다. 그 밖에는 절대 금지(2026-09-15 대표 지시).
-글쓰기 · 분석 · 판단은 전부 클로드다 — 클로드는 Max 구독 안이고 제미나이는 구글
-계정으로 따로 청구된다. 쓰는 자리는 셋뿐이다:
+운영 서버의 모델 호출은 전부 제미나이다. 클로드 API는 전면 폐기했다(2026-09-15 대표
+지시 — 「클로드 API는 싹다 전면 폐기하고 제미나이로 명시해」). 다섯 자리다:
 
-    analysis/gemini-visit-note-reader.ts   상담 녹음
-    analysis/consultation-reader.ts        상담 녹음
+    analysis/gemini-analyzer.ts            견적서 · 계약서 구조화
     analysis/gemini-payment-reader.ts      결제 증빙 OCR
+    analysis/wedding-feed-writer.ts        웨딩피드 글쓰기
+    analysis/consultation-reader.ts        상담 녹음
+    analysis/gemini-visit-note-reader.ts   상담 녹음에서 방문노트
 
-그 밖에서 callGemini를 부르면 위반이다.
+모델 이름은 config.geminiModel 한 칸이다. 이유는 돈이다 — 운영 서버가
+ANTHROPIC_API_KEY로 API를 부르는 것은 Max 구독 밖이라 종량 과금이다. 「클로드는
+구독 안」은 사람이 쓰는 세션 이야기이고 서버에는 맞지 않는다. 같은 날 아침에 그
+전제로 클로드로 옮겼다가 되돌렸다.
+
+@anthropic-ai/sdk를 다시 넣지 마라 — no-claude.test.ts가 저장소 전체를 세서 막는다.
 
 숫자는 언제나 천단위 쉼표다(2026-09-15 대표 지시). 사용자 화면 · 관리자 화면 전부.
 로케일을 못 박는다 — toLocaleString()을 로케일 없이 부르면 기기 설정을 따라가서
