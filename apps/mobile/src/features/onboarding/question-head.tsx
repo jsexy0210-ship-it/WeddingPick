@@ -30,6 +30,12 @@ export function QuestionHead({
   lines: readonly [string, string];
   description?: string;
 }) {
+  /*
+   * 영문 eyebrow(«JUST FOR YOU»)를 **줄째 없앴다** — 2026-09-15 대표 지시
+   * 「이딴 영문 싹다 없애」 · 「이런 형식에 맞지 않는 화면 있으면 싹다 찾아서 삭제해」.
+   * 한국어로 옮기는 것이 아니라 지운다. 제목 위에 영문 소문자 간격을 넓혀 얹은
+   * **장식 줄**이라 한국어로 바꾸면 그 장식이 어색해진다. 피그마에 있어도 넣지 않는다.
+   */
   return (
     <View style={styles.wrap}>
       <ThemedText type="f38" style={styles.title}>

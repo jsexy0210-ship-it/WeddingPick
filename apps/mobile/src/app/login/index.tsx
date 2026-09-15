@@ -28,7 +28,7 @@ import {
 import { loadRememberedAccount, type RememberedAccount } from '@/features/auth/remembered-account';
 import { bootOwnsSigningInMessage, takePendingSignInError } from '@/features/auth/sign-in-handoff';
 import { CheckDot } from '@/features/settings/my-kit';
-import { SigningInBody, signingInMessage } from '@/features/auth/signing-in-view';
+import { SigningInBody } from '@/features/auth/signing-in-view';
 import { useSignIn } from '@/features/auth/use-sign-in';
 import { openExternal } from '@/features/open-external';
 
@@ -80,8 +80,12 @@ const KAKAO_PROVIDER_NAME = '카카오';
 export default function LoginScreen() {
   const theme = useTheme();
   const { providers, error: loadError } = useAuthProviders();
-  const { signIn, busy, busyProvider, error, retry, dismissError, reportError, needsAgeConfirm } =
-    useSignIn();
+  /*
+   * `busyProvider`를 더 이상 꺼내지 않는다 — 진행 문구가 제공자에 따라 갈리지 않게
+   * 되면서(2026-09-15 대표 지시, 「로그인 중이에요」 하나) 쓸 자리가 없어졌다.
+   * `useSignIn`은 그대로 돌려준다.
+   */
+  const { signIn, busy, error, retry, dismissError, reportError, needsAgeConfirm } = useSignIn();
   /** «만 14세 이상이에요»를 사람이 눌렀는가. 기본값은 꺼짐 — 미리 켜두지 않는다. */
   const [ageChecked, setAgeChecked] = useState(false);
   /** undefined = 아직 안 읽음, null = 기억된 계정 없음(WP-AUTH-001). */
@@ -149,15 +153,15 @@ export default function LoginScreen() {
             {providers === null || remembered === undefined || busy ? (
               <ThemedView style={styles.busy}>
                 {/*
-                  문구   지금 로그인을 진행 중이고(`busy`), 그 말을 이 화면이 맡았을 때
-                  로더   그 밖 — 제공자·기억된 계정을 읽어오는 중이거나, 문구는 부팅 화면이 맡았을 때
-                  문장은 `SigningInBody` 한 곳에만 있고, 누가 말하는지는 `bootOwnsSigningInMessage()`가 정한다.
+                  로더 위 · 문구 아래가 한 덩어리로 나온다(2026-09-15 대표 지시).
+                  «하나만 보인다»는 폐기됐고, 어느 쪽을 보일지 고르던 `show`도 같이 없앴다.
+                  문장은 `SigningInBody` 한 곳에만 있다 — 제공자에 따라 갈리지 않는다.
+
+                  **부팅 화면이 말하는 중이면 여기서는 그리지 않는다.** 둘이 한 프레임에
+                  겹치면 같은 덩어리가 두 번 보인다(2026-09-09 보고). 제공자를 읽어오는
+                  중(`busy`가 아닐 때)은 부팅이 말하지 않으므로 여기서 그린다.
                 */}
-                <SigningInBody
-                  size={28}
-                  show={busy && !bootOwnsSigningInMessage() ? 'message' : 'loader'}
-                  message={signingInMessage(busyProvider)}
-                />
+                <SigningInBody size={28} active={!(busy && bootOwnsSigningInMessage())} />
               </ThemedView>
             ) : (
               <View style={styles.section}>

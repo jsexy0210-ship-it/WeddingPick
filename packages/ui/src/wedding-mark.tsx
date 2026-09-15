@@ -1,6 +1,8 @@
 import type { ColorValue } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
+import { Colors } from './theme';
+
 /**
  * 웨딩픽 심볼 — **하트 안에 체크**(Pick Mark).
  *
@@ -35,7 +37,7 @@ export type WeddingMarkProps = {
   color?: ColorValue;
 };
 
-export function WeddingMark({ size = 64, color = '#ff6f61' }: WeddingMarkProps) {
+export function WeddingMark({ size = 64, color = Colors.light.tint }: WeddingMarkProps) {
   return (
     <Svg
       width={size}
