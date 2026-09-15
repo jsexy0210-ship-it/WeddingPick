@@ -13,8 +13,6 @@
  * 다시 덮어쓴 자리가 있다(옛 «확인된 ~» 표기 → `실 제보`). 뒤에 온 쪽을 쓴다.
  */
 
-import { formatCount } from './format-number';
-
 export const TERMS = {
   /** 업체 찾기. `탐색`을 쓰지 않는다. */
   search: '검색',
@@ -83,22 +81,3 @@ export const MANY_CONFIRMED = '많이 확인된 곳';
 /** 검색 홈 섹션 제목(v3.17). 홈의 «많이 확인된 곳»과 다른 자리다. */
 export const MOST_VIEWED = '많이 본 곳';
 
-/**
- * 금액 옆에 늘 함께 적는 줄. v3.1 §11.
- *
- *   `실 제보 12건 · 최근 12개월 · 기준금액 168만원`
- *
- * 숫자만 떼어놓으면 그것이 어디서 왔는지 모르는 채로 읽히고, 그때부터 그 숫자는
- * 우리가 정한 값처럼 보인다.
- */
-export function dataCaption(input: {
-  count: number;
-  period?: string;
-  baseAmount?: string;
-}): string {
-  const parts = [`${TERMS.verifiedData} ${formatCount(input.count)}건`, input.period ?? TERMS.period];
-
-  if (input.baseAmount) parts.push(`${TERMS.baseAmount} ${input.baseAmount}`);
-
-  return parts.join(' · ');
-}

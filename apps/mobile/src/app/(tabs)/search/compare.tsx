@@ -22,6 +22,7 @@ import { savePendingAction } from '@/features/auth/pending-action';
 import { PickDoneSheet } from '@/features/pick/pick-sheets';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
+import strings from '../../../../../../spec/strings.ko.json';
 import {
   ErrorView,
   Layout,
@@ -61,6 +62,7 @@ const KEY_LETTERS = 'ABCDE';
 const COUNT_GAP_NOTABLE = DISCLOSURE_THRESHOLDS.limited;
 
 /** 문구. spec/strings.ko.json compare.* */
+const BEST_BADGE = strings.compare.best;
 const SUMMARY_TITLE = '웨딩픽 요약';
 const ROW_PRICE = '제보 금액';
 const ROW_MEDIAN = TERMS.baseAmount;
@@ -283,11 +285,15 @@ export default function CompareScreen() {
                           style={[styles.bold, styles.tableCellText]}>
                           {cell.value}
                         </ThemedText>
-                        {/* BEST — 정보가 더 있다(실 제보 건수)는 뜻이지 값을 평가하지 않는다. */}
+                        {/*
+                          우세 배지 — 정보가 더 있다(실 제보 건수)는 뜻이지 값을 평가하지 않는다.
+                          2026-09-15 대표 지시 「이딴 영문 싹다 없애」로 `BEST`를 한국어로 바꿨다.
+                          문구는 `spec/strings.ko.json` `compare.best`다.
+                        */}
                         {cell.tone === 'text' ? (
                           <View style={[styles.bestBadge, { backgroundColor: theme.tintSurface }]}>
                             <ThemedText type="micro" themeColor="tint" style={styles.bold}>
-                              BEST
+                              {BEST_BADGE}
                             </ThemedText>
                           </View>
                         ) : null}

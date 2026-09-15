@@ -84,6 +84,12 @@ const NAV: NavEntry[] = [
   { key: 'queue', label: '확인 필요', href: '/admin/queue' },
   { key: 'data-pipeline', label: '제보 처리', href: '/admin/data-pipeline' },
   { key: 'vendors', label: '업체 관리', href: '/admin/vendors' },
+  /*
+   * 임시로 「업체」 옆에 둔다. 관리자 메뉴 31개 재편(session_01RYQFkgtV79JsukuGsiUa3J)이
+   * 아직 대표님 확정 전이라 최종 자리는 아니다 — 「업체」에 남기거나 신설
+   * 「행사·박람회」로 옮기는 것 중 MASTER가 그 안과 맞춰 정한다(PR #참고).
+   */
+  { key: 'expos', label: '박람회 관리', href: '/admin/expos' },
   { key: 'images', label: '이미지 관리', href: '/admin/images' },
   /* 들어올 때마다 — 후기 · 이의제기 · 개인정보 · 계정 */
   { key: 'rebuttal', label: '후기 · 반론', href: '/admin/rebuttal' },
@@ -92,6 +98,7 @@ const NAV: NavEntry[] = [
   { key: 'users', label: '계정 관리', href: '/admin/users' },
   /* 문구 · 카드 — 자주 손대지만 급하지 않다 */
   { key: 'faq', label: 'FAQ 관리', href: '/admin/faq' },
+  { key: 'wedding-feed', label: '웨딩피드 관리', href: '/admin/wedding-feed' },
   { key: 'og-card', label: '링크 미리보기', href: '/admin/og-card' },
   /* 성장 — 회차마다 */
   { key: 'campaigns', label: '캠페인 · 보상', href: '/admin/campaigns' },

@@ -34,10 +34,15 @@ import { useMyCandidates } from '@/features/pick/use-my-candidates';
  *   header 430×56  flex · align center · pad 0 16 · bg #FFFFFF 95%
  *     button 40×40 r9999  svg 20×20        p "상담 예약" · 14/700 · lh 20 · pad 0 40 0 0
  *   main 430×889  pad 28 20 0 20
- *     p "BLOOMING STUDIO" · 10/400 #868B94 · lh 15 · ls 1.7px
+ *
+ * **규격서의 영문 eyebrow는 옮겨 적지 않는다**(2026-09-15 대표 지시 「이런 형식에 맞지 않는
+ * 화면 있으면 싹다 찾아서 삭제해」). 아래 규격서 옮김에 `BLOOMING STUDIO` · `YOUR CONSULTANT`가
+ * 그대로 남아 있는 것은 **무엇을 안 넣었는지 알아보라고 남긴 기록**이지 만들 목록이 아니다.
+ * 제목 위 여백은 그 줄이 차지하던 높이를 합쳐 둔다 — 로그인 · 온보딩과 같은 방식이다.
+ *     p "BLOOMING STUDIO" · 10/400 #868B94 · lh 15 · ls 1.7px      ← **넣지 않는다**(영문 eyebrow)
  *     h1 "우리에게 편한 시간으로 상담을 예약해요." · 30/700 #1A1C20 · lh 38 · ls -0.6px · mar 8 0 0 0
  *     div 390×113  flex · gap 16 · pad 16 · mar 28 0 0 0 · r16 · border 1 #000000 6%     ← 담당자 카드
- *       img 64×64 r18   p "YOUR CONSULTANT" 10/400 ls1.2 · p "김소연 작가" 14/700 mt4 · 별 12 ×5 + "10년 경력 · 자연광 전문" 10/400 · p "평균 응답 30분 이내" 11/400 mt4
+ *       img 64×64 r18   p "YOUR CONSULTANT"(← **넣지 않는다**) 10/400 ls1.2 · p "김소연 작가" 14/700 mt4 · 별 12 ×5 + "10년 경력 · 자연광 전문" 10/400 · p "평균 응답 30분 이내" 11/400 mt4
  *     section mar 32 0 0 0                                                             ← 날짜 선택
  *       div flex · space-between · center · mar 0 0 12 0
  *         div flex · gap 8 · center   svg 16×16   h2 "날짜 선택" · 14/700 · lh 20         span "2026년 9월" · 10/400 #868B94
