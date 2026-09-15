@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
   /* 보기 «mar 40 0 0 0» — 질문 아래 40. 좌우는 화면 24. */
   section: {
     marginTop: Spacing.five + Spacing.two,
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.shellGutter,
     gap: Layout.rowPaddingY,
   },
   /* 줄 사이 «mar 0 0 12 0». */

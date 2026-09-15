@@ -151,7 +151,7 @@ const FILL = { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } as c
 const styles = StyleSheet.create({
   /* 좌우 24 · 아래 24 · 격자 사이 11(시안 tasteWrap gap · 토큰 gap2col). */
   grid: {
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.shellGutter,
     paddingBottom: Layout.gutter,
     gap: Layout.gap2col,
   },

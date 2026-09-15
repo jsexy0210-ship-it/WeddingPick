@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
   /* 화면 «pad 32 24 32 24»의 아래 32는 위에서 insets와 합친다. */
   content: { flexGrow: 1 },
   /* «mar 40 0 0 0» — 보기 아래 40. 좌우는 화면 24. */
-  ctaWrap: { marginTop: Spacing.five + Spacing.two, paddingHorizontal: Layout.gutter, gap: Spacing.two },
+  ctaWrap: { marginTop: Spacing.five + Spacing.two, paddingHorizontal: Layout.shellGutter, gap: Spacing.two },
   /* «382×56 · gap 8 · r16 · bg #1A1C20». */
   next: {
     height: Layout.ctaSheet,
@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
   /* 답 줄 — 기존 정본(answeredWrap) 그대로: 좌우 24 · 상하 6 · 줄 사이 2. */
   answered: {
     marginTop: Spacing.four,
-    marginHorizontal: Layout.gutter,
+    marginHorizontal: Layout.shellGutter,
     paddingVertical: Spacing.two - Spacing.half,
     gap: Spacing.half,
   },

@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
   /* 화면 «pad 32 24 32 24»의 위 · 좌우. 줄 ↔ 막대 «mar 20 0 0 0». */
   bar: {
     paddingTop: Spacing.five,
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.shellGutter,
     gap: Layout.listGap,
   },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: Layout.iconRow },

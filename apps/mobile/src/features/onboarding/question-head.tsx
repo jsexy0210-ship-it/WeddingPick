@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
   /* «pad 80 0 0 0» — 같은 값의 pickEmptyPaddingY. 좌우는 화면 «pad … 24». */
   wrap: {
     paddingTop: Layout.pickEmptyPaddingY,
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.shellGutter,
   },
   /* «10/400 · ls 2.2px». */
   eyebrow: { letterSpacing: LetterSpacing.p22 },
