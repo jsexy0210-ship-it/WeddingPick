@@ -36,7 +36,7 @@ node scripts/screenshot-screens.mjs --build
 | `--full` | 스크롤 포함 전체. 기본은 한 화면(390×844) |
 | `--wait <ms>` | 렌더를 기다리는 시간. 기본 1500 |
 | `--tap <이름>` | 찍기 전에 누른다. 여러 번 줄 수 있고 준 순서대로 누른다 — 아래 |
-| `--viewport WxH` | 창 크기. 기본은 경로를 보고 정한다 — 아래 |
+| `--viewport WxH` | 창 크기. 기본은 경로를 보고 정한다 — 아래. **피그마와 나란히 놓을 때는 `430x932`** |
 
 ## 눌러야 나오는 화면
 
@@ -115,7 +115,65 @@ npx jest --config packages/api-contract/jest.config.js --rootDir packages/api-co
 
 어느 칸이 어떻게 틀렸는지 zod가 그대로 말해 준다. `npm test`에도 같이 돈다.
 
-## 시안은 찍지 않는다 — 사람이 옆에 놓고 본다
+## 피그마 시안은 찍는다 — `screenshot-figma.mjs`
+
+**2026-09-15에 바뀐 것.** 아래 「`.dc.html`은 못 찍는다」는 그대로 맞지만, 그 전제를
+**피그마 저장소에까지 넓혀 읽은 것이 틀렸다.** `weddingpick_figma`는 자산이 다 들어
+있는 평범한 Vite + React 앱이라 빌드하면 찍힌다. 그 전제를 고치지 않은 채 2026-09-14까지
+왔고, 대표님이 앱을 열어 보시고 「피그마랑 아예 다르잖아」라고 하실 때까지 **아무도 두
+장을 나란히 놓은 적이 없었다.**
+
+처음 한 번 준비한다.
+
+```bash
+git clone --depth 1 https://github.com/jsexy0210-ship-it/weddingpick_figma \
+  /home/user/jsexy0210-ship-it/weddingpick_figma
+cd /home/user/jsexy0210-ship-it/weddingpick_figma && npm install && npx vite build
+```
+
+찍는다. **폭을 앱과 맞춘다** — 기본값이 양쪽 다 430이라 그냥 두면 맞는다.
+
+```bash
+node scripts/screenshot-figma.mjs --out /tmp/figma --route "/" --route "/search"
+node scripts/screenshot-screens.mjs --build --full --viewport 430x932 \
+  --out /tmp/app --route "/(tabs)/" --route "/(tabs)/search/"
+```
+
+라우트 대조표는 `docs/rn-migration/RN_MIGRATION_MAP.md`에 있다.
+
+**찍힌 것을 시안 값으로 믿지 않는다.** 피그마 저장소의 `src/app/components/`는 Figma
+Make가 LLM으로 생성한 근사치(B등급)라 **구성·IA·흐름의 근거**이지 수치의 근거가
+아니다. 자세한 등급은 `docs/rn-migration/FIGMA_SCREEN_INVENTORY.md` §1.
+
+또 시안은 바깥 자산(unsplash 사진 · Google Fonts · jsDelivr)을 부르는데 도구가 전부
+막는다 — 사진 자리는 회색으로 비고 **서체는 폴백으로 떨어진다.** 글자 모양을 이
+그림으로 판정하지 않는다.
+
+## 「연결이 불안정해요」만 찍히던 시절 — 2026-09-15에 고쳤다
+
+**이 도구는 2026-09-15 전까지 모든 화면을 오류 화면으로 찍고 있었다.** 파일은
+나왔으므로 실패로 보이지도 않았다.
+
+까닭은 오리진이 둘이었던 것이다. 정적 서버는 `listen(0)`으로 아무 포트나 잡고
+`EXPO_PUBLIC_API_URL`은 따로 `http://127.0.0.1:1`을 구웠다. 그러면
+
+1. 포트 1은 크로뮴이 막는 well-known 포트라 `ERR_UNSAFE_PORT`로 **가로채기 전에** 끊기고,
+2. 그 자리를 안전한 포트로 옮겨도 화면과 API의 오리진이 달라 **CORS 프리플라이트
+   (OPTIONS)** 가 먼저 나가는데, playwright의 `page.route`는 프리플라이트를 못 가로챈다.
+
+어느 쪽이든 fixtures가 답할 기회를 못 얻고 앱은 「연결이 불안정해요」를 그린다.
+
+고친 방법은 **화면과 API를 같은 오리진에 두는 것**이다. 정적 서버를 고정 포트
+`4317`에 앉히고 같은 주소를 굽는다(`CAPTURE_PORT`). 프리플라이트가 아예 없다.
+
+`--build`에 `--clear`를 붙인 것도 같은 일의 일부다 — 메트로는 인라인된
+`EXPO_PUBLIC_*` 값을 캐시 키에 넣지 않아, 주소를 고쳐도 **지난 번들을 그대로 다시
+내놓는다.** 고친 줄을 보고 「고쳤다」고 적었는데 dist에는 옛 주소가 남아 있었다.
+
+그래서 찍은 뒤에 **콘솔 오류 줄을 읽는다.** 거기 `ERR_UNSAFE_PORT`나
+`ERR_CONNECTION_REFUSED`가 있으면 그림은 화면이 아니라 오류 화면이다.
+
+## 핸드오프 `.dc.html` 시안은 찍지 않는다 — 사람이 옆에 놓고 본다
 
 `docs/design-handoff/`의 `.dc.html`은 **이 도구가 찍지 않는다.** 자산이 저장소에
 들어오지 않기 때문이다(2026-09-11 대표님 확인 — 용량 때문에 올릴 수 없다).

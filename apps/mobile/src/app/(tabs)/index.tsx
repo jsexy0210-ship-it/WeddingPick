@@ -28,6 +28,7 @@ import { takeFullScreenLoading } from '@/features/loading/first-run';
 import { BenefitSheet } from '@/features/home/benefit-sheet';
 import { hasSeenBenefitSheet, markBenefitSheetSeen } from '@/features/home/benefit-sheet-seen';
 import { Board } from '@/features/home/board';
+import { CategoryGrid } from '@/features/home/category-grid';
 import { listWeddingContent, type WeddingContentItem } from '@/features/home/content';
 import {
   DEFAULT_HOME_LAYOUT,
@@ -342,6 +343,25 @@ function homeSectionBlocks({
               }
             }}
           />
+        </ThemedView>
+      ),
+    },
+
+    /*
+     * 카테고리 — 업종별 검색으로 바로 들어가는 3×2 격자. 시안에는 있는데 앱에
+     * 없던 자리다(2026-09-15). 상태를 보지 않는다 — 어느 구간이든 같은 여섯 칸이라
+     * `view`를 받지 않는다.
+     */
+    category: {
+      key: 'category',
+      node: (
+        <ThemedView style={styles.block}>
+          <ThemedView style={styles.section}>
+            <ThemedText type="t4">카테고리</ThemedText>
+            <CategoryGrid
+              onPressCategory={(category) => router.push(`/search?category=${category}`)}
+            />
+          </ThemedView>
         </ThemedView>
       ),
     },
