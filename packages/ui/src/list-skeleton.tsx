@@ -42,7 +42,7 @@ export function ListSkeleton({ rows = 3, hero = false }: ListSkeletonProps) {
 
         return (
           <View key={i} style={styles.row}>
-            <Skeleton width={THUMB} height={THUMB} radius={Radius.control} />
+            <Skeleton width={THUMB} height={THUMB} radius={Radius.small} />
             <View style={styles.lines}>
               <Skeleton width={w1} height={16} />
               <Skeleton width={w2} height={13} style={{ backgroundColor: theme.backgroundSelected }} />
