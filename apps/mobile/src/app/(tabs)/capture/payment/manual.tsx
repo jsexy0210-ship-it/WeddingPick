@@ -1,6 +1,7 @@
 import {
   PAYMENT_PROOF_FIELD_LABEL,
   claimablePaymentProofFields,
+  formatCount,
   type PaymentProofField,
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -36,12 +37,17 @@ function toTimestamp(day: string): string | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
 }
 
-/** 세 자리마다 쉼표. 숫자가 아닌 것은 들어오지 못한다. */
+/**
+ * 적는 동안 세 자리마다 쉼표를 찍는다. 숫자가 아닌 것은 들어오지 못한다.
+ *
+ * **쉼표는 `formatCount`가 찍는다**(2026-09-15 대표 지시 — 「항상 모든 숫자는 천단위
+ * [,] 처리한다」 · 「공용 함수 하나를 거친다」). 여기서 정규식으로 따로 찍으면 화면마다
+ * 다른 규칙이 생기고, 그중 하나가 로케일을 빠뜨린다.
+ */
 function comma(raw: string): string {
-  return raw
-    .replace(/[^0-9]/g, '')
-    .slice(0, 12)
-    .replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const digits = raw.replace(/[^0-9]/g, '').slice(0, 12);
+
+  return digits.length === 0 ? '' : formatCount(Number(digits));
 }
 
 /**
