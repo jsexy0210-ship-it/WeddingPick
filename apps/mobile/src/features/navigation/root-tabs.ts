@@ -1,4 +1,4 @@
-import type { ProductSymbolName } from '@weddingpick/ui';
+import type { SeedIconName } from '@weddingpick/ui';
 
 /**
  * Root 탭 — **이 배열 하나가 탭의 유일한 정의다.**
@@ -19,7 +19,11 @@ export type RootTabSpec = {
   /** `app/(tabs)` 아래 라우트 이름. 화면 이름이 바뀌어도 이 값은 그대로다. */
   name: string;
   label: string;
-  icon: ProductSymbolName | 'pick';
+  /**
+   * SEED 아이콘 켜짐 · 꺼짐 한 쌍(피그마 `Root.tsx` `IconActive` · `IconInactive`). Pick만
+   * `'pick'` — 우리 Pick Mark다(보류 · 2026-09-15 MASTER. 대표님이 하트라 하기 전까지 그대로).
+   */
+  icon: { off: SeedIconName; on: SeedIconName } | 'pick';
   /**
    * 가운데 원형 강조. Pick 하나뿐이다 — 이 앱에서 가장 중요한 행동이라
    * 나머지 넷과 다른 모양으로 선다(Figma `Root.tsx` `isPick`).
@@ -28,12 +32,12 @@ export type RootTabSpec = {
 };
 
 export const ROOT_TABS: readonly RootTabSpec[] = [
-  { name: 'index', label: '홈', icon: 'house' },
+  { name: 'index', label: '홈', icon: { off: 'homeRegular', on: 'homeFill' } },
   /* 라우트는 `/wedding` 그대로. 이름만 «웨딩노트»다. */
-  { name: 'wedding', label: '웨딩노트', icon: 'calendar' },
+  { name: 'wedding', label: '웨딩노트', icon: { off: 'calendarRegular', on: 'calendarFill' } },
   { name: 'pick', label: 'Pick', icon: 'pick', emphasized: true },
-  { name: 'community', label: '라운지', icon: 'twoPeople' },
-  { name: 'my', label: 'MY', icon: 'person' },
+  { name: 'community', label: '라운지', icon: { off: 'communityRegular', on: 'communityFill' } },
+  { name: 'my', label: 'MY', icon: { off: 'profileRegular', on: 'profileFill' } },
 ];
 
 /**
@@ -43,7 +47,7 @@ export const ROOT_TABS: readonly RootTabSpec[] = [
  * **`search`는 임시로 내린 것이다(2026-09-14 대표 지시).** 「검색은 차후에 탭으로
  * 이관한다. 초기 이미지 데이터가 없어서 뒤로 숨긴다」 — 영구 결정이 아니다.
  * 되돌리는 방법은 한 줄이다: 여기서 `'search'`를 빼고 `ROOT_TABS`에
- * `{ name: 'search', label: '검색', icon: 'magnifier' }`를 넣으면 된다.
+ * `{ name: 'search', label: '검색', icon: { off: 'searchRegular', on: 'searchFill' } }`(searchFill은 SEED에서 더 옮겨야 한다)를 넣으면 된다.
  * 그동안 진입은 홈 상단 검색바가 맡는다(`app/(tabs)/index.tsx` — 다른 담당).
  *
  * `capture`(제보)는 v3.2 §1이 루트에서 뺀 것이고, `(home)`은 홈에서 파고드는

@@ -642,6 +642,8 @@ export const AdminSpacing = {
 export const Layout = {
   /** 화면 좌우 거터. 바텀시트 내부도 같다. */
   gutter: 24,
+  /** 피그마 화면의 좌우 여백 20 — spacing.pageX(규격서 `pad … 20 … 20`). 피그마에 없는 화면은 gutter 24 그대로. */
+  pageX: 20,
   /** 섹션을 가르는 gray100 밴드 높이. */
   sectionBand: 16,
   /** 섹션과 섹션 사이 · 섹션 하단. spacing.sectionBottom. */
@@ -722,7 +724,7 @@ export const Layout = {
   /** 탭 항목 최소 높이. tabBar.itemMinHeight. */
   tabItemMinHeight: 52,
   /** 탭 아이콘과 라벨 사이. tabBar.itemGap. */
-  tabItemGap: 3,
+  tabItemGap: 4,
   /** Pick 탭 점 배지 지름·테두리·위치. tabBar.pickDot. */
   tabPickDot: 7,
   tabPickDotBorder: 1.5,
@@ -814,12 +816,49 @@ export const Layout = {
   iconTab: 24,
   /** 헤더 오른쪽 아이콘 버튼 한 변(40, 원형) · 뒤로가기. size.iconButton · size.backButton. */
   iconButton: 40,
+  /**
+   * 검색 화면(피그마 `Search.tsx` · 2026-09-14 정본) 전용 크기. size.iconField ·
+   * iconMicro · searchField · headerBack · pickCircle · thumbSearch — 근거는
+   * spec/tokens.json `size.$figmaNote`.
+   */
+  iconField: 16,
+  iconMicro: 12,
+  /** 규격서 vendor-1.txt 「인증」 pill 안 체크 «svg 10×10» — size.iconTiny. */
+  iconTiny: 10,
+  searchField: 48,
+  headerBack: 36,
+  pickCircle: 28,
+  thumbSearchWidth: 104,
+  thumbSearchHeight: 116,
+  /** Pick 빈 상태의 원 64와 그 안 하트 32 — size.emptyMark · iconEmpty(피그마 `Pick.tsx` `h-16 w-16` · `h-8 w-8`). */
+  emptyMark: 64,
+  iconEmpty: 32,
+  /** 업체 상세 대표 이미지 288 · 포트폴리오 띠 정사각 144 — size.heroVendor · thumbPortfolio(피그마 `VendorFlows.tsx` `h-72` · `h-36 w-36`). */
+  heroVendor: 288,
+  thumbPortfolio: 144,
+  /*
+   * 홈 규격서 docs/figma-spec/home.txt(2026-09-15). 히어로 장식 원 «div 144×144 … r9999» ·
+   * «div 112×112 … border 14» · 더보기 «button 24×24» · 아바타 «span 16×16 "지" 7/700» · 추천 카드
+   * «div 208×262» «img 206×144» · 하트 «button 32×32» · 웨딩피드 «img 80×80 r18» · 탭 바 «pad 0 8».
+   */
+  heroDecorLarge: 144,
+  heroDecorSmall: 112,
+  heroDecorBorder: 14,
+  heroMore: 24,
+  avatarMini: 16,
+  cardRecommendWidth: 208,
+  imageRecommendHeight: 144,
+  pickBubble: 32,
+  thumbFeed: 80,
+  tabBarPaddingX: 8,
   /** 행 안 아이콘. size.iconRow. */
   iconRow: 20,
   /** 행 끝 chevron 한 변. size.iconInline. */
   iconInline: 18,
   /** 칩 삭제 X 한 변. size.iconChipClose · size.iconSmall. */
   iconChipClose: 14,
+  /** 작은 아이콘 14 — size.iconSmall. 칩 안의 꺾쇠 · 카드 Pick 원 안의 하트(피그마 `w-3.5 h-3.5`). */
+  iconSmall: 14,
   /** 썸네일. size.thumbList · thumbCandidate · thumbGallery. */
   thumbList: 52,
   thumbCandidate: 44,
@@ -845,6 +884,8 @@ export const Layout = {
   stepRow: 30,
   /** 목록 앞 점 지름. spacing.bulletDot — 시안 «width:6px;height:6px;border-radius:999px». */
   bulletDot: 6,
+  /** Pick 빈 상태의 위아래 80 — spacing.pickEmptyPaddingY(피그마 `Pick.tsx` `py-20`). */
+  pickEmptyPaddingY: 80,
   /** 바텀시트 패널 — padding 12 24 28(+ safeBottom) · 요소 간격 20 · 제목과 본문 사이 6. component.sheet. */
   sheetPaddingTop: 12,
   sheetPaddingBottom: 28,
@@ -924,6 +965,21 @@ export const Radius = {
   /** 폰 프레임(시안 전용). radius.device. */
   device: 40,
   pill: 999,
+  /**
+   * 피그마(2026-09-14 정본)의 곡률 셋. radius.cardLarge · thumb · hero — 근거는
+   * spec/tokens.json `radius.$figmaNote`.
+   *
+   * cardLarge 16은 `rounded-2xl`의 **실효값**이다 — 피그마 theme.css가 `--radius-2xl`을
+   * 정의하지 않아 Tailwind 기본 1rem으로 떨어진 값이고, 그래서 xl(22)보다 작다. 화면에
+   * 그려진 대로 옮겼고 18 기준 채택 여부는 대표 판단 대기다(FIGMA_DESIGN_SYSTEM.md §6-5).
+   */
+  cardLarge: 16,
+  thumb: 18,
+  hero: 22,
+  /** 웨딩노트의 캘린더 · 예산 · 상담 패널. radius.panel — 피그마 `OurWedding.tsx` `rounded-[26px]`. */
+  panel: 26,
+  /** 로그인 안내 카드. radius.callout — 피그마 `FlowScreens.tsx` `rounded-[28px]`. */
+  callout: 28,
 } as const;
 
 /**
@@ -948,6 +1004,18 @@ export const Border = {
  * 한다. 떠 있는 카드 하나만 `floatingCard`(0 2px 6px rgba(0,0,0,.16))를 쓴다.
  */
 export const Elevation = {
+  /**
+   * 피그마 규격서의 «shadow» — Tailwind `shadow-sm` = 0 1px 2px rgba(0,0,0,.05). 검색 · Pick ·
+   * 웨딩피드 카드가 쓴다(docs/figma-spec/search.txt 「div 390×137 … r16 · border … · shadow」).
+   * 2026-09-15 대표 지시로 규격서의 수를 그대로 옮긴다 — elevation.$rule(그림자 거의 안 씀)보다 앞선다.
+   */
+  figmaCard: {
+    shadowColor: '#000000',
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
   floatingCard: {
     shadowColor: '#000000',
     shadowOpacity: 0.16,

@@ -50,9 +50,14 @@ export function BackButton({
         따로 그렸는데(`M15 5.5 8 12l7 6.5` · 획 1.9) 다른 화면의 `chevronLeft`
         (`M14.5 5 8 12l6.5 7`)와 모양도 두께도 달랐다.
       */}
+      {/*
+        뒤로는 ← 화살(피그마 2026-09-14 정본 — `Search.tsx` · `VendorFlows.tsx` · `FlowScreens.tsx`
+        전부 lucide ArrowLeft `h-5 w-5` = 20). 꺾쇠였던 것을 바꿨고, 상세 화면끼리 같은 단추를
+        쓰므로 여기 한 곳만 바꾸면 전부 따라온다.
+      */}
       <ProductSymbol
-        name={variant === 'close' ? 'close' : 'chevronLeft'}
-        size={Layout.iconTab}
+        name={variant === 'close' ? 'close' : 'arrowLeft'}
+        size={variant === 'close' ? Layout.iconTab : Layout.iconRow}
         color={theme.text}
       />
     </Pressable>

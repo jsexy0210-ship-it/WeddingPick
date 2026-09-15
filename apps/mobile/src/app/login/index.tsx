@@ -37,11 +37,16 @@ import { openExternal } from '@/features/open-external';
  * 디자인 핸드오프 v3.12의 확정 카피 — `spec/strings.ko.json`의
  * `auth.login.benefit*`과 같은 문장을 유지한다.
  */
-const REASONS = [
-  '실제 견적 금액을 비교해요', // pick-language: 업체에서 실제로 받은 금액을 가리키는 말 — 서류를 고르라는 자리가 아니다
-  '마음에 드는 곳을 함께 Pick해요',
-  '일정과 지출도 한곳에서 관리해요',
-];
+/*
+ * 피그마 `Login`(2026-09-14 정본)의 카피. 제목 «결정은 가볍게, 준비는 단단하게.» · 부제 ·
+ * 안내 카드 «나에게 맞는 순서부터 / 예산, 지역, 날짜를 기준으로 시작해요». 영문 eyebrow
+ * («WEDDING, LESS OVERWHELMING»)는 걷어낸다(C-9). 이전 카피(«웨딩 준비, 진짜 견적부터 …»
+ * + 혜택 세 줄)는 피그마가 이겼다 — 판단 필요로 PR에 적었다.
+ */
+const HERO_TITLE = '결정은 가볍게,\n준비는 단단하게.';
+const HERO_SUB = '흩어진 웨딩 정보를 한곳에 모아, 우리에게 맞는 선택만 남겨드릴게요.';
+const CALLOUT_TITLE = '나에게 맞는 순서부터';
+const CALLOUT_BODY = '예산, 지역, 날짜를 기준으로 시작해요';
 
 /**
  * 카카오가 연령대를 주지 않았을 때만 뜨는 확인 — strings.ko.json
@@ -157,20 +162,24 @@ export default function LoginScreen() {
               </>
             ) : (
               <>
-                <ThemedText type="t1">
-                  웨딩 준비,{'\n'}진짜 견적부터{'\n'}확인해 보세요{/* pick-language: 업체에서 실제로 받은 금액을 가리키는 말 — 서류를 고르라는 자리가 아니다 */}
+                {/* 피그마: 제목 42/700(스케일에 없어 t1 32) · 20 아래 부제(15 · muted · 최대 300) · 48 아래 안내 카드. */}
+                <ThemedText type="t1">{HERO_TITLE}</ThemedText>
+                <ThemedText type="t6" themeColor="textAssistive" style={styles.heroBody}>
+                  {HERO_SUB}
                 </ThemedText>
-
-                {/* 시안 benefitWrap — 위 28 · 줄 사이 2. 줄은 최소 44 · 상하 9 · 점과 글자 사이 10. */}
-                <View style={styles.benefitList}>
-                  {REASONS.map((reason) => (
-                    <View key={reason} style={styles.benefitRow}>
-                      <View style={[styles.dot, { backgroundColor: theme.tint }]} />
-                      <ThemedText type="body" themeColor="textStrong" style={styles.benefitText}>
-                        {reason}
-                      </ThemedText>
-                    </View>
-                  ))}
+                {/* 안내 카드 `rounded-[28px] border-primary/15 bg-primary/[0.06] p-5` — 키 컬러 면 · 테두리, 원 40 안에 마크. */}
+                <View style={[styles.callout, { backgroundColor: theme.tintSurface, borderColor: theme.tintBorder }]}>
+                  <View style={[styles.calloutMark, { backgroundColor: theme.tint }]}>
+                    <WeddingMark size={KAKAO_LOGO} color={theme.onTint} />
+                  </View>
+                  <View style={styles.calloutText}>
+                    <ThemedText type="t7" style={styles.bold}>
+                      {CALLOUT_TITLE}
+                    </ThemedText>
+                    <ThemedText type="micro" themeColor="textAssistive" style={styles.calloutBody}>
+                      {CALLOUT_BODY}
+                    </ThemedText>
+                  </View>
                 </View>
               </>
             )}
@@ -420,6 +429,8 @@ function PolicyLink({ id }: { id: 'terms' | 'privacy' }) {
 /* 시안 고정값 — 마크 64 · 카카오 로고 20 · 아바타 40(로고 18) · 배지 좌우 9 · 카드 안쪽 16/18. */
 /* 시안 고정값 — 마크 64 · 카카오 로고 20 · 아바타 40(로고 18) · 배지 좌우 9 · 카드 안쪽 16/18. */
 const MARK_SIZE = 64;
+/** 피그마 `Login` 부제 `max-w-[300px]` — 시안 고정값. */
+const CALLOUT_BODY_MAX_WIDTH = 300;
 const KAKAO_LOGO = 20;
 const AVATAR_LOGO = 18;
 const BADGE_PADDING_X = 9;
@@ -483,26 +494,31 @@ const styles = StyleSheet.create({
     fontWeight: 400,
   },
   /* 시안 benefitWrap — 위 28(섹션 사이) · 줄 사이 2. */
-  benefitList: {
-    paddingTop: Layout.sectionGap,
-    gap: Spacing.half,
+  /* 부제 `mt-5 max-w-[300px]` — 위 20(같은 값의 listGap) · 최대 300(size.screen.width 390 − 좌우 여백은 아니고 시안 고정값). */
+  heroBody: {
+    marginTop: Layout.listGap,
+    maxWidth: CALLOUT_BODY_MAX_WIDTH,
+    fontWeight: 400,
   },
-  benefitRow: {
+  /* 안내 카드 `mt-12 rounded-[28px] border p-5 gap-3` — 위 48 · radius 28 · 안쪽 20 · 원↔글 12. */
+  callout: {
+    marginTop: Spacing.four + Spacing.four,
+    borderRadius: Radius.callout,
+    borderWidth: 1,
+    padding: Layout.cardPadding,
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Layout.cardGap,
-    minHeight: Layout.touchTarget,
-    paddingVertical: Layout.summaryRowPaddingY,
+    alignItems: 'center',
+    gap: Layout.inlineGap,
   },
-  benefitText: {
-    flex: 1,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    marginTop: Spacing.two,
+  calloutMark: {
+    width: Layout.iconButton,
+    height: Layout.iconButton,
     borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  calloutText: { flex: 1, minWidth: 0 },
+  calloutBody: { marginTop: Spacing.half, fontWeight: 400 },
   busy: { alignItems: 'center', gap: Spacing.two, paddingVertical: Spacing.three },
   /* 시안 lastWrap — 위 28. */
   accountWrap: { paddingTop: Layout.sectionGap },

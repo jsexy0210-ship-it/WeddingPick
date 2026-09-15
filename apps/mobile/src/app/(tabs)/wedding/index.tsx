@@ -1,200 +1,150 @@
+/**
+ * 웨딩노트 — WP-OUR-001.
+ *
+ * 피그마 `OurWedding.tsx`(2026-09-14 정본 · 최상위 규칙 1)대로 그린다. 제목 → 세 칸 탭
+ * (캘린더 · 상담기록 · 예산현황) → 탭마다 패널 하나(radius 26 · 테두리 · 안쪽 20) → 오른쪽
+ * 아래 FAB. 그 앞에는 루트 시안의 D-Day 히어로 · 다음 일정 · 지출 상자 · 우리둘 카드가
+ * 있었다 — 피그마가 그 자리를 이긴다. 예식 뒤 화면(`WeddingCompleteView`)은 피그마에
+ * 없으므로 기존 정본 그대로다(최상위 규칙 3).
+ *
+ * **피그마를 그대로 옮기지 않은 것.**
+ * - 영문 eyebrow(«OUR CALENDAR» 등)는 걷어낸다(인수인계 C-9).
+ * - 일정의 완료 표시는 누르지 않는다 — `status`는 서버가 시각으로 계산한다
+ *   (`weddingEventStatusSchema` 주석). 지난 일정이 «완료»다.
+ * - 일정 · 지출의 추가 · 수정은 피그마의 인라인 시트 대신 **기존 화면**으로 간다
+ *   (`/wedding/[id]/events/new` · `events/[eventId]` · `expenses/add`) — 시트는 기존 정본(규칙 5).
+ * - 예산현황의 항목별 «집행 / 예산»은 서버가 항목별 예산을 주지 않는다(`buckets`는 집행
+ *   금액과 비율뿐). 막대는 전체 지출 중 비율이고 오른쪽 수는 집행 금액이다. 항목별
+ *   수정 · 삭제 단추도 그래서 없다.
+ * - 상담기록은 목록만 여기 있고, 올리기 · 확인 · 저장은 기존 상담기록 화면이 한다.
+ *   «AI 분석 중» 같은 말은 쓰지 않는다(용어 규칙).
+ */
 import { FullScreenError } from '@/features/errors/full-screen-error';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import type {
+  ConsultationRecord,
   CurrentUser,
   ExpenseSummaryResponse,
-  WeddingEventListResponse,
-  WeddingTaskListResponse,
+  WeddingEvent,
 } from '@weddingpick/api-contract';
 import { TERMS, isBeforeWedding, lifecycle, manwon } from '@weddingpick/domain';
-import { Redirect, router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { Redirect, router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
-  ActionButton,
+  Border,
+  DonutChart,
+  Elevation,
+  Fab,
   Layout,
-  LineHeight,
-  ProgressBar,
+  ProductSymbol,
   Radius,
-  Skeleton,
   Spacing,
   ThemedText,
   ThemedView,
+  Toast,
+  showAlert,
   useTheme,
 } from '@weddingpick/ui';
-import { ensureWedding, getCurrentUser, getExpenses, listWeddingEvents, listWeddingTasks } from '@/api/client';
-import { readCurrentUserSnapshot } from '@/features/loading/current-user-snapshot';
+import {
+  ensureWedding,
+  getCurrentUser,
+  getExpenses,
+  listConsultations,
+  listWeddingEvents,
+  removeWeddingEvent,
+} from '@/api/client';
 import { useSession } from '@/features/auth/use-session';
 import { WeddingCompleteView } from '@/features/wedding/complete-view';
-import { Avatar, DateChip, RowValue, eventTime } from '@/features/wedding/screen-kit';
+import { eventTime } from '@/features/wedding/screen-kit';
 
-/**
- * 배우자 상태 — 혼자 · 배우자와 함께(v3.16). «미연결»이라는 이름을 쓰지 않는다 —
- * 혼자인 상태는 결핍이 아니다. 핸드오프 08c(18a · 18a2)가 정한 상태는 이 둘뿐이라
- * 초대를 보낸 뒤도 화면은 «혼자»와 같다.
- */
-type CoupleStatus = 'solo' | 'together';
+type Tab = 'calendar' | 'consult' | 'budget';
 
-type WeddingData = {
-  me: CurrentUser | null;
-  events: WeddingEventListResponse | null;
-  expenses: ExpenseSummaryResponse | null;
-  tasks: WeddingTaskListResponse | null;
-};
+/* 문구 — spec/strings.ko.json `ourWedding`. 피그마 `OurWedding.tsx`에서 왔다. */
+const TABS: readonly { key: Tab; label: string }[] = [
+  { key: 'calendar', label: '캘린더' },
+  { key: 'consult', label: '상담기록' },
+  { key: 'budget', label: '예산현황' },
+];
+const CALENDAR_HINT = '빈 날짜를 누르면 일정을 바로 추가해요';
+const ADD_FOR_DAY = '이 날짜에 일정을 추가해요';
+const DONE = '완료';
+const PREV_MONTH = '이전 달';
+const NEXT_MONTH = '다음 달';
+const EDIT = '수정';
+const DELETE = '삭제';
+const DELETE_TITLE = '삭제할까요?';
+const USED = '사용';
+const UNPAID = '미집행';
+const CONSULT_EMPTY_TITLE = '녹음 파일을 선택해 주세요';
+const CONSULT_EMPTY_BODY = '스마트폰 녹음앱에서 저장한 파일을 올릴 수 있어요';
+const CONSULT_SAVED = '저장됨';
+const CONSULT_PENDING = '확인 필요';
+const FAB_LABEL: Record<Tab, string> = { calendar: '일정 추가', budget: '지출 추가', consult: '녹음 파일 추가' };
+const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
 
-const EMPTY: WeddingData = { me: null, events: null, expenses: null, tasks: null };
+/** 막대 · 도넛의 값 — 피그마 `h-2`(8) · `h-28`(112) · 구멍 `h-20`(80). */
+const BAR_HEIGHT = 8;
+const DONUT_SIZE = 112;
+const DONUT_HOLE = 80;
+const EVENT_DOT = 4;
 
-/** 핸드오프 08c: 진행바 트랙 높이 6. `ProgressBar` 기본값(8)과 달라 여기서 준다. */
-const TRACK_HEIGHT = 6;
-const DAY_MS = 24 * 60 * 60 * 1000;
+const pad = (value: number) => String(value).padStart(2, '0');
+const dayKey = (value: Date) => `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`;
 
-/** `spec/strings.ko.json` `ourWedding.*` · `common.cta.report`. */
-const S = {
-  title: TERMS.ourWedding,
-  nextSchedule: '다음 일정',
-  seeAll: '전체 보기',
-  spend: '지출',
-  report: 'Pick 인증하기',
-  couple: '우리둘',
-  inviteTitle: '함께 Pick하고 준비해요',
-  invite: '초대하기',
-  noSchedule: '다음 일정이 없어요',
-} as const;
-
-/**
- * 웨딩일정 홈 · WP-OUR-001 (핸드오프 08c 18a/18a2).
- *
- *   header   56 · «웨딩일정» 20/27 · 오른쪽 아바타 26(혼자 1 · 함께 2 겹침)
- *   hero     padding 12 24 26 · «두근두근 / 140일 남았어요» 26/35 · 진행바 6 + «10/20»
- *   다음 일정  «전체 보기» · 날짜칩 52 + 제목 18/24 + 시각·장소 14/19 + D-day 16/22 · 최대 2행
- *   밴드 16
- *   지출     제목 20/27 · 카드(총액 32 · 예산 · 진행바 · 업종 3행 · «Pick 인증하기» 48) — 카드를 누르면 지출 요약
- *   밴드 16
- *   우리둘   카드 «우리둘» 14/19 + «함께 Pick하고 준비해요» 18/24 + «초대하기» 48 — 함께면 문장만
- *
- * **혼자서도 전면 개방.** 두 상태는 같은 화면이고 다른 것은 둘뿐이다 — 헤더 아바타 1개/2개,
- * 하단 «우리둘» 카드(초대하기 유무). 화면을 두 개 만들지 않는다.
- *
- * **준비 현황은 여기 없다(v3.22 SPEC 13.9).** WP-OUR-002는 폐기했고 홈 4칸 + WP-HOME-009
- * 두 곳뿐이다. 웨딩일정은 결정한 뒤의 관리(일정 · 지출 · 메모)만 맡는다.
- *
- * **예식일이 지나면 예식 완료(WP-OUR-013) 본문을 그대로 보여준다.** 준비 알림은 멈추고
- * 기록은 남는다.
- */
 export default function WeddingScreen() {
   const theme = useTheme();
   const { state, refresh } = useSession();
-  const [data, setData] = useState<WeddingData>(EMPTY);
-  const [loading, setLoading] = useState(true);
-  /** 일정 D-day 계산용 기준 시각. 렌더 중에는 Date.now()를 부르지 않는다 — 마운트 후 한 번 정한다. */
-  const [now, setNow] = useState<number | null>(null);
-
-  useEffect(() => {
-    void Promise.resolve().then(() => setNow(Date.now()));
-  }, []);
+  const [me, setMe] = useState<CurrentUser | null>(null);
+  const [events, setEvents] = useState<WeddingEvent[] | null>(null);
+  const [expenses, setExpenses] = useState<ExpenseSummaryResponse | null>(null);
+  const [consults, setConsults] = useState<ConsultationRecord[] | null>(null);
+  const [tab, setTab] = useState<Tab>('calendar');
+  const [toast, setToast] = useState<string | null>(null);
 
   const isSignedIn = state.status === 'signedIn';
 
   const load = useCallback(() => {
+    if (!isSignedIn) return;
     let active = true;
-    const stop = () => { active = false; };
-    if (!isSignedIn) {
-      void Promise.resolve().then(() => {
-        if (!active) return;
-        setData(EMPTY);
-        setLoading(false);
-      });
-      return stop;
-    }
-
-    // 회원 확인과 목록 요청은 병렬로 시작하고, 확인된 웨딩의 답만 화면에 반영한다.
-    const lists = (weddingId: string) => ({
-      events: listWeddingEvents(weddingId).catch(() => null),
-      expenses: getExpenses(weddingId).catch(() => null),
-      tasks: listWeddingTasks(weddingId).catch(() => null),
-    });
-    const known = readCurrentUserSnapshot();
-    const early = known?.weddingId ? lists(known.weddingId) : null;
-    void Promise.resolve().then(() => {
-      if (!active) return;
-      if (known) setData((prev) => ({ ...prev, me: prev.me ?? known }));
-      setLoading(true);
-    });
-
     void getCurrentUser()
       .then(async (first) => {
+        const current = first.weddingId ? first : await ensureWedding().then(() => getCurrentUser());
         if (!active) return;
-        const me = first.weddingId ? first : await ensureWedding().then(() => getCurrentUser());
-        if (!active) return;
-        setData((prev) => prev.me?.weddingId === me.weddingId ? { ...prev, me } : { ...EMPTY, me });
-        if (!me.weddingId) {
-          setLoading(false);
-          return;
-        }
-        const pending = early && known?.weddingId === me.weddingId ? early : lists(me.weddingId);
-        // 가장 느린 지출 응답이 일정과 준비 현황까지 가리지 않도록 각각 반영한다.
-        await Promise.all([
-          pending.events.then((events) => { if (active) setData((prev) => ({ ...prev, events })); }),
-          pending.expenses.then((expenses) => { if (active) setData((prev) => ({ ...prev, expenses })); }),
-          pending.tasks.then((tasks) => { if (active) setData((prev) => ({ ...prev, tasks })); }),
-        ]);
-        if (active) setLoading(false);
+        setMe(current);
+        if (!current.weddingId) return;
+        const weddingId = current.weddingId;
+        // 세 목록은 따로 도착한다 — 가장 느린 것이 나머지를 가리지 않게 각각 반영한다.
+        void listWeddingEvents(weddingId).then((r) => { if (active) setEvents(r.events); }).catch(() => undefined);
+        void getExpenses(weddingId).then((r) => { if (active) setExpenses(r); }).catch(() => undefined);
+        void listConsultations(weddingId).then((r) => { if (active) setConsults(r.records); }).catch(() => undefined);
       })
-      .catch(() => {
-        if (!active) return;
-        setData(EMPTY);
-        setLoading(false);
-      });
-    return stop;
+      .catch(() => undefined);
+    return () => { active = false; };
   }, [isSignedIn]);
 
-  useEffect(load, [load]);
-
-  const coupleStatus: CoupleStatus = data.me?.spouseLinked ? 'together' : 'solo';
-  const myName = data.me?.displayName ?? null;
-  const partnerName = data.me?.partnerDisplayName ?? null;
-  const initial = (myName ?? '나').slice(0, 1);
-  const partnerInitial = (partnerName ?? TERMS.spouse).slice(0, 1);
-
-  // 다음 일정: upcoming 상태만 startsAt 순으로 최대 2개
-  const upcomingEvents = (data.events?.events ?? [])
-    .filter((e) => e.status === 'upcoming')
-    .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())
-    .slice(0, 2);
-
-  // 지출 버킷: 금액 있는 것만 최대 3개
-  const topBuckets = (data.expenses?.buckets ?? []).filter((b) => b.amount > 0).slice(0, 3);
-
-  /* 홈 히어로와 같은 문구 — 남은 기간별 상태는 `lifecycle`이 한 곳에서 정한다. 예식일이 없어도 답한다. */
-  const stage = lifecycle(data.me?.weddingDate ?? null);
-  const taskProgress = data.tasks?.progress;
-  const progressRatio = taskProgress && taskProgress.total > 0 ? taskProgress.done / taskProgress.total : 0;
-  const weddingId = data.me?.weddingId ?? null;
-  const weddingOver = weddingId !== null && data.me?.weddingDate != null && !isBeforeWedding(stage.stage) && stage.stage !== 'wedding_day';
-
-  const header = (
-    <View style={styles.header}>
-      <ThemedText type="t4">{S.title}</ThemedText>
-      {data.me ? (
-        <View style={styles.avatarRow}>
-          <Avatar initial={initial} tone="me" size={26} />
-          {coupleStatus === 'together' ? (
-            <View style={styles.avatarOverlap}>
-              <Avatar initial={partnerInitial} tone="partner" size={26} />
-            </View>
-          ) : null}
-        </View>
-      ) : null}
-    </View>
-  );
+  /* 일정 · 지출 화면에서 돌아오면 목록이 바뀌어 있다 — 화면에 올 때마다 다시 읽는다. */
+  useFocusEffect(load);
 
   if (state.status === 'error') return <FullScreenError kind={state.kind} onRetry={() => void refresh()} />;
   if (state.status === 'loading') return <DelayedLoadingView />;
   if (state.status === 'signedOut') return <Redirect href="/login" />;
 
-  /* 예식 완료 — WP-OUR-001 «예식 완료» 상태는 WP-OUR-013 본문이다. */
+  const weddingId = me?.weddingId ?? null;
+  const stage = lifecycle(me?.weddingDate ?? null);
+  const weddingOver =
+    weddingId !== null && me?.weddingDate != null && !isBeforeWedding(stage.stage) && stage.stage !== 'wedding_day';
+
+  const header = (
+    <View style={styles.header}>
+      <ThemedText type="f28" style={styles.bold}>
+        {TERMS.ourWedding}
+      </ThemedText>
+    </View>
+  );
+
   if (weddingOver && weddingId) {
     return (
       <ThemedView style={styles.container}>
@@ -206,254 +156,608 @@ export default function WeddingScreen() {
     );
   }
 
+  function onFab() {
+    if (!weddingId) return;
+    if (tab === 'calendar') router.push(`/wedding/${weddingId}/events/new` as never);
+    else if (tab === 'budget') router.push(`/wedding/${weddingId}/expenses/add` as never);
+    else router.push(`/wedding/${weddingId}/consultations` as never);
+  }
+
+  async function deleteEvent(event: WeddingEvent) {
+    if (!weddingId) return;
+    try {
+      await removeWeddingEvent(weddingId, event.id);
+      setEvents((prev) => (prev ? prev.filter((item) => item.id !== event.id) : prev));
+    } catch {
+      setToast('일정을 지우지 못했어요. 잠시 후 다시 시도해주세요.');
+    }
+  }
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         {header}
 
         <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* D-Day 히어로 — 배경 상자 없이 글(26/35)과 진행바만. */}
-          <View style={styles.hero}>
-            {loading && !data.me ? (
-              <>
-                <Skeleton width="60%" height={LineHeight.t2} />
-                <Skeleton width="40%" height={LineHeight.t2} style={{ marginTop: Spacing.one }} />
-              </>
-            ) : (
-              <ThemedText type="t2">
-                {stage.mood}
-                {'\n'}
-                {stage.note}
-              </ThemedText>
-            )}
-            {taskProgress && taskProgress.total > 0 ? (
-              <View style={styles.progressRow}>
-                <View style={styles.progressTrack}>
-                  <ProgressBar value={progressRatio} height={TRACK_HEIGHT} />
-                </View>
-                <ThemedText type="t7" themeColor="textAssistive" numeric style={styles.bold}>
-                  {taskProgress.done}/{taskProgress.total}
-                </ThemedText>
-              </View>
-            ) : null}
-          </View>
-
-          {/* 다음 일정 */}
-          <View style={styles.section}>
-            <View style={styles.sectionHead}>
-              <ThemedText type="t4">{S.nextSchedule}</ThemedText>
-              <Pressable
-                accessibilityRole="button"
-                hitSlop={8}
-                onPress={() => (weddingId ? router.push(`/wedding/${weddingId}/events` as never) : null)}>
-                <ThemedText type="t7" themeColor="textAssistive" style={styles.bold}>
-                  {S.seeAll}
-                </ThemedText>
-              </Pressable>
-            </View>
-
-            {loading && !data.events ? (
-              <View style={styles.list}>
-                <Skeleton height={Layout.rowMinHeight} />
-                <Skeleton height={Layout.rowMinHeight} />
-              </View>
-            ) : upcomingEvents.length === 0 ? (
-              <ThemedText type="t6" themeColor="textAssistive">
-                {S.noSchedule}
-              </ThemedText>
-            ) : (
-              <View style={styles.list}>
-                {upcomingEvents.map((event) => {
-                  const startOfToday = now === null ? null : new Date(now);
-                  startOfToday?.setHours(0, 0, 0, 0);
-                  const startOfDay = new Date(event.startsAt);
-                  startOfDay.setHours(0, 0, 0, 0);
-                  const diffDays =
-                    startOfToday === null ? null : Math.round((startOfDay.getTime() - startOfToday.getTime()) / DAY_MS);
-                  const dDayLabel = diffDays === null ? null : diffDays <= 0 ? '오늘' : `D-${diffDays}`;
-                  const place = event.location ?? event.vendorLabel;
-                  const subText = place ? `${eventTime(event.startsAt)} · ${place}` : eventTime(event.startsAt);
-
-                  return (
-                    <Pressable
-                      key={event.id}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${event.title} · ${subText}`}
-                      onPress={() => router.push(`/wedding/${weddingId}/events/${event.id}` as never)}>
-                      <View style={styles.scheduleRow}>
-                        <DateChip date={event.startsAt} />
-                        <View style={styles.rowContent}>
-                          <ThemedText type="t5" numberOfLines={1}>
-                            {event.title}
-                          </ThemedText>
-                          <ThemedText type="t7" themeColor="textAssistive" numeric numberOfLines={1}>
-                            {subText}
-                          </ThemedText>
-                        </View>
-                        {dDayLabel !== null ? <RowValue>{dDayLabel}</RowValue> : null}
-                      </View>
-                      <View style={[styles.divider, { backgroundColor: theme.border }]} />
-                    </Pressable>
-                  );
-                })}
-              </View>
-            )}
-          </View>
-
-          <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} />
-
-          {/* 지출 — 총액 · 예산 · 진행바 · 항목 · Pick 인증하기가 전부 한 상자 안. 상자를 누르면 지출 요약(WP-OUR-008). */}
-          <View style={styles.section}>
-            <ThemedText type="t4">{S.spend}</ThemedText>
-
-            {loading && !data.expenses ? (
-              <View style={[styles.statBox, { backgroundColor: theme.backgroundElement }]}>
-                <Skeleton width="50%" height={LineHeight.amount} />
-                <Skeleton height={TRACK_HEIGHT} />
-              </View>
-            ) : data.expenses ? (
-              <View style={[styles.statBox, { backgroundColor: theme.backgroundElement }]}>
+          {/* 세 칸 탭 — 피그마 `grid grid-cols-3 rounded-2xl bg-secondary p-1`, 칸 `h-11 rounded-xl`. 켠 칸은 흰 면(그림자는 없다 — elevation.$rule). */}
+          <View accessibilityRole="tablist" style={[styles.tabs, { backgroundColor: theme.backgroundElement }]}>
+            {TABS.map((item) => {
+              const selected = item.key === tab;
+              return (
                 <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`${S.spend} ${S.seeAll}`}
-                  onPress={() => (weddingId ? router.push(`/wedding/${weddingId}/expenses` as never) : null)}
-                  style={({ pressed }) => [styles.statBody, pressed && styles.pressed]}>
-                <View style={styles.spendHead}>
-                  <ThemedText type="amount" numeric>
-                    {manwon(data.expenses.paidTotal)}
+                  key={item.key}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected }}
+                  accessibilityLabel={item.label}
+                  onPress={() => setTab(item.key)}
+                  style={[styles.tab, selected ? [{ backgroundColor: theme.background }, Elevation.figmaCard] : null]}>
+                  <ThemedText type="f14" style={[styles.bold, { color: selected ? theme.text : theme.textAssistive }]}>
+                    {item.label}
                   </ThemedText>
-                  {data.expenses.budget.set ? (
-                    <ThemedText type="t7" themeColor="textAssistive" numeric>
-                      예산 {manwon(data.expenses.budget.budget)}
-                    </ThemedText>
-                  ) : null}
-                </View>
-                {data.expenses.budget.set ? (
-                  <ProgressBar value={data.expenses.budget.spent / data.expenses.budget.budget} height={TRACK_HEIGHT} />
-                ) : null}
-
-                {topBuckets.length > 0 ? (
-                  <View style={styles.list}>
-                    {topBuckets.map((bucket) => (
-                      <View key={bucket.bucket}>
-                        <View style={styles.spendRow}>
-                          <ThemedText type="t6" themeColor="textSecondary" numberOfLines={1} style={styles.grow}>
-                            {bucket.label}
-                          </ThemedText>
-                          <ThemedText type="t6" numeric style={styles.bold}>
-                            {manwon(bucket.amount)}
-                          </ThemedText>
-                        </View>
-                        <View style={[styles.divider, { backgroundColor: theme.border }]} />
-                      </View>
-                    ))}
-                  </View>
-                ) : null}
                 </Pressable>
-
-                {/* 지출 입력과 Pick 인증은 한 화면이다(v3.22 SPEC 13.10 · WP-OUR-014). 자료가 없어도 지출은 저장된다. */}
-                <ActionButton
-                  variant="ghost"
-                  size="large"
-                  label={S.report}
-                  onPress={() =>
-                    weddingId ? router.push(`/wedding/${weddingId}/expenses/add` as never) : router.push('/capture' as never)
-                  }
-                />
-              </View>
-            ) : null}
+              );
+            })}
           </View>
 
-          <View style={[styles.band, { backgroundColor: theme.backgroundSelected }]} />
-
-          {/* 우리둘 — 배우자 초대의 유일한 진입점(MY 배우자 연결 관리 말고는). 혼자면 초대하기, 함께면 문장만. */}
-          <View style={styles.coupleSection}>
-            <View style={[styles.coupleCard, { backgroundColor: theme.backgroundElement }]}>
-              <View style={styles.coupleText}>
-                <ThemedText type="t7" themeColor="textAssistive" style={styles.bold}>
-                  {S.couple}
-                </ThemedText>
-                {coupleStatus === 'together' ? (
-                  <ThemedText type="t5">
-                    {myName ?? '나'}님과 {partnerName ?? TERMS.spouse}님이{'\n'}함께 준비하고 있어요
-                  </ThemedText>
-                ) : (
-                  <ThemedText type="t5">{S.inviteTitle}</ThemedText>
-                )}
-              </View>
-              {coupleStatus === 'solo' ? (
-                <ActionButton variant="ghost" size="large" label={S.invite} onPress={() => router.push('/wedding/partner')} />
-              ) : null}
-            </View>
-          </View>
+          {tab === 'calendar' ? (
+            <CalendarPanel
+              events={events ?? []}
+              onAdd={(date) =>
+                weddingId ? router.push({ pathname: `/wedding/${weddingId}/events/new`, params: { date } } as never) : null
+              }
+              onEdit={(event) => (weddingId ? router.push(`/wedding/${weddingId}/events/${event.id}` as never) : null)}
+              onDelete={(event) =>
+                showAlert(DELETE_TITLE, `"${event.title}" 일정을 삭제합니다.`, [
+                  { text: '취소', style: 'cancel' },
+                  { text: '삭제하기', style: 'destructive', onPress: () => void deleteEvent(event) },
+                ])
+              }
+            />
+          ) : tab === 'budget' ? (
+            <BudgetPanel expenses={expenses} />
+          ) : (
+            <ConsultPanel
+              records={consults ?? []}
+              onOpen={() => (weddingId ? router.push(`/wedding/${weddingId}/consultations` as never) : null)}
+            />
+          )}
         </ScrollView>
+
+        {/* FAB — 피그마 56 원 · 키 컬러 · «+». 탭마다 하는 일이 다르다. 자리는 기존 Fab 그대로다. */}
+        {weddingId ? <Fab label={FAB_LABEL[tab]} onPress={onFab} /> : null}
       </SafeAreaView>
+      <Toast message={toast} onHidden={() => setToast(null)} />
     </ThemedView>
   );
 }
 
+/* ────────────────────────────────────────────
+   캘린더 패널 — 달 제목 24/700 · ‹ 안내 › · 요일 · 날짜 격자(40 원) · 선 · 그날 일정
+──────────────────────────────────────────── */
+function CalendarPanel({
+  events,
+  onAdd,
+  onEdit,
+  onDelete,
+}: {
+  events: WeddingEvent[];
+  onAdd: (date: string) => void;
+  onEdit: (event: WeddingEvent) => void;
+  onDelete: (event: WeddingEvent) => void;
+}) {
+  const theme = useTheme();
+  const [today] = useState(() => new Date());
+  const [cursor, setCursor] = useState(() => ({ year: today.getFullYear(), month: today.getMonth() }));
+  const [selected, setSelected] = useState(() => dayKey(today));
+
+  const firstWeekday = new Date(cursor.year, cursor.month, 1).getDay();
+  const dayCount = new Date(cursor.year, cursor.month + 1, 0).getDate();
+  const cells: (number | null)[] = [
+    ...Array.from<null>({ length: firstWeekday }).fill(null),
+    ...Array.from({ length: dayCount }, (_, index) => index + 1),
+  ];
+  while (cells.length % 7 !== 0) cells.push(null);
+  const rows = Array.from({ length: cells.length / 7 }, (_, row) => cells.slice(row * 7, row * 7 + 7));
+
+  const keyOf = (day: number) => `${cursor.year}-${pad(cursor.month + 1)}-${pad(day)}`;
+  const eventDays = new Set(events.map((event) => dayKey(new Date(event.startsAt))));
+  const dayEvents = events
+    .filter((event) => dayKey(new Date(event.startsAt)) === selected)
+    .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
+
+  function move(delta: number) {
+    setCursor((prev) => {
+      const next = new Date(prev.year, prev.month + delta, 1);
+      return { year: next.getFullYear(), month: next.getMonth() };
+    });
+  }
+
+  /* 피그마 `selectDate`: 날짜를 고르고, 그날 일정이 없으면 바로 추가로 간다. */
+  function selectDay(day: number) {
+    const key = keyOf(day);
+    setSelected(key);
+    if (!eventDays.has(key)) onAdd(key);
+  }
+
+  return (
+    <View style={[styles.panel, { backgroundColor: theme.background, borderColor: theme.border }]}>
+      {/* 규격서: 달 «24/700 · lh 32». */}
+      <ThemedText type="f24" style={styles.bold}>{`${cursor.year}년 ${cursor.month + 1}월`}</ThemedText>
+
+      <View style={styles.monthNav}>
+        <Pressable accessibilityRole="button" accessibilityLabel={PREV_MONTH} onPress={() => move(-1)} style={styles.navBtn}>
+          <ProductSymbol name="chevronLeft" size={Layout.iconRow} color={theme.text} />
+        </Pressable>
+        {/* 규격서: «11/400 #868B94 · lh 17». */}
+        <ThemedText type="f11" themeColor="textAssistive">
+          {CALENDAR_HINT}
+        </ThemedText>
+        <Pressable accessibilityRole="button" accessibilityLabel={NEXT_MONTH} onPress={() => move(1)} style={styles.navBtn}>
+          <ProductSymbol name="chevronRight" size={Layout.iconRow} color={theme.text} />
+        </Pressable>
+      </View>
+
+      <View style={styles.weekRow}>
+        {WEEKDAYS.map((label) => (
+          <View key={label} style={styles.weekCell}>
+            {/* 규격서: 요일 «10/600 #868B94 · lh 15». */}
+            <ThemedText type="f10" themeColor="textAssistive" style={styles.semibold}>
+              {label}
+            </ThemedText>
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.grid}>
+        {rows.map((row, rowIndex) => (
+          <View key={rowIndex} style={styles.gridRow}>
+            {row.map((day, cellIndex) => {
+              if (day === null) return <View key={`b${cellIndex}`} style={styles.dayCell} />;
+              const key = keyOf(day);
+              const isSelected = key === selected;
+              const hasEvent = eventDays.has(key);
+              return (
+                <View key={key} style={styles.dayCell}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`${cursor.month + 1}월 ${day}일`}
+                    accessibilityState={{ selected: isSelected }}
+                    onPress={() => selectDay(day)}
+                    style={[styles.dayCircle, isSelected ? { backgroundColor: theme.text } : null]}>
+                    {/* 규격서: 날짜 «12/500 · lh 16». */}
+                    <ThemedText type="f12" style={[styles.medium, { color: isSelected ? theme.onInk : theme.text }]}>
+                      {day}
+                    </ThemedText>
+                    {hasEvent ? (
+                      <View style={[styles.eventDot, { backgroundColor: isSelected ? theme.onInk : theme.text }]} />
+                    ) : null}
+                  </Pressable>
+                </View>
+              );
+            })}
+          </View>
+        ))}
+      </View>
+
+      <View style={[styles.dayList, { borderTopColor: theme.border }]}>
+        {dayEvents.length === 0 ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={ADD_FOR_DAY}
+            onPress={() => onAdd(selected)}
+            style={[styles.addForDay, { borderColor: theme.border }]}>
+            <ProductSymbol name="calendar" size={Layout.iconField} color={theme.textAssistive} />
+            <ThemedText type="t7" themeColor="textAssistive">
+              {ADD_FOR_DAY}
+            </ThemedText>
+          </Pressable>
+        ) : (
+          <View style={styles.eventList}>
+            {dayEvents.map((event) => {
+              const done = event.status === 'done';
+              return (
+                <View
+                  key={event.id}
+                  style={[styles.eventRow, { backgroundColor: done ? theme.backgroundSelected : theme.backgroundElement }]}>
+                  {/* 완료 표시 — 서버가 시각으로 정한다. 누르는 자리가 아니다. */}
+                  <View
+                    style={[
+                      styles.doneMark,
+                      done
+                        ? { backgroundColor: theme.text, borderColor: theme.text }
+                        : { borderColor: theme.textAssistive, opacity: 0.4 },
+                    ]}>
+                    {done ? <ProductSymbol name="check" size={Layout.iconMicro} color={theme.onInk} /> : null}
+                  </View>
+                  {/* 규격서: 일정 «14/600 · lh 20» · 시각 «11/400 #868B94 · lh 17». */}
+                  <ThemedText
+                    type="f14"
+                    numberOfLines={1}
+                    themeColor={done ? 'textAssistive' : undefined}
+                    style={[styles.semibold, styles.eventTitle, done ? styles.strike : null]}>
+                    {event.title}
+                  </ThemedText>
+                  {done ? (
+                    <View style={[styles.doneBadge, { backgroundColor: theme.backgroundSelected }]}>
+                      <ThemedText type="micro" themeColor="textAssistive" style={styles.bold}>
+                        {DONE}
+                      </ThemedText>
+                    </View>
+                  ) : null}
+                  <ThemedText type="f11" themeColor="textAssistive" numeric>
+                    {eventTime(event.startsAt)}
+                  </ThemedText>
+                  <View style={styles.rowActions}>
+                    <Pressable accessibilityRole="button" accessibilityLabel={`${event.title} ${EDIT}`} onPress={() => onEdit(event)} style={styles.rowActionBtn}>
+                      <ProductSymbol name="edit" size={Layout.iconSmall} color={theme.textAssistive} />
+                    </Pressable>
+                    <Pressable accessibilityRole="button" accessibilityLabel={`${event.title} ${DELETE}`} onPress={() => onDelete(event)} style={styles.rowActionBtn}>
+                      <ProductSymbol name="trash" size={Layout.iconSmall} color={theme.textAssistive} />
+                    </Pressable>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
+      </View>
+    </View>
+  );
+}
+
+/* ────────────────────────────────────────────
+   예산현황 패널 — 도넛 112(구멍 80) · 총 예산 · 사용 · 잔여 · 항목별 막대 8
+──────────────────────────────────────────── */
+function BudgetPanel({ expenses }: { expenses: ExpenseSummaryResponse | null }) {
+  const theme = useTheme();
+  const budget = expenses?.budget;
+  const set = budget?.set === true ? budget : null;
+  const total = set?.budget ?? 0;
+  const spent = set?.spent ?? expenses?.paidTotal ?? 0;
+  const percentage = total > 0 ? Math.round((spent / total) * 100) : 0;
+  const buckets = expenses?.buckets ?? [];
+
+  return (
+    <View style={[styles.panel, { backgroundColor: theme.background, borderColor: theme.border }]}>
+      <ThemedText type="t6" style={styles.bold}>
+        {TABS[2].label}
+      </ThemedText>
+
+      <View style={styles.budgetHead}>
+        <DonutChart
+          size={DONUT_SIZE}
+          holeSize={DONUT_HOLE}
+          holeColor={theme.background}
+          slices={[
+            { key: 'spent', value: Math.max(percentage, 0), color: theme.text },
+            { key: 'left', value: Math.max(100 - percentage, 0), color: theme.backgroundElement },
+          ]}>
+          <ThemedText type="t5" numeric style={styles.bold}>
+            {`${percentage}%`}
+          </ThemedText>
+          <ThemedText type="micro" themeColor="textAssistive" style={styles.regular}>
+            {USED}
+          </ThemedText>
+        </DonutChart>
+        <View style={styles.budgetText}>
+          {set ? (
+            <ThemedText type="t6" numeric style={styles.bold}>
+              {`총 예산 ${manwon(set.budget)}`}
+            </ThemedText>
+          ) : (
+            <ThemedText type="t6" style={styles.bold}>
+              {budget?.set === false ? budget.note : '예산을 아직 정하지 않았어요'}
+            </ThemedText>
+          )}
+          <ThemedText type="t7" themeColor="textAssistive" numeric>
+            {`${manwon(spent)} 사용`}
+          </ThemedText>
+          {set ? (
+            <View style={styles.remainingRow}>
+              <View style={[styles.legendDot, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]} />
+              <ThemedText type="micro" themeColor="textAssistive" numeric style={styles.regular}>
+                {`잔여 ${manwon(Math.max(set.remaining, 0))}`}
+              </ThemedText>
+            </View>
+          ) : null}
+        </View>
+      </View>
+
+      <View style={[styles.bucketList, { borderTopColor: theme.border }]}>
+        {buckets.map((bucket) => {
+          const pct = Math.min(100, Math.round(bucket.ratio * 100));
+          return (
+            <View key={bucket.bucket}>
+              <View style={styles.bucketHead}>
+                <ThemedText type="t7" numberOfLines={1} style={[styles.bold, styles.grow]}>
+                  {bucket.label}
+                </ThemedText>
+                <ThemedText type="micro" themeColor="textAssistive" numeric style={styles.regular}>
+                  {manwon(bucket.amount)}
+                </ThemedText>
+              </View>
+              <View style={[styles.bar, { backgroundColor: theme.backgroundElement }]}>
+                <View style={[styles.barFill, { width: `${pct}%`, backgroundColor: theme.text }]} />
+              </View>
+              <View style={styles.bucketFoot}>
+                <ThemedText type="micro" themeColor="textAssistive" numeric style={styles.regular}>
+                  {bucket.amount > 0 ? `${manwon(bucket.amount)} 집행` : UNPAID}
+                </ThemedText>
+                <ThemedText type="micro" numeric style={styles.bold}>
+                  {`${pct}%`}
+                </ThemedText>
+              </View>
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+/* ────────────────────────────────────────────
+   상담기록 패널 — 행: 업체 · 날짜 · 금액 / 상태. 비면 점선 상자.
+──────────────────────────────────────────── */
+function ConsultPanel({ records, onOpen }: { records: ConsultationRecord[]; onOpen: () => void }) {
+  const theme = useTheme();
+
+  return (
+    <View style={[styles.panel, { backgroundColor: theme.background, borderColor: theme.border }]}>
+      <ThemedText type="t6" style={styles.bold}>
+        {TABS[1].label}
+      </ThemedText>
+      {records.length === 0 ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={CONSULT_EMPTY_TITLE}
+          onPress={onOpen}
+          style={[styles.consultEmpty, { borderColor: theme.border }]}>
+          <ProductSymbol name="mic" size={Layout.iconRow} color={theme.textAssistive} />
+          <ThemedText type="t7" themeColor="textAssistive">
+            {CONSULT_EMPTY_TITLE}
+          </ThemedText>
+          <ThemedText type="micro" themeColor="textAssistive" style={styles.regular}>
+            {CONSULT_EMPTY_BODY}
+          </ThemedText>
+        </Pressable>
+      ) : (
+        <View style={[styles.consultList, { borderTopColor: theme.border }]}>
+          {records.map((record, index) => {
+            const amount = consultAmount(record);
+            const date = new Date(record.createdAt);
+            const meta = `${date.getMonth() + 1}월 ${date.getDate()}일${amount !== null ? ` · ${manwon(amount)}` : ''}`;
+            const saved = record.confirmedAt !== null;
+            return (
+              <Pressable
+                key={record.id}
+                accessibilityRole="button"
+                accessibilityLabel={`${record.vendorLabel ?? '업체 미확인'} 상담기록`}
+                onPress={onOpen}
+                style={[
+                  styles.consultRow,
+                  index < records.length - 1 ? { borderBottomWidth: Border.hairline, borderBottomColor: theme.border } : null,
+                ]}>
+                <View style={styles.grow}>
+                  <ThemedText type="t7" numberOfLines={1} style={styles.bold}>
+                    {record.vendorLabel ?? '업체 미확인'}
+                  </ThemedText>
+                  <ThemedText type="micro" themeColor="textAssistive" numeric style={[styles.regular, styles.consultMeta]}>
+                    {meta}
+                  </ThemedText>
+                </View>
+                <ThemedText
+                  type="micro"
+                  themeColor={saved ? undefined : 'textAssistive'}
+                  style={saved ? styles.bold : styles.regular}>
+                  {saved ? CONSULT_SAVED : CONSULT_PENDING}
+                </ThemedText>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
+    </View>
+  );
+}
+
+/** 상담기록의 총 제시금액 — 최종 금액이 있으면 그것, 없으면 견적 총액(상담기록 화면과 같은 순서). */
+function consultAmount(record: ConsultationRecord): number | null {
+  for (const key of ['finalAmount', 'quotedTotal']) {
+    const raw = record.common[key];
+    if (raw && typeof raw === 'object' && typeof (raw as { value?: unknown }).value === 'number') {
+      return (raw as { value: number }).value;
+    }
+  }
+  return null;
+}
+
+/* ────────────────────────────────────────────
+   스타일 — 값은 피그마 `OurWedding.tsx`(2026-09-14 정본). 12 · 14 · 20 · 36 · 40처럼
+   사다리에 없는 값은 같은 값의 기존 토큰을 주석과 함께 쓴다(저장소 관례).
+──────────────────────────────────────────── */
 const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1 },
-  /* 목업 08c: 56 · padding 0 24 · 테두리 없음. */
+  /* 제목 `px-5 pb-5 pt-6` — 좌우는 정본 24 · 위 24 · 아래 20(같은 값의 listGap). 28은 스케일에 없어 t2(26)다. */
+  /* 규격서 our-wedding.txt 「header 430×86 pad 24 20 20 20」 · 제목 «28/700 · lh 42». */
   header: {
-    height: Layout.navBar,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.pageX,
+    paddingTop: Spacing.four,
+    paddingBottom: Layout.listGap,
   },
-  avatarRow: { flexDirection: 'row', alignItems: 'center' },
-  /* 목업: gap 6 + margin-left -10 → 겹침 4. */
-  avatarOverlap: { marginLeft: -Spacing.one },
   scroll: { flex: 1 },
-  scrollContent: { paddingBottom: Spacing.two },
-  /* 목업: padding 12 24 26 · gap 12 · 배경 없음. */
-  hero: {
-    paddingHorizontal: Layout.gutter,
-    paddingTop: Layout.rowPaddingY,
-    paddingBottom: Spacing.four + Spacing.half,
-    gap: Layout.rowPaddingY,
-  },
-  /* 목업: 트랙과 «10/20» 사이 10. */
-  progressRow: { flexDirection: 'row', alignItems: 'center', gap: Layout.cardGap },
-  progressTrack: { flex: 1 },
-  /* 목업: padding 0 24 28 · 제목→내용 12. */
-  section: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionGap, gap: Layout.rowPaddingY },
-  sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Layout.rowPaddingY },
-  /* 목업: 행 사이 2. */
-  list: { gap: Spacing.half },
-  /* 목업: gap 14 · min-height 56 · padding 8 0. */
-  scheduleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Layout.sectionHeadGap,
-    minHeight: Layout.rowMinHeight,
-    paddingVertical: Spacing.two,
-  },
-  rowContent: { flex: 1, minWidth: 0, gap: Spacing.half },
+  /* 바깥 `pb-24` = 96 — FAB 자리. 사다리에 없어 five(32) + six(64)로 적는다. */
+  scrollContent: { paddingBottom: Spacing.five + Spacing.six },
+
+  bold: { fontWeight: 700 },
+  regular: { fontWeight: 400 },
+  /* 규격서의 굵기 600 · 500 — spec/tokens.json typography.$weights의 피그마 예외. */
+  semibold: { fontWeight: 600 },
+  medium: { fontWeight: 500 },
   grow: { flex: 1, minWidth: 0 },
-  divider: { height: 1 },
-  band: { height: Layout.sectionBand, marginBottom: Layout.sectionGap },
-  /* 목업: radius 10 · padding 20 · 요소 사이 12. */
-  statBox: { borderRadius: Radius.medium, padding: Layout.cardPadding, gap: Layout.rowPaddingY },
-  statBody: { gap: Layout.rowPaddingY },
-  spendHead: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: Layout.rowPaddingY },
-  /* 목업: min-height 44 · padding 6 0. */
-  spendRow: {
+  strike: { textDecorationLine: 'line-through' },
+
+  /* 탭 `mx-5 rounded-2xl p-1`, 칸 `h-11 rounded-xl`. */
+  /* 규격서 「nav 390×52 pad 4 · mar 0 20 0 20 · bg #F7F8F9 · r16」, 칸 «127×44 · r22 · 14/700 · 켠 칸 흰 면 + shadow». */
+  tabs: {
+    marginHorizontal: Layout.pageX,
+    borderRadius: Radius.cardLarge,
+    padding: Spacing.one,
+    flexDirection: 'row',
+  },
+  tab: {
+    flex: 1,
+    height: Layout.touchTarget,
+    borderRadius: Radius.hero,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  /* 패널 `mx-5 mt-4 rounded-[26px] border p-5`. */
+  panel: {
+    marginHorizontal: Layout.pageX,
+    marginTop: Spacing.three,
+    borderRadius: Radius.panel,
+    borderWidth: Border.hairline,
+    padding: Layout.cardPadding,
+  },
+
+  // ── 캘린더 ──
+  /* `mt-4 flex items-center justify-between`, 단추 `h-9 w-9 rounded-full`. */
+  monthNav: {
+    marginTop: Spacing.three,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: Layout.touchTarget,
-    paddingVertical: Spacing.one + Spacing.half,
+  },
+  navBtn: {
+    width: Layout.headerBack,
+    height: Layout.headerBack,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  /* 요일 `mt-4 grid grid-cols-7`. */
+  weekRow: { marginTop: Spacing.three, flexDirection: 'row' },
+  weekCell: { flex: 1, alignItems: 'center' },
+  /* 날짜 `mt-2 grid grid-cols-7`, 칸 `h-10 w-10 rounded-full`. */
+  grid: { marginTop: Spacing.two },
+  gridRow: { flexDirection: 'row' },
+  dayCell: { flex: 1, alignItems: 'center' },
+  dayCircle: {
+    width: Layout.controlMedium,
+    height: Layout.controlMedium,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  /* 일정 점 `absolute bottom-1.5 h-1 w-1` — 4 · 아래 6(같은 값의 menuGroupGap). */
+  eventDot: {
+    position: 'absolute',
+    bottom: Layout.menuGroupGap,
+    width: EVENT_DOT,
+    height: EVENT_DOT,
+    borderRadius: Radius.pill,
+  },
+  /* 그날 일정 `mt-5 border-t pt-4`. */
+  dayList: {
+    marginTop: Layout.listGap,
+    paddingTop: Spacing.three,
+    borderTopWidth: Border.hairline,
+  },
+  /* 빈 날 `rounded-2xl border border-dashed py-5 gap-2`. */
+  addForDay: {
+    borderRadius: Radius.cardLarge,
+    borderWidth: Border.hairline,
+    borderStyle: 'dashed',
+    paddingVertical: Layout.listGap,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: Spacing.two,
   },
-  bold: { fontWeight: 700 },
-  pressed: { opacity: 0.9 },
-  /* 목업: 마지막 섹션은 카드만 — 제목 없이 padding 0 24 28. */
-  coupleSection: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionGap },
-  /* 우리둘 카드 — radius 10 · padding 20 · 요소 사이 14. */
-  coupleCard: { borderRadius: Radius.medium, padding: Layout.cardPadding, gap: Layout.sectionHeadGap },
-  /* 목업: «우리둘»과 문장 사이 6. */
-  coupleText: { gap: Spacing.one + Spacing.half },
+  eventList: { gap: Spacing.two },
+  /* 행 `rounded-2xl px-3.5 py-3 gap-3` — 좌우 14(같은 값의 chipPaddingX) · 상하 12 · 사이 12. */
+  eventRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Layout.inlineGap,
+    borderRadius: Radius.cardLarge,
+    paddingHorizontal: Layout.chipPaddingX,
+    paddingVertical: Layout.inlineGap,
+  },
+  /* 완료 원 `h-6 w-6 rounded-full border-2` — 24(같은 값의 iconTab) · 테두리 2. */
+  doneMark: {
+    width: Layout.iconTab,
+    height: Layout.iconTab,
+    borderRadius: Radius.pill,
+    borderWidth: Border.focus,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  eventTitle: { flex: 1, minWidth: 0 },
+  /* «완료» `rounded-full px-2 py-0.5`. */
+  doneBadge: {
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.half,
+  },
+  /* 수정 · 삭제 `h-8 w-8 rounded-xl`(32 · 같은 값의 avatarRow), 사이 2. */
+  rowActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.half },
+  rowActionBtn: {
+    width: Layout.avatarRow,
+    height: Layout.avatarRow,
+    borderRadius: Radius.hero,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // ── 예산현황 ──
+  /* `mt-6 flex items-center gap-5` — 위 24 · 사이 20. */
+  budgetHead: {
+    marginTop: Spacing.four,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Layout.listGap,
+  },
+  /* `space-y-1.5` — 줄 사이 6(같은 값의 menuGroupGap). */
+  budgetText: { flex: 1, minWidth: 0, gap: Layout.menuGroupGap },
+  remainingRow: { flexDirection: 'row', alignItems: 'center', gap: Layout.menuGroupGap, paddingTop: Spacing.half },
+  /* 범례 점 `h-2 w-2 rounded-full border`. */
+  legendDot: { width: BAR_HEIGHT, height: BAR_HEIGHT, borderRadius: Radius.pill, borderWidth: Border.hairline },
+  /* 항목 `mt-6 space-y-5 border-t pt-5`. */
+  bucketList: {
+    marginTop: Spacing.four,
+    paddingTop: Layout.listGap,
+    borderTopWidth: Border.hairline,
+    gap: Layout.listGap,
+  },
+  bucketHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one, marginBottom: Spacing.two },
+  /* 막대 `h-2 rounded-full`. */
+  bar: { height: BAR_HEIGHT, borderRadius: Radius.pill, overflow: 'hidden' },
+  barFill: { height: '100%', borderRadius: Radius.pill },
+  /* `mt-1.5 flex justify-between`. */
+  bucketFoot: { marginTop: Layout.menuGroupGap, flexDirection: 'row', justifyContent: 'space-between' },
+
+  // ── 상담기록 ──
+  /* 빈 상태 `mt-5 rounded-2xl border-dashed py-8 gap-2`. */
+  consultEmpty: {
+    marginTop: Layout.listGap,
+    borderRadius: Radius.cardLarge,
+    borderWidth: Border.hairline,
+    borderStyle: 'dashed',
+    paddingVertical: Spacing.five,
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  /* 목록 `mt-1 border-t`, 행 `py-4 gap-3`. */
+  consultList: { marginTop: Spacing.one, borderTopWidth: Border.hairline },
+  consultRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Layout.inlineGap,
+    paddingVertical: Spacing.three,
+  },
+  consultMeta: { marginTop: Spacing.half },
 });

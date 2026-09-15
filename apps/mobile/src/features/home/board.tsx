@@ -1,24 +1,41 @@
+/**
+ * 홈 준비 현황 2×2 — 규격서 docs/figma-spec/home.txt(2026-09-15 대표 지시 「규격서의 수를 그대로」).
+ *
+ *   div 390×216  grid · cols 191px 191px · gap 8
+ *     div 191×104  pad 14 · bg #F7F8F9 · r16 · border 1 #000000 6%
+ *       div 161×28  flex · justify space-between · align flex-start · mar 0 0 8 0
+ *         span "🏛️" · 20/400 · lh 28                 svg 16×16
+ *       p "웨딩홀" · 14/600 · lh 20
+ *       p "서울 그랜드 워커힐" · 12/500 · lh 16 · mar 2 0 0 0
+ *
+ * 아이콘은 피그마가 그린 **이모지 그대로**다(2026-09-15 대표 지시 「전체 이모지 SEED 걸로 사용,
+ * 선 아이콘 X」). 앞 세션이 선 아이콘(CategoryIcon)으로 바꿨던 것을 되돌렸다.
+ *
+ * 상태 셋(피그마 `PREP_STATUS`): done = 회색 면 + 체크 16 · 상세 잉크, picking = 하늘색 면 +
+ * 시계 16 · 상세 하늘색, todo = 회색 면 + 빈 고리 16(테두리 1.5 · muted 30%) · 상세 muted.
+ * **하늘색(#F0F9FF · #B8E6FE · #0084D1)은 우리 토큰에 없다** — 색은 MASTER 몫이라 만들지 않고
+ * 있는 accent(하늘) 토큰을 쓰며 PR에 보고했다. 축은 그대로다: 라벨은 업종명 · 값은 상태.
+ */
 import type { VendorCategory } from '@weddingpick/domain';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Border, Layout, Radius, ThemedText, useTheme } from '@weddingpick/ui';
+import { Border, Layout, LineHeight, ProductSymbol, Radius, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 
 import type { BoardCell, BoardTone } from './state';
-
-/**
- * 준비 현황 — 홈의 4칸 격자. SPEC §13.8 · §13.9.
- *
- * **항상 4칸이다.** 12업종을 다 펼치지 않는다. 나머지는 «전체 보기»(WP-HOME-009)로
- * 넘긴다. 네 칸 모두 **라벨은 업종명, 값은 상태**로 축을 통일한다 — 격자 안에
- * 카운터를 섞지 않고, 빈 칸이나 «—»를 쓰지 않는다.
- *
- * **지금 좁힐 업종 하나만 코랄 테두리다**(홈 코랄 네 곳 중 하나). 완료는 초록이
- * 아니라 `textSecondary`(#4D5159)다 — 상태색을 아낀다.
- */
 
 export type BoardProps = {
   cells: readonly BoardCell[];
   onPressCategory: (category: VendorCategory) => void;
+};
+
+/** 피그마 `PREP_STATUS` · `CATEGORIES`의 이모지. 없는 업종은 자리만 비운다 — 다른 그림으로 메우지 않는다. */
+export const CATEGORY_EMOJI: Partial<Record<VendorCategory, string>> = {
+  hall: '🏛️',
+  studio: '📷',
+  dress: '👗',
+  makeup: '💄',
+  snap: '📸',
+  honeymoon: '✈️',
 };
 
 export function Board({ cells, onPressCategory }: BoardProps) {
@@ -31,19 +48,26 @@ export function Board({ cells, onPressCategory }: BoardProps) {
   );
 }
 
-/**
- * 값 글자색. 시안: 완료 #4D5159 · 지금 #212124 · 시작 전 #ADB1BA · 담는 중 #212124.
- * 값 글자는 시안이 15/20인데 토큰 사다리에 15가 없어 16(t6)이다.
- */
-function valueColor(tone: BoardTone): 'text' | 'textSecondary' | 'textDisabled' {
-  if (tone === 'done') return 'textSecondary';
-  if (tone === 'none') return 'textDisabled';
+/** 피그마 세 상태 — done · picking · todo. 우리 tone 넷 중 going · now가 picking이다. */
+function figmaState(tone: BoardTone): 'done' | 'picking' | 'todo' {
+  if (tone === 'done') return 'done';
+  if (tone === 'going' || tone === 'now') return 'picking';
+  return 'todo';
+}
 
-  return 'text';
+function StatusMark({ state }: { state: 'done' | 'picking' | 'todo' }) {
+  const theme = useTheme();
+
+  if (state === 'done') return <ProductSymbol name="checkCircle" size={Layout.iconField} color={theme.text} />;
+  if (state === 'picking') return <ProductSymbol name="clock" size={Layout.iconField} color={theme.accentText} />;
+
+  return <View style={[styles.emptyRing, { borderColor: theme.textAssistive }]} />;
 }
 
 function Cell({ cell, onPress }: { cell: BoardCell; onPress: () => void }) {
   const theme = useTheme();
+  const state = figmaState(cell.tone);
+  const emoji = CATEGORY_EMOJI[cell.category];
 
   return (
     <Pressable
@@ -52,48 +76,65 @@ function Cell({ cell, onPress }: { cell: BoardCell; onPress: () => void }) {
       onPress={onPress}
       style={({ pressed }) => [
         styles.cell,
-        /*
-         * 테두리는 네 칸 모두 1.5다 — 지금 칸만 코랄이고 나머지는 투명. 지금 칸에만
-         * 테두리를 주면 그 칸이 3px 넓어져 격자가 어긋난다(시안은 inset box-shadow).
-         */
-        cell.tone === 'now'
-          ? { borderColor: theme.tint, backgroundColor: theme.background }
-          : { borderColor: 'transparent', backgroundColor: theme.backgroundElement },
+        state === 'picking'
+          ? { backgroundColor: theme.accentBackground, borderColor: theme.accentText }
+          : { backgroundColor: theme.backgroundElement, borderColor: theme.border },
         pressed && styles.pressed,
       ]}>
-      {/* 시안 13/18 400 — micro는 700이라 굵기만 내린다. */}
-      <ThemedText type="micro" themeColor="textAssistive" numberOfLines={1} style={styles.label}>
+      <View style={styles.cellHead}>
+        {emoji ? (
+          <ThemedText type="f20" style={styles.emoji}>
+            {emoji}
+          </ThemedText>
+        ) : (
+          <View style={styles.emojiSlot} />
+        )}
+        <StatusMark state={state} />
+      </View>
+      <ThemedText type="f14" numberOfLines={1} style={styles.label}>
         {cell.label}
       </ThemedText>
       <ThemedText
-        type="t6"
+        type="f12"
         numberOfLines={1}
-        themeColor={valueColor(cell.tone)}
-        style={styles.value}>
+        style={[
+          styles.value,
+          { color: state === 'done' ? theme.text : state === 'picking' ? theme.accentText : theme.textAssistive },
+        ]}>
         {cell.value}
       </ThemedText>
     </Pressable>
   );
 }
 
-/** 지금 칸의 코랄 테두리 굵기. 시안 `inset 0 0 0 1.5px` — spec/tokens.json border.selected. */
-const NOW_BORDER = Border.selected;
+/** 빈 고리 `h-4 w-4 border-[1.5px] muted/30` — 16 · 테두리 1.5(같은 값의 Border.selected) · 30%. */
+const RING = Layout.iconField;
 
 const styles = StyleSheet.create({
-  /* 시안: repeat(4, minmax(0,1fr)) · gap 7. 네 칸이 한 줄에 같은 폭으로 선다. */
-  grid: { flexDirection: 'row', gap: 7 },
-  /* 시안 cell: radius 10 · padding 12 10 · gap 3 · 테두리 1.5. */
+  /* 「grid · cols 191px 191px · gap 8」 — 두 칸이 폭을 반씩. */
+  grid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: Spacing.two, rowGap: Spacing.two },
   cell: {
-    flex: 1,
-    minWidth: 0,
-    borderRadius: Radius.medium,
-    borderWidth: NOW_BORDER,
-    paddingVertical: Layout.rowPaddingY - NOW_BORDER,
-    paddingHorizontal: Layout.cardGap - NOW_BORDER,
-    alignItems: 'center',
-    gap: 3,
+    flexGrow: 1,
+    flexBasis: 0,
+    minWidth: '40%',
+    borderRadius: Radius.cardLarge,
+    borderWidth: Border.hairline,
+    padding: Layout.fieldPaddingX,
   },
-  label: { fontWeight: 400 },
-  value: { fontWeight: 700 },
+  /* 「div 161×28 … align flex-start · mar 0 0 8 0」. */
+  cellHead: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.two,
+  },
+  /* 이모지 «20/400 · lh 28». */
+  emoji: { lineHeight: LineHeight.lh28 },
+  emojiSlot: { width: Layout.iconTab, height: LineHeight.lh28 },
+  emptyRing: { width: RING, height: RING, borderRadius: Radius.pill, borderWidth: Border.selected, opacity: 0.3 },
+  /* 업종명 «14/600 · lh 20». */
+  label: { fontWeight: 600 },
+  /* 상태 «12/500 · lh 16 · mar 2 0 0 0». */
+  value: { fontWeight: 500, marginTop: Spacing.half },
   pressed: { opacity: 0.8 },
 });
