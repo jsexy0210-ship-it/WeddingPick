@@ -30,8 +30,17 @@ describe('색은 SEED에서 온다', () => {
   it('spec/tokens.json의 색이 SEED 값과 같다', () => {
     const drifted = Object.entries(mapping.map)
       .map(([path, seedName]) => {
+        /*
+         * `split`은 무엇이 나올지 타입으로 모른다 — `key`가 `string | undefined`라
+         * 그대로 색인에 쓰면 `noUncheckedIndexedAccess`에서 컴파일이 깨진다.
+         * 표에 «group.key» 꼴이 아닌 줄이 들어오면 `ours`가 undefined가 되고, 그
+         * 줄은 아래 filter가 어긋난 것으로 잡아 준다 — 조용히 통과하지 않는다.
+         */
         const [group, key] = path.split('.');
-        const ours = tokens.color[group]?.[key]?.value;
+        const ours =
+          group === undefined || key === undefined
+            ? undefined
+            : tokens.color[group]?.[key]?.value;
         const theirs = seed.light[seedName];
 
         return { path, seedName, ours, theirs };
