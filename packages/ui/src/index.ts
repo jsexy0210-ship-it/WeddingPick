@@ -19,8 +19,13 @@ export { IconButton, type IconButtonProps } from './icon-button';
 export { SectionHeader, type SectionHeaderProps } from './section-header';
 export { SearchBar, type SearchBarProps } from './search-bar';
 export { SegmentedTabs, type SegmentedTabsProps, type SegmentedTabItem } from './segmented-tabs';
-export { VendorCard, type VendorCardProps, type VendorCardPrice } from './vendor-card';
-export { PickCard, type PickCardProps } from './pick-card';
+/*
+ * `VendorCard` · `PickCard`는 내보내지 않는다 — 2026-09-15 대표 지시 「안 쓰는 건 싹다 삭제해」.
+ * 둘 다 화면에서 부르는 곳이 0이었고(검색 · Pick · 홈은 각자 피그마대로 다시 짰다),
+ * 값이 피그마와 달라서(곡률 10 · 14 · 썸네일 72 정사각 · 사진 위 배치) 다음 사람이
+ * 집어 쓰면 그 화면이 어긋난다. **파일 삭제는 이 세션에서 막혀 MASTER 몫으로 남겼다** —
+ * `packages/ui/src/vendor-card.tsx` · `pick-card.tsx`.
+ */
 export { RatingPicker, type RatingPickerProps } from './rating-picker';
 export { RatingStars, type RatingStarsProps } from './rating-stars';
 export { WeddingCalendar, type WeddingCalendarProps } from './wedding-calendar';
