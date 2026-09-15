@@ -15,6 +15,7 @@ import {
   TERMS,
   WEDDING_STYLE_LABEL,
   countsTowardScore,
+  formatCount,
   needsPickProof,
   priceLine,
   rangeLabel,
@@ -95,7 +96,7 @@ const OFFICIAL_LAST_CHECK = '마지막 확인';
 const REPORT_ERROR = '정보가 틀렸나요? 제보하기';
 const GUIDE_PROVIDED = '업체가 제공한 정보예요';
 const EXPERIENCE_COUNT = (n: number) => `${n}명이 답했어요`;
-const REVIEW_VIEW_ALL = (n: number) => `${n}개 전체 보기`;
+const REVIEW_VIEW_ALL = (n: number) => `${formatCount(n)}개 전체 보기`;
 const MAP_LINK = '지도에서 보기';
 /** 기준금액 ⓘ 설명 — SPEC §2 고정 문장. */
 const BASE_AMOUNT_NOTE = `${TERMS.baseAmount}은 실 제보의 중앙값이에요`;
@@ -311,7 +312,7 @@ export default function VendorDetailScreen() {
     ...vendor.prices.products.map((product) => ({
       key: `${product.productLabel}-${product.docType}`,
       cond: product.productLabel,
-      n: `${TERMS.verifiedData} ${product.stat.sampleCount}건 · ${formatPeriod(product.stat.periodStart, product.stat.periodEnd)}`,
+      n: `${TERMS.verifiedData} ${formatCount(product.stat.sampleCount)}건 · ${formatPeriod(product.stat.periodStart, product.stat.periodEnd)}`,
       range: rangeLabel(product.stat.p25, product.stat.p75),
       dim: false,
     })),
@@ -436,7 +437,7 @@ export default function VendorDetailScreen() {
           <View style={[styles.statsRow, { borderBottomColor: theme.border }]}>
             {/* 규격서: «14/400 #868B94 · lh 20» 셋 · 핀 14 · 금액 «14/700». */}
             <ThemedText type="f14" themeColor="textAssistive" numeric>
-              {`${TERMS.verifiedData} ${paidPrice.count}건`}
+              {`${TERMS.verifiedData} ${formatCount(paidPrice.count)}건`}
             </ThemedText>
             <ThemedText type="f14" themeColor="textAssistive">·</ThemedText>
             <View style={styles.statsPlace}>
@@ -570,7 +571,7 @@ export default function VendorDetailScreen() {
                   {!line.dim ? (
                     <View style={styles.priceDarkTail}>
                       <ThemedText type="f12" numeric style={{ color: theme.onInk }}>
-                        {`${TERMS.verifiedData} ${paidPrice.count}건`}
+                        {`${TERMS.verifiedData} ${formatCount(paidPrice.count)}건`}
                       </ThemedText>
                     </View>
                   ) : null}
@@ -793,7 +794,7 @@ export default function VendorDetailScreen() {
                       <View key={item.key} style={styles.meter}>
                         <View style={styles.meterHead}>
                           <ThemedText type="t6" themeColor="textStrong">{item.label}</ThemedText>
-                          <ThemedText type="t6" numeric style={styles.bold}>{item.answered}명</ThemedText>
+                          <ThemedText type="t6" numeric style={styles.bold}>{formatCount(item.answered)}명</ThemedText>
                         </View>
                         <ProgressBar
                           value={item.percent / 100}
