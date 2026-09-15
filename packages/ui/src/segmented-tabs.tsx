@@ -35,7 +35,7 @@ export function SegmentedTabs({ items, value, onChange, accessibilityLabel }: Se
     <View
       accessibilityRole="tablist"
       accessibilityLabel={accessibilityLabel}
-      style={[styles.track, { backgroundColor: theme.backgroundSelected }]}>
+      style={[styles.track, { backgroundColor: theme.backgroundElement }]}>
       {items.map((item) => {
         const selected = item.value === value;
         return (
@@ -60,7 +60,8 @@ export function SegmentedTabs({ items, value, onChange, accessibilityLabel }: Se
             <ThemedText
               type="t7"
               numberOfLines={1}
-              themeColor={selected ? 'text' : 'textAssistive'}>
+              themeColor={selected ? 'text' : 'textAssistive'}
+              style={styles.label}>
               {item.label}
             </ThemedText>
           </Pressable>
@@ -70,18 +71,23 @@ export function SegmentedTabs({ items, value, onChange, accessibilityLabel }: Se
   );
 }
 
+/*
+ * 피그마 세 칸 탭(2026-09-14 정본 · `CommunityFeed` `grid-cols-3 rounded-2xl bg-secondary p-1`,
+ * 칸 `h-10 rounded-xl text-xs font-bold`): 겉 radius 16 · 안쪽 4 · 칸 40 · radius 22 · 글자 700.
+ * 켠 칸은 흰 면(그림자는 없다 — elevation.$rule).
+ */
 const styles = StyleSheet.create({
   track: {
     flexDirection: 'row',
-    borderRadius: Radius.medium,
+    borderRadius: Radius.cardLarge,
     padding: Spacing.one,
-    gap: Spacing.one,
   },
   item: {
     flex: 1,
-    height: Layout.touchTarget,
-    borderRadius: Radius.control,
+    height: Layout.controlMedium,
+    borderRadius: Radius.hero,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  label: { fontWeight: 700 },
 });

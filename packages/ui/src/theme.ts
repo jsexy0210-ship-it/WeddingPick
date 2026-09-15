@@ -962,6 +962,8 @@ export const Radius = {
   hero: 22,
   /** 웨딩노트의 캘린더 · 예산 · 상담 패널. radius.panel — 피그마 `OurWedding.tsx` `rounded-[26px]`. */
   panel: 26,
+  /** 로그인 안내 카드. radius.callout — 피그마 `FlowScreens.tsx` `rounded-[28px]`. */
+  callout: 28,
 } as const;
 
 /**

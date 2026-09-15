@@ -232,3 +232,41 @@ node scripts/screenshot-screens.mjs --build --viewport 430x1700 \
 
 색 토큰은 **손대지 않았다** — `spec/tokens.json` `color` · `packages/ui/src/theme.ts` gray 램프
 diff 0(MASTER 지시). 화면 코드에 hex를 직접 적은 곳도 없다.
+
+---
+
+# 두 번째 세션 — 2026-09-15 (검색부터 MY까지)
+
+앞 세션의 인수인계를 그대로 받아 같은 브랜치 · 같은 PR(#235)에서 이었다. MASTER 브랜치
+`claude/figma-integration`의 `7dfc4c7`(글자색)까지 머지했다(`seed-parity.test.ts` 충돌은 MASTER 판).
+
+## 한 것 — 화면마다 앱과 시안을 430으로 찍어 대조하고 고쳤다
+
+| 화면 | 커밋 | 요지 |
+| --- | --- | --- |
+| 검색 | `1d21a84` | 헤더(← + 「업체 검색」 + 부제) · 검색창 48/16 · 드롭다운 칩 넷 · 테두리 카드 · 필터 시트에 카테고리 그룹 |
+| Pick | `487a313` | 진행바 + 업종 행 → 저장 업체 카드 목록 · 비교 배너 · 업종 칩 · 빈 상태 |
+| 웨딩노트 | `cbbb62c` | 히어로 · 지출 상자 → 세 칸 탭(캘린더 · 상담기록 · 예산현황) + 패널 + FAB. 캡처 fixture에 일정 · 지출 |
+| 업체 상세 | `216973f` | 틀만: 헤더 · 히어로 오버레이(svg 그라데이션) · 요약 줄 · 잉크 탭 · 소개 탭 · 하단 CTA. 정보 구조는 그대로 |
+| MY · 라운지 · 로그인 · 온보딩 | (이 커밋) | MY 카드 섹션 · 라운지 헤더/세 칸 탭 · 로그인 카피 + 안내 카드 · 온보딩 진행 줄/질문 머리 |
+
+토큰(전부 `$figmaNote`에 출처): `radius.cardLarge` 16 · `thumb` 18 · `hero` 22 · `panel` 26 · `callout` 28 ·
+`size.searchField` 48 · `headerBack` 36 · `pickCircle` 28 · `iconField` 16 · `iconMicro` 12 · `thumbSearch` ·
+`emptyMark` 64 · `iconEmpty` 32 · `heroVendor` 288 · `thumbPortfolio` 144 · `spacing.pickEmptyPaddingY` 80.
+`ProductSymbol`에 arrowLeft · chevronDown · pin · link · chart · checkCircle · edit · trash · mic · file ·
+lock · info · headset · signout · gift. `BackButton`은 꺾쇠 → ← 화살(피그마 세 화면 모두 ArrowLeft).
+
+## 판단 필요 — PR #235 본문에 화면별로 적어 두었다
+
+S-a 10~12px 글자(전부 micro 13) · S-b 카드 하트(Pick Mark 하트 path, 체크 없음) · P-a 「Pick하기」→「결정하기」 ·
+W-a 우리둘 · 초대하기 카드 삭제 · V-a 하단 CTA(Primary = Pick, 정사각 = 비교; 상담은 고지 후 구현 대기) ·
+L-a 로그인 카피를 피그마로 바꿈 · D-d radius 16(`--radius-2xl` 누락) · 온보딩 dock(이전/다음 두 단추 유지 ·
+Primary는 키 컬러) · 탭 바 아이콘 24/라벨 12(피그마 20/10 — 기존 토큰 그대로).
+
+## 안 한 것
+
+- 홈의 나머지 넷(§2-1)은 그대로 「판단 필요」다 — D-a · D-b · D-c.
+- 라운지 본문(후기 · 피드 · 카테고리 레일 · 글쓰기 FAB) · 후기 상세 · 예약 · 상담 신청 — 서버 계약 없음 / 고지 후 구현 대기.
+- 로그인 · 온보딩은 캡처를 못 찍었다 — fixture 사용자가 로그인 상태라 `/login`은 홈으로, `/setup`은 홈으로 튕긴다.
+  코드로만 맞춘 자리다. 찍으려면 `screenshot-screens.mjs`에 「토큰 없이 찍기」 옵션이 필요하다.
+- 온보딩 보기 목록(예식일 휠 · 지역 아홉 · 스타일)은 대표 규칙이라 손대지 않았다. 질문 머리와 진행 줄만 피그마다.
