@@ -196,7 +196,8 @@ const routes = {
     items: [],
     missingRequired: [],
   },
-  'GET /v1/me': ME,
+  /* `FIXTURE_SETUP_COMPLETE=false`면 온보딩(`/setup`)을 찍을 수 있다 — 그때만 setupComplete가 false다. */
+  'GET /v1/me': () => ({ ...ME, setupComplete: process.env.FIXTURE_SETUP_COMPLETE !== 'false' }),
   'GET /v1/app/bootstrap': {
     member: ME,
     notifications: null,

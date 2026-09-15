@@ -636,13 +636,17 @@ export const AdminSpacing = {
  * 핸드오프가 이름 붙인 치수. 화면이 숫자를 직접 적지 않게 한다. spec/tokens.json
  * `spacing` · `size` · `tabBar` · `component`.
  *
- * **거터만 SEED와 다르다.** SEED 스펙은 16px인데 확정 정책이 24px이라 24를
- * 지킨다 — 이탈은 이 한 줄뿐이고, 나머지는 SEED 컨트롤 토큰 그대로다.
+ * **거터는 피그마에서 잰 20이다.** SEED 스펙은 16px이고 예전 정책은 24px이었는데,
+ * 피그마 12 화면을 실제로 재면 전부 20이다(`docs/figma-spec/*.txt`의 `pad … 20 … 20`).
+ * 2026-09-15 대표 지시 「기존 정본은 잊어. 피그마가 곧 정본이다」로 24를 버렸다.
+ *
+ * **이 한 줄이 화면 99개를 움직인다.** 그전에는 99개가 24, 8개가 20이라 같은 앱
+ * 안에서 좌우 끝선이 4px씩 어긋났고, 대표님이 처음 짚으신 자리가 그것이다.
  */
 export const Layout = {
-  /** 화면 좌우 거터. 바텀시트 내부도 같다. */
-  gutter: 24,
-  /** 피그마 화면의 좌우 여백 20 — spacing.pageX(규격서 `pad … 20 … 20`). 피그마에 없는 화면은 gutter 24 그대로. */
+  /** 화면 좌우 거터. 바텀시트 내부도 같다. spec/tokens.json spacing.gutter. */
+  gutter: 20,
+  /** `gutter`와 같은 값. 피그마 규격서를 그대로 옮긴 화면들이 이 이름을 쓴다. */
   pageX: 20,
   /** 섹션을 가르는 gray100 밴드 높이. */
   sectionBand: 16,
@@ -940,8 +944,17 @@ export const Layout = {
 export const Radius = {
   /** 배지 · 체크박스 · 뼈대 바. radius.badge. */
   badge: 4,
-  /** 버튼 · 입력 필드 · 작은 썸네일. radius.control. */
-  control: 6,
+  /**
+   * 버튼과 입력 필드. radius.control.
+   *
+   * **2026-09-15까지 6이었다.** 피그마의 풀폭 CTA 17개를 재면 전부 r16이다 —
+   * 「카카오로 3초 만에 시작하기」 · 「다음」 · 「상담 일정 잡기」 · 「날짜와 시간을
+   * 선택해주세요」 전부 h56 · r16. 우리 버튼만 각진 채로 남아 있었다.
+   *
+   * **작은 썸네일은 이 이름에서 뗐다** — `small` 6을 쓴다. 한 이름이 버튼과
+   * 썸네일을 같이 가리키면 한쪽을 고칠 때 다른 쪽이 따라 움직인다.
+   */
+  control: 16,
   /**
    * 날짜 선택의 연 · 월 펼침 칸과 날짜 칸. radius.picker — 20-onboarding-v2의
    * `optCell` · `dayCell`이 «border-radius:8px»다.

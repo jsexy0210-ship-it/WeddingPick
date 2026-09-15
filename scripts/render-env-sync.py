@@ -277,12 +277,25 @@ def main() -> int:
         if not check_api_health(api_base):
             return 1
 
+    # 이름을 못 찾은 서비스를 모아 둔다 — 하나가 어긋났다고 나머지를 안 내보내지 않는다.
+    missing: list[str] = []
+
     for name in ordered:
         spec = services[name]
         print(f'\n== {name}')
         identifier = api_id if name == api_name else service_id(name)
         if not identifier:
-            return 1
+            """
+            **여기서 멈추지 않는다.** 2026-09-15에 `WeddingPick-웹뷰(앱 테스트)` 하나가
+            Render에서 이름이 바뀌었는데, 그 자리에서 return 1을 해버려 **그 뒤의
+            `WeddingPick-웹사이트`는 시도조차 못 했다.** API와 관리자는 이미 새 커밋으로
+            올라간 뒤였고, 웹사이트만 옛 판으로 남았다 — 반만 배포된 상태가 제일 나쁘다.
+
+            못 찾은 것은 모아 두고 끝에서 실패한다. 실패는 그대로이고, 내보낼 수 있는
+            것을 안 내보내는 것만 그만둔다.
+            """
+            missing.append(name)
+            continue
 
         wanted: dict[str, str] = dict(spec.get('vars') or {})
         for key in spec.get('secrets') or []:
@@ -324,6 +337,14 @@ def main() -> int:
                     return 1
                 if name == api_name and not check_api_health(api_base):
                     return 1
+
+    if missing:
+        print('\n!! Render에서 이름이 정확히 일치하는 서비스를 못 찾았다:')
+        for name in missing:
+            print(f'   - {name}')
+        print('   infra/render-env.yml의 이름과 Render 대시보드의 이름이 같아야 한다.')
+        print('   나머지 서비스는 배포했다 — 위 서비스만 옛 판으로 남아 있다.')
+        return 1
 
     print('\n선언 확인을 마쳤다.' if dry_run else
           '\n모든 요청 배포의 live를 확인했다.' if wait else
