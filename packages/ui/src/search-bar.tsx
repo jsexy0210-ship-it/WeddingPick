@@ -51,6 +51,13 @@ export function SearchBar({
       accessibilityElementsHidden={onPress ? true : undefined}
       importantForAccessibility={onPress ? 'no-hide-descendants' : undefined}
       autoFocus={autoFocus}
+      /*
+       * 검색 칸만 48이다 — 피그마 `search.txt`의 «div 334×48»과 그 옆 필터 단추
+       * «button 48×48». 토큰 `size.searchField`가 그 값을 담고 있었는데, 이 부품이
+       * `TextField` 기본 높이 52를 그대로 쓰는 바람에 **토큰과 코드가 4px 어긋나
+       * 있었다**(2026-09-15 실측).
+       */
+      height={Layout.searchField}
       returnKeyType="search"
       autoCorrect={false}
       testID={onPress ? undefined : testID}
