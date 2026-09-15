@@ -1,3 +1,5 @@
+import { FONT_FACE, FONT_STACK } from './fonts';
+
 /**
  * 서비스 웹(WP-WEB)의 스타일. 한 파일에 담아 인라인으로 넣는다.
  *
@@ -37,6 +39,7 @@ const TYPE_SCALE = `
 `;
 
 export const SITE_STYLES = `
+${FONT_FACE}
 :root {
   color-scheme: light dark;
 
@@ -97,12 +100,13 @@ body {
   background: var(--surface);
   color: var(--ink);
   /*
-   * Pretendard를 싣지 않는다. 이 문서는 자기 혼자 서야 하고, 웹폰트 한 벌은
-   * 검색으로 들어온 사람이 첫 화면을 보기까지를 늘린다. 핸드오프도 웹은 시스템
-   * 서체로 두라고 적었다.
+   * Pretendard를 싣는다(fonts.ts). 2026-09-14에 대표님이 「웹폰트는 싣지 않는다」를
+   * 뒤집으셨고, 2026-09-15에 원본 파일을 올리셨다. 스택은 tokens에서 가져온다.
+   *
+   * 첫 화면이 늦어지는 걱정은 font-display: swap 과 preload가 받는다 — 글자는
+   * 시스템 서체로 먼저 읽히고, 2.0MB가 도착하면 바뀐다.
    */
-  font-family: -apple-system, BlinkMacSystemFont, system-ui, 'Apple SD Gothic Neo',
-    'Malgun Gothic', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: ${FONT_STACK};
   -webkit-font-smoothing: antialiased;
   font-size: var(--fs-body);
   line-height: var(--lh-body);
