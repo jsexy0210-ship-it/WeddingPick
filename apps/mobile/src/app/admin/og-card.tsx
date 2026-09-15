@@ -1,3 +1,4 @@
+import { Redirect } from 'expo-router';
 /**
  * 링크 미리보기(OG 카드) 관리
  *
@@ -69,7 +70,7 @@ function formatWhen(value: string | null): string {
   return `${at.getFullYear()}. ${at.getMonth() + 1}. ${at.getDate()}. ${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`;
 }
 
-export default function OgCardScreen() {
+export function OgCardPanel() {
   const [data, setData] = useState<AdminView | null>(null);
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -444,3 +445,11 @@ const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   error: { padding: 32, fontSize: FontSize.t7, color: '#d92d20' },
 });
+
+/**
+ * 옛 주소는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제 화면은 `/admin/faq`(사이트·기록)의 링크 미리보기 탭에 있다 —
+ * `OgCardPanel`이 이 파일의 본체다.
+ */
+export default function OgCardRedirect() {
+  return <Redirect href="/admin/faq?tab=og-card" />;
+}

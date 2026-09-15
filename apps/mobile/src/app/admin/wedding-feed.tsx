@@ -16,7 +16,16 @@
  *
  * 규칙과 한도는 `packages/domain/src/wedding-feed.ts` 한 곳에서만 온다 — 여기서
  * 값을 다시 적으면 화면과 서버가 다른 길이를 막게 된다.
+ *
+ * **2026-09-15 — 「사이트·기록」 화면의 탭 하나로 자리 잡았다.** `main`의 옛
+ * 사이드바는 이 화면을 FAQ·링크 미리보기와 같은 「문구 · 카드」 묶음에 두었는데,
+ * 그 묶음이 그대로 「사이트·기록」 탭 넷(FAQ 관리 · 약관·방침 · 링크 미리보기 ·
+ * 감사 기록)이 됐다 — 웨딩피드도 사용자에게 노출되는 콘텐츠를 관리자가 직접
+ * 쓰고 고치는 화면이라 같은 자리다. `faq.tsx`의 `TABS` 끝에 추가했다. 이 파일
+ * 맨 아래 `WeddingFeedRedirect`가 옛 주소를 `/admin/faq?tab=wedding-feed`로
+ * 보내고, 본문은 `WeddingFeedPanel`로 이름만 바꿨다.
  */
+import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -124,7 +133,7 @@ const STATUS_KIND: Record<WeddingFeedStatus, 'ok' | 'warn' | 'dim'> = {
   archived: 'dim',
 };
 
-export default function WeddingFeedScreen() {
+export function WeddingFeedPanel() {
   const [data, setData] = useState<FeedData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -276,6 +285,7 @@ export default function WeddingFeedScreen() {
 
   return (
     <Page
+      embedded
       title="웨딩피드 관리"
       sub="홈 아래쪽에 깔리는 읽을거리 — 직접 쓰거나 자동 작성이 채운다"
       action={{
@@ -411,6 +421,11 @@ export default function WeddingFeedScreen() {
       ) : null}
     </Page>
   );
+}
+
+/** 옛 주소 — 「사이트·기록」의 웨딩피드 관리 탭으로 보낸다. */
+export default function WeddingFeedRedirect() {
+  return <Redirect href="/admin/faq?tab=wedding-feed" />;
 }
 
 const C = Colors.light;

@@ -1,3 +1,4 @@
+import { Redirect } from 'expo-router';
 /**
  * WP-ADM-051 정책 규칙 관리
  *
@@ -46,7 +47,7 @@ type PolicyItem = {
 
 type PolicyData = { policies: PolicyItem[] };
 
-export default function PolicyEngineScreen() {
+export function PolicyEnginePanel() {
   const [data, setData] = useState<PolicyData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -140,6 +141,7 @@ export default function PolicyEngineScreen() {
 
   return (
     <Page
+      embedded
       title="정책 규칙 관리"
       sub="자동 판단 규칙 · 임계값"
       action={
@@ -247,3 +249,11 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
 });
+
+/**
+ * 옛 주소는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제 화면은 `/admin/automation`(자동화)의 정책 규칙 탭에 있다 —
+ * `PolicyEnginePanel`이 이 파일의 본체다.
+ */
+export default function PolicyEngineRedirect() {
+  return <Redirect href="/admin/automation?tab=policy-engine" />;
+}

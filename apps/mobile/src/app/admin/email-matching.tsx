@@ -1,3 +1,4 @@
+import { Redirect } from 'expo-router';
 /**
  * WP-ADM-016 이메일 회신 자동 매칭
  *
@@ -69,7 +70,7 @@ const COLS: Col[] = [
   { key: 'status', label: '상태', width: 100 },
 ];
 
-export default function EmailMatchingScreen() {
+export function EmailMatchingPanel() {
   const [data, setData] = useState<EmailData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -124,6 +125,7 @@ export default function EmailMatchingScreen() {
 
   return (
     <Page
+      embedded
       title="이메일 회신 자동 매칭"
       sub="업체 회신을 어느 문의에 붙였는지"
       action={{ label: '새로 고침', onPress: reload }}
@@ -186,4 +188,12 @@ export default function EmailMatchingScreen() {
       ) : null}
     </Page>
   );
+}
+
+/**
+ * 옛 주소는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제 화면은 `/admin/vendors`(업체·행사)의 이메일 회신 탭에 있다 —
+ * `EmailMatchingPanel`이 이 파일의 본체다.
+ */
+export default function EmailMatchingRedirect() {
+  return <Redirect href="/admin/vendors?tab=email-matching" />;
 }

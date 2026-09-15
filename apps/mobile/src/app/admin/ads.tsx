@@ -1,13 +1,23 @@
 /**
  * WP-ADM-033 성장 · 광고 집행 관리
  * 광고주 · 요금제 · 슬롯 · 기간 · 상태 · 노출 · 클릭 · CTR · Pick · 전환율
+ *
+ * **2026-09-15 대표 확정(재확정) — 「광고·마케팅」 화면의 탭 넷 중 하나다**(광고
+ * 집행 · 전환 승인 · 캠페인·보상 · 마케팅 발송). 처음엔 광고 둘만 묶었는데,
+ * 대표님이 「비슷한 유형끼리 탭으로 묶어도 된다」고 넓히시면서 성장 계열 넷을
+ * 한 화면 탭으로 다시 묶었다.
  */
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Colors, FontSize, Layout, Spacing } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { AdminTabShell, type AdminTabDef } from './_ui';
+import { AdsGatePanel } from './ads-gate';
+import { CampaignsPanel } from './campaigns';
+import { MarketingPanel } from './marketing';
 import { formatMonthDayDot } from '@/features/common/format-date';
 import { formatCount } from '@weddingpick/domain';
 
@@ -49,7 +59,7 @@ const PLAN_COLOR: Record<AdItem['plan'], string> = {
   PREMIUM: Colors.light.negative,
 };
 
-export default function AdsScreen() {
+function AdsPanel() {
   const [data, setData] = useState<AdsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -166,6 +176,33 @@ export default function AdsScreen() {
         </ScrollView>
       )}
     </View>
+  );
+}
+
+const TABS: AdminTabDef[] = [
+  { key: 'ads', label: '집행' },
+  { key: 'gate', label: '전환 승인' },
+  { key: 'campaigns', label: '캠페인 · 보상' },
+  { key: 'marketing', label: '마케팅 발송' },
+];
+
+/**
+ * 「광고·마케팅」 — 광고 집행 · 전환 승인 · 캠페인·보상 · 마케팅 발송을 탭 넷으로
+ * 묶는다. 넷 다 성장 · 발송성 운영이라 「광고」를 찾을 때 오갈 필요가 없게 한
+ * 화면에 둔다. 각 패널은 원래 화면 그대로 두고 `AdminTabShell`만 위에 얹는다.
+ */
+export default function AdsScreen() {
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
+  const initial = TABS.some((t) => t.key === tab) ? (tab as string) : 'ads';
+  const [active, setActive] = useState(initial);
+
+  return (
+    <AdminTabShell tabs={TABS} active={active} onChange={setActive}>
+      {active === 'ads' && <AdsPanel />}
+      {active === 'gate' && <AdsGatePanel />}
+      {active === 'campaigns' && <CampaignsPanel />}
+      {active === 'marketing' && <MarketingPanel />}
+    </AdminTabShell>
   );
 }
 

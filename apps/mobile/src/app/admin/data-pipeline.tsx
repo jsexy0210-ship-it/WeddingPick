@@ -1,7 +1,11 @@
 /**
  * WP-ADM-010 데이터 · 제보 처리 현황
  * 자동 처리 건수 · 단계별 적체 · 실패 큐 · 재처리
+ *
+ * **2026-09-15 대표 확정 — 「확인 필요」 화면의 탭 하나로 묶였다**(탭 셋). 이 파일의
+ * 본체는 `DataPipelinePanel`로 옮기고 `queue.tsx`가 탭으로 골라 그린다.
  */
+import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -19,7 +23,7 @@ type PipelineData = {
   failedQueue: FailedItem[];
 };
 
-export default function DataPipelineScreen() {
+export function DataPipelinePanel() {
   const [data, setData] = useState<PipelineData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -326,3 +330,12 @@ const styles = StyleSheet.create({
   inlineBtnText: { fontSize: FontSize.tab, color: Colors.light.textSecondary },
   btnDisabled: { opacity: 0.5 },
 });
+
+/**
+ * 옛 주소(`/admin/data-pipeline`)는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제
+ * 화면은 `/admin/queue`(확인 필요)의 제보 처리 탭에 있다 — `DataPipelinePanel`이
+ * 이 파일의 본체다.
+ */
+export default function DataPipelineRedirect() {
+  return <Redirect href="/admin/queue?tab=data-pipeline" />;
+}
