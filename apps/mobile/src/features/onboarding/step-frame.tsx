@@ -14,8 +14,6 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 
-import { AnsweredRow } from './answered-row';
-import type { AnsweredRowModel, QuestionStep } from './flow';
 import { OnboardingProgress } from './progress';
 
 /**
@@ -28,15 +26,15 @@ import { OnboardingProgress } from './progress';
  *       svg 16×16  ChevronRight
  *
  * «이전»은 머리 줄 왼쪽 글자 단추다(피그마 `step ? "이전" : "나중에"`). 하단 dock은 규격서에 없어 뺐다 —
- * 「다음」은 보기 아래 40에 붙어 흐른다. 답 줄(`answered`)은 규격서에 없지만 «바꾸기» 흐름의 기존 정본이라
- * 남긴다(CLAUDE.md 3번 — 피그마에 없는 자리는 기존 정본).
+ * 「다음」은 보기 아래 40에 붙어 흐른다.
+ *
+ * **답 줄(«라벨 · 값 · 바꾸기»)은 없다** — 2026-09-15 대표 지시 「온보딩에 바꾸기 정보 삭제해.
+ * 버튼 CTA는 하단에 유지한다」로 걷어냈다. 규격서에도 없던 자리다.
  */
 export function StepFrame({
   label,
   stepKey,
   children,
-  answered = [],
-  onEdit,
   prevLabel,
   onPrev,
   nextLabel,
@@ -49,8 +47,6 @@ export function StepFrame({
   /** 바뀌면 질문 블록이 «요소 상승»으로 나타난다. */
   stepKey: string;
   children: ReactNode;
-  answered?: readonly AnsweredRowModel[];
-  onEdit?: (step: QuestionStep) => void;
   /** 없으면 «이전»이 없다 — 첫 질문과 완료 화면. */
   prevLabel?: string;
   onPrev?: () => void;
@@ -97,19 +93,6 @@ export function StepFrame({
               </ThemedText>
             ) : null}
           </View>
-
-          {answered.length > 0 ? (
-            <View style={styles.answered}>
-              {answered.map((row) => (
-                <AnsweredRow
-                  key={row.step}
-                  label={row.label}
-                  value={row.value}
-                  onEdit={() => onEdit?.(row.step)}
-                />
-              ))}
-            </View>
-          ) : null}
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -164,11 +147,4 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.4 },
   pressed: { opacity: 0.8 },
   error: { textAlign: 'center' },
-  /* 답 줄 — 기존 정본(answeredWrap) 그대로: 좌우 24 · 상하 6 · 줄 사이 2. */
-  answered: {
-    marginTop: Spacing.four,
-    marginHorizontal: Layout.gutter,
-    paddingVertical: Spacing.two - Spacing.half,
-    gap: Spacing.half,
-  },
 });

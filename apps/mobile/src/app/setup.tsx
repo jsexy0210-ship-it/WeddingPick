@@ -3,6 +3,7 @@ import {
   WEDDING_STYLES,
   WEDDING_STYLE_LABEL,
   combineRegion,
+  shortDistrictName,
   formatDateDot,
   toggleStyle,
   type WeddingStyle,
@@ -28,13 +29,11 @@ import {
   PREV_CTA,
   STEP_TITLE_LINES,
   UNDECIDED_LABEL,
-  answeredRows,
   canAdvance,
   doneRows,
   nextStep,
   prevStep,
   resumeStep,
-  returnStep,
   stepDescription,
   stepProgress,
   stepsFor,
@@ -44,7 +43,7 @@ import {
 import { InlineToast, useInlineToast } from '@/features/onboarding/inline-toast';
 import { OptionRow } from '@/features/onboarding/option-row';
 import { QuestionHead } from '@/features/onboarding/question-head';
-import { RegionPicker } from '@/features/onboarding/region-picker';
+import { RegionPickerSheet } from '@/features/onboarding/region-picker-sheet';
 import { StepFrame } from '@/features/onboarding/step-frame';
 import {
   clearOnboardingAnswers,
@@ -65,18 +64,16 @@ import {
  * (`app/(tabs)/my/wedding-settings.tsx`)에서 계속 고칠 수 있다. 순서와 개수는
  * `features/onboarding/flow.ts`가 정한다.
  *
- * **큰 질문 하나 = Step 하나.** 순서·건너뛰기·요약은 전부 `features/onboarding/flow.ts`
- * 가 정하고 이 화면은 그 답을 그린다. 답하면 그 질문은 화면 아래로 가라앉아 «라벨 ·
- * 값 · 바꾸기» 한 줄이 되고 새 질문이 위에서 내려온다(은행앱 방식 · v3.19).
+ * **큰 질문 하나 = Step 하나.** 순서·건너뛰기는 전부 `features/onboarding/flow.ts`가
+ * 정하고 이 화면은 그 답을 그린다.
+ *
+ * **답 요약 줄(«라벨 · 값 · 바꾸기»)은 없다**(2026-09-15 대표 지시 「온보딩에 바꾸기
+ * 정보 삭제해. 버튼 CTA는 하단에 유지한다」). 답한 질문이 화면 아래에 쌓이던
+ * 은행앱 방식(v3.19)과 SPEC §13.6의 «「바꾸기」 동작 정의»가 이 지시로 폐기됐다 —
+ * 되돌아가는 길은 «이전»이다. **하단 CTA는 그대로다.**
  *
  * **상단 뒤로가기가 없다.** 첫 질문은 «다음»만, 두 번째부터 «이전 · 다음».
  * 안드로이드 물리 뒤로가기는 «이전»과 같고 첫 질문에서는 로그인으로 나간다.
- *
- * **«바꾸기»**(SPEC §13.6 «「바꾸기」 동작 정의»)는 그 질문만 다시 연다 — 진행바는
- * 그 Step으로 돌아가고 하단은 «다음» 하나뿐이며, 뒤에 답한 값은 그대로 두되 답 줄에서
- * 잠시 숨긴다. 고치고 «다음»을 누르면 원래 있던 Step으로 바로 복귀한다 — 2/3을
- * 다시 묻지 않는다. 연쇄 초기화는 없다 — 스타일은 업종과 무관한 축이라 준비 현황을
- * 바꿔도 지우지 않는다(v3.19 «범용 스타일»).
  *
  * **미정을 억지로 받지 않는다.** 예식일 · 지역 «아직 정하지 않았어요», 준비 현황
  * «아직 시작 전이에요», 예산 «아직 모르겠어요». 스타일만 최소 1개 필수다 — 추천의
@@ -103,8 +100,22 @@ import {
 /** 예식일 첫 줄 — 아직 안 골랐을 때. 고르면 그 날짜가 이 자리에 선다. */
 const DATE_PICK_LABEL = '날짜 고르기';
 
-/** «바꾸기»로 다시 연 질문. `from`은 돌아갈 Step. */
-type Editing = { step: QuestionStep; from: QuestionStep };
+/** 지역 첫 줄 — 아직 안 골랐을 때. 고르면 «서울 강남»처럼 그 지역이 이 자리에 선다. */
+const REGION_PICK_LABEL = '지역 고르기';
+
+/**
+ * 고른 지역을 줄에 적는 말. 아직 안 골랐거나 «미정»이면 null — 그 자리는
+ * «지역 고르기»가 선다.
+ *
+ * **보이는 것만 짧게 줄인다**(`shortDistrictName`) — 「서울 강남구」가 아니라
+ * 「서울 강남」이다. 저장하는 값은 「강남구」 그대로고, 「중구」처럼 두 글자인
+ * 이름은 그 함수가 손대지 않는다.
+ */
+function regionLabelOf(value: Answers['region']): string | null {
+  if (value === null || value.region === null) return null;
+
+  return value.district === null ? value.region : `${value.region} ${shortDistrictName(value.district)}`;
+}
 
 export default function SetupScreen() {
   const theme = useTheme();
@@ -113,12 +124,12 @@ export default function SetupScreen() {
   const [step, setStep] = useState<QuestionStep | 'done'>('date');
   /** 기기에 적어둔 답을 읽기 전에는 첫 질문을 그리지 않는다 — 잠깐 스쳤다 바뀌면 안 된다. */
   const [restored, setRestored] = useState(false);
-  const [editing, setEditing] = useState<Editing | null>(null);
   /** 서버에 이미 있는 스타일 — 3/3에 닿았을 때 아직 안 골랐으면 이걸로 복원한다. */
   const [seedStyle, setSeedStyle] = useState<readonly WeddingStyle[] | null>(null);
   /** 서버 응답이 올 때 이미 3/3에 있는지 보려고 지금 Step을 적어 둔다. */
   const stepRef = useRef<QuestionStep | 'done'>('date');
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [regionSheetOpen, setRegionSheetOpen] = useState(false);
   const limitToast = useInlineToast();
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -191,7 +202,7 @@ export default function SetupScreen() {
   );
 
   const goPrev = useCallback(() => {
-    if (step === 'done' || editing !== null) return;
+    if (step === 'done') return;
 
     const previous = prevStep(step, answers);
 
@@ -202,44 +213,20 @@ export default function SetupScreen() {
     } else {
       enter(previous);
     }
-  }, [step, answers, editing, enter]);
+  }, [step, answers, enter]);
 
-  /**
-   * «바꾸기»로 연 질문을 닫는다. 원래 있던 Step으로 바로 돌아간다(`returnStep`).
-   * 돌아갈 곳이 없으면 완료다. 연쇄 초기화는 없다.
-   */
-  const finishEdit = useCallback(() => {
-    if (editing === null || step === 'done' || !canAdvance(step, answers)) return;
-
-    const target = returnStep(editing.step, editing.from, answers);
-
-    setEditing(null);
-    setError(null);
-
-    if (target === null) {
-      /* 「바꾸기」를 닫고 돌아갈 곳이 없으면 결과 화면이다. 여기서도 저장하지 않는다. */
-      setStep('done');
-    } else {
-      enter(target);
-    }
-  }, [editing, step, answers, enter]);
-
-  /* 안드로이드 물리 뒤로가기 = «이전». 바꾸는 중에는 «다음»과 같고, 완료 화면에서는 아무 데도 가지 않는다. */
+  /* 안드로이드 물리 뒤로가기 = «이전». 완료 화면에서는 아무 데도 가지 않는다. */
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
       if (step === 'done') return true;
 
-      if (editing !== null) {
-        finishEdit();
-      } else {
-        goPrev();
-      }
+      goPrev();
 
       return true;
     });
 
     return () => subscription.remove();
-  }, [step, editing, goPrev, finishEdit]);
+  }, [step, goPrev]);
 
   /**
    * 서버에 보낸다. **완료 화면에서 «완료»를 눌렀을 때만 부른다.**
@@ -348,11 +335,6 @@ export default function SetupScreen() {
   function goNext() {
     if (step === 'done') return;
 
-    if (editing !== null) {
-      finishEdit();
-      return;
-    }
-
     const next = nextStep(step, answers);
 
     setError(null);
@@ -366,15 +348,6 @@ export default function SetupScreen() {
     } else {
       enter(next);
     }
-  }
-
-  /** «바꾸기» — 그 질문만 다시 연다. 돌아갈 곳을 기억해 둔다. */
-  function beginEdit(target: QuestionStep) {
-    if (step === 'done') return;
-
-    setError(null);
-    setEditing({ step: target, from: step });
-    enter(target);
   }
 
   if (!restored) {
@@ -440,19 +413,17 @@ export default function SetupScreen() {
   }
 
   const progress = stepProgress(step);
-  /* 바꾸는 중에는 «다음» 하나뿐이다(SPEC §13.6 «하단 CTA 다음 하나만 · 이전 버튼 없음»). */
-  const previous = editing === null ? prevStep(step, answers) : null;
+  const previous = prevStep(step, answers);
   const chosenStyles = answers.style ?? [];
   const date = answers.date?.value ?? null;
   const dateUndecided = answers.date !== null && date === null;
+  const regionUndecided = answers.region !== null && answers.region.region === null;
 
   return (
     <>
       <StepFrame
         label={progress.label}
         stepKey={step}
-        answered={answeredRows(step, answers, editing !== null)}
-        onEdit={beginEdit}
         prevLabel={previous === null ? undefined : PREV_CTA}
         onPrev={previous === null ? undefined : goPrev}
         nextLabel={NEXT_CTA}
@@ -481,8 +452,23 @@ export default function SetupScreen() {
           </View>
         ) : null}
 
+        {/*
+          지역 2/3 — 예식일 1/3과 같은 두 줄이다. 첫 줄이 시트를 열고(시/도 · 시/군/구 휠 2열),
+          둘째 줄이 «아직 정하지 않았어요»다. 2026-09-15 대표 지시로 줄 목록에서 시트로 바뀌었다.
+        */}
         {step === 'region' ? (
-          <RegionPicker value={answers.region} onChange={(next) => update({ region: next })} />
+          <View style={styles.options}>
+            <OptionRow
+              label={regionLabelOf(answers.region) ?? REGION_PICK_LABEL}
+              selected={regionLabelOf(answers.region) !== null}
+              onPress={() => setRegionSheetOpen(true)}
+            />
+            <OptionRow
+              label={UNDECIDED_LABEL}
+              selected={regionUndecided}
+              onPress={() => update({ region: { region: null, district: null } })}
+            />
+          </View>
         ) : null}
 
         {/* 스타일 3/3 — 넷 중 1~2개(v3.24). 사진 타일(style-grid.tsx)은 규격서에 없어 65 줄로 바꿨다. */}
@@ -507,6 +493,16 @@ export default function SetupScreen() {
       </StepFrame>
 
       <InlineToast toast={limitToast.toast} onHidden={limitToast.hide} />
+
+      <RegionPickerSheet
+        visible={regionSheetOpen}
+        value={answers.region?.region ? { region: answers.region.region, district: answers.region.district } : null}
+        onConfirm={(picked) => {
+          update({ region: picked });
+          setRegionSheetOpen(false);
+        }}
+        onDismiss={() => setRegionSheetOpen(false)}
+      />
 
       <DatePickerSheet
         visible={sheetOpen}

@@ -200,45 +200,17 @@ export function answerSummary(step: QuestionStep, answers: Answers): string | nu
   }
 }
 
-export type AnsweredRowModel = { step: QuestionStep; label: string; value: string };
-
 /**
- * 화면 아래에 쌓이는 답 줄. Step 순서 그대로 위에서 아래로 — 최근 답을 위로
- * 올리지 않는다. 지금 열린 질문은 빠진다.
- *
- * «바꾸기»로 다시 연 동안(`editing`)은 그 질문 **앞**의 답만 보인다 — 뒤에 답한
- * 값은 그대로 두되 화면에서 잠시 숨긴다(SPEC §13.6 «「바꾸기」 동작 정의 · 아래 줄»).
+ * 완료 요약 한 줄. **«바꾸기» 단추는 없다** — 2026-09-15 대표 지시로 답 줄과 함께
+ * 걷어냈다. 라벨과 값만 읽는다.
  */
-export function answeredRows(active: QuestionStep, answers: Answers, editing = false): AnsweredRowModel[] {
-  const rows: AnsweredRowModel[] = [];
-  const activeIndex = QUESTION_STEPS.indexOf(active);
-
-  for (const step of QUESTION_STEPS) {
-    if (step === active) continue;
-    if (editing && QUESTION_STEPS.indexOf(step) > activeIndex) continue;
-
-    const value = answerSummary(step, answers);
-
-    if (value !== null) rows.push({ step, label: STEP_LABEL[step], value });
-  }
-
-  return rows;
-}
-
-/**
- * «바꾸기»로 고친 뒤 «다음»이 돌아갈 곳. 원래 있던 Step으로 바로 복귀한다 —
- * 1/3을 고쳤다고 2/3을 다시 묻지 않는다. 연쇄 초기화가 없으므로 돌아갈 Step은
- * 항상 남아 있다.
- */
-export function returnStep(edited: QuestionStep, cameFrom: QuestionStep, answers: Answers): QuestionStep | null {
-  return stepsFor(answers).includes(cameFrom) ? cameFrom : nextStep(edited, answers);
-}
+export type SummaryRow = { step: QuestionStep; label: string; value: string };
 
 /**
  * 완료 요약 3행. 항상 세 줄이다 — 미정은 «미정»으로 적는다. 빈칸이나 «—»는
  * 쓰지 않는다.
  */
-export function doneRows(answers: Answers): AnsweredRowModel[] {
+export function doneRows(answers: Answers): SummaryRow[] {
   return QUESTION_STEPS.map((step) => ({
     step,
     label: STEP_LABEL[step],
