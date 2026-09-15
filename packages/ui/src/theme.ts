@@ -944,8 +944,17 @@ export const Layout = {
 export const Radius = {
   /** 배지 · 체크박스 · 뼈대 바. radius.badge. */
   badge: 4,
-  /** 버튼 · 입력 필드 · 작은 썸네일. radius.control. */
-  control: 6,
+  /**
+   * 버튼과 입력 필드. radius.control.
+   *
+   * **2026-09-15까지 6이었다.** 피그마의 풀폭 CTA 17개를 재면 전부 r16이다 —
+   * 「카카오로 3초 만에 시작하기」 · 「다음」 · 「상담 일정 잡기」 · 「날짜와 시간을
+   * 선택해주세요」 전부 h56 · r16. 우리 버튼만 각진 채로 남아 있었다.
+   *
+   * **작은 썸네일은 이 이름에서 뗐다** — `small` 6을 쓴다. 한 이름이 버튼과
+   * 썸네일을 같이 가리키면 한쪽을 고칠 때 다른 쪽이 따라 움직인다.
+   */
+  control: 16,
   /**
    * 날짜 선택의 연 · 월 펼침 칸과 날짜 칸. radius.picker — 20-onboarding-v2의
    * `optCell` · `dayCell`이 «border-radius:8px»다.
