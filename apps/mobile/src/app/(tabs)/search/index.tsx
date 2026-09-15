@@ -45,7 +45,9 @@ import { vendorImageCategory } from '@/features/search/vendor-image-category';
 import {
   ActionButton,
   Border,
+  Elevation,
   FontSize,
+  LetterSpacing,
   Layout,
   LineHeight,
   MARK_HEART_PATH,
@@ -877,7 +879,8 @@ export default function SearchScreen() {
 
         {/* 결과 수 — 피그마 «7개 업체»(12 · muted). 아래 12. 새로고침 표시가 같은 줄에 붙는다. */}
         <View style={[styles.countRow, { backgroundColor: theme.background }]}>
-          <ThemedText type="micro" themeColor="textAssistive" numeric style={styles.regular}>
+          {/* 규격서: «12/500 #868B94 · lh 16». */}
+          <ThemedText type="f12" themeColor="textAssistive" numeric style={styles.medium}>
             {total}개 업체
           </ThemedText>
           <DelayedLoader active={refreshing} size={20} />
@@ -959,8 +962,11 @@ export default function SearchScreen() {
               <ProductSymbol name="arrowLeft" size={Layout.iconRow} color={theme.text} />
             </Pressable>
             <View style={styles.headerTitleText}>
-              <ThemedText type="t4">{TITLE}</ThemedText>
-              <ThemedText type="micro" themeColor="textAssistive" style={styles.regular}>
+              {/* 규격서: 제목 «20/700 · lh 28 · ls -0.4px» · 부제 «11/400 #868B94 · lh 17». */}
+              <ThemedText type="f20" style={[styles.bold, styles.title]}>
+                {TITLE}
+              </ThemedText>
+              <ThemedText type="f11" themeColor="textAssistive">
                 {SUBTITLE}
               </ThemedText>
             </View>
@@ -1142,10 +1148,11 @@ function ResultCard({
         <View>
           <View style={styles.cardHeadRow}>
             <View style={styles.cardHeadText}>
-              <ThemedText type="micro" themeColor="textAssistive" style={styles.bold}>
+              {/* 규격서 search.txt: 업종 «10/700 #868B94 · lh 15 · ls 0.5px» · 이름 «14/700 · lh 19 · mar 2 0 0 0». */}
+              <ThemedText type="f10" themeColor="textAssistive" style={[styles.bold, styles.tracked]}>
                 {VENDOR_CATEGORY_LABEL[category]}
               </ThemedText>
-              <ThemedText type="t7" numberOfLines={1} style={[styles.bold, styles.cardName]}>
+              <ThemedText type="f14" numberOfLines={1} style={[styles.bold, styles.cardName]}>
                 {name}
               </ThemedText>
             </View>
@@ -1170,32 +1177,29 @@ function ResultCard({
           </View>
           <View style={styles.cardLocation}>
             <ProductSymbol name="pin" size={Layout.iconMicro} color={theme.textAssistive} />
-            <ThemedText type="micro" themeColor="textAssistive" numberOfLines={1} style={styles.regular}>
+            {/* 규격서: 지역 «12/400 #868B94 · lh 16». */}
+            <ThemedText type="f12" themeColor="textAssistive" numberOfLines={1}>
               {region}
             </ThemedText>
           </View>
         </View>
         {price || tail ? (
           <View style={styles.cardFoot}>
+            {/* 규격서: 금액 «12/600 #1A1C20 · lh 16» · 꼬리(«저장 2341» 자리) «10/400 #868B94 · lh 15». */}
             {price ? (
               <ThemedText
-                type="micro"
+                type="f12"
                 numeric
                 numberOfLines={1}
                 themeColor={price.dim ? 'textAssistive' : undefined}
-                style={styles.bold}>
+                style={styles.semibold}>
                 {price.text}
               </ThemedText>
             ) : (
               <View />
             )}
             {tail ? (
-              <ThemedText
-                type="micro"
-                themeColor="textAssistive"
-                numeric
-                numberOfLines={1}
-                style={styles.regular}>
+              <ThemedText type="f10" themeColor="textAssistive" numeric numberOfLines={1}>
                 {tail}
               </ThemedText>
             ) : null}
@@ -1238,7 +1242,8 @@ function DropdownChip({
         },
         pressed ? styles.pressed : null,
       ]}>
-      <ThemedText type="t7" numberOfLines={1} style={[styles.bold, { color }]}>
+      {/* 규격서: 칩 «14/600 · lh 20». */}
+      <ThemedText type="f14" numberOfLines={1} style={[styles.semibold, { color }]}>
         {label}
       </ThemedText>
       <View style={styles.dropChevron}>
@@ -1261,11 +1266,11 @@ const styles = StyleSheet.create({
   },
 
   // ── 헤더 — 피그마 `Search.tsx`(2026-09-14 정본) ──
-  /* `px-5 pb-4 pt-3 border-b` — 좌우는 정본 24(spacing.gutter · C-6), 위 12 · 아래 16 · 아래 선 1. 12는 사다리에 없어 같은 값의 inlineGap을 쓴다. */
+  /* 규격서 search.txt 「div 430×134 pad 12 20 16 20」 — 위 12 · 좌우 20(pageX) · 아래 16 · 아래 선 1. */
   header: {
     paddingTop: Layout.inlineGap,
     paddingBottom: Spacing.three,
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.pageX,
     borderBottomWidth: Border.hairline,
   },
   /* `mb-3 flex items-center gap-2` — ← 와 제목 사이 8, 아래 12. */
@@ -1313,11 +1318,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     gap: Spacing.two,
   },
-  /* 입력 글자 `text-sm` = 14. */
+  /* 규격서: 입력 «input 278×20» — 글자 14 · 줄높이 20. */
   searchInput: {
     flex: 1,
-    fontSize: FontSize.t7,
-    lineHeight: LineHeight.t7,
+    fontSize: FontSize.f14,
+    lineHeight: LineHeight.lh20,
     paddingVertical: 0,
   },
 
@@ -1377,6 +1382,22 @@ const styles = StyleSheet.create({
   },
   bold: {
     fontWeight: 700,
+  },
+  /* 규격서의 굵기 600 · 500 — spec/tokens.json typography.$weights의 피그마 예외. */
+  semibold: {
+    fontWeight: 600,
+  },
+  medium: {
+    fontWeight: 500,
+  },
+  /* 규격서 «ls 0.5px» — 업종 라벨. */
+  tracked: {
+    letterSpacing: LetterSpacing.p05,
+  },
+  /* 규격서 제목 «lh 28 · ls -0.4px». */
+  title: {
+    lineHeight: LineHeight.lh28,
+    letterSpacing: LetterSpacing.n04,
   },
   /* `micro`는 기본이 700이다. 피그마에서 regular인 작은 글자(부제 · 지역 · 결과 수 · 꼬리)는 400으로 되돌린다. */
   regular: {
@@ -1481,7 +1502,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     alignItems: 'center',
     gap: Spacing.two,
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.pageX,
     paddingTop: Layout.inlineGap,
     paddingBottom: Spacing.two,
   },
@@ -1509,22 +1530,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.one,
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.pageX,
     marginBottom: Layout.inlineGap,
   },
   /* 목록 `px-5 space-y-3` + 바깥 `pb-4` — 카드 사이 12 · 아래 16. */
   resultList: {
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.pageX,
     paddingBottom: Spacing.three,
     gap: Layout.inlineGap,
   },
 
-  /* 카드 `rounded-2xl border overflow-hidden` — radius 16 · 테두리 1 · 그림자 없음(elevation.$rule). */
+  /* 규격서 「div 390×137 … bg #FFFFFF · r16 · border 1 #000000 6% · shadow」 — radius 16 · 테두리 1 · shadow-sm. */
   resultCard: {
     flexDirection: 'row',
     borderRadius: Radius.cardLarge,
     borderWidth: Border.hairline,
-    overflow: 'hidden',
+    ...Elevation.figmaCard,
   },
   /* 왼쪽 열 `p-2` 안에 썸네일 104×116 — 열 폭 120. */
   cardImageCol: {
@@ -1559,8 +1580,10 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   /* 이름 `mt-0.5` — 업종 라벨 아래 2. */
+  /* 규격서: 이름 «lh 19 · mar 2 0 0 0». */
   cardName: {
     marginTop: Spacing.half,
+    lineHeight: LineHeight.lh19,
   },
   /* Pick 원 `w-7 h-7 rounded-full mt-0.5` — 28. */
   pickCircle: {

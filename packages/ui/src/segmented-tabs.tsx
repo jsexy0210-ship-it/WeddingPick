@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Border, Layout, Radius, Spacing } from './theme';
+import { Border, Elevation, Layout, Radius, Spacing } from './theme';
 import { ThemedText } from './themed-text';
 import { useTheme } from './use-theme';
 import { readWebInteractionState } from './web-interaction';
@@ -49,6 +49,7 @@ export function SegmentedTabs({ items, value, onChange, accessibilityLabel }: Se
               const { pressed, hovered, focused } = readWebInteractionState(state);
               return [
                 styles.item,
+                selected ? Elevation.figmaCard : null,
                 {
                   backgroundColor: selected ? theme.background : 'transparent',
                   borderWidth: focused ? Border.focus : 0,
@@ -57,8 +58,9 @@ export function SegmentedTabs({ items, value, onChange, accessibilityLabel }: Se
                 },
               ];
             }}>
+            {/* 규격서 community.txt: 칸 «127×40 · r22 · 12/700 · lh 16», 켠 칸 흰 면 + shadow. */}
             <ThemedText
-              type="t7"
+              type="f12"
               numberOfLines={1}
               themeColor={selected ? 'text' : 'textAssistive'}
               style={styles.label}>

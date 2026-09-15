@@ -55,6 +55,7 @@ import {
   Border,
   ErrorView,
   Layout,
+  LetterSpacing,
   LineHeight,
   MARK_HEART_PATH,
   MaxContentWidth,
@@ -362,7 +363,8 @@ export default function VendorDetailScreen() {
         */}
         <View style={[styles.navBar, { borderBottomColor: theme.border }]}>
           <BackButton />
-          <ThemedText type="t7" numberOfLines={1} style={[styles.bold, styles.navTitle]}>
+          {/* 규격서 vendor-1.txt: 제목 «14/700 · lh 20 · pad 0 40 0 0». */}
+          <ThemedText type="f14" numberOfLines={1} style={[styles.bold, styles.navTitle]}>
             {vendor.name}
           </ThemedText>
         </View>
@@ -411,19 +413,21 @@ export default function VendorDetailScreen() {
                 {vendor.sourceNote ? (
                   /* 피그마 «인증» pill — 키 컬러 · 흰 글자 · 체크 10. 우리 뜻은 «공공기관 확인»이다. */
                   <View style={[styles.heroBadge, { backgroundColor: theme.tint }]}>
-                    <ProductSymbol name="checkCircle" size={Layout.iconMicro} color={theme.onTint} />
-                    <ThemedText type="micro" style={[styles.bold, { color: theme.onTint }]}>
+                    {/* 규격서: pill «10/700 · lh 15 · pad 2 8 · gap 4» · 체크 10. */}
+                    <ProductSymbol name="checkCircle" size={Layout.iconTiny} color={theme.onTint} />
+                    <ThemedText type="f10" style={[styles.bold, { color: theme.onTint }]}>
                       공공기관 확인
                     </ThemedText>
                   </View>
                 ) : null}
                 <View style={styles.heroCategory}>
-                  <ThemedText type="micro" style={[styles.bold, { color: theme.onInk }]}>
+                  {/* 규격서: 업종 «12/700 #FFFFFF 70% · lh 16 · ls 0.3px» · 이름 «32/700 · lh 40 · ls -0.64px». */}
+                  <ThemedText type="f12" style={[styles.bold, styles.tracked03, { color: theme.onInk }]}>
                     {VENDOR_CATEGORY_LABEL[vendor.category]}
                   </ThemedText>
                 </View>
               </View>
-              <ThemedText type="t1" numberOfLines={2} style={{ color: theme.onInk }}>
+              <ThemedText type="f32" numberOfLines={2} style={[styles.bold, styles.heroName, { color: theme.onInk }]}>
                 {vendor.name}
               </ThemedText>
             </View>
@@ -442,19 +446,20 @@ export default function VendorDetailScreen() {
             오른쪽 끝 금액(14/700).
           */}
           <View style={[styles.statsRow, { borderBottomColor: theme.border }]}>
-            <ThemedText type="t7" themeColor="textAssistive" numeric>
+            {/* 규격서: «14/400 #868B94 · lh 20» 셋 · 핀 14 · 금액 «14/700». */}
+            <ThemedText type="f14" themeColor="textAssistive" numeric>
               {`${TERMS.verifiedData} ${paidPrice.count}건`}
             </ThemedText>
-            <ThemedText type="t7" themeColor="textAssistive">·</ThemedText>
+            <ThemedText type="f14" themeColor="textAssistive">·</ThemedText>
             <View style={styles.statsPlace}>
               <ProductSymbol name="pin" size={Layout.iconSmall} color={theme.textAssistive} />
-              <ThemedText type="t7" themeColor="textAssistive" numberOfLines={1}>
+              <ThemedText type="f14" themeColor="textAssistive" numberOfLines={1}>
                 {regionLabel(vendor.region)}
               </ThemedText>
             </View>
             <View style={styles.statsPrice}>
               <ThemedText
-                type="t7"
+                type="f14"
                 numeric
                 numberOfLines={1}
                 themeColor={line.dim ? 'textAssistive' : undefined}
@@ -481,7 +486,7 @@ export default function VendorDetailScreen() {
                   style={styles.tabBtn}
                   onPress={() => setTab(t.key)}>
                   {/* 피그마 탭: 14/700 · 켬은 잉크 글자 + 아래 잉크 선 2(전폭), 끔은 보조색. */}
-                  <ThemedText type="t7" themeColor={active ? undefined : 'textAssistive'} style={styles.bold}>
+                  <ThemedText type="f14" themeColor={active ? undefined : 'textAssistive'} style={styles.bold}>
                     {t.label}
                   </ThemedText>
                   <View
@@ -511,7 +516,7 @@ export default function VendorDetailScreen() {
               {/* 포트폴리오 — 승인된 실사진 띠. 144 정사각 · radius 18 · 사이 8. 사진이 없으면 띠째 없다. */}
               {photos.length > 0 ? (
                 <View>
-                  <ThemedText type="t7" style={[styles.bold, styles.introHead]}>포트폴리오</ThemedText>
+                  <ThemedText type="f14" style={[styles.bold, styles.introHead]}>포트폴리오</ThemedText>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.portfolioStrip}>
                     {photos.map((photo, index) => (
                       <Pressable
@@ -553,7 +558,8 @@ export default function VendorDetailScreen() {
                         {matched ? (
                           <ProductSymbol name="check" size={Layout.iconMicro} color={theme.tint} />
                         ) : null}
-                        <ThemedText type="micro" themeColor={matched ? 'tint' : undefined} style={styles.bold}>
+                        {/* 규격서: 태그 «12/600 · lh 16 · pad 8 14». */}
+                        <ThemedText type="f12" themeColor={matched ? 'tint' : undefined} style={styles.semibold}>
                           {`#${WEDDING_STYLE_LABEL[style]}`}
                         </ThemedText>
                       </View>
@@ -569,19 +575,20 @@ export default function VendorDetailScreen() {
               */}
               <View style={[styles.priceDark, { backgroundColor: theme.backgroundInk }]}>
                 <View style={styles.priceDarkRow}>
-                  <ThemedText type="t3" numeric style={{ color: theme.onInk }}>
+                  {/* 규격서: 금액 «24/500 · lh 32» · 꼬리 «12/400 65%» · 아래 줄 «12/400 55% · lh 20 · mar 12». */}
+                  <ThemedText type="f24" numeric style={[styles.medium, { color: theme.onInk }]}>
                     {line.text}
                   </ThemedText>
                   {!line.dim ? (
                     <View style={styles.priceDarkTail}>
-                      <ThemedText type="micro" numeric style={[styles.regular, { color: theme.onInk }]}>
+                      <ThemedText type="f12" numeric style={{ color: theme.onInk }}>
                         {`${TERMS.verifiedData} ${paidPrice.count}건`}
                       </ThemedText>
                     </View>
                   ) : null}
                 </View>
                 <View style={styles.priceDarkNote}>
-                  <ThemedText type="micro" style={[styles.regular, { color: theme.onInk }]}>
+                  <ThemedText type="f12" style={[styles.noteLine, { color: theme.onInk }]}>
                     {line.dim ? line.caption : BASE_AMOUNT_NOTE}
                   </ThemedText>
                 </View>
@@ -590,15 +597,17 @@ export default function VendorDetailScreen() {
               {/* 우리 조건에 맞는 이유 — 피그마 3열 칸(radius 22 · 회색 면 · 안쪽 8/12 · 체크 12 + 11/600). */}
               <View style={[styles.reasonSection, { borderTopColor: theme.border }]}>
                 <View style={styles.reasonHead}>
-                  <ThemedText type="t7" style={styles.bold}>우리 조건에 맞는 이유</ThemedText>
-                  <ThemedText type="micro" themeColor="textAssistive" style={styles.regular}>내 조건 기준</ThemedText>
+                  {/* 규격서: 제목 «14/700 · lh 20» · «내 조건 기준» «11/400 #868B94 · lh 17». */}
+                  <ThemedText type="f14" style={styles.bold}>우리 조건에 맞는 이유</ThemedText>
+                  <ThemedText type="f11" themeColor="textAssistive">내 조건 기준</ThemedText>
                 </View>
                 {hasRecommendation && reasonLines.length > 0 ? (
                   <View style={styles.reasonGrid}>
                     {reasonLines.map((reason) => (
                       <View key={reason} style={[styles.reasonCell, { backgroundColor: theme.backgroundElement }]}>
                         <ProductSymbol name="check" size={Layout.iconMicro} color={theme.text} />
-                        <ThemedText type="micro" style={[styles.bold, styles.reasonText]}>
+                        {/* 규격서: 칸 글자 «11/600 · lh 16». */}
+                        <ThemedText type="f11" style={[styles.semibold, styles.reasonText]}>
                           {reason}
                         </ThemedText>
                       </View>
@@ -987,7 +996,7 @@ export default function VendorDetailScreen() {
                   strokeLinejoin="round"
                 />
               </Svg>
-              <ThemedText type="t7" themeColor="onTint" style={styles.bold}>
+              <ThemedText type="f14" themeColor="onTint" style={styles.bold}>
                 {pickBusy ? 'Pick하는 중…' : picked ? 'Pick했어요' : 'Pick하기'}
               </ThemedText>
             </Pressable>
@@ -1134,7 +1143,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Layout.inlineGap,
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.pageX,
     paddingVertical: Layout.inlineGap,
     borderBottomWidth: Border.hairline,
   },
@@ -1165,9 +1174,10 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   // ── 탭 넷(소개 · 가격 · 후기 · 정보) · Figma VendorDetailPage 탭 배치를 가져온 자리 ──
+  /* 규격서 「div 430×46 flex · pad 0 20 0 20」, 칸 «pad 12 0 · 14/700». */
   tabBar: {
     flexDirection: 'row',
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.pageX,
     borderBottomWidth: 1,
   },
   /* 탭 칸 `flex-1 py-3 border-b-2` — 상하 12 · 아래 선 2 전폭. */
@@ -1216,9 +1226,28 @@ const styles = StyleSheet.create({
   regular: {
     fontWeight: 400,
   },
-  // ── 「소개」 탭 — 피그마 `space-y-7 px-5 pt-6`: 좌우 24 · 위 24 · 덩어리 사이 28 ──
+  /* 규격서의 굵기 600 · 500 — spec/tokens.json typography.$weights의 피그마 예외. */
+  semibold: {
+    fontWeight: 600,
+  },
+  medium: {
+    fontWeight: 500,
+  },
+  /* 규격서 «ls 0.3px» — 히어로 업종. */
+  tracked03: {
+    letterSpacing: LetterSpacing.p03,
+  },
+  /* 규격서 히어로 이름 «ls -0.64px». */
+  heroName: {
+    letterSpacing: LetterSpacing.n064,
+  },
+  /* 규격서 어두운 카드 아래 줄 «lh 20». */
+  noteLine: {
+    lineHeight: LineHeight.lh20,
+  },
+  // ── 「소개」 탭 — 규격서 「div 430×1017 pad 24 20 0 20」: 좌우 20 · 위 24 · 덩어리 사이 28 ──
   introSection: {
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.pageX,
     paddingTop: Spacing.four,
     gap: Layout.sectionGap,
   },

@@ -34,7 +34,10 @@ import Svg, { Path } from 'react-native-svg';
 
 import {
   Border,
+  Elevation,
   Layout,
+  LetterSpacing,
+  LineHeight,
   MARK_HEART_PATH,
   MaxContentWidth,
   ProductSymbol,
@@ -318,14 +321,17 @@ function Header({ me, partner, total }: { me: CurrentUser; partner: string | nul
   return (
     <View style={styles.head}>
       <View style={styles.titleRow}>
-        <ThemedText type="t3">{TERMS.pick}</ThemedText>
+        {/* 규격서: «Pick» 24/700 lh 32 ls -0.6 · 배지 12/700 흰 글자 lh 16 pad 4 12 · 부제 14/400 #868B94 lh 20. */}
+        <ThemedText type="f24" style={[styles.bold, styles.title]}>
+          {TERMS.pick}
+        </ThemedText>
         <View style={[styles.countBadge, { backgroundColor: theme.text }]}>
-          <ThemedText type="micro" style={[styles.bold, { color: theme.onInk }]}>
+          <ThemedText type="f12" style={[styles.bold, { color: theme.onInk }]}>
             {`${total}개 저장`}
           </ThemedText>
         </View>
       </View>
-      <ThemedText type="t7" themeColor="textAssistive">
+      <ThemedText type="f14" themeColor="textAssistive">
         {SUBTITLE}
       </ThemedText>
 
@@ -346,7 +352,8 @@ function Header({ me, partner, total }: { me: CurrentUser; partner: string | nul
                 overlap
               />
             </View>
-            <ThemedText type="micro" numberOfLines={1} style={[styles.bold, styles.partnerText]}>
+            {/* 규격서: «12/600 #1A1C20 · lh 16». */}
+            <ThemedText type="f12" numberOfLines={1} style={[styles.semibold, styles.partnerText]}>
               {partnerWith(partner, '함께 보고 있어요')}
             </ThemedText>
           </View>
@@ -365,7 +372,8 @@ function Header({ me, partner, total }: { me: CurrentUser; partner: string | nul
               ];
             }}>
             <ProductSymbol name="link" size={Layout.iconSmall} color={theme.tint} />
-            <ThemedText type="micro" themeColor="tint" style={styles.bold}>
+            {/* 규격서: «가격 제보» 12/700 키 컬러 lh 16 · 고리 14. */}
+            <ThemedText type="f12" themeColor="tint" style={styles.bold}>
               {PRICE_REPORT}
             </ThemedText>
           </Pressable>
@@ -391,7 +399,8 @@ function Avatar({
   return (
     <View style={[styles.avatar, { backgroundColor: background, borderColor: ring }, overlap ? styles.avatarOverlap : null]}>
       {initial ? (
-        <ThemedText type="micro" style={[styles.bold, { color: theme.onInk }]}>
+        /* 규격서: 아바타 글자 «11/700 #FFFFFF · lh 17». */
+        <ThemedText type="f11" style={[styles.bold, { color: theme.onInk }]}>
           {initial}
         </ThemedText>
       ) : (
@@ -426,7 +435,8 @@ function CategoryChip({ label, active, onPress }: { label: string; active: boole
         { backgroundColor: active ? theme.text : theme.backgroundElement },
         pressed ? styles.pressed : null,
       ]}>
-      <ThemedText type="t7" numberOfLines={1} style={[styles.bold, { color: active ? theme.onInk : theme.textAssistive }]}>
+      {/* 규격서: 칩 «14/600 · lh 20 · pad 10 16». */}
+      <ThemedText type="f14" numberOfLines={1} style={[styles.semibold, { color: active ? theme.onInk : theme.textAssistive }]}>
         {label}
       </ThemedText>
     </Pressable>
@@ -480,7 +490,7 @@ function CandidateCard({
           />
           {candidate.addedByPartner ? (
             <View style={[styles.badge, { backgroundColor: theme.text }]}>
-              <ThemedText type="micro" style={[styles.bold, { color: theme.onInk }]}>
+              <ThemedText type="f10" style={[styles.bold, { color: theme.onInk }]}>
                 {BADGE_SHARED}
               </ThemedText>
             </View>
@@ -496,10 +506,11 @@ function CandidateCard({
         <View style={styles.info}>
           <View style={styles.headRow}>
             <View style={styles.headText}>
-              <ThemedText type="micro" themeColor="textAssistive" style={styles.bold}>
+              {/* 규격서: 업종 «10/700 #868B94 · lh 15 · ls 0.5px» · 이름 «16/700 · lh 22 · mar 2 0 0 0». */}
+              <ThemedText type="f10" themeColor="textAssistive" style={[styles.bold, styles.tracked]}>
                 {VENDOR_CATEGORY_LABEL[candidate.category]}
               </ThemedText>
-              <ThemedText type="t6" numberOfLines={1} style={[styles.bold, styles.name]}>
+              <ThemedText type="f16" numberOfLines={1} style={[styles.bold, styles.name]}>
                 {candidate.vendorName}
               </ThemedText>
             </View>
@@ -517,12 +528,14 @@ function CandidateCard({
           </View>
           <View style={styles.location}>
             <ProductSymbol name="pin" size={Layout.iconMicro} color={theme.textAssistive} />
-            <ThemedText type="micro" themeColor="textAssistive" numberOfLines={1} style={styles.regular}>
+            {/* 규격서: 지역 «12/400 #868B94 · lh 16 · mar 6 0 0 0». */}
+            <ThemedText type="f12" themeColor="textAssistive" numberOfLines={1}>
               {candidate.region}
             </ThemedText>
           </View>
           {candidate.note ? (
-            <ThemedText type="micro" themeColor="textAssistive" numberOfLines={1} style={[styles.regular, styles.note]}>
+            /* 규격서 해시태그 줄 자리 «10/500 #868B94 · lh 15 · mar 8 0 0 0». */
+            <ThemedText type="f10" themeColor="textAssistive" numberOfLines={1} style={[styles.medium, styles.note]}>
               {candidate.note}
             </ThemedText>
           ) : null}
@@ -543,7 +556,7 @@ function CandidateCard({
               pressed ? styles.pressed : null,
               busy ? styles.busy : null,
             ]}>
-            <ThemedText type="micro" themeColor="textAssistive" style={styles.bold}>
+            <ThemedText type="f12" themeColor="textAssistive" style={styles.bold}>
               {ACTION_UNDECIDE}
             </ThemedText>
           </Pressable>
@@ -564,8 +577,9 @@ function CandidateCard({
                 compareDisabled ? styles.disabled : null,
                 pressed ? styles.pressed : null,
               ]}>
+              {/* 규격서: CTA 글자 «12/700 · lh 16». */}
               <ThemedText
-                type="micro"
+                type="f12"
                 style={[styles.bold, { color: comparing ? theme.onInk : compareDisabled ? theme.textAssistive : theme.text }]}>
                 {comparing ? ACTION_COMPARING : ACTION_COMPARE}
               </ThemedText>
@@ -582,7 +596,7 @@ function CandidateCard({
                   { backgroundColor: theme.tint },
                   pressed ? styles.pressed : null,
                 ]}>
-                <ThemedText type="micro" style={[styles.bold, { color: theme.onTint }]}>
+                <ThemedText type="f12" style={[styles.bold, { color: theme.onTint }]}>
                   {ACTION_DECIDE}
                 </ThemedText>
               </Pressable>
@@ -669,16 +683,23 @@ const styles = StyleSheet.create({
   bottomSpacer: { height: Spacing.five },
 
   bold: { fontWeight: 700 },
-  /* `micro`는 기본이 700이다 — 피그마에서 regular인 작은 글자는 400으로 되돌린다. */
+  /* 규격서의 굵기 600 · 500 — spec/tokens.json typography.$weights의 피그마 예외. */
+  semibold: { fontWeight: 600 },
+  medium: { fontWeight: 500 },
   regular: { fontWeight: 400 },
+  /* 규격서 «ls 0.5px» — 업종 라벨. */
+  tracked: { letterSpacing: LetterSpacing.p05 },
+  /* 규격서 제목 «lh 32 · ls -0.6px». */
+  title: { lineHeight: LineHeight.lh32, letterSpacing: LetterSpacing.n06 },
   pressed: { transform: [{ scale: 0.97 }] },
   busy: { opacity: 0.6 },
   /* 비교함이 찼을 때의 «비교하기» `opacity-40`. */
   disabled: { opacity: 0.4 },
 
   // ── 헤더 `px-5 pb-5 pt-6` — 좌우는 정본 24 · 위 24 · 아래 20(같은 값의 listGap) ──
+  /* 규격서 pick.txt 「div 430×172 pad 24 20 20 20」. */
   head: {
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.pageX,
     paddingTop: Spacing.four,
     paddingBottom: Layout.listGap,
   },
@@ -768,7 +789,7 @@ const styles = StyleSheet.create({
   chipRow: {
     flexDirection: 'row',
     gap: Spacing.two,
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.pageX,
     paddingBottom: Spacing.three,
   },
   /* `px-4 py-2.5 text-sm` — 40(같은 값의 controlMedium) · 좌우 16. */
@@ -781,15 +802,16 @@ const styles = StyleSheet.create({
   },
 
   // ── 카드 목록 `space-y-3 px-5` — 카드 사이 12 ──
+  /* 규격서 「div 430×884 pad 0 20 0 20」. */
   list: {
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.pageX,
     gap: Layout.inlineGap,
   },
-  /* `rounded-2xl border overflow-hidden` — 그림자(`shadow-sm`)는 elevation.$rule에 따라 없다. */
+  /* 규격서 「div 390×212 … r16 · border 1 #000000 6% · shadow」. */
   card: {
     borderRadius: Radius.cardLarge,
     borderWidth: Border.hairline,
-    overflow: 'hidden',
+    ...Elevation.figmaCard,
   },
   cardBody: { flexDirection: 'row' },
   /* 왼쪽 열 `p-2` 안에 썸네일 104×116 — 열 폭 120. */
@@ -827,8 +849,8 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
   },
   headText: { flex: 1, minWidth: 0 },
-  /* 이름 `mt-0.5`. */
-  name: { marginTop: Spacing.half },
+  /* 규격서: 이름 «lh 22 · mar 2 0 0 0». */
+  name: { marginTop: Spacing.half, lineHeight: LineHeight.lh22 },
   /* × `p-1 rounded-full`. */
   removeBtn: {
     padding: Spacing.one,

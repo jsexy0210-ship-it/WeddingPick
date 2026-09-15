@@ -7,6 +7,7 @@ import {
   ActionButton,
   Border,
   Layout,
+  LetterSpacing,
   MaxContentWidth,
   SegmentedTabs,
   Spacing,
@@ -55,8 +56,11 @@ export default function CommunityScreen() {
           부르지 않는다). 그 아래 세 칸 탭은 `mx-5 mt-4`. 후기 · 피드 본문은 서버 계약이 없어
           빈 상태 그대로다(인수인계 §3-3).
         */}
+        {/* 규격서 community.txt 「header 430×56 pad 0 20 0 20」 · 제목 «24/700 · lh 32 · ls -0.72px». */}
         <View style={[styles.header, { borderBottomColor: theme.border }]}>
-          <ThemedText type="t3">{S.title}</ThemedText>
+          <ThemedText type="f24" style={[styles.bold, styles.title]}>
+            {S.title}
+          </ThemedText>
         </View>
 
         <View style={styles.tabsWrap}>
@@ -100,11 +104,13 @@ const styles = StyleSheet.create({
   header: {
     height: Layout.navBar,
     justifyContent: 'center',
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.pageX,
     borderBottomWidth: Border.hairline,
   },
-  /* 탭 `mx-5 mt-4` — 위 16. */
-  tabsWrap: { paddingHorizontal: Layout.gutter, paddingTop: Spacing.three, paddingBottom: Layout.rowPaddingY },
+  bold: { fontWeight: 700 },
+  title: { letterSpacing: LetterSpacing.n072 },
+  /* 규격서 「nav 390×48 … mar 16 20 0 20」 — 위 16 · 좌우 20. */
+  tabsWrap: { paddingHorizontal: Layout.pageX, paddingTop: Spacing.three, paddingBottom: Layout.rowPaddingY },
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: Layout.sectionGap },
   center: { textAlign: 'center' },

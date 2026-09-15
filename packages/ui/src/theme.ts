@@ -642,6 +642,8 @@ export const AdminSpacing = {
 export const Layout = {
   /** 화면 좌우 거터. 바텀시트 내부도 같다. */
   gutter: 24,
+  /** 피그마 화면의 좌우 여백 20 — spacing.pageX(규격서 `pad … 20 … 20`). 피그마에 없는 화면은 gutter 24 그대로. */
+  pageX: 20,
   /** 섹션을 가르는 gray100 밴드 높이. */
   sectionBand: 16,
   /** 섹션과 섹션 사이 · 섹션 하단. spacing.sectionBottom. */
@@ -821,6 +823,8 @@ export const Layout = {
    */
   iconField: 16,
   iconMicro: 12,
+  /** 규격서 vendor-1.txt 「인증」 pill 안 체크 «svg 10×10» — size.iconTiny. */
+  iconTiny: 10,
   searchField: 48,
   headerBack: 36,
   pickCircle: 28,
@@ -985,6 +989,18 @@ export const Border = {
  * 한다. 떠 있는 카드 하나만 `floatingCard`(0 2px 6px rgba(0,0,0,.16))를 쓴다.
  */
 export const Elevation = {
+  /**
+   * 피그마 규격서의 «shadow» — Tailwind `shadow-sm` = 0 1px 2px rgba(0,0,0,.05). 검색 · Pick ·
+   * 웨딩피드 카드가 쓴다(docs/figma-spec/search.txt 「div 390×137 … r16 · border … · shadow」).
+   * 2026-09-15 대표 지시로 규격서의 수를 그대로 옮긴다 — elevation.$rule(그림자 거의 안 씀)보다 앞선다.
+   */
+  figmaCard: {
+    shadowColor: '#000000',
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
   floatingCard: {
     shadowColor: '#000000',
     shadowOpacity: 0.16,

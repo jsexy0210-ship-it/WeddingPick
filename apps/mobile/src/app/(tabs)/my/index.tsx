@@ -25,6 +25,7 @@ import {
   Border,
   Layout,
   MaxContentWidth,
+  LetterSpacing,
   ProductSymbol,
   type ProductSymbolName,
   Radius,
@@ -229,7 +230,10 @@ export default function MyScreen() {
           showsVerticalScrollIndicator={false}>
           {/* 제목 `px-5 pb-5` + 위 24 — 26/700 = t2. */}
           <View style={styles.header}>
-            <ThemedText type="t2">{S.title}</ThemedText>
+            {/* 규격서 my.txt: «MY» 26/700 · lh 39 · ls -0.65px. */}
+            <ThemedText type="f26" style={[styles.bold, styles.title]}>
+              {S.title}
+            </ThemedText>
           </View>
 
           {/* 프로필 카드 `rounded-[22px] border`: 이름 16/700 · 결혼 예정일 14 · 선 · «내 웨딩 설정» 행. */}
@@ -241,10 +245,11 @@ export default function MyScreen() {
                   accessibilityLabel="프로필"
                   onPress={() => router.push('/my/profile' as never)}
                   style={({ pressed }) => [styles.profile, pressed ? styles.pressed : null]}>
-                  <ThemedText type="t6" numberOfLines={1} style={styles.bold}>
+                  {/* 규격서: 이름 «16/700 · lh 24» · 결혼 예정일 «14/400 #868B94 · lh 20 · mar 2». */}
+                  <ThemedText type="f16" numberOfLines={1} style={styles.bold}>
                     {me.displayName ? me.displayName : S.nameless}
                   </ThemedText>
-                  <ThemedText type="t7" themeColor="textAssistive" numeric numberOfLines={1} style={styles.profileSub}>
+                  <ThemedText type="f14" themeColor="textAssistive" numeric numberOfLines={1} style={styles.profileSub}>
                     {me.weddingDate ? S.weddingDate(koreanDate(me.weddingDate)) : S.weddingDateUnset}
                   </ThemedText>
                 </Pressable>
@@ -257,7 +262,8 @@ export default function MyScreen() {
                     { borderTopColor: theme.border },
                     pressed ? styles.pressed : null,
                   ]}>
-                  <ThemedText type="t7" style={styles.grow}>
+                  {/* 규격서: «14/500 · lh 20». */}
+                  <ThemedText type="f14" style={[styles.medium, styles.grow]}>
                     {S['item.weddingSetting']}
                   </ThemedText>
                   <ProductSymbol name="chevronRight" size={Layout.iconField} color={theme.textAssistive} />
@@ -287,7 +293,8 @@ export default function MyScreen() {
           {/* 섹션 — 제목 `mb-2 px-1`(11/700 · muted) + 카드 `rounded-[22px] border`, 행 `px-4 py-3.5 gap-3`. */}
           {sections.map((section) => (
             <View key={section.title} style={styles.block}>
-              <ThemedText type="micro" themeColor="textAssistive" style={[styles.bold, styles.sectionTitle]}>
+              {/* 규격서: 섹션 제목 «11/700 #868B94 · lh 17 · ls 1.1px · pad 0 4 · mar 0 0 8». */}
+              <ThemedText type="f11" themeColor="textAssistive" style={[styles.bold, styles.sectionTitle]}>
                 {section.title}
               </ThemedText>
               <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.border }]}>
@@ -305,11 +312,12 @@ export default function MyScreen() {
                       pressed ? styles.pressed : null,
                     ]}>
                     <ProductSymbol name={row.icon} size={Layout.iconField} color={theme.textAssistive} />
-                    <ThemedText type="t7" numberOfLines={1} style={styles.grow}>
+                    {/* 규격서: 행 «14/500 · lh 20» · 꼬리 «12/700 키 컬러 · mar 0 4 0 0». */}
+                    <ThemedText type="f14" numberOfLines={1} style={[styles.medium, styles.grow]}>
                       {row.label}
                     </ThemedText>
                     {row.tail ? (
-                      <ThemedText type="micro" themeColor="tint" numeric style={[styles.bold, styles.tail]}>
+                      <ThemedText type="f12" themeColor="tint" numeric style={[styles.bold, styles.tail]}>
                         {row.tail}
                       </ThemedText>
                     ) : null}
@@ -324,10 +332,11 @@ export default function MyScreen() {
           <View style={styles.versionBlock}>
             <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.border }]}>
               <View style={styles.row}>
-                <ThemedText type="t7" themeColor="textAssistive" style={styles.grow}>
+                {/* 규격서: «앱 버전» 14/400 · 값 12/400. */}
+                <ThemedText type="f14" themeColor="textAssistive" style={styles.grow}>
                   {S.appVersion}
                 </ThemedText>
-                <ThemedText type="micro" themeColor="textAssistive" numeric style={styles.regular}>
+                <ThemedText type="f12" themeColor="textAssistive" numeric>
                   {APP_VERSION}
                 </ThemedText>
               </View>
@@ -345,7 +354,8 @@ export default function MyScreen() {
                 void signOut().finally(() => router.replace('/login'));
               }}>
               <ProductSymbol name="signout" size={Layout.iconMicro} color={theme.textAssistive} />
-              <ThemedText type="micro" themeColor="textAssistive" style={[styles.regular, styles.underline]}>
+              {/* 규격서: «로그아웃» 12/500 · 60% · 기호 12 · mar 0 4 0 0. */}
+              <ThemedText type="f12" themeColor="textAssistive" style={[styles.medium, styles.underline]}>
                 {S.logout}
               </ThemedText>
             </Pressable>
@@ -353,7 +363,8 @@ export default function MyScreen() {
 
           {/* 표어 `mt-4 text-center text-[11px] muted/50` + 사업자 정보(2026-09-08 등록 · 법정 공시). */}
           <View style={styles.footer}>
-            <ThemedText type="micro" themeColor="textAssistive" style={[styles.regular, styles.center]}>
+            {/* 규격서: 표어 «11/400 · 50% · lh 17 · mar 16». */}
+            <ThemedText type="f11" themeColor="textAssistive" style={styles.center}>
               {S.tagline}
             </ThemedText>
             <View style={styles.businessNotice}>
@@ -395,20 +406,26 @@ const styles = StyleSheet.create({
   bold: { fontWeight: 700 },
   /* `micro`는 기본이 700 — 시안에서 regular인 작은 글자는 400. */
   regular: { fontWeight: 400 },
+  /* 규격서의 굵기 500 — spec/tokens.json typography.$weights의 피그마 예외. */
+  medium: { fontWeight: 500 },
+  /* 규격서 «MY» «ls -0.65px». */
+  title: { letterSpacing: LetterSpacing.n065 },
   center: { textAlign: 'center' },
   grow: { flex: 1, minWidth: 0 },
   pressed: { opacity: 0.6 },
   underline: { textDecorationLine: 'underline' },
 
   /* 제목 — 위 24(`h-6` 빈 칸) · 좌우 24 · 아래 20. */
+  /* 규격서 「div 430×24」 + 「header 430×59 pad 0 20 20 20」 — 위 24 · 좌우 20 · 아래 20. */
   header: {
     paddingTop: Spacing.four,
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.pageX,
     paddingBottom: Layout.listGap,
   },
   /* 덩어리 `mx-5 mb-6` — 좌우 24 · 아래 24. */
+  /* 규격서 「div 390×… mar 0 20 24 20」 — 좌우 20 · 아래 24. */
   block: {
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.pageX,
     paddingBottom: Spacing.four,
   },
   loginCta: { gap: Spacing.two },
@@ -437,6 +454,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     marginBottom: Spacing.two,
     paddingHorizontal: Spacing.one,
+    letterSpacing: LetterSpacing.p11,
   },
   /* 행 `px-4 py-3.5 gap-3` — 안쪽 16/14 · 사이 12. */
   row: {
@@ -450,7 +468,7 @@ const styles = StyleSheet.create({
   tail: { marginRight: Spacing.one },
   /* 앱 버전 카드 `mx-5 mb-2`. */
   versionBlock: {
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.pageX,
     paddingBottom: Spacing.two,
   },
   /* 로그아웃 `mt-3` 가운데 · 기호↔글 4. */

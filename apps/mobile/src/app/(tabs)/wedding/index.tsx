@@ -36,6 +36,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Border,
   DonutChart,
+  Elevation,
   Fab,
   Layout,
   ProductSymbol,
@@ -138,7 +139,9 @@ export default function WeddingScreen() {
 
   const header = (
     <View style={styles.header}>
-      <ThemedText type="t2">{TERMS.ourWedding}</ThemedText>
+      <ThemedText type="f28" style={styles.bold}>
+        {TERMS.ourWedding}
+      </ThemedText>
     </View>
   );
 
@@ -187,8 +190,8 @@ export default function WeddingScreen() {
                   accessibilityState={{ selected }}
                   accessibilityLabel={item.label}
                   onPress={() => setTab(item.key)}
-                  style={[styles.tab, selected ? { backgroundColor: theme.background } : null]}>
-                  <ThemedText type="t7" style={[styles.bold, { color: selected ? theme.text : theme.textAssistive }]}>
+                  style={[styles.tab, selected ? [{ backgroundColor: theme.background }, Elevation.figmaCard] : null]}>
+                  <ThemedText type="f14" style={[styles.bold, { color: selected ? theme.text : theme.textAssistive }]}>
                     {item.label}
                   </ThemedText>
                 </Pressable>
@@ -278,13 +281,15 @@ function CalendarPanel({
 
   return (
     <View style={[styles.panel, { backgroundColor: theme.background, borderColor: theme.border }]}>
-      <ThemedText type="t3">{`${cursor.year}년 ${cursor.month + 1}월`}</ThemedText>
+      {/* 규격서: 달 «24/700 · lh 32». */}
+      <ThemedText type="f24" style={styles.bold}>{`${cursor.year}년 ${cursor.month + 1}월`}</ThemedText>
 
       <View style={styles.monthNav}>
         <Pressable accessibilityRole="button" accessibilityLabel={PREV_MONTH} onPress={() => move(-1)} style={styles.navBtn}>
           <ProductSymbol name="chevronLeft" size={Layout.iconRow} color={theme.text} />
         </Pressable>
-        <ThemedText type="micro" themeColor="textAssistive" style={styles.regular}>
+        {/* 규격서: «11/400 #868B94 · lh 17». */}
+        <ThemedText type="f11" themeColor="textAssistive">
           {CALENDAR_HINT}
         </ThemedText>
         <Pressable accessibilityRole="button" accessibilityLabel={NEXT_MONTH} onPress={() => move(1)} style={styles.navBtn}>
@@ -295,7 +300,8 @@ function CalendarPanel({
       <View style={styles.weekRow}>
         {WEEKDAYS.map((label) => (
           <View key={label} style={styles.weekCell}>
-            <ThemedText type="micro" themeColor="textAssistive" style={styles.bold}>
+            {/* 규격서: 요일 «10/600 #868B94 · lh 15». */}
+            <ThemedText type="f10" themeColor="textAssistive" style={styles.semibold}>
               {label}
             </ThemedText>
           </View>
@@ -318,7 +324,8 @@ function CalendarPanel({
                     accessibilityState={{ selected: isSelected }}
                     onPress={() => selectDay(day)}
                     style={[styles.dayCircle, isSelected ? { backgroundColor: theme.text } : null]}>
-                    <ThemedText type="micro" style={[styles.regular, { color: isSelected ? theme.onInk : theme.text }]}>
+                    {/* 규격서: 날짜 «12/500 · lh 16». */}
+                    <ThemedText type="f12" style={[styles.medium, { color: isSelected ? theme.onInk : theme.text }]}>
                       {day}
                     </ThemedText>
                     {hasEvent ? (
@@ -362,11 +369,12 @@ function CalendarPanel({
                     ]}>
                     {done ? <ProductSymbol name="check" size={Layout.iconMicro} color={theme.onInk} /> : null}
                   </View>
+                  {/* 규격서: 일정 «14/600 · lh 20» · 시각 «11/400 #868B94 · lh 17». */}
                   <ThemedText
-                    type="t7"
+                    type="f14"
                     numberOfLines={1}
                     themeColor={done ? 'textAssistive' : undefined}
-                    style={[styles.bold, styles.eventTitle, done ? styles.strike : null]}>
+                    style={[styles.semibold, styles.eventTitle, done ? styles.strike : null]}>
                     {event.title}
                   </ThemedText>
                   {done ? (
@@ -376,7 +384,7 @@ function CalendarPanel({
                       </ThemedText>
                     </View>
                   ) : null}
-                  <ThemedText type="micro" themeColor="textAssistive" numeric style={styles.regular}>
+                  <ThemedText type="f11" themeColor="textAssistive" numeric>
                     {eventTime(event.startsAt)}
                   </ThemedText>
                   <View style={styles.rowActions}>
@@ -571,8 +579,9 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1 },
   /* 제목 `px-5 pb-5 pt-6` — 좌우는 정본 24 · 위 24 · 아래 20(같은 값의 listGap). 28은 스케일에 없어 t2(26)다. */
+  /* 규격서 our-wedding.txt 「header 430×86 pad 24 20 20 20」 · 제목 «28/700 · lh 42». */
   header: {
-    paddingHorizontal: Layout.gutter,
+    paddingHorizontal: Layout.pageX,
     paddingTop: Spacing.four,
     paddingBottom: Layout.listGap,
   },
@@ -582,12 +591,16 @@ const styles = StyleSheet.create({
 
   bold: { fontWeight: 700 },
   regular: { fontWeight: 400 },
+  /* 규격서의 굵기 600 · 500 — spec/tokens.json typography.$weights의 피그마 예외. */
+  semibold: { fontWeight: 600 },
+  medium: { fontWeight: 500 },
   grow: { flex: 1, minWidth: 0 },
   strike: { textDecorationLine: 'line-through' },
 
   /* 탭 `mx-5 rounded-2xl p-1`, 칸 `h-11 rounded-xl`. */
+  /* 규격서 「nav 390×52 pad 4 · mar 0 20 0 20 · bg #F7F8F9 · r16」, 칸 «127×44 · r22 · 14/700 · 켠 칸 흰 면 + shadow». */
   tabs: {
-    marginHorizontal: Layout.gutter,
+    marginHorizontal: Layout.pageX,
     borderRadius: Radius.cardLarge,
     padding: Spacing.one,
     flexDirection: 'row',
@@ -602,7 +615,7 @@ const styles = StyleSheet.create({
 
   /* 패널 `mx-5 mt-4 rounded-[26px] border p-5`. */
   panel: {
-    marginHorizontal: Layout.gutter,
+    marginHorizontal: Layout.pageX,
     marginTop: Spacing.three,
     borderRadius: Radius.panel,
     borderWidth: Border.hairline,

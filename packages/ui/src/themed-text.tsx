@@ -52,7 +52,25 @@ export type ThemedTextProps = TextProps & {
     | 'subtitle'
     | 'default'
     | 'small'
-    | 'smallBold';
+    | 'smallBold'
+    /* 피그마 규격서 크기 — 이름이 곧 값. 굵기는 style로, 줄높이가 다르면 LineHeight.lhNN으로 덮는다. */
+    | 'f10'
+    | 'f11'
+    | 'f12'
+    | 'f13'
+    | 'f14'
+    | 'f15'
+    | 'f16'
+    | 'f18'
+    | 'f20'
+    | 'f24'
+    | 'f26'
+    | 'f28'
+    | 'f32'
+    | 'f38'
+    | 'f42'
+    | 'f46'
+    | 'f52';
   themeColor?: ThemeColor;
   /** 금액에는 tabular-nums를 붙인다. 자릿수가 흔들리면 숫자가 춤춘다. */
   numeric?: boolean;
@@ -114,6 +132,24 @@ const STYLE_FOR: Record<TextType, keyof typeof styles> = {
   small: 't7',
   // 목록 항목명·강조 값. smallBold가 실제로 쓰이던 자리가 t5다.
   smallBold: 't5',
+
+  f10: 'f10',
+  f11: 'f11',
+  f12: 'f12',
+  f13: 'f13',
+  f14: 'f14',
+  f15: 'f15',
+  f16: 'f16',
+  f18: 'f18',
+  f20: 'f20',
+  f24: 'f24',
+  f26: 'f26',
+  f28: 'f28',
+  f32: 'f32',
+  f38: 'f38',
+  f42: 'f42',
+  f46: 'f46',
+  f52: 'f52',
 };
 
 /**
@@ -140,6 +176,24 @@ const ANDROID_LETTER_SPACING_EM: Record<keyof typeof styles, number> = {
   badge: -0.04,
   code: 0,
   numeric: 0,
+  /* 피그마 규격서 크기는 자간을 줄마다 따로 적는다(«ls -0.4px») — 기본 0, 자리에서 style로 준다. */
+  f10: 0,
+  f11: 0,
+  f12: 0,
+  f13: 0,
+  f14: 0,
+  f15: 0,
+  f16: 0,
+  f18: 0,
+  f20: 0,
+  f24: 0,
+  f26: 0,
+  f28: 0,
+  f32: 0,
+  f38: 0,
+  f42: 0,
+  f46: 0,
+  f52: 0,
 };
 
 function androidLetterSpacing(key: keyof typeof styles): { letterSpacing: number } | null {
@@ -189,6 +243,28 @@ const styles = StyleSheet.create({
   amount: { fontSize: FontSize.amount, lineHeight: LineHeight.amount, fontWeight: 700 },
 
   numeric: { fontVariant: ['tabular-nums'] },
+
+  /*
+   * 피그마 규격서 크기. 줄높이는 Tailwind 기본(규격서에 가장 많이 적힌 값)이고, 자리마다
+   * 다르면 LineHeight.lhNN으로 덮는다. 굵기는 기본 400 — 규격서의 500 · 600 · 700을 style로 준다.
+   */
+  f10: { fontSize: FontSize.f10, lineHeight: LineHeight.lh15, fontWeight: 400 },
+  f11: { fontSize: FontSize.f11, lineHeight: LineHeight.lh17, fontWeight: 400 },
+  f12: { fontSize: FontSize.f12, lineHeight: LineHeight.lh16, fontWeight: 400 },
+  f13: { fontSize: FontSize.f13, lineHeight: LineHeight.lh20, fontWeight: 400 },
+  f14: { fontSize: FontSize.f14, lineHeight: LineHeight.lh20, fontWeight: 400 },
+  f15: { fontSize: FontSize.f15, lineHeight: LineHeight.lh22, fontWeight: 400 },
+  f16: { fontSize: FontSize.f16, lineHeight: LineHeight.lh24, fontWeight: 400 },
+  f18: { fontSize: FontSize.f18, lineHeight: LineHeight.lh28, fontWeight: 400 },
+  f20: { fontSize: FontSize.f20, lineHeight: LineHeight.lh28, fontWeight: 400 },
+  f24: { fontSize: FontSize.f24, lineHeight: LineHeight.lh32, fontWeight: 400 },
+  f26: { fontSize: FontSize.f26, lineHeight: LineHeight.lh39, fontWeight: 400 },
+  f28: { fontSize: FontSize.f28, lineHeight: LineHeight.lh42, fontWeight: 400 },
+  f32: { fontSize: FontSize.f32, lineHeight: LineHeight.lh40, fontWeight: 400 },
+  f38: { fontSize: FontSize.f38, lineHeight: LineHeight.lh45, fontWeight: 400 },
+  f42: { fontSize: FontSize.f42, lineHeight: LineHeight.lh45, fontWeight: 400 },
+  f46: { fontSize: FontSize.f46, lineHeight: LineHeight.lh46, fontWeight: 400 },
+  f52: { fontSize: FontSize.f52, lineHeight: LineHeight.lh52, fontWeight: 400 },
 
   link: { fontSize: FontSize.t7, lineHeight: LineHeight.link },
   code: {
