@@ -122,6 +122,27 @@ CI가 빨가면 배포가 시작되지 않는다.
 괄호가 범위를 밝히고 있어 허위는 아니나, 「전부」라는 낱말이 실제보다 넓다.
 숫자(332 · 26)는 현재(348 · 34)보다 작아 그 시점의 값으로 보이며, 시험이 줄어든 흔적은 아니다.
 
+### 이 조사 PR의 CI 결과 — 초록, 그러나 **몇 개가 돌았는지는 못 봤다**
+
+PR #242 (head `15b0a352`) CI: **success**. 16단계 전부 성공했다.
+`Initialize containers`(postgres 서비스)·`SEED 토큰`·`Copy lint (금지어)`·`Test`·
+`API health validator test`·`Render deploy orchestration test` 모두 초록.
+`Deploy → Staging`·`Deploy → Production`은 **skipped** — PR이라 `if:` 조건에 걸리지 않았다. 정상이다.
+
+경고 4건은 전부 기존 것이다(Node 20 deprecation · `Import in body of module` ×2 ·
+`useEffect` 의존성). 내가 넣은 두 파일은 마크다운 문서와 루트 `scripts/`의 `.mjs`이고,
+`npm run lint`는 워크스페이스(`apps/*`·`packages/*`)만 보므로 **둘 다 린트 범위 밖**이다. 내 것이 아니다.
+
+**못 봤다 — CI에서 실제로 몇 개의 시험이 돌았는지.**
+GitHub 작업 로그는 `productionresultssa3.blob.core.windows.net`으로 리다이렉트되는데
+이 환경의 조직 네트워크 정책이 그 호스트를 막는다(`connect_rejected`, 403).
+우회하지 않았다. 그래서 **CI 쪽 실측 수치는 이 조사에 없다.**
+
+내가 세운 「CI에서 2,569개가 전부 돈다」는 **추론이지 관측이 아니다.** 근거는
+① `main.yml:52`가 `DATABASE_URL`을 설정하고 같은 잡의 postgres 서비스가 떴다는 것
+(`Initialize containers` 성공), ② 같은 major·같은 자격증명으로 내가 로컬에서 재현해
+2,569개가 전부 돌고 전부 통과한 것. **CI 로그로 확인한 것이 아니다.**
+
 ---
 
 ## 남은 구멍 — 무력화는 아니나 적어 둔다
@@ -145,7 +166,24 @@ CI가 빨가면 배포가 시작되지 않는다.
    시험을 끄는 것이 아니고 20초도 실측 최악(6.8초)의 세 배라 **무력화로 판정하지 않는다.**
    다만 「글이 말하는 것과 코드가 하는 것이 갈린 자리」라 적어 둔다. 고치는 것은 이 세션 일이 아니다.
 
-4. **jest 6개 워크스페이스 전부 `--forceExit`다.** 실패를 숨기지는 않지만,
+4. **CI가 시험 수를 어디에도 남기지 않는다 — 이것이 이 감시의 가장 큰 사각지대다.**
+   `main.yml`에 `$GITHUB_STEP_SUMMARY`를 쓰는 곳이 **0곳**이고, 시험 결과 아티팩트도 없다
+   (올라가는 아티팩트는 `marketing-preview` 984바이트 하나뿐).
+   그래서 **⑤ 「보고와 실제 대조」를 CI 실행에 대해서는 수행할 수 없다.**
+   누가 「전부 초록」이라 적었을 때 그 실행에서 몇 개가 돌았는지 맞춰 볼 근거가 로그밖에 없는데,
+   그 로그를 이 세션이 읽지 못한다. 시험이 조용히 줄어도 **CI 쪽에서는 잡히지 않는다.**
+   고치는 것은 이 세션 일이 아니나, 대표님께 올린다 — `Test` 단계가 jest 요약
+   (`Tests: N passed, M skipped, T total`)을 `$GITHUB_STEP_SUMMARY`에 한 줄 적어 주기만 해도
+   체크런 API로 읽혀 이 사각지대가 사라진다.
+
+5. **루트 `scripts/`가 린트·타입검사 범위 밖이다.**
+   `npm run lint`·`npm run typecheck` 모두 `--workspaces`라 `apps/*`·`packages/*`만 본다.
+   그런데 CI 방어 장치 셋(`sync-seed-tokens.mjs` · `check-destructive-migrations.js` ·
+   `check-api-health.mjs`)이 바로 거기 있다. 그중 시험이 있는 것은 `check-api-health`
+   (`check-api-health.test.mjs`)와 `render-env-sync`(`test-render-env-sync.py`) 둘뿐이다.
+   **`sync-seed-tokens.mjs`와 `check-destructive-migrations.js`는 지키는 쪽인데 자기를 지키는 시험이 없다.**
+
+6. **jest 6개 워크스페이스 전부 `--forceExit`다.** 실패를 숨기지는 않지만,
    닫히지 않은 핸들을 덮어 버린다. 시험을 끄는 장치는 아니므로 판정에 넣지 않고 기록만 한다.
 
 ## 다음 주기에 볼 것
@@ -153,5 +191,7 @@ CI가 빨가면 배포가 시작되지 않는다.
 - 기준선을 **191 suites / 2,569 tests**로 갱신할지 대표님 판단을 받는다 (`packages/db` 포함 여부).
 - `packages/ui`에 시험 파일이 생기는지 지켜본다. 생기면 1번 구멍이 바로 사고가 된다.
 - `main.yml`에 `continue-on-error`가 붙거나 위 6개 장치가 빠지는지 매번 대조한다.
+- **CI 로그 접근이 막혀 있는 한 ⑤는 반쪽이다.** 위 4번이 해결되기 전까지, 「CI에서 몇 개가 돌았다」는
+  이 문서에 적지 않는다. 적을 수 있는 것은 「CI가 success였다」까지다.
 - 시험별 타임아웃이 더 올라가는지 본다. 현재: api 60초 · db 60초 · mobile **20초(실효)** ·
   web·domain·api-contract는 jest 기본 5초. 개별 시험에 3번째 인자로 타임아웃을 준 자리는 0건이다.
