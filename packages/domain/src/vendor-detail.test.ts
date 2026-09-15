@@ -14,7 +14,6 @@ describe('업체 상세 순서', () => {
       'key_conditions',
       'recommend_reason',
       'verified_data',
-      'pick',
       'vendor_notice',
       'benefits',
       'experience',
@@ -22,19 +21,27 @@ describe('업체 상세 순서', () => {
       'rebuttals',
       'official_source',
       'report_error',
+      'pick',
     ]);
   });
 
-  it('공식정보가 후기 다음이고, Pick은 제보 금액 바로 다음이다', () => {
+  it('공식정보가 후기 다음이고, Pick은 어느 자리에도 속하지 않는다', () => {
     /*
      * 공식정보는 예전에 업체명 바로 아래에 있었다. 이름을 꾸며주는 배지처럼 보였는데,
-     * 읽는 사람이 출처를 궁금해하는 때는 후기까지 읽은 뒤다.
-     * Pick은 핸드오프 WP-VEND-001 rule — «근거를 다 읽은 자리(제보 금액 다음)에 둔다».
+     * 읽는 사람이 출처를 궁금해하는 때는 후기까지 읽은 뒤다. 그 규칙은 그대로다.
+     *
+     * **Pick은 2026-09-14에 자리가 바뀌었다.** 핸드오프 WP-VEND-001은 «근거를 다 읽은
+     * 자리(제보 금액 다음)»라고 정했고, 화면이 위에서 아래로 한 번에 흐르던 때는 그
+     * 자리가 곧 그 뜻이었다. 대표 지시로 상세가 탭 넷이 되면서 그 자리가 사라졌다 —
+     * 한 탭 안에 넣으면 나머지 세 탭에서는 Pick을 못 누른다.
+     *
+     * 그래서 탭 바깥 하단 고정으로 옮겼다. 목록에서 마지막인 것은 «제일 덜 중요하다»가
+     * 아니라 **어느 자리에도 속하지 않는다**는 뜻이고, 그것을 여기서 지킨다.
      */
     const keys = VENDOR_DETAIL_SECTIONS.map((section) => section.key);
 
     expect(keys.indexOf('official_source')).toBeGreaterThan(keys.indexOf('reviews'));
-    expect(keys.indexOf('pick')).toBe(keys.indexOf('verified_data') + 1);
+    expect(keys.indexOf('pick')).toBe(keys.length - 1);
   });
 
   it('아직 못 그리는 자리도 목록에 남는다', () => {
@@ -62,12 +69,12 @@ describe('업체 상세 순서', () => {
       'name',
       'key_conditions',
       'verified_data',
-      'pick',
       'experience',
       'reviews',
       'rebuttals',
       'official_source',
       'report_error',
+      'pick',
     ]);
   });
 

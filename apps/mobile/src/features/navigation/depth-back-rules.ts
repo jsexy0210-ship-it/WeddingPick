@@ -68,6 +68,7 @@ export const ROUTES: readonly string[] = [
   '/admin/users',
   '/admin/vendors',
   '/community',
+  '/community/feed/[id]',
   '/capture',
   '/capture/analysis/[id]',
   '/capture/camera',
@@ -164,6 +165,7 @@ export const ROUTES: readonly string[] = [
   '/wedding/[id]/tasks',
   '/wedding/[id]/timeline',
   '/wedding/[id]/verify',
+  '/wedding/[id]/consultations',
   '/wedding/[id]/visit-notes',
   '/wedding/join',
   '/wedding/partner',
@@ -249,6 +251,7 @@ export const DEPTH_BACK_EXCEPTIONS: Readonly<Record<string, string>> = {
   '/wedding/[id]/quotes': '/wedding',
   '/wedding/[id]/tasks': '/wedding',
   '/wedding/[id]/timeline': '/wedding',
+  '/wedding/[id]/consultations': '/wedding',
   '/wedding/[id]/visit-notes': '/wedding',
 };
 

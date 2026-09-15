@@ -1,0 +1,25 @@
+# /login
+
+노드 21개 · 폭 430
+
+body 430×932  bg #FFFFFF
+  div 430×932  
+    div 430×932  flex · justify center · align flex-start · bg #F7F8F9
+      div 430×932  flex/column · bg #FFFFFF · shadow
+        section 430×0  
+        main 430×932  
+          div 430×932  pad 64 24 32 24 · bg #FFFFFF
+            p 382×15  "WEDDING, LESS OVERWHELMING" · 10/400 #E7898D · lh 15 · ls 2.4px
+            h1 382×89  "결정은 가볍게, 준비는 단단하게." · 42/700 #1A1C20 · lh 45 · ls -1.05px · mar 20 0 0 0
+              br 0×46  
+            p 300×56  "흩어진 웨딩 정보를 한곳에 모아, 우리에게 맞는 선택만 남겨드릴게요." · 15/400 #868B94 · lh 28 · mar 20 0 0 0
+            div 382×82  pad 20 20 20 20 · mar 48 0 0 0 · bg #EE8888 6% · r28 · border 1 #E4868D 15%
+              div 340×40  flex · gap 12 · align center
+                span 40×40  "✦" · 18/400 #FFFFFF · lh 28 · grid · cols 40px · align center · bg #E7898D · r9999
+                div 203×38  
+                  p 203×20  "나에게 맞는 순서부터" · 14/700 #1A1C20 · lh 20
+                  p 203×16  "예산, 지역, 날짜를 기준으로 시작해요" · 12/400 #868B94 · lh 16 · mar 2 0 0 0
+            div 382×132  pad 40 0 0 0
+              button 382×56  "카카오로 3초 만에 시작하기" · 15/700 #191600 · lh 23 · flex · gap 8 · justify center · align center · bg #FEE500 · r16
+                span 20×20  "k" · 10/900 #FEE500 · lh 15 · grid · cols 20px · align center · bg #191600 · r16
+              p 382×20  "시작하면 웨딩픽 이용약관과 개인정보 처리방침에 동의하게 됩니다." · 11/400 #868B94 · lh 20 · mar 16 0 0 0

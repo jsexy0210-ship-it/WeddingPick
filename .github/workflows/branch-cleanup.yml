@@ -42,7 +42,25 @@ on:
         # 「마지막 커밋이 오래됐다」 조건에 걸리는 순간 돌고 있는 세션의 브랜치가
         # 지워진다 — 나이로 걸러지는 것은 우연이지 보호가 아니다.
         # 세션이 끝나면 여기서 뺀다. 그때 비로소 정리 대상이 된다.
-        default: 'claude/weddingpick-master-bootstrap-6j1c7o,claude/admin-console,claude/webview-design,claude/inapp-browser,claude/admin-accounts,claude/admin-split,claude/badge-clipping,claude/retention-3,release/public-data-sbiz-key-guard'
+        #
+        # 2026-09-14: `claude/rn-*` 여덟을 더한다. 같은 날 #224로 `include_unmerged`가
+        # 본선에 올라왔는데, 그 넷은 **「열린 PR」 보호막 밖**이었다 — PR을 아직 안 건
+        # 브랜치가 다섯이었고 그중 `rn-migration-plan`은 1단계 설계 문서 넷을 그 안에만
+        # 들고 있었다. 두 가지가 겹치면 「지울 것」 목록에 그대로 들어간다.
+        # 지운 뒤 되살릴 길은 요약에 적히는 SHA 하나뿐이라, 겹치기 전에 막는다.
+        #
+        # 2026-09-15: **살아 있는 브랜치 열둘을 더한다.** 재어 보니 원격 작업 브랜치 23개 중
+        # **열하나가 보호 밖**이었고 거기에 `claude/figma-integration`이 들어 있었다 — RN 화면
+        # 통합 · 상담기록 전체 · 규칙 md 세 벌 · 피그마 규격서가 전부 그 하나에 있다.
+        #
+        # 그날 RN PR 넷(#222 · #226 · #228 · #229)을 닫았다. **내용이 이 브랜치에 다 들어가서
+        # 중복 PR을 접은 것**이지 작업을 버린 것이 아니다. 다만 닫는 순간 그 넷은 「열린 PR」
+        # 보호막에서 빠졌고, 정작 내용을 들고 있는 브랜치는 처음부터 목록에 없었다.
+        # **접는 쪽과 지키는 쪽이 따로 놀면 이렇게 된다.**
+        #
+        # 이 워크플로는 `workflow_dispatch`뿐이라 스스로 돌지 않는다. 그래서 급하지는 않지만,
+        # 누군가 손으로 한 번 돌리는 순간 되살릴 길은 요약에 적히는 SHA 하나뿐이다.
+        default: 'claude/weddingpick-master-bootstrap-6j1c7o,claude/rn-tokens,claude/rn-components,claude/rn-nav-auth,claude/rn-screens-core,claude/rn-screens-vendor,claude/rn-screens-plan,claude/rn-migration-plan,claude/rn-preview,claude/policy-gemini-audio,claude/activity-ledger,claude/image-no-hotlink,claude/public-data-unify,claude/admin-console,claude/webview-design,claude/inapp-browser,claude/admin-accounts,claude/admin-split,claude/badge-clipping,claude/retention-3,release/public-data-sbiz-key-guard,claude/figma-integration,claude/figma-pixel-parity,claude/design-policy-audit,claude/identity-purge,claude/figma-missing-screens,claude/public-data-resume,claude/report-manual-entry,claude/approval-queue,claude/perf-audit,claude/alimtalk-channel,claude/data-collect-refine-d1d3,claude/weddingpick-data-collection-q72atr'
 
 permissions:
   contents: write

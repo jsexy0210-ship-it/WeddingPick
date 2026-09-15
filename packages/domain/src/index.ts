@@ -71,3 +71,6 @@ export * from './site';
 export * from './style';
 export * from './guide-price';
 export * from './reward-payout';
+export * from './visit-note-audio';
+export * from './consultation-category';
+export * from './wedding-feed';

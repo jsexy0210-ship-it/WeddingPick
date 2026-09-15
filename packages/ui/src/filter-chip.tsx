@@ -60,7 +60,20 @@ export function FilterChip({
   const small = size === 'small';
   const paddingX = small ? Layout.chipSmallPaddingX : Layout.chipPaddingX;
   const height = small ? Layout.chipSmall : size === 'sheet' ? Layout.chipSheet : Layout.chip;
+  /*
+   * **글자색을 배경에 맞춰 고른다.**
+   *
+   * 전에는 배경만 갈라 고르고 글자는 늘 `onTint`였다. `onTint`는 플럼이고
+   * 코랄 위에서 읽으라고 만든 색인데, 기본 칩의 배경은 `theme.text`(거의 검정)라
+   * **검은 바탕에 검은 글자**가 됐다 — 검색 화면의 「전체」 칩이 그랬다.
+   *
+   * 토큰 주석이 이미 그 경계를 적어 두고 있었다(「`onTint`와 갈라 둔다 — 플럼을
+   * 잉크 위에 얹지 않는다」). 칩만 그것을 안 지켰다.
+   *
+   * **코드로는 안 보였고 찍어 보고 알았다**(2026-09-15).
+   */
   const selectedBackground = accent === 'tint' ? theme.tint : theme.text;
+  const selectedLabel = accent === 'tint' ? theme.onTint : theme.onInk;
   /* 꺼진 칩의 테두리. 켠 칩과 포커스 링은 자기 색이 있어 여기 끼지 않는다. */
   const outlined = off === 'outline' && !selected;
 
@@ -95,7 +108,7 @@ export function FilterChip({
             <ThemedText
               type={small ? 'micro' : size === 'sheet' ? 't6' : 't7'}
               numberOfLines={1}
-              style={[styles.label, { color: selected ? theme.onTint : theme.textSecondary }]}>
+              style={[styles.label, { color: selected ? selectedLabel : theme.textSecondary }]}>
               {label}
             </ThemedText>
           </ThemedView>

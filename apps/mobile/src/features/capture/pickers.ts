@@ -87,3 +87,56 @@ export async function pickPdf(): Promise<CapturedPage[]> {
     })
   );
 }
+
+/**
+ * 상담 녹음 파일을 하나 고른다. 취소하면 null.
+ *
+ * **길이를 재지 않는다.** 기기에서 음성 길이를 읽으려면 재생기(expo-av)가 필요한데,
+ * 그 값을 재 봐야 서버가 믿지 않는다 — 보내는 쪽이 정하는 값이라 2시간짜리를
+ * 60초라고 적어 보낼 수 있다. **길이는 파일이 도착한 뒤 서버가 `ffprobe`로 잰다.**
+ *
+ * 그래서 앱은 형식과 크기만 본다. 둘은 고르는 순간 알 수 있고, 미리 막으면
+ * 다 올리고 나서 거절당하는 일이 없다.
+ */
+export async function pickConsultationAudio(): Promise<CapturedPage | null> {
+  const result = await DocumentPicker.getDocumentAsync({
+    type: 'audio/*',
+    multiple: false,
+    copyToCacheDirectory: true,
+  });
+
+  if (result.canceled) return null;
+
+  const asset = result.assets[0];
+
+  if (!asset) return null;
+
+  return createPage('file', {
+    uri: asset.uri,
+    /*
+     * 기기가 형식을 안 알려주면 확장자로 정한다. `audio/*`로 걸러 골랐으니
+     * 음성인 것은 맞고, 서버가 목록에 없는 형식을 다시 막는다.
+     */
+    mimeType: asset.mimeType ?? mimeFromName(asset.name),
+    name: asset.name,
+    sizeBytes: asset.size ?? undefined,
+  });
+}
+
+/** 확장자 → 형식. 서버가 받는 목록(`VISIT_NOTE_AUDIO_TYPES`)과 같은 이름을 쓴다. */
+function mimeFromName(name: string): string {
+  const ext = name.toLowerCase().split('.').pop() ?? '';
+
+  const byExtension: Record<string, string> = {
+    wav: 'audio/wav',
+    mp3: 'audio/mpeg',
+    aiff: 'audio/aiff',
+    aac: 'audio/aac',
+    ogg: 'audio/ogg',
+    flac: 'audio/flac',
+    mp4: 'audio/mp4',
+    m4a: 'audio/m4a',
+  };
+
+  return byExtension[ext] ?? 'audio/m4a';
+}

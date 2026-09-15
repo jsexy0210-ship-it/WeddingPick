@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { listReportReasons, listVendorReviews, reportReview } from '@/api/client';
 import { formatDateDot } from '@/features/common/format-date';
 import { BackBar } from '@/components/back-bar';
+import { Badge } from '@/features/wedding/screen-kit';
 import {
   ActionButton,
   FilterChip,
@@ -211,9 +212,29 @@ export default function VendorReviewsScreen() {
                     않았다. 별 다섯 칸이 만점을 보여주고 숫자가 정확한 값을 말한다.
                   */}
                   <RatingStars value={review.overall} />
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {review.roleLabel} · {review.verificationLabel}
-                  </ThemedText>
+
+                  {/*
+                    * 확인 등급은 **배지로** 그린다(피그마 `ReviewDetailPage` 718행).
+                    * 글자로 흘려 적으면 「지수 · Pick확인」이 한 덩어리로 읽혀서,
+                    * 무엇이 사람이고 무엇이 우리가 확인한 것인지 구분되지 않는다.
+                    *
+                    * **라벨을 여기서 짓지 않는다.** `REVIEW_VERIFICATION_LABEL`이
+                    * 원본이고 서버가 그것으로 만들어 보낸다 — 화면이 따로 지으면
+                    * 같은 등급이 두 이름으로 불린다.
+                    *
+                    * 피그마는 이 자리를 「계약 인증」이라 적었는데 **오용어다.**
+                    * 우리 등급은 상담제보 · Pick확인 · 계약확인 · 이용확인 넷이고,
+                    * 그중 하나가 그대로 온다.
+                    */}
+                  <View style={styles.meta}>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      {review.roleLabel}
+                    </ThemedText>
+                    <Badge
+                      label={review.verificationLabel}
+                      tone={review.verification === 'reported' ? 'none' : 'ok'}
+                    />
+                  </View>
                   {/* 시안 L415 — 후기 본문 16/24 #393a40. 14/19는 메타 크기라 본문이 메타처럼 읽힌다. */}
                   <ThemedText type="body" themeColor="textStrong">{review.body}</ThemedText>
 
@@ -326,6 +347,8 @@ function Frame({ children }: { children: React.ReactNode }) {
 }
 
 const styles = StyleSheet.create({
+  /** 역할과 확인 배지를 한 줄에. 배지가 글자 흐름에 섞이지 않게 나눈다. */
+  meta: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   /**
    * 후기 아래 업체 반론 상자. 시안 11-report-review.dc.html L417 —
    * `border-radius:10px;background:#f7f8fa;padding:16px;gap:6px`.

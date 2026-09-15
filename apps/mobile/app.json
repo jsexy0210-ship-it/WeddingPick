@@ -19,7 +19,7 @@
     "android": {
       "package": "kr.weddingpick.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E7898D",
+        "backgroundColor": "#FF6F61",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -42,7 +42,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#E7898D",
+          "backgroundColor": "#FF6F61",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 160
         }
@@ -68,7 +68,45 @@
           "defaultChannel": "default"
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-font",
+        {
+          "android": {
+            "fonts": [
+              {
+                "fontFamily": "Pretendard",
+                "fontDefinitions": [
+                  {
+                    "path": "./assets/fonts/Pretendard-Regular.ttf",
+                    "weight": 400
+                  },
+                  {
+                    "path": "./assets/fonts/Pretendard-SemiBold.ttf",
+                    "weight": 600
+                  },
+                  {
+                    "path": "./assets/fonts/Pretendard-Bold.ttf",
+                    "weight": 700
+                  },
+                  {
+                    "path": "./assets/fonts/Pretendard-ExtraBold.ttf",
+                    "weight": 800
+                  }
+                ]
+              }
+            ]
+          },
+          "ios": {
+            "fonts": [
+              "./assets/fonts/Pretendard-Regular.ttf",
+              "./assets/fonts/Pretendard-SemiBold.ttf",
+              "./assets/fonts/Pretendard-Bold.ttf",
+              "./assets/fonts/Pretendard-ExtraBold.ttf"
+            ]
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

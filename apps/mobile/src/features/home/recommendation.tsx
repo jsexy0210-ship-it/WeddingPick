@@ -53,13 +53,36 @@ export function Recommendation({
   onPressVendor,
   onPressCta,
 }: RecommendationProps) {
+  const theme = useTheme();
   const [main, ...subs] = vendors;
 
   return (
     <ThemedView style={styles.section}>
-      <ThemedText type="t7" themeColor="tint" style={styles.label} numberOfLines={1}>
-        {categoryLabel === null ? TERMS.todaysPick : `${TERMS.todaysPick} · ${categoryLabel}`}
-      </ThemedText>
+      <View style={styles.sectionHead}>
+        <ThemedText type="t7" themeColor="tint" style={[styles.label, styles.grow]} numberOfLines={1}>
+          {categoryLabel === null ? TERMS.todaysPick : `${TERMS.todaysPick} · ${categoryLabel}`}
+        </ThemedText>
+        {/*
+          "비교하기" pill — 2026-09-14 대표 지시(피그마 기준). 비교가 표로 가면서
+          진입점이 하나 더 필요해졌다. `ids`가 있을 때만(=비교할 것이 있을 때만) 보인다 —
+          `cta.kind === 'proof'`이면 아직 비교할 것이 없다.
+        */}
+        {cta.kind === 'compare' ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="추천 업체 비교하기"
+            onPress={onPressCta}
+            style={({ pressed }) => [
+              styles.comparePill,
+              { backgroundColor: theme.tint },
+              pressed && styles.pressed,
+            ]}>
+            <ThemedText type="micro" themeColor="onTint" style={styles.bold}>
+              비교하기
+            </ThemedText>
+          </Pressable>
+        ) : null}
+      </View>
 
       {chips.length === 0 ? null : (
         <ScrollView
@@ -200,7 +223,17 @@ function SubCard({ vendor, onPress }: { vendor: VendorSummary; onPress: () => vo
 const styles = StyleSheet.create({
   /* 시안 padSec: gap 11. */
   section: { gap: Layout.gap2col },
+  sectionHead: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   label: { fontWeight: 700 },
+  comparePill: {
+    flexShrink: 0,
+    height: 30,
+    paddingHorizontal: 14,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bold: { fontWeight: 700 },
   /* 시안 condRow: gap 6 · 가로 스크롤. 칩마다 flex:0 0 auto — 안 붙이면 마지막 칩이 잘린다. */
   chipRow: { flexDirection: 'row', gap: 6 },
   chip: {

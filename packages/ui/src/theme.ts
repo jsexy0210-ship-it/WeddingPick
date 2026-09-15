@@ -14,7 +14,7 @@ import { Platform } from 'react-native';
  * 팔레트 원본. 역할 이름 아래에서만 쓰고 화면이 직접 집지 않는다.
  *
  * gray 램프와 의미색은 SEED scale 토큰을 그대로 옮겼다. **키 컬러만 SEED와 다르다** —
- * SEED의 carrot(#ff6f0f)은 당근의 브랜드색이고, 우리 키 컬러는 `#e7898d`다.
+ * SEED의 carrot(#ff6f0f)은 당근의 브랜드색이고, 우리 키 컬러는 `#ff6f61`다.
  * 파생색(눌림 · 짙은 · 옅은 · 면 · 테두리)은 spec/tokens.json `color.brand` 값이다.
  *
  * **2026-09-14에 키 컬러가 코랄 `#ff6f61`에서 지금 값으로 바뀌었다**(대표님 확정 · Figma 신규
@@ -25,37 +25,55 @@ import { Platform } from 'react-native';
  */
 const palette = {
   /* 키 컬러 — spec/tokens.json color.brand. */
-  coral500: '#e7898d',
+  coral500: '#ff6f61',
   /** primaryPressed — Primary 버튼 눌림. */
-  coralPressed: '#d87d80',
+  coralPressed: '#ee6255',
   /** `coralPressed`의 옛 이름 — 웹(site-styles `--tint-strong`)이 이 이름으로 값을 맞춘다. 같은 값. */
-  coral600: '#d87d80',
+  coral600: '#ee6255',
   /** primaryDark — 옅은 키 컬러 배경 위 텍스트(대비 확보). coralSurface 위 4.69:1. */
-  coralDark: '#c63f45',
+  coralDark: '#c2453a',
   /** primaryTint — 옅은 배지 · 아바타. color-mix(pick 12%, #fff)의 고정값. */
-  coralTint: '#fbebec',
+  coralTint: '#ffe8e4',
   /** primarySurface — 브랜드 카드 · Pick 완료 버튼 배경. color-mix(pick 7%, #fff)의 고정값. */
-  coralSurface: '#fdf6f6',
+  coralSurface: '#fff5f2',
   /** primaryBorder — 브랜드 카드 테두리. */
-  coralBorder: '#f9dfe0',
+  coralBorder: '#ffd9d4',
   /**
-   * onPrimary — 키 컬러 면 위의 글자·아이콘. **흰색이 아니다.** `#e7898d` 위에서 흰 글자는
-   * 2.51:1로 WCAG AA에 못 미쳐 2026-09-14에 이 플럼으로 확정됐다(6.11:1).
-   * 값은 Figma 픽셀 export(src/imports/Home/index.tsx)에 이미 있던 색이다.
-   */
-  plum: '#371b34',
+   * 키 컬러 면 위의 글자 · 아이콘. 앱 아이콘 · 스플래시의 마크도 같다.
+   *
+   * **2026-09-15 대표 지시로 코랄 정본으로 되돌렸다** — 「기존 정본색상으로 싹다 다시
+   * 바꿔. 코랄색으로」. 하루 동안 키 컬러가 `#e7898d`였고 그 위 글자는 플럼
+   * `#371b34`였는데, 값은 전부 코랄판(`8a259608~1`)에서 그대로 읽어 왔다. 지어낸 값이
+   * 하나도 없다.
+   *
+   * **흰 글자는 `#ff6f61` 위에서 3.03:1이다.** WCAG AA 본문 4.5:1에는 못 미치고 큰 글자
+   * 3.0:1은 넘는다. 코랄판이 원래 그랬고 대표님이 그 판으로 돌아가라고 하셨다.
+  onKey: '#ffffff',
 
-  /* SEED gray 램프 (light). */
-  gray900: '#212124',
-  gray800: '#393a40',
-  gray700: '#4d5159',
+  /*
+   * SEED gray 램프 (light). **값은 `spec/seed-tokens.json`에서 온다** —
+   * `node scripts/sync-seed-tokens.mjs`가 `@seed-design/css`의 base.css에서 뽑고,
+   * `spec/seed-parity.test.ts`가 어긋나면 빨개진다. 손으로 고치지 않는다.
+   *
+   * 2026-09-15 전까지 이 자리는 **SEED를 손으로 베낀 옛 세대**였다. 베낀 뒤 SEED가
+   * 움직이는 동안 우리만 그대로여서 본문 먹색이 `#212124`(우리)와 `#1a1c20`(SEED)로
+   * 갈라져 있었고, 모든 화면에 걸리는 차이인데 아무도 몰랐다.
+   *
+   * **우리 이름은 SEED보다 한 칸씩 작다.** `gray900`이 SEED `gray-1000`이고
+   * `gray50`이 SEED `gray-100`이다 — 우리 램프에 `gray1000`이 없어서 생긴 어긋남이다.
+   * 이름을 바꾸면 쓰는 자리를 전부 손봐야 해서 값만 맞췄다. 어느 이름이 SEED의
+   * 무엇인지는 `spec/seed-map.json`에 적혀 있다.
+   */
+  gray900: '#1a1c20',
+  gray800: '#2a3038',
+  gray700: '#555d6d',
   gray600: '#868b94',
-  gray500: '#adb1ba',
+  gray500: '#b0b3ba',
   gray400: '#d1d3d8',
   gray300: '#dcdee3',
-  gray200: '#eaebee',
-  gray100: '#f2f3f6',
-  gray50: '#f7f8fa',
+  gray200: '#eeeff1',
+  gray100: '#f3f4f5',
+  gray50: '#f7f8f9',
   gray00: '#ffffff',
 
   /*
@@ -70,18 +88,29 @@ const palette = {
   /** surface.inverse — 토스트 · 어두운 안내 블록. */
   inverse: '#0e0f10',
 
-  /* SEED gray 램프 (dark). SEED가 어두운 모드 값을 직접 정해준다. */
-  darkGray900: '#eaebee',
-  darkGray800: '#ced3de',
-  darkGray700: '#adb1ba',
-  darkGray600: '#868b94',
-  darkGray500: '#6d717a',
-  darkGray400: '#50545c',
-  darkGray300: '#43474f',
-  darkGray200: '#34373d',
-  darkGray100: '#2b2e33',
-  darkGray50: '#212124',
-  darkGray00: '#17171a',
+  /*
+   * SEED gray 램프 (dark). 위와 같은 자리에서 뽑는다 — `spec/seed-tokens.json`의 `dark`.
+   * SEED는 어두운 벌을 **뒤집은 값으로 직접 정해준다**(gray-1000이 #f3f4f5다).
+   *
+   * `darkGray00`이 순검정인 것은 베낀 실수가 아니라 SEED 그대로다 — 어두운 테마에서
+   * `bg-layer-basement`가 #000000이고 그 위에 올라앉는 `bg-layer-default`가
+   * #16171b(= `darkGray50`)다. 바탕이 가장 어둡고 카드가 한 겹 밝은 구조다.
+   *
+   * **앱은 항상 라이트다**(`use-color-scheme.ts`). 이 벌이 실제로 보이는 곳은 서비스
+   * 웹뿐이고, `apps/web/src/site-styles.ts`가 같은 값을 옮겨 적는다
+   * (`apps/web/src/site.test.ts`가 지킨다).
+   */
+  darkGray900: '#f3f4f5',
+  darkGray800: '#e9eaec',
+  darkGray700: '#dcdee3',
+  darkGray600: '#b0b3ba',
+  darkGray500: '#868b94',
+  darkGray400: '#5b606a',
+  darkGray300: '#393d46',
+  darkGray200: '#2b2e35',
+  darkGray100: '#1d2025',
+  darkGray50: '#16171b',
+  darkGray00: '#000000',
 
   /* 의미색 — spec/tokens.json color.status. 스킨과 무관하게 고정. */
   successText: '#1aa174',
@@ -147,7 +176,7 @@ const palette = {
   calendarSaturday: '#5b8def',
 
   /* 차트 계열 — spec/tokens.json color.chart. 키 컬러 계열 셋 + 나머지 회색. 스킨과 무관하게 고정. */
-  chartSeries1: '#e7898d',
+  chartSeries1: '#ff6f61',
   chartSeries2: '#f4bfc1',
   chartSeries3: '#f8ddde',
   chartSeriesRest: '#eaebee',
@@ -244,9 +273,22 @@ export function pickTintFor(skin: SkinId): string {
  */
 export const Colors = {
   light: {
+    /*
+     * **피그마는 글자에 두 색만 쓴다** — `#1a1c20`과 `#868b94`다. 아홉 화면을 렌더해
+     * 글자 노드의 계산된 색을 전부 세어 확인했다(191회 · 185회). 그 사이 단계
+     * (`#2a3038` · `#555d6d`)는 **한 번도 나오지 않는다** — 피그마는 굵기와 크기로
+     * 가르지 색으로 가르지 않는다(2026-09-15 대표 지시 「텍스트 색상도 피그마 기준」).
+     *
+     * 그래서 `textStrong`은 `text`와, `textSecondary`는 `textAssistive`와 같은 값이다.
+     * **이름을 지우지는 않는다** — 쓰는 자리가 많고, 이름이 남아 있어야 나중에 피그마가
+     * 단계를 늘릴 때 그 자리만 고치면 된다.
+     *
+     * `textDisabled`만 피그마에 표본이 없다(비활성 상태를 그린 화면이 없다). SEED의
+     * `fg-placeholder`를 그대로 쓴다 — 최상위 규칙 3번이 말하는 자리다.
+     */
     text: palette.gray900,
-    textStrong: palette.gray800,
-    textSecondary: palette.gray700,
+    textStrong: palette.gray900,
+    textSecondary: palette.gray600,
     textAssistive: palette.gray600,
     textDisabled: palette.gray500,
 
@@ -281,7 +323,7 @@ export const Colors = {
     tintDark: palette.coralDark,
     /** @deprecated primaryDark의 옛 이름. `tintDark`를 쓴다. */
     tintStrong: palette.coralDark,
-    /** 옅은 배지·아바타. brand.primaryTint(#FBEBEC · 구 #FFE8E4). */
+    /** 옅은 배지·아바타. brand.primaryTint(#FFE8E4 · 구 #FFE8E4). */
     tintSubtle: palette.coralTint,
     /** 코랄 카드 · Pick 완료 버튼 배경. brand.primarySurface. */
     tintSurface: palette.coralSurface,
@@ -365,10 +407,19 @@ export const Colors = {
      */
     dateWheelTwo: palette.dateWheelTwo,
     dateWheelFar: palette.dateWheelFar,
-    onTint: palette.plum,
     /**
-     * backgroundInk(어두운 면) 위의 글자·아이콘. `onTint`와 갈라 둔다 — 플럼을 잉크 위에
-     * 얹으면 1.05:1로 아예 보이지 않는다. `toast.tsx`가 이 자리를 쓴다.
+     * 키 컬러 면 위의 글자·아이콘. **피그마에서 재서 가져온 값이다** — 코랄 히어로의
+     * `D-127` · 「비교하기」 · 배지가 전부 흰색이다(2026-09-15 대표 지시 「텍스트 색상도
+     * 피그마 기준」). 「흰색이 아니다」로 잡혀 있던 플럼은 웨딩픽이 아닌 템플릿 파일에서
+     * 온 값이었다 — `palette.onKey` 주석에 그 경위가 있다.
+     *
+     * **대비는 2.51:1이다.** WCAG AA(4.5:1)에 못 미친다는 사실 자체는 그대로다.
+     * 피그마가 그렇게 그렸고 대표님이 그 기준으로 맞추라고 하셨다.
+     */
+    onTint: palette.gray00,
+    /**
+     * backgroundInk(어두운 면) 위의 글자·아이콘. `onTint`와 갈라 둔 자리다.
+     * `toast.tsx`가 이 자리를 쓴다.
      */
     onInk: palette.gray00,
     /** 본문 속 링크(약관 · 처리방침). 키 컬러는 CTA·Pick·선택에만 쓴다(CLAUDE.md §5). */
@@ -383,9 +434,10 @@ export const Colors = {
    * 의미색은 어두운 면에서 읽히도록 올린 값이다. 라이트와 키가 같아야 `ThemeColor`가 성립한다.
    */
   dark: {
+    /* 라이트와 같은 구조 — 위 주석 참고. */
     text: palette.darkGray900,
-    textStrong: palette.darkGray800,
-    textSecondary: palette.darkGray700,
+    textStrong: palette.darkGray900,
+    textSecondary: palette.darkGray600,
     textAssistive: palette.darkGray600,
     textDisabled: palette.darkGray500,
 
@@ -401,13 +453,13 @@ export const Colors = {
     fieldBorder: palette.darkGray400,
     fieldBorderFocus: palette.darkGray900,
 
-    tint: '#eb9c9f',
-    tintPressed: '#efb0b3',
-    tintDark: '#f1bcbe',
-    tintStrong: '#f1bcbe',
-    tintSubtle: '#3f2b2c',
-    tintSurface: '#312424',
-    tintBorder: '#4e3435',
+    tint: '#ff8478',
+    tintPressed: '#ff9a90',
+    tintDark: '#ffa79e',
+    tintStrong: '#ffa79e',
+    tintSubtle: '#3a2320',
+    tintSurface: '#2b1c1a',
+    tintBorder: '#4a2c28',
     tintInactive: palette.darkGray500,
 
     positive: '#3ecf8e',
@@ -462,7 +514,7 @@ export const Colors = {
     dateWheelTwo: palette.darkGray500,
     dateWheelFar: palette.darkGray400,
     /** 라이트와 같다 — 토큰이 「다크 테마에서도 반전하지 않는다」고 못박았다. */
-    onTint: palette.plum,
+    onTint: palette.gray00,
     onInk: '#ffffff',
     link: palette.accentAction,
   },
@@ -817,7 +869,7 @@ export const Layout = {
    *
    * 값의 출처는 `17-sheets-states.dc.html`(WP-ST-012)의 `spinner`다 —
    * `width:32px;height:32px;border:3px solid #eaebee;border-top-color:#ff6f61`
-   * (시안이 적은 값이다 — 실제로 그리는 색은 `tint`라 지금은 `#e7898d`다).
+   * (시안이 적은 값이다 — 실제로 그리는 색은 `tint`라 지금은 `#ff6f61`다).
    * 지름은 순회 로더와 같은 자리 이름(20·28·40)을 쓰고, 두께는 시안의 32:3을
    * 정수 px로 반올림했다(20→2 · 28→3 · 40→4).
    */

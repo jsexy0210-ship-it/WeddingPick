@@ -138,7 +138,7 @@ export default function PickScreen() {
     <ThemedView style={styles.root}>
       <SafeAreaView style={styles.safeArea}>
         <View style={[styles.wrapper, { maxWidth: MaxContentWidth }]}>
-          <Header partner={partner} />
+          <Header partner={partner} total={page?.total ?? 0} />
 
           {error ? (
             <ScrollView contentContainerStyle={styles.scroll}>
@@ -184,24 +184,63 @@ export default function PickScreen() {
 }
 
 /* ────────────────────────────────────────────
-   Header — 제목 + 배우자 연결 표시
+   Header — 제목 + 저장 배지 + 배우자 연결 표시 · 가격 제보 링크
 ──────────────────────────────────────────── */
-function Header({ partner }: { partner: string | null }) {
+function Header({ partner, total }: { partner: string | null; total: number }) {
   const theme = useTheme();
 
   return (
     <View style={styles.header}>
-      <ThemedText type="t4">{TERMS.pick}</ThemedText>
-      {partner ? (
-        <View style={styles.partnerChip}>
-          <View style={[styles.partnerAvatar, { backgroundColor: theme.tintSubtle }]}>
-            <ThemedText type="badge" themeColor="tint">
-              {partner[0]}
+      <View style={styles.headerLeft}>
+        <ThemedText type="t4">{TERMS.pick}</ThemedText>
+        {/*
+          "N개 저장" 배지 — 2026-09-14 대표 지시(피그마 Pick.tsx 407행 구조 참고, B등급).
+          서브카피는 두지 않는다(대표 지시 · SPEC §11.2 섹션 제목 규칙과 같은 결).
+        */}
+        {total > 0 ? (
+          <View style={[styles.countBadge, { backgroundColor: theme.tint }]}>
+            <ThemedText type="badge" themeColor="onTint">
+              {`${total}개 저장`}
             </ThemedText>
           </View>
-          <ThemedText type="t7" themeColor="textSecondary" style={styles.bold}>
-            {partnerWith(partner, '함께')}
-          </ThemedText>
+        ) : null}
+      </View>
+      {partner ? (
+        <View style={styles.headerRight}>
+          <View style={styles.partnerChip}>
+            <View style={[styles.partnerAvatar, { backgroundColor: theme.tintSubtle }]}>
+              <ThemedText type="badge" themeColor="tint">
+                {partner[0]}
+              </ThemedText>
+            </View>
+            <ThemedText type="t7" themeColor="textSecondary" style={styles.bold}>
+              {partnerWith(partner, '함께')}
+            </ThemedText>
+          </View>
+          {/*
+            "가격 제보" 링크 — 피그마 Pick.tsx 422행은 배우자 함께-보기 박스 안에 이 링크를 둔다.
+            우리 쪽 "가격 제보" 전용 화면(search/[vendorId]/price-report)은 v3.24에서 폐기되어
+            Pick 인증(사진 기반) 동의 화면으로 리다이렉트만 한다 — 업체별 화면이 아니라 업체 무관
+            전역 진입이라, 폐기된 경유지를 거치지 않고 그 동의 화면으로 바로 보낸다.
+          */}
+          <Pressable
+            onPress={() => router.push('/capture/payment/consent')}
+            accessibilityRole="button"
+            accessibilityLabel="가격 제보하기"
+            style={(state) => {
+              const { hovered, focused } = readWebInteractionState(state);
+              return [
+                styles.priceReportLink,
+                hovered ? { opacity: 0.8 } : null,
+                focused
+                  ? { outlineWidth: 2, outlineColor: theme.tint, outlineStyle: 'solid', outlineOffset: 2 }
+                  : null,
+              ];
+            }}>
+            <ThemedText type="t7" themeColor="tint" style={styles.bold}>
+              가격 제보
+            </ThemedText>
+          </Pressable>
         </View>
       ) : null}
     </View>
@@ -413,8 +452,11 @@ function SharedSection({
   group: GroupRow;
   sharedCandidates: GroupRow['candidates'];
 }) {
+  const theme = useTheme();
   const categoryLabel = VENDOR_CATEGORY_LABEL[group.category] ?? group.categoryLabel;
   const totalCount = group.candidates.length;
+  /* 비교는 두 곳부터다 — api-contract candidates.ts의 group.comparable과 같은 기준. */
+  const canCompare = totalCount >= 2;
 
   /* 비교는 WP-CMP-001 시트에서 후보를 고른 뒤 시작한다(SPEC §13.11 — Pick 탭 진입은 내 후보만). */
   function goCompare() {
@@ -424,17 +466,49 @@ function SharedSection({
   return (
     <View style={styles.sharedSection}>
       <ThemedText type="t4">둘 다 고른 곳</ThemedText>
+      {/*
+        비교 배너 — 2026-09-14 대표 지시(피그마 Pick.tsx 428행 «Compare banner» 구조 참고, B등급).
+        검정 배경은 쓰지 않는다(대표 지시) — 피그마는 bg-foreground(검정)이지만 토큰의 tintSubtle 면을 쓴다.
+        2곳 미만이면 비교할 것이 없어 배너 대신 목록만 보인다.
+      */}
+      {canCompare ? (
+        <Pressable
+          onPress={goCompare}
+          accessibilityRole="button"
+          accessibilityLabel={`${categoryLabel} ${totalCount}곳 비교하기`}
+          style={({ pressed }) => [
+            styles.compareBanner,
+            { backgroundColor: theme.tintSubtle },
+            pressed && styles.pressed,
+          ]}>
+          <View style={styles.grow}>
+            <ThemedText type="t6" themeColor="tint" style={styles.bold}>
+              {`${totalCount}곳 선택됨`}
+            </ThemedText>
+            <ThemedText type="t7" themeColor="textSecondary">
+              가격과 조건을 한눈에 볼 수 있어요
+            </ThemedText>
+          </View>
+          <View style={[styles.compareBannerCta, { backgroundColor: theme.tint }]}>
+            <ThemedText type="micro" themeColor="onTint" style={styles.bold}>
+              전체 비교하기
+            </ThemedText>
+          </View>
+        </Pressable>
+      ) : null}
       <View style={styles.list}>
         {sharedCandidates.map((candidate) => (
           <SharedVendorRow key={candidate.id} candidate={candidate} categoryLabel={categoryLabel} />
         ))}
       </View>
-      <ActionButton
-        variant="primary"
-        size="xlarge"
-        label={`${categoryLabel} ${totalCount}곳 비교하기`}
-        onPress={goCompare}
-      />
+      {canCompare ? null : (
+        <ActionButton
+          variant="primary"
+          size="xlarge"
+          label={`${categoryLabel} ${totalCount}곳 비교하기`}
+          onPress={goCompare}
+        />
+      )}
     </View>
   );
 }
@@ -625,6 +699,10 @@ const styles = StyleSheet.create({
     /* 오른쪽 20 — 05-root head «padding:0 20px 0 24px». */
     paddingRight: Layout.navPaddingRight,
   },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
+  countBadge: { paddingHorizontal: Spacing.two, paddingVertical: Spacing.half, borderRadius: Radius.pill },
+  priceReportLink: { paddingVertical: Spacing.half },
   partnerChip: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one + Spacing.half },
   partnerAvatar: {
     width: HEADER_AVATAR,
@@ -661,6 +739,23 @@ const styles = StyleSheet.create({
 
   /* 둘 다 고른 곳 · gap 12 · 행 gap 12 · padding 12 0 */
   sharedSection: { paddingHorizontal: Layout.gutter, paddingBottom: Layout.sectionGap, gap: Layout.rowPaddingY },
+  grow: { flex: 1, minWidth: 0 },
+  pressed: { opacity: 0.85 },
+  compareBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Layout.cardGap,
+    borderRadius: Radius.medium,
+    padding: Layout.cardPadding,
+  },
+  compareBannerCta: {
+    flexShrink: 0,
+    height: 34,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   list: { gap: Spacing.half },
   vendorRow: {
     flexDirection: 'row',
