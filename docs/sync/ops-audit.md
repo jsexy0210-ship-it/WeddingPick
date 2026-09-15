@@ -13,17 +13,23 @@
 
 ### 이 회차에서 못 본 것부터 적는다
 
-이 세션의 조직 egress 정책이 **`weddingpickl-sg.onrender.com`과 `api.github.com`을 막는다.**
-프록시가 CONNECT에 403을 돌려준다(2026-09-15 11:52 KST 기록, `__agentproxy/status`
-`recentRelayFailures`). 정책 거부라 우회하지 않고 적어 둔다.
+막힌 곳이 둘이고 서로 다른 이유다. **하나씩 실제로 찔러 보고 적는다.**
 
-그래서 **다음 넷은 이번 회차에 「못 봤다」다.**
+- **`weddingpickl-sg.onrender.com` — 조직 egress 정책이 막는다.** 프록시가 CONNECT에
+  403을 돌려준다(2026-09-15 11:52 KST, `__agentproxy/status` `recentRelayFailures`).
+  정책 거부라 우회하지 않는다.
+- **이 저장소에 대한 GitHub REST API — 세션 권한이 없다.** `api.github.com` 자체는
+  닿는다(`/rate_limit` 200). 이 저장소를 부르면 403에 「GitHub access to this repository
+  is not enabled for this session」이 돌아온다. `add_repo`를 `access: "push"`로 이미
+  불렀고 같은 답이었다 — 조직에 Claude GitHub App이 붙어 있지 않다.
+- **git 푸시는 된다.** 세션의 git 프록시를 타므로 API 권한과 별개다.
+  `claude/ops-audit` 브랜치는 실제로 올라갔다.
 
 | 항목 | 판정 | 이유 |
 | --- | --- | --- |
 | ① `/health` 본문의 applied/expected · 0330 · 0340 적용 여부 | **못 봤다** | 운영 호스트 차단 |
-| ② `main.yml` 실행 기록(승인 대기로 잊힌 것 · 실패 방치) | **못 봤다** | GitHub API 차단 |
-| ③ Render 다섯 서비스가 든 커밋 | **못 봤다** | Render · GitHub API 차단 |
+| ② `main.yml` 실행 기록(승인 대기로 잊힌 것 · 실패 방치) | **못 봤다** | 이 저장소 GitHub API 권한 없음 |
+| ③ Render 다섯 서비스가 든 커밋 | **못 봤다** | Render 호스트 차단 · 저장소 API 권한 없음 |
 | ④ `structured.wedding_feed_runs` · AI 사용 기록 표의 호출 수 · 비용 | **못 봤다** | 운영 DB 접근 없음 |
 
 **이 넷이 이 감시의 핵심이다.** 저장소 안만 보는 것은 다른 세션이 이미 한다.
@@ -151,15 +157,16 @@ DB Migrate(운영 DB) → Render 배포 → Health check.
 ### 대표님 결정이 필요한 것
 
 **이 세션은 지금 운영을 볼 수 없다.** 저장소만 본다면 다른 감시 세션과 겹치고,
-이 세션을 만든 이유가 사라진다. 아래 중 하나가 있어야 ① ② ③ ④를 볼 수 있다.
+이 세션을 만든 이유가 사라진다. 아래 셋이 열려야 ① ② ③ ④를 본다.
 
-1. 이 세션의 egress 정책에 `weddingpickl-sg.onrender.com`과 `api.github.com` 허용
-2. 또는 운영 DB 읽기 전용 접속 정보
+1. **egress 정책에 `weddingpickl-sg.onrender.com` 허용** → ① `/health` 본문
+2. **조직에 Claude GitHub App 설치** → ② Actions 실행 기록 · ③ Render 배포 상태.
+   <https://github.com/apps/claude/installations/select_target> 또는 claude.ai 설정에서
+   GitHub 재연결
+3. **운영 DB 읽기 전용 접속 정보** → ④ 호출 수 · 비용
 
-**그리고 이 세션은 푸시가 막혀 있다.** 저장소가 조직에 대해 Claude GitHub App이
-붙어 있지 않아 `claude/ops-audit` 브랜치를 올리지 못한다. 이 문서는 지금 로컬
-커밋으로만 있다. 푸시를 열려면 <https://github.com/apps/claude/installations/select_target>
-에서 앱을 설치하거나 claude.ai 설정에서 GitHub를 다시 연결해야 한다.
+**PR은 대표님이 열어 주셔야 한다.** 브랜치는 올라갔지만 PR 생성이 API를 타서 막힌다.
+→ <https://github.com/jsexy0210-ship-it/WeddingPick/pull/new/claude/ops-audit>
 
 ### 다음 회차에 볼 것
 
