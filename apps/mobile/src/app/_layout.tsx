@@ -1,5 +1,4 @@
-// 글꼴 변수(시스템 서체 스택)와 글자 크기 변수. 웹폰트는 싣지 않는다 — spec/tokens.json
-// typography.$fontFamily · CLAUDE.md 「폰트는 시스템 서체 유지(Pretendard 미적용)」.
+// 글꼴 변수(Pretendard 우선 스택)와 글자 크기 변수 — spec/tokens.json typography.$fontFamily.
 import '@weddingpick/ui/tokens.css';
 // 브라우저가 입력칸에 얹는 자기 규칙(자동완성 배경 등) 보정. 네이티브에서는 무시된다.
 import '@/global.css';
@@ -71,9 +70,14 @@ export default function RootLayout() {
 
 function RootLayoutContent() {
   /*
-   * 글꼴을 싣지 않는다 — 시스템 서체다(iOS Apple SD Gothic Neo · Android Roboto/Noto Sans KR ·
-   * 웹 시스템 스택). 한때 Pretendard TTF를 useFonts로 받아 첫 화면을 그만큼 늦췄는데, 핸드오프
-   * v3.24까지 「Pretendard 도입 보류」라 2026-09-09 감사에서 뺐다(packages/ui theme.ts Fonts 참고).
+   * **글꼴 파일을 아직 싣지 않는다.** `theme.ts`의 `Fonts`는 세 플랫폼 모두 Pretendard를 맨
+   * 앞에 두지만(최상위 정책 규칙 2번), 번들에 Pretendard가 없어 네이티브는 폴백인 iOS
+   * Apple SD Gothic Neo · Android Roboto로 떨어진다. **이름만 있고 서체는 아직 없다.**
+   *
+   * 한때 Pretendard TTF를 useFonts로 받아 첫 화면을 그만큼 늦췄고, 핸드오프 v3.24의
+   * 「Pretendard 도입 보류」를 따라 2026-09-09 감사에서 뺐다. 그 보류를 2026-09-14 대표님이
+   * 푸셨으므로 되싣는 것이 맞는데, 첫 화면이 늦어지는 값을 다시 치르는 일이라 MASTER
+   * 판단을 기다린다(docs/sync/design-policy-audit.md 2026-09-15 R2-5).
    */
   const [entry, setEntry] = useState<Entry | null>(null);
   const [entryError, setEntryError] = useState<unknown>(null);

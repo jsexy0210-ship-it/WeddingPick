@@ -87,8 +87,9 @@ body {
   padding: 0;
   background: var(--bg);
   color: var(--text-p);
-  font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Pretendard',
-    'Noto Sans KR', 'Malgun Gothic', system-ui, sans-serif;
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont,
+    system-ui, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
   font-size: var(--t16);
   line-height: 1.6;
   word-break: keep-all;

@@ -76,6 +76,12 @@ jobs:
       - name: SEED 토큰 (뽑은 값이 현행인지)
         run: node scripts/sync-seed-tokens.mjs --check
 
+      # 최상위 정책 규칙(CLAUDE.md 맨 위) 가운데 자동으로 재는 셋 — 화면 코드의 생 hex ·
+      # 금지 서체 · 색만 바꾸는 컴포넌트. 남은 빚은 baseline에 수로 적혀 있고 **늘어나면**
+      # 깨진다. 사람이 매번 세는 것은 언젠가 빠진다(docs/sync/design-policy-audit.md).
+      - name: 디자인 정책 (최상위 규칙 1 · 2 · 5)
+        run: node scripts/check-design-policy.mjs
+
       # 금지어 게이트. `spec/glossary.json`을 읽는 것은 이 스크립트뿐인데
       # **어느 워크플로에도 연결돼 있지 않았다** — 48개 금지어 중 37개가
       # 검사되지 않고 있었다(Release Audit 1차 P1-10).

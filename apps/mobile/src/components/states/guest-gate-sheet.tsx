@@ -30,7 +30,7 @@ export function GuestGateSheet({ visible, onDismiss, onKakaoPress }: GuestGateSh
           styles.sheet,
           { backgroundColor: theme.background, paddingBottom: insets.bottom + Spacing.three },
         ]}>
-        <View style={styles.grabber} />
+        <View style={[styles.grabber, { backgroundColor: theme.border }]} />
         <ThemedText type="t4" style={styles.title}>
           로그인하면 저장돼요
         </ThemedText>
@@ -54,11 +54,11 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     gap: Spacing.two,
   },
+  /* 색은 `theme.border`로 넘긴다 — 다른 시트(bottom-sheet · benefit-sheet)와 같은 자리다. */
   grabber: {
     width: 36,
     height: 4,
     borderRadius: Radius.pill,
-    backgroundColor: '#eaebee',
     alignSelf: 'center',
     marginBottom: 4,
   },

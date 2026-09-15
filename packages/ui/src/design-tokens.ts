@@ -288,8 +288,8 @@ export const DesignTokens = {
       }
     },
     "font": {
-      "ios": "Apple SD Gothic Neo",
-      "android": "Roboto · Noto Sans KR"
+      "ios": "Pretendard",
+      "android": "Pretendard"
     },
     "backButton": {
       "ios": "좌상단 화살표 + 좌측 스와이프",
