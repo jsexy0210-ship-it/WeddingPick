@@ -16,6 +16,10 @@ const ROOT = join(__dirname, '..', '..', '..', '..');
  * 적지 않는다. `padding:4px 9px; line-height:19px`뿐이고 그려지는 높이는 27이다.
  * 웹(`apps/web/src/site-styles.ts` `.badge`)도 같다. 그래서 앱도 최소 높이로만 든다.
  *
+ * **2026-09-15에 앱 배지의 값이 피그마 실측으로 바뀌었다** — «h19 · 10/15 · pad 2 8 ·
+ * r9999»(규격서 배지꼴 34개 중 28개). 여기서 지키는 **규칙은 그대로다**(최소 높이가
+ * 줄을 누르지 않는다). 바뀐 것은 어느 토큰을 읽어야 하는가뿐이다.
+ *
  * typography.test.ts와 같은 방식으로 저장소를 훑는다 — 눈으로 지키는 규칙은
  * 지켜지지 않는다.
  */
@@ -105,13 +109,23 @@ describe('배지 상자', () => {
   it('최소 높이가 줄 높이를 누르지 않는다', () => {
     /*
      * 상자가 실제로 그려지는 높이는 `상하 패딩 + 줄 높이`다. 그 값이 최소 높이보다
-     * 작으면 최소 높이가 이기면서 패딩이 줄어든다 — 지금은 27 > 22라 패딩이 온전하다.
-     * 토큰을 손봐서 이 관계가 뒤집히면 여기서 걸린다.
+     * 작으면 최소 높이가 이기면서 패딩이 줄어든다. 지금은 2+15+2 = 19로 최소 높이와
+     * **꼭 맞는다** — 토큰을 손봐서 이 관계가 뒤집히면 여기서 걸린다.
+     *
+     * **읽는 줄 높이는 `lh15`다.** 배지 글자가 `f10`(10/`lh15`)으로 바뀌었기 때문이다
+     * (2026-09-15 피그마 실측). 예전에는 `badge`를 읽었는데, `tokenNumber`가 파일에서
+     * **처음 만나는** `badge:`를 집어서 실제로는 `LineHeight.badge`(19)가 아니라
+     * `FontSize.badge`(14)를 읽고 있었다 — 그때는 4+14 = 22가 최소 높이 22와 같아
+     * 우연히 통과했다. 이름을 못박아 그 우연을 없앤다.
      */
     const minHeight = tokenNumber('packages/ui/src/theme.ts', 'badgeHeight');
     const paddingY = tokenNumber('packages/ui/src/theme.ts', 'badgePaddingY');
-    const lineHeight = tokenNumber('packages/ui/src/typography.ts', 'badge');
+    const lineHeight = tokenNumber('packages/ui/src/typography.ts', 'lh15');
 
+    /* 배지가 정말 그 줄 높이를 쓰는지 — 부품 쪽도 같이 본다. 시험만 고치면 헛돈다. */
+    const badgeSource = readFileSync(join(ROOT, 'packages/ui/src/pick-status-badge.tsx'), 'utf8');
+
+    expect(badgeSource).toContain('type="f10"');
     expect(paddingY * 2 + lineHeight).toBeGreaterThanOrEqual(minHeight);
   });
 
