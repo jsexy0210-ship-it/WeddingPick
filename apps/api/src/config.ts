@@ -72,6 +72,17 @@ const configSchema = z.object({
    */
   analysisModel: z.string().default('claude-opus-5'),
 
+  /**
+   * 상담기록·Pick 인증을 Gemini로 읽을 때 쓰는 모델.
+   *
+   * **기본값을 둔다.** 값이 빠진 채 배포돼도 서버는 뜨고, 이름 없이 호출해 400을
+   * 받는 일이 없다. 다만 `gemini-2.5-flash-lite`는 **2026년 10월 16일에 없어진다** —
+   * 그날 전에 `infra/render-env.yml`의 `GEMINI_MODEL`을 갈아끼운다. 여기 적힌
+   * 기본값도 그때 함께 고친다(둘 중 하나만 고치면 환경변수를 안 넣은 배포에서
+   * 없어진 모델을 부른다).
+   */
+  geminiModel: z.string().default('gemini-2.5-flash-lite'),
+
   /** 제공자별 설정이 없으면 그 제공자 로그인만 막힌다. 서비스 전체가 멈추지는 않는다. */
   appleClientId: z.string().optional(),
   kakaoAppKey: z.string().optional(),
@@ -129,6 +140,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     proofReaderStrongModel: env.PROOF_READER_STRONG_MODEL,
     aiDailyCallLimit: env.AI_DAILY_CALL_LIMIT,
     analysisModel: env.ANALYSIS_MODEL,
+    geminiModel: env.GEMINI_MODEL,
     corsOrigins: (env.CORS_ORIGINS ?? '')
       .split(',')
       .map((origin) => origin.trim())

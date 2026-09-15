@@ -1,5 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
 
+import { TERMS } from '@weddingpick/domain';
 import { WeddingCompleteView } from '@/features/wedding/complete-view';
 import { NavBar, Screen } from '@/features/wedding/screen-kit';
 
@@ -12,7 +13,7 @@ export default function WeddingCompleteScreen() {
 
   return (
     <Screen>
-      <NavBar title="웨딩일정" />
+      <NavBar title={TERMS.ourWedding} />
       <WeddingCompleteView weddingId={id} />
     </Screen>
   );

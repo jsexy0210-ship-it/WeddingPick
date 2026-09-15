@@ -313,8 +313,19 @@ async function main() {
        * 주소는 형식만 맞으면 된다 — 나가는 요청은 브라우저가 전부 가로챈다.
        * 그래도 비워 두지는 않는다: 비면 `isServerConfigured`가 false가 되어
        * 서버를 아예 안 부르는 다른 화면이 찍힌다(api/config.ts).
+       *
+       * 포트 1은 Chromium이 ERR_UNSAFE_PORT로 접속 자체를 막는다(tcpmux) —
+       * page.route가 가로채기도 전에 브라우저가 거부한다. 39999는 안전 목록 밖의
+       * 높은 포트다.
+       *
+       * **경로 없이 origin만 둔다.** `client.ts`의 `send()`가 `${baseUrl}${path}`를
+       * 단순 문자열 접합으로 만든다(URL 재해석이 아니다) — base가 `/capture`로
+       * 끝나면 실제 요청 pathname이 `/capture/v1/...`가 되어 `installFixtures`의
+       * `pathname.startsWith('/v1/')` 검사를 벗어난다. 그러면 가로채지 못한 요청이
+       * 실제 네트워크로 나가고, 업체 상세처럼 fetch가 필요한 화면은 전부
+       * «연결이 불안정해요»만 찍힌다 — fixture를 아무리 채워도 닿지 않는다.
        */
-      env: { ...process.env, EXPO_PUBLIC_API_URL: 'http://127.0.0.1:1/capture' },
+      env: { ...process.env, EXPO_PUBLIC_API_URL: 'http://127.0.0.1:39999' },
     });
   }
 
@@ -322,7 +333,18 @@ async function main() {
 
   const { chromium } = loadPlaywright();
   const { server, port } = await startStaticServer(DIST);
-  const browser = await chromium.launch();
+  /*
+   * **설치된 브라우저를 직접 가리킬 수 있게 둔다.**
+   *
+   * Playwright는 자기 버전에 맞는 브라우저만 찾는다. 컨테이너에 이미 깔려 있어도
+   * 번호가 다르면 「없다」고 하고 `npx playwright install`을 하라고 한다 — 그
+   * 한 줄 때문에 **캡처를 한 번도 못 돌린 채 「환경에서 안 된다」로 넘어갔다.**
+   * 실제로 2026-09-15에 그랬다.
+   *
+   * `CHROMIUM_PATH`를 주면 그것을 쓴다. 없으면 지금까지처럼 알아서 찾는다.
+   */
+  const executablePath = process.env.CHROMIUM_PATH || undefined;
+  const browser = await chromium.launch(executablePath ? { executablePath } : {});
   /*
    * 관리자와 앱은 기준 해상도가 다르다. 섞어 찍으면 한쪽이 반드시 뭉개지므로
    * 경로를 보고 정한다 — 따로 주고 싶으면 `--viewport 1280x800`.

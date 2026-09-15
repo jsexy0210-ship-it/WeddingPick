@@ -36,19 +36,36 @@ export const AI_FEATURE_LABEL: Record<AiFeature, string> = {
 /**
  * 백만 토큰당 단가(USD).
  *
- * **우리가 정한 값이 아니다.** Anthropic이 공개한 값을 받아 적은 것이고, 언제
- * 받아 적었는지를 함께 남긴다 — 값이 바뀌면 여기가 낡는다. 낡은 것을 모른 채
- * 쓰는 것보다 언제 적은 값인지 보이는 편이 낫다.
+ * **우리가 정한 값이 아니다.** 사업자가 공개한 값을 받아 적은 것이고, 언제 받아
+ * 적었는지를 함께 남긴다 — 값이 바뀌면 여기가 낡는다. 낡은 것을 모른 채 쓰는
+ * 것보다 언제 적은 값인지 보이는 편이 낫다.
  *
- * 기준일: 2026-06-24.
+ * **`audio`는 있을 때만 적는다.** Gemini는 음성 입력을 글자보다 비싸게 받는다
+ * (2.5 Flash-Lite 기준 글자 $0.10 대 음성 $0.30 — 세 배다). 그 차이를 안 적으면
+ * 상담기록 정리 비용이 실제보다 적게 잡히고, 예산이 넉넉해 보인다. 비어 있으면
+ * 그 모델은 음성을 글자와 같은 값으로 받는다는 뜻이다.
  */
-export const MODEL_PRICES_USD_PER_MILLION: Record<string, { input: number; output: number }> = {
+export const MODEL_PRICES_USD_PER_MILLION: Record<
+  string,
+  { input: number; output: number; audio?: number }
+> = {
   'claude-opus-5': { input: 5, output: 25 },
   'claude-sonnet-5': { input: 2, output: 10 },
   'claude-haiku-4-5': { input: 1, output: 5 },
+  /*
+   * Gemini — 2026-09-14에 받아 적었다.
+   *
+   * **`gemini-2.5-flash-lite`는 2026년 10월 16일에 없어진다.** 지금 제일 싸서 먼저
+   * 쓰지만(2026-09-14 대표 결정 「가장 저렴한 모델로 우선 적용하고 추후 변경한다」)
+   * 그날 전에 갈아끼워야 한다. 모델 이름은 환경변수(`GEMINI_MODEL`)라 배포만
+   * 하면 된다 — 코드를 고칠 일이 아니다.
+   */
+  'gemini-2.5-flash-lite': { input: 0.1, output: 0.4, audio: 0.3 },
+  'gemini-3.1-flash-lite': { input: 0.25, output: 1.5, audio: 0.5 },
+  'gemini-3.5-flash-lite': { input: 0.3, output: 2.5, audio: 0.3 },
 };
 
-export const MODEL_PRICES_AS_OF = '2026-06-24';
+export const MODEL_PRICES_AS_OF = '2026-09-14';
 
 /**
  * 이 호출이 얼마였는지. 모르는 모델이면 null이다 — 0으로 두지 않는다.
@@ -60,13 +77,25 @@ export function estimateCostUsd(input: {
   model: string;
   inputTokens: number;
   outputTokens: number;
+  /**
+   * 음성으로 들어온 토큰. 상담기록 정리에서만 쓴다.
+   *
+   * **`inputTokens`에 포함하지 않고 따로 준다.** 두 값을 합쳐 넘기면 비싼 음성이
+   * 싼 글자 단가로 계산돼 비용이 실제보다 적게 잡힌다. 한 시간짜리 녹음 하나가
+   * 영수증 수백 장보다 비싼데 그 사실이 합계에서 사라진다.
+   */
+  audioTokens?: number;
 }): number | null {
   const price = MODEL_PRICES_USD_PER_MILLION[input.model];
 
   if (!price) return null;
 
+  // 음성 단가가 따로 없는 모델은 글자와 같은 값으로 받는다.
+  const audioRate = price.audio ?? price.input;
+
   const cost =
     (input.inputTokens / 1_000_000) * price.input +
+    ((input.audioTokens ?? 0) / 1_000_000) * audioRate +
     (input.outputTokens / 1_000_000) * price.output;
 
   // 소수점 여섯 자리. 한 번 호출이 0.000001달러 아래면 반올림해도 합계가 흔들리지 않는다.

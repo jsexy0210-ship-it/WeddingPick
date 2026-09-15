@@ -70,6 +70,76 @@ const VENDORS = [
 ];
 
 /**
+ * WP-VEND-001 업체 상세용 fixture. `VENDORS[0]`(강남 A 웨딩홀)의 id를 그대로 쓴다 —
+ * 검색 결과 카드와 상세가 같은 업체를 가리키게 두는 편이 캡처를 볼 때 헷갈리지 않는다.
+ *
+ * `vendorDetailSchema`는 목록 스키마에서 `paidPrice`를 덜어내고 `prices`·`usageScore`를
+ * 더한 모양이다 — `VENDORS[0]`를 그대로 펼치지 않고 새로 짠다(스칠 정도로 다르다).
+ */
+const VENDOR_DETAIL = {
+  id: VENDORS[0].id,
+  name: VENDORS[0].name,
+  category: VENDORS[0].category,
+  region: VENDORS[0].region,
+  coordinates: null,
+  sourceNote: null,
+  imageUrl: null,
+  comparableQuoteCount: 12,
+  styleTags: ['URBAN'],
+  guidePrice: null,
+  lastVerifiedAt: '2026-08-12',
+  prices: {
+    products: [
+      {
+        productLabel: '스탠다드 패키지',
+        docType: 'contract',
+        stat: {
+          sampleCount: 12,
+          periodStart: '2026-01-01',
+          periodEnd: '2026-08-01',
+          median: 1_680_000,
+          p25: 1_580_000,
+          p75: 1_780_000,
+          p90: 1_840_000,
+          minVerificationLevel: 'L2',
+        },
+      },
+    ],
+    paidPrice: disclosed(12, 1_520_000, 1_840_000, 1_680_000),
+    reportedPrice: { available: false, reason: '아직 문서 없이 적어준 금액이 없어요', count: 0 },
+    deepData: true,
+    deepDataNote: null,
+  },
+  usageScore: {
+    available: true,
+    average: 4.6,
+    count: 18,
+    aspects: [{ key: 'kindness', label: '친절도', average: 4.7 }],
+    checklist: [],
+    caption: null,
+  },
+};
+
+const VENDOR_REVIEWS = [
+  {
+    id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    role: 'contractor',
+    roleLabel: '계약자',
+    overall: 5,
+    title: '만족스러웠어요',
+    body: '상담부터 진행까지 설명이 꼼꼼했어요.',
+    pros: '응대가 빨라요',
+    cons: null,
+    verification: 'contract',
+    verificationLabel: '계약 확인',
+    aspects: [],
+    createdAt: '2026-07-01T00:00:00.000Z',
+    mine: false,
+    rebuttal: null,
+  },
+];
+
+/**
  * 광고 자리. **자연 결과와 섞지 않는다**(계약 E-1) — 화면이 목록 위에 따로 그린다.
  *
  * 비워 두지 않는 이유는 **광고가 그려지는지 눈으로 볼 수 없기 때문**이다. 빈 배열로
@@ -100,8 +170,9 @@ const ME = {
   budgetAmount: null,
   setupComplete: true,
   styleTags: ['URBAN'],
-  spouseLinked: false,
-  partnerDisplayName: null,
+  /* Pick 화면 캡처(배지·배너·가격 제보 링크)가 배우자 연결 상태를 필요로 한다. */
+  spouseLinked: true,
+  partnerDisplayName: '준호',
   hasPaymentProof: false,
   hasPick: false,
   hasCompared: false,
@@ -143,12 +214,117 @@ const routes = {
   'GET /v1/auth/providers': {
     providers: [{ provider: 'kakao', isDevelopmentStandIn: false }],
   },
+  /*
+   * 상담기록. **저장 전(확인 필요) 한 장과 저장 후 한 장**을 함께 둔다 — 화면이
+   * 갈리는 자리라 한쪽만 두면 나머지 절반을 못 본다.
+   *
+   * 금액의 `evidence`는 40자 이내다. 그 한도가 화면에서도 지켜지는지 보인다.
+   */
+  'GET /v1/weddings/:weddingId/consultations': {
+    records: [
+      {
+        id: '11111111-1111-4111-8111-111111111111',
+        weddingId: '22222222-2222-4222-8222-222222222222',
+        vendorId: null,
+        vendorLabel: '강남 A 웨딩홀',
+        status: 'SUPPORTED_WEDDING_CONSULTATION',
+        category: 'hall',
+        confidence: 0.94,
+        common: {
+          vendorName: '강남 A 웨딩홀',
+          finalAmount: {
+            value: 16_800_000,
+            confidence: 0.97,
+            evidence: '최종 1680만원으로 해드릴게요',
+          },
+          included: ['기본 꽃장식', '주차 2시간', '신부대기실'],
+        },
+        categoryData: {
+          mealPrice: { value: 78_000, confidence: 0.97, evidence: '식대는 인당 7만 8천원입니다' },
+          guaranteedGuests: 250,
+        },
+        after: {
+          summary: '토요일 12시 홀로 보고 왔고, 보증인원 250명 기준으로 안내받았어요.',
+          additionalCosts: ['생화 장식 업그레이드 80만원', '주차 3시간부터 대당 2천원'],
+          benefits: ['당일 계약 시 대관료 20% 할인'],
+          warnings: ['할인 적용 기한이 대화에서 확인되지 않았어요'],
+          missingInformation: [
+            '주류 비용은 확인되지 않았어요',
+            '보증인원을 마지막으로 바꿀 수 있는 날을 확인해보세요',
+          ],
+        },
+        confirmedAt: null,
+        audioDeletedAt: null,
+        createdAt: '2026-09-14T02:10:00.000Z',
+      },
+      {
+        id: '33333333-3333-4333-8333-333333333333',
+        weddingId: '22222222-2222-4222-8222-222222222222',
+        vendorId: null,
+        vendorLabel: '청담 B 스튜디오',
+        status: 'SUPPORTED_WEDDING_CONSULTATION',
+        category: 'studio',
+        confidence: 0.88,
+        common: {
+          vendorName: '청담 B 스튜디오',
+          finalAmount: { value: 1_680_000, confidence: 0.91, evidence: '168만원에 원본 포함이에요' },
+          included: ['원본 전체', '보정본 30장', '의상 3벌'],
+        },
+        categoryData: { retouchedCount: 30, originalsIncluded: true },
+        after: {
+          summary: '원본 포함이고 야외촬영은 별도라고 들었어요.',
+          additionalCosts: ['야외촬영 장소비 30만원'],
+          benefits: [],
+          warnings: [],
+          missingInformation: ['사진 고르는 일정을 확인해보세요'],
+        },
+        confirmedAt: '2026-09-13T08:00:00.000Z',
+        audioDeletedAt: '2026-09-13T08:00:01.000Z',
+        createdAt: '2026-09-13T07:40:00.000Z',
+      },
+    ],
+  },
+
   'GET /v1/weddings/:weddingId/candidates': {
-    groups: [],
-    total: 0,
+    /* 웨딩홀 두 곳 — 배우자도 같이 담아 «둘 다 고른 곳» 비교 배너를 찍을 수 있게 한다. */
+    groups: [
+      {
+        category: 'hall',
+        categoryLabel: '웨딩홀',
+        candidates: [
+          {
+            id: 'c1111111-1111-4111-8111-111111111111',
+            vendorId: '11111111-1111-4111-8111-111111111111',
+            vendorName: '강남 A 웨딩홀',
+            category: 'hall',
+            region: '서울',
+            imageUrl: null,
+            note: null,
+            addedAt: '2026-08-01T00:00:00.000Z',
+            addedByPartner: true,
+          },
+          {
+            id: 'c2222222-2222-4222-8222-222222222222',
+            vendorId: '22222222-2222-4222-8222-222222222222',
+            vendorName: '강남 B 웨딩홀',
+            category: 'hall',
+            region: '서울',
+            imageUrl: null,
+            note: null,
+            addedAt: '2026-08-02T00:00:00.000Z',
+            addedByPartner: true,
+          },
+        ],
+        comparable: true,
+        state: 'picking',
+        stateLabel: '후보 Pick 중',
+        decidedVendorId: null,
+      },
+    ],
+    total: 2,
     limit: 5,
     progress: { decided: 0, total: 13, label: '0/13 완료' },
-    nextCategory: 'hall',
+    nextCategory: 'makeup',
   },
   /*
    * 관리자 — 광고 실운영 관문과 상품별 상태(WP-ADM-034).
@@ -205,6 +381,46 @@ const routes = {
     const vendors = category ? VENDORS.filter((v) => v.category === category) : VENDORS;
 
     return { vendors, sponsored: SPONSORED, nextCursor: null, total: vendors.length };
+  },
+  /*
+   * A-17 업체 비교 — search/compare.tsx 캡처용. VENDORS 목록을 vendorDetail 꼴로 늘린다.
+   * `ids`가 없으면(계약 시험의 기본 호출처럼) 웨딩홀 두 곳으로 대신한다 — 계약은
+   * `vendors`가 최소 둘이라, 빈 배열을 기본값으로 두면 시험이 항상 빨개진다.
+   */
+  'GET /v1/vendors/compare': ({ url }) => {
+    const requested = (url.searchParams.get('ids') ?? '').split(',').filter(Boolean);
+    const ids = requested.length > 0 ? requested : [VENDORS[0].id, VENDORS[1].id];
+    const vendors = ids
+      .map((id) => VENDORS.find((v) => v.id === id))
+      .filter(Boolean)
+      .map(({ paidPrice, ...summary }) => ({
+        ...summary,
+        lastVerifiedAt: '2026-09-01T00:00:00.000Z',
+        prices: {
+          products: [],
+          paidPrice,
+          reportedPrice: { available: false, reason: '아직 제보가 모자라요', count: 0 },
+          deepData: false,
+          deepDataNote: '결제내역을 한 건 등록하면 열려요',
+        },
+        usageScore: { available: false, reason: '아직 후기가 모자라요', count: 0 },
+      }));
+
+    return { vendors, caveats: ['같은 조건이 아니라면 금액만으로 견주지 마세요'] };
+  },
+
+  /* WP-VEND-001 업체 상세 및 하위 화면(이미지·조건별 사례·후기). id는 무엇이 와도 같은 fixture를 낸다 — 캡처는 실제 DB를 보지 않는다. */
+  'GET /v1/vendors/:vendorId': VENDOR_DETAIL,
+  'GET /v1/vendors/:vendorId/images': { photos: [] },
+  'GET /v1/vendors/:vendorId/conditions': {
+    available: false,
+    note: '조건이 비슷한 사례를 더 모으고 있어요',
+  },
+  'GET /v1/vendors/:vendorId/reviews': {
+    reviews: VENDOR_REVIEWS,
+    nextCursor: null,
+    usageScore: VENDOR_DETAIL.usageScore,
+    caveat: '한 사람의 경험이에요. 업체를 고르는 유일한 기준으로 삼지 마세요.',
   },
 };
 

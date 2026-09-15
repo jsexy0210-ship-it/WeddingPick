@@ -30,9 +30,9 @@ const CHECK = constant('MARK_CHECK_PATH');
 const STROKE = constant('MARK_STROKE');
 const VIEWBOX = constant('MARK_VIEWBOX');
 /* 브랜드 키 컬러. spec/tokens.json color.brand.primary. */
-const BRAND = '#e7898d';
+const BRAND = '#ff6f61';
 /* 키 컬러 면 위의 마크. spec/tokens.json color.brand.onPrimary. 흰색이 아니다 — appIcon 주석 참고. */
-const ON_BRAND = '#371b34';
+const ON_BRAND = '#ffffff';
 
 /**
  * `ratio`는 캔버스 한 변 대비 심볼 격자(64)가 차지할 비율이다.
@@ -66,17 +66,42 @@ const TARGETS = [
   { file: 'splash-icon.png', size: 512, color: ON_BRAND, background: null, ratio: 0.96 },
 ];
 
+/**
+ * 웹 쪽 아이콘.
+ *
+ * **여기 없던 것을 더한다.** 2026-09-14에 키 컬러를 바꿀 때 웹 PNG 일곱 장은 이 스크립트
+ * 밖에서 손으로 만들어졌고, 그래서 2026-09-15에 코랄로 되돌릴 때 **혼자 옛 색으로
+ * 남았다.** 생성기가 없는 자산은 반드시 드리프트한다 — 그 자리를 여기로 들인다.
+ *
+ * `apple-touch-icon`은 투명 배경을 허용하지 않는 자리라(iOS가 검정으로 채운다) 면을 깐다.
+ * `maskable-512`는 안드로이드 크롬이 바깥을 잘라내므로 안드로이드 전경과 같은 0.62다.
+ */
+const WEB_TARGETS = [
+  { file: 'favicon-16.png', size: 16, color: BRAND, background: null, ratio: 0.96 },
+  { file: 'favicon-32.png', size: 32, color: BRAND, background: null, ratio: 0.96 },
+  { file: 'favicon-48.png', size: 48, color: BRAND, background: null, ratio: 0.96 },
+  { file: 'icon-192.png', size: 192, color: ON_BRAND, background: BRAND, ratio: 0.72 },
+  { file: 'maskable-512.png', size: 512, color: ON_BRAND, background: BRAND, ratio: 0.62 },
+  { file: 'apple-touch-icon.png', size: 180, color: ON_BRAND, background: BRAND, ratio: 0.72 },
+  { file: 'android-icon-foreground.png', size: 512, color: ON_BRAND, background: null, ratio: 0.62 },
+];
+
 const { chromium } = await import('playwright');
 const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_CHROMIUM });
-const out = join(root, 'apps/mobile/assets/images');
-for (const target of TARGETS) {
-  const page = await browser.newPage({
-    viewport: { width: target.size, height: target.size },
-    deviceScaleFactor: 1,
-  });
-  await page.setContent(`<body style="margin:0">${markup(target)}</body>`);
-  await page.screenshot({ path: join(out, target.file), omitBackground: !target.background });
-  await page.close();
-  console.log(`${target.file} ${target.size}x${target.size}`);
+async function render(targets, out) {
+  for (const target of targets) {
+    const page = await browser.newPage({
+      viewport: { width: target.size, height: target.size },
+      deviceScaleFactor: 1,
+    });
+
+    await page.setContent(`<body style="margin:0">${markup(target)}</body>`);
+    await page.screenshot({ path: join(root, out, target.file), omitBackground: !target.background });
+    await page.close();
+    console.log(`${out}/${target.file} ${target.size}x${target.size}`);
+  }
 }
+
+await render(TARGETS, 'apps/mobile/assets/images');
+await render(WEB_TARGETS, 'apps/web/public/assets');
 await browser.close();

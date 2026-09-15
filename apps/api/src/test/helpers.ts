@@ -61,6 +61,7 @@ export async function createTestApp(): Promise<TestApp> {
     port: 0,
     sessionTtlDays: 30,
     storage: { driver: 'local' },
+    geminiModel: 'gemini-2.5-flash-lite',
     analysisModel: 'test-analysis',
     corsOrigins: [],
     retentionMode: 'manual',

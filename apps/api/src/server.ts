@@ -30,6 +30,7 @@ import { registerTasteRoutes } from './routes/taste';
 import { registerWithdrawalRoutes } from './routes/withdrawal';
 import { registerSignupRoutes } from './routes/signup';
 import { registerPlannerRoutes } from './routes/planners';
+import { registerConsultationRoutes } from './routes/consultations';
 import { registerPaymentProofRoutes } from './routes/payment-proofs';
 import { registerPriceReportRoutes } from './routes/price-reports';
 import { registerReviewRoutes } from './routes/reviews';
@@ -186,6 +187,7 @@ export function buildServer(context: AppContext): FastifyInstance {
   registerInquiryRoutes(app, context);
   registerDeviceRoutes(app, context);
   registerPaymentProofRoutes(app, context);
+  registerConsultationRoutes(app, context);
   registerPriceReportRoutes(app, context);
   registerReviewRoutes(app, context);
   registerWeddingInviteRoutes(app, context);
