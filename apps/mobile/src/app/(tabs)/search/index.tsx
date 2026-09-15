@@ -33,6 +33,7 @@ import { ApiError, listVendorRegions, searchVendors } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { LoginSheet } from '@/features/auth/login-sheet';
 import { savePendingAction } from '@/features/auth/pending-action';
+import { useDepthBack } from '@/features/navigation/depth-back';
 import { PickDoneSheet, UnpickSheet } from '@/features/pick/pick-sheets';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
 import {
@@ -169,6 +170,7 @@ function countTail(item: VendorSummary): string {
 
 export default function SearchScreen() {
   const theme = useTheme();
+  const depthBack = useDepthBack();
   const entry = useLocalSearchParams<EntryParams>();
   const [filters, setFilters] = useState<Filters>({
     q: '',
@@ -471,8 +473,7 @@ export default function SearchScreen() {
    */
   /** 헤더 ← — 온 곳으로 돌아간다(피그마 `navigate("/")`). 이력이 없으면(딥링크) 홈. */
   function goBack() {
-    if (router.canGoBack()) router.back();
-    else router.replace('/');
+    depthBack();
   }
 
   /** 자동완성 «업체» 행 — 결과를 건너뛰고 상세로(SPEC §13.7). 검색어는 최근 검색에 남긴다. */

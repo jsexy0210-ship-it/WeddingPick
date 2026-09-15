@@ -83,11 +83,10 @@ export default function PickConfirmScreen() {
   }, [vendorId]);
 
   /* 시트를 닫는 것은 «연 자리로 되돌아가기»라 History Back이다. 되돌아갈 곳이 없을 때만
-     Depth Back 규칙이 한 단계 위(Pick 탭)로 내려놓는다. */
+     Depth Back 규칙이 한 단계 위(Pick 탭)로 내려놓는다 — `depthBack`이 이미 그 순서다. */
   function dismiss() {
     setVisible(false);
-    if (router.canGoBack()) router.back();
-    else depthBack();
+    depthBack();
   }
 
   async function decide() {
