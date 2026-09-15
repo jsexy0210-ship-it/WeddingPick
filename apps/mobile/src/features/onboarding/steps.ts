@@ -67,7 +67,13 @@ export const ONBOARDING_STEPS: readonly OnboardingStep[] = [
       { label: '지출 현황', value: '표시' },
       { label: 'Pick', value: '숨김' },
     ],
-    caption: '홈 맨 아래 홈 편집에서 바꿀 수 있어요',
+    /*
+     * 2026-09-15 대표 지시로 홈편집 기능이 없어졌다 — 「홈 맨 아래 홈 편집에서
+     * 바꿀 수 있어요」는 이제 없는 화면을 가리킨다. 이 캡션만 고친다. 위
+     * headline · body · card는 같은 장(홈 순서 바꾸기)을 그대로 말하고 있는데
+     * 온보딩을 크게 고치고 있는 다른 세션 몫이라 손대지 않았다 — PR에 적는다.
+     */
+    caption: '홈 구성은 준비 상황에 따라 달라져요',
   },
 ];
 

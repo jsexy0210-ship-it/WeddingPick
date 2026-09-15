@@ -6,7 +6,7 @@ import type {
   VendorSummary,
 } from '@weddingpick/api-contract';
 import { daysUntil, hasUnread } from '@weddingpick/domain';
-import { router, useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -32,13 +32,6 @@ import { hasSeenBenefitSheet, markBenefitSheetSeen } from '@/features/home/benef
 import { Board } from '@/features/home/board';
 import { CategoryGrid } from '@/features/home/category-grid';
 import { listWeddingContent, type WeddingContentItem } from '@/features/home/content';
-import {
-  DEFAULT_HOME_LAYOUT,
-  readHomeLayout,
-  visibleHomeSections,
-  type HomeLayout,
-  type HomeSectionKey,
-} from '@/features/home/layout';
 import { Recommendation } from '@/features/home/recommendation';
 import { homeView, type HomeView } from '@/features/home/state';
 import { WeddingContent } from '@/features/home/wedding-content';
@@ -52,14 +45,12 @@ import { WebShellView } from '@/features/webshell/WebShellView';
  *
  * 위에서부터 header → 히어로 → 준비현황 → 웨딩픽 추천 → 카테고리 → 웨딩피드. 규격서의 수는
  * 각 조각의 주석에 그대로 적었다(`Header` · `Hero` · 아래 `styles`). 히어로는 늘 맨 위 고정이고,
- * 그 아래는 홈 편집(WP-HOME-007)이 정한 순서를 따른다.
+ * 그 아래는 **고정 순서**다(2026-09-15 대표 지시로 홈편집 기능을 전부 없앴다 —
+ * `HOME_SECTION_ORDER` 하나가 순서의 원본이다).
  *
  * **규격서와 다르게 둔 것과 근거.**
  * - 옛 홈의 회색 밴드 · 조건 칩 · «다음 준비» 줄 · 준비 현황 «더 보기» 링크 · 히어로의 두 줄 제목과
- *   진행바는 규격서에 없어 뺐다. 홈 편집의 «다음 준비» 항목은 켜도 아무것도 그리지 않는다(판단 필요 —
- *   PR 본문).
- * - 홈 편집 진입 줄은 규격서에 없지만 남긴다 — 온보딩이 «홈 맨 아래 홈 편집에서 바꿀 수 있어요»라고
- *   약속한 주소다(보이는 것이 아니라 부르는 주소).
+ *   진행바는 규격서에 없어 뺐다.
  * - 히어로 «서울 그랜드 워커힐»(예식장)은 우리 계약(`CurrentUser`)에 없어 지역으로 대신한다.
  * - 아바타 면 `#F7D2C4` · `#C9DAEC`, 준비현황 하늘색 `#F0F9FF` · `#B8E6FE` · `#0084D1`은 토큰에 없다 —
  *   색은 MASTER 몫이라 만들지 않고 있는 토큰으로 두고 PR에 보고했다.
@@ -68,6 +59,15 @@ import { WebShellView } from '@/features/webshell/WebShellView';
  *
  * 화면이 무엇을 보여주는지는 전부 `features/home/state.ts`가 정한다. 여기는 그린다.
  */
+
+/** 히어로 밑 섹션 키. 순서는 `HOME_SECTION_ORDER` 하나뿐이다 — 더는 고칠 수 없다. */
+type HomeSectionKey = 'board' | 'recommendation' | 'category' | 'content';
+
+/** 규격서 순서 그대로(위 JSDoc). */
+const HOME_SECTION_ORDER: readonly HomeSectionKey[] = ['board', 'recommendation', 'category', 'content'];
+
+/** 홈이 웨딩피드에서 보여주는 카드 수 — 규격서 «div 390×224»가 정확히 두 장이다. */
+const HOME_FEED_PREVIEW_COUNT = 2;
 
 type HomeData = {
   me: CurrentUser | null;
@@ -99,11 +99,6 @@ export default function HomeScreen() {
   const [benefitOpen, setBenefitOpen] = useState(false);
   const benefitChecked = useRef(false);
   /*
-   * 홈 편집이 정한 구성. 기기에서 읽으므로 기본값으로 시작한다 — 읽는 동안 홈이
-   * 비어 보이면 안 된다. 편집하고 돌아왔을 때 반영되도록 화면이 뜰 때마다 다시 읽는다.
-   */
-  const [layout, setLayout] = useState<HomeLayout>(DEFAULT_HOME_LAYOUT);
-  /*
    * 이 홈이 전체 화면 로딩을 써도 되는가. 마운트 때 한 번만 묻는다 — 렌더마다 물으면
    * 첫 렌더가 예산을 쓰고 두 번째 렌더가 못 받아 로더가 도중에 바뀐다.
    */
@@ -122,7 +117,7 @@ export default function HomeScreen() {
     // 자체는 남기고, 몸통만 건너뛴다.
     if (isWebShellScreen('home')) return;
 
-    void listWeddingContent()
+    void listWeddingContent(HOME_FEED_PREVIEW_COUNT)
       .then((content) => setData((current) => ({ ...current, content })))
       .catch(() => undefined);
 
@@ -145,20 +140,6 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(load, [load]);
-
-  useFocusEffect(
-    useCallback(() => {
-      let alive = true;
-
-      void readHomeLayout().then((stored) => {
-        if (alive) setLayout(stored);
-      });
-
-      return () => {
-        alive = false;
-      };
-    }, []),
-  );
 
   useEffect(() => {
     if (!settled || data.me?.setupComplete !== true || benefitChecked.current) return;
@@ -254,7 +235,6 @@ export default function HomeScreen() {
   const sections = homeSectionBlocks({
     view,
     data,
-    layout,
     isPicked: (vendorId) => candidates.candidateFor(vendorId) !== null,
     onPressPick: (vendor) => void onPressPick(vendor),
   });
@@ -266,20 +246,10 @@ export default function HomeScreen() {
           <Header unread={data.unread} onPressBell={() => router.push('/my/notifications')} />
           <Hero me={data.me} daysLeft={daysLeft} />
 
-          {/* 히어로 밑은 홈 편집(WP-HOME-007)이 정한 순서대로 그린다. */}
+          {/* 히어로 밑은 고정 순서로 그린다(HOME_SECTION_ORDER). */}
           {sections.map((section) => (
             <View key={section.key}>{section.node}</View>
           ))}
-
-          {/* 홈 편집 — 온보딩이 «홈 맨 아래 홈 편집에서 바꿀 수 있어요»라고 약속한 자리다. */}
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push('/home-edit')}
-            style={({ pressed }) => [styles.editEntry, pressed && styles.pressed]}>
-            <ThemedText type="f12" themeColor="textAssistive" style={styles.semibold}>
-              홈 편집
-            </ThemedText>
-          </Pressable>
         </ScrollView>
       </SafeAreaView>
 
@@ -312,20 +282,18 @@ type HomeSectionBlock = {
 };
 
 /**
- * 홈 편집이 정한 순서대로, 보여줄 섹션만.
+ * `HOME_SECTION_ORDER` 그대로, 보여줄 섹션만.
  *
  * 그릴 것이 없는 섹션은 자리도 차지하지 않는다(SPEC §2).
  */
 function homeSectionBlocks({
   view,
   data,
-  layout,
   isPicked,
   onPressPick,
 }: {
   view: HomeView;
   data: HomeData;
-  layout: HomeLayout;
   isPicked: (vendorId: string) => boolean;
   onPressPick: (vendor: VendorSummary) => void;
 }): readonly HomeSectionBlock[] {
@@ -394,9 +362,6 @@ function homeSectionBlocks({
       ),
     },
 
-    /* 규격서에 없는 섹션 — 그리지 않는다(위 파일 JSDoc). */
-    next: { key: 'next', node: null },
-
     /*
      * 웨딩피드 — 규격서 «div 430×256 · pad 0 20 0 20»
      *   div 390×20  flex · space-between · center · mar 0 0 12 0
@@ -428,7 +393,7 @@ function homeSectionBlocks({
     },
   };
 
-  return visibleHomeSections(layout)
+  return HOME_SECTION_ORDER
     .map((key) => blocks[key])
     .filter((block) => block.node !== null);
 }
@@ -626,14 +591,6 @@ const styles = StyleSheet.create({
 
   /* 두 번째부터의 로딩 — 아이콘 로더 하나만 가운데 둔다. */
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-
-  /* 홈 편집 — 맨 아래 한 줄. 규격서에 없는 자리라 크기만 웨딩피드 «더보기»(12/600)와 같다. */
-  editEntry: {
-    minHeight: Layout.rowMinHeight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Layout.pageX,
-  },
 
   /* «pad 16 · mar 0 20 24 20 · r22». 장식 원이 밖으로 나가므로 overflow hidden. */
   hero: {

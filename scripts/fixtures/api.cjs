@@ -205,6 +205,25 @@ const routes = {
     candidates: null,
     recommendations: VENDORS.slice(0, 3),
   },
+  /** 홈 아래쪽 웨딩피드 — 공개된 글만. 홈은 두 장만 보여준다(`HOME_FEED_PREVIEW_COUNT`). */
+  'GET /v1/wedding-feed': {
+    items: [
+      {
+        id: '00000000-0000-4000-8000-0000000000f1',
+        categoryLabel: '예산',
+        title: '예산을 넘기지 않는 스드메 조합 3가지',
+        summary: '항목별로 먼저 상한을 정해두면 흔들리지 않아요.',
+        imageUrl: null,
+      },
+      {
+        id: '00000000-0000-4000-8000-0000000000f2',
+        categoryLabel: '웨딩홀',
+        title: '웨딩홀 투어에서 꼭 물어볼 것',
+        summary: '보증인원과 식대 인상 조건을 먼저 확인하세요.',
+        imageUrl: null,
+      },
+    ],
+  },
   'GET /v1/vendors/regions': {
     regions: [
       { name: '서울', vendorCount: 128 },
