@@ -4,6 +4,7 @@
   "counts": {
     "r1_hex_in_screen_code": 17,
     "r2_forbidden_fonts": 0,
-    "r5_raw_color_in_guarded": 0
+    "r5_raw_color_in_guarded": 0,
+    "icon_line_icon_in_screens": 0
   }
 }

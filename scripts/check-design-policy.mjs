@@ -6,11 +6,12 @@
  * 세션 여럿이 「시안대로 맞췄다」고 보고했고 아무도 거짓말을 하지 않았다 — 두 화면을
  * 나란히 놓고 본 적이 없었을 뿐이다. 사람이 매번 세는 것은 언젠가 빠진다. 그래서 센다.
  *
- * 재는 것은 셋이다.
+ * 재는 것은 넷이다.
  *
- *   R1  화면 코드에 hex를 직접 적지 않는다. 값은 SEED → spec/tokens.json → theme으로 온다.
- *   R2  Pretendard만 쓴다. Noto Sans KR · Playfair Display · DM Mono는 코드에 없어야 한다.
- *   R5  로더 · 토스트 · 얼럿 · 컨펌은 색만 바꾼다 — 그 파일들에 생색이 있으면 안 된다.
+ *   R1      화면 코드에 hex를 직접 적지 않는다. 값은 SEED → spec/tokens.json → theme으로 온다.
+ *   R1-아이콘 우리가 만든 선 아이콘(`CategoryIcon`)을 화면에 그리지 않는다. 피그마에 없다.
+ *   R2      Pretendard만 쓴다. Noto Sans KR · Playfair Display · DM Mono는 코드에 없어야 한다.
+ *   R5      로더 · 토스트 · 얼럿 · 컨펌은 색만 바꾼다 — 그 파일들에 생색이 있으면 안 된다.
  *
  * **주석은 세지 않는다.** 이것이 이 스크립트의 핵심이다. 단순 grep은 `circle-loader.tsx`를
  * 위반 3건으로 잡는데, 그 셋은 전부 「시안의 #eaebee와 같은 값」이라고 적어 둔 주석이고
@@ -62,6 +63,22 @@ const GUARDED = [
   'packages/ui/src/toast.tsx',
   'packages/ui/src/show-alert.ts',
 ];
+
+/**
+ * R1-아이콘 — 우리가 만든 선 아이콘은 화면에 그리지 않는다.
+ *
+ * 2026-09-15 대표 지시: 「전체 이모지 SEED 걸로 사용한다. 선 아이콘 X」. 피그마가 이모지를
+ * 그린 자리(카테고리 · 준비현황)는 이모지, SEED 아이콘을 쓴 자리(탭 바 · 헤더 · 상태)는
+ * SEED다. `CategoryIcon`은 **피그마에 없는 우리 것**이라 화면에서 쓰지 않는다.
+ *
+ * 앞 세션이 실제로 이것을 선 아이콘으로 바꿨다가 되돌렸다. 되돌린 것이 또 뒤집히지 않게 센다.
+ *
+ * **`CategoryCycleLoader`만 예외다.** 업종 아이콘이 도는 로더 자체가 피그마에 없는
+ * 우리 것이고, R5가 「기존 정본을 그대로 쓰되 색만 바꾼다」로 이미 지키는 자리다 —
+ * 여기서 아이콘을 바꾸는 것은 R5 위반이 된다. 규칙 둘이 반대로 당기므로 자리를 적어 둔다.
+ */
+const LINE_ICON_ALLOWED = 'packages/ui/src/category-cycle-loader.tsx';
+const LINE_ICON_RENDER = /<CategoryIcon\b/g;
 
 /**
  * 주석과 문자열을 걷어낸다.
@@ -177,7 +194,7 @@ function lineOf(source, index) {
 }
 
 function collect() {
-  const findings = { r1: [], r2: [], r5: [] };
+  const findings = { r1: [], r2: [], r5: [], icon: [] };
 
   for (const root of SCREEN_ROOTS) {
     for (const file of walk(join(ROOT, root))) {
@@ -205,6 +222,13 @@ function collect() {
       if (GUARDED.includes(rel)) {
         for (const m of code.matchAll(HEX)) {
           findings.r5.push({ file: rel, line: lineOf(code, m.index), value: m[0] });
+        }
+      }
+
+      // R1-아이콘 — 화면이 우리 선 아이콘을 그리는가
+      if (rel !== LINE_ICON_ALLOWED) {
+        for (const m of code.matchAll(LINE_ICON_RENDER)) {
+          findings.icon.push({ file: rel, line: lineOf(code, m.index), value: '<CategoryIcon>' });
         }
       }
     }
@@ -242,6 +266,7 @@ const counts = {
   r1_hex_in_screen_code: findings.r1.length,
   r2_forbidden_fonts: findings.r2.length + stackProblems.length,
   r5_raw_color_in_guarded: findings.r5.length,
+  icon_line_icon_in_screens: findings.icon.length,
 };
 
 if (process.argv.includes('--update')) {
@@ -272,7 +297,7 @@ try {
 }
 
 let failed = false;
-const show = { r1: findings.r1, r2: findings.r2, r5: findings.r5 };
+const show = { r1: findings.r1, r2: findings.r2, r5: findings.r5, icon: findings.icon };
 
 for (const [key, count] of Object.entries(counts)) {
   const allowed = baseline[key] ?? 0;
