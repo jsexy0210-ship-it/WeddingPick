@@ -17,6 +17,8 @@ import type { AppContext } from '../context';
 import * as dashboardAdmin from '../dashboard-admin';
 import * as decisionsAdmin from '../decisions-admin';
 import * as faqAdmin from '../faq-admin';
+import * as weddingFeed from '../wedding-feed';
+import { createClaudeFeedWriter } from '../analysis/wedding-feed-writer';
 import { NotAnOperator } from '../decisions';
 import { ApiError, forbidden, notFound } from '../errors';
 import * as inquiryAdmin from '../inquiry-admin';
@@ -1045,6 +1047,77 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
     await faqAdmin.remove(context.pool, request.params.id);
 
     return reply.status(204).send();
+  });
+
+  // ─── 웨딩피드 ──────────────────────────────────────────────────────────────
+  /*
+   * 웨딩픽 콘텐츠. 대표 지시(2026-09-15) — 「관리자에 웨딩피드 콘텐츠 메뉴 만들어.
+   * 목록 · 등록 · 삭제 · 수정 다 가능해야 하고 LLM으로 지속 콘텐츠 작성한다」.
+   *
+   * **FAQ와 같은 모양이다**(PUT으로 전체를 보내고 PATCH는 두지 않는다). 부르는 데
+   * 없는 쓰기 라우트를 성공으로 남겨두면 다음 사람이 그것을 믿는다.
+   *
+   * `listForAdmin`을 그대로 돌려준다 — `{ posts, runs, remainingTopics }`
+   * (계약은 `adminWeddingFeedResponseSchema`). 화면 위 배너가 필요한 공개·초안
+   * 건수는 `posts`의 `status`만 세면 나오므로 따로 왕복하지 않는다.
+   *
+   * **전에는 여기서 `{ posts: listForAdmin(...), counts: ... }`로 한 번 더 감쌌다.**
+   * `listForAdmin`이 이미 `{ posts, runs, remainingTopics }`를 돌려주는데 그것을
+   * `posts` 키 하나에 다시 넣어, 실제 글 배열이 `posts.posts`에 있었다 — 부르는
+   * 데가 없어서 아무도 겪지 않았을 뿐인 버그다.
+   */
+  app.get('/v1/admin/wedding-feed', auth, async () =>
+    weddingFeed.listForAdmin(context.pool, context.storage)
+  );
+
+  app.post<{ Body: unknown }>('/v1/admin/wedding-feed', auth, async (request) =>
+    weddingFeed.create(
+      context.pool,
+      weddingFeed.parseFeedInput(request.body),
+      currentUserId(request)
+    )
+  );
+
+  app.put<{ Params: { id: string }; Body: unknown }>(
+    '/v1/admin/wedding-feed/:id',
+    auth,
+    async (request, reply) => {
+      await weddingFeed.update(
+        context.pool,
+        request.params.id,
+        weddingFeed.parseFeedInput(request.body)
+      );
+
+      return reply.status(204).send();
+    }
+  );
+
+  app.delete<{ Params: { id: string } }>(
+    '/v1/admin/wedding-feed/:id',
+    auth,
+    async (request, reply) => {
+      await weddingFeed.remove(context.pool, request.params.id);
+
+      return reply.status(204).send();
+    }
+  );
+
+  /*
+   * 지금 한 번 쓰게 한다. 평소에는 워커가 스스로 돌지만, 운영자가 「지금 필요하다」고
+   * 판단하는 자리가 있다.
+   *
+   * 클로드로 쓴다(2026-09-15 대표 지시 — 제미나이는 녹음·OCR에만, `CLAUDE.md` 참고).
+   * 모델은 `claude-analyzer.ts`와 같은 설정(`config.analysisModel`)에서 온다.
+   */
+  app.post('/v1/admin/wedding-feed/generate', auth, async () => {
+    const model = context.config.analysisModel;
+
+    return weddingFeed.runGeneration({
+      pool: context.pool,
+      writer: createClaudeFeedWriter({ model }),
+      model,
+      trigger: 'manual',
+    });
   });
 
   // ─── Users ────────────────────────────────────────────────────────────────

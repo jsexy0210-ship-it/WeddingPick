@@ -154,6 +154,8 @@ import {
   type MyRewardPayoutResponse,
   type RequestRewardPayoutRequest,
   type RewardPayout,
+  weddingFeedListResponseSchema,
+  type WeddingFeedListResponse,
 } from '@weddingpick/api-contract';
 import { z, type ZodType } from 'zod';
 
@@ -592,6 +594,14 @@ export async function getCurrentUser() {
 /** 홈 데이터를 미리 받으면 인증 확인과 병렬로 준비할 수 있다. */
 export async function getAppBootstrap(): Promise<AppBootstrapResponse> {
   return request('/v1/app/bootstrap', appBootstrapResponseSchema);
+}
+
+/** 웨딩피드 — 공개된 글만. 로그인 여부와 무관해 bootstrap과 따로 부른다. */
+export async function getWeddingFeed(limit?: number): Promise<WeddingFeedListResponse> {
+  return request(
+    `/v1/wedding-feed${limit ? `?limit=${limit}` : ''}`,
+    weddingFeedListResponseSchema
+  );
 }
 
 /**

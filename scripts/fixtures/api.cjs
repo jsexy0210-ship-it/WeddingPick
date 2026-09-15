@@ -205,6 +205,25 @@ const routes = {
     candidates: null,
     recommendations: VENDORS.slice(0, 3),
   },
+  /** 홈 아래쪽 웨딩피드 — 공개된 글만. 홈은 두 장만 보여준다(`HOME_FEED_PREVIEW_COUNT`). */
+  'GET /v1/wedding-feed': {
+    items: [
+      {
+        id: '00000000-0000-4000-8000-0000000000f1',
+        categoryLabel: '예산',
+        title: '예산을 넘기지 않는 스드메 조합 3가지',
+        summary: '항목별로 먼저 상한을 정해두면 흔들리지 않아요.',
+        imageUrl: null,
+      },
+      {
+        id: '00000000-0000-4000-8000-0000000000f2',
+        categoryLabel: '웨딩홀',
+        title: '웨딩홀 투어에서 꼭 물어볼 것',
+        summary: '보증인원과 식대 인상 조건을 먼저 확인하세요.',
+        imageUrl: null,
+      },
+    ],
+  },
   'GET /v1/vendors/regions': {
     regions: [
       { name: '서울', vendorCount: 128 },
@@ -506,6 +525,59 @@ const routes = {
       { tier: 'standard', state: 'test', decidedAt: null, placements: 1 },
       { tier: 'premium', state: 'withheld', decidedAt: '2026-09-10T00:00:00.000Z', placements: 0 },
     ],
+  },
+  /** 관리자 — 웨딩피드(WP-ADM-053). 검토 대기 초안 하나 · 공개 하나 · 자동 작성 한 바퀴. */
+  'GET /v1/admin/wedding-feed': {
+    posts: [
+      {
+        id: '00000000-0000-4000-8000-0000000000f1',
+        categoryLabel: '예산',
+        title: '스드메 예산을 넘기지 않게 짜는 방법',
+        summary: '항목별로 먼저 상한을 정해두면 흔들리지 않아요.',
+        body: '스드메 예산을 짤 때는…',
+        imageKey: null,
+        imageUrl: null,
+        status: 'draft',
+        source: 'generated',
+        model: 'gemini-2.5-flash-lite',
+        topic: 'budget-sdm',
+        sortOrder: 0,
+        publishedAt: null,
+        createdAt: '2026-09-15T01:00:00.000Z',
+        updatedAt: '2026-09-15T01:00:00.000Z',
+      },
+      {
+        id: '00000000-0000-4000-8000-0000000000f2',
+        categoryLabel: '웨딩홀',
+        title: '웨딩홀 투어에서 꼭 물어볼 것',
+        summary: '보증인원과 식대 인상 조건을 먼저 확인하세요.',
+        body: '웨딩홀 투어에서는…',
+        imageKey: null,
+        imageUrl: null,
+        status: 'published',
+        source: 'manual',
+        model: null,
+        topic: null,
+        sortOrder: 1,
+        publishedAt: '2026-09-14T09:00:00.000Z',
+        createdAt: '2026-09-14T09:00:00.000Z',
+        updatedAt: '2026-09-14T09:00:00.000Z',
+      },
+    ],
+    runs: [
+      {
+        id: '00000000-0000-4000-8000-0000000000f9',
+        startedAt: '2026-09-15T01:00:00.000Z',
+        finishedAt: '2026-09-15T01:00:20.000Z',
+        createdCount: 1,
+        model: 'gemini-2.5-flash-lite',
+        inputTokens: 512,
+        outputTokens: 640,
+        error: null,
+        trigger: 'schedule',
+      },
+    ],
+    remainingTopics: 16,
   },
   'GET /v1/vendors': ({ url }) => {
     const category = url.searchParams.get('category');

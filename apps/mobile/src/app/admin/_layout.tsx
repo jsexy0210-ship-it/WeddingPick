@@ -92,6 +92,7 @@ const NAV: NavEntry[] = [
   { key: 'users', label: '계정 관리', href: '/admin/users' },
   /* 문구 · 카드 — 자주 손대지만 급하지 않다 */
   { key: 'faq', label: 'FAQ 관리', href: '/admin/faq' },
+  { key: 'wedding-feed', label: '웨딩피드 관리', href: '/admin/wedding-feed' },
   { key: 'og-card', label: '링크 미리보기', href: '/admin/og-card' },
   /* 성장 — 회차마다 */
   { key: 'campaigns', label: '캠페인 · 보상', href: '/admin/campaigns' },

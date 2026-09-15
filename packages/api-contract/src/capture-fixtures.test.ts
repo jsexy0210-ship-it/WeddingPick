@@ -20,6 +20,7 @@ import { myMonthlyDrawResponseSchema, myRewardPayoutResponseSchema, myRewardsRes
 import { reportReasonListResponseSchema, reviewListResponseSchema } from './reviews';
 import { settingsSchema } from './settings';
 import { signupStateSchema } from './signup';
+import { weddingFeedListResponseSchema } from './wedding-feed';
 import { weddingEventListResponseSchema } from './wedding-events';
 import { expenseSummaryResponseSchema } from './wedding-plan';
 import {
@@ -69,6 +70,7 @@ const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/vendors/:vendorId/images', vendorPhotosResponseSchema],
   ['GET /v1/vendors/:vendorId/conditions', conditionStatsSchema],
   ['GET /v1/vendors/:vendorId/reviews', reviewListResponseSchema],
+  ['GET /v1/wedding-feed', weddingFeedListResponseSchema],
 ]);
 
 /**
@@ -83,6 +85,7 @@ const CONTRACTS = new Map<string, ZodType>([
 const NO_CONTRACT = new Set([
   'GET /v1/admin/ads-gate',
   'GET /v1/admin/ad-tiers',
+  'GET /v1/admin/wedding-feed',
   'GET /v1/weddings/:weddingId/candidates/removed',
 ]);
 
