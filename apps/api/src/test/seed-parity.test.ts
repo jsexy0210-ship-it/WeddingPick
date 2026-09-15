@@ -30,7 +30,7 @@ describe('색은 SEED에서 온다', () => {
   it('spec/tokens.json의 색이 SEED 값과 같다', () => {
     const drifted = Object.entries(mapping.map)
       .map(([path, seedName]) => {
-        const [group, key] = path.split('.');
+        const [group = '', key = ''] = path.split('.');
         const ours = tokens.color[group]?.[key]?.value;
         const theirs = seed.light[seedName];
 
