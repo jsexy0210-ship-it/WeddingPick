@@ -4,7 +4,7 @@
   "map": {
     "text.ink": "color-fg-neutral",
     "text.ink2": "color-palette-gray-900",
-    "text.secondary": "color-fg-neutral-muted",
+    "text.secondary": "color-fg-neutral-subtle",
     "text.tertiary": "color-fg-neutral-subtle",
     "text.disabled": "color-fg-placeholder",
     "line.border": "color-stroke-neutral-weak",

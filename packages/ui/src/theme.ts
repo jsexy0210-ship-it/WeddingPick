@@ -39,9 +39,17 @@ const palette = {
   /** primaryBorder — 브랜드 카드 테두리. */
   coralBorder: '#f9dfe0',
   /**
-   * onPrimary — 키 컬러 면 위의 글자·아이콘. **흰색이 아니다.** `#e7898d` 위에서 흰 글자는
-   * 2.51:1로 WCAG AA에 못 미쳐 2026-09-14에 이 플럼으로 확정됐다(6.11:1).
-   * 값은 Figma 픽셀 export(src/imports/Home/index.tsx)에 이미 있던 색이다.
+   * 앱 아이콘 · 스플래시의 마크 색. `#e7898d` 위에 얹는다(6.11:1).
+   *
+   * **화면의 글자에는 쓰지 않는다.** 2026-09-14에 「키 컬러 면 위의 글자」로 잡혀 있었고
+   * 근거가 「Figma 픽셀 export(`src/imports/Home/index.tsx`)에 있던 색」이었는데,
+   * **그 파일은 웨딩픽이 아니다** — 「Peer Group Meetup」 · 「Meditation」 · Alegreya 서체가
+   * 든 다른 앱의 템플릿이고 피그마 라우터(`routes.ts`)가 부르지도 않는다. 값을 엉뚱한
+   * 데서 집어 온 것이다. 실제 웨딩픽 화면은 코랄 면 위에 **흰 글자**를 쓴다(재서 확인:
+   * 히어로 `D-127` · 「비교하기」 · 배지가 전부 #ffffff).
+   *
+   * 아이콘 쪽은 그대로 둔다 — `spec/tokens.json` `symbol.appIcon`이 정한 자리이고,
+   * 거기서는 가는 stroke가 뭉개지지 않게 대비가 필요하다.
    */
   plum: '#371b34',
 
@@ -268,9 +276,22 @@ export function pickTintFor(skin: SkinId): string {
  */
 export const Colors = {
   light: {
+    /*
+     * **피그마는 글자에 두 색만 쓴다** — `#1a1c20`과 `#868b94`다. 아홉 화면을 렌더해
+     * 글자 노드의 계산된 색을 전부 세어 확인했다(191회 · 185회). 그 사이 단계
+     * (`#2a3038` · `#555d6d`)는 **한 번도 나오지 않는다** — 피그마는 굵기와 크기로
+     * 가르지 색으로 가르지 않는다(2026-09-15 대표 지시 「텍스트 색상도 피그마 기준」).
+     *
+     * 그래서 `textStrong`은 `text`와, `textSecondary`는 `textAssistive`와 같은 값이다.
+     * **이름을 지우지는 않는다** — 쓰는 자리가 많고, 이름이 남아 있어야 나중에 피그마가
+     * 단계를 늘릴 때 그 자리만 고치면 된다.
+     *
+     * `textDisabled`만 피그마에 표본이 없다(비활성 상태를 그린 화면이 없다). SEED의
+     * `fg-placeholder`를 그대로 쓴다 — 최상위 규칙 3번이 말하는 자리다.
+     */
     text: palette.gray900,
-    textStrong: palette.gray800,
-    textSecondary: palette.gray700,
+    textStrong: palette.gray900,
+    textSecondary: palette.gray600,
     textAssistive: palette.gray600,
     textDisabled: palette.gray500,
 
@@ -389,10 +410,19 @@ export const Colors = {
      */
     dateWheelTwo: palette.dateWheelTwo,
     dateWheelFar: palette.dateWheelFar,
-    onTint: palette.plum,
     /**
-     * backgroundInk(어두운 면) 위의 글자·아이콘. `onTint`와 갈라 둔다 — 플럼을 잉크 위에
-     * 얹으면 1.05:1로 아예 보이지 않는다. `toast.tsx`가 이 자리를 쓴다.
+     * 키 컬러 면 위의 글자·아이콘. **피그마에서 재서 가져온 값이다** — 코랄 히어로의
+     * `D-127` · 「비교하기」 · 배지가 전부 흰색이다(2026-09-15 대표 지시 「텍스트 색상도
+     * 피그마 기준」). 「흰색이 아니다」로 잡혀 있던 플럼은 웨딩픽이 아닌 템플릿 파일에서
+     * 온 값이었다 — `palette.plum` 주석에 그 경위가 있다.
+     *
+     * **대비는 2.51:1이다.** WCAG AA(4.5:1)에 못 미친다는 사실 자체는 그대로다.
+     * 피그마가 그렇게 그렸고 대표님이 그 기준으로 맞추라고 하셨다.
+     */
+    onTint: palette.gray00,
+    /**
+     * backgroundInk(어두운 면) 위의 글자·아이콘. `onTint`와 갈라 둔 자리다.
+     * `toast.tsx`가 이 자리를 쓴다.
      */
     onInk: palette.gray00,
     /** 본문 속 링크(약관 · 처리방침). 키 컬러는 CTA·Pick·선택에만 쓴다(CLAUDE.md §5). */
@@ -407,9 +437,10 @@ export const Colors = {
    * 의미색은 어두운 면에서 읽히도록 올린 값이다. 라이트와 키가 같아야 `ThemeColor`가 성립한다.
    */
   dark: {
+    /* 라이트와 같은 구조 — 위 주석 참고. */
     text: palette.darkGray900,
-    textStrong: palette.darkGray800,
-    textSecondary: palette.darkGray700,
+    textStrong: palette.darkGray900,
+    textSecondary: palette.darkGray600,
     textAssistive: palette.darkGray600,
     textDisabled: palette.darkGray500,
 
@@ -486,7 +517,7 @@ export const Colors = {
     dateWheelTwo: palette.darkGray500,
     dateWheelFar: palette.darkGray400,
     /** 라이트와 같다 — 토큰이 「다크 테마에서도 반전하지 않는다」고 못박았다. */
-    onTint: palette.plum,
+    onTint: palette.gray00,
     onInk: '#ffffff',
     link: palette.accentAction,
   },
