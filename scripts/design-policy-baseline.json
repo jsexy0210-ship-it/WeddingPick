@@ -7,6 +7,7 @@
     "r5_raw_color_in_guarded": 0,
     "icon_line_icon_in_screens": 0,
     "number_localeless_tolocalestring": 0,
-    "loader_deprecated_cycle_loader": 4
+    "loader_deprecated_cycle_loader": 4,
+    "inapp_web_new_tab": 1
   }
 }

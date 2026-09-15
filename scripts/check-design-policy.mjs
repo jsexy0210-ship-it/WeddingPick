@@ -6,7 +6,7 @@
  * 세션 여럿이 「시안대로 맞췄다」고 보고했고 아무도 거짓말을 하지 않았다 — 두 화면을
  * 나란히 놓고 본 적이 없었을 뿐이다. 사람이 매번 세는 것은 언젠가 빠진다. 그래서 센다.
  *
- * 재는 것은 여섯이다.
+ * 재는 것은 일곱이다.
  *
  *   R1      화면 코드에 hex를 직접 적지 않는다. 값은 SEED → spec/tokens.json → theme으로 온다.
  *   R1-아이콘 우리가 만든 선 아이콘(`CategoryIcon`)을 화면에 그리지 않는다. 피그마에 없다.
@@ -14,6 +14,7 @@
  *   R5      로더 · 토스트 · 얼럿 · 컨펌은 색만 바꾼다 — 그 파일들에 생색이 있으면 안 된다.
  *   숫자    천단위 쉼표. `toLocaleString()`을 로케일 없이 부르지 않는다 — `formatCount()`를 거친다.
  *   로더    원형 하나뿐이다. 폐기된 `CategoryCycleLoader`가 새 자리에 붙는 것을 막는다.
+ *   인앱    앱 밖으로 나가지 않는다. 웹의 `window.open` 새 탭을 센다(지도 · 달력은 예외).
  *
  * **주석은 세지 않는다.** 이것이 이 스크립트의 핵심이다. 단순 grep은 `circle-loader.tsx`를
  * 위반 3건으로 잡는데, 그 셋은 전부 「시안의 #eaebee와 같은 값」이라고 적어 둔 주석이고
@@ -97,6 +98,25 @@ const LINE_ICON_RENDER = /<CategoryIcon\b/g;
  * 폐기된 것이 새 자리에 또 붙는 것은 막는다.
  */
 const CYCLE_LOADER_RENDER = /<CategoryCycleLoader\b/g;
+
+/**
+ * 앱 밖으로 나가는 자리 — **웹의 새 탭**을 센다.
+ *
+ * 2026-09-15 대표 지시 — 「인앱에서 웹 새창 또는 이동 시 앱을 탈출하게 된다. 하여
+ * iframe 껍데기 씌워서 웨딩픽 앱 밖으로 나가지 못하게 한다」.
+ *
+ * **네이티브는 고쳤다**(`open-external.ts`가 `expo-web-browser`를 쓴다). 남은 것은 웹의
+ * `window.open(_blank)` 하나인데, 그것을 없애려면 **우리 화면 안에 iframe 껍데기를 새로
+ * 그려야 한다** — 화면을 만드는 일이라 감독 세션이 밀지 않고 넘겼다(장부 10차).
+ *
+ * **얼려 두는 이유는 늘어나는 것을 막기 위해서다.** 껍데기가 생기기 전에 다른 화면이
+ * 또 새 탭을 열기 시작하면, 나중에 걷을 자리가 그만큼 늘어난다.
+ *
+ * **`Linking.openURL`은 세지 않는다.** 지금 쓰는 다섯 곳이 전부 규칙이 적어 둔 예외다 —
+ * `map.kakao.com`(길 찾기)과 `.ics` 내려받기(달력 앱). 다른 앱에 넘기는 것이 목적이라
+ * 앱 안에 가두면 그 일을 못 한다. 세면 예외를 위반으로 적게 된다.
+ */
+const WEB_NEW_TAB = /window\.open\(/g;
 
 /**
  * 숫자 — 천단위 쉼표. 로케일을 빼고 부르면 걸린다.
@@ -227,7 +247,7 @@ function lineOf(source, index) {
 }
 
 function collect() {
-  const findings = { r1: [], r2: [], r5: [], icon: [], number: [], cycle: [] };
+  const findings = { r1: [], r2: [], r5: [], icon: [], number: [], cycle: [], newtab: [] };
 
   for (const root of SCREEN_ROOTS) {
     for (const file of walk(join(ROOT, root))) {
@@ -256,6 +276,11 @@ function collect() {
         for (const m of code.matchAll(HEX)) {
           findings.r5.push({ file: rel, line: lineOf(code, m.index), value: m[0] });
         }
+      }
+
+      // 앱 밖으로 — 웹의 새 탭
+      for (const m of code.matchAll(WEB_NEW_TAB)) {
+        findings.newtab.push({ file: rel, line: lineOf(code, m.index), value: 'window.open(' });
       }
 
       // 로더 — 폐기된 순회 로더를 그리는가
@@ -321,6 +346,7 @@ const counts = {
   icon_line_icon_in_screens: findings.icon.length,
   number_localeless_tolocalestring: findings.number.length,
   loader_deprecated_cycle_loader: findings.cycle.length,
+  inapp_web_new_tab: findings.newtab.length,
 };
 
 if (process.argv.includes('--update')) {
@@ -351,7 +377,7 @@ try {
 }
 
 let failed = false;
-const show = { r1: findings.r1, r2: findings.r2, r5: findings.r5, icon: findings.icon, number: findings.number, cycle: findings.cycle };
+const show = { r1: findings.r1, r2: findings.r2, r5: findings.r5, icon: findings.icon, number: findings.number, cycle: findings.cycle, newtab: findings.newtab };
 
 for (const [key, count] of Object.entries(counts)) {
   const allowed = baseline[key] ?? 0;
@@ -377,4 +403,4 @@ if (failed) {
   process.exit(1);
 }
 
-console.log('\n최상위 정책 규칙 — 자동으로 재는 여섯은 baseline 아래다.');
+console.log('\n최상위 정책 규칙 — 자동으로 재는 일곱은 baseline 아래다.');
