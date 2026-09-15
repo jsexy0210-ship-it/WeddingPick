@@ -14,7 +14,12 @@ export { ThemedView, type ThemedViewProps } from './themed-view';
 export { ActionButton, type ActionButtonProps } from './action-button';
 export { FilterChip, type FilterChipProps } from './filter-chip';
 export { TextField, type TextFieldProps } from './text-field';
-export { Card, type CardProps } from './card';
+/*
+ * `Card`도 내보내지 않는다 — 부르는 화면이 0이다. 검색 · Pick · 홈 · 관리자가 전부
+ * 자기 카드를 따로 그린다(관리자는 `app/admin/_ui`). 유일한 사용처였던
+ * `vendor-card` · `pick-card`를 위에서 내리면서 완전히 고아가 됐다.
+ * **파일 삭제는 MASTER 몫** — `packages/ui/src/card.tsx`.
+ */
 export { IconButton, type IconButtonProps } from './icon-button';
 export { SectionHeader, type SectionHeaderProps } from './section-header';
 export { SearchBar, type SearchBarProps } from './search-bar';
