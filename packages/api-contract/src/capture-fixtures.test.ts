@@ -16,6 +16,7 @@ import { candidateListResponseSchema } from './candidates';
 import { consultationListResponseSchema } from './consultations';
 import { reviewListResponseSchema } from './reviews';
 import { signupStateSchema } from './signup';
+import { weddingFeedListResponseSchema } from './wedding-feed';
 import { weddingEventListResponseSchema } from './wedding-events';
 import { expenseSummaryResponseSchema } from './wedding-plan';
 import {
@@ -54,6 +55,7 @@ const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/vendors/:vendorId/images', vendorPhotosResponseSchema],
   ['GET /v1/vendors/:vendorId/conditions', conditionStatsSchema],
   ['GET /v1/vendors/:vendorId/reviews', reviewListResponseSchema],
+  ['GET /v1/wedding-feed', weddingFeedListResponseSchema],
 ]);
 
 /**
@@ -61,7 +63,11 @@ const CONTRACTS = new Map<string, ZodType>([
  * `apps/api`의 타입이 정하므로 여기서 검사할 스키마가 없다 — 그래도 **적어는
  * 둔다.** 빠뜨린 것과 일부러 뺀 것을 구별하려고.
  */
-const NO_CONTRACT = new Set(['GET /v1/admin/ads-gate', 'GET /v1/admin/ad-tiers']);
+const NO_CONTRACT = new Set([
+  'GET /v1/admin/ads-gate',
+  'GET /v1/admin/ad-tiers',
+  'GET /v1/admin/wedding-feed',
+]);
 
 /**
  * 함수 fixture는 한 번 불러 본다 — 조건 없이 부른 결과가 기본 응답이다.
