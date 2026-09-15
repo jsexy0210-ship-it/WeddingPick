@@ -6,6 +6,8 @@
  */
 import { useEffect, useState } from 'react';
 
+import { formatCount } from '@weddingpick/domain';
+
 import { formatMonthDayTimeDot } from '@/features/common/format-date';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
@@ -175,11 +177,11 @@ export default function AuditLogScreen() {
 
           <KpiRow
             items={[
-              { label: '기록', value: `${data.total.toLocaleString()}건`, note: `자동 ${byAi} · 사람 ${byHuman}` },
+              { label: '기록', value: `${formatCount(data.total)}건`, note: `자동 ${byAi} · 사람 ${byHuman}` },
               { label: '평균 confidence', value: avgConfidence.toFixed(2), note: '자동 판단 전체' },
               {
                 label: '되돌릴 수 있는 건',
-                value: `${revertable}건`,
+                value: `${formatCount(revertable)}건`,
                 note: items.length === 0 ? '기록이 없어요' : `이 목록의 ${((revertable / items.length) * 100).toFixed(1)}%`,
               },
               { label: '보관 기한', value: `${RETENTION_DAYS}일`, note: '이후 자동 삭제' },

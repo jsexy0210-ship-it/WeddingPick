@@ -10,6 +10,7 @@
  * **깊이다** — 조건이 비슷한 사례와 상세 분석.
  */
 
+import { formatCount } from './format-number';
 import { NOT_ENOUGH_DATA, TERMS } from './terms';
 
 /**
@@ -67,7 +68,7 @@ export function disclosureCaption(input: {
    * v3.3이 사용자 화면에서 `결제인증 N건`을 걷어냈고, v3.18부터는 `실 제보 N건`이다.
    * 안에서는 여전히 결제인증이고, 이 줄은 밖으로 나가는 말이다.
    */
-  const head = `${TERMS.verifiedData} ${input.count}건`;
+  const head = `${TERMS.verifiedData} ${formatCount(input.count)}건`;
 
   if (input.stage === 'collecting') return `${head} · 수집 중`;
   if (input.stage === 'limited') return `${head} · ${NOT_ENOUGH_DATA}`;

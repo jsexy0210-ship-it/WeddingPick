@@ -1,3 +1,4 @@
+import { formatCount } from './format-number';
 import { withSubject } from './korean';
 
 /**
@@ -158,5 +159,5 @@ export function reviewSummary(input: {
   if (input.hintCount === 0) return detected;
 
   // '1곳가'가 되지 않도록 조사는 앞말을 보고 고른다.
-  return `${detected} · 구조화 데이터에서 ${withSubject(`${input.hintCount}곳`)} 눈에 띔`;
+  return `${detected} · 구조화 데이터에서 ${withSubject(`${formatCount(input.hintCount)}곳`)} 눈에 띔`;
 }

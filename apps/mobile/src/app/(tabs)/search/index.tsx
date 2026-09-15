@@ -9,6 +9,7 @@ import {
   BUDGET_BANDS,
   type BudgetBandKey,
   DISCLOSURE_THRESHOLDS,
+  formatCount,
   priceLine,
   TERMS,
   type VendorCategory,
@@ -165,7 +166,9 @@ type EntryParams = { q?: string; category?: string; region?: string; sort?: stri
 /** 자동완성 «업체» 행과 결과 카드 아래 줄의 오른쪽 꼬리. 시안: «실 제보 12건» · 적으면 «3건». */
 function countTail(item: VendorSummary): string {
   const count = item.paidPrice.count;
-  return count >= DISCLOSURE_THRESHOLDS.limited ? `${TERMS.verifiedData} ${count}건` : `${count}건`;
+  return count >= DISCLOSURE_THRESHOLDS.limited
+    ? `${TERMS.verifiedData} ${formatCount(count)}건`
+    : `${formatCount(count)}건`;
 }
 
 export default function SearchScreen() {
@@ -882,7 +885,7 @@ export default function SearchScreen() {
         <View style={[styles.countRow, { backgroundColor: theme.background }]}>
           {/* 규격서: «12/500 #868B94 · lh 16». */}
           <ThemedText type="f12" themeColor="textAssistive" numeric style={styles.medium}>
-            {total}개 업체
+            {formatCount(total)}개 업체
           </ThemedText>
           <DelayedLoader active={refreshing} size={20} />
         </View>
@@ -976,7 +979,7 @@ export default function SearchScreen() {
             {renderSearchBox()}
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={activeFilterCount > 0 ? `필터 ${activeFilterCount}개 적용됨` : '필터'}
+              accessibilityLabel={activeFilterCount > 0 ? `필터 ${formatCount(activeFilterCount)}개 적용됨` : '필터'}
               onPress={() => setFilterOpen(true)}
               style={[styles.headerFilterBtn, { backgroundColor: theme.backgroundElement }]}>
               <FilterIcon color={theme.text} />

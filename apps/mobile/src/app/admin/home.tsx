@@ -23,6 +23,7 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AdminSpacing as A, Colors, FontSize, LineHeight, Radius } from '@weddingpick/ui';
+import { formatCount } from '@weddingpick/domain';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import {
@@ -254,7 +255,7 @@ export default function AdminHomeScreen() {
   const bannerTitle = urgent
     ? '되돌릴 수 없는 결정이 기다리고 있어요'
     : total > 0
-      ? `확인할 것이 ${total}건 있어요`
+      ? `확인할 것이 ${formatCount(total)}건 있어요`
       : '확인할 것이 없어요';
 
   const queueRows: RowItem[] = (data?.humanQueue ?? [])
@@ -265,7 +266,7 @@ export default function AdminHomeScreen() {
       name: item.label,
       meta: item.why,
       bold: true,
-      num: `${item.count}건`,
+      num: `${formatCount(item.count)}건`,
       numKind: QUEUE_TONE[item.tone],
       onPress: () => open(item.key),
     }));
@@ -274,7 +275,7 @@ export default function AdminHomeScreen() {
     key: seg.key,
     dot: seg.key === 'concluded' ? 'ok' : seg.key === 'failed' ? 'bad' : 'warn',
     name: seg.label,
-    num: `${seg.count}건`,
+    num: `${formatCount(seg.count)}건`,
     numKind: SEGMENT_KIND[seg.key],
   }));
 
@@ -343,13 +344,13 @@ export default function AdminHomeScreen() {
             detail={
               total === 0
                 ? '사람이 결정해야 하는 건을 모두 끝냈어요.'
-                : `모두 ${total}건 · 최근 24시간 판정 ${decided}건 중 ${auto.ratePct ?? 0}%가 자동으로 끝났어요.`
+                : `모두 ${formatCount(total)}건 · 최근 24시간 판정 ${formatCount(decided)}건 중 ${auto.ratePct ?? 0}%가 자동으로 끝났어요.`
             }
           />
 
           <CardGrid>
             {/* 1. 사람이 결정해야만 진행되는 것. 한 줄을 누르면 그 화면으로 간다. */}
-            <Card title="안대표가 볼 일" sub={`모두 ${total}건`}>
+            <Card title="안대표가 볼 일" sub={`모두 ${formatCount(total)}건`}>
               {total === 0 ? (
                 /* 빈 큐는 실패가 아니라 목표다(ADMIN.md 공통 규칙). */
                 <EmptyState
@@ -433,7 +434,7 @@ export default function AdminHomeScreen() {
 
           <Card
             title="워크플로별 자동 처리"
-            sub={`판정 유지율 ${auto.keepRatePct === null ? '—' : `${auto.keepRatePct}%`} · 되돌림 ${auto.revertedCount}건 · 판정 시간 중앙값 ${
+            sub={`판정 유지율 ${auto.keepRatePct === null ? '—' : `${auto.keepRatePct}%`} · 되돌림 ${formatCount(auto.revertedCount)}건 · 판정 시간 중앙값 ${
               auto.medianLatencyMs === null ? '—' : `${(auto.medianLatencyMs / 1000).toFixed(1)}초`
             }`}
             full

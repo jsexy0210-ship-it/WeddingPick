@@ -1,5 +1,5 @@
 import type { DecisionListResponse } from '@weddingpick/api-contract';
-import { TERMS, manwon } from '@weddingpick/domain';
+import { formatCount, TERMS, manwon } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -103,7 +103,7 @@ export default function DecidedVendorsScreen() {
                   title={S.expenses}
                   sub={
                     paid
-                      ? `${decision.expenses.paidCount}건${scheduled ? ` · 낼 금액 ${manwon(decision.expenses.scheduledTotal)}` : ''}`
+                      ? `${formatCount(decision.expenses.paidCount)}건${scheduled ? ` · 낼 금액 ${manwon(decision.expenses.scheduledTotal)}` : ''}`
                       : null
                   }
                   subLines={1}
