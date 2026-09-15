@@ -1,9 +1,9 @@
 import { RETENTION_POLICY } from '@weddingpick/domain';
 import type { Pool } from 'pg';
 
-import { createClaudeAnalyzer } from './analysis/claude-analyzer';
+import { createGeminiAnalyzer } from './analysis/gemini-analyzer';
 import { runForever } from './analysis/worker';
-import { createClaudeFeedWriter } from './analysis/wedding-feed-writer';
+import { createGeminiFeedWriter } from './analysis/wedding-feed-writer';
 import type { Config } from './config';
 import { createExpoPush } from './push/expo';
 import { sendPriceChangeNudges, sendTaskNudges } from './notify/nudges';
@@ -215,9 +215,9 @@ export function startWorkerLoops({ pool, storage, config, signal }: WorkerDeps):
   }, RETENTION_SWEEP_MS);
 
   /*
-   * 클로드로 쓴다(2026-09-15 대표 지시 — 제미나이는 녹음·OCR에만, `CLAUDE.md`
-   * 참고). 모델은 `claude-analyzer.ts`와 같은 설정(`config.analysisModel`)에서
-   * 온다 — 새 설정 칸을 만들지 않는다.
+   * 제미나이로 쓴다(2026-09-15 대표 지시 — 「클로드 API는 싹다 전면 폐기하고
+   * 제미나이로 명시해」). 모델은 `config.geminiModel`이다 — 분석 워커와 같은
+   * 칸을 쓴다. 새 설정 칸을 만들지 않는다.
    *
    * **기본은 꺼짐이다.** `WEDDING_FEED_AUTOWRITE=true`를 넣어야 이 루프가
    * 돈다 — 사람이 안 보는 동안에도 계속 글을 쓰는 자리라, 켜고 끄는 것은
@@ -228,6 +228,12 @@ export function startWorkerLoops({ pool, storage, config, signal }: WorkerDeps):
    * 이 루프 하나만 try/catch로 감싼다 — 한 바퀴가 실패해도 파기 정리 · 알림까지
    * 멈추면 안 된다.
    */
+  /*
+   * 제미나이 열쇠. **워커를 띄우는 쪽이 한 번만 읽는다** — 부르는 자리마다
+   * `process.env`를 다시 읽으면 어디서 빠졌는지 찾기 어려워진다.
+   */
+  const geminiApiKey = process.env.GEMINI_API_KEY ?? '';
+
   const feedAutowrite = process.env.WEDDING_FEED_AUTOWRITE === 'true';
 
   console.log(
@@ -240,11 +246,11 @@ export function startWorkerLoops({ pool, storage, config, signal }: WorkerDeps):
     ? setInterval(() => {
         void (async () => {
           try {
-            const model = config.analysisModel;
+            const model = config.geminiModel;
 
             const result = await runWeddingFeedGeneration({
               pool,
-              writer: createClaudeFeedWriter({ model }),
+              writer: createGeminiFeedWriter({ apiKey: geminiApiKey, model }),
               model,
               trigger: 'schedule',
             });
@@ -272,8 +278,8 @@ export function startWorkerLoops({ pool, storage, config, signal }: WorkerDeps):
     {
       pool,
       storage,
-      analyzer: createClaudeAnalyzer({ model: config.analysisModel }),
-      model: config.analysisModel,
+      analyzer: createGeminiAnalyzer({ apiKey: geminiApiKey, model: config.geminiModel }),
+      model: config.geminiModel,
       dailyCallLimit: config.aiDailyCallLimit,
     },
     { signal: controller.signal }

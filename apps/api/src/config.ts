@@ -73,13 +73,15 @@ const configSchema = z.object({
    */
   aiDailyCallLimit: z.coerce.number().int().min(0).optional(),
 
-  /**
-   * 문서를 읽는 모델.
+  /*
+   * **`analysisModel`은 없앴다**(2026-09-15 대표 지시 — 「클로드 API는 싹다 전면
+   * 폐기하고 제미나이로 명시해」). 클로드 모델 이름을 담던 칸이고, 부르는 코드가
+   * 하나도 남지 않았다. 빈 칸을 남겨 두면 다음 사람이 「여기 모델을 적으면 되나」
+   * 하고 클로드 이름을 다시 넣는다.
    *
-   * 결제내역 쪽과 같은 규칙으로 설정에 둔다(스펙 7.3 — 모델을 이름으로 박아두지
-   * 않는다). 여기 있어야 `ai_usage`에 적는 이름과 실제로 부른 이름이 갈라지지 않는다.
+   * 모델 이름은 아래 `geminiModel` 하나다 — 분석 · 결제 증빙 · 웨딩피드 · 녹음이
+   * 같은 칸을 본다.
    */
-  analysisModel: z.string().default('claude-opus-5'),
 
   /**
    * 상담기록·Pick 인증을 Gemini로 읽을 때 쓰는 모델.
@@ -149,7 +151,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     proofReaderCheapModel: env.PROOF_READER_CHEAP_MODEL,
     proofReaderStrongModel: env.PROOF_READER_STRONG_MODEL,
     aiDailyCallLimit: env.AI_DAILY_CALL_LIMIT,
-    analysisModel: env.ANALYSIS_MODEL,
     geminiModel: env.GEMINI_MODEL,
     corsOrigins: (env.CORS_ORIGINS ?? '')
       .split(',')
