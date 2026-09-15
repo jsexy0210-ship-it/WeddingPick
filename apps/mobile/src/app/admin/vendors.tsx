@@ -16,6 +16,7 @@ import {
 import { Colors, FontSize, Spacing } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { comma } from '@weddingpick/domain';
 
 type VendorStatus = 'active' | 'closed' | 'suspended' | 'merged';
 type HistoryItem = { at: string; action: string; note: string };
@@ -215,7 +216,7 @@ export default function VendorsScreen() {
               value={search}
               onChangeText={setSearch}
             />
-            <Text style={styles.totalText}>총 {data.total.toLocaleString()}개</Text>
+            <Text style={styles.totalText}>총 {comma(data.total)}개</Text>
           </View>
           <ScrollView>
             <View style={styles.tableHead}>

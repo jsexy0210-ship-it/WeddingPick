@@ -24,6 +24,7 @@ import {
   type Kind,
   type TableRow,
 } from './_ui';
+import { comma } from '@weddingpick/domain';
 
 type WorkflowStatus = 'healthy' | 'degraded' | 'down' | 'recovering';
 type Workflow = {
@@ -129,7 +130,7 @@ export default function AutomationScreen() {
     key: w.id,
     cells: [
       { v: w.name, bold: true, kind: 'none' },
-      { v: `${w.execToday.toLocaleString()}회` },
+      { v: `${comma(w.execToday)}회` },
       { v: `${(w.successRate * 100).toFixed(1)}%`, kind: w.successRate < 0.9 ? 'bad' : 'none' },
       { v: `${w.retryCount}회`, kind: w.retryCount > 0 ? 'warn' : 'dim' },
       { v: `${w.dlqSize}건`, kind: w.dlqSize > 0 ? 'bad' : 'dim' },

@@ -6,12 +6,13 @@
  * 세션 여럿이 「시안대로 맞췄다」고 보고했고 아무도 거짓말을 하지 않았다 — 두 화면을
  * 나란히 놓고 본 적이 없었을 뿐이다. 사람이 매번 세는 것은 언젠가 빠진다. 그래서 센다.
  *
- * 재는 것은 넷이다.
+ * 재는 것은 다섯이다.
  *
  *   R1      화면 코드에 hex를 직접 적지 않는다. 값은 SEED → spec/tokens.json → theme으로 온다.
  *   R1-아이콘 우리가 만든 선 아이콘(`CategoryIcon`)을 화면에 그리지 않는다. 피그마에 없다.
  *   R2      Pretendard만 쓴다. Noto Sans KR · Playfair Display · DM Mono는 코드에 없어야 한다.
  *   R5      로더 · 토스트 · 얼럿 · 컨펌은 색만 바꾼다 — 그 파일들에 생색이 있으면 안 된다.
+ *   숫자    천단위 쉼표. `toLocaleString()`을 로케일 없이 부르지 않는다 — `comma()`를 거친다.
  *
  * **주석은 세지 않는다.** 이것이 이 스크립트의 핵심이다. 단순 grep은 `circle-loader.tsx`를
  * 위반 3건으로 잡는데, 그 셋은 전부 「시안의 #eaebee와 같은 값」이라고 적어 둔 주석이고
@@ -79,6 +80,21 @@ const GUARDED = [
  */
 const LINE_ICON_ALLOWED = 'packages/ui/src/category-cycle-loader.tsx';
 const LINE_ICON_RENDER = /<CategoryIcon\b/g;
+
+/**
+ * 숫자 — 천단위 쉼표. 로케일을 빼고 부르면 걸린다.
+ *
+ * 2026-09-15 대표 지시 「항상 모든 숫자는 천단위 [,] 처리한다」. `toLocaleString()`을
+ * 로케일 없이 부르면 기기 설정을 따라가고, **독일어 기기에서 `1,234`가 `1.234`가 된다** —
+ * 천을 나타내는 쉼표가 소수점으로 읽힌다. 우리 기기에서는 재현되지 않고 오류도 나지
+ * 않아서, 사람이 보는 것으로는 절대 안 잡힌다. 그래서 센다.
+ *
+ * 고치는 법은 `comma()`(`@weddingpick/domain` `korean.ts`)를 거치는 것이다.
+ */
+const LOCALELESS_NUMBER = /\.toLocaleString\(\s*\)/g;
+
+/** 숫자는 화면 밖에서도 만들어진다 — 웹 문자열 · domain 문구까지 훑는다. */
+const NUMBER_ROOTS = ['apps/mobile/src', 'packages/ui/src', 'apps/web/src', 'packages/domain/src'];
 
 /**
  * 주석과 문자열을 걷어낸다.
@@ -194,7 +210,7 @@ function lineOf(source, index) {
 }
 
 function collect() {
-  const findings = { r1: [], r2: [], r5: [], icon: [] };
+  const findings = { r1: [], r2: [], r5: [], icon: [], number: [] };
 
   for (const root of SCREEN_ROOTS) {
     for (const file of walk(join(ROOT, root))) {
@@ -234,6 +250,20 @@ function collect() {
     }
   }
 
+  /*
+   * 숫자는 화면 코드 밖에서도 만들어진다 — 웹의 문자열 템플릿 · domain의 문구.
+   * 그래서 이 하나만 더 넓게 훑는다.
+   */
+  for (const root of NUMBER_ROOTS) {
+    for (const file of walk(join(ROOT, root))) {
+      const rel = relative(ROOT, file).split('\\').join('/');
+      const code = stripComments(readFileSync(file, 'utf8'));
+      for (const m of code.matchAll(LOCALELESS_NUMBER)) {
+        findings.number.push({ file: rel, line: lineOf(code, m.index), value: 'toLocaleString()' });
+      }
+    }
+  }
+
   return findings;
 }
 
@@ -267,6 +297,7 @@ const counts = {
   r2_forbidden_fonts: findings.r2.length + stackProblems.length,
   r5_raw_color_in_guarded: findings.r5.length,
   icon_line_icon_in_screens: findings.icon.length,
+  number_localeless_tolocalestring: findings.number.length,
 };
 
 if (process.argv.includes('--update')) {
@@ -297,7 +328,7 @@ try {
 }
 
 let failed = false;
-const show = { r1: findings.r1, r2: findings.r2, r5: findings.r5, icon: findings.icon };
+const show = { r1: findings.r1, r2: findings.r2, r5: findings.r5, icon: findings.icon, number: findings.number };
 
 for (const [key, count] of Object.entries(counts)) {
   const allowed = baseline[key] ?? 0;
@@ -323,4 +354,4 @@ if (failed) {
   process.exit(1);
 }
 
-console.log('\n최상위 정책 규칙 — 자동으로 재는 셋은 baseline 아래다.');
+console.log('\n최상위 정책 규칙 — 자동으로 재는 다섯은 baseline 아래다.');

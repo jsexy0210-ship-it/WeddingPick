@@ -21,6 +21,7 @@ import {
   type Kind,
   type TableRow,
 } from './_ui';
+import { comma } from '@weddingpick/domain';
 
 type Decision = 'approved' | 'rejected' | 'escalated' | 'skipped';
 type AuditEvent = {
@@ -175,7 +176,7 @@ export default function AuditLogScreen() {
 
           <KpiRow
             items={[
-              { label: '기록', value: `${data.total.toLocaleString()}건`, note: `자동 ${byAi} · 사람 ${byHuman}` },
+              { label: '기록', value: `${comma(data.total)}건`, note: `자동 ${byAi} · 사람 ${byHuman}` },
               { label: '평균 confidence', value: avgConfidence.toFixed(2), note: '자동 판단 전체' },
               {
                 label: '되돌릴 수 있는 건',

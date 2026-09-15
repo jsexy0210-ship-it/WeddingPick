@@ -76,3 +76,24 @@ export function withObject(word: string): string {
 export function withInstrument(word: string): string {
   return `${word}${instrumentParticle(word)}`;
 }
+
+/**
+ * 숫자를 천단위 쉼표로 적는다.
+ *
+ * 2026-09-15 대표 지시 — 「항상 모든 숫자는 천단위 [,] 처리한다」. 사용자 화면과
+ * 관리자 화면 전부다.
+ *
+ * **로케일을 못 박는 것이 이 함수가 있는 이유다.** `toLocaleString()`을 로케일 없이
+ * 부르면 기기 설정을 따라가고, 독일어 기기에서는 `1234`가 `1.234`가 된다 — 천을
+ * 나타내는 쉼표가 소수점이 되어 **1,234가 1.234로 읽힌다.** 아무 오류도 나지 않고
+ * 우리 화면에서는 재현되지 않으므로, 쓰는 자리마다 로케일을 적기를 기대하지 않고
+ * 함수 하나로 막는다.
+ *
+ * 숫자가 아닌 값(NaN · Infinity)은 그대로 문자열로 돌려준다 — 「NaN」이 화면에
+ * 보이는 것이 조용히 0으로 바뀌는 것보다 낫다.
+ */
+export function comma(value: number): string {
+  if (!Number.isFinite(value)) return String(value);
+
+  return value.toLocaleString('ko-KR');
+}

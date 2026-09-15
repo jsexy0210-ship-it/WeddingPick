@@ -21,6 +21,7 @@ import {
   type RowItem,
   type Tone,
 } from './_ui';
+import { comma } from '@weddingpick/domain';
 
 type RiskItem = { id: string; category: string; description: string; severity: 'high' | 'medium' | 'low' };
 type Anomaly = { time: string; description: string };
@@ -155,7 +156,7 @@ export default function BriefingScreen() {
 
           <KpiRow
             items={[
-              { label: '자동처리', value: `${data.autoProcessed.toLocaleString()}건` },
+              { label: '자동처리', value: `${comma(data.autoProcessed)}건` },
               {
                 /*
                  * `successRate`는 0~1 비율이다 — `admin-ops.ts`가
@@ -166,7 +167,7 @@ export default function BriefingScreen() {
                 value: `${(data.successRate * 100).toFixed(1)}%`,
                 kind: data.successRate < 0.9 ? 'bad' : 'ok',
               },
-              { label: '자동복구', value: `${data.autoRecovered.toLocaleString()}건`, kind: 'ok' },
+              { label: '자동복구', value: `${comma(data.autoRecovered)}건`, kind: 'ok' },
               {
                 label: '미해결 리스크',
                 value: `${data.unresolvedRisks.length}건`,

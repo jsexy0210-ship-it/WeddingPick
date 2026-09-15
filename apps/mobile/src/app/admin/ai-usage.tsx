@@ -8,6 +8,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { comma } from '@weddingpick/domain';
 
 type ModelStat = {
   model: string;
@@ -95,11 +96,11 @@ export default function AiUsageScreen() {
                 <Text style={styles.modelName} numberOfLines={1}>{m.model}</Text>
                 <Text style={styles.providerName}>{m.provider}</Text>
               </View>
-              <Text style={[styles.td, styles.colCalls]}>{m.callCount.toLocaleString()}</Text>
+              <Text style={[styles.td, styles.colCalls]}>{comma(m.callCount)}</Text>
               <Text style={[styles.td, styles.colSuccess, m.successRate < 0.95 && { color: Colors.light.negative }]}>
                 {(m.successRate * 100).toFixed(1)}%
               </Text>
-              <Text style={[styles.td, styles.colLatency]}>{m.avgLatencyMs.toLocaleString()}</Text>
+              <Text style={[styles.td, styles.colLatency]}>{comma(m.avgLatencyMs)}</Text>
               <Text style={[styles.td, styles.colEdit, m.userEditRate > 0.3 && { color: Colors.light.cautionary }]}>
                 {(m.userEditRate * 100).toFixed(1)}%
               </Text>

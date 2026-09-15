@@ -23,6 +23,7 @@ import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { formatDateDot } from '@/features/common/format-date';
+import { comma } from '@weddingpick/domain';
 
 type WithdrawalStatus = 'hold' | 'failed' | 'pending' | 'deletion_pending';
 type UserRecord = {
@@ -223,7 +224,7 @@ export default function UsersScreen() {
                 </Pressable>
               ))}
             </View>
-            <Text style={styles.totalText}>총 {data.total.toLocaleString()}명</Text>
+            <Text style={styles.totalText}>총 {comma(data.total)}명</Text>
           </View>
           <ScrollView>
             <View style={styles.tableHead}>
