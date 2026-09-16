@@ -92,20 +92,33 @@ export function MarketingPanel() {
     return () => { cancelled = true; };
   }, [rev]);
 
+  const [actionNote, setActionNote] = useState<string | null>(null);
+
   const reload = () => setRev((r) => r + 1);
 
+  /*
+   * 삼키지 않는다. 「다시 불러오면 실제 상태가 드러난다」는 것은 성공했을 때 얘기고,
+   * 실패하면 목록이 그대로라 「눌렀는데 아무 일도 안 일어난다」로만 보인다 —
+   * 서버가 거절한 것인지 내가 잘못 본 것인지 알 수가 없다. 이유를 그대로 적는다.
+   */
   async function retry(id: string) {
+    setActionNote(null);
     try {
       await apiFetch(`/v1/admin/marketing/${id}/retry`, { method: 'POST' });
       reload();
-    } catch { /* 다시 불러오면 실제 상태가 드러난다 */ }
+    } catch (e) {
+      setActionNote(e instanceof Error ? e.message : '다시 보내지 못했어요');
+    }
   }
 
   async function simulate(id: string) {
+    setActionNote(null);
     try {
       await apiFetch(`/v1/admin/marketing/${id}/simulate`, { method: 'POST' });
       reload();
-    } catch { /* 위와 같다 */ }
+    } catch (e) {
+      setActionNote(e instanceof Error ? e.message : '모의 실행하지 못했어요');
+    }
   }
 
   /** 실패한 것은 다시 보내고, 대기 중인 것은 모의 실행한다. 끝난 것은 누를 것이 없다. */
@@ -144,12 +157,22 @@ export function MarketingPanel() {
 
       {!loading && !error && data ? (
         <>
+          {/* 처리가 거절당하면 그 이유부터 맨 위에 — v3.27 「지금 봐야 할 것이 맨 위」. */}
+          {actionNote ? (
+            <StatusBanner
+              tone="bad"
+              title="처리하지 못했어요"
+              detail={actionNote}
+              cta={{ label: '닫기', onPress: () => setActionNote(null) }}
+            />
+          ) : null}
+
           <StatusBanner
             tone={failed === 0 ? 'ok' : failRate > FAIL_RATE_CEILING ? 'bad' : 'warn'}
             title={
               failed === 0
                 ? '멈춘 소재가 없어요'
-                : `실패한 소재 ${failed}건이 있어요`
+                : `실패한 소재 ${formatCount(failed)}건이 있어요`
             }
             detail={
               failed === 0

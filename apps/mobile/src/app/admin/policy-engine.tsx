@@ -12,7 +12,7 @@ import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, TextInput } from 'react-native';
 
-import { withParticle } from '@weddingpick/domain';
+import { formatCount, withParticle } from '@weddingpick/domain';
 import { Colors, FontSize, LineHeight, Radius, Spacing } from '@weddingpick/ui';
 
 import { formatDateTimeDot } from '@/features/common/format-date';
@@ -166,7 +166,7 @@ export function PolicyEnginePanel() {
                 ? '저장하지 못했어요'
                 : changed.length === 0
                   ? '저장하지 않은 변경이 없어요'
-                  : `저장하지 않은 변경 ${changed.length}건이 있어요`
+                  : `저장하지 않은 변경 ${formatCount(changed.length)}건이 있어요`
             }
             detail={
               saveError
@@ -218,7 +218,7 @@ export function PolicyEnginePanel() {
 
           {confirming ? (
             <ConfirmCard
-              title={`변경 ${changed.length}건을 저장할까요?`}
+              title={`변경 ${formatCount(changed.length)}건을 저장할까요?`}
               body="저장하는 즉시 자동 판단이 새 값으로 움직여요."
               items={changed.map((p) => `${p.label} ${p.value} → ${draft[p.key]}`)}
               cta="저장"

@@ -26,6 +26,27 @@
 
 광고는 특히 위험하다 — 「광고를 껐다」고 믿는데 안 꺼져 있는 상태가 가능하다.
 
+### 정정 (2026-09-16 · 고치는 세션이 재서 확인) — 「쓰기 단추가 살아 있고」는 틀렸다
+
+**여섯 중 어느 것도 화면이 부르지 않는다.** 네 화면의 `apiFetch` 호출을 전부 세어 봤다.
+
+    ads.tsx        GET /v1/admin/ads · PATCH /v1/admin/ads/:id/status      ← 둘 다 진짜다
+    ads-gate.tsx   GET ads-gate · GET/PUT/DELETE ad-tiers · POST ads-gate/:kind
+    automation.tsx GET automation · POST automation/:id/recover|drain-dlq
+    campaigns.tsx  GET campaigns · POST campaigns/:id/pay|block
+
+네 화면의 `onPress` 열넷도 전부 위 라우트로 간다. **없는 단추가 없다** — 그래서 잠글
+것도 없고, `BACKEND_PENDING`을 붙일 자리도 없었다.
+
+**그렇다고 위험이 없던 것은 아니다.** 여섯은 관리자 로그인을 지난 사람이면
+누구나 부를 수 있는 **HTTP 표면**이었고, 부르면 성공을 돌려줬다. 화면이 아니라
+도구·스크립트·다음에 단추를 다는 사람이 그것을 믿는다 — FAQ 다섯이 정확히 그렇게
+당했다(`routes/admin.ts`의 FAQ 주석).
+
+**셈이 틀린 이유를 적어 둔다.** 「DB를 안 만지는 라우트」와 「화면에 잠금이 없는
+화면」을 따로 세어 같은 줄에 놓았다. 둘 다 맞는 셈이지만 **그 둘이 같은 자리를
+가리키는지는 세지 않았다** — 라우트가 어느 화면에서 불리는지를 세야 했다.
+
 ## 라우트가 아예 없는 것 하나
 
 | 화면이 부르는 것 | 서버 |

@@ -96,6 +96,7 @@ function FaqPanel() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   /*
    * 지우기 전에 무엇이 사라지는지 보여준다(CLAUDE.md 관리자 공통 규칙 — 「위험한
    * 조작은 무엇이 바뀌는지 항목으로 보여준 뒤 한 번 더 확인」). 전에는 단추 한 번에
@@ -165,16 +166,30 @@ function FaqPanel() {
   async function deleteFaq(item: FaqItem) {
     setAsking(null);
     setDeleting(item.id);
+    setDeleteError(null);
     try {
       await apiFetch(`/v1/admin/faq/${item.id}`, { method: 'DELETE' });
       setRev((r) => r + 1);
     } catch (e) {
-      /* 조용히 삼키면 목록이 그대로라 「지워졌는데 화면이 안 바뀐 것」으로 읽힌다. */
-      setError(e instanceof Error ? e.message : '삭제하지 못했어요.');
-    } finally {
-      setDeleting(null);
-    }
+      /*
+       * 삼키지 않는다. 지우지 못했는데 목록이 그대로면 운영자에게는 「눌렀는데
+       * 아무 일도 안 일어난다」로만 보인다 — 서버가 거절한 것인지 내가 잘못 본
+       * 것인지 알 수가 없다. 이유를 그대로 적는다.
+       */
+      setDeleteError(e instanceof Error ? e.message : '삭제 실패');
+    } finally { setDeleting(null); }
   }
+
+  /*
+   * 고를 수 있는 묶음. 서버가 준 목록에 지금 화면에 떠 있는 묶음을 합친다.
+   *
+   * **예전에는 「코드에 있는 항목」 묶음을 여기서 뺐다.** 코드에 든 FAQ가 그 이름으로
+   * 겹쳐 오고 거기에는 새로 넣을 수 없었기 때문이다. 2026-09-16 대표 지시로 그 항목이
+   * 전부 표로 내려와서 **뺄 묶음이 없다** — 보이는 묶음은 전부 실제로 넣을 수 있다.
+   */
+  const categoryChoices = Array.from(
+    new Set([...(data?.categories ?? []), ...(data?.items ?? []).map((i) => i.category)])
+  ).filter(Boolean);
 
   const grouped = data?.items.reduce<Record<string, FaqItem[]>>((acc, item) => {
     const cat = item.category || '기타';
@@ -202,6 +217,12 @@ function FaqPanel() {
           <Pressable style={styles.retryBtn} onPress={() => setRev((r) => r + 1)}>
             <Text style={styles.retryText}>다시 시도</Text>
           </Pressable>
+        </View>
+      )}
+
+      {deleteError && (
+        <View style={styles.actionErrorBox}>
+          <Text style={styles.actionErrorText}>{deleteError}</Text>
         </View>
       )}
 
@@ -251,11 +272,37 @@ function FaqPanel() {
             {editing && (
               <>
                 <Text style={styles.fieldLabel}>카테고리</Text>
+                {/*
+                  * **이미 있는 묶음에서 고른다.** 예전에는 빈 칸에 직접 적었는데,
+                  * 이 화면도 사용자 FAQ도 이 «글자»로 묶는다 — 「예약」을 「예약 」이나
+                  * 「에약」으로 적으면 그 글이 아무 묶음에도 들어가지 않고 혼자 새
+                  * 묶음을 만든다. 웨딩피드 카테고리가 같은 꼴로 사고를 냈다.
+                  *
+                  * 목록은 서버가 이미 보내준다(`categories`) — 화면이 안 쓰고 있었다.
+                  * 새 묶음이 필요한 때는 있으므로 직접 적는 길은 남기되, 고르는 쪽을
+                  * 먼저 보여준다.
+                  */}
+                {categoryChoices.length > 0 && (
+                  <View style={styles.categoryChips}>
+                    {categoryChoices.map((c) => {
+                      const on = editing.category === c;
+                      return (
+                        <Pressable
+                          key={c}
+                          style={[styles.categoryChip, on && styles.categoryChipOn]}
+                          onPress={() => setEditing((prev) => prev ? { ...prev, category: c } : prev)}
+                        >
+                          <Text style={[styles.categoryChipText, on && styles.categoryChipTextOn]}>{c}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                )}
                 <TextInput
                   style={styles.fieldInput}
                   value={editing.category}
                   onChangeText={(v) => setEditing((prev) => prev ? { ...prev, category: v } : prev)}
-                  placeholder="카테고리명"
+                  placeholder="위에서 고르거나, 새 묶음이면 직접 적어주세요"
                 />
                 <Text style={styles.fieldLabel}>질문</Text>
                 <TextInput
@@ -454,6 +501,30 @@ const styles = StyleSheet.create({
     borderColor: Colors.light.negativeBorder,
   },
   deleteBtnText: { fontSize: FontSize.tab, color: Colors.light.negative, fontWeight: '700' },
+  /* 삭제 실패를 적는 자리. 목록 위에 걸려 무엇이 안 됐는지 먼저 읽힌다. */
+  actionErrorBox: {
+    marginHorizontal: 24,
+    marginBottom: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 6,
+    backgroundColor: Colors.light.negativeBoxBackground,
+    borderWidth: 1,
+    borderColor: Colors.light.negativeBorder,
+  },
+  actionErrorText: { fontSize: FontSize.t7, color: Colors.light.negative, fontWeight: '600' },
+  categoryChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  categoryChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.light.track,
+    backgroundColor: Colors.light.background,
+  },
+  categoryChipOn: { backgroundColor: Colors.light.tint, borderColor: Colors.light.tint },
+  categoryChipText: { fontSize: FontSize.tab, color: Colors.light.textSecondary },
+  categoryChipTextOn: { color: Colors.light.onTint, fontWeight: '700' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
   modalBox: { backgroundColor: Colors.light.background, borderRadius: 14, padding: 24, width: 520, maxHeight: '85%' },
   modalTitle: { fontSize: FontSize.t5, fontWeight: '700', color: Colors.light.text, marginBottom: 16 },

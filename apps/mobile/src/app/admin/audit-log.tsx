@@ -166,7 +166,7 @@ export function AuditLogPanel() {
                 ? '남은 기록이 없어요'
                 : revertable === items.length
                   ? '모든 기록을 되돌릴 수 있어요'
-                  : `되돌릴 수 없는 기록 ${items.length - revertable}건이 있어요`
+                  : `되돌릴 수 없는 기록 ${formatCount(items.length - revertable)}건이 있어요`
             }
             detail={
               items.length === 0
