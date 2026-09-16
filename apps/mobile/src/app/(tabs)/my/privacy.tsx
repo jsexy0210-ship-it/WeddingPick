@@ -112,7 +112,7 @@ export default function PrivacyScreen() {
               variant="primary"
               label="전문 보기"
               onPress={() => {
-                void openExternal(policy.url!);
+                void openExternal(policy.url!, { title: policy.title });
               }}
             />
           ) : null}

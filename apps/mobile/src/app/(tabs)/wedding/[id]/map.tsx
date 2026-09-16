@@ -1,7 +1,7 @@
 import { VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -16,6 +16,7 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
+import { openExternal } from '@/features/open-external';
 import { getMapVendors } from '@/api/client';
 import { BackBar } from '@/components/back-bar';
 
@@ -78,7 +79,8 @@ export default function WeddingMapScreen() {
 
   function openKakao(vendor: PinnedVendor) {
     const q = encodeURIComponent(`${vendor.vendorName} ${vendor.address}`);
-    void Linking.openURL(`https://map.kakao.com/?q=${q}`);
+    /* 지도 앱에 넘기는 자리다 — 앱 안에 가두면 길 찾기를 못 한다(CLAUDE.md 「지도와 달력은 이 규칙의 예외다」). */
+    void openExternal(`https://map.kakao.com/?q=${q}`, { handOff: true });
   }
 
   return (

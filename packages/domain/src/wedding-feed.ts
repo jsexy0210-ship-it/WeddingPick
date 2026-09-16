@@ -85,60 +85,27 @@ export const WEDDING_FEED_TOPICS: readonly WeddingFeedTopic[] = [
 ];
 
 /**
- * 화면 위 탭 넷 — **전체 · 준비·예산 · 업체·서비스 · 계약·여행**(2026-09-16 대표 지시).
+ * 화면 위 탭 — **전체 · 준비·예산 · 업체·서비스 · 계약·여행**(2026-09-16 대표 지시).
  *
- * 카테고리가 열셋이라 그대로 세우면 탭이 열셋이 된다. 대표님 말씀 그대로다 —
- * 「카테고리가 너무 많다 … 사용자가 웨딩 준비보다 탭 읽다가 지칩니다」.
+ * **값은 더 이상 여기 없다.** 2026-09-16까지 `WEDDING_FEED_GROUPS` 상수가 탭 넷을
+ * 들고 있었고, 바꾸려면 코드를 고쳐 배포해야 했다. 같은 날 대표 지시 「웨딩피드는
+ * 탭별 카테고리별로 다 설정 가능해야한다」로 표(0421)로 옮겼다 — 씨앗값이 그 상수와
+ * 글자 하나까지 같아서 옮긴 직후 화면이 그대로다.
  *
- * ```
- * [ 전체 ]　[ 준비·예산 ]　[ 업체·서비스 ]　[ 계약·여행 ]
- * ```
- *
- * **웨딩홀 · 스튜디오 · 드레스를 각각 위로 올리지 않는다**(같은 지시). 일곱이 전부
- * 「어느 업체를 고르나」 하나라서 묶으면 하나로 읽히고, 풀면 탭 줄이 넘친다.
+ * 옮기면서 남긴 판단은 그대로 유효하다. **웨딩홀 · 스튜디오 · 드레스를 각각 위로
+ * 올리지 않는다** — 일곱이 전부 「어느 업체를 고르나」 하나라서 묶으면 하나로 읽히고,
+ * 풀면 탭 줄이 넘친다(대표님 말씀 — 「카테고리가 너무 많다 … 사용자가 웨딩 준비보다
+ * 탭 읽다가 지칩니다」). 이제는 그것이 규칙이 아니라 **운영자가 표에서 정하는 값**이다.
  *
  * **카드의 배지는 원래 카테고리명 그대로다.** 탭은 추리는 도구이고 배지는 무엇에 관한
  * 글인지를 말한다 — 배지까지 「업체·서비스」로 바꾸면 카드 세 장이 같은 말을 달게 된다.
- * 그래서 이 그룹은 `categoryLabel`을 대체하지 않고 그 위에 한 겹 얹는다.
+ * 그래서 탭은 `categoryLabel`을 대체하지 않고 그 위에 한 겹 얹는다.
  *
- * **`WEDDING_FEED_TOPICS`의 카테고리가 모두 어느 한 그룹에 든다** — 시험이 그것을 센다.
- * 주제를 더하면서 그룹에 안 넣으면 그 글은 「전체」에서만 보이고 탭 셋 어디에도 안 나온다.
+ * 아래 `WEDDING_FEED_ALL_TAB` · `buildFeedTabs` · `findUngroupedCategories`가 그
+ * 모양과 규칙을 잇는다. **「모든 카테고리가 어느 탭에 드는가」를 세던 시험도 옮겼다** —
+ * 상수를 세는 것은 늘 맞고, 틀릴 수 있는 것은 운영자가 고친 뒤의 표다
+ * (`packages/db/src/wedding-feed-taxonomy.test.ts`).
  */
-export type WeddingFeedGroupKey = 'all' | 'prep' | 'vendor' | 'contract';
-
-export type WeddingFeedGroup = {
-  key: WeddingFeedGroupKey;
-  label: string;
-  /** 이 그룹에 드는 `categoryLabel`들. `all`은 비어 있고 «전부»라는 뜻이다. */
-  categories: readonly string[];
-};
-
-export const WEDDING_FEED_GROUPS: readonly WeddingFeedGroup[] = [
-  { key: 'all', label: '전체', categories: [] },
-  {
-    key: 'prep',
-    label: '준비·예산',
-    categories: ['예산', '체크리스트', '준비 순서', '하객'],
-  },
-  {
-    key: 'vendor',
-    label: '업체·서비스',
-    categories: ['웨딩홀', '스튜디오', '드레스', '메이크업', '본식스냅', '헤어변형', '결정사'],
-  },
-  { key: 'contract', label: '계약·여행', categories: ['계약', '허니문'] },
-];
-
-/**
- * 이 글이 그 탭에 드는가. `all`은 언제나 참이다.
- *
- * 그룹에 없는 카테고리는 **어느 탭에도 안 든다** — 「전체」에서만 보인다. 조용히 아무
- * 그룹에나 넣는 것보다 낫다. 넣어 두면 어느 탭에 잘못 들어갔는지를 아무도 모른다.
- */
-export function inWeddingFeedGroup(categoryLabel: string, group: WeddingFeedGroupKey): boolean {
-  if (group === 'all') return true;
-
-  return WEDDING_FEED_GROUPS.find((g) => g.key === group)?.categories.includes(categoryLabel) ?? false;
-}
 
 /**
  * 공개된 글이 이보다 적으면 자동 작성이 돈다.
@@ -226,4 +193,108 @@ export function shouldGenerate(input: {
   if (input.draftCount >= WEDDING_FEED_PER_RUN) return false;
 
   return pickTopics(input.usedTopics, 1).length > 0;
+}
+
+/**
+ * ── 탭과 카테고리 ─────────────────────────────────────────────────────────
+ *
+ * 2026-09-16 대표 지시 — 「웨딩피드는 탭별 카테고리별로 다 설정 가능해야한다」.
+ *
+ * **값은 여기 없다.** 탭과 카테고리는 `structured.wedding_feed_groups` ·
+ * `structured.wedding_feed_categories`에 있고(0421) 관리자가 고친다. 여기 남는
+ * 것은 값이 아니라 **모양과 규칙**이다 — 서버 · 관리자 · 앱이 같은 것을 본다.
+ */
+
+/**
+ * 「전체」 탭.
+ *
+ * **표에 넣지 않고 여기 둔다.** 다른 탭은 「이 카테고리들을 보여준다」인데 이것은
+ * 「거르지 않는다」라서 담을 카테고리가 없다. 순서를 바꾸거나 꺼야 할 이유도 없다 —
+ * 끄면 사용자가 글 전체를 볼 방법이 사라지고, 그것은 설정이 아니라 고장이다.
+ *
+ * 표에 두면 「모든 카테고리는 어느 탭에 드는가」를 볼 때마다 이 한 줄만 빼고 세야
+ * 한다. 규칙에 예외를 하나 만드는 것보다 규칙 밖에 두는 편이 낫다.
+ */
+export const WEDDING_FEED_ALL_TAB = { key: 'all', label: '전체' } as const;
+
+export type WeddingFeedGroup = {
+  id: string;
+  name: string;
+  sortOrder: number;
+  active: boolean;
+};
+
+export type WeddingFeedCategory = {
+  id: string;
+  name: string;
+  /** 어느 탭인가. 탭이 지워지면 null이 된다 — 그 상태를 보이게 두는 것이 요점이다. */
+  groupId: string | null;
+  sortOrder: number;
+  active: boolean;
+};
+
+/** 탭 이름·카테고리 이름의 한도. 탭 줄에 들어가는 길이라 카테고리와 같이 둔다. */
+export const WEDDING_FEED_TAXONOMY_LIMITS = {
+  groupName: 20,
+  categoryName: WEDDING_FEED_LIMITS.categoryLabel,
+} as const;
+
+/**
+ * 어느 탭에도 안 든 카테고리.
+ *
+ * **이것이 이 파일에서 가장 중요한 함수다.** 카테고리가 탭에서 떨어지면 그 값으로
+ * 쌓인 글은 「전체」에서만 보인다 — 오류도 안 나고 목록에서는 멀쩡해 보여서,
+ * 운영자가 「왜 이 글이 탭에 안 뜨지」를 묻기 전까지 아무도 모른다. 관리자 화면이
+ * 이 목록을 경고로 띄운다.
+ *
+ * **꺼진 카테고리는 세지 않는다.** 꺼 둔 것은 애초에 앱에 안 나가므로 탭이 없어도
+ * 달라지는 것이 없다 — 그것까지 경고하면 경고가 늘 켜져 있고, 늘 켜져 있는 경고는
+ * 아무도 읽지 않는다.
+ */
+export function findUngroupedCategories(
+  categories: readonly WeddingFeedCategory[]
+): readonly WeddingFeedCategory[] {
+  return categories.filter((category) => category.active && category.groupId === null);
+}
+
+/**
+ * 탭 하나에 붙는 카테고리 이름들. 꺼진 것은 빠지고 순서대로 나온다.
+ *
+ * 앱은 이 이름으로 글을 거른다 — 글이 들고 있는 것이 `categoryLabel` 문자열이라서다.
+ */
+export function categoryNamesOfGroup(
+  group: WeddingFeedGroup,
+  categories: readonly WeddingFeedCategory[]
+): readonly string[] {
+  return categories
+    .filter((category) => category.active && category.groupId === group.id)
+    .slice()
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((category) => category.name);
+}
+
+/**
+ * 앱이 그릴 탭 줄.
+ *
+ * **카테고리가 하나도 없는 탭은 뺀다.** 눌렀는데 늘 비어 있는 탭은 있는 것이
+ * 없는 것보다 나쁘다. 「전체」는 언제나 맨 앞이고 언제나 있다.
+ */
+export type WeddingFeedTab = { key: string; label: string; categories: readonly string[] };
+
+export function buildFeedTabs(
+  groups: readonly WeddingFeedGroup[],
+  categories: readonly WeddingFeedCategory[]
+): readonly WeddingFeedTab[] {
+  const tabs = groups
+    .filter((group) => group.active)
+    .slice()
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((group) => ({
+      key: group.id,
+      label: group.name,
+      categories: categoryNamesOfGroup(group, categories),
+    }))
+    .filter((tab) => tab.categories.length > 0);
+
+  return [{ key: WEDDING_FEED_ALL_TAB.key, label: WEDDING_FEED_ALL_TAB.label, categories: [] }, ...tabs];
 }
