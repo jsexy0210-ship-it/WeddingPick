@@ -85,6 +85,62 @@ export const WEDDING_FEED_TOPICS: readonly WeddingFeedTopic[] = [
 ];
 
 /**
+ * 화면 위 탭 넷 — **전체 · 준비·예산 · 업체·서비스 · 계약·여행**(2026-09-16 대표 지시).
+ *
+ * 카테고리가 열셋이라 그대로 세우면 탭이 열셋이 된다. 대표님 말씀 그대로다 —
+ * 「카테고리가 너무 많다 … 사용자가 웨딩 준비보다 탭 읽다가 지칩니다」.
+ *
+ * ```
+ * [ 전체 ]　[ 준비·예산 ]　[ 업체·서비스 ]　[ 계약·여행 ]
+ * ```
+ *
+ * **웨딩홀 · 스튜디오 · 드레스를 각각 위로 올리지 않는다**(같은 지시). 일곱이 전부
+ * 「어느 업체를 고르나」 하나라서 묶으면 하나로 읽히고, 풀면 탭 줄이 넘친다.
+ *
+ * **카드의 배지는 원래 카테고리명 그대로다.** 탭은 추리는 도구이고 배지는 무엇에 관한
+ * 글인지를 말한다 — 배지까지 「업체·서비스」로 바꾸면 카드 세 장이 같은 말을 달게 된다.
+ * 그래서 이 그룹은 `categoryLabel`을 대체하지 않고 그 위에 한 겹 얹는다.
+ *
+ * **`WEDDING_FEED_TOPICS`의 카테고리가 모두 어느 한 그룹에 든다** — 시험이 그것을 센다.
+ * 주제를 더하면서 그룹에 안 넣으면 그 글은 「전체」에서만 보이고 탭 셋 어디에도 안 나온다.
+ */
+export type WeddingFeedGroupKey = 'all' | 'prep' | 'vendor' | 'contract';
+
+export type WeddingFeedGroup = {
+  key: WeddingFeedGroupKey;
+  label: string;
+  /** 이 그룹에 드는 `categoryLabel`들. `all`은 비어 있고 «전부»라는 뜻이다. */
+  categories: readonly string[];
+};
+
+export const WEDDING_FEED_GROUPS: readonly WeddingFeedGroup[] = [
+  { key: 'all', label: '전체', categories: [] },
+  {
+    key: 'prep',
+    label: '준비·예산',
+    categories: ['예산', '체크리스트', '준비 순서', '하객'],
+  },
+  {
+    key: 'vendor',
+    label: '업체·서비스',
+    categories: ['웨딩홀', '스튜디오', '드레스', '메이크업', '본식스냅', '헤어변형', '결정사'],
+  },
+  { key: 'contract', label: '계약·여행', categories: ['계약', '허니문'] },
+];
+
+/**
+ * 이 글이 그 탭에 드는가. `all`은 언제나 참이다.
+ *
+ * 그룹에 없는 카테고리는 **어느 탭에도 안 든다** — 「전체」에서만 보인다. 조용히 아무
+ * 그룹에나 넣는 것보다 낫다. 넣어 두면 어느 탭에 잘못 들어갔는지를 아무도 모른다.
+ */
+export function inWeddingFeedGroup(categoryLabel: string, group: WeddingFeedGroupKey): boolean {
+  if (group === 'all') return true;
+
+  return WEDDING_FEED_GROUPS.find((g) => g.key === group)?.categories.includes(categoryLabel) ?? false;
+}
+
+/**
  * 공개된 글이 이보다 적으면 자동 작성이 돈다.
  *
  * 홈은 두 장을 보여준다(시안 `home.txt` — 웨딩피드 카드 2장). 여유를 둬서 여덟이다 —

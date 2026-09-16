@@ -1,5 +1,6 @@
 import {
   CHECKLIST_CAPTION,
+  MINIMUM_REVIEW_COUNT,
   aspectsFor,
   computeUsageScore,
   evaluationModeFor,
@@ -95,4 +96,28 @@ export async function loadUsageScore(pool: Pool, vendorId: string, category: Ven
     checklist: [],
     caption: null,
   };
+}
+
+/**
+ * 목록 카드의 별점 한 줄(2026-09-15 대표 지시 「별점은 표기가 필요하다」).
+ *
+ * **위 `loadUsageScore`와 같은 관문을 본다** — `structured.scored_reviews`(게시 중이고
+ * 확인된 후기)에서 센 수와 평균만 받는다. 조건을 여기서 다시 쓰지 않는 것이 요점이다:
+ * 목록이 4.6이고 상세가 4.3이면 사용자는 둘 다 못 믿는다.
+ *
+ * 문턱도 같다 — `MINIMUM_REVIEW_COUNT`. 못 미치면 **null이고 화면은 별점 줄을 안 그린다.**
+ * 「4건에서 계산한 4.5점을 회색으로 흐려 보여주는 것도 안 된다」(`review.ts`).
+ *
+ * 체크리스트 업종(결정사)도 null이다 — 4.2점과 78%는 다른 것을 재는 숫자라 별 하나에
+ * 같이 담을 수 없다.
+ */
+export function summaryRating(input: {
+  category: VendorCategory;
+  count: number;
+  average: number | null;
+}): { average: number; count: number } | null {
+  if (evaluationModeFor(input.category) === 'checklist') return null;
+  if (input.average === null || input.count < MINIMUM_REVIEW_COUNT) return null;
+
+  return { average: Math.round(input.average * 10) / 10, count: input.count };
 }

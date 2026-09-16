@@ -15,6 +15,7 @@ import {
   createUploadResponseSchema,
   currentUserSchema,
   displayNameResponseSchema,
+  categoryRecommendationsResponseSchema,
   top3ResponseSchema,
   errorResponseSchema,
   createVerificationResponseSchema,
@@ -151,6 +152,7 @@ import {
   type CompleteSetupRequest,
   appBootstrapResponseSchema,
   type AppBootstrapResponse,
+  type CategoryRecommendationsResponse,
   type CurrentUser,
   myRewardPayoutResponseSchema,
   rewardPayoutSchema,
@@ -597,6 +599,21 @@ export async function getCurrentUser() {
 /** 홈 데이터를 미리 받으면 인증 확인과 병렬로 준비할 수 있다. */
 export async function getAppBootstrap(): Promise<AppBootstrapResponse> {
   return request('/v1/app/bootstrap', appBootstrapResponseSchema);
+}
+
+/**
+ * Pick 추천 — 아직 정하지 않은 업종과 업종별 추천 업체.
+ *
+ * **홈과 「웨딩픽 추천」 전체 페이지가 이 하나를 나눠 쓴다.** 홈은 `limit`을 주어 앞의 셋만,
+ * 전체 페이지는 `limit` 없이 전부 받는다 — 두 화면이 각자 부르면 「전체에서 본 곳이 홈에
+ * 없다」가 생기고, 그때 어느 쪽이 맞는지 아무도 모른다.
+ */
+export async function getCategoryRecommendations(
+  limit?: number
+): Promise<CategoryRecommendationsResponse> {
+  const suffix = limit === undefined ? '' : `?limit=${limit}`;
+
+  return request(`/v1/me/recommendations${suffix}`, categoryRecommendationsResponseSchema);
 }
 
 /** 웨딩피드 — 공개된 글만. 로그인 여부와 무관해 bootstrap과 따로 부른다. */

@@ -1,9 +1,11 @@
 import {
+  WEDDING_FEED_GROUPS,
   WEDDING_FEED_LIMITS,
   WEDDING_FEED_PER_RUN,
   WEDDING_FEED_TARGET_PUBLISHED,
   WEDDING_FEED_TOPICS,
   checkWeddingFeedInput,
+  inWeddingFeedGroup,
   pickTopics,
   shouldGenerate,
   type WeddingFeedInput,
@@ -104,5 +106,44 @@ describe('웨딩피드 — 언제 자동 작성이 도는가', () => {
 
   it('모자라고 주제가 남았으면 돈다', () => {
     expect(shouldGenerate({ publishedCount: 1, draftCount: 0, usedTopics: [] })).toBe(true);
+  });
+});
+
+describe('웨딩피드 탭 넷 (2026-09-16 대표 지시)', () => {
+  it('전체를 빼면 셋이고 이름이 지시 그대로다', () => {
+    expect(WEDDING_FEED_GROUPS.map((g) => g.label)).toEqual([
+      '전체',
+      '준비·예산',
+      '업체·서비스',
+      '계약·여행',
+    ]);
+  });
+
+  /**
+   * **이 시험이 이 그룹화의 핵심이다.** 주제를 더하면서 그룹에 안 넣으면 그 글은
+   * 「전체」에서만 보이고 탭 셋 어디에도 안 나온다 — 화면은 멀쩡히 그려지고 아무
+   * 오류도 없어서, 글 하나가 안 보인다는 것을 알아챌 방법이 없다.
+   */
+  it('주제의 카테고리가 하나도 빠짐없이 어느 그룹에 든다', () => {
+    const grouped = new Set(WEDDING_FEED_GROUPS.flatMap((g) => g.categories));
+    const missing = [...new Set(WEDDING_FEED_TOPICS.map((t) => t.categoryLabel))].filter(
+      (label) => !grouped.has(label)
+    );
+
+    expect(missing).toEqual([]);
+  });
+
+  it('한 카테고리가 두 그룹에 들지 않는다 — 들면 같은 글이 탭 둘에 뜬다', () => {
+    const all = WEDDING_FEED_GROUPS.flatMap((g) => g.categories);
+
+    expect(all.length).toBe(new Set(all).size);
+  });
+
+  it('전체는 무엇이든 받고, 나머지는 자기 것만 받는다', () => {
+    expect(inWeddingFeedGroup('예산', 'all')).toBe(true);
+    expect(inWeddingFeedGroup('없는카테고리', 'all')).toBe(true);
+    expect(inWeddingFeedGroup('드레스', 'vendor')).toBe(true);
+    expect(inWeddingFeedGroup('드레스', 'prep')).toBe(false);
+    expect(inWeddingFeedGroup('허니문', 'contract')).toBe(true);
   });
 });
