@@ -144,7 +144,7 @@ export function registerSignupRoutes(app: FastifyInstance, context: AppContext):
         if (!definition) continue;
 
         /*
-         * **어느 판에 동의했는지를 «가리키게» 한다**(0420). 공개된 판이 있으면 그
+         * **어느 판에 동의했는지를 «가리키게» 한다**(0421). 공개된 판이 있으면 그
          * 행을 가리키고, 없으면 비워 둔다 — 없는 연결을 지어내지 않는다.
          *
          * **판 이름(`terms_version`)은 손대지 않는다.** 이 글자는 아래 `loadState`와

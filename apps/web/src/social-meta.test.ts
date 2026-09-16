@@ -8,7 +8,7 @@ test('built public HTML exposes one complete sharing card and preserved icons wi
   const out = join(__dirname, '..', 'dist');
 
   /*
-   * 약관·방침은 표에서 온다(0420). 못 읽으면 빌드가 멈추므로 여기서 답해준다 —
+   * 약관·방침은 표에서 온다(0421). 못 읽으면 빌드가 멈추므로 여기서 답해준다 —
    * 이 시험이 보는 것은 카드 태그와 아이콘이지 약관 본문이 아니다.
    */
   process.env['WEDDINGPICK_API_URL'] = 'https://api.test';
