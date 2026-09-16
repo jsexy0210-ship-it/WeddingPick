@@ -1,5 +1,7 @@
 import type { Pool, PoolClient } from 'pg';
 
+import { officialVendorCondition } from '@weddingpick/domain';
+
 import { ApiError, notFound } from './errors';
 
 /**
@@ -129,6 +131,8 @@ export type ChangeLogEntry = { at: string; action: string; note: string };
 
 const ACTION_LABEL: Record<string, string> = {
   name: '상호 변경',
+  // 관계자 인증이 승인되면 출처가 `vendor_official`로 오른다(vendor-claim-admin.ts).
+  source: '출처 변경',
   status: '영업 상태 변경',
   merged_into_vendor_id: '업체 병합',
 };
@@ -695,4 +699,55 @@ export async function mergeVendors(
   } finally {
     client.release();
   }
+}
+
+/**
+ * 공식인증 업체가 몇 곳인지. **조회만 한다.**
+ *
+ * 이 수가 앱 필터를 언제 켤 수 있는지를 정하는 근거다. 지금 DB의 업체는 전부
+ * `public_data`라, 켜는 순간 홈 · 검색 · Pick 추천이 빈 화면이 된다 —
+ * 「몇 곳이 준비됐나」를 셀 수 있어야 그날을 정할 수 있다.
+ *
+ * 셋을 따로 센다. **어느 것으로 자를지는 아직 안 정했다**(대표님 결정 대기).
+ * 세 수를 나란히 놓으면 고르는 데 필요한 것이 보인다 — 가와 나가 벌어져 있으면
+ * 승인은 됐는데 출처가 안 올라간 옛 업체가 남아 있다는 뜻이고, 나와 다가 벌어져
+ * 있으면 승인은 받았지만 아직 사진을 안 준 업체가 그만큼이라는 뜻이다.
+ *
+ * `total`은 `listVendors`의 것과 같은 수다(업체 전체). 나란히 읽으라고 맞췄다.
+ */
+export type OfficialVendorCounts = {
+  total: number;
+  /** 가 — 출처 표시가 `vendor_official`이다. */
+  bySource: number;
+  /** 나 — 승인된 관계자 인증이 있다. */
+  byApprovedClaim: number;
+  /** 다 — 나 + 업체가 직접 준 사진 1장 이상. 언제나 `byApprovedClaim` 이하다. */
+  byVendorProvidedImage: number;
+};
+
+export async function countOfficialVendors(pool: Pool): Promise<OfficialVendorCounts> {
+  const { rows } = await pool.query<{
+    total: string;
+    by_source: string;
+    by_approved_claim: string;
+    by_vendor_provided_image: string;
+  }>(
+    `SELECT COUNT(*)::text AS total,
+            COUNT(*) FILTER (WHERE ${officialVendorCondition('v', 'source')})::text
+              AS by_source,
+            COUNT(*) FILTER (WHERE ${officialVendorCondition('v', 'approvedClaim')})::text
+              AS by_approved_claim,
+            COUNT(*) FILTER (WHERE ${officialVendorCondition('v', 'vendorProvidedImage')})::text
+              AS by_vendor_provided_image
+       FROM structured.vendors v`
+  );
+
+  const row = rows[0]!;
+
+  return {
+    total: Number(row.total),
+    bySource: Number(row.by_source),
+    byApprovedClaim: Number(row.by_approved_claim),
+    byVendorProvidedImage: Number(row.by_vendor_provided_image),
+  };
 }

@@ -12,6 +12,7 @@ import {
 import { weddingFeedInputSchema } from '@weddingpick/api-contract';
 
 import { ApiError, notFound } from './errors';
+import { listTabs } from './wedding-feed-taxonomy';
 import type { FeedWriter } from './analysis/wedding-feed-writer';
 
 /**
@@ -153,6 +154,10 @@ export async function listPublished(pool: Pool, storage: FeedStorage | null, lim
 
   const posts = await Promise.all(rows.map((row) => toPost(row, storage)));
 
+  /*
+   * **탭을 글과 같은 응답으로 준다.** 따로 부르면 목록이 먼저 그려지고 탭 줄이
+   * 나중에 끼어들어 본문이 손가락 아래에서 밀린다. 한 번에 오면 둘이 같이 나타난다.
+   */
   return {
     items: posts.map((post) => ({
       id: post.id,
@@ -161,6 +166,7 @@ export async function listPublished(pool: Pool, storage: FeedStorage | null, lim
       summary: post.summary,
       imageUrl: post.imageUrl,
     })),
+    tabs: await listTabs(pool),
   };
 }
 
@@ -171,9 +177,10 @@ export async function create(
 ): Promise<{ id: string }> {
   const { rows } = await pool.query<{ id: string }>(
     `INSERT INTO structured.wedding_feed_posts
-       (category_label, title, summary, body, image_key, status, sort_order,
+       (category_label, category_id, title, summary, body, image_key, status, sort_order,
         published_at, created_by)
-     VALUES ($1, $2, $3, $4, $5, $6, $7,
+     VALUES ($1, (SELECT id FROM structured.wedding_feed_categories WHERE name = $1),
+             $2, $3, $4, $5, $6, $7,
              CASE WHEN $6 = 'published' THEN now() ELSE NULL END, $8)
      RETURNING id`,
     [
@@ -201,7 +208,9 @@ export async function create(
 export async function update(pool: Pool, id: string, input: FeedInput): Promise<void> {
   const { rowCount } = await pool.query(
     `UPDATE structured.wedding_feed_posts
-     SET category_label = $2, title = $3, summary = $4, body = $5, image_key = $6,
+     SET category_label = $2,
+         category_id = (SELECT id FROM structured.wedding_feed_categories WHERE name = $2),
+         title = $3, summary = $4, body = $5, image_key = $6,
          status = $7, sort_order = $8,
          published_at = CASE
            WHEN $7 <> 'published' THEN NULL
@@ -327,8 +336,9 @@ export async function runGeneration(input: {
 
       await pool.query(
         `INSERT INTO structured.wedding_feed_posts
-           (category_label, title, summary, body, status, source, model, topic)
-         VALUES ($1, $2, $3, $4, 'draft', 'generated', $5, $6)`,
+           (category_label, category_id, title, summary, body, status, source, model, topic)
+         VALUES ($1, (SELECT id FROM structured.wedding_feed_categories WHERE name = $1),
+                 $2, $3, $4, 'draft', 'generated', $5, $6)`,
         [topic.categoryLabel, draft.title, draft.summary, draft.body, model, topic.key]
       );
       created += 1;

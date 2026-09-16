@@ -1,11 +1,12 @@
 import {
-  WEDDING_FEED_GROUPS,
+  WEDDING_FEED_ALL_TAB,
   WEDDING_FEED_LIMITS,
   WEDDING_FEED_PER_RUN,
   WEDDING_FEED_TARGET_PUBLISHED,
   WEDDING_FEED_TOPICS,
+  buildFeedTabs,
   checkWeddingFeedInput,
-  inWeddingFeedGroup,
+  findUngroupedCategories,
   pickTopics,
   shouldGenerate,
   type WeddingFeedInput,
@@ -109,41 +110,101 @@ describe('웨딩피드 — 언제 자동 작성이 도는가', () => {
   });
 });
 
-describe('웨딩피드 탭 넷 (2026-09-16 대표 지시)', () => {
-  it('전체를 빼면 셋이고 이름이 지시 그대로다', () => {
-    expect(WEDDING_FEED_GROUPS.map((g) => g.label)).toEqual([
-      '전체',
-      '준비·예산',
-      '업체·서비스',
-      '계약·여행',
+describe('웨딩피드 — 탭과 카테고리', () => {
+  const group = (id: string, sortOrder: number, active = true) => ({
+    id,
+    name: `탭${id}`,
+    sortOrder,
+    active,
+  });
+  const category = (
+    name: string,
+    groupId: string | null,
+    sortOrder: number,
+    active = true
+  ) => ({ id: `c-${name}`, name, groupId, sortOrder, active });
+
+  it('어느 탭에도 안 든 카테고리를 찾아낸다', () => {
+    /*
+     * **관리자가 알 수 있어야 한다.** 탭에서 떨어진 카테고리의 글은 「전체」에서만
+     * 보이는데 오류도 안 나고 목록에서는 멀쩡해 보인다.
+     */
+    const found = findUngroupedCategories([
+      category('예산', 'a', 1),
+      category('허니문', null, 2),
+      category('하객', null, 3),
     ]);
+
+    expect(found.map((c) => c.name)).toEqual(['허니문', '하객']);
   });
 
-  /**
-   * **이 시험이 이 그룹화의 핵심이다.** 주제를 더하면서 그룹에 안 넣으면 그 글은
-   * 「전체」에서만 보이고 탭 셋 어디에도 안 나온다 — 화면은 멀쩡히 그려지고 아무
-   * 오류도 없어서, 글 하나가 안 보인다는 것을 알아챌 방법이 없다.
-   */
-  it('주제의 카테고리가 하나도 빠짐없이 어느 그룹에 든다', () => {
-    const grouped = new Set(WEDDING_FEED_GROUPS.flatMap((g) => g.categories));
-    const missing = [...new Set(WEDDING_FEED_TOPICS.map((t) => t.categoryLabel))].filter(
-      (label) => !grouped.has(label)
+  it('꺼 둔 카테고리는 탭이 없어도 세지 않는다', () => {
+    // 꺼 둔 것은 앱에 안 나간다 — 늘 켜져 있는 경고는 아무도 읽지 않는다.
+    expect(findUngroupedCategories([category('하객', null, 1, false)])).toEqual([]);
+  });
+
+  it('「전체」가 언제나 맨 앞이고 아무것도 거르지 않는다', () => {
+    const tabs = buildFeedTabs(
+      [group('a', 1)],
+      [category('예산', 'a', 1)]
     );
 
-    expect(missing).toEqual([]);
+    expect(tabs[0]!.key).toBe(WEDDING_FEED_ALL_TAB.key);
+    expect(tabs[0]!.label).toBe('전체');
+    expect(tabs[0]!.categories).toEqual([]);
   });
 
-  it('한 카테고리가 두 그룹에 들지 않는다 — 들면 같은 글이 탭 둘에 뜬다', () => {
-    const all = WEDDING_FEED_GROUPS.flatMap((g) => g.categories);
+  it('탭은 순서대로 나오고 꺼진 탭은 빠진다', () => {
+    const tabs = buildFeedTabs(
+      [group('b', 2), group('a', 1), group('c', 3, false)],
+      [category('예산', 'a', 1), category('계약', 'b', 1), category('허니문', 'c', 1)]
+    );
 
-    expect(all.length).toBe(new Set(all).size);
+    expect(tabs.map((t) => t.key)).toEqual([WEDDING_FEED_ALL_TAB.key, 'a', 'b']);
   });
 
-  it('전체는 무엇이든 받고, 나머지는 자기 것만 받는다', () => {
-    expect(inWeddingFeedGroup('예산', 'all')).toBe(true);
-    expect(inWeddingFeedGroup('없는카테고리', 'all')).toBe(true);
-    expect(inWeddingFeedGroup('드레스', 'vendor')).toBe(true);
-    expect(inWeddingFeedGroup('드레스', 'prep')).toBe(false);
-    expect(inWeddingFeedGroup('허니문', 'contract')).toBe(true);
+  it('카테고리가 하나도 없는 탭은 그리지 않는다', () => {
+    // 눌렀는데 늘 비어 있는 탭은 있는 것이 없는 것보다 나쁘다.
+    const tabs = buildFeedTabs([group('a', 1), group('b', 2)], [category('예산', 'a', 1)]);
+
+    expect(tabs.map((t) => t.key)).toEqual([WEDDING_FEED_ALL_TAB.key, 'a']);
+  });
+
+  it('탭 안의 카테고리는 순서대로 나오고 꺼진 것은 빠진다', () => {
+    const tabs = buildFeedTabs(
+      [group('a', 1)],
+      [
+        category('하객', 'a', 3),
+        category('예산', 'a', 1),
+        category('체크리스트', 'a', 2, false),
+      ]
+    );
+
+    expect(tabs[1]!.categories).toEqual(['예산', '하객']);
+  });
+
+  it('자동 작성이 쓰는 카테고리 이름은 열셋이다', () => {
+    /*
+     * 표의 씨앗값(0421)이 이 목록에서 왔다. **글자 하나 다르면 그 주제로 쓴 글이
+     * 어느 탭에도 안 붙는다** — 자동 작성은 화면을 거치지 않아서 고르기로 막을 수
+     * 없고, 이 시험이 그 자리를 지킨다.
+     */
+    const names = [...new Set(WEDDING_FEED_TOPICS.map((t) => t.categoryLabel))];
+
+    expect(names).toEqual([
+      '예산',
+      '체크리스트',
+      '웨딩홀',
+      '스튜디오',
+      '드레스',
+      '메이크업',
+      '본식스냅',
+      '헤어변형',
+      '결정사',
+      '허니문',
+      '계약',
+      '준비 순서',
+      '하객',
+    ]);
   });
 });

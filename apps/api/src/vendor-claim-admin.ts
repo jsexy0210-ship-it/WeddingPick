@@ -1,6 +1,7 @@
 import {
   CLAIM_METHOD_RULES,
   CLAIM_STATUS_LABEL,
+  VENDOR_OFFICIAL_SOURCE,
   matchesOfficialDomain,
   type ClaimMethod,
   type ClaimStatus,
@@ -67,6 +68,10 @@ export async function decide(
   await withTransaction(pool, async (client) => {
     await requireOperator(client, by);
 
+    // 한 사건의 여러 단계가 나눠 쓴다(L장 B-3). 승인이면 심사 한 줄과 출처 승격 한 줄이
+    // 같은 열쇠로 묶여, 나중에 「이 업체가 왜 공식이 됐나」를 한 번에 따라갈 수 있다.
+    const eventId = newEventId();
+
     const { rows } = await client.query<{
       status: ClaimStatus;
       claimant_user_id: string;
@@ -112,7 +117,7 @@ export async function decide(
     );
 
     await recordDecision(client, {
-      eventId: newEventId(),
+      eventId,
       workflow: 'vendor_claim',
       step: 'decide',
       subjectKind: 'vendor_claim',
@@ -123,6 +128,99 @@ export async function decide(
       // 가리키기만 한다. 무엇으로 확인했는지는 note에 사람이 적는다(원문 27번).
       evidence: [{ kind: 'vendor', id: found.vendor_id }],
     });
+
+    /*
+     * 승인이 업체의 출처 표시를 올린다. 2026-09-15 대표 지시 —
+     * 「업체 공식인증이란 업체 승인을 통해 수급한 이미지와 기타 정보들」.
+     *
+     * 지금까지 승인과 `vendors.source`가 이어져 있지 않았다. 승인 표(0038)와
+     * `approved_vendor_claims` 뷰는 있는데 승인해도 업체는 `public_data`인 채였고,
+     * 그래서 「공식인증된 업체」를 출처로 셀 수가 없었다.
+     *
+     * **같은 트랜잭션 안에서 한다.** 따로 하면 승인은 됐는데 출처만 안 올라간 업체가
+     * 생기고, 그 업체는 앱 필터를 켜는 날 조용히 빠진다.
+     *
+     * **이미 `vendor_official`인 업체는 건드리지 않는다** — 둘째 · 셋째 관계자가
+     * 승인될 때마다 `last_verified_at`이 밀리고 승격 기록이 또 쌓이는 것을 막는다.
+     * 승격은 처음 한 번만 일어난 사건이다.
+     *
+     * `last_verified_at`을 함께 민다. 0001의 주석대로 출처와 마지막 확인일은 짝이고,
+     * 방금 사람이 확인해서 출처가 바뀐 참이다.
+     */
+    if (to === 'approved') {
+      // 업체 줄을 먼저 잠그고 이전 값을 읽는다. 이력에 「무엇에서 무엇으로」를 적어야
+      // 하는데, UPDATE는 바뀌기 전 값을 돌려주지 않는다.
+      const { rows: vendorRows } = await client.query<{ source: string }>(
+        'SELECT source::text AS source FROM structured.vendors WHERE id = $1::uuid FOR UPDATE',
+        [found.vendor_id]
+      );
+
+      const previousSource = vendorRows[0]!.source;
+
+      if (previousSource !== VENDOR_OFFICIAL_SOURCE) {
+        await client.query(
+          `UPDATE structured.vendors
+              SET source = $2::source_type, last_verified_at = now()
+            WHERE id = $1::uuid`,
+          [found.vendor_id, VENDOR_OFFICIAL_SOURCE]
+        );
+
+        /*
+         * 0048이 이 자리를 위해 만들어 둔 원인 값이 `claim`이다 — 「업체 관계자
+         * 인증(0038 vendor_claims) 후 수정」. 여태 아무도 쓰지 않았다.
+         *
+         * 운영자가 볼 수 있는 자리가 여기다. 업체 관리 화면의 변경 이력이
+         * `vendor_change_log`를 그대로 그리므로, 화면을 고치지 않고도 승격이 보인다.
+         */
+        await client.query(
+          `INSERT INTO structured.vendor_change_log
+             (vendor_id, field_name, old_value, new_value, cause, changed_by, note)
+           VALUES ($1::uuid, 'source', $2, $3, 'claim', $4::uuid, $5)`,
+          [found.vendor_id, previousSource, VENDOR_OFFICIAL_SOURCE, by, `관계자 인증 승인 ${id}`]
+        );
+
+        /*
+         * 올린 기록. 누가 · 언제 · 어느 신청 때문인지가 여기 남는다 — 때는
+         * `decisions.created_at`, 사람은 `actor_user_id`, 신청은 evidence다.
+         *
+         * **되돌리지 않는다. 그 판단을 여기 적어 둔다.**
+         *
+         * 되돌릴 자리로 물은 것이 둘이었다.
+         *
+         *   ① 승인이 뒤집힌다(approved → rejected)
+         *      **이 코드에 그 길이 없다.** 위에서 `status !== 'pending'`이면 바로
+         *      막는다 — 한 번 결론이 난 신청은 다시 심사되지 않는다. 없는 길에
+         *      되돌리기를 붙이면 돌지 않는 코드가 규칙처럼 읽힌다.
+         *
+         *   ② 마지막 승인 claim이 사라진다
+         *      claim은 사람이 지우지 않는다. `claimant_user_id`의 ON DELETE CASCADE로
+         *      **신청한 사람이 탈퇴하면** 사라진다(0038). 그때 업체를 `public_data`로
+         *      내리면, 관계없는 사람의 탈퇴가 그 업체를 앱에서 없앤다.
+         *
+         * 승격은 **그때 일어난 일의 기록**이다. 운영자가 소속을 확인했고 그 확인을
+         * 근거로 업체가 정보를 넘겼다는 사실은, 신청인이 계정을 지운다고 없던 일이
+         * 되지 않는다. 되돌려야 할 일이 생기면 사유와 기록을 갖춘 운영자의 조작이어야
+         * 하고, 다른 곳에서 딸려 오는 부수 효과여서는 안 된다.
+         *
+         * **되돌리기를 붙인다면** 남은 승인 claim부터 세야 한다 —
+         * `officialVendorCondition(alias, 'approvedClaim')`이 그 조건이다. 한 업체에
+         * 관계자가 여럿 승인될 수 있으므로, 하나 사라졌다고 0이 된 것이 아니다.
+         * 이 자리는 대표님 결정이 필요해 비워 둔다.
+         */
+        await recordDecision(client, {
+          eventId,
+          workflow: 'vendor_claim',
+          step: 'promote_source',
+          subjectKind: 'vendor',
+          subjectId: found.vendor_id,
+          decider: { kind: 'human', userId: by },
+          decision: VENDOR_OFFICIAL_SOURCE,
+          reasonCode: 'affiliation_verified',
+          // 어느 신청 때문에 올랐는지. 값이 아니라 가리키기만 한다.
+          evidence: [{ kind: 'vendor_claim', id }],
+        });
+      }
+    }
 
     await notify(client, {
       userId: found.claimant_user_id,

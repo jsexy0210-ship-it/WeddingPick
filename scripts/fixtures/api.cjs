@@ -218,6 +218,67 @@ const routes = {
     bracketAnswered: true,
     partnerInvitePending: false,
   },
+  /**
+   * 자주 묻는 것 — MY 지원 · 문의하기 · 안내 · 질문 상세 넷이 읽는다.
+   *
+   * **2026-09-16부터 서버에서 온다**(대표 지시 — 운영자가 직접 고치고 지운다).
+   * 그전에는 코드에 든 배열이라 가짜 응답이 필요 없었다.
+   *
+   * 답은 **이미 채워진 글**이다 — 서버가 `{{limited}}` 같은 자리를 공개 기준
+   * 건수로 바꿔 내보낸다. 여기에 괄호를 그대로 두면 찍은 화면에 괄호가 나온다.
+   */
+  'GET /v1/faq': {
+    items: [
+      {
+        key: 'price-source',
+        category: '자주 묻는 것',
+        question: '실 제보는 어디서 온 금액인가요',
+        answer:
+          '이용자가 등록한 결제내역에서 읽은 금액이에요. 실 제보가 3건 모이면 구간을 보여드리고, 10건부터 기준금액까지 보여드려요. 그 아래에서는 숫자를 만들지 않고 모으는 중이라고 알려드려요.',
+      },
+      {
+        key: 'why-locked',
+        category: '자주 묻는 것',
+        question: '가격을 보려면 결제내역을 등록해야 하나요',
+        answer:
+          '아니요. 실 제보는 로그인하지 않아도 보실 수 있어요. 결제내역을 등록하시면 조건이 비슷한 결제 사례를 함께 보실 수 있어요.',
+      },
+      {
+        key: 'original-image',
+        category: '자주 묻는 것',
+        question: '올린 이미지는 어떻게 되나요',
+        answer:
+          '금액과 가맹점 이름 같은 필요한 정보만 읽고, 원본 이미지는 24시간 안에 지워요. 카드번호처럼 함께 찍힌 번호는 있었다는 것만 남기고 값은 저장하지 않아요.',
+      },
+      {
+        key: 'who-sees',
+        category: '자주 묻는 것',
+        question: '제가 올린 금액이 다른 사람에게 그대로 보이나요',
+        answer: '개별 금액은 보이지 않아요. 여럿을 묶은 구간과 기준금액으로만 보여드려요.',
+      },
+      {
+        key: 'review-hidden',
+        category: '자주 묻는 것',
+        question: '쓴 후기가 갑자기 안 보여요',
+        answer:
+          '전화번호나 계좌번호처럼 위험한 정보가 들어 있으면 잠시 가려요. 알림으로 알려드리고, 그 부분을 지워 고치시면 다시 보여요.',
+      },
+      {
+        key: 'vendor-rebuttal',
+        category: '자주 묻는 것',
+        question: '업체가 제 후기에 반론을 달 수 있나요',
+        answer:
+          '업체 관계자임이 확인되면 후기 아래에 반론이 함께 표시돼요. 반론이 달려도 원래 후기는 지워지지 않아요.',
+      },
+      {
+        key: 'spouse',
+        category: '자주 묻는 것',
+        question: '배우자와 어디까지 함께 보나요',
+        answer:
+          '연결하면 지출내역, 웨딩 스케줄, Pick한 곳을 함께 보실 수 있어요. 연결을 끊으면 그때부터 서로 보이지 않아요.',
+      },
+    ],
+  },
   /** 홈 아래쪽 웨딩피드 — 공개된 글만. 홈은 두 장만 보여준다(`HOME_FEED_PREVIEW_COUNT`). */
   'GET /v1/wedding-feed': {
     items: [
@@ -234,6 +295,37 @@ const routes = {
         title: '웨딩홀 투어에서 꼭 물어볼 것',
         summary: '보증인원과 식대 인상 조건을 먼저 확인하세요.',
         imageUrl: null,
+      },
+    ],
+    /*
+     * 탭은 글과 «같은 응답»으로 온다(2026-09-16 대표 지시 — 「탭별 카테고리별로 다
+     * 설정 가능해야한다」). 값은 관리자가 표에서 고치고, 여기 있는 것은 0420의
+     * 씨앗값 그대로다. 「전체」는 표에 없고 언제나 맨 앞이다.
+     */
+    tabs: [
+      { key: 'all', label: '전체', categories: [] },
+      {
+        key: '00000000-0000-4000-8000-0000000000a1',
+        label: '준비·예산',
+        categories: ['예산', '체크리스트', '준비 순서', '하객'],
+      },
+      {
+        key: '00000000-0000-4000-8000-0000000000a2',
+        label: '업체·서비스',
+        categories: [
+          '웨딩홀',
+          '스튜디오',
+          '드레스',
+          '메이크업',
+          '본식스냅',
+          '헤어변형',
+          '결정사',
+        ],
+      },
+      {
+        key: '00000000-0000-4000-8000-0000000000a3',
+        label: '계약·여행',
+        categories: ['계약', '허니문'],
       },
     ],
   },
@@ -835,6 +927,223 @@ const routes = {
     nextCursor: null,
     usageScore: VENDOR_DETAIL.usageScore,
     caveat: '한 사람의 경험이에요. 업체를 고르는 유일한 기준으로 삼지 마세요.',
+  },
+
+  /*
+   * ─── 관리자 콘솔 ──────────────────────────────────────────────────────────
+   *
+   * 위쪽에 이미 여덟(대시보드 · 일일 브리핑 · 광고 · 박람회 · 웨딩피드 · 관리자
+   * 계정 · 회원 추이)이 있었다. 아래 일곱은 2026-09-16 관리자 화면 전수 조사에서
+   * 더했다 — 그전까지 FAQ · 업체 · 이미지 · 제보 처리 · 개인정보 검토 · 정책 규칙 ·
+   * 마케팅 발송을 찍으면 본문 자리에 「API … → 404」 한 줄만 나왔다. 껍데기는
+   * 보이지만 본문은 한 번도 찍힌 적이 없었다는 뜻이다.
+   *
+   * 값은 **가명·가짜 수치**다(CLAUDE.md 「예시 데이터」). 천단위 쉼표가 실제로
+   * 걸리는지 보려고 네 자리가 넘는 수를 일부러 섞어 뒀다.
+   */
+  'GET /v1/admin/faq': {
+    items: [
+      {
+        id: '00000000-0000-4000-8000-00000000fa01',
+        category: '예약',
+        question: '예약은 언제부터 할 수 있나요?',
+        answer: '예식일 12개월 전부터 예약할 수 있어요.',
+        order: 0,
+        published: true,
+        editable: true,
+      },
+      {
+        id: '00000000-0000-4000-8000-00000000fa02',
+        category: '예약',
+        question: '예약을 취소하면 어떻게 되나요?',
+        answer: '취소 규정은 업체마다 달라요. 계약서를 확인해주세요.',
+        order: 1,
+        published: false,
+        editable: true,
+      },
+      {
+        id: '00000000-0000-4000-8000-00000000fa03',
+        category: '제보',
+        question: 'Pick 인증은 어떻게 하나요?',
+        answer: '계약서나 결제 증빙을 올리면 돼요.',
+        order: 0,
+        published: true,
+        editable: true,
+      },
+      {
+        id: 'spec:price-basis',
+        category: '코드에 있는 항목',
+        question: '기준금액은 어떻게 정해지나요?',
+        answer: '실 제보의 중앙값이에요.',
+        order: 0,
+        published: true,
+        editable: false,
+      },
+    ],
+    categories: ['예약', '제보', '코드에 있는 항목'],
+  },
+  'GET /v1/admin/marketing': {
+    summary: { generated: 1284, simulated: 1180, failed: 104, failRate: 0.081 },
+    items: [
+      {
+        id: '00000000-0000-4000-8000-0000000bb001',
+        title: '9월 박람회 안내 소재',
+        channel: '알림톡',
+        status: 'failed',
+        createdAt: '2026-09-15T02:10:00.000Z',
+        simulatedAt: null,
+        failReason: '템플릿 심사 대기',
+      },
+      {
+        id: '00000000-0000-4000-8000-0000000bb002',
+        title: '가을 스냅 기획 소재',
+        channel: '푸시',
+        status: 'queued',
+        createdAt: '2026-09-15T05:40:00.000Z',
+        simulatedAt: null,
+        failReason: null,
+      },
+      {
+        id: '00000000-0000-4000-8000-0000000bb003',
+        title: '드레스 투어 안내 소재',
+        channel: '푸시',
+        status: 'simulated',
+        createdAt: '2026-09-14T23:05:00.000Z',
+        simulatedAt: '2026-09-15T01:00:00.000Z',
+        failReason: null,
+      },
+    ],
+  },
+  'GET /v1/admin/data/images': {
+    summary: { total: 12480, licensed: 11902, pending: 431, rejected: 147 },
+    items: [
+      {
+        id: '00000000-0000-4000-8000-0000000cc001',
+        vendorName: '강남 A 스튜디오',
+        source: '업체 공식 채널',
+        rightsStatus: 'pending',
+        matchConfidence: 0.92,
+        createdAt: '2026-09-15T04:00:00.000Z',
+        url: null,
+      },
+      {
+        id: '00000000-0000-4000-8000-0000000cc002',
+        vendorName: '분당 C 웨딩홀',
+        source: '크롤링',
+        rightsStatus: 'pending',
+        matchConfidence: 0.41,
+        createdAt: '2026-09-15T04:20:00.000Z',
+        url: null,
+      },
+    ],
+  },
+  'GET /v1/admin/vendors': {
+    total: 3,
+    vendors: [
+      {
+        id: '11111111-1111-4111-8111-111111111111',
+        name: '강남 A 웨딩홀',
+        category: 'hall',
+        status: 'active',
+        dataCount: 1284,
+        mergedInto: null,
+        history: [],
+      },
+      {
+        id: '22222222-2222-4222-8222-222222222222',
+        name: '강남 B 웨딩홀',
+        category: 'hall',
+        status: 'suspended',
+        dataCount: 96,
+        mergedInto: null,
+        history: [{ at: '2026-09-14T00:00:00.000Z', action: '정지', note: '제보 검증 중' }],
+      },
+      {
+        id: '33333333-3333-4333-8333-333333333333',
+        name: '분당 C 웨딩홀',
+        category: 'hall',
+        status: 'merged',
+        dataCount: 0,
+        mergedInto: '강남 A 웨딩홀',
+        history: [],
+      },
+    ],
+  },
+  'GET /v1/admin/data/pipeline': {
+    today: { received: 3120, autoProcessed: 2894, manualRequired: 182, failed: 44 },
+    stages: [
+      { stage: '수집', count: 3120, avgWaitMin: 1 },
+      { stage: '판독', count: 2980, avgWaitMin: 4 },
+      { stage: '대조', count: 2894, avgWaitMin: 7 },
+    ],
+    failedQueue: [
+      {
+        id: '00000000-0000-4000-8000-00000000dd01',
+        stage: '판독',
+        error: '증빙 이미지를 읽지 못했어요',
+        failedAt: '2026-09-15T06:10:00.000Z',
+        retryCount: 2,
+      },
+    ],
+  },
+  'GET /v1/admin/pii-reviews': {
+    reviews: [
+      {
+        id: '00000000-0000-4000-8000-00000000pp01',
+        createdAt: '2026-09-15T03:30:00.000Z',
+        detectedKinds: ['휴대폰 번호'],
+        hintCount: 1284,
+      },
+      {
+        id: '00000000-0000-4000-8000-00000000pp02',
+        createdAt: '2026-09-15T05:15:00.000Z',
+        detectedKinds: ['이메일', '계좌번호'],
+        hintCount: 12,
+      },
+    ],
+  },
+  'GET /v1/admin/policy-engine': {
+    policies: [
+      {
+        id: '00000000-0000-4000-8000-00000000po01',
+        key: 'report.min_count',
+        label: '금액 공개 최소 제보 수',
+        description: '이 수보다 적으면 업체 안내가를 대신 보여줘요.',
+        category: '제보',
+        type: 'number',
+        value: '3',
+        defaultValue: '3',
+        lastChangedAt: null,
+        lastChangedBy: null,
+        readOnlyReason: null,
+      },
+      {
+        id: '00000000-0000-4000-8000-00000000po02',
+        key: 'notify.daily_cap',
+        label: '하루 알림 최대 건수',
+        description: '한 사람에게 하루에 보낼 수 있는 알림 수예요.',
+        category: '알림',
+        type: 'number',
+        value: '2',
+        defaultValue: '2',
+        lastChangedAt: '2026-09-12T02:00:00.000Z',
+        lastChangedBy: '운영자',
+        readOnlyReason: null,
+      },
+      {
+        id: '00000000-0000-4000-8000-00000000po03',
+        key: 'expo.auto_delete',
+        label: '박람회 종료 자동 삭제',
+        description: '대표님 지시로 보류 중이라 여기서 켤 수 없어요.',
+        category: '박람회',
+        type: 'boolean',
+        value: 'false',
+        defaultValue: 'false',
+        lastChangedAt: null,
+        lastChangedBy: null,
+        readOnlyReason: '대표 지시로 보류 중이에요',
+      },
+    ],
   },
 };
 

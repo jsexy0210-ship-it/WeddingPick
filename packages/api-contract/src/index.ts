@@ -11,6 +11,7 @@ export * from './devices';
 export * from './documents';
 export * from './endpoints';
 export * from './errors';
+export * from './faq';
 export * from './inquiries';
 export * from './my-reports';
 export * from './notifications';

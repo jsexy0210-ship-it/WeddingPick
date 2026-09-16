@@ -1,11 +1,9 @@
-import { randomUUID } from 'node:crypto';
-
 import { isFeature } from '../ai-cost-admin';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
 import type { MarketingChannel, MarketingFormat } from '@weddingpick/api-contract';
-import { disclosureStage, type DisclosureStage } from '@weddingpick/domain';
+import { disclosureStage, type DisclosureStage, VENDOR_CATEGORIES } from '@weddingpick/domain';
 import * as marketingContent from '../marketing/content';
 import * as marketingStore from '../marketing/store';
 import * as adAdmin from '../ad-admin';
@@ -20,6 +18,7 @@ import * as expoAdmin from '../expo-admin';
 import { listExposEndingToday } from '../retention/expo-sweep';
 import * as faqAdmin from '../faq-admin';
 import * as weddingFeed from '../wedding-feed';
+import * as feedTaxonomy from '../wedding-feed-taxonomy';
 import { createGeminiFeedWriter } from '../analysis/wedding-feed-writer';
 import { NotAnOperator } from '../decisions';
 import { ApiError, forbidden, notFound } from '../errors';
@@ -1105,6 +1104,70 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   );
 
   /*
+   * 웨딩피드의 탭과 카테고리 — 2026-09-16 대표 지시 「탭별 카테고리별로 다 설정
+   * 가능해야한다」.
+   *
+   * **지우기는 둘이 다르다.** 탭을 지우면 딸린 카테고리가 소속만 잃고 남지만
+   * (`ON DELETE SET NULL`), 쓰는 카테고리는 아예 지워지지 않는다 — 지우면 그 글들이
+   * 어느 탭에도 안 뜨는데 화면은 멀쩡해 보인다. 끄기로 감춘다.
+   */
+  app.get('/v1/admin/wedding-feed/taxonomy', auth, async () =>
+    feedTaxonomy.listTaxonomy(context.pool)
+  );
+
+  app.post<{ Body: unknown }>('/v1/admin/wedding-feed/groups', auth, async (request) =>
+    feedTaxonomy.createGroup(context.pool, feedTaxonomy.parseGroupInput(request.body))
+  );
+
+  app.put<{ Params: { id: string }; Body: unknown }>(
+    '/v1/admin/wedding-feed/groups/:id',
+    auth,
+    async (request, reply) => {
+      await feedTaxonomy.updateGroup(
+        context.pool,
+        request.params.id,
+        feedTaxonomy.parseGroupInput(request.body)
+      );
+
+      return reply.status(204).send();
+    }
+  );
+
+  app.delete<{ Params: { id: string } }>(
+    '/v1/admin/wedding-feed/groups/:id',
+    auth,
+    async (request) => feedTaxonomy.removeGroup(context.pool, request.params.id)
+  );
+
+  app.post<{ Body: unknown }>('/v1/admin/wedding-feed/categories', auth, async (request) =>
+    feedTaxonomy.createCategory(context.pool, feedTaxonomy.parseCategoryInput(request.body))
+  );
+
+  app.put<{ Params: { id: string }; Body: unknown }>(
+    '/v1/admin/wedding-feed/categories/:id',
+    auth,
+    async (request, reply) => {
+      await feedTaxonomy.updateCategory(
+        context.pool,
+        request.params.id,
+        feedTaxonomy.parseCategoryInput(request.body)
+      );
+
+      return reply.status(204).send();
+    }
+  );
+
+  app.delete<{ Params: { id: string } }>(
+    '/v1/admin/wedding-feed/categories/:id',
+    auth,
+    async (request, reply) => {
+      await feedTaxonomy.removeCategory(context.pool, request.params.id);
+
+      return reply.status(204).send();
+    }
+  );
+
+  /*
    * 지금 한 번 쓰게 한다. 평소에는 워커가 스스로 돌지만, 운영자가 「지금 필요하다」고
    * 판단하는 자리가 있다.
    *
@@ -1265,6 +1328,21 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   app.get('/v1/admin/vendors', auth, async () => vendorAdmin.listVendors(context.pool));
 
   /*
+   * 공식인증 업체가 몇 곳인지. **조회만 한다 — 아무것도 바꾸지 않는다.**
+   *
+   * 이 수가 앱 필터를 언제 켤 수 있는지를 정하는 근거다. 지금 DB의 업체는 전부
+   * `public_data`라, 켜는 순간 홈 · 검색 · Pick 추천이 빈 화면이 된다.
+   *
+   * **붙은 화면이 없다.** 관리자 콘솔이 `apps/mobile` 안에 있고 이번 작업은 화면을
+   * 건드리지 않기로 한 범위라(2026-09-16 대표 지시 — 「일단 화면은 냅두고 백 작업만
+   * 실행해」), 서버만 먼저 세워 둔다. 반대 방향이 아니므로 CLAUDE.md의 「서버에 없는
+   * 동작은 화면에서 잠근다」에 걸리지 않는다 — 빈 껍데기 화면이 생기지 않는다.
+   */
+  app.get('/v1/admin/vendors/official-counts', auth, async () =>
+    vendorAdmin.countOfficialVendors(context.pool)
+  );
+
+  /*
    * 병합하면 무엇이 몇 건 옮겨 가는지 세어서 돌려준다. 아무것도 바꾸지 않는다.
    *
    * 병합은 이 콘솔에서 되돌릴 수 없는 유일한 조작이고 사용자가 쓴 기록에 닿는다.
@@ -1357,14 +1435,115 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   });
 
   // ─── Ads ──────────────────────────────────────────────────────────────────
+  /*
+   * 광고 자리 등록 · 수정 · 삭제.
+   *
+   * **셋 다 성공만 돌려주고 아무것도 하지 않았다** — POST는 새 uuid를, PATCH ·
+   * DELETE는 204를 냈다. 표는 처음부터 있었고(`ads.placements` — 0040 · 0042 ·
+   * 0130) `ad-admin.ts`에 넣고 내리는 함수까지 있었는데, 라우트만 그 함수를 부르지
+   * 않았다. 새로 쓰지 않고 그것을 부른다.
+   *
+   * **자리를 «내리는 것»과 «멈추는 것»은 다르다.** 멈추는 것은 아래
+   * `PATCH /:id/status`이고 기간을 남긴다. DELETE는 줄 자체를 지우므로 잘못 잡은
+   * 자리를 무를 때만 쓴다.
+   */
   app.get('/v1/admin/ads', auth, async () => adminOps.adPlacements(context.pool));
-  app.post('/v1/admin/ads', auth, async () => {
-    return { id: randomUUID() };
+
+  const adSurface = z.enum(['vendor_detail', 'search', 'region_category']);
+  const adTier = z.enum(['light', 'standard', 'premium']);
+  const adDay = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '날짜는 2026-09-16 꼴로 적어주세요.');
+  /*
+   * 업종은 `vendor_category` enum이다. 아무 글자나 받으면 질의가 22P02로 터져
+   * 500이 된다 — 잘못 보낸 것을 서버 오류로 돌려주지 않는다. 목록은 도메인
+   * 하나에서 온다(`VENDOR_CATEGORIES`).
+   */
+  const adCategory = z.enum(VENDOR_CATEGORIES);
+
+  const adCreateBody = z.object({
+    vendorId: z.string().uuid(),
+    surface: adSurface,
+    tier: adTier,
+    category: adCategory.nullish(),
+    region: z.string().trim().min(1).nullish(),
+    startsOn: adDay,
+    endsOn: adDay,
   });
-  app.patch<{ Params: { id: string } }>('/v1/admin/ads/:id', auth, async (_req, reply) => {
-    return reply.status(204).send();
+
+  app.post<{ Body: unknown }>('/v1/admin/ads', auth, async (request, reply) => {
+    const body = adCreateBody.parse(request.body ?? {});
+
+    const id = await run(() =>
+      adAdmin.add(
+        context.pool,
+        {
+          vendorId: body.vendorId,
+          surface: body.surface,
+          tier: body.tier,
+          ...(body.category ? { category: body.category } : {}),
+          ...(body.region ? { region: body.region } : {}),
+          from: body.startsOn,
+          to: body.endsOn,
+        },
+        currentUserId(request)
+      )
+    );
+
+    return reply.status(201).send({ id });
   });
-  app.delete<{ Params: { id: string } }>('/v1/admin/ads/:id', auth, async (_req, reply) => {
+
+  /** 넣은 칸만 고친다. 업체는 바꿀 수 없다 — `ad-admin.update` 주석 참고. */
+  const adUpdateBody = z
+    .object({
+      surface: adSurface.optional(),
+      tier: adTier.optional(),
+      category: adCategory.nullable().optional(),
+      region: z.string().trim().min(1).nullable().optional(),
+      startsOn: adDay.optional(),
+      endsOn: adDay.optional(),
+    })
+    .refine((body) => Object.keys(body).length > 0, {
+      message: '고칠 것을 하나는 골라주세요.',
+    });
+
+  app.patch<{ Params: { id: string }; Body: unknown }>(
+    '/v1/admin/ads/:id',
+    auth,
+    async (request, reply) => {
+      if (!UUID_RE.test(request.params.id)) throw notFound('광고');
+
+      const body = adUpdateBody.parse(request.body ?? {});
+
+      const found = await run(() =>
+        adAdmin.update(
+          context.pool,
+          request.params.id,
+          {
+            ...(body.surface !== undefined ? { surface: body.surface } : {}),
+            ...(body.tier !== undefined ? { tier: body.tier } : {}),
+            ...(body.category !== undefined ? { category: body.category } : {}),
+            ...(body.region !== undefined ? { region: body.region } : {}),
+            ...(body.startsOn !== undefined ? { from: body.startsOn } : {}),
+            ...(body.endsOn !== undefined ? { to: body.endsOn } : {}),
+          },
+          currentUserId(request)
+        )
+      );
+
+      if (!found) throw notFound('광고');
+
+      return reply.status(204).send();
+    }
+  );
+
+  app.delete<{ Params: { id: string } }>('/v1/admin/ads/:id', auth, async (request, reply) => {
+    if (!UUID_RE.test(request.params.id)) throw notFound('광고');
+
+    const removed = await run(() =>
+      adAdmin.remove(context.pool, request.params.id, currentUserId(request))
+    );
+
+    if (!removed) throw notFound('광고');
+
     return reply.status(204).send();
   });
 
@@ -1392,8 +1571,20 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
 
   // ─── Ads Gate ─────────────────────────────────────────────────────────────
   app.get('/v1/admin/ads-gate', auth, async () => adminOps.adsGate(context.pool));
-  app.patch('/v1/admin/ads-gate', auth, async (_req, reply) => {
-    return reply.status(204).send();
+
+  /*
+   * **관문에는 통째로 고칠 것이 없다.** `ads.production_gate`(0130)가 담는 사실은
+   * 셋뿐이고(승인 · 켜짐 · 끔) 셋 다 아래 전용 라우트가 이미 쓴다. 여기에 길을
+   * 하나 더 내면 그것이 곧 `activated`를 켜는 두 번째 입구가 된다 — 광고 실운영
+   * 전환은 대표 오더 대기이고 입구는 하나여야 한다(`activate` 주석).
+   *
+   * 그래서 성공을 돌려주지 않고 어디로 가야 하는지를 말한다.
+   */
+  app.patch('/v1/admin/ads-gate', auth, async () => {
+    throw new ApiError(
+      'invalid_request',
+      '관문은 승인 · 전환 · 해제로만 바꿔요. 아래 단추를 눌러주세요.'
+    );
   });
 
   /*
@@ -1482,8 +1673,22 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
 
   // ─── Automation ───────────────────────────────────────────────────────────
   app.get('/v1/admin/automation', auth, async () => adminOps.automationStatus(context.pool));
-  app.patch('/v1/admin/automation', auth, async (_req, reply) => {
-    return reply.status(204).send();
+
+  /*
+   * **켤 수 있는 칸이 하나뿐인데 그것을 읽는 코드가 없다.**
+   * `structured.automation_workflows`(0130)에서 사람이 고칠 수 있는 칸은
+   * `self_heal_enabled`이고, 0130이 그 자리에 「아직 그런 코드는 없다」고 적어
+   * 두었다. 지금도 그렇다 — 이 값을 보는 곳은 화면의 「자동복구 켜짐」 딱지뿐이다.
+   *
+   * 켜 주면 딱지만 바뀌고 실패한 줄은 그대로 쌓인다. **켠 줄 알고 손을 놓는 것이
+   * 가장 나쁘다**(`KillSwitch.wired` 주석과 같은 이유다). 되돌리는 것은 지금도
+   * 사람이 한다 — 아래 `recover` · `drain-dlq`가 실제로 도는 자리다.
+   */
+  app.patch('/v1/admin/automation', auth, async () => {
+    throw new ApiError(
+      'invalid_request',
+      '자동복구를 도는 코드가 아직 없어요. 실패한 줄은 「다시 시도」로 되돌려주세요.'
+    );
   });
 
   /** 실패한 줄을 다시 대기 목록에 세운다. 지우지 않는다. */
@@ -1579,8 +1784,21 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
 
   // ─── Campaigns ────────────────────────────────────────────────────────────
   app.get('/v1/admin/campaigns', auth, async () => adminOps.campaignGrants(context.pool));
+
+  /*
+   * **캠페인을 담는 표가 없다.** 이 화면이 보는 것은 `structured.reward_grants`
+   * (0039)이고, 그 표는 보상 한 건이 초대(`referral_id`) 또는 홍보 제출
+   * (`promotion_id`) 하나에서 온다고 CHECK로 못 박는다
+   * (`grant_has_exactly_one_source`). 근거 없는 지급을 스키마가 거절한다.
+   *
+   * 그 근거를 만드는 것은 사용자의 행동이지 관리자의 단추가 아니다. 관리자가 할
+   * 일은 이미 생긴 건을 지급하거나 차단하는 것이고, 아래 `:id/:action`이 그 자리다.
+   */
   app.post('/v1/admin/campaigns', auth, async () => {
-    return { id: randomUUID() };
+    throw new ApiError(
+      'invalid_request',
+      '보상은 초대 · 홍보 인증에서 생겨요. 여기서는 생긴 건을 지급하거나 차단해요.'
+    );
   });
 
   /*
