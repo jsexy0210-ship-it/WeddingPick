@@ -30,6 +30,12 @@ const vendor = (id, name, category, region, opts = {}) => ({
   paidPrice: opts.paidPrice ?? { stage: 'collecting', count: 0, caption: '수집 중' },
   styleTags: opts.styleTags ?? [],
   guidePrice: opts.guideFrom ? { fromKrw: opts.guideFrom, sourceLabel: '업체 안내' } : null,
+  /*
+   * 별점. **일부러 없는 곳을 섞어 둔다** — 확인된 후기 5건에 못 미치거나 체크리스트
+   * 업종(결정사)이면 null이고, 그때 카드가 별점 줄을 안 그린다. 캡처에서 두 꼴이 같이
+   * 보여야 「없는 카드」의 생김새를 눈으로 확인할 수 있다.
+   */
+  rating: opts.rating ?? null,
 });
 
 /** 실 제보가 충분한 업체. 금액 한 줄이 구간으로 뜬다. */
@@ -47,11 +53,13 @@ const VENDORS = [
     reports: 12,
     paidPrice: disclosed(12, 1_520_000, 1_840_000, 1_680_000),
     styleTags: ['URBAN'],
+    rating: { average: 4.7, count: 18 },
   }),
   vendor('22222222-2222-4222-8222-222222222222', '강남 B 웨딩홀', 'hall', '서울', {
     reports: 5,
     paidPrice: disclosed(5, 1_900_000, 2_400_000),
     styleTags: ['GLAMOROUS'],
+    rating: { average: 4.3, count: 7 },
   }),
   vendor('33333333-3333-4333-8333-333333333333', '분당 C 웨딩홀', 'hall', '경기', {
     reports: 1,
@@ -66,6 +74,7 @@ const VENDORS = [
     reports: 8,
     paidPrice: disclosed(8, 980_000, 1_240_000, 1_100_000),
     styleTags: ['NATURAL'],
+    rating: { average: 4.9, count: 11 },
   }),
 ];
 
@@ -204,6 +213,10 @@ const routes = {
     popularVendors: VENDORS.slice(0, 2),
     candidates: null,
     recommendations: VENDORS.slice(0, 3),
+    /* 히어로 «남은 예산 3,000만원 · 27% 사용». */
+    budget: { total: 41_000_000, spent: 11_000_000, remaining: 30_000_000 },
+    bracketAnswered: true,
+    partnerInvitePending: false,
   },
   /** 홈 아래쪽 웨딩피드 — 공개된 글만. 홈은 두 장만 보여준다(`HOME_FEED_PREVIEW_COUNT`). */
   'GET /v1/wedding-feed': {
@@ -435,6 +448,38 @@ const routes = {
     done: ['계정이 삭제됐어요', '로그인 정보가 지워졌어요'],
   },
   'GET /v1/weddings/:weddingId/invites': { invite: null },
+  /*
+   * Pick 추천 — 홈 아코디언과 「웨딩픽 추천」 전체 페이지가 같이 쓴다. 상태를 셋 다 다르게
+   * 둬서 캡처 한 장에 «비교» · «보기» · «추천»이 같이 보이게 한다. `limit`은 무시한다 —
+   * 캡처에서는 홈도 전체 페이지도 같은 셋을 그린다.
+   */
+  'GET /v1/me/recommendations': {
+    groups: [
+      {
+        category: 'hall',
+        categoryLabel: '웨딩홀',
+        state: 'COMPARING',
+        pickCount: 2,
+        vendors: VENDORS.filter((v) => v.category === 'hall').slice(0, 3),
+      },
+      {
+        category: 'studio',
+        categoryLabel: '스튜디오',
+        state: 'SHORTLISTED',
+        pickCount: 1,
+        vendors: VENDORS.filter((v) => v.category === 'studio'),
+      },
+      {
+        category: 'dress',
+        categoryLabel: '드레스',
+        state: 'NOT_STARTED',
+        pickCount: 0,
+        vendors: [],
+      },
+    ],
+    remaining: 7,
+    remainingCategories: ['hall', 'studio', 'dress', 'makeup', 'hair', 'goods', 'honeymoon'],
+  },
   'GET /v1/expos': {
     items: [
       {

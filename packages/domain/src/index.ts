@@ -47,6 +47,7 @@ export * from './nudge';
 export * from './vendor-claim';
 export * from './terms';
 export * from './pick';
+export * from './home-recommend';
 export * from './lifecycle';
 export * from './withdrawal';
 export * from './ai-router';
