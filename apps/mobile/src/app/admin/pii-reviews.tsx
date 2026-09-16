@@ -2,6 +2,7 @@ import { Redirect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { formatCount } from '@weddingpick/domain';
 import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { formatDateTimeDot } from '@/features/common/format-date';
@@ -157,7 +158,7 @@ export function PiiReviewsPanel() {
                   <Text style={[styles.td, styles.colKinds]} numberOfLines={1}>
                     {item.detectedKinds.join(' · ') || '—'}
                   </Text>
-                  <Text style={[styles.td, styles.colCount]}>{item.hintCount}곳</Text>
+                  <Text style={[styles.td, styles.colCount]}>{formatCount(item.hintCount)}곳</Text>
                   <Text style={[styles.td, styles.colDate]}>{formatDateTimeDot(item.createdAt)}</Text>
                 </Pressable>
               ))}

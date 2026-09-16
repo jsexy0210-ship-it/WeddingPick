@@ -34,8 +34,8 @@ type CampaignData = {
 /**
  * 서버 응답을 화면이 쓰는 모양으로 맞춘다.
  *
- * `GET /v1/admin/campaigns`는 아직 `{ items: [], total: 0 }`을 그대로 돌려주는
- * 자리다(`apps/api/src/routes/admin.ts`). 예산 칸이 없는데 화면이 `data.budget.total`을
+ * `GET /v1/admin/campaigns`는 `structured.reward_grants`를 읽어 `{ items }`만 준다
+ * (`admin-ops.campaignGrants`). 예산 칸이 없는데 화면이 `data.budget.total`을
  * 바로 읽어서, **이 화면은 열면 그 자리에서 죽었다**(2026-09-09 확인). 서버가 무엇을
  * 주든 화면이 죽지 않게 여기서 한 번 걸러 낸다 — 관리자 화면이 안 열리면 무슨 일이
  * 일어나는지 볼 수단까지 같이 사라진다.

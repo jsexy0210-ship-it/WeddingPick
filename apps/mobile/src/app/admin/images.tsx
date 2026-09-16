@@ -9,6 +9,7 @@ import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
 
 import { DelayedLoader } from '@/features/loading/delayed-loader';
+import { formatCount } from '@weddingpick/domain';
 import { apiFetch } from './_api';
 import {
   Card,
@@ -186,7 +187,7 @@ export function ImagesPanel() {
             title={
               pending === 0
                 ? '노출을 막고 있는 것이 없어요'
-                : `권리 미확인 ${pending}건이 노출을 막고 있어요`
+                : `권리 미확인 ${formatCount(pending)}건이 노출을 막고 있어요`
             }
             detail={
               pending === 0
@@ -197,10 +198,10 @@ export function ImagesPanel() {
 
           <KpiRow
             items={[
-              { label: '수집', value: `${data.summary.total}장`, note: '전체' },
-              { label: '권리 확인', value: `${data.summary.licensed}장`, note: '노출 가능', kind: 'ok' },
-              { label: '권리 미확인', value: `${pending}장`, note: '노출 차단 중', kind: pending === 0 ? 'ok' : 'bad' },
-              { label: '매칭 신뢰도 낮음', value: `${lowMatch}장`, note: `${MATCH_FLOOR} 미만`, kind: 'brand' },
+              { label: '수집', value: `${formatCount(data.summary.total)}장`, note: '전체' },
+              { label: '권리 확인', value: `${formatCount(data.summary.licensed)}장`, note: '노출 가능', kind: 'ok' },
+              { label: '권리 미확인', value: `${formatCount(pending)}장`, note: '노출 차단 중', kind: pending === 0 ? 'ok' : 'bad' },
+              { label: '매칭 신뢰도 낮음', value: `${formatCount(lowMatch)}장`, note: `${MATCH_FLOOR} 미만`, kind: 'brand' },
             ]}
           />
 
@@ -219,7 +220,7 @@ export function ImagesPanel() {
                 items={[
                   { key: 'homepage', name: '업체 공식 채널', meta: '홈페이지 · 인스타그램 · 블로그', num: '자동', numKind: 'ok' },
                   { key: 'provided', name: '업체 제공', meta: 'WP-BIZ-005 자료 제공으로 받은 것', num: '자동', numKind: 'ok' },
-                  { key: 'public', name: '공공 데이터', meta: '공공누리 1~4유형', num: '자동', numKind: 'ok' },
+                  { key: 'public', name: '공공데이터', meta: '공공누리 1~4유형', num: '자동', numKind: 'ok' },
                   { key: 'crawl', name: '크롤링', meta: '출처를 특정할 수 없는 것', num: '불가', numKind: 'bad' },
                 ]}
               />

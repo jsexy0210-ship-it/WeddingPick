@@ -142,7 +142,7 @@ export function PriceStatsPanel() {
             <View style={styles.tableHead}>
               <Text style={[styles.th, styles.colName]}>업체명</Text>
               <Text style={[styles.th, styles.colStage]}>단계</Text>
-              <Text style={[styles.th, styles.colCount]}>데이터 수</Text>
+              <Text style={[styles.th, styles.colCount]}>실 제보 수</Text>
               <Text style={[styles.th, styles.colAnomaly]}>이상치</Text>
               <Text style={[styles.th, styles.colVersion]}>버전</Text>
               <Text style={[styles.th, styles.colAction]} />
