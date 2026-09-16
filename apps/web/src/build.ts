@@ -8,7 +8,7 @@ import { apiBase, loadSiteData, loadSiteMeta, loadVendor, vendorIdsToBuild } fro
 import { applySiteMeta } from './social-meta';
 import { renderFaqPage, renderIntroPage, renderPrivacyPage, renderSupportPage, renderTermsPage } from './subpages';
 import { STYLES } from './styles';
-import { validateLegalDates } from './legal-config';
+import { loadLegalDocument } from './legal-data';
 import { renderVendorPage } from './vendor-page';
 
 /**
@@ -39,8 +39,20 @@ import { renderVendorPage } from './vendor-page';
  * 내보내는 것보다 낫다.
  */
 export async function build(outDir: string): Promise<string> {
-  // 잘못된 시행일이면 기존 산출물을 지우기 전에 중단한다.
-  validateLegalDates();
+  /*
+   * **약관·방침을 먼저 읽는다. 기존 산출물을 지우기 전에.**
+   *
+   * 본문은 이제 표에 있고(0420) 읽는 곳은 API다. 못 읽으면 여기서 멈춘다 —
+   * 빈 약관 페이지가 나가는 것보다 옛 빌드가 계속 서빙되는 편이 낫다. 정적
+   * 사이트는 빌드가 실패하면 그렇게 된다.
+   *
+   * 지우기 «전에» 읽는 이유가 그것이다. 지운 뒤에 실패하면 약관이 사라진 사이트가
+   * 남는다.
+   */
+  const [termsDoc, privacyDoc] = await Promise.all([
+    loadLegalDocument('terms'),
+    loadLegalDocument('privacy'),
+  ]);
   /*
    * 먼저 비운다. 안 비우면 **지운 페이지가 계속 서빙된다** — 이 함수는 쓰기만 하고
    * 지우지 않아서, 예전 빌드가 남긴 파일이 그대로 남는다. 2026-09-09에 `admin.html`을
@@ -73,8 +85,8 @@ export async function build(outDir: string): Promise<string> {
   writeFileSync(join(outDir, 'intro.html'), renderIntroPage(), 'utf8');
   writeFileSync(join(outDir, 'faq.html'), renderFaqPage(), 'utf8');
   writeFileSync(join(outDir, 'support.html'), renderSupportPage(), 'utf8');
-  writeFileSync(join(outDir, 'terms.html'), renderTermsPage(), 'utf8');
-  writeFileSync(join(outDir, 'privacy.html'), renderPrivacyPage(), 'utf8');
+  writeFileSync(join(outDir, 'terms.html'), renderTermsPage(termsDoc), 'utf8');
+  writeFileSync(join(outDir, 'privacy.html'), renderPrivacyPage(privacyDoc), 'utf8');
 
   writeFileSync(join(outDir, 'about.html'), renderLandingPage(STYLES), 'utf8');
 

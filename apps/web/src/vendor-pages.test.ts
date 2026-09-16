@@ -6,6 +6,7 @@ import type { VendorDetail, VendorSummary } from '@weddingpick/api-contract';
 
 import { build } from './build';
 import { API_URL_ENV } from './site-data';
+import { legalStubResponse } from './legal-stub';
 
 /**
  * 공유한 주소에 페이지가 있는가.
@@ -71,6 +72,8 @@ function stubApi(): void {
         headers: { 'content-type': 'application/json' },
       });
 
+    const legal = legalStubResponse(url);
+    if (legal) return legal;
     if (url.includes('/v1/site-meta')) return body({});
     if (url.includes('/v1/vendors/regions')) {
       return body({ regions: [{ name: '서울 강남구', vendorCount: 1 }] });

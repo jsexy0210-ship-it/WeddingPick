@@ -13,6 +13,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { currentUserId, requireSignup } from '../auth/plugin';
 import type { AppContext } from '../context';
+import { publishedVersionId } from '../legal-version';
 import { ApiError } from '../errors';
 
 /**
@@ -142,11 +143,24 @@ export function registerSignupRoutes(app: FastifyInstance, context: AppContext):
 
         if (!definition) continue;
 
+        /*
+         * **어느 판에 동의했는지를 «가리키게» 한다**(0420). 공개된 판이 있으면 그
+         * 행을 가리키고, 없으면 비워 둔다 — 없는 연결을 지어내지 않는다.
+         *
+         * **판 이름(`terms_version`)은 손대지 않는다.** 이 글자는 아래 `loadState`와
+         * `missingRequiredConsents`가 `consentVersion(item)`과 맞춰 보는 값이라,
+         * 여기서 표의 판 이름(`v0.1`)으로 바꾸면 **방금 동의한 사람이 동의하지 않은
+         * 것으로 읽힌다** — 가입 화면이 같은 자리를 되풀이한다. 두 이름을 하나로
+         * 합치는 것은 출시 게이트(`release-gate.ts`)까지 걸린 일이라 따로 정한다.
+         */
+        const versionId = await publishedVersionId(client, item);
+
         await client.query(
-          `INSERT INTO structured.user_consents (user_id, item, terms_version, is_required)
-           VALUES ($1, $2, $3, $4)
+          `INSERT INTO structured.user_consents
+             (user_id, item, terms_version, is_required, terms_version_id)
+           VALUES ($1, $2, $3, $4, $5)
            ON CONFLICT DO NOTHING`,
-          [userId, item, definition.version, definition.required]
+          [userId, item, definition.version, definition.required, versionId]
         );
       }
 
