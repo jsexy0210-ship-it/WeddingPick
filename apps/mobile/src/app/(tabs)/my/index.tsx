@@ -75,6 +75,7 @@ const S = {
   'item.benefit': '혜택 · 이벤트',
   'item.weddingSetting': '내 웨딩 설정',
   'item.taste': '스타일 다시 고르기',
+  'item.progress': '준비 현황',
   'item.partner': '연결 관리',
   'item.notification': '알림 설정',
   'item.display': '화면 설정',
@@ -193,6 +194,7 @@ export default function MyScreen() {
     {
       title: S['group.together'],
       rows: [
+        { key: 'progress', label: S['item.progress'], icon: 'checkCircle', onPress: () => guestPush('/progress') },
         { key: 'partner', label: S['item.partner'], icon: 'twoPeople', tail: data.couple ? COUPLE_LABEL[data.couple] : undefined, onPress: () => guestPush('/wedding/partner') },
       ],
     },
