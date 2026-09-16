@@ -238,12 +238,14 @@ export default function WeddingTasksScreen() {
       </SafeAreaView>
 
       {/*
-        핸드오프 15번의 연필 FAB. 프리셋 14개로 시작하지만 사람마다 챙길 일이
-        다르다 — 더할 길이 없으면 그 목록은 우리 목록이지 그 사람의 목록이 아니다.
+        더하기 FAB. 프리셋 14개로 시작하지만 사람마다 챙길 일이 다르다 — 더할
+        길이 없으면 그 목록은 우리 목록이지 그 사람의 목록이 아니다.
+
+        **연필이 아니라 더하기다**(2026-09-15). 피그마 웨딩노트 FAB은 탭이 무엇이든
+        `IconAddRegular`이고 바뀌는 것은 읽는 기계에 하는 말뿐이다.
       */}
       <Fab
         label="일정 더하기"
-        glyph="✎"
         onPress={() => {
           closeSheet();
           setAdding(true);
