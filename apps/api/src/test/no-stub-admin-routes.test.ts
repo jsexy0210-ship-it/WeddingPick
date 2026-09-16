@@ -48,12 +48,6 @@ const WRITE_METHODS = ['post', 'put', 'patch', 'delete'] as const;
  */
 const ALLOWED = new Map<string, string>([
   [
-    'POST /v1/admin/terms',
-    '약관 조문 편집·공개는 앱 약관·동의 기록에 연결한 뒤 열린다(`termsUnavailable`). 열릴 때 세 줄을 함께 지운다.',
-  ],
-  ['PUT /v1/admin/terms/:id/clauses/:clauseId', '위와 같다 — `termsUnavailable`.'],
-  ['POST /v1/admin/terms/:id/publish', '위와 같다 — `termsUnavailable`.'],
-  [
     'PATCH /v1/admin/ads-gate',
     '관문이 담는 사실 셋(승인 · 켜짐 · 끔)은 전용 라우트가 이미 쓴다. 여기에 길을 내면 실운영 전환을 켜는 두 번째 입구가 된다 — 대표 오더 대기(2026-09-16).',
   ],
