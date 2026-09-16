@@ -349,7 +349,7 @@ function PolicyLink({ id }: { id: 'terms' | 'privacy' }) {
       accessibilityRole="link"
       style={[styles.policyLink, { textDecorationColor: theme.textSecondary }]}
       onPress={() => {
-        void openExternal(url);
+        void openExternal(url, { title: policy.title });
       }}>
       {policy.title}
     </ThemedText>

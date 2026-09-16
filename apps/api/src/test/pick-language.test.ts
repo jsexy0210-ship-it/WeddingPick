@@ -180,10 +180,18 @@ describe('사용자 앱 Pick 언어', () => {
      * FAQ가 `Pick 인증 자료를 올리시면`이라고만 적으면 무엇을 올리라는 건지
      * 모른다. 예외가 실제로 열려 있는지 여기서 확인한다 — 열려 있지 않으면
      * 위 시험이 지나치게 넓게 잡고 있다는 뜻이다.
+     *
+     * **2026-09-16부터 FAQ 문장은 코드가 아니라 표에 있다**(대표 지시 — 운영자가 직접
+     * 고치고 지운다). 그래서 코드에서 읽을 자리가 초기값을 넣은 마이그레이션이다.
+     * 여기가 마지막으로 남은 「글자로 붙들 수 있는 FAQ」이고, 운영자가 그 뒤에 고친
+     * 문장까지는 이 시험이 못 본다 — 그 자리는 관리자 화면이 맡는다.
      */
-    const faq = readFileSync(join(ROOT, 'packages/domain/src/faq.ts'), 'utf8');
+    const seed = readFileSync(
+      join(ROOT, 'packages/db/migrations/0420_faq_seed_from_code.sql'),
+      'utf8'
+    );
 
-    expect(faq).toContain('결제');
+    expect(seed).toContain('결제');
   });
 
   it('Pick 인증 어휘가 한 곳에 있다', () => {
