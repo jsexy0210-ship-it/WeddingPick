@@ -62,7 +62,6 @@ export async function createTestApp(): Promise<TestApp> {
     sessionTtlDays: 30,
     storage: { driver: 'local' },
     geminiModel: 'gemini-2.5-flash-lite',
-    analysisModel: 'test-analysis',
     corsOrigins: [],
     retentionMode: 'manual',
     retentionReminderHours: 24,

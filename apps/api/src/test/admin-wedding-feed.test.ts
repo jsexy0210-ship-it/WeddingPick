@@ -139,27 +139,26 @@ describe('웨딩피드 관리자 라우트', () => {
   });
 
   /*
-   * 2026-09-15 대표 지시로 클로드 작성기로 바뀌면서 `GEMINI_MODEL` 검사는
-   * 없어졌다 — 모델은 `context.config.analysisModel`에서 온다. `runGeneration`
-   * 자체(실제 DB 흐름)는 `wedding-feed.test.ts`가 아니라 여기서는 라우트가
-   * 그 값을 그대로 넘기는지만 본다 — 실제 클로드를 부르지 않는다.
+   * 2026-09-15에 이 자리가 두 번 뒤집혔다 — 제미나이 → 클로드 → 제미나이.
+   * 마지막이 「클로드 API는 싹다 전면 폐기하고 제미나이로 명시해」다. 모델은
+   * `context.config.geminiModel` 하나에서 온다.
+   *
+   * 여기서는 라우트가 그 값을 그대로 넘기는지만 본다 — 실제로 부르지 않는다.
    */
-  it('지금 쓰기는 config.analysisModel로 클로드 작성기를 부른다', async () => {
+  it('지금 쓰기는 config.geminiModel로 제미나이 작성기를 부른다', async () => {
     const runGeneration = jest
       .spyOn(weddingFeed, 'runGeneration')
       .mockResolvedValue({ created: 1, skipped: null });
     /*
-     * 진짜 `Anthropic` 클라이언트를 만들지 않는다 — 생성만 해도 SDK가 자격
-     * 증명을 찾느라 비동기로 파일시스템을 뒤지고, 그 작업이 시험이 끝난
-     * 뒤까지 남아 「Jest 환경이 정리된 뒤 require」 경고를 남긴다.
-     * `runGeneration` 자체를 위에서 이미 가짜로 바꿨으니 `writer`는 아무
-     * 것도 하지 않아도 된다.
+     * 작성기를 가짜로 바꾼다 — 진짜는 열쇠가 없으면 만들 때 던지고, 이 시험에는
+     * 열쇠가 없다. `runGeneration` 자체를 위에서 이미 가짜로 바꿨으니 `writer`는
+     * 아무것도 하지 않아도 된다.
      */
-    jest.spyOn(weddingFeedWriter, 'createClaudeFeedWriter').mockReturnValue({
+    jest.spyOn(weddingFeedWriter, 'createGeminiFeedWriter').mockReturnValue({
       write: jest.fn(),
     });
 
-    const response = await app({ config: { analysisModel: '시험용-모델' } } as Partial<AppContext>).inject({
+    const response = await app({ config: { geminiModel: '시험용-모델' } } as Partial<AppContext>).inject({
       method: 'POST',
       url: '/v1/admin/wedding-feed/generate',
     });

@@ -1,13 +1,18 @@
+import type { VendorSummary } from '@weddingpick/api-contract';
 import { top3QuerySchema } from '@weddingpick/api-contract';
 import {
   DEFAULT_PERIOD_LABEL,
   DEFAULT_PERIOD_MONTHS,
   PREPARATION_CATEGORIES,
+  RECOMMEND_VENDORS_PER_CATEGORY,
   RECENT_PERIOD_MONTHS,
   TOP3_LIMIT,
   TOP3_EMPTY,
   TOP3_PARTIAL_NOTE,
   TOP3_REASON_LABEL,
+  VENDOR_CATEGORY_LABEL,
+  categoryPickState,
+  compareRecommendCategories,
   discloseAmounts,
   displayableImageUrlCondition,
   isRecommendable,
@@ -19,7 +24,10 @@ import {
   regionLikePattern,
   regionMatches,
   regionTokens,
+  showsInRecommend,
   styleOverlap,
+  type CategoryPickState,
+  type PreparationState,
   type Top3Reason,
   type VendorCategory,
   type WeddingBudgetBracket,
@@ -27,9 +35,11 @@ import {
 } from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
 
-import { optionalUser, optionalUserId } from '../auth/plugin';
+import { currentUserId, optionalUser, optionalUserId, requireUser } from '../auth/plugin';
 import type { AppContext } from '../context';
 import { assertFeatureEnabled } from '../kill-switches';
+import { summaryRating } from '../review-view';
+import { loadVendorSummaries } from './vendors';
 import { vendorSourceNote } from '../vendor-view';
 
 type CandidateRow = {
@@ -49,6 +59,8 @@ type CandidateRow = {
   confirmed_count: string;
   recent_count: string;
   paid_amounts: string[] | null;
+  rating_count: string;
+  rating_avg: string | null;
 };
 
 type ViewerRow = {
@@ -71,6 +83,8 @@ export type Recommendation = {
   styleTags: WeddingStyle[];
   guidePrice: { fromKrw: number; sourceLabel: string } | null;
   paidPrice: ReturnType<typeof discloseAmounts>;
+  /** 별점. 검색 카드와 같은 관문·같은 문턱이다(review-view summaryRating). 없으면 null. */
+  rating: { average: number; count: number } | null;
   reasonKeys: Top3Reason[];
   /** 사용자 화면 문장. 스타일 일치가 먼저다. */
   reasons: string[];
@@ -178,6 +192,10 @@ export async function recommendVendors(
             AND p.paid_at >= now() - ($3 || ' months')::interval),
          ARRAY[]::bigint[]
        ) AS paid_amounts,
+       (SELECT count(*) FROM structured.scored_reviews sr WHERE sr.vendor_id = v.id)
+         AS rating_count,
+       (SELECT avg(sr.overall) FROM structured.scored_reviews sr WHERE sr.vendor_id = v.id)
+         AS rating_avg,
        cardinality(ARRAY(SELECT unnest(v.style_tags) INTERSECT SELECT unnest($6::wedding_style[])))
          AS style_overlap
      FROM structured.vendors v
@@ -236,6 +254,11 @@ export async function recommendVendors(
         styleTags,
         guidePrice,
         paidPrice,
+        rating: summaryRating({
+          category: row.category,
+          count: Number(row.rating_count ?? 0),
+          average: row.rating_avg === null ? null : Number(row.rating_avg),
+        }),
         reasonKeys,
         reasons: reasonKeys.map((key) => TOP3_REASON_LABEL[key]),
         confirmedCount: facts.confirmedCount,
@@ -255,6 +278,165 @@ export async function recommendVendors(
   return { region, category, items };
 }
 
+
+/**
+ * 아직 정하지 않은 업종과 그 업종의 추천 업체. GET /v1/me/recommendations.
+ *
+ * **홈의 Pick 추천과 「웨딩픽 추천」 전체 페이지가 이 하나를 나눠 쓴다**(대표 사양 §12 · §14).
+ * 홈은 `limit=3`으로 앞의 셋만, 전체 페이지는 `limit` 없이 전부 받는다. 두 화면이 각자
+ * 추천을 만들면 「전체 페이지에서 본 곳이 홈에 없다」가 생기고, 그때 어느 쪽이 맞는지
+ * 아무도 모른다.
+ *
+ * 업종을 고르는 일과 업체를 고르는 일을 나눠 둔다 — 업종 순서는 도메인
+ * (`compareRecommendCategories`)이, 업체는 `recommendVendors`(TOP3와 같은 함수)가 정한다.
+ */
+export async function categoryRecommendations(
+  context: AppContext,
+  input: { userId: string; limit?: number }
+): Promise<{
+  groups: {
+    category: VendorCategory;
+    categoryLabel: string;
+    state: CategoryPickState;
+    pickCount: number;
+    vendors: VendorSummary[];
+  }[];
+  remaining: number;
+  remainingCategories: VendorCategory[];
+}> {
+  const wedding = (
+    await context.pool.query<{ id: string; prepared_categories: VendorCategory[] }>(
+      `SELECT id, prepared_categories::text[] AS prepared_categories
+       FROM structured.weddings
+       WHERE owner_user_id = $1 OR partner_user_id = $1
+       ORDER BY created_at LIMIT 1`,
+      [input.userId]
+    )
+  ).rows[0];
+
+  /*
+   * 웨딩이 없으면 준비 상태도 없다. 그래도 빈 목록을 돌려주지 않는다 — 준비 순서의 앞에서부터
+   * 시작 전으로 세운다. 온보딩을 막 끝낸 사람이 홈에서 빈 자리를 보는 것이 가장 나쁘다.
+   */
+  const prepared = new Set(wedding?.prepared_categories ?? []);
+  const progress = new Map<VendorCategory, { state: PreparationState; pickCount: number }>();
+
+  if (wedding) {
+    const { rows } = await context.pool.query<{
+      category: VendorCategory;
+      state: PreparationState;
+      pick_count: string;
+    }>(
+      `SELECT p.category::text AS category, p.state, p.pick_count
+       FROM structured.wedding_preparation p
+       WHERE p.wedding_id = $1`,
+      [wedding.id]
+    );
+
+    for (const row of rows) {
+      progress.set(row.category, { state: row.state, pickCount: Number(row.pick_count) });
+    }
+  }
+
+  const open = PREPARATION_CATEGORIES.map((category) => {
+    const row = progress.get(category);
+    const pickCount = row?.pickCount ?? 0;
+
+    return {
+      category,
+      pickCount,
+      state: categoryPickState({
+        state: row?.state ?? 'before',
+        pickCount,
+        prepared: prepared.has(category),
+      }),
+    };
+  })
+    .filter((row) => showsInRecommend(row.state))
+    .sort(compareRecommendCategories);
+
+  const limit = input.limit ?? open.length;
+  /*
+   * 업종마다 추천을 부른다. **보여줄 업종만** 부른다 — 홈이 셋만 그리는데 열둘을 다 부르면
+   * 그 아홉은 버려지고 질의만 남는다. 서로 기대지 않으므로 병렬로 묶는다.
+   */
+  const shown = await Promise.all(
+    open.slice(0, limit).map(async (row) => {
+      const vendors = await vendorsFor(context, {
+        userId: input.userId,
+        weddingId: wedding?.id ?? null,
+        category: row.category,
+        pickCount: row.pickCount,
+      });
+
+      return {
+        category: row.category,
+        categoryLabel: VENDOR_CATEGORY_LABEL[row.category],
+        state: row.state,
+        pickCount: row.pickCount,
+        vendors,
+      };
+    })
+  );
+
+  return {
+    groups: shown,
+    /*
+     * 「아직 결정하지 않은 준비가 N개 있어요」는 **보이는 수가 아니라 전체 수**다. 잘린 뒤에
+     * 세면 홈에서는 늘 3이 되고, 그 줄은 아무것도 말하지 않게 된다.
+     */
+    remaining: open.length,
+    remainingCategories: open.map((row) => row.category),
+  };
+}
+
+/**
+ * 펼쳤을 때 무엇이 보이는가. 대표 사양 §7의 「펼침 내용」 칸 그대로다.
+ *
+ *   담아둔 곳이 있다   **그 사람이 Pick한 곳**(SHORTLISTED · COMPARING)
+ *   담아둔 곳이 없다   추천 업체(NOT_STARTED)
+ *
+ * **자기가 담은 곳을 자기 업종에서 못 보면 안 된다.** 웨딩홀 셋을 Pick해둔 사람이 웨딩홀을
+ * 펼쳤을 때 모르는 세 곳이 나오면, 그 사람은 자기 Pick이 어디로 갔는지부터 찾는다 —
+ * 사양 §8의 「추천 → 보기 → Pick → 비교 → 결정」이 거기서 끊긴다.
+ *
+ * 담은 곳이 셋을 넘으면 최근에 담은 셋이다. 카드 줄은 셋까지고(§6), 넘치는 것은
+ * 「한눈에 비교」가 여는 업종 화면이 다 보여준다.
+ */
+async function vendorsFor(
+  context: AppContext,
+  input: { userId: string; weddingId: string | null; category: VendorCategory; pickCount: number }
+) {
+  if (input.pickCount > 0 && input.weddingId !== null) {
+    const { rows } = await context.pool.query<{ vendor_id: string }>(
+      `SELECT c.vendor_id
+       FROM structured.vendor_candidates c
+       JOIN structured.vendors v ON v.id = c.vendor_id
+       WHERE c.wedding_id = $1 AND v.category = $2::vendor_category
+       ORDER BY c.added_at DESC
+       LIMIT $3`,
+      [input.weddingId, input.category, RECOMMEND_VENDORS_PER_CATEGORY]
+    );
+
+    const picked = await loadVendorSummaries(
+      context.pool,
+      rows.map((row) => row.vendor_id)
+    );
+
+    /* 담은 곳을 못 읽었으면(업체가 사라졌다든가) 빈 칸을 두지 않고 추천으로 메운다. */
+    if (picked.length > 0) return picked;
+  }
+
+  const { items } = await recommendVendors(context, {
+    userId: input.userId,
+    category: input.category,
+    limit: RECOMMEND_VENDORS_PER_CATEGORY,
+  });
+
+  /* 이유 문장과 실 제보 수는 카드가 안 쓴다 — 목록 요약(vendorSummary)만 남긴다. */
+  return items.map(({ reasonKeys: _keys, confirmedCount: _count, ...vendor }) => vendor);
+}
+
 /**
  * 추천. 통합정책 v3.10 §2.
  *
@@ -272,6 +454,24 @@ export function registerRecommendationRoutes(app: FastifyInstance, context: AppC
    * 비회원도 부른다. 지연 로그인이라 로그인 전에도 홈이 뜨고, 그때 지역은 기기에
    * 적혀 있어 쿼리로 넘어온다.
    */
+  /**
+   * Pick 추천 — 아직 정하지 않은 업종과 업종별 추천 업체.
+   *
+   * 로그인한 사람만이다. 준비 상태가 웨딩에 매달려 있어 비회원에게는 세울 업종이 없다.
+   */
+  app.get<{ Querystring: { limit?: string } }>(
+    '/v1/me/recommendations',
+    { preHandler: requireUser(context) },
+    async (request) => {
+      const limit = Number(request.query.limit);
+
+      return categoryRecommendations(context, {
+        userId: currentUserId(request),
+        limit: Number.isFinite(limit) && limit > 0 ? limit : undefined,
+      });
+    }
+  );
+
   app.get('/v1/recommendations/top3', auth, async (request) => {
     const query = top3QuerySchema.parse(request.query);
     const userId = optionalUserId(request);

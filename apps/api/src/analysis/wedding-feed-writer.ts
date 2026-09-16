@@ -1,7 +1,7 @@
-import Anthropic from '@anthropic-ai/sdk';
-import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import { WEDDING_FEED_LIMITS, type WeddingFeedTopic } from '@weddingpick/domain';
 import { z } from 'zod';
+
+import { callGemini } from './gemini-call';
 
 /**
  * 웨딩피드 글을 쓴다.
@@ -70,69 +70,54 @@ export type FeedWriter = {
 };
 
 /**
- * Anthropic 클라이언트의 한도. `claude-analyzer.ts`와 같은 값이다.
+ * 제미나이로 쓴다(2026-09-15 대표 지시 — 「제미나이로 되돌린다」).
  *
- * 인자 없이 만들면 SDK 기본값(10분 타임아웃 + 재시도)이 요청 하나를 오래
- * 붙잡을 수 있다(Release Audit 1차 P1-9) — 워커 루프 하나가 이 글쓰기 한
- * 건 때문에 다음 바퀴까지 밀리면 안 된다.
+ * **오늘 두 번 바뀐 자리다. 왜 그랬는지를 적어 둔다.**
+ *
+ * 아침에 클로드로 옮겼다 — 「제미나이는 녹음파일 인식, OCR 확인 외 절대 사용금지다」.
+ * 그 지시의 이유는 돈이었다: 「클로드는 Max 구독 안에서 처리되고 제미나이는 구글
+ * 계정으로 따로 청구된다」.
+ *
+ * **그 전제가 이 자리에서는 틀렸다.** Max 구독이 덮는 것은 사람이 쓰는 Claude Code
+ * 세션이고, **운영 서버가 `ANTHROPIC_API_KEY`로 API를 부르는 것은 구독 밖이라
+ * 종량 과금이다.** 대표님이 먼저 짚으셨다 — 「엔트로픽 api key면 요금 발생하는거
+ * 아니냐?」. 옮긴 것이 돈을 아낀 것이 아니었고, `gemini-2.5-flash-lite`가 그 일에
+ * 훨씬 싸다.
+ *
+ * **녹음·OCR 금지 규칙 자체는 살아 있다.** 없어진 것은 그 규칙이 이 파일까지
+ * 덮는다는 부분이고, 근거가 무너진 만큼만 좁혔다 — `CLAUDE.md`에 그렇게 적었다.
+ *
+ * 모델은 호출하는 쪽이 정해서 넘긴다 — `runGeneration`에 넘기는 `model`과 실제로
+ * 부르는 모델이 같아야 `wedding_feed_runs`에 적히는 이름이 사실과 맞는다.
+ *
+ * **`config.analysisModel`이 아니라 `config.geminiModel`을 넘겨야 한다.** 앞의
+ * 것은 클로드 모델 이름이고, 그대로 넘기면 제미나이가 모르는 이름을 받는다.
  */
-const CLIENT_LIMITS = { timeout: 120_000, maxRetries: 2 };
-
-/**
- * 클로드로 쓴다(2026-09-15 대표 지시 — 「제미나이는 녹음파일 인식, OCR 확인 외
- * 절대 사용금지다」, `CLAUDE.md` 커밋 `94ca7c62`). 글쓰기는 제미나이가 할 일이
- * 아니다 — 예전에는 `callGemini`로 썼고, 붙기 전이라 구글 쪽 요금은 나간 적이
- * 없다.
- *
- * `claude-analyzer.ts` · `claude-payment-reader.ts`가 이미 쓰는 경로 그대로다 —
- * `Anthropic` SDK를 직접 부르고 `zodOutputFormat`으로 스키마를 강제한다. 새
- * 호출 경로를 만들지 않는다.
- *
- * 모델은 호출하는 쪽이 정해서 넘긴다(`config.analysisModel`) — `runGeneration`에
- * 넘기는 `model`과 실제로 부르는 모델이 같아야 `wedding_feed_runs`에 적히는
- * 이름이 사실과 맞는다. 새 설정 칸을 만들지 않는다 — `claude-analyzer.ts`가
- * 같은 칸을 쓰고, 모델을 바꿀 자리를 하나로 묶어 둔다.
- */
-export function createClaudeFeedWriter(options: { model: string }): FeedWriter {
-  const client = new Anthropic(CLIENT_LIMITS);
+export function createGeminiFeedWriter(options: { apiKey: string; model: string }): FeedWriter {
+  if (!options.apiKey) {
+    throw new Error('GEMINI_API_KEY가 없다. 웨딩피드 자동 작성을 부를 수 없다.');
+  }
 
   return {
     async write(topic) {
-      const response = await client.messages.parse({
+      const { value, usage } = await callGemini({
+        apiKey: options.apiKey,
         model: options.model,
-        max_tokens: 4000,
-        system: [
+        systemPrompt: SYSTEM_PROMPT,
+        schema: feedDraftSchema,
+        parts: [
           {
-            type: 'text',
-            text: SYSTEM_PROMPT,
-            // 지시문은 매번 그대로다. 캐시가 먹도록 앞에 두고 주제를 뒤에 붙인다.
-            cache_control: { type: 'ephemeral' },
+            text:
+              `주제: ${topic.brief}\n` +
+              `묶음: ${topic.categoryLabel}\n\n` +
+              '이 주제로 한 편을 쓰고 스키마대로 채워라.',
           },
         ],
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text:
-                  `주제: ${topic.brief}\n` +
-                  `묶음: ${topic.categoryLabel}\n\n` +
-                  '이 주제로 한 편을 쓰고 스키마대로 채워라.',
-              },
-            ],
-          },
-        ],
-        output_config: { format: zodOutputFormat(feedDraftSchema) },
       });
 
-      if (!response.parsed_output) {
-        throw new Error('구조화 출력을 읽지 못했다.');
-      }
-
       return {
-        draft: response.parsed_output,
-        usage: { inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens },
+        draft: value,
+        usage: { inputTokens: usage.inputTokens, outputTokens: usage.outputTokens },
       };
     },
   };

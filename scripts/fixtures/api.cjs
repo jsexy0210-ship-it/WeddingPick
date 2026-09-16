@@ -30,6 +30,12 @@ const vendor = (id, name, category, region, opts = {}) => ({
   paidPrice: opts.paidPrice ?? { stage: 'collecting', count: 0, caption: '수집 중' },
   styleTags: opts.styleTags ?? [],
   guidePrice: opts.guideFrom ? { fromKrw: opts.guideFrom, sourceLabel: '업체 안내' } : null,
+  /*
+   * 별점. **일부러 없는 곳을 섞어 둔다** — 확인된 후기 5건에 못 미치거나 체크리스트
+   * 업종(결정사)이면 null이고, 그때 카드가 별점 줄을 안 그린다. 캡처에서 두 꼴이 같이
+   * 보여야 「없는 카드」의 생김새를 눈으로 확인할 수 있다.
+   */
+  rating: opts.rating ?? null,
 });
 
 /** 실 제보가 충분한 업체. 금액 한 줄이 구간으로 뜬다. */
@@ -47,11 +53,13 @@ const VENDORS = [
     reports: 12,
     paidPrice: disclosed(12, 1_520_000, 1_840_000, 1_680_000),
     styleTags: ['URBAN'],
+    rating: { average: 4.7, count: 18 },
   }),
   vendor('22222222-2222-4222-8222-222222222222', '강남 B 웨딩홀', 'hall', '서울', {
     reports: 5,
     paidPrice: disclosed(5, 1_900_000, 2_400_000),
     styleTags: ['GLAMOROUS'],
+    rating: { average: 4.3, count: 7 },
   }),
   vendor('33333333-3333-4333-8333-333333333333', '분당 C 웨딩홀', 'hall', '경기', {
     reports: 1,
@@ -66,6 +74,7 @@ const VENDORS = [
     reports: 8,
     paidPrice: disclosed(8, 980_000, 1_240_000, 1_100_000),
     styleTags: ['NATURAL'],
+    rating: { average: 4.9, count: 11 },
   }),
 ];
 
@@ -204,6 +213,10 @@ const routes = {
     popularVendors: VENDORS.slice(0, 2),
     candidates: null,
     recommendations: VENDORS.slice(0, 3),
+    /* 히어로 «남은 예산 3,000만원 · 27% 사용». */
+    budget: { total: 41_000_000, spent: 11_000_000, remaining: 30_000_000 },
+    bracketAnswered: true,
+    partnerInvitePending: false,
   },
   /** 홈 아래쪽 웨딩피드 — 공개된 글만. 홈은 두 장만 보여준다(`HOME_FEED_PREVIEW_COUNT`). */
   'GET /v1/wedding-feed': {
@@ -435,6 +448,38 @@ const routes = {
     done: ['계정이 삭제됐어요', '로그인 정보가 지워졌어요'],
   },
   'GET /v1/weddings/:weddingId/invites': { invite: null },
+  /*
+   * Pick 추천 — 홈 아코디언과 「웨딩픽 추천」 전체 페이지가 같이 쓴다. 상태를 셋 다 다르게
+   * 둬서 캡처 한 장에 «비교» · «보기» · «추천»이 같이 보이게 한다. `limit`은 무시한다 —
+   * 캡처에서는 홈도 전체 페이지도 같은 셋을 그린다.
+   */
+  'GET /v1/me/recommendations': {
+    groups: [
+      {
+        category: 'hall',
+        categoryLabel: '웨딩홀',
+        state: 'COMPARING',
+        pickCount: 2,
+        vendors: VENDORS.filter((v) => v.category === 'hall').slice(0, 3),
+      },
+      {
+        category: 'studio',
+        categoryLabel: '스튜디오',
+        state: 'SHORTLISTED',
+        pickCount: 1,
+        vendors: VENDORS.filter((v) => v.category === 'studio'),
+      },
+      {
+        category: 'dress',
+        categoryLabel: '드레스',
+        state: 'NOT_STARTED',
+        pickCount: 0,
+        vendors: [],
+      },
+    ],
+    remaining: 7,
+    remainingCategories: ['hall', 'studio', 'dress', 'makeup', 'hair', 'goods', 'honeymoon'],
+  },
   'GET /v1/expos': {
     items: [
       {
@@ -518,6 +563,104 @@ const routes = {
     canActivate: true,
     /* 막고 있는 것이 없다. 「켜면 나갑니다」는 안내라 여기 넣지 않는다. */
     blockers: [],
+  },
+  /*
+   * 관리자 계정. 뷰어가 표에 저장된 진짜 슈퍼(`viewerAccountId`가 자기 자신)인
+   * 상태로 찍는다 — 「나머지 전체를 뷰어로」 단추가 보이는 화면이 이 상태다.
+   */
+  'GET /v1/admin/accounts': {
+    accounts: [
+      {
+        id: 'aaaaaaaa-0000-4000-8000-000000000001',
+        loginId: 'jsexy0210',
+        role: 'super',
+        disabled: false,
+        createdBy: null,
+        createdAt: '2026-09-10T00:00:00.000Z',
+      },
+      {
+        id: 'aaaaaaaa-0000-4000-8000-000000000002',
+        loginId: 'ops-team',
+        role: 'operator',
+        disabled: false,
+        createdBy: 'jsexy0210',
+        createdAt: '2026-09-12T00:00:00.000Z',
+      },
+      {
+        id: 'aaaaaaaa-0000-4000-8000-000000000003',
+        loginId: 'qa-checker',
+        role: 'viewer',
+        disabled: false,
+        createdBy: 'jsexy0210',
+        createdAt: '2026-09-13T00:00:00.000Z',
+      },
+    ],
+    viewerIsStored: true,
+    viewerAccountId: 'aaaaaaaa-0000-4000-8000-000000000001',
+  },
+  /*
+   * 대시보드 + 일일 브리핑(2026-09-15 대표 확정으로 한 화면). 브리핑은 대시보드
+   * 아래 절반이라 이 파일에서는 셋을 나란히 둔다 — 화면을 찍으면 위아래가 한 번에 보인다.
+   */
+  'GET /v1/admin/dashboard': {
+    humanQueue: [
+      { key: 'queue', label: '확인 필요', why: '실 제보 인증 대기', count: 3, tone: 'caution' },
+      { key: 'rebuttal', label: '후기 · 반론', why: '관계자 인증 확인 필요', count: 1, tone: 'danger' },
+    ],
+    humanTotal: 4,
+    dashCards: [
+      { key: 'ai-usage', label: '분석 비용', mode: '비용', value: '12,400', unit: '원', note: '오늘 사용분' },
+      { key: 'price-stats', label: '가격 통계', mode: '지표', value: '128', unit: '건', note: '이번 주 신규' },
+      { key: 'campaigns', label: '캠페인 참여', mode: '지표', value: '56', unit: '명', note: '이번 회차' },
+      { key: 'automation1', label: '자동 처리', mode: '자동', value: '312', unit: '건', note: '최근 24시간' },
+      { key: 'automation2', label: '자동 성공률', mode: '자동', value: '98.2', unit: '%', note: '최근 24시간' },
+      { key: 'automation3', label: '자동 복구', mode: '자동', value: '2', unit: '건', note: '최근 24시간' },
+    ],
+    auto: {
+      ratePct: 92,
+      segments: [
+        { key: 'concluded', label: '자동 종결', count: 288 },
+        { key: 'failed', label: '실패', count: 6 },
+        { key: 'human', label: '사람에게 넘김', count: 18 },
+      ],
+      keepRatePct: 96,
+      revertedCount: 2,
+      medianLatencyMs: 4200,
+      byWorkflow: [
+        { workflow: 'verification-review', concluded: 210, failed: 4, human: 12, reverted: 1, autoPct: 93 },
+      ],
+    },
+    autoLog: [
+      {
+        id: '11111111-1111-4111-8111-111111111111',
+        decision: '승인',
+        subject: '강남 A 웨딩홀',
+        reasonCode: 'auto_verified',
+        confidence: 0.94,
+        decidedAt: '2026-09-15T02:00:00.000Z',
+        tone: 'ok',
+      },
+    ],
+  },
+  'GET /v1/admin/members-trend': {
+    bucket: 'month',
+    points: [
+      { at: '2026-07-01T00:00:00.000Z', signups: 120, total: 1200 },
+      { at: '2026-08-01T00:00:00.000Z', signups: 150, total: 1350 },
+      { at: '2026-09-01T00:00:00.000Z', signups: 90, total: 1440 },
+    ],
+    current: 1440,
+  },
+  'GET /v1/admin/briefing': {
+    date: '2026-09-15',
+    autoProcessed: 312,
+    successRate: 0.982,
+    autoRecovered: 2,
+    unresolvedRisks: [],
+    aiCostToday: '12,400원',
+    revenueToday: '0원',
+    anomalies: [],
+    summary: '오늘 처리한 312건 중 사람이 볼 것은 없어요.',
   },
   'GET /v1/admin/ad-tiers': {
     tiers: [

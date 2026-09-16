@@ -1,3 +1,4 @@
+import { Redirect } from 'expo-router';
 /**
  * WP-ADM-041 긴급 중지
  *
@@ -42,7 +43,7 @@ type SwitchItem = {
 
 type KillSwitchData = { switches: SwitchItem[] };
 
-export default function KillSwitchScreen() {
+export function KillSwitchPanel() {
   const [data, setData] = useState<KillSwitchData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -121,7 +122,7 @@ export default function KillSwitchScreen() {
   }
 
   return (
-    <Page title="긴급 중지" sub="기능별 스위치 · 끄면 무엇이 멈추는지 보여요">
+    <Page embedded title="긴급 중지" sub="기능별 스위치 · 끄면 무엇이 멈추는지 보여요">
       <DelayedLoader active={loading} size={40} />
       {!loading && error ? <LoadError message={error} onRetry={reload} /> : null}
 
@@ -176,4 +177,12 @@ export default function KillSwitchScreen() {
       ) : null}
     </Page>
   );
+}
+
+/**
+ * 옛 주소는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제 화면은 `/admin/automation`(자동화)의 긴급 중지 탭에 있다 —
+ * `KillSwitchPanel`이 이 파일의 본체다.
+ */
+export default function KillSwitchRedirect() {
+  return <Redirect href="/admin/automation?tab=kill-switch" />;
 }

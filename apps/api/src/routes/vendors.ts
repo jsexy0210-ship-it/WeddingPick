@@ -38,7 +38,7 @@ import { z } from 'zod';
 import { optionalUser, optionalUserId } from '../auth/plugin';
 import type { AppContext } from '../context';
 import { ApiError, notFound } from '../errors';
-import { loadUsageScore } from '../review-view';
+import { loadUsageScore, summaryRating } from '../review-view';
 import { vendorSourceNote } from '../vendor-view';
 
 /**
@@ -67,6 +67,12 @@ type VendorRow = {
   /** 업체 안내 가격(정보 0층). 없으면 null. */
   guide_price_from: string | number | null;
   guide_price_source: string | null;
+  /**
+   * 이용점수 요약. 검색 목록에서만 채워진다 — 상세는 `loadUsageScore`로 항목별까지 읽는다.
+   * `scored_reviews`(게시 중 · 확인된 후기)에서 센 것이고, 문턱 판정은 `summaryRating`이 한다.
+   */
+  rating_count?: string;
+  rating_avg?: string | null;
   /** 검색 목록에서만 채워진다. 상세는 따로 읽는다. */
   proof_count?: string;
   total?: string;
@@ -134,7 +140,74 @@ function toSummary(row: VendorRow) {
     comparableQuoteCount: Number(row.comparable_quote_count),
     styleTags: (row.style_tags ?? []).filter(isWeddingStyle),
     guidePrice: guidePriceOf(row),
+    /*
+     * 별점. 상세와 같은 관문(scored_reviews)에서 온 수와 평균을 `summaryRating`이 판정한다 —
+     * 확인된 후기가 모자라거나 체크리스트 업종이면 null이고, 그때 카드는 별점 줄을 안 그린다.
+     * 행에 그 칸이 없는 질의(상세·비교)는 애초에 `rating`을 덜어내므로 null로 둔다.
+     */
+    rating: summaryRating({
+      category: row.category as VendorCategory,
+      count: Number(row.rating_count ?? 0),
+      average: row.rating_avg === null || row.rating_avg === undefined ? null : Number(row.rating_avg),
+    }),
   };
+}
+
+/**
+ * 업체 몇 곳을 **목록 카드 꼴로** 읽는다. Pick 추천 아코디언이 쓴다.
+ *
+ * 왜 `loadVendorDetail`이 아닌가 — 상세는 상품별 중앙값 · 이용점수 항목 · 조건별 사례까지
+ * 읽는다. 카드 한 장에 그 전부를 읽으면 업종 셋을 펼치는 데 질의가 수십 개 돈다. 여기서
+ * 읽는 것은 검색 목록 한 줄과 **같은 칸**이다(`toSummary` · 같은 금액 · 같은 별점 관문).
+ *
+ * 순서는 넘긴 id 순서 그대로다 — SQL의 순서에 맡기면 담은 순서가 뒤집힌다.
+ */
+export async function loadVendorSummaries(pool: Pool, ids: readonly string[]) {
+  if (ids.length === 0) return [];
+
+  const { rows } = await pool.query<VendorRow>(
+    `SELECT v.id, v.name, v.category, v.region, v.source, to_jsonb(v)->>'source_url' AS source_url,
+            v.last_verified_at, v.lat, v.lng,
+            v.style_tags::text[] AS style_tags, v.guide_price_from, v.guide_price_source,
+            (SELECT i.source_url FROM structured.vendor_images i
+               WHERE i.vendor_id = v.id AND i.status = 'approved' AND i.copyright_basis <> 'unknown'
+                 AND i.source_url IS NOT NULL
+               ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url,
+            (SELECT count(*) FROM structured.comparable_quotes c WHERE c.vendor_id = v.id)
+              AS comparable_quote_count,
+            (SELECT count(*) FROM structured.scored_reviews sr WHERE sr.vendor_id = v.id)
+              AS rating_count,
+            (SELECT avg(sr.overall) FROM structured.scored_reviews sr WHERE sr.vendor_id = v.id)
+              AS rating_avg,
+            coalesce(
+              (SELECT array_agg(p.paid_amount)
+               FROM structured.usable_payment_proofs p
+               WHERE p.vendor_id = v.id
+                 AND p.paid_at >= now() - ($2 || ' months')::interval),
+              ARRAY[]::bigint[]
+            ) AS paid_amounts
+     FROM structured.vendors v
+     WHERE v.id = ANY ($1::uuid[])`,
+    [[...ids], DEFAULT_PERIOD_MONTHS]
+  );
+
+  const byId = new Map(rows.map((row) => [row.id, row]));
+
+  return ids.flatMap((id) => {
+    const row = byId.get(id);
+
+    if (row === undefined) return [];
+
+    return [
+      {
+        ...toSummary(row),
+        paidPrice: discloseAmounts({
+          amounts: (row.paid_amounts ?? []).map(Number),
+          period: DEFAULT_PERIOD_LABEL,
+        }),
+      },
+    ];
+  });
 }
 
 /**
@@ -561,6 +634,15 @@ export function registerVendorRoutes(app: FastifyInstance, context: AppContext):
               (SELECT count(*) FROM structured.comparable_quotes c WHERE c.vendor_id = v.id)
                 AS comparable_quote_count,
               coalesce(w.proof_count, 0) AS proof_count,
+              /*
+               * 별점. 상세(loadUsageScore)와 같은 뷰를 본다 — 게시 중이고 확인된 후기만
+               * 들어오는 관문이다. 몇 건부터 점수를 만들지는 도메인이 정하므로(MINIMUM_REVIEW_COUNT)
+               * 여기서는 세기만 하고 판정하지 않는다.
+               */
+              (SELECT count(*) FROM structured.scored_reviews s WHERE s.vendor_id = v.id)
+                AS rating_count,
+              (SELECT avg(s.overall) FROM structured.scored_reviews s WHERE s.vendor_id = v.id)
+                AS rating_avg,
               /* 전체 건수는 한 번만 센다 — 행마다 found를 다시 훑으면 업체 수의 제곱으로 느려진다. */
               count(*) OVER () AS total,
               ${sort.key ? `(${sort.key})::text` : 'NULL::text'} AS sort_key,

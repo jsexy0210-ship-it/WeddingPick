@@ -1,7 +1,12 @@
 /**
  * WP-ADM-034 성장 · 광고 실운영 전환 게이트
  * 테스트 전체 오픈 → 데이터 축적 → AI 독립 분석 → 보고서 → 최종 결정 → 실운영
+ *
+ * **2026-09-15 대표 확정 — 「광고 집행」과 한 화면 「광고」로 묶였다**(탭 둘). 이
+ * 파일의 본체는 `AdsGatePanel`로 옮기고 `ads.tsx`가 탭으로 골라 그린다 — 이 주소
+ * (`/admin/ads-gate`)는 저장된 링크가 깨지지 않게 `/admin/ads`의 전환 승인 탭으로 넘긴다.
  */
+import { Redirect } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -87,7 +92,7 @@ const STEP_LABEL: Record<GateStepStatus, string> = {
   blocked: '차단됨',
 };
 
-export default function AdsGateScreen() {
+export function AdsGatePanel() {
   const [data, setData] = useState<AdsGateData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -425,6 +430,14 @@ export default function AdsGateScreen() {
 
     </View>
   );
+}
+
+/**
+ * 옛 주소(`/admin/ads-gate`)는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제 화면은
+ * `/admin/ads`(광고)의 전환 승인 탭에 있다 — `AdsGatePanel`이 이 파일의 본체다.
+ */
+export default function AdsGateRedirect() {
+  return <Redirect href="/admin/ads?tab=gate" />;
 }
 
 const styles = StyleSheet.create({

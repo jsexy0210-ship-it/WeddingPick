@@ -5,9 +5,27 @@
  * 다 가능해야 하고 지속 콘텐츠 작성한다」. 운영자가 직접 쓰고 고치고 지우는 위에,
  * 자동 작성(`worker-loops.ts`)이 공개 글이 목표(8건)보다 적을 때 스스로 채운다.
  *
+ * **자동 작성을 한 번 뺐다가 되살렸다**(2026-09-15). 대표님이 「지금 자동 작성」을
+ * 누르셨을 때 실패했고, 원인을 캐다 나온 사실이 결정을 두 번 뒤집었다 — 운영 서버의
+ * 클로드 API 호출은 Max 구독 밖이라 종량 과금이다. 그래서 「내가 직접 작성할게 자동
+ * 작성은 빼」로 뺐고, 제미나이면 값이 다르다는 것을 확인한 뒤 「제미나이로 되돌린다」로
+ * 되살렸다. 지금 작성기는 `createGeminiFeedWriter`다.
+ *
+ * **자동 루프는 꺼져 있다.** `WEDDING_FEED_AUTOWRITE`를 배포에 넣지 않았다 — 이
+ * 단추로 한 편 써 보고 품질을 확인한 뒤에 켜는 것이 순서다.
+ *
  * 규칙과 한도는 `packages/domain/src/wedding-feed.ts` 한 곳에서만 온다 — 여기서
  * 값을 다시 적으면 화면과 서버가 다른 길이를 막게 된다.
+ *
+ * **2026-09-15 — 「사이트·기록」 화면의 탭 하나로 자리 잡았다.** `main`의 옛
+ * 사이드바는 이 화면을 FAQ·링크 미리보기와 같은 「문구 · 카드」 묶음에 두었는데,
+ * 그 묶음이 그대로 「사이트·기록」 탭 넷(FAQ 관리 · 약관·방침 · 링크 미리보기 ·
+ * 감사 기록)이 됐다 — 웨딩피드도 사용자에게 노출되는 콘텐츠를 관리자가 직접
+ * 쓰고 고치는 화면이라 같은 자리다. `faq.tsx`의 `TABS` 끝에 추가했다. 이 파일
+ * 맨 아래 `WeddingFeedRedirect`가 옛 주소를 `/admin/faq?tab=wedding-feed`로
+ * 보내고, 본문은 `WeddingFeedPanel`로 이름만 바꿨다.
  */
+import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -115,7 +133,7 @@ const STATUS_KIND: Record<WeddingFeedStatus, 'ok' | 'warn' | 'dim'> = {
   archived: 'dim',
 };
 
-export default function WeddingFeedScreen() {
+export function WeddingFeedPanel() {
   const [data, setData] = useState<FeedData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -151,6 +169,12 @@ export default function WeddingFeedScreen() {
 
   const [deleting, setDeleting] = useState<Post | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
+  /*
+   * 지우기가 실패했을 때 배너에 적는 말. 전에는 자동 작성의 `generateMsg`를 빌려
+   * 쓰고 있었다 — 자동 작성을 화면에서 뺐다 되살리는 동안 드러났다. 빌린 상태는
+   * 그 주인이 사라질 때까지 아무도 모른다.
+   */
+  const [actionMsg, setActionMsg] = useState<string | null>(null);
 
   const [generating, setGenerating] = useState(false);
   const [generateMsg, setGenerateMsg] = useState<string | null>(null);
@@ -210,7 +234,7 @@ export default function WeddingFeedScreen() {
       setDeleting(null);
       reload();
     } catch (e) {
-      setGenerateMsg(e instanceof Error ? e.message : '삭제 실패');
+      setActionMsg(e instanceof Error ? e.message : '삭제 실패');
       setDeleting(null);
     } finally {
       setDeleteBusy(false);
@@ -261,6 +285,7 @@ export default function WeddingFeedScreen() {
 
   return (
     <Page
+      embedded
       title="웨딩피드 관리"
       sub="홈 아래쪽에 깔리는 읽을거리 — 직접 쓰거나 자동 작성이 채운다"
       action={{
@@ -275,7 +300,7 @@ export default function WeddingFeedScreen() {
 
       {!loading && !error && data ? (
         <>
-          <StatusBanner tone={bannerTone} title={bannerTitle} detail={generateMsg ?? bannerDetail} />
+          <StatusBanner tone={bannerTone} title={bannerTitle} detail={actionMsg ?? generateMsg ?? bannerDetail} />
 
           <CardGrid>
             <Card title="글 목록" sub="등록 · 수정 · 삭제는 직접 한다" action={{ label: '+ 새 글', onPress: openNew, kind: 'brand' }} full>
@@ -396,6 +421,11 @@ export default function WeddingFeedScreen() {
       ) : null}
     </Page>
   );
+}
+
+/** 옛 주소 — 「사이트·기록」의 웨딩피드 관리 탭으로 보낸다. */
+export default function WeddingFeedRedirect() {
+  return <Redirect href="/admin/faq?tab=wedding-feed" />;
 }
 
 const C = Colors.light;

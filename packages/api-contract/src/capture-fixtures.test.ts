@@ -16,6 +16,7 @@ import { candidateListResponseSchema } from './candidates';
 import { expoListResponseSchema } from './expos';
 import { consultationListResponseSchema } from './consultations';
 import { myReportListResponseSchema } from './my-reports';
+import { categoryRecommendationsResponseSchema } from './recommendations';
 import { myMonthlyDrawResponseSchema, myRewardPayoutResponseSchema, myRewardsResponseSchema } from './rewards';
 import { reportReasonListResponseSchema, reviewListResponseSchema } from './reviews';
 import { settingsSchema } from './settings';
@@ -48,6 +49,7 @@ const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/me/signup', signupStateSchema],
   ['GET /v1/me', currentUserSchema],
   ['GET /v1/app/bootstrap', appBootstrapResponseSchema],
+  ['GET /v1/me/recommendations', categoryRecommendationsResponseSchema],
   ['GET /v1/auth/providers', authProvidersResponseSchema],
   ['GET /v1/weddings/:weddingId/candidates', candidateListResponseSchema],
   ['GET /v1/me/monthly-draw', myMonthlyDrawResponseSchema],
@@ -85,6 +87,10 @@ const CONTRACTS = new Map<string, ZodType>([
 const NO_CONTRACT = new Set([
   'GET /v1/admin/ads-gate',
   'GET /v1/admin/ad-tiers',
+  'GET /v1/admin/accounts',
+  'GET /v1/admin/dashboard',
+  'GET /v1/admin/members-trend',
+  'GET /v1/admin/briefing',
   'GET /v1/admin/wedding-feed',
   /* 박람회 관리(0410) — 관리자 전용이라 사용자 계약이 없다. 위 admin 넷과 같은 자리다. */
   'GET /v1/admin/expos',

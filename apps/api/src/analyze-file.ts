@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { basename, extname } from 'node:path';
 
-import { createClaudeAnalyzer } from './analysis/claude-analyzer';
+import { createGeminiAnalyzer } from './analysis/gemini-analyzer';
 import { persistExtraction } from './analysis/persist';
 import { loadConfig } from './config';
 import { createPool, withTransaction } from './db';
@@ -87,10 +87,8 @@ async function main(): Promise<void> {
     return;
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.error(
-      'ANTHROPIC_API_KEY가 없다. 이 명령은 실제 분석을 부르므로 키가 있어야 한다.'
-    );
+  if (!process.env.GEMINI_API_KEY) {
+    console.error('GEMINI_API_KEY가 없다. 이 명령은 실제 분석을 부르므로 키가 있어야 한다.');
     process.exitCode = 1;
     return;
   }
@@ -109,7 +107,10 @@ async function main(): Promise<void> {
 
   console.log(`${basename(file)} (${(bytes.length / 1024).toFixed(0)}KB) 분석 중…`);
 
-  const analyzer = createClaudeAnalyzer({ model: process.env.ANALYSIS_MODEL });
+  const analyzer = createGeminiAnalyzer({
+    apiKey: process.env.GEMINI_API_KEY ?? '',
+    model: process.env.GEMINI_MODEL ?? 'gemini-2.5-flash-lite',
+  });
   // 읽지 못하면 예외가 난다. 여기서 감싸지 않는다 — 왜 못 읽었는지가 그대로 보여야 한다.
   const { extraction, usage } = await analyzer.analyze([{ mimeType, bytes }]);
 
