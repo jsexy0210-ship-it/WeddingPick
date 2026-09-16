@@ -47,6 +47,7 @@
 
 | 무엇 | 어디에 있나 | 누가 보나 | 표로 옮길 수 있나 | 못 옮기면 왜 |
 | --- | --- | --- | --- | --- |
+| **웹사이트 FAQ 5개** `webLanding.faq` | `spec/strings.ko.json` → `apps/web/src/landing.ts:111` · `subpages.ts:268`(`/faq.html`) | 웹사이트 | **예** | **앱 FAQ와 «다른» 목록이다** — 질문 다섯이 겹치지 않는다(「지금 앱을 받을 수 있나요?」 등). 방금 만든 표를 그대로 쓰되 `category`로 가르면 된다. 웹은 정적 HTML이라 저장 뒤 재빌드가 필요하다 |
 | `ANALYSIS_FACTS` 7개 + `ANALYSIS_DISCLAIMER` — 분석 안내 | `packages/domain/src/analysis-notice.ts:15,20` | 사용자(`my/guide`) · 웹 | **예** | — |
 | `SHOOTING_TIPS` 4개 — 「이렇게 찍어주세요」 | `apps/mobile/src/app/(tabs)/my/guide.tsx:10` | 사용자 | **예** | — |
 | `SUMMARY` 3문답 — 개인정보 요약 | `apps/mobile/src/app/(tabs)/my/privacy.tsx:38` | 사용자 | **예** | 방침 «본문»이 아니라 앱의 요약 안내다. 본문은 웹사이트 정본 그대로 둔다 |
@@ -153,12 +154,16 @@
 
 ## 다음에 잡을 것 — 값이 큰 순서
 
-1. **`ANALYSIS_FACTS` + `SHOOTING_TIPS` + `my/privacy.tsx`의 요약 3문답.** FAQ와 같은 성격이고
+1. **웹사이트 FAQ 5개**(`spec/strings.ko.json` `webLanding.faq`). **같은 이름의 다른 목록이
+   둘 있는 상태다** — 앱은 표에서 읽고 웹은 코드에서 읽는다. 대표님이 「FAQ를 고쳤는데 웹에는
+   안 바뀌었다」고 하실 자리가 여기다. 표에 `category`로 「웹사이트」를 두고 웹 빌드가 그것을
+   읽으면 된다.
+2. **`ANALYSIS_FACTS` + `SHOOTING_TIPS` + `my/privacy.tsx`의 요약 3문답.** FAQ와 같은 성격이고
    같은 화면(`my/guide` · `my/privacy`)에 있다. FAQ가 만든 표·라우트·관리자 탭을 그대로 쓴다.
-2. **탈퇴 문구 16개.** 한 화면에 모여 있어 옮기는 단위가 뚜렷하다.
-3. **웹사이트 랜딩 문구**(`site-content.ts` · `content.ts`). 마케팅 카피라 가장 자주 바뀌는데
+3. **탈퇴 문구 16개.** 한 화면에 모여 있어 옮기는 단위가 뚜렷하다.
+4. **웹사이트 랜딩 문구**(`site-content.ts` · `content.ts`). 마케팅 카피라 가장 자주 바뀌는데
    지금은 배포해야 바뀐다. `site_meta`의 「저장 후 반영하기」 구조가 이미 있다.
-4. **3번의 사본 정리.** 옮기기 전에 정본을 정하지 않으면 옮긴 뒤에 갈린다.
+5. **3번의 사본 정리.** 옮기기 전에 정본을 정하지 않으면 옮긴 뒤에 갈린다.
 
 **관리자 화면을 어디에 붙일지는 MASTER에게 물어야 한다.** 사이드바는 아홉으로 줄여 둔
 상태이고 늘리는 것은 그 결정을 되돌리는 일이다. FAQ가 있는 「사이트·기록」 탭 묶음에 넣는
