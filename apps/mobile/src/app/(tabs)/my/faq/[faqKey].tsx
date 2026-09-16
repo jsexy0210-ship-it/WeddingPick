@@ -8,6 +8,8 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { ActionButton, Layout, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
+import { useFaq } from '@/features/faq/use-faq';
+import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { Hero, Row, Rows, Section, SubScreen } from '@/features/settings/my-kit';
 
 /**
@@ -29,19 +31,38 @@ import { Hero, Row, Rows, Section, SubScreen } from '@/features/settings/my-kit'
  */
 export default function FaqDetailScreen() {
   const { faqKey } = useLocalSearchParams<{ faqKey: string }>();
-  const item = faqItem(faqKey);
+  /*
+   * 질문은 서버에서 온다(2026-09-16 대표 지시 — 운영자가 직접 고치고 지운다).
+   * 받아오기 «전»에 「찾는 질문이 없어요」를 그리면 멀쩡한 질문이 없어진 것으로
+   * 보인다. 그래서 다 받은 뒤에 없을 때만 그 말을 한다.
+   */
+  const faq = useFaq();
+  const item = faqItem(faq.items, faqKey);
   const [thanked, setThanked] = useState(false);
 
   if (!item) {
     return (
       <SubScreen title="질문">
-        <Hero lines={['찾는 질문이 없어요']} sub="목록에서 다시 골라주세요" />
+        {faq.loading ? (
+          <DelayedLoader size={40} />
+        ) : (
+          <Hero
+            lines={[faq.failed ? '질문을 불러오지 못했어요' : '찾는 질문이 없어요']}
+            sub={faq.failed ? '잠시 뒤에 다시 열어주세요' : '목록에서 다시 골라주세요'}
+          />
+        )}
       </SubScreen>
     );
   }
 
+  /*
+   * 관련 질문 짝짓기는 코드에 남는다 — 글이 아니라 화면의 분기다. 운영자가 새로
+   * 등록한 항목은 여기에 없어 이 칸이 비고, 비면 그리지 않는다.
+   *
+   * 지워졌거나 비공개로 내린 질문은 받아온 목록에 없으므로 여기서 함께 걸러진다.
+   */
   const related = (FAQ_RELATED[item.key] ?? [])
-    .map((key) => faqItem(key))
+    .map((key) => faqItem(faq.items, key))
     .filter((entry): entry is NonNullable<typeof entry> => entry !== undefined);
 
   return (

@@ -1,3 +1,4 @@
+import { DISCLOSURE_THRESHOLDS } from '@weddingpick/domain';
 import Fastify from 'fastify';
 import type { Pool } from 'pg';
 
@@ -42,14 +43,19 @@ beforeEach(() => {
 });
 
 describe('FAQ', () => {
-  it('목록은 표를 읽고 코드 항목을 잠근 채 함께 준다', async () => {
+  /**
+   * 2026-09-16 대표 지시로 **코드 항목을 겹쳐 보여주던 것이 없어졌다** — 일곱이
+   * 표로 내려와 전부 고치고 지울 수 있다. 목록은 표만 읽는다.
+   */
+  it('목록은 표만 읽고, 답은 채운 글과 고칠 원문을 함께 준다', async () => {
     pool.query.mockResolvedValue({
       rows: [
         {
           id: '00000000-0000-4000-8000-0000000000aa',
+          key: null,
           category: '이용 안내',
           question: '운영자가 넣은 질문',
-          answer: '운영자가 넣은 답',
+          answer: '실 제보가 {{limited}}건 모이면 보여드려요.',
           sort_order: 3,
           published: true,
         },
@@ -57,13 +63,18 @@ describe('FAQ', () => {
     });
 
     const data = await faqAdmin.list(pool as unknown as Pool);
-    const mine = data.items.find((item) => item.question === '운영자가 넣은 질문');
-    const fromCode = data.items.filter((item) => item.editable === false);
 
     expect(pool.query).toHaveBeenCalled();
-    expect(mine).toMatchObject({ order: 3, published: true, editable: true });
-    /* 코드 항목이 함께 보여야 운영자가 같은 질문을 두 번 등록하지 않는다. */
-    expect(fromCode.length).toBeGreaterThan(0);
+    expect(data.items).toHaveLength(1);
+    expect(data.items[0]).toMatchObject({
+      order: 3,
+      published: true,
+      key: null,
+      /* 목록에 보여주는 것은 사용자가 읽을 문장이다. */
+      answer: `실 제보가 ${DISCLOSURE_THRESHOLDS.limited}건 모이면 보여드려요.`,
+      /* 고칠 때 여는 것은 채우기 전 글이다 — 채운 글을 되돌려 저장하면 수가 굳는다. */
+      answerSource: '실 제보가 {{limited}}건 모이면 보여드려요.',
+    });
   });
 
   it('등록은 표에 INSERT한다 — 성공 응답만 돌려주지 않는다', async () => {
@@ -95,7 +106,13 @@ describe('FAQ', () => {
     expect(pool.query).not.toHaveBeenCalled();
   });
 
-  it('코드에 있는 항목은 고치거나 지울 수 없다', async () => {
+  /**
+   * **「코드에 있는 항목은 고칠 수 없다」가 없어진 자리다**(2026-09-16 대표 지시).
+   * 전에는 `spec:price-source` 꼴의 id로 오는 쓰기를 400으로 막았다. 지금 남는 것은
+   * 표의 행을 가리키지 않는 id를 거르는 일뿐이다 — 그대로 질의에 넣으면 PostgreSQL이
+   * 22P02로 끊어 500이 되고, 운영자는 없는 것을 지운 것을 고장으로 읽는다.
+   */
+  it('표의 행이 아닌 id는 DB를 건드리기 전에 「찾지 못했어요」로 돌려준다', async () => {
     await expect(
       faqAdmin.update(
         pool as unknown as Pool,
@@ -103,12 +120,35 @@ describe('FAQ', () => {
         { category: '이용 안내', question: '질문', answer: '답', order: 0, published: true },
         null
       )
-    ).rejects.toMatchObject({ code: 'invalid_request' });
+    ).rejects.toMatchObject({ code: 'not_found' });
 
     await expect(faqAdmin.remove(pool as unknown as Pool, 'spec:price-source')).rejects.toMatchObject({
-      code: 'invalid_request',
+      code: 'not_found',
     });
 
+    expect(pool.query).not.toHaveBeenCalled();
+  });
+
+  /**
+   * 채울 수 없는 자리표시자.
+   *
+   * **DB를 건드리기 전에 막는다.** 통과시키면 `{{limitedd}}`가 표에 담기고 그대로
+   * 사용자 화면에 실린다 — 글자라서 아무도 고장으로 보지 않는다.
+   */
+  it('없는 자리표시자를 적으면 DB를 건드리기 전에 거부한다', async () => {
+    const response = await app(registerAdminRoutes).inject({
+      method: 'POST',
+      url: '/v1/admin/faq',
+      payload: {
+        category: '이용 안내',
+        question: '질문',
+        answer: '실 제보가 {{limitedd}}건 모이면',
+        order: 0,
+        published: true,
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
     expect(pool.query).not.toHaveBeenCalled();
   });
 });
