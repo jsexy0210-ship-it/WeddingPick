@@ -11,13 +11,22 @@
 것들을 본다: 아무것도 안 하는 단추 · 실패를 삼키는 곳 · 화면에 박아 둔 값 · 자유 입력이어야
 하지 않을 곳 · `BACKEND_PENDING`과 실제 서버 상태의 어긋남 · 메뉴에서 빠져야 할 화면.
 
-## 먼저 — 이 문서가 기대던 문서가 없었다
+## MASTER의 라우트 대조와 맞춰 봤다
 
-지시는 `docs/sync/backend-wiring-audit-2026-09-16.md`를 읽으라고 했는데 **`main`에 그 파일이
-없다**(작업 시작 시점 `main` = `f59104b`). MASTER가 아직 올리지 않은 것으로 보인다. 그래서
-라우트 대조를 **이 세션이 다시 했다** — `apps/api/src`의 `/v1/admin/**` 라우트를 뽑아 26개
-화면이 부르는 경로와 맞춰 봤고, **빠진 라우트는 없었다.** MASTER 쪽 결과와 어긋나면 그쪽이
-정본이다.
+지시가 가리킨 `docs/sync/backend-wiring-audit-2026-09-16.md`는 **작업을 시작할 때는 `main`에
+없었다**(그때 `main` = `f59104b`). 그래서 라우트 대조를 이 세션이 한 번 다시 했다 —
+`apps/api/src`의 `/v1/admin/**`를 뽑아 26개 화면이 부르는 경로와 맞췄고 **빠진 라우트는
+없었다.** 작업을 마치고 `main`을 머지하니(`33c0aeb`) 그 문서가 들어와 있어 맞춰 봤다.
+
+**어긋나는 곳이 없다.** MASTER가 「가장 나쁜 것」으로 꼽은 여섯(`POST/PATCH/DELETE
+/v1/admin/ads` · `PATCH /v1/admin/ads-gate` · `PATCH /v1/admin/automation` ·
+`POST /v1/admin/campaigns`)과 「라우트가 아예 없는 것」(`biz-queue` 승인·반려)과 「빈 값을
+돌려주는 조회 셋」은 **전부 다른 세션이 잡고 있는 아홉 파일 안에 있다.** 내 26개에는 그런
+자리가 없다.
+
+`terms.tsx`는 **두 조사가 따로 같은 결론에 닿았다** — MASTER의 「껍데기가 맞지만 «의도된»
+것」 표에 `termsUnavailable()` 셋이 그대로 있고, 나도 화면 쪽에서 「`BACKEND_PENDING`과 짝이
+맞다」로 적었다. 고치지 않는다.
 
 ## 어떻게 봤나 — 찍어서 봤다
 
@@ -205,7 +214,7 @@ terms는 「라우트는 있는데 서버가 `termsUnavailable`로 의도적으�
 | `npm run lint` | 0 errors (경고 4 — 전부 내 변경과 무관한 기존 파일) |
 | `node lint-copy.js` | 통과 (다만 위 「판단 필요 1」 참고 — 관리자를 건너뛴다) |
 | `node scripts/sync-seed-tokens.mjs --check` | SEED와 같다 |
-| `capture-fixtures` 계약 | 28/28 통과 |
-| `npm test` | PR 본문에 건수를 적는다 |
+| `capture-fixtures` 계약 | 29/29 통과(`main` 머지 뒤 기준) |
+| `npm test` | **2,601건 / 197 스위트 전부 통과**(api 1104 · domain 963 · mobile 337 · db 79 · web 73 · api-contract 45). 로컬 PostgreSQL 16 |
 
 **prettier는 돌리지 않았다.**
