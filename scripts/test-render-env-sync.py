@@ -203,6 +203,67 @@ class DeployTest(unittest.TestCase):
         self.assertTrue(any(event[0] == 'POST' and event[1] == '/services/static/deploys'
                             for event in self.events))
 
+    def test_transient_break_is_retried_instead_of_abandoning_the_deploy(self):
+        """947이 죽은 자리다.
+
+        환경변수 하나가 올라간 직후 다음 PUT이 HTTP 0으로 끊겼고, 스크립트가 그 한 번에
+        전체 배포를 포기했다. **환경변수가 바뀌면 Render는 서비스를 재시작한다** — 그래서
+        API는 옛 커밋으로 재시작하고 새 커밋은 안 올라간 채로 남았다. DB 마이그레이션은
+        이미 들어간 뒤였다.
+        """
+        attempts = {'n': 0}
+
+        def flaky_once(method, path, body=None):
+            if method == 'PUT':
+                attempts['n'] += 1
+                if attempts['n'] == 1:
+                    return 0, '<urlopen error timed out>'
+            return self.call(method, path, body)
+
+        with patch.object(sync, 'call_once', side_effect=flaky_once), \
+                patch.object(sync.time, 'sleep') as sleep:
+            result, _ = self.run_main(call=sync.call)
+
+        # 끊긴 한 번 때문에 배포를 버리지 않는다.
+        self.assertEqual(result, 0)
+        self.assertGreater(attempts['n'], 1)
+        # 기다렸다가 다시 부른다 — 곧바로 다시 부르면 같은 자리에서 또 끊긴다.
+        sleep.assert_called()
+
+    def test_answered_rejection_is_not_retried(self):
+        """응답이 온 4xx는 다시 불러도 같은 답이 온다. 배포만 늦어진다."""
+        attempts = {'n': 0}
+
+        def rejected(method, path, body=None):
+            if method == 'PUT':
+                attempts['n'] += 1
+                return 400, '{"message":"bad"}'
+            return self.call(method, path, body)
+
+        with patch.object(sync, 'call_once', side_effect=rejected):
+            result, output = self.run_main(call=sync.call)
+
+        self.assertEqual(result, 1)
+        self.assertEqual(attempts['n'], 1)
+        # 거절 사유 본문은 적지 않는다 — Render가 값을 되비칠 수 있다.
+        self.assertNotIn('bad', output)
+
+    def test_deploy_post_is_not_retried(self):
+        """끊긴 POST는 서버에서 이미 성공했을 수 있다. 두 번 부르면 배포가 둘 생긴다."""
+        attempts = {'n': 0}
+
+        def flaky_post(method, path, body=None):
+            if method == 'POST':
+                attempts['n'] += 1
+                return 0, '<urlopen error timed out>'
+            return self.call(method, path, body)
+
+        with patch.object(sync, 'call_once', side_effect=flaky_post):
+            result, _ = self.run_main(call=sync.call)
+
+        self.assertEqual(result, 1)
+        self.assertEqual(attempts['n'], 1)
+
     def test_fallback_parser_does_not_send_yaml_quotes_as_env_values(self):
         result = sync.parse_simple('services:\n  api:\n    vars:\n      DAY: \'2026-09-10\'\n      MODE: "production"\n')
         self.assertEqual(result['api']['vars'], {'DAY': '2026-09-10', 'MODE': 'production'})

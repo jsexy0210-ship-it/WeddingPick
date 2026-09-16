@@ -33,7 +33,7 @@ def flag(name: str, default: bool = False) -> bool:
     return default
 
 
-def call(method: str, path: str, body: dict | None = None) -> tuple[int, str]:
+def call_once(method: str, path: str, body: dict | None = None) -> tuple[int, str]:
     """Render API 한 번. 실패해도 던지지 않고 (상태, 본문)으로 돌려준다."""
     data = json.dumps(body).encode() if body is not None else None
     request = urllib.request.Request(f'{API}{path}', data=data, method=method)
@@ -49,6 +49,35 @@ def call(method: str, path: str, body: dict | None = None) -> tuple[int, str]:
         return error.code, error.read().decode()[:400]
     except Exception as error:  # 네트워크·타임아웃
         return 0, str(error)[:400]
+
+
+# 끊긴 것 · 잠깐 막힌 것. 응답이 온 4xx는 여기 없다 — 다시 불러도 같은 답이 온다.
+TRANSIENT = {0, 408, 429, 500, 502, 503, 504}
+
+
+def call(method: str, path: str, body: dict | None = None, attempts: int = 4) -> tuple[int, str]:
+    """`call_once`에 재시도를 붙인다.
+
+    2026-09-16에 947이 여기서 죽었다. 환경변수 하나를 올린 직후(`ok GEMINI_MODEL`)
+    다음 PUT이 **HTTP 0**으로 끊겼고, 스크립트가 그 한 번에 전체 배포를 포기했다.
+    **환경변수가 바뀌면 Render는 서비스를 재시작한다** — 그래서 API는 옛 커밋으로
+    재시작하고 새 커밋은 안 올라간, 이 파일이 아래에서 「제일 나쁘다」고 적어 둔
+    반만 배포된 상태가 됐다. 그날 DB 마이그레이션은 이미 들어간 뒤였다.
+
+    **POST는 다시 부르지 않는다.** 끊긴 POST는 서버에서 이미 성공했을 수 있고,
+    `/deploys`를 두 번 부르면 배포가 둘 생겨 아래 `wait`가 엉뚱한 것을 지켜본다.
+    GET · PUT은 몇 번을 불러도 결과가 같아서 안전하다.
+    """
+    idempotent = method in ('GET', 'PUT', 'DELETE')
+    delay = 2.0
+    for attempt in range(1, attempts + 1):
+        status, text = call_once(method, path, body)
+        if status not in TRANSIENT or not idempotent or attempt == attempts:
+            return status, text
+        print(f'  .. {method} {path} HTTP {status} — {delay:.0f}초 뒤 다시 ({attempt}/{attempts - 1}) {text[:120]}')
+        time.sleep(delay)
+        delay *= 2
+    return status, text
 
 
 def service_id(name: str) -> str | None:
@@ -316,7 +345,11 @@ def main() -> int:
                 print(f'  ok {key}')
                 changed = True
             else:
-                print(f'  !! {key} 실패 (HTTP {status})')
+                # 끊긴 것(HTTP 0)의 본문은 파이썬 예외 문구다 — 무엇이 끊겼는지가 거기
+                # 있고 값은 없다. 응답이 온 4xx 본문은 적지 않는다 — Render가 거절 사유에
+                # 값을 되비칠 수 있고, 이 파일의 규칙은 「값은 절대 찍지 않는다」이다.
+                detail = f' {body[:200]}' if status == 0 else ''
+                print(f'  !! {key} 실패 (HTTP {status}){detail}')
                 return 1
 
         if redeploy and not dry_run and (changed or wait):
