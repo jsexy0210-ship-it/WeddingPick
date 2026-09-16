@@ -21,6 +21,7 @@ import { CaptureDraftProvider } from '@/features/capture/capture-draft';
 import { DocumentStoreProvider } from '@/features/documents/document-store';
 import { FullScreenError } from '@/features/errors/full-screen-error';
 import { escapeInAppBrowser } from '@/features/inapp-browser/escape';
+import { InAppWebShell } from '@/features/in-app-web/in-app-web-shell';
 import { InAppBrowserNotice } from '@/features/inapp-browser/in-app-browser-notice';
 import { resolveSessionEntry, sessionErrorKind, type SessionEntry } from '@/features/auth/session-recovery';
 import { saveToken } from '@/api/session';
@@ -319,6 +320,13 @@ function RootLayoutContent() {
       <DocumentStoreProvider>
         <CaptureDraftProvider>
           <InAppBrowserNotice notice={inAppNotice} />
+          {/*
+            바깥 주소를 앱 «안»에 띄우는 껍데기(웹). 뿌리에 한 장만 둔다 — 화면 안에
+            두면 탭바·헤더 아래에 갇혀서 앱을 덮지 못한다(2026-09-15 대표 지시 ·
+            CLAUDE.md 「앱 밖으로 나가지 않는다」). 네이티브에서는 아무것도 그리지
+            않는다 — 거기서는 expo-web-browser의 시스템 시트가 앱 위에 뜬다.
+          */}
+          <InAppWebShell />
           <Stack screenOptions={stackScreenOptions}>
             <Stack.Screen name="(tabs)" />
             {/*

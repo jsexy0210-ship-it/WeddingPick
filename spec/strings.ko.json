@@ -711,6 +711,13 @@
     "detail.notFound": "게시물을 찾을 수 없어요"
   },
 
+  "weddingFeed": {
+    "title": "웨딩픽 콘텐츠",
+    "sub": "두 분의 준비에 맞는 이야기를 골라드려요.",
+    "empty.all": "준비 중이에요. 곧 새로운 글이 올라올 거예요.",
+    "empty.tab": "이 묶음에는 아직 올라온 글이 없어요."
+  },
+
   "benefit": {
     "title": "혜택",
     "hero": "{n}개를 더 하면\n{amount}을 받아요",
@@ -911,7 +918,11 @@
 
   "inAppBrowser": {
     "open": "브라우저에서 열기",
-    "guide": "오른쪽 위 ···를 눌러 «Safari로 열기»를 선택해주세요"
+    "guide": "오른쪽 위 ···를 눌러 «Safari로 열기»를 선택해주세요",
+    "shellClose": "닫기",
+    "shellNewWindow": "새 창에서 열려요",
+    "shellStuck": "불러오지 못했어요",
+    "shellOpenNewWindow": "새 창에서 열기"
   },
 
   "expo": {

@@ -36,6 +36,7 @@ import {
   weddingEventListResponseSchema,
 } from './wedding-events';
 import { amountSchema, idSchema } from './common';
+import { faqListResponseSchema } from './faq';
 import {
   authProvidersResponseSchema,
   createSessionRequestSchema,
@@ -152,6 +153,18 @@ export type EndpointDefinition = {
  * 오류: 어떤 경로든 실패하면 `errorResponseSchema` 모양으로 답한다.
  */
 export const ENDPOINTS = {
+  /**
+   * 자주 묻는 것. 토큰 없이 부른다 — 로그인하지 않아도 보는 화면이다.
+   *
+   * 운영자가 관리자 화면에서 고치고 지운다(2026-09-16 대표 지시). 답의 자리표시자는
+   * 서버가 채워서 내려준다.
+   */
+  listFaq: {
+    method: 'GET',
+    path: '/v1/faq',
+    response: faqListResponseSchema,
+  },
+
   /** 쓸 수 있는 로그인 방법. 토큰 없이 부른다. */
   listAuthProviders: {
     method: 'GET',
