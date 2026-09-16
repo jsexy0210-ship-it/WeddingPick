@@ -2,6 +2,7 @@ import {
   WEDDING_FEED_LIMITS,
   WEDDING_FEED_SOURCES,
   WEDDING_FEED_STATUSES,
+  WEDDING_FEED_TAXONOMY_LIMITS,
 } from '@weddingpick/domain';
 import { z } from 'zod';
 
@@ -71,7 +72,26 @@ export const adminWeddingFeedResponseSchema = z.object({
 
 export type AdminWeddingFeedResponse = z.infer<typeof adminWeddingFeedResponseSchema>;
 
-/** 앱 홈이 부르는 것. 공개된 글만 나간다. */
+/**
+ * 앱이 그릴 탭 하나.
+ *
+ * `categories`는 **이름 배열**이다 — 글이 들고 있는 것이 `categoryLabel` 문자열이라
+ * 앱은 그 이름으로 거른다. 「전체」는 빈 배열이고 아무것도 거르지 않는다.
+ */
+export const weddingFeedTabSchema = z.object({
+  key: z.string(),
+  label: z.string(),
+  categories: z.array(z.string()),
+});
+
+/**
+ * 앱 홈이 부르는 것. 공개된 글만 나간다.
+ *
+ * **탭을 글과 «같은 응답»으로 준다.** 따로 부르면 목록이 먼저 그려지고 탭 줄이
+ * 나중에 끼어들어 본문이 손가락 아래에서 밀린다 — 홈은 이미 이 자리를 기다리지 않고
+ * 부르는 중이라(`(tabs)/index.tsx`) 그 어긋남이 그대로 보인다. 한 번에 오면 탭과
+ * 목록이 같이 나타나거나 같이 안 나타난다.
+ */
 export const weddingFeedListResponseSchema = z.object({
   items: z.array(
     weddingFeedPostSchema.pick({
@@ -82,6 +102,8 @@ export const weddingFeedListResponseSchema = z.object({
       imageUrl: true,
     })
   ),
+  /** 맨 앞은 언제나 「전체」다. 카테고리가 하나도 없는 탭은 빠진다. */
+  tabs: z.array(weddingFeedTabSchema),
 });
 
 export type WeddingFeedListResponse = z.infer<typeof weddingFeedListResponseSchema>;
@@ -91,3 +113,58 @@ export const weddingFeedGenerateResponseSchema = z.object({
   /** 왜 아무것도 안 나왔는지. 만들어졌으면 null. */
   skipped: z.string().nullable(),
 });
+
+/**
+ * ── 탭과 카테고리 ─────────────────────────────────────────────────────────
+ *
+ * 2026-09-16 대표 지시 — 「웨딩피드는 탭별 카테고리별로 다 설정 가능해야한다」.
+ * 값은 표(0421)에 있고 관리자가 고친다.
+ */
+
+export const weddingFeedGroupSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  sortOrder: z.number().int(),
+  active: z.boolean(),
+});
+
+export const weddingFeedCategorySchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  /** 어느 탭인가. 탭이 지워지면 null이 된다. */
+  groupId: z.string().uuid().nullable(),
+  sortOrder: z.number().int(),
+  active: z.boolean(),
+  /** 이 카테고리로 쌓인 글이 몇 편인가. 지우기를 막는 근거이자 화면에 보여줄 수다. */
+  postCount: z.number().int(),
+});
+
+export const weddingFeedGroupInputSchema = z.object({
+  name: trimmed(WEDDING_FEED_TAXONOMY_LIMITS.groupName).min(1),
+  sortOrder: z.number().int().default(0),
+  active: z.boolean().default(true),
+});
+
+export const weddingFeedCategoryInputSchema = z.object({
+  name: trimmed(WEDDING_FEED_TAXONOMY_LIMITS.categoryName).min(1),
+  groupId: z.string().uuid().nullable().default(null),
+  sortOrder: z.number().int().default(0),
+  active: z.boolean().default(true),
+});
+
+export type WeddingFeedGroupInputPayload = z.input<typeof weddingFeedGroupInputSchema>;
+export type WeddingFeedCategoryInputPayload = z.input<typeof weddingFeedCategoryInputSchema>;
+
+/**
+ * 관리자가 받는 분류표.
+ *
+ * `ungrouped`를 **서버가 세어 준다** — 어느 탭에도 안 든 카테고리다. 화면이 직접
+ * 세게 두면 화면마다 세는 법이 갈린다(꺼진 것을 셀 것인가 같은 자리에서).
+ */
+export const adminWeddingFeedTaxonomySchema = z.object({
+  groups: z.array(weddingFeedGroupSchema),
+  categories: z.array(weddingFeedCategorySchema),
+  ungrouped: z.array(z.string()),
+});
+
+export type AdminWeddingFeedTaxonomy = z.infer<typeof adminWeddingFeedTaxonomySchema>;

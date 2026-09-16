@@ -28,7 +28,7 @@ import {
 } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
@@ -46,6 +46,7 @@ import { BackButton } from '@/components/back-button';
 import { LoginSheet } from '@/features/auth/login-sheet';
 import { InfoDot, InfoSheet, type InfoTopic } from '@/features/common/info-sheet';
 import { savePendingAction } from '@/features/auth/pending-action';
+import { openExternal } from '@/features/open-external';
 import { readCurrentUserSnapshot } from '@/features/loading/current-user-snapshot';
 import { PickDoneSheet, UnpickSheet } from '@/features/pick/pick-sheets';
 import { useMyCandidates } from '@/features/pick/use-my-candidates';
@@ -916,7 +917,8 @@ export default function VendorDetailScreen() {
                 accessibilityLabel={MAP_LINK}
                 onPress={() => {
                   const query = encodeURIComponent(`${vendor.name} ${vendor.region}`);
-                  void Linking.openURL(`https://map.kakao.com/?q=${query}`);
+                  /* 지도 앱에 넘기는 자리다 — 앱 안에 가두면 길 찾기를 못 한다(CLAUDE.md 「지도와 달력은 이 규칙의 예외다」). */
+                  void openExternal(`https://map.kakao.com/?q=${query}`, { handOff: true });
                 }}>
                 <View style={styles.row}>
                   <ThemedText type="t6" style={styles.rowGrow}>{MAP_LINK}</ThemedText>
