@@ -14,7 +14,7 @@
  *   R5      로더 · 토스트 · 얼럿 · 컨펌은 색만 바꾼다 — 그 파일들에 생색이 있으면 안 된다.
  *   숫자    천단위 쉼표. `toLocaleString()`을 로케일 없이 부르지 않는다 — `formatCount()`를 거친다.
  *   로더    원형 하나뿐이다. 폐기된 `CategoryCycleLoader`가 새 자리에 붙는 것을 막는다.
- *   인앱    앱 밖으로 나가지 않는다. 웹의 `window.open` 새 탭을 센다(지도 · 달력은 예외).
+ *   인앱    앱 밖으로 나가지 않는다. 껍데기 «밖»에서 여는 새 탭을 센다(껍데기 두 파일만 예외).
  *
  * **주석은 세지 않는다.** 이것이 이 스크립트의 핵심이다. 단순 grep은 `circle-loader.tsx`를
  * 위반 3건으로 잡는데, 그 셋은 전부 「시안의 #eaebee와 같은 값」이라고 적어 둔 주석이고
@@ -110,23 +110,43 @@ const LINE_ICON_RENDER = /<CategoryIcon\b/g;
 const CYCLE_LOADER_RENDER = /<CategoryCycleLoader\b/g;
 
 /**
- * 앱 밖으로 나가는 자리 — **웹의 새 탭**을 센다.
+ * 앱 밖으로 나가는 자리 — **껍데기 «밖»의 새 탭**을 센다.
  *
  * 2026-09-15 대표 지시 — 「인앱에서 웹 새창 또는 이동 시 앱을 탈출하게 된다. 하여
  * iframe 껍데기 씌워서 웨딩픽 앱 밖으로 나가지 못하게 한다」.
  *
- * **네이티브는 고쳤다**(`open-external.ts`가 `expo-web-browser`를 쓴다). 남은 것은 웹의
- * `window.open(_blank)` 하나인데, 그것을 없애려면 **우리 화면 안에 iframe 껍데기를 새로
- * 그려야 한다** — 화면을 만드는 일이라 감독 세션이 밀지 않고 넘겼다(장부 10차).
+ * **2026-09-16에 이 검사가 세는 뜻이 바뀌었다.** 전에는 「아직 못 갚은 빚」이었다 —
+ * 10차에 네이티브만 고치고 웹의 `window.open` 하나를 baseline 1로 얼려 MASTER에
+ * 넘겼다(껍데기를 그리는 것은 화면 만드는 일이라 감독이 밀지 않았다).
  *
- * **얼려 두는 이유는 늘어나는 것을 막기 위해서다.** 껍데기가 생기기 전에 다른 화면이
- * 또 새 탭을 열기 시작하면, 나중에 걷을 자리가 그만큼 늘어난다.
+ * **껍데기가 생겼다**(`claude/stay-in-app` · main `bf5d72d`). 그래서 남은 `window.open`
+ * 둘은 빚이 아니라 **규칙이 스스로 시킨 탈출구**다.
  *
- * **`Linking.openURL`은 세지 않는다.** 지금 쓰는 다섯 곳이 전부 규칙이 적어 둔 예외다 —
- * `map.kakao.com`(길 찾기)과 `.ics` 내려받기(달력 앱). 다른 앱에 넘기는 것이 목적이라
- * 앱 안에 가두면 그 일을 못 한다. 세면 예외를 위반으로 적게 된다.
+ *     open-external.ts        남의 사이트 — 감쌀 수 없어서가 아니라 «거절당한 것을
+ *                             알아낼 방법이 없어서» 새 탭으로 넘기고 알린다
+ *     in-app-web-shell.tsx    껍데기가 안 뜰 때 사람이 「새 창에서 열기」를 누른 자리
+ *
+ * 규칙이 그렇게 적는다 — 「웹은 iframe을 시도하고 안 뜨면 새 탭으로 넘기며 「새 창에서
+ * 열려요」를 알린다. **빈 칸을 보여주고 끝내지 않는다**」.
+ *
+ * **그래서 수를 늘리는 대신 «자리»를 못 박았다.** 전부 세어 2로 올리면 셋째 화면이
+ * 새 탭을 열어도 안 걸린다. 껍데기 두 파일만 빼고 **나머지는 0**으로 센다 — 어느
+ * 화면이든 스스로 탭을 열기 시작하면 그 순간 깨진다.
+ *
+ * **`Linking.openURL`은 세지 않는다.** 규칙이 적어 둔 예외이고(지도 · 달력), 이제
+ * `openExternal`의 `handOff`가 그 뜻을 코드로 적는다 — 주소를 보고 가르지 않는다.
  */
 const WEB_NEW_TAB = /window\.open\(/g;
+
+/**
+ * 껍데기를 «구현하는» 파일 둘. 여기의 `window.open`이 규칙이 시킨 탈출구다.
+ *
+ * 자리를 못 박는 것이지 봐주는 것이 아니다 — 이 둘 밖에서 한 번이라도 열면 깨진다.
+ */
+const NEW_TAB_ALLOWED = new Set([
+  'apps/mobile/src/features/open-external.ts',
+  'apps/mobile/src/features/in-app-web/in-app-web-shell.tsx',
+]);
 
 /**
  * 숫자 — 천단위 쉼표. 로케일을 빼고 부르면 걸린다.
@@ -290,9 +310,11 @@ function collect() {
         }
       }
 
-      // 앱 밖으로 — 웹의 새 탭
-      for (const m of code.matchAll(WEB_NEW_TAB)) {
-        findings.newtab.push({ file: rel, line: lineOf(code, m.index), value: 'window.open(' });
+      // 앱 밖으로 — 껍데기 밖에서 새 탭을 여는가
+      if (!NEW_TAB_ALLOWED.has(rel)) {
+        for (const m of code.matchAll(WEB_NEW_TAB)) {
+          findings.newtab.push({ file: rel, line: lineOf(code, m.index), value: 'window.open(' });
+        }
       }
 
       // 로더 — 폐기된 순회 로더를 그리는가
