@@ -100,9 +100,15 @@ jobs:
       - name: SEED 토큰 (뽑은 값이 현행인지)
         run: node scripts/sync-seed-tokens.mjs --check
 
-      # 최상위 정책 규칙(CLAUDE.md 맨 위) 가운데 자동으로 재는 셋 — 화면 코드의 생 hex ·
-      # 금지 서체 · 색만 바꾸는 컴포넌트. 남은 빚은 baseline에 수로 적혀 있고 **늘어나면**
-      # 깨진다. 사람이 매번 세는 것은 언젠가 빠진다(docs/sync/design-policy-audit.md).
+      # 최상위 정책 규칙(CLAUDE.md 맨 위) 가운데 자동으로 재는 **일곱** — 화면 코드의 생
+      # hex · 우리 선 아이콘 · 금지 서체 · 로케일 없는 숫자 · 색만 바꾸는 컴포넌트 ·
+      # 폐기된 순회 로더 · 껍데기 밖의 새 탭. 남은 빚은 baseline에 수로 적혀 있고
+      # **늘어나면** 깨진다. 사람이 매번 세는 것은 언젠가 빠진다
+      # (docs/sync/design-policy-audit.md).
+      #
+      # 처음 붙일 때는 셋이었고 이 주석이 그때 그대로 낡아 있었다(19차에 고침).
+      # 검사를 늘리면 **부르는 자리의 설명도 같이 고친다** — 안 그러면 다음 사람이
+      # 주석을 읽고 「셋만 보는구나」로 안다.
       - name: 디자인 정책 (최상위 규칙 — 자동으로 재는 일곱)
         run: node scripts/check-design-policy.mjs
 
