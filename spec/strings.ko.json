@@ -906,7 +906,11 @@
 
   "inAppBrowser": {
     "open": "브라우저에서 열기",
-    "guide": "오른쪽 위 ···를 눌러 «Safari로 열기»를 선택해주세요"
+    "guide": "오른쪽 위 ···를 눌러 «Safari로 열기»를 선택해주세요",
+    "shellClose": "닫기",
+    "shellNewWindow": "새 창에서 열려요",
+    "shellStuck": "불러오지 못했어요",
+    "shellOpenNewWindow": "새 창에서 열기"
   },
 
   "expo": {
