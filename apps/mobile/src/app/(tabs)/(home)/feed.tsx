@@ -17,7 +17,6 @@ import {
   FilterChip,
   Layout,
   MaxContentWidth,
-  SegmentedTabs,
   Spacing,
   ThemedText,
   ThemedView,
@@ -28,27 +27,29 @@ import strings from '../../../../../../spec/strings.ko.json';
 const S = strings.weddingFeed;
 
 /**
- * 탭 줄이 균등 분할을 견디는 개수.
- *
- * `SegmentedTabs`는 칸을 똑같이 나눠 가지고 **넷을 넘으면 글자가 눌린다** — 그때는
- * 칩을 쓰라고 그 컴포넌트가 적어 두었다. 탭 개수는 이제 관리자가 정하므로 화면이
- * 스스로 갈라야 한다. 씨앗값은 「전체」까지 넷이라 균등 분할로 그려진다.
- */
-const EVEN_SPLIT_MAX = 4;
-
-/**
  * 개인화 웨딩피드. WP-HOME-006.
  *
  * 홈 탭에서 진입. `listWeddingFeed()`가 공개된 글과 탭을 **한 번에** 받아온다 —
  * 목록이 비면 안내 문구를 보여준다.
  *
- * **탭은 서버가 준다**(2026-09-16 대표 지시 — 「웨딩피드는 탭별 카테고리별로 다 설정
- * 가능해야한다」). 관리자가 표에서 고치고 앱은 받은 것을 그대로 그린다 — 탭을 하나
- * 더하려고 앱을 다시 배포하지 않는다.
+ * **위에 탭이 선다 — 전체 · 준비·예산 · 업체·서비스 · 계약·여행**(2026-09-16 대표 지시).
+ * 카테고리가 열셋이라 그대로 세우면 탭이 열셋이 된다.
+ *
+ * **그 목록이 이제 서버에서 온다.** 같은 날까지는 `WEDDING_FEED_GROUPS` 상수를 읽었고
+ * 탭을 하나 바꾸려면 배포해야 했다 — 「탭별 카테고리별로 다 설정 가능해야한다」를
+ * 만족하지 못하는 자리였다(`docs/sync/backend-wiring-audit-2026-09-16.md`). 이제
+ * 관리자가 표에서 고치고 앱은 받은 것을 그대로 그린다.
  *
  * **탭만 따로 부르지 않는다.** 목록은 이미 한 번에 받아 오고 있어서, 탭을 따로
  * 부르면 글이 먼저 그려지고 탭 줄이 나중에 끼어들어 본문이 손가락 아래에서 밀린다.
  * 한 응답으로 오면 둘이 같이 나타나거나 같이 안 나타난다 — 그동안은 로더 하나다.
+ *
+ * **거르는 것은 화면 안에서 한다.** 서버에 탭별 질의를 더하지 않았다 — 공개된 글이
+ * 여덟 안팎이라(`WEDDING_FEED_TARGET_PUBLISHED`) 전부 받아 두고 추리는 편이 탭을
+ * 누를 때마다 다시 받는 것보다 빠르고, 탭 사이를 오갈 때 로딩이 끼어들지 않는다.
+ *
+ * **카드의 배지는 원래 카테고리명 그대로다**(같은 지시 — 「기존 카테고리명을 배지로
+ * 유지하면 됩니다」). 탭은 추리는 도구이고 배지는 무엇에 관한 글인지를 말한다.
  */
 export default function FeedScreen() {
   const [items, setItems] = useState<readonly WeddingContentItem[] | null>(null);
@@ -105,38 +106,31 @@ export default function FeedScreen() {
             </ThemedText>
           </ThemedView>
 
-          {/* 탭이 「전체」 하나뿐이면 줄을 그리지 않는다 — 고를 것이 없는 탭 줄은 자리만 먹는다. */}
-          {tabs.length > 1 ? (
+          {/*
+            탭은 글이 하나도 없을 때는 세우지 않는다 — 칸 전부 빈 목록으로 가는
+            탭 줄은 누를 이유가 없고, 「준비 중」 안내를 위로 밀어낸다.
+
+            **「전체」 하나만 올 때도 세우지 않는다.** 운영자가 탭을 전부 꺼 두면
+            서버가 「전체」만 보내는데, 고를 것이 하나뿐인 줄은 자리만 먹는다.
+           */}
+          {items.length > 0 && tabs.length > 1 && (
             <View style={styles.tabs}>
-              {tabs.length <= EVEN_SPLIT_MAX ? (
-                <SegmentedTabs
-                  items={tabs.map((t) => ({ value: t.key, label: t.label }))}
-                  value={tab ?? tabs[0]!.key}
-                  onChange={setTab}
-                  accessibilityLabel={S.title}
+              {tabs.map((t) => (
+                <FilterChip
+                  key={t.key}
+                  label={t.label}
+                  role="radio"
+                  selected={t.key === (tab ?? tabs[0]!.key)}
+                  onPress={() => setTab(t.key)}
                 />
-              ) : (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.chips}>
-                  {tabs.map((t) => (
-                    <FilterChip
-                      key={t.key}
-                      label={t.label}
-                      role="radio"
-                      selected={t.key === (tab ?? tabs[0]!.key)}
-                      onPress={() => setTab(t.key)}
-                    />
-                  ))}
-                </ScrollView>
-              )}
+              ))}
             </View>
-          ) : null}
+          )}
 
           {items.length === 0 ? (
             <EmptyView title={S['empty.all']} />
           ) : shown.length === 0 ? (
+            /* 글은 있는데 이 탭에만 없다. 「준비 중」과 다른 말이어야 한다. */
             <EmptyView title={S['empty.tab']} />
           ) : (
             <WeddingContent
@@ -164,6 +158,5 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   header: { gap: Spacing.two },
-  tabs: { marginBottom: Spacing.one },
-  chips: { flexDirection: 'row', gap: Spacing.two },
+  tabs: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
 });

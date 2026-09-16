@@ -89,6 +89,24 @@ describeWithDb('웨딩피드 — 탭과 카테고리', () => {
       ).rejects.toThrow();
     });
 
+    it('한 카테고리는 탭 하나에만 든다', async () => {
+      /*
+       * 상수였을 때는 배열 셋에 같은 이름을 두 번 적을 수 있어서 **세어서** 막았다
+       * (「한 카테고리가 두 그룹에 들지 않는다 — 들면 같은 글이 탭 둘에 뜬다」).
+       * 표에서는 소속이 `group_id` 한 칸이라 두 번 적을 자리가 없다 — 세는 대신
+       * 그 칸이 하나뿐인 것을 확인한다.
+       */
+      const { rows } = await client.query<{ n: string }>(
+        `SELECT count(*)::text AS n
+         FROM information_schema.columns
+         WHERE table_schema = 'structured'
+           AND table_name = 'wedding_feed_categories'
+           AND column_name = 'group_id'`
+      );
+
+      expect(Number(rows[0]!.n)).toBe(1);
+    });
+
     it('업종 이름은 정본을 쓴다', async () => {
       // CLAUDE.md 2026-09-11 — 본식스냅 · 헤어변형 · 결정사.
       const { rows } = await client.query<{ name: string }>(
