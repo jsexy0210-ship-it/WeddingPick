@@ -81,6 +81,7 @@ function parseArgs(argv) {
     taps: [],
     /** 토큰을 심지 않는다 — 로그인 화면(`/login`)처럼 로그인 전 화면을 찍을 때. */
     guest: false,
+    expand: false,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -90,6 +91,7 @@ function parseArgs(argv) {
     else if (arg === '--out') opts.out = resolve(argv[++i]);
     else if (arg === '--build') opts.build = true;
     else if (arg === '--full') opts.full = true;
+    else if (arg === '--expand') { opts.expand = true; opts.full = true; }
     else if (arg === '--wait') opts.wait = Number(argv[++i]);
     else if (arg === '--tap') opts.taps.push(argv[++i]);
     else if (arg === '--edges') opts.edges = true;
@@ -303,6 +305,41 @@ async function captureRoute(context, origin, route, opts) {
   }
 
   const file = join(opts.out, `${safeName(route)}.png`);
+
+  /*
+   * **`--full`만으로는 접힌 아래가 안 찍힌다.** `fullPage`는 «문서» 높이를 늘리는데,
+   * react-native-web의 `ScrollView`는 문서가 아니라 `overflow:auto`인 «안쪽 div»가
+   * 스크롤된다. 그래서 화면 하나 높이에서 잘린 그림이 나오고, 그것을 「전체」라고
+   * 믿게 된다 — 2026-09-16에 홈을 그렇게 찍어 대표님께 반쪽만 보여드렸다.
+   *
+   * 스크롤되는 것을 찾아 높이를 내용만큼 늘린다. 뷰포트를 고정한 조상(높이 100%)도
+   * 같이 풀어야 늘어난 높이가 실제로 보인다.
+   */
+  if (opts.expand) {
+    await page.evaluate(() => {
+      const scrollers = [...document.querySelectorAll('*')].filter((el) => {
+        const style = getComputedStyle(el);
+        const scrolls = /(auto|scroll)/.test(style.overflowY);
+        return scrolls && el.scrollHeight > el.clientHeight + 1;
+      });
+
+      for (const el of scrollers) {
+        for (let node = el; node && node !== document.documentElement; node = node.parentElement) {
+          node.style.setProperty('height', 'auto', 'important');
+          node.style.setProperty('max-height', 'none', 'important');
+          node.style.setProperty('overflow', 'visible', 'important');
+          node.style.setProperty('position', 'static', 'important');
+        }
+        el.style.setProperty('height', `${el.scrollHeight}px`, 'important');
+      }
+
+      for (const el of [document.documentElement, document.body]) {
+        el.style.setProperty('height', 'auto', 'important');
+        el.style.setProperty('overflow', 'visible', 'important');
+      }
+    });
+    await page.waitForTimeout(600);
+  }
 
   await page.screenshot({ path: file, fullPage: opts.full });
 
