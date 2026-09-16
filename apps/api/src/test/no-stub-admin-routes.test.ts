@@ -71,7 +71,7 @@ const ALLOWED = new Map<string, string>([
   ],
   [
     'POST /v1/admin/data/price-stats/:vendorId/recalc',
-    '아직 껍데기다(202 `{queued:true}`). 가격 통계는 다른 세션이 맡는다 — 붙는 날 이 줄을 지운다(2026-09-16 배정).',
+    '**껍데기가 아니라 실패를 돌려준다**(2026-09-16). 재 보니 다시 계산할 것 자체가 없었다 — 바로 위 `GET`이 읽을 때마다 새로 구하고, `stats.price_stats`는 표만 있고 쓰는 코드가 없다. DB를 안 보는 것이 맞다.',
   ],
 ]);
 
