@@ -122,13 +122,18 @@ function RootLayoutContent() {
   const redirected = useRef(false);
   /*
    * 지금 열린 것이 관리자 콘솔인가. 관리자는 웹 전용이고(`admin/_layout.tsx`),
-   * 커플 앱의 첫 화면 규칙 밖에 있다. 주소가 바뀌면 페이지가 다시 뜨는 정적
-   * export라 매 렌더 계산해도 값이 흔들리지 않는다.
+   * 커플 앱의 첫 화면 규칙 밖에 있다.
+   *
+   * **`window.location.pathname`이 아니라 라우터의 `usePathname()`을 본다.**
+   * 정적 내보내기는 이 화면을 Node에서 한 번 그려 HTML로 굽는데, 거기에는
+   * `window`가 없다 — 주소를 못 읽으니 관리자 경로에서도 «커플 앱»으로 판정해
+   * 스플래시를 구웠고, 브라우저는 같은 자리에 관리자 화면을 그린다. 서버가 보낸
+   * HTML과 클라이언트 첫 렌더가 어긋나면 React가 hydration 실패를 찍고 그 자리를
+   * 통째로 다시 그린다. `usePathname()`은 서버 렌더에서도 그 페이지의 주소를
+   * 안다(정적 렌더러가 `ServerContainer`에 주소를 넣어 준다) — 양쪽이 같아진다.
    */
-  const isAdminPath =
-    Platform.OS === 'web' &&
-    typeof window !== 'undefined' &&
-    window.location.pathname.startsWith('/admin');
+  const pathname = usePathname();
+  const isAdminPath = Platform.OS === 'web' && pathname.startsWith('/admin');
   /*
    * 네이티브 쉘의 웹뷰가 최초 진입 URL에 `wp_token`을 한 번 실어 보낸다(하이브리드
    * 웹뷰 쉘, `features/webshell`). 웹 export는 이 값을 받아 저장하고 주소창에서
@@ -137,7 +142,22 @@ function RootLayoutContent() {
    * effect 콜백에서 완료로 표시한다.
    */
   const [tokenBootstrapped, setTokenBootstrapped] = useState(() => {
-    if (Platform.OS !== 'web') return true;
+    /*
+     * `typeof window` 검사가 이 파일의 다른 자리(`isAuthPopup` · `hasKakaoReturn` ·
+     * `escapeInAppBrowser` · `isAdminPath`)에는 다 있는데 **여기만 빠져 있었다.**
+     * 정적 내보내기(app.json `web.output: "static"`)는 이 화면을 Node에서 한 번
+     * 그려 HTML로 굽는데, 그 Node에는 `window`가 없다. `Platform.OS`는 그때도
+     * 'web'이라 위 줄을 통과하고 다음 줄에서 `ReferenceError: window is not defined`가
+     * 났다.
+     *
+     * **그 하나가 모든 화면의 React #419를 만들었다.** 뿌리 레이아웃이 서버
+     * 렌더에서 죽으면 expo-router가 라우트마다 두르는 Suspense 경계가 «못 끝낸
+     * 경계»(`<!--$!-->`)로 굳고, 브라우저가 그 HTML을 물려받을 때 React가
+     * #419(「서버 렌더가 실패해 클라이언트 렌더로 전환했다」)를 찍는다. 화면
+     * 하나의 문제가 아니라 253장 전부가 같은 이유였다 — 굽힌 HTML 253장이
+     * 바이트까지 똑같은 «빈 껍데기»였다.
+     */
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return true;
 
     return !new URLSearchParams(window.location.search).has('wp_token');
   });
@@ -162,7 +182,6 @@ function RootLayoutContent() {
     }),
     [theme]
   );
-  const pathname = usePathname();
 
   useEffect(() => {
     /*

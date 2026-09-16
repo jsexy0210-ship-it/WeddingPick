@@ -208,19 +208,18 @@ async function installFixtures(page, missing, blocked) {
 }
 
 /**
- * 늘 나오지만 화면과 상관없는 콘솔 오류.
+ * 늘 나오지만 화면과 상관없는 콘솔 오류. **지금은 비어 있다.**
  *
- * React #419는 아직 미해결이다(2026-09-15). `_layout.tsx`의 인증 게이트 타이밍이
- * 원인이라고 처음 짚었던 것은 **틀렸다** — 그 갱신을 hydration 뒤로 미뤄도(0ms ·
- * 3000ms 둘 다 시험) 사라지지 않았고, 인증 게이트 자체가 없는 `/admin/expos`와
- * 아직 아무 화면도 못 그린 `/login`에서도 똑같이 난다. `web.output: "single"`로
- * 바꾸면 사라지는 것은 확인했지만, 그러면 라우트별 정적 파일이 없어져
- * `scripts/split-admin-dist.mjs`가 실패하고 `render.yaml`의 배포 빌드가 통째로
- * 죽는다(관리자 출처 분리 — CLAUDE.md) — 그래서 `static`을 유지한 채로는 아직
- * 고치는 방법을 못 찾았다. 여기 적어 두지 않으면 매 캡처마다 같은 줄이 붙고,
- * 사람은 곧 콘솔 오류를 통째로 안 읽게 된다.
+ * 2026-09-15까지 여기에 React #419가 들어 있었다. 「아직 미해결」이라 적고
+ * 걸러 두었던 것인데, 2026-09-16에 원인을 찾아 고쳤다 — `app/_layout.tsx`의
+ * `tokenBootstrapped` 초기화가 `window`를 검사 없이 읽어서 정적 내보내기의
+ * Node 렌더가 죽었고, 그 하나가 253장 전부를 «못 끝낸 Suspense 경계»로 만들었다.
+ *
+ * **다시 채우기 전에 두 번 생각한다.** 거르기 시작하면 그 줄은 다시 읽히지
+ * 않는다 — 저 #419도 하루 만에 「원래 나는 것」이 됐고, 그동안 굽힌 HTML
+ * 253장이 전부 빈 껍데기라는 사실이 같이 묻혔다.
  */
-const BENIGN_CONSOLE = [/Minified React error #419/];
+const BENIGN_CONSOLE = [];
 
 function safeName(route) {
   return route.replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '') || 'root';

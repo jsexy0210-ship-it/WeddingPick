@@ -42,7 +42,7 @@ npm run export:web --workspace @weddingpick/mobile
 | 역할 | 하는 일 | 성격 |
 |---|---|---|
 | `app` | `dist/admin/**.html`을 관리자 출처로 넘기는 쪽지로 교체 | **필요한 조치.** 관리자가 두 곳에 살아 한쪽이 낡는 것을 막는다 |
-| `admin` | `admin` · `_expo` · `assets` · favicon · `+not-found` 만 남기고 사용자 화면 제거, `index.html`은 `/admin/home`으로 | **정리이지 경계가 아니다.** 번들에 사용자 라우트가 남아 클라이언트 라우팅으로는 그려질 수 있다 |
+| `admin` | `admin` · `_expo` · `assets` · `fonts` · favicon · `+not-found` 만 남기고 사용자 화면 제거, `index.html`은 `/admin/home`으로 | **정리이지 경계가 아니다.** 번들에 사용자 라우트가 남아 클라이언트 라우팅으로는 그려질 수 있다 |
 
 ### 왜 `render.yaml`의 `routes`를 쓰지 않았나
 
@@ -52,6 +52,13 @@ npm run export:web --workspace @weddingpick/mobile
    못했다.** 추측 위에 경계를 세우지 않는다.
 
 파일이 없으면 규칙 해석과 무관하게 없다. 그래서 산출물을 직접 깎는다.
+
+**`fonts`가 2026-09-16에 그 목록에 들어왔다.** Pretendard 원본은 `apps/mobile/public/`에서
+출력 뿌리의 `fonts/`로 복사되는데(`+html.tsx`의 `@font-face`가 그 주소를 부른다) 목록에
+없어서 **관리자 출처만 폰트를 잃고 있었다.** 아무 오류도 나지 않는다 — 브라우저는 못 받은
+서체를 조용히 건너뛰고 시스템 서체로 떨어진다. 남길 것만 세어두는 화이트리스트의 값은
+여기에 있다(빠뜨려도 사용자 화면이 새지 않는다). 대신 **새로 뿌리에 놓이는 것은 여기
+적어야 한다.**
 
 ### 왜 `/admin` 접두어를 관리자 출처에서도 유지하나
 

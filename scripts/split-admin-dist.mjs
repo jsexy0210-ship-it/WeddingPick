@@ -46,7 +46,17 @@ const ADMIN_ORIGIN = (process.env.ADMIN_ORIGIN || 'https://weddingpick-admin.onr
 const ADMIN_KEEP = new Set([
   'admin', // 관리자 화면 32장 + 모듈 산출물 2장(_api·_session)
   '_expo', // JS·CSS 번들 (사용자 화면과 같은 번들 하나다 — 갈라지지 않는다)
-  'assets', // 폰트·이미지
+  'assets', // 이미지·아이콘
+  /*
+   * Pretendard 원본. `apps/mobile/public/`이 통째로 출력 뿌리에 복사되는 자리라
+   * `assets`가 아니라 여기 따로 선다(`+html.tsx`의 `@font-face`가 이 주소를 부른다).
+   *
+   * **2026-09-15에 폰트가 들어오면서 이 줄이 빠져 있었고, 관리자 출처만 폰트를
+   * 잃고 있었다**(2026-09-16 확인). 아무 오류도 나지 않는다 — 브라우저는 못 받은
+   * 서체를 조용히 건너뛰고 시스템 서체로 떨어진다. 폰트를 실었던 그 작업이 끝내려던
+   * 실패가 바로 이 모양이었다.
+   */
+  'fonts',
   'favicon.ico',
   '+not-found.html',
 ]);

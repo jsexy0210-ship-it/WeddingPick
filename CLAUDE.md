@@ -409,6 +409,19 @@ eyebrow가 아닌 영문(버튼 · 라벨 · 안내문)은 **한국어로 바꾼
 **`docs/design-handoff/current/`는 읽기 전용이다.** 전달 ZIP에서 내용 변경 없이 뽑은
 원본이라 고치지 않는다. 어긋나는 것은 저장소 쪽을 고친다.
 
+**앱 웹은 Node에서 «한 번 그려» HTML로 굽는다**(`apps/mobile/app.json` `web.output: "static"`).
+그 Node에는 `window`도 `document`도 `localStorage`도 없다. **`Platform.OS`는 그때도 `'web'`이다** —
+`Platform.OS === 'web'`은 브라우저라는 뜻이 아니다. 렌더 도중(본문 · `useState` 초기화 ·
+`useMemo`)에 브라우저 전역을 읽으려면 `typeof window === 'undefined'`를 함께 본다. 주소가
+필요하면 `window.location.pathname`이 아니라 expo-router의 `usePathname()`을 쓴다 — 서버
+렌더에서도 그 페이지의 주소를 안다. effect 안은 브라우저에서만 도니 그대로 둬도 된다.
+
+**빠뜨리면 화면 하나가 아니라 전부가 깨지고, 아무도 모른다.** 뿌리 레이아웃이 서버 렌더에서
+죽으면 라우트마다 두른 Suspense 경계가 «못 끝낸 경계»로 굳어 굽힌 HTML이 전부 빈 껍데기가
+되고, 브라우저 콘솔에 React #419만 남는다. **빌드는 초록으로 끝난다.** 2026-09-15까지 실제로
+그 상태였다 — `_layout.tsx`의 `window` 한 줄 때문에 253장이 바이트까지 똑같은 빈 껍데기였고,
+캡처 도구는 그 #419를 「원래 나는 것」으로 걸러 두고 있었다(2026-09-16 수정).
+
 **prettier를 돌리지 않는다.** 이 저장소의 서식은 손으로 정한 것이고, 한 번 돌리면 관계
 없는 파일 수백 개가 diff에 들어와 무엇을 고쳤는지가 사라진다.
 
