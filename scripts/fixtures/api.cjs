@@ -842,6 +842,223 @@ const routes = {
     usageScore: VENDOR_DETAIL.usageScore,
     caveat: '한 사람의 경험이에요. 업체를 고르는 유일한 기준으로 삼지 마세요.',
   },
+
+  /*
+   * ─── 관리자 콘솔 ──────────────────────────────────────────────────────────
+   *
+   * 위쪽에 이미 여덟(대시보드 · 일일 브리핑 · 광고 · 박람회 · 웨딩피드 · 관리자
+   * 계정 · 회원 추이)이 있었다. 아래 일곱은 2026-09-16 관리자 화면 전수 조사에서
+   * 더했다 — 그전까지 FAQ · 업체 · 이미지 · 제보 처리 · 개인정보 검토 · 정책 규칙 ·
+   * 마케팅 발송을 찍으면 본문 자리에 「API … → 404」 한 줄만 나왔다. 껍데기는
+   * 보이지만 본문은 한 번도 찍힌 적이 없었다는 뜻이다.
+   *
+   * 값은 **가명·가짜 수치**다(CLAUDE.md 「예시 데이터」). 천단위 쉼표가 실제로
+   * 걸리는지 보려고 네 자리가 넘는 수를 일부러 섞어 뒀다.
+   */
+  'GET /v1/admin/faq': {
+    items: [
+      {
+        id: '00000000-0000-4000-8000-00000000fa01',
+        category: '예약',
+        question: '예약은 언제부터 할 수 있나요?',
+        answer: '예식일 12개월 전부터 예약할 수 있어요.',
+        order: 0,
+        published: true,
+        editable: true,
+      },
+      {
+        id: '00000000-0000-4000-8000-00000000fa02',
+        category: '예약',
+        question: '예약을 취소하면 어떻게 되나요?',
+        answer: '취소 규정은 업체마다 달라요. 계약서를 확인해주세요.',
+        order: 1,
+        published: false,
+        editable: true,
+      },
+      {
+        id: '00000000-0000-4000-8000-00000000fa03',
+        category: '제보',
+        question: 'Pick 인증은 어떻게 하나요?',
+        answer: '계약서나 결제 증빙을 올리면 돼요.',
+        order: 0,
+        published: true,
+        editable: true,
+      },
+      {
+        id: 'spec:price-basis',
+        category: '코드에 있는 항목',
+        question: '기준금액은 어떻게 정해지나요?',
+        answer: '실 제보의 중앙값이에요.',
+        order: 0,
+        published: true,
+        editable: false,
+      },
+    ],
+    categories: ['예약', '제보', '코드에 있는 항목'],
+  },
+  'GET /v1/admin/marketing': {
+    summary: { generated: 1284, simulated: 1180, failed: 104, failRate: 0.081 },
+    items: [
+      {
+        id: '00000000-0000-4000-8000-0000000bb001',
+        title: '9월 박람회 안내 소재',
+        channel: '알림톡',
+        status: 'failed',
+        createdAt: '2026-09-15T02:10:00.000Z',
+        simulatedAt: null,
+        failReason: '템플릿 심사 대기',
+      },
+      {
+        id: '00000000-0000-4000-8000-0000000bb002',
+        title: '가을 스냅 기획 소재',
+        channel: '푸시',
+        status: 'queued',
+        createdAt: '2026-09-15T05:40:00.000Z',
+        simulatedAt: null,
+        failReason: null,
+      },
+      {
+        id: '00000000-0000-4000-8000-0000000bb003',
+        title: '드레스 투어 안내 소재',
+        channel: '푸시',
+        status: 'simulated',
+        createdAt: '2026-09-14T23:05:00.000Z',
+        simulatedAt: '2026-09-15T01:00:00.000Z',
+        failReason: null,
+      },
+    ],
+  },
+  'GET /v1/admin/data/images': {
+    summary: { total: 12480, licensed: 11902, pending: 431, rejected: 147 },
+    items: [
+      {
+        id: '00000000-0000-4000-8000-0000000cc001',
+        vendorName: '강남 A 스튜디오',
+        source: '업체 공식 채널',
+        rightsStatus: 'pending',
+        matchConfidence: 0.92,
+        createdAt: '2026-09-15T04:00:00.000Z',
+        url: null,
+      },
+      {
+        id: '00000000-0000-4000-8000-0000000cc002',
+        vendorName: '분당 C 웨딩홀',
+        source: '크롤링',
+        rightsStatus: 'pending',
+        matchConfidence: 0.41,
+        createdAt: '2026-09-15T04:20:00.000Z',
+        url: null,
+      },
+    ],
+  },
+  'GET /v1/admin/vendors': {
+    total: 3,
+    vendors: [
+      {
+        id: '11111111-1111-4111-8111-111111111111',
+        name: '강남 A 웨딩홀',
+        category: 'hall',
+        status: 'active',
+        dataCount: 1284,
+        mergedInto: null,
+        history: [],
+      },
+      {
+        id: '22222222-2222-4222-8222-222222222222',
+        name: '강남 B 웨딩홀',
+        category: 'hall',
+        status: 'suspended',
+        dataCount: 96,
+        mergedInto: null,
+        history: [{ at: '2026-09-14T00:00:00.000Z', action: '정지', note: '제보 검증 중' }],
+      },
+      {
+        id: '33333333-3333-4333-8333-333333333333',
+        name: '분당 C 웨딩홀',
+        category: 'hall',
+        status: 'merged',
+        dataCount: 0,
+        mergedInto: '강남 A 웨딩홀',
+        history: [],
+      },
+    ],
+  },
+  'GET /v1/admin/data/pipeline': {
+    today: { received: 3120, autoProcessed: 2894, manualRequired: 182, failed: 44 },
+    stages: [
+      { stage: '수집', count: 3120, avgWaitMin: 1 },
+      { stage: '판독', count: 2980, avgWaitMin: 4 },
+      { stage: '대조', count: 2894, avgWaitMin: 7 },
+    ],
+    failedQueue: [
+      {
+        id: '00000000-0000-4000-8000-00000000dd01',
+        stage: '판독',
+        error: '증빙 이미지를 읽지 못했어요',
+        failedAt: '2026-09-15T06:10:00.000Z',
+        retryCount: 2,
+      },
+    ],
+  },
+  'GET /v1/admin/pii-reviews': {
+    reviews: [
+      {
+        id: '00000000-0000-4000-8000-00000000pp01',
+        createdAt: '2026-09-15T03:30:00.000Z',
+        detectedKinds: ['휴대폰 번호'],
+        hintCount: 1284,
+      },
+      {
+        id: '00000000-0000-4000-8000-00000000pp02',
+        createdAt: '2026-09-15T05:15:00.000Z',
+        detectedKinds: ['이메일', '계좌번호'],
+        hintCount: 12,
+      },
+    ],
+  },
+  'GET /v1/admin/policy-engine': {
+    policies: [
+      {
+        id: '00000000-0000-4000-8000-00000000po01',
+        key: 'report.min_count',
+        label: '금액 공개 최소 제보 수',
+        description: '이 수보다 적으면 업체 안내가를 대신 보여줘요.',
+        category: '제보',
+        type: 'number',
+        value: '3',
+        defaultValue: '3',
+        lastChangedAt: null,
+        lastChangedBy: null,
+        readOnlyReason: null,
+      },
+      {
+        id: '00000000-0000-4000-8000-00000000po02',
+        key: 'notify.daily_cap',
+        label: '하루 알림 최대 건수',
+        description: '한 사람에게 하루에 보낼 수 있는 알림 수예요.',
+        category: '알림',
+        type: 'number',
+        value: '2',
+        defaultValue: '2',
+        lastChangedAt: '2026-09-12T02:00:00.000Z',
+        lastChangedBy: '운영자',
+        readOnlyReason: null,
+      },
+      {
+        id: '00000000-0000-4000-8000-00000000po03',
+        key: 'expo.auto_delete',
+        label: '박람회 종료 자동 삭제',
+        description: '대표님 지시로 보류 중이라 여기서 켤 수 없어요.',
+        category: '박람회',
+        type: 'boolean',
+        value: 'false',
+        defaultValue: 'false',
+        lastChangedAt: null,
+        lastChangedBy: null,
+        readOnlyReason: '대표 지시로 보류 중이에요',
+      },
+    ],
+  },
 };
 
 /**

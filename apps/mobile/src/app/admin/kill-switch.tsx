@@ -130,7 +130,7 @@ export function KillSwitchPanel() {
         <>
           <StatusBanner
             tone={off.length === 0 ? 'ok' : 'bad'}
-            title={off.length === 0 ? '모두 켜져 있어요' : `${off.length}개가 꺼져 있어요`}
+            title={off.length === 0 ? '모두 켜져 있어요' : `${formatCount(off.length)}개가 꺼져 있어요`}
             detail={
               off.length === 0
                 ? '멈춰 있는 기능이 없어요.'
