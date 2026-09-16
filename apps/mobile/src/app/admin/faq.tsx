@@ -23,10 +23,11 @@ import {
   View,
 } from 'react-native';
 
+import { FAQ_PLACEHOLDER_LABEL, FAQ_PLACEHOLDER_NAMES } from '@weddingpick/domain';
 import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
-import { AdminTabShell, type AdminTabDef } from './_ui';
+import { AdminTabShell, ConfirmCard, type AdminTabDef } from './_ui';
 import { TermsPanel } from './terms';
 import { OgCardPanel } from './og-card';
 import { AuditLogPanel } from './audit-log';
@@ -34,32 +35,56 @@ import { WeddingFeedPanel } from './wedding-feed';
 
 type FaqItem = {
   id: string;
+  /**
+   * 코드에서 옮겨 온 항목의 고정 이름. 사용자 화면의 주소가 이 값이다.
+   * 운영자가 새로 등록한 항목은 `null`이고, 그때는 행의 id가 주소가 된다.
+   */
+  key: string | null;
   category: string;
   question: string;
+  /** 자리를 채운 글. 목록에 보여주는 것은 이쪽 — 사용자가 읽을 문장이다. */
   answer: string;
+  /** 채우기 «전» 글. 고치는 것은 이쪽이다. */
+  answerSource: string;
   order: number;
   published: boolean;
-  /**
-   * 고칠 수 있는 항목인지. 코드에 든 FAQ(`packages/domain/src/faq.ts`)는 `false`로
-   * 와서 수정·삭제 단추 대신 그 사실을 적는다.
-   *
-   * **코드 항목을 표로 옮겨 적지 않은 이유**가 그 답에 있다 — 공개 기준 건수를
-   * 계산해 문장에 넣으므로, 글자로 복사하면 기준이 바뀌는 날 사본이 옛 수를 말한다.
-   * 그래도 여기 함께 보여준다: 운영자가 「사용자가 지금 보는 것」을 한 자리에서
-   * 확인하지 못하면 같은 질문을 두 번 등록한다.
-   */
-  editable?: boolean;
 };
 
 type FaqData = { items: FaqItem[]; categories: string[] };
 
 const BLANK_FAQ: Omit<FaqItem, 'id'> = {
+  key: null,
   category: '',
   question: '',
   answer: '',
+  answerSource: '',
   order: 0,
   published: false,
 };
+
+/**
+ * 답에 쓸 수 있는 자리.
+ *
+ * **적어 두지 않으면 외워야 한다.** 이름은 `packages/domain/src/faq.ts` 한 곳에서
+ * 오고, 여기 적히는 설명도 같은 파일에서 온다 — 두 군데에 적으면 화면이 「쓸 수
+ * 있다」고 말한 이름을 서버가 모르는 날이 온다.
+ */
+function PlaceholderHelp() {
+  return (
+    <View style={styles.helpBox}>
+      <Text style={styles.helpTitle}>답변에 쓸 수 있는 자리</Text>
+      {FAQ_PLACEHOLDER_NAMES.map((name) => (
+        <Text key={name} style={styles.helpLine}>
+          {`{{${name}}}`} — {FAQ_PLACEHOLDER_LABEL[name]}
+        </Text>
+      ))}
+      <Text style={styles.helpNote}>
+        이대로 적어두면 보여줄 때 지금 기준 건수로 바뀌어요. 기준이 바뀌어도 문장을 다시
+        고치지 않아도 돼요. 목록에 없는 이름은 저장할 때 알려드려요.
+      </Text>
+    </View>
+  );
+}
 
 function FaqPanel() {
   const [data, setData] = useState<FaqData | null>(null);
@@ -71,6 +96,13 @@ function FaqPanel() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  /*
+   * 지우기 전에 무엇이 사라지는지 보여준다(CLAUDE.md 관리자 공통 규칙 — 「위험한
+   * 조작은 무엇이 바뀌는지 항목으로 보여준 뒤 한 번 더 확인」). 전에는 단추 한 번에
+   * 바로 지워졌고, 코드에서 옮겨 온 항목까지 지울 수 있게 되면서 그 한 번이 사용자
+   * 화면에서 질문 하나를 없애는 일이 됐다.
+   */
+  const [asking, setAsking] = useState<FaqItem | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -98,7 +130,8 @@ function FaqPanel() {
   }
 
   function openEdit(item: FaqItem) {
-    setEditing({ ...item });
+    /* 고치는 것은 «채우기 전» 글이다. 채운 글을 되돌려 저장하면 숫자가 글자로 굳는다. */
+    setEditing({ ...item, answer: item.answerSource });
     setIsNew(false);
     setSaveError(null);
   }
@@ -129,12 +162,18 @@ function FaqPanel() {
     }
   }
 
-  async function deleteFaq(id: string) {
-    setDeleting(id);
+  async function deleteFaq(item: FaqItem) {
+    setAsking(null);
+    setDeleting(item.id);
     try {
-      await apiFetch(`/v1/admin/faq/${id}`, { method: 'DELETE' });
+      await apiFetch(`/v1/admin/faq/${item.id}`, { method: 'DELETE' });
       setRev((r) => r + 1);
-    } catch { /* 무시 */ } finally { setDeleting(null); }
+    } catch (e) {
+      /* 조용히 삼키면 목록이 그대로라 「지워졌는데 화면이 안 바뀐 것」으로 읽힌다. */
+      setError(e instanceof Error ? e.message : '삭제하지 못했어요.');
+    } finally {
+      setDeleting(null);
+    }
   }
 
   const grouped = data?.items.reduce<Record<string, FaqItem[]>>((acc, item) => {
@@ -186,22 +225,16 @@ function FaqPanel() {
                     <Text style={styles.faqA} numberOfLines={2}>{item.answer}</Text>
                   </View>
                   <View style={styles.faqActions}>
-                    {item.editable === false ? (
-                      <Text style={styles.faqLocked}>코드에 있는 항목</Text>
-                    ) : (
-                      <>
-                        <Pressable style={styles.editBtn} onPress={() => openEdit(item)}>
-                          <Text style={styles.editBtnText}>수정</Text>
-                        </Pressable>
-                        <Pressable
-                          style={[styles.deleteBtn, deleting === item.id && styles.btnDisabled]}
-                          onPress={() => void deleteFaq(item.id)}
-                          disabled={deleting !== null}
-                        >
-                          <Text style={styles.deleteBtnText}>{deleting === item.id ? '…' : '삭제'}</Text>
-                        </Pressable>
-                      </>
-                    )}
+                    <Pressable style={styles.editBtn} onPress={() => openEdit(item)}>
+                      <Text style={styles.editBtnText}>수정</Text>
+                    </Pressable>
+                    <Pressable
+                      style={[styles.deleteBtn, deleting === item.id && styles.btnDisabled]}
+                      onPress={() => setAsking(item)}
+                      disabled={deleting !== null}
+                    >
+                      <Text style={styles.deleteBtnText}>{deleting === item.id ? '…' : '삭제'}</Text>
+                    </Pressable>
                   </View>
                 </View>
               ))}
@@ -259,6 +292,7 @@ function FaqPanel() {
                     trackColor={{ true: Colors.light.tint }}
                   />
                 </View>
+                <PlaceholderHelp />
                 {saveError && <Text style={styles.saveError}>{saveError}</Text>}
                 <View style={styles.modalActions}>
                   <Pressable
@@ -279,6 +313,32 @@ function FaqPanel() {
               </>
             )}
           </View>
+        </View>
+      </Modal>
+
+      {/* 지우기 전 확인. 무엇이 사라지는지 항목으로 적는다. */}
+      <Modal visible={asking !== null} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          {asking ? (
+            <ConfirmCard
+              title="이 질문을 지울까요?"
+              body={`「${asking.question}」 — 지우면 되돌릴 수 없어요.`}
+              items={[
+                asking.published
+                  ? '사용자 화면의 자주 묻는 것에서 바로 사라져요'
+                  : '비공개 항목이라 사용자 화면은 그대로예요',
+                '이 질문의 답도 함께 지워져요',
+                asking.key
+                  ? `이 질문으로 가는 주소(/my/faq/${asking.key})가 「찾는 질문이 없어요」로 바뀌어요`
+                  : '이 질문으로 가는 주소가 「찾는 질문이 없어요」로 바뀌어요',
+                '지운 뒤에는 다시 등록해야 해요 — 되살리는 단추가 없어요',
+              ]}
+              cta="지우기"
+              danger
+              onConfirm={() => void deleteFaq(asking)}
+              onCancel={() => setAsking(null)}
+            />
+          ) : null}
         </View>
       </Modal>
     </View>
@@ -361,7 +421,21 @@ const styles = StyleSheet.create({
   faqOrder: { fontSize: FontSize.tab, color: Colors.light.textAssistive },
   faqA: { fontSize: FontSize.tab, color: Colors.light.textAssistive, lineHeight: LineHeight.micro },
   faqActions: { flexDirection: 'row', gap: 6 },
-  faqLocked: { fontSize: FontSize.tab, color: Colors.light.textAssistive },
+  helpBox: {
+    marginTop: 14,
+    padding: 12,
+    borderRadius: 6,
+    backgroundColor: Colors.light.backgroundSelected,
+    gap: 4,
+  },
+  helpTitle: { fontSize: FontSize.tab, fontWeight: '700', color: Colors.light.textStrong },
+  helpLine: { fontSize: FontSize.tab, color: Colors.light.textSecondary },
+  helpNote: {
+    fontSize: FontSize.tab,
+    color: Colors.light.textAssistive,
+    lineHeight: LineHeight.micro,
+    marginTop: 4,
+  },
   editBtn: {
     paddingHorizontal: 10,
     paddingVertical: 6,
