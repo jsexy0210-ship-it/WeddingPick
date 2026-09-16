@@ -156,7 +156,13 @@ jobs:
       cancel-in-progress: false
 
     steps:
+      # **역사가 있어야 「바뀐 쪽만 누른다」가 돈다.** 기본값은 깊이 1이라 옛 커밋이
+      # 없고, `render-env-sync.py`가 서비스의 live 커밋과 비교할 수 없다 — 그러면
+      # 「모르면 누른다」로 빠져서 **넷이 전부 다시 빌드된다.** Render의 Pipeline
+      # Minutes는 한정돼 있다.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
