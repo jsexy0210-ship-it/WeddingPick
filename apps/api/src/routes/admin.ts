@@ -1336,6 +1336,16 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   });
 
   // ─── Revenue ──────────────────────────────────────────────────────────────
+  /*
+   * **여기에는 아직 아무 상태도 없다.** `email-matching`과 같은 자리다 — 구독·결제
+   * 표가 DB에 없다(0001~0230 어디에도 없다). `payment_proofs`가 이름 때문에
+   * 헷갈리는데, 그건 사용자가 **업체에 낸** 영수증을 읽어 둔 것이라 우리 매출이
+   * 아니다. 가격 통계의 재료지 수익의 재료가 아니다.
+   *
+   * 그래서 0을 돌려준다. **화면은 언제나 0을 그린다** — 매출이 0이라서가 아니라
+   * 셀 표가 없어서다. 이 주석이 없으면 다음 사람이 그 둘을 구별할 수 없다.
+   * 수익 현황은 결제 연동 뒤에 붙는다.
+   */
   app.get('/v1/admin/revenue', auth, async () => {
     return {
       mrr: 0,
@@ -1501,9 +1511,62 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   );
 
   // ─── Biz Queue ────────────────────────────────────────────────────────────
+  /*
+   * **업체 소유 확인(관계자 인증) 큐다.** 이름이 「문의」라 오래 헷갈렸다.
+   *
+   * 예전에는 `{ items: [], total: 0 }` 리터럴이었다. 그래서 대시보드는
+   * `biz-queue`를 「업체 소유 확인 대기 N건」으로 빨갛게 세어 놓고
+   * (`dashboard-admin.ts`가 `vendorClaims.length`를 쓴다), 운영자가 그 줄을 눌러
+   * 들어오면 화면이 **「접수 건이 없어요」**를 그렸다. 숫자와 화면이 서로를
+   * 부정했다 — 빈 목록이라 아무도 승인·반려를 눌러보지 않았고, 그래서 그 단추가
+   * 서버에 없다는 것도 함께 묻혀 있었다.
+   *
+   * 대시보드가 이미 같은 표(`structured.vendor_claims`)를 가리키고 있었으므로
+   * 여기서 새로 정하는 것은 없다. **같은 표를 읽게 붙일 뿐이다.**
+   *
+   * 주소(`/v1/admin/biz-queue`)는 그대로 둔다 — 화면과 대시보드 링크가 이 이름을
+   * 들고 있다. 판단은 `vendor-claim-admin`에 있고 여기는 넘기기만 한다.
+   */
   app.get('/v1/admin/biz-queue', auth, async () => {
-    return { items: [] as unknown[], total: 0 };
+    const items = await vendorClaimAdmin.queue(context.pool);
+    return { items, total: items.length };
   });
+
+  /*
+   * 승인 · 반려.
+   *
+   * `campaigns/:id/:action`과 같은 모양이다 — 판단을 새로 쓰지 않고 화면의
+   * 말(`approve`/`reject`)을 `vendorClaimAdmin.decide`의 말로 옮긴다. 그 함수가
+   * 「신청한 본인은 심사할 수 없다」 · 「이미 처리된 건은 다시 처리하지 않는다」 ·
+   * 결정 기록 · 알림까지 한 트랜잭션에서 한다.
+   *
+   * 사유(`note`)를 반드시 받는다. 승인이든 반려든 신청한 사람이 그것을 읽는다.
+   */
+  app.post<{ Params: { id: string; action: string }; Body: unknown }>(
+    '/v1/admin/biz-queue/:id/:action',
+    auth,
+    async (request, reply) => {
+      const { action } = request.params;
+
+      if (action !== 'approve' && action !== 'reject') {
+        throw new ApiError('invalid_request', '승인 또는 반려만 할 수 있습니다.');
+      }
+
+      const body = vendorClaimDecisionBodySchema.parse(request.body ?? {});
+
+      await run(() =>
+        vendorClaimAdmin.decide(
+          context.pool,
+          request.params.id,
+          action === 'approve' ? 'approved' : 'rejected',
+          currentUserId(request),
+          body.note
+        )
+      );
+
+      return reply.status(204).send();
+    }
+  );
 
   // ─── Briefing ─────────────────────────────────────────────────────────────
   app.get('/v1/admin/briefing', auth, async () => {
@@ -2001,8 +2064,27 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
     return { summary, vendors };
   });
 
-  app.post<{ Params: { vendorId: string } }>('/v1/admin/data/price-stats/:vendorId/recalc', auth, async (_req, reply) => {
-    return reply.status(202).send({ queued: true });
+  /*
+   * 「다시 계산」.
+   *
+   * 예전에는 `202 { queued: true }`를 돌려줬다. **큐에 넣는 줄이 없었다** — 성공을
+   * 말하면서 아무것도 하지 않는 응답이라, 화면의 잠금이 풀리는 날 조용히 거짓말이
+   * 된다.
+   *
+   * 그런데 재 보니 **다시 계산할 것 자체가 없다.** 바로 위 `GET`이 읽을 때마다
+   * `usable_payment_proofs`에서 평균·표준편차를 새로 구한다. 미리 계산해 둔 값을
+   * 담는 `stats.price_stats`(`0001_init.sql`)는 있지만 **저장소 어디에도 그 표에
+   * 쓰는 코드가 없다.** 목록의 숫자는 늘 최신이고, 눌러서 새로 만들 것이 없다.
+   *
+   * 그래서 이 자리는 붙일 것이 없다. 화면의 단추는 이미 잠겨 있고
+   * (`BACKEND_PENDING`), 서버도 같은 말을 하게 둔다. 미리 계산해 두는 방식으로
+   * 바꾸는 날 이 라우트가 그 작업을 걸면 된다.
+   */
+  app.post<{ Params: { vendorId: string } }>('/v1/admin/data/price-stats/:vendorId/recalc', auth, async () => {
+    throw new ApiError(
+      'invalid_request',
+      '목록의 값은 열 때마다 새로 계산해요. 따로 다시 계산할 것이 없어요.'
+    );
   });
 
   // ── 박람회 ──────────────────────────────────────────────────

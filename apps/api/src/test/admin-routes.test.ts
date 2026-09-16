@@ -518,6 +518,9 @@ describeWithDb('관리자 콘솔 라우트', () => {
   });
 
   describe('업체 관계자 인증', () => {
+    /* 대시보드 전체 모양은 「요약 대시보드」가 본다. 여기서는 세는 줄 하나만 읽는다. */
+    type HumanQueueOnly = { humanQueue: { key: string; count: number }[] };
+
     async function aPendingClaim() {
       const vendor = await test.pool.query<{ id: string }>(
         `INSERT INTO structured.vendors (name, category, region, source, official_domain)
@@ -552,6 +555,75 @@ describeWithDb('관리자 콘솔 라우트', () => {
         note: '공식 도메인 주소로 회신 확인',
       });
       expect(approve.statusCode).toBe(204);
+    });
+
+    /*
+     * 대시보드가 세는 숫자와 운영자가 열어 보는 화면이 같은 표를 봐야 한다.
+     *
+     * 예전에는 어긋나 있었다 — `GET /v1/admin/biz-queue`가 `{items: [], total: 0}`
+     * 리터럴이라, 대시보드는 「업체 소유 확인 대기 1건」을 빨갛게 띄우고 그 줄을
+     * 눌러 들어온 화면은 「접수 건이 없어요」를 그렸다.
+     */
+    it('대시보드가 센 건이 업체 소유 확인 화면에 그대로 보인다', async () => {
+      const claimId = await aPendingClaim();
+      const operator = await operatorHeaders();
+
+      const counted = (await get('/v1/admin/dashboard', operator.headers)).json<HumanQueueOnly>();
+      expect(counted.humanQueue.find((q) => q.key === 'biz-queue')?.count).toBe(1);
+
+      const queue = (await get('/v1/admin/biz-queue', operator.headers)).json<{
+        total: number;
+        items: {
+          id: string;
+          status: string;
+          vendorName: string;
+          claimedRole: string;
+          method: string;
+          domainMatches: boolean | null;
+        }[];
+      }>();
+
+      expect(queue.total).toBe(1);
+      expect(queue.items[0]).toMatchObject({
+        id: claimId,
+        status: 'pending',
+        vendorName: '가온예식홀',
+        claimedRole: '예약팀장',
+        method: 'official_domain_email',
+        /* 재료지 결론이 아니다(0038) — 화면도 「확인됨」이라고 적지 않는다. */
+        domainMatches: true,
+      });
+    });
+
+    it('화면의 승인·반려가 실제로 상태를 바꾸고, 사유 없이는 받지 않는다', async () => {
+      const claimId = await aPendingClaim();
+      const operator = await operatorHeaders();
+
+      /* 신청한 사람이 이 글을 읽는다. 비워 두면 보낼 것이 없다. */
+      expect((await post(`/v1/admin/biz-queue/${claimId}/reject`, operator.headers, {})).statusCode)
+        .toBe(400);
+      expect((await post(`/v1/admin/biz-queue/${claimId}/hold`, operator.headers, { note: 'ㅇ' })).statusCode)
+        .toBe(400);
+
+      const approved = await post(`/v1/admin/biz-queue/${claimId}/approve`, operator.headers, {
+        note: '공식 도메인 주소로 회신 확인',
+      });
+      expect(approved.statusCode).toBe(204);
+
+      /* 처리한 건은 목록에서 사라지지 않는다 — 사라지면 놓친 것과 구별이 안 된다. */
+      const after = (await get('/v1/admin/biz-queue', operator.headers)).json<{
+        total: number;
+        items: { status: string; decisionNote: string | null }[];
+      }>();
+      expect(after.total).toBe(1);
+      expect(after.items[0]).toMatchObject({
+        status: 'approved',
+        decisionNote: '공식 도메인 주소로 회신 확인',
+      });
+
+      /* 대시보드의 「확인 대기」에서는 빠진다. 같은 표를 보므로 함께 움직인다. */
+      const counted = (await get('/v1/admin/dashboard', operator.headers)).json<HumanQueueOnly>();
+      expect(counted.humanQueue.find((q) => q.key === 'biz-queue')?.count).toBe(0);
     });
   });
 

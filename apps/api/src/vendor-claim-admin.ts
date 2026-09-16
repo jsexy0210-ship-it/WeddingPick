@@ -235,6 +235,73 @@ export async function show(
   };
 }
 
+export type VendorClaimQueueRow = VendorClaimDetail & {
+  /**
+   * 낸 주소가 업체 공식 도메인과 같은가.
+   *
+   * **결론이 아니라 재료다**(0038) — 도메인이 같다는 것은 그 회사의 주소라는 뜻이지
+   * 신청한 사람이 그 주소를 쓴다는 뜻이 아니다. 화면도 그렇게 적는다. 증빙으로 낸
+   * 신청(`business_document`)은 견줄 주소 자체가 없으므로 `null`이다.
+   */
+  domainMatches: boolean | null;
+};
+
+/**
+ * 관리자 화면(`/admin/biz-queue`)이 읽는 목록.
+ *
+ * `list`와 나눠 둔 이유 둘. 저쪽은 **확인 대기만** 세므로 대시보드의 숫자가 되고,
+ * 여기는 처리가 끝난 것까지 보여줘야 한다 — 방금 승인한 건이 목록에서 사라지면
+ * 운영자는 처리된 것인지 놓친 것인지 알 수 없다. 그리고 화면은 한 줄을 고르면
+ * 곧바로 상세를 그리므로(따로 부르지 않는다) `show`가 주는 칸이 전부 필요하다.
+ */
+export async function queue(
+  pool: ReturnType<typeof createPool>
+): Promise<VendorClaimQueueRow[]> {
+  const { rows } = await pool.query<{
+    id: string;
+    status: ClaimStatus;
+    vendor_name: string;
+    official_domain: string | null;
+    claimed_role: string;
+    method: ClaimMethod;
+    contact_email: string | null;
+    listed_at: string | null;
+    has_document: boolean;
+    decision_note: string | null;
+    created_at: Date;
+  }>(
+    /*
+     * 확인 대기가 맨 위다. 그 다음은 최근 순 — 운영자가 할 일을 먼저 보고,
+     * 그 아래에서 방금 무엇을 했는지 되짚는다.
+     */
+    `SELECT c.id, c.status, v.name AS vendor_name, v.official_domain,
+            c.claimed_role, c.method, c.contact_email, c.listed_at,
+            c.evidence_document_id IS NOT NULL AS has_document,
+            c.decision_note, c.created_at
+     FROM structured.vendor_claims c
+     JOIN structured.vendors v ON v.id = c.vendor_id
+     ORDER BY (c.status = 'pending') DESC, c.created_at DESC`
+  );
+
+  return rows.map((row) => ({
+    id: row.id,
+    status: row.status,
+    vendorName: row.vendor_name,
+    officialDomain: row.official_domain,
+    claimedRole: row.claimed_role,
+    method: row.method,
+    contactEmail: row.contact_email,
+    listedAt: row.listed_at,
+    hasDocument: row.has_document,
+    decisionNote: row.decision_note,
+    createdAt: row.created_at,
+    domainMatches:
+      row.contact_email === null
+        ? null
+        : matchesOfficialDomain(row.contact_email, row.official_domain),
+  }));
+}
+
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
   const pool = createPool(loadConfig().databaseUrl);
