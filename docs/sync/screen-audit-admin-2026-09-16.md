@@ -215,6 +215,6 @@ terms는 「라우트는 있는데 서버가 `termsUnavailable`로 의도적으�
 | `node lint-copy.js` | 통과 (다만 위 「판단 필요 1」 참고 — 관리자를 건너뛴다) |
 | `node scripts/sync-seed-tokens.mjs --check` | SEED와 같다 |
 | `capture-fixtures` 계약 | 29/29 통과(`main` 머지 뒤 기준) |
-| `npm test` | **2,601건 / 197 스위트 전부 통과**(api 1104 · domain 963 · mobile 337 · db 79 · web 73 · api-contract 45). 로컬 PostgreSQL 16 |
+| `npm test` | **2,637건 / 200 스위트 전부 통과**(api 1111 · domain 984 · mobile 344 · db 79 · web 73 · api-contract 46). `main` 머지 뒤 다시 돌린 값이고, 로컬 PostgreSQL 16을 쓴다 |
 
 **prettier는 돌리지 않았다.**
