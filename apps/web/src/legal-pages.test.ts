@@ -88,10 +88,25 @@ describe('공개 법적 문서', () => {
     expect(row('privacy@render.com')).toContain('전 세계(정적 웹 전송망');
     // 미국에 남은 API·워커는 없다. 지운 것을 방침이 계속 적고 있으면 그것도 틀린 고지다.
     expect(row('privacy@render.com')).not.toContain('기존 API');
-
-    // 자료 분석과 푸시 중계는 그대로 미국이다. 전부 싱가포르로 뭉뚱그리지 않는다.
-    expect(row('privacy@anthropic.com')).toContain('미국 ·');
     expect(row('650 Industries')).toContain('미국 ·');
+    /*
+     * 자료 분석·상담 녹음 정리의 수탁자를 Anthropic에서 Google로 바꿨다(2026-09-14 대표 결정).
+     *
+     * **한 회사는 한 줄이다.** 2026-09-16에 이 표에 Google 행이 «둘» 있었다 — 하나는
+     * Anthropic 행을 옮긴 것이라 법인명·국가가 전부 「확인 필요」였고, 다른 하나는 이미
+     * `Google LLC · 미국`으로 적고 있었다. 같은 회사를 두 이름으로 부르면 읽는 사람은
+     * 서로 다른 곳으로 읽는다. 구체적인 쪽으로 합치고 자료 분석 목적을 그 행에 더했다.
+     *
+     * 아래가 그 잠금이다. **「확인 필요」를 잠그던 자리를 실제 값으로 바꿨다** — 이전받는
+     * 자와 국가는 국외 이전 고지의 핵심 항목이라(개인정보보호법 제28조의8) 비어 있으면
+     * 고지가 성립하지 않는다.
+     */
+    expect(row('Google LLC')).toContain('업로드한 자료와 상담 녹음');
+    expect(row('Google LLC')).not.toContain('싱가포르');
+    // 모델 학습에 쓰이지 않는다는 조건은 이 이전을 받아들일 수 있게 하는 근거다. 지우지 않는다.
+    expect(row('Google LLC')).toContain('모델 학습에 이용되지 않는 조건');
+    // 합쳐진 뒤에도 Google 행은 하나뿐이다. 주소는 링크로 바뀌므로 행을 센다.
+    expect(table!.split('</tr>').filter(part => part.includes('Google LLC'))).toHaveLength(1);
 
     /*
      * 상담 녹음을 읽어내는 이전. **이 행이 없으면 첫 호출이 곧 미고지 이전이다**

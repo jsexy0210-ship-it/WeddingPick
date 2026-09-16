@@ -7,6 +7,11 @@ import { TERMS } from './terms';
 import { TOP3_EMPTY, TOP3_PARTIAL_NOTE, TOP3_REASON_LABEL } from './top3';
 import { VENDOR_DETAIL_SECTIONS } from './vendor-detail';
 import {
+  VISIT_NOTE_AUDIO_CONSENT_POINTS,
+  VISIT_NOTE_AUDIO_CONSENT_REVOKED_NOTICE,
+  VISIT_NOTE_AUDIO_LAWFULNESS_CONFIRM,
+} from './visit-note-audio';
+import {
   WITHDRAWAL_HEADLINE,
   WITHDRAWAL_IRREVERSIBLE,
   WITHDRAWAL_SEPARATED_NOTE,
@@ -44,6 +49,12 @@ const USER_COPY: [string, string][] = [
   ['withdrawal:irreversible', WITHDRAWAL_IRREVERSIBLE],
   ['withdrawal:separatedNote', WITHDRAWAL_SEPARATED_NOTE],
   ['withdrawal:sheetBody', WITHDRAWAL_SHEET_BODY],
+  ...VISIT_NOTE_AUDIO_CONSENT_POINTS.map((point, index): [string, string] => [
+    `visitNoteAudio:consent:${index}`,
+    point,
+  ]),
+  ['visitNoteAudio:lawfulness', VISIT_NOTE_AUDIO_LAWFULNESS_CONFIRM],
+  ['visitNoteAudio:revoked', VISIT_NOTE_AUDIO_CONSENT_REVOKED_NOTICE],
 ];
 
 describe('사용자에게 나가는 말', () => {
