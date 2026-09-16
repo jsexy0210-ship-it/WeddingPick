@@ -6,8 +6,8 @@ import {
 import type { Pool } from 'pg';
 
 import { loadConfig } from './config';
-import { createPool } from './db';
-import { requireOperator } from './decisions';
+import { createPool, withTransaction } from './db';
+import { newEventId, recordDecision, requireOperator } from './decisions';
 
 /**
  * 광고 지면 도구. 최종통합정책 v2.0 E장.
@@ -82,35 +82,155 @@ export type AddPlacementInput = {
   to: string;
 };
 
+/**
+ * 자리를 잡는다.
+ *
+ * **자리를 잡는 것과 그 사실을 적는 것이 한 트랜잭션이다.** 둘이 갈라지면 표에는
+ * 광고가 있는데 누가 언제 넣었는지가 없는 줄이 생긴다 — 돈이 오간 자리라 그
+ * 질문이 반드시 나온다. 정지·재개(`admin-ops.setAdStatus`)가 이미 같은 꼴이다.
+ */
 export async function add(pool: Pool, input: AddPlacementInput, by: string): Promise<string> {
-  await requireOperator(pool, by);
+  return withTransaction(pool, async (client) => {
+    await requireOperator(client, by);
 
-  const { rows } = await pool.query<{ id: string }>(
-    `INSERT INTO ads.placements (vendor_id, surface, tier, category, region, starts_on, ends_on)
-     VALUES ($1, $2::ad_surface, $3::ad_tier, $4::vendor_category, $5, $6, $7)
-     RETURNING id`,
-    [
-      input.vendorId,
-      input.surface,
-      input.tier,
-      input.category ?? null,
-      input.region ?? null,
-      input.from,
-      input.to,
-    ]
-  );
+    const { rows } = await client.query<{ id: string }>(
+      `INSERT INTO ads.placements (vendor_id, surface, tier, category, region, starts_on, ends_on)
+       VALUES ($1, $2::ad_surface, $3::ad_tier, $4::vendor_category, $5, $6, $7)
+       RETURNING id`,
+      [
+        input.vendorId,
+        input.surface,
+        input.tier,
+        input.category ?? null,
+        input.region ?? null,
+        input.from,
+        input.to,
+      ]
+    );
 
-  return rows[0]!.id;
+    const id = rows[0]!.id;
+
+    await recordDecision(client, {
+      eventId: newEventId(),
+      workflow: 'ad_placement',
+      step: 'add',
+      subjectKind: 'ad_placement',
+      subjectId: id,
+      decider: { kind: 'human', userId: by },
+      decision: `${input.tier} · ${input.surface} · ${input.from}~${input.to}`,
+      reasonCode: 'ad_placed',
+      evidence: [{ kind: 'vendor', id: input.vendorId }],
+    });
+
+    return id;
+  });
 }
 
+/**
+ * 고칠 수 있는 것. 넣지 않은 칸은 그대로 둔다.
+ *
+ * **업체는 없다.** 다른 업체의 자리로 바꾸는 것은 고치는 것이 아니라 파는 것이라,
+ * 새로 잡고 옛 자리를 내려야 무엇을 팔았는지가 기록에 남는다.
+ */
+export type UpdatePlacementInput = {
+  surface?: string;
+  tier?: string;
+  category?: string | null;
+  region?: string | null;
+  from?: string;
+  to?: string;
+};
+
+export async function update(
+  pool: Pool,
+  placementId: string,
+  input: UpdatePlacementInput,
+  by: string
+): Promise<boolean> {
+  return withTransaction(pool, async (client) => {
+    await requireOperator(client, by);
+
+    const { rows } = await client.query<{ id: string }>(
+      'SELECT id FROM ads.placements WHERE id = $1 FOR UPDATE',
+      [placementId]
+    );
+
+    if (!rows[0]) return false;
+
+    /*
+     * 넣은 칸만 적는다. 없는 칸을 NULL로 덮으면 조건 없는 광고가 되고, 기간을
+     * 비우면 내릴 때를 모른다 — 기간은 돈이 오간 약속이다(0130).
+     */
+    const sets: string[] = [];
+    const values: unknown[] = [placementId];
+    const set = (column: string, cast: string, value: unknown): void => {
+      values.push(value);
+      sets.push(`${column} = $${values.length}${cast}`);
+    };
+
+    if (input.surface !== undefined) set('surface', '::ad_surface', input.surface);
+    if (input.tier !== undefined) set('tier', '::ad_tier', input.tier);
+    if (input.category !== undefined) set('category', '::vendor_category', input.category);
+    if (input.region !== undefined) set('region', '', input.region);
+    if (input.from !== undefined) set('starts_on', '::date', input.from);
+    if (input.to !== undefined) set('ends_on', '::date', input.to);
+
+    if (sets.length === 0) {
+      throw new Error('고칠 것을 하나는 적어야 한다.');
+    }
+
+    await client.query(
+      `UPDATE ads.placements SET ${sets.join(', ')} WHERE id = $1`,
+      values
+    );
+
+    await recordDecision(client, {
+      eventId: newEventId(),
+      workflow: 'ad_placement',
+      step: 'update',
+      subjectKind: 'ad_placement',
+      subjectId: placementId,
+      decider: { kind: 'human', userId: by },
+      decision: sets.join(', '),
+      reasonCode: 'ad_updated',
+      evidence: [{ kind: 'ad_placement', id: placementId }],
+    });
+
+    return true;
+  });
+}
+
+/**
+ * 자리를 내린다.
+ *
+ * **집행을 멈추는 것이 아니다.** 잠시 멈추는 것은 `paused_at`이고(0130) 그쪽은
+ * 기간을 남긴다. 여기는 줄 자체를 지우므로 잘못 잡은 자리를 무를 때만 쓴다.
+ * 지운 뒤에 남는 것은 감사 기록 한 줄뿐이다.
+ */
 export async function remove(pool: Pool, placementId: string, by: string): Promise<boolean> {
-  await requireOperator(pool, by);
+  return withTransaction(pool, async (client) => {
+    await requireOperator(client, by);
 
-  const { rowCount } = await pool.query('DELETE FROM ads.placements WHERE id = $1', [
-    placementId,
-  ]);
+    const { rowCount } = await client.query('DELETE FROM ads.placements WHERE id = $1', [
+      placementId,
+    ]);
 
-  return rowCount !== 0;
+    if (rowCount === 0) return false;
+
+    await recordDecision(client, {
+      eventId: newEventId(),
+      workflow: 'ad_placement',
+      step: 'remove',
+      subjectKind: 'ad_placement',
+      subjectId: placementId,
+      decider: { kind: 'human', userId: by },
+      decision: 'removed',
+      reasonCode: 'ad_removed',
+      evidence: [{ kind: 'ad_placement', id: placementId }],
+    });
+
+    return true;
+  });
 }
 
 export function firewallNotice(): { protectedSurfaces: string[]; sponsoredLabel: string } {
