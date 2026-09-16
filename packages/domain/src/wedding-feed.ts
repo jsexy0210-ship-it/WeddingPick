@@ -171,3 +171,107 @@ export function shouldGenerate(input: {
 
   return pickTopics(input.usedTopics, 1).length > 0;
 }
+
+/**
+ * ── 탭과 카테고리 ─────────────────────────────────────────────────────────
+ *
+ * 2026-09-16 대표 지시 — 「웨딩피드는 탭별 카테고리별로 다 설정 가능해야한다」.
+ *
+ * **값은 여기 없다.** 탭과 카테고리는 `structured.wedding_feed_groups` ·
+ * `structured.wedding_feed_categories`에 있고(0420) 관리자가 고친다. 여기 남는
+ * 것은 값이 아니라 **모양과 규칙**이다 — 서버 · 관리자 · 앱이 같은 것을 본다.
+ */
+
+/**
+ * 「전체」 탭.
+ *
+ * **표에 넣지 않고 여기 둔다.** 다른 탭은 「이 카테고리들을 보여준다」인데 이것은
+ * 「거르지 않는다」라서 담을 카테고리가 없다. 순서를 바꾸거나 꺼야 할 이유도 없다 —
+ * 끄면 사용자가 글 전체를 볼 방법이 사라지고, 그것은 설정이 아니라 고장이다.
+ *
+ * 표에 두면 「모든 카테고리는 어느 탭에 드는가」를 볼 때마다 이 한 줄만 빼고 세야
+ * 한다. 규칙에 예외를 하나 만드는 것보다 규칙 밖에 두는 편이 낫다.
+ */
+export const WEDDING_FEED_ALL_TAB = { key: 'all', label: '전체' } as const;
+
+export type WeddingFeedGroup = {
+  id: string;
+  name: string;
+  sortOrder: number;
+  active: boolean;
+};
+
+export type WeddingFeedCategory = {
+  id: string;
+  name: string;
+  /** 어느 탭인가. 탭이 지워지면 null이 된다 — 그 상태를 보이게 두는 것이 요점이다. */
+  groupId: string | null;
+  sortOrder: number;
+  active: boolean;
+};
+
+/** 탭 이름·카테고리 이름의 한도. 탭 줄에 들어가는 길이라 카테고리와 같이 둔다. */
+export const WEDDING_FEED_TAXONOMY_LIMITS = {
+  groupName: 20,
+  categoryName: WEDDING_FEED_LIMITS.categoryLabel,
+} as const;
+
+/**
+ * 어느 탭에도 안 든 카테고리.
+ *
+ * **이것이 이 파일에서 가장 중요한 함수다.** 카테고리가 탭에서 떨어지면 그 값으로
+ * 쌓인 글은 「전체」에서만 보인다 — 오류도 안 나고 목록에서는 멀쩡해 보여서,
+ * 운영자가 「왜 이 글이 탭에 안 뜨지」를 묻기 전까지 아무도 모른다. 관리자 화면이
+ * 이 목록을 경고로 띄운다.
+ *
+ * **꺼진 카테고리는 세지 않는다.** 꺼 둔 것은 애초에 앱에 안 나가므로 탭이 없어도
+ * 달라지는 것이 없다 — 그것까지 경고하면 경고가 늘 켜져 있고, 늘 켜져 있는 경고는
+ * 아무도 읽지 않는다.
+ */
+export function findUngroupedCategories(
+  categories: readonly WeddingFeedCategory[]
+): readonly WeddingFeedCategory[] {
+  return categories.filter((category) => category.active && category.groupId === null);
+}
+
+/**
+ * 탭 하나에 붙는 카테고리 이름들. 꺼진 것은 빠지고 순서대로 나온다.
+ *
+ * 앱은 이 이름으로 글을 거른다 — 글이 들고 있는 것이 `categoryLabel` 문자열이라서다.
+ */
+export function categoryNamesOfGroup(
+  group: WeddingFeedGroup,
+  categories: readonly WeddingFeedCategory[]
+): readonly string[] {
+  return categories
+    .filter((category) => category.active && category.groupId === group.id)
+    .slice()
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((category) => category.name);
+}
+
+/**
+ * 앱이 그릴 탭 줄.
+ *
+ * **카테고리가 하나도 없는 탭은 뺀다.** 눌렀는데 늘 비어 있는 탭은 있는 것이
+ * 없는 것보다 나쁘다. 「전체」는 언제나 맨 앞이고 언제나 있다.
+ */
+export type WeddingFeedTab = { key: string; label: string; categories: readonly string[] };
+
+export function buildFeedTabs(
+  groups: readonly WeddingFeedGroup[],
+  categories: readonly WeddingFeedCategory[]
+): readonly WeddingFeedTab[] {
+  const tabs = groups
+    .filter((group) => group.active)
+    .slice()
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((group) => ({
+      key: group.id,
+      label: group.name,
+      categories: categoryNamesOfGroup(group, categories),
+    }))
+    .filter((tab) => tab.categories.length > 0);
+
+  return [{ key: WEDDING_FEED_ALL_TAB.key, label: WEDDING_FEED_ALL_TAB.label, categories: [] }, ...tabs];
+}
