@@ -75,3 +75,4 @@ export * from './reward-payout';
 export * from './visit-note-audio';
 export * from './consultation-category';
 export * from './wedding-feed';
+export * from './vendor-official';

@@ -1265,6 +1265,21 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   app.get('/v1/admin/vendors', auth, async () => vendorAdmin.listVendors(context.pool));
 
   /*
+   * 공식인증 업체가 몇 곳인지. **조회만 한다 — 아무것도 바꾸지 않는다.**
+   *
+   * 이 수가 앱 필터를 언제 켤 수 있는지를 정하는 근거다. 지금 DB의 업체는 전부
+   * `public_data`라, 켜는 순간 홈 · 검색 · Pick 추천이 빈 화면이 된다.
+   *
+   * **붙은 화면이 없다.** 관리자 콘솔이 `apps/mobile` 안에 있고 이번 작업은 화면을
+   * 건드리지 않기로 한 범위라(2026-09-16 대표 지시 — 「일단 화면은 냅두고 백 작업만
+   * 실행해」), 서버만 먼저 세워 둔다. 반대 방향이 아니므로 CLAUDE.md의 「서버에 없는
+   * 동작은 화면에서 잠근다」에 걸리지 않는다 — 빈 껍데기 화면이 생기지 않는다.
+   */
+  app.get('/v1/admin/vendors/official-counts', auth, async () =>
+    vendorAdmin.countOfficialVendors(context.pool)
+  );
+
+  /*
    * 병합하면 무엇이 몇 건 옮겨 가는지 세어서 돌려준다. 아무것도 바꾸지 않는다.
    *
    * 병합은 이 콘솔에서 되돌릴 수 없는 유일한 조작이고 사용자가 쓴 기록에 닿는다.
