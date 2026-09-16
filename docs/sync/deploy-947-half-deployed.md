@@ -67,3 +67,37 @@ GET · PUT · DELETE만 재시도한다.
 `render.yaml`은 API 서비스를 아직 `weddingpick-api`로 적고 있는데 실제로 도는 것은
 `weddingpickl-sg`다(워크플로의 `API_SERVICE`). 이번 사고의 원인은 아니지만,
 이름이 갈린 채로 두면 다음 사람이 `render.yaml`만 보고 엉뚱한 서비스를 짚는다.
+
+## 그 뒤 — API는 스스로 돌아왔다 (14:37 KST · 14분 만에)
+
+Render가 재시작을 끝냈다. 200 · 0.47초. 웹 셋(app-web · web · admin)은 내내 정상이었다.
+
+**헬스 응답이 반만 배포된 상태를 그대로 증명한다.**
+
+    {"ok":true,"database":"ok",
+     "schema":{"applied":123,"expected":118,"pending":[],
+               "unknown":["0052_mission_draw","0059_wedding_events","0060_vendor_geo",
+                          "0420_faq_seed_from_code","0421_wedding_feed_taxonomy"]}}
+
+`pending`은 비었다 — 안 돌아간 마이그레이션이 없다. 그런데 `unknown`에 0420 · 0421이
+있다. **DB에는 적용됐는데 돌고 있는 코드가 그 이름을 모른다**는 뜻이고, `expected: 118`이
+옛 코드가 아는 개수, `applied: 123`이 DB의 실제 개수다.
+
+**이 `unknown` 목록이 「DB가 코드보다 앞선」 상태의 탐지기다.** 다음에 같은 사고를
+의심할 때 여기를 본다 — 배포가 실패했는지를 Actions에서 찾기 전에, 헬스 한 번으로
+DB와 코드가 벌어졌는지가 나온다. 나머지 셋(`0052` · `0059` · `0060`)은 전부터 있던
+것이라 이번 건이 아니다.
+
+## 복구
+
+947의 **실패한 잡만** 재실행했다(`rerun_failed_jobs`). CI는 앞 실행의 초록을 그대로
+쓴다 — 16분을 다시 쓰지 않는다. 마이그레이션은 `schema_migrations`에 이미 있어
+다시 돌지 않는다.
+
+**승인은 다시 필요하다.** `environment: production`의 보호는 재실행에도 붙는다.
+
+## 한도가 아니다
+
+멈춘 것을 「파이프라인 한도」로 의심할 자리라 적어 둔다. 이 저장소는 **공개**라
+(`visibility: public`) 표준 러너의 Actions는 무료이고 분 한도가 없다. 끝날 한도가
+애초에 없다. 947의 `status`는 `waiting` — 기계가 아니라 **사람을 기다리는 중**이다.
