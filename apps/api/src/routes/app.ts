@@ -27,6 +27,60 @@ const POPULAR_COUNT = 4;
 /** 웨딩픽 추천에 세우는 곳의 수. 셋을 넘기면 한 줄에 들어가지 않는다. */
 const PICK_COUNT = 3;
 
+/**
+ * 히어로가 쓰는 두 가지 — 예산과 배우자 초대.
+ *
+ * **예산 구간만 고른 사람을 예산 미설정으로 읽지 않는다.** 온보딩의 «4,000만원 이상» ·
+ * «아직 모르겠어요»는 상한이 없어 숫자 예산이 서지 않지만 이미 답한 사람이다. 그 사람에게
+ * «예산을 정해볼까요?»를 다시 묻는 것이 `features/home/priority.ts`가 주석으로 적어둔
+ * 바로 그 함정이다.
+ *
+ * 초대는 «살아 있는 초대가 있는가»만 본다 — 코드도 누구에게 보냈는지도 여기서는 필요 없다.
+ */
+async function heroFacts(
+  context: AppContext,
+  weddingId: string
+): Promise<{
+  budget: { total: number; spent: number; remaining: number } | null;
+  bracketAnswered: boolean;
+  partnerInvitePending: boolean;
+}> {
+  const [wedding, spent, invite] = await Promise.all([
+    context.pool.query<{ budget_amount: string | null; budget_bracket: string | null; partner_user_id: string | null }>(
+      `SELECT budget_amount, budget_bracket::text AS budget_bracket, partner_user_id
+       FROM structured.weddings WHERE id = $1`,
+      [weddingId]
+    ),
+    /* 낸 돈만 센다 — 예정 지출을 «썼다»고 적으면 사용률이 실제보다 앞선다. */
+    context.pool.query<{ total: string | null }>(
+      `SELECT sum(amount) AS total FROM structured.wedding_expenses
+       WHERE wedding_id = $1 AND status = 'paid'`,
+      [weddingId]
+    ),
+    context.pool.query<{ exists: boolean }>(
+      `SELECT EXISTS (
+         SELECT 1 FROM structured.wedding_invites
+         WHERE wedding_id = $1 AND status = 'pending' AND revoked_at IS NULL AND expires_at > now()
+       ) AS exists`,
+      [weddingId]
+    ),
+  ]);
+
+  const row = wedding.rows[0];
+  const total = row?.budget_amount === null || row?.budget_amount === undefined ? null : Number(row.budget_amount);
+  const paid = Number(spent.rows[0]?.total ?? 0);
+
+  return {
+    budget:
+      total !== null && Number.isFinite(total) && total > 0
+        ? { total, spent: paid, remaining: total - paid }
+        : null,
+    bracketAnswered: (row?.budget_bracket ?? null) !== null,
+    /* 이미 연결됐으면 기다리는 초대가 아니다 — 살아 있는 초대가 남아 있어도 그렇다. */
+    partnerInvitePending: (row?.partner_user_id ?? null) === null && invite.rows[0]?.exists === true,
+  };
+}
+
 export function registerAppRoutes(app: FastifyInstance, context: AppContext): void {
   const auth = { preHandler: optionalUser(context) };
 
@@ -61,6 +115,9 @@ export function registerAppRoutes(app: FastifyInstance, context: AppContext): vo
         popularVendors,
         candidates: null,
         recommendations: [],
+        budget: null,
+        bracketAnswered: false,
+        partnerInvitePending: false,
       };
     }
 
@@ -102,7 +159,15 @@ export function registerAppRoutes(app: FastifyInstance, context: AppContext): vo
       ).then((body) => body?.vendors ?? []);
     }
 
-    return { member, notifications, popularVendors, candidates, recommendations };
+    /*
+     * 히어로가 적는 예산 한 줄과 초대 상태. 둘 다 작은 값인데 각자 왕복을 타면 홈이 두 번 더
+     * 기다린다 — 여기서 같이 읽는다. 지출 화면은 계속 `/v1/weddings/:id/expenses`를 쓴다.
+     */
+    const hero = member.weddingId
+      ? await heroFacts(context, member.weddingId)
+      : { budget: null, bracketAnswered: false, partnerInvitePending: false };
+
+    return { member, notifications, popularVendors, candidates, recommendations, ...hero };
   });
 
   /*
