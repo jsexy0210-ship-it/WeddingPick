@@ -9,6 +9,7 @@ import {
   weddingNoteListResponseSchema,
   weddingTaskListResponseSchema,
   authProvidersResponseSchema,
+  faqListResponseSchema,
   comparisonResponseSchema,
   completeUploadResponseSchema,
   createSessionResponseSchema,
@@ -97,6 +98,7 @@ import {
   type Analysis,
   type ComparisonResponse,
   type AuthProvidersResponse,
+  type FaqListResponse,
   type CreateVerificationRequest,
   type CreateVerificationResponse,
   type ErrorCode,
@@ -488,6 +490,16 @@ async function request<T>(
   } finally {
     refresh?.onRefreshing(false);
   }
+}
+
+/**
+ * 자주 묻는 것. **로그인 없이 부른다** — FAQ는 로그인하지 않아도 보는 화면이다.
+ *
+ * 2026-09-16 대표 지시로 항목이 표로 내려가면서 생겼다. 그전에는 코드에 든 배열을
+ * 화면이 직접 들고 있어서, 관리자 화면에서 무엇을 고쳐도 사용자에게 닿지 않았다.
+ */
+export async function listFaq(): Promise<FaqListResponse> {
+  return request('/v1/faq', faqListResponseSchema, { auth: false });
 }
 
 /** 서버가 켜둔 로그인 방법. 앱이 짐작하지 않는다. */

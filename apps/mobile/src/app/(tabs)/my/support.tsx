@@ -1,9 +1,10 @@
-import { FAQ_ITEMS, formatCount, POLICY_DOCUMENTS } from '@weddingpick/domain';
+import { formatCount, POLICY_DOCUMENTS } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 
 import { listMyInquiries } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
+import { useFaq } from '@/features/faq/use-faq';
 import { openExternal } from '@/features/open-external';
 import { Hero, Row, Rows, Section, SubScreen } from '@/features/settings/my-kit';
 import { APP_VERSION } from '@/features/settings/version';
@@ -37,6 +38,8 @@ const TOP_FAQ = 3;
  */
 export default function SupportScreen() {
   const [inquiryCount, setInquiryCount] = useState<number | null>(null);
+  /* 질문은 운영자가 관리자 화면에서 고친다(2026-09-16 대표 지시) — 서버에서 받아 온다. */
+  const faq = useFaq();
 
   useEffect(() => {
     if (!isServerConfigured) return;
@@ -54,7 +57,7 @@ export default function SupportScreen() {
 
       <Section title={S.faq}>
         <Rows>
-          {FAQ_ITEMS.slice(0, TOP_FAQ).map((item) => (
+          {faq.items.slice(0, TOP_FAQ).map((item) => (
             <Row
               key={item.key}
               name={item.question}
@@ -63,7 +66,14 @@ export default function SupportScreen() {
               onPress={() => router.push(`/my/faq/${item.key}` as never)}
             />
           ))}
-          <Row name={S.faqAll} tail={S.faqCount(FAQ_ITEMS.length)} tailDim chevron onPress={() => router.push('/my/guide' as never)} />
+          <Row
+            name={S.faqAll}
+            /* 몇 개인지는 받아온 뒤에만 적는다. 0개라고 먼저 적으면 그것을 답으로 읽는다. */
+            tail={faq.loading ? undefined : S.faqCount(faq.items.length)}
+            tailDim
+            chevron
+            onPress={() => router.push('/my/guide' as never)}
+          />
         </Rows>
       </Section>
 
@@ -82,8 +92,8 @@ export default function SupportScreen() {
 
       <Section>
         <Rows>
-          <Row name={S.terms} chevron onPress={() => terms?.url && void openExternal(terms.url)} />
-          <Row name={S.privacy} chevron onPress={() => privacy?.url && void openExternal(privacy.url)} />
+          <Row name={S.terms} chevron onPress={() => terms?.url && void openExternal(terms.url, { title: S.terms })} />
+          <Row name={S.privacy} chevron onPress={() => privacy?.url && void openExternal(privacy.url, { title: S.privacy })} />
           <Row name={S.version} tail={APP_VERSION} tailDim />
         </Rows>
       </Section>
