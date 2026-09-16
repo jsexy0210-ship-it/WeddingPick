@@ -9,7 +9,7 @@ import {
   shouldGenerate,
   type WeddingFeedStatus,
 } from '@weddingpick/domain';
-import { weddingFeedInputSchema } from '@weddingpick/api-contract';
+import { weddingFeedInputSchema, weddingFeedPostSchema } from '@weddingpick/api-contract';
 
 import { ApiError, notFound } from './errors';
 import { listTabs } from './wedding-feed-taxonomy';
@@ -167,6 +167,41 @@ export async function listPublished(pool: Pool, storage: FeedStorage | null, lim
       imageUrl: post.imageUrl,
     })),
     tabs: await listTabs(pool),
+  };
+}
+
+/**
+ * 글 하나. 카드를 눌러 들어온 자리가 부른다.
+ *
+ * **공개된 것만 나간다.** 초안과 내림은 없는 것으로 본다 — 목록(`listPublished`)과
+ * 같은 조건이라야 「목록에 없는데 주소로는 열리는 글」이 생기지 않는다. 운영자가
+ * 방금 내린 글을 누가 열어 둔 채로 있었다면, 그 사람이 다시 들어올 때 404다.
+ *
+ * **`id`가 UUID인지 먼저 본다.** 아니면 Postgres가 `22P02`로 죽고, 그것은 500으로
+ * 나간다 — 잘못된 주소는 서버 고장이 아니라 「없는 글」이다.
+ */
+export async function getPublished(pool: Pool, storage: FeedStorage | null, id: string) {
+  if (!weddingFeedPostSchema.shape.id.safeParse(id).success) throw notFound('글');
+
+  const { rows } = await pool.query<Row>(
+    `SELECT ${COLUMNS} FROM structured.wedding_feed_posts
+     WHERE id = $1 AND status = 'published'`,
+    [id]
+  );
+  const row = rows[0];
+
+  if (!row) throw notFound('글');
+
+  const post = await toPost(row, storage);
+
+  return {
+    id: post.id,
+    categoryLabel: post.categoryLabel,
+    title: post.title,
+    summary: post.summary,
+    body: post.body,
+    imageUrl: post.imageUrl,
+    publishedAt: post.publishedAt,
   };
 }
 
