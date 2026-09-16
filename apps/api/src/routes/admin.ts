@@ -2047,7 +2047,7 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
    * 약관도 동일하게 내가 수정가능하도록 하고」. 그전까지 이 셋은 `termsUnavailable()`이
    * 막고 있었고, 그 문구가 적은 「앱 약관·동의 기록에 연결한 뒤」가 이 작업이다.
    *
-   * **정본이 하나라는 규칙은 그대로다.** 웹이 이 표를 읽어 그리고(0420), 앱은 지금처럼
+   * **정본이 하나라는 규칙은 그대로다.** 웹이 이 표를 읽어 그리고(0422), 앱은 지금처럼
    * 웹으로 내보낸다. 바뀐 것은 그 하나가 코드가 아니라 표라는 것뿐이다.
    */
   app.get('/v1/admin/terms', auth, async () => adminOps.termsDocuments(context.pool));
@@ -2119,7 +2119,7 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
 
   /**
    * 조문 더하기. **마케팅 정보 수신 동의가 이 길로 시작한다** — 저장소에 본문이
-   * 한 번도 없어서 0420이 빈 초안만 두었다(없는 법적 문서를 지어내지 않았다).
+   * 한 번도 없어서 0422이 빈 초안만 두었다(없는 법적 문서를 지어내지 않았다).
    */
   const clauseAddBody = z.object({ title: z.string(), body: z.string() });
 

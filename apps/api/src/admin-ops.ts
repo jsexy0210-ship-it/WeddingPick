@@ -783,7 +783,7 @@ export type TermsClause = {
   bodyTable: TermsClauseTable | null;
   /**
    * 지우거나 비울 때 한 번 더 확인받을 절이면 그 사유. 막는 것이 아니라
-   * **알고 지우는 것과 모르고 지우는 것을 가르는** 표시다(0420).
+   * **알고 지우는 것과 모르고 지우는 것을 가르는** 표시다(0422).
    */
   removalWarning: string | null;
 };
@@ -1022,7 +1022,7 @@ export async function editTermsClause(
  * 초안에 조문을 하나 더한다.
  *
  * **마케팅 정보 수신 동의가 이 길로 시작한다.** 저장소에 본문이 한 번도 없어서
- * 0420이 빈 초안만 두었다 — 없는 법적 문서를 지어내지 않았다. 고칠 조문이 하나도
+ * 0422이 빈 초안만 두었다 — 없는 법적 문서를 지어내지 않았다. 고칠 조문이 하나도
  * 없으면 「수정 가능하도록」이 반만 열린 것이라, 더하는 자리를 같이 연다.
  */
 export async function addTermsClause(

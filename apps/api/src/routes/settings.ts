@@ -140,7 +140,7 @@ export function registerSettingsRoutes(app: FastifyInstance, context: AppContext
     if (body.marketingEnabled != null) {
       /*
        * **본문을 고치는 것과 동의 상태를 바꾸는 것은 다른 일이다.** 이 스위치는
-       * 지금까지대로 동의 상태만 켜고 끈다 — 0420이 바꾼 것은 그 동의가 «어느 판»에
+       * 지금까지대로 동의 상태만 켜고 끈다 — 0422이 바꾼 것은 그 동의가 «어느 판»에
        * 대한 것인지를 함께 적는다는 것뿐이다.
        */
       const versionId = await publishedVersionId(context.pool, MARKETING_CONSENT_ITEM);

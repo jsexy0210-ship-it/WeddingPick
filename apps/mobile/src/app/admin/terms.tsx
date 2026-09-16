@@ -25,7 +25,7 @@ import { ConfirmCard } from './_ui';
  * 약관도 동일하게 내가 수정가능하도록 하고」.
  *
  * 전까지 이 화면에는 화면 안쪽 잠금 상수가 켜져 있었고, 서버도 `termsUnavailable()`로
- * 막고 있었다. 그 문구가 적은 「앱 약관·동의 기록에 연결한 뒤」가 0420이다 —
+ * 막고 있었다. 그 문구가 적은 「앱 약관·동의 기록에 연결한 뒤」가 0422이다 —
  * 본문이 표로 왔고 동의 기록이 판을 가리킨다.
  *
  * **이 주석에 그 상수 이름을 적지 않는다.** `test/admin-read-only-pairing.test.ts`가
@@ -51,7 +51,7 @@ type TermsClause = {
   body: string;
   /** 표 모양 조문이면 채워져 있다. 방침의 세 절이 그렇다. */
   bodyTable: TermsClauseTable | null;
-  /** 지우거나 비울 때 한 번 더 확인받을 절이면 그 사유(0420). */
+  /** 지우거나 비울 때 한 번 더 확인받을 절이면 그 사유(0422). */
   removalWarning: string | null;
 };
 type TermsDoc = {
@@ -90,7 +90,7 @@ export function TermsPanel() {
   /**
    * 국외 이전 · 수탁자 절에서 무엇이 사라지는지 서버가 보내온 것.
    *
-   * 막는 것이 아니라 가르는 것이다 — 알고 지우는 것과 모르고 지우는 것(0420).
+   * 막는 것이 아니라 가르는 것이다 — 알고 지우는 것과 모르고 지우는 것(0422).
    */
   const [askingRemoval, setAskingRemoval] = useState<{ warning: string; removing: string[] } | null>(null);
   /** 표 모양 조문을 고치는 중이면 그 표. 방침의 세 절이 여기에 해당한다. */
@@ -147,6 +147,29 @@ export function TermsPanel() {
     );
   }
 
+  /**
+   * 새 초안을 만든다.
+   *
+   * **0422가 심은 판은 공개돼 있다** — 이미 웹사이트에 나가 있던 글이라 「아직 공개
+   * 전」이 아니다. 공개된 판의 조문은 얼어 있으므로, 고치려면 먼저 초안을 만든다.
+   * 공개된 판의 조문을 그대로 물려받아 시작한다.
+   */
+  async function createDraft() {
+    setSaving(true);
+    setActionError(null);
+    try {
+      await apiFetch('/v1/admin/terms', {
+        method: 'POST',
+        body: JSON.stringify({ doc: activeDoc }),
+      });
+      setRev((r) => r + 1);
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : '초안 만들기 실패');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function addClause() {
     setSaving(true);
     setActionError(null);
@@ -166,7 +189,7 @@ export function TermsPanel() {
     }
   }
 
-  /** 조문을 지운다. 보호 표시가 붙은 절은 서버가 한 번 더 묻는다(0420). */
+  /** 조문을 지운다. 보호 표시가 붙은 절은 서버가 한 번 더 묻는다(0422). */
   async function deleteClause(clause: TermsClause, confirm = false) {
     setSaving(true);
     setActionError(null);
@@ -197,7 +220,7 @@ export function TermsPanel() {
    *
    * 국외 이전 · 수탁자 절에서 항목이 사라지면 서버가 저장하지 않고
    * `{ saved: false, removing }`을 돌려준다. 그때 무엇이 사라지는지 항목으로
-   * 보인 뒤 `confirm`을 붙여 다시 보낸다(v3.27 · 0420).
+   * 보인 뒤 `confirm`을 붙여 다시 보낸다(v3.27 · 0422).
    */
   async function saveClause(confirm = false) {
     if (!editingClause) return;
@@ -248,6 +271,15 @@ export function TermsPanel() {
     <View style={styles.root}>
       <View style={styles.header}>
         <Text style={styles.title}>약관 · 방침 관리</Text>
+        {activeDocData && !activeDocData.latestDraftVersion && (
+          <Pressable
+            style={[styles.addBtn, saving && styles.btnDisabled]}
+            disabled={saving}
+            onPress={() => void createDraft()}
+          >
+            <Text style={styles.addBtnText}>{saving ? '만드는 중…' : '새 초안 만들기'}</Text>
+          </Pressable>
+        )}
         {activeDocData?.latestDraftVersion && (
           <Pressable
             style={styles.addBtn}
@@ -361,7 +393,9 @@ export function TermsPanel() {
                 */}
                 {activeDocData.clauses.length === 0 && (
                   <Text style={styles.emptyText}>
-                    아직 조문이 없어요. 위의 「조문 추가」로 첫 조문을 넣어주세요.
+                    {activeDocData.latestDraftVersion
+                      ? '아직 조문이 없어요. 위의 「조문 추가」로 첫 조문을 넣어주세요.'
+                      : '아직 조문이 없어요. 위의 「새 초안 만들기」부터 눌러주세요.'}
                   </Text>
                 )}
                 {activeDocData.clauses.map((clause, i) => (
@@ -380,10 +414,22 @@ export function TermsPanel() {
                         <Text style={styles.protectedNote}>{clause.removalWarning}</Text>
                       )}
                     </View>
-                    <Pressable style={styles.editBtn} onPress={() => openClause(clause)}>
+                    {/*
+                      공개된 판을 보고 있으면 고칠 수 없다 — 단추를 눌러도 서버가
+                      거절하므로, 눌리지 않게 두고 위의 「새 초안 만들기」로 보낸다.
+                    */}
+                    <Pressable
+                      style={[styles.editBtn, !activeDocData.latestDraftVersion && styles.btnDisabled]}
+                      disabled={!activeDocData.latestDraftVersion}
+                      onPress={() => openClause(clause)}
+                    >
                       <Text style={styles.editBtnText}>수정</Text>
                     </Pressable>
-                    <Pressable style={styles.editBtn} onPress={() => void deleteClause(clause)}>
+                    <Pressable
+                      style={[styles.editBtn, !activeDocData.latestDraftVersion && styles.btnDisabled]}
+                      disabled={!activeDocData.latestDraftVersion}
+                      onPress={() => void deleteClause(clause)}
+                    >
                       <Text style={styles.deleteBtnText}>삭제</Text>
                     </Pressable>
                   </View>

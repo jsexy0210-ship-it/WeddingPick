@@ -46,7 +46,7 @@ type LegalResponse = {
  * 표의 한 줄을 그리는 쪽이 아는 모양으로 돌린다.
  *
  * 표가 없는 절은 `body`를 줄바꿈으로 가른다 — 관리자 편집칸이 여러 줄 입력이라
- * 운영자가 엔터로 조항을 나눈다. 저장 쪽(0420)도 같은 규칙으로 심었다.
+ * 운영자가 엔터로 조항을 나눈다. 저장 쪽(0422)도 같은 규칙으로 심었다.
  */
 function toSection(clause: ClauseResponse): LegalSection {
   if (clause.bodyTable) {

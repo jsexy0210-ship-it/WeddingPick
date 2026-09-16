@@ -1,4 +1,4 @@
--- 0420: 약관 · 방침 · 마케팅 동의를 «표»로 옮긴다
+-- 0422: 약관 · 방침 · 마케팅 동의를 «표»로 옮긴다
 --
 -- 2026-09-16 대표 지시 — 「개인정보처리방침 이용약관 마케팅 약관도 동일하게 내가
 -- 수정가능하도록 하고」. 바로 앞 지시(관리자 FAQ처럼 코드에 박힌 것도 직접 고치게
@@ -154,7 +154,44 @@ CREATE TRIGGER user_consents_point_at_published_versions
   FOR EACH ROW EXECUTE FUNCTION structured.reject_consent_to_unpublished_version();
 
 -- ---------------------------------------------------------------------------
--- 5. 본문 — 지금 웹에 나가 있는 그대로
+-- 5. 이관한 판은 «사람이 공개한 것»이 아니다
+-- ---------------------------------------------------------------------------
+
+/*
+ * 0130은 「공개했으면 공개한 사람이 있다」를 제약으로 걸었다
+ * (`publication_names_the_person`). 사람이 관리자에서 누르는 것만 생각한 제약이다.
+ *
+ * **이관에는 누른 사람이 없다.** 이 판은 지금 이미 웹사이트에 나가 있는 글이고,
+ * 마이그레이션이 그것을 표로 옮기는 것뿐이다. 여기에 아무 운영자 id나 적으면
+ * **그 사람이 공개했다는 거짓이 감사 기록에 남는다** — 빈칸이 사실이다.
+ *
+ * 빈칸의 뜻을 «모른다»가 아니라 «이관»으로 못 박는다. 그래야 나중에 published_by가
+ * 빠진 행을 보고 버그로 읽지 않는다.
+ */
+ALTER TABLE structured.terms_versions
+  ADD COLUMN carried_over boolean NOT NULL DEFAULT false;
+
+COMMENT ON COLUMN structured.terms_versions.carried_over IS
+  '마이그레이션이 웹사이트에서 옮겨 온 판. 사람이 공개한 것이 아니라 published_by가 빈다.';
+
+ALTER TABLE structured.terms_versions
+  DROP CONSTRAINT publication_names_the_person;
+
+ALTER TABLE structured.terms_versions
+  ADD CONSTRAINT publication_names_the_person_unless_carried_over
+    CHECK (
+      (published_at IS NULL AND published_by IS NULL)
+      OR (published_at IS NOT NULL AND published_by IS NOT NULL)
+      OR (published_at IS NOT NULL AND carried_over)
+    );
+
+/* 「사람이 공개했는데 이관 표시」는 모순이라 막는다. */
+ALTER TABLE structured.terms_versions
+  ADD CONSTRAINT carried_over_has_no_publisher
+    CHECK (NOT carried_over OR published_by IS NULL);
+
+-- ---------------------------------------------------------------------------
+-- 6. 본문 — 지금 웹에 나가 있는 그대로
 -- ---------------------------------------------------------------------------
 
 /*
@@ -162,8 +199,16 @@ CREATE TRIGGER user_consents_point_at_published_versions
  * **한 글자도 고치지 않았다** — 옮기면서 문장을 다듬으면 그것은 법적 문서를 고친
  * 것이고, 고치는 것은 대표님 몫이다.
  *
- * 초안으로 넣는다. 공개는 대표님이 시행일을 정해 누르실 때 일어난다 — 마이그레이션이
- * 공개 시각과 시행일을 지어내지 않는다.
+ * **공개된 판으로 심는다.** 초안으로만 두면 공개된 판이 하나도 없고, 웹 빌드가
+ * 약관을 읽지 못해 **멈춘다**(`legal-data.ts` — 빈 약관을 내보내는 것보다 낫다).
+ * 지금 이 글은 이미 사용자가 보고 있는 글이라 「아직 공개 전」이 아니다. 옮기는
+ * 것이지 새로 공개하는 것이 아니므로 `carried_over`로 표시하고 published_by는 비운다.
+ *
+ * **먼저 초안으로 넣고, 조문을 채운 뒤에 공개한다.** 0130의 트리거가 공개된 판에
+ * 조문을 넣는 것을 막는다 — 그 문을 잠시 여는 것보다 순서를 바꾸는 쪽이 낫다.
+ *
+ * **시행일은 문서마다 다르다.** 배포 환경변수에 있던 값을 그대로 판에 붙인다
+ * (`infra/render-env.yml` — 약관 2026-09-10 · 방침 2026-09-18).
  *
  * **마케팅 정보 수신 동의는 본문이 없다.** 저장소 어디에도 없다 — 가입 화면의
  * 「혜택 소식 받기」 한 줄(`packages/domain/src/signup.ts`)이 전부고 웹에 페이지가
@@ -330,3 +375,20 @@ WHERE v.id = c.version_id
   AND v.doc = 'privacy'
   AND c.position = 4
   AND c.title = '5. 개인정보의 국외 이전';
+
+/*
+ * **이제 공개한다.** 조문이 다 들어갔고 지우면 안 되는 절도 찍혔다.
+ *
+ * **마케팅은 공개하지 않는다** — 조문이 없다. 빈 약관을 내보내지 않는다.
+ */
+UPDATE structured.terms_versions v
+SET published_at = now(),
+    effective_on = seed.effective_on,
+    carried_over = true
+FROM (VALUES
+  ('terms',   DATE '2026-09-10'),
+  ('privacy', DATE '2026-09-18')
+) AS seed(doc, effective_on)
+WHERE v.doc = seed.doc::terms_doc_kind
+  AND v.published_at IS NULL
+  AND EXISTS (SELECT 1 FROM structured.terms_clauses c WHERE c.version_id = v.id);
