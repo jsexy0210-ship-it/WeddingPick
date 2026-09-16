@@ -39,6 +39,13 @@ const ROUTES = [
   '/our-wedding',
   '/my',
   '/community',
+  /*
+   * 라우터에 걸려 있는데 이 목록에 없던 화면. **글 상세다**(`FlowScreens.tsx`
+   * `FeedDetailPage`). 2026-09-16에 웨딩피드 글 상세를 만들면서 「피그마에 글
+   * 상세가 없다」고 적을 뻔했다 — 이 목록만 봤기 때문이다. 목록이 라우터보다
+   * 짧으면 없는 화면과 안 적어 둔 화면이 같아 보인다.
+   */
+  '/community/feed/1',
   '/vendor/1',
   '/vendor/1/booking',
   '/vendor/1/consult',
