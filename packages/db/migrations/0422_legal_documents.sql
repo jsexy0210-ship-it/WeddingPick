@@ -216,6 +216,10 @@ ALTER TABLE structured.terms_versions
  * 조문을 더하시면 그때 글이 생긴다.
  */
 /*
+ * **판 이름은 `v1.0`이다.** 0.x가 아니다 — 이 글은 초안이 아니라 지금 사용자가
+ * 보고 있는 글이고, 옮기면서 판을 새로 세는 것이 아니라 «첫 판»으로 적는 것이다.
+ * 다음 판은 `nextVersion`이 `v1.1`로 올린다.
+ *
  * **이미 판이 있는 문서는 건드리지 않는다.**
  *
  * 한 문서에 초안은 하나뿐이라(`terms_one_draft_per_doc`, 0130) 초안이 이미 있는
@@ -226,7 +230,7 @@ ALTER TABLE structured.terms_versions
  * 판이 이미 있던 문서에는 본문도 덧씌우지 않는다.
  */
 INSERT INTO structured.terms_versions (doc, version)
-SELECT seed.doc::terms_doc_kind, 'v0.1'
+SELECT seed.doc::terms_doc_kind, 'v1.0'
 FROM (VALUES ('terms'), ('privacy'), ('marketing')) AS seed(doc)
 WHERE NOT EXISTS (
   SELECT 1 FROM structured.terms_versions v WHERE v.doc = seed.doc::terms_doc_kind
