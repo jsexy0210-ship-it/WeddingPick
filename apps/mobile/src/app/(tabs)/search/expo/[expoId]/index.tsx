@@ -2,10 +2,10 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as WebBrowser from 'expo-web-browser';
 
 import { getExpo, toggleExpoNotify, type ExpoDetail, type ExpoStatus } from '@/api/client';
 import { BackBar } from '@/components/back-bar';
+import { openExternal } from '@/features/open-external';
 import {
   ActionButton,
   ErrorView,
@@ -224,7 +224,7 @@ export default function ExpoDetailScreen() {
             떠나지 않는 In-App Browser로 연다(대표 정정, expo-agent-spec.md).
           */}
           {expo.officialWebsiteUrl ? (
-            <Pressable onPress={() => void WebBrowser.openBrowserAsync(expo.officialWebsiteUrl!)}>
+            <Pressable onPress={() => void openExternal(expo.officialWebsiteUrl!, { title: expo.title })}>
               <ThemedText type="t7" themeColor="tint">
                 공식 홈페이지
               </ThemedText>
@@ -251,7 +251,7 @@ export default function ExpoDetailScreen() {
                   onPress={() => {
                     // 공식 신청 링크 — 앱을 떠나지 않는 In-App Browser로 연다
                     // (대표 정정, expo-agent-spec.md).
-                    if (expo.applyUrl) void WebBrowser.openBrowserAsync(expo.applyUrl);
+                    if (expo.applyUrl) void openExternal(expo.applyUrl, { title: expo.title });
                   }}
                 />
               ) : (

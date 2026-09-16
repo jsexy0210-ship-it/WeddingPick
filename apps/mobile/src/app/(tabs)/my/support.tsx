@@ -92,8 +92,8 @@ export default function SupportScreen() {
 
       <Section>
         <Rows>
-          <Row name={S.terms} chevron onPress={() => terms?.url && void openExternal(terms.url)} />
-          <Row name={S.privacy} chevron onPress={() => privacy?.url && void openExternal(privacy.url)} />
+          <Row name={S.terms} chevron onPress={() => terms?.url && void openExternal(terms.url, { title: S.terms })} />
+          <Row name={S.privacy} chevron onPress={() => privacy?.url && void openExternal(privacy.url, { title: S.privacy })} />
           <Row name={S.version} tail={APP_VERSION} tailDim />
         </Rows>
       </Section>
