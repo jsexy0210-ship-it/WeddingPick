@@ -170,10 +170,22 @@ CREATE TRIGGER user_consents_point_at_published_versions
  * 없다. 없는 법적 문서를 지어내지 않는다. 빈 초안만 만들어 두고, 대표님이 관리자에서
  * 조문을 더하시면 그때 글이 생긴다.
  */
-INSERT INTO structured.terms_versions (doc, version) VALUES
-  ('terms', 'v0.1'),
-  ('privacy', 'v0.1'),
-  ('marketing', 'v0.1');
+/*
+ * **이미 판이 있는 문서는 건드리지 않는다.**
+ *
+ * 한 문서에 초안은 하나뿐이라(`terms_one_draft_per_doc`, 0130) 초안이 이미 있는
+ * DB에서 그냥 넣으면 색인이 걸려 **마이그레이션이 통째로 실패한다** — 그러면 이
+ * 판에 묶인 배포 전체가 멈춘다. 운영 DB에 무엇이 들어 있는지는 여기서 알 수 없다.
+ *
+ * 있으면 그쪽이 맞다고 보고 비켜선다. 아래 조문 넣기도 같은 조건을 보므로,
+ * 판이 이미 있던 문서에는 본문도 덧씌우지 않는다.
+ */
+INSERT INTO structured.terms_versions (doc, version)
+SELECT seed.doc::terms_doc_kind, 'v0.1'
+FROM (VALUES ('terms'), ('privacy'), ('marketing')) AS seed(doc)
+WHERE NOT EXISTS (
+  SELECT 1 FROM structured.terms_versions v WHERE v.doc = seed.doc::terms_doc_kind
+);
 
 /*
  * 조문. `article_number`는 관리자 목록에서 줄을 부르는 번호이고, 화면에 그려지는
@@ -241,7 +253,10 @@ Pick 인증 자료를 통한 제보 금액 정보 제공
 문의: help.weddingpick@gmail.com', 20, NULL::jsonb)
 ) AS c(doc, article_number, title, body, position, body_table)
   ON c.doc::terms_doc_kind = v.doc
-WHERE v.doc = 'terms' AND v.published_at IS NULL;
+WHERE v.doc = 'terms'
+  AND v.published_at IS NULL
+  /* 위와 같은 이유로 비켜선다 — 이미 조문이 든 초안에 덧붙이면 자리(position)가 겹친다. */
+  AND NOT EXISTS (SELECT 1 FROM structured.terms_clauses x WHERE x.version_id = v.id);
 
 INSERT INTO structured.terms_clauses (version_id, article_number, title, body, position, body_table)
 SELECT v.id, c.article_number, c.title, c.body, c.position, c.body_table
@@ -283,22 +298,35 @@ JOIN (VALUES
   ('privacy', '13', '13. 처리방침 변경', '이 처리방침을 변경할 때에는 시행일, 변경 내용과 사유를 서비스에서 알리고 이전 처리방침을 확인할 수 있도록 제공합니다. 별도 동의가 필요한 처리 목적·제3자 제공·국외 이전 등의 변경은 기능 사용 전에 필요한 절차를 거칩니다.', 12, NULL::jsonb)
 ) AS c(doc, article_number, title, body, position, body_table)
   ON c.doc::terms_doc_kind = v.doc
-WHERE v.doc = 'privacy' AND v.published_at IS NULL;
+WHERE v.doc = 'privacy'
+  AND v.published_at IS NULL
+  /* 위와 같은 이유로 비켜선다 — 이미 조문이 든 초안에 덧붙이면 자리(position)가 겹친다. */
+  AND NOT EXISTS (SELECT 1 FROM structured.terms_clauses x WHERE x.version_id = v.id);
 
 /*
  * 지우면 안 되는 절을 찍는다. 수탁자(4항)와 국외 이전(5항)이다.
  *
- * 제목으로 찾지 않고 위치로 찍는다 — 대표님이 제목을 고치실 수 있고, 제목이 바뀌면
- * 표시가 조용히 떨어져 나간다. 표시는 조문에 붙어 있어야 한다.
+ * **찍고 나면 위치에 붙어 있다.** 표시는 조문 행에 있는 칼럼이라, 대표님이 제목을
+ * 고치셔도 떨어져 나가지 않는다.
+ *
+ * **찍을 때는 제목까지 맞춰 본다.** 방금 심은 것이 맞는지 확인하는 것이다 — 이미
+ * 다른 초안이 있던 DB에서는 위에서 비켜섰으므로 4·5번째 자리에 전혀 다른 조문이
+ * 있을 수 있고, 거기에 국외 이전 딱지를 붙이면 엉뚱한 절을 지킨다.
  */
 UPDATE structured.terms_clauses c
 SET removal_warning =
   '개인정보보호법 제26조가 요구하는 수탁자 고지예요. 이 절이 비면 위탁 사실을 알리지 않은 것이 돼요.'
 FROM structured.terms_versions v
-WHERE v.id = c.version_id AND v.doc = 'privacy' AND c.position = 3;
+WHERE v.id = c.version_id
+  AND v.doc = 'privacy'
+  AND c.position = 3
+  AND c.title = '4. 개인정보 처리위탁';
 
 UPDATE structured.terms_clauses c
 SET removal_warning =
   '개인정보보호법 제28조의8이 요구하는 국외 이전 고지예요. 국외 이전 자체가 위법이 아니라 고지 없이 이전하는 것이 위법이라, 이 절이 비면 지금 돌고 있는 이전이 미고지 이전이 돼요.'
 FROM structured.terms_versions v
-WHERE v.id = c.version_id AND v.doc = 'privacy' AND c.position = 4;
+WHERE v.id = c.version_id
+  AND v.doc = 'privacy'
+  AND c.position = 4
+  AND c.title = '5. 개인정보의 국외 이전';

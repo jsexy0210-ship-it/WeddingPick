@@ -596,6 +596,93 @@ describeWithDb('관리자 운영·시스템 라우트', () => {
       expect(response.json()).toMatchObject({ saved: true });
     });
 
+    /*
+     * **마케팅 정보 수신 동의는 이 길로 시작한다.** 저장소에 본문이 한 번도 없어서
+     * 0420이 빈 초안만 두었다 — 없는 법적 문서를 지어내지 않았다. 더하는 자리가
+     * 없으면 「수정 가능하도록」이 반만 열린 셈이다.
+     */
+    it('빈 문서에 조문을 더해 공개까지 간다', async () => {
+      const operator = await operatorHeaders();
+
+      const added = await post('/v1/admin/terms/marketing/clauses', operator.headers, {
+        title: '제1조 목적',
+        body: '혜택 소식을 받는 것에 대한 동의예요.',
+      });
+      expect(added.statusCode).toBe(200);
+
+      const body = (await get('/v1/admin/terms', operator.headers)).json();
+      expect(docOf(body, 'marketing')?.clauses).toHaveLength(1);
+      expect(docOf(body, 'marketing')?.clauses[0]?.body).toContain('혜택 소식');
+
+      const published = await publishTerms(
+        test.pool,
+        'marketing',
+        operator.userId,
+        '첫 판',
+        '2026-10-01'
+      );
+      expect(published.effectiveOn).toBe('2026-10-01');
+    });
+
+    it('빈 제목이나 빈 내용은 조문이 되지 않는다', async () => {
+      const operator = await operatorHeaders();
+
+      for (const payload of [
+        { title: '  ', body: '내용' },
+        { title: '제목', body: '  ' },
+      ]) {
+        const response = await post('/v1/admin/terms/marketing/clauses', operator.headers, payload);
+        expect(response.statusCode).toBe(400);
+      }
+    });
+
+    it('보호 표시가 없는 조문은 한 번에 지워진다', async () => {
+      const operator = await operatorHeaders();
+      const { clauseId } = await seededDraft();
+
+      const response = await test.app.inject({
+        method: 'DELETE',
+        url: `/v1/admin/terms/terms/clauses/${clauseId}?confirm=false`,
+        headers: operator.headers,
+      });
+      expect(response.json()).toMatchObject({ saved: true });
+
+      const body = (await get('/v1/admin/terms', operator.headers)).json();
+      expect(docOf(body, 'terms')?.clauses).toHaveLength(20);
+    });
+
+    /* 절이 통째로 없어지면 그 순간부터 미고지 이전이 된다(제28조의8). 보이고 받는다. */
+    it('국외 이전 절을 지울 때는 무엇이 사라지는지 먼저 보인다', async () => {
+      const operator = await operatorHeaders();
+      const { rows } = await test.pool.query<{ id: string }>(
+        `SELECT c.id
+         FROM structured.terms_clauses c
+         JOIN structured.terms_versions v ON v.id = c.version_id
+         WHERE v.doc = 'privacy' AND v.published_at IS NULL AND c.removal_warning IS NOT NULL
+         ORDER BY c.position DESC
+         LIMIT 1`
+      );
+      const clauseId = rows[0]!.id;
+      const del = (confirm: boolean) =>
+        test.app.inject({
+          method: 'DELETE',
+          url: `/v1/admin/terms/privacy/clauses/${clauseId}?confirm=${confirm}`,
+          headers: operator.headers,
+        });
+
+      const asked = (await del(false)).json() as { saved: boolean; removing: string[] };
+      expect(asked.saved).toBe(false);
+      expect(asked.removing.length).toBeGreaterThan(1);
+
+      // 확인 전에는 그대로 있다.
+      const still = (await get('/v1/admin/terms', operator.headers)).json();
+      expect(docOf(still, 'privacy')?.clauses.some((c) => c.id === clauseId)).toBe(true);
+
+      expect((await del(true)).json()).toMatchObject({ saved: true });
+      const gone = (await get('/v1/admin/terms', operator.headers)).json();
+      expect(docOf(gone, 'privacy')?.clauses.some((c) => c.id === clauseId)).toBe(false);
+    });
+
     it('공개하면 판을 보존하고 시행일을 붙이고 다음 초안을 만든다', async () => {
       const operator = await operatorHeaders();
 

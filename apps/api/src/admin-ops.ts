@@ -1019,6 +1019,132 @@ export async function editTermsClause(
 }
 
 /**
+ * 초안에 조문을 하나 더한다.
+ *
+ * **마케팅 정보 수신 동의가 이 길로 시작한다.** 저장소에 본문이 한 번도 없어서
+ * 0420이 빈 초안만 두었다 — 없는 법적 문서를 지어내지 않았다. 고칠 조문이 하나도
+ * 없으면 「수정 가능하도록」이 반만 열린 것이라, 더하는 자리를 같이 연다.
+ */
+export async function addTermsClause(
+  pool: Pool,
+  doc: DocType,
+  input: { title: string; body: string },
+  by: string
+): Promise<{ id: string }> {
+  const title = input.title.trim();
+  const body = input.body.trim();
+
+  if (title.length === 0) throw new ApiError('invalid_request', '조문 제목을 넣어주세요.');
+  if (body.length === 0) throw new ApiError('invalid_request', '조문 내용을 넣어주세요.');
+
+  return withTransaction(pool, async (client) => {
+    const { rows } = await client.query<{ id: string; next_position: number }>(
+      `SELECT v.id,
+              coalesce(
+                (SELECT max(position) + 1 FROM structured.terms_clauses WHERE version_id = v.id),
+                0
+              ) AS next_position
+       FROM structured.terms_versions v
+       WHERE v.doc = $1::terms_doc_kind AND v.published_at IS NULL
+       FOR UPDATE`,
+      [doc]
+    );
+
+    const draft = rows[0];
+    if (!draft) throw new ApiError('invalid_request', '고칠 초안이 없어요. 초안을 먼저 만들어주세요.');
+
+    /*
+     * 관리자 목록에서 줄을 부르는 번호다. 화면에 그려지는 제목은 `title`이고
+     * 「제1조 목적」처럼 번호가 그 안에 이미 들어 있다 — 두 번 적지 않는다.
+     */
+    const { rows: created } = await client.query<{ id: string }>(
+      `INSERT INTO structured.terms_clauses (version_id, article_number, title, body, position)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id`,
+      [draft.id, String(draft.next_position + 1), title, body, draft.next_position]
+    );
+
+    await recordDecision(client, {
+      eventId: newEventId(),
+      workflow: 'terms',
+      step: 'add_clause',
+      subjectKind: 'terms_clause',
+      subjectId: created[0]!.id,
+      decider: { kind: 'human', userId: by },
+      decision: 'added',
+      reasonCode: 'clause_added',
+      evidence: [{ kind: 'terms_clause', id: created[0]!.id }],
+    });
+
+    return { id: created[0]!.id };
+  });
+}
+
+/**
+ * 초안에서 조문을 지운다.
+ *
+ * **국외 이전 · 수탁자 절은 한 번 더 묻는다.** 고치는 것보다 지우는 쪽이 위험하다 —
+ * 절이 통째로 없어지면 그 순간부터 미고지 이전이 된다(개인정보보호법 제28조의8).
+ * 막지는 않는다. 무엇이 사라지는지 보이고 받는다.
+ */
+export async function deleteTermsClause(
+  pool: Pool,
+  doc: DocType,
+  clauseId: string,
+  by: string,
+  confirmed = false
+): Promise<ClauseEditResult> {
+  return withTransaction(pool, async (client) => {
+    const { rows } = await client.query<
+      TermsClauseRow & { published_at: Date | null; doc: DocType }
+    >(
+      `SELECT c.id, c.article_number, c.title, c.body, c.body_table, c.removal_warning,
+              v.published_at, v.doc
+       FROM structured.terms_clauses c
+       JOIN structured.terms_versions v ON v.id = c.version_id
+       WHERE c.id = $1`,
+      [clauseId]
+    );
+
+    const found = rows[0];
+    if (!found || found.doc !== doc) throw notFound('조문');
+
+    if (found.published_at !== null) {
+      throw new ApiError('invalid_request', '공개된 판의 조문은 지울 수 없습니다. 새 초안을 만들어주세요.');
+    }
+
+    if (found.removal_warning && !confirmed) {
+      const clause = toClause(found);
+      const removing = clause.bodyTable
+        ? clause.bodyTable.rows.map(rowLabel)
+        : clause.body
+            .split('\n')
+            .map((line) => line.trim())
+            .filter(Boolean)
+            .map((line) => (line.length > 40 ? `${line.slice(0, 40)}…` : line));
+
+      return { saved: false, warning: found.removal_warning, removing };
+    }
+
+    await client.query('DELETE FROM structured.terms_clauses WHERE id = $1', [clauseId]);
+
+    await recordDecision(client, {
+      eventId: newEventId(),
+      workflow: 'terms',
+      step: 'delete_clause',
+      subjectKind: 'terms_clause',
+      subjectId: clauseId,
+      decider: { kind: 'human', userId: by },
+      decision: 'deleted',
+      reasonCode: found.removal_warning ? 'protected_clause_deleted' : 'clause_deleted',
+      evidence: [{ kind: 'terms_clause', id: clauseId }],
+    });
+
+    return { saved: true };
+  });
+}
+
+/**
  * 아직 초안이 없는 문서에 초안을 만든다.
  *
  * 마케팅 정보 수신 동의가 그렇다 — 저장소에 본문이 한 번도 없었다. 공개된 판이

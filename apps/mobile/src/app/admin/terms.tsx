@@ -24,9 +24,13 @@ import { ConfirmCard } from './_ui';
  * **2026-09-16에 이 화면이 열렸다.** 대표 지시 — 「개인정보처리방침 이용약관 마케팅
  * 약관도 동일하게 내가 수정가능하도록 하고」.
  *
- * 전까지 `BACKEND_PENDING = true`가 편집·공개를 잠그고 있었고, 서버도
- * `termsUnavailable()`로 막고 있었다. 그 문구가 적은 「앱 약관·동의 기록에 연결한
- * 뒤」가 0420이다 — 본문이 표로 왔고 동의 기록이 판을 가리킨다.
+ * 전까지 이 화면에는 화면 안쪽 잠금 상수가 켜져 있었고, 서버도 `termsUnavailable()`로
+ * 막고 있었다. 그 문구가 적은 「앱 약관·동의 기록에 연결한 뒤」가 0420이다 —
+ * 본문이 표로 왔고 동의 기록이 판을 가리킨다.
+ *
+ * **이 주석에 그 상수 이름을 적지 않는다.** `test/admin-read-only-pairing.test.ts`가
+ * 화면 파일에서 그 글자를 «글자 그대로» 찾아 「아직 잠긴 화면」을 센다 — 지나간
+ * 이야기를 적어 둔 줄 하나 때문에 이 화면이 다시 잠긴 것으로 세어진다.
  *
  * **사이드바의 「조회만」 딱지도 같이 뗐다**(`faq.tsx`의 `TABS`). 한쪽만 지우면
  * 말이 어긋난다 — 목록은 「조회만」이라 적고 화면은 저장되는 상태가 된다.
@@ -91,6 +95,16 @@ export function TermsPanel() {
   const [askingRemoval, setAskingRemoval] = useState<{ warning: string; removing: string[] } | null>(null);
   /** 표 모양 조문을 고치는 중이면 그 표. 방침의 세 절이 여기에 해당한다. */
   const [clauseTable, setClauseTable] = useState<TermsClauseTable | null>(null);
+  /**
+   * 조문을 새로 더하는 중.
+   *
+   * **마케팅 정보 수신 동의가 이 길로 시작한다** — 저장소에 본문이 한 번도 없어서
+   * 빈 초안만 있다. 더하는 자리가 없으면 「수정 가능하도록」이 반만 열린 셈이다.
+   */
+  const [addingClause, setAddingClause] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  /** 지우려는 조문. 보호 표시가 붙었으면 서버가 무엇이 사라지는지 먼저 보낸다. */
+  const [deletingClause, setDeletingClause] = useState<TermsClause | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -131,6 +145,51 @@ export function TermsPanel() {
     setClauseTable((table) =>
       table === null ? null : { ...table, rows: table.rows.filter((_, i) => i !== index) }
     );
+  }
+
+  async function addClause() {
+    setSaving(true);
+    setActionError(null);
+    try {
+      await apiFetch(`/v1/admin/terms/${activeDoc}/clauses`, {
+        method: 'POST',
+        body: JSON.stringify({ title: newTitle, body: clauseBody }),
+      });
+      setAddingClause(false);
+      setNewTitle('');
+      setClauseBody('');
+      setRev((r) => r + 1);
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : '추가 실패');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /** 조문을 지운다. 보호 표시가 붙은 절은 서버가 한 번 더 묻는다(0420). */
+  async function deleteClause(clause: TermsClause, confirm = false) {
+    setSaving(true);
+    setActionError(null);
+    try {
+      const result = (await apiFetch(
+        `/v1/admin/terms/${activeDoc}/clauses/${clause.id}?confirm=${confirm ? 'true' : 'false'}`,
+        { method: 'DELETE' }
+      )) as { saved: boolean; warning?: string; removing?: string[] };
+
+      if (!result.saved) {
+        setDeletingClause(clause);
+        setAskingRemoval({ warning: result.warning ?? '', removing: result.removing ?? [] });
+        return;
+      }
+
+      setDeletingClause(null);
+      setAskingRemoval(null);
+      setRev((r) => r + 1);
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : '삭제 실패');
+    } finally {
+      setSaving(false);
+    }
   }
 
   /**
@@ -189,6 +248,14 @@ export function TermsPanel() {
     <View style={styles.root}>
       <View style={styles.header}>
         <Text style={styles.title}>약관 · 방침 관리</Text>
+        {activeDocData?.latestDraftVersion && (
+          <Pressable
+            style={styles.addBtn}
+            onPress={() => { setNewTitle(''); setClauseBody(''); setClauseTable(null); setActionError(null); setAddingClause(true); }}
+          >
+            <Text style={styles.addBtnText}>조문 추가</Text>
+          </Pressable>
+        )}
         <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
           <Text style={styles.refreshText}>새로 고침</Text>
         </Pressable>
@@ -287,6 +354,16 @@ export function TermsPanel() {
               )}
 
               <ScrollView>
+                {/*
+                  빈 상태가 정상 상태다(v3.27). 마케팅 동의는 저장소에 본문이 한 번도
+                  없었다 — 「고장 났다」가 아니라 「아직 안 쓰셨다」이고, 다음에 무엇을
+                  하면 되는지를 말한다.
+                */}
+                {activeDocData.clauses.length === 0 && (
+                  <Text style={styles.emptyText}>
+                    아직 조문이 없어요. 위의 「조문 추가」로 첫 조문을 넣어주세요.
+                  </Text>
+                )}
                 {activeDocData.clauses.map((clause, i) => (
                   <View key={clause.id} style={[styles.clauseRow, i % 2 === 1 && styles.clauseRowZebra]}>
                     <View style={styles.clauseMain}>
@@ -305,6 +382,9 @@ export function TermsPanel() {
                     </View>
                     <Pressable style={styles.editBtn} onPress={() => openClause(clause)}>
                       <Text style={styles.editBtnText}>수정</Text>
+                    </Pressable>
+                    <Pressable style={styles.editBtn} onPress={() => void deleteClause(clause)}>
+                      <Text style={styles.deleteBtnText}>삭제</Text>
                     </Pressable>
                   </View>
                 ))}
@@ -367,6 +447,47 @@ export function TermsPanel() {
         </View>
       </Modal>
 
+      {/* 조문 더하기. 제목은 화면에 그대로 그려진다 — 「제1조 목적」처럼 번호를 안에 적는다. */}
+      <Modal visible={addingClause} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>조문 추가</Text>
+            <Text style={styles.modalSub}>
+              제목은 화면에 그대로 나와요 — 「제1조 목적」처럼 번호를 안에 적어주세요.
+            </Text>
+            <TextInput
+              style={styles.titleInput}
+              value={newTitle}
+              onChangeText={setNewTitle}
+              placeholder="제1조 목적"
+              placeholderTextColor={Colors.light.textAssistive}
+            />
+            <TextInput
+              style={styles.clauseInput}
+              multiline
+              value={clauseBody}
+              onChangeText={setClauseBody}
+              textAlignVertical="top"
+              placeholder="엔터로 줄을 나누면 조항이 나뉘어요."
+              placeholderTextColor={Colors.light.textAssistive}
+            />
+            {actionError && <Text style={styles.saveError}>{actionError}</Text>}
+            <View style={styles.modalActions}>
+              <Pressable style={styles.cancelBtn} onPress={() => setAddingClause(false)} disabled={saving}>
+                <Text style={styles.cancelBtnText}>취소</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.saveBtn, saving && styles.btnDisabled]}
+                onPress={() => void addClause()}
+                disabled={saving}
+              >
+                <Text style={styles.saveBtnText}>{saving ? '추가 중…' : '추가'}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/*
         **국외 이전 · 수탁자 절에서 항목이 사라질 때.**
 
@@ -379,10 +500,12 @@ export function TermsPanel() {
           title="이 항목들이 방침에서 빠져요"
           body={askingRemoval.warning}
           items={askingRemoval.removing}
-          cta="알겠어요, 저장할게요"
+          cta={deletingClause ? '알겠어요, 지울게요' : '알겠어요, 저장할게요'}
           danger
-          onConfirm={() => void saveClause(true)}
-          onCancel={() => setAskingRemoval(null)}
+          onConfirm={() =>
+            void (deletingClause ? deleteClause(deletingClause, true) : saveClause(true))
+          }
+          onCancel={() => { setAskingRemoval(null); setDeletingClause(null); }}
         />
       ) : null}
 
@@ -486,6 +609,32 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
   },
   protectedNote: { fontSize: FontSize.tab, color: Colors.light.cautionary, marginTop: 6 },
+  addBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 6,
+    backgroundColor: Colors.light.tint,
+    marginRight: 8,
+  },
+  addBtnText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
+  deleteBtnText: { fontSize: FontSize.tab, color: Colors.light.negative },
+  emptyText: {
+    fontSize: FontSize.t7,
+    color: Colors.light.textAssistive,
+    padding: 24,
+    textAlign: 'center',
+  },
+  titleInput: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: Colors.light.fieldBorder,
+    backgroundColor: Colors.light.background,
+    fontSize: FontSize.t7,
+    color: Colors.light.text,
+    marginBottom: 10,
+  },
   tableBox: { maxHeight: 220, marginTop: 12 },
   tableRow: {
     flexDirection: 'row',

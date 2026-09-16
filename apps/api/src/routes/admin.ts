@@ -1965,6 +1965,53 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   );
 
   /**
+   * 조문 더하기. **마케팅 정보 수신 동의가 이 길로 시작한다** — 저장소에 본문이
+   * 한 번도 없어서 0420이 빈 초안만 두었다(없는 법적 문서를 지어내지 않았다).
+   */
+  const clauseAddBody = z.object({ title: z.string(), body: z.string() });
+
+  app.post<{ Params: { id: string }; Body: unknown }>(
+    '/v1/admin/terms/:id/clauses',
+    auth,
+    async (request) => {
+      const doc = request.params.id;
+
+      if (!adminOps.isDocType(doc)) throw notFound('문서');
+
+      const parsed = clauseAddBody.safeParse(request.body ?? {});
+
+      if (!parsed.success) {
+        throw new ApiError('invalid_request', '조문 제목과 내용을 넣어주세요.');
+      }
+
+      return run(() =>
+        adminOps.addTermsClause(context.pool, doc, parsed.data, currentUserId(request))
+      );
+    }
+  );
+
+  /** 조문 지우기. 보호 표시가 붙은 절은 무엇이 사라지는지 보인 뒤 한 번 더 받는다. */
+  app.delete<{ Params: { id: string; clauseId: string }; Querystring: { confirm?: string } }>(
+    '/v1/admin/terms/:id/clauses/:clauseId',
+    auth,
+    async (request) => {
+      const doc = request.params.id;
+
+      if (!adminOps.isDocType(doc)) throw notFound('문서');
+
+      return run(() =>
+        adminOps.deleteTermsClause(
+          context.pool,
+          doc,
+          request.params.clauseId,
+          currentUserId(request),
+          request.query.confirm === 'true'
+        )
+      );
+    }
+  );
+
+  /**
    * 초안 공개. 공개한 판은 얼어붙고, 이어서 고칠 새 초안이 같이 생긴다.
    *
    * **시행일을 받는다.** 저장한 날과 효력이 생기는 날은 다르다 — 약관 변경은

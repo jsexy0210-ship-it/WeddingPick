@@ -303,8 +303,8 @@ const TABS: AdminTabDef[] = [
  *
  * **정본이 웹사이트라는 규칙은 그대로다.** 여기서 고친 것을 웹이 읽어 그린다 —
  * 사본이 둘이 되는 것이 아니라, 그 하나가 코드에서 표로 옮겨간 것이다.
- * 딱지를 뗄 때 화면의 `BACKEND_PENDING`도 같이 지웠다(`terms.tsx`). 한쪽만
- * 지우면 말이 어긋난다.
+ * 딱지를 뗄 때 화면 안쪽 잠금도 같이 지웠다(`terms.tsx`). 한쪽만 지우면 말이
+ * 어긋나고, `test/admin-read-only-pairing.test.ts`가 그 어긋남을 잡는다.
  */
 export default function SiteContentShell() {
   const { tab } = useLocalSearchParams<{ tab?: string }>();
