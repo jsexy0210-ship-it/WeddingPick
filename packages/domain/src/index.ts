@@ -71,3 +71,6 @@ export * from './site';
 export * from './style';
 export * from './guide-price';
 export * from './reward-payout';
+
+export * from './legal-documents';
+export * from './legal-renderer';

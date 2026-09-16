@@ -1,3 +1,4 @@
+import { AdminAccountActions } from './_ui';
 /**
  * WP-ADM-012 데이터 · 가격통계
  * 업체별 데이터 수 · 공개 단계 · 이상치 후보 · 재계산 · 통계 버전
@@ -87,15 +88,16 @@ export default function PriceStatsScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>가격 통계</Text>
         <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
-          <Text style={styles.refreshText}>새로 고침</Text>
+          <Text style={styles.refreshText}>새로고침</Text>
         </Pressable>
+        <AdminAccountActions />
       </View>
 
       {/* 사이드바의 「조회만」과 짝이다(`_layout.tsx`의 `READ_ONLY`). */}
       {BACKEND_PENDING ? (
         <PendingBackendNotice
           actions="재계산"
-          reason="통계를 다시 계산하는 곳이 아직 없어요. 목록의 수와 공개 단계는 실제 값이에요."
+          reason="재계산 기능은 개발 준비 중입니다. 목록의 건수와 공개 단계는 현재 집계된 값이에요."
         />
       ) : null}
 

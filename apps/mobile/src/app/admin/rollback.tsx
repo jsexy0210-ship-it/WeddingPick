@@ -164,9 +164,9 @@ export default function RollbackScreen() {
       busy
         ? { v: '…', kind: 'dim' }
         : item.status === 'pending_approval'
-          ? { v: '롤백 승인', kind: 'brand', onPress: () => void act(item.id, 'approve') }
+          ? { v: '복구 승인', kind: 'brand', onPress: () => void act(item.id, 'approve') }
           : item.status === 'anomaly_detected'
-            ? { v: '롤백 실행', kind: 'bad', onPress: () => setTriggering(item) }
+            ? { v: '복구 실행', kind: 'bad', onPress: () => setTriggering(item) }
             : { v: '—', kind: 'dim' },
     ],
   }));
@@ -225,7 +225,7 @@ export default function RollbackScreen() {
           {/* 무엇이 바뀌는지 항목으로 보인 뒤 진행한다(v3.27). */}
           {triggering ? (
             <ConfirmCard
-              title="롤백을 실행할까요?"
+              title="이전 상태로 복구할까요?"
               body={`${triggering.name}을(를) 적용 직전 상태로 되돌려요.`}
               items={[
                 triggering.type === 'policy'
@@ -237,7 +237,7 @@ export default function RollbackScreen() {
                 '되돌린 뒤에는 이 화면에서 다시 앞으로 감을 수 없어요',
                 '누가 언제 실행했는지 감사 기록에 남아요',
               ]}
-              cta="롤백 실행"
+              cta="복구 실행"
               danger
               onConfirm={() => void act(triggering.id, 'trigger')}
               onCancel={() => setTriggering(null)}

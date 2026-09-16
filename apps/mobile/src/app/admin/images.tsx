@@ -162,7 +162,7 @@ export default function ImagesScreen() {
     <Page
       title="이미지 자동 수급"
       sub="권리 확인이 필수 관문 · 미확인은 노출되지 않아요"
-      action={{ label: '새로 고침', onPress: reload }}
+      action={{ label: '새로고침', onPress: reload, permission: 'view' }}
     >
       <DelayedLoader active={loading} size={40} />
       {!loading && error ? <LoadError message={error} onRetry={reload} /> : null}

@@ -4,127 +4,59 @@ import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-n
 
 import { AdminSpacing as A, Colors, FontSize, LineHeight, Radius, Spacing, WeddingMark } from '@weddingpick/ui';
 
-import { clearAdminToken, loadAdminToken, readAdminTokenSync, subscribeAdminToken } from './_session';
+import { loadAdminToken, readAdminTokenSync, subscribeAdminToken } from './_session';
+import { AdminAccessProvider } from './_ui';
 
-/**
- * 관리자 콘솔 좌측 사이드바.
- *
- * **묶음이 2026-09-11에 다시 짜였다**(대표 지시). 예전에는 시안 `22-admin-ops.dc.html`의
- * 여섯 묶음(보고 · 데이터 · 사용자 · 성장 · 운영 · 시스템)을 그대로 따랐는데, 그것은
- * **무엇에 관한 화면인지**로 가른 것이라 **지금 쓸 수 있는 화면인지**를 말해주지 못했다.
- * 운영자는 동작하는 메뉴와 껍데기만 있는 메뉴를 하나씩 눌러 보고서야 구분했다.
- *
- * 그래서 순서를 이렇게 정했다.
- *
- *   1. 대시보드      한 화면에서 상태를 먼저 본다
- *   2. 운영          운영자가 값을 바꿀 수 있고 그것이 실제로 저장되는 화면
- *   3. 조회          보기만 되는 화면 — 그것이 그 화면의 목적이라 고장이 아니다
- *   4. 서버 연결 전  확인 불가 · 동작 불가 — 한 묶음으로 맨 아래
- *
- * **4번을 「기타」로 부르지 않는다.** 이름이 상태를 감추면 최하단으로 내린 뜻이 사라진다.
- *
- * 어느 화면이 어느 묶음인지는 전수 조사로 갈랐다 — 부르는 경로 · 서버에 그 경로가
- * 있는지 · 그 핸들러가 실제로 DB를 건드리는지. 근거는 `docs/admin-screen-inventory.md`에
- * 화면마다 한 줄로 적혀 있다.
- *
- * **메뉴를 지우지 않는다.** 4번의 화면도 조회는 되는 곳이 있어서, 눌리지 않게 막으면
- * 되는 것까지 못 보게 된다(2026-09-10 대표 지시).
- *
- * **사이드바 이름과 화면 이름은 다를 수 있다.** 240 폭에서 긴 이름은 잘리고, 잘린
- * 이름은 어느 화면인지 말해주지 못한다.
- */
-type NavEntry = { group: string } | { key: string; label: string; href: string; readOnly?: boolean };
+/** 사용자 확정 분류. 확인·승인이 필요한 일은 대시보드 묶음에 모은다. */
+type NavEntry = { group: string } | { key: string; label: string; href: string };
 
-/**
- * **「조회만」은 「이 화면은 지금 조작이 안 된다」는 표시다**(2026-09-10 대표 지시 —
- * 「서버에 없는 동작들 화면에도 목록 디스에이블 처리해」).
- *
- * 화면 안쪽은 이미 잠겨 있다(`BACKEND_PENDING`). 그런데 그것은 **들어가 봐야** 보인다.
- * 메뉴만 보고는 어느 것이 실제로 일을 하는지 알 수 없어서, 운영자는 하나씩 눌러
- * 보고서야 알게 된다.
- *
- * **메뉴를 죽이지는 않는다.** 여기 적힌 곳도 조회는 전부 된다 — 목록 · 지표 · 상태가
- * 실제 서버 값으로 나온다(`revenue`는 예외다. 서버가 0을 고정으로 준다). 눌리지 않게
- * 막으면 되는 것까지 못 보게 된다.
- *
- * **둘에서 다섯으로 늘었다**(2026-09-11 전수 조사). 나머지 셋은 잠긴 화면이었는데
- * 사이드바에 표시가 없었다 —
- *
- *   email-matching  회신을 담는 표가 DB에 없어 수신함이 늘 비어 있다
- *   revenue         구독 · 결제 표가 없어 서버가 0을 고정으로 돌려준다
- *   price-stats     목록은 실제 값이지만 「재계산」이 아무것도 하지 않는다
- *
- * 서버 동작이 붙으면 그 화면의 `BACKEND_PENDING`과 여기 이름을 **함께** 지운다.
- * 한쪽만 지우면 말이 어긋난다 — `test/admin-read-only-pairing.test.ts`가 그것을 잡는다.
- */
-const READ_ONLY = new Set(['biz-queue', 'email-matching', 'price-stats', 'revenue', 'terms']);
-
-/**
- * ADMIN.md 26화면 목록에 아직 없는 라우트. 지우면 기능이 사라지므로 남기되
- * 어느 것이 목록 밖인지 한 곳에 적어 둔다 — `docs/admin-screen-audit.md` 참고.
- */
+/** 개발 준비 중인 화면도 현재 조회 가능한 내용은 열어 볼 수 있다. */
+const READ_ONLY = new Set(['biz-queue', 'email-matching', 'price-stats', 'revenue']);
 const OUTSIDE_ADMIN_MD = new Set(['decisions', 'objections', 'pii-reviews', 'og-card']);
 
-/**
- * **2번 묶음의 순서는 운영자가 자주 여는 순이다.** 시안의 계열 순서가 아니다.
- *
- * 기준은 「그 일이 얼마나 자주 들어오는가」다. 제보 심사와 업체 정리는 매일 들어오고,
- * 관리자 계정과 정책 규칙은 한 달에 한 번도 열지 않는다. 자주 여는 것을 아래에 두면
- * 매일 스크롤을 내리게 된다.
- *
- * 이 순서는 내 판단이다 — 실제 사용 기록으로 확인한 것이 아니다. 대표님이 다르게
- * 보시면 여기 배열 순서만 고치면 된다.
- */
 const NAV: NavEntry[] = [
   { group: '대시보드' },
   { key: 'home', label: '대시보드', href: '/admin/home' },
-
-  { group: '운영' },
-  /* 매일 — 제보 심사 · 제보 처리 · 업체 · 이미지 */
-  { key: 'queue', label: '확인 필요', href: '/admin/queue' },
-  { key: 'data-pipeline', label: '제보 처리', href: '/admin/data-pipeline' },
-  { key: 'vendors', label: '업체 관리', href: '/admin/vendors' },
-  { key: 'images', label: '이미지 관리', href: '/admin/images' },
-  /* 들어올 때마다 — 후기 · 이의제기 · 개인정보 · 계정 */
+  { key: 'queue', label: '승인대기', href: '/admin/queue' },
+  { key: 'briefing', label: '일일 브리핑', href: '/admin/briefing' },
+  { key: 'report', label: '신고 접수', href: '/admin/report' },
   { key: 'rebuttal', label: '후기 · 반론', href: '/admin/rebuttal' },
   { key: 'objections', label: '후기 이의제기', href: '/admin/objections' },
   { key: 'pii-reviews', label: '개인정보 검토', href: '/admin/pii-reviews' },
-  { key: 'users', label: '계정 관리', href: '/admin/users' },
-  /* 문구 · 카드 — 자주 손대지만 급하지 않다 */
-  { key: 'faq', label: 'FAQ 관리', href: '/admin/faq' },
-  { key: 'og-card', label: '링크 미리보기', href: '/admin/og-card' },
-  /* 성장 — 회차마다 */
-  { key: 'campaigns', label: '캠페인 · 보상', href: '/admin/campaigns' },
+  { key: 'ads-gate', label: '광고 전환 승인', href: '/admin/ads-gate' },
+
+  { group: '운영 관리' },
+  { key: 'campaigns', label: '이벤트 관리', href: '/admin/campaigns' },
+  { key: 'vendors', label: '업체 관리', href: '/admin/vendors' },
+  { key: 'users', label: '회원 관리', href: '/admin/users' },
+  { key: 'faq', label: '자주 묻는 질문', href: '/admin/faq' },
+  { key: 'terms', label: '약관 · 방침', href: '/admin/terms' },
+  { key: 'audit-log', label: '감사 기록', href: '/admin/audit-log' },
+
+  { group: '마케팅 관리' },
   { key: 'marketing', label: '마케팅 발송', href: '/admin/marketing' },
   { key: 'ads', label: '광고 집행', href: '/admin/ads' },
-  { key: 'ads-gate', label: '광고 전환 승인', href: '/admin/ads-gate' },
-  /* 손댈 일이 없어야 정상인 것들. 필요할 때 바로 찾을 수 있게 붙여 둔다 */
+  { key: 'og-card', label: '링크 미리보기', href: '/admin/og-card' },
+
+  { group: '자동화 관리' },
+  { key: 'images', label: '이미지 자동 수급', href: '/admin/images' },
+  { key: 'data-pipeline', label: '제보 처리', href: '/admin/data-pipeline' },
   { key: 'automation', label: '처리 상태', href: '/admin/automation' },
+  { key: 'decisions', label: '자동 처리 내역', href: '/admin/decisions' },
+  { key: 'stats', label: '이상 거래', href: '/admin/stats' },
   { key: 'kill-switch', label: '긴급 중지', href: '/admin/kill-switch' },
   { key: 'rollback', label: '변경 복구', href: '/admin/rollback' },
   { key: 'policy-engine', label: '정책 규칙', href: '/admin/policy-engine' },
-  { key: 'admins', label: '관리자 계정', href: '/admin/admins' },
 
-  { group: '조회' },
-  { key: 'briefing', label: '일일 브리핑', href: '/admin/briefing' },
-  { key: 'decisions', label: '자동 처리 내역', href: '/admin/decisions' },
-  { key: 'report', label: '신고 접수', href: '/admin/report' },
-  { key: 'stats', label: '이상 거래', href: '/admin/stats' },
-  { key: 'price-stats', label: '가격 통계', href: '/admin/price-stats' },
+  { group: '비용 · 정산 관리' },
   { key: 'ai-usage', label: '분석 비용', href: '/admin/ai-usage' },
-  { key: 'audit-log', label: '감사 기록', href: '/admin/audit-log' },
 
-  /*
-   * 확인 불가 · 동작 불가 · 안 쓰는 메뉴. **왜 여기 있는지는 화면마다 다르다** —
-   * 근거는 `docs/admin-screen-inventory.md`에 한 줄로 적혀 있다.
-   */
-  { group: '서버 연결 전' },
+  { group: '개발 준비 중' },
   { key: 'biz-queue', label: '업체 문의', href: '/admin/biz-queue' },
   { key: 'email-matching', label: '이메일 회신', href: '/admin/email-matching' },
+  { key: 'price-stats', label: '가격 통계', href: '/admin/price-stats' },
   { key: 'revenue', label: '수익 현황', href: '/admin/revenue' },
-  { key: 'terms', label: '약관 · 방침', href: '/admin/terms' },
 ];
-
 const LOGIN_PATH = '/admin/login';
 
 function Sidebar({ pathname }: { pathname: string }) {
@@ -183,24 +115,13 @@ function Sidebar({ pathname }: { pathname: string }) {
                   * 아홉 곳이나 두면 운영자가 하나씩 눌러 보게 된다.
                   */}
                 {READ_ONLY.has(item.key) && (
-                  <Text style={[styles.navChip, active && styles.navChipActive]}>조회만</Text>
+                  <Text style={[styles.navChip, active && styles.navChipActive]}>준비 중</Text>
                 )}
               </Pressable>
             </Link>
           );
         })}
       </ScrollView>
-      <Pressable
-        style={styles.signOut}
-        onPress={() => {
-          void clearAdminToken().then(() => {
-            /* 화면 상태를 되돌리는 가장 단순한 길. 관리자 콘솔은 웹 전용이다. */
-            window.location.assign(LOGIN_PATH);
-          });
-        }}
-      >
-        <Text style={styles.signOutText}>로그아웃</Text>
-      </Pressable>
     </View>
   );
 }
@@ -286,12 +207,14 @@ export default function AdminLayout() {
   if (!token) return <Redirect href={LOGIN_PATH as never} />;
 
   return (
+    <AdminAccessProvider key={token} token={token}>
     <View style={styles.root}>
       <Sidebar pathname={pathname} />
       <View style={styles.main}>
         <Slot />
       </View>
     </View>
+    </AdminAccessProvider>
   );
 }
 
@@ -344,17 +267,6 @@ const styles = StyleSheet.create({
   /* 시안 side «gap:3px» — 메뉴 사이. */
   sidebarScrollContent: {
     gap: A.stackGap,
-  },
-  signOut: {
-    paddingHorizontal: A.btnPaddingX,
-    paddingVertical: Spacing.three,
-    borderTopWidth: 1,
-    borderTopColor: C.adminSidebarLine,
-  },
-  signOutText: {
-    fontSize: FontSize.micro,
-    lineHeight: LineHeight.micro,
-    color: C.adminSidebarLabel,
   },
   navGroup: {
     /* 시안 navGroup «padding:16px 12px 6px». */

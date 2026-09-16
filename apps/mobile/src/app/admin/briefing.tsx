@@ -2,7 +2,7 @@
  * WP-ADM-002 일일 브리핑
  *
  * 시안 `22-admin-ops.dc.html` 1번. 하루치 요약이고, 문제가 없으면 「오늘 사람이 볼 것은
- * 없어요」가 초록 배너로 맨 위에 온다 — 그것이 이 화면의 목적이다. 미해결 리스크가
+ * 없어요」가 초록 배너로 맨 위에 온다 — 그것이 이 화면의 목적이다. 아직 해결하지 못한 문제가
  * 있을 때만 상단 색이 바뀐다.
  */
 import { useEffect, useState } from 'react';
@@ -73,7 +73,7 @@ function isBriefingData(d: unknown): d is BriefingData {
   );
 }
 
-const SHAPE_ERROR = '서버가 이 화면이 읽는 모양으로 답하지 않았어요. 서버의 일일 브리핑 집계를 확인해주세요.';
+const SHAPE_ERROR = '일일 브리핑을 불러오지 못했어요. 잠시 뒤 다시 시도해주세요.';
 
 /** 문제 없으면 초록, 확인할 것이 있으면 주황, 조치가 필요하면 빨강(ADMIN.md 공통 규칙). */
 function bannerTone(risks: RiskItem[]): Tone {
@@ -136,7 +136,7 @@ export default function BriefingScreen() {
     <Page
       title="일일 브리핑"
       sub={data ? `${data.date} 기준` : undefined}
-      action={{ label: '새로 고침', onPress: reload }}
+      action={{ label: '새로고침', onPress: reload, permission: 'view' }}
     >
       <DelayedLoader active={loading} size={40} />
       {!loading && error ? <LoadError message={error} onRetry={reload} /> : null}
@@ -148,7 +148,7 @@ export default function BriefingScreen() {
             title={
               data.unresolvedRisks.length === 0
                 ? '오늘 사람이 볼 것은 없어요'
-                : `미해결 리스크 ${data.unresolvedRisks.length}건이 있어요`
+                : `아직 해결하지 못한 문제 ${data.unresolvedRisks.length}건이 있어요`
             }
             detail={data.summary || undefined}
           />
@@ -168,7 +168,7 @@ export default function BriefingScreen() {
               },
               { label: '자동복구', value: `${data.autoRecovered.toLocaleString()}건`, kind: 'ok' },
               {
-                label: '미해결 리스크',
+                label: '아직 해결하지 못한 문제',
                 value: `${data.unresolvedRisks.length}건`,
                 note: data.unresolvedRisks.length === 0 ? '확인할 것이 없어요' : '확인 필요',
                 kind: data.unresolvedRisks.length === 0 ? 'ok' : 'bad',
@@ -178,9 +178,9 @@ export default function BriefingScreen() {
           />
 
           <CardGrid>
-            <Card title="미해결 리스크" sub="사람이 봐야 하는 것">
+            <Card title="아직 해결하지 못한 문제" sub="사람이 봐야 하는 것">
               {riskRows.length === 0 ? (
-                <EmptyState title="확인할 것이 없어요" detail="미해결 리스크가 없어요. 개별 큐를 열지 않아도 괜찮아요." />
+                <EmptyState title="확인할 것이 없어요" detail="아직 해결하지 못한 문제가 없어요. 개별 대기 목록을 열지 않아도 괜찮아요." />
               ) : (
                 <Rows items={riskRows} />
               )}

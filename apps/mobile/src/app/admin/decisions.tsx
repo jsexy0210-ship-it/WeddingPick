@@ -1,3 +1,4 @@
+import { AdminAccountActions } from './_ui';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -36,6 +37,8 @@ type OpenDecision = {
 };
 
 const money = (usd: number | null): string => (usd === null ? '—' : `$${usd.toFixed(2)}`);
+const DECIDER_LABEL: Record<string, string> = { rule: '규칙', model: '자동 분석', human: '운영자' };
+const EXECUTION_LABEL: Record<string, string> = { succeeded: '완료', failed: '실패', rolled_back: '복구됨', pending: '대기 중' };
 
 export default function DecisionsScreen() {
   const [briefing, setBriefing] = useState<BriefingRow[]>([]);
@@ -78,8 +81,9 @@ export default function DecisionsScreen() {
             setLoading(true);
             setRev((r) => r + 1);
           }}>
-          <Text style={styles.refreshText}>새로 고침</Text>
+          <Text style={styles.refreshText}>새로고침</Text>
         </Pressable>
+        <AdminAccountActions />
       </View>
 
       <DelayedLoader active={loading} size={40} style={styles.centered} />
@@ -109,7 +113,7 @@ export default function DecisionsScreen() {
                   {row.workflow}
                 </Text>
                 <Text style={[styles.td, styles.colDecider]} numberOfLines={1}>
-                  {row.decider}
+                  {DECIDER_LABEL[row.decider] ?? row.decider}
                 </Text>
                 <Text style={[styles.td, styles.colNum, styles.numText]}>{row.decisions}</Text>
                 <Text style={[styles.td, styles.colNum, styles.numText, row.failed > 0 && styles.failText]}>
@@ -156,7 +160,7 @@ export default function DecisionsScreen() {
                   {row.reasonCode}
                 </Text>
                 <Text style={[styles.td, styles.colStatus]} numberOfLines={1}>
-                  {row.executionStatus}
+                  {EXECUTION_LABEL[row.executionStatus] ?? row.executionStatus}
                 </Text>
                 <Text style={[styles.td, styles.colDate]}>{formatDateTimeDot(row.createdAt)}</Text>
               </View>

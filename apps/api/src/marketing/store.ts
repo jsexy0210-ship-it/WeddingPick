@@ -12,6 +12,8 @@ import type { PoolClient } from 'pg';
 import type { MarketingJob, MarketingSource } from '@weddingpick/api-contract';
 import type { Db } from '../db';
 import { generateContent } from './content';
+import { notFound, ApiError } from '../errors';
+import { withTransaction } from '../db';
 
 const MAX_RETRY = 3;
 
@@ -27,6 +29,8 @@ export async function registerSource(
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
      ON CONFLICT (id) DO UPDATE SET
        fact_ids       = EXCLUDED.fact_ids,
+       reviewed       = EXCLUDED.reviewed,
+       reviewed_at    = EXCLUDED.reviewed_at,
        expires_at     = EXCLUDED.expires_at,
        next_verify_at = EXCLUDED.next_verify_at,
        active         = EXCLUDED.active,
@@ -140,7 +144,7 @@ export async function createJob(
 
 export async function getJob(db: Db, id: string): Promise<MarketingJob | null> {
   const { rows } = await db.query<Record<string, unknown>>(
-    'SELECT * FROM marketing_jobs WHERE id = $1',
+    'SELECT * FROM marketing_jobs WHERE id = $1 AND deleted_at IS NULL',
     [id],
   );
   const r = rows[0];
@@ -149,7 +153,7 @@ export async function getJob(db: Db, id: string): Promise<MarketingJob | null> {
 
 export async function listJobs(db: Db, limit = 50): Promise<MarketingJob[]> {
   const { rows } = await db.query<Record<string, unknown>>(
-    'SELECT * FROM marketing_jobs ORDER BY created_at DESC LIMIT $1',
+    'SELECT * FROM marketing_jobs WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT $1',
     [limit],
   );
   return rows.map(rowToJob);
@@ -185,7 +189,7 @@ async function recordEvent(
  * dry_run만 허용 — 실제 외부 게시 없음.
  * FOR UPDATE SKIP LOCKED 로 동시 호출 충돌 방지.
  */
-export async function processScheduled(db: Db): Promise<{ ok: number; failed: number }> {
+export async function processScheduled(db: Db, jobId?: string): Promise<{ ok: number; failed: number }> {
   const client = await db.connect();
   let ok = 0;
   let failed = 0;
@@ -194,12 +198,13 @@ export async function processScheduled(db: Db): Promise<{ ok: number; failed: nu
     await client.query('BEGIN');
     const { rows } = await client.query<Record<string, unknown>>(
       `SELECT * FROM marketing_jobs
-       WHERE status = 'queued'
+       WHERE status = 'queued' AND deleted_at IS NULL AND ($1::uuid IS NULL OR id=$1)
          AND (scheduled_at IS NULL OR scheduled_at <= NOW())
        ORDER BY scheduled_at NULLS LAST
        LIMIT 10
-       FOR UPDATE SKIP LOCKED`,
+       FOR UPDATE SKIP LOCKED`, [jobId ?? null],
     );
+    if (jobId && rows.length === 0) throw new ApiError('invalid_request', '지금 모의 실행할 수 있는 작업이 아니에요');
 
     for (const row of rows) {
       const job = rowToJob(row);
@@ -236,13 +241,7 @@ export async function processScheduled(db: Db): Promise<{ ok: number; failed: nu
         continue;
       }
 
-      // 본문이 변경된 경우 업데이트
-      if (result.title !== job.title || result.body !== job.body) {
-        await client.query(
-          'UPDATE marketing_jobs SET title=$1, body=$2, utm_url=$3 WHERE id=$4',
-          [result.title, result.body, result.utmUrl, job.id],
-        );
-      }
+      // 실행 전 출처만 다시 검증한다. 관리자가 검토·수정한 본문을 재생성으로 덮지 않는다.
 
       await client.query(
         "UPDATE marketing_jobs SET status='simulated', simulated_at=NOW() WHERE id=$1",
@@ -265,10 +264,11 @@ export async function processScheduled(db: Db): Promise<{ ok: number; failed: nu
 
 /** 실패 작업 재시도 */
 export async function retryJob(db: Db, id: string): Promise<void> {
-  await db.query(
-    "UPDATE marketing_jobs SET status='queued', failed_at=NULL, fail_reason=NULL WHERE id=$1 AND status='failed' AND retry_count < $2",
-    [id, MAX_RETRY],
+  const result = await db.query(
+    "UPDATE marketing_jobs SET status='queued', failed_at=NULL, fail_reason=NULL, retry_count=0 WHERE id=$1 AND status='failed' AND deleted_at IS NULL RETURNING id",
+    [id],
   );
+  if (!result.rows[0]) throw new ApiError('invalid_request', '실패한 작업만 다시 실행할 수 있어요');
 }
 
 /** 마케팅 요약 통계 */
@@ -276,7 +276,7 @@ export async function getSummary(
   db: Db,
 ): Promise<{ generated: number; simulated: number; failed: number; failRate: number }> {
   const { rows } = await db.query<{ status: string; cnt: string }>(
-    'SELECT status, COUNT(*) AS cnt FROM marketing_jobs GROUP BY status',
+    'SELECT status, COUNT(*) AS cnt FROM marketing_jobs WHERE deleted_at IS NULL GROUP BY status',
   );
   const map = Object.fromEntries(rows.map((r) => [r.status, Number(r.cnt)]));
   const generated = Object.values(map).reduce((a, b) => a + b, 0);
@@ -288,4 +288,22 @@ export async function getSummary(
     failed,
     failRate: generated > 0 ? failed / generated : 0,
   };
+}
+
+export async function editJob(db: Db, id: string, input: { title: string; body: string }, by: string): Promise<void> {
+  await withTransaction(db, async (client) => {
+    const result = await client.query(`UPDATE marketing_jobs SET title=$2,body=$3,status='queued',
+      simulated_at=NULL,failed_at=NULL,fail_reason=NULL,retry_count=0 WHERE id=$1 AND deleted_at IS NULL RETURNING id`,
+    [id, input.title, input.body]);
+    if (!result.rows[0]) throw notFound('마케팅 소재');
+    await recordEvent(client, id, 'edited', { by });
+  });
+}
+
+export async function deleteJob(db: Db, id: string, by: string): Promise<void> {
+  await withTransaction(db, async (client) => {
+    const result = await client.query('UPDATE marketing_jobs SET deleted_at=now() WHERE id=$1 AND deleted_at IS NULL RETURNING id', [id]);
+    if (!result.rows[0]) throw notFound('마케팅 소재');
+    await recordEvent(client, id, 'deleted', { by });
+  });
 }

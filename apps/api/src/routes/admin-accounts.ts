@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import { hashAdminPassword } from '../auth/admin-password';
 import { type AdminRole, atMost } from '../auth/admin-role';
-import { currentAdminRole, currentUserId, requireSuperAdmin } from '../auth/plugin';
+import { currentAdminRole, currentUserId, requireOperatorUser, requireSuperAdmin } from '../auth/plugin';
 import type { AppContext } from '../context';
 import { newEventId, recordDecision } from '../decisions';
 import { ApiError, notFound } from '../errors';
@@ -62,6 +62,8 @@ const createSchema = z.object({
   loginId: LOGIN_ID,
   password: PASSWORD,
   role: ROLE,
+  canEdit: z.boolean().default(true),
+  canDelete: z.boolean().default(false),
 });
 
 const roleSchema = z.object({ role: ROLE });
@@ -72,6 +74,9 @@ type AccountRow = {
   login_id: string;
   role: AdminRole;
   disabled_at: Date | null;
+  deleted_at: Date | null;
+  can_edit: boolean;
+  can_delete: boolean;
   created_by_login_id: string | null;
   created_at: Date;
 };
@@ -82,13 +87,15 @@ function toView(row: AccountRow) {
     loginId: row.login_id,
     role: row.role,
     disabled: row.disabled_at !== null,
+    canEdit: row.role === 'super' || (row.role === 'operator' && row.can_edit),
+    canDelete: row.role === 'super' || (row.role === 'operator' && row.can_delete),
     createdBy: row.created_by_login_id,
     createdAt: row.created_at.toISOString(),
   };
 }
 
 const SELECT_ACCOUNTS = `
-  SELECT a.id, a.user_id, a.login_id, a.role, a.disabled_at, a.created_at,
+  SELECT a.id, a.user_id, a.login_id, a.role, a.disabled_at, a.deleted_at, a.can_edit, a.can_delete, a.created_at,
          maker.login_id AS created_by_login_id
   FROM structured.admin_accounts a
   LEFT JOIN structured.admin_accounts maker ON maker.user_id = a.created_by
@@ -97,9 +104,14 @@ const SELECT_ACCOUNTS = `
 export function registerAdminAccountRoutes(app: FastifyInstance, context: AppContext): void {
   const auth = { preHandler: requireSuperAdmin(context) };
 
+  app.get('/v1/admin/access', { preHandler: requireOperatorUser(context) }, async (request) => ({
+    role: request.adminAccess!.role, canView: true, canEdit: request.adminAccess!.canEdit,
+    canDelete: request.adminAccess!.canDelete, isSuperAdmin: request.adminAccess!.role === 'super',
+  }));
+
   app.get('/v1/admin/accounts', auth, async (request) => {
     const { rows } = await context.pool.query<AccountRow>(
-      `${SELECT_ACCOUNTS} ORDER BY a.disabled_at IS NOT NULL, a.created_at`
+      `${SELECT_ACCOUNTS} WHERE a.deleted_at IS NULL ORDER BY a.disabled_at IS NOT NULL, a.created_at`
     );
 
     /*
@@ -116,7 +128,7 @@ export function registerAdminAccountRoutes(app: FastifyInstance, context: AppCon
       throw new ApiError('invalid_request', parsed.error.issues[0]?.message ?? '입력을 확인해주세요.');
     }
 
-    const { loginId, password, role } = parsed.data;
+    const { loginId, password, role, canEdit, canDelete } = parsed.data;
 
     /*
      * **자기 등급보다 높은 등급을 줄 수 없다**(2026-09-10 결정). 지금은 이 라우트가
@@ -174,11 +186,11 @@ export function registerAdminAccountRoutes(app: FastifyInstance, context: AppCon
       );
 
       const { rows } = await client.query<AccountRow>(
-        `INSERT INTO structured.admin_accounts (user_id, login_id, password_hash, role, created_by)
-         VALUES ($1, $2, $3, $4::admin_role, $5)
-         RETURNING id, user_id, login_id, role, disabled_at, created_at, null::text AS created_by_login_id`,
+        `INSERT INTO structured.admin_accounts (user_id, login_id, password_hash, role, created_by, can_edit, can_delete)
+         VALUES ($1, $2, $3, $4::admin_role, $5, $6, $7)
+         RETURNING id, user_id, login_id, role, disabled_at, deleted_at, can_edit, can_delete, created_at, null::text AS created_by_login_id`,
         /* 원문은 이 줄에서 해시가 되고 그대로 버려진다. */
-        [userId, loginId, hashAdminPassword(password), role, currentUserId(request)]
+        [userId, loginId, hashAdminPassword(password), role, currentUserId(request), role === 'super' || (role === 'operator' && canEdit), role === 'super' || (role === 'operator' && canDelete)]
       );
 
       await recordAccountDecision(client, request, rows[0]!.id, 'create', role);
@@ -218,6 +230,14 @@ export function registerAdminAccountRoutes(app: FastifyInstance, context: AppCon
     return await change(request, parsed.data.disabled ? 'disable' : 'enable', null);
   });
 
+  app.patch('/v1/admin/accounts/:id/permissions', auth, async (request) => {
+    const parsed = z.object({ canEdit: z.boolean(), canDelete: z.boolean() }).safeParse(request.body);
+    if (!parsed.success) throw new ApiError('invalid_request', '편집·삭제 권한을 확인해주세요.');
+    return await change(request, 'permissions', null, parsed.data);
+  });
+
+  app.delete('/v1/admin/accounts/:id', auth, async (request) => await change(request, 'delete', null));
+
   /**
    * 등급 변경과 켜고 끄기가 지켜야 할 것이 같아서 한 곳에 둔다.
    *
@@ -231,8 +251,9 @@ export function registerAdminAccountRoutes(app: FastifyInstance, context: AppCon
    */
   async function change(
     request: FastifyRequest,
-    step: 'grade' | 'disable' | 'enable',
-    role: AdminRole | null
+    step: 'grade' | 'disable' | 'enable' | 'permissions' | 'delete',
+    role: AdminRole | null,
+    permissions?: { canEdit: boolean; canDelete: boolean }
   ) {
     const { id } = request.params as { id: string };
 
@@ -250,7 +271,7 @@ export function registerAdminAccountRoutes(app: FastifyInstance, context: AppCon
        * 내릴 때 둘 다 「나 말고 하나 더 있다」를 보고 둘 다 내려간다.
        */
       const { rows } = await client.query<AccountRow & { user_id: string }>(
-        `SELECT a.id, a.user_id, a.login_id, a.role, a.disabled_at, a.created_at,
+        `SELECT a.id, a.user_id, a.login_id, a.role, a.disabled_at, a.deleted_at, a.can_edit, a.can_delete, a.created_at,
                 null::text AS created_by_login_id
          FROM structured.admin_accounts a WHERE a.id = $1 FOR UPDATE`,
         [id]
@@ -258,12 +279,16 @@ export function registerAdminAccountRoutes(app: FastifyInstance, context: AppCon
 
       const target = rows[0];
 
-      if (!target) {
+      if (!target || target.deleted_at) {
         throw notFound('관리자 계정');
       }
 
       const me = currentUserId(request);
       const mine = target.user_id === me;
+
+      if (target.role === 'super' && (step === 'delete' || step === 'permissions')) {
+        throw new ApiError('forbidden', '슈퍼 관리자는 삭제하거나 개별 권한을 바꿀 수 없어요.');
+      }
 
       if (target.role === 'super' && !mine) {
         throw new ApiError('forbidden', '다른 슈퍼 관리자의 등급과 상태는 바꿀 수 없어요.');
@@ -280,15 +305,26 @@ export function registerAdminAccountRoutes(app: FastifyInstance, context: AppCon
       }
 
       const { rows: changed } = await client.query<AccountRow>(
-        step === 'grade'
+        step === 'permissions'
+          ? `UPDATE structured.admin_accounts SET can_edit = $2, can_delete = $3, updated_at = now() WHERE id = $1
+             RETURNING *, null::text AS created_by_login_id`
+          : step === 'delete'
+          ? `UPDATE structured.admin_accounts SET disabled_at = now(), deleted_at = now(), updated_at = now() WHERE id = $1
+             RETURNING *, null::text AS created_by_login_id`
+          : step === 'grade'
           ? `UPDATE structured.admin_accounts
              SET role = $2::admin_role, updated_at = now() WHERE id = $1
-             RETURNING id, user_id, login_id, role, disabled_at, created_at, null::text AS created_by_login_id`
+             RETURNING id, user_id, login_id, role, disabled_at, deleted_at, can_edit, can_delete, created_at, null::text AS created_by_login_id`
           : `UPDATE structured.admin_accounts
              SET disabled_at = $2, updated_at = now() WHERE id = $1
-             RETURNING id, user_id, login_id, role, disabled_at, created_at, null::text AS created_by_login_id`,
-        [id, step === 'grade' ? role : step === 'disable' ? new Date() : null]
+             RETURNING id, user_id, login_id, role, disabled_at, deleted_at, can_edit, can_delete, created_at, null::text AS created_by_login_id`,
+        step === 'permissions' ? [id, permissions!.canEdit, permissions!.canDelete]
+          : step === 'delete' ? [id] : [id, step === 'grade' ? role : step === 'disable' ? new Date() : null]
       );
+
+      if (step === 'disable' || step === 'delete') {
+        await client.query('UPDATE identity.sessions SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL', [target.user_id]);
+      }
 
       await recordAccountDecision(client, request, id, step, role ?? target.role);
 
@@ -332,7 +368,7 @@ async function recordAccountDecision(
   client: Parameters<typeof recordDecision>[0],
   request: { userId?: string },
   accountId: string,
-  step: 'create' | 'grade' | 'disable' | 'enable',
+  step: 'create' | 'grade' | 'disable' | 'enable' | 'permissions' | 'delete',
   role: AdminRole
 ): Promise<void> {
   await recordDecision(client, {

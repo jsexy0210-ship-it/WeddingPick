@@ -19,10 +19,13 @@
  *
  * 값은 전부 `spec/tokens.json`에서 온다 — 이 파일에 hex를 적지 않는다.
  */
-import { type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { Link, router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { AdminSpacing as A, Colors, FontSize, LineHeight, Radius, Spacing } from '@weddingpick/ui';
+import { clearAdminToken } from './_session';
+import { apiFetch } from './_api';
 
 const C = Colors.light;
 
@@ -86,6 +89,66 @@ const KIND_BG: Record<Kind, string> = {
 
 /* ── 화면 뼈대 ─────────────────────────────────────────────── */
 
+type AdminAccess = { role: 'super' | 'operator' | 'viewer' | null; canEdit: boolean; canDelete: boolean; isSuperAdmin: boolean; loading: boolean; error: boolean; retry?: () => void };
+const NO_ACCESS: AdminAccess = { role: null, canEdit: false, canDelete: false, isSuperAdmin: false, loading: true, error: false };
+const AdminAccessContext = createContext<AdminAccess>(NO_ACCESS);
+export function useAdminAccess() { return useContext(AdminAccessContext); }
+
+/** 토큰마다 한 번만 조회한다. 페이지와 헤더는 이 결과를 함께 사용한다. */
+export function AdminAccessProvider({ token, children }: { token: string; children: ReactNode }) {
+  const [access, setAccess] = useState<AdminAccess>(NO_ACCESS);
+  const [revision, setRevision] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    void apiFetch('/v1/admin/access').then((data) => {
+      const found = data as Partial<AdminAccess>;
+      if (!cancelled) setAccess({
+        role: found.role === 'super' || found.role === 'operator' || found.role === 'viewer' ? found.role : null,
+        canEdit: found.canEdit === true, canDelete: found.canDelete === true,
+        isSuperAdmin: found.isSuperAdmin === true, loading: false, error: false,
+      });
+    }).catch(() => { if (!cancelled) setAccess({ ...NO_ACCESS, loading: false, error: true }); });
+    return () => { cancelled = true; };
+  }, [token, revision]);
+  return <AdminAccessContext.Provider value={{ ...access, retry: () => { setAccess(NO_ACCESS); setRevision((value) => value + 1); } }}>{children}</AdminAccessContext.Provider>;
+}
+
+type ActionPermission = 'view' | 'edit' | 'delete';
+function allowsAction(access: AdminAccess, permission: ActionPermission = 'edit') {
+  return permission === 'view' || (permission === 'delete' ? access.canDelete : access.canEdit);
+}
+
+/** 공용 Page와 개별 헤더 모두 같은 높이에서 계정 도구를 제공한다. */
+export function AdminAccountActions() {
+  const access = useAdminAccess();
+  const [signingOut, setSigningOut] = useState(false);
+  async function signOut() {
+    if (signingOut) return;
+    setSigningOut(true);
+    try {
+      await clearAdminToken();
+      router.replace('/admin/login');
+    } finally {
+      setSigningOut(false);
+    }
+  }
+  return (
+    <View style={styles.accountActions}>
+      {access.loading ? <Text style={styles.pageSub}>권한 확인 중</Text> : null}
+      {access.error ? <Pressable accessibilityRole="button" onPress={access.retry} style={styles.topAction}><Text style={styles.dangerLabel}>권한 확인 실패 · 다시 시도</Text></Pressable> : null}
+      {access.role === 'viewer' ? <Text style={styles.pageSub}>조회 전용</Text> : null}
+      <Link href="/admin/admins" asChild>
+        <Pressable accessibilityRole="link" style={StyleSheet.flatten(styles.topAction)}>
+          <Text style={styles.topActionLabel}>관리자 계정</Text>
+        </Pressable>
+      </Link>
+      <Pressable accessibilityRole="button" disabled={signingOut} onPress={() => void signOut()} style={styles.topAction}>
+        <Text style={styles.topActionLabel}>{signingOut ? '로그아웃 중' : '로그아웃'}</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 export type PageProps = {
   title: string;
   /** 제목 아래 한 줄. 지금 무엇을 보고 있는지. */
@@ -96,12 +159,14 @@ export type PageProps = {
    * 흐리게만 만든다(`features/admin/pending-backend`). 이름을 「준비 중」으로 바꾸면
    * 그 단추가 원래 무엇을 하는 자리인지가 사라진다.
    */
-  action?: { label: string; onPress: () => void; kind?: 'brand' | 'danger' | 'plain'; disabled?: boolean };
+  action?: { label: string; onPress: () => void; kind?: 'brand' | 'danger' | 'plain'; disabled?: boolean; permission?: ActionPermission };
   children: ReactNode;
 };
 
 /** 상단 바(76) + 본문. 사이드바는 `_layout.tsx`가 그린다. */
 export function Page({ title, sub, action, children }: PageProps) {
+  const access = useAdminAccess();
+  const actionDisabled = Boolean(action?.disabled || (action && !allowsAction(access, action.permission)));
   return (
     <View style={styles.page}>
       <View style={styles.topbar}>
@@ -112,12 +177,12 @@ export function Page({ title, sub, action, children }: PageProps) {
         {action ? (
           <Pressable
             onPress={action.onPress}
-            disabled={action.disabled}
+            disabled={actionDisabled}
             style={[
               styles.topAction,
               action.kind === 'brand' && styles.topActionBrand,
               action.kind === 'danger' && styles.topActionDanger,
-              action.disabled && styles.topActionDisabled,
+              actionDisabled && styles.topActionDisabled,
             ]}
           >
             <Text
@@ -131,6 +196,7 @@ export function Page({ title, sub, action, children }: PageProps) {
             </Text>
           </Pressable>
         ) : null}
+        <AdminAccountActions />
       </View>
       <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
         {children}
@@ -317,6 +383,7 @@ function Wrap({ onPress, style, children }: { onPress?: () => void; style: Style
 }
 
 export function Rows({ items }: { items: RowItem[] }) {
+  const access = useAdminAccess();
   return (
     <View>
       {items.map((r, i) => (
@@ -341,8 +408,10 @@ export function Rows({ items }: { items: RowItem[] }) {
             {r.btn ? (
               <Pressable
                 onPress={r.btn.onPress}
+                disabled={!access.canEdit}
                 style={[
                   styles.rowBtn,
+                  !access.canEdit && styles.topActionDisabled,
                   r.btn.kind === 'danger' && styles.rowBtnDanger,
                   r.btn.kind === 'brand' && styles.rowBtnBrand,
                 ]}
@@ -379,11 +448,13 @@ export function Badge({ label, kind = 'none' }: { label: string; kind?: Kind }) 
 }
 
 export function Toggle({ on, onPress }: { on: boolean; onPress: () => void }) {
+  const access = useAdminAccess();
   return (
     <Pressable
       onPress={onPress}
+      disabled={!access.canEdit}
       accessibilityRole="switch"
-      accessibilityState={{ checked: on }}
+      accessibilityState={{ checked: on, disabled: !access.canEdit }}
       style={[styles.toggle, on ? styles.toggleOn : styles.toggleOff]}
     >
       <View style={styles.knob} />
@@ -404,6 +475,7 @@ export type Col = {
 };
 
 export type Cell = {
+  permission?: ActionPermission;
   v: string;
   kind?: Kind;
   bold?: boolean;
@@ -424,6 +496,7 @@ export type TableRow = { key: string; cells: Cell[] };
  * 폭이 남으면 `grow` 열이 먹는다. 열을 고르게 늘리면 짧은 열에 빈칸만 생긴다.
  */
 export function DataTable({ cols, rows, empty }: { cols: Col[]; rows: TableRow[]; empty?: StatusBannerProps['title'] }) {
+  const access = useAdminAccess();
   const min = cols.reduce((sum, c) => sum + c.width, 0);
 
   if (rows.length === 0) {
@@ -451,7 +524,7 @@ export function DataTable({ cols, rows, empty }: { cols: Col[]; rows: TableRow[]
                     key={col.key}
                     style={[colWidth(col), col.align === 'right' ? styles.cellRightBox : styles.cellLeftBox]}
                   >
-                    <Pressable onPress={cell.onPress}>
+                    <Pressable onPress={cell.onPress} disabled={!allowsAction(access, cell.permission)} style={!allowsAction(access, cell.permission) && styles.topActionDisabled}>
                       <Text style={[styles.td, styles.bold, { color: KIND_FG[cell.kind ?? 'none'] }]}>
                         {cell.v}
                       </Text>
@@ -538,6 +611,7 @@ export function Bars({ items }: { items: BarItem[] }) {
 /* ── 5. 위험한 조작 ────────────────────────────────────────── */
 
 export type ConfirmCardProps = {
+  permission?: ActionPermission;
   title: string;
   /** 무엇이 왜 바뀌는지 한두 줄. */
   body: string;
@@ -555,7 +629,9 @@ export type ConfirmCardProps = {
  * 확인 카드. 항목이 비어 있으면 그리지 않는다 — 무엇이 바뀌는지 말하지 못하는
  * 확인 창은 「예」를 누르는 절차만 늘린다.
  */
-export function ConfirmCard({ title, body, items, cta, danger, children, onConfirm, onCancel }: ConfirmCardProps) {
+export function ConfirmCard({ title, body, items, cta, danger, children, onConfirm, onCancel, permission }: ConfirmCardProps) {
+  const access = useAdminAccess();
+  const disabled = !allowsAction(access, permission);
   return (
     <View style={styles.confirmWrap}>
       <View style={styles.confirmCard}>
@@ -574,7 +650,7 @@ export function ConfirmCard({ title, body, items, cta, danger, children, onConfi
           <Pressable onPress={onCancel} style={styles.btnGhost}>
             <Text style={styles.btnGhostLabel}>취소</Text>
           </Pressable>
-          <Pressable onPress={onConfirm} style={[styles.btnPrimary, danger && styles.btnDanger]}>
+          <Pressable onPress={onConfirm} disabled={disabled} style={[styles.btnPrimary, danger && styles.btnDanger, disabled && styles.topActionDisabled]}>
             <Text style={styles.btnPrimaryLabel}>{cta}</Text>
           </Pressable>
         </View>
@@ -610,6 +686,7 @@ const styles = StyleSheet.create({
     borderBottomColor: C.line,
   },
   topbarText: { flex: 1, minWidth: 0, gap: A.stackGap },
+  accountActions: { flexDirection: 'row', alignItems: 'center', gap: A.tableGap, flexShrink: 0, marginLeft: 'auto' },
   pageTitle: { fontSize: FontSize.t4, lineHeight: LineHeight.t4, fontWeight: '700', color: C.text },
   pageSub: { fontSize: FontSize.micro, lineHeight: LineHeight.micro, color: C.textAssistive },
   topAction: {

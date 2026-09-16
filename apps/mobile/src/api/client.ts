@@ -596,6 +596,10 @@ export async function getSignupState() {
   return request('/v1/me/signup', signupStateSchema);
 }
 
+export async function getEventNotices() {
+  return request('/v1/events', z.object({ events: z.array(z.object({ id: z.string(), title: z.string(), description: z.string() })) }));
+}
+
 /**
  * 필수 동의로 가입을 마무리한다. 통합정책 v3.13 §3.5.
  *
@@ -603,7 +607,7 @@ export async function getSignupState() {
  * 서버에 있다 — 예전에는 이 자리에 `ageVerified: true`를 늘 넣어 보냈고, 서버가
  * 그것으로 관문을 지켰다. 앱이 채우는 값은 관문이 될 수 없다.
  */
-export async function completeSignup(input: { consents: string[] }) {
+export async function completeSignup(input: { consents: string[]; versions?: Record<string, string> }) {
   return request('/v1/me/signup', signupStateSchema, {
     method: 'POST',
     body: JSON.stringify(input),

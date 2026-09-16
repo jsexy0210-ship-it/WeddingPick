@@ -9,7 +9,7 @@ import { Colors, FontSize, LineHeight, Spacing } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { formatDateDot } from '@/features/common/format-date';
-import { ConfirmCard } from './_ui';
+import { useAdminAccess, AdminAccountActions, ConfirmCard } from './_ui';
 
 type GateStepStatus = 'done' | 'in_progress' | 'pending' | 'blocked';
 
@@ -87,6 +87,7 @@ const STEP_LABEL: Record<GateStepStatus, string> = {
 };
 
 export default function AdsGateScreen() {
+  const { canEdit } = useAdminAccess();
   const [data, setData] = useState<AdsGateData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -163,8 +164,9 @@ export default function AdsGateScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>광고 전환 승인</Text>
         <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
-          <Text style={styles.refreshText}>새로 고침</Text>
+          <Text style={styles.refreshText}>새로고침</Text>
         </Pressable>
+        <AdminAccountActions />
       </View>
 
       <DelayedLoader active={loading} size={40} style={styles.centered} />
@@ -235,7 +237,7 @@ export default function AdsGateScreen() {
               <Pressable
                 style={[styles.approvalBtn, confirming && styles.btnDisabled]}
                 onPress={() => { setActionError(null); setAsking({ kind: 'approve' }); }}
-                disabled={confirming}
+                disabled={!canEdit || confirming}
               >
                 <Text style={styles.approvalBtnText}>
                   {confirming ? '처리 중…' : '실운영 전환 확정'}
@@ -269,7 +271,7 @@ export default function AdsGateScreen() {
                   setActionError(null);
                   setAsking({ kind: data.activated ? 'deactivate' : 'activate' });
                 }}
-                disabled={confirming}
+                disabled={!canEdit || confirming}
               >
                 <Text style={styles.approvalBtnText}>
                   {confirming ? '처리 중…' : data.activated ? '광고 끄기' : '광고 켜기'}

@@ -1,3 +1,4 @@
+import { useAdminAccess, AdminAccountActions } from './_ui';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -38,6 +39,7 @@ type RebuttalDetail = {
 
 
 export default function RebuttalScreen() {
+  const { canEdit } = useAdminAccess();
   const [items, setItems] = useState<PendingRebuttal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -169,8 +171,9 @@ export default function RebuttalScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>후기 · 반론</Text>
         <Pressable style={styles.refreshBtn} onPress={reload}>
-          <Text style={styles.refreshText}>새로 고침</Text>
+          <Text style={styles.refreshText}>새로고침</Text>
         </Pressable>
+        <AdminAccountActions />
       </View>
 
       <View style={styles.body}>
@@ -295,7 +298,7 @@ export default function RebuttalScreen() {
                 <Pressable
                   style={styles.offlineRow}
                   onPress={() => setOfflineCheck((on) => !on)}
-                  disabled={acting}
+                  disabled={!canEdit || acting}
                 >
                   <View style={[styles.checkbox, offlineCheck && styles.checkboxOn]}>
                     {offlineCheck && <Text style={styles.checkboxMark}>✓</Text>}
@@ -313,14 +316,14 @@ export default function RebuttalScreen() {
                   <Pressable
                     style={[styles.publishBtn, acting && styles.btnDisabled]}
                     onPress={() => ask('publish')}
-                    disabled={acting}
+                    disabled={!canEdit || acting}
                   >
                     <Text style={styles.publishBtnText}>게시</Text>
                   </Pressable>
                   <Pressable
                     style={[styles.rejectBtn, acting && styles.btnDisabled]}
                     onPress={() => ask('reject')}
-                    disabled={acting}
+                    disabled={!canEdit || acting}
                   >
                     <Text style={styles.rejectBtnText}>게시 불가</Text>
                   </Pressable>
@@ -340,12 +343,12 @@ export default function RebuttalScreen() {
                             ? '소속을 앱 밖에서 확인한 것으로 기록됩니다.'
                             : '소속을 관계자 인증으로 확인한 것으로 기록됩니다.',
                           '반론을 보낸 쪽과 후기를 쓴 쪽 모두에게 알림이 갑니다.',
-                          '큐에서 빠지고 되돌릴 수 없어요.',
+                          '대기 목록에서 빠지고 되돌릴 수 없어요.',
                         ]
                       : [
                           '이 반론은 어디에도 실리지 않습니다.',
                           '적은 사유가 반론을 보낸 쪽에 그대로 전달됩니다.',
-                          '큐에서 빠지고 되돌릴 수 없어요.',
+                          '대기 목록에서 빠지고 되돌릴 수 없어요.',
                         ]
                   }
                   confirmLabel={pending === 'publish' ? '게시' : '게시 불가'}

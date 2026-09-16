@@ -1,3 +1,4 @@
+import { useAdminAccess, AdminAccountActions } from './_ui';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -21,14 +22,15 @@ type PendingVerification = {
 
 const STATUS_LABEL: Record<VerificationStatus, string> = {
   received: '접수',
-  in_review: '심사중',
-  needs_supplement: '보완요청',
+  in_review: '심사 중',
+  needs_supplement: '보완 요청',
   approved: '승인',
   rejected: '반려',
 };
 
 
 export default function QueueScreen() {
+  const { canEdit } = useAdminAccess();
   const [items, setItems] = useState<PendingVerification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -112,10 +114,11 @@ export default function QueueScreen() {
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <Text style={styles.title}>확인 필요 큐</Text>
+        <Text style={styles.title}>승인대기</Text>
         <Pressable style={styles.refreshBtn} onPress={reload}>
-          <Text style={styles.refreshText}>새로 고침</Text>
+          <Text style={styles.refreshText}>새로고침</Text>
         </Pressable>
+        <AdminAccountActions />
       </View>
 
       <View style={styles.body}>
@@ -214,14 +217,14 @@ export default function QueueScreen() {
                   <Pressable
                     style={[styles.approveBtn, acting && styles.btnDisabled]}
                     onPress={() => ask('approve')}
-                    disabled={acting}
+                    disabled={!canEdit || acting}
                   >
                     <Text style={styles.approveBtnText}>승인</Text>
                   </Pressable>
                   <Pressable
                     style={[styles.rejectBtn, acting && styles.btnDisabled]}
                     onPress={() => ask('reject')}
-                    disabled={acting}
+                    disabled={!canEdit || acting}
                   >
                     <Text style={styles.rejectBtnText}>반려</Text>
                   </Pressable>
@@ -238,12 +241,12 @@ export default function QueueScreen() {
                       ? [
                           `문서 등급이 ${selected.targetLevel}이 되고, 가격 비교에 쓰입니다.`,
                           '신청한 사람에게 확인이 끝났다는 알림이 갑니다.',
-                          '큐에서 빠지고 되돌릴 수 없어요.',
+                          '대기 목록에서 빠지고 되돌릴 수 없어요.',
                         ]
                       : [
                           '이 신청은 반려로 끝납니다.',
                           '적은 사유가 신청한 사람에게 그대로 전달돼요.',
-                          '큐에서 빠지고 되돌릴 수 없어요.',
+                          '대기 목록에서 빠지고 되돌릴 수 없어요.',
                         ]
                   }
                   confirmLabel={pending === 'approve' ? '승인' : '반려'}

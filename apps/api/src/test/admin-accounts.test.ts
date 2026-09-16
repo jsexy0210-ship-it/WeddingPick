@@ -289,7 +289,12 @@ describeWithDb('관리자 계정 관리', () => {
         headers: gone.headers,
       });
 
-      expect(response.statusCode).toBe(403);
+      expect(response.statusCode).toBe(401);
+      const active = await test.pool.query(
+        `SELECT 1 FROM identity.active_sessions WHERE user_id =
+           (SELECT user_id FROM structured.admin_accounts WHERE login_id = $1)`, ['shown-out']
+      );
+      expect(active.rows).toHaveLength(0);
     });
   });
 
@@ -328,7 +333,12 @@ describeWithDb('관리자 계정 관리', () => {
         headers: shut.headers,
       });
 
-      expect(response.statusCode).toBe(403);
+      expect(response.statusCode).toBe(401);
+      const active = await test.pool.query(
+        `SELECT 1 FROM identity.active_sessions WHERE user_id =
+           (SELECT user_id FROM structured.admin_accounts WHERE login_id = $1)`, ['shut-out']
+      );
+      expect(active.rows).toHaveLength(0);
     });
   });
 

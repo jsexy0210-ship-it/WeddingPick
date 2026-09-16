@@ -6,7 +6,7 @@
  *
  * 시안 `21-admin.dc.html`의 `dash` 화면. 네 덩어리다.
  *
- *   1. 안대표가 볼 일    사람이 결정해야만 진행되는 것. 한 줄을 누르면 그 화면으로 간다.
+ *   1. 확인 · 승인할 일    사람이 결정해야만 진행되는 것. 한 줄을 누르면 그 화면으로 간다.
  *   2. 자동 검토 현황    자동이 끝낸 것 · 못 끝낸 것 · 사람에게 넘어간 것.
  *   3. 3열 카드 그리드   `dashCards` — 라벨 + 처리 방식 배지 · 큰 숫자 + 단위 · 한 줄 설명.
  *   4. 자동 판정 로그    무엇으로 · 왜 · 얼마나 확신했는지.
@@ -147,7 +147,7 @@ function hhmmKst(iso: string): string {
 
 /** 워크플로별 표의 열. 폭은 1920 기준이고 이름 열이 남는 폭을 먹는다. */
 const WORKFLOW_COLS: Col[] = [
-  { key: 'workflow', label: '워크플로', width: 220, grow: true },
+  { key: 'workflow', label: '자동 처리 업무', width: 220, grow: true },
   { key: 'rate', label: '자동 처리 비중', width: 120, align: 'right' },
   { key: 'concluded', label: '자동', width: 80, align: 'right' },
   { key: 'failed', label: '실패', width: 80, align: 'right' },
@@ -330,7 +330,7 @@ export default function AdminHomeScreen() {
     <Page
       title="대시보드"
       sub="지금 봐야 할 것 · 회원 추이 · 처리 현황"
-      action={{ label: '새로 고침', onPress: reload }}
+      action={{ label: '새로고침', onPress: reload, permission: 'view' }}
     >
       <DelayedLoader active={loading} size={40} />
       {!loading && error ? <LoadError message={error} onRetry={reload} /> : null}
@@ -349,7 +349,7 @@ export default function AdminHomeScreen() {
 
           <CardGrid>
             {/* 1. 사람이 결정해야만 진행되는 것. 한 줄을 누르면 그 화면으로 간다. */}
-            <Card title="안대표가 볼 일" sub={`모두 ${total}건`}>
+            <Card title="확인 · 승인할 일" sub={`모두 ${total}건`}>
               {total === 0 ? (
                 /* 빈 큐는 실패가 아니라 목표다(ADMIN.md 공통 규칙). */
                 <EmptyState
@@ -364,8 +364,8 @@ export default function AdminHomeScreen() {
             {/* 2. 자동이 끝낸 것과 사람에게 남은 것. */}
             <Card
               title="자동 검토 현황"
-              sub="최근 24시간 · 리스크가 큰 건만 사람이 봐요"
-              note="되돌림은 자동 판정을 사람이 취소한 건이에요. 같은 워크플로에서 되돌림이 늘면 그 기준부터 손봐요."
+              sub="최근 24시간 · 운영자 확인이 필요한 건만 모았어요"
+              note="되돌림은 자동 판정을 사람이 취소한 건이에요. 같은 업무에서 되돌림이 늘면 처리 기준을 확인해주세요."
             >
               {decided === 0 ? (
                 <EmptyState
@@ -432,7 +432,7 @@ export default function AdminHomeScreen() {
           <KpiRow items={cards.slice(3, 6)} />
 
           <Card
-            title="워크플로별 자동 처리"
+            title="업무별 자동 처리"
             sub={`판정 유지율 ${auto.keepRatePct === null ? '—' : `${auto.keepRatePct}%`} · 되돌림 ${auto.revertedCount}건 · 판정 시간 중앙값 ${
               auto.medianLatencyMs === null ? '—' : `${(auto.medianLatencyMs / 1000).toFixed(1)}초`
             }`}

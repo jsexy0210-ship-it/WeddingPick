@@ -9,10 +9,21 @@ import { Colors, FontSize, Layout, Spacing } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { formatMonthDayDot } from '@/features/common/format-date';
+import { AdminAccountActions, useAdminAccess } from './_ui';
+import { ContentButton, ContentForm, DeleteContentButton, type ContentField } from '@/features/admin/content-form';
+import { VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
+const AD_FIELDS: ContentField[] = [
+  { key: 'vendorId', label: '업체 ID' },
+  { key: 'tier', label: '요금제', options: [{ value: 'light', label: '라이트' }, { value: 'standard', label: '스탠다드' }, { value: 'premium', label: '프리미엄' }] },
+  { key: 'surface', label: '노출 위치', options: [{ value: 'vendor_detail', label: '업체 상세' }, { value: 'search', label: '검색' }, { value: 'region_category', label: '지역·업종' }] },
+  { key: 'category', label: '업종', options: [{ value: '', label: '전체' }, ...Object.entries(VENDOR_CATEGORY_LABEL).map(([value, label]) => ({ value, label }))] },
+  { key: 'region', label: '지역 (전국이면 비워두세요)' }, { key: 'startsOn', label: '시작일 (YYYY-MM-DD)' }, { key: 'endsOn', label: '종료일 (YYYY-MM-DD)' },
+];
 
 type AdStatus = 'active' | 'paused' | 'expired' | 'pending';
 type AdItem = {
   id: string;
+  vendorId: string; surface: string; category: string | null; region: string | null;
   vendorName: string;
   plan: 'LIGHT' | 'STANDARD' | 'PREMIUM';
   slot: string;
@@ -49,6 +60,8 @@ const PLAN_COLOR: Record<AdItem['plan'], string> = {
 };
 
 export default function AdsScreen() {
+  const access = useAdminAccess();
+  const [editing, setEditing] = useState<AdItem | 'new' | null>(null);
   const [data, setData] = useState<AdsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -96,10 +109,12 @@ export default function AdsScreen() {
     <View style={styles.root}>
       <View style={styles.header}>
         <Text style={styles.title}>성장 · 광고 집행 관리</Text>
+        <ContentButton label="신규 등록" disabled={!access.canEdit} onPress={() => setEditing('new')} />
         {data && <Text style={styles.totalRevenue}>총 광고 수익: {data.totalRevenue}</Text>}
         <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
           <Text style={styles.refreshText}>새로 고침</Text>
         </Pressable>
+        <AdminAccountActions />
       </View>
 
       {actionError && <Text style={styles.actionError}>{actionError}</Text>}
@@ -148,11 +163,13 @@ export default function AdsScreen() {
               <Text style={[styles.td, styles.colConv]}>{(item.conversionRate * 100).toFixed(1)}%</Text>
               <Text style={[styles.td, styles.colFee]}>{item.monthlyFee}</Text>
               <View style={styles.colAction}>
+                <ContentButton label="수정" disabled={!access.canEdit} onPress={() => setEditing(item)} />
+                <DeleteContentButton name={item.vendorName} onDelete={async () => { await apiFetch(`/v1/admin/ads/${item.id}`, { method: 'DELETE' }); setRev((r) => r + 1); }} />
                 {(item.status === 'active' || item.status === 'paused') && (
                   <Pressable
                     style={[styles.inlineBtn, (acting === item.id) && styles.btnDisabled]}
                     onPress={() => void toggleStatus(item.id, item.status)}
-                    disabled={acting !== null}
+                    disabled={acting !== null || !access.canEdit}
                   >
                     <Text style={styles.inlineBtnText}>
                       {acting === item.id ? '…' : item.status === 'active' ? '정지' : '재개'}
@@ -164,6 +181,14 @@ export default function AdsScreen() {
           ))}
         </ScrollView>
       )}
+      {editing ? <ContentForm title={editing === 'new' ? '광고 등록' : '광고 수정'} fields={AD_FIELDS}
+        initial={editing === 'new' ? { vendorId: '', tier: 'light', surface: 'vendor_detail', category: '', region: '', startsOn: '', endsOn: '' } : {
+          vendorId: editing.vendorId, tier: editing.plan.toLowerCase(), surface: editing.surface, category: editing.category ?? '', region: editing.region ?? '', startsOn: editing.startDate, endsOn: editing.endDate,
+        }} onClose={() => setEditing(null)} onSave={async (values) => {
+          await apiFetch(editing === 'new' ? '/v1/admin/ads' : `/v1/admin/ads/${editing.id}`, { method: editing === 'new' ? 'POST' : 'PATCH',
+            body: JSON.stringify({ ...values, category: values.category || null, region: values.region || null }),
+          }); setRev((r) => r + 1);
+        }} /> : null}
     </View>
   );
 }
@@ -230,7 +255,7 @@ const styles = StyleSheet.create({
   colCtr: { width: 50, textAlign: 'right' as const, fontSize: FontSize.tab },
   colConv: { width: 50, textAlign: 'right' as const, fontSize: FontSize.tab },
   colFee: { width: 72, textAlign: 'right' as const, fontSize: FontSize.tab },
-  colAction: { width: 50, alignItems: 'flex-end' },
+  colAction: { width: 190, alignItems: 'flex-end', flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
   inlineBtn: {
     paddingHorizontal: 8,
     paddingVertical: 4,

@@ -1,3 +1,4 @@
+import { AdminAccountActions } from './_ui';
 import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -57,6 +58,7 @@ export default function ReportScreen() {
     <View style={styles.root}>
       <View style={styles.header}>
         <Text style={styles.title}>신고 접수</Text>
+        <AdminAccountActions />
       </View>
 
       {/* 필터 탭 */}
@@ -130,6 +132,8 @@ export default function ReportScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
     backgroundColor: Colors.light.background,

@@ -451,21 +451,21 @@ describeWithDb('관리자 운영·시스템 라우트', () => {
       return { versionId: version[0]!.id, clauseId: clause[0]!.id };
     }
 
-    it('앱 약관 연결 전에는 조문 편집을 거부하고 원문을 보존한다', async () => {
+    it('초안 조문을 편집하고 다시 조회하면 저장한 내용이 보인다', async () => {
       const operator = await operatorHeaders();
       const { clauseId } = await draftWithClause();
 
       const response = await put(
         `/v1/admin/terms/terms/clauses/${clauseId}`,
         operator.headers,
-        { body: '고친 내용' }
+        { articleNumber: '제1조', title: '목적', body: '고친 내용' }
       );
-      expect(response.statusCode).toBe(400);
+      expect(response.statusCode).toBe(200);
 
       const body = (await get('/v1/admin/terms', operator.headers)).json() as {
         documents: { type: string; clauses: { body: string }[] }[];
       };
-      expect(body.documents.find((d) => d.type === 'terms')?.clauses[0]?.body).toBe('처음 내용');
+      expect(body.documents.find((d) => d.type === 'terms')?.clauses[0]?.body).toBe('고친 내용');
     });
 
     it('내부 공개 함수는 판을 보존하고 다음 초안을 만든다', async () => {
@@ -492,9 +492,9 @@ describeWithDb('관리자 운영·시스템 라우트', () => {
       const response = await put(
         `/v1/admin/terms/terms/clauses/${clauseId}`,
         operator.headers,
-        { body: '몰래 고침' }
+        { articleNumber: '제1조', title: '목적', body: '몰래 고침' }
       );
-      expect(response.statusCode).toBe(400);
+      expect(response.statusCode).toBe(404);
     });
 
     /*

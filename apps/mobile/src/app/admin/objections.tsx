@@ -1,3 +1,4 @@
+import { useAdminAccess, AdminAccountActions } from './_ui';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -30,6 +31,7 @@ type ObjectedReview = {
 };
 
 export default function ObjectionsScreen() {
+  const { canEdit } = useAdminAccess();
   const [items, setItems] = useState<ObjectedReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -123,8 +125,9 @@ export default function ObjectionsScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>후기 이의제기</Text>
         <Pressable style={styles.refreshBtn} onPress={reload}>
-          <Text style={styles.refreshText}>새로 고침</Text>
+          <Text style={styles.refreshText}>새로고침</Text>
         </Pressable>
+        <AdminAccountActions />
       </View>
 
       <View style={styles.body}>
@@ -211,13 +214,13 @@ export default function ObjectionsScreen() {
               {pending === null ? (
                 <View style={styles.actionRow}>
                   <Pressable
-                    disabled={acting}
+                    disabled={!canEdit || acting}
                     style={[styles.restoreBtn, acting && styles.btnDisabled]}
                     onPress={() => ask('restore')}>
                     <Text style={styles.restoreBtnText}>되살리기</Text>
                   </Pressable>
                   <Pressable
-                    disabled={acting}
+                    disabled={!canEdit || acting}
                     style={[styles.removeBtn, acting && styles.btnDisabled]}
                     onPress={() => ask('remove')}>
                     <Text style={styles.removeBtnText}>내리기</Text>
@@ -235,7 +238,7 @@ export default function ObjectionsScreen() {
                       ? [
                           `${selected.vendorName} 업체 화면에 이 후기가 다시 보입니다.`,
                           '쓴 사람에게 다시 보인다는 알림이 갑니다.',
-                          '이의는 확인 완료로 닫히고 큐에서 빠져요.',
+                          '이의제기를 확인 완료로 처리하고 대기 목록에서 제외해요.',
                           '적은 메모는 처리 기록에만 남고, 밖으로 나가지 않아요.',
                         ]
                       : [
@@ -266,7 +269,7 @@ export default function ObjectionsScreen() {
                   onChangeText={setDays}
                 />
                 <Pressable
-                  disabled={acting}
+                  disabled={!canEdit || acting}
                   style={[styles.extendBtn, acting && styles.btnDisabled]}
                   onPress={() => void extend()}>
                   <Text style={styles.extendBtnText}>기한 늘리기</Text>

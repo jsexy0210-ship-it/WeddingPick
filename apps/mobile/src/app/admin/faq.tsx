@@ -1,5 +1,6 @@
+import { useAdminAccess, AdminAccountActions } from './_ui';
 /**
- * WP-ADM-035 FAQ 관리
+ * WP-ADM-035 자주 묻는 질문
  * 운영자가 직접 등록·수정·삭제. 카테고리·노출 순서·공개 여부
  */
 import { useEffect, useState } from 'react';
@@ -48,6 +49,7 @@ const BLANK_FAQ: Omit<FaqItem, 'id'> = {
 };
 
 export default function FaqScreen() {
+  const { canEdit, canDelete } = useAdminAccess();
   const [data, setData] = useState<FaqData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -133,13 +135,14 @@ export default function FaqScreen() {
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <Text style={styles.title}>FAQ 관리</Text>
-        <Pressable style={styles.addBtn} onPress={openNew}>
-          <Text style={styles.addBtnText}>+ 새 FAQ</Text>
+        <Text style={styles.title}>자주 묻는 질문</Text>
+        <Pressable style={styles.addBtn} disabled={!canEdit} onPress={openNew}>
+          <Text style={styles.addBtnText}>+ 질문 추가</Text>
         </Pressable>
         <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
-          <Text style={styles.refreshText}>새로 고침</Text>
+          <Text style={styles.refreshText}>새로고침</Text>
         </Pressable>
+        <AdminAccountActions />
       </View>
 
       <DelayedLoader active={loading} size={40} style={styles.centered} />
@@ -176,13 +179,13 @@ export default function FaqScreen() {
                       <Text style={styles.faqLocked}>코드에 있는 항목</Text>
                     ) : (
                       <>
-                        <Pressable style={styles.editBtn} onPress={() => openEdit(item)}>
+                        <Pressable style={styles.editBtn} disabled={!canEdit} onPress={() => openEdit(item)}>
                           <Text style={styles.editBtnText}>수정</Text>
                         </Pressable>
                         <Pressable
                           style={[styles.deleteBtn, deleting === item.id && styles.btnDisabled]}
                           onPress={() => void deleteFaq(item.id)}
-                          disabled={deleting !== null}
+                          disabled={!canDelete || deleting !== null}
                         >
                           <Text style={styles.deleteBtnText}>{deleting === item.id ? '…' : '삭제'}</Text>
                         </Pressable>
@@ -200,7 +203,7 @@ export default function FaqScreen() {
       <Modal visible={editing !== null} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>{isNew ? '새 FAQ 추가' : 'FAQ 수정'}</Text>
+            <Text style={styles.modalTitle}>{isNew ? '질문 추가 추가' : '질문 수정'}</Text>
             {editing && (
               <>
                 <Text style={styles.fieldLabel}>카테고리</Text>
@@ -257,7 +260,7 @@ export default function FaqScreen() {
                   <Pressable
                     style={[styles.saveBtn, saving && styles.btnDisabled]}
                     onPress={() => void save()}
-                    disabled={saving}
+                    disabled={!canEdit || saving}
                   >
                     <Text style={styles.saveBtnText}>{saving ? '저장 중…' : '저장'}</Text>
                   </Pressable>

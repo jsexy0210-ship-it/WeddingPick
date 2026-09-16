@@ -8,6 +8,16 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { AdminAccountActions, useAdminAccess } from './_ui';
+import { ContentButton, ContentForm, DeleteContentButton, type ContentField } from '@/features/admin/content-form';
+
+type EventItem = { id: string; title: string; description: string; startsOn: string; endsOn: string; budgetAmount: number | null; status: string };
+const EVENT_FIELDS: ContentField[] = [
+  { key: 'title', label: '이벤트 이름' }, { key: 'description', label: '참여 조건·보상·안내', multiline: true },
+  { key: 'startsOn', label: '시작일 (YYYY-MM-DD)' }, { key: 'endsOn', label: '종료일 (YYYY-MM-DD)' },
+  { key: 'budgetAmount', label: '운영 계획 예산 (원, 미정이면 비워두세요)' },
+  { key: 'status', label: '상태', options: [{ value: 'draft', label: '초안' }, { value: 'active', label: '진행' }, { value: 'closed', label: '종료' }] },
+];
 
 type CampaignType = 'mission' | 'referral' | 'promo_cert' | 'grant';
 type PayoutStatus = 'pending' | 'paid' | 'failed' | 'blocked';
@@ -26,6 +36,7 @@ type CampaignItem = {
 type CampaignBudget = { total: string; used: string; remaining: string };
 
 type CampaignData = {
+  events: EventItem[];
   budget: CampaignBudget;
   items: CampaignItem[];
 };
@@ -52,6 +63,7 @@ function toCampaignData(raw: unknown): CampaignData {
   const items = at(raw, 'items');
 
   return {
+    events: Array.isArray(at(raw, 'events')) ? at(raw, 'events') as EventItem[] : [],
     budget: {
       total: text(at(budget, 'total')),
       used: text(at(budget, 'used')),
@@ -81,6 +93,8 @@ const PAYOUT_COLOR: Record<PayoutStatus, string> = {
 };
 
 export default function CampaignsScreen() {
+  const access = useAdminAccess();
+  const [editing, setEditing] = useState<EventItem | 'new' | null>(null);
   const [data, setData] = useState<CampaignData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -136,10 +150,12 @@ export default function CampaignsScreen() {
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <Text style={styles.title}>성장 · 캠페인 · 보상</Text>
+        <Text style={styles.title}>이벤트 관리</Text>
+        <ContentButton label="신규 등록" disabled={!access.canEdit} onPress={() => setEditing('new')} />
         <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
           <Text style={styles.refreshText}>새로 고침</Text>
         </Pressable>
+        <AdminAccountActions />
       </View>
 
       <DelayedLoader active={loading} size={40} style={styles.centered} />
@@ -170,6 +186,16 @@ export default function CampaignsScreen() {
             </View>
           </View>
           <ScrollView>
+            <Text style={styles.budgetLabel}>진행 상태의 이벤트는 설정한 기간에 앱 혜택 안내에 표시돼요. 계획 예산은 자동 지급 한도가 아니며, 기존 미션·초대·추첨 조건과 보상 지급 이력은 별도로 유지해요.</Text>
+            <Text style={styles.budgetLabel}>등록한 이벤트</Text>
+            {data.events.length === 0 ? <Text style={styles.td}>등록한 이벤트가 없어요.</Text> : data.events.map((event) => (
+              <View key={event.id} style={styles.tableRow}>
+                <View style={{ flex: 1 }}><Text style={styles.td}>{event.title}</Text><Text style={styles.budgetLabel}>{event.startsOn} ~ {event.endsOn} · {event.status === 'draft' ? '초안' : event.status === 'active' ? '진행' : '종료'}</Text></View>
+                <ContentButton label="수정" disabled={!access.canEdit} onPress={() => setEditing(event)} />
+                <DeleteContentButton name={event.title} onDelete={async () => { await apiFetch(`/v1/admin/campaigns/${event.id}`, { method: 'DELETE' }); setRev((r) => r + 1); }} />
+              </View>
+            ))}
+            <Text style={styles.budgetLabel}>보상 지급 이력</Text>
             <View style={styles.tableHead}>
               <Text style={[styles.th, styles.colType]}>유형</Text>
               <Text style={[styles.th, styles.colDesc]}>내용</Text>
@@ -194,7 +220,7 @@ export default function CampaignsScreen() {
                     <Pressable
                       style={[styles.payBtn, (acting === item.id + '_pay') && styles.btnDisabled]}
                       onPress={() => void pay(item.id)}
-                      disabled={acting !== null}
+                      disabled={acting !== null || !access.canEdit}
                     >
                       <Text style={styles.payBtnText}>{acting === item.id + '_pay' ? '…' : '지급'}</Text>
                     </Pressable>
@@ -203,7 +229,7 @@ export default function CampaignsScreen() {
                     <Pressable
                       style={[styles.blockBtn, (acting === item.id) && styles.btnDisabled]}
                       onPress={() => void block(item.id)}
-                      disabled={acting !== null}
+                      disabled={acting !== null || !access.canEdit}
                     >
                       <Text style={styles.blockBtnText}>{acting === item.id ? '…' : '차단'}</Text>
                     </Pressable>
@@ -214,6 +240,16 @@ export default function CampaignsScreen() {
           </ScrollView>
         </View>
       )}
+      {editing ? <ContentForm title={editing === 'new' ? '이벤트 등록' : '이벤트 수정'} fields={EVENT_FIELDS}
+        initial={editing === 'new' ? { title: '', description: '', startsOn: '', endsOn: '', budgetAmount: '', status: 'draft' } : {
+          title: editing.title, description: editing.description, startsOn: editing.startsOn, endsOn: editing.endsOn,
+          budgetAmount: editing.budgetAmount === null ? '' : String(editing.budgetAmount), status: editing.status,
+        }} onClose={() => setEditing(null)} onSave={async (values) => {
+          if (values.budgetAmount?.trim() && !Number.isSafeInteger(Number(values.budgetAmount))) throw new Error('계획 예산은 원 단위 숫자로 입력해주세요.');
+          await apiFetch(editing === 'new' ? '/v1/admin/campaigns' : `/v1/admin/campaigns/${editing.id}`, {
+            method: editing === 'new' ? 'POST' : 'PATCH', body: JSON.stringify({ ...values, budgetAmount: values.budgetAmount?.trim() ? Number(values.budgetAmount) : null }),
+          }); setRev((r) => r + 1);
+        }} /> : null}
     </View>
   );
 }

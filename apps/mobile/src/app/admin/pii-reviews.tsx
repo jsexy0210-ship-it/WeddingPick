@@ -1,3 +1,5 @@
+import { personalInfoLabel } from '@weddingpick/domain';
+import { useAdminAccess, AdminAccountActions } from './_ui';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -34,6 +36,7 @@ type ReviewDetail = {
 };
 
 export default function PiiReviewsScreen() {
+  const { canEdit } = useAdminAccess();
   const [items, setItems] = useState<PendingReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -123,8 +126,9 @@ export default function PiiReviewsScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>개인정보 검토</Text>
         <Pressable style={styles.refreshBtn} onPress={reload}>
-          <Text style={styles.refreshText}>새로 고침</Text>
+          <Text style={styles.refreshText}>새로고침</Text>
         </Pressable>
+        <AdminAccountActions />
       </View>
 
       <View style={styles.body}>
@@ -151,7 +155,7 @@ export default function PiiReviewsScreen() {
                     {item.id.slice(0, 8)}…
                   </Text>
                   <Text style={[styles.td, styles.colKinds]} numberOfLines={1}>
-                    {item.detectedKinds.join(' · ') || '—'}
+                    {item.detectedKinds.map(personalInfoLabel).join(' · ') || '—'}
                   </Text>
                   <Text style={[styles.td, styles.colCount]}>{item.hintCount}곳</Text>
                   <Text style={[styles.td, styles.colDate]}>{formatDateTimeDot(item.createdAt)}</Text>
@@ -198,12 +202,12 @@ export default function PiiReviewsScreen() {
                 return (
                   <Pressable
                     key={key}
-                    disabled={done || acting}
+                    disabled={!canEdit || done || acting}
                     style={[styles.hintRow, done && styles.hintRowDone]}
                     onPress={() => void redact(hint)}>
                     <View style={styles.hintTexts}>
                       <Text style={styles.hintField}>{hint.field}</Text>
-                      <Text style={styles.hintKind}>{hint.kind}</Text>
+                      <Text style={styles.hintKind}>{personalInfoLabel(hint.kind)}</Text>
                     </View>
                     <Text style={[styles.hintAction, done && styles.hintActionDone]}>
                       {done ? '지웠어요' : '지우기'}
@@ -223,13 +227,13 @@ export default function PiiReviewsScreen() {
               {actionError && <Text style={styles.actionErrorText}>{actionError}</Text>}
 
               <Pressable
-                disabled={acting}
+                disabled={!canEdit || acting}
                 style={[styles.cleanBtn, acting && styles.btnDisabled]}
                 onPress={() => void markClean()}>
                 <Text style={styles.cleanBtnText}>개인정보 없음으로 마치기</Text>
               </Pressable>
               <Text style={styles.detailHint}>
-                지울 것이 없다고 판단하면 여기서 검토를 끝냅니다. 큐에서 사라져요.
+                지울 것이 없다고 판단하면 여기서 검토를 끝냅니다. 대기 목록에서 빠져요.
               </Text>
             </ScrollView>
           )}

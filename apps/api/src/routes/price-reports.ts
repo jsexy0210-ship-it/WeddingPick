@@ -34,7 +34,7 @@ export function registerPriceReportRoutes(app: FastifyInstance, context: AppCont
       throw new ApiError('invalid_request', check.reason);
     }
 
-    const vendor = await context.pool.query('SELECT 1 FROM structured.vendors WHERE id = $1', [
+    const vendor = await context.pool.query('SELECT 1 FROM structured.vendors WHERE id = $1 AND deleted_at IS NULL', [
       body.vendorId,
     ]);
 

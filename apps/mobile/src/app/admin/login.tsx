@@ -177,7 +177,7 @@ export default function AdminLoginScreen() {
         <Text style={styles.sideLabel}>운영 콘솔</Text>
         <Text style={styles.sideTitle}>심사와 원본 열람은{'\n'}모두 기록돼요</Text>
         <Text style={styles.sideBody}>
-          전 메뉴를 자동 검토해요. 리스크가 큰 건만 보류로 올라와요.
+          자동 처리 결과를 확인하고, 승인이 필요한 항목을 검토해요.
         </Text>
       </View>
     </View>

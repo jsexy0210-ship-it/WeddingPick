@@ -1,3 +1,4 @@
+import { AdminAccountActions } from './_ui';
 /**
  * WP-ADM-050 시스템 · AI 사용량 · 비용
  * 모델별 호출 · 단가 · 성공률 · 상위 모델 전환율 · 사용자 수정률 · 처리시간
@@ -61,10 +62,11 @@ export default function AiUsageScreen() {
           <View style={styles.headerCosts}>
             <Text style={styles.costText}>오늘 {data.totalCostToday}</Text>
             <Text style={styles.costText}>이달 {data.totalCostMonth}</Text>
-          </View>
+            <AdminAccountActions />
+      </View>
         )}
         <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
-          <Text style={styles.refreshText}>새로 고침</Text>
+          <Text style={styles.refreshText}>새로고침</Text>
         </Pressable>
       </View>
 

@@ -31,7 +31,7 @@
  * `PATCH`를 직접 부르는 순간 그대로 통했을 것이다.
  */
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
@@ -55,6 +55,8 @@ type AdminAccount = {
   loginId: string;
   role: Role;
   disabled: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
   createdBy: string | null;
   createdAt: string;
 };
@@ -81,7 +83,7 @@ const ROLE_POWER: Record<Role, { write: string; accounts: string }> = {
 
 const ROLE_NOTE: Record<Role, string> = {
   super: '계정 관리를 포함한 전부',
-  operator: '운영 전부 · 계정 관리는 못 함',
+  operator: '지정된 편집·삭제 권한 · 계정 관리는 못 함',
   viewer: '읽기만',
 };
 
@@ -106,13 +108,17 @@ const COLS = [
  * 바뀌는지 말해 주지 않아서, 읽는 사람이 자기가 무엇을 누르는지 모른 채 누른다.
  */
 type Pending =
-  | { kind: 'create'; loginId: string; password: string; role: Role }
+  | { kind: 'create'; loginId: string; password: string; role: Role; canEdit: boolean; canDelete: boolean }
   | { kind: 'role'; account: AdminAccount; role: Role }
+  | { kind: 'permissions'; account: AdminAccount; canEdit: boolean; canDelete: boolean }
+  | { kind: 'delete'; account: AdminAccount }
   | { kind: 'disabled'; account: AdminAccount; disabled: boolean };
 
 function confirmTitle(pending: Pending): string {
   if (pending.kind === 'create') return '관리자를 만들어요';
   if (pending.kind === 'role') return '등급을 바꿔요';
+  if (pending.kind === 'permissions') return '편집·삭제 권한을 바꿔요';
+  if (pending.kind === 'delete') return '관리자 계정을 삭제해요';
 
   return pending.disabled ? '계정을 꺼요' : '계정을 다시 켜요';
 }
@@ -125,7 +131,7 @@ function confirmItems(pending: Pending): string[] {
     return [
       `아이디 ${pending.loginId}`,
       `등급 ${ROLE_LABEL[pending.role]}`,
-      `관리자 쓰기 ${power.write}`,
+      `조회 허용 · 편집 ${pending.role === 'super' || (pending.role === 'operator' && pending.canEdit) ? '허용' : '금지'} · 삭제 ${pending.role === 'super' || (pending.role === 'operator' && pending.canDelete) ? '허용' : '금지'}`,
       `계정 관리 ${power.accounts}`,
       '비밀번호는 해시만 저장해요 — 만든 뒤에는 다시 볼 수 없어요',
     ];
@@ -143,6 +149,14 @@ function confirmItems(pending: Pending): string[] {
     ];
   }
 
+  if (pending.kind === 'delete') return [
+    `아이디 ${pending.account.loginId}`, '로그인과 기존 세션이 끊겨요',
+    '계정 목록에서 제거하고 다시 활성화할 수 없어요', '기존 감사 기록은 남아요',
+  ];
+  if (pending.kind === 'permissions') return [
+    `아이디 ${pending.account.loginId}`, '조회는 계속 허용돼요',
+    `편집 ${pending.canEdit ? '허용' : '금지'} · 삭제 ${pending.canDelete ? '허용' : '금지'}`,
+  ];
   const power = ROLE_POWER[pending.account.role];
 
   return pending.disabled
@@ -172,6 +186,8 @@ export default function AdminAccountsScreen() {
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<Role>('viewer');
+  const [canEdit, setCanEdit] = useState(true);
+  const [canDelete, setCanDelete] = useState(false);
 
   const [selected, setSelected] = useState<AdminAccount | null>(null);
   const [pending, setPending] = useState<Pending | null>(null);
@@ -201,7 +217,7 @@ export default function AdminAccountsScreen() {
 
   /** 확인 카드에서 진행을 눌렀을 때에만 서버로 간다. */
   async function commit() {
-    if (!pending) return;
+    if (!pending || acting) return;
     setActing(true);
     setActionError(null);
 
@@ -213,6 +229,8 @@ export default function AdminAccountsScreen() {
             loginId: pending.loginId,
             password: pending.password,
             role: pending.role,
+            canEdit: pending.canEdit,
+            canDelete: pending.canDelete,
           }),
         });
         /*
@@ -222,12 +240,22 @@ export default function AdminAccountsScreen() {
         setLoginId('');
         setPassword('');
         setRole('viewer');
+        setCanEdit(true);
+        setCanDelete(false);
         setCreating(false);
       } else if (pending.kind === 'role') {
         await apiFetch(`/v1/admin/accounts/${pending.account.id}/role`, {
           method: 'PATCH',
           body: JSON.stringify({ role: pending.role }),
         });
+        setSelected(null);
+      } else if (pending.kind === 'permissions') {
+        await apiFetch(`/v1/admin/accounts/${pending.account.id}/permissions`, {
+          method: 'PATCH', body: JSON.stringify({ canEdit: pending.canEdit, canDelete: pending.canDelete }),
+        });
+        setSelected(null);
+      } else if (pending.kind === 'delete') {
+        await apiFetch(`/v1/admin/accounts/${pending.account.id}`, { method: 'DELETE' });
         setSelected(null);
       } else {
         await apiFetch(`/v1/admin/accounts/${pending.account.id}/disabled`, {
@@ -289,8 +317,8 @@ export default function AdminAccountsScreen() {
     cells: [
       { v: account.loginId, bold: true, onPress: () => open(account) },
       { v: ROLE_LABEL[account.role], badge: ROLE_KIND[account.role] },
-      { v: ROLE_NOTE[account.role] },
-      { v: account.disabled ? '꺼짐' : '켜짐', kind: account.disabled ? 'dim' : 'ok' },
+      { v: `조회 · 편집 ${account.canEdit ? '허용' : '금지'} · 삭제 ${account.canDelete ? '허용' : '금지'}` },
+      { v: account.disabled ? '정지' : '활성', kind: account.disabled ? 'dim' : 'ok' },
       { v: account.createdBy ?? '—' },
       { v: formatDateDot(account.createdAt) },
     ],
@@ -336,7 +364,7 @@ export default function AdminAccountsScreen() {
           }}
           onConfirm={() => {
             if (!canSubmitNew) return;
-            setPending({ kind: 'create', loginId: loginId.trim(), password, role });
+            setPending({ kind: 'create', loginId: loginId.trim(), password, role, canEdit, canDelete });
           }}
         >
           <View style={styles.form}>
@@ -368,6 +396,10 @@ export default function AdminAccountsScreen() {
                 </Pressable>
               ))}
             </View>
+            {role === 'operator' && <View style={styles.roleRow}>
+              <Text style={styles.formLabel}>편집 허용</Text><Switch accessibilityLabel="새 관리자 편집 권한" value={canEdit} onValueChange={setCanEdit} />
+              <Text style={styles.formLabel}>삭제 허용</Text><Switch accessibilityLabel="새 관리자 삭제 권한" value={canDelete} onValueChange={setCanDelete} />
+            </View>}
           </View>
         </ConfirmCard>
       )}
@@ -381,7 +413,7 @@ export default function AdminAccountsScreen() {
             `만든 날 ${formatDateDot(selected.createdAt)}`,
             `상태 ${selected.disabled ? '꺼짐' : '켜짐'}`,
           ]}
-          cta={selected.disabled ? '다시 켜기' : '끄기'}
+          cta={selected.disabled ? '정지 해제' : '정지'}
           danger={!selected.disabled}
           onCancel={() => {
             setSelected(null);
@@ -393,6 +425,10 @@ export default function AdminAccountsScreen() {
         >
           <View style={styles.form}>
             <Text style={styles.formLabel}>등급 바꾸기</Text>
+            {selected.role === 'operator' && <View style={styles.roleRow}>
+              <Text style={styles.formLabel}>편집 허용</Text><Switch accessibilityLabel="편집 권한" value={selected.canEdit} onValueChange={(value) => setPending({ kind: 'permissions', account: selected, canEdit: value, canDelete: selected.canDelete })} />
+              <Text style={styles.formLabel}>삭제 허용</Text><Switch accessibilityLabel="삭제 권한" value={selected.canDelete} onValueChange={(value) => setPending({ kind: 'permissions', account: selected, canEdit: selected.canEdit, canDelete: value })} />
+            </View>}
             <View style={styles.roleRow}>
               {ROLES.map((r) => (
                 <Pressable
@@ -407,6 +443,9 @@ export default function AdminAccountsScreen() {
                 </Pressable>
               ))}
             </View>
+            {selected.role !== 'super' && <Pressable style={styles.roleBtn} onPress={() => setPending({ kind: 'delete', account: selected })}>
+              <Text style={styles.error}>관리자 삭제</Text>
+            </Pressable>}
           </View>
         </ConfirmCard>
       )}
@@ -417,7 +456,7 @@ export default function AdminAccountsScreen() {
           body={acting ? '바꾸는 중이에요…' : '이렇게 바뀌어요.'}
           items={confirmItems(pending)}
           cta={acting ? '바꾸는 중…' : '진행'}
-          danger={pending.kind === 'disabled' && pending.disabled}
+          danger={pending.kind === 'delete' || (pending.kind === 'disabled' && pending.disabled)}
           onCancel={() => {
             setPending(null);
             setActionError(null);

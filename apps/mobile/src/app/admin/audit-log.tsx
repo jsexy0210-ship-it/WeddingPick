@@ -143,7 +143,7 @@ export default function AuditLogScreen() {
     <Page
       title="감사 기록"
       sub={`모든 자동 결정의 근거 · ${RETENTION_DAYS}일 보관`}
-      action={{ label: '새로 고침', onPress: reload }}
+      action={{ label: '새로고침', onPress: reload, permission: 'view' }}
     >
       <DelayedLoader active={loading} size={40} />
       {!loading && error ? <LoadError message={error} onRetry={reload} /> : null}

@@ -163,7 +163,7 @@ export default function AutomationScreen() {
           ? `주기 작업 ${workflows.length}개 · 마지막 실행과 결과`
           : '주기 작업 · 마지막 실행과 결과'
       }
-      action={{ label: '새로 고침', onPress: reload }}
+      action={{ label: '새로고침', onPress: reload, permission: 'view' }}
     >
       <DelayedLoader active={loading} size={40} />
       {!loading && error ? <LoadError message={error} onRetry={reload} /> : null}

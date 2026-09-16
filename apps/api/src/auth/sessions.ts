@@ -2,6 +2,7 @@ import { createHash, randomBytes } from 'node:crypto';
 
 import type { AgeVerifiedVia } from '@weddingpick/domain';
 import type { Pool } from 'pg';
+import { ApiError } from '../errors';
 
 import type { VerifiedIdentity } from './identity-provider';
 
@@ -43,6 +44,10 @@ export async function signIn(
     let userId = existing.rows[0]?.user_id;
 
     if (userId) {
+      const { rows: state } = await client.query<{ suspended_at: Date | null }>(
+        'SELECT suspended_at FROM structured.users WHERE id = $1 FOR UPDATE', [userId]
+      );
+      if (state[0]?.suspended_at) throw new ApiError('forbidden', '이용이 정지된 계정이에요. 고객센터로 문의해주세요.');
       await client.query(
         `UPDATE identity.identities SET
            last_login_at = now(), email = COALESCE($3, email),
@@ -221,6 +226,7 @@ export async function resolveSession(pool: Pool, token: string): Promise<Session
     `SELECT s.user_id,
             (a.id IS NOT NULL) AS activated
      FROM identity.active_sessions s
+     JOIN structured.users u ON u.id = s.user_id AND u.suspended_at IS NULL
      LEFT JOIN structured.active_users a ON a.id = s.user_id
      WHERE s.token_hash = $1`,
     [hashToken(token)]

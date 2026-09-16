@@ -350,7 +350,7 @@ export async function dashboard(pool: Pool): Promise<Dashboard> {
     },
     {
       key: 'ai-usage',
-      label: 'AI 사용량 · 비용',
+      label: '분석 사용량 · 비용',
       mode: '비용',
       value: `$${spentUsd.toFixed(2)}`,
       unit: '이번 달',
@@ -369,7 +369,7 @@ export async function dashboard(pool: Pool): Promise<Dashboard> {
       label: '가격 통계',
       mode: '지표',
       value: proofCount.toLocaleString('ko-KR'),
-      unit: '건 데이터',
+      unit: '건',
       note: `업체 ${proofVendorCount.toLocaleString('ko-KR')}곳`,
     },
     {

@@ -223,7 +223,7 @@ async function loadVendorDetail(pool: Pool, vendorId: string, viewerId: string |
                  ORDER BY i.is_representative DESC, i.created_at LIMIT 1) AS image_url,
             (SELECT count(*) FROM structured.comparable_quotes c WHERE c.vendor_id = v.id)
               AS comparable_quote_count
-     FROM structured.vendors v WHERE v.id = $1`,
+     FROM structured.vendors v WHERE v.id = $1 AND v.deleted_at IS NULL`,
     [vendorId]
   );
 
@@ -678,7 +678,7 @@ async function loadSponsored(
         * "AI가 멋대로 광고 스위치를 올리는 일 금지"가 여기까지 와야 뜻이 있다.
         */
        JOIN ads.tier_state t ON t.tier = p.tier AND t.state = 'live'
-       WHERE p.surface = 'search'
+       WHERE p.surface = 'search' AND v.deleted_at IS NULL
          AND EXISTS (SELECT 1 FROM ads.production_gate g WHERE g.id = true AND g.activated)
          AND (p.category IS NULL OR $1::text IS NULL OR p.category::text = $1::text)
          AND (p.region IS NULL OR $2::text IS NULL OR p.region = $2::text)
@@ -726,7 +726,7 @@ async function loadConditionStats(
   | { available: true; condition: string; axes: number; price: ReturnType<typeof discloseAmounts> }
 > {
   const vendor = await pool.query<{ category: string; region: string }>(
-    'SELECT category, region FROM structured.vendors WHERE id = $1',
+    'SELECT category, region FROM structured.vendors WHERE id = $1 AND deleted_at IS NULL',
     [vendorId]
   );
 
@@ -824,7 +824,7 @@ async function loadConditionStats(
       const { vendorId } = request.params;
 
       const { rows } = await context.pool.query<{ id: string }>(
-        'SELECT id FROM structured.vendors WHERE id = $1',
+        'SELECT id FROM structured.vendors WHERE id = $1 AND deleted_at IS NULL',
         [vendorId]
       );
 
@@ -855,7 +855,7 @@ async function loadConditionStats(
       const { vendorId } = request.params;
 
       const vendorCheck = await context.pool.query<{ id: string }>(
-        'SELECT id FROM structured.vendors WHERE id = $1',
+        'SELECT id FROM structured.vendors WHERE id = $1 AND deleted_at IS NULL',
         [vendorId]
       );
 
@@ -916,7 +916,7 @@ async function loadConditionStats(
       const { vendorId } = request.params;
 
       const vendorCheck = await context.pool.query<{ id: string }>(
-        'SELECT id FROM structured.vendors WHERE id = $1',
+        'SELECT id FROM structured.vendors WHERE id = $1 AND deleted_at IS NULL',
         [vendorId]
       );
 

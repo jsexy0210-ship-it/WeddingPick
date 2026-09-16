@@ -67,7 +67,7 @@ function isRevenueData(d: unknown): d is RevenueData {
   );
 }
 
-const SHAPE_ERROR = '서버가 이 화면이 읽는 모양으로 답하지 않았어요. 서버의 수익 집계를 확인해주세요.';
+const SHAPE_ERROR = '수익 현황을 불러오지 못했어요. 잠시 뒤 다시 시도해주세요.';
 
 export default function RevenueScreen() {
   const [data, setData] = useState<RevenueData | null>(null);
@@ -118,11 +118,13 @@ export default function RevenueScreen() {
     num: f.value,
   }));
 
+  if (BACKEND_PENDING) return <Page title="수익 현황" sub="개발 준비 중"><PendingBackendNotice actions="수익 집계" reason="수익 집계 기능을 준비하고 있어요. 아직 실제 매출과 정산 내역을 확인할 수 없어요." /></Page>;
+
   return (
     <Page
       title="수익 현황"
       sub={data?.period}
-      action={{ label: '새로 고침', onPress: reload }}
+      action={{ label: '새로고침', onPress: reload, permission: 'view' }}
     >
       <DelayedLoader active={loading} size={40} />
       {!loading && error ? <LoadError message={error} onRetry={reload} /> : null}
@@ -140,7 +142,7 @@ export default function RevenueScreen() {
           {BACKEND_PENDING ? (
             <PendingBackendNotice
               actions="수익 집계"
-              reason="구독 · 매출을 담는 곳이 아직 없어서 이 화면의 수는 모두 0으로 나와요. 집계가 붙으면 실제 수로 바뀌어요."
+              reason="개발 준비 중입니다. 수익 집계가 연결되지 않아 현재 표시된 0은 실제 매출이 아니에요."
             />
           ) : null}
           {/*
@@ -181,13 +183,13 @@ export default function RevenueScreen() {
 
           <CardGrid>
             <Card
-              title="퍼널"
+              title="단계별 전환"
               sub={data.period}
               full
               note="막대는 가장 큰 단계를 기준으로 그린 모양이에요. 실제 수는 아래 목록에 있어요."
             >
               {funnel.length === 0 ? (
-                <EmptyState title="집계된 퍼널이 없어요" detail="이번 기간에 셀 것이 아직 없어요." />
+                <EmptyState title="집계된 전환 내역이 없어요" detail="이번 기간에 셀 것이 아직 없어요." />
               ) : (
                 <>
                   <Bars items={bars} />

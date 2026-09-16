@@ -1,4 +1,6 @@
 import type { Pool, PoolClient } from 'pg';
+import { VENDOR_CATEGORIES, WEDDING_REGIONS } from '@weddingpick/domain';
+import { z } from 'zod';
 
 import { ApiError, notFound } from './errors';
 
@@ -26,7 +28,7 @@ import { ApiError, notFound } from './errors';
  */
 
 /** 화면이 그리는 상태 넷. `structured.vendors`의 컬럼 조합에서 끌어낸다. */
-export type VendorStatus = 'active' | 'closed' | 'suspended' | 'merged';
+export type VendorStatus = 'active' | 'closed' | 'suspended' | 'merged' | 'deleted';
 
 /** 관리자가 직접 고를 수 있는 상태. 「병합됨」은 병합의 결과일 뿐 고르는 것이 아니다. */
 export const SETTABLE_STATUSES = ['active', 'closed', 'suspended'] as const;
@@ -76,10 +78,11 @@ type VendorRow = {
   closed_at: Date | null;
   suspended_at: Date | null;
   merged_into_vendor_id: string | null;
+  deleted_at: Date | null;
 };
 
 const VENDOR_COLUMNS = `id, name, category::text AS category, is_active,
-                        closed_at, suspended_at, merged_into_vendor_id`;
+                        closed_at, suspended_at, merged_into_vendor_id, deleted_at`;
 
 /**
  * 컬럼 조합에서 상태 하나를 끌어낸다.
@@ -94,7 +97,9 @@ export function vendorStatus(row: {
   closed_at: Date | null;
   suspended_at: Date | null;
   merged_into_vendor_id: string | null;
+  deleted_at?: Date | null;
 }): VendorStatus {
+  if (row.deleted_at) return 'deleted';
   if (row.merged_into_vendor_id !== null) return 'merged';
   if (row.is_active) return 'active';
   if (row.suspended_at !== null) return 'suspended';
@@ -131,6 +136,8 @@ const ACTION_LABEL: Record<string, string> = {
   name: '상호 변경',
   status: '영업 상태 변경',
   merged_into_vendor_id: '업체 병합',
+  created: '업체 등록',
+  deleted_at: '업체 삭제',
 };
 
 /**
@@ -187,6 +194,7 @@ export type AdminVendor = {
   id: string;
   name: string;
   category: string;
+  region: string;
   status: VendorStatus;
   dataCount: number;
   mergedInto: string | null;
@@ -206,10 +214,10 @@ const HISTORY_PER_VENDOR = 10;
  */
 export async function listVendors(pool: Pool): Promise<{ vendors: AdminVendor[]; total: number }> {
   const { rows } = await pool.query<
-    VendorRow & { data_count: string; merged_into_name: string | null }
+    VendorRow & { region: string; data_count: string; merged_into_name: string | null }
   >(
-    `SELECT v.id, v.name, v.category::text AS category, v.is_active,
-            v.closed_at, v.suspended_at, v.merged_into_vendor_id,
+    `SELECT v.id, v.name, v.region, v.category::text AS category, v.is_active,
+            v.closed_at, v.suspended_at, v.merged_into_vendor_id, v.deleted_at,
             m.name AS merged_into_name,
             (SELECT COUNT(*) FROM structured.price_reports pr
               WHERE pr.vendor_id = v.id AND pr.rejected_at IS NULL)
@@ -263,6 +271,7 @@ export async function listVendors(pool: Pool): Promise<{ vendors: AdminVendor[];
       id: r.id,
       name: r.name,
       category: r.category,
+      region: r.region,
       status: vendorStatus(r),
       dataCount: Number(r.data_count),
       // 화면은 대상 업체를 사람이 읽어야 하므로 id가 아니라 이름을 준다.
@@ -294,6 +303,56 @@ async function writeChangeLog(
 
 // ─── 상호 변경 ──────────────────────────────────────────────────────────────
 
+export const createVendorSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  category: z.enum(VENDOR_CATEGORIES),
+  region: z.enum(WEDDING_REGIONS),
+});
+
+export async function createVendor(pool: Pool, input: z.infer<typeof createVendorSchema>, operatorId: string) {
+  const data = createVendorSchema.parse(input);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { rows } = await client.query<{ id: string }>(
+      `INSERT INTO structured.vendors (name, category, region, source, admin_locked)
+       VALUES ($1, $2::vendor_category, $3, 'vendor_official', true)
+       ON CONFLICT (normalized_name, region) DO NOTHING RETURNING id`,
+      [data.name, data.category, data.region]
+    );
+    if (!rows[0]) throw new ApiError('conflict', '같은 이름과 지역의 업체가 이미 있어요. 삭제된 업체도 다시 등록할 수 없어요.');
+    const id = rows[0].id;
+    await writeChangeLog(client, { vendorId: id, field: 'created', oldValue: null, newValue: data.name,
+      operatorId, note: '관리자 직접 등록' });
+    await client.query('COMMIT');
+    return { id, ...data, status: 'active' as const };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally { client.release(); }
+}
+
+export async function deleteVendor(pool: Pool, vendorId: string, reason: string, operatorId: string) {
+  requireUuid(vendorId, '업체');
+  if (!reason.trim()) throw new ApiError('invalid_request', '삭제 사유를 입력해주세요.');
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const vendor = await loadVendor(client, vendorId, true);
+    if (!vendor) throw notFound('업체');
+    if (!vendor.deleted_at) {
+      await client.query('UPDATE structured.vendors SET deleted_at = now(), is_active = false, admin_locked = true WHERE id = $1', [vendorId]);
+      await writeChangeLog(client, { vendorId, field: 'deleted_at', oldValue: vendorStatus(vendor), newValue: 'deleted',
+        operatorId, note: reason.trim() });
+    }
+    await client.query('COMMIT');
+    return { id: vendorId, status: 'deleted' as const, note: '공개 목록에서 제외했어요. 기존 제보·후기·Pick과 변경 이력은 보존돼요.' };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally { client.release(); }
+}
+
 export async function renameVendor(
   pool: Pool,
   vendorId: string,
@@ -309,6 +368,7 @@ export async function renameVendor(
     await client.query('BEGIN');
     const vendor = await loadVendor(client, vendorId, true);
     if (!vendor) throw notFound('업체');
+    if (vendor.deleted_at) throw new ApiError('conflict', '삭제된 업체는 수정할 수 없습니다.');
 
     // 병합된 업체의 상호를 고치는 것은 흡수된 껍데기에 손대는 것이라 뜻이 없다.
     if (vendor.merged_into_vendor_id !== null) {
@@ -358,6 +418,7 @@ export async function setVendorStatus(
     await client.query('BEGIN');
     const vendor = await loadVendor(client, vendorId, true);
     if (!vendor) throw notFound('업체');
+    if (vendor.deleted_at) throw new ApiError('conflict', '삭제된 업체는 수정할 수 없습니다.');
 
     if (vendor.merged_into_vendor_id !== null) {
       throw new ApiError('conflict', '병합된 업체는 수정할 수 없습니다.');
@@ -440,6 +501,7 @@ async function loadMergePair(
   if (!source) throw notFound('업체');
   const target = rows.get(targetId);
   if (!target) throw notFound('병합할 업체');
+  if (source.deleted_at || target.deleted_at) throw new ApiError('conflict', '삭제된 업체는 병합할 수 없습니다.');
 
   if (source.merged_into_vendor_id !== null) {
     throw new ApiError('conflict', '이미 병합된 업체입니다.');

@@ -22,6 +22,8 @@ const consentKeys = CONSENT_ITEMS.map((item) => item.key) as [string, ...string[
 export const completeSignupRequestSchema = z.object({
   /** 동의한 항목. 필수가 하나라도 빠지면 거절한다. */
   consents: z.array(z.enum(consentKeys)),
+  /** 화면에서 확인한 문서 버전. 공개본이 바뀌면 다시 확인하도록 한다. */
+  versions: z.record(z.string(), z.string()).optional(),
 });
 
 export const consentItemSchema = z.object({

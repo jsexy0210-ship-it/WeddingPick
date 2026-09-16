@@ -1,5 +1,8 @@
 import { MISSION_COMPLETE_REWARD_NOTIFICATION, REWARDS, REWARD_PAYOUT_COPY } from '@weddingpick/domain';
 import { router } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { getEventNotices } from '@/api/client';
 
 import { ErrorView } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
@@ -65,6 +68,14 @@ const S = {
  * 운영이 바뀌면 전부 틀린다(SPEC §11.3). 응답에 없는 숫자(«27/40커플 남음»)도 적지 않는다.
  */
 export default function BenefitsScreen() {
+  const [notices, setNotices] = useState<{ id: string; title: string; description: string }[]>([]);
+  const [noticeError, setNoticeError] = useState(false);
+  useFocusEffect(useCallback(() => {
+    let cancelled = false;
+    void getEventNotices().then(({ events }) => { if (!cancelled) { setNotices(events); setNoticeError(false); } })
+      .catch(() => { if (!cancelled) setNoticeError(true); });
+    return () => { cancelled = true; };
+  }, []));
   const { me, rewards, draw, payout, loading, error, reload } = useBenefitData();
 
   if (error) return <ErrorView message={error} onRetry={reload} />;
@@ -88,6 +99,8 @@ export default function BenefitsScreen() {
 
       <Section gap="events">
         <CardList>
+          {notices.map((notice) => <NoteBox key={notice.id} title={notice.title} body={notice.description} />)}
+          {noticeError ? <NoteBox title="이벤트 안내를 불러오지 못했어요" body="잠시 후 다시 확인해주세요." /> : null}
           {payout && (payout.receivableKrw > 0 || payout.open) ? (
             <CampaignCard
               brand={!payout.open}

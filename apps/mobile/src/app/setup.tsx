@@ -1,5 +1,6 @@
 import {
   STYLE_PICK_LIMIT_TOAST,
+  SITE_ORIGIN,
   preparationSkippedToast,
   skippedPreparationCategories,
   combineRegion,
@@ -10,7 +11,7 @@ import {
 } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BackHandler, Pressable, StyleSheet, View } from 'react-native';
+import { BackHandler, Linking, Pressable, StyleSheet, View } from 'react-native';
 
 import { ApiError, completeSetup, completeSignup, getCurrentUser, getSignupState } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
@@ -123,6 +124,8 @@ export default function SetupScreen() {
   const prepWarnedRef = useRef<string | null>(null);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [consentReview, setConsentReview] = useState<{ item: string; label: string; version: string }[] | null>(null);
+  const [reviewedConsents, setReviewedConsents] = useState<string[]>([]);
 
   useEffect(() => {
     void loadOnboardingAnswers().then((saved) => {
@@ -293,7 +296,10 @@ export default function SetupScreen() {
           return;
         }
         if (!signup.activated) {
-          const completed = await completeSignup({ consents: ['terms', 'privacy'] });
+          if (consentReview && consentReview.some((item) => !reviewedConsents.includes(item.item))) {
+            throw new Error('변경된 필수 약관을 확인하고 동의해주세요.');
+          }
+          const completed = await completeSignup({ consents: ['terms', 'privacy'], versions: Object.fromEntries((consentReview ?? signup.items).map((item) => [item.item, item.version])) });
           if (!completed.activated) throw new Error(errorCopy['general.body']);
         }
 
@@ -332,6 +338,17 @@ export default function SetupScreen() {
 
       router.replace('/');
     } catch (caught) {
+      if (caught instanceof ApiError && caught.status === 409) {
+        setReviewedConsents([]);
+        try {
+          const latest = await getSignupState();
+          setConsentReview(latest.items.filter((item) => item.required));
+        } catch {
+          setConsentReview([]);
+          setError('변경된 약관을 불러오지 못했어요. 다시 시도해주세요.');
+          return;
+        }
+      }
       // 세션이 끝났으면(401) 이 화면에 머물 이유가 없다 — 로그인으로 보낸다.
       if (caught instanceof ApiError && caught.status === 401) {
         router.replace('/login');
@@ -428,6 +445,16 @@ export default function SetupScreen() {
         onNext={() => void finish()}
         error={error}>
         <QuestionHead lines={DONE_TITLE_LINES} />
+        {consentReview ? <View style={styles.section}>
+          <ThemedText type="t5">변경된 약관을 확인해주세요</ThemedText>
+          {consentReview.map((item) => <View key={item.item} style={styles.summaryRow}>
+            <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: reviewedConsents.includes(item.item) }}
+              onPress={() => setReviewedConsents((list) => list.includes(item.item) ? list.filter((key) => key !== item.item) : [...list, item.item])}>
+              <ThemedText>{reviewedConsents.includes(item.item) ? '동의함' : '동의하기'} · {item.label}</ThemedText>
+            </Pressable>
+            <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(`${SITE_ORIGIN}/${item.item}.html`)}><ThemedText>내용 보기</ThemedText></Pressable>
+          </View>)}
+        </View> : null}
 
         <View style={styles.section}>
           <View style={[styles.summary, { backgroundColor: theme.backgroundElement }]}>

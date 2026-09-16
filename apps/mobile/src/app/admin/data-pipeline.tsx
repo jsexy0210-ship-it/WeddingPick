@@ -1,5 +1,6 @@
+import { useAdminAccess, AdminAccountActions } from './_ui';
 /**
- * WP-ADM-010 데이터 · 제보 처리 현황
+ * WP-ADM-010 제보 처리
  * 자동 처리 건수 · 단계별 적체 · 실패 큐 · 재처리
  */
 import { useEffect, useState } from 'react';
@@ -19,6 +20,7 @@ type PipelineData = {
 };
 
 export default function DataPipelineScreen() {
+  const { canEdit } = useAdminAccess();
   const [data, setData] = useState<PipelineData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -86,10 +88,11 @@ export default function DataPipelineScreen() {
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <Text style={styles.title}>데이터 · 제보 처리 현황</Text>
+        <Text style={styles.title}>제보 처리</Text>
         <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
-          <Text style={styles.refreshText}>새로 고침</Text>
+          <Text style={styles.refreshText}>새로고침</Text>
         </Pressable>
+        <AdminAccountActions />
       </View>
 
       {/* 재처리 결과. 「지금 봐야 할 것이 맨 위」 — v3.27 관리자 공통 규칙. */}
@@ -155,12 +158,12 @@ export default function DataPipelineScreen() {
 
           {/* 실패 큐 */}
           <View style={styles.failQueueHeader}>
-            <Text style={styles.sectionTitle}>실패 큐</Text>
+            <Text style={styles.sectionTitle}>처리 실패 목록</Text>
             {data.failedQueue.length > 0 && (
               <Pressable
                 style={[styles.retryAllBtn, (retrying === 'all') && styles.btnDisabled]}
                 onPress={() => void retryAll()}
-                disabled={retrying !== null}
+                disabled={!canEdit || retrying !== null}
               >
                 <Text style={styles.retryAllText}>
                   {retrying === 'all' ? '처리 중…' : '전체 재처리'}
@@ -170,7 +173,7 @@ export default function DataPipelineScreen() {
           </View>
           <View style={styles.card}>
             {data.failedQueue.length === 0 ? (
-              <Text style={styles.emptyText}>실패 큐 비어 있어요.</Text>
+              <Text style={styles.emptyText}>처리하지 못한 제보가 없어요.</Text>
             ) : (
               <>
                 <View style={styles.tableHead}>
@@ -192,7 +195,7 @@ export default function DataPipelineScreen() {
                       <Pressable
                         style={[styles.inlineBtn, (retrying === item.id) && styles.btnDisabled]}
                         onPress={() => void retryItem(item.id)}
-                        disabled={retrying !== null}
+                        disabled={!canEdit || retrying !== null}
                       >
                         <Text style={styles.inlineBtnText}>
                           {retrying === item.id ? '…' : '재처리'}

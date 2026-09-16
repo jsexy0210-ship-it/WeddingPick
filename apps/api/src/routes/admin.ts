@@ -5,11 +5,14 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
 import type { MarketingChannel, MarketingFormat } from '@weddingpick/api-contract';
+import { marketingChannelSchema, marketingFormatSchema } from '@weddingpick/api-contract';
 import { disclosureStage, type DisclosureStage } from '@weddingpick/domain';
 import * as marketingContent from '../marketing/content';
 import * as marketingStore from '../marketing/store';
 import * as adAdmin from '../ad-admin';
 import * as adminOps from '../admin-ops';
+import * as contentAdmin from '../content-admin';
+import { publishedLegalBody } from '@weddingpick/domain';
 import * as aiCostAdmin from '../ai-cost-admin';
 import { currentUserId, requireOperatorUser } from '../auth/plugin';
 import { isKnownSourceKey } from '../public-data/sources';
@@ -33,6 +36,7 @@ import * as vendorAdmin from '../vendor-admin';
 import * as vendorClaimAdmin from '../vendor-claim-admin';
 import * as verificationAdmin from '../verification-admin';
 import * as withdrawalAdmin from '../withdrawal-admin';
+import { registerAdminUserStateRoutes } from './admin-user-state';
 
 /**
  * 관리자 콘솔 라우트. 최종통합정책 v2.0 H장.
@@ -147,6 +151,7 @@ function mapCopyrightBasis(
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function registerAdminRoutes(app: FastifyInstance, context: AppContext): void {
+  registerAdminUserStateRoutes(app, context);
   const auth = { preHandler: requireOperatorUser(context) };
 
   /** 도구 함수의 일반 Error를 사람이 읽는 400으로 바꾼다. */
@@ -1070,7 +1075,8 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
     let idx = 1;
 
     if (filter === 'withdrawn') clauses.push('u.deleted_at IS NOT NULL');
-    else if (filter === 'active') clauses.push('u.deleted_at IS NULL');
+    else if (filter === 'active') clauses.push('u.deleted_at IS NULL AND u.suspended_at IS NULL');
+    else if (filter === 'suspended') clauses.push('u.deleted_at IS NULL AND u.suspended_at IS NOT NULL');
 
     if (search) {
       clauses.push(
@@ -1106,6 +1112,7 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
       activated_at: Date | null;
       created_at: Date;
       deleted_at: Date | null;
+      suspended_at: Date | null;
       is_operator: boolean;
       pick_verified: boolean;
       provider: string | null;
@@ -1117,7 +1124,9 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
       failure_attempts: number | null;
     }>(
       `SELECT
-         u.id, u.display_name, u.activated_at, u.created_at, u.deleted_at, u.is_operator,
+         u.id, u.display_name, u.activated_at, u.created_at, u.deleted_at, u.suspended_at,
+         (u.is_operator OR EXISTS (SELECT 1 FROM structured.admin_accounts a WHERE a.user_id = u.id)
+          OR EXISTS (SELECT 1 FROM identity.identities ai WHERE ai.user_id = u.id AND ai.provider = 'admin')) AS is_operator,
          EXISTS (
            SELECT 1 FROM structured.usable_payment_proofs p WHERE p.reporter_user_id = u.id
          ) AS pick_verified,
@@ -1164,6 +1173,7 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
         activatedAt: r.activated_at?.toISOString() ?? null,
         lastLoginAt: r.last_login_at?.toISOString() ?? null,
         deletedAt: r.deleted_at?.toISOString() ?? null,
+        suspendedAt: r.suspended_at?.toISOString() ?? null,
         isOperator: r.is_operator,
         pickVerified: r.pick_verified,
         withdrawal: r.withdrawal_status
@@ -1188,6 +1198,16 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
    * 있었다 — 즉 표가 언제나 비어 있었다. 조회조차 되지 않고 있었던 셈이다.
    */
   app.get('/v1/admin/vendors', auth, async () => vendorAdmin.listVendors(context.pool));
+
+  app.post('/v1/admin/vendors', auth, async (request, reply) => {
+    const input = vendorAdmin.createVendorSchema.parse(request.body);
+    return reply.code(201).send(await vendorAdmin.createVendor(context.pool, input, currentUserId(request)));
+  });
+
+  app.delete<{ Params: { id: string } }>('/v1/admin/vendors/:id', auth, async (request) => {
+    const { reason } = z.object({ reason: z.string().trim().min(1).max(1000) }).parse(request.body);
+    return vendorAdmin.deleteVendor(context.pool, request.params.id, reason, currentUserId(request));
+  });
 
   /*
    * 병합하면 무엇이 몇 건 옮겨 가는지 세어서 돌려준다. 아무것도 바꾸지 않는다.
@@ -1273,13 +1293,15 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
 
   // ─── Ads ──────────────────────────────────────────────────────────────────
   app.get('/v1/admin/ads', auth, async () => adminOps.adPlacements(context.pool));
-  app.post('/v1/admin/ads', auth, async () => {
-    return { id: randomUUID() };
+  app.post('/v1/admin/ads', auth, async (request) => {
+    return contentAdmin.saveAd(context.pool, null, contentAdmin.adBody.parse(request.body), currentUserId(request));
   });
-  app.patch<{ Params: { id: string } }>('/v1/admin/ads/:id', auth, async (_req, reply) => {
+  app.patch<{ Params: { id: string } }>('/v1/admin/ads/:id', auth, async (request, reply) => {
+    await contentAdmin.saveAd(context.pool, z.uuid().parse(request.params.id), contentAdmin.adBody.parse(request.body), currentUserId(request));
     return reply.status(204).send();
   });
-  app.delete<{ Params: { id: string } }>('/v1/admin/ads/:id', auth, async (_req, reply) => {
+  app.delete<{ Params: { id: string } }>('/v1/admin/ads/:id', auth, async (request, reply) => {
+    await contentAdmin.deleteAd(context.pool, z.uuid().parse(request.params.id), currentUserId(request));
     return reply.status(204).send();
   });
 
@@ -1440,9 +1462,27 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   });
 
   // ─── Campaigns ────────────────────────────────────────────────────────────
-  app.get('/v1/admin/campaigns', auth, async () => adminOps.campaignGrants(context.pool));
-  app.post('/v1/admin/campaigns', auth, async () => {
-    return { id: randomUUID() };
+  app.get('/v1/admin/campaigns', auth, async () => ({
+    ...await adminOps.campaignGrants(context.pool), events: await contentAdmin.listEvents(context.pool),
+  }));
+  app.get('/v1/events', async (_request, reply) => {
+    reply.header('Cache-Control', 'no-store');
+    const { rows } = await context.pool.query(`SELECT id,title,description FROM structured.admin_events
+      WHERE deleted_at IS NULL AND status='active'
+        AND (now() AT TIME ZONE 'Asia/Seoul')::date BETWEEN starts_on AND ends_on
+      ORDER BY created_at DESC`);
+    return { events: rows };
+  });
+  app.post('/v1/admin/campaigns', auth, async (request) => {
+    return contentAdmin.saveEvent(context.pool, null, contentAdmin.eventBody.parse(request.body), currentUserId(request));
+  });
+  app.patch<{ Params: { id: string } }>('/v1/admin/campaigns/:id', auth, async (request, reply) => {
+    await contentAdmin.saveEvent(context.pool, z.uuid().parse(request.params.id), contentAdmin.eventBody.parse(request.body), currentUserId(request));
+    return reply.status(204).send();
+  });
+  app.delete<{ Params: { id: string } }>('/v1/admin/campaigns/:id', auth, async (request, reply) => {
+    await contentAdmin.deleteEvent(context.pool, z.uuid().parse(request.params.id), currentUserId(request));
+    return reply.status(204).send();
   });
 
   /*
@@ -1640,26 +1680,36 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
 
   // ─── Marketing ────────────────────────────────────────────────────────────
   app.get('/v1/admin/marketing', auth, async () => {
-    try {
-      const [items, summary] = await Promise.all([
+      const [items, summary, sources] = await Promise.all([
         marketingStore.listJobs(context.pool, 50),
         marketingStore.getSummary(context.pool),
+        marketingStore.listSources(context.pool),
       ]);
-      return { summary, items };
-    } catch {
-      // DB 없을 때 빈 응답 (개발 환경)
-      return {
-        summary: { generated: 0, simulated: 0, failed: 0, failRate: 0 },
-        items: [],
-      };
-    }
+      return { summary, items, sources, facts: marketingContent.VERIFIED_FACTS };
+  });
+  app.post('/v1/admin/marketing', auth, async (request) => {
+    const input = z.object({ sourceId: z.string().trim().min(1), channel: marketingChannelSchema,
+      format: marketingFormatSchema, title: z.string().trim().min(1).max(200), body: z.string().trim().min(1).max(20000),
+    }).parse(request.body);
+    const source = await marketingStore.getSource(context.pool, input.sourceId);
+    if (!source || !source.active) throw notFound('활성 출처');
+    return { job: await marketingStore.createJob(context.pool, { ...input, utmUrl: null }) };
+  });
+  app.patch<{ Params: { jobId: string } }>('/v1/admin/marketing/:jobId', auth, async (request, reply) => {
+    const body = z.object({ title: z.string().trim().min(1).max(200), body: z.string().trim().min(1).max(20000) }).parse(request.body);
+    await marketingStore.editJob(context.pool, z.uuid().parse(request.params.jobId), body, currentUserId(request));
+    return reply.status(204).send();
+  });
+  app.delete<{ Params: { jobId: string } }>('/v1/admin/marketing/:jobId', auth, async (request, reply) => {
+    await marketingStore.deleteJob(context.pool, z.uuid().parse(request.params.jobId), currentUserId(request));
+    return reply.status(204).send();
   });
 
   app.post('/v1/admin/marketing/sources', auth, async (request) => {
-    const body = request.body as {
-      id: string; factIds: string[]; reviewed?: boolean;
-      expiresAt?: string; nextVerifyAt?: string; note?: string;
-    };
+    const body = z.object({ id: z.string().trim().min(1).max(200), factIds: z.array(z.string().trim().min(1)).min(1),
+      reviewed: z.boolean().optional(), expiresAt: z.iso.datetime().optional(), nextVerifyAt: z.iso.datetime().optional(),
+      note: z.string().max(2000).optional(),
+    }).parse(request.body);
     await marketingStore.registerSource(context.pool, {
       id: body.id,
       factIds: body.factIds,
@@ -1714,8 +1764,8 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   app.post<{ Params: { jobId: string } }>(
     '/v1/admin/marketing/:jobId/simulate',
     auth,
-    async (_request) => {
-      const r = await marketingStore.processScheduled(context.pool);
+    async (request) => {
+      const r = await marketingStore.processScheduled(context.pool, z.uuid().parse(request.params.jobId));
       return { ok: true, result: r };
     },
   );
@@ -1818,13 +1868,28 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
    * 막힌 자리는 **무엇이 되는지**를 말한다(v3.27). 「~할 수 없어요」로 끝나면
    * 운영자는 다음에 무엇을 해야 하는지 모른 채 화면을 닫는다.
    */
-  const termsUnavailable = async () => {
-    throw new ApiError(
-      'invalid_request',
-      '지금은 약관 조문과 판 이력을 조회할 수 있어요. 편집·공개는 앱 약관·동의 기록에 연결한 뒤 열려요.'
-    );
-  };
-  app.post('/v1/admin/terms', auth, termsUnavailable);
+  app.post('/v1/admin/terms', auth, async (request) => {
+    const { doc } = contentAdmin.draftBody.parse(request.body);
+    return contentAdmin.createTermsDraft(context.pool, doc, currentUserId(request));
+  });
+  app.delete<{ Params: { id: string } }>('/v1/admin/terms/:id/draft', auth, async (request, reply) => {
+    await contentAdmin.deleteTermsDraft(context.pool, request.params.id, currentUserId(request));
+    return reply.status(204).send();
+  });
+  app.post<{ Params: { id: string } }>('/v1/admin/terms/:id/clauses', auth, async (request, reply) => {
+    await contentAdmin.saveClause(context.pool, request.params.id, null, contentAdmin.clauseBody.parse(request.body), currentUserId(request));
+    return reply.status(201).send({ ok: true });
+  });
+  app.delete<{ Params: { id: string; clauseId: string } }>('/v1/admin/terms/:id/clauses/:clauseId', auth, async (request, reply) => {
+    await contentAdmin.deleteClause(context.pool, request.params.id, z.uuid().parse(request.params.clauseId), currentUserId(request));
+    return reply.status(204).send();
+  });
+  app.get<{ Params: { doc: string } }>('/v1/legal/:doc', async (request, reply) => {
+    if (!adminOps.isDocType(request.params.doc)) throw notFound('문서');
+    reply.header('Cache-Control', 'no-store');
+    const document = await contentAdmin.publicTerms(context.pool, request.params.doc);
+    return { document: document ? { ...document, html: publishedLegalBody(request.params.doc, document.sections) } : null };
+  });
 
   /** 조문 편집. 화면(`terms.tsx`)이 PUT으로 `{ body }`를 보낸다. */
   app.put<{ Params: { id: string; clauseId: string }; Body: unknown }>(
@@ -1834,7 +1899,8 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
       const doc = request.params.id;
 
       if (!adminOps.isDocType(doc)) throw notFound('문서');
-      return termsUnavailable();
+      await contentAdmin.saveClause(context.pool, doc, z.uuid().parse(request.params.clauseId), contentAdmin.clauseBody.parse(request.body), currentUserId(request));
+      return { ok: true };
     }
   );
 
@@ -1847,7 +1913,7 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
 
       if (!adminOps.isDocType(doc)) throw notFound('문서');
 
-      return termsUnavailable();
+      return adminOps.publishTerms(context.pool, doc, currentUserId(request), reasonBody.parse(request.body ?? {}).reason);
     }
   );
 
