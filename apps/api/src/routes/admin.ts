@@ -18,6 +18,7 @@ import * as expoAdmin from '../expo-admin';
 import { listExposEndingToday } from '../retention/expo-sweep';
 import * as faqAdmin from '../faq-admin';
 import * as weddingFeed from '../wedding-feed';
+import * as feedTaxonomy from '../wedding-feed-taxonomy';
 import { createGeminiFeedWriter } from '../analysis/wedding-feed-writer';
 import { NotAnOperator } from '../decisions';
 import { ApiError, forbidden, notFound } from '../errors';
@@ -1097,6 +1098,70 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
     auth,
     async (request, reply) => {
       await weddingFeed.remove(context.pool, request.params.id);
+
+      return reply.status(204).send();
+    }
+  );
+
+  /*
+   * 웨딩피드의 탭과 카테고리 — 2026-09-16 대표 지시 「탭별 카테고리별로 다 설정
+   * 가능해야한다」.
+   *
+   * **지우기는 둘이 다르다.** 탭을 지우면 딸린 카테고리가 소속만 잃고 남지만
+   * (`ON DELETE SET NULL`), 쓰는 카테고리는 아예 지워지지 않는다 — 지우면 그 글들이
+   * 어느 탭에도 안 뜨는데 화면은 멀쩡해 보인다. 끄기로 감춘다.
+   */
+  app.get('/v1/admin/wedding-feed/taxonomy', auth, async () =>
+    feedTaxonomy.listTaxonomy(context.pool)
+  );
+
+  app.post<{ Body: unknown }>('/v1/admin/wedding-feed/groups', auth, async (request) =>
+    feedTaxonomy.createGroup(context.pool, feedTaxonomy.parseGroupInput(request.body))
+  );
+
+  app.put<{ Params: { id: string }; Body: unknown }>(
+    '/v1/admin/wedding-feed/groups/:id',
+    auth,
+    async (request, reply) => {
+      await feedTaxonomy.updateGroup(
+        context.pool,
+        request.params.id,
+        feedTaxonomy.parseGroupInput(request.body)
+      );
+
+      return reply.status(204).send();
+    }
+  );
+
+  app.delete<{ Params: { id: string } }>(
+    '/v1/admin/wedding-feed/groups/:id',
+    auth,
+    async (request) => feedTaxonomy.removeGroup(context.pool, request.params.id)
+  );
+
+  app.post<{ Body: unknown }>('/v1/admin/wedding-feed/categories', auth, async (request) =>
+    feedTaxonomy.createCategory(context.pool, feedTaxonomy.parseCategoryInput(request.body))
+  );
+
+  app.put<{ Params: { id: string }; Body: unknown }>(
+    '/v1/admin/wedding-feed/categories/:id',
+    auth,
+    async (request, reply) => {
+      await feedTaxonomy.updateCategory(
+        context.pool,
+        request.params.id,
+        feedTaxonomy.parseCategoryInput(request.body)
+      );
+
+      return reply.status(204).send();
+    }
+  );
+
+  app.delete<{ Params: { id: string } }>(
+    '/v1/admin/wedding-feed/categories/:id',
+    auth,
+    async (request, reply) => {
+      await feedTaxonomy.removeCategory(context.pool, request.params.id);
 
       return reply.status(204).send();
     }
