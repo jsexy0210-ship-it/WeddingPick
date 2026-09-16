@@ -48,9 +48,29 @@
 | `GET /v1/admin/revenue` | 전부 0 | `revenue.tsx` 잠금 2곳 |
 | `GET /v1/admin/data/email-matching` | 전부 0 | `email-matching.tsx` 잠금 2곳 |
 
-이 셋은 규칙대로 「조회만」이 붙어 있다. **다만 `price-stats`와 `biz-queue`는 잠금
-표시가 있는데도 쓰기 단추가 하나씩 살아 있다** — `POST .../price-stats/:vendorId/recalc`는
-202 `{queued:true}`만 돌려주고 큐에 넣지 않는다.
+이 셋은 규칙대로 「조회만」이 붙어 있고 **쓰기 단추도 실제로 잠겨 있다.**
+
+**이 자리를 처음에 「단추가 살아 있다」고 잘못 적었다.** `const BACKEND_PENDING = true`
+선언만 grep해서 `terms.tsx` 하나만 걸렸는데, 나머지 넷은 `features/admin/pending-backend`
+에서 **가져다 쓰고 있었다.** 선언이 아니라 **쓰는 곳**을 세야 했다.
+
+    grep "const BACKEND_PENDING"   →  terms.tsx 하나          ← 틀린 셈
+    grep "BACKEND_PENDING"         →  다섯 화면              ← 맞는 셈
+
+`POST .../price-stats/:vendorId/recalc`가 202 `{queued:true}`만 돌려주고 큐에 넣지 않는
+것은 사실이지만, **그 단추는 눌리지 않는다.** 거짓말하는 여섯과 성격이 다르다 —
+저쪽은 잠기지도 않았고 서버가 성공을 돌려준다.
+
+## 라운지 탭에 서버 계약이 아예 없다
+
+`apps/mobile/src/app/(tabs)/community/index.tsx` — **루트 탭 다섯 중 하나다.**
+「리얼후기 · 웨딩피드 · 박람회」 세 탭인데 후기 · 피드 글을 보여줄 API가 없어
+**빈 상태만 그린다**(박람회만 `/search/expo`로 넘긴다).
+
+목록을 지어내지 않은 것은 옳다. 다만 **사용자 눈에는 탭 하나가 통째로 비어 있고**,
+관리자 화면과 달리 「조회만」 같은 표시를 붙일 자리도 아니다 — 사용자에게 「서버가
+아직 없어요」라고 말할 수는 없다. 무엇을 보여줄지가 제품 결정이라 대표님 판단이
+필요하다.
 
 ## 껍데기가 맞지만 «의도된» 것 — 고치지 않는다
 
