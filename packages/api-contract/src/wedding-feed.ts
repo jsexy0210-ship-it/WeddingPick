@@ -118,7 +118,7 @@ export const weddingFeedGenerateResponseSchema = z.object({
  * ── 탭과 카테고리 ─────────────────────────────────────────────────────────
  *
  * 2026-09-16 대표 지시 — 「웨딩피드는 탭별 카테고리별로 다 설정 가능해야한다」.
- * 값은 표(0420)에 있고 관리자가 고친다.
+ * 값은 표(0421)에 있고 관리자가 고친다.
  */
 
 export const weddingFeedGroupSchema = z.object({

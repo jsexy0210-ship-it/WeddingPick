@@ -89,7 +89,7 @@ export const WEDDING_FEED_TOPICS: readonly WeddingFeedTopic[] = [
  *
  * **값은 더 이상 여기 없다.** 2026-09-16까지 `WEDDING_FEED_GROUPS` 상수가 탭 넷을
  * 들고 있었고, 바꾸려면 코드를 고쳐 배포해야 했다. 같은 날 대표 지시 「웨딩피드는
- * 탭별 카테고리별로 다 설정 가능해야한다」로 표(0420)로 옮겼다 — 씨앗값이 그 상수와
+ * 탭별 카테고리별로 다 설정 가능해야한다」로 표(0421)로 옮겼다 — 씨앗값이 그 상수와
  * 글자 하나까지 같아서 옮긴 직후 화면이 그대로다.
  *
  * 옮기면서 남긴 판단은 그대로 유효하다. **웨딩홀 · 스튜디오 · 드레스를 각각 위로
@@ -201,7 +201,7 @@ export function shouldGenerate(input: {
  * 2026-09-16 대표 지시 — 「웨딩피드는 탭별 카테고리별로 다 설정 가능해야한다」.
  *
  * **값은 여기 없다.** 탭과 카테고리는 `structured.wedding_feed_groups` ·
- * `structured.wedding_feed_categories`에 있고(0420) 관리자가 고친다. 여기 남는
+ * `structured.wedding_feed_categories`에 있고(0421) 관리자가 고친다. 여기 남는
  * 것은 값이 아니라 **모양과 규칙**이다 — 서버 · 관리자 · 앱이 같은 것을 본다.
  */
 
