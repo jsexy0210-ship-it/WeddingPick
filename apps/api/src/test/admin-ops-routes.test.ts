@@ -499,7 +499,7 @@ describeWithDb('관리자 운영·시스템 라우트', () => {
        * (`infra/render-env.yml` — 약관 2026-09-10 · 방침 2026-09-21).
        */
       expect(docOf(body, 'terms')?.effectiveOn).toBe('2026-09-10');
-      expect(docOf(body, 'privacy')?.effectiveOn).toBe('2026-09-18');
+      expect(docOf(body, 'privacy')?.effectiveOn).toBe('2026-09-21');
 
       // 공개돼 있고 초안은 아직 없다 — 고치려면 새 초안을 만든다.
       expect(docOf(body, 'terms')?.currentVersion).toBe('v1.0');
@@ -546,20 +546,17 @@ describeWithDb('관리자 운영·시스템 라우트', () => {
        * 못한 것을 지어내지 않았다(#230). 확인되면 방침과 이 시험을 함께 고친다.
        */
       /*
-       * **상담 녹음은 이미 Google이 수탁자다**(main 현행). 제4항 「음성 인식·상담내용
-       * 분석」과 제5항 `Google LLC` 행이 그것이다.
+       * **수탁자는 Google이다. Anthropic은 걷혔다**(2026-09-16 대표 결정 · PR #230).
        *
-       * **문자인식·영상 분석은 아직 `Anthropic PBC`로 적혀 있다.** 클로드 API는
-       * 2026-09-15 대표 지시로 전면 폐기했고 지금 그 일도 제미나이가 한다
-       * (`analysis/gemini-analyzer.ts` · `gemini-payment-reader.ts`). **방침이
-       * 존재하지 않는 수탁자를 적고 있다** — 이 PR이 옮긴 것이 아니라 옮기기 전부터
-       * 그랬고, 고치는 것은 법적 문안이라 대표님·MASTER 몫이다(PR 본문 「판단 필요」).
+       * 클로드 API는 2026-09-15 대표 지시로 전면 폐기했고 문자인식·영상 분석과 상담
+       * 녹음 정리 둘 다 제미나이가 한다(`analysis/gemini-*.ts` · `no-claude.test.ts`).
+       * 방침이 그 사실을 따라잡은 것이 #230이고, 이 씨앗은 그 뒤의 본문이다.
        *
-       * 이 줄은 **그 사실을 잠가 둔다.** 고쳐지면 여기가 빨개지고, 그때 같이 고친다 —
-       * 조용히 넘어가서 잊히는 것을 막는 것이 목적이다.
+       * **없는 수탁자가 다시 들어오면 여기가 빨개진다.** 국외 이전은 고지가 이전보다
+       * 먼저라(제28조의8) 틀린 이름이 실린 채로 공개되면 그것이 미고지가 된다.
        */
-      expect(row('Google LLC')).toContain('상담 녹음');
-      expect(all).toContain('Anthropic PBC');
+      expect(all).toContain('Google LLC');
+      expect(all).not.toContain('Anthropic');
 
       // 수탁자 목록과 국외 이전, 둘 다 지우면 안 되는 절로 찍혀 있다.
       expect(clauses.filter((c) => c.removalWarning !== null)).toHaveLength(2);
@@ -865,7 +862,7 @@ describeWithDb('관리자 운영·시스템 라우트', () => {
         const response = await test.app.inject({ method: 'GET', url: '/v1/legal/privacy' });
         expect(
           (response.json() as { document: { effectiveOn: string } }).document.effectiveOn
-        ).toBe('2026-09-18');
+        ).toBe('2026-09-21');
       });
 
       /* 마케팅은 조문이 없어 공개된 적이 없다. 초안을 내보내지 않는다. */
