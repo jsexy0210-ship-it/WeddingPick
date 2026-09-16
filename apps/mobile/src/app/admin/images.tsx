@@ -220,7 +220,7 @@ export function ImagesPanel() {
                 items={[
                   { key: 'homepage', name: '업체 공식 채널', meta: '홈페이지 · 인스타그램 · 블로그', num: '자동', numKind: 'ok' },
                   { key: 'provided', name: '업체 제공', meta: 'WP-BIZ-005 자료 제공으로 받은 것', num: '자동', numKind: 'ok' },
-                  { key: 'public', name: '공공 데이터', meta: '공공누리 1~4유형', num: '자동', numKind: 'ok' },
+                  { key: 'public', name: '공공데이터', meta: '공공누리 1~4유형', num: '자동', numKind: 'ok' },
                   { key: 'crawl', name: '크롤링', meta: '출처를 특정할 수 없는 것', num: '불가', numKind: 'bad' },
                 ]}
               />
