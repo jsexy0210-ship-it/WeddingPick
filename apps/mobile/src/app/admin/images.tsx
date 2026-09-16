@@ -9,6 +9,7 @@ import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
 
 import { DelayedLoader } from '@/features/loading/delayed-loader';
+import { formatCount } from '@weddingpick/domain';
 import { apiFetch } from './_api';
 import {
   Card,
@@ -186,7 +187,7 @@ export function ImagesPanel() {
             title={
               pending === 0
                 ? '노출을 막고 있는 것이 없어요'
-                : `권리 미확인 ${pending}건이 노출을 막고 있어요`
+                : `권리 미확인 ${formatCount(pending)}건이 노출을 막고 있어요`
             }
             detail={
               pending === 0
@@ -197,10 +198,10 @@ export function ImagesPanel() {
 
           <KpiRow
             items={[
-              { label: '수집', value: `${data.summary.total}장`, note: '전체' },
-              { label: '권리 확인', value: `${data.summary.licensed}장`, note: '노출 가능', kind: 'ok' },
-              { label: '권리 미확인', value: `${pending}장`, note: '노출 차단 중', kind: pending === 0 ? 'ok' : 'bad' },
-              { label: '매칭 신뢰도 낮음', value: `${lowMatch}장`, note: `${MATCH_FLOOR} 미만`, kind: 'brand' },
+              { label: '수집', value: `${formatCount(data.summary.total)}장`, note: '전체' },
+              { label: '권리 확인', value: `${formatCount(data.summary.licensed)}장`, note: '노출 가능', kind: 'ok' },
+              { label: '권리 미확인', value: `${formatCount(pending)}장`, note: '노출 차단 중', kind: pending === 0 ? 'ok' : 'bad' },
+              { label: '매칭 신뢰도 낮음', value: `${formatCount(lowMatch)}장`, note: `${MATCH_FLOOR} 미만`, kind: 'brand' },
             ]}
           />
 

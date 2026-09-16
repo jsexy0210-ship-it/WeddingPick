@@ -93,6 +93,18 @@ const NO_CONTRACT = new Set([
   /* 박람회 관리(0410) — 관리자 전용이라 사용자 계약이 없다. 위 admin 넷과 같은 자리다. */
   'GET /v1/admin/expos',
   'GET /v1/admin/expos/deletion-preview',
+  /*
+   * 관리자 화면 전수 조사(2026-09-16)에서 더한 일곱. 위 admin 항목과 같은 자리다 —
+   * 응답 모양을 정하는 것은 `apps/api`의 타입이라 여기서 검사할 스키마가 없다.
+   * 그전까지 이 일곱은 fixture가 없어서 화면 본문이 「API … → 404」로만 찍혔다.
+   */
+  'GET /v1/admin/faq',
+  'GET /v1/admin/marketing',
+  'GET /v1/admin/data/images',
+  'GET /v1/admin/vendors',
+  'GET /v1/admin/data/pipeline',
+  'GET /v1/admin/pii-reviews',
+  'GET /v1/admin/policy-engine',
   'GET /v1/weddings/:weddingId/candidates/removed',
 ]);
 
