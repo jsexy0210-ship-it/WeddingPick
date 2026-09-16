@@ -188,7 +188,7 @@ export function RollbackPanel() {
                 ? '조치하지 못했어요'
                 : needsPerson === 0
                 ? '사람이 되돌려야 하는 건은 없어요'
-                : `사람이 볼 변경 ${needsPerson}건이 있어요`
+                : `사람이 볼 변경 ${formatCount(needsPerson)}건이 있어요`
             }
             detail={
               actionError

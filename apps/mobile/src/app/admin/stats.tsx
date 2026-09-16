@@ -115,7 +115,7 @@ function StatsPanel() {
   }));
 
   return (
-    <Page embedded title="이상 거래" sub="자동 차단 후 목록 · 최근 7일">
+    <Page embedded title="이상치·조작 탐지" sub="자동 차단 후 목록 · 최근 7일">
       {loading ? null : error ? <LoadError message={error} onRetry={reload} /> : null}
 
       {!loading && !error && data ? (
@@ -164,13 +164,13 @@ function StatsPanel() {
 
 const TABS: AdminTabDef[] = [
   { key: 'price-stats', label: '가격 통계', readOnly: true },
-  { key: 'stats', label: '이상 거래' },
+  { key: 'stats', label: '이상치 탐지' },
   { key: 'revenue', label: '수익 현황', readOnly: true },
   { key: 'ai-usage', label: '분석 비용' },
 ];
 
 /**
- * 「통계·수익」 — 가격 통계 · 이상 거래 · 수익 현황 · 분석 비용을 탭 넷으로 묶는다.
+ * 「통계·수익」 — 가격 통계 · 이상치·조작 탐지 · 수익 현황 · 분석 비용을 탭 넷으로 묶는다.
  * 넷 다 조회 전용 집계 화면이라 사이드바 「조회」 묶음 안에서만 옮긴 것과 같다 —
  * 조작 화면과 섞이지 않는다. **가격 통계 · 수익 현황은 「조회만」 딱지가 붙는다**
  * (넷 중 둘 — 읽기는 되지만 화면 안에서 쓰기 단추가 잠겨 있다).

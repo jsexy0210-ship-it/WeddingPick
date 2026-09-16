@@ -31,7 +31,7 @@ import { ImagesPanel } from './images';
 import { BizQueuePanel } from './biz-queue';
 import { EmailMatchingPanel } from './email-matching';
 import { ExposPanel } from './expos';
-import { formatCount } from '@weddingpick/domain';
+import { formatCount, VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
 
 type VendorStatus = 'active' | 'closed' | 'suspended' | 'merged';
 type HistoryItem = { at: string; action: string; note: string };
@@ -47,6 +47,19 @@ type Vendor = {
 };
 
 type VendorListData = { vendors: Vendor[]; total: number };
+
+/**
+ * 업종 이름은 domain 한 곳(`VENDOR_CATEGORY_LABEL`)에서만 가져온다 —
+ * `stats.tsx`의 `formatCat`과 같은 자리다. 서버는 DB enum(`hall` · `snap`)을
+ * 그대로 주는데, 그것을 그대로 그리면 표에 「hall」이 뜬다. 운영자가 읽는 이름은
+ * 「웨딩홀」이고, 같은 것을 두 이름으로 부르지 않는다(2026-09-11 대표 지시).
+ *
+ * 모르는 값이 오면 코드를 그대로 보여 준다 — 관리자 화면이라 감추기보다 드러내는
+ * 쪽이 맞다.
+ */
+function formatCat(category: string) {
+  return (VENDOR_CATEGORY_LABEL as Record<string, string>)[category] ?? category;
+}
 
 /**
  * 병합하면 무엇이 몇 건 옮겨 가는지. 서버가 세어서 준다.
@@ -206,7 +219,7 @@ function VendorsPanel() {
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <Text style={styles.title}>데이터 · 업체 관리</Text>
+        <Text style={styles.title}>업체 관리</Text>
         <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
           <Text style={styles.refreshText}>새로 고침</Text>
         </Pressable>
@@ -238,7 +251,7 @@ function VendorsPanel() {
               <Text style={[styles.th, styles.colName]}>업체명</Text>
               <Text style={[styles.th, styles.colCategory]}>카테고리</Text>
               <Text style={[styles.th, styles.colStatus]}>상태</Text>
-              <Text style={[styles.th, styles.colCount]}>데이터</Text>
+              <Text style={[styles.th, styles.colCount]}>제보</Text>
             </View>
             {filtered.map((v, i) => (
               <Pressable
@@ -247,11 +260,11 @@ function VendorsPanel() {
                 onPress={() => selectVendor(v)}
               >
                 <Text style={[styles.td, styles.colName]} numberOfLines={1}>{v.name}</Text>
-                <Text style={[styles.td, styles.colCategory]}>{v.category}</Text>
+                <Text style={[styles.td, styles.colCategory]}>{formatCat(v.category)}</Text>
                 <Text style={[styles.td, styles.colStatus, { color: STATUS_COLOR[v.status] }]}>
                   {STATUS_LABEL[v.status]}
                 </Text>
-                <Text style={[styles.td, styles.colCount]}>{v.dataCount}</Text>
+                <Text style={[styles.td, styles.colCount]}>{formatCount(v.dataCount)}</Text>
               </Pressable>
             ))}
           </ScrollView>
@@ -263,7 +276,7 @@ function VendorsPanel() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
             <Text style={styles.modalTitle}>{selected?.name}</Text>
-            <Text style={styles.modalSub}>{selected?.id} · {selected?.category}</Text>
+            <Text style={styles.modalSub}>{selected?.id} · {selected ? formatCat(selected.category) : ''}</Text>
 
             <Text style={styles.fieldLabel}>상호 변경</Text>
             <TextInput
@@ -348,7 +361,7 @@ function VendorsPanel() {
 
             {mergePreview?.categoryDiffers && (
               <Text style={styles.mergeWarn}>
-                업종이 서로 달라요 ({mergePreview.source.category} · {mergePreview.target.category}).
+                업종이 서로 달라요 ({formatCat(mergePreview.source.category)} · {formatCat(mergePreview.target.category)}).
               </Text>
             )}
 
