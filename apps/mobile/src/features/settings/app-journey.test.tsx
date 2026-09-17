@@ -16,7 +16,17 @@ jest.mock('@/api/client', () => ({
   getSettings: jest.fn(), updateSettings: jest.fn(), searchVendors: jest.fn(), listVendorRegions: jest.fn(),
 }));
 jest.mock('@/components/back-bar', () => ({ BackBar: 'BackBar' }));
-jest.mock('@/features/auth/use-session', () => ({ useSession: () => ({ signOut: jest.fn() }) }));
+/*
+ * 세션 상태를 시험마다 바꿔 끼운다. `jest.mock`은 끌어올려지므로 이름이 `mock`으로
+ * 시작해야 밖의 값을 읽을 수 있다.
+ *
+ * 기본은 로그인된 상태다 — 아래 시험 대부분이 화면 내용을 보는 것이고, 로그아웃이면
+ * 관문에 걸려 화면이 안 그려진다.
+ */
+const mockSession: { state: { status: string; kind?: string } } = { state: { status: 'signedIn' } };
+jest.mock('@/features/auth/use-session', () => ({
+  useSession: () => ({ state: mockSession.state, refresh: jest.fn(), signOut: jest.fn() }),
+}));
 jest.mock('@/features/settings/version', () => ({ APP_VERSION: '1.0.0' }));
 jest.mock('@/features/common/bottom-sheet', () => ({ BottomSheet: 'BottomSheet', SHEET_PANEL: {} }));
 jest.mock('@/features/wedding/screen-kit', () => ({ NavBar: 'NavBar' }));
@@ -106,8 +116,28 @@ describe.each([['알림 설정', NotificationSettingsScreen], ['계정', Account
 });
 
 it('폐기된 수동 가격 제보 링크는 Pick 인증 동의로 연결한다', async () => {
+  mockSession.state = { status: 'signedIn' };
   await mount(<PriceReportScreen />);
   expect(tree.root.findByType('Redirect' as never).props.href).toBe('/capture/payment/consent');
+});
+
+/*
+ * 2026-09-17 전수 검수에서 잡힌 것. 넘기기만 하는 화면이 로그인을 안 보면, 앞서
+ * `/login`으로 간 주소를 이 `<Redirect>`가 덮어써서 **로그아웃 상태로 안쪽 화면에
+ * 들어간다.** `app/_layout.tsx`의 관문은 한 번만 돌기 때문에 되돌려 주지 않는다.
+ *
+ * 같은 모양이 `my/membership.tsx`에도 있고 그쪽이 실제로 새 나갔다 —
+ * 만료 토큰으로 열면 미션 화면의 오류 화면에 멈췄다. 이쪽은 주소에 `[vendorId]`가
+ * 들어가 검수 대상(정적 62장)에서 빠져 있었을 뿐이다.
+ */
+it('로그아웃 상태면 넘기지 않고 로그인으로 보낸다', async () => {
+  mockSession.state = { status: 'signedOut' };
+  try {
+    await mount(<PriceReportScreen />);
+    expect(tree.root.findByType('Redirect' as never).props.href).toBe('/login');
+  } finally {
+    mockSession.state = { status: 'signedIn' };
+  }
 });
 
 it('자동완성 업체조회 실패는 검색결과 없음 대신 오류를 표시하고 재시도한다', async () => {

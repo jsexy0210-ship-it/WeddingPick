@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-static.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-scale.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-semantic.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/typography.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/dimension.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/motion.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/base.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/core/core.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/buttons/buttons.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/forms/forms.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/feedback/feedback.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/overlay/overlay.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/display/display.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/styles.css">
+<script src="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/_ds_bundle.js"></script>
+<script src="./image-slot.js"></script>
+<style>
+body{margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#ff6f61;text-decoration:none}
+a:hover{color:#e2564a}
+.nsb::-webkit-scrollbar{display:none}
+image-slot{background:#eaebee}
+image-slot::part(empty){display:none !important}
+</style>
+</helmet>
+
+<section style="{{ root }}">
+
+<div style="{{ intro }}">
+  <span style="{{ eyebrow }}">WeddingPick · Figma → 정본</span>
+  <span style="{{ h0 }}">라운지 · MY</span>
+  <span style="{{ lead }}">Figma Community.tsx · My.tsx를 정본 톤으로 옮겼습니다. 별점 · 영문 라벨 · FAB를 걷어냈고, 「가격 제보」는 Pick 인증으로 바꿨습니다. MY는 메뉴 나열에 그치지 않도록 상세 4화면을 함께 그렸습니다.</span>
+</div>
+
+<div style="{{ row }}">
+
+  <div style="{{ col }}">
+    <div style="{{ tag }}"><span style="{{ tagId }}">1</span>라운지 · 후기</div>
+    <span style="{{ tagDesc }}">별점 5개를 3축 답변 칩으로 바꿨습니다. 「가격 제보」 배지는 Pick 인증입니다. 우하단 FAB는 없애고 헤더 우측 텍스트로 옮겼습니다.</span>
+    <div style="{{ phone }}">
+      <div style="{{ bar }}"><span>9:41</span></div>
+      <div style="{{ navBar }}"><span style="{{ icoBack }}"></span><span style="{{ navTitle }}">라운지</span><span style="{{ headAct }}">글쓰기</span></div>
+      <div style="{{ segWrap }}"><sc-for list="{{ segReview }}" as="s" hint-placeholder-count="3"><span style="{{ s.style }}">{{ s.label }}</span></sc-for></div>
+      <div class="nsb" style="{{ chipBar }}"><sc-for list="{{ cats }}" as="c" hint-placeholder-count="7"><span style="{{ c.style }}">{{ c.label }}</span></sc-for></div>
+      <div class="nsb" style="{{ scroll }}">
+        <sc-for list="{{ reviews }}" as="r" hint-placeholder-count="2">
+          <div style="{{ revCard }}">
+            <div style="{{ revHead }}">
+              <span style="{{ revAvatar }}">{{ r.mark }}</span>
+              <div style="{{ revNameCol }}">
+                <div style="{{ revNameRow }}"><span style="{{ revName }}">{{ r.author }}</span><sc-if value="{{ r.verified }}" hint-placeholder-val="{{ true }}"><span style="{{ badgeVerify }}">Pick 인증</span></sc-if></div>
+                <span style="{{ revMeta }}">{{ r.vendor }} · {{ r.time }}</span>
+              </div>
+            </div>
+            <div style="{{ revAnswers }}"><sc-for list="{{ r.answers }}" as="a" hint-placeholder-count="3"><span style="{{ revChip }}">{{ a }}</span></sc-for></div>
+            <div style="{{ revImg }}"><image-slot id="{{ r.id }}" src="{{ r.src }}" shape="rect" placeholder=""></image-slot></div>
+            <span style="{{ revText }}">{{ r.text }}</span>
+            <div style="{{ revFoot }}"><span style="{{ r.likeStyle }}"><span style="{{ r.likeIcon }}"></span>{{ r.likes }}</span><span style="{{ revCmt }}"><span style="{{ icoChat }}"></span>{{ r.comments }}</span></div>
+          </div>
+        </sc-for>
+        <div style="height:24px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="{{ col }}">
+    <div style="{{ tag }}"><span style="{{ tagId }}">2</span>라운지 · 웨딩정보</div>
+    <span style="{{ tagDesc }}">Figma의 「01 · 02 · 03」 이니셜 타일을 실제 이미지로 바꿨습니다. TODAY'S PICK 검정 카드는 뺐습니다 — 홈에 같은 영역이 있습니다.</span>
+    <div style="{{ phone }}">
+      <div style="{{ bar }}"><span>9:41</span></div>
+      <div style="{{ navBar }}"><span style="{{ icoBack }}"></span><span style="{{ navTitle }}">라운지</span><span style="{{ headAct }}">글쓰기</span></div>
+      <div style="{{ segWrap }}"><sc-for list="{{ segFeed }}" as="s" hint-placeholder-count="3"><span style="{{ s.style }}">{{ s.label }}</span></sc-for></div>
+      <div class="nsb" style="{{ chipBar }}"><sc-for list="{{ cats }}" as="c" hint-placeholder-count="7"><span style="{{ c.style }}">{{ c.label }}</span></sc-for></div>
+      <div class="nsb" style="{{ scroll }}">
+        <sc-for list="{{ guides }}" as="g" hint-placeholder-count="4">
+          <div style="{{ guideRow }}">
+            <div style="{{ guideThumb }}"><image-slot id="{{ g.id }}" src="{{ g.src }}" shape="rect" placeholder=""></image-slot></div>
+            <div style="{{ guideCol }}">
+              <span style="{{ guideCat }}">{{ g.cat }}</span>
+              <span style="{{ guideTitle }}">{{ g.title }}</span>
+              <span style="{{ guideMeta }}">{{ g.meta }}</span>
+            </div>
+          </div>
+        </sc-for>
+        <div style="height:24px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="{{ col }}">
+    <div style="{{ tag }}"><span style="{{ tagId }}">3</span>라운지 · 박람회</div>
+    <span style="{{ tagDesc }}">「UPCOMING FAIR」 영문 라벨과 배너를 뺐습니다. 마감이 가까운 것에 D-day를 붙이고 지난 일정은 회색으로 내립니다. 출처를 하단에 적습니다.</span>
+    <div style="{{ phone }}">
+      <div style="{{ bar }}"><span>9:41</span></div>
+      <div style="{{ navBar }}"><span style="{{ icoBack }}"></span><span style="{{ navTitle }}">라운지</span><span style="{{ headAct }}">글쓰기</span></div>
+      <div style="{{ segWrap }}"><sc-for list="{{ segExpo }}" as="s" hint-placeholder-count="3"><span style="{{ s.style }}">{{ s.label }}</span></sc-for></div>
+      <div class="nsb" style="{{ scroll }}">
+        <div style="{{ sec }}">
+          <sc-for list="{{ expos }}" as="e" hint-placeholder-count="3">
+            <div style="{{ e.card }}">
+              <div style="{{ expoHead }}">
+                <div style="{{ expoCol }}">
+                  <span style="{{ e.nameStyle }}">{{ e.title }}</span>
+                  <span style="{{ expoMeta }}">{{ e.date }}</span>
+                  <span style="{{ expoMeta }}">{{ e.place }}</span>
+                </div>
+                <span style="{{ e.ddayStyle }}">{{ e.dday }}</span>
+              </div>
+              <sc-if value="{{ e.tag }}"><span style="{{ e.tagStyle }}">{{ e.tag }}</span></sc-if>
+            </div>
+          </sc-for>
+          <span style="{{ note }}">주최사 공지에서 모아요. 방문 전에 한 번 더 확인해주세요.</span>
+        </div>
+        <div style="height:24px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="{{ col }}">
+    <div style="{{ tag }}"><span style="{{ tagId }}">4</span>MY</div>
+    <span style="{{ tagDesc }}">설정 섹션을 없애고 프로필 카드를 눌러 들어가게 합니다. 메뉴 4글자는 띄어쓰기 없이 붙입니다.</span>
+    <div style="{{ phone }}">
+      <div style="{{ bar }}"><span>9:41</span></div>
+      <div style="{{ head }}"><span style="{{ h1 }}">MY</span></div>
+      <div class="nsb" style="{{ scroll }}">
+        <div style="{{ sec }}">
+          <div style="{{ profCard }}">
+            <div style="{{ profTop }}">
+              <span style="{{ profAvatar }}">지</span>
+              <div style="{{ profCol }}">
+                <div style="{{ profNameRow }}"><span style="{{ profName }}">김지수</span><span style="{{ badgeVerify }}">Pick 인증</span></div>
+                <span style="{{ profSub }}">2027.05.16(토) · 250일 남았어요</span>
+              </div>
+              <span style="{{ icoRight }}"></span>
+            </div>
+            <div style="{{ profDiv }}"></div>
+            <div style="{{ profRow }}"><span style="{{ profRowT }}">내 웨딩설정</span><span style="{{ icoRight }}"></span></div>
+          </div>
+        </div>
+        <sc-for list="{{ mySections }}" as="s" hint-placeholder-count="5">
+          <div style="{{ sec }}">
+            <span style="{{ secLabel }}">{{ s.title }}</span>
+            <div style="{{ listCard }}">
+              <sc-for list="{{ s.rows }}" as="r" hint-placeholder-count="4">
+                <div style="{{ r.rowStyle }}">
+                  <span style="{{ r.icon }}"></span>
+                  <span style="{{ myLabel }}">{{ r.label }}</span>
+                  <sc-if value="{{ r.count }}"><span style="{{ myCount }}">{{ r.count }}</span></sc-if>
+                  <sc-if value="{{ r.toggle }}" hint-placeholder-val="{{ false }}"><span style="{{ r.track }}"><span style="{{ knob }}"></span></span></sc-if>
+                  <sc-if value="{{ r.arrow }}" hint-placeholder-val="{{ true }}"><span style="{{ icoRight }}"></span></sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+        <div style="{{ secFoot }}">
+          <span style="{{ verRow }}">앱 버전 1.0.0</span>
+        </div>
+        <div style="height:24px"></div>
+      </div>
+      <div style="{{ tabBar }}"><sc-for list="{{ tabsMy }}" as="t" hint-placeholder-count="5"><div style="{{ tabCell }}"><span style="{{ t.icon }}"></span><span style="{{ t.label }}">{{ t.text }}</span></div></sc-for></div>
+    </div>
+  </div>
+
+  <div style="{{ col }}">
+    <div style="{{ tag }}"><span style="{{ tagIdWide }}">4-1</span>Pick 인증 내역</div>
+    <span style="{{ tagDesc }}">인증 결과를 상태별로 보여줍니다. 보완이 필요한 건에만 행동 버튼을 답니다. 반려는 이유를 적습니다.</span>
+    <div style="{{ phone }}">
+      <div style="{{ bar }}"><span>9:41</span></div>
+      <div style="{{ navBar }}"><span style="{{ icoBack }}"></span><span style="{{ navTitle }}">Pick 인증내역</span><span style="{{ navPad }}"></span></div>
+      <div class="nsb" style="{{ scroll }}">
+        <div style="{{ sec }}">
+          <div style="{{ statRow }}">
+            <sc-for list="{{ certStats }}" as="c" hint-placeholder-count="3">
+              <div style="{{ statCell }}"><span style="{{ c.numStyle }}">{{ c.n }}</span><span style="{{ statLabel }}">{{ c.k }}</span></div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="{{ sec }}">
+          <sc-for list="{{ certs }}" as="c" hint-placeholder-count="4">
+            <div style="{{ certCard }}">
+              <div style="{{ certHead }}"><span style="{{ c.badge }}">{{ c.state }}</span><span style="{{ certDate }}">{{ c.date }}</span></div>
+              <div style="{{ certBody }}"><span style="{{ certName }}">{{ c.name }}</span><span style="{{ c.amtStyle }}">{{ c.amount }}</span></div>
+              <span style="{{ certNote }}">{{ c.note }}</span>
+              <sc-if value="{{ c.action }}"><span style="{{ certBtn }}">{{ c.action }}</span></sc-if>
+            </div>
+          </sc-for>
+        </div>
+        <div style="height:24px"></div>
+      </div>
+      <div style="{{ dockSingle }}"><span style="{{ ctaFull }}">새로 인증하기</span></div>
+    </div>
+  </div>
+
+  <div style="{{ col }}">
+    <div style="{{ tagRow }}"><span style="{{ tagIdWide }}">4-2</span><span style="{{ tagText }}">연결관리</span></div>
+    <span style="{{ tagDesc }}">같이 보는 것과 각자 보는 것을 토글로 나눕니다. 연결 끊기는 맨 아래 회색으로 두고 강조하지 않습니다.</span>
+    <div style="{{ phone }}">
+      <div style="{{ bar }}"><span>9:41</span></div>
+      <div style="{{ navBar }}"><span style="{{ icoBack }}"></span><span style="{{ navTitle }}">연결관리</span><span style="{{ navPad }}"></span></div>
+      <div class="nsb" style="{{ scroll }}">
+        <div style="{{ sec }}">
+          <div style="{{ coupleCard }}">
+            <span style="{{ coupleAvatars }}"><span style="{{ av1 }}">지</span><span style="{{ av2 }}">준</span></span>
+            <div style="{{ coupleCol }}">
+              <span style="{{ coupleName }}">준호님과 함께 준비 중</span>
+              <span style="{{ coupleMeta }}">8월 12일 연결 · 고른 곳 3곳 · 일정 5개</span>
+            </div>
+          </div>
+        </div>
+        <div style="{{ sec }}">
+          <span style="{{ secLabel }}">같이 보는 것</span>
+          <div style="{{ listCard }}">
+            <sc-for list="{{ shareOn }}" as="r" hint-placeholder-count="4">
+              <div style="{{ r.rowStyle }}"><span style="{{ myLabel }}">{{ r.label }}</span><span style="{{ r.track }}"><span style="{{ knob }}"></span></span></div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="{{ sec }}">
+          <span style="{{ secLabel }}">각자 보는 것</span>
+          <div style="{{ listCard }}">
+            <sc-for list="{{ shareOff }}" as="r" hint-placeholder-count="2">
+              <div style="{{ r.rowStyle }}"><span style="{{ myLabel }}">{{ r.label }}</span><span style="{{ r.track }}"><span style="{{ knob }}"></span></span></div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="{{ sec }}">
+          <div style="{{ listCard }}">
+            <div style="{{ rowPlain }}"><span style="{{ myLabel }}">변경 내역 보기</span><span style="{{ icoRight }}"></span></div>
+            <div style="{{ rowPlainLast }}"><span style="{{ myLabelDim }}">연결 끊기</span><span style="{{ icoRight }}"></span></div>
+          </div>
+        </div>
+        <div style="height:24px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="{{ col }}">
+    <div style="{{ tagRow }}"><span style="{{ tagIdWide }}">4-3</span><span style="{{ tagText }}">내 웨딩설정</span></div>
+    <span style="{{ tagDesc }}">온보딩에서 받은 다섯 가지를 그대로 보여주고 각각 바꿀 수 있게 합니다. 바꾸면 추천이 다시 계산된다고 하단에 적습니다.</span>
+    <div style="{{ phone }}">
+      <div style="{{ bar }}"><span>9:41</span></div>
+      <div style="{{ navBar }}"><span style="{{ icoBack }}"></span><span style="{{ navTitle }}">내 웨딩설정</span><span style="{{ navPad }}"></span></div>
+      <div class="nsb" style="{{ scroll }}">
+        <div style="{{ sec }}">
+          <div style="{{ listCard }}">
+            <sc-for list="{{ weddingSet }}" as="r" hint-placeholder-count="5">
+              <div style="{{ r.rowStyle }}">
+                <div style="{{ setCol }}"><span style="{{ setK }}">{{ r.k }}</span><span style="{{ setV }}">{{ r.v }}</span></div>
+                <span style="{{ icoRight }}"></span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="{{ sec }}">
+          <div style="{{ noteBox }}"><span style="{{ noteT }}">바꾸면 추천이 다시 계산돼요</span><span style="{{ noteS }}">지금까지 고른 곳과 지출 기록은 그대로 남아요.</span></div>
+        </div>
+        <div style="height:24px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="{{ col }}">
+    <div style="{{ tagRow }}"><span style="{{ tagIdWide }}">4-4</span><span style="{{ tagText }}">내가 쓴 후기</span></div>
+    <span style="{{ tagDesc }}">쓴 후기와 쓸 수 있는 곳을 나눕니다. 업체 반론이 달린 후기는 표시해서 확인을 유도합니다.</span>
+    <div style="{{ phone }}">
+      <div style="{{ bar }}"><span>9:41</span></div>
+      <div style="{{ navBar }}"><span style="{{ icoBack }}"></span><span style="{{ navTitle }}">내가 쓴 후기</span><span style="{{ navPad }}"></span></div>
+      <div class="nsb" style="{{ scroll }}">
+        <div style="{{ sec }}">
+          <span style="{{ secLabel }}">쓴 후기 2개</span>
+          <div style="{{ listCard }}">
+            <sc-for list="{{ myReviews }}" as="r" hint-placeholder-count="2">
+              <div style="{{ r.rowStyle }}">
+                <div style="{{ mrThumb }}"><image-slot id="{{ r.id }}" src="{{ r.src }}" shape="rect" placeholder=""></image-slot></div>
+                <div style="{{ mrCol }}"><span style="{{ mrName }}">{{ r.name }}</span><span style="{{ mrMeta }}">{{ r.meta }}</span></div>
+                <sc-if value="{{ r.badge }}"><span style="{{ badgeWarn }}">{{ r.badge }}</span></sc-if>
+                <span style="{{ icoRight }}"></span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="{{ sec }}">
+          <span style="{{ secLabel }}">쓸 수 있는 곳 2개</span>
+          <div style="{{ listCard }}">
+            <sc-for list="{{ canWrite }}" as="r" hint-placeholder-count="2">
+              <div style="{{ r.rowStyle }}">
+                <div style="{{ mrThumb }}"><image-slot id="{{ r.id }}" src="{{ r.src }}" shape="rect" placeholder=""></image-slot></div>
+                <div style="{{ mrCol }}"><span style="{{ mrName }}">{{ r.name }}</span><span style="{{ mrMeta }}">{{ r.meta }}</span></div>
+                <span style="{{ writeBtn }}">쓰기</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="height:24px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="{{ col }}">
+    <div style="{{ tagRow }}"><span style="{{ tagIdWide }}">4-5</span><span style="{{ tagText }}">프로필</span></div>
+    <span style="{{ tagDesc }}">MY 상단 프로필 카드를 누르면 들어옵니다. 설정 섹션을 흡수해 이름 · 알림 · 계정을 한 화면에서 다룹니다. 로그아웃과 탈퇴가 맨 아래입니다.</span>
+    <div style="{{ phone }}">
+      <div style="{{ bar }}"><span>9:41</span></div>
+      <div style="{{ navBar }}"><span style="{{ icoBack }}"></span><span style="{{ navTitle }}">프로필</span><span style="{{ navSave }}">저장</span></div>
+      <div class="nsb" style="{{ scroll }}">
+        <div style="{{ avatarSec }}">
+          <span style="{{ avatarBig }}">지</span>
+          <span style="{{ avatarAct }}">사진 바꾸기</span>
+        </div>
+        <div style="{{ sec }}">
+          <span style="{{ secLabel }}">기본</span>
+          <div style="{{ listCard }}">
+            <sc-for list="{{ profileBasic }}" as="r" hint-placeholder-count="2">
+              <div style="{{ r.rowStyle }}"><span style="{{ myLabel }}">{{ r.k }}</span><span style="{{ setVal }}">{{ r.v }}</span><span style="{{ icoRight }}"></span></div>
+            </sc-for>
+          </div>
+          <span style="{{ note }}">다른 사용자에게는 김OO처럼 일부만 보여요.</span>
+        </div>
+        <div style="{{ sec }}">
+          <span style="{{ secLabel }}">알림</span>
+          <div style="{{ listCard }}">
+            <sc-for list="{{ notiRows }}" as="r" hint-placeholder-count="3">
+              <div style="{{ r.rowStyle }}"><div style="{{ setCol }}"><span style="{{ notiT }}">{{ r.label }}</span><sc-if value="{{ r.sub }}"><span style="{{ notiS }}">{{ r.sub }}</span></sc-if></div><span style="{{ r.track }}"><span style="{{ knob }}"></span></span></div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="{{ sec }}">
+          <span style="{{ secLabel }}">계정</span>
+          <div style="{{ listCard }}">
+            <div style="{{ rowPlain }}"><span style="{{ kakaoMark }}">k</span><div style="{{ setCol }}"><span style="{{ notiT }}">카카오</span><span style="{{ notiS }}">ji***@kakao.com</span></div><span style="{{ badgeVerify }}">연결됨</span></div>
+            <div style="{{ rowPlain }}"><span style="{{ myLabel }}">로그아웃</span><span style="{{ icoRight }}"></span></div>
+            <div style="{{ rowPlainLast }}"><span style="{{ myLabelDim }}">회원 탈퇴</span><span style="{{ icoRight }}"></span></div>
+          </div>
+        </div>
+        <div style="height:24px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="{{ col }}">
+    <div style="{{ tagRow }}"><span style="{{ tagIdWide }}">4-6</span><span style="{{ tagText }}">스크랩</span></div>
+    <span style="{{ tagDesc }}">라운지에서 저장한 글이 쌓입니다. 업종 칩으로 거르고, 비어 있으면 라운지로 보냅니다.</span>
+    <div style="{{ phone }}">
+      <div style="{{ bar }}"><span>9:41</span></div>
+      <div style="{{ navBar }}"><span style="{{ icoBack }}"></span><span style="{{ navTitle }}">스크랩</span><span style="{{ navPad }}"></span></div>
+      <div class="nsb" style="{{ chipBar }}"><sc-for list="{{ savedCats }}" as="c" hint-placeholder-count="4"><span style="{{ c.style }}">{{ c.label }}</span></sc-for></div>
+      <div class="nsb" style="{{ scroll }}">
+        <sc-for list="{{ savedGuides }}" as="g" hint-placeholder-count="3">
+          <div style="{{ guideRow }}">
+            <div style="{{ guideThumb }}"><image-slot id="{{ g.id }}" src="{{ g.src }}" shape="rect" placeholder=""></image-slot></div>
+            <div style="{{ guideCol }}">
+              <span style="{{ guideCat }}">{{ g.cat }}</span>
+              <span style="{{ guideTitle }}">{{ g.title }}</span>
+              <span style="{{ guideMeta }}">{{ g.meta }}</span>
+            </div>
+            <span style="{{ icoBookmark }}"></span>
+          </div>
+        </sc-for>
+        <div style="height:24px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="{{ col }}">
+    <div style="{{ tagRow }}"><span style="{{ tagIdWide }}">4-7</span><span style="{{ tagText }}">문의하기</span></div>
+    <span style="{{ tagDesc }}">내역과 작성을 한 화면에 합쳤습니다. 지난 문의가 위에 쌓이고 아래에서 새로 씁니다. 답변 시간을 미리 적습니다.</span>
+    <div style="{{ phone }}">
+      <div style="{{ bar }}"><span>9:41</span></div>
+      <div style="{{ navBar }}"><span style="{{ icoBack }}"></span><span style="{{ navTitle }}">문의하기</span><span style="{{ navPad }}"></span></div>
+      <div class="nsb" style="{{ scroll }}">
+        <div style="{{ sec }}">
+          <span style="{{ secLabel }}">지난 문의 1건</span>
+          <div style="{{ listCard }}">
+            <sc-for list="{{ pastInquiries }}" as="p" hint-placeholder-count="1">
+              <div style="{{ p.rowStyle }}">
+                <div style="{{ setCol }}"><span style="{{ notiT }}">{{ p.q }}</span><span style="{{ notiS }}">{{ p.date }}</span></div>
+                <span style="{{ p.badge }}">{{ p.state }}</span>
+                <span style="{{ icoRight }}"></span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="{{ divider }}"></div>
+        <div style="{{ qBlock }}">
+          <span style="{{ qTitle }}">어떤 점이<br>궁금하세요?</span>
+        </div>
+        <div style="{{ sec }}">
+          <div style="{{ listCard }}">
+            <sc-for list="{{ inquiryTypes }}" as="t" hint-placeholder-count="5">
+              <div style="{{ t.rowStyle }}"><span style="{{ t.mark }}"></span><span style="{{ myLabel }}">{{ t.label }}</span></div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="{{ sec }}">
+          <span style="{{ secLabel }}">내용</span>
+          <div style="{{ textarea }}">Pick 인증을 올렸는데 아직 반영이 안 됐어요</div>
+        </div>
+        <div style="{{ sec }}">
+          <span style="{{ secLabel }}">사진 · 선택</span>
+          <div style="{{ photoRow }}"><span style="{{ photoAdd }}"><span style="{{ icoCam }}"></span></span></div>
+        </div>
+        <div style="{{ sec }}">
+          <div style="{{ noteBox }}"><span style="{{ noteT }}">평일 오전 10시부터 오후 6시까지 답변드려요</span><span style="{{ noteS }}">주말과 공휴일에 남긴 문의는 다음 영업일에 처리해요.</span></div>
+        </div>
+        <div style="height:24px"></div>
+      </div>
+      <div style="{{ dockSingle }}"><span style="{{ ctaFull }}">문의 보내기</span></div>
+    </div>
+  </div>
+
+  <div style="{{ colWide }}">
+    <div style="{{ tag }}"><span style="{{ tagId }}">5</span>Figma 원본에서 고친 것</div>
+    <span style="{{ tagDesc }}">정책 판단이 필요한 항목은 주황색입니다.</span>
+    <div style="{{ diffCard }}">
+      <div style="{{ diffHead }}"><span style="{{ dh1 }}">항목</span><span style="{{ dh2 }}">Figma 원본</span><span style="{{ dh3 }}">정본 적용</span><span style="{{ dh4 }}">근거</span></div>
+      <sc-for list="{{ diffs }}" as="d" hint-placeholder-count="14">
+        <div style="{{ diffRow }}"><span style="{{ dc1 }}">{{ d.k }}</span><span style="{{ dc2 }}">{{ d.a }}</span><span style="{{ d.bStyle }}">{{ d.b }}</span><span style="{{ dc3 }}">{{ d.why }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+
+</div>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:2000,&quot;height&quot;:1200}}">
+class Component extends DCLogic {
+  renderVals() {
+    const P = '#ff6f61';
+    const INK = '#212124';
+    const SUB = '#4d5159';
+    const MUTED = '#868b94';
+    const DIM = '#adb1ba';
+    const SEC = '#f2f3f6';
+    const REC = '#f7f8fa';
+    const BORDER = '#eaebee';
+    const AMBER = '#805217';
+    const GREEN = '#1aa174';
+    const DS = 'assets/seed-icons/';
+    const ICO = (n, sz, c) => 'display:inline-block;width:' + sz + 'px;height:' + sz + 'px;flex:0 0 ' + sz + 'px;background-color:' + c
+      + ';-webkit-mask:url(' + DS + n + '.svg) center/contain no-repeat;mask:url(' + DS + n + '.svg) center/contain no-repeat';
+
+    const IMG = {
+      urban: 'uploads/스타일 이미지/urban.png',
+      natural: 'uploads/스타일 이미지/natural.png',
+      romantic: 'uploads/스타일 이미지/romantic.png',
+      glam: 'uploads/스타일 이미지/glamorous.png'
+    };
+
+    const seg = (label, on) => ({ label,
+      style: 'flex:1;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;cursor:pointer;'
+        + (on ? 'background:#fff;color:' + INK + ';box-shadow:0 1px 3px rgba(0,27,55,.10);' : 'color:' + MUTED + ';') });
+
+    const cat = (label, on) => ({ label,
+      style: 'flex:0 0 auto;height:34px;padding:0 14px;border-radius:999px;display:inline-flex;align-items:center;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer;'
+        + (on ? 'background:' + INK + ';color:#fff;' : 'background:' + SEC + ';color:' + SUB + ';') });
+
+    const FILLED = ['home', 'search', 'heart', 'profile'];
+    const tab = (icon, text, on) => ({ icon: ICO(on && FILLED.indexOf(icon) >= 0 ? icon + '-fill' : icon, 24, on ? INK : MUTED), text,
+      label: 'font-size:12px;line-height:16px;font-weight:700;color:' + (on ? INK : MUTED) });
+
+    const rev = (id, src, mark, author, vendor, time, verified, answers, text, likes, comments, liked) => ({
+      id, src, mark, author, vendor, time, verified, answers, text, likes, comments,
+      likeStyle: 'display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:700;color:' + (liked ? P : SUB),
+      likeIcon: ICO(liked ? 'heart-fill' : 'heart', 18, liked ? P : SUB) });
+
+    const guide = (id, src, cat2, title, meta) => ({ id, src, cat: cat2, title, meta });
+
+    const expo = (title, date, place, dday, tag, past) => ({ title, date, place, dday, tag,
+      card: 'border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:12px;' + (past ? 'background:' + REC + ';' : 'border:1px solid ' + BORDER + ';background:#fff;'),
+      nameStyle: 'font-size:16px;font-weight:700;color:' + (past ? DIM : INK),
+      ddayStyle: 'font-size:14px;font-weight:700;white-space:nowrap;color:' + (past ? DIM : P),
+      tagStyle: 'align-self:flex-start;height:28px;padding:0 10px;border-radius:999px;background:' + SEC + ';color:' + SUB + ';display:inline-flex;align-items:center;font-size:12px;font-weight:700' });
+
+    const ROW = (last) => 'display:flex;align-items:center;gap:12px;min-height:52px;padding:0 16px;' + (last ? '' : 'box-shadow:inset 0 -1px 0 ' + BORDER + ';');
+    const my = (label, icon, o) => {
+      o = o || {};
+      return { label, icon: ICO(icon, 18, MUTED), count: o.count || '',
+        toggle: o.toggle || '', arrow: !o.toggle,
+        rowStyle: ROW(o.last),
+        track: o.toggle === 'on'
+          ? 'width:44px;height:26px;flex:0 0 44px;border-radius:999px;background:' + P + ';display:flex;align-items:center;justify-content:flex-end;padding:0 3px;box-sizing:border-box'
+          : 'width:44px;height:26px;flex:0 0 44px;border-radius:999px;background:#dcdee3;display:flex;align-items:center;padding:0 3px;box-sizing:border-box' };
+    };
+    const tgl = (label, on, last) => ({ label, rowStyle: ROW(last),
+      track: on
+        ? 'width:44px;height:26px;flex:0 0 44px;border-radius:999px;background:' + P + ';display:flex;align-items:center;justify-content:flex-end;padding:0 3px;box-sizing:border-box'
+        : 'width:44px;height:26px;flex:0 0 44px;border-radius:999px;background:#dcdee3;display:flex;align-items:center;padding:0 3px;box-sizing:border-box' });
+
+    const badgeS = k => 'padding:4px 9px;border-radius:4px;font-size:12px;font-weight:700;white-space:nowrap;'
+      + (k === 'ok' ? 'background:#e8faf6;color:' + GREEN + ';'
+        : k === 'warn' ? 'background:#ffe3ba;color:' + AMBER + ';'
+          : k === 'no' ? 'background:#ffe5e3;color:#e81607;' : 'background:' + SEC + ';color:' + SUB + ';');
+
+    const cert = (state, kind, date, name, amount, note, action) => ({ state, date, name, amount, note, action: action || '',
+      badge: badgeS(kind),
+      amtStyle: 'font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;color:' + (amount === '—' ? DIM : INK) });
+
+    const stat = (n, k, kind) => ({ n, k,
+      numStyle: 'font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;color:' + (kind === 'ok' ? GREEN : kind === 'warn' ? AMBER : INK) });
+
+    const mr = (id, src, name, meta, badge, last) => ({ id, src, name, meta, badge: badge || '', rowStyle: 'display:flex;align-items:center;gap:12px;min-height:72px;padding:12px 16px;' + (last ? '' : 'box-shadow:inset 0 -1px 0 ' + BORDER + ';') });
+
+    const RADIO = on => 'width:22px;height:22px;flex:0 0 22px;border-radius:999px;'
+      + (on
+        ? 'background:' + P + ';background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'3.4\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpath d=\'m5 12.5 4.5 4.5L19 7.5\'/%3E%3C/svg%3E");background-size:14px;background-position:center;background-repeat:no-repeat'
+        : 'box-shadow:inset 0 0 0 1.5px #dcdee3');
+    const diff = (k, a, b, why, warn) => ({ k, a, b, why,
+      bStyle: 'width:270px;flex:0 0 270px;font-size:13px;line-height:20px;font-weight:700;color:' + (warn ? AMBER : INK) });
+
+    return {
+      root: 'display:flex;flex-direction:column;gap:32px;padding:64px;width:max-content',
+      intro: 'display:flex;flex-direction:column;gap:10px;max-width:960px',
+      eyebrow: 'font-size:14px;line-height:19px;font-weight:700;color:' + P,
+      h0: 'font-size:40px;line-height:52px;font-weight:700;color:' + INK,
+      lead: 'font-size:17px;line-height:26px;color:' + SUB + ';text-wrap:pretty',
+      row: 'display:flex;gap:36px;align-items:flex-start;flex-wrap:wrap',
+      col: 'display:flex;flex-direction:column;gap:10px;width:430px',
+      colWide: 'display:flex;flex-direction:column;gap:10px;width:900px',
+      tag: 'height:26px;display:flex;align-items:center;gap:8px;font-size:18px;font-weight:700;color:' + INK + ';white-space:nowrap',
+      tagRow: 'height:26px;display:flex;align-items:center;gap:8px;white-space:nowrap',
+      tagText: 'font-size:18px;font-weight:700;color:' + INK,
+      tagId: 'width:26px;height:26px;flex:0 0 26px;border-radius:6px;background:' + INK + ';color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700',
+      tagIdWide: 'height:26px;flex:0 0 auto;padding:0 8px;border-radius:6px;background:' + MUTED + ';color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;white-space:nowrap',
+      tagDesc: 'height:66px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;line-height:21px;color:' + SUB + ';text-wrap:pretty',
+
+      phone: 'width:430px;height:932px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)',
+      bar: 'flex:0 0 44px;display:flex;align-items:center;padding:0 26px;font-size:14px;font-weight:700;color:' + INK,
+      head: 'flex:0 0 56px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 20px',
+      h1: 'font-size:26px;font-weight:700;color:' + INK,
+      headAct: 'font-size:15px;font-weight:700;color:' + P,
+      navBar: 'flex:0 0 56px;display:flex;align-items:center;gap:8px;padding:0 16px;box-shadow:inset 0 -1px 0 ' + BORDER,
+      navTitle: 'flex:1;min-width:0;text-align:center;font-size:16px;font-weight:700;color:' + INK,
+      navPad: 'width:40px;flex:0 0 40px',
+      icoBack: ICO('chevron-left', 24, INK),
+      icoRight: ICO('chevron-right', 16, DIM),
+      icoChat: ICO('chatting', 18, SUB),
+      scroll: 'flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;scrollbar-width:none',
+
+      segWrap: 'flex:0 0 auto;margin:0 20px 12px;padding:4px;border-radius:10px;background:' + SEC + ';display:flex;gap:2px',
+      segReview: [seg('후기', true), seg('웨딩정보', false), seg('박람회', false)],
+      segFeed: [seg('후기', false), seg('웨딩정보', true), seg('박람회', false)],
+      segExpo: [seg('후기', false), seg('웨딩정보', false), seg('박람회', true)],
+      chipBar: 'flex:0 0 auto;display:flex;gap:8px;padding:0 20px 14px;overflow-x:auto;scrollbar-width:none',
+      cats: [cat('전체', true), cat('웨딩홀'), cat('드레스'), cat('스튜디오'), cat('메이크업'), cat('예산'), cat('허니문')],
+
+      tabBar: 'flex:0 0 76px;display:flex;padding-top:8px;box-shadow:inset 0 1px 0 ' + BORDER,
+      tabCell: 'flex:1;display:flex;flex-direction:column;align-items:center;gap:4px',
+      tabsLounge: [tab('home', '홈', false), tab('search', '검색', false), tab('heart', 'Pick', false), tab('calendar', '웨딩노트', false), tab('profile', 'MY', false)],
+      tabsMy: [tab('home', '홈', false), tab('search', '검색', false), tab('heart', 'Pick', false), tab('calendar', '웨딩노트', false), tab('profile', 'MY', true)],
+
+      revCard: 'flex:0 0 auto;padding:18px 20px;display:flex;flex-direction:column;gap:12px;box-shadow:inset 0 -1px 0 ' + BORDER,
+      revHead: 'display:flex;align-items:center;gap:10px',
+      revAvatar: 'width:40px;height:40px;flex:0 0 40px;border-radius:999px;background:' + SEC + ';display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:' + SUB,
+      revNameCol: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:3px',
+      revNameRow: 'display:flex;align-items:center;gap:6px',
+      revName: 'font-size:15px;font-weight:700;color:' + INK,
+      revMeta: 'font-size:12px;color:' + MUTED,
+      badgeVerify: 'padding:3px 8px;border-radius:4px;background:#e8faf6;color:' + GREEN + ';font-size:11px;font-weight:700;white-space:nowrap',
+      badgeWarn: 'padding:3px 8px;border-radius:4px;background:#ffe3ba;color:' + AMBER + ';font-size:11px;font-weight:700;white-space:nowrap',
+      revAnswers: 'display:flex;flex-wrap:wrap;gap:6px',
+      revChip: 'height:26px;padding:0 10px;border-radius:999px;background:' + REC + ';display:inline-flex;align-items:center;font-size:12px;font-weight:700;color:' + SUB,
+      revImg: 'position:relative;width:100%;height:240px;border-radius:10px;overflow:hidden',
+      revText: 'font-size:15px;line-height:24px;color:' + SUB + ';text-wrap:pretty',
+      revFoot: 'display:flex;align-items:center;gap:18px',
+      revCmt: 'display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:700;color:' + SUB,
+      reviews: [
+        rev('lr-1', IMG.urban, '수', '수아와 도윤', '강남 A 스튜디오', '2시간 전', true,
+          ['빨랐어요', '기대 이상', '명확했어요'],
+          '세 곳을 비교하고 정했어요. 최종 금액도 웨딩픽에서 본 범위 안이었습니다.', 42, 8, true),
+        rev('lr-2', IMG.romantic, '하', '하린과 우진', '라비드레스', '1일 전', false,
+          ['적당했어요', '기대만큼', '보통이었어요'],
+          '피팅 전에 원하는 실루엣 세 장만 정해 갔어요. 생각이 명확할수록 빨랐습니다.', 29, 4, false)
+      ],
+
+      guideRow: 'flex:0 0 auto;display:flex;gap:14px;padding:16px 20px;box-shadow:inset 0 -1px 0 ' + BORDER,
+      guideThumb: 'width:88px;height:88px;flex:0 0 88px;border-radius:10px;overflow:hidden;position:relative',
+      guideCol: 'flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:4px',
+      guideCat: 'font-size:12px;font-weight:700;color:' + P,
+      guideTitle: 'font-size:15px;line-height:22px;font-weight:700;color:' + INK + ';display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden',
+      guideMeta: 'font-size:12px;color:' + MUTED,
+      guides: [
+        guide('lg-1', IMG.romantic, '드레스', '첫 피팅 전에 물어볼 여섯 가지', '읽는 데 4분'),
+        guide('lg-2', IMG.glam, '예산', '추가금을 줄이는 계약서 확인 항목', '읽는 데 5분'),
+        guide('lg-3', IMG.natural, '일정', '본식 4개월 전, 무엇부터 할까', '읽는 데 3분'),
+        guide('lg-4', IMG.urban, '스튜디오', '원본을 전부 받는 게 왜 중요한가', '읽는 데 3분')
+      ],
+
+      sec: 'flex:0 0 auto;padding:0 20px 20px;display:flex;flex-direction:column;gap:12px',
+      secFoot: 'flex:0 0 auto;padding:4px 20px 0;display:flex;flex-direction:column;align-items:center;gap:14px',
+      secLabel: 'font-size:13px;font-weight:700;color:' + MUTED,
+      note: 'font-size:13px;line-height:20px;color:' + MUTED + ';text-wrap:pretty',
+      expoHead: 'display:flex;align-items:flex-start;justify-content:space-between;gap:12px',
+      expoCol: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:4px',
+      expoMeta: 'font-size:13px;color:' + MUTED + ';font-variant-numeric:tabular-nums',
+      expos: [
+        expo('더 웨딩페어 코엑스', '9월 19일~20일', '코엑스 D홀', 'D-2', '사전등록 무료'),
+        expo('더현대 서울 웨딩위크', '9월 26일~27일', '더현대 서울 6층', 'D-9', '드레스 쇼케이스'),
+        expo('강남 웨딩박람회', '8월 30일 종료', '세텍', '종료', '', true)
+      ],
+
+      profCard: 'border-radius:10px;border:1px solid ' + BORDER + ';background:#fff;display:flex;flex-direction:column',
+      profTop: 'display:flex;align-items:center;gap:14px;padding:18px',
+      profAvatar: 'width:52px;height:52px;flex:0 0 52px;border-radius:999px;background:#fff5f2;color:' + P + ';display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700',
+      profCol: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:4px',
+      profNameRow: 'display:flex;align-items:center;gap:7px',
+      profName: 'font-size:18px;font-weight:700;color:' + INK,
+      profSub: 'font-size:13px;color:' + MUTED + ';font-variant-numeric:tabular-nums',
+      profDiv: 'height:1px;background:' + BORDER,
+      profRow: 'display:flex;align-items:center;gap:12px;min-height:52px;padding:0 18px',
+      profRowT: 'flex:1;font-size:15px;color:' + INK,
+
+      listCard: 'border-radius:10px;border:1px solid ' + BORDER + ';background:#fff;display:flex;flex-direction:column;overflow:hidden',
+      myLabel: 'flex:1;min-width:0;font-size:15px;color:' + INK + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      myLabelDim: 'flex:1;min-width:0;font-size:15px;color:' + DIM,
+      myCount: 'font-size:14px;font-weight:700;color:' + P + ';font-variant-numeric:tabular-nums',
+      knob: 'width:20px;height:20px;border-radius:999px;background:#fff',
+      rowPlain: 'display:flex;align-items:center;gap:12px;min-height:52px;padding:0 16px;box-shadow:inset 0 -1px 0 ' + BORDER,
+      rowPlainLast: 'display:flex;align-items:center;gap:12px;min-height:52px;padding:0 16px',
+      mySections: [
+        { title: '내 활동', rows: [
+          my('Pick 인증내역', 'check-fill', { count: '4' }),
+          my('내가 쓴 후기', 'edit', { count: '2' }),
+          my('스크랩', 'bookmark', { count: '3', last: true })
+        ] },
+        { title: '함께 준비하기', rows: [
+          my('연결관리', 'community', { last: true })
+        ] },
+        { title: '둘러보기', rows: [
+          my('라운지', 'chatting', { last: true })
+        ] },
+        { title: '고객지원', rows: [
+          my('FAQ', 'chatting'),
+          my('문의하기', 'chatting', { count: '1', last: true })
+        ] },
+        { title: '약관', rows: [
+          my('이용약관', 'edit'),
+          my('개인정보처리방침', 'edit', { last: true })
+        ] }
+      ],
+      verRow: 'font-size:13px;color:' + MUTED + ';font-variant-numeric:tabular-nums',
+      logout: 'font-size:13px;color:' + DIM + ';text-decoration:underline',
+
+      statRow: 'display:flex;gap:10px',
+      statCell: 'flex:1;border-radius:10px;background:' + REC + ';padding:16px 12px;display:flex;flex-direction:column;align-items:center;gap:3px',
+      statLabel: 'font-size:12px;color:' + MUTED + ';white-space:nowrap',
+      certStats: [stat('4', '반영됨', 'ok'), stat('1', '확인 중'), stat('1', '보완 필요', 'warn')],
+      certCard: 'border-radius:10px;border:1px solid ' + BORDER + ';padding:16px 18px;display:flex;flex-direction:column;gap:8px',
+      certHead: 'display:flex;align-items:center;justify-content:space-between;gap:12px',
+      certDate: 'font-size:12px;color:' + MUTED + ';font-variant-numeric:tabular-nums',
+      certBody: 'display:flex;align-items:baseline;justify-content:space-between;gap:12px',
+      certName: 'flex:1;min-width:0;font-size:16px;font-weight:700;color:' + INK + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      certNote: 'font-size:13px;line-height:20px;color:' + MUTED + ';text-wrap:pretty',
+      certBtn: 'align-self:flex-start;height:36px;padding:0 14px;border-radius:6px;background:' + P + ';color:#fff;display:inline-flex;align-items:center;font-size:14px;font-weight:700',
+      certs: [
+        cert('반영됨', 'ok', '8월 28일', '강남 A 스튜디오', '168만원', '실 제보에 반영됐어요. 이제 Pick 인증 회원이에요.'),
+        cert('확인 중', 'warn', '8월 30일', '라비드레스', '112만원', '금액과 자료가 맞는지 보고 있어요.'),
+        cert('보완 필요', 'warn', '8월 25일', '메종 브라이드', '—', '사진에서 날짜를 찾지 못했어요. 날짜만 알려주시면 바로 처리돼요.', '날짜 입력하기'),
+        cert('반려', 'no', '8월 12일', '청담 D 스튜디오', '—', '같은 자료가 이미 등록돼 있어요.')
+      ],
+
+      coupleCard: 'border-radius:10px;background:#fff5f2;padding:18px;display:flex;align-items:center;gap:14px',
+      coupleAvatars: 'display:flex;align-items:center;flex:0 0 auto',
+      av1: 'width:44px;height:44px;border-radius:999px;background:#ffe8e4;color:' + P + ';display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700',
+      av2: 'width:44px;height:44px;border-radius:999px;background:#fff;color:' + SUB + ';display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;margin-left:-12px;box-shadow:0 0 0 3px #fff5f2',
+      coupleCol: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:4px',
+      coupleName: 'font-size:16px;font-weight:700;color:' + INK,
+      coupleMeta: 'font-size:13px;color:' + MUTED + ';font-variant-numeric:tabular-nums',
+      shareOn: [tgl('고른 곳', true), tgl('일정', true), tgl('지출', true), tgl('메모', true, true)],
+      shareOff: [tgl('검색 기록', false), tgl('알림 설정', false, true)],
+
+      setCol: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:3px',
+      setK: 'font-size:13px;color:' + MUTED,
+      setV: 'font-size:15px;font-weight:700;color:' + INK + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      weddingSet: [
+        { k: '예식일', v: '2027.05.16(토) · 250일 남음', rowStyle: 'display:flex;align-items:center;gap:12px;min-height:64px;padding:0 16px;box-shadow:inset 0 -1px 0 ' + BORDER },
+        { k: '지역', v: '서울 강남구', rowStyle: 'display:flex;align-items:center;gap:12px;min-height:64px;padding:0 16px;box-shadow:inset 0 -1px 0 ' + BORDER },
+        { k: '준비 현황', v: '결정사 · 웨딩홀 · 스튜디오', rowStyle: 'display:flex;align-items:center;gap:12px;min-height:64px;padding:0 16px;box-shadow:inset 0 -1px 0 ' + BORDER },
+        { k: '예산', v: '1,000~2,000만원', rowStyle: 'display:flex;align-items:center;gap:12px;min-height:64px;padding:0 16px;box-shadow:inset 0 -1px 0 ' + BORDER },
+        { k: '스타일', v: '도시적인 · 자연스러운', rowStyle: 'display:flex;align-items:center;gap:12px;min-height:64px;padding:0 16px' }
+      ],
+      noteBox: 'border-radius:10px;background:' + REC + ';padding:18px;display:flex;flex-direction:column;gap:5px',
+      noteT: 'font-size:15px;font-weight:700;color:' + INK,
+      noteS: 'font-size:13px;line-height:20px;color:' + MUTED,
+
+      mrThumb: 'width:48px;height:48px;flex:0 0 48px;border-radius:8px;overflow:hidden;position:relative',
+      mrCol: 'flex:1;min-width:0;display:flex;flex-direction:column;gap:3px',
+      mrName: 'font-size:15px;font-weight:700;color:' + INK + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      mrMeta: 'font-size:12px;color:' + MUTED + ';font-variant-numeric:tabular-nums',
+      writeBtn: 'height:32px;padding:0 14px;border-radius:6px;background:' + P + ';color:#fff;display:inline-flex;align-items:center;font-size:13px;font-weight:700;white-space:nowrap',
+      myReviews: [
+        mr('mv-1', IMG.urban, '강남 A 스튜디오', '2026.09 · 도움돼요 14', '반론 1'),
+        mr('mv-2', IMG.glam, '더채플 강남', '2026.03 · 도움돼요 8', '', true)
+      ],
+      canWrite: [
+        mr('mw-1', IMG.romantic, '라비드레스', 'Pick 인증 완료 · 3월 4일'),
+        mr('mw-2', IMG.natural, '청담 헤메', 'Pick 인증 완료 · 4월 2일', '', true)
+      ],
+
+      dockSingle: 'flex:0 0 92px;padding:12px 20px;display:flex;box-shadow:inset 0 1px 0 ' + BORDER,
+      ctaFull: 'flex:1;height:56px;border-radius:6px;background:' + P + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700',
+
+      navSave: 'font-size:15px;font-weight:700;color:' + P + ';white-space:nowrap',
+      navTitleL: 'flex:1;min-width:0;text-align:center;font-size:16px;font-weight:700;color:' + INK,
+      qBlock2: '',
+      avatarSec: 'flex:0 0 auto;padding:24px 20px 20px;display:flex;flex-direction:column;align-items:center;gap:12px',
+      avatarBig: 'width:88px;height:88px;border-radius:999px;background:#fff5f2;color:' + P + ';display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700',
+      avatarAct: 'font-size:15px;font-weight:700;color:' + P,
+      setVal: 'font-size:15px;font-weight:700;color:' + INK + ';white-space:nowrap',
+      notiT: 'font-size:15px;color:' + INK,
+      notiS: 'font-size:12px;color:' + MUTED,
+      kakaoMark: 'width:28px;height:28px;flex:0 0 28px;border-radius:7px;background:#FEE500;color:#191600;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:800',
+      profileBasic: [
+        { k: '이름', v: '김지수', rowStyle: 'display:flex;align-items:center;gap:12px;min-height:56px;padding:0 16px;box-shadow:inset 0 -1px 0 ' + BORDER },
+        { k: '배우자에게 보이는 이름', v: '지수', rowStyle: 'display:flex;align-items:center;gap:12px;min-height:56px;padding:0 16px' }
+      ],
+      notiRows: [
+        { label: '서비스 알림', sub: '일정 · Pick 변화 · 인증 결과', rowStyle: ROW(false),
+          track: 'width:44px;height:26px;flex:0 0 44px;border-radius:999px;background:' + P + ';display:flex;align-items:center;justify-content:flex-end;padding:0 3px;box-sizing:border-box' },
+        { label: '마케팅 알림', sub: '혜택 · 이벤트', rowStyle: ROW(false),
+          track: 'width:44px;height:26px;flex:0 0 44px;border-radius:999px;background:#dcdee3;display:flex;align-items:center;padding:0 3px;box-sizing:border-box' },
+        { label: '야간 수신', sub: '밤 9시 이후', rowStyle: ROW(true),
+          track: 'width:44px;height:26px;flex:0 0 44px;border-radius:999px;background:#dcdee3;display:flex;align-items:center;padding:0 3px;box-sizing:border-box' }
+      ],
+      savedCats: [cat('전체', true), cat('드레스'), cat('예산'), cat('일정')],
+      icoBookmark: ICO('bookmark', 20, P),
+      savedGuides: [
+        guide('sv-1', IMG.romantic, '드레스', '첫 피팅 전에 물어볼 여섯 가지', '9월 8일 저장'),
+        guide('sv-2', IMG.glam, '예산', '추가금을 줄이는 계약서 확인 항목', '9월 2일 저장'),
+        guide('sv-3', IMG.natural, '일정', '본식 4개월 전, 무엇부터 할까', '8월 28일 저장')
+      ],
+      qBlock: 'flex:0 0 auto;padding:16px 20px 20px;display:flex;flex-direction:column;gap:8px',
+      divider: 'flex:0 0 8px;background:' + SEC,
+      pastInquiries: [
+        { q: 'Pick 인증이 반려됐어요', date: '8월 12일 · 답변 완료', state: '답변 완료', badge: badgeS('ok'),
+          rowStyle: 'display:flex;align-items:center;gap:12px;min-height:64px;padding:0 16px' }
+      ],
+      qTitle: 'font-size:26px;line-height:35px;letter-spacing:-0.02em;font-weight:700;color:' + INK,
+      inquiryTypes: [
+        { label: 'Pick 인증이 안 돼요', mark: RADIO(true), rowStyle: ROW(false) },
+        { label: '금액이 이상해요', mark: RADIO(false), rowStyle: ROW(false) },
+        { label: '업체 정보가 틀렸어요', mark: RADIO(false), rowStyle: ROW(false) },
+        { label: '후기를 신고하고 싶어요', mark: RADIO(false), rowStyle: ROW(false) },
+        { label: '그 밖의 문의', mark: RADIO(false), rowStyle: ROW(true) }
+      ],
+      textarea: 'min-height:120px;border-radius:6px;border:1px solid #d1d3d8;padding:14px;font-size:15px;line-height:23px;color:' + INK,
+      photoRow: 'display:flex;gap:10px',
+      photoAdd: 'width:72px;height:72px;border-radius:8px;border:1px dashed #dcdee3;display:flex;align-items:center;justify-content:center',
+      icoCam: ICO('camera', 22, MUTED),
+
+      diffCard: 'width:900px;background:#fff;border:1px solid ' + BORDER + ';border-radius:10px;padding:8px 24px 16px;display:flex;flex-direction:column;box-sizing:border-box',
+      diffHead: 'display:flex;align-items:center;gap:16px;min-height:44px;box-shadow:inset 0 -1px 0 #dcdee3',
+      diffRow: 'display:flex;align-items:flex-start;gap:16px;min-height:52px;padding:12px 0;box-shadow:inset 0 -1px 0 ' + SEC,
+      dh1: 'width:130px;flex:0 0 130px;font-size:12px;font-weight:700;color:' + MUTED,
+      dh2: 'width:270px;flex:0 0 270px;font-size:12px;font-weight:700;color:' + MUTED,
+      dh3: 'width:270px;flex:0 0 270px;font-size:12px;font-weight:700;color:' + MUTED,
+      dh4: 'flex:1;font-size:12px;font-weight:700;color:' + MUTED,
+      dc1: 'width:130px;flex:0 0 130px;font-size:13px;line-height:20px;font-weight:700;color:' + INK,
+      dc2: 'width:270px;flex:0 0 270px;font-size:13px;line-height:20px;color:' + MUTED,
+      dc3: 'flex:1;font-size:12px;line-height:19px;color:' + MUTED,
+
+      diffs: [
+        diff('탭 이름', '커뮤니티 · 리얼후기 · 웨딩피드', '라운지 · 후기 · 웨딩정보', '용어사전'),
+        diff('후기 평가', '별 5개 · 4.9', '3축 답변 칩', '정본은 별점을 쓰지 않는다'),
+        diff('후기 배지', '가격 제보', 'Pick 인증', '용어사전'),
+        diff('글쓰기 진입', '우하단 FAB + 내가 쓴 글 팝오버', '헤더 우측 «글쓰기»', 'FAB를 쓰지 않는다'),
+        diff('웨딩정보 썸네일', '01 · 02 · 03 이니셜 색 타일', '실제 이미지 88px', '이미지 있는 곳은 이미지로'),
+        diff('TODAY\u0027S PICK 카드', '웨딩정보 하단 검정 카드', '뺌', '홈에 같은 영역이 있다'),
+        diff('박람회 헤더', 'UPCOMING FAIR · 이번 주말 한 번에 비교해요', '뺌 · 목록만', '영문 라벨을 쓰지 않는다'),
+        diff('박람회 D-day', '없음', 'D-2 · D-9 · 종료', '마감이 가까운 것을 먼저 알린다'),
+        diff('박람회 출처', '없음', '주최사 공지에서 모아요', '출처를 밝힌다'),
+        diff('MY 제목', 'Playfair Display · MY', '시스템 서체 · MY', 'Playfair를 쓰지 않는다'),
+        diff('MY 섹션 라벨', 'UPPERCASE tracking-widest', '한글 13px', 'UPPERCASE를 쓰지 않는다'),
+        diff('MY 프로필', '이름 + 결혼 예정일 두 줄', '아바타 + Pick 인증 배지 + D-day', '상태를 먼저 보여준다'),
+        diff('라운지 화면', 'Root 탭 · 탭바 있음', '하위 화면 · back nav만', '탭이 아니면 탭바를 두지 않는다'),
+        diff('업체 반론 메뉴', 'MY · 고객지원', '뺌', '업체용 기능이라 앱 MY에 두지 않는다'),
+        diff('MY 상세', '없음 · 메뉴만 나열', 'Pick 인증 내역 · 연결 관리 · 웨딩 설정 · 내 후기', '누르면 갈 곳이 있어야 한다'),
+        diff('로그아웃', '작은 회색 밑줄 + 아이콘', '작은 회색 밑줄', '강조하지 않되 찾을 수는 있게'),
+        diff('탭 구성', '홈 · 검색 · Pick · 우리웨딩 · 라운지 · MY 6개', '홈 · 검색 · Pick · 웨딩노트 · MY 5개', '탭은 5칸이 상한'),
+        diff('라운지 진입', '탭바 5번째', '홈 하단 «웨딩 소식» 더보기 · MY «둘러보기»', '초기엔 콘텐츠가 적어 탭 한 칸이 죽는다'),
+        diff('설정 섹션', 'MY에 알림 · 개인정보 · 계정 3줄', '프로필 한 화면으로 합침', '설정을 두 곳에 나누지 않는다'),
+        diff('프로필 카드', '누를 수 없는 정보 표시', '카드 전체 + [>] · 프로필로 이동', '카드를 누르면 내 정보가 나와야 한다'),
+        diff('MY 하위', '없음', '7화면 신설', '디자인이 없으면 구현이 제멋대로 된다'),
+        diff('메뉴 띄어쓰기', '연결 관리 · 인증 내역 · 웨딩 설정', '연결관리 · 인증내역 · 웨딩설정', '메뉴 4글자는 붙여 쓴다 · 전체 공통'),
+        diff('저장한 콘텐츠', '저장한 웨딩 콘텐츠', '스크랩', '짧고 한 단어로'),
+        diff('자주 묻는 질문', '자주 묻는 질문', 'FAQ', '메뉴는 짧게'),
+        diff('문의', '문의하기 + 내 문의 내역 2줄', '문의하기 1줄 · 내역과 작성 한 화면', '같은 일을 두 곳에 두지 않는다'),
+        diff('로그아웃', 'MY 맨 아래', '프로필 · 계정 섹션', '계정 관련은 한곳에'),
+        diff('개인정보 내려받기', '있음', '뺌', '쓰지 않는 기능'),
+        diff('약관 섹션', '서비스', '약관', '무엇이 들었는지 그대로'),
+        diff('프로필 진입', '프로필 수정 별도 줄', '프로필 카드 전체 + [>]', '카드를 누르면 내 정보로')
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>

@@ -1,4 +1,5 @@
-// 글꼴 변수(Pretendard 우선 스택)와 글자 크기 변수 — spec/tokens.json typography.$fontFamily.
+// 글꼴 변수(시스템 서체 스택)와 글자 크기 변수. 웹폰트는 싣지 않는다 — spec/tokens.json
+// typography.$fontFamily · CLAUDE.md 「폰트는 시스템 서체 유지(Pretendard 미적용)」.
 import '@weddingpick/ui/tokens.css';
 // 브라우저가 입력칸에 얹는 자기 규칙(자동완성 배경 등) 보정. 네이티브에서는 무시된다.
 import '@/global.css';
@@ -76,17 +77,18 @@ export default function RootLayout() {
 
 function RootLayoutContent() {
   /*
-   * **글꼴은 여기서 부르지 않는다. 빌드가 싣는다.**
+   * **글꼴은 Pretendard이고, 여기서 싣지 않는다.** 이 주석은 2026-09-17까지
+   * 「글꼴을 싣지 않는다 — 시스템 서체다」라고 적고 있었는데 **사실과 달랐다.**
    *
-   * `app.json`의 `expo-font` 플러그인이 `assets/fonts/`의 Pretendard 네 벌(400 · 600 ·
-   * 700 · 800)을 네이티브 번들에 박아 넣는다. 그래서 `theme.ts`의 `Fonts`가 집는
-   * 이름 `'Pretendard'`가 실제로 잡힌다 — `useFonts`로 **받지** 않으므로 2026-09-09에
-   * 뺐던 첫 화면 지연이 다시 생기지 않는다. 웹은 `apps/web/src/fonts.ts`의 `@font-face`가
-   * 가변 폰트 한 벌을 싣는다.
+   * 2026-09-15에 실제로 실었다. 다만 `useFonts`로 받지 않는다 — 두 길이 따로다.
    *
-   * 2026-09-15까지는 세 플랫폼 스택이 전부 Pretendard를 맨 앞에 두면서 **정작 파일이
-   * 없어** 폴백으로 떨어지고 있었다(감독 1·2차 R2-5). 대표님이 원본을 올리시고 그것을
-   * 실으면서 풀렸다.
+   *   네이티브   `app.json`의 `expo-font` 플러그인이 TTF 넷을 **빌드 때 앱에 박는다.**
+   *              첫 화면에서 기다릴 것이 없다.
+   *   웹        `+html.tsx`의 `@font-face`가 `PretendardVariable.woff2`를 받는다.
+   *              `font-display: swap`이라 글자가 먼저 뜨고 나중에 바뀐다.
+   *
+   * 옛 주석이 남은 이유는 **`useFonts`를 뺀 것과 글꼴을 뺀 것을 같은 일로 적었기**
+   * 때문이다. 부르는 코드가 없다고 글꼴이 없는 것이 아니다 — 싣는 자리가 옮겨 갔다.
    */
   const [entry, setEntry] = useState<Entry | null>(null);
   const [entryError, setEntryError] = useState<unknown>(null);
