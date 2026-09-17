@@ -77,8 +77,8 @@ export function DataPipelinePanel() {
       // 건너뛴 건수를 감추지 않는다. 계속 실패하는 건은 사람이 개별로 봐야 한다.
       setActionNote(
         r.skipped > 0
-          ? `${r.retried}건을 다시 처리해요. ${r.skipped}건은 여러 번 실패해 건너뛰었어요.`
-          : `${r.retried}건을 다시 처리해요.`
+          ? `${formatCount(r.retried)}건을 다시 처리해요. ${formatCount(r.skipped)}건은 여러 번 실패해 건너뛰었어요.`
+          : `${formatCount(r.retried)}건을 다시 처리해요.`
       );
       setRev((v) => v + 1);
     } catch (e) {
@@ -91,7 +91,7 @@ export function DataPipelinePanel() {
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <Text style={styles.title}>데이터 · 제보 처리 현황</Text>
+        <Text style={styles.title}>제보 처리 현황</Text>
         <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
           <Text style={styles.refreshText}>새로 고침</Text>
         </Pressable>

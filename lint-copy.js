@@ -19,7 +19,19 @@ const g = JSON.parse(fs.readFileSync(GLOSSARY, 'utf8'));
 
 const EXT = /\.(swift|kt|kts|dart|tsx?|jsx?|json|webmanifest|xml|strings|html)$/i;
 const SKIP_DIR = /(^|\/)(node_modules|build|dist|\.git|Pods|\.gradle|__snapshots__)(\/|$)/;
-const SKIP_FILE = /(admin|Admin|관리자|internal|test|Test|spec\/|\.d\.ts$|glossary\.json$)/;
+/**
+ * 검사하지 않는 파일.
+ *
+ * **2026-09-16에 `admin` · `Admin` · `관리자`를 여기서 뺐다.** 2026-09-11 대표 지시
+ * 「전체 메뉴명과 세부 명칭은 AI식 단어를 쓰지 않고, 한국식 토스식 용어를 사용한다」가
+ * 금지어를 관리자 화면까지 넓혔는데 **이 줄이 그 전 범위로 남아 있었다.**
+ *
+ * 그래서 관리자 화면의 금지어 여덟 건이 «카피 린트 통과»를 받은 채 main에 올라가 있었다.
+ * 통합할 때마다 「카피 린트 통과」라고 적었고 그 말은 맞았다 — **검사가 그 파일들을
+ * 열어보지도 않았을 뿐이다.** 규칙을 넓히면서 그것을 세는 자리를 같이 넓히지 않으면
+ * 이렇게 된다.
+ */
+const SKIP_FILE = /(internal|test|Test|spec\/|\.d\.ts$|glossary\.json$)/;
 
 /**
  * 검사하지 않는 자리. **`pick-language.test.ts`의 `EXEMPT`와 같은 목록이다** —
@@ -106,16 +118,17 @@ function scanFile(file) {
   });
 }
 
+/**
+ * 그 줄에 허용된 말이 들어 있으면 넘어간다. 법령·기관 고유명사(«공정거래위원회» ·
+ * «공공데이터»)와 금지어를 설명하는 문장이 여기 해당한다.
+ *
+ * **목록은 `spec/glossary.json`의 `allow` 하나다.** 2026-09-16까지는 이 함수가 목록을
+ * 따로 들고 있었고 **용어집의 `allow`를 아무도 안 읽었다** — 그래서 용어집에 «공공데이터»가
+ * 허용으로 적혀 있는데도 화면에서 걸렸고, 반대로 린터만 아는 «별점 대신»은 용어집에
+ * 없었다. 두 곳에 적으면 반드시 갈린다.
+ */
 function isExempt(line, b) {
-  // 법령·기관 고유명사는 제품 용어 치환 대상이 아니다.
-  if (b.term === '거래' && line.includes('공정거래위원회')) return true;
-  const exemptPhrases = {
-    '중앙값': '실 제보의 중앙값이에요',
-    '별점': '별점 대신',
-    '둘러보기': '둘러보기',
-  };
-  const p = exemptPhrases[b.term];
-  return p ? line.includes(p) : false;
+  return (b.allow ?? []).some((phrase) => line.includes(phrase));
 }
 
 function walk(target) {

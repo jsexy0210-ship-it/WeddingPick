@@ -34,7 +34,8 @@ export default function PoliciesScreen() {
               meta={policy.status}
               chevron
               onPress={() => {
-                if (policy.url && !policy.url.startsWith('#')) void openExternal(policy.url);
+                if (policy.url && !policy.url.startsWith('#'))
+                  void openExternal(policy.url, { title: policy.title });
                 else router.push('/my/guide' as never);
               }}
             />

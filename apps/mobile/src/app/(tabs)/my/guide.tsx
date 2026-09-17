@@ -1,4 +1,4 @@
-import { ANALYSIS_FACTS, FAQ_ITEMS, formatAttribution, listDataSources } from '@weddingpick/domain';
+import { ANALYSIS_FACTS, formatAttribution, listDataSources } from '@weddingpick/domain';
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActionButton, Layout, MaxContentWidth, Radius, Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
 import { APP_VERSION } from '@/features/settings/version';
 import { BackBar } from '@/components/back-bar';
+import { useFaq } from '@/features/faq/use-faq';
 
 const SHOOTING_TIPS = [
   '문서가 화면에 꽉 차게, 네 귀퉁이가 모두 보이게 찍어주세요.',
@@ -16,6 +17,9 @@ const SHOOTING_TIPS = [
 
 /** 촬영 요령, FAQ, 분석 안내. MY와 촬영 화면에서 들어온다. */
 export default function GuideScreen() {
+  /* 질문은 운영자가 관리자 화면에서 고치고 지운다(2026-09-16 대표 지시). */
+  const faq = useFaq();
+
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
@@ -28,16 +32,29 @@ export default function GuideScreen() {
               답을 읽은 뒤에 할 수 있는 일이 없다 — 상세에는 관련 질문과
               「해결되지 않았어요」가 있고, 그것이 문의로 이어지는 유일한 길이다.
             */}
-            {FAQ_ITEMS.map((faq) => (
+            {faq.items.map((item) => (
               <Pressable
-                key={faq.key}
+                key={item.key}
                 accessibilityRole="button"
-                onPress={() => router.push(`/my/faq/${faq.key}` as never)}>
+                onPress={() => router.push(`/my/faq/${item.key}` as never)}>
                 <ThemedView type="backgroundElement" style={styles.card}>
-                  <ThemedText type="smallBold">{faq.question}</ThemedText>
+                  <ThemedText type="smallBold">{item.question}</ThemedText>
                 </ThemedView>
               </Pressable>
             ))}
+            {/*
+              빈 상태를 반드시 그린다. 질문 자리가 통째로 사라지면 운영자가 전부
+              지운 것인지 못 불러온 것인지 구별할 수 없다.
+            */}
+            {!faq.loading && faq.items.length === 0 ? (
+              <ThemedView type="backgroundElement" style={styles.card}>
+                <ThemedText type="small" themeColor="textSecondary">
+                  {faq.failed
+                    ? '자주 묻는 것을 불러오지 못했어요. 잠시 뒤에 다시 열어주세요.'
+                    : '아직 올려둔 질문이 없어요.'}
+                </ThemedText>
+              </ThemedView>
+            ) : null}
           </ThemedView>
 
           <ThemedView style={styles.section}>

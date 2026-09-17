@@ -40,8 +40,8 @@ const SUMMARY: Summary[] = [
     id: 'collect',
     title: '무엇을 받나요',
     body:
-      '카카오 로그인으로 받은 닉네임과 프로필 사진, 만 14세 이상인지 판정하는 데 쓰는 출생 연도예요. ' +
-      '출생 연도는 판정하고 나서 지우고 판정 결과만 남겨요. 예식일 · 지역 · 예산처럼 직접 고른 값과, ' +
+      '카카오 로그인으로 받은 닉네임과 프로필 사진, 만 14세 이상인지 판정하는 데 쓰는 연령대예요. ' +
+      '연령대는 판정하고 나서 지우고 판정 결과만 남겨요. 예식일 · 지역 · 예산처럼 직접 고른 값과, ' +
       'Pick 인증이나 견적서 정리에 올린 자료도 받아요.', // pick-language: 받는 서류 이름 — 무엇을 받는지 정확히 적어야 하는 방침 요약
   },
   {
@@ -112,7 +112,7 @@ export default function PrivacyScreen() {
               variant="primary"
               label="전문 보기"
               onPress={() => {
-                void openExternal(policy.url!);
+                void openExternal(policy.url!, { title: policy.title });
               }}
             />
           ) : null}

@@ -22,13 +22,47 @@ export type WeddingContentItem = {
   imageUri: string | null;
 };
 
-export async function listWeddingContent(limit?: number): Promise<readonly WeddingContentItem[]> {
-  const { items } = await getWeddingFeed(limit);
+/**
+ * 피드 화면이 그릴 탭 하나.
+ *
+ * **서버가 준다**(2026-09-16 대표 지시 — 「탭별 카테고리별로 다 설정 가능해야한다」).
+ * 탭과 카테고리는 관리자가 표에서 고치고, 앱은 받은 것을 그대로 그린다.
+ * `categories`가 빈 것이 「전체」이고 아무것도 거르지 않는다.
+ */
+export type WeddingFeedTabItem = {
+  key: string;
+  label: string;
+  categories: readonly string[];
+};
 
-  return items.map((item) => ({
-    id: item.id,
-    categoryLabel: item.categoryLabel,
-    title: item.title,
-    imageUri: item.imageUrl,
-  }));
+/**
+ * 글과 탭을 **한 번에** 받는다.
+ *
+ * 따로 부르면 목록이 먼저 그려지고 탭 줄이 나중에 끼어들어 본문이 손가락 아래에서
+ * 밀린다. 한 응답이면 둘이 같이 나타나거나 같이 안 나타난다.
+ */
+export async function listWeddingFeed(limit?: number): Promise<{
+  items: readonly WeddingContentItem[];
+  tabs: readonly WeddingFeedTabItem[];
+}> {
+  const { items, tabs } = await getWeddingFeed(limit);
+
+  return {
+    items: items.map((item) => ({
+      id: item.id,
+      categoryLabel: item.categoryLabel,
+      title: item.title,
+      imageUri: item.imageUrl,
+    })),
+    tabs,
+  };
+}
+
+/**
+ * 글만 필요한 자리. 홈이 쓴다 — 홈의 웨딩피드는 3건 미리보기라 탭이 없다.
+ */
+export async function listWeddingContent(limit?: number): Promise<readonly WeddingContentItem[]> {
+  const { items } = await listWeddingFeed(limit);
+
+  return items;
 }

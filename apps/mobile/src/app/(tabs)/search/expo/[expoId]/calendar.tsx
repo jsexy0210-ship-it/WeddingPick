@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { getExpo, type ExpoDetail } from '@/api/client';
 import { BackBar } from '@/components/back-bar';
+import { openExternal } from '@/features/open-external';
 import {
   ActionButton,
   Layout,
@@ -120,7 +121,8 @@ export default function CalendarScreen() {
           notify('열 수 없어요', 'Google 캘린더를 열 수 없어요. 브라우저가 설치되어 있는지 확인해주세요.');
           return;
         }
-        await Linking.openURL(url);
+        /* 달력 앱에 넘기는 자리다 — 앱 안에 가두면 일정을 넣지 못한다(CLAUDE.md 「지도와 달력은 이 규칙의 예외다」). */
+        await openExternal(url, { handOff: true });
       } else if (option === 'apple') {
         if (Platform.OS !== 'ios') {
           notify('지원 안 해요', 'Apple 캘린더는 iPhone에서만 쓸 수 있어요.');
@@ -139,7 +141,7 @@ export default function CalendarScreen() {
           'END:VCALENDAR',
         ].join('\r\n');
         const encoded = encodeURIComponent(ics);
-        await Linking.openURL(`data:text/calendar;charset=utf-8,${encoded}`);
+        await openExternal(`data:text/calendar;charset=utf-8,${encoded}`, { handOff: true });
       } else if (option === 'outlook') {
         const url = buildOutlookUrl({
           title: expoTitle,
@@ -153,7 +155,7 @@ export default function CalendarScreen() {
           notify('열 수 없어요', 'Outlook을 열 수 없어요.');
           return;
         }
-        await Linking.openURL(url);
+        await openExternal(url, { handOff: true });
       }
     } catch {
       notify('오류', '캘린더를 열 수 없어요. 잠시 후 다시 시도해주세요.');

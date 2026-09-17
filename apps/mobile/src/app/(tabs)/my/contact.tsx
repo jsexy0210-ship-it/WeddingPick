@@ -1,6 +1,5 @@
 import type { Inquiry } from '@weddingpick/api-contract';
 import {
-  FAQ_ITEMS,
   INQUIRY_CATEGORIES,
   INQUIRY_CATEGORY_RULES,
   INQUIRY_STATUS_LABEL,
@@ -15,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { createInquiry, listMyInquiries } from '@/api/client';
 import { isServerConfigured } from '@/api/config';
 import { formatDateDot } from '@/features/common/format-date';
+import { useFaq } from '@/features/faq/use-faq';
 import { useDepthBack } from '@/features/navigation/depth-back';
 import { BackBar } from '@/components/back-bar';
 import {
@@ -63,6 +63,8 @@ export default function ContactScreen() {
   const [mine, setMine] = useState<Inquiry[]>([]);
   // 「돌아가기」는 Depth Back이다 — 알림·링크로 곧장 들어와도 MY로 올라간다.
   const depthBack = useDepthBack();
+  /* 자주 묻는 것은 운영자가 고친다(2026-09-16 대표 지시) — 서버에서 받아 온다. */
+  const faq = useFaq();
 
   const subject =
     params.subjectKind && params.subjectId
@@ -152,13 +154,20 @@ export default function ContactScreen() {
           */}
           <ThemedView style={styles.section}>
             <ThemedText type="smallBold">자주 묻는 것</ThemedText>
-            <Accordion
-              items={FAQ_ITEMS.map((item) => ({
-                key: item.key,
-                title: item.question,
-                body: item.answer,
-              }))}
-            />
+            {faq.loading ? null : (
+              <Accordion
+                items={faq.items.map((item) => ({
+                  key: item.key,
+                  title: item.question,
+                  body: item.answer,
+                }))}
+              />
+            )}
+            {!faq.loading && faq.items.length === 0 ? (
+              <ThemedText type="small" themeColor="textSecondary">
+                지금은 자주 묻는 것을 불러오지 못했어요. 아래로 바로 문의하실 수 있어요.
+              </ThemedText>
+            ) : null}
           </ThemedView>
 
           {!isServerConfigured ? (

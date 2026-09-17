@@ -18,6 +18,7 @@ import { registerAuthRoutes } from './routes/auth';
 import { registerDevStorageRoutes } from './routes/dev-storage';
 import { registerDeviceRoutes } from './routes/devices';
 import { registerDocumentRoutes } from './routes/documents';
+import { registerFaqRoutes } from './routes/faq';
 import { registerInquiryRoutes } from './routes/inquiries';
 import { registerMyReportRoutes } from './routes/my-reports';
 import { registerNotificationRoutes } from './routes/notifications';
@@ -198,6 +199,7 @@ export function buildServer(context: AppContext): FastifyInstance {
   registerMyReportRoutes(app, context);
   registerSettingsRoutes(app, context);
   registerSiteMetaRoutes(app, context);
+  registerFaqRoutes(app, context);
   registerAdminLoginRoutes(app, context);
   registerTasteRoutes(app, context);
   registerWithdrawalRoutes(app, context);
