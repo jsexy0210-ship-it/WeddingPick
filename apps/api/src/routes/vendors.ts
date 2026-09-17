@@ -37,6 +37,7 @@ import { z } from 'zod';
 import { optionalUser, optionalUserId } from '../auth/plugin';
 import type { AppContext } from '../context';
 import { ApiError, notFound } from '../errors';
+import { isUuid } from '../uuid';
 import { loadUsageScore, summaryRating } from '../review-view';
 import { vendorSourceNote } from '../vendor-view';
 
@@ -285,6 +286,9 @@ async function previewsImages(pool: Pool, viewerId: string | null): Promise<bool
  * 가격으로 그릴 여지가 생긴다.
  */
 async function loadVendorDetail(pool: Pool, vendorId: string, viewerId: string | null) {
+  // 꼴이 아니면 DB에 묻지 않는다 — 물으면 22P02로 터져 500이 된다(`src/uuid.ts`).
+  if (!isUuid(vendorId)) throw notFound('업체');
+
   const preview = await previewsImages(pool, viewerId);
 
   const { rows } = await pool.query<VendorRow>(
@@ -811,6 +815,8 @@ async function loadConditionStats(
   | { available: false; note: string }
   | { available: true; condition: string; axes: number; price: ReturnType<typeof discloseAmounts> }
 > {
+  if (!isUuid(vendorId)) throw notFound('업체');
+
   const vendor = await pool.query<{ category: string; region: string }>(
     'SELECT category, region FROM structured.vendors WHERE id = $1',
     [vendorId]

@@ -88,10 +88,6 @@
                   {
                     "path": "./assets/fonts/Pretendard-Bold.ttf",
                     "weight": 700
-                  },
-                  {
-                    "path": "./assets/fonts/Pretendard-ExtraBold.ttf",
-                    "weight": 800
                   }
                 ]
               }
@@ -101,8 +97,7 @@
             "fonts": [
               "./assets/fonts/Pretendard-Regular.ttf",
               "./assets/fonts/Pretendard-SemiBold.ttf",
-              "./assets/fonts/Pretendard-Bold.ttf",
-              "./assets/fonts/Pretendard-ExtraBold.ttf"
+              "./assets/fonts/Pretendard-Bold.ttf"
             ]
           }
         }
