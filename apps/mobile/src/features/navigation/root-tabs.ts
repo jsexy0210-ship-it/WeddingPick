@@ -7,8 +7,17 @@ import type { SeedIconName } from '@weddingpick/ui';
  * 두 곳에 따로 적어 두면 한쪽만 고쳐서 «라우터는 여섯 탭인데 바에는 다섯»이 된다.
  *
  * ```
- * 홈 · 웨딩노트 · Pick · 라운지 · MY      (2026-09-14 대표 확정)
+ * 홈 · 검색 · Pick · 웨딩노트 · MY      (2026-09-17 대표 지시 — 새 패키지)
  * ```
+ *
+ * **라운지가 내려가고 검색이 올라왔다.** 근거는 `docs/design/figma-export/README.md` —
+ * 「라운지는 탭이 아닙니다. 초기에는 후기와 박람회가 몇 건뿐이라 탭 한 칸이 빈 화면을
+ * 띄웁니다」. 검색은 2026-09-14에 「초기 이미지 데이터가 없어서」 임시로 내렸던 것이고
+ * 그때부터 «차후에 되돌린다»고 적어 둔 자리다 — 지금이 그때다.
+ *
+ * **라운지를 없애는 것이 아니다.** 화면 `/community`는 그대로 살아 있고 진입만 둘로
+ * 옮겼다 — 홈의 「웨딩 소식」 섹션 우측과 MY의 「둘러보기」. 주소를 바꾸지 않는 이유는
+ * 저장된 링크와 공유 주소가 깨지기 때문이다.
  *
  * **보이는 이름과 라우트를 같이 바꾸지 않는다.** 이 자리는 «우리웨딩 → 웨딩일정 →
  * 웨딩플랜 → 웨딩노트»로 이름이 네 번 바뀌는 동안 라우트가 계속 `/wedding`이었다 —
@@ -33,10 +42,10 @@ export type RootTabSpec = {
 
 export const ROOT_TABS: readonly RootTabSpec[] = [
   { name: 'index', label: '홈', icon: { off: 'homeRegular', on: 'homeFill' } },
+  { name: 'search', label: '검색', icon: { off: 'searchRegular', on: 'searchFill' } },
+  { name: 'pick', label: 'Pick', icon: 'pick', emphasized: true },
   /* 라우트는 `/wedding` 그대로. 이름만 «웨딩노트»다. */
   { name: 'wedding', label: '웨딩노트', icon: { off: 'calendarRegular', on: 'calendarFill' } },
-  { name: 'pick', label: 'Pick', icon: 'pick', emphasized: true },
-  { name: 'community', label: '라운지', icon: { off: 'communityRegular', on: 'communityFill' } },
   { name: 'my', label: 'MY', icon: { off: 'profileRegular', on: 'profileFill' } },
 ];
 
@@ -44,16 +53,18 @@ export const ROOT_TABS: readonly RootTabSpec[] = [
  * `(tabs)` 아래에 있지만 탭으로 세우지 않는 라우트. 화면은 그대로 살아 있고
  * 다른 화면에서 밀어 넣어 연다 — 탭 바는 이 화면들에서 통째로 숨는다.
  *
- * **`search`는 임시로 내린 것이다(2026-09-14 대표 지시).** 「검색은 차후에 탭으로
- * 이관한다. 초기 이미지 데이터가 없어서 뒤로 숨긴다」 — 영구 결정이 아니다.
- * 되돌리는 방법은 한 줄이다: 여기서 `'search'`를 빼고 `ROOT_TABS`에
- * `{ name: 'search', label: '검색', icon: { off: 'searchRegular', on: 'searchFill' } }`(searchFill은 SEED에서 더 옮겨야 한다)를 넣으면 된다.
- * 그동안 진입은 홈 상단 검색바가 맡는다(`app/(tabs)/index.tsx` — 다른 담당).
+ * **`search`는 2026-09-17에 탭으로 돌아갔다.** 2026-09-14에 「초기 이미지 데이터가
+ * 없어서 뒤로 숨긴다 · 차후에 탭으로 이관한다」로 임시로 내렸던 것이고, 그 자리에
+ * 「되돌리는 방법은 한 줄」이라고 적어 뒀었다. 그 한 줄을 지금 썼다.
+ *
+ * **`community`(라운지)가 대신 내려왔다**(대표 지시 · 새 패키지). 화면은 그대로 살아
+ * 있고 탭에서만 뺀다 — 후기와 박람회가 몇 건뿐이라 탭 한 칸이 빈 화면을 띄운다.
+ * 진입은 홈 「웨딩 소식」 우측과 MY 「둘러보기」 둘이다. 주소 `/community`는 그대로다.
  *
  * `capture`(제보)는 v3.2 §1이 루트에서 뺀 것이고, `(home)`은 홈에서 파고드는
  * 하위 스택이라 애초에 탭이 아니다 — 숨기지 않으면 라우터가 없는 탭을 만든다.
  */
-export const OFF_TAB_ROUTES = ['search', 'capture', '(home)'] as const;
+export const OFF_TAB_ROUTES = ['community', 'capture', '(home)'] as const;
 
 /** 이 라우트에 탭 바가 서는가. 다섯 탭 밖에서는 상단 뒤로가기만 쓴다. */
 export function isRootTab(routeName: string | undefined): boolean {
