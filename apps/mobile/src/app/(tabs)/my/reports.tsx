@@ -20,9 +20,10 @@ import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { won } from '@/features/quotes/quote-result-view';
 import { Badge, Dock, EmptyBox, Hero, Section, SubScreen } from '@/features/settings/my-kit';
 
-/** 시안 11-report-review 12c WP-RPT-009. */
+/** 시안 `docs/design/figma-export/07-lounge-my.dc.html` 4-1 · 11-report-review 12c WP-RPT-009. */
 const S = {
-  title: '내 제보 내역',
+  title: 'Pick 인증내역',
+  newProof: '새로 인증하기',
   hero: (total: number, used: number) => [`${formatCount(total)}건 제보했고`, `${formatCount(used)}건이 반영됐어요`],
   heroEmpty: ['아직 제보한 것이', '없어요'],
   inUse: '반영됨',
@@ -50,8 +51,10 @@ function badgeLabel(report: MyReport): string {
 }
 
 /**
- * 내 제보 내역 · WP-RPT-009. 카드마다 상태 배지 + 날짜 · 업체명 ↔ 금액 · 사유. 행동 버튼은 할 일이
- * 남은 카드에만 둔다(rule «보완 필요에만 행동 버튼») — 지금은 후기 지우기가 그 자리다.
+ * Pick 인증내역 · WP-RPT-009 · 시안 4-1. 위에 상태별 개수 셋(반영됨 · 확인 중 · 반영 전), 아래
+ * 카드마다 상태 배지 + 날짜 · 업체명 ↔ 금액 · 사유. 행동 버튼은 할 일이 남은 카드에만 둔다
+ * (rule «보완 필요에만 행동 버튼») — 지금은 후기 지우기가 그 자리다. dock의 «새로 인증하기»는
+ * MY에서 «제보» 줄이 빠지면서 이 화면이 맡은 Pick 인증의 진입이다.
  *
  * **남아 있는 것과 쓰이는 것은 다르다.** 업체를 못 찾은 Pick 인증처럼 남아 있지만 쓰이지 않는 것은
  * «반영 전»으로 적고 서버가 보낸 사유를 붙인다.
@@ -101,16 +104,37 @@ export default function MyReportsScreen() {
 
   const used = reports.filter((report) => report.inUse).length;
   const empty = reports.length === 0;
+  /* 상태 셋은 Pick 인증만 센다 — 후기는 «내가 쓴 후기»가 센다. */
+  const proofs = reports.filter((report) => report.kind !== 'review');
+  const stats = [
+    { label: S.inUse, value: proofs.filter((report) => report.inUse).length, color: theme.positive },
+    { label: S.needsCheck, value: proofs.filter((report) => !report.inUse && report.needsCheck).length, color: theme.cautionary },
+    { label: S.notInUse, value: proofs.filter((report) => !report.inUse && !report.needsCheck).length, color: theme.text },
+  ];
 
   return (
     <SubScreen
       title={S.title}
-      dock={
-        empty ? (
-          <Dock primary={{ label: MY_REPORTS_EMPTY_CTA, onPress: () => router.push('/capture/payment/consent') }} />
-        ) : undefined
-      }>
+      dock={<Dock primary={{ label: empty ? MY_REPORTS_EMPTY_CTA : S.newProof, onPress: () => router.push('/capture/payment/consent') }} />}>
       <Hero lines={empty ? S.heroEmpty : S.hero(reports.length, used)} />
+
+      {/* 시안 statRow: 셀 셋 · radius 10 · recessed 바탕 · 숫자 24/700 tabular(반영됨 초록 · 보완 필요 주황) · 라벨 12 muted. */}
+      {empty ? null : (
+        <Section gap="events">
+          <View style={styles.statRow}>
+            {stats.map((stat) => (
+              <View key={stat.label} style={[styles.statCell, { backgroundColor: theme.backgroundElement }]}>
+                <ThemedText type="f24" numeric style={[styles.statValue, { color: stat.color }]}>
+                  {formatCount(stat.value)}
+                </ThemedText>
+                <ThemedText type="f12" themeColor="textAssistive" numberOfLines={1}>
+                  {stat.label}
+                </ThemedText>
+              </View>
+            ))}
+          </View>
+        </Section>
+      )}
 
       <Section gap="events">
         {empty ? (
@@ -163,6 +187,17 @@ export default function MyReportsScreen() {
 
 const styles = StyleSheet.create({
   list: { gap: Layout.rowPaddingY },
+  /* statRow `gap:10px` · statCell `radius 10 · padding 16 12 · gap 3` 가운데. */
+  statRow: { flexDirection: 'row', gap: Layout.cardGap },
+  statCell: {
+    flex: 1,
+    borderRadius: Radius.medium,
+    paddingVertical: Spacing.three,
+    paddingHorizontal: Layout.rowPaddingY,
+    alignItems: 'center',
+    gap: Spacing.one,
+  },
+  statValue: { fontWeight: '700' },
   /* 카드 radius 10 · 1 gray300 · 18 20 · gap 10 */
   card: {
     borderRadius: Radius.medium,

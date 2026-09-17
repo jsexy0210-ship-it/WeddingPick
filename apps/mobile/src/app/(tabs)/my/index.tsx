@@ -1,20 +1,25 @@
 /**
- * MY — WP-MY-001.
+ * MY — WP-MY-001 · `docs/design/figma-export/07-lounge-my.dc.html` 4.
  *
- * 피그마 `My.tsx`(2026-09-14 정본 · 최상위 규칙 1)대로 그린다. 제목 «MY»(26/700) → 프로필
- * 카드(이름 · 결혼 예정일 · «내 웨딩 설정» 행) → 섹션(작은 제목 + radius 22 테두리 카드 안에
- * 아이콘 16 · 라벨 14 · 꼬리 · 꺾쇠 16 행) → 앱 버전 카드 → 로그아웃 → 한 줄 표어.
+ * 제목 «MY»(26/700) → 프로필 카드(아바타 + 이름 + Pick 인증 배지 + 예식일 · D-day → 프로필,
+ * 선, «내 웨딩설정» 행) → 섹션 다섯(작은 제목 + 테두리 카드 안에 아이콘 18 · 라벨 15 · 꼬리 ·
+ * 꺾쇠 16 행) → «앱 버전» 한 줄 → 사업자 정보(법정 공시).
  *
- * 메뉴 항목은 우리 것 그대로다 — 서버에 있는 화면만 세운다. 피그마의 «저장한 웨딩 콘텐츠» ·
- * «개인정보 보호» · «신고 내역» · «업체 반론»은 그 화면이 없어 만들지 않았고, 피그마에 없는
- * «제보» · «혜택 · 이벤트» · «스타일 다시 고르기» · «화면 설정» · «업체 · 플래너 문의»는 가장
- * 가까운 섹션에 남긴다. 알림 설정은 피그마의 토글 하나가 아니라 여러 토글이 있는 화면이라
- * 꺾쇠 행이다. 헤더의 톱니(설정)는 피그마에 없어 뺐다 — 설정 섹션의 행이 그 자리를 맡는다.
- * 사업자 정보 공시는 법이 정한 것이라 맨 아래 그대로 둔다.
+ * **설정 섹션이 없다**(시안 4 「설정 섹션을 없애고 프로필 카드를 눌러 들어가게 합니다」).
+ * 알림 · 화면 · 계정 · 로그아웃 · 탈퇴는 프로필(`my/profile.tsx`)이 맡는다.
+ *
+ * **메뉴 4글자는 붙여 쓴다** — 연결관리 · 인증내역 · 웨딩설정(새 패키지 · 전체 공통).
+ *
+ * 시안에 없지만 남긴 줄 둘 — «혜택 · 이벤트»(Npay 응모 화면의 유일한 진입)와 «업체 · 플래너
+ * 문의»(B2B 창구). 다른 진입이 없어 여기서 빼면 그 화면에 들어갈 길이 사라진다. 시안에 있지만
+ * 없는 줄 하나 — «스크랩»은 저장 계약이 없어 세우지 않는다(누르면 갈 곳이 있어야 한다).
+ *
+ * 모양은 시안, 수치는 `docs/design/handoff/tokens.json`(카드 radius 10 · 행 56 · 아바타 56 ·
+ * 아이콘 18 · 좌우 24). 문구는 `spec/strings.ko.json` `my`.
  */
 import { FullScreenError } from '@/features/errors/full-screen-error';
 import type { CurrentUser, MyReportListResponse } from '@weddingpick/api-contract';
-import { BUSINESS_NOTICE_LINES, formatCount, TERMS } from '@weddingpick/domain';
+import { BUSINESS_NOTICE_LINES, daysUntil, formatCount } from '@weddingpick/domain';
 import { Redirect, router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -22,6 +27,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   ActionButton,
+  Badge,
   Border,
   Layout,
   MaxContentWidth,
@@ -39,13 +45,17 @@ import {
   getMyMonthlyDraw,
   getMyRewards,
   getWeddingInvite,
+  listMyInquiries,
   listMyReports,
 } from '@/api/client';
 import { useSession } from '@/features/auth/use-session';
 import { participableCount } from '@/features/membership/use-benefit-data';
 import { DelayedLoader, DelayedLoadingView } from '@/features/loading/delayed-loader';
+import { Avatar } from '@/features/settings/my-kit';
 import strings from '../../../../../../spec/strings.ko.json';
 import { APP_VERSION } from '@/features/settings/version';
+
+const S = strings.my;
 
 type CoupleState = 'unlinked' | 'invited' | 'linked';
 
@@ -54,65 +64,29 @@ type MyData = {
   reports: MyReportListResponse | null;
   couple: CoupleState | null;
   benefits: number | null;
+  inquiries: number | null;
 };
 
-const EMPTY: MyData = { me: null, reports: null, couple: null, benefits: null };
-
-/* 문구 — spec/strings.ko.json `my`. 섹션 이름은 피그마 `My.tsx`에서 왔다. */
-const S = {
-  title: 'MY',
-  nameless: '이름을 정해주세요',
-  weddingDate: (date: string) => `${date} 결혼 예정`,
-  weddingDateUnset: '예식일을 아직 정하지 않았어요',
-  'group.activity': '내 활동',
-  'group.together': '함께 준비하기',
-  'group.browse': '둘러보기',
-  'group.settings': '설정',
-  'group.support': '고객지원',
-  'group.service': '서비스',
-  'item.report': '제보',
-  'item.reportLog': '내 제보 내역',
-  'item.myReview': '내가 쓴 후기',
-  'item.benefit': '혜택 · 이벤트',
-  'item.weddingSetting': '내 웨딩 설정',
-  'item.taste': '스타일 다시 고르기',
-  'item.progress': '준비 현황',
-  'item.lounge': '라운지',
-  'item.partner': '연결 관리',
-  'item.notification': '알림 설정',
-  'item.display': '화면 설정',
-  'item.account': '계정 설정',
-  'item.support': '문의하기',
-  'item.bizInquiry': '업체 · 플래너 문의',
-  'item.terms': '이용약관',
-  'item.privacy': '개인정보처리방침',
-  appVersion: '앱 버전',
-  count: (n: number) => `${formatCount(n)}건`,
-  benefitCount: (n: number) => `${formatCount(n)}개 참여 가능`,
-  logout: '로그아웃',
-  tagline: '웨딩픽 · 결혼 준비의 시작',
-  loginCta: '로그인 · 가입하기',
-  loginHint: `${TERMS.ourWedding}와 Pick 인증에 필요해요`,
-} as const;
+const EMPTY: MyData = { me: null, reports: null, couple: null, benefits: null, inquiries: null };
 
 const COUPLE_LABEL: Record<CoupleState, string> = {
-  unlinked: '미연결',
-  invited: '초대 대기',
-  linked: '연결됨',
+  unlinked: S['couple.unlinked'],
+  invited: S['couple.invited'],
+  linked: S['couple.linked'],
 };
 
 type MenuRow = {
   key: string;
   label: string;
   icon: ProductSymbolName;
-  /** 오른쪽 작은 꼬리. 피그마의 `count`(키 컬러 굵은 글자) 자리. */
+  /** 오른쪽 꼬리. 시안 `myCount`(14/700 코랄 tabular) 자리. */
   tail?: string;
   onPress: () => void;
 };
 
 export default function MyScreen() {
   const theme = useTheme();
-  const { state, signOut, refresh } = useSession();
+  const { state, refresh } = useSession();
   const [data, setData] = useState<MyData>(EMPTY);
   const [loadFailed, setLoadFailed] = useState(false);
   const loadVersion = useRef(0);
@@ -133,13 +107,14 @@ export default function MyScreen() {
       .then(async (me) => {
         if (version !== loadVersion.current) return;
         setData((prev) => ({ ...prev, me }));
-        const [reports, invite, rewards, draw] = await Promise.allSettled([
+        const [reports, invite, rewards, draw, inquiries] = await Promise.allSettled([
           listMyReports(),
           me.spouseLinked || !me.weddingId
             ? Promise.resolve(null)
             : getWeddingInvite(me.weddingId),
           getMyRewards(),
           getMyMonthlyDraw(),
+          listMyInquiries(),
         ]);
         if (version !== loadVersion.current) return;
         const couple: CoupleState | null = me.spouseLinked
@@ -156,6 +131,7 @@ export default function MyScreen() {
             rewards: rewards.status === 'fulfilled' ? rewards.value : null,
             draw: draw.status === 'fulfilled' ? draw.value : null,
           }),
+          inquiries: inquiries.status === 'fulfilled' ? inquiries.value.inquiries.length : null,
         }));
       })
       .catch(() => { if (version === loadVersion.current) setLoadFailed(true); });
@@ -176,40 +152,43 @@ export default function MyScreen() {
 
   const me = data.me;
   const reports = data.reports?.reports ?? [];
-  const totalReports = reports.filter((report) => report.kind !== 'review').length;
+  /* 인증내역의 꼬리는 Pick 인증 건수다 — 후기는 «내가 쓴 후기»가 센다. */
+  const totalProofs = reports.filter((report) => report.kind !== 'review').length;
   const totalReviews = reports.filter((report) => report.kind === 'review').length;
 
   if (state.status === 'error') return <FullScreenError kind={state.kind} onRetry={() => void refresh()} />;
   if (state.status === 'loading') return <DelayedLoadingView />;
   if (state.status === 'signedOut') return <Redirect href="/login" />;
 
+  const count = (n: number) => (n > 0 ? S.count.replace('{n}', formatCount(n)) : undefined);
+
+  /* 순서와 묶음은 시안 `mySections` 그대로다. 남긴 줄 · 뺀 줄의 사유는 파일 머리에 있다. */
   const sections: { title: string; rows: MenuRow[] }[] = [
     {
       title: S['group.activity'],
       rows: [
-        { key: 'report', label: S['item.report'], icon: 'checkCircle', tail: totalReports > 0 ? S.count(totalReports) : undefined, onPress: () => guestPush('/capture') },
-        { key: 'reportLog', label: S['item.reportLog'], icon: 'file', onPress: () => guestPush('/my/reports') },
-        { key: 'myReview', label: S['item.myReview'], icon: 'edit', tail: totalReviews > 0 ? S.count(totalReviews) : undefined, onPress: () => guestPush('/my/reviews') },
-        { key: 'benefit', label: S['item.benefit'], icon: 'gift', tail: data.benefits !== null && data.benefits > 0 ? S.benefitCount(data.benefits) : undefined, onPress: () => guestPush('/my/rewards') },
+        { key: 'certLog', label: S['item.certLog'], icon: 'checkCircle', tail: count(totalProofs), onPress: () => guestPush('/my/reports') },
+        { key: 'myReview', label: S['item.myReview'], icon: 'edit', tail: count(totalReviews), onPress: () => guestPush('/my/reviews') },
+        {
+          key: 'benefit',
+          label: S['item.benefit'],
+          icon: 'gift',
+          tail: data.benefits !== null && data.benefits > 0 ? S.benefitCount.replace('{n}', formatCount(data.benefits)) : undefined,
+          onPress: () => guestPush('/my/rewards'),
+        },
       ],
     },
     {
       title: S['group.together'],
       rows: [
-        { key: 'progress', label: S['item.progress'], icon: 'checkCircle', onPress: () => guestPush('/progress') },
         { key: 'partner', label: S['item.partner'], icon: 'twoPeople', tail: data.couple ? COUPLE_LABEL[data.couple] : undefined, onPress: () => guestPush('/wedding/partner') },
       ],
     },
     /*
-     * **라운지로 들어오는 두 자리 중 하나다.**
-     *
-     * 2026-09-17 대표 지시로 라운지가 Root 탭에서 내려왔다 — 후기와 박람회가 몇
-     * 건뿐이라 탭 한 칸이 빈 화면을 띄운다(`docs/design/figma-export/README.md`).
-     * **화면을 없앤 것이 아니라 진입을 옮긴 것이므로, 이 줄이 없으면 라운지에
-     * 들어갈 길이 사라진다.** 나머지 한 자리는 홈의 「웨딩 소식」 섹션 우측이고,
-     * 홈은 새 패키지로 다시 그릴 때 같이 붙인다.
-     *
-     * 주소는 `/community` 그대로다. 저장된 링크와 공유 주소가 그것을 가리킨다.
+     * **라운지로 들어오는 두 자리 중 하나다.** 2026-09-17 대표 지시로 라운지가 Root 탭에서
+     * 내려왔다 — 화면을 없앤 것이 아니라 진입을 옮긴 것이므로 **이 줄이 없으면 라운지에
+     * 들어갈 길이 사라진다.** 나머지 한 자리는 홈 「웨딩 소식」 섹션 우측이다. 주소는
+     * `/community` 그대로다(저장된 링크 · 공유 주소).
      */
     {
       title: S['group.browse'],
@@ -218,23 +197,15 @@ export default function MyScreen() {
       ],
     },
     {
-      title: S['group.settings'],
-      rows: [
-        { key: 'notification', label: S['item.notification'], icon: 'bell', onPress: () => guestPush('/my/notification-settings') },
-        { key: 'taste', label: S['item.taste'], icon: 'checkCircle', onPress: () => guestPush('/my/taste') },
-        { key: 'display', label: S['item.display'], icon: 'gear', onPress: () => guestPush('/my/display') },
-        { key: 'account', label: S['item.account'], icon: 'lock', onPress: () => guestPush('/my/account') },
-      ],
-    },
-    {
       title: S['group.support'],
       rows: [
-        { key: 'support', label: S['item.support'], icon: 'headset', onPress: () => guestPush('/my/support') },
+        { key: 'faq', label: S['item.faq'], icon: 'info', onPress: () => router.push('/my/guide' as never) },
+        { key: 'contact', label: S['item.contact'], icon: 'headset', tail: data.inquiries !== null ? count(data.inquiries) : undefined, onPress: () => guestPush('/my/contact') },
         { key: 'biz', label: S['item.bizInquiry'], icon: 'info', onPress: () => router.push('/my/biz' as never) },
       ],
     },
     {
-      title: S['group.service'],
+      title: S['group.terms'],
       rows: [
         { key: 'terms', label: S['item.terms'], icon: 'file', onPress: () => router.push('/my/policies' as never) },
         { key: 'privacy', label: S['item.privacy'], icon: 'file', onPress: () => router.push('/my/policies' as never) },
@@ -249,30 +220,36 @@ export default function MyScreen() {
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}>
-          {/* 제목 `px-5 pb-5` + 위 24 — 26/700 = t2. */}
+          {/* 시안 head: 56 · 좌우 여백 · «MY» 26/700. */}
           <View style={styles.header}>
-            {/* 규격서 my.txt: «MY» 26/700 · lh 39 · ls -0.65px. */}
             <ThemedText type="f26" style={[styles.bold, styles.title]}>
               {S.title}
             </ThemedText>
           </View>
 
-          {/* 프로필 카드 `rounded-[22px] border`: 이름 16/700 · 결혼 예정일 14 · 선 · «내 웨딩 설정» 행. */}
+          {/* 프로필 카드 — 아바타 + 이름 18/700 + Pick 인증 배지 + 예식일 · D-day 13 muted + 꺾쇠 → 프로필. 선. «내 웨딩설정» 행. */}
           {isSignedIn && me ? (
             <View style={styles.block}>
-              <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.border }]}>
+              <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.track }]}>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="프로필"
                   onPress={() => router.push('/my/profile' as never)}
                   style={({ pressed }) => [styles.profile, pressed ? styles.pressed : null]}>
-                  {/* 규격서: 이름 «16/700 · lh 24» · 결혼 예정일 «14/400 #868B94 · lh 20 · mar 2». */}
-                  <ThemedText type="f16" numberOfLines={1} style={styles.bold}>
-                    {me.displayName ? me.displayName : S.nameless}
-                  </ThemedText>
-                  <ThemedText type="f14" themeColor="textAssistive" numeric numberOfLines={1} style={styles.profileSub}>
-                    {me.weddingDate ? S.weddingDate(koreanDate(me.weddingDate)) : S.weddingDateUnset}
-                  </ThemedText>
+                  <Avatar initial={me.displayName?.slice(0, 1) ?? '나'} size={Layout.avatarProfile} />
+                  <View style={styles.profileCol}>
+                    <View style={styles.profileNameRow}>
+                      <ThemedText type="f18" numberOfLines={1} style={[styles.bold, styles.shrink]}>
+                        {me.displayName ? me.displayName : S.nameless}
+                      </ThemedText>
+                      {/* 상태를 먼저 보여준다 — Pick 인증 회원만 배지가 붙는다. */}
+                      {me.hasPaymentProof ? <Badge kind="ok">{S.verifiedBadge}</Badge> : null}
+                    </View>
+                    <ThemedText type="f13" themeColor="textAssistive" numeric numberOfLines={1}>
+                      {me.weddingDate ? weddingLine(me.weddingDate) : S.weddingDateUnset}
+                    </ThemedText>
+                  </View>
+                  <ProductSymbol name="chevronRight" size={Layout.iconField} color={theme.textDisabled} />
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
@@ -283,11 +260,10 @@ export default function MyScreen() {
                     { borderTopColor: theme.border },
                     pressed ? styles.pressed : null,
                   ]}>
-                  {/* 규격서: «14/500 · lh 20». */}
-                  <ThemedText type="f14" style={[styles.medium, styles.grow]}>
+                  <ThemedText type="f15" style={styles.grow}>
                     {S['item.weddingSetting']}
                   </ThemedText>
-                  <ProductSymbol name="chevronRight" size={Layout.iconField} color={theme.textAssistive} />
+                  <ProductSymbol name="chevronRight" size={Layout.iconField} color={theme.textDisabled} />
                 </Pressable>
               </View>
             </View>
@@ -311,14 +287,13 @@ export default function MyScreen() {
             </View>
           )}
 
-          {/* 섹션 — 제목 `mb-2 px-1`(11/700 · muted) + 카드 `rounded-[22px] border`, 행 `px-4 py-3.5 gap-3`. */}
+          {/* 섹션 — 제목 13/700 muted + 테두리 카드(radius 10), 행 56 · 안쪽 16 · gap 12. */}
           {sections.map((section) => (
             <View key={section.title} style={styles.block}>
-              {/* 규격서: 섹션 제목 «11/700 #868B94 · lh 17 · ls 1.1px · pad 0 4 · mar 0 0 8». */}
-              <ThemedText type="f11" themeColor="textAssistive" style={[styles.bold, styles.sectionTitle]}>
+              <ThemedText type="f13" themeColor="textAssistive" style={[styles.bold, styles.sectionTitle]}>
                 {section.title}
               </ThemedText>
-              <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.border }]}>
+              <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.track }]}>
                 {section.rows.map((row, index) => (
                   <Pressable
                     key={row.key}
@@ -332,62 +307,28 @@ export default function MyScreen() {
                         : null,
                       pressed ? styles.pressed : null,
                     ]}>
-                    <ProductSymbol name={row.icon} size={Layout.iconField} color={theme.textAssistive} />
-                    {/* 규격서: 행 «14/500 · lh 20» · 꼬리 «12/700 키 컬러 · mar 0 4 0 0». */}
-                    <ThemedText type="f14" numberOfLines={1} style={[styles.medium, styles.grow]}>
+                    <ProductSymbol name={row.icon} size={Layout.iconInline} color={theme.textAssistive} />
+                    <ThemedText type="f15" numberOfLines={1} style={styles.grow}>
                       {row.label}
                     </ThemedText>
                     {row.tail ? (
-                      <ThemedText type="f12" themeColor="tint" numeric style={[styles.bold, styles.tail]}>
+                      <ThemedText type="f14" themeColor="tint" numeric style={styles.bold}>
                         {row.tail}
                       </ThemedText>
                     ) : null}
-                    <ProductSymbol name="chevronRight" size={Layout.iconField} color={theme.textAssistive} />
+                    <ProductSymbol name="chevronRight" size={Layout.iconField} color={theme.textDisabled} />
                   </Pressable>
                 ))}
               </View>
             </View>
           ))}
 
-          {/* 앱 버전 카드 `mb-2` — «앱 버전» 14 muted · 오른쪽 12 muted. */}
-          <View style={styles.versionBlock}>
-            <View style={[styles.card, { backgroundColor: theme.background, borderColor: theme.border }]}>
-              <View style={styles.row}>
-                {/* 규격서: «앱 버전» 14/400 · 값 12/400. */}
-                <ThemedText type="f14" themeColor="textAssistive" style={styles.grow}>
-                  {S.appVersion}
-                </ThemedText>
-                <ThemedText type="f12" themeColor="textAssistive" numeric>
-                  {APP_VERSION}
-                </ThemedText>
-              </View>
-            </View>
-          </View>
-
-          {/* 로그아웃 — 피그마 «잘 안 보이게»: 가운데 · 12 · muted 60% · 밑줄 · 앞에 나가기 기호 12. */}
-          {isSignedIn ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={S.logout}
-              hitSlop={Spacing.two}
-              style={({ pressed }) => [styles.logout, pressed ? styles.pressed : null]}
-              onPress={() => {
-                void signOut().finally(() => router.replace('/login'));
-              }}>
-              <ProductSymbol name="signout" size={Layout.iconMicro} color={theme.textAssistive} />
-              {/* 규격서: «로그아웃» 12/500 · 60% · 기호 12 · mar 0 4 0 0. */}
-              <ThemedText type="f12" themeColor="textAssistive" style={[styles.medium, styles.underline]}>
-                {S.logout}
-              </ThemedText>
-            </Pressable>
-          ) : null}
-
-          {/* 표어 `mt-4 text-center text-[11px] muted/50` + 사업자 정보(2026-09-08 등록 · 법정 공시). */}
+          {/* 시안 secFoot: «앱 버전 1.0.0» 13 muted 가운데. 로그아웃 · 탈퇴는 프로필에 있다. */}
           <View style={styles.footer}>
-            {/* 규격서: 표어 «11/400 · 50% · lh 17 · mar 16». */}
-            <ThemedText type="f11" themeColor="textAssistive" style={styles.center}>
-              {S.tagline}
+            <ThemedText type="f13" themeColor="textAssistive" numeric style={styles.center}>
+              {S.appVersion.replace('{version}', APP_VERSION)}
             </ThemedText>
+            {/* 사업자 정보 — 2026-09-08 등록 · 법정 공시라 시안에 없어도 둔다. */}
             <View style={styles.businessNotice}>
               {BUSINESS_NOTICE_LINES.map((line) => (
                 <ThemedText key={line} type="micro" themeColor="textAssistive" style={[styles.regular, styles.center]}>
@@ -402,13 +343,24 @@ export default function MyScreen() {
   );
 }
 
-/** «2027년 1월 15일» — 피그마 프로필 카드의 날짜 꼴. 저장값은 ISO 그대로다. */
-function koreanDate(iso: string): string {
-  const value = new Date(iso);
-  return `${value.getFullYear()}년 ${value.getMonth() + 1}월 ${value.getDate()}일`;
+/** «2027.05.16(토) · 250일 남았어요» — 시안 `profSub`. 저장값은 `YYYY-MM-DD`다. */
+function weddingLine(iso: string): string {
+  const [year, month, day] = iso.split('-').map(Number);
+  const date = new Date(year!, month! - 1, day!);
+  const dot = `${year}.${String(month).padStart(2, '0')}.${String(day).padStart(2, '0')}(${WEEKDAY[date.getDay()]})`;
+  const days = daysUntil(iso);
+  const dday =
+    days > 0
+      ? S['dday.upcoming'].replace('{n}', formatCount(days))
+      : days === 0
+        ? S['dday.today']
+        : S['dday.past'].replace('{n}', formatCount(-days));
+  return S.weddingDate.replace('{date}', dot).replace('{dday}', dday);
 }
 
-// ─── Styles — 값은 피그마 `My.tsx`(2026-09-14 정본) ───────────────────
+const WEEKDAY = ['일', '월', '화', '수', '목', '금', '토'] as const;
+
+// ─── Styles — 모양은 07-lounge-my.dc.html 4, 수치는 docs/design/handoff/tokens.json ───
 
 const styles = StyleSheet.create({
   container: {
@@ -422,92 +374,70 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   scroll: { flex: 1 },
-  /* 바깥 `pb-12` = 48. */
-  scrollContent: { paddingBottom: Spacing.four + Spacing.four },
+  scrollContent: { paddingBottom: Spacing.four },
   bold: { fontWeight: 700 },
   /* `micro`는 기본이 700 — 시안에서 regular인 작은 글자는 400. */
   regular: { fontWeight: 400 },
-  /* 규격서의 굵기 500 — spec/tokens.json typography.$weights의 피그마 예외. */
-  medium: { fontWeight: 500 },
-  /* 규격서 «MY» «ls -0.65px». */
+  /* «MY» 26/700 · ls -0.65px(규격서). */
   title: { letterSpacing: LetterSpacing.n065 },
   center: { textAlign: 'center' },
   grow: { flex: 1, minWidth: 0 },
+  shrink: { flexShrink: 1, minWidth: 0 },
   pressed: { opacity: 0.6 },
-  underline: { textDecorationLine: 'underline' },
 
-  /* 제목 — 위 24(`h-6` 빈 칸) · 좌우 24 · 아래 20. */
-  /* 규격서 「div 430×24」 + 「header 430×59 pad 0 20 20 20」 — 위 24 · 좌우 20 · 아래 20. */
+  /* head `flex:0 0 56px` · 좌우 24. */
   header: {
-    paddingTop: Spacing.four,
-    paddingHorizontal: Layout.pageX,
+    height: Layout.navBar,
+    justifyContent: 'center',
+    paddingHorizontal: Layout.gutter,
+  },
+  /* sec `padding:0 20px 20px;gap:12px` — 좌우 24 · 아래 20 · 제목↔카드 12. */
+  block: {
+    paddingHorizontal: Layout.gutter,
     paddingBottom: Layout.listGap,
   },
-  /* 덩어리 `mx-5 mb-6` — 좌우 24 · 아래 24. */
-  /* 규격서 「div 390×… mar 0 20 24 20」 — 좌우 20 · 아래 24. */
-  block: {
-    paddingHorizontal: Layout.pageX,
-    paddingBottom: Spacing.four,
-  },
   loginCta: { gap: Spacing.two },
-  /* 카드 `rounded-[22px] border overflow-hidden`. */
+  /* profCard · listCard: radius 10 · 1 테두리(handoff card.defaultBorder) · overflow hidden. */
   card: {
-    borderRadius: Radius.hero,
+    borderRadius: Radius.medium,
     borderWidth: Border.hairline,
     overflow: 'hidden',
   },
-  /* 프로필 위 `px-5 py-4`. */
+  /* profTop `gap:14px;padding:18px`. */
   profile: {
-    paddingHorizontal: Layout.cardPadding,
-    paddingVertical: Spacing.three,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Layout.sectionHeadGap,
+    padding: Layout.cardPaddingCompactY,
   },
-  profileSub: { marginTop: Spacing.half },
-  /* «내 웨딩 설정» `border-t px-5 py-3.5 gap-3` — 안쪽 20/14 · 사이 12. */
+  profileCol: { flex: 1, minWidth: 0, gap: Spacing.one },
+  /* profNameRow `gap:7px` → 8(Spacing.two). */
+  profileNameRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  /* profRow `gap:12px;min-height:52px;padding:0 18px` — 행 높이는 handoff 56. */
   profileRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Layout.inlineGap,
+    minHeight: Layout.rowMinHeight,
     borderTopWidth: Border.hairline,
-    paddingHorizontal: Layout.cardPadding,
-    paddingVertical: Layout.fieldPaddingX,
+    paddingHorizontal: Layout.cardPaddingCompactY,
   },
-  /* 섹션 제목 `mb-2 px-1`. */
-  sectionTitle: {
-    marginBottom: Spacing.two,
-    paddingHorizontal: Spacing.one,
-    letterSpacing: LetterSpacing.p11,
-  },
-  /* 행 `px-4 py-3.5 gap-3` — 안쪽 16/14 · 사이 12. */
+  /* secLabel 13/700 muted. */
+  sectionTitle: { marginBottom: Layout.inlineGap },
+  /* ROW `gap:12px;min-height:52px;padding:0 16px` — 행 높이는 handoff 56. */
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Layout.inlineGap,
+    minHeight: Layout.rowMinHeight,
     paddingHorizontal: Spacing.three,
-    paddingVertical: Layout.fieldPaddingX,
   },
-  /* 꼬리 `mr-1`. */
-  tail: { marginRight: Spacing.one },
-  /* 앱 버전 카드 `mx-5 mb-2`. */
-  versionBlock: {
-    paddingHorizontal: Layout.pageX,
-    paddingBottom: Spacing.two,
-  },
-  /* 로그아웃 `mt-3` 가운데 · 기호↔글 4. */
-  logout: {
-    marginTop: Layout.inlineGap,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
-    minHeight: Layout.touchTarget,
-    opacity: 0.6,
-  },
-  /* 표어 `mt-4`. 아래 사업자 정보는 8 띄운다. */
+  /* secFoot `padding:4px 20px 0;gap:14px` 가운데. 아래 사업자 정보는 8 띄운다. */
   footer: {
-    marginTop: Spacing.three,
+    paddingTop: Spacing.one,
     paddingHorizontal: Layout.gutter,
+    alignItems: 'center',
     gap: Spacing.two,
-    opacity: 0.5,
   },
-  businessNotice: { gap: Spacing.half },
+  businessNotice: { gap: Spacing.half, opacity: 0.5 },
 });

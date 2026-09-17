@@ -9,7 +9,7 @@ import { EmptyBox, Hero, NoteBox, Row, Rows, Section, SubScreen } from '@/featur
 
 /** 시안 12b-remaining #10 «내 후기 · WP-REV-004»의 renderVals. */
 const S = {
-  title: '내 후기',
+  title: '내가 쓴 후기',
   hero: (n: number) => [`${n}곳에`, '후기를 남겼어요'],
   heroEmpty: ['아직 남긴 후기가', '없어요'],
   written: '쓴 후기',

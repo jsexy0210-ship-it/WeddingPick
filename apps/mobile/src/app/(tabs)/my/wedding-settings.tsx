@@ -32,7 +32,7 @@ type PreparedCategory = Exclude<VendorCategory, 'etc'>;
 
 /** screens.json WP-MY-003 layout · `spec/strings.ko.json` `my.setting.*`. */
 const S = {
-  title: '내 웨딩 설정',
+  title: '내 웨딩설정',
   hero: ['한 가지씩', '고칠 수 있어요'],
   basic: '기본',
   recommend: '추천에 쓰는 정보',

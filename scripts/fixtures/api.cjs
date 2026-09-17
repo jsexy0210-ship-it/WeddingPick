@@ -507,6 +507,8 @@ const routes = {
     history: [],
   },
   'GET /v1/me/reports': { reports: [] },
+  /* MY 「문의하기」 꼬리 · 라운지 — 문의가 없는 상태가 기본이다. */
+  'GET /v1/inquiries': { inquiries: [] },
   'GET /v1/me/rewards': {
     referralCode: 'ABC123',
     invitedCount: 0,
