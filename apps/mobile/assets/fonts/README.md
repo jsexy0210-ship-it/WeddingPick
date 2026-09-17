@@ -5,7 +5,7 @@
 
 | 자리 | 파일 | 쓰는 곳 |
 | --- | --- | --- |
-| `apps/mobile/assets/fonts/` | `Pretendard-{Regular,SemiBold,Bold,ExtraBold}.ttf` | 앱(iOS · Android). `app.json`의 `expo-font` 플러그인이 빌드 때 심는다 |
+| `apps/mobile/assets/fonts/` | `Pretendard-{Regular,SemiBold,Bold}.ttf` | 앱(iOS · Android). `app.json`의 `expo-font` 플러그인이 빌드 때 심는다 |
 | `apps/mobile/public/fonts/` | `PretendardVariable.woff2` | 앱을 웹으로 내보낸 것(`+html.tsx`) |
 | `apps/web/public/assets/fonts/` | `PretendardVariable.woff2` | 마케팅 웹(`apps/web/src/fonts.ts`) |
 
@@ -41,11 +41,19 @@ SIL Open Font License, Version 1.1. 전문은 <http://scripts.sil.org/OFL>과 �
 **웹은 다른 방법으로 줄였다**(`packages/domain/src/web-font.ts`). 그쪽은 `unicode-range`로
 필요한 쪽만 받을 수 있어서 흔한 글자 2,350자를 따로 떼어 493KB로 만들었다.
 
-### 아직 안 한 것 — 대표님 판단
+### ExtraBold는 뺐다 (2026-09-17 대표 지시 「줄이고」)
 
-`Pretendard-ExtraBold.ttf`(2.19MB)가 쓰이는 자리는 **두 곳뿐**이다(`fontWeight: 800`).
-빼면 그 둘이 Bold(700)로 떨어진다. 2.19MB를 더 줄일 수 있지만 **보이는 것이 바뀌므로
-고르지 않고 남겨 둔다.**
+```
+10,728,696  →  8,796,232  →  6,607,020 bytes   (전체 38% 감소)
+   원본         계열 정리       ExtraBold 제거
+```
+
+굵기 800을 쓰는 자리는 **`packages/ui/src/npay-logo.tsx` 두 줄뿐**이었다. 두 줄 때문에
+2.19MB를 앱에 넣고 다녔다.
+
+**코드의 `fontWeight: '800'`은 그대로 뒀다.** 규격이 800이고(핸드오프 v3.22) 웹은
+가변 폰트(45~920)라 **실제로 800을 그린다** — 코드를 700으로 적으면 웹까지 내려간다.
+네이티브만 기기가 700으로 떨어뜨린다.
 
 굵기별 쓰임 (`apps/mobile/src` · `packages/ui/src`에서 센 것):
 
@@ -54,5 +62,7 @@ SIL Open Font License, Version 1.1. 전문은 <http://scripts.sil.org/OFL>과 �
 600   32곳      파일 있음
 400   32곳      파일 있음
 500   11곳      파일 없음 — 기기가 가장 가까운 것으로 떨어뜨린다
-800    2곳      파일 있음 (2.19MB)
+800    2곳      파일 없음 — 웹은 800, 네이티브는 700
 ```
+
+네이티브에서도 정확히 800이어야 하면 TTF를 되돌린다. 그때는 2.19MB를 치르는 것이다.
