@@ -26,7 +26,7 @@ services:
   #
   WeddingPick-관리자 사이트:
     vars:
-      EXPO_PUBLIC_API_URL: https://weddingpickl-sg.onrender.com
+      EXPO_PUBLIC_API_URL: https://210.109.82.212
       EXPO_PUBLIC_KAKAO_CLIENT_ID: 8e9a14dd3a0aa1a420bff858460c415c
 
   # 모바일 웹 export (앱 화면)
@@ -39,7 +39,7 @@ services:
   # `weddingpickl-Preview`였다. 대문자 P까지 그대로다 — Render는 이름을 그대로 맞춘다.
   weddingpickl-Preview:
     vars:
-      EXPO_PUBLIC_API_URL: https://weddingpickl-sg.onrender.com
+      EXPO_PUBLIC_API_URL: https://210.109.82.212
       # 카카오 REST API 키 — 로그인 리다이렉트 URI가 등록된 키다.
       # 네이티브 앱 키를 넣으면 /oauth/authorize가 KOE033으로 거부한다.
       EXPO_PUBLIC_KAKAO_CLIENT_ID: 8e9a14dd3a0aa1a420bff858460c415c
@@ -55,7 +55,7 @@ services:
       WEDDINGPICK_CONTACT_EMAIL: help.weddingpick@gmail.com
       # 없으면 search.html의 "많이 확인된 곳"이 «정보를 모으는 중»으로 나가고
       # 업체 상세(/v/*.html)가 한 장도 만들어지지 않는다.
-      WEDDINGPICK_API_URL: https://weddingpickl-sg.onrender.com
+      WEDDINGPICK_API_URL: https://210.109.82.212
       # 법적 문서 시행일. **비밀이 아니다** — 약관 페이지에 「시행일 2026년 9월 10일」로
       # 그대로 찍히는 공개 값이다. secrets로 두면 GitHub Secrets에 같은 이름을 손으로
       # 넣어야 하고, 넣지 않으면 동기화가 조용히 건너뛴 뒤 값 없이 빌드에 들어간 웹이
