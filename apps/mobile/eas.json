@@ -13,7 +13,7 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://weddingpickl-sg.onrender.com",
+        "EXPO_PUBLIC_API_URL": "https://210.109.82.212",
         "EXPO_PUBLIC_KAKAO_CLIENT_ID": "8e9a14dd3a0aa1a420bff858460c415c",
         "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "595165026523-dd5s0fqtle78e03mb34m9iaclpdmlb9r.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "595165026523-3mlcq960r5q174h6chun8mommjkpt0qi.apps.googleusercontent.com",
@@ -30,7 +30,7 @@
     },
     "production": {
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://weddingpickl-sg.onrender.com",
+        "EXPO_PUBLIC_API_URL": "https://210.109.82.212",
         "EXPO_PUBLIC_KAKAO_CLIENT_ID": "8e9a14dd3a0aa1a420bff858460c415c",
         "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "595165026523-dd5s0fqtle78e03mb34m9iaclpdmlb9r.apps.googleusercontent.com",
         "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "595165026523-3mlcq960r5q174h6chun8mommjkpt0qi.apps.googleusercontent.com",
