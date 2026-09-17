@@ -1,0 +1,175 @@
+name: Deploy Kakao API
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/api/**'
+      - 'packages/api-contract/**'
+      - 'packages/db/**'
+      - 'packages/domain/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'Dockerfile'
+      - '.github/workflows/deploy-kakao-api.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: weddingpick-kakao-api-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy → KakaoCloud API
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify deployment environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f /home/ubuntu/WeddingPick/.env.kakao-prod
+          sudo docker version >/dev/null
+          echo "KakaoCloud runner and production env are ready."
+
+      - name: Build and deploy with rollback
+        shell: bash
+        env:
+          ENV_FILE: /home/ubuntu/WeddingPick/.env.kakao-prod
+          PUBLIC_HEALTH_URL: https://210.109.82.212/health
+        run: |
+          set -euo pipefail
+
+          IMAGE="weddingpick-api:${GITHUB_SHA}"
+          PROD_CONTAINER="weddingpick-api"
+          CANDIDATE_CONTAINER="weddingpick-api-candidate"
+          OLD_IMAGE=""
+
+          cleanup_candidate() {
+            sudo docker rm -f "$CANDIDATE_CONTAINER" >/dev/null 2>&1 || true
+          }
+
+          health_ok() {
+            local url="$1"
+            local attempts="${2:-30}"
+            local delay="${3:-2}"
+            local body
+
+            for _ in $(seq 1 "$attempts"); do
+              body="$(curl -fsS --max-time 10 "$url" 2>/dev/null || true)"
+              if BODY="$body" python3 - <<'PY'
+import json, os, sys
+try:
+    d = json.loads(os.environ.get('BODY', ''))
+except Exception:
+    sys.exit(1)
+ok = (
+    d.get('ok') is True
+    and d.get('database') == 'ok'
+    and isinstance(d.get('schema'), dict)
+    and d['schema'].get('ok') is True
+    and d['schema'].get('pending') == []
+)
+sys.exit(0 if ok else 1)
+PY
+              then
+                return 0
+              fi
+              sleep "$delay"
+            done
+            return 1
+          }
+
+          rollback() {
+            echo "Deployment failed. Restoring previous container."
+            sudo docker logs --tail 120 "$PROD_CONTAINER" 2>/dev/null || true
+            sudo docker rm -f "$PROD_CONTAINER" >/dev/null 2>&1 || true
+
+            if [ -n "$OLD_IMAGE" ]; then
+              sudo docker run -d \
+                --name "$PROD_CONTAINER" \
+                --restart unless-stopped \
+                --env-file "$ENV_FILE" \
+                -p 127.0.0.1:3001:3000 \
+                "$OLD_IMAGE" >/dev/null
+
+              if health_ok http://127.0.0.1:3001/health 30 2; then
+                echo "Rollback succeeded: $OLD_IMAGE"
+              else
+                echo "Rollback container started but health check failed." >&2
+              fi
+            else
+              echo "No previous image was available for rollback." >&2
+            fi
+          }
+
+          trap cleanup_candidate EXIT
+
+          echo "Building $IMAGE"
+          sudo docker build -t "$IMAGE" .
+
+          cleanup_candidate
+          echo "Starting candidate on 127.0.0.1:3002"
+          sudo docker run -d \
+            --name "$CANDIDATE_CONTAINER" \
+            --restart no \
+            --env-file "$ENV_FILE" \
+            -e RUN_WORKER_IN_API=false \
+            -p 127.0.0.1:3002:3000 \
+            "$IMAGE" >/dev/null
+
+          if ! health_ok http://127.0.0.1:3002/health 45 2; then
+            echo "Candidate health check failed." >&2
+            sudo docker logs --tail 120 "$CANDIDATE_CONTAINER" || true
+            exit 1
+          fi
+
+          echo "Candidate health check passed."
+          cleanup_candidate
+
+          OLD_IMAGE="$(sudo docker inspect -f '{{.Config.Image}}' "$PROD_CONTAINER" 2>/dev/null || true)"
+          if [ -n "$OLD_IMAGE" ]; then
+            echo "Previous image: $OLD_IMAGE"
+          fi
+
+          sudo docker rm -f "$PROD_CONTAINER" >/dev/null 2>&1 || true
+
+          sudo docker run -d \
+            --name "$PROD_CONTAINER" \
+            --restart unless-stopped \
+            --env-file "$ENV_FILE" \
+            -p 127.0.0.1:3001:3000 \
+            "$IMAGE" >/dev/null
+
+          if ! health_ok http://127.0.0.1:3001/health 45 2; then
+            rollback
+            exit 1
+          fi
+
+          if ! health_ok "$PUBLIC_HEALTH_URL" 20 3; then
+            rollback
+            exit 1
+          fi
+
+          sudo docker tag "$IMAGE" weddingpick-api:kakao-current
+          sudo docker image prune -f >/dev/null || true
+
+          echo "KakaoCloud API deployed successfully: ${GITHUB_SHA}"
+
+      - name: Deployment summary
+        if: always()
+        shell: bash
+        run: |
+          echo "### KakaoCloud API" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Commit: \`${GITHUB_SHA}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Runner: \`${RUNNER_NAME}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Endpoint: \`https://210.109.82.212\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Container:" >> "$GITHUB_STEP_SUMMARY"
+          sudo docker ps --filter name=weddingpick-api --format '- `{{.Names}}` → `{{.Image}}` / `{{.Status}}`' >> "$GITHUB_STEP_SUMMARY" || true
