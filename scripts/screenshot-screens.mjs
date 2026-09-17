@@ -81,6 +81,7 @@ function parseArgs(argv) {
     taps: [],
     /** 토큰을 심지 않는다 — 로그인 화면(`/login`)처럼 로그인 전 화면을 찍을 때. */
     guest: false,
+    expand: false,
   };
 
   for (let i = 0; i < argv.length; i += 1) {
@@ -90,6 +91,7 @@ function parseArgs(argv) {
     else if (arg === '--out') opts.out = resolve(argv[++i]);
     else if (arg === '--build') opts.build = true;
     else if (arg === '--full') opts.full = true;
+    else if (arg === '--expand') { opts.expand = true; opts.full = true; }
     else if (arg === '--wait') opts.wait = Number(argv[++i]);
     else if (arg === '--tap') opts.taps.push(argv[++i]);
     else if (arg === '--edges') opts.edges = true;
@@ -302,6 +304,89 @@ async function captureRoute(context, origin, route, opts) {
   }
 
   const file = join(opts.out, `${safeName(route)}.png`);
+
+  /*
+   * **`--full`만으로는 접힌 아래가 안 찍힌다.** `fullPage`는 «문서» 높이를 늘리는데,
+   * react-native-web의 `ScrollView`는 문서가 아니라 `overflow:auto`인 «안쪽 div»가
+   * 스크롤된다. 그래서 화면 하나 높이에서 잘린 그림이 나오고, 그것을 「전체」라고
+   * 믿게 된다 — 2026-09-16에 홈을 그렇게 찍어 대표님께 반쪽만 보여드렸다.
+   *
+   * 스크롤되는 것을 찾아 높이를 내용만큼 늘린다. 뷰포트를 고정한 조상(높이 100%)도
+   * 같이 풀어야 늘어난 높이가 실제로 보인다.
+   */
+  /*
+   * **`--full`만으로는 접힌 아래가 안 찍힌다.** `fullPage`는 «문서» 높이를 늘리는데,
+   * react-native-web의 `ScrollView`는 문서가 아니라 `overflow:auto`인 «안쪽 div»가
+   * 스크롤된다. 그래서 화면 하나 높이에서 잘린 그림이 나오고, 그것을 「전체」라고
+   * 믿게 된다 — 2026-09-16에 홈을 그렇게 찍어 대표님께 반쪽만 보여드렸다.
+   *
+   * 스크롤되는 것을 찾아 높이를 내용만큼 늘린다.
+   *
+   * **그런데 이 수법이 어떤 화면에서는 «내용을 접는다».** Pick · 웨딩노트 · 라운지가
+   * 그랬다 — 조상에 `height:auto`를 주면 flex로 늘어나 있던 칸이 제 내용만큼으로
+   * 줄어들고, 화면이 844에서 223으로 무너진다. 요소는 그대로 살아 있어서 «개수»로는
+   * 못 잡는다. **재는 것은 내용이 차지한 «범위»다.**
+   *
+   * 무너졌으면 되돌리고 안 편 채로 찍는다. 잘린 그림이 무너진 그림보다 낫고,
+   * 무엇보다 **어느 쪽인지 말해준다** — 조용히 틀린 그림을 내보내지 않는다.
+   */
+  if (opts.expand) {
+    const extent = () => page.evaluate(() => {
+      const boxes = [...document.querySelectorAll('*')]
+        .map((el) => el.getBoundingClientRect())
+        .filter((box) => box.width > 0 && box.height > 0);
+
+      if (boxes.length === 0) return 0;
+
+      return Math.round(Math.max(...boxes.map((box) => box.bottom + window.scrollY)));
+    });
+
+    const before = await extent();
+
+    await page.evaluate(() => {
+      const touched = [];
+      const scrollers = [...document.querySelectorAll('*')].filter((el) => {
+        const style = getComputedStyle(el);
+        return /(auto|scroll)/.test(style.overflowY) && el.scrollHeight > el.clientHeight + 1;
+      });
+
+      const relax = (el, height) => {
+        touched.push([el, el.getAttribute('style')]);
+        el.style.setProperty('height', height, 'important');
+        el.style.setProperty('max-height', 'none', 'important');
+        el.style.setProperty('overflow', 'visible', 'important');
+      };
+
+      for (const el of scrollers) {
+        for (let node = el.parentElement; node && node !== document.documentElement; node = node.parentElement) {
+          relax(node, 'auto');
+        }
+        relax(el, `${el.scrollHeight}px`);
+      }
+
+      for (const el of [document.documentElement, document.body]) relax(el, 'auto');
+
+      // 되돌릴 수 있게 남겨 둔다.
+      window.__expandUndo = () => {
+        for (const [el, style] of touched) {
+          if (style === null) el.removeAttribute('style');
+          else el.setAttribute('style', style);
+        }
+      };
+    });
+    await page.waitForTimeout(600);
+
+    const after = await extent();
+
+    if (after < before) {
+      console.warn(
+        `  !! --expand가 화면을 접었다 (${before}px → ${after}px). 되돌리고 안 편 채로 찍는다 — ` +
+        '이 화면은 아래가 잘릴 수 있다.'
+      );
+      await page.evaluate(() => window.__expandUndo?.());
+      await page.waitForTimeout(300);
+    }
+  }
 
   await page.screenshot({ path: file, fullPage: opts.full });
 
