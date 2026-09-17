@@ -47,6 +47,7 @@ const ADMIN_KEEP = new Set([
   'admin', // 관리자 화면 32장 + 모듈 산출물 2장(_api·_session)
   '_expo', // JS·CSS 번들 (사용자 화면과 같은 번들 하나다 — 갈라지지 않는다)
   'assets', // 폰트·이미지
+  'fonts', // public/fonts의 Pretendard를 관리자 산출물에서도 보존한다.
   'favicon.ico',
   '+not-found.html',
 ]);

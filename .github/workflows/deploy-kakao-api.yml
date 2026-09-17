@@ -1,0 +1,227 @@
+name: Deploy Kakao API
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/api/**'
+      - 'packages/api-contract/**'
+      - 'packages/db/**'
+      - 'packages/domain/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'Dockerfile'
+      - '.dockerignore'
+      - '.github/workflows/deploy-kakao-api.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: weddingpick-kakao-api-production
+  cancel-in-progress: false
+
+jobs:
+  ci-gate:
+    name: Verify CI for this commit
+    if: github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Wait for the same commit's CI job
+        shell: python
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          import json
+          import os
+          import time
+          import urllib.error
+          import urllib.request
+
+          repo = os.environ['GITHUB_REPOSITORY']
+          sha = os.environ['GITHUB_SHA']
+          base = os.environ['GITHUB_API_URL'] + '/repos/' + repo
+          headers = {
+              'Authorization': 'Bearer ' + os.environ['GH_TOKEN'],
+              'Accept': 'application/vnd.github+json',
+          }
+
+          def get(path):
+              request = urllib.request.Request(base + path, headers=headers)
+              with urllib.request.urlopen(request, timeout=20) as response:
+                  return json.load(response)
+
+          deadline = time.monotonic() + 1500
+          while time.monotonic() < deadline:
+              try:
+                  if get('/git/ref/heads/main')['object']['sha'] != sha:
+                      raise SystemExit('A newer main commit exists; this deployment is not applied.')
+                  runs = get('/actions/workflows/main.yml/runs?branch=main&event=push&head_sha=' + sha + '&per_page=10')['workflow_runs']
+                  runs = [run for run in runs if run['head_sha'] == sha and run['head_branch'] == 'main']
+                  if runs:
+                      run = max(runs, key=lambda item: item['id'])
+                      jobs = get('/actions/runs/' + str(run['id']) + '/jobs?filter=latest&per_page=100')['jobs']
+                      checks = [job for job in jobs if job['name'] == 'CI' and job['head_sha'] == sha]
+                      if checks and checks[-1]['status'] == 'completed':
+                          if checks[-1]['conclusion'] != 'success':
+                              raise SystemExit('CI did not pass; the running API is unchanged.')
+                          print('CI passed for ' + sha, flush=True)
+                          break
+                      if run['status'] == 'completed':
+                          raise SystemExit('No successful CI job was found; deployment stopped.')
+                  print('Waiting for the existing CI job; tests are not run twice.', flush=True)
+              except urllib.error.HTTPError as error:
+                  if error.code not in (429, 500, 502, 503, 504):
+                      raise SystemExit('GitHub CI lookup failed: HTTP ' + str(error.code))
+                  print('GitHub temporarily unavailable; retrying.', flush=True)
+              except (urllib.error.URLError, TimeoutError):
+                  print('CI lookup timed out; retrying.', flush=True)
+              time.sleep(15)
+          else:
+              raise SystemExit('Timed out waiting for CI; the running API is unchanged.')
+
+  deploy:
+    name: Deploy → KakaoCloud API
+    needs: [ci-gate]
+    if: github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main'
+    environment: production
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 40
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Verify deployment environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -r /home/ubuntu/WeddingPick/.env.kakao-prod
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$PWD" != /home/ubuntu/WeddingPick
+          command -v python3 >/dev/null
+          command -v curl >/dev/null
+          command -v flock >/dev/null
+          sudo -n docker version >/dev/null
+          echo 'Runner and production environment file are ready; secret values are not printed.'
+
+      - name: Build and deploy with rollback
+        shell: bash
+        env:
+          ENV_FILE: /home/ubuntu/WeddingPick/.env.kakao-prod
+          PUBLIC_HEALTH_URL: https://210.109.82.212/health
+        run: |
+          set -euo pipefail
+          umask 077
+          exec 9> /home/ubuntu/WeddingPick/.kakao-deploy.lock
+          flock -n 9 || { echo 'Another API deployment holds the lock.' >&2; exit 1; }
+
+          IMAGE="weddingpick-api:${GITHUB_SHA}"
+          PROD_CONTAINER=weddingpick-api
+          CANDIDATE_CONTAINER="weddingpick-api-candidate-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          BACKUP_CONTAINER="weddingpick-api-previous-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          OLD_ID=''
+          CUTOVER_STARTED=0
+          DEPLOYED=0
+
+          health_ok() {
+            local url="$1" attempts="${2:-30}" delay="${3:-2}" body
+            for ((i=0; i<attempts; i++)); do
+              body="$(curl --fail --silent --show-error --connect-timeout 5 --max-time 10 "$url" 2>/dev/null || true)"
+              if printf '%s' "$body" | python3 -c 'import json,sys; d=json.load(sys.stdin); s=d.get("schema"); sys.exit(0 if d.get("ok") is True and d.get("database")=="ok" and isinstance(s,dict) and s.get("ok") is True and s.get("pending")==[] else 1)' 2>/dev/null; then
+                return 0
+              fi
+              sleep "$delay"
+            done
+            return 1
+          }
+
+          current_main() {
+            test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$GITHUB_SHA"
+          }
+
+          cleanup() {
+            local status=$? current_id old_name
+            trap - EXIT INT TERM
+            set +e
+            sudo -n docker rm -f "$CANDIDATE_CONTAINER" >/dev/null 2>&1
+            if [ "$CUTOVER_STARTED" -eq 1 ] && [ "$DEPLOYED" -eq 0 ]; then
+              echo 'Restoring the previous container with its original settings.' >&2
+              current_id="$(sudo -n docker inspect -f '{{.Id}}' "$PROD_CONTAINER" 2>/dev/null)"
+              if [ -n "$current_id" ] && [ "$current_id" != "$OLD_ID" ]; then
+                sudo -n docker rm -f "$current_id" >/dev/null 2>&1
+              fi
+              old_name="$(sudo -n docker inspect -f '{{.Name}}' "$OLD_ID" 2>/dev/null)"
+              if [ -n "$old_name" ] && [ "$old_name" != "/$PROD_CONTAINER" ]; then
+                sudo -n docker rename "$OLD_ID" "$PROD_CONTAINER"
+              fi
+              if sudo -n docker start "$OLD_ID" >/dev/null && health_ok http://127.0.0.1:3001/health 30 2; then
+                echo 'Previous API container restored.' >&2
+              else
+                echo 'Automatic recovery failed; inspect the VM. No DB rollback was attempted.' >&2
+              fi
+              status=1
+            fi
+            exit "$status"
+          }
+          trap cleanup EXIT
+          trap 'exit 130' INT
+          trap 'exit 143' TERM
+
+          current_main || { echo 'A newer main commit exists; deployment stopped.' >&2; exit 1; }
+          OLD_ID="$(sudo -n docker inspect -f '{{.Id}}' "$PROD_CONTAINER")"
+          test "$(sudo -n docker inspect -f '{{.State.Running}}' "$OLD_ID")" = true
+          health_ok http://127.0.0.1:3001/health 10 2
+          if sudo -n docker inspect "$BACKUP_CONTAINER" >/dev/null 2>&1; then
+            echo 'A recovery container already exists; it will not be overwritten.' >&2
+            exit 1
+          fi
+
+          echo "Building $IMAGE while the current API remains running."
+          sudo -n docker build --label "org.opencontainers.image.revision=$GITHUB_SHA" -t "$IMAGE" .
+          sudo -n docker run -d --pull=never --name "$CANDIDATE_CONTAINER" --restart=no \
+            --env-file "$ENV_FILE" -e RUN_WORKER_IN_API=false \
+            -p 127.0.0.1:3002:3000 "$IMAGE" >/dev/null
+
+          if ! health_ok http://127.0.0.1:3002/health 45 2; then
+            echo 'Candidate health failed; the existing API is unchanged. Runtime logs stay on the VM.' >&2
+            exit 1
+          fi
+          sudo -n docker rm -f "$CANDIDATE_CONTAINER" >/dev/null
+          current_main || { echo 'main changed during the build; the existing API is unchanged.' >&2; exit 1; }
+
+          CUTOVER_STARTED=1
+          sudo -n docker stop --time 30 "$OLD_ID" >/dev/null
+          sudo -n docker rename "$OLD_ID" "$BACKUP_CONTAINER"
+          sudo -n docker run -d --pull=never --name "$PROD_CONTAINER" --restart=unless-stopped \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+            --env-file "$ENV_FILE" -p 127.0.0.1:3001:3000 "$IMAGE" >/dev/null
+
+          health_ok http://127.0.0.1:3001/health 45 2
+          health_ok "$PUBLIC_HEALTH_URL" 20 3
+          sudo -n docker tag "$IMAGE" weddingpick-api:kakao-current
+          DEPLOYED=1
+          echo "KakaoCloud API deployed successfully: $GITHUB_SHA"
+          echo "Stopped recovery container retained: $BACKUP_CONTAINER"
+          echo 'The environment file, worker setting, DB schema and Render services were not modified.'
+
+      - name: Deployment summary
+        if: always()
+        shell: bash
+        env:
+          DEPLOY_STATUS: ${{ job.status }}
+        run: |
+          {
+            echo '### KakaoCloud API'
+            printf -- '- Job status: `%s`\n' "$DEPLOY_STATUS"
+            printf -- '- Commit: `%s`\n' "$GITHUB_SHA"
+            printf -- '- Runner: `%s`\n' "$RUNNER_NAME"
+            echo '- Endpoint: `https://210.109.82.212`'
+            echo '- Running API:'
+            sudo -n docker ps --filter name='^/weddingpick-api$' --format '- `{{.Names}}` → `{{.Image}}` / `{{.Status}}`' || true
+          } >> "$GITHUB_STEP_SUMMARY"
