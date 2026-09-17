@@ -19,3 +19,9 @@ iOS_액세스 토큰(중요)
 **/*.jks
 **/*.key
 **/*.mobileprovision
+
+**/.env*
+
+**/*.pem
+
+**/.ssh
