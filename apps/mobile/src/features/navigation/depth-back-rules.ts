@@ -93,6 +93,7 @@ export const ROUTES: readonly string[] = [
   '/capture/verify-status/[requestId]',
   '/capture/verify/[quoteId]',
   '/feed',
+  '/feed/[id]',
   '/login',
   '/login/age-required',
   '/my',

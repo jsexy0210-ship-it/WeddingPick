@@ -345,7 +345,7 @@ export default function HomeScreen() {
                   </ThemedText>
                 </Pressable>
               </View>
-              <WeddingContent items={data.content} onPressItem={() => router.push('/feed')} />
+              <WeddingContent items={data.content} onPressItem={(id) => router.push(`/feed/${id}`)} />
             </View>
           )}
 

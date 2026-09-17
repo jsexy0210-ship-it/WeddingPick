@@ -43,6 +43,7 @@ describe('depthBackTarget — 대표 경로', () => {
     ['/pick/history', '/pick', 'WP-PICK-007 결정 내역 → Pick 탭'],
     ['/pick/studio', '/pick', '업종별 Pick → Pick 탭'],
     ['/feed', '/', '홈 하위 스택(피드) → 홈'],
+    ['/feed/f-1', '/feed', '웨딩피드 글 상세 → 웨딩피드 목록'],
     ['/top3', '/', '웨딩픽 TOP3 → 홈'],
     ['/progress', '/', '준비 현황 → 홈'],
 

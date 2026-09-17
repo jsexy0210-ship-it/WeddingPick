@@ -848,6 +848,15 @@ export const Layout = {
   /** 업체 상세 대표 이미지 288 · 포트폴리오 띠 정사각 144 — size.heroVendor · thumbPortfolio(피그마 `VendorFlows.tsx` `h-72` · `h-36 w-36`). */
   heroVendor: 288,
   thumbPortfolio: 144,
+  /**
+   * 웨딩피드 글 상세의 대표 이미지 208 — size.heroFeed(피그마 `FlowScreens.tsx`
+   * `FeedDetailPage`의 `h-52`).
+   *
+   * **`heroVendor`(288 · `h-72`)로 대신하지 않는다.** 업체 상세는 사진이 주인공이라
+   * 크고, 글 상세는 읽는 화면이라 제목을 위로 끌어올린다. 피그마가 두 자리에 다른
+   * 값을 쓴 것이 그 뜻이고, 80px 차이는 나란히 놓으면 바로 보인다.
+   */
+  heroFeed: 208,
   /*
    * 홈 규격서 docs/figma-spec/home.txt(2026-09-15). 히어로 장식 원 «div 144×144 … r9999» ·
    * «div 112×112 … border 14» · 더보기 «button 24×24» · 아바타 «span 16×16 "지" 7/700» · 추천 카드

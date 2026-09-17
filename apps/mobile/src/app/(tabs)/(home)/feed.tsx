@@ -135,9 +135,7 @@ export default function FeedScreen() {
           ) : (
             <WeddingContent
               items={shown}
-              onPressItem={(id) => {
-                void id;
-              }}
+              onPressItem={(id) => router.push(`/feed/${id}`)}
             />
           )}
 

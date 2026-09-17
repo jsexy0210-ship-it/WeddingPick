@@ -22,7 +22,7 @@ import { myMonthlyDrawResponseSchema, myRewardPayoutResponseSchema, myRewardsRes
 import { reportReasonListResponseSchema, reviewListResponseSchema } from './reviews';
 import { settingsSchema } from './settings';
 import { signupStateSchema } from './signup';
-import { weddingFeedListResponseSchema } from './wedding-feed';
+import { weddingFeedDetailSchema, weddingFeedListResponseSchema } from './wedding-feed';
 import { weddingEventListResponseSchema } from './wedding-events';
 import { expenseSummaryResponseSchema } from './wedding-plan';
 import {
@@ -75,6 +75,7 @@ const CONTRACTS = new Map<string, ZodType>([
   ['GET /v1/vendors/:vendorId/reviews', reviewListResponseSchema],
   ['GET /v1/faq', faqListResponseSchema],
   ['GET /v1/wedding-feed', weddingFeedListResponseSchema],
+  ['GET /v1/wedding-feed/:id', weddingFeedDetailSchema],
 ]);
 
 /**

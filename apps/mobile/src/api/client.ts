@@ -158,6 +158,8 @@ import {
   type MyRewardPayoutResponse,
   type RequestRewardPayoutRequest,
   type RewardPayout,
+  weddingFeedDetailSchema,
+  type WeddingFeedDetail,
   weddingFeedListResponseSchema,
   type WeddingFeedListResponse,
 } from '@weddingpick/api-contract';
@@ -631,6 +633,11 @@ export async function getWeddingFeed(limit?: number): Promise<WeddingFeedListRes
     `/v1/wedding-feed${limit ? `?limit=${limit}` : ''}`,
     weddingFeedListResponseSchema
   );
+}
+
+/** 웨딩피드 글 하나. 목록에 없는 본문이 여기 있다 — 공개된 글이 아니면 404다. */
+export async function getWeddingFeedPost(id: string): Promise<WeddingFeedDetail> {
+  return request(`/v1/wedding-feed/${encodeURIComponent(id)}`, weddingFeedDetailSchema);
 }
 
 /**
