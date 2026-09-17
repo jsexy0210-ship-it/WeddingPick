@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-static.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-scale.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-semantic.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/typography.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/dimension.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/motion.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/base.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/core/core.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/display/display.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/styles.css">
+<script src="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/_ds_bundle.js"></script>
+<style>
+body{margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#ff6f61;text-decoration:none}
+a:hover{color:#e2564a}
+</style>
+</helmet>
+
+<section style="display:flex;flex-direction:column;gap:64px;align-items:flex-start;padding:64px;width:max-content">
+
+  <div style="display:flex;flex-direction:column;gap:12px;max-width:1100px">
+    <span style="font-size:14px;line-height:19px;font-weight:700;color:#ff6f61">WeddingPick · Flow Board</span>
+    <span style="font-size:40px;line-height:52px;font-weight:700;color:#212124">사용자 흐름 순서</span>
+    <span style="font-size:18px;line-height:26px;color:#393a40">앱을 켠 순간부터 순서대로 실제 화면을 늘어놓았습니다. 단계 제목을 누르면 원본 디자인 파일이 열립니다. 코랄 번호는 핵심 루프입니다.</span>
+    <div style="display:flex;gap:10px;padding-top:6px">
+      <span style="{{ legend }}"><span style="{{ dotKey }}"></span>핵심 루프</span>
+      <span style="{{ legend }}"><span style="{{ dotPlain }}"></span>일반 화면</span>
+      <span style="{{ legend }}"><span style="{{ dotSheet }}"></span>바텀시트</span>
+    </div>
+  </div>
+
+  <sc-for list="{{ stages }}" as="g" hint-placeholder-count="18">
+    <div style="display:flex;flex-direction:column;gap:16px">
+
+      <a href="{{ g.href }}" style="display:flex;align-items:baseline;gap:12px;text-decoration:none">
+        <span style="{{ stageKey }}">{{ g.key }}</span>
+        <span style="font-size:26px;line-height:35px;font-weight:700;color:#212124;white-space:nowrap">{{ g.title }}</span>
+        <span style="font-size:15px;line-height:22px;color:#868b94;font-variant-numeric:tabular-nums;white-space:nowrap">{{ g.range }}</span>
+        <sc-if value="{{ g.note }}">
+          <span style="font-size:15px;line-height:22px;color:#4d5159">{{ g.note }}</span>
+        </sc-if>
+        <span style="font-size:14px;line-height:22px;font-weight:700;color:#ff6f61;white-space:nowrap">{{ g.file }}</span>
+      </a>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;max-width:1760px">
+        <sc-for list="{{ g.steps }}" as="s" hint-placeholder-count="6">
+          <span style="{{ s.chip }}">
+            <span style="{{ s.numStyle }}">{{ s.no }}</span>
+            <span style="{{ chipName }}">{{ s.name }}</span>
+            <span style="{{ chipId }}">{{ s.id }}</span>
+          </span>
+        </sc-for>
+      </div>
+
+      <a href="{{ g.href }}" style="{{ g.shot }}">
+        <img src="{{ g.png }}" alt="{{ g.title }}" style="{{ g.imgStyle }}">
+      </a>
+    </div>
+  </sc-for>
+
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1900,&quot;height&quot;:1100}}">
+class Component extends DCLogic {
+  renderVals() {
+    const C = '#ff6f61';
+    let n = 0;
+
+    const st = (name, id, kind) => {
+      n += 1;
+      const isKey = kind === 'key';
+      const isSheet = kind === 'sheet';
+      const isRule = kind === 'rule';
+      return {
+        no: String(n).padStart(3, '0'), name, id,
+        chip: 'display:inline-flex;align-items:baseline;gap:8px;height:36px;padding:0 14px;border-radius:999px;background:#fff;white-space:nowrap;'
+          + (isKey ? 'box-shadow:inset 0 0 0 1.5px ' + C + ';'
+            : isRule ? 'box-shadow:inset 0 0 0 1px #eaebee;opacity:.6;'
+              : 'box-shadow:inset 0 0 0 1px #dcdee3;'),
+        numStyle: 'font-size:15px;line-height:36px;font-weight:700;font-variant-numeric:tabular-nums;color:'
+          + (isKey ? C : isSheet ? '#0088cc' : isRule ? '#dcdee3' : '#adb1ba')
+      };
+    };
+
+    const stage = (o) => ({
+      key: o.key, title: o.title, note: o.note || '',
+      file: o.file, href: o.href, png: 'handoff/png/' + o.png,
+      range: o.steps.length ? o.steps[0].no + '~' + o.steps[o.steps.length - 1].no : '',
+      steps: o.steps,
+      shot: 'display:block;border-radius:12px;overflow:hidden;background:#fff;box-shadow:0 10px 40px rgba(0,27,55,.12);max-width:1760px;text-decoration:none',
+      imgStyle: 'display:block;width:100%;height:auto'
+    });
+
+    const stages = [
+      stage({
+        key: 'A', title: '앱 진입 · 로그인', note: '비회원 이용은 없다 · 스플래시 다음이 바로 로그인',
+        file: '로그인', href: '웨딩픽 로그인.dc.html', png: '01a-login.png',
+        steps: [
+          st('앱 아이콘', 'WP-APP-001'),
+          st('스플래시', 'WP-APP-002'),
+          st('로그인', 'WP-AUTH-001', 'key'),
+          st('다른 방법으로 시작', 'WP-AUTH-002', 'sheet'),
+          st('로그인 유지', 'WP-AUTH-003'),
+          st('로그인 실패', 'WP-AUTH-004', 'sheet'),
+          st('시작 · 폐기', 'WP-APP-004', 'rule')
+        ]
+      }),
+      stage({
+        key: 'B', title: '초기 설정', note: '로그인 직후 4단계',
+        file: '진입 온보딩', href: '웨딩픽 진입 온보딩.dc.html', png: '01-onboarding.png',
+        steps: [
+          st('권한 요청', 'WP-APP-007', 'sheet'),
+          st('초기 설정 · 예식일', 'WP-APP-008'),
+          st('초기 설정 · 지역', 'WP-APP-009'),
+          st('초기 설정 · 총예산', 'WP-APP-010'),
+          st('초기 설정 · 취향', 'WP-APP-011'),
+          st('초기 설정 완료', 'WP-APP-012'),
+          st('진입 오류 3종', 'WP-APP-006'),
+          st('최초 실행 소개 · 보류', 'WP-APP-003', 'rule')
+        ]
+      }),
+      stage({
+        key: 'C', title: '홈', note: '정보 위계 5단계 고정 · 비회원 상태 폐기',
+        file: '홈 C-1', href: '웨딩픽 홈 C-1 상태.dc.html', png: '03-home.png',
+        steps: [
+          st('비회원 홈 · 폐기', 'WP-HOME-008', 'rule'),
+          st('회원 · 취향 없음', 'WP-HOME-001'),
+          st('회원 · 후보 없음', 'WP-HOME-001'),
+          st('후보 있고 제보 없음', 'WP-HOME-001'),
+          st('개인화 홈', 'WP-HOME-001', 'key'),
+          st('Pick 이후', 'WP-HOME-001')
+        ]
+      }),
+      stage({
+        key: 'C', title: '검색', note: '추천 문구를 넣지 않는다',
+        file: '검색', href: '웨딩픽 검색.dc.html', png: '06-search.png',
+        steps: [
+          st('검색 홈', 'WP-SRCH-001'),
+          st('검색어 입력', 'WP-SRCH-002'),
+          st('검색 결과', 'WP-SRCH-004'),
+          st('검색 필터', 'WP-SRCH-005', 'sheet'),
+          st('지도 보기', 'WP-SRCH-007'),
+          st('결과 없음', 'WP-SRCH-008')
+        ]
+      }),
+      stage({
+        key: 'D', title: '업체 판단 · 비교 · 결정', note: '핵심 루프',
+        file: '핵심루프', href: '웨딩픽 핵심루프.dc.html', png: '09-core-loop.png',
+        steps: [
+          st('업체 상세', 'WP-VEND-001', 'key'),
+          st('비교 결과', 'WP-CMP-002', 'key'),
+          st('업종별 픽', 'WP-PICK-002'),
+          st('최종 결정 확인', 'WP-PICK-005', 'sheet'),
+          st('결정 완료', 'WP-PICK-006', 'key')
+        ]
+      }),
+      stage({
+        key: 'E', title: '업체 상세 하위', note: '업체 안내와 제보를 항상 분리한다',
+        file: '업체상세 하위', href: '웨딩픽 업체상세 하위.dc.html', png: '09b-vendor-sub.png',
+        steps: [
+          st('이미지 전체보기', 'WP-VEND-002'),
+          st('제보 금액 상세', 'WP-VEND-003'),
+          st('업체 안내', 'WP-VEND-004'),
+          st('공식 정보', 'WP-VEND-005'),
+          st('정보 오류 제보', 'WP-VEND-006'),
+          st('업체 반론 표시', 'WP-REV-007')
+        ]
+      }),
+      stage({
+        key: 'F', title: '픽', note: 'Pick은 결정 전, 우리웨딩은 결정 후',
+        file: 'Pick 탭', href: '웨딩픽 Pick 탭.dc.html', png: '07-pick.png',
+        steps: [
+          st('픽 홈', 'WP-PICK-001'),
+          st('업종별 픽', 'WP-PICK-002'),
+          st('배우자 공동 결정', 'WP-PICK-004'),
+          st('결정 내역', 'WP-PICK-007'),
+          st('픽 해제', 'WP-PICK-008', 'sheet'),
+          st('비교 후보 선택', 'WP-CMP-001', 'sheet')
+        ]
+      }),
+      stage({
+        key: 'G', title: '배우자 연결', note: '연결을 강요하지 않는다',
+        file: '커플 연결', href: '웨딩픽 커플 연결.dc.html', png: '14-couple.png',
+        steps: [
+          st('배우자 초대', 'WP-CPL-001'),
+          st('초대 수락', 'WP-CPL-002'),
+          st('연결 완료', 'WP-CPL-003'),
+          st('편집 충돌 해결', 'WP-CPL-004'),
+          st('변경 내역', 'WP-CPL-005'),
+          st('연결 해제', 'WP-CPL-006')
+        ]
+      }),
+      stage({
+        key: 'H', title: '우리웨딩 · 마이페이지', note: '결정 후 관리',
+        file: '우리웨딩 MY', href: '웨딩픽 우리웨딩 MY.dc.html', png: '08c-our-my.png',
+        steps: [
+          st('우리웨딩 홈', 'WP-OUR-001'),
+          st('결정한 업체', 'WP-OUR-003'),
+          st('내 웨딩 설정', 'WP-MY-003'),
+          st('마이페이지 홈', 'WP-MY-001'),
+          st('지출 내역', 'WP-OUR-009'),
+          st('준비 타임라인', 'WP-OUR-012')
+        ]
+      }),
+      stage({
+        key: 'I', title: '우리웨딩 하위', note: '자동 생성 항목과 직접 입력 항목을 구분한다',
+        file: '우리웨딩 하위', href: '웨딩픽 우리웨딩 하위.dc.html', png: '08-our-wedding.png',
+        steps: [
+          st('일정 목록', 'WP-OUR-004'),
+          st('일정 상세', 'WP-OUR-005'),
+          st('일정 추가', 'WP-OUR-006'),
+          st('지출 요약', 'WP-OUR-008'),
+          st('메모', 'WP-OUR-011'),
+          st('예식 완료', 'WP-OUR-013'),
+          st('준비 현황', 'WP-OUR-002')
+        ]
+      }),
+      stage({
+        key: 'J', title: 'Pick 인증 · 후기', note: '계약서를 요구하지 않는다 · 별점 대신 3축',
+        file: '제보 후기', href: '웨딩픽 제보 후기.dc.html', png: '11-report-review.png',
+        steps: [
+          st('제보 홈', 'WP-RPT-001'),
+          st('이미지 선택', 'WP-RPT-002'),
+          st('문서 분석 중', 'WP-RPT-003'),
+          st('자동 입력 확인', 'WP-RPT-004', 'key'),
+          st('업체 확인', 'WP-RPT-005'),
+          st('제출 완료', 'WP-RPT-007'),
+          st('내 제보 내역', 'WP-RPT-009'),
+          st('후기 작성', 'WP-REV-002'),
+          st('후기 목록', 'WP-REV-001'),
+          st('이용자 경험', 'WP-REV-006')
+        ]
+      }),
+      stage({
+        key: 'K', title: '홈 하위 · 제보 · 후기 · 박람회 · 검색 나머지', note: '',
+        file: '잔여 화면', href: '웨딩픽 잔여 화면.dc.html', png: '12b-remaining.png',
+        steps: [
+          st('추천 상위 3곳', 'WP-HOME-004'),
+          st('다음 준비', 'WP-HOME-005'),
+          st('웨딩 소식', 'WP-HOME-006'),
+          st('홈 편집', 'WP-HOME-007'),
+          st('홈 상단 규칙', 'WP-HOME-002', 'rule'),
+          st('처리 결과', 'WP-RPT-008'),
+          st('가격 제보', 'WP-RPT-010'),
+          st('업체 정보 제보', 'WP-RPT-011'),
+          st('후기 상세', 'WP-REV-003'),
+          st('내 후기', 'WP-REV-004'),
+          st('박람회 목록', 'WP-EXPO-001'),
+          st('웨딩 정보 목록', 'WP-EXPO-003'),
+          st('웨딩 정보 상세', 'WP-EXPO-004'),
+          st('업종별 탐색', 'WP-SRCH-003'),
+          st('검색 결과 정렬', 'WP-SRCH-006', 'sheet')
+        ]
+      }),
+      stage({
+        key: 'L', title: '알림 · 박람회 · 지출 상세 · 신고 · 체크리스트', note: '',
+        file: '마감 화면', href: '웨딩픽 마감 화면.dc.html', png: '12-closing.png',
+        steps: [
+          st('알림센터', 'WP-NOTI-001'),
+          st('박람회 상세', 'WP-EXPO-002'),
+          st('후기 신고', 'WP-REV-005'),
+          st('준비 체크리스트', 'WP-OUR-007'),
+          st('지출 상세', 'WP-OUR-010'),
+          st('알림 유형별 연결', 'WP-NOTI-002', 'rule')
+        ]
+      }),
+      stage({
+        key: 'M', title: '혜택', note: 'Root 탭이 아니다 · 우선순위를 낮게 둔다',
+        file: '혜택 이벤트', href: '웨딩픽 혜택 이벤트.dc.html', png: '15-events.png',
+        steps: [
+          st('혜택 모아보기', 'WP-EVT-001'),
+          st('미션 4개', 'WP-EVT-002'),
+          st('친구 초대', 'WP-EVT-003'),
+          st('홍보 인증', 'WP-EVT-004'),
+          st('월간 웨딩지원금', 'WP-EVT-005'),
+          st('네이버페이 수령', 'WP-EVT-006'),
+          st('참여 · 지급 내역', 'WP-EVT-007')
+        ]
+      }),
+      stage({
+        key: 'N', title: '마이페이지 하위', note: '',
+        file: 'MY 하위', href: '웨딩픽 MY 하위.dc.html', png: '13-my.png',
+        steps: [
+          st('프로필', 'WP-MY-002'),
+          st('취향 다시 고르기', 'WP-MY-004'),
+          st('배우자 연결 관리', 'WP-MY-006'),
+          st('계정 관리', 'WP-MY-007'),
+          st('고객지원', 'WP-MY-009'),
+          st('화면 설정', 'WP-MY-005')
+        ]
+      }),
+      stage({
+        key: 'O', title: '회원 탈퇴', note: '개인정보 삭제 · 통합 보존기간을 두지 않는다',
+        file: '회원탈퇴', href: '웨딩픽 회원탈퇴.dc.html', png: '13b-withdrawal.png',
+        steps: [
+          st('탈퇴 안내 · 배우자 연결됨', 'WP-MY-008'),
+          st('동의 전 · 미연결', 'WP-MY-008'),
+          st('최종 확인', 'WP-MY-008', 'sheet'),
+          st('탈퇴 완료', 'WP-MY-008')
+        ]
+      }),
+      stage({
+        key: 'P', title: '자주 묻는 질문', note: '앱과 웹이 같은 원문을 쓴다 · 관리자가 직접 등록',
+        file: 'FAQ', href: '웨딩픽 FAQ.dc.html', png: '16-faq.png',
+        steps: [
+          st('자주 묻는 질문 홈', 'WP-FAQ-001'),
+          st('업종별 목록', 'WP-FAQ-002'),
+          st('질문 답변 상세', 'WP-FAQ-003'),
+          st('관리자 · 질문 관리', 'WP-ADM-035'),
+          st('관리자 · 질문 편집', 'WP-ADM-035')
+        ]
+      }),
+      stage({
+        key: 'Q', title: '이용약관 · 개인정보 처리방침', note: '발췌하지 않고 원문 전체를 노출한다',
+        file: '약관 방침', href: '웨딩픽 약관 방침.dc.html', png: '16-legal.png',
+        steps: [
+          st('이용약관', 'WP-LEGAL-001'),
+          st('개인정보 처리방침', 'WP-LEGAL-002'),
+          st('동의 이력', 'WP-LEGAL-003'),
+          st('관리자 · 약관 편집', 'WP-ADM-036')
+        ]
+      }),
+      stage({
+        key: 'R', title: '업체 · 플래너 문의', note: '앱은 MY 하단, 웹은 Footer로 진입',
+        file: '업체문의', href: '웨딩픽 업체문의.dc.html', png: '18-biz.png',
+        steps: [
+          st('문의 유형 선택', 'WP-BIZ-001'),
+          st('소속 확인', 'WP-BIZ-002'),
+          st('문의 내역', 'WP-BIZ-003'),
+          st('반론 등록', 'WP-BIZ-004'),
+          st('웹 하단 진입', 'WP-BIZ-008')
+        ]
+      }),
+      stage({
+        key: 'S', title: '공통 하단 팝업 16종 · 상태 14종', note: '전 화면에서 같은 컴포넌트를 쓴다',
+        file: '오버레이 상태', href: '웨딩픽 오버레이 상태.dc.html', png: '17-sheets-states.png',
+        steps: [
+          st('하단 팝업 16종', 'WP-SHT-001~016', 'sheet'),
+          st('공통 상태 14종', 'WP-ST-001~014')
+        ]
+      }),
+      stage({
+        key: 'T', title: '웹 랜딩', note: '검색 유입과 앱 다운로드 · 가명 업체 유지',
+        file: '랜딩 v4', href: '웨딩픽 랜딩 v4.dc.html', png: '19-landing.png',
+        steps: [st('랜딩', 'WP-LAND-001')]
+      }),
+      stage({
+        key: 'U', title: '웹 하위', note: '',
+        file: '랜딩 하위', href: '웨딩픽 랜딩 하위페이지.dc.html', png: '19b-landing-sub.png',
+        steps: [
+          st('서비스 소개', 'WP-LAND-002'),
+          st('자주 묻는 질문', 'WP-LAND-003'),
+          st('고객지원', 'WP-LAND-004'),
+          st('이용약관', 'WP-LAND-005'),
+          st('개인정보 처리방침', 'WP-LAND-006')
+        ]
+      }),
+      stage({
+        key: 'V', title: '관리자', note: 'AI 운영을 감독한다 · 내부 화면이라 AI · 데이터 용어 유지',
+        file: '관리자', href: '웨딩픽 관리자.dc.html', png: '20-admin.png',
+        steps: [
+          st('관리자 홈', 'WP-ADM-001'),
+          st('일일 브리핑', 'WP-ADM-002'),
+          st('데이터 7', 'WP-ADM-010~016'),
+          st('사용자 4', 'WP-ADM-020~023'),
+          st('성장 5', 'WP-ADM-030~034'),
+          st('운영 3', 'WP-ADM-040~042'),
+          st('시스템 5', 'WP-ADM-050~052')
+        ]
+      }),
+      stage({
+        key: 'W', title: '디자인 시스템 · 전체 IA', note: '구현 기준 문서',
+        file: '컴포넌트 시트', href: '웨딩픽 컴포넌트 시트.dc.html', png: '02-design-system.png',
+        steps: [
+          st('토큰 · 타이포 7단계', 'DS'),
+          st('컴포넌트 규격', 'DS'),
+          st('용어사전', 'DS'),
+          st('검수 체크리스트', 'DS')
+        ]
+      }),
+      stage({
+        key: 'X', title: '기기별 하단 여백 · 플랫폼 차이', note: '화면을 두 벌 그리지 않는다 · 여백만 다르게',
+        file: '디바이스 대응', href: '웨딩픽 디바이스 대응.dc.html', png: '21-device.png',
+        steps: [
+          st('iOS 노치', 'safeBottom 34'),
+          st('iOS 홈버튼', 'safeBottom 0'),
+          st('Android 제스처', 'safeBottom 16~24'),
+          st('Android 3버튼', 'inset 0 · 주의', 'key'),
+          st('뒤로가기 처리 8행', 'rule', 'rule'),
+          st('플랫폼 차이 9행', 'rule', 'rule')
+        ]
+      })
+    ];
+
+    return {
+      stages,
+      stageKey: 'width:38px;height:38px;flex:0 0 38px;border-radius:10px;background:#212124;color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700',
+      chipName: 'font-size:15px;line-height:36px;font-weight:700;color:#212124',
+      chipId: 'font-size:12px;line-height:36px;font-weight:700;color:#adb1ba;font-variant-numeric:tabular-nums',
+      legend: 'height:34px;display:flex;align-items:center;gap:7px;padding:0 14px;border-radius:999px;background:#fff;box-shadow:inset 0 0 0 1px #dcdee3;font-size:14px;font-weight:700;color:#4d5159;white-space:nowrap',
+      dotKey: 'width:8px;height:8px;border-radius:999px;background:' + C,
+      dotPlain: 'width:8px;height:8px;border-radius:999px;background:#adb1ba',
+      dotSheet: 'width:8px;height:8px;border-radius:999px;background:#0088cc'
+    };
+  }
+}
+
+</script>
+</body>
+</html>

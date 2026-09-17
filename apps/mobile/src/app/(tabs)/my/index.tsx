@@ -66,6 +66,7 @@ const S = {
   weddingDateUnset: '예식일을 아직 정하지 않았어요',
   'group.activity': '내 활동',
   'group.together': '함께 준비하기',
+  'group.browse': '둘러보기',
   'group.settings': '설정',
   'group.support': '고객지원',
   'group.service': '서비스',
@@ -76,6 +77,7 @@ const S = {
   'item.weddingSetting': '내 웨딩 설정',
   'item.taste': '스타일 다시 고르기',
   'item.progress': '준비 현황',
+  'item.lounge': '라운지',
   'item.partner': '연결 관리',
   'item.notification': '알림 설정',
   'item.display': '화면 설정',
@@ -196,6 +198,23 @@ export default function MyScreen() {
       rows: [
         { key: 'progress', label: S['item.progress'], icon: 'checkCircle', onPress: () => guestPush('/progress') },
         { key: 'partner', label: S['item.partner'], icon: 'twoPeople', tail: data.couple ? COUPLE_LABEL[data.couple] : undefined, onPress: () => guestPush('/wedding/partner') },
+      ],
+    },
+    /*
+     * **라운지로 들어오는 두 자리 중 하나다.**
+     *
+     * 2026-09-17 대표 지시로 라운지가 Root 탭에서 내려왔다 — 후기와 박람회가 몇
+     * 건뿐이라 탭 한 칸이 빈 화면을 띄운다(`docs/design/figma-export/README.md`).
+     * **화면을 없앤 것이 아니라 진입을 옮긴 것이므로, 이 줄이 없으면 라운지에
+     * 들어갈 길이 사라진다.** 나머지 한 자리는 홈의 「웨딩 소식」 섹션 우측이고,
+     * 홈은 새 패키지로 다시 그릴 때 같이 붙인다.
+     *
+     * 주소는 `/community` 그대로다. 저장된 링크와 공유 주소가 그것을 가리킨다.
+     */
+    {
+      title: S['group.browse'],
+      rows: [
+        { key: 'lounge', label: S['item.lounge'], icon: 'twoPeople', onPress: () => guestPush('/community') },
       ],
     },
     {

@@ -1,3 +1,4 @@
+import { FONT_COMMON, fontFaceRules } from '@weddingpick/domain';
 import { ScrollViewStyleReset } from 'expo-router/html';
 import type { PropsWithChildren } from 'react';
 
@@ -35,13 +36,18 @@ import {
 /**
  * 가변 폰트 한 벌. 45~920 축 하나가 400 · 600 · 700 · 800을 전부 덮는다.
  *
- * 값은 원본 배포판 `variable/pretendardvariable.css`를 그대로 옮겼다 —
- * `font-weight: 45 920` · `format('woff2-variations')`. 지어낸 숫자가 없다.
+ * **두 벌로 갈라 싣는다**(2026-09-17 대표 지시 「용량은 미리 축소한다」). 원본 한 벌은
+ * 2.0MB이고 화면마다 그것을 받았다. 흔한 글자와 나머지를 가르면 보통 화면은 493KB만
+ * 받는다 — 빠지는 글자는 없다. 가른 근거와 잰 값은 `packages/domain/src/web-font.ts`.
+ *
+ * **글자를 여기 적지 않는다.** 웹사이트(`apps/web/src/fonts.ts`)와 같은 것을 써야 하고,
+ * 두 곳에 따로 적으면 한쪽만 고쳐서 갈라진다 — 2026-09-15까지 실제로 그랬다.
  *
  * 자리는 `apps/mobile/public/fonts/`다. Expo 정적 내보내기가 `public/`을 통째로
  * 출력 폴더 뿌리에 복사한다.
  */
-const FONT_FACE = `@font-face{font-family:'Pretendard Variable';font-weight:45 920;font-style:normal;font-display:swap;src:url('/fonts/PretendardVariable.woff2') format('woff2-variations')}`;
+const FONT_DIR = '/fonts';
+const FONT_FACE = fontFaceRules(FONT_DIR);
 
 export default function Root({ children }: PropsWithChildren) {
   return (
@@ -72,7 +78,7 @@ export default function Root({ children }: PropsWithChildren) {
          */}
         <link
           rel="preload"
-          href="/fonts/PretendardVariable.woff2"
+          href={`${FONT_DIR}/${FONT_COMMON.file}`}
           as="font"
           type="font/woff2"
           crossOrigin=""

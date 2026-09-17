@@ -39,6 +39,7 @@ import type { AppContext } from '../context';
 import { withTransaction } from '../db';
 import { newEventId, recordDecision } from '../decisions';
 import { ApiError, notFound } from '../errors';
+import { isUuid } from '../uuid';
 import { notify } from '../notify';
 import { loadUsageScore } from '../review-view';
 
@@ -65,6 +66,9 @@ const listQuerySchema = z.object({
 type VendorRow = { id: string; name: string; category: VendorCategory };
 
 async function loadVendor(pool: Pool, vendorId: string): Promise<VendorRow> {
+  // 꼴이 아니면 DB에 묻지 않는다 — 물으면 22P02로 터져 500이 된다(`src/uuid.ts`).
+  if (!isUuid(vendorId)) throw notFound('업체');
+
   const { rows } = await pool.query<VendorRow>(
     'SELECT id, name, category FROM structured.vendors WHERE id = $1',
     [vendorId]
