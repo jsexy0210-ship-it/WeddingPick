@@ -10,6 +10,31 @@ Codex에 일을 넘길 때 **아래 블록을 그대로 붙여넣는다.** 맨 �
 ```
 웨딩픽(WeddingPick) 저장소에서 아래 일을 한다.
 
+## 디자인은 `docs/design/` 하나만 본다 (2026-09-17, 대표 지시 — 맨 앞)
+
+대표님 원문 — 「두 개 파일 main에 업로드하고 **모든 디자인은 해당 경로만 보도록 한다**」.
+
+```
+docs/design/handoff/        핸드오프 v3.28 — 수치와 규칙의 원본(tokens · screens · SPEC)
+docs/design/figma-export/   정본 시안 9장 — 화면의 모양
+```
+
+**이 경로 밖을 근거로 쓰지 않는다.** 아래 1번이 가리키는 `weddingpick_figma` ·
+`docs/figma-spec/`도, `docs/design-handoff/current/` · `root/`도 더 이상 근거가 아니다.
+
+**`.dc.html`은 열리지 않는다**(2026-09-17 실측) — React · Babel을 unpkg에서 받는데
+프록시가 막고, `_ds/` 번들이 zip에 없다. 화면을 눈으로 봐야 하면 `weddingpick_figma`를
+빌드해 찍고(`scripts/screenshot-figma.mjs`), **값은 `docs/design/`에서 읽는다.**
+
+**새 패키지가 대표님이 앞서 정하신 것과 넷 어긋난다 — 고르지 말고 MASTER에게 물어라.**
+서체(Pretendard 대 시스템 서체) · 좌우 여백(20 대 24) · Root 탭(라운지 대 검색) ·
+소셜 로그인(둘 대 넷). 답이 오기 전까지 **지금 코드를 그대로 둔다.** 표는
+`docs/design/README.md`에 있다. 브랜드색은 안 어긋난다(둘 다 코랄 `#FF6F61`).
+
+**브라우저 `alert` · `confirm` · `prompt`를 쓰지 않는다** — DLG-A~F 여섯 유형
+(`figma-export/09-dialogs.dc.html`). 버튼은 왼쪽 취소 · 오른쪽 실행 고정, 겹쳐 띄우지
+않는다. 이것도 지금 코드와 다르므로 위 넷과 함께 판단을 기다린다.
+
 ## 최상위 정책 규칙 (2026-09-15, 대표 지시 — 절대 기준)
 
 **이 다섯이 아래 어떤 줄보다 앞선다.** 충돌하면 이쪽이 이긴다.

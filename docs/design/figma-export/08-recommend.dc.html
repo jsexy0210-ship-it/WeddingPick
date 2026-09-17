@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-static.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-scale.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/colors-semantic.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/typography.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/dimension.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/motion.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/tokens/base.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/core/core.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/buttons/buttons.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/components/display/display.css">
+<link rel="stylesheet" href="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/styles.css">
+<script src="_ds/seed-design-system-karrot-5ddd627f-e4d9-44f2-ada6-1cb83109d058/_ds_bundle.js"></script>
+<script src="./image-slot.js"></script>
+<style>
+body{margin:0;background:#eef1f4;font-family:-apple-system,BlinkMacSystemFont,system-ui,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#ff6f61;text-decoration:none}
+a:hover{color:#e2564a}
+.nsb::-webkit-scrollbar{display:none}
+image-slot{background:#eaebee}
+image-slot::part(empty){display:none !important}
+</style>
+</helmet>
+
+<section style="{{ root }}">
+
+<div style="{{ intro }}">
+  <span style="{{ eyebrow }}">WeddingPick · /recommendations</span>
+  <span style="{{ h0 }}">웨딩픽 추천</span>
+  <span style="{{ lead }}">아직 정하지 않은 업종만 모아 보여줍니다. 결정한 업종은 목록에서 빠지고 다음 것이 올라옵니다. 정본 톤으로 옮기면서 별점을 실 제보 건수로, 손 이모지를 SEED 아이콘으로 바꿨습니다.</span>
+</div>
+
+<div style="{{ row }}">
+
+  <div style="{{ col }}">
+    <div style="{{ tag }}"><span style="{{ tagId }}">1</span>추천 · 기본</div>
+    <span style="{{ tagDesc }}">첫 업종만 펼쳐 둡니다. 나머지는 접힌 줄로 남아 스크롤 부담을 줄입니다. 가로 카드는 3곳까지 보여주고 뒤에 더 찾아보기를 둡니다.</span>
+    <div style="{{ phone }}">
+      <div style="{{ bar }}"><span>9:41</span></div>
+      <div style="{{ navBar }}"><span style="{{ icoBack }}"></span><span style="{{ navPad }}"></span></div>
+      <div class="nsb" style="{{ scroll }}">
+        <div style="{{ headBlock }}">
+          <span style="{{ h1 }}">웨딩픽 추천</span>
+          <span style="{{ headSub }}">아직 정하지 않은 준비가 11개 있어요</span>
+        </div>
+
+        <div style="{{ openSec }}">
+          <div style="{{ catHead }}">
+            <span style="{{ catTitle }}">결정사</span>
+            <span style="{{ catRight }}"><span style="{{ catMeta }}">실 제보 24건</span><span style="{{ icoUp }}"></span></span>
+          </div>
+          <div class="nsb" style="{{ cardScroll }}">
+            <sc-for list="{{ agency }}" as="v" hint-placeholder-count="3">
+              <div style="{{ vCard }}">
+                <div style="{{ vImgWrap }}">
+                  <image-slot id="{{ v.id }}" src="{{ v.src }}" shape="rect" placeholder=""></image-slot>
+                  <span style="{{ v.heart }}"><span style="{{ v.heartIcon }}"></span></span>
+                </div>
+                <div style="{{ vBody }}">
+                  <span style="{{ vCat }}">{{ v.cat }}</span>
+                  <span style="{{ vName }}">{{ v.name }}</span>
+                  <div style="{{ vLocRow }}"><span style="{{ icoLoc }}"></span><span style="{{ vLoc }}">{{ v.loc }}</span></div>
+                  <div style="{{ vTagRow }}"><sc-for list="{{ v.tags }}" as="t" hint-placeholder-count="2"><span style="{{ vTag }}">{{ t }}</span></sc-for></div>
+                  <span style="{{ v.priceStyle }}">{{ v.price }}</span>
+                  <span style="{{ vReports }}">{{ v.reports }}</span>
+                </div>
+              </div>
+            </sc-for>
+            <span style="{{ scrollTail }}"></span>
+          </div>
+          <div style="{{ moreRow }}"><span style="{{ moreBtn }}">더 찾아보기</span></div>
+        </div>
+
+        <div style="{{ foldWrap }}">
+          <sc-for list="{{ folded }}" as="f" hint-placeholder-count="6">
+            <div style="{{ foldRow }}">
+              <span style="{{ foldTitle }}">{{ f.label }}</span>
+              <span style="{{ foldRight }}"><span style="{{ foldMeta }}">{{ f.meta }}</span><span style="{{ icoDown }}"></span></span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="height:24px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="{{ col }}">
+    <div style="{{ tagRow }}"><span style="{{ tagIdWide }}">1-1</span><span style="{{ tagText }}">추천 이유 펼침</span></div>
+    <span style="{{ tagDesc }}">카드를 눌러 왜 골랐는지 봅니다. 내 조건과 맞는 것만 체크로, 맞지 않는 것은 회색으로 둡니다. 판단 근거를 먼저 보여준 뒤 Pick으로 이어집니다.</span>
+    <div style="{{ phone }}">
+      <div style="{{ bar }}"><span>9:41</span></div>
+      <div style="{{ navBar }}"><span style="{{ icoBack }}"></span><span style="{{ navPad }}"></span></div>
+      <div class="nsb" style="{{ scroll }}">
+        <div style="{{ headBlock }}">
+          <span style="{{ h1 }}">웨딩픽 추천</span>
+          <span style="{{ headSub }}">아직 정하지 않은 준비가 11개 있어요</span>
+        </div>
+        <div style="{{ openSec }}">
+          <div style="{{ catHead }}">
+            <span style="{{ catTitle }}">스튜디오</span>
+            <span style="{{ catRight }}"><span style="{{ catMeta }}">실 제보 31건</span><span style="{{ icoUp }}"></span></span>
+          </div>
+          <div style="{{ pickedCard }}">
+            <div style="{{ pickedImgWrap }}">
+              <image-slot id="rc-open" src="uploads/스타일 이미지/urban.png" shape="rect" placeholder=""></image-slot>
+              <span style="{{ heartOn }}"><span style="{{ icoHeartFill }}"></span></span>
+              <span style="{{ rankBadge }}">추천 1위</span>
+            </div>
+            <div style="{{ pickedBody }}">
+              <span style="{{ vCat }}">스튜디오</span>
+              <span style="{{ pickedName }}">블루밍 스튜디오</span>
+              <div style="{{ vLocRow }}"><span style="{{ icoLoc }}"></span><span style="{{ vLoc }}">서울 강남구</span></div>
+              <div style="{{ priceRow }}">
+                <span style="{{ bigPrice }}">80~150만원</span>
+                <span style="{{ vReports }}">실 제보 12건</span>
+              </div>
+              <div style="{{ reasonWrap }}">
+                <sc-for list="{{ reasons }}" as="r" hint-placeholder-count="4">
+                  <div style="{{ reasonRow }}"><span style="{{ r.mark }}"></span><span style="{{ r.text }}">{{ r.label }}</span></div>
+                </sc-for>
+              </div>
+              <div style="{{ btnRow }}">
+                <span style="{{ btnGhost }}">비교에 담기</span>
+                <span style="{{ btnPick }}">Pick했어요</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="{{ foldWrap }}">
+          <sc-for list="{{ foldedOpen }}" as="f" hint-placeholder-count="6">
+            <div style="{{ foldRow }}">
+              <span style="{{ foldTitle }}">{{ f.label }}</span>
+              <span style="{{ foldRight }}"><span style="{{ foldMeta }}">{{ f.meta }}</span><span style="{{ icoDown }}"></span></span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="height:24px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="{{ col }}">
+    <div style="{{ tagRow }}"><span style="{{ tagIdWide }}">1-2</span><span style="{{ tagText }}">정보 부족 · 전부 결정</span></div>
+    <span style="{{ tagDesc }}">실 제보가 3건 미만인 업종은 금액을 가리고 수집 중으로 둡니다. 11개를 다 정하면 목록이 비고 다음 할 일로 보냅니다.</span>
+    <div style="{{ phone }}">
+      <div style="{{ bar }}"><span>9:41</span></div>
+      <div style="{{ navBar }}"><span style="{{ icoBack }}"></span><span style="{{ navPad }}"></span></div>
+      <div class="nsb" style="{{ scroll }}">
+        <div style="{{ headBlock }}">
+          <span style="{{ h1 }}">웨딩픽 추천</span>
+          <span style="{{ headSub }}">아직 정하지 않은 준비가 2개 있어요</span>
+        </div>
+        <div style="{{ openSec }}">
+          <div style="{{ catHead }}">
+            <span style="{{ catTitle }}">부케</span>
+            <span style="{{ catRight }}"><span style="{{ catMetaDim }}">정보 수집 중</span><span style="{{ icoUp }}"></span></span>
+          </div>
+          <div class="nsb" style="{{ cardScroll }}">
+            <sc-for list="{{ scarce }}" as="v" hint-placeholder-count="2">
+              <div style="{{ vCard }}">
+                <div style="{{ vImgWrap }}">
+                  <image-slot id="{{ v.id }}" src="{{ v.src }}" shape="rect" placeholder=""></image-slot>
+                  <span style="{{ v.heart }}"><span style="{{ v.heartIcon }}"></span></span>
+                </div>
+                <div style="{{ vBody }}">
+                  <span style="{{ vCat }}">{{ v.cat }}</span>
+                  <span style="{{ vName }}">{{ v.name }}</span>
+                  <div style="{{ vLocRow }}"><span style="{{ icoLoc }}"></span><span style="{{ vLoc }}">{{ v.loc }}</span></div>
+                  <div style="{{ vTagRow }}"><sc-for list="{{ v.tags }}" as="t" hint-placeholder-count="2"><span style="{{ vTag }}">{{ t }}</span></sc-for></div>
+                  <span style="{{ v.priceStyle }}">{{ v.price }}</span>
+                  <span style="{{ vReports }}">{{ v.reports }}</span>
+                </div>
+              </div>
+            </sc-for>
+            <span style="{{ scrollTail }}"></span>
+          </div>
+          <span style="{{ scarceNote }}">제보가 3건 넘으면 금액대를 보여드려요</span>
+        </div>
+        <div style="{{ foldWrap }}">
+          <div style="{{ foldRow }}">
+            <span style="{{ foldTitle }}">청첩장</span>
+            <span style="{{ foldRight }}"><span style="{{ foldMeta }}">실 제보 8건</span><span style="{{ icoDown }}"></span></span>
+          </div>
+        </div>
+        <div style="{{ doneSec }}">
+          <div style="{{ doneCard }}">
+            <span style="{{ doneMark }}"></span>
+            <span style="{{ doneTitle }}">9개를 정했어요</span>
+            <span style="{{ doneSub }}">정한 곳은 웨딩노트에서 볼 수 있어요</span>
+            <span style="{{ doneBtn }}">웨딩노트 보기</span>
+          </div>
+        </div>
+        <div style="height:24px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="{{ colWide }}">
+    <div style="{{ tag }}"><span style="{{ tagId }}">2</span>추천 규칙</div>
+    <span style="{{ tagDesc }}">구현에서 지켜야 하는 것입니다.</span>
+    <div style="{{ ruleCard }}">
+      <div style="{{ ruleHead }}"><span style="{{ rh1 }}">항목</span><span style="{{ rh2 }}">규칙</span></div>
+      <sc-for list="{{ rules }}" as="r" hint-placeholder-count="9">
+        <div style="{{ ruleRow }}"><span style="{{ rc1 }}">{{ r.k }}</span><span style="{{ rc2 }}">{{ r.v }}</span></div>
+      </sc-for>
+    </div>
+
+    <div style="{{ tag2 }}"><span style="{{ tagId }}">3</span>Figma 원본에서 고친 것</div>
+    <div style="{{ ruleCard }}">
+      <div style="{{ diffHead }}"><span style="{{ dh1 }}">항목</span><span style="{{ dh2 }}">Figma 원본</span><span style="{{ dh3 }}">정본 적용</span><span style="{{ dh4 }}">근거</span></div>
+      <sc-for list="{{ diffs }}" as="d" hint-placeholder-count="9">
+        <div style="{{ diffRow }}"><span style="{{ dc1 }}">{{ d.k }}</span><span style="{{ dc2 }}">{{ d.a }}</span><span style="{{ d.bStyle }}">{{ d.b }}</span><span style="{{ dc3 }}">{{ d.why }}</span></div>
+      </sc-for>
+    </div>
+  </div>
+
+</div>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:2000,&quot;height&quot;:1200}}">
+class Component extends DCLogic {
+  renderVals() {
+    const P = '#ff6f61';
+    const INK = '#212124';
+    const SUB = '#4d5159';
+    const MUTED = '#868b94';
+    const DIM = '#adb1ba';
+    const SEC = '#f2f3f6';
+    const REC = '#f7f8fa';
+    const BORDER = '#eaebee';
+    const AMBER = '#805217';
+    const DS = 'assets/seed-icons/';
+    const ICO = (n, sz, c) => 'display:inline-block;width:' + sz + 'px;height:' + sz + 'px;flex:0 0 ' + sz + 'px;background-color:' + c
+      + ';-webkit-mask:url(' + DS + n + '.svg) center/contain no-repeat;mask:url(' + DS + n + '.svg) center/contain no-repeat';
+    const CHECK = 'background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'white\' stroke-width=\'3.4\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpath d=\'m5 12.5 4.5 4.5L19 7.5\'/%3E%3C/svg%3E");background-size:13px;background-position:center;background-repeat:no-repeat';
+
+    const IMG = {
+      urban: 'uploads/스타일 이미지/urban.png',
+      natural: 'uploads/스타일 이미지/natural.png',
+      romantic: 'uploads/스타일 이미지/romantic.png',
+      glam: 'uploads/스타일 이미지/glamorous.png'
+    };
+
+    const vend = (o) => ({
+      id: o.id, src: o.src, cat: o.cat, name: o.name, loc: o.loc, tags: o.tags,
+      price: o.price, reports: o.reports,
+      priceStyle: 'font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;color:' + (o.scarce ? MUTED : INK),
+      heart: 'position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:'
+        + (o.picked ? P : 'rgba(255,255,255,.92)'),
+      heartIcon: ICO(o.picked ? 'heart-fill' : 'heart', 17, o.picked ? '#fff' : SUB)
+    });
+
+    const reason = (label, on) => ({ label,
+      mark: 'width:20px;height:20px;flex:0 0 20px;margin-top:2px;border-radius:999px;' + (on ? 'background:' + P + ';' + CHECK : 'background:' + SEC),
+      text: 'flex:1;font-size:14px;line-height:21px;color:' + (on ? INK : MUTED) });
+
+    const fold = (label, meta) => ({ label, meta });
+    const rule = (k, v) => ({ k: k, v: v });
+    const diff = (k, a, b, why, warn) => ({ k, a, b, why,
+      bStyle: 'width:250px;flex:0 0 250px;font-size:13px;line-height:20px;font-weight:700;color:' + (warn ? AMBER : INK) });
+
+    return {
+      root: 'display:flex;flex-direction:column;gap:32px;padding:64px;width:max-content',
+      intro: 'display:flex;flex-direction:column;gap:10px;max-width:960px',
+      eyebrow: 'font-size:14px;line-height:19px;font-weight:700;color:' + P,
+      h0: 'font-size:40px;line-height:52px;font-weight:700;color:' + INK,
+      lead: 'font-size:17px;line-height:26px;color:' + SUB + ';text-wrap:pretty',
+      row: 'display:flex;gap:36px;align-items:flex-start;flex-wrap:wrap',
+      col: 'display:flex;flex-direction:column;gap:10px;width:430px',
+      colWide: 'display:flex;flex-direction:column;gap:10px;width:900px',
+      tag: 'height:26px;display:flex;align-items:center;gap:8px;font-size:18px;font-weight:700;color:' + INK + ';white-space:nowrap',
+      tag2: 'height:26px;margin-top:22px;display:flex;align-items:center;gap:8px;font-size:18px;font-weight:700;color:' + INK + ';white-space:nowrap',
+      tagRow: 'height:26px;display:flex;align-items:center;gap:8px;white-space:nowrap',
+      tagText: 'font-size:18px;font-weight:700;color:' + INK,
+      tagId: 'width:26px;height:26px;flex:0 0 26px;border-radius:6px;background:' + INK + ';color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:700',
+      tagIdWide: 'height:26px;flex:0 0 auto;padding:0 8px;border-radius:6px;background:' + MUTED + ';color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;white-space:nowrap',
+      tagDesc: 'height:66px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;line-height:21px;color:' + SUB + ';text-wrap:pretty',
+
+      phone: 'width:430px;height:932px;border-radius:40px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:#fff;box-shadow:0 15px 75px rgba(0,27,55,.14)',
+      bar: 'flex:0 0 44px;display:flex;align-items:center;padding:0 26px;font-size:14px;font-weight:700;color:' + INK,
+      navBar: 'flex:0 0 52px;display:flex;align-items:center;padding:0 16px',
+      navPad: 'flex:1',
+      icoBack: ICO('chevron-left', 24, INK),
+      scroll: 'flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;scrollbar-width:none',
+
+      headBlock: 'flex:0 0 auto;padding:4px 20px 24px;display:flex;flex-direction:column;gap:8px',
+      h1: 'font-size:28px;line-height:36px;letter-spacing:-0.02em;font-weight:700;color:' + INK,
+      headSub: 'font-size:14px;line-height:21px;color:' + MUTED,
+
+      openSec: 'flex:0 0 auto;display:flex;flex-direction:column;gap:12px;padding-bottom:20px',
+      catHead: 'display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 20px',
+      catTitle: 'font-size:18px;font-weight:700;color:' + INK,
+      catRight: 'display:flex;align-items:center;gap:6px',
+      catMeta: 'font-size:13px;color:' + MUTED + ';font-variant-numeric:tabular-nums',
+      catMetaDim: 'font-size:13px;color:' + MUTED,
+      icoUp: ICO('chevron-right', 18, MUTED) + ';transform:rotate(-90deg)',
+      icoDown: ICO('chevron-right', 18, MUTED) + ';transform:rotate(90deg)',
+
+      cardScroll: 'display:flex;gap:12px;padding:0 20px;overflow-x:auto;scrollbar-width:none',
+      scrollTail: 'flex:0 0 8px',
+      vCard: 'width:204px;flex:0 0 204px;border-radius:12px;background:' + REC + ';overflow:hidden;display:flex;flex-direction:column',
+      vImgWrap: 'position:relative;width:100%;height:150px',
+      vBody: 'padding:14px;display:flex;flex-direction:column;gap:3px',
+      vCat: 'font-size:11px;color:' + MUTED,
+      vName: 'font-size:16px;font-weight:700;color:' + INK + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      vLocRow: 'display:flex;align-items:center;gap:4px;padding-top:1px',
+      icoLoc: ICO('location', 13, DIM),
+      vLoc: 'font-size:12px;color:' + MUTED + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap',
+      vTagRow: 'display:flex;gap:5px;padding:4px 0 6px;overflow:hidden',
+      vTag: 'font-size:11px;color:' + P + ';white-space:nowrap',
+      vReports: 'font-size:11px;color:' + MUTED + ';font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis',
+      moreRow: 'display:flex;justify-content:flex-end;padding:0 20px',
+      moreBtn: 'height:36px;padding:0 16px;border-radius:999px;background:' + SEC + ';color:' + SUB + ';display:inline-flex;align-items:center;font-size:13px;font-weight:700',
+      scarceNote: 'padding:0 20px;font-size:12px;color:' + MUTED,
+
+      foldWrap: 'flex:0 0 auto;display:flex;flex-direction:column;padding:0 20px',
+      foldRow: 'display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:60px;box-shadow:inset 0 -1px 0 ' + BORDER,
+      foldTitle: 'font-size:18px;font-weight:700;color:' + INK,
+      foldRight: 'display:flex;align-items:center;gap:6px',
+      foldMeta: 'font-size:13px;color:' + MUTED + ';font-variant-numeric:tabular-nums',
+
+      pickedCard: 'margin:0 20px;border-radius:12px;background:#fff;box-shadow:inset 0 0 0 1.5px ' + P + ';overflow:hidden;display:flex;flex-direction:column',
+      pickedImgWrap: 'position:relative;width:100%;height:200px',
+      heartOn: 'position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:999px;background:' + P + ';display:flex;align-items:center;justify-content:center',
+      icoHeartFill: ICO('heart-fill', 19, '#fff'),
+      rankBadge: 'position:absolute;left:12px;top:12px;height:26px;padding:0 10px;border-radius:999px;background:' + P + ';color:#fff;display:inline-flex;align-items:center;font-size:12px;font-weight:700',
+      pickedBody: 'padding:16px 18px 18px;display:flex;flex-direction:column;gap:4px',
+      pickedName: 'font-size:20px;font-weight:700;color:' + INK,
+      priceRow: 'display:flex;align-items:baseline;gap:8px;padding:8px 0 4px',
+      bigPrice: 'font-size:22px;font-weight:700;color:' + INK + ';font-variant-numeric:tabular-nums',
+      reasonWrap: 'display:flex;flex-direction:column;gap:8px;padding:10px 0 4px',
+      reasonRow: 'display:flex;align-items:flex-start;gap:9px',
+      reasons: [
+        reason('고른 스타일이랑 가장 비슷해요', true),
+        reason('생각한 예산 안에 들어와요', true),
+        reason('원본을 전부 받을 수 있어요', true),
+        reason('5월 주말은 아직 확인 못 했어요', false)
+      ],
+      btnRow: 'display:flex;gap:8px;padding-top:10px',
+      btnGhost: 'flex:1;height:48px;border-radius:8px;background:' + SEC + ';color:' + SUB + ';display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700',
+      btnPick: 'flex:1;height:48px;border-radius:8px;background:' + P + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700',
+
+      doneSec: 'flex:0 0 auto;padding:20px',
+      doneCard: 'border-radius:12px;background:' + REC + ';padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:8px',
+      doneMark: 'width:48px;height:48px;border-radius:999px;background:#e8faf6;'
+        + 'background-image:url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%231aa174\' stroke-width=\'3\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpath d=\'m5 12.5 4.5 4.5L19 7.5\'/%3E%3C/svg%3E");background-size:24px;background-position:center;background-repeat:no-repeat',
+      doneTitle: 'font-size:17px;font-weight:700;color:' + INK,
+      doneSub: 'font-size:13px;color:' + MUTED,
+      doneBtn: 'margin-top:6px;height:44px;padding:0 20px;border-radius:8px;background:#fff;box-shadow:inset 0 0 0 1px ' + BORDER + ';color:' + INK + ';display:inline-flex;align-items:center;font-size:14px;font-weight:700',
+
+      agency: [
+        vend({ id: 'rc-a1', src: IMG.romantic, cat: '결정사', name: '선우매칭', loc: '서울 송파구', tags: ['#로맨틱한'], price: '198~386만원', reports: '실 제보 9건', picked: false }),
+        vend({ id: 'rc-a2', src: IMG.glam, cat: '결정사', name: '두근매칭', loc: '서울 마포구', tags: ['#로맨틱한', '#화려한'], price: '361~387만원', reports: '실 제보 11건', picked: false }),
+        vend({ id: 'rc-a3', src: IMG.urban, cat: '결정사', name: '로얄매칭', loc: '서울 강남구', tags: ['#도시적인'], price: '수집 중', reports: '아직 정보가 적어요 · 2건', scarce: true, picked: false })
+      ],
+      scarce: [
+        vend({ id: 'rc-b1', src: IMG.natural, cat: '부케', name: '온플라워', loc: '서울 성동구', tags: ['#자연스러운'], price: '수집 중', reports: '아직 정보가 적어요 · 2건', scarce: true, picked: false }),
+        vend({ id: 'rc-b2', src: IMG.romantic, cat: '부케', name: '블롬 스튜디오', loc: '서울 마포구', tags: ['#로맨틱한'], price: '수집 중', reports: '아직 정보가 적어요 · 1건', scarce: true, picked: false })
+      ],
+      folded: [
+        fold('스튜디오', '실 제보 31건'), fold('드레스', '실 제보 22건'),
+        fold('메이크업', '실 제보 18건'), fold('헤어변형', '실 제보 12건'),
+        fold('본식스냅', '실 제보 14건'), fold('부케', '정보 수집 중')
+      ],
+      foldedOpen: [
+        fold('결정사', '실 제보 24건'), fold('드레스', '실 제보 22건'),
+        fold('메이크업', '실 제보 18건'), fold('헤어변형', '실 제보 12건'),
+        fold('본식스냅', '실 제보 14건'), fold('부케', '정보 수집 중')
+      ],
+
+      ruleCard: 'width:900px;background:#fff;border:1px solid ' + BORDER + ';border-radius:10px;padding:8px 24px 16px;display:flex;flex-direction:column;box-sizing:border-box',
+      ruleHead: 'display:flex;align-items:center;gap:16px;min-height:44px;box-shadow:inset 0 -1px 0 #dcdee3',
+      ruleRow: 'display:flex;align-items:flex-start;gap:16px;min-height:52px;padding:12px 0;box-shadow:inset 0 -1px 0 ' + SEC,
+      rh1: 'width:160px;flex:0 0 160px;font-size:12px;font-weight:700;color:' + MUTED,
+      rh2: 'flex:1;font-size:12px;font-weight:700;color:' + MUTED,
+      rc1: 'width:160px;flex:0 0 160px;font-size:13px;line-height:20px;font-weight:700;color:' + INK,
+      rc2: 'flex:1;font-size:13px;line-height:20px;color:' + SUB + ';text-wrap:pretty',
+      rules: [
+        rule('노출 대상', '준비 현황에서 결정하지 않은 업종만. 결정하면 목록에서 빠지고 다음 업종이 올라온다'),
+        rule('정렬', '남은 업종 중 예식일이 가까운 순. 같으면 실 제보가 많은 순'),
+        rule('펼침', '첫 업종만 펼치고 나머지는 접는다. 한 번에 하나만 펼친다'),
+        rule('카드 수', '업종당 3곳. 더 보려면 «더 찾아보기»로 검색 결과로 간다'),
+        rule('추천 이유', '내 조건과 맞는 것은 체크, 확인 못 한 것은 회색. 맞지 않으면 추천하지 않는다'),
+        rule('금액 표기', '실 제보 3건 미만은 «수집 중». 빈칸이나 «—»를 쓰지 않는다'),
+        rule('전부 결정', '남은 업종이 0이면 목록을 비우고 웨딩노트로 보낸다'),
+        rule('Pick', 'Pick해도 목록에서 빠지지 않는다. 최종 결정을 해야 빠진다'),
+        rule('광고', '이 화면에 광고 슬롯을 두지 않는다. 자연 추천만 보여준다')
+      ],
+
+      diffHead: 'display:flex;align-items:center;gap:16px;min-height:44px;box-shadow:inset 0 -1px 0 #dcdee3',
+      diffRow: 'display:flex;align-items:flex-start;gap:16px;min-height:52px;padding:12px 0;box-shadow:inset 0 -1px 0 ' + SEC,
+      dh1: 'width:120px;flex:0 0 120px;font-size:12px;font-weight:700;color:' + MUTED,
+      dh2: 'width:250px;flex:0 0 250px;font-size:12px;font-weight:700;color:' + MUTED,
+      dh3: 'width:250px;flex:0 0 250px;font-size:12px;font-weight:700;color:' + MUTED,
+      dh4: 'flex:1;font-size:12px;font-weight:700;color:' + MUTED,
+      dc1: 'width:120px;flex:0 0 120px;font-size:13px;line-height:20px;font-weight:700;color:' + INK,
+      dc2: 'width:250px;flex:0 0 250px;font-size:13px;line-height:20px;color:' + MUTED,
+      dc3: 'flex:1;font-size:12px;line-height:19px;color:' + MUTED,
+      diffs: [
+        diff('이미지 자리', '🤝 손 이모지 · 회색 박스', '실제 사진', '이모지를 쓰지 않는다'),
+        diff('금액', '198~386만원만', '금액 + 실 제보 건수', '근거 없는 금액을 보여주지 않는다'),
+        diff('정보 부족', '«업체 없음»', '«수집 중» + 안내 한 줄', '빈칸을 남기지 않는다'),
+        diff('부제', '아직 남은 준비를 한눈에 확인해보세요', '뺌 · 개수 한 줄만', '서브카피를 쓰지 않는다'),
+        diff('접힌 줄', '«추천» 텍스트 + 화살표', '실 제보 건수 + 화살표', '펼치기 전에도 정보량을 보여준다'),
+        diff('업종 순서', '결정사 · 스튜디오 · 드레스 고정', '예식일 가까운 순', '급한 것부터'),
+        diff('CTA', '하트만', '비교에 담기 + Pick', '판단 다음에 행동'),
+        diff('전부 결정', '없음', '완료 카드 + 웨딩노트 링크', '빈 화면을 남기지 않는다'),
+        diff('탭바', '있음', '없음 · back nav만', '탭이 아닌 하위 화면')
+      ]
+    };
+  }
+}
+
+</script>
+</body>
+</html>
