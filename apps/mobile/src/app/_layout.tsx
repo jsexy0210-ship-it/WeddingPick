@@ -77,9 +77,18 @@ export default function RootLayout() {
 
 function RootLayoutContent() {
   /*
-   * 글꼴을 싣지 않는다 — 시스템 서체다(iOS Apple SD Gothic Neo · Android Roboto/Noto Sans KR ·
-   * 웹 시스템 스택). 한때 Pretendard TTF를 useFonts로 받아 첫 화면을 그만큼 늦췄는데, 핸드오프
-   * v3.24까지 「Pretendard 도입 보류」라 2026-09-09 감사에서 뺐다(packages/ui theme.ts Fonts 참고).
+   * **글꼴은 Pretendard이고, 여기서 싣지 않는다.** 이 주석은 2026-09-17까지
+   * 「글꼴을 싣지 않는다 — 시스템 서체다」라고 적고 있었는데 **사실과 달랐다.**
+   *
+   * 2026-09-15에 실제로 실었다. 다만 `useFonts`로 받지 않는다 — 두 길이 따로다.
+   *
+   *   네이티브   `app.json`의 `expo-font` 플러그인이 TTF 넷을 **빌드 때 앱에 박는다.**
+   *              첫 화면에서 기다릴 것이 없다.
+   *   웹        `+html.tsx`의 `@font-face`가 `PretendardVariable.woff2`를 받는다.
+   *              `font-display: swap`이라 글자가 먼저 뜨고 나중에 바뀐다.
+   *
+   * 옛 주석이 남은 이유는 **`useFonts`를 뺀 것과 글꼴을 뺀 것을 같은 일로 적었기**
+   * 때문이다. 부르는 코드가 없다고 글꼴이 없는 것이 아니다 — 싣는 자리가 옮겨 갔다.
    */
   const [entry, setEntry] = useState<Entry | null>(null);
   const [entryError, setEntryError] = useState<unknown>(null);
