@@ -53,8 +53,9 @@ function RootLayoutContent() {
   const [minimumShown, setMinimumShown] = useState(() => hasKakaoReturn());
   const [inAppNotice] = useState(escapeInAppBrowser);
   const redirected = useRef(false);
-  const isAdminPath = Platform.OS === 'web' && typeof window !== 'undefined' &&
-    /^\/admin(?:\/|$)/.test(window.location.pathname);
+  // 서버 렌더와 브라우저가 같은 경로로 관리자 화면을 판정한다(PR #272의 해당 수정 반영).
+  const pathname = usePathname();
+  const isAdminPath = Platform.OS === 'web' && /^\/admin(?:\/|$)/.test(pathname);
   const theme = useTheme();
   const stackScreenOptions = useStackScreenOptions();
   const navigationTheme = useMemo(() => ({
@@ -64,7 +65,6 @@ function RootLayoutContent() {
       card: theme.background, text: theme.text, border: theme.border,
     },
   }), [theme]);
-  const pathname = usePathname();
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
