@@ -27,6 +27,7 @@ yarn-error.*
 # env
 .env
 .env*.local
+.env.kakao-*
 .collection/
 
 # typescript
