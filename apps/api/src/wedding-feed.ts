@@ -9,9 +9,10 @@ import {
   shouldGenerate,
   type WeddingFeedStatus,
 } from '@weddingpick/domain';
-import { weddingFeedInputSchema, weddingFeedPostSchema } from '@weddingpick/api-contract';
+import { weddingFeedInputSchema } from '@weddingpick/api-contract';
 
 import { ApiError, notFound } from './errors';
+import { isUuid } from './uuid';
 import { listTabs } from './wedding-feed-taxonomy';
 import type { FeedWriter } from './analysis/wedding-feed-writer';
 
@@ -178,10 +179,11 @@ export async function listPublished(pool: Pool, storage: FeedStorage | null, lim
  * 방금 내린 글을 누가 열어 둔 채로 있었다면, 그 사람이 다시 들어올 때 404다.
  *
  * **`id`가 UUID인지 먼저 본다.** 아니면 Postgres가 `22P02`로 죽고, 그것은 500으로
- * 나간다 — 잘못된 주소는 서버 고장이 아니라 「없는 글」이다.
+ * 나간다 — 잘못된 주소는 서버 고장이 아니라 「없는 글」이다. 검사는 `./uuid`의
+ * `isUuid` 하나를 쓴다(2026-09-17에 업체 상세가 같은 일로 500을 내고 생긴 자리다).
  */
 export async function getPublished(pool: Pool, storage: FeedStorage | null, id: string) {
-  if (!weddingFeedPostSchema.shape.id.safeParse(id).success) throw notFound('글');
+  if (!isUuid(id)) throw notFound('글');
 
   const { rows } = await pool.query<Row>(
     `SELECT ${COLUMNS} FROM structured.wedding_feed_posts
