@@ -11,7 +11,8 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "build:ui": "npm run build --workspace @weddingpick/ui",
-    "progress": "node scripts/progress.mjs"
+    "progress": "node scripts/progress.mjs",
+    "test:auth-hardening": "node scripts/verify-auth-hardening.cjs"
   },
   "engines": {
     "node": ">=22"
