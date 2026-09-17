@@ -1,8 +1,9 @@
-import { AdminAccountActions } from './_ui';
+import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
+import { formatCount } from '@weddingpick/domain';
 
 import { apiFetch } from './_api';
 
@@ -31,7 +32,7 @@ const TYPE_LABEL: Record<string, string> = {
   review: '후기 신고',
 };
 
-export default function ReportScreen() {
+export function ReportPanel() {
   const [items, setItems] = useState<ReportItem[]>([]);
   const [filter, setFilter] = useState<'pending' | 'resolved'>('pending');
   const [loading, setLoading] = useState(true);
@@ -58,7 +59,6 @@ export default function ReportScreen() {
     <View style={styles.root}>
       <View style={styles.header}>
         <Text style={styles.title}>신고 접수</Text>
-        <AdminAccountActions />
       </View>
 
       {/* 필터 탭 */}
@@ -120,7 +120,7 @@ export default function ReportScreen() {
                 <Text style={styles.dateText}>{item.reportedAt.slice(0, 10)}</Text>
               </View>
               <Text style={styles.summary} numberOfLines={2}>{item.summary || '(내용 없음)'}</Text>
-              <Text style={styles.reporterCount}>신고자 {item.reporterCount}명</Text>
+              <Text style={styles.reporterCount}>신고자 {formatCount(item.reporterCount)}명</Text>
             </View>
           )}
         />
@@ -132,8 +132,6 @@ export default function ReportScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.light.backgroundSelected },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 16,
     backgroundColor: Colors.light.background,
@@ -187,3 +185,11 @@ const styles = StyleSheet.create({
   summary: { fontSize: FontSize.t7, color: Colors.light.textStrong, lineHeight: LineHeight.t7 },
   reporterCount: { fontSize: FontSize.badge, color: Colors.light.textAssistive },
 });
+
+/**
+ * 옛 주소는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제 화면은 `/admin/rebuttal`(후기·신고)의 신고 접수 탭에 있다 —
+ * `ReportPanel`이 이 파일의 본체다.
+ */
+export default function ReportRedirect() {
+  return <Redirect href="/admin/rebuttal?tab=report" />;
+}

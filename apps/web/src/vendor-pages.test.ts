@@ -33,6 +33,8 @@ function summary(): VendorSummary {
     comparableQuoteCount: 12,
     styleTags: [],
     guidePrice: null,
+    /* 웹은 별점을 그리지 않는다 — 앱 카드의 칸이라 여기서는 늘 null이다. */
+    rating: null,
     paidPrice: {
       stage: 'detailed',
       count: 12,

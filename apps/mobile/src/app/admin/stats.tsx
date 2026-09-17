@@ -3,13 +3,33 @@
  *
  * 시안 `22-admin-ops.dc.html` 2번. 자동으로 잡아 이미 차단한 뒤 목록으로 보여준다 —
  * 사람은 오탐만 풀어주면 된다. 그래서 카드 낱장이 아니라 한눈에 훑는 표다.
+ *
+ * **2026-09-15 대표 확정 — 「통계·수익」 화면의 탭 하나(이상 거래 자신)다**(가격
+ * 통계 · 이상 거래 · 수익 현황 · 분석 비용 — 넷 다 조회 전용 집계). 이 파일 맨
+ * 아래 `StatsShell`이 그 껍데기고, 여기 있던 본문은 `StatsPanel`로 이름만 바꿨다.
  */
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 
-import { VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
+import { formatCount, VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
 
 import { apiFetch } from './_api';
-import { Card, CardGrid, DataTable, KpiRow, LoadError, Page, StatusBanner, type Col, type TableRow } from './_ui';
+import {
+  AdminTabShell,
+  Card,
+  CardGrid,
+  DataTable,
+  KpiRow,
+  LoadError,
+  Page,
+  StatusBanner,
+  type AdminTabDef,
+  type Col,
+  type TableRow,
+} from './_ui';
+import { PriceStatsPanel } from './price-stats';
+import { RevenuePanel } from './revenue';
+import { AiUsagePanel } from './ai-usage';
 
 type AnomalyItem = {
   vendorId: string;
@@ -55,7 +75,7 @@ const COLS: Col[] = [
   { key: 'status', label: '상태', width: 90 },
 ];
 
-export default function StatsScreen() {
+function StatsPanel() {
   const [data, setData] = useState<PriceStatsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -95,7 +115,7 @@ export default function StatsScreen() {
   }));
 
   return (
-    <Page title="이상 거래" sub="자동 차단 후 목록 · 최근 7일">
+    <Page embedded title="이상치·조작 탐지" sub="자동 차단 후 목록 · 최근 7일">
       {loading ? null : error ? <LoadError message={error} onRetry={reload} /> : null}
 
       {!loading && !error && data ? (
@@ -105,7 +125,7 @@ export default function StatsScreen() {
             title={
               anomalies.length === 0
                 ? '차단된 것이 없어요'
-                : `자동 차단 ${anomalies.length}건`
+                : `자동 차단 ${formatCount(anomalies.length)}건`
             }
             detail={
               anomalies.length === 0
@@ -116,11 +136,11 @@ export default function StatsScreen() {
 
           <KpiRow
             items={[
-              { label: '자동 차단', value: `${anomalies.length}건`, note: '집계에서 제외 중', kind: anomalies.length === 0 ? 'ok' : 'bad' },
-              { label: '전체 집계', value: `${data.total}건`, note: '가격 통계 대상' },
+              { label: '자동 차단', value: `${formatCount(anomalies.length)}건`, note: '집계에서 제외 중', kind: anomalies.length === 0 ? 'ok' : 'bad' },
+              { label: '전체 집계', value: `${formatCount(data.total)}건`, note: '가격 통계 대상' },
               {
                 label: '대상 업체',
-                value: `${new Set(anomalies.map((a) => a.vendorId)).size}곳`,
+                value: `${formatCount(new Set(anomalies.map((a) => a.vendorId)).size)}곳`,
                 note: '차단이 걸린 곳',
               },
             ]}
@@ -139,5 +159,33 @@ export default function StatsScreen() {
         </>
       ) : null}
     </Page>
+  );
+}
+
+const TABS: AdminTabDef[] = [
+  { key: 'price-stats', label: '가격 통계', readOnly: true },
+  { key: 'stats', label: '이상치 탐지' },
+  { key: 'revenue', label: '수익 현황', readOnly: true },
+  { key: 'ai-usage', label: '분석 비용' },
+];
+
+/**
+ * 「통계·수익」 — 가격 통계 · 이상치·조작 탐지 · 수익 현황 · 분석 비용을 탭 넷으로 묶는다.
+ * 넷 다 조회 전용 집계 화면이라 사이드바 「조회」 묶음 안에서만 옮긴 것과 같다 —
+ * 조작 화면과 섞이지 않는다. **가격 통계 · 수익 현황은 「조회만」 딱지가 붙는다**
+ * (다섯 화면 중 둘 — 읽기는 되지만 화면 안에서 쓰기 단추가 잠겨 있다).
+ */
+export default function StatsShell() {
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
+  const initial = TABS.some((t) => t.key === tab) ? (tab as string) : 'stats';
+  const [active, setActive] = useState(initial);
+
+  return (
+    <AdminTabShell tabs={TABS} active={active} onChange={setActive}>
+      {active === 'price-stats' && <PriceStatsPanel />}
+      {active === 'stats' && <StatsPanel />}
+      {active === 'revenue' && <RevenuePanel />}
+      {active === 'ai-usage' && <AiUsagePanel />}
+    </AdminTabShell>
   );
 }

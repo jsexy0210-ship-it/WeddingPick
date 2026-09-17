@@ -266,9 +266,7 @@ export async function forceWithdraw(
   if (trimmedReason === '') throw new WithdrawalRefused('탈퇴 사유가 필요하다.');
 
   const { rows } = await deps.pool.query<{ is_operator: boolean; deleted_at: Date | null }>(
-    `SELECT (u.is_operator OR EXISTS (SELECT 1 FROM structured.admin_accounts a WHERE a.user_id = u.id)
-       OR EXISTS (SELECT 1 FROM identity.identities i WHERE i.user_id = u.id AND i.provider = 'admin')) AS is_operator,
-       u.deleted_at FROM structured.users u WHERE u.id = $1`,
+    'SELECT is_operator, deleted_at FROM structured.users WHERE id = $1',
     [userId]
   );
   const target = rows[0];

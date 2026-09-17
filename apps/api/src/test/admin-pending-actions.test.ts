@@ -1,6 +1,10 @@
+import Fastify from 'fastify';
 import type { Pool } from 'pg';
 import { DISCLOSURE_THRESHOLDS } from '@weddingpick/domain';
 import { isDocType, policyRules, setPolicyRules } from '../admin-ops';
+import type { AppContext } from '../context';
+import { ApiError } from '../errors';
+import { registerAdminRoutes } from '../routes/admin';
 
 // 권한은 기존 DB 통합시험에서 검사한다. 여기서는 운영자도 미연결 기능을 쓸 수 없는지 본다.
 jest.mock('../auth/plugin', () => ({
@@ -35,6 +39,28 @@ it('공개 규칙은 DB에 다른 값이 남아 있어도 실제 공개 기준�
   expect(data.policies[0]).toMatchObject({
     value: String(DISCLOSURE_THRESHOLDS.limited), readOnlyReason: expect.any(String),
   });
+});
+
+it.each([
+  { method: 'POST' as const, url: '/v1/admin/terms' },
+  { method: 'PUT' as const, url: '/v1/admin/terms/terms/clauses/00000000-0000-4000-8000-000000000002' },
+  { method: 'POST' as const, url: '/v1/admin/terms/terms/publish' },
+])('$method $url은 약관 연결 전 성공 응답이나 DB 변경을 만들지 않는다', async (request) => {
+  const app = Fastify();
+  app.setErrorHandler((error, _request, reply) => {
+    if (error instanceof ApiError) return reply.status(error.status).send(error.toResponse());
+    throw error;
+  });
+  registerAdminRoutes(app, { pool } as unknown as AppContext);
+  try {
+    const response = await app.inject(request);
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({ error: { message: expect.stringContaining('연결한 뒤 열려요') } });
+    expect(pool.query).not.toHaveBeenCalled();
+    expect(pool.connect).not.toHaveBeenCalled();
+  } finally {
+    await app.close();
+  }
 });
 
 /*
@@ -108,3 +134,26 @@ it.each(['terms', 'privacy', 'marketing'])('%s는 약관 문서다', (value) => 
   expect(isDocType(value)).toBe(true);
 });
 
+/**
+ * 막힌 자리가 **무엇이 되는지**를 말하는가(v3.27).
+ *
+ * 「~할 수 없어요」로 끝나면 운영자는 다음에 무엇을 할지 모른 채 화면을 닫는다.
+ */
+it('약관 편집·공개를 막는 말은 무엇이 되는지 먼저 말한다', async () => {
+  const app = Fastify();
+  app.setErrorHandler((error, _request, reply) => {
+    if (error instanceof ApiError) return reply.status(error.status).send(error.toResponse());
+    throw error;
+  });
+  registerAdminRoutes(app, { pool } as unknown as AppContext);
+
+  try {
+    const response = await app.inject({ method: 'POST', url: '/v1/admin/terms' });
+    const message = (response.json() as { error: { message: string } }).error.message;
+
+    expect(message).toContain('조회할 수 있어요');
+    expect(message).not.toMatch(/할 수 없어요\.?$|못해요\.?$/);
+  } finally {
+    await app.close();
+  }
+});

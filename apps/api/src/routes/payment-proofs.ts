@@ -109,7 +109,7 @@ export function registerPaymentProofRoutes(app: FastifyInstance, context: AppCon
     }
 
     if (body.vendorId) {
-      const found = await context.pool.query('SELECT 1 FROM structured.vendors WHERE id = $1 AND deleted_at IS NULL', [
+      const found = await context.pool.query('SELECT 1 FROM structured.vendors WHERE id = $1', [
         body.vendorId,
       ]);
 

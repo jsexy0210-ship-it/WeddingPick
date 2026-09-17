@@ -29,11 +29,19 @@
  * 이 화면은 슈퍼 관리자만 연다. 그것을 정하는 곳은 **서버**이고(`requireSuperAdmin`),
  * 여기서는 403을 받아 그렇게 말해 줄 뿐이다. 화면이 막는 것으로 쳤다면 뷰어가
  * `PATCH`를 직접 부르는 순간 그대로 통했을 것이다.
+ *
+ * **2026-09-15 대표 확정 — 「계정·권한」 화면의 탭 하나(관리자 계정)다**(앱 회원 ·
+ * 관리자 계정 둘, 표는 절대 하나로 합치지 않는다 — 위 「다른 화면이다」 항목 그대로).
+ * 이 파일의 새 기본 내보내기는 옛 주소(`/admin/admins`)를 `/admin/users?tab=admins`로
+ * 보내는 `Redirect`이고, 본문은 `AdminsPanel`로 이름만 바꿨다. 탭은 껍데기라 본문은
+ * 손대지 않았다.
  */
+import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Colors, FontSize } from '@weddingpick/ui';
+import { formatCount } from '@weddingpick/domain';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { formatDateDot } from '@/features/common/format-date';
@@ -55,13 +63,11 @@ type AdminAccount = {
   loginId: string;
   role: Role;
   disabled: boolean;
-  canEdit: boolean;
-  canDelete: boolean;
   createdBy: string | null;
   createdAt: string;
 };
 
-type ListData = { accounts: AdminAccount[]; viewerIsStored: boolean };
+type ListData = { accounts: AdminAccount[]; viewerIsStored: boolean; viewerAccountId: string | null };
 
 const ROLE_LABEL: Record<Role, string> = {
   super: '슈퍼 관리자',
@@ -83,7 +89,7 @@ const ROLE_POWER: Record<Role, { write: string; accounts: string }> = {
 
 const ROLE_NOTE: Record<Role, string> = {
   super: '계정 관리를 포함한 전부',
-  operator: '지정된 편집·삭제 권한 · 계정 관리는 못 함',
+  operator: '운영 전부 · 계정 관리는 못 함',
   viewer: '읽기만',
 };
 
@@ -108,17 +114,15 @@ const COLS = [
  * 바뀌는지 말해 주지 않아서, 읽는 사람이 자기가 무엇을 누르는지 모른 채 누른다.
  */
 type Pending =
-  | { kind: 'create'; loginId: string; password: string; role: Role; canEdit: boolean; canDelete: boolean }
+  | { kind: 'create'; loginId: string; password: string; role: Role }
   | { kind: 'role'; account: AdminAccount; role: Role }
-  | { kind: 'permissions'; account: AdminAccount; canEdit: boolean; canDelete: boolean }
-  | { kind: 'delete'; account: AdminAccount }
-  | { kind: 'disabled'; account: AdminAccount; disabled: boolean };
+  | { kind: 'disabled'; account: AdminAccount; disabled: boolean }
+  | { kind: 'demote-others'; targets: AdminAccount[] };
 
 function confirmTitle(pending: Pending): string {
   if (pending.kind === 'create') return '관리자를 만들어요';
   if (pending.kind === 'role') return '등급을 바꿔요';
-  if (pending.kind === 'permissions') return '편집·삭제 권한을 바꿔요';
-  if (pending.kind === 'delete') return '관리자 계정을 삭제해요';
+  if (pending.kind === 'demote-others') return '나머지를 전부 뷰어로 내려요';
 
   return pending.disabled ? '계정을 꺼요' : '계정을 다시 켜요';
 }
@@ -131,7 +135,7 @@ function confirmItems(pending: Pending): string[] {
     return [
       `아이디 ${pending.loginId}`,
       `등급 ${ROLE_LABEL[pending.role]}`,
-      `조회 허용 · 편집 ${pending.role === 'super' || (pending.role === 'operator' && pending.canEdit) ? '허용' : '금지'} · 삭제 ${pending.role === 'super' || (pending.role === 'operator' && pending.canDelete) ? '허용' : '금지'}`,
+      `관리자 쓰기 ${power.write}`,
       `계정 관리 ${power.accounts}`,
       '비밀번호는 해시만 저장해요 — 만든 뒤에는 다시 볼 수 없어요',
     ];
@@ -149,14 +153,13 @@ function confirmItems(pending: Pending): string[] {
     ];
   }
 
-  if (pending.kind === 'delete') return [
-    `아이디 ${pending.account.loginId}`, '로그인과 기존 세션이 끊겨요',
-    '계정 목록에서 제거하고 다시 활성화할 수 없어요', '기존 감사 기록은 남아요',
-  ];
-  if (pending.kind === 'permissions') return [
-    `아이디 ${pending.account.loginId}`, '조회는 계속 허용돼요',
-    `편집 ${pending.canEdit ? '허용' : '금지'} · 삭제 ${pending.canDelete ? '허용' : '금지'}`,
-  ];
+  if (pending.kind === 'demote-others') {
+    return [
+      ...pending.targets.map((a) => `${a.loginId} — ${ROLE_LABEL[a.role]} → 뷰어`),
+      '관리자 쓰기 · 계정 관리는 지금 이 계정에만 남아요',
+    ];
+  }
+
   const power = ROLE_POWER[pending.account.role];
 
   return pending.disabled
@@ -176,7 +179,7 @@ function confirmItems(pending: Pending): string[] {
       ];
 }
 
-export default function AdminAccountsScreen() {
+export function AdminsPanel() {
   const [data, setData] = useState<ListData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -186,8 +189,6 @@ export default function AdminAccountsScreen() {
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<Role>('viewer');
-  const [canEdit, setCanEdit] = useState(true);
-  const [canDelete, setCanDelete] = useState(false);
 
   const [selected, setSelected] = useState<AdminAccount | null>(null);
   const [pending, setPending] = useState<Pending | null>(null);
@@ -217,7 +218,7 @@ export default function AdminAccountsScreen() {
 
   /** 확인 카드에서 진행을 눌렀을 때에만 서버로 간다. */
   async function commit() {
-    if (!pending || acting) return;
+    if (!pending) return;
     setActing(true);
     setActionError(null);
 
@@ -229,8 +230,6 @@ export default function AdminAccountsScreen() {
             loginId: pending.loginId,
             password: pending.password,
             role: pending.role,
-            canEdit: pending.canEdit,
-            canDelete: pending.canDelete,
           }),
         });
         /*
@@ -240,8 +239,6 @@ export default function AdminAccountsScreen() {
         setLoginId('');
         setPassword('');
         setRole('viewer');
-        setCanEdit(true);
-        setCanDelete(false);
         setCreating(false);
       } else if (pending.kind === 'role') {
         await apiFetch(`/v1/admin/accounts/${pending.account.id}/role`, {
@@ -249,14 +246,8 @@ export default function AdminAccountsScreen() {
           body: JSON.stringify({ role: pending.role }),
         });
         setSelected(null);
-      } else if (pending.kind === 'permissions') {
-        await apiFetch(`/v1/admin/accounts/${pending.account.id}/permissions`, {
-          method: 'PATCH', body: JSON.stringify({ canEdit: pending.canEdit, canDelete: pending.canDelete }),
-        });
-        setSelected(null);
-      } else if (pending.kind === 'delete') {
-        await apiFetch(`/v1/admin/accounts/${pending.account.id}`, { method: 'DELETE' });
-        setSelected(null);
+      } else if (pending.kind === 'demote-others') {
+        await apiFetch('/v1/admin/accounts/demote-others', { method: 'POST' });
       } else {
         await apiFetch(`/v1/admin/accounts/${pending.account.id}/disabled`, {
           method: 'PATCH',
@@ -276,7 +267,7 @@ export default function AdminAccountsScreen() {
 
   if (loading) {
     return (
-      <Page title="관리자 계정">
+      <Page embedded title="관리자 계정">
         <DelayedLoader active size={40} style={styles.centered} />
       </Page>
     );
@@ -284,7 +275,7 @@ export default function AdminAccountsScreen() {
 
   if (error || !data) {
     return (
-      <Page title="관리자 계정">
+      <Page embedded title="관리자 계정">
         <LoadError message={error ?? '불러오기 실패'} onRetry={() => setRev((r) => r + 1)} />
       </Page>
     );
@@ -302,7 +293,8 @@ export default function AdminAccountsScreen() {
     ? {
         tone: 'warn' as const,
         title: '환경변수 계정으로 들어와 있어요',
-        detail: '슈퍼 관리자를 하나 만들면 이 계정으로는 더 이상 들어올 수 없어요.',
+        detail: '표에 저장된 계정이 아니에요. 슈퍼 관리자를 하나 만들면 이 화면으로는 더 이상 들어올 수 없어요.',
+        cta: { label: '관리자 추가', onPress: () => setCreating(true) },
       }
     : supers.length === 1
       ? {
@@ -312,13 +304,22 @@ export default function AdminAccountsScreen() {
         }
       : { tone: 'ok' as const, title: '확인할 것이 없어요' };
 
+  /*
+   * 「나머지 계정은 싹다 뷰어로」(2026-09-15 대표 지시)의 대상. 이미 뷰어이거나
+   * 꺼진 계정은 바꿀 것이 없고, 지금 보고 있는 자기 계정은 절대 빼지 않는다 —
+   * 자기 등급까지 뷰어로 떨어지면 그 즉시 이 화면에서 튕겨 나간다.
+   */
+  const demotable = accounts.filter(
+    (a) => !a.disabled && a.role !== 'viewer' && a.id !== data.viewerAccountId
+  );
+
   const rows: TableRow[] = accounts.map((account) => ({
     key: account.id,
     cells: [
       { v: account.loginId, bold: true, onPress: () => open(account) },
       { v: ROLE_LABEL[account.role], badge: ROLE_KIND[account.role] },
-      { v: `조회 · 편집 ${account.canEdit ? '허용' : '금지'} · 삭제 ${account.canDelete ? '허용' : '금지'}` },
-      { v: account.disabled ? '정지' : '활성', kind: account.disabled ? 'dim' : 'ok' },
+      { v: ROLE_NOTE[account.role] },
+      { v: account.disabled ? '꺼짐' : '켜짐', kind: account.disabled ? 'dim' : 'ok' },
       { v: account.createdBy ?? '—' },
       { v: formatDateDot(account.createdAt) },
     ],
@@ -333,13 +334,26 @@ export default function AdminAccountsScreen() {
 
   return (
     <Page
+      embedded
       title="관리자 계정"
       sub="콘솔에 들어올 수 있는 사람과 등급"
       action={{ label: '관리자 추가', onPress: () => setCreating(true), kind: 'brand' }}
     >
       <StatusBanner {...banner} />
 
-      <Card title={`관리자 ${accounts.length}개`} full note="끈 계정은 로그인이 막히고 등급은 그대로 남아요.">
+      <Card
+        title={`관리자 ${formatCount(accounts.length)}개`}
+        full
+        note="끈 계정은 로그인이 막히고 등급은 그대로 남아요."
+        action={
+          demotable.length > 0
+            ? {
+                label: '나머지 전체를 뷰어로',
+                onPress: () => setPending({ kind: 'demote-others', targets: demotable }),
+              }
+            : undefined
+        }
+      >
         <DataTable
           cols={COLS}
           rows={rows}
@@ -364,7 +378,7 @@ export default function AdminAccountsScreen() {
           }}
           onConfirm={() => {
             if (!canSubmitNew) return;
-            setPending({ kind: 'create', loginId: loginId.trim(), password, role, canEdit, canDelete });
+            setPending({ kind: 'create', loginId: loginId.trim(), password, role });
           }}
         >
           <View style={styles.form}>
@@ -396,10 +410,6 @@ export default function AdminAccountsScreen() {
                 </Pressable>
               ))}
             </View>
-            {role === 'operator' && <View style={styles.roleRow}>
-              <Text style={styles.formLabel}>편집 허용</Text><Switch accessibilityLabel="새 관리자 편집 권한" value={canEdit} onValueChange={setCanEdit} />
-              <Text style={styles.formLabel}>삭제 허용</Text><Switch accessibilityLabel="새 관리자 삭제 권한" value={canDelete} onValueChange={setCanDelete} />
-            </View>}
           </View>
         </ConfirmCard>
       )}
@@ -413,7 +423,7 @@ export default function AdminAccountsScreen() {
             `만든 날 ${formatDateDot(selected.createdAt)}`,
             `상태 ${selected.disabled ? '꺼짐' : '켜짐'}`,
           ]}
-          cta={selected.disabled ? '정지 해제' : '정지'}
+          cta={selected.disabled ? '다시 켜기' : '끄기'}
           danger={!selected.disabled}
           onCancel={() => {
             setSelected(null);
@@ -425,10 +435,6 @@ export default function AdminAccountsScreen() {
         >
           <View style={styles.form}>
             <Text style={styles.formLabel}>등급 바꾸기</Text>
-            {selected.role === 'operator' && <View style={styles.roleRow}>
-              <Text style={styles.formLabel}>편집 허용</Text><Switch accessibilityLabel="편집 권한" value={selected.canEdit} onValueChange={(value) => setPending({ kind: 'permissions', account: selected, canEdit: value, canDelete: selected.canDelete })} />
-              <Text style={styles.formLabel}>삭제 허용</Text><Switch accessibilityLabel="삭제 권한" value={selected.canDelete} onValueChange={(value) => setPending({ kind: 'permissions', account: selected, canEdit: selected.canEdit, canDelete: value })} />
-            </View>}
             <View style={styles.roleRow}>
               {ROLES.map((r) => (
                 <Pressable
@@ -443,9 +449,6 @@ export default function AdminAccountsScreen() {
                 </Pressable>
               ))}
             </View>
-            {selected.role !== 'super' && <Pressable style={styles.roleBtn} onPress={() => setPending({ kind: 'delete', account: selected })}>
-              <Text style={styles.error}>관리자 삭제</Text>
-            </Pressable>}
           </View>
         </ConfirmCard>
       )}
@@ -456,7 +459,7 @@ export default function AdminAccountsScreen() {
           body={acting ? '바꾸는 중이에요…' : '이렇게 바뀌어요.'}
           items={confirmItems(pending)}
           cta={acting ? '바꾸는 중…' : '진행'}
-          danger={pending.kind === 'delete' || (pending.kind === 'disabled' && pending.disabled)}
+          danger={(pending.kind === 'disabled' && pending.disabled) || pending.kind === 'demote-others'}
           onCancel={() => {
             setPending(null);
             setActionError(null);
@@ -468,6 +471,11 @@ export default function AdminAccountsScreen() {
       )}
     </Page>
   );
+}
+
+/** 옛 주소 — 「계정·권한」의 관리자 계정 탭으로 보낸다. */
+export default function AdminsRedirect() {
+  return <Redirect href="/admin/users?tab=admins" />;
 }
 
 const styles = StyleSheet.create({

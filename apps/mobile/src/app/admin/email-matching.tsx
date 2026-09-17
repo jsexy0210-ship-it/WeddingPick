@@ -1,3 +1,4 @@
+import { Redirect } from 'expo-router';
 /**
  * WP-ADM-016 이메일 회신 자동 매칭
  *
@@ -69,7 +70,7 @@ const COLS: Col[] = [
   { key: 'status', label: '상태', width: 100 },
 ];
 
-export default function EmailMatchingScreen() {
+export function EmailMatchingPanel() {
   const [data, setData] = useState<EmailData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -122,13 +123,12 @@ export default function EmailMatchingScreen() {
     ],
   }));
 
-  if (BACKEND_PENDING) return <Page title="이메일 회신" sub="개발 준비 중"><PendingBackendNotice actions="이메일 수신 · 자동 연결" reason="이메일 수신과 자동 연결 기능을 준비하고 있어요. 아직 실제 회신 내역을 확인할 수 없어요." /></Page>;
-
   return (
     <Page
+      embedded
       title="이메일 회신 자동 매칭"
       sub="업체 회신을 어느 문의에 붙였는지"
-      action={{ label: '새로고침', onPress: reload, permission: 'view' }}
+      action={{ label: '새로 고침', onPress: reload }}
     >
       <DelayedLoader active={loading} size={40} />
       {!loading && error ? <LoadError message={error} onRetry={reload} /> : null}
@@ -156,7 +156,7 @@ export default function EmailMatchingScreen() {
           {BACKEND_PENDING ? (
             <PendingBackendNotice
               actions="반영 · 재시도"
-              reason="개발 준비 중입니다. 이메일 수신과 자동 연결 기능은 아직 사용할 수 없어요."
+              reason="업체 회신을 받아 두는 곳이 아직 없어요. 지금은 수신함이 비어 있는 것으로 보여요. 회신이 쌓이면 반영 · 재시도를 열어요."
             />
           ) : null}
 
@@ -188,4 +188,12 @@ export default function EmailMatchingScreen() {
       ) : null}
     </Page>
   );
+}
+
+/**
+ * 옛 주소는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제 화면은 `/admin/vendors`(업체·행사)의 이메일 회신 탭에 있다 —
+ * `EmailMatchingPanel`이 이 파일의 본체다.
+ */
+export default function EmailMatchingRedirect() {
+  return <Redirect href="/admin/vendors?tab=email-matching" />;
 }

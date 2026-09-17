@@ -108,9 +108,9 @@ export default function AddExpenseScreen() {
     setSaving(null);
     if (!ok) return;
 
-    /* 링크로 곧장 들어와 되돌아갈 곳이 없으면 Depth Back이 한 단계 위(지출 요약)로 보낸다. */
-    if (router.canGoBack()) router.back();
-    else depthBack();
+    /* 링크로 곧장 들어와 되돌아갈 곳이 없으면 Depth Back이 한 단계 위(지출 요약)로
+       보낸다 — `depthBack`이 이미 History 우선 순서다. */
+    depthBack();
   }
 
   /**

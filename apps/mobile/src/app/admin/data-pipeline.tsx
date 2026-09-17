@@ -1,14 +1,18 @@
-import { useAdminAccess, AdminAccountActions } from './_ui';
 /**
- * WP-ADM-010 제보 처리
+ * WP-ADM-010 데이터 · 제보 처리 현황
  * 자동 처리 건수 · 단계별 적체 · 실패 큐 · 재처리
+ *
+ * **2026-09-15 대표 확정 — 「확인 필요」 화면의 탭 하나로 묶였다**(탭 셋). 이 파일의
+ * 본체는 `DataPipelinePanel`로 옮기고 `queue.tsx`가 탭으로 골라 그린다.
  */
+import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Colors, FontSize, Layout, Spacing } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { formatCount } from '@weddingpick/domain';
 
 type StageCount = { stage: string; count: number; avgWaitMin: number };
 type FailedItem = { id: string; stage: string; error: string; failedAt: string; retryCount: number };
@@ -19,8 +23,7 @@ type PipelineData = {
   failedQueue: FailedItem[];
 };
 
-export default function DataPipelineScreen() {
-  const { canEdit } = useAdminAccess();
+export function DataPipelinePanel() {
   const [data, setData] = useState<PipelineData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -74,8 +77,8 @@ export default function DataPipelineScreen() {
       // 건너뛴 건수를 감추지 않는다. 계속 실패하는 건은 사람이 개별로 봐야 한다.
       setActionNote(
         r.skipped > 0
-          ? `${r.retried}건을 다시 처리해요. ${r.skipped}건은 여러 번 실패해 건너뛰었어요.`
-          : `${r.retried}건을 다시 처리해요.`
+          ? `${formatCount(r.retried)}건을 다시 처리해요. ${formatCount(r.skipped)}건은 여러 번 실패해 건너뛰었어요.`
+          : `${formatCount(r.retried)}건을 다시 처리해요.`
       );
       setRev((v) => v + 1);
     } catch (e) {
@@ -88,11 +91,10 @@ export default function DataPipelineScreen() {
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <Text style={styles.title}>제보 처리</Text>
+        <Text style={styles.title}>제보 처리 현황</Text>
         <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
-          <Text style={styles.refreshText}>새로고침</Text>
+          <Text style={styles.refreshText}>새로 고침</Text>
         </Pressable>
-        <AdminAccountActions />
       </View>
 
       {/* 재처리 결과. 「지금 봐야 할 것이 맨 위」 — v3.27 관리자 공통 규칙. */}
@@ -114,22 +116,22 @@ export default function DataPipelineScreen() {
           <Text style={styles.sectionTitle}>오늘 처리 현황</Text>
           <View style={styles.statsGrid}>
             <View style={styles.statCell}>
-              <Text style={styles.statValue}>{data.today.received.toLocaleString()}</Text>
+              <Text style={styles.statValue}>{formatCount(data.today.received)}</Text>
               <Text style={styles.statLabel}>접수</Text>
             </View>
             <View style={styles.statCell}>
-              <Text style={[styles.statValue, styles.valueOk]}>{data.today.autoProcessed.toLocaleString()}</Text>
+              <Text style={[styles.statValue, styles.valueOk]}>{formatCount(data.today.autoProcessed)}</Text>
               <Text style={styles.statLabel}>자동 처리</Text>
             </View>
             <View style={styles.statCell}>
               <Text style={[styles.statValue, data.today.manualRequired > 0 && styles.valueWarn]}>
-                {data.today.manualRequired.toLocaleString()}
+                {formatCount(data.today.manualRequired)}
               </Text>
               <Text style={styles.statLabel}>수동 필요</Text>
             </View>
             <View style={styles.statCell}>
               <Text style={[styles.statValue, data.today.failed > 0 && styles.valueDanger]}>
-                {data.today.failed.toLocaleString()}
+                {formatCount(data.today.failed)}
               </Text>
               <Text style={styles.statLabel}>실패</Text>
             </View>
@@ -147,7 +149,7 @@ export default function DataPipelineScreen() {
               <View key={s.stage} style={[styles.tableRow, i % 2 === 1 && styles.tableRowZebra]}>
                 <Text style={[styles.td, styles.colStage]}>{s.stage}</Text>
                 <Text style={[styles.td, styles.colCount, s.count > 100 && styles.valueDanger]}>
-                  {s.count.toLocaleString()}
+                  {formatCount(s.count)}
                 </Text>
                 <Text style={[styles.td, styles.colWait]}>
                   {s.avgWaitMin < 60 ? `${s.avgWaitMin}분` : `${(s.avgWaitMin / 60).toFixed(1)}시간`}
@@ -158,12 +160,12 @@ export default function DataPipelineScreen() {
 
           {/* 실패 큐 */}
           <View style={styles.failQueueHeader}>
-            <Text style={styles.sectionTitle}>처리 실패 목록</Text>
+            <Text style={styles.sectionTitle}>실패 큐</Text>
             {data.failedQueue.length > 0 && (
               <Pressable
                 style={[styles.retryAllBtn, (retrying === 'all') && styles.btnDisabled]}
                 onPress={() => void retryAll()}
-                disabled={!canEdit || retrying !== null}
+                disabled={retrying !== null}
               >
                 <Text style={styles.retryAllText}>
                   {retrying === 'all' ? '처리 중…' : '전체 재처리'}
@@ -173,7 +175,7 @@ export default function DataPipelineScreen() {
           </View>
           <View style={styles.card}>
             {data.failedQueue.length === 0 ? (
-              <Text style={styles.emptyText}>처리하지 못한 제보가 없어요.</Text>
+              <Text style={styles.emptyText}>실패 큐 비어 있어요.</Text>
             ) : (
               <>
                 <View style={styles.tableHead}>
@@ -190,12 +192,12 @@ export default function DataPipelineScreen() {
                     </Text>
                     <Text style={[styles.td, styles.colFailStage]}>{item.stage}</Text>
                     <Text style={[styles.td, styles.colError]} numberOfLines={1}>{item.error}</Text>
-                    <Text style={[styles.td, styles.colRetry]}>{item.retryCount}회</Text>
+                    <Text style={[styles.td, styles.colRetry]}>{formatCount(item.retryCount)}회</Text>
                     <View style={[styles.colAction]}>
                       <Pressable
                         style={[styles.inlineBtn, (retrying === item.id) && styles.btnDisabled]}
                         onPress={() => void retryItem(item.id)}
-                        disabled={!canEdit || retrying !== null}
+                        disabled={retrying !== null}
                       >
                         <Text style={styles.inlineBtnText}>
                           {retrying === item.id ? '…' : '재처리'}
@@ -328,3 +330,12 @@ const styles = StyleSheet.create({
   inlineBtnText: { fontSize: FontSize.tab, color: Colors.light.textSecondary },
   btnDisabled: { opacity: 0.5 },
 });
+
+/**
+ * 옛 주소(`/admin/data-pipeline`)는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제
+ * 화면은 `/admin/queue`(확인 필요)의 제보 처리 탭에 있다 — `DataPipelinePanel`이
+ * 이 파일의 본체다.
+ */
+export default function DataPipelineRedirect() {
+  return <Redirect href="/admin/queue?tab=data-pipeline" />;
+}

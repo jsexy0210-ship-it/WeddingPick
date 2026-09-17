@@ -1,3 +1,4 @@
+import { Redirect } from 'expo-router';
 /**
  * WP-ADM-015 이미지 자동 수급
  *
@@ -8,6 +9,7 @@
 import { useEffect, useState } from 'react';
 
 import { DelayedLoader } from '@/features/loading/delayed-loader';
+import { formatCount } from '@weddingpick/domain';
 import { apiFetch } from './_api';
 import {
   Card,
@@ -79,7 +81,7 @@ const COLS: Col[] = [
   { key: 'action', label: '', width: 110, align: 'right' },
 ];
 
-export default function ImagesScreen() {
+export function ImagesPanel() {
   const [data, setData] = useState<ImagesData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -160,9 +162,10 @@ export default function ImagesScreen() {
 
   return (
     <Page
+      embedded
       title="이미지 자동 수급"
       sub="권리 확인이 필수 관문 · 미확인은 노출되지 않아요"
-      action={{ label: '새로고침', onPress: reload, permission: 'view' }}
+      action={{ label: '새로 고침', onPress: reload }}
     >
       <DelayedLoader active={loading} size={40} />
       {!loading && error ? <LoadError message={error} onRetry={reload} /> : null}
@@ -184,7 +187,7 @@ export default function ImagesScreen() {
             title={
               pending === 0
                 ? '노출을 막고 있는 것이 없어요'
-                : `권리 미확인 ${pending}건이 노출을 막고 있어요`
+                : `권리 미확인 ${formatCount(pending)}건이 노출을 막고 있어요`
             }
             detail={
               pending === 0
@@ -195,10 +198,10 @@ export default function ImagesScreen() {
 
           <KpiRow
             items={[
-              { label: '수집', value: `${data.summary.total}장`, note: '전체' },
-              { label: '권리 확인', value: `${data.summary.licensed}장`, note: '노출 가능', kind: 'ok' },
-              { label: '권리 미확인', value: `${pending}장`, note: '노출 차단 중', kind: pending === 0 ? 'ok' : 'bad' },
-              { label: '매칭 신뢰도 낮음', value: `${lowMatch}장`, note: `${MATCH_FLOOR} 미만`, kind: 'brand' },
+              { label: '수집', value: `${formatCount(data.summary.total)}장`, note: '전체' },
+              { label: '권리 확인', value: `${formatCount(data.summary.licensed)}장`, note: '노출 가능', kind: 'ok' },
+              { label: '권리 미확인', value: `${formatCount(pending)}장`, note: '노출 차단 중', kind: pending === 0 ? 'ok' : 'bad' },
+              { label: '매칭 신뢰도 낮음', value: `${formatCount(lowMatch)}장`, note: `${MATCH_FLOOR} 미만`, kind: 'brand' },
             ]}
           />
 
@@ -217,7 +220,7 @@ export default function ImagesScreen() {
                 items={[
                   { key: 'homepage', name: '업체 공식 채널', meta: '홈페이지 · 인스타그램 · 블로그', num: '자동', numKind: 'ok' },
                   { key: 'provided', name: '업체 제공', meta: 'WP-BIZ-005 자료 제공으로 받은 것', num: '자동', numKind: 'ok' },
-                  { key: 'public', name: '공공 데이터', meta: '공공누리 1~4유형', num: '자동', numKind: 'ok' },
+                  { key: 'public', name: '공공데이터', meta: '공공누리 1~4유형', num: '자동', numKind: 'ok' },
                   { key: 'crawl', name: '크롤링', meta: '출처를 특정할 수 없는 것', num: '불가', numKind: 'bad' },
                 ]}
               />
@@ -227,4 +230,12 @@ export default function ImagesScreen() {
       ) : null}
     </Page>
   );
+}
+
+/**
+ * 옛 주소는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제 화면은 `/admin/vendors`(업체·행사)의 이미지 관리 탭에 있다 —
+ * `ImagesPanel`이 이 파일의 본체다.
+ */
+export default function ImagesRedirect() {
+  return <Redirect href="/admin/vendors?tab=images" />;
 }

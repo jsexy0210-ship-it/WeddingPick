@@ -30,7 +30,7 @@
 핵심 문서 9개 중 `CHANGELOG.md`, `tokens.json`, `PROJECT_RULES.md`는 개행 정규화 후 동일하다. `ADMIN.md`, `README.md`, `screens.json`, `SPEC.md`, `IMAGES.md`, `IMAGE_PROMPTS.md`는 다르다. ADMIN의 차이는 끝의 시안 열람 설명 추가이며 본문은 같다.
 
 - 관리자 기본·운영 HTML은 이미 Git에 있는 원본과 동일하다. 관리자 구현 차이는 새 시안이 늦게 전달돼 생긴 문제만으로 설명할 수 없다.
-- 스타일 이미지 `urban/natural/romantic/glamorous` 4장은 ZIP의 `uploads/스타일 이미지/`와 앱 `assets/images/style/`가 **원시 SHA-256까지 동일**하다. 코드 `features/onboarding/style-grid.tsx:128–131`이 이 파일을 사용한다.
+- 스타일 이미지 `urban/natural/romantic/glamorous` 4장은 ZIP의 `uploads/스타일 이미지/`와 앱 `assets/images/style/`가 **원시 SHA-256까지 동일**했다. **2026-09-15에 그 4장과 `style-grid.tsx`를 지웠다** — 대표 지시 「타일로 하지마 버튼으로 통일한다」로 사진 타일이 없어졌다. ZIP 쪽 원본은 그대로 남아 있어 되돌릴 근거는 유지된다.
 - 웨딩일정의 지출 상자·Pick 인증·배우자 연결 분기는 이미 구현에 반영된 부분이다. 재작업 대상으로 집계하지 않는다.
 - `handoff/screens.json`·SPEC는 v3.26 폴더와 같고, CHANGELOG·ADMIN은 v3.27, tokens는 v3.21과 같다. 버전별 폴더는 누적 변경 묶음이지 매번 완결된 패키지가 아니다.
 

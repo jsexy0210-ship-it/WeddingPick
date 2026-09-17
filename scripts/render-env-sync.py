@@ -33,7 +33,7 @@ def flag(name: str, default: bool = False) -> bool:
     return default
 
 
-def call(method: str, path: str, body: dict | None = None) -> tuple[int, str]:
+def call_once(method: str, path: str, body: dict | None = None) -> tuple[int, str]:
     """Render API 한 번. 실패해도 던지지 않고 (상태, 본문)으로 돌려준다."""
     data = json.dumps(body).encode() if body is not None else None
     request = urllib.request.Request(f'{API}{path}', data=data, method=method)
@@ -49,6 +49,35 @@ def call(method: str, path: str, body: dict | None = None) -> tuple[int, str]:
         return error.code, error.read().decode()[:400]
     except Exception as error:  # 네트워크·타임아웃
         return 0, str(error)[:400]
+
+
+# 끊긴 것 · 잠깐 막힌 것. 응답이 온 4xx는 여기 없다 — 다시 불러도 같은 답이 온다.
+TRANSIENT = {0, 408, 429, 500, 502, 503, 504}
+
+
+def call(method: str, path: str, body: dict | None = None, attempts: int = 4) -> tuple[int, str]:
+    """`call_once`에 재시도를 붙인다.
+
+    2026-09-16에 947이 여기서 죽었다. 환경변수 하나를 올린 직후(`ok GEMINI_MODEL`)
+    다음 PUT이 **HTTP 0**으로 끊겼고, 스크립트가 그 한 번에 전체 배포를 포기했다.
+    **환경변수가 바뀌면 Render는 서비스를 재시작한다** — 그래서 API는 옛 커밋으로
+    재시작하고 새 커밋은 안 올라간, 이 파일이 아래에서 「제일 나쁘다」고 적어 둔
+    반만 배포된 상태가 됐다. 그날 DB 마이그레이션은 이미 들어간 뒤였다.
+
+    **POST는 다시 부르지 않는다.** 끊긴 POST는 서버에서 이미 성공했을 수 있고,
+    `/deploys`를 두 번 부르면 배포가 둘 생겨 아래 `wait`가 엉뚱한 것을 지켜본다.
+    GET · PUT은 몇 번을 불러도 결과가 같아서 안전하다.
+    """
+    idempotent = method in ('GET', 'PUT', 'DELETE')
+    delay = 2.0
+    for attempt in range(1, attempts + 1):
+        status, text = call_once(method, path, body)
+        if status not in TRANSIENT or not idempotent or attempt == attempts:
+            return status, text
+        print(f'  .. {method} {path} HTTP {status} — {delay:.0f}초 뒤 다시 ({attempt}/{attempts - 1}) {text[:120]}')
+        time.sleep(delay)
+        delay *= 2
+    return status, text
 
 
 def service_id(name: str) -> str | None:
@@ -186,6 +215,128 @@ def deploys(identifier: str) -> list[dict] | None:
         return None
 
 
+# 어느 파일이 바뀌면 그 서비스를 다시 빌드해야 하는가.
+#
+# **Render의 Pipeline Minutes는 한정돼 있다**(2026-09-14 대표 확인 · 2026-09-16 잔여 8분).
+# `render.yaml` 머리말이 「바뀐 쪽만 누른다」고 적어 두었는데 **이 스크립트가 그것을
+# 지키지 않고 있었다** — 아래 재배포 조건이 `changed or wait`였고 워크플로가
+# `WAIT_FOR_LIVE=true`를 넘겨서 **항상 참**이었다. 그래서 문서 한 줄만 고쳐도 서비스
+# 넷이 전부 다시 빌드됐고, 그중 `export:web`(Expo 정적 export)이 **두 번** 돌았다.
+#
+# 목록의 출처는 `render.yaml`의 `buildCommand`다. 두 파일을 함께 고친다.
+#
+# **`packages/` · `spec/` · 잠금파일은 모두에게 들어간다** — 어느 서비스가 쓰는지
+# 일일이 가르지 않는다. 덜 건너뛰는 쪽이 안전하다.
+SERVICE_PATHS: dict[str, tuple[str, ...]] = {
+    # API — apps/api를 빌드한다
+    'weddingpickl-sg': ('apps/api/',),
+    # Expo 정적 export를 깎아 쓰는 둘. 같은 빌드를 각자 한 번씩 돌린다(가장 비싸다).
+    'WeddingPick-관리자 사이트': ('apps/mobile/', 'scripts/split-admin-dist.mjs'),
+    'weddingpickl-Preview': ('apps/mobile/', 'scripts/split-admin-dist.mjs'),
+    # 랜딩·약관·방침
+    'WeddingPick-웹사이트': ('apps/web/',),
+}
+
+# 무엇이 바뀌든 전부 다시 빌드해야 하는 자리.
+#
+# **`render.yaml`은 여기 «없다».** 이 파일의 머리말이 적어 둔 대로 Blueprint sync가
+# 깨져 있어서(`POST /v1/blueprints/{id}/sync`가 HTTP 오류 · 2026-09-07 확인)
+# **저장소의 `render.yaml`은 Render에 닿지 않는다.** 실제 빌드 명령은 Render 대시보드에
+# 있고, 이 파일은 그것을 적어 둔 문서다. 문서를 고쳤다고 빌드 결과가 달라지지 않는다.
+#
+# **Blueprint sync가 고쳐지는 날 이 판단도 다시 본다.** 그때는 `render.yaml`이
+# 진짜 설정이 되므로 여기 넣어야 한다. 그 조건을 여기 적어 두는 이유는, 고치는
+# 사람이 이 줄을 안 보면 조용히 낡은 빌드 명령으로 배포되기 때문이다.
+SHARED_PATHS: tuple[str, ...] = ('packages/', 'spec/', 'package.json', 'package-lock.json')
+
+
+def changed_files(base: str, head: str) -> list[str] | None:
+    """두 커밋 사이에 바뀐 파일. 못 세면 None — 그때는 «전부 배포한다»."""
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+    def git(*args: str, timeout: int = 120) -> subprocess.CompletedProcess | None:
+        try:
+            return subprocess.run(['git', *args], cwd=root, capture_output=True,
+                                  text=True, timeout=timeout, check=False)
+        except (OSError, subprocess.TimeoutExpired):
+            return None
+
+    result = git('diff', '--name-only', f'{base}..{head}', timeout=60)
+    if result is None:
+        return None
+
+    if result.returncode != 0:
+        # **얕은 복제면 옛 커밋이 없다.** `actions/checkout`의 기본값이 깊이 1이라
+        # 여기서 처음 걸렸다. 워크플로에 `fetch-depth: 0`을 넣어 두었지만, 이 함수만
+        # 보고 쓰는 다른 자리가 생길 수 있어 스스로 한 번 더 받아 본다.
+        #
+        # 이것이 없으면 «조용히» 「모르면 누른다」로 빠진다 — 아무도 고장으로 안 보고
+        # 매번 넷이 다시 빌드된다. 고쳤다고 적힌 채로.
+        print('  .. 옛 커밋이 없다 — 받아 온다')
+        if git('fetch', '--no-tags', '--depth=200', 'origin', base, head) is None:
+            return None
+        result = git('diff', '--name-only', f'{base}..{head}', timeout=60)
+        if result is None or result.returncode != 0:
+            return None
+
+    return [line for line in result.stdout.splitlines() if line]
+
+
+def needs_rebuild(name: str, files: list[str] | None) -> bool:
+    """이 서비스를 다시 빌드해야 하나.
+
+    **모르면 True다.** 건너뛰어서 운영이 낡은 코드로 남는 것이, 분을 조금 더 쓰는
+    것보다 훨씬 나쁘다. 그래서 파일 목록을 못 얻었을 때(`None`)도, 선언에 없는
+    서비스 이름도 전부 다시 빌드한다.
+    """
+    if files is None:
+        return True
+    owned = SERVICE_PATHS.get(name)
+    if owned is None:
+        return True
+    prefixes = owned + SHARED_PATHS
+    return any(path.startswith(prefix) for path in files for prefix in prefixes)
+
+
+def current_env(identifier: str) -> dict[str, str] | None:
+    """이 서비스에 «지금 들어 있는» 환경변수. 못 읽으면 None.
+
+    **이것이 없으면 「바뀌었다」를 알 수 없다.** Render는 같은 값을 PUT해도 200을
+    돌려주므로, 응답만 보고는 값이 실제로 달라졌는지 구별하지 못한다. 2026-09-16까지
+    이 스크립트가 그렇게 세고 있었고 — PUT이 성공하면 `changed = True` — 그래서
+    **아무것도 안 바뀐 날에도 서비스 넷이 전부 다시 빌드됐다.**
+    """
+    status, body = call('GET', f'/services/{identifier}/env-vars?limit=100')
+    if status != 200:
+        return None
+    try:
+        items = json.loads(body)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(items, list):
+        return None
+    result: dict[str, str] = {}
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        entry = item.get('envVar', item)
+        key = entry.get('key')
+        if isinstance(key, str) and 'value' in entry:
+            result[key] = str(entry.get('value'))
+    return result
+
+
+def live_commit(identifier: str) -> str | None:
+    """이 서비스가 «지금 띄우고 있는» 커밋. 못 알아내면 None — 그때는 전부 배포한다."""
+    items = deploys(identifier)
+    if not items:
+        return None
+    for item in items:
+        if item.get('status') == 'live':
+            return (item.get('commit') or {}).get('id')
+    return None
+
+
 def wait_for_live(identifier: str, requested_id: str, commit: str) -> bool:
     """요청한 배포만 기다린다. 다른 배포의 live는 성공 근거가 아니다."""
     deadline = time.monotonic() + 1200
@@ -238,6 +389,8 @@ def main() -> int:
 
     dry_run = flag('DRY_RUN')
     redeploy = flag('REDEPLOY', default=True)
+    # 전부 다시 빌드한다. 「바뀐 쪽만」 판단이 틀렸다고 의심될 때 쓰는 빠져나갈 구멍이다.
+    force = flag('FORCE_REDEPLOY')
     wait = flag('WAIT_FOR_LIVE')
     commit = os.environ.get('DEPLOY_COMMIT', '').strip()
     api_name = os.environ.get('API_SERVICE', 'weddingpickl-sg')
@@ -277,12 +430,25 @@ def main() -> int:
         if not check_api_health(api_base):
             return 1
 
+    # 이름을 못 찾은 서비스를 모아 둔다 — 하나가 어긋났다고 나머지를 안 내보내지 않는다.
+    missing: list[str] = []
+
     for name in ordered:
         spec = services[name]
         print(f'\n== {name}')
         identifier = api_id if name == api_name else service_id(name)
         if not identifier:
-            return 1
+            """
+            **여기서 멈추지 않는다.** 2026-09-15에 `WeddingPick-웹뷰(앱 테스트)` 하나가
+            Render에서 이름이 바뀌었는데, 그 자리에서 return 1을 해버려 **그 뒤의
+            `WeddingPick-웹사이트`는 시도조차 못 했다.** API와 관리자는 이미 새 커밋으로
+            올라간 뒤였고, 웹사이트만 옛 판으로 남았다 — 반만 배포된 상태가 제일 나쁘다.
+
+            못 찾은 것은 모아 두고 끝에서 실패한다. 실패는 그대로이고, 내보낼 수 있는
+            것을 안 내보내는 것만 그만둔다.
+            """
+            missing.append(name)
+            continue
 
         wanted: dict[str, str] = dict(spec.get('vars') or {})
         for key in spec.get('secrets') or []:
@@ -292,10 +458,21 @@ def main() -> int:
             else:
                 print(f'  -- {key}: GitHub Secrets에 없어 건너뛴다')
 
+        # **같은 값이면 쓰지 않는다.** 쓰면 Render가 서비스를 다시 띄우고, 정적
+        # 사이트는 그것이 곧 다시 빌드다. 못 읽으면(`None`) 전부 쓴다 — 모르면
+        # 쓰는 쪽이 안전하다.
+        existing = current_env(identifier) if not dry_run else None
+        if existing is None and not dry_run:
+            print('  -- 현재 환경변수를 읽지 못했다 — 전부 쓴다')
+
         changed = False
         for key, value in wanted.items():
             if dry_run:
                 print(f'  (dry-run) {key}')
+                continue
+
+            if existing is not None and existing.get(key) == value:
+                print(f'  =  {key} (그대로)')
                 continue
 
             status, body = call('PUT', f'/services/{identifier}/env-vars/{urllib.parse.quote(key)}', {'value': value})
@@ -303,10 +480,38 @@ def main() -> int:
                 print(f'  ok {key}')
                 changed = True
             else:
-                print(f'  !! {key} 실패 (HTTP {status})')
+                # 끊긴 것(HTTP 0)의 본문은 파이썬 예외 문구다 — 무엇이 끊겼는지가 거기
+                # 있고 값은 없다. 응답이 온 4xx 본문은 적지 않는다 — Render가 거절 사유에
+                # 값을 되비칠 수 있고, 이 파일의 규칙은 「값은 절대 찍지 않는다」이다.
+                detail = f' {body[:200]}' if status == 0 else ''
+                print(f'  !! {key} 실패 (HTTP {status}){detail}')
                 return 1
 
-        if redeploy and not dry_run and (changed or wait):
+        # **바뀐 쪽만 누른다**(`render.yaml` 머리말 · Pipeline Minutes가 한정돼 있다).
+        #
+        # 전에는 조건이 `changed or wait`였고 워크플로가 `WAIT_FOR_LIVE=true`를 넘겨
+        # **항상 참**이었다 — 문서 한 줄만 고쳐도 넷이 전부 다시 빌드됐다.
+        #
+        # 세 가지 중 하나라도 맞으면 다시 빌드한다.
+        #   1. 환경변수가 실제로 바뀌었다(`changed`) — 정적 사이트는 값을 구워 넣는다
+        #   2. 이 서비스가 쓰는 파일이 바뀌었다(`needs_rebuild`)
+        #   3. 모르겠다 — live 커밋을 못 읽었거나 `FORCE_REDEPLOY`가 켜졌다
+        #
+        # **모르면 배포한다.** 건너뛰어서 운영이 낡는 것이 분을 더 쓰는 것보다 나쁘다.
+        skipped = False
+        if redeploy and not dry_run and not changed and not force:
+            base = live_commit(identifier) if commit else None
+            if base and base != commit:
+                touched = changed_files(base, commit)
+                if not needs_rebuild(name, touched):
+                    count = len(touched) if touched is not None else '?'
+                    print(f'  -- 다시 빌드하지 않는다 (이 서비스가 쓰는 파일이 안 바뀌었다 · 바뀐 파일 {count}개)')
+                    skipped = True
+            elif base == commit and base is not None:
+                print('  -- 다시 빌드하지 않는다 (이미 이 커밋을 띄우고 있다)')
+                skipped = True
+
+        if redeploy and not dry_run and not skipped and (changed or force or wait):
             status, body = call('POST', f'/services/{identifier}/deploys', {'commitId': commit} if commit else {})
             print(f'  재배포 요청 → HTTP {status}')
             if not 200 <= status < 300:
@@ -324,6 +529,14 @@ def main() -> int:
                     return 1
                 if name == api_name and not check_api_health(api_base):
                     return 1
+
+    if missing:
+        print('\n!! Render에서 이름이 정확히 일치하는 서비스를 못 찾았다:')
+        for name in missing:
+            print(f'   - {name}')
+        print('   infra/render-env.yml의 이름과 Render 대시보드의 이름이 같아야 한다.')
+        print('   나머지 서비스는 배포했다 — 위 서비스만 옛 판으로 남아 있다.')
+        return 1
 
     print('\n선언 확인을 마쳤다.' if dry_run else
           '\n모든 요청 배포의 live를 확인했다.' if wait else

@@ -1,0 +1,101 @@
+# /vendor/1
+
+노드 97개 · 폭 430
+
+body 430×932  bg #FFFFFF
+  div 430×932  
+    div 430×1549  flex · justify center · align flex-start · bg #F7F8F9
+      div 430×1549  flex/column · bg #FFFFFF · shadow
+        section 430×0  
+        main 430×1549  
+          div 430×1549  pad 0 0 96 0
+            header 430×56  flex · align center · pad 0 16 0 16 · bg #FFFFFF 95%
+              button 40×40  grid · cols 40px · align center · r9999
+                svg 20×20  svg
+              p 358×20  "블루밍 스튜디오" · 14/700 #1A1C20 · lh 20 · pad 0 40 0 0
+              button 40×40  grid · cols 40px · align center · r9999
+                svg 16×16  svg
+            div 430×288  
+              img 430×288  bg #F7F8F9 · img https://images.unsplash.com/photo-160621
+              div 430×288  
+              div 267×105  pad 20 20 20 20
+                div 227×19  flex · gap 8 · align center · mar 0 0 6 0
+                  span 50×19  "인증" · 10/700 #FFFFFF · lh 15 · flex · gap 4 · align center · pad 2 8 2 8 · bg #E7898D · r9999
+                    svg 10×10  svg
+                  span 49×16  "스튜디오" · 12/700 #FFFFFF 70% · lh 16 · ls 0.3px
+                h1 227×40  "블루밍 스튜디오" · 32/700 #FFFFFF · lh 40 · ls -0.64px
+            div 430×45  flex · gap 12 · align center · pad 12 20 12 20
+              span 45×20  "4.9" · 14/700 #1A1C20 · lh 20 · flex · gap 4 · align center
+                svg 16×16  svg
+              span 106×20  "가격 제보 198 건" · 14/400 #868B94 · lh 20
+              span 4×20  "·" · 14/400 #868B94 · lh 20
+              span 60×20  "강남구" · 14/400 #868B94 · lh 20 · flex · gap 4 · align center
+                svg 14×14  svg
+              span 78×20  "80–150만원" · 14/700 #1A1C20 · lh 20 · mar 0 0 0 49
+            div 430×47  bg #FFFFFF
+              div 430×46  flex · pad 0 20 0 20
+                button 98×46  "소개" · 14/700 #1A1C20 · lh 20 · pad 12 0 12 0
+                button 98×46  "패키지" · 14/700 #868B94 · lh 20 · pad 12 0 12 0
+                button 98×46  "후기" · 14/700 #868B94 · lh 20 · pad 12 0 12 0
+                button 98×46  "정보" · 14/700 #868B94 · lh 20 · pad 12 0 12 0
+            div 430×1017  pad 24 20 0 20
+              section 390×180  mar 0 0 28 0
+                h2 390×20  "포트폴리오" · 14/700 #1A1C20 · lh 20 · mar 0 0 12 0
+                div 390×148  flex · gap 8 · pad 0 0 4 0
+                  img 144×144  bg #F7F8F9 · r18 · img https://images.unsplash.com/photo-160621
+                  img 144×144  bg #F7F8F9 · r18 · img https://images.unsplash.com/photo-159160
+                  img 144×144  bg #F7F8F9 · r18 · img https://images.unsplash.com/photo-151916
+                  img 144×144  bg #F7F8F9 · r18 · img https://images.unsplash.com/photo-158393
+                  img 144×144  bg #F7F8F9 · r18 · img https://images.unsplash.com/photo-151128
+              div 390×72  flex · gap 8 · wrap · mar 0 0 28 0
+                span 74×32  "# 자연광" · 12/600 #1A1C20 · lh 16 · pad 8 14 8 14 · bg #F7F8F9 · r9999
+                span 86×32  "# 야외촬영" · 12/600 #1A1C20 · lh 16 · pad 8 14 8 14 · bg #F7F8F9 · r9999
+                span 86×32  "# 필름감성" · 12/600 #1A1C20 · lh 16 · pad 8 14 8 14 · bg #F7F8F9 · r9999
+                span 74×32  "# 커플샷" · 12/600 #1A1C20 · lh 16 · pad 8 14 8 14 · bg #F7F8F9 · r9999
+                span 107×32  "# 강남역 10분" · 12/600 #1A1C20 · lh 16 · pad 8 14 8 14 · bg #F7F8F9 · r9999
+              p 390×84  "창가에서 쏟아지는 자연광으로 유명한 강남구의 프리미엄 웨딩 스튜디오예요. 10년 이상의 경력을 가진 전문 작" · 14/400 #1A1C20 · lh 28 · mar 0 0 28 0
+              section 390×127  pad 20 20 20 20 · mar 0 0 28 0 · bg #1A1C20 · r16
+                p 350×15  "VERIFIED PRICE RANGE" · 10/400 #FFFFFF 45% · lh 15 · ls 1.5px
+                div 350×32  flex · justify space-between · align flex-end · mar 8 0 0 0
+                  p 134×32  "80–150만원" · 24/500 #FFFFFF · lh 32
+                  span 86×16  "최근 30일 24건" · 12/400 #FFFFFF 65% · lh 16
+                p 350×20  "실제 가격 제보와 업체 공식 견적을 함께 반영했어요." · 12/400 #FFFFFF 55% · lh 20 · mar 12 0 0 0
+              section 390×97  pad 24 0 0 0 · mar 0 0 28 0 · border 1 #000000 6%
+                div 390×20  flex · justify space-between · align center · mar 0 0 12 0
+                  h2 141×20  "우리 조건에 맞는 이유" · 14/700 #1A1C20 · lh 20
+                  span 62×17  "내 조건 기준" · 11/400 #868B94 · lh 17
+                div 390×40  grid · cols 124.656px 124.672px 124.656px · gap 8
+                  div 125×40  flex · gap 6 · align center · pad 12 8 12 8 · bg #F7F8F9 · r22
+                    svg 12×12  svg
+                    span 78×16  "강남 30분 이내" · 11/600 #1A1C20 · lh 16
+                  div 125×40  flex · gap 6 · align center · pad 12 8 12 8 · bg #F7F8F9 · r22
+                    svg 12×12  svg
+                    span 59×16  "자연광 취향" · 11/600 #1A1C20 · lh 16
+                  div 125×40  flex · gap 6 · align center · pad 12 8 12 8 · bg #F7F8F9 · r22
+                    svg 12×12  svg
+                    span 48×16  "예산 안쪽" · 11/600 #1A1C20 · lh 16
+              section 390×293  pad 24 0 8 0 · border 1 #000000 6%
+                h2 390×20  "자주 묻는 질문" · 14/700 #1A1C20 · lh 20 · mar 0 0 16 0
+                div 390×224  
+                  div 390×50  mar 0 0 8 0 · bg #FFFFFF · r16 · border 1 #000000 6%
+                    button 388×48  flex · justify space-between · align center · pad 14 16 14 16
+                      span 235×20  "예약 취소는 언제까지 가능한가요?" · 14/600 #1A1C20 · lh 20 · pad 0 16 0 0
+                      svg 16×16  svg
+                  div 390×50  mar 0 0 8 0 · bg #FFFFFF · r16 · border 1 #000000 6%
+                    button 388×48  flex · justify space-between · align center · pad 14 16 14 16
+                      span 207×20  "의상은 몇 벌까지 가능한가요?" · 14/600 #1A1C20 · lh 20 · pad 0 16 0 0
+                      svg 16×16  svg
+                  div 390×50  mar 0 0 8 0 · bg #FFFFFF · r16 · border 1 #000000 6%
+                    button 388×48  flex · justify space-between · align center · pad 14 16 14 16
+                      span 209×20  "헤어&메이크업도 제공하나요?" · 14/600 #1A1C20 · lh 20 · pad 0 16 0 0
+                      svg 16×16  svg
+                  div 390×50  bg #FFFFFF · r16 · border 1 #000000 6%
+                    button 388×48  flex · justify space-between · align center · pad 14 16 14 16
+                      span 141×20  "주차는 가능한가요?" · 14/600 #1A1C20 · lh 20 · pad 0 16 0 0
+                      svg 16×16  svg
+            div 430×89  pad 16 16 16 16 · bg #FFFFFF 95% · border 1 #000000 6%
+              div 398×56  flex · gap 8
+                button 56×56  bg #FFFFFF · r16 · border 1 #000000 6%
+                  svg 20×20  mar 0 17 0 17 · svg
+                button 334×56  "상담 일정 잡기" · 14/700 #FFFFFF · lh 20 · flex · gap 8 · justify center · align center · bg #E7898D · r16
+                  svg 16×16  svg

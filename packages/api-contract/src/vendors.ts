@@ -69,6 +69,25 @@ export const vendorSummarySchema = z.object({
    * «실 제보 N건»은 자료가 생기면 등장한다. 추천 자리가 아니면 없다.
    */
   reasons: z.array(z.string().min(1)).optional(),
+  /**
+   * 이용점수 요약. 카드가 «★4.3»을 적는 자리다(2026-09-15 대표 지시 「별점은 표기가 필요하다」).
+   *
+   * **없으면 null이고, 그때 화면은 별점 줄을 아예 그리지 않는다.** «★0.0»도 «★-»도 아니다 —
+   * 그건 「나쁜 업체」로 읽힌다. 위 첫 줄의 「모르는 것을 아는 척하지 않는다」가 이 칸에도
+   * 그대로 적용된다. 대표 이미지가 없을 때 «사진 준비 중» 상자를 안 그리는 것과 같은 규칙이다.
+   *
+   * null이 되는 경우는 둘이다.
+   *   - 확인된 후기가 `MINIMUM_REVIEW_COUNT`(5)에 못 미친다
+   *   - 체크리스트로 평가하는 업종이다(결정사) — 4.2점과 78%는 다른 것을 재는 숫자다
+   *
+   * **`VendorDetail.usageScore`와 다른 이름인 것이 중요하다.** 그쪽은 항목별 평균 ·
+   * 체크리스트 · 캡션까지 든 상세용이고 이쪽은 목록 카드 한 줄이다. 같은 이름이면 언젠가
+   * 하나로 합쳐지고, 그때 목록이 상세만큼 무거워진다. **값의 근거는 하나다** — 둘 다
+   * `structured.scored_reviews`(게시 중 · 확인된 후기)만 본다.
+   */
+  rating: z
+    .object({ average: z.number().min(0).max(5), count: z.int().positive() })
+    .nullable(),
 });
 
 
@@ -221,7 +240,8 @@ export const vendorPricesSchema = z.object({
  * 아무도 모른다. 하나만 둔다.
  */
 export const vendorDetailSchema = vendorSummarySchema
-  .omit({ paidPrice: true })
+  /* `rating`도 같은 이유로 덜어낸다 — 상세에는 항목별 평균까지 든 `usageScore`가 있다. */
+  .omit({ paidPrice: true, rating: true })
   .extend({
     lastVerifiedAt: z.string().min(1),
     prices: vendorPricesSchema,
@@ -230,7 +250,27 @@ export const vendorDetailSchema = vendorSummarySchema
   });
 
 /**
- * A-17 업체 비교. 최대 세 곳.
+ * 비교 질의. **서버가 따로 베끼지 않는다.**
+ *
+ * 바로 아래 응답 스키마와 한 쌍이다. 전에는 이것만 라우트 파일에 `max(200)`으로
+ * 박혀 있었고, 한도를 셋에서 다섯으로 올리자 **여섯 곳 요청(221자)이 길이에서 먼저
+ * 튕겼다.** 그러면 「한 번에 5곳까지 견줄 수 있습니다」가 한 번도 안 나가고,
+ * 사용자는 몇 곳까지 되는지 모른 채 「요청 형식이 올바르지 않습니다」만 본다.
+ *
+ * 길이는 **한도보다 한 곳 더 들어갈 만큼**이다. 딱 맞게 끊으면 한 곳 넘긴 요청이
+ * 안내를 못 받고, 넉넉히 열어두면 상한이 상한 노릇을 못 한다.
+ */
+const UUID_LENGTH = 36;
+
+export const COMPARE_IDS_MAX_LENGTH = (UUID_LENGTH + 1) * (MAX_COMPARED_VENDORS + 1);
+
+export const vendorCompareQuerySchema = z.object({
+  /** 쉼표로 이은 업체 id. */
+  ids: z.string().min(1).max(COMPARE_IDS_MAX_LENGTH),
+});
+
+/**
+ * A-17 업체 비교.
  *
  * 단서(caveats)는 결과와 한 객체로 나간다. 떼어놓을 수 있게 두면 화면이 표만 그리고
  * "금액만으로는 비교할 수 없다"는 말을 빠뜨릴 수 있다 — 사업계획서 2번이 꼽은

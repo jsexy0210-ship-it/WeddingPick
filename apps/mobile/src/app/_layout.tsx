@@ -4,7 +4,7 @@ import '@weddingpick/ui/tokens.css';
 // 브라우저가 입력칸에 얹는 자기 규칙(자동완성 배경 등) 보정. 네이티브에서는 무시된다.
 import '@/global.css';
 
-import { DefaultTheme, Stack, ThemeProvider, router } from 'expo-router';
+import { DefaultTheme, Stack, ThemeProvider, router, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Platform } from 'react-native';
@@ -21,6 +21,7 @@ import { CaptureDraftProvider } from '@/features/capture/capture-draft';
 import { DocumentStoreProvider } from '@/features/documents/document-store';
 import { FullScreenError } from '@/features/errors/full-screen-error';
 import { escapeInAppBrowser } from '@/features/inapp-browser/escape';
+import { InAppWebShell } from '@/features/in-app-web/in-app-web-shell';
 import { InAppBrowserNotice } from '@/features/inapp-browser/in-app-browser-notice';
 import { resolveSessionEntry, sessionErrorKind, type SessionEntry } from '@/features/auth/session-recovery';
 import { saveToken } from '@/api/session';
@@ -45,10 +46,15 @@ SplashScreen.preventAutoHideAsync();
  * 막혔다는 말만 듣는다. 마칠 수 있는 화면으로 보낸다.
  */
 /*
- * 스플래시 다음은 바로 로그인이다(2026-09-04 · v3.11). 최초 실행 소개 5장
- * (WP-APP-003, `onboarding.tsx`)은 보류 — 화면 파일은 두되 어디서도 열지 않는다.
- * 기기 저장소의 «소개를 봤는가» 값으로 갈랐던 것을 없앴다: 카카오톡 인앱
- * 브라우저처럼 저장소가 새로 시작되는 곳에서 매번 소개가 먼저 떴다.
+ * 스플래시 다음은 바로 로그인이다(2026-09-04 · v3.11). 최초 실행 소개 4장
+ * (WP-APP-003)은 **2026-09-15 대표 지시로 전면 폐기했다** — 「인트로 전면 폐기한다.
+ * 온보딩만 유지한다」. `onboarding.tsx`와 `features/onboarding/steps.ts`를 지웠고
+ * `/onboarding` 라우트도 `depth-back-rules.ts`에서 내렸다. 남은 온보딩은 `/setup`
+ * 세 질문뿐이다.
+ *
+ * 그전에도 이미 아무도 열지 않는 화면이었다. 기기 저장소의 «소개를 봤는가» 값으로
+ * 갈랐던 것을 없앴기 때문이다 — 카카오톡 인앱 브라우저처럼 저장소가 새로 시작되는
+ * 곳에서 매번 소개가 먼저 떴다.
  */
 type Entry = SessionEntry;
 
@@ -156,6 +162,31 @@ function RootLayoutContent() {
     }),
     [theme]
   );
+  const pathname = usePathname();
+
+  useEffect(() => {
+    /*
+     * 화면을 넘길 때마다(push · replace) 방금 있던 화면의 `View`가
+     * `aria-hidden="true"`로 감춰진다 — expo-router가 포크해 쓰는 Stack의
+     * `CardA11yWrapper`가 `focused`가 아닌 카드에 무조건 그렇게 건다
+     * (`node_modules/expo-router/build/react-navigation/stack/views/Stack/CardA11yWrapper.js`).
+     * 그런데 화면을 넘긴 단추(Pressable)는 그 순간까지도 DOM 포커스를 쥐고 있다 —
+     * `aria-hidden`이 걸린 조상 안에 포커스가 그대로 남은 상태가 되고, Chrome이
+     * 「Blocked aria-hidden on an element because its descendant retained focus」를
+     * 찍는다. `/pick` · `/pick/done` · `/search` · `/wedding/<id>/events/new` ·
+     * `/my/reports` 등 여러 화면에서 났던 이유가 이것이다 — 화면 하나의 문제가
+     * 아니라 모든 push·replace가 지나는 Stack 자체의 문제다.
+     *
+     * 화면마다 누르는 단추에서 따로 blur하지 않는다 — 어느 화면이 다음에 이걸
+     * 겪을지 알 수 없고, 화면마다 고치면 빠진 화면에서 또 난다. 경로가 바뀔 때마다
+     * (모든 내비게이션이 지나는 단 하나의 자리) 여기서 포커스를 놓는다.
+     */
+    if (Platform.OS !== 'web') return;
+
+    const active = document.activeElement;
+
+    if (active instanceof HTMLElement && active !== document.body) active.blur();
+  }, [pathname]);
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
@@ -289,6 +320,13 @@ function RootLayoutContent() {
       <DocumentStoreProvider>
         <CaptureDraftProvider>
           <InAppBrowserNotice notice={inAppNotice} />
+          {/*
+            바깥 주소를 앱 «안»에 띄우는 껍데기(웹). 뿌리에 한 장만 둔다 — 화면 안에
+            두면 탭바·헤더 아래에 갇혀서 앱을 덮지 못한다(2026-09-15 대표 지시 ·
+            CLAUDE.md 「앱 밖으로 나가지 않는다」). 네이티브에서는 아무것도 그리지
+            않는다 — 거기서는 expo-web-browser의 시스템 시트가 앱 위에 뜬다.
+          */}
+          <InAppWebShell />
           <Stack screenOptions={stackScreenOptions}>
             <Stack.Screen name="(tabs)" />
             {/*

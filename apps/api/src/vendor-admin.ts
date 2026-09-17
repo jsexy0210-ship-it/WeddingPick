@@ -1,6 +1,6 @@
 import type { Pool, PoolClient } from 'pg';
-import { VENDOR_CATEGORIES, WEDDING_REGIONS } from '@weddingpick/domain';
-import { z } from 'zod';
+
+import { officialVendorCondition } from '@weddingpick/domain';
 
 import { ApiError, notFound } from './errors';
 
@@ -28,7 +28,7 @@ import { ApiError, notFound } from './errors';
  */
 
 /** 화면이 그리는 상태 넷. `structured.vendors`의 컬럼 조합에서 끌어낸다. */
-export type VendorStatus = 'active' | 'closed' | 'suspended' | 'merged' | 'deleted';
+export type VendorStatus = 'active' | 'closed' | 'suspended' | 'merged';
 
 /** 관리자가 직접 고를 수 있는 상태. 「병합됨」은 병합의 결과일 뿐 고르는 것이 아니다. */
 export const SETTABLE_STATUSES = ['active', 'closed', 'suspended'] as const;
@@ -78,11 +78,10 @@ type VendorRow = {
   closed_at: Date | null;
   suspended_at: Date | null;
   merged_into_vendor_id: string | null;
-  deleted_at: Date | null;
 };
 
 const VENDOR_COLUMNS = `id, name, category::text AS category, is_active,
-                        closed_at, suspended_at, merged_into_vendor_id, deleted_at`;
+                        closed_at, suspended_at, merged_into_vendor_id`;
 
 /**
  * 컬럼 조합에서 상태 하나를 끌어낸다.
@@ -97,9 +96,7 @@ export function vendorStatus(row: {
   closed_at: Date | null;
   suspended_at: Date | null;
   merged_into_vendor_id: string | null;
-  deleted_at?: Date | null;
 }): VendorStatus {
-  if (row.deleted_at) return 'deleted';
   if (row.merged_into_vendor_id !== null) return 'merged';
   if (row.is_active) return 'active';
   if (row.suspended_at !== null) return 'suspended';
@@ -134,10 +131,10 @@ export type ChangeLogEntry = { at: string; action: string; note: string };
 
 const ACTION_LABEL: Record<string, string> = {
   name: '상호 변경',
+  // 관계자 인증이 승인되면 출처가 `vendor_official`로 오른다(vendor-claim-admin.ts).
+  source: '출처 변경',
   status: '영업 상태 변경',
   merged_into_vendor_id: '업체 병합',
-  created: '업체 등록',
-  deleted_at: '업체 삭제',
 };
 
 /**
@@ -194,7 +191,6 @@ export type AdminVendor = {
   id: string;
   name: string;
   category: string;
-  region: string;
   status: VendorStatus;
   dataCount: number;
   mergedInto: string | null;
@@ -214,10 +210,10 @@ const HISTORY_PER_VENDOR = 10;
  */
 export async function listVendors(pool: Pool): Promise<{ vendors: AdminVendor[]; total: number }> {
   const { rows } = await pool.query<
-    VendorRow & { region: string; data_count: string; merged_into_name: string | null }
+    VendorRow & { data_count: string; merged_into_name: string | null }
   >(
-    `SELECT v.id, v.name, v.region, v.category::text AS category, v.is_active,
-            v.closed_at, v.suspended_at, v.merged_into_vendor_id, v.deleted_at,
+    `SELECT v.id, v.name, v.category::text AS category, v.is_active,
+            v.closed_at, v.suspended_at, v.merged_into_vendor_id,
             m.name AS merged_into_name,
             (SELECT COUNT(*) FROM structured.price_reports pr
               WHERE pr.vendor_id = v.id AND pr.rejected_at IS NULL)
@@ -271,7 +267,6 @@ export async function listVendors(pool: Pool): Promise<{ vendors: AdminVendor[];
       id: r.id,
       name: r.name,
       category: r.category,
-      region: r.region,
       status: vendorStatus(r),
       dataCount: Number(r.data_count),
       // 화면은 대상 업체를 사람이 읽어야 하므로 id가 아니라 이름을 준다.
@@ -303,56 +298,6 @@ async function writeChangeLog(
 
 // ─── 상호 변경 ──────────────────────────────────────────────────────────────
 
-export const createVendorSchema = z.object({
-  name: z.string().trim().min(1).max(200),
-  category: z.enum(VENDOR_CATEGORIES),
-  region: z.enum(WEDDING_REGIONS),
-});
-
-export async function createVendor(pool: Pool, input: z.infer<typeof createVendorSchema>, operatorId: string) {
-  const data = createVendorSchema.parse(input);
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    const { rows } = await client.query<{ id: string }>(
-      `INSERT INTO structured.vendors (name, category, region, source, admin_locked)
-       VALUES ($1, $2::vendor_category, $3, 'vendor_official', true)
-       ON CONFLICT (normalized_name, region) DO NOTHING RETURNING id`,
-      [data.name, data.category, data.region]
-    );
-    if (!rows[0]) throw new ApiError('conflict', '같은 이름과 지역의 업체가 이미 있어요. 삭제된 업체도 다시 등록할 수 없어요.');
-    const id = rows[0].id;
-    await writeChangeLog(client, { vendorId: id, field: 'created', oldValue: null, newValue: data.name,
-      operatorId, note: '관리자 직접 등록' });
-    await client.query('COMMIT');
-    return { id, ...data, status: 'active' as const };
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally { client.release(); }
-}
-
-export async function deleteVendor(pool: Pool, vendorId: string, reason: string, operatorId: string) {
-  requireUuid(vendorId, '업체');
-  if (!reason.trim()) throw new ApiError('invalid_request', '삭제 사유를 입력해주세요.');
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    const vendor = await loadVendor(client, vendorId, true);
-    if (!vendor) throw notFound('업체');
-    if (!vendor.deleted_at) {
-      await client.query('UPDATE structured.vendors SET deleted_at = now(), is_active = false, admin_locked = true WHERE id = $1', [vendorId]);
-      await writeChangeLog(client, { vendorId, field: 'deleted_at', oldValue: vendorStatus(vendor), newValue: 'deleted',
-        operatorId, note: reason.trim() });
-    }
-    await client.query('COMMIT');
-    return { id: vendorId, status: 'deleted' as const, note: '공개 목록에서 제외했어요. 기존 제보·후기·Pick과 변경 이력은 보존돼요.' };
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally { client.release(); }
-}
-
 export async function renameVendor(
   pool: Pool,
   vendorId: string,
@@ -368,7 +313,6 @@ export async function renameVendor(
     await client.query('BEGIN');
     const vendor = await loadVendor(client, vendorId, true);
     if (!vendor) throw notFound('업체');
-    if (vendor.deleted_at) throw new ApiError('conflict', '삭제된 업체는 수정할 수 없습니다.');
 
     // 병합된 업체의 상호를 고치는 것은 흡수된 껍데기에 손대는 것이라 뜻이 없다.
     if (vendor.merged_into_vendor_id !== null) {
@@ -418,7 +362,6 @@ export async function setVendorStatus(
     await client.query('BEGIN');
     const vendor = await loadVendor(client, vendorId, true);
     if (!vendor) throw notFound('업체');
-    if (vendor.deleted_at) throw new ApiError('conflict', '삭제된 업체는 수정할 수 없습니다.');
 
     if (vendor.merged_into_vendor_id !== null) {
       throw new ApiError('conflict', '병합된 업체는 수정할 수 없습니다.');
@@ -501,7 +444,6 @@ async function loadMergePair(
   if (!source) throw notFound('업체');
   const target = rows.get(targetId);
   if (!target) throw notFound('병합할 업체');
-  if (source.deleted_at || target.deleted_at) throw new ApiError('conflict', '삭제된 업체는 병합할 수 없습니다.');
 
   if (source.merged_into_vendor_id !== null) {
     throw new ApiError('conflict', '이미 병합된 업체입니다.');
@@ -757,4 +699,55 @@ export async function mergeVendors(
   } finally {
     client.release();
   }
+}
+
+/**
+ * 공식인증 업체가 몇 곳인지. **조회만 한다.**
+ *
+ * 이 수가 앱 필터를 언제 켤 수 있는지를 정하는 근거다. 지금 DB의 업체는 전부
+ * `public_data`라, 켜는 순간 홈 · 검색 · Pick 추천이 빈 화면이 된다 —
+ * 「몇 곳이 준비됐나」를 셀 수 있어야 그날을 정할 수 있다.
+ *
+ * 셋을 따로 센다. **어느 것으로 자를지는 아직 안 정했다**(대표님 결정 대기).
+ * 세 수를 나란히 놓으면 고르는 데 필요한 것이 보인다 — 가와 나가 벌어져 있으면
+ * 승인은 됐는데 출처가 안 올라간 옛 업체가 남아 있다는 뜻이고, 나와 다가 벌어져
+ * 있으면 승인은 받았지만 아직 사진을 안 준 업체가 그만큼이라는 뜻이다.
+ *
+ * `total`은 `listVendors`의 것과 같은 수다(업체 전체). 나란히 읽으라고 맞췄다.
+ */
+export type OfficialVendorCounts = {
+  total: number;
+  /** 가 — 출처 표시가 `vendor_official`이다. */
+  bySource: number;
+  /** 나 — 승인된 관계자 인증이 있다. */
+  byApprovedClaim: number;
+  /** 다 — 나 + 업체가 직접 준 사진 1장 이상. 언제나 `byApprovedClaim` 이하다. */
+  byVendorProvidedImage: number;
+};
+
+export async function countOfficialVendors(pool: Pool): Promise<OfficialVendorCounts> {
+  const { rows } = await pool.query<{
+    total: string;
+    by_source: string;
+    by_approved_claim: string;
+    by_vendor_provided_image: string;
+  }>(
+    `SELECT COUNT(*)::text AS total,
+            COUNT(*) FILTER (WHERE ${officialVendorCondition('v', 'source')})::text
+              AS by_source,
+            COUNT(*) FILTER (WHERE ${officialVendorCondition('v', 'approvedClaim')})::text
+              AS by_approved_claim,
+            COUNT(*) FILTER (WHERE ${officialVendorCondition('v', 'vendorProvidedImage')})::text
+              AS by_vendor_provided_image
+       FROM structured.vendors v`
+  );
+
+  const row = rows[0]!;
+
+  return {
+    total: Number(row.total),
+    bySource: Number(row.by_source),
+    byApprovedClaim: Number(row.by_approved_claim),
+    byVendorProvidedImage: Number(row.by_vendor_provided_image),
+  };
 }

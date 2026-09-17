@@ -66,7 +66,7 @@ type VendorRow = { id: string; name: string; category: VendorCategory };
 
 async function loadVendor(pool: Pool, vendorId: string): Promise<VendorRow> {
   const { rows } = await pool.query<VendorRow>(
-    'SELECT id, name, category FROM structured.vendors WHERE id = $1 AND deleted_at IS NULL',
+    'SELECT id, name, category FROM structured.vendors WHERE id = $1',
     [vendorId]
   );
 

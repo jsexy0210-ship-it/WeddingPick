@@ -1,25 +1,9 @@
 import { dDay, formatDateDot } from '@weddingpick/domain';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { useMemo, useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-import {
-  ActionButton,
-  FontSize,
-  Layout,
-  LineHeight,
-  Radius,
-  Spacing,
-  ThemedText,
-  useTheme,
-} from '@weddingpick/ui';
+import { ActionButton, FontSize, Layout, LineHeight, Spacing, ThemedText, useTheme } from '@weddingpick/ui';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
 
 import {
@@ -33,6 +17,7 @@ import {
   type PickedDate,
 } from './calendar';
 import { ddayLabel } from './flow';
+import { Wheel, WheelGroup } from './wheel';
 
 /**
  * 날짜 선택 시트(WP-APP-023) — **휠 3열**.
@@ -155,11 +140,9 @@ function SheetBody({
         </Pressable>
       </View>
 
-      <View style={styles.wheels}>
-        {/* 밴드가 열보다 뒤에 깔린다 — 형제 순서가 곧 z 순서다(밴드 → 열 → 페이드). 시안 wheelBand. */}
-        <View style={[styles.band, { backgroundColor: theme.backgroundElement }]} />
-
+      <WheelGroup>
         <Wheel
+          numeric
           accessibilityLabel={S.year}
           flex={FLEX_YEAR}
           items={years}
@@ -168,6 +151,7 @@ function SheetBody({
           onChange={(year) => change({ year })}
         />
         <Wheel
+          numeric
           accessibilityLabel={S.month}
           flex={FLEX_MONTH}
           items={months}
@@ -176,6 +160,7 @@ function SheetBody({
           onChange={(month) => change({ month })}
         />
         <Wheel
+          numeric
           accessibilityLabel={S.day}
           flex={FLEX_DAY}
           items={days}
@@ -183,11 +168,7 @@ function SheetBody({
           value={picked.day}
           onChange={(day) => change({ day })}
         />
-
-        {/* 위아래로 흐려지는 덮개. 눌리지 않게 둔다 — 휠은 그 아래에서 굴러간다. */}
-        <Fade edge="top" />
-        <Fade edge="bottom" />
-      </View>
+      </WheelGroup>
 
       <View style={styles.picked}>
         <ThemedText type="t5" numeric style={styles.bold}>
@@ -205,119 +186,6 @@ function SheetBody({
   );
 }
 
-/**
- * 휠 한 열.
- *
- * 스크롤 위치를 값으로 읽는다 — `snapToInterval`이 한 칸(48)마다 멈추므로 중앙에
- * 걸린 것은 `offset / 48`번째다. 위아래 패딩 96이 첫 항목을 밴드 자리로 내려 준다.
- *
- * `value`가 밖에서 바뀌면(월을 굴려 일이 당겨졌을 때) 그 자리로 되돌린다. **사람이
- * 굴리는 중에는 건드리지 않는다** — 손 밑에서 목록이 움직이면 고르던 것을 놓친다.
- */
-function Wheel<T extends number>({
-  accessibilityLabel,
-  flex,
-  items,
-  format,
-  value,
-  onChange,
-}: {
-  accessibilityLabel: string;
-  flex: number;
-  items: readonly T[];
-  format: (item: T) => string;
-  value: T;
-  onChange: (item: T) => void;
-}) {
-  const ref = useRef<ScrollView>(null);
-  const dragging = useRef(false);
-  /* 첫 배치를 했는가. 안드로이드는 `contentOffset`을 무시하므로 한 번은 직접 굴려 준다. */
-  const placed = useRef(false);
-  const index = Math.max(items.indexOf(value), 0);
-  const [centered, setCentered] = useState(index);
-
-  useEffect(() => {
-    if (placed.current && (dragging.current || centered === index)) return;
-
-    placed.current = true;
-    setCentered(index);
-    ref.current?.scrollTo({ y: index * ITEM, animated: false });
-  }, [index, centered]);
-
-  function onScroll(event: NativeSyntheticEvent<NativeScrollEvent>) {
-    const next = Math.min(Math.max(Math.round(event.nativeEvent.contentOffset.y / ITEM), 0), items.length - 1);
-    const item = items[next];
-
-    if (item === undefined || next === centered) return;
-
-    setCentered(next);
-    /* 멈추기를 기다리지 않는다 — 굴리는 중에도 아래 결과가 따라 움직인다(시안 B). */
-    if (item !== value) onChange(item);
-  }
-
-  return (
-    <ScrollView
-      ref={ref}
-      accessibilityLabel={accessibilityLabel}
-      style={[styles.wheel, { flex }]}
-      contentContainerStyle={styles.wheelContent}
-      contentOffset={{ x: 0, y: index * ITEM }}
-      showsVerticalScrollIndicator={false}
-      snapToInterval={ITEM}
-      decelerationRate="fast"
-      scrollEventThrottle={16}
-      onScroll={onScroll}
-      onScrollBeginDrag={() => {
-        dragging.current = true;
-      }}
-      onScrollEndDrag={() => {
-        dragging.current = false;
-      }}
-      onMomentumScrollEnd={() => {
-        dragging.current = false;
-      }}>
-      {items.map((item, at) => (
-        <WheelItem key={item} label={format(item)} distance={Math.abs(at - centered)} />
-      ))}
-    </ScrollView>
-  );
-}
-
-/** 항목 하나. 중앙에서 멀어질수록 작아지고 옅어진다 — 시안 `wheelItem`의 네 단계. */
-function WheelItem({ label, distance }: { label: string; distance: number }) {
-  const theme = useTheme();
-  const step = Math.min(distance, STEP_COLOR.length - 1);
-
-  return (
-    <View style={styles.item}>
-      <ThemedText numeric style={[STEP_TEXT[step] ?? styles.far, { color: theme[STEP_COLOR[step] ?? 'text'] }]}>
-        {label}
-      </ThemedText>
-    </View>
-  );
-}
-
-/**
- * 위아래 덮개 — 시안 `wheelFadeTop` «#fff 30% → 투명» · `wheelFadeBottom` «투명 → #fff 70%».
- *
- * **React Native에는 그라데이션이 없다.** 이 한 자리를 위해 `expo-linear-gradient`를
- * 새로 들이는 대신 96을 네 칸(24)으로 끊어 흉내 낸다. 칸마다의 불투명도는 원래
- * 기울기를 그 칸 가운데에서 읽은 값이다 — 끊긴 자리가 보이지 않을 만큼은 촘촘하고,
- * 라이브러리 하나를 더 싣지는 않는다.
- */
-function Fade({ edge }: { edge: 'top' | 'bottom' }) {
-  const theme = useTheme();
-  const steps = edge === 'top' ? FADE_STEPS : [...FADE_STEPS].reverse();
-
-  return (
-    <View pointerEvents="none" style={[styles.fade, edge === 'top' ? styles.fadeTop : styles.fadeBottom]}>
-      {steps.map((opacity, at) => (
-        <View key={at} style={[styles.fadeStep, { backgroundColor: theme.background, opacity }]} />
-      ))}
-    </View>
-  );
-}
-
 const S = {
   title: '예식일 선택',
   close: '닫기',
@@ -327,24 +195,11 @@ const S = {
   confirm: '확인',
 } as const;
 
-/*
- * 시안 `wheelCol` · `wheelItem` · `wheelBand` · `wheelFadeTop` 실측 —
- * spec/tokens.json `component.dateWheel`. 이 시트 밖에서 쓰지 않아 여기 둔다.
- */
-/** 휠 한 칸. 밴드 높이와 같다. */
-const ITEM = 48;
-/** 열 높이. 위아래 패딩 96을 빼면 가운데 48이 남고 그것이 밴드다(240 - 96*2 = 48). */
-const HEIGHT = 240;
-const PAD = (HEIGHT - ITEM) / 2;
+/* 휠 규격(칸 48 · 높이 240 · 덮개 · 네 단계)은 `wheel.tsx`가 들고 있다. */
 /** 연 열이 조금 넓다 — 「2027년」이 「5월」 · 「16일」보다 길다. */
 const FLEX_YEAR = 1.1;
 const FLEX_MONTH = 1;
 const FLEX_DAY = 1;
-/** 덮개 한 겹의 불투명도. 위는 이 순서, 아래는 뒤집어 쓴다. */
-const FADE_STEPS = [1, 0.89, 0.54, 0.18] as const;
-
-/** 중앙에서 0 · 1 · 2 · 3칸 밖. 크기와 색이 네 단계로 줄어든다. */
-const STEP_COLOR = ['text', 'textAssistive', 'dateWheelTwo', 'dateWheelFar'] as const;
 
 const styles = StyleSheet.create({
   /* 시안 sheet — 패딩 · 둥글기 · 그래버는 SheetPanel. 요소 사이만 16(공용 20보다 좁다). */
@@ -363,22 +218,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  /* 시안 wheelWrap — 세 열이 나란히 굴러가고 밖으로 나간 항목은 잘린다. */
-  wheels: { flexDirection: 'row', height: HEIGHT, overflow: 'hidden' },
-  /* 시안 wheelBand — 가운데 한 칸. 열보다 뒤에 깔린다. */
-  band: { position: 'absolute', left: 0, right: 0, top: PAD, height: ITEM, borderRadius: Radius.medium },
-  wheel: { minWidth: 0, height: HEIGHT },
-  /* 위아래 패딩이 첫 · 끝 항목을 밴드 자리까지 데려온다. */
-  wheelContent: { paddingVertical: PAD },
-  item: { height: ITEM, alignItems: 'center', justifyContent: 'center' },
-  near: { fontSize: FontSize.t4, lineHeight: LineHeight.t4, fontWeight: 700 },
-  one: { fontSize: FontSize.t5, lineHeight: LineHeight.t5 },
-  two: { fontSize: FontSize.dateWheel, lineHeight: LineHeight.dateWheel },
-  far: { fontSize: FontSize.t6, lineHeight: LineHeight.t6 },
-  fade: { position: 'absolute', left: 0, right: 0, height: PAD },
-  fadeTop: { top: 0 },
-  fadeBottom: { bottom: 0 },
-  fadeStep: { flex: 1 },
   /* 시안 pickedRow — 결과 줄 · baseline 정렬 · 좌우 2. */
   picked: {
     flexDirection: 'row',
@@ -393,5 +232,3 @@ const styles = StyleSheet.create({
   cta: { width: '100%', flexGrow: 0, flexShrink: 0 },
   bold: { fontWeight: 700 },
 });
-
-const STEP_TEXT = [styles.near, styles.one, styles.two, styles.far] as const;

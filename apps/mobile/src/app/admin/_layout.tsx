@@ -5,58 +5,64 @@ import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-n
 import { AdminSpacing as A, Colors, FontSize, LineHeight, Radius, Spacing, WeddingMark } from '@weddingpick/ui';
 
 import { loadAdminToken, readAdminTokenSync, subscribeAdminToken } from './_session';
-import { AdminAccessProvider } from './_ui';
 
-/** 사용자 확정 분류. 확인·승인이 필요한 일은 대시보드 묶음에 모은다. */
-type NavEntry = { group: string } | { key: string; label: string; href: string };
+/**
+ * 관리자 콘솔 좌측 사이드바.
+ *
+ * **2026-09-15에 다시 짜였다**(대표 확정, 두 단계). 2026-09-11판은 시안의 여섯
+ * 묶음(보고 · 데이터 · 사용자 · 성장 · 운영 · 시스템) 대신 **지금 쓸 수 있는
+ * 화면인지**(운영 · 조회 · 서버 연결 전)로 갈랐는데, 「운영」 한 묶음에 19개가
+ * 몰렸다. 처음엔 아홉 주제 묶음(그룹 헤더 + 그 아래 여러 줄)으로 다시 짰는데,
+ * 대표님이 「비슷한 유형끼리 탭 메뉴로 구성해도 된다」고 한 번 더 넓히면서
+ * **그룹 하나 = 사이드바 줄 하나 + 그 화면 안의 탭**으로 바뀌었다. 그래서 지금
+ * 사이드바는 **아홉 줄뿐이다** —
+ *
+ *   대시보드 · 확인 필요 · 업체·행사 · 후기·신고 · 광고·마케팅 · 자동화 ·
+ *   통계·수익 · 계정·권한 · 사이트·기록
+ *
+ * 옛 화면 34개(로그인 제외 33개)는 사라지지 않았다 — 각 그룹의 대표 화면 파일이
+ * `AdminTabShell`로 나머지를 탭으로 불러 그린다(예: `automation.tsx`가 「자동화」
+ * 화면이고 그 안에 처리 상태 · 처리 내역 · 정책 규칙 · 긴급 중지 · 변경 복구 다섯
+ * 탭을 그린다). **탭은 껍데기다** — 화면 컴포넌트는 원래 파일에 그대로 두고 이름만
+ * `XxxPanel`로 바꿔 가져다 쓴다. PR 본문의 주소 매핑표에 옛 주소 34개가 지금 어느
+ * 화면·탭인지 전부 적혀 있다 — 저장된 링크는 각 옛 파일의 `Redirect`가 받는다.
+ *
+ * **박람회 관리 · 웨딩피드 관리 둘은 2026-09-15에 뒤늦게 합류했다.** 이 재편이
+ * 시작된 뒤 다른 두 세션이 각자 `/admin/expos`(PR #254) · `/admin/wedding-feed`를
+ * `main`에 올렸다 — 처음 32개(31개 + 로그인) 셀 때는 없던 화면이라 뒤따라 자리를
+ * 정했다(박람회는 「업체·행사」, 웨딩피드는 「사이트·기록」).
+ *
+ * **「지금 쓸 수 있는 화면인지」 표시는 버리지 않았다.** 「서버 연결 전」 그룹이
+ * 없어진 자리는 각 `AdminTabShell`의 `AdminTabDef.readOnly`가 대신한다 — 그 탭에만
+ * 「조회만」 딱지가 붙는다(다섯 화면. `_ui.tsx`의 `AdminTabShell` 주석 참고).
+ *
+ * **사이드바 이름과 화면 이름은 다를 수 있다.** 240 폭에서 긴 이름은 잘리고, 잘린
+ * 이름은 어느 화면인지 말해주지 못한다.
+ */
+type NavEntry = { key: string; label: string; href: string };
 
-/** 개발 준비 중인 화면도 현재 조회 가능한 내용은 열어 볼 수 있다. */
-const READ_ONLY = new Set(['biz-queue', 'email-matching', 'price-stats', 'revenue']);
-const OUTSIDE_ADMIN_MD = new Set(['decisions', 'objections', 'pii-reviews', 'og-card']);
-
+/**
+ * **아홉 줄 — 2026-09-15 대표 확정(탭 재편).** 순서는 대표님이 준 목록 순서를
+ * 그대로 따른다. 각 `href`는 그 그룹의 **대표 화면**(첫 탭)이고, 나머지는 그 화면
+ * 안의 탭이다 — 예를 들어 「자동화」를 누르면 `/admin/automation`이 열리고
+ * 안에서 처리 상태 탭이 기본으로 선택된다.
+ *
+ * **업체·행사의 박람회 관리, 사이트·기록의 웨딩피드 관리는 MASTER 지시로 자리를
+ * 정했다**(각각 `vendors.tsx` · `faq.tsx`의 `TABS` 끝) — 이 사이드바 자체는
+ * 그룹 대표 화면만 가리키므로 줄이 늘지 않는다.
+ */
 const NAV: NavEntry[] = [
-  { group: '대시보드' },
   { key: 'home', label: '대시보드', href: '/admin/home' },
-  { key: 'queue', label: '승인대기', href: '/admin/queue' },
-  { key: 'briefing', label: '일일 브리핑', href: '/admin/briefing' },
-  { key: 'report', label: '신고 접수', href: '/admin/report' },
-  { key: 'rebuttal', label: '후기 · 반론', href: '/admin/rebuttal' },
-  { key: 'objections', label: '후기 이의제기', href: '/admin/objections' },
-  { key: 'pii-reviews', label: '개인정보 검토', href: '/admin/pii-reviews' },
-  { key: 'ads-gate', label: '광고 전환 승인', href: '/admin/ads-gate' },
-
-  { group: '운영 관리' },
-  { key: 'campaigns', label: '이벤트 관리', href: '/admin/campaigns' },
-  { key: 'vendors', label: '업체 관리', href: '/admin/vendors' },
-  { key: 'users', label: '회원 관리', href: '/admin/users' },
-  { key: 'faq', label: '자주 묻는 질문', href: '/admin/faq' },
-  { key: 'terms', label: '약관 · 방침', href: '/admin/terms' },
-  { key: 'audit-log', label: '감사 기록', href: '/admin/audit-log' },
-
-  { group: '마케팅 관리' },
-  { key: 'marketing', label: '마케팅 발송', href: '/admin/marketing' },
-  { key: 'ads', label: '광고 집행', href: '/admin/ads' },
-  { key: 'og-card', label: '링크 미리보기', href: '/admin/og-card' },
-
-  { group: '자동화 관리' },
-  { key: 'images', label: '이미지 자동 수급', href: '/admin/images' },
-  { key: 'data-pipeline', label: '제보 처리', href: '/admin/data-pipeline' },
-  { key: 'automation', label: '처리 상태', href: '/admin/automation' },
-  { key: 'decisions', label: '자동 처리 내역', href: '/admin/decisions' },
-  { key: 'stats', label: '이상 거래', href: '/admin/stats' },
-  { key: 'kill-switch', label: '긴급 중지', href: '/admin/kill-switch' },
-  { key: 'rollback', label: '변경 복구', href: '/admin/rollback' },
-  { key: 'policy-engine', label: '정책 규칙', href: '/admin/policy-engine' },
-
-  { group: '비용 · 정산 관리' },
-  { key: 'ai-usage', label: '분석 비용', href: '/admin/ai-usage' },
-
-  { group: '개발 준비 중' },
-  { key: 'biz-queue', label: '업체 문의', href: '/admin/biz-queue' },
-  { key: 'email-matching', label: '이메일 회신', href: '/admin/email-matching' },
-  { key: 'price-stats', label: '가격 통계', href: '/admin/price-stats' },
-  { key: 'revenue', label: '수익 현황', href: '/admin/revenue' },
+  { key: 'queue', label: '확인 필요', href: '/admin/queue' },
+  { key: 'vendors', label: '업체·행사', href: '/admin/vendors' },
+  { key: 'rebuttal', label: '후기·신고', href: '/admin/rebuttal' },
+  { key: 'ads', label: '광고·마케팅', href: '/admin/ads' },
+  { key: 'automation', label: '자동화', href: '/admin/automation' },
+  { key: 'stats', label: '통계·수익', href: '/admin/stats' },
+  { key: 'users', label: '계정·권한', href: '/admin/users' },
+  { key: 'faq', label: '사이트·기록', href: '/admin/faq' },
 ];
+
 const LOGIN_PATH = '/admin/login';
 
 function Sidebar({ pathname }: { pathname: string }) {
@@ -72,14 +78,7 @@ function Sidebar({ pathname }: { pathname: string }) {
         contentContainerStyle={styles.sidebarScrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {NAV.map((item, i) => {
-          if ('group' in item) {
-            return (
-              <Text key={`g-${i}`} style={styles.navGroup}>
-                {item.group}
-              </Text>
-            );
-          }
+        {NAV.map((item) => {
           const active = pathname.startsWith(item.href);
           return (
             <Link key={item.key} href={item.href as never} asChild>
@@ -100,28 +99,21 @@ function Sidebar({ pathname }: { pathname: string }) {
                 */}
               <Pressable style={StyleSheet.flatten([styles.navItem, active && styles.navItemActive])}>
                 <Text
-                  style={[
-                    styles.navLabel,
-                    OUTSIDE_ADMIN_MD.has(item.key) && styles.navLabelOutside,
-                    READ_ONLY.has(item.key) && !active && styles.navLabelReadOnly,
-                    active && styles.navLabelActive,
-                  ]}
+                  style={[styles.navLabel, active && styles.navLabelActive]}
                   numberOfLines={1}
                 >
                   {item.label}
                 </Text>
-                {/*
-                  * 조회만 되는 곳은 목록에서 미리 말한다. 들어가 봐야 아는 것을
-                  * 아홉 곳이나 두면 운영자가 하나씩 눌러 보게 된다.
-                  */}
-                {READ_ONLY.has(item.key) && (
-                  <Text style={[styles.navChip, active && styles.navChipActive]}>준비 중</Text>
-                )}
               </Pressable>
             </Link>
           );
         })}
       </ScrollView>
+      {/*
+        로그아웃은 2026-09-15에 여기(사이드바 맨 아래)에서 상단 바 우측 고정
+        영역(`_ui.tsx`의 `Page`)으로 옮겨갔다 — 대표 지시. 이 자리는 비워 둔다,
+        메뉴를 9개로 줄이는 중에 다른 것을 채우지 않는다.
+      */}
     </View>
   );
 }
@@ -207,14 +199,12 @@ export default function AdminLayout() {
   if (!token) return <Redirect href={LOGIN_PATH as never} />;
 
   return (
-    <AdminAccessProvider key={token} token={token}>
     <View style={styles.root}>
       <Sidebar pathname={pathname} />
       <View style={styles.main}>
         <Slot />
       </View>
     </View>
-    </AdminAccessProvider>
   );
 }
 
@@ -268,16 +258,6 @@ const styles = StyleSheet.create({
   sidebarScrollContent: {
     gap: A.stackGap,
   },
-  navGroup: {
-    /* 시안 navGroup «padding:16px 12px 6px». */
-    paddingHorizontal: A.btnPaddingX,
-    paddingTop: Spacing.three,
-    paddingBottom: A.navGroupPaddingBottom,
-    fontSize: FontSize.adminNavGroup,
-    lineHeight: LineHeight.adminNavGroup,
-    fontWeight: '700',
-    color: C.adminSidebarGroup,
-  },
   navItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -295,34 +275,6 @@ const styles = StyleSheet.create({
     fontSize: FontSize.micro,
     lineHeight: LineHeight.micro,
     color: C.adminSidebarLabel,
-  },
-  /* ADMIN.md 목록 밖의 라우트는 한 단 흐리게 — 지운 것이 아니라 아직 목록에 없는 것이다. */
-  navLabelOutside: {
-    color: C.adminSidebarGroup,
-  },
-  /*
-   * 조회만 되는 곳은 한 단계 흐리게 둔다. 지우지는 않는다 — 조회는 실제로 되고,
-   * 못 쓰는 것처럼 보이면 열어보지 않게 된다.
-   *
-   * 보고 있는 화면(active)에는 흐림을 걸지 않는다. 선택된 줄은 코랄 위의 흰 글자라,
-   * 거기에 흐림까지 얹으면 어느 화면에 있는지가 안 읽힌다.
-   */
-  navLabelReadOnly: {
-    opacity: 0.55,
-  },
-  navChip: {
-    flexShrink: 0,
-    marginLeft: Spacing.one,
-    paddingHorizontal: Spacing.one,
-    borderRadius: Radius.small,
-    fontSize: FontSize.tab,
-    fontWeight: '700',
-    color: C.cautionary,
-    backgroundColor: C.cautionaryBackground,
-  },
-  navChipActive: {
-    color: C.onTint,
-    backgroundColor: 'rgba(255,255,255,0.24)',
   },
   navLabelActive: {
     color: C.onTint,

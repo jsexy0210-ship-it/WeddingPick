@@ -1,15 +1,21 @@
 /**
  * WP-ADM-034 성장 · 광고 실운영 전환 게이트
  * 테스트 전체 오픈 → 데이터 축적 → AI 독립 분석 → 보고서 → 최종 결정 → 실운영
+ *
+ * **2026-09-15 대표 확정 — 「광고 집행」과 한 화면 「광고」로 묶였다**(탭 둘). 이
+ * 파일의 본체는 `AdsGatePanel`로 옮기고 `ads.tsx`가 탭으로 골라 그린다 — 이 주소
+ * (`/admin/ads-gate`)는 저장된 링크가 깨지지 않게 `/admin/ads`의 전환 승인 탭으로 넘긴다.
  */
+import { Redirect } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Colors, FontSize, LineHeight, Spacing } from '@weddingpick/ui';
+import { formatCount } from '@weddingpick/domain';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import { formatDateDot } from '@/features/common/format-date';
-import { useAdminAccess, AdminAccountActions, ConfirmCard } from './_ui';
+import { ConfirmCard } from './_ui';
 
 type GateStepStatus = 'done' | 'in_progress' | 'pending' | 'blocked';
 
@@ -86,8 +92,7 @@ const STEP_LABEL: Record<GateStepStatus, string> = {
   blocked: '차단됨',
 };
 
-export default function AdsGateScreen() {
-  const { canEdit } = useAdminAccess();
+export function AdsGatePanel() {
   const [data, setData] = useState<AdsGateData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -164,9 +169,8 @@ export default function AdsGateScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>광고 전환 승인</Text>
         <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
-          <Text style={styles.refreshText}>새로고침</Text>
+          <Text style={styles.refreshText}>새로 고침</Text>
         </Pressable>
-        <AdminAccountActions />
       </View>
 
       <DelayedLoader active={loading} size={40} style={styles.centered} />
@@ -237,7 +241,7 @@ export default function AdsGateScreen() {
               <Pressable
                 style={[styles.approvalBtn, confirming && styles.btnDisabled]}
                 onPress={() => { setActionError(null); setAsking({ kind: 'approve' }); }}
-                disabled={!canEdit || confirming}
+                disabled={confirming}
               >
                 <Text style={styles.approvalBtnText}>
                   {confirming ? '처리 중…' : '실운영 전환 확정'}
@@ -271,7 +275,7 @@ export default function AdsGateScreen() {
                   setActionError(null);
                   setAsking({ kind: data.activated ? 'deactivate' : 'activate' });
                 }}
-                disabled={!canEdit || confirming}
+                disabled={confirming}
               >
                 <Text style={styles.approvalBtnText}>
                   {confirming ? '처리 중…' : data.activated ? '광고 끄기' : '광고 켜기'}
@@ -301,7 +305,7 @@ export default function AdsGateScreen() {
                       {TIER_STATE_LABEL[tier.state]}
                     </Text>
                     <Text style={styles.tierMeta}>
-                      {tier.placements > 0 ? `오늘 자리 ${tier.placements}건` : '오늘 자리 없음'}
+                      {tier.placements > 0 ? `오늘 자리 ${formatCount(tier.placements)}건` : '오늘 자리 없음'}
                       {tier.decidedAt ? ` · 정한 날 ${formatDateDot(tier.decidedAt)}` : ''}
                     </Text>
                   </View>
@@ -426,6 +430,14 @@ export default function AdsGateScreen() {
 
     </View>
   );
+}
+
+/**
+ * 옛 주소(`/admin/ads-gate`)는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제 화면은
+ * `/admin/ads`(광고)의 전환 승인 탭에 있다 — `AdsGatePanel`이 이 파일의 본체다.
+ */
+export default function AdsGateRedirect() {
+  return <Redirect href="/admin/ads?tab=gate" />;
 }
 
 const styles = StyleSheet.create({

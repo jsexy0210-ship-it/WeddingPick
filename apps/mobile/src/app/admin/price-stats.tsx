@@ -1,4 +1,4 @@
-import { AdminAccountActions } from './_ui';
+import { Redirect } from 'expo-router';
 /**
  * WP-ADM-012 데이터 · 가격통계
  * 업체별 데이터 수 · 공개 단계 · 이상치 후보 · 재계산 · 통계 버전
@@ -40,7 +40,7 @@ const STAGE_COLOR: Record<number, string> = {
   3: Colors.light.positive,
 };
 
-export default function PriceStatsScreen() {
+export function PriceStatsPanel() {
   const [data, setData] = useState<PriceStatsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -88,16 +88,15 @@ export default function PriceStatsScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>가격 통계</Text>
         <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
-          <Text style={styles.refreshText}>새로고침</Text>
+          <Text style={styles.refreshText}>새로 고침</Text>
         </Pressable>
-        <AdminAccountActions />
       </View>
 
       {/* 사이드바의 「조회만」과 짝이다(`_layout.tsx`의 `READ_ONLY`). */}
       {BACKEND_PENDING ? (
         <PendingBackendNotice
           actions="재계산"
-          reason="재계산 기능은 개발 준비 중입니다. 목록의 건수와 공개 단계는 현재 집계된 값이에요."
+          reason="통계를 다시 계산하는 곳이 아직 없어요. 목록의 수와 공개 단계는 실제 값이에요."
         />
       ) : null}
 
@@ -143,7 +142,7 @@ export default function PriceStatsScreen() {
             <View style={styles.tableHead}>
               <Text style={[styles.th, styles.colName]}>업체명</Text>
               <Text style={[styles.th, styles.colStage]}>단계</Text>
-              <Text style={[styles.th, styles.colCount]}>데이터 수</Text>
+              <Text style={[styles.th, styles.colCount]}>실 제보 수</Text>
               <Text style={[styles.th, styles.colAnomaly]}>이상치</Text>
               <Text style={[styles.th, styles.colVersion]}>버전</Text>
               <Text style={[styles.th, styles.colAction]} />
@@ -296,3 +295,11 @@ const styles = StyleSheet.create({
   inlineBtnText: { fontSize: FontSize.tab, color: Colors.light.textSecondary },
   btnDisabled: { opacity: 0.5 },
 });
+
+/**
+ * 옛 주소는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제 화면은 `/admin/stats`(통계·수익)의 가격 통계 탭에 있다 —
+ * `PriceStatsPanel`이 이 파일의 본체다.
+ */
+export default function PriceStatsRedirect() {
+  return <Redirect href="/admin/stats?tab=price-stats" />;
+}

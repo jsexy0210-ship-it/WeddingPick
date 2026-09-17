@@ -1,3 +1,4 @@
+import type { AuthProvider } from '@weddingpick/api-contract';
 import { StyleSheet } from 'react-native';
 
 import { Spacing, ThemedText, ThemedView } from '@weddingpick/ui';
@@ -12,6 +13,24 @@ import { DelayedLoader } from '@/features/loading/delayed-loader';
  * 말하는 동안 로그인 화면은 말하지 않는다(`owner` 참고).
  */
 export const SIGNING_IN_MESSAGE = '카카오로 로그인하는 중이에요';
+/** 애플 차례. 제공자가 둘이 되면서 문장도 둘이 됐다 — 자리는 여전히 이 파일 하나다. */
+export const APPLE_SIGNING_IN_MESSAGE = 'Apple로 로그인하는 중이에요';
+
+/**
+ * 어느 제공자로 로그인하는 중인지에 맞는 한 줄.
+ *
+ * 애플을 눌렀는데 «카카오로 로그인하는 중»이라고 적히면, 사용자는 자기가 잘못
+ * 눌렀다고 읽는다. 개발용 대체는 서버가 `apple` 자리에 얹어 보내지만 실제 애플이
+ * 아니라 기본 문장을 쓴다. 아직 모르는 상태(null)도 기본이다 — 부팅이 잇는 것은
+ * 카카오 리다이렉트뿐이다.
+ */
+export function signingInMessage(provider: AuthProvider | null | undefined): string {
+  if (provider?.provider === 'apple' && !provider.isDevelopmentStandIn) {
+    return APPLE_SIGNING_IN_MESSAGE;
+  }
+
+  return SIGNING_IN_MESSAGE;
+}
 
 /**
  * 이 자리가 무엇 **하나**를 보여줄 것인가.
@@ -37,13 +56,24 @@ export type SigningInShow = 'message' | 'loader';
  * 것이 「하나만」을 타입으로 지키는 방법이다.
  *
  * `size`는 자리에 따라 다르다 — 화면 전체는 40, 로그인 화면 버튼 자리는 28.
+ *
+ * `message`를 주면 그 문장을 쓴다 — 제공자가 둘이라 로그인 화면이
+ * `signingInMessage(busyProvider)`로 골라 넘긴다. 안 주면 카카오 문장이다.
  */
-export function SigningInBody({ size, show }: { size: 28 | 40; show: SigningInShow }) {
+export function SigningInBody({
+  size,
+  show,
+  message = SIGNING_IN_MESSAGE,
+}: {
+  size: 28 | 40;
+  show: SigningInShow;
+  message?: string;
+}) {
   if (show === 'loader') return <DelayedLoader size={size} />;
 
   return (
     <ThemedText type="small" themeColor="textAssistive">
-      {SIGNING_IN_MESSAGE}
+      {message}
     </ThemedText>
   );
 }

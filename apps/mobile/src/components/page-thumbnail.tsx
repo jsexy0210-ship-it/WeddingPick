@@ -21,7 +21,7 @@ const styles = StyleSheet.create({
   thumbnail: {
     width: 56,
     height: 72,
-    borderRadius: Radius.control,
+    borderRadius: Radius.small,
   },
   file: {
     alignItems: 'center',

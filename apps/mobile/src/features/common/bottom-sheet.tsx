@@ -16,7 +16,7 @@ import {
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Layout, Motion, Radius, ThemedView, useTheme } from '@weddingpick/ui';
+import { Layout, Motion, Radius, ThemedView, USE_NATIVE_DRIVER, useTheme } from '@weddingpick/ui';
 
 export type BottomSheetProps = {
   visible: boolean;
@@ -89,20 +89,20 @@ export function BottomSheet({
         toValue: 1,
         duration: Motion.scrimFade.duration,
         easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       reduceMotion
         ? Animated.timing(panel, {
             toValue: 1,
             duration: Motion.scrimFade.duration,
             easing: Easing.out(Easing.quad),
-            useNativeDriver: true,
+            useNativeDriver: USE_NATIVE_DRIVER,
           })
         : Animated.timing(translateY, {
             toValue: 0,
             duration: Motion.sheetEnter.duration,
             easing: Easing.bezier(...Motion.sheetEnter.bezier),
-            useNativeDriver: true,
+            useNativeDriver: USE_NATIVE_DRIVER,
           }),
     ]);
     running.current.start();
@@ -117,20 +117,20 @@ export function BottomSheet({
         toValue: 0,
         duration: Motion.scrimFade.duration,
         easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       reduceMotion
         ? Animated.timing(panel, {
             toValue: 0,
             duration: Motion.scrimFade.duration,
             easing: Easing.in(Easing.quad),
-            useNativeDriver: true,
+            useNativeDriver: USE_NATIVE_DRIVER,
           })
         : Animated.timing(translateY, {
             toValue: to,
             duration: Motion.sheetExit.duration,
             easing: Easing.in(Easing.quad),
-            useNativeDriver: true,
+            useNativeDriver: USE_NATIVE_DRIVER,
           }),
     ]);
     running.current.start(({ finished }) => {

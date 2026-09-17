@@ -1,8 +1,17 @@
-import { useAdminAccess, AdminAccountActions } from './_ui';
 /**
- * WP-ADM-014 업체 관리
+ * WP-ADM-014 데이터 · 업체 관리
  * 업체 병합·분리 · 상호 변경 · 영업상태 · 재귀속 이력
+ *
+ * **2026-09-15 대표 확정 — 「업체·행사」 화면의 탭 하나(업체 관리 자신)다**(업체
+ * 관리 · 이미지 관리 · 업체 문의 · 이메일 회신 · 박람회 관리 — 다섯 다 업체 관련
+ * 운영). 이 파일 맨 아래 `VendorsShell`이 그 껍데기고, 여기 있던 본문은
+ * `VendorsPanel`로 이름만 바꿨다.
+ *
+ * **박람회 탭은 2026-09-15에 붙었다.** 다른 세션(`session_01X9VA1VeAwEajpxUwTCHmFh`)이
+ * `/admin/expos` 화면을 만들어 `main`에 올렸고(PR #254), MASTER 지시로 이 탭
+ * 자리로 정했다 — `expos.tsx` 참고.
  */
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   Modal,
@@ -15,18 +24,22 @@ import {
 } from 'react-native';
 
 import { Colors, FontSize, Spacing } from '@weddingpick/ui';
-import { VENDOR_CATEGORIES, VENDOR_CATEGORY_LABEL, WEDDING_REGIONS, type VendorCategory, type WeddingRegion } from '@weddingpick/domain';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { AdminTabShell, type AdminTabDef } from './_ui';
+import { ImagesPanel } from './images';
+import { BizQueuePanel } from './biz-queue';
+import { EmailMatchingPanel } from './email-matching';
+import { ExposPanel } from './expos';
+import { formatCount, VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
 
-type VendorStatus = 'active' | 'closed' | 'suspended' | 'merged' | 'deleted';
+type VendorStatus = 'active' | 'closed' | 'suspended' | 'merged';
 type HistoryItem = { at: string; action: string; note: string };
 
 type Vendor = {
   id: string;
   name: string;
   category: string;
-  region: string;
   status: VendorStatus;
   dataCount: number;
   mergedInto: string | null;
@@ -34,6 +47,19 @@ type Vendor = {
 };
 
 type VendorListData = { vendors: Vendor[]; total: number };
+
+/**
+ * 업종 이름은 domain 한 곳(`VENDOR_CATEGORY_LABEL`)에서만 가져온다 —
+ * `stats.tsx`의 `formatCat`과 같은 자리다. 서버는 DB enum(`hall` · `snap`)을
+ * 그대로 주는데, 그것을 그대로 그리면 표에 「hall」이 뜬다. 운영자가 읽는 이름은
+ * 「웨딩홀」이고, 같은 것을 두 이름으로 부르지 않는다(2026-09-11 대표 지시).
+ *
+ * 모르는 값이 오면 코드를 그대로 보여 준다 — 관리자 화면이라 감추기보다 드러내는
+ * 쪽이 맞다.
+ */
+function formatCat(category: string) {
+  return (VENDOR_CATEGORY_LABEL as Record<string, string>)[category] ?? category;
+}
 
 /**
  * 병합하면 무엇이 몇 건 옮겨 가는지. 서버가 세어서 준다.
@@ -58,18 +84,15 @@ const STATUS_LABEL: Record<VendorStatus, string> = {
   closed: '폐업',
   suspended: '정지',
   merged: '병합됨',
-  deleted: '삭제됨',
 };
 const STATUS_COLOR: Record<VendorStatus, string> = {
   active: Colors.light.positive,
   closed: Colors.light.textAssistive,
   suspended: Colors.light.negative,
   merged: Colors.light.accent,
-  deleted: Colors.light.textAssistive,
 };
 
-export default function VendorsScreen() {
-  const { canEdit, canDelete } = useAdminAccess();
+function VendorsPanel() {
   const [data, setData] = useState<VendorListData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -83,12 +106,6 @@ export default function VendorsScreen() {
   // 병합 확인 단계. 미리보기를 받아 두기 전에는 병합을 부르지 않는다.
   const [mergePreview, setMergePreview] = useState<MergePreview | null>(null);
   const [mergeReason, setMergeReason] = useState('');
-  const [creating, setCreating] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [newCategory, setNewCategory] = useState<VendorCategory>('hall');
-  const [newRegion, setNewRegion] = useState<WeddingRegion>('서울');
-  const [deleting, setDeleting] = useState(false);
-  const [deleteReason, setDeleteReason] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -116,28 +133,6 @@ export default function VendorsScreen() {
     // 이미 병합된 업체는 어차피 다시 합칠 수 없다.
     setMergeTarget('');
     setActionError(null);
-    setDeleting(false);
-    setDeleteReason('');
-  }
-
-  async function createVendor() {
-    if (!newName.trim() || acting || !canEdit) return;
-    setActing(true); setActionError(null);
-    try {
-      await apiFetch('/v1/admin/vendors', { method: 'POST', body: JSON.stringify({ name: newName.trim(), category: newCategory, region: newRegion }) });
-      setCreating(false); setNewName(''); setRev((value) => value + 1);
-    } catch (error) { setActionError(error instanceof Error ? error.message : '등록하지 못했어요.'); }
-    finally { setActing(false); }
-  }
-
-  async function deleteVendor() {
-    if (!selected || !deleteReason.trim() || acting || !canDelete) return;
-    setActing(true); setActionError(null);
-    try {
-      await apiFetch(`/v1/admin/vendors/${selected.id}`, { method: 'DELETE', body: JSON.stringify({ reason: deleteReason.trim() }) });
-      setSelected(null); setDeleting(false); setDeleteReason(''); setRev((value) => value + 1);
-    } catch (error) { setActionError(error instanceof Error ? error.message : '삭제하지 못했어요.'); }
-    finally { setActing(false); }
   }
 
   async function updateName() {
@@ -220,18 +215,13 @@ export default function VendorsScreen() {
   const filtered = data?.vendors.filter(
     (v) => !search || v.name.includes(search) || v.id.includes(search)
   ) ?? [];
-  const canChangeSelected = canEdit && selected?.status !== 'deleted' && selected?.status !== 'merged';
 
   return (
     <View style={styles.root}>
       <View style={styles.header}>
         <Text style={styles.title}>업체 관리</Text>
         <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
-          <Text style={styles.refreshText}>새로고침</Text>
-        </Pressable>
-        <AdminAccountActions />
-        <Pressable style={styles.refreshBtn} disabled={!canEdit} onPress={() => { setCreating(true); setActionError(null); }}>
-          <Text style={styles.refreshText}>업체 등록</Text>
+          <Text style={styles.refreshText}>새로 고침</Text>
         </Pressable>
       </View>
 
@@ -254,14 +244,14 @@ export default function VendorsScreen() {
               value={search}
               onChangeText={setSearch}
             />
-            <Text style={styles.totalText}>총 {data.total.toLocaleString()}개</Text>
+            <Text style={styles.totalText}>총 {formatCount(data.total)}개</Text>
           </View>
           <ScrollView>
             <View style={styles.tableHead}>
               <Text style={[styles.th, styles.colName]}>업체명</Text>
               <Text style={[styles.th, styles.colCategory]}>카테고리</Text>
               <Text style={[styles.th, styles.colStatus]}>상태</Text>
-              <Text style={[styles.th, styles.colCount]}>데이터</Text>
+              <Text style={[styles.th, styles.colCount]}>제보</Text>
             </View>
             {filtered.map((v, i) => (
               <Pressable
@@ -270,11 +260,11 @@ export default function VendorsScreen() {
                 onPress={() => selectVendor(v)}
               >
                 <Text style={[styles.td, styles.colName]} numberOfLines={1}>{v.name}</Text>
-                <Text style={[styles.td, styles.colCategory]}>{v.category}</Text>
+                <Text style={[styles.td, styles.colCategory]}>{formatCat(v.category)}</Text>
                 <Text style={[styles.td, styles.colStatus, { color: STATUS_COLOR[v.status] }]}>
                   {STATUS_LABEL[v.status]}
                 </Text>
-                <Text style={[styles.td, styles.colCount]}>{v.dataCount}</Text>
+                <Text style={[styles.td, styles.colCount]}>{formatCount(v.dataCount)}</Text>
               </Pressable>
             ))}
           </ScrollView>
@@ -284,10 +274,9 @@ export default function VendorsScreen() {
       {/* 상세 모달 */}
       <Modal visible={selected !== null} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <ScrollView style={styles.modalBox}>
+          <View style={styles.modalBox}>
             <Text style={styles.modalTitle}>{selected?.name}</Text>
-            <Text style={styles.modalSub}>{selected?.id} · {selected?.category} · {selected?.region}</Text>
-            {selected?.status === 'deleted' && <Text style={styles.mergeWarn}>삭제된 업체예요. 공개 목록에서는 보이지 않고 기존 회원 기록과 변경 이력은 보존돼요.</Text>}
+            <Text style={styles.modalSub}>{selected?.id} · {selected ? formatCat(selected.category) : ''}</Text>
 
             <Text style={styles.fieldLabel}>상호 변경</Text>
             <TextInput
@@ -296,9 +285,9 @@ export default function VendorsScreen() {
               onChangeText={setNameEdit}
             />
             <Pressable
-              style={[styles.primaryBtn, (!canChangeSelected || acting) && styles.btnDisabled]}
+              style={[styles.primaryBtn, (acting) && styles.btnDisabled]}
               onPress={() => void updateName()}
-              disabled={!canChangeSelected || acting}
+              disabled={acting}
             >
               <Text style={styles.primaryBtnText}>상호 저장</Text>
             </Pressable>
@@ -310,7 +299,7 @@ export default function VendorsScreen() {
                   key={s}
                   style={[styles.statusBtn, selected?.status === s && { borderColor: STATUS_COLOR[s] }]}
                   onPress={() => void updateStatus(s)}
-                  disabled={!canChangeSelected || acting}
+                  disabled={acting}
                 >
                   <Text style={[styles.statusBtnText, selected?.status === s && { color: STATUS_COLOR[s] }]}>
                     {STATUS_LABEL[s]}
@@ -327,22 +316,13 @@ export default function VendorsScreen() {
               placeholder="병합할 대상 업체 ID"
             />
             <Pressable
-              style={[styles.dangerBtn, (!canChangeSelected || acting) && styles.btnDisabled]}
+              style={[styles.dangerBtn, (acting) && styles.btnDisabled]}
               onPress={() => void previewMerge()}
-              disabled={!canChangeSelected || acting || !mergeTarget.trim()}
+              disabled={acting || !mergeTarget.trim()}
             >
               <Text style={styles.dangerBtnText}>병합할 내용 확인</Text>
             </Pressable>
 
-            {selected?.status !== 'deleted' && <Pressable style={[styles.dangerBtn, !canDelete && styles.btnDisabled]} disabled={!canDelete || acting} onPress={() => setDeleting(true)}>
-              <Text style={styles.dangerBtnText}>업체 삭제</Text>
-            </Pressable>}
-            {deleting && <View>
-              <Text style={styles.mergeWarn}>삭제하면 공개 목록에서 제외돼요. 기존 제보·후기·Pick과 변경 이력은 남고, 업체를 다시 활성화할 수 없어요.</Text>
-              <TextInput style={styles.fieldInput} value={deleteReason} onChangeText={setDeleteReason} placeholder="삭제 사유" maxLength={1000} />
-              <Pressable style={styles.dangerBtn} disabled={!canDelete || acting || !deleteReason.trim()} onPress={() => void deleteVendor()}><Text style={styles.dangerBtnText}>{acting ? '삭제 중…' : '삭제 확인'}</Text></Pressable>
-              <Pressable style={styles.closeBtn} disabled={acting} onPress={() => setDeleting(false)}><Text style={styles.closeBtnText}>삭제 취소</Text></Pressable>
-            </View>}
             {actionError && <Text style={styles.actionError}>{actionError}</Text>}
 
             {/* 이력 */}
@@ -362,23 +342,8 @@ export default function VendorsScreen() {
             <Pressable style={styles.closeBtn} onPress={() => setSelected(null)}>
               <Text style={styles.closeBtnText}>닫기</Text>
             </Pressable>
-          </ScrollView>
+          </View>
         </View>
-      </Modal>
-
-      <Modal visible={creating} transparent animationType="fade">
-        <View style={styles.modalOverlay}><ScrollView style={styles.modalBox}>
-          <Text style={styles.modalTitle}>업체 등록</Text>
-          <Text style={styles.fieldLabel}>상호</Text>
-          <TextInput style={styles.fieldInput} value={newName} onChangeText={setNewName} placeholder="상호" maxLength={200} />
-          <Text style={styles.fieldLabel}>업종</Text>
-          <View style={[styles.statusRow, { flexWrap: 'wrap' }]}>{VENDOR_CATEGORIES.map((category) => <Pressable key={category} style={[styles.statusBtn, newCategory === category && { borderColor: Colors.light.tint }]} onPress={() => setNewCategory(category)}><Text style={styles.statusBtnText}>{VENDOR_CATEGORY_LABEL[category]}</Text></Pressable>)}</View>
-          <Text style={styles.fieldLabel}>지역</Text>
-          <View style={[styles.statusRow, { flexWrap: 'wrap' }]}>{WEDDING_REGIONS.map((region) => <Pressable key={region} style={[styles.statusBtn, newRegion === region && { borderColor: Colors.light.tint }]} onPress={() => setNewRegion(region)}><Text style={styles.statusBtnText}>{region}</Text></Pressable>)}</View>
-          {actionError && <Text style={styles.actionError}>{actionError}</Text>}
-          <Pressable style={styles.primaryBtn} disabled={acting || !newName.trim() || !canEdit} onPress={() => void createVendor()}><Text style={styles.primaryBtnText}>{acting ? '등록 중…' : '등록'}</Text></Pressable>
-          <Pressable style={styles.closeBtn} disabled={acting} onPress={() => setCreating(false)}><Text style={styles.closeBtnText}>취소</Text></Pressable>
-        </ScrollView></View>
       </Modal>
 
       {/*
@@ -396,7 +361,7 @@ export default function VendorsScreen() {
 
             {mergePreview?.categoryDiffers && (
               <Text style={styles.mergeWarn}>
-                업종이 서로 달라요 ({mergePreview.source.category} · {mergePreview.target.category}).
+                업종이 서로 달라요 ({formatCat(mergePreview.source.category)} · {formatCat(mergePreview.target.category)}).
               </Text>
             )}
 
@@ -404,10 +369,10 @@ export default function VendorsScreen() {
             {mergePreview?.counts.map((c) => (
               <View key={c.label} style={styles.mergeRow}>
                 <Text style={styles.mergeRowLabel}>{c.label}</Text>
-                <Text style={styles.mergeRowValue}>{c.moves}건</Text>
+                <Text style={styles.mergeRowValue}>{formatCount(c.moves)}건</Text>
                 {c.blocked > 0 && (
                   // 겹쳐서 옮기지 못하는 것도 적는다. 감추면 「전부 옮겨 갔다」로 읽힌다.
-                  <Text style={styles.mergeRowBlocked}>겹침 {c.blocked}건</Text>
+                  <Text style={styles.mergeRowBlocked}>겹침 {formatCount(c.blocked)}건</Text>
                 )}
               </View>
             ))}
@@ -425,7 +390,7 @@ export default function VendorsScreen() {
             <Pressable
               style={[styles.dangerBtn, (acting || !mergeReason.trim()) && styles.btnDisabled]}
               onPress={() => void confirmMerge()}
-              disabled={!canEdit || acting || !mergeReason.trim()}
+              disabled={acting || !mergeReason.trim()}
             >
               <Text style={styles.dangerBtnText}>합치기</Text>
             </Pressable>
@@ -437,6 +402,41 @@ export default function VendorsScreen() {
         </View>
       </Modal>
     </View>
+  );
+}
+
+const TABS: AdminTabDef[] = [
+  { key: 'vendors', label: '업체 관리' },
+  { key: 'images', label: '이미지 관리' },
+  { key: 'biz-queue', label: '업체 문의', readOnly: true },
+  { key: 'email-matching', label: '이메일 회신', readOnly: true },
+  { key: 'expos', label: '박람회 관리' },
+];
+
+/**
+ * 「업체·행사」 — 업체 관리 · 이미지 관리 · 업체 문의 · 이메일 회신 · 박람회 관리를
+ * 탭으로 묶는다. **업체 문의 · 이메일 회신은 「조회만」 딱지가 붙는다** — 읽기는
+ * 되지만 쓰기 단추가 화면 안에서 잠겨 있다(다섯 화면 중 둘.
+ * `test/admin-read-only-pairing.test.ts`가 이 딱지와 화면 안쪽 잠금이 짝인지
+ * 확인한다). 되는 화면 둘 사이에서 안 되는 화면이 묻히지 않게 탭에도 표시를 남긴다.
+ *
+ * **박람회 관리는 2026-09-15 MASTER 지시로 이 탭에 자리 잡았다** — 박람회도 결국
+ * 업체가 참가하는 행사라 이미 업체·시설을 다루는 이 묶음과 성격이 같고, 새 사이드바
+ * 묶음을 신설하는 것은 32개를 9개로 줄이는 방향과 반대이기 때문이다.
+ */
+export default function VendorsShell() {
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
+  const initial = TABS.some((t) => t.key === tab) ? (tab as string) : 'vendors';
+  const [active, setActive] = useState(initial);
+
+  return (
+    <AdminTabShell tabs={TABS} active={active} onChange={setActive}>
+      {active === 'vendors' && <VendorsPanel />}
+      {active === 'images' && <ImagesPanel />}
+      {active === 'biz-queue' && <BizQueuePanel />}
+      {active === 'email-matching' && <EmailMatchingPanel />}
+      {active === 'expos' && <ExposPanel />}
+    </AdminTabShell>
   );
 }
 

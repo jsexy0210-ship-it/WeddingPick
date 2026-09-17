@@ -2,6 +2,13 @@ import { z, type ZodType } from 'zod';
 
 import { analysisSchema } from './analyses';
 import {
+  consultationListResponseSchema,
+  consultationRecordSchema,
+  createConsultationUploadRequestSchema,
+  createConsultationUploadResponseSchema,
+  updateConsultationRequestSchema,
+} from './consultations';
+import {
   candidateListResponseSchema,
   createCandidateRequestSchema,
   decideCategoryRequestSchema,
@@ -29,6 +36,7 @@ import {
   weddingEventListResponseSchema,
 } from './wedding-events';
 import { amountSchema, idSchema } from './common';
+import { faqListResponseSchema } from './faq';
 import {
   authProvidersResponseSchema,
   createSessionRequestSchema,
@@ -100,7 +108,11 @@ import {
   vendorRegionsResponseSchema,
   vendorSearchResponseSchema,
 } from './vendors';
-import { top3QuerySchema, top3ResponseSchema } from './recommendations';
+import {
+  categoryRecommendationsResponseSchema,
+  top3QuerySchema,
+  top3ResponseSchema,
+} from './recommendations';
 import {
   createVerificationRequestSchema,
   createVerificationResponseSchema,
@@ -139,6 +151,18 @@ export type EndpointDefinition = {
  * 오류: 어떤 경로든 실패하면 `errorResponseSchema` 모양으로 답한다.
  */
 export const ENDPOINTS = {
+  /**
+   * 자주 묻는 것. 토큰 없이 부른다 — 로그인하지 않아도 보는 화면이다.
+   *
+   * 운영자가 관리자 화면에서 고치고 지운다(2026-09-16 대표 지시). 답의 자리표시자는
+   * 서버가 채워서 내려준다.
+   */
+  listFaq: {
+    method: 'GET',
+    path: '/v1/faq',
+    response: faqListResponseSchema,
+  },
+
   /** 쓸 수 있는 로그인 방법. 토큰 없이 부른다. */
   listAuthProviders: {
     method: 'GET',
@@ -215,6 +239,19 @@ export const ENDPOINTS = {
     response: top3ResponseSchema,
   },
 
+  /**
+   * Pick 추천 — 아직 정하지 않은 업종과 업종별 추천 업체(대표 사양 §4 · §10 · §12).
+   *
+   * **홈과 「웨딩픽 추천」 전체 페이지가 이 하나를 나눠 쓴다.** 홈은 `limit=3`으로 앞의
+   * 셋만, 전체 페이지는 `limit` 없이 전부 받는다 — 둘이 다른 순서를 보여줄 길이 없다.
+   * `getTop3`와 같은 `recommendVendors()`가 업종마다 돈다. 추천 규칙을 두 벌 두지 않는다.
+   */
+  getCategoryRecommendations: {
+    method: 'GET',
+    path: '/v1/me/recommendations',
+    response: categoryRecommendationsResponseSchema,
+  },
+
   createWedding: {
     method: 'POST',
     path: '/v1/weddings',
@@ -226,6 +263,65 @@ export const ENDPOINTS = {
     method: 'GET',
     path: '/v1/weddings/{weddingId}',
     response: weddingDetailSchema,
+  },
+
+  /**
+   * 상담기록 — 녹음을 올릴 자리를 받는다.
+   *
+   * 형식과 길이를 **미리** 보낸다. 거절당한 호출도 과금되므로 서버가 Gemini를
+   * 부르기 전에 막는다.
+   */
+  createConsultationUpload: {
+    method: 'POST',
+    path: '/v1/consultations/uploads',
+    body: createConsultationUploadRequestSchema,
+    response: createConsultationUploadResponseSchema,
+  },
+
+  /** 올리기가 끝났음을 알리면 1차 판정이 시작된다. */
+  completeConsultationUpload: {
+    method: 'POST',
+    path: '/v1/consultations/{consultationId}/complete',
+    response: consultationRecordSchema,
+  },
+
+  /** 이 웨딩의 상담기록. */
+  listConsultations: {
+    method: 'GET',
+    path: '/v1/weddings/{weddingId}/consultations',
+    response: consultationListResponseSchema,
+  },
+
+  getConsultation: {
+    method: 'GET',
+    path: '/v1/consultations/{consultationId}',
+    response: consultationRecordSchema,
+  },
+
+  /** 사용자가 고친다. **모델이 뽑은 값은 확정이 아니다.** */
+  updateConsultation: {
+    method: 'PATCH',
+    path: '/v1/consultations/{consultationId}',
+    body: updateConsultationRequestSchema,
+    response: consultationRecordSchema,
+  },
+
+  /**
+   * 확인을 마치고 저장한다. **여기서 원본을 지운다.**
+   *
+   * 확인 전에 지우지 않는 이유는 다시 읽어야 할 수 있기 때문이고, 확인을 안 해도
+   * 24시간 뒤에는 지운다 — 그 상한이 `audio_delete_by`다.
+   */
+  confirmConsultation: {
+    method: 'POST',
+    path: '/v1/consultations/{consultationId}/confirm',
+    response: consultationRecordSchema,
+  },
+
+  deleteConsultation: {
+    method: 'DELETE',
+    path: '/v1/consultations/{consultationId}',
+    response: z.object({ deleted: z.literal(true) }),
   },
 
   /** A-04 촬영. 서명된 URL을 받아 파일은 스토리지로 바로 올린다. */

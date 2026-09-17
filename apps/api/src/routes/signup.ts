@@ -1,10 +1,12 @@
 import { completeSignupRequestSchema, type SignupState } from '@weddingpick/api-contract';
 import {
   AGE_UNVERIFIED_NOTICE,
+  CONSENT_ITEMS,
   MINIMUM_AGE,
   REQUIRED_CONSENTS,
   canActivate,
   consentVersion,
+  missingRequiredConsents,
   type ConsentItem,
 } from '@weddingpick/domain';
 import type { FastifyInstance } from 'fastify';
@@ -12,7 +14,6 @@ import type { FastifyInstance } from 'fastify';
 import { currentUserId, requireSignup } from '../auth/plugin';
 import type { AppContext } from '../context';
 import { ApiError } from '../errors';
-import { currentConsentItems } from '../content-admin';
 
 /**
  * 가입 완료. 통합정책 v3.13 §3.5.
@@ -50,13 +51,13 @@ export function registerSignupRoutes(app: FastifyInstance, context: AppContext):
       [userId]
     );
 
-    const definitions = await currentConsentItems(context.pool);
+    const granted = consents.rows.map((row) => ({ item: row.item, version: row.terms_version }));
 
     return {
       activated: user.activated_at !== null,
       ageVerified: user.age_verified,
       minimumAge: MINIMUM_AGE,
-      items: definitions.map((item) => {
+      items: CONSENT_ITEMS.map((item) => {
         const match = consents.rows.find(
           (row) => row.item === item.key && row.terms_version === item.version
         );
@@ -69,7 +70,7 @@ export function registerSignupRoutes(app: FastifyInstance, context: AppContext):
           grantedAt: match?.granted_at.toISOString() ?? null,
         };
       }),
-      missingRequired: definitions.filter((item) => item.required && !consents.rows.some((row) => row.item === item.key && row.terms_version === item.version)).map((item) => item.key),
+      missingRequired: missingRequiredConsents(granted),
     };
   }
 
@@ -136,16 +137,10 @@ export function registerSignupRoutes(app: FastifyInstance, context: AppContext):
        * 받은 항목만 적는다. 선택 항목을 대신 켜주지 않는다(§N-2) — 켜주면 그
        * 동의는 사용자가 한 것이 아니다.
        */
-      const definitions = await currentConsentItems(client);
       for (const item of new Set(body.consents as ConsentItem[])) {
-        const definition = definitions.find((candidate) => candidate.key === item);
+        const definition = CONSENT_ITEMS.find((candidate) => candidate.key === item);
 
         if (!definition) continue;
-        const confirmedVersion = body.versions?.[item] ?? consentVersion(item);
-        if (confirmedVersion !== definition.version) {
-          await client.query('ROLLBACK');
-          throw new ApiError('conflict', '약관이 변경됐어요. 새 내용을 확인한 뒤 다시 동의해주세요.');
-        }
 
         await client.query(
           `INSERT INTO structured.user_consents (user_id, item, terms_version, is_required)

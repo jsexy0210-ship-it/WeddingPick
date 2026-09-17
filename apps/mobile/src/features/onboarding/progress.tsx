@@ -1,56 +1,88 @@
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Layout, Radius, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
+import { Layout, Radius, Spacing, ThemedText, ThemedView, useTheme } from '@weddingpick/ui';
 
 /**
- * 온보딩 상단 내비게이션. 디자인 핸드오프 v3.22 20-onboarding-v2.dc.html `nav` —
- * 진행 막대 4px와 «N/5»가 한 줄(56)에 앉는다. 좌우 거터 24, 사이 12.
+ * 온보딩 머리 — 규격서 docs/figma-spec/onboarding.txt(2026-09-15 대표 지시 「규격서의 수를 그대로」).
  *
- * **뒤로가기 버튼이 없다**(v3.19 «Back 버튼 전면 제거»). 되돌아가는 길은 dock의
- * «이전»과 답 줄의 «바꾸기»뿐이다 — 상단에 화살표가 있으면 «온보딩을 나간다»와
- * «앞 질문으로 간다»가 한 버튼에 겹쳐 어느 쪽인지 사용자가 알 수 없다.
+ *   div 382×20  flex · justify space-between · align center
+ *     button "나중에" · 14/500 #868B94 · lh 20        (둘째 질문부터는 «이전»)
+ *     span "01 / 03" · 12/400 #868B94 · lh 16
+ *   div 382×4  flex · gap 6 · mar 20 0 0 0
+ *     span 123×4  bg primary · r9999      ← 지난 질문과 지금 질문
+ *     span 123×4  bg #F7F8F9 · r9999      ← 남은 질문
  *
- * 몇 단계가 남았는지 보이지 않으면 사용자는 끝을 모른 채 답하게 되고, 그때
- * 이탈이 늘어난다. 막대와 숫자를 함께 두는 이유다 — 막대만으로는 «몇 개
- * 남았는가»가 읽히지 않는다.
- *
- * 막대 바탕은 `border`(#EAEBEE)다 — `track`(#DCDEE3)이 아니다. 시안이 막대
- * 바탕과 목록 행 구분선에 같은 값을 쓴다.
+ * 첫 질문의 «나중에»는 우리 흐름에 건너뛰기가 없어 그리지 않는다(판단 필요 — PR 본문).
  */
 export function OnboardingProgress({
-  progress,
   label,
+  leftLabel,
+  onLeft,
 }: {
-  /** 0~100. 다섯 질문 기준 20 → 40 → 60 → 80 → 100. */
-  progress: number;
-  /** 진행 막대 오른쪽 — «1/5» … «5/5» · 완료 화면은 «완료». */
+  /** `stepProgress().label` — «1/3» 꼴. 완료 화면은 «완료». */
   label: string;
+  leftLabel?: string;
+  onLeft?: () => void;
 }) {
   const theme = useTheme();
+  const counter = parseCounter(label);
 
   return (
     <ThemedView style={styles.bar}>
-      <View style={[styles.track, { backgroundColor: theme.border }]}>
-        <View style={[styles.fill, { backgroundColor: theme.tint, width: `${progress}%` }]} />
+      <View style={styles.row}>
+        {leftLabel && onLeft ? (
+          <Pressable accessibilityRole="button" onPress={onLeft} style={({ pressed }) => pressed && styles.pressed}>
+            <ThemedText type="f14" themeColor="textAssistive" style={styles.left}>
+              {leftLabel}
+            </ThemedText>
+          </Pressable>
+        ) : (
+          <View />
+        )}
+        <ThemedText type="f12" themeColor="textAssistive" numeric>
+          {counter ? `${pad(counter.current)} / ${pad(counter.total)}` : label}
+        </ThemedText>
       </View>
-
-      <ThemedText type="t7" themeColor="textAssistive" numeric style={styles.counter}>
-        {label}
-      </ThemedText>
+      <View style={styles.track}>
+        {Array.from({ length: counter?.total ?? 1 }, (_, index) => (
+          <View
+            key={index}
+            style={[
+              styles.segment,
+              { backgroundColor: counter === null || index < counter.current ? theme.tint : theme.backgroundElement },
+            ]}
+          />
+        ))}
+      </View>
     </ThemedView>
   );
 }
 
+function parseCounter(label: string): { current: number; total: number } | null {
+  const match = /^(\d+)\s*\/\s*(\d+)$/.exec(label);
+
+  return match ? { current: Number(match[1]), total: Number(match[2]) } : null;
+}
+
+function pad(value: number): string {
+  return String(value).padStart(2, '0');
+}
+
+/** 막대 «382×4». */
+const TRACK = 4;
+
 const styles = StyleSheet.create({
+  /* 화면 «pad 32 24 32 24»의 위 · 좌우. 줄 ↔ 막대 «mar 20 0 0 0». */
   bar: {
-    height: Layout.navBar,
-    flexDirection: 'row',
-    alignItems: 'center',
-    /* 시안의 12 — 목록 행과 같은 리듬이다. */
-    gap: Layout.rowPaddingY,
+    paddingTop: Spacing.five,
     paddingHorizontal: Layout.gutter,
+    gap: Layout.listGap,
   },
-  track: { flex: 1, height: 4, borderRadius: Radius.pill, overflow: 'hidden' },
-  fill: { height: '100%', borderRadius: Radius.pill },
-  counter: { fontWeight: 700 },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: Layout.iconRow },
+  /* «14/500». */
+  left: { fontWeight: 500 },
+  /* «flex · gap 6». */
+  track: { flexDirection: 'row', gap: Layout.menuGroupGap, height: TRACK },
+  segment: { flex: 1, height: TRACK, borderRadius: Radius.pill },
+  pressed: { opacity: 0.8 },
 });

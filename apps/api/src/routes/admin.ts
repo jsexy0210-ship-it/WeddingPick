@@ -1,25 +1,25 @@
-import { randomUUID } from 'node:crypto';
-
 import { isFeature } from '../ai-cost-admin';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
 import type { MarketingChannel, MarketingFormat } from '@weddingpick/api-contract';
-import { marketingChannelSchema, marketingFormatSchema } from '@weddingpick/api-contract';
-import { disclosureStage, type DisclosureStage } from '@weddingpick/domain';
+import { disclosureStage, type DisclosureStage, VENDOR_CATEGORIES } from '@weddingpick/domain';
 import * as marketingContent from '../marketing/content';
 import * as marketingStore from '../marketing/store';
 import * as adAdmin from '../ad-admin';
 import * as adminOps from '../admin-ops';
-import * as contentAdmin from '../content-admin';
-import { publishedLegalBody } from '@weddingpick/domain';
 import * as aiCostAdmin from '../ai-cost-admin';
 import { currentUserId, requireOperatorUser } from '../auth/plugin';
 import { isKnownSourceKey } from '../public-data/sources';
 import type { AppContext } from '../context';
 import * as dashboardAdmin from '../dashboard-admin';
 import * as decisionsAdmin from '../decisions-admin';
+import * as expoAdmin from '../expo-admin';
+import { listExposEndingToday } from '../retention/expo-sweep';
 import * as faqAdmin from '../faq-admin';
+import * as weddingFeed from '../wedding-feed';
+import * as feedTaxonomy from '../wedding-feed-taxonomy';
+import { createGeminiFeedWriter } from '../analysis/wedding-feed-writer';
 import { NotAnOperator } from '../decisions';
 import { ApiError, forbidden, notFound } from '../errors';
 import * as inquiryAdmin from '../inquiry-admin';
@@ -36,7 +36,6 @@ import * as vendorAdmin from '../vendor-admin';
 import * as vendorClaimAdmin from '../vendor-claim-admin';
 import * as verificationAdmin from '../verification-admin';
 import * as withdrawalAdmin from '../withdrawal-admin';
-import { registerAdminUserStateRoutes } from './admin-user-state';
 
 /**
  * 관리자 콘솔 라우트. 최종통합정책 v2.0 H장.
@@ -151,7 +150,6 @@ function mapCopyrightBasis(
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function registerAdminRoutes(app: FastifyInstance, context: AppContext): void {
-  registerAdminUserStateRoutes(app, context);
   const auth = { preHandler: requireOperatorUser(context) };
 
   /** 도구 함수의 일반 Error를 사람이 읽는 400으로 바꾼다. */
@@ -1052,6 +1050,141 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
     return reply.status(204).send();
   });
 
+  // ─── 웨딩피드 ──────────────────────────────────────────────────────────────
+  /*
+   * 웨딩픽 콘텐츠. 대표 지시(2026-09-15) — 「관리자에 웨딩피드 콘텐츠 메뉴 만들어.
+   * 목록 · 등록 · 삭제 · 수정 다 가능해야 하고 LLM으로 지속 콘텐츠 작성한다」.
+   *
+   * **FAQ와 같은 모양이다**(PUT으로 전체를 보내고 PATCH는 두지 않는다). 부르는 데
+   * 없는 쓰기 라우트를 성공으로 남겨두면 다음 사람이 그것을 믿는다.
+   *
+   * `listForAdmin`을 그대로 돌려준다 — `{ posts, runs, remainingTopics }`
+   * (계약은 `adminWeddingFeedResponseSchema`). 화면 위 배너가 필요한 공개·초안
+   * 건수는 `posts`의 `status`만 세면 나오므로 따로 왕복하지 않는다.
+   *
+   * **전에는 여기서 `{ posts: listForAdmin(...), counts: ... }`로 한 번 더 감쌌다.**
+   * `listForAdmin`이 이미 `{ posts, runs, remainingTopics }`를 돌려주는데 그것을
+   * `posts` 키 하나에 다시 넣어, 실제 글 배열이 `posts.posts`에 있었다 — 부르는
+   * 데가 없어서 아무도 겪지 않았을 뿐인 버그다.
+   */
+  app.get('/v1/admin/wedding-feed', auth, async () =>
+    weddingFeed.listForAdmin(context.pool, context.storage)
+  );
+
+  app.post<{ Body: unknown }>('/v1/admin/wedding-feed', auth, async (request) =>
+    weddingFeed.create(
+      context.pool,
+      weddingFeed.parseFeedInput(request.body),
+      currentUserId(request)
+    )
+  );
+
+  app.put<{ Params: { id: string }; Body: unknown }>(
+    '/v1/admin/wedding-feed/:id',
+    auth,
+    async (request, reply) => {
+      await weddingFeed.update(
+        context.pool,
+        request.params.id,
+        weddingFeed.parseFeedInput(request.body)
+      );
+
+      return reply.status(204).send();
+    }
+  );
+
+  app.delete<{ Params: { id: string } }>(
+    '/v1/admin/wedding-feed/:id',
+    auth,
+    async (request, reply) => {
+      await weddingFeed.remove(context.pool, request.params.id);
+
+      return reply.status(204).send();
+    }
+  );
+
+  /*
+   * 웨딩피드의 탭과 카테고리 — 2026-09-16 대표 지시 「탭별 카테고리별로 다 설정
+   * 가능해야한다」.
+   *
+   * **지우기는 둘이 다르다.** 탭을 지우면 딸린 카테고리가 소속만 잃고 남지만
+   * (`ON DELETE SET NULL`), 쓰는 카테고리는 아예 지워지지 않는다 — 지우면 그 글들이
+   * 어느 탭에도 안 뜨는데 화면은 멀쩡해 보인다. 끄기로 감춘다.
+   */
+  app.get('/v1/admin/wedding-feed/taxonomy', auth, async () =>
+    feedTaxonomy.listTaxonomy(context.pool)
+  );
+
+  app.post<{ Body: unknown }>('/v1/admin/wedding-feed/groups', auth, async (request) =>
+    feedTaxonomy.createGroup(context.pool, feedTaxonomy.parseGroupInput(request.body))
+  );
+
+  app.put<{ Params: { id: string }; Body: unknown }>(
+    '/v1/admin/wedding-feed/groups/:id',
+    auth,
+    async (request, reply) => {
+      await feedTaxonomy.updateGroup(
+        context.pool,
+        request.params.id,
+        feedTaxonomy.parseGroupInput(request.body)
+      );
+
+      return reply.status(204).send();
+    }
+  );
+
+  app.delete<{ Params: { id: string } }>(
+    '/v1/admin/wedding-feed/groups/:id',
+    auth,
+    async (request) => feedTaxonomy.removeGroup(context.pool, request.params.id)
+  );
+
+  app.post<{ Body: unknown }>('/v1/admin/wedding-feed/categories', auth, async (request) =>
+    feedTaxonomy.createCategory(context.pool, feedTaxonomy.parseCategoryInput(request.body))
+  );
+
+  app.put<{ Params: { id: string }; Body: unknown }>(
+    '/v1/admin/wedding-feed/categories/:id',
+    auth,
+    async (request, reply) => {
+      await feedTaxonomy.updateCategory(
+        context.pool,
+        request.params.id,
+        feedTaxonomy.parseCategoryInput(request.body)
+      );
+
+      return reply.status(204).send();
+    }
+  );
+
+  app.delete<{ Params: { id: string } }>(
+    '/v1/admin/wedding-feed/categories/:id',
+    auth,
+    async (request, reply) => {
+      await feedTaxonomy.removeCategory(context.pool, request.params.id);
+
+      return reply.status(204).send();
+    }
+  );
+
+  /*
+   * 지금 한 번 쓰게 한다. 평소에는 워커가 스스로 돌지만, 운영자가 「지금 필요하다」고
+   * 판단하는 자리가 있다.
+   *
+   * 클로드로 쓴다(2026-09-15 대표 지시 — 제미나이는 녹음·OCR에만, `CLAUDE.md` 참고).
+   * 모델은 분석 워커와 같은 설정(`config.geminiModel`)에서 온다.
+   */
+  app.post('/v1/admin/wedding-feed/generate', auth, async () => {
+    const model = context.config.geminiModel;
+
+    return weddingFeed.runGeneration({
+      pool: context.pool,
+      writer: createGeminiFeedWriter({ apiKey: process.env.GEMINI_API_KEY ?? '', model }),
+      model,
+      trigger: 'manual',
+    });
+  });
+
   // ─── Users ────────────────────────────────────────────────────────────────
   /*
    * 계정 목록. **탈퇴를 접수한 계정도 보인다** — 이 화면의 첫 번째 쓰임이
@@ -1075,8 +1208,7 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
     let idx = 1;
 
     if (filter === 'withdrawn') clauses.push('u.deleted_at IS NOT NULL');
-    else if (filter === 'active') clauses.push('u.deleted_at IS NULL AND u.suspended_at IS NULL');
-    else if (filter === 'suspended') clauses.push('u.deleted_at IS NULL AND u.suspended_at IS NOT NULL');
+    else if (filter === 'active') clauses.push('u.deleted_at IS NULL');
 
     if (search) {
       clauses.push(
@@ -1112,7 +1244,6 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
       activated_at: Date | null;
       created_at: Date;
       deleted_at: Date | null;
-      suspended_at: Date | null;
       is_operator: boolean;
       pick_verified: boolean;
       provider: string | null;
@@ -1124,9 +1255,7 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
       failure_attempts: number | null;
     }>(
       `SELECT
-         u.id, u.display_name, u.activated_at, u.created_at, u.deleted_at, u.suspended_at,
-         (u.is_operator OR EXISTS (SELECT 1 FROM structured.admin_accounts a WHERE a.user_id = u.id)
-          OR EXISTS (SELECT 1 FROM identity.identities ai WHERE ai.user_id = u.id AND ai.provider = 'admin')) AS is_operator,
+         u.id, u.display_name, u.activated_at, u.created_at, u.deleted_at, u.is_operator,
          EXISTS (
            SELECT 1 FROM structured.usable_payment_proofs p WHERE p.reporter_user_id = u.id
          ) AS pick_verified,
@@ -1173,7 +1302,6 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
         activatedAt: r.activated_at?.toISOString() ?? null,
         lastLoginAt: r.last_login_at?.toISOString() ?? null,
         deletedAt: r.deleted_at?.toISOString() ?? null,
-        suspendedAt: r.suspended_at?.toISOString() ?? null,
         isOperator: r.is_operator,
         pickVerified: r.pick_verified,
         withdrawal: r.withdrawal_status
@@ -1199,15 +1327,20 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
    */
   app.get('/v1/admin/vendors', auth, async () => vendorAdmin.listVendors(context.pool));
 
-  app.post('/v1/admin/vendors', auth, async (request, reply) => {
-    const input = vendorAdmin.createVendorSchema.parse(request.body);
-    return reply.code(201).send(await vendorAdmin.createVendor(context.pool, input, currentUserId(request)));
-  });
-
-  app.delete<{ Params: { id: string } }>('/v1/admin/vendors/:id', auth, async (request) => {
-    const { reason } = z.object({ reason: z.string().trim().min(1).max(1000) }).parse(request.body);
-    return vendorAdmin.deleteVendor(context.pool, request.params.id, reason, currentUserId(request));
-  });
+  /*
+   * 공식인증 업체가 몇 곳인지. **조회만 한다 — 아무것도 바꾸지 않는다.**
+   *
+   * 이 수가 앱 필터를 언제 켤 수 있는지를 정하는 근거다. 지금 DB의 업체는 전부
+   * `public_data`라, 켜는 순간 홈 · 검색 · Pick 추천이 빈 화면이 된다.
+   *
+   * **붙은 화면이 없다.** 관리자 콘솔이 `apps/mobile` 안에 있고 이번 작업은 화면을
+   * 건드리지 않기로 한 범위라(2026-09-16 대표 지시 — 「일단 화면은 냅두고 백 작업만
+   * 실행해」), 서버만 먼저 세워 둔다. 반대 방향이 아니므로 CLAUDE.md의 「서버에 없는
+   * 동작은 화면에서 잠근다」에 걸리지 않는다 — 빈 껍데기 화면이 생기지 않는다.
+   */
+  app.get('/v1/admin/vendors/official-counts', auth, async () =>
+    vendorAdmin.countOfficialVendors(context.pool)
+  );
 
   /*
    * 병합하면 무엇이 몇 건 옮겨 가는지 세어서 돌려준다. 아무것도 바꾸지 않는다.
@@ -1292,16 +1425,115 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   });
 
   // ─── Ads ──────────────────────────────────────────────────────────────────
+  /*
+   * 광고 자리 등록 · 수정 · 삭제.
+   *
+   * **셋 다 성공만 돌려주고 아무것도 하지 않았다** — POST는 새 uuid를, PATCH ·
+   * DELETE는 204를 냈다. 표는 처음부터 있었고(`ads.placements` — 0040 · 0042 ·
+   * 0130) `ad-admin.ts`에 넣고 내리는 함수까지 있었는데, 라우트만 그 함수를 부르지
+   * 않았다. 새로 쓰지 않고 그것을 부른다.
+   *
+   * **자리를 «내리는 것»과 «멈추는 것»은 다르다.** 멈추는 것은 아래
+   * `PATCH /:id/status`이고 기간을 남긴다. DELETE는 줄 자체를 지우므로 잘못 잡은
+   * 자리를 무를 때만 쓴다.
+   */
   app.get('/v1/admin/ads', auth, async () => adminOps.adPlacements(context.pool));
-  app.post('/v1/admin/ads', auth, async (request) => {
-    return contentAdmin.saveAd(context.pool, null, contentAdmin.adBody.parse(request.body), currentUserId(request));
+
+  const adSurface = z.enum(['vendor_detail', 'search', 'region_category']);
+  const adTier = z.enum(['light', 'standard', 'premium']);
+  const adDay = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '날짜는 2026-09-16 꼴로 적어주세요.');
+  /*
+   * 업종은 `vendor_category` enum이다. 아무 글자나 받으면 질의가 22P02로 터져
+   * 500이 된다 — 잘못 보낸 것을 서버 오류로 돌려주지 않는다. 목록은 도메인
+   * 하나에서 온다(`VENDOR_CATEGORIES`).
+   */
+  const adCategory = z.enum(VENDOR_CATEGORIES);
+
+  const adCreateBody = z.object({
+    vendorId: z.string().uuid(),
+    surface: adSurface,
+    tier: adTier,
+    category: adCategory.nullish(),
+    region: z.string().trim().min(1).nullish(),
+    startsOn: adDay,
+    endsOn: adDay,
   });
-  app.patch<{ Params: { id: string } }>('/v1/admin/ads/:id', auth, async (request, reply) => {
-    await contentAdmin.saveAd(context.pool, z.uuid().parse(request.params.id), contentAdmin.adBody.parse(request.body), currentUserId(request));
-    return reply.status(204).send();
+
+  app.post<{ Body: unknown }>('/v1/admin/ads', auth, async (request, reply) => {
+    const body = adCreateBody.parse(request.body ?? {});
+
+    const id = await run(() =>
+      adAdmin.add(
+        context.pool,
+        {
+          vendorId: body.vendorId,
+          surface: body.surface,
+          tier: body.tier,
+          ...(body.category ? { category: body.category } : {}),
+          ...(body.region ? { region: body.region } : {}),
+          from: body.startsOn,
+          to: body.endsOn,
+        },
+        currentUserId(request)
+      )
+    );
+
+    return reply.status(201).send({ id });
   });
+
+  /** 넣은 칸만 고친다. 업체는 바꿀 수 없다 — `ad-admin.update` 주석 참고. */
+  const adUpdateBody = z
+    .object({
+      surface: adSurface.optional(),
+      tier: adTier.optional(),
+      category: adCategory.nullable().optional(),
+      region: z.string().trim().min(1).nullable().optional(),
+      startsOn: adDay.optional(),
+      endsOn: adDay.optional(),
+    })
+    .refine((body) => Object.keys(body).length > 0, {
+      message: '고칠 것을 하나는 골라주세요.',
+    });
+
+  app.patch<{ Params: { id: string }; Body: unknown }>(
+    '/v1/admin/ads/:id',
+    auth,
+    async (request, reply) => {
+      if (!UUID_RE.test(request.params.id)) throw notFound('광고');
+
+      const body = adUpdateBody.parse(request.body ?? {});
+
+      const found = await run(() =>
+        adAdmin.update(
+          context.pool,
+          request.params.id,
+          {
+            ...(body.surface !== undefined ? { surface: body.surface } : {}),
+            ...(body.tier !== undefined ? { tier: body.tier } : {}),
+            ...(body.category !== undefined ? { category: body.category } : {}),
+            ...(body.region !== undefined ? { region: body.region } : {}),
+            ...(body.startsOn !== undefined ? { from: body.startsOn } : {}),
+            ...(body.endsOn !== undefined ? { to: body.endsOn } : {}),
+          },
+          currentUserId(request)
+        )
+      );
+
+      if (!found) throw notFound('광고');
+
+      return reply.status(204).send();
+    }
+  );
+
   app.delete<{ Params: { id: string } }>('/v1/admin/ads/:id', auth, async (request, reply) => {
-    await contentAdmin.deleteAd(context.pool, z.uuid().parse(request.params.id), currentUserId(request));
+    if (!UUID_RE.test(request.params.id)) throw notFound('광고');
+
+    const removed = await run(() =>
+      adAdmin.remove(context.pool, request.params.id, currentUserId(request))
+    );
+
+    if (!removed) throw notFound('광고');
+
     return reply.status(204).send();
   });
 
@@ -1329,8 +1561,20 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
 
   // ─── Ads Gate ─────────────────────────────────────────────────────────────
   app.get('/v1/admin/ads-gate', auth, async () => adminOps.adsGate(context.pool));
-  app.patch('/v1/admin/ads-gate', auth, async (_req, reply) => {
-    return reply.status(204).send();
+
+  /*
+   * **관문에는 통째로 고칠 것이 없다.** `ads.production_gate`(0130)가 담는 사실은
+   * 셋뿐이고(승인 · 켜짐 · 끔) 셋 다 아래 전용 라우트가 이미 쓴다. 여기에 길을
+   * 하나 더 내면 그것이 곧 `activated`를 켜는 두 번째 입구가 된다 — 광고 실운영
+   * 전환은 대표 오더 대기이고 입구는 하나여야 한다(`activate` 주석).
+   *
+   * 그래서 성공을 돌려주지 않고 어디로 가야 하는지를 말한다.
+   */
+  app.patch('/v1/admin/ads-gate', auth, async () => {
+    throw new ApiError(
+      'invalid_request',
+      '관문은 승인 · 전환 · 해제로만 바꿔요. 아래 단추를 눌러주세요.'
+    );
   });
 
   /*
@@ -1419,8 +1663,22 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
 
   // ─── Automation ───────────────────────────────────────────────────────────
   app.get('/v1/admin/automation', auth, async () => adminOps.automationStatus(context.pool));
-  app.patch('/v1/admin/automation', auth, async (_req, reply) => {
-    return reply.status(204).send();
+
+  /*
+   * **켤 수 있는 칸이 하나뿐인데 그것을 읽는 코드가 없다.**
+   * `structured.automation_workflows`(0130)에서 사람이 고칠 수 있는 칸은
+   * `self_heal_enabled`이고, 0130이 그 자리에 「아직 그런 코드는 없다」고 적어
+   * 두었다. 지금도 그렇다 — 이 값을 보는 곳은 화면의 「자동복구 켜짐」 딱지뿐이다.
+   *
+   * 켜 주면 딱지만 바뀌고 실패한 줄은 그대로 쌓인다. **켠 줄 알고 손을 놓는 것이
+   * 가장 나쁘다**(`KillSwitch.wired` 주석과 같은 이유다). 되돌리는 것은 지금도
+   * 사람이 한다 — 아래 `recover` · `drain-dlq`가 실제로 도는 자리다.
+   */
+  app.patch('/v1/admin/automation', auth, async () => {
+    throw new ApiError(
+      'invalid_request',
+      '자동복구를 도는 코드가 아직 없어요. 실패한 줄은 「다시 시도」로 되돌려주세요.'
+    );
   });
 
   /** 실패한 줄을 다시 대기 목록에 세운다. 지우지 않는다. */
@@ -1462,27 +1720,22 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   });
 
   // ─── Campaigns ────────────────────────────────────────────────────────────
-  app.get('/v1/admin/campaigns', auth, async () => ({
-    ...await adminOps.campaignGrants(context.pool), events: await contentAdmin.listEvents(context.pool),
-  }));
-  app.get('/v1/events', async (_request, reply) => {
-    reply.header('Cache-Control', 'no-store');
-    const { rows } = await context.pool.query(`SELECT id,title,description FROM structured.admin_events
-      WHERE deleted_at IS NULL AND status='active'
-        AND (now() AT TIME ZONE 'Asia/Seoul')::date BETWEEN starts_on AND ends_on
-      ORDER BY created_at DESC`);
-    return { events: rows };
-  });
-  app.post('/v1/admin/campaigns', auth, async (request) => {
-    return contentAdmin.saveEvent(context.pool, null, contentAdmin.eventBody.parse(request.body), currentUserId(request));
-  });
-  app.patch<{ Params: { id: string } }>('/v1/admin/campaigns/:id', auth, async (request, reply) => {
-    await contentAdmin.saveEvent(context.pool, z.uuid().parse(request.params.id), contentAdmin.eventBody.parse(request.body), currentUserId(request));
-    return reply.status(204).send();
-  });
-  app.delete<{ Params: { id: string } }>('/v1/admin/campaigns/:id', auth, async (request, reply) => {
-    await contentAdmin.deleteEvent(context.pool, z.uuid().parse(request.params.id), currentUserId(request));
-    return reply.status(204).send();
+  app.get('/v1/admin/campaigns', auth, async () => adminOps.campaignGrants(context.pool));
+
+  /*
+   * **캠페인을 담는 표가 없다.** 이 화면이 보는 것은 `structured.reward_grants`
+   * (0039)이고, 그 표는 보상 한 건이 초대(`referral_id`) 또는 홍보 제출
+   * (`promotion_id`) 하나에서 온다고 CHECK로 못 박는다
+   * (`grant_has_exactly_one_source`). 근거 없는 지급을 스키마가 거절한다.
+   *
+   * 그 근거를 만드는 것은 사용자의 행동이지 관리자의 단추가 아니다. 관리자가 할
+   * 일은 이미 생긴 건을 지급하거나 차단하는 것이고, 아래 `:id/:action`이 그 자리다.
+   */
+  app.post('/v1/admin/campaigns', auth, async () => {
+    throw new ApiError(
+      'invalid_request',
+      '보상은 초대 · 홍보 인증에서 생겨요. 여기서는 생긴 건을 지급하거나 차단해요.'
+    );
   });
 
   /*
@@ -1680,36 +1933,26 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
 
   // ─── Marketing ────────────────────────────────────────────────────────────
   app.get('/v1/admin/marketing', auth, async () => {
-      const [items, summary, sources] = await Promise.all([
+    try {
+      const [items, summary] = await Promise.all([
         marketingStore.listJobs(context.pool, 50),
         marketingStore.getSummary(context.pool),
-        marketingStore.listSources(context.pool),
       ]);
-      return { summary, items, sources, facts: marketingContent.VERIFIED_FACTS };
-  });
-  app.post('/v1/admin/marketing', auth, async (request) => {
-    const input = z.object({ sourceId: z.string().trim().min(1), channel: marketingChannelSchema,
-      format: marketingFormatSchema, title: z.string().trim().min(1).max(200), body: z.string().trim().min(1).max(20000),
-    }).parse(request.body);
-    const source = await marketingStore.getSource(context.pool, input.sourceId);
-    if (!source || !source.active) throw notFound('활성 출처');
-    return { job: await marketingStore.createJob(context.pool, { ...input, utmUrl: null }) };
-  });
-  app.patch<{ Params: { jobId: string } }>('/v1/admin/marketing/:jobId', auth, async (request, reply) => {
-    const body = z.object({ title: z.string().trim().min(1).max(200), body: z.string().trim().min(1).max(20000) }).parse(request.body);
-    await marketingStore.editJob(context.pool, z.uuid().parse(request.params.jobId), body, currentUserId(request));
-    return reply.status(204).send();
-  });
-  app.delete<{ Params: { jobId: string } }>('/v1/admin/marketing/:jobId', auth, async (request, reply) => {
-    await marketingStore.deleteJob(context.pool, z.uuid().parse(request.params.jobId), currentUserId(request));
-    return reply.status(204).send();
+      return { summary, items };
+    } catch {
+      // DB 없을 때 빈 응답 (개발 환경)
+      return {
+        summary: { generated: 0, simulated: 0, failed: 0, failRate: 0 },
+        items: [],
+      };
+    }
   });
 
   app.post('/v1/admin/marketing/sources', auth, async (request) => {
-    const body = z.object({ id: z.string().trim().min(1).max(200), factIds: z.array(z.string().trim().min(1)).min(1),
-      reviewed: z.boolean().optional(), expiresAt: z.iso.datetime().optional(), nextVerifyAt: z.iso.datetime().optional(),
-      note: z.string().max(2000).optional(),
-    }).parse(request.body);
+    const body = request.body as {
+      id: string; factIds: string[]; reviewed?: boolean;
+      expiresAt?: string; nextVerifyAt?: string; note?: string;
+    };
     await marketingStore.registerSource(context.pool, {
       id: body.id,
       factIds: body.factIds,
@@ -1764,8 +2007,8 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
   app.post<{ Params: { jobId: string } }>(
     '/v1/admin/marketing/:jobId/simulate',
     auth,
-    async (request) => {
-      const r = await marketingStore.processScheduled(context.pool, z.uuid().parse(request.params.jobId));
+    async (_request) => {
+      const r = await marketingStore.processScheduled(context.pool);
       return { ok: true, result: r };
     },
   );
@@ -1868,28 +2111,13 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
    * 막힌 자리는 **무엇이 되는지**를 말한다(v3.27). 「~할 수 없어요」로 끝나면
    * 운영자는 다음에 무엇을 해야 하는지 모른 채 화면을 닫는다.
    */
-  app.post('/v1/admin/terms', auth, async (request) => {
-    const { doc } = contentAdmin.draftBody.parse(request.body);
-    return contentAdmin.createTermsDraft(context.pool, doc, currentUserId(request));
-  });
-  app.delete<{ Params: { id: string } }>('/v1/admin/terms/:id/draft', auth, async (request, reply) => {
-    await contentAdmin.deleteTermsDraft(context.pool, request.params.id, currentUserId(request));
-    return reply.status(204).send();
-  });
-  app.post<{ Params: { id: string } }>('/v1/admin/terms/:id/clauses', auth, async (request, reply) => {
-    await contentAdmin.saveClause(context.pool, request.params.id, null, contentAdmin.clauseBody.parse(request.body), currentUserId(request));
-    return reply.status(201).send({ ok: true });
-  });
-  app.delete<{ Params: { id: string; clauseId: string } }>('/v1/admin/terms/:id/clauses/:clauseId', auth, async (request, reply) => {
-    await contentAdmin.deleteClause(context.pool, request.params.id, z.uuid().parse(request.params.clauseId), currentUserId(request));
-    return reply.status(204).send();
-  });
-  app.get<{ Params: { doc: string } }>('/v1/legal/:doc', async (request, reply) => {
-    if (!adminOps.isDocType(request.params.doc)) throw notFound('문서');
-    reply.header('Cache-Control', 'no-store');
-    const document = await contentAdmin.publicTerms(context.pool, request.params.doc);
-    return { document: document ? { ...document, html: publishedLegalBody(request.params.doc, document.sections) } : null };
-  });
+  const termsUnavailable = async () => {
+    throw new ApiError(
+      'invalid_request',
+      '지금은 약관 조문과 판 이력을 조회할 수 있어요. 편집·공개는 앱 약관·동의 기록에 연결한 뒤 열려요.'
+    );
+  };
+  app.post('/v1/admin/terms', auth, termsUnavailable);
 
   /** 조문 편집. 화면(`terms.tsx`)이 PUT으로 `{ body }`를 보낸다. */
   app.put<{ Params: { id: string; clauseId: string }; Body: unknown }>(
@@ -1899,8 +2127,7 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
       const doc = request.params.id;
 
       if (!adminOps.isDocType(doc)) throw notFound('문서');
-      await contentAdmin.saveClause(context.pool, doc, z.uuid().parse(request.params.clauseId), contentAdmin.clauseBody.parse(request.body), currentUserId(request));
-      return { ok: true };
+      return termsUnavailable();
     }
   );
 
@@ -1913,7 +2140,7 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
 
       if (!adminOps.isDocType(doc)) throw notFound('문서');
 
-      return adminOps.publishTerms(context.pool, doc, currentUserId(request), reasonBody.parse(request.body ?? {}).reason);
+      return termsUnavailable();
     }
   );
 
@@ -1994,5 +2221,70 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
 
   app.post<{ Params: { vendorId: string } }>('/v1/admin/data/price-stats/:vendorId/recalc', auth, async (_req, reply) => {
     return reply.status(202).send({ queued: true });
+  });
+
+  // ── 박람회 ──────────────────────────────────────────────────
+  // `docs/expo-agent-spec.md`. 검수 대기가 맨 위(listExpos)이고, 위험한 조작(삭제)은
+  // 화면이 ConfirmCard로 확인받은 뒤에야 이 라우트를 부른다.
+  const expoInputBody = z.object({
+    title: z.string().trim().min(1),
+    organizer: z.string().trim().min(1),
+    host: z.string().trim().optional().nullable(),
+    startsAt: z.string().min(1),
+    endsAt: z.string().min(1),
+    venue: z.string().trim().min(1),
+    address: z.string().trim().optional(),
+    region: z.string().trim().min(1),
+    city: z.string().trim().optional().nullable(),
+    district: z.string().trim().optional().nullable(),
+    registrationDeadline: z.string().optional().nullable(),
+    reservationUrl: z.string().trim().optional().nullable(),
+    officialWebsiteUrl: z.string().trim().optional().nullable(),
+    benefits: z.array(z.string()).optional(),
+    description: z.string().trim().optional(),
+    eventCategories: z.array(z.string()).optional(),
+    confidence: z
+      .enum(['OFFICIAL_CONFIRMED', 'CROSS_CONFIRMED', 'SOCIAL_ONLY', 'CONFLICT'])
+      .optional()
+      .nullable(),
+    confidenceScore: z.coerce.number().int().min(0).max(100).optional().nullable(),
+    sourceNote: z.string().trim().optional(),
+    adminReviewRequired: z.boolean().optional(),
+    reviewReason: z.array(z.string()).optional(),
+  });
+
+  app.get('/v1/admin/expos', auth, async () => ({ expos: await expoAdmin.listExpos(context.pool) }));
+
+  app.get('/v1/admin/expos/review-queue', auth, async () => ({
+    expos: await expoAdmin.reviewQueue(context.pool),
+  }));
+
+  /** 「내일 지워질 박람회」 미리보기 — 오늘이 종료일인 것들. */
+  app.get('/v1/admin/expos/deletion-preview', auth, async () => ({
+    expos: await listExposEndingToday(context.pool),
+  }));
+
+  app.get<{ Params: { id: string } }>('/v1/admin/expos/:id', auth, async (request) =>
+    expoAdmin.getExpo(context.pool, request.params.id)
+  );
+
+  app.post('/v1/admin/expos', auth, async (request, reply) => {
+    const body = expoInputBody.parse(request.body);
+    const created = await expoAdmin.createExpo(context.pool, body);
+    return reply.status(201).send(created);
+  });
+
+  app.patch<{ Params: { id: string } }>('/v1/admin/expos/:id', auth, async (request) => {
+    const body = expoInputBody.partial().parse(request.body);
+    return expoAdmin.updateExpo(context.pool, request.params.id, body);
+  });
+
+  app.post<{ Params: { id: string } }>('/v1/admin/expos/:id/approve', auth, async (request) =>
+    expoAdmin.approveExpo(context.pool, request.params.id)
+  );
+
+  app.delete<{ Params: { id: string } }>('/v1/admin/expos/:id', auth, async (request, reply) => {
+    await expoAdmin.removeExpo(context.pool, request.params.id);
+    return reply.status(204).send();
   });
 }

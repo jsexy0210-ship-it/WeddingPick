@@ -1,4 +1,4 @@
-import { AdminAccountActions } from './_ui';
+import { Redirect } from 'expo-router';
 /**
  * WP-ADM-050 시스템 · AI 사용량 · 비용
  * 모델별 호출 · 단가 · 성공률 · 상위 모델 전환율 · 사용자 수정률 · 처리시간
@@ -9,6 +9,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { formatCount } from '@weddingpick/domain';
 
 type ModelStat = {
   model: string;
@@ -29,7 +30,7 @@ type AiUsageData = {
   models: ModelStat[];
 };
 
-export default function AiUsageScreen() {
+export function AiUsagePanel() {
   const [data, setData] = useState<AiUsageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,11 +63,10 @@ export default function AiUsageScreen() {
           <View style={styles.headerCosts}>
             <Text style={styles.costText}>오늘 {data.totalCostToday}</Text>
             <Text style={styles.costText}>이달 {data.totalCostMonth}</Text>
-            <AdminAccountActions />
-      </View>
+          </View>
         )}
         <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
-          <Text style={styles.refreshText}>새로고침</Text>
+          <Text style={styles.refreshText}>새로 고침</Text>
         </Pressable>
       </View>
 
@@ -97,11 +97,11 @@ export default function AiUsageScreen() {
                 <Text style={styles.modelName} numberOfLines={1}>{m.model}</Text>
                 <Text style={styles.providerName}>{m.provider}</Text>
               </View>
-              <Text style={[styles.td, styles.colCalls]}>{m.callCount.toLocaleString()}</Text>
+              <Text style={[styles.td, styles.colCalls]}>{formatCount(m.callCount)}</Text>
               <Text style={[styles.td, styles.colSuccess, m.successRate < 0.95 && { color: Colors.light.negative }]}>
                 {(m.successRate * 100).toFixed(1)}%
               </Text>
-              <Text style={[styles.td, styles.colLatency]}>{m.avgLatencyMs.toLocaleString()}</Text>
+              <Text style={[styles.td, styles.colLatency]}>{formatCount(m.avgLatencyMs)}</Text>
               <Text style={[styles.td, styles.colEdit, m.userEditRate > 0.3 && { color: Colors.light.cautionary }]}>
                 {(m.userEditRate * 100).toFixed(1)}%
               </Text>
@@ -167,3 +167,11 @@ const styles = StyleSheet.create({
   colCost: { width: 72, textAlign: 'right' as const },
   colUnit: { width: 64, textAlign: 'right' as const },
 });
+
+/**
+ * 옛 주소는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제 화면은 `/admin/stats`(통계·수익)의 분석 비용 탭에 있다 —
+ * `AiUsagePanel`이 이 파일의 본체다.
+ */
+export default function AiUsageRedirect() {
+  return <Redirect href="/admin/stats?tab=ai-usage" />;
+}

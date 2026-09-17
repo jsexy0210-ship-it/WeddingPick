@@ -1,3 +1,4 @@
+import { Redirect } from 'expo-router';
 /**
  * WP-ADM-042 변경 복구 관리
  *
@@ -11,6 +12,8 @@
  * 실행은 `ConfirmCard`로 무엇이 바뀌는지 보여준 뒤 진행한다.
  */
 import { useEffect, useState } from 'react';
+
+import { formatCount } from '@weddingpick/domain';
 
 import { formatDateTimeDot } from '@/features/common/format-date';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
@@ -89,7 +92,7 @@ function revertable(item: RollbackItem) {
   return item.autoRollbackEnabled && !item.requiresApproval;
 }
 
-export default function RollbackScreen() {
+export function RollbackPanel() {
   const [data, setData] = useState<RollbackData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -164,15 +167,15 @@ export default function RollbackScreen() {
       busy
         ? { v: '…', kind: 'dim' }
         : item.status === 'pending_approval'
-          ? { v: '복구 승인', kind: 'brand', onPress: () => void act(item.id, 'approve') }
+          ? { v: '롤백 승인', kind: 'brand', onPress: () => void act(item.id, 'approve') }
           : item.status === 'anomaly_detected'
-            ? { v: '복구 실행', kind: 'bad', onPress: () => setTriggering(item) }
+            ? { v: '롤백 실행', kind: 'bad', onPress: () => setTriggering(item) }
             : { v: '—', kind: 'dim' },
     ],
   }));
 
   return (
-    <Page title="변경 복구 관리" sub={`되돌릴 수 있는 자동 결정 · ${RETENTION_DAYS}일 보관`}>
+    <Page embedded title="변경 복구 관리" sub={`되돌릴 수 있는 자동 결정 · ${RETENTION_DAYS}일 보관`}>
       <DelayedLoader active={loading} size={40} />
       {!loading && error ? <LoadError message={error} onRetry={reload} /> : null}
 
@@ -185,7 +188,7 @@ export default function RollbackScreen() {
                 ? '조치하지 못했어요'
                 : needsPerson === 0
                 ? '사람이 되돌려야 하는 건은 없어요'
-                : `사람이 볼 변경 ${needsPerson}건이 있어요`
+                : `사람이 볼 변경 ${formatCount(needsPerson)}건이 있어요`
             }
             detail={
               actionError
@@ -199,11 +202,11 @@ export default function RollbackScreen() {
 
           <KpiRow
             items={[
-              { label: '되돌릴 수 있는 건', value: `${canRevert}건`, note: `최근 ${RETENTION_DAYS}일` },
-              { label: '복구됨', value: `${recovered}건`, note: '이미 이전 상태로 돌아갔어요', kind: 'ok' },
+              { label: '되돌릴 수 있는 건', value: `${formatCount(canRevert)}건`, note: `최근 ${RETENTION_DAYS}일` },
+              { label: '복구됨', value: `${formatCount(recovered)}건`, note: '이미 이전 상태로 돌아갔어요', kind: 'ok' },
               {
                 label: '사람 확인',
-                value: `${needsPerson}건`,
+                value: `${formatCount(needsPerson)}건`,
                 note: needsPerson === 0 ? '확인할 것이 없어요' : '이상 감지 · 승인 대기',
                 kind: needsPerson === 0 ? 'ok' : 'bad',
               },
@@ -225,7 +228,7 @@ export default function RollbackScreen() {
           {/* 무엇이 바뀌는지 항목으로 보인 뒤 진행한다(v3.27). */}
           {triggering ? (
             <ConfirmCard
-              title="이전 상태로 복구할까요?"
+              title="롤백을 실행할까요?"
               body={`${triggering.name}을(를) 적용 직전 상태로 되돌려요.`}
               items={[
                 triggering.type === 'policy'
@@ -237,7 +240,7 @@ export default function RollbackScreen() {
                 '되돌린 뒤에는 이 화면에서 다시 앞으로 감을 수 없어요',
                 '누가 언제 실행했는지 감사 기록에 남아요',
               ]}
-              cta="복구 실행"
+              cta="롤백 실행"
               danger
               onConfirm={() => void act(triggering.id, 'trigger')}
               onCancel={() => setTriggering(null)}
@@ -247,4 +250,12 @@ export default function RollbackScreen() {
       ) : null}
     </Page>
   );
+}
+
+/**
+ * 옛 주소는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제 화면은 `/admin/automation`(자동화)의 변경 복구 탭에 있다 —
+ * `RollbackPanel`이 이 파일의 본체다.
+ */
+export default function RollbackRedirect() {
+  return <Redirect href="/admin/automation?tab=rollback" />;
 }

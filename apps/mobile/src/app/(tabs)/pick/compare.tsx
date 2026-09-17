@@ -1,5 +1,10 @@
 import type { CandidateListResponse } from '@weddingpick/api-contract';
-import { TERMS, VENDOR_CATEGORY_LABEL, type VendorCategory } from '@weddingpick/domain';
+import {
+  MAX_COMPARED_VENDORS,
+  TERMS,
+  VENDOR_CATEGORY_LABEL,
+  type VendorCategory,
+} from '@weddingpick/domain';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -24,13 +29,13 @@ import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
  * 비교 후보 선택 · WP-CMP-001 · WP-SHT-004. 시안 17-sheets-states.dc.html SHT-004.
  *
  *   시트   공용 SheetPanel(그래버 40×4 · padding 12 24 28 · gap 20)
- *   제목   24 «비교할 곳을 골라주세요» · 본문 16 «같은 업종에서 2~3곳까지»
+ *   제목   24 «비교할 곳을 골라주세요» · 본문 16 «같은 업종에서 2~5곳까지»
  *   행     56 · 이름 18 · «지역 · 업종» 14 · 체크 24 원 — 고정(A)은 코랄 A 칩 · 해제 불가
  *   CTA    52 coral «N곳 비교» — 2~3곳일 때만 산다
  *
  * 비교 화면은 WP-CMP-002 하나이고, 진입에 따라 **후보 초기값**만 다르다(SPEC §13.11).
  *
- *   Pick 탭에서    그 업종의 내 후보만 · 아무것도 체크되지 않은 채 2~3곳을 고른다
+ *   Pick 탭에서    그 업종의 내 후보만 · 아무것도 체크되지 않은 채 2~5곳을 고른다
  *   업체 상세에서  `fixed`(vendorId)를 A로 고정 · 맨 앞 · 해제 불가 · B·C는 같은 업종 후보
  *
  * 고정 업체가 내 후보에 없어도 비교는 된다 — 업체 상세에서 온 사람은 그 업체를 견주고 싶은
@@ -38,7 +43,13 @@ import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
  * (`/search/compare?ids=…`) 안에서는 교체하지 않는다.
  */
 
-const MAX_COMPARE = 3;
+/**
+ * **숫자를 여기 적지 않는다.** 서버가 막는 값과 화면이 막는 값이 같아야 한다 —
+ * 전에는 여기 `3`이 적혀 있었고, 도메인 값이 다섯으로 오른 뒤에도 화면은 넷째부터
+ * 체크를 받지 않았다. 서버는 받아주는데 화면이 막는 상태는 사용자에게 고장으로
+ * 보인다.
+ */
+const MAX_COMPARE = MAX_COMPARED_VENDORS;
 const MIN_COMPARE = 2;
 
 /** 문구. spec/strings.ko.json compare.selectTitle · screens.json WP-SHT-004 */
@@ -159,11 +170,10 @@ export default function PickCompareScreen() {
   );
 
   /* 시트를 닫는 것은 «연 자리로 되돌아가기»라 History Back이다. 되돌아갈 곳이 없을 때만
-     Depth Back 규칙이 한 단계 위(Pick 탭)로 내려놓는다. */
+     Depth Back 규칙이 한 단계 위(Pick 탭)로 내려놓는다 — `depthBack`이 이미 그 순서다. */
   function dismiss() {
     setVisible(false);
-    if (router.canGoBack()) router.back();
-    else depthBack();
+    depthBack();
   }
 
   if (error) {

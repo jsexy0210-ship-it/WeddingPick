@@ -4,7 +4,7 @@ import type {
   Quote,
   QuoteDocument,
 } from '@weddingpick/api-contract';
-import { ANALYSIS_DISCLAIMER, PRICE_JUDGEMENT_LABEL, needsAttention } from '@weddingpick/domain';
+import { ANALYSIS_DISCLAIMER, formatCount, PRICE_JUDGEMENT_LABEL, needsAttention } from '@weddingpick/domain';
 import { formatDateDot } from '@/features/common/format-date';
 import { ScrollView, StyleSheet, type ViewStyle } from 'react-native';
 
@@ -175,7 +175,7 @@ export function QuoteResultView({
         {quote.guaranteedGuests !== null || quote.mealPricePerPerson !== null ? (
           <ThemedText type="small" themeColor="textSecondary">
             {[
-              quote.guaranteedGuests !== null && `보증인원 ${quote.guaranteedGuests}명`,
+              quote.guaranteedGuests !== null && `보증인원 ${formatCount(quote.guaranteedGuests)}명`,
               quote.mealPricePerPerson !== null &&
                 `1인 식대 ${won(quote.mealPricePerPerson)}`,
             ]
@@ -270,7 +270,7 @@ export function QuoteResultView({
                 </ThemedText>
                 {/* 사업계획서 9번: 실 제보 건수와 기준 기간을 늘 함께 보인다. */}
                 <ThemedText type="small" themeColor="textSecondary">
-                  인증된 계약 {comparison.stat.sampleCount}건 · {comparison.stat.periodStart}~
+                  인증된 계약 {formatCount(comparison.stat.sampleCount)}건 · {comparison.stat.periodStart}~
                   {comparison.stat.periodEnd}
                 </ThemedText>
               </>

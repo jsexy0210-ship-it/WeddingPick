@@ -1,17 +1,29 @@
 /**
- * WP-ADM-040 자동화 상태
+ * WP-ADM-040 자동화 상태 — 이제 「자동화」 화면의 탭 하나(처리 상태)다.
  *
  * 시안 `22-admin-ops.dc.html` 7번. 돌고 있어야 할 작업이 실제로 돌았는지 본다.
  * ADMIN.md — **정상이면 전부 회색**이고, 지연이나 실패가 있을 때만 색이 바뀐다.
  *
  * 서버(`/v1/admin/automation`)가 `structured.decisions`를 세어 워크플로별 상태를 준다.
  * 등록된 워크플로가 없으면 목록이 비어 오고, 그때는 빈 상태를 그린다 — 빈 목록이 실패가 아니다.
+ *
+ * **2026-09-15 대표 확정(재확정) — 「자동화」 화면의 탭 다섯 중 하나다**(처리 상태 ·
+ * 처리 내역 · 정책 규칙 · 긴급 중지 · 변경 복구). 처음엔 처리 상태·처리 내역만
+ * 위아래로 붙였는데, 대표님이 「비슷한 유형끼리 탭으로 묶어도 된다」고 넓히시면서
+ * 자동화 계열 다섯을 한 화면 탭으로 다시 묶었다 — 이 파일 맨 아래 `AutomationShell`이
+ * 그 껍데기고, 여기 있던 본문은 `AutomationPanel`로 이름만 바꿨다.
  */
 import { useEffect, useState } from 'react';
+import { useLocalSearchParams } from 'expo-router';
 
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { DecisionsPanel } from './decisions';
+import { PolicyEnginePanel } from './policy-engine';
+import { KillSwitchPanel } from './kill-switch';
+import { RollbackPanel } from './rollback';
 import {
+  AdminTabShell,
   Card,
   CardGrid,
   ConfirmCard,
@@ -20,10 +32,12 @@ import {
   LoadError,
   Page,
   StatusBanner,
+  type AdminTabDef,
   type Col,
   type Kind,
   type TableRow,
 } from './_ui';
+import { formatCount } from '@weddingpick/domain';
 
 type WorkflowStatus = 'healthy' | 'degraded' | 'down' | 'recovering';
 type Workflow = {
@@ -70,7 +84,7 @@ const COLS: Col[] = [
   { key: 'drain', label: '처리 못한 건 비우기', width: 150 },
 ];
 
-export default function AutomationScreen() {
+function AutomationPanel() {
   const [data, setData] = useState<AutomationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -129,10 +143,10 @@ export default function AutomationScreen() {
     key: w.id,
     cells: [
       { v: w.name, bold: true, kind: 'none' },
-      { v: `${w.execToday.toLocaleString()}회` },
+      { v: `${formatCount(w.execToday)}회` },
       { v: `${(w.successRate * 100).toFixed(1)}%`, kind: w.successRate < 0.9 ? 'bad' : 'none' },
-      { v: `${w.retryCount}회`, kind: w.retryCount > 0 ? 'warn' : 'dim' },
-      { v: `${w.dlqSize}건`, kind: w.dlqSize > 0 ? 'bad' : 'dim' },
+      { v: `${formatCount(w.retryCount)}회`, kind: w.retryCount > 0 ? 'warn' : 'dim' },
+      { v: `${formatCount(w.dlqSize)}건`, kind: w.dlqSize > 0 ? 'bad' : 'dim' },
       {
         v: w.lastRecoveredAt
           ? `${w.lastRecoveredAt.slice(0, 10)}${w.selfHealEnabled ? ' · 자동복구 켜짐' : ' · 자동복구 꺼짐'}`
@@ -157,13 +171,14 @@ export default function AutomationScreen() {
 
   return (
     <Page
+      embedded
       title="처리 상태"
       sub={
         workflows.length > 0
-          ? `주기 작업 ${workflows.length}개 · 마지막 실행과 결과`
+          ? `주기 작업 ${formatCount(workflows.length)}개 · 마지막 실행과 결과`
           : '주기 작업 · 마지막 실행과 결과'
       }
-      action={{ label: '새로고침', onPress: reload, permission: 'view' }}
+      action={{ label: '새로 고침', onPress: reload }}
     >
       <DelayedLoader active={loading} size={40} />
       {!loading && error ? <LoadError message={error} onRetry={reload} /> : null}
@@ -178,7 +193,7 @@ export default function AutomationScreen() {
                 : workflows.length === 0
                 ? '지켜볼 작업이 아직 없어요'
                 : allWell
-                  ? `${workflows.length}개 작업이 모두 정상이에요`
+                  ? `${formatCount(workflows.length)}개 작업이 모두 정상이에요`
                   : down > 0
                     ? `중단된 작업 ${down}개가 있어요`
                     : `저하된 작업 ${degraded}개가 있어요`
@@ -197,12 +212,12 @@ export default function AutomationScreen() {
 
           <KpiRow
             items={[
-              { label: '정상', value: `${healthy}개`, note: `전체 ${workflows.length}개`, kind: 'ok' },
-              { label: '저하', value: `${degraded}개`, note: degraded === 0 ? '기준 초과 없음' : '확인 필요', kind: degraded === 0 ? 'ok' : 'warn' },
-              { label: '중단', value: `${down}개`, note: down === 0 ? '멈춘 것이 없어요' : '조치 필요', kind: down === 0 ? 'ok' : 'bad' },
+              { label: '정상', value: `${formatCount(healthy)}개`, note: `전체 ${formatCount(workflows.length)}개`, kind: 'ok' },
+              { label: '저하', value: `${formatCount(degraded)}개`, note: degraded === 0 ? '기준 초과 없음' : '확인 필요', kind: degraded === 0 ? 'ok' : 'warn' },
+              { label: '중단', value: `${formatCount(down)}개`, note: down === 0 ? '멈춘 것이 없어요' : '조치 필요', kind: down === 0 ? 'ok' : 'bad' },
               {
                 label: '처리 못한 건',
-                value: `${workflows.reduce((sum, w) => sum + w.dlqSize, 0)}건`,
+                value: `${formatCount(workflows.reduce((sum, w) => sum + w.dlqSize, 0))}건`,
                 note: '재시도까지 실패한 것',
               },
             ]}
@@ -241,5 +256,37 @@ export default function AutomationScreen() {
         </>
       ) : null}
     </Page>
+  );
+}
+
+const TABS: AdminTabDef[] = [
+  { key: 'automation', label: '처리 상태' },
+  { key: 'decisions', label: '처리 내역' },
+  { key: 'policy-engine', label: '정책 규칙' },
+  { key: 'kill-switch', label: '긴급 중지', danger: true },
+  { key: 'rollback', label: '변경 복구', danger: true },
+];
+
+/**
+ * 「자동화」 — 처리 상태 · 처리 내역 · 정책 규칙 · 긴급 중지 · 변경 복구를 탭 다섯으로
+ * 묶는다. **긴급 중지 · 변경 복구는 위험한 조작이라 탭 자체가 다른 색이다**
+ * (2026-09-15 대표 지시 — 「옆 탭 누르다 스친다」). 안에서 하는 조작은 그대로
+ * 「무엇이 바뀌는지 보여준 뒤 한 번 더 확인」이다(각 패널이 이미 그렇게 돼 있다) —
+ * 탭 색은 누르기 전에 «이 탭은 다르다»를 먼저 말해 주는 것이지, 안의 확인 절차를
+ * 대신하는 것이 아니다.
+ */
+export default function AutomationShell() {
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
+  const initial = TABS.some((t) => t.key === tab) ? (tab as string) : 'automation';
+  const [active, setActive] = useState(initial);
+
+  return (
+    <AdminTabShell tabs={TABS} active={active} onChange={setActive}>
+      {active === 'automation' && <AutomationPanel />}
+      {active === 'decisions' && <DecisionsPanel />}
+      {active === 'policy-engine' && <PolicyEnginePanel />}
+      {active === 'kill-switch' && <KillSwitchPanel />}
+      {active === 'rollback' && <RollbackPanel />}
+    </AdminTabShell>
   );
 }

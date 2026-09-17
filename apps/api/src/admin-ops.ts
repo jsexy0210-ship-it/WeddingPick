@@ -762,7 +762,7 @@ const DOC_LABEL: Record<DocType, string> = {
  */
 export const isDocType = (value: string): value is DocType => Object.hasOwn(DOC_LABEL, value);
 
-export type TermsClause = { id: string; articleNumber: string; title: string; body: string; sourcePath: string[] | null };
+export type TermsClause = { id: string; articleNumber: string; title: string; body: string };
 export type TermsVersion = { version: string; publishedAt: string | null; isDraft: boolean };
 export type TermsDoc = {
   type: DocType;
@@ -795,9 +795,8 @@ export async function termsDocuments(db: Queryable): Promise<{ documents: TermsD
     article_number: string;
     title: string;
     body: string;
-    source_path: string[] | null;
   }>(
-    `SELECT id, version_id, article_number, title, body, source_path
+    `SELECT id, version_id, article_number, title, body
      FROM structured.terms_clauses
      ORDER BY version_id, position`
   );
@@ -834,7 +833,6 @@ export async function termsDocuments(db: Queryable): Promise<{ documents: TermsD
               articleNumber: c.article_number,
               title: c.title,
               body: c.body,
-              sourcePath: c.source_path,
             }))
         : [],
     };
@@ -911,8 +909,8 @@ export async function publishTerms(
   reason: string | undefined
 ): Promise<{ version: string; nextDraft: string }> {
   return withTransaction(pool, async (client) => {
-    const { rows } = await client.query<{ id: string; version: string; document_snapshot: unknown }>(
-      `SELECT id, version, document_snapshot FROM structured.terms_versions
+    const { rows } = await client.query<{ id: string; version: string }>(
+      `SELECT id, version FROM structured.terms_versions
        WHERE doc = $1::terms_doc_kind AND published_at IS NULL
        FOR UPDATE`,
       [doc]
@@ -920,8 +918,6 @@ export async function publishTerms(
 
     const draft = rows[0];
     if (!draft) throw new ApiError('invalid_request', '공개할 초안이 없습니다.');
-    const contents = await client.query('SELECT id FROM structured.terms_clauses WHERE version_id=$1 LIMIT 1', [draft.id]);
-    if (!contents.rows[0]) throw new ApiError('invalid_request', '조문을 등록한 뒤 공개해주세요.');
 
     await client.query(
       `UPDATE structured.terms_versions
@@ -933,15 +929,15 @@ export async function publishTerms(
     const nextDraft = nextVersion(draft.version);
 
     const { rows: created } = await client.query<{ id: string }>(
-      `INSERT INTO structured.terms_versions (doc, version, document_snapshot)
-       VALUES ($1::terms_doc_kind, $2, $3)
+      `INSERT INTO structured.terms_versions (doc, version)
+       VALUES ($1::terms_doc_kind, $2)
        RETURNING id`,
-      [doc, nextDraft, JSON.stringify(draft.document_snapshot)]
+      [doc, nextDraft]
     );
 
     await client.query(
-      `INSERT INTO structured.terms_clauses (version_id, article_number, title, body, position, source_path)
-       SELECT $2::uuid, article_number, title, body, position, source_path
+      `INSERT INTO structured.terms_clauses (version_id, article_number, title, body, position)
+       SELECT $2::uuid, article_number, title, body, position
        FROM structured.terms_clauses
        WHERE version_id = $1::uuid`,
       [draft.id, created[0]!.id]
@@ -980,10 +976,6 @@ export type AdStatus = 'active' | 'paused' | 'expired' | 'pending';
 
 export type AdItem = {
   id: string;
-  vendorId: string;
-  surface: string;
-  category: string | null;
-  region: string | null;
   vendorName: string;
   plan: 'LIGHT' | 'STANDARD' | 'PREMIUM';
   slot: string;
@@ -1016,9 +1008,6 @@ const SURFACE_LABEL: Record<string, string> = {
 export async function adPlacements(db: Queryable): Promise<{ items: AdItem[]; totalRevenue: string }> {
   const { rows } = await db.query<{
     id: string;
-    vendor_id: string;
-    category: string | null;
-    region: string | null;
     vendor_name: string;
     tier: 'light' | 'standard' | 'premium';
     surface: string;
@@ -1026,7 +1015,7 @@ export async function adPlacements(db: Queryable): Promise<{ items: AdItem[]; to
     ends_on: Date;
     paused_at: Date | null;
   }>(
-    `SELECT p.id, p.vendor_id, p.category::text, p.region, v.name AS vendor_name, p.tier, p.surface,
+    `SELECT p.id, v.name AS vendor_name, p.tier, p.surface,
             p.starts_on, p.ends_on, p.paused_at
      FROM ads.placements p
      JOIN structured.vendors v ON v.id = p.vendor_id
@@ -1052,10 +1041,6 @@ export async function adPlacements(db: Queryable): Promise<{ items: AdItem[]; to
 
     return {
       id: row.id,
-      vendorId: row.vendor_id,
-      surface: row.surface,
-      category: row.category,
-      region: row.region,
       vendorName: row.vendor_name,
       plan: row.tier.toUpperCase() as AdItem['plan'],
       slot: SURFACE_LABEL[row.surface] ?? row.surface,

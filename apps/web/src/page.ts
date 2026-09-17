@@ -15,6 +15,7 @@ import {
 } from '@weddingpick/domain';
 
 import { BRAND, CONTACT_EMAIL, LEAD, STEPS } from './content';
+import { fontPreloadTag } from './fonts';
 
 /** 본문에 들어가는 모든 값은 이걸 거친다. 도메인에서 온 문자열도 예외가 아니다. */
 export function escapeHtml(value: string): string {
@@ -171,6 +172,7 @@ export function renderLandingPage(styles: string): string {
 <title>${escapeHtml(title)}</title>
 <meta name="description" content="${escapeHtml(BRAND.description)}">
 ${socialMeta("/about.html", title, BRAND.description)}
+${fontPreloadTag()}
 <style>${styles}</style>
 </head>
 <body>

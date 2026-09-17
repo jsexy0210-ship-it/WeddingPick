@@ -1,8 +1,8 @@
-import { personalInfoLabel } from '@weddingpick/domain';
-import { useAdminAccess, AdminAccountActions } from './_ui';
+import { Redirect } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { formatCount } from '@weddingpick/domain';
 import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { formatDateTimeDot } from '@/features/common/format-date';
@@ -16,6 +16,9 @@ import { apiFetch } from './_api';
  * 통일하면서). 옮기며 하나 고쳤다 — 예전에는 지울 항목의 «필드명»과 «종류»를 사람이
  * 손으로 타이핑했다. 서버가 `hints`로 그 둘을 이미 알려주므로 **누르기만 하면 되게** 했다.
  * 손으로 적으면 오타 하나에 엉뚱한 자리가 지워지거나 아무 일도 안 일어난다.
+ *
+ * **2026-09-15 대표 확정 — 「확인 필요」 화면의 탭 하나로 묶였다**(탭 셋). 이 파일의
+ * 본체는 `PiiReviewsPanel`로 옮기고 `queue.tsx`가 탭으로 골라 그린다.
  */
 type PendingReview = {
   id: string;
@@ -35,8 +38,7 @@ type ReviewDetail = {
   reviewStatus: string;
 };
 
-export default function PiiReviewsScreen() {
-  const { canEdit } = useAdminAccess();
+export function PiiReviewsPanel() {
   const [items, setItems] = useState<PendingReview[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -126,9 +128,8 @@ export default function PiiReviewsScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>개인정보 검토</Text>
         <Pressable style={styles.refreshBtn} onPress={reload}>
-          <Text style={styles.refreshText}>새로고침</Text>
+          <Text style={styles.refreshText}>새로 고침</Text>
         </Pressable>
-        <AdminAccountActions />
       </View>
 
       <View style={styles.body}>
@@ -155,9 +156,9 @@ export default function PiiReviewsScreen() {
                     {item.id.slice(0, 8)}…
                   </Text>
                   <Text style={[styles.td, styles.colKinds]} numberOfLines={1}>
-                    {item.detectedKinds.map(personalInfoLabel).join(' · ') || '—'}
+                    {item.detectedKinds.join(' · ') || '—'}
                   </Text>
-                  <Text style={[styles.td, styles.colCount]}>{item.hintCount}곳</Text>
+                  <Text style={[styles.td, styles.colCount]}>{formatCount(item.hintCount)}곳</Text>
                   <Text style={[styles.td, styles.colDate]}>{formatDateTimeDot(item.createdAt)}</Text>
                 </Pressable>
               ))}
@@ -202,12 +203,12 @@ export default function PiiReviewsScreen() {
                 return (
                   <Pressable
                     key={key}
-                    disabled={!canEdit || done || acting}
+                    disabled={done || acting}
                     style={[styles.hintRow, done && styles.hintRowDone]}
                     onPress={() => void redact(hint)}>
                     <View style={styles.hintTexts}>
                       <Text style={styles.hintField}>{hint.field}</Text>
-                      <Text style={styles.hintKind}>{personalInfoLabel(hint.kind)}</Text>
+                      <Text style={styles.hintKind}>{hint.kind}</Text>
                     </View>
                     <Text style={[styles.hintAction, done && styles.hintActionDone]}>
                       {done ? '지웠어요' : '지우기'}
@@ -227,13 +228,13 @@ export default function PiiReviewsScreen() {
               {actionError && <Text style={styles.actionErrorText}>{actionError}</Text>}
 
               <Pressable
-                disabled={!canEdit || acting}
+                disabled={acting}
                 style={[styles.cleanBtn, acting && styles.btnDisabled]}
                 onPress={() => void markClean()}>
                 <Text style={styles.cleanBtnText}>개인정보 없음으로 마치기</Text>
               </Pressable>
               <Text style={styles.detailHint}>
-                지울 것이 없다고 판단하면 여기서 검토를 끝냅니다. 대기 목록에서 빠져요.
+                지울 것이 없다고 판단하면 여기서 검토를 끝냅니다. 큐에서 사라져요.
               </Text>
             </ScrollView>
           )}
@@ -321,3 +322,12 @@ const styles = StyleSheet.create({
   cleanBtnText: { color: Colors.light.background, fontSize: FontSize.t7, fontWeight: '700' },
   btnDisabled: { opacity: 0.5 },
 });
+
+/**
+ * 옛 주소(`/admin/pii-reviews`)는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제
+ * 화면은 `/admin/queue`(확인 필요)의 개인정보 검토 탭에 있다 — `PiiReviewsPanel`이
+ * 이 파일의 본체다.
+ */
+export default function PiiReviewsRedirect() {
+  return <Redirect href="/admin/queue?tab=pii-reviews" />;
+}

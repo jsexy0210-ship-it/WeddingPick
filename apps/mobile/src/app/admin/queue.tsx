@@ -1,10 +1,21 @@
-import { useAdminAccess, AdminAccountActions } from './_ui';
+/**
+ * WP-ADM-021 확인 필요 — 실 제보 인증 심사 큐.
+ *
+ * **2026-09-15 대표 확정 — 「확인 필요」 화면의 탭 셋 중 하나(확인 필요 자신)다**
+ * (확인 필요 · 제보 처리 · 개인정보 검토). 매일 들어오는 셋을 한 화면 탭으로
+ * 묶었다 — 이 파일 맨 아래 `QueueShell`이 그 껍데기고, 여기 있던 본문은
+ * `QueuePanel`로 이름만 바꿨다.
+ */
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Colors, FontSize } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { AdminTabShell, type AdminTabDef } from './_ui';
+import { DataPipelinePanel } from './data-pipeline';
+import { PiiReviewsPanel } from './pii-reviews';
 import { ConfirmDecision } from '@/features/admin/confirm-decision';
 import { verificationDecisionRequest, type VerificationAction } from '@/features/admin/review-decision';
 import { formatDateDot, formatDateTimeDot } from '@/features/common/format-date';
@@ -22,15 +33,14 @@ type PendingVerification = {
 
 const STATUS_LABEL: Record<VerificationStatus, string> = {
   received: '접수',
-  in_review: '심사 중',
-  needs_supplement: '보완 요청',
+  in_review: '심사중',
+  needs_supplement: '보완요청',
   approved: '승인',
   rejected: '반려',
 };
 
 
-export default function QueueScreen() {
-  const { canEdit } = useAdminAccess();
+function QueuePanel() {
   const [items, setItems] = useState<PendingVerification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -114,11 +124,10 @@ export default function QueueScreen() {
   return (
     <View style={styles.root}>
       <View style={styles.header}>
-        <Text style={styles.title}>승인대기</Text>
+        <Text style={styles.title}>확인 필요 큐</Text>
         <Pressable style={styles.refreshBtn} onPress={reload}>
-          <Text style={styles.refreshText}>새로고침</Text>
+          <Text style={styles.refreshText}>새로 고침</Text>
         </Pressable>
-        <AdminAccountActions />
       </View>
 
       <View style={styles.body}>
@@ -217,14 +226,14 @@ export default function QueueScreen() {
                   <Pressable
                     style={[styles.approveBtn, acting && styles.btnDisabled]}
                     onPress={() => ask('approve')}
-                    disabled={!canEdit || acting}
+                    disabled={acting}
                   >
                     <Text style={styles.approveBtnText}>승인</Text>
                   </Pressable>
                   <Pressable
                     style={[styles.rejectBtn, acting && styles.btnDisabled]}
                     onPress={() => ask('reject')}
-                    disabled={!canEdit || acting}
+                    disabled={acting}
                   >
                     <Text style={styles.rejectBtnText}>반려</Text>
                   </Pressable>
@@ -241,12 +250,12 @@ export default function QueueScreen() {
                       ? [
                           `문서 등급이 ${selected.targetLevel}이 되고, 가격 비교에 쓰입니다.`,
                           '신청한 사람에게 확인이 끝났다는 알림이 갑니다.',
-                          '대기 목록에서 빠지고 되돌릴 수 없어요.',
+                          '큐에서 빠지고 되돌릴 수 없어요.',
                         ]
                       : [
                           '이 신청은 반려로 끝납니다.',
                           '적은 사유가 신청한 사람에게 그대로 전달돼요.',
-                          '대기 목록에서 빠지고 되돌릴 수 없어요.',
+                          '큐에서 빠지고 되돌릴 수 없어요.',
                         ]
                   }
                   confirmLabel={pending === 'approve' ? '승인' : '반려'}
@@ -261,6 +270,31 @@ export default function QueueScreen() {
         </View>
       </View>
     </View>
+  );
+}
+
+const TABS: AdminTabDef[] = [
+  { key: 'queue', label: '확인 필요' },
+  { key: 'data-pipeline', label: '제보 처리' },
+  { key: 'pii-reviews', label: '개인정보 검토' },
+];
+
+/**
+ * 「확인 필요」 — 확인 필요 · 제보 처리 · 개인정보 검토를 탭 셋으로 묶는다. 매일
+ * 들어오는 화면들이라 자주 여는 순으로 왼쪽에 둔다. 각 패널은 원래 화면 그대로
+ * 두고 `AdminTabShell`만 위에 얹는다.
+ */
+export default function QueueShell() {
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
+  const initial = TABS.some((t) => t.key === tab) ? (tab as string) : 'queue';
+  const [active, setActive] = useState(initial);
+
+  return (
+    <AdminTabShell tabs={TABS} active={active} onChange={setActive}>
+      {active === 'queue' && <QueuePanel />}
+      {active === 'data-pipeline' && <DataPipelinePanel />}
+      {active === 'pii-reviews' && <PiiReviewsPanel />}
+    </AdminTabShell>
   );
 }
 

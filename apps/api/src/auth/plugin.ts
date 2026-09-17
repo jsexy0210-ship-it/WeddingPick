@@ -3,8 +3,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import type { AppContext } from '../context';
 import { ApiError, forbidden, unauthenticated } from '../errors';
-import { type AdminRole, type ResolvedAdmin, resolveAdmin } from './admin-role';
-import { assertAdminAction } from './admin-action';
+import { type AdminRole, canWrite, resolveAdmin } from './admin-role';
 import { resolveSession } from './sessions';
 
 declare module 'fastify' {
@@ -14,7 +13,6 @@ declare module 'fastify' {
     userActivated?: boolean;
     /** 관리자 콘솔 등급. `requireOperatorUser`를 단 라우트에서만 있다. */
     adminRole?: AdminRole;
-    adminAccess?: ResolvedAdmin;
   }
 }
 
@@ -59,6 +57,7 @@ export function requireUser(context: AppContext) {
  * **모르는 메서드는 쓰기로 친다.** 목록에 없는 것을 읽기로 두면, 새 메서드가
  * 생기는 날 뷰어에게 조용히 열린다.
  */
+const READ_METHODS = new Set(['GET', 'HEAD']);
 
 /**
  * 로그인 + 관리자. 관리자 콘솔 라우트 전부가 이걸 쓴다.
@@ -88,9 +87,13 @@ export function requireOperatorUser(context: AppContext) {
   return async function (request: FastifyRequest, _reply: FastifyReply): Promise<void> {
     const admin = await readAdmin(context, request);
 
-    const route = request.routeOptions.url;
-    if (!route) throw forbidden();
-    assertAdminAction(admin, request.method, route, request.body);
+    if (!READ_METHODS.has(request.method) && !canWrite(admin.role)) {
+      /*
+       * 무엇이 부족한지 말해 준다. 「접근 권한이 없습니다」만 돌려주면 뷰어는
+       * 자기 토큰이 만료된 줄 알고 다시 로그인한다 — 다시 로그인해도 같다.
+       */
+      throw new ApiError('forbidden', '이 계정은 읽기 전용이에요. 변경은 운영 권한이 있어야 해요.');
+    }
   };
 }
 
@@ -115,7 +118,7 @@ export function requireSuperAdmin(context: AppContext) {
 async function readAdmin(
   context: AppContext,
   request: FastifyRequest
-): Promise<ResolvedAdmin> {
+): Promise<{ role: AdminRole }> {
   const user = await readSession(context, request);
 
   if (!user) {
@@ -135,7 +138,6 @@ async function readAdmin(
   request.userId = user.userId;
   request.userActivated = true;
   request.adminRole = admin.role;
-  request.adminAccess = admin;
 
   return admin;
 }

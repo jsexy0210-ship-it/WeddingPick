@@ -30,6 +30,12 @@ const vendor = (id, name, category, region, opts = {}) => ({
   paidPrice: opts.paidPrice ?? { stage: 'collecting', count: 0, caption: '수집 중' },
   styleTags: opts.styleTags ?? [],
   guidePrice: opts.guideFrom ? { fromKrw: opts.guideFrom, sourceLabel: '업체 안내' } : null,
+  /*
+   * 별점. **일부러 없는 곳을 섞어 둔다** — 확인된 후기 5건에 못 미치거나 체크리스트
+   * 업종(결정사)이면 null이고, 그때 카드가 별점 줄을 안 그린다. 캡처에서 두 꼴이 같이
+   * 보여야 「없는 카드」의 생김새를 눈으로 확인할 수 있다.
+   */
+  rating: opts.rating ?? null,
 });
 
 /** 실 제보가 충분한 업체. 금액 한 줄이 구간으로 뜬다. */
@@ -47,11 +53,13 @@ const VENDORS = [
     reports: 12,
     paidPrice: disclosed(12, 1_520_000, 1_840_000, 1_680_000),
     styleTags: ['URBAN'],
+    rating: { average: 4.7, count: 18 },
   }),
   vendor('22222222-2222-4222-8222-222222222222', '강남 B 웨딩홀', 'hall', '서울', {
     reports: 5,
     paidPrice: disclosed(5, 1_900_000, 2_400_000),
     styleTags: ['GLAMOROUS'],
+    rating: { average: 4.3, count: 7 },
   }),
   vendor('33333333-3333-4333-8333-333333333333', '분당 C 웨딩홀', 'hall', '경기', {
     reports: 1,
@@ -66,7 +74,78 @@ const VENDORS = [
     reports: 8,
     paidPrice: disclosed(8, 980_000, 1_240_000, 1_100_000),
     styleTags: ['NATURAL'],
+    rating: { average: 4.9, count: 11 },
   }),
+];
+
+/**
+ * WP-VEND-001 업체 상세용 fixture. `VENDORS[0]`(강남 A 웨딩홀)의 id를 그대로 쓴다 —
+ * 검색 결과 카드와 상세가 같은 업체를 가리키게 두는 편이 캡처를 볼 때 헷갈리지 않는다.
+ *
+ * `vendorDetailSchema`는 목록 스키마에서 `paidPrice`를 덜어내고 `prices`·`usageScore`를
+ * 더한 모양이다 — `VENDORS[0]`를 그대로 펼치지 않고 새로 짠다(스칠 정도로 다르다).
+ */
+const VENDOR_DETAIL = {
+  id: VENDORS[0].id,
+  name: VENDORS[0].name,
+  category: VENDORS[0].category,
+  region: VENDORS[0].region,
+  coordinates: null,
+  sourceNote: null,
+  imageUrl: null,
+  comparableQuoteCount: 12,
+  styleTags: ['URBAN'],
+  guidePrice: null,
+  lastVerifiedAt: '2026-08-12',
+  prices: {
+    products: [
+      {
+        productLabel: '스탠다드 패키지',
+        docType: 'contract',
+        stat: {
+          sampleCount: 12,
+          periodStart: '2026-01-01',
+          periodEnd: '2026-08-01',
+          median: 1_680_000,
+          p25: 1_580_000,
+          p75: 1_780_000,
+          p90: 1_840_000,
+          minVerificationLevel: 'L2',
+        },
+      },
+    ],
+    paidPrice: disclosed(12, 1_520_000, 1_840_000, 1_680_000),
+    reportedPrice: { available: false, reason: '아직 문서 없이 적어준 금액이 없어요', count: 0 },
+    deepData: true,
+    deepDataNote: null,
+  },
+  usageScore: {
+    available: true,
+    average: 4.6,
+    count: 18,
+    aspects: [{ key: 'kindness', label: '친절도', average: 4.7 }],
+    checklist: [],
+    caption: null,
+  },
+};
+
+const VENDOR_REVIEWS = [
+  {
+    id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    role: 'contractor',
+    roleLabel: '계약자',
+    overall: 5,
+    title: '만족스러웠어요',
+    body: '상담부터 진행까지 설명이 꼼꼼했어요.',
+    pros: '응대가 빨라요',
+    cons: null,
+    verification: 'contract',
+    verificationLabel: '계약 확인',
+    aspects: [],
+    createdAt: '2026-07-01T00:00:00.000Z',
+    mine: false,
+    rebuttal: null,
+  },
 ];
 
 /**
@@ -100,8 +179,9 @@ const ME = {
   budgetAmount: null,
   setupComplete: true,
   styleTags: ['URBAN'],
-  spouseLinked: false,
-  partnerDisplayName: null,
+  /* Pick 화면 캡처(배지·배너·가격 제보 링크)가 배우자 연결 상태를 필요로 한다. */
+  spouseLinked: true,
+  partnerDisplayName: '준호',
   hasPaymentProof: false,
   hasPick: false,
   hasCompared: false,
@@ -125,13 +205,129 @@ const routes = {
     items: [],
     missingRequired: [],
   },
-  'GET /v1/me': ME,
+  /* `FIXTURE_SETUP_COMPLETE=false`면 온보딩(`/setup`)을 찍을 수 있다 — 그때만 setupComplete가 false다. */
+  'GET /v1/me': () => ({ ...ME, setupComplete: process.env.FIXTURE_SETUP_COMPLETE !== 'false' }),
   'GET /v1/app/bootstrap': {
     member: ME,
     notifications: null,
     popularVendors: VENDORS.slice(0, 2),
     candidates: null,
-    recommendations: [],
+    recommendations: VENDORS.slice(0, 3),
+    /* 히어로 «남은 예산 3,000만원 · 27% 사용». */
+    budget: { total: 41_000_000, spent: 11_000_000, remaining: 30_000_000 },
+    bracketAnswered: true,
+    partnerInvitePending: false,
+  },
+  /**
+   * 자주 묻는 것 — MY 지원 · 문의하기 · 안내 · 질문 상세 넷이 읽는다.
+   *
+   * **2026-09-16부터 서버에서 온다**(대표 지시 — 운영자가 직접 고치고 지운다).
+   * 그전에는 코드에 든 배열이라 가짜 응답이 필요 없었다.
+   *
+   * 답은 **이미 채워진 글**이다 — 서버가 `{{limited}}` 같은 자리를 공개 기준
+   * 건수로 바꿔 내보낸다. 여기에 괄호를 그대로 두면 찍은 화면에 괄호가 나온다.
+   */
+  'GET /v1/faq': {
+    items: [
+      {
+        key: 'price-source',
+        category: '자주 묻는 것',
+        question: '실 제보는 어디서 온 금액인가요',
+        answer:
+          '이용자가 등록한 결제내역에서 읽은 금액이에요. 실 제보가 3건 모이면 구간을 보여드리고, 10건부터 기준금액까지 보여드려요. 그 아래에서는 숫자를 만들지 않고 모으는 중이라고 알려드려요.',
+      },
+      {
+        key: 'why-locked',
+        category: '자주 묻는 것',
+        question: '가격을 보려면 결제내역을 등록해야 하나요',
+        answer:
+          '아니요. 실 제보는 로그인하지 않아도 보실 수 있어요. 결제내역을 등록하시면 조건이 비슷한 결제 사례를 함께 보실 수 있어요.',
+      },
+      {
+        key: 'original-image',
+        category: '자주 묻는 것',
+        question: '올린 이미지는 어떻게 되나요',
+        answer:
+          '금액과 가맹점 이름 같은 필요한 정보만 읽고, 원본 이미지는 24시간 안에 지워요. 카드번호처럼 함께 찍힌 번호는 있었다는 것만 남기고 값은 저장하지 않아요.',
+      },
+      {
+        key: 'who-sees',
+        category: '자주 묻는 것',
+        question: '제가 올린 금액이 다른 사람에게 그대로 보이나요',
+        answer: '개별 금액은 보이지 않아요. 여럿을 묶은 구간과 기준금액으로만 보여드려요.',
+      },
+      {
+        key: 'review-hidden',
+        category: '자주 묻는 것',
+        question: '쓴 후기가 갑자기 안 보여요',
+        answer:
+          '전화번호나 계좌번호처럼 위험한 정보가 들어 있으면 잠시 가려요. 알림으로 알려드리고, 그 부분을 지워 고치시면 다시 보여요.',
+      },
+      {
+        key: 'vendor-rebuttal',
+        category: '자주 묻는 것',
+        question: '업체가 제 후기에 반론을 달 수 있나요',
+        answer:
+          '업체 관계자임이 확인되면 후기 아래에 반론이 함께 표시돼요. 반론이 달려도 원래 후기는 지워지지 않아요.',
+      },
+      {
+        key: 'spouse',
+        category: '자주 묻는 것',
+        question: '배우자와 어디까지 함께 보나요',
+        answer:
+          '연결하면 지출내역, 웨딩 스케줄, Pick한 곳을 함께 보실 수 있어요. 연결을 끊으면 그때부터 서로 보이지 않아요.',
+      },
+    ],
+  },
+  /** 홈 아래쪽 웨딩피드 — 공개된 글만. 홈은 두 장만 보여준다(`HOME_FEED_PREVIEW_COUNT`). */
+  'GET /v1/wedding-feed': {
+    items: [
+      {
+        id: '00000000-0000-4000-8000-0000000000f1',
+        categoryLabel: '예산',
+        title: '예산을 넘기지 않는 스드메 조합 3가지',
+        summary: '항목별로 먼저 상한을 정해두면 흔들리지 않아요.',
+        imageUrl: null,
+      },
+      {
+        id: '00000000-0000-4000-8000-0000000000f2',
+        categoryLabel: '웨딩홀',
+        title: '웨딩홀 투어에서 꼭 물어볼 것',
+        summary: '보증인원과 식대 인상 조건을 먼저 확인하세요.',
+        imageUrl: null,
+      },
+    ],
+    /*
+     * 탭은 글과 «같은 응답»으로 온다(2026-09-16 대표 지시 — 「탭별 카테고리별로 다
+     * 설정 가능해야한다」). 값은 관리자가 표에서 고치고, 여기 있는 것은 0420의
+     * 씨앗값 그대로다. 「전체」는 표에 없고 언제나 맨 앞이다.
+     */
+    tabs: [
+      { key: 'all', label: '전체', categories: [] },
+      {
+        key: '00000000-0000-4000-8000-0000000000a1',
+        label: '준비·예산',
+        categories: ['예산', '체크리스트', '준비 순서', '하객'],
+      },
+      {
+        key: '00000000-0000-4000-8000-0000000000a2',
+        label: '업체·서비스',
+        categories: [
+          '웨딩홀',
+          '스튜디오',
+          '드레스',
+          '메이크업',
+          '본식스냅',
+          '헤어변형',
+          '결정사',
+        ],
+      },
+      {
+        key: '00000000-0000-4000-8000-0000000000a3',
+        label: '계약·여행',
+        categories: ['계약', '허니문'],
+      },
+    ],
   },
   'GET /v1/vendors/regions': {
     regions: [
@@ -143,12 +339,279 @@ const routes = {
   'GET /v1/auth/providers': {
     providers: [{ provider: 'kakao', isDevelopmentStandIn: false }],
   },
+  /*
+   * 상담기록. **저장 전(확인 필요) 한 장과 저장 후 한 장**을 함께 둔다 — 화면이
+   * 갈리는 자리라 한쪽만 두면 나머지 절반을 못 본다.
+   *
+   * 금액의 `evidence`는 40자 이내다. 그 한도가 화면에서도 지켜지는지 보인다.
+   */
+  'GET /v1/weddings/:weddingId/consultations': {
+    records: [
+      {
+        id: '11111111-1111-4111-8111-111111111111',
+        weddingId: '22222222-2222-4222-8222-222222222222',
+        vendorId: null,
+        vendorLabel: '강남 A 웨딩홀',
+        status: 'SUPPORTED_WEDDING_CONSULTATION',
+        category: 'hall',
+        confidence: 0.94,
+        common: {
+          vendorName: '강남 A 웨딩홀',
+          finalAmount: {
+            value: 16_800_000,
+            confidence: 0.97,
+            evidence: '최종 1680만원으로 해드릴게요',
+          },
+          included: ['기본 꽃장식', '주차 2시간', '신부대기실'],
+        },
+        categoryData: {
+          mealPrice: { value: 78_000, confidence: 0.97, evidence: '식대는 인당 7만 8천원입니다' },
+          guaranteedGuests: 250,
+        },
+        after: {
+          summary: '토요일 12시 홀로 보고 왔고, 보증인원 250명 기준으로 안내받았어요.',
+          additionalCosts: ['생화 장식 업그레이드 80만원', '주차 3시간부터 대당 2천원'],
+          benefits: ['당일 계약 시 대관료 20% 할인'],
+          warnings: ['할인 적용 기한이 대화에서 확인되지 않았어요'],
+          missingInformation: [
+            '주류 비용은 확인되지 않았어요',
+            '보증인원을 마지막으로 바꿀 수 있는 날을 확인해보세요',
+          ],
+        },
+        confirmedAt: null,
+        audioDeletedAt: null,
+        createdAt: '2026-09-14T02:10:00.000Z',
+      },
+      {
+        id: '33333333-3333-4333-8333-333333333333',
+        weddingId: '22222222-2222-4222-8222-222222222222',
+        vendorId: null,
+        vendorLabel: '청담 B 스튜디오',
+        status: 'SUPPORTED_WEDDING_CONSULTATION',
+        category: 'studio',
+        confidence: 0.88,
+        common: {
+          vendorName: '청담 B 스튜디오',
+          finalAmount: { value: 1_680_000, confidence: 0.91, evidence: '168만원에 원본 포함이에요' },
+          included: ['원본 전체', '보정본 30장', '의상 3벌'],
+        },
+        categoryData: { retouchedCount: 30, originalsIncluded: true },
+        after: {
+          summary: '원본 포함이고 야외촬영은 별도라고 들었어요.',
+          additionalCosts: ['야외촬영 장소비 30만원'],
+          benefits: [],
+          warnings: [],
+          missingInformation: ['사진 고르는 일정을 확인해보세요'],
+        },
+        confirmedAt: '2026-09-13T08:00:00.000Z',
+        audioDeletedAt: '2026-09-13T08:00:01.000Z',
+        createdAt: '2026-09-13T07:40:00.000Z',
+      },
+    ],
+  },
+
+  /*
+   * 웨딩노트 캘린더 · 예산현황. 일정은 **오늘** 둘(하나는 지난 시각 = done)과 열흘 뒤 하나 —
+   * 오늘이 기본 선택일이라 오늘에 일정이 없으면 목록 자리가 빈 상태로만 찍힌다.
+   */
+  'GET /v1/weddings/:weddingId/events': (() => {
+    const today = new Date();
+    const at = (dayOffset, hour) => {
+      const value = new Date(today.getFullYear(), today.getMonth(), today.getDate() + dayOffset, hour, 0, 0);
+      return value.toISOString();
+    };
+    const event = (id, title, startsAt, status, extra = {}) => ({
+      id,
+      title,
+      startsAt,
+      location: null,
+      vendorId: null,
+      vendorLabel: null,
+      memo: null,
+      notifyEnabled: true,
+      source: 'manual',
+      status,
+      ...extra,
+    });
+    return {
+      events: [
+        event('31111111-1111-4111-8111-111111111111', '청첩장 인쇄', at(0, 9), 'done'),
+        event('32222222-2222-4222-8222-222222222222', '드레스 피팅', at(0, 14), 'upcoming', { location: '청담' }),
+        event('33333333-3333-4333-8333-333333333333', '스튜디오 상담', at(10, 11), 'upcoming'),
+      ],
+    };
+  })(),
+  'GET /v1/weddings/:weddingId/expenses': {
+    paidTotal: 12000000,
+    scheduledTotal: 0,
+    scheduledNote: '예정된 지출이 없어요',
+    buckets: [
+      { bucket: 'hall', label: '웨딩홀', amount: 10000000, ratio: 0.83 },
+      { bucket: 'sdm', label: '스드메', amount: 2000000, ratio: 0.17 },
+    ],
+    budget: { set: true, budget: 30000000, spent: 12000000, remaining: 18000000, over: false },
+    budgetBracket: null,
+    expenses: [],
+  },
   'GET /v1/weddings/:weddingId/candidates': {
-    groups: [],
-    total: 0,
+    /* 웨딩홀 두 곳 — 배우자도 같이 담아 «둘 다 고른 곳» 비교 배너를 찍을 수 있게 한다. */
+    groups: [
+      {
+        category: 'hall',
+        categoryLabel: '웨딩홀',
+        candidates: [
+          {
+            id: 'c1111111-1111-4111-8111-111111111111',
+            vendorId: '11111111-1111-4111-8111-111111111111',
+            vendorName: '강남 A 웨딩홀',
+            category: 'hall',
+            region: '서울',
+            imageUrl: null,
+            note: null,
+            addedAt: '2026-08-01T00:00:00.000Z',
+            addedByPartner: true,
+          },
+          {
+            id: 'c2222222-2222-4222-8222-222222222222',
+            vendorId: '22222222-2222-4222-8222-222222222222',
+            vendorName: '강남 B 웨딩홀',
+            category: 'hall',
+            region: '서울',
+            imageUrl: null,
+            note: null,
+            addedAt: '2026-08-02T00:00:00.000Z',
+            addedByPartner: true,
+          },
+        ],
+        comparable: true,
+        state: 'picking',
+        stateLabel: '후보 Pick 중',
+        decidedVendorId: null,
+      },
+    ],
+    total: 2,
     limit: 5,
     progress: { decided: 0, total: 13, label: '0/13 완료' },
-    nextCategory: 'hall',
+    nextCategory: 'makeup',
+  },
+  'GET /v1/weddings/:weddingId/candidates/removed': {
+    groups: [],
+  },
+  /* 응답 본문이 없다(z.null()) — Pick 비교 로그. */
+  'POST /v1/weddings/:weddingId/comparisons': null,
+  'GET /v1/me/rewards/payout': {
+    receivableKrw: 300000,
+    receivableGrantIds: ['a1111111-1111-4111-8111-111111111111'],
+    recipientNameDefault: '우리',
+    open: null,
+    history: [],
+  },
+  'GET /v1/me/reports': { reports: [] },
+  'GET /v1/me/rewards': {
+    referralCode: 'ABC123',
+    invitedCount: 0,
+    qualifiedCount: 0,
+    grants: [],
+  },
+  'GET /v1/me/settings': {
+    userId: 'u1111111-1111-4111-8111-111111111111',
+    pushEnabled: true,
+    priceChangeEnabled: true,
+    marketingEnabled: false,
+    marketingConsentAt: null,
+    nightPushEnabled: false,
+    paymentConsent: true,
+    paymentConsentAt: '2026-08-01T00:00:00.000Z',
+    documentConsent: false,
+    documentConsentAt: null,
+    weddingDate: '2027-04-17',
+    region: '서울',
+    spouseLinked: true,
+    displayName: '우리',
+  },
+  'GET /v1/me/withdrawal': {
+    lead: '배우자와 함께 만든 기록도 함께 사라져요',
+    hasPartner: true,
+    deleted: [
+      { label: '계정 정보', value: '이메일 · 로그인 정보' },
+      { label: 'Pick 목록', value: '2건' },
+    ],
+    separated: [{ label: '작성한 후기', note: '작성자 정보만 지워지고 후기는 남아요', anonymous: true }],
+    done: ['계정이 삭제됐어요', '로그인 정보가 지워졌어요'],
+  },
+  'GET /v1/weddings/:weddingId/invites': { invite: null },
+  /*
+   * Pick 추천 — 홈 아코디언과 「웨딩픽 추천」 전체 페이지가 같이 쓴다. 상태를 셋 다 다르게
+   * 둬서 캡처 한 장에 «비교» · «보기» · «추천»이 같이 보이게 한다. `limit`은 무시한다 —
+   * 캡처에서는 홈도 전체 페이지도 같은 셋을 그린다.
+   */
+  'GET /v1/me/recommendations': {
+    groups: [
+      {
+        category: 'hall',
+        categoryLabel: '웨딩홀',
+        state: 'COMPARING',
+        pickCount: 2,
+        vendors: VENDORS.filter((v) => v.category === 'hall').slice(0, 3),
+      },
+      {
+        category: 'studio',
+        categoryLabel: '스튜디오',
+        state: 'SHORTLISTED',
+        pickCount: 1,
+        vendors: VENDORS.filter((v) => v.category === 'studio'),
+      },
+      {
+        category: 'dress',
+        categoryLabel: '드레스',
+        state: 'NOT_STARTED',
+        pickCount: 0,
+        vendors: [],
+      },
+    ],
+    remaining: 7,
+    remainingCategories: ['hall', 'studio', 'dress', 'makeup', 'hair', 'goods', 'honeymoon'],
+  },
+  'GET /v1/expos': {
+    items: [
+      {
+        id: 'e1111111-1111-4111-8111-111111111111',
+        title: '2026 가을 웨딩 박람회',
+        organizer: '웨딩픽',
+        startsAt: '2026-09-26T01:00:00.000Z',
+        endsAt: '2026-09-27T09:00:00.000Z',
+        venue: '서울 코엑스',
+        region: '서울',
+        status: 'upcoming',
+        isDeadlineSoon: true,
+        sourceNote: '주최사 공지 기준',
+        lastVerifiedAt: '2026-09-10T00:00:00.000Z',
+      },
+    ],
+    nextCursor: null,
+  },
+  'GET /v1/review-report-reasons': {
+    reasons: [
+      { value: 'false_content', label: '사실과 달라요' },
+      { value: 'abusive', label: '욕설·비방이에요' },
+      { value: 'spam', label: '광고·스팸이에요' },
+      { value: 'personal_info', label: '개인정보가 담겼어요' },
+      { value: 'other', label: '기타' },
+    ],
+  },
+  'GET /v1/me/monthly-draw': {
+    drawMonth: '2026-09',
+    status: 'not_entered',
+    statusLabel: '응모 전',
+    statusNote: '두 가지만 더 하면 이번 달 응모가 완료돼요',
+    amountKrw: 300000,
+    winnersPerMonth: 5,
+    conditions: [
+      { key: 'wedding_set', label: '예식일과 지역 설정', done: true },
+      { key: 'payment_proof', label: 'Pick 인증 1건 이상', done: false },
+      { key: 'partner', label: '배우자와 연결', done: false },
+    ],
+    remaining: 2,
   },
   /*
    * 관리자 — 광고 실운영 관문과 상품별 상태(WP-ADM-034).
@@ -193,6 +656,104 @@ const routes = {
     /* 막고 있는 것이 없다. 「켜면 나갑니다」는 안내라 여기 넣지 않는다. */
     blockers: [],
   },
+  /*
+   * 관리자 계정. 뷰어가 표에 저장된 진짜 슈퍼(`viewerAccountId`가 자기 자신)인
+   * 상태로 찍는다 — 「나머지 전체를 뷰어로」 단추가 보이는 화면이 이 상태다.
+   */
+  'GET /v1/admin/accounts': {
+    accounts: [
+      {
+        id: 'aaaaaaaa-0000-4000-8000-000000000001',
+        loginId: 'jsexy0210',
+        role: 'super',
+        disabled: false,
+        createdBy: null,
+        createdAt: '2026-09-10T00:00:00.000Z',
+      },
+      {
+        id: 'aaaaaaaa-0000-4000-8000-000000000002',
+        loginId: 'ops-team',
+        role: 'operator',
+        disabled: false,
+        createdBy: 'jsexy0210',
+        createdAt: '2026-09-12T00:00:00.000Z',
+      },
+      {
+        id: 'aaaaaaaa-0000-4000-8000-000000000003',
+        loginId: 'qa-checker',
+        role: 'viewer',
+        disabled: false,
+        createdBy: 'jsexy0210',
+        createdAt: '2026-09-13T00:00:00.000Z',
+      },
+    ],
+    viewerIsStored: true,
+    viewerAccountId: 'aaaaaaaa-0000-4000-8000-000000000001',
+  },
+  /*
+   * 대시보드 + 일일 브리핑(2026-09-15 대표 확정으로 한 화면). 브리핑은 대시보드
+   * 아래 절반이라 이 파일에서는 셋을 나란히 둔다 — 화면을 찍으면 위아래가 한 번에 보인다.
+   */
+  'GET /v1/admin/dashboard': {
+    humanQueue: [
+      { key: 'queue', label: '확인 필요', why: '실 제보 인증 대기', count: 3, tone: 'caution' },
+      { key: 'rebuttal', label: '후기 · 반론', why: '관계자 인증 확인 필요', count: 1, tone: 'danger' },
+    ],
+    humanTotal: 4,
+    dashCards: [
+      { key: 'ai-usage', label: '분석 비용', mode: '비용', value: '12,400', unit: '원', note: '오늘 사용분' },
+      { key: 'price-stats', label: '가격 통계', mode: '지표', value: '128', unit: '건', note: '이번 주 신규' },
+      { key: 'campaigns', label: '캠페인 참여', mode: '지표', value: '56', unit: '명', note: '이번 회차' },
+      { key: 'automation1', label: '자동 처리', mode: '자동', value: '312', unit: '건', note: '최근 24시간' },
+      { key: 'automation2', label: '자동 성공률', mode: '자동', value: '98.2', unit: '%', note: '최근 24시간' },
+      { key: 'automation3', label: '자동 복구', mode: '자동', value: '2', unit: '건', note: '최근 24시간' },
+    ],
+    auto: {
+      ratePct: 92,
+      segments: [
+        { key: 'concluded', label: '자동 종결', count: 288 },
+        { key: 'failed', label: '실패', count: 6 },
+        { key: 'human', label: '사람에게 넘김', count: 18 },
+      ],
+      keepRatePct: 96,
+      revertedCount: 2,
+      medianLatencyMs: 4200,
+      byWorkflow: [
+        { workflow: 'verification-review', concluded: 210, failed: 4, human: 12, reverted: 1, autoPct: 93 },
+      ],
+    },
+    autoLog: [
+      {
+        id: '11111111-1111-4111-8111-111111111111',
+        decision: '승인',
+        subject: '강남 A 웨딩홀',
+        reasonCode: 'auto_verified',
+        confidence: 0.94,
+        decidedAt: '2026-09-15T02:00:00.000Z',
+        tone: 'ok',
+      },
+    ],
+  },
+  'GET /v1/admin/members-trend': {
+    bucket: 'month',
+    points: [
+      { at: '2026-07-01T00:00:00.000Z', signups: 120, total: 1200 },
+      { at: '2026-08-01T00:00:00.000Z', signups: 150, total: 1350 },
+      { at: '2026-09-01T00:00:00.000Z', signups: 90, total: 1440 },
+    ],
+    current: 1440,
+  },
+  'GET /v1/admin/briefing': {
+    date: '2026-09-15',
+    autoProcessed: 312,
+    successRate: 0.982,
+    autoRecovered: 2,
+    unresolvedRisks: [],
+    aiCostToday: '12,400원',
+    revenueToday: '0원',
+    anomalies: [],
+    summary: '오늘 처리한 312건 중 사람이 볼 것은 없어요.',
+  },
   'GET /v1/admin/ad-tiers': {
     tiers: [
       { tier: 'light', state: 'live', decidedAt: '2026-09-11T00:00:00.000Z', placements: 2 },
@@ -200,11 +761,389 @@ const routes = {
       { tier: 'premium', state: 'withheld', decidedAt: '2026-09-10T00:00:00.000Z', placements: 0 },
     ],
   },
+  /** 관리자 — 웨딩피드(WP-ADM-053). 검토 대기 초안 하나 · 공개 하나 · 자동 작성 한 바퀴. */
+  'GET /v1/admin/wedding-feed': {
+    posts: [
+      {
+        id: '00000000-0000-4000-8000-0000000000f1',
+        categoryLabel: '예산',
+        title: '스드메 예산을 넘기지 않게 짜는 방법',
+        summary: '항목별로 먼저 상한을 정해두면 흔들리지 않아요.',
+        body: '스드메 예산을 짤 때는…',
+        imageKey: null,
+        imageUrl: null,
+        status: 'draft',
+        source: 'generated',
+        model: 'gemini-2.5-flash-lite',
+        topic: 'budget-sdm',
+        sortOrder: 0,
+        publishedAt: null,
+        createdAt: '2026-09-15T01:00:00.000Z',
+        updatedAt: '2026-09-15T01:00:00.000Z',
+      },
+      {
+        id: '00000000-0000-4000-8000-0000000000f2',
+        categoryLabel: '웨딩홀',
+        title: '웨딩홀 투어에서 꼭 물어볼 것',
+        summary: '보증인원과 식대 인상 조건을 먼저 확인하세요.',
+        body: '웨딩홀 투어에서는…',
+        imageKey: null,
+        imageUrl: null,
+        status: 'published',
+        source: 'manual',
+        model: null,
+        topic: null,
+        sortOrder: 1,
+        publishedAt: '2026-09-14T09:00:00.000Z',
+        createdAt: '2026-09-14T09:00:00.000Z',
+        updatedAt: '2026-09-14T09:00:00.000Z',
+      },
+    ],
+    runs: [
+      {
+        id: '00000000-0000-4000-8000-0000000000f9',
+        startedAt: '2026-09-15T01:00:00.000Z',
+        finishedAt: '2026-09-15T01:00:20.000Z',
+        createdCount: 1,
+        model: 'gemini-2.5-flash-lite',
+        inputTokens: 512,
+        outputTokens: 640,
+        error: null,
+        trigger: 'schedule',
+      },
+    ],
+    remainingTopics: 16,
+  },
+  /* WP-ADM 박람회 관리(admin/expos.tsx) — 검수 대기 한 건 · 정상 한 건을 함께 둔다. */
+  'GET /v1/admin/expos': {
+    expos: [
+      {
+        id: 'f1111111-1111-4111-8111-111111111111',
+        title: '2026 서울 웨딩페어(확인 필요)',
+        organizer: '확인되지 않음',
+        host: null,
+        startsAt: '2026-10-10',
+        endsAt: '2026-10-12',
+        venue: '코엑스 A홀',
+        address: '서울 강남구 영동대로 513',
+        region: '서울',
+        city: null,
+        district: null,
+        registrationDeadline: null,
+        reservationUrl: null,
+        officialWebsiteUrl: null,
+        benefits: [],
+        description: '',
+        eventCategories: ['종합 웨딩박람회'],
+        status: 'UPCOMING',
+        confidence: 'SOCIAL_ONLY',
+        confidenceScore: 55,
+        adminReviewRequired: true,
+        reviewReason: ['SNS 한 곳에서만 발견', '주최사를 확인할 수 없음'],
+        sourceNote: '인스타그램 게시물 1건',
+        lastVerifiedAt: '2026-09-14',
+      },
+      {
+        id: 'f2222222-2222-4222-8222-222222222222',
+        title: '2026 경기 웨딩박람회',
+        organizer: '웨딩픽 박람회 운영팀',
+        host: null,
+        startsAt: '2026-09-20',
+        endsAt: '2026-09-21',
+        venue: '킨텍스 제2전시장',
+        address: '경기 고양시 일산서구 킨텍스로 217-60',
+        region: '경기',
+        city: '고양시',
+        district: null,
+        registrationDeadline: '2026-09-18',
+        reservationUrl: 'https://example.com/apply',
+        officialWebsiteUrl: 'https://example.com',
+        benefits: ['현장 예약 시 계약금 할인'],
+        description: '경기권 예비부부 대상 종합 웨딩박람회예요.',
+        eventCategories: ['종합 웨딩박람회'],
+        status: 'ONGOING',
+        confidence: 'OFFICIAL_CONFIRMED',
+        confidenceScore: 95,
+        adminReviewRequired: false,
+        reviewReason: [],
+        sourceNote: '주최사 공식 홈페이지',
+        lastVerifiedAt: '2026-09-14',
+      },
+    ],
+  },
+  'GET /v1/admin/expos/deletion-preview': {
+    expos: [
+      {
+        id: 'f3333333-3333-4333-8333-333333333333',
+        title: '2026 인천 웨딩박람회',
+        startsAt: '2026-09-08',
+        endsAt: '2026-09-15',
+        venue: '송도컨벤시아',
+      },
+    ],
+  },
   'GET /v1/vendors': ({ url }) => {
     const category = url.searchParams.get('category');
     const vendors = category ? VENDORS.filter((v) => v.category === category) : VENDORS;
 
     return { vendors, sponsored: SPONSORED, nextCursor: null, total: vendors.length };
+  },
+  /*
+   * A-17 업체 비교 — search/compare.tsx 캡처용. VENDORS 목록을 vendorDetail 꼴로 늘린다.
+   * `ids`가 없으면(계약 시험의 기본 호출처럼) 웨딩홀 두 곳으로 대신한다 — 계약은
+   * `vendors`가 최소 둘이라, 빈 배열을 기본값으로 두면 시험이 항상 빨개진다.
+   */
+  'GET /v1/vendors/compare': ({ url }) => {
+    const requested = (url.searchParams.get('ids') ?? '').split(',').filter(Boolean);
+    const ids = requested.length > 0 ? requested : [VENDORS[0].id, VENDORS[1].id];
+    const vendors = ids
+      .map((id) => VENDORS.find((v) => v.id === id))
+      .filter(Boolean)
+      .map(({ paidPrice, ...summary }) => ({
+        ...summary,
+        lastVerifiedAt: '2026-09-01T00:00:00.000Z',
+        prices: {
+          products: [],
+          paidPrice,
+          reportedPrice: { available: false, reason: '아직 제보가 모자라요', count: 0 },
+          deepData: false,
+          deepDataNote: '결제내역을 한 건 등록하면 열려요',
+        },
+        usageScore: { available: false, reason: '아직 후기가 모자라요', count: 0 },
+      }));
+
+    return { vendors, caveats: ['같은 조건이 아니라면 금액만으로 견주지 마세요'] };
+  },
+
+  /* WP-VEND-001 업체 상세 및 하위 화면(이미지·조건별 사례·후기). id는 무엇이 와도 같은 fixture를 낸다 — 캡처는 실제 DB를 보지 않는다. */
+  'GET /v1/vendors/:vendorId': VENDOR_DETAIL,
+  'GET /v1/vendors/:vendorId/images': { photos: [] },
+  'GET /v1/vendors/:vendorId/conditions': {
+    available: false,
+    note: '조건이 비슷한 사례를 더 모으고 있어요',
+  },
+  'GET /v1/vendors/:vendorId/reviews': {
+    reviews: VENDOR_REVIEWS,
+    nextCursor: null,
+    usageScore: VENDOR_DETAIL.usageScore,
+    caveat: '한 사람의 경험이에요. 업체를 고르는 유일한 기준으로 삼지 마세요.',
+  },
+
+  /*
+   * ─── 관리자 콘솔 ──────────────────────────────────────────────────────────
+   *
+   * 위쪽에 이미 여덟(대시보드 · 일일 브리핑 · 광고 · 박람회 · 웨딩피드 · 관리자
+   * 계정 · 회원 추이)이 있었다. 아래 일곱은 2026-09-16 관리자 화면 전수 조사에서
+   * 더했다 — 그전까지 FAQ · 업체 · 이미지 · 제보 처리 · 개인정보 검토 · 정책 규칙 ·
+   * 마케팅 발송을 찍으면 본문 자리에 「API … → 404」 한 줄만 나왔다. 껍데기는
+   * 보이지만 본문은 한 번도 찍힌 적이 없었다는 뜻이다.
+   *
+   * 값은 **가명·가짜 수치**다(CLAUDE.md 「예시 데이터」). 천단위 쉼표가 실제로
+   * 걸리는지 보려고 네 자리가 넘는 수를 일부러 섞어 뒀다.
+   */
+  'GET /v1/admin/faq': {
+    items: [
+      {
+        id: '00000000-0000-4000-8000-00000000fa01',
+        category: '예약',
+        question: '예약은 언제부터 할 수 있나요?',
+        answer: '예식일 12개월 전부터 예약할 수 있어요.',
+        order: 0,
+        published: true,
+        editable: true,
+      },
+      {
+        id: '00000000-0000-4000-8000-00000000fa02',
+        category: '예약',
+        question: '예약을 취소하면 어떻게 되나요?',
+        answer: '취소 규정은 업체마다 달라요. 계약서를 확인해주세요.',
+        order: 1,
+        published: false,
+        editable: true,
+      },
+      {
+        id: '00000000-0000-4000-8000-00000000fa03',
+        category: '제보',
+        question: 'Pick 인증은 어떻게 하나요?',
+        answer: '계약서나 결제 증빙을 올리면 돼요.',
+        order: 0,
+        published: true,
+        editable: true,
+      },
+      {
+        id: 'spec:price-basis',
+        category: '코드에 있는 항목',
+        question: '기준금액은 어떻게 정해지나요?',
+        answer: '실 제보의 중앙값이에요.',
+        order: 0,
+        published: true,
+        editable: false,
+      },
+    ],
+    categories: ['예약', '제보', '코드에 있는 항목'],
+  },
+  'GET /v1/admin/marketing': {
+    summary: { generated: 1284, simulated: 1180, failed: 104, failRate: 0.081 },
+    items: [
+      {
+        id: '00000000-0000-4000-8000-0000000bb001',
+        title: '9월 박람회 안내 소재',
+        channel: '알림톡',
+        status: 'failed',
+        createdAt: '2026-09-15T02:10:00.000Z',
+        simulatedAt: null,
+        failReason: '템플릿 심사 대기',
+      },
+      {
+        id: '00000000-0000-4000-8000-0000000bb002',
+        title: '가을 스냅 기획 소재',
+        channel: '푸시',
+        status: 'queued',
+        createdAt: '2026-09-15T05:40:00.000Z',
+        simulatedAt: null,
+        failReason: null,
+      },
+      {
+        id: '00000000-0000-4000-8000-0000000bb003',
+        title: '드레스 투어 안내 소재',
+        channel: '푸시',
+        status: 'simulated',
+        createdAt: '2026-09-14T23:05:00.000Z',
+        simulatedAt: '2026-09-15T01:00:00.000Z',
+        failReason: null,
+      },
+    ],
+  },
+  'GET /v1/admin/data/images': {
+    summary: { total: 12480, licensed: 11902, pending: 431, rejected: 147 },
+    items: [
+      {
+        id: '00000000-0000-4000-8000-0000000cc001',
+        vendorName: '강남 A 스튜디오',
+        source: '업체 공식 채널',
+        rightsStatus: 'pending',
+        matchConfidence: 0.92,
+        createdAt: '2026-09-15T04:00:00.000Z',
+        url: null,
+      },
+      {
+        id: '00000000-0000-4000-8000-0000000cc002',
+        vendorName: '분당 C 웨딩홀',
+        source: '크롤링',
+        rightsStatus: 'pending',
+        matchConfidence: 0.41,
+        createdAt: '2026-09-15T04:20:00.000Z',
+        url: null,
+      },
+    ],
+  },
+  'GET /v1/admin/vendors': {
+    total: 3,
+    vendors: [
+      {
+        id: '11111111-1111-4111-8111-111111111111',
+        name: '강남 A 웨딩홀',
+        category: 'hall',
+        status: 'active',
+        dataCount: 1284,
+        mergedInto: null,
+        history: [],
+      },
+      {
+        id: '22222222-2222-4222-8222-222222222222',
+        name: '강남 B 웨딩홀',
+        category: 'hall',
+        status: 'suspended',
+        dataCount: 96,
+        mergedInto: null,
+        history: [{ at: '2026-09-14T00:00:00.000Z', action: '정지', note: '제보 검증 중' }],
+      },
+      {
+        id: '33333333-3333-4333-8333-333333333333',
+        name: '분당 C 웨딩홀',
+        category: 'hall',
+        status: 'merged',
+        dataCount: 0,
+        mergedInto: '강남 A 웨딩홀',
+        history: [],
+      },
+    ],
+  },
+  'GET /v1/admin/data/pipeline': {
+    today: { received: 3120, autoProcessed: 2894, manualRequired: 182, failed: 44 },
+    stages: [
+      { stage: '수집', count: 3120, avgWaitMin: 1 },
+      { stage: '판독', count: 2980, avgWaitMin: 4 },
+      { stage: '대조', count: 2894, avgWaitMin: 7 },
+    ],
+    failedQueue: [
+      {
+        id: '00000000-0000-4000-8000-00000000dd01',
+        stage: '판독',
+        error: '증빙 이미지를 읽지 못했어요',
+        failedAt: '2026-09-15T06:10:00.000Z',
+        retryCount: 2,
+      },
+    ],
+  },
+  'GET /v1/admin/pii-reviews': {
+    reviews: [
+      {
+        id: '00000000-0000-4000-8000-00000000pp01',
+        createdAt: '2026-09-15T03:30:00.000Z',
+        detectedKinds: ['휴대폰 번호'],
+        hintCount: 1284,
+      },
+      {
+        id: '00000000-0000-4000-8000-00000000pp02',
+        createdAt: '2026-09-15T05:15:00.000Z',
+        detectedKinds: ['이메일', '계좌번호'],
+        hintCount: 12,
+      },
+    ],
+  },
+  'GET /v1/admin/policy-engine': {
+    policies: [
+      {
+        id: '00000000-0000-4000-8000-00000000po01',
+        key: 'report.min_count',
+        label: '금액 공개 최소 제보 수',
+        description: '이 수보다 적으면 업체 안내가를 대신 보여줘요.',
+        category: '제보',
+        type: 'number',
+        value: '3',
+        defaultValue: '3',
+        lastChangedAt: null,
+        lastChangedBy: null,
+        readOnlyReason: null,
+      },
+      {
+        id: '00000000-0000-4000-8000-00000000po02',
+        key: 'notify.daily_cap',
+        label: '하루 알림 최대 건수',
+        description: '한 사람에게 하루에 보낼 수 있는 알림 수예요.',
+        category: '알림',
+        type: 'number',
+        value: '2',
+        defaultValue: '2',
+        lastChangedAt: '2026-09-12T02:00:00.000Z',
+        lastChangedBy: '운영자',
+        readOnlyReason: null,
+      },
+      {
+        id: '00000000-0000-4000-8000-00000000po03',
+        key: 'expo.auto_delete',
+        label: '박람회 종료 자동 삭제',
+        description: '대표님 지시로 보류 중이라 여기서 켤 수 없어요.',
+        category: '박람회',
+        type: 'boolean',
+        value: 'false',
+        defaultValue: 'false',
+        lastChangedAt: null,
+        lastChangedBy: null,
+        readOnlyReason: '대표 지시로 보류 중이에요',
+      },
+    ],
   },
 };
 

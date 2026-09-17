@@ -1,59 +1,312 @@
+import { Redirect } from 'expo-router';
+/**
+ * WP-ADM-036 약관 · 방침 관리
+ * 조문 단위 편집, 저장하면 새 버전. 공개는 별도 단추
+ */
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+
 import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
-import { AdminAccountActions, ConfirmCard, useAdminAccess } from './_ui';
-import { ContentButton, ContentForm, DeleteContentButton, type ContentField } from '@/features/admin/content-form';
+import { formatDateDot } from '@/features/common/format-date';
+import { ConfirmCard } from './_ui';
+import { PendingBackendNotice } from '@/features/admin/pending-backend';
 
-type Clause = { id: string; articleNumber: string; title: string; body: string; sourcePath?: string[] | null };
-type Doc = { type: string; label: string; currentVersion: string; latestDraftVersion: string | null; clauses: Clause[]; versions: {version: string; isDraft: boolean}[] };
-const FIELDS: ContentField[] = [{key:'articleNumber',label:'조문 번호'},{key:'title',label:'조문 제목'},{key:'body',label:'내용',multiline:true}];
-export default function TermsScreen() {
-  const access = useAdminAccess();
-  const [docs,setDocs] = useState<Doc[]>([]);
-  const [active,setActive] = useState('terms');
-  const [editing,setEditing] = useState<Clause | 'new' | null>(null);
-  const [loading,setLoading] = useState(true);
-  const [busy,setBusy] = useState(false);
-  const [error,setError] = useState<string | null>(null);
-  const [rev,setRev] = useState(0);
-  const [publishing,setPublishing] = useState(false);
+const BACKEND_PENDING = true;
+
+/**
+ * 잠긴 동안 핸들러가 돌면 적는 말.
+ *
+ * 단추는 이미 비활성이지만 핸들러는 그대로 있다. 그냥 `return`하면 「눌렀는데
+ * 아무 일도 안 일어난다」가 되고, v3.27이 가장 나쁘다고 적은 상태가 된다.
+ * 무엇이 되는지를 함께 말한다.
+ */
+const PENDING_REASON =
+  '지금은 약관 조문과 판 이력을 조회할 수 있어요. 편집·공개는 앱 약관·동의 기록에 연결한 뒤 열려요.';
+
+type DocType = 'terms' | 'privacy' | 'marketing';
+type TermsVersion = {
+  version: string;
+  publishedAt: string | null;
+  isDraft: boolean;
+};
+type TermsClause = {
+  id: string;
+  articleNumber: string;
+  title: string;
+  body: string;
+};
+type TermsDoc = {
+  type: DocType;
+  label: string;
+  currentVersion: string;
+  latestDraftVersion: string | null;
+  publishedAt: string | null;
+  versions: TermsVersion[];
+  clauses: TermsClause[];
+};
+
+type TermsData = { documents: TermsDoc[] };
+
+const DOC_LABEL: Record<DocType, string> = {
+  terms: '이용약관',
+  privacy: '개인정보처리방침',
+  marketing: '마케팅 정보 수신 동의',
+};
+
+export function TermsPanel() {
+  const [data, setData] = useState<TermsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [rev, setRev] = useState(0);
+  const [activeDoc, setActiveDoc] = useState<DocType>('terms');
+  const [editingClause, setEditingClause] = useState<TermsClause | null>(null);
+  const [clauseBody, setClauseBody] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  /** 공개를 확인받는 중. 공개한 판은 다시 고칠 수 없어 한 번 더 묻는다(v3.27). */
+  const [askingPublish, setAskingPublish] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+
   useEffect(() => {
     let cancelled = false;
-    apiFetch('/v1/admin/terms').then((value) => { if(!cancelled){setDocs((value as {documents:Doc[]}).documents);setError(null);}})
-      .catch((e:unknown)=>{if(!cancelled)setError(e instanceof Error?e.message:'불러오기 실패');})
-      .finally(()=>{if(!cancelled)setLoading(false);});
-    return ()=>{cancelled=true;};
-  },[rev]);
-  const doc=docs.find((d)=>d.type===active);
-  async function act(url:string, body?:unknown) {
-    if(busy)return;
-    setBusy(true);setError(null);
-    try{await apiFetch(url,{method:'POST',...(body?{body:JSON.stringify(body)}:{})});setRev((v)=>v+1);setPublishing(false);}
-    catch(e){setError(e instanceof Error?e.message:'저장 실패');}
-    finally{setBusy(false);}
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLoading(true);
+    apiFetch('/v1/admin/terms')
+      .then((d) => {
+        if (cancelled) return;
+        setData(d as TermsData);
+        setError(null);
+        setLoading(false);
+      })
+      .catch((e: unknown) => {
+        if (cancelled) return;
+        setError(e instanceof Error ? e.message : '불러오기 실패');
+        setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [rev]);
+
+  const activeDocData = data?.documents.find((d) => d.type === activeDoc);
+
+  function openClause(clause: TermsClause) {
+    if (BACKEND_PENDING) {
+      setActionError(PENDING_REASON);
+      return;
+    }
+    setEditingClause(clause);
+    setClauseBody(clause.body);
+    setActionError(null);
   }
-  return <View style={styles.root}>
-    <View style={styles.header}><Text style={styles.title}>약관 · 방침 관리</Text><ContentButton label="새로 고침" onPress={()=>setRev((v)=>v+1)} /><AdminAccountActions /></View>
-    <DelayedLoader active={loading} size={40} />
-    {error?<Text style={styles.actionError}>{error}</Text>:null}
-    <View style={styles.docTabs}>{docs.map((d)=><Pressable key={d.type} onPress={()=>setActive(d.type)} style={[styles.docTab,active===d.type&&styles.docTabActive]}><Text style={styles.docTabText}>{d.label}</Text></Pressable>)}</View>
-    {doc?<View style={styles.docBody}>
-      <View style={styles.docMeta}><View><Text style={styles.versionText}>공개 버전: {doc.currentVersion}</Text><Text style={styles.draftText}>초안: {doc.latestDraftVersion??'없음'}</Text></View>
-        {doc.latestDraftVersion?<><ContentButton label="조문 등록" disabled={!access.canEdit||busy} onPress={()=>setEditing('new')} /><ContentButton label="초안 공개" disabled={!access.canEdit||busy} onPress={()=>setPublishing(true)} /></>:<ContentButton label="새 초안" disabled={!access.canEdit||busy} onPress={()=>void act('/v1/admin/terms',{doc:active})} />}
+
+  async function saveClause() {
+    if (BACKEND_PENDING) {
+      setActionError(PENDING_REASON);
+      return;
+    }
+    if (!editingClause) return;
+    setSaving(true);
+    setActionError(null);
+    try {
+      await apiFetch(`/v1/admin/terms/${activeDoc}/clauses/${editingClause.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ body: clauseBody }),
+      });
+      setEditingClause(null);
+      setRev((r) => r + 1);
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : '저장 실패');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function publish() {
+    if (BACKEND_PENDING) {
+      setActionError(PENDING_REASON);
+      return;
+    }
+    if (!activeDocData?.latestDraftVersion) return;
+    setPublishing(true);
+    setActionError(null);
+    try {
+      await apiFetch(`/v1/admin/terms/${activeDoc}/publish`, { method: 'POST' });
+      setRev((r) => r + 1);
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : '공개 실패');
+    } finally {
+      setPublishing(false);
+      // 실패해도 닫는다 — 창이 떠 있으면 오류 문구가 창에 가린다.
+      setAskingPublish(false);
+    }
+  }
+
+  return (
+    <View style={styles.root}>
+      <View style={styles.header}>
+        <Text style={styles.title}>약관 · 방침 관리</Text>
+        <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
+          <Text style={styles.refreshText}>새로 고침</Text>
+        </Pressable>
       </View>
-      <Text style={styles.dateText}>저장한 초안은 검토 후 공개해주세요. 공개하면 웹 문서에 즉시 반영되고 이후 동의에 새 버전이 기록돼요.</Text>
-      {doc.latestDraftVersion ? <DeleteContentButton name={`${doc.label} 미공개 초안`} onDelete={async () => { await apiFetch(`/v1/admin/terms/${active}/draft`, { method: 'DELETE' }); setRev((v) => v + 1); }} /> : null}
-      <ScrollView>{doc.clauses.map((clause)=><View style={styles.clauseRow} key={clause.id}><View style={styles.clauseMain}><Text style={styles.clauseArticle}>{clause.articleNumber}. {clause.title}</Text><Text style={styles.clauseBody}>{clause.body}</Text></View>
-        <ContentButton label="수정" disabled={!access.canEdit||!doc.latestDraftVersion} onPress={()=>setEditing(clause)} />
-        {doc.latestDraftVersion?<DeleteContentButton name={clause.title} onDelete={async()=>{await apiFetch(`/v1/admin/terms/${active}/clauses/${clause.id}`,{method:'DELETE'});setRev((v)=>v+1);}} />:null}
-      </View>)}</ScrollView>
-    </View>:null}
-    {editing?<ContentForm title={editing==='new'?'조문 등록':'조문 수정'} fields={editing !== 'new' && editing.sourcePath ? FIELDS.filter((field) => field.key === 'body') : FIELDS} initial={editing==='new'?{articleNumber:'',title:'',body:''}:{articleNumber:editing.articleNumber,title:editing.title,body:editing.body}}
-      onClose={()=>setEditing(null)} onSave={async(values)=>{await apiFetch(`/v1/admin/terms/${active}/clauses${editing==='new'?'':`/${editing.id}`}`,{method:editing==='new'?'POST':'PUT',body:JSON.stringify(values)});setRev((v)=>v+1);}} />:null}
-    {publishing&&doc?<ConfirmCard title="초안을 공개할까요?" body={doc.label} items={['웹 문서에 즉시 반영돼요.','공개본은 수정·삭제하지 않고 새 초안으로 이어서 고쳐요.','신규 동의 기록에 이 버전을 남겨요.']} cta={busy?'공개 중…':'공개'} onCancel={()=>{if(!busy)setPublishing(false);}} onConfirm={()=>void act(`/v1/admin/terms/${active}/publish`)} />:null}
-  </View>;
+
+      {/*
+        * **약관 정본은 웹사이트다**(2026-09-11 대표 지시 — `apps/web/src/subpages.ts`).
+        * 여기서 고치게 만들면 같은 문서가 두 벌이 되고, 한 벌이 낡으면 낡은 쪽을
+        * 사용자가 본다. 「관리자에서 직접 조작」을 어디에 둘지는 두 안을 올려 두었고
+        * (`docs/admin-screen-inventory.md`), 정해지기 전까지는 조회만 둔다.
+        */}
+      <PendingBackendNotice
+        actions="약관 편집·공개"
+        reason="약관 정본은 웹사이트에 있어요. 여기서는 저장된 초안과 판 이력을 확인할 수 있어요."
+      />
+      <DelayedLoader active={loading} size={40} style={styles.centered} />
+      {!loading && error && (
+        <View style={styles.centered}>
+          <Text style={styles.errorText}>{error}</Text>
+          <Pressable style={styles.retryBtn} onPress={() => setRev((r) => r + 1)}>
+            <Text style={styles.retryText}>다시 시도</Text>
+          </Pressable>
+        </View>
+      )}
+
+      {!loading && !error && data && (
+        <View style={styles.body}>
+          {/* 문서 탭 */}
+          <View style={styles.docTabs}>
+            {data.documents.map((doc) => (
+              <Pressable
+                key={doc.type}
+                style={[styles.docTab, activeDoc === doc.type && styles.docTabActive]}
+                onPress={() => setActiveDoc(doc.type)}
+              >
+                <Text style={[styles.docTabText, activeDoc === doc.type && styles.docTabTextActive]}>
+                  {DOC_LABEL[doc.type]}
+                </Text>
+                {doc.latestDraftVersion && (
+                  <View style={styles.draftDot} />
+                )}
+              </Pressable>
+            ))}
+          </View>
+
+          {activeDocData && (
+            <View style={styles.docBody}>
+              <View style={styles.docMeta}>
+                <View>
+                  <Text style={styles.versionText}>
+                    현재 공개 버전: {activeDocData.currentVersion}
+                  </Text>
+                  {activeDocData.publishedAt && (
+                    <Text style={styles.dateText}>
+                      공개일: {formatDateDot(activeDocData.publishedAt)}
+                    </Text>
+                  )}
+                  {activeDocData.latestDraftVersion && (
+                    <Text style={styles.draftText}>
+                      미공개 초안: {activeDocData.latestDraftVersion}
+                    </Text>
+                  )}
+                </View>
+                {activeDocData.latestDraftVersion && (
+                  <Pressable
+                    style={[styles.publishBtn, (BACKEND_PENDING || publishing) && styles.btnDisabled]}
+                    onPress={() => { setActionError(null); setAskingPublish(true); }}
+                    disabled={BACKEND_PENDING || publishing}
+                  >
+                    <Text style={styles.publishBtnText}>
+                      {publishing ? '공개 중…' : '초안 공개'}
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
+
+              {actionError && (
+                <Text style={styles.actionError}>{actionError}</Text>
+              )}
+
+              <ScrollView>
+                {activeDocData.clauses.map((clause, i) => (
+                  <View key={clause.id} style={[styles.clauseRow, i % 2 === 1 && styles.clauseRowZebra]}>
+                    <View style={styles.clauseMain}>
+                      <Text style={styles.clauseArticle}>{clause.articleNumber}. {clause.title}</Text>
+                      <Text style={styles.clauseBody} numberOfLines={3}>{clause.body}</Text>
+                    </View>
+                    <Pressable style={[styles.editBtn, BACKEND_PENDING && styles.btnDisabled]} disabled={BACKEND_PENDING} onPress={() => openClause(clause)}>
+                      <Text style={styles.editBtnText}>수정</Text>
+                    </Pressable>
+                  </View>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+        </View>
+      )}
+
+      {/* 조문 편집 모달 */}
+      <Modal visible={editingClause !== null} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>
+              {editingClause?.articleNumber}. {editingClause?.title}
+            </Text>
+            <Text style={styles.modalSub}>저장하면 새 초안 버전이 만들어져요.</Text>
+            <TextInput
+              style={styles.clauseInput}
+              multiline
+              value={clauseBody}
+              onChangeText={setClauseBody}
+              textAlignVertical="top"
+            />
+            {actionError && <Text style={styles.saveError}>{actionError}</Text>}
+            <View style={styles.modalActions}>
+              <Pressable style={styles.cancelBtn} onPress={() => setEditingClause(null)} disabled={saving}>
+                <Text style={styles.cancelBtnText}>취소</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.saveBtn, saving && styles.btnDisabled]}
+                onPress={() => void saveClause()}
+                disabled={saving}
+              >
+                <Text style={styles.saveBtnText}>{saving ? '저장 중…' : '저장'}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/*
+        공개한 판은 얼어붙는다 — 사용자가 동의한 글이라 나중에 고칠 수 없다.
+        무엇이 바뀌는지 항목으로 보인 뒤 한 번 더 확인한다(v3.27).
+      */}
+      {askingPublish && activeDocData ? (
+        <ConfirmCard
+          title="초안을 공개할까요?"
+          body="공개한 판의 조문은 다시 고칠 수 없어요."
+          items={[
+            `${activeDocData.label} ${activeDocData.latestDraftVersion ?? ''} 판이 공개돼요`,
+            '공개된 조문은 잠기고, 이어서 고칠 새 초안이 만들어져요',
+            '사용자에게 이 판이 현행으로 보여요',
+            '공개한 사람과 시각이 감사 기록에 남아요',
+          ]}
+          cta="초안 공개"
+          danger
+          onConfirm={() => void publish()}
+          onCancel={() => setAskingPublish(false)}
+        />
+      ) : null}
+
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -161,3 +414,11 @@ const styles = StyleSheet.create({
   saveBtnText: { fontSize: FontSize.t7, fontWeight: '700', color: Colors.light.background },
   btnDisabled: { opacity: 0.5 },
 });
+
+/**
+ * 옛 주소는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제 화면은 `/admin/faq`(사이트·기록)의 약관·방침 탭에 있다 —
+ * `TermsPanel`이 이 파일의 본체다.
+ */
+export default function TermsRedirect() {
+  return <Redirect href="/admin/faq?tab=terms" />;
+}

@@ -1,4 +1,4 @@
-import { useAdminAccess, Page } from './_ui';
+import { Redirect } from 'expo-router';
 /**
  * 링크 미리보기(OG 카드) 관리
  *
@@ -15,6 +15,7 @@ import {
   ActivityIndicator,
   Image,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -69,8 +70,7 @@ function formatWhen(value: string | null): string {
   return `${at.getFullYear()}. ${at.getMonth() + 1}. ${at.getDate()}. ${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`;
 }
 
-export default function OgCardScreen() {
-  const { canEdit, canDelete } = useAdminAccess();
+export function OgCardPanel() {
   const [data, setData] = useState<AdminView | null>(null);
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -257,8 +257,8 @@ export default function OgCardScreen() {
   const imageUrl = draft['ogImageUrl']?.trim() || data.effective.ogImageUrl;
 
   return (
-    <Page title="링크 미리보기"><View style={styles.content}>
-      
+    <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+      <Text style={styles.h1}>링크 미리보기</Text>
       <Text style={styles.lead}>
         카카오톡이나 슬랙에 주소를 붙이면 뜨는 카드예요. 저장한 뒤 「반영하기」를 눌러야 사이트에 나가요.
       </Text>
@@ -321,7 +321,7 @@ export default function OgCardScreen() {
           <Pressable
             style={[styles.button, styles.buttonPrimary]}
             onPress={() => void uploadImage()}
-            disabled={!canEdit || uploading}
+            disabled={uploading}
           >
             {uploading ? (
               <ActivityIndicator color="#fff" />
@@ -330,7 +330,7 @@ export default function OgCardScreen() {
             )}
           </Pressable>
           {data.ogImageSource === 'upload' ? (
-            <Pressable style={styles.button} onPress={() => void removeImage()} disabled={!canDelete || uploading}>
+            <Pressable style={styles.button} onPress={() => void removeImage()} disabled={uploading}>
               <Text style={styles.buttonText}>올린 그림 치우기</Text>
             </Pressable>
           ) : null}
@@ -367,20 +367,20 @@ export default function OgCardScreen() {
       {notice ? <Text style={styles.notice}>{notice}</Text> : null}
 
       <View style={styles.actions}>
-        <Pressable style={[styles.button, styles.buttonPrimary]} onPress={save} disabled={!canEdit || saving}>
+        <Pressable style={[styles.button, styles.buttonPrimary]} onPress={save} disabled={saving}>
           {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonPrimaryText}>저장</Text>}
         </Pressable>
-        <Pressable style={styles.button} onPress={publish} disabled={!canEdit || publishing}>
+        <Pressable style={styles.button} onPress={publish} disabled={publishing}>
           {publishing ? <ActivityIndicator /> : <Text style={styles.buttonText}>저장 후 반영하기</Text>}
         </Pressable>
       </View>
-    </View></Page>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#f2f3f6' },
-  content: { gap: 20, maxWidth: 1120 },
+  content: { padding: 32, gap: 20, maxWidth: 1120 },
   h1: { fontSize: FontSize.t3, fontWeight: '700', color: '#212124' },
   lead: { fontSize: FontSize.t7, lineHeight: LineHeight.t7, color: '#4d5159' },
   row: { flexDirection: 'row', gap: 16, flexWrap: 'wrap' },
@@ -445,3 +445,11 @@ const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   error: { padding: 32, fontSize: FontSize.t7, color: '#d92d20' },
 });
+
+/**
+ * 옛 주소는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제 화면은 `/admin/faq`(사이트·기록)의 링크 미리보기 탭에 있다 —
+ * `OgCardPanel`이 이 파일의 본체다.
+ */
+export default function OgCardRedirect() {
+  return <Redirect href="/admin/faq?tab=og-card" />;
+}

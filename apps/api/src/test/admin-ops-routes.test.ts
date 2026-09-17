@@ -451,21 +451,21 @@ describeWithDb('관리자 운영·시스템 라우트', () => {
       return { versionId: version[0]!.id, clauseId: clause[0]!.id };
     }
 
-    it('초안 조문을 편집하고 다시 조회하면 저장한 내용이 보인다', async () => {
+    it('앱 약관 연결 전에는 조문 편집을 거부하고 원문을 보존한다', async () => {
       const operator = await operatorHeaders();
       const { clauseId } = await draftWithClause();
 
       const response = await put(
         `/v1/admin/terms/terms/clauses/${clauseId}`,
         operator.headers,
-        { articleNumber: '제1조', title: '목적', body: '고친 내용' }
+        { body: '고친 내용' }
       );
-      expect(response.statusCode).toBe(200);
+      expect(response.statusCode).toBe(400);
 
       const body = (await get('/v1/admin/terms', operator.headers)).json() as {
         documents: { type: string; clauses: { body: string }[] }[];
       };
-      expect(body.documents.find((d) => d.type === 'terms')?.clauses[0]?.body).toBe('고친 내용');
+      expect(body.documents.find((d) => d.type === 'terms')?.clauses[0]?.body).toBe('처음 내용');
     });
 
     it('내부 공개 함수는 판을 보존하고 다음 초안을 만든다', async () => {
@@ -492,9 +492,9 @@ describeWithDb('관리자 운영·시스템 라우트', () => {
       const response = await put(
         `/v1/admin/terms/terms/clauses/${clauseId}`,
         operator.headers,
-        { articleNumber: '제1조', title: '목적', body: '몰래 고침' }
+        { body: '몰래 고침' }
       );
-      expect(response.statusCode).toBe(404);
+      expect(response.statusCode).toBe(400);
     });
 
     /*
@@ -924,6 +924,149 @@ describeWithDb('관리자 운영·시스템 라우트', () => {
         status: 'active',
       });
       expect(again.statusCode).toBe(400);
+    });
+
+    /*
+     * 2026-09-16까지 이 셋은 **성공만 돌려주고 아무것도 하지 않았다** — POST는 새
+     * uuid를, PATCH · DELETE는 204를 냈다. 표에는 아무것도 남지 않았다.
+     *
+     * 그래서 상태 코드만 보지 않는다. **표를 다시 읽어 확인한다** — 204가 오는
+     * 것과 줄이 바뀌는 것은 다른 말이고, 예전 판은 앞쪽만 하고 있었다.
+     */
+    async function aVendor(): Promise<string> {
+      const { rows } = await test.pool.query<{ id: string }>(
+        `INSERT INTO structured.vendors (name, category, region, source)
+         VALUES ('강남 B 스튜디오 ' || gen_random_uuid(), 'studio', '서울', 'public_data')
+         RETURNING id`
+      );
+      return rows[0]!.id;
+    }
+
+    const newAd = (vendorId: string) => ({
+      vendorId,
+      surface: 'vendor_detail',
+      tier: 'light',
+      category: 'studio',
+      region: '서울',
+      startsOn: '2026-10-01',
+      endsOn: '2026-10-31',
+    });
+
+    it('등록하면 표에 남는다', async () => {
+      const operator = await operatorHeaders();
+      const vendorId = await aVendor();
+
+      const created = await post('/v1/admin/ads', operator.headers, newAd(vendorId));
+      expect(created.statusCode).toBe(201);
+
+      const { id } = created.json() as { id: string };
+
+      const { rows } = await test.pool.query<{
+        vendor_id: string;
+        tier: string;
+        surface: string;
+        region: string | null;
+      }>('SELECT vendor_id, tier, surface, region FROM ads.placements WHERE id = $1', [id]);
+
+      expect(rows[0]).toMatchObject({
+        vendor_id: vendorId,
+        tier: 'light',
+        surface: 'vendor_detail',
+        region: '서울',
+      });
+
+      /* 누가 넣었는지가 같이 남는다. 돈이 오간 자리라 그 질문이 반드시 나온다. */
+      const { rows: decided } = await test.pool.query<{ actor_user_id: string }>(
+        `SELECT actor_user_id FROM structured.decisions
+         WHERE workflow = 'ad_placement' AND step = 'add' AND subject_id = $1`,
+        [id]
+      );
+      expect(decided[0]?.actor_user_id).toBe(operator.userId);
+    });
+
+    it('고치면 넣은 칸만 바뀐다', async () => {
+      const operator = await operatorHeaders();
+      const vendorId = await aVendor();
+      const { id } = (
+        await post('/v1/admin/ads', operator.headers, newAd(vendorId))
+      ).json() as { id: string };
+
+      const changed = await patch(`/v1/admin/ads/${id}`, operator.headers, {
+        tier: 'premium',
+        endsOn: '2026-11-30',
+      });
+      expect(changed.statusCode).toBe(204);
+
+      const { rows } = await test.pool.query<{
+        tier: string;
+        surface: string;
+        region: string | null;
+        ends_on: Date;
+      }>('SELECT tier, surface, region, ends_on FROM ads.placements WHERE id = $1', [id]);
+
+      expect(rows[0]?.tier).toBe('premium');
+      expect(rows[0]?.ends_on.toISOString().slice(0, 10)).toBe('2026-11-30');
+      /* 안 보낸 칸은 그대로다. NULL로 덮으면 조건 없는 광고가 된다. */
+      expect(rows[0]?.surface).toBe('vendor_detail');
+      expect(rows[0]?.region).toBe('서울');
+    });
+
+    it('빈 본문으로는 고치지 않는다', async () => {
+      const operator = await operatorHeaders();
+      const vendorId = await aVendor();
+      const { id } = (
+        await post('/v1/admin/ads', operator.headers, newAd(vendorId))
+      ).json() as { id: string };
+
+      expect((await patch(`/v1/admin/ads/${id}`, operator.headers, {})).statusCode).toBe(400);
+    });
+
+    it('내리면 표에서 사라지고, 없는 자리는 404다', async () => {
+      const operator = await operatorHeaders();
+      const vendorId = await aVendor();
+      const { id } = (
+        await post('/v1/admin/ads', operator.headers, newAd(vendorId))
+      ).json() as { id: string };
+
+      const removed = await test.app.inject({
+        method: 'DELETE',
+        url: `/v1/admin/ads/${id}`,
+        headers: operator.headers,
+      });
+      expect(removed.statusCode).toBe(204);
+
+      const { rowCount } = await test.pool.query('SELECT 1 FROM ads.placements WHERE id = $1', [
+        id,
+      ]);
+      expect(rowCount).toBe(0);
+
+      const again = await test.app.inject({
+        method: 'DELETE',
+        url: `/v1/admin/ads/${id}`,
+        headers: operator.headers,
+      });
+      expect(again.statusCode).toBe(404);
+    });
+
+    /*
+     * 표가 없어서 「나」로 간 셋. **성공을 돌려주지 않는다는 것 자체가 사양이다** —
+     * 204로 되돌아가면 이 시험이 잡는다.
+     */
+    it.each([
+      ['PATCH', '/v1/admin/ads-gate'],
+      ['PATCH', '/v1/admin/automation'],
+      ['POST', '/v1/admin/campaigns'],
+    ])('%s %s는 성공을 지어내지 않는다', async (method, url) => {
+      const operator = await operatorHeaders();
+
+      const response = await test.app.inject({
+        method: method as 'PATCH' | 'POST',
+        url,
+        headers: operator.headers,
+        payload: {},
+      });
+
+      expect(response.statusCode).toBe(400);
     });
   });
 });

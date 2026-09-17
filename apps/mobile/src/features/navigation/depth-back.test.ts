@@ -174,6 +174,13 @@ describe('ROUTES가 src/app과 같은가', () => {
        */
       if (!entry.name.endsWith('.tsx') || entry.name.startsWith('_')) continue;
 
+      /*
+       * `+html.tsx`는 화면이 아니라 **웹으로 내보낸 HTML의 껍데기**다. expo-router가 따로
+       * 읽어 문서 전체를 감싸고, 주소로 들어갈 수 있는 자리가 아니다. `+`로 시작하는 파일이
+       * 전부 그런 것은 아니라(`+not-found.tsx`는 진짜 라우트다) 이름을 콕 집어 거른다.
+       */
+      if (entry.name === '+html.tsx') continue;
+
       // `map.web.tsx`는 `map.tsx`와 같은 라우트다.
       const base = entry.name.replace(/\.web\.tsx$/, '').replace(/\.tsx$/, '');
       const segments = base === 'index' ? prefix : [...prefix, base];

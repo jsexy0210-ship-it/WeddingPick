@@ -2,7 +2,7 @@ import React from 'react';
 import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import { router } from 'expo-router';
 
-import { getCurrentUser, listCandidates, completeSetup, createInquiry, listMyInquiries } from '@/api/client';
+import { getCurrentUser, listCandidates, completeSetup, createInquiry, listFaq, listMyInquiries } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
 import ContactScreen from '@/app/(tabs)/my/contact';
 import StyleScreen from '@/app/(tabs)/my/taste';
@@ -46,6 +46,8 @@ jest.mock('@/api/client', () => ({
   completeSetup: jest.fn(),
   createInquiry: jest.fn(),
   listMyInquiries: jest.fn(),
+  /* 문의 화면은 자주 묻는 것을 위에 띄운다 — 2026-09-16부터 서버에서 받아 온다. */
+  listFaq: jest.fn(),
 }));
 jest.mock('@/api/config', () => ({ isServerConfigured: true }));
 jest.mock('@/components/back-bar', () => ({ BackBar: 'BackBar' }));
@@ -55,7 +57,7 @@ jest.mock('@/features/onboarding/inline-toast', () => ({
   InlineToast: 'InlineToast',
   useInlineToast: () => ({ toast: null, show: jest.fn(), hide: jest.fn() }),
 }));
-jest.mock('@/features/onboarding/style-grid', () => ({ StyleGrid: 'StyleGrid' }));
+jest.mock('@/features/onboarding/option-row', () => ({ OptionRow: 'OptionRow' }));
 jest.mock('@/features/settings/my-kit', () => ({
   Hero: 'Hero', NavAction: 'NavAction', NoteBox: 'NoteBox', Section: 'Section', SubScreen: 'SubScreen',
 }));
@@ -100,6 +102,8 @@ function backButtons() {
 describe('/my/contact — 문의 완료·목록 하단', () => {
   beforeEach(() => {
     jest.mocked(listMyInquiries).mockResolvedValue({ inquiries: [] } as never);
+    /* `resetMocks: true`가 매번 구현을 지운다 — 여기서 다시 붙여야 한다. */
+    jest.mocked(listFaq).mockResolvedValue({ items: [] } as never);
   });
 
   it('정상 진입: 「돌아가기」가 MY로 올라간다', async () => {
@@ -130,6 +134,16 @@ describe('/my/contact — 문의 완료·목록 하단', () => {
     await act(async () => backButtons()[0]!.props.onPress());
     expect(landedOn()).toBe('/my');
     expect(router.replace).toHaveBeenCalledWith('/my');
+  });
+
+  it('기록이 있으면 History Back이다 — 계층표(dismissTo/replace)를 보지 않는다', async () => {
+    mockPathname = '/my/contact';
+    jest.mocked(router.canGoBack).mockReturnValueOnce(true);
+    await mount(<ContactScreen />);
+    await act(async () => backButtons()[0]!.props.onPress());
+    expect(router.back).toHaveBeenCalledTimes(1);
+    expect(router.dismissTo).not.toHaveBeenCalled();
+    expect(router.replace).not.toHaveBeenCalled();
   });
 });
 

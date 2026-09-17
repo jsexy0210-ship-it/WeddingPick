@@ -6,7 +6,7 @@
  *
  * 시안 `21-admin.dc.html`의 `dash` 화면. 네 덩어리다.
  *
- *   1. 확인 · 승인할 일    사람이 결정해야만 진행되는 것. 한 줄을 누르면 그 화면으로 간다.
+ *   1. 안대표가 볼 일    사람이 결정해야만 진행되는 것. 한 줄을 누르면 그 화면으로 간다.
  *   2. 자동 검토 현황    자동이 끝낸 것 · 못 끝낸 것 · 사람에게 넘어간 것.
  *   3. 3열 카드 그리드   `dashCards` — 라벨 + 처리 방식 배지 · 큰 숫자 + 단위 · 한 줄 설명.
  *   4. 자동 판정 로그    무엇으로 · 왜 · 얼마나 확신했는지.
@@ -17,15 +17,24 @@
  * 뼈대와 규칙은 `_ui.tsx`가 든다(배너 · 빈 상태 · tabular-nums · 카드 안 표 스크롤).
  * 숫자는 전부 `GET /v1/admin/dashboard`가 실제 큐에서 세어 보내고, 서버는 `tone` ·
  * `mode` 같은 뜻만 보낸다 — 색은 여기서 토큰으로 고른다.
+ *
+ * **2026-09-15 대표 확정 — 「대시보드」 화면의 탭 둘 중 하나(요약)다.** 「일일
+ * 브리핑」(옛 `/admin/briefing`)과 묶였다 — 처음엔 위아래로 붙였는데, 대표님이
+ * 「비슷한 유형끼리 탭으로 묶어도 된다」고 넓히시면서 다른 묶음과 같은 탭 모양으로
+ * 맞췄다. 이 파일 맨 아래 `HomeShell`이 그 껍데기고, 여기 있던 본문은
+ * `HomePanel`로 이름만 바꿨다.
  */
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AdminSpacing as A, Colors, FontSize, LineHeight, Radius } from '@weddingpick/ui';
+import { formatCount } from '@weddingpick/domain';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { BriefingPanel } from './briefing';
 import {
+  AdminTabShell,
   Bars,
   Card,
   CardGrid,
@@ -36,6 +45,7 @@ import {
   Page,
   Rows,
   StatusBanner,
+  type AdminTabDef,
   type BarItem,
   type Col,
   type Kind,
@@ -47,7 +57,7 @@ import {
 
 /** 회원 추이. `GET /v1/admin/members-trend`가 구간별로 준다. */
 type MemberBucket = 'day' | 'week' | 'month' | 'year';
-type MemberTrendPoint = { at: string; signups: number; total: number };
+type MemberTrendPoint = { at: string; signups: number; withdrawals: number; total: number };
 type MemberTrend = { bucket: MemberBucket; points: MemberTrendPoint[]; current: number };
 
 type QueueTone = 'danger' | 'caution';
@@ -147,7 +157,7 @@ function hhmmKst(iso: string): string {
 
 /** 워크플로별 표의 열. 폭은 1920 기준이고 이름 열이 남는 폭을 먹는다. */
 const WORKFLOW_COLS: Col[] = [
-  { key: 'workflow', label: '자동 처리 업무', width: 220, grow: true },
+  { key: 'workflow', label: '워크플로', width: 220, grow: true },
   { key: 'rate', label: '자동 처리 비중', width: 120, align: 'right' },
   { key: 'concluded', label: '자동', width: 80, align: 'right' },
   { key: 'failed', label: '실패', width: 80, align: 'right' },
@@ -186,13 +196,18 @@ function bucketLabel(iso: string, bucket: MemberBucket): string {
   return parts({ month: 'numeric', day: 'numeric' });
 }
 
-export default function AdminHomeScreen() {
+function HomePanel() {
   const router = useRouter();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rev, setRev] = useState(0);
-  const [bucket, setBucket] = useState<MemberBucket>('month');
+  /*
+   * 2026-09-15 대표 지시 — 「일 통계가 디폴트로 보여진다」. 전에는 'month'였다.
+   * 대표님이 매일 보시는 것은 어제와 오늘의 차이라, 월이 먼저 뜨면 그 차이가
+   * 한 칸 안에 뭉개진다.
+   */
+  const [bucket, setBucket] = useState<MemberBucket>('day');
   const [trend, setTrend] = useState<MemberTrend | null>(null);
   const [trendError, setTrendError] = useState<string | null>(null);
 
@@ -254,7 +269,7 @@ export default function AdminHomeScreen() {
   const bannerTitle = urgent
     ? '되돌릴 수 없는 결정이 기다리고 있어요'
     : total > 0
-      ? `확인할 것이 ${total}건 있어요`
+      ? `확인할 것이 ${formatCount(total)}건 있어요`
       : '확인할 것이 없어요';
 
   const queueRows: RowItem[] = (data?.humanQueue ?? [])
@@ -265,7 +280,7 @@ export default function AdminHomeScreen() {
       name: item.label,
       meta: item.why,
       bold: true,
-      num: `${item.count}건`,
+      num: `${formatCount(item.count)}건`,
       numKind: QUEUE_TONE[item.tone],
       onPress: () => open(item.key),
     }));
@@ -274,7 +289,7 @@ export default function AdminHomeScreen() {
     key: seg.key,
     dot: seg.key === 'concluded' ? 'ok' : seg.key === 'failed' ? 'bad' : 'warn',
     name: seg.label,
-    num: `${seg.count}건`,
+    num: `${formatCount(seg.count)}건`,
     numKind: SEGMENT_KIND[seg.key],
   }));
 
@@ -305,15 +320,29 @@ export default function AdminHomeScreen() {
    * 막대 높이는 그 구간의 **최대 가입 수**를 100으로 놓고 잡는다. 누적 회원과 같은
    * 자를 쓰면 가입 수 막대가 전부 바닥에 붙어 아무것도 읽히지 않는다 — 누적은
    * 숫자로 말하고 막대는 가입 수만 그린다.
+   *
+   * **탈퇴도 같은 자를 쓴다**(2026-09-15 대표 지시 — 「탈퇴 여부도 같이 차트에
+   * 보여줘」). 탈퇴에 제 최대값을 따로 주면 탈퇴 1건이 가입 100건과 같은 높이로
+   * 서고, 나란히 놓인 두 막대가 「가입만큼 나갔다」로 읽힌다. 자가 하나여야
+   * 둘을 비교한 것이 된다.
    */
-  const trendMax = Math.max(1, ...(trend?.points ?? []).map((p) => p.signups));
+  const trendMax = Math.max(
+    1,
+    ...(trend?.points ?? []).map((p) => Math.max(p.signups, p.withdrawals))
+  );
   const trendBars: BarItem[] = (trend?.points ?? []).map((point) => ({
     label: bucketLabel(point.at, bucket),
     pct: (point.signups / trendMax) * 100,
     kind: 'brand',
-    value: String(point.signups),
+    value: formatCount(point.signups),
+    secondary: {
+      pct: (point.withdrawals / trendMax) * 100,
+      value: formatCount(point.withdrawals),
+      kind: 'danger',
+    },
   }));
   const trendSignups = (trend?.points ?? []).reduce((sum, point) => sum + point.signups, 0);
+  const trendWithdrawals = (trend?.points ?? []).reduce((sum, point) => sum + point.withdrawals, 0);
 
   const logRows: TableRow[] = (data?.autoLog ?? []).map((r) => ({
     key: r.id,
@@ -328,9 +357,10 @@ export default function AdminHomeScreen() {
 
   return (
     <Page
-      title="대시보드"
-      sub="지금 봐야 할 것 · 회원 추이 · 처리 현황"
-      action={{ label: '새로고침', onPress: reload, permission: 'view' }}
+      embedded
+      title="요약"
+      sub="회원 추이 · 지금 봐야 할 것 · 처리 현황"
+      action={{ label: '새로 고침', onPress: reload }}
     >
       <DelayedLoader active={loading} size={40} />
       {!loading && error ? <LoadError message={error} onRetry={reload} /> : null}
@@ -343,51 +373,15 @@ export default function AdminHomeScreen() {
             detail={
               total === 0
                 ? '사람이 결정해야 하는 건을 모두 끝냈어요.'
-                : `모두 ${total}건 · 최근 24시간 판정 ${decided}건 중 ${auto.ratePct ?? 0}%가 자동으로 끝났어요.`
+                : `모두 ${formatCount(total)}건 · 최근 24시간 판정 ${formatCount(decided)}건 중 ${auto.ratePct ?? 0}%가 자동으로 끝났어요.`
             }
           />
 
-          <CardGrid>
-            {/* 1. 사람이 결정해야만 진행되는 것. 한 줄을 누르면 그 화면으로 간다. */}
-            <Card title="확인 · 승인할 일" sub={`모두 ${total}건`}>
-              {total === 0 ? (
-                /* 빈 큐는 실패가 아니라 목표다(ADMIN.md 공통 규칙). */
-                <EmptyState
-                  title="확인할 것이 없어요"
-                  detail="사람이 결정해야 하는 건을 모두 끝냈어요."
-                />
-              ) : (
-                <Rows items={queueRows} />
-              )}
-            </Card>
-
-            {/* 2. 자동이 끝낸 것과 사람에게 남은 것. */}
-            <Card
-              title="자동 검토 현황"
-              sub="최근 24시간 · 운영자 확인이 필요한 건만 모았어요"
-              note="되돌림은 자동 판정을 사람이 취소한 건이에요. 같은 업무에서 되돌림이 늘면 처리 기준을 확인해주세요."
-            >
-              {decided === 0 ? (
-                <EmptyState
-                  title="최근 24시간에 판정이 없어요"
-                  detail="건이 들어오면 자동 검토가 먼저 돌아요."
-                />
-              ) : (
-                <>
-                  {/* 시안 dash의 대표 수치 — 40/700(typography.scale adminHero). */}
-                  <View style={styles.rateRow}>
-                    <Text style={styles.rateValue}>{auto.ratePct}</Text>
-                    <Text style={styles.rateUnit}>%</Text>
-                    <Text style={styles.rateLabel}>자동 처리율</Text>
-                  </View>
-                  <Rows items={segmentRows} />
-                </>
-              )}
-            </Card>
-          </CardGrid>
-
           {/*
-            3. 회원 추이(2026-09-11 대표 지시 — 「회원은 차트를 활용해 시각화 한다」).
+            1. 회원 추이(2026-09-11 대표 지시 — 「회원은 차트를 활용해 시각화 한다」).
+
+            **맨 위다**(2026-09-15 대표 지시 — 「회원가입 통계가 제일 상단에
+            오도록」). 전에는 큐·자동 검토 아래 셋째였다.
 
             **차트 라이브러리를 들이지 않았다.** 이 저장소에 차트 의존성이 없고, 막대
             추이를 그리는 `Bars`가 이미 `_ui.tsx`에 있다. 의존성 하나는 관리자 화면만
@@ -398,9 +392,9 @@ export default function AdminHomeScreen() {
             sub={
               trend === null
                 ? '불러오는 중'
-                : `지금 ${trend.current.toLocaleString('ko-KR')}명 · 이 구간 가입 ${trendSignups.toLocaleString('ko-KR')}명`
+                : `지금 ${formatCount(trend.current)}명 · 이 구간 가입 ${formatCount(trendSignups)}명 · 탈퇴 ${formatCount(trendWithdrawals)}명`
             }
-            note="누적은 탈퇴한 계정을 뺀 수예요. 가입 수는 그 칸에 실제로 들어온 수라서 나중에 탈퇴해도 줄지 않아요."
+            note="막대는 왼쪽이 가입 · 오른쪽이 탈퇴예요. 누적은 탈퇴한 계정을 뺀 수이고, 가입 수는 그 칸에 실제로 들어온 수라서 나중에 탈퇴해도 줄지 않아요."
             full
           >
             <View style={styles.bucketRow}>
@@ -424,6 +418,45 @@ export default function AdminHomeScreen() {
             )}
           </Card>
 
+          <CardGrid>
+            {/* 2. 사람이 결정해야만 진행되는 것. 한 줄을 누르면 그 화면으로 간다. */}
+            <Card title="안대표가 볼 일" sub={`모두 ${formatCount(total)}건`}>
+              {total === 0 ? (
+                /* 빈 큐는 실패가 아니라 목표다(ADMIN.md 공통 규칙). */
+                <EmptyState
+                  title="확인할 것이 없어요"
+                  detail="사람이 결정해야 하는 건을 모두 끝냈어요."
+                />
+              ) : (
+                <Rows items={queueRows} />
+              )}
+            </Card>
+
+            {/* 3. 자동이 끝낸 것과 사람에게 남은 것. */}
+            <Card
+              title="자동 검토 현황"
+              sub="최근 24시간 · 리스크가 큰 건만 사람이 봐요"
+              note="되돌림은 자동 판정을 사람이 취소한 건이에요. 같은 워크플로에서 되돌림이 늘면 그 기준부터 손봐요."
+            >
+              {decided === 0 ? (
+                <EmptyState
+                  title="최근 24시간에 판정이 없어요"
+                  detail="건이 들어오면 자동 검토가 먼저 돌아요."
+                />
+              ) : (
+                <>
+                  {/* 시안 dash의 대표 수치 — 40/700(typography.scale adminHero). */}
+                  <View style={styles.rateRow}>
+                    <Text style={styles.rateValue}>{auto.ratePct}</Text>
+                    <Text style={styles.rateUnit}>%</Text>
+                    <Text style={styles.rateLabel}>자동 처리율</Text>
+                  </View>
+                  <Rows items={segmentRows} />
+                </>
+              )}
+            </Card>
+          </CardGrid>
+
           {/*
             4. 3열 × 2줄. 시안의 카드 순서가 곧 설계다 —
             내가 돈을 쓰는 것 → 내가 봐야 하는 지표 → 자동으로 도는 것.
@@ -432,8 +465,8 @@ export default function AdminHomeScreen() {
           <KpiRow items={cards.slice(3, 6)} />
 
           <Card
-            title="업무별 자동 처리"
-            sub={`판정 유지율 ${auto.keepRatePct === null ? '—' : `${auto.keepRatePct}%`} · 되돌림 ${auto.revertedCount}건 · 판정 시간 중앙값 ${
+            title="워크플로별 자동 처리"
+            sub={`판정 유지율 ${auto.keepRatePct === null ? '—' : `${auto.keepRatePct}%`} · 되돌림 ${formatCount(auto.revertedCount)}건 · 판정 시간 중앙값 ${
               auto.medianLatencyMs === null ? '—' : `${(auto.medianLatencyMs / 1000).toFixed(1)}초`
             }`}
             full
@@ -448,6 +481,24 @@ export default function AdminHomeScreen() {
         </>
       ) : null}
     </Page>
+  );
+}
+
+const TABS: AdminTabDef[] = [
+  { key: 'home', label: '요약' },
+  { key: 'briefing', label: '일일 브리핑' },
+];
+
+/** 「대시보드」 — 요약과 일일 브리핑을 탭 둘로 묶는다(2026-09-15 대표 확정, 탭 재편). */
+export default function HomeShell() {
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
+  const initial = TABS.some((t) => t.key === tab) ? (tab as string) : 'home';
+  const [active, setActive] = useState(initial);
+
+  return (
+    <AdminTabShell tabs={TABS} active={active} onChange={setActive}>
+      {active === 'home' ? <HomePanel /> : <BriefingPanel />}
+    </AdminTabShell>
   );
 }
 

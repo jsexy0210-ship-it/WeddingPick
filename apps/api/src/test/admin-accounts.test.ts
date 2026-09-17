@@ -289,12 +289,7 @@ describeWithDb('관리자 계정 관리', () => {
         headers: gone.headers,
       });
 
-      expect(response.statusCode).toBe(401);
-      const active = await test.pool.query(
-        `SELECT 1 FROM identity.active_sessions WHERE user_id =
-           (SELECT user_id FROM structured.admin_accounts WHERE login_id = $1)`, ['shown-out']
-      );
-      expect(active.rows).toHaveLength(0);
+      expect(response.statusCode).toBe(403);
     });
   });
 
@@ -333,12 +328,7 @@ describeWithDb('관리자 계정 관리', () => {
         headers: shut.headers,
       });
 
-      expect(response.statusCode).toBe(401);
-      const active = await test.pool.query(
-        `SELECT 1 FROM identity.active_sessions WHERE user_id =
-           (SELECT user_id FROM structured.admin_accounts WHERE login_id = $1)`, ['shut-out']
-      );
-      expect(active.rows).toHaveLength(0);
+      expect(response.statusCode).toBe(403);
     });
   });
 
@@ -475,6 +465,169 @@ describeWithDb('관리자 계정 관리', () => {
       delete process.env.ADMIN_PASSWORD_HASH;
 
       expect((await bootstrapLogin()).statusCode).toBe(401);
+    });
+  });
+
+  /*
+   * 2026-09-15 대표 지시 — 부트스트랩 계정(`jsexy0210` 등)이 「진짜 저장된 슈퍼」가
+   * 되는 길. 같은 아이디로 이미 로그인한 적이 있으면 `identity.identities`에
+   * (provider='admin', subject=그 아이디) 줄이 이미 있다 — 그 신원을 무시하고 새
+   * 사람을 만들면 유일 키에 걸려 죽는다.
+   */
+  describe('이미 로그인한 적 있는 아이디로 진짜 계정을 만들 때', () => {
+    it('있는 신원을 그대로 쓴다 — 새 사람을 만들지 않는다', async () => {
+      const boss = await adminSession(test, 'super');
+
+      /* 부트스트랩으로 이미 한 번 로그인해 신원만 생긴 상태를 흉내낸다. */
+      const { rows: existing } = await test.pool.query<{ id: string }>(
+        'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
+      );
+      const existingUserId = existing[0]!.id;
+      await test.pool.query(
+        `INSERT INTO identity.identities (user_id, provider, subject) VALUES ($1, 'admin', 'already-seen')`,
+        [existingUserId]
+      );
+
+      const response = await create(boss.headers, { loginId: 'already-seen', role: 'super' });
+
+      expect(response.statusCode).toBe(201);
+
+      const { rows } = await test.pool.query<{ user_id: string }>(
+        `SELECT user_id FROM structured.admin_accounts WHERE login_id = 'already-seen'`
+      );
+      expect(rows[0]!.user_id).toBe(existingUserId);
+
+      /* identities에 중복 줄이 생기지 않았다 — 유일 키를 두 번 건드리지 않는다. */
+      const { rows: identities } = await test.pool.query<{ n: string }>(
+        `SELECT count(*)::text AS n FROM identity.identities
+         WHERE provider = 'admin' AND subject = 'already-seen'`
+      );
+      expect(identities[0]!.n).toBe('1');
+    });
+
+    it('그 신원으로 진짜 슈퍼 관리자를 만든 뒤 실제로 로그인된다', async () => {
+      const boss = await adminSession(test, 'super');
+
+      const { rows: existing } = await test.pool.query<{ id: string }>(
+        'INSERT INTO structured.users DEFAULT VALUES RETURNING id'
+      );
+      await test.pool.query(
+        `INSERT INTO identity.identities (user_id, provider, subject) VALUES ($1, 'admin', 'promoted-boss')`,
+        [existing[0]!.id]
+      );
+      await create(boss.headers, { loginId: 'promoted-boss', role: 'super' });
+
+      const response = await test.app.inject({
+        method: 'POST',
+        url: '/v1/admin/login',
+        payload: { id: 'promoted-boss', password: PASSWORD },
+      });
+
+      expect(response.statusCode).toBe(201);
+      expect(response.json()).toMatchObject({ role: 'super' });
+    });
+
+    it('그 아이디가 이미 다른 관리자 계정과 연결돼 있으면 거절한다', async () => {
+      const boss = await adminSession(test, 'super');
+      await create(boss.headers, { loginId: 'has-account', role: 'operator' });
+
+      const { rows: acc } = await test.pool.query<{ user_id: string }>(
+        `SELECT user_id FROM structured.admin_accounts WHERE login_id = 'has-account'`
+      );
+      /* 같은 사람에게 다른 아이디로도 로그인 신원이 하나 더 붙은 상태를 만든다. */
+      await test.pool.query(
+        `INSERT INTO identity.identities (user_id, provider, subject) VALUES ($1, 'admin', 'second-name')`,
+        [acc[0]!.user_id]
+      );
+
+      const response = await create(boss.headers, { loginId: 'second-name', role: 'viewer' });
+
+      expect(response.statusCode).toBe(409);
+    });
+  });
+
+  /*
+   * 2026-09-15 대표 지시 — 「나머지 계정은 싹다 테스트(조회만 가능)으로 변경해」.
+   * 한 번에 여러 계정을 뷰어로 내리는 길.
+   */
+  describe('나머지 전체를 뷰어로', () => {
+    async function demoteOthers(headers: Record<string, string>) {
+      return await test.app.inject({ method: 'POST', url: '/v1/admin/accounts/demote-others', headers });
+    }
+
+    it('내 계정만 남기고 나머지를 뷰어로 내린다', async () => {
+      const boss = await adminSession(test, 'super');
+      await create(boss.headers, { loginId: 'other-super', role: 'super' });
+      await create(boss.headers, { loginId: 'op-1', role: 'operator' });
+      await create(boss.headers, { loginId: 'viewer-1', role: 'viewer' });
+
+      const response = await demoteOthers(boss.headers);
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json<{ changed: string[] }>().changed.sort()).toEqual(['op-1', 'other-super']);
+
+      const { rows } = await test.pool.query<{ login_id: string; role: string }>(
+        `SELECT login_id, role FROM structured.admin_accounts ORDER BY login_id`
+      );
+      expect(rows).toEqual([
+        { login_id: 'admin-super', role: 'super' },
+        { login_id: 'op-1', role: 'viewer' },
+        { login_id: 'other-super', role: 'viewer' },
+        { login_id: 'viewer-1', role: 'viewer' },
+      ]);
+    });
+
+    it('꺼진 계정과 이미 뷰어인 계정은 건드리지 않는다', async () => {
+      const boss = await adminSession(test, 'super');
+      await create(boss.headers, { loginId: 'op-2', role: 'operator' });
+      await test.app.inject({
+        method: 'PATCH',
+        url: `/v1/admin/accounts/${await accountId('op-2')}/disabled`,
+        headers: boss.headers,
+        payload: { disabled: true },
+      });
+
+      const response = await demoteOthers(boss.headers);
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json<{ changed: string[] }>().changed).toEqual([]);
+
+      const { rows } = await test.pool.query<{ role: string; disabled_at: Date | null }>(
+        `SELECT role, disabled_at FROM structured.admin_accounts WHERE login_id = 'op-2'`
+      );
+      expect(rows[0]!.role).toBe('operator');
+      expect(rows[0]!.disabled_at).not.toBeNull();
+    });
+
+    it('감사 기록에 남는다', async () => {
+      const boss = await adminSession(test, 'super');
+      await create(boss.headers, { loginId: 'op-3', role: 'operator' });
+
+      await demoteOthers(boss.headers);
+
+      const { rows } = await test.pool.query<{ step: string; decision: string }>(
+        `SELECT step, decision FROM structured.decisions
+         WHERE workflow = 'admin_account' AND subject_id = (SELECT id FROM structured.admin_accounts WHERE login_id = 'op-3')
+         ORDER BY created_at DESC LIMIT 1`
+      );
+      expect(rows[0]).toEqual({ step: 'grade', decision: 'viewer' });
+    });
+
+    it('부트스트랩 계정(표에 저장된 슈퍼가 없음)은 친절하게 막는다', async () => {
+      process.env.ADMIN_LOGIN_ID = 'bootstrap-id';
+      process.env.ADMIN_PASSWORD_HASH = hashAdminPassword(PASSWORD);
+
+      const login = await test.app.inject({
+        method: 'POST',
+        url: '/v1/admin/login',
+        payload: { id: 'bootstrap-id', password: PASSWORD },
+      });
+      const headers = { authorization: `Bearer ${login.json<{ token: string }>().token}` };
+
+      const response = await demoteOthers(headers);
+
+      expect(response.statusCode).toBe(409);
+      expect(response.json<{ error: { message: string } }>().error.message).toContain('관리자 추가');
     });
   });
 });

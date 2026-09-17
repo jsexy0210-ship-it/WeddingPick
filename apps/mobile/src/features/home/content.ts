@@ -1,18 +1,17 @@
+import { getWeddingFeed } from '@/api/client';
+
 /**
- * 웨딩 정보 — 홈 아래쪽의 이미지 피드.
+ * 웨딩피드 — 홈 아래쪽의 이미지 피드.
  *
- * **서버에 아직 자리가 없다.** 계약에도 API에도 콘텐츠라는 개념이 없다. 그래서
- * 지금은 빈 목록을 돌려주고, 홈은 목록이 비면 그 섹션을 통째로 접는다.
+ * `GET /v1/wedding-feed`(공개된 글만)를 부른다 — 관리자가 등록·수정·삭제하고
+ * 자동 작성이 채우는 그 표다(`apps/api/src/wedding-feed.ts` `listPublished`).
  *
- * 시안에 있는 «투어 전에 정해둘 세 가지» 같은 제목을 하드코딩해 두지 않는 이유는,
- * 그게 시안에서는 자리를 채우는 회색 상자와 같은 역할이지만 앱에서는 **읽을 수
- * 있는 글처럼 보이기** 때문이다. 눌러도 아무것도 없는 카드가 홈에 두 장 있는 것은
- * 섹션이 없는 것보다 나쁘다.
+ * 목록이 비면 홈이 그 섹션을 통째로 접는다 — 눌러도 아무것도 없는 카드가 홈에
+ * 두 장 있는 것은 섹션이 없는 것보다 나쁘다. **실패는 여기서 삼키지 않는다** —
+ * 부르는 쪽마다 다루는 법이 다르다. 홈(`(tabs)/index.tsx`)은 조용히 넘기고,
+ * 전체 보기(`(tabs)/(home)/feed.tsx`)는 오류 화면을 보여준다.
  *
- * 화면은 이 함수만 알고 있어서, 콘텐츠 API가 생기면 여기서 그것을 부르면 된다.
- * 컴포넌트(`WeddingContent`)는 이미 시안대로 다 그려져 있다.
- *
- * 사용자에게 보이는 말은 «웨딩픽 콘텐츠»다 — `AI`라고 적지 않는다.
+ * 사용자에게 보이는 말은 «웨딩피드»다 — `AI`라고 적지 않는다.
  */
 
 export type WeddingContentItem = {
@@ -23,7 +22,47 @@ export type WeddingContentItem = {
   imageUri: string | null;
 };
 
-/** TODO: 콘텐츠 API가 생기면 여기서 부른다. 그때까지 홈의 이 섹션은 접혀 있다. */
-export async function listWeddingContent(): Promise<readonly WeddingContentItem[]> {
-  return [];
+/**
+ * 피드 화면이 그릴 탭 하나.
+ *
+ * **서버가 준다**(2026-09-16 대표 지시 — 「탭별 카테고리별로 다 설정 가능해야한다」).
+ * 탭과 카테고리는 관리자가 표에서 고치고, 앱은 받은 것을 그대로 그린다.
+ * `categories`가 빈 것이 「전체」이고 아무것도 거르지 않는다.
+ */
+export type WeddingFeedTabItem = {
+  key: string;
+  label: string;
+  categories: readonly string[];
+};
+
+/**
+ * 글과 탭을 **한 번에** 받는다.
+ *
+ * 따로 부르면 목록이 먼저 그려지고 탭 줄이 나중에 끼어들어 본문이 손가락 아래에서
+ * 밀린다. 한 응답이면 둘이 같이 나타나거나 같이 안 나타난다.
+ */
+export async function listWeddingFeed(limit?: number): Promise<{
+  items: readonly WeddingContentItem[];
+  tabs: readonly WeddingFeedTabItem[];
+}> {
+  const { items, tabs } = await getWeddingFeed(limit);
+
+  return {
+    items: items.map((item) => ({
+      id: item.id,
+      categoryLabel: item.categoryLabel,
+      title: item.title,
+      imageUri: item.imageUrl,
+    })),
+    tabs,
+  };
+}
+
+/**
+ * 글만 필요한 자리. 홈이 쓴다 — 홈의 웨딩피드는 3건 미리보기라 탭이 없다.
+ */
+export async function listWeddingContent(limit?: number): Promise<readonly WeddingContentItem[]> {
+  const { items } = await listWeddingFeed(limit);
+
+  return items;
 }

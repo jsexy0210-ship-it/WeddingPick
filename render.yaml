@@ -7,26 +7,48 @@
 # 환경변수 API로 직접 넣는다. 값을 바꾸려면 여기가 아니라 그 파일을 고친다.
 #
 # 여기는 서비스의 생김새(빌드 명령·퍼블리시 경로·routes)를 적어두는 용도로 남긴다.
+#
+# **빌드 분(Pipeline Minutes)은 한정돼 있다(2026-09-14 대표 확인).** 무엇이 분을
+# 쓰는지 여기 적어 둔다 — 모르면 아낄 수 없다.
+#
+#   머지               분을 쓰지 않는다. 다섯 서비스 전부 autoDeploy: false다
+#   Manual Deploy      한 번에 한 서비스의 빌드 하나. **이것만 분을 쓴다**
+#   GitHub Actions CI  Render와 무관하다. 여기서 나가는 분은 0이다
+#
+# 가장 비싼 것은 `npm run export:web`(Expo 정적 export)이고, `weddingpick-app-web`과
+# `weddingpick-admin`이 **같은 export를 각자 한 번씩** 돌린다. 산출물만 다르게 깎는
+# 구조라 앱을 배포할 때 관리자까지 함께 누르면 같은 빌드를 두 번 사는 셈이다.
+# **바뀐 쪽만 누른다.**
+#
+# 개발 중에는 배포를 모아서 한다. 브랜치마다 눌러 확인하면 그 수만큼 분이 나간다.
+#
+# **「바뀐 쪽만 누른다」를 2026-09-16에 «실제로» 구현했다.** 그전까지 이 줄은 사람에게
+# 하는 말이었고 자동 배포는 안 지키고 있었다 — `scripts/render-env-sync.py`가 매번
+# 서비스 넷을 전부 눌렀다. 이유가 둘이었다.
+#
+#   1. 재배포 조건이 `changed or wait`인데 워크플로가 `WAIT_FOR_LIVE=true`를 넘겨
+#      **항상 참**이었다
+#   2. `changed`도 늘 참이었다 — 매번 환경변수를 전부 PUT하고 200이 오면 「바뀌었다」로
+#      셌는데, **Render는 같은 값에도 200을 돌려준다**
+#
+# 그래서 문서 한 줄만 고친 날에도 `export:web`이 두 번 돌았다. 지금은 이렇게 한다.
+#
+#   환경변수   쓰기 전에 현재 값을 읽어 비교한다. 같으면 안 쓴다
+#   재배포     그 서비스가 쓰는 파일이 바뀌었을 때만 누른다(`SERVICE_PATHS`)
+#   모르면     **누른다** — 건너뛰어 운영이 낡는 것이 분을 더 쓰는 것보다 나쁘다
+#   전부 밀기  `FORCE_REDEPLOY=true`
+#
+# **`buildCommand`를 고치거나 서비스를 더하면 `SERVICE_PATHS`도 함께 고친다.** 안 고치면
+# 그 서비스는 매번 다시 빌드된다(모르는 이름은 누르게 돼 있다). 시험이 선언과 목록이
+# 어긋났는지 센다(`scripts/test-render-env-sync.py`).
+#
+# **`autoDeploy`를 true로 바꾸지 마라.** 켜는 순간 main에 머지할 때마다 빌드가
+# 돌고, 하루에 여러 번 머지하는 지금 속도로는 분이 빠르게 사라진다. 2026-09-14에
+# `weddingpick-app-web`이 이 파일에 **두 번** 선언돼 있었고 낡은 쪽이
+# `autoDeploy: true`에 옛 API 주소(Ohio)를 들고 있었다 — Blueprint sync가 깨져
+# 있어서 반영되지 않았을 뿐, 고쳐지는 날 그대로 켜졌을 함정이라 지웠다.
 
 services:
-  # 하이브리드 앱 WebView가 읽는 Expo 정적 웹
-  - type: web
-    name: weddingpick-app-web
-    runtime: static
-    staticPublishPath: ./apps/mobile/dist
-    autoDeploy: true
-    buildCommand: npm run export:web --workspace @weddingpick/mobile
-    envVars:
-      - key: EXPO_PUBLIC_API_URL
-        value: https://weddingpickl.onrender.com
-    headers:
-      - path: /_expo/static/*
-        name: Cache-Control
-        value: public, max-age=31536000, immutable
-      - path: /assets/*
-        name: Cache-Control
-        value: public, max-age=31536000, immutable
-
   # 웹 앱 (정적 사이트)
   - type: web
     name: weddingpick-web
@@ -94,6 +116,11 @@ services:
         value: tgp4WVYlYO_qd2nyvHug
       - key: EXPO_PUBLIC_NAVER_REDIRECT_URI
         value: https://weddingpickl-sg.onrender.com/v1/auth/naver/callback
+      # 이 export 자신의 배포 주소. 하이브리드 웹뷰 쉘과 링크 공유 카드(og:url)가
+      # 함께 쓴다(apps/mobile/src/features/webshell/config.ts ·
+      # apps/mobile/src/features/social-meta.ts). 비밀이 아니다.
+      - key: EXPO_PUBLIC_WEB_URL
+        value: https://weddingpick-app-web.onrender.com
     routes:
       # expo-router 클라이언트 라우팅 — 없는 경로를 index.html로 되돌린다.
       - type: rewrite

@@ -2,72 +2,84 @@ import { API_URL } from '@/api/config';
 
 import { clearAdminToken, loadAdminToken } from './_session';
 
+/**
+ * 관리자 화면 전용 API 호출 유틸.
+ *
+ * **관리자 토큰을 붙인다.** 예전에는 일반 사용자 토큰(`@/api/session`)을 붙였는데,
+ * 그 토큰에는 운영 권한이 없어서 서버가 403을 줬다. 그런데 그 403을 「로그인이
+ * 필요해요」로 말해 주는 자리가 없어 화면에는 «잠시 문제가 생겼어요»만 떴다
+ * (2026-09-10 사용자 보고).
+ *
+ * 이제 401·403이면 토큰을 지우고 `AdminUnauthorized`를 던진다 — 화면이 그것을 보고
+ * 로그인으로 돌려보낸다. 오류 문구를 읽어 판단하지 않는다: 문구는 바뀐다.
+ */
 export class AdminUnauthorized extends Error {
   constructor(readonly status: number) {
-    super(status === 403 ? '이 작업을 수행할 권한이 없어요.' : '다시 로그인해주세요.');
+    super(status === 403 ? '이 계정에는 운영 권한이 없어요.' : '다시 로그인해주세요.');
     this.name = 'AdminUnauthorized';
   }
 }
 
-/** 관리자 인증을 사용하며, 응답이 멈춰도 화면에서 다시 시도할 수 있게 한다. */
 export async function apiFetch(path: string, options?: RequestInit): Promise<unknown> {
   const token = await loadAdminToken();
-  const controller = new AbortController();
-  const callerSignal = options?.signal;
-  const abort = () => controller.abort();
-  if (callerSignal?.aborted) abort();
-  else callerSignal?.addEventListener('abort', abort, { once: true });
-  const readOnly = !options?.method || ['GET', 'HEAD'].includes(options.method.toUpperCase());
-  let timedOut = false;
-  const timer = setTimeout(() => {
-    timedOut = true;
-    controller.abort();
-  }, readOnly ? 30_000 : 120_000);
+  const res = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options?.headers as Record<string, string> | undefined),
+    },
+  });
 
-  try {
-    const res = await fetch(`${API_URL}${path}`, {
-      ...options,
-      signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...(options?.headers as Record<string, string> | undefined),
-      },
-    });
+  if (res.status === 401 || res.status === 403) {
+    /*
+     * 403은 「토큰은 맞는데 권한이 없다」일 수도 있다. 그때도 지운다 — 권한이 없는
+     * 토큰을 들고 있어봐야 모든 화면이 같은 오류를 낼 뿐이고, 로그인 화면이 무엇이
+     * 잘못됐는지 말해 주는 편이 낫다.
+     */
+    await clearAdminToken();
 
-    // 권한 부족(403)은 로그인 만료가 아니다. 뷰어도 조회를 계속할 수 있어야 한다.
-    if (res.status === 401) {
-      // 이전 요청의 늦은 401로 새로 로그인한 세션을 지우지 않는다.
-      if ((await loadAdminToken()) === token) {
-        await clearAdminToken();
-        if (typeof window !== 'undefined' && window.location && !window.location.pathname.endsWith('/admin/login')) {
-          window.location.assign('/admin/login');
-        }
-      }
-      throw new AdminUnauthorized(res.status);
+    /*
+     * **여기서 직접 보낸다.** 던지기만 하면 화면마다 그것을 알아보고 이동시켜야
+     * 하는데, 관리자 화면이 서른 개가 넘어서 한 곳만 빠뜨려도 그 화면은 계속
+     * «잠시 문제가 생겼어요»를 띄운다. 실제로 처음 만들었을 때 **서른 화면 전부**가
+     * 이 예외를 처리하지 않았다.
+     *
+     * 콘솔은 웹 전용이라 이 길로 충분하다. 던지기도 계속한다 — 이동은 즉시가
+     * 아니고, 그 사이에 호출부가 응답을 받은 것처럼 진행하면 안 된다.
+     */
+    if (typeof window !== 'undefined' && !window.location.pathname.endsWith('/admin/login')) {
+      window.location.assign('/admin/login');
     }
 
-    if (!res.ok) {
-      const detail = await res.json().then((body: unknown) => {
-        if (typeof body !== 'object' || body === null || !('error' in body)) return undefined;
-        const message = (body as { error?: { message?: unknown } }).error?.message;
-        return typeof message === 'string' ? message : undefined;
-      }).catch(() => undefined);
-      throw new Error(detail ?? (res.status === 403
-        ? '이 작업을 수행할 권한이 없어요.'
-        : '요청을 처리하지 못했어요. 잠시 후 다시 시도해주세요.'));
-    }
-    if (res.status === 204) return null;
-    return await res.json();
-  } catch (error) {
-    if (timedOut) {
-      throw new Error(readOnly
-        ? '서버 응답이 늦어지고 있어요. 다시 불러오기를 눌러주세요.'
-        : '처리 결과를 받지 못했어요. 목록을 새로고침해 반영 여부를 확인해주세요.');
-    }
-    throw error;
-  } finally {
-    clearTimeout(timer);
-    callerSignal?.removeEventListener('abort', abort);
+    throw new AdminUnauthorized(res.status);
   }
+
+  /*
+   * 서버가 적어 보낸 이유를 그대로 쓴다.
+   *
+   * 예전에는 `API /v1/... → 409`만 던졌다. 서버는 «이미 병합된 업체입니다» ·
+   * «실패한 건만 다시 처리할 수 있습니다»처럼 사람이 읽을 말을 `{error:{message}}`에
+   * 담아 보내는데(errors.ts `ApiError.toResponse`), 그것을 버리고 숫자만 남긴
+   * 셈이다. 운영자에게는 「409가 떴다」와 「안 된다」가 같은 말이다.
+   *
+   * 본문이 없거나 그 모양이 아니면 예전처럼 경로와 상태로 돌아간다 — 502처럼
+   * 서버가 아니라 앞단이 낸 응답이 그렇다.
+   */
+  if (!res.ok) {
+    const detail = await res
+      .json()
+      .then((b: unknown) =>
+        typeof b === 'object' && b !== null && 'error' in b
+          ? (b as { error?: { message?: string } }).error?.message
+          : undefined
+      )
+      .catch(() => undefined);
+
+    throw new Error(detail ?? `API ${path} → ${res.status}`);
+  }
+  // 204에는 본문이 없다. res.json()을 부르면 성공한 PATCH가 호출부에서 실패로 잡힌다.
+  if (res.status === 204) return null;
+
+  return res.json();
 }

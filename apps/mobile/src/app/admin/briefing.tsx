@@ -1,12 +1,21 @@
 /**
- * WP-ADM-002 일일 브리핑
+ * WP-ADM-002 일일 브리핑 — 이제 「대시보드」 화면의 아래쪽 절반이다.
  *
  * 시안 `22-admin-ops.dc.html` 1번. 하루치 요약이고, 문제가 없으면 「오늘 사람이 볼 것은
- * 없어요」가 초록 배너로 맨 위에 온다 — 그것이 이 화면의 목적이다. 아직 해결하지 못한 문제가
+ * 없어요」가 초록 배너로 맨 위에 온다 — 그것이 이 화면의 목적이다. 미해결 리스크가
  * 있을 때만 상단 색이 바뀐다.
+ *
+ * **2026-09-15 대표 확정 — 「대시보드」(옛 `/admin/home`)와 한 화면으로 묶였다**(위아래,
+ * 탭이 아니다). 대시보드가 「지금 이 순간의 상태」고 브리핑이 「하루치 요약」이라 같은
+ * 성격이라 굳이 갈라 둘 이유가 없다는 것이 대표님 판단이다. 이 파일의 본체는
+ * `BriefingPanel`로 옮기고 `home.tsx`가 그 안에서 이어 그린다. 자체 서버 응답을
+ * 쓰므로 새로고침은 이 패널 것만 따로 둔다.
  */
 import { useEffect, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
+import { Redirect } from 'expo-router';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
 import {
@@ -15,12 +24,12 @@ import {
   EmptyState,
   KpiRow,
   LoadError,
-  Page,
   Rows,
   StatusBanner,
   type RowItem,
   type Tone,
 } from './_ui';
+import { formatCount } from '@weddingpick/domain';
 
 type RiskItem = { id: string; category: string; description: string; severity: 'high' | 'medium' | 'low' };
 type Anomaly = { time: string; description: string };
@@ -73,7 +82,7 @@ function isBriefingData(d: unknown): d is BriefingData {
   );
 }
 
-const SHAPE_ERROR = '일일 브리핑을 불러오지 못했어요. 잠시 뒤 다시 시도해주세요.';
+const SHAPE_ERROR = '서버가 이 화면이 읽는 모양으로 답하지 않았어요. 서버의 일일 브리핑 집계를 확인해주세요.';
 
 /** 문제 없으면 초록, 확인할 것이 있으면 주황, 조치가 필요하면 빨강(ADMIN.md 공통 규칙). */
 function bannerTone(risks: RiskItem[]): Tone {
@@ -81,7 +90,8 @@ function bannerTone(risks: RiskItem[]): Tone {
   return risks.some((r) => r.severity === 'high') ? 'bad' : 'warn';
 }
 
-export default function BriefingScreen() {
+/** `/admin/home`(대시보드)이 위쪽 대시보드 아래에 이어 그리는 패널. */
+export function BriefingPanel() {
   const [data, setData] = useState<BriefingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -133,11 +143,17 @@ export default function BriefingScreen() {
   const tone = bannerTone(data?.unresolvedRisks ?? []);
 
   return (
-    <Page
-      title="일일 브리핑"
-      sub={data ? `${data.date} 기준` : undefined}
-      action={{ label: '새로고침', onPress: reload, permission: 'view' }}
-    >
+    <View style={styles.panel}>
+      <View style={styles.panelHead}>
+        <View style={styles.panelHeadText}>
+          <Text style={styles.panelTitle}>일일 브리핑</Text>
+          {data ? <Text style={styles.panelSub}>{`${data.date} 기준`}</Text> : null}
+        </View>
+        <Pressable style={styles.panelAction} onPress={reload}>
+          <Text style={styles.panelActionLabel}>새로 고침</Text>
+        </Pressable>
+      </View>
+
       <DelayedLoader active={loading} size={40} />
       {!loading && error ? <LoadError message={error} onRetry={reload} /> : null}
 
@@ -148,14 +164,14 @@ export default function BriefingScreen() {
             title={
               data.unresolvedRisks.length === 0
                 ? '오늘 사람이 볼 것은 없어요'
-                : `아직 해결하지 못한 문제 ${data.unresolvedRisks.length}건이 있어요`
+                : `미해결 리스크 ${formatCount(data.unresolvedRisks.length)}건이 있어요`
             }
             detail={data.summary || undefined}
           />
 
           <KpiRow
             items={[
-              { label: '자동처리', value: `${data.autoProcessed.toLocaleString()}건` },
+              { label: '자동처리', value: `${formatCount(data.autoProcessed)}건` },
               {
                 /*
                  * `successRate`는 0~1 비율이다 — `admin-ops.ts`가
@@ -166,10 +182,10 @@ export default function BriefingScreen() {
                 value: `${(data.successRate * 100).toFixed(1)}%`,
                 kind: data.successRate < 0.9 ? 'bad' : 'ok',
               },
-              { label: '자동복구', value: `${data.autoRecovered.toLocaleString()}건`, kind: 'ok' },
+              { label: '자동복구', value: `${formatCount(data.autoRecovered)}건`, kind: 'ok' },
               {
-                label: '아직 해결하지 못한 문제',
-                value: `${data.unresolvedRisks.length}건`,
+                label: '미해결 리스크',
+                value: `${formatCount(data.unresolvedRisks.length)}건`,
                 note: data.unresolvedRisks.length === 0 ? '확인할 것이 없어요' : '확인 필요',
                 kind: data.unresolvedRisks.length === 0 ? 'ok' : 'bad',
               },
@@ -178,9 +194,9 @@ export default function BriefingScreen() {
           />
 
           <CardGrid>
-            <Card title="아직 해결하지 못한 문제" sub="사람이 봐야 하는 것">
+            <Card title="미해결 리스크" sub="사람이 봐야 하는 것">
               {riskRows.length === 0 ? (
-                <EmptyState title="확인할 것이 없어요" detail="아직 해결하지 못한 문제가 없어요. 개별 대기 목록을 열지 않아도 괜찮아요." />
+                <EmptyState title="확인할 것이 없어요" detail="미해결 리스크가 없어요. 개별 큐를 열지 않아도 괜찮아요." />
               ) : (
                 <Rows items={riskRows} />
               )}
@@ -209,6 +225,30 @@ export default function BriefingScreen() {
           </CardGrid>
         </>
       ) : null}
-    </Page>
+    </View>
   );
 }
+
+/**
+ * 옛 주소(`/admin/briefing`)는 저장된 링크·딥링크가 있을 수 있어 남긴다. 실제 화면은
+ * `/admin/home`(대시보드)에 있다 — 그 안의 `BriefingPanel`이 이 파일의 본체다.
+ */
+export default function BriefingRedirect() {
+  return <Redirect href="/admin/home?tab=briefing" />;
+}
+
+const styles = StyleSheet.create({
+  panel: { gap: 16 },
+  panelHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  panelHeadText: { flex: 1, minWidth: 0, gap: 2 },
+  panelTitle: { fontSize: FontSize.t6, fontWeight: '700', color: Colors.light.text },
+  panelSub: { fontSize: FontSize.tab, lineHeight: LineHeight.adminMeta, color: Colors.light.textAssistive },
+  panelAction: {
+    height: 32,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    justifyContent: 'center',
+    backgroundColor: Colors.light.backgroundSelected,
+  },
+  panelActionLabel: { fontSize: FontSize.micro, fontWeight: '700', color: Colors.light.textSecondary },
+});

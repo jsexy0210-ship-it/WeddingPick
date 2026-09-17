@@ -1,13 +1,14 @@
 import type { ReviewListResponse } from '@weddingpick/api-contract';
-import { TERMS, type ReportReason } from '@weddingpick/domain';
+import { formatCount, TERMS, type ReportReason } from '@weddingpick/domain';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { listReportReasons, listVendorReviews, reportReview } from '@/api/client';
 import { formatDateDot } from '@/features/common/format-date';
 import { BackBar } from '@/components/back-bar';
+import { Badge } from '@/features/wedding/screen-kit';
 import {
   ActionButton,
   FilterChip,
@@ -155,7 +156,7 @@ export default function VendorReviewsScreen() {
                       type="small"
                       themeColor={item.needsAttention ? 'cautionary' : 'textSecondary'}>
                       {item.label}{' '}
-                      {item.collecting ? '수집 중' : `${item.percent}% · ${item.answered}명 답함`}
+                      {item.collecting ? '수집 중' : `${item.percent}% · ${formatCount(item.answered)}명 답함`}
                     </ThemedText>
                   ))}
                   {page.usageScore.caption ? (
@@ -204,16 +205,42 @@ export default function VendorReviewsScreen() {
             ) : (
               reviews.map((review) => (
                 <ThemedView key={review.id} type="backgroundElement" style={styles.card}>
-                  <ThemedText type="smallBold">{review.title}</ThemedText>
+                  {/* 제목을 누르면 후기 상세(피그마 `ReviewDetailPage`)로 간다 — 2026-09-15 「고지가 먼저」 파기. */}
+                  <Pressable
+                    accessibilityRole="link"
+                    accessibilityLabel={`${review.title} 후기 자세히 보기`}
+                    onPress={() => router.push(`/search/${vendorId}/review/${review.id}`)}>
+                    <ThemedText type="smallBold">{review.title}</ThemedText>
+                  </Pressable>
                   {/*
                     별점을 그린다(2026-09-09 사용자 결정 · 5.0 만점). 예전에는 «4.0»처럼
                     숫자만 적었는데, 그 숫자가 5점 만점인지 10점 만점인지 화면이 말하지
                     않았다. 별 다섯 칸이 만점을 보여주고 숫자가 정확한 값을 말한다.
                   */}
                   <RatingStars value={review.overall} />
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {review.roleLabel} · {review.verificationLabel}
-                  </ThemedText>
+
+                  {/*
+                    * 확인 등급은 **배지로** 그린다(피그마 `ReviewDetailPage` 718행).
+                    * 글자로 흘려 적으면 「지수 · Pick확인」이 한 덩어리로 읽혀서,
+                    * 무엇이 사람이고 무엇이 우리가 확인한 것인지 구분되지 않는다.
+                    *
+                    * **라벨을 여기서 짓지 않는다.** `REVIEW_VERIFICATION_LABEL`이
+                    * 원본이고 서버가 그것으로 만들어 보낸다 — 화면이 따로 지으면
+                    * 같은 등급이 두 이름으로 불린다.
+                    *
+                    * 피그마는 이 자리를 「계약 인증」이라 적었는데 **오용어다.**
+                    * 우리 등급은 상담제보 · Pick확인 · 계약확인 · 이용확인 넷이고,
+                    * 그중 하나가 그대로 온다.
+                    */}
+                  <View style={styles.meta}>
+                    <ThemedText type="small" themeColor="textSecondary">
+                      {review.roleLabel}
+                    </ThemedText>
+                    <Badge
+                      label={review.verificationLabel}
+                      tone={review.verification === 'reported' ? 'none' : 'ok'}
+                    />
+                  </View>
                   {/* 시안 L415 — 후기 본문 16/24 #393a40. 14/19는 메타 크기라 본문이 메타처럼 읽힌다. */}
                   <ThemedText type="body" themeColor="textStrong">{review.body}</ThemedText>
 
@@ -326,6 +353,8 @@ function Frame({ children }: { children: React.ReactNode }) {
 }
 
 const styles = StyleSheet.create({
+  /** 역할과 확인 배지를 한 줄에. 배지가 글자 흐름에 섞이지 않게 나눈다. */
+  meta: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
   /**
    * 후기 아래 업체 반론 상자. 시안 11-report-review.dc.html L417 —
    * `border-radius:10px;background:#f7f8fa;padding:16px;gap:6px`.

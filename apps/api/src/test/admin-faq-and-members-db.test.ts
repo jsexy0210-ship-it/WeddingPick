@@ -1,3 +1,5 @@
+import { DISCLOSURE_THRESHOLDS } from '@weddingpick/domain';
+
 import { createTestApp, resetDatabase, signInAs, type TestApp } from './helpers';
 import type { LocalStorage } from '../storage/local';
 
@@ -35,12 +37,13 @@ describeWithDb('관리자 — FAQ · 회원 추이', () => {
 
   type FaqItem = {
     id: string;
+    key: string | null;
     category: string;
     question: string;
     answer: string;
+    answerSource: string;
     order: number;
     published: boolean;
-    editable?: boolean;
   };
 
   const list = async (headers: Record<string, string>) => {
@@ -77,7 +80,8 @@ describeWithDb('관리자 — FAQ · 회원 추이', () => {
       question: 'Pick 인증은 무엇인가요',
       order: 2,
       published: true,
-      editable: true,
+      /* 운영자가 등록한 항목에는 고정 이름이 없다 — 화면은 id로 연다. */
+      key: null,
     });
 
     const updated = await test.app.inject({
@@ -110,23 +114,136 @@ describeWithDb('관리자 — FAQ · 회원 추이', () => {
     expect((await list(headers)).some((item) => item.id === id)).toBe(false);
   });
 
-  it('코드에 있는 항목은 함께 보이지만 잠겨 있다', async () => {
+  /**
+   * 코드에 있던 일곱이 표로 내려왔다(2026-09-16 대표 지시 — 「관리자 faq처럼 이미
+   * 코드로 등록되어 있는것도 내가 직접 수정 삭제 가능하도록 하라고」).
+   *
+   * **여기서 붙드는 것은 「잠금이 풀렸는가」다.** 전에는 코드 항목이 `editable: false`로
+   * 와서 수정·삭제가 400이었다. 하나(공개 기준 건수를 계산해 넣던 답) 때문에 일곱을
+   * 다 잠가 둔 상태였고, 그 하나는 자리표시자로 옮겼다.
+   */
+  it('옮겨 온 일곱이 전부 있고 전부 고치고 지울 수 있다', async () => {
     const { headers } = await operator();
-    const items = await list(headers);
-    const locked = items.filter((item) => item.editable === false);
+    const seeded = (await list(headers)).filter((item) => item.key !== null);
 
-    expect(locked.length).toBeGreaterThan(0);
+    expect(seeded.map((item) => item.key).sort()).toEqual([
+      'original-image',
+      'price-source',
+      'review-hidden',
+      'spouse',
+      'vendor-rebuttal',
+      'who-sees',
+      'why-locked',
+    ]);
 
-    const response = await test.app.inject({
+    const target = seeded.find((item) => item.key === 'spouse')!;
+
+    const updated = await test.app.inject({
+      method: 'PUT',
+      url: `/v1/admin/faq/${target.id}`,
+      headers,
+      payload: {
+        category: target.category,
+        question: target.question,
+        answer: '고친 답이에요.',
+        order: target.order,
+        published: true,
+      },
+    });
+
+    expect(updated.statusCode).toBe(204);
+
+    const removed = await test.app.inject({
       method: 'DELETE',
-      url: `/v1/admin/faq/${locked[0]!.id}`,
+      url: `/v1/admin/faq/${target.id}`,
       headers,
     });
 
-    expect(response.statusCode).toBe(400);
+    expect(removed.statusCode).toBe(204);
+    expect((await list(headers)).some((item) => item.key === 'spouse')).toBe(false);
   });
 
-  it('회원 추이는 가입을 그 칸에 세고 탈퇴는 누적에서 뺀다', async () => {
+  /**
+   * 공개 기준 건수가 든 답 하나.
+   *
+   * 0230 마이그레이션이 코드 항목을 잠가 둔 이유가 이것이었다 — 문장에 수를 박아
+   * 두면 기준이 바뀌는 날 표에 든 사본이 옛 수를 말하고, 문장이라서 아무도 고장으로
+   * 보지 않는다. 표에 담은 것은 수가 아니라 자리표시자다.
+   */
+  it('기준 건수는 표가 아니라 코드에서 온다', async () => {
+    const { headers } = await operator();
+    const item = (await list(headers)).find((entry) => entry.key === 'price-source')!;
+
+    /* 표에 담긴 것은 자리표시자 그대로다 — 수가 글자로 굳어 있지 않다. */
+    expect(item.answerSource).toContain('{{limited}}');
+    expect(item.answerSource).toContain('{{detailed}}');
+
+    /* 보여줄 때는 코드의 기준으로 채워진다. */
+    expect(item.answer).toContain(`${DISCLOSURE_THRESHOLDS.limited}건`);
+    expect(item.answer).toContain(`${DISCLOSURE_THRESHOLDS.detailed}건`);
+    expect(item.answer).not.toContain('{{');
+  });
+
+  /**
+   * 없는 이름은 저장할 때 막는다.
+   *
+   * 통과시키면 `{{limitedd}}`가 그대로 사용자 화면에 실린다 — 글자라서 문구의
+   * 일부로 읽히고 아무도 고장으로 보지 않는다.
+   */
+  it('채울 수 없는 자리를 적으면 저장을 막는다', async () => {
+    const { headers } = await operator();
+
+    const response = await test.app.inject({
+      method: 'POST',
+      url: '/v1/admin/faq',
+      headers,
+      payload: {
+        category: '이용 안내',
+        question: '오타가 든 질문',
+        answer: '실 제보가 {{limitedd}}건 모이면 보여드려요.',
+        order: 0,
+        published: true,
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({ error: { message: expect.stringContaining('limitedd') } });
+  });
+
+  /**
+   * 사용자 화면이 읽는 자리.
+   *
+   * **비공개 항목이 새어 나가지 않는지**가 요점이다. 관리자 목록은 작성 중인 것까지
+   * 보여주고 이쪽은 공개한 것만 내보낸다.
+   */
+  it('공개 조회는 공개한 것만 내보내고 자리를 채워서 준다', async () => {
+    const { headers } = await operator();
+
+    await test.app.inject({
+      method: 'POST',
+      url: '/v1/admin/faq',
+      headers,
+      payload: {
+        category: '이용 안내',
+        question: '아직 쓰는 중인 질문',
+        answer: '아직 쓰는 중이에요.',
+        order: 0,
+        published: false,
+      },
+    });
+
+    const response = await test.app.inject({ method: 'GET', url: '/v1/faq' });
+
+    expect(response.statusCode).toBe(200);
+
+    const items = (response.json() as { items: { key: string; answer: string }[] }).items;
+
+    expect(items.some((item) => item.key === 'price-source')).toBe(true);
+    expect(items.some((item) => item.answer === '아직 쓰는 중이에요.')).toBe(false);
+    expect(items.find((item) => item.key === 'price-source')!.answer).not.toContain('{{');
+  });
+
+  it('회원 추이는 가입과 탈퇴를 그 칸에 세고, 누적에서는 탈퇴를 뺀다', async () => {
     const { headers, userId } = await operator();
 
     /* 오늘 가입한 계정 하나를 탈퇴 처리한다 — 가입 수는 남고 누적에서는 빠져야 한다. */
@@ -143,7 +260,7 @@ describeWithDb('관리자 — FAQ · 회원 추이', () => {
     expect(response.statusCode).toBe(200);
 
     const data = response.json() as {
-      points: { at: string; signups: number; total: number }[];
+      points: { at: string; signups: number; withdrawals: number; total: number }[];
       current: number;
     };
     const today = data.points.at(-1)!;
@@ -154,6 +271,12 @@ describeWithDb('관리자 — FAQ · 회원 추이', () => {
     /* 살아 있는 것은 운영자 하나뿐이다. */
     expect(today.total).toBe(1);
     expect(data.current).toBe(1);
+    /*
+     * 탈퇴도 그 칸에 센다(2026-09-15 대표 지시로 차트에 같이 그린다). 누적에서
+     * 빠지는 것과는 다른 값이다 — 저쪽은 「몇 명이 남았나」이고 이쪽은 「그 칸에
+     * 몇 명이 나갔나」다. 방금 만든 계정 하나가 오늘 나갔다.
+     */
+    expect(today.withdrawals).toBe(1);
     expect(rows[0]!.id).not.toBe(userId);
   });
 

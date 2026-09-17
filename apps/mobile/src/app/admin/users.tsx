@@ -1,12 +1,19 @@
 /**
- * WP-ADM-020 사용자 · 계정
+ * WP-ADM-020 사용자 · 계정 — 이제 「계정·권한」 화면의 탭 하나(앱 회원)다.
  *
  * 가입 · 로그인 수단 · Pick 인증 · 탈퇴 상태. **탈퇴를 접수한 계정도 보인다** —
  * 이 화면의 첫 번째 쓰임이 «탈퇴했는데 회원정보가 남았는가»를 확인하는 것이다.
  * 삭제가 끝난 계정은 행이 없어 안 보인다 — 그것이 정상이다.
  *
- * 정지·해제는 사유를 기록하고 서버에서 권한을 확인한다.
+ * 정지·차단 같은 상태 변경은 없다 — 서버에 그런 상태가 없다. 없는 버튼을 두면
+ * 눌러도 아무 일이 없고, 그게 «되는 줄» 알게 만든다.
+ *
+ * **관리자 계정(`admins.tsx`)과는 탭으로만 나란히 둔다, 표는 절대 합치지 않는다**
+ * (대표 지시 — 「계정관리 → 앱 회원과 관리자 계정 화면 탭으로 나누던가 분리해」).
+ * 여기는 서비스 이용자의 개인정보, 저기는 관리자 권한이다. 이 파일 맨 아래
+ * `UsersShell`이 그 탭 껍데기고, 여기 있던 본문은 `UsersPanel`로 이름만 바꿨다.
  */
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   Modal,
@@ -19,9 +26,11 @@ import {
 } from 'react-native';
 
 import { Colors, FontSize } from '@weddingpick/ui';
+import { AdminTabShell, type AdminTabDef } from './_ui';
+import { AdminsPanel } from './admins';
+import { formatCount } from '@weddingpick/domain';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
-import { AdminAccountActions, useAdminAccess } from './_ui';
 import { formatDateDot } from '@/features/common/format-date';
 
 type WithdrawalStatus = 'hold' | 'failed' | 'pending' | 'deletion_pending';
@@ -35,16 +44,15 @@ type UserRecord = {
   activatedAt: string | null;
   lastLoginAt: string | null;
   deletedAt: string | null;
-  suspendedAt: string | null;
   isOperator: boolean;
   pickVerified: boolean;
   withdrawal: { status: WithdrawalStatus; failure: { message: string; attemptCount: number } | null } | null;
 };
 
 type UserListData = { users: UserRecord[]; total: number; hasMore: boolean; nextCursor: string | null };
-type Filter = 'all' | 'active' | 'suspended' | 'withdrawn';
+type Filter = 'all' | 'active' | 'withdrawn';
 
-const FILTER_LABEL: Record<Filter, string> = { all: '전체', active: '활성', suspended: '정지', withdrawn: '탈퇴 접수' };
+const FILTER_LABEL: Record<Filter, string> = { all: '전체', active: '활성', withdrawn: '탈퇴 접수' };
 
 /* withdrawal-admin.ts의 STATUS_LABEL과 같은 말을 쓴다. */
 const WITHDRAWAL_LABEL: Record<WithdrawalStatus, string> = {
@@ -67,7 +75,6 @@ function statusOf(u: UserRecord): { label: string; color: string } {
   if (u.withdrawal) {
     return { label: WITHDRAWAL_LABEL[u.withdrawal.status], color: WITHDRAWAL_COLOR[u.withdrawal.status] };
   }
-  if (u.suspendedAt) return { label: '정지', color: Colors.light.negative };
   if (!u.activatedAt) return { label: '가입 미완료', color: Colors.light.textAssistive };
   return { label: '활성', color: Colors.light.positive };
 }
@@ -80,7 +87,7 @@ function loginOf(u: UserRecord): string {
 
 const when = (iso: string | null) => (iso ? formatDateDot(iso) : '—');
 
-export default function UsersScreen() {
+function UsersPanel() {
   const [data, setData] = useState<UserListData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -95,27 +102,6 @@ export default function UsersScreen() {
   /** 대신 탈퇴시키기 — 확인 단계와 사유. 되돌릴 수 없어 한 번 더 묻는다. */
   const [confirmWithdraw, setConfirmWithdraw] = useState(false);
   const [withdrawReason, setWithdrawReason] = useState('');
-  const [confirmState, setConfirmState] = useState(false);
-  const [stateReason, setStateReason] = useState('');
-  const access = useAdminAccess();
-
-  async function changeSuspension() {
-    if (!selected || acting) return;
-    if (!stateReason.trim()) { setActionError('사유를 적어주세요.'); return; }
-    setActing(true);
-    setActionError(null);
-    try {
-      const result = await apiFetch(`/v1/admin/users/${selected.id}/${selected.suspendedAt ? 'resume' : 'suspend'}`, {
-        method: 'POST', body: JSON.stringify({ reason: stateReason.trim() }),
-      }) as { suspendedAt: string | null };
-      setSelected({ ...selected, suspendedAt: result.suspendedAt });
-      setConfirmState(false);
-      setStateReason('');
-      setRev((value) => value + 1);
-    } catch (error) {
-      setActionError(error instanceof Error ? error.message : '처리하지 못했어요.');
-    } finally { setActing(false); }
-  }
 
   useEffect(() => {
     let cancelled = false;
@@ -212,7 +198,6 @@ export default function UsersScreen() {
         <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
           <Text style={styles.refreshText}>새로 고침</Text>
         </Pressable>
-        <AdminAccountActions />
       </View>
 
       <DelayedLoader active={loading} size={40} style={styles.centered} />
@@ -247,7 +232,7 @@ export default function UsersScreen() {
                 </Pressable>
               ))}
             </View>
-            <Text style={styles.totalText}>총 {data.total.toLocaleString()}명</Text>
+            <Text style={styles.totalText}>총 {formatCount(data.total)}명</Text>
           </View>
           <ScrollView>
             <View style={styles.tableHead}>
@@ -267,7 +252,7 @@ export default function UsersScreen() {
                 <Pressable
                   key={u.id}
                   style={[styles.tableRow, i % 2 === 1 && styles.tableRowZebra, selected?.id === u.id && styles.tableRowActive]}
-                  onPress={() => { setSelected(u); setActionError(null); setActionNote(null); setConfirmState(false); setStateReason(''); setConfirmWithdraw(false); setWithdrawReason(''); }}
+                  onPress={() => { setSelected(u); setActionError(null); setActionNote(null); }}
                 >
                   <Text style={[styles.td, styles.colName]} numberOfLines={1}>
                     {u.displayName || '(이름 없음)'}{u.isOperator ? ' · 운영자' : ''}
@@ -308,10 +293,10 @@ export default function UsersScreen() {
             {selected?.withdrawal?.failure && (
               <>
                 <Text style={styles.fieldLabel}>
-                  삭제 실패 {selected.withdrawal.failure.attemptCount}회
+                  삭제 실패 {formatCount(selected.withdrawal.failure.attemptCount)}회
                 </Text>
                 <Text style={styles.modalSub}>{selected.withdrawal.failure.message}</Text>
-                <Pressable style={styles.retryAction} onPress={() => void retryDeletion()} disabled={acting || !access.canDelete}>
+                <Pressable style={styles.retryAction} onPress={() => void retryDeletion()} disabled={acting}>
                   <Text style={styles.retryActionText}>{acting ? '지우는 중…' : '삭제 다시 시도'}</Text>
                 </Pressable>
               </>
@@ -322,22 +307,7 @@ export default function UsersScreen() {
               위의 «삭제 다시 시도»가 맡는다. 운영자 계정에는 두지 않는다(서버도
               막지만, 눌러도 안 되는 단추를 보여줄 이유가 없다).
             */}
-            {selected && !selected.deletedAt && !selected.isOperator && access.canEdit && !confirmWithdraw && (
-              <View>
-                <Pressable style={styles.withdrawAction} onPress={() => setConfirmState(true)}>
-                  <Text style={styles.withdrawActionText}>{selected.suspendedAt ? '정지 해제' : '회원 정지'}</Text>
-                </Pressable>
-                {confirmState && <View style={styles.confirmBox}>
-                  <Text style={styles.confirmTitle}>{selected.suspendedAt ? '다시 로그인할 수 있게 됩니다' : '기존 세션을 종료하고 새 로그인을 막습니다'}</Text>
-                  <TextInput style={styles.reasonInput} value={stateReason} onChangeText={setStateReason} placeholder="사유 (감사 기록에 남습니다)" />
-                  <View style={styles.confirmRow}>
-                    <Pressable style={styles.confirmCancel} disabled={acting} onPress={() => setConfirmState(false)}><Text style={styles.confirmCancelText}>취소</Text></Pressable>
-                    <Pressable style={styles.confirmGo} disabled={acting} onPress={() => void changeSuspension()}><Text style={styles.confirmGoText}>{acting ? '처리 중…' : '확인'}</Text></Pressable>
-                  </View>
-                </View>}
-              </View>
-            )}
-            {selected && !selected.deletedAt && !selected.isOperator && access.canDelete && !confirmWithdraw && !confirmState && (
+            {selected && !selected.deletedAt && !selected.isOperator && !confirmWithdraw && (
               <Pressable
                 style={styles.withdrawAction}
                 onPress={() => { setConfirmWithdraw(true); setActionError(null); setActionNote(null); }}
@@ -393,6 +363,27 @@ export default function UsersScreen() {
         </View>
       </Modal>
     </View>
+  );
+}
+
+const TABS: AdminTabDef[] = [
+  { key: 'users', label: '앱 회원' },
+  { key: 'admins', label: '관리자 계정' },
+];
+
+/**
+ * 「계정·권한」 — 앱 회원과 관리자 계정을 탭 둘로 나눈다. **표는 절대 하나로
+ * 합치지 않는다**(대표 지시) — 여기는 개인정보, 저기는 권한이다.
+ */
+export default function UsersShell() {
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
+  const initial = TABS.some((t) => t.key === tab) ? (tab as string) : 'users';
+  const [active, setActive] = useState(initial);
+
+  return (
+    <AdminTabShell tabs={TABS} active={active} onChange={setActive}>
+      {active === 'users' ? <UsersPanel /> : <AdminsPanel />}
+    </AdminTabShell>
   );
 }
 

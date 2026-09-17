@@ -1,10 +1,13 @@
-import { useAdminAccess, AdminAccountActions } from './_ui';
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Colors, FontSize, LineHeight } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { AdminTabShell, type AdminTabDef } from './_ui';
+import { ObjectionsPanel } from './objections';
+import { ReportPanel } from './report';
 import { ConfirmDecision } from '@/features/admin/confirm-decision';
 import { formatDateDot, formatDateTimeDot } from '@/features/common/format-date';
 
@@ -37,9 +40,7 @@ type RebuttalDetail = {
   verifiedRole: string | null;
 };
 
-
-export default function RebuttalScreen() {
-  const { canEdit } = useAdminAccess();
+function RebuttalPanel() {
   const [items, setItems] = useState<PendingRebuttal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -171,9 +172,8 @@ export default function RebuttalScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>후기 · 반론</Text>
         <Pressable style={styles.refreshBtn} onPress={reload}>
-          <Text style={styles.refreshText}>새로고침</Text>
+          <Text style={styles.refreshText}>새로 고침</Text>
         </Pressable>
-        <AdminAccountActions />
       </View>
 
       <View style={styles.body}>
@@ -298,7 +298,7 @@ export default function RebuttalScreen() {
                 <Pressable
                   style={styles.offlineRow}
                   onPress={() => setOfflineCheck((on) => !on)}
-                  disabled={!canEdit || acting}
+                  disabled={acting}
                 >
                   <View style={[styles.checkbox, offlineCheck && styles.checkboxOn]}>
                     {offlineCheck && <Text style={styles.checkboxMark}>✓</Text>}
@@ -316,14 +316,14 @@ export default function RebuttalScreen() {
                   <Pressable
                     style={[styles.publishBtn, acting && styles.btnDisabled]}
                     onPress={() => ask('publish')}
-                    disabled={!canEdit || acting}
+                    disabled={acting}
                   >
                     <Text style={styles.publishBtnText}>게시</Text>
                   </Pressable>
                   <Pressable
                     style={[styles.rejectBtn, acting && styles.btnDisabled]}
                     onPress={() => ask('reject')}
-                    disabled={!canEdit || acting}
+                    disabled={acting}
                   >
                     <Text style={styles.rejectBtnText}>게시 불가</Text>
                   </Pressable>
@@ -343,12 +343,12 @@ export default function RebuttalScreen() {
                             ? '소속을 앱 밖에서 확인한 것으로 기록됩니다.'
                             : '소속을 관계자 인증으로 확인한 것으로 기록됩니다.',
                           '반론을 보낸 쪽과 후기를 쓴 쪽 모두에게 알림이 갑니다.',
-                          '대기 목록에서 빠지고 되돌릴 수 없어요.',
+                          '큐에서 빠지고 되돌릴 수 없어요.',
                         ]
                       : [
                           '이 반론은 어디에도 실리지 않습니다.',
                           '적은 사유가 반론을 보낸 쪽에 그대로 전달됩니다.',
-                          '대기 목록에서 빠지고 되돌릴 수 없어요.',
+                          '큐에서 빠지고 되돌릴 수 없어요.',
                         ]
                   }
                   confirmLabel={pending === 'publish' ? '게시' : '게시 불가'}
@@ -363,6 +363,38 @@ export default function RebuttalScreen() {
         </View>
       </View>
     </View>
+  );
+}
+
+const TABS: AdminTabDef[] = [
+  { key: 'rebuttal', label: '반론' },
+  { key: 'objections', label: '이의제기' },
+  { key: 'report', label: '신고 접수' },
+];
+
+/**
+ * 「후기·신고」 — 후기·반론 · 이의제기 · 신고 접수를 탭 셋으로 묶는다.
+ *
+ * 셋 다 후기 하나를 두고 다른 방향에서 들어온다 — 관계자 반론 · 업체 이의제기 ·
+ * 이용자 신고. **탭이지 표를 합친 것이 아니다** — 판단 갈래가 달라서 한 표에
+ * 섞으면 어느 결정이 어느 흐름의 것인지 헷갈린다. 각 패널은 원래 화면
+ * (`RebuttalPanel` · `ObjectionsPanel` · `ReportPanel`) 그대로 두고, `AdminTabShell`
+ * 하나만 위에 얹는다.
+ *
+ * 옛 주소 `/admin/objections` · `/admin/report`는 `?tab=`으로 이 화면에 들어온다
+ * (대체용 `Redirect`, 각 파일 참고) — 그래서 시작 탭을 그 쿼리에서 읽는다.
+ */
+export default function ReviewHandlingScreen() {
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
+  const initial = TABS.some((t) => t.key === tab) ? (tab as string) : 'rebuttal';
+  const [active, setActive] = useState(initial);
+
+  return (
+    <AdminTabShell tabs={TABS} active={active} onChange={setActive}>
+      {active === 'rebuttal' && <RebuttalPanel />}
+      {active === 'objections' && <ObjectionsPanel />}
+      {active === 'report' && <ReportPanel />}
+    </AdminTabShell>
   );
 }
 

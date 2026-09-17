@@ -58,11 +58,10 @@
 | [통합정책 v3.14 충돌·리스크.md](통합정책%20v3.14%20충돌·리스크.md) | 시행 전 검토(v3.14 시점 작성, T장 추가로는 갱신되지 않음) | 미확정 법률·보안·운영 쟁점을 관리한다 |
 | [legal/](legal/) | 외부 배포용 Word 약관·방침 | 통합정책과 확정된 실제 운영값을 반영한다 |
 | [archive/통합정책 v3.13](archive/통합정책%20v3.13) | 과거본 | 세부 도메인은 v3.15와 충돌하지 않는 범위에서만 유효하다 |
-| [archive/통합정책 v3.12](archive/통합정책%20v3.12) | 과거본 | 기준이 아니다 |
-| [archive/통합정책 v3.10](archive/통합정책%20v3.10) | 과거본 | 기준이 아니다 |
+| [archive/통합정책 v3.10](archive/통합정책%20v3.10) | 과거본 — 코드 16곳이 `v3.10 §…`로 인용해서 남긴다 | 기준이 아니다 |
 | [05-product-spec.md](05-product-spec.md) | 개발용 — Phase 1 범위·화면·데이터 모델 | 과거 범위 기준. 통합정책이 우선한다 |
 | [05a-screen-data-spec.md](05a-screen-data-spec.md) | 개발용 — 화면·데이터 구조 스펙 | 과거 범위 기준. 통합정책이 우선한다 |
-| [design-handoff](design-handoff) | Git 반영본은 [current/](design-handoff/current) v3.27. 최신 ZIP의 추가·충돌은 [접수 기록](design-handoff/INTAKE-2026-09-10.md) 참조. 화면 수를 완료율로 사용하지 않음 | 운영 정책과 시각 디자인의 적용 범위를 구분함 |
+| [design-handoff](design-handoff) | Git 반영본은 [current/](design-handoff/current) — 현행 판은 [CHANGELOG.md](design-handoff/current/CHANGELOG.md) 맨 위가 정한다(이 줄에 적힌 번호가 아니라). 최신 ZIP의 추가·충돌은 [접수 기록](design-handoff/INTAKE-2026-09-10.md) 참조. 화면 수를 완료율로 사용하지 않음 | 운영 정책과 시각 디자인의 적용 범위를 구분함 |
 | [AI_HANDOFF.md](AI_HANDOFF.md) | 작업 인수인계 서식 | — |
 
 ## 과거 버전 번호를 어떻게 읽을 것인가

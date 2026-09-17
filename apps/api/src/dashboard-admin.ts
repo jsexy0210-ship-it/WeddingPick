@@ -350,7 +350,7 @@ export async function dashboard(pool: Pool): Promise<Dashboard> {
     },
     {
       key: 'ai-usage',
-      label: '분석 사용량 · 비용',
+      label: 'AI 사용량 · 비용',
       mode: '비용',
       value: `$${spentUsd.toFixed(2)}`,
       unit: '이번 달',
@@ -369,7 +369,7 @@ export async function dashboard(pool: Pool): Promise<Dashboard> {
       label: '가격 통계',
       mode: '지표',
       value: proofCount.toLocaleString('ko-KR'),
-      unit: '건',
+      unit: '건 데이터',
       note: `업체 ${proofVendorCount.toLocaleString('ko-KR')}곳`,
     },
     {
@@ -416,6 +416,15 @@ export type MemberTrendPoint = {
   at: string;
   /** 그 칸에 새로 들어온 계정 수. */
   signups: number;
+  /**
+   * 그 칸에 탈퇴를 접수한 계정 수(2026-09-15 대표 지시 — 「탈퇴 여부도 같이
+   * 차트에 보여줘」).
+   *
+   * **가입과 같은 자를 쓴다** — 그 칸에 실제로 일어난 수이지, 누적이 아니다.
+   * 탈퇴한 계정은 `total`에서 빠지지만 그것은 「몇 명이 남았나」이고, 이 칸은
+   * 「그날 몇 명이 나갔나」다. 둘은 다른 질문이라 따로 센다.
+   */
+  withdrawals: number;
   /** 그 칸이 끝난 시점의 살아 있는 계정 수. */
   total: number;
 };
@@ -448,7 +457,7 @@ export async function memberTrend(pool: Pool, bucket: MemberBucket): Promise<Mem
    * 누적은 각 칸의 끝까지 살아 있는 계정을 센다. 창 밖(첫 칸보다 이른) 가입도
    * 들어가야 하므로 가입 수를 더해 올라가는 방식으로는 구하지 않는다.
    */
-  const { rows } = await pool.query<{ at: Date; signups: string; total: string }>(
+  const { rows } = await pool.query<{ at: Date; signups: string; withdrawals: string; total: string }>(
     `WITH spans AS (
        SELECT generate_series(
                 date_trunc($1, now() AT TIME ZONE 'Asia/Seoul') - ($2::int - 1) * $3::interval,
@@ -462,6 +471,11 @@ export async function memberTrend(pool: Pool, bucket: MemberBucket): Promise<Mem
                 AND u.created_at AT TIME ZONE 'Asia/Seoul' < s.bucket_start + $3::interval
             ) AS signups,
             (SELECT count(*) FROM structured.users u
+              WHERE u.deleted_at IS NOT NULL
+                AND u.deleted_at AT TIME ZONE 'Asia/Seoul' >= s.bucket_start
+                AND u.deleted_at AT TIME ZONE 'Asia/Seoul' < s.bucket_start + $3::interval
+            ) AS withdrawals,
+            (SELECT count(*) FROM structured.users u
               WHERE u.created_at AT TIME ZONE 'Asia/Seoul' < s.bucket_start + $3::interval
                 AND (u.deleted_at IS NULL
                      OR u.deleted_at AT TIME ZONE 'Asia/Seoul' >= s.bucket_start + $3::interval)
@@ -474,6 +488,7 @@ export async function memberTrend(pool: Pool, bucket: MemberBucket): Promise<Mem
   const points = rows.map((row) => ({
     at: row.at.toISOString(),
     signups: Number(row.signups),
+    withdrawals: Number(row.withdrawals),
     total: Number(row.total),
   }));
 

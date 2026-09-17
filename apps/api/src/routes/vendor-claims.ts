@@ -48,7 +48,7 @@ export function registerVendorClaimRoutes(app: FastifyInstance, context: AppCont
     if (!check.ok) throw new ApiError('invalid_request', check.message);
 
     const vendor = await context.pool.query<{ id: string; official_domain: string | null }>(
-      'SELECT id, official_domain FROM structured.vendors WHERE id = $1 AND deleted_at IS NULL',
+      'SELECT id, official_domain FROM structured.vendors WHERE id = $1',
       [body.vendorId]
     );
 

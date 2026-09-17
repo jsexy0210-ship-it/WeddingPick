@@ -60,8 +60,6 @@ export function bootstrapPassword(): string | undefined {
 
 export type ResolvedAdmin = {
   role: AdminRole;
-  canEdit: boolean;
-  canDelete: boolean;
   /**
    * 표에 줄이 있는 계정인가.
    *
@@ -100,12 +98,9 @@ export async function resolveAdmin(
     is_operator: boolean;
     bootstrap_subject: boolean;
     active_supers: string;
-    can_edit: boolean;
-    can_delete: boolean;
   }>(
     `SELECT
        a.role AS role,
-       a.can_edit, a.can_delete,
        /*
         * 꺼진 계정이 있는가. 등급이 아니라 **이것**이 아래 흘러내림을 멈춘다 —
         * 이유는 아래 주석 참고.
@@ -136,9 +131,7 @@ export async function resolveAdmin(
 
   if (!row) return null;
 
-  if (row.role) return { role: row.role, stored: true,
-    canEdit: row.role === 'super' || (row.role === 'operator' && row.can_edit),
-    canDelete: row.role === 'super' || (row.role === 'operator' && row.can_delete) };
+  if (row.role) return { role: row.role, stored: true };
 
   /*
    * **꺼진 계정은 여기서 끝난다.** 아래로 흘러내리게 두면 되살아날 길이 둘 남는다.
@@ -166,10 +159,10 @@ export async function resolveAdmin(
    * 하나 생기는 순간 저절로 사라진다.
    */
   if (bootstrapId && row.bootstrap_subject && Number(row.active_supers) === 0) {
-    return { role: 'super', stored: false, canEdit: true, canDelete: true };
+    return { role: 'super', stored: false };
   }
 
-  if (row.is_operator) return { role: 'operator', stored: false, canEdit: true, canDelete: true };
+  if (row.is_operator) return { role: 'operator', stored: false };
 
   return null;
 }

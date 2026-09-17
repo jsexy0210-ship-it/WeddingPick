@@ -15,6 +15,7 @@ import {
   Spacing,
   ThemedText,
   ThemedView,
+  USE_NATIVE_DRIVER,
   WeddingMark,
   useTheme,
 } from '@weddingpick/ui';
@@ -102,7 +103,7 @@ export default function PickDoneScreen() {
       toValue: 1,
       duration: Motion.checkPop.duration,
       easing: Easing.bezier(...Motion.checkPop.bezier),
-      useNativeDriver: true,
+      useNativeDriver: USE_NATIVE_DRIVER,
     }).start();
 
     // 2. ringSpread — 마크와 동시에 시작
@@ -111,13 +112,13 @@ export default function PickDoneScreen() {
         toValue: RING_TO_SCALE,
         duration: RING_DURATION,
         easing: Easing.bezier(...Motion.ringSpread.bezier),
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(ringOpacity, {
         toValue: 0,
         duration: RING_DURATION,
         easing: Easing.bezier(...Motion.ringSpread.bezier),
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ]).start();
 
@@ -130,13 +131,13 @@ export default function PickDoneScreen() {
             toValue: 0,
             duration: Motion.rise.duration,
             easing: Easing.bezier(...Motion.sheetEnter.bezier),
-            useNativeDriver: true,
+            useNativeDriver: USE_NATIVE_DRIVER,
           }),
           Animated.timing(riseOpacity[i]!, {
             toValue: 1,
             duration: Motion.rise.duration,
             easing: Easing.bezier(...Motion.sheetEnter.bezier),
-            useNativeDriver: true,
+            useNativeDriver: USE_NATIVE_DRIVER,
           }),
         ]),
       ]).start();
@@ -149,7 +150,7 @@ export default function PickDoneScreen() {
   const reflected = [
     {
       key: 'wedding',
-      label: '웨딩일정',
+      label: '웨딩노트',
       text: `준비 현황에 ${categoryLabel} 결정 완료로 반영됐어요`,
       onPress: () => router.replace('/wedding'),
     },

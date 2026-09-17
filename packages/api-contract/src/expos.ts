@@ -22,6 +22,12 @@ export const expoDetailSchema = expoItemSchema.extend({
   benefits: z.array(z.string()),
   description: z.string(),
   notifyEnabled: z.boolean(),
+  /**
+   * 공식 신청 링크(없으면 공식 홈페이지). In-App Browser로 연다 — 앱을 떠나지
+   * 않는다(대표 정정, docs/expo-agent-spec.md).
+   */
+  applyUrl: z.string().nullable(),
+  officialWebsiteUrl: z.string().nullable(),
 });
 
 export const expoListResponseSchema = z.object({

@@ -1,29 +1,29 @@
 /**
  * WP-ADM-033 성장 · 광고 집행 관리
  * 광고주 · 요금제 · 슬롯 · 기간 · 상태 · 노출 · 클릭 · CTR · Pick · 전환율
+ *
+ * **2026-09-15 대표 확정(재확정) — 「광고·마케팅」 화면의 탭 넷 중 하나다**(광고
+ * 집행 · 전환 승인 · 캠페인·보상 · 마케팅 발송). 처음엔 광고 둘만 묶었는데,
+ * 대표님이 「비슷한 유형끼리 탭으로 묶어도 된다」고 넓히시면서 성장 계열 넷을
+ * 한 화면 탭으로 다시 묶었다.
  */
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Colors, FontSize, Layout, Spacing } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
 import { apiFetch } from './_api';
+import { AdminTabShell, type AdminTabDef } from './_ui';
+import { AdsGatePanel } from './ads-gate';
+import { CampaignsPanel } from './campaigns';
+import { MarketingPanel } from './marketing';
 import { formatMonthDayDot } from '@/features/common/format-date';
-import { AdminAccountActions, useAdminAccess } from './_ui';
-import { ContentButton, ContentForm, DeleteContentButton, type ContentField } from '@/features/admin/content-form';
-import { VENDOR_CATEGORY_LABEL } from '@weddingpick/domain';
-const AD_FIELDS: ContentField[] = [
-  { key: 'vendorId', label: '업체 ID' },
-  { key: 'tier', label: '요금제', options: [{ value: 'light', label: '라이트' }, { value: 'standard', label: '스탠다드' }, { value: 'premium', label: '프리미엄' }] },
-  { key: 'surface', label: '노출 위치', options: [{ value: 'vendor_detail', label: '업체 상세' }, { value: 'search', label: '검색' }, { value: 'region_category', label: '지역·업종' }] },
-  { key: 'category', label: '업종', options: [{ value: '', label: '전체' }, ...Object.entries(VENDOR_CATEGORY_LABEL).map(([value, label]) => ({ value, label }))] },
-  { key: 'region', label: '지역 (전국이면 비워두세요)' }, { key: 'startsOn', label: '시작일 (YYYY-MM-DD)' }, { key: 'endsOn', label: '종료일 (YYYY-MM-DD)' },
-];
+import { formatCount } from '@weddingpick/domain';
 
 type AdStatus = 'active' | 'paused' | 'expired' | 'pending';
 type AdItem = {
   id: string;
-  vendorId: string; surface: string; category: string | null; region: string | null;
   vendorName: string;
   plan: 'LIGHT' | 'STANDARD' | 'PREMIUM';
   slot: string;
@@ -59,9 +59,7 @@ const PLAN_COLOR: Record<AdItem['plan'], string> = {
   PREMIUM: Colors.light.negative,
 };
 
-export default function AdsScreen() {
-  const access = useAdminAccess();
-  const [editing, setEditing] = useState<AdItem | 'new' | null>(null);
+function AdsPanel() {
   const [data, setData] = useState<AdsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -109,12 +107,10 @@ export default function AdsScreen() {
     <View style={styles.root}>
       <View style={styles.header}>
         <Text style={styles.title}>성장 · 광고 집행 관리</Text>
-        <ContentButton label="신규 등록" disabled={!access.canEdit} onPress={() => setEditing('new')} />
         {data && <Text style={styles.totalRevenue}>총 광고 수익: {data.totalRevenue}</Text>}
         <Pressable style={styles.refreshBtn} onPress={() => setRev((r) => r + 1)}>
           <Text style={styles.refreshText}>새로 고침</Text>
         </Pressable>
-        <AdminAccountActions />
       </View>
 
       {actionError && <Text style={styles.actionError}>{actionError}</Text>}
@@ -158,18 +154,16 @@ export default function AdsScreen() {
               <Text style={[styles.td, styles.colStatus, { color: STATUS_COLOR[item.status] }]}>
                 {STATUS_LABEL[item.status]}
               </Text>
-              <Text style={[styles.td, styles.colImp]}>{item.impressions.toLocaleString()}</Text>
+              <Text style={[styles.td, styles.colImp]}>{formatCount(item.impressions)}</Text>
               <Text style={[styles.td, styles.colCtr]}>{(item.ctr * 100).toFixed(2)}%</Text>
               <Text style={[styles.td, styles.colConv]}>{(item.conversionRate * 100).toFixed(1)}%</Text>
               <Text style={[styles.td, styles.colFee]}>{item.monthlyFee}</Text>
               <View style={styles.colAction}>
-                <ContentButton label="수정" disabled={!access.canEdit} onPress={() => setEditing(item)} />
-                <DeleteContentButton name={item.vendorName} onDelete={async () => { await apiFetch(`/v1/admin/ads/${item.id}`, { method: 'DELETE' }); setRev((r) => r + 1); }} />
                 {(item.status === 'active' || item.status === 'paused') && (
                   <Pressable
                     style={[styles.inlineBtn, (acting === item.id) && styles.btnDisabled]}
                     onPress={() => void toggleStatus(item.id, item.status)}
-                    disabled={acting !== null || !access.canEdit}
+                    disabled={acting !== null}
                   >
                     <Text style={styles.inlineBtnText}>
                       {acting === item.id ? '…' : item.status === 'active' ? '정지' : '재개'}
@@ -181,15 +175,34 @@ export default function AdsScreen() {
           ))}
         </ScrollView>
       )}
-      {editing ? <ContentForm title={editing === 'new' ? '광고 등록' : '광고 수정'} fields={AD_FIELDS}
-        initial={editing === 'new' ? { vendorId: '', tier: 'light', surface: 'vendor_detail', category: '', region: '', startsOn: '', endsOn: '' } : {
-          vendorId: editing.vendorId, tier: editing.plan.toLowerCase(), surface: editing.surface, category: editing.category ?? '', region: editing.region ?? '', startsOn: editing.startDate, endsOn: editing.endDate,
-        }} onClose={() => setEditing(null)} onSave={async (values) => {
-          await apiFetch(editing === 'new' ? '/v1/admin/ads' : `/v1/admin/ads/${editing.id}`, { method: editing === 'new' ? 'POST' : 'PATCH',
-            body: JSON.stringify({ ...values, category: values.category || null, region: values.region || null }),
-          }); setRev((r) => r + 1);
-        }} /> : null}
     </View>
+  );
+}
+
+const TABS: AdminTabDef[] = [
+  { key: 'ads', label: '집행' },
+  { key: 'gate', label: '전환 승인' },
+  { key: 'campaigns', label: '캠페인 · 보상' },
+  { key: 'marketing', label: '마케팅 발송' },
+];
+
+/**
+ * 「광고·마케팅」 — 광고 집행 · 전환 승인 · 캠페인·보상 · 마케팅 발송을 탭 넷으로
+ * 묶는다. 넷 다 성장 · 발송성 운영이라 「광고」를 찾을 때 오갈 필요가 없게 한
+ * 화면에 둔다. 각 패널은 원래 화면 그대로 두고 `AdminTabShell`만 위에 얹는다.
+ */
+export default function AdsScreen() {
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
+  const initial = TABS.some((t) => t.key === tab) ? (tab as string) : 'ads';
+  const [active, setActive] = useState(initial);
+
+  return (
+    <AdminTabShell tabs={TABS} active={active} onChange={setActive}>
+      {active === 'ads' && <AdsPanel />}
+      {active === 'gate' && <AdsGatePanel />}
+      {active === 'campaigns' && <CampaignsPanel />}
+      {active === 'marketing' && <MarketingPanel />}
+    </AdminTabShell>
   );
 }
 
@@ -255,7 +268,7 @@ const styles = StyleSheet.create({
   colCtr: { width: 50, textAlign: 'right' as const, fontSize: FontSize.tab },
   colConv: { width: 50, textAlign: 'right' as const, fontSize: FontSize.tab },
   colFee: { width: 72, textAlign: 'right' as const, fontSize: FontSize.tab },
-  colAction: { width: 190, alignItems: 'flex-end', flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
+  colAction: { width: 50, alignItems: 'flex-end' },
   inlineBtn: {
     paddingHorizontal: 8,
     paddingVertical: 4,

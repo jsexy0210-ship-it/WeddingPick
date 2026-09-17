@@ -131,7 +131,7 @@ async function syncOne(client: PoolClient, v: CollectedVendor, runId: string): P
   const revived = await client.query(
     `UPDATE structured.vendors SET is_active=true, closed_at=NULL, collection_status='needs_verification'
       WHERE id=$1 AND admin_locked=false AND is_active=false AND collection_status='closed'
-        AND merged_into_vendor_id IS NULL AND suspended_at IS NULL AND deleted_at IS NULL`, [old.id]);
+        AND merged_into_vendor_id IS NULL AND suspended_at IS NULL`, [old.id]);
   if (revived.rowCount) {
     await client.query(`INSERT INTO structured.vendor_change_log
       (vendor_id,field_name,old_value,new_value,cause,import_run_id)

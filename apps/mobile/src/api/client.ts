@@ -9,12 +9,14 @@ import {
   weddingNoteListResponseSchema,
   weddingTaskListResponseSchema,
   authProvidersResponseSchema,
+  faqListResponseSchema,
   comparisonResponseSchema,
   completeUploadResponseSchema,
   createSessionResponseSchema,
   createUploadResponseSchema,
   currentUserSchema,
   displayNameResponseSchema,
+  categoryRecommendationsResponseSchema,
   top3ResponseSchema,
   errorResponseSchema,
   createVerificationResponseSchema,
@@ -79,6 +81,14 @@ import {
   type UpdateExpenseRequest,
   type UpdateWeddingNoteRequest,
   type UpdateWeddingTaskRequest,
+  consultationListResponseSchema,
+  consultationRecordSchema,
+  createConsultationUploadResponseSchema,
+  type ConsultationListResponse,
+  type ConsultationRecord,
+  type CreateConsultationUploadRequest,
+  type CreateConsultationUploadResponse,
+  type UpdateConsultationRequest,
   type VisitNoteListResponse,
   type WeddingNoteListResponse,
   type WeddingTaskListResponse,
@@ -88,6 +98,7 @@ import {
   type Analysis,
   type ComparisonResponse,
   type AuthProvidersResponse,
+  type FaqListResponse,
   type CreateVerificationRequest,
   type CreateVerificationResponse,
   type ErrorCode,
@@ -140,12 +151,15 @@ import {
   type CompleteSetupRequest,
   appBootstrapResponseSchema,
   type AppBootstrapResponse,
+  type CategoryRecommendationsResponse,
   type CurrentUser,
   myRewardPayoutResponseSchema,
   rewardPayoutSchema,
   type MyRewardPayoutResponse,
   type RequestRewardPayoutRequest,
   type RewardPayout,
+  weddingFeedListResponseSchema,
+  type WeddingFeedListResponse,
 } from '@weddingpick/api-contract';
 import { z, type ZodType } from 'zod';
 
@@ -478,6 +492,16 @@ async function request<T>(
   }
 }
 
+/**
+ * 자주 묻는 것. **로그인 없이 부른다** — FAQ는 로그인하지 않아도 보는 화면이다.
+ *
+ * 2026-09-16 대표 지시로 항목이 표로 내려가면서 생겼다. 그전에는 코드에 든 배열을
+ * 화면이 직접 들고 있어서, 관리자 화면에서 무엇을 고쳐도 사용자에게 닿지 않았다.
+ */
+export async function listFaq(): Promise<FaqListResponse> {
+  return request('/v1/faq', faqListResponseSchema, { auth: false });
+}
+
 /** 서버가 켜둔 로그인 방법. 앱이 짐작하지 않는다. */
 export async function listAuthProviders(): Promise<AuthProvidersResponse> {
   return request('/v1/auth/providers', authProvidersResponseSchema, { auth: false });
@@ -587,6 +611,29 @@ export async function getAppBootstrap(): Promise<AppBootstrapResponse> {
 }
 
 /**
+ * Pick 추천 — 아직 정하지 않은 업종과 업종별 추천 업체.
+ *
+ * **홈과 「웨딩픽 추천」 전체 페이지가 이 하나를 나눠 쓴다.** 홈은 `limit`을 주어 앞의 셋만,
+ * 전체 페이지는 `limit` 없이 전부 받는다 — 두 화면이 각자 부르면 「전체에서 본 곳이 홈에
+ * 없다」가 생기고, 그때 어느 쪽이 맞는지 아무도 모른다.
+ */
+export async function getCategoryRecommendations(
+  limit?: number
+): Promise<CategoryRecommendationsResponse> {
+  const suffix = limit === undefined ? '' : `?limit=${limit}`;
+
+  return request(`/v1/me/recommendations${suffix}`, categoryRecommendationsResponseSchema);
+}
+
+/** 웨딩피드 — 공개된 글만. 로그인 여부와 무관해 bootstrap과 따로 부른다. */
+export async function getWeddingFeed(limit?: number): Promise<WeddingFeedListResponse> {
+  return request(
+    `/v1/wedding-feed${limit ? `?limit=${limit}` : ''}`,
+    weddingFeedListResponseSchema
+  );
+}
+
+/**
  * 가입 상태. 통합정책 v3.13 §N.
  *
  * 로그인 직후 이걸 먼저 본다. 소셜 로그인 성공만으로는 가입이 끝나지 않아서,
@@ -596,10 +643,6 @@ export async function getSignupState() {
   return request('/v1/me/signup', signupStateSchema);
 }
 
-export async function getEventNotices() {
-  return request('/v1/events', z.object({ events: z.array(z.object({ id: z.string(), title: z.string(), description: z.string() })) }));
-}
-
 /**
  * 필수 동의로 가입을 마무리한다. 통합정책 v3.13 §3.5.
  *
@@ -607,7 +650,7 @@ export async function getEventNotices() {
  * 서버에 있다 — 예전에는 이 자리에 `ageVerified: true`를 늘 넣어 보냈고, 서버가
  * 그것으로 관문을 지켰다. 앱이 채우는 값은 관문이 될 수 없다.
  */
-export async function completeSignup(input: { consents: string[]; versions?: Record<string, string> }) {
+export async function completeSignup(input: { consents: string[] }) {
   return request('/v1/me/signup', signupStateSchema, {
     method: 'POST',
     body: JSON.stringify(input),
@@ -1562,3 +1605,63 @@ export type { ExpoItem, ExpoStatus, ExpoDetail } from '@weddingpick/api-contract
 export type { WeddingInfoListResponse, WeddingInfoDetail } from '@weddingpick/api-contract';
 export type { BudgetBracket } from '@weddingpick/api-contract';
 
+/* ── 상담기록 ─────────────────────────────────────────────────────────── */
+
+export async function listConsultations(weddingId: string): Promise<ConsultationListResponse> {
+  return request(`/v1/weddings/${weddingId}/consultations`, consultationListResponseSchema);
+}
+
+export async function getConsultation(consultationId: string): Promise<ConsultationRecord> {
+  return request(`/v1/consultations/${consultationId}`, consultationRecordSchema);
+}
+
+/**
+ * 올릴 자리를 받는다.
+ *
+ * **파일 본체는 이 요청에 싣지 않는다.** 서명 URL을 받아 스토리지로 바로 올린다 —
+ * 100MB짜리가 API 서버를 지나갈 이유가 없다.
+ */
+export async function createConsultationUpload(
+  body: CreateConsultationUploadRequest
+): Promise<CreateConsultationUploadResponse> {
+  return request('/v1/consultations/uploads', createConsultationUploadResponseSchema, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+/**
+ * 올리기가 끝났음을 알린다. **여기부터 판정이 시작된다.**
+ *
+ * 서명 URL로 올린 것만으로는 서버가 파일이 다 왔는지 모른다 — 알려줘야 읽는다.
+ */
+export async function completeConsultationUpload(
+  consultationId: string
+): Promise<ConsultationRecord> {
+  return request(`/v1/consultations/${consultationId}/complete`, consultationRecordSchema, {
+    method: 'POST',
+  });
+}
+
+export async function updateConsultation(
+  consultationId: string,
+  body: UpdateConsultationRequest
+): Promise<ConsultationRecord> {
+  return request(`/v1/consultations/${consultationId}`, consultationRecordSchema, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  });
+}
+
+/** 확인을 마치고 저장한다. **서버가 여기서 원본을 지운다.** */
+export async function confirmConsultation(consultationId: string): Promise<ConsultationRecord> {
+  return request(`/v1/consultations/${consultationId}/confirm`, consultationRecordSchema, {
+    method: 'POST',
+  });
+}
+
+export async function removeConsultation(consultationId: string): Promise<void> {
+  await request(`/v1/consultations/${consultationId}`, z.object({ deleted: z.literal(true) }), {
+    method: 'DELETE',
+  });
+}

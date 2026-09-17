@@ -151,7 +151,7 @@ export function registerCandidateRoutes(app: FastifyInstance, context: AppContex
 
       await assertWeddingAccess(context.pool, request.params.weddingId, userId);
 
-      const vendor = await context.pool.query('SELECT 1 FROM structured.vendors WHERE id = $1 AND deleted_at IS NULL', [
+      const vendor = await context.pool.query('SELECT 1 FROM structured.vendors WHERE id = $1', [
         body.vendorId,
       ]);
 
@@ -177,14 +177,12 @@ export function registerCandidateRoutes(app: FastifyInstance, context: AppContex
       try {
         const { rows } = await context.pool.query<{ id: string }>(
           `INSERT INTO structured.vendor_candidates (wedding_id, vendor_id, added_by, note)
-           SELECT $1, $2, $3, $4 FROM structured.vendors
-           WHERE id = $2 AND deleted_at IS NULL FOR SHARE
+           VALUES ($1, $2, $3, $4)
            RETURNING id`,
           [request.params.weddingId, body.vendorId, userId, body.note ?? null]
         );
 
-        if (!rows[0]) throw notFound('업체');
-        return reply.status(201).send({ candidateId: rows[0].id });
+        return reply.status(201).send({ candidateId: rows[0]!.id });
       } catch (error) {
         // 이미 담긴 곳. 배우자가 먼저 담았을 수도 있다.
         if (error instanceof Error && error.message.includes('vendor_candidates_wedding_id')) {
