@@ -1,95 +1,24 @@
+# main.yml의 CI 성공 후에만 같은 커밋으로 호출한다.
+# 독립 push 실행과 CI 결과를 기다리는 중복 작업은 만들지 않는다.
 name: Deploy Kakao API
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'apps/api/**'
-      - 'packages/api-contract/**'
-      - 'packages/db/**'
-      - 'packages/domain/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'Dockerfile'
-      - '.dockerignore'
-      - '.github/workflows/deploy-kakao-api.yml'
-  workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
-  actions: read
-
-concurrency:
-  group: weddingpick-kakao-api-production
-  cancel-in-progress: false
 
 jobs:
-  ci-gate:
-    name: Verify CI for this commit
-    if: github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - name: Wait for the same commit's CI job
-        shell: python
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          import json
-          import os
-          import time
-          import urllib.error
-          import urllib.request
-
-          repo = os.environ['GITHUB_REPOSITORY']
-          sha = os.environ['GITHUB_SHA']
-          base = os.environ['GITHUB_API_URL'] + '/repos/' + repo
-          headers = {
-              'Authorization': 'Bearer ' + os.environ['GH_TOKEN'],
-              'Accept': 'application/vnd.github+json',
-          }
-
-          def get(path):
-              request = urllib.request.Request(base + path, headers=headers)
-              with urllib.request.urlopen(request, timeout=20) as response:
-                  return json.load(response)
-
-          deadline = time.monotonic() + 1500
-          while time.monotonic() < deadline:
-              try:
-                  if get('/git/ref/heads/main')['object']['sha'] != sha:
-                      raise SystemExit('A newer main commit exists; this deployment is not applied.')
-                  runs = get('/actions/workflows/main.yml/runs?branch=main&event=push&head_sha=' + sha + '&per_page=10')['workflow_runs']
-                  runs = [run for run in runs if run['head_sha'] == sha and run['head_branch'] == 'main']
-                  if runs:
-                      run = max(runs, key=lambda item: item['id'])
-                      jobs = get('/actions/runs/' + str(run['id']) + '/jobs?filter=latest&per_page=100')['jobs']
-                      checks = [job for job in jobs if job['name'] == 'CI' and job['head_sha'] == sha]
-                      if checks and checks[-1]['status'] == 'completed':
-                          if checks[-1]['conclusion'] != 'success':
-                              raise SystemExit('CI did not pass; the running API is unchanged.')
-                          print('CI passed for ' + sha, flush=True)
-                          break
-                      if run['status'] == 'completed':
-                          raise SystemExit('No successful CI job was found; deployment stopped.')
-                  print('Waiting for the existing CI job; tests are not run twice.', flush=True)
-              except urllib.error.HTTPError as error:
-                  if error.code not in (429, 500, 502, 503, 504):
-                      raise SystemExit('GitHub CI lookup failed: HTTP ' + str(error.code))
-                  print('GitHub temporarily unavailable; retrying.', flush=True)
-              except (urllib.error.URLError, TimeoutError):
-                  print('CI lookup timed out; retrying.', flush=True)
-              time.sleep(15)
-          else:
-              raise SystemExit('Timed out waiting for CI; the running API is unchanged.')
-
   deploy:
     name: Deploy → KakaoCloud API
-    needs: [ci-gate]
     if: github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main'
     environment: production
     runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
     timeout-minutes: 40
+    # 이전 독립 실행의 승인 대기와 분리한다. VM 파일 잠금은 구버전과도 공유한다.
+    concurrency:
+      group: weddingpick-kakao-api-cutover
+      cancel-in-progress: false
     steps:
       - name: Checkout
         uses: actions/checkout@v4
