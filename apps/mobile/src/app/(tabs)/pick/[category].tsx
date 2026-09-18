@@ -27,7 +27,13 @@ import {
   readWebInteractionState,
   useTheme,
 } from '@weddingpick/ui';
-import { addCandidate, getCurrentUser, listCandidates, removeCandidate } from '@/api/client';
+import {
+  addCandidate,
+  decideCategory,
+  getCurrentUser,
+  listCandidates,
+  removeCandidate,
+} from '@/api/client';
 import { BackButton } from '@/components/back-button';
 import { confirmAlert } from '@/components/confirm-alert';
 import { DialogToast } from '@/components/confirm-alert-toast';
@@ -67,6 +73,11 @@ const REMOVE = '빼기';
 const EDIT = '편집';
 const EDIT_DONE = '완료';
 
+type UndoCandidate = {
+  candidate: VendorCandidate;
+  wasDecided: boolean;
+};
+
 function CandidateCardSkeleton() {
   const theme = useTheme();
   return (
@@ -90,7 +101,7 @@ export default function CategoryPickScreen() {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [undoCandidate, setUndoCandidate] = useState<VendorCandidate | null>(null);
+  const [undoCandidate, setUndoCandidate] = useState<UndoCandidate | null>(null);
   /** 비교할 후보(vendorId). 시안: 체크 26. */
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [editing, setEditing] = useState(false);
@@ -138,7 +149,7 @@ export default function CategoryPickScreen() {
   const candidates = group?.candidates ?? [];
   const sharedCount = candidates.filter((c) => c.addedByPartner).length;
 
-  function showToast(message: string, undo: VendorCandidate | null = null) {
+  function showToast(message: string, undo: UndoCandidate | null = null) {
     setUndoCandidate(undo);
     setToast(message);
   }
@@ -168,11 +179,14 @@ export default function CategoryPickScreen() {
 
   function askUnpick(candidate: VendorCandidate) {
     const who = partner && partner !== TERMS.spouse ? `${partner}님` : TERMS.spouse;
-    const message = candidate.addedByPartner
-      ? `${who} 목록에서도 함께 사라져요. 다시 담을 수 있어요.`
-      : '다시 담을 수 있어요.';
+    const wasDecided = candidate.vendorId === decidedVendorId;
+    const impacts = [
+      wasDecided ? '최종 결정도 함께 취소돼요.' : null,
+      candidate.addedByPartner ? `${who} 목록에서도 함께 사라져요.` : null,
+      '다시 Pick할 수 있어요.',
+    ].filter(Boolean);
 
-    confirmAlert('후보에서 뺄까요?', message, [
+    confirmAlert('후보에서 뺄까요?', impacts.join(' '), [
       { text: '그대로 둘게요', style: 'cancel' },
       {
         text: '빼기',
@@ -185,7 +199,7 @@ export default function CategoryPickScreen() {
               next.delete(candidate.vendorId);
               return next;
             });
-            showToast('후보에서 뺐어요', candidate);
+            showToast('후보에서 뺐어요', { candidate, wasDecided });
             load();
           } catch {
             showToast('후보를 빼지 못했어요. 잠시 후 다시 시도해주세요.');
@@ -195,14 +209,28 @@ export default function CategoryPickScreen() {
     ]);
   }
 
-  async function undoUnpick(candidate: VendorCandidate) {
+  async function undoUnpick(target: UndoCandidate) {
     if (!weddingId) return;
+    const { candidate, wasDecided } = target;
+    let candidateRestored = false;
     try {
       await addCandidate(weddingId, candidate.vendorId, candidate.note ?? undefined);
-      showToast('다시 Pick했어요');
-      load();
+      candidateRestored = true;
+      if (wasDecided) {
+        await decideCategory(weddingId, {
+          category: candidate.category,
+          vendorId: candidate.vendorId,
+        });
+      }
+      showToast(wasDecided ? 'Pick과 결정을 되돌렸어요' : '다시 Pick했어요');
     } catch {
-      showToast('다시 Pick하지 못했어요. 잠시 후 다시 시도해주세요.');
+      showToast(
+        candidateRestored && wasDecided
+          ? '다시 Pick했지만 결정을 복구하지 못했어요.'
+          : '다시 Pick하지 못했어요. 잠시 후 다시 시도해주세요.'
+      );
+    } finally {
+      load();
     }
   }
 
