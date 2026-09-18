@@ -27,7 +27,19 @@ jobs:
       - name: Mobile lint
         run: npm run lint --workspace @weddingpick/mobile
       - name: Secure session regression
-        run: npm run test --workspace @weddingpick/mobile -- --runInBand src/api/session.test.ts
+        shell: bash
+        run: |
+          set +e
+          npm run test --workspace @weddingpick/mobile -- --runInBand src/api/session.test.ts 2>&1 | tee session-test.log
+          status=${PIPESTATUS[0]}
+          {
+            echo "### Secure session regression"
+            echo
+            echo '\`\`\`text'
+            tail -n 120 session-test.log
+            echo '\`\`\`'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
       - name: Web export regression
         env:
           EXPO_PUBLIC_API_URL: https://example.invalid
