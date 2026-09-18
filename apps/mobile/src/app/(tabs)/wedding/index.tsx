@@ -35,7 +35,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   Border,
-  DonutChart,
   Elevation,
   Fab,
   Layout,
@@ -76,7 +75,6 @@ const NEXT_MONTH = '다음 달';
 const EDIT = '수정';
 const DELETE = '삭제';
 const DELETE_TITLE = '삭제할까요?';
-const USED = '사용';
 const UNPAID = '미집행';
 const CONSULT_EMPTY_TITLE = '녹음 파일을 선택해 주세요';
 const CONSULT_EMPTY_BODY = '스마트폰 녹음앱에서 저장한 파일을 올릴 수 있어요';
@@ -85,10 +83,8 @@ const CONSULT_PENDING = '확인 필요';
 const FAB_LABEL: Record<Tab, string> = { calendar: '일정 추가', budget: '지출 추가', consult: '녹음 파일 추가' };
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'] as const;
 
-/** 막대 · 도넛의 값 — 피그마 `h-2`(8) · `h-28`(112) · 구멍 `h-20`(80). */
+/** 진행바 값 — 피그마 `h-2`(8). 예산 정본은 원형 그래프를 쓰지 않는다. */
 const BAR_HEIGHT = 8;
-const DONUT_SIZE = 112;
-const DONUT_HOLE = 80;
 const EVENT_DOT = 4;
 
 const pad = (value: number) => String(value).padStart(2, '0');
@@ -406,7 +402,8 @@ function CalendarPanel({
 }
 
 /* ────────────────────────────────────────────
-   예산현황 패널 — 도넛 112(구멍 80) · 총 예산 · 사용 · 잔여 · 항목별 막대 8
+   예산현황 패널 — 총 사용액 · 총 예산 · 가로 진행바 8 · 잔여/사용률 · 항목별 막대
+   04-wedding-note 정본은 원형 그래프를 쓰지 않는다.
 ──────────────────────────────────────────── */
 function BudgetPanel({ expenses }: { expenses: ExpenseSummaryResponse | null }) {
   const theme = useTheme();
@@ -415,6 +412,7 @@ function BudgetPanel({ expenses }: { expenses: ExpenseSummaryResponse | null }) 
   const total = set?.budget ?? 0;
   const spent = set?.spent ?? expenses?.paidTotal ?? 0;
   const percentage = total > 0 ? Math.round((spent / total) * 100) : 0;
+  const progress = Math.max(0, Math.min(100, percentage));
   const buckets = expenses?.buckets ?? [];
 
   return (
@@ -423,45 +421,33 @@ function BudgetPanel({ expenses }: { expenses: ExpenseSummaryResponse | null }) 
         {TABS[2].label}
       </ThemedText>
 
-      <View style={styles.budgetHead}>
-        <DonutChart
-          size={DONUT_SIZE}
-          holeSize={DONUT_HOLE}
-          holeColor={theme.background}
-          slices={[
-            { key: 'spent', value: Math.max(percentage, 0), color: theme.text },
-            { key: 'left', value: Math.max(100 - percentage, 0), color: theme.backgroundElement },
-          ]}>
-          <ThemedText type="t5" numeric style={styles.bold}>
-            {`${percentage}%`}
-          </ThemedText>
-          <ThemedText type="micro" themeColor="textAssistive" style={styles.regular}>
-            {USED}
-          </ThemedText>
-        </DonutChart>
-        <View style={styles.budgetText}>
-          {set ? (
-            <ThemedText type="t6" numeric style={styles.bold}>
-              {`총 예산 ${manwon(set.budget)}`}
+      {set ? (
+        <View style={styles.budgetSummary}>
+          <View style={styles.budgetSummaryRow}>
+            <ThemedText type="amount" numeric style={styles.bold}>
+              {manwon(spent)}
             </ThemedText>
-          ) : (
-            <ThemedText type="t6" style={styles.bold}>
-              {budget?.set === false ? budget.note : '예산을 아직 정하지 않았어요'}
+            <ThemedText type="t7" themeColor="textAssistive" numeric>
+              {`예산 ${manwon(total)}`}
             </ThemedText>
-          )}
+          </View>
+          <View style={[styles.bar, { backgroundColor: theme.backgroundElement }]}>
+            <View style={[styles.barFill, { width: `${progress}%`, backgroundColor: theme.tint }]} />
+          </View>
+          <ThemedText type="t7" themeColor="textAssistive" numeric style={styles.budgetSummaryNote}>
+            {`${manwon(Math.max(set.remaining, 0))} 남았어요 · ${percentage}% 썼어요`}
+          </ThemedText>
+        </View>
+      ) : (
+        <View style={styles.budgetSummary}>
+          <ThemedText type="t6" style={styles.bold}>
+            {budget?.set === false ? budget.note : '예산을 아직 정하지 않았어요'}
+          </ThemedText>
           <ThemedText type="t7" themeColor="textAssistive" numeric>
             {`${manwon(spent)} 사용`}
           </ThemedText>
-          {set ? (
-            <View style={styles.remainingRow}>
-              <View style={[styles.legendDot, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]} />
-              <ThemedText type="micro" themeColor="textAssistive" numeric style={styles.regular}>
-                {`잔여 ${manwon(Math.max(set.remaining, 0))}`}
-              </ThemedText>
-            </View>
-          ) : null}
         </View>
-      </View>
+      )}
 
       <View style={[styles.bucketList, { borderTopColor: theme.border }]}>
         {buckets.map((bucket) => {
@@ -714,18 +700,16 @@ const styles = StyleSheet.create({
   },
 
   // ── 예산현황 ──
-  /* `mt-6 flex items-center gap-5` — 위 24 · 사이 20. */
-  budgetHead: {
-    marginTop: Spacing.four,
+  /* 정본 sumRow + track + sumNote. 원형 그래프를 쓰지 않는다. */
+  budgetSummary: { marginTop: Spacing.three },
+  budgetSummaryRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: Layout.listGap,
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: Layout.inlineGap,
+    marginBottom: Spacing.three,
   },
-  /* `space-y-1.5` — 줄 사이 6(같은 값의 menuGroupGap). */
-  budgetText: { flex: 1, minWidth: 0, gap: Layout.menuGroupGap },
-  remainingRow: { flexDirection: 'row', alignItems: 'center', gap: Layout.menuGroupGap, paddingTop: Spacing.half },
-  /* 범례 점 `h-2 w-2 rounded-full border`. */
-  legendDot: { width: BAR_HEIGHT, height: BAR_HEIGHT, borderRadius: Radius.pill, borderWidth: Border.hairline },
+  budgetSummaryNote: { marginTop: Spacing.two },
   /* 항목 `mt-6 space-y-5 border-t pt-5`. */
   bucketList: {
     marginTop: Spacing.four,
