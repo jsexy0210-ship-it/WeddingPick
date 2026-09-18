@@ -56,4 +56,27 @@ describe('geocodeKakaoAddress', () => {
       })
     ).rejects.toThrow('HTTP 429');
   });
+  it('aborts a slow geocode request at the configured timeout', async () => {
+    await expect(
+      geocodeKakaoAddress({
+        restApiKey: 'server-secret',
+        address: '서울 강남구',
+        timeoutMs: 1,
+        fetchImpl: async (_input, init) =>
+          await new Promise<Response>((_resolve, reject) => {
+            const signal = init?.signal;
+            if (!signal) {
+              reject(new Error('missing timeout signal'));
+              return;
+            }
+            if (signal.aborted) {
+              reject(signal.reason);
+              return;
+            }
+            signal.addEventListener('abort', () => reject(signal.reason), { once: true });
+          }),
+      })
+    ).rejects.toMatchObject({ name: 'TimeoutError' });
+  });
+
 });
