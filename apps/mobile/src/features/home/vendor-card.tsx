@@ -141,7 +141,6 @@ export function VendorCard({
 
         {showReason && vendor.reasons?.[0] ? (
           <View style={styles.reasonRow}>
-            <SeedIcon name="checkFlowerFill" size={Layout.iconField} color={theme.tint} />
             <ThemedText type="f12" themeColor="tint" numberOfLines={2} style={styles.reason}>
               {vendor.reasons[0]}
             </ThemedText>
@@ -192,9 +191,6 @@ const styles = StyleSheet.create({
   price: { fontWeight: 700, marginTop: Layout.cardGap },
   proof: { marginTop: Spacing.one },
   reasonRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.one,
     marginTop: Spacing.two,
   },
   reason: { flex: 1, minWidth: 0, fontWeight: 600 },
