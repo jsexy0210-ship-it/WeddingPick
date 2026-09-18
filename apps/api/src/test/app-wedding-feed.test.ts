@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import type { Pool } from 'pg';
 
 import type { AppContext } from '../context';
+import { ApiError } from '../errors';
 import { registerAppRoutes } from '../routes/app';
 
 /**
@@ -20,9 +21,35 @@ const pool = { query: jest.fn(), connect: jest.fn() };
 function app() {
   const instance = Fastify();
 
+  /* 서버의 것과 같은 자리(`server.ts`) — 없으면 404가 500으로 나가 시험이 거짓말한다. */
+  instance.setErrorHandler((error, _request, reply) => {
+    if (error instanceof ApiError) return reply.status(error.status).send(error.toResponse());
+    throw error;
+  });
   registerAppRoutes(instance, { pool, storage: null } as unknown as AppContext);
 
   return instance;
+}
+
+/** 표에서 읽히는 글 한 줄. 필요한 칸만 바꿔 쓴다. */
+function row(overrides: Record<string, unknown> = {}) {
+  return {
+    id: '00000000-0000-4000-8000-0000000000f1',
+    category_label: '예산',
+    title: '스드메 예산 짜는 법',
+    summary: '요약',
+    body: '본문',
+    image_key: null,
+    status: 'published',
+    source: 'manual',
+    model: null,
+    topic: null,
+    sort_order: 0,
+    published_at: new Date('2026-09-14T00:00:00Z'),
+    created_at: new Date('2026-09-14T00:00:00Z'),
+    updated_at: new Date('2026-09-14T00:00:00Z'),
+    ...overrides,
+  };
 }
 
 beforeEach(() => {
@@ -112,6 +139,45 @@ describe('공개 웨딩피드', () => {
 
     expect(response.statusCode).toBe(200);
     expect(pool.query.mock.calls[0]?.[1]).toEqual([2]);
+  });
+
+  describe('글 하나', () => {
+    const id = '00000000-0000-4000-8000-0000000000f1';
+
+    it('본문과 공개 시각을 준다 — 목록에 없는 값이다', async () => {
+      pool.query.mockResolvedValueOnce({ rows: [row()] });
+
+      const response = await app().inject({ method: 'GET', url: `/v1/wedding-feed/${id}` });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toEqual({
+        id,
+        categoryLabel: '예산',
+        title: '스드메 예산 짜는 법',
+        summary: '요약',
+        body: '본문',
+        imageUrl: null,
+        publishedAt: '2026-09-14T00:00:00.000Z',
+      });
+    });
+
+    it('공개된 것만 찾는다', async () => {
+      // 목록과 같은 조건이라야 「목록에 없는데 주소로는 열리는 글」이 안 생긴다.
+      pool.query.mockResolvedValueOnce({ rows: [] });
+
+      const response = await app().inject({ method: 'GET', url: `/v1/wedding-feed/${id}` });
+
+      expect(response.statusCode).toBe(404);
+      expect(pool.query.mock.calls[0]?.[0]).toContain("status = 'published'");
+    });
+
+    it('UUID가 아닌 주소는 404다 — 표를 묻지 않는다', async () => {
+      // 물으면 Postgres가 22P02로 죽고 그것은 500으로 나간다. 500은 서버 고장이라는 말이다.
+      const response = await app().inject({ method: 'GET', url: '/v1/wedding-feed/abc' });
+
+      expect(response.statusCode).toBe(404);
+      expect(pool.query).not.toHaveBeenCalled();
+    });
   });
 
   it('이상한 limit은 기본값(8)으로 대신한다', async () => {

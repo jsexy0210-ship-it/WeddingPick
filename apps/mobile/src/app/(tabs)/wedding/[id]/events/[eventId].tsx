@@ -4,8 +4,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { getCurrentUser, listWeddingEvents, removeWeddingEvent, updateWeddingEvent } from '@/api/client';
+import { confirmAlert } from '@/components/confirm-alert';
 import { formatDateDot, formatMonthDayDot } from '@/features/common/format-date';
-import { ErrorView, Layout, Spacing, ThemedText, showAlert } from '@weddingpick/ui';
+import { ErrorView, Layout, Spacing, ThemedText } from '@weddingpick/ui';
 import { DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { DateTimeField, combineDayTime, splitDayTime } from '@/features/wedding/event-form';
 import {
@@ -163,7 +164,7 @@ export default function WeddingEventDetailScreen() {
   }
 
   function remove() {
-    showAlert('일정을 삭제할까요?', '삭제하면 되돌릴 수 없어요.', [
+    confirmAlert('일정을 삭제할까요?', '삭제하면 되돌릴 수 없어요.', [
       { text: '취소', style: 'cancel' },
       {
         text: '삭제',
