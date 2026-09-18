@@ -76,4 +76,4 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      - run: bash ./scripts/rollback-kakao-app-web.sh
+      - run: bash ./scripts/rollback-kakao-app-web-failed-cutover.sh
