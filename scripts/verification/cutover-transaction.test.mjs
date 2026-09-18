@@ -23,6 +23,14 @@ const appRollbackSource = readFileSync(
   path.join(repoRoot, 'scripts/rollback-kakao-app-web.sh'),
   'utf8',
 );
+const appUpdateRollbackSource = readFileSync(
+  path.join(repoRoot, 'scripts/rollback-kakao-app-web-update.sh'),
+  'utf8',
+);
+const appFinalizeSource = readFileSync(
+  path.join(repoRoot, 'scripts/finalize-kakao-app-web-update.sh'),
+  'utf8',
+);
 const appCutoverWorkflow = readFileSync(
   path.join(repoRoot, '.github/workflows/cutover-kakao-app-web.yml'),
   'utf8',
@@ -82,8 +90,12 @@ function makeHarness({ includeLogin = true } = {}) {
 
   const installPath = path.join(scripts, 'install-kakao-app-web.sh');
   const rollbackPath = path.join(scripts, 'rollback-kakao-app-web.sh');
+  const updateRollbackPath = path.join(scripts, 'rollback-kakao-app-web-update.sh');
+  const finalizePath = path.join(scripts, 'finalize-kakao-app-web-update.sh');
   writeExecutable(installPath, replaceRuntimePaths(appInstallSource, root, conf));
   writeExecutable(rollbackPath, replaceRuntimePaths(appRollbackSource, root, conf));
+  writeExecutable(updateRollbackPath, replaceRuntimePaths(appUpdateRollbackSource, root, conf));
+  writeExecutable(finalizePath, replaceRuntimePaths(appFinalizeSource, root, conf));
 
   writeExecutable(
     path.join(bin, 'sudo'),
@@ -191,6 +203,8 @@ fi
     state,
     installPath,
     rollbackPath,
+    updateRollbackPath,
+    finalizePath,
     releaseSha,
     releaseApp,
     servedApp,
@@ -267,6 +281,8 @@ shellTest('re-running the same live release preserves served files and the API-o
   try {
     const first = run(h.installPath, [h.releaseSha], h.env);
     assert.equal(first.status, 0, first.stderr || first.stdout);
+    const finalize = run(h.finalizePath, [], h.env);
+    assert.equal(finalize.status, 0, finalize.stderr || finalize.stdout);
 
     const marker = path.join(h.root, '.app-web-cutover-backup');
     const firstBackup = readFileSync(marker, 'utf8').trim();
@@ -351,6 +367,32 @@ shellTest('successful install clears rollback-on-exit and keeps app-web live', (
   }
 });
 
+shellTest('failed release update restores the immediately previous live release instead of API-only', () => {
+  const h = makeHarness();
+  try {
+    const first = run(h.installPath, [h.releaseSha], h.env);
+    assert.equal(first.status, 0, first.stderr || first.stdout);
+    const finalized = run(h.finalizePath, [], h.env);
+    assert.equal(finalized.status, 0, finalized.stderr || finalized.stdout);
+
+    const previousConfig = readFileSync(h.conf, 'utf8');
+    const releaseB = 'release-b';
+    const sourceB = path.join(h.root, 'static-releases', releaseB, 'app');
+    mkdirSync(sourceB, { recursive: true });
+    writeFileSync(path.join(sourceB, 'index.html'), '<html>b</html>', 'utf8');
+    writeFileSync(path.join(sourceB, 'login.html'), '<html>b-login</html>', 'utf8');
+
+    const second = run(h.installPath, [releaseB], {
+      ...h.env,
+      MOCK_CURL_FAIL_MATCH: '/login',
+    });
+    assert.notEqual(second.status, 0);
+    assert.equal(readFileSync(h.conf, 'utf8'), previousConfig);
+    assert.equal(readFileSync(path.join(h.root, 'static-live-app'), 'utf8').trim(), h.releaseSha);
+  } finally {
+    h.cleanup();
+  }
+});
 shellTest('explicit rollback is repeatable and returns 443 to the preserved baseline', () => {
   const h = makeHarness();
   try {
@@ -374,7 +416,8 @@ shellTest('workflow rollback ownership prevents double rollback after a successf
     appCutoverWorkflow,
     /needs\.cutover\.result == 'success'\s*&&\s*needs\.verify\.result != 'success'/,
   );
-  assert.match(appCutoverWorkflow, /rollback-kakao-app-web\.sh/);
+  assert.match(appCutoverWorkflow, /rollback-kakao-app-web-update\.sh/);
+  assert.match(appCutoverWorkflow, /finalize-kakao-app-web-update\.sh/);
   assert.match(appInstallSource, /trap rollback_on_error EXIT/);
   assert.match(appInstallSource, /trap - EXIT/);
 });
