@@ -21,7 +21,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const { spawn } = require('child_process');
+            const { spawnSync } = require('child_process');
 
             const runnerRoot = '/home/ubuntu/actions-runner';
             const configPath = runnerRoot + '/.runner';
@@ -67,50 +67,77 @@ jobs:
               return;
             }
 
-            const env = { ...process.env };
-            delete env.RUNNER_TRACKING_ID;
-
             const svcPath = runnerRoot + '/svc.sh';
+            const systemdRunPath = '/usr/bin/systemd-run';
             if (!fs.existsSync(svcPath)) {
               core.setFailed('Runner service helper was not found: ' + svcPath);
+              return;
+            }
+            if (!fs.existsSync(systemdRunPath)) {
+              core.setFailed('systemd-run was not found: ' + systemdRunPath);
               return;
             }
 
             fs.writeFileSync(
               restartLogPath,
-              new Date().toISOString() + ' restart scheduled by GitHub Actions\n',
+              new Date().toISOString() + ' restart scheduled by GitHub Actions via systemd-run\n',
               { mode: 0o600 }
             );
 
             const restartCommand =
-              '{ ' +
-              'echo "[$(date -Is)] restart child started"; ' +
-              'sleep 8; ' +
+              'set +e; ' +
+              'echo "[$(date -Is)] systemd restart unit started"; ' +
               'echo "[$(date -Is)] stopping runner service"; ' +
-              'sudo -n "' + svcPath + '" stop; ' +
+              '"' + svcPath + '" stop; ' +
               'stop_status=$?; ' +
               'echo "[$(date -Is)] stop_status=$stop_status"; ' +
               'sleep 2; ' +
               'echo "[$(date -Is)] starting runner service"; ' +
-              'sudo -n "' + svcPath + '" start; ' +
+              '"' + svcPath + '" start; ' +
               'start_status=$?; ' +
               'echo "[$(date -Is)] start_status=$start_status"; ' +
               'if [ "$stop_status" -eq 0 ] && [ "$start_status" -eq 0 ]; then ' +
               'rm -f "' + markerPath + '"; ' +
               'echo "[$(date -Is)] restart succeeded; marker cleared"; ' +
+              'exit 0; ' +
               'else ' +
               'echo "[$(date -Is)] restart failed; marker retained"; ' +
-              'fi; ' +
-              '} >> "' + restartLogPath + '" 2>&1';
+              'exit 1; ' +
+              'fi ' +
+              '>> "' + restartLogPath + '" 2>&1';
 
-            const child = spawn('/bin/bash', ['-lc', restartCommand], {
-              detached: true,
-              stdio: 'ignore',
-              env
-            });
-            child.unref();
+            const suffix = String(process.env.GITHUB_RUN_ID || 'manual') + '-' +
+              String(process.env.GITHUB_RUN_ATTEMPT || '1');
+            const unitName = 'weddingpick-runner-restart-' +
+              suffix.replace(/[^A-Za-z0-9_.-]/g, '-');
+
+            const scheduled = spawnSync(
+              'sudo',
+              [
+                '-n',
+                systemdRunPath,
+                '--unit=' + unitName,
+                '--on-active=8s',
+                '--collect',
+                '/bin/bash',
+                '-lc',
+                restartCommand
+              ],
+              { encoding: 'utf8' }
+            );
+
+            if (scheduled.status !== 0) {
+              const detail = String(scheduled.stderr || scheduled.stdout || '').trim();
+              core.setFailed(
+                'Failed to schedule runner restart with systemd-run' +
+                (detail ? ': ' + detail : '')
+              );
+              return;
+            }
+
+            core.info(String(scheduled.stdout || '').trim());
             core.setOutput('restart_scheduled', 'true');
-            core.info('Runner restart scheduled in 8 seconds.');
+            core.info('Runner restart scheduled with systemd-run in 8 seconds.');
 
   restart-window:
     name: Wait for scheduled restart
@@ -123,7 +150,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # repair job은 8초 뒤 stop, 그 뒤 2초 뒤 start를 예약한다.
+          # repair job은 systemd timer로 8초 뒤 stop, 그 뒤 2초 뒤 start를 예약한다.
           # 다음 self-hosted job이 그 사이 배정되지 않도록 reusable workflow 안에서
           # GitHub-hosted job이 의존성 장벽을 유지한다.
           # stop 예약(8초) + start 전 대기(2초) 이후 서비스 기동/runner 재등록 시간을
