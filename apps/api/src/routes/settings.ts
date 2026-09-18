@@ -10,6 +10,7 @@ import type { FastifyInstance } from 'fastify';
 
 import { currentUserId, requireUser } from '../auth/plugin';
 import type { AppContext } from '../context';
+import { publishedVersionId } from '../legal-version';
 import { ApiError } from '../errors';
 
 type SettingsRow = {
@@ -137,16 +138,25 @@ export function registerSettingsRoutes(app: FastifyInstance, context: AppContext
      * 답할 수 없다.
      */
     if (body.marketingEnabled != null) {
+      /*
+       * **본문을 고치는 것과 동의 상태를 바꾸는 것은 다른 일이다.** 이 스위치는
+       * 지금까지대로 동의 상태만 켜고 끈다 — 0422이 바꾼 것은 그 동의가 «어느 판»에
+       * 대한 것인지를 함께 적는다는 것뿐이다.
+       */
+      const versionId = await publishedVersionId(context.pool, MARKETING_CONSENT_ITEM);
+
       await (body.marketingEnabled
         ? context.pool.query(
-            `INSERT INTO structured.user_consents (user_id, item, terms_version, is_required)
-             VALUES ($1, $2, $3, $4)
+            `INSERT INTO structured.user_consents
+               (user_id, item, terms_version, is_required, terms_version_id)
+             VALUES ($1, $2, $3, $4, $5)
              ON CONFLICT DO NOTHING`,
             [
               userId,
               MARKETING_CONSENT_ITEM,
               consentVersion(MARKETING_CONSENT_ITEM),
               isRequiredConsent(MARKETING_CONSENT_ITEM),
+              versionId,
             ]
           )
         : /* 지우지 않고 철회 시각을 적는다. 판이 여럿이면 살아 있는 것을 모두 내린다. */

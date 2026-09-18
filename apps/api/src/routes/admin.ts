@@ -2168,21 +2168,46 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
     }
   );
 
-  // ─── Terms ────────────────────────────────────────────────────────────────
-  app.get('/v1/admin/terms', auth, async () => adminOps.termsDocuments(context.pool));
   /*
-   * 막힌 자리는 **무엇이 되는지**를 말한다(v3.27). 「~할 수 없어요」로 끝나면
-   * 운영자는 다음에 무엇을 해야 하는지 모른 채 화면을 닫는다.
+   * ─── Terms ────────────────────────────────────────────────────────────────
+   *
+   * 2026-09-16 대표 지시로 편집·공개가 열렸다 — 「개인정보처리방침 이용약관 마케팅
+   * 약관도 동일하게 내가 수정가능하도록 하고」. 그전까지 이 셋은 `termsUnavailable()`이
+   * 막고 있었고, 그 문구가 적은 「앱 약관·동의 기록에 연결한 뒤」가 이 작업이다.
+   *
+   * **정본이 하나라는 규칙은 그대로다.** 웹이 이 표를 읽어 그리고(0422), 앱은 지금처럼
+   * 웹으로 내보낸다. 바뀐 것은 그 하나가 코드가 아니라 표라는 것뿐이다.
    */
-  const termsUnavailable = async () => {
-    throw new ApiError(
-      'invalid_request',
-      '지금은 약관 조문과 판 이력을 조회할 수 있어요. 편집·공개는 앱 약관·동의 기록에 연결한 뒤 열려요.'
-    );
-  };
-  app.post('/v1/admin/terms', auth, termsUnavailable);
+  app.get('/v1/admin/terms', auth, async () => adminOps.termsDocuments(context.pool));
 
-  /** 조문 편집. 화면(`terms.tsx`)이 PUT으로 `{ body }`를 보낸다. */
+  /** 초안 만들기. 아직 본문이 한 번도 없던 문서(마케팅)가 여기서 시작한다. */
+  app.post<{ Body: { doc?: string } }>('/v1/admin/terms', auth, async (request) => {
+    const doc = request.body?.doc ?? '';
+
+    if (!adminOps.isDocType(doc)) throw notFound('문서');
+
+    return run(() => adminOps.createTermsDraft(context.pool, doc, currentUserId(request)));
+  });
+
+  /**
+   * 조문 편집. 화면(`terms.tsx`)이 PUT으로 `{ body, bodyTable?, confirm? }`를 보낸다.
+   *
+   * **국외 이전 · 수탁자 절은 한 번 더 묻는다.** `confirm` 없이 그 절에서 항목이
+   * 사라지면 저장하지 않고 `{ saved: false, removing: [...] }`를 돌려준다 — 화면이
+   * 무엇이 사라지는지 항목으로 보이고 다시 보낸다(v3.27). 막는 것이 아니다.
+   */
+  const clauseEditBody = z.object({
+    body: z.string(),
+    bodyTable: z
+      .object({
+        lead: z.string().nullish(),
+        cols: z.array(z.object({ label: z.string() })).min(1),
+        rows: z.array(z.array(z.string())),
+      })
+      .nullish(),
+    confirm: z.boolean().optional(),
+  });
+
   app.put<{ Params: { id: string; clauseId: string }; Body: unknown }>(
     '/v1/admin/terms/:id/clauses/:clauseId',
     auth,
@@ -2190,11 +2215,94 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
       const doc = request.params.id;
 
       if (!adminOps.isDocType(doc)) throw notFound('문서');
-      return termsUnavailable();
+
+      const parsed = clauseEditBody.safeParse(request.body ?? {});
+
+      if (!parsed.success) {
+        throw new ApiError(
+          'invalid_request',
+          parsed.error.issues[0]?.message ?? '잘못된 요청이에요.'
+        );
+      }
+
+      const { body, bodyTable, confirm } = parsed.data;
+
+      return run(() =>
+        adminOps.editTermsClause(
+          context.pool,
+          doc,
+          request.params.clauseId,
+          {
+            body,
+            ...(bodyTable === undefined
+              ? {}
+              : { bodyTable: bodyTable === null ? null : { ...bodyTable, lead: bodyTable.lead ?? null } }),
+          },
+          currentUserId(request),
+          confirm === true
+        )
+      );
     }
   );
 
-  /** 초안 공개. 공개한 판은 얼어붙고, 이어서 고칠 새 초안이 같이 생긴다. */
+  /**
+   * 조문 더하기. **마케팅 정보 수신 동의가 이 길로 시작한다** — 저장소에 본문이
+   * 한 번도 없어서 0422이 빈 초안만 두었다(없는 법적 문서를 지어내지 않았다).
+   */
+  const clauseAddBody = z.object({ title: z.string(), body: z.string() });
+
+  app.post<{ Params: { id: string }; Body: unknown }>(
+    '/v1/admin/terms/:id/clauses',
+    auth,
+    async (request) => {
+      const doc = request.params.id;
+
+      if (!adminOps.isDocType(doc)) throw notFound('문서');
+
+      const parsed = clauseAddBody.safeParse(request.body ?? {});
+
+      if (!parsed.success) {
+        throw new ApiError('invalid_request', '조문 제목과 내용을 넣어주세요.');
+      }
+
+      return run(() =>
+        adminOps.addTermsClause(context.pool, doc, parsed.data, currentUserId(request))
+      );
+    }
+  );
+
+  /** 조문 지우기. 보호 표시가 붙은 절은 무엇이 사라지는지 보인 뒤 한 번 더 받는다. */
+  app.delete<{ Params: { id: string; clauseId: string }; Querystring: { confirm?: string } }>(
+    '/v1/admin/terms/:id/clauses/:clauseId',
+    auth,
+    async (request) => {
+      const doc = request.params.id;
+
+      if (!adminOps.isDocType(doc)) throw notFound('문서');
+
+      return run(() =>
+        adminOps.deleteTermsClause(
+          context.pool,
+          doc,
+          request.params.clauseId,
+          currentUserId(request),
+          request.query.confirm === 'true'
+        )
+      );
+    }
+  );
+
+  /**
+   * 초안 공개. 공개한 판은 얼어붙고, 이어서 고칠 새 초안이 같이 생긴다.
+   *
+   * **시행일을 받는다.** 저장한 날과 효력이 생기는 날은 다르다 — 약관 변경은
+   * 시행일을 미리 알리고 그날부터 적용한다(이용약관 제3조 · 방침 제13항).
+   */
+  const publishBody = z.object({
+    effectiveOn: z.string(),
+    reason: z.string().optional(),
+  });
+
   app.post<{ Params: { id: string }; Body: unknown }>(
     '/v1/admin/terms/:id/publish',
     auth,
@@ -2203,7 +2311,21 @@ export function registerAdminRoutes(app: FastifyInstance, context: AppContext): 
 
       if (!adminOps.isDocType(doc)) throw notFound('문서');
 
-      return termsUnavailable();
+      const parsed = publishBody.safeParse(request.body ?? {});
+
+      if (!parsed.success) {
+        throw new ApiError('invalid_request', '시행일을 YYYY-MM-DD로 정해주세요.');
+      }
+
+      return run(() =>
+        adminOps.publishTerms(
+          context.pool,
+          doc,
+          currentUserId(request),
+          parsed.data.reason,
+          parsed.data.effectiveOn
+        )
+      );
     }
   );
 
