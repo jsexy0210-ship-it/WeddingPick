@@ -13,6 +13,51 @@ on:
 # 실행 전체를 취소하지 않는다. CI job만 최신 main을 남기고 오래된 검증은 취소한다.
 # 이미 시작된 운영 배포는 reusable workflow 자체의 concurrency가 끝까지 보호한다.
 jobs:
+  current-backlog-production:
+    name: Current backlog production gate
+    if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      auto: ${{ steps.gate.outputs.auto }}
+      pr_number: ${{ steps.gate.outputs.pr_number }}
+      environment_name: ${{ steps.gate.outputs.environment_name }}
+    steps:
+      - name: Allow only the backlog that was open on 2026-09-19
+        id: gate
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          ALLOWED_PRS: '329 334 336 340 342 345 352 359 370 373 377 388 402 406 410 412 413 414 415 417 418 419'
+        run: |
+          set -euo pipefail
+          auto=false
+          pr_number=''
+          environment_name=production
+
+          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            associated_prs="$(gh api "repos/$REPOSITORY/commits/$GITHUB_SHA/pulls" --jq '.[] | select(.base.ref == "main" and .merged_at != null) | .number' 2>/dev/null || true)"
+            for pr in $associated_prs; do
+              case " $ALLOWED_PRS " in
+                *" $pr "*)
+                  auto=true
+                  pr_number="$pr"
+                  environment_name=production-current-backlog-auto
+                  break
+                  ;;
+              esac
+            done
+          fi
+
+          echo "auto=$auto" >> "$GITHUB_OUTPUT"
+          echo "pr_number=$pr_number" >> "$GITHUB_OUTPUT"
+          echo "environment_name=$environment_name" >> "$GITHUB_OUTPUT"
+          echo "Current-backlog auto production: $auto"
+          echo "Associated allowed PR: ${pr_number:-none}"
+
   ci:
     name: CI
     if: ${{ !contains(github.event.head_commit.message || '', '[probe-only]') }}
@@ -290,16 +335,16 @@ jobs:
 
   repair-kakao-runner:
     name: Repair Kakao Runner
-    needs: [ci, api-tests]
-    if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message || '', '[skip-api-deploy]') }}
+    needs: [ci, api-tests, current-backlog-production]
+    if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || needs.current-backlog-production.outputs.auto == 'true') && !contains(github.event.head_commit.message || '', '[skip-api-deploy]') }}
     permissions:
       contents: read
     uses: ./.github/workflows/repair-kakao-runner.yml
 
   api-deploy-needed:
     name: Detect Kakao API catch-up
-    needs: [ci, api-tests, repair-kakao-runner]
-    if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message || '', '[skip-api-deploy]') }}
+    needs: [ci, api-tests, repair-kakao-runner, current-backlog-production]
+    if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || needs.current-backlog-production.outputs.auto == 'true') && !contains(github.event.head_commit.message || '', '[skip-api-deploy]') }}
     runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
     timeout-minutes: 5
     outputs:
@@ -331,8 +376,21 @@ jobs:
 
   deploy-kakao:
     name: KakaoCloud API
-    needs: [ci, api-tests, repair-kakao-runner, api-deploy-needed]
+    needs: [ci, api-tests, repair-kakao-runner, api-deploy-needed, current-backlog-production]
     if: ${{ needs.api-deploy-needed.outputs.changed == 'true' }}
     permissions:
       contents: read
     uses: ./.github/workflows/deploy-kakao-api.yml
+    with:
+      environment_name: ${{ needs.current-backlog-production.outputs.environment_name }}
+
+  auto-cutover-current-backlog-app-web:
+    name: Production App Web (current backlog)
+    needs: [current-backlog-production, stage-kakao-static, deploy-kakao]
+    if: ${{ always() && needs.current-backlog-production.outputs.auto == 'true' && needs.stage-kakao-static.result == 'success' && (needs.deploy-kakao.result == 'success' || needs.deploy-kakao.result == 'skipped') }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/cutover-kakao-app-web.yml
+    with:
+      release_sha: ${{ github.sha }}
+      environment_name: ${{ needs.current-backlog-production.outputs.environment_name }}
