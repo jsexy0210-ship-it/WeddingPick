@@ -35,7 +35,7 @@ jobs:
         run: npm run lint
 
       - name: Mobile home tests
-        run: npm run test --workspace @weddingpick/mobile -- --runInBand apps/mobile/src/features/home
+        run: npm run test --workspace @weddingpick/mobile -- --runInBand src/features/home
 
       - name: Capture fixture contract
         run: npx jest --config packages/api-contract/jest.config.js --rootDir packages/api-contract capture-fixtures --runInBand
@@ -58,6 +58,23 @@ jobs:
             --edges \
             --wait 2200 \
             --out design-captures
+
+      - name: Capture design canon
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/design-canon.log 2>&1 &
+          server_pid=$!
+          trap 'kill $server_pid || true' EXIT
+          sleep 2
+          playwright screenshot \
+            --viewport-size=390,844 \
+            --full-page \
+            http://127.0.0.1:4173/docs/design/figma-export/01-home.dc.html \
+            design-captures/canon-home.png
+          playwright screenshot \
+            --viewport-size=390,844 \
+            --full-page \
+            http://127.0.0.1:4173/docs/design/figma-export/08-recommendations.dc.html \
+            design-captures/canon-recommendations.png
 
       - name: Upload design captures
         if: always()
