@@ -1,13 +1,7 @@
 import { Redirect } from 'expo-router';
 /**
- * 링크 미리보기(OG 카드) 관리
- *
- * 카카오톡·슬랙에 주소를 붙이면 뜨는 카드의 제목·설명·그림을 고친다.
- *
- * **저장과 반영은 다른 일이다.** 웹은 정적 HTML이라 저장만으로는 바뀌지 않고 다시
- * 빌드해야 한다. 그래서 단추가 둘이고, 화면은 「지금 사이트에 나가 있는 제목」을
- * 실제로 읽어와 보여준다 — 저장 시각과 배포 시각을 비교해 「반영됨」이라고 말하면
- * 실패한 배포까지 반영된 것으로 보인다.
+ * 링크 미리보기(OG 카드) 관리.
+ * 설정 저장과 정적 사이트 반영은 별개다. 이 화면에서는 배포를 요청하지 않는다.
  */
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useState } from 'react';
@@ -76,10 +70,8 @@ export function OgCardPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [publishing, setPublishing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [rev, setRev] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -107,7 +99,7 @@ export function OgCardPanel() {
     return () => {
       cancelled = true;
     };
-  }, [rev]);
+  }, []);
 
   /** 칸이 비어 있으면 기본값이 무엇인지 보여준다. 저장하면 그 값이 다시 이긴다. */
   function shown(key: keyof Meta): string {
@@ -130,15 +122,8 @@ export function OgCardPanel() {
   }
 
   /**
-   * 그림을 골라 올린다.
-   *
-   * **파일 본체는 API를 지나지 않는다.** 서버에서 올릴 자리를 받아 저장소에 바로
-   * 올리고, 그다음에 「그 열쇠를 쓰겠다」고 알린다 — 견적서 원본과 같은 길이다
-   * (`features/capture/upload.ts`).
-   *
-   * 그림은 저장과 따로 즉시 반영된다. 제목·설명처럼 초안으로 들고 있다가 함께
-   * 저장하게 만들면, 올리기는 이미 끝났는데 화면만 「아직 저장 안 됨」으로 보인다.
-   * 사이트에 나가는 것은 여전히 「반영하기」를 눌러야 한다.
+   * 그림을 골라 저장소에 올린 뒤 키를 저장한다.
+   * 정적 사이트에는 별도 사이트 배포 후 반영된다.
    */
   async function uploadImage(): Promise<void> {
     setNotice(null);
@@ -178,7 +163,7 @@ export function OgCardPanel() {
 
       setData(saved);
       setDraft((prev) => ({ ...prev, ogImageUrl: '' }));
-      setNotice('그림을 올렸어요. 사이트에 내보내려면 「저장 후 반영하기」를 눌러주세요.');
+      setNotice('그림을 저장했어요. 사이트에는 별도 배포 후 반영돼요.');
     } catch (e: unknown) {
       setNotice(e instanceof Error ? e.message : '그림을 올리지 못했어요.');
     } finally {
@@ -208,39 +193,11 @@ export function OgCardPanel() {
     setNotice(null);
     try {
       await persist();
-      setNotice('저장했어요. 사이트에 내보내려면 「저장 후 반영하기」를 눌러주세요.');
+      setNotice('설정을 저장했어요. 사이트에는 별도 배포 후 반영돼요.');
     } catch (e: unknown) {
       setNotice(e instanceof Error ? e.message : '저장하지 못했어요.');
     } finally {
       setSaving(false);
-    }
-  }
-
-  /**
-   * **먼저 저장하고 배포를 건다.** 단추 이름이 「저장 후 반영하기」인데 배포만 걸면,
-   * 고쳐 놓고 저장을 안 누른 사람은 옛 문구가 그대로 나간 것을 「반영했는데 안 바뀐다」로
-   * 읽는다. 저장이 실패하면 배포를 걸지 않는다 — 걸어봐야 옛 문구가 다시 나갈 뿐이다.
-   */
-  async function publish(): Promise<void> {
-    setPublishing(true);
-    setNotice(null);
-    try {
-      await persist();
-    } catch (e: unknown) {
-      setNotice(e instanceof Error ? e.message : '저장하지 못해서 반영하지 않았어요.');
-      setPublishing(false);
-
-      return;
-    }
-
-    try {
-      await apiFetch('/v1/admin/site-meta/publish', { method: 'POST' });
-      setNotice('저장하고 사이트를 다시 만들고 있어요. 2~4분 뒤에 「지금 사이트에 나간 제목」으로 확인해주세요.');
-      setRev((n) => n + 1);
-    } catch (e: unknown) {
-      setNotice(e instanceof Error ? e.message : '저장은 됐지만 반영하지 못했어요.');
-    } finally {
-      setPublishing(false);
     }
   }
 
@@ -260,7 +217,7 @@ export function OgCardPanel() {
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
       <Text style={styles.h1}>링크 미리보기</Text>
       <Text style={styles.lead}>
-        카카오톡이나 슬랙에 주소를 붙이면 뜨는 카드예요. 저장한 뒤 「반영하기」를 눌러야 사이트에 나가요.
+        카카오톡이나 슬랙에 주소를 붙이면 뜨는 카드예요. 설정은 저장할 수 있고, 사이트에는 별도 배포 후 반영돼요.
       </Text>
 
       <View style={styles.row}>
@@ -304,13 +261,13 @@ export function OgCardPanel() {
             <>
               <Text style={matched ? styles.stateOk : styles.statePending}>{live}</Text>
               <Text style={styles.stateHint}>
-                {matched ? '지금 저장된 제목과 같아요.' : '저장한 제목과 달라요. 「반영하기」를 눌러주세요.'}
+                {matched ? '지금 저장된 제목과 같아요.' : '저장한 제목과 달라요. 사이트 배포 후 다시 확인해주세요.'}
               </Text>
             </>
           )}
           <View style={styles.metaRow}>
             <Text style={styles.metaText}>마지막 저장 {formatWhen(data.updatedAt)}</Text>
-            <Text style={styles.metaText}>마지막 반영 요청 {formatWhen(data.publishRequestedAt)}</Text>
+            <Text style={styles.metaText}>이전 반영 요청 {formatWhen(data.publishRequestedAt)}</Text>
           </View>
         </View>
       </View>
@@ -369,9 +326,6 @@ export function OgCardPanel() {
       <View style={styles.actions}>
         <Pressable style={[styles.button, styles.buttonPrimary]} onPress={save} disabled={saving}>
           {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonPrimaryText}>저장</Text>}
-        </Pressable>
-        <Pressable style={styles.button} onPress={publish} disabled={publishing}>
-          {publishing ? <ActivityIndicator /> : <Text style={styles.buttonText}>저장 후 반영하기</Text>}
         </Pressable>
       </View>
     </ScrollView>

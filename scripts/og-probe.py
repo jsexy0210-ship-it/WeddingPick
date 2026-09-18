@@ -1,18 +1,7 @@
 #!/usr/bin/env python3
 """공유 링크 미리보기가 실제로 나가는지 확인한다.
 
-**「고쳤다」와 「나오는 것을 봤다」는 다르다.** 링크 미리보기는 우리 코드가 아니라
-카카오톡·슬랙의 크롤러가 읽는 것이고, 그것들이 읽는 것은 배포된 정적 HTML이다.
-그래서 저장소를 보는 것으로는 확인이 끝나지 않는다 — 공개 주소를 실제로 받아
-태그를 꺼내 본다.
-
-컨테이너 안에서는 밖으로 나갈 수 없어 이 확인을 워크플로에서 한다
-(`.github/workflows/og-probe.yml`).
-
-**업체 상세는 목록에서 찾아 들어간다.** 어느 업체가 정적으로 나가 있는지는 배포
-환경변수와 API 응답에 달려 있어 미리 적어둘 수 없다. 검색 화면이 건 첫 링크를
-따라가고, 링크가 없으면 그 사실을 적는다 — 「상세가 한 장도 없다」가 바로 그
-증상이기 때문이다.
+공개 정적 사이트와 카카오 API를 읽기만 한다. 저장·배포 요청은 하지 않는다.
 """
 
 import json
@@ -22,7 +11,7 @@ import urllib.error
 import urllib.request
 
 WEB = "https://weddingpick-web.onrender.com"
-API = "https://weddingpickl-sg.onrender.com"
+API = "https://210.109.82.212"
 
 # 카드가 뜨려면 넷이 다 있어야 한다. 하나라도 없으면 크롤러는 카드를 접는다.
 REQUIRED = ("og:title", "og:description", "og:image", "og:url")
@@ -96,7 +85,7 @@ try:
     live = tags(landing or "").get("og:title")
     if live and meta.get("ogTitle") and live != meta["ogTitle"]:
         print(f"  ! 저장된 제목과 나가 있는 제목이 다르다 — 저장 {meta['ogTitle']} / 나감 {live}")
-        print("    「반영하기」를 눌러 웹을 다시 빌드해야 한다. 이 스크립트의 실패로는 세지 않는다.")
+        print("    정적 사이트 별도 배포가 필요하다. 이 도구와 관리자 화면은 배포를 요청하지 않는다.")
 except Exception as error:  # noqa: BLE001
     failures.append(f"GET /v1/site-meta — {error}")
     print(f"  ✗ GET /v1/site-meta: {error}")

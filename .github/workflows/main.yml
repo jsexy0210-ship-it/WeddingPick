@@ -1,6 +1,6 @@
 # main 검증과 KakaoCloud API 배포를 한 실행으로 묶는다.
-# Render SG 재배포 및 운영 DB 자동 마이그레이션은 이 경로에서 실행하지 않는다.
-# Render 정적 사이트 3개는 별도 배포가 필요하며, 이 워크플로 성공이 웹 전환 완료를 뜻하지 않는다.
+# Render 배포 경로는 폐기했다. 운영 및 정적 사이트 잔여 작업은 docs/deployment.md를 따른다.
+# 이 워크플로 성공을 정적 사이트 전환 완료로 해석하지 않는다.
 name: CI / Deploy
 
 on:
@@ -45,6 +45,12 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Deployment policy regression tests
+        run: node --test scripts/check-render-retired.test.mjs
+
+      - name: Reject retired deployment paths
+        run: node scripts/check-render-retired.mjs
+
       - run: npm ci
 
       - name: Typecheck
@@ -64,9 +70,6 @@ jobs:
 
       - name: API health validator test
         run: node --test scripts/check-api-health.test.mjs
-
-      - name: Render deploy orchestration test
-        run: python3 -B scripts/test-render-env-sync.py
 
       - name: Marketing preview
         run: npm run marketing --workspace @weddingpick/api -- demo "$GITHUB_WORKSPACE/$MARKETING_PREVIEW_DIR"
