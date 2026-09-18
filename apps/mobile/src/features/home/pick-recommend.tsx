@@ -1,12 +1,14 @@
 import type { CategoryRecommendation, VendorSummary } from '@weddingpick/api-contract';
 import {
   NOT_ENOUGH_DATA,
+  VENDOR_CATEGORY_LABEL,
   formatCount,
   nextStepsCountLine,
   nextStepsSummary,
   priceLine,
   type VendorCategory,
 } from '@weddingpick/domain';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import {
@@ -22,6 +24,7 @@ import {
 } from '@weddingpick/ui';
 
 import strings from '../../../../../spec/strings.ko.json';
+import { CategoryImage } from './category-image';
 import { VendorCard } from './vendor-card';
 
 const S = strings.home;
@@ -42,7 +45,6 @@ type SharedRecommendationProps = {
 export function HomeRecommendations({
   groups,
   isPicked,
-  onPressVendor,
   onPressPick,
   onPressCompare,
   onPressMore,
@@ -53,7 +55,14 @@ export function HomeRecommendations({
   return (
     <View style={styles.homeSection}>
       <View style={styles.homeHeading}>
-        <ThemedText type="f20" style={styles.bold}>{S['recommend.title']}</ThemedText>
+        <View style={styles.homeHeadingCopy}>
+          <ThemedText type="f20" style={styles.bold}>{S['recommend.title']}</ThemedText>
+          {group === null ? null : (
+            <ThemedText type="f13" themeColor="textAssistive" style={styles.homeSub}>
+              {`${group.categoryLabel} 후보를 좁힐 차례예요`}
+            </ThemedText>
+          )}
+        </View>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="웨딩픽 추천 전체 보기"
@@ -71,13 +80,6 @@ export function HomeRecommendations({
         </ThemedView>
       ) : (
         <>
-          <View style={styles.homeContext}>
-            <ThemedText type="f14" style={styles.bold}>{group.categoryLabel}</ThemedText>
-            <ThemedText type="f12" themeColor="textAssistive">
-              {groupReportLine(group)}
-            </ThemedText>
-          </View>
-
           {group.vendors.length === 0 ? (
             <ThemedView type="backgroundElement" style={[styles.homeEmpty, { borderColor: theme.border }]}>
               <ThemedText type="f13" themeColor="textAssistive">{NOT_ENOUGH_DATA}</ThemedText>
@@ -95,6 +97,7 @@ export function HomeRecommendations({
                   picked={isPicked(vendor.id)}
                   onPress={() => onPressVendor(vendor.id)}
                   onPressPick={() => onPressPick(vendor)}
+                  showTags={false}
                 />
               ))}
               <View style={styles.tail} />
@@ -170,7 +173,6 @@ export function PickRecommend({
           expanded={group.category === open}
           onToggle={() => onToggle(group.category)}
           isPicked={isPicked}
-          onPressVendor={onPressVendor}
           onPressPick={onPressPick}
           onPressCompare={() => onPressCompare(group.category)}
           onPressSearchMore={
@@ -208,7 +210,6 @@ function CategoryRow({
   expanded,
   onToggle,
   isPicked,
-  onPressVendor,
   onPressPick,
   onPressCompare,
   onPressSearchMore,
@@ -217,13 +218,23 @@ function CategoryRow({
   expanded: boolean;
   onToggle: () => void;
   isPicked: (vendorId: string) => boolean;
-  onPressVendor: (vendorId: string) => void;
   onPressPick: (vendor: VendorSummary) => void;
   onPressCompare: () => void;
   onPressSearchMore?: () => void;
 }) {
   const theme = useTheme();
-  const top = group.vendors[0] ?? null;
+  const [reasonVendorId, setReasonVendorId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!expanded) setReasonVendorId(null);
+  }, [expanded]);
+
+  const reasonIndex = reasonVendorId === null
+    ? -1
+    : group.vendors.findIndex((vendor) => vendor.id === reasonVendorId);
+  const reasonVendor = expanded && reasonIndex >= 0 ? group.vendors[reasonIndex]! : null;
+  const scarce = group.vendors.length > 0
+    && group.vendors.every((vendor) => vendor.comparableQuoteCount < 3);
 
   return (
     <View style={[styles.category, { borderBottomColor: theme.border }]}>
@@ -233,7 +244,7 @@ function CategoryRow({
         accessibilityLabel={`${group.categoryLabel} ${expanded ? '접기' : '펼치기'}`}
         onPress={onToggle}
         style={({ pressed }) => [styles.rowHead, styles.gutter, pressed && styles.pressed]}>
-        <ThemedText type="f16" style={styles.bold}>{group.categoryLabel}</ThemedText>
+        <ThemedText type="f18" style={styles.bold}>{group.categoryLabel}</ThemedText>
         <View style={styles.foldMeta}>
           <ThemedText type="f12" numeric themeColor="textAssistive">
             {groupReportLine(group)}
@@ -246,7 +257,15 @@ function CategoryRow({
 
       {!expanded ? null : (
         <View style={styles.expanded}>
-          {group.vendors.length === 0 ? (
+          {reasonVendor !== null ? (
+            <RecommendationReasonCard
+              vendor={reasonVendor}
+              rank={reasonIndex + 1}
+              picked={isPicked(reasonVendor.id)}
+              onPressCompare={onPressCompare}
+              onPressPick={() => onPressPick(reasonVendor)}
+            />
+          ) : group.vendors.length === 0 ? (
             <View style={styles.gutter}>
               <ThemedView type="backgroundElement" style={[styles.empty, { borderColor: theme.border }]}>
                 <ThemedText type="f13" themeColor="textAssistive">{NOT_ENOUGH_DATA}</ThemedText>
@@ -263,7 +282,9 @@ function CategoryRow({
                   key={vendor.id}
                   vendor={vendor}
                   picked={isPicked(vendor.id)}
-                  onPress={() => onPressVendor(vendor.id)}
+                  accessibilityLabel={`${vendor.name} 추천 이유 보기`}
+                  showReason={false}
+                  onPress={() => setReasonVendorId(vendor.id)}
                   onPressPick={() => onPressPick(vendor)}
                 />
               ))}
@@ -271,43 +292,27 @@ function CategoryRow({
             </ScrollView>
           )}
 
-          {top?.reasons?.length ? (
-            <RecommendationReasonCard
-              vendor={top}
-              picked={isPicked(top.id)}
-              onPressVendor={() => onPressVendor(top.id)}
-              onPressPick={() => onPressPick(top)}
-            />
+          {reasonVendor === null && scarce ? (
+            <ThemedText type="f12" themeColor="textAssistive" style={styles.scarceNote}>
+              제보가 3건 넘으면 금액대를 보여드려요
+            </ThemedText>
           ) : null}
 
-          <View style={[styles.actions, styles.gutter]}>
-            {group.state === 'COMPARING' ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`${group.categoryLabel} 한눈에 비교`}
-                onPress={onPressCompare}
-                style={({ pressed }) => [
-                  styles.actionButton,
-                  { borderColor: theme.tint },
-                  pressed && styles.pressed,
-                ]}>
-                <ThemedText type="f14" themeColor="tint" style={styles.bold}>한눈에 비교</ThemedText>
-              </Pressable>
-            ) : null}
-            {onPressSearchMore ? (
+          {reasonVendor === null && onPressSearchMore ? (
+            <View style={[styles.actions, styles.gutter]}>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`${group.categoryLabel} 더 찾아보기`}
                 onPress={onPressSearchMore}
                 style={({ pressed }) => [
                   styles.actionButton,
-                  { borderColor: theme.border },
+                  { backgroundColor: theme.backgroundElement },
                   pressed && styles.pressed,
                 ]}>
-                <ThemedText type="f14" style={styles.bold}>{S['recommend.more']}</ThemedText>
+                <ThemedText type="f13" style={styles.bold}>{S['recommend.more']}</ThemedText>
               </Pressable>
-            ) : null}
-          </View>
+            </View>
+          ) : null}
         </View>
       )}
     </View>
@@ -316,13 +321,15 @@ function CategoryRow({
 
 function RecommendationReasonCard({
   vendor,
+  rank,
   picked,
-  onPressVendor,
+  onPressCompare,
   onPressPick,
 }: {
   vendor: VendorSummary;
+  rank: number;
   picked: boolean;
-  onPressVendor: () => void;
+  onPressCompare: () => void;
   onPressPick: () => void;
 }) {
   const theme = useTheme();
@@ -331,59 +338,79 @@ function RecommendationReasonCard({
   return (
     <View style={[
       styles.reasonCard,
-      styles.gutterCard,
       { backgroundColor: theme.background, borderColor: theme.tint },
     ]}>
-      <View style={styles.reasonHead}>
-        <View style={styles.reasonTitle}>
-          <ThemedText type="f12" themeColor="tint" style={styles.bold}>1순위</ThemedText>
-          <ThemedText type="f20" style={styles.bold} numberOfLines={1}>{vendor.name}</ThemedText>
+      <View style={styles.reasonImage}>
+        <CategoryImage uri={vendor.imageUrl} label={vendor.name} category={vendor.category} />
+        <View style={[styles.reasonRank, { backgroundColor: theme.tint }]}>
+          <ThemedText type="f12" themeColor="onTint" style={styles.bold}>추천 {rank}위</ThemedText>
         </View>
-        <SeedIcon name={picked ? 'heartFill' : 'heartRegular'} size={Layout.iconRow} color={theme.tint} />
-      </View>
-
-      <View style={styles.reasonPrice}>
-        <ThemedText type="f20" numeric style={styles.bold}>{price.text}</ThemedText>
-        <ThemedText type="f12" numeric themeColor="textAssistive">
-          실 제보 {formatCount(vendor.comparableQuoteCount)}건
-        </ThemedText>
-      </View>
-
-      <View style={styles.reasonList}>
-        <ThemedText type="f14" style={styles.bold}>추천 이유</ThemedText>
-        {vendor.reasons?.map((reason) => (
-          <View key={reason} style={styles.reasonRow}>
-            <SeedIcon name="checkFlowerFill" size={Layout.iconField} color={theme.tint} />
-            <ThemedText type="f13" style={styles.reasonText}>{reason}</ThemedText>
-          </View>
-        ))}
-      </View>
-
-      <View style={styles.reasonActions}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`${vendor.name} 상세 보기`}
-          onPress={onPressVendor}
-          style={({ pressed }) => [
-            styles.reasonButton,
-            { backgroundColor: theme.backgroundElement },
-            pressed && styles.pressed,
-          ]}>
-          <ThemedText type="f14" style={styles.bold}>상세 보기</ThemedText>
-        </Pressable>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={picked ? `${vendor.name} Pick 해제` : `${vendor.name} Pick`}
+          accessibilityState={{ selected: picked }}
           onPress={onPressPick}
           style={({ pressed }) => [
-            styles.reasonButton,
+            styles.reasonHeart,
             { backgroundColor: theme.tint },
             pressed && styles.pressed,
           ]}>
-          <ThemedText type="f14" themeColor="onTint" style={styles.bold}>
-            {picked ? 'Pick 완료' : 'Pick'}
-          </ThemedText>
+          <SeedIcon name={picked ? 'heartFill' : 'heartRegular'} size={Layout.iconRow} color={theme.onTint} />
         </Pressable>
+      </View>
+
+      <View style={styles.reasonBody}>
+        <ThemedText type="f10" themeColor="textAssistive">
+          {VENDOR_CATEGORY_LABEL[vendor.category]}
+        </ThemedText>
+        <ThemedText type="f20" style={styles.bold} numberOfLines={1}>{vendor.name}</ThemedText>
+        <View style={styles.reasonPlace}>
+          <SeedIcon name="locationRegular" size={Layout.iconMicro} color={theme.textAssistive} />
+          <ThemedText type="f12" themeColor="textAssistive" numberOfLines={1}>{vendor.region}</ThemedText>
+        </View>
+
+        <View style={styles.reasonPriceRow}>
+          <ThemedText type="f20" numeric style={styles.bold}>{price.text}</ThemedText>
+          <ThemedText type="f12" numeric themeColor="textAssistive">
+            실 제보 {formatCount(vendor.comparableQuoteCount)}건
+          </ThemedText>
+        </View>
+
+        <View style={styles.reasonList}>
+          {vendor.reasons?.map((reason) => (
+            <View key={reason} style={styles.reasonRow}>
+              <SeedIcon name="checkFlowerFill" size={Layout.iconField} color={theme.tint} />
+              <ThemedText type="f13" style={styles.reasonText}>{reason}</ThemedText>
+            </View>
+          ))}
+        </View>
+
+        <View style={styles.reasonActions}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`${vendor.name} 비교에 담기`}
+            onPress={onPressCompare}
+            style={({ pressed }) => [
+              styles.reasonButton,
+              { backgroundColor: theme.backgroundElement },
+              pressed && styles.pressed,
+            ]}>
+            <ThemedText type="f14" style={styles.bold}>비교에 담기</ThemedText>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={picked ? `${vendor.name} Pick 해제` : `${vendor.name} Pick`}
+            onPress={onPressPick}
+            style={({ pressed }) => [
+              styles.reasonButton,
+              { backgroundColor: theme.tint },
+              pressed && styles.pressed,
+            ]}>
+            <ThemedText type="f14" themeColor="onTint" style={styles.bold}>
+              {picked ? 'Pick했어요' : 'Pick하기'}
+            </ThemedText>
+          </Pressable>
+        </View>
       </View>
     </View>
   );
@@ -404,14 +431,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: Layout.inlineGap,
   },
-  homeContext: {
-    paddingHorizontal: Layout.gutter,
-    marginBottom: Layout.cardGap,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Layout.inlineGap,
-  },
+  homeHeadingCopy: { flex: 1, minWidth: 0 },
+  homeSub: { marginTop: Spacing.half },
   homeCards: {
     flexDirection: 'row',
     gap: Layout.inlineGap,
@@ -453,32 +474,55 @@ const styles = StyleSheet.create({
   tail: { width: Layout.gutter - Layout.inlineGap },
 
   reasonCard: {
+    marginHorizontal: Layout.gutter,
+    marginTop: Spacing.three,
     borderRadius: Radius.medium,
     borderWidth: Border.selected,
-    padding: Layout.cardPadding,
-    gap: Layout.cardGap,
+    overflow: 'hidden',
   },
-  gutterCard: { marginHorizontal: Layout.gutter, marginTop: Spacing.three },
-  reasonHead: {
+  reasonImage: { height: 200, position: 'relative' },
+  reasonRank: {
+    position: 'absolute',
+    top: Layout.inlineGap,
+    left: Layout.inlineGap,
+    minHeight: 26,
+    borderRadius: Radius.pill,
+    paddingHorizontal: Spacing.two,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reasonHeart: {
+    position: 'absolute',
+    top: Layout.inlineGap,
+    right: Layout.inlineGap,
+    width: Layout.chip,
+    height: Layout.chip,
+    borderRadius: Radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reasonBody: { padding: Layout.cardPadding, gap: Spacing.one },
+  reasonPlace: { flexDirection: 'row', alignItems: 'center', gap: Spacing.one },
+  reasonPriceRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: Layout.inlineGap,
+    alignItems: 'baseline',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+    paddingVertical: Spacing.two,
   },
-  reasonTitle: { flex: 1, minWidth: 0, gap: Spacing.half },
-  reasonPrice: { gap: Spacing.one },
-  reasonList: { gap: Spacing.two, paddingTop: Spacing.one },
+  reasonList: { gap: Spacing.two, paddingVertical: Spacing.two },
   reasonRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.two },
   reasonText: { flex: 1, minWidth: 0 },
   reasonActions: { flexDirection: 'row', gap: Spacing.two, paddingTop: Spacing.two },
   reasonButton: {
     flex: 1,
-    minHeight: Layout.ctaInCard,
+    height: Layout.controlLarge,
     borderRadius: Radius.control,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: Layout.fieldPaddingX,
   },
+  scarceNote: { paddingHorizontal: Layout.gutter, marginTop: Spacing.two },
 
   actions: {
     flexDirection: 'row',
