@@ -12,6 +12,7 @@ on:
 jobs:
   ci:
     name: CI
+    if: ${{ !contains(github.event.head_commit.message || '', '[probe-only]') }}
     runs-on: ubuntu-latest
     outputs:
       deploy_api: ${{ steps.api_changes.outputs.changed }}
@@ -165,8 +166,7 @@ jobs:
 
   probe-kakao-static-ports:
     name: Probe Kakao Static Ports
-    needs: [ci]
-    if: github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && needs.ci.outputs.probe_static_ports == 'true'
+    if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message || '', '[probe-static-ports]') }}
     permissions:
       contents: read
     uses: ./.github/workflows/probe-kakao-static-ports.yml
