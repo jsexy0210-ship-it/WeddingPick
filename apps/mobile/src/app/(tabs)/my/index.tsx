@@ -9,10 +9,8 @@
  * 알림 · 화면 · 계정 · 로그아웃 · 탈퇴는 프로필(`my/profile.tsx`)이 맡는다.
  *
  * **메뉴 4글자는 붙여 쓴다** — 연결관리 · 인증내역 · 웨딩설정(새 패키지 · 전체 공통).
- *
- * 시안에 없지만 남긴 줄 둘 — «혜택 · 이벤트»(Npay 응모 화면의 유일한 진입)와 «업체 · 플래너
- * 문의»(B2B 창구). 다른 진입이 없어 여기서 빼면 그 화면에 들어갈 길이 사라진다. 시안에 있지만
- * 없는 줄 하나 — «스크랩»은 저장 계약이 없어 세우지 않는다(누르면 갈 곳이 있어야 한다).
+ * 루트 메뉴는 정본의 내 활동 / 함께 준비하기 / 둘러보기 / 고객지원 / 약관만 둔다.
+ * 스크랩은 저장 계약이 없어 빈 상태 화면까지만 제공하고 가짜 저장 데이터는 만들지 않는다.
  *
  * 모양은 시안, 수치는 `docs/design/handoff/tokens.json`(카드 radius 10 · 행 56 · 아바타 56 ·
  * 아이콘 18 · 좌우 24). 문구는 `spec/strings.ko.json` `my`.
@@ -42,14 +40,11 @@ import {
 } from '@weddingpick/ui';
 import {
   getCurrentUser,
-  getMyMonthlyDraw,
-  getMyRewards,
   getWeddingInvite,
   listMyInquiries,
   listMyReports,
 } from '@/api/client';
 import { useSession } from '@/features/auth/use-session';
-import { participableCount } from '@/features/membership/use-benefit-data';
 import { DelayedLoader, DelayedLoadingView } from '@/features/loading/delayed-loader';
 import { Avatar } from '@/features/settings/my-kit';
 import strings from '../../../../../../spec/strings.ko.json';
@@ -63,11 +58,10 @@ type MyData = {
   me: CurrentUser | null;
   reports: MyReportListResponse | null;
   couple: CoupleState | null;
-  benefits: number | null;
   inquiries: number | null;
 };
 
-const EMPTY: MyData = { me: null, reports: null, couple: null, benefits: null, inquiries: null };
+const EMPTY: MyData = { me: null, reports: null, couple: null, inquiries: null };
 
 const COUPLE_LABEL: Record<CoupleState, string> = {
   unlinked: S['couple.unlinked'],
@@ -107,13 +101,11 @@ export default function MyScreen() {
       .then(async (me) => {
         if (version !== loadVersion.current) return;
         setData((prev) => ({ ...prev, me }));
-        const [reports, invite, rewards, draw, inquiries] = await Promise.allSettled([
+        const [reports, invite, inquiries] = await Promise.allSettled([
           listMyReports(),
           me.spouseLinked || !me.weddingId
             ? Promise.resolve(null)
             : getWeddingInvite(me.weddingId),
-          getMyRewards(),
-          getMyMonthlyDraw(),
           listMyInquiries(),
         ]);
         if (version !== loadVersion.current) return;
@@ -126,11 +118,6 @@ export default function MyScreen() {
           ...prev,
           reports: reports.status === 'fulfilled' ? reports.value : null,
           couple,
-          benefits: participableCount({
-            me,
-            rewards: rewards.status === 'fulfilled' ? rewards.value : null,
-            draw: draw.status === 'fulfilled' ? draw.value : null,
-          }),
           inquiries: inquiries.status === 'fulfilled' ? inquiries.value.inquiries.length : null,
         }));
       })
@@ -169,13 +156,7 @@ export default function MyScreen() {
       rows: [
         { key: 'certLog', label: S['item.certLog'], icon: 'checkCircle', tail: count(totalProofs), onPress: () => guestPush('/my/reports') },
         { key: 'myReview', label: S['item.myReview'], icon: 'edit', tail: count(totalReviews), onPress: () => guestPush('/my/reviews') },
-        {
-          key: 'benefit',
-          label: S['item.benefit'],
-          icon: 'gift',
-          tail: data.benefits !== null && data.benefits > 0 ? S.benefitCount.replace('{n}', formatCount(data.benefits)) : undefined,
-          onPress: () => guestPush('/my/rewards'),
-        },
+        { key: 'scrap', label: '스크랩', icon: 'file', onPress: () => guestPush('/my/scraps') },
       ],
     },
     {
@@ -199,9 +180,8 @@ export default function MyScreen() {
     {
       title: S['group.support'],
       rows: [
-        { key: 'faq', label: S['item.faq'], icon: 'info', onPress: () => router.push('/my/guide' as never) },
+        { key: 'faq', label: 'FAQ', icon: 'info', onPress: () => router.push('/my/guide' as never) },
         { key: 'contact', label: S['item.contact'], icon: 'headset', tail: data.inquiries !== null ? count(data.inquiries) : undefined, onPress: () => guestPush('/my/contact') },
-        { key: 'biz', label: S['item.bizInquiry'], icon: 'info', onPress: () => router.push('/my/biz' as never) },
       ],
     },
     {
