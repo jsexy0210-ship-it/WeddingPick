@@ -23,8 +23,9 @@ describe('업체 위치 UI', () => {
   });
 
   it('깨진 지도 이미지를 숨기고 로딩·실패 상태를 구분한다', () => {
-    expect(source).toContain('onLoad={() => setMapLoaded(true)}');
-    expect(source).toContain('onError={() => setMapFailed(true)}');
+    expect(source).toContain("setMapStatus({ uri: mapUri, loaded: true, failed: false })");
+    expect(source).toContain("setMapStatus({ uri: mapUri, loaded: false, failed: true })");
+    expect(source).toContain('mapStatus.uri === mapUri');
     expect(source).toContain('mapUri && !mapFailed');
     expect(source).toContain('지도를 불러오는 중이에요');
     expect(source).toContain('지도 이미지를 불러오지 못했어요');
@@ -44,6 +45,7 @@ describe('업체 위치 UI', () => {
   it('주소는 줄임 없이 선택 가능하고 주소 복사를 제공한다', () => {
     expect(source).toContain('selectable');
     expect(source).toContain('Clipboard.setStringAsync(normalizedAddress)');
+    expect(source).toContain('copiedAddress === normalizedAddress');
     expect(source).toContain('주소 복사');
     expect(source).toContain('복사됨');
     expect(source).not.toContain('numberOfLines=');
