@@ -27,7 +27,7 @@ import {
   readWebInteractionState,
   useTheme,
 } from '@weddingpick/ui';
-import { getCurrentUser, listCandidates, removeCandidate } from '@/api/client';
+import { addCandidate, getCurrentUser, listCandidates, removeCandidate } from '@/api/client';
 import { BackButton } from '@/components/back-button';
 import { confirmAlert } from '@/components/confirm-alert';
 import { DialogToast } from '@/components/confirm-alert-toast';
@@ -90,6 +90,7 @@ export default function CategoryPickScreen() {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [undoCandidate, setUndoCandidate] = useState<VendorCandidate | null>(null);
   /** 비교할 후보(vendorId). 시안: 체크 26. */
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [editing, setEditing] = useState(false);
@@ -137,12 +138,17 @@ export default function CategoryPickScreen() {
   const candidates = group?.candidates ?? [];
   const sharedCount = candidates.filter((c) => c.addedByPartner).length;
 
+  function showToast(message: string, undo: VendorCandidate | null = null) {
+    setUndoCandidate(undo);
+    setToast(message);
+  }
+
   function toggleSelect(candidate: VendorCandidate) {
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(candidate.vendorId)) next.delete(candidate.vendorId);
       else if (next.size < MAX_COMPARE) next.add(candidate.vendorId);
-      else setToast(`한 번에 ${MAX_COMPARE}곳까지 비교할 수 있어요`);
+      else showToast(`한 번에 ${MAX_COMPARE}곳까지 비교할 수 있어요`);
       return next;
     });
   }
@@ -179,14 +185,25 @@ export default function CategoryPickScreen() {
               next.delete(candidate.vendorId);
               return next;
             });
-            setToast('후보에서 뺐어요');
+            showToast('후보에서 뺐어요', candidate);
             load();
           } catch {
-            setToast('후보를 빼지 못했어요. 잠시 후 다시 시도해주세요.');
+            showToast('후보를 빼지 못했어요. 잠시 후 다시 시도해주세요.');
           }
         },
       },
     ]);
+  }
+
+  async function undoUnpick(candidate: VendorCandidate) {
+    if (!weddingId) return;
+    try {
+      await addCandidate(weddingId, candidate.vendorId, candidate.note ?? undefined);
+      showToast('다시 Pick했어요');
+      load();
+    } catch {
+      showToast('다시 Pick하지 못했어요. 잠시 후 다시 시도해주세요.');
+    }
   }
 
   function startCompare() {
@@ -304,7 +321,16 @@ export default function CategoryPickScreen() {
         ) : null}
       </SafeAreaView>
 
-      <DialogToast message={toast} onHidden={() => setToast(null)} />
+      <DialogToast
+        message={toast}
+        docked={!isDecided && candidates.length >= MIN_COMPARE}
+        actionLabel={undoCandidate ? '되돌리기' : null}
+        onAction={undoCandidate ? () => void undoUnpick(undoCandidate) : null}
+        onHidden={() => {
+          setToast(null);
+          setUndoCandidate(null);
+        }}
+      />
     </ThemedView>
   );
 }
