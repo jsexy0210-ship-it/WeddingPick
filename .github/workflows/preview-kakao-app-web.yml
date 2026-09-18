@@ -1,0 +1,67 @@
+name: Preview Kakao App Web on 443
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  precheck:
+    name: Verify API health before preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: API health must be green
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --connect-timeout 5 --max-time 15             https://210.109.82.212/health |
+            python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if d.get("ok") is True and d.get("database")=="ok" else 1)'
+
+  publish:
+    name: Publish staged app web on 443
+    needs: [precheck]
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Publish latest staged app-web with local smoke
+        run: bash ./scripts/install-kakao-app-web.sh
+
+  verify:
+    name: Verify public app-web and API coexist
+    needs: [publish]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify app root and login
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --connect-timeout 5 --max-time 15             https://210.109.82.212/ > /tmp/root.html
+          grep -qi '<html' /tmp/root.html
+          curl --fail --silent --show-error --connect-timeout 5 --max-time 15             https://210.109.82.212/login > /tmp/login.html
+          grep -qi '<html' /tmp/login.html
+
+      - name: Verify API paths still work
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --connect-timeout 5 --max-time 15             https://210.109.82.212/health |
+            python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if d.get("ok") is True and d.get("database")=="ok" else 1)'
+          curl --fail --silent --show-error --connect-timeout 5 --max-time 15             https://210.109.82.212/v1/auth/providers |
+            python3 -c 'import json,sys; d=json.load(sys.stdin); sys.exit(0 if isinstance(d.get("providers"), list) else 1)'
+
+  rollback:
+    name: Roll back preview on failure
+    if: ${{ always() && needs.publish.result == 'success' && needs.verify.result != 'success' }}
+    needs: [publish, verify]
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - run: bash ./scripts/rollback-kakao-app-web.sh
