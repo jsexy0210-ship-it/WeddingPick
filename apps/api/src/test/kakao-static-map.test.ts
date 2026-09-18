@@ -1,7 +1,7 @@
 import { fetchKakaoStaticMap } from '../kakao-static-map';
 
 describe('fetchKakaoStaticMap', () => {
-  it('keeps the REST key server-side and requests a marker at the vendor coordinates', async () => {
+  it('builds an authenticated request with a marker at the vendor coordinates', async () => {
     let seenUrl: URL | null = null;
     let seenAuthorization: string | null = null;
 
