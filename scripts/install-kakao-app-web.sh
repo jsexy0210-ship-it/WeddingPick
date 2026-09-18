@@ -5,6 +5,9 @@ ROOT=/home/ubuntu/WeddingPick
 CONF=/etc/nginx/sites-available/weddingpick-api
 BACKUP_MARKER="$ROOT/.app-web-cutover-backup"
 LIVE_MARKER="$ROOT/static-live-app"
+TX_BACKUP_MARKER="$ROOT/.app-web-update-backup"
+TX_LIVE_MARKER="$ROOT/.app-web-update-live-backup"
+TX_TARGET_MARKER="$ROOT/.app-web-update-target"
 
 release_sha="${1:-}"
 if [ -z "$release_sha" ]; then
@@ -20,6 +23,11 @@ if [ ! -f "$source_dir/login.html" ] && [ ! -f "$source_dir/login/index.html" ];
   exit 1
 fi
 echo "Using staged app release: $release_sha"
+
+if [ -e "$TX_BACKUP_MARKER" ] || [ -e "$TX_LIVE_MARKER" ] || [ -e "$TX_TARGET_MARKER" ]; then
+  echo 'An app-web update transaction is still pending; refusing to overwrite rollback state.' >&2
+  exit 1
+fi
 
 target="/var/www/weddingpick/releases/$release_sha/app"
 
@@ -90,16 +98,26 @@ else
   printf '%s\n' "$backup" > "$BACKUP_MARKER"
 fi
 
+tx_backup="$ROOT/nginx-backups/weddingpick-app-web-update-$(date -u +%Y%m%dT%H%M%SZ)-${GITHUB_RUN_ID:-manual}-${GITHUB_RUN_ATTEMPT:-1}.conf"
+sudo -n cp "$CONF" "$tx_backup"
+printf '%s\n' "$tx_backup" > "$TX_BACKUP_MARKER"
+if [ -r "$LIVE_MARKER" ]; then
+  cat "$LIVE_MARKER" > "$TX_LIVE_MARKER"
+else
+  printf '%s\n' NONE > "$TX_LIVE_MARKER"
+fi
+printf '%s\n' "$release_sha" > "$TX_TARGET_MARKER"
+
 tmp=''
 rollback_on_error() {
   status=$?
   if [ -n "${tmp:-}" ]; then
     rm -f "$tmp" || true
   fi
-  if [ "$status" -ne 0 ] && [ -r "$BACKUP_MARKER" ]; then
-    echo 'App-web cutover failed; restoring previous 443 Nginx config.' >&2
-    if ! bash "$(dirname "$0")/rollback-kakao-app-web.sh"; then
-      echo 'Automatic app-web rollback failed; inspect the Kakao VM before another cutover.' >&2
+  if [ "$status" -ne 0 ] && [ -r "$TX_BACKUP_MARKER" ]; then
+    echo 'App-web cutover failed; restoring the previous live release.' >&2
+    if ! bash "$(dirname "$0")/rollback-kakao-app-web-update.sh"; then
+      echo 'Automatic app-web update rollback failed; inspect the Kakao VM before another cutover.' >&2
     fi
   fi
   exit "$status"
@@ -186,4 +204,4 @@ printf '%s\n' "$release_sha" > "$LIVE_MARKER"
 rm -f "$tmp"
 tmp=''
 trap - EXIT
-echo "Kakao app web enabled on 443 from release $release_sha"
+echo "Kakao app web enabled locally from release $release_sha; public verification is still pending."
