@@ -102,7 +102,7 @@ case "$cmd" in
     printf 'old123\n' > "$S/prod_id"
     ;;
   start)
-    [ "$1" = weddingpick-api ]
+    [ "$1" = old123 ] || [ "$1" = weddingpick-api ]
     ;;
   *)
     echo "unsupported docker command: $cmd" >&2
@@ -176,13 +176,22 @@ shellTest('missing marker is an idempotent no-op', () => {
   } finally { h.close(); }
 });
 
-shellTest('health failure keeps rollback marker for investigation', () => {
+shellTest('health failure keeps enough state to retry the same rollback safely', () => {
   const h = harness();
   try {
     const result = h.run({ MOCK_HEALTH_FAIL: '1' });
     assert.notEqual(result.status, 0);
     assert.equal(get(path.join(h.state, 'prod_id')), 'old123');
+    assert.equal(get(path.join(h.state, 'backup_exists')), '0');
     assert.equal(existsSync(h.marker), true);
+    assert.match(readFileSync(h.marker, 'utf8'), /container_id=old123/);
     assert.equal(readFileSync(h.env, 'utf8'), 'CORS_ORIGINS=old\n');
+    assert.equal(get(path.join(h.state, 'rm_count')), '1');
+
+    const retry = h.run();
+    assert.equal(retry.status, 0, retry.stderr || retry.stdout);
+    assert.equal(get(path.join(h.state, 'prod_id')), 'old123');
+    assert.equal(get(path.join(h.state, 'rm_count')), '1', 'retry must not delete the restored API');
+    assert.equal(existsSync(h.marker), false);
   } finally { h.close(); }
 });
