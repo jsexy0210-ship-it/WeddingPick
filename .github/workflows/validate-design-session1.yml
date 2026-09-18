@@ -41,6 +41,7 @@ jobs:
           cat > apps/mobile/tsconfig.design-session1.json <<'JSON'
           {
             "extends": "./tsconfig.json",
+            "include": [],
             "files": [
               "src/app/(tabs)/index.tsx",
               "src/app/(tabs)/(home)/recommendations.tsx",
