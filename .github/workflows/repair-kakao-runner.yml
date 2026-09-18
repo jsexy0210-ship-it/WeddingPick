@@ -27,6 +27,7 @@ jobs:
             const configPath = runnerRoot + '/.runner';
             const tempPath = configPath + '.repair';
             const markerPath = runnerRoot + '/.runner-restart-needed';
+            const restartLogPath = runnerRoot + '/.runner-restart.log';
 
             core.setOutput('restart_scheduled', 'false');
 
@@ -69,14 +70,38 @@ jobs:
             const env = { ...process.env };
             delete env.RUNNER_TRACKING_ID;
 
+            const svcPath = runnerRoot + '/svc.sh';
+            if (!fs.existsSync(svcPath)) {
+              core.setFailed('Runner service helper was not found: ' + svcPath);
+              return;
+            }
+
+            fs.writeFileSync(
+              restartLogPath,
+              new Date().toISOString() + ' restart scheduled by GitHub Actions\n',
+              { mode: 0o600 }
+            );
+
             const restartCommand =
+              '{ ' +
+              'echo "[$(date -Is)] restart child started"; ' +
               'sleep 8; ' +
-              'sudo -n "' + runnerRoot + '/svc.sh" stop; ' +
+              'echo "[$(date -Is)] stopping runner service"; ' +
+              'sudo -n "' + svcPath + '" stop; ' +
               'stop_status=$?; ' +
+              'echo "[$(date -Is)] stop_status=$stop_status"; ' +
               'sleep 2; ' +
-              'sudo -n "' + runnerRoot + '/svc.sh" start; ' +
+              'echo "[$(date -Is)] starting runner service"; ' +
+              'sudo -n "' + svcPath + '" start; ' +
               'start_status=$?; ' +
-              'if [ "$stop_status" -eq 0 ] && [ "$start_status" -eq 0 ]; then rm -f "' + markerPath + '"; fi';
+              'echo "[$(date -Is)] start_status=$start_status"; ' +
+              'if [ "$stop_status" -eq 0 ] && [ "$start_status" -eq 0 ]; then ' +
+              'rm -f "' + markerPath + '"; ' +
+              'echo "[$(date -Is)] restart succeeded; marker cleared"; ' +
+              'else ' +
+              'echo "[$(date -Is)] restart failed; marker retained"; ' +
+              'fi; ' +
+              '} >> "' + restartLogPath + '" 2>&1';
 
             const child = spawn('/bin/bash', ['-lc', restartCommand], {
               detached: true,
@@ -101,7 +126,9 @@ jobs:
           # repair job은 8초 뒤 stop, 그 뒤 2초 뒤 start를 예약한다.
           # 다음 self-hosted job이 그 사이 배정되지 않도록 reusable workflow 안에서
           # GitHub-hosted job이 의존성 장벽을 유지한다.
-          sleep 15
+          # stop 예약(8초) + start 전 대기(2초) 이후 서비스 기동/runner 재등록 시간을
+          # 충분히 확보한다. verify job이 너무 빨리 같은 runner에 잡히는 race를 줄인다.
+          sleep 30
 
   verify-restart:
     name: Verify repaired runner
@@ -116,11 +143,25 @@ jobs:
           set -euo pipefail
           runner_root=/home/ubuntu/actions-runner
           marker="$runner_root/.runner-restart-needed"
+          restart_log="$runner_root/.runner-restart.log"
           config="$runner_root/.runner"
 
           if [ -e "$marker" ]; then
             echo "Runner restart marker still exists; refusing to release dependent jobs." >&2
+            if [ -f "$restart_log" ]; then
+              echo "----- runner restart log -----" >&2
+              cat "$restart_log" >&2
+              echo "----- end runner restart log -----" >&2
+            else
+              echo "Runner restart log is missing: $restart_log" >&2
+            fi
             exit 1
+          fi
+
+          if [ -f "$restart_log" ]; then
+            echo "----- runner restart log -----"
+            cat "$restart_log"
+            echo "----- end runner restart log -----"
           fi
 
           python3 - "$config" <<'PY'
