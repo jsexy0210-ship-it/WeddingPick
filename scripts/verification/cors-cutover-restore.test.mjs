@@ -47,6 +47,7 @@ function makeHarness() {
   writeFileSync(path.join(dockerState, 'old_running'), '1\n', 'utf8');
   writeFileSync(path.join(dockerState, 'new_exists'), '0\n', 'utf8');
   writeFileSync(path.join(dockerState, 'new_running'), '0\n', 'utf8');
+  writeFileSync(path.join(dockerState, 'removed_old'), '0\n', 'utf8');
   writeFileSync(path.join(dockerState, 'worker_in_api'), 'unset\n', 'utf8');
 
   const script = path.join(base, 'add-kakao-static-cors.sh');
@@ -75,6 +76,24 @@ exit 0
     path.join(bin, 'python3'),
     `#!/usr/bin/env bash
 set -euo pipefail
+if [ "\${1:-}" = "-" ]; then
+  env_file="\${2:?}"
+  tmp="$env_file.tmp"
+  awk '
+    BEGIN { done=0 }
+    /^CORS_ORIGINS=/ {
+      print "CORS_ORIGINS=https://210.109.82.212,https://210.109.82.212:8443,https://210.109.82.212:9443"
+      done=1
+      next
+    }
+    { print }
+    END {
+      if (!done) print "CORS_ORIGINS=https://210.109.82.212,https://210.109.82.212:8443,https://210.109.82.212:9443"
+    }
+  ' "$env_file" > "$tmp"
+  mv "$tmp" "$env_file"
+  exit 0
+fi
 body="$(cat)"
 [ -n "$body" ] || exit 1
 grep -Fq '"ok":true' <<< "$body"
@@ -285,7 +304,7 @@ function assertOldRestored(h) {
   assert.equal(state(path.join(h.dockerState, 'prod_owner')), 'old');
   assert.equal(state(path.join(h.dockerState, 'old_name')), '/weddingpick-api');
   assert.equal(state(path.join(h.dockerState, 'old_running')), '1');
-  assert.equal(state(path.join(h.dockerState, 'removed_old'), '0'), 'old container must never be removed');
+  assert.equal(state(path.join(h.dockerState, 'removed_old'), '0'), '0', 'old container must never be removed');
   assert.equal(readFileSync(h.envFile, 'utf8'), 'CORS_ORIGINS=https://210.109.82.212\nKEEP=1\n');
 }
 
