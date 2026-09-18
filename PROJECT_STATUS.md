@@ -1,6 +1,15 @@
 # WeddingPick 프로젝트 상태
 
-## 최신 배포 작업 — 2026-09-13 KST
+## 현재 기준 — 2026-09-18 10:28:36 KST
+
+- 인수인계 기준 main은 `4adc9502f0c9f7d2efeb7cad467f07c578069d86`이다. 이 커밋에서 **CI / Deploy #979 (Run ID 35293129181)**의 CI·러너 복구·KakaoCloud API 자동배포가 모두 성공했다.
+- 운영 API 기준 주소는 `https://210.109.82.212`다. Render SG API는 사용자가 중지했으며 재배포·재활성화하지 않는다.
+- Render에는 앱 웹 Preview·관리자·웹사이트 정적 서비스가 유지된다. 정적 서비스의 실제 환경변수·라이브 번들이 KakaoCloud API를 바라보는지는 별도 배포와 브라우저 검증이 필요하다.
+- `claude/rn-preview`는 최신 디자인 정본이 아니다. 현재 main과 크게 갈라져 있으므로 그대로 배포 소스로 사용하지 않는다.
+- 남은 인프라 작업은 정적 화면 반영/검증, NCP 기존 파일 이전과 KakaoCloud 파일 접근 검증, 워커 실행 확인, 인증서 자동 갱신 및 잔여 Render 훅·키 정리다.
+- 보고 시 **코드 반영 / CI 통과 / API 배포 / 화면 배포 / 실제 기능 검증**을 서로 다른 상태로 기록한다.
+
+## 이전 배포 기록 — 2026-09-13 KST
 
 앱 출시를 제외한 웹·API·관리자 배포를 진행한다. 기준 main은 `bcd8771484baa906aa24a0f4a0f88e27185359e9`이며 PR208·218·219와 검토 수정사항을 통합했다. 최종 CI·배포 결과는 [master-status.json의 webApiRelease20260913](docs/sync/master-status.json)을 따른다. 아래 9월 10~11일 기록은 당시의 이력이며 현재 배포 버전을 뜻하지 않는다.
 
@@ -40,9 +49,11 @@
 | 대상 | 확인한 사실과 한계 |
 |---|---|
 | GitHub | 저장소·Actions 실행·로그 조회 가능. 조회 가능과 배포 통제 완료는 별개 |
-| Render 운영 API | `https://weddingpickl.onrender.com`, Live `e34193e`. Free·Ohio 리전 |
-| Render 앱 웹·관리자 | `https://weddingpick-app-web.onrender.com`, 관리자는 같은 주소의 `/admin`. Live `e34193e` |
-| Render 웹사이트 | `https://weddingpick-web.onrender.com`, Live `e34193e` |
+| KakaoCloud API | `https://210.109.82.212`. #979에서 자동배포 성공 확인 |
+| Render SG API | 사용자가 중지함. 재배포·재활성화하지 않음 |
+| Render 앱 웹 Preview | `https://weddingpick-app-web.onrender.com`. 정적 서비스 유지, 최신 main 반영 여부 별도 검증 필요 |
+| Render 관리자 | `https://weddingpick-admin.onrender.com/admin`. 정적 서비스 유지, 최신 main 반영 여부 별도 검증 필요 |
+| Render 웹사이트 | `https://weddingpick-web.onrender.com`. 정적 서비스 유지, 최신 main 반영 여부 별도 검증 필요 |
 | Neon | 프로젝트 콘솔 접근, production 브랜치의 `neondb`·`weddingpick_staging` 존재 확인. 이번 점검에서는 직접 SQL 실행 안 함 |
 | NCP Object Storage | `weddingpick-test` 버킷 및 계정 권한 조회. 목록 공개 꺼짐. 이번 점검의 업로드·다운로드·삭제 왕복 검증은 미실행 |
 | Expo/EAS | Owner 계정·프로젝트·기존 빌드 조회 가능. 최근 조회 빌드는 아래 표 참조 |
@@ -51,7 +62,7 @@
 | Google Play | 앱 상태 ‘임시’. 앱 설정·비공개 테스트·프로덕션 액세스 절차 미완료 |
 | Cloudflare | 연결 계정 인증 가능, zone 목록 비어 있음. 현재 사용하지 않는 도메인 부재를 장애로 분류하지 않음 |
 
-`weddingpick.kr`은 **폐기했다**(2026-09-11 대표 지시). 2026-09-10의 「보유하되 미사용·폐기 대상 아님」을 뒤집은 결정이다. DNS 연결·커스텀 도메인 전환을 과제로 두지 않고, 다시 붙이자고 제안하지도 않는다. 주소는 `onrender.com`이 정본이다.
+`weddingpick.kr`은 **폐기했다**(2026-09-11 대표 지시). 2026-09-10의 「보유하되 미사용·폐기 대상 아님」을 뒤집은 결정이다. DNS 연결·커스텀 도메인 전환을 과제로 두지 않고, 다시 붙이자고 제안하지도 않는다. 정적 사이트 공개 주소는 `onrender.com`을 유지하고, API는 KakaoCloud 주소를 사용한다.
 
 Render의 환경변수 선언은 [infra/render-env.yml](infra/render-env.yml), 반영 경로는 [render-env-sync.yml](.github/workflows/render-env-sync.yml)이다. 서비스 표시 이름과 URL 호스트는 다를 수 있으므로 오래된 이름만으로 리소스를 삭제하거나 대체하지 않는다. 남은 별도 DB·관리자 리소스의 사용 여부는 추가 확인 대상이다.
 
