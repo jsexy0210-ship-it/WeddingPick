@@ -43,6 +43,7 @@ jobs:
           STORAGE_DRIVER: local
           MODE: ${{ github.event.inputs.mode }}
           TARGET: ${{ github.event.inputs.target }}
+          KAKAO_APP_KEY: ${{ secrets.KAKAO_APP_KEY }}
         run: |
           # 이 워크플로는 검수용 샘플이고 remove는 업체·이미지·표본 계정을 지운다.
           # 운영 DB(DATABASE_URL)를 그대로 쓰던 것을 대상 선택으로 바꾼다.
@@ -67,8 +68,7 @@ jobs:
             exit 1
           fi
           echo "대상: ${TARGET:-staging}"
-          # 공개 클라이언트 키(EXPO_PUBLIC_KAKAO_CLIENT_ID와 같은 값) — 한 곳(infra/render-env.yml)에서 읽는다.
-          export KAKAO_APP_KEY=$(grep -m1 '^ *KAKAO_APP_KEY:' infra/render-env.yml | awk '{print $2}')
+          # images 모드에서만 카카오 이미지 검색 키를 사용한다.
           if [ "$MODE" = "remove" ]; then
             npm run seed:samples --workspace @weddingpick/api -- --remove --yes
           elif [ "$MODE" = "images" ]; then
