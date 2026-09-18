@@ -132,6 +132,7 @@ const log = { warn() {}, info() {}, error() {} };
       '@react-native-async-storage/async-storage':old,
       '@weddingpick/ui':{SocialColors:{apple:'apple',kakao:'kakao'}},
       'expo-auth-session':{AuthRequest:class{},ResponseType:{Code:'code'},makeRedirectUri:()=>''},
+      'expo-crypto':{getRandomBytesAsync:async n=>new Uint8Array(n).fill(1)},
       'expo-web-browser':{maybeCompleteAuthSession(){}},'react':{},'react-native':{Platform:platform},
       '@/api/client':{ApiError,listAuthProviders:async()=>({providers:[]}),signIn:async()=>{},signInWithAuthorizationCode:async(data)=>{exchanged++;input=data;return{activated:true};}},
       '@/api/config':{isServerConfigured:true},'@/features/auth/dev-login':{DEV_LOGIN_SECRET:undefined,devIdToken:()=>''},
