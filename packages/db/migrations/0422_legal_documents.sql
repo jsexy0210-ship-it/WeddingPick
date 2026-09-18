@@ -226,11 +226,12 @@ ALTER TABLE structured.terms_versions
  * DB에서 그냥 넣으면 색인이 걸려 **마이그레이션이 통째로 실패한다** — 그러면 이
  * 판에 묶인 배포 전체가 멈춘다. 운영 DB에 무엇이 들어 있는지는 여기서 알 수 없다.
  *
- * 있으면 그쪽이 맞다고 보고 비켜선다. 아래 조문 넣기도 같은 조건을 보므로,
- * 판이 이미 있던 문서에는 본문도 덧씌우지 않는다.
+ * 있으면 그쪽이 맞다고 보고 비켜선다. 이번 이관에서 새로 만든 판에는
+ * `carried_over=true`를 처음부터 찍고, 아래 조문 삽입·경고·공개는 그 판만
+ * 대상으로 삼는다. 기존 미공개 초안이 있어도 내용을 덧씌우거나 공개하지 않는다.
  */
-INSERT INTO structured.terms_versions (doc, version)
-SELECT seed.doc::terms_doc_kind, 'v1.0'
+INSERT INTO structured.terms_versions (doc, version, carried_over)
+SELECT seed.doc::terms_doc_kind, 'v1.0', true
 FROM (VALUES ('terms'), ('privacy'), ('marketing')) AS seed(doc)
 WHERE NOT EXISTS (
   SELECT 1 FROM structured.terms_versions v WHERE v.doc = seed.doc::terms_doc_kind
@@ -309,6 +310,7 @@ Pick 인증 자료를 통한 제보 금액 정보 제공
   ON c.doc::terms_doc_kind = v.doc
 WHERE v.doc = 'terms'
   AND v.published_at IS NULL
+  AND v.carried_over
   AND NOT EXISTS (SELECT 1 FROM structured.terms_clauses x WHERE x.version_id = v.id);
 
 INSERT INTO structured.terms_clauses (version_id, article_number, title, body, position, body_table)
@@ -353,6 +355,7 @@ JOIN (VALUES
   ON c.doc::terms_doc_kind = v.doc
 WHERE v.doc = 'privacy'
   AND v.published_at IS NULL
+  AND v.carried_over
   AND NOT EXISTS (SELECT 1 FROM structured.terms_clauses x WHERE x.version_id = v.id);
 
 /*
@@ -368,6 +371,7 @@ SET removal_warning =
 FROM structured.terms_versions v
 WHERE v.id = c.version_id
   AND v.doc = 'privacy'
+  AND v.carried_over
   AND c.position = 3
   AND c.title = '4. 개인정보 처리위탁';
 
@@ -377,6 +381,7 @@ SET removal_warning =
 FROM structured.terms_versions v
 WHERE v.id = c.version_id
   AND v.doc = 'privacy'
+  AND v.carried_over
   AND c.position = 4
   AND c.title = '5. 개인정보의 국외 이전';
 
@@ -395,4 +400,5 @@ FROM (VALUES
 ) AS seed(doc, effective_on)
 WHERE v.doc = seed.doc::terms_doc_kind
   AND v.published_at IS NULL
+  AND v.carried_over
   AND EXISTS (SELECT 1 FROM structured.terms_clauses c WHERE c.version_id = v.id);
