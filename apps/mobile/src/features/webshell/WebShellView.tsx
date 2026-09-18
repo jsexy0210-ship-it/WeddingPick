@@ -15,7 +15,9 @@ type Props = { path: string };
 
 /** 세션은 신뢰한 메인 프레임의 일회성 요청에만 전달한다. source URI에는 토큰이 없다. */
 export function WebShellView({ path }: Props) {
-  const web = useRef<WebView>(null);
+  // react-native-webview 14.0.1의 기본 제네릭(undefined)이 props를 never로 만드는 타입 버그 우회.
+  // 업스트림 수정이 안정판에 들어오면 명시 제네릭을 제거해도 된다.
+  const web = useRef<WebView<Record<never, never>>>(null);
   const generation = useRef(0);
   const offered = useRef<{ channel: string; token: string } | null>(null);
   const [revision, setRevision] = useState(0);
@@ -82,7 +84,7 @@ export function WebShellView({ path }: Props) {
   }
 
   return (
-    <WebView
+    <WebView<Record<never, never>>
       key={`${target.uri}:${revision}`}
       ref={web}
       source={{ uri: target.uri }}
