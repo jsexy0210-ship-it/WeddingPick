@@ -17,11 +17,31 @@ test -f "$source_root/admin/admin/login.html"
 test -f "$source_root/web/index.html"
 test -f "$source_root/web/privacy.html"
 
-sudo -n mkdir -p "/var/www/weddingpick/releases/$release_sha"
-sudo -n rm -rf "$admin_root" "$web_root"
-sudo -n cp -a "$source_root/admin" "$admin_root"
-sudo -n cp -a "$source_root/web" "$web_root"
-sudo -n chmod -R a+rX /var/www/weddingpick
+backup=''
+if [ -r "$MARKER" ]; then
+  backup="$(cat "$MARKER")"
+  if [ ! -f "$backup" ]; then
+    echo "Preview rollback backup is missing: $backup" >&2
+    exit 1
+  fi
+elif grep -Fq 'location ^~ /admin/' "$CONF" 2>/dev/null; then
+  echo 'Preview routes are active but their rollback marker is missing.' >&2
+  exit 1
+fi
+
+if [ -n "$backup" ] &&
+   grep -Fq "root $admin_root;" "$CONF" 2>/dev/null &&
+   grep -Fq "root $web_root;" "$CONF" 2>/dev/null; then
+  test -f "$admin_root/admin/login.html"
+  test -f "$web_root/privacy.html"
+  echo "Preview routes already use release $release_sha; preserving served files."
+else
+  sudo -n mkdir -p "/var/www/weddingpick/releases/$release_sha"
+  sudo -n rm -rf "$admin_root" "$web_root"
+  sudo -n cp -a "$source_root/admin" "$admin_root"
+  sudo -n cp -a "$source_root/web" "$web_root"
+  sudo -n chmod -R a+rX /var/www/weddingpick
+fi
 
 cert="$(sudo -n nginx -T 2>/dev/null | awk '$1=="ssl_certificate" && $2 !~ /_key/ {gsub(/;/,"",$2); print $2; exit}')"
 key="$(sudo -n nginx -T 2>/dev/null | awk '$1=="ssl_certificate_key" {gsub(/;/,"",$2); print $2; exit}')"
@@ -29,22 +49,23 @@ test -n "$cert"
 test -n "$key"
 
 mkdir -p "$ROOT/nginx-backups"
-if [ ! -r "$MARKER" ]; then
+if [ -z "$backup" ]; then
   backup="$ROOT/nginx-backups/weddingpick-preview-routes-$(date -u +%Y%m%dT%H%M%SZ).conf"
   sudo -n cp "$CONF" "$backup"
   printf '%s\n' "$backup" > "$MARKER"
-else
-  backup="$(cat "$MARKER")"
 fi
+
+tmp=''
 
 rollback_on_error() {
   status=$?
+  if [ -n "${tmp:-}" ]; then
+    rm -f "$tmp" || true
+  fi
   if [ "$status" -ne 0 ]; then
     echo 'Preview route setup failed; restoring previous Nginx config.' >&2
-    if [ -f "$backup" ]; then
-      sudo -n cp "$backup" "$CONF" || true
-      sudo -n nginx -t >/dev/null 2>&1 || true
-      sudo -n systemctl reload nginx || true
+    if ! bash "$(dirname "$0")/rollback-kakao-preview-routes.sh"; then
+      echo 'Automatic preview route rollback failed; inspect the Kakao VM before another cutover.' >&2
     fi
   fi
   exit "$status"
@@ -52,7 +73,6 @@ rollback_on_error() {
 trap rollback_on_error EXIT
 
 tmp="$(mktemp)"
-trap 'rm -f "$tmp"' RETURN
 cat >"$tmp" <<EOF
 server {
     listen 80 default_server;
@@ -159,6 +179,7 @@ grep -qi '<html' /tmp/wp-privacy-preview.html
 
 curl --fail --silent --show-error --connect-timeout 5 --max-time 10   https://210.109.82.212/health >/dev/null
 
+rm -f "$tmp" || true
+tmp=''
 trap - EXIT
-rm -f "$tmp"
 echo "Kakao preview routes enabled on 443 from release $release_sha"
