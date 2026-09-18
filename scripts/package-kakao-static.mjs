@@ -15,6 +15,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const MOBILE_DIST = join(ROOT, 'apps', 'mobile', 'dist');
 const WEB_DIST = join(ROOT, 'apps', 'web', 'dist');
 const OUT = join(ROOT, '.kakao-static');
+const CANONICAL_FAVICON_PNG = join(ROOT, 'apps', 'mobile', 'assets', 'images', 'favicon.png');
 
 function requirePath(path, label) {
   if (!existsSync(path)) {
@@ -42,19 +43,27 @@ for (const role of ['app', 'admin']) {
 cpSync(WEB_DIST, join(OUT, 'web'), { recursive: true });
 
 /*
- * 브라우저 탭 파비콘 정본은 Expo app export의 favicon.ico 하나다.
- * admin은 같은 mobile dist를 깎아 만들므로 이미 같은 파일을 가진다.
- * web 후보에도 **그 바이트 그대로** 복사해 세 출처가 다른 아이콘을 가질 여지를 없앤다.
+ * 정적 origin이 분리되어도 절대경로 /favicon.png가 각 origin에서 같은 바이트를
+ * 가리키도록 canonical PNG를 app/admin/web 세 root에 모두 넣는다.
+ * favicon.ico도 기존 정책대로 Expo app export를 정본으로 유지한다.
  */
-requirePath(join(OUT, 'app', 'favicon.ico'), '공통 파비콘');
+requirePath(CANONICAL_FAVICON_PNG, '공통 PNG 파비콘');
+for (const role of ['app', 'admin', 'web']) {
+  cpSync(CANONICAL_FAVICON_PNG, join(OUT, role, 'favicon.png'));
+}
+
+requirePath(join(OUT, 'app', 'favicon.ico'), '공통 ICO 파비콘');
 cpSync(join(OUT, 'app', 'favicon.ico'), join(OUT, 'web', 'favicon.ico'));
 
 requirePath(join(OUT, 'app', 'index.html'), '앱 후보');
+requirePath(join(OUT, 'app', 'favicon.png'), '앱 PNG 파비콘');
 requirePath(join(OUT, 'admin', 'index.html'), '관리자 후보');
 requirePath(join(OUT, 'admin', 'admin', 'login.html'), '관리자 로그인 후보');
-requirePath(join(OUT, 'admin', 'favicon.ico'), '관리자 공통 파비콘');
+requirePath(join(OUT, 'admin', 'favicon.ico'), '관리자 공통 ICO 파비콘');
+requirePath(join(OUT, 'admin', 'favicon.png'), '관리자 PNG 파비콘');
 requirePath(join(OUT, 'web', 'index.html'), '웹사이트 후보');
-requirePath(join(OUT, 'web', 'favicon.ico'), '웹사이트 공통 파비콘');
+requirePath(join(OUT, 'web', 'favicon.ico'), '웹사이트 공통 ICO 파비콘');
+requirePath(join(OUT, 'web', 'favicon.png'), '웹사이트 PNG 파비콘');
 
 const manifest = {
   commit: process.env.GITHUB_SHA || null,
