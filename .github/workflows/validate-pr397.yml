@@ -18,7 +18,8 @@ jobs:
       - name: Validate EAS JSON
         run: node -e "JSON.parse(require('fs').readFileSync('apps/mobile/eas.json','utf8'))"
       - name: Validate Android workflow YAML
-        run: ruby -e "require 'yaml'; YAML.load_file('.github/workflows/android-apk.yml', aliases: true)"
+        run: |
+          ruby -e "require 'yaml'; YAML.load_file('.github/workflows/android-apk.yml', aliases: true)"
       - name: Confirm retired Naver public build env removed
         shell: bash
         run: |
