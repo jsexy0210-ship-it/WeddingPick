@@ -1,16 +1,20 @@
 # WeddingPick 프로젝트 상태
 
-## 현재 기준 — 2026-09-18 11:36 KST
+## 현재 기준 — 2026-09-18 12:25 KST
 
 - 운영 API는 `https://210.109.82.212`의 KakaoCloud VM이다. 첫 자동배포 성공 기준은 **CI / Deploy #979 / `4adc950`**이며 Render SG API는 사용자 중지 상태로 되살리지 않는다.
-- 최신 main `365613f9ea57041947bd63bd546430c4a304cba2`에서 **CI / Deploy #982**가 성공했다. 앱웹·관리자·웹사이트 정적 산출물을 빌드·검사한 뒤 카카오 VM의 `static-releases/<SHA>` 후보 폴더까지 전달했다.
-- #982에서 **KakaoCloud API 재배포와 Runner 복구는 둘 다 Skip**됐다. 정적 이관 때문에 API를 불필요하게 교체하지 않았다.
-- 정적 후보의 **라이브 Nginx cutover는 아직 하지 않았다.** 공개 주소·카카오 로그인 redirect·CORS·정책 링크를 바꾸기 전에 Nginx·IP HTTPS 인증서·보안그룹을 검증한다.
+- **CI / Deploy #983 / `2dcf0b5` 성공**: 앱웹·관리자·웹사이트 정적 산출물을 빌드·검사한 뒤 카카오 VM의 `static-releases/<SHA>` 후보 폴더까지 전달했다. API 재배포와 Runner 복구는 둘 다 Skip됐다.
+- Kakao VM은 Nginx가 80/443을 받고 443에서 `127.0.0.1:3001` API로 프록시한다. IP 인증서는 Let's Encrypt이며 SAN에 `210.109.82.212`가 있고 `snap.certbot.renew.timer`가 활성 상태다.
+- **정적 별도 origin 포트 사전검증 #987**: VM 내부에서 8443/9443 Nginx 설정·`nginx -t`·reload는 성공했지만 외부 GitHub runner의 8443 연결은 5초 timeout으로 실패했다. 임시 설정은 cleanup에서 정상 제거했다. 현재 카카오 보안그룹에서 비표준 포트가 막힌 상태로 본다.
+- 관리자 출처 분리 정책을 되돌리지 않는다. 따라서 8443/9443 보안그룹 허용 전에는 관리자·웹사이트 라이브 cutover를 진행하지 않는다.
 - Render는 빌드 분 복구 여부와 무관하게 더 이상 사용하지 않는다. 기존 정적 3개는 카카오 전환 검증 전 임시 공개본일 뿐이며 Render 재배포는 하지 않는다.
-- 새 파일 저장소는 KakaoCloud Object Storage `weddingpick-prod-media`(`kr-central-2`)다. 기존 NCP `weddingpick-test` 전체 이전과 실제 파일 접근 검증은 남아 있다.
-- 마지막 명시 워커 설정은 `RUN_WORKER_IN_API=false`다. `RETENTION_MODE=automatic`과 비용이 드는 Gemini 작업이 함께 있으므로 실제 런타임 감사 전 워커를 켜지 않는다.
+- 새 파일 저장소 운영 설정은 KakaoCloud Object Storage `weddingpick-prod-media` / `kr-central-2` / `https://objectstorage.kr-central-2.kakaocloud.com`이다.
+- **운영 DB 읽기 전용 감사 #988**: 분석 pending 0, 30분 이상 running 0, `raw_document_pages.storage_key` 0, 내부 업체 이미지 0, 상담 음성 원본 0, 기한 초과 음성 0, 파기 예정 원본 0, 파기 일정 미정 원본 0. 따라서 현재 운영 DB가 참조하는 NCP→Kakao 이관 대상 파일은 **0개**다. NCP 버킷은 삭제하지 않고 보존하며 불필요한 전체 egress 복사는 하지 않는다.
+- 런타임은 `RUN_WORKER_IN_API=false`, `RETENTION_MODE=automatic`이다. 현재 backlog·파기 대상이 모두 0이므로 즉시 데이터 적체는 없지만, 향후 신규 업로드 분석/파기에는 워커 활성화 또는 역할 분리가 필요하다. 비용·자동삭제를 함께 켜지 않도록 별도 검증 전에는 활성화하지 않는다.
+- 사용자 앱 443 cutover는 카카오 개발자 Redirect URI `https://210.109.82.212/setup` 등록과 CORS/정책 링크 변경을 같은 전환에서 처리한다.
 - `claude/rn-preview`는 최신 디자인 정본이 아니며 배포 소스로 사용하지 않는다.
 - 보고 시 **코드 반영 / CI 통과 / API 배포 / 화면 후보 스테이징 / 화면 공개 / 실제 기능 검증**을 서로 다른 상태로 기록한다.
+
 ## 이전 배포 기록 — 2026-09-13 KST
 
 앱 출시를 제외한 웹·API·관리자 배포를 진행한다. 기준 main은 `bcd8771484baa906aa24a0f4a0f88e27185359e9`이며 PR208·218·219와 검토 수정사항을 통합했다. 최종 CI·배포 결과는 [master-status.json의 webApiRelease20260913](docs/sync/master-status.json)을 따른다. 아래 9월 10~11일 기록은 당시의 이력이며 현재 배포 버전을 뜻하지 않는다.
