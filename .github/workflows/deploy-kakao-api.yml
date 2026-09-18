@@ -163,8 +163,3 @@ jobs:
             echo '- Running worker:'
             sudo -n docker ps --filter name='^/weddingpick-worker$' --format '- `{{.Names}}` → `{{.Image}}` / `{{.Status}}`' || true
           } >> "$GITHUB_STEP_SUMMARY"
- --format '- `{{.Names}}` → `{{.Image}}` / `{{.Status}}`' || true
-            echo '- Running worker:'
-            sudo -n docker ps --filter name='^/weddingpick-worker          } >> "$GITHUB_STEP_SUMMARY"
- --format '- `{{.Names}}` → `{{.Image}}` / `{{.Status}}`' || true
-          } >> "$GITHUB_STEP_SUMMARY"
