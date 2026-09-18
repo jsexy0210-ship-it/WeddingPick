@@ -1,0 +1,65 @@
+name: Validate Design Session 1
+
+on:
+  push:
+    branches:
+      - codex/design-session1-273-visual
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Home Recommendations Visual Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      EXPO_PUBLIC_API_URL: http://127.0.0.1:39999
+      EXPO_PUBLIC_WEB_URL: https://example.invalid
+      EXPO_PUBLIC_KAKAO_CLIENT_ID: validation-only
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Mobile tests
+        run: npm run test --workspace @weddingpick/mobile -- --runInBand
+
+      - name: Capture fixture contract
+        run: npx jest --config packages/api-contract/jest.config.js --rootDir packages/api-contract capture-fixtures --runInBand
+
+      - name: Expo web export
+        run: npm run export:web --workspace @weddingpick/mobile
+
+      - name: Install capture browser
+        run: |
+          npm install --global playwright@1.55.0
+          playwright install --with-deps chromium
+
+      - name: Capture home and recommendations
+        run: |
+          mkdir -p design-captures
+          node scripts/screenshot-screens.mjs \
+            --route / \
+            --route /recommendations \
+            --full \
+            --edges \
+            --wait 2200 \
+            --out design-captures
+
+      - name: Upload design captures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: design-session1-captures
+          path: design-captures/
+          if-no-files-found: warn
