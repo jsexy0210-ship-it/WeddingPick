@@ -40,7 +40,12 @@ jobs:
       - name: 실행
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          STORAGE_DRIVER: local
+          STORAGE_DRIVER: s3
+          S3_BUCKET: ${{ secrets.S3_BUCKET }}
+          S3_REGION: ${{ secrets.S3_REGION }}
+          S3_ENDPOINT: ${{ secrets.S3_ENDPOINT }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           MODE: ${{ github.event.inputs.mode }}
           BY: ${{ github.event.inputs.by }}
           VALUE: ${{ github.event.inputs.value }}

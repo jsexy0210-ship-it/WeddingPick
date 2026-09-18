@@ -7,6 +7,9 @@ name: DB Migrate
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   migrate:
     environment: production
