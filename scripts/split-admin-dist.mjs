@@ -28,7 +28,9 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const DIST = join(ROOT, 'apps', 'mobile', 'dist');
+const DIST = process.env.WEDDINGPICK_DIST_DIR
+  ? resolve(process.env.WEDDINGPICK_DIST_DIR)
+  : join(ROOT, 'apps', 'mobile', 'dist');
 
 /*
  * 관리자 출처. 기본값은 운영 주소이고, 스테이징처럼 다른 곳에 올릴 때만
