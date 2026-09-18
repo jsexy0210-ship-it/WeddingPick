@@ -8,7 +8,7 @@ import { UNDECIDED_LABEL, type Answers } from './flow';
 import { OptionRow } from './option-row';
 
 /**
- * 지역 2/3 — 보기는 규격서 docs/figma-spec/onboarding.txt의 65 줄(`OptionRow`)이다. 피그마의 보기 세 개
+ * 지역 2/3 — 보기는 규격서 docs/design/figma-export/06-onboarding-login.dc.html의 65 줄(`OptionRow`)이다. 피그마의 보기 세 개
  * («서울 · 경기·인천 · 다른 지역»)는 시안용 가짜 값이고, **지역은 짧은 꼴 아홉**(`WEDDING_REGIONS` ·
  * 용어 규칙)이라 아홉 + «아직 정하지 않았어요»를 같은 줄 모양으로 세운다.
  *

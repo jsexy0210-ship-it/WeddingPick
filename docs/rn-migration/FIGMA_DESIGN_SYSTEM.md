@@ -2,7 +2,7 @@
 
 작성 2026-09-14 (KST) · 브랜치 `claude/rn-migration-plan`
 이 문서는 **분석 결과**다. `spec/tokens.json`을 포함해 어떤 토큰·코드도 고치지 않는다. 반영은 2단계다.
-파일 경로는 별도 표기가 없으면 **Figma 저장소**(`weddingpick_figma`) 기준이다.
+파일 경로는 별도 표기가 없으면 **Figma 저장소**(`docs/design/figma-export`) 기준이다.
 
 ## 0. 결론 먼저 — A등급은 색과 서체를 줄 수 없다
 
@@ -162,9 +162,9 @@ WeddingPickl 정본(`spec/tokens.json` v3.10) 기준. **「그대로」가 압�
 
 ```
 color.brand.primary.$note:
-  "#E7898D — weddingpick_figma/src/styles/theme.css:16. 2026-09-14 대표 확정."
+  "#E7898D — docs/design/figma-export/src/styles/theme.css:16. 2026-09-14 대표 확정."
 color.brand.accent.$note:
-  "#ECA0A3 — weddingpick_figma/src/styles/theme.css:22. 2026-09-14 대표 확정."
+  "#ECA0A3 — docs/design/figma-export/src/styles/theme.css:22. 2026-09-14 대표 확정."
 typography.$fontFamily.$note:
   "Pretendard 단일. 2026-09-14 대표 확정 — Playfair Display · Noto Sans KR · DM Mono 제외.
    기존 '시스템 서체 유지 · Pretendard 미적용' 규칙을 뒤집는 결정.

@@ -20,6 +20,7 @@ import {
   updateWeddingTask,
 } from '@/api/client';
 import { BottomSheet, SHEET_PANEL } from '@/features/common/bottom-sheet';
+import { confirmAlert } from '@/components/confirm-alert';
 import { BackBar } from '@/components/back-bar';
 import {
   ActionButton,
@@ -29,7 +30,6 @@ import {
   Layout,
   MaxContentWidth,
   Radius,
-  showAlert,
   Spacing,
   ThemedText,
   ThemedView,
@@ -146,7 +146,7 @@ export default function WeddingTasksScreen() {
   }
 
   function remove(taskId: string) {
-    showAlert('삭제할까요?', '이 일정을 삭제하면 되돌릴 수 없어요.', [
+    confirmAlert('삭제할까요?', '이 일정을 삭제하면 되돌릴 수 없어요.', [
       { text: '취소', style: 'cancel' },
       {
         text: '삭제',

@@ -281,8 +281,8 @@ jobs:
 
   stage-kakao-static:
     name: Stage Kakao Static
-    needs: [ci, api-tests]
-    if: github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && needs.ci.outputs.stage_static == 'true'
+    needs: [ci, api-tests, repair-kakao-runner]
+    if: ${{ always() && github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && needs.ci.result == 'success' && needs.api-tests.result == 'success' && (needs.repair-kakao-runner.result == 'success' || needs.repair-kakao-runner.result == 'skipped') && needs.ci.outputs.stage_static == 'true' }}
     permissions:
       contents: read
       actions: read

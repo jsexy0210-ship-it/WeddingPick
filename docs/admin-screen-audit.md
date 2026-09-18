@@ -1,7 +1,7 @@
 # 관리자 화면 대조 · ADMIN.md ↔ 코드 라우트
 
 기준
-- 목록: `docs/design-handoff/current/ADMIN.md` (v3.27 · 26화면)
+- 목록: `docs/design/handoff/ADMIN.md` (v3.27 · 26화면)
 - 코드: `apps/mobile/src/app/admin/*.tsx`
 - 대조 시점: `main` @ `bf69c03` (PR #167 로그인 미머지 상태)
 
