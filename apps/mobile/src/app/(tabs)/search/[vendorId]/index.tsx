@@ -42,6 +42,7 @@ import {
 import { isServerConfigured } from '@/api/config';
 import { BackButton } from '@/components/back-button';
 import { InfoDot, InfoSheet, type InfoTopic } from '@/features/common/info-sheet';
+import { savePendingAction } from '@/features/auth/pending-action';
 import { openExternal } from '@/features/open-external';
 import { readCurrentUserSnapshot } from '@/features/loading/current-user-snapshot';
 import { PickDoneSheet, UnpickSheet } from '@/features/pick/pick-sheets';
@@ -264,7 +265,10 @@ export default function VendorDetailScreen() {
     }
     const result = await candidates.pick(vendor!.id);
     if (result === 'picked') setPickDoneOpen(true);
-    else if (result === 'login') router.replace('/login');
+    else if (result === 'login') {
+      await savePendingAction({ kind: 'pick', vendorId: vendor!.id, vendorName: vendor!.name });
+      router.replace('/login');
+    }
     else setToast('Pick하지 못했어요. 잠시 후 다시 시도해주세요.');
   }
 
