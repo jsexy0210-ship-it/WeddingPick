@@ -67,6 +67,8 @@ async function main() {
   let cleanupError = null;
 
   try {
+    // 전송 중 응답을 잃어도 서버 쪽 객체는 생성됐을 수 있으므로 Put 전에 cleanup 대상을 표시한다.
+    objectMayExist = true;
     await client.send(new PutObjectCommand({
       Bucket: bucket,
       Key: key,
@@ -74,7 +76,6 @@ async function main() {
       ContentType: 'text/plain; charset=utf-8',
       CacheControl: 'no-store',
     }));
-    objectMayExist = true;
     console.log('kakao_storage_put=ok');
 
     const result = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
@@ -103,8 +104,9 @@ async function main() {
     }
   }
 
-  if (primaryError) throw primaryError;
+  // cleanup 실패는 임시 객체 잔존 가능성을 뜻하므로 본 검증 실패보다 우선 보고한다.
   if (cleanupError) throw cleanupError;
+  if (primaryError) throw primaryError;
 }
 
 main().catch((error) => {
