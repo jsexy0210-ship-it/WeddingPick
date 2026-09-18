@@ -419,7 +419,7 @@ async function loadVendorDetail(pool: Pool, vendorId: string, viewerId: string |
     ...toSummary(vendor),
     usageScore,
     lastVerifiedAt: vendor.last_verified_at.toISOString(),
-    address: vendor.address ?? null,
+    address: vendor.address?.trim() || null,
     prices: {
       products,
       paidPrice,
