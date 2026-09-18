@@ -19,15 +19,10 @@ permissions:
 
 jobs:
   precheck:
-    name: Verify public dependencies
+    name: Verify API dependency
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Website must already be live on Kakao
-        run: |
-          set -euo pipefail
-          curl --fail --silent --show-error --connect-timeout 5 --max-time 15             https://210.109.82.212:9443/privacy.html | grep -qi '<html'
-
       - name: API health must be green
         run: |
           set -euo pipefail
