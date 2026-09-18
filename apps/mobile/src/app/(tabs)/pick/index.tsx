@@ -49,7 +49,7 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
-import { getCurrentUser, listCandidates, removeCandidate, removeDecision } from '@/api/client';
+import { addCandidate, getCurrentUser, listCandidates, removeCandidate, removeDecision } from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
 import { DialogToast } from '@/components/confirm-alert-toast';
 import {
@@ -104,6 +104,7 @@ export default function PickScreen() {
   const [compare, setCompare] = useState<ReadonlySet<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [undoCandidate, setUndoCandidate] = useState<VendorCandidate | null>(null);
 
   const load = useCallback(() => {
     // 하이브리드 웹뷰 쉘 POC로 이 화면을 대체할 때는 이 밑 자료를 안 쓴다 —
@@ -143,12 +144,17 @@ export default function PickScreen() {
   const partner = me?.spouseLinked ? (me.partnerDisplayName ?? TERMS.spouse) : null;
   const weddingId = me?.weddingId ?? null;
 
+  function showToast(message: string, undo: VendorCandidate | null = null) {
+    setUndoCandidate(undo);
+    setToast(message);
+  }
+
   function toggleCompare(vendorId: string) {
     setCompare((prev) => {
       const next = new Set(prev);
       if (next.has(vendorId)) next.delete(vendorId);
       else if (next.size < PICK_COMPARE_MAX) next.add(vendorId);
-      else setToast(`한 번에 ${PICK_COMPARE_MAX}곳까지 비교할 수 있어요`);
+      else showToast(`한 번에 ${PICK_COMPARE_MAX}곳까지 비교할 수 있어요`);
       return next;
     });
   }
@@ -183,10 +189,10 @@ export default function PickScreen() {
     setBusy(true);
     try {
       await removeDecision(weddingId, category);
-      setToast('결정을 취소했어요');
+      showToast('결정을 취소했어요');
       load();
     } catch {
-      setToast('결정을 취소하지 못했어요. 잠시 후 다시 시도해주세요.');
+      showToast('결정을 취소하지 못했어요. 잠시 후 다시 시도해주세요.');
     } finally {
       setBusy(false);
     }
@@ -217,10 +223,24 @@ export default function PickScreen() {
         next.delete(candidate.vendorId);
         return next;
       });
-      setToast('후보에서 뺐어요');
+      showToast('후보에서 뺐어요', candidate);
       load();
     } catch {
-      setToast('후보를 빼지 못했어요. 잠시 후 다시 시도해주세요.');
+      showToast('후보를 빼지 못했어요. 잠시 후 다시 시도해주세요.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function undoUnpick(candidate: VendorCandidate) {
+    if (!weddingId) return;
+    setBusy(true);
+    try {
+      await addCandidate(weddingId, candidate.vendorId, candidate.note ?? undefined);
+      showToast('다시 Pick했어요');
+      load();
+    } catch {
+      showToast('다시 Pick하지 못했어요. 잠시 후 다시 시도해주세요.');
     } finally {
       setBusy(false);
     }
@@ -322,7 +342,16 @@ export default function PickScreen() {
         </View>
       </SafeAreaView>
 
-      <DialogToast message={toast} onHidden={() => setToast(null)} />
+      <DialogToast
+        message={toast}
+        docked
+        actionLabel={undoCandidate ? '되돌리기' : null}
+        onAction={undoCandidate ? () => void undoUnpick(undoCandidate) : null}
+        onHidden={() => {
+          setToast(null);
+          setUndoCandidate(null);
+        }}
+      />
     </ThemedView>
   );
 }
