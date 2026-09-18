@@ -882,8 +882,8 @@ async function loadConditionStats(
   /**
    * 업체 상세의 정적 지도 이미지.
    *
-   * 카카오 REST API 키는 서버에만 두고 이미지 바이트만 전달한다. 좌표가 없는 업체는
-   * 지도를 만들 수 없으므로 404 — 화면은 이미지 없이 주소/외부 지도 링크만 유지한다.
+   * 정적 지도 인증 요청은 API가 맡고 이미지 바이트만 전달한다. 저장 좌표가 없더라도
+   * 허용 출처의 주소가 있으면 요청 중에만 좌표를 구한다. 주소·좌표가 모두 없으면 404다.
    */
   app.get<{ Params: { vendorId: string } }>(
     '/v1/vendors/:vendorId/static-map',
