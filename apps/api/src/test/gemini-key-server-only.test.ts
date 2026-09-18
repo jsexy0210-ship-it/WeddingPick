@@ -43,7 +43,7 @@ describe('Gemini 키는 서버에만 있다', () => {
     for (const path of CLIENT_SURFACES) {
       const source = readFileSync(join(ROOT, path), 'utf8');
 
-      if (/\\bGEMINI_API_KEY\\s*[:=]/i.test(source)) offenders.push(path);
+      if (/\bGEMINI_API_KEY\s*[:=]/i.test(source)) offenders.push(path);
     }
 
     expect(offenders).toEqual([]);
