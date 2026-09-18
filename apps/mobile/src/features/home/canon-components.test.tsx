@@ -73,7 +73,7 @@ describe('최신 홈·추천 연결', () => {
     expect(card).toBeDefined();
     act(() => { card!.props.onPress(); });
 
-    expect(text(view)).toContain('추천 1위');
+    expect(text(view)).toMatch(/추천\s*1\s*위/);
     expect(text(view)).toContain('선호하는 분위기가 같아요');
     expect(text(view)).toMatch(/실 제보\s*0\s*건/);
     expect(text(view)).toContain('비교에 담기');
