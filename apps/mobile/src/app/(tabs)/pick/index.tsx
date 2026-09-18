@@ -48,7 +48,14 @@ import {
   useTheme,
 } from '@weddingpick/ui';
 import { DelayedLoader } from '@/features/loading/delayed-loader';
-import { addCandidate, getCurrentUser, listCandidates, removeCandidate, removeDecision } from '@/api/client';
+import {
+  addCandidate,
+  decideCategory,
+  getCurrentUser,
+  listCandidates,
+  removeCandidate,
+  removeDecision,
+} from '@/api/client';
 import { confirmAlert } from '@/components/confirm-alert';
 import { DialogToast } from '@/components/confirm-alert-toast';
 import {
@@ -93,6 +100,12 @@ type Row = {
   isDecided: boolean;
 };
 
+type UndoCandidate = {
+  candidate: VendorCandidate;
+  /** 후보 삭제의 FK cascade로 같이 풀린 최종 결정을 되살려야 하는가. */
+  wasDecided: boolean;
+};
+
 export default function PickScreen() {
   const theme = useTheme();
   const [me, setMe] = useState<CurrentUser | null>(null);
@@ -103,7 +116,7 @@ export default function PickScreen() {
   const [compare, setCompare] = useState<ReadonlySet<string>>(new Set());
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [undoCandidate, setUndoCandidate] = useState<VendorCandidate | null>(null);
+  const [undoCandidate, setUndoCandidate] = useState<UndoCandidate | null>(null);
 
   const load = useCallback(() => {
     // 하이브리드 웹뷰 쉘 POC로 이 화면을 대체할 때는 이 밑 자료를 안 쓴다 —
@@ -143,7 +156,7 @@ export default function PickScreen() {
   const partner = me?.spouseLinked ? (me.partnerDisplayName ?? TERMS.spouse) : null;
   const weddingId = me?.weddingId ?? null;
 
-  function showToast(message: string, undo: VendorCandidate | null = null) {
+  function showToast(message: string, undo: UndoCandidate | null = null) {
     setUndoCandidate(undo);
     setToast(message);
   }
@@ -208,11 +221,11 @@ export default function PickScreen() {
 
     confirmAlert('후보에서 뺄까요?', impacts.join(' '), [
       { text: '그대로 둘게요', style: 'cancel' },
-      { text: '빼기', onPress: () => confirmUnpick(candidate) },
+      { text: '빼기', onPress: () => confirmUnpick(candidate, isDecided) },
     ]);
   }
 
-  async function confirmUnpick(candidate: VendorCandidate) {
+  async function confirmUnpick(candidate: VendorCandidate, wasDecided: boolean) {
     if (!weddingId) return;
     setBusy(true);
     try {
@@ -222,7 +235,7 @@ export default function PickScreen() {
         next.delete(candidate.vendorId);
         return next;
       });
-      showToast('후보에서 뺐어요', candidate);
+      showToast('후보에서 뺐어요', { candidate, wasDecided });
       load();
     } catch {
       showToast('후보를 빼지 못했어요. 잠시 후 다시 시도해주세요.');
@@ -231,16 +244,29 @@ export default function PickScreen() {
     }
   }
 
-  async function undoUnpick(candidate: VendorCandidate) {
+  async function undoUnpick(target: UndoCandidate) {
     if (!weddingId) return;
+    const { candidate, wasDecided } = target;
+    let candidateRestored = false;
     setBusy(true);
     try {
       await addCandidate(weddingId, candidate.vendorId, candidate.note ?? undefined);
-      showToast('다시 Pick했어요');
-      load();
+      candidateRestored = true;
+      if (wasDecided) {
+        await decideCategory(weddingId, {
+          category: candidate.category,
+          vendorId: candidate.vendorId,
+        });
+      }
+      showToast(wasDecided ? 'Pick과 결정을 되돌렸어요' : '다시 Pick했어요');
     } catch {
-      showToast('다시 Pick하지 못했어요. 잠시 후 다시 시도해주세요.');
+      showToast(
+        candidateRestored && wasDecided
+          ? '다시 Pick했지만 결정을 복구하지 못했어요.'
+          : '다시 Pick하지 못했어요. 잠시 후 다시 시도해주세요.'
+      );
     } finally {
+      load();
       setBusy(false);
     }
   }
