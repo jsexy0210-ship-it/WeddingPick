@@ -35,6 +35,10 @@ const appCutoverWorkflow = readFileSync(
   path.join(repoRoot, '.github/workflows/cutover-kakao-app-web.yml'),
   'utf8',
 );
+const appPreviewWorkflow = readFileSync(
+  path.join(repoRoot, '.github/workflows/preview-kakao-app-web.yml'),
+  'utf8',
+);
 const previewInstallSource = readFileSync(
   path.join(repoRoot, 'scripts/install-kakao-preview-routes.sh'),
   'utf8',
@@ -424,6 +428,19 @@ shellTest('workflow rollback ownership prevents double rollback after a successf
   assert.match(appCutoverWorkflow, /finalize-kakao-app-web-update\.sh/);
   assert.match(appInstallSource, /trap rollback_on_error EXIT/);
   assert.match(appInstallSource, /trap - EXIT/);
+});
+
+shellTest('app-web preview finalizes successful transactions and rolls failed verify back to the previous live release', () => {
+  assert.match(
+    appPreviewWorkflow,
+    /needs\.publish\.result == 'success'\s*&&\s*needs\.verify\.result != 'success'/,
+  );
+  assert.match(appPreviewWorkflow, /rollback-kakao-app-web-update\.sh/);
+  assert.match(
+    appPreviewWorkflow,
+    /needs\.publish\.result == 'success'\s*&&\s*needs\.verify\.result == 'success'/,
+  );
+  assert.match(appPreviewWorkflow, /finalize-kakao-app-web-update\.sh/);
 });
 
 shellTest('preview route flow keeps internal failure rollback separate from public-verify rollback', () => {
