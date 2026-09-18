@@ -13,6 +13,7 @@ import {
   updateWeddingNote,
 } from '@/api/client';
 import { BottomSheet, SheetPanel } from '@/features/common/bottom-sheet';
+import { confirmAlert } from '@/components/confirm-alert';
 import {
   ActionButton,
   ErrorView,
@@ -21,7 +22,6 @@ import {
   SkeletonView,
   Spacing,
   ThemedText,
-  showAlert,
 } from '@weddingpick/ui';
 import {
   Avatar,
@@ -156,7 +156,7 @@ export default function WeddingNotesScreen() {
     const body = draftBody.trim();
 
     if (!body) {
-      showAlert('메모를 적어주세요');
+      confirmAlert('메모를 적어주세요');
       return;
     }
 
@@ -187,14 +187,14 @@ export default function WeddingNotesScreen() {
         return;
       }
 
-      showAlert('저장하지 못했어요', caught instanceof Error ? caught.message : '다시 시도해주세요.');
+      confirmAlert('저장하지 못했어요', caught instanceof Error ? caught.message : '다시 시도해주세요.');
     } finally {
       setSaving(false);
     }
   }
 
   function remove(note: WeddingNote) {
-    showAlert(S.deleteTitle, S.deleteBody, [
+    confirmAlert(S.deleteTitle, S.deleteBody, [
       { text: '취소', style: 'cancel' },
       {
         text: '삭제',
