@@ -926,7 +926,9 @@ const rowLabel = (row: string[]): string => (row[0] ?? '').split('·')[0]!.trim(
  * 눈에 안 띈다. 줄글은 비는 것만 본다.
  */
 function removedEntries(before: TermsClause, after: ClauseEdit): string[] {
-  const nextTable = after.bodyTable ?? null;
+  // bodyTable을 생략한 수정은 기존 표를 유지한다. undefined를 null(표 삭제)로 읽으면
+  // 본문만 고쳐도 보호 표의 모든 행이 사라진 것으로 오인한다.
+  const nextTable = after.bodyTable === undefined ? before.bodyTable : after.bodyTable;
 
   if (before.bodyTable) {
     if (!nextTable) {

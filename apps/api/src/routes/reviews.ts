@@ -12,6 +12,7 @@ import {
   REVIEWER_ROLE_LABEL,
   REVIEW_CAVEAT,
   REVIEW_VERIFICATION_LABEL,
+  VENDOR_CATEGORIES,
   aspectsFor,
   aspectsForRole,
   checklistFor,
@@ -61,6 +62,10 @@ const RISK_HOLD_DAYS = 7;
 const listQuerySchema = z.object({
   cursor: z.string().max(200).optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
+});
+
+const loungeListQuerySchema = listQuerySchema.extend({
+  category: z.enum(VENDOR_CATEGORIES).optional(),
 });
 
 type VendorRow = { id: string; name: string; category: VendorCategory };
@@ -247,7 +252,17 @@ function decodeCursor(cursor: string): [string, string] | null {
       typeof parsed[0] === 'string' &&
       typeof parsed[1] === 'string'
     ) {
-      return [parsed[0], parsed[1]];
+      const createdAt = new Date(parsed[0]);
+
+      // DB cast까지 잘못된 값을 넘기면 22P02/날짜 cast 오류가 500으로 번진다.
+      // encodeCursor가 만드는 정규 ISO 문자열과 UUID만 cursor로 인정한다.
+      if (
+        !Number.isNaN(createdAt.getTime()) &&
+        createdAt.toISOString() === parsed[0] &&
+        isUuid(parsed[1])
+      ) {
+        return [parsed[0], parsed[1]];
+      }
     }
   } catch {
     // 망가진 커서는 첫 쪽으로 되돌린다. 오류를 띄우느니 처음부터 보여주는 편이 낫다.
@@ -473,6 +488,111 @@ export function registerReviewRoutes(app: FastifyInstance, context: AppContext):
       }
     }
   );
+
+  /**
+   * 라운지의 전체 후기.
+   *
+   * 공개 여부는 `structured.visible_reviews` 하나가 정한다. 작성자 식별자·증빙 원문은
+   * 응답에 싣지 않고, 업체 정보와 후기 본문·검증 단계·게시된 반론만 내보낸다.
+   * 업종 필터 뒤에도 `created_at, id` 순서를 유지해 cursor가 흔들리지 않는다.
+   */
+  app.get('/v1/reviews', open, async (request) => {
+    const userId = optionalUserId(request);
+    const query = loungeListQuerySchema.parse(request.query);
+    const after = query.cursor ? decodeCursor(query.cursor) : null;
+
+    const { rows } = await context.pool.query<{
+      id: string;
+      vendor_id: string;
+      vendor_name: string;
+      vendor_category: VendorCategory;
+      role: ReviewerRole;
+      overall: number;
+      title: string;
+      body: string;
+      pros: string | null;
+      cons: string | null;
+      verification: ReviewVerification;
+      created_at: Date;
+      mine: boolean;
+      aspects: { aspect: string; rating: number }[] | null;
+      rebuttal_role: string | null;
+      rebuttal_body: string | null;
+      rebuttal_published_at: Date | null;
+    }>(
+      `SELECT r.id,
+              v.id AS vendor_id,
+              v.name AS vendor_name,
+              v.category AS vendor_category,
+              r.role, r.overall, r.title, r.body, r.pros, r.cons,
+              r.verification, r.created_at,
+              coalesce(r.author_user_id = $2::uuid, false) AS mine,
+              (SELECT json_agg(json_build_object('aspect', a.aspect, 'rating', a.rating)
+                               ORDER BY a.aspect)
+               FROM structured.review_aspects a WHERE a.review_id = r.id) AS aspects,
+              b.claimed_role AS rebuttal_role,
+              b.body AS rebuttal_body,
+              b.published_at AS rebuttal_published_at
+       FROM structured.visible_reviews r
+       JOIN structured.vendors v ON v.id = r.vendor_id
+       LEFT JOIN structured.published_rebuttals b ON b.review_id = r.id
+       WHERE ($1::vendor_category IS NULL OR v.category = $1::vendor_category)
+         AND ($3::timestamptz IS NULL OR (r.created_at, r.id) < ($3, $4::uuid))
+       ORDER BY r.created_at DESC, r.id DESC
+       LIMIT $5`,
+      [
+        query.category ?? null,
+        userId,
+        after?.[0] ?? null,
+        after?.[1] ?? null,
+        query.limit + 1,
+      ]
+    );
+
+    const hasMore = rows.length > query.limit;
+    const page = hasMore ? rows.slice(0, query.limit) : rows;
+
+    return {
+      reviews: page.map((row) => {
+        const labels = new Map(aspectsFor(row.vendor_category).map((a) => [a.key, a.label]));
+
+        return {
+          id: row.id,
+          role: row.role,
+          roleLabel: REVIEWER_ROLE_LABEL[row.role],
+          overall: row.overall,
+          title: row.title,
+          body: row.body,
+          pros: row.pros,
+          cons: row.cons,
+          verification: row.verification,
+          verificationLabel: REVIEW_VERIFICATION_LABEL[row.verification],
+          aspects: (row.aspects ?? []).flatMap((a) => {
+            const label = labels.get(a.aspect);
+
+            return label ? [{ key: a.aspect, label, rating: a.rating }] : [];
+          }),
+          createdAt: row.created_at.toISOString(),
+          mine: row.mine,
+          rebuttal:
+            row.rebuttal_body && row.rebuttal_role && row.rebuttal_published_at
+              ? {
+                  claimedRole: row.rebuttal_role,
+                  body: row.rebuttal_body,
+                  publishedAt: row.rebuttal_published_at.toISOString(),
+                }
+              : null,
+          vendor: {
+            id: row.vendor_id,
+            name: row.vendor_name,
+            category: row.vendor_category,
+          },
+        };
+      }),
+      nextCursor: hasMore && page.length > 0 ? encodeCursor(page[page.length - 1]!) : null,
+      caveat: REVIEW_CAVEAT,
+    };
+  });
 
   /**
    * 업체의 후기.

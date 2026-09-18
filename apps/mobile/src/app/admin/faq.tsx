@@ -394,7 +394,7 @@ function FaqPanel() {
 
 const TABS: AdminTabDef[] = [
   { key: 'faq', label: 'FAQ 관리' },
-  { key: 'terms', label: '약관 · 방침', readOnly: true },
+  { key: 'terms', label: '약관 · 방침' },
   { key: 'og-card', label: '링크 미리보기' },
   { key: 'audit-log', label: '감사 기록' },
   { key: 'wedding-feed', label: '웨딩피드 관리' },
@@ -402,9 +402,16 @@ const TABS: AdminTabDef[] = [
 
 /**
  * 「사이트·기록」 — FAQ 관리 · 약관·방침 · 링크 미리보기 · 감사 기록 · 웨딩피드
- * 관리를 탭 다섯으로 묶는다. **약관·방침은 「조회만」 딱지가 붙는다** — 정본이
- * 웹사이트라 관리자는 조회만 한다(다섯 화면 중 하나. CLAUDE.md 「약관·방침의
- * 직접 조작」).
+ * 관리를 탭 다섯으로 묶는다.
+ *
+ * **약관·방침의 「조회만」 딱지는 2026-09-16에 뗐다** — 대표 지시 「개인정보처리방침
+ * 이용약관 마케팅 약관도 동일하게 내가 수정가능하도록 하고」. 본문이 표로 왔고
+ * (마이그레이션 0422) 서버가 편집·공개를 받는다.
+ *
+ * **정본이 웹사이트라는 규칙은 그대로다.** 여기서 고친 것을 웹이 읽어 그린다 —
+ * 사본이 둘이 되는 것이 아니라, 그 하나가 코드에서 표로 옮겨간 것이다.
+ * 딱지를 뗄 때 화면 안쪽 잠금도 같이 지웠다(`terms.tsx`). 한쪽만 지우면 말이
+ * 어긋나고, `test/admin-read-only-pairing.test.ts`가 그 어긋남을 잡는다.
  */
 export default function SiteContentShell() {
   const { tab } = useLocalSearchParams<{ tab?: string }>();

@@ -9,7 +9,7 @@ import {
 } from '@weddingpick/domain';
 import { z } from 'zod';
 
-import { idSchema, timestampSchema } from './common';
+import { idSchema, timestampSchema, vendorCategorySchema } from './common';
 
 export const reviewerRoleSchema = z.enum(REVIEWER_ROLES);
 export const checklistAnswerSchema = z.enum(CHECKLIST_ANSWERS);
@@ -232,6 +232,27 @@ export const reviewListResponseSchema = z.object({
 });
 
 /**
+ * 라운지에서 보는 후기 한 건.
+ *
+ * 업체별 후기와 본문 모양은 같고, 어느 업체 이야기인지 식별할 최소 정보만 더한다.
+ * 작성자 정보·증빙 원문·내부 검수값은 계약에 없다.
+ */
+export const loungeReviewSchema = reviewSchema.extend({
+  vendor: z.object({
+    id: idSchema,
+    name: z.string().min(1),
+    category: vendorCategorySchema,
+  }),
+});
+
+/** 라운지 전체 후기 목록. 업종 필터·cursor·limit은 쿼리로 받는다. */
+export const loungeReviewListResponseSchema = z.object({
+  reviews: z.array(loungeReviewSchema),
+  nextCursor: z.string().nullable(),
+  caveat: z.string().min(1),
+});
+
+/**
  * 후기 고치기. 원문 23번.
  *
  * **역할과 평가 항목은 바꾸지 않는다.** 계약자로 쓴 글을 하객으로 바꾸면 그 글이
@@ -275,6 +296,8 @@ export type CreateReviewRequest = z.infer<typeof createReviewRequestSchema>;
 export type UpdateReviewRequest = z.infer<typeof updateReviewRequestSchema>;
 export type CreateReviewResponse = z.infer<typeof createReviewResponseSchema>;
 export type Review = z.infer<typeof reviewSchema>;
+export type LoungeReview = z.infer<typeof loungeReviewSchema>;
+export type LoungeReviewListResponse = z.infer<typeof loungeReviewListResponseSchema>;
 export type UsageScore = z.infer<typeof usageScoreSchema>;
 export type ReviewListResponse = z.infer<typeof reviewListResponseSchema>;
 export type ReportReasonListResponse = z.infer<typeof reportReasonListResponseSchema>;

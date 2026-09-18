@@ -669,6 +669,35 @@ describeWithDb('관리자 운영·시스템 라우트', () => {
       expect(confirmed.json()).toMatchObject({ saved: true });
     });
 
+    it('보호 표 조문에서 bodyTable을 생략하면 기존 표를 유지한다', async () => {
+      const operator = await operatorHeaders();
+      await createDraft('privacy', operator.headers);
+
+      const { rows } = await test.pool.query<{ id: string; row_count: string }>(
+        `SELECT c.id, jsonb_array_length(c.body_table->'rows')::text AS row_count
+         FROM structured.terms_clauses c
+         JOIN structured.terms_versions v ON v.id = c.version_id
+         WHERE v.doc = 'privacy' AND v.published_at IS NULL
+           AND c.removal_warning IS NOT NULL AND c.body_table IS NOT NULL
+         ORDER BY c.position DESC
+         LIMIT 1`
+      );
+      const clause = rows[0]!;
+      const response = await put(
+        `/v1/admin/terms/privacy/clauses/${clause.id}`,
+        operator.headers,
+        { body: '설명만 바꾼다' }
+      );
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toMatchObject({ saved: true });
+
+      const body = (await get('/v1/admin/terms', operator.headers)).json();
+      const kept = docOf(body, 'privacy')?.clauses.find((c) => c.id === clause.id);
+      expect(kept?.body).toBe('설명만 바꾼다');
+      expect((kept?.bodyTable as { rows: string[][] }).rows).toHaveLength(Number(clause.row_count));
+    });
+
     it('국외 이전 절을 지울 때도 무엇이 사라지는지 먼저 보인다', async () => {
       const operator = await operatorHeaders();
       await createDraft('privacy', operator.headers);

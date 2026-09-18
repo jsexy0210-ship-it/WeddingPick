@@ -12,8 +12,11 @@ jobs:
     name: Repair self-hosted runner
     runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
     timeout-minutes: 5
+    outputs:
+      restart_scheduled: ${{ steps.repair.outputs.restart_scheduled }}
     steps:
       - name: Repair runner work directory and restart
+        id: repair
         uses: actions/github-script@v8
         with:
           script: |
@@ -24,6 +27,8 @@ jobs:
             const configPath = runnerRoot + '/.runner';
             const tempPath = configPath + '.repair';
             const markerPath = runnerRoot + '/.runner-restart-needed';
+
+            core.setOutput('restart_scheduled', 'false');
 
             if (!fs.existsSync(configPath)) {
               core.setFailed('Runner configuration was not found: ' + configPath);
@@ -79,4 +84,58 @@ jobs:
               env
             });
             child.unref();
+            core.setOutput('restart_scheduled', 'true');
             core.info('Runner restart scheduled in 8 seconds.');
+
+  restart-window:
+    name: Wait for scheduled restart
+    needs: repair
+    if: needs.repair.outputs.restart_scheduled == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Keep dependent self-hosted jobs off the runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          # repair job은 8초 뒤 stop, 그 뒤 2초 뒤 start를 예약한다.
+          # 다음 self-hosted job이 그 사이 배정되지 않도록 reusable workflow 안에서
+          # GitHub-hosted job이 의존성 장벽을 유지한다.
+          sleep 15
+
+  verify-restart:
+    name: Verify repaired runner
+    needs: [repair, restart-window]
+    if: needs.repair.outputs.restart_scheduled == 'true' && needs.restart-window.result == 'success'
+    runs-on: [self-hosted, Linux, X64, weddingpick-kakao]
+    timeout-minutes: 2
+    steps:
+      - name: Verify restart marker cleared
+        shell: bash
+        run: |
+          set -euo pipefail
+          runner_root=/home/ubuntu/actions-runner
+          marker="$runner_root/.runner-restart-needed"
+          config="$runner_root/.runner"
+
+          if [ -e "$marker" ]; then
+            echo "Runner restart marker still exists; refusing to release dependent jobs." >&2
+            exit 1
+          fi
+
+          python3 - "$config" <<'PY'
+          import codecs
+          import json
+          import sys
+
+          path = sys.argv[1]
+          with open(path, "rb") as handle:
+              raw = handle.read()
+          if raw.startswith(codecs.BOM_UTF8):
+              raw = raw[len(codecs.BOM_UTF8):]
+          config = json.loads(raw.decode("utf-8"))
+          if config.get("workFolder") != "_work":
+              raise SystemExit("Runner workFolder is not _work after restart.")
+          PY
+
+          echo "Runner restart completed; marker cleared and workFolder is _work."
