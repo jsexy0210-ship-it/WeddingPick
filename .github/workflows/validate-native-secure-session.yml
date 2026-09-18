@@ -1,0 +1,36 @@
+name: Validate native secure session branch
+
+on:
+  push:
+    branches:
+      - chatgpt/native-secure-session-20260918
+
+concurrency:
+  group: validate-native-secure-session
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Mobile typecheck
+        run: npm run typecheck --workspace @weddingpick/mobile
+      - name: Mobile lint
+        run: npm run lint --workspace @weddingpick/mobile
+      - name: Secure session regression
+        run: npm run test --workspace @weddingpick/mobile -- --runInBand src/api/session.test.ts
+      - name: Web export regression
+        env:
+          EXPO_PUBLIC_API_URL: https://example.invalid
+          EXPO_PUBLIC_KAKAO_CLIENT_ID: test
+          EXPO_PUBLIC_WEB_URL: https://example.invalid
+        run: npm run export:web --workspace @weddingpick/mobile
