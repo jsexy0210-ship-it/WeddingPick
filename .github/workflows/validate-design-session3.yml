@@ -11,6 +11,7 @@ on:
       - 'apps/mobile/src/components/confirmation-queue*'
       - 'apps/mobile/src/features/navigation/**'
       - 'scripts/fixtures/api.cjs'
+      - 'scripts/screenshot-screens.mjs'
       - '.github/workflows/validate-design-session3.yml'
 
 permissions:
