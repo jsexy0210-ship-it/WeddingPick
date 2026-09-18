@@ -37,6 +37,7 @@ import {
   reportReasonListResponseSchema,
   reviewFormSchema,
   reviewListResponseSchema,
+  loungeReviewListResponseSchema,
   plannerDetailSchema,
   plannerRegionsResponseSchema,
   plannerSearchResponseSchema,
@@ -115,6 +116,7 @@ import {
   type ReportReasonListResponse,
   type ReviewForm,
   type ReviewListResponse,
+  type LoungeReviewListResponse,
   type CreateInquiryResponse,
   type InquiryListResponse,
   type PlannerDetail,
@@ -158,6 +160,8 @@ import {
   type MyRewardPayoutResponse,
   type RequestRewardPayoutRequest,
   type RewardPayout,
+  weddingFeedDetailSchema,
+  type WeddingFeedDetail,
   weddingFeedListResponseSchema,
   type WeddingFeedListResponse,
 } from '@weddingpick/api-contract';
@@ -632,6 +636,11 @@ export async function getWeddingFeed(limit?: number): Promise<WeddingFeedListRes
     `/v1/wedding-feed${limit ? `?limit=${limit}` : ''}`,
     weddingFeedListResponseSchema
   );
+}
+
+/** 웨딩피드 글 하나. 목록에 없는 본문이 여기 있다 — 공개된 글이 아니면 404다. */
+export async function getWeddingFeedPost(id: string): Promise<WeddingFeedDetail> {
+  return request(`/v1/wedding-feed/${encodeURIComponent(id)}`, weddingFeedDetailSchema);
 }
 
 /**
@@ -1134,6 +1143,21 @@ export async function listVendorReviews(
   const suffix = cursor ? `?cursor=${encodeURIComponent(cursor)}` : '';
 
   return request(`/v1/vendors/${vendorId}/reviews${suffix}`, reviewListResponseSchema);
+}
+
+/** 라운지 전체 후기. 작성자 개인정보 없이 업체·후기·인증 단계만 온다. */
+export async function listLoungeReviews(input: {
+  category?: VendorCategory;
+  cursor?: string;
+  limit?: number;
+} = {}): Promise<LoungeReviewListResponse> {
+  const params: string[] = [];
+  if (input.category) params.push(`category=${encodeURIComponent(input.category)}`);
+  if (input.cursor) params.push(`cursor=${encodeURIComponent(input.cursor)}`);
+  if (input.limit !== undefined) params.push(`limit=${encodeURIComponent(String(input.limit))}`);
+  const suffix = params.length > 0 ? `?${params.join('&')}` : '';
+
+  return request(`/v1/reviews${suffix}`, loungeReviewListResponseSchema);
 }
 
 export async function listReportReasons(): Promise<ReportReasonListResponse> {

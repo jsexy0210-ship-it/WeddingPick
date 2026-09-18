@@ -1,6 +1,5 @@
 import type { CandidateListResponse, VendorCandidate } from '@weddingpick/api-contract';
 import {
-  MAX_COMPARED_VENDORS,
   TERMS,
   VENDOR_CATEGORY_LABEL,
   withInstrument,
@@ -24,14 +23,22 @@ import {
   Spacing,
   ThemedText,
   ThemedView,
-  Toast,
   VendorImage,
   readWebInteractionState,
   useTheme,
 } from '@weddingpick/ui';
-import { getCurrentUser, listCandidates, removeCandidate } from '@/api/client';
+import {
+  addCandidate,
+  decideCategory,
+  getCurrentUser,
+  listCandidates,
+  removeCandidate,
+} from '@/api/client';
 import { BackButton } from '@/components/back-button';
-import { UnpickSheet } from '@/features/pick/pick-sheets';
+import { confirmAlert } from '@/components/confirm-alert';
+import { DialogToast } from '@/components/confirm-alert-toast';
+import { useDepthBack } from '@/features/navigation/depth-back';
+import { PICK_COMPARE_MAX, PICK_COMPARE_MIN } from '@/features/pick/canonical-rules';
 import { vendorImageCategory } from '@/features/search/vendor-image-category';
 
 /**
@@ -41,16 +48,16 @@ import { vendorImageCategory } from '@/features/search/vendor-image-category';
  *   hero     «3곳 중 2곳은 준호님도 골랐어요» + «둘 다 고른 곳부터 비교해보세요»
  *   카드      썸네일 72 · 배지(둘 다 고른 곳 / 나만 Pick) · 이름 18 · 지역 14 · 체크 26 · 메모
  *            둘 다 고른 곳은 coral 1.5px 테두리
- *   dock 92  «N곳 비교하기» 52(tokens size.ctaPrimary) — 체크한 후보 2~5곳
+ *   dock 92  «N곳 비교하기» 52(tokens size.ctaPrimary) — 체크한 후보 2~3곳
  *
- * 체크는 **비교 후보 선택**이다(SPEC §13.11 — Pick 탭 진입은 그 업종의 내 후보만 · 체크로 2~5곳).
+ * 체크는 **비교 후보 선택**이다(SPEC §13.11 — Pick 탭 진입은 그 업종의 내 후보만 · 체크로 2~3곳).
  * 최종 결정은 카드 아래 «최종 결정»으로 WP-PICK-005 시트에 넘긴다 — 결정 자체는 그 시트가 한다.
  * «편집»을 누르면 카드마다 «빼기»가 나오고, 빼기는 WP-SHT-003 시트로 한 번 묻는다.
  */
 
-/** 서버가 막는 값과 같아야 한다. 화면이 따로 세면 둘이 어긋난다 — `vendor-comparison.ts`가 원본이다. */
-const MAX_COMPARE = MAX_COMPARED_VENDORS;
-const MIN_COMPARE = 2;
+/** 03-pick 정본은 한 화면 최대 3곳이다. API 상한과 별개로 UI는 이 값을 넘기지 않는다. */
+const MAX_COMPARE = PICK_COMPARE_MAX;
+const MIN_COMPARE = PICK_COMPARE_MIN;
 
 /** 시안 #10c 카드 썸네일 72 · 체크 26 · 배우자 테두리 1.5. Layout에 이름이 없는 값. */
 const CARD_THUMB = 72;
@@ -65,6 +72,11 @@ const DECIDE = '최종 결정';
 const REMOVE = '빼기';
 const EDIT = '편집';
 const EDIT_DONE = '완료';
+
+type UndoCandidate = {
+  candidate: VendorCandidate;
+  wasDecided: boolean;
+};
 
 function CandidateCardSkeleton() {
   const theme = useTheme();
@@ -81,6 +93,7 @@ export default function CategoryPickScreen() {
   const { category } = useLocalSearchParams<{ category: string }>();
   const colors = useTheme();
   const insets = useSafeAreaInsets();
+  const depthBack = useDepthBack();
 
   const [weddingId, setWeddingId] = useState<string | null>(null);
   const [partner, setPartner] = useState<string | null>(null);
@@ -88,11 +101,10 @@ export default function CategoryPickScreen() {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [undoCandidate, setUndoCandidate] = useState<UndoCandidate | null>(null);
   /** 비교할 후보(vendorId). 시안: 체크 26. */
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [editing, setEditing] = useState(false);
-  const [unpickTarget, setUnpickTarget] = useState<VendorCandidate | null>(null);
-  const [removing, setRemoving] = useState(false);
 
   const load = useCallback(() => {
     setError(null);
@@ -126,7 +138,7 @@ export default function CategoryPickScreen() {
         message={error}
         onRetry={load}
         retryLabel="다시 시도"
-        onBack={() => router.back()}
+        onBack={depthBack}
         backLabel="돌아가기"
       />
     );
@@ -137,17 +149,22 @@ export default function CategoryPickScreen() {
   const candidates = group?.candidates ?? [];
   const sharedCount = candidates.filter((c) => c.addedByPartner).length;
 
+  function showToast(message: string, undo: UndoCandidate | null = null) {
+    setUndoCandidate(undo);
+    setToast(message);
+  }
+
   function toggleSelect(candidate: VendorCandidate) {
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(candidate.vendorId)) next.delete(candidate.vendorId);
       else if (next.size < MAX_COMPARE) next.add(candidate.vendorId);
-      else setToast(`한 번에 ${MAX_COMPARE}곳까지 비교할 수 있어요`);
+      else showToast(`한 번에 ${MAX_COMPARE}곳까지 비교할 수 있어요`);
       return next;
     });
   }
 
-  /** 최종 결정은 확인 시트(WP-PICK-005)가 한다 — 여기서 먼저 저장하지 않는다. */
+  /** 최종 결정은 확인 시트(WP-PICK-005)가 한다 — 여기서 먼저 결정 기록을 만들지 않는다. */
   function goDecide(candidate: VendorCandidate) {
     router.push({
       pathname: '/pick/confirm',
@@ -160,22 +177,60 @@ export default function CategoryPickScreen() {
     });
   }
 
-  async function confirmUnpick() {
-    if (!unpickTarget || !weddingId) return;
-    setRemoving(true);
+  function askUnpick(candidate: VendorCandidate) {
+    const who = partner && partner !== TERMS.spouse ? `${partner}님` : TERMS.spouse;
+    const wasDecided = candidate.vendorId === decidedVendorId;
+    const impacts = [
+      wasDecided ? '최종 결정도 함께 취소돼요.' : null,
+      candidate.addedByPartner ? `${who} 목록에서도 함께 사라져요.` : null,
+      '다시 Pick할 수 있어요.',
+    ].filter(Boolean);
+
+    confirmAlert('후보에서 뺄까요?', impacts.join(' '), [
+      { text: '그대로 둘게요', style: 'cancel' },
+      {
+        text: '빼기',
+        onPress: async () => {
+          if (!weddingId) return;
+          try {
+            await removeCandidate(weddingId, candidate.id);
+            setSelected((prev) => {
+              const next = new Set(prev);
+              next.delete(candidate.vendorId);
+              return next;
+            });
+            showToast('후보에서 뺐어요', { candidate, wasDecided });
+            load();
+          } catch {
+            showToast('후보를 빼지 못했어요. 잠시 후 다시 시도해주세요.');
+          }
+        },
+      },
+    ]);
+  }
+
+  async function undoUnpick(target: UndoCandidate) {
+    if (!weddingId) return;
+    const { candidate, wasDecided } = target;
+    let candidateRestored = false;
     try {
-      await removeCandidate(weddingId, unpickTarget.id);
-      setSelected((prev) => {
-        const next = new Set(prev);
-        next.delete(unpickTarget.vendorId);
-        return next;
-      });
-      load();
+      await addCandidate(weddingId, candidate.vendorId, candidate.note ?? undefined);
+      candidateRestored = true;
+      if (wasDecided) {
+        await decideCategory(weddingId, {
+          category: candidate.category,
+          vendorId: candidate.vendorId,
+        });
+      }
+      showToast(wasDecided ? 'Pick과 결정을 되돌렸어요' : '다시 Pick했어요');
     } catch {
-      setToast('후보를 빼지 못했어요. 잠시 후 다시 시도해주세요.');
+      showToast(
+        candidateRestored && wasDecided
+          ? '다시 Pick했지만 결정을 복구하지 못했어요.'
+          : '다시 Pick하지 못했어요. 잠시 후 다시 시도해주세요.'
+      );
     } finally {
-      setRemoving(false);
-      setUnpickTarget(null);
+      load();
     }
   }
 
@@ -258,7 +313,7 @@ export default function CategoryPickScreen() {
                   partner={partner}
                   onToggle={() => toggleSelect(candidate)}
                   onDecide={() => goDecide(candidate)}
-                  onRemove={() => setUnpickTarget(candidate)}
+                  onRemove={() => askUnpick(candidate)}
                 />
               ))
             )}
@@ -294,13 +349,15 @@ export default function CategoryPickScreen() {
         ) : null}
       </SafeAreaView>
 
-      <Toast message={toast} onHidden={() => setToast(null)} />
-      <UnpickSheet
-        candidate={unpickTarget}
-        partnerName={partner === TERMS.spouse ? null : partner}
-        busy={removing}
-        onConfirm={() => void confirmUnpick()}
-        onDismiss={() => setUnpickTarget(null)}
+      <DialogToast
+        message={toast}
+        docked={!isDecided && candidates.length >= MIN_COMPARE}
+        actionLabel={undoCandidate ? '되돌리기' : null}
+        onAction={undoCandidate ? () => void undoUnpick(undoCandidate) : null}
+        onHidden={() => {
+          setToast(null);
+          setUndoCandidate(null);
+        }}
       />
     </ThemedView>
   );

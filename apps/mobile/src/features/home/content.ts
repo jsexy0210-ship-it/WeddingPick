@@ -1,4 +1,4 @@
-import { getWeddingFeed } from '@/api/client';
+import { getWeddingFeed, getWeddingFeedPost } from '@/api/client';
 
 /**
  * 웨딩피드 — 홈 아래쪽의 이미지 피드.
@@ -20,6 +20,22 @@ export type WeddingContentItem = {
   categoryLabel: string;
   title: string;
   imageUri: string | null;
+};
+
+/**
+ * 글 하나를 열었을 때 그릴 것.
+ *
+ * 카드(`WeddingContentItem`)에 본문 · 한 줄 요약 · 공개 시각이 더 붙는다. **카드에
+ * 없는 값이 여기 있는 것이 요점이다** — 목록이 본문까지 실어 나르면 읽지도 않을
+ * 본문 여덟 편이 카드 여덟 장과 같이 건너온다.
+ *
+ * `publishedAt`이 비는 글은 없다(공개된 것만 나간다) — 그래도 계약이 `null`을 허용해서
+ * 화면이 그 경우를 그린다.
+ */
+export type WeddingContentDetail = WeddingContentItem & {
+  summary: string;
+  body: string;
+  publishedAt: string | null;
 };
 
 /**
@@ -55,6 +71,27 @@ export async function listWeddingFeed(limit?: number): Promise<{
       imageUri: item.imageUrl,
     })),
     tabs,
+  };
+}
+
+/**
+ * 글 하나. 카드를 눌러 들어간 자리가 쓴다(`(tabs)/(home)/feed/[id].tsx`).
+ *
+ * **목록과 같은 이름을 쓴다** — 목록이 `imageUri`로 넘기는 것을 상세만 `imageUrl`로
+ * 받으면 같은 그림이 화면마다 다른 이름을 갖는다. 웨딩피드를 부르는 곳은 이 파일
+ * 하나이고, 이름을 맞추는 자리도 여기 하나다.
+ */
+export async function getWeddingFeedDetail(id: string): Promise<WeddingContentDetail> {
+  const post = await getWeddingFeedPost(id);
+
+  return {
+    id: post.id,
+    categoryLabel: post.categoryLabel,
+    title: post.title,
+    summary: post.summary,
+    body: post.body,
+    imageUri: post.imageUrl,
+    publishedAt: post.publishedAt,
   };
 }
 
