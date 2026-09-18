@@ -61,6 +61,16 @@ describe('native session secure storage', () => {
     expect(SecureStore.setItemAsync).toHaveBeenCalledWith(KEY, 'legacy-token');
   });
 
+  it('SecureStore 이관 쓰기가 실패하면 기존 AsyncStorage 토큰을 보존한다', async () => {
+    legacyValues.set(KEY, 'legacy-token');
+    (SecureStore.setItemAsync as jest.Mock).mockRejectedValueOnce(new Error('secure store unavailable'));
+
+    await expect(loadToken()).rejects.toThrow('secure store unavailable');
+
+    expect(legacyValues.get(KEY)).toBe('legacy-token');
+    expect(secureValues.has(KEY)).toBe(false);
+  });
+
   it('SecureStore 세션이 있으면 구 AsyncStorage 값보다 우선한다', async () => {
     secureValues.set(KEY, 'secure-token');
     legacyValues.set(KEY, 'stale-token');
