@@ -115,7 +115,9 @@ function splitFixture(script,role,missingAdmin=false) {
     fs.mkdirSync(path.dirname(path.join(dist,name)),{recursive:true});
     fs.writeFileSync(path.join(dist,name),'synthetic-fixture-not-a-real-font');
   }
-  const run=spawnSync(process.execPath,[path.join(dir,'scripts/split-admin-dist.mjs'),role],{encoding:'utf8',timeout:5000});
+  // 테스트는 명시한 임시 폴더만 정리한다. 상속된 배포 경로를 사용하지 않는다.
+  const env={...process.env,WEDDINGPICK_DIST_DIR:dist,ADMIN_ORIGIN:'https://admin.example.test'};
+  const run=spawnSync(process.execPath,[path.join(dir,'scripts/split-admin-dist.mjs'),role],{encoding:'utf8',timeout:5000,env});
   return{dir,dist,run,exists:name=>fs.existsSync(path.join(dist,name)),read:name=>fs.readFileSync(path.join(dist,name),'utf8'),
     cleanup:()=>fs.rmSync(dir,{recursive:true,force:true})};
 }
@@ -192,7 +194,7 @@ function splitFixture(script,role,missingAdmin=false) {
     const l=loungeHarness({failedUser:true});l.render();l.h.commit();await flush();assert.equal(find(l.render(),'NavBar')[0].props.right,null);
   });
   const script=fs.readFileSync(path.join(root,'scripts/split-admin-dist.mjs'),'utf8');
-  const legacy=script.replace("  'fonts', // public/fonts의 Pretendard를 관리자 산출물에서도 보존한다.\n",'');
+  const legacy=script.replace(/^[ \t]*['"]fonts['"],[^\n]*\n/m,'');
   await check('negative control reproduces original font deletion',()=>{
     assert.notEqual(legacy,script,'Font-retention negative control must remove the allowlist entry');
     const f=splitFixture(legacy,'admin');try{assert.equal(f.run.status,0);assert.equal(f.exists('fonts/PretendardVariable.woff2'),false);}finally{f.cleanup();}

@@ -28,13 +28,15 @@ import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const DIST = join(ROOT, 'apps', 'mobile', 'dist');
+const DIST = process.env.WEDDINGPICK_DIST_DIR
+  ? resolve(process.env.WEDDINGPICK_DIST_DIR)
+  : join(ROOT, 'apps', 'mobile', 'dist');
 
 /*
  * 관리자 출처. 기본값은 운영 주소이고, 스테이징처럼 다른 곳에 올릴 때만
  * 환경변수로 덮는다. 비밀이 아니다 — 브라우저 주소창에 그대로 보이는 값이다.
  */
-const ADMIN_ORIGIN = (process.env.ADMIN_ORIGIN || 'https://weddingpick-admin.onrender.com').replace(/\/+$/, '');
+const ADMIN_ORIGIN = (process.env.ADMIN_ORIGIN || 'https://210.109.82.212:8443').replace(/\/+$/, '');
 
 /*
  * 관리자 출처에 남길 것. 이 목록에 없는 최상위 항목은 지운다.
@@ -46,8 +48,8 @@ const ADMIN_ORIGIN = (process.env.ADMIN_ORIGIN || 'https://weddingpick-admin.onr
 const ADMIN_KEEP = new Set([
   'admin', // 관리자 화면 32장 + 모듈 산출물 2장(_api·_session)
   '_expo', // JS·CSS 번들 (사용자 화면과 같은 번들 하나다 — 갈라지지 않는다)
-  'assets', // 폰트·이미지
-  'fonts', // public/fonts의 Pretendard를 관리자 산출물에서도 보존한다.
+  'assets', // 이미지·정적 자산
+  'fonts', // Pretendard 웹폰트는 dist/fonts에 따로 복사된다
   'favicon.ico',
   '+not-found.html',
 ]);
