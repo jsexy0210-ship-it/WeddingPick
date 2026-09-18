@@ -1,8 +1,11 @@
 /**
  * 서비스 웹사이트 주소.
  *
- * 앱(약관 링크) · 웹(공유 메타) · 도메인(정책 문서 주소)이 전부 여기서 읽는다.
- * **weddingpick.kr은 폐기한다**(2026-09-11 대표 지시). 2026-09-10에 「보유하되 미사용」으로
- * 두었던 것을 뒤집은 결정이다. 다시 붙이자고 제안하지 않는다 — 아래 onrender 주소가 정본이다.
+ * 공개 주소는 빌드 시 `EXPO_PUBLIC_SITE_ORIGIN`으로 넣는다. 이 값은 비밀이 아니다.
+ * 값이 없는 기존 빌드·테스트는 전환 완료 전 공개본인 Render 주소를 fallback으로 쓴다.
+ *
+ * KakaoCloud 정적 전환 후보는 `https://210.109.82.212:9443`을 넣어 빌드한다.
  */
-export const SITE_ORIGIN = 'https://weddingpick-web.onrender.com';
+export const SITE_ORIGIN = (
+  process.env.EXPO_PUBLIC_SITE_ORIGIN || 'https://weddingpick-web.onrender.com'
+).replace(/\/+$/, '');
