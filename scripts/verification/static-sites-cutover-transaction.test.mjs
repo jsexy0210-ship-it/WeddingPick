@@ -47,7 +47,7 @@ function makeHarness({ includePrivacy = true, previousLiveSha = null } = {}) {
   const scripts = path.join(base, 'scripts');
   const bin = path.join(base, 'bin');
   const state = path.join(base, 'state');
-  const releaseSha = 'a'.repeat(40);
+  const releaseSha = 'release-static-a';
   const releaseRoot = path.join(root, 'static-releases', releaseSha);
   const servedReleaseRoot = path.join(root, 'var', 'www', 'weddingpick', 'releases', releaseSha);
   const liveMarker = path.join(root, 'static-live-admin-web');
@@ -173,13 +173,6 @@ fi
 
 function run(h, env = h.env) {
   return spawnSync('bash', [h.installPath, h.releaseSha], {
-    env,
-    encoding: 'utf8',
-  });
-}
-
-function runLatest(h, env = h.env) {
-  return spawnSync('bash', [h.installPath], {
     env,
     encoding: 'utf8',
   });
@@ -353,8 +346,8 @@ test('successful install keeps new static config and release marker without roll
     const result = run(h);
     assert.equal(result.status, 0, result.stderr || result.stdout);
     const liveConfig = readFileSync(h.conf, 'utf8');
-    assert.ok(liveConfig.includes(`${h.releaseSha}/admin`));
-    assert.ok(liveConfig.includes(`${h.releaseSha}/web`));
+    assert.match(liveConfig, /release-static-a\/admin/);
+    assert.match(liveConfig, /release-static-a\/web/);
     assert.equal(
       readFileSync(h.liveMarker, 'utf8').trim(),
       h.releaseSha,
@@ -367,8 +360,38 @@ test('successful install keeps new static config and release marker without roll
 });
 
 
+test('missing live marker fails closed before mutating currently served static files', () => {
+  const h = makeHarness();
+  try {
+    const first = run(h);
+    assert.equal(first.status, 0, first.stderr || first.stdout);
+
+    rmSync(h.liveMarker, { force: true });
+    writeFileSync(
+      path.join(h.servedReleaseRoot, 'admin', 'admin', 'login.html'),
+      '<html>LIVE-ADMIN-SAFE</html>',
+      'utf8',
+    );
+    writeFileSync(
+      path.join(h.root, 'static-releases', h.releaseSha, 'admin', 'admin', 'login.html'),
+      '<html>NEW-SOURCE</html>',
+      'utf8',
+    );
+
+    const second = run(h);
+    assert.notEqual(second.status, 0);
+    assert.match(second.stderr, /live release marker is missing/);
+    assert.equal(
+      readFileSync(path.join(h.servedReleaseRoot, 'admin', 'admin', 'login.html'), 'utf8'),
+      '<html>LIVE-ADMIN-SAFE</html>',
+    );
+  } finally {
+    h.cleanup();
+  }
+});
+
 test('re-running the same live static release does not replace served files', () => {
-  const h = makeHarness({ previousLiveSha: 'a'.repeat(40) });
+  const h = makeHarness({ previousLiveSha: 'release-static-a' });
   try {
     const result = run(h);
     assert.equal(result.status, 0, result.stderr || result.stdout);

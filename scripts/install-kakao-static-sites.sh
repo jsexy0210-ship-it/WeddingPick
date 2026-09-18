@@ -29,9 +29,29 @@ if [ ! -f "$source_dir/admin/admin/login.html" ] || [ ! -f "$source_dir/web/priv
 fi
 
 target="/var/www/weddingpick/releases/$release_sha"
+static_is_live=false
+if grep -Eq '/var/www/weddingpick/releases/.*/(admin|web)' "$CONF" 2>/dev/null; then
+  static_is_live=true
+fi
+
 live_sha=''
 if [ -f "$LIVE_MARKER" ]; then
   live_sha="$(cat "$LIVE_MARKER")"
+fi
+
+# 현재 Nginx가 static release를 제공 중이면 live marker와 실제 root가 일치해야 한다.
+# marker 유실/불일치 상태에서 현재 served admin/web를 먼저 rm -rf 하면, 이 시점에는
+# rollback trap이 아직 없어서 복구할 수 없다.
+if [ "$static_is_live" = true ]; then
+  if [ -z "$live_sha" ]; then
+    echo 'Static admin/web is live but the live release marker is missing.' >&2
+    exit 1
+  fi
+  live_root="/var/www/weddingpick/releases/$live_sha"
+  if ! grep -Fq "root $live_root/admin;" "$CONF" 2>/dev/null ||      ! grep -Fq "root $live_root/web;" "$CONF" 2>/dev/null; then
+    echo "Static live marker does not match the active Nginx roots: $live_sha" >&2
+    exit 1
+  fi
 fi
 
 if [ "$live_sha" = "$release_sha" ]; then
