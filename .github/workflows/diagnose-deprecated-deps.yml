@@ -27,3 +27,11 @@ jobs:
             echo "===== npm explain $pkg ====="
             npm explain "$pkg" --all || true
           done
+
+      - name: Audit production dependencies
+        shell: bash
+        run: npm audit --omit=dev || true
+
+      - name: Audit all dependencies
+        shell: bash
+        run: npm audit || true
