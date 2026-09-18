@@ -33,7 +33,9 @@ test('built public HTML exposes one complete sharing card and preserved icons wi
   const home = readFileSync(join(out, 'index.html'), 'utf8');
   expect(home).toContain(`content="${SHARE_TITLE}"`);
   expect(home).toContain(`content="${SHARE_DESCRIPTION}"`);
-  for (const name of ['favicon-16.png', 'favicon-32.png', 'favicon-48.png', 'apple-touch-icon.png', 'site.webmanifest']) {
+  expect(home).toContain('href="/favicon.ico"');
+  expect(home).not.toContain('rel="icon" type="image/png"');
+  for (const name of ['apple-touch-icon.png', 'site.webmanifest']) {
     expect(home).toContain(`/assets/${name}`);
     expect(readFileSync(join(out, 'assets', name))).toEqual(readFileSync(join(__dirname, '..', 'public', 'assets', name)));
   }
