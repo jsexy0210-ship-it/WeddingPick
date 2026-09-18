@@ -477,6 +477,15 @@ shellTest('explicit rollback is repeatable and returns 443 to the preserved base
   }
 });
 
+shellTest('app-web workflows share the Kakao VM write concurrency group', () => {
+  for (const source of [appCutoverWorkflow, appPreviewWorkflow]) {
+    assert.match(
+      source,
+      /concurrency:\s*\n\s*group: weddingpick-kakao-vm-write\s*\n\s*cancel-in-progress: false/,
+    );
+  }
+});
+
 shellTest('app-web proxy does not trust client-supplied X-Forwarded-For values', () => {
   assert.doesNotMatch(appInstallSource, /X-Forwarded-For \\\$proxy_add_x_forwarded_for/);
   const xff = appInstallSource.match(/proxy_set_header X-Forwarded-For \\\$remote_addr;/g) ?? [];
