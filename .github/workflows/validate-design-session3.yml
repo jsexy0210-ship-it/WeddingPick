@@ -70,3 +70,5 @@ jobs:
           path: validation-artifacts/
           if-no-files-found: error
           retention-days: 7
+
+# Triggered after workflow registration so this branch run is observable.
