@@ -95,8 +95,10 @@ sudo -n docker stop --time 30 "$old_id" >/dev/null
 sudo -n docker rename "$old_id" "$backup_name"
 sudo -n docker run -d --pull=never --name weddingpick-api --restart=unless-stopped \
   --label "org.opencontainers.image.revision=$(sudo -n docker inspect -f '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$backup_name")" \
-  --env-file "$ENV_FILE" -p 127.0.0.1:3001:3000 "$image" >/dev/null
+  --env-file "$ENV_FILE" -e RUN_WORKER_IN_API=false \
+  -p 127.0.0.1:3001:3000 "$image" >/dev/null
 
+test "$(sudo -n docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' weddingpick-api | sed -n 's/^RUN_WORKER_IN_API=//p' | tail -n1)" = false
 health_ok http://127.0.0.1:3001/health 30 2
 health_ok https://210.109.82.212/health 20 3
 
