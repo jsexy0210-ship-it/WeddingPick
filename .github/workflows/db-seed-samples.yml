@@ -25,7 +25,18 @@ permissions:
   contents: read
 
 jobs:
+  production-write-gate:
+    name: Approve production write
+    if: ${{ inputs.target != 'staging' }}
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: echo 'Production write approved.'
+
   run:
+    needs: [production-write-gate]
+    if: ${{ always() && (needs.production-write-gate.result == 'success' || needs.production-write-gate.result == 'skipped') }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -63,8 +74,8 @@ jobs:
             exit 1
           fi
           # 지어낸 업체를 운영 DB에 **넣는** 일은 하지 않는다. 걷어내는 것만 허용한다.
-          if [ "${TARGET:-staging}" = "default" ] && [ "$MODE" != "remove" ]; then
-            echo "::error::운영 DB에는 remove만 돌린다. 샘플을 넣거나 사진을 바꾸는 것은 staging에서 한다."
+          if [ "${TARGET:-staging}" != "staging" ] && [ "$MODE" != "remove" ]; then
+            echo "::error::운영 계열 DB에는 remove만 돌린다. 샘플을 넣거나 사진을 바꾸는 것은 staging에서 한다."
             exit 1
           fi
           echo "대상: ${TARGET:-staging}"
