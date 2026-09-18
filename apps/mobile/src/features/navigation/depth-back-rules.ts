@@ -117,6 +117,7 @@ export const ROUTES: readonly string[] = [
   '/my/referral',
   '/my/reports',
   '/my/reviews',
+  '/my/scraps',
   '/my/rewards',
   '/my/rewards/fund',
   '/my/rewards/history',
