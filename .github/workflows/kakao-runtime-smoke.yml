@@ -135,7 +135,7 @@ jobs:
 
           grep -q '^GEMINI_API_KEY=.' /home/ubuntu/WeddingPick/.env.kakao-prod
           image="$(sudo -n docker inspect -f '{{.Config.Image}}' weddingpick-api)"
-          name="weddingpick-worker-smoke-\${GITHUB_RUN_ID}-\${GITHUB_RUN_ATTEMPT}"
+          name="weddingpick-worker-smoke-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
 
           cleanup() {
             sudo -n docker rm -f "$name" >/dev/null 2>&1 || true
