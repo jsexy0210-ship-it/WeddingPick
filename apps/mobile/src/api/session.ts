@@ -56,9 +56,8 @@ async function removeCurrent(): Promise<void> {
   if (isWebShellSession()) {
     clearWebShellToken();
   } else if (usesNativeSecureStore()) {
-    const store = await secureStore();
     await Promise.all([
-      store.deleteItemAsync(STORAGE_KEY),
+      SecureStore.deleteItemAsync(STORAGE_KEY),
       // 이전 앱에서 남았거나 이관 도중 남은 사본도 같이 제거한다.
       AsyncStorage.removeItem(STORAGE_KEY),
     ]);
