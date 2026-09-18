@@ -198,6 +198,13 @@ jobs:
       contents: read
     uses: ./.github/workflows/cutover-kakao-admin-web.yml
 
+  preview-kakao-admin-web:
+    name: Preview Kakao Admin and Website
+    if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message || '', '[preview-admin-web]') }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/preview-kakao-admin-web.yml
+
   preview-kakao-app-web:
     name: Preview Kakao App Web
     if: ${{ github.repository == 'jsexy0210-ship-it/WeddingPick' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message || '', '[preview-app-web]') }}
