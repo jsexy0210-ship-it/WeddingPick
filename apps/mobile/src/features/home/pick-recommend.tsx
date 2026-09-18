@@ -226,7 +226,7 @@ function CategoryRow({
   const top = group.vendors[0] ?? null;
 
   return (
-    <View style={[styles.category, { borderBottomColor: theme.divider }]}>
+    <View style={[styles.category, { borderBottomColor: theme.border }]}>
       <Pressable
         accessibilityRole="button"
         accessibilityState={{ expanded }}
